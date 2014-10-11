@@ -3499,10 +3499,10 @@ LDataSrcContainer.readFromSrcAltSrc()を利用する形での変更は困難で�
 LDataSrcContainer.selectSrcAltSrc()というのを分離実装し，srcとaltsrcのどちらから読み込むか判定するstatic methodを作成⇒LDataSrcContainer.readFromSrcAltSrc()でも内部でこれを呼び出して実装し共通化
 ⇒StyleFileやStyleSetの実装は変更せずにほぼそのままsrc/alt_srcを使った読み込みを実装
 
+●完了
+gitへの移行
 
 ---------------------------------------------------------------------------
-○TO DO
-gitへの移行
 
 ○TO DO
 CPK, ballstickのdetailのdefault値を上げる(10に?）
