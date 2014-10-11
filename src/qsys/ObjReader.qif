@@ -1,0 +1,33 @@
+// -*-Mode: C++;-*-
+//
+
+#ifndef OBJECT_READER_QIF_INCLUDED
+#define OBJECT_READER_QIF_INCLUDED
+
+#include "Object.qif"
+#include "InOutHandler.qif"
+
+runtime_class ObjReader extends InOutHandler
+{
+  client_hdr "ObjReader.hpp";
+  client_name qsys::ObjReader;
+  dllexport QSYS_API;
+
+  scriptable;
+  smartptr;
+
+  ////////////////////
+  // Method definition
+
+  void attach(object<Object$> obj);
+  object<Object$> detach();
+
+  /// Create default object for this reader
+  object<Object$> createDefaultObj();
+
+  void read();
+
+};
+
+#endif
+

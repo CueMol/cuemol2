@@ -1,0 +1,30 @@
+// -*-Mode: C++;-*-
+//
+//  StyleSet scripting interface definition
+//
+
+#ifndef STYLESET_QIF_INCLUDED
+#define STYLESET_QIF_INCLUDED
+
+runtime_class StyleSet
+{
+  client_hdr "StyleSet.hpp";
+  client_name qsys::StyleSet;
+  dllexport QSYS_API;
+
+  scriptable;
+  smartptr;
+
+  //
+  // properties
+  //
+
+  property string src => redirect(getSource, XXX) (readonly);
+  property boolean readonly => redirect(isReadOnly, setReadOnly);
+  property boolean modified => redirect(isModified, XXX) (readonly);
+
+
+};
+
+#endif
+

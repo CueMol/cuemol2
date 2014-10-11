@@ -1,0 +1,82 @@
+<?xml version="1.0"?>
+<!DOCTYPE overlay SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+<!-- -*- xml -*- -->
+
+<overlay id="cuemol2-panels-overlay"
+  xmlns:html="http://www.w3.org/1999/xhtml"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <overlaytarget id="panels-overlay-target" hidden="true">
+
+    <script type="application/javascript" src="chrome://cuemol2/content/object-menulist.js"/>
+    <script type="application/javascript" src="chrome://cuemol2/content/symmetry-panel.js"/>
+
+    <vbox id="symm" flex="0" title="&symmetryPanel.title;">
+      <menulist id="symm_object_selector" sizetopopup="none">
+	<menupopup/>
+      </menulist>
+
+      <html:table>
+  
+	<!--<html:td>Lattice:</html:td>-->
+
+	  <html:tr>
+	    <html:td colspan="6">
+	      <html:span id="symm_lattice">Unknown</html:span>, &symmetryPanel.sg;: <html:span id="symm_spacegrp">Unknown</html:span>
+	    </html:td>
+	  </html:tr>
+
+	  <html:tr>
+	    <html:td style="text-align: right"><html:i>a</html:i>=</html:td>
+	    <html:td flex="1" ><html:span id="symm_cella">100.0</html:span> &#0197;</html:td>
+	    
+	    <html:td style="text-align: right"><html:i>b</html:i>=</html:td>
+	    <html:td flex="1" ><html:span id="symm_cellb">100.0</html:span> &#0197;</html:td>
+
+	    <html:td style="text-align: right"><html:i>c</html:i>=</html:td>
+	    <html:td flex="1" ><html:span id="symm_cellc">100.0</html:span> &#0197;</html:td>
+	  </html:tr>
+
+	  <html:tr>
+	    <html:td style="text-align: right">&#0945;=</html:td>
+	    <html:td flex="1" ><html:span id="symm_alpha" >90.0</html:span>&#0176;</html:td>
+
+	    <html:td style="text-align: right">&#0946;=</html:td>
+	    <html:td flex="1" ><html:span id="symm_beta">90.0</html:span>&#0176;</html:td>
+
+	    <html:td style="text-align: right">&#0947;=</html:td>
+	    <html:td flex="1" ><html:span id="symm_gamma">90.0</html:span>&#0176;</html:td>
+	  </html:tr>
+      </html:table>
+
+      <hbox flex="0">
+	<button class="panel-button" id="symm-panel-change" label="Change ..."
+	  oncommand="cuemolui.panels.symm.changeSymm(event)"/>
+	<button class="panel-button" id="symm-panel-showsymm" label="&symmetryPanel.symmol;"
+	  oncommand="cuemolui.panels.symm.showSymmRend(event)"
+	  type="menu">
+	  <menupopup>
+	    <menuitem id="symm-panel-showsymm-around20" label="20 &#0197;"/>
+	    <menuitem id="symm-panel-showsymm-around50" label="50 &#0197;"/>
+	    <menuitem id="symm-panel-showsymm-around100" label="100 &#0197;"/>
+	    <menuitem id="symm-panel-showsymm-around200" label="200 &#0197;"/>
+	    <menuitem id="symm-panel-showsymm-unitcell" label="Unit cell"/>
+	  </menupopup>
+	</button>
+	<button class="panel-button" id="symm-panel-showcell" label="&symmetryPanel.unitcell;"
+	  oncommand="cuemolui.panels.symm.showUnitCell()"/>
+      </hbox>      
+    </vbox>
+
+  </overlaytarget>
+
+  <!-- Menu -->
+  <overlaytarget id="window-leftpanels-popup">
+    <menuitem id="menu-symm-panel-toggle"
+      type="checkbox" autocheck="false"
+      label="Symmetry"
+      oncommand="cuemolui.sidepanel.onToggle('symm')" />
+  </overlaytarget>
+
+</overlay>
+

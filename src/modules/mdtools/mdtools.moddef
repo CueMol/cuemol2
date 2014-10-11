@@ -1,0 +1,13 @@
+// -*-Mode: C++;-*-
+//
+
+#include "NAMDCoorReader.qif"
+
+module mdtools
+{
+  init mdtools::init();
+  fini mdtools::fini();
+
+  NAMDCoorReader;
+};
+

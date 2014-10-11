@@ -1,0 +1,171 @@
+/*
+  CSS for GDK/X11 GUI
+  $Id: macosx.css,v 1.8 2011/04/30 10:20:33 rishitani Exp $
+*/
+
+/* ----- default splitter styles ----- */
+/* vertical */
+splitter {
+  min-width: 6px;
+  min-height: 6px;
+  background-image: none;
+  background-color: threedface;
+  border-left: 1px solid rgba(0,0,0,0.35);
+  border-right: 1px solid rgba(0,0,0,0.35);
+}
+
+/* horizontal */
+splitter[orient="vertical"] {
+  border-left: none;
+  border-right: none;
+  border-top: 1px solid rgba(0,0,0,0.35);
+  border-bottom: 1px solid rgba(0,0,0,0.35);
+}
+
+#content-holder {
+  border-style:  solid none none none;
+  border-width: 2px 0 0 0;
+  -moz-border-top-colors: rgba(0,0,0,.5) rgba(255,255,255,.75) ;
+}
+
+/* ------------------------------------------------------------------- */
+/* toolbar-ribbon */
+
+.ribbon-tabs {
+  font: -moz-button;
+  background-image: -moz-linear-gradient(rgba(0,0,0,0.0), rgba(0,0,0,0.1));
+}
+
+.ribbon-tabs .tabs-left {
+  display: none;
+}
+
+.ribbon-tabs .tabs-right {
+}
+
+.ribbon-tabbox {
+ margin: 0;
+}
+
+
+.ribbon-tabpanels {
+  -moz-appearance: none !important;
+  border-right: 0px;
+  border-bottom: 0px;
+  /*border-bottom: 2px solid threeddarkshadow;*/
+  border-left: 0px;
+  padding: 0px;
+  background-image: -moz-linear-gradient(rgba(255,255,255,.58), rgba(255,255,255,0));
+  background-color: -moz-Dialog;
+}
+
+.ribbon-tabpanel {
+}
+
+.ribbon-bar {
+  -moz-appearance: none;
+  margin: 1px;
+}
+
+/* ------------------------------------------------------------------- */
+/* tabmolview */
+
+.tabmolview-tabpanels {
+  -moz-appearance: none !important;
+  border: none;
+  padding: 0;
+  /*background-color: none;*/
+  /*color: none;*/
+}
+
+.tabmolview-tabs {
+  -moz-box-pack: center;
+  -moz-box-align: center;
+  height: 25px;
+  margin-top: 0;
+  font: -moz-button;
+}
+
+.tabmolview-tabs .tabs-left {
+  display: none;
+}
+
+.tabmolview-tabbox {
+ margin: 0;
+}
+
+/* ------------------------------------------------------------------- */
+/* sidebar-tabs */
+
+.sidebar-tabpanels {
+  -moz-appearance: none !important;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-tabpanel {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-tabbox {
+ margin: 0;
+}
+
+.sidebar-tabbox .ribbon-tab {
+  -moz-border-radius: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar-tabbox .ribbon-tab .tab-text{
+  /*border: solid red 1px !important;*/
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar-tabbox .ribbon-tab[label=""] .tab-text{
+  display: none;
+/*  border: none;
+  margin: 0;
+  padding: 0;*/
+}
+
+.sidepanel-splitter {
+  min-height: 5px;
+  background-color: threeddarkface;
+  border-top: 1px solid rgba(0,0,0,0.35);
+  border-bottom: 1px solid rgba(0,0,0,0.35);
+  border-left: none;
+  border-right: none;
+}
+
+/* ------------------------------------------------------------------- */
+/* Toolbar toolbuttons (+Ribbon toolbar buttons) */
+
+.ribbon-toolbar-button > .toolbarbutton-text ,
+.toolbar-button > .toolbarbutton-text {
+  display: none;
+}
+
+.ribbon-toolbar-spacer,
+.toolbar-spacer {
+  display: none;
+/*  border: none;*/
+/*  border: solid red 1px;*/
+  margin: 0;
+  padding: 0;
+}
+
+.ribbon-toolbar-button[type="menu-button"] .toolbarbutton-text {
+  display: none;
+}
+
+.object-tree-children::-moz-tree-row(odd) {
+  background-color: -moz-oddtreerow;
+}
+.object-tree-children::-moz-tree-row(odd,selected) {
+  background-color: highlight;
+}

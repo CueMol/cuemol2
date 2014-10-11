@@ -1,0 +1,30 @@
+// -*-Mode: C++;-*-
+//
+// Molecular surface object scripting interface
+//
+
+#ifndef MOL_SURF_OBJ_QIF_INCLUDED
+#define MOL_SURF_OBJ_QIF_INCLUDED
+
+#include <qsys/Object.qif>
+#include <qlib/Vector.qif>
+#include <modules/molstr/SelCommand.qif>
+
+runtime_class MolSurfObj extends Object
+{
+  client_hdr "MolSurfObj.hpp";
+  client_name surface::MolSurfObj;
+
+  scriptable;
+  smartptr;
+
+  /// Cut surface by a plane
+  void cutByPlane(real cdiv, object<Vector> norm, object<Vector> pos, boolean bSec);
+  void cutByPlane2(real cdiv, object<Vector> norm, object<Vector> pos, boolean bBody, boolean bSec);
+
+  void createSESFromMol(object<MolCoord$> pMol, object<MolSelection$> pSel, real density, real probe_radius);
+
+};
+
+#endif
+

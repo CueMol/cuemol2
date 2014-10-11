@@ -1,0 +1,24 @@
+// -*-Mode: C++;-*-
+//
+// APBS file reader scripting interface
+//
+
+#ifndef OPENDX_POT_READER_QIF_INCLUDED
+#define OPENDX_POT_READER_QIF_INCLUDED
+
+#include <qsys/ObjReader.qif>
+
+runtime_class OpenDXPotReader extends ObjReader
+{
+  client_hdr "OpenDXPotReader.hpp";
+  client_name surface::OpenDXPotReader;
+
+  scriptable;
+  smartptr;
+
+  property real smooth => m_dSmooth;
+  default smooth = -1.0;
+
+};
+
+#endif

@@ -1,0 +1,28 @@
+// -*-Mode: C++;-*-
+//
+// STL (Stereolithography) scene output class
+//
+
+#ifndef STL_SCENE_EXPORTER_QIF_INCLUDED
+#define STL_SCENE_EXPORTER_QIF_INCLUDED
+
+#include <qsys/SceneExporter.qif>
+
+runtime_class StlSceneExporter extends SceneExporter
+{
+  client_hdr "StlSceneExporter.hpp";
+  client_name render::StlSceneExporter;
+
+  scriptable;
+  smartptr;
+
+  ////////////////////
+  // Property definition
+
+  /// scale (1 angstrom <--> 1 mm)
+  property real scale => m_scale;
+
+};
+
+#endif
+

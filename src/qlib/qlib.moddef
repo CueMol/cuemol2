@@ -1,0 +1,41 @@
+// -*-Mode: C++;-*-
+//
+// $Id: qlib.moddef,v 1.14 2011/04/16 12:44:39 rishitani Exp $
+
+#include "Vector.qif"
+#include "Matrix.qif"
+#include "RegExpr.qif"
+#include "Quat.qif"
+#include "TimeValue.qif"
+#include "RangeSet.qif"
+#include "LScrCallBack.qif"
+#include "MsgLog.qif"
+#include "ByteArray.qif"
+#include "ProcessManager.qif"
+
+// #include "ClassA.qif"
+// #include "ClassB.qif"
+// #include "ClassS.qif"
+
+module qlib
+{
+  init qlib::init();
+  fini qlib::fini();
+
+  Vector uuid fddb4a5c-ea4d-4f99-91bb-79d22e701762;
+  Matrix uuid 065dc8ec-a7fc-4d23-8f0d-bf14486a9f1f;
+  RegExpr uuid eb65f57b-08b9-43c3-84ba-888a18bea5bd;
+  Quat uuid 9fcf32f6-724c-4c10-94bc-b4aaa7ed05c5;
+  RangeSet;
+  MsgLog;
+
+  LScrCallBack;
+  ByteArray;
+  TimeValue;
+  ProcessManager;
+
+  // ClassA uuid 34114043-a617-49bd-a718-65fb5fdad1c6;
+  // ClassB uuid ae9712eb-9bc3-4ffd-ad9d-b516df94d121;
+  // ClassS uuid d785dc26-24f8-456b-a139-5d8a1cffa0fe;
+};
+

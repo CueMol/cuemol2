@@ -1,0 +1,145 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+
+<!-- -*- xml -*- -->
+
+<dialog
+  id     = "style-editor-dialog"
+  windowtype="CueMol2:StyleEditorDlg"
+  title  = "Style editor"
+  xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  buttons="accept,cancel"
+  ondialogaccept="return gMain.onDialogAccept(event);">
+
+  <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/treeview.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/colpicker.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/style/style_editor.js"/>
+
+  <groupbox >
+    <caption id="style-name" label="Name: "/>
+
+    <grid flex="0">
+      <columns>
+	<column flex="0"/>
+	<column flex="1"/>
+      </columns>
+      
+      <rows>
+	<row align="center">
+	  <label value="Source: "/>
+	  <textbox readonly="true" id="style-src" value="" flex="1"/>
+	</row>
+
+	<row align="center">
+	  <label value="Type: "/>
+	  <label id="style-type" value="" flex="1"/>
+	</row>
+
+      </rows>
+
+    </grid>
+  </groupbox>
+  
+  <tabbox selectedIndex="0" flex="1">
+    <tabs id="tabs-overlay-target">
+      <tab label="Color" id="color-tab"/>
+      <tab label="Selection" id="sel-tab"/>
+    </tabs>
+
+    <tabpanels id="tabpanels-overlay-target" flex="1">
+      <!-- Color editor -->
+      <tabpanel flex="1" orient="vertical">
+
+	<hbox flex="1">
+	  <tree id="color-listbox" flex="1"
+	     style="height: 20em; width: 30em;"
+	    hidecolumnpicker="true" editable="false"
+	    treelines="false" seltype="single">
+	    <treecols>
+	      <treecol id="color_name" primary="true"
+		label="Name" flex="1"/>
+	      <splitter class="tree-splitter"/>
+	      <treecol id="color_value"
+		label="Color" flex="1"/>
+	    </treecols>
+	    <treechildren id="color-listbox-children" class="noindent-tree-children"/>
+	  </tree>
+	  <spacer width="5px"/>
+	  <vbox flex="0">
+	    <toolbarbutton
+	      id="color-addbtn"
+	      class="toolbar-button add-button"
+	      oncommand="gMain.onAddColor(event);"
+	      tooltiptext="Add">
+	    </toolbarbutton>
+	    <toolbarbutton
+	      id="color-delbtn"
+	      class="toolbar-button delete-button"
+	      oncommand="gMain.onDelColor(event);"
+	      tooltiptext="Delete"/>
+	  </vbox>
+	</hbox>
+	
+	<spacer height="5px"/>
+
+	<hbox align="center" flex="0">
+	  <label value="Name:"/>
+	  <textbox size="1" id="color-name-box" flex="1"
+	    onchange="gMain.onColChg(event)"/>
+	  <label value="Color:"/>
+	  <mycolpicker size="1" id="color-value-edit" flex="1"
+	    onchange="gMain.onColChg(event)"/>
+	</hbox>
+
+      </tabpanel>
+
+      <!-- MolSel defs editor -->
+      <tabpanel flex="1" orient="vertical">
+	<hbox flex="1">
+	  <tree id="molsel-listbox" flex="1"
+	    style="height: 20em; width: 30em;"
+	    hidecolumnpicker="true" editable="false"
+	    treelines="false" seltype="single">
+	    <treecols>
+	      <treecol id="molsel_name" primary="true"
+		label="Name" flex="1"/>
+	      <splitter class="tree-splitter"/>
+	      <treecol id="molsel_value"
+		label="Value" flex="1"/>
+	    </treecols>
+	    <treechildren id="molsel-listbox-children" class="noindent-tree-children"/>
+	  </tree>
+	  <spacer width="5px"/>
+	  <vbox flex="0">
+	    <toolbarbutton
+	      id="molsel-addbtn"
+	      class="toolbar-button add-button"
+	      oncommand="gMain.onAddMolSel(event);"
+	      tooltiptext="Add">
+	    </toolbarbutton>
+	    <toolbarbutton
+	      id="molsel-delbtn"
+	      class="toolbar-button delete-button"
+	      oncommand="gMain.onDelMolSel(event);"
+	      tooltiptext="Delete"/>
+	  </vbox>
+	</hbox>
+	
+	<spacer height="5px"/>
+	
+	<hbox align="center" flex="0">
+	  <label value="Name:"/>
+	  <textbox id="molsel-name-box" flex="1" size="1"
+	    onchange="gMain.onSelChg(event)"/>
+	  <label value="Value:"/>
+	  <textbox id="molsel-value-edit" flex="1" size="1"
+	    onchange="gMain.onSelChg(event)"/>
+	</hbox>
+      </tabpanel>
+
+    </tabpanels>
+  </tabbox>
+</dialog>
+

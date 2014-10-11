@@ -1,0 +1,27 @@
+// -*-Mode: C++;-*-
+//
+// LWRenderer scripting interface
+//
+
+#ifndef LWRENDERER_QIF_INCLUDED
+#define LWRENDERER_QIF_INCLUDED
+
+#include <qsys/Renderer.qif>
+
+runtime_class LWRenderer extends Renderer
+{
+  client_hdr "LWRenderer.hpp";
+  client_name lwview::LWRenderer;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  /// data ID (in LWObject data)
+  property integer data_id => redirect(getDataID, setDataID);
+  default data_id = 0;
+  
+};
+
+#endif
+

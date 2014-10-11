@@ -1,0 +1,74 @@
+<?xml version="1.0"?>
+<!DOCTYPE overlay SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+<!-- -*- xml -*- -->
+
+<overlay id="molstruct-panel"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <overlaytarget id="panels-overlay-target" hidden="true">
+
+    <script type="application/javascript" src="chrome://cuemol2/content/treeview.js"/>
+    <script type="application/javascript" src="chrome://cuemol2/content/object-menulist.js"/>
+    <script type="application/javascript" src="chrome://cuemol2/content/molstruct-panel.js"/>
+
+    <vbox id="molstruct-panel" title="MolStruct" flex="1">
+      <menulist id="molstruct-mol-selector" sizetopopup="none"/>
+      <tree id="molStructTree" flex="2" hidecolumnpicker="true" editable="false" treelines="true" seltype="multiple">
+	<treecols style="height: 0px">
+	  <treecol id="molstruct_name" primary="true"
+	    label="Name" flex="1"/>
+	</treecols>
+	<treechildren class="object-tree-children"/>
+      </tree>
+      <hbox>
+	<toolbarbutton
+	  id="molstrPanelSelectBtn"
+	  class="toolbar-button arrow-button"
+	  tooltiptext="Select atoms"/>
+	<toolbarbutton
+	  id="molstrPanelCenterBtn"
+	  class="toolbar-button centerat-button"
+	  tooltiptext="Center at"/>
+	<toolbarbutton
+	  id="molstrPanelZoomBtn"
+	  class="toolbar-button zoom-button"
+	  tooltiptext="Zoom at"/>
+	<toolbarbutton
+	  id="molstrPanelPropBtn"
+	  class="toolbar-button prop-button"
+	  tooltiptext="Properties ..."/>
+      </hbox>
+    </vbox>
+
+  </overlaytarget>
+
+  <!--<overlaytarget id="menus-overlay-target">
+    <popupset>
+      <menupopup id="wspcPanelSceneCtxtMenu">
+	<menuitem label="Properties..." oncommand="cuemolui.panels.molstruct.onPropCmd(event)" />
+      </menupopup>
+
+      <menupopup id="wspcPanelObjCtxtMenu">
+	<menuitem label="New renderer..." oncommand="cuemolui.panels.molstruct.onNewCmd(event);"/>
+	<menuitem label="Delete object" oncommand="cuemolui.panels.molstruct.onDeleteCmd(event);"/>
+	<menuitem label="Properties..." oncommand="cuemolui.panels.molstruct.onPropCmd(event)" />
+      </menupopup>
+
+      <menupopup id="wspcPanelRendCtxtMenu">
+	<menuitem label="New renderer..." oncommand="cuemolui.panels.molstruct.onNewCmd(event);"/>
+	<menuitem label="Delete renderer" oncommand="cuemolui.panels.molstruct.onDeleteCmd(event);"/>
+	<menuitem label="Properties..." oncommand="cuemolui.panels.molstruct.onPropCmd(event)"/>
+      </menupopup>
+    </popupset>
+
+  </overlaytarget>-->
+  
+  <overlaytarget id="window-leftpanels-popup">
+    <menuitem id="menu-molstruct-panel-toggle"
+      type="checkbox" autocheck="false"
+      label="MolStruct"
+      oncommand="cuemolui.sidepanel.onToggle('molstruct-panel')" />
+  </overlaytarget>
+
+</overlay>
+

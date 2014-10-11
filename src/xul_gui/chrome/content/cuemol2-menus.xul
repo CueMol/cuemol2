@@ -1,0 +1,445 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+
+<!DOCTYPE overlay [
+  <!ENTITY % brandDTD SYSTEM "chrome://global/locale/brand.dtd">
+  %brandDTD;
+  <!ENTITY % updateDTD SYSTEM "chrome://mozapps/locale/update/updates.dtd">
+  %updateDTD;
+  <!ENTITY % cuemol2DTD SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+  %cuemol2DTD;
+]>
+
+<overlay id="cuemol2-menus-overlay"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+  
+  <overlaytarget id="menus-overlay-target">
+    
+    <script type="application/x-javascript">
+      <![CDATA[
+	dump("cuemol2-menus.xul loading...  \n");
+	
+      function showConsole() {
+      window.open("chrome://global/content/console.xul", "_blank",
+      "chrome,extrachrome,menubar,resizable,scrollbars,status,toolbar");
+      }
+
+      function showConfig() {
+      var win = window.open('about:config', "cuemolGeckoConfigWnd",
+      "chrome,width=600,height=300,resizable");
+      win.focus();
+      //window.open("about:config", "_blank",
+      //"chrome,extrachrome,menubar,resizable,scrollbars,status,toolbar");
+      }
+
+      function showAddonMgr() {
+        var win = window.open("chrome://mozapps/content/extensions/extensions.xul", "cuemolGeckoConfigWnd",
+                              "chrome,width=600,height=300,resizable");
+        win.focus();
+      }
+
+      function showDOMInspector() {
+      window.open("chrome://inspector/content/inspector.xul", "", 'chrome,width=600,height=300,resizable');
+      }
+
+      function showCrashReporter() {
+      var cr = Cc['@mozilla.org/toolkit/crash-reporter;1'].getService(Ci.nsICrashReporter);
+      dd("crash enabled: "+cr.enabled);
+      dd("crash dump path: "+cr.minidumpPath.path);
+      //dd("crash dump URL: "+cr.serverURL);
+      cuemol.xpc.test(null);
+      }
+
+      function restoreDefaultPanels() {
+        var sidep = document.getElementById("left_side_panel");
+        sidep.restoreDefault();
+        sidep.realize();
+      }
+
+	]]>
+    </script>
+
+    <commandset id="mainCommandSet">
+      <command id="cmd_new_tab" oncommand="gQm2Main.onNewTabWindow(false);"
+	tooltiptext="&new_tab.label;"/>
+      <command id="cmd_close_tab" oncommand="gQm2Main.onCloseTab()"/>
+      <command id="cmd_open_scene" oncommand="gQm2Main.onOpenScene();" tooltiptext="&open_scene.label;"/>
+      <command id="cmd_save_scene" oncommand="gQm2Main.onSaveScene()" tooltiptext="&save_scene.label;"/>
+      <command id="cmd_reload_scene" oncommand="gQm2Main.onReloadScene()" tooltiptext="&reload_scene.label;"/>
+      <command id="cmd_undo" oncommand="gQm2Main.undo()" tooltiptext="&edit_undo.label;"/>
+      <command id="cmd_redo" oncommand="gQm2Main.redo()" tooltiptext="&edit_redo.label;"/>
+      <command id="cmd_quitApplication" oncommand="if(gQm2Main.onCloseEvent()) goQuitApplication();"/>
+
+      <command id="cmd_file_open" oncommand="gQm2Main.onFileOpen()"
+	tooltiptext="&open_file.label;"/>
+      <command id="cmd_file_save_as" oncommand="gQm2Main.onFileSaveAs()"
+	tooltiptext="&save_file_as.label;"/>
+      <command id="cmd_file_open_mru" oncommand="gQm2Main.onFileOpenMRU(event)"/>
+
+      <command id="cmd_config" oncommand="gQm2Main.showConfigDlg()"/>
+
+      <command id="cmd_toggle_hwstereo" oncommand="gQm2Main.toggleHWStereo()"/>
+    </commandset>
+
+    <keyset id="mainKeyset">
+      <key id="mkNewTab"
+	key="&new_tab.commandkey;"
+	command="cmd_new_tab"
+	modifiers="accel"/>
+      <key id="mkOpenFile"
+	key="&open_file.commandkey;"
+	command="cmd_file_open"
+	modifiers="accel"/>
+      <key id="mkSaveFileAs"
+	key="&save_file_as.commandkey;"
+	command="cmd_file_save_as"
+	modifiers="accel"/>
+      <key id="mkOpenScene"
+	command="cmd_open_scene"
+	key="o" modifiers="shift accel"/>
+      <key id="mkReloadScene"
+	key="&reload_scene.commandkey;"
+	command="cmd_reload_scene"
+	modifiers="accel"/>
+      <key id="mkSaveScene"
+	key="&save_scene.commandkey;"
+	command="cmd_save_scene"
+	modifiers="accel"/>
+
+      <key id="mkEditUndo"
+	key="&edit_undo.commandkey;"
+	command="cmd_undo"
+	modifiers="accel"/>
+      <key id="mkEditRedo"
+	key="&edit_redo.commandkey;"
+	command="cmd_redo"
+	modifiers="accel"/>
+      <key id="mkEditConfig"
+	   key="&edit_config.commandkey;"
+	   command="cmd_config"
+	   modifiers="accel"/>
+
+      <key id="mkToggleHWStereo"
+	keycode="VK_F1"
+	command="cmd_toggle_hwstereo"/>
+
+#ifdef XP_MACOSX
+      <key id="key_configCmdMac"
+	   key="&configCmdMac.commandkey;"
+	   command="cmd_config"
+	   modifiers="accel"/>
+      <key id="key_hideThisAppCmdMac"
+           key="&hideThisAppCmdMac.commandkey;"
+           modifiers="accel"/>
+      <key id="key_hideOtherAppsCmdMac"
+           key="&hideOtherAppsCmdMac.commandkey;"
+           modifiers="accel,alt"/>
+
+      <key id="key_quitApplication"
+	   key="&quitApplicationCmdMac.key;"
+	   command="cmd_quitApplication"
+	   modifiers="accel"/>
+#endif
+
+    </keyset>
+    <keyset id="shortcutKeyset"/>
+
+#ifdef XP_MACOSX
+# MacOSX Application menu
+    <menupopup id="menu_ToolsPopup">
+      <menuitem id="menu_preferences" label="&configCmdMac.label;" key="key_configCmdMac"
+		command="cmd_config"/>
+      <menuitem id="menu_mac_services" label="&servicesMenuMac.label;"/>
+      <menuitem id="menu_mac_hide_app" label="&hideThisAppCmdMac.label;" key="key_hideThisAppCmdMac"/>
+      <menuitem id="menu_mac_hide_others" label="&hideOtherAppsCmdMac.label;" key="key_hideOtherAppsCmdMac"/>
+      <menuitem id="menu_mac_show_all" label="&showAllAppsCmdMac.label;"/>
+
+      <menuitem id="menu_FileQuitItem"
+		label="&quitApplicationCmdMac.label;"
+		key="key_quitApplication"
+		command="cmd_quitApplication" />
+    </menupopup>
+#endif
+
+    <toolbox flex="1">
+      <menubar id="main-menubar">
+	<menu id="file-menu" label="&menu_file.label;" accesskey="&menu_file.accesskey;">
+	  <menupopup id="file-popup">
+
+	    <!--
+	      <menuitem label="&new_window.label;"
+	      accesskey="&new_window.accesskey;"
+	      oncommand="gQm2Main.onNewTabWindow(true);" />
+	      -->
+	    <menuitem label="&new_tab.label;"
+	      accesskey="&new_tab.accesskey;"
+	      key="mkNewTab"
+	      command="cmd_new_tab"/>
+
+	    <menuitem label="&open_file.label;"
+	      accesskey="&open_file.accesskey;"
+	      key="mkOpenFile"
+	      command="cmd_file_open" />
+
+	    <menuitem label="&open_PDB.label;" oncommand="gQm2Main.onOpenPDBsite();"/>
+
+	    <menu label="Open recent" id="file-mru-open">
+	      <menupopup id="file-mru-open-popup"
+			 onpopupshowing="gQm2Main.populateFileMRUMenu(event)">
+		<menuseparator/>
+		<menuitem label="Clear Menu"
+			  oncommand="gQm2Main.clearMRUMenu(event)"/>
+	      </menupopup>
+	    </menu>
+
+	    <menuitem label="&save_file_as.label;"
+	      accesskey="&save_file_as.accesskey;"
+	      key="mkSaveFileAs"
+	      command="cmd_file_save_as" />
+
+	    <menuitem label="&saveCurrCam.label;" oncommand="gQm2Main.onSaveCurView()" />
+
+	    <menuitem label="&close_tab.label;" command="cmd_close_tab" />
+
+	    <menuseparator/>
+
+	    <menuitem label="&open_scene.label;"
+	      accesskey="&open_scene.accesskey;"
+	      key="mkOpenScene"
+	      command="cmd_open_scene"/>
+	    <menuitem label="&reload_scene.label;"
+	      accesskey="&reload_scene.accesskey;"
+	      key="mkReloadScene"
+	      command ="cmd_reload_scene"/>
+	    <menuitem label="&save_scene.label;"
+	      accesskey="&save_scene.accesskey;"
+	      key="mkSaveScene"
+	      command ="cmd_save_scene"/>
+	    <menuitem label="&save_scene_as.label;" oncommand="gQm2Main.onSaveSceneAs();"/>
+
+	    <menuseparator/>
+
+	    <menuitem label="Open web page..." oncommand="gQm2Main.onOpenURL();"/>
+
+#ifndef XP_MACOSX
+	    <menuseparator/>
+	    <menuitem
+	       id="menu_FileQuitItem"
+#ifdef XP_WIN
+               label="&quitApplicationCmdWin.label;"
+               accesskey="&quitApplicationCmdWin.accesskey;"
+#else
+# Other OS (may be Linux??)
+               label="&quitApplicationCmd.label;"
+               accesskey="&quitApplicationCmd.accesskey;"
+               key="key_quitApplication"
+#endif
+	       command="cmd_quitApplication" />
+#endif
+
+	  </menupopup>
+	</menu>
+
+	<menu id="edit-menu" label="&menu_edit.label;" accesskey="&menu_edit.accesskey;">
+	  <menupopup id="edit-popup">
+	    <menuitem label="&edit_undo.label;"
+	      accesskey="&edit_undo.accesskey;"
+	      key="mkEditUndo"
+	      command ="cmd_undo"/>
+	    <menuitem label="&edit_redo.label;"
+	      accesskey="&edit_redo.accesskey;"
+	      key="mkEditRedo"
+	      command="cmd_redo"/>
+
+	    <menuitem label="Clear undo data"
+	      oncommand="gQm2Main.clearUndoData()"/>
+
+	    <!--<menuseparator/>-->
+
+	    <!-- <menuitem label="Delete object" oncommand="onDeleteObject();" />
+	    <menuitem label="Create renderer" oncommand="gQm2Main.onCreateRenderer();" />
+	    <menuitem label="Delete renderer" oncommand="window.alert('not impl');" />
+	    <menuitem label="Edit renderer" oncommand="window.alert('not impl');" />
+	    <menuitem label="Change renderer property" oncommand="gQm2Main.onChgRendProp();" />
+	    <menuseparator/> -->
+
+#ifndef XP_MACOSX
+	    <menuseparator/>
+	    <menuitem label="&edit_config.label;"
+	      accesskey="&edit_config.accesskey;"
+	      key="mkEditConfig"
+	      command="cmd_config"/>
+#endif
+	  </menupopup>
+	</menu>
+
+	<menu id="render-menu" label="&menu_render.label;" accesskey="&menu_render.accesskey;">
+	  <menupopup id="render-popup">
+	    <menuitem id="render-povrender-menu"
+	      label="POV-Ray rendering ..."
+	      oncommand="gQm2Main.showPovRenderDlg();"/>
+
+	    <menuitem id="render-anim-menu"
+	      label="Animation rendering ..."
+	      oncommand="cuemolui.onAnimRender();"/>
+
+	    <menuseparator/>
+	    <menuitem id="render-exportscene-menu"
+	      accesskey="&render_exportscene.accesskey;"
+	      label="&render_exportscene.label;"
+	      oncommand="try {gQm2Main.exportScene();} catch (e) { debug.exception(e); }"/>
+	  </menupopup>
+	</menu>
+
+	<menu id="view-menu" label="View" accesskey="V">
+	  <menupopup id="view-menu-popup"
+	    onpopupshowing="gQm2Main.onViewMenuShowing(event)">
+	    <menuitem
+	      id="view-menu-perspec"
+	      label="Perspective" type="checkbox"
+	      oncommand="gQm2Main.onViewProjChg(event);"/>
+	    <menuitem
+	      id="view-menu-ortho"
+	      label="Orthographic" type="checkbox" checked="true"
+	      oncommand="gQm2Main.onViewProjChg(event);"/>
+	    
+	    <menuseparator/>
+
+	    <menu label="Center mark">
+	      <menupopup id="view-menu-mark-popup"
+		onpopupshowing="gQm2Main.onViewMenuMarkShowing(event)">
+		<menuitem
+		  id="view-menu-mark-cross"
+		  label="Cross" type="radio" checked="true"
+		  oncommand="gQm2Main.onViewMarkChg(event);"/>
+		<menuitem
+		  id="view-menu-mark-axis"
+		  label="Axis" type="radio"
+		  oncommand="gQm2Main.onViewMarkChg(event);"/>
+		<menuitem
+		  id="view-menu-mark-none"
+		  label="None" type="radio"
+		  oncommand="gQm2Main.onViewMarkChg(event);"/>
+	      </menupopup>
+	    </menu>
+	    
+	    <menuseparator/>
+	    
+	    <menuitem id="view-menu-hwstereo"
+	      accesskey="H"
+	      key="mkToggleHWStereo"
+	      name="view-menu-stereo-type"
+	      type="checkbox"
+	      label="Hardware stereo"
+	      command="cmd_toggle_hwstereo"/>
+
+	    <menuitem
+	      label="View property ..."
+	      oncommand="gQm2Main.showViewPropDlg();"/>
+
+	  </menupopup>
+	</menu>
+
+	<menu id="tools-menu" label="&menu_tools.label;" accesskey="&menu_tools.accesskey;">
+	  <menupopup>
+	    <menuitem label="Molecular superposition ..." oncommand="gQm2Main.onSSMSup1();" />
+	    <menuitem label="Mol bond editor ..." oncommand="gQm2Main.onMolBondEditor();" />
+	    <menuitem label="Interaction ..." oncommand="cuemolui.onIntrTool();" />
+	    <menuitem label="Reassign secondary str ..." oncommand="cuemolui.onProt2ndry();" />
+	    <menuitem label="Mol morphing animation ..." oncommand="cuemolui.onMorphAnimSetup();" />
+	    
+	    <menuseparator/>
+
+	    <menuitem label="Mol surface generation ..." oncommand="gQm2Main.calcMolSurf();" />
+	    <menuitem label="Mol surface cutter ..." oncommand="gQm2Main.surfCutByPlaneTool();" />
+	    <!--<menuitem label="MSMS surface generation ..." oncommand="gQm2Main.calcMsmsSurf();" />-->
+
+	    <menuseparator/>
+
+	    <menuitem label="APBS elepot calculation ..." oncommand="gQm2Main.calcApbsPot();" />
+      
+	    <menuseparator/>
+
+#ifdef XP_WIN
+	    <menuitem label="Execute script..." oncommand="gQm2Main.onExecJS();"/>
+#endif
+	  </menupopup>
+	</menu>
+
+	<menu id="window-menu" label="&menu_window.label;" accesskey="&menu_window.accesskey;">
+	  <menupopup id="window-popup">
+	    <!-- <menuitem id="window-testsave-menu"
+	      label="TEST: save sidepanel"
+	      oncommand="$('#left_side_panel')[0].saveSession('left');"/>-->
+
+	    <menuitem id="window-toggleribbon-menu"
+	      label="Show/Hide Topbar"
+	      oncommand="window.gToolRibbon.toggleCollapse()"/>
+
+	    <menuitem id="window-clearlog-menu"
+	      label="Clear log contents"
+	      oncommand="gQm2Main.clearLogContents()"/>
+
+	    <menuitem id="window-restore-menu"
+	      label="Restore default panel location"
+	      oncommand="restoreDefaultPanels()"/>
+
+	    <menu label="Panels" id="window-leftpanels-menu">
+	      <menupopup id="window-leftpanels-popup"/>
+	    </menu>
+	  </menupopup>
+	</menu>
+
+	<menu id="help-menu" label="&menu_help.label;" accesskey="&menu_help.accesskey;">
+	<menupopup id="help-popup">
+	    <menuitem label="About plugins..." oncommand="window.open('about:plugins', 'mywindow1', 'chrome,width=600,height=300,resizable');" />
+	    <menuitem label="About config..." oncommand="showConfig()" />
+	    <menuitem label="Addon manager..." oncommand="showAddonMgr()" />
+	    <menuitem id="aboutName"
+	      accesskey="&help_about.accesskey;"
+#ifdef XP_MACOSX
+	      label="&help_aboutCmdMac.label;"
+#else
+	      label="&help_about.label;"
+#endif
+	      oncommand="openAboutDialog();"/>
+	    <menuseparator/>
+	    <menuitem label="Console" oncommand="showConsole();" />
+	    <menuitem label="DOM Inspector" oncommand="showDOMInspector();" />
+	    <!--<menuitem label="Crash reporter" oncommand="showCrashReporter();" />-->
+	    <menuitem id="help-menu-update" label="Check for updates" oncommand="gQm2Main.checkForUpdates();" />
+	  </menupopup>
+	</menu>
+
+      </menubar>
+    </toolbox>
+
+    <popupset>
+      <panel id="update-alert-popup" class="alert-popup-panel"
+	noautohide="true">
+	<stack >
+	  <hbox align="start" style="margin: 5px;">
+	    <image flex="0"
+	      width="14px" height="14px"
+	      class="alertpopup-close-button"
+	      tooltiptext="close"
+	      onclick="gQm2Main.closeUpdatePopup()"/>
+	    <spacer flex="1"/>
+	  </hbox>
+	  <hbox align="center" style="margin: 19px;">
+	    <vbox>
+	      <label id="update-message" value=""/>
+	      <checkbox label="Don't check for updates"
+		id="never-update-check"/>
+	    </vbox>
+	    <button label="Check!!"
+	      oncommand="document.getElementById('update-alert-popup').hidePopup();
+	      gQm2Main.goDownloadSite()"/>
+	  </hbox>
+	</stack>
+      </panel>
+    </popupset>    
+
+  </overlaytarget>
+</overlay>
+

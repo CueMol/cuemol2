@@ -1,0 +1,56 @@
+// -*-Mode: C++;-*-
+//
+// Interface definition for SplineRenderer
+//
+
+#ifndef SPLINE_RENDERER_QIF
+#define SPLINE_RENDERER_QIF
+
+#include <modules/molstr/MainChainRenderer.qif>
+// #include <modules/molstr/Selection.qif>
+
+runtime_class SplineRenderer extends MainChainRenderer
+{
+  client_hdr "SplineRenderer.hpp";
+  client_name molvis::SplineRenderer;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  /// Detail level to the axial direction
+  property integer axialdetail => redirect(getAxialDetail, setAxialDetail);
+  default axialdetail = 6;
+
+  /// spline smoothing value
+  property real smooth => redirect(getSmooth, setSmooth);
+  default smooth = 0.0;
+
+  /// color smoothing flag
+  property boolean smoothcolor => redirect(isSmoothColor, setSmoothColor);
+  default smoothcolor = true;
+
+  /// spline line width
+  property real line_width => redirect(getLineWidth, setLineWidth);
+  default line_width = 1.2;
+
+  ///////////////////////////
+  
+  /// tube cap type
+  enumdef start_captype {
+    sphere = molvis::SplineRenderer::TUBE_CAP_SPHR;
+    flat = molvis::SplineRenderer::TUBE_CAP_FLAT;
+    none = molvis::SplineRenderer::TUBE_CAP_NONE;
+  }
+  property enum start_captype => redirect(getStartCapType, setStartCapType);
+  default start_captype = "sphere";
+
+  enumdef end_captype = start_captype;
+
+  property enum end_captype => redirect(getEndCapType, setEndCapType);
+  default end_captype = "sphere";
+
+};
+
+#endif // SPLINE_RENDERER_QIF
+

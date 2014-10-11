@@ -1,0 +1,199 @@
+<?xml version="1.0"?>
+
+<!-- -*- xml -*- -->
+<!-- XBL binding for multi-item selector -->
+
+<bindings id="multiSelectBindings"
+  xmlns="http://www.mozilla.org/xbl"
+  xmlns:html="http://www.w3.org/1999/xhtml"
+  xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  xmlns:xbl="http://www.mozilla.org/xbl">
+
+  <binding id="multiselect">
+
+    <!--<resources>
+      <stylesheet src="chrome://cuemol2/content/anim/timeedit.css"/>
+    </resources>-->
+
+    <content>
+      <xul:hbox xbl:inherits="flex">
+	<xul:listbox anonid="rend-list" rows="4" seltype="multiple" flex="1"
+	  onselect="this.parentNode.parentNode._onListSelect(event)"/>
+	<xul:vbox flex="0">
+	  <xul:toolbarbutton
+	    anonid="rend-list-addbtn"
+	    class="toolbar-button add-button"
+	    type="menu"
+	    oncommand="this.parentNode.parentNode.parentNode._onAddCmd(event);"
+	    tooltiptext="Add">
+	    <xul:menupopup anonid="add-menupopup">
+	    </xul:menupopup>
+	  </xul:toolbarbutton>
+	  <xul:toolbarbutton
+	    anonid="delete-btn"
+	    class="toolbar-button delete-button"
+	    oncommand="this.parentNode.parentNode.parentNode._onRemoveCmd(event);"
+	    tooltiptext="Delete"/>
+	</xul:vbox>
+      </xul:hbox>
+    </content>
+
+    <implementation>
+
+      <field name="mListBox">
+        document.getAnonymousElementByAttribute(this, "anonid", "rend-list");
+      </field>
+
+      <field name="mRemoveBtn">
+        document.getAnonymousElementByAttribute(this, "anonid", "delete-btn");
+      </field>
+
+      <field name="mAddBtn">
+        document.getAnonymousElementByAttribute(this, "anonid", "rend-list-addbtn");
+      </field>
+
+      <field name="mAddMenuPopup">
+        document.getAnonymousElementByAttribute(this, "anonid", "add-menupopup");
+      </field>
+
+      <constructor>
+      </constructor>
+      
+      <method name="_onListSelect">
+        <parameter name="aEvent"/>
+        <body>
+          <![CDATA[
+	    if (this.mListBox.selectedCount>0)
+	      this.mRemoveBtn.disabled = false;
+	    else
+	      this.mRemoveBtn.disabled = true;
+          ]]>
+        </body>
+      </method>
+
+      <method name="_onAddCmd">
+        <parameter name="aEvent"/>
+        <body>
+          <![CDATA[
+	    var val = aEvent.target.value;
+	    if (!this.mAllList.some( function (e) { return e.value==val; } )) {
+	      dd("unknown value: "+value);
+	      return;
+	    }
+	    this.mSelList.push(val);
+	    this._updateWidgets();
+	    this._fireChangedEvent();
+	    dd("add btn: "+val);
+          ]]>
+        </body>
+      </method>
+
+      <method name="_onRemoveCmd">
+        <parameter name="aEvent"/>
+        <body>
+          <![CDATA[
+	    dd("remove btn");
+	    let that = this;
+	    let newlist = new Array();
+	    this.mSelList.forEach( function (e) {
+	      if (!that.mListBox.selectedItems.some( function (f) { return f.value==e; } )) {
+	        newlist.push(e);
+	        dd("remove not removed: "+e);
+	      }
+	    });
+	    this.mSelList = newlist;
+	    this._updateWidgets();
+	    this._fireChangedEvent();
+          ]]>
+        </body>
+      </method>
+
+      <method name="setList">
+        <parameter name="aList"/>
+        <body>
+          <![CDATA[
+	  this.mAllList = aList;
+          ]]>
+        </body>
+      </method>
+
+      <method name="setSelValues">
+        <parameter name="aStr"/>
+        <body>
+          <![CDATA[
+	  let re = new RegExp("\\s*,\\s*");
+	  this.mSelList = aStr.split(re);
+	  this._updateWidgets();
+          ]]>
+        </body>
+      </method>
+
+      <method name="getSelValues">
+        <body>
+          <![CDATA[
+	    let that = this;
+	    let valist = new Array();
+	    this.mSelList.forEach( function (e) {
+	      if (that.mAllList.some( function (f) { return f.value==e; } )) {
+	        valist.push(e);
+	      }
+	    });
+	    this.mSelList = valist;
+	    return this.mSelList.join(",");
+          ]]>
+        </body>
+      </method>
+
+      <method name="_updateWidgets">
+        <body>
+          <![CDATA[
+	  let list = this.mSelList;
+
+	  util.clearMenu(this.mListBox);
+	  util.clearMenu(this.mAddMenuPopup);
+      
+	  const nelem = this.mAllList.length;
+	  let nmenu = 0;
+	  for (var i=0; i<nelem; ++i) {
+	    let item = this.mAllList[i];
+	    if (list.some( function (elem) { return item.value==elem; } )) {
+	      this.mListBox.appendItem(item.label, item.value);
+	      dd("item "+item.value+" selected");
+	    }
+	    else {
+	      util.appendMenu( document, this.mAddMenuPopup, item.value, item.label );
+	      ++nmenu;
+	    }
+	  }
+	  this._onListSelect();
+	  if (nmenu==0)
+	    this.mAddBtn.disabled = true;
+	  else
+	    this.mAddBtn.disabled = false;
+          ]]>
+        </body>
+      </method>
+
+      <method name="_fireChangedEvent">
+        <body>
+          <![CDATA[
+	    var event = document.createEvent("Events");
+	    event.initEvent("change", true, true);
+	    return !this.dispatchEvent(event);
+	    ]]>
+        </body>
+      </method>
+
+    </implementation>
+
+    <handlers>
+      <handler event="focus" phase="capturing">
+      </handler>
+
+      <handler event="change">
+      </handler>
+    </handlers>
+
+  </binding>
+</bindings>
+

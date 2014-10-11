@@ -1,0 +1,46 @@
+// -*-Mode: C++;-*-
+//
+// Vector class with 4 dimension real value
+//
+// $Id: Vector4D.qif,v 1.2 2007/11/29 12:10:18 rishitani Exp $
+
+// C++ name:       qlib::Vector4D
+// C++ class decl: Vector4D.hpp
+// Script/Runtime name:    Vector4D
+
+// Wrapper name: LWrapper_Vector4D
+// Wrapper class decl file: LWrapper_Vector4D.hpp
+// Wrapper class impl file: LWrapper_Vector4D.cpp
+
+// code for class factory (runtime creation) is always generated
+
+class Vector4D
+{
+  impl_hdr "Vector4D.hpp";
+  cpp_name qlib::Vector4D;
+
+  scriptable;
+
+  // cloneable option generates instance creation with copy constructor
+  cloneable;
+
+  // persistent;
+
+  copy_policy clone;
+  // copy_policy refcount;
+  // copy_policy singleton;
+
+  property real x => m_pdat->x;
+  property real y => m_pdat->y;
+  property real z => m_pdat->z;
+  property real w => m_pdat->w;
+
+  property string teststr => m_testStr;
+
+  property object(Vector4D *) testvec => m_pVec;
+
+  void set(real, real, real) => set_xyz;
+  string toString();
+
+};
+

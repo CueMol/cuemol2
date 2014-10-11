@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<VisualStudioToolFile
+	Name="mcwrapgen3"
+	Version="8.00"
+	>
+	<Rules>
+		<CustomBuildRule
+			Name="mcwrapgen3"
+			DisplayName="mcwrapgen3"
+			CommandLine="perl.exe $(SolutionDir)..\src\perl\mcwrapgen3.pl -MSVC -I $(SolutionDir)..\src\ -m hdr  $(InputPath)&#x0D;&#x0A;perl.exe $(SolutionDir)..\src\perl\mcwrapgen3.pl -MSVC -I $(SolutionDir)..\src\ -m src  $(InputPath)&#x0D;&#x0A;perl.exe $(SolutionDir)..\src\perl\mcwrapgen3.pl -MSVC -I $(SolutionDir)..\src\ -m js  -jsdir $(SolutionDir)..\src\xul_gui\resources\cuemol-wrappers\ $(InputPath)&#x0D;&#x0A;"
+			Outputs="$(InputDir)$(SafeInputName)_wrap.cpp;$(InputDir)$(SafeInputName)_wrap.hpp"
+			FileExtensions="*.qif"
+			>
+			<Properties>
+			</Properties>
+		</CustomBuildRule>
+		<CustomBuildRule
+			Name="mcw_loader"
+			DisplayName="mcw_loader"
+			CommandLine="perl.exe $(SolutionDir)..\src\perl\mcwrapgen3.pl -MSVC -I $(SolutionDir)..\src\ -m mod  $(InputPath)"
+			Outputs="$(InputDir)$(SafeInputName)_loader.cpp"
+			FileExtensions="*.moddef"
+			>
+			<Properties>
+			</Properties>
+		</CustomBuildRule>
+	</Rules>
+</VisualStudioToolFile>

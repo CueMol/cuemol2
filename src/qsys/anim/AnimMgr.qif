@@ -1,0 +1,83 @@
+// -*-Mode: C++;-*-
+//
+// Animation manager scripting interface
+//
+
+#ifndef ANIMMGR_QIF_INCLUDED
+#define ANIMMGR_QIF_INCLUDED
+
+#include "AnimObj.qif"
+#include "qsys/View.qif"
+#include "qsys/SceneExporter.qif"
+
+runtime_class AnimMgr
+{
+  client_hdr "AnimMgr.hpp";
+  client_name qsys::AnimMgr;
+
+  // interface attributes
+  scriptable;
+  smartptr;
+
+  ////////////////////////
+  // Persistent properties
+
+  property object<TimeValue> length => redirect(getScrLength, setScrLength);
+
+  property string startcam => redirect(getStartCamName, setStartCamName);
+  default startcam = "";
+
+  property boolean loop => redirect(isLoop, setLoop);
+  default loop = false;
+
+  ////////////////////////////
+  // Non-persistent properties
+
+  property integer uid => redirect(getUID, XXX) (readonly);
+
+  property integer size => redirect(getSize, XXX) (readonly);
+
+  property object<TimeValue> elapsed => redirect(getScrElapsed, X) (readonly);
+
+  // Play state
+  enumdef playState {
+    stop = qsys::AnimMgr::AM_STOP;
+    play = qsys::AnimMgr::AM_RUNNING;
+    pause = qsys::AnimMgr::AM_PAUSED;
+  }
+  property enum playState => m_nState (readonly);
+
+  ////////////////////////////
+  // methods (player)
+
+  void start(object<View$> pTgtView);
+  void stop();
+  void pause();
+
+  void goTime(object<TimeValue> tv, object<View$> pTgtView) => goTimeScr;
+
+  ////////////////////////////
+  // rendering methods
+
+  integer setupRender(object<TimeValue> tv_start, object<TimeValue> tv_end, real frame_rate);
+
+  void writeFrame(object<SceneExporter$> pWr);
+
+  property integer frameno => redirect(getFrameNo, XXX) (readonly);
+
+  ////////////////////////////
+  // methods (editor)
+
+  void clear();
+  object<AnimObj$> getAt(integer index);
+  object<AnimObj$> getByName(string name);
+
+  void append(object<AnimObj$> pObj);
+  void insertBefore(integer ind, object<AnimObj$> pObj);
+  boolean removeAt(integer ind);
+  
+
+};
+
+#endif
+

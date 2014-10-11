@@ -1,0 +1,328 @@
+<?xml version="1.0"?>
+
+<!-- -*- xml -*- -->
+<!-- XBL binding for time editor -->
+
+<bindings id="timerEditBindings"
+  xmlns="http://www.mozilla.org/xbl"
+  xmlns:html="http://www.w3.org/1999/xhtml"
+  xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  xmlns:xbl="http://www.mozilla.org/xbl">
+
+  <binding id="timeedit">
+    <resources>
+      <stylesheet src="chrome://global/content/textbox.css"/>
+      <stylesheet src="chrome://global/skin/textbox.css"/>
+      <stylesheet src="chrome://global/skin/dropmarker.css"/>
+      <stylesheet src="chrome://global/skin/datetimepicker.css"/>
+      <stylesheet src="chrome://cuemol2/content/anim/timeedit.css"/>
+    </resources>
+    
+    <content align="center" pack="left">
+      <xul:hbox class="timeedit-input-box" align="center"
+	xbl:inherits="context">
+        <xul:hbox class="textbox-input-box datetimepicker-input-subbox" align="center">
+          <html:input class="datetimepicker-input textbox-input" anonid="input-one"
+	    size="2" maxlength="2"
+	    xbl:inherits="disabled,readonly"/>
+        </xul:hbox>
+        <xul:label anonid="sep-first" class="datetimepicker-separator" value=":"/>
+        <xul:hbox class="textbox-input-box datetimepicker-input-subbox" align="center">
+          <html:input class="datetimepicker-input textbox-input" anonid="input-two"
+	    size="2" maxlength="2"
+	    xbl:inherits="disabled,readonly"/>
+        </xul:hbox>
+        <xul:label anonid="sep-second" class="datetimepicker-separator" value=":"/>
+        <xul:hbox class="textbox-input-box datetimepicker-input-subbox" align="center">
+          <html:input class="datetimepicker-input textbox-input" anonid="input-three"
+	    size="2" maxlength="2"
+	    xbl:inherits="disabled,readonly"/>
+        </xul:hbox>
+	
+        <xul:label anonid="sep-millisecond" class="datetimepicker-separator" value="."/>
+        <xul:hbox class="textbox-input-box datetimepicker-input-subbox timeedit-msecbox" align="center">
+          <html:input class="datetimepicker-input textbox-input" anonid="input-four"
+	    size="3" maxlength="3"
+	    xbl:inherits="disabled,readonly"/>
+        </xul:hbox>
+
+	<xul:spinbuttons anonid="buttons" xbl:inherits="disabled"
+	  onup="this.parentNode.parentNode._increaseOrDecrease(1);"
+	  ondown="this.parentNode.parentNode._increaseOrDecrease(-1);"/>
+      </xul:hbox>
+    </content>
+
+    <implementation>
+      <field name="_dateValue">null</field>
+      <field name="_valueEntered">false</field>
+
+      <field name="_fieldHour">
+        document.getAnonymousElementByAttribute(this, "anonid", "input-one");
+      </field>
+      <field name="_fieldMinute">
+        document.getAnonymousElementByAttribute(this, "anonid", "input-two");
+      </field>
+      <field name="_fieldSecond">
+        document.getAnonymousElementByAttribute(this, "anonid", "input-three");
+      </field>
+      <field name="_fieldMilliSec">
+        document.getAnonymousElementByAttribute(this, "anonid", "input-four");
+      </field>
+      <field name="_spinButton">
+        document.getAnonymousElementByAttribute(this, "anonid", "buttons");
+      </field>
+
+      <field name="_lastFocusedField">null</field>
+
+      <property name="_currentField" readonly="true">
+        <getter>
+          var focusedInput = document.activeElement;
+          if (focusedInput == this._fieldHour ||
+              focusedInput == this._fieldMinute ||
+              focusedInput == this._fieldSecond ||
+              focusedInput == this._fieldMilliSec)
+            return focusedInput;
+          return this._lastFocusedField || this._fieldSecond;
+        </getter>
+      </property>
+
+      <property name="value" onget="return this._dateValue.getTime();">
+        <setter>
+          <![CDATA[
+            this._setValueNoSync(val);
+            return val;
+          ]]>
+        </setter>
+      </property>
+
+      <property name="strvalue"
+	onget="return this.convToStrValue(this.value);">
+        <setter>
+          <![CDATA[
+	    //dd("TmpTval="+debug.dumpObjectTree(this._tmptval,2));
+	    this.value = this.convToIntValue(val);
+            return val;
+          ]]>
+        </setter>
+      </property>
+
+      <constructor>
+	<![CDATA[
+        // this._init();
+	this._tmptval = cuemol.createObj("TimeValue");
+        var cval = this.getAttribute("value");
+        if (cval) {
+          try {
+	    let msec = parseInt(cval);
+	    this.value = msec;
+            return;
+          } catch (ex) { }
+        }
+        this.value = 0;
+
+        var ro = this.getAttribute("readonly");
+	  dd("********** Readonly="+ro);
+	if (ro&&ro=="true") {
+	  this._spinButton.setAttribute("hidden", "true");
+	}
+          ]]>
+      </constructor>
+      
+      <method name="convToStrValue">
+        <parameter name="aValue"/>
+        <body>
+          <![CDATA[
+	    this._tmptval.intval = aValue;
+	    return this._tmptval.strval;
+          ]]>
+        </body>
+      </method>
+
+      <method name="convToIntValue">
+        <parameter name="aValue"/>
+        <body>
+          <![CDATA[
+	    this._tmptval.strval = aValue;
+	    return this._tmptval.intval;
+          ]]>
+        </body>
+      </method>
+
+      <method name="_setValueNoSync">
+        <parameter name="aValue"/>
+        <body>
+          <![CDATA[
+            var dt = new Date(aValue);
+            if (!isNaN(dt)) {
+              this._dateValue = dt;
+              this.setAttribute("value", this.value);
+              this._updateUI(this._fieldHour, this._dateValue.getUTCHours() );
+              this._updateUI(this._fieldMinute, this._dateValue.getUTCMinutes() );
+              this._updateUI(this._fieldSecond, this._dateValue.getUTCSeconds() );
+              this._updateUI(this._fieldMilliSec, this._dateValue.getUTCMilliseconds() );
+            }
+          ]]>
+        </body>
+      </method>
+
+      <method name="_increaseOrDecrease">
+        <parameter name="aDir"/>
+        <body>
+          <![CDATA[
+            if (this.disabled || this.readOnly)
+              return;
+
+            var field = this._currentField;
+            if (this._valueEntered)
+              this._setValueOnChange(field);
+
+            {
+              var oldval;
+              var change = aDir;
+              if (field == this._fieldHour) {
+                oldval = this._dateValue.getUTCHours();
+              }
+              else if (field == this._fieldMinute) {
+                oldval = this._dateValue.getUTCMinutes();
+                // change *= this.increment;
+              }
+              else if (field == this._fieldSecond) {
+                oldval = this._dateValue.getUTCSeconds();
+              }
+              else if (field == this._fieldMilliSec) {
+                oldval = this._dateValue.getUTCMilliseconds();
+                change *= 100;
+              }
+
+	      dd("incr/decr field: "+field.getAttribute("anonid"));
+
+              var newval = this._constrainValue(field, oldval + change, false);
+
+	      dd("incr/decr field: "+field.getAttribute("anonid"));
+	      dd("incr/decr newval: "+newval);
+              this._setFieldValue(field, newval);
+
+              if (oldval != newval)
+                this._fireEvent("change", this);
+            }
+            field.select();
+          ]]>
+        </body>
+      </method>
+
+      <method name="_setFieldValue">
+        <parameter name="aField"/>
+        <parameter name="aValue"/>
+        <body>
+          <![CDATA[
+            if (aField == this._fieldHour)
+              this._dateValue.setUTCHours(aValue);
+            else if (aField == this._fieldMinute)
+              this._dateValue.setUTCMinutes(aValue);
+            else if (aField == this._fieldSecond)
+              this._dateValue.setUTCSeconds(aValue);
+            else if (aField == this._fieldMilliSec)
+              this._dateValue.setUTCMilliseconds(aValue);
+
+            this.setAttribute("value", this.value);
+            this._updateUI(aField, aValue);
+          ]]>
+        </body>
+      </method>
+
+      <method name="_updateUI">
+        <parameter name="aField"/>
+        <parameter name="aValue"/>
+        <body>
+          <![CDATA[
+            this._valueEntered = false;
+            aField.value = aValue;
+          ]]>
+        </body>
+      </method>
+
+      <method name="_constrainValue">
+        <parameter name="aField"/>
+        <parameter name="aValue"/>
+        <parameter name="aNoWrap"/>
+        <body>
+          <![CDATA[
+            // aNoWrap is true when the user entered a value, so just
+            // constrain within limits. If false, the value is being
+            // incremented or decremented, so wrap around values 
+	      dd("cstrval field: "+aField);
+	      dd("cstrval field: "+aField.getAttribute("anonid"));
+            var max = (aField == this._fieldMilliSec) ? 1000 : 60;
+	      dd("cstrval max: "+max);
+            if (aValue < 0)
+              return aNoWrap ? 0 : max + aValue;
+            if (aValue >= max)
+              return aNoWrap ? max - 1 : aValue - max;
+            return aValue;
+          ]]>
+        </body>
+      </method>
+
+      <method name="_setValueOnChange">
+        <parameter name="aField"/>
+        <body>
+          <![CDATA[
+            if (aField == this._fieldHour ||
+                aField == this._fieldMinute ||
+                aField == this._fieldSecond ||
+                aField == this._fieldMilliSec) {
+              var value = Number(aField.value);
+              if (isNaN(value))
+                value = 0;
+
+              value = this._constrainValue(aField, value, true);
+              this._setFieldValue(aField, value);
+            }
+          ]]>
+        </body>
+      </method>
+
+      <method name="_fireEvent">
+        <parameter name="aEventName"/>
+        <parameter name="aTarget"/>
+        <body>
+          var event = document.createEvent("Events");
+          event.initEvent(aEventName, true, true);
+          return !aTarget.dispatchEvent(event);
+        </body>
+      </method>
+
+    </implementation>
+
+    <handlers>
+      <handler event="focus" phase="capturing">
+        <![CDATA[
+          var target = event.originalTarget;
+          if (target == this._fieldHour ||
+              target == this._fieldMinute ||
+              target == this._fieldSecond ||
+              target == this._fieldMilliSec)
+            this._lastFocusedField = target;
+        ]]>
+      </handler>
+
+      <handler event="keypress" keycode="VK_UP">
+        this._increaseOrDecrease(1);
+      </handler>
+      <handler event="keypress" keycode="VK_DOWN">
+        this._increaseOrDecrease(-1);
+      </handler>
+
+      <handler event="input">
+        this._valueEntered = true;
+      </handler>
+
+      <handler event="change">
+	// dd("onChange");
+        this._setValueOnChange(event.originalTarget);
+      </handler>
+    </handlers>
+
+  </binding>
+</bindings>
+

@@ -1,0 +1,63 @@
+// -*-Mode: C++;-*-
+//
+// $Id: molstr.moddef,v 1.14 2010/12/05 17:42:00 rishitani Exp $
+
+#include "MolAtom.qif"
+#include "MolResidue.qif"
+#include "MolChain.qif"
+#include "MolCoord.qif"
+#include "MolRenderer.qif"
+#include "SimpleRenderer.qif"
+#include "AtomIterator.qif"
+#include "ResidIterator.qif"
+#include "Selection.qif"
+#include "SelCommand.qif"
+#include "ColoringScheme.qif"
+#include "CPKColoring.qif"
+#include "MainChainRenderer.qif"
+#include "TraceRenderer.qif"
+#include "NameLabelRenderer.qif"
+#include "SelectionRenderer.qif"
+#include "PDBFileReader.qif"
+#include "PDBFileWriter.qif"
+#include "QdfMolReader.qif"
+#include "BfacColoring.qif"
+#include "RectSelDrawObj.qif"
+#include "SolidColoring.qif"
+#include "ResidRangeSet.qif"
+
+module molstr
+{
+  init molstr::init();
+  fini molstr::fini();
+
+  MolAtom uuid bda6588b-0913-4f95-97a9-a98bf6dedf98;
+  MolResidue uuid bba5ab20-56f8-4891-8847-56e28c06167e;
+  MolChain uuid 6d65ac77-7357-41e1-a8a3-a71feb8d687b;
+  MolCoord uuid 4f3ae91e-e8ff-4e0a-92e2-684da29f3ed6;
+  MolRenderer uuid f7d735b3-56fa-48b7-a053-0dd7c1c89dcb;
+  SimpleRenderer uuid 4f7d8a28-fced-4057-9f70-1654c7a88521;
+  MainChainRenderer uuid 71f2c289-f184-4a0c-9cca-04e7ccc4f1b1;
+  TraceRenderer uuid e964c858-f906-4e55-a189-928e0bca65c1;
+  NameLabelRenderer uuid e964c858-f906-4e55-a189-928e0bca65c1;
+  SelectionRenderer uuid e964c858-f906-4e55-a189-928e0bca65c1;
+
+  AtomIterator uuid 92570525-62d7-46e1-b3d7-8d4602071477;
+  ResidIterator uuid 4a1daad1-fd75-494c-885a-11fadfff89b6;
+  ResidRangeSet;
+
+  MolSelection;
+  SelCommand uuid 3e6ff992-19dd-4dbe-a746-3b73e150cff4;
+
+  ColoringScheme uuid 0acdf600-b4d2-4a8c-9b0c-535708c22e32;
+  CPKColoring uuid ba8900a6-3fa0-499d-9ef1-72b602fddcd3;
+  BfacColoring;
+  SolidColoring;
+
+  PDBFileReader;
+  PDBFileWriter;
+  QdfMolReader;
+
+  RectSelDrawObj;
+};
+

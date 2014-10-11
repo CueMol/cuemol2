@@ -1,0 +1,21 @@
+// -*-Mode: C++;-*-
+//
+// Electron density map scripting interface
+//
+
+#ifndef ELE_POT_MAP_QIF_INCLUDED
+#define ELE_POT_MAP_QIF_INCLUDED
+
+#include <qsys/Object.qif>
+
+runtime_class ElePotMap extends Object
+{
+  client_hdr "ElePotMap.hpp";
+  client_name surface::ElePotMap;
+
+  scriptable;
+  smartptr;
+};
+
+#endif
+

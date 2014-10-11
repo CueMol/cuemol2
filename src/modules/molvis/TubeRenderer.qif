@@ -1,0 +1,44 @@
+// -*-Mode: C++;-*-
+//
+// Interface definition for TubeRenderer
+//
+
+#ifndef TUBE_RENDERER_QIF
+#define TUBE_RENDERER_QIF
+
+#include "SplineRenderer.qif"
+#include "TubeSection.qif"
+
+runtime_class TubeRenderer extends SplineRenderer
+{
+  client_hdr "TubeRenderer.hpp";
+  client_name molvis::TubeRenderer;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  property object<TubeSection$> section => redirect(getTubeSection, xxx) (readonly);
+  // default section = molvis::TubeSectionPtr(new molvis::TubeSection());
+
+  /// putty type
+  enumdef putty_mode {
+    none = molvis::TubeRenderer::TBR_PUTTY_OFF;
+    bfac = molvis::TubeRenderer::TBR_PUTTY_BFAC;
+    occ = molvis::TubeRenderer::TBR_PUTTY_OCC;
+  }
+  property enum putty_mode => redirect(getPuttyMode, setPuttyMode);
+  default putty_mode = "none";
+  
+  /// putty mode scale factor
+  property real putty_hiscl => redirect(getPuttyHiScl, setPuttyHiScl);
+  default putty_hiscl = 3.0;
+
+  /// putty mode scale factor
+  property real putty_loscl => redirect(getPuttyLoScl, setPuttyLoScl);
+  default putty_loscl = 3.0;
+
+};
+
+#endif // TUBE_RENDERER_QIF
+

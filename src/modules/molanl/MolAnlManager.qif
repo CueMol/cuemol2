@@ -1,0 +1,54 @@
+// -*-Mode: C++;-*-
+//
+// $Id: MolAnlManager.qif,v 1.3 2011/04/29 13:40:38 rishitani Exp $
+
+#ifndef MOLANL_MANAGER_QIF_INCLUDED
+#define MOLANL_MANAGER_QIF_INCLUDED
+
+#include <qlib/LScrObject.qif>
+#include <modules/molstr/MolCoord.qif>
+
+runtime_class MolAnlManager
+{
+  client_hdr "MolAnlManager.hpp";
+  client_name molanl::MolAnlManager;
+
+  scriptable;
+  singleton;
+
+  //////////////////////////
+  // molecular superposition
+
+  void superposeSSM1(object<MolCoord$> pmol_ref, object<MolSelection$> psel_ref, object<MolCoord$> pmol_mov, object<MolSelection$> psel_mov);
+  void superposeSSM2(integer, string, integer, string);
+  
+  void superposeLSQ1(object<MolCoord$> pmol_ref, object<MolSelection$> psel_ref, object<MolCoord$> pmol_mov, object<MolSelection$> psel_mov);
+
+  void calcRMSD(object<MolCoord$> pmol_ref, object<MolSelection$> psel_ref, object<MolCoord$> pmol_mov, object<MolSelection$> psel_mov, string path) => calcRMSDScr;
+
+  //////////////////////////
+  // non-standard bond editor
+
+  string getNostdBondsJSON(object<MolCoord$> pmol);
+
+  void removeBond(object<MolCoord$> pmol, integer aid1, integer aid2);
+  void makeBond(object<MolCoord$> pmol, integer aid1, integer aid2);
+
+  //////////////////////////
+  // interaction analysis
+
+  string calcAtomContactJSON(object<MolCoord$> pMol, object<MolSelection$> pSel, real r_min, real r_max, boolean hbond, integer nMax);
+  string calcAtomContact2JSON(object<MolCoord$> pMol, object<MolSelection$> pSel, object<MolSelection$> pSel2, real r_min, real r_max, boolean hbond, integer nMax);
+  
+  //////////////////////////
+  // protein secondary structure
+
+  void calcProt2ndry(object<MolCoord$> pmol, real hbmax);
+
+  void setProt2ndry(object<MolCoord$> pmol, object<MolSelection$> pSel, integer nSecType);
+
+
+};
+
+#endif // MOLANL_MANAGER_QIF_INCLUDED
+

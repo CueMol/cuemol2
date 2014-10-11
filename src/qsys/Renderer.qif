@@ -1,0 +1,108 @@
+// -*-Mode: C++;-*-
+//
+// $Id: Renderer.qif,v 1.20 2011/04/24 15:05:49 rishitani Exp $
+//
+
+#ifndef RENDERER_QIF_INCLUDED
+#define RENDERER_QIF_INCLUDED
+
+#include <qlib/Vector.qif>
+#include <qlib/Matrix.qif>
+#include <gfx/Color.qif>
+#include "Object.qif"
+#include "Scene.qif"
+
+runtime_class Renderer
+{
+  using Color; // <-- gfx::SolidColor
+
+  client_hdr "Renderer.hpp";
+  client_name qsys::Renderer;
+  dllexport QSYS_API;
+
+  scriptable;
+  abstract;
+  smartptr;
+
+  //////////
+
+  property integer uid => redirect(getUID, xxx) (readonly);
+  property integer scene_uid => redirect(getSceneID, xxx) (readonly);
+  property string type_name => redirect(getTypeName, xxx) (readonly);
+
+  property object<Vector> center => redirect(getCenterScr, xxx) (readonly);
+
+  property string name => redirect(getName, setName);
+  default name = "";
+
+  property boolean visible => redirect(isVisible, setVisible);
+  default visible = true;
+
+  property boolean locked => redirect(isUILocked, setUILocked);
+  default locked = false;
+
+  property string style => redirect(getStyleNames, xxx) (readonly);
+
+  /// Default material name
+  property string material => redirect(getDefaultMaterial, setDefaultMaterial);
+  default material = "";
+
+  /// Default transparency (1.0=opacue)
+  property real alpha => redirect(getDefaultAlpha, setDefaultAlpha);
+  default alpha = 1.0;
+
+  /// Transform matrix
+  property object<Matrix> xformMat => redirect(getXformMatrix, setXformMatrix);
+  default xformMat = qlib::Matrix4D();
+
+  /// Display order (used in GUI)
+  property integer ui_order => redirect(getUIOrder, setUIOrder) (nopersist);
+
+  /// Group name (used in GUI impl)
+  property string group => redirect(getGroupName, setGroupName);
+
+  /// Edge/silhouette line type
+  enumdef egtype {
+    none = qsys::Renderer::ELT_NONE;
+    edges = qsys::Renderer::ELT_EDGES;
+    silhouette = qsys::Renderer::ELT_SILHOUETTE;
+//     opaq_edges = qsys::Renderer::ELT_OPQ_EDGES;
+//     opaq_silh = qsys::Renderer::ELT_OPQ_SILHOUETTE;
+  }
+  property enum egtype => redirect(getEdgeLineType, setEdgeLineType);
+  default egtype = "none";
+
+  /// Width of edge lines in cartoon rendering
+  property real eglinew => redirect(getEdgeLineWidth, setEdgeLineWidth);
+  default eglinew = 0.01;
+
+  property object<AbstractColor$> egcolor => redirect(getEdgeLineColor, setEdgeLineColor);
+  default egcolor = gfx::SolidColor::createRGB(.0, .0, .0);
+
+  //////////
+
+  string toString();
+  integer getUID();
+
+  object<Vector> getCenter() => getCenterScr;
+
+  integer getClientObjID();
+  object<Object$> getClientObj();
+
+  // get parent scene
+  object<Scene$> getScene();
+
+  // Styles
+  void applyStyles(string names);
+  void reapplyStyle();
+  
+  boolean isCompatibleObj(object<Object$>);
+
+  // // Removed (2.1.0/120408)
+  // boolean pushStyle(string names);
+  // boolean removeStyleRegex(string regex);
+
+};
+
+#endif
+

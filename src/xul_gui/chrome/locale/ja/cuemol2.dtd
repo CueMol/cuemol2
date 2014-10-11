@@ -1,0 +1,128 @@
+﻿<!ENTITY cuemol2.title   "CueMol2">
+
+<!-- ********** Main Menu ********** -->
+
+<!ENTITY menu_file.label "ファイル">
+<!ENTITY menu_file.accesskey "F">
+
+<!--
+<!ENTITY new_window.label "新規ウィンドウ...">
+<!ENTITY new_window.accesskey "N">
+<!ENTITY new_window.commandkey "n">
+-->
+
+<!ENTITY new_tab.label "新規タブ...">
+<!ENTITY new_tab.accesskey "N">
+<!ENTITY new_tab.commandkey "n">
+
+<!ENTITY open_file.label "開く...">
+<!ENTITY open_file.accesskey "O">
+<!ENTITY open_file.commandkey "o">
+<!ENTITY save_file_as.label "名前をつけて保存...">
+<!ENTITY save_file_as.accesskey "A">
+<!ENTITY save_file_as.commandkey "">
+
+<!ENTITY open_scene.label "シーンを開く...">
+<!ENTITY open_scene.accesskey "P">
+<!ENTITY reload_scene.label "シーンを再読込み">
+<!ENTITY reload_scene.accesskey "R">
+<!ENTITY reload_scene.commandkey "r">
+<!ENTITY save_scene.label "シーンを保存">
+<!ENTITY save_scene.accesskey "S">
+<!ENTITY save_scene.commandkey "s">
+<!ENTITY save_scene_as.label "シーンを別名で保存...">
+
+<!ENTITY open_PDB.label "PDBサイト開く...">
+<!ENTITY saveCurrCam.label "現在の視点を保存">
+
+<!ENTITY close_tab.label "タブを閉じる">
+
+<!ENTITY menu_edit.label "編集">
+<!ENTITY menu_edit.accesskey "E">
+
+<!ENTITY edit_undo.label "元に戻す">
+<!ENTITY edit_undo.accesskey "U">
+<!ENTITY edit_undo.commandkey "z">
+
+<!ENTITY edit_redo.label "やり直し">
+<!ENTITY edit_redo.accesskey "R">
+<!ENTITY edit_redo.commandkey "y">
+
+<!ENTITY edit_config.label "環境設定 ...">
+<!ENTITY edit_config.accesskey "O">
+<!ENTITY edit_config.commandkey "k">
+
+<!ENTITY menu_render.label "レンダリング">
+<!ENTITY menu_render.accesskey "R">
+
+<!ENTITY render_exportscene.label "シーンの書き出し...">
+<!ENTITY render_exportscene.accesskey "E">
+
+<!ENTITY menu_tools.label "ツール">
+<!ENTITY menu_tools.accesskey "T">
+
+<!ENTITY menu_window.label "ウィンドウ">
+<!ENTITY menu_window.accesskey "W">
+
+<!ENTITY menu_help.label "ヘルプ">
+<!ENTITY menu_help.accesskey "H">
+
+<!ENTITY help_about.label "CueMol2のバージョン情報">
+<!ENTITY help_about.accesskey "A">
+
+<!ENTITY quitApplicationCmd.label       "終了"> 
+<!ENTITY quitApplicationCmd.accesskey   "Q">
+
+<!-- ********** OS specific ********** -->
+
+<!ENTITY configCmdMac.label "環境設定 ...">
+<!ENTITY configCmdMac.commandkey   ",">
+
+<!ENTITY servicesMenuMac.label          "Services">
+
+<!ENTITY hideThisAppCmdMac.label        "Hide &brandShortName;">
+<!ENTITY hideThisAppCmdMac.commandkey   "H">
+
+<!ENTITY hideOtherAppsCmdMac.label      "Hide Others">
+<!ENTITY hideOtherAppsCmdMac.commandkey "H">
+
+<!ENTITY showAllAppsCmdMac.label        "Show All">
+
+<!ENTITY quitApplicationCmdWin.label       "終了"> 
+<!ENTITY quitApplicationCmdWin.accesskey   "x">
+<!ENTITY quitApplicationCmdMac.label    "&brandShortName;を終了">
+<!ENTITY quitApplicationCmdMac.key      "Q">
+
+<!ENTITY help_aboutCmdMac.label "&brandShortName;について">
+
+<!-- ********** About dialog ********** -->
+
+<!ENTITY aboutDialog.title           "&brandShortName;のバージョン情報">
+<!ENTITY aboutDialog.version         "バージョン">
+<!ENTITY aboutDialog.build           "ビルド識別子">
+<!ENTITY aboutDialog.copyrightInfo   "&#169;1998-2014 Contributors. All Rights Reserved. CueMol and the 
+                                     CueMol logos are trademarks of the BKR Laboratory.  All rights 
+                                     reserved.">
+
+<!-- ********** Panels ********** -->
+
+<!ENTITY workspacePanel.title "シーン">
+<!ENTITY workspacePanel.object_tree.name "名前">
+
+<!ENTITY denmapPanel.title "電子密度">
+
+<!ENTITY symmetryPanel.title "対称性">
+<!ENTITY symmetryPanel.sg "空間群">
+<!ENTITY symmetryPanel.symmol "対称分子">
+<!ENTITY symmetryPanel.unitcell "単位胞">
+
+<!ENTITY coloringPanel.title "着色">
+
+<!ENTITY elem.hydrogen "水素">
+<!ENTITY elem.carbon "炭素">
+<!ENTITY elem.nitrogen "窒素">
+<!ENTITY elem.oxygen "酸素">
+<!ENTITY elem.sulfur "硫黄">
+<!ENTITY elem.phosphorus "リン">
+<!ENTITY elem.others "その他">
+

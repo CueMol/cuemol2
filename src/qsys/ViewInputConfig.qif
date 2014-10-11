@@ -1,0 +1,59 @@
+// -*-Mode: C++;-*-
+//
+// ViewInputConfig class interface definition
+//
+
+#ifndef VIEW_INPUT_CONFIG_QIF_INCLUDED
+#define VIEW_INPUT_CONFIG_QIF_INCLUDED
+
+runtime_class ViewInputConfig
+{
+  client_hdr "ViewInputConfig.hpp";
+  client_name qsys::ViewInputConfig;
+
+  scriptable;
+  singleton;
+
+  ///////////////////////////////////////
+  // view properties
+
+  property string conf_rotx => redirect(getConfRotX, setConfRotX);
+  property string conf_roty => redirect(getConfRotY, setConfRotY);
+  property string conf_rotz => redirect(getConfRotZ, setConfRotZ);
+
+  property string conf_trax => redirect(getConfTraX, setConfTraX);
+  property string conf_tray => redirect(getConfTraY, setConfTraY);
+  property string conf_traz => redirect(getConfTraZ, setConfTraZ);
+
+  property string conf_zoom => redirect(getConfZoom, setConfZoom);
+  property string conf_slab => redirect(getConfSlab, setConfSlab);
+  property string conf_dist => redirect(getConfDist, setConfDist);
+
+  default conf_rotx = "LBUTTON|MOUSE_X";
+  default conf_roty = "LBUTTON|MOUSE_Y";
+  default conf_rotz = "LBUTTON|RBUTTON|MOUSE_Y";
+
+  default conf_trax = "RBUTTON|MOUSE_X";
+  default conf_tray = "RBUTTON|MOUSE_Y";
+  default conf_traz = "LBUTTON|RBUTTON|MOUSE_X";
+
+  default conf_zoom = "LBUTTON|SHIFT|MOUSE_Y,WHEEL1";
+  default conf_slab = "LBUTTON|SHIFT|MOUSE_X";
+  default conf_dist = "";
+
+  property real tbrad => redirect(getTbRad, setTbRad);
+  default tbrad = 0.8;
+
+  property real hitprec => redirect(getHitPrec, setHitPrec);
+  default hitprec = 10.0;
+
+  /////////////
+  // Style supports
+
+  property string style => redirect(getStyleName, applyStyle);
+};
+
+#endif
+
+
+

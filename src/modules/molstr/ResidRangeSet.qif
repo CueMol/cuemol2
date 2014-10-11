@@ -1,0 +1,35 @@
+// -*-Mode: C++;-*-
+//
+// Residue range set scripting interface
+//
+
+#ifndef RESID_RANGE_SET_QIF_INCLUDED
+#define RESID_RANGE_SET_QIF_INCLUDED
+
+#include "MolCoord.qif"
+#include "MolResidue.qif"
+
+runtime_class ResidRangeSet
+{
+  client_hdr "ResidRangeSet.hpp";
+  client_name molstr::ResidRangeSet;
+
+  scriptable;
+
+  // cloneable option generates instance creation with copy constructor
+  cloneable;
+  smartptr;
+
+  void clear();
+  void fromSel(object<MolCoord$> pMol, object<MolSelection$> pSel);
+  object<MolSelection$> toSel(object<MolCoord$> pMol);
+
+  void append(object<MolCoord$> pMol, object<MolSelection$> pSel);
+  void remove(object<MolCoord$> pMol, object<MolSelection$> pSel);
+  boolean contains(object<MolResidue$> pRes);
+
+  string toString();
+};
+
+#endif
+

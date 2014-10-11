@@ -1,0 +1,516 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<styles id="system">
+
+  <!-- Mouse Configuration Styles -->
+  <style id="DefaultViewInConf" type="view" desc="Default"
+    conf_rotx = "LBUTTON|MOUSE_X"
+    conf_roty = "LBUTTON|MOUSE_Y"
+    conf_rotz = "LBUTTON|RBUTTON|MOUSE_Y"
+    conf_trax = "RBUTTON|MOUSE_X"
+    conf_tray = "RBUTTON|MOUSE_Y"
+    conf_traz = "LBUTTON|RBUTTON|MOUSE_X"
+    conf_zoom = "LBUTTON|SHIFT|MOUSE_Y,WHEEL1"
+    conf_slab = "LBUTTON|SHIFT|MOUSE_X"
+    />
+
+  <style id="CootViewInConf" type="view" desc="Coot"
+    conf_rotx = "LBUTTON|MOUSE_X"
+    conf_roty = "LBUTTON|MOUSE_Y"
+    conf_rotz = ""
+    conf_trax = "LBUTTON|CTRL|MOUSE_X"
+    conf_tray = "LBUTTON|CTRL|MOUSE_Y"
+    conf_traz = "LBUTTON|SHIFT|MOUSE_X"
+    conf_zoom = "RBUTTON|MOUSE_X,RBUTTON|MOUSE_Y"
+    conf_slab = "LBUTTON|SHIFT|MOUSE_Y"
+    />
+
+  <style id="PymolViewInConf" type="view" desc="Pymol"
+    conf_rotx = "LBUTTON|MOUSE_X"
+    conf_roty = "LBUTTON|MOUSE_Y"
+    conf_rotz = ""
+    conf_trax = "MBUTTON|MOUSE_X"
+    conf_tray = "MBUTTON|MOUSE_Y"
+    conf_traz = "CTRL|WHEEL1"
+    conf_zoom = "RBUTTON|MOUSE_X,RBUTTON|MOUSE_Y,CTRL|SHIFT|WHEEL1"
+    conf_slab = "WHEEL1"
+    />
+
+  <style id="IphoneViewInConf" type="view" desc="iPhone"
+    conf_rotx = "LBUTTON|MOUSE_X"
+    conf_roty = "LBUTTON|MOUSE_Y"
+    conf_rotz = ""
+    conf_trax = "RBUTTON|MOUSE_X"
+    conf_tray = "RBUTTON|MOUSE_Y"
+    conf_traz = ""
+    conf_zoom = ""
+    conf_slab = "LBUTTON|SHIFT|MOUSE_X,LBUTTON|SHIFT|MOUSE_Y"
+    />
+
+  <!--
+    ===== Renderer Styles =====
+    -->
+
+  <style id="DefaultRibbon" type="renderer" axialdetail="8" desc="Default">
+    <helix type="rectangle" tuber="6.0" width="0.2"/>
+    <helixhead type="smooth"/>
+    <helixtail type="smooth"/>
+    <sheet type="rectangle" tuber="7.0" width="0.2"/>
+    <sheethead type="arrow"/>
+    <sheettail type="smooth"/>
+  </style>
+
+  <style id="RoundRibbon" type="renderer" axialdetail="8" desc="Round">
+    <helix type="elliptical" tuber="6.0" width="0.2"/>
+    <helixhead type="smooth"/>
+    <helixtail type="smooth"/>
+    <sheet type="elliptical" tuber="7.0" width="0.2"/>
+    <sheethead type="arrow" gamma="1.2"/>
+    <sheettail type="smooth"/>
+  </style>
+
+  <style id="Fancy1Ribbon" type="renderer" axialdetail="8" desc="Fancy1"
+    helix_usebackcol="true"
+    helix_backcol="$molcol{mod_s:-0.4}"
+    sheet_usesidecol="true"
+    sheet_sidecol="$molcol{mod_s:-0.4}">
+    <helix type="fancy1" tuber="6.5" sharp="0.3" width="0.2"/>
+    <helixhead type="smooth"/>
+    <helixtail type="smooth"/>
+    <sheet type="rectangle" tuber="6" width="0.2"/>
+    <sheethead type="arrow" arrow="1.6" gamma="1"/>
+    <sheettail type="smooth"/>
+    <coil width="0.25"/>
+  </style>
+
+  <style id="DefaultNucl" type="renderer"
+    axialdetail="8" pivotatom="P" defaultcolor="$molcol">
+    <coloring type="SolidColoring"/>
+    <section width="0.5" tuber="2.5"/>
+  </style>
+
+  <style id="DefaultLabel" type="renderer"
+    color="Yellow" font_size="12" font_name="san-serif"/>
+
+  <style id="DefaultAnIsoU" type="renderer"
+    bondw="0.05" sphr="1.0" detail="5">
+    <coloring type="CPKColoring"/>
+  </style>
+
+  <style id="DefaultBallStick" type="renderer" desc="Default"
+    bondw="0.2" sphr="0.3" detail="3" ringcolor="$molcol">
+  </style>
+  <style id="StickBallStick" type="renderer" desc="Stick"
+    bondw="0.2" sphr="0.2" detail="3" ringcolor="$molcol">
+  </style>
+  <style id="ThickBallStick" type="renderer" desc="Thick"
+    bondw="0.3" sphr="0.5" detail="5" ringcolor="$molcol">
+  </style>
+  <style id="ThickStickBallStick" type="renderer" desc="Thick stick"
+    bondw="0.5" sphr="0.5" detail="5" ringcolor="$molcol">
+  </style>
+
+  <style id="DefaultAtomIntr" desc="Default" type="renderer"
+    mode="simple" showlabel="true" width="1.0" />
+
+  <style id="DashedStick1AtomIntr" desc="Dashed stick1"
+    color="#FFFF00" mode="fancy" showlabel="false" width="0.1"
+    stipple0="0.25" stipple1="0.4"
+    type="renderer"/>
+
+  <style id="DashedStick2AtomIntr" desc="Dashed stick2"
+    color="#00FFFF" mode="fancy" showlabel="false" width="0.1"
+    stipple0="0.25" stipple1="0.5" stipple2="0.001" stipple3="0.5"
+    type="renderer"/>
+
+  <style id="DefaultCartoon" type="renderer" desc="Default"
+    axialdetail="8" smoothcolor="false">
+    <helix_waver value="true"/>
+    <helix_wplus value="0.2"/>
+    <helix type="elliptical" tuber="1.0" />
+    <sheet type="rectangle" tuber="7.0" width="0.2"/>
+    <sheet_smooth value="3.0"/>
+    <coil type="elliptical" width="0.2" />
+    <sheethead type="arrow" gamma="1.0"/>
+  </style>
+
+  <style id="DefaultSimple" desc="Default" type="renderer" width="1.2" />
+  <style id="ThickSimple" desc="Thick" type="renderer" width="3.0" />
+  <style id="ExThickSimple" desc="ExThick" type="renderer" width="6.0" />
+
+  <style id="DefaultTrace" desc="Default" type="renderer" width="1.2" />
+  <style id="ThickTrace" desc="Thick" type="renderer" width="3.0" />
+  <style id="ExThickTrace" desc="ExThick" type="renderer" width="6.0" />
+
+
+  <!--
+    ===== Edge Styles =====
+    -->
+
+  <style id="EgLineThin" desc="Edge line (thin)" type="renderer"
+    egtype="edges" eglinew="0.03"/>
+  <style id="EgLineNormal" desc="Edge line (normal)" type="renderer"
+    egtype="edges" eglinew="0.06"/>
+  <style id="EgLineThick" desc="Edge line (thick)" type="renderer"
+    egtype="edges" eglinew="0.15"/>
+  <style id="EgLineNone" desc="No edge line" type="renderer"
+    egtype="none"/>
+
+  <!--
+    ===== Coloring Styles =====
+    -->
+
+  <style id="DefaultCPKColoring" type="renderer" desc="Default">
+    <coloring type="CPKColoring" col_C="$molcol" />
+  </style>
+
+  <!-- for white bg -->
+  <style id="DarkCPKColoring" type="renderer" desc="Darkgray carbon">
+    <coloring type="CPKColoring" col_C="#404040" />
+  </style>
+  <style id="LightCPKColoring" type="renderer" desc="Lightgray carbon">
+    <coloring type="CPKColoring" col_C="#C0C0C0" />
+  </style>
+  
+  <style id="DefaultHSCPaint" type="renderer" desc="Default" defaultcolor="$molcol">
+    <coloring type="SolidColoring"/>
+  </style>
+  
+  <style id="WoodyHSCPaint" type="renderer" desc="Woody">
+    <coloring type="PaintColoring">
+      <paint sel="sheet" color="#7FFF7F"/>
+      <paint sel="helix" color="#FF7F7F"/>
+      <paint sel="*" color="#FFFFBF"/>
+    </coloring>
+  </style>
+
+  <style id="RedHSCPaint" type="renderer" desc="Red">
+    <coloring type="PaintColoring">
+      <paint sel="sheet" color="hsb(5, 0.8, 1)"/>
+      <paint sel="helix" color="hsb(0, 0.8, 1)"/>
+      <paint sel="*" color="hsb(10, 0.4, 1)"/>
+    </coloring>
+  </style>
+
+  <style id="OrangeHSCPaint" type="renderer" desc="Orange">
+    <coloring type="PaintColoring">
+      <paint sel="sheet" color="hsb(35, 0.8, 1)"/>
+      <paint sel="helix" color="hsb(30, 0.8, 1)"/>
+      <paint sel="*" color="hsb(40, 0.4, 1)"/>
+    </coloring>
+  </style>
+
+  <style id="YellowHSCPaint" type="renderer" desc="Yellow">
+    <coloring type="PaintColoring">
+      <paint sel="sheet" color="hsb(65, 0.8, 1)"/>
+      <paint sel="helix" color="hsb(60, 0.8, 1)"/>
+      <paint sel="*" color="hsb(70, 0.4, 1)"/>
+    </coloring>
+  </style>
+  
+  <style id="GreenHSCPaint" type="renderer" desc="Green">
+    <coloring type="PaintColoring">
+      <paint sel="sheet" color="hsb(125, 0.8, 1)"/>
+      <paint sel="helix" color="hsb(120, 0.8, 1)"/>
+      <paint sel="*" color="hsb(130, 0.4, 1)"/>
+    </coloring>
+  </style>
+
+  <style id="CyanHSCPaint" type="renderer" desc="Cyan">
+    <coloring type="PaintColoring">
+      <paint sel="sheet" color="hsb(185, 0.8, 1)"/>
+      <paint sel="helix" color="hsb(180, 0.8, 1)"/>
+      <paint sel="*" color="hsb(190, 0.4, 1)"/>
+    </coloring>
+  </style>
+  
+  <style id="BlueHSCPaint" type="renderer" desc="Blue">
+    <coloring type="PaintColoring">
+      <paint sel="sheet" color="hsb(245, 0.8, 1)"/>
+      <paint sel="helix" color="hsb(240, 0.8, 1)"/>
+      <paint sel="*" color="hsb(250, 0.4, 1)"/>
+    </coloring>
+  </style>
+
+  <style id="PurpleHSCPaint" type="renderer" desc="Purple">
+    <coloring type="PaintColoring">
+      <paint sel="sheet" color="hsb(305, 0.8, 1)"/>
+      <paint sel="helix" color="hsb(300, 0.8, 1)"/>
+      <paint sel="*" color="hsb(310, 0.4, 1)"/>
+    </coloring>
+  </style>
+
+  <!-- ========== default material definition (for OpenGL view) ========== -->
+  <material id="default">
+    <def ambient="0.2" diffuse="0.8" specular="0.0" shininess="32.0"/>
+  </material>
+  <material id="shadow">
+    <def ambient="0.75" diffuse="0.0" specular="0.0" shininess="0.0"/>
+  </material>
+  <material id="nolighting">
+    <def ambient="1.0" diffuse="0.0" specular="0.0" shininess="0.0"/>
+  </material>
+  <material id="toon1">
+    <def ambient="0.0" diffuse="0.85" specular="0.0" shininess="0.0"/>
+  </material>
+  <material id="toon2">
+    <def ambient="0.0" diffuse="0.85" specular="0.0" shininess="32.0"/>
+  </material>
+  <material id="matte">
+    <def ambient="0.3" diffuse="0.6" specular="0.0" shininess="32.0"/>
+  </material>
+  <material id="diff_metal">
+    <def ambient="0.2" diffuse="0.5" specular="0.7" shininess="76.8"/>
+  </material>
+  <material id="spec_metal">
+    <def ambient="0.2" diffuse="0.5" specular="0.7" shininess="76.8"/>
+  </material>
+  
+  <!-- ========== default material definition (for POV-Ray) ========== -->
+
+  <setting type="pov">
+    <preamble>
+<![CDATA[
+#include "colors.inc"
+#include "metals.inc"
+#include "woods.inc"
+#include "stones.inc"
+]]>
+    </preamble>
+  </setting>
+
+  <material id="default">
+    <def type="pov">
+<![CDATA[
+texture {
+  finish {
+   ambient 0.2
+   diffuse 0.8  brilliance 1.0
+   specular 0.4  roughness 0.01
+  }
+  pigment { color rgbt @COLOR@ }
+}
+]]>
+    </def>
+  </material>
+    
+  <material id="spec_metal">
+    <def type="pov">
+      texture {finish {F_MetalD} pigment { color rgbt @COLOR@ }}
+    </def>
+  </material>
+
+  <material id="diff_metal">
+    <def type="pov">
+      texture {finish {F_MetalA} pigment { color rgbt @COLOR@ }}
+    </def>
+  </material>
+  
+  <material id="matte">
+    <def type="pov">
+      texture {finish {ambient 0.3} pigment { color rgbt @COLOR@ }}
+    </def>
+  </material>
+
+  <material id="shadow">
+    <def type="pov">
+      texture {finish {ambient 0.75 diffuse 0.0 specular 0.0} pigment { color rgbt @COLOR@ }}
+    </def>
+  </material>
+
+  <material id="nolighting">
+    <def type="pov">
+      texture {finish {ambient 1.0 diffuse 0.0 specular 0.0} pigment { color rgbt @COLOR@ }}
+    </def>
+  </material>
+
+  <material id="toon1">
+    <def type="pov">
+      texture {finish {ambient 0.0 diffuse 0.85 brilliance 0} pigment { color rgbt @COLOR@ }}
+    </def>
+  </material>
+
+  <material id="toon2">
+    <def type="pov">
+      texture {finish {ambient 0.0 diffuse 0.85 brilliance 0 specular 10000 roughness 0.005} pigment { color rgbt @COLOR@ }}
+    </def>
+  </material>
+
+  <material id="metallic_chrome">
+    <def type="pov">
+      texture{ T_Chrome_4D }
+    </def>
+  </material>
+
+  <material id="metallic_copper">
+    <def type="pov">
+      texture{ T_Copper_3C }
+    </def>
+  </material>
+
+  <material id="stone35">
+    <def type="pov">
+      texture {T_Stone35}
+    </def>
+  </material>
+
+  <material id="wood31">
+    <def type="pov">
+      texture {T_Wood31}
+    </def>
+  </material>
+
+  <!-- ========== Selection aliases ========== -->
+
+  <sel id="helix" value="rprop secondary=helix"/>
+  <sel id="sheet" value="rprop secondary=sheet"/>
+  <sel id="coil" value="!rprop secondary=helix and !rprop secondary=sheet"/>
+  <sel id="protein" value="rprop type=prot"/>
+  <sel id="nucleic" value="rprop type=nucl"/>
+  <sel id="water" value="rprop type=water"/>
+  <sel id="sugar" value="rprop type=pyranose"/>
+
+  <!-- Default color names from HTML/CSS2 color table -->
+  <color id="AliceBlue" value="#F0F8FF"/>
+  <color id="White" value="#FFFFFF"/>
+  <color id="Snow" value="#FFFAFA"/>
+  <color id="GhostWhite" value="#F8F8FF"/>
+  <color id="WhiteSmoke" value="#F5F5F5"/>
+  <color id="FloralWhite" value="#FFFAF0"/>
+  <color id="Linen" value="#FAF0E6"/>
+  <color id="AntiqueWhite" value="#FAEBD7"/>
+  <color id="PapayaWhip" value="#FFEFD5"/>
+  <color id="BlanchedAlmond" value="#FFEBCD"/>
+  <color id="Bisque" value="#FFE4C4"/>
+  <color id="Moccasin" value="#FFE4B5"/>
+  <color id="NavajoWhite" value="#FFDEAD"/>
+  <color id="PeachPuff" value="#FFDAB9"/>
+  <color id="MistyRose" value="#FFE4E1"/>
+  <color id="LavenderBlush" value="#FFF0F5"/>
+  <color id="Seashell" value="#FFF5EE"/>
+  <color id="OldLace" value="#FDF5E6"/>
+  <color id="Ivory" value="#FFFFF0"/>
+  <color id="Honeydew" value="#F0FFF0"/>
+  <color id="MintCream" value="#F5FFFA"/>
+  <color id="Azure" value="#F0FFFF"/>
+  <color id="Lavender" value="#E6E6FA"/>
+  <color id="Black" value="#000000"/>
+  <color id="DarkSlateGray" value="#2F4F4F"/>
+  <color id="DimGray" value="#696969"/>
+  <color id="Gray" value="#808080"/>
+  <color id="DarkGray" value="#A9A9A9"/>
+  <color id="Silver" value="#C0C0C0"/>
+  <color id="LightGrey" value="#D3D3D3"/>
+  <color id="Gainsboro" value="#DCDCDC"/>
+  <color id="LightSlateGray" value="#778899"/>
+  <color id="SlateGray" value="#708090"/>
+  <color id="LightSteelBlue" value="#B0C4DE"/>
+  <color id="SteelBlue" value="#4682B4"/>
+  <color id="RoyalBlue" value="#4169E1"/>
+  <color id="MidinightBlue" value="#191970"/>
+  <color id="Navy" value="#000080"/>
+  <color id="DarkBlue" value="#00008B"/>
+  <color id="MediumBlue" value="#0000CD"/>
+  <color id="Blue" value="#0000FF"/>
+  <color id="DodgerBlue" value="#1E90FF"/>
+  <color id="CornflowerBlue" value="#6495ED"/>
+  <color id="DeepSkyBlue" value="#00BFFF"/>
+  <color id="LightSkyBlue" value="#87CEFA"/>
+  <color id="SkyBlue" value="#87CEEB"/>
+  <color id="LightBlue" value="#ADD8E6"/>
+  <color id="PowderBlue" value="#B0E0E6"/>
+  <color id="PaleTurquoise" value="#AFEEEE"/>
+  <color id="LightCyan" value="#E0FFFF"/>
+  <color id="Cyan" value="#00FFFF"/>
+  <color id="Aqua" value="#00FFFF"/>
+  <color id="Turquoise" value="#40E0D0"/>
+  <color id="MediumTurquoise" value="#48D1CC"/>
+  <color id="DarkTurquoise" value="#00CED1"/>
+  <color id="LightSeaGreen" value="#20B2AA"/>
+  <color id="CadetBlue" value="#5F9EA0"/>
+  <color id="Darkcyan" value="#008B8B"/>
+  <color id="Teal" value="#008080"/>
+  <color id="SeaGreen" value="#2E8B57"/>
+  <color id="DarkOliveGreen" value="#556B2F"/>
+  <color id="DarkGreen" value="#006400"/>
+  <color id="Green" value="#008000"/>
+  <color id="ForestGreen" value="#228B22"/>
+  <color id="MediumSeaGreen" value="#3CB371"/>
+  <color id="DarkSeaGreen" value="#8FBC8F"/>
+  <color id="MideumAquamarine" value="#66CDAA"/>
+  <color id="Aquamarine" value="#7FFFD4"/>
+  <color id="PaleGreen" value="#98FB98"/>
+  <color id="LightGreen" value="#90EE90"/>
+  <color id="SpringGreen" value="#00FF7F"/>
+  <color id="MediumSpringGreen" value="#00DA9A"/>
+  <color id="LawnGreen" value="#7CFC00"/>
+  <color id="Chartreuse" value="#7FFF00"/>
+  <color id="GreenYellow" value="#ADFF2F"/>
+  <color id="Lime" value="#00FF00"/>
+  <color id="LimeGreen" value="#32CD32"/>
+  <color id="YellowGreen" value="#9ACD32"/>
+  <color id="OliveDrab" value="#6B8E23"/>
+  <color id="Olive" value="#808000"/>
+  <color id="DarkKahki" value="#BDB76B"/>
+  <color id="PaleGoldenrod" value="#EEE8AA"/>
+  <color id="Cornsilk" value="#FFF8DC"/>
+  <color id="Beige" value="#F5F5DC"/>
+  <color id="LightYellow" value="#FFFFE0"/>
+  <color id="LightGoldenrodYellow" value="#FAFAD2"/>
+  <color id="LemonChiffon" value="#FFFACD"/>
+  <color id="Wheat" value="#F5DEB3"/>
+  <color id="Burywood" value="#DEB887"/>
+  <color id="Tan" value="#D2B48C"/>
+  <color id="Khaki" value="#F0E68C"/>
+  <color id="Yellow" value="#FFFF00"/>
+  <color id="Gold" value="#FFD700"/>
+  <color id="Orange" value="#FFA500"/>
+  <color id="SandyBrown" value="#F4A460"/>
+  <color id="DarkOrange" value="#FF8C00"/>
+  <color id="Golodenrod" value="#DAA520"/>
+  <color id="Peru" value="#CD853F"/>
+  <color id="DarkGoldenrod" value="#B8860B"/>
+  <color id="Chocolate" value="#D2691E"/>
+  <color id="Sienna" value="#A0522D"/>
+  <color id="SaddleBrown" value="#8B4513"/>
+  <color id="Maroon" value="#800000"/>
+  <color id="DarkRed" value="#8B0000"/>
+  <color id="Brown" value="#A52A2A"/>
+  <color id="FireBrick" value="#B22222"/>
+  <color id="IndianRed" value="#CD5C5C"/>
+  <color id="RosyBrown" value="#BC8F8F"/>
+  <color id="DarkSalmon" value="#E9967A"/>
+  <color id="LightCoral" value="#F08080"/>
+  <color id="Salmon" value="#FA8072"/>
+  <color id="LightSalmon" value="#FFA07A"/>
+  <color id="Coral" value="#FF7F50"/>
+  <color id="Tomato" value="#FF6347"/>
+  <color id="OrangeRed" value="#FF4500"/>
+  <color id="Red" value="#FF0000"/>
+  <color id="Crimson" value="#DC143C"/>
+  <color id="MediumVioletRed" value="#C71585"/>
+  <color id="DeepPink" value="#FF1493"/>
+  <color id="HotPink" value="#FF69B4"/>
+  <color id="PaleVioletRed" value="#DB7093"/>
+  <color id="Pink" value="#FFC0CB"/>
+  <color id="LightPink" value="#FFB6C1"/>
+  <color id="Thistle" value="#D8BFD8"/>
+  <color id="Magenta" value="#FF00FF"/>
+  <color id="Fuchsia" value="#FF00FF"/>
+  <color id="Violet" value="#EE82EE"/>
+  <color id="Plum" value="#DDA0DD"/>
+  <color id="Orchid" value="#DA70D6"/>
+  <color id="MediumOrchid" value="#BA55D3"/>
+  <color id="DarkOrchid" value="#9932CC"/>
+  <color id="DarkViolet" value="#9400D3"/>
+  <color id="DarkMagenta" value="#8B008B"/>
+  <color id="Purple" value="#800080"/>
+  <color id="Indigo" value="#4B0082"/>
+  <color id="DarkSlateBlue" value="#483D8B"/>
+  <color id="BlueViolet" value="#8A2BE2"/>
+  <color id="MediumPurple" value="#937CDB"/>
+  <color id="SlateBlue" value="#6A5ACD"/>
+  <color id="MediumSlateBlue" value="#7B68EE"/>
+
+</styles>
+

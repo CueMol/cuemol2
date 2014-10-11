@@ -1,0 +1,15 @@
+// -*-Mode: C++;-*-
+//
+// $Id: molanl.moddef,v 1.1 2010/01/23 14:25:04 rishitani Exp $
+
+//#include "DensityMap.qif"
+#include "MolAnlManager.qif"
+
+module molanl
+{
+  init molanl::init();
+  fini molanl::fini();
+
+  MolAnlManager;
+};
+

@@ -1,0 +1,25 @@
+// -*-Mode: C++;-*-
+//
+// MSMS file reader scripting interface
+//
+
+#ifndef MSMS_FILE_READER_QIF_INCLUDED
+#define MSMS_FILE_READER_QIF_INCLUDED
+
+#include <qsys/ObjReader.qif>
+
+runtime_class MSMSFileReader extends ObjReader
+{
+  client_hdr "MSMSFileReader.hpp";
+  client_name surface::MSMSFileReader;
+
+  scriptable;
+  smartptr;
+
+//  property string vertex_file => m_vertFileName (nopersist);
+  property string vertex_file => m_vertFileName;
+
+};
+
+#endif
+

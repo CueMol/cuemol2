@@ -1,0 +1,23 @@
+
+.wheel-image {
+  -moz-appearance: none;
+  list-style-image: url("chrome://cuemol2/content/images/wheel2.png");
+  -moz-image-region: rect(0px, 110px, 12px, 0px);
+
+  padding: 2px 4px 2px 4px;
+  /*margin: none;*/
+  margin: 0;
+}
+
+.wheel-image[state="1"] {
+  -moz-image-region: rect(12px, 110px, 24px, 0px);
+}
+
+.wheel-image[state="2"] {
+  -moz-image-region: rect(24px, 110px, 36px, 0px);
+}
+
+.wheel-image[state="3"] {
+  -moz-image-region: rect(36px, 110px, 48px, 0px);
+}
+

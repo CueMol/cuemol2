@@ -1,0 +1,27 @@
+// -*-Mode: C++;-*-
+//
+// $Id: ResidIterator.qif,v 1.1 2009/01/05 10:30:15 rishitani Exp $
+
+#include "MolResidue.qif"
+#include "MolCoord.qif"
+
+runtime_class ResidIterator
+{
+  client_hdr "ResidIterator.hpp";
+  client_name molstr::ResidIterator;
+
+  scriptable;
+
+  // cloneable option generates instance creation with copy constructor
+  cloneable;
+  smartptr;
+
+  property object<MolCoord$> target => redirect(getTarget, setTarget);
+
+  void first();
+  void next();
+  boolean hasMore();
+  // integer getID();
+  object<MolResidue$> get();
+  
+};

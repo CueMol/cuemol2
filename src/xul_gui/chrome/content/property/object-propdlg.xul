@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+<?xul-overlay href="chrome://cuemol2/content/propeditor-generic-page.xul"?>
+<?xul-overlay href="chrome://cuemol2/content/propeditor-object-common.xul"?>
+
+<!-- -*- xml -*- -->
+
+<dialog
+  id     = "object-propdlg"
+  title  = "Object properties"
+  xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  ondialogaccept="return gMain.onDialogAccept(event);">
+
+  <script type="application/javascript;version=1.8"
+    src="chrome://cuemol2/content/cuemol2-utils.js"/>
+  <script type="application/javascript;version=1.8"
+    src="chrome://cuemol2/content/propeditor-generic-page.js"/>
+  <script type="application/javascript;version=1.8"
+    src="chrome://cuemol2/content/molsellist.js"/>
+  <script type="application/javascript;version=1.8" src="object-propdlg.js"/>
+
+  <tabbox id="propdlg-tabbox" flex="1">
+    <tabs id="tabs-overlay-target">
+      <tab label="Common" id="common-tab"/>
+    </tabs>
+    <tabpanels id="tabpanels-overlay-target" flex="1">
+      <tabpanel flex="1" orient="vertical">
+	<grid>
+	  <columns>
+	    <column flex="0"/>
+	    <column flex="1"/>
+	  </columns>
+	  
+	  <rows>
+	      <row align="center" class="propdlg-rowbox">
+		<label value="Name:"/>
+		<textbox id="comprop-name"/>
+	      </row>
+
+	      <row align="center" class="propdlg-rowbox">
+		<label value="Selection:"/>
+		<molsellist id="comprop-molsel" editable="true" flex="1"/>
+	      </row>
+
+	      <hbox>
+		<checkbox id="comprop-visible" flex="0" label="Visible"/>
+	      </hbox>
+
+	      <hbox>
+		<checkbox id="comprop-locked" flex="0" label="Locked"/>
+	      </hbox>
+
+	      <row align="center" class="propdlg-rowbox">
+		<label id="label-embed-key" value="Linked:"/>
+		<textbox id="label-embed-value" value="(embeded)" disabled="true"/>
+	      </row>
+	    </rows>
+	</grid>
+      </tabpanel>
+    </tabpanels>
+  </tabbox>
+
+</dialog>
+

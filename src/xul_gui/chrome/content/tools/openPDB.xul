@@ -1,0 +1,97 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<!-- -*- xml -*- -->
+
+<dialog
+  id     = "openPDB"
+  title  = "Download PDB"
+  xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  ondialogaccept="return gPdbDlg.onFind();"
+  onload = "gPdbDlg.init();">
+
+  <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
+<script>
+<![CDATA[
+var Cc = Components.classes;
+var Ci = Components.interfaces;
+window.gPdbDlg = {
+  init: function () {
+    this.mFindBtn = document.getElementById('find-button');
+    this.mPdbIdBox = document.getElementById('pdbid');
+    this.mResBox = document.getElementById('result-text');
+    this.mArgs = window.arguments;
+    this.mIoService = Cc["@mozilla.org/network/io-service;1"].getService(Ci.nsIIOService);
+  },
+
+  validation: function (pdbid) {
+    var val = pdbid;
+    if (val.length!="4")
+      return false;
+    if (!val.match(/^[0-9][0-9a-z][0-9a-z][0-9a-z]$/i))
+      return false;
+    return true;
+  },
+
+  onCancel: function () {
+    window.close();
+    return false;
+  },
+
+  onFind: function () {
+    var pdbid = this.mPdbIdBox.value;
+
+    if (!this.validation(pdbid)) {
+      this.mResBox.value = "Invalid PDB ID: "+pdbid;
+      this.mPdbIdBox.select();
+      this.mPdbIdBox.focus();
+      return false;
+    }
+
+    var pdb_url = "http://www.rcsb.org/pdb/download/downloadFile.do?"+
+      "fileFormat=pdb&compression=NO&structureId="+pdbid;
+    var uri = this.mIoService.newURI(pdb_url, null, null);
+
+    try {
+      var httpChannel = this.mIoService.newChannelFromURI(uri)
+        .QueryInterface(Components.interfaces.nsIHttpChannel);
+      httpChannel.requestMethod = "HEAD";
+      httpChannel.redirectionLimit = 0;
+      httpChannel.open();
+      dd("Response "+httpChannel.responseStatus+httpChannel.responseStatusText);
+      if (httpChannel.responseStatus==200) {
+        this.mArgs[0](pdbid);
+        return true;
+      }
+    }
+    catch (e) {
+      debug.exception(e);
+    }
+
+    this.mResBox.value = "PDB Entry "+pdbid+" not found.";
+    this.mPdbIdBox.select();
+    this.mPdbIdBox.focus();
+    return false;
+  }
+};
+]]>  
+</script>
+
+<vbox>
+  <description value="Enter PDB ID:"/>
+  <textbox id="pdbid" />
+  <description id="result-text" value=""/>
+
+<!-- <hbox>
+
+   <progressmeter id="progress" style="margin: 4px" disabled="true"/>
+   <spacer flex="1"/>
+   <button id="find-button" label="Find" default="true"
+     oncommand="return gPdbDlg.onFind();" />
+   
+   <button id="cancel-button" label="Cancel"
+     oncommand="return gPdbDlg.onCancel();" />
+   
+ </hbox>-->
+</vbox>
+
+</dialog>

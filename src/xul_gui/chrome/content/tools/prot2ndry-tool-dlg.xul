@@ -1,0 +1,82 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+
+<dialog
+  id     = "Prot2ndryTool"
+  windowtype="CueMol2:Prot2ndryTool"
+  title  = "Protein secondary str tool"
+  xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  buttons="accept,cancel"
+  ondialogaccept="return window.gDlg.onDialogAccept()">
+
+  <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/molsellist.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/object-menulist.js"/>
+  <script type="application/javascript; version=1.8" src="chrome://cuemol2/content/tools/prot2ndry-tool.js"/>
+  <script type="application/javascript">
+    window.gDlg = new cuemolui.Prot2ndryTool();
+  </script>
+
+  <vbox>
+
+    <hbox align="center">
+      <label value="Molecule:" />
+      <menulist id="targ_mol" flex="1"/>
+    </hbox>
+
+    <radiogroup id="radiobtns">
+      <groupbox flex="0">
+	<caption>
+	  <radio label="Recalc secondry str" id="radio_recalc" selected="true"/>
+	</caption>
+
+	<hbox align="center">
+	  <label value="Max hbond energy (cal/mol):"/>
+	  <textbox id="hbmax" type="number"
+	    min="-Infinity" value="-500" size="3" decimalplaces="0" increment="10"/>
+	</hbox>
+      </groupbox>
+
+      <groupbox flex="0">
+	<caption>
+	  <radio label="Assign by selection" id="radio_assign"/>
+	</caption>
+
+	<grid flex="1">
+	  <columns>
+	    <column flex="0"/>
+	    <column flex="1"/>
+	  </columns>
+
+	  <rows>
+	    <row align="center">
+	      <label value="Selection:" />
+	      <molsellist id="targ_molsel" editable="true" errorbox="molsel_err" flex="1"/>
+	    </row>
+	    <!--<row>
+	      <spacer/>
+	      <label id="molsel_err" class="errormsg" noerr="yes" value="Selection error!!"/>
+	      </row>-->
+	    <row align="center">
+	      <label value="Type:" />
+	      <menulist id="sec_type" flex="1">
+		<menupopup>
+		  <menuitem label="Coil" value="0"/>
+		  <menuitem label="&#0946; strand" value="1"/>
+		  <menuitem label="&#0945; helix" value="2"/>
+		  <menuitem label="3-10 helix" value="3"/>
+		  <menuitem label="&#0960; helix" value="4"/>
+		</menupopup>
+	      </menulist>
+	    </row>
+	  </rows>
+	</grid>
+      </groupbox>
+    </radiogroup>
+    
+  </vbox>
+</dialog>
+

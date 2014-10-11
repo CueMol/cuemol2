@@ -1,0 +1,113 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+<?xul-overlay href="chrome://cuemol2/content/property/ribbon-helix-page.xul"?>
+<?xul-overlay href="chrome://cuemol2/content/property/ribbon-sheet-page.xul"?>
+<?xul-overlay href="chrome://cuemol2/content/property/ribbon-coil-page.xul"?>
+<?xul-overlay href="chrome://cuemol2/content/propeditor-generic-page.xul"?>
+<?xul-overlay href="chrome://cuemol2/content/property/renderer-common-page.xul"?>
+
+<!-- -*- xml -*- -->
+
+<dialog
+  id     = "ribbon-propdlg"
+  title  = "Ribbon representation properties"
+  xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  buttons="extra1,extra2,accept,cancel"
+
+  buttonlabelextra1="Reset all to default"
+  ondialogextra1="gMain.resetAllToDefault()"
+
+  buttonlabelextra2="Apply"
+  ondialogextra2="gMain.apply()"
+
+  ondialogaccept="return gMain.onDialogAccept(event);">
+  
+  <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/property/renderer-common-page.js"/>
+
+  <script type="application/javascript" src="chrome://cuemol2/content/propeditor-generic-page.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/property/ribbon-hsc-page.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/property/ribbon-propdlg.js"/>
+
+  <tabbox id="propdlg-tabbox" flex="1">
+    <tabs id="tabs-overlay-target">
+      <tab label="Common" id="ribbon-main-tab"/>
+    </tabs>
+
+    <tabpanels id="tabpanels-overlay-target" flex="1">
+
+      <!-- Ribbon common props -->
+      <tabpanel flex="1" orient="vertical">
+
+	<grid flex="0">
+	  <columns>
+	    <column flex="0"/>
+	    <column flex="1"/>
+	  </columns>
+
+	  <rows>
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Section detail: " flex="0"/>
+	      <numslider id="compage-sectdet" flex="1" size="2"
+		decimalplaces="0" min="2" max="20" increment="1" unit="none"
+		onchange="gComm.validateWidgets(event)"/>
+	    </row>
+
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Axial detail: " flex="0"/>
+	      <numslider id="compage-axdet" flex="1" size="2"
+		decimalplaces="0" min="2" max="20" increment="1" unit="none"
+		onchange="gComm.validateWidgets(event)"/>
+	    </row>
+
+	    <hbox flex="1" align="center" class="propdlg-rowbox">
+	      <hbox flex="1">
+		<checkbox id="compage-smocol" flex="0"
+		  label="Smooth color" oncommand="gComm.validateWidgets(event)"/>
+		<spacer flex="1"/>
+	      </hbox>
+	      <hbox flex="1">
+		<checkbox id="compage-pivotcheck" flex="0"
+		  label="Pivot atom name: "
+		  oncommand="gComm.validateWidgets(event)"/>
+		<textbox id="compage-pivotatom" flex="1" size="3"
+		  onchange="gComm.validateWidgets(event)"/>
+	      </hbox>
+	    </hbox>
+	    
+	    <hbox flex="0" align="center" class="propdlg-rowbox">
+	      <label value="Start type:" />
+	      <menulist id="compage-starttype" flex="0" class="propdlg-menulist"
+		oncommand="gComm.validateWidgets(event)">
+		<menupopup>
+		  <menuitem label="flat" value="flat"/>
+		  <menuitem label="sphere" value="sphere"/>
+		  <menuitem label="none" value="none"/>
+		</menupopup>
+	      </menulist>
+	      <spacer width="5px"/>
+	      <label value="End type:" />
+	      <menulist id="compage-endtype" flex="0" class="propdlg-menulist"
+		oncommand="gComm.validateWidgets(event)">
+		<menupopup>
+		  <menuitem label="flat" value="flat"/>
+		  <menuitem label="sphere" value="sphere"/>
+		  <menuitem label="none" value="none"/>
+		</menupopup>
+	      </menulist>
+	    </hbox>
+	  </rows>
+	</grid>
+	
+	<overlaytarget id="renderer-common-page"/>
+
+	<spacer flex="1"/>
+      </tabpanel>
+
+    </tabpanels>
+  </tabbox>
+
+
+</dialog>
+

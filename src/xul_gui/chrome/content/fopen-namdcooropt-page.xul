@@ -1,0 +1,107 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+<!DOCTYPE window SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+
+<overlay id="fopen-namdcooropt-overlay"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <overlaytarget id="tabs-overlay-target">
+    <tab label="NAMD Coor file options" hidden="true" id="namdcoor_options_tab"/>
+  </overlaytarget>
+  
+  <overlaytarget id="tabpanels-overlay-target">
+    <tabpanel hidden="true" id="namdcoor_options_tabpanel">
+      <hbox align="center">
+	<label value="PSF file:"/>
+	<textbox id="coor-psffile-path"/>
+	<button id="coor-psffile-path-btn" label="Change ..."/>
+      </hbox>
+    </tabpanel>
+  </overlaytarget>
+
+<script type="application/javascript;version=1.8">
+  <![CDATA[
+
+const history_name = "cuemol2.ui.histories.namdcoor.psfpath";
+
+( function () {
+let dlgdata = window.arguments[0];
+let util = require("util");
+let pref = require("preferences-service");
+let psfPathBox = null;
+
+function selectPSFFile(aDefPath)
+{
+  const nsIFilePicker = Ci.nsIFilePicker;
+  let fp = Cc["@mozilla.org/filepicker;1"].createInstance(Ci.nsIFilePicker);
+  
+  fp.displayDirectory = aDefPath.parent;
+  fp.defaultString = aDefPath.leafName;
+  fp.appendFilter("PSF file (*.psf)", "*.psf");
+  fp.init(window, "Select PSF file", nsIFilePicker.modeOpen);
+
+  let res = fp.show();
+  if (res!=nsIFilePicker.returnOK) {
+    return null;
+  }
+  
+  return fp.file.path;
+}
+
+function onInit() {
+  psfPathBox = document.getElementById('coor-psffile-path');
+  try {
+  if (window.gDlgObj.selectShowTab(dlgdata.target[0].reader_name, "namdcoor")) {
+  let rdr = dlgdata.target[0].reader;
+  let path = dlgdata.target[0].path;
+
+  let psf_path_def = null;
+  if (pref.has(history_name)) {
+    psf_path_def = pref.get(history_name);
+  }
+  else {
+    let cpos = util.splitFileName(path, "*.coor");
+    psf_path_def = path.substr(0, cpos) + ".psf";
+  }
+
+  dd("psf_path_def: "+psf_path_def);
+  psfPathBox.value = psf_path_def;
+
+  document.getElementById('coor-psffile-path-btn').addEventListener("command", function() {
+    let res = selectPSFFile(util.createMozFile(path));
+    if (res)
+      psfPathBox.value = res;
+  }, false);
+  }
+  }
+  catch (e) {
+    debug.exception(e);
+  }
+}
+
+addEventListener("load", onInit, false);
+
+dlgdata.ondlgok.push( function (aEvent) {
+  if (document.getElementById("namdcoor_options_tabpanel")) {
+
+  let rdr = dlgdata.target[0].reader;
+  try {
+    var subpath = psfPathBox.value;
+    rdr.setSubPath("topo", subpath);
+
+    pref.set(history_name, subpath);
+  }
+  catch (e) {
+    dd("SetProp error: "+e);
+    debug.exception(e);
+  }
+}
+  
+});
+
+} )();
+  
+    ]]>
+</script>
+</overlay>
+

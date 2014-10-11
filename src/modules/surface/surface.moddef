@@ -1,0 +1,30 @@
+// -*-Mode: C++;-*-
+//
+// $Id: surface.moddef,v 1.5 2011/04/02 15:01:11 rishitani Exp $
+
+#include "MolSurfObj.qif"
+#include "MolSurfRenderer.qif"
+#include "MSMSFileReader.qif"
+#include "ElePotMap.qif"
+#include "OpenDXPotReader.qif"
+//#include "MS2TestRenderer.qif"
+#include "DirectSurfRenderer.qif"
+#include "XYZRFileWriter.qif"
+#include "PQRFileWriter.qif"
+
+module surface
+{
+  init surface::init();
+  fini surface::fini();
+
+  MolSurfObj;
+  MolSurfRenderer;
+  MSMSFileReader;
+  ElePotMap;
+  OpenDXPotReader;
+  // MS2TestRenderer;
+  DirectSurfRenderer;
+  XYZRFileWriter;
+  PQRFileWriter;
+};
+

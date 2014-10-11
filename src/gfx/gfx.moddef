@@ -1,0 +1,23 @@
+// -*-Mode: C++;-*-
+//
+// $Id: gfx.moddef,v 1.10 2011/04/16 08:22:15 rishitani Exp $
+
+#include "AbstractColor.qif"
+#include "Color.qif"
+#include "NamedColor.qif"
+#include "MolColorRef.qif"
+#include "TextImgBuf.qif"
+
+module gfx
+{
+  init gfx::init();
+  fini gfx::fini();
+
+  AbstractColor uuid 91414f2e-ec19-4087-a1d7-bb8a452d6770;
+  Color uuid f0dafa00-bc1a-4521-a61a-d5dbdb4eb42b;
+  NamedColor;
+  MolColorRef;
+  TextImgBuf;
+};
+
+

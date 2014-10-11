@@ -1,0 +1,43 @@
+// -*-Mode: C++;-*-
+//
+// $Id: StreamManager.qif,v 1.8 2010/12/15 00:19:08 rishitani Exp $
+
+#ifndef STREAM_MANAGER_QIF_INCLUDED
+#define STREAM_MANAGER_QIF_INCLUDED
+
+#include <qlib/ByteArray.qif>
+#include <qlib/LScrObject.qif>
+#include "ObjReader.qif"
+
+runtime_class StreamManager
+{
+  client_hdr "StreamManager.hpp";
+  client_name qsys::StreamManager;
+
+  scriptable;
+
+  // 
+  singleton;
+
+  string getReaderInfoJSON();
+  string getWriterInfoJSON();
+  string getInfoJSON2();
+
+  // string getInitRendererNames(string reader_name);
+  string findCompatibleWriterNamesForObj(integer objid);
+
+  object<InOutHandler$> createHandler(string name, integer category);
+
+  // Asynchronous data loading
+  integer loadObjectAsync(object<ObjReader$>);
+  void supplyDataAsync(integer, object<ByteArray$>, integer);
+  object<Object$> waitLoadAsync(integer);
+
+  // XML-string serialization
+  object<ByteArray$> toXML(object<LScrObject$>);
+  object<ByteArray$> toXML2(object<LScrObject$>, string type_ovwr);
+  object<LScrObject$> fromXML(object<ByteArray$>, integer);
+};
+
+#endif // STREAM_MANAGER_QIF_INCLUDED
+

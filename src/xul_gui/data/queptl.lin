@@ -1,0 +1,145 @@
+remarks file toppar/protein.link
+remarks 
+remarks this is a macro to define standard protein peptide bonds
+remarks and termini to generate a protein sequence.
+ 
+set echo=false end
+
+checkversion 1.0
+
+link pepp    head - *     tail + pro     end  { link to pro }
+link pepp    head - *     tail + cpr     end  { link to cpr }
+
+link pept    head - ala   tail + *     end
+link pept    head - arg   tail + *     end
+link pept    head - asn   tail + *     end
+link pept    head - asp   tail + *     end
+link pept    head - cys   tail + *     end
+link pept    head - gln   tail + *     end
+link pept    head - glu   tail + *     end
+link pept    head - gly   tail + *     end
+link pept    head - hish  tail + *     end
+link pept    head - hip   tail + *     end
+link pept    head - his   tail + *     end
+link pept    head - hie   tail + *     end
+link pept    head - hid   tail + *     end
+link pept    head - ile   tail + *     end
+link pept    head - leu   tail + *     end
+link pept    head - lys   tail + *     end
+link pept    head - met   tail + *     end
+link pept    head - mse   tail + *     end
+link pept    head - m3l   tail + *     end
+link pept    head - phe   tail + *     end
+link pept    head - pro   tail + *     end
+link pept    head - cpr   tail + *     end
+link pept    head - ser   tail + *     end
+link pept    head - thr   tail + *     end
+link pept    head - trp   tail + *     end
+link pept    head - tyr   tail + *     end
+link pept    head - val   tail + *     end
+
+first prop    tail + pro       end  { nter for pro }
+first prop    tail + cpr       end  { nter for cpr }
+
+first nter    tail + ala       end
+first nter    tail + arg       end
+first nter    tail + asn       end
+first nter    tail + asp       end
+first nter    tail + cys       end
+first nter    tail + gln       end
+first nter    tail + glu       end
+first nter    tail + gly       end
+first nter    tail + hish      end
+first nter    tail + hip       end
+first nter    tail + his       end
+first nter    tail + hie       end
+first nter    tail + hid       end
+first nter    tail + ile       end
+first nter    tail + leu       end
+first nter    tail + lys       end
+first nter    tail + met       end
+first nter    tail + mse       end
+first nter    tail + m3l       end
+first nter    tail + phe       end
+first nter    tail + ser       end
+first nter    tail + thr       end
+first nter    tail + trp       end
+first nter    tail + tyr       end
+first nter    tail + val       end
+
+last cter    head - ala       end
+last cter    head - arg       end
+last cter    head - asn       end
+last cter    head - asp       end
+last cter    head - cys       end
+last cter    head - gln       end
+last cter    head - glu       end
+last cter    head - gly       end
+last cter    head - hish      end
+last cter    head - hip       end
+last cter    head - his       end
+last cter    head - hie       end
+last cter    head - hid       end
+last cter    head - ile       end
+last cter    head - leu       end
+last cter    head - lys       end
+last cter    head - met       end
+last cter    head - mse       end
+last cter    head - m3l       end
+last cter    head - phe       end
+last cter    head - pro       end
+last cter    head - cpr       end
+last cter    head - ser       end
+last cter    head - thr       end
+last cter    head - trp       end
+last cter    head - tyr       end
+last cter    head - val       end
+
+set echo=true end
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+remarks file toppar/dna-rna.link
+remarks macro to define standard nucleic acid links and termini
+remarks this file has both 3' and 5' terminii without phosphate groups
+remarks
+
+set echo=false end
+
+checkversion 1.0
+
+link  nuc  head - ade  tail + * end
+link  nuc  head - cmp  tail + * end
+link  nuc  head - cyt  tail + * end
+link  nuc  head - gua  tail + * end
+link  nuc  head - thy  tail + * end
+link  nuc  head - uri  tail + * end
+link  nuc  head - psu  tail + * end
+
+link  nuc  head - 5mu  tail + * end
+link  nuc  head - 1ma  tail + * end
+link  nuc  head - 2mg  tail + * end
+link  nuc  head - 7mg  tail + * end
+link  nuc  head - m2g  tail + * end
+link  nuc  head - omg  tail + * end
+link  nuc  head - yyg  tail + * end
+link  nuc  head - h2u  tail + * end
+link  nuc  head - omc  tail + * end
+link  nuc  head - 5mc  tail + * end
+
+first 5ter tail + ade end
+first 5ter tail + cmp end
+first 5ter tail + cyt end
+first 5ter tail + gua end
+first 5ter tail + thy end
+first 5ter tail + uri end
+first 5ter tail + psu end
+
+last  3ter head - ade end
+last  3ter head - cmp end
+last  3ter head - cyt end
+last  3ter head - gua end
+last  3ter head - thy end
+last  3ter head - uri end
+last  3ter head - psu end
+
+set echo=true end

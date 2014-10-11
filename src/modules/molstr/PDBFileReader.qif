@@ -1,0 +1,37 @@
+// -*-Mode: C++;-*-
+//
+// PDB file reader scripting interface
+//
+
+#ifndef PDB_FILE_READER_QIF_INCLUDED
+#define PDB_FILE_READER_QIF_INCLUDED
+
+#include <qsys/ObjReader.qif>
+
+runtime_class PDBFileReader extends ObjReader
+{
+  client_hdr "PDBFileReader.hpp";
+  client_name molstr::PDBFileReader;
+
+  scriptable;
+  smartptr;
+
+  property boolean loadmodel => m_bLoadMultiModel;
+  default loadmodel = false;
+
+  property boolean loadanisou => m_bLoadAnisoU;
+  default loadanisou = true;
+
+  property boolean loadaltconf => m_bLoadAltConf;
+  default loadaltconf = true;
+
+  property boolean build2ndry => m_bBuild2ndry;
+  default build2ndry = true;
+
+  // load segID
+  property boolean loadsegid => m_bLoadSegID;
+  default loadsegid = false;
+};
+
+#endif
+

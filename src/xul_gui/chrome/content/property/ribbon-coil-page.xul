@@ -1,0 +1,71 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+
+<!-- -*- xml -*- -->
+<!DOCTYPE window SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+
+<overlay id="ribbon-coil-page"
+	 xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <overlaytarget id="tabs-overlay-target">
+    <tab label="Coil" id="ribbon-coil-tab"/>
+  </overlaytarget>
+
+  <overlaytarget id="tabpanels-overlay-target">
+    <!-- Ribbon coil props -->
+    <tabpanel flex="1" orient="vertical">
+
+      <groupbox flex="0">
+	<caption label="Coil Section"/>
+
+	<grid flex="0">
+	  <columns>
+	    <column flex="0"/>
+	    <column flex="1"/>
+	  </columns>
+
+	  <rows>
+	    <hbox flex="0" align="center" class="propdlg-rowbox">
+	      <label value="Type:" />
+	      <menulist id="coilpage-secttype" flex="0" class="propdlg-menulist">
+		<menupopup>
+		  <menuitem label="Elliptical" value="elliptical"/>
+		  <menuitem label="Round square" value="roundsquare"/>
+		  <menuitem label="Rectangle" value="rectangle"/>
+		</menupopup>
+	      </menulist>
+	    </hbox>
+
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Width (&#0197;): " flex="0"/>
+	      <numslider id="coilpage-width" flex="1" size="3"
+		decimalplaces="2" min="0" max="5" increment="0.05" unit="none"/>
+	    </row>
+
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Tuber: " flex="0"/>
+	      <numslider id="coilpage-tuber" flex="1" size="3"
+		decimalplaces="1" min="0.2" max="10" increment="0.1" unit="none"/>
+	    </row>
+
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Sharpness: " flex="0"/>
+	      <numslider id="coilpage-sharp" flex="1" size="3"
+		decimalplaces="2" min="0" max="1" increment="0.05" unit="none"/>
+	    </row>
+
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Smoothness: " flex="0"/>
+	      <numslider id="coilpage-smooth" flex="1" size="3"
+		decimalplaces="2" min="0" max="0.5" increment="0.01" unit="none"/>
+	    </row>
+
+	  </rows>
+	</grid>
+      </groupbox>
+
+    </tabpanel>
+  </overlaytarget>
+</overlay>
+

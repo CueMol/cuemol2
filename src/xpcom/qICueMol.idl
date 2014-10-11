@@ -1,0 +1,52 @@
+// -*-Mode: IDL;-*-
+//
+// IDL for CueMol application object
+//
+// $Id: qICueMol.idl,v 1.9 2011/03/10 13:11:55 rishitani Exp $
+
+#include "nsISupports.idl"
+#include "nsIInputStream.idl"
+
+#include "qINativeWidget.idl"
+//#include "nsIVariant.idl"
+//#include "qIObjWrapper.idl"
+
+%{C++
+namespace qlib {
+     class LScriptable;
+}
+%}
+
+interface qIObjWrapper;
+
+[scriptable, uuid(45BD3162-00C6-4c86-B722-E08C9F460CC6)]
+interface qICueMol : nsISupports
+{
+  // initialization/finalization
+  boolean init(in string confpath);
+  void fini();
+  boolean isInitialized();
+
+  /// Get service objects by name
+  qIObjWrapper getService(in string svcname);
+
+  /// Create new object by class name
+  qIObjWrapper createObj(in string clsname);
+
+  /// Create native MolView widget
+  qINativeWidget createNativeWidget();
+
+  ////////////////////////
+  // Byte-array operations
+
+  qIObjWrapper createBAryFromStr(in ACString aString);
+  ACString convBAryToStr(in qIObjWrapper aObj);
+  qIObjWrapper createBAryFromIStream(in nsIInputStream aInputStream);
+
+  // Get message for most recently occured error
+  string getErrMsg();
+
+  void test(in nsISupports arg);
+
+};
+

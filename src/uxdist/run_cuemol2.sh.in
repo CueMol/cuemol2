@@ -1,0 +1,36 @@
+#!/bin/sh
+
+progname="$0"
+curdir=`dirname "$progname"`
+basedir="$curdir/.."
+
+echo current_exe_dir is $curdir
+echo cmd args: ${1+"$@"}
+
+exitcode=1
+XULRUNNER="$basedir/xulrunner/xulrunner"
+APPINI="$basedir/application.ini"
+BINDIR="$curdir"
+LIBDIR="$basedir/lib"
+
+##
+## Run the program
+##
+run_program()
+{
+echo LD_LIBRARY_PATH: $LD_LIBRARY_PATH
+    echo "$XULRUNNER" $APPINI ${1+"$@"}
+    exec "$XULRUNNER" $APPINI ${1+"$@"}
+    exitcode=$?
+}
+
+##
+## Set LD_LIBRARY_PATH
+##
+
+LD_LIBRARY_PATH=${BINDIR}:${LIBDIR}:${LD_LIBRARY_PATH}
+
+
+run_program ${1+"$@"}
+exit $exitcode
+

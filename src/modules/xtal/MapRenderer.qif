@@ -1,0 +1,43 @@
+// -*-Mode: C++;-*-
+//
+// $Id: MapRenderer.qif,v 1.4 2011/02/03 10:39:51 rishitani Exp $
+//
+
+#ifndef MAP_RENDERER_QIF_INCLUDED
+#define MAP_RENDERER_QIF_INCLUDED
+
+#include <qsys/Renderer.qif>
+#include <gfx/Color.qif>
+
+runtime_class MapRenderer extends Renderer
+{
+  client_hdr "MapRenderer.hpp";
+  client_name xtal::MapRenderer;
+  using Color;
+
+  scriptable;
+  abstract;
+  smartptr;
+
+  property real maxLevel => redirect(getMaxLevel, XXX) (readonly);
+  property real minLevel => redirect(getMinLevel, XXX) (readonly);
+
+
+  property object<AbstractColor$> color => redirect(getColor, setColor);
+  default color = gfx::SolidColor::createRGB(0.0, 0.0, 1.0);
+
+  property real siglevel => redirect(getSigLevel, setSigLevel);
+  default siglevel = 1.1;
+
+  property real extent => redirect(getExtent, setExtent);
+  default extent = 15.0;
+  
+  property object<Vector> center => redirect(getCenter, setCenter);
+  default center = qlib::Vector4D();
+
+
+  property real level => redirect(getLevel, setLevel) (nopersist);
+};
+
+#endif
+

@@ -1,0 +1,31 @@
+// -*-Mode: C++;-*-
+//
+// Animation module definition
+//
+
+#include "CamMotion.qif"
+#include "RealPropAnim.qif"
+#include "RendXformAnim.qif"
+#include "SimpleSpin.qif"
+#include "NoopAnimObj.qif"
+#include "MorphMol.qif"
+#include "MolAnim.qif"
+#include "ShowHideAnim.qif"
+#include "SlideInOutAnim.qif"
+
+module anim
+{
+  init anim::init();
+  fini anim::fini();
+
+  CamMotion;
+  RealPropAnim;
+  RendXformAnim;
+  SimpleSpin;
+  NoopAnimObj;
+  MorphMol;
+  MolAnim;
+  ShowHideAnim;
+  SlideInOutAnim;
+};
+

@@ -1,0 +1,233 @@
+<?xml version="1.0"?>
+
+<!-- -*- xml -*- -->
+<!-- XBL binding for color slider -->
+
+<bindings id="colorSliderBindings"
+  xmlns="http://www.mozilla.org/xbl"
+  xmlns:svg="http://www.w3.org/2000/svg"
+  xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  xmlns:xbl="http://www.mozilla.org/xbl">
+  
+  <binding id="colslicore"
+    extends="chrome://global/content/bindings/scale.xml#scale">
+    <resources>
+      <stylesheet src="chrome://cuemol2/content/colorSlider.css"/>
+    </resources>
+
+    <content align="center" pack="center">
+      <xul:slider anonid="slider" class="my-scale-slider" snap="true" flex="1" movetoclick="true"
+	xbl:inherits="disabled,dir,curpos=value,minpos=min,maxpos=max,increment,pageincrement">
+	<xul:thumb anonid="thumb" class="my-scale-thumb" xbl:inherits="disabled"/>
+      </xul:slider>
+    </content>
+
+    <implementation implements="nsISliderListener">
+
+      <method name="valueChanged">
+        <parameter name="which"/>
+        <parameter name="newValue"/>
+        <parameter name="userChanged"/>
+        <body>
+        <![CDATA[
+	  // dump("colorSliderCore.valueChanged() UC:"+userChanged+"\n");
+          switch (which) {
+            case "curpos":
+              this.setAttribute("value", newValue);
+
+	      if (userChanged) {
+	        var changeEvent = document.createEvent("Events");
+                changeEvent.initEvent("change", true, true);
+                this.dispatchEvent(changeEvent);
+	      }
+              break;
+
+            case "minpos":
+              this.setAttribute("min", newValue);
+              break;
+
+            case "maxpos":
+              this.setAttribute("max", newValue);
+              break;
+          }
+        ]]>
+        </body>
+      </method>
+
+      <method name="dragStateChanged">
+        <parameter name="isDragging"/>
+        <body>
+	  // dump("colorSliderCore.dragStateChanged()\n");
+	  var changeEvent = document.createEvent("Events");
+	  changeEvent.initEvent("dragStateChange", true, true);
+	  changeEvent.isDragging = isDragging;
+	  this.dispatchEvent(changeEvent);
+	</body>
+      </method>
+
+    </implementation>
+  </binding>
+
+  <!-- ===================================================================== -->
+
+  <binding id="colorslider"
+    extends="chrome://global/content/bindings/general.xml#basecontrol">
+    <resources>
+      <stylesheet src="chrome://cuemol2/content/colorSlider.css"/>
+    </resources>
+
+    <content align="center" pack="center">
+      <xul:stack flex="1" anonid="stack">
+	<xul:vbox class="my-scale-colorbar">
+	  <svg:svg version="1.1" width="100%" height="7px">
+	    <svg:defs>
+	      <svg:linearGradient id="colpick_grad1">
+		<svg:stop offset="0" stop-color="#000000" anonid="grad_start"/>
+		<svg:stop offset="1" stop-color="#FF0000" anonid="grad_end"/>
+	      </svg:linearGradient>
+	      <svg:linearGradient id="colpick_hue_grad">
+		<svg:stop offset="0" stop-color="#FF0000" anonid="grad_0"/>
+		<svg:stop offset=".16666666666666666666" stop-color="#FFFF00" anonid="grad_60"/>
+		<svg:stop offset=".33333333333333333333" stop-color="#00FF00" anonid="grad_120"/>
+		<svg:stop offset="0.5" stop-color="#00FFFF" anonid="grad_180"/>
+		<svg:stop offset=".66666666666666666666" stop-color="#0000FF" anonid="grad_240"/>
+		<svg:stop offset=".83333333333333333333" stop-color="#FF00FF" anonid="grad_300"/>
+		<svg:stop offset="1" stop-color="#FF0000" anonid="grad_360"/>
+	      </svg:linearGradient>
+	    </svg:defs>
+	    <svg:rect anonid="colpick_rect1" x="0" y="0"
+	      width="100%" height="100%" fill="url(#colpick_grad1)"/>
+	  </svg:svg>
+	</xul:vbox>
+	<xul:colslicore anonid="slider"/>
+      </xul:stack>
+      
+    </content>
+
+    <implementation implements="nsIAccessibleProvider">
+
+      <property name="accessibleType" readonly="true">
+        <getter>
+          return Components.interfaces.nsIAccessibleProvider.XULScale;
+        </getter>
+      </property>
+
+      <property name="value" onget="return this.mSlider._getIntegerAttribute('curpos', 0);"
+                             onset="return this.mSlider._setIntegerAttribute('curpos', val);"/>
+      <property name="min" onget="return this.mSlider._getIntegerAttribute('minpos', 0);"
+                           onset="return this.mSlider._setIntegerAttribute('minpos', val);"/>
+      <property name="max" onget="return this.mSlider._getIntegerAttribute('maxpos', 100);"
+                           onset="return this.mSlider._setIntegerAttribute('maxpos', val);"/>
+      <property name="increment" onget="return this.mSlider._getIntegerAttribute('increment', 1);"
+                                 onset="return this.mSlider._setIntegerAttribute('increment', val);"/>
+      <property name="pageIncrement" onget="return this.mSlider._getIntegerAttribute('pageincrement', 10);"
+                                     onset="return this.mSlider._setIntegerAttribute('pageincrement', val);"/>
+
+      <property name="startColor"
+	onget="return this.getStartColor();"
+	onset="return this.setStartColor(val);"/>
+
+      <property name="endColor"
+	onget="return this.getEndColor();"
+	onset="return this.setEndColor(val);"/>
+
+      <field name="mSlider" readonly="true"/>
+
+      <field name="mStartGrad" readonly="true">
+        document.getAnonymousElementByAttribute(this, "anonid", "grad_start");
+      </field>
+      <field name="mEndGrad" readonly="true">
+        document.getAnonymousElementByAttribute(this, "anonid", "grad_end");
+      </field>
+      <field name="mGradRect" readonly="true">
+        document.getAnonymousElementByAttribute(this, "anonid", "colpick_rect1");
+      </field>
+
+<!--      <field name="_userChanged">false</field>-->
+
+<!--      <property name="_slider" readonly="true">
+        <getter>return this.mSlider;</getter>
+      </property>-->
+
+      <constructor>
+	this.mSlider = document.getAnonymousElementByAttribute(this, "anonid", "slider");
+        <![CDATA[
+          /*var value = parseInt(this.getAttribute("value"), 10);
+          if (!isNaN(value))
+            this.value = value;
+          else if (this.min > 0)
+            this.value = this.min;
+          else if (this.max < 0)
+            this.value = this.max;*/
+        ]]>
+      </constructor>
+
+      <!-- =================================================== -->
+
+      <method name="setHueMode">
+        <body>
+	  this.mGradRect.setAttribute("fill", "url(#colpick_hue_grad)");
+        </body>
+      </method>
+
+      <method name="setHueGrad">
+        <parameter name="aAnonID"/>
+        <parameter name="aHTMLValue"/>
+        <body>
+	  var elem = document.getAnonymousElementByAttribute(this, "anonid", aAnonID);
+	  elem.setAttribute("stop-color", aHTMLValue);
+        </body>
+      </method>
+
+      <method name="setLinerMode">
+        <body>
+	  this.mGradRect.setAttribute("fill", "url(#colpick_grad1)");
+        </body>
+      </method>
+
+      <method name="getStartColor">
+        <body>
+          return this.mStartGrad.getAttribute("stop-color");
+        </body>
+      </method>
+
+      <method name="setStartColor">
+        <parameter name="aValue"/>
+        <body>
+	  this.mStartGrad.setAttribute("stop-color", aValue);
+        </body>
+      </method>
+
+      <method name="getEndColor">
+        <body>
+          return this.mEndGrad.getAttribute("stop-color");
+        </body>
+      </method>
+
+      <method name="setEndColor">
+        <parameter name="aValue"/>
+        <body>
+	  this.mEndGrad.setAttribute("stop-color", aValue);
+        </body>
+      </method>
+
+      <!-- =================================================== -->
+      <method name="decrease">
+        <body>this.mSlider.decrease();</body>
+      </method>
+      <method name="increase">
+        <body>this.mSlider.increase();</body>
+      </method>
+
+      <method name="decreasePage">
+        <body>this.mSlider.decreasePage();</body>
+      </method>
+      <method name="increasePage">
+        <body>this.mSlider.increasePage();</body>
+      </method>
+
+    </implementation>
+  </binding>
+
+</bindings>
+

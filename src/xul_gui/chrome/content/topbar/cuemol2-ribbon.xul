@@ -1,0 +1,238 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+<!DOCTYPE overlay SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+
+<overlay id="cuemol2-ribbon-overlay"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <overlaytarget id="ribbon-overlay-target">
+
+    <script type="application/javascript" src="tool-ribbon.js"/>
+    <script type="application/javascript" src="navi-toolribbon.js"/>
+    <script type="application/javascript" src="measure-toolribbon.js"/>
+
+    <script type="application/javascript">
+      try {
+      window.gToolRibbon = new cuemolui.ToolRibbon("main_view", "tool-ribbon-tabcontainer");
+      window.gToolRibbon.registerTool(new cuemolui.NaviToolRibbon("navigate"));
+      window.gToolRibbon.registerTool(new cuemolui.MeasToolRibbon("measure"));
+      } catch (e) {
+      debug.exception(e);
+      }
+    </script>
+
+    <tabbox class="ribbon-tabbox" flex="1">
+      <hbox flex="1" align="center">
+	<tabs class="ribbon-tabs" id="tool-ribbon-tabcontainer" flex="1">
+	  <tab class="ribbon-tab" id="navigate-ribbon-tab" label="Home"/>
+	  <tab class="ribbon-tab" id="measure-ribbon-tab" label="Measure"/>
+	</tabs>
+
+	<image flex="0"
+	  class="ribbon-collapse-button"
+	  id="ribbon-collapse-button"
+	  tooltiptext="collapse/expand"
+	  onclick="gToolRibbon.onToggleCollapse(event)"/>
+      </hbox>
+
+      <tabpanels flex="0" id="ribbon-tabpanels" class="ribbon-tabpanels" persist="collapsed">
+
+	<!-- Home/Navigation toolbar -->
+	<tabpanel flex="1" id="navigate-ribbon-tabpanel" class="ribbon-tabpanel">
+	  <toolbar class="ribbon-bar">
+	    <toolbarspacer class="ribbon-toolbar-spacer"/>
+
+	    <toolbarbutton flex="0" id="navi-ribbon-newtab"
+	      class="ribbon-toolbar-button"
+	      image="chrome://cuemol2/content/images/toolbtn-newtab1.png"
+	      command="cmd_new_tab"/>
+	    <toolbarbutton flex="0" id="navi-ribbon-fileopen"
+	      class="ribbon-toolbar-button"
+	      image="chrome://cuemol2/content/images/toolbtn-fopen1.png"
+	      command="cmd_file_open"/>
+	    <toolbarbutton flex="0" id="navi-ribbon-filesaveas"
+	      class="ribbon-toolbar-button"
+	      image="chrome://cuemol2/content/images/toolbtn-fsaveas1.png"
+	      command="cmd_file_save_as"/>
+
+	    <toolbarseparator />
+
+	    <toolbarbutton flex="0" id="navi-ribbon-sceneopen"
+	      class="ribbon-toolbar-button"
+	      image="chrome://cuemol2/content/images/toolbtn-sceneopen1.png"
+	      command="cmd_open_scene"/>
+	    <toolbarbutton flex="0" id="navi-ribbon-scenereload"
+	      class="ribbon-toolbar-button"
+	      image="chrome://cuemol2/content/images/toolbtn-scene-reload1.png"
+	      command="cmd_reload_scene"/>
+	    <toolbarbutton flex="0" id="navi-ribbon-scenesave"
+	      class="ribbon-toolbar-button"
+	      image="chrome://cuemol2/content/images/toolbtn-scene-save1.png"
+	      command="cmd_save_scene"/>
+
+	    <toolbarseparator />
+
+	    <toolbarbutton flex="0" id="navi-ribbon-getpdb"
+	      class="ribbon-toolbar-button"
+	      image="chrome://cuemol2/content/images/toolbtn-getpdb1.png"
+	      tooltiptext="&open_PDB.label;"
+	      oncommand="gQm2Main.onOpenPDBsite();"/>
+
+	    <toolbarseparator />
+
+	    <toolbarbutton flex="0" id="navi-ribbon-undo"
+	      type="menu-button"
+	      class="ribbon-toolbar-button undo-imgbutton"
+	      command="cmd_undo">
+	      <menupopup id="navi-ribbon-undo-popup"
+		onpopupshowing="gQm2Main.populateUndoMenu(event)"
+		oncommand="gQm2Main.popupUndo(event)"/>
+	    </toolbarbutton>
+	    <toolbarbutton flex="0" id="navi-ribbon-redo"
+	      type="menu-button"
+	      class="ribbon-toolbar-button redo-imgbutton"
+	      command="cmd_redo">
+	      <menupopup id="navi-ribbon-redo-popup"
+		onpopupshowing="gQm2Main.populateRedoMenu(event)"
+		oncommand="gQm2Main.popupRedo(event)"/>
+	    </toolbarbutton>
+
+	    <toolbarspacer class="ribbon-toolbar-spacer"/>
+	    <toolbarseparator />
+	    <toolbarspacer class="ribbon-toolbar-spacer"/>
+
+	    <toolbarbutton flex="0" type="radio" group="ribbon-navi-radio"
+	      label="Rotate"
+	      id="navi-ribbon-arrowbtn"
+	      image="chrome://cuemol2/content/images/toolbtn-arrow1.png"
+	      class="ribbon-toolbar-radiobutton"
+	      checked="true"/>
+	    <toolbarbutton label="Rect select" flex="0" type="radio"
+	      image="chrome://cuemol2/content/images/toolbtn-rect1.png"
+	      id="navi-ribbon-rectbtn" group="ribbon-navi-radio"
+			   class="ribbon-toolbar-radiobutton"/>
+	    <!--<toolbarbutton label="Lasso select" flex="0" type="radio"
+	      disabled="true" group="ribbon-navi-radio"
+			   class="ribbon-toolbar-radiobutton"/>-->
+	  </toolbar>
+	</tabpanel>
+
+	<!-- Measure toolbar -->
+	<tabpanel flex="0" id="measure-ribbon-tabpanel" class="ribbon-tabpanel">
+	  <toolbar class="ribbon-bar" align="center">
+	    <toolbarbutton label="Distance" flex="0" type="radio" 
+	      group="ribbon-meas-radio" class="ribbon-toolbar-radiobutton"
+	      id="measure-ribbon-distbtn"
+	      image="chrome://cuemol2/content/images/toolbtn-meas1.png"
+	      checked="true"/>
+	    <toolbarbutton label="Angle" flex="0" type="radio"
+	      group="ribbon-meas-radio" class="ribbon-toolbar-radiobutton"
+	      id="measure-ribbon-anglbtn"
+	      image="chrome://cuemol2/content/images/toolbtn-angle1.png"
+	      />
+	    <toolbarbutton label="Torsion" flex="0" type="radio"
+	      group="ribbon-meas-radio" class="ribbon-toolbar-radiobutton"
+	      id="measure-ribbon-torsbtn"
+	      />
+	    <label value="Renderer name:"/>
+	    <menulist id="measure-ribbon-tgtlist" value="measure"
+		      editable="true">
+	      <menupopup>
+		<menuitem label="measure"/>
+	      </menupopup>
+	    </menulist>
+	  </toolbar>
+	</tabpanel>
+      </tabpanels>
+    </tabbox>
+
+    <popupset>
+      <!-- NaviTool popup menu -->
+      <menupopup id="navi-ctxtmenu-atom">
+	<menuitem id="navi-ctxtmenu-atomlabel" label="atom_label"/>
+	<menuitem id="navi-ctxtmenu-symmlabel" class="ctxtmenu-symm"
+	  label="symm_label" hidden="true"/>
+
+	<menuseparator/>
+
+	<menuitem label="Center at this atom"
+	  id="navi-ctxtmenu-centerat"/>
+
+	<menuseparator/>
+
+	<menuitem label="Select this atom"
+	  id="navi-ctxtmenu-selectatom"/>
+	    
+	<menuitem label="Select this residue"
+	  id="navi-ctxtmenu-selectresid"/>
+	    
+	<menuitem label="Select this chain"
+	  id="navi-ctxtmenu-selectchain"/>
+	    
+	<menuitem label="Select this molecule"
+	  id="navi-ctxtmenu-selectmol"/>
+
+	<menuseparator/>
+
+	<menu label="Add Select">
+	  <menupopup>
+	    <menuitem label="This atom"
+	      id="navi-ctxtmenu-addselectatom"/>
+	    
+	    <menuitem label="This residue"
+	      id="navi-ctxtmenu-addselectresid"/>
+	    
+	    <menuitem label="This chain"
+	      id="navi-ctxtmenu-addselectchain"/>
+
+	  </menupopup>
+	</menu>
+
+	<menuseparator/>
+
+	<menuitem label="Unselect"
+		  id="navi-ctxtmenu-unselectmol"/>
+	<menuitem label="Invert Sel"
+		  id="navi-ctxtmenu-invertmolsel"/>
+
+	<menuitem label="Toggle Sidechain"
+	  id="navi-ctxtmenu-togglesidech"/>
+
+	<menu label="Around Byresid">
+	  <menupopup>
+	    <menuitem label="3 &#0197;" id="navi-ctxtmenu-arbyres-3"/>
+	    <menuitem label="5 &#0197;" id="navi-ctxtmenu-arbyres-5"/>
+	    <menuitem label="7 &#0197;" id="navi-ctxtmenu-arbyres-7"/>
+	    <menuitem label="10 &#0197;" id="navi-ctxtmenu-arbyres-10"/>
+	  </menupopup>
+	</menu>
+	<menu label="Around">
+	  <menupopup>
+	    <menuitem label="3 &#0197;" id="navi-ctxtmenu-arnd-3"/>
+	    <menuitem label="5 &#0197;" id="navi-ctxtmenu-arnd-5"/>
+	    <menuitem label="7 &#0197;" id="navi-ctxtmenu-arnd-7"/>
+	    <menuitem label="10 &#0197;" id="navi-ctxtmenu-arnd-10"/>
+	  </menupopup>
+	</menu>
+
+	<menuseparator hidden="true" class="ctxtmenu-symm"/>
+
+	<menuitem label="Center at SYMM atom"
+	  id="navi-ctxtmenu-centerat-symm" hidden="true" class="ctxtmenu-symm"/>
+
+	<menuitem label="Create this SYMM mol ..."
+	  id="navi-ctxtmenu-create-symm" hidden="true" class="ctxtmenu-symm"/>
+
+      </menupopup>
+
+      <!-- NaviTool generic popup menu -->
+      <menupopup id="navi-cmenu-gen">
+	<menuitem id="navi-cmenu-gen-msg" label="message"/>
+	<menuitem id="navi-cmenu-gen-centerat" label="Center at here"/>
+      </menupopup>
+
+    </popupset>
+
+  </overlaytarget>
+</overlay>
+

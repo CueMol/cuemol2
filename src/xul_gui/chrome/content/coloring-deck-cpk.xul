@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+
+<!DOCTYPE overlay SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+
+<overlay id="coloring-deck-cpk-overlay"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <overlaytarget id="colpanel-deck">
+
+    <!--  for CPKColoring (index=3) -->
+    <vbox id="coloring-deck-cpk">
+      <description value="CPK coloring:"/>
+      <grid style="overflow-y: auto;" flex="1">
+	<columns>
+	  <column/><column flex="1"/>
+	</columns>
+	<rows>
+	  <row align="center">
+	    <label value="&elem.carbon;"/>
+	    <mycolpicker id="cpk_col_C"
+	      onchange="cuemolui.panels.paint.onCPKColChanged(event)"/>
+	  </row>
+	  <row align="center">
+	    <label value="&elem.nitrogen;"/>
+	    <mycolpicker id="cpk_col_N"
+	      onchange="cuemolui.panels.paint.onCPKColChanged(event)"/>
+	  </row>
+	  <row align="center">
+	    <label value="&elem.oxygen;"/>
+	    <mycolpicker id="cpk_col_O"
+	      onchange="cuemolui.panels.paint.onCPKColChanged(event)"/>
+	  </row>
+	  <row align="center">
+	    <label value="&elem.sulfur;"/>
+	    <mycolpicker id="cpk_col_S"
+	      onchange="cuemolui.panels.paint.onCPKColChanged(event)"/>
+	  </row>
+	  <row align="center">
+	    <label value="&elem.phosphorus;"/>
+	    <mycolpicker id="cpk_col_P"
+	      onchange="cuemolui.panels.paint.onCPKColChanged(event)"/>
+	  </row>
+	  <row align="center">
+	    <label value="&elem.hydrogen;"/>
+	    <mycolpicker id="cpk_col_H"
+	      onchange="cuemolui.panels.paint.onCPKColChanged(event)"/>
+	  </row>
+	  <row align="center">
+	    <label value="&elem.others;"/>
+	    <mycolpicker id="cpk_col_X"
+	      onchange="cuemolui.panels.paint.onCPKColChanged(event)"/>
+	  </row>
+	</rows>
+      </grid>
+    </vbox>
+
+  </overlaytarget>
+</overlay>
+

@@ -1,0 +1,32 @@
+// -*-Mode: C++;-*-
+//
+//  UnitCellRenderer interface definition
+//
+
+#ifndef UNIT_CELL_RENDERER_QIF_INCLUDED
+#define UNIT_CELL_RENDERER_QIF_INCLUDED
+
+#include <qsys/Renderer.qif>
+
+runtime_class UnitCellRenderer extends Renderer
+{
+  client_hdr "UnitCellRenderer.hpp";
+  client_name symm::UnitCellRenderer;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  property real width => redirect(getLineWidth, setLineWidth);
+  default width = 1.0;
+  
+  property object<AbstractColor$> color => redirect(getColor, setColor);
+  default color = gfx::SolidColor::createRGB(1.0, 1.0, 0.0);
+
+  property object<AbstractColor$> labelcolor => redirect(getLabelColor, setLabelColor);
+  default labelcolor = gfx::SolidColor::createRGB(1.0, 0.0, 0.0);
+
+};
+
+#endif
+

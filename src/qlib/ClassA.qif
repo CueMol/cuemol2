@@ -1,0 +1,79 @@
+// -*-Mode: C++;-*-
+//
+// $Id: ClassA.qif,v 1.13 2009/08/28 14:48:30 rishitani Exp $
+
+// C++ name: ClassA
+// C++ class decl: TestClass.hpp
+// Script/Runtime name: ClassA
+
+// Wrapper name: ClassA_wrap
+// Wrapper class decl file: ClassA_wrap.hpp
+// Wrapper class impl file: ClassA_wrap.cpp
+
+// code for class factory (runtime creation) is always generated
+
+// include "ClassS1_wrap.hpp"
+// include "ClassS2_wrap.hpp"
+
+#include "Vector.qif"
+
+runtime_class ClassA
+{
+  uuid c6ab1202-10ca-480a-bdf8-892214a8e346;
+
+  // interface qIClassA
+  // wrapper ClassA_wrap;
+  // extends ClassS1_wrap, ClassS2_wrap, ...
+
+  // client_hdr "ClassA.hpp";
+  client_hdr "TestClass.hpp";
+
+  // client_name ClassA;
+
+  scriptable;
+
+  // cloneable option generates instance creation with copy constructor
+  cloneable;
+  smartptr;
+
+  // persistent;
+
+  property boolean prop0 => m_bProp0;
+ default prop0 = false;
+
+  property integer prop1 => m_nProp1;
+ default prop1 = 246;
+
+  property real realprop => m_dProp;
+ default realprop = 345.678;
+
+  property string strprop => m_strProp;
+ default strprop = "abcd";
+
+  property object<Vector> vecprop => m_vecProp;
+  
+  property object<ClassA$> prop3 => m_pProp3;
+
+  property integer prop4 => prop4 (redirect);
+
+  enumdef enumprop {
+    foo = ClassA::ENUM_TYPE0;
+    bar = ClassA::ENUM_TYPE1;
+    baz = ClassA::ENUM_TYPE2;
+    qux = ClassA::ENUM_TYPE3;
+  }
+  property enum enumprop => m_nEnumProp;
+  default enumprop = "bar";
+
+  //////////
+
+  void foo(integer, string, real);
+
+  void foo2(object<ClassA>, object<ClassA$>);
+
+  object<ClassA$> foo3();
+
+  string toString();
+
+};
+

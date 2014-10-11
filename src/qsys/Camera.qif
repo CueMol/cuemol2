@@ -1,0 +1,74 @@
+// -*-Mode: C++;-*-
+//
+// Scripting interface of the Camera object
+//
+// $Id: Camera.qif,v 1.5 2011/02/20 09:34:26 rishitani Exp $
+
+#ifndef CAMERA_QIF_INCLUDE_
+#define CAMERA_QIF_INCLUDE_
+
+#include "qlib/Vector.qif"
+#include "qlib/Quat.qif"
+
+runtime_class Camera
+{
+  //uuid ;
+
+  client_hdr "Camera.hpp";
+  client_name qsys::Camera;
+
+  scriptable;
+  cloneable;
+  smartptr;
+
+  /// Name of the camera
+  property string name => redirect(getName, setName);
+
+  /// Source of the camera (empty if embeded)
+  property string src => redirect(getSource, XXX) (readonly);
+
+  property real zoom => redirect(getZoom, setZoom);
+  default zoom = 50.0;
+
+  property real slab => redirect(getSlabDepth, setSlabDepth);
+  default slab = 50.0;
+
+  property object<Vector> center => redirect(getCenter, setCenter);
+  property object<Quat> rotation => redirect(getRotQuat, setRotQuat);
+
+  property real distance => redirect(getCamDist, setCamDist);
+  default distance = 200.0;
+
+  property real stereoDist => m_fStereoDist;
+  default stereoDist = 1.0;
+
+  // Stereo mode
+  enumdef stereoMode {
+    none = qsys::Camera::CSM_NONE;
+    para = qsys::Camera::CSM_PARA;
+    cross = qsys::Camera::CSM_CROSS;
+    hardware = qsys::Camera::CSM_HW_QBUF;
+  }
+  property enum stereoMode => redirect(getStereoMode, setStereoMode);
+  default stereoMode = "none";
+
+  property boolean perspec => m_fPerspec;
+  default perspec = false;
+
+  // Center mark
+  enumdef centerMark {
+    none = qsys::Camera::CCM_NONE;
+    crosshair = qsys::Camera::CCM_CROSS;
+    axis = qsys::Camera::CCM_AXIS;
+    // cube = qsys::Camera::CCM_CUBE;
+  }
+  property enum centerMark => redirect(getCenterMark, setCenterMark);
+  default centerMark = "crosshair";
+
+  // TO DO: Origin mark
+
+
+};
+
+#endif
+

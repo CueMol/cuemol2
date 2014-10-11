@@ -1,0 +1,37 @@
+// -*-Mode: C++;-*-
+//
+// Process Manager interface
+
+#ifndef PROCESS_MANAGER_QIF
+#define PROCESS_MANAGER_QIF
+
+runtime_class ProcessManager
+{
+  client_hdr "LProcMgr.hpp";
+  client_name qlib::LProcMgr;
+
+  scriptable;
+  singleton;
+
+  property integer queue_len => redirect(getQueueLen, XXX) (readonly);
+
+  void setSlotSize(integer n);
+  integer getSlotSize();
+
+  integer queueTask(string path, string args, string waitfor);
+  boolean isAlive(integer);
+  integer getTaskStatus(integer) => getState;
+  void waitForExit(integer);
+  void kill(integer);
+
+  string peekResultOutput(integer);
+  string getResultOutput(integer);
+  void setLogPath(string logpath);
+  
+  boolean isEmpty();
+  void killAll();
+  string doneTaskListJSON();
+};
+
+#endif
+

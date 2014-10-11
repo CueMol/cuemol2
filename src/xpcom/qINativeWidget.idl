@@ -1,0 +1,54 @@
+// -*-Mode: IDL;-*-
+//
+// IDL for native window/widget handler
+//
+
+#include "nsISupports.idl"
+#include "nsIBaseWindow.idl"
+#include "nsIDocShell.idl"
+#include "nsIDOMEvent.idl"
+
+[scriptable, uuid(95c2ee8d-c3aa-4e9b-9e3b-2ff61b7186e6)]
+interface qINativeWidget : nsISupports
+{
+  /// setup native window object using nsIBaseWindow interface
+  void setup(in nsIDocShell docshell, in nsIBaseWindow basewin);
+
+  /// perform setup (creating view or window, etc)
+  void load(in long scid, in long vwid);
+
+  /// perform cleanup on unloading
+  void unload();
+
+  /// resize frame
+  void resize(in long x, in long y, in long w, in long h);
+
+  /// show
+  void show();
+
+  /// hide
+  void hide();
+
+  /// re-initialize native widget (for changing stereo mode)
+  boolean reload();
+
+  /// handle DOM event
+  void handleEvent(in nsIDOMEvent aEvent);
+
+  /// use OpenGL Shader
+  attribute boolean useGlShader;
+
+  /// use multi-touch trackpad for scrolling (for MacOSX only)
+  attribute boolean useMultiPad;
+
+  /// emulate mouse R button by Ctrl+L button (for MacOSX only)
+  attribute boolean useRbtnEmul;
+
+  /// Use HiDPI display (display with sclfac!=1)
+  attribute boolean useHiDPI;
+
+  attribute long sceneID;
+  attribute long viewID;
+
+};
+

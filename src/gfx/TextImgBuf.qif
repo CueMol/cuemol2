@@ -1,0 +1,39 @@
+// -*-Mode: C++;-*-
+//
+
+#ifndef TEXT_IMAGE_BUFFER_QIF_INCLUDED
+#define TEXT_IMAGE_BUFFER_QIF_INCLUDED
+
+runtime_class TextImgBuf
+{
+  client_hdr "TextImgBuf.hpp";
+  client_name gfx::TextImgBuf;
+
+  scriptable;
+  cloneable;
+  smartptr;
+
+  property string text => redirect(getText, setText);
+  property string font => redirect(getFont, setFont);
+
+  property integer width => redirect(getWidth, setWidth);
+  property integer height => redirect(getHeight, setHeight);
+
+  //////////
+  
+  void resize(integer nsize);
+
+  void setAt(integer i, integer value);
+  integer getAt(integer i);
+
+  void setAt2D(integer x, integer y, integer value);
+  integer getAt2D(integer x, integer y);
+
+  // string toString();
+
+  // boolean equals(object<TextImgBuf$>);
+};
+
+#endif
+
+

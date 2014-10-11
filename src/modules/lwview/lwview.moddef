@@ -1,0 +1,17 @@
+// -*-Mode: C++;-*-
+//
+
+#include "LWObject.qif"
+#include "LWRenderer.qif"
+#include "LWViewerManager.qif"
+
+module lwview
+{
+  init lwview::init();
+  fini lwview::fini();
+
+  LWObject;
+  LWRenderer;
+  LWViewerManager;
+};
+

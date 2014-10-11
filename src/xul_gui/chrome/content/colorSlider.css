@@ -1,0 +1,38 @@
+@namespace url("http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul");
+
+/* ::::: scale ::::: */
+
+.my-scale-slider {
+  -moz-appearance: none;
+/*  -moz-appearance: scale-horizontal;*/
+  border: none;
+/*border: 1px solid black;*/
+  background: none;
+/*  background: url("chrome://global/skin/scale/scale-tray-horiz.gif") 0% 50% repeat-x;*/
+  margin: 0px; /*none;*/
+  height: 12px;
+/*  width: 100px;*/
+}
+
+/* ::::: scale thumb ::::: */
+
+.my-scale-thumb {
+  -moz-appearance: none;
+  background: url("chrome://cuemol2/content/arrow-up-sharp.gif") no-repeat;
+  background-position: bottom;
+  border: none;
+  /*background-color: none;*/
+  min-width: 9px;
+  min-height: 5px;
+}
+
+.my-scale-colorbar {
+  border: 1px solid black;
+  height: 7px;	
+  margin: 0px 4px 5px 4px;
+}
+
+colslicore {
+  -moz-binding: url("chrome://cuemol2/content/colorSlider.xml#colslicore");
+}
+

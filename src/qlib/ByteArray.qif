@@ -1,0 +1,46 @@
+// -*-Mode: C++;-*-
+//
+// Byte Array Script Interface
+//
+
+#ifndef BYTE_ARRAY_QIF_INCLUDED
+#define BYTE_ARRAY_QIF_INCLUDED
+
+// C++ name: LByteArray
+// C++ class decl: LByteArray.hpp
+// Script/Runtime name: ByteArray
+
+// Wrapper name: ByteArray_wrap
+// Wrapper class decl file: ByteArray_wrap.hpp
+// Wrapper class impl file: ByteArray_wrap.cpp
+
+runtime_class ByteArray
+{
+  client_hdr "LByteArray.hpp";
+  client_name qlib::LByteArray;
+
+  scriptable;
+  cloneable;
+  smartptr;
+
+  //
+  // properties
+  //
+
+  property integer length => redirect(getSize, XXX) (readonly);
+
+  //
+  // methods
+  //
+
+  integer getValue(integer);
+
+  void setValue(integer, integer);
+
+  // string toString();
+
+};
+
+#endif
+
+

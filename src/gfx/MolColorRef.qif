@@ -1,0 +1,34 @@
+// -*-Mode: C++;-*-
+//
+//  Special color object for molcolor reference impl.
+//
+
+#ifndef MOL_COLOR_REF_QIF_INCLUDED
+#define MOL_COLOR_REF_QIF_INCLUDED
+
+#include "AbstractColor.qif"
+
+runtime_class MolColorRef extends AbstractColor
+{
+  client_hdr "MolColorRef.hpp";
+  client_name gfx::MolColorRef;
+
+  scriptable;
+  cloneable;
+  smartptr;
+
+  property string material => redirect(getMaterial, setMaterial);
+  default material = "";
+  property real alpha => redirect(getAlpha, setAlpha);
+  default alpha = -1.0;
+  
+  property real mod_h => redirect(getModHue, setModHue);
+  default mod_h = 0.0;
+  property real mod_s => redirect(getModSat, setModSat);
+  default mod_s = 0.0;
+  property real mod_b => redirect(getModBri, setModBri);
+  default mod_b = 0.0;
+};
+
+#endif
+

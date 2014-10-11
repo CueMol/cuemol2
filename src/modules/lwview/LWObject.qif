@@ -1,0 +1,21 @@
+// -*-Mode: C++;-*-
+//
+// Light-weight object scripting interface
+//
+
+#ifndef LW_OBJECT_QIF_INCLUDED
+#define LW_OBJECT_QIF_INCLUDED
+
+#include <qsys/Object.qif>
+
+runtime_class LWObject extends Object
+{
+  client_hdr "LWObject.hpp";
+  client_name lwview::LWObject;
+
+  scriptable;
+  smartptr;
+};
+
+#endif
+

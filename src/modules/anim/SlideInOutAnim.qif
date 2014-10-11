@@ -1,0 +1,35 @@
+// -*-Mode: C++;-*-
+//
+// Animation object scripting interface
+//
+
+#ifndef SLIDE_INOUT_ANIM_QIF_INCLUDED
+#define SLIDE_INOUT_ANIM_QIF_INCLUDED
+
+#include <qsys/anim/AnimObj.qif>
+
+runtime_class SlideInOutAnim extends AnimObj
+{
+  client_hdr "SlideInOutAnim.hpp";
+  client_name anim::SlideInOutAnim;
+
+  // interface attributes
+  scriptable;
+  cloneable;
+  smartptr;
+
+  // properties
+  property string rend => redirect(getRendNames, setRendNames);
+
+  property boolean hide => redirect(isHide, setHide);
+  default hide = false;
+
+  property real direction => redirect(getDirection, setDirection);
+  default direction = 0.0;
+
+  property real distance => redirect(getDistance, setDistance);
+  default distance = 1.0;
+};
+
+#endif
+

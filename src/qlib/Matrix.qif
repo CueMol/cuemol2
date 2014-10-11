@@ -1,0 +1,45 @@
+// -*-Mode: C++;-*-
+//
+// $Id: Matrix.qif,v 1.4 2011/04/09 12:17:09 rishitani Exp $
+
+#ifndef MATRIX_QIF_INCLUDED
+#define MATRIX_QIF_INCLUDED
+
+// C++ name: LScrMatrix4D
+// C++ class decl: LScrMatrix4D.hpp
+// Script/Runtime name: Matrix
+
+#include "Vector.qif"
+
+runtime_class Matrix
+{
+  uuid b043fe2e-e75d-487c-9958-cdbaf94e4436;
+
+  client_hdr "LScrMatrix4D.hpp";
+  client_name qlib::LScrMatrix4D;
+
+  scriptable;
+  cloneable;
+  smartptr;
+
+  // methods
+  string toString();
+
+  boolean equals(object<Matrix>);
+  boolean isZero();
+
+  void setAt(integer, integer, real);
+  real getAt(integer, integer);
+
+  object<Matrix> scale(real);
+  object<Matrix> divide(real);
+  object<Matrix> add(object<Matrix>);
+  object<Matrix> sub(object<Matrix>);
+  object<Matrix> mul(object<Matrix>);
+  object<Vector> mulvec(object<Vector>);
+
+  void setUnit();
+};
+
+#endif
+

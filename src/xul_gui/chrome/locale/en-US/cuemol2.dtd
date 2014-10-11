@@ -1,0 +1,128 @@
+<!ENTITY cuemol2.title   "CueMol2">
+
+<!-- ********** Main Menu ********** -->
+
+<!ENTITY menu_file.label "File">
+<!ENTITY menu_file.accesskey "F">
+
+<!--
+<!ENTITY new_window.label "New Window">
+<!ENTITY new_window.accesskey "N">
+<!ENTITY new_window.commandkey "n">
+-->
+
+<!ENTITY new_tab.label "New Tab">
+<!ENTITY new_tab.accesskey "N">
+<!ENTITY new_tab.commandkey "n">
+
+<!ENTITY open_file.label "Open File...">
+<!ENTITY open_file.accesskey "O">
+<!ENTITY open_file.commandkey "o">
+<!ENTITY save_file_as.label "Save File As...">
+<!ENTITY save_file_as.accesskey "A">
+<!ENTITY save_file_as.commandkey "">
+
+<!ENTITY open_scene.label "Open Scene...">
+<!ENTITY open_scene.accesskey "P">
+<!ENTITY reload_scene.label "Reload Scene">
+<!ENTITY reload_scene.accesskey "R">
+<!ENTITY reload_scene.commandkey "r">
+<!ENTITY save_scene.label "Save Scene">
+<!ENTITY save_scene.accesskey "S">
+<!ENTITY save_scene.commandkey "s">
+<!ENTITY save_scene_as.label "Save Scene As...">
+
+<!ENTITY open_PDB.label "Get PDB using accession code ...">
+<!ENTITY saveCurrCam.label "Save current view">
+
+<!ENTITY close_tab.label "Close Tab">
+
+<!ENTITY menu_edit.label "Edit">
+<!ENTITY menu_edit.accesskey "E">
+
+<!ENTITY edit_undo.label "Undo">
+<!ENTITY edit_undo.accesskey "U">
+<!ENTITY edit_undo.commandkey "z">
+
+<!ENTITY edit_redo.label "Redo">
+<!ENTITY edit_redo.accesskey "R">
+<!ENTITY edit_redo.commandkey "y">
+
+<!ENTITY edit_config.label "Options ...">
+<!ENTITY edit_config.accesskey "O">
+<!ENTITY edit_config.commandkey "k">
+
+<!ENTITY menu_render.label "Render">
+<!ENTITY menu_render.accesskey "R">
+
+<!ENTITY render_exportscene.label "Export scene...">
+<!ENTITY render_exportscene.accesskey "E">
+
+<!ENTITY menu_tools.label "Tools">
+<!ENTITY menu_tools.accesskey "T">
+
+<!ENTITY menu_window.label "Window">
+<!ENTITY menu_window.accesskey "W">
+
+<!ENTITY menu_help.label "Help">
+<!ENTITY menu_help.accesskey "H">
+
+<!ENTITY help_about.label "About CueMol2">
+<!ENTITY help_about.accesskey "A">
+
+<!ENTITY quitApplicationCmd.label       "Quit"> 
+<!ENTITY quitApplicationCmd.accesskey   "Q">
+
+<!-- ********** MacOSX specific ********** -->
+
+<!ENTITY configCmdMac.label "Preferences ...">
+<!ENTITY configCmdMac.commandkey   ",">
+
+<!ENTITY servicesMenuMac.label          "Services">
+
+<!ENTITY hideThisAppCmdMac.label        "Hide &brandShortName;">
+<!ENTITY hideThisAppCmdMac.commandkey   "H">
+
+<!ENTITY hideOtherAppsCmdMac.label      "Hide Others">
+<!ENTITY hideOtherAppsCmdMac.commandkey "H">
+
+<!ENTITY showAllAppsCmdMac.label        "Show All">
+
+<!ENTITY quitApplicationCmdWin.label       "Exit"> 
+<!ENTITY quitApplicationCmdWin.accesskey   "x">
+<!ENTITY quitApplicationCmdMac.label    "Quit &brandShortName;">
+<!ENTITY quitApplicationCmdMac.key      "Q">
+
+<!ENTITY help_aboutCmdMac.label "About &brandShortName;">
+
+<!-- ********** About dialog ********** -->
+
+<!ENTITY aboutDialog.title           "About &brandShortName;">
+<!ENTITY aboutDialog.version         "Version">
+<!ENTITY aboutDialog.build           "Build ID">
+<!ENTITY aboutDialog.copyrightInfo   "&#169;1998-2014 Contributors. All Rights Reserved. CueMol and the 
+                                     CueMol logos are trademarks of the BKR Laboratory.  All rights 
+                                     reserved.">
+
+<!-- ********** Panels ********** -->
+
+<!ENTITY workspacePanel.title "Scene">
+<!ENTITY workspacePanel.object_tree.name "Name">
+<!ENTITY denmapPanel.title "Density map">
+
+<!ENTITY symmetryPanel.title "Symmetry">
+<!ENTITY symmetryPanel.sg "S.g.">
+<!ENTITY symmetryPanel.symmol "Symm mol">
+<!ENTITY symmetryPanel.unitcell "Unit cell">
+
+<!ENTITY coloringPanel.title "Color">
+
+<!-- ********** Element names ********** -->
+<!ENTITY elem.hydrogen "Hydrogen">
+<!ENTITY elem.carbon "Carbon">
+<!ENTITY elem.nitrogen "Nitrogen">
+<!ENTITY elem.oxygen "Oxygen">
+<!ENTITY elem.sulfur "Sulfur">
+<!ENTITY elem.phosphorus "Phosphorus">
+<!ENTITY elem.others "Others">
+

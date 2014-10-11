@@ -1,0 +1,36 @@
+// -*-Mode: C++;-*-
+//
+// Molecular animation object scripting interface
+//
+
+#ifndef MORPH_MOL_QIF_INCLUDED
+#define MORPH_MOL_QIF_INCLUDED
+
+#include <modules/molstr/MolCoord.qif>
+
+runtime_class MorphMol extends MolCoord
+{
+  client_hdr "MorphMol.hpp";
+  client_name anim::MorphMol;
+
+  scriptable;
+  smartptr;
+
+  property real frame => redirect(getFrame, setFrame) (nopersist);
+  default frame = 0.0;
+
+  property integer nframe => redirect(getFrameSize, XX) (readonly);
+
+  //////////////////////
+  // Access methods
+
+  void insertBefore(object<MolCoord$> pmol, integer index);
+  void removeFrame(integer index);
+  string getFrameInfoJSON();
+
+  void appendThisFrame();
+
+};
+
+#endif
+

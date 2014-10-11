@@ -1,0 +1,71 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+
+<!-- -*- xml -*- -->
+
+<!DOCTYPE window SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+
+<overlay id="propeditor-radii-common"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <overlaytarget id="propeditor-radii-common" orient="vertical">
+    <groupbox flex="0">
+      <caption label="Atom radii"/>
+
+      <grid>
+	<columns>
+	  <column flex="0"/>
+	  <column flex="1"/>
+	</columns>
+
+	<rows>
+	  <row align="center" class="propdlg-rowbox">
+	    <label value="&elem.carbon;"/>
+	    <numslider id="radii-C" flex="1" size="2"
+	      decimalplaces="2" min="0" max="3" increment="0.01" unit="&#0197;"/>
+	  </row>
+	  <row align="center" class="propdlg-rowbox">
+	    <label value="&elem.nitrogen;"/>
+	    <numslider id="radii-N" flex="1" size="2"
+	      decimalplaces="2" min="0" max="3" increment="0.01" unit="&#0197;"/>
+	  </row>
+	  <row align="center" class="propdlg-rowbox">
+	    <label value="&elem.oxygen;"/>
+	    <numslider id="radii-O" flex="1" size="2"
+	      decimalplaces="2" min="0" max="3" increment="0.01" unit="&#0197;"/>
+	  </row>
+	  <row align="center" class="propdlg-rowbox">
+	    <label value="&elem.sulfur;"/>
+	    <numslider id="radii-S" flex="1" size="2"
+	      decimalplaces="2" min="0" max="3" increment="0.01" unit="&#0197;"/>
+	  </row>
+	  <row align="center" class="propdlg-rowbox">
+	    <label value="&elem.phosphorus;"/>
+	    <numslider id="radii-P" flex="1" size="2"
+	      decimalplaces="2" min="0" max="3" increment="0.01" unit="&#0197;"/>
+	  </row>
+	  <row align="center" class="propdlg-rowbox">
+	    <label value="&elem.hydrogen;"/>
+	    <numslider id="radii-H" flex="1" size="2"
+	      decimalplaces="2" min="0" max="3" increment="0.01" unit="&#0197;"/>
+	  </row>
+	  <row align="center" class="propdlg-rowbox">
+	    <label value="&elem.others;"/>
+	    <numslider id="radii-X" flex="1" size="2"
+	      decimalplaces="2" min="0" max="3" increment="0.01" unit="&#0197;"/>
+	  </row>
+
+	</rows>
+
+      </grid>
+    </groupbox>
+    
+    <hbox id="radii-detail-hbox">
+      <label value="Detail:"/>
+      <numslider id="radii-detail" flex="1" size="2"
+	min="2" max="20" increment="1" unit="none"/>
+    </hbox>
+  </overlaytarget>
+</overlay>
+

@@ -1,0 +1,107 @@
+<?xml version="1.0"?>
+<!DOCTYPE overlay SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+<!-- -*- xml -*- -->
+
+<?xml-stylesheet href="chrome://cuemol2/content/selection-widgets.css" type="text/css"?>
+
+<overlay id="selection-panel"
+  xmlns:html="http://www.w3.org/1999/xhtml"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <overlaytarget id="panels-overlay-target" hidden="true">
+
+    <!--<script type="application/javascript" src="chrome://cuemol2/content/treeview.js"/>-->
+    <!--<script type="application/javascript" src="chrome://cuemol2/content/object-menulist.js"/>-->
+    <script type="application/javascript" src="chrome://cuemol2/content/selection-panel.js"/>
+
+    <vbox id="selection-panel" title="Selection" flex="1">
+      <menulist id="selection-mol-selector" sizetopopup="none"/>
+      <tabbox class="sidebar-tabbox" flex="1">
+	<hbox flex="0">
+	<tabs class="ribbon-tabs" flex="0">
+	  <tab class="ribbon-tab"
+	       label="" image="chrome://cuemol2/content/images/tabbtn-cmdsel1.png" tooltiptext="Input command"/>
+	  <tab class="ribbon-tab"
+	       label="" image="chrome://cuemol2/content/images/tabbtn-list1.png" tooltiptext="Editor"/>
+	</tabs>
+	</hbox>
+
+
+	<tabpanels class="sidebar-tabpanels" flex="1">
+
+	  <!-- Selection-command panel -->
+	  <tabpanel class="sidebar-tabpanel" flex="1">
+	    <vbox flex="1">
+	      <textbox id="select-command-input" flex="1"
+		emptytext="Input selection command" multiline="true"/>
+	      <hbox flex="0">
+		<toolbarbutton
+		  type="menu"
+		  id="selectPanelHistBtn"
+		  class="toolbar-button history-imgbutton"
+		  tooltiptext="History">
+		  <menupopup id="selectPanelHistPopup"/>
+		</toolbarbutton>
+
+		<toolbarbutton
+		  id="selectPanelCmdSelectBtn"
+		  class="toolbar-button arrow-button"
+		  tooltiptext="Select"/>
+		<toolbarbutton
+		  id="selectPanelCmdClTxtBtn"
+		  class="cleartext-button"
+		  oncommand="document.getElementById('select-command-input').value='';"
+		  tooltiptext="Clear input"/>
+	      </hbox>
+
+	    </vbox>
+	  </tabpanel>
+
+	  <!-- XXX: Selection-list panel -->
+	  <tabpanel class="sidebar-tabpanel" flex="1">
+	    <vbox flex="1">
+	      <richlistbox id="select-editor-list" flex="1"/>
+	      <hbox flex="0">
+		<toolbarbutton
+		  id="selectPanelEditSelectBtn"
+		  class="toolbar-button arrow-button"
+		  tooltiptext="Select"/>
+		
+		<toolbarbutton type="menu"
+		  id="selectPanelEditAddBtn"
+		  class="toolbar-button add-button"
+		  tooltiptext="Add">
+		  <menupopup>
+		    <menuitem label="Hierarchical" id="selectPanelEditAdd-hier"/>
+		    <menuitem label="Terminal" id="selectPanelEditAdd-term"/>
+		    <menuitem label="Around/Expand" id="selectPanelEditAdd-arnd"/>
+		  </menupopup>
+		</toolbarbutton>
+
+		<toolbarbutton
+		  id="selectPanelEditDelBtn"
+		  class="toolbar-button delete-button"
+		  tooltiptext="Delete"/>
+		
+		<toolbarbutton
+		  id="selectPanelEditClrBtn"
+		  class="toolbar-button cleartext-button"
+		  tooltiptext="Delete all"/>
+
+	      </hbox>
+	    </vbox>
+	  </tabpanel>
+
+	</tabpanels>
+      </tabbox>
+    </vbox>
+  </overlaytarget>
+
+  <overlaytarget id="window-leftpanels-popup">
+    <menuitem id="menu-selection-panel-toggle"
+      label="Selection" type="checkbox" autocheck="false"
+      oncommand="cuemolui.sidepanel.onToggle('selection-panel')" />
+  </overlaytarget>
+
+</overlay>
+

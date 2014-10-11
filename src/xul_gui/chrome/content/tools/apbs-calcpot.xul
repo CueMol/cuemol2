@@ -1,0 +1,152 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2-sysdep.css" type="text/css"?>
+
+<dialog
+  id     = "apbs-calcpot-dialog"
+  windowtype="CueMol2:ApbsCalcPotDlg"
+  title  = "APBS tool"
+  xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  ondialogaccept="gDlgObj.onStartStop2(event); return false;"
+  buttons="accept,cancel">
+
+  <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/object-menulist.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/molsellist.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/tools/apbs-calcpot.js"/>
+
+  <label value="Calculate electrostatic potential by APBS:"/>
+  <grid>
+    <columns>
+      <column flex="0"/>
+      <column flex="1"/>
+    </columns>
+    <rows>
+      <row align="center">
+	<label class="disable-target" value="APBS exe path:"/>
+	<hbox align="center">
+	  <textbox class="disable-target" id="apbs-exe-path" flex="1"/>
+	  <button class="disable-target" id="apbs-exe-path-btn" label="Change ..." oncommand="gDlgObj.onApbsExePath()"/>
+	</hbox>
+      </row>
+      
+      <row align="center">
+	<label value="Target molecule:"/>
+	<menulist class="disable-target" id="mol-select-box" sizetopopup="none"/>
+      </row>
+
+      <row align="center">
+	<checkbox id="selection-check" label="Selection:" oncommand="gDlgObj.onSelChk(event)"/>
+	<molsellist class="disable-target" id="mol-selection-list"
+		    editable="true" disabled="true"/>
+      </row>
+
+      <row align="center">
+	<label value="Elepot name:"/>
+	<hbox>
+	  <textbox class="disable-target" id="elepot-obj-name" flex="1"/>
+	</hbox>
+      </row>
+
+    </rows>
+  </grid>
+
+  <groupbox>
+    <caption label="Charge calculation method"/>
+
+    <radiogroup>
+
+      <radio class="disable-target" id="use-pdb2pqr" label="Use PDB2PQR"
+	     group="charge-method" selected="true"
+	     oncommand="gDlgObj.onChgMthSel(event.target.id)"/>
+
+      <vbox style="margin-left: 16px">
+	<hbox align="center">
+	  <label class="pdb2pqr-group" value="pdb2pqr.py path:"/>
+	  <textbox class="pdb2pqr-group disable-target"
+		   id="pdb2pqr-py-path" flex="1"/>
+	  <button class="pdb2pqr-group disable-target"
+		  id="pdb2pqr-py-path-btn" label="Change ..."
+		  oncommand="gDlgObj.onPdb2PqrPath()"/>
+	</hbox>
+	
+	<hbox align="center">
+	  <label class="pdb2pqr-group" value="Force field:"/>
+	  <menulist class="pdb2pqr-group disable-target" id="pdb2pqr-ff-list">
+	    <menupopup>
+	      <menuitem value="charmm" label="charmm" selected="true"/>
+	      <menuitem value="amber" label="amber"/>
+	      <menuitem value="tyl06" label="tyl06"/>
+	      <menuitem value="peoepb" label="peoepb"/>
+	      <menuitem value="swanson" label="swanson"/>
+	    </menupopup>
+	  </menulist>
+	</hbox>
+      </vbox>
+
+      <radio class="disable-target" id="use-internal-pqr" label="Use internal method"
+	     group="charge-method"
+	     oncommand="gDlgObj.onChgMthSel(event.target.id)"/>
+
+      <hbox align="center" style="margin-left: 16px">
+	<checkbox class="disable-targe intchg-group"
+		  id="use-hydrogen" label="Use hydrogen atoms"/>
+	<spacer/>
+      </hbox>
+    </radiogroup>
+  </groupbox>
+
+  <groupbox>
+    <caption label="APBS Options"/>
+  
+    <grid>
+      <columns>
+	<column flex="0"/>
+	<column flex="1"/>
+	<column flex="0"/>
+	<column flex="1"/>
+      </columns>
+      <rows>
+
+	<checkbox class="disable-target" id="use-npbe" label="Solve non-liner PBE"/>
+	
+	<row align="center">
+	  <label value="Temperature (K)"/>
+	  <hbox>
+	    <textbox class="disable-target" id="calc-temp" type="number" flex="0" size="3"
+	      decimalplaces="2" increment="0.1" min="0.1" value="298.15"/>
+	    <spacer flex="1"/>
+	  </hbox>
+	  <label value="Max grid size (&#0197;)"/>
+	  <hbox>
+	    <textbox class="disable-target" id="grid-size" type="number" flex="0" size="1"
+	      decimalplaces="1" increment="0.1" min="0.1" value="1.0"/>
+	    <spacer flex="1"/>
+	  </hbox>
+	</row>
+
+	<row align="center">
+	  <label value="Water dielectric"/>
+	  <hbox>
+	    <textbox class="disable-target" id="water-dielec" type="number" flex="0" size="3"
+	      decimalplaces="2" increment="0.1" min="0.1" value="78.54"/>
+	    <spacer flex="1"/>
+	  </hbox>
+	  <label value="Protein dielectric"/>
+	  <hbox>
+	    <textbox class="disable-target" id="prot-dielec" type="number" flex="0" size="3"
+	      decimalplaces="2" increment="0.1" min="0.1" value="2.0"/>
+	    <spacer flex="1"/>
+	  </hbox>
+	</row>
+
+      </rows>
+    </grid>
+  </groupbox>
+
+
+</dialog>
+

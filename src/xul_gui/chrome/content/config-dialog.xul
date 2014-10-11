@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+<!DOCTYPE window SYSTEM "chrome://cuemol2/locale/config-dialog.dtd">
+
+<prefwindow type="prefwindow"
+  id     = "config-dialog"
+  windowtype="CueMol2:Config"
+  title  = "Options"
+  xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
+
+    <style xmlns="http://www.w3.org/1999/xhtml"><![CDATA[
+radio[pane=pane-misc] {
+  list-style-image: url("chrome://cuemol2/content/images/config_tabimg_misc.png");
+  padding: 5px 3px 1px;
+}
+radio[pane=pane-keybinding] {
+  list-style-image: url("chrome://cuemol2/content/images/config_tabimg_misc.png");
+  padding: 5px 3px 1px;
+}
+radio[pane=pane-mouseconf] {
+  list-style-image: url("chrome://cuemol2/content/images/config_tabimg_misc.png");
+  padding: 5px 3px 1px;
+}
+    ]]></style>
+
+  <prefpane id="pane-misc" label="Misc"
+    src="chrome://cuemol2/content/config-misc.xul"/>
+
+  <prefpane id="pane-keybinding" label="Key"
+    src="chrome://cuemol2/content/config-keybind.xul"/>
+  
+  <prefpane id="pane-mouseconf" label="Mouse"
+    src="chrome://cuemol2/content/config-mouse.xul"/>
+
+</prefwindow>
+

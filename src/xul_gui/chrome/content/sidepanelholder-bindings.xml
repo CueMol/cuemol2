@@ -1,0 +1,213 @@
+<?xml version="1.0"?>
+
+<bindings id="sidepanelholder-bindings"
+  xmlns="http://www.mozilla.org/xbl"
+  xmlns:html="http://www.w3.org/1999/xhtml"
+  xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  xmlns:xbl="http://www.mozilla.org/xbl">
+
+  <binding id="sidepanelbar">
+    <resources>
+      <stylesheet src="chrome://cuemol2/content/cuemol2.css"/>
+    </resources>
+
+    <content>
+      <xul:hbox align="center" flex="1">
+	<xul:image
+	  class="sidebar-collapse-button"
+	  anonid="collapse-button"
+	  xbl:inherits="parentid=id, panelstate"
+	  tooltiptext="collapse/expand"/>
+	
+	<xul:label class="sidebar-title"
+	  anonid="title-label"
+	  flex="1" xbl:inherits="value=title"/>
+
+	<xul:image
+	  width="14px" height="14px"
+	  class="sidebar-close-button"
+	  anonid="close-button"
+	  xbl:inherits="parentid=id"
+	  tooltiptext="close"/>
+	
+      </xul:hbox>
+    </content>
+
+    <implementation>
+      <field name="mCollapseButton" readonly="true">
+        document.getAnonymousElementByAttribute(this, "anonid", "collapse-button");
+      </field>
+      <field name="mCloseButton" readonly="true">
+        document.getAnonymousElementByAttribute(this, "anonid", "close-button");
+      </field>
+      <field name="mTitleLabel" readonly="true">
+        document.getAnonymousElementByAttribute(this, "anonid", "title-label");
+      </field>
+
+      <constructor>
+	var xthis = this;
+	this.mCollapseButton.addEventListener("click", function() {
+	xthis.onClickCollapse();
+	}, false);
+
+	this.mCloseButton.addEventListener("click", function() {
+	xthis.onClickClose();
+	}, false);
+
+	this.mTitleLabel.addEventListener("dragstart", function(aEvent) {
+	xthis.onDragStart(aEvent);
+	}, false);
+
+	this.mTitleLabel.addEventListener("click", function(aEvent) {
+	xthis.onClickTitle(aEvent);
+	}, false);
+      </constructor>
+
+      <method name="setBarImpl">
+	<parameter name="aImpl"/>
+	<body>
+	  this.mImpl = aImpl;
+	</body>
+      </method>
+
+      <method name="onClickCollapse">
+	<body>
+	  var id = this.getAttribute("target");
+	  this.mImpl.onClickCollapse(id);
+	</body>
+      </method>
+
+      <method name="onClickClose">
+	<body>
+	  var id = this.getAttribute("target");
+	  this.mImpl.onClickClose(id);
+	</body>
+      </method>
+
+      <method name="onDragStart">
+	<parameter name="aEvent"/>
+	<body>
+	  var id = this.getAttribute("target");
+	  this.mImpl.onDragStart(aEvent, id);
+	</body>
+      </method>
+
+      <method name="onClickTitle">
+	<parameter name="aEvent"/>
+	<body>
+          <![CDATA[
+	  if (aEvent.detail==2 && aEvent.button==0) {
+	  dd("onClilckTitle detail="+aEvent.detail);
+	  var id = this.getAttribute("target");
+	  this.mImpl.onTitleDblClick(id);
+	  }
+          ]]>
+	</body>
+      </method>
+
+    </implementation>
+
+  </binding>
+
+  <!-- *************** Side panel holder *************** -->
+
+  <binding id="sidepanelholder">
+    <resources>
+      <stylesheet src="chrome://cuemol2/content/cuemol2.css"/>
+    </resources>
+    <content>
+      <xul:vbox flex="1" anonid="panel-container"/>
+    </content>
+
+    <implementation>
+
+      <constructor>
+	cuemolui.sidepanel = this.mImpl = new cuemolui.SidePanelHolder(this);
+      </constructor>
+
+      <method name="registerPanel">
+	<parameter name="aPanel"/>
+	<body>
+	  this.mImpl.registerPanel(aPanel);
+	</body>
+      </method>
+
+      <method name="realize">
+	<body>
+	  this.mImpl.realize();
+	</body>
+      </method>
+
+      <method name="saveSession">
+	<parameter name="aName"/>
+	<body>
+	  this.mImpl.saveSession(aName);
+	</body>
+      </method>
+
+      <method name="loadSession">
+	<parameter name="aName"/>
+	<body>
+	  return this.mImpl.loadSession(aName);
+	</body>
+      </method>
+
+      <method name="restoreDefault">
+	<body>
+	  this.mImpl.restoreDefault();
+	</body>
+      </method>
+
+    </implementation>
+
+    <!-- EVENT HANDLERS -->
+    <handlers>
+
+      <handler event="dragover">
+	var isTabDrag = event.dataTransfer.types.contains("application/x-ptb-tabdrag");
+	// dump("DragOverCalled: "+isTabDrag+"\n");
+	if (isTabDrag) {
+          this.mImpl.onDragOver(event);
+	}
+      </handler>
+
+      <handler event="dragleave">
+	var isTabDrag = event.dataTransfer.types.contains("application/x-ptb-tabdrag");
+	if (isTabDrag) {
+	  this.mImpl.onDragLeave(event);
+	}
+      </handler>
+
+      <handler event="drop">
+	dd("Drop called");
+	var isTabDrag = event.dataTransfer.types.contains("application/x-ptb-tabdrag");
+	if (isTabDrag) {
+          this.mImpl.onDrop(event);
+	}
+      </handler>
+    </handlers>
+  </binding>
+
+  <!-- =============================================== -->
+
+  <binding id="color-menuitem" extends="chrome://global/content/bindings/menu.xml#menuitem-iconic">
+    <implementation>
+      <constructor>
+	var color = this.getAttribute("color");
+	var value = this.getAttribute("value");
+	if (value) {
+	  var qc = cuemol.makeColor(value);
+	  rgb = [qc.r(), qc.g(), qc.b()];
+	  color = util.packToHTMLColor(rgb);
+	}
+        var icon = document.getAnonymousElementByAttribute(this, "class", "menu-iconic-icon");
+	icon.style.backgroundColor = color;
+      </constructor>
+    </implementation>
+  </binding>
+
+  <binding id="tlbtn-repeat" display="xul:autorepeatbutton"
+           extends="chrome://global/content/bindings/toolbarbutton.xml#toolbarbutton"/>
+
+</bindings>
+

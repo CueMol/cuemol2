@@ -1,0 +1,23 @@
+// -*-Mode: C++;-*-
+//
+
+#ifndef DRAWOBJ_QIF_INCLUDED
+#define DRAWOBJ_QIF_INCLUDED
+
+runtime_class DrawObj
+{
+  client_hdr "DrawObj.hpp";
+  client_name qsys::DrawObj;
+  dllexport QSYS_API;
+
+  scriptable;
+  abstract;
+  smartptr;
+
+  //////////
+
+  property boolean enabled => redirect(isEnabled, setEnabled);
+};
+
+#endif
+

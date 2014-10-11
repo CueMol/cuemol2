@@ -1,0 +1,191 @@
+/*
+ *  Color definition parser
+ */
+
+%{
+#include <common.h>
+
+#include <qlib/LChar.hpp>
+
+#include "ColCompiler.hpp"
+// #include "ColNodes.hpp"
+
+extern int collex();
+extern int yyerror(char* error);
+
+using namespace gfx;
+using qlib::LChar;
+
+#define YYDEBUG 0
+
+%}
+
+%union {
+  int intnum;
+  double floatnum;
+  char *str;
+}
+
+/*
+ *      tokens of selection grammar
+ */
+
+%token COL_LPAREN COL_RPAREN
+%token COL_LBRACE COL_RBRACE
+%token COL_COMMA
+%token COL_COLON COL_SEMICOLON
+
+%token COL_RGB COL_RGBA COL_HSB COL_HSBA COL_MOLCOL
+
+%token <str> COL_NAME
+%token <str> COL_MODIFVAL
+%token <intnum> COL_INTNUM COL_HTML3 COL_HTML6
+%token <floatnum> COL_FLOATNUM
+%token <floatnum> COL_PERCENTNUM
+
+/* special terminal character(s) */
+%token COL_NULL
+
+%token LEX_ERROR
+
+/*
+ *      type definitions
+ */
+
+/*
+ *      color tokens
+ */
+%type <floatnum> color_num
+%type <floatnum> color_fnum
+%type <floatnum> color_hue
+
+/*
+ *      precedence table
+ */
+
+%%
+
+start:		color_term
+		{
+		  // ColCompiler::getInstance()->evalNode($1);
+		}
+		;
+
+color_term 	: color_value
+		{
+		  //MB_DPRINT("sel_and\n");
+		}
+		| color_value COL_LBRACE color_modifiers COL_RBRACE
+		{
+		  //MB_DPRINT("sel_or\n");
+		}
+		;
+
+color_value	: COL_NAME
+		{
+		  // Named color
+		  ColCompiler::getInstance()->setNamedColor($1);
+		  delete [] $1;
+		}
+		| COL_MOLCOL
+		{
+		  // $molcol reference
+		  ColCompiler::getInstance()->setMolColor();
+		}
+		| COL_HTML3
+		{
+		  // HTML3 color
+		  ColCompiler::getInstance()->setRGBHexColor($1);
+		}
+		| COL_HTML6
+		{
+		  // HTML6 color
+		  ColCompiler::getInstance()->setRGBHexColor($1);
+		}
+		| COL_RGB COL_LPAREN color_num COL_COMMA color_num COL_COMMA color_num COL_RPAREN
+		{
+		  // RGB color
+		  ColCompiler::getInstance()->setRGBColor($3, $5, $7);
+		}
+		| COL_RGBA COL_LPAREN color_num COL_COMMA color_num COL_COMMA color_num COL_COMMA color_num COL_RPAREN
+		{
+		  // RGBA color
+		  ColCompiler::getInstance()->setRGBColor($3, $5, $7);
+		  ColCompiler::getInstance()->setAlpha($9);
+		}
+		| COL_HSB COL_LPAREN color_hue COL_COMMA color_fnum COL_COMMA color_fnum COL_RPAREN
+		{
+		  // HSB color
+		  ColCompiler::getInstance()->setHSBColor($3, $5, $7);
+		}
+		| COL_HSBA COL_LPAREN color_hue COL_COMMA color_fnum COL_COMMA color_fnum COL_COMMA color_fnum COL_RPAREN
+		{
+		  // HSB color
+		  ColCompiler::getInstance()->setHSBColor($3, $5, $7);
+		  ColCompiler::getInstance()->setAlpha($9);
+		}
+		;
+
+color_hue	: COL_FLOATNUM
+		{
+		  $$ = $1;
+		}
+		| COL_PERCENTNUM
+		{
+		  $$ = ($1 * 360.0) / 100.0;
+		  // MB_DPRINTLN("CC>Percentnum %f is converted to %f", $1, $$);
+		}
+		;
+
+color_fnum	: COL_FLOATNUM
+		{
+		  $$ = $1;
+		}
+		| COL_PERCENTNUM
+		{
+		  $$ = $1/100.0;
+		  // MB_DPRINTLN("CC>Percentnum %f is converted to %f", $1, $$);
+		}
+		;
+
+color_num	: color_fnum
+		| COL_INTNUM
+		{
+		  $$ = $1/255.0;
+		  // MB_DPRINTLN("CC>Intnum %d is converted to %f", $1, $$);
+		}
+		;
+
+color_modifiers	: color_modifier
+		{
+		}
+		| color_modifiers COL_SEMICOLON color_modifier
+		{
+		}
+		;
+
+
+color_modifier	: COL_NAME COL_COLON {ColCompiler::setModifState();} COL_MODIFVAL
+		{
+		  ColCompiler::setInitState();
+		  ColCompiler::getInstance()->defModif($1, $4);
+		  delete [] $1;
+		  delete [] $4;
+		}
+		;
+
+%%
+
+extern char *coltext;
+
+int colerror(char* error)
+{
+  LOG_DPRINTLN("ERROR: %s at \"%s\"", error, coltext);
+  return 0;
+}
+
+//private static
+void ColCompiler::resetParserState()
+{
+  yyclearin;
+}

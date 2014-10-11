@@ -1,0 +1,12 @@
+HKCR
+{
+	NoRemove AppID
+	{
+		'%APPID%' = s 'AxCueMol2'
+		'AxCueMol2.ocx'
+		{
+			val AppID = s '%APPID%'
+		}
+	}
+}
+

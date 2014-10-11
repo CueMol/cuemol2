@@ -1,0 +1,39 @@
+// -*-Mode: C++;-*-
+//
+// $Id: MolAtom.qif,v 1.8 2011/03/16 17:24:11 rishitani Exp $
+
+#ifndef MOL_ATOM_QIF_INCLUDED_
+#define MOL_ATOM_QIF_INCLUDED_
+
+#include <qlib/Vector.qif>
+
+runtime_class MolAtom
+{
+  client_hdr "MolAtom.hpp";
+  client_name molstr::MolAtom;
+
+  scriptable;
+
+  // cloneable option generates instance creation with copy constructor
+  cloneable;
+  smartptr;
+
+  //property string name => m_name;
+  property string name => redirect(getName, setName);
+  property string element => redirect(getElementName, setElementName);
+  property real bfac => redirect(getBfac, setBfac);
+  property real occ => redirect(getOcc, setOcc);
+  // property real charge => redirect(getCharge, setCharge);
+  // property real radius => redirect(getRadius, setRadius);
+
+  property object<Vector> pos => redirect(getPosScr, setPosScr);
+
+  property string chainName => redirect(getChainName, xxx) (readonly);
+  property string residIndex => redirect(getResIndexScr, xxx) (readonly);
+
+  string formatMsg();
+
+};
+
+#endif // MOL_ATOM_QIF_INCLUDED_
+

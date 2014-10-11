@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+<!DOCTYPE window SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+
+<overlay id="fopen-mtzopt-overlay"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <overlaytarget id="scripts-overlay-target">
+    <script type="application/javascript;version=1.8" src="fopen-mtzopt-page.js"/>
+  </overlaytarget>
+
+  <overlaytarget id="tabs-overlay-target">
+    <tab label="MTZ options" hidden="true" id="mtzmap_options_tab"/>
+  </overlaytarget>
+  
+  <overlaytarget id="tabpanels-overlay-target">
+    <tabpanel hidden="true" id="mtzmap_options_tabpanel">
+      <vbox flex="1">
+	<grid flex="1">
+	  <columns>
+	    <column flex="0"/>
+	    <column flex="1"/>
+	  </columns>
+	  <rows>
+	    <row align="center">
+	      <label value="Amplitude (F): "/>
+	      <menulist id="mtzopt-flist">
+		<menupopup>
+		</menupopup>
+	      </menulist>
+	    </row>
+	    <row align="center">
+	      <checkbox id="mtzopt-phichk" label="Phase: "
+		oncommand="gMtzDlg.updateDisabledState()"/>
+	      <menulist id="mtzopt-philist">
+		<menupopup/>
+	      </menulist>
+	    </row>
+	    <row align="center">
+	      <checkbox id="mtzopt-wgtchk" label="Weight: "
+		oncommand="gMtzDlg.updateDisabledState()"/>
+	      <menulist id="mtzopt-wgtlist">
+		<menupopup/>
+	      </menulist>
+	    </row>
+	    <row align="center">
+	      <label value="Max resolution (&#0197;): "/>
+	      <textbox id="mtzopt-resoln" type="number"
+		size ="3" decimalplaces ="1" increment="0.1"/>
+	    </row>
+	    <row align="center">
+	      <label value="Grid spacing: "/>
+	      <menulist id="mtzopt-gridsize-list">
+		<menupopup>
+		  <menuitem label="Fine" value="0.25"/>
+		  <menuitem label="Coarse" value="0.333333"/>
+		</menupopup>
+	      </menulist>
+	    </row>
+	  </rows>
+	</grid>
+      </vbox>
+    </tabpanel>
+  </overlaytarget>
+
+</overlay>
+

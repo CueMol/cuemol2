@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+
+<overlay id="cuemol2-scripts-overlay"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <overlaytarget id="scripts-overlay-target">
+
+    <script src="chrome://global/content/nsUserSettings.js"/>
+    <script src="chrome://global/content/nsTransferable.js"/>
+    <script src="chrome://global/content/nsClipboard.js"/>
+    <script src="chrome://global/content/nsDragAndDrop.js"/>
+    <script src="chrome://global/content/findUtils.js"/>
+    <script src="chrome://global/content/strres.js"/>
+    <script src="chrome://global/content/globalOverlay.js"/>
+
+    <script type="application/x-javascript;version=1.8" src="renderer.js"/>
+    <script type="application/x-javascript;version=1.8" src="fileopen.js"/>
+    <script type="application/x-javascript;version=1.8" src="dragdropopen.js"/>
+    <script type="application/x-javascript;version=1.8" src="export-qsl.js"/>
+
+    <!-- tool definitions -->
+    <script type="application/x-javascript;version=1.8" src="tools/netpdbopen.js"/>
+    <script type="application/javascript; version=1.8"
+	    src="chrome://cuemol2/content/tools/intr-tool.js"/>
+    <script type="application/javascript; version=1.8"
+	    src="chrome://cuemol2/content/tools/prot2ndry-tool.js"/>
+    <script type="application/javascript; version=1.8"
+	    src="chrome://cuemol2/content/tools/morphanim-tool.js"/>
+
+    <script>
+      // instantiate the main object
+      window.gQm2Main = new Qm2Main();
+    </script>
+
+  </overlaytarget>
+
+</overlay>

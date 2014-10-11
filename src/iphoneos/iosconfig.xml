@@ -1,0 +1,23 @@
+<cueconfig>
+  <entry name="style">
+    <entry name="style_file" value="%%CONFDIR%%/default_style.xml"/>
+  </entry>
+  <entry name="toppar">
+    <entry name="toppar_file" value="xml:%%CONFDIR%%/prot_top.xml"/>
+    <entry name="toppar_file" value="xml:%%CONFDIR%%/prot_props.xml"/>
+    <entry name="toppar_file" value="xml:%%CONFDIR%%/nucl_top.xml"/>
+    <entry name="toppar_file" value="xml:%%CONFDIR%%/nucl_props.xml"/>
+    <entry name="toppar_file" value="xml:%%CONFDIR%%/sugar_top.xml"/>
+    <entry name="toppar_file" value="xml:%%CONFDIR%%/mono_top.xml"/>
+    <entry name="toppar_file" value="xml:%%CONFDIR%%/default_params.xml"/>
+  </entry>
+  
+<!--
+  <entry name="module">
+    <entry name="dir" value="%%CONFDIR%%/modules/"/>
+  </entry>
+  <entry name="script_dir" value="%%CONFDIR%%/scripts/"/>
+  <entry name="symm_file" value="%%CONFDIR%%/symop.dat"/>
+  <entry name="torsion_defs" value="%%CONFDIR%%/torsion_defs.xml"/>
+-->
+</cueconfig>

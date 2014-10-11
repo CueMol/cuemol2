@@ -1,0 +1,30 @@
+// -*-Mode: C++;-*-
+//
+// $Id: MolChain.qif,v 1.3 2011/04/16 07:40:51 rishitani Exp $
+
+#ifndef MOL_CHAIN_QIF_INCLUDED
+#define MOL_CHAIN_QIF_INCLUDED
+
+#include "MolResidue.qif"
+
+runtime_class MolChain
+{
+  client_hdr "MolChain.hpp";
+  client_name molstr::MolChain;
+
+  scriptable;
+  smartptr;
+
+  property string name => redirect(getName, setName);
+
+  //////////////////////
+  // Access methods
+
+  string getResidsJSON();
+
+  object<MolResidue$> getResidue(string index);
+  
+};
+
+#endif
+

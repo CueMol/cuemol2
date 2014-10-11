@@ -1,0 +1,77 @@
+// -*-Mode: IDL;-*-
+//
+// IDL for CueMol object wrapper interface
+//
+// $Id: qIObjWrapper.idl,v 1.18 2010/07/10 15:35:00 rishitani Exp $
+
+#include "nsISupports.idl"
+#include "nsIVariant.idl"
+#include "nsIArray.idl"
+
+//////////
+/// Function object
+[scriptable, uuid(a9c32dc1-b7b5-4dfe-9772-d467175177e9)]
+interface qICallBack : nsISupports
+{
+  nsIVariant notify0();
+  nsIVariant notify(in nsIVariant arglist);
+};
+
+//////////
+
+[scriptable, uuid(b915abcd-1e8f-4544-902e-d6fc27fa0311)]
+interface qIObjWrapper : nsISupports
+{
+  //////////////////////
+  // property operations
+
+  nsIVariant getProp(in string propname);
+  void setProp(in string propname, in nsIVariant value);
+  boolean hasProp(in string propname);
+
+  int32_t isPropDefault(in string propname);
+
+  // reset property to default state
+  void resetProp(in string propname);
+
+  // get properties' structure by JSON (for UI)
+  AString getPropsJSON();
+
+  //////////////////////
+  // Enum operations
+
+  // get enum definitions by JSON
+  string getEnumDefsJSON(in string propname);
+  int32_t getEnumDef(in string propname, in string enumname);
+
+  //////////////////////
+  // Method operations
+
+  boolean hasMethod(in string name);
+  nsIVariant invoke0(in string name);
+  nsIVariant invoke1(in string name, in nsIVariant arg1);
+  nsIVariant invoke2(in string name, in nsIVariant arg1, in nsIVariant arg2);
+  nsIVariant invoke3(in string name, in nsIVariant arg1, in nsIVariant arg2, in nsIVariant arg3);
+  nsIVariant invoke4(in string name, in nsIVariant arg1, in nsIVariant arg2, in nsIVariant arg3, in nsIVariant arg4);
+  nsIVariant invoke5(in string name, in nsIVariant arg1, in nsIVariant arg2, in nsIVariant arg3, in nsIVariant arg4, in nsIVariant arg5);
+
+  nsIVariant invoke(in string name, in nsIVariant valueArray);
+
+  /// Invoke methods with callable object argument
+  nsIVariant invokeWithCallback1(in string name, in qICallBack arg1);
+
+  //////////////////////
+  // Misc operations
+
+  /// Get string representation of this obj
+  string toString();
+
+  boolean instanceOf(in string name);
+
+  string getAbiClassName();
+  string getClassName();
+
+  /// Assign debug message (usually stack dump) to this obj
+  void setDbgMsg(in string dbgmsg);
+};
+

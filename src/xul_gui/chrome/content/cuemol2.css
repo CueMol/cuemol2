@@ -1,0 +1,498 @@
+
+/*
+  CSS for cuemol2 xul application
+  $Id: cuemol2.css,v 1.47 2011/04/30 10:20:33 rishitani Exp $
+*/
+
+/* ------------------------------------------------------------------- */
+/* --- Scene Panel tree-related definitions --- */
+
+/*tree {
+    margin: 0;
+    padding: 0;
+    border: 1px solid red;
+}*/
+
+/*treechildren::-moz-tree-checkbox(checked) {
+    list-style-image: url(chrome://global/skin/checkbox/cbox-check.gif);
+}
+.object-tree-children::-moz-tree-checkbox(checked) {
+    list-style-image: url(chrome://cuemol2/content/workspace-eye1.png);
+}*/
+
+.object-tree-children::-moz-tree-cell(invisible, visible, disabled, locked, unlocked) {
+  cursor: pointer;
+}
+
+.object-tree-children::-moz-tree-cell(noindent) {
+    padding-left: 0px !important;
+    margin-left: 0px !important;
+   /*border: 1px solid black;*/
+  /*background-color: red;*/
+}
+
+.object-tree-children::-moz-tree-image(visible) {
+  cursor: pointer;
+  list-style-image: url(chrome://cuemol2/content/images/visible1.png);
+}
+.object-tree-children::-moz-tree-image(disabled) {
+  cursor: pointer;
+  list-style-image: url(chrome://cuemol2/content/images/visible1-dis.png);
+}
+
+.object-tree-children::-moz-tree-image(locked) {
+  cursor: pointer;
+  list-style-image: url(chrome://cuemol2/content/images/locked1.png);
+}
+
+.object-tree-children::-moz-tree-image(linked) {
+  cursor: pointer;
+  list-style-image: url(chrome://cuemol2/content/images/filelinked1.png);
+}
+
+.object-tree-children::-moz-tree-image(group) {
+  list-style-image: url(chrome://cuemol2/content/images/folder16px.png);
+  margin-left: 4px;
+  margin-right: 4px;
+}
+
+/* --- Paint Panel tree-related definitions --- */
+
+#paint-listbox-children:-moz-tree-twisty {
+  width: 0px ! important;
+}
+
+.paint-listitem {
+  -moz-binding: url("chrome://cuemol2/content/paintpanel-bindings.xml#paintlistitem");
+}
+.paint-listitem[selected="true"] {
+  -moz-binding: url("chrome://cuemol2/content/paintpanel-bindings.xml#paintlistitem-selected");
+}
+
+.object-tree-children:-moz-tree-twisty(noindent) {
+  width: 0px ! important;
+}
+
+/* ------------------------------------------------------------------- */
+/* tabmolview */
+
+tabmolview {
+  -moz-binding: url("chrome://cuemol2/content/mainViewBindings.xml#tabmolview");
+}
+
+.tabmolview-tab {
+  -moz-binding: url("chrome://cuemol2/content/mainViewBindings.xml#tabmolview-tab");
+}
+
+.tabmolview-tabs {
+  -moz-binding: url("chrome://cuemol2/content/mainViewBindings.xml#tabmolview-tabs");
+}
+
+tab .tabmolview-tab-closebox {
+  -moz-binding: url("chrome://global/content/bindings/toolbarbutton.xml#toolbarbutton-image");
+
+  -moz-appearance: none;
+  /*-moz-margin-end: 3px;*/
+  border: none;
+  /*border: 1px solid black;*/
+  padding: 0 0 0 0;
+  margin: 0 0 0 0;
+  min-height: 14px;
+  min-width: 14px;
+  list-style-image: url("chrome://cuemol2/content/images/tab-close2.png");
+  -moz-image-region: rect(0px, 56px, 14px, 42px);
+}
+
+tab[selected="true"] .tabmolview-tab-closebox {
+  -moz-image-region: rect(0px, 14px, 14px, 0px);
+}
+tab[selected="true"] .tabmolview-tab-closebox:hover {
+  -moz-image-region: rect(0px, 28px, 14px, 14px);
+}
+tab[selected="true"] .tabmolview-tab-closebox:hover:active {
+  -moz-image-region: rect(0px, 42px, 14px, 28px);
+}
+
+/* Tab DnD indicator */
+.tab-drop-indicator {
+  position: relative;
+  z-index: 2;
+  list-style-image: url(chrome://cuemol2/content/images/tabDragIndicator.png);
+  margin-bottom: 0px;/*-11px*/
+}
+
+/* ------------------------------------------------ */
+/* ---  Popup Button with Large Dropdown Marker --- */
+
+.dropdown-button {
+/*  -moz-appearance: none;
+  -border-radius: 2px;
+  border: 2px solid;
+  -moz-border-top-colors: ThreeDShadow rgba(255,255,255,.3);
+  -moz-border-left-colors: ThreeDShadow rgba(255,255,255,.3);
+  border-right-width: 1px;
+  border-bottom-width: 1px;
+  -moz-border-right-colors: ThreeDShadow;
+  -moz-border-bottom-colors: ThreeDShadow;
+  padding: 0;*/
+}
+
+.dropdown-button > .toolbarbutton-text {
+  display: none;
+}
+.dropdown-button > .toolbarbutton-icon {
+  list-style-image: url("chrome://cuemol2/content/images/dropdown-arrow.png");
+  margin: 5px 0 4px;
+  -moz-image-region: rect(0, 13px, 11px, 0);
+}
+.dropdown-button > .toolbarbutton-menu-dropmarker {
+  display: none;
+}
+.dropdown-button:hover > .toolbarbutton-icon,
+.dropdown-button:hover:active > .toolbarbutton-icon,
+.dropdown-button[open="true"] > .toolbarbutton-icon {
+  -moz-image-region: rect(0, 26px, 11px, 13px);
+}
+
+
+/* ------------------------------------------------------------------- */
+
+scobjpanel {
+  -moz-binding: url("chrome://cuemol2/content/mainViewBindings.xml#scobjpanel");
+}
+
+sidepanelholder {
+  -moz-binding: url("chrome://cuemol2/content/sidepanelholder-bindings.xml#sidepanelholder");
+}
+
+sidepanelbar {
+  -moz-binding: url("chrome://cuemol2/content/sidepanelholder-bindings.xml#sidepanelbar");
+}
+
+colorslider {
+  -moz-binding: url("chrome://cuemol2/content/colorSlider.xml#colorslider");
+}
+
+numslider {
+  -moz-binding: url("chrome://cuemol2/content/numslider-binding.xml#numslider");
+}
+
+wheelbtn {
+  -moz-binding: url("chrome://cuemol2/content/wheelbtn-bindings.xml#wheelbtn");
+}
+
+/* ----- Sidebar close button ----- */
+
+.sidebar-close-button {
+  -moz-appearance: none;
+  /*-moz-image-region: rect(0px, 56px, 14px, 42px);*/
+  -moz-image-region: rect(0px, 14px, 14px, 0px);
+  -moz-margin-end: 3px;
+  border: none;
+  padding: 0px;
+  list-style-image: url("chrome://cuemol2/content/images/tab-close2.png");
+}
+.sidebar-close-button:hover {
+  -moz-image-region: rect(0px, 28px, 14px, 14px);
+}
+.sidebar-close-button:hover:active {
+  -moz-image-region: rect(0px, 42px, 14px, 28px);
+}
+
+/* ----- Sidebar collapse/expand button ----- */
+
+.sidebar-collapse-button {
+  width: 17px;
+  height: 11px;
+
+  -moz-appearance: none;
+  -moz-margin-start: 3px;
+/*  border: solid transparent 1px;*/
+  border: none;
+  padding: 0;
+  margin: 0;
+  -moz-image-region: rect(0px, 17px, 11px, 0px);
+  list-style-image: url("chrome://cuemol2/content/images/tab-collapse3.png");
+}
+.sidebar-collapse-button:hover {
+  -moz-image-region: rect(33px, 17px, 44px, 0px);
+}
+.sidebar-collapse-button:hover:active {
+  -moz-image-region: rect(11px, 17px, 22px, 0px);
+}
+
+.sidebar-collapse-button[panelstate="collapsed"] {
+  -moz-image-region: rect(0px, 34px, 11px, 17px);
+}
+.sidebar-collapse-button:hover[panelstate="collapsed"] {
+  -moz-image-region: rect(33px, 34px, 44px, 17px);
+}
+.sidebar-collapse-button:hover:active[panelstate="collapsed"] {
+  -moz-image-region: rect(11px, 34px, 22px, 17px);
+}
+
+.sidebar-title {
+  border: none;
+  margin: 2px;
+  padding: 0px;
+}
+
+.sidebar-title:hover {
+  background-color: -moz-menuhover;
+  color: -moz-menuhovertext;
+}
+
+/*.sidebar-title:hover:active {
+  background-color: -moz-buttonhoverface;
+  color: -moz-buttonhovertext;
+}*/
+
+.sidepanel-splitter {
+  -moz-binding: url("chrome://global/content/bindings/splitter.xml#splitter");
+  min-height: 6px;
+  cursor: ns-resize;
+}
+
+.sidepanel-splitter[state="on"] {
+  background-color: -moz-menuhover;
+}
+
+.sidepanel-indicator {
+  min-height: 0px;
+  height: 0px;
+}
+
+.sidepanel-indicator[state="on"] {
+  min-height: 6px;
+  height: 6px;
+  background-color: -moz-menuhover;
+}
+
+.panel-button {
+  margin: 0;
+  border: none;
+}
+
+.delete-button {
+ list-style-image: url("chrome://cuemol2/content/images/toolbtn-delete1.png");
+}
+.delete-button[disabled="true"] {
+ list-style-image: url("chrome://cuemol2/content/images/toolbtn-delete1-dis.png");
+}
+.add-button {
+ list-style-image: url("chrome://cuemol2/content/images/toolbtn-new1.png");
+}
+.add-button[disabled="true"] {
+ list-style-image: url("chrome://cuemol2/content/images/toolbtn-new1-dis.png");
+}
+.prop-button {
+ list-style-image: url("chrome://cuemol2/content/images/toolbtn-prop1.png");
+}
+.prop-button[disabled="true"] {
+ list-style-image: url("chrome://cuemol2/content/images/toolbtn-prop1-dis.png");
+}
+
+.moveup-button {
+ list-style-image: url("chrome://cuemol2/content/images/toolbtn-moveup1.png");
+  -moz-image-region: rect(0px, 16px, 16px, 0px);
+}
+.moveup-button[disabled="true"] {
+  -moz-image-region: rect(0px, 32px, 16px, 16px);
+}
+
+.movedown-button {
+ list-style-image: url("chrome://cuemol2/content/images/toolbtn-movedown1.png");
+  -moz-image-region: rect(0px, 16px, 16px, 0px);
+}
+.movedown-button[disabled="true"] {
+  -moz-image-region: rect(0px, 32px, 16px, 16px);
+}
+
+
+/* ----- molstruct panel ----- */
+
+.arrow-button {
+ list-style-image: url("chrome://cuemol2/content/images/toolbtn-arrow2.png");
+  -moz-image-region: rect(0px, 16px, 16px, 0px);
+}
+.arrow-button[disabled="true"] {
+  -moz-image-region: rect(0px, 32px, 16px, 16px);
+}
+
+.centerat-button {
+ list-style-image: url("chrome://cuemol2/content/images/toolbtn-centerat1.png");
+}
+
+.zoom-button {
+ list-style-image: url("chrome://cuemol2/content/images/toolbtn-zoom1.png");
+  -moz-image-region: rect(0px, 16px, 16px, 0px);
+}
+.zoom-button[disabled="true"] {
+  -moz-image-region: rect(0px, 32px, 16px, 16px);
+}
+
+.cleartext-button {
+ list-style-image: url("chrome://cuemol2/content/images/toolbtn-clear-text1.png");
+  -moz-image-region: rect(0px, 16px, 16px, 0px);
+}
+.cleartext-button[disabled="true"] {
+  -moz-image-region: rect(0px, 32px, 16px, 16px);
+}
+
+
+/* ===== color picker ===== */
+
+mycolpicker {
+  -moz-binding: url("chrome://cuemol2/content/colpicker-bindings.xml#colpicker");
+}
+
+.colorpickertile {
+  width                 : 32px;
+  height                : 20px;
+  margin                : 1px;
+  border : 1px solid black;
+/*  border-left           : 1px solid ThreeDShadow;
+  border-top            : 1px solid ThreeDShadow;
+  border-right          : 1px solid ThreeDHighlight;
+  border-bottom         : 1px solid ThreeDHighlight;*/
+}
+
+.colorpickertile[selected="true"] {
+  -moz-border-top-colors: black white black;
+  -moz-border-bottom-colors: black white black;
+  -moz-border-left-colors: black white black;
+  -moz-border-right-colors: black white black;
+  border : 3px solid;
+}
+
+/* ===== molecular selection list ===== */
+
+molsellist {
+  -moz-binding: url("chrome://cuemol2/content/molsellist-bindings.xml#molsellist");
+}
+
+.errormsg[noerr="yes"] {
+  color: transparent
+}
+
+.errormsg {
+  color: red;
+  font-weight: bold;
+}
+
+/* ------------------------------------------------------------------- */
+/* property edit dialog */
+
+.propdlg-rowbox {
+  margin-bottom: 3px;
+}
+
+.propdlg-menulist {
+  border: 0 !important;
+  margin: 0;
+}
+
+/* ------------------------------------------------------------------- */
+/* alert popup (for app-update) */
+
+.alert-popup-panel {
+  -moz-appearance: none;
+  background: rgba(27%,27%,27%,.9) url(images/alertpopup-bkgnd.png) repeat-x;
+  /*background: rgba(27%,27%,27%,.9) repeat-x;*/
+  color: white;
+  border-style: none;
+  /*-moz-border-radius: 10px;*/
+  -border-radius: 10px;
+}
+
+.alertpopup-close-button {
+  -moz-appearance: none;
+  /*-moz-image-region: rect(0px, 14px, 14px, 0px);*/
+  -moz-image-region: rect(0px, 28px, 14px, 14px);
+  -moz-margin-end: 3px;
+  border: none;
+  padding: 0px;
+  list-style-image: url("chrome://cuemol2/content/images/tab-close2.png");
+}
+.alertpopup-close-button:hover:active {
+  -moz-image-region: rect(0px, 42px, 14px, 28px);
+}
+
+/* ------------------------------------------------------------------- */
+/* Tool ribbon UI */
+
+.ribbon-collapse-button {
+  width: 17px;
+  height: 11px;
+
+  -moz-appearance: none;
+  -moz-margin-start: 3px;
+  border: solid transparent 1px;
+  padding: 0px;
+  -moz-image-region: rect(0px, 17px, 11px, 0px);
+  list-style-image: url("chrome://cuemol2/content/images/tab-collapse3.png");
+
+}
+.ribbon-collapse-button:hover {
+  -moz-image-region: rect(33px, 17px, 44px, 0px);
+}
+.ribbon-collapse-button:hover:active {
+  -moz-image-region: rect(11px, 17px, 22px, 0px);
+}
+
+.ribbon-collapse-button[state="on"] {
+  -moz-image-region: rect(0px, 34px, 11px, 17px);
+}
+.ribbon-collapse-button:hover[state="on"] {
+  -moz-image-region: rect(33px, 34px, 44px, 17px);
+}
+.ribbon-collapse-button:hover:active[state="on"] {
+  -moz-image-region: rect(11px, 34px, 22px, 17px);
+}
+
+/*.menu-iconic-icon {
+ border: solid red 1px;
+ background-color: red;
+}*/
+
+.color-menuitem {
+  -moz-binding: url("chrome://cuemol2/content/sidepanelholder-bindings.xml#color-menuitem");
+}
+
+toolbarbutton[type="repeat"] {
+  -moz-binding: url("chrome://cuemol2/content/sidepanelholder-bindings.xml#tlbtn-repeat");
+}
+
+
+.undo-imgbutton {
+ list-style-image: url("chrome://cuemol2/content/images/toolbtn-undo1.png");
+  -moz-image-region: rect(0px, 16px, 16px, 0px);
+}
+.undo-imgbutton[disabled="true"] {
+  -moz-image-region: rect(0px, 32px, 16px, 16px);
+}
+
+.redo-imgbutton {
+ list-style-image: url("chrome://cuemol2/content/images/toolbtn-redo1.png");
+  -moz-image-region: rect(0px, 16px, 16px, 0px);
+}
+.redo-imgbutton[disabled="true"] {
+  -moz-image-region: rect(0px, 32px, 16px, 16px);
+}
+
+.history-imgbutton {
+ list-style-image: url("chrome://cuemol2/content/images/tabbtn-history1.png");
+ -moz-image-region: rect(0px, 16px, 16px, 0px);
+}
+/*.history-imgbutton[disabled="true"] {
+  -moz-image-region: rect(0px, 32px, 16px, 16px);
+}*/
+
+timeedit {
+  -moz-binding: url("chrome://cuemol2/content/anim/timeedit-binding.xml#timeedit");
+}
+
+camerasel {
+  -moz-binding: url("chrome://cuemol2/content/camerasel-binding.xml#camerasel");
+}
+

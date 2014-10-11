@@ -1,0 +1,71 @@
+// -*-Mode: C++;-*-
+//
+// Molecular object scripting interface
+//
+
+#ifndef MOL_COORD_QIF_INCLUDED
+#define MOL_COORD_QIF_INCLUDED
+
+#include <qlib/Vector.qif>
+#include <qlib/Matrix.qif>
+
+#include <qsys/Object.qif>
+#include <qsys/View.qif>
+
+#include "SelCommand.qif"
+#include "MolAtom.qif"
+#include "MolChain.qif"
+#include "ColoringScheme.qif"
+
+runtime_class MolCoord extends Object
+{
+  client_hdr "MolCoord.hpp";
+  client_name molstr::MolCoord;
+  dllexport MOLSTR_API;
+  using SelCommand;
+
+  scriptable;
+  smartptr;
+
+  // property string name => redirect(getName, setName);
+  property object<MolSelection$> sel => redirect(getSelection, setSelection);
+  default sel = molstr::SelectionPtr(new molstr::SelCommand());
+
+  // default molecular coloring refered by $molcol notation
+  property object<ColoringScheme$> coloring => redirect(getColSchm, setColSchm);
+  default coloring = molstr::ColoringScheme::createDefaultS();
+
+  property object<AbstractColor$> defaultcolor => redirect(getDefaultColor, setDefaultColor);
+  default defaultcolor = gfx::SolidColor::createRGB(1.0, 1.0, 1.0, 1.0);
+
+  //////////////////////
+  // Access methods
+
+  object<MolAtom$> getAtomByID(integer aid) => getAtom;
+  object<MolResidue$> getResidue(string name, string sindex) =>getResidScr;
+  object<MolChain$> getChain(string name);
+
+  string getChainsJSON();
+
+  object<Vector> getCenterPos(boolean fsel) => getCenterPosScr;
+  object<Vector> getBoundBoxMin(boolean fsel) => getBoundBoxMinScr;
+  object<Vector> getBoundBoxMax(boolean fsel) => getBoundBoxMaxScr;
+
+  void fitView(boolean fsel, object<View$> pView);
+  void fitView2(object<MolSelection$> sel, object<View$> pView);
+
+  // Operations
+  string getChainNameCandsJSON();
+  string getResidNameCandsJSON();
+  string getAtomNameCandsJSON();
+  string getElemNameCandsJSON();
+
+  // Edit
+  boolean copyAtoms(object<MolCoord$> pmol2, object<MolSelection$> psel2);
+  boolean deleteAtoms(object<MolSelection$> psel);
+
+  void xformByMat(object<Matrix> mat, object<MolSelection$> psel);
+};
+
+#endif
+

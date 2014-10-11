@@ -1,0 +1,25 @@
+// -*-Mode: C++;-*-
+//
+// QdfMol reader scripting interface
+//
+
+#ifndef QDF_MOL_READER_QIF_INCLUDED
+#define QDF_MOL_READER_QIF_INCLUDED
+
+#include "PDBFileReader.qif"
+
+runtime_class QdfMolReader extends PDBFileReader
+{
+  client_hdr "QdfMolReader.hpp";
+  client_name molstr::QdfMolReader;
+
+  scriptable;
+  smartptr;
+
+  property boolean build2ndry => m_bBuild2ndry;
+  default build2ndry = false;
+
+};
+
+#endif
+

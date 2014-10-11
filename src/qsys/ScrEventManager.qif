@@ -1,0 +1,27 @@
+// -*-Mode: C++;-*-
+//
+// Script interface for event manager
+//
+
+#ifndef SCR_EVENT_MANAGER_QIF_INCLUDED
+#define SCR_EVENT_MANAGER_QIF_INCLUDED
+
+#include <qlib/LScrCallBack.qif>
+
+runtime_class ScrEventManager
+{
+  client_hdr "ScrEventManager.hpp";
+  client_name qsys::ScrEventManager;
+
+  scriptable;
+  singleton;
+
+  integer addListener(object<LScrCallBack$>);
+  boolean removeListener(integer nid);
+
+  integer append(string cat, integer src_type, integer evt_type, integer src_uid);
+  boolean remove(integer id);
+};
+
+#endif
+

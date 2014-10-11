@@ -1,0 +1,36 @@
+// -*-Mode: C++;-*-
+//
+
+#ifndef OBJECT_WRITER_QIF_INCLUDED
+#define OBJECT_WRITER_QIF_INCLUDED
+
+#include "Object.qif"
+#include "InOutHandler.qif"
+
+runtime_class ObjWriter extends InOutHandler
+{
+  client_hdr "ObjWriter.hpp";
+  client_name qsys::ObjWriter;
+  dllexport QSYS_API;
+
+  scriptable;
+  smartptr;
+
+  ////////////////////
+  // Property definition
+
+  property boolean convToLink => redirect(isConvToLink, setConvToLink);
+  default convToLink = false;
+
+  ////////////////////
+  // Method definition
+
+  void attach(object<Object$> obj);
+  object<Object$> detach();
+
+  void write();
+
+};
+
+#endif
+

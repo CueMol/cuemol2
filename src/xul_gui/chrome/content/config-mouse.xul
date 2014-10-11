@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+
+<!DOCTYPE overlay [
+<!ENTITY % configDTD SYSTEM "chrome://cuemol2/locale/config-dialog.dtd">
+%configDTD;
+]>
+
+<overlay id="ConfigMouseOverlay"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  xmlns:html="http://www.w3.org/1999/xhtml">
+
+  <prefpane id="pane-mouseconf" flex="1"
+    onpaneload="gMouseConfPane.init();">
+
+    <script type="application/javascript" src="chrome://cuemol2/content/config-mouse.js"/>
+  
+    <preferences id="mouse-prefs">
+      <preference id="mouse-pref-multitouchpad" name="cuemol2.ui.mouse-multitouch-pad" type="bool"/>
+      <preference id="mouse-pref-emulrbtn" name="cuemol2.ui.mouse-emulate-rbutton" type="bool"/>
+      <preference id="mouse-momentum-scroll" name="cuemol2.ui.mouse-momentum-scroll" type="bool"/>
+    </preferences>
+
+    <label value="View operation preset: "/>
+    <menulist id="mousebind-styles" oncommand="window.gKeybindPane.validateWidget(event)">
+      <menupopup/>
+    </menulist>
+    
+    <hbox align="center">
+      <label value="XY-rot sensitivity:"/>
+      <textbox id="mouse-tbrad" flex="1" type="number"
+	decimalplaces="1" min="0.1" max="10.0" increment="0.1"/>
+    </hbox>
+
+    <hbox align="center">
+      <label value="Pick precision:"/>
+      <textbox id="mouse-hitprec" flex="1" type="number"
+	decimalplaces="1" min="0.0" max="100.0" increment="1.0"/>
+    </hbox>
+
+    <checkbox id="mouse-momentum-scroll" label="Momentum scroll"
+      preference="mouse-momentum-scroll"/>
+
+#ifdef XP_MACOSX
+    <!-- Multitouch pad (MacOSX only) -->
+    <checkbox id="mouse-multitouch-pad" label="Enable multi-touch trackpad"
+	      preference="mouse-pref-multitouchpad"/>
+    
+    <checkbox id="mouse-emulate-rbutton" label="Emulate mouse R button"
+	      preference="mouse-pref-emulrbtn"/>
+#endif
+
+  </prefpane>
+</overlay>

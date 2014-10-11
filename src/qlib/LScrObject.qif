@@ -1,0 +1,17 @@
+// -*-Mode: C++;-*-
+//
+// $Id: LScrObject.qif,v 1.2 2009/12/12 17:54:22 rishitani Exp $
+
+// This file is only used by including other QIF files,
+//  and don't have to be compiled.
+
+runtime_class LScrObject
+{
+  client_hdr "LScrObjects.hpp";
+  client_name qlib::LScrObjBase;
+
+  scriptable;
+  abstract;
+  smartptr;
+};
+

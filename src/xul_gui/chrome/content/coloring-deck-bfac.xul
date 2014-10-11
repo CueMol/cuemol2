@@ -1,0 +1,75 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+
+<!DOCTYPE overlay SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+
+<overlay id="coloring-deck-bfac-overlay"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <overlaytarget id="colpanel-deck">
+
+    <!--  for BfacColoring (5) -->
+    <vbox id="coloring-deck-bfac">
+
+      <description value="Bfac coloring:"/>
+      <vbox style="overflow-y: auto;" flex="1">
+	<hbox align="center">
+	  <label value="Mode: " flex="0"/>
+	  <menulist id="paint-bfac-mode" flex="1" class="propdlg-menulist"
+	    oncommand="cuemolui.panels.paint.onBfacChange(event)">
+	    <menupopup>
+	      <menuitem label="B-factor" value="bfac"/>
+	      <menuitem label="Occupancy" value="occ"/>
+	      <menuitem label="Distance from center" value="center"/>
+	    </menupopup>
+	  </menulist>
+	</hbox>
+
+	<grid flex="0">
+	  <columns>
+	    <column/><column flex="1"/>
+	  </columns>
+	  <rows>
+	    <row align="center">
+	      <label value="Low:"/>
+	      <mycolpicker id="paint-bfac-collo"
+		onchange="cuemolui.panels.paint.onBfacChange(event)"/>
+	    </row>
+	    <row align="center">
+	      <label value="High:"/>
+	      <mycolpicker id="paint-bfac-colhi"
+		onchange="cuemolui.panels.paint.onBfacChange(event)"/>
+	    </row>
+	  </rows>
+	</grid>
+
+	<groupbox flex="0">
+	  <caption label="Parameter"/>
+	  <menulist id="paint-bfac-auto" flex="0" class="propdlg-menulist"
+	    oncommand="cuemolui.panels.paint.onBfacChange(event)">
+	    <menupopup>
+	      <menuitem label="Manual" value="none"/>
+	      <menuitem label="Auto (by mol)" value="mol"/>
+	      <menuitem label="Auto (by rend)" value="rend"/>
+	    </menupopup>
+	  </menulist>
+
+	  <hbox align="center">
+	    <label value="Low: " flex="0"/>
+	    <textbox id="paint-bfac-parlo"  flex="1"
+	      type="number" decimalplaces="Infinity" size="3" value="0.0" min="-Infinity"
+	      onchange="cuemolui.panels.paint.onBfacChange(event)"/>
+	    <label value="High: " flex="0"/>
+	    <textbox id="paint-bfac-parhi" flex="1"
+	      type="number" decimalplaces="Infinity" size="3" value="0.0" min="-Infinity"
+	      onchange="cuemolui.panels.paint.onBfacChange(event)"/>
+	  </hbox>
+
+	</groupbox>
+      </vbox>
+
+    </vbox>
+
+  </overlaytarget>
+</overlay>
+

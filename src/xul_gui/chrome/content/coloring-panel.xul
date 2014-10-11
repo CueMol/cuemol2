@@ -1,0 +1,75 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+<?xul-overlay href="chrome://cuemol2/content/coloring-deck-paint.xul"?>
+<?xul-overlay href="chrome://cuemol2/content/coloring-deck-cpk.xul"?>
+<?xul-overlay href="chrome://cuemol2/content/coloring-deck-rainbow.xul"?>
+<?xul-overlay href="chrome://cuemol2/content/coloring-deck-bfac.xul"?>
+<?xul-overlay href="chrome://cuemol2/content/coloring-deck-elepot.xul"?>
+<!DOCTYPE overlay SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+
+<overlay id="coloring-panel"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <overlaytarget id="panels-overlay-target" hidden="true">
+
+    <script type="application/javascript" src="chrome://cuemol2/content/treeview.js"/>
+    <script type="application/javascript" src="chrome://cuemol2/content/object-menulist.js"/>
+    <script type="application/javascript" src="chrome://cuemol2/content/coloring-panel.js"/>
+
+    <vbox id="coloring-panel" title="&coloringPanel.title;" flex="1">
+      <hbox>
+	<!-- Renderer selection widget -->
+	<menulist id="colpanel-rend-menulist" flex="1" sizetopopup="none"/>
+
+	<!-- Dropdown menu widget -->
+	<toolbarbutton id="colpanel-coloring-menu" type="menu"
+	  class="dropdown-button"
+	  label="" disabled="true"
+	  style="margin: 3px 0px 3px;"
+	  oncommand="cuemolui.panels.paint.onChgColoring(event)">
+	  <menupopup>
+	    <!--<menuitem id="paint-type-paint" label="Paint coloring" type="radio" checked="true"/>-->
+	    <menu id="paint-type-paint" label="Paint coloring"
+	      onpopupshowing="cuemolui.panels.paint.onPaintColShowing(event)">
+	      <menupopup/>
+	    </menu>
+	    <menuitem value="paint-type-solid" label="Solid coloring"/>
+	    <menuitem value="paint-type-cpk" label="CPK coloring"/>
+	    <menuitem value="paint-type-bfac" label="Bfac/Occ coloring"/>
+	    <menuitem value="paint-type-rainbow" label="Rainbow coloring"/>
+	    <menuitem id="paint-type-elepot" value="paint-type-elepot" label="Electrostatic potential"/>
+	  </menupopup>
+	</toolbarbutton>
+      </hbox>
+
+      <deck id="colpanel-deck" selectedIndex="0" flex="1">
+
+	<!-- for non-coloring renderers (0) -->
+	<vbox id="coloring-deck-undef">
+	  <description value="Coloring isn't supported"/>
+	  <!--<numslider flex="1" size="2" class="simple-numslider"
+	    decimalplaces="0" min="0" max="360" increment="1" unit="&#0176;"/>-->
+	</vbox>
+
+	<!-- for non-PaintColoring coloring (1) -->
+	<vbox id="coloring-deck-unknown">
+	  <description id="colpanel-clsname"/>
+	  <hbox flex="0" align="center">
+	    <label value="Default color" flex="0"/>
+	    <mycolpicker id="paint-default-color" flex="1"
+	      onchange="cuemolui.panels.paint.onDefaultColorChanged(event)"/>
+	  </hbox>
+	</vbox>
+
+      </deck>
+    </vbox>
+  </overlaytarget>
+
+  <overlaytarget id="window-leftpanels-popup">
+    <menuitem id="menu-coloring-panel-toggle"
+      label="&coloringPanel.title;" type="checkbox" autocheck="false"
+      oncommand="cuemolui.sidepanel.onToggle('coloring-panel')" />
+  </overlaytarget>
+
+</overlay>
+

@@ -1,0 +1,56 @@
+#!/usr/bin/perl
+
+my $arch = "@OSXDISTR_ARCH@";
+my $top_srcdir = "@top_srcdir@";
+
+my $inst_top = $ARGV[0];
+my $povray_dir = $ARGV[2];
+my $ffmpeg_dir = $ARGV[3];
+
+my $ICON = "$top_srcdir/osxbuild/cuemol-disk1.icns";
+
+if (!-d $inst_top) {
+    die "inst_top ($inst_top) not found.\nUsage: $0 <inst_top> <top_srcdir> <povray_dir>\n";
+}
+if (!-d $top_srcdir) {
+    die "top_srcdir ($top_srcdir) not found.\nUsage: $0 <inst_top> <top_srcdir> <povray_dir>\n";
+}
+if (!-d $povray_dir) {
+    die "povray_dir ($povray_dir) not found.\nUsage: $0 <inst_top> <top_srcdir> <povray_dir>\n";
+}
+
+my $RSYNC = "rsync";
+
+my $dist_top; 
+open(IN, "$top_srcdir/version.hpp") || die "$?:$!";
+while (<IN>) {
+    if (/PRODUCTVER\s+(\d+),(\d+),(\d+),(\d+)/) {
+	$dist_top = "CueMol2-$1.$2.$3.$4-$arch"; 
+    }
+}
+close(IN);
+
+print "output: $dist_top\n";
+
+#####
+
+my $TARGET_POV_DIR = "$dist_top/CueMol2.app/Contents/Resources/povray";
+system("mkdir -p $TARGET_POV_DIR/bin");
+system("cp $povray_dir/unix/povray $TARGET_POV_DIR/bin/");
+system("cp -r $povray_dir/include $TARGET_POV_DIR");
+
+if (-d $ffmpeg_dir) {
+    my $TARGET_DIR = "$dist_top/CueMol2.app/Contents/Resources/ffmpeg";
+    system("mkdir -p $TARGET_DIR/bin");
+    system("cp $ffmpeg_dir/ffmpeg $TARGET_DIR/bin/");
+}
+
+# system("perl $top_srcdir/osxbuild/pkg-dmg --source $dist_top --target ${dist_top}+povray.dmg"); 
+
+my $pkgcmd = "perl $top_srcdir/osxbuild/pkg-dmg  ".
+    "--source $dist_top ".
+    "--target ${dist_top}+povray.dmg ".
+    "--icon $ICON ".
+    "--symlink /Applications";
+print("$pkgcmd\n");
+system($pkgcmd); 

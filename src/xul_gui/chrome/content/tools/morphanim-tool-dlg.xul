@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+
+<dialog
+  id     = "MorphAnimTool"
+  windowtype="CueMol2:MorphAnimTool"
+  title  = "Morph animation tool"
+  xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  buttons="accept"
+  ondialogaccept="return window.gDlg.onDialogAccept()">
+
+  <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/treeview.js"/>
+  <script type="application/javascript; version=1.8" src="chrome://cuemol2/content/tools/morphanim-tool.js"/>
+
+  <script type="application/javascript">
+    window.gDlg = new cuemolui.MorphAnimTool();
+  </script>
+
+  <vbox>
+    <tree id="mol_list" flex="1" style="height: 20em; width: 30em;"
+      hidecolumnpicker="true">
+      <treecols>
+	<treecol id="treecol_name" label="Name" flex="1" primary="true" persist="width"/>
+	<splitter class="tree-splitter"/>
+	<treecol id="treecol_src" label="Source" flex="1" persist="width"/>
+      </treecols>
+      <treechildren class="object-tree-children"/>
+    </tree>
+
+    <hbox flex="1">
+      <!--
+      <toolbarbutton
+	id="animpanel-moveupbtn"
+	class="toolbar-button moveup-button"
+	oncommand="window.gDlg.onMoveUpCmd(event);"
+	tooltiptext="Move up"/>
+      
+      <toolbarbutton
+	id="animpanel-movedownbtn"
+	class="toolbar-button movedown-button"
+	oncommand="window.gDlg.onMoveDownCmd(event);"
+	tooltiptext="Move down"/>
+      -->
+
+      <toolbarbutton
+	id="delete-btn"
+	class="toolbar-button delete-button"
+	oncommand="window.gDlg.onDelete(event);"
+	tooltiptext="Delete"/>
+
+      <spacer flex="1"/>
+      
+      <toolbarbutton
+	id="add-btn"
+	class="toolbar-button add-button"
+	oncommand="window.gDlg.onAdd(event);"
+	tooltiptext="Add"/>
+
+    </hbox>
+
+  </vbox>
+</dialog>
+

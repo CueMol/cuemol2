@@ -1,0 +1,26 @@
+// -*-Mode: C++;-*-
+//
+// PDB file writer scripting interface
+//
+
+#ifndef PDB_FILE_WRITER_QIF_INCLUDED
+#define PDB_FILE_WRITER_QIF_INCLUDED
+
+#include <qsys/ObjWriter.qif>
+#include "SelCommand.qif"
+
+runtime_class PDBFileWriter extends ObjWriter
+{
+  client_hdr "PDBFileWriter.hpp";
+  client_name molstr::PDBFileWriter;
+  using SelCommand;
+
+  scriptable;
+  smartptr;
+
+  property object<MolSelection$> sel => redirect(getSelection, setSelection);
+  default sel = molstr::SelectionPtr(new molstr::SelCommand());
+};
+
+#endif
+

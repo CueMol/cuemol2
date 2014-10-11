@@ -1,0 +1,15 @@
+manifest chrome/cuemol2.manifest
+manifest chrome/inspector.manifest
+interfaces components/qICueMol.xpt
+interfaces components/qIObjWrapper.xpt
+interfaces components/qINativeWidget.xpt
+binary-component components/xpcqm2.dll ABI=WINNT_x86-msvc
+binary-component components/libxpcqm.0.dylib ABI=Darwin_x86-gcc3
+binary-component components/libxpcqm.0.dylib ABI=Darwin_x86_64-gcc3
+binary-component components/libxpcqm.so.0.0.0 ABI=Linux_x86-gcc3
+binary-component components/libxpcqm.so.0.0.0 ABI=Linux_x86_64-gcc3
+
+component {4349a533-9aa1-4760-85ef-f537cc69d13c} components/cuemol2-cmdline.js
+contract @cuemol.org/cuemol2-clh;1 {4349a533-9aa1-4760-85ef-f537cc69d13c}
+category command-line-handler m-cuemol2 @cuemol.org/cuemol2-clh;1
+

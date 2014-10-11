@@ -1,0 +1,29 @@
+// -*-Mode: C++;-*-
+//
+// $Id: MainChainRenderer.qif,v 1.5 2010/12/30 17:49:41 rishitani Exp $
+//
+
+#ifndef MAIN_CHAIN_RENDERER_QIF_INCLUDED
+#define MAIN_CHAIN_RENDERER_QIF_INCLUDED
+
+#include "MolRenderer.qif"
+
+runtime_class MainChainRenderer extends MolRenderer
+{
+  client_hdr "MainChainRenderer.hpp";
+  client_name molstr::MainChainRenderer;
+
+  // This is required for implementing MolRenderer subclasses in other DLLs!!
+  dllexport MOLSTR_API;
+
+  scriptable;
+  abstract;
+  smartptr;
+
+  property string pivotatom => redirect(getPivAtomName, setPivAtomName);
+  default pivotatom = "";
+
+};
+
+#endif
+

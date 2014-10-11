@@ -1,0 +1,158 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+<!DOCTYPE overlay SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+
+<overlay id="anim-panel"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <overlaytarget id="panels-overlay-target" hidden="true">
+
+    <style xmlns="http://www.w3.org/1999/xhtml">
+      <![CDATA[
+#anim-listbox-children:-moz-tree-twisty {
+  width: 0px ! important;
+}
+	]]>
+    </style>
+
+    <script type="application/javascript; version=1.8" src="chrome://cuemol2/content/treeview.js"/>
+    <script type="application/javascript; version=1.8" src="chrome://cuemol2/content/object-menulist.js"/>
+    <script type="application/javascript; version=1.8" src="chrome://cuemol2/content/anim/anim-panel.js"/>
+
+    <vbox id="anim-panel" title="Animation" flex="1">
+
+      <hbox align="center">
+	<label value="Duration: "/>
+	<timeedit id="anim_duration" readonly="true" flex="1"/>
+      </hbox>
+
+      <hbox align="center">
+	<label value="Start cam: "/>
+	<camerasel id="anim_startcam" flex="1"/>
+      </hbox>
+
+      <!-- animation list box -->
+      <tree id="anim-listbox" flex="1"
+	hidecolumnpicker="true" editable="false"
+	treelines="false" seltype="multiple">
+	<treecols>
+	  <treecol id="anim_name" primary="true"
+	    label="Name" flex="2"
+	    persist="hidden ordinal width"/>
+	  <splitter class="tree-splitter"/>
+	  <treecol id="anim_start"
+	    label="Start" flex="1"
+	    persist="hidden ordinal width"/>
+	  <splitter class="tree-splitter"/>
+	  <treecol id="anim_end"
+	    label="End" flex="1"
+	    persist="hidden ordinal width"/>
+	</treecols>
+	<treechildren id="anim-listbox-children" class="noindent-tree-children"/>
+      </tree>
+
+      <!-- command buttons -->
+      <hbox>
+	<toolbarbutton
+	  id="animpanel-addbtn"
+	  class="toolbar-button add-button"
+	  type="menu"
+	  oncommand="cuemolui.panels.anim.onAddCmd(event);"
+	  tooltiptext="Add">
+	  <menupopup id="animPanelAddPopup">
+	    <menuitem label="Simple spin" value="SimpleSpin"/>
+	    <menuitem label="Camera motion" value="CamMotion"/>
+	    <menuitem label="Show" value="ShowAnim"/>
+	    <menuitem label="Hide" value="HideAnim"/>
+	    <menuitem label="Slide In" value="SlideInAnim"/>
+	    <menuitem label="Slide Out" value="SlideOutAnim"/>
+	    <menuitem label="Mol Morphing" value="MolAnim"/>
+	    <menuitem label="No operation" value="NoopAnimObj"/>
+	  </menupopup>
+	</toolbarbutton>
+	<toolbarbutton
+	  id="animpanel-delbtn"
+	  class="toolbar-button delete-button"
+	  disabled="true"
+	  oncommand="cuemolui.panels.anim.onDeleteCmd(event);"
+	  tooltiptext="Delete"/>
+	<!--<toolbarbutton
+	  id="animpanel-delallbtn"
+	  class="toolbar-button cleartext-button"
+	  oncommand="cuemolui.panels.anim.onDeleteCmd(event);"
+	  tooltiptext="Delete all"/>-->
+	<toolbarbutton
+	  id="animpanel-propbtn"
+	  class="toolbar-button prop-button"
+	  disabled="true"
+	  oncommand="cuemolui.panels.anim.onPropCmd(event)"
+	  tooltiptext="Change"/>
+
+	<toolbarbutton
+	  id="animpanel-moveupbtn"
+	  class="toolbar-button moveup-button"
+	  disabled="true"
+	  oncommand="cuemolui.panels.anim.onMoveUpCmd(event);"
+	  tooltiptext="Move up"/>
+	<toolbarbutton
+	  id="animpanel-movedownbtn"
+	  class="toolbar-button movedown-button"
+	  disabled="true"
+	  oncommand="cuemolui.panels.anim.onMoveDownCmd(event);"
+	  tooltiptext="Move down"/>
+
+      </hbox>
+
+    </vbox>
+  </overlaytarget>
+
+  <!-- Main Window Menu -->
+  <overlaytarget id="window-leftpanels-popup">
+    <menuitem id="menu-anim-panel-toggle"
+      label="Animation" type="checkbox" autocheck="false"
+      oncommand="cuemolui.sidepanel.onToggle('anim-panel')" />
+  </overlaytarget>
+
+  <overlaytarget id="menus-overlay-target">
+    <popupset>
+      <menupopup id="animPanelCtxtMenu"
+	onpopupshowing="cuemolui.panels.anim.onCtxtMenuShowing(event)">
+	<menuitem label="Change..."
+	  oncommand="cuemolui.panels.anim.onPropCmd(event)" />
+	<menuitem label="Delete"
+	  oncommand="cuemolui.panels.anim.onDeleteCmd(event)" />
+	
+	<menu label="Add..." oncommand="cuemolui.panels.anim.onAddCmd(event)">
+	  <menupopup>
+	    <menuitem label="Simple spin" value="SimpleSpin"/>
+	    <menuitem label="Camera motion" value="CamMotion"/>
+	    <menuitem label="Show" value="ShowAnim"/>
+	    <menuitem label="Hide" value="HideAnim"/>
+	    <menuitem label="Slide In" value="SlideInAnim"/>
+	    <menuitem label="Slide Out" value="SlideOutAnim"/>
+	    <menuitem label="Mol Morphing" value="MolAnim"/>
+	    <menuitem label="No operation" value="NoopAnimObj"/>
+	  </menupopup>
+	</menu>
+
+	<menuitem label="Move up"
+	  oncommand="cuemolui.panels.anim.onMoveUpCmd(event)" />
+	<menuitem label="Move down"
+	  oncommand="cuemolui.panels.anim.onMoveDownCmd(event)" />
+
+	<!--
+	<menuseparator/>
+	<menuitem label="Cut"
+	  oncommand="cuemolui.panels.anim.onCut(event);"/>
+	<menuitem label="Copy"
+	  oncommand="cuemolui.panels.anim.onCopy(event);"/>
+	<menuitem id="animPanelCtxtMenu-Paste"
+	  label="Paste"
+	  oncommand="cuemolui.panels.anim.onPaste(event);"/>
+	  -->
+      </menupopup>
+    </popupset>
+  </overlaytarget>
+  
+</overlay>
+

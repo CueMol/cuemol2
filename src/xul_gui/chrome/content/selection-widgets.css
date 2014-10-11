@@ -1,0 +1,90 @@
+
+/*
+  CSS for mol selection widgets
+  $Id: selection-widgets.css,v 1.3 2010/11/22 15:59:55 rishitani Exp $
+*/
+
+/* ------------------------------------------------------------------- */
+
+.molselitem-hier {
+  -moz-binding: url("chrome://cuemol2/content/selection-widget-bindings.xml#molselitem-hier");
+}
+
+.molselitem-term {
+  -moz-binding: url("chrome://cuemol2/content/selection-widget-bindings.xml#molselitem-term");
+}
+
+.molselitem-around {
+  -moz-binding: url("chrome://cuemol2/content/selection-widget-bindings.xml#molselitem-around");
+}
+
+/*.molselitem[selected="true"] {
+  -moz-binding: url("chrome://cuemol2/content/selection-widget-bindings.xml#molselitem-selected");
+}*/
+
+.molselitem-dropmarker {
+  -moz-appearance: button;
+}
+
+.molselitem-dropmarker:hover {
+  -moz-appearance: button;
+}
+
+molselboolop {
+  -moz-binding: url("chrome://cuemol2/content/selection-widget-bindings.xml#molsel-boolop");
+}
+
+molselboolop[noop] {
+  -moz-binding: url("chrome://cuemol2/content/selection-widget-bindings.xml#molsel-noop");
+}
+
+.molselitem-menulist {
+  -moz-appearance: none;
+  -moz-border-top-colors: none;
+  -moz-border-bottom-colors: none;
+  -moz-border-left-colors: none;
+  -moz-border-right-colors: none;
+  border: 1px solid #CCC;
+  padding: 0;
+  margin: 1px;
+  background-color: white;
+}
+
+.molselitem-menulist:hover {
+  background-image: url(chrome://cuemol2/content/images/molselitem-bkgnd.png);
+}
+
+.molselitem-menulist > .menulist-editable-box  {
+  padding: 0;
+  margin: 0;
+}
+
+.molselitem-textbox {
+  -moz-appearance: none;
+  -moz-border-top-colors: none !important;
+  -moz-border-bottom-colors: none !important;
+  -moz-border-left-colors: none !important;
+  -moz-border-right-colors: none !important;
+  border: 1px solid #CCC !important;
+  margin: 1px !important;
+  background-color: white;
+}
+
+.molsel-boolop-btn {
+  -moz-appearance: none;
+  -moz-border-top-colors: none !important;
+  -moz-border-bottom-colors: none !important;
+  -moz-border-left-colors: none !important;
+  -moz-border-right-colors: none !important;
+  border: 1px solid #CCC !important;
+  margin: 1px !important;
+  background-color: white;
+}
+
+.molsel-boolop-btn:hover {
+  /*-moz-appearance: toolbarbutton;*/
+  border: 1px solid #CCC !important;
+  /*background-color: ButtonFace;*/
+  background-image: url(chrome://cuemol2/content/images/molselitem-bkgnd.png);
+}
+

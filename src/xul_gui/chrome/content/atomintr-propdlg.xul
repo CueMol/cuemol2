@@ -1,0 +1,155 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+<?xul-overlay href="chrome://cuemol2/content/propeditor-generic-page.xul"?>
+<?xul-overlay href="chrome://cuemol2/content/property/renderer-common-page.xul"?>
+
+<!-- -*- xml -*- -->
+
+<dialog
+  id     = "atomintr-propdlg"
+  title  = "Interaction renderer properties"
+  xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  buttons="extra1,extra2,accept,cancel"
+  buttonlabelextra1="Reset all to default"
+  ondialogextra1="gMain.resetAllToDefault()"
+  buttonlabelextra2="Apply"
+  ondialogextra2="gMain.apply()"
+  ondialogaccept="return gMain.onDialogAccept(event);"
+>
+
+  <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/propeditor-generic-page.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/property/renderer-common-page.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/atomintr-propdlg.js"/>
+
+  <tabbox id="propdlg-tabbox" flex="1">
+    <tabs id="tabs-overlay-target">
+      <tab label="Common" id="common-tab"/>
+      <tab label="Interaction" id="atomintr-tab"/>
+    </tabs>
+    <tabpanels id="tabpanels-overlay-target" flex="1">
+      <tabpanel flex="1" orient="vertical">
+	<overlaytarget id="renderer-common-page"/>
+      </tabpanel>
+
+      <tabpanel flex="1" orient="vertical">
+	
+	<grid flex="0">
+	  <columns>
+	    <column flex="0"/>
+	    <column flex="1"/>
+	  </columns>
+
+	  <rows>
+	    <hbox flex="0" align="center" class="propdlg-rowbox">
+	      <label value="Mode:" />
+	      <menulist id="aintrpage-mode" flex="0" class="propdlg-menulist"
+		oncommand="gAintr.validateWidgets(event)">
+		<menupopup>
+		  <menuitem label="Simple line" value="simple"/>
+		  <menuitem label="3D tube" value="fancy"/>
+		</menupopup>
+	      </menulist>
+	      <spacer width="10px"/>
+	      <checkbox id="aintrpage-showlabel" flex="0"
+		label="Show label" oncommand="gAintr.validateWidgets(event)"/>
+
+	      <spacer flex="1"/>
+	    </hbox>
+	    
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Width:"/>
+	      <numslider id="aintrpage-width" size="3"
+		decimalplaces="2" min="0" max="5" increment="0.05" unit="&#0197;"
+		onchange="gAintr.validateWidgets(event)"/>
+	    </row>
+
+	    <hbox flex="0" align="center" class="propdlg-rowbox">
+	      <label value="Color:"/>
+	      <mycolpicker id="aintrpage-color" size="1" flex="1"
+		onchange="gAintr.validateWidgets(event)"/>
+	      <spacer flex="1"/>
+	    </hbox>
+
+	  </rows>
+	</grid>
+
+	<groupbox orient="vertical">
+	  <caption>
+	    <checkbox id="aintrpage-dashed" flex="0"
+	      label="Dashed line" oncommand="gAintr.validateWidgets(event)"/>
+	  </caption>
+
+	  <grid flex="0">
+	    <columns>
+	      <column flex="1"/>
+	      <column flex="1"/>
+	      <column flex="1"/>
+	      <column flex="1"/>
+	      <column flex="1"/>
+	      <column flex="1"/>
+	    </columns>
+
+	    <rows>
+	      <row align="center" onchange="gAintr.validateWidgets(event)">
+		<textbox size="1" id="aintrpage-stp0"/>
+		<textbox size="1" id="aintrpage-stp1"/>
+		<textbox size="1" id="aintrpage-stp2"/>
+		<textbox size="1" id="aintrpage-stp3"/>
+		<textbox size="1" id="aintrpage-stp4"/>
+		<textbox size="1" id="aintrpage-stp5"/>
+	      </row>
+	      <row align="center">
+		<hbox pack="center"><label class="plain" value="dash" /></hbox>
+		<hbox pack="center"><label class="plain" value="gap" /></hbox>
+		<hbox pack="center"><label class="plain" value="dash" /></hbox>
+		<hbox pack="center"><label class="plain" value="gap" /></hbox>
+		<hbox pack="center"><label class="plain" value="dash" /></hbox>
+		<hbox pack="center"><label class="plain" value="gap" /></hbox>
+	      </row>
+	    </rows>
+	  </grid>
+	</groupbox>
+	
+	<groupbox>
+	  <caption label="3D tube options"/>
+	  <hbox align="center">
+	    <label value="Detail:" />
+	    <menulist id="aintrpage-detail" flex="0" class="propdlg-menulist" editable="true"
+	      onselect="gAintr.validateWidgets(event)"
+	      onchange="gAintr.validateWidgets(event)">
+	      <menupopup>
+		<menuitem label="2" value="2"/>
+		<menuitem label="4" value="4"/>
+		<menuitem label="6" value="6"/>
+		<menuitem label="8" value="8"/>
+		<menuitem label="10" value="10"/>
+		<menuitem label="15" value="15"/>
+		<menuitem label="20" value="20"/>
+	      </menupopup>
+	    </menulist>
+
+	    <spacer width="10px"/>
+
+	    <label value="Cap type:" />
+	    <menulist id="aintrpage-capend" flex="0" class="propdlg-menulist"
+	      oncommand="gAintr.validateWidgets(event)">
+	      <menupopup>
+		<menuitem label="Flat" value="flat"/>
+		<menuitem label="Round" value="sphere"/>
+		<menuitem label="Arrow" value="arrow"/>
+	      </menupopup>
+	    </menulist>
+
+	  </hbox>
+
+	</groupbox>
+
+      </tabpanel>
+
+    </tabpanels>
+  </tabbox>
+
+</dialog>
+

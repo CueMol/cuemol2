@@ -1,0 +1,22 @@
+// -*-Mode: C++;-*-
+//
+// $Id: MS2TestRenderer.qif,v 1.1 2011/02/10 14:17:43 rishitani Exp $
+//
+
+#ifndef MS2TEST_RENDERER_QIF_INCLUDED
+#define MS2TEST_RENDERER_QIF_INCLUDED
+
+#include <modules/molstr/MolRenderer.qif>
+
+runtime_class MS2TestRenderer extends MolRenderer
+{
+  client_hdr "MS2TestRenderer.hpp";
+  client_name surface::MS2TestRenderer;
+
+  scriptable;
+  smartptr;
+  cloneable;
+};
+
+#endif
+

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>LSArchitecturePriority</key>
+    <array>
+      <string>@OSXDISTR_LSAP@</string>
+    </array>
+    
+    <key>CFBundleDevelopmentRegion</key>
+    <string>English</string>
+
+    <key>CFBundleDocumentTypes</key>
+    <array>
+      <dict>
+        <key>CFBundleTypeExtensions</key>
+        <array>
+          <string>qsc</string>
+        </array>
+        <key>CFBundleTypeIconFile</key>
+        <string>document-qsc.icns</string>
+        <key>CFBundleTypeName</key>
+        <string>CueMol2 Scene</string>
+        <key>CFBundleTypeRole</key>
+        <string>Editor</string>
+      </dict>
+      <dict>
+        <key>CFBundleTypeExtensions</key>
+        <array>
+          <string>qsl</string>
+        </array>
+        <key>CFBundleTypeIconFile</key>
+        <string>document-qsl.icns</string>
+        <key>CFBundleTypeName</key>
+        <string>CueMol2 Light-weight Scene</string>
+        <key>CFBundleTypeRole</key>
+        <string>Editor</string>
+      </dict>
+    </array>
+
+    <key>CFBundleExecutable</key>
+    <string>cuemol</string>
+
+    <key>CFBundleGetInfoString</key>
+    <string>CueMol2 2.0</string>
+
+    <key>CFBundleIconFile</key>
+    <string>cuemol2</string>
+
+    <key>CFBundleIdentifier</key>
+    <string>org.cuemol.cuemol2</string>
+
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+
+    <key>CFBundleName</key>
+    <string>CueMol2</string>
+
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+
+    <key>CFBundleShortVersionString</key>
+    <string>2.0</string>
+
+    <key>CFBundleSignature</key>
+    <string>QMO2</string>
+
+    <key>CFBundleVersion</key>
+    <string>1.0</string>
+
+    <key>NSAppleScriptEnabled</key>
+    <true/>
+
+    <key>CGDisableCoalescedUpdates</key>
+    <true/>
+
+    <key>LSMinimumSystemVersion</key>
+    <string>10.6</string>
+
+    <key>NSHighResolutionCapable</key>
+    <true/>
+
+  </dict>
+</plist>

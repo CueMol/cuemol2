@@ -1,0 +1,38 @@
+// -*-Mode: C++;-*-
+//
+// $Id: MolRenderer.qif,v 1.11 2011/02/10 14:21:00 rishitani Exp $
+//
+
+#ifndef MOL_RENDERER_QIF_INCLUDED
+#define MOL_RENDERER_QIF_INCLUDED
+
+#include <qsys/Renderer.qif>
+#include "SelCommand.qif"
+#include "ColoringScheme.qif"
+
+runtime_class MolRenderer extends Renderer
+{
+  client_hdr "MolRenderer.hpp";
+  client_name molstr::MolRenderer;
+  using SelCommand;
+
+  // This is required for implementing MolRenderer subclasses in other DLLs!!
+  dllexport MOLSTR_API;
+
+  scriptable;
+  abstract;
+  smartptr;
+
+  property object<MolSelection$> sel => redirect(getSelection, setSelection);
+  default sel = molstr::SelectionPtr(new molstr::SelCommand());
+
+  property object<ColoringScheme$> coloring => redirect(getColSchm, setColSchm);
+  default coloring = molstr::ColoringScheme::createDefaultS();
+
+  property object<AbstractColor$> defaultcolor => m_defaultColor;
+  default defaultcolor = gfx::SolidColor::createRGB(1.0, 1.0, 1.0, 1.0);
+
+};
+
+#endif
+

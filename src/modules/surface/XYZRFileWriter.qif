@@ -1,0 +1,25 @@
+// -*-Mode: C++;-*-
+//
+// MSMS file reader scripting interface
+//
+
+#ifndef XYZR_FILE_WRITER_QIF_INCLUDED
+#define XYZR_FILE_WRITER_QIF_INCLUDED
+
+#include <qsys/ObjWriter.qif>
+#include <modules/molstr/SelCommand.qif>
+
+runtime_class XYZRFileWriter extends ObjWriter
+{
+  client_hdr "XYZRFileWriter.hpp";
+  client_name surface::XYZRFileWriter;
+
+  scriptable;
+  smartptr;
+
+  property object<MolSelection$> sel => redirect(getSelection, setSelection);
+
+};
+
+#endif
+

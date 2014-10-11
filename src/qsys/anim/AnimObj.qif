@@ -1,0 +1,38 @@
+// -*-Mode: C++;-*-
+//
+// Animation object scripting interface
+//
+
+#ifndef ANIMOBJ_QIF_INCLUDED
+#define ANIMOBJ_QIF_INCLUDED
+
+#include "qlib/TimeValue.qif"
+
+runtime_class AnimObj
+{
+  client_hdr "AnimObj.hpp";
+  client_name qsys::AnimObj;
+  dllexport QSYS_API;
+
+  // interface attributes
+  scriptable;
+  smartptr;
+
+  // properties
+  property string name => m_name;
+
+  property boolean disabled => redirect(isDisabled, setDisabled);
+  default disabled = false;
+
+  property object<TimeValue> start => redirect(getScrStart, setScrStart);
+  property object<TimeValue> end => redirect(getScrEnd, setScrEnd);
+
+  property real quadric => redirect(getQuadric, setQuadric);
+  default quadric = 0.0;
+
+  // non-persistent properties
+  property integer uid => redirect(getUID, XXX) (readonly);
+};
+
+#endif
+

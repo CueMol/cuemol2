@@ -1,0 +1,47 @@
+// -*-Mode: C++;-*-
+//
+// $Id: BfacColoring.qif,v 1.2 2011/01/01 15:58:20 rishitani Exp $
+//
+
+#include "ColoringScheme.qif"
+
+runtime_class BfacColoring extends ColoringScheme
+{
+  client_hdr "BfacColoring.hpp";
+  client_name molstr::BfacColoring;
+
+  scriptable;
+  cloneable;
+  smartptr;
+
+  /// Mode
+  enumdef mode {
+    bfac = molstr::BfacColoring::BFC_BFAC;
+    occ = molstr::BfacColoring::BFC_OCC;
+    center = molstr::BfacColoring::BFC_CENTER;
+  }
+  property enum mode => m_nMode;
+  default mode = "bfac";
+
+  /// Auto param mode
+  enumdef auto {
+    none = molstr::BfacColoring::BFA_NONE;
+    mol = molstr::BfacColoring::BFA_MOL;
+    rend = molstr::BfacColoring::BFA_REND;
+  }
+  property enum auto => m_nAuto;
+  default auto = "mol";
+
+  property object<AbstractColor$> lowcol => m_colLow;
+  default lowcol = gfx::SolidColor::createRGB(0.0, 0.0, 1.0);
+
+  property object<AbstractColor$> highcol => m_colHigh;
+  default highcol = gfx::SolidColor::createRGB(1.0, 0.0, 0.0);
+
+  property real lowpar => m_parLow;
+  default lowpar = 20.0;
+
+  property real highpar => m_parHigh;
+  default highpar = 80.0;
+};
+

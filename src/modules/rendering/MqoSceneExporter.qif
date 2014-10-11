@@ -1,0 +1,29 @@
+// -*-Mode: C++;-*-
+//
+
+#ifndef MQO_SCENE_EXPORTER_QIF_INCLUDED
+#define MQO_SCENE_EXPORTER_QIF_INCLUDED
+
+#include <qsys/SceneExporter.qif>
+
+runtime_class MqoSceneExporter extends SceneExporter
+{
+  client_hdr "MqoSceneExporter.hpp";
+  client_name render::MqoSceneExporter;
+
+  scriptable;
+  smartptr;
+
+  ////////////////////
+  // Property definition
+
+  property boolean perspective => m_bPerspective;
+
+  property boolean useClipZ => m_bUseClipZ;
+
+  property integer gradSteps => m_nGradSteps;
+
+};
+
+#endif
+

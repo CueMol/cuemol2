@@ -1,0 +1,347 @@
+/*
+  CSS for MacOS X UI
+  $Id: macosx.css,v 1.8 2011/04/30 10:20:33 rishitani Exp $
+*/
+
+/* ----- default splitter styles ----- */
+/* vertical */
+splitter {
+  min-width: 6px;
+  min-height: 6px;
+  background-image: none;
+  background-color: threedface;
+  border-left: 1px solid rgba(0,0,0,0.35);
+  border-right: 1px solid rgba(0,0,0,0.35);
+}
+
+/* horizontal */
+splitter[orient="vertical"] {
+  border-left: none;
+  border-right: none;
+  border-top: 1px solid rgba(0,0,0,0.35);
+  border-bottom: 1px solid rgba(0,0,0,0.35);
+}
+
+#content-holder {
+  border-style:  solid none none none;
+  border-width: 2px 0 0 0;
+  -moz-border-top-colors: rgba(0,0,0,.5) rgba(255,255,255,.75) ;
+}
+
+/* ------------------------------------------------------------------- */
+/* toolbar-ribbon */
+
+.ribbon-tabs {
+  font: -moz-button;
+  background-image: -moz-linear-gradient(rgba(0,0,0,0.0), rgba(0,0,0,0.1));
+}
+
+.ribbon-tabs .tabs-left {
+  display: none;
+}
+
+.ribbon-tabs .tabs-right {
+}
+
+.ribbon-tabbox {
+ margin: 0;
+}
+
+.ribbon-tab {
+  -moz-appearance: none;
+  -moz-border-radius: 2px 2px 0 0;
+  color: #666;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+  /*margin: 1px 0 0;
+  padding: 0 5px 0px;*/
+  margin: none;
+  padding: none;
+  border-style:  solid solid none;
+  border-width: 3px;
+  -moz-border-top-colors: rgba(0,0,0,.04) rgba(0,0,0,.17) rgba(255,255,255,.35);
+  -moz-border-bottom-colors: rgba(0,0,0,.04) rgba(0,0,0,.17) rgba(255,255,255,.25);
+  -moz-border-right-colors: rgba(0,0,0,.04) rgba(0,0,0,.17) rgba(255,255,255,.35);
+  -moz-border-left-colors: rgba(0,0,0,.04) rgba(0,0,0,.17) rgba(255,255,255,.35);
+  background-clip: padding-box;
+  -moz-background-clip: padding;
+  text-align: center;
+  background-image: -moz-linear-gradient(rgba(0,0,0,0.0), rgba(0,0,0,0.1));
+  /*height: 24px;*/
+}
+
+.ribbon-tab[selected="true"] {
+  -moz-border-top-colors: rgba(0,0,0,.04) rgba(0,0,0,.17) rgba(255,255,255,.9);
+  -moz-border-right-colors: rgba(0,0,0,.04) rgba(0,0,0,.17) rgba(255,255,255,.6);
+  -moz-border-left-colors: rgba(0,0,0,.04) rgba(0,0,0,.17) rgba(255,255,255,.6);
+  background-image: -moz-linear-gradient(rgba(255,255,255,.7), rgba(255,255,255,.58));
+  background-color: -moz-Dialog;
+}
+
+.ribbon-tab[selected="true"],
+.ribbon-tab:hover {
+  color: #000000;
+}
+
+.ribbon-tabpanels {
+  -moz-appearance: none !important;
+  border-right: 0px;
+  border-bottom: 0px;
+  /*border-bottom: 2px solid threeddarkshadow;*/
+  border-left: 0px;
+  padding: 0px;
+  background-image: -moz-linear-gradient(rgba(255,255,255,.58), rgba(255,255,255,0));
+  background-color: -moz-Dialog;
+}
+
+.ribbon-tabpanel {
+}
+
+.ribbon-bar {
+  -moz-appearance: none;
+  margin: 1px;
+}
+
+/* ------------------------------------------------------------------- */
+/* tabmolview */
+
+.tabmolview-tabpanels {
+  -moz-appearance: none !important;
+  border: none;
+  padding: 0;
+  /*background-color: none;*/
+  /*color: none;*/
+}
+
+.tabmolview-tabs {
+  -moz-box-pack: center;
+  -moz-box-align: center;
+  height: 25px;
+  margin-top: 0;
+  font: -moz-button;
+}
+
+.tabmolview-tabs .tabs-left {
+  display: none;
+}
+
+.tabmolview-tabbox {
+ margin: 0;
+}
+
+.tabmolview-tab {
+  -moz-appearance: none;
+  -moz-border-radius: 6px 6px 0 0;
+  color: #666;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+  margin: 1px 0 0;
+  padding: 0 5px 2px;
+  border-style:  solid solid none;
+  border-width: 3px;
+  -moz-border-top-colors: rgba(0,0,0,.04) rgba(0,0,0,.17) rgba(255,255,255,.35);
+  -moz-border-bottom-colors: rgba(0,0,0,.04) rgba(0,0,0,.17) rgba(255,255,255,.25);
+  -moz-border-right-colors: rgba(0,0,0,.04) rgba(0,0,0,.17) rgba(255,255,255,.35);
+  -moz-border-left-colors: rgba(0,0,0,.04) rgba(0,0,0,.17) rgba(255,255,255,.35);
+  background-clip: padding-box;
+  -moz-background-clip: padding;
+  height: 24px;
+  text-align: center;
+  background-image: -moz-linear-gradient(rgba(0,0,0,0.0), rgba(0,0,0,0.25));
+  /*background-image: -moz-linear-gradient(rgba(255,255,255,.2), rgba(255,255,255,0));*/
+  /*background-image: url(chrome://browser/skin/tabbrowser/tab-bkgnd.png);*/
+
+
+/*
+-moz-appearance: tab;
+-moz-border-radius-topleft: 0px;
+-moz-border-radius-topright: 0px;
+-moz-border-top-colors: none;
+-moz-border-right-colors: none;
+-moz-border-left-colors: none;
+margin: 0px 0px 0px 0px;
+padding: 2px 2px 2px 2px;
+color: -moz-dialogtext;
+*/
+/*border-width: 0px 2px 0px 2px;*/
+/*background-color: #CCC;*/
+}
+
+.tabmolview-tab[selected="true"] {
+  -moz-border-top-colors: rgba(0,0,0,.04) rgba(0,0,0,.17) rgba(255,255,255,.9);
+  -moz-border-right-colors: rgba(0,0,0,.04) rgba(0,0,0,.17) rgba(255,255,255,.6);
+  -moz-border-left-colors: rgba(0,0,0,.04) rgba(0,0,0,.17) rgba(255,255,255,.6);
+  background-image: -moz-linear-gradient(rgba(255,255,255,.7), rgba(255,255,255,.58));
+}
+
+.tabmolview-tab[selected="true"],
+.tabmolview-tab:hover {
+  color: #000000;
+}
+
+.tabmolview-tab-text {
+margin: 0 8px 0 4px;
+}
+
+/* ------------------------------------------------------------------- */
+/* sidebar-tabs */
+
+.sidebar-tabpanels {
+  -moz-appearance: none !important;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-tabpanel {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-tabbox {
+ margin: 0;
+}
+
+.sidebar-tabbox .ribbon-tab {
+  -moz-border-radius: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar-tabbox .ribbon-tab .tab-text{
+  /*border: solid red 1px !important;*/
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar-tabbox .ribbon-tab[label=""] .tab-text{
+  display: none;
+/*  border: none;
+  margin: 0;
+  padding: 0;*/
+}
+
+.sidepanel-splitter {
+  min-height: 5px;
+  background-color: threeddarkface;
+  border-top: 1px solid rgba(0,0,0,0.35);
+  border-bottom: 1px solid rgba(0,0,0,0.35);
+  border-left: none;
+  border-right: none;
+}
+
+/* ------------------------------------------------------------------- */
+/* Toolbar toolbuttons (+Ribbon toolbar buttons) */
+
+.ribbon-toolbar-button,
+.toolbar-button {
+  padding: 2px 5px 2px 5px !important;
+  margin: 2px;
+  -moz-appearance: none;
+  -moz-border-radius: 2px;
+  border: solid transparent 1px;
+}
+
+.ribbon-toolbar-button > .toolbarbutton-text ,
+.toolbar-button > .toolbarbutton-text {
+  display: none;
+}
+
+.ribbon-toolbar-button:hover,
+.toolbar-button:hover {
+  border: solid rgba(0,0,0,0.5) 1px;
+  background-color: #FFF;
+  background-image: -moz-linear-gradient(rgba(0,0,0,0.1), rgba(0,0,0,0.3));
+}
+
+.ribbon-toolbar-button:hover:active,
+.toolbar-button:hover:active {
+  border: solid rgba(0,0,0,0.5) 1px;
+  background-color: #CCC;
+}
+
+.ribbon-toolbar-button[disabled="true"]:hover,
+.ribbon-toolbar-button[disabled="true"]:hover:active,
+.ribbon-toolbar-button[disabled="true"]:hover,
+.ribbon-toolbar-button[disabled="true"]:hover:active {
+  border: solid transparent 1px;
+  background-color: transparent;
+  background-image: none;
+}
+
+.ribbon-toolbar-spacer,
+.toolbar-spacer {
+  display: none;
+/*  border: none;*/
+/*  border: solid red 1px;*/
+  margin: 0;
+  padding: 0;
+}
+
+
+.ribbon-toolbar-radiobutton {
+  /*padding: 2px 10px 2px 10px !important;*/
+  padding: 2px 5px 2px 5px !important;
+  margin: 2px;
+
+  -moz-appearance: none;
+  -moz-border-radius: 2px;
+  border: solid transparent 1px;
+
+  /*border-width: 3px;
+  -moz-border-top-colors: rgba(0,0,0,.04) rgba(0,0,0,.17) rgba(255,255,255,.35);
+  -moz-border-bottom-colors: rgba(0,0,0,.04) rgba(0,0,0,.17) rgba(255,255,255,.25);
+  -moz-border-right-colors: rgba(0,0,0,.04) rgba(0,0,0,.17) rgba(255,255,255,.35);
+  -moz-border-left-colors: rgba(0,0,0,.04) rgba(0,0,0,.17) rgba(255,255,255,.35);*/
+}
+
+.ribbon-toolbar-radiobutton[disabled="true"]:hover,
+.ribbon-toolbar-radiobutton[disabled="true"]:hover:active {
+  border: solid transparent 1px;
+  background-color: transparent;
+}
+
+.ribbon-toolbar-radiobutton:hover {
+  border: solid transparent 1px;
+  background-color: #CCC;
+}
+
+.ribbon-toolbar-radiobutton[checked="true"],
+.ribbon-toolbar-radiobutton:hover:active {
+  border: solid rgba(0,0,0,0.2) 1px;
+  background-color: #CCC;
+}
+
+.ribbon-toolbar-button[type="menu-button"] .toolbarbutton-text {
+  display: none;
+}
+
+/* ------------------------------------------------------------------- */
+/* Trees (workspace, etc) */
+
+.object-tree-children::-moz-tree-row(odd) {
+  background-color: -moz-oddtreerow;
+}
+.object-tree-children::-moz-tree-row(odd,selected) {
+  background-color: highlight;
+}
+
+/*.object-tree-children::-moz-tree-cell-text {
+   border: 1px solid black;
+   margin: 0px !important;
+}*/
+
+/*.object-tree-children::-moz-tree-indentation {
+  width: 10px !important;
+}*/
+
+.object-tree-children::-moz-tree-twisty {
+   padding: 0px !important;
+   margin-right: -6px !important;
+   /*border: 1px solid black;*/
+}
+
+.noindent-tree-children::-moz-tree-cell(primary) {
+  margin-left: -20px;
+  /*background-color: red;
+  border: 1px solid black;*/
+}

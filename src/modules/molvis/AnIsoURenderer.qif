@@ -1,0 +1,46 @@
+// -*-Mode: C++;-*-
+//
+// Interface definition for AnIsoURenderer
+//
+
+#ifndef ANISOU_RENDERER_QIF
+#define ANISOU_RENDERER_QIF
+
+#include "BallStickRenderer.qif"
+
+runtime_class AnIsoURenderer extends BallStickRenderer
+{
+  client_hdr "AnIsoURenderer.hpp";
+  client_name molvis::AnIsoURenderer;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  /////////////////
+  // Properties
+  
+  property boolean drawdisc => m_fDrawDisc;
+  default drawdisc = true;
+  
+  property real discscale => m_dDiscScale;
+  default discscale = 1.1;
+  
+  property real discthick => m_dDiscThick;
+  default discthick = 0.1;
+
+  // overloaded properties (from ballstick)
+
+//  property real bondw => redirect(getBondw, setBondw);
+//  default bondw = 0.05;
+
+//  property real sphr => redirect(getSphr, setSphr);
+//  default sphr = 0.3;
+
+//  property integer detail => redirect(getDetail, setDetail);
+//  default detail = 5;
+
+};
+
+#endif // ANISOU_RENDERER_QIF
+

@@ -1,0 +1,104 @@
+// -*-Mode: C++;-*-
+//
+// $Id: Object.qif,v 1.23 2011/03/31 14:19:15 rishitani Exp $
+
+#ifndef OBJECT_QIF_INCLUDED
+#define OBJECT_QIF_INCLUDED
+
+#include <qlib/LScrObject.qif>
+#include "Renderer.qif"
+#include "Scene.qif"
+
+runtime_class Object
+{
+  uuid 7bdde69f-8e2a-40b6-9ebc-f3f11ecf7580;
+
+  client_hdr "Object.hpp";
+  client_name qsys::Object;
+  dllexport QSYS_API;
+
+  scriptable;
+  smartptr;
+  //cloneable;
+
+  ////////////////////
+  // Property definition
+
+  property integer uid => redirect(getUID, xxx) (readonly);
+  property integer scene_uid => redirect(getSceneID, xxx) (readonly);
+
+  property string name => redirect(getName, setName);
+  default name = "";
+
+  property boolean visible => redirect(isVisible, setVisible);
+  default visible = true;
+
+  property boolean locked => redirect(isUILocked, setUILocked);
+  default locked = false;
+
+  property boolean ui_collapsed => redirect(isUICollapsed, setUICollapsed);
+  default ui_collapsed = false;
+
+  property integer ui_order => redirect(getUIOrder, setUIOrder) (nopersist);
+
+  property boolean modified => redirect(getModifiedFlag, XXX) (readonly);
+
+  /// src path in absolute path representation
+  /// src property has special meaning for deser/serialization
+  property string src => redirect(getSource, XXX) (readonly);
+
+  /// src path in alternative form (may be in abs form)
+  property string alt_src => redirect(getAltSource, XXX) (readonly);
+
+  /// src type
+  property string srctype => redirect(getSourceType, XXX) (readonly);
+
+  ////////////////////
+  // Method definition
+
+  ////
+  // Common functions
+  string toString();
+  integer getUID();
+
+  ////
+  // Get parent scene
+  object<Scene$> getScene();
+
+  ////
+  // Renderer management
+
+  object<Renderer$> createRenderer(string);
+  void attachRenderer(object<Renderer$>);
+
+  object<Renderer$> getRenderer(integer);
+  object<Renderer$> getRendererByType(string);
+  boolean destroyRenderer(integer);
+  string searchCompatibleRendererNames();
+
+  // get size(number) of renderers attached to this object
+  integer getRendCount();
+  // get renderer by index (starting 0)
+  object<Renderer$> getRendererByIndex(integer);
+
+  // property array rends => redirect(getRendArray, XXX) (readonly);
+  property string rend_uids => redirect(getRendUIDList, XXX) (readonly);
+
+  // // Renderer serialization/deserialization
+  // string writeRendToXML(integer);
+  // integer readRendFromXML(string);
+  // string checkRendXML(string);
+
+  ////
+  // Extension data
+  object<LScrObject$> getExtData(string);
+
+  ////
+
+  /// Force embedding of this obj (to qsc file; this op cannot be undone)
+  void forceEmbed();
+
+};
+
+#endif
+

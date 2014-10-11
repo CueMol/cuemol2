@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+
+<!-- -*- xml -*- -->
+<!-- XBL binding for animation slider -->
+
+<bindings id="animSliderBindings"
+  xmlns="http://www.mozilla.org/xbl"
+  xmlns:svg="http://www.w3.org/2000/svg"
+  xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  xmlns:xbl="http://www.mozilla.org/xbl">
+  
+  <binding id="animslider"
+    extends="chrome://global/content/bindings/scale.xml#scale">
+
+    <implementation implements="nsISliderListener">
+
+      <method name="valueChanged">
+        <parameter name="which"/>
+        <parameter name="newValue"/>
+        <parameter name="userChanged"/>
+        <body>
+        <![CDATA[
+	  // dd("AnimSlider.valueChanged> UC:"+userChanged);
+          switch (which) {
+            case "curpos":
+              this.setAttribute("value", newValue);
+
+	      if (userChanged||this._userChanged) {
+	        var changeEvent = document.createEvent("Events");
+                changeEvent.initEvent("change", true, true);
+                changeEvent.isKey = this._userChanged;
+                changeEvent.isMouse = userChanged;
+                this.dispatchEvent(changeEvent);
+	      }
+              break;
+
+            case "minpos":
+              this.setAttribute("min", newValue);
+              break;
+
+            case "maxpos":
+              this.setAttribute("max", newValue);
+              break;
+          }
+        ]]>
+        </body>
+      </method>
+
+      <method name="dragStateChanged">
+        <parameter name="isDragging"/>
+        <body>
+        <![CDATA[
+	  // dd("AnimSlider.dragStateChanged> ID:"+isDragging);
+	  var changeEvent = document.createEvent("Events");
+	  changeEvent.initEvent("dragStateChange", true, true);
+	  changeEvent.isDragging = isDragging;
+	  this.dispatchEvent(changeEvent);
+        ]]>
+	</body>
+      </method>
+
+    </implementation>
+  </binding>
+
+</bindings>
+
+
+

@@ -1,0 +1,75 @@
+// -*-Mode: C++;-*-
+//
+// Interface definition for RibbonRenderer
+//
+
+#ifndef RIBBON_RENDERER_QIF
+#define RIBBON_RENDERER_QIF
+
+#include "SplineRenderer.qif"
+#include "TubeSection.qif"
+#include "JctTable.qif"
+
+runtime_class RibbonRenderer extends SplineRenderer
+{
+  client_hdr "RibbonRenderer.hpp";
+  client_name molvis::RibbonRenderer;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  // Section of helix
+  property object<TubeSection$> helix => redirect(getHelixSection, x) (readonly);
+
+  // Section of sheet
+  property object<TubeSection$> sheet => redirect(getSheetSection, x) (readonly);
+
+  // Section of coil
+  property object<TubeSection$> coil => redirect(getCoilSection, x) (readonly);
+
+  
+  // Junction of helix head
+  property object<JctTable$> helixhead => redirect(getHelixHead, x) (readonly);
+
+  // Junction of helix tail
+  property object<JctTable$> helixtail => redirect(getHelixTail, x) (readonly);
+
+  // Junction of sheet head
+  property object<JctTable$> sheethead => redirect(getSheetHead, x) (readonly);
+
+  // Junction of sheet tail
+  property object<JctTable$> sheettail => redirect(getSheetTail, x) (readonly);
+
+
+  // Smoothness of helix
+  property real helix_smooth => redirect(getHelixSmooth, setHelixSmooth);
+  default helix_smooth = 0.0;
+
+  // Smoothness of sheet
+  property real sheet_smooth => redirect(getSheetSmooth, setSheetSmooth);
+  default sheet_smooth = 0.5;
+
+  // Smoothness of coil
+  property real coil_smooth => redirect(getCoilSmooth, setCoilSmooth);
+  default coil_smooth = 0.0;
+
+  ///////////
+  
+  property boolean helix_usebackcol => redirect(isUseHBCol, setUseHBCol);
+  default helix_usebackcol = false;
+
+  property object<AbstractColor$> helix_backcol => redirect(getHelixBackCol, setHelixBackCol);
+  default helix_backcol = gfx::SolidColor::createRGB(1.0, 1.0, 1.0);
+  
+  //
+
+  property boolean sheet_usesidecol => redirect(isUseSSCol, setUseSSCol);
+  default sheet_usesidecol = false;
+
+  property object<AbstractColor$> sheet_sidecol => redirect(getSheetSideCol, setSheetSideCol);
+  default sheet_sidecol = gfx::SolidColor::createRGB(1.0, 1.0, 1.0);
+};
+
+#endif // Ribbon_RENDERER_QIF
+

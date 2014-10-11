@@ -1,0 +1,440 @@
+<?xml version="1.0"?>
+
+<bindings id="mainViewBindings"
+          xmlns="http://www.mozilla.org/xbl"
+          xmlns:html="http://www.w3.org/1999/xhtml"
+          xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+          xmlns:xbl="http://www.mozilla.org/xbl">
+
+  <binding id="tabmolview">
+    <content>
+      <xul:tabbox class="tabmolview-tabbox"
+		  orient="vertical" anonid="tabbox" flex="1">
+        <xul:hbox collapsed="false">
+          <xul:tabs class="tabmolview-tabs" anonid="tabcontainer" flex="1" />
+        </xul:hbox>
+        <xul:tabpanels class ="tabmolview-tabpanels" flex="1"
+	  anonid="panelcontainer" style="padding: 0px;"/>
+      </xul:tabbox>
+    </content>
+
+    <implementation>
+
+      <!-- ********** FIELDS ********** -->
+      <field name="mTabBox" readonly="true">
+        document.getAnonymousElementByAttribute(this, "anonid", "tabbox");
+      </field>
+
+      <field name="mTabContainer" readonly="true">
+        document.getAnonymousElementByAttribute(this, "anonid", "tabcontainer");
+      </field>
+
+      <field name="mPanelContainer" readonly="true">
+        document.getAnonymousElementByAttribute(this, "anonid", "panelcontainer");
+      </field>
+
+      <field name="mTabs" readonly="true">
+        this.mTabContainer.childNodes;
+      </field>
+
+      <field name="mUsePlugin" readonly="true">
+        false;
+      </field>
+
+      <!-- ********** PROPERTIES ********** -->
+      <property name="currentSceneW" readonly="true">
+	<getter>
+	  return this.mImpl.getCurrentSceneW();
+	</getter>
+      </property>
+
+      <property name="currentScene" readonly="true">
+	<getter>
+	  return this.mImpl.getCurrentSceneW();
+	</getter>
+      </property>
+
+      <property name="currentViewW" readonly="true">
+	<getter>
+	  return this.mImpl.getCurrentViewW();
+	</getter>
+      </property>
+
+      <property name="currentView" readonly="true">
+	<getter>
+	  return this.mImpl.getCurrentViewW();
+	</getter>
+      </property>
+
+      <property name="currentNativeWidget" readonly="true">
+	<getter>
+	  return this.selectedTab.natwin;
+	</getter>
+      </property>
+
+      <property name="selectedTab">
+        <getter>
+          return this.mTabBox.selectedTab;
+        </getter>
+        <setter>
+          <![CDATA[
+          // Update the tab
+          this.mTabBox.selectedTab = val;
+          return val;
+          ]]>
+        </setter>
+      </property>
+
+      <property name="rotQuat">
+        <getter>
+	  this.mImpl.updateCurView();
+	  return this.mImpl.mCurrentView.getRotQuat();
+        </getter>
+        <setter>
+	  this.mImpl.updateCurView();
+	  this.mImpl.mCurrentView.setRotQuat(val);
+        </setter>
+      </property>
+
+      <property name="viewCenter">
+        <getter>
+	  this.mImpl.updateCurView();
+	  return this.mImpl.mCurrentView.getViewCenter();
+        </getter>
+        <setter>
+	  this.mImpl.updateCurView();
+	  this.mImpl.mCurrentView.setViewCenter(val);
+        </setter>
+      </property>
+
+      <property name="zoom">
+        <getter>
+	  this.mImpl.updateCurView();
+	  return this.mImpl.mCurrentView.getZoom();
+        </getter>
+        <setter>
+	  this.mImpl.updateCurView();
+	  this.mImpl.mCurrentView.setZoom(val);
+        </setter>
+      </property>
+
+      <property name="slab">
+        <getter>
+	  this.mImpl.updateCurView();
+	  return this.mImpl.mCurrentView.getSlabDepth();
+        </getter>
+        <setter>
+	  this.mImpl.updateCurView();
+	  this.mImpl.mCurrentView.setSlabDepth(val);
+        </setter>
+      </property>
+
+      <property name="distance">
+        <getter>
+	  this.mImpl.updateCurView();
+	  return this.mImpl.mCurrentView.distance;
+        </getter>
+        <setter>
+	  this.mImpl.updateCurView();
+	  this.mImpl.mCurrentView.distance = val;
+        </setter>
+      </property>
+
+      <!-- ********** METHODS ********** -->
+      <constructor>
+	this.mImpl = new cuemolui.TabMolView(this);
+      </constructor>
+
+      <method name="bindMolViewTab">
+        <parameter name="aTabIndex"/>
+        <parameter name="aScID"/>
+        <parameter name="aVwID"/>
+        <body>
+	  this.mImpl.bindMolViewTab(aTabIndex, aScID, aVwID);
+        </body>
+      </method>
+
+      <method name="addMolViewTab">
+        <parameter name="aScID"/>
+        <parameter name="aVwID"/>
+        <body>
+	  return this.mImpl.addTab(aScID, aVwID);
+        </body>
+      </method>
+
+      <method name="removeTab">
+        <parameter name="aTab"/>
+        <body>
+	  this.mImpl.removeTab(aTab);
+        </body>
+      </method>
+
+      <method name="removeAllTabs">
+        <body>
+	  this.mImpl.removeAllTabs();
+        </body>
+      </method>
+
+      <method name="moveTabTo">
+        <parameter name="aTab"/>
+        <parameter name="aInd"/>
+        <body>
+	  this.mImpl.moveTabTo(aTab, aInd);
+        </body>
+      </method>
+
+      <method name="getCurrentSceneID">
+        <body>
+	  try {
+	  var tab = this.selectedTab;
+	  return tab.linkedSceneID;
+	  } catch (e) {
+	  return null;
+	  }
+	</body>
+      </method>
+
+      <method name="getCurrentViewID">
+        <body>
+	  try {
+	  return this.selectedTab.linkedViewID;
+	  } catch (e) {
+	  return null;
+	  }
+	</body>
+      </method>
+
+      <method name="getCurrentIframe">
+        <body>
+	  try {
+	  return this.selectedTab.linkedView;
+	  } catch (e) {
+	  return null;
+	  }
+	</body>
+      </method>
+
+      <method name="getTabCount">
+	<body>
+	  try {
+          return this.mTabContainer.childNodes.length;
+	  } catch (e) {
+	  return 0;
+	  }
+	</body>
+      </method>
+
+      <method name="rotateView">
+        <parameter name="x"/>
+        <parameter name="y"/>
+        <parameter name="z"/>
+        <body>
+	  this.mImpl.updateCurView();
+	  this.mImpl.mCurrentView.rotateView(x,y,z);
+	  dd("view rotated ("+x+","+y+","+z+")");
+        </body>
+      </method>
+
+      <method name="translateView">
+        <parameter name="x"/>
+        <parameter name="y"/>
+        <parameter name="z"/>
+        <parameter name="bDrag"/>
+        <body>
+	  this.mImpl.updateCurView();
+	  if (bDrag)
+	    this.mImpl.mCurrentView.translateViewDrag(x,y,z);
+	  else
+	    this.mImpl.mCurrentView.translateView(x,y,z);
+        </body>
+      </method>
+
+      <method name="zoomView">
+        <parameter name="x"/>
+        <body>
+          <![CDATA[
+	  this.mImpl.updateCurView();
+	  var cur = this.mImpl.mCurrentView.getZoom() + x;
+	  if (cur<0) cur = 0.01;
+	  if (cur>1000) cur = 1000;
+	  this.mImpl.mCurrentView.setZoom(cur);
+	  dd("cur zoom "+cur);
+	  return cur;
+          ]]>
+        </body>
+      </method>
+
+      <method name="slabView">
+        <parameter name="x"/>
+        <body>
+          <![CDATA[
+	    this.mImpl.updateCurView();
+	    var cur = this.mImpl.mCurrentView.getSlabDepth() + x;
+	    if (cur<0) cur = 0;
+	    if (cur>1000) cur = 1000;
+	  this.mImpl.mCurrentView.setSlabDepth(cur);
+	  return cur;
+          ]]>
+        </body>
+      </method>
+
+    </implementation>
+
+    <handlers>
+    </handlers>
+  </binding>
+
+
+
+  <!-- ******************************
+    tabmolview's tab container (tabs)
+    ******************************-->
+
+  <binding id="tabmolview-tabs"
+    extends="chrome://global/content/bindings/tabbox.xml#tabs">
+
+    <content>
+      <xul:hbox align="end">
+        <xul:image class="tab-drop-indicator" anonid="tab-drop-indicator" collapsed="true"/>
+      </xul:hbox>
+
+      <xul:hbox anonid="tab-strip" flex="1">
+	<!-- ???: <children includes="tab"/> -->
+	<children/>
+	
+	<xul:spacer flex="1000"/>
+	<xul:toolbarbutton class="dropdown-button" anonid="alltabs-button"
+	  type="menu">
+	  <xul:menupopup class="tabs-alltabs-popup" anonid="alltabs-popup"
+	    position="after_end"/>
+	</xul:toolbarbutton>
+      </xul:hbox>
+    </content>
+
+    <implementation>
+      <field name="mTabstrip">
+        document.getAnonymousElementByAttribute(this, "anonid", "tab-strip");
+      </field>
+
+      <field name="mAllTabsPopup">
+        document.getAnonymousElementByAttribute(this,
+                                                "anonid", "alltabs-popup");
+      </field>
+
+      <field name="_tabDropIndicator">
+        document.getAnonymousElementByAttribute(this, "anonid", "tab-drop-indicator");
+      </field>
+
+      <constructor>
+	this.mImpl = new cuemolui.MolViewTabs(this);
+      </constructor>
+
+    </implementation>
+
+    <handlers>
+      <handler event="dragstart"><![CDATA[
+	return this.mImpl.onDragStart(event);
+      ]]></handler>
+
+      <handler event="dragover"><![CDATA[
+	return this.mImpl.onDragOver(event);
+      ]]></handler>
+
+      <handler event="drop"><![CDATA[
+	return this.mImpl.onDrop(event);
+      ]]></handler>
+
+      <handler event="dragend"><![CDATA[
+	return this.mImpl.onDragEnd(event);
+      ]]></handler>
+
+      <handler event="dragexit"><![CDATA[
+	return this.mImpl.onDragExit(event);
+      ]]></handler>
+
+    </handlers>
+
+  </binding>
+
+
+
+  <!-- ******************************
+    tabmolview's tab and tab button (close)
+    ******************************-->
+
+  <binding id="tabmolview-tab" display="xul:hbox"
+           extends="chrome://global/content/bindings/tabbox.xml#tab">
+
+    <content closetabtext="Close tab">
+      <xul:label flex="1" xbl:inherits="value=label,crop,accesskey" class="tabmolview-tab-text"/>
+      <xul:toolbarbutton flex="0" anonid="close-button" tabindex="-1" class="tabmolview-tab-closebox"/>
+    </content>
+
+    <implementation>
+      <field name="mOverCloseButton">false</field>
+      <field name="mCorrespondingMenuitem">null</field>
+
+      <constructor>
+        var closebtn = document.getAnonymousElementByAttribute(this, "anonid", "close-button");
+	var xthis = this;
+	closebtn.addEventListener("click", function() {
+	  gQm2Main.closeTabImpl(xthis, false);
+	}, false);
+      </constructor>
+
+      <method name="setImpl">
+	<parameter name="aImpl"/>
+	<body>
+	  this.mImpl = aImpl;
+	</body>
+      </method>
+
+    </implementation>
+
+    <handlers>
+      <handler event="mouseover">
+        var anonid = event.originalTarget.getAttribute("anonid");
+        if (anonid == "close-button")
+          this.mOverCloseButton = true;
+      </handler>
+
+      <handler event="mouseout">
+        var anonid = event.originalTarget.getAttribute("anonid");
+        if (anonid == "close-button")
+          this.mOverCloseButton = false;
+      </handler>
+
+      <handler event="dragstart" phase="capturing">
+        //this.style.MozUserFocus = '';
+      </handler>
+
+      <handler event="mousedown" button="0" phase="capturing">
+      <![CDATA[
+        if (this.mOverCloseButton) {
+          event.stopPropagation();
+        }
+        else {
+	//this.style.MozUserFocus = 'ignore';
+          this.clientTop; // just using this to flush style updates
+        }
+      ]]>
+      </handler>
+
+      <handler event="mousedown" button="1">
+        //this.style.MozUserFocus = 'ignore';
+        this.clientTop;
+      </handler>
+
+      <handler event="mousedown" button="2">
+        //this.style.MozUserFocus = 'ignore';
+        this.clientTop;
+      </handler>
+
+      <handler event="mouseup">
+        //this.style.MozUserFocus = '';
+      </handler>
+
+    </handlers>
+  </binding>
+
+</bindings>

@@ -1,0 +1,24 @@
+// -*-Mode: C++;-*-
+//
+
+#include "ImgSceneExporter.qif"
+#include "MqoSceneExporter.qif"
+#include "PngSceneExporter.qif"
+#include "PovSceneExporter.qif"
+#include "WbpSceneExporter.qif"
+#include "StlSceneExporter.qif"
+
+module render
+{
+  init render::init();
+  fini render::fini();
+
+  ImgSceneExporter;
+  MqoSceneExporter;
+  PngSceneExporter;
+  PovSceneExporter;
+  WbpSceneExporter;
+  StlSceneExporter;
+
+};
+

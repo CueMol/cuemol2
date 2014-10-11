@@ -1,0 +1,55 @@
+// -*-Mode: C++;-*-
+//
+//  NameLabelRenderer interface definition
+//
+
+#ifndef NAME_LABEL_RENDERER_QIF_INCLUDED
+#define NAME_LABEL_RENDERER_QIF_INCLUDED
+
+#include <gfx/AbstractColor.qif>
+#include <qsys/Renderer.qif>
+#include "MolCoord.qif"
+
+runtime_class NameLabelRenderer extends Renderer
+{
+  client_hdr "NameLabelRenderer.hpp";
+  client_name molstr::NameLabelRenderer;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  property integer maxlabel => redirect(getMaxLabel, setMaxLabel);
+  default maxlabel = 50;
+  
+  property real dispx => m_xdispl;
+  default dispx = 0.0;
+  property real dispy => m_ydispl;
+  default dispy = 0.0;
+
+  property object<AbstractColor$> color => m_color;
+  default color = gfx::SolidColor::createRGB(1.0, 1.0, 0.0);
+
+  property real font_size => m_dFontSize;
+  default font_size = 12.0;
+
+  property string font_name => m_strFontName;
+  default font_name = "sans-serif";
+
+  property string font_style => m_strFontStyle;
+  default font_style = "normal";
+
+  property string font_weight => m_strFontWgt;
+  default font_weight = "normal";
+
+  //////////
+
+  // add new label for the atom
+  boolean addLabel(integer aid) => addLabelByID;
+
+  // remove label for atom
+  boolean removeLabel(integer aid) => removeLabelByID;
+};
+
+#endif
+

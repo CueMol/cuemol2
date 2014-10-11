@@ -1,0 +1,50 @@
+// -*-Mode: C++;-*-
+//
+//  Disorder line (dot) renderer interface
+//
+
+#ifndef DISORDER_RENDERER_QIF_INCLUDED
+#define DISORDER_RENDERER_QIF_INCLUDED
+
+#include <qsys/Renderer.qif>
+#include <modules/molstr/MolCoord.qif>
+#include <modules/molstr/MolRenderer.qif>
+#include <modules/molstr/Selection.qif>
+
+runtime_class DisoRenderer extends MolRenderer
+{
+  client_hdr "DisoRenderer.hpp";
+  client_name molvis::DisoRenderer;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  /// detail level of tesselation
+  property integer detail => redirect(getDetail, setDetail);
+  default detail = 5;
+
+  /// width of dots
+  property real width => redirect(getWidth, setWidth);
+  default width = 0.3;
+
+  /// number of dots
+  property real dotsep => redirect(getDotSep, setDotSep);
+  default dotsep = 1.0;
+
+  /// size of the loop
+  property real loopsize => redirect(getStrength, setStrength);
+  default loopsize = 2.0;
+
+  /// size of the loop (of C-term side)
+  property real loopsize2 => redirect(getStrength2, setStrength2);
+  default loopsize2 = -1.0;
+
+  /// target renderer name
+  property string target => redirect(getTgtRendName, setTgtRendName);
+  default target = "";
+
+};
+
+#endif
+
