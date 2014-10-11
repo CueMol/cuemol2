@@ -1,0 +1,215 @@
+/*
+ *  Color description scanner
+ */
+
+%option noyywrap
+%option never-interactive
+
+%x MODIFVAL_STATE SQ_STRING
+
+%{
+#include <common.h>
+#include <qlib/LChar.hpp>
+#include <qlib/LString.hpp>
+
+#include "ColCompiler.hpp"
+
+using namespace gfx;
+
+using qlib::LChar;
+using qlib::LString;
+
+#include "color_parser.h"
+
+
+#undef YY_INPUT
+#define YY_INPUT(buf,result,max) (result = ColCompiler::getInstance()->feedInput(buf, max))
+
+extern int colerror(char* error);
+
+%}
+
+FLOATNUM ([-+]?([0-9]*\.[0-9]+)([eE][-+]?[0-9]+)?)
+INTNUM   ([-+]?(0|[1-9][0-9]*))
+PERCENTNUM   ({INTNUM}\%)
+HEXNUM   "0x"[a-fA-F0-9]+
+
+COLNAME ([_a-zA-Z0-9][_a-zA-Z0-9\+\-]*)
+
+HEXDIGIT ([0-9a-fA-F])
+HTML3DIG    (\#{HEXDIGIT}{3})
+HTML6DIG    (\#{HEXDIGIT}{6})
+
+%%
+
+%{
+  LString qstring_buf;
+%}
+
+ /*
+  *  Color tokens
+  */
+
+ /* Ignore white spaces */
+[ \t]+				|
+<MODIFVAL_STATE>[ \t]+		|
+\n				|
+<MODIFVAL_STATE>\n		{ ; }
+
+
+ /* Operators */
+"("	{ return COL_LPAREN; }
+")"	{ return COL_RPAREN; }
+
+"{"	{ return COL_LBRACE; }
+"}"	{ return COL_RBRACE; }
+
+":"	{ return COL_COLON; }
+";"	{ return COL_SEMICOLON; }
+","	{ return COL_COMMA; }
+
+<MODIFVAL_STATE>"'"	{
+  qstring_buf = LString();
+  BEGIN SQ_STRING;
+}
+<SQ_STRING>"'"		{ 
+  BEGIN MODIFVAL_STATE;
+  // MB_DPRINTLN("ColModifVal %s", qstring_buf.c_str());
+  collval.str = LChar::dup(qstring_buf.c_str());
+  return COL_MODIFVAL;
+}
+<SQ_STRING>.	{
+  qstring_buf += yytext;
+}
+
+<MODIFVAL_STATE>";"	{ return COL_SEMICOLON; }
+<MODIFVAL_STATE>{FLOATNUM}	|
+<MODIFVAL_STATE>{PERCENTNUM}	|
+<MODIFVAL_STATE>{HEXNUM}	|
+<MODIFVAL_STATE>{HTML3DIG}	|
+<MODIFVAL_STATE>{COLNAME}	{
+  // MB_DPRINTLN("ColModifVal %s", yytext);
+  collval.str = LChar::dup(yytext);
+  return COL_MODIFVAL;
+}
+
+
+ /* Reserved keywords */
+"rgb"	{ return COL_RGB; }
+"RGB"	{ return COL_RGB; }
+
+"rgba"	{ return COL_RGBA; }
+"RGBA"	{ return COL_RGBA; }
+
+"hsb"	{ return COL_HSB; }
+"HSB"	{ return COL_HSB; }
+
+"hsba"	{ return COL_HSBA; }
+"HSBA"	{ return COL_HSBA; }
+
+"$molcol"	{ return COL_MOLCOL; }
+
+ /* Values */
+{FLOATNUM}	{
+  // MB_DPRINTLN("ColFloatNum %s", yytext);
+  LChar::toDouble(yytext, collval.floatnum);
+  return COL_FLOATNUM;
+}
+{PERCENTNUM}	{
+  // MB_DPRINTLN("ColPercNum %s", yytext);
+  int nlen = LChar::length(yytext);
+  yytext[nlen-1] = '\0';
+  LChar::toDouble(yytext, collval.floatnum);
+  return COL_PERCENTNUM;
+}
+{INTNUM}	{
+  // MB_DPRINTLN("ColIntNum %s", yytext);
+  LChar::toDouble(yytext, collval.floatnum);
+  return COL_FLOATNUM;
+}
+{HEXNUM}	{
+  // MB_DPRINTLN("ColHexNum %s", yytext);
+  LChar::toInt(yytext, collval.intnum);
+  return COL_INTNUM;
+}
+
+{HTML3DIG}	{
+  // MB_DPRINTLN("ColHTML_3 %s", yytext);
+  char sbuf[3];  
+  int r, g, b;
+  sbuf[2] = 0;
+
+  sbuf[0] = sbuf[1] = yytext[1];
+  LChar::toInt(sbuf, r, 16);
+
+  sbuf[0] = sbuf[1] = yytext[2];
+  LChar::toInt(sbuf, g, 16);
+
+  sbuf[0] = sbuf[1] = yytext[3];
+  LChar::toInt(sbuf, b, 16);
+
+  collval.intnum = ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | ((b & 0xFF) << 0);
+  return COL_HTML3;
+}
+
+{HTML6DIG}	{
+  // MB_DPRINTLN("ColHTML_6 %s", yytext);
+  char sbuf[3];  
+  int r, g, b;
+  sbuf[2] = 0;
+
+  sbuf[0] = yytext[1];
+  sbuf[1] = yytext[2];
+  LChar::toInt(sbuf, r, 16);
+
+  sbuf[0] = yytext[3];
+  sbuf[1] = yytext[4];
+  LChar::toInt(sbuf, g, 16);
+
+  sbuf[0] = yytext[5];
+  sbuf[1] = yytext[6];
+  LChar::toInt(sbuf, b, 16);
+
+  collval.intnum = ((r & 0xFF) << 16) | ((g & 0xFF) << 8) | ((b & 0xFF) << 0);
+  return COL_HTML6;
+}
+
+{COLNAME}	{
+  // MB_DPRINTLN("ColName %s", yytext);
+  collval.str = LChar::dup(yytext);
+  return COL_NAME;
+}
+
+\\. {
+  colerror("unknown character(s) in color definition");
+  return LEX_ERROR;
+}
+
+. |
+<MODIFVAL_STATE>. {
+  colerror("unknown character(s) in color definition");
+  return LEX_ERROR;
+}
+
+%%
+
+//private static
+void ColCompiler::resetScannerState()
+{
+  BEGIN INITIAL;
+  yyrestart(NULL);
+}
+
+/////
+
+//static 
+void ColCompiler::setModifState()
+{
+  BEGIN MODIFVAL_STATE;
+}
+
+//static
+void ColCompiler::setInitState()
+{
+  BEGIN INITIAL;
+}

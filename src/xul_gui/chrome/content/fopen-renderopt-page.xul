@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+<!DOCTYPE window SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+
+<overlay id="fopen-renderopt-overlay"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <overlaytarget id="scripts-overlay-target">
+    <script type="application/javascript" src="chrome://cuemol2/content/molsellist.js"/>
+    <script type="application/javascript" src="chrome://cuemol2/content/fopen-renderopt-page.js"/>
+  </overlaytarget>
+  
+  <overlaytarget id="tabs-overlay-target">
+    <tab label ="Renderer" id="render_options_tab"/>
+  </overlaytarget>
+  
+  <overlaytarget id="tabpanels-overlay-target">
+    <tabpanel id="render_options_tabpanel">
+      <vbox id="render_options_only">
+
+	<grid flex="1">
+	  <columns>
+	    <column/>
+	    <column flex="1"/>
+	  </columns>
+
+	  <rows>
+	    <row align="center">
+	      <label value="Object:" />
+	      <textbox id="renderopt-objname" />
+	    </row>
+	    
+
+	    <row align="center">
+	      <label value="Renderer type:" />
+	      <menulist id="renderopt-rendtype-sel">
+		<menupopup>
+		  <menuitem label="none" />
+		</menupopup>
+	      </menulist>
+	    </row>
+
+	    <row align="center">
+	      <label value="Renderer name:" />
+	      <textbox id="renderopt-rendname" />
+	    </row>
+
+	    <row align="center">
+	      <checkbox id="selection-check" label="Selection:"/>
+	      <molsellist id="mol-selection-list" editable="true" disabled="true" flex="1"/>
+	    </row>
+	  </rows>
+
+	</grid>
+
+	<checkbox id="center" label="Recenter view" checked="true" persist="checked"/>
+
+      </vbox>
+    </tabpanel>
+  </overlaytarget>
+
+</overlay>
+  

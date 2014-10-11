@@ -1,0 +1,39 @@
+// -*-Mode: C++;-*-
+//
+// Interface definition for JctTable class
+//
+
+#ifndef JCT_TABLE_QIF_INCLUDED
+#define JCT_TABLE_QIF_INCLUDED
+
+runtime_class JctTable
+{
+  client_hdr "JctTable.hpp";
+  client_name molvis::JctTable;
+
+  scriptable;
+  cloneable;
+  smartptr;
+
+  /// Junction type
+  enumdef type {
+    smooth = molvis::JctTable::JT_SMOOTH1;
+    arrow = molvis::JctTable::JT_ARROW1;
+    flat = molvis::JctTable::JT_FLAT;
+  }
+  property enum type => redirect(getType, setType);
+  default type = "smooth";
+
+  property real gamma => redirect(getGamma, setGamma);
+  default gamma = 2.2;
+
+  property real basw => redirect(getBasw, setBasw);
+  default basw = 0.0;
+
+  property real arrow => redirect(getArrow, setArrow);
+  default arrow = 1.8;
+
+};
+
+#endif // TUBE_SECTION_QIF_INCLUDED
+

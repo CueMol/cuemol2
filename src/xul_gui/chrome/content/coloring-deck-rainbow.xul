@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+
+<!DOCTYPE overlay SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+
+<overlay id="coloring-deck-rainbow-overlay"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <overlaytarget id="colpanel-deck">
+
+    <!--  for RainbowColoring (4) -->
+    <vbox id="coloring-deck-rainbow">
+      <description value="Rainbow coloring:"/>
+      <grid style="overflow-y: auto;" flex="1">
+	<columns>
+	  <column flex="0"/>
+	  <column flex="1"/>
+	</columns>
+	<rows>
+	  <row align="center" class="propdlg-rowbox">
+	    <label value="Mode: " flex="0"/>
+	    <menulist id="paint-rnb-mode" flex="0" class="propdlg-menulist"
+	      oncommand="cuemolui.panels.paint.onRainbowChange(event)">
+	      <menupopup>
+		<menuitem label="Molecule" value="mol"/>
+		<menuitem label="Chain" value="chain"/>
+		<!--<menuitem label="Shown" value="rend"/>-->
+	      </menupopup>
+	    </menulist>
+	  </row>
+	  <row align="center" class="propdlg-rowbox">
+	    <label value="Start H: " flex="0"/>
+	    <numslider id="paint-rnb-starth" flex="1" size="2"
+	      decimalplaces="0" min="0" max="360"
+	      increment="1" pageincrement="30" unit="&#0176;"
+	      onchange="cuemolui.panels.paint.onRainbowChange(event)"/>
+	  </row>
+	  <row align="center" class="propdlg-rowbox">
+	    <label value="End H: " flex="0"/>
+	    <numslider id="paint-rnb-endh" flex="1" size="2"
+	      decimalplaces="0" min="0" max="360"
+	      increment="1" pageincrement="30" unit="&#0176;"
+	      onchange="cuemolui.panels.paint.onRainbowChange(event)"/>
+	  </row>
+	  <row align="center" class="propdlg-rowbox">
+	    <label value="Brightness: " flex="0"/>
+	    <numslider id="paint-rnb-bri" flex="1" size="2"
+	      decimalplaces="0" min="0" max="100" increment="1" unit="%"
+	      onchange="cuemolui.panels.paint.onRainbowChange(event)"/>
+	  </row>
+	  <row align="center" class="propdlg-rowbox">
+	    <label value="Saturation: " flex="0"/>
+	    <numslider id="paint-rnb-sat" flex="1" size="2"
+	      decimalplaces="0" min="0" max="100" increment="1" unit="%"
+	      onchange="cuemolui.panels.paint.onRainbowChange(event)"/>
+	  </row>
+	</rows>
+      </grid>
+    </vbox>
+
+  </overlaytarget>
+</overlay>
+

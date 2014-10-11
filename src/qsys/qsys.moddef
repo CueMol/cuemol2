@@ -1,0 +1,64 @@
+// -*-Mode: C++;-*-
+//
+// $Id: qsys.moddef,v 1.19 2011/04/10 10:48:09 rishitani Exp $
+
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
+#include "Scene.qif"
+#include "SceneManager.qif"
+#include "StreamManager.qif"
+
+#include "InOutHandler.qif"
+#include "SceneXMLReader.qif"
+#include "SceneXMLWriter.qif"
+#include "ObjReader.qif"
+#include "ObjWriter.qif"
+#include "ScrEventManager.qif"
+#include "DrawObj.qif"
+#include "ViewInputConfig.qif"
+#include "style/StyleManager.qif"
+#include "style/StyleSet.qif"
+#include "anim/AnimMgr.qif"
+#include "anim/AnimObj.qif"
+
+#include "SceneExporter.qif"
+#include "RendGroup.qif"
+
+module qsys
+{
+  init qsys::init();
+  fini qsys::fini();
+
+  StreamManager uuid 5F0C639A-5AED-40c7-A650-55997F43B111;
+  SceneManager uuid 75b388f4-80c1-480a-88f7-dc45557c7dd7;
+  Scene uuid 0e572da0-7efb-4526-aad6-52fc453cc209;
+  Object uuid b503c399-03b0-4ef1-9563-7c1b5c45aab6;
+  View uuid 55f5d650-77e5-4379-8c9f-65d01ecdf630;
+  Renderer uuid 31b9aa90-c17e-4631-a852-fa4d853dac1e;
+  Camera uuid 3B88300A-0D04-49ad-980E-F7D509754F73;
+
+  SceneXMLReader;
+  SceneXMLWriter;
+  InOutHandler;
+  ObjReader;
+  ObjWriter;
+  ScrEventManager;
+  DrawObj;
+  StyleManager;
+  StyleSet;
+  ViewInputConfig;
+  AnimMgr;
+  AnimObj;
+
+  RendGroup;
+  
+#if !defined(QM_BUILD_LW)
+  SceneExporter;
+//  ImgSceneExporter;
+//  PngSceneExporter;
+#endif
+
+};
+

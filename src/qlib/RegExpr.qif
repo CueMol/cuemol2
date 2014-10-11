@@ -1,0 +1,49 @@
+// -*-Mode: C++;-*-
+//
+// $Id: RegExpr.qif,v 1.1 2008/04/12 14:57:19 rishitani Exp $
+
+// C++ name: LRegExpr
+// C++ class decl: LRegExpr.hpp
+// Script/Runtime name: RegExpr
+
+// Wrapper name: RegExpr_wrap
+// Wrapper class decl file: RegExpr_wrap.hpp
+// Wrapper class impl file: RegExpr_wrap.cpp
+
+// code for class factory (runtime creation) is always generated
+
+runtime_class RegExpr
+{
+  uuid a7bd829c-1ca9-41c3-be17-57d6093f0c63;
+
+  client_hdr "LRegExpr.hpp";
+  client_name qlib::LRegExpr;
+
+  scriptable;
+
+  // cloneable option generates instance creation with copy constructor
+  cloneable;
+  smartptr;
+
+  // persistent;
+
+  // properties
+  property string p => m_pat;
+  property string s => m_subj;
+
+  // methods
+  void setup(string) => setPattern;
+
+  // perform pattern matching
+  boolean match(string);
+
+  // return the pattern string
+  string toString() => getPattern;
+
+  // return num of matched groups
+  integer size() => getSubstrCount;
+
+  // return the matched substring by index
+  string at(integer) => getSubstr;
+
+};

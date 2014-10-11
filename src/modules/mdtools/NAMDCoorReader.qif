@@ -1,0 +1,22 @@
+// -*-Mode: C++;-*-
+//
+// NAMD coor file reader scripting interface
+//
+
+#ifndef NAMD_COOR_READER_QIF_INCLUDED
+#define NAMD_COOR_READER_QIF_INCLUDED
+
+#include <qsys/ObjReader.qif>
+
+runtime_class NAMDCoorReader extends ObjReader
+{
+  client_hdr "NAMDCoorReader.hpp";
+  client_name mdtools::NAMDCoorReader;
+
+  scriptable;
+  smartptr;
+
+};
+
+#endif
+

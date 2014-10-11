@@ -1,0 +1,44 @@
+// -*-Mode: C++;-*-
+//
+// Rainbow coloring scripting interface
+//
+
+#ifndef RAINBOW_COLORING_QIF_INCLUDED
+#define RAINBOW_COLORING_QIF_INCLUDED
+
+#include <modules/molstr/ColoringScheme.qif>
+
+runtime_class RainbowColoring extends ColoringScheme
+{
+  client_hdr "RainbowColoring.hpp";
+  client_name molvis::RainbowColoring;
+
+  scriptable;
+  cloneable;
+  smartptr;
+
+
+  property real start_hue => redirect(getStartHue, setStartHue);
+  default start_hue = 0.0;
+
+  property real end_hue => redirect(getEndHue, setEndHue);
+  default end_hue = 270.0;
+
+  property real sat => m_dSat;
+  default sat = 1.0;
+
+  property real bri => m_dBri;
+  default bri = 1.0;
+
+  enumdef mode {
+    mol = molvis::RainbowColoring::RBC_MOL;
+    chain = molvis::RainbowColoring::RBC_CHAIN;
+  }
+  property enum mode => redirect(getMode, setMode);
+  default mode = "mol";
+  
+
+};
+
+#endif
+

@@ -1,0 +1,158 @@
+<?xml version="1.0"?>
+
+<bindings id="colpicker-bindings"
+  xmlns="http://www.mozilla.org/xbl"
+  xmlns:html="http://www.w3.org/1999/xhtml"
+  xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  xmlns:xbl="http://www.mozilla.org/xbl">
+
+  <binding id="colpicker">
+    <content>
+      <xul:vbox flex="1">
+	<xul:hbox flex="1">
+	  <xul:label anonid="main_colorbox" value="" pack="end" width="32px" flex="0"
+	    style="border: 1px solid black; margin: 3px 0px 3px 6px;"/>
+	  <xul:textbox anonid="main_textbox" value="#000000" flex="1"
+		       xbl:inherits="width,disabled,size"/>
+	  <xul:toolbarbutton type="menu" class="dropdown-button"
+	    label="" xbl:inherits="disabled">
+	    <xul:menupopup>
+	      <!-- <menuitem id="colpick_menu_hidedetail" label="Hide detail"/> -->
+	      <xul:menuitem anonid="colpick_menu_rgb" label="RGB"/>
+	      <xul:menuitem anonid="colpick_menu_hsb" label="HSB"/>
+	      <xul:menuitem anonid="colpick_menu_named" label="Named colors"/>
+	      <xul:menuitem anonid="colpick_menu_palette" label="Palette"/>
+	      <xul:menuitem anonid="colpick_menu_molcol" label="Use mol color"/>
+	      <!--<menuitem anonid="colpick_menu_transp" label="Transparency"/>-->
+	    </xul:menupopup>
+	  </xul:toolbarbutton>
+	</xul:hbox>
+
+	<!--- color sliders panel -->
+	<xul:panel anonid="colpick_slider_popup" width="200px">
+	  <xul:grid flex="1">
+	    <xul:columns>
+	      <xul:column/>
+	      <xul:column flex="1"/>
+	      <xul:column/>
+	    </xul:columns>
+
+	    <xul:rows>
+	      <xul:row align="center">
+		<xul:label anonid="colpick_lab1" value="R" pack="end"/>
+		<xul:colorslider anonid="colpick_sli1" align="stretch"/>
+		<xul:textbox anonid="colpick_cmpv1" size="3" value="0" type="number" style="width: 4em;"/>
+	      </xul:row>
+	      <xul:row align="center">
+		<xul:label anonid="colpick_lab2" value="G" pack="end"/>
+		<xul:colorslider anonid="colpick_sli2" align="stretch"/>
+		<xul:textbox anonid="colpick_cmpv2" size="3" value="0" type="number" style="width: 4em;"/>
+	      </xul:row>
+	      <xul:row align="center">
+		<xul:label anonid="colpick_lab3" value="B" pack="end"/>
+		<xul:colorslider anonid="colpick_sli3" align="stretch"/>
+		<xul:textbox anonid="colpick_cmpv3" size="3" value="0" type="number" style="width: 4em;"/>
+	      </xul:row>
+	    </xul:rows>
+	  </xul:grid>
+	</xul:panel>
+
+	<!--- color named color panel -->
+	<xul:panel anonid="colpick_named_popup">
+	  <xul:listbox anonid="colpick_named_list" rows="5" flex="1" id="button"
+	    style="height: 200px;">
+	    <xul:listcols>
+	      <xul:listcol width="32"/>
+	      <xul:listcol flex="1"/>
+	    </xul:listcols>
+	  </xul:listbox>
+	  <xul:hbox align="end">
+	    <xul:resizer flex="1" dir="bottom" style="-moz-appearance: none !important;"  height="8"/>
+	    <!--<xul:spacer flex="1"/>-->
+	    <xul:resizer flex="0" dir="bottomright"/>
+	  </xul:hbox>
+	</xul:panel>
+
+	<!--- palette color panel -->
+	<xul:panel anonid="colpick_palette_popup">
+	  <xul:vbox anonid="colpick_palette_box" flex="1" style="width:-moz-max-content;"/>
+	</xul:panel>
+      </xul:vbox>
+    </content>
+
+    <!-- :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::: -->
+
+    <implementation>
+      <field name="mColorBox" readonly="true">
+        document.getAnonymousElementByAttribute(this, "anonid", "main_colorbox");
+      </field>
+
+      <field name="mTextBox" readonly="true">
+        document.getAnonymousElementByAttribute(this, "anonid", "main_textbox");
+      </field>
+
+      <field name="mImpl" readonly="true"/>
+
+      <property name="type" readonly="true">
+	<getter>
+	  return this.getAttribute("type");
+	</getter>
+      </property>
+
+      <property name="disabled"
+		onset="if (val) this.setAttribute('disabled', 'true');
+                       else this.removeAttribute('disabled'); return val;"
+                onget="if (this.hasAttribute('disabled')) return true;
+		       else return false;"/>
+
+      <constructor>
+	var that = this;
+	this.mImpl = new cuemolui.ColorPicker(this);
+	this.mImpl.init();
+      </constructor>
+
+      <method name="setTargetSceneID">
+        <parameter name="aValue"/>
+	<body>
+	  this.mImpl.mTgtSceID = aValue;
+	</body>
+      </method>
+
+      <method name="setParentUpdate">
+        <parameter name="aValue"/>
+	<body>
+	  this.mImpl.setParentUpdate(aValue);
+	</body>
+      </method>
+
+      <method name="setColorText">
+        <parameter name="aValue"/>
+	<body>
+	  this.mImpl.setColorText(aValue);
+	</body>
+      </method>
+
+      <method name="getColorText">
+	<body>
+	  return this.mImpl.getColorText();
+	</body>
+      </method>
+
+      <method name="setColorObj">
+        <parameter name="aValue"/>
+	<body>
+	  this.mImpl.setColorObj(aValue);
+	</body>
+      </method>
+
+      <method name="getColorObj">
+	<body>
+	  return this.mImpl.getColorObj();
+	</body>
+      </method>
+
+    </implementation>
+  </binding>
+
+</bindings>
+

@@ -1,0 +1,27 @@
+// -*-Mode: C++;-*-
+//
+// PQR file reader scripting interface
+//
+
+#ifndef PQR_FILE_WRITER_QIF_INCLUDED
+#define PQR_FILE_WRITER_QIF_INCLUDED
+
+#include <qsys/ObjWriter.qif>
+#include <modules/molstr/SelCommand.qif>
+
+runtime_class PQRFileWriter extends ObjWriter
+{
+  client_hdr "PQRFileWriter.hpp";
+  client_name surface::PQRFileWriter;
+
+  scriptable;
+  smartptr;
+
+  property object<MolSelection$> sel => redirect(getSelection, setSelection);
+
+  property boolean use_H => redirect(isUseH, setUseH);
+  property string ns => redirect(getNS, setNS);
+};
+
+#endif
+

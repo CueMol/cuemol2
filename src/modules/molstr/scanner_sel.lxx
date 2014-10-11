@@ -1,0 +1,307 @@
+/*
+ *  Molecular selection grammer lexical scanner
+ */
+
+%option noyywrap
+%option never-interactive
+
+%x SEL_NUM_STAT SEL_REX_STAT SEL_DQSTR_STAT SEL_SQSTR_STAT
+
+%{
+#include <common.h>
+#include <qlib/LChar.hpp>
+
+#include "SelCompiler.hpp"
+#include "SelNodes.hpp"
+
+using qlib::LChar;
+using qlib::LString;
+using namespace molstr;
+
+#include "parser_sel.h"
+
+
+#undef YY_INPUT
+#define YY_INPUT(buf,result,max) (result = SelCompiler::getInstance()->yyInput(buf, max))
+
+extern int yyerror(char* error);
+
+%}
+
+SEL_FLOATNUM ([-+]?([0-9]*\.[0-9]+)([eE][-+]?[0-9]+)?)
+SEL_INTNUM ([-+]?(0|[1-9][0-9]*))
+SEL_INSRES ([-+]?(0|[1-9][0-9]*)[a-zA-Z])
+
+SEL_TOKEN  [_a-zA-Z0-9][_a-zA-Z0-9\'\*]*
+
+%%
+
+%{
+  LString string_buf;
+%}
+
+ /*
+  *  Selection tokens
+  */
+
+ /* Ignore white spaces */
+[ \t]+	;
+<SEL_NUM_STAT>[ \t]+ ;
+
+\n		{ ; }
+<SEL_NUM_STAT>\n		{ ; }
+
+
+ /* Operators */
+"("	{ return SEL_LPAREN; }
+")"	{ return SEL_RPAREN; }
+"["	{ return SEL_LBRACK; }
+"]"	{ return SEL_RBRACK; }
+":"	{ return SEL_COLON; }
+"."	{ return SEL_DOT; }
+","	{ return SEL_COMMA; }
+"&"	{ return SEL_AND; }
+"and"	{ return SEL_AND; }
+"|"	{ return SEL_OR; }
+"or"	{ return SEL_OR; }
+"!"	{ return SEL_NOT; }
+"not"	{ return SEL_NOT; }
+"="	{ return SEL_EQ; }
+">"	{ return SEL_GT; }
+"<"	{ return SEL_LT; }
+"*"	{ return SEL_ALL; }
+
+ /* Regular expression (mode start) */
+"/"	{
+  string_buf = "";
+  BEGIN SEL_REX_STAT;
+}
+
+ /* Quoted string (double quotation, mode start) */
+"\""	{
+  string_buf = "";
+  BEGIN SEL_DQSTR_STAT;
+}
+
+ /* Quoted string (single quotation, mode start) */
+"'"	{
+  string_buf = "";
+  BEGIN SEL_SQSTR_STAT;
+}
+
+ /* Reserved keywords */
+"elem"	{ return SEL_ELEM; }
+"e;"	{ return SEL_ELEM; }
+
+"name"	{ return SEL_ANAME; }
+"n;"	{ return SEL_ANAME; }
+
+"alt"	{ return SEL_ALTCONF; }
+
+"resn"	{ return SEL_RESN; }
+"r;"	{ return SEL_RESN; }
+
+"resi"	{ return SEL_RESI; }
+"resid"	{ return SEL_RESI; }
+"i;"	{ return SEL_RESI; }
+
+"chain"	{ return SEL_CHAIN; }
+"c;"	{ return SEL_CHAIN; }
+
+"aid"	{ return SEL_AID; }
+
+"aprop" { return SEL_APROP; }
+"rprop" { return SEL_RPROP; }
+
+"all"	{ return SEL_ALL; }
+"none"	{ return SEL_NONE; }
+"null"	{ return SEL_NULL; }
+
+"bfac"	{ return SEL_BFAC; }
+"occ"	{ return SEL_OCC; }
+
+"around"	{
+  MB_DPRINTLN("AROUND token");
+  SelCompiler::setSelNumState();
+  MB_DPRINTLN("AROUND set num state");
+  return SEL_AROUND;
+}
+"a;"	{
+  MB_DPRINTLN("AROUND token");
+  SelCompiler::setSelNumState();
+  MB_DPRINTLN("AROUND set num state");
+  return SEL_AROUND;
+}
+
+"expand"	{
+  MB_DPRINTLN("EXPAND token");
+  SelCompiler::setSelNumState();
+  MB_DPRINTLN("EXPAND set num state");
+  return SEL_EXPAND;
+}
+"ex;"	{
+  MB_DPRINTLN("EXPAND token");
+  SelCompiler::setSelNumState();
+  MB_DPRINTLN("EXPAND set num state");
+  return SEL_EXPAND;
+}
+
+"neighbor"	{
+  MB_DPRINTLN("NBR token");
+  SelCompiler::setSelNumState();
+  MB_DPRINTLN("NBR set num state");
+  return SEL_NBR;
+}
+"nbr;"	{
+  MB_DPRINTLN("NBR token");
+  SelCompiler::setSelNumState();
+  MB_DPRINTLN("NBR set num state");
+  return SEL_NBR;
+}
+
+"extend"	{
+  MB_DPRINTLN("EXTEND token");
+  SelCompiler::setSelNumState();
+  MB_DPRINTLN("EXTEND set num state");
+  return SEL_EXTEND;
+}
+
+"byres"	{ return SEL_BYRES; }
+"br;"	{ return SEL_BYRES; }
+
+"bymainch"	{ return SEL_BYMAINCH; }
+"bysidech"	{ return SEL_BYSIDECH; }
+
+{SEL_INSRES} {
+  // Residue number with insertion code
+  //MB_DPRINTLN("selintnum %s", yytext);
+  int nlen = ::strlen(yytext);
+  yylval.insres.inscode = yytext[nlen-1];
+  yytext[nlen-1] = '\0';
+  yylval.insres.intnum = ::atoi(yytext);
+  return SEL_INSRES;
+}
+
+{SEL_INTNUM} {
+  MB_DPRINTLN("selintnum %s", yytext);
+  yylval.intnum = atoi(yytext);
+  return SEL_INTNUM;
+}
+
+{SEL_TOKEN}	{
+ //MB_DPRINTLN("sel_token %s", yytext);
+ yylval.str = LChar::dup(yytext);
+ return SEL_STRING;
+}
+
+\\. {
+  yyerror("unknown char in selection statement");
+  return LEX_ERROR;
+}
+
+. {
+  yyerror("unknown char in selection statement");
+  return LEX_ERROR;
+}
+
+<SEL_NUM_STAT>{SEL_FLOATNUM}	{
+   MB_DPRINTLN("numstat-floatnum %s", yytext);
+   yylval.floatnum = atof(yytext);
+   return SEL_FLOATNUM;
+}
+
+<SEL_NUM_STAT>{SEL_INTNUM}  {
+  MB_DPRINTLN("numstat-intnum %s", yytext);
+  yylval.intnum = atoi(yytext);
+  return SEL_INTNUM;
+}
+
+
+  /* Regular Expression Mode */
+<SEL_REX_STAT>"/"	{
+  yylval.str = LChar::dup(string_buf);
+  MB_DPRINTLN("sel rex end %s", string_buf.c_str());
+  string_buf = "";
+  BEGIN INITIAL;
+  return SEL_REGEXP;
+}
+
+<SEL_REX_STAT>"\\/"	{
+  MB_DPRINTLN("sel rex escaped slash [\\/]");
+  string_buf += yytext;
+//  yylval.str = LChar::dup(yytext);
+//  return SEL_REGEXP;
+}
+
+<SEL_REX_STAT>.	{
+  string_buf += yytext;
+  MB_DPRINTLN("sel rex %s", string_buf.c_str());
+//  yylval.str = LChar::dup(yytext);
+//  return SEL_REGEXP;
+}
+
+  /* Quoted String ("...") Mode */
+<SEL_DQSTR_STAT>"\""	{
+  yylval.str = LChar::dup(string_buf);
+  MB_DPRINTLN("sel dqstr end %s", string_buf.c_str());
+  string_buf = "";
+  BEGIN INITIAL;
+  return SEL_STRING;
+}
+
+<SEL_DQSTR_STAT>"\\\""	{
+  MB_DPRINTLN("sel dqstr escaped dquot [\\\"]");
+  string_buf += yytext;
+}
+
+<SEL_DQSTR_STAT>.	{
+  string_buf += yytext;
+  MB_DPRINTLN("sel dqstr %s", string_buf.c_str());
+}
+
+  /* Signle-Quoted String ('...') Mode */
+<SEL_SQSTR_STAT>"'"	{
+  yylval.str = LChar::dup(string_buf);
+  MB_DPRINTLN("sel sqstr end %s", string_buf.c_str());
+  string_buf = "";
+  BEGIN INITIAL;
+  return SEL_STRING;
+}
+
+<SEL_SQSTR_STAT>"\\'"	{
+  MB_DPRINTLN("sel sqstr escaped squot [\\']");
+  string_buf += yytext;
+}
+
+<SEL_SQSTR_STAT>.	{
+  string_buf += yytext;
+  MB_DPRINTLN("sel sqstr %s", string_buf.c_str());
+}
+
+%%
+
+//static 
+void SelCompiler::setSelNumState()
+{
+  BEGIN SEL_NUM_STAT; 
+}
+
+//static 
+void SelCompiler::setSelRexState()
+{
+//  string_buf = "";
+  BEGIN SEL_REX_STAT; 
+}
+
+//static
+void SelCompiler::setSelState()
+{
+  BEGIN INITIAL;
+}
+
+//private static
+void SelCompiler::resetScannerState()
+{
+  BEGIN INITIAL;
+  yyrestart(NULL);
+}

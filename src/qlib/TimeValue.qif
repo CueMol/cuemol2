@@ -1,0 +1,40 @@
+// -*-Mode: C++;-*-
+//
+// Time value representation
+//
+
+#ifndef TIME_VALUE_QIF_INCLUDED
+#define TIME_VALUE_QIF_INCLUDED
+
+runtime_class TimeValue
+{
+  client_hdr "LScrTime.hpp";
+  client_name qlib::LScrTime;
+
+  scriptable;
+  cloneable;
+
+  //
+  // properties
+  //
+
+  property string strval => redirect(getStrValue, setStrValue);
+  property integer intval => redirect(getIntValue, setIntValue);
+
+  //
+  // methods
+  //
+
+  string toString();
+  boolean equals(object<TimeValue>);
+
+  integer getHour();
+  integer getMinute(boolean lim);
+  integer getSecond(boolean lim);
+  integer getMilliSec(boolean lim);
+
+  // void setIntValue(integer);
+};
+
+#endif
+

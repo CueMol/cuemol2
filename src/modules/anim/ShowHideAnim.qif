@@ -1,0 +1,37 @@
+// -*-Mode: C++;-*-
+//
+// Animation object scripting interface
+//
+
+#ifndef SHOW_HIDE_ANIM_QIF_INCLUDED
+#define SHOW_HIDE_ANIM_QIF_INCLUDED
+
+#include <qsys/anim/AnimObj.qif>
+
+runtime_class ShowHideAnim extends AnimObj
+{
+  client_hdr "ShowHideAnim.hpp";
+  client_name anim::ShowHideAnim;
+
+  // interface attributes
+  scriptable;
+  cloneable;
+  smartptr;
+
+  // properties
+
+  property boolean hide => redirect(isHide, setHide);
+  default hide = false;
+  
+  property boolean fade => redirect(isFade, setFade);
+  default fade = true;
+  
+  property string rend => redirect(getRendNames, setRendNames);
+
+  // target alpha
+  property real tgt_alpha => redirect(getTgtAlpha, setTgtAlpha);
+  default tgt_alpha = 1.0;
+};
+
+#endif
+

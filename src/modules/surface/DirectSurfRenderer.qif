@@ -1,0 +1,87 @@
+// -*-Mode: C++;-*-
+//
+//  Direct molecular surface renderer scripting interface
+//
+
+#ifndef DIRECT_SURF_RENDERER_QIF_INCLUDED
+#define DIRECT_SURF_RENDERER_QIF_INCLUDED
+
+#include <modules/molstr/MolRenderer.qif>
+
+runtime_class DirectSurfRenderer extends MolRenderer
+{
+  client_hdr "DirectSurfRenderer.hpp";
+  client_name surface::DirectSurfRenderer;
+  using SelCommand;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  property integer detail => redirect(getDetail, setDetail);
+  default detail = 6;
+
+  property real proberad => redirect(getProbeRadius, setProbeRadius);
+  default proberad = 1.4;
+
+  /// Surface type
+  enumdef surftype {
+    vdw = surface::DirectSurfRenderer::DS_VDW;
+    sas = surface::DirectSurfRenderer::DS_SAS;
+    ses = surface::DirectSurfRenderer::DS_SES;
+  }
+  property enum surftype => redirect(getSurfType, setSurfType);
+  default surftype = "ses";
+  
+  /// Surface calculation algorithm
+  enumdef surfalgor {
+    edtsurf = surface::DirectSurfRenderer::DS_EDTSURF;
+    msms = surface::DirectSurfRenderer::DS_MSMS;
+  }
+  property enum surfalgor => redirect(getSurfAlgor, setSurfAlgor);
+  default surfalgor = "edtsurf";
+
+  /// Mesh drawing mode
+  enumdef drawmode {
+    fill = surface::DirectSurfRenderer::SFDRAW_FILL;
+    line = surface::DirectSurfRenderer::SFDRAW_LINE;
+    point = surface::DirectSurfRenderer::SFDRAW_POINT;
+  }
+  property enum drawmode => redirect(getDrawMode, setDrawMode);
+  default drawmode = "fill";
+
+  /// Line/Dot size in wireframe/dot mode
+  property real width => redirect(getLineWidth, setLineWidth);
+  default width = 1.2;
+
+  // Selection for display
+  property object<MolSelection$> showsel => redirect(getShowSel, setShowSel);
+  default showsel = molstr::SelectionPtr(new molstr::SelCommand());
+
+  // Atom vdw radii
+
+  property real vdwr_H => m_vdwr_H;
+  default vdwr_H = 1.2;
+
+  property real vdwr_C => m_vdwr_C;
+  default vdwr_C = 1.7;
+
+  property real vdwr_N => m_vdwr_N;
+  default vdwr_N = 1.55;
+
+  property real vdwr_O => m_vdwr_O;
+  default vdwr_O = 1.52;
+
+  property real vdwr_S => m_vdwr_S;
+  default vdwr_S = 1.8;
+
+  property real vdwr_P => m_vdwr_P;
+  default vdwr_P = 1.8;
+
+  property real vdwr_X => m_vdwr_X;
+  default vdwr_X = 1.7;
+
+};
+
+#endif
+

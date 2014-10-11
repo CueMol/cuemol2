@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<!DOCTYPE overlay SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+<!-- -*- xml -*- -->
+
+<overlay id="cuemol2-panels-overlay"
+  xmlns:html="http://www.w3.org/1999/xhtml"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <overlaytarget id="panels-overlay-target" hidden="true">
+
+    <script type="application/javascript" src="chrome://cuemol2/content/object-menulist.js"/>
+    <script type="application/javascript" src="chrome://cuemol2/content/densitymap-panel.js"/>
+
+    <vbox id="denmap-panel" flex="0" title="&denmapPanel.title;">
+      <menulist id="denmap-rend-list" sizetopopup="none"
+	onselect="cuemolui.panels.denmap.selChg(event)"
+	onchange="cuemolui.panels.denmap.listChg(event)">
+	<menupopup/>
+      </menulist>
+
+      <grid flex="1">
+	<columns>
+	  <column/>
+	  <column flex="1"/>
+	</columns>
+	
+	<rows>
+	  <hbox align="center" flex="1">
+	    <button class="panel-button" id="denmap-panel-redraw" label="Redraw"
+	      oncommand="cuemolui.panels.denmap.onRedraw(event)" flex="0"/>
+	    <mycolpicker id="denmap-panel-color" flex="1"
+	      onchange="cuemolui.panels.denmap.validateWidget(event)"/>
+	  </hbox>
+	  <row align="center">
+	    <label value="Transp: "/>
+	    <numslider id="denmap-panel-transp"
+	      flex="1" size="2" class="simple-numslider"
+	      decimalplaces="1" min="0" max="1" increment="0.1" unit="none"
+	      onchange="cuemolui.panels.denmap.validateWidget(event)"/>
+	  </row>
+	  <row align="center">
+	    <label value="Level: "/>
+	    <numslider id="denmap-panel-level"
+	      flex="1" size="2" class="simple-numslider"
+	      decimalplaces="1" min="-10" max="10" increment="0.1" unit="&#0963;"
+	      onchange="cuemolui.panels.denmap.validateWidget(event)"/>
+	  </row>
+	  <row align="center">
+	    <label value="Extent:"/>
+	    <numslider id="denmap-panel-extent"
+	      flex="1" size="2" class="simple-numslider"
+	      decimalplaces="1" min="0" max="100" increment="1" unit="&#0197;"
+	      onchange="cuemolui.panels.denmap.validateWidget(event)"/>
+	  </row>
+	</rows>
+      </grid>
+    </vbox>
+
+  </overlaytarget>
+
+  <overlaytarget id="window-leftpanels-popup">
+    <menuitem id="menu-denmap-panel-toggle"
+      label="&denmapPanel.title;" type="checkbox" autocheck="false"
+      oncommand="cuemolui.sidepanel.onToggle('denmap-panel')" />
+  </overlaytarget>
+</overlay>
+

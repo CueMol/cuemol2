@@ -1,0 +1,112 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+<!-- XBL binding for wheel button -->
+
+<bindings id="wheelBtnBindings"
+  xmlns="http://www.mozilla.org/xbl"
+  xmlns:svg="http://www.w3.org/2000/svg"
+  xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  xmlns:xbl="http://www.mozilla.org/xbl">
+  
+  <binding id="wheelbtn">
+    <resources>
+      <stylesheet src="chrome://cuemol2/content/wheelbtn.css"/>
+    </resources>
+
+    <content align="center" pack="center">
+      <xul:toolbarbutton anonid="wheel-widget" class="wheel-image" state="0"/>
+    </content>
+
+    <implementation>
+
+      <field name="mWheelWidget">
+        document.getAnonymousElementByAttribute(this,
+	"anonid", "wheel-widget");
+      </field>
+
+      <constructor>
+	this.mWheelCnt = 0;
+      </constructor>
+      
+      <method name="mouseMoved">
+	<parameter name="event"/>
+	<body>
+	  <![CDATA[
+	    if (event.clientX==this.mPrevX) return;
+	    var delx = event.clientX - this.mPrevX;
+	    this.mWheelCnt = (this.mWheelCnt+delx)&3;
+	    this.mWheelWidget.setAttribute("state", this.mWheelCnt);
+	    dd("wheel count: " + this.mWheelCnt);
+
+	    /*
+	    var sign = (delx<0.0)?-1.0:1.0;
+	    var delabs = Math.abs(delx);
+	    if (delabs<10.0) {
+	      delabs = delabs*delabs/10.0;
+	      delx = sign * delabs;
+	    }
+	    */
+	  
+	    this.mValue += delx;
+	    //this.mValueLabel.value = this.mValue; //.toFixed();
+	    dd("DeltaX: " + delx);
+	    
+	    var changeEvent = document.createEvent("Events");
+	    changeEvent.initEvent("change", true, true);
+	    changeEvent.value=this.mValue;
+	    changeEvent.delta=delx;
+	    changeEvent.state="move";
+	    this.dispatchEvent(changeEvent);
+
+	    this.mPrevX = event.clientX;
+	    ]]>
+	</body>
+      </method>
+
+    </implementation>
+
+    <handlers>
+      <handler event="mousedown" button="0">
+      <![CDATA[
+        event.target.setCapture();
+	this.mPrevX = event.clientX;
+	this.mValue = 0;
+	//this.mValueLabel.value = 0;
+	var that = this;
+        event.target.addEventListener("mousemove", that.mouseMoved, false);
+
+	var changeEvent = document.createEvent("Events");
+	changeEvent.initEvent("change", true, true);
+	changeEvent.value=0;
+	changeEvent.delta=0;
+	changeEvent.state="start";
+	this.dispatchEvent(changeEvent);
+      ]]>
+      </handler>
+
+      <handler event="mouseup" button="0">
+        //this.style.MozUserFocus = '';
+	var that = this;
+	event.target.removeEventListener("mousemove", that.mouseMoved, false);
+
+	var changeEvent = document.createEvent("Events");
+	changeEvent.initEvent("change", true, true);
+	changeEvent.value=event.clientX - this.mOrigX;
+	changeEvent.delta=event.clientX - this.mPrevX;
+	changeEvent.state="end";
+	this.dispatchEvent(changeEvent);
+      </handler>
+
+      <handler event="mouseover">
+      </handler>
+
+      <handler event="mouseout">
+      </handler>
+
+    </handlers>
+  </binding>
+
+</bindings>
+
+
+

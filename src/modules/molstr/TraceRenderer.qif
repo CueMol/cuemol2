@@ -1,0 +1,27 @@
+// -*-Mode: C++;-*-
+//
+// $Id: TraceRenderer.qif,v 1.6 2010/01/24 15:23:45 rishitani Exp $
+//
+
+#ifndef TRACE_RENDERER_QIF_INCLUDED
+#define TRACE_RENDERER_QIF_INCLUDED
+
+#include "MainChainRenderer.qif"
+
+runtime_class TraceRenderer extends MainChainRenderer
+{
+  client_hdr "TraceRenderer.hpp";
+  client_name molstr::TraceRenderer;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  // Width of lines
+  property real width => redirect(getLineWidth, setLineWidth);
+  default width = 1.2;
+
+};
+
+#endif
+

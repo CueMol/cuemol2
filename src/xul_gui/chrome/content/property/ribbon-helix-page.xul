@@ -1,0 +1,164 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+
+<!-- -*- xml -*- -->
+<!DOCTYPE window SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+
+<overlay id="propeditor-generic-page"
+	 xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <overlaytarget id="tabs-overlay-target">
+    <tab label="Helix" id="ribbon-helix-tab"/>
+  </overlaytarget>
+
+  <overlaytarget id="tabpanels-overlay-target">
+    <!-- Ribbon helix props -->
+    <tabpanel flex="1" orient="vertical">
+
+      <groupbox flex="0">
+	<caption label="Helix Section"/>
+
+	<grid flex="0">
+	  <columns>
+	    <column flex="0"/>
+	    <column flex="1"/>
+	  </columns>
+
+	  <rows>
+	    <hbox flex="0" align="center" class="propdlg-rowbox">
+	      <label value="Type:" />
+	      <menulist id="helixpage-secttype" flex="0" class="propdlg-menulist">
+		<menupopup>
+		  <menuitem label="Elliptical" value="elliptical"/>
+		  <menuitem label="Round square" value="roundsquare"/>
+		  <menuitem label="Rectangle" value="rectangle"/>
+		  <menuitem label="Fancy" value="fancy1"/>
+		</menupopup>
+	      </menulist>
+	      <spacer flex="1"/>
+	      <checkbox id="helixpage-usebackcol"
+		label="Back color:"/>
+	      <mycolpicker id="helixpage-backcol"
+		size="4"/>
+	    </hbox>
+
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Width (&#0197;): " flex="0"/>
+	      <numslider id="helixpage-width" flex="1" size="3"
+		decimalplaces="2" min="0" max="5" increment="0.05" unit="none"/>
+	    </row>
+
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Tuber: " flex="0"/>
+	      <numslider id="helixpage-tuber" flex="1" size="3"
+		decimalplaces="1" min="0.2" max="10" increment="0.1" unit="none"/>
+	    </row>
+
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Sharpness: " flex="0"/>
+	      <numslider id="helixpage-sharp" flex="1" size="3"
+		decimalplaces="2" min="0" max="1" increment="0.05" unit="none"/>
+	    </row>
+
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Smoothness: " flex="0"/>
+	      <numslider id="helixpage-smooth" flex="1" size="3"
+		decimalplaces="2" min="0" max="0.5" increment="0.01" unit="none"/>
+	    </row>
+
+	  </rows>
+	</grid>
+      </groupbox>
+
+      <groupbox flex="0">
+	<caption label="Helix Head"/>
+
+	<grid flex="0">
+	  <columns>
+	    <column flex="0"/>
+	    <column flex="1"/>
+	  </columns>
+
+	  <rows>
+	    <hbox flex="0" align="center" class="propdlg-rowbox">
+	      <label value="Type:" />
+	      <menulist id="helixpage-head-type" flex="0" class="propdlg-menulist">
+		<menupopup>
+		  <menuitem label="Round" value="smooth"/>
+		  <menuitem label="Flat" value="flat"/>
+		  <menuitem label="Arrow" value="arrow"/>
+		</menupopup>
+	      </menulist>
+	    </hbox>
+
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Power: " flex="0"/>
+	      <numslider id="helixpage-head-gamma" flex="1" size="3"
+		ticktype="exp1"
+		decimalplaces="2" min="0.1" max="10" increment="0.1" unit="none"/>
+	    </row>
+	    
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Arrow height:" flex="0"/>
+	      <numslider id="helixpage-head-basw" flex="1" size="3"
+		min="0" max="100" increment="10" unit="%"/>
+	    </row>
+
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Arrow width:" flex="0"/>
+	      <numslider id="helixpage-head-arrow" flex="1" size="3"
+		min="0" max="100" increment="10" unit="%"/>
+	    </row>
+	  </rows>
+	</grid>
+      </groupbox>
+      
+      <groupbox flex="0">
+	<caption label="Helix Tail"/>
+
+	<grid flex="0">
+	  <columns>
+	    <column flex="0"/>
+	    <column flex="1"/>
+	  </columns>
+
+	  <rows>
+	    <hbox flex="0" align="center" class="propdlg-rowbox">
+	      <label value="Type:" />
+	      <menulist id="helixpage-tail-type" flex="0" class="propdlg-menulist">
+		<menupopup>
+		  <menuitem label="Round" value="smooth"/>
+		  <menuitem label="Flat" value="flat"/>
+		  <menuitem label="Arrow" value="arrow"/>
+		</menupopup>
+	      </menulist>
+	    </hbox>
+
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Power: " flex="0"/>
+	      <numslider id="helixpage-tail-gamma" flex="1" size="3"
+		ticktype="exp1"
+		decimalplaces="2" min="0.1" max="10" increment="0.1" unit="none"/>
+	    </row>
+	    
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Arrow height (%):" flex="0"/>
+	      <numslider id="helixpage-tail-basw" flex="1" size="3"
+		min="0" max="100" increment="10" unit="none"/>
+	    </row>
+
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Arrow width (%):" flex="0"/>
+	      <numslider id="helixpage-tail-arrow" flex="1" size="3"
+		min="0" max="100" increment="10" unit="none"/>
+	    </row>
+
+	  </rows>
+	</grid>
+      </groupbox>
+      
+    </tabpanel>
+  </overlaytarget>
+</overlay>
+

@@ -1,0 +1,48 @@
+// -*-Mode: C++;-*-
+//
+// Interface definition for TubeSection class
+//
+
+#ifndef TUBE_SECTION_QIF_INCLUDED
+#define TUBE_SECTION_QIF_INCLUDED
+
+runtime_class TubeSection
+{
+  client_hdr "TubeSection.hpp";
+  client_name molvis::TubeSection;
+
+  scriptable;
+  cloneable;
+  smartptr;
+
+  /// tube width
+  property real width => redirect(getWidth, setWidth);
+  default width = 0.35;
+
+  /// tuber ratio
+  property real tuber => redirect(getTuber, setTuber);
+  default tuber = 1.0;
+
+  /// sharpness of square (valid only for type SQUARE)
+  property real sharp => redirect(getSharp, setSharp);
+  default sharp = 0.4;
+
+  /// section type
+  enumdef type {
+    elliptical = molvis::TubeSection::TS_ELLIPTICAL;
+    roundsquare = molvis::TubeSection::TS_SQUARE;
+    rectangle = molvis::TubeSection::TS_RECT;
+    fancy1 = molvis::TubeSection::TS_MOLSCR;
+  }
+  property enum type => redirect(getType, setType);
+  ///default type = "roundsquare";
+  default type = "elliptical";
+
+  /// detail level in section direction
+  property integer detail => redirect(getDetail, setDetail);
+  default detail = 16;
+
+};
+
+#endif // TUBE_SECTION_QIF_INCLUDED
+

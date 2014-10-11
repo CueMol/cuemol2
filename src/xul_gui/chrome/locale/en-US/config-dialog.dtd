@@ -1,0 +1,14 @@
+
+<!ENTITY config_dlg.langGroup   "Language">
+<!ENTITY config_dlg.lang.ja   "Japanese">
+<!ENTITY config_dlg.lang.en-US   "English">
+
+<!ENTITY config_dlg.atomLabelGroup   "Atom labels">
+<!ENTITY config_dlg.atomLabel.font   "Font: ">
+<!ENTITY config_dlg.atomLabel.size   "Size: ">
+<!ENTITY config_dlg.atomLabel.color   "Color: ">
+<!ENTITY config_dlg.atomLabel.italic   "Italic">
+<!ENTITY config_dlg.atomLabel.bold   "Bold">
+<!ENTITY config_dlg.atomLabel.sample   "Sample: ">
+
+

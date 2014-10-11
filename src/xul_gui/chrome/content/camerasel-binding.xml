@@ -1,0 +1,260 @@
+<?xml version="1.0"?>
+
+<!-- -*- xml -*- -->
+<!-- XBL binding for camera selector -->
+
+<bindings id="cameraSelBindings"
+  xmlns="http://www.mozilla.org/xbl"
+  xmlns:html="http://www.w3.org/1999/xhtml"
+  xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  xmlns:xbl="http://www.mozilla.org/xbl">
+
+  <binding id="camerasel">
+    <content>
+      <xul:menulist xbl:inherits="editable,disabled,readonly,flex"
+		    anonid="selection-box" onselect="this.parentNode._onSelect(event)">
+	<xul:menupopup/>
+      </xul:menulist>
+    </content>
+
+    <implementation>
+      <field name="mSelBox" readonly="true">
+	document.getAnonymousElementByAttribute(this, "anonid", "selection-box");
+      </field>
+      <field name="mSceneID">null</field>
+      <field name="mUserInput">true</field>
+
+      <property name="sceneID">
+        <getter>
+          return this.mSceneID;
+        </getter>
+        <setter>
+          <![CDATA[
+            if (this.mSceneID==val) return val;
+            this._detachScene();
+	    this.mSceneID = val;
+            this._attachScene();
+	    this._buildContents();
+	    return val;
+	    ]]>
+        </setter>
+      </property>
+
+      <property name="value">
+        <getter>
+          <![CDATA[
+	  var item = this.mSelBox.selectedItem;
+	  if (item)
+	    return item.value;
+	  return null;
+	    ]]>
+	</getter>
+        <setter>
+          <![CDATA[
+            var that = this;
+            window.setTimeout(function () { that._selectItem(val); }, 0);
+	    return val;
+	    ]]>
+        </setter>
+      </property>
+
+      <property name="disabled"
+		onset="if (val) this.setAttribute('disabled', 'true');
+                       else this.removeAttribute('disabled'); return val;"
+                onget="if (this.hasAttribute('disabled')) return true;
+		       else return false;"/>
+
+      <constructor>
+	var that = this;
+	window.addEventListener("unload", function() {that._onUnLoad();}, false);
+      </constructor>
+      
+      <destructor>
+	this._detachScene();
+      </destructor>
+
+      <method name="_onUnLoad">
+        <body>
+	  this._detachScene();
+	</body>
+      </method>
+      
+      <method name="_attachScene">
+        <body>
+	<![CDATA[
+          var that = this;
+          var src_filter = cuemol.evtMgr.SEM_CAMERA|cuemol.evtMgr.SEM_SCENE;
+          this._callbackID =
+	  cuemol.evtMgr.addListener("",
+				  src_filter, // source type
+				  cuemol.evtMgr.SEM_ANY, // event type
+				  this.mSceneID, // source UID
+				  function (args) { try { that._onQsysEvent(args); }
+ catch (e) { debug.exception(e);}});
+          
+	  ]]>
+	</body>
+      </method>
+
+      <method name="_detachScene">
+        <body>
+	<![CDATA[
+          if (this.mSceneID==null) return;
+          var oldscene = cuemol.getScene(this.mSceneID);
+          if (oldscene && this._callbackID)
+            cuemol.evtMgr.removeListener(this._callbackID);
+          this._callbackID = null;
+	  ]]>
+	</body>
+      </method>
+
+      <method name="_onQsysEvent">
+        <parameter name="args"/>
+        <body>
+	<![CDATA[
+          //alert('XXX:'+debug.dumpObjectTree(args));
+          if (args.evtType==cuemol.evtMgr.SEM_ADDED) {
+	    this._buildContents();
+          }
+          else if (args.evtType==cuemol.evtMgr.SEM_REMOVING) {
+	    this._removeItem(args.obj.name);
+          }
+          else if (args.method=="sceneAllCleared" ||
+                   args.method=="sceneLoaded") {
+            this._buildContents();
+          }
+	  ]]>
+	</body>
+      </method>
+
+      <method name="_buildContents">
+        <body>
+	<![CDATA[
+	  var scene = cuemol.getScene(this.mSceneID);
+	  var element = this.mSelBox;
+          var popup = element.menupopup;
+          var oldselval = null;
+          if (element.selectedItem)
+            oldselval = element.selectedItem.value;
+          while (popup.firstChild)
+            popup.removeChild(popup.firstChild);
+	  
+	  var json_str = scene.getCameraInfoJSON();
+          dd("CameraSel.build: json="+json_str);
+	  var data = JSON.parse(json_str);
+
+	  element.appendItem("(none)", "");
+
+	  var lab, val;
+	  var i, nlen = data.length;
+          if (nlen==0) {
+	    // element.disabled = true;
+            element.selectedIndex = 0;
+            return false;
+          }
+          // element.disabled = false;
+	  for (i=0; i<nlen; ++i) {
+	    lab = data[i].name;
+	    val = data[i].name;
+            this.mUserInput = false;
+	    element.appendItem(lab, val);
+            this.mUserInput = true;
+	  }
+          if (oldselval)
+            this._selectItem(oldselval);
+
+          // this.dumpItems("a");
+
+	  return true;
+	  ]]>
+	</body>
+      </method>
+
+      <method name="_selectItem">
+        <parameter name="aValue"/>
+        <body>
+	<![CDATA[
+	  var element = this.mSelBox;
+	  var nelem = element.itemCount;
+          dd("CamSel._selectItem> nelem="+nelem);
+	  for (var i=0; i<nelem; ++i) {
+	    var item = element.getItemAtIndex(i);
+            dd("CamSel._selectItem> ind="+i+", value: <"+item.value+">, label: <"+item.label+">");
+	    if (item.value==aValue) {
+              //dd("CamSel._selectItem> value: <"+aValue+"> found");
+	      if (element.selectedItem != item) {
+	        this.mUserInput = false;
+	        dd("CameraSel.selectItem> set mUserInput as FALSE");
+	        element.selectedIndex = i;
+                this.mUserInput = true;
+                dd("CamSel._selectItem> set mUserInput as TRUE");
+	      }
+	      return;
+	    }
+	  }
+	  // no item found -> select the first item
+          dd("CamSel._selectItem> value: <"+aValue+"> not found");
+	  if (element.selectedIndex != 0) {
+	    this.mUserInput = false;
+	    dd("CameraSel.selectItem> set mUserInput as FALSE");
+	    element.selectedIndex = 0;
+            this.mUserInput = true;
+            dd("CameraSel> set mUserInput as TRUE");
+	  }
+	  ]]>
+	</body>
+      </method>
+
+      <method name="dumpItems">
+        <parameter name="aValue"/>
+        <body>
+	<![CDATA[
+	  var element = this.mSelBox;
+	  var nelem = element.itemCount;
+	  for (var i=0; i<nelem; ++i) {
+	    var item = element.getItemAtIndex(i);
+            dd("CamSel.dumpItem("+aValue+")> ind="+i+", value: <"+item.value+">, label: <"+item.label+">");
+	  }
+	  ]]>
+	</body>
+      </method>
+
+      <method name="_removeItem">
+        <parameter name="aValue"/>
+        <body>
+	<![CDATA[
+	  var element = this.mSelBox;
+	  var nelem = element.itemCount;
+	  for (var i=0; i<nelem; ++i) {
+	    var item = element.getItemAtIndex(i);
+	    if (item.value==aValue) {
+	      element.removeItemAt(i);
+	      //if (element.itemCount==1)
+	      //element.disabled = true;
+	      return true;
+	    }
+	  }
+	  return false;
+	  ]]>
+	</body>
+      </method>
+
+      <method name="_onSelect">
+        <parameter name="aEvent"/>
+        <body>
+	<![CDATA[
+	  dd("CameraSel.onSelect> select ui="+this.mUserInput+", sel="+this.mSelBox.selectedItem.value);
+	  // filter out the non-user input event
+	  if (!this.mUserInput)
+	    aEvent.stopPropagation();
+	  else if (this.mSelBox.selectedItem==null)
+	    aEvent.stopPropagation();
+	  ]]>
+	</body>
+      </method>
+
+    </implementation>
+
+  </binding>
+</bindings>
+

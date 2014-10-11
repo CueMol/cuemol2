@@ -1,0 +1,39 @@
+// -*-Mode: C++;-*-
+//
+
+#ifndef SCENE_XML_READER_QIF_INCLUDED
+#define SCENE_XML_READER_QIF_INCLUDED
+
+#include "Scene.qif"
+#include <qlib/ByteArray.qif>
+#include <qlib/LScrObject.qif>
+
+runtime_class SceneXMLReader
+{
+  client_hdr "SceneXMLReader.hpp";
+  client_name qsys::SceneXMLReader;
+
+  scriptable;
+  smartptr;
+
+  ////////////////////
+  // Property definition
+  property string error => redirect(getErrMsg, XXX) (readonly);
+
+  ////////////////////
+  // Method definition
+
+  void setPath(string path);
+
+  void attach(object<Scene$> scene);
+  object<Scene$> detach();
+
+  void read();
+
+  object<LScrObject$> fromByteArray(object<ByteArray$>);
+
+
+};
+
+#endif
+

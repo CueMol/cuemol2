@@ -1,0 +1,56 @@
+// -*-Mode: C++;-*-
+//
+// $Id: Vector.qif,v 1.4 2011/04/02 15:01:11 rishitani Exp $
+
+// C++ name: qlib::LScrVector4D
+// C++ class decl: LScrVector4D.hpp
+// Script/Runtime name: Vector
+
+// Wrapper name: Vector_wrap
+// Wrapper class decl file: Vector_wrap.hpp
+// Wrapper class impl file: Vector_wrap.cpp
+
+// code for class factory (runtime creation) is always generated
+
+runtime_class Vector
+{
+  uuid 29b865a2-7b40-4c79-af93-53c0ec506c8b;
+
+  client_hdr "LScrVector4D.hpp";
+  client_name qlib::LScrVector4D;
+
+  scriptable;
+  cloneable;
+  smartptr;
+
+  // properties
+  property real x => redirect(getX, setX);
+  property real y => redirect(getY, setY);
+  property real z => redirect(getZ, setZ);
+  property real w => redirect(getW, setW);
+
+  property string strvalue => redirect(toString, setStrValue);
+
+  // methods
+  void set3(real, real, real) => set;
+  void set4(real, real, real, real) => set;
+
+  string toString();
+
+  boolean equals(object<Vector>);
+  boolean isZero();
+  real sqlen();
+  real length();
+
+  object<Vector> scale(real);
+  object<Vector> divide(real) => divideScr;
+  object<Vector> normalize() => normalizeScr;
+  object<Vector> cross(object<Vector>);
+  real dot(object<Vector>);
+  real angle(object<Vector>);
+  void zero();
+
+  object<Vector> add(object<Vector>) => addScr;
+  object<Vector> sub(object<Vector>) => subScr;
+
+};

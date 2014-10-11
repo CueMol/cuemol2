@@ -1,0 +1,44 @@
+// -*-Mode: C++;-*-
+//
+
+#ifndef SCENE_XML_WRITER_QIF_INCLUDED
+#define SCENE_XML_WRITER_QIF_INCLUDED
+
+#include "Scene.qif"
+#include "InOutHandler.qif"
+
+runtime_class SceneXMLWriter extends InOutHandler
+{
+  client_hdr "SceneXMLWriter.hpp";
+  client_name qsys::SceneXMLWriter;
+
+  scriptable;
+  smartptr;
+
+  ////////////////////
+  // Property definition
+
+  /// Embed-all-objects flag (Embed don't have to be persistent)
+  property boolean embedAll => redirect(getEmbedAll, setEmbedAll) (nopersist);
+
+  /// version ID (Version value should be persistent,
+  /// since the file should be saved with the same version format in the next time)
+  property string version => redirect(getVersion, setVersion);
+
+  ////////////////////
+  // Method definition
+
+  void setPath(string path);
+
+  /// Retrieve default options from scene (qsc_opts)
+  void setDefaultOpts(object<Scene$> scene);
+
+  void attach(object<Scene$> scene);
+  object<Scene$> detach();
+
+  void write();
+
+};
+
+#endif
+

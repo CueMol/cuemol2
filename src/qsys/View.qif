@@ -1,0 +1,145 @@
+// -*-Mode: C++;-*-
+//
+// $Id: View.qif,v 1.24 2011/03/18 05:53:45 rishitani Exp $
+
+#ifndef VIEW_QIF_INCLUDED
+#define VIEW_QIF_INCLUDED
+
+#include <qlib/Vector.qif>
+#include <qlib/Quat.qif>
+#include <qlib/LScrCallBack.qif>
+#include "Camera.qif"
+#include "Scene.qif"
+#include "DrawObj.qif"
+
+runtime_class View
+{
+  client_hdr "View.hpp";
+  client_name qsys::View;
+
+  scriptable;
+  abstract;
+  smartptr;
+
+  ///////////////////////////////////////
+  // view properties
+
+  property string name => redirect(getName, setName);
+  property integer uid => redirect(getUID, XXX) (readonly);
+  property boolean active => redirect(isActive, setActive);
+
+  property real zoom => redirect(getZoom, setZoom);
+  property real distance => redirect(getViewDist, setViewDist);
+  property real slab => redirect(getSlabDepth, setSlabDepth);
+  property object<Vector> center => redirect(getViewCenterScr, setViewCenter);
+  property object<Quat> rotation => redirect(getRotQuatScr, setRotQuat);
+
+  property boolean perspective => redirect(isPerspec, setPerspec);
+  // default perspective = false;
+
+  property integer width => redirect(getWidth, XXX) (readonly);
+  property integer height => redirect(getHeight, XXX) (readonly);
+
+  property boolean trans_mms => redirect(isTransMMS, setTransMMS);
+  property boolean rot_mms => redirect(isRotMMS, setRotMMS);
+
+  // Stereo mode
+  enumdef stereoMode {
+    none = qsys::Camera::CSM_NONE;
+    para = qsys::Camera::CSM_PARA;
+    cross = qsys::Camera::CSM_CROSS;
+    hardware = qsys::Camera::CSM_HW_QBUF;
+  }
+  property enum stereoMode => redirect(getStereoMode, setStereoMode);
+  // default stereoMode = "none";
+
+  // Hardware stereo
+  property boolean hasHWStereo => redirect(hasHWStereo, XXX) (readonly);
+
+  property real stereoDist => redirect(getStereoDist, setStereoDist);
+
+  property boolean swapStereoEyes => redirect(isSwapStereoEyes, setSwapStereoEyes);
+
+  ///////////////////////////////////////
+  // Methods
+  
+  // Center mark
+  enumdef centerMark {
+    none = qsys::Camera::CCM_NONE;
+    crosshair = qsys::Camera::CCM_CROSS;
+    axis = qsys::Camera::CCM_AXIS;
+    // cube = qsys::Camera::CCM_CUBE;
+  }
+  property enum centerMark => redirect(getCenterMark, setCenterMark);
+  // default centerMark = "crosshair";
+
+  string toString();
+  integer getUID();
+
+  /////////////
+
+  // Zoom factor
+  void setZoom(real f);
+  real getZoom();
+
+  // Slab depth
+  void setSlabDepth(real d);
+  real getSlabDepth();
+
+  // View center
+  void setViewCenter(object<Vector> pos);
+  object<Vector> getViewCenter() => getViewCenterScr;
+
+  // translate (in view coordinates, in pixels)
+  void translateView(real x, real y, real z);
+  // translate (the same as translateView() with generating XXX_PROPDRG type event)
+  void translateViewDrag(real x, real y, real z);
+
+  // View rotation
+  void setRotQuat(object<Quat> q);
+  object<Quat> getRotQuat() => getRotQuatScr;
+
+  // rotate (in view coordinates, in degree)
+  void rotateView(real rotx, real roty, real rotz);
+
+  void setPerspec(boolean b);
+  boolean isPerspec();
+
+  object<Camera$> getCamera();
+  void setCamera(object<Camera$> rcam);
+  // boolean saveTo(object<Camera$> rcam);
+  // boolean loadFrom(object<Camera$> rcam);
+
+  void invalidate() => setUpdateFlag;
+
+  void redraw() => forceRedraw;
+
+  /////////////
+
+  // integer addListener(object<LScrCallBack$>);
+  // boolean removeListener(integer nid);
+
+  string hitTest(integer x, integer y);
+  string hitTestRect(integer x, integer y, integer w, integer h, boolean bNr);
+  
+  // get parent scene
+  object<Scene$> getScene();
+
+  // get UI drawing object
+  object<DrawObj$> getDrawObj(string clsname);
+
+  /////////////
+  // Style supports
+
+  property string style => redirect(getStyleNames, xxx) (readonly);
+
+  void applyStyles(string names);
+
+  boolean pushStyle(string names);
+
+  boolean removeStyleRegex(string regex);
+
+};
+
+#endif
+

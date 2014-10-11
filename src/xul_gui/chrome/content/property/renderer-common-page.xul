@@ -1,0 +1,97 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+
+<!-- -*- xml -*- -->
+<!DOCTYPE window SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+
+<overlay id="renderer-common-page"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <overlaytarget id="renderer-common-page" orient="vertical">
+
+    <script type="application/javascript" src="chrome://cuemol2/content/molsellist.js"/>
+
+    <groupbox>
+      <caption label="Basic settings"/>
+
+      <grid>
+	<columns>
+	  <column flex="0"/>
+	  <column flex="1"/>
+	</columns>
+
+	<rows>
+	  <row align="center" class="propdlg-rowbox">
+	    <label value="Name:"/>
+	    <textbox id="comprop-name"/>
+	  </row>
+
+	  <row align="center" class="propdlg-rowbox">
+	    <label value="Selection:"/>
+	    <molsellist id="comprop-molsel" editable="true" flex="1"/>
+	  </row>
+
+	  <hbox>
+	    <checkbox id="comprop-visible" flex="1" label="Visible"/>
+	    <checkbox id="comprop-locked" flex="1" label="Locked"/>
+	  </hbox>
+
+	  <row align="center" class="propdlg-rowbox">
+	    <label value="Material:"/>
+	    <!--<textbox id="comprop-material"/>-->
+	    <menulist id="comprop-material" flex="0" sizetopopup="none">
+	      <menupopup/>
+	    </menulist>
+	  </row>
+
+	  <row align="center" class="propdlg-rowbox">
+	    <label value="Opacity:"/>
+	    <numslider id="comprop-alpha" flex="1" size="3"
+	      decimalplaces="1" min="0.0" max="1.0" increment="0.1" unit="none"/>
+	  </row>
+	</rows>
+      </grid>
+    </groupbox>
+    
+    <groupbox>
+      <caption>
+	<!--<checkbox id="" flex="1" label="Edge lines"/>-->
+	<label value="Edge lines:"/>
+	<menulist id="comprop-edgetype" flex="0" class="propdlg-menulist">
+	  <menupopup>
+	    <menuitem label="none" value="none"/>
+	    <menuitem label="edges" value="edges"/>
+	    <menuitem label="silhouette" value="silhouette"/>
+	  </menupopup>
+	</menulist>
+      </caption>
+
+      <grid flex="0">
+	<columns>
+	  <column/>
+	  <column flex="1"/>
+	</columns>
+	
+	<rows>
+	  <row align="center">
+	    <label value="Width: "/>
+	    <numslider id="comprop-eglinew" flex="1" size="3"
+	      decimalplaces="2" min="0" max="0.5" increment="0.01" unit="&#0197;"/>
+	  </row>
+	  <row align="center">
+	    <label value="Color: "/>
+	    <mycolpicker id="comprop-egline-color"/>
+	  </row>
+	</rows>
+      </grid>
+    </groupbox>
+
+    <!-- <hbox align="center" pack="end">
+      <button label="Reset all to default" oncommand="gComm.resetAll()"/>
+    </hbox> -->
+
+  </overlaytarget>
+
+</overlay>
+

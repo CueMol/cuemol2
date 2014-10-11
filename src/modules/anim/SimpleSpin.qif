@@ -1,0 +1,31 @@
+// -*-Mode: C++;-*-
+//
+// Animation object scripting interface
+//
+
+#ifndef SIMPLE_SPIN_QIF_INCLUDED
+#define SIMPLE_SPIN_QIF_INCLUDED
+
+#include <qlib/Vector.qif>
+#include <qsys/anim/AnimObj.qif>
+
+runtime_class SimpleSpin extends AnimObj
+{
+  client_hdr "SimpleSpin.hpp";
+  client_name anim::SimpleSpin;
+
+  // interface attributes
+  scriptable;
+  cloneable;
+  smartptr;
+
+  // properties
+  property real angle => redirect(getAngle, setAngle);
+  default angle = 0.0;
+
+  property object<Vector> axis => redirect(getScrAxis, setScrAxis);
+  default axis = qlib::LScrVector4D(0.0,1.0,0.0,0.0);
+};
+
+#endif
+

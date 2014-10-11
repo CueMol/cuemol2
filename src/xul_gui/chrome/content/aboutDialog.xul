@@ -1,0 +1,117 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+
+<!DOCTYPE dialog [
+  <!ENTITY % brandDTD SYSTEM "chrome://global/locale/brand.dtd">
+  %brandDTD;
+  <!ENTITY % cuemol2DTD SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+  %cuemol2DTD;
+]>
+
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?> 
+
+<dialog xmlns:html="http://www.w3.org/1999/xhtml"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  id="aboutDialog"
+  windowtype="CueMol2:About"
+  onload="init(event);" onunload="uninit(event);"
+  title="&aboutDialog.title;"
+  buttons="accept"
+  style="padding-top: 0; -moz-padding-end: 0; padding-bottom: 10px; -moz-padding-start: 0; width: 299px;">
+  
+  <!--<script type="application/x-javascript" src="chrome://cuemol2/content/aboutDialog.js"/>-->
+<script>
+<![CDATA[
+var Cc = Components.classes;
+var Ci = Components.interfaces;
+
+function init(aEvent) 
+{
+  if (aEvent.target != document)
+    return;
+
+  try {
+    var info = Cc["@mozilla.org/network/protocol;1?name=http"].getService(Components.interfaces.nsIHttpProtocolHandler);
+    var greInfoField = document.getElementById("GREInfo");
+    greInfoField.value = "Based on Mozilla "+info.misc; //+" version "+info.oscpu;
+  }
+  catch (e) {
+  }
+
+  try {
+    var qm = Cc["@cuemol.org/XPCCueMol"].getService(Ci.qICueMol);
+    var scm = qm.getService("SceneManager");
+    var qm_version = scm.getProp("version");
+    var qm_build = scm.getProp("build");
+
+    var versionField = document.getElementById("version");
+    versionField.value += qm_version;
+    //  versionField.style.display = "block";
+
+    var buildField = document.getElementById("buildID");
+    buildField.value += qm_build;
+  }
+  catch (e) {
+    // Pref is unset
+  }
+
+  var userAgentField = document.getElementById("userAgent");
+  userAgentField.value = navigator.userAgent;
+
+/*
+  var button = document.documentElement.getButton("extra2");
+  button.setAttribute("label", document.documentElement.getAttribute("creditslabel"));
+  button.setAttribute("accesskey", document.documentElement.getAttribute("creditsaccesskey"));
+  button.addEventListener("command", switchPage, false);
+*/
+
+  var acceptButton = document.documentElement.getButton("accept");
+  acceptButton.focus();
+}
+
+function uninit(aEvent)
+{
+  if (aEvent.target != document)
+    return;
+}
+
+]]>  
+</script>
+
+    <vbox flex="1" id="clientBox"
+style="background-image: url('chrome://cuemol2/content/about.png'); background-repeat: no-repeat; background-color: #FFFFFF; padding-top: 60px; color: #000000;">
+      <label id="appName" value="CueMol2"
+style="color: #2F40A7; font-size: 30px; font-family: verdana,arial,helvetica,Sans-Serif;font-weight: bold; margin-top: 1em; -moz-margin-end: 0; margin-bottom: 0px; -moz-margin-start: 17px;"/>
+        <label id="version" value="&aboutDialog.version; "
+style="font-weight: bold; color: #808080; margin-top: 0; -moz-margin-end: 0; margin-bottom: 2px; -moz-margin-start: 17px;"/>
+        <label id="buildID" value="&aboutDialog.build; "
+style="font-weight: normal; color: #808080; margin-top: 0; -moz-margin-end: 0; margin-bottom: 2px; -moz-margin-start: 17px;"/>
+        <label id="GREInfo" value=""
+style="font-weight: normal; color: #808080; margin-top: 0; -moz-margin-end: 0; margin-bottom: 10px; -moz-margin-start: 17px;"
+	  />
+
+      <description id="copyright"
+style="margin-top: 0; -moz-margin-end: 16px; margin-bottom: 3px; -moz-margin-start: 16px;"
+>&aboutDialog.copyrightInfo;</description>
+
+      <textbox id="userAgent" multiline="true" readonly="true" flex="1"
+style="  margin-top: 10px;
+  -moz-margin-end: 13px;
+  margin-bottom: 0;
+  -moz-margin-start: 13px;
+  background-color: #FFFFFF;
+  color: #000000;
+  padding-top: 1px;
+  -moz-padding-end: 1px;
+  padding-bottom: 1px;
+  -moz-padding-start: 3px;
+  -moz-appearance: none;
+  overflow: hidden;
+  border: none;
+  height: 10em;
+"/>
+    </vbox>
+  <separator class="groove" id="groove" style="margin-top: 0;"/>
+
+</dialog>
+

@@ -1,0 +1,23 @@
+// -*-Mode: C++;-*-
+//
+// Animation object scripting interface
+//
+
+#ifndef NOOP_ANIMOBJ_QIF_INCLUDED
+#define NOOP_ANIMOBJ_QIF_INCLUDED
+
+#include <qsys/anim/AnimObj.qif>
+
+runtime_class NoopAnimObj extends AnimObj
+{
+  client_hdr "NoopAnimObj.hpp";
+  client_name anim::NoopAnimObj;
+
+  // interface attributes
+  scriptable;
+  cloneable;
+  smartptr;
+};
+
+#endif
+

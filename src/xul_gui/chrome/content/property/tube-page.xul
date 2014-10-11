@@ -1,0 +1,125 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+
+<!-- -*- xml -*- -->
+<!DOCTYPE window SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+
+<overlay id="propeditor-renderer-tube"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <overlaytarget id="propeditor-renderer-tube" orient="vertical">
+
+    <groupbox flex="0">
+      <caption label="Section"/>
+
+      <grid flex="0">
+	<columns>
+	  <column flex="0"/>
+	  <column flex="1"/>
+	</columns>
+
+	<rows>
+	  <hbox flex="0" align="center" class="propdlg-rowbox">
+	    <label value="Type:" />
+	    <menulist id="tubepage-secttype" flex="0" class="propdlg-menulist">
+	      <menupopup>
+		<menuitem label="elliptical" value="elliptical"/>
+		<menuitem label="round square" value="roundsquare"/>
+		<menuitem label="rectangle" value="rectangle"/>
+		<menuitem label="fancy1" value="fancy1"/>
+	      </menupopup>
+	    </menulist>
+	  </hbox>
+	  
+	  <row align="center" class="propdlg-rowbox">
+	    <label value="Detail:" flex="0"/>
+	    <numslider id="tubepage-sectdet" flex="1" size="2"
+		       decimalplaces="0" min="2" max="20" increment="1" unit="none"/>
+	  </row>
+
+	  <row align="center" class="propdlg-rowbox">
+	    <label value="Width1 (&#0197;):" flex="0"/>
+	    <numslider id="tubepage-width" flex="1" size="3"
+		       decimalplaces="2" min="0" max="5" increment="0.01" unit="none"/>
+	  </row>
+	  
+	  <row align="center" class="propdlg-rowbox">
+	    <label value="Width2 (&#0197;):" flex="0"/>
+	    <numslider id="tubepage-width2" flex="1" size="3"
+		       decimalplaces="2" min="0" max="5" increment="0.01" unit="none"/>
+	  </row>
+
+	  <!--<row align="center" class="propdlg-rowbox">
+	    <label value="Tuber:" flex="0"/>
+	    <numslider id="tubepage-tuber" flex="1" size="3"
+		       decimalplaces="1" min="0.1" max="10" increment="0.1" unit="none"/>
+	  </row>-->
+
+	  <row align="center" class="propdlg-rowbox">
+	    <label value="Sharpness:" flex="0"/>
+	    <numslider id="tubepage-sharp" flex="1" size="3"
+		       decimalplaces="2" min="0" max="1" increment="0.05" unit="none"/>
+	  </row>
+
+	</rows>
+      </grid>
+    </groupbox>
+
+    <grid flex="0">
+      <columns>
+	<column flex="0"/>
+	<column flex="1"/>
+      </columns>
+      
+      <rows>
+	<row align="center" class="propdlg-rowbox">
+	  <label value="Axial detail: " flex="0"/>
+	  <numslider id="tubepage-axdet" flex="1" size="2"
+		     decimalplaces="0" min="2" max="20" increment="1" unit="none"/>
+	</row>
+	
+	<row align="center" class="propdlg-rowbox">
+	  <label value="Smoothness: " flex="0"/>
+	  <numslider id="tubepage-smooth" flex="1" size="3"
+		     decimalplaces="2" min="0" max="0.5" increment="0.01" unit="none"/>
+	</row>
+	
+	<hbox flex="1" align="center" class="propdlg-rowbox">
+	  <hbox flex="1">
+	    <checkbox id="tubepage-smocol" flex="0"
+		      label="Smooth color"/>
+	    <spacer flex="1"/>
+	  </hbox>
+	  <hbox flex="1">
+	    <checkbox id="tubepage-pivotcheck" flex="0"
+		      label="Pivot atom name: "/>
+	    <textbox id="tubepage-pivotatom" flex="1" size="3"/>
+	  </hbox>
+	</hbox>
+	
+	<hbox flex="0" align="center" class="propdlg-rowbox">
+	  <label value="Start type:" />
+	  <menulist id="tubepage-starttype" flex="0" class="propdlg-menulist">
+	    <menupopup>
+	      <menuitem label="flat" value="flat"/>
+	      <menuitem label="sphere" value="sphere"/>
+	      <menuitem label="none" value="none"/>
+	    </menupopup>
+	  </menulist>
+	  <spacer width="5px"/>
+	  <label value="End type:" />
+	  <menulist id="tubepage-endtype" flex="0" class="propdlg-menulist">
+	    <menupopup>
+	      <menuitem label="flat" value="flat"/>
+	      <menuitem label="sphere" value="sphere"/>
+	      <menuitem label="none" value="none"/>
+	    </menupopup>
+	  </menulist>
+	</hbox>
+      </rows>
+    </grid>
+
+  </overlaytarget>
+</overlay>
+

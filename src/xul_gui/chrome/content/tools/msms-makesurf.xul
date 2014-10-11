@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2-sysdep.css" type="text/css"?>
+
+<dialog
+  id     = "msms-makesurf-dialog"
+  windowtype="CueMol2:MsmsMakeSurfDlg"
+  title  = "Mol surface tool"
+  xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  ondialogaccept="return window.gDlgObj.onDialogAccept(event);"
+  buttons="accept,cancel">
+
+  <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/object-menulist.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/molsellist.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/tools/msms-makesurf.js"/>
+
+  <label value="Create solvent-excluded surface:"/>
+  <grid>
+    <columns>
+      <column flex="0"/>
+      <column flex="1"/>
+    </columns>
+    <rows>
+      <row align="center">
+	<label class="disable-target" value="MSMS exe path:"/>
+	<hbox align="center">
+	  <textbox class="disable-target" id="msms-exe-path" flex="1"/>
+	  <button class="disable-target" id="msms-exe-path-btn" label="Change ..." oncommand="window.gDlgObj.onMsmsExePath()"/>
+	</hbox>
+      </row>
+      
+      <row align="center">
+	<label class="disable-target" value="Target molecule:"/>
+	<menulist id="mol-select-box" sizetopopup="none"/>
+      </row>
+
+      <row>
+	<spacer/>
+	<hbox align="center">
+	  <checkbox id="selection-check" label="Selection:" flex="0"
+	    oncommand="window.gDlgObj.onSelChk(event)"/>
+	  <molsellist id="mol-selection" flex="1"
+	    editable="true" disabled="true"/>
+	</hbox>
+      </row>
+
+      <row align="center">
+	<label value="Surface name:"/>
+	<hbox>
+	  <textbox id="surf-obj-name" flex="1"/>
+	</hbox>
+      </row>
+
+      <row align="center">
+	<label value="Density (/&#0197;):"/>
+	<hbox>
+	  <textbox id="point-density-value" type="number" min="1" size="2" flex="0"/>
+	  <spacer flex="1"/>
+	</hbox>
+      </row>
+
+      <row align="center">
+	<label value="Probe radius (&#0197;):"/>
+	<hbox>
+	  <textbox id="probe-radius" flex="0" size="2" type="number" 
+	    decimalplaces="1" increment="0.1" min="0.1" value="1.4"/>
+	  <spacer flex="1"/>
+	</hbox>
+      </row>
+    </rows>
+  </grid>
+</dialog>
+

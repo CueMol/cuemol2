@@ -1,0 +1,253 @@
+<?xml version="1.0"?>
+
+<bindings id="selection-widget-bindings"
+          xmlns="http://www.mozilla.org/xbl"
+          xmlns:html="http://www.w3.org/1999/xhtml"
+          xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+          xmlns:xbl="http://www.mozilla.org/xbl">
+
+  <binding id="molselitem-hier" extends="chrome://global/content/bindings/richlistbox.xml#richlistitem">
+    <content>
+      <xul:hbox flex="1" valign="center">
+	<xul:molselboolop xbl:inherits="noop" anonid="boolop"/>
+	<xul:menulist anonid="chain-list" flex="0" editable="true" class="molselitem-menulist" value="*">
+	  <xul:menupopup onpopupshowing="document.getBindingParent(this).onChainListPopupShowing(this)">
+	    <xul:menuitem label="A"/>
+	    <xul:menuitem label="B"/>
+	    <xul:menuitem label="C"/>
+	  </xul:menupopup>
+	</xul:menulist>
+	<xul:label value="."/>
+	<xul:textbox anonid="resid-text" class="plain molselitem-textbox" size="3" value="10:100" flex="1"/>
+	<xul:label value="."/>
+	<xul:menulist anonid="aname-list" flex="0" editable="true" class="molselitem-menulist" value="*">
+	  <xul:menupopup onpopupshowing="document.getBindingParent(this).onAnameListPopupShowing(this)">
+	    <xul:menuitem label="C"/>
+	    <xul:menuitem label="N"/>
+	    <xul:menuitem label="O"/>
+	    <xul:menuitem label="CA"/>
+	    <xul:menuitem label="CB"/>
+	  </xul:menupopup>
+	</xul:menulist>
+      </xul:hbox>
+    </content>
+
+    <implementation>
+      <property name="boolop">
+	<getter>
+	  var elem = document.getAnonymousElementByAttribute(this, "anonid", "boolop");
+	  return elem.value;
+	</getter>
+      </property>
+
+      <property name="chainName">
+	<getter>
+	  var elem = document.getAnonymousElementByAttribute(this, "anonid", "chain-list");
+	  return elem.value;
+	</getter>
+      </property>
+
+      <property name="residIndex">
+	<getter>
+	  var elem = document.getAnonymousElementByAttribute(this, "anonid", "resid-text");
+	  return elem.value;
+	</getter>
+      </property>
+
+      <property name="atomName">
+	<getter>
+	  var elem = document.getAnonymousElementByAttribute(this, "anonid", "aname-list");
+	  return elem.value;
+	</getter>
+      </property>
+
+      <method name="onChainListPopupShowing">
+	<parameter name="aElem"/>
+	<body>
+	  cuemolui.panels.selection.populateChainList(aElem);
+	</body>
+      </method>
+      <method name="onAnameListPopupShowing">
+	<parameter name="aElem"/>
+	<body>
+	  cuemolui.panels.selection.populateAnameList(aElem);
+	</body>
+      </method>
+    </implementation>
+
+  </binding>
+
+  <binding id="molselitem-term" extends="chrome://global/content/bindings/richlistbox.xml#richlistitem">
+    <content>
+      <xul:hbox flex="1"  valign="center">
+	<xul:molselboolop xbl:inherits="noop" anonid="boolop"/>
+	<xul:menulist flex="0" class="molselitem-menulist" anonid="command-type-list"
+	  onselect="document.getBindingParent(this).setupArgs(event)">
+	  <xul:menupopup>
+	    <xul:menuitem label="chain" value="c;"/>
+	    <xul:menuitem label="resid" value="i;"/>
+	    <xul:menuitem label="resname" value="r;"/>
+	    <xul:menuitem label="atom" value="n;"/>
+	    <xul:menuitem label="element" value="e;"/>
+	    <xul:menuitem label="aid" value="aid"/>
+	  </xul:menupopup>
+	</xul:menulist>
+
+	<xul:deck anonid="command-args-deck" flex="1">
+	  <xul:menulist class="molselitem-menulist" anonid="command-args-list"
+	    flex="1" editable="true" >
+	    <xul:menupopup anonid="command-args-popup"/>
+	  </xul:menulist>
+	  <xul:textbox class="plain molselitem-textbox" size="3" flex="1" anonid="command-args-text"/>
+	</xul:deck>
+      </xul:hbox>
+    </content>
+
+    <implementation>
+      <property name="boolop">
+	<getter>
+	  var elem = document.getAnonymousElementByAttribute(this, "anonid", "boolop");
+	  return elem.value;
+	</getter>
+      </property>
+
+      <property name="commandName">
+	<getter>
+	  var elem = document.getAnonymousElementByAttribute(this, "anonid", "command-type-list");
+	  return elem.selectedItem.value;
+	</getter>
+      </property>
+
+      <property name="commandArgs">
+	<getter>
+	  var deck = document.getAnonymousElementByAttribute(this, "anonid", "command-args-deck");
+	  var elem;
+	  if (deck.selectedIndex==0)
+	    elem = document.getAnonymousElementByAttribute(this, "anonid", "command-args-list");
+	  else
+	    elem = document.getAnonymousElementByAttribute(this, "anonid", "command-args-text");
+	  return elem.value;
+	</getter>
+      </property>
+
+      <method name="setupArgs">
+	<parameter name="aEvent"/>
+	<body>
+	  var value = aEvent.target.value;
+	  var deck = document.getAnonymousElementByAttribute(this, "anonid", "command-args-deck");
+	  var popup = document.getAnonymousElementByAttribute(this, "anonid", "command-args-popup");
+	  var list = document.getAnonymousElementByAttribute(this, "anonid", "command-args-list");
+	  //alert('setupArgs: '+value);
+
+	  while (popup.firstChild)
+	    popup.removeChild(popup.firstChild);
+
+	  switch (value) {
+	  case "c;":
+	    deck.selectedIndex=0;
+	    cuemolui.panels.selection.populateChainList(popup);
+	    break;
+
+	  case "r;":
+	    deck.selectedIndex=0;
+	    cuemolui.panels.selection.populateResnList(popup);
+	    break;
+
+	  case "n;":
+	    deck.selectedIndex=0;
+	    cuemolui.panels.selection.populateAnameList(popup);
+	    break;
+
+	  case "e;":
+	    deck.selectedIndex=0;
+	    cuemolui.panels.selection.populateElemList(popup);
+	    break;
+
+	  default:
+	    deck.selectedIndex=1;
+  	    var text = document.getAnonymousElementByAttribute(this, "anonid", "command-args-text");
+	    text.value="1:100";
+	    return;
+	  }
+
+	  var initvalue = popup.firstChild.getAttribute("label");
+	  if (initvalue)
+	    list.value = initvalue;
+	</body>
+      </method>
+    </implementation>
+
+  </binding>
+  
+  <binding id="molselitem-around" extends="chrome://global/content/bindings/richlistbox.xml#richlistitem">
+    <content>
+      <xul:hbox flex="1"  valign="center">
+	<xul:molselboolop noop="true" anonid="boolop"/>
+	<xul:menulist flex="0" class="molselitem-menulist" anonid="command-type-list">
+	  <xul:menupopup>
+	    <xul:menuitem label="around"/>
+	    <xul:menuitem label="expand"/>
+	    <xul:menuitem label="around byres"/>
+	    <xul:menuitem label="extend byres"/>
+	  </xul:menupopup>
+	</xul:menulist>
+	<xul:textbox class="plain molselitem-textbox" size="3" value="5" flex="1" anonid="command-args-text"/>
+      </xul:hbox>
+    </content>
+
+    <implementation>
+      <property name="commandName">
+	<getter>
+	  var elem = document.getAnonymousElementByAttribute(this, "anonid", "command-type-list");
+	  return elem.selectedItem.label;
+	</getter>
+      </property>
+
+      <property name="commandArgs">
+	<getter>
+	  var elem = document.getAnonymousElementByAttribute(this, "anonid", "command-args-text");
+	  return elem.value;
+	</getter>
+      </property>
+
+    </implementation>
+  </binding>
+  
+  <binding id="molsel-boolop">
+    <content>
+      <xul:spacer width="8px"/>
+      <xul:toolbarbutton anonid="bool-sel"
+	class="molsel-boolop-btn" label="|" type="menu" flex="0"
+	oncommand="dd('boolop:'+event.target.value); event.currentTarget.label = event.target.value;">
+	<xul:menupopup>
+	  <xul:menuitem label="&amp; (and)" value="&amp;"/>
+	  <xul:menuitem label="| (or)" value="|"/>
+	</xul:menupopup>
+      </xul:toolbarbutton>
+    </content>
+
+    <implementation>
+      <property name="value">
+	<getter>
+	  var elem = document.getAnonymousElementByAttribute(this, "anonid", "bool-sel");
+	  return elem.label;
+	</getter>
+      </property>
+    </implementation>
+  </binding>
+
+  <binding id="molsel-noop">
+    <content>
+      <xul:spacer width="16px"/>
+    </content>
+    <implementation>
+      <property name="value">
+	<getter>
+	  return null;
+	</getter>
+      </property>
+    </implementation>
+  </binding>
+  
+</bindings>
+

@@ -1,0 +1,21 @@
+// -*-Mode: IDL;-*-
+//
+// IDL for CueMol object wrapper interface
+//
+// $Id: qIObjWrapper.idl,v 1.2 2008/01/12 12:38:26 rishitani Exp $
+
+#include "nsISupports.idl"
+
+%{C++
+namespace qlib {
+     class LScriptable;
+}
+%}
+
+[ptr] native LScriptablePtr(qlib::LScriptable);
+
+[scriptable, uuid(59def3d1-26ca-4cd4-9184-5100c201b76b)]
+interface qIObjWrapper : nsISupports
+{
+  [noscript] void wrapperGetObj(out LScriptablePtr pp);
+};

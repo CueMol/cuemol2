@@ -1,0 +1,66 @@
+// -*-Mode: C++;-*-
+//
+// $Id: Quat.qif,v 1.3 2011/04/09 12:17:09 rishitani Exp $
+
+#ifndef QUAT_QIF_INCLUDED
+#define QUAT_QIF_INCLUDED
+
+#include "Matrix.qif"
+
+// C++ name: LScrQuat
+// C++ class decl: LScrQuat.hpp
+// Script/Runtime name: Quat
+
+// Wrapper name: Quat_wrap
+// Wrapper class decl file: Quat_wrap.hpp
+// Wrapper class impl file: Quat_wrap.cpp
+
+// code for class factory (runtime creation) is always generated
+
+runtime_class Quat
+{
+  uuid 8f5c62a4-9685-4f23-9e70-0acbbfa0af6d;
+
+  client_hdr "LScrQuat.hpp";
+  client_name qlib::LScrQuat;
+
+  scriptable;
+  cloneable;
+  smartptr;
+
+  //
+  // properties
+  //
+
+  property real x => redirect(getX, setX);
+  property real y => redirect(getY, setY);
+  property real z => redirect(getZ, setZ);
+  property real a => redirect(getA, setA);
+
+  //
+  // methods
+  //
+
+  string toString();
+  boolean equals(object<Quat>);
+  // boolean isZero();
+  real sqlen();
+  // real length();
+
+  object<Quat> scale(real);
+  object<Quat> divide(real);
+  object<Quat> normalize();
+  object<Quat> conjugate();
+  void normalizeSelf();
+  object<Quat> mul(object<Quat>);
+
+  object<Quat> rotateX(real);
+  object<Quat> rotateY(real);
+  object<Quat> rotateZ(real);
+
+  object<Matrix> toMatrix();
+
+};
+
+#endif
+

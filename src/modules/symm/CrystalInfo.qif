@@ -1,0 +1,54 @@
+// -*-Mode: C++;-*-
+//
+// $Id: CrystalInfo.qif,v 1.3 2010/09/11 17:54:46 rishitani Exp $
+
+#ifndef CRYSTALINFO_QIF_INCLUDED
+#define CRYSTALINFO_QIF_INCLUDED
+
+// #include "Object.qif"
+#include <qlib/Vector.qif>
+#include <qlib/Matrix.qif>
+
+runtime_class CrystalInfo
+{
+  client_hdr "CrystalInfo.hpp";
+  client_name symm::CrystalInfo;
+  dllexport SYMM_API;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  ////////////////////
+  // Property definition
+
+  property real a => redirect(a, setA);
+  property real b => redirect(b, setB);
+  property real c => redirect(c, setC);
+
+  property real alpha => redirect(alpha, setAlpha);
+  // default alpha = 90.0;
+  property real beta => redirect(beta, setBeta);
+  // default beta = 90.0;
+  property real gamma => redirect(gamma, setGamma);
+  // default gamma = 90.0;
+
+  property integer nsg => redirect(getSG, setSG);
+
+  property string lattice => redirect(getLatticeName, XXX) (readonly);
+  property string hm_spacegroup => redirect(getHMSpaceGroupName, XXX) (readonly);
+  property string spacegroup => redirect(getSpaceGroupName, XXX) (readonly);
+
+  ////////////////////
+  // method definition
+
+  object<Matrix> getOrthMat() => getOrthMatScr;
+  object<Matrix> getFracMat() => getFracMatScr;
+
+  object<Vector> fracToOrth(object<Vector> pos) => fracToOrthScr;
+  object<Vector> orthToFrac(object<Vector> pos) => orthToFracScr;
+
+};
+
+#endif
+

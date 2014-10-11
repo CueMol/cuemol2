@@ -1,0 +1,46 @@
+// -*-Mode: C++;-*-
+//
+// $Id: SelectionRenderer.qif,v 1.6 2010/12/10 04:45:12 rishitani Exp $
+//
+
+#ifndef SELECTION_RENDERER_QIF_INCLUDED
+#define SELECTION_RENDERER_QIF_INCLUDED
+
+#include "MolRenderer.qif"
+#include "Selection.qif"
+
+runtime_class SelectionRenderer extends MolRenderer
+{
+  client_hdr "SelectionRenderer.hpp";
+  client_name molstr::SelectionRenderer;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  property real linew => m_linew;
+  default linew = 3.0;
+
+  property real dispx => m_dispx;
+  default dispx = 3.0;
+
+  property real dispy => m_dispy;
+  default dispy = 3.0;
+
+  property object<AbstractColor$> color => m_color;
+  default color = gfx::SolidColor::createRGB(0.0, 1.0, 1.0, 0.5);
+
+  // selection display type
+  enumdef mode {
+    stick = molstr::SelectionRenderer::MODE_STICK;
+    point = molstr::SelectionRenderer::MODE_POINT;
+  }
+  property enum mode => m_nMode;
+  default mode = "stick";
+
+  //
+  property object<MolSelection$> sel => redirect(getSelection, xxx) (readonly);
+};
+
+#endif
+

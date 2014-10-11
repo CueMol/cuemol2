@@ -1,0 +1,14 @@
+
+body {
+  color: black;
+  background-color: white;
+}
+
+.console-text {
+  font-size: 10pt;
+}
+
+pre {
+      white-space: pre-wrap;
+}
+

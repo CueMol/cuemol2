@@ -1,0 +1,99 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+
+<dialog
+  id     = "IntrTool"
+  windowtype="CueMol2:IntrTool"
+  title  = "Interaction analysis"
+  xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  buttons="accept,cancel"
+  ondialogaccept="return window.gDlg.onDialogAccept()">
+
+  <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/object-menulist.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/molsellist.js"/>
+  <script type="application/javascript; version=1.8" src="chrome://cuemol2/content/tools/intr-tool.js"/>
+  <script type="application/javascript">
+    window.gDlg = new cuemolui.IntrTool();
+  </script>
+
+  <vbox>
+
+    <grid flex="1">
+      <columns>
+	<column/>
+	<column flex="1"/>
+      </columns>
+
+      <rows>
+	<row align="center">
+	  <label value="Molecule:" />
+	  <menulist id="targ_mol" sizetopopup="none"/>
+	</row>
+
+	<row align="center">
+	  <label value="Selection 1:" />
+	  <molsellist id="targ_molsel" editable="true" errorbox="molsel_err" flex="1"/>
+	</row>
+	<row>
+	  <spacer/>
+	  <label id="molsel_err" class="errormsg" noerr="yes" value="Error in the selection code!!"/>
+	</row>
+
+	<row align="center">
+	  <checkbox id="chk_molsel2" label="Selection 2:" persistent="checked"/>
+	  <molsellist id="targ_molsel2" editable="true" errorbox="molsel_err2" flex="1"/>
+	</row>
+	<row>
+	  <spacer/>
+	  <label id="molsel_err2" class="errormsg" noerr="yes" value="Error in the selection code!!"/>
+	</row>
+
+	<row align="center">
+	  <label value="Min distance (&#0197;):"/>
+	  <hbox>
+	    <textbox id="min-distance" type="number"
+	      min="0" value="1.5" size="2" flex="0" decimalplaces="2" increment="0.1"/>
+	    <spacer flex="1"/>
+	  </hbox>
+	</row>
+
+	<row align="center">
+	  <label value="Max distance (&#0197;):"/>
+	  <hbox>
+	    <textbox id="max-distance" type="number"
+	      min="0" value="3.5" size="2" flex="0" decimalplaces="2" increment="0.1"/>
+	    <spacer flex="1"/>
+	  </hbox>
+	</row>
+
+	<row align="center">
+	  <label value="Max labels:"/>
+	  <hbox>
+	    <textbox id="max-labels" type="number"
+	      min="1" value="100" size="2" flex="0" increment="1"/>
+	    <spacer flex="1"/>
+	  </hbox>
+	</row>
+
+	<checkbox id="chk_hbond" label="Hydrogen bond (N, O) only" checked="true" persist="checked"/>
+	
+	<row align="center">
+	  <label value="Renderer:" />
+	  <menulist id="targ_rend" value="measure" editable="true">
+	    <menupopup>
+	      <menuitem label="measure"/>
+	    </menupopup>
+	  </menulist>
+	</row>
+
+      </rows>
+    </grid>
+
+
+  </vbox>
+</dialog>
+

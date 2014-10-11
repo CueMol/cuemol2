@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+<?xul-overlay href="chrome://cuemol2/content/propeditor-generic-page.xul"?>
+<?xul-overlay href="chrome://cuemol2/content/property/renderer-common-page.xul"?>
+<?xul-overlay href="chrome://cuemol2/content/property/molsurf-page.xul"?>
+
+<!-- -*- xml -*- -->
+
+<dialog
+   id     = "molsurf-propdlg"
+   title  = "MolSurf Rend Properties"
+   xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+   buttons="extra1,extra2,accept,cancel"
+   buttonlabelextra1="Reset all to default"
+   ondialogextra1="gMain.resetAllToDefault()"
+   buttonlabelextra2="Apply"
+   ondialogextra2="gMain.apply()"
+   ondialogaccept="return gMain.onDialogAccept(event);">
+  
+  <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/object-menulist.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/propeditor-generic-page.js"/>
+  <script type="application/javascript"
+    src="chrome://cuemol2/content/property/renderer-common-page.js"/>
+  <script type="application/javascript"
+    src="chrome://cuemol2/content/property/molsurf-page.js"/>
+  <script type="application/javascript;version=1.8"
+    src="chrome://cuemol2/content/property/molsurf-propdlg.js"/>
+
+  <!--<overlaytarget id="scripts-overlay-target"/>-->
+
+  <tabbox id="propdlg-tabbox" flex="1">
+    <tabs id="tabs-overlay-target">
+      <tab label="Common" id="common-tab"/>
+      <tab label="MolSurf" id="molsurf-tab"/>
+    </tabs>
+
+    <tabpanels id="tabpanels-overlay-target" flex="1">
+
+      <tabpanel flex="1" orient="vertical">
+	<overlaytarget id="renderer-common-page"/>
+      </tabpanel>
+
+      <tabpanel flex="1" orient="vertical">
+	<overlaytarget id="molsurf-page"/>
+      </tabpanel>
+
+    </tabpanels>
+  </tabbox>
+
+
+</dialog>
+

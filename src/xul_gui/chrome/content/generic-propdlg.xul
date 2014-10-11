@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+<?xul-overlay href="chrome://cuemol2/content/propeditor-generic-page.xul"?>
+
+<!-- -*- xml -*- -->
+
+<dialog
+   id     = "generic-propdlg"
+   title  = "Object properties"
+   xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+   ondialogaccept="return window.gObjPropDlg.onDialogAccept(event);">
+
+  <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/propeditor-generic-page.js"/>
+
+  <!--<overlaytarget id="scripts-overlay-target"/>-->
+
+  <tabbox id="propdlg-tabbox" flex="1">
+    <tabs id="tabs-overlay-target"/>
+    <tabpanels id="tabpanels-overlay-target" flex="1"/>
+  </tabbox>
+
+  <script type="application/javascript">
+<![CDATA[
+// Call constructor
+window.gObjPropDlg = new cuemolui.GenPropEdit();
+]]>  
+  </script>
+
+</dialog>
+

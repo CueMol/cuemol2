@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2-sysdep.css" type="text/css"?>
+
+<dialog
+  id     = "surf-cutbyplane-dialog"
+  windowtype="CueMol2:SurfCutByPlaneDlg"
+  title  = "MolSurf cutting tool"
+  xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  ondialogaccept="return gDlgObj.onDialogAccept(event);"
+  buttons="accept,cancel">
+
+  <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/object-menulist.js"/>
+  <script type="application/javascript" src="surf-cutbyplane.js"/>
+
+  <label value="Cut molecular surface by the current clipping plane:"/>
+  <grid>
+    <columns>
+      <column flex="0"/>
+      <column flex="1"/>
+    </columns>
+    <rows>
+      <row align="center">
+	<label class="disable-target" value="Target surface:"/>
+	<menulist id="surf-select-box" sizetopopup="none"/>
+      </row>
+
+      <!-- <checkbox id="make-sect-mesh" label="Create mesh faces in the section"
+	checked="true" persist="checked"/>-->
+
+      <row align="center">
+	<label class="disable-target" value="Cross section type:"/>
+	<menulist id="cuttype-list">
+	  <menupopup>
+	    <menuitem label="Complete" value="full"/>
+	    <menuitem label="Section only" value="sect"/>
+	    <menuitem label="No section" value="body"/>
+	  </menupopup>
+	</menulist>
+      </row>
+      
+      <row align="center">
+	<label value="Section mesh density (/&#0197;):"/>
+	<hbox>
+	  <textbox id="sect-mesh-den" flex="0" size="2" type="number" 
+	    decimalplaces="1" increment="1.0" min="1.0" value="1.0"/>
+	  <spacer flex="1"/>
+	</hbox>
+      </row>
+    </rows>
+  </grid>
+</dialog>
+

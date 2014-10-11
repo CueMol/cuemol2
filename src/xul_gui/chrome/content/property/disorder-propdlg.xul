@@ -1,0 +1,114 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+<?xul-overlay href="chrome://cuemol2/content/propeditor-generic-page.xul"?>
+<?xul-overlay href="chrome://cuemol2/content/property/renderer-common-page.xul"?>
+
+<!-- -*- xml -*- -->
+
+<dialog
+   id     = "disorder-propdlg"
+   title  = "Disorder renderer properties"
+  xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  buttons="extra1,extra2,accept,cancel"
+
+  buttonlabelextra1="Reset all to default"
+  ondialogextra1="gMain.resetAllToDefault()"
+
+  buttonlabelextra2="Apply"
+  ondialogextra2="gMain.apply()"
+
+  ondialogaccept="return gMain.onDialogAccept(event);"
+>
+  
+  <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/propeditor-generic-page.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/property/renderer-common-page.js"/>
+  <script type="application/javascript" src="disorder-propdlg.js"/>
+
+  <!--<overlaytarget id="scripts-overlay-target"/>-->
+
+  <tabbox id="propdlg-tabbox" flex="1">
+    <tabs id="tabs-overlay-target">
+      <tab label="Common" id="common-tab"/>
+      <tab label="Disorder" id="disorder-tab"/>
+    </tabs>
+
+    <tabpanels id="tabpanels-overlay-target" flex="1">
+
+      <tabpanel flex="1" orient="vertical">
+	<overlaytarget id="renderer-common-page"/>
+      </tabpanel>
+
+
+      <tabpanel flex="1" orient="vertical">
+
+	<grid flex="0">
+	  <columns>
+	    <column/>
+	    <column flex="1"/>
+	  </columns>
+
+	  <rows>
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Target:"/>
+	      <hbox>
+		<menulist id="disopage-targrend" flex="0">
+		  <menupopup/>
+		</menulist>
+		<spacer flex="1"/>
+	      </hbox>
+	    </row>
+
+	    <row align="center">
+	      <label value="Detail: " flex="0"/>
+	      <numslider id="disopage-detail" flex="1" size="3"
+		min="2" max="20" increment="1" unit="none"
+		onchange="gDiso.validateWidgets()"/>
+	    </row>
+
+	    <row align="center">
+	      <label value="Dot size: " flex="0"/>
+	      <numslider id="disopage-dotsize" flex="1" size="3"
+		decimalplaces="1" min="0" max="3" increment="0.1" unit="&#0197;"
+		onchange="gDiso.validateWidgets()"/>
+	    </row>
+
+	    <row align="center">
+	      <label value="Dot separation: " flex="0"/>
+	      <numslider id="disopage-dotsep" flex="1" size="3"
+		decimalplaces="1" min="0" max="3" increment="0.1" unit="&#0197;"
+		onchange="gDiso.validateWidgets()"/>
+	    </row>
+
+	    <row align="center">
+	      <label value="Loop size: " flex="0"/>
+	      <numslider id="disopage-loopsize" flex="1" size="3"
+		decimalplaces="1" min="0" max="10" increment="0.1" unit="&#0197;"
+		onchange="gDiso.validateWidgets()"/>
+	    </row>
+
+	    <row align="center">
+	      <label value="Loop size 2: " flex="0"/>
+	      <numslider id="disopage-loopsize2" flex="1" size="3"
+		decimalplaces="1" min="-1" max="10" increment="0.1" unit="&#0197;"
+		onchange="gDiso.validateWidgets()"/>
+	    </row>
+
+	    <hbox align="center">
+	      <label value="Color: "/>
+	      <mycolpicker id="disopage-color"
+		onchange="gDiso.validateWidgets()"/>
+	    </hbox>
+	    
+	  </rows>
+	</grid>
+
+	<spacer flex="1"/>
+
+      </tabpanel>
+    </tabpanels>
+  </tabbox>
+
+</dialog>
+

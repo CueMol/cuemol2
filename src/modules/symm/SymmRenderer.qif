@@ -1,0 +1,43 @@
+// -*-Mode: C++;-*-
+//
+//  SymmRenderer interface definition
+//
+
+#ifndef SYMM_RENDERER_QIF_INCLUDED
+#define SYMM_RENDERER_QIF_INCLUDED
+
+#include <qsys/Renderer.qif>
+#include <qlib/Matrix.qif>
+
+runtime_class SymmRenderer extends Renderer
+{
+  client_hdr "SymmRenderer.hpp";
+  client_name symm::SymmRenderer;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  property integer maxop => redirect(getMaxOp, setMaxOp);
+  default maxop = 100;
+
+  property real extent => redirect(getExtent, setExtent);
+  default extent = 50.0;
+  
+  property boolean unitcell => redirect(isUnitCellMode, setUnitCellMode);
+  default unitcell = true;
+
+  property boolean autoupdate => redirect(isAutoUpdate, setAutoUpdate);
+  default autoupdate = false;
+
+  property object<Vector> center => redirect(getCenter, setCenter);
+  default center = qlib::Vector4D();
+
+  //////////
+
+  //object<Vector> xform(integer symid, object<Vector> pos);
+  object<Matrix> getXformMatrix(integer symid);
+};
+
+#endif
+

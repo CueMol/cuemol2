@@ -1,0 +1,29 @@
+// -*-Mode: C++;-*-
+//
+// Animation object scripting interface
+//
+
+#ifndef REND_PROP_ANIM_QIF_INCLUDED
+#define REND_PROP_ANIM_QIF_INCLUDED
+
+#include <qsys/anim/AnimObj.qif>
+
+runtime_class RealPropAnim extends AnimObj
+{
+  client_hdr "RealPropAnim.hpp";
+  client_name anim::RealPropAnim;
+
+  // interface attributes
+  scriptable;
+  cloneable;
+  smartptr;
+
+  // properties
+  property real startValue => redirect(getStartValue, setStartValue);
+  property real endValue => redirect(getEndValue, setEndValue);
+  property string prop => redirect(getPropName, setPropName);
+  property string rend => redirect(getRendNames, setRendNames);
+};
+
+#endif
+

@@ -1,0 +1,76 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+<!DOCTYPE overlay SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+
+<overlay id="animui-ribbon-overlay"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+<style xmlns="http://www.w3.org/1999/xhtml"><![CDATA[
+.anim-play-pause-btn {
+ list-style-image: url("chrome://cuemol2/content/anim/button-play-pause.png");
+  -moz-image-region: rect(0px, 16px, 16px, 0px);
+}
+.anim-play-pause-btn[disabled="true"] {
+  -moz-image-region: rect(48px, 16px, 64px, 0px);
+}
+.anim-play-pause-btn[state="pause"] {
+  -moz-image-region: rect(0px, 32px, 16px, 16px);
+}
+.anim-play-pause-btn[state="pause"][disabled="true"] {
+  -moz-image-region: rect(48px, 32px, 64px, 16px);
+}
+
+.anim-stop-btn {
+ list-style-image: url("chrome://cuemol2/content/anim/button-stop.png");
+  -moz-image-region: rect(0px, 16px, 16px, 0px);
+}
+.anim-stop-btn[disabled="true"] {
+  -moz-image-region: rect(48px, 16px, 64px, 0px);
+}
+
+.animslider {
+  -moz-binding: url("chrome://cuemol2/content/anim/anim-slider-bindings.xml#animslider");
+}
+]]></style>
+
+  <overlaytarget id="scripts-overlay-target">
+    <script type="application/javascript;version=1.8" src="anim-ribbon.js"/>
+    <script type="application/javascript">
+      try {
+      window.gToolRibbon.registerTool(new cuemolui.AnimUIToolRibbon("animui"));
+      } catch (e) {
+      debug.exception(e);
+      }
+    </script>
+  </overlaytarget>
+
+  <overlaytarget id="tool-ribbon-tabcontainer">
+    <tab class="ribbon-tab" id="animui-ribbon-tab" label="Animation"/>
+  </overlaytarget>
+  
+  <overlaytarget id="ribbon-tabpanels">
+    <tabpanel flex="1" id="animui-ribbon-tabpanel" class="ribbon-tabpanel">
+      <toolbar class="ribbon-bar" align="center" flex="1">
+	<toolbarbutton id="animui-play-pause"
+	  flex="0" class="ribbon-toolbar-button anim-play-pause-btn"
+	  state="play"
+	  label="Play"/>
+	<toolbarbutton id="animui-stop"
+	  flex="0" class="ribbon-toolbar-button anim-stop-btn"
+	  oncommand=""
+	  label="Stop"/>
+	<checkbox id="animui-chkloop" label="Loop"/>
+	<scale class="animslider" id="animui-scale" flex="1" movetoclick="true"/>
+	<label id="animui-cur-min" value="00"/>
+	<label value=":"/>
+	<label id="animui-cur-sec" value="00"/>
+	<label value="/"/>
+	<label id="animui-total-min" value="00"/>
+	<label value=":"/>
+	<label id="animui-total-sec" value="00"/>
+      </toolbar>
+    </tabpanel>
+  </overlaytarget>
+</overlay>
+
+

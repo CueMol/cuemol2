@@ -1,0 +1,30 @@
+// -*-Mode: C++;-*-
+//
+
+#ifndef WBP_SCENE_EXPORTER_QIF_INCLUDED
+#define WBP_SCENE_EXPORTER_QIF_INCLUDED
+
+#include <qsys/SceneExporter.qif>
+
+runtime_class WbpSceneExporter extends SceneExporter
+{
+  client_hdr "WbpSceneExporter.hpp";
+  client_name render::WbpSceneExporter;
+
+  scriptable;
+  smartptr;
+
+  ////////////////////
+  // Property definition
+
+  // property boolean perspective => m_bPerspective;
+  property string camera => m_cameraName;
+
+  property boolean useClipZ => m_bUseClipZ;
+
+  property integer gradSteps => m_nGradSteps;
+
+};
+
+#endif
+

@@ -1,0 +1,98 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+
+<!DOCTYPE overlay SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+
+<overlay id="coloring-deck-paint-overlay"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <overlaytarget id="colpanel-deck">
+
+    <vbox id="coloring-deck-paint">
+      <!-- tree view for PaintColoring (index=2) -->
+      <description value="Paint coloring:"/>
+      <tree id="paint-listbox" flex="1"
+	hidecolumnpicker="true" editable="false"
+	treelines="false" seltype="multiple">
+	<treecols>
+	  <treecol id="paint_name" primary="true"
+	    label="Selection" flex="1"
+	    persist="hidden ordinal width"/>
+	  <splitter class="tree-splitter"/>
+	  <treecol id="paint_value"
+	    label="Color" flex="1"
+	    persist="hidden ordinal width"/>
+	</treecols>
+	<treechildren id="paint-listbox-children" class="noindent-tree-children"/>
+      </tree>
+
+      <!-- command buttons -->
+      <hbox>
+	
+	<toolbarbutton
+	  id="paintpanel-addbtn"
+	  class="toolbar-button add-button"
+	  disabled="true"
+	  oncommand="cuemolui.panels.paint.onAddCmd(event);"
+	  tooltiptext="Add"/>
+	<toolbarbutton
+	  id="paintpanel-delbtn"
+	  class="toolbar-button delete-button"
+	  disabled="true"
+	  oncommand="cuemolui.panels.paint.onDeleteCmd(event);"
+	  tooltiptext="Delete"/>
+	<toolbarbutton
+	  id="paintpanel-delallbtn"
+	  class="toolbar-button cleartext-button"
+	  oncommand="cuemolui.panels.paint.onDeleteCmd(event);"
+	  tooltiptext="Delete all"/>
+	<toolbarbutton
+	  id="paintpanel-propbtn"
+	  class="toolbar-button prop-button"
+	  disabled="true"
+	  oncommand="cuemolui.panels.paint.onPropCmd(event)"
+	  tooltiptext="Change"/>
+
+	<toolbarbutton
+	  id="paintpanel-moveupbtn"
+	  class="toolbar-button moveup-button"
+	  disabled="true"
+	  oncommand="cuemolui.panels.paint.onMoveUpCmd(event);"
+	  tooltiptext="Move up"/>
+	<toolbarbutton
+	  id="paintpanel-movedownbtn"
+	  class="toolbar-button movedown-button"
+	  disabled="true"
+	  oncommand="cuemolui.panels.paint.onMoveDownCmd(event);"
+	  tooltiptext="Move down"/>
+      </hbox>
+    </vbox>
+
+  </overlaytarget>
+
+  <overlaytarget id="menus-overlay-target">
+    <popupset>
+      <menupopup id="paintPanelCtxtMenu"
+	onpopupshowing="cuemolui.panels.paint.onCtxtMenuShowing(event)">
+	<menuitem label="Change..."
+		  oncommand="cuemolui.panels.paint.onPropCmd(event)" />
+	<menuitem label="Delete"
+		  oncommand="cuemolui.panels.paint.onDeleteCmd(event)" />
+	<menuitem label="Add..."
+		  oncommand="cuemolui.panels.paint.onAddCmd(event)" />
+	
+	<menuseparator/>
+
+	<menuitem label="Cut"
+		  oncommand="cuemolui.panels.paint.onCut(event);"/>
+	<menuitem label="Copy"
+		  oncommand="cuemolui.panels.paint.onCopy(event);"/>
+	<menuitem id="paintPanelCtxtMenu-Paste"
+		  label="Paste"
+		  oncommand="cuemolui.panels.paint.onPaste(event);"/>
+      </menupopup>
+    </popupset>
+  </overlaytarget>
+
+</overlay>
+

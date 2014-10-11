@@ -1,0 +1,117 @@
+/*
+  CSS for Windows7 UI
+  $Id: windows7.css,v 1.8 2011/04/30 10:20:33 rishitani Exp $
+*/
+
+/* ------------------------------------------------------------------- */
+/* toolbar-ribbon */
+
+.ribbon-tabpanels {
+  -moz-appearance: none !important;
+  border-right: 0px;
+  border-bottom: 2px solid threedshadow;
+  border-left: 0px;
+  border-top: 0px;
+  padding: 0px;
+}
+
+.ribbon-button {
+  padding: 5px 8px 5px 8px !important;
+  margin: 3px;
+}
+
+.toolbar-radiobutton,
+.ribbon-toolbar-button,
+.ribbon-toolbar-radiobutton {
+  padding: 5px;
+  margin: 2px;
+}
+
+.ribbon-toolbar-radiobutton .toolbarbutton-text {
+  /*border: solid red 1px;*/
+  padding-right: 5px;
+}
+
+.ribbon-toolbar-button[type="menu-button"] .toolbarbutton-text {
+  display: none;
+}
+
+.ribbon-toolbar-button[type="menu-button"] {
+  margin: 2px;
+  -moz-box-align: center !important;
+  -moz-box-pack: center !important;
+}
+.ribbon-toolbar-button[type="menu-button"] .toolbarbutton-menubutton-button {
+  padding: 5px 0px 5px 5px;
+  margin: 0;
+}
+.ribbon-toolbar-button[type="menu-button"] .toolbarbutton-icon {
+  padding: 0;
+  margin: 0 !important;
+}
+
+.ribbon-toolbar-spacer {
+  width: 5px !important;
+}
+
+/* ------------------------------------------------------------------- */
+/* tabmolview */
+
+.tabmolview-tabpanels {
+  -moz-appearance: none !important;
+  border: none;
+  padding: 0;
+}
+
+.tabmolview-tabs {
+  margin-top: 0;
+}
+
+.tabmolview-tabbox {
+ margin: 0;
+}
+
+.tabmolview-tab {
+  height: 24px;
+  text-align: center;
+}
+
+.tabmolview-tab-text {
+margin: 0 8px 0 4px;
+}
+
+/* ------------------------------------------------------------------- */
+/* sidebar-tabs */
+
+.sidebar-tabpanels {
+  -moz-appearance: none !important;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-tabpanel {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-tabbox {
+ margin: 0;
+}
+
+.object-tree-children::-moz-tree-row(odd) {
+  background-color: buttonface;
+}
+.object-tree-children::-moz-tree-row(odd,selected) {
+  background-color: highlight;
+}
+
+.sidepanel-splitter {
+  min-height: 6px;
+  background-color: threedface;
+  border-top: 1px solid threedshadow;
+  border-bottom: 1px solid threedshadow;
+  border-left: none;
+  border-right: none;
+}

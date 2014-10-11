@@ -1,0 +1,35 @@
+// -*-Mode: C++;-*-
+//
+// $Id: CPKColoring.qif,v 1.2 2009/08/19 08:16:01 rishitani Exp $
+//
+
+#include "ColoringScheme.qif"
+
+runtime_class CPKColoring extends ColoringScheme
+{
+  uuid 9e1040b5-77b6-4f31-9d5b-8a9fc7217622;
+
+  client_hdr "CPKColoring.hpp";
+  client_name molstr::CPKColoring;
+
+  scriptable;
+  cloneable;
+  smartptr;
+
+  property object<AbstractColor$> col_C => m_atomcol_C;
+  property object<AbstractColor$> col_N => m_atomcol_N;
+  property object<AbstractColor$> col_O => m_atomcol_O;
+  property object<AbstractColor$> col_H => m_atomcol_H;
+  property object<AbstractColor$> col_S => m_atomcol_S;
+  property object<AbstractColor$> col_P => m_atomcol_P;
+  property object<AbstractColor$> col_X => m_atomcol_X;
+
+  default col_H = gfx::SolidColor::createRGB(0.0, 1.0, 1.0);
+  default col_C = gfx::SolidColor::createRGB(1.0, 1.0, 0.75);
+  default col_N = gfx::SolidColor::createRGB(0.0, 0.0, 1.0);
+  default col_O = gfx::SolidColor::createRGB(1.0, 0.0, 0.0);
+  default col_P = gfx::SolidColor::createRGB(1.0, 1.0, 0.0);
+  default col_S = gfx::SolidColor::createRGB(0.0, 1.0, 0.0);
+  default col_X = gfx::SolidColor::createRGB(0.7, 0.7, 0.7);
+
+};

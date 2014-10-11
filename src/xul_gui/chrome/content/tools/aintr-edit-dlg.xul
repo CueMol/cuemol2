@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2-sysdep.css" type="text/css"?>
+
+<!-- -*- xml -*- -->
+
+<dialog
+  id     = "aintr-edit-dlg"
+  title  = "Edit interaction list"
+  xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  buttons="accept"
+  ondialogaccept="return window.gDlgObj.onDialogAccept(event);">
+
+  <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/treeview.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/tools/aintr-edit-dlg.js"/>
+
+  <hbox>
+    <label value="Mol name:"/>
+    <label id="mol-name"/>
+  </hbox>
+  <tree id="intr-list-tree" flex="1" style="height: 20em; width: 30em;"
+    hidecolumnpicker="true">
+    <treecols>
+      <treecol id="treecol_atom0" label="Rend/Atom0" flex="1" primary="true" persist="width"/>
+      <splitter class="tree-splitter"/>
+      <treecol id="treecol_atom1" label="Atom1" flex="1" persist="width"/>
+      <splitter class="tree-splitter"/>
+      <treecol id="treecol_atom2" label="Atom2" flex="1" persist="width"/>
+      <splitter class="tree-splitter"/>
+      <treecol id="treecol_atom3" label="Atom3" flex="1" persist="width"/>
+    </treecols>
+    <treechildren class="object-tree-children"/>
+  </tree>
+  
+  <hbox>
+    <!--<toolbarbutton
+	  id="wspcPanelZoomBtn"
+	  class="toolbar-button zoom-button"
+	  oncommand="cuemolui.panels.workspace.onBtnZoomCmd(event);"
+	  disabled="true"
+	  tooltiptext="Zoom at"/>-->
+    <toolbarbutton
+      id="delete-btn"
+      class="toolbar-button delete-button"
+      tooltiptext="Delete"/>
+  </hbox>
+
+</dialog>

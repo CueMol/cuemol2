@@ -1,0 +1,32 @@
+// -*-Mode: C++;-*-
+//
+// MTZ s.f. file reader scripting interface
+//
+
+#ifndef MTZ2MAP_READER_QIF_INCLUDED
+#define MTZ2MAP_READER_QIF_INCLUDED
+
+#include <qsys/ObjReader.qif>
+
+runtime_class MTZ2MapReader extends ObjReader
+{
+  client_hdr "MTZ2MapReader.hpp";
+  client_name xtal::MTZ2MapReader;
+
+  scriptable;
+  smartptr;
+
+  property real resolution => m_mapr;
+  property real min_res => m_dResMin (readonly);
+  property real max_res => m_dResMax (readonly);
+
+  property real gridsize => m_grid;
+  property string clmn_F => m_strClmnF;
+  property string clmn_PHI => m_strClmnPHI;
+  property string clmn_WT => m_strClmnWT;
+
+  string getColumnInfoJSON();
+};
+
+#endif
+

@@ -1,0 +1,24 @@
+// -*-Mode: C++;-*-
+//
+// $Id: MolResidue.qif,v 1.5 2011/03/15 05:05:41 rishitani Exp $
+
+
+runtime_class MolResidue
+{
+  client_hdr "MolResidue.hpp";
+  client_name molstr::MolResidue;
+
+  scriptable;
+  cloneable;
+  smartptr;
+
+  property string name => redirect(getName, setName);
+  property string type => redirect(getType, setType);
+  // property integer index => redirect(getIndex, setIndex);
+  property string sindex => redirect(getStrIndex, setStrIndex);
+
+  string toString();
+
+  string getAtomsJSON();
+};
+

@@ -1,0 +1,91 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+
+<!DOCTYPE overlay [
+<!ENTITY % configDTD SYSTEM "chrome://cuemol2/locale/config-dialog.dtd">
+%configDTD;
+]>
+
+<overlay id="ConfigKeybindOverlay"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  xmlns:html="http://www.w3.org/1999/xhtml">
+
+  <prefpane id="pane-keybinding" flex="1"
+    onpaneload="gKeybindPane.init();">
+
+    <style xmlns="http://www.w3.org/1999/xhtml"><![CDATA[
+treechildren::-moz-tree-checkbox {
+  list-style-image: none;
+}
+treechildren::-moz-tree-checkbox(checked){
+  list-style-image: url("chrome://global/skin/checkbox/cbox-check.gif");
+}
+    ]]></style>
+
+    <script type="application/javascript" src="chrome://cuemol2/content/treeview.js"/>
+    <script type="application/javascript" src="chrome://cuemol2/content/config-keybind.js"/>
+  
+    <preferences id="keybind-prefs"/>
+
+    <label value="Key config: "/>
+
+    <tree id="keybind-tree" flex="1" style="height: 10em;"
+      hidecolumnpicker="true">
+      <treecols>
+	<treecol id="shortcut-id" label="Name" flex="1" primary="true" />
+	<splitter class="tree-splitter"/>
+	<treecol id="shortcut-key" label="Key" flex="1"/>
+	<splitter class="tree-splitter"/>
+	<treecol id="shortcut-ctrl" type="checkbox" label="Ctrl" flex="0"/>
+	<treecol id="shortcut-alt" type="checkbox" label="Alt" flex="0"/>
+	<treecol id="shortcut-shift" type="checkbox" label="Shift" flex="0"/>
+      </treecols>
+      <treechildren />
+    </tree>
+
+    <hbox flex="0">
+      <grid flex="1">
+	<columns>
+	  <column/>
+	  <column flex="1"/>
+	</columns>
+	<rows>
+	  <row align="center">
+	    <label value="Name: "/>
+	    <textbox id="keybind-name" readonly="true"/>
+	  </row>
+	  <row align="center">
+	    <label value="Key: "/>
+	    <menulist id="keybind-keylist" oncommand="window.gKeybindPane.validateWidget(event)">
+	      <menupopup>
+		<menuitem label="Right" value="VK_RIGHT"/>
+		<menuitem label="Left" value="VK_LEFT"/>
+		<menuitem label="Up" value="VK_UP"/>
+		<menuitem label="Down" value="VK_DOWN"/>
+	      </menupopup>
+	    </menulist>
+	  </row>
+	  <row align="center">
+	    <spacer/>
+	    <checkbox id="keybind-chk-ctrl" label="Ctrl"
+	      oncommand="window.gKeybindPane.validateWidget(event)"/>
+	  </row>
+	  <row align="center">
+	    <spacer/>
+	    <checkbox id="keybind-chk-alt" label="Alt"
+	      oncommand="window.gKeybindPane.validateWidget(event)"/>
+	  </row>
+	  <row align="center">
+	    <spacer/>
+	    <checkbox id="keybind-chk-shift" label="Shift"
+	      oncommand="window.gKeybindPane.validateWidget(event)"/>
+	  </row>
+	</rows>
+      </grid>
+
+    </hbox>
+
+  </prefpane>
+
+</overlay>
+

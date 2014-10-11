@@ -1,0 +1,42 @@
+// -*-Mode: C++;-*-
+//
+// Interface definition for BallStickRenderer
+//
+
+#ifndef BALL_STICK_RENDERER_QIF
+#define BALL_STICK_RENDERER_QIF
+
+#include <modules/molstr/MolRenderer.qif>
+#include <modules/molstr/Selection.qif>
+
+runtime_class BallStickRenderer extends MolRenderer
+{
+  client_hdr "BallStickRenderer.hpp";
+  client_name molvis::BallStickRenderer;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  property real bondw => m_bondw;
+  default bondw = 0.2;
+
+  property real sphr => m_sphr;
+  default sphr = 0.3;
+
+  property integer detail => m_nDetail;
+  default detail = 3;
+
+  property boolean ring => m_fRing;
+  default ring = false;
+
+  property real thickness => m_tickness;
+  default thickness = 0.2;
+
+  property object<AbstractColor$> ringcolor => m_ringcol;
+  default ringcolor = gfx::SolidColor::createRGB(1.0, 1.0, 0.75);
+
+};
+
+#endif // BALL_STICK_RENDERER_QIF
+

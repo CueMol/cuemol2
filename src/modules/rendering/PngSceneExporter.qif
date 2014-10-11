@@ -1,0 +1,30 @@
+// -*-Mode: C++;-*-
+//
+
+#ifndef PNG_SCENE_EXPORTER_QIF_INCLUDED
+#define PNG_SCENE_EXPORTER_QIF_INCLUDED
+
+#include "ImgSceneExporter.qif"
+
+runtime_class PngSceneExporter extends ImgSceneExporter
+{
+  client_hdr "PngSceneExporter.hpp";
+  client_name render::PngSceneExporter;
+
+  scriptable;
+  smartptr;
+
+  ////////////////////
+  // Property definition
+
+  /// PNG interlaced option
+  property boolean interlace => m_bIntrl;
+  default interlace = false;
+
+  /// PNG interlaced option
+  property integer compress => m_nCompLev;
+  default compress = 6;
+};
+
+#endif
+

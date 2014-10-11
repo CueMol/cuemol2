@@ -1,0 +1,22 @@
+// -*-Mode: C++;-*-
+//
+// $Id: ColoringScheme.qif,v 1.1 2009/02/24 09:28:07 rishitani Exp $
+//
+
+#ifndef SOLID_COLORING_QIF_DEFINED
+#define SOLID_COLORING_QIF_DEFINED
+
+#include "ColoringScheme.qif"
+
+runtime_class SolidColoring extends ColoringScheme
+{
+  client_hdr "ColoringScheme.hpp";
+  client_name molstr::SolidColoring;
+
+  scriptable;
+  cloneable;
+  smartptr;
+};
+
+#endif
+

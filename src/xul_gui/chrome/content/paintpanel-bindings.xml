@@ -1,0 +1,95 @@
+<?xml version="1.0"?>
+
+<bindings id="paintpanel-bindings"
+  xmlns="http://www.mozilla.org/xbl"
+  xmlns:html="http://www.w3.org/1999/xhtml"
+  xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  xmlns:xbl="http://www.mozilla.org/xbl">
+
+  <binding id="paintlistitem-base"
+    extends="chrome://global/content/bindings/richlistbox.xml#richlistitem">
+    <implementation>
+      <property name="type" readonly="true">
+	<getter>
+	  return this.getAttribute("type");
+	</getter>
+      </property>
+    </implementation>
+  </binding>
+
+  <binding id="paintlistitem"
+    extends="chrome://cuemol2/content/paintpanel-bindings.xml#paintlistitem-base">
+    <content>
+      <xul:hbox flex="1">
+        <xul:hbox flex="1" align="center" xbl:inherits="tooltiptext=typeDescription">
+          <xul:image src="moz-icon://goat?size=16" class="typeIcon"
+                     xbl:inherits="src=typeIcon" height="16" width="16"/>
+          <xul:label flex="1" crop="end" xbl:inherits="value=typeDescription"
+	    ondblclick="dd('leftlabel dblclick3d')"/>
+        </xul:hbox>
+        <xul:hbox flex="1" align="center" xbl:inherits="tooltiptext=actionDescription">
+          <xul:box height="16" width="16" style="background: blue; border: 1px solid black;"/>
+	  <xul:label flex="1" crop="end" xbl:inherits="value=actionDescription"/>
+        </xul:hbox>
+      </xul:hbox>
+    </content>
+  </binding>
+
+  <binding id="paintlistitem-selected"
+    extends="chrome://cuemol2/content/paintpanel-bindings.xml#paintlistitem-base">
+    <content>
+      <xul:hbox flex="1" equalsize="always">
+        <xul:hbox flex="1" align="center" xbl:inherits="tooltiptext=typeDescription">
+          <xul:image src="moz-icon://goat?size=16" class="typeIcon"
+	    xbl:inherits="src=typeIcon" height="16" width="16"/>
+          <xul:label flex="1" crop="end" xbl:inherits="value=typeDescription"/>
+        </xul:hbox>
+        <xul:hbox flex="1">
+          <xul:menulist class="actionsMenu" flex="1" crop="end" selectedIndex="1"
+	    xbl:inherits="tooltiptext=actionDescription" editable="true">
+            <xul:menupopup>
+	      <xul:menuitem label="xxxx"/>
+	      <xul:menuitem label="xxxx"/>
+	      <xul:menuitem label="xxxx"/>
+	      <xul:menuitem label="xxxx"/>
+	      <xul:menuitem label="xxxx"/>
+	      <xul:menuitem label="xxxx"/>
+	      <xul:menuitem label="xxxx"/>
+	      <xul:menuitem label="xxxx"/>
+	      <xul:menuitem label="xxxx"/>
+	      <xul:menuitem label="ZZZ">
+		<xul:box height="16" width="16" style="background: blue; border: 1px solid black;"/>
+		<xul:label flex="1" crop="end" value="ZZZ"/>
+	      </xul:menuitem>
+	    </xul:menupopup>
+          </xul:menulist>
+        </xul:hbox>
+      </xul:hbox>
+    </content>
+
+    <implementation>
+      <constructor>
+        // gApplicationsPane.rebuildActionsMenu();
+      </constructor>
+    </implementation>
+
+  </binding>
+
+  <binding id="paintprop-listitem-icon"
+    extends="chrome://global/content/bindings/general.xml#image">
+
+    <implementation>
+      <constructor>
+	dump("xxx: "+this.parentNode.parentNode.localName+"\n");
+	dump("getattr: "+this.parentNode.parentNode.getAttribute("colorxxx")+"\n");
+	this.style.backgroundColor = this.parentNode.parentNode.getAttribute("iconcolor");
+      </constructor>
+
+      <method name="test">
+	this.style.backgroundColor="blue";
+      </method>
+    </implementation>
+
+  </binding>
+</bindings>
+

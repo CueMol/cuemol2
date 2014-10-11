@@ -1,0 +1,28 @@
+// -*-Mode: C++;-*-
+//
+// $Id$
+
+#ifndef SYMMOP_MANAGER_QIF_INCLUDED
+#define SYMMOP_MANAGER_QIF_INCLUDED
+
+runtime_class SymmOpManager
+{
+  client_hdr "SymOpDB.hpp";
+  client_name symm::SymOpDB;
+
+  scriptable;
+  singleton;
+
+  /// Get space group names belonging to the specified lattice
+  string getSgNamesJSON(string);
+
+  string getCName(integer);
+
+  string getName(integer);
+
+  /// change crystal info (wrapper)
+  void changeXtalInfo(integer, real, real, real, real, real, real, integer);
+};
+
+#endif // SYMMOP_MANAGER_QIF_INCLUDED
+

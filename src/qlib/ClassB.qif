@@ -1,0 +1,31 @@
+// -*-Mode: C++;-*-
+//
+// $Id: ClassB.qif,v 1.6 2008/07/11 12:53:33 rishitani Exp $
+
+// Script/Runtime name: ClassB
+// C++ class decl: TestClass.hpp
+// C++ name: ClassB
+
+// Wrapper name: ClassB_wrap
+// Wrapper class decl file: ClassB_wrap.hpp
+// Wrapper class impl file: ClassB_wrap.cpp
+
+#include "ClassA.qif"
+
+runtime_class ClassB extends ClassA
+{
+  uuid be5efc40-0725-4f5a-a17d-ae8d048803c9;
+
+  // extends_wrapper ClassA_wrap;
+
+  client_hdr "TestClass.hpp";
+
+  scriptable;
+  cloneable;
+  smartptr;
+
+  string toString();
+  void bar(real r);
+
+};
+

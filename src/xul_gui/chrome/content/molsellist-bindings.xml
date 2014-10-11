@@ -1,0 +1,124 @@
+<?xml version="1.0"?>
+
+<bindings id="molsellist-bindings"
+  xmlns="http://www.mozilla.org/xbl"
+  xmlns:html="http://www.w3.org/1999/xhtml"
+  xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  xmlns:xbl="http://www.mozilla.org/xbl">
+
+  <binding id="molsellist">
+    <content>
+      <xul:menulist xbl:inherits="disabled" flex="1" editable="true"
+		    sizetopopup="none"
+		    anonid="selection-box">
+	<xul:menupopup/>
+      </xul:menulist>
+    </content>
+
+    <implementation>
+      <field name="mSelBox" readonly="true">
+	document.getAnonymousElementByAttribute(this, "anonid", "selection-box");
+      </field>
+      
+      <property name="mSelErrBox">
+	<getter>
+	  if (!this.hasAttribute("errorbox"))
+	    return null;
+	  var elemid = this.getAttribute("errorbox");
+	  return document.getElementById(elemid);
+	</getter>
+      </property>
+
+      <property name="sceneID">
+        <getter>
+          return this.mImpl.targetSceID;
+        </getter>
+        <setter>
+          <![CDATA[
+	    this.mImpl.targetSceID = val;
+	    return val;
+	    ]]>
+        </setter>
+      </property>
+      
+      <property name="molID">
+        <getter>
+          return this.mImpl.targetObjID;
+        </getter>
+        <setter>
+	  this.mImpl.targetObjID = val;
+	  this.mImpl.updateCurrentSel();
+	  return val;
+        </setter>
+      </property>
+
+      <property name="origSel">
+        <getter>
+          return this.mImpl.mOrigSel;
+        </getter>
+        <setter>
+	  this.mImpl.mOrigSel = val;
+	  return val;
+        </setter>
+      </property>
+
+      <property name="selectedSel"
+	onget ="return this.mImpl.getSelectedSel();"
+	onset ="this.mImpl.mSelectedSel = val; return val;"/>
+
+      <property name="disabled"
+		onset="if (val) this.setAttribute('disabled', 'true');
+                       else this.removeAttribute('disabled'); return val;"
+                onget="if (this.hasAttribute('disabled')) return true;
+		       else return false;"/>
+
+      <property name="textBoxSize">
+        <getter>
+          return this.mSelBox.inputField.size;
+        </getter>
+        <setter>
+	  this.mSelBox.inputField.size = val;
+	  return val;
+        </setter>
+      </property>
+
+      <!-- =============================================== -->
+
+      <constructor>
+	var that = this;
+	this.mImpl = new cuemolui.MolSelList(this);
+	this.mImpl.init();
+
+	var nsize = 10;
+	var ntmp = parseInt(this.getAttribute("size"));
+	if (!isNaN(ntmp))
+	  nsize = ntmp;
+	this.mSelBox.inputField.size = nsize;
+      </constructor>
+
+      <method name="buildBox">
+	<body>
+	  //this.mImpl.buildBox(false);
+	  // reserve current selection, if possible
+	  this.mImpl.buildBox(true);
+	</body>
+      </method>
+
+      <method name="appendSelJSON">
+        <parameter name="aElem"/>
+        <parameter name="aJson"/>
+	<body>
+	  this.mImpl.appendSelJSON(aElem, aJson);
+	</body>
+      </method>
+      
+      <method name="addHistorySel">
+	<body>
+	  this.mImpl.addHistorySel();
+	</body>
+      </method>
+    </implementation>
+  </binding>
+
+</bindings>
+

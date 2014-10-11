@@ -1,0 +1,46 @@
+#!/bin/sh
+
+GECKO_SDK=@GECKO_SDK_PATH@
+
+
+FX_DIST=$GECKO_SDK/..
+
+FX_SDK_INCLUDE1=$FX_DIST/sdk/include
+
+XPIDL=$GECKO_SDK/bin/xpidl
+XPIDL_INCLUDE=$GECKO_SDK/idl/
+
+REGCOMP="$FX_DIST/bin/run-mozilla.sh $FX_DIST/bin/regxpcom"
+COMPONENT_LOCATION=$FX_DIST/bin/components/
+
+cp qIObjWrapper.xpt ClassA_qi.xpt ClassB_qi.xpt ClassS_qi.xpt Vector_qi.xpt Matrix_qi.xpt RegExpr_qi.xpt $COMPONENT_LOCATION
+cp .libs/libxpcqlib.so.0.0.0 $COMPONENT_LOCATION/libxpcqlib.so
+
+$REGCOMP
+
+###########
+
+RUNMOZ=$FX_DIST/bin/run-mozilla.sh
+XPCSH=$FX_DIST/bin/xpcshell
+
+#$RUNMOZ -g -d valgrind $XPCSH
+#$RUNMOZ -g -d gdb $XPCSH
+$RUNMOZ $XPCSH
+
+
+exit;
+
+const Vector = new Components.Constructor("@cuemol.org/Vector", "qIVector");
+const Matrix = new Components.Constructor("@cuemol.org/Matrix", "qIMatrix");
+const RegExpr = new Components.Constructor("@cuemol.org/RegExpr", "qIRegExpr");
+const ClassA = new Components.Constructor("@cuemol.org/ClassA", "qIClassA");
+const ClassB = new Components.Constructor("@cuemol.org/ClassB", "qIClassB");
+var v = new Vector;
+var m = new Matrix;
+var re = new RegExpr;
+var a = new ClassA;
+var b = new ClassB;
+a.prop3 = b;
+a.foo(123, "hoge", b);
+v;
+m;

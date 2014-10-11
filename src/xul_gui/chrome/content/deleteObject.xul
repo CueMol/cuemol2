@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+
+<dialog
+  id     = "deleteObject"
+  title  = "Delete object"
+  xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  buttons="accept,cancel"
+  onload="window.arguments[0](document)"
+  ondialogaccept="window.arguments[1](document)">
+
+<vbox>
+  <hbox align="center">
+    <label value="Object to delete:" />
+    <menulist id="obj_targ">
+      <menupopup>
+        <menuitem label="none" />
+      </menupopup>
+    </menulist>
+  </hbox>
+</vbox>
+</dialog>
+

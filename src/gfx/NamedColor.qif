@@ -1,0 +1,33 @@
+// -*-Mode: C++;-*-
+//
+// $Id: NamedColor.qif,v 1.3 2010/12/25 13:13:21 rishitani Exp $
+
+#ifndef NAMED_COLOR_QIF_INCLUDED
+#define NAMED_COLOR_QIF_INCLUDED
+
+#include "AbstractColor.qif"
+
+runtime_class NamedColor extends AbstractColor
+{
+  client_hdr "NamedColor.hpp";
+  client_name gfx::NamedColor;
+
+  scriptable;
+  cloneable;
+  smartptr;
+
+  property string material => redirect(getMaterial, setMaterial);
+  default material = "";
+  property real alpha => m_dSetAlpha;
+  default alpha = -1.0;
+  
+  property real mod_h => m_dModHue;
+  default mod_h = 0.0;
+  property real mod_s => m_dModSat;
+  default mod_s = 0.0;
+  property real mod_b => m_dModBri;
+  default mod_b = 0.0;
+};
+
+#endif
+

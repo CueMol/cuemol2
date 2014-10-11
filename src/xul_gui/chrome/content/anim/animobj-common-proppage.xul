@@ -1,0 +1,280 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+
+<!-- -*- xml -*- -->
+<!DOCTYPE window SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+
+<!--
+  =================================
+  AnimObj common property edit page
+  =================================
+  -->
+
+<overlay id="animobj-common-proppage"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <overlaytarget id="tabs-overlay-target">
+    <tab label="Common" id="common-tab"/>
+  </overlaytarget>
+
+  <overlaytarget id="tabpanels-overlay-target" orient="vertical">
+    <tabpanel flex="1" orient="vertical">
+
+<style xmlns="http://www.w3.org/1999/xhtml"><![CDATA[
+multiselect {
+  -moz-binding: url("chrome://cuemol2/content/anim/multiselect-binding.xml#multiselect");
+}
+]]></style>
+
+      <groupbox>
+	<caption label="Common settings"/>
+
+	<grid>
+	  <columns>
+	    <column flex="0"/>
+	    <column flex="1"/>
+	  </columns>
+
+	  <rows>
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Name:"/>
+	      <hbox>
+		<textbox id="comprop-name" flex="1"/>
+		<checkbox id="comprop-disabled" label="Disabled" flex="0"/>
+	      </hbox>
+	    </row>
+
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Start time:"/>
+	      <timeedit id="comprop-starttime" flex="1"/>
+	    </row>
+
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Duration:"/>
+	      <timeedit id="comprop-duration" flex="1"/>
+	    </row>
+
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Quadric:"/>
+	      <numslider id="comprop-quadric" flex="1" size="3"
+		decimalplaces="0" min="0" max="50" increment="5" unit="%"/>
+	    </row>
+	  </rows>
+	</grid>
+
+      </groupbox>
+
+      <!-- =========================================================== -->
+
+      <groupbox id="simspin-group" hidden="true">
+	<caption label="SimpleSpin settings"/>
+
+	<grid>
+	  <columns>
+	    <column flex="0"/>
+	    <column flex="1"/>
+	  </columns>
+
+	  <rows>
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Rotation angle:"/>
+	      <numslider id="simspin-angle" flex="1" size="3"
+		decimalplaces="0" min="0" max="360" increment="5" unit="&#0176;"/>
+	    </row>
+
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Spin axis:"/>
+	      <hbox flex="1" align="center">
+		<menulist id="simspin-axis-type" flex="0" class="propdlg-menulist">
+		  <menupopup>
+		    <menuitem label="X axis" value="xaxis"/>
+		    <menuitem label="Y axis" value="yaxis"/>
+		    <menuitem label="Z axis" value="zaxis"/>
+		    <menuitem label="Cartesian" value="cart"/>
+		    <!-- <menuitem label="Polar angle" value="polar"/> -->
+		  </menupopup>
+		</menulist>
+		<label class="plain" value="("/>
+		<textbox id="simspin-axis-x" type="number" size="2" flex="1"
+		  decimalplaces="Infinity" min="-Infinity" hidespinbuttons="true"/>
+		<label class="plain" value=","/>
+		<textbox id="simspin-axis-y" type="number" size="2" flex="1"
+		  decimalplaces="Infinity" min="-Infinity" hidespinbuttons="true"/>
+		<label class="plain" value=","/>
+		<textbox id="simspin-axis-z" type="number" size="2" flex="1"
+		  decimalplaces="Infinity" min="-Infinity" hidespinbuttons="true"/>
+		<label class="plain" value=")"/>
+	      </hbox>
+	    </row>
+
+	  </rows>
+	</grid>
+      </groupbox>
+      
+      <!-- =========================================================== -->
+
+      <groupbox id="cammot-group" hidden="true">
+	<caption label="CamMotion settings"/>
+
+	<grid>
+	  <columns>
+	    <column flex="0"/>
+	    <column flex="1"/>
+	  </columns>
+
+	  <rows>
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Target camera:"/>
+	      <camerasel id="cammot-targ-cam" flex="1"/>
+	    </row>
+	  </rows>
+	</grid>
+	
+	<grid>
+	  <columns>
+	    <column flex="1"/>
+	    <column flex="1"/>
+	  </columns>
+
+	  <rows>
+	    <row align="center" class="propdlg-rowbox">
+	      <checkbox id="cammot-ign-rotate" label="Ignore rotation"/>
+	      <checkbox id="cammot-ign-center" label="Ignore center"/>
+	    </row>
+	    <row align="center" class="propdlg-rowbox">
+	      <checkbox id="cammot-ign-zoom" label="Ignore zoom"/>
+	      <checkbox id="cammot-ign-slab" label="Ignore slab"/>
+	    </row>
+	  </rows>
+	</grid>
+
+      </groupbox>
+
+      <!-- =========================================================== -->
+
+      <groupbox id="showhide-group" hidden="true">
+	<caption label="Show/Hide settings"/>
+
+	<grid>
+	  <columns>
+	    <column flex="0"/>
+	    <column flex="1"/>
+	  </columns>
+
+	  <rows>
+	    <row align="top" class="propdlg-rowbox">
+	      <label value="Target renderers:"/>
+	      <multiselect id="showhide-targ-rends" flex="1"/>
+	    </row>
+
+	    <!--<checkbox id="showhide-chk-hide" label="Hide"/>-->
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Show/Hide:"/>
+	      <menulist id="showhide-menu-showhide" flex="0">
+		<menupopup>
+		  <menuitem label="Show" value="false"/>
+		  <menuitem label="Hide" value="true"/>
+		</menupopup>
+	      </menulist>
+	    </row>
+	    <checkbox id="showhide-chk-fade" label="Fade"/>
+
+	  </rows>
+	</grid>
+	
+      </groupbox>
+
+      <!-- =========================================================== -->
+
+      <groupbox id="slideio-group" hidden="true">
+	<caption label="Slide in/out settings"/>
+
+	<grid>
+	  <columns>
+	    <column flex="0"/>
+	    <column flex="1"/>
+	  </columns>
+
+	  <rows>
+	    <row align="top" class="propdlg-rowbox">
+	      <label value="Target renderers:"/>
+	      <multiselect id="slideio-targ-rends" flex="1"/>
+	    </row>
+
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Direction angle:"/>
+	      <hbox flex="0" align="center">
+		<numslider id="slideio-angle" flex="1" size="3"
+		  decimalplaces="0" min="0" max="360" increment="5" unit="&#0176;"/>
+		<menulist id="slideio-dir-type" flex="0" class="propdlg-menulist">
+		  <menupopup>
+		    <menuitem label="Left" value="0"/>
+		    <menuitem label="Up" value="90"/>
+		    <menuitem label="Right" value="180"/>
+		    <menuitem label="Down" value="270"/>
+		  </menupopup>
+		</menulist>
+	      </hbox>
+	    </row>
+	    
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Distance:"/>
+	      <numslider id="slideio-dist" flex="1" size="2"
+		decimalplaces="1" min="0" max="2" increment="0.1" unit="W/2"/>
+	    </row>
+
+	    <!--<checkbox id="slideio-chk-hide" label="Hide"/>-->
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Show/Hide:"/>
+	      <menulist id="slideio-menu-showhide" flex="0">
+		<menupopup>
+		  <menuitem label="Show" value="false"/>
+		  <menuitem label="Hide" value="true"/>
+		</menupopup>
+	      </menulist>
+	    </row>
+
+	  </rows>
+	</grid>
+	
+      </groupbox>
+
+      <!-- =========================================================== -->
+
+      <groupbox id="molanim-group" hidden="true">
+	<caption label="MolAnim settings"/>
+
+	<grid>
+	  <columns>
+	    <column flex="0"/>
+	    <column flex="1"/>
+	  </columns>
+
+	  <rows>
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Target MorphMol:"/>
+	      <menulist id="molanim_tgtmol" sizetopopup="none"/>
+	    </row>
+
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Start value:"/>
+	      <numslider id="molanim_startval" flex="1" size="3"
+		decimalplaces="2" min="0" max="1" increment="0.1" unit="none"/>
+	    </row>
+
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="End value:"/>
+	      <numslider id="molanim_endval" flex="1" size="3"
+		decimalplaces="2" min="0" max="1" increment="0.1" unit="none"/>
+	    </row>
+
+	  </rows>
+	</grid>
+	
+      </groupbox>
+
+    </tabpanel>    
+  </overlaytarget>
+</overlay>
+

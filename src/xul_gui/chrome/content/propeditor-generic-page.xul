@@ -1,0 +1,107 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+
+<!-- -*- xml -*- -->
+<!DOCTYPE window SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+
+<overlay id="propeditor-generic-page"
+	 xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <!-- ondialogaccept="return gObjPropDlg.onDialogAccept(event);" -->
+
+  <overlaytarget id="script-overlay-target">
+    <script type="application/javascript" src="chrome://cuemol2/content/colpicker.js"/>
+    <script type="application/javascript" src="chrome://cuemol2/content/propeditor-generic-page.js"/>
+  </overlaytarget>
+
+  <overlaytarget id="tabs-overlay-target">
+    <tab label="Generic" id="generic-tab"/>
+  </overlaytarget>
+
+  <overlaytarget id="tabpanels-overlay-target">
+    <!-- Generic property value editor -->
+    <tabpanel flex="1" orient="vertical">
+
+      <tree id="objprop-tree" flex="1" style="height: 20em; width: 30em;"
+	    hidecolumnpicker="true">
+	<treecols>
+          <treecol id="objprop-key" label="Name" flex="1" primary="true" />
+	  <splitter class="tree-splitter"/>
+          <treecol id="objprop-readonly" label="R" flex="0"/>
+	  <splitter class="tree-splitter"/>
+          <treecol id="objprop-type" label="Type" flex="1"/>
+	  <splitter class="tree-splitter"/>
+          <treecol id="objprop-value" label="Value" flex="1"/>
+	</treecols>
+	<treechildren />
+      </tree>
+
+      <hbox>
+	<grid flex="1">
+          <columns>
+            <column/>
+            <column flex="1"/>
+          </columns>
+          <rows>
+            <row align="center">
+	      <label value="Name: "/>
+	      <textbox id="prop-name-text" readonly="true"/>
+            </row>
+            <row align="center">
+	      <label value="Type: "/>
+	      <textbox id="prop-type-text" readonly="true"/>
+            </row>
+            <row align="center">
+	      <label value="Value: "/>
+	      <hbox align="top">
+		<checkbox id="default-check" checked="false" label="default"/>
+
+		<!-- Value deck -->
+		<deck id="value-deck" flex="1">
+		  <!-- 0: generic text value -->
+		  <textbox id="value-text" align="start" readonly="true"/>
+
+		  <!-- 1: Boolean value -->
+		  <checkbox id="value-check" checked="false"/>
+		  
+		  <!-- 2: Color value -->
+		  <mycolpicker id="colorPickerPanel"/>
+
+		  <!-- 3: Enum value -->
+		  <menulist id="value-enum-list"/>
+		  
+		  <!-- 4: Unsupported type -->
+		  <label value="Unsupported type"/>
+
+		  <!-- 5: vector value -->
+		  <hbox align="center" flex="1">
+		    <label class="plain" value="("/>
+		    <textbox id="value-vec-x" type="number" size="2" flex="1"
+		      decimalplaces="Infinity" min="-Infinity" hidespinbuttons="true"/>
+		    <label class="plain" value=","/>
+		    <textbox id="value-vec-y" type="number" size="2" flex="1"
+		      decimalplaces="Infinity" min="-Infinity" hidespinbuttons="true"/>
+		    <label class="plain" value=","/>
+		    <textbox id="value-vec-z" type="number" size="2" flex="1"
+		      decimalplaces="Infinity" min="-Infinity" hidespinbuttons="true"/>
+		    <label class="plain" value=")"/>
+		  </hbox>
+
+		  <!-- 5: time value -->
+		  <timeedit id="value-timeval" flex="1"/>
+
+		</deck>
+
+	      </hbox>
+            </row>
+          </rows>
+	</grid>
+
+      </hbox>
+
+    </tabpanel>
+  </overlaytarget>
+
+</overlay>
+

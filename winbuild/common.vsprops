@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="shift_jis"?>
+<VisualStudioPropertySheet
+	ProjectType="Visual C++"
+	Version="8.00"
+	Name="common"
+	>
+	<Tool
+		Name="VCCLCompilerTool"
+		AdditionalIncludeDirectories="$(SourceDir);$(SourceDir)\modules"
+		PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS;_SCL_SECURE_NO_WARNINGS"
+		UsePrecompiledHeader="2"
+		PrecompiledHeaderThrough="common.h"
+	/>
+	<UserMacro
+		Name="SourceDir"
+		Value="$(SolutionDir)..\src\"
+	/>
+	<UserMacro
+		Name="XULRunnerDir"
+		Value="$(PROJ_DIR)\xulrunner\xulrunner2-sdk\"
+	/>
+	<UserMacro
+		Name="XULDeployDir"
+		Value="$(SolutionDir)xul_$(ConfigurationName)\"
+	/>
+</VisualStudioPropertySheet>

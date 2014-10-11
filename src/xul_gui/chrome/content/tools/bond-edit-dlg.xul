@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2-sysdep.css" type="text/css"?>
+
+<!-- -*- xml -*- -->
+
+<dialog
+  id     = "bond-edit-dlg"
+  windowtype="CueMol2:BondEditDlg"
+  title  = "Edit non-standard bonds"
+  xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  buttons="accept"
+  ondialogaccept="return window.gDlgObj.onDialogAccept(event);">
+
+  <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/treeview.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/object-menulist.js"/>
+  <script type="application/javascript" src="bond-edit-dlg.js"/>
+
+  <hbox align="center">
+    <label value="Mol name:"/>
+    <menulist id="mol_object_selector" sizetopopup="none" flex="1">
+      <menupopup/>
+    </menulist>
+  </hbox>
+  <tree id="bond-list-tree" flex="1" style="height: 20em; width: 30em;"
+    hidecolumnpicker="true">
+    <treecols>
+      <treecol id="treecol_atom0" label="Atom0" flex="1" primary="true" persist="width"/>
+      <splitter class="tree-splitter"/>
+      <treecol id="treecol_atom1" label="Atom1" flex="1" persist="width"/>
+    </treecols>
+    <treechildren class="object-tree-children"/>
+  </tree>
+  
+  <hbox>
+    <toolbarbutton
+      label="Delete"
+      id="delete-btn"
+      class="toolbar-button delete-button"
+      tooltiptext="Delete"/>
+  </hbox>
+
+  <groupbox align="center" orient="horizontal">
+    <label value="Atom1:"/>
+    <textbox id="text-aid1" size="3" flex="1"/>
+    <label value="Atom2:"/>
+    <textbox id="text-aid2" size="3" flex="1"/>
+    <toolbarbutton
+      label="Add"
+      id="add-btn"
+      class="toolbar-button add-button"
+      tooltiptext="Add"/>
+  </groupbox>
+</dialog>

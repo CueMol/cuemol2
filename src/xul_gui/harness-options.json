@@ -1,0 +1,44 @@
+
+{
+ "bootstrap": {
+  "classID": "{cab0644a-3704-45ad-9bad-f16e920d1dfd}", 
+  "contractID": "@mozilla.org/harness-service;1?id=jid1-VXE1ZvI77MQkIA@jetpack"
+ }, 
+ "bundleID": "jid1-VXE1ZvI77MQkIA@jetpack", 
+ "enable_e10s": false, 
+ "jetpackID": "jid1-VXE1ZvI77MQkIA@jetpack", 
+ "loader": "resource://api-utils-lib/cuddlefish.js", 
+
+ "resourcePackages": {
+  "cuemol2ui-lib": "cuemol2ui", 
+  "addon-kit-lib": "addon-kit", 
+  "api-utils-lib": "api-utils"
+ }, 
+ "resources": {
+  "cuemol2ui-lib": [
+   "resources", 
+   "cuemol2ui-lib"
+  ], 
+  "addon-kit-lib": [
+   "resources", 
+   "addon-kit-lib"
+  ], 
+  "api-utils-lib": [
+   "resources", 
+   "api-utils-lib"
+  ]
+ }, 
+
+ "rootPaths": [
+  "resource://cuemol2ui-lib/", 
+  "resource://api-utils-lib/", 
+  "resource://addon-kit-lib/"
+ ], 
+
+ "sdkVersion": "1.0", 
+ "staticArgs": {}, 
+ "uriPrefix": "resource://", 
+
+ "verbose": false
+}
+

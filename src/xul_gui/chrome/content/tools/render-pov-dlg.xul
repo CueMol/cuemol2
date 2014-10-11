@@ -1,0 +1,178 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+
+<dialog
+  id     = "render-pov-dialog"
+  windowtype="CueMol2:RenderPovDlg"
+  title  = "POV-Ray rendering"
+  xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  persist = "screenX screenY width height"
+
+  buttons="accept,extra1,extra2,cancel"
+
+  buttonlabelaccept="Render"
+  ondialogaccept="window.gDlgObj.onStartStopRender(); return false;"
+
+  buttonlabelextra1="Save image ..."
+  ondialogextra1="window.gDlgObj.onSaveImage()"
+
+  buttonlabelextra2="Copy to clipboard"
+  ondialogextra2="window.gDlgObj.onCopyImage()"
+
+  buttonlabelcancel="Close"
+  ondialogcancel="return window.gDlgObj.onCloseEvent(null)"
+  >
+
+<style xmlns="http://www.w3.org/1999/xhtml"><![CDATA[
+.zoom-button {
+ list-style-image: url("chrome://cuemol2/content/images/toolbtn-zoom1.png");
+  -moz-image-region: rect(0px, 16px, 16px, 0px);
+}
+.unzoom-button {
+ list-style-image: url("chrome://cuemol2/content/images/toolbtn-unzoom1.png");
+  -moz-image-region: rect(0px, 16px, 16px, 0px);
+}
+]]></style>
+
+  <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
+  <script type="application/javascript" src="render-pov-dlg.js"/>
+
+  <vbox flex="1">
+    <grid>
+      <columns>
+	<column flex="0"/>
+	<column flex="1"/>
+	<column flex="0"/>
+      </columns>
+      <rows>
+	<row align="center">
+	  <label class="disable-target" value="Povray-exe-path:"/>
+	  <textbox class="disable-target" id="povray-exe-path"/>
+	  <button class="disable-target" id="povray-exe-path-btn" label="Change ..." oncommand="window.gDlgObj.onPovExePath()"/>
+	</row>
+
+	<row align="center">
+	  <label class="disable-target" value="Povray-inc-path:"/>
+	  <textbox class="disable-target" id="povray-inc-path"/>
+	  <button class="disable-target" id="povray-inc-path-btn" label="Change ..." oncommand="window.gDlgObj.onPovIncPath()"/>
+	</row>
+      </rows>
+    </grid>
+
+    <hbox align="center">
+      <label value="W:"/>
+      <textbox class="disable-target" id="output-image-width"
+	value="1000" size="4" type="number" min="1" max="10000" hidespinbuttons="true"/>
+
+      <label value="H:"/>
+      <textbox class="disable-target" id="output-image-height"
+	value="1000" size="4" type="number" min="1" max="10000" hidespinbuttons="true"/>
+
+      <menulist id="output-image-unit" class="disable-target" onselect="window.gDlgObj.onImgSzUnitSel(event)">
+	<menupopup>
+	  <menuitem value="px" label="pixel" selected="true"/>
+	  <menuitem value="in" label="inch"/>
+	  <menuitem value="mm" label="mm"/>
+	  <menuitem value="cm" label="cm"/>
+	</menupopup>
+      </menulist>
+
+      <label value="DPI:"/>
+      <menulist class="disable-target" id="output-image-dpi" editable="true">
+	<menupopup>
+	  <menuitem label="72" value="72"/>
+	  <menuitem label="150" value="150" />
+	  <menuitem label="300" value="300"/>
+	  <menuitem label="600" value="600" selected="true"/>
+	</menupopup>
+      </menulist>
+
+      <button type="menu" label="Preset size" id="preset-size-list" class="disable-target" oncommand="window.gDlgObj.onPresetSel(event)">
+	<menupopup>
+	  <menuitem value="view" label="Same as view"/>
+	  <menuitem value="100,100,72" label="100x100@72dpi"/>
+	  <menuitem value="300,300,300" label="300x300@300dpi"/>
+	  <menuitem value="600,600,300" label="600x600@300dpi"/>
+	  <menuitem value="1200,1200,600" label="1200x1200@600dpi"/>
+	</menupopup>
+      </button>
+    </hbox>      
+
+    <hbox align="center">
+      <label value="Stereo: "/>
+      <menulist id="stereo-mode-list" class="disable-target" >
+	<menupopup>
+	  <menuitem value="none" label="None" selected="true"/>
+	  <menuitem value="right" label="Right eye"/>
+	  <menuitem value="left" label="Left eye"/>
+	</menupopup>
+      </menulist>
+
+      <label value="Stereo depth: "/>
+      <textbox class="disable-target" id="stereo-depth"
+	value="0.03" size="3" type="number" min="0" max="1" increment="0.01" decimalplaces="2"/>
+
+      <label value="Projection: "/>
+      <menulist id="proj-mode-list" class="disable-target" >
+	<menupopup>
+	  <menuitem value="perspec" label="Perspective" selected="true"/>
+	  <menuitem value="ortho" label="Orthographic"/>
+	</menupopup>
+      </menulist>
+    </hbox>
+
+    <hbox align="center">
+      <checkbox id="enable-clip-plane" label="Clipping plane" checked="true" persist="checked"/>
+      <checkbox id="enable-post-blend" label="Post-render alpha blending" checked="true" persist="checked"/>
+      <checkbox id="enable-shadow" label="Shadow" checked="false" persist="checked"/>
+      <checkbox id="enable-edgelines" label="Edge lines" checked="true" persist="checked"/>
+    </hbox>      
+
+    <!-- preview box -->
+    <groupbox flex="1">
+      <caption label="Preview"/>
+      <hbox align="center">
+	<spacer width="10px"/>
+	<toolbarbutton
+	  id="ZoomBtn"
+	  class="zoom-button"
+	  tooltiptext="Zoom"/>
+	<toolbarbutton
+	  id="UnzoomBtn"
+	  class="unzoom-button"
+	  tooltiptext="Unzoom"/>
+	<menulist id="ZoomList">
+	  <menupopup>
+	    <menuitem value="10" label="10%"/>
+	    <menuitem value="25" label="25%"/>
+	    <menuitem value="50" label="50%"/>
+	    <menuitem value="75" label="75%"/>
+	    <menuitem value="100" label="100%" selected="true"/>
+	    <menuitem value="125" label="125%"/>
+	    <menuitem value="150" label="150%"/>
+	    <menuitem value="200" label="200%"/>
+	    <menuitem value="300" label="300%"/>
+	  </menupopup>
+	</menulist>
+      </hbox>
+      <richlistbox flex="1" width="100" style="min-height: 300px;" disabled="true">
+	<richlistitem id="imagebox-item" disabled="true">
+	  <image id="image-box" validate="always" flex="0"/>
+	</richlistitem>
+      </richlistbox>
+    </groupbox>
+    
+    <!--
+    <hbox align="center">
+      <spacer flex="1"/>
+      <button id="render-start-stop" label="Render" oncommand="window.gDlgObj.onStartStopRender()"/>
+      <button class="disable-target" id="save-image" label="Save image ..." oncommand="window.gDlgObj.onSaveImage()"/>
+      <button class="disable-target" id="close-dialog" label="Close" oncommand="window.gDlgObj.onCloseClicked()"/>
+    </hbox>
+      -->
+
+  </vbox>
+</dialog>
+

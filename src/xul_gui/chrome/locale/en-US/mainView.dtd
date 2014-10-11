@@ -1,0 +1,5 @@
+<!ENTITY  untitledScene "Untitled Scene">
+<!ENTITY  newScene.label "New Scene">
+<!ENTITY  newScene.accesskey "N">
+<!ENTITY  closeTab.label "Close Tab">
+<!ENTITY  closeTab.accesskey "c">

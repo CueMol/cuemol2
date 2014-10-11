@@ -1,0 +1,53 @@
+// -*-Mode: C++;-*-
+//
+// Common interface of obj reader/writer
+//
+
+#ifndef IN_OUT_HANDLER_QIF_INCLUDED
+#define IN_OUT_HANDLER_QIF_INCLUDED
+
+runtime_class InOutHandler
+{
+  client_hdr "InOutHandler.hpp";
+  client_name qsys::InOutHandler;
+  dllexport QSYS_API;
+
+  scriptable;
+  abstract;
+  smartptr;
+
+  ////////////////////
+  // Property definition
+
+  property string name => redirect(getName, XXX) (readonly);
+  property string typedescr => redirect(getTypeDescr, XXX) (readonly);
+  property string fileext => redirect(getFileExt, XXX) (readonly);
+
+  /// Compression mode
+  enumdef compress {
+    none = qsys::InOutHandler::COMP_NONE;
+    gzip = qsys::InOutHandler::COMP_GZIP;
+    bzip2 = qsys::InOutHandler::COMP_BZIP2;
+    xzip = qsys::InOutHandler::COMP_XZIP;
+  }
+  property enum compress => redirect(getCompressMode, setCompressMode);
+  default compress = "none";
+
+  /// Base64 encoding flag
+  property boolean base64 => redirect(getBase64Flag, setBase64Flag);
+  default base64 = false;
+
+  ////////////////////
+  // Method definition
+
+  /// setup main stream names and paths
+  void setPath(string path);
+
+  /// setup sub stream names and paths
+  void setSubPath(string key, string path) => setPath;
+  
+
+};
+
+#endif
+

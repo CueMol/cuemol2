@@ -1,0 +1,13 @@
+﻿
+<!ENTITY config_dlg.langGroup   "UIの言語">
+<!ENTITY config_dlg.lang.ja   "日本語">
+<!ENTITY config_dlg.lang.en-US   "英語">
+
+<!ENTITY config_dlg.atomLabelGroup   "原子のラベル">
+<!ENTITY config_dlg.atomLabel.font   "フォント:">
+<!ENTITY config_dlg.atomLabel.size   "サイズ:">
+<!ENTITY config_dlg.atomLabel.color   "色:">
+<!ENTITY config_dlg.atomLabel.italic   "斜体">
+<!ENTITY config_dlg.atomLabel.bold   "太字">
+<!ENTITY config_dlg.atomLabel.sample   "サンプル: ">
+

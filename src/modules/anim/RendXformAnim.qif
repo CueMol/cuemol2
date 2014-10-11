@@ -1,0 +1,32 @@
+// -*-Mode: C++;-*-
+//
+// Animation object scripting interface
+//
+
+#ifndef REND_REND_XFORM_ANIM_QIF_INCLUDED
+#define REND_REND_XFORM_ANIM_QIF_INCLUDED
+
+#include <qlib/Vector.qif>
+#include <qsys/anim/AnimObj.qif>
+
+runtime_class RendXformAnim extends AnimObj
+{
+  client_hdr "RendXformAnim.hpp";
+  client_name anim::RendXformAnim;
+
+  // interface attributes
+  scriptable;
+  cloneable;
+  smartptr;
+
+  // properties
+  property string prop => redirect(getPropName, setPropName);
+  property string rend => redirect(getRendNames, setRendNames);
+  property object<Vector> start_tran => redirect(getStartDPos, setStartDPos);
+  property object<Vector> end_tran => redirect(getEndDPos, setEndDPos);
+};
+
+#endif
+
+
+

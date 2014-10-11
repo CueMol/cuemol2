@@ -1,0 +1,41 @@
+// -*-Mode: C++;-*-
+//
+
+#ifndef SCENE_EXPORTER_QIF_INCLUDED
+#define SCENE_EXPORTER_QIF_INCLUDED
+
+#include "Scene.qif"
+#include "InOutHandler.qif"
+
+runtime_class SceneExporter extends InOutHandler
+{
+  client_hdr "SceneExporter.hpp";
+  client_name qsys::SceneExporter;
+  dllexport QSYS_API;
+
+  scriptable;
+  smartptr;
+
+  ////////////////////
+  // Property definition
+
+  property string camera => redirect(getCameraName, setCameraName);
+
+  // property boolean perspective => m_bPerspective;
+
+  /// hint of image size (w/h) rendered by this exporter
+  property integer width => redirect(getWidth, setWidth);
+  property integer height => redirect(getHeight, setHeight);
+
+  ////////////////////
+  // Method definition
+
+  void attach(object<Scene$> scene);
+  object<Scene$> detach();
+
+  void write();
+
+};
+
+#endif
+

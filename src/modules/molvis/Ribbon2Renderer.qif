@@ -1,0 +1,125 @@
+// -*-Mode: C++;-*-
+//
+// Interface definition for Ribbon2Renderer
+//
+
+#ifndef RIBBON2_RENDERER_QIF
+#define RIBBON2_RENDERER_QIF
+
+#include <modules/molstr/MainChainRenderer.qif>
+#include <modules/molstr/SelCommand.qif>
+#include "TubeSection.qif"
+#include "JctTable.qif"
+
+runtime_class Ribbon2Renderer extends MainChainRenderer
+{
+  client_hdr "Ribbon2Renderer.hpp";
+  client_name molvis::Ribbon2Renderer;
+
+  scriptable;
+  smartptr;
+  cloneable;
+  using SelCommand;
+
+  /// Detail level to the axial direction
+  property integer axialdetail => redirect(getAxialDetail, setAxialDetail);
+  default axialdetail = 8;
+
+  /// color smoothing flag
+  property boolean smoothcolor => redirect(isSmoothColor, setSmoothColor);
+  default smoothcolor = false;
+
+  // Selection for Calpha anchor
+  property object<MolSelection$> anchor_sel => redirect(getAnchorSel, setAnchorSel);
+  default anchor_sel = molstr::SelectionPtr(new molstr::SelCommand());
+
+  /// Anchor point weight
+  property real anchor_weight => redirect(getAnchorWgt, setAnchorWgt);
+  default anchor_weight = 10.0;
+
+  ///////////////////////////
+
+  // Helix properties
+
+  property real helix_smooth => m_dHelixSmo;
+  default helix_smooth = 3.0;
+
+  /// Helix width mode
+  enumdef helix_width_mode {
+    const = molvis::Ribbon2Renderer::HWIDTH_CONST;
+    average = molvis::Ribbon2Renderer::HWIDTH_AVER;
+    wavy = molvis::Ribbon2Renderer::HWIDTH_WAVY;
+  }
+  property enum helix_width_mode => redirect(getHelixWidthMode, setHelixWidthMode);
+  default helix_width_mode = "average";
+
+  /// helix width (const mode)
+  property real helix_width => m_dHelixWidth;
+  default helix_width = 2.3;
+
+  property real helix_extend => m_dAxExt;
+  default helix_extend = 0.5;
+
+  /// interpolated width (--> cone/sausage like)
+  property real helix_wsmooth => m_dWidthRho;
+  default helix_wsmooth = 5.0;
+
+  property real helix_wplus => m_dWidthPlus;
+  default helix_wplus = 0.2;
+
+  /// compativility: averaged constant width (--> cylinder)
+  property boolean helix_waver => redirect(isWidthAver, setWidthAver) (nopersist);
+
+  // Sheet properties
+
+  property real sheet_smooth => m_dSheetSmo;
+  default sheet_smooth = 2.0;
+  
+  property real sheet_wsmooth => m_dSheetWsmo;
+  default sheet_wsmooth = 5.0;
+
+  // Coil properties
+
+  property real coil_smooth => m_dCoilSmo;
+  default coil_smooth = -1.0;
+
+  ///////////////////////////
+
+  // Section of helix
+  property object<TubeSection$> helix => redirect(getHelixSection, x) (readonly);
+
+  // Section of sheet
+  property object<TubeSection$> sheet => redirect(getSheetSection, x) (readonly);
+
+  // Section of coil
+  property object<TubeSection$> coil => redirect(getCoilSection, x) (readonly);
+
+  // Junction of sheet head
+  property object<JctTable$> sheethead => redirect(getSheetHead, x) (readonly);
+
+  ///////////////////////////
+  
+  /// Tube cap type
+  enumdef start_captype {
+    sphere = molvis::Ribbon2Renderer::TUBE_CAP_SPHR;
+    flat = molvis::Ribbon2Renderer::TUBE_CAP_FLAT;
+    none = molvis::Ribbon2Renderer::TUBE_CAP_NONE;
+  }
+  property enum start_captype => redirect(getStartCapType, setStartCapType);
+  default start_captype = "flat";
+
+  enumdef end_captype = start_captype;
+
+  property enum end_captype => redirect(getEndCapType, setEndCapType);
+  default end_captype = "flat";
+
+  ///////////////////////////
+
+  property boolean dump_curvature => m_bDumpCurv;
+  default dump_curvature = false;
+
+  // void curvature();
+};
+
+#endif // SPLINE_RENDERER_QIF
+

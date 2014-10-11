@@ -1,0 +1,29 @@
+// -*-Mode: C++;-*-
+//
+// Animation object scripting interface
+//
+
+#ifndef MOL_ANIM_QIF_INCLUDED
+#define MOL_ANIM_QIF_INCLUDED
+
+#include <qsys/anim/AnimObj.qif>
+
+runtime_class MolAnim extends AnimObj
+{
+  client_hdr "MolAnim.hpp";
+  client_name anim::MolAnim;
+
+  // interface attributes
+  scriptable;
+  cloneable;
+  smartptr;
+
+  // properties
+  property real startValue => redirect(getStartValue, setStartValue);
+  property real endValue => redirect(getEndValue, setEndValue);
+  property string prop => redirect(getPropName, setPropName);
+  property string mol => redirect(getMolName, setMolName);
+};
+
+#endif
+

@@ -1,0 +1,35 @@
+
+@namespace url("http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul");
+@namespace html url("http://www.w3.org/1999/xhtml");
+
+timeedit {
+  padding: 0 0 1px;
+  margin: 4px;
+  border: none;
+}
+
+.timeedit-input-box {
+  -moz-appearance: textfield;
+  cursor: text;
+  margin-right: 4px;
+  margin-bottom: 2px;
+  border: 3px solid;
+  -moz-border-top-colors: transparent #888888 #000000;
+  -moz-border-right-colors: transparent #FFFFFF #000000;
+  -moz-border-bottom-colors: transparent #FFFFFF #000000;
+  -moz-border-left-colors: transparent #888888 #000000;
+  border-top-right-radius: 2px;
+  border-bottom-left-radius: 2px;
+  padding: 0px;
+  background-color: -moz-Field;
+  color: -moz-FieldText;
+}
+
+.timeedit-msecbox {
+  width: 2.4em;
+}
+
+.timeedit-sep {
+  margin: 0 !important;
+}
+

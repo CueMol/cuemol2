@@ -1,0 +1,530 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 45;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1D60589F0D05DD5A006BFB54 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1D30AB110D05D00D00671497 /* Foundation.framework */; };
+		1DF5F4E00D08C38300B7A737 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1DF5F4DF0D08C38300B7A737 /* UIKit.framework */; };
+		28FD15000DC6FC520079059D /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 28FD14FF0DC6FC520079059D /* OpenGLES.framework */; };
+		28FD15080DC6FC5B0079059D /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 28FD15070DC6FC5B0079059D /* QuartzCore.framework */; };
+		CE1F50CB15CD701A0070547E /* es2_default_frag.glsl in Resources */ = {isa = PBXBuildFile; fileRef = CE1F50C915CD701A0070547E /* es2_default_frag.glsl */; };
+		CE1F50CC15CD701A0070547E /* es2_default_vert.glsl in Resources */ = {isa = PBXBuildFile; fileRef = CE1F50CA15CD701A0070547E /* es2_default_vert.glsl */; };
+		CE1F99181482875500E335DD /* boost.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CE1F99171482875500E335DD /* boost.framework */; };
+		CE2805281660E26D00C0950B /* Default-568h@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = CE2805271660E26D00C0950B /* Default-568h@2x.png */; };
+		CE30DCFA14B0113400487AB3 /* cuemol_57x57_24.png in Resources */ = {isa = PBXBuildFile; fileRef = CE30DCF914B0113400487AB3 /* cuemol_57x57_24.png */; };
+		CE30DCFC14B0114000487AB3 /* cuemol_114x114_24.png in Resources */ = {isa = PBXBuildFile; fileRef = CE30DCFB14B0114000487AB3 /* cuemol_114x114_24.png */; };
+		CE30DCFE14B0114500487AB3 /* cuemol_72x72_24.png in Resources */ = {isa = PBXBuildFile; fileRef = CE30DCFD14B0114500487AB3 /* cuemol_72x72_24.png */; };
+		CE51F9E414AE192300BC2022 /* test1.qsl in Resources */ = {isa = PBXBuildFile; fileRef = CE51F9E314AE192300BC2022 /* test1.qsl */; };
+		CE53021E14B1851000C32411 /* FileViewController.mm in Sources */ = {isa = PBXBuildFile; fileRef = CE53021D14B1851000C32411 /* FileViewController.mm */; };
+		CE6A46FC14827E8F00E06475 /* CueMolAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = CE6A46FB14827E8F00E06475 /* CueMolAppDelegate.m */; };
+		CE6A470C14827ED800E06475 /* CueMolViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = CE6A470714827ED800E06475 /* CueMolViewController.m */; };
+		CE6A470D14827ED800E06475 /* EAGLView.m in Sources */ = {isa = PBXBuildFile; fileRef = CE6A470914827ED800E06475 /* EAGLView.m */; };
+		CE6A470E14827ED800E06475 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = CE6A470A14827ED800E06475 /* main.m */; };
+		CE97B2D41483D54100FC4DC6 /* default_palette.xml in Resources */ = {isa = PBXBuildFile; fileRef = CE97B2CB1483D54100FC4DC6 /* default_palette.xml */; };
+		CE97B2D51483D54100FC4DC6 /* default_params.xml in Resources */ = {isa = PBXBuildFile; fileRef = CE97B2CC1483D54100FC4DC6 /* default_params.xml */; };
+		CE97B2D61483D54100FC4DC6 /* default_style.xml in Resources */ = {isa = PBXBuildFile; fileRef = CE97B2CD1483D54100FC4DC6 /* default_style.xml */; };
+		CE97B2D71483D54100FC4DC6 /* mono_top.xml in Resources */ = {isa = PBXBuildFile; fileRef = CE97B2CE1483D54100FC4DC6 /* mono_top.xml */; };
+		CE97B2D81483D54100FC4DC6 /* nucl_props.xml in Resources */ = {isa = PBXBuildFile; fileRef = CE97B2CF1483D54100FC4DC6 /* nucl_props.xml */; };
+		CE97B2D91483D54100FC4DC6 /* nucl_top.xml in Resources */ = {isa = PBXBuildFile; fileRef = CE97B2D01483D54100FC4DC6 /* nucl_top.xml */; };
+		CE97B2DA1483D54100FC4DC6 /* prot_props.xml in Resources */ = {isa = PBXBuildFile; fileRef = CE97B2D11483D54100FC4DC6 /* prot_props.xml */; };
+		CE97B2DB1483D54100FC4DC6 /* prot_top.xml in Resources */ = {isa = PBXBuildFile; fileRef = CE97B2D21483D54100FC4DC6 /* prot_top.xml */; };
+		CE97B2DC1483D54100FC4DC6 /* sugar_top.xml in Resources */ = {isa = PBXBuildFile; fileRef = CE97B2D31483D54100FC4DC6 /* sugar_top.xml */; };
+		CE97B2EE1483D84900FC4DC6 /* iosconfig.xml in Resources */ = {isa = PBXBuildFile; fileRef = CE97B2ED1483D84900FC4DC6 /* iosconfig.xml */; };
+		CEA398E914935D1F00496BE1 /* test.pdb in Resources */ = {isa = PBXBuildFile; fileRef = CEA398E814935D1F00496BE1 /* test.pdb */; };
+		CEB4AA821483C35F001ED9DD /* ios_main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = CEB4AA811483C35F001ED9DD /* ios_main.cpp */; };
+		CEC5300115E0E96100DCBD22 /* config_btn_white.png in Resources */ = {isa = PBXBuildFile; fileRef = CEC5300015E0E96100DCBD22 /* config_btn_white.png */; };
+		CEC5A5AC14B0B3BE0030098C /* GLViewController.mm in Sources */ = {isa = PBXBuildFile; fileRef = CEC5A5AB14B0B3BE0030098C /* GLViewController.mm */; };
+		CEC5A5AE14B0B3F10030098C /* IosQmView.mm in Sources */ = {isa = PBXBuildFile; fileRef = CEC5A5AD14B0B3F10030098C /* IosQmView.mm */; };
+		CEC5A5B014B0B3FF0030098C /* IosTimerImpl.mm in Sources */ = {isa = PBXBuildFile; fileRef = CEC5A5AF14B0B3FF0030098C /* IosTimerImpl.mm */; };
+		CEC5A5B214B0B4970030098C /* ViewCtlImpl.mm in Sources */ = {isa = PBXBuildFile; fileRef = CEC5A5B114B0B4970030098C /* ViewCtlImpl.mm */; };
+		CECA3A8514C6F7DE00C2CF88 /* config_btn.png in Resources */ = {isa = PBXBuildFile; fileRef = CECA3A8414C6F7DE00C2CF88 /* config_btn.png */; };
+		CECA3A9714C7024000C2CF88 /* ConfigViewController.mm in Sources */ = {isa = PBXBuildFile; fileRef = CECA3A9614C7024000C2CF88 /* ConfigViewController.mm */; };
+		CEDA886814B20B4B007258F6 /* DisplayViewController.mm in Sources */ = {isa = PBXBuildFile; fileRef = CEDA886714B20B4B007258F6 /* DisplayViewController.mm */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		1D30AB110D05D00D00671497 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+		1D6058910D05DD3D006BFB54 /* CueMol.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CueMol.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1DF5F4DF0D08C38300B7A737 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
+		28FD14FF0DC6FC520079059D /* OpenGLES.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGLES.framework; path = System/Library/Frameworks/OpenGLES.framework; sourceTree = SDKROOT; };
+		28FD15070DC6FC5B0079059D /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
+		CE0BC6B314C1CCA600893EC6 /* CueMol.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = CueMol.entitlements; sourceTree = "<group>"; };
+		CE1F50C915CD701A0070547E /* es2_default_frag.glsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = es2_default_frag.glsl; path = ../src/sysdep/es2_default_frag.glsl; sourceTree = SOURCE_ROOT; };
+		CE1F50CA15CD701A0070547E /* es2_default_vert.glsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = es2_default_vert.glsl; path = ../src/sysdep/es2_default_vert.glsl; sourceTree = SOURCE_ROOT; };
+		CE1F99171482875500E335DD /* boost.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = boost.framework; path = /Users/user/iosproj/boost.framework; sourceTree = "<absolute>"; };
+		CE2805271660E26D00C0950B /* Default-568h@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default-568h@2x.png"; sourceTree = "<group>"; };
+		CE30DCF914B0113400487AB3 /* cuemol_57x57_24.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = cuemol_57x57_24.png; sourceTree = "<group>"; };
+		CE30DCFB14B0114000487AB3 /* cuemol_114x114_24.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = cuemol_114x114_24.png; sourceTree = "<group>"; };
+		CE30DCFD14B0114500487AB3 /* cuemol_72x72_24.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = cuemol_72x72_24.png; sourceTree = "<group>"; };
+		CE51F9E314AE192300BC2022 /* test1.qsl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = test1.qsl; sourceTree = "<group>"; };
+		CE53021D14B1851000C32411 /* FileViewController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = FileViewController.mm; sourceTree = "<group>"; };
+		CE6A46FB14827E8F00E06475 /* CueMolAppDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CueMolAppDelegate.m; path = ../src/iphoneos/CueMolAppDelegate.m; sourceTree = SOURCE_ROOT; };
+		CE6A470714827ED800E06475 /* CueMolViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = CueMolViewController.m; path = ../src/iphoneos/CueMolViewController.m; sourceTree = SOURCE_ROOT; };
+		CE6A470914827ED800E06475 /* EAGLView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = EAGLView.m; path = ../src/iphoneos/EAGLView.m; sourceTree = SOURCE_ROOT; };
+		CE6A470A14827ED800E06475 /* main.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = main.m; path = ../src/iphoneos/main.m; sourceTree = SOURCE_ROOT; };
+		CE6A471014827F0900E06475 /* CueMol-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = "CueMol-Info.plist"; path = "../src/iphoneos/CueMol-Info.plist"; sourceTree = SOURCE_ROOT; };
+		CE6A471814827F8400E06475 /* CueMol_Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CueMol_Prefix.pch; path = ../src/iphoneos/CueMol_Prefix.pch; sourceTree = SOURCE_ROOT; };
+		CE97B2CB1483D54100FC4DC6 /* default_palette.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = default_palette.xml; path = ../src/xul_gui/data/default_palette.xml; sourceTree = SOURCE_ROOT; };
+		CE97B2CC1483D54100FC4DC6 /* default_params.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = default_params.xml; path = ../src/xul_gui/data/default_params.xml; sourceTree = SOURCE_ROOT; };
+		CE97B2CD1483D54100FC4DC6 /* default_style.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = default_style.xml; path = ../src/xul_gui/data/default_style.xml; sourceTree = SOURCE_ROOT; };
+		CE97B2CE1483D54100FC4DC6 /* mono_top.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = mono_top.xml; path = ../src/xul_gui/data/mono_top.xml; sourceTree = SOURCE_ROOT; };
+		CE97B2CF1483D54100FC4DC6 /* nucl_props.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = nucl_props.xml; path = ../src/xul_gui/data/nucl_props.xml; sourceTree = SOURCE_ROOT; };
+		CE97B2D01483D54100FC4DC6 /* nucl_top.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = nucl_top.xml; path = ../src/xul_gui/data/nucl_top.xml; sourceTree = SOURCE_ROOT; };
+		CE97B2D11483D54100FC4DC6 /* prot_props.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = prot_props.xml; path = ../src/xul_gui/data/prot_props.xml; sourceTree = SOURCE_ROOT; };
+		CE97B2D21483D54100FC4DC6 /* prot_top.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = prot_top.xml; path = ../src/xul_gui/data/prot_top.xml; sourceTree = SOURCE_ROOT; };
+		CE97B2D31483D54100FC4DC6 /* sugar_top.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = sugar_top.xml; path = ../src/xul_gui/data/sugar_top.xml; sourceTree = SOURCE_ROOT; };
+		CE97B2ED1483D84900FC4DC6 /* iosconfig.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; name = iosconfig.xml; path = ../src/iphoneos/iosconfig.xml; sourceTree = SOURCE_ROOT; };
+		CEA398E814935D1F00496BE1 /* test.pdb */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = test.pdb; sourceTree = "<group>"; };
+		CEB4AA811483C35F001ED9DD /* ios_main.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ios_main.cpp; path = ../src/iphoneos/ios_main.cpp; sourceTree = SOURCE_ROOT; };
+		CEC5300015E0E96100DCBD22 /* config_btn_white.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = config_btn_white.png; path = ../src/iphoneos/config_btn_white.png; sourceTree = "<group>"; };
+		CEC5A5AB14B0B3BE0030098C /* GLViewController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = GLViewController.mm; sourceTree = "<group>"; };
+		CEC5A5AD14B0B3F10030098C /* IosQmView.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IosQmView.mm; sourceTree = "<group>"; };
+		CEC5A5AF14B0B3FF0030098C /* IosTimerImpl.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = IosTimerImpl.mm; sourceTree = "<group>"; };
+		CEC5A5B114B0B4970030098C /* ViewCtlImpl.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = ViewCtlImpl.mm; sourceTree = "<group>"; };
+		CECA3A8414C6F7DE00C2CF88 /* config_btn.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = config_btn.png; path = ../src/iphoneos/config_btn.png; sourceTree = "<group>"; };
+		CECA3A9614C7024000C2CF88 /* ConfigViewController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = ConfigViewController.mm; sourceTree = "<group>"; };
+		CEDA886714B20B4B007258F6 /* DisplayViewController.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = DisplayViewController.mm; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		1D60588F0D05DD3D006BFB54 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1D60589F0D05DD5A006BFB54 /* Foundation.framework in Frameworks */,
+				1DF5F4E00D08C38300B7A737 /* UIKit.framework in Frameworks */,
+				28FD15000DC6FC520079059D /* OpenGLES.framework in Frameworks */,
+				28FD15080DC6FC5B0079059D /* QuartzCore.framework in Frameworks */,
+				CE1F99181482875500E335DD /* boost.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		080E96DDFE201D6D7F000001 /* Classes */ = {
+			isa = PBXGroup;
+			children = (
+				CECA3A9614C7024000C2CF88 /* ConfigViewController.mm */,
+				CEDA886714B20B4B007258F6 /* DisplayViewController.mm */,
+				CE53021D14B1851000C32411 /* FileViewController.mm */,
+				CEC5A5B114B0B4970030098C /* ViewCtlImpl.mm */,
+				CEC5A5AF14B0B3FF0030098C /* IosTimerImpl.mm */,
+				CEC5A5AD14B0B3F10030098C /* IosQmView.mm */,
+				CEB4AA811483C35F001ED9DD /* ios_main.cpp */,
+				CE6A470714827ED800E06475 /* CueMolViewController.m */,
+				CE6A470914827ED800E06475 /* EAGLView.m */,
+				CE6A470A14827ED800E06475 /* main.m */,
+				CE6A46FB14827E8F00E06475 /* CueMolAppDelegate.m */,
+				CEC5A5AB14B0B3BE0030098C /* GLViewController.mm */,
+			);
+			name = Classes;
+			path = ../src/iphoneos;
+			sourceTree = "<group>";
+		};
+		19C28FACFE9D520D11CA2CBB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				1D6058910D05DD3D006BFB54 /* CueMol.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		29B97314FDCFA39411CA2CEA /* CustomTemplate */ = {
+			isa = PBXGroup;
+			children = (
+				CE2805271660E26D00C0950B /* Default-568h@2x.png */,
+				CE0BC6B314C1CCA600893EC6 /* CueMol.entitlements */,
+				CE30DCFD14B0114500487AB3 /* cuemol_72x72_24.png */,
+				CE30DCFB14B0114000487AB3 /* cuemol_114x114_24.png */,
+				CE30DCF914B0113400487AB3 /* cuemol_57x57_24.png */,
+				080E96DDFE201D6D7F000001 /* Classes */,
+				29B97315FDCFA39411CA2CEA /* Other Sources */,
+				29B97317FDCFA39411CA2CEA /* Resources */,
+				29B97323FDCFA39411CA2CEA /* Frameworks */,
+				19C28FACFE9D520D11CA2CBB /* Products */,
+				CE1F99171482875500E335DD /* boost.framework */,
+			);
+			name = CustomTemplate;
+			sourceTree = "<group>";
+		};
+		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
+			isa = PBXGroup;
+			children = (
+				CE6A471814827F8400E06475 /* CueMol_Prefix.pch */,
+			);
+			name = "Other Sources";
+			sourceTree = "<group>";
+		};
+		29B97317FDCFA39411CA2CEA /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				CEC5300015E0E96100DCBD22 /* config_btn_white.png */,
+				CE1F50C915CD701A0070547E /* es2_default_frag.glsl */,
+				CE1F50CA15CD701A0070547E /* es2_default_vert.glsl */,
+				CECA3A8414C6F7DE00C2CF88 /* config_btn.png */,
+				CE51F9E314AE192300BC2022 /* test1.qsl */,
+				CEA398E814935D1F00496BE1 /* test.pdb */,
+				CE97B2ED1483D84900FC4DC6 /* iosconfig.xml */,
+				CE97B2CA1483D51000FC4DC6 /* data */,
+				CE6A471014827F0900E06475 /* CueMol-Info.plist */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
+		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				28FD15070DC6FC5B0079059D /* QuartzCore.framework */,
+				28FD14FF0DC6FC520079059D /* OpenGLES.framework */,
+				1DF5F4DF0D08C38300B7A737 /* UIKit.framework */,
+				1D30AB110D05D00D00671497 /* Foundation.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		CE97B2CA1483D51000FC4DC6 /* data */ = {
+			isa = PBXGroup;
+			children = (
+				CE97B2CB1483D54100FC4DC6 /* default_palette.xml */,
+				CE97B2CC1483D54100FC4DC6 /* default_params.xml */,
+				CE97B2CD1483D54100FC4DC6 /* default_style.xml */,
+				CE97B2CE1483D54100FC4DC6 /* mono_top.xml */,
+				CE97B2CF1483D54100FC4DC6 /* nucl_props.xml */,
+				CE97B2D01483D54100FC4DC6 /* nucl_top.xml */,
+				CE97B2D11483D54100FC4DC6 /* prot_props.xml */,
+				CE97B2D21483D54100FC4DC6 /* prot_top.xml */,
+				CE97B2D31483D54100FC4DC6 /* sugar_top.xml */,
+			);
+			name = data;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		1D6058900D05DD3D006BFB54 /* CueMol */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1D6058960D05DD3E006BFB54 /* Build configuration list for PBXNativeTarget "CueMol" */;
+			buildPhases = (
+				1D60588D0D05DD3D006BFB54 /* Resources */,
+				1D60588E0D05DD3D006BFB54 /* Sources */,
+				1D60588F0D05DD3D006BFB54 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = CueMol;
+			productName = CueMol;
+			productReference = 1D6058910D05DD3D006BFB54 /* CueMol.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		29B97313FDCFA39411CA2CEA /* Project object */ = {
+			isa = PBXProject;
+			buildConfigurationList = C01FCF4E08A954540054247B /* Build configuration list for PBXProject "CueMol" */;
+			compatibilityVersion = "Xcode 3.1";
+			developmentRegion = English;
+			hasScannedForEncodings = 1;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
+			mainGroup = 29B97314FDCFA39411CA2CEA /* CustomTemplate */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				1D6058900D05DD3D006BFB54 /* CueMol */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		1D60588D0D05DD3D006BFB54 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CE97B2D41483D54100FC4DC6 /* default_palette.xml in Resources */,
+				CE97B2D51483D54100FC4DC6 /* default_params.xml in Resources */,
+				CE97B2D61483D54100FC4DC6 /* default_style.xml in Resources */,
+				CE97B2D71483D54100FC4DC6 /* mono_top.xml in Resources */,
+				CE97B2D81483D54100FC4DC6 /* nucl_props.xml in Resources */,
+				CE97B2D91483D54100FC4DC6 /* nucl_top.xml in Resources */,
+				CE97B2DA1483D54100FC4DC6 /* prot_props.xml in Resources */,
+				CE97B2DB1483D54100FC4DC6 /* prot_top.xml in Resources */,
+				CE97B2DC1483D54100FC4DC6 /* sugar_top.xml in Resources */,
+				CE97B2EE1483D84900FC4DC6 /* iosconfig.xml in Resources */,
+				CEA398E914935D1F00496BE1 /* test.pdb in Resources */,
+				CE51F9E414AE192300BC2022 /* test1.qsl in Resources */,
+				CE30DCFA14B0113400487AB3 /* cuemol_57x57_24.png in Resources */,
+				CE30DCFC14B0114000487AB3 /* cuemol_114x114_24.png in Resources */,
+				CE30DCFE14B0114500487AB3 /* cuemol_72x72_24.png in Resources */,
+				CECA3A8514C6F7DE00C2CF88 /* config_btn.png in Resources */,
+				CE1F50CB15CD701A0070547E /* es2_default_frag.glsl in Resources */,
+				CE1F50CC15CD701A0070547E /* es2_default_vert.glsl in Resources */,
+				CEC5300115E0E96100DCBD22 /* config_btn_white.png in Resources */,
+				CE2805281660E26D00C0950B /* Default-568h@2x.png in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		1D60588E0D05DD3D006BFB54 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CE6A46FC14827E8F00E06475 /* CueMolAppDelegate.m in Sources */,
+				CE6A470C14827ED800E06475 /* CueMolViewController.m in Sources */,
+				CE6A470D14827ED800E06475 /* EAGLView.m in Sources */,
+				CE6A470E14827ED800E06475 /* main.m in Sources */,
+				CEB4AA821483C35F001ED9DD /* ios_main.cpp in Sources */,
+				CEC5A5AC14B0B3BE0030098C /* GLViewController.mm in Sources */,
+				CEC5A5AE14B0B3F10030098C /* IosQmView.mm in Sources */,
+				CEC5A5B014B0B3FF0030098C /* IosTimerImpl.mm in Sources */,
+				CEC5A5B214B0B4970030098C /* ViewCtlImpl.mm in Sources */,
+				CE53021E14B1851000C32411 /* FileViewController.mm in Sources */,
+				CEDA886814B20B4B007258F6 /* DisplayViewController.mm in Sources */,
+				CECA3A9714C7024000C2CF88 /* ConfigViewController.mm in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1D6058940D05DD3E006BFB54 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_ENTITLEMENTS = CueMol.entitlements;
+				CODE_SIGN_IDENTITY = "";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COMPRESS_PNG_FILES = NO;
+				COPY_PHASE_STRIP = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../..\"",
+				);
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = ../src/iphoneos/CueMol_Prefix.pch;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					DEBUG,
+					HAVE_CONFIG_H,
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				"GCC_THUMB_SUPPORT[arch=armv6]" = "";
+				HEADER_SEARCH_PATHS = (
+					../src,
+					"$(HOME)/iosproj/boost-i386/include",
+					.,
+				);
+				INFOPLIST_FILE = "../src/iphoneos/CueMol-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
+				LIBRARY_SEARCH_PATHS = build/lib;
+				OTHER_LDFLAGS = (
+					"-lexpat",
+					"-lpcre",
+					"-lqmzlib",
+					"-lqlib",
+					"-lgfx",
+					"-lqsys",
+					"-lsysdep",
+					"-llwview",
+					"-lmolstr",
+					"-lanim",
+				);
+				PRODUCT_NAME = CueMol;
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "";
+				VALID_ARCHS = armv7;
+			};
+			name = Debug;
+		};
+		1D6058950D05DD3E006BFB54 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_ENTITLEMENTS = CueMol.entitlements;
+				CODE_SIGN_IDENTITY = "";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COMPRESS_PNG_FILES = NO;
+				COPY_PHASE_STRIP = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../..\"",
+				);
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = ../src/iphoneos/CueMol_Prefix.pch;
+				GCC_PREPROCESSOR_DEFINITIONS = HAVE_CONFIG_H;
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				"GCC_THUMB_SUPPORT[arch=armv6]" = "";
+				HEADER_SEARCH_PATHS = (
+					../src,
+					"$(HOME)/iosproj/boost-i386/include",
+					.,
+				);
+				INFOPLIST_FILE = "../src/iphoneos/CueMol-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
+				LIBRARY_SEARCH_PATHS = build/lib;
+				OTHER_LDFLAGS = (
+					"-lexpat",
+					"-lpcre",
+					"-lqmzlib",
+					"-lqlib",
+					"-lgfx",
+					"-lqsys",
+					"-lsysdep",
+					"-llwview",
+					"-lmolstr",
+					"-lanim",
+				);
+				PRODUCT_NAME = CueMol;
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "";
+				VALIDATE_PRODUCT = YES;
+				VALID_ARCHS = armv7;
+			};
+			name = Release;
+		};
+		C01FCF4F08A954540054247B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_UNIVERSAL_IPHONE_OS)";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				GCC_C_LANGUAGE_STANDARD = c99;
+				GCC_PREPROCESSOR_DEFINITIONS = DEBUG;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
+				LIBRARY_SEARCH_PATHS = "";
+				PREBINDING = NO;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C01FCF5008A954540054247B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_UNIVERSAL_IPHONE_OS)";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
+				GCC_C_LANGUAGE_STANDARD = c99;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CFLAGS = "-DNS_BLOCK_ASSERTIONS=1";
+				PREBINDING = NO;
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		CEB8F04414C1B14C0012B5FF /* Ad-Hoc */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = "$(ARCHS_UNIVERSAL_IPHONE_OS)";
+				CODE_SIGN_IDENTITY = "iPhone Distribution: Ryuichiro Ishitani";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: Ryuichiro Ishitani";
+				GCC_C_LANGUAGE_STANDARD = c99;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
+				LIBRARY_SEARCH_PATHS = "";
+				OTHER_CFLAGS = "-DNS_BLOCK_ASSERTIONS=1";
+				PREBINDING = NO;
+				PROVISIONING_PROFILE = "F747BCF6-E841-4CC1-BC4B-009EFD710A2A";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "F747BCF6-E841-4CC1-BC4B-009EFD710A2A";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = "Ad-Hoc";
+		};
+		CEB8F04514C1B14C0012B5FF /* Ad-Hoc */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_ENTITLEMENTS = CueMol.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Distribution: Ryuichiro Ishitani";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: Ryuichiro Ishitani";
+				COMPRESS_PNG_FILES = NO;
+				COPY_PHASE_STRIP = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"$(SRCROOT)/../..\"",
+				);
+				GCC_INLINES_ARE_PRIVATE_EXTERN = NO;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = ../src/iphoneos/CueMol_Prefix.pch;
+				GCC_PREPROCESSOR_DEFINITIONS = HAVE_CONFIG_H;
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				"GCC_THUMB_SUPPORT[arch=armv6]" = "";
+				HEADER_SEARCH_PATHS = (
+					../src,
+					"$(HOME)/iosproj/boost-i386/include",
+					.,
+				);
+				INFOPLIST_FILE = "../src/iphoneos/CueMol-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 5.0;
+				LIBRARY_SEARCH_PATHS = build/lib;
+				OTHER_LDFLAGS = (
+					"-lexpat",
+					"-lpcre",
+					"-lqmzlib",
+					"-lqlib",
+					"-lgfx",
+					"-lqsys",
+					"-lsysdep",
+					"-llwview",
+					"-lmolstr",
+					"-lanim",
+				);
+				PRODUCT_NAME = CueMol;
+				PROVISIONING_PROFILE = "F747BCF6-E841-4CC1-BC4B-009EFD710A2A";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "F747BCF6-E841-4CC1-BC4B-009EFD710A2A";
+				VALIDATE_PRODUCT = YES;
+				VALID_ARCHS = armv7;
+			};
+			name = "Ad-Hoc";
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1D6058960D05DD3E006BFB54 /* Build configuration list for PBXNativeTarget "CueMol" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1D6058940D05DD3E006BFB54 /* Debug */,
+				1D6058950D05DD3E006BFB54 /* Release */,
+				CEB8F04514C1B14C0012B5FF /* Ad-Hoc */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C01FCF4E08A954540054247B /* Build configuration list for PBXProject "CueMol" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C01FCF4F08A954540054247B /* Debug */,
+				C01FCF5008A954540054247B /* Release */,
+				CEB8F04414C1B14C0012B5FF /* Ad-Hoc */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 29B97313FDCFA39411CA2CEA /* Project object */;
+}

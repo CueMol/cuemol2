@@ -1,0 +1,64 @@
+// -*-Mode: C++;-*-
+//
+// $Id: RangeSet.qif,v 1.3 2011/04/16 12:44:39 rishitani Exp $
+
+// C++ name: RangeSet
+// C++ class decl: RangeSet.hpp
+// Script/Runtime name: RangeSet
+
+// Wrapper name: RangeSet_wrap
+// Wrapper class decl file: RangeSet_wrap.hpp
+// Wrapper class impl file: RangeSet_wrap.cpp
+
+// code for class factory (runtime creation) is always generated
+
+runtime_class RangeSet
+{
+  uuid cf86b075-c746-407b-992b-864c0b10b393;
+
+  client_hdr "LScrRangeSet.hpp";
+  client_name qlib::LScrRangeSet;
+
+  scriptable;
+
+  // cloneable option generates instance creation with copy constructor
+  cloneable;
+  smartptr;
+
+  // persistent;
+
+  // properties
+
+  /////////////////////
+  // methods
+
+  // ; constructor (create an empty range obj)
+  //static object range()
+  //static object range(integer, integer)
+
+  object<RangeSet> negate();
+
+  object<RangeSet> append(object<RangeSet>) => scr_append;
+  object<RangeSet> appendInt(integer, integer) => scr_appendInt;
+  object<RangeSet> remove(object<RangeSet>) => scr_remove;
+  object<RangeSet> removeInt(integer, integer) => scr_removeInt;
+
+  boolean containsInt(integer, integer) => contains;
+
+  //void appendSelf(object<RangeSet>$) => merge;
+  //void appendIntSelf(integer, integer) => append;
+  //void removeSelf(object<RangeSet>$) => remove;
+  //void removeIntSelf(integer, integer) => remove;
+
+  string toString();
+  void fromString(string);
+
+  void clear();
+  boolean isEmpty();
+
+  // void forEach(any);
+  // void fromString(string);
+  // boolean equals(object<RangeSet>);
+  // void zero();
+};
+

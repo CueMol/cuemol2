@@ -1,0 +1,20 @@
+// -*-Mode: C++;-*-
+//
+// Renderer group
+
+#include "Renderer.qif"
+
+runtime_class RendGroup extends Renderer
+{
+  client_hdr "RendGroup.hpp";
+  client_name qsys::RendGroup;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  property boolean ui_collapsed => redirect(isUICollapsed, setUICollapsed);
+  default ui_collapsed = false;
+
+};
+

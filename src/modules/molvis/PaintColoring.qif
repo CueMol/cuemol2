@@ -1,0 +1,41 @@
+// -*-Mode: C++;-*-
+//
+// Paint coloring scripting interface
+//
+
+#ifndef PAINT_COLORING_QIF_INCLUDED
+#define PAINT_COLORING_QIF_INCLUDED
+
+#include <modules/molstr/ColoringScheme.qif>
+#include <modules/molstr/Selection.qif>
+
+runtime_class PaintColoring extends ColoringScheme
+{
+  client_hdr "PaintColoring.hpp";
+  client_name molvis::PaintColoring;
+
+  scriptable;
+  cloneable;
+  smartptr;
+
+  // XXX: ???
+  // property object<AbstractColor$> default => redirect(getDefaultColor, setDefaultColor);
+  // default default = gfx::SolidColor::createRGB(1.0, 1.0, 1.0);
+  // property object<AbstractColor$> mask => redirect(getMaskColor, setMaskColor);
+  // default mask = gfx::SolidColor::createRGB(1.0, 1.0, 1.0, 1.0);
+
+  property integer size => redirect(getSize, XXX) (readonly);
+
+  void clear();
+  void append(object<MolSelection$> pSel, object<AbstractColor$> pCol);
+  void insertBefore(integer ind, object<MolSelection$> pSel, object<AbstractColor$> pCol);
+
+  object<AbstractColor$> getColorAt(integer ind);
+  object<MolSelection$> getSelAt(integer ind);
+  
+  boolean removeAt(integer ind);
+  boolean changeAt(integer ind, object<MolSelection$> pSel, object<AbstractColor$> pCol);
+};
+
+#endif
+

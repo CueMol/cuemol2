@@ -1,0 +1,23 @@
+// -*-Mode: C++;-*-
+//
+
+#ifndef LWVIEWER_MANAGER_QIF_INCLUDED
+#define LWVIEWER_MANAGER_QIF_INCLUDED
+
+#include <qlib/LScrObject.qif>
+#include <qsys/Scene.qif>
+
+runtime_class LWViewerManager
+{
+  client_hdr "LWViewerManager.hpp";
+  client_name lwview::LWViewerManager;
+
+  scriptable;
+  singleton;
+
+  // void saveLWSceneAs(object<Scene$>, object<View$>, string path);
+  void convToLWScene(object<Scene$>, object<Scene$>);
+};
+
+#endif // LWVIEWER_MANAGER_QIF_INCLUDED
+

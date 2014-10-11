@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+
+<!-- -*- xml -*- -->
+
+<dialog
+  id     = "paint-propdlg"
+  title  = "Paint property"
+  xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  buttons="accept,cancel"
+  ondialogaccept="return window.gDlgObj.onDialogAccept(event);">
+
+  <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/colpicker.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/molsellist.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/paint-propdlg.js"/>
+
+  <overlaytarget id="scripts-overlay-target"/>
+
+  <grid flex="1">
+    <columns>
+      <column/>
+      <column flex="1"/>
+    </columns>
+
+    <rows>
+      <row align="center">
+	<label value="Selection:" />
+	<molsellist id="mol-selection-list" errorbox="selection-error-box"/>
+      </row>
+
+      <row align="center">
+	<spacer/>
+	<label class="errormsg" id="selection-error-box" value="Error in the selection code!!"/>
+      </row>
+
+      <row align="center">
+	<label value="Color:" />
+	<mycolpicker id="colorPickerPanel"/>
+      </row>
+
+    </rows>
+  </grid>
+
+</dialog>
+

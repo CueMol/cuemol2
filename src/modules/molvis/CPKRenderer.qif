@@ -1,0 +1,48 @@
+// -*-Mode: C++;-*-
+//
+// Interface definition for CPKRenderer
+//
+
+#ifndef CPK_RENDERER_QIF
+#define CPK_RENDERER_QIF
+
+#include <modules/molstr/MolRenderer.qif>
+#include <modules/molstr/Selection.qif>
+
+runtime_class CPKRenderer extends MolRenderer
+{
+  client_hdr "CPKRenderer.hpp";
+  client_name molvis::CPKRenderer;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  property real vdwr_H => m_vdwr_H;
+  default vdwr_H = 1.2;
+
+  property real vdwr_C => m_vdwr_C;
+  default vdwr_C = 1.7;
+
+  property real vdwr_N => m_vdwr_N;
+  default vdwr_N = 1.55;
+
+  property real vdwr_O => m_vdwr_O;
+  default vdwr_O = 1.52;
+
+  property real vdwr_S => m_vdwr_S;
+  default vdwr_S = 1.8;
+
+  property real vdwr_P => m_vdwr_P;
+  default vdwr_P = 1.8;
+
+  property real vdwr_X => m_vdwr_X;
+  default vdwr_X = 1.7;
+
+  property integer detail => m_nDetail;
+  default detail = 3;
+
+};
+
+#endif BALL_STICK_RENDERER_QIF
+

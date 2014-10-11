@@ -1,0 +1,27 @@
+######################################################
+#
+# $Id: mcwgen.am,v 2.8 2010/11/14 15:08:17 rishitani Exp $
+#
+
+######################################################
+# C++ mcinfo generation rule
+
+MCWRAPGEN = perl $(top_srcdir)/perl/mcwrapgen3.pl
+MCWG_INCLUDES= -D HAVE_CONFIG_H -I $(top_srcdir) -I $(top_builddir)
+
+%_wrap.cpp : %.qif
+	$(MCWRAPGEN) $(MCWG_INCLUDES) -m src $<
+	$(MCWRAPGEN) $(MCWG_INCLUDES) -m js -jsdir $(top_srcdir)/xul_gui/resources/cuemol-wrappers/ $<
+
+%_wrap.hpp: %.qif
+	$(MCWRAPGEN) $(MCWG_INCLUDES) -m hdr $<
+
+%_loader.cpp: %.moddef
+	$(MCWRAPGEN) $(MCWG_INCLUDES) -m mod $<
+
+######################################################
+
+plugindir=${prefix}/plugins
+xpcomdir=${prefix}/components
+xptdir=${prefix}/components
+

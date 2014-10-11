@@ -1,0 +1,124 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+
+<!DOCTYPE overlay [
+  <!ENTITY % cuemol2DTD SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+  %cuemol2DTD;
+]>
+
+<overlay id="fakedial-panel"
+  xmlns:html="http://www.w3.org/1999/xhtml"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <overlaytarget id="panels-overlay-target" hidden="true">
+
+    <script type="application/javascript" src="chrome://cuemol2/content/fakedial-panel.js"/>
+
+    <vbox id="fakedial-panel" title="View" style="overflow-y: auto; min-height: 50px; border-top: 1px solid threedshadow" flex="1">
+
+      <grid flex="1">
+	<columns>
+	  <column flex="0"/><column flex="0"/><column flex="0"/><column flex="1"/><column flex="0"/>
+	</columns>
+	<rows>
+	  <hbox align="center">
+	    <label value="Rotation"/>
+	    <html:hr flex="1"/>
+	  </hbox>
+
+	  <row align="center">
+	    <spacer width="10px"/>
+	    <label value="RotX:"/>
+	    <wheelbtn id="fdl-rotx-wheel"/>
+	    <textbox id="fdl-rotx-val" class="plain" type="number"
+	      hidespinbuttons="true" decimalplaces="0" min="-Infinity"/>
+	    <label value="&#xB0;" class="plain"/>
+	  </row>
+	  <row align="center">
+	    <spacer width="10px"/>
+	    <label value="RotY:"/>
+	    <wheelbtn id="fdl-roty-wheel"/>
+	    <textbox id="fdl-roty-val" class="plain" type="number"
+	      hidespinbuttons="true" decimalplaces="0" min="-Infinity"/>
+	    <label value="&#xB0;" class="plain"/>
+	  </row>
+	  <row align="center">
+	    <spacer width="10px"/>
+	    <label value="RotZ:"/>
+	    <wheelbtn id="fdl-rotz-wheel"/>
+	    <textbox id="fdl-rotz-val" class="plain" type="number"
+	      hidespinbuttons="true" decimalplaces="0" min="-Infinity"/>
+	    <label value="&#xB0;" class="plain"/>
+	  </row>
+
+	  <hbox align="center">
+	    <label value="Translation"/>
+	    <html:hr flex="1"/>
+	  </hbox>
+	  
+	  <row align="center">
+	    <spacer width="10px"/>
+	    <label value="TraX:"/>
+	    <wheelbtn id="fdl-trax-wheel"/>
+	    <textbox id="fdl-trax-val" class="plain" type="number"
+	      hidespinbuttons="true" decimalplaces="2" min="-Infinity"/>
+	    <label value="&#0197;" class="plain"/>
+	  </row>
+	  <row align="center">
+	    <spacer width="10px"/>
+	    <label value="TraY:"/>
+	    <wheelbtn id="fdl-tray-wheel"/>
+	    <textbox id="fdl-tray-val" class="plain" type="number"
+	      hidespinbuttons="true" decimalplaces="2" min="-Infinity"/>
+	    <label value="&#0197;" class="plain"/>
+	  </row>
+	  <row align="center">
+	    <spacer width="10px"/>
+	    <label value="TraZ:"/>
+	    <wheelbtn id="fdl-traz-wheel"/>
+	    <textbox id="fdl-traz-val" class="plain" type="number"
+	      hidespinbuttons="true" decimalplaces="2" min="-Infinity"/>
+	    <label value="&#0197;" class="plain"/>
+	  </row>
+
+	  <hbox align="center">
+	    <label value="Zoom/Slab"/>
+	    <html:hr flex="1"/>
+	  </hbox>
+
+	  <row align="center">
+	    <spacer width="10px"/>
+	    <label value="Zoom:"/>
+	    <wheelbtn id="fdl-zoom-wheel"/>
+	    <textbox id="fdl-zoom-val" class="plain" type="number" hidespinbuttons="true"/>
+	    <label value="&#0197;" class="plain"/>
+	  </row>
+	  <row align="center">
+	    <spacer width="10px"/>
+	    <label value="Slab:"/>
+	    <wheelbtn id="fdl-slab-wheel"/>
+	    <textbox id="fdl-slab-val" class="plain" type="number" hidespinbuttons="true"/>
+	    <label value="&#0197;" class="plain"/>
+	  </row>
+	  <row align="center">
+	    <spacer width="10px"/>
+	    <label value="Dist:"/>
+	    <wheelbtn id="fdl-dist-wheel"/>
+	    <textbox id="fdl-dist-val" class="plain" type="number" hidespinbuttons="true"/>
+	    <label value="&#0197;" class="plain"/>
+	  </row>
+	</rows>
+      </grid>
+    </vbox>
+
+  </overlaytarget>
+
+  <!-- Main Window Menu -->
+  <overlaytarget id="window-leftpanels-popup">
+    <menuitem id="menu-fakedial-panel-toggle"
+      label="View" type="checkbox" autocheck="false"
+      oncommand="cuemolui.sidepanel.onToggle('fakedial-panel')" />
+  </overlaytarget>
+
+</overlay>
+

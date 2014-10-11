@@ -1,0 +1,35 @@
+// -*-Mode: C++;-*-
+//
+// $Id: ClassS.qif,v 1.1 2007/12/09 14:36:44 rishitani Exp $
+
+runtime_class ClassS
+{
+  uuid fe7787a5-294b-42a0-9380-7ce6c47a090c;
+
+  // interface qIClassS
+  // wrapper ClassS_wrap;
+  // extends <none>
+
+  // client_hdr "ClassA.hpp";
+  client_hdr "TestClass.hpp";
+
+  // client_name ClassA;
+
+  scriptable;
+
+  // 
+  singleton;
+
+  // persistent;
+
+  //property integer prop1 => m_nProp1;
+  //property string prop2 => m_strProp;
+
+  //property object<ClassA$> prop3 => m_pProp3;
+
+  //void foo(integer, string, object<ClassA$>);
+
+  string toString();
+
+};
+

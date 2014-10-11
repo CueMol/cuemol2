@@ -1,0 +1,167 @@
+// -*-Mode: C++;-*-
+//
+// $Id: Scene.qif,v 1.38 2011/03/10 13:11:55 rishitani Exp $
+
+#ifndef SCENE_QIF_INCLUDED
+#define SCENE_QIF_INCLUDED
+
+#include "Object.qif"
+#include "Renderer.qif"
+#include "View.qif"
+#include <qlib/LScrCallBack.qif>
+#include <qlib/ByteArray.qif>
+#include <gfx/Color.qif>
+#include "anim/AnimMgr.qif"
+
+runtime_class Scene
+{
+  using Color; // <-- gfx::SolidColor
+  client_hdr "Scene.hpp";
+  client_name qsys::Scene;
+
+  scriptable;
+  smartptr;
+
+  ////////////////////
+  // Scene properties
+
+  property integer uid => redirect(getUID, XXX) (readonly);
+  property boolean modified => redirect(isModified, XXX) (readonly);
+
+  property string name => redirect(getName, XXX) (readonly);
+
+  /// Source path of this scene
+  property string src => redirect(getSource, XXX) (readonly);
+  /// Type name of source
+  property string srctype => redirect(getSourceType, XXX) (readonly);
+  /// Base path
+  property string basePath => redirect(getBasePath, XXX) (readonly);
+
+  property object<AbstractColor$> bgcolor => redirect(getBgColor, setBgColor);
+  default bgcolor = gfx::SolidColor::createRGB(0.0, 0.0, 0.0);
+
+  property string onload => m_scrOnLoadEvent;
+  default onload = "";
+
+  ////////////////////
+  // Scene operations
+
+  void setName(string);
+
+  boolean isJustCreated();
+
+  ////////////////////
+  // Object manager
+
+  /// Add new object to the scene (and returns new UID of object)
+  integer addObject(object<Object$> obj);
+
+  /// Get object by UID
+  object<Object$> getObject(integer);
+
+  /// Remove object
+  boolean destroyObject(integer);
+
+  /// Get object by name
+  object<Object$> getObjectByName(string);
+
+  void clearAllData() => clearAllDataScr;
+
+  //property array objs => redirect(getObjArray, XXX) (readonly);
+  property string obj_uids => redirect(getObjUIDList, XXX) (readonly);
+
+  /// Get scene information in JSON format (ignore rend groups)
+  string getObjectTreeJSON();
+
+  /// Get scene information in JSON format (w/ rend groups)
+  string getSceneDataJSON();
+
+  ////////////////////
+  // Renderer related methods
+
+  /// Get the first matching renderer object by name
+  object<Renderer$> getRendByName(string);
+
+  ////////////////////
+  // View manager
+
+  object<View$> createView();
+  object<View$> getView(integer);
+  object<View$> getViewByName(string);
+  boolean destroyView(integer);
+  // return the number of the bound views
+  integer getViewCount();
+  integer getUID();
+
+  //property array views => redirect(getViewArray, XXX) (readonly);
+  property string view_uids => redirect(getViewUIDList, XXX) (readonly);
+
+  property object<View$> activeView => redirect(getActiveView, XXX) (readonly, nopersist);
+
+  void setActiveViewID(integer);
+
+  ////////////////////
+  // Camera manager
+
+  /// get copy of camera object
+  object<Camera$> getCamera(string name);
+
+  /// get reference of camera object
+  object<Camera$> getCameraRef(string name);
+
+  boolean hasCamera(string name);
+  void setCamera(string, object<Camera$>);
+  boolean destroyCamera(string name);
+
+  boolean saveViewToCam(integer viewid, string nm);
+  void loadViewFromCam(integer viewid, string nm);
+
+  string getCameraInfoJSON();
+
+  /// Save camera to the local file
+  boolean saveCameraTo(string camera_name, string filename);
+
+  /// Load camera from the local file
+  object<Camera$> loadCamera(string filename);
+
+  ////////////////////
+  // Undo manager
+
+  boolean isUndoable();
+  boolean isRedoable();
+  string getUndoDesc(integer);
+  string getRedoDesc(integer);
+  integer getUndoSize();
+  integer getRedoSize();
+
+  void startUndoTxn(string descr);
+  void commitUndoTxn();
+  void rollbackUndoTxn();
+  
+  boolean undo(integer);
+  boolean redo(integer);
+
+  // clear all undo/redo data
+  void clearUndoData() => clearUndoDataScr;
+
+  ////////////////////
+  // Animation manager
+  object<AnimMgr$> getAnimMgr();
+
+  ////////////////////
+  // Event
+
+  integer addListener(object<LScrCallBack$>);
+  boolean removeListener(integer nid);
+
+  ////////////////////
+
+  void dump();
+
+  /// Execute javascript in this scene
+  boolean execJSFile(string);
+
+};
+
+#endif
+

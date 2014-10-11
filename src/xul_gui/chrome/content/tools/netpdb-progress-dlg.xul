@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<!-- -*- xml -*- -->
+
+<dialog
+  id     = "netpdb-progress-dlg"
+  title  = "PDB Download"
+  xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  buttons = "cancel"
+  onload = "gProgDlg.init();"
+  ondialogcancel = "gProgDlg.onCancel();">
+
+<script>
+<![CDATA[
+var Cc = Components.classes;
+var Ci = Components.interfaces;
+window.gProgDlg = {
+  init: function () {
+    this.mLsnr = window.arguments[0](window);
+    this.mResBox = document.getElementById('status-text');
+    this.m_progress = document.getElementById('prog-bar');
+
+    this.mArgs = window.arguments;
+    this.mCurValue = 0;
+    var xthis = this;
+    this.mLsnr.showProgress = function (aLen) {
+      xthis.onProgress(aLen);
+    }
+    this.m_progress.mode = "undetermined";
+  },
+
+  onProgress: function(aLen) {
+    if (aLen<0) {
+      this.mResBox.value = "Downloaded, processing...";
+      return;      
+    }
+    this.mCurValue += aLen;
+    this.mResBox.value = "Read "+this.mCurValue+" bytes";
+  },
+
+  onCancel: function() {
+    this.mResBox.value = "Canceling...";
+    this.mLsnr.forceCancel();
+    this.mResBox.value = "Operation canceled";
+  }
+}
+]]>  
+</script>
+
+ <vbox>
+   <progressmeter id="prog-bar" style="margin: 4px; width: 100px;"/>
+   <description id="status-text" value="" style="margin: 4px; width: 100px;"/>
+ </vbox>
+</dialog>

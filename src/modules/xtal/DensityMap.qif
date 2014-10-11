@@ -1,0 +1,21 @@
+// -*-Mode: C++;-*-
+//
+// Electron density map scripting interface
+//
+
+#ifndef DENSITY_MAP_QIF_INCLUDED
+#define DENSITY_MAP_QIF_INCLUDED
+
+#include <qsys/Object.qif>
+
+runtime_class DensityMap extends Object
+{
+  client_hdr "DensityMap.hpp";
+  client_name xtal::DensityMap;
+
+  scriptable;
+  smartptr;
+};
+
+#endif
+

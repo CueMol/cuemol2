@@ -1,0 +1,108 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+
+<!DOCTYPE overlay [
+<!ENTITY % configDTD SYSTEM "chrome://cuemol2/locale/config-dialog.dtd">
+%configDTD;
+]>
+
+<overlay id="PrivacyPaneOverlay"
+         xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+         xmlns:html="http://www.w3.org/1999/xhtml">
+
+  <prefpane id="pane-misc"
+    onpaneload="gDialog.init();">
+
+    <script type="application/javascript" src="chrome://cuemol2/content/colpicker.js"/>
+    <script type="application/x-javascript" src="chrome://mozapps/content/preferences/fontbuilder.js"/>
+    <script type="application/javascript" src="chrome://cuemol2/content/config-dialog.js"/>
+  
+    <preferences id="misc-prefs">
+      <preference id="misc-pref-autoupdatechk" name="cuemol2.ui.updater.dontcheck" type="bool"/>
+      <preference id="view-pref-useglshader" name="cuemol2.ui.view.use_gl_shader" type="bool"/>
+      <preference id="view-pref-hidpi" name="cuemol2.ui.view.use_hidpi" type="bool"/>
+    </preferences>
+
+    <!-- <description value="Renderer setup"/> -->
+    <groupbox>
+      <caption label="&config_dlg.atomLabelGroup;"/>
+
+      <vbox>
+	<hbox align="center">
+	  <label value="&config_dlg.atomLabel.font;"/>
+	  <menulist id="atomlabel-fontnames-list" flex="1"/>
+	</hbox>
+
+	<hbox align="center">
+	  <label value="&config_dlg.atomLabel.size;"/>
+	  <menulist id="atomlabel-fontsize-list" editable="true">
+	    <menupopup>
+	      <menuitem label="6" value="6"/>
+	      <menuitem label="7" value="7"/>
+	      <menuitem label="8" value="8"/>
+	      <menuitem label="9" value="9"/>
+	      <menuitem label="10" value="10"/>
+	      <menuitem label="11" value="11"/>
+	      <menuitem label="12" value="12"/>
+	      <menuitem label="14" value="14"/>
+	      <menuitem label="18" value="18"/>
+	      <menuitem label="21" value="21"/>
+	      <menuitem label="24" value="24"/>
+	      <menuitem label="36" value="36"/>
+	      <menuitem label="48" value="48"/>
+	      <menuitem label="60" value="60"/>
+	      <menuitem label="72" value="72"/>
+	    </menupopup>
+	  </menulist>
+	  <label value="&config_dlg.atomLabel.color;"/>
+	  <mycolpicker id="atomlabel-colpicker" width="150px"/>
+	</hbox>
+
+	<hbox align="center">
+	  <checkbox id="atomlabel-font-style" label="&config_dlg.atomLabel.italic;" flex="1"/>
+	  <checkbox id="atomlabel-font-weight" label="&config_dlg.atomLabel.bold;" flex="1"/>
+	</hbox>
+
+	<hbox align="center">
+	  <label value="&config_dlg.atomLabel.sample;"/>
+	  <hbox id="atomlabel-sample-box"
+	    align="center"
+	    style="overflow: auto; height: 30px; border: 1px solid black; background: white;" flex="1">
+	    <label id="atomlabel-sample" value="ABC abc 123" style="font-size: 20px;" flex="1"/>
+	  </hbox>
+	</hbox>
+      </vbox>
+
+    </groupbox>
+
+    <groupbox>
+      <caption label="Other settings"/>
+
+      <checkbox id="autoupdate-check" label="Disable software update checking"
+	preference="misc-pref-autoupdatechk"/>
+
+      <checkbox id="use-glshader-check" label="Use OpenGL Shader"
+	preference="view-pref-useglshader"/>
+
+#ifdef XP_MACOSX
+      <!-- HiDPI Retina support ON/OFF (MacOSX only) -->
+      <checkbox id="view-hidpi-check" label="Enable HiDPI (Retina) display"
+		preference="view-pref-hidpi"/>
+#endif
+    
+      <hbox align="center">
+	<label value="&config_dlg.langGroup;" flex="0"/>
+	<menulist id="uilang-list" flex="1">
+	  <menupopup>
+	    <menuitem label="&config_dlg.lang.en-US;" value="en-US"/>
+	    <menuitem label="&config_dlg.lang.ja;" value="ja"/>
+	  </menupopup>
+	</menulist>
+      </hbox>
+      
+    </groupbox>
+
+  </prefpane>
+
+</overlay>
+

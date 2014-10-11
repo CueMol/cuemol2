@@ -1,0 +1,31 @@
+@namespace url("http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul");
+
+.num-slider-scale {
+  -moz-binding: url("chrome://cuemol2/content/numslider-binding.xml#numslider-core");
+}
+
+/*.simple-numslider .num-slider-scale {
+  -moz-binding: url("chrome://cuemol2/content/numslider-binding.xml#simple-numscale");
+}*/
+
+/*.simple-numslider .scale-thumb {
+  -moz-appearance: none;
+  background: url("chrome://cuemol2/content/arrow-up-sharp.gif") no-repeat;
+  background-position: bottom;
+  border: none;
+  min-width: 9px !important;
+  min-height: 10px !important;
+}*/
+  /*background-color: none;*/
+
+.num-slider-unit {
+/*border: 1px solid black;*/
+border: none !important;
+margin: 0 3px 0 0 !important;
+padding: 0 !important;
+}
+
+.num-slider-unit[value="none"] {
+display: none;
+}
+

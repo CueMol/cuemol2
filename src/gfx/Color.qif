@@ -1,0 +1,33 @@
+// -*-Mode: C++;-*-
+//
+// $Id: Color.qif,v 1.11 2010/12/25 13:13:21 rishitani Exp $
+
+#ifndef SOLID_COLOR_QIF_INCLUDED
+#define SOLID_COLOR_QIF_INCLUDED
+
+#include "AbstractColor.qif"
+
+runtime_class Color extends AbstractColor
+{
+  uuid 2053e2d0-911a-42e6-a8db-ed8b9de53b17;
+
+  client_hdr "SolidColor.hpp";
+  client_name gfx::SolidColor;
+
+  scriptable;
+  cloneable;
+  smartptr;
+
+  property string material => redirect(getMaterial, setMaterial);
+  default material = "";
+
+  void setCode(integer);
+  void setR(integer);
+  void setG(integer);
+  void setB(integer);
+  void setA(integer);
+  void setAlpha(real);
+};
+
+#endif
+

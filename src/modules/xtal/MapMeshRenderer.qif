@@ -1,0 +1,53 @@
+// -*-Mode: C++;-*-
+//
+// $Id: MapMeshRenderer.qif,v 1.3 2011/01/04 17:07:34 rishitani Exp $
+//
+
+#ifndef MAPMESH_RENDERER_QIF_INCLUDED
+#define MAPMESH_RENDERER_QIF_INCLUDED
+
+#include "MapRenderer.qif"
+#include <modules/molstr/SelCommand.qif>
+
+runtime_class MapMeshRenderer extends MapRenderer
+{
+  client_hdr "MapMeshRenderer.hpp";
+  client_name xtal::MapMeshRenderer;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  property real maxExtent => redirect(getMaxExtent, XXX) (readonly);
+
+  property real width => redirect(getLineWidth, setLineWidth);
+  default width = 1.0;
+
+  property integer bufsize => redirect(getBufSize, setBufSize);
+  default bufsize = 100;
+
+  /// Automatically update the map center as view center (only in mouseUp event)
+  property boolean autoupdate => m_bAutoUpdate;
+  default autoupdate = true;
+
+  /// Automatically update (including mouse drag event)
+  property boolean dragupdate => m_bDragUpdate;
+  default dragupdate = false;
+
+  //////////////////////
+
+  property real bndry_rng => redirect(getBndryRng, setBndryRng);
+  default bndry_rng = 5.0;
+  
+  property string bndry_molname => redirect(getBndryMolName, setBndryMolName);
+  default bndry_molname = "";
+
+  using SelCommand;
+
+  property object<MolSelection$> bndry_sel => redirect(getBndrySel, setBndrySel);
+  default bndry_sel = molstr::SelectionPtr(new molstr::SelCommand());
+
+};
+
+#endif
+

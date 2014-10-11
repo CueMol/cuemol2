@@ -1,0 +1,90 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+<!DOCTYPE window SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+
+<overlay id="fopen-msmsopt-overlay"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <overlaytarget id="tabs-overlay-target">
+    <tab label="MSMS surface file options" hidden="true" id="msms_options_tab"/>
+  </overlaytarget>
+  
+  <overlaytarget id="tabpanels-overlay-target">
+    <tabpanel hidden="true" id="msms_options_tabpanel">
+      <hbox align="center">
+	<label value="Vertex file:"/>
+	<textbox id="msms-vertfile-path"/>
+	<button id="msms-vertfile-path-btn" label="Change ..."/>
+      </hbox>
+    </tabpanel>
+  </overlaytarget>
+
+<script type="application/javascript;version=1.8">
+( function () {
+let dlgdata = window.arguments[0];
+let util = require("util");
+
+function selectVertexFile(aDefPath)
+{
+  const nsIFilePicker = Ci.nsIFilePicker;
+  let fp = Cc["@mozilla.org/filepicker;1"].createInstance(Ci.nsIFilePicker);
+  
+  fp.displayDirectory = aDefPath.parent;
+  fp.defaultString = aDefPath.leafName;
+  fp.appendFilter("MSMS vertex file (*.vert)", "*.vert");
+  fp.init(window, "Select MSMS vertex file", nsIFilePicker.modeOpen);
+
+  let res = fp.show();
+  if (res!=nsIFilePicker.returnOK) {
+    return null;
+  }
+  
+  return fp.file.path;
+}
+
+function onInit() {
+  try {
+  if (window.gDlgObj.selectShowTab(dlgdata.target[0].reader_name, "msms")) {
+  let rdr = dlgdata.target[0].reader;
+  let face_path = dlgdata.target[0].path;
+  let cpos = util.splitFileName(face_path, "*.face");
+
+  let vert_path_def = face_path.substr(0, cpos) + ".vert";
+
+  dd("vert_path_def: "+vert_path_def);
+  document.getElementById('msms-vertfile-path').value = vert_path_def; //rdr.vertex_file;
+
+  document.getElementById('msms-vertfile-path-btn').addEventListener("command", function() {
+    let res = selectVertexFile(util.createMozFile(face_path));
+    if (res)
+      document.getElementById('msms-vertfile-path').value = res;
+  }, false);
+  }
+  }
+  catch (e) {
+    debug.exception(e);
+  }
+}
+
+addEventListener("load", onInit, false);
+
+dlgdata.ondlgok.push( function (aEvent) {
+if (document.getElementById("msms_options_tabpanel")) {
+  
+  let rdr = dlgdata.target[0].reader;
+  try {
+    rdr.vertex_file = document.getElementById('msms-vertfile-path').value;
+  }
+  catch (e) {
+    dd("SetProp error: "+e);
+    debug.exception(e);
+  }
+}
+  
+});
+
+} )();
+  
+</script>
+</overlay>
+

@@ -1,0 +1,107 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+
+<dialog
+  id     = "SymmChgDlg"
+  windowtype="CueMol2:SymmChgDlg"
+  title  = "Change symmetry"
+  xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  xmlns:html="http://www.w3.org/1999/xhtml"
+  buttons="accept,cancel">
+  
+  <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/object-menulist.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/molsellist.js"/>
+  <script type="application/javascript" src="symm-chg-dlg.js"/>
+
+  <vbox>
+    
+    <groupbox flex="0">
+      <caption label="Symmetry"/>
+
+      <grid flex="0">
+	<columns>
+	  <column flex="0"/>
+	  <column flex="1"/>
+	</columns>
+	
+	<rows>
+	  <row align="center">
+	    <label value="Crystal system: "/>
+	    <menulist id="xtal-symm-lattice">
+	      <menupopup>
+		<menuitem label="Triclinic" value="TRICLINIC"/>
+		<menuitem label="Monoclinic" value="MONOCLINIC"/>
+		<menuitem label="Orthorhombic" value="ORTHORHOMBIC"/>
+		<menuitem label="Trigonal" value="TRIGONAL"/>
+		<menuitem label="Tetragonal" value="TETRAGONAL"/>
+		<menuitem label="Hexagonal" value="HEXAGONAL"/>
+		<menuitem label="Cubic" value="CUBIC"/>
+	      </menupopup>
+	    </menulist>
+	  </row>
+
+	  <row align="center">
+	    <label value="Space Group: "/>
+	    <menulist id="xtal-symm-spcgrp">
+	      <menupopup/>
+	    </menulist>
+	  </row>
+
+	  <checkbox id="xtal-symm-chiral" label="Biomolecules only" disabled="true"/>
+
+	  <row align="center">
+	    <label value="Space Group Number: "/>
+	    <textbox id="xtal-symm-sgnum" size="3" disabled="true"/>
+	  </row>
+
+	</rows>
+
+      </grid>
+    </groupbox>
+
+    <groupbox flex="0">
+      <caption label="Cell dimension"/>
+
+      <grid flex="0">
+	<columns>
+	  <column flex="0"/>
+	  <column flex="1"/>
+	  <column flex="0"/>
+	  <column flex="1"/>
+	</columns>
+	
+	<rows>
+
+	  <checkbox id="xtal-symm-rcell" label="Restrict by symmetry"/>
+
+	  <row align="center">
+	    <label value="a="/>
+	    <textbox id="xtal-cell-a" size="3" type="number" decimalplaces="2" hidespinbuttons="true"/>
+	    <label value="&#0945;="/>
+	    <textbox id="xtal-cell-alp" size="3" type="number" decimalplaces="2" hidespinbuttons="true"/>
+	  </row>
+
+	  <row align="center">
+	    <label value="b="/>
+	    <textbox id="xtal-cell-b" size="3" type="number" decimalplaces="2" hidespinbuttons="true"/>
+	    <label value="&#0946;="/>
+	    <textbox id="xtal-cell-bet" size="3" type="number" decimalplaces="2" hidespinbuttons="true"/>
+	  </row>
+
+	  <row align="center">
+	    <label value="c="/>
+	    <textbox id="xtal-cell-c" size="3" type="number" decimalplaces="2" hidespinbuttons="true"/>
+	    <label value="&#0947;="/>
+	    <textbox id="xtal-cell-gam" size="3" type="number" decimalplaces="2" hidespinbuttons="true"/>
+	  </row>
+	</rows>
+      </grid>
+    </groupbox>
+
+  </vbox>
+</dialog>
+

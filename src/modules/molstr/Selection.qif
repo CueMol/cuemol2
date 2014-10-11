@@ -1,0 +1,33 @@
+// -*-Mode: C++;-*-
+//
+// $Id: Selection.qif,v 1.3 2009/09/27 11:56:14 rishitani Exp $
+//
+
+#ifndef SELECTION_QIF_INCLUDED
+#define SELECTION_QIF_INCLUDED
+
+#include "MolCoord.qif"
+#include "MolChain.qif"
+#include "MolResidue.qif"
+#include "MolAtom.qif"
+
+runtime_class MolSelection
+{
+  client_hdr "Selection.hpp";
+  client_name molstr::Selection;
+
+  scriptable;
+  abstract;
+  smartptr;
+
+  integer isSelectedMol(object<MolCoord$> pobj);
+  integer isSelectedChain(object<MolChain$> pchain);
+  integer isSelectedResid(object<MolResidue$> presid);
+  boolean isSelected(object<MolAtom$> patom);
+  boolean isEmpty();
+
+  string toString();
+};
+
+#endif
+

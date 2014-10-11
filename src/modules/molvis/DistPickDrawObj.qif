@@ -1,0 +1,32 @@
+// -*-Mode: C++;-*-
+//
+//  DistPickDrawObj interface definition
+//
+
+#ifndef MOLVIS_DISTPICK_DRAWOBJ_QIF_INCLUDED
+#define MOLVIS_DISTPICK_DRAWOBJ_QIF_INCLUDED
+
+#include <qsys/DrawObj.qif>
+#include <gfx/AbstractColor.qif>
+
+runtime_class DistPickDrawObj extends DrawObj
+{
+  client_hdr "DistPickDrawObj.hpp";
+  client_name molvis::DistPickDrawObj;
+
+  scriptable;
+  smartptr;
+
+  /// color of marks
+  property object<AbstractColor$> color => m_color;
+  default color = gfx::SolidColor::createRGB(1.0, 1.0, 1.0, 0.5);
+
+  property real width => m_width;
+  default width = 3.0;
+
+  /// add new label for atoms
+  void append(integer mol_id, integer atom_id) => append;
+};
+
+#endif
+

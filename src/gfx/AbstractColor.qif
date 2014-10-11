@@ -1,0 +1,37 @@
+// -*-Mode: C++;-*-
+//
+// $Id: AbstractColor.qif,v 1.6 2010/12/24 18:43:48 rishitani Exp $
+
+#ifndef ABSTRACT_COLOR_QIF_INCLUDED
+#define ABSTRACT_COLOR_QIF_INCLUDED
+
+runtime_class AbstractColor
+{
+  uuid fff6e75c-a18e-46f6-9e2d-7122d2817f8c;
+
+  client_hdr "AbstractColor.hpp";
+  client_name gfx::AbstractColor;
+
+  scriptable;
+  abstract;
+  smartptr;
+
+  // property string material => redirect(getMaterial, XXX) (readonly);
+
+  integer r();
+  integer g();
+  integer b();
+  integer a();
+
+  real fr();
+  real fg();
+  real fb();
+  real fa();
+  
+  string toString();
+
+  // boolean equals(object<AbstractColor$>);
+};
+
+#endif
+

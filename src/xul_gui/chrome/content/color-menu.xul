@@ -1,0 +1,110 @@
+  <menupopup>
+    <menu label="Monochrome">
+      <menupopup>
+	<menuitem class="color-menuitem menuitem-iconic" label="White" value="#FFF"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="75% Gray" value="rgb(0.75,0.75,0.75)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="50% Gray" value="rgb(0.5,0.5,0.5)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="25% Gray" value="rgb(0.25,0.25,0.25)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="Black" value="#000"/>
+      </menupopup>
+    </menu>
+
+    <menu label="Red">
+      <menupopup>
+	<menuitem class="color-menuitem menuitem-iconic" label="Red" value="hsb(0, 1.0, 1.0)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="Red, sat 25%" value="hsb(0, 0.25, 1.0)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="Red, sat 50%" value="hsb(0, 0.5, 1.0)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="Red, sat 75%" value="hsb(0, 0.75, 1.0)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="Red, bri 75%" value="hsb(0, 1.0, 0.75)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="Red, bri 50%" value="hsb(0, 1.0, 0.50)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="Red, bri 25%" value="hsb(0, 1.0, 0.25)"/>
+      </menupopup>
+    </menu>
+
+    <menu label="Orange">
+      <menupopup>
+	<menuitem class="color-menuitem menuitem-iconic"
+	  label="Orange" value="hsb(30, 1.0, 1.0)"/>
+	<menuitem class="color-menuitem menuitem-iconic"
+	  label="Orange, sat 25%" value="hsb(30, 0.25, 1.0)"/>
+	<menuitem class="color-menuitem menuitem-iconic"
+	  label="Orange, sat 50%" value="hsb(30, 0.5, 1.0)"/>
+	<menuitem class="color-menuitem menuitem-iconic"
+	  label="Orange, sat 75%" value="hsb(30, 0.75, 1.0)"/>
+	<menuitem class="color-menuitem menuitem-iconic"
+	  label="Orange, bri 75%" value="hsb(30, 1.0, 0.75)"/>
+	<menuitem class="color-menuitem menuitem-iconic"
+	  label="Orange, bri 50%" value="hsb(30, 1.0, 0.50)"/>
+	<menuitem class="color-menuitem menuitem-iconic"
+	  label="Orange, bri 25%" value="hsb(30, 1.0, 0.25)"/>
+      </menupopup>
+    </menu>
+
+    <menu label="Yellow">
+      <menupopup>
+	<menuitem class="color-menuitem menuitem-iconic"
+	  label="Yellow" value="hsb(60, 1.0, 1.0)"/>
+	<menuitem class="color-menuitem menuitem-iconic"
+	  label="Yellow, sat 25%" value="hsb(60, 0.25, 1.0)"/>
+	<menuitem class="color-menuitem menuitem-iconic"
+	  label="Yellow, sat 50%" value="hsb(60, 0.5, 1.0)"/>
+	<menuitem class="color-menuitem menuitem-iconic"
+	  label="Yellow, sat 75%" value="hsb(60, 0.75, 1.0)"/>
+	<menuitem class="color-menuitem menuitem-iconic"
+	  label="Yellow, bri 75%" value="hsb(60, 1.0, 0.75)"/>
+	<menuitem class="color-menuitem menuitem-iconic"
+	  label="Yellow, bri 50%" value="hsb(60, 1.0, 0.50)"/>
+	<menuitem class="color-menuitem menuitem-iconic"
+	  label="Yellow, bri 25%" value="hsb(60, 1.0, 0.25)"/>
+      </menupopup>
+    </menu>
+
+    <menu label="Green">
+      <menupopup>
+	<menuitem class="color-menuitem menuitem-iconic" label="Green" value="hsb(120, 1.0, 1.0)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="Green, sat 25%" value="hsb(120, 0.25, 1.0)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="Green, sat 50%" value="hsb(120, 0.5, 1.0)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="Green, sat 75%" value="hsb(120, 0.75, 1.0)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="Green, bri 75%" value="hsb(120, 1.0, 0.75)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="Green, bri 50%" value="hsb(120, 1.0, 0.50)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="Green, bri 25%" value="hsb(120, 1.0, 0.25)"/>
+      </menupopup>
+    </menu>
+
+    <menu label="Cyan">
+      <menupopup>
+	<menuitem class="color-menuitem menuitem-iconic" label="Cyan" value="hsb(180, 1.0, 1.0)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="Cyan, sat 25%" value="hsb(180, 0.25, 1.0)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="Cyan, sat 50%" value="hsb(180, 0.5, 1.0)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="Cyan, sat 75%" value="hsb(180, 0.75, 1.0)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="Cyan, bri 75%" value="hsb(180, 1.0, 0.75)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="Cyan, bri 50%" value="hsb(180, 1.0, 0.50)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="Cyan, bri 25%" value="hsb(180, 1.0, 0.25)"/>
+      </menupopup>
+    </menu>
+
+    <menu label="Blue">
+      <menupopup>
+	<menuitem class="color-menuitem menuitem-iconic" label="Blue" value="hsb(240, 1.0, 1.0)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="Blue, sat 25%" value="hsb(240, 0.25, 1.0)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="Blue, sat 50%" value="hsb(240, 0.5, 1.0)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="Blue, sat 75%" value="hsb(240, 0.75, 1.0)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="Blue, bri 75%" value="hsb(240, 1.0, 0.75)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="Blue, bri 50%" value="hsb(240, 1.0, 0.50)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="Blue, bri 25%" value="hsb(240, 1.0, 0.25)"/>
+      </menupopup>
+    </menu>
+
+    <menu label="Purple">
+      <menupopup>
+	<menuitem class="color-menuitem menuitem-iconic" label="Purple" value="hsb(300, 1.0, 1.0)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="Purple, sat 25%" value="hsb(300, 0.25, 1.0)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="Purple, sat 50%" value="hsb(300, 0.5, 1.0)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="Purple, sat 75%" value="hsb(300, 0.75, 1.0)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="Purple, bri 75%" value="hsb(300, 1.0, 0.75)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="Purple, bri 50%" value="hsb(300, 1.0, 0.50)"/>
+	<menuitem class="color-menuitem menuitem-iconic" label="Purple, bri 25%" value="hsb(300, 1.0, 0.25)"/>
+      </menupopup>
+    </menu>
+
+  </menupopup>

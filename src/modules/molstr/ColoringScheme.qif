@@ -1,0 +1,28 @@
+// -*-Mode: C++;-*-
+//
+// $Id: ColoringScheme.qif,v 1.1 2009/02/24 09:28:07 rishitani Exp $
+//
+
+#ifndef COLORING_SCHEME_QIF_DEFINED
+#define COLORING_SCHEME_QIF_DEFINED
+
+#include <gfx/AbstractColor.qif>
+
+runtime_class ColoringScheme
+{
+  uuid f3be05ac-9d3d-4aee-b030-7f36ab82c278;
+
+  client_hdr "ColoringScheme.hpp";
+  client_name molstr::ColoringScheme;
+
+  // This is required for implementing MolRenderer subclasses in other DLLs!!
+  dllexport MOLSTR_API;
+
+  scriptable;
+  abstract;
+  smartptr;
+
+};
+
+#endif
+

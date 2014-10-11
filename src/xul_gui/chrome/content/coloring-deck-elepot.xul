@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+
+<!DOCTYPE overlay SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+
+<overlay id="coloring-deck-elepot-overlay"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <overlaytarget id="colpanel-deck">
+
+    <!--  for MolSurf elepot mode (6) -->
+    <vbox id="coloring-deck-elepot">
+      <description value="Elepot coloring:"/>
+      <vbox style="overflow-y: auto;" flex="1">
+	<menulist id="paint-elepot-obj-selector"/>
+	<checkbox id="paint-elepot-ramp-above" label="Color by SAS"
+	  oncommand="cuemolui.panels.paint.onElepotChange(event)"/>
+	<grid>
+	  <columns>
+	    <column/><column/><column flex="1"/>
+	  </columns>
+	  <rows>
+	    <row align="center">
+	      <label value="High"/>
+	      <textbox id="paint-elepot-parh"
+		type="number" decimalplaces="Infinity" size="1" value="1.0" min="-Infinity"
+		onchange="cuemolui.panels.paint.onElepotChange(event)"/>
+	      <mycolpicker id="paint-elepot-colh"
+		onchange="cuemolui.panels.paint.onElepotChange(event)"/>
+	    </row>
+
+	    <row align="center">
+	      <label value="Mid"/>
+	      <textbox id="paint-elepot-parm"
+		type="number" decimalplaces="Infinity" size="1" value="1.0" min="-Infinity"
+		onchange="cuemolui.panels.paint.onElepotChange(event)"/>
+	      <mycolpicker id="paint-elepot-colm"
+		onchange="cuemolui.panels.paint.onElepotChange(event)"/>
+	    </row>
+
+	    <row align="center">
+	      <label value="Low"/>
+	      <textbox id="paint-elepot-parl"
+		type="number" decimalplaces="Infinity" size="1" value="1.0" min="-Infinity"
+		onchange="cuemolui.panels.paint.onElepotChange(event)"/>
+	      <mycolpicker id="paint-elepot-coll"
+		onchange="cuemolui.panels.paint.onElepotChange(event)"/>
+	    </row>
+	  </rows>
+	</grid>
+      </vbox>
+    </vbox>
+
+  </overlaytarget>
+</overlay>
+

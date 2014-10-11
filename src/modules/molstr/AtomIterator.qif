@@ -1,0 +1,29 @@
+// -*-Mode: C++;-*-
+//
+// $Id: AtomIterator.qif,v 1.2 2009/01/08 10:27:25 rishitani Exp $
+
+#include "MolAtom.qif"
+#include "MolCoord.qif"
+#include "Selection.qif"
+
+runtime_class AtomIterator
+{
+  client_hdr "AtomIterator.hpp";
+  client_name molstr::AtomIterator;
+
+  scriptable;
+
+  // cloneable option generates instance creation with copy constructor
+  cloneable;
+  smartptr;
+
+  property object<MolCoord$> target => redirect(getTarget, setTarget);
+  property object<MolSelection$> sel => redirect(getSelection, setSelection);
+
+  void first();
+  void next();
+  boolean hasMore();
+  integer getID();
+  object<MolAtom$> get();
+  
+};

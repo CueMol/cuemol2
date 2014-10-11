@@ -1,0 +1,43 @@
+// -*-Mode: C++;-*-
+//
+
+#ifndef POV_SCENE_EXPORTER_QIF_INCLUDED
+#define POV_SCENE_EXPORTER_QIF_INCLUDED
+
+#include <qsys/SceneExporter.qif>
+
+runtime_class PovSceneExporter extends SceneExporter
+{
+  client_hdr "PovSceneExporter.hpp";
+  client_name render::PovSceneExporter;
+
+  scriptable;
+  smartptr;
+
+  ////////////////////
+  // Property definition
+
+  // property boolean texblend => m_bTexBlend;
+  property boolean perspective => m_bPerspective;
+  // property string incFileName => m_strIncFileName;
+
+  property boolean makeRelIncPath => m_bMakeRelIncPath;
+
+  property boolean useClipZ => m_bUseClipZ;
+
+  property boolean usePostBlend => m_bPostBlend;
+
+  property string blendTable => m_strBlendTab;
+
+  //////////
+
+  property boolean showEdgeLines => m_bEnableEdgeLines;
+
+  property real creaseLimit => m_dCreaseLimit;
+
+  property real edgeRise => m_dEdgeRise;
+
+};
+
+#endif
+

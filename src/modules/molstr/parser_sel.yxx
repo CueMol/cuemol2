@@ -1,0 +1,434 @@
+/*
+ *  Molecular selection grammar parser
+ */
+
+%{
+#include <common.h>
+
+#include <qlib/LChar.hpp>
+
+#include "SelCompiler.hpp"
+#include "SelNodes.hpp"
+
+extern int yylex();
+extern int yyerror(char* error);
+
+using namespace molstr;
+using qlib::LChar;
+
+#define YYDEBUG 0
+
+%}
+
+%union {
+  molstr::SelSuperNode *seltok;
+  int intnum;
+  double floatnum;
+  char *str;
+  struct {
+    int start; int end;
+    char cstart; char cend;
+  } intrng;
+  struct {
+    int intnum;
+    char inscode;
+  } insres;
+}
+
+%token SELECTION
+
+/*
+ *      tokens of selection grammar
+ */
+/* unary, atom prop selectors */
+%token SEL_AID SEL_ELEM SEL_ANAME SEL_ALTCONF
+
+/* unary, resid/chain prop selectors */
+%token SEL_RESN SEL_RESI SEL_CHAIN
+
+/* binary, resid/atom custom property selectors */
+%token SEL_RPROP SEL_APROP
+
+%token SEL_BFAC SEL_OCC
+
+/* single term selectors */
+%token SEL_ALL SEL_NONE
+
+/* Operators */
+%token SEL_LPAREN SEL_RPAREN
+%token SEL_LBRACK SEL_RBRACK
+%token SEL_SLASH SEL_DOT SEL_COMMA SEL_COLON
+%token SEL_AND SEL_OR SEL_NOT
+%token SEL_EQ SEL_GT SEL_LT
+
+/* binary selectors */
+%token SEL_AROUND SEL_EXPAND
+%token SEL_BYRES SEL_BYMAINCH SEL_BYSIDECH
+%token SEL_NBR SEL_EXTEND
+
+%token <str> SEL_STRING SEL_REGEXP
+%token <insres> SEL_INSRES
+%token <intnum> SEL_INTNUM
+%token <floatnum> SEL_FLOATNUM
+
+/* special terminal character(s) */
+%token SEL_NULL
+
+%token LEX_ERROR
+
+/*
+ *      type definitions
+ */
+
+/*
+ *      selection tokens
+ */
+%type <seltok> select_terms select_term sel_name_list
+%type <str> sel_name
+%type <seltok> sel_hierar
+%type <seltok> sel_ranges
+%type <seltok> sel_resid_ranges
+%type <seltok> selh_chexpr selh_resexpr selh_atmexpr
+%type <floatnum> sel_number
+%type <intrng> sel_range
+%type <intnum> sel_compop
+
+/*
+ *      precedence table
+ */
+
+%right  SEL_BYRES
+%right  SEL_BYMAINCH
+%right  SEL_BYSIDECH
+%left  SEL_NBR
+%left  SEL_EXTEND
+%left  SEL_AROUND
+%left  SEL_EXPAND
+%left  SEL_OR
+%left  SEL_AND
+%right  SEL_NOT
+
+%%
+
+start:		select_terms
+		{
+		  SelCompiler::getInstance()->evalNode($1);
+		}
+		;
+
+/*
+ *    molecular selection expression
+ */
+
+select_terms 	: select_terms SEL_AND select_terms
+		{
+		  //MB_DPRINT("sel_and\n");
+		  $$ = new SelBinNode($1,$3,SelBinNode::OP_AND);
+		}
+		| select_terms SEL_OR select_terms
+		{
+		  //MB_DPRINT("sel_or\n");
+		  $$ = new SelBinNode($1,$3,SelBinNode::OP_OR);
+		}
+		| SEL_NOT select_terms
+		{
+		  //MB_DPRINT("sel_not\n");
+		  $$ = new SelOpNode($2,SelOpNode::OP_NOT);
+		}
+		| select_terms SEL_AROUND sel_number
+		{
+		  SelCompiler::setSelState();
+		  MB_DPRINTLN("AROUND set normal state");
+		  SelOpNode *pp = new SelOpNode($1,SelOpNode::OP_AROUND);
+		  pp->setValue($3);
+		  $$ = pp;
+		}
+		| select_terms SEL_AROUND SEL_LBRACK SEL_STRING SEL_RBRACK sel_number
+		{
+		  SelCompiler::setSelState();
+		  SelOpNode *pp = new SelOpNode($1,SelOpNode::OP_AROUND);
+		  pp->setAroundTarget($4);
+		  pp->setValue($6);
+		  $$ = pp;
+		  delete [] $4;
+		}
+		| select_terms SEL_EXPAND sel_number
+		{
+		  SelCompiler::setSelState();
+		  SelOpNode *pp = new SelOpNode($1,SelOpNode::OP_EXPAND);
+		  pp->setValue($3);
+		  $$ = pp;
+		}
+		| select_terms SEL_NBR sel_number
+		{
+		  SelCompiler::setSelState();
+		  SelOpNode *pp = new SelOpNode($1,SelOpNode::OP_NEIGHBOR);
+		  pp->setValue($3);
+		  $$ = pp;
+		}
+		| select_terms SEL_EXTEND sel_number
+		{
+		  SelCompiler::setSelState();
+		  SelOpNode *pp = new SelOpNode($1,SelOpNode::OP_EXTEND);
+		  pp->setValue($3);
+		  $$ = pp;
+		}
+		| SEL_BYRES select_terms
+		{
+		  $$ = new SelOpNode($2,SelOpNode::OP_BYRES);
+		}
+		| SEL_BYMAINCH select_terms
+		{
+		  $$ = new SelOpNode($2,SelOpNode::OP_BYMAINCH);
+		}
+		| SEL_BYSIDECH select_terms
+		{
+		  $$ = new SelOpNode($2,SelOpNode::OP_BYSIDECH);
+		}
+		| SEL_LPAREN select_terms SEL_RPAREN { $$ = $2; }
+		| select_term
+		;
+
+select_term	: SEL_STRING
+		{
+		  if (!SelCompiler::checkNameRef($1))
+		    YYERROR;
+		  SelRefNode *pp = new SelRefNode($1);
+		  //pp->setName($1);
+		  $$ = pp;
+
+		  delete [] $1;
+		}
+
+		| SEL_ALL { $$ = new SelAllNode(true); }
+
+		| SEL_NONE { $$ = new SelAllNode(false); }
+
+		| SEL_ELEM sel_name_list
+		{
+		  $$ = new SelTermNode((SelNamesNode *)$2,
+		                       SelTermNode::ELEMENT);
+		}
+
+		| SEL_ANAME sel_name_list
+		{
+		  $$ = new SelTermNode((SelNamesNode *)$2,
+		                       SelTermNode::ATOMNAME);
+		}
+
+		| SEL_ALTCONF sel_name_list
+		{
+		  $$ = new SelTermNode((SelNamesNode *)$2,
+		                       SelTermNode::ALTCONF_NAME);
+		}
+
+		| SEL_RESN sel_name_list
+		{
+		  $$ = new SelTermNode((SelNamesNode *)$2,
+		                       SelTermNode::RESIDNAME);
+		}
+
+		| SEL_RESI sel_resid_ranges
+		{
+		  $$ = new SelTermNode((SelResidNode *)$2,
+		                       SelTermNode::RESIDRANGE);
+		}
+		| SEL_CHAIN sel_name_list
+		{
+		  $$ = new SelTermNode((SelNamesNode *)$2,
+		                       SelTermNode::CHAINNAME);
+		}
+		| SEL_AID sel_ranges
+		{
+		  $$ = new SelTermNode((SelRangesNode *)$2,
+		                       SelTermNode::AIDRANGE);
+		}
+		| SEL_BFAC sel_compop { SelCompiler::setSelNumState();} sel_number
+		{
+		  SelCompiler::setSelState();
+		  $$ = new SelCompNode(SelCompNode::COMP_BFAC, $2, $4);
+		}
+		| SEL_OCC sel_compop { SelCompiler::setSelNumState();} sel_number
+		{
+		  SelCompiler::setSelState();
+		  $$ = new SelCompNode(SelCompNode::COMP_OCC, $2, $4);
+		}
+		| SEL_RPROP sel_name SEL_EQ sel_name
+		{
+		  $$ = new SelPropNode(SelPropNode::RPROP, $2, $4);
+		  delete [] $2; delete [] $4;
+		}
+		| sel_hierar
+		;
+
+sel_name	: SEL_STRING
+		| SEL_STRING SEL_COLON
+		{
+		  LString buf = $1;
+		  delete [] $1;
+		  buf += ":";
+		  $$ = LChar::dup(buf);
+		}
+		| SEL_STRING SEL_COLON SEL_STRING
+		{
+		  LString buf = $1;
+		  delete [] $1;
+		  buf += ":";
+		  buf += $3;
+		  delete [] $3;
+		  $$ = LChar::dup(buf);
+		}
+		| SEL_NULL
+		{
+		  // empty name for chain or altconf
+		  $$ = LChar::dup("");
+		}
+		| SEL_INTNUM
+		{
+		  // name-node composed of int num should be permitted...
+		  LString sbuf = LString::format("%d", $1);
+		  $$ = LChar::dup(sbuf);
+		}
+		;
+
+sel_name_list	: sel_name
+		{
+		  SelNamesNode *pp = new SelNamesNode();
+		  pp->append($1); delete [] $1;
+		  $$ = pp;
+		}
+		| sel_name_list SEL_COMMA sel_name
+		{
+		  SelNamesNode *pp  = (SelNamesNode *) $1;
+		  pp->append($3); delete [] $3;
+		  $$ = pp;
+		}
+		| SEL_REGEXP
+		{
+		  SelNamesNode *pp = new SelNamesNode();
+		  pp->setRegEx($1);
+		  delete [] $1;
+		  $$ = pp;
+		}
+		;
+
+
+sel_hierar	: selh_chexpr SEL_DOT selh_resexpr SEL_DOT selh_atmexpr
+		{
+		  $$ = new SelHierNode(static_cast<SelNamesNode *>($1),
+		                       static_cast<SelResidNode *>($3),
+		                       static_cast<SelNamesNode *>($5));
+		  //$$ = new SelBinNode(new SelBinNode($1, $3, SelBinNode::OP_AND),
+		  //   $5, SelBinNode::OP_AND);
+		}
+		;
+
+selh_chexpr	: SEL_ALL { $$ = NULL; }
+		| sel_name_list { $$ = $1; }
+		;
+
+selh_resexpr	: SEL_ALL { $$ = NULL; }
+		| sel_resid_ranges { $$ = $1; }
+		;
+
+selh_atmexpr	: SEL_ALL { $$ = NULL; }
+		| sel_name_list { $$ = $1; }
+		;
+
+
+
+sel_compop	: SEL_EQ {$$ = SelCompNode::COMP_EQ;}
+		| SEL_LT {$$ = SelCompNode::COMP_LT;}
+		| SEL_GT {$$ = SelCompNode::COMP_GT;}
+		;
+
+sel_number	: SEL_INTNUM
+		{
+		  $$=$1;
+		}
+		| SEL_FLOATNUM
+		{
+		  $$=$1;
+		}
+		;
+
+sel_ranges	: sel_range
+		{
+		  SelRangesNode *p1 = new SelRangesNode($1.start, $1.end);
+		  $$ = p1;
+		}
+		| sel_ranges SEL_COMMA sel_range
+		{
+		  SelRangesNode *p1 = (SelRangesNode *) $1;
+		  p1->append($3.start, $3.end);
+		  $$ = p1;
+		}
+		;
+
+sel_resid_ranges
+		: sel_range
+		{
+		  SelResidNode *p1 = new SelResidNode($1.start, $1.cstart, $1.end, $1.cend);
+		  $$ = p1;
+		}
+		| sel_resid_ranges SEL_COMMA sel_range
+		{
+		  SelResidNode *p1 = (SelResidNode *) $1;
+		  p1->append($3.start, $3.cstart, $3.end, $3.cend);
+		  $$ = p1;
+		}
+		;
+
+sel_range	: SEL_INTNUM
+		{
+		  $$.start = $$.end = $1;
+		  $$.cstart = $$.cend = 0;
+		}
+		| SEL_INSRES
+		{
+		  $$.start = $$.end = $1.intnum;
+		  $$.cstart = $$.cend = $1.inscode;
+		}
+		| SEL_INTNUM SEL_COLON SEL_INTNUM
+		{
+		  $$.start = $1;
+		  $$.end = $3;
+		  $$.cstart = $$.cend = 0;
+		}
+		| SEL_INSRES SEL_COLON SEL_INTNUM
+		{
+		  $$.start = $1.intnum;
+		  $$.cstart = $1.inscode;
+		  $$.end = $3;
+		  $$.cend = 0;
+		}
+		| SEL_INTNUM SEL_COLON SEL_INSRES
+		{
+		  $$.start = $1;
+		  $$.cstart = 0;
+		  $$.end = $3.intnum;
+		  $$.cend = $3.inscode;
+		}
+		| SEL_INSRES SEL_COLON SEL_INSRES
+		{
+		  $$.start = $1.intnum;
+		  $$.cstart = $1.inscode;
+		  $$.end = $3.intnum;
+		  $$.cend = $3.inscode;
+		}
+		;
+%%
+
+extern char *yytext;
+
+int yyerror(char* error)
+{
+  LOG_DPRINTLN("ERROR: %s at \"%s\"", error, yytext);
+  return 0;
+}
+
+//private static
+void SelCompiler::resetParserState()
+{
+  yyclearin;
+}

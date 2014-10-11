@@ -1,0 +1,33 @@
+// -*-Mode: C++;-*-
+//
+// $Id: SelCommand.qif,v 1.4 2011/02/05 11:47:04 rishitani Exp $
+//
+
+#ifndef SEL_COMMAND_QIF_INCLUDED
+#define SEL_COMMAND_QIF_INCLUDED
+
+#include "Selection.qif"
+
+runtime_class SelCommand extends MolSelection
+{
+  client_hdr "SelCommand.hpp";
+  client_name molstr::SelCommand;
+
+  scriptable;
+  cloneable;
+  smartptr;
+
+  // integer isSelectedMol(object<MolCoord$> pobj);
+  // integer isSelectedChain(object<MolChain$> pchain);
+  // integer isSelectedResid(object<MolResidue$> presid);
+  // boolean isSelected(object<MolAtom$> patom);
+  // boolean isEmpty();
+
+  /// Compile selectio command cmd, in the context uid
+  boolean compile(string cmd, integer uid);
+
+  string dumpNodes();
+};
+
+#endif
+

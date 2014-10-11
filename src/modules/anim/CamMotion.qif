@@ -1,0 +1,39 @@
+// -*-Mode: C++;-*-
+//
+// Animation object scripting interface
+//
+
+#ifndef CAM_MOTION_QIF_INCLUDED
+#define CAM_MOTION_QIF_INCLUDED
+
+#include <qsys/anim/AnimObj.qif>
+
+runtime_class CamMotion extends AnimObj
+{
+  client_hdr "CamMotion.hpp";
+  client_name anim::CamMotion;
+
+  // interface attributes
+  scriptable;
+  cloneable;
+  smartptr;
+
+  // properties
+  property string endcam => redirect(getDestCamName, setDestCamName);
+
+  property boolean ignorecenter => m_bIgnoreCenter;
+  default ignorecenter = false;
+
+  property boolean ignorerotate => m_bIgnoreRotate;
+  default ignorerotate = false;
+
+  property boolean ignorezoom => m_bIgnoreZoom;
+  default ignorezoom = false;
+
+  property boolean ignoreslab => m_bIgnoreSlab;
+  default ignoreslab = false;
+
+};
+
+#endif
+

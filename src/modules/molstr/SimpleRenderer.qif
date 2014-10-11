@@ -1,0 +1,29 @@
+// -*-Mode: C++;-*-
+//
+// $Id: SimpleRenderer.qif,v 1.10 2011/03/29 11:03:44 rishitani Exp $
+//
+
+#ifndef SIMPLE_RENDERER_QIF_INCLUDED
+#define SIMPLE_RENDERER_QIF_INCLUDED
+
+#include "MolRenderer.qif"
+#include "Selection.qif"
+
+runtime_class SimpleRenderer extends MolRenderer
+{
+  client_hdr "SimpleRenderer.hpp";
+  client_name molstr::SimpleRenderer;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  property real width => redirect(getLineWidth, setLineWidth);
+  default width = 1.2;
+
+  // property boolean valbond => redirect(getValBond, setValBond);
+  // default valbond = false;
+};
+
+#endif
+

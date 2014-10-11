@@ -1,0 +1,106 @@
+// -*-Mode: C++;-*-
+//
+// $Id: MolSurfRenderer.qif,v 1.6 2011/04/02 07:57:34 rishitani Exp $
+//
+
+#ifndef MOLSURF_RENDERER_QIF_INCLUDED
+#define MOLSURF_RENDERER_QIF_INCLUDED
+
+#include <qsys/Renderer.qif>
+#include <gfx/Color.qif>
+#include <modules/molstr/ColoringScheme.qif>
+#include <modules/molstr/SelCommand.qif>
+
+runtime_class MolSurfRenderer extends Renderer
+{
+  client_hdr "MolSurfRenderer.hpp";
+  client_name surface::MolSurfRenderer;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  property object<AbstractColor$> defaultcolor => redirect(getDefaultColor, setDefaultColor);
+  default defaultcolor = gfx::SolidColor::createRGB(192.0/255.0, 192.0/255.0, 1.0, 1.0);
+
+  property boolean cullface => redirect(isCullFace, setCullFace);
+  default cullface = false;
+
+  // property boolean wireframe => redirect(isWireFrame, setWireFrame);
+  // default wireframe = false;
+  // property boolean dot => redirect(isDotSurf, setDotSurf);
+  // default dot = false;
+
+  /// Mesh drawing mode
+  enumdef drawmode {
+    fill = surface::MolSurfRenderer::SFDRAW_FILL;
+    line = surface::MolSurfRenderer::SFDRAW_LINE;
+    point = surface::MolSurfRenderer::SFDRAW_POINT;
+  }
+  property enum drawmode => redirect(getDrawMode, setDrawMode);
+  default drawmode = "fill";
+
+  /// coloring mode
+  enumdef colormode {
+    solid = surface::MolSurfRenderer::SFREND_SIMPLE;
+    potential = surface::MolSurfRenderer::SFREND_SCAPOT;
+    molecule = surface::MolSurfRenderer::SFREND_MOLFANC;
+  }
+  property enum colormode => redirect(getColorMode, setColorMode);
+  default colormode = "solid";
+
+  /// reference molecule target (used in molecule mode)
+  property string target => redirect(getTgtObjName, setTgtObjName);
+  default target = "";
+
+  /// Line/Dot size in wireframe/dot mode
+  property real width => redirect(getLineWidth, setLineWidth);
+  default width = 1.2;
+
+  //////////
+  // for "potential" mode
+
+  /// reference elepot target (used in potential mode)
+  property string elepot => redirect(getTgtElePotName, setTgtElePotName);
+  default elepot = "";
+
+  property real lowpar => redirect(getLowPar, setLowPar);
+  default lowpar = -10.0;
+
+  property real midpar => redirect(getMidPar, setMidPar);
+  default midpar = 0.0;
+
+  property real highpar => redirect(getHighPar, setHighPar);
+  default highpar = 10.0;
+
+  property object<AbstractColor$> highcol => redirect(getHighCol, setHighCol);
+  default highcol = gfx::SolidColor::createRGB(0.0, 0.0, 1.0);
+
+  property object<AbstractColor$> midcol => redirect(getMidCol, setMidCol);
+  default midcol = gfx::SolidColor::createRGB(1.0, 1.0, 1.0);
+
+  property object<AbstractColor$> lowcol => redirect(getLowCol, setLowCol);
+  default lowcol = gfx::SolidColor::createRGB(1.0, 0.0, 0.0);
+
+  property boolean ramp_above => redirect(isRampAbove, setRampAbove);
+  default ramp_above = false;
+
+  //////////
+  // for "molecule" mode
+
+  property object<ColoringScheme$> coloring => redirect(getColSchm, setColSchm);
+  default coloring = molstr::ColoringScheme::createDefaultS();
+  
+  using SelCommand;
+
+  // Selection for atom mapping
+  property object<MolSelection$> sel => redirect(getMolSel, setMolSel);
+  default sel = molstr::SelectionPtr(new molstr::SelCommand());
+
+  // Selection for display
+  property object<MolSelection$> showsel => redirect(getShowSel, setShowSel);
+  default showsel = molstr::SelectionPtr(new molstr::SelCommand());
+};
+
+#endif
+

@@ -1,0 +1,209 @@
+<?xml version="1.0"?>
+
+<!-- -*- xml -*- -->
+<!-- XBL binding for numeric slider -->
+
+<bindings id="numSliderBindings"
+  xmlns="http://www.mozilla.org/xbl"
+  xmlns:svg="http://www.w3.org/2000/svg"
+  xmlns:xul="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  xmlns:xbl="http://www.mozilla.org/xbl">
+  
+  <binding id="numslider-core"
+    extends="chrome://global/content/bindings/scale.xml#scale">
+
+    <implementation implements="nsISliderListener">
+
+      <method name="valueChanged">
+        <parameter name="which"/>
+        <parameter name="newValue"/>
+        <parameter name="userChanged"/>
+        <body>
+        <![CDATA[
+	  //dd("NumSliCore.valueChanged> UC:"+userChanged);
+	  //dd("NumSliCore.valueChanged> _UC:"+this._userChanged);
+          switch (which) {
+            case "curpos":
+              this.setAttribute("value", newValue);
+
+	      if (userChanged||this._userChanged) {
+	        var changeEvent = document.createEvent("Events");
+                changeEvent.initEvent("change", true, true);
+                changeEvent.isKey = this._userChanged;
+                changeEvent.isMouse = userChanged;
+                this.dispatchEvent(changeEvent);
+	      }
+              break;
+
+            case "minpos":
+              this.setAttribute("min", newValue);
+              break;
+
+            case "maxpos":
+              this.setAttribute("max", newValue);
+              break;
+          }
+        ]]>
+        </body>
+      </method>
+
+      <method name="dragStateChanged">
+        <parameter name="isDragging"/>
+        <body>
+	  //dd("NumSliCore.dragStateChg> "+isDragging);
+	  var changeEvent = document.createEvent("Events");
+	  changeEvent.initEvent("change", true, true);
+	  changeEvent.isDragging = isDragging;
+	  this.dispatchEvent(changeEvent);
+	</body>
+      </method>
+
+    </implementation>
+  </binding>
+
+  <binding id="numslider">
+    <resources>
+      <stylesheet src="chrome://cuemol2/content/numslider.css"/>
+    </resources>
+
+    <content align="center" pack="center">
+      <!--<xul:label anonid="minlab" flex="0" class="num-slider-label"/>-->
+      <xul:scale
+	xbl:inherits="disabled, pageincrement" movetoclick="true"
+	anonid="scale" class="num-slider-scale" flex="1"
+	onchange="document.getBindingParent(this).onSliChanged(event)"/>
+      <!--<xul:label anonid="maxlab" flex="0" class="num-slider-label"/>-->
+      <xul:textbox
+	xbl:inherits="size,decimalplaces,min,max,increment,value,disabled"
+	anonid="numbox" class="num-slider-numbox" flex="0"
+	type="number"
+	onchange="document.getBindingParent(this).onBoxChanged(event)"/>
+      <xul:label anonid="unitlab" flex="0" class="num-slider-unit"
+	xbl:inherits="value=unit"/>
+    </content>
+
+    <implementation implements="nsISliderListener">
+
+      <constructor>
+	this.mTickMode = 0;
+
+	var tick_type = this.getAttribute("ticktype")
+	if (tick_type=="exp1") {
+	  this.mTickMode = 1;
+	}
+
+	var min = this.mMinValue = parseFloat(this.getAttribute("min"));
+	var max = this.mMaxValue = parseFloat(this.getAttribute("max"));
+	var incr = this.mIncrValue = parseFloat(this.getAttribute("increment"));
+	var scl_min = this.convToScaleVal(min);
+	var scl_max = this.convToScaleVal(max);
+	this.mScale.min = scl_min;
+	this.mScale.max = scl_max;
+	this.mScale.increment = 1;
+	//this.mMinLab.value = min;
+	//this.mMaxLab.value = max;
+
+      </constructor>
+      
+      <field name="mScale" readonly="true">
+        document.getAnonymousElementByAttribute(this, "anonid", "scale");
+      </field>
+      
+      <field name="mNumBox" readonly="true">
+        document.getAnonymousElementByAttribute(this, "anonid", "numbox");
+      </field>
+
+      <!--
+      <field name="mMinLab" readonly="true">
+        document.getAnonymousElementByAttribute(this, "anonid", "minlab");
+      </field>
+      <field name="mMaxLab" readonly="true">
+        document.getAnonymousElementByAttribute(this, "anonid", "maxlab");
+      </field>
+	-->
+
+      <property name="disabled"
+	onget="return this.mNumBox.disabled;"
+	onset="this.mNumBox.disabled = val; this.mScale.disabled = val;"
+	/>
+
+      <property name="value"
+	onget="return this.mNumBox.value;">
+	<setter>
+	  <![CDATA[
+	    //dd("NumSli> setprop value="+val);
+	    this.mNumBox.value = val;
+	    var scval = this.convToScaleVal(val);
+	    //dd("NumSli> setprop scale value="+scval);
+	    this.mScale.value = scval
+	    ]]>
+	</setter>
+      </property>
+
+      <property name="min"
+	onget="return this.mNumBox.min;">
+	<setter>
+	  <![CDATA[
+	    this.mNumBox.min = val;
+	    this.mScale.min = this.convToScaleVal(val);
+	    ]]>
+	</setter>
+      </property>
+
+      <property name="max"
+	onget="return this.mNumBox.max;">
+	<setter>
+	  <![CDATA[
+	    this.mNumBox.max = val;
+	    this.mScale.max = this.convToScaleVal(val);
+	    ]]>
+	</setter>
+      </property>
+
+      <method name="onSliChanged">
+	<parameter name="aEvent"/>
+	<body>
+	  if ('isDragging' in aEvent) {
+	    //dd("NumSli> DRAGSTATE CHANGED; drg="+aEvent.isDragging);
+	    // does not prevent bubbling to ancestoral elements
+	    return;
+	  }
+	  // var value = this.mScale.value;
+	  // dd("NumSli> onSliChg orig value="+value);
+	  // value = this.convFromScaleVal(value);
+	  // dd("NumSli> onSliChg value="+value);
+	  this.mNumBox.value = this.convFromScaleVal(this.mScale.value);
+	  if (aEvent.isMouse)
+	    aEvent.stopPropagation();
+	</body>
+      </method>
+
+      <method name="onBoxChanged">
+	<parameter name="aEvent"/>
+	<body>
+	  var value = this.mNumBox.value;
+	  // dd("NumSli> onNBoxChg value="+value);
+	  this.mScale.value = this.convToScaleVal(value);
+	</body>
+      </method>
+
+      <method name="convToScaleVal">
+	<parameter name="val"/>
+	<body>
+	  return Math.round(val / this.mIncrValue);
+	</body>
+      </method>
+
+      <method name="convFromScaleVal">
+	<parameter name="val"/>
+	<body>
+	  return val * this.mIncrValue;
+	</body>
+      </method>
+
+    </implementation>
+
+  </binding>
+
+</bindings>
+

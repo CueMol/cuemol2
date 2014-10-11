@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<VisualStudioToolFile
+	Name="glslshader"
+	Version="8.00"
+	>
+	<Rules>
+		<CustomBuildRule
+			Name="glslshader"
+			DisplayName="glslshader"
+			CommandLine="mkdir $(XULDeployDir)\data\shaders&#x0D;&#x0A;copy /Y $(InputPath) $(XULDeployDir)\data\shaders\&#x0D;&#x0A;"
+			Outputs="$(XULDeployDir)\data\shaders\$(InputFileName)"
+			FileExtensions="*.glsl"
+			>
+			<Properties>
+			</Properties>
+		</CustomBuildRule>
+	</Rules>
+</VisualStudioToolFile>

@@ -1,0 +1,45 @@
+// -*-Mode: C++;-*-
+//
+
+#ifndef IMG_SCENE_EXPORTER_QIF_INCLUDED
+#define IMG_SCENE_EXPORTER_QIF_INCLUDED
+
+#include <qsys/SceneExporter.qif>
+
+runtime_class ImgSceneExporter extends SceneExporter
+{
+  client_hdr "ImgSceneExporter.hpp";
+  client_name render::ImgSceneExporter;
+
+  scriptable;
+  smartptr;
+  abstract;
+
+  ////////////////////
+  // Property definition
+
+  // property boolean perspective => m_bPerspective;
+  // property string camera => m_cameraName;
+
+  property integer width => redirect(getWidth, setWidth);
+  property integer height => redirect(getHeight, setHeight);
+
+  property real resoln => redirect(getResDPI, setResDPI);
+  default resoln = 72.0;
+
+  /// PNG transparency (RGBA) option
+  property boolean alpha => redirect(getUseAlpha, setUseAlpha);
+  default alpha = false;
+
+  ////////////////////
+  // Method definition
+
+  void attach(object<Scene$> scene);
+  object<Scene$> detach();
+
+  void write();
+
+};
+
+#endif
+

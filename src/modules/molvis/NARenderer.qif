@@ -1,0 +1,53 @@
+// -*-Mode: C++;-*-
+//
+// Interface definition for TubeRenderer
+//
+
+#ifndef NA_RENDERER_QIF
+#define NA_RENDERER_QIF
+
+#include "TubeRenderer.qif"
+
+runtime_class NARenderer extends TubeRenderer
+{
+  client_hdr "NARenderer.hpp";
+  client_name molvis::NARenderer;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  /// tube rendering on/off
+  property boolean show_tube => redirect(getRendTube, setRendTube);
+  default show_tube = true;
+  
+  /// base pair rendering on/off
+  property boolean show_basepair => redirect(isShowBP, setShowBP);
+  default show_basepair = true;
+
+  /// size of bases
+  property real base_size => redirect(getBaseSize, setBaseSize);
+  default base_size = 0.5;
+
+  /// tesselation level of bases
+  property integer base_detail => redirect(getBaseDetail, setBaseDetail);
+  default base_detail = 3;
+
+  /// thickness of bases (valid for detail1/2 modes)
+  property real base_thick => redirect(getBaseThick, setBaseThick);
+  default base_thick = 0.5;
+
+  /// base rendering type
+  enumdef base_type {
+    basepair = molvis::NARenderer::NAREND_BP;
+    simple1 = molvis::NARenderer::NAREND_SIMPLE1;
+    detail1 = molvis::NARenderer::NAREND_DETAIL1;
+    detail2 = molvis::NARenderer::NAREND_DETAIL2;
+  }
+  property enum base_type => redirect(getBaseType, setBaseType);
+  default base_type = "basepair";
+
+};
+
+#endif // TUBE_RENDERER_QIF
+

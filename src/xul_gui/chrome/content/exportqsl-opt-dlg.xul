@@ -1,0 +1,83 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+
+<dialog
+  id     = "QSLOptDlg"
+  windowtype="CueMol2:QSLOptDlg"
+  title  = "QSL options"
+  xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  onload="window.gDlg.onLoad()"
+  ondialogaccept="window.gDlg.onAccept()"
+  buttons="accept,cancel">
+
+  <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
+
+  <vbox>
+    <groupbox>
+      <caption label="QSL options"/>
+      <hbox align="center">
+	<checkbox id="chg-detail-chk" label="Change detail:" checked="true"
+	  oncommand="gDlg.onChgDetail()"/>
+	<numslider id="numsli-detail" flex="1" size="3"
+	  decimalplaces="0" min="1" max="5" increment="1" unit="none"/>
+	
+      </hbox>
+      <checkbox id="compress_flag" label="Use compression" flex="1" checked="true"/>
+    </groupbox>
+    <checkbox id="show_result" label="Open the resulting qsl file" flex="1"/>
+  </vbox>
+
+  <script type="application/javascript;version=1.8">
+    <![CDATA[
+window.gDlg = {
+mDlgData: window.arguments[0],
+
+onLoad: function ()
+{
+  this.mChkDetail = document.getElementById("chg-detail-chk");
+  this.mNumSliDetail = document.getElementById("numsli-detail");
+  this.mChkOpen = document.getElementById("show_result");
+  this.mChkCompr = document.getElementById("compress_flag");
+},
+
+onChgDetail: function ()
+{
+  if (this.mChkDetail.checked)
+    this.mNumSliDetail.removeAttribute("disabled");
+  else
+    this.mNumSliDetail.setAttribute("disabled", "true");
+  
+  dd("OnChgDet: "+this.mNumSliDetail.disbled);
+},
+
+onAccept: function ()
+{
+  try {
+    if (!this.mChkDetail.checked) {
+      this.mDlgData.ndetail = -1;
+    }
+    else {
+      let new_val = parseInt(this.mNumSliDetail.value);
+      if (isNaN(new_val) || new_val<=0 || new_val>10)
+        return;
+      this.mDlgData.ndetail = new_val;
+    }
+    this.mDlgData.open = this.mChkOpen.checked;
+    this.mDlgData.compress = this.mChkCompr.checked;
+    this.mDlgData.ok = true;
+    return true;
+  }
+  catch (e) { debug.exception(e); }
+
+  return false;
+}
+
+};
+
+      ]]>
+  </script>
+</dialog>
+

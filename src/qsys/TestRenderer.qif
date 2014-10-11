@@ -1,0 +1,22 @@
+// -*-Mode: C++;-*-
+//
+// $Id: TestRenderer.qif,v 1.3 2009/09/22 15:59:15 rishitani Exp $
+//
+
+#include <gfx/Color.qif>
+#include "Renderer.qif"
+
+runtime_class TestRenderer extends Renderer
+{
+  client_hdr "TestRenderer.hpp";
+  client_name qsys::TestRenderer;
+
+  scriptable;
+  cloneable;
+  smartptr;
+
+  property object<AbstractColor$> color1 => m_col1;
+  default color1 = gfx::SolidColor::createRGB(0.0, 1.0, 1.0);
+
+};
+
