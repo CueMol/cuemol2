@@ -50,6 +50,7 @@ klass.onLoad = function ()
   },false);
 
   this.mCtxtMenuAtomLabel = document.getElementById("navi-ctxtmenu-atomlabel");
+  this.mCtxtMenuRendLabel = document.getElementById("navi-ctxtmenu-rendlabel");
   this.mCtxtMenu = document.getElementById("navi-ctxtmenu-atom");
 
   this.mCtxtMenuSymmLabel = document.getElementById("navi-ctxtmenu-symmlabel");
@@ -404,8 +405,9 @@ klass.onMouseClicked = function (x, y, mod)
   if ( cuemol.implIface(res.objtype, "MolCoord") ) {
     if (mod&(1<<5)) { // rbtn
       this.mCtxtMenuAtomLabel.label
-	= ( (res.obj_name) ? (res.obj_name+": "):"" ) + res.message;
-
+	= ( (res.obj_name) ? (res.obj_name+": ") : "" ) + res.message;
+      this.mCtxtMenuRendLabel.label
+	= res.rend_name + " (" + res.rendtype + ")";
       if (res.rendtype=="*symm") {
 	this.mCtxtMenuSymmLabel.label = " (symop: "+res.symm_name+")";
 	this.setupSymmCtxtMenu(true);

@@ -82,6 +82,9 @@ Qm2Main.prototype.setDefaultStyles = function(mol, rend)
   else if (rend_type === "ballstick") {
     rend.applyStyles("DefaultBallStick,DefaultCPKColoring");
   }
+  else if (rend_type === "cpk") {
+    rend.applyStyles("DefaultCPK,DefaultCPKColoring");
+  }
   else if ('coloring' in rend) {
     rend.applyStyles("DefaultCPKColoring");
   }

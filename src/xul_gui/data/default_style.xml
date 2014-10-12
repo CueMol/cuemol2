@@ -98,16 +98,20 @@
   </style>
 
   <style id="DefaultBallStick" type="renderer" desc="Default"
-    bondw="0.2" sphr="0.3" detail="3" ringcolor="$molcol">
+    bondw="0.2" sphr="0.3" detail="10" ringcolor="$molcol">
   </style>
   <style id="StickBallStick" type="renderer" desc="Stick"
-    bondw="0.2" sphr="0.2" detail="3" ringcolor="$molcol">
+    bondw="0.2" sphr="0.2" detail="10" ringcolor="$molcol">
   </style>
   <style id="ThickBallStick" type="renderer" desc="Thick"
-    bondw="0.3" sphr="0.5" detail="5" ringcolor="$molcol">
+    bondw="0.3" sphr="0.5" detail="10" ringcolor="$molcol">
   </style>
   <style id="ThickStickBallStick" type="renderer" desc="Thick stick"
-    bondw="0.5" sphr="0.5" detail="5" ringcolor="$molcol">
+    bondw="0.5" sphr="0.5" detail="10" ringcolor="$molcol">
+  </style>
+
+  <style id="DefaultCPK" type="renderer" desc="Default"
+    detail="10">
   </style>
 
   <style id="DefaultAtomIntr" desc="Default" type="renderer"

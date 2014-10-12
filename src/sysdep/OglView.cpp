@@ -644,15 +644,18 @@ LString OglView::hitTest(int ax, int ay)
   pdc->setCurrent();
 
   double dHitPrec = convToBackingX( qsys::ViewInputConfig::getInstance()->getHitPrec() );
-  if ( !hitTestPreHelper(pdc, Vector4D(x, y, dHitPrec, dHitPrec), false, 1.0) )
+  if ( !hitTestPreHelper(pdc, Vector4D(x, y, dHitPrec, dHitPrec), true, 1.0) )
     return LString();
 
   int nrend = m_hitdata.getRendSize();
   if (nrend==0) // no hit
     return LString();
     
+  MB_DPRINTLN("OglView.hitTest> hit nrend=%d", nrend);
   qlib::uid_t rend_id;
+  // qlib::Array<qlib::uid_t> rend_ids(nrend);
   m_hitdata.getRendArray(&rend_id, 1);
+  // m_hitdata.getRendArray(rend_ids.data(), nrend);
 
   qsys::RendererPtr pRend = SceneManager::getRendererS(rend_id);
   if (pRend.isnull()) {

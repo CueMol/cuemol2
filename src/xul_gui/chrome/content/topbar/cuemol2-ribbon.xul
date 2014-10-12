@@ -150,6 +150,7 @@
       <!-- NaviTool popup menu -->
       <menupopup id="navi-ctxtmenu-atom">
 	<menuitem id="navi-ctxtmenu-atomlabel" label="atom_label"/>
+	<menuitem id="navi-ctxtmenu-rendlabel" label="rend_label"/>
 	<menuitem id="navi-ctxtmenu-symmlabel" class="ctxtmenu-symm"
 	  label="symm_label" hidden="true"/>
 

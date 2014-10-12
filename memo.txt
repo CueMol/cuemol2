@@ -3499,17 +3499,24 @@ LDataSrcContainer.readFromSrcAltSrc()を利用する形での変更は困難で�
 LDataSrcContainer.selectSrcAltSrc()というのを分離実装し，srcとaltsrcのどちらから読み込むか判定するstatic methodを作成⇒LDataSrcContainer.readFromSrcAltSrc()でも内部でこれを呼び出して実装し共通化
 ⇒StyleFileやStyleSetの実装は変更せずにほぼそのままsrc/alt_srcを使った読み込みを実装
 
+2014/10/11
 ●完了
 gitへの移行
+
+●修正
+CPK, ballstickのdetailのdefault値を上げる(10に?）
+
+●修正
+Hittest時に，hitしたrendererの情報から，context menuにobject情報だけでなく，renderer情報を出すようにする
+
 
 ---------------------------------------------------------------------------
 
 ○TO DO
-CPK, ballstickのdetailのdefault値を上げる(10に?）
-あるいは，GLのsphere, coneのrendering方法をshaderによるようにする？
+GLのsphere, coneのrendering方法をshaderによるようにする
 
 ○TO DO
-Hittest時に，hitしたrendererの情報から，context menuにobject情報だけでなく，renderer情報を出すようにする
+POV-Rayを3.7にする．（並列rendering等に対応している）
 
 ○問題点
 スタート時にshow/hideを入れると，一旦すべてshowされてから0 frame目がrenderingされ，その後hideされるというおかしな挙動になる．
@@ -3588,9 +3595,6 @@ canvasを使って高解像度の文字ラベルをrenderingし，それをtextu
 HTMLの表記を可能にする（上付き下付き文字など）
 文字の装飾を可能に（縁付き文字などが必要）
 文字ラベルを見やすい場所に移動できる編集UIが必要
-
-○TO DO
-POV-Rayを3.7にする．（並列rendering等に対応している）
 
 -----
 
