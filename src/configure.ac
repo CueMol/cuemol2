@@ -257,7 +257,13 @@ AC_SUBST(PNG_LIBADD)
 
 AX_BOOST_BASE
 AX_BOOST_SYSTEM
+
+# Code trying to link with -lboost_thread (newer than 1.56?) in AX_BOOST_THREAD requires -lboost_system!!
+_tmp_libs=${BOOST_SYSTEM_LIB}
+LIBS="${BOOST_SYSTEM_LIB} $LIBS"
 AX_BOOST_THREAD
+LIBS=$_tmp_libs
+
 AX_BOOST_FILESYSTEM
 dnl AX_BOOST_IOSTREAMS
 

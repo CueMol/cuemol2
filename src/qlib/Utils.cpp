@@ -22,10 +22,15 @@ using namespace qlib;
 namespace fs = boost::filesystem;
 
 namespace qlib {
+
   LString getLeafName(const LString &aPath)
   {
     fs::path path(aPath);
+#if (BOOST_FILESYSTEM_VERSION==2)
     return LString(path.filename());
+#else
+    return LString(path.filename().string());
+#endif
   }
 
 LString makeRelativePath(const LString &aAbs, const LString &aBase)
@@ -83,9 +88,14 @@ LString makeAbsolutePath(const LString &aRel, const LString &aBase)
   }
 
   if (nup==0) {
-    // There's no dir-up ('..') string --> just concat to make abs path.
+    // There's no up-dir ('..') string --> just concat to make abs path.
+#if (BOOST_FILESYSTEM_VERSION==2)
     relpath = fs::complete(relpath, basepath);
     return relpath.file_string();
+#else
+    relpath = fs::absolute(relpath, basepath);
+    return relpath.string();
+#endif
   }
 
   for (; nup>0; --nup) {
@@ -97,7 +107,11 @@ LString makeAbsolutePath(const LString &aRel, const LString &aBase)
     basepath /= *iter1;
   }
 
+#if (BOOST_FILESYSTEM_VERSION==2)
   return basepath.file_string();
+#else
+  return basepath.string();
+#endif
 }
 
 bool isAbsolutePath(const LString &aPath)

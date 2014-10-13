@@ -71,7 +71,12 @@ void ExpatInStream::parse()
   // check base URI
 
   fs::path srcpath(getURI());
+#if (BOOST_FILESYSTEM_VERSION==2)
   LString base_dir = srcpath.parent_path().directory_string();
+#else
+  LString base_dir = srcpath.parent_path().string();
+#endif
+
   if (!base_dir.isEmpty())
     setBaseURI(base_dir);
 

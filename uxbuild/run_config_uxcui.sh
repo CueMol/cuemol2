@@ -10,7 +10,10 @@ debug="--enable-debug --enable-m64"
 ##
 
 #boost_dir=/usr/local
-boost_dir=/net3/ishitani/app64/boost_static
+
+#boost_dir=/net3/ishitani/app64/boost_static
+boost_dir=/net3/ishitani/app64/boost_1_56_0
+
 fftw_dir=/net3/ishitani/app64/fftw
 cgal_dir=/net3/ishitani/app64/CGAL-3.8
 

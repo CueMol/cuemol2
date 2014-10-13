@@ -78,9 +78,15 @@ const char *SceneXMLReader::getFileExt() const
 
 void SceneXMLReader::read()
 {
-  // convert to absolute path name (based on the cwd)
+  // If getPath() points to a relative path,
+  // convert it to the absolute path name using the fs::current_path() (i.e. pwd)
   fs::path curpath = fs::current_path();
+#if (BOOST_FILESYSTEM_VERSION==2)
   LString localfile = qlib::makeAbsolutePath(getPath(), curpath.file_string());
+#else
+  LString localfile = qlib::makeAbsolutePath(getPath(), curpath.string());
+#endif
+
 
   // Enter the loading scene's context
   AutoStyleCtxt style_ctxt(m_pClient->getUID());

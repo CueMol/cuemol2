@@ -112,9 +112,14 @@ void SceneXMLWriter::write()
 
   // Update the SourcePath/BasePath
   {
-    // Convert to absolute path name (based on the cwd)
+    // If getPath() points to a relative path,
+    // convert it to the absolute path name using the fs::current_path() (i.e. pwd)
     fs::path curpath = fs::current_path();
+#if (BOOST_FILESYSTEM_VERSION==2)
     LString localfile = qlib::makeAbsolutePath(getPath(), curpath.file_string());
+#else
+    LString localfile = qlib::makeAbsolutePath(getPath(), curpath.string());
+#endif
 
     m_pClient->setSource(localfile);
     m_pClient->setSourceType(getName());
@@ -184,49 +189,6 @@ void SceneXMLWriter::write()
     }
   }
   
-/*
-  Scene::ObjIter oiter = m_pClient->beginObj();
-  Scene::ObjIter oiter_end = m_pClient->endObj();
-  for (; oiter!=oiter_end; ++oiter) {
-    ObjectPtr obj = oiter->second;
-    bool bEmbed = m_bForceEmbedAll;
-
-    // Determine whether the object should be embedded or not.
-    if (!bEmbed) {
-      src = obj->getSource();
-      srctype = obj->getSourceType();
-      if (src.isEmpty() || srctype.isEmpty()) {
-        // invalid source info --> embed it
-        bEmbed = true;
-      }
-      else if (src.startsWith("datachunk:")) {
-        // already embedded datasource will be anyway embedded.
-        bEmbed = true;
-      }
-      else if (obj->getModifiedFlag()) {
-        // modified since the obj loaded from file
-        bEmbed = true;
-      }
-    }
-
-    if (bEmbed) {
-      qlib::LDataSrcContainer *pDC = dynamic_cast<qlib::LDataSrcContainer *>(obj.get());
-      if (pDC!=NULL && pDC->isDataSrcWritable()) {
-        src = oos.prepareDataChunk(obj->getUID());
-        srctype = pDC->getDataChunkReaderName();
-        obj->setSource(src);
-        obj->setSourceType(srctype);
-	MB_DPRINTLN("SceneXMLWr> embeding src=%s, srctype=%s",
-                    src.c_str(), srctype.c_str());
-      }
-      else {
-	LOG_DPRINTLN("SceneXMLWr> embed requested for unsupported obj %s (%d)",
-		     obj->getName().c_str(), int(obj->getUID()) );
-      }
-    }
-  }
-*/
-    
   // save qsc options
   qlib::LDom2Tree qsctree("qsc_opts");
   

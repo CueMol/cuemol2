@@ -58,8 +58,15 @@ LString SceneExporter::makeRelSubPath(const LString &sub_name)
   // Check and modify the mainpath to absolute form
   fs::path mainpath(str_mainpath);
   if (!mainpath.is_complete()) {
+#if (BOOST_FILESYSTEM_VERSION==2)
+    // Make mainpath to be absolute using initial_path() (= PWD at the time when program starts)
     mainpath = fs::complete(mainpath);
     setPath(mainpath.file_string());
+#else
+    // Make mainpath to be absolute using current_path() (= PWD)
+    mainpath = fs::absolute(mainpath);
+    setPath(mainpath.string());
+#endif
   }
   fs::path base_path = mainpath.parent_path();
 
@@ -68,14 +75,25 @@ LString SceneExporter::makeRelSubPath(const LString &sub_name)
   if (!subpath.is_complete()) {
     // subpath is relative path (to the base_path) ==> return it
     rval = str_subpath_orig;
+#if (BOOST_FILESYSTEM_VERSION==2)
     subpath = fs::complete(subpath, base_path);
     // rewrite subpath with abs subpath
     setPath(sub_name, subpath.file_string());
+#else
+    subpath = fs::absolute(subpath, base_path);
+    // rewrite subpath with abs subpath
+    setPath(sub_name, subpath.string());
+#endif
+
   }
   else {
     // subpath is absolute path
     // make the inc-file path relative ==> return it
+#if (BOOST_FILESYSTEM_VERSION==2)
     rval = qlib::makeRelativePath(str_subpath_orig, base_path.directory_string());
+#else
+    rval = qlib::makeRelativePath(str_subpath_orig, base_path.string());
+#endif
   }
 
   return rval;

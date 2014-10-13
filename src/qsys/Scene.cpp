@@ -259,7 +259,11 @@ void Scene::setSource(const LString &name)
 LString Scene::getBasePath() const
 {
   fs::path srcpath(m_source);
+#if (BOOST_FILESYSTEM_VERSION==2)
   return srcpath.parent_path().directory_string();
+#else
+  return srcpath.parent_path().string();
+#endif
 }
 
 LString Scene::resolveBasePath(const LString &aLocalFile) const

@@ -202,7 +202,11 @@ void process_input(const LString &loadscr, const std::deque<LString> &args)
   fs::path full_path = fs::system_complete( scr_path );
 
   if ( !fs::exists( full_path ) ) {
+#if (BOOST_FILESYSTEM_VERSION==2)
     std::cout << "\nNot found: " << full_path.file_string() << std::endl;
+#else
+    std::cout << "\nNot found: " << full_path.string() << std::endl;
+#endif
     return;
   }
 

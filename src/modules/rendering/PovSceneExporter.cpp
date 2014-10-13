@@ -52,20 +52,34 @@ void PovSceneExporter::write()
       // Check and modify the main pov file path
       fs::path povpath(str_povpath);
       if (!povpath.is_complete()) {
+#if (BOOST_FILESYSTEM_VERSION==2)
         povpath = fs::complete(povpath);
         setPath(povpath.file_string());
+#else
+        povpath = fs::absolute(povpath);
+        setPath(povpath.string());
+#endif
       }
       fs::path base_path = povpath.parent_path();
       // Check and modify the inc file path
       fs::path incpath(str_incpath);
       if (!incpath.is_complete()) {
         ppovdc->setIncFileName(str_incpath);
+#if (BOOST_FILESYSTEM_VERSION==2)
         incpath = fs::complete(incpath, base_path);
         setPath("inc", incpath.file_string());
+#else
+        incpath = fs::absolute(incpath, base_path);
+        setPath("inc", incpath.string());
+#endif
       }
       else {
         // make the inc-file path relative
+#if (BOOST_FILESYSTEM_VERSION==2)
         LString relpath = qlib::makeRelativePath(str_incpath, base_path.directory_string());
+#else
+        LString relpath = qlib::makeRelativePath(str_incpath, base_path.string());
+#endif
         ppovdc->setIncFileName(relpath);
       }
     }
