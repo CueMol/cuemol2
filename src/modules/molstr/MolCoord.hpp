@@ -133,6 +133,10 @@ namespace molstr {
     ///
     int appendAtom(MolAtomPtr pAtom);
 
+    int appendAtomScrHelper(MolAtomPtr pAtom, const LString &ch,
+			    ResidIndex resid, const LString &resn);
+    int appendAtomScr1(MolAtomPtr pAtom, const LString &ch, int nresid, const LString &resn);
+
     /// Remove an atom by atom ID
     bool removeAtom(int atomid);
   

@@ -30,6 +30,7 @@ runtime_class MolAtom
 
   property string chainName => redirect(getChainName, xxx) (readonly);
   property string residIndex => redirect(getResIndexScr, xxx) (readonly);
+  property string residName => redirect(getResName, xxx) (readonly);
 
   string formatMsg();
 

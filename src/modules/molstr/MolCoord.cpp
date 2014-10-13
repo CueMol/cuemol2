@@ -246,6 +246,43 @@ int MolCoord::appendAtom(MolAtomPtr pAtom)
   return atomid;
 }
 
+int MolCoord::appendAtomScrHelper(MolAtomPtr pAtom, const LString &ch,
+				  ResidIndex resid, const LString &resn)
+{
+  qlib::uid_t nuid = pAtom->getParentUID();
+  if (nuid!=qlib::invalid_uid) {
+    // pAtom has been already belonged to other mol
+    // --> ERROR!!
+    MB_DPRINTLN("MolCoord.appendAtom> ERROR, pAtom already belongs to mol %d ().", nuid);
+    return -1;
+  }
+
+  pAtom->setParentUID(getUID());
+  pAtom->setChainName(ch);
+  pAtom->setResIndex(resid);
+
+  if (resn.isEmpty()) {
+    // res name is determined by chain name and resindex
+    MolResiduePtr pRes = getResidue(ch, resid);
+    if (pRes.isnull()) {
+      // ERROR!! cannot determine the residue to append to
+      return -1;
+    }
+    pAtom->setResName(pRes->getName());
+  }
+  else {
+    pAtom->setResName(resn);
+  }
+
+  return appendAtom(pAtom);
+}
+
+/// Append new atom (for scripting interface)
+int MolCoord::appendAtomScr1(MolAtomPtr pAtom, const LString &ch, int nresid, const LString &resn)
+{
+  return appendAtomScrHelper(pAtom, ch, ResidIndex(nresid), resn);
+}
+
 bool MolCoord::removeAtom(int atomid)
 {
   MolAtomPtr pAtom = getAtom(atomid);

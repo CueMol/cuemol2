@@ -18,9 +18,8 @@ using namespace molstr;
 /** default ctor */
 MolAtom::MolAtom()
 {
-  // m_pParent = NULL;
-  // m_nbonds = 0;
 
+  m_molID = qlib::invalid_uid;
   m_nresid = 0;
   m_nID = -1;
   m_elem = ElemSym::XX;
@@ -39,9 +38,10 @@ MolAtom::MolAtom()
 /** copy ctor */
 MolAtom::MolAtom(const MolAtom &src)
 {
-  // m_pParent = src.m_pParent;
-  // m_nbonds = src.m_nbonds;
+  // Do not copy parent Mol ID
+  // (copied obj does not belong to the original one's mol)
   // m_molID = src.m_molID;
+  m_molID = qlib::invalid_uid;
 
   m_name = src.m_name;
   m_chain = src.m_chain;
