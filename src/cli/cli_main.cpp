@@ -16,6 +16,10 @@
 #  include <pybr/pybr.hpp>
 #endif
 
+#ifdef USE_XMLRPC
+#  include <xmlrpc_bridge/xrbr.hpp>
+#endif
+
 #if !defined(QM_BUILD_LW)
 #  include <jsbr/jsbr.hpp>
 #  include <jsbr/Interp.hpp>
@@ -147,16 +151,32 @@ int main(int argc, const char *argv[])
   pybr::init();
 #endif
 
+#ifdef USE_XMLRPC
+  // load XML-RPC module
+  xrbr::init();
+#endif
+
   //////////
 
   if (!loadscr.isEmpty()) {
     process_input(loadscr, args2);
   }
 
+#ifdef USE_XMLRPC
+  // Wait for XML-RPC requests
+  xrbr::serverRun();
+#endif
+
   //////////
 
+#ifdef USE_XMLRPC
+  // unload XML-RPC module
+  xrbr::fini();
+  MB_DPRINTLN("=== xrbr::fini() OK ===");
+#endif
+
 #ifdef USE_PYTHON
-  // load python module
+  // unload python module
   pybr::fini();
   MB_DPRINTLN("=== pybr::fini() OK ===");
 #endif

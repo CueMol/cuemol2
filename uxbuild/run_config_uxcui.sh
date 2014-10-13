@@ -17,6 +17,8 @@ boost_dir=/net3/ishitani/app64/boost_1_56_0
 fftw_dir=/net3/ishitani/app64/fftw
 cgal_dir=/net3/ishitani/app64/CGAL-3.8
 
+xmlrpc_dir=/net3/ishitani/app64/xmlrpc-c
+
 #######################
 
 config_scr=../src/configure
@@ -36,6 +38,7 @@ env CC=gcc CXX=g++ \
 $config_scr \
 --enable-cli \
 --enable-python \
+--with-xmlrpc=$xmlrpc_dir \
 --enable-static --disable-shared \
 --prefix=$install_dir \
 --with-boost=$boost_dir \

@@ -439,7 +439,7 @@ AM_PATH_PYTHON(2.6.0)
 PY_PREFIX=`$PYTHON -c 'import sys ; print sys.prefix'`
 PYTHON_LDADD="-lpython$PYTHON_VERSION"
 PYTHON_CPPFLAGS="-I$PY_PREFIX/include/python$PYTHON_VERSION"
-echo "Python: " $PY_PREFIX $PYTHON_VERSION
+echo "Python prefix: " $PY_PREFIX ", version: " $PYTHON_VERSION
 AC_SUBST([PYTHON_LDADD])
 AC_SUBST([PYTHON_CPPFLAGS])
 BUILD_SCR="$BUILD_SCR pybr"
@@ -448,6 +448,63 @@ SCR_LDFLAGS="$SCR_LDFLAGS -L../pybr/"
 AC_DEFINE([USE_PYTHON], [1], [Use python binding])
     ],
     [])
+
+#######################################################
+# XML-RPC supports
+
+XMLRPC_CPPFLAGS=
+XMLRPC_LIBADD=
+XMLRPC_LDFLAGS=
+
+# AC_MSG_CHECKING(XML-RPC-C library location)
+AC_ARG_WITH(xmlrpc,
+[  --with-xmlrpc[=DIR]      Look for XML-RPC-C library in DIR (default=no) ],
+[ case "$with_xmlrpc" in
+  no)
+    
+    ;;
+  *)
+    AC_MSG_RESULT($with_xmlrpc)
+    _cppflags=${CPPFLAGS}
+    CPPFLAGS="-I$with_xmlrpc/include $CPPFLAGS"
+    AC_CHECK_HEADERS([xmlrpc-c/base.h],,[AC_MSG_ERROR(xmlrpc-c/base.h not found)],[])
+    AC_CHECK_DECLS(xmlrpc_version,
+                   [XMLRPC_CPPFLAGS="-I$with_xmlrpc/include"],
+		   [AC_MSG_ERROR(xmlrpc_version() not found)],
+		   [#include <xmlrpc-c/base.h>])
+    CPPFLAGS=$_cppflags
+
+    _ldflags=${LDFLAGS}
+    LDFLAGS="-L$with_xmlrpc/lib $LDFLAGS"
+    AC_CHECK_LIB(xmlrpc, xmlrpc_version,
+                 [XMLRPC_LDFLAGS="-L$with_xmlrpc/lib"
+		  XMLRPC_LIBADD=" -lxmlrpc_server_abyss++ -lxmlrpc_server++ -lxmlrpc_server_abyss -lxmlrpc_server -lxmlrpc_abyss -lpthread -lxmlrpc++ -lxmlrpc -lxmlrpc_util -lxmlrpc_xmlparse -lxmlrpc_xmltok"],
+		 [AC_MSG_ERROR(xmlrpc_version() not found)],
+		 [])
+    LDFLAGS=$_ldflags
+    ;;
+  esac ],
+[   AC_CHECK_HEADERS([xmlrpc-c/base.h],,[AC_MSG_ERROR(xmlrpc-c/base.h not found)],[])
+    AC_CHECK_DECLS(xmlrpc_version,
+                   [],
+		   [AC_MSG_ERROR(xmlrpc_version() not found)],
+		   [#include <xmlrpc-c/base.h>])
+    AC_CHECK_LIB(xmlrpc, xmlrpc_version,
+                 [XMLRPC_LIBADD=" -lxmlrpc_server_abyss++ -lxmlrpc_server++ -lxmlrpc_server_abyss -lxmlrpc_server -lxmlrpc_abyss -lpthread -lxmlrpc++ -lxmlrpc -lxmlrpc_util -lxmlrpc_xmlparse -lxmlrpc_xmltok"],
+		 [AC_MSG_ERROR(xmlrpc_version() not found)],
+		 [])
+])
+
+if test x$with_xmlrpc != xno ; then
+  BUILD_SCR="$BUILD_SCR xmlrpc_bridge"
+  SCR_LDADD="$SCR_LDADD -lxrbr"
+  SCR_LDFLAGS="$SCR_LDFLAGS -L../xmlrpc_bridge/ $XMLRPC_LDFLAGS"
+  AC_DEFINE([USE_XMLRPC], [1], [Use XML-RPC service])
+fi
+
+AC_SUBST(XMLRPC_CPPFLAGS)
+AC_SUBST(XMLRPC_LIBADD)
+AC_SUBST(XMLRPC_LDFLAGS)
 
 ##
 
@@ -721,6 +778,7 @@ AC_CONFIG_FILES([
 	qlib/Makefile
 	jsbr/Makefile
 	pybr/Makefile
+	xmlrpc_bridge/Makefile
 	gfx/Makefile
 	qsys/Makefile
 	cli/Makefile
