@@ -360,9 +360,7 @@
       
 	    <menuseparator/>
 
-#ifdef XP_WIN
-	    <menuitem label="Execute script..." oncommand="gQm2Main.onExecJS();"/>
-#endif
+	    <menuitem id="exec_scr_menuitem" label="Execute script..." oncommand="gQm2Main.onExecScr();" disabled="true" />
 	  </menupopup>
 	</menu>
 

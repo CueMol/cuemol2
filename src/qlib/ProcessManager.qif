@@ -31,6 +31,8 @@ runtime_class ProcessManager
   boolean isEmpty();
   void killAll();
   string doneTaskListJSON();
+
+  property string supportedScripts => redirect(getSupportedScr, XXX) (readonly);
 };
 
 #endif

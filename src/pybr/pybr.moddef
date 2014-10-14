@@ -1,0 +1,13 @@
+// -*-Mode: C++;-*-
+//
+
+#include "PythonBridge.qif"
+
+module pybr
+{
+  init qlib::init();
+  fini qlib::fini();
+
+  PythonBridge;
+};
+

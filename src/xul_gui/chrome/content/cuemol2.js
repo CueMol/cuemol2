@@ -301,6 +301,15 @@ Qm2Main.prototype.onLoad = function ()
   
   //////////
 
+  try {
+    var pybr = cuemol.getService("PythonBridge");
+    if (pybr) {
+      var elem = document.getElementById("exec_scr_menuitem");
+      elem.disabled = false;
+    }
+  }
+  catch (e) {
+  }
 }
   
 

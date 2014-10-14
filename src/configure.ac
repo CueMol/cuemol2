@@ -19,6 +19,7 @@ sinclude(conftools/ax_boost_thread.m4)
 sinclude(conftools/ax_boost_system.m4)
 sinclude(conftools/ax_boost_filesystem.m4)
 dnl sinclude(conftools/ax_boost_iostreams.m4)
+sinclude(conftools/ax_cxx_compile_stdcxx_0x.m4)
 
 #######################################################
 # LIBTOOL
@@ -211,6 +212,13 @@ case $host_os in
 	GUI_ARCH=X11
 	BUILD_OSDEP="sysdep uxdist utils"
 	AC_DEFINE([GUI_ARCH], [X11], [name of the GUI archtecture])
+        dnl Linux/Gecko23 build requires std=c++0x feature (char16_t)
+        AX_CXX_COMPILE_STDCXX_0X
+	if test $ax_cv_cxx_compile_cxx0x_cxx = yes ; then
+	   CXXFLAGS="$CXXFLAGS -std=c++0x"
+	else
+	   AC_MSG_ERROR(requires c++ with -std=c++0x support)
+	fi
      ;;
 esac
 fi])
@@ -396,7 +404,7 @@ if test x$GUI_ARCH = xCLI ; then
     # Use internal js impl in the standalone CLI build
     BUILD_SCR="$BUILD_SCR js jsbr"
     # overall settings
-    SCR_CPPFLAGS=
+    SCR_CPPFLAGS="-DHAVE_JAVASCRIPT"
     SCR_LDADD="-ljsbr"
     SCR_LDFLAGS="-L../jsbr/"
     # jsbr module settings
@@ -443,9 +451,9 @@ echo "Python: " $PY_PREFIX $PYTHON_VERSION
 AC_SUBST([PYTHON_LDADD])
 AC_SUBST([PYTHON_CPPFLAGS])
 BUILD_SCR="$BUILD_SCR pybr"
+SCR_CPPFLAGS="$SCR_CPPFLAGS -DHAVE_PYTHON"
 SCR_LDADD="$SCR_LDADD -lpybr $PYTHON_LDADD"
 SCR_LDFLAGS="$SCR_LDFLAGS -L../pybr/"
-AC_DEFINE([USE_PYTHON], [1], [Use python binding])
     ],
     [])
 

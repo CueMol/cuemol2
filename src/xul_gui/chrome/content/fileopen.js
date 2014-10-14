@@ -879,7 +879,7 @@ Qm2Main.prototype.deleteObject = function (aObjID)
 /////////////////////////////////////////////////////////////
 // experimental routines
 
-Qm2Main.prototype.onExecJS = function ()
+Qm2Main.prototype.onExecScr = function ()
 {
   let scene = this.mMainWnd.currentSceneW;
   if (!scene) {
@@ -889,8 +889,27 @@ Qm2Main.prototype.onExecJS = function ()
 
   const nsIFilePicker = Ci.nsIFilePicker;
   let fp = Cc["@mozilla.org/filepicker;1"].createInstance(nsIFilePicker);
-  fp.appendFilter("Javascript (*.js)", "*.js");
-  // fp.appendFilter("HTML (*.html)", "*.html");
+  let ftype = new Array();
+
+  var pybr;
+  try {
+      pybr = cuemol.getService("PythonBridge");
+      if (pybr) {
+	  fp.appendFilter("Python (*.py)", "*.py");
+	  ftype.push("py");
+      }
+  }
+  catch (e) {}
+
+  var jsbr;
+  try {
+      jsbr = cuemol.getService("JSBridge");
+      if (jsbr && typeof scene.execJSFile === 'function') {
+	  fp.appendFilter("Javascript (*.js)", "*.js");
+	  ftype.push("js");
+      }
+  }
+  catch (e) {}
 
   fp.init(window, "Select a File", nsIFilePicker.modeOpen);
 
@@ -898,11 +917,15 @@ Qm2Main.prototype.onExecJS = function ()
   if (res==nsIFilePicker.returnCancel)
     return;
 
-  scene.execJSFile(fp.file.path);
-  // let path = fp.file.path;
-  // let url = fp.fileURL;
-  // window.open(url.spec, "_blank",
-  // "chrome,extrachrome,menubar,resizable,scrollbars,status,toolbar");
+  if (ftype[fp.filterIndex]=="py") {
+      //pybr.runFile(fp.file.path);
+      let vwid = this.mMainWnd.getCurrentViewID();
+      pybr.runFile2(fp.file.path, scene.uid, vwid);
+  }
+  else if (ftype[fp.filterIndex]=="js") {
+      scene.execJSFile(fp.file.path);
+  }
+
 };
 
 Qm2Main.prototype.onOpenURL = function ()

@@ -1,0 +1,21 @@
+// -*-Mode: C++;-*-
+//
+// Python interpreter bridge
+//
+
+#ifndef PYTHON_BRIDGE_QIF
+#define PYTHON_BRIDGE_QIF
+
+runtime_class PythonBridge
+{
+  client_hdr "PythonBridge.hpp";
+  client_name pybr::PythonBridge;
+
+  scriptable;
+  singleton;
+
+  void runFile(string);
+  void runFile2(string, integer, integer);
+};
+
+#endif
