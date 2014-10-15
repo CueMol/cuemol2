@@ -67,6 +67,10 @@ runtime_class MolCoord extends Object
   void xformByMat(object<Matrix> mat, object<MolSelection$> psel);
 
   integer appendAtom1(object<MolAtom$> pAtom, string chain, integer resid, string resn) => appendAtomScr1;
+
+  void applyTopology();
+  void calcProt2ndry(real hb_high);
+  void calcBasePair(real cutoff, real tilt);
 };
 
 #endif
