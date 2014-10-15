@@ -34,6 +34,8 @@ runtime_class MolAtom
 
   string formatMsg();
 
+  void setU(integer i, integer j, real uij);
+  real getU(integer i, integer j);
 };
 
 #endif // MOL_ATOM_QIF_INCLUDED_
