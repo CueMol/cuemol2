@@ -11,6 +11,11 @@ class CueMol:
         obj = Wrapper(id);
         return obj;
 
+    def getService(self, name):
+        id = self.proxy.getService(name);
+        obj = Wrapper(id);
+        return obj;
+
 cuemol = CueMol()
 
 ##############
@@ -22,9 +27,22 @@ class MethodObj:
         self.name = name;
 
     def __call__(self, *args):
-        print "MethodObj ["+ str(self.obj.UID)+ "]."+ self.name+"() called"
-        cuemol.proxy.callMethod(self.obj.UID, self.name);
+        nargs = len(args)
+        print "MethodObj ["+ str(self.obj.UID)+ "]."+ self.name+"("+str(nargs)+") called"
 
+        arg2 = []
+        for item in args:
+            if (isinstance(item, Wrapper)):
+                arg2.append({"UID":item.UID});
+            else:
+                arg2.append(item);
+
+        rval = cuemol.proxy.callMethod(self.obj.UID, self.name, arg2);
+
+        if (isinstance(rval, dict)):
+            return Wrapper(rval["UID"])
+        else:
+            return rval
 
 class Wrapper:
 
@@ -40,8 +58,11 @@ class Wrapper:
         res = cuemol.proxy.hasProp(self.UID, name);
         if (res==1 or res==2):
             #print "getattr hasProp() OK"
-            res = cuemol.proxy.getProp(self.UID, name);
-            return res;
+            rval = cuemol.proxy.getProp(self.UID, name);
+            if (isinstance(rval, dict)):
+                return Wrapper(rval["UID"])
+            else:
+                return rval;
         elif (res==3):
             #print "getattr hasMethod() OK"
             return MethodObj(self, name)
@@ -65,14 +86,81 @@ class Wrapper:
 
 if __name__ == "__main__":
 
-    obj = cuemol.createObj("MolCoord");
-    print "Result: ", obj.UID;
-    print "Name =  ", obj.name;
-    print "UID =  ", obj.uid;
-    obj.name = "hoge"
-    print "Name =  ", obj.name;
-#    print "toString() =  ", obj.toString();
+    def test1():
+        obj = cuemol.createObj("Vector");
+        obj2 = cuemol.createObj("Vector");
+        print "Result: ", obj.UID;
+        print "v.x =  ", obj.x;
+        obj.x = 123.456
+        print "v.x =  ", obj.x;
+        obj.set4(1,2,3,4);
+        print "toString() =  ", obj.toString();
+        
+        return
 
-#print "3 is even: %s" % str(proxy.sample.add(1000,100))
-#print "3 is even: %s" % str(proxy.is_even(3))
-#print "100 is even: %s" % str(proxy.is_even(100))
+    test1()
+        
+##############
+        
+    def test2():
+        # Create new scene
+        scm = cuemol.getService("SceneManager")
+        scene = scm.createScene()
+        
+        #print "scene = "+str(scene)
+
+        mol = cuemol.createObj("MolCoord")
+        
+        # Register to the scene
+        scene.addObject(mol)
+        
+        fname = '/net3/ishitani/PLP.pdb';
+
+        for line in open(fname):
+            #print "PDB: ", line;
+            if line[0:6] in ["ATOM  ", "HETATM"]:
+                aname = line[12:16].strip(  )
+                altloc = line[16:17]
+                resn = line[17:20].strip(  )
+                chn = line[21:22]
+                resid = int( line[22:26] )
+                ins = line[26:27]
+                posx = float( line[30:38] )
+                posy = float( line[38:46] )
+                posz = float( line[46:54] )
+                occ = float( line[54:60] )
+                bfac = float( line[60:66] )
+                elem = line[76:78].strip()
+            else:        
+                print "PDB: ", line
+                continue
+
+            # print "name=", aname
+            atom = cuemol.createObj("MolAtom");
+            atom.name = aname;
+            atom.element = elem;
+            atom.bfac = bfac;
+            atom.occ = occ;
+        
+            vpos = cuemol.createObj("Vector");
+            vpos.set3(posx, posy, posz);
+            atom.pos = vpos;
+        
+            mol.appendAtom1(atom, chn, resid, resn);
+        
+        # Create PDB file writer
+        stm = cuemol.getService("StreamManager");
+        # Handler type : 1 (Object writer)
+        writer = stm.createHandler("pdb", 1);
+        
+        # Set source path name
+        writer.setPath("test1.pdb");
+
+        # Write PDB file
+        writer.attach(mol);
+        writer.write();
+        writer.detach();
+        return
+
+    test2()
+

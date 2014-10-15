@@ -237,6 +237,109 @@ bool XmlRpcManager::setProp(qlib::uid_t uid, const LString &propnm, const xmlrpc
   return true;
 }
 
+bool XmlRpcManager::callMethod(qlib::uid_t uid, const LString &mthnm, const xmlrpc_c::carray &vargs, xmlrpc_c::value *pRval)
+{
+  const int nargs = vargs.size();
+
+  qlib::LScriptable *pObj = getObj(uid);
+  if (pObj==NULL) {
+    // TO DO: report error
+    MB_DPRINTLN("CallMethod error, object %d not found", uid);
+    return false;
+  }
+  
+  if (!pObj->hasMethod(mthnm)) {
+    // TO DO: report error
+    MB_DPRINTLN("CallMethod error, object %d not has method %s", uid, mthnm.c_str());
+    return false;
+  }
+
+  // Convert arguments.
+
+  qlib::LVarArgs largs(nargs);
+  int i;
+  bool ok;
+  LString errmsg;
+
+  for (i = 0; i < nargs; ++i) {
+    ok = false;
+    errmsg = LString();
+    try {
+      convXrval2Lvar(&vargs[i], largs.at(i));
+      ok = true;
+    }
+    catch (const qlib::LException &e) {
+      errmsg = LString::format("call method %s: cannot convert arg %d, %s",
+			       mthnm.c_str(), i, e.getMsg().c_str());
+    }
+    catch (...) {
+      errmsg = LString::format("call method %s: cannot convert arg %d",
+			       mthnm.c_str(), i);
+    }
+    if (!ok) {
+      MB_DPRINTLN("ERROR: %s", errmsg.c_str());
+      // TO DO: report error
+      return false;
+    }
+  }
+
+  MB_DPRINTLN("invoke method %s nargs=%d", mthnm.c_str(), nargs);
+
+  // Invoke method
+
+  ok = false;
+  errmsg = LString();
+
+  try {
+    ok = pObj->invokeMethod(mthnm, largs);
+    if (!ok)
+      errmsg = LString::format("call method %s: failed", mthnm.c_str());
+  }
+  catch (qlib::LException &e) {
+    errmsg = 
+      LString::format("Exception occured in native method %s: %s",
+		      mthnm.c_str(), e.getMsg().c_str());
+  }
+  catch (...) {
+    errmsg = 
+      LString::format("Unknown Exception occured in native method %s",
+		      mthnm.c_str());
+  }
+
+  if (!ok) {
+    MB_DPRINTLN("ERROR: %s", errmsg.c_str());
+    // TO DO: report error
+    return false;
+  }
+
+  // Convert returned value
+
+  errmsg = LString();
+
+  try {
+    if (!convLvar2Xrval(largs.retval(), pRval)) {
+      // TO DO: report error
+      return false;
+    }
+  }
+  catch (const qlib::LException &e) {
+    errmsg = LString::format("call method %s: cannot convert rval, %s",
+			     mthnm.c_str(), e.getMsg().c_str());
+  }
+  catch (...) {
+    errmsg = LString::format("call method %s: cannot convert rval",
+			     mthnm.c_str());
+  }
+
+  if (pRval==NULL) {
+    MB_DPRINTLN("ERROR: %s", errmsg.c_str());
+    // TO DO: report error
+    return false;
+  }
+
+  return true;
+}
+
 bool XmlRpcManager::convLvar2Xrval(qlib::LVariant &variant, xmlrpc_c::value *pRval)
 {
   switch (variant.getTypeID()) {
@@ -265,8 +368,13 @@ bool XmlRpcManager::convLvar2Xrval(qlib::LVariant &variant, xmlrpc_c::value *pRv
   }
 
   case qlib::LVariant::LT_OBJECT: {
-    // TO DO: impl
-    //PyObject *pObj = createWrapper(variant.getObjectPtr());
+    qlib::LScriptable *pObj = variant.getObjectPtr();
+    qlib::uid_t id = registerObj(pObj);
+
+    xmlrpc_c::cstruct dict;
+    dict.insert(std::pair<std::string, xmlrpc_c::value>(std::string("UID"), xmlrpc_c::value_int(id)));
+
+    *pRval = xmlrpc_c::value_struct(dict);
 
     // At this point, the ownership of value is passed to PyObject
     //  (forget() avoids deleting the ptr transferred to PyObject)
@@ -297,29 +405,57 @@ bool XmlRpcManager::convXrval2Lvar(const xmlrpc_c::value *pVal, qlib::LVariant &
   switch (ntype) {
   case xmlrpc_c::value::TYPE_INT:
     rvar.setIntValue(static_cast<const xmlrpc_c::value_int *>(pVal)->cvalue());
-    break;
+    return true;
 
   case xmlrpc_c::value::TYPE_I8:
     rvar.setIntValue(static_cast<const xmlrpc_c::value_i8 *>(pVal)->cvalue());
-    break;
+    return true;
 
   case xmlrpc_c::value::TYPE_BOOLEAN:
     rvar.setBoolValue(static_cast<const xmlrpc_c::value_boolean *>(pVal)->cvalue());
-    break;
+    return true;
 
   case xmlrpc_c::value::TYPE_STRING:
     rvar.setStringValue(static_cast<const xmlrpc_c::value_string *>(pVal)->cvalue());
-    break;
+    return true;
 
   case xmlrpc_c::value::TYPE_DOUBLE:
     rvar.setRealValue(static_cast<const xmlrpc_c::value_double *>(pVal)->cvalue());
-    break;
+    return true;
+
+  case xmlrpc_c::value::TYPE_STRUCT: {
+    xmlrpc_c::cstruct obj = static_cast<const xmlrpc_c::value_struct *>(pVal)->cvalue();
+    xmlrpc_c::cstruct::const_iterator iter = obj.find("UID");
+    if (iter==obj.end()) {
+      MB_DPRINTLN("convXrval2Lvar: unsupported type %d", ntype);
+      break;
+    }
+    if (iter->second.type()!=xmlrpc_c::value::TYPE_INT) {
+      MB_DPRINTLN("convXrval2Lvar: unsupported type %d", ntype);
+      break;
+    }
+    qlib::uid_t id = static_cast<const xmlrpc_c::value_int>(iter->second).cvalue();
+    qlib::LScriptable *pScr = getObj(id);
+    if (pScr==NULL) {
+      MB_DPRINTLN("Obj not found %d", id);
+      break;
+    }
+
+    // pScr is owned by obj_tab
+    // (variant share the ptr and won't have the ownership!!)
+    rvar.shareObjectPtr(pScr);
+    MB_DPRINTLN("Object");
+    return true;
+  }
 
   default:
+    MB_DPRINTLN("convXrval2Lvar: unsupported type %d", ntype);
     break;
   }
 
-  return true;
+  // Error!!
+  MB_THROW(qlib::RuntimeException, "unsupported XML-RPC value type");
+  return false;
 }
 
 
@@ -499,6 +635,39 @@ namespace {
       return;
     }
   };
+
+
+  class CallMethod : public xmlrpc_c::method
+  {
+  public:
+    CallMethod() {
+      this->_signature = "i:is";
+      this->_help = "This method";
+    }
+
+    void
+    execute(xmlrpc_c::paramList const& paramList,
+            xmlrpc_c::value *   const  retvalP)
+    {
+      paramList.verifyEnd(3);
+        
+      qlib::uid_t uid = (qlib::uid_t) paramList.getInt(0);
+      std::string mthnm = paramList.getString(1);
+      //xmlrpc_c::value val = paramList[2];
+      xmlrpc_c::carray vargs = paramList.getArray(2);
+        
+      MB_DPRINTLN("CallMethod for %d, %s called", uid, mthnm.c_str());
+      int nargs = vargs.size();
+      for (int i=0; i<nargs; ++i) {
+	MB_DPRINTLN("Arg %d: type %d", i, vargs[i].type());
+      }
+
+      XmlRpcManager *pMgr = XmlRpcManager::getInstance();
+      pMgr->callMethod(uid, mthnm, vargs, retvalP);
+
+      return;
+    }
+  };
 }
 
 void XmlRpcManager::run()
@@ -514,6 +683,7 @@ void XmlRpcManager::run()
     myRegistry.addMethod("hasProp", xmlrpc_c::methodPtr(new HasPropMethod));
     myRegistry.addMethod("getProp", xmlrpc_c::methodPtr(new GetPropMethod));
     myRegistry.addMethod("setProp", xmlrpc_c::methodPtr(new SetPropMethod));
+    myRegistry.addMethod("callMethod", xmlrpc_c::methodPtr(new CallMethod));
 
     xmlrpc_c::serverAbyss myAbyssServer(xmlrpc_c::serverAbyss::constrOpt()
 					.registryP(&myRegistry)
@@ -526,7 +696,7 @@ void XmlRpcManager::run()
 
   }
   catch (std::exception const& e) {
-    std::cerr << "Something failed.  " << e.what() << std::endl;
+    //std::cerr << "Something failed.  " << e.what() << std::endl;
   }
 
 }

@@ -442,18 +442,20 @@ AC_SUBST(JS_LDFLAGS)
 AC_ARG_ENABLE(python,
     [--enable-python         Enable python support],
     [
-dnl check python inc/lib
-AM_PATH_PYTHON(2.6.0)
-PY_PREFIX=`$PYTHON -c 'import sys ; print sys.prefix'`
-PYTHON_LDADD="-lpython$PYTHON_VERSION"
-PYTHON_CPPFLAGS="-I$PY_PREFIX/include/python$PYTHON_VERSION"
-echo "Python prefix: " $PY_PREFIX ", version: " $PYTHON_VERSION
-AC_SUBST([PYTHON_LDADD])
-AC_SUBST([PYTHON_CPPFLAGS])
-BUILD_SCR="$BUILD_SCR pybr"
-SCR_CPPFLAGS="$SCR_CPPFLAGS -DHAVE_PYTHON"
-SCR_LDADD="$SCR_LDADD -lpybr $PYTHON_LDADD"
-SCR_LDFLAGS="$SCR_LDFLAGS -L../pybr/"
+if test $enableval = yes ; then
+   dnl check python inc/lib
+   AM_PATH_PYTHON(2.6.0)
+   PY_PREFIX=`$PYTHON -c 'import sys ; print sys.prefix'`
+   PYTHON_LDADD="-lpython$PYTHON_VERSION"
+   PYTHON_CPPFLAGS="-I$PY_PREFIX/include/python$PYTHON_VERSION"
+   echo "Python prefix: " $PY_PREFIX ", version: " $PYTHON_VERSION
+   AC_SUBST([PYTHON_LDADD])
+   AC_SUBST([PYTHON_CPPFLAGS])
+   BUILD_SCR="$BUILD_SCR pybr"
+   SCR_CPPFLAGS="$SCR_CPPFLAGS -DHAVE_PYTHON"
+   SCR_LDADD="$SCR_LDADD -lpybr $PYTHON_LDADD"
+   SCR_LDFLAGS="$SCR_LDFLAGS -L../pybr/"
+fi
     ],
     [])
 

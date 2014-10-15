@@ -71,6 +71,8 @@ namespace xrbr {
     bool getProp(qlib::uid_t uid, const LString &propnm, xmlrpc_c::value *pRval);
     bool setProp(qlib::uid_t uid, const LString &propnm, const xmlrpc_c::value *pVal);
 
+    bool callMethod(qlib::uid_t uid, const LString &mthnm, const xmlrpc_c::carray &vargs, xmlrpc_c::value *pRval);
+
     ///////////////////////
 
     void run();

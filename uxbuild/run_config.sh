@@ -5,7 +5,13 @@ cwd=`pwd`
 top_srcdir=$cwd/../src/
 install_dir=$top_srcdir/xul_gui/
 debug="--enable-debug --enable-m64"
-usepybr="--enable-python"
+
+#usepybr="--enable-python"
+usepybr="--disable-python"
+
+#usexrbr="--with-xmlrpc=/net3/ishitani/app64/xmlrpc-c"
+usexrbr="--without-xmlrpc"
+
 ##
 
 # Release version
@@ -43,6 +49,7 @@ $config_scr \
 --enable-shared \
 --prefix=$install_dir \
 $usepybr \
+$usexrbr \
 --with-xulrunner-sdk=$gecko_sdk_dir \
 --with-xulrunner-runtime=$gecko_rt_dir \
 --with-boost=$boost_dir \
