@@ -3,6 +3,8 @@
 //
 // $Id: XPCCueMol.cpp,v 1.38 2011/03/10 13:11:55 rishitani Exp $
 //
+#define __STDC_LIMIT_MACROS
+#define __STDC_CONSTANT_MACROS
 
 #include <common.h>
 
@@ -33,8 +35,12 @@
 #include <qsys/qsys.hpp>
 #include <sysdep/sysdep.hpp>
 
-#ifndef NO_SCRIPT
+#ifdef HAVE_JAVASCRIPT
 #include <jsbr/jsbr.hpp>
+#endif
+
+#ifdef HAVE_PYTHON
+#include <pybr/pybr.hpp>
 #endif
 
 
@@ -198,12 +204,6 @@ NS_IMETHODIMP XPCCueMol::Init(const char *confpath, bool *_retval)
   sysdep::init();
   //MB_DPRINTLN("---------- qsys::init(confpath) OK");
 
-#ifndef NO_SCRIPT
-  // load internal JS module
-  jsbr::init();
-#endif
-  //MB_DPRINTLN("---------- jsbr::init() OK");
-
   // load other modules
   render::init();
   molstr::init();
@@ -233,6 +233,17 @@ NS_IMETHODIMP XPCCueMol::Init(const char *confpath, bool *_retval)
 
   MB_DPRINTLN("---------- setup observers OK");
 
+#ifdef HAVE_JAVASCRIPT
+  // load internal JS module
+  jsbr::init();
+  //MB_DPRINTLN("---------- jsbr::init() OK");
+#endif
+
+#ifdef HAVE_PYTHON
+  // load python module
+  pybr::init();
+#endif
+
   MB_DPRINTLN("XPCCueMol> CueMol initialized.");
   m_bInit = true;
   *_retval = PR_TRUE;
@@ -243,6 +254,17 @@ NS_IMETHODIMP XPCCueMol::Init(const char *confpath, bool *_retval)
 NS_IMETHODIMP XPCCueMol::Fini()
 {
   int i;
+
+#ifdef HAVE_PYTHON
+  // unload python module
+  pybr::fini();
+  MB_DPRINTLN("=== pybr::fini() OK ===");
+#endif
+
+#ifdef HAVE_JAVASCRIPT
+  jsbr::fini();
+  MB_DPRINTLN("=== jsbr::fini() OK ===");
+#endif
 
   //finiTextRender();
   destroyTextRender(m_pTR);
@@ -275,10 +297,6 @@ NS_IMETHODIMP XPCCueMol::Fini()
   molvis::fini();
   molstr::fini();
   render::fini();
-
-#ifndef NO_SCRIPT
-  jsbr::fini();
-#endif
 
   // CueMol-App finalization
   sysdep::fini();

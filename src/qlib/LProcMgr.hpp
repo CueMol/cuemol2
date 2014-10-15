@@ -154,6 +154,18 @@ namespace qlib {
 
     void checkQueue();
 
+
+    ///////////////////////
+    // script support query
+
+  private:
+    std::set<LString> m_supscrs;
+
+  public:
+    LString getSupportedScr() const;
+    void addSupportedScr(const LString &name);
+
+
   private:
     void waitForRunningExit(int id);
 

@@ -31,7 +31,7 @@
 # define STDERR_FILENO 2
 #endif
 
-#if (__cplusplus>=201103L)
+#if (__cplusplus>=201103L || __GXX_EXPERIMENTAL_CXX0X__)
 #define HANDLE_EINTR(x) ({                                \
       decltype(x) __eintr_result__;                         \
       do {                                                \

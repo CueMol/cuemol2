@@ -87,7 +87,7 @@ else
 ############################
 # Other UNIX Build definitions
 
-libxpcqm_la_EXTRA_CXXFLAGS = -DXP_UNIX -DMOZ_X11 @GTK2_CFLAGS@
+libxpcqm_la_EXTRA_CXXFLAGS = -DXP_UNIX -DMOZ_X11 @GTK2_CFLAGS@ -D__STDC_LIMIT_MACROS
 libxpcqm_la_EXTRA_LDFLAGS =
 libxpcqm_la_EXTRA_LIBS = @GTK2_LIBS@
 libxpcqm_la_SOURCES += XPCNativeWidgetGDK.cpp

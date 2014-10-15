@@ -12,7 +12,12 @@
 #include <qsys/SceneManager.hpp>
 #include <qsys/SysConfig.hpp>
 
-#ifdef USE_PYTHON
+#ifdef HAVE_JAVASCRIPT
+#  include <jsbr/jsbr.hpp>
+#  include <jsbr/Interp.hpp>
+#endif
+
+#ifdef HAVE_PYTHON
 #  include <pybr/pybr.hpp>
 #endif
 
@@ -21,8 +26,6 @@
 #endif
 
 #if !defined(QM_BUILD_LW)
-#  include <jsbr/jsbr.hpp>
-#  include <jsbr/Interp.hpp>
 
 namespace render {
   extern bool init();
@@ -141,12 +144,12 @@ int main(int argc, const char *argv[])
   molanl::init();
 #endif
 
-#if !defined(QM_BUILD_LW)
+#ifdef HAVE_JAVASCRIPT
   // load internal JS module
   jsbr::init();
 #endif
 
-#ifdef USE_PYTHON
+#ifdef HAVE_PYTHON
   // load python module
   pybr::init();
 #endif
@@ -175,13 +178,13 @@ int main(int argc, const char *argv[])
   MB_DPRINTLN("=== xrbr::fini() OK ===");
 #endif
 
-#ifdef USE_PYTHON
+#ifdef HAVE_PYTHON
   // unload python module
   pybr::fini();
   MB_DPRINTLN("=== pybr::fini() OK ===");
 #endif
 
-#if !defined(QM_BUILD_LW)
+#ifdef HAVE_JAVASCRIPT
   jsbr::fini();
   MB_DPRINTLN("=== jsbr::fini() OK ===");
 #endif
@@ -263,7 +266,7 @@ void process_input(const LString &loadscr, const std::deque<LString> &args)
     delete pInt;
   }
   else if (full_path.extension()==".py") {
-#ifdef USE_PYTHON
+#ifdef HAVE_PYTHON
     pybr::runFile(loadscr);
 #else
     LOG_DPRINTLN("Python not supported!!");

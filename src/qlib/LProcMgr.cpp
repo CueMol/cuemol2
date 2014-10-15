@@ -422,3 +422,17 @@ void LProcMgr::writeLogFile(const LString &res)
   }
 }
 
+////////////////////////////////
+
+LString LProcMgr::getSupportedScr() const
+{
+  LString rval;
+  rval = LString::join(" ", m_supscrs.begin(), m_supscrs.end());
+  return rval;
+}
+
+void LProcMgr::addSupportedScr(const LString &name)
+{
+  m_supscrs.insert(name);
+}
+

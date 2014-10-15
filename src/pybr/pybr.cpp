@@ -6,16 +6,25 @@
 
 #include <common.h>
 #include <qlib/LString.hpp>
+#include <qlib/LProcMgr.hpp>
 
 #include "pybr.hpp"
 #include "wrapper.hpp"
+
+extern void pybr_regClasses();
 
 namespace pybr {
 
   bool init()
   {
+    pybr_regClasses();
     Py_Initialize();
-    return Wrapper::setup();
+    bool res = Wrapper::setup();
+    if (res) {
+      qlib::LProcMgr *pPM = qlib::LProcMgr::getInstance();
+      pPM->addSupportedScr("python");
+    }
+    return res;
   }
 
   void fini()
@@ -25,7 +34,6 @@ namespace pybr {
 
   bool runFile(const qlib::LString &path)
   {
-
     FILE *fp = fopen(path.c_str(), "r");
     if (fp==NULL) {
       LOG_DPRINTLN("cannot open file: %s", path.c_str());

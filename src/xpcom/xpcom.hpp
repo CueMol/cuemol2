@@ -2,6 +2,7 @@
 // XPCOM-related include files
 //
 
+
 #ifdef WINVER
 #  undef WINVER
 #endif
