@@ -1,6 +1,6 @@
 # Process this file with autoconf to produce a configure script.
 
-AC_INIT(cuemol2, 2.1.0, [http://www.cuemol.org/])
+AC_INIT(cuemol2, 2.2.0, [http://www.cuemol.org/])
 AM_INIT_AUTOMAKE([subdir-objects foreign])
 
 # Initialize with some random file to ensure the source is here.
@@ -267,10 +267,10 @@ AX_BOOST_BASE
 AX_BOOST_SYSTEM
 
 # Code trying to link with -lboost_thread (newer than 1.56?) in AX_BOOST_THREAD requires -lboost_system!!
-_tmp_libs=${BOOST_SYSTEM_LIB}
-LIBS="${BOOST_SYSTEM_LIB} $LIBS"
+_tmp_save_libs="${LIBS}"
+LIBS="${BOOST_SYSTEM_LIB} ${LIBS}"
 AX_BOOST_THREAD
-LIBS=$_tmp_libs
+LIBS=${_tmp_libs}
 
 AX_BOOST_FILESYSTEM
 dnl AX_BOOST_IOSTREAMS

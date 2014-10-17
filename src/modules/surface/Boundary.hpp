@@ -77,10 +77,10 @@ namespace surface {
       return m_verts.empty();
     }
 
-    const_iterator begin() const { m_verts.begin(); }
-    const_iterator end() const { m_verts.end(); }
-    iterator begin() { m_verts.begin(); }
-    iterator end() { m_verts.end(); }
+    const_iterator begin() const { return m_verts.begin(); }
+    const_iterator end() const { return m_verts.end(); }
+    iterator begin() { return m_verts.begin(); }
+    iterator end() { return m_verts.end(); }
 
     Vector2D getVert(int i) const
     {
