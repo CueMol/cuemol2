@@ -6,6 +6,7 @@ top_srcdir=$cwd/../src/
 install_dir=$top_srcdir/xul_gui/
 #debug="--disable-debug --enable-m64"
 debug="--enable-debug --enable-m64"
+usepybr="--enable-python"
 
 ##
 
@@ -31,11 +32,15 @@ if test ! -f $config_scr; then
     )	
 fi
 
-env CC="clang" CXX="clang++ -std=c++11 -Wno-parentheses-equality -Wno-c++11-narrowing" CFLAGS="-O" CXXFLAGS="-O" \
+env CC="clang" \
+CFLAGS="-O" \
+CXX="clang++" \
+CXXFLAGS="-O -std=c++11 -Wno-parentheses-equality -Wno-c++11-narrowing -Wno-extra-tokens -Wno-invalid-pp-token" \
 $config_scr \
 --disable-static \
 --enable-shared \
 --prefix=$install_dir \
+$usepybr \
 --with-xulrunner-sdk=$gecko_sdk_dir \
 --with-boost=$boost_dir \
 --with-fftw=$fftw_dir \
