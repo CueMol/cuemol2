@@ -25,3 +25,6 @@ libxrbr_la_CXXFLAGS = \
  @BOOST_CPPFLAGS@ \
  $(NULL)
 
+libxrbr_la_LIBADD = @XMLRPC_LIBADD@
+
+libxrbr_la_LDFLAGS = @XMLRPC_LDFLAGS@

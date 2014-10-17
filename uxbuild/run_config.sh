@@ -9,7 +9,7 @@ debug="--enable-debug --enable-m64"
 #usepybr="--enable-python"
 usepybr="--disable-python"
 
-usexrbr="--with-xmlrpc=/net3/ishitani/app64/xmlrpc-c"
+usexrbr="--with-xmlrpc=/net3/ishitani/app64"
 #usexrbr="--without-xmlrpc"
 
 ##

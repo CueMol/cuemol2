@@ -478,6 +478,7 @@ AC_ARG_WITH(xmlrpc,
     _cppflags=${CPPFLAGS}
     CPPFLAGS="-I$with_xmlrpc/include $CPPFLAGS"
     AC_CHECK_HEADERS([xmlrpc-c/base.h],,[AC_MSG_ERROR(xmlrpc-c/base.h not found)],[])
+
     AC_CHECK_DECLS(xmlrpc_version,
                    [XMLRPC_CPPFLAGS="-I$with_xmlrpc/include"],
 		   [AC_MSG_ERROR(xmlrpc_version() not found)],
@@ -485,13 +486,17 @@ AC_ARG_WITH(xmlrpc,
     CPPFLAGS=$_cppflags
 
     _ldflags=${LDFLAGS}
+    _libs=${LIBS}
     LDFLAGS="-L$with_xmlrpc/lib $LDFLAGS"
+    LIBS="-lxmlrpc_server_abyss++ -lxmlrpc_server++ -lxmlrpc_server_abyss -lxmlrpc_server -lxmlrpc_abyss -lpthread -lxmlrpc++ -lxmlrpc -lxmlrpc_util -lxmlrpc_xmlparse -lxmlrpc_xmltok $LIBS"
     AC_CHECK_LIB(xmlrpc, xmlrpc_version,
                  [XMLRPC_LDFLAGS="-L$with_xmlrpc/lib"
 		  XMLRPC_LIBADD=" -lxmlrpc_server_abyss++ -lxmlrpc_server++ -lxmlrpc_server_abyss -lxmlrpc_server -lxmlrpc_abyss -lpthread -lxmlrpc++ -lxmlrpc -lxmlrpc_util -lxmlrpc_xmlparse -lxmlrpc_xmltok"],
 		 [AC_MSG_ERROR(xmlrpc_version() not found)],
 		 [])
     LDFLAGS=$_ldflags
+    LIBS=$_libs
+
     ;;
   esac ],
 [   AC_CHECK_HEADERS([xmlrpc-c/base.h],,[AC_MSG_ERROR(xmlrpc-c/base.h not found)],[])
