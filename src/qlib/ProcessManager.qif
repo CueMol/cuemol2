@@ -32,7 +32,7 @@ runtime_class ProcessManager
   void killAll();
   string doneTaskListJSON();
 
-  property string supportedScripts => redirect(getSupportedScr, XXX) (readonly);
+  // property string supportedScripts => redirect(getSupportedScr, XXX) (readonly);
 };
 
 #endif

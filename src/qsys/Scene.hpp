@@ -264,6 +264,9 @@ namespace qsys {
     int getViewCount() const { return m_viewtab.size(); }
 
     void setActiveViewID(qlib::uid_t uid);
+    qlib::uid_t getActiveViewID() const {
+      return m_nActiveViewID;
+    }
 
     ViewPtr getActiveView() const;
 

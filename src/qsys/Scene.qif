@@ -96,8 +96,8 @@ runtime_class Scene
   //property array views => redirect(getViewArray, XXX) (readonly);
   property string view_uids => redirect(getViewUIDList, XXX) (readonly);
 
-  property object<View$> activeView => redirect(getActiveView, XXX) (readonly, nopersist);
-
+  // property object<View$> activeView => redirect(getActiveView, XXX) (readonly, nopersist);
+  property integer activeViewID => redirect(getActiveViewID, setActiveViewID) (nopersist);
   void setActiveViewID(integer);
 
   ////////////////////

@@ -6,7 +6,6 @@
 
 #include <common.h>
 #include <qlib/LString.hpp>
-#include <qlib/LProcMgr.hpp>
 
 #include "pybr.hpp"
 #include "wrapper.hpp"
@@ -20,10 +19,6 @@ namespace pybr {
     pybr_regClasses();
     Py_Initialize();
     bool res = Wrapper::setup();
-    if (res) {
-      qlib::LProcMgr *pPM = qlib::LProcMgr::getInstance();
-      pPM->addSupportedScr("python");
-    }
     return res;
   }
 

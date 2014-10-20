@@ -211,3 +211,15 @@ ViewPtr SceneManager::getViewS(qlib::uid_t uid)
 }
 
 
+void SceneManager::setActiveSceneID(qlib::uid_t uid)
+{
+  // check the validity of UID
+  data_t::const_iterator iter = m_data.find(uid);
+  if (iter==m_data.end()) {
+    LString msg = LString::format("Cannot activate unknown scene ID: %d", uid);
+    MB_THROW(qlib::RuntimeException, msg);
+    return;
+  }
+    
+  m_nActiveSceneID = uid;
+}

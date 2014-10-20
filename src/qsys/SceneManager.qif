@@ -44,6 +44,8 @@ runtime_class SceneManager
   property string version => redirect(getVersion, XXX) (readonly);
   property string build => redirect(getBuildID, XXX) (readonly);
 
+  property integer activeSceneID => redirect(getActiveSceneID, XXX) (readonly, nopersist);
+
 };
 
 #endif

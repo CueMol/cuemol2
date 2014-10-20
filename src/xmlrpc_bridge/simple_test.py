@@ -116,7 +116,20 @@ if __name__ == "__main__":
         
         return
 
-    test1()
+#    test1()
         
 ##############
 
+    def test2():
+        scm = cuemol.getService("SceneManager")
+        scid = scm.activeSceneID;
+        print "Active scene ID=", scid;
+        sc = scm.getScene(scid);
+        vwid = sc.activeViewID;
+        print "Active view ID=", vwid;
+
+        color = cuemol.createObj("Color");
+        color.setCode(0xFFFFFF);
+        sc.bgcolor = color;
+        
+    test2()

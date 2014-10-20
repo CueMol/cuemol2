@@ -16,6 +16,7 @@
 #include "StreamManager.hpp"
 #include "style/AutoStyleCtxt.hpp"
 #include "CameraEditInfo.hpp"
+#include "SceneManager.hpp"
 
 #include <qlib/FileStream.hpp>
 #include <qlib/StringStream.hpp>
@@ -818,6 +819,10 @@ void Scene::setActiveViewID(qlib::uid_t uid)
   }
     
   m_nActiveViewID = uid;
+
+  // set this Scene as active scene to the scene manager.
+  SceneManager *pMgr = SceneManager::getInstance();
+  pMgr->setActiveSceneID(m_nUID);
 }
 
 ViewPtr Scene::getActiveView() const
