@@ -6,7 +6,12 @@ top_srcdir=$cwd/../src/
 install_dir=$top_srcdir/xul_gui/
 #debug="--disable-debug --enable-m64"
 debug="--enable-debug --enable-m64"
-usepybr="--enable-python"
+
+#usepybr="--enable-python"
+usepybr="--disable-python"
+
+usexrbr="--with-xmlrpc=$HOME/proj64/xmlrpc-c"
+#usexrbr="--without-xmlrpc"
 
 ##
 
@@ -41,6 +46,7 @@ $config_scr \
 --enable-shared \
 --prefix=$install_dir \
 $usepybr \
+$usexrbr \
 --with-xulrunner-sdk=$gecko_sdk_dir \
 --with-boost=$boost_dir \
 --with-fftw=$fftw_dir \

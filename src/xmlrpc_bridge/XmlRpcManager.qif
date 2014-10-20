@@ -1,0 +1,20 @@
+// -*-Mode: C++;-*-
+//
+// XML-RPC Manager
+//
+
+#ifndef XML_RPC_MANAGER_QIF
+#define XML_RPC_MANAGER_QIF
+
+runtime_class XmlRpcManager
+{
+  client_hdr "XmlRpcMgr.hpp";
+  client_name xrbr::XmlRpcMgr;
+
+  scriptable;
+  singleton;
+
+  void start();
+};
+
+#endif

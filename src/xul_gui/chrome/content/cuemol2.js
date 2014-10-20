@@ -310,6 +310,16 @@ Qm2Main.prototype.onLoad = function ()
   }
   catch (e) {
   }
+
+  //////////
+
+  try {
+    var xrmgr = cuemol.getService("XmlRpcManager");
+    if (xrmgr)
+      xrmgr.start();
+  }
+  catch (e) {
+  }
 }
   
 

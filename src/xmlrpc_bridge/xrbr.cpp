@@ -8,22 +8,27 @@
 #include "xrbr.hpp"
 #include "XmlRpcMgr.hpp"
 
+extern void xrbr_regClasses();
+
 namespace xrbr {
 
   bool init()
   {
-    XmlRpcManager::init();
+    xrbr_regClasses();
+    XmlRpcMgr::init();
+    return true;
   }
 
   void fini()
   {
-    XmlRpcManager::fini();
+    XmlRpcMgr::fini();
   }
 
+  /*
   void serverRun()
   {
-    XmlRpcManager *pMgr = XmlRpcManager::getInstance();
+    XmlRpcMgr *pMgr = XmlRpcMgr::getInstance();
     pMgr->run();
   }
-
+  */
 }

@@ -8,8 +8,10 @@
 
 #include "xrbr.hpp"
 
+#include <qlib/LScrObjects.hpp>
 #include <qlib/SingletonBase.hpp>
-#include <qlib/LScriptable.hpp>
+#include <qlib/mcutils.hpp>
+#include <qlib/LThread.hpp>
 
 #include <xmlrpc-c/base.hpp>
 
@@ -19,12 +21,22 @@ namespace xrbr {
   using qlib::LString;
   using qlib::LScriptable;
 
+  class XRBR_API XrMgrThrImpl
+    : public qlib::LThread
+  {
+    virtual void run();
+  };
+
   ///
   ///  Singleton class for
   ///  XML-RPC Manager
   ///
-  class XRBR_API XmlRpcManager : public qlib::SingletonBase<XmlRpcManager>
+  class XRBR_API XmlRpcMgr
+    : public qlib::LSingletonScrObject,
+      public qlib::SingletonBase<XmlRpcMgr>
   {
+    MC_SCRIPTABLE;
+
   private:
     struct Entry {
       LScriptable *p;
@@ -45,8 +57,8 @@ namespace xrbr {
 
   public:
     
-    XmlRpcManager();
-    virtual ~XmlRpcManager();
+    XmlRpcMgr();
+    virtual ~XmlRpcMgr();
     
     ///////////////////////
 
@@ -68,14 +80,23 @@ namespace xrbr {
     bool destroyObj(qlib::uid_t uid);
     qlib::LScriptable *getObj(qlib::uid_t uid);
 
+    int hasProp(qlib::uid_t uid, const LString &propnm);
     bool getProp(qlib::uid_t uid, const LString &propnm, xmlrpc_c::value *pRval);
     bool setProp(qlib::uid_t uid, const LString &propnm, const xmlrpc_c::value *pVal);
 
     bool callMethod(qlib::uid_t uid, const LString &mthnm, const xmlrpc_c::carray &vargs, xmlrpc_c::value *pRval);
 
+    void chkCred(const LString &c);
+
     ///////////////////////
 
+  private:
+    XrMgrThrImpl *m_pMgrThr;
+
+  public:
     void run();
+
+    void start();
   };
 
 }

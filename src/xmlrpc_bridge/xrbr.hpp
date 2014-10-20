@@ -45,8 +45,6 @@ namespace xrbr {
   /// Cleanup the xrbr library
   XRBR_API void fini();
 
-  /// wait for call
-  XRBR_API void serverRun();
 }
 
 #include <qlib/LString.hpp>

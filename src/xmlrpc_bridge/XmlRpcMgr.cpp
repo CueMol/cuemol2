@@ -7,6 +7,7 @@
 #include <qlib/LVariant.hpp>
 #include <qlib/LVarArgs.hpp>
 #include <qlib/LVarArray.hpp>
+// #include <qlib/LExceptions.hpp>
 
 #include "XmlRpcMgr.hpp"
 
@@ -16,17 +17,18 @@
 
 using namespace xrbr;
 
-SINGLETON_BASE_IMPL(XmlRpcManager);
+SINGLETON_BASE_IMPL(XmlRpcMgr);
 
-XmlRpcManager::XmlRpcManager() : m_uidgen(0)
+XmlRpcMgr::XmlRpcMgr() : m_uidgen(0)
+{
+  m_pMgrThr = NULL;
+}
+
+XmlRpcMgr::~XmlRpcMgr()
 {
 }
 
-XmlRpcManager::~XmlRpcManager()
-{
-}
-
-qlib::uid_t XmlRpcManager::registerObj(LScriptable *pObj)
+qlib::uid_t XmlRpcMgr::registerObj(LScriptable *pObj)
 {
   qlib::uid_t uid = createNewUID();
   Entry ent;
@@ -47,7 +49,7 @@ qlib::uid_t XmlRpcManager::registerObj(LScriptable *pObj)
   return uid;
 }
 
-qlib::uid_t XmlRpcManager::createObj(const LString &clsname)
+qlib::uid_t XmlRpcMgr::createObj(const LString &clsname)
 {
   qlib::ClassRegistry *pMgr = qlib::ClassRegistry::getInstance();
   MB_ASSERT(pMgr!=NULL);
@@ -60,6 +62,8 @@ qlib::uid_t XmlRpcManager::createObj(const LString &clsname)
   catch (...) {
     LString msg = LString::format("createObj class %s not found", clsname.c_str());
     LOG_DPRINTLN(msg);
+    // ERROR!!
+    throw ( xmlrpc_c::fault(msg.c_str(), xmlrpc_c::fault::CODE_UNSPECIFIED) );
     return qlib::invalid_uid;
   }
 
@@ -67,6 +71,8 @@ qlib::uid_t XmlRpcManager::createObj(const LString &clsname)
   if (pNewObj==NULL) {
     LString msg = LString::format("createObj %s failed", clsname.c_str());
     LOG_DPRINTLN(msg);
+    // ERROR!!
+    throw ( xmlrpc_c::fault(msg.c_str(), xmlrpc_c::fault::CODE_UNSPECIFIED) );
     return qlib::invalid_uid;
   }
   
@@ -75,7 +81,7 @@ qlib::uid_t XmlRpcManager::createObj(const LString &clsname)
   return registerObj(pNewObj);
 }
 
-qlib::uid_t XmlRpcManager::getService(const LString &clsname)
+qlib::uid_t XmlRpcMgr::getService(const LString &clsname)
 {
   qlib::ClassRegistry *pMgr = qlib::ClassRegistry::getInstance();
   MB_ASSERT(pMgr!=NULL);
@@ -95,7 +101,7 @@ qlib::uid_t XmlRpcManager::getService(const LString &clsname)
   return registerObj((qlib::LScriptable *)pObj);
 }
 
-bool XmlRpcManager::destroyObj(qlib::uid_t uid)
+bool XmlRpcMgr::destroyObj(qlib::uid_t uid)
 {
   ObjTable::iterator i = m_objtab.find(uid);
   if (i==m_objtab.end()) {
@@ -119,24 +125,44 @@ bool XmlRpcManager::destroyObj(qlib::uid_t uid)
   return true;
 }
 
-qlib::LScriptable *XmlRpcManager::getObj(qlib::uid_t uid)
+qlib::LScriptable *XmlRpcMgr::getObj(qlib::uid_t uid)
 {
   ObjTable::const_iterator i = m_objtab.find(uid);
   if (i==m_objtab.end()) {
-    MB_DPRINTLN("getObj uid %d not found!!", uid);
+    LString msg = LString::format("getObj unknown object ID: %d", uid);
+    throw( xmlrpc_c::fault(msg.c_str(), xmlrpc_c::fault::CODE_UNSPECIFIED) );
     return NULL;
   }
 
   return i->second.p;
 }
 
-bool XmlRpcManager::getProp(qlib::uid_t uid, const LString &propnm, xmlrpc_c::value *pRval)
+int XmlRpcMgr::hasProp(qlib::uid_t uid, const LString &propnm)
 {
   qlib::LScriptable *pObj = getObj(uid);
-  if (pObj==NULL) {
-    // TO DO: report error
-    return false;
+
+  if (pObj->hasProperty(propnm)) {
+    if (pObj->hasWritableProperty(propnm)) {
+      // has wrprop (1)
+      return 1;
+    }
+    else {
+      // has roprop (2)
+      return 2;
+    }
   }
+
+  if (pObj->hasMethod(propnm)) {
+    // name is method (3)
+    return 3;
+  }
+
+  return 0;
+}
+
+bool XmlRpcMgr::getProp(qlib::uid_t uid, const LString &propnm, xmlrpc_c::value *pRval)
+{
+  qlib::LScriptable *pObj = getObj(uid);
   
   if (!pObj->hasProperty(propnm)) {
     // TO DO: report error
@@ -147,19 +173,19 @@ bool XmlRpcManager::getProp(qlib::uid_t uid, const LString &propnm, xmlrpc_c::va
   if (!pObj->getProperty(propnm, lvar)) {
     LString msg =
       LString::format("GetProp: getProperty(\"%s\") call failed.", propnm.c_str());
-    // TO DO: report error
+    throw( xmlrpc_c::fault(msg.c_str(), xmlrpc_c::fault::CODE_UNSPECIFIED) );
     return false;
   }
   
   if (!convLvar2Xrval(lvar, pRval)) {
-    // TO DO: report error
+    throw( xmlrpc_c::fault("Conv from LVar to XMLRPC val failed", xmlrpc_c::fault::CODE_UNSPECIFIED) );
     return false;
   }
 
   return true;
 }
 
-bool XmlRpcManager::setProp(qlib::uid_t uid, const LString &propnm, const xmlrpc_c::value *pVal)
+bool XmlRpcMgr::setProp(qlib::uid_t uid, const LString &propnm, const xmlrpc_c::value *pVal)
 {
   qlib::LScriptable *pObj = getObj(uid);
   if (pObj==NULL) {
@@ -237,7 +263,7 @@ bool XmlRpcManager::setProp(qlib::uid_t uid, const LString &propnm, const xmlrpc
   return true;
 }
 
-bool XmlRpcManager::callMethod(qlib::uid_t uid, const LString &mthnm, const xmlrpc_c::carray &vargs, xmlrpc_c::value *pRval)
+bool XmlRpcMgr::callMethod(qlib::uid_t uid, const LString &mthnm, const xmlrpc_c::carray &vargs, xmlrpc_c::value *pRval)
 {
   const int nargs = vargs.size();
 
@@ -340,7 +366,7 @@ bool XmlRpcManager::callMethod(qlib::uid_t uid, const LString &mthnm, const xmlr
   return true;
 }
 
-bool XmlRpcManager::convLvar2Xrval(qlib::LVariant &variant, xmlrpc_c::value *pRval)
+bool XmlRpcMgr::convLvar2Xrval(qlib::LVariant &variant, xmlrpc_c::value *pRval)
 {
   switch (variant.getTypeID()) {
   case qlib::LVariant::LT_NULL:
@@ -372,7 +398,7 @@ bool XmlRpcManager::convLvar2Xrval(qlib::LVariant &variant, xmlrpc_c::value *pRv
     qlib::uid_t id = registerObj(pObj);
 
     xmlrpc_c::cstruct dict;
-    dict.insert(std::pair<std::string, xmlrpc_c::value>(std::string("UID"), xmlrpc_c::value_int(id)));
+    dict.insert(xmlrpc_c::cstruct::value_type(std::string("UID"), xmlrpc_c::value_int(id)));
 
     *pRval = xmlrpc_c::value_struct(dict);
 
@@ -398,7 +424,7 @@ bool XmlRpcManager::convLvar2Xrval(qlib::LVariant &variant, xmlrpc_c::value *pRv
   return false;
 }
 
-bool XmlRpcManager::convXrval2Lvar(const xmlrpc_c::value *pVal, qlib::LVariant &rvar)
+bool XmlRpcMgr::convXrval2Lvar(const xmlrpc_c::value *pVal, qlib::LVariant &rvar)
 {
   xmlrpc_c::value::type_t ntype = pVal->type();
 
@@ -458,6 +484,14 @@ bool XmlRpcManager::convXrval2Lvar(const xmlrpc_c::value *pVal, qlib::LVariant &
   return false;
 }
 
+void XmlRpcMgr::chkCred(const LString &c)
+{
+  // TO DO: implementation
+  if (!c.equals("XXX"))
+    throw( xmlrpc_c::fault("Invalid credential", xmlrpc_c::fault::CODE_UNSPECIFIED) );
+}
+
+
 
 ////////////////////
 
@@ -466,22 +500,27 @@ namespace {
   {
   public:
     CreateObjMethod() {
-      // signature and help strings are documentation -- the client
-      // can query this information with a system.methodSignature and
-      // system.methodHelp RPC.
-      this->_signature = "i:s";
-      // method's result and two arguments are integers
+      this->_signature = "i:ss";
       this->_help = "This method";
     }
     void
     execute(xmlrpc_c::paramList const& paramList,
             xmlrpc_c::value *   const  retvalP)
     {
-      std::string clsnm = paramList.getString(0);
+      MB_DPRINTLN("*********** CreateObj called\n");
+      paramList.verifyEnd(2);
+      MB_DPRINTLN("*********** CreateObj NArgs OK");
         
-      paramList.verifyEnd(1);
+      // Credential for authentication
+      std::string cred = paramList.getString(0);
+      // Class name of object to create
+      std::string clsnm = paramList.getString(1);
         
-      XmlRpcManager *pMgr = XmlRpcManager::getInstance();
+      XmlRpcMgr *pMgr = XmlRpcMgr::getInstance();
+
+      // check credential
+      pMgr->chkCred(cred);
+
       qlib::uid_t nObjID = pMgr->createObj(clsnm);
 
       *retvalP = xmlrpc_c::value_int(nObjID);
@@ -492,22 +531,24 @@ namespace {
   {
   public:
     GetServiceMethod() {
-      // signature and help strings are documentation -- the client
-      // can query this information with a system.methodSignature and
-      // system.methodHelp RPC.
-      this->_signature = "i:s";
-      // method's result and two arguments are integers
+      this->_signature = "i:ss";
       this->_help = "This method";
     }
     void
     execute(xmlrpc_c::paramList const& paramList,
             xmlrpc_c::value *   const  retvalP)
     {
-      std::string clsnm = paramList.getString(0);
+      paramList.verifyEnd(2);
         
-      paramList.verifyEnd(1);
+      // Credential for authentication
+      std::string cred = paramList.getString(0);
+      // Class name of service object
+      std::string clsnm = paramList.getString(1);
         
-      XmlRpcManager *pMgr = XmlRpcManager::getInstance();
+      XmlRpcMgr *pMgr = XmlRpcMgr::getInstance();
+      // check credential
+      pMgr->chkCred(cred);
+
       qlib::uid_t nObjID = pMgr->getService(clsnm);
 
       *retvalP = xmlrpc_c::value_int(nObjID);
@@ -518,18 +559,25 @@ namespace {
   {
   public:
     DestroyObjMethod() {
-      this->_signature = "i:i";
+      this->_signature = "i:si";
       this->_help = "This method";
     }
     void
     execute(xmlrpc_c::paramList const& paramList,
             xmlrpc_c::value *   const  retvalP)
     {
-      qlib::uid_t uid = (qlib::uid_t) paramList.getInt(0);
+      paramList.verifyEnd(2);
         
-      paramList.verifyEnd(1);
+      // Credential for authentication
+      std::string cred = paramList.getString(0);
+      //
+      qlib::uid_t uid = (qlib::uid_t) paramList.getInt(1);
         
-      XmlRpcManager *pMgr = XmlRpcManager::getInstance();
+      XmlRpcMgr *pMgr = XmlRpcMgr::getInstance();
+
+      // check credential
+      pMgr->chkCred(cred);
+
       bool res = pMgr->destroyObj(uid);
 
       *retvalP = xmlrpc_c::value_boolean(res);
@@ -540,45 +588,30 @@ namespace {
   {
   public:
     HasPropMethod() {
-      this->_signature = "i:is";
+      this->_signature = "i:sis";
       this->_help = "This method";
     }
     void
     execute(xmlrpc_c::paramList const& paramList,
             xmlrpc_c::value *   const  retvalP)
     {
-      qlib::uid_t uid = (qlib::uid_t) paramList.getInt(0);
-      std::string propnm = paramList.getString(1);
+      paramList.verifyEnd(3);
         
-      paramList.verifyEnd(2);
+      // Credential for authentication
+      std::string cred = paramList.getString(0);
+      //
+      qlib::uid_t uid = (qlib::uid_t) paramList.getInt(1);
+      //
+      std::string propnm = paramList.getString(2);
         
-      XmlRpcManager *pMgr = XmlRpcManager::getInstance();
-      qlib::LScriptable *pObj = pMgr->getObj(uid);
-      if (pObj==NULL) {
-	// TO DO: report error
-	return;
-      }
+      XmlRpcMgr *pMgr = XmlRpcMgr::getInstance();
 
-      if (pObj->hasProperty(propnm)) {
-	if (pObj->hasWritableProperty(propnm)) {
-	  // has wrprop (1)
-	  *retvalP = xmlrpc_c::value_int(1);
-	}
-	else {
-	  // has roprop (2)
-	  *retvalP = xmlrpc_c::value_int(2);
-	}
-	return;
-      }
+      // check credential
+      pMgr->chkCred(cred);
 
-      if (pObj->hasMethod(propnm)) {
-	// name is method (3)
-	*retvalP = xmlrpc_c::value_int(3);
-	return;
-      }
+      int rcode = pMgr->hasProp(uid, propnm);
 
-      // prop not found
-      *retvalP = xmlrpc_c::value_int(0);
+      *retvalP = xmlrpc_c::value_int(rcode);
       return;
     }
   };
@@ -588,31 +621,7 @@ namespace {
   {
   public:
     GetPropMethod() {
-      this->_signature = "i:is";
-      this->_help = "This method";
-    }
-
-    void
-    execute(xmlrpc_c::paramList const& paramList,
-            xmlrpc_c::value *   const  retvalP)
-    {
-      qlib::uid_t uid = (qlib::uid_t) paramList.getInt(0);
-      std::string propnm = paramList.getString(1);
-        
-      paramList.verifyEnd(2);
-        
-      XmlRpcManager *pMgr = XmlRpcManager::getInstance();
-      pMgr->getProp(uid, propnm, retvalP);
-
-      return;
-    }
-  };
-
-  class SetPropMethod : public xmlrpc_c::method
-  {
-  public:
-    SetPropMethod() {
-      this->_signature = "i:is";
+      this->_signature = "i:sis";
       this->_help = "This method";
     }
 
@@ -622,13 +631,97 @@ namespace {
     {
       paramList.verifyEnd(3);
         
-      qlib::uid_t uid = (qlib::uid_t) paramList.getInt(0);
-      std::string propnm = paramList.getString(1);
-      xmlrpc_c::value val = paramList[2];
+      // Credential for authentication
+      std::string cred = paramList.getString(0);
+      //
+      qlib::uid_t uid = (qlib::uid_t) paramList.getInt(1);
+      //
+      std::string propnm = paramList.getString(2);
         
+      XmlRpcMgr *pMgr = XmlRpcMgr::getInstance();
+      // check credential
+      pMgr->chkCred(cred);
+
+      pMgr->getProp(uid, propnm, retvalP);
+
+      return;
+    }
+  };
+
+  class TryGetPropMethod : public xmlrpc_c::method
+  {
+  public:
+    TryGetPropMethod() {
+      this->_signature = "i:sis";
+      this->_help = "This method";
+    }
+
+    void
+    execute(xmlrpc_c::paramList const& paramList,
+            xmlrpc_c::value *   const  retvalP)
+    {
+      paramList.verifyEnd(3);
+        
+      // Credential for authentication
+      std::string cred = paramList.getString(0);
+      //
+      qlib::uid_t uid = (qlib::uid_t) paramList.getInt(1);
+      //
+      std::string propnm = paramList.getString(2);
+        
+      XmlRpcMgr *pMgr = XmlRpcMgr::getInstance();
+      // check credential
+      pMgr->chkCred(cred);
+
+      int rcode = pMgr->hasProp(uid, propnm);
+      if (rcode==0) {
+	LString msg = LString::format("TryGetProp: property %s not found.", propnm.c_str());
+	throw( xmlrpc_c::fault(msg.c_str(), xmlrpc_c::fault::CODE_UNSPECIFIED) );
+	return;
+      }
+
+      xmlrpc_c::cstruct dict;
+      dict.insert(xmlrpc_c::cstruct::value_type(std::string("rcode"), xmlrpc_c::value_int(rcode)));
+      if (rcode==1||rcode==2) {
+	xmlrpc_c::value rval;
+	pMgr->getProp(uid, propnm, &rval);
+	dict.insert(xmlrpc_c::cstruct::value_type(std::string("rval"), rval));
+      }
+
+      *retvalP = xmlrpc_c::value_struct(dict);
+      return;
+    }
+  };
+
+  class SetPropMethod : public xmlrpc_c::method
+  {
+  public:
+    SetPropMethod() {
+      this->_signature = "i:sis";
+      this->_help = "This method";
+    }
+
+    void
+    execute(xmlrpc_c::paramList const& paramList,
+            xmlrpc_c::value *   const  retvalP)
+    {
+      paramList.verifyEnd(4);
+        
+      // Credential for authentication
+      std::string cred = paramList.getString(0);
+      //
+      qlib::uid_t uid = (qlib::uid_t) paramList.getInt(1);
+      //
+      std::string propnm = paramList.getString(2);
+      //
+      xmlrpc_c::value val = paramList[3];
+        
+      XmlRpcMgr *pMgr = XmlRpcMgr::getInstance();
+      // check credential
+      pMgr->chkCred(cred);
+
       MB_DPRINTLN("SetProp for %d, %s called", uid, propnm.c_str());
 
-      XmlRpcManager *pMgr = XmlRpcManager::getInstance();
       pMgr->setProp(uid, propnm, &val);
 
       *retvalP = xmlrpc_c::value_nil();
@@ -649,20 +742,27 @@ namespace {
     execute(xmlrpc_c::paramList const& paramList,
             xmlrpc_c::value *   const  retvalP)
     {
-      paramList.verifyEnd(3);
+      paramList.verifyEnd(4);
         
-      qlib::uid_t uid = (qlib::uid_t) paramList.getInt(0);
-      std::string mthnm = paramList.getString(1);
-      //xmlrpc_c::value val = paramList[2];
-      xmlrpc_c::carray vargs = paramList.getArray(2);
+      // Credential for authentication
+      std::string cred = paramList.getString(0);
+      //
+      qlib::uid_t uid = (qlib::uid_t) paramList.getInt(1);
+      //
+      std::string mthnm = paramList.getString(2);
+      //
+      xmlrpc_c::carray vargs = paramList.getArray(3);
         
+      XmlRpcMgr *pMgr = XmlRpcMgr::getInstance();
+      // check credential
+      pMgr->chkCred(cred);
+
       MB_DPRINTLN("CallMethod for %d, %s called", uid, mthnm.c_str());
       int nargs = vargs.size();
       for (int i=0; i<nargs; ++i) {
 	MB_DPRINTLN("Arg %d: type %d", i, vargs[i].type());
       }
 
-      XmlRpcManager *pMgr = XmlRpcManager::getInstance();
       pMgr->callMethod(uid, mthnm, vargs, retvalP);
 
       return;
@@ -670,7 +770,7 @@ namespace {
   };
 }
 
-void XmlRpcManager::run()
+void XmlRpcMgr::run()
 {
   try {
     xmlrpc_c::registry myRegistry;
@@ -682,6 +782,7 @@ void XmlRpcManager::run()
 
     myRegistry.addMethod("hasProp", xmlrpc_c::methodPtr(new HasPropMethod));
     myRegistry.addMethod("getProp", xmlrpc_c::methodPtr(new GetPropMethod));
+    myRegistry.addMethod("tryGetProp", xmlrpc_c::methodPtr(new TryGetPropMethod));
     myRegistry.addMethod("setProp", xmlrpc_c::methodPtr(new SetPropMethod));
     myRegistry.addMethod("callMethod", xmlrpc_c::methodPtr(new CallMethod));
 
@@ -700,4 +801,23 @@ void XmlRpcManager::run()
   }
 
 }
+
+void XrMgrThrImpl::run()
+{
+  XmlRpcMgr *pMgr = XmlRpcMgr::getInstance();
+  pMgr->run();
+}
+
+void XmlRpcMgr::start()
+{
+  MB_ASSERT(m_pMgrThr==NULL);
+
+  m_pMgrThr = MB_NEW XrMgrThrImpl;
+
+  // start the server thread
+  m_pMgrThr->kick();
+  
+  MB_DPRINTLN("XML-RPC thread start: thread running %d", m_pMgrThr->isRunning());
+}
+
 

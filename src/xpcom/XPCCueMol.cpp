@@ -43,6 +43,9 @@
 #include <pybr/pybr.hpp>
 #endif
 
+#ifdef USE_XMLRPC
+#include <xmlrpc_bridge/xrbr.hpp>
+#endif
 
 gfx::TextRenderImpl *createTextRender();
 void destroyTextRender(void *pTR);
@@ -245,6 +248,12 @@ NS_IMETHODIMP XPCCueMol::Init(const char *confpath, bool *_retval)
   MB_DPRINTLN("---------- setup PYBR OK");
 #endif
 
+#ifdef USE_XMLRPC
+  // load python module
+  xrbr::init();
+  MB_DPRINTLN("---------- setup XRBR OK");
+#endif
+
   MB_DPRINTLN("XPCCueMol> CueMol initialized.");
   m_bInit = true;
   *_retval = PR_TRUE;
@@ -255,6 +264,12 @@ NS_IMETHODIMP XPCCueMol::Init(const char *confpath, bool *_retval)
 NS_IMETHODIMP XPCCueMol::Fini()
 {
   int i;
+
+#ifdef USE_XMLRPC
+  // unload XMLRPC module
+  xrbr::fini();
+  MB_DPRINTLN("=== xrbr::fini() OK ===");
+#endif
 
 #ifdef HAVE_PYTHON
   // unload python module

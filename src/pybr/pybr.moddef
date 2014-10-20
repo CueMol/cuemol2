@@ -5,8 +5,8 @@
 
 module pybr
 {
-  init qlib::init();
-  fini qlib::fini();
+  init pybr::init();
+  fini pybr::fini();
 
   PythonBridge;
 };
