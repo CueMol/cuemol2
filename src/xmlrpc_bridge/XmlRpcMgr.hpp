@@ -1,3 +1,4 @@
+// -*-Mode: C++;-*-
 //
 // Singleton class for
 // XML-RPC Manager
@@ -13,7 +14,14 @@
 #include <qlib/mcutils.hpp>
 #include <qlib/LThread.hpp>
 
-#include <xmlrpc-c/base.hpp>
+//#include <xmlrpc-c/base.hpp>
+
+#include "ReqEvtQueue.hpp"
+
+namespace xmlrpc_c {
+  class value;
+  typedef std::vector<xmlrpc_c::value> carray;
+}
 
 namespace xrbr {
 
@@ -54,6 +62,9 @@ namespace xrbr {
     RevTable m_revtab;
 
     qlib::uid_t m_uidgen;
+
+    /// Request-object queue
+    ReqEvtQueue m_que;
 
   public:
     
@@ -97,6 +108,8 @@ namespace xrbr {
     void run();
 
     void start();
+
+    void processReq(int n) { m_que.processReq(n); }
   };
 
 }

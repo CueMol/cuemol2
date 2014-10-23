@@ -52,6 +52,7 @@ qlib::uid_t XmlRpcMgr::registerObj(LScriptable *pObj)
 
 qlib::uid_t XmlRpcMgr::createObj(const LString &clsname)
 {
+  /*
   qlib::ClassRegistry *pMgr = qlib::ClassRegistry::getInstance();
   MB_ASSERT(pMgr!=NULL);
 
@@ -78,8 +79,18 @@ qlib::uid_t XmlRpcMgr::createObj(const LString &clsname)
   }
   
   MB_DPRINTLN("createObj(%s) OK, result=%p!!", clsname.c_str(), pNewObj);
+  */
+  ReoCreateObj evt;
+  evt.m_clsname = clsname;
+  evt.m_pRval = NULL;
+  m_que.putWait(&evt);
 
-  return registerObj(pNewObj);
+  if (!evt.m_bOK || evt.m_pRval==NULL) {
+    throw ( xmlrpc_c::fault(evt.m_errmsg.c_str(), xmlrpc_c::fault::CODE_UNSPECIFIED) );
+    return qlib::invalid_uid;
+  }
+
+  return registerObj(evt.m_pRval);
 }
 
 qlib::uid_t XmlRpcMgr::getService(const LString &clsname)
@@ -264,10 +275,11 @@ bool XmlRpcMgr::setProp(qlib::uid_t uid, const LString &propnm, const xmlrpc_c::
   return true;
 }
 
-bool XmlRpcMgr::callMethod(qlib::uid_t uid, const LString &mthnm, const xmlrpc_c::carray &vargs, xmlrpc_c::value *pRval)
+bool XmlRpcMgr::callMethod(qlib::uid_t uid, const LString &mthnm,
+			   const xmlrpc_c::carray &vargs, xmlrpc_c::value *pRval)
 {
   const int nargs = vargs.size();
-
+  
   qlib::LScriptable *pObj = getObj(uid);
   if (pObj==NULL) {
     // TO DO: report error
@@ -281,9 +293,14 @@ bool XmlRpcMgr::callMethod(qlib::uid_t uid, const LString &mthnm, const xmlrpc_c
     return false;
   }
 
+  ReoCallMethod evt(nargs);
+  evt.m_pObj = pObj;
+  evt.m_mthname = mthnm;
+
   // Convert arguments.
 
-  qlib::LVarArgs largs(nargs);
+  //qlib::LVarArgs largs(nargs);
+  qlib::LVarArgs &largs = evt.m_vargs;
   int i;
   bool ok;
   LString errmsg;
@@ -310,6 +327,13 @@ bool XmlRpcMgr::callMethod(qlib::uid_t uid, const LString &mthnm, const xmlrpc_c
     }
   }
 
+  m_que.putWait(&evt);
+  if (!evt.m_bOK) {
+    throw ( xmlrpc_c::fault(evt.m_errmsg.c_str(), xmlrpc_c::fault::CODE_UNSPECIFIED) );
+    return qlib::invalid_uid;
+  }
+
+  /*
   MB_DPRINTLN("invoke method %s nargs=%d", mthnm.c_str(), nargs);
 
   // Invoke method
@@ -338,6 +362,7 @@ bool XmlRpcMgr::callMethod(qlib::uid_t uid, const LString &mthnm, const xmlrpc_c
     // TO DO: report error
     return false;
   }
+  */
 
   // Convert returned value
 

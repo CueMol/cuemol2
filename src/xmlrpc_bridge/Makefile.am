@@ -29,6 +29,7 @@ lib_LTLIBRARIES = libxrbr.la
 libxrbr_la_SOURCES = \
 xrbr.cpp \
 XmlRpcMgr.cpp \
+ReqEvtQueue.cpp \
 $(MODLDR_SRC) \
 $(MC_SRCS) \
 $(NULL)
