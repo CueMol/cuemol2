@@ -4,7 +4,9 @@ cwd=`pwd`
 
 top_srcdir=$cwd/../src/
 install_dir=$top_srcdir/xul_gui/
-debug="--enable-debug --enable-m64"
+
+#debug="--enable-debug --enable-m64"
+debug="--disable-debug --enable-m64"
 
 #usepybr="--enable-python"
 usepybr="--disable-python"
@@ -43,7 +45,7 @@ if test ! -f $config_scr; then
 fi
 
 env CC=gcc CXX=g++ \
-CFLAGS="-O0 -g -fPIC -DPIC" CXXFLAGS="-O0 -g -fPIC -DPIC" \
+CFLAGS="-O3 -fPIC -DPIC" CXXFLAGS="-O3 -fPIC -DPIC" \
 $config_scr \
 --disable-static \
 --enable-shared \

@@ -1,106 +1,8 @@
-import xmlrpclib
+import cuemol
 
+#import xmlrpclib
 
-class CueMol:
-
-    def __init__(self, portno, path, cred):
-        url = "http://localhost:"+str(portno)+"/"+path;
-        self.proxy = xmlrpclib.ServerProxy(url)
-        self.credential = cred;
-
-    def createObj(self, name):
-        id = self.proxy.createObj(self.credential, name);
-        obj = Wrapper(id);
-        return obj;
-
-    def getService(self, name):
-        id = self.proxy.getService(self.credential, name);
-        obj = Wrapper(id);
-        return obj;
-
-cuemol = CueMol(8080, "RPC2", "XXX")
-
-##############
-
-class MethodObj:
-
-    def __init__(self, obj, name):
-        self.obj = obj;
-        self.name = name;
-
-    def __call__(self, *args):
-        nargs = len(args)
-        print "MethodObj ["+ str(self.obj.UID)+ "]."+ self.name+"("+str(nargs)+") called"
-
-        arg2 = []
-        for item in args:
-            if (isinstance(item, Wrapper)):
-                arg2.append({"UID":item.UID});
-            else:
-                arg2.append(item);
-
-        rval = cuemol.proxy.callMethod(cuemol.credential,
-                                       self.obj.UID, self.name, arg2);
-
-        if (isinstance(rval, dict)):
-            return Wrapper(rval["UID"])
-        else:
-            return rval
-
-class Wrapper:
-
-    def __init__(self, uid):
-        self.__dict__["UID"] = uid
-        
-    def __del__(self):
-        #print "destructing obj: ", self.UID
-        cuemol.proxy.destroyObj(cuemol.credential, self.UID);
-
-    def __getattr__(self, name):
-        #print "getattr (", name, ") called for obj: ", self.UID
-        res = cuemol.proxy.tryGetProp(cuemol.credential, self.UID, name);
-        rcode = res["rcode"];
-        if (rcode==1 or rcode==2):
-            rval = res["rval"];
-            if (isinstance(rval, dict)):
-                return Wrapper(rval["UID"])
-            else:
-                return rval;
-        elif (rcode==3):
-            # get method called --> return method obj
-            return MethodObj(self, name)
-        else:
-            # Report ERROR
-            print "getattr tryGetProp() NG"
-
-#        res = cuemol.proxy.hasProp(cuemol.credential, self.UID, name);
-#        if (res==1 or res==2):
-#            #print "getattr hasProp() OK"
-#            rval = cuemol.proxy.getProp(cuemol.credential, self.UID, name);
-#            if (isinstance(rval, dict)):
-#                return Wrapper(rval["UID"])
-#            else:
-#                return rval;
-#        elif (res==3):
-#            #print "getattr hasMethod() OK"
-#            return MethodObj(self, name)
-#        else:
-#            # Report ERROR
-#            print "getattr hasProp() NG"
-
-    def __setattr__(self, name, value):
-        #print "setattr (", name, ") called for obj: ", self.UID
-        #res = cuemol.proxy.hasProp(self.UID, name);
-        #if (res!=1):
-        #    # Report ERROR
-        #    print "setattr hasProp() NG"
-        #print "setattr hasWrProp() OK"
-
-        cuemol.proxy.setProp(cuemol.credential, self.UID, name, value);
-        return;
-
-
-##############
+cuemol.init(8080, "RPC2", "XXX")
 
 if __name__ == "__main__":
 
@@ -132,4 +34,78 @@ if __name__ == "__main__":
         color.setCode(0xFFFFFF);
         sc.bgcolor = color;
         
-    test2()
+#    test2()
+
+    def readPDB(fname):
+        scm = cuemol.getService("SceneManager")
+        scid = scm.activeSceneID;
+        scene = scm.getScene(scid);
+
+        # Create Mol & Register to the scene
+        mol = cuemol.createObj("MolCoord");
+        scene.addObject(mol);
+
+
+        for line in open(fname):
+            #    print "PDB: ", line;
+            if line[0:6] in ["ATOM  ", "HETATM"]:
+                aname = line[12:16].strip(  )
+                altloc = line[16:17]
+                resn = line[17:20].strip(  )
+                chn = line[21:22]
+                resid = int( line[22:26] )
+                ins = line[26:27]
+                posx = float( line[30:38] )
+                posy = float( line[38:46] )
+                posz = float( line[46:54] )
+                occ = float( line[54:60] )
+                bfac = float( line[60:66] )
+                elem = line[76:78].strip()
+                
+            else:        
+                print "PDB: ", line
+                continue
+
+            # print "name=", aname
+            atom = cuemol.createObj("MolAtom");
+            atom.name = aname;
+            atom.element = elem;
+            atom.bfac = bfac;
+            atom.occ = occ;
+            
+            vpos = cuemol.createObj("Vector");
+            vpos.set3(posx, posy, posz);
+            atom.pos = vpos;
+            
+            mol.appendAtom1(atom, chn, resid, resn);
+
+        return mol
+
+    def makeSel(mol, selstr):
+        selobj = cuemol.createObj("SelCommand");
+        uid = mol.scene_uid
+        if (not selobj.compile(selstr, uid)):
+            return null
+        return selobj
+
+    def createRend(mol, typenm, sel):
+        rend = mol.createRenderer(typenm)
+        rend.sel = makeSel(mol, sel)
+        return rend
+        
+    ##############################
+
+    fname = '/net3/ishitani/PLP.pdb';
+    mol = readPDB(fname);
+    # mol.applyTopology()
+    rend = createRend(mol, "cpk", "*");
+    rend.applyStyles("DefaultCPK,DefaultCPKColoring");
+    rend.name = "cpk1"
+
+    scm = cuemol.getService("SceneManager")
+    scene = scm.getScene(scm.activeSceneID);
+    view = scm.getView(scene.activeViewID);
+
+#    pos = rend.getCenter();
+#    view.setViewCenter(pos);
+    

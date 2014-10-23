@@ -46,6 +46,7 @@ qlib::uid_t XmlRpcMgr::registerObj(LScriptable *pObj)
     return qlib::invalid_uid;
   }
   
+  MB_DPRINTLN("Object %p was registered as UID=%d", pObj, uid);
   return uid;
 }
 
