@@ -154,3 +154,111 @@ bool MolAtom::removeBond(MolBond *pBond)
   return true;
 }
 
+bool MolAtom::getAtomProp(const LString &propnm, qlib::LVariant &presult) const
+{
+  PropTab::const_iterator i = m_props.find(propnm);
+  if (m_props.end()==i)
+    return false; // not found!!
+
+  presult = i->second;
+  return true;
+}
+
+bool MolAtom::setAtomProp(const LString &propnm, const qlib::LVariant &pvalue)
+{
+  m_props.forceSet(propnm, pvalue);
+  return true;
+}
+
+bool MolAtom::removeAtomProp(const LString &propnm)
+{
+  return m_props.remove(propnm);
+}
+
+int MolAtom::getAtomPropNames(std::set<LString> &names) const
+{
+  PropTab::const_iterator i = m_props.begin();
+  PropTab::const_iterator ie = m_props.end();
+  
+  int nnames = 0;
+  for (; i!=ie; ++i) {
+    names.insert(i->first);
+    ++nnames;
+  }
+
+  return nnames;
+}
+
+LString MolAtom::getPropTypeName(const LString &propnm) const
+{
+  PropTab::const_iterator i = m_props.find(propnm);
+  if (m_props.end()==i)
+    return LString(); // not found!!
+
+  return i->second.getTypeString();
+}
+
+
+int MolAtom::getAtomPropInt(const LString &propnm) const
+{
+  qlib::LVariant var;
+  if (!getAtomProp(propnm, var)) {
+    MB_THROW(qlib::RuntimeException, "getAtomPropInt() prop not found");
+    return 0;
+  }
+  if (!var.isInt()) {
+    MB_THROW(qlib::RuntimeException, "getAtomPropInt() prop type error");
+    return 0;
+  }
+  return var.getIntValue();
+}
+
+void MolAtom::setAtomPropInt(const LString &propnm, int value)
+{
+  qlib::LVariant var;
+  var.setIntValue(value);
+  setAtomProp(propnm, var);
+}
+    
+double MolAtom::getAtomPropReal(const LString &propnm) const
+{
+  qlib::LVariant var;
+  if (!getAtomProp(propnm, var)) {
+    MB_THROW(qlib::RuntimeException, "getAtomPropInt() prop not found");
+    return 0;
+  }
+  if (!var.isReal()) {
+    MB_THROW(qlib::RuntimeException, "getAtomPropInt() prop type error");
+    return 0;
+  }
+  return var.getRealValue();
+}
+
+void MolAtom::setAtomPropReal(const LString &propnm, double value)
+{
+  qlib::LVariant var;
+  var.setRealValue(value);
+  setAtomProp(propnm, var);
+}
+
+LString MolAtom::getAtomPropStr(const LString &propnm) const
+{
+  qlib::LVariant var;
+  if (!getAtomProp(propnm, var)) {
+    MB_THROW(qlib::RuntimeException, "getAtomPropStr() prop not found");
+    return 0;
+  }
+  if (!var.isString()) {
+    MB_THROW(qlib::RuntimeException, "getAtomPropStr() prop type error");
+    return 0;
+  }
+  return var.getStringValue();
+}
+
+void MolAtom::setAtomPropStr(const LString &propnm, const LString &value)
+{
+  qlib::LVariant var;
+  var.setStringValue(value);
+  setAtomProp(propnm, var);
+}
+

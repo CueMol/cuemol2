@@ -10,6 +10,7 @@
 #include <qlib/LScrObjects.hpp>
 #include <qlib/LScrSmartPtr.hpp>
 #include <qlib/mcutils.hpp>
+#include <qlib/LVariant.hpp>
 
 #include <qlib/LScrVector4D.hpp>
 
@@ -71,14 +72,6 @@ namespace molstr {
 
     /// Alternative conf. ID
     char m_confid;
-
-    /*
-    /// Partial charge (in electron unit)
-    double m_charge;
-
-    /// Radius, angstrom (vdw; including H/without H)
-    double m_radius;
-     */
 
     /// canonical name in the topology definition
     LString m_canonName;
@@ -168,26 +161,6 @@ namespace molstr {
       m_occ = occup;
     }
 
-/*
-    double getCharge() const
-    {
-      return m_charge;
-    }
-    void setCharge(double val)
-    {
-      m_charge = val;
-    }
-
-    double getRadius() const
-    {
-      return m_radius;
-    }
-    void setRadius(double val)
-    {
-      m_radius = val;
-    }
-*/
-
     /// Canonical name
     const LString &getCName() const {
       return m_canonName;
@@ -241,6 +214,9 @@ namespace molstr {
     bool addBond(MolBond *pBond);
     bool removeBond(MolBond *pBond);
 
+    /// get atom info string
+    LString formatMsg() const;
+
     //////////////////////////////////////////////////////////////////////
     // unisotropic B factor
   private:
@@ -269,8 +245,49 @@ namespace molstr {
       m_paib[getuind(i, j)] = uij;
     }
 
-    LString formatMsg() const;
+    //////////////////////////////////////////////////////////////////////
+    // dynamic properties
+  private:
+    typedef qlib::MapTable<qlib::LVariant> PropTab;
+    
+    PropTab m_props;
 
+  public:
+    
+    bool getAtomProp(const LString &propnm, qlib::LVariant &presult) const;
+    bool setAtomProp(const LString &propnm, const qlib::LVariant &pvalue);
+    bool removeAtomProp(const LString &propnm);
+    int getAtomPropNames(std::set<LString> &names) const;
+    LString getPropTypeName(const LString &propnm) const;
+
+    int getAtomPropInt(const LString &propnm) const;
+    void setAtomPropInt(const LString &propnm, int pvalue);
+    
+    double getAtomPropReal(const LString &propnm) const;
+    void setAtomPropReal(const LString &propnm, double pvalue);
+
+    LString getAtomPropStr(const LString &propnm) const;
+    void setAtomPropStr(const LString &propnm, const LString &pvalue);
+
+/*
+    double getCharge() const
+    {
+      return m_charge;
+    }
+    void setCharge(double val)
+    {
+      m_charge = val;
+    }
+
+    double getRadius() const
+    {
+      return m_radius;
+    }
+    void setRadius(double val)
+    {
+      m_radius = val;
+    }
+*/
   };
 
 
