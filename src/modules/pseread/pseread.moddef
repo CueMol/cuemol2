@@ -1,0 +1,13 @@
+// -*-Mode: C++;-*-
+//
+
+#include "PSEFileReader.qif"
+
+module pseread
+{
+  init pseread::init();
+  fini pseread::fini();
+
+  PSEFileReader;
+};
+

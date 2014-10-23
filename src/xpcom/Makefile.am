@@ -99,27 +99,28 @@ endif
 
 libxpcqm_la_CXXFLAGS = \
   -DXPCQM_EXPORTS=1 \
-@BOOST_CPPFLAGS@ \
-@SCR_CPPFLAGS@ \
-@XPCOM_CPPFLAGS@ \
-$(libxpcqm_la_EXTRA_CXXFLAGS) \
--DUSE_XPCOM -DMOZ_NO_MOZALLOC -Wall -Wno-non-virtual-dtor \
--I$(top_srcdir) -I$(srcdir) \
-@XPCOM_CPPFLAGS@ \
-$(NULL)
+  @MODULES_CXXFLAGS@ \
+  @BOOST_CPPFLAGS@ \
+  @SCR_CPPFLAGS@ \
+  @XPCOM_CPPFLAGS@ \
+  $(libxpcqm_la_EXTRA_CXXFLAGS) \
+  -DUSE_XPCOM -DMOZ_NO_MOZALLOC -Wall -Wno-non-virtual-dtor \
+  -I$(top_srcdir) -I$(srcdir) \
+  @XPCOM_CPPFLAGS@ \
+  $(NULL)
 
 libxpcqm_la_LDFLAGS = \
   @MODULES_LDFLAGS@ \
- -L../sysdep \
- -L../qsys \
- @SCR_LDFLAGS@ \
- -L../qlib \
- -L@XULRUNNER_SDK_PATH@/sdk/lib/ \
- -L@XULRUNNER_SDK_PATH@/lib/ \
- @JS_LDFLAGS@ \
- @BOOST_LDFLAGS@ \
- @CGAL_LDFLAGS@ \
- $(libxpcqm_la_EXTRA_LDFLAGS)
+  -L../sysdep \
+  -L../qsys \
+  @SCR_LDFLAGS@ \
+  -L../qlib \
+  -L@XULRUNNER_SDK_PATH@/sdk/lib/ \
+  -L@XULRUNNER_SDK_PATH@/lib/ \
+  @JS_LDFLAGS@ \
+  @BOOST_LDFLAGS@ \
+  @CGAL_LDFLAGS@ \
+  $(libxpcqm_la_EXTRA_LDFLAGS)
 
 libxpcqm_la_LIBADD = \
  $(libxpcqm_la_EXTRA_LIBS) \
