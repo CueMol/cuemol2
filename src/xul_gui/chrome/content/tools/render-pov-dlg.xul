@@ -98,6 +98,11 @@
 	  <menuitem value="1200,1200,600" label="1200x1200@600dpi"/>
 	</menupopup>
       </button>
+
+      <label value="CPU: "/>
+      <textbox class="disable-target" id="num-threads"
+	value="2" size="2" type="number" min="0" max="32" increment="1"/>
+
     </hbox>      
 
     <hbox align="center">

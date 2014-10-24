@@ -24,6 +24,7 @@ function PovRender()
 {
   this.mTimerFn = null;
   
+  this.nThreads = 1;
   this.img_width = 500;
   this.img_height = 500;
   this.nStereo = 0;
@@ -387,27 +388,32 @@ PovRender.prototype.doRenderImpl = function (index, aAsync)
   var outImgPath = this.mImgFile[index].path;
   var incDirPath = this.mPovIncPath.path;
   var povFilePath = this.mPovFiles.path;
+  var povFileDir =  this.mPovFiles.parent.path;
 
   if (this.mPlfName == "Windows_NT") {
     outImgPath = outImgPath.split("\\").join("/");
     incDirPath = incDirPath.split("\\").join("/");
     povFilePath = povFilePath.split("\\").join("/");
+    povFileDir = povFileDir.split("\\").join("/");
   }
   
   dd("Output image file: " + outImgPath);
   dd("povinc dir: " + incDirPath);
-  dd("input pov path: " + povFilePath);
+  dd("Input pov path: " + povFilePath);
+  dd("Input pov dir: " + povFileDir);
 
   //////////
 
   var args = ["\"Input_File_Name="+povFilePath+"\"",
 	      "\"Output_File_Name="+outImgPath+"\"",
 	      "\"Library_Path="+incDirPath+"\"",
+	      "\"Library_Path="+povFileDir+"\"",
 	      "Declare=_stereo=" + this.nStereo,
 	      "Declare=_iod=" + this.dSteDep,
 	      "Declare=_perspective="+(this.bOrtho?"0":"1"),
 	      "Declare=_shadow="+(this.mbShadow?"1":"0"),
-	      "-D",
+	      "-D","-V",
+	      "+WT" + this.nThreads,
 	      "+W" + this.img_width,
 	      "+H" + this.img_height,
 	      "+FN8",

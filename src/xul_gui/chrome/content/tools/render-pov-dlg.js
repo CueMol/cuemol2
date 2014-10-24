@@ -16,6 +16,7 @@
   const pov_height_key = "cuemol2.ui.render.pov-img-height";
   const pov_dpi_key = "cuemol2.ui.render.pov-img-dpi";
   const pov_unit_key = "cuemol2.ui.render.pov-img-unit";
+  const pov_ncpu_key = "cuemol2.ui.render.pov-ncpu";
 
   var dlg = window.gDlgObj = new Object();
   dlg.mTgtSceID = window.arguments[0];
@@ -59,6 +60,7 @@
     this.mOutImgHeight = document.getElementById("output-image-height");
     this.mOutImgDPI = document.getElementById("output-image-dpi");
     this.mOutImgUnit = document.getElementById("output-image-unit");
+    this.mNumThreads = document.getElementById("num-threads");
 
     {
       // setup default values
@@ -68,6 +70,7 @@
       // DPI==600
       // UNIT==px
       this.setupImgUnit("px");
+      this.mNumThreads.value = 2;
     }
 
     if (pref.has(pov_dpi_key)) {
@@ -89,6 +92,11 @@
 	let val = parseFloat( pref.get(pov_height_key) );
 	if (!isNaN(val))
 	    this.mOutImgHeight.value = val;
+    }
+    if (pref.has(pov_ncpu_key)) {
+      let val = parseInt( pref.get(pov_ncpu_key) );
+      if (!isNaN(val))
+	this.mNumThreads.value = val;
     }
 
     this.mImage = document.getElementById("image-box");
@@ -140,6 +148,7 @@
       pref.set(pov_dpi_key, this.mOutImgDPI.value);
     }
     pref.set(pov_unit_key, this.mOutImgUnit.value);
+    pref.set(pov_ncpu_key, this.mNumThreads.value);
 
     dd("PovRender: ***** prefs saved");
   };
@@ -245,6 +254,9 @@
 
     // setup image size unit
     var unit = this.mOutImgUnit.value;
+
+    // num of threads
+    this.mPovRender.nThreads = this.mNumThreads.value;
 
     this.mPovRender.img_height = Math.round( this.convImgSizeUnit(this.mOutImgHeight.value, dpi, unit) );
     this.mPovRender.img_width = Math.round( this.convImgSizeUnit(this.mOutImgWidth.value, dpi, unit) );
@@ -481,6 +493,9 @@
       return;
     }
     try {
+      if (!imgfile.exists()) {
+	throw "file does not exist";
+      }
       if (!imgfile.isFile()) {
         throw "not a file";
       }
