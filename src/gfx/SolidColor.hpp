@@ -97,6 +97,9 @@ namespace gfx {
       m_material = mat;
     }
 
+    void setRGBA(double R, double G, double B, double A=1.0);
+    void setHSBA(double H, double S, double B, double A=1.0);
+
     ///////////////////////////
 
     static qlib::LScrSp<SolidColor> createRGB(double R, double G, double B, double A=1.0);

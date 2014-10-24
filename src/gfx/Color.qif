@@ -21,12 +21,21 @@ runtime_class Color extends AbstractColor
   property string material => redirect(getMaterial, setMaterial);
   default material = "";
 
+  property integer code => redirect(getCode, setCode);
   void setCode(integer);
+  integer getCode();
+
   void setR(integer);
   void setG(integer);
   void setB(integer);
   void setA(integer);
   void setAlpha(real);
+
+  void setRGBA(real, real, real, real);
+  void setHSBA(real, real, real, real);
+
+  void setRGB(real, real, real) => setRGBA;
+  void setHSB(real, real, real) => setHSBA;
 };
 
 #endif

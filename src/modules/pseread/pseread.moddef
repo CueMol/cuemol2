@@ -2,6 +2,7 @@
 //
 
 #include "PSEFileReader.qif"
+#include "AtomPropColoring.qif"
 
 module pseread
 {
@@ -9,5 +10,6 @@ module pseread
   fini pseread::fini();
 
   PSEFileReader;
+  AtomPropColoring;
 };
 
