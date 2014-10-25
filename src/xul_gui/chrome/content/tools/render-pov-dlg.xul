@@ -133,6 +133,24 @@
       <checkbox id="enable-post-blend" label="Post-render alpha blending" checked="true" persist="checked"/>
       <checkbox id="enable-shadow" label="Shadow" checked="false" persist="checked"/>
       <checkbox id="enable-edgelines" label="Edge lines" checked="true" persist="checked"/>
+
+      <label value="Radiosity: "/>
+      <menulist id="radio-mode-list" class="disable-target" >
+	<menupopup>
+	  <menuitem value="-1" label="Disable" selected="true"/>
+	  <menuitem value="0" label="Default"/>
+	  <menuitem value="1" label="Debug"/>
+	  <menuitem value="2" label="Fast"/>
+	  <menuitem value="3" label="Normal"/>
+	  <menuitem value="4" label="2Bounce"/>
+	  <menuitem value="5" label="Final"/>
+	  <menuitem value="6" label="OutdoorLQ"/>
+	  <menuitem value="7" label="OutdoorHQ"/>
+	  <menuitem value="8" label="OutdoorLight"/>
+	  <menuitem value="9" label="IndoorLQ"/>
+	  <menuitem value="10" label="IndoorHQ"/>
+	</menupopup>
+      </menulist>
     </hbox>      
 
     <!-- preview box -->

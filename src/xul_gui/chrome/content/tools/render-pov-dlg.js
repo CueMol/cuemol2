@@ -17,6 +17,7 @@
   const pov_dpi_key = "cuemol2.ui.render.pov-img-dpi";
   const pov_unit_key = "cuemol2.ui.render.pov-img-unit";
   const pov_ncpu_key = "cuemol2.ui.render.pov-ncpu";
+  const pov_radio_key = "cuemol2.ui.render.pov-radiosity";
 
   var dlg = window.gDlgObj = new Object();
   dlg.mTgtSceID = window.arguments[0];
@@ -61,6 +62,7 @@
     this.mOutImgDPI = document.getElementById("output-image-dpi");
     this.mOutImgUnit = document.getElementById("output-image-unit");
     this.mNumThreads = document.getElementById("num-threads");
+    this.mRadMode = document.getElementById("radio-mode-list");
 
     {
       // setup default values
@@ -97,6 +99,12 @@
       let val = parseInt( pref.get(pov_ncpu_key) );
       if (!isNaN(val))
 	this.mNumThreads.value = val;
+    }
+    if (pref.has(pov_radio_key)) {
+      let val = parseInt( pref.get(pov_radio_key) );
+      if (!isNaN(val)) {
+	util.selectMenuListByValue(this.mRadMode, val);
+      }
     }
 
     this.mImage = document.getElementById("image-box");
@@ -149,6 +157,7 @@
     }
     pref.set(pov_unit_key, this.mOutImgUnit.value);
     pref.set(pov_ncpu_key, this.mNumThreads.value);
+    pref.set(pov_radio_key, this.mRadMode.value);
 
     dd("PovRender: ***** prefs saved");
   };
@@ -293,6 +302,15 @@
     elem = document.getElementById("enable-edgelines");
     this.mPovRender.mbShowEdgeLines = elem.checked;
     // alert("edge lines: "+this.mPovRender.mbShowEdgeLines);
+
+    // radiosity settings
+    if (this.mRadMode.value=="-1")
+      this.mPovRender.mbRadiosity=false;
+    else {
+      this.mPovRender.mbRadiosity=true;
+      this.mPovRender.mnRadMode = this.mRadMode.value;
+    }
+    this.mPovRender.mbShowEdgeLines = elem.checked;
 
     setTimeout( function () {
       try {

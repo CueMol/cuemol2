@@ -196,7 +196,7 @@ void PovDisplayContext::writeHeader()
   ps.format(" */\n");
   ps.format("\n");
 
-  ps.format("#version 3.5;\n");
+  ps.format("#version 3.7;\n");
 
   StyleMgr *pSM = StyleMgr::getInstance();
   //LString preamble = pSM->getConfig("preamble", "pov").trim(" \r\t\n");
@@ -205,7 +205,9 @@ void PovDisplayContext::writeHeader()
     ps.println(preamble);
 
   ps.format("\n");
-  ps.format("background {color rgb <%f,%f,%f>}\n", bgcolor.x(), bgcolor.y(), bgcolor.z());
+  ps.format("#declare _bgcolor = rgb <%f,%f,%f>;\n", bgcolor.x(), bgcolor.y(), bgcolor.z());
+  ps.format("\n");
+  ps.format("background {color _bgcolor}\n");
   ps.format("\n");
   ps.format("#declare _distance = %f;\n", m_dViewDist);
 
@@ -256,6 +258,45 @@ void PovDisplayContext::writeHeader()
   //ps.format("light_source {<_stereo*_distance*_iod,0,_distance> color rgb 1}\n");
   //ps.format("light_source {<-1,1,1>*10000 color rgb 0.5 shadowless}\n");
 
+  ps.format("global_settings {\n");
+  ps.format("  assumed_gamma 1.0\n");
+  ps.format("}\n");
+  ps.format("\n");
+
+  // Radiosity settings
+  ps.format("#ifdef (_radiosity)\n");
+  ps.format("  #include \"rad_def.inc\"\n");
+  ps.format("global_settings {\n");
+  ps.format("  radiosity {\n");
+  ps.format("    Rad_Settings(_radiosity, off, off)\n");
+  ps.format("  }\n");
+  ps.format("}\n");
+  ps.format("\n");
+  ps.format("light_source {\n");
+  ps.format("   <1,1,1>*30000\n");
+  ps.format("   color rgb 0.4 parallel point_at <0,0,0> \n");
+  ps.format("}\n");
+  ps.format("\n");
+  ps.format("sphere {\n");
+  ps.format("  <0, 0, 0>, 1\n");
+  ps.format("  texture {\n");
+  ps.format("  pigment { color _bgcolor }\n");
+  ps.format("   finish { diffuse 0 emission 0.8 }\n");
+  ps.format("  }\n");
+  ps.format("  hollow on\n");
+  ps.format("  no_shadow\n");
+  ps.format("  scale 30000\n");
+  ps.format("}\n");
+  ps.format("\n");
+  ps.format("plane {z,-1000 \n");
+  ps.format("  texture {\n");
+  ps.format("  pigment { color _bgcolor }\n");
+  ps.format("   finish { diffuse 0 emission 1 }\n");
+  ps.format("  }\n");
+  ps.format("}\n");
+  ps.format("#else\n");
+
+  // Raytrace settings
   ps.format("light_source {\n");
   ps.format("   <_stereo*_distance*_iod,0,_distance>\n");
   ps.format("   color rgb 0.8 \n");
@@ -270,6 +311,7 @@ void PovDisplayContext::writeHeader()
   ps.format("   shadowless\n");
   ps.format("#end\n");
   ps.format("}\n");
+  ps.format("#end\n");
   
   ps.format("\n");
 

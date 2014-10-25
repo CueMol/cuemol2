@@ -35,6 +35,8 @@ function PovRender()
   this.mbShadow = false;
   this.mbShowEdgeLines = true;
   this.mDPI = -1.0;
+  this.mbRadiosity = false;
+  this.mnRadMode = 0;
 
   this.mTimer = null;
   this.mPlfName = util.getPlatformString();
@@ -412,7 +414,8 @@ PovRender.prototype.doRenderImpl = function (index, aAsync)
 	      "Declare=_iod=" + this.dSteDep,
 	      "Declare=_perspective="+(this.bOrtho?"0":"1"),
 	      "Declare=_shadow="+(this.mbShadow?"1":"0"),
-	      "-D","-V",
+	      "File_Gamma=1",
+	      "-D","+V",
 	      "+WT" + this.nThreads,
 	      "+W" + this.img_width,
 	      "+H" + this.img_height,
@@ -422,7 +425,11 @@ PovRender.prototype.doRenderImpl = function (index, aAsync)
 	      "Antialias_Depth=3",
 	      "Antialias_Threshold=0.1",
 	      "Jitter=Off"];
-  //,
+
+  if (this.mbRadiosity) {
+    dd("PovRender> Radiosity ON; mode="+this.mnRadMode);
+    args.push("Declare=_radiosity="+this.mnRadMode);
+  }
   //
   //
   //"Jitter_Amount=0.5",
