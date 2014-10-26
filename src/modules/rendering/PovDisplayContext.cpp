@@ -274,7 +274,7 @@ void PovDisplayContext::writeHeader()
   ps.format("\n");
   ps.format("light_source {\n");
   ps.format("   <1,1,1>*30000\n");
-  ps.format("   color rgb 0.4 parallel point_at <0,0,0> \n");
+  ps.format("   color rgb 0.6 parallel point_at <0,0,0> \n");
   ps.format("}\n");
   ps.format("\n");
   ps.format("sphere {\n");

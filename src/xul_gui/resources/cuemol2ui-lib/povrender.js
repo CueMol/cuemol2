@@ -514,10 +514,31 @@ PovRender.prototype.startTimer = function ()
   }, 1000);
 };    
 
+function filteredOutput(re, msg)
+{
+  if (msg=="") {
+    cuemol.putLogMsg("...");
+    return;
+  }
+  
+  let res = re.exec(msg);
+  if (res) {
+    let newmsg = msg.replace(re, "", "g");
+    if (newmsg!="")
+      cuemol.putLogMsg(newmsg);
+    else
+      cuemol.putLogMsg(res[0]);
+  }
+  else
+    cuemol.putLogMsg(msg);
+
+};
+
 PovRender.prototype.onTimer = function ()
 {
   // check the running tasks
   var bDone = true;
+  var re = /Rendered (\d+) of (\d+) pixels \((\d+)%\)/g;
   for (var i=0; i<this.mProcs.length; ++i) {
     let tid = this.mProcs[i];
     dd("PovRender.timer> slot"+i+" tid="+tid);
@@ -533,15 +554,15 @@ PovRender.prototype.onTimer = function ()
       bDone = false;
       this.mCurIndex = i;
       let msg = procMgr.getResultOutput(tid);
-      if (msg!=="")
-	cuemol.putLogMsg(msg);
+
+      filteredOutput(re, msg);
     }
     else {
       // tid is done (ENDED)
       var msg = procMgr.getResultOutput(tid);
-      if (msg!=="")
-	cuemol.putLogMsg(msg);
-      // dd("result: "+msg);
+
+      filteredOutput(re, msg);
+
       this.mProcs[i] = -1;
     }
   }
