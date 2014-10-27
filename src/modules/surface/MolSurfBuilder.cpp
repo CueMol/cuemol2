@@ -7,6 +7,9 @@
 #include <common.h>
 #include "surface.hpp"
 
+#include <qsys/Scene.hpp>
+#include <qsys/ObjectEvent.hpp>
+
 #include <modules/molstr/MolCoord.hpp>
 #include <modules/molstr/MolAtom.hpp>
 #include <modules/molstr/AtomIterator.hpp>
@@ -150,8 +153,56 @@ void MolSurfObj::createSESFromMol(MolCoordPtr pMol, SelectionPtr pSel, double de
 
   delete pSES;
   delete pRS;
+
+  // save data for re-generation
+  m_sOrigMol = pMol->getName();
+  m_nOrigMolID = pMol->getUID();
+  m_pMolSel = pSel;
+  m_dDensity = density;
+  m_dProbeRad = probe_r;
 }
 
+void MolSurfObj::regenerateSES(double density, double probe_r, SelectionPtr pSel)
+{
+  if (m_dDensity<0.0 || m_dProbeRad<0.0) {
+    MB_THROW(qlib::RuntimeException, "Cannot regenerate surfobj: invalid density or proberad");
+    return;
+  }
+
+  qsys::ScenePtr pScene = getScene();
+  molstr::MolCoordPtr pMol;
+  if (m_nOrigMolID==qlib::invalid_uid)
+    pMol = pScene->getObjectByName(m_sOrigMol); 
+  else
+    pMol = pScene->getObject(m_nOrigMolID); 
+
+  if (pMol.isnull()) {
+    MB_THROW(qlib::RuntimeException, "Cannot regenerate surfobj: origMol is not found");
+    return;
+  }
+
+  double den2 = density;
+  if (den2<0.0)
+    den2 = m_dDensity;
+
+  double rad2 = probe_r;
+  if (rad2<0.0)
+    rad2 = m_dProbeRad;
+
+  clean();
+  createSESFromMol(pMol, pSel, den2, rad2);
+
+  // TO DO: save UNDO INFO!!
+
+  // notify update of structure
+  {
+    qsys::ObjectEvent obe;
+    obe.setType(qsys::ObjectEvent::OBE_CHANGED);
+    obe.setTarget(getUID());
+    obe.setDescr("structure");
+    fireObjectEvent(obe);
+  }
+}
 
 #ifdef SURF_BUILDER_TEST
 ////////////////////////////////////////////////////////////////

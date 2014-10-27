@@ -24,6 +24,8 @@ runtime_class MolSurfObj extends Object
 
   void createSESFromMol(object<MolCoord$> pMol, object<MolSelection$> pSel, real density, real probe_radius);
 
+  void regenerateSES1(real density) => regenerateSES;
+
 };
 
 #endif

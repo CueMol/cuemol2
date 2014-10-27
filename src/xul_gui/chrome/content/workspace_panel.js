@@ -1461,6 +1461,18 @@ ws.onCtxtMenuShowing = function (aEvent)
         item.disabled = false;
       else
         item.disabled = true;
+
+      // Update molsurf regenerate menu
+      item = document.getElementById("wspcPanelMolSurfRegen");
+      
+      let elem = this.mViewObj.getSelectedNode();
+      item.hidden = true;
+      if (elem.type=="object") {
+	let obj = cuemol.getObject(elem.obj_id);
+	if (obj && cuemol.getClassName(obj)=="MolSurfObj") {
+	  item.hidden = false;
+	}
+      }
     }
     else if (aEvent.target.id=="wspcPanelRendGrpCtxtMenu") {
       // Update the renderer-paste in rendgrp menu 
@@ -2947,6 +2959,11 @@ ws.toggleVisibleRendGrp = function (aElem)
   scene.commitUndoTxn();
   // EDIT TXN END //
 };
+
+ws.onMolSurfRegen = function (aEvent)
+{
+};
+
 
 } )();
 

@@ -13,6 +13,7 @@
 #include <qsys/Object.hpp>
 #include <qlib/LDOM2Stream.hpp>
 
+#include <modules/molstr/Selection.hpp>
 #include <modules/molstr/molstr.hpp>
 
 namespace surface {
@@ -74,9 +75,12 @@ public:
 public:
 
   MolSurfObj()
-       : m_nVerts(0), m_pVerts(NULL),
-         m_nFaces(0), m_pFaces(NULL)
+    : m_nVerts(0), m_pVerts(NULL),
+    m_nFaces(0), m_pFaces(NULL),
+    m_pMolSel(SelectionPtr())    
     {
+      m_dDensity = 0.0;
+      m_dProbeRad = 0.0;
     }
 
   virtual ~MolSurfObj();
@@ -187,9 +191,30 @@ public:
   void createSESFromMol(MolCoordPtr pMol, SelectionPtr pSel, double density, double probe_r);
 
   ////////////////////////////////////////////
+
+ private:
+  /// Molecule object name by which this molsurf obj generated (persistent)
+  LString m_sOrigMol;
+
+  /// Molecule object ID by which this molsurf obj generated (non-persistent)
+  qlib::uid_t m_nOrigMolID;
+
+  /// Selection of OrigMol used for the generation of this molsurf obj
+  SelectionPtr m_pMolSel;
+
+  double m_dDensity;
+
+  double m_dProbeRad;
+
+ public:
+  void regenerateSES(double density, double probe_r=-1.0, SelectionPtr pSel=SelectionPtr());
+
+ public:
+
+  ////////////////////////////////////////////
   // Data chunk serialization
 
-    virtual bool isDataSrcWritable() const { return true; }
+  virtual bool isDataSrcWritable() const { return true; }
   virtual LString getDataChunkReaderName() const;
   virtual void writeDataChunkTo(qlib::LDom2OutStream &oos) const;
 

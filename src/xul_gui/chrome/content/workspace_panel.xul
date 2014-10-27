@@ -101,6 +101,10 @@
       <menupopup id="wspcPanelObjCtxtMenu"
 	onpopupshowing="cuemolui.panels.workspace.onCtxtMenuShowing(event)"
 	>
+
+	<menuitem label="Regenerate surface..." id="wspcPanelMolSurfRegen"
+		  oncommand="cuemolui.panels.workspace.onMolSurfRegen(event);"/>
+
 	<menu label="Selection">
 	  <menupopup>
 	    <menuitem label="Select All"
