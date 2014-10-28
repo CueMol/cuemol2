@@ -178,11 +178,12 @@ LString AbstractColor::makeModifFromProps() const
     if (spec.bReadOnly)
       continue;
 
-    // check default flag
-    bool bDefault = false;
-    if (spec.bHasDefault)
-      bDefault = isPropDefault(nm);
-    if (bDefault)
+    // Ignore property without default value
+    if (!spec.bHasDefault)
+      continue;
+
+    // Prop value is default --> not convert to modifier
+    if (isPropDefault(nm))
       continue;
 
     if (!getProperty(nm, value))
