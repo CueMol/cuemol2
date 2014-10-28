@@ -74,14 +74,7 @@ public:
   ////////////////////////////////////////////
 public:
 
-  MolSurfObj()
-    : m_nVerts(0), m_pVerts(NULL),
-    m_nFaces(0), m_pFaces(NULL),
-    m_pMolSel(SelectionPtr())    
-    {
-      m_dDensity = 0.0;
-      m_dProbeRad = 0.0;
-    }
+  MolSurfObj();
 
   virtual ~MolSurfObj();
 
@@ -207,6 +200,19 @@ public:
   double m_dProbeRad;
 
  public:
+  void setOrigMolName(const LString &nm) { m_sOrigMol = nm; }
+  const LString &getOrigMolName() const { return m_sOrigMol; }
+
+  SelectionPtr getOrigSel() const { return m_pMolSel; }
+  void setOrigSel(SelectionPtr pNewSel) { m_pMolSel = pNewSel; }
+  
+  void setOrigDen(double val) { m_dDensity = val; }
+  double getOrigDen() const { return m_dDensity; }
+
+  void setOrigProbeRad(double val) { m_dProbeRad = val; }
+  double getOrigProbeRad() const { return m_dProbeRad; }
+  
+
   void regenerateSES(double density, double probe_r=-1.0, SelectionPtr pSel=SelectionPtr());
 
  public:

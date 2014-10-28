@@ -7,7 +7,7 @@
 #include <common.h>
 #include "MolSurfObj.hpp"
 #include "QdfSurfWriter.hpp"
-
+#include <modules/molstr/SelCommand.hpp>
 /*
 static std::deque<std::pair<Vector3D, LString> > *pdbg;
 static void dbgmsg(const Vector3D &v, const LString &str)
@@ -17,6 +17,16 @@ static void dbgmsg(const Vector3D &v, const LString &str)
 */
 
 using namespace surface;
+
+MolSurfObj::MolSurfObj()
+  : m_nVerts(0), m_pVerts(NULL),
+    m_nFaces(0), m_pFaces(NULL)
+{
+  m_nOrigMolID = qlib::invalid_uid;
+  m_pMolSel = SelectionPtr(new molstr::SelCommand());
+  m_dDensity = 0.0;
+  m_dProbeRad = 0.0;
+}
 
 MolSurfObj::~MolSurfObj()
 {

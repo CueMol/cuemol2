@@ -14,6 +14,15 @@
   var dlg = window.gDlgObj = new Object();
   dlg.mTgtSceID = window.arguments[0];
   dd("MolSurfDlg> TargetScene="+dlg.mTgtSceID);
+  if (window.arguments[1]) {
+      // regeneration mode
+      dlg.mRegenMode = true;
+      dlg.mTgtObjID = window.arguments[1];
+  }
+  else {
+      dlg.mRegenMode = false;
+      dlg.mTgtObjID = 0;
+  }
   
   dlg.mObjBox = new cuemolui.ObjMenuList(
     "mol-select-box", window,
@@ -22,7 +31,7 @@
     },
     cuemol.evtMgr.SEM_OBJECT);
   dlg.mObjBox._tgtSceID = dlg.mTgtSceID;
-  
+
   window.addEventListener("load", function(){
     try {dlg.onLoad();} catch (e) {debug.exception(e);}
   }, false);
@@ -60,6 +69,15 @@
       sel_chk.disabled = true;
       this.mSelBox.disabled = true;
       this.mSurfName.disabled = true;
+    }
+    if (this.mRegenMode) {
+      // Regenerate-mode
+      // --> disable mol,sel,name,pradius widgets
+      sel_chk.disabled = true;
+      this.mSelBox.disabled = true;
+      this.mSurfName.disabled = true;
+      this.mObjBox._widget.disabled = true;
+      document.getElementById("probe-radius").disabled = true;
     }
     else {
       var mol = this.mObjBox.getSelectedObj();
@@ -119,7 +137,10 @@
     if (tgtmol==null)
       return;
 
-    this.buildMolSurf();
+    if (this.mRegenMode)
+      this.regenMolSurf();
+    else
+      this.buildMolSurf();
   }
 
   ////////////////
@@ -127,8 +148,6 @@
   dlg.buildMolSurf = function ()
   {
     var scene = cuemol.getScene(this.mTgtSceID);
-
-    var strMgr = cuemol.getService("StreamManager");
 
     var tgtmol = this.mObjBox.getSelectedObj();
     var newname = this.mSurfName.value;
@@ -184,6 +203,49 @@
 	rend.sel = molsel;
       rend.colormode = "molecule";
       rend.coloring = cuemol.createObj("CPKColoring");
+    }
+    catch (e) {
+      dd("Error: "+e);
+      debug.exception(e);
+      
+      util.alert(window, "Failed to generate molecular surface");
+      scene.rollbackUndoTxn();
+      return;
+    }
+
+    // EDIT TXN END //
+    scene.commitUndoTxn();
+  }
+
+  // Regenerate molsurf
+  dlg.regenMolSurf = function ()
+  {
+    var scene = cuemol.getScene(this.mTgtSceID);
+
+    var tgtmol = cuemol.getObject(this.mTgtObjID);
+
+    ////
+    // density value
+    var nden = parseInt(document.getElementById("point-density-value").value);
+    if (nden==NaN || nden<1)
+      nden = 1;
+
+    /*
+    ////
+    // probe radius
+    var prad = parseFloat(document.getElementById("probe-radius").value);
+    if (prad==NaN || prad<0.1)
+      prad = 1.4;
+    */
+
+    ////
+    // do the actual task
+
+    // EDIT TXN START //
+    scene.startUndoTxn("Regenerate mol surface");
+
+    try {
+      tgtmol.regenerateSES1(nden);
     }
     catch (e) {
       dd("Error: "+e);

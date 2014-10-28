@@ -18,6 +18,17 @@ runtime_class MolSurfObj extends Object
   scriptable;
   smartptr;
 
+  property string orig_mol => redirect(getOrigMolName, setOrigMolName);
+  // default name = "";
+  
+  property object<MolSelection$> orig_sel => redirect(getOrigSel, setOrigSel);
+  // default sel = molstr::SelectionPtr(new molstr::SelCommand());
+
+  property real orig_den => redirect(getOrigDen, setOrigDen);
+  property real orig_prad => redirect(getOrigProbeRad, setOrigProbeRad);
+  
+  //////////
+
   /// Cut surface by a plane
   void cutByPlane(real cdiv, object<Vector> norm, object<Vector> pos, boolean bSec);
   void cutByPlane2(real cdiv, object<Vector> norm, object<Vector> pos, boolean bBody, boolean bSec);

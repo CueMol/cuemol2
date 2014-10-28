@@ -1121,9 +1121,24 @@ NS_IMETHODIMP XPCObjWrapper::GetPropsJSON(nsAString &_retval)
     return NS_ERROR_INVALID_POINTER;
   }
 
-  LString str = getPropsJSONImpl(m_pWrapped);
-  nsAutoCString nsstr(str.c_str());
-  ::CopyUTF8toUTF16(nsstr, _retval);
+  try {
+    LString str = getPropsJSONImpl(m_pWrapped);
+    nsAutoCString nsstr(str.c_str());
+    ::CopyUTF8toUTF16(nsstr, _retval);
+  }
+  catch (qlib::LException &e) {
+    LString errmsg = 
+      LString::format("Exception occured in getPropsJSON: %s",
+                      e.getFmtMsg().c_str());
+    LOG_DPRINTLN(errmsg);
+    return NS_ERROR_FAILURE;
+  }
+  catch (...) {
+    LString errmsg = 
+      LString::format("Unknown Exception occured in getPropsJSON");
+    LOG_DPRINTLN(errmsg);
+    return NS_ERROR_FAILURE;
+  }
 
   //*_retval = ToNewCString(nsstr);
 
@@ -1221,7 +1236,9 @@ LString XPCObjWrapper::getPropsJSONImpl(qlib::LScriptable *pObj)
       pObj->getProperty(key, lvar);
       if (!lvar.isObject()) {
         // FATAL ERROR!!
-        MB_THROW(qlib::RuntimeException, "inconsistent object name");
+	LString msg = LString::format("inconsistent object name of prop <%s>",
+				      key.c_str());
+        MB_THROW(qlib::RuntimeException, msg);
         return rval;
       }
 

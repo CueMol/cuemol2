@@ -1447,6 +1447,33 @@ ws.onEditIntr = function ()
 //////////////////////////////
 // Copy & Paste (renderer)
 
+// Update molsurf regenerate menu
+ws.setupMolSurfCtxtMenu = function ()
+{
+  item = document.getElementById("wspcPanelMolSurfRegen");
+      
+  let elem = this.mViewObj.getSelectedNode();
+  item.hidden = true;
+  if (elem.type!="object")
+    return;
+
+  let obj = cuemol.getObject(elem.obj_id);
+  if (!obj || cuemol.getClassName(obj)!="MolSurfObj")
+    return;
+
+  item.hidden = false;
+  item.disabled = true;
+  
+  dd("obj.orig_mol: "+obj.orig_mol);
+  if (!obj.orig_mol)
+    return;
+
+  let scene = obj.getScene();
+  let origobj = scene.getObjectByName(obj.orig_mol);
+  if (origobj)
+    item.disabled = false;
+};
+
 /// Context menu setup for Scene, Object, and RendGrp items
 ws.onCtxtMenuShowing = function (aEvent)
 {
@@ -1463,16 +1490,8 @@ ws.onCtxtMenuShowing = function (aEvent)
         item.disabled = true;
 
       // Update molsurf regenerate menu
-      item = document.getElementById("wspcPanelMolSurfRegen");
+      this.setupMolSurfCtxtMenu();
       
-      let elem = this.mViewObj.getSelectedNode();
-      item.hidden = true;
-      if (elem.type=="object") {
-	let obj = cuemol.getObject(elem.obj_id);
-	if (obj && cuemol.getClassName(obj)=="MolSurfObj") {
-	  item.hidden = false;
-	}
-      }
     }
     else if (aEvent.target.id=="wspcPanelRendGrpCtxtMenu") {
       // Update the renderer-paste in rendgrp menu 
@@ -2962,6 +2981,25 @@ ws.toggleVisibleRendGrp = function (aElem)
 
 ws.onMolSurfRegen = function (aEvent)
 {
+  var elem = this.mViewObj.getSelectedNode();
+  if (!elem) return;
+  if (elem.type!="object")
+    return;
+
+  var stylestr = "chrome,resizable=no,dependent,centerscreen";
+
+  var scene_id = this._mainWnd.getCurrentSceneID();
+
+  var winMed = Cc["@mozilla.org/appshell/window-mediator;1"]
+  .getService(Ci.nsIWindowMediator);
+
+  var win = winMed.getMostRecentWindow("CueMol2:MsmsMakeSurfDlg");
+  if (win) {
+    dd("ERROR!!");
+  }
+  else
+    window.openDialog("chrome://cuemol2/content/tools/makesurf.xul",
+		      "", stylestr, scene_id, elem.obj_id);
 };
 
 
