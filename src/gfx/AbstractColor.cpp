@@ -162,6 +162,9 @@ void AbstractColor::RGBtoHSB(int r, int g, int b,
   }
 }
 
+/// Convert object's property to color modifiers for object serialization
+/// R/W Props with default value (and is not in default value)
+/// will be written out to the result string as modifiers (e.g. material, mod_s, etc).
 LString AbstractColor::makeModifFromProps() const
 {
   std::set<LString> names;
