@@ -78,6 +78,10 @@
       this.mSurfName.disabled = true;
       this.mObjBox._widget.disabled = true;
       document.getElementById("probe-radius").disabled = true;
+      // set orig_den as a default value of point density
+      let mol = cuemol.getObject(this.mTgtObjID);
+      let orig_den = mol.orig_den;
+      document.getElementById("point-density-value").value = orig_den;
     }
     else {
       var mol = this.mObjBox.getSelectedObj();
