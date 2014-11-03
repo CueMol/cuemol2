@@ -57,8 +57,14 @@
       <toolbarbutton
 	id="add-btn"
 	class="toolbar-button add-button"
+	type="menu"
 	oncommand="window.gDlg.onAdd(event);"
-	tooltiptext="Add"/>
+	tooltiptext="Add">
+	<menupopup id="animPanelAddPopup">
+	  <menuitem label="Add PDB file..." value="PDBFile"/>
+	  <menuitem label="Add MolCoord..." value="MolCoord"/>
+	</menupopup>
+      </toolbarbutton>	
 
     </hbox>
 

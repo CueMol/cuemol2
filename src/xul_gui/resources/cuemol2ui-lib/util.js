@@ -267,6 +267,54 @@ exports.confirmYesNoCancel = function(window, text)
   return button;
 }
 
+exports.doSelectObjPrompt = function(window, scene, dlg_title, filter_fn)
+{
+  var id, label, ok;
+  var labellist = new Array();
+  var uidlist = new Array();
+  var selected = {};
+  var re = /\(([0-9]+)\)$/, match;
+  var scene;
+
+  try {
+    var json = scene.getObjectTreeJSON();
+    var obj = JSON.parse(json);
+    for (var i=0; i<obj.length; ++i) {
+      var target = obj[i];
+      label = filter_fn((i==0)?"scene":"object", target);
+      if (label!==null) {
+        labellist.push(label);
+        uidlist.push(target.ID);
+      }
+
+      var rnds = target.rends;
+      if (typeof rnds!='undefined' && 'length' in rnds) {
+        for (var j=0; j<rnds.length; ++j) {
+          target = rnds[j];
+          label = filter_fn("renderer", target);
+          if (label!==null) {
+            labellist.push(label);
+            uidlist.push(target.ID);
+          }
+        }
+      }
+    }
+  }
+  catch (e) {
+    debug_util.exception(e);
+    return null;
+  }
+
+  ok = promptSvc.select(window, "CueMol2", dlg_title, 
+                        labellist.length, labellist, selected);
+
+  if (!ok)
+    return null;
+
+  target_ID = uidlist[selected.value];
+
+  return target_ID;
+}
 
 exports.makeUniqName = function(strbundle, prop_name, try_func)
 {

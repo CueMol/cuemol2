@@ -8,6 +8,8 @@
 #include "MorphMol.hpp"
 
 #include <qlib/Utils.hpp>
+#include <qsys/EditInfo.hpp>
+#include <qsys/UndoManager.hpp>
 #include <modules/molstr/MolArrayMap.hpp>
 #include <modules/molstr/MolAtom.hpp>
 
@@ -235,6 +237,95 @@ void MorphMol::setupData()
 
 using molstr::MolCoordPtr;
 
+namespace {
+
+class MorphMolEditInfo : public qsys::EditInfo
+{
+public:
+  qlib::uid_t m_nTgtUID;
+
+  enum {
+    MME_ADD,
+    MME_REMOVE,
+  };
+
+  int m_nMode;
+
+  int m_nInsBefore;
+  MolCoordPtr m_pTgtMol;
+
+  MorphMolEditInfo() : m_nTgtUID(qlib::invalid_uid), m_nMode(0), m_nInsBefore(0)
+  {
+  }
+
+  virtual ~MorphMolEditInfo()
+  {
+  }
+
+  MorphMol *getTarget() const {
+    return qlib::ObjectManager::sGetObj<MorphMol>(m_nTgtUID);
+  }
+
+  /// Perform undo
+  virtual bool undo()
+  {
+    MB_DPRINTLN("MorphMol Undo mode=%d", m_nMode);
+
+    MorphMol *pTgt = getTarget();
+    if (pTgt==NULL)
+      return false;
+    
+    switch (m_nMode) {
+    case MME_REMOVE:
+      pTgt->insertBefore(m_pTgtMol, m_nInsBefore);
+      break;
+
+    case MME_ADD:
+      pTgt->removeFrame(m_nInsBefore);
+      break;
+
+    default:
+      return false;
+    }
+    return true;
+  }
+  
+  /// Perform redo
+  virtual bool redo()
+  {
+    MB_DPRINTLN("MorphMol Redo mode=%d", m_nMode);
+
+    MorphMol *pTgt = getTarget();
+    if (pTgt==NULL)
+      return false;
+    
+    switch (m_nMode) {
+    case MME_REMOVE:
+      pTgt->removeFrame(m_nInsBefore);
+      break;
+
+    case MME_ADD:
+      pTgt->insertBefore(m_pTgtMol, m_nInsBefore);
+      break;
+
+    default:
+      return false;
+    }
+    return true;
+  }
+  
+  virtual bool isUndoable() const {
+    if (m_pTgtMol.isnull()) return false;
+    return true;
+  }
+  virtual bool isRedoable() const {
+    if (m_pTgtMol.isnull()) return false;
+    return true;
+  }
+
+};
+}
+
 /// Append new coordinates frame
 void MorphMol::insertBefore(MolCoordPtr pmol, int index)
 {
@@ -257,6 +348,17 @@ void MorphMol::insertBefore(MolCoordPtr pmol, int index)
     FrameArray::iterator iter = m_frames.begin();
     iter += index;
     m_frames.insert(iter, pFrm);
+  }
+
+  // setup undo info
+  qsys::UndoUtil uu(getScene());
+  if (uu.isOK()) {
+    MorphMolEditInfo *pInfo = MB_NEW MorphMolEditInfo();
+    pInfo->m_nMode = MorphMolEditInfo::MME_ADD;
+    pInfo->m_nInsBefore = index;
+    pInfo->m_pTgtMol = pmol;
+    pInfo->m_nTgtUID = getUID();
+    uu.add(pInfo);
   }
 
   return;
@@ -282,9 +384,22 @@ void MorphMol::removeFrame(int index)
 
   m_frames.erase(iter);
 
+  MolCoordPtr pmol = pFrm->m_pMol;
   pFrm->m_crds.resize(0);
   pFrm->m_pMol = MolCoordPtr();
   delete pFrm;
+
+  // setup undo info
+  qsys::UndoUtil uu(getScene());
+  if (uu.isOK()) {
+    MorphMolEditInfo *pInfo = MB_NEW MorphMolEditInfo();
+    pInfo->m_nMode = MorphMolEditInfo::MME_REMOVE;
+    pInfo->m_nInsBefore = index;
+    pInfo->m_pTgtMol = pmol;
+    pInfo->m_nTgtUID = getUID();
+    uu.add(pInfo);
+  }
+
 }
 
 LString MorphMol::getFrameInfoJSON() const

@@ -260,7 +260,6 @@
 	    <menuitem label="Create renderer" oncommand="gQm2Main.onCreateRenderer();" />
 	    <menuitem label="Delete renderer" oncommand="window.alert('not impl');" />
 	    <menuitem label="Edit renderer" oncommand="window.alert('not impl');" />
-	    <menuitem label="Change renderer property" oncommand="gQm2Main.onChgRendProp();" />
 	    <menuseparator/> -->
 
 #ifndef XP_MACOSX

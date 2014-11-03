@@ -424,12 +424,14 @@ if (!("anim" in cuemolui.panels)) {
 	uids.some( function (elem) {
 	  let uid = parseInt(elem);
 	  let o = cuemol.getObject(uid);
-	  let clsnm = cuemol.getClassName(o);
-	  dd("Name="+o.name);
-	  dd("  ClassName="+clsnm);
-	  if (clsnm=="MorphMol") {
-	    obj.mol = o.name;
-	    return true;
+	  if (o) {
+	    let clsnm = cuemol.getClassName(o);
+	    dd("Name="+o.name);
+	    dd("  ClassName="+clsnm);
+	    if (clsnm=="MorphMol") {
+	      obj.mol = o.name;
+	      return true;
+	    }
 	  }
 	  return false;
 	});

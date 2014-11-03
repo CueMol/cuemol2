@@ -19,7 +19,7 @@ Please use it *at your own risk*.
 
 For non-profit (academic) organization users,
 CueMol (including both binary and source code) is distributed with no costs,
-under the [X/MIT licence](http://opensource.org/licenses/MIT).
+under the [GPLv3](http://opensource.org/licenses/GPL-3.0).
 
 If you are commercial organization user and want to use CueMol,
 please contact ishitani_at_users.sourceforge.net.

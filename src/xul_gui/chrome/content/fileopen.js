@@ -314,7 +314,9 @@ Qm2Main.prototype.onFileSaveAs = function()
   let targetID;
   let that = this;
   
-  targetID = this.doSelectObjPrompt("Select object to save", function (type, elem) {
+  targetID = util.doSelectObjPrompt(window, scene,
+				    "Select object to save",
+				    function (type, elem) {
     if (type!="object") return null;
     let rdrnames = that.mStrMgr.findCompatibleWriterNamesForObj(elem.ID);
     if (rdrnames.length==0)

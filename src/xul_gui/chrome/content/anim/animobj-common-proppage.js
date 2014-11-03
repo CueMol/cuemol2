@@ -66,6 +66,7 @@ if (!("AnimObjPropPage" in cuemolui)) {
       this.onLoadCamMot();
       this.onLoadShowHide();
       this.onLoadSlideIO();
+
       this.onLoadMolAnim();
     };
 
@@ -136,6 +137,7 @@ if (!("AnimObjPropPage" in cuemolui)) {
 
       /////
 
+      dd("1 *****");
       if (tgt_id=="comprop-name" || tgt_id==null) {
 	new_val = this.mNameEdit.value;
 	this.mMain.updateData("name", new_val);
@@ -143,6 +145,7 @@ if (!("AnimObjPropPage" in cuemolui)) {
 
       /////
 
+      dd("2 *****");
       if (tgt_id=="comprop-disabled" || tgt_id==null) {
 	new_val = this.mDisChk.checked;
 	this.mMain.updateData("disabled", new_val);
@@ -150,6 +153,7 @@ if (!("AnimObjPropPage" in cuemolui)) {
 
       /////
 
+      dd("3 *****");
       if (tgt_id=="comprop-starttime" || tgt_id==null) {
 	new_val = this.mStartTime.strvalue;
 	this.mMain.updateData("start", new_val);
@@ -158,6 +162,7 @@ if (!("AnimObjPropPage" in cuemolui)) {
 	let str_end = this.mStartTime.convToStrValue(ms_end);
 	this.mMain.updateData("end", str_end);
       }
+      dd("4 *****");
 
       if (tgt_id=="comprop-duration" || tgt_id==null) {
 	let ms_end = this.mStartTime.value + this.mDurTime.value;
@@ -166,18 +171,23 @@ if (!("AnimObjPropPage" in cuemolui)) {
       }
 
       /////
+      dd("5 *****");
 
       if (tgt_id=="comprop-quadric" || tgt_id==null) {
 	var new_val = parseFloat(this.mQuadSli.value);
-	if (isNaN(new_val) || new_val<=0.0 || new_val>50.0) return;
-	this.mMain.updateData("quadric", new_val/100.0);
+	if (!(isNaN(new_val) || new_val<=0.0 || new_val>50.0))
+	  this.mMain.updateData("quadric", new_val/100.0);
       }
-
+      dd("6*****");
       if (tgt_id==null) {
 	this.validateSimSpinWidgets();
+      dd("7*****");
 	this.validateCamMotWidgets();
+      dd("8*****");
 	this.validateShowHideWidgets();
+      dd("9*****");
 	this.validateSlideIOWidgets();
+      dd("10*****");
 	this.validateMolAnimWidgets();
       }
     };
@@ -804,6 +814,7 @@ if (!("AnimObjPropPage" in cuemolui)) {
     /// Intrn-data --> widget
     klass.updateMolAnimWidgets = function ()
     {
+      dd("AnimObjProp> *********** validate MolAnimW");
       if (this._tgtClsName!="MolAnim")
 	return;
 
@@ -840,17 +851,20 @@ if (!("AnimObjPropPage" in cuemolui)) {
 
       if (tgt_id=="molanim_tgtmol" || tgt_id==null) {
 	let obj = this.mMolAnimTarg.getSelectedObj();
-	this.mMain.updateData("mol", obj.name);
+	if (obj)
+	  this.mMain.updateData("mol", obj.name);
       }
 
       if (tgt_id=="molanim_startval" || tgt_id==null) {
-	new_val = this.mStartVal.value;
-	this.mMain.updateData("startValue", new_val);
+	new_val = parseFloat(this.mStartVal.value);
+	if (!(isNaN(new_val) || new_val<0.0 || new_val>1.0))
+	  this.mMain.updateData("startValue", new_val);
       }
 
       if (tgt_id=="molanim_endval" || tgt_id==null) {
-	new_val = this.mEndVal.value;
-	this.mMain.updateData("endValue", new_val);
+	new_val = parseFloat(this.mEndVal.value);
+	if (!(isNaN(new_val) || new_val<0.0 || new_val>1.0))
+	  this.mMain.updateData("endValue", new_val);
       }
 
     };

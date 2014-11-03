@@ -3509,14 +3509,24 @@ CPK, ballstickのdetailのdefault値を上げる(10に?）
 ●修正
 Hittest時に，hitしたrendererの情報から，context menuにobject情報だけでなく，renderer情報を出すようにする
 
+●実装
+POV-Rayを3.7に．（並列rendering等に対応している）
+
+●実装
+surfaceのre-generationをできるようにした(point densityを変えられるように)．
+
+2014/11/03
+●修正
+AnimObjのprop dialogのうち，MolAnimのstart/end valueの変更が効かなかったのを修正
+MorphEdit dialogでdebug用のalertが出るのを削除
+●実装
+MorphEdit dialogですでに読み込んでいるmol objectを追加できるように変更
+MorphEdit dialogの追加削除をundo/redo可能に
 
 ---------------------------------------------------------------------------
 
 ○TO DO
 GLのsphere, coneのrendering方法をshaderによるようにする
-
-○TO DO
-POV-Rayを3.7にする．（並列rendering等に対応している）
 
 ○問題点
 スタート時にshow/hideを入れると，一旦すべてshowされてから0 frame目がrenderingされ，その後hideされるというおかしな挙動になる．

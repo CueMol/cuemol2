@@ -209,10 +209,7 @@ Qm2Main.prototype.deleteRendByID = function(aRendID)
   return;
 }
 
-Qm2Main.prototype.SELOBJP_SCENE = 0x01;
-Qm2Main.prototype.SELOBJP_OBJECT = 0x02;
-Qm2Main.prototype.SELOBJP_RENDERER = 0x04;
-
+/*
 Qm2Main.prototype.doSelectObjPrompt = function(dlg_title, filter_fn)
 {
   var id, label, ok;
@@ -270,90 +267,5 @@ Qm2Main.prototype.doSelectObjPrompt = function(dlg_title, filter_fn)
   target_ID = uidlist[selected.value];
 
   return target_ID;
-}
-
-Qm2Main.prototype.onChgRendProp = function()
-{
-  var id, ok;
-  var scene;
-
-  scene = this.mMainWnd.currentSceneW._wrapped;
-
-  targetObj = this.doSelectObjPrompt("Select target object", 1+2+4);
-  if (!targetObj)
-    return;
-
-  //////////
-
-  var input = {value: ""};
-  var dummy = {};
-  var old_value, new_value, prop_name;
-
-  ok = this.mPrompts.prompt(window, document.title,
-                            "Prop name for "+(targetObj.getProp("name"))+":", input,
-                            "", dummy
-                            );
-  if (!ok) return;
-  prop_name = input.value;
-
-  try {
-    old_value = targetObj.getProp(input.value);
-  }
-  catch (e) {
-    dump("error: " +e+ "\n");
-    return;
-  }
-
-  //////////
-
-  var dflag;
-
-  try {
-    dflag = targetObj.isPropDefault(input.value);
-  }
-  catch (e) {
-    dump("error: " +e+ "\n");
-    return;
-  }
-
-  // prop is not in default value
-  if (dflag==1) {
-    ok = this.mPrompts.confirm(window, "Default value",
-                               "Do you want to reset "+prop_name+" (value="+old_value+")"+"to default?");
-    if (ok) {
-      
-      try {
-        targetObj.resetProp(input.value);
-      }
-      catch (e) {
-        dump("error: " +e+ "\n");
-        return;
-      }
-      return;
-    }
-  }
-
-  //////////
-
-  input.value = old_value;
-  ok = this.mPrompts.prompt(window, document.title,
-                            "Prop value for "+prop_name+" (old="+old_value+")"+":", input,
-                            "", dummy
-                            );
-  if (!ok) return;
-
-  // EDIT TXN START //
-  scene.invoke1("startUndoTxn", "Change prop");
-  try {
-    targetObj.setProp(prop_name, input.value);
-  }
-  catch (e) {
-    dump("error: " +e+ "\n");
-  }
-  scene.invoke0("commitUndoTxn");
-  // EDIT TXN END //
-
-}
-
-//////////
+}*/
 
