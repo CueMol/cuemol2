@@ -17,6 +17,14 @@ runtime_class MapSurfRenderer extends MapRenderer
   smartptr;
   cloneable;
 
+  /// Automatically update the map center as view center (only in mouseUp event)
+  property boolean autoupdate => m_bAutoUpdate;
+  default autoupdate = true;
+
+  /// Automatically update (including mouse drag event)
+  property boolean dragupdate => m_bDragUpdate;
+  default dragupdate = false;
+
 };
 
 #endif

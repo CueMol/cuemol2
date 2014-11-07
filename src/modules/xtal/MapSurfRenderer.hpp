@@ -119,14 +119,24 @@ namespace xtal {
     {
       // TO DO: support PBC
       // TO DO: support symop
-      if (x<0||y<0||z<0)
-        return 0.0;
-      if (x>=m_nMapColNo||
-          y>=m_nMapRowNo||
-          z>=m_nMapSecNo)
-        return 0.0;
 
-      return m_pCMap->atFloat(x, y, z);
+      if (m_bPBC) {
+        const int xx = (x+10000*m_nMapColNo)%m_nMapColNo;
+        const int yy = (y+10000*m_nMapRowNo)%m_nMapRowNo;
+        const int zz = (z+10000*m_nMapSecNo)%m_nMapSecNo;
+        // return pMap->atByte(xx,yy,zz);
+        return m_pCMap->atFloat(xx, yy, zz);
+      }
+      else {
+        if (x<0||y<0||z<0)
+          return 0.0;
+        if (x>=m_nMapColNo||
+            y>=m_nMapRowNo||
+            z>=m_nMapSecNo)
+          return 0.0;
+        return m_pCMap->atFloat(x, y, z);
+      }
+      
     }
 
     inline double intrpX(double x, int y, int z) const

@@ -28,8 +28,9 @@ MapSurfRenderer::MapSurfRenderer()
 {
 //  m_nBufSize = 100;
 //  m_lw = 1.0;
-//  m_bPBC = false;
+  m_bPBC = false;
   m_bAutoUpdate = true;
+  m_bDragUpdate = false;
 
   //resetAllProps();
 
@@ -206,17 +207,21 @@ void MapSurfRenderer::render(DisplayContext *pdl)
         int ix = i+m_nStCol - pMap->getStartCol();
         int iy = j+m_nStRow - pMap->getStartRow();
         int iz = k+m_nStSec - pMap->getStartSec();
-        if (ix<0||iy<0||iz<0)
-          continue;
-        if (ix+1>=m_nMapColNo||
-            iy+1>=m_nMapRowNo||
-            iz+1>=m_nMapSecNo)
-          continue;
+        if (!m_bPBC) {
+          if (ix<0||iy<0||iz<0)
+            continue;
+          if (ix+1>=m_nMapColNo||
+              iy+1>=m_nMapRowNo||
+              iz+1>=m_nMapSecNo)
+            continue;
+        }
         double values[8];
         
         int ii;
-        for (ii=0; ii<8; ii++)
-          values[ii] = pMap->atFloat(ix+vtxoffs[ii][0], iy+vtxoffs[ii][1], iz+vtxoffs[ii][2]);
+        for (ii=0; ii<8; ii++) {
+          // values[ii] = pMap->atFloat(ix+vtxoffs[ii][0], iy+vtxoffs[ii][1], iz+vtxoffs[ii][2]);
+          values[ii] = getDen(ix+vtxoffs[ii][0], iy+vtxoffs[ii][1], iz+vtxoffs[ii][2]);
+        }
         
         marchCube(pdl, i, j, k, values);
 
@@ -272,6 +277,19 @@ void MapSurfRenderer::makerange()
     const CrystalInfo &xt = pXtal->getXtalInfo();
     xt.orthToFrac(vmin);
     xt.orthToFrac(vmax);
+
+    // check PBC
+    m_bPBC = false;
+    const double dimx = pMap->getColGridSize()*pMap->getColNo();
+    const double dimy = pMap->getRowGridSize()*pMap->getRowNo();
+    const double dimz = pMap->getSecGridSize()*pMap->getSecNo();
+    const double cea = xt.a();
+    const double ceb = xt.b();
+    const double cec = xt.c();
+    if (qlib::isNear4(dimx, cea) &&
+        qlib::isNear4(dimy, ceb) &&
+        qlib::isNear4(dimz, cec))
+      m_bPBC = true;
   }
 
   if (pXtal!=NULL) {
@@ -291,16 +309,16 @@ void MapSurfRenderer::makerange()
     vmax.z() /= pMap->getSecGridSize();
   }
 
-  //if (!m_bPBC) {
-  // limit XYZ in the available region of map
-  vmin.x() = floor(qlib::max<double>(vmin.x(), pMap->getStartCol()));
-  vmin.y() = floor(qlib::max<double>(vmin.y(), pMap->getStartRow()));
-  vmin.z() = floor(qlib::max<double>(vmin.z(), pMap->getStartSec()));
-  
-  vmax.x() = floor(qlib::min<double>(vmax.x(), pMap->getStartCol()+pMap->getColNo()));
-  vmax.y() = floor(qlib::min<double>(vmax.y(), pMap->getStartRow()+pMap->getRowNo()));
-  vmax.z() = floor(qlib::min<double>(vmax.z(), pMap->getStartSec()+pMap->getSecNo()));
-  // }
+  if (!m_bPBC) {
+    // limit XYZ in the available region of map
+    vmin.x() = floor(qlib::max<double>(vmin.x(), pMap->getStartCol()));
+    vmin.y() = floor(qlib::max<double>(vmin.y(), pMap->getStartRow()));
+    vmin.z() = floor(qlib::max<double>(vmin.z(), pMap->getStartSec()));
+    
+    vmax.x() = floor(qlib::min<double>(vmax.x(), pMap->getStartCol()+pMap->getColNo()));
+    vmax.y() = floor(qlib::min<double>(vmax.y(), pMap->getStartRow()+pMap->getRowNo()));
+    vmax.z() = floor(qlib::min<double>(vmax.z(), pMap->getStartSec()+pMap->getSecNo()));
+  }
 
   m_nActCol = int(vmax.x() - vmin.x());
   m_nActRow = int(vmax.y() - vmin.y());
