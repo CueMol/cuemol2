@@ -1,8 +1,6 @@
 // -*-Mode: C++;-*-
 //
-// Generate/Render a mesh contour of ScalarObject
-//
-// $Id: MapMeshRenderer.cpp,v 1.13 2011/02/03 10:39:51 rishitani Exp $
+// Generate/Render the map contour mesh of ScalarObject
 //
 
 #include <common.h>

@@ -10,6 +10,7 @@
 
 #include "DensityMap.qif"
 #include "MapMeshRenderer.qif"
+#include "MapSurfRenderer.qif"
 #include "MTZ2MapReader.qif"
 
 #ifdef USE_OPENGL
@@ -24,6 +25,7 @@ module xtal
 
   DensityMap;
   MapMeshRenderer;
+  MapSurfRenderer;
   MTZ2MapReader;
 
 #ifdef USE_OPENGL

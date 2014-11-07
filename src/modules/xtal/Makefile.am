@@ -21,6 +21,7 @@ XplorMapReader.cpp \
 MTZ2MapReader.cpp \
 DensityMap.cpp \
 MapMeshRenderer.cpp \
+MapSurfRenderer.cpp \
 MapRenderer.cpp \
 QdfDenMapReader.cpp \
 QdfDenMapWriter.cpp \
@@ -32,6 +33,7 @@ $(NULL)
 MCWG_SRC= \
 DensityMap.qif \
 MapMeshRenderer.qif \
+MapSurfRenderer.qif \
 MapRenderer.qif \
 MTZ2MapReader.qif \
 $(NULL)

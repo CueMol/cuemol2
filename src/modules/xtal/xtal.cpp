@@ -9,6 +9,7 @@
 
 #include "xtal.hpp"
 #include "MapMeshRenderer.hpp"
+#include "MapSurfRenderer.hpp"
 #include "CCP4MapReader.hpp"
 #include "MTZ2MapReader.hpp"
 #include "XplorMapReader.hpp"
@@ -41,6 +42,7 @@ bool init()
   
   RendererFactory *pRF = RendererFactory::getInstance();
   pRF->regist<MapMeshRenderer>();
+  pRF->regist<MapSurfRenderer>();
 
 #ifdef USE_OPENGL
   pRF->regist<GLSLMapVolRenderer>();

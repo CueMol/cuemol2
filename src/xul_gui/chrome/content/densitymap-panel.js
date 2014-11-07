@@ -22,6 +22,7 @@ denmap.mMapList = new cuemolui.ObjMenuList(
   "denmap-rend-list", window,
   function (elem) {
     if (elem.type=="contour"||
+	elem.type=="isosurf"||
 	elem.type=="gpu_mapmesh"||
 	elem.type=="gpu_mapvol") return true;
     return false; },

@@ -269,6 +269,18 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\modules\xtal\MapSurfRenderer.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\modules\xtal\MapSurfRenderer.qif"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\modules\xtal\MapSurfRenderer_wrap.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\modules\xtal\MTZ2MapReader.cpp"
 				>
 			</File>

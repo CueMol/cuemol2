@@ -166,24 +166,10 @@ private:
 			   unsigned int s1,
 			   unsigned int lv);
 
-  /*
-  double fmax(double a, double b) {
-    if (a>b) return a; else return b;
-  }
-
-  double fmin(double a, double b) {
-    if (a>b) return b; else return a;
-  }
-*/
-  
   unsigned char getMap(ScalarObject *pMap, int x, int y, int z) const
   {
-    /*
-    if (m_bUseMolBndry) {
-      if (!inMolBndry(pMap, x,y,z))
-        return 0;
-    }
-     */
+    // TO DO: support symop
+
     if (m_bPBC) {
       const int xx = (x+10000*m_nMapColNo)%m_nMapColNo;
       const int yy = (y+10000*m_nMapRowNo)%m_nMapRowNo;

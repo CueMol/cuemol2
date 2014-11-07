@@ -1,0 +1,23 @@
+// -*-Mode: C++;-*-
+//
+//
+
+#ifndef MAPSURF_RENDERER_QIF_INCLUDED
+#define MAPSURF_RENDERER_QIF_INCLUDED
+
+#include "MapRenderer.qif"
+#include <modules/molstr/SelCommand.qif>
+
+runtime_class MapSurfRenderer extends MapRenderer
+{
+  client_hdr "MapSurfRenderer.hpp";
+  client_name xtal::MapSurfRenderer;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+};
+
+#endif
+
