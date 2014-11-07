@@ -307,8 +307,14 @@ LString LDom2Node::getErrorMsgs() const
 {
   LString rval;
   if (getChildCount()>0) {
-    for (firstChild(); hasMoreChild(); nextChild())
-      rval += getCurChild()->getErrorMsgs();
+    for (firstChild(); hasMoreChild(); nextChild()) {
+      LDom2Node *p = getCurChild();
+      if (p==NULL) {
+        LOG_DPRINTLN("LDom2Node::getErrorMsgs() FatalError child count=%d", getChildCount());
+      }
+      else
+        rval += p->getErrorMsgs();
+    }
   }
 
   if (m_errMsgs.size()>0) {
