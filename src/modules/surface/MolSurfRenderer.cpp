@@ -32,6 +32,7 @@ MolSurfRenderer::MolSurfRenderer()
   m_pAmap = NULL;
   m_nDrawMode = SFDRAW_FILL;
   m_nMode = SFREND_SIMPLE;
+  m_lw = 1.2;
 }
 
 /** destructor */

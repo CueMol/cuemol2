@@ -5,6 +5,8 @@
 
 #include <common.h>
 
+// #define SHOW_NORMAL
+
 #include "MapSurfRenderer.hpp"
 #include "MapSurfRenderer_consts.hpp"
 #include "DensityMap.hpp"
@@ -31,6 +33,8 @@ MapSurfRenderer::MapSurfRenderer()
   m_bPBC = false;
   m_bAutoUpdate = true;
   m_bDragUpdate = false;
+  m_nDrawMode = MSRDRAW_FILL;
+  m_lw = 1.2;
 
   //resetAllProps();
 
@@ -118,7 +122,35 @@ void MapSurfRenderer::viewChanged(qsys::ViewEvent &ev)
 void MapSurfRenderer::preRender(DisplayContext *pdc)
 {
   pdc->color(getColor());
-  pdc->setLighting(true);
+
+  if (m_nDrawMode==MSRDRAW_POINT) {
+    pdc->setLighting(false);
+    pdc->setPolygonMode(gfx::DisplayContext::POLY_POINT);
+    pdc->setPointSize(m_lw);
+  }
+  else if (m_nDrawMode==MSRDRAW_LINE) {
+    pdc->setLighting(false);
+    pdc->setPolygonMode(gfx::DisplayContext::POLY_LINE);
+    pdc->setLineWidth(m_lw);
+  }
+  else {
+    pdc->setLighting(true);
+    pdc->setPolygonMode(gfx::DisplayContext::POLY_FILL);
+  }
+  
+  //if (!m_bCullFace)
+  //pdc->setCullFace(false);
+  pdc->setCullFace(true);
+}
+
+void MapSurfRenderer::postRender(DisplayContext *pdc)
+{
+  // reset to default drawing options
+  pdc->setPolygonMode(gfx::DisplayContext::POLY_FILL);
+  pdc->setPointSize(1.0);
+  pdc->setLineWidth(1.0);
+  pdc->setCullFace(true);
+  pdc->setLighting(false);
 }
 
 // generate display list
@@ -128,6 +160,7 @@ void MapSurfRenderer::render(DisplayContext *pdl)
   DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
 
   m_pCMap = pMap;
+
 
   // generate map-range information
   makerange();
@@ -181,11 +214,7 @@ void MapSurfRenderer::render(DisplayContext *pdl)
   }
 
   MB_DPRINTLN("MapSurfRenderer Rendereing...\n");
-
-  //pdl->startLines();
-  pdl->setPolygonMode(DisplayContext::POLY_FILL);
-  //if (!m_bCullFace)
-  pdl->setCullFace(false);
+  
   pdl->startTriangles();
 
   /////////////////////
@@ -240,8 +269,16 @@ void MapSurfRenderer::render(DisplayContext *pdl)
   //////////
 
   pdl->end();
-  pdl->setLighting(false);
 
+#ifdef SHOW_NORMAL
+  pdl->startLines();
+  BOOST_FOREACH (const Vector4D &elem, m_tmpv) {
+    pdl->vertex(elem);
+  }
+  pdl->end();
+  m_tmpv.clear();
+#endif
+  
   pdl->popMatrix();
 
   MB_DPRINTLN("MapSurfRenderer Rendereing OK\n");
@@ -434,10 +471,21 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl, double fx, double fy, doubl
       
       // getVertexColor(sColor, asEdgeVertex[iVertex], asEdgeNorm[iVertex]);
       // glColor3f(sColor.x, sColor.y, sColor.z);
-      if (getLevel()<0)
+
+      if (getLevel()<0) {
         pdl->normal(-asEdgeNorm[iVertex]);
-      else
+#ifdef SHOW_NORMAL
+        m_tmpv.push_back(asEdgeVertex[iVertex]);
+        m_tmpv.push_back(asEdgeVertex[iVertex]-asEdgeNorm[iVertex]);
+#endif
+      }
+      else {
         pdl->normal(asEdgeNorm[iVertex]);
+#ifdef SHOW_NORMAL
+        m_tmpv.push_back(asEdgeVertex[iVertex]);
+        m_tmpv.push_back(asEdgeVertex[iVertex]+asEdgeNorm[iVertex]);
+#endif
+      }
       pdl->vertex(asEdgeVertex[iVertex]);
     }
   }

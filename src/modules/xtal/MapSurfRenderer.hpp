@@ -32,6 +32,7 @@ namespace xtal {
     MC_SCRIPTABLE;
     MC_CLONEABLE;
 
+  private:
     typedef MapRenderer super_t;
     friend class ::MapSurfRenderer_wrap;
 
@@ -51,6 +52,20 @@ namespace xtal {
     /// (default: false)
     bool m_bDragUpdate;
 
+  public:
+    enum {
+      MSRDRAW_FILL = 0,
+      MSRDRAW_LINE = 1,
+      MSRDRAW_POINT = 2,
+    };
+    
+  private:
+    /// Mesh-drawing mode
+    int m_nDrawMode;
+
+    /// Line width (used in LINE/POINT mode)
+    double m_lw;
+
   private:
 
     ///////////////////////////////////////////
@@ -66,6 +81,11 @@ namespace xtal {
     /// contour level (not a property)
     double m_dLevel;
 
+    /// for debug
+#ifdef SHOW_NORMAL
+    std::deque<Vector4D> m_tmpv;
+#endif
+    
   public:
 
     ///////////////////////////////////////////
@@ -90,9 +110,9 @@ namespace xtal {
 
     virtual void render(DisplayContext *pdl);
     virtual void preRender(DisplayContext *pdc);
-    virtual void postRender(DisplayContext *pdc) {}
+    virtual void postRender(DisplayContext *pdc);
 
-    virtual bool isTransp() const { return true; }
+    // virtual bool isTransp() const { return true; }
 
     ///////////////////////////////////////////////////////////////
 
