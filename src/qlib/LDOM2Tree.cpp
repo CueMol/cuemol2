@@ -229,8 +229,12 @@ void LDom2Node::dump() const
   }
   else {
     MB_DPRINTLN(", children= {");
-    for (firstChild(); hasMoreChild(); nextChild())
-      getCurChild()->dump();
+    BOOST_FOREACH (LDom2Node *p, m_children) {
+      if (p==NULL)
+        MB_DPRINTLN("(nil)\n");
+      else
+        p->dump();
+    }
     MB_DPRINTLN("}");
   }
 }
@@ -306,17 +310,11 @@ void LDom2Node::appendErrMsg(const char *fmt, ...)
 LString LDom2Node::getErrorMsgs() const
 {
   LString rval;
-  if (getChildCount()>0) {
-    for (firstChild(); hasMoreChild(); nextChild()) {
-      LDom2Node *p = getCurChild();
-      if (p==NULL) {
-        LOG_DPRINTLN("LDom2Node::getErrorMsgs() FatalError child count=%d", getChildCount());
-      }
-      else
-        rval += p->getErrorMsgs();
-    }
+  BOOST_FOREACH (LDom2Node* p, m_children) {
+    if (p!=NULL)
+      rval += p->getErrorMsgs();
   }
-
+  
   if (m_errMsgs.size()>0) {
     rval += LString::join("\n", m_errMsgs) + "\n";
   }
