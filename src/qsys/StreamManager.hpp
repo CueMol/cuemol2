@@ -133,6 +133,8 @@ namespace qsys {
     qlib::LScrSp<qlib::LScrObjBase> fromXML(const qlib::LScrSp<qlib::LByteArray> &pObj,
                                             qlib::uid_t nSceneID);
 
+    qlib::LScrSp<qlib::LByteArray> arrayToXML(const qlib::LVarArray &objs);
+
   public:
   
     //////////

@@ -13,6 +13,7 @@
 
 #include <qlib/FileStream.hpp>
 #include <qlib/LByteArray.hpp>
+#include <qlib/LVarArray.hpp>
 
 #ifdef HAVE_BOOST_THREAD
 #define BOOST_LIB_DIAGNOSTIC 1
@@ -370,5 +371,42 @@ qlib::LScrSp<qlib::LScrObjBase> StreamManager::fromXML(const qlib::LScrSp<qlib::
   qlib::LScrSp<qlib::LScrObjBase> rval = reader.fromByteArray(pbuf);
   reader.detach();
   return rval;
+}
+
+qlib::LByteArrayPtr StreamManager::arrayToXML(const qlib::LVarArray &objs)
+{
+  const int nlen = objs.size();
+  
+  if (nlen==0)
+    return qlib::LByteArrayPtr();
+
+  {
+    // try renderer array
+    std::list<RendererPtr> list;
+    for (int i=0; i<nlen; ++i) {
+      if (!objs[i].isObject())
+        return qlib::LByteArrayPtr();
+      
+      LScriptable *pObj = objs[i].getObjectPtr();
+      if (pObj==NULL)
+        return qlib::LByteArrayPtr();
+      if (!pObj->isSmartPtr())
+        return qlib::LByteArrayPtr();
+
+      qlib::LSupScrSp *pBaseSP = static_cast<qlib::LSupScrSp *>(pObj);
+      RendererPtr pRend = RendererPtr(*pBaseSP);
+      if (pRend.isnull())
+        return qlib::LByteArrayPtr();
+
+      list.push_back(pRend);
+    }
+
+    SceneXMLWriter writer;
+    qlib::LByteArrayPtr rval = writer.rendArrayToByteArray(list);
+    return rval;
+  }
+  
+  
+  // return qlib::LByteArrayPtr();
 }
 

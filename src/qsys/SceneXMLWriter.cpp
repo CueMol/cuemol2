@@ -372,3 +372,59 @@ qlib::LScrSp<qlib::LByteArray> SceneXMLWriter::toByteArray(const qlib::LScrSp<ql
   return pRet;
 }
 
+/////
+
+qlib::LByteArrayPtr
+SceneXMLWriter::rendArrayToByteArray(const std::list<RendererPtr> &rendary)
+{
+  // Setup streams
+  qlib::StrOutStream fos;
+  qlib::LDom2OutStream oos(fos);
+
+  // gzip-compressed base64 stream
+  // (the output should be text format)
+  oos.setQdfEncType("11");
+  
+  qlib::uid_t nSceneID = qlib::invalid_uid;
+  LString top_type = "renderers";
+
+  // check scene ID
+  BOOST_FOREACH (RendererPtr pRend, rendary) {
+    if (nSceneID==qlib::invalid_uid)
+      nSceneID = pRend->getSceneID();
+    else if (nSceneID != pRend->getSceneID())
+      MB_THROW(qlib::RuntimeException, "arryToXML error: different scenes");
+  }
+
+  // Enter the context (all renderers must be in the same scene!!)
+  AutoStyleCtxt style_ctxt(nSceneID);
+
+  //
+  // Build LDOM2 tree
+  //
+  qlib::LDom2Tree tree(top_type);
+  qlib::LDom2Node *pNode = tree.top();
+
+  BOOST_FOREACH (RendererPtr pRend, rendary) {
+    qlib::LDom2Node *pChNode = pNode->appendChild("renderer");
+    pChNode->setTypeName( pRend->getTypeName() );
+    // always in child element
+    pChNode->setAttrFlag(false);
+  
+    pRend->writeTo2(pChNode);
+  }
+
+  oos.write(&tree);
+  oos.close();
+
+  // End of writing
+  fos.close();
+
+  qlib::LScrSp<qlib::LByteArray> pRet = fos.getByteArray();
+
+  MB_DPRINTLN("XML:\n%s<<<", pRet->data());
+  MB_DPRINTLN("Length: %d", pRet->size());
+
+  return pRet;
+}
+

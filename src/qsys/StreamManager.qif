@@ -37,6 +37,9 @@ runtime_class StreamManager
   object<ByteArray$> toXML(object<LScrObject$>);
   object<ByteArray$> toXML2(object<LScrObject$>, string type_ovwr);
   object<LScrObject$> fromXML(object<ByteArray$>, integer);
+
+  // array ver
+  object<ByteArray$> arrayToXML(array);
 };
 
 #endif // STREAM_MANAGER_QIF_INCLUDED

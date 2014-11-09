@@ -1,0 +1,462 @@
+//
+//
+//
+
+ws.mSceneCtxtMenuID = "wspcPanelSceneCtxtMenu";
+ws.mObjCtxtMenuID = "wspcPanelObjCtxtMenu";
+ws.mRendCtxtMenuID = "wspcPanelRendCtxtMenu";
+
+/// Context menu setup for Scene, Object, and RendGrp items
+ws.onCtxtMenuShowing = function (aEvent)
+{
+  var clipboard = require("qsc-copipe");
+  var item, xmlstr;
+  try {
+    if (aEvent.target.id=="wspcPanelObjCtxtMenu") {
+      // Update the renderer-paste menu
+      item = document.getElementById("wspcPanelObjCtxtMenu-Paste");
+      xmlstr = clipboard.get("qscrend");
+      if (xmlstr)
+        item.disabled = false;
+      else
+        item.disabled = true;
+
+      // Update molsurf regenerate menu
+      this.setupMolSurfCtxtMenu();
+      
+    }
+    else if (aEvent.target.id=="wspcPanelRendGrpCtxtMenu") {
+      // Update the renderer-paste in rendgrp menu 
+      item = document.getElementById("wspcPanelRendGrpCtxtMenu-Paste");
+      xmlstr = clipboard.get("qscrend");
+      dd("RendGrp CtxtMenu clipboard="+xmlstr);
+      if (xmlstr)
+        item.disabled = false;
+      else
+        item.disabled = true;
+    }
+    else if (aEvent.target.id=="wspcPanelSceneCtxtMenu") {
+      // Update the object-paste menu
+      item = document.getElementById("wspcPanelSceneCtxtMenu-Paste");
+      xmlstr = clipboard.get("qscobj");
+      if (xmlstr)
+        item.disabled = false;
+      else
+        item.disabled = true;
+    }
+  } catch (e) { debug.exception(e); }
+}
+
+/////////////////
+// molsurf menus
+
+// Update molsurf regenerate menu
+ws.setupMolSurfCtxtMenu = function ()
+{
+  item = document.getElementById("wspcPanelMolSurfRegen");
+      
+  let elem = this.mViewObj.getSelectedNode();
+  item.hidden = true;
+  if (elem.type!="object")
+    return;
+
+  let obj = cuemol.getObject(elem.obj_id);
+  if (!obj || cuemol.getClassName(obj)!="MolSurfObj")
+    return;
+
+  item.hidden = false;
+  item.disabled = true;
+  
+  dd("obj.orig_mol: "+obj.orig_mol);
+  if (!obj.orig_mol)
+    return;
+
+  let scene = obj.getScene();
+  let origobj = scene.getObjectByName(obj.orig_mol);
+  if (origobj)
+    item.disabled = false;
+};
+
+ws.onMolSurfRegen = function (aEvent)
+{
+  var elem = this.mViewObj.getSelectedNode();
+  if (!elem) return;
+  if (elem.type!="object")
+    return;
+
+  var stylestr = "chrome,resizable=no,dependent,centerscreen";
+
+  var scene_id = this._mainWnd.getCurrentSceneID();
+
+  var winMed = Cc["@mozilla.org/appshell/window-mediator;1"]
+  .getService(Ci.nsIWindowMediator);
+
+  var win = winMed.getMostRecentWindow("CueMol2:MsmsMakeSurfDlg");
+  if (win) {
+    dd("ERROR!!");
+  }
+  else
+    window.openDialog("chrome://cuemol2/content/tools/makesurf.xul",
+		      "", stylestr, scene_id, elem.obj_id);
+};
+
+/////////////////////////////////
+/// Setup rend context menu items
+ws.onRendCtxtMenuShowing = function (aEvent)
+{
+  var paintitem = document.getElementById("wspcPanelPaintMenu");
+  var clrngitem = document.getElementById("wspcPanelRendColMenu");
+  var selitem = document.getElementById("wspcPanelRendSelMenu");
+  var editiitem = document.getElementById("wspcPanelEditIntrMenu");
+
+  editiitem.hidden = true;
+  if (this.checkIntrRend()!=null)
+    editiitem.hidden = false;
+
+  var rend = this.getSelectedRend();
+  if (rend==null ||
+      rend.type_name=="*selection") {
+    selitem.hidden = true;
+    paintitem.disabled = true;
+    clrngitem.disabled = true;
+    document.getElementById("wspcPanelStyleMenu").disabled = true;
+    document.getElementById("wspcPanelCopyMenu").disabled = true;
+    return;
+  }
+
+  selitem.hidden = false;
+  document.getElementById("wspcPanelStyleMenu").disabled = false;
+  document.getElementById("wspcPanelCopyMenu").disabled = false;
+  
+  if (this.checkColoring()==null) {
+    paintitem.disabled = true;
+    clrngitem.disabled = true;
+  }
+  else if (this.checkPaintColoring()==null) {
+    paintitem.disabled = true;
+    clrngitem.disabled = false;
+  }
+  else {
+    paintitem.disabled = false;
+    clrngitem.disabled = false;
+  }
+
+}
+
+ws.checkPaintColoring = function ()
+{
+  var target = this.checkColoring();
+  if (!target)
+    return null;
+  var coloring = target.coloring;
+
+  var clsname = coloring._wrapped.getClassName();
+  if (clsname!="PaintColoring") {
+    dd("WS.coloringMol> Error, not paint coloring");
+    return null;
+  }
+
+  return [coloring, target];
+}
+
+ws.checkColoring = function ()
+{
+  var target = this.getSelectedRend();
+
+  if (target==null||
+      target.type_name=="*selection" ||
+      target.type_name=="*namelabel" ||
+      target.type_name=="atomintr")
+    return null;
+
+  if (!('coloring' in target)) {
+    dd("WS.coloringMol> Error, coloring not supported in rend, "+elem.obj_id);
+    return null;
+  }
+
+  return target;
+};
+
+ws.onColoringMol = function (aEvent)
+{
+  var target = this.checkColoring();
+  if (target) {
+    //alert("event value="+aEvent.target.value);
+    gQm2Main.setRendColoring(aEvent.target.value, target);
+  }
+};
+
+ws.onPaintMol = function (aEvent)
+{
+  dd("WS.paintMol: "+aEvent.target.localName);
+  let value = aEvent.target.value;
+  dd("WS.paintMol: "+value);
+
+  let coloring = null;
+  let elem = this.mViewObj.getSelectedNode();
+  let uobj = cuemol.getUIDObj(elem.obj_id);
+  if (!('coloring' in uobj))
+    return;
+  let coloring = uobj.coloring;
+
+  let sel = null;
+  if ('getClientObj' in uobj) {
+    // renderer
+    var mol = uobj.getClientObj();
+    if ('sel' in mol)
+      sel = mol.sel;
+  }    
+  else if ('sel' in uobj) {
+    // object
+    sel = uobj.sel;
+  }
+
+  if (sel==null || sel.isEmpty()) {
+    dd("WS.coloringMol> Error, cur sel is empty");
+    util.alert(window, "Selection is empty");
+    return;
+  }
+
+  let scene = uobj.getScene();
+
+  // EDIT TXN START //
+  scene.startUndoTxn("Insert paint entry");
+
+  try {
+    if (uobj._wrapped.isPropDefault("coloring"))
+      uobj.coloring = coloring;
+    coloring.insertBefore(0, sel, cuemol.makeColor(value));
+  }
+  catch (e) {
+    dd("***** ERROR: insewrtBefore "+e);
+    debug.exception(e);
+    scene.rollbackUndoTxn();
+    return;
+  }
+
+  scene.commitUndoTxn();
+  // EDIT TXN END //
+};
+
+////////////////////////////////
+// Interaction renderer related methods
+
+ws.checkIntrRend = function ()
+{
+  var target = this.getSelectedRend();
+  if (target==null||
+      target.type_name !== "atomintr")
+    return null;
+  return target;
+}
+
+ws.onEditIntr = function ()
+{
+  var rend = this.checkIntrRend();
+  
+  var args = Cu.getWeakReference({target: rend});
+  window.openDialog("chrome://cuemol2/content/tools/aintr-edit-dlg.xul",
+                    null,
+                    "chrome,modal,resizable=no,dependent,centerscreen",
+                    args);
+}
+
+///////////////////////////////////
+// Mol/rend context menu for styles
+
+ws.onStyleShowing = function (aEvent)
+{
+  try {
+
+    var elem = this.mViewObj.getSelectedNode();
+    //dd("elem.type_name="+elem.type_name);
+
+    if (elem.type!="renderer") return;
+
+    var menu = aEvent.currentTarget.menupopup;
+
+    var regex = null;
+    if (elem.type_name == "ribbon") {
+      regex = /Ribbon$/;
+    }
+    else if (elem.type_name == "cartoon") {
+      regex = /Ribbon$/;
+    }
+    else if (elem.type_name == "ballstick") {
+      regex = /BallStick$/;
+    }
+    else if (elem.type_name == "atomintr") {
+      regex = /AtomIntr$/;
+    }
+    else if (elem.type_name == "simple") {
+      regex = /Simple$/;
+    }
+    else if (elem.type_name == "trace") {
+      regex = /Trace$/;
+    }
+
+    cuemolui.populateStyleMenus(this.mTgtSceneID, menu, regex, true);
+    
+    // add edge styles
+    if (elem.type_name != "simple" &&
+        elem.type_name != "trace" &&
+        elem.type_name != "spline" &&
+        elem.type_name != "*namelabel" &&
+        elem.type_name != "*selection" &&
+        elem.type_name != "coutour") {
+      regex = /^EgLine/;
+      util.appendMenuSep(document, menu);
+      cuemolui.populateStyleMenus(this.mTgtSceneID, menu, regex, false);
+    }
+
+  } catch (e) { debug.exception(e); }
+};
+
+ws.styleMol = function (aEvent)
+{
+  try {
+    var rend = this.getSelectedRend();
+    if (rend==null)
+      return;
+
+    var value = aEvent.target.value;
+    var remove_re = aEvent.target.getAttribute("remove_re");
+    remove_re = remove_re.substr(1, remove_re.length-2);
+    remove_re = RegExp(remove_re);
+
+    var style = value.substr("style-".length);
+    dd("style: "+style);
+    dd("remove_re: "+remove_re);
+
+    var curstyle = rend.style;
+    curstyle = styleutil.remove(curstyle, remove_re);
+    style =  styleutil.push(curstyle, style);
+    dd("styleMol> new style: "+style);
+
+    var scene = rend.getScene();
+
+    // EDIT TXN START //
+    scene.startUndoTxn("Change style");
+
+    try {
+      rend.applyStyles(style);
+    }
+    catch (e) {
+      dd("***** ERROR: pushStyle "+e);
+      debug.exception(e);
+      scene.rollbackUndoTxn();
+      return;
+    }
+    scene.commitUndoTxn();
+    // EDIT TXN END //
+
+  } catch (e) { debug.exception(e); }
+};
+
+
+////////////////////////////////
+/// Initialize camera context menu
+ws.onCamCtxtShowing = function (aEvent)
+{
+  try {
+    //
+    // Update the camera-paste menu
+    //
+    var item = document.getElementById("wspcCamCtxt-Paste");
+
+    let clipboard = require("qsc-copipe");
+    let xmlstr = clipboard.get("qsccam");
+    if (xmlstr)
+      item.disabled = false;
+    else
+      item.disabled = true;
+
+    //
+    // Update other menus
+    //
+    var elem = this.mViewObj.getSelectedNode();
+    var tgt = Array.prototype.slice.call(this.mCamCtxtDisableTgt, 0);
+    
+    if (elem.type=="camera") {
+      tgt.forEach( function (elem, ind, ary) {
+	  elem.setAttribute("disabled", false);
+	});
+    }
+    else {
+      tgt.forEach( function (elem, ind, ary) {
+	  elem.setAttribute("disabled", true);
+	});
+    }
+
+    // update reload menu
+    dd("elem type="+elem.type);
+    if (elem.type=="camera") {
+      let widget = document.getElementById("wspcCamCtxtReload");
+      let name = elem.obj_id;
+      let scene = this._mainWnd.currentSceneW;
+      let cam = scene.getCamera(name);
+      let srcpath = cam.src;
+      if (srcpath.length==0)
+        widget.disabled = true;
+      else
+        widget.disabled = false;
+    }
+    
+  } catch (e) { debug.exception(e); }
+};
+
+
+/// initialize style context menu
+ws.onStyCtxtShowing = function (aEvent)
+{
+  try {
+    //
+    // Update other menus
+    //
+    var elem = this.mViewObj.getSelectedNode();
+    var tgt = Array.prototype.slice.call(this.mStyCtxtDisableTgt, 0);
+    
+    if (elem.type=="style") {
+      tgt.forEach( function (elem, ind, ary) {
+	  elem.setAttribute("disabled", false);
+	});
+    }
+    else {
+      tgt.forEach( function (elem, ind, ary) {
+	  elem.setAttribute("disabled", true);
+	});
+    }
+
+    dd("elem type="+elem.type);
+    if (elem.type=="style") {
+      // get target style set
+      let stylem = cuemol.getService("StyleManager");
+      let styleset = stylem.getStyleSet(elem.obj_id);
+
+      // update reload menu
+      let widget = document.getElementById("wspcStyCtxtReload");
+      if (styleset.src.length>0)
+        // external style set --> reloadable
+        widget.setAttribute("disabled", false);
+      else
+        widget.setAttribute("disabled", true);
+
+      // update toggle read-only menu
+      widget = document.getElementById("wspcStyCtxtReadOnly");
+      if (styleset.readonly)
+        widget.setAttribute("checked", true);
+      else
+        widget.removeAttribute("checked");
+      
+      if (elem.scene_id==0)
+        widget.setAttribute("disabled", true);
+      else
+        widget.setAttribute("disabled", false);
+
+      // modified style cannot be changed to read-only mode!!
+      if (!styleset.readonly && styleset.modified)
+        widget.setAttribute("disabled", true);
+    }
+    
+  } catch (e) { debug.exception(e); }
+};

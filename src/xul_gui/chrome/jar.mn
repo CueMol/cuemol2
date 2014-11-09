@@ -101,7 +101,7 @@ cuemol2.jar:
   content/symmetry-panel.xul
   content/symmetry-panel.js
 * content/workspace_panel.xul
-  content/workspace_panel.js  
+* content/workspace_panel.js  
   content/selection-panel.xul
   content/selection-panel.js
   content/selection-widget-bindings.xml

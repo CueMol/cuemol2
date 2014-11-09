@@ -10,6 +10,7 @@
 
 #include "Scene.hpp"
 #include "InOutHandler.hpp"
+#include <qlib/LByteArray.hpp>
 
 namespace qsys {
 
@@ -97,15 +98,18 @@ namespace qsys {
     void setDefaultOpts(ScenePtr pScene);
 
     /// Convert object (rend, obj, cam) to bytearray
-    qlib::LScrSp<qlib::LByteArray> toByteArray(const qlib::LScrSp<qlib::LScrObjBase> &pSObj)
+    qlib::LByteArrayPtr toByteArray(const qlib::LScrSp<qlib::LScrObjBase> &pSObj)
     {
       return toByteArray(pSObj, LString());
     }
 
     /// Convert object (rend, obj, cam) to bytearray (with type overwrite option)
     /// type overwrite option is valid for renderers
-    qlib::LScrSp<qlib::LByteArray> toByteArray(const qlib::LScrSp<qlib::LScrObjBase> &pSObj,
-                                               const LString &type_ovwr);
+    qlib::LByteArrayPtr toByteArray(const qlib::LScrSp<qlib::LScrObjBase> &pSObj,
+                                    const LString &type_ovwr);
+
+    qlib::LByteArrayPtr
+      SceneXMLWriter::rendArrayToByteArray(const std::list<RendererPtr> &pArray);
 
   private:
     void procDataChunks(qlib::LDom2OutStream &oos, qlib::LDom2Node *pNode);

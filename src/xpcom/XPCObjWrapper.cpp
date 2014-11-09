@@ -64,11 +64,42 @@ qlib::LScriptable *XPCObjWrapper::getWrappedObj() const
   return m_pWrapped;
 }
 
-
 static
 nsresult NSArrayToLArray(nsIVariant *aValue, qlib::LVariant &variant)
 {
-  return NS_ERROR_NOT_IMPLEMENTED;
+  uint16_t valueType;
+  nsIID iid;
+  uint32_t valueCount;
+  void* rawArray;
+  aValue->GetAsArray(&valueType, &iid, &valueCount, &rawArray);
+
+  LVarArray res(valueCount);
+  if (//valueType == nsIDataType::VTYPE_INTERFACE ||
+      valueType == nsIDataType::VTYPE_INTERFACE_IS) {
+    nsISupports** values = static_cast<nsISupports**>(rawArray);
+    for (uint32_t i = 0; i < valueCount; ++i) {
+      nsCOMPtr<nsISupports> supports = dont_AddRef(values[i]);
+      nsCOMPtr<qIObjWrapper> piobj = do_QueryInterface(supports);
+      XPCObjWrapper *pp = dynamic_cast<XPCObjWrapper *>(piobj.get());
+      if (pp==NULL) {
+        LOG_DPRINTLN("NSVar2LVar> FATAL ERROR: unknown wrapper type (unsupported)");
+        nsMemory::Free(rawArray);
+        return NS_ERROR_NOT_IMPLEMENTED;
+      }
+
+      // object is owned by XPCOM
+      // (variant share the ptr and don't have an ownership)
+      res[i].shareObjectPtr(pp->getWrappedObj());
+    }
+  }
+
+  nsMemory::Free(rawArray);
+  
+  // Container array is temporaly owned by wrapper function context
+  //  (and will be freed after the execution)
+  variant.setArrayValue(res);
+  
+  return NS_OK;
 }
 
 static
@@ -81,6 +112,7 @@ nsresult NSVarToLVar(nsIVariant *aValue, qlib::LVariant &variant)
   rv = aValue->GetDataType(&dt);
   if (NS_FAILED(rv)) return rv;
 
+  // MB_DPRINTLN("NSVarToLVar dt=%d", dt);
   switch (dt) {
   case nsIDataType::VTYPE_VOID:
   case nsIDataType::VTYPE_EMPTY:
@@ -165,14 +197,6 @@ nsresult NSVarToLVar(nsIVariant *aValue, qlib::LVariant &variant)
   case nsIDataType::VTYPE_DOMSTRING:
   case nsIDataType::VTYPE_WSTRING_SIZE_IS:
   case nsIDataType::VTYPE_ASTRING:
-/*{
-    char *psz;
-    PRUint32 nlen;
-    rv = aValue->GetAsStringWithSize(&nlen, &psz);
-    NS_ENSURE_SUCCESS(rv,rv);
-
-    MB_DPRINTLN("NSVar: cstring(%s)", psz);
-  }*/
     {
 
     PRUnichar *psz;
