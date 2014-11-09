@@ -12,7 +12,8 @@
     <script type="application/javascript;version=1.8" src="chrome://cuemol2/content/workspace_panel.js"/>
 
     <vbox id="workspace-panel" title="&workspacePanel.title;" flex="1">
-      <tree id="objectTree" flex="2" hidecolumnpicker="true" editable="true" treelines="true" seltype="single">
+      <tree id="objectTree" flex="2" hidecolumnpicker="true"
+	editable="true" treelines="true" seltype="multiple">
 	<treecols>
 	  <treecol id="object_vis" flex="0" persist="width" label="V" tooltip="Toggle Visible/Invisible"/>
 	  <splitter class="tree-splitter"/>

@@ -228,6 +228,28 @@ TreeView.prototype.isSelected = function ()
   return true;
 };
 
+TreeView.prototype.isMultiSelected = function ()
+{
+  var sel = this._tvi.selection;
+  if (sel==null) return false;
+
+  var nrng = sel.getRangeCount();
+  if (nrng<=0) return false;
+
+  // multirange --> multisel
+  if (nrng>1) return true;
+
+  var start = {value: 0};
+  var end = {value: 0};
+  sel.getRangeAt(0, start, end);
+  var nsel = end.value-start.value+1;
+
+  if (nsel==1) return false;
+
+  // single-range & multisel
+  return true;
+};
+
 TreeView.prototype.getRowCount = function ()
 {
   return this._tvi.rowCount;
@@ -285,7 +307,23 @@ TreeView.prototype.getSelectedRowList = function ()
   }
 
   return res;
-}
+};
+
+/*
+TreeView.prototype.getSelectedRowList2 = function ()
+{
+  var res = new Array();
+  var cl = this.getSelectedRowList();
+  var nrng = cl.length;
+  for (var i=0; i<nrng; ++i) {
+    let elem = cl[i];
+    for (var j=elem.start; j<elem.end; ++j)
+      res.push(j);
+  }
+
+  return res;
+};
+*/
 
 TreeView.prototype.saveSelection = function ()
 {

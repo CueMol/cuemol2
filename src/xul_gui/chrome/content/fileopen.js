@@ -849,18 +849,18 @@ Qm2Main.prototype.exportScene = function()
 Qm2Main.prototype.deleteObject = function (aObjID)
 {
   let obj = cuemol.getObject(aObjID);
-  if (!obj) {
-    dd("DeleteObject: ERROR!! invalid object ID="+aObjID);
-    return;
-  }
+  if (!obj)
+    throw ("DeleteObject: ERROR!! invalid object ID="+aObjID);
+
   let sc = obj.getScene();
-  if (!sc) {
-    dd("DeleteObject: ERROR!! invalid object ID="+aObjID);
-    return;
-  }
+  if (!sc)
+    throw ("DeleteObject: ERROR!! invalid object ID="+aObjID);
   
+  var name = "";
+  try { name = obj.name; } catch (e) {}
+
   // EDIT TXN START //
-  sc.startUndoTxn("Destroy object");
+  sc.startUndoTxn("Destroy object "+name);
 
   try {
     sc.destroyObject(aObjID);

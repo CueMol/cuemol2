@@ -179,22 +179,22 @@ Qm2Main.prototype.setupRendByObjID = function(aObjID, aRendGrp)
 Qm2Main.prototype.deleteRendByID = function(aRendID)
 {
   var rend = cuemol.getRenderer(aRendID);
-  if (!rend) {
+  if (!rend)
     throw ("DeleteRenderer: ERROR!! invalid renderer ID="+aRendID);
-    return;
-  }
+
   var obj = rend.getClientObj();
-  if (!obj) {
+  if (!obj)
     throw ("DeleteRenderer: ERROR!! invalid renderer ID="+aRendID);
-    return;
-  }
+
   var scene = rend.getScene();
-  if (!scene) {
+  if (!scene)
     throw ("DeleteRenderer: ERROR!! invalid renderer ID="+aRendID);
-    return;
-  }
+
+  var name = "";
+  var objname = "";
+  try { name = rend.name; objname = obj.name; } catch (e) {}
   
-  scene.startUndoTxn("Delete representation");
+  scene.startUndoTxn("Delete renderer "+objname+"/"+name);
   var ok;
   try {
     ok = obj.destroyRenderer(aRendID);
