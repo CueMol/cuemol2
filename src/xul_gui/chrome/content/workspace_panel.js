@@ -692,6 +692,11 @@ ws.deleteCmdImpl = function (elem)
 
 ws.onPropCmd = function ()
 {
+  if (this.mViewObj.isMultiSelected()) {
+    util.alert(window, "Multiple items selected.");
+    return;
+  }
+
   var elem = this.mViewObj.getSelectedNode();
   if (!elem) return;
   //dd("onNewCmd elem="+require("debug_util").dumpObjectTree(elem, 1));
@@ -2114,15 +2119,6 @@ ws.createStyle = function ()
   }
   scene.commitUndoTxn();
   // EDIT TXN END //
-
-/*
-  // update scene's tree UI (createStyleSet doesn't generate ADD event)
-  this.mViewObj.saveOpenState(sceneid);
-  this.mViewObj.saveSelection();
-  this.syncContents(sceneid);
-  if (!this.selectByUID(set_id))
-    this.mViewObj.restoreSelection();
-*/
   
 }
 
@@ -2152,12 +2148,6 @@ ws.destroyStyle = function (elem)
   scene.commitUndoTxn();
   // EDIT TXN END //
 
-/*
-  // update scene's tree UI
-  this.mViewObj.saveOpenState(sceneid);
-  this.syncContents(sceneid);
-  this.mViewObj.setSelectedRow(irow-1);
-*/
   // update all
   // stylem.firePendingEvents();
 };
