@@ -532,7 +532,7 @@ NS_IMETHODIMP XPCCueMol::CreateNativeWidget(qINativeWidget **_retval )
 /////////////////////////////////////////////////////////////////////
 // ByteArray operation
 
-/* ACString convBAryToStr (in qIObjWrapper aObj); */
+/// ACString convBAryToStr (in qIObjWrapper aObj)
 NS_IMETHODIMP XPCCueMol::ConvBAryToStr(qIObjWrapper *aObj, nsACString & _retval )
 {
   XPCObjWrapper *pp = dynamic_cast<XPCObjWrapper *>(aObj);
@@ -562,7 +562,7 @@ NS_IMETHODIMP XPCCueMol::ConvBAryToStr(qIObjWrapper *aObj, nsACString & _retval 
   return NS_OK;
 }
 
-/* qIObjWrapper createBAryFromStr (in ACString aString, in PRUint32 aCount); */
+/// qIObjWrapper createBAryFromStr (in ACString aString, in PRUint32 aCount)
 NS_IMETHODIMP XPCCueMol::CreateBAryFromStr(const nsACString & aString, qIObjWrapper **_retval )
 {
   nsresult rv = NS_OK;

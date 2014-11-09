@@ -236,7 +236,7 @@ void SceneXMLReader::procDataSrcLoad(qlib::LDom2InStream &ois, LDom2Node *pNode)
 
 }
 
-qlib::LScrSp<qlib::LScrObjBase> SceneXMLReader::fromByteArray(const qlib::LScrSp<qlib::LByteArray> &pbuf)
+qlib::LScrObjBasePtr SceneXMLReader::fromByteArray(const qlib::LByteArrayPtr &pbuf)
 {
   qlib::uid_t nSceneID = m_pClient->getUID();
 
@@ -246,18 +246,17 @@ qlib::LScrSp<qlib::LScrObjBase> SceneXMLReader::fromByteArray(const qlib::LScrSp
   MB_DPRINTLN("fromXML\n%s<<<", pbuf->data());
   MB_DPRINTLN("Length: %d", pbuf->size());
 
-  //
   // Setup streams
-  //
   qlib::StrInStream fis(pbuf);
   qlib::LDom2InStream ois(fis);
 
+  // Construct nodes from stream
   qlib::LDom2Tree tree;
   ois.read(tree);
   qlib::LDom2Node *pNode = tree.top();
   //pNode->dump();
 
-  qlib::LScrSp<qlib::LScrObjBase> pSObj;
+  qlib::LScrObjBasePtr pSObj;
   LString tag = pNode->getTagName();
   LString type_name = pNode->getTypeName();
   if (tag.equals("renderer") && !type_name.isEmpty()) {
@@ -296,8 +295,54 @@ qlib::LScrSp<qlib::LScrObjBase> SceneXMLReader::fromByteArray(const qlib::LScrSp
     return pSObj;
   }
 
-
   return pSObj;
 }
 
+void SceneXMLReader::rendArrayFromByteArray(const qlib::LByteArrayPtr &pbuf,
+                                            std::list<RendererPtr> &rends)
+{
+  qlib::uid_t nSceneID = m_pClient->getUID();
+
+  // Enter the context
+  AutoStyleCtxt style_ctxt(nSceneID);
+
+  MB_DPRINTLN("fromXML\n%s<<<", pbuf->data());
+  MB_DPRINTLN("Length: %d", pbuf->size());
+  
+  // Setup streams
+  qlib::StrInStream fis(pbuf);
+  qlib::LDom2InStream ois(fis);
+
+  // Construct nodes from stream
+  qlib::LDom2Tree tree;
+  ois.read(tree);
+  qlib::LDom2Node *pNode = tree.top();
+  //pNode->dump();
+
+  LString tagname = pNode->getTagName();
+  if (!tagname.equals("renderers")) {
+    MB_THROW(qlib::RuntimeException, "readRendFromXML error, Invalid QSC XML");
+  }
+    
+  RendererFactory *pRF = RendererFactory::getInstance();
+  
+  for (pNode->firstChild(); pNode->hasMoreChild(); pNode->nextChild()) {
+    qlib::LDom2Node *pChNode = pNode->getCurChild();
+    LString tag = pChNode->getTagName();
+    LString type_name = pChNode->getTypeName();
+
+    if (!tag.equals("renderer") || type_name.isEmpty())
+      continue;
+
+    RendererPtr prend = pRF->create(type_name);
+
+    // Renderer's properties should be built before registration to the scene,
+    //   to prevent event propargation.
+    prend->readFrom2(pChNode);
+
+    rends.push_back(prend);
+  }
+
+  return;
+}
 

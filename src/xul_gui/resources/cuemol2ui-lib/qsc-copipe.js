@@ -6,6 +6,8 @@ const {Cc,Ci} = require("chrome");
 const errors = require("errors");
 const apiUtils = require("api-utils");
  
+const debug_util = require("debug_util");
+const dd = debug_util.dd;
 const cuemol = require("cuemol");
 
 /*
@@ -16,8 +18,13 @@ const kAllowableFlavors = [
   "text/unicode",
   "text/html",
   "application/x-cuemol2-scenexml-rend",
+  "application/x-cuemol2-scenexml-rend-array",
   "application/x-cuemol2-scenexml-obj",
+  "application/x-cuemol2-scenexml-obj-array",
   "application/x-cuemol2-scenexml-cam",
+  "application/x-cuemol2-scenexml-cam-array",
+  "application/x-cuemol2-scenexml-style",
+  "application/x-cuemol2-scenexml-style-array",
   "application/x-cuemol2-json-paint"
 ];
 
@@ -31,8 +38,13 @@ const kFlavorMap = [
   { short: "html", long: "text/html" },
   { short: "imagefilepng", long: "image/png" },
   { short: "qscrend", long: "application/x-cuemol2-scenexml-rend" },
+  { short: "qscrendary", long: "application/x-cuemol2-scenexml-rend-array" },
   { short: "qscobj", long: "application/x-cuemol2-scenexml-obj" },
+  { short: "qscobjary", long: "application/x-cuemol2-scenexml-obj-array" },
   { short: "qsccam", long: "application/x-cuemol2-scenexml-cam" },
+  { short: "qsccamary", long: "application/x-cuemol2-scenexml-cam-array" },
+  { short: "qscsty", long: "application/x-cuemol2-scenexml-style" },
+  { short: "qscstyary", long: "application/x-cuemol2-scenexml-style-array" },
   { short: "qscpaint", long: "application/x-cuemol2-json-paint" }
 ];
 
@@ -67,6 +79,8 @@ exports.set = function(aData, aDataType) {
   if (!xferable)
     throw new Error("Couldn't set the clipboard due to an internal error " + 
                     "(couldn't create a Transferable object).");
+
+  dd("Copipe set() flavor="+flavor);
 
   switch (flavor) {
     case "text/html":
@@ -117,7 +131,9 @@ exports.set = function(aData, aDataType) {
 
   case "application/x-cuemol2-scenexml-rend":
   case "application/x-cuemol2-scenexml-obj": 
-  case "application/x-cuemol2-scenexml-cam": {
+  case "application/x-cuemol2-scenexml-cam":
+  case "application/x-cuemol2-scenexml-style":
+  case "application/x-cuemol2-scenexml-rend-array": {
 
     var str = Cc["@mozilla.org/supports-string;1"].
       createInstance(Ci.nsISupportsString);
@@ -161,8 +177,8 @@ exports.set = function(aData, aDataType) {
   return true;
 };
 
-
-exports.get = function(aDataType) {
+exports.get = function(aDataType)
+{
   let options = {
     datatype: aDataType || "text"
   };
@@ -209,6 +225,8 @@ exports.get = function(aDataType) {
   if (data.value === null)
     return null;
 
+  dd("Copipe get() flavor="+flavor);
+
   // TODO: Add flavors here as we support more in kAllowableFlavors.
   switch (flavor) {
   case "text/unicode":
@@ -221,9 +239,14 @@ exports.get = function(aDataType) {
   case "application/x-cuemol2-scenexml-cam": {
     let str = data.value.QueryInterface(Ci.nsISupportsString).data;
     data = cuemol.convPolymObj( cuemol.xpc.createBAryFromStr(str) );
-
     break;
   }    
+
+  case "application/x-cuemol2-scenexml-rend-array": {
+    let str = data.value.QueryInterface(Ci.nsISupportsString).data;
+    data = cuemol.convPolymObj( cuemol.xpc.createBAryFromStr(str) );
+    break;
+  }
 
   case "application/x-cuemol2-json-paint": {
     // paint entry is encoded as a simple json string
@@ -236,6 +259,59 @@ exports.get = function(aDataType) {
   }
 
   return data;
+};
+
+exports.check = function(aDataType)
+{
+  let options = {
+    datatype: aDataType || "text"
+  };
+  options = apiUtils.validateOptions(options, {
+    datatype: {
+      is: ["string"]
+    }
+  });
+
+  var xferable = Cc["@mozilla.org/widget/transferable;1"].
+                 createInstance(Ci.nsITransferable);
+  if (!xferable)
+    throw new Error("Couldn't set the clipboard due to an internal error " + 
+                    "(couldn't create a Transferable object).");
+
+  var flavor = fromJetpackFlavor(options.datatype);
+
+  // Ensure that the user hasn't requested a flavor that we don't support.
+  if (!flavor)
+    throw new Error("Getting the clipboard with the flavor '" + flavor +
+                    "' is > not supported.");
+
+  xferable.addDataFlavor(flavor);
+
+  // Get the data into our transferable.
+  clipboardService.getData(
+    xferable,
+    clipboardService.kGlobalClipboard
+  );
+
+  var data = {};
+  var dataLen = {};
+  try {
+    xferable.getTransferData(flavor, data, dataLen);
+  }
+  catch (e) {
+    // Clipboard doesn't contain data in flavor, return null.
+    dd("flavor not found: "+flavor);
+    return false;
+  }
+
+  // There's no data available, return.
+  if (data.value === null) {
+    dd("flavor not found: "+flavor);
+    return false;
+  }
+  
+  dd("flavor found: "+flavor);
+  return true;
 };
 
 exports.__defineGetter__("currentFlavors", function() {

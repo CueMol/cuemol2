@@ -348,6 +348,17 @@
 	  oncommand="cuemolui.panels.workspace.onPropCmd(event)"/>
       </menupopup>
 
+      <!--
+	===== Multi-selected context menu =====
+	-->
+      <menupopup id="wspcPanelMulCtxtMenu"
+	onpopupshowing="cuemolui.panels.workspace.onMulCtxtMenuShowing(event)">
+	<menuitem id="wspcMulCopy" label="Copy"
+	  oncommand="cuemolui.panels.workspace.onCopyCmd(event);"/>
+	<menuitem id="wspcMulDel" label="Delete"
+	  oncommand="cuemolui.panels.workspace.onDeleteCmd(event);"/>
+      </menupopup>
+      
       <!-- =============================== -->
 
     </popupset>

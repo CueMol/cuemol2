@@ -144,6 +144,7 @@ namespace qlib {
   };
 
   typedef LScrSp<LVarArray> LVarArrayPtr;
+  typedef LVarArray LArray;
 
 }
 

@@ -73,6 +73,7 @@ runtime_class Object
 
   object<Renderer$> getRenderer(integer);
   object<Renderer$> getRendererByType(string);
+  object<Renderer$> getRendererByName(string) => getRendByName;
   boolean destroyRenderer(integer);
   string searchCompatibleRendererNames();
 

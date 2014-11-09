@@ -13,6 +13,7 @@
 
 #include <qlib/FileStream.hpp>
 #include <qlib/LByteArray.hpp>
+#include <qlib/LVarArray.hpp>
 
 #ifdef HAVE_BOOST_THREAD
 #define BOOST_LIB_DIAGNOSTIC 1
@@ -346,23 +347,62 @@ LString StreamManager::findCompatibleWriterNamesForObj(qlib::uid_t objid)
 /////////////////////////////////////////////////////////////////////////
 
 
-qlib::LScrSp<qlib::LByteArray> StreamManager::toXML(const qlib::LScrSp<qlib::LScrObjBase> &pSObj)
+qlib::LByteArrayPtr StreamManager::toXML(const qlib::LScrObjBasePtr &pSObj)
 {
   SceneXMLWriter writer;
   qlib::LScrSp<qlib::LByteArray> rval = writer.toByteArray(pSObj);
   return rval;
 }
 
-qlib::LScrSp<qlib::LByteArray> StreamManager::toXML2(const qlib::LScrSp<qlib::LScrObjBase> &pSObj,
-                                                    const LString &type_ovwr)
+qlib::LByteArrayPtr StreamManager::toXML2(const qlib::LScrObjBasePtr &pSObj,
+                                          const LString &type_ovwr)
 {
   SceneXMLWriter writer;
   qlib::LScrSp<qlib::LByteArray> rval = writer.toByteArray(pSObj, type_ovwr);
   return rval;
 }
 
-qlib::LScrSp<qlib::LScrObjBase> StreamManager::fromXML(const qlib::LScrSp<qlib::LByteArray> &pbuf,
-                                                       qlib::uid_t nSceneID)
+qlib::LByteArrayPtr StreamManager::arrayToXML(const qlib::LVarArray &objs)
+{
+  const int nlen = objs.size();
+  
+  if (nlen==0)
+    return qlib::LByteArrayPtr();
+
+  {
+    // try renderer array
+    std::list<RendererPtr> list;
+    for (int i=0; i<nlen; ++i) {
+      if (!objs[i].isObject())
+        return qlib::LByteArrayPtr();
+      
+      LScriptable *pObj = objs[i].getObjectPtr();
+      if (pObj==NULL)
+        return qlib::LByteArrayPtr();
+      if (!pObj->isSmartPtr())
+        return qlib::LByteArrayPtr();
+
+      qlib::LSupScrSp *pBaseSP = static_cast<qlib::LSupScrSp *>(pObj);
+      RendererPtr pRend = RendererPtr(*pBaseSP);
+      if (pRend.isnull())
+        return qlib::LByteArrayPtr();
+
+      list.push_back(pRend);
+    }
+
+    SceneXMLWriter writer;
+    qlib::LByteArrayPtr rval = writer.rendArrayToByteArray(list);
+    return rval;
+  }
+  
+  
+  // return qlib::LByteArrayPtr();
+}
+
+////////////////////////////////
+
+qlib::LScrObjBasePtr StreamManager::fromXML(const qlib::LByteArrayPtr &pbuf,
+                                            qlib::uid_t nSceneID)
 {
   SceneXMLReader reader;
   ScenePtr pScene = SceneManager::getSceneS(nSceneID);
@@ -371,4 +411,30 @@ qlib::LScrSp<qlib::LScrObjBase> StreamManager::fromXML(const qlib::LScrSp<qlib::
   reader.detach();
   return rval;
 }
+
+qlib::LVarArray StreamManager::arrayFromXML(const qlib::LByteArrayPtr &pbuf,
+                                            qlib::uid_t nSceneID)
+{
+  SceneXMLReader reader;
+  ScenePtr pScene = SceneManager::getSceneS(nSceneID);
+  reader.attach(pScene);
+
+  std::list<RendererPtr> rends;
+  reader.rendArrayFromByteArray(pbuf, rends);
+
+  reader.detach();
+
+  int nrends = rends.size();
+  qlib::LVarArray rval(nrends);
+  
+  int i=0;
+  BOOST_FOREACH (RendererPtr pRend, rends) {
+    LScriptable *p = pRend.copy();
+    rval[i].setObjectPtr(p);
+    ++i;
+  }
+
+  return rval;
+}
+
 

@@ -127,11 +127,15 @@ namespace qsys {
     //////////
 
   public:
-    qlib::LScrSp<qlib::LByteArray> toXML(const qlib::LScrSp<qlib::LScrObjBase> &pObj);
-    qlib::LScrSp<qlib::LByteArray> toXML2(const qlib::LScrSp<qlib::LScrObjBase> &pObj,
-                                          const LString &type_ovwr);
-    qlib::LScrSp<qlib::LScrObjBase> fromXML(const qlib::LScrSp<qlib::LByteArray> &pObj,
-                                            qlib::uid_t nSceneID);
+    qlib::LByteArrayPtr toXML(const qlib::LScrObjBasePtr &pObj);
+    qlib::LByteArrayPtr toXML2(const qlib::LScrObjBasePtr &pObj,
+                               const LString &type_ovwr);
+    qlib::LByteArrayPtr arrayToXML(const qlib::LVarArray &objs);
+
+    qlib::LScrObjBasePtr fromXML(const qlib::LByteArrayPtr &pObj,
+                                 qlib::uid_t nSceneID);
+    qlib::LVarArray StreamManager::arrayFromXML(const qlib::LByteArrayPtr &pbuf,
+                                                qlib::uid_t nSceneID);
 
   public:
   

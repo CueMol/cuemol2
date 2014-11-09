@@ -344,5 +344,16 @@ namespace qlib {
   class clsname; \
   typedef qlib::LScrSp<clsname> spclsname;
 
+namespace qlib {
+  MC_DECL_SCRSP(LScrObjBase);
+  MC_DECL_SCRSP(LByteArray);
+  MC_DECL_SCRSP(LRegExpr);
+  MC_DECL_SCRSP(LScrCallBack);
+  MC_DECL_SCRSP(LScrMatrix4D);
+  MC_DECL_SCRSP(LScrQuat);
+  MC_DECL_SCRSP(LScrRangeSet);
+  MC_DECL_SCRSP(LScrTime);
+  MC_DECL_SCRSP(LScrVector4D);
+}
 
 #endif // __LSCR_SMART_PTR_HPP__

@@ -62,7 +62,6 @@ namespace qlib {
     }
   };
 
-  typedef LScrSp<LByteArray> LByteArrayPtr;
 }
 
 #endif

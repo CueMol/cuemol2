@@ -43,7 +43,9 @@ namespace qsys {
 
     /// Read from bytearray
     // This method just return the resulting object, and not register to the attached scene.
-    qlib::LScrSp<qlib::LScrObjBase> fromByteArray(const qlib::LScrSp<qlib::LByteArray> &pbuf);
+    qlib::LScrSp<qlib::LScrObjBase> fromByteArray(const qlib::LByteArrayPtr &pbuf);
+
+    void rendArrayFromByteArray(const qlib::LByteArrayPtr &pbuf, std::list<RendererPtr> &rends);
 
     ////////////////////////////////////////
     // Client management
@@ -84,46 +86,7 @@ namespace qsys {
 
     void loadObjFromSrc(LDataSrcContainer *pCnt, const LString &src, const LString &altsrc);
 
-    //////////
 
-/*
-    std::map<LString, LDataSrcContainer *> m_chunkmap;
-    std::map<LString, LString> m_typemap;
-
-    void clearChunkMap()
-    {
-      m_chunkmap.clear();
-      m_typemap.clear();
-    }
-
-    void addChunkMap(const LString &src, LDataSrcContainer *pCnt, const LString &type) {
-      m_chunkmap.insert(std::pair<LString, LDataSrcContainer *>(src, pCnt));
-      m_typemap.insert(std::pair<LString, LString>(src, type));
-    }
-
-    LDataSrcContainer *findChunkObj(const LString &chunkid) const
-    {
-      std::map<LString, LDataSrcContainer *>::const_iterator ci = m_chunkmap.find(chunkid);
-      if (ci==m_chunkmap.end()) {
-        LString msg = LString::format("Chunk (ID: \"%s\") is not found", chunkid.c_str());
-        LOG_DPRINTLN("SceneXMLRead> %s", msg.c_str());
-        MB_THROW(qlib::IOException, msg);
-      }
-      return ci->second;
-    }
-
-    LString findChunkType(const LString &chunkid) const
-    {
-      std::map<LString, LString>::const_iterator ci = m_typemap.find(chunkid);
-      if (ci==m_typemap.end()) {
-        LString msg = LString::format("Chunk type (ID: \"%s\") is not found", chunkid.c_str());
-        LOG_DPRINTLN("SceneXMLRead> %s", msg.c_str());
-        MB_THROW(qlib::IOException, msg);
-      }
-      return ci->second;
-    }
-*/
-    
   };
 
   ////////////////////////////////////////////////////////////

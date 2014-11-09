@@ -538,6 +538,7 @@ TreeView.prototype._onUnLoad = function ()
 
 TreeView.prototype._onContextMenu = function (aEvent)
 {
+  /*
   // perform hit test
   var row = {}, col = {}, obj = {};
   this._tvi._treeBoxObj.getCellAt(aEvent.clientX, aEvent.clientY, row, col, obj);
@@ -550,14 +551,24 @@ TreeView.prototype._onContextMenu = function (aEvent)
     // mouse is in outside of the tree rows
     // --> target is the current sel
     node = this.getSelectedNode();
-    //return;
+    dd("_onContextMenu> node is selectedNode");
   }
   else {
     node = this.getNodeByRow(row.value);
+    dd("_onContextMenu> node is hittestNode");
   }
+   */
 
   var menuid;
-  if (node && node.menu_id) {
+  var node = this.getSelectedNode();
+
+  if (this.isMultiSelected() &&
+      this.mulselCtxtMenuId) {
+    dd("_onContextMenu> multisel");
+    // multi selection --> use multisel ctxt menu
+    menuid = this.mulselCtxtMenuId;
+  }
+  else if (node && node.menu_id) {
     menuid = node.menu_id;
   }
   else if (this.defCtxtMenuId) {

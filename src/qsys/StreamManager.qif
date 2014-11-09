@@ -36,7 +36,11 @@ runtime_class StreamManager
   // XML-string serialization
   object<ByteArray$> toXML(object<LScrObject$>);
   object<ByteArray$> toXML2(object<LScrObject$>, string type_ovwr);
+  // array ver
+  object<ByteArray$> arrayToXML(array);
+
   object<LScrObject$> fromXML(object<ByteArray$>, integer);
+  array arrayFromXML(object<ByteArray$>, integer);
 };
 
 #endif // STREAM_MANAGER_QIF_INCLUDED
