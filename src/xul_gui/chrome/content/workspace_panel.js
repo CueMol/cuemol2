@@ -11,15 +11,19 @@ if (!("workspace" in cuemolui.panels)) {
 
 var ws = cuemolui.panels.workspace = new Object();
 
-// panel's ID
+/// Panel's ID
 ws.id = "workspace-panel";
   
 ws.collapsed = false;
 ws.command_id = "menu-workspace-panel-toggle";
   
+/// Callback ID of the scene event listener
 ws._callbackID = null;
+
+/// Target scene ID
 ws.mTgtSceneID = -1;
 
+////////////////////////////////
 // create TreeView object
 ws.mViewObj = new cuemolui.TreeView(window, "objectTree");
 
@@ -41,6 +45,7 @@ ws.mViewObj.dropHandler = function (elem, ori, dt)
 
 const ITEM_DROP_TYPE = "application/x-cuemol-workspace-item";
 
+////////////////////////////////
 // Setup DOM event handlers
 window.addEventListener("load", function(){ws.onLoad();}, false);
 window.addEventListener("unload", function() {ws.onUnLoad();}, false);
@@ -348,7 +353,6 @@ ws.removeObject = function (aId)
 {
   dd("WS.removeObject ID="+aId);
   let irow = this.mViewObj.getSelectedRow();
-
   this.mViewObj.removeNode( function(elem) {
     return (elem.obj_id==aId)?true:false;
   } );
@@ -538,13 +542,6 @@ ws._attachScene = function (scid)
                                                scene.uid, // source UID
                                                handler);
 
-  /*
-  // window.alert("XXX getScnene" + scid);
-  if (scid>0) {
-    var scene = cuemol.getScene(scid);
-    this._callbackID = scene.addListener(new SceneEventListener(this));
-  }
-   */
 }
 
 // detach from the previous active scene
@@ -635,25 +632,54 @@ ws.onNewCmd = function (aEvent)
 
 ws.onDeleteCmd = function (aEvent)
 {
-  var elem = this.mViewObj.getSelectedNode();
-  if (!elem) return;
+  var elemList = this.mViewObj.getSelectedNodeList();
+  var nsel = elemList.length;
+  if (nsel<=0)
+    return;
+
+  if (nsel==1) {
+    this.deleteCmdImpl(elemList[0]);
+    return;
+  }
+  
+  var scene = cuemol.getScene(this.mTgtSceneID);
+  if (!scene) return;
+
+  // EDIT TXN START //
+  scene.startUndoTxn("Destroy multiple object");
+
+  for (var i=0; i<nsel; ++i) {
+    try {
+      this.deleteCmdImpl(elemList[i]);
+    }
+    catch (e) {
+      debug.exception(e);
+    }
+  }
+
+  scene.commitUndoTxn();
+  // EDIT TXN END //
+};
+
+ws.deleteCmdImpl = function (elem)
+{
   var id = elem.obj_id;
 
   if (elem.type=="object") {
     gQm2Main.deleteObject(id);
   }
   else if (elem.type=="renderer") {
-    this.mViewObj.saveSelection();
+    // this.mViewObj.saveSelection();
     gQm2Main.deleteRendByID(id);
-    this.mViewObj.restoreSelection();
+    // this.mViewObj.restoreSelection();
   }
   else if (elem.type=="rendGroup") {
     if (elem.childNodes.length>0)
       util.alert(window, "Group is not empty");
     else {
-      this.mViewObj.saveSelection();
+      // this.mViewObj.saveSelection();
       gQm2Main.deleteRendByID(id);
-      this.mViewObj.restoreSelection();
+      // this.mViewObj.restoreSelection();
     }
   }
   else if (elem.type=="camera") {

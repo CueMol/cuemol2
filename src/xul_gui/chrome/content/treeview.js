@@ -285,7 +285,23 @@ TreeView.prototype.getSelectedRowList = function ()
   }
 
   return res;
-}
+};
+
+/*
+TreeView.prototype.getSelectedRowList2 = function ()
+{
+  var res = new Array();
+  var cl = this.getSelectedRowList();
+  var nrng = cl.length;
+  for (var i=0; i<nrng; ++i) {
+    let elem = cl[i];
+    for (var j=elem.start; j<elem.end; ++j)
+      res.push(j);
+  }
+
+  return res;
+};
+*/
 
 TreeView.prototype.saveSelection = function ()
 {
