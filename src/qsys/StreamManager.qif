@@ -41,6 +41,7 @@ runtime_class StreamManager
 
   object<LScrObject$> fromXML(object<ByteArray$>, integer);
   array arrayFromXML(object<ByteArray$>, integer);
+
 };
 
 #endif // STREAM_MANAGER_QIF_INCLUDED

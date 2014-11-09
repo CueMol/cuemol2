@@ -137,6 +137,8 @@ namespace qsys {
     qlib::LVarArray StreamManager::arrayFromXML(const qlib::LByteArrayPtr &pbuf,
                                                 qlib::uid_t nSceneID);
 
+    qlib::LScrSp<qlib::LByteArray> arrayToXML(const qlib::LVarArray &objs);
+
   public:
   
     //////////
