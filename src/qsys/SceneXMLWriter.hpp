@@ -109,7 +109,7 @@ namespace qsys {
                                     const LString &type_ovwr);
 
     qlib::LByteArrayPtr
-      SceneXMLWriter::rendArrayToByteArray(const std::list<RendererPtr> &pArray);
+      rendArrayToByteArray(const std::list<RendererPtr> &pArray);
 
   private:
     void procDataChunks(qlib::LDom2OutStream &oos, qlib::LDom2Node *pNode);
