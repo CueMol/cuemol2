@@ -134,8 +134,8 @@ namespace qsys {
 
     qlib::LScrObjBasePtr fromXML(const qlib::LByteArrayPtr &pObj,
                                  qlib::uid_t nSceneID);
-    qlib::LVarArray StreamManager::arrayFromXML(const qlib::LByteArrayPtr &pbuf,
-                                                qlib::uid_t nSceneID);
+    qlib::LVarArray arrayFromXML(const qlib::LByteArrayPtr &pbuf,
+				 qlib::uid_t nSceneID);
 
   public:
   
