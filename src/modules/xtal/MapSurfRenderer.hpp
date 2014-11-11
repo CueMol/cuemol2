@@ -137,7 +137,6 @@ namespace xtal {
 
     inline double getDen(int x, int y, int z) const
     {
-      // TO DO: support PBC
       // TO DO: support symop
 
       if (m_bPBC) {
