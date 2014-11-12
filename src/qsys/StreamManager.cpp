@@ -362,7 +362,7 @@ qlib::LByteArrayPtr StreamManager::toXML2(const qlib::LScrObjBasePtr &pSObj,
   return rval;
 }
 
-qlib::LByteArrayPtr StreamManager::arrayToXML(const qlib::LVarArray &objs)
+qlib::LByteArrayPtr StreamManager::rendGrpToXML(const qlib::LVarArray &objs, const LString &grpname)
 {
   const int nlen = objs.size();
   
@@ -391,7 +391,7 @@ qlib::LByteArrayPtr StreamManager::arrayToXML(const qlib::LVarArray &objs)
     }
 
     SceneXMLWriter writer;
-    qlib::LByteArrayPtr rval = writer.rendArrayToByteArray(list);
+    qlib::LByteArrayPtr rval = writer.rendArrayToByteArray(list, grpname);
     return rval;
   }
   
@@ -420,14 +420,18 @@ qlib::LVarArray StreamManager::arrayFromXML(const qlib::LByteArrayPtr &pbuf,
   reader.attach(pScene);
 
   std::list<RendererPtr> rends;
-  reader.rendArrayFromByteArray(pbuf, rends);
+  LString grpname;
+  reader.rendArrayFromByteArray(pbuf, rends, grpname);
 
   reader.detach();
 
   int nrends = rends.size();
-  qlib::LVarArray rval(nrends);
+  qlib::LVarArray rval(nrends+1);
   
-  int i=0;
+  // the first element contains the group name (empty if array is not a group)
+  rval[0].setStringValue(grpname);
+
+  int i=1;
   BOOST_FOREACH (RendererPtr pRend, rends) {
     LScriptable *p = pRend.copy();
     rval[i].setObjectPtr(p);

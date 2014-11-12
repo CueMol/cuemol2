@@ -299,7 +299,8 @@ qlib::LScrObjBasePtr SceneXMLReader::fromByteArray(const qlib::LByteArrayPtr &pb
 }
 
 void SceneXMLReader::rendArrayFromByteArray(const qlib::LByteArrayPtr &pbuf,
-                                            std::list<RendererPtr> &rends)
+                                            std::list<RendererPtr> &rends,
+                                            LString &grpName)
 {
   qlib::uid_t nSceneID = m_pClient->getUID();
 
@@ -342,6 +343,8 @@ void SceneXMLReader::rendArrayFromByteArray(const qlib::LByteArrayPtr &pbuf,
 
     rends.push_back(prend);
   }
+
+  grpName = pNode->getStrAttr("group");
 
   return;
 }

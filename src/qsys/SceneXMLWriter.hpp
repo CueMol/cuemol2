@@ -108,8 +108,11 @@ namespace qsys {
     qlib::LByteArrayPtr toByteArray(const qlib::LScrSp<qlib::LScrObjBase> &pSObj,
                                     const LString &type_ovwr);
 
+    /// Convert multiple renderers to bytearray (in qsc format)
+    /// @param pArray list containing renderer ptrs
+    /// @param grpname renderer group name (empty if pArray is not a group)
     qlib::LByteArrayPtr
-      rendArrayToByteArray(const std::list<RendererPtr> &pArray);
+      rendArrayToByteArray(const std::list<RendererPtr> &pArray, const LString &grpname=LString());
 
   private:
     void procDataChunks(qlib::LDom2OutStream &oos, qlib::LDom2Node *pNode);

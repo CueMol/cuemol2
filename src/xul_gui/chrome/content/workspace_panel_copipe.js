@@ -26,7 +26,9 @@ ws.onCopyCmd = function (aEvent)
       clipboard.set(xmldat, "qscrend");
     }
     else if (elem.type=="rendGroup") {
-      // TO DO: impl
+      let elemList = elem.childNodes;
+      let grpName = elem.orig_name;
+      this.multiRendCopyImpl(elemList, grpName);
     }
     else if (elem.type=="object") {
       let obj = cuemol.getObject(id);
@@ -53,19 +55,30 @@ ws.onMultiCopy = function (aEvent)
     return;
   }
 
-  let clipboard = require("qsc-copipe");
-
   if (type=="renderer") {
-    let args = new Array();
-    for (var i=0; i<nsel; ++i) {
-      let rend = cuemol.getRenderer(elemList[i].obj_id);
-      args.push(rend._wrapped);
-    }
-    
-    let xmldat = gQm2Main.mStrMgr.arrayToXML(args);
-
-    clipboard.set(xmldat, "qscrendary");
+    this.multiRendCopyImpl(elemList);
   }
+};
+
+ws.multiRendCopyImpl = function (aElemList, aGrpName)
+{
+  var nsel = aElemList.length;
+  var clipboard = require("qsc-copipe");
+
+  var args = new Array();
+  for (var i=0; i<nsel; ++i) {
+    let rend = cuemol.getRenderer(aElemList[i].obj_id);
+    args.push(rend._wrapped);
+  }
+    
+  var xmldat = gQm2Main.mStrMgr.arrayToXML(args);
+
+  if (aGrpName)
+    xmldat = gQm2Main.mStrMgr.rendGrpToXML(args, aGrpName);
+  else
+    xmldat = gQm2Main.mStrMgr.arrayToXML(args);
+
+  clipboard.set(xmldat, "qscrendary");
 };
 
 function convElemNodeTypes(type)
@@ -133,12 +146,22 @@ ws.onPasteRend = function (aEvent)
     let scene = obj.getScene();
     if (bary) {
       let rends = gQm2Main.mStrMgr.arrayFromXML(xmldat, scene.uid);
-      let nrends = rends.length;
+      let nrends = rends.length -1;
+
+      // alert("group="+rends[0]);
 
       // EDIT TXN START //
       scene.startUndoTxn("Paste renderers");
       try {
-	for (let i=0; i<nrends; ++i) {
+	if (destgrp=="" && rends[0]!="") {
+	  // create new group & paste rend
+	  dd("Paste new group="+rends[0]);
+	  destgrp=rends[0];
+	  let rend = obj.createRenderer("*group");
+	  rend.name = destgrp;
+	}
+
+	for (let i=1; i<=nrends; ++i) {
 	  let rend = cuemol.convPolymObj( rends[i] );
 	  this.pasteRendImpl(obj, rend, destgrp);
 	}

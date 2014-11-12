@@ -375,7 +375,7 @@ qlib::LScrSp<qlib::LByteArray> SceneXMLWriter::toByteArray(const qlib::LScrSp<ql
 /////
 
 qlib::LByteArrayPtr
-SceneXMLWriter::rendArrayToByteArray(const std::list<RendererPtr> &rendary)
+SceneXMLWriter::rendArrayToByteArray(const std::list<RendererPtr> &rendary, const LString &grpname)
 {
   // Setup streams
   qlib::StrOutStream fos;
@@ -405,6 +405,11 @@ SceneXMLWriter::rendArrayToByteArray(const std::list<RendererPtr> &rendary)
   qlib::LDom2Tree tree(top_type);
   qlib::LDom2Node *pNode = tree.top();
 
+  // add group attribute (in the case of rendGrp)
+  if (!grpname.isEmpty()) {
+    pNode->setStrAttr("group", grpname);
+  }
+
   BOOST_FOREACH (RendererPtr pRend, rendary) {
     qlib::LDom2Node *pChNode = pNode->appendChild("renderer");
     pChNode->setTypeName( pRend->getTypeName() );
@@ -412,6 +417,15 @@ SceneXMLWriter::rendArrayToByteArray(const std::list<RendererPtr> &rendary)
     pChNode->setAttrFlag(false);
   
     pRend->writeTo2(pChNode);
+
+    if (grpname.isEmpty()) {
+      // remove group attribute
+      pChNode->removeChild("group");
+    }
+    else {
+      // overwrite group attribute
+      pChNode->setStrAttr("group", grpname);
+    }
   }
 
   oos.write(&tree);

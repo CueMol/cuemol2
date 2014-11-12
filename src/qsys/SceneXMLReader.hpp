@@ -45,7 +45,7 @@ namespace qsys {
     // This method just return the resulting object, and not register to the attached scene.
     qlib::LScrSp<qlib::LScrObjBase> fromByteArray(const qlib::LByteArrayPtr &pbuf);
 
-    void rendArrayFromByteArray(const qlib::LByteArrayPtr &pbuf, std::list<RendererPtr> &rends);
+    void rendArrayFromByteArray(const qlib::LByteArrayPtr &pbuf, std::list<RendererPtr> &rends, LString &grpName);
 
     ////////////////////////////////////////
     // Client management

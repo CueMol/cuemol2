@@ -262,6 +262,8 @@
       <menupopup id="wspcPanelRendGrpCtxtMenu"
 	onpopupshowing="cuemolui.panels.workspace.onCtxtMenuShowing(event)"
 	>
+	<menuitem id="wspcRendGrpCopy" label="Copy"
+	  oncommand="cuemolui.panels.workspace.onCopyCmd(event);"/>
 	<menuitem id="wspcPanelRendGrpCtxtMenu-Paste"
 		  label="Paste Renderer" oncommand="cuemolui.panels.workspace.onPasteRend(event);"/>
 	<menuitem label="Change Name" oncommand="cuemolui.panels.workspace.onRenameRendGrp(event);"/>

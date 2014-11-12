@@ -73,10 +73,16 @@ ws._nodes = null;
 ws.createRendNodeData = function (aRend, aParent)
 {
   let rnode = new Object();
+
+  // internal name
   rnode.orig_name = aRend.name;
+
+  // type name (i.e. simple, etc)
   rnode.type_name = aRend.type;
-  // display name
+
+  // display name (<=orig_name + type_name)
   rnode.name = aRend.name + " ("+aRend.type+")";
+
   //rnode.values = { object_vis: aRend.visible };
   
   let rvis = "invisible";
@@ -730,7 +736,6 @@ ws.onPropCmd = function ()
     break;
     
   case "rendGroup":
-    // TO DO: impl (change group name)
     return this.onRenameRendGrp();
     
   case "camera":

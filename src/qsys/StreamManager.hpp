@@ -130,7 +130,11 @@ namespace qsys {
     qlib::LByteArrayPtr toXML(const qlib::LScrObjBasePtr &pObj);
     qlib::LByteArrayPtr toXML2(const qlib::LScrObjBasePtr &pObj,
                                const LString &type_ovwr);
-    qlib::LByteArrayPtr arrayToXML(const qlib::LVarArray &objs);
+
+    qlib::LByteArrayPtr arrayToXML(const qlib::LVarArray &objs) {
+      return rendGrpToXML(objs, LString());
+    }
+    qlib::LByteArrayPtr rendGrpToXML(const qlib::LVarArray &objs, const LString &grpname);
 
     qlib::LScrObjBasePtr fromXML(const qlib::LByteArrayPtr &pObj,
                                  qlib::uid_t nSceneID);

@@ -38,6 +38,7 @@ runtime_class StreamManager
   object<ByteArray$> toXML2(object<LScrObject$>, string type_ovwr);
   // array ver
   object<ByteArray$> arrayToXML(array);
+  object<ByteArray$> rendGrpToXML(array, string);
 
   object<LScrObject$> fromXML(object<ByteArray$>, integer);
   array arrayFromXML(object<ByteArray$>, integer);
