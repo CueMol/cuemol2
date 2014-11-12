@@ -85,7 +85,12 @@ namespace sysdep {
     /// @param far_factor factor of far slab limitation (1.0 for the same as display)
     void setUpHitProjMat(gfx::DisplayContext *pdc, const Vector4D &, double far_factor);
     
-    bool hitTestPreHelper(gfx::DisplayContext *pdc, const Vector4D &, bool fGetAll, double far_factor);
+    /// Hit-test implementation
+    /// @param pdc display context attached to the hittest buffer
+    /// @parm 4D vector containing: (screen X, screen Y, X-hit precision, Y-hit precision)
+    /// @fGetAll If true, all of the hit elements are returned. Otherwise, only the nearest hit is returned.
+    /// @far_factor factor of far slab limitation (1.0 for the same as display)
+    bool hitTestImpl(gfx::DisplayContext *pdc, const Vector4D &parm, bool fGetAll, double far_factor);
 
   public:
     virtual LString hitTest(int x, int y);

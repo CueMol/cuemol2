@@ -9,7 +9,7 @@
 
   const povrender = require("povrender");
   const util = require("util");
-  const timer = require("timer");
+  // const timer = require("timer");
   const pref = require("preferences-service");
   
   const pov_width_key = "cuemol2.ui.render.pov-img-width";
@@ -63,6 +63,8 @@
     this.mOutImgUnit = document.getElementById("output-image-unit");
     this.mNumThreads = document.getElementById("num-threads");
     this.mRadMode = document.getElementById("radio-mode-list");
+
+    this.mProgBar = document.getElementById("progress");
 
     {
       // setup default values
@@ -490,12 +492,15 @@
   dlg.onTimer = function (bEnd)
   {
     dd("PovDlg.onTimer> called bEnd="+bEnd);
-    this.updateImagePreview();
+    // this.updateImagePreview();
+    this.mProgBar.value = this.mPovRender.getProgress();
 
     if (!bEnd)
       return;
 
     dd("PovDlg.onTimer> Timer END");
+    this.mProgBar.value = 0;
+    this.updateImagePreview();
     this.disableButtons(false);
 
     // Now the new temporary image file is available.

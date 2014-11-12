@@ -13,14 +13,14 @@
   
   const output_dir_key = "cuemol2.ui.animrender.output-path";
   const ffmpeg_exe_key = "cuemol2.ui.animrender.ffmpeg-exe-path";
+  const ncpu_key = "cuemol2.ui.animrender.ncpu";
 
   var dlg = window.gDlgObj = new Object();
   dlg.mTgtSceID = window.arguments[0];
   
-  // Save scene name here
+  // Save target scene name
   {
     let scene = cuemol.getScene(dlg.mTgtSceID);
-    //var ini_name = scene.name;
     dlg.mSceName = scene.name;
     delete scene;
   }
@@ -55,15 +55,15 @@
     this.mOutputBaseBox = document.getElementById("output-base-name");
     this.mOutImgWidth = document.getElementById("output-image-width");
     this.mOutImgHeight = document.getElementById("output-image-height");
+    this.mRadMode = document.getElementById("pov-radio-mode-list");
 
+    // Setup log window
     this.mLogWnd = document.getElementById("output-log-frame");
     this.mLogWndDoc = this.mLogWnd.contentDocument;
     this.mLogWndDoc.writeln("<head><link rel='stylesheet' type='text/css' href='chrome://cuemol2/content/logwindow.css'></head><body><pre id='log_content' class='console-text'/></body>");
     this.mLogWndDoc.close();
     this.mLogWndWin = this.mLogWnd.contentWindow;
     this.mLogWndPre = this.mLogWndDoc.getElementById("log_content");
-    // this.mLogWndPre.appendChild(this.mLogWndDoc.createTextNode("XXXXXXXX"));
-    // this.mLogWndWin.scrollTo(0, this.mLogWndPre.scrollHeight);
 
     // set initial values
     if (prefsvc.has(output_dir_key)) {
@@ -74,6 +74,11 @@
     
     this.mOutputBaseBox.value = "output";
     this.mFfOutFileExt = null;
+
+    if (prefsvc.has(ncpu_key)) {
+      let ncpu = prefsvc.get(ncpu_key);
+      document.getElementById("task-concr-run").value = ncpu;
+    }
 
     this.mProgBar = document.getElementById("progress");
 
@@ -117,6 +122,7 @@
 
     let ncpu = document.getElementById("task-concr-run").value;
     if (isNaN(ncpu)||ncpu<1) ncpu = 1;
+    prefsvc.set(ncpu_key, ncpu);
 
     let fDupLastFrm = document.getElementById("main-dup-lastfrm").checked;
     //let fDupLastFrm = true;
@@ -125,6 +131,29 @@
     let postblend = document.getElementById("pov-enable-post-blend").checked;
     let clipplane = document.getElementById("pov-enable-clip-plane").checked;
     let shadow = document.getElementById("pov-enable-shadow").checked;
+    let edgelines = document.getElementById("pov-enable-edgelines").checked;
+
+    // radiosity settings
+    if (this.mRadMode.value=="-1")
+      this.mPovRender.mbRadiosity=false;
+    else {
+      this.mPovRender.mbRadiosity=true;
+      this.mPovRender.mnRadMode = this.mRadMode.value;
+    }
+
+    this.mPovRender.nThreads = 1;
+    this.mPovRender.mbShadow = shadow;
+    this.mPovRender.mbShowEdgeLines = edgelines;
+    this.mPovRender.mbVerbose = false;
+
+    this.mPovRender.setPovExePath(this.mPovExePathBox.value);
+    this.mPovRender.setPovIncPath(this.mPovIncPathBox.value);
+    this.mPovRender.setupPovPaths();
+    this.mPovRender.bOrtho = ortho;
+    this.mPovRender.img_width = img_width;
+    this.mPovRender.img_height = img_height;
+    this.mPovRender.mDPI = -1.0; // don't set DPI
+    this.mPovRender.mbPostBlend = postblend;
 
     try {
       // set concurrency
@@ -154,10 +183,6 @@
       this._bRender = true;
       this.disableButtons(true);
 
-      this.mPovRender.setPovExePath(this.mPovExePathBox.value);
-      this.mPovRender.setPovIncPath(this.mPovIncPathBox.value);
-      this.mPovRender.setupPovPaths();
-
       let tv_st = cuemol.createObj("TimeValue");
       tv_st.intval = 0;
       let tv_en = am.length;
@@ -173,13 +198,7 @@
       exp.makeRelIncPath = false;
       exp.useClipZ = clipplane;
       exp.usePostBlend = postblend;
-
-      this.mPovRender.bOrtho = ortho;
-      this.mPovRender.img_width = img_width;
-      this.mPovRender.img_height = img_height;
-      this.mPovRender.mDPI = -1.0; // don't set DPI
-      this.mPovRender.mbPostBlend = postblend;
-      this.mPovRender.mbShadow = shadow;
+      exp.showEdgeLines = edgelines;
 
       this.mAnimMgr = am;
       this.mExp = exp;
@@ -706,6 +725,7 @@
     util.persistChkBox("pov-enable-clip-plane", document);
     util.persistChkBox("pov-enable-post-blend", document);
     util.persistChkBox("pov-enable-shadow", document);
+    util.persistChkBox("pov-enable-edgelines", document);
     util.persistChkBox("ffmpeg-enable-check", document);
 
     // disable log recording

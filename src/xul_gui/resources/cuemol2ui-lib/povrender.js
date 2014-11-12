@@ -37,6 +37,7 @@ function PovRender()
   this.mDPI = -1.0;
   this.mbRadiosity = false;
   this.mnRadMode = 0;
+  this.mbVerbose = true;
 
   this.mTimer = null;
   this.mPlfName = util.getPlatformString();
@@ -415,7 +416,7 @@ PovRender.prototype.doRenderImpl = function (index, aAsync)
 	      "Declare=_perspective="+(this.bOrtho?"0":"1"),
 	      "Declare=_shadow="+(this.mbShadow?"1":"0"),
 	      "File_Gamma=1",
-	      "-D","+V",
+	      "-D",
 	      "+WT" + this.nThreads,
 	      "+W" + this.img_width,
 	      "+H" + this.img_height,
@@ -425,6 +426,11 @@ PovRender.prototype.doRenderImpl = function (index, aAsync)
 	      "Antialias_Depth=3",
 	      "Antialias_Threshold=0.1",
 	      "Jitter=Off"];
+
+  if (this.mbVerbose)
+    args.push("+V");
+  else
+    args.push("-V");
 
   if (this.mbRadiosity) {
     dd("PovRender> Radiosity ON; mode="+this.mnRadMode);
@@ -514,31 +520,29 @@ PovRender.prototype.startTimer = function ()
   }, 1000);
 };    
 
-function filteredOutput(re, msg)
+var re = /Rendered (\d+) of (\d+) pixels \((\d+)%\)/g;
+
+PovRender.prototype.filteredOutput = function (msg)
 {
   if (msg=="") {
-    cuemol.putLogMsg("...");
+    //cuemol.putLogMsg("...");
     return;
   }
   
   let res = re.exec(msg);
   if (res) {
-    let newmsg = msg.replace(re, "", "g");
-    if (newmsg!="")
-      cuemol.putLogMsg(newmsg);
-    else
-      cuemol.putLogMsg(res[0]);
+    this.mPcProg = parseInt(res[3]);
   }
   else
     cuemol.putLogMsg(msg);
 
+  // cuemol.putLogMsg("<"+msg+">");
 };
 
 PovRender.prototype.onTimer = function ()
 {
   // check the running tasks
   var bDone = true;
-  var re = /Rendered (\d+) of (\d+) pixels \((\d+)%\)/g;
   for (var i=0; i<this.mProcs.length; ++i) {
     let tid = this.mProcs[i];
     dd("PovRender.timer> slot"+i+" tid="+tid);
@@ -555,13 +559,13 @@ PovRender.prototype.onTimer = function ()
       this.mCurIndex = i;
       let msg = procMgr.getResultOutput(tid);
 
-      filteredOutput(re, msg);
+      this.filteredOutput(msg);
     }
     else {
       // tid is done (ENDED)
       var msg = procMgr.getResultOutput(tid);
 
-      filteredOutput(re, msg);
+      this.filteredOutput(msg);
 
       this.mProcs[i] = -1;
     }
@@ -595,6 +599,11 @@ PovRender.prototype.onTimer = function ()
   if (this.mTimerFn)
     this.mTimerFn(true);
 
+};
+
+PovRender.prototype.getProgress = function ()
+{
+  return this.mPcProg;
 };
 
 PovRender.prototype.stopRender = function ()

@@ -153,9 +153,16 @@
       </menulist>
     </hbox>      
 
+    <!-- Progress bar -->
+    <hbox align="center">
+      <label value="Progress: "/>
+      <progressmeter id="progress" flex="1"/>
+    </hbox>
+    
+
     <!-- preview box -->
     <groupbox flex="1">
-      <caption label="Preview"/>
+      <caption label="Result"/>
       <hbox align="center">
 	<spacer width="10px"/>
 	<toolbarbutton

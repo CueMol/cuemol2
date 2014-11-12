@@ -188,7 +188,7 @@
       <menupopup id="wspcPanelRendCtxtMenu"
 	onpopupshowing="cuemolui.panels.workspace.onRendCtxtMenuShowing(event)">
 
-	<menu label="Selection" id="wspcPanelRendSelMenu" >
+	<menu label="Change sel" id="wspcPanelRendSelMenu" >
 	  <menupopup>
 	    <menuitem label="Current"
 		      oncommand="cuemolui.panels.workspace.setRendSel('current')"/>

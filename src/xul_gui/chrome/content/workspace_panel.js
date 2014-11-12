@@ -787,11 +787,14 @@ ws.onBtnZoomCmd = function ()
 
 ws.onTreeSelChanged = function ()
 {
-  //dd("******** ontreeselchanged called");
-
-  //this.mBtnUp.disabled = true;
-  //this.mBtnDown.disabled = true;
-
+  if (this.mViewObj.isMultiSelected()) {
+    this.mBtnNew.disabled = true;
+    this.mBtnDel.disabled = false;
+    this.mBtnProp.disabled = true;
+    this.mBtnZoom.disabled = true;
+    return
+  }
+  
   var elem = this.mViewObj.getSelectedNode();
   if (elem) {
     if (elem.type=="scene") {

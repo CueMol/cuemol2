@@ -540,7 +540,7 @@ void OglView::setUpHitProjMat(gfx::DisplayContext *pdc, const Vector4D &parm, do
   glMatrixMode(GL_MODELVIEW);
 }
 
-bool OglView::hitTestPreHelper(gfx::DisplayContext *pdc, const Vector4D &parm, bool fGetAll, double far_factor)
+bool OglView::hitTestImpl(gfx::DisplayContext *pdc, const Vector4D &parm, bool fGetAll, double far_factor)
 {
   qsys::ScenePtr pScene = getScene();
   if (pScene.isnull()) {
@@ -644,7 +644,9 @@ LString OglView::hitTest(int ax, int ay)
   pdc->setCurrent();
 
   double dHitPrec = convToBackingX( qsys::ViewInputConfig::getInstance()->getHitPrec() );
-  if ( !hitTestPreHelper(pdc, Vector4D(x, y, dHitPrec, dHitPrec), true, 1.0) )
+
+  // Perform hittest (single hit)
+  if ( !hitTestImpl(pdc, Vector4D(x, y, dHitPrec, dHitPrec), false, 1.0) )
     return LString();
 
   int nrend = m_hitdata.getRendSize();
@@ -707,7 +709,8 @@ LString OglView::hitTestRect(int ax, int ay, int aw, int ah, bool bNearest)
   double cnx = double(x) + double(w)/2.0;
   double cny = double(y) + double(h)/2.0;
 
-  if ( !hitTestPreHelper(pdc, Vector4D(cnx, cny, w, h), true, 0.5) )
+  // Perform hittest (multiple hit)
+  if ( !hitTestImpl(pdc, Vector4D(cnx, cny, w, h), true, 0.5) )
     return LString();
 
   int nrend = m_hitdata.getRendSize();
