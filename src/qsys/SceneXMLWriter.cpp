@@ -160,6 +160,9 @@ void SceneXMLWriter::write()
   // Setup embedding objects
   //
 
+  if (m_bForceEmbedAll)
+    m_pClient->forceEmbed();
+
   Scene::ObjIter oiter = m_pClient->beginObj();
   Scene::ObjIter oiter_end = m_pClient->endObj();
   for (; oiter!=oiter_end; ++oiter) {

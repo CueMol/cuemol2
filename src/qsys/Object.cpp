@@ -852,9 +852,6 @@ void Object::forceEmbed()
   }
   
   setSourceType(getDataChunkReaderName());
-  //m_source = "";
-  //m_altsrc = "";
-  //m_sourcetype = "";
 
   if (m_pReaderOpts!=NULL) delete m_pReaderOpts;
   m_pReaderOpts = NULL;

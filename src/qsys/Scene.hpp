@@ -196,6 +196,8 @@ namespace qsys {
     std::pair<LString, LString> convSrcPaths(const LString &aSrc,
                                              const LString &aAltSrc) const;
     
+    /// Convert rel and abs of src and alt_src paths
+    /// This method calls convSrcPaths() and additionary append src and alt_src attributes to pNode.
     std::pair<LString, LString> setPathsToNode(const LString &aSrc,
                                                const LString &aAltSrc,
                                                qlib::LDom2Node *pNode) const;
@@ -451,6 +453,9 @@ namespace qsys {
     /// Serialize this scene to the localfile
     ///
     virtual void readFrom2(qlib::LDom2Node *pNode);
+
+    /// force to embed all external files (cameras and styles)
+    void forceEmbed();
 
   private:
     // writeTo2/readFrom2 impl for specific settings

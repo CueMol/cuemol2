@@ -366,8 +366,8 @@ qlib::LByteArrayPtr StreamManager::rendGrpToXML(const qlib::LVarArray &objs, con
 {
   const int nlen = objs.size();
   
-  if (nlen==0)
-    return qlib::LByteArrayPtr();
+//  if (nlen==0)
+//    return qlib::LByteArrayPtr();
 
   {
     // try renderer array

@@ -9,10 +9,6 @@
 
 #include "QdfAbsWriter.hpp"
 
-#include <qlib/BinStream.hpp>
-#include <qlib/Base64Stream.hpp>
-#include <qlib/GzipStream.hpp>
-
 using namespace qsys;
 
 QdfAbsWriter::QdfAbsWriter()

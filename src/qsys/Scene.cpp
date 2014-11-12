@@ -1788,4 +1788,30 @@ std::pair<LString,LString> Scene::setPathsToNode(const LString &aSrc,
   return res;
 }
 
+void Scene::forceEmbed()
+{
+  // change all camera sources
+  camtab_t::const_iterator viter = m_camtab.begin();
+  camtab_t::const_iterator eiter = m_camtab.end();
+  for (; viter!=eiter; ++viter) {
+    CameraPtr pCam = viter->second;
+    pCam->setSource("");
+  }
+  
+  // change all style sources
+  qlib::uid_t nScopeID = getUID();
+  LString basedir = getBasePath();
+  
+  StyleList *pSL = m_pStyleMgr->getCreateStyleList(nScopeID);
+  if (pSL==NULL || pSL->empty())
+    return;
+
+  BOOST_FOREACH(StyleList::value_type pSet, *pSL) {
+    // style set name (id)
+    LString id = pSet->getName();
+    pSet->setSource("");
+  }
+
+}
+
 

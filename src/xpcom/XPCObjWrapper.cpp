@@ -69,9 +69,17 @@ nsresult NSArrayToLArray(nsIVariant *aValue, qlib::LVariant &variant)
 {
   uint16_t valueType;
   nsIID iid;
-  uint32_t valueCount;
+  uint32_t valueCount =0;
   void* rawArray;
-  aValue->GetAsArray(&valueType, &iid, &valueCount, &rawArray);
+  nsresult rv;
+  
+  rv = aValue->GetAsArray(&valueType, &iid, &valueCount, &rawArray);
+  if (NS_FAILED(rv)) {
+    // empty array
+    LVarArray res(0);
+    variant.setArrayValue(res);
+    return NS_OK;
+  }
 
   LVarArray res(valueCount);
   if (//valueType == nsIDataType::VTYPE_INTERFACE ||
@@ -128,10 +136,8 @@ nsresult NSVarToLVar(nsIVariant *aValue, qlib::LVariant &variant)
     return NS_OK;
     //GET_FROM_V(bool, v->GetAsBool, MyBool_FromBool);
   }
-  case nsIDataType::VTYPE_EMPTY_ARRAY:
-    // TO DO: implementation
-    return NS_ERROR_NOT_IMPLEMENTED;
 
+  case nsIDataType::VTYPE_EMPTY_ARRAY:
   case nsIDataType::VTYPE_ARRAY: {
     return NSArrayToLArray(aValue, variant);
   }

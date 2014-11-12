@@ -28,6 +28,7 @@ ws.onCopyCmd = function (aEvent)
     else if (elem.type=="rendGroup") {
       let elemList = elem.childNodes;
       let grpName = elem.orig_name;
+      dd("onCopy rendGroup name="+grpName);
       this.multiRendCopyImpl(elemList, grpName);
     }
     else if (elem.type=="object") {
@@ -71,8 +72,6 @@ ws.multiRendCopyImpl = function (aElemList, aGrpName)
     args.push(rend._wrapped);
   }
     
-  var xmldat = gQm2Main.mStrMgr.arrayToXML(args);
-
   if (aGrpName)
     xmldat = gQm2Main.mStrMgr.rendGrpToXML(args, aGrpName);
   else
