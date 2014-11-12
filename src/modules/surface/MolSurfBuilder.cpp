@@ -23,6 +23,7 @@
 #include "BALL/STRUCTURE/triangulatedSAS.h"
 
 #include "MolSurfObj.hpp"
+#include "MolSurfEditInfo.hpp"
 
 using namespace surface;
 using gfx::DisplayContext;
@@ -46,6 +47,7 @@ namespace {
     MB_DPRINTLN("MS> Atom %s alt=%c ignored", pAtom->formatMsg().c_str(), confid);
     return false;
   }
+
 }
 
 void MolSurfObj::createSESFromMol(MolCoordPtr pMol, SelectionPtr pSel, double density, double probe_r)
@@ -189,10 +191,16 @@ void MolSurfObj::regenerateSES(double density, double probe_r, SelectionPtr pSel
   if (rad2<0.0)
     rad2 = m_dProbeRad;
 
+  // Record undo info
+  qsys::UndoUtil uu(getScene());
+  if (uu.isOK()) {
+    MolSurfEditInfo *pInfo = MB_NEW MolSurfEditInfo();
+    pInfo->setup(this);
+    uu.add(pInfo);
+  }
+
   clean();
   createSESFromMol(pMol, pSel, den2, rad2);
-
-  // TO DO: save UNDO INFO!!
 
   // notify update of structure
   {
