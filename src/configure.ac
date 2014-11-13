@@ -460,18 +460,44 @@ fi
     [])
 
 #######################################################
+# RMI supports
+
+RMI_CPPFLAGS=
+RMI_LIBADD=
+RMI_LDFLAGS=
+RMI_TYPE=
+
+AC_MSG_CHECKING(RMI support)
+AC_ARG_WITH(rmi,
+[  --with-rmi[=xmlrpc,thrift]      Support RMI type (default=no) ],
+[  case "$with_rmi" in
+  no)
+    ;;
+  xmlrpc)
+    RMI_TYPE=xmlrpc
+    AC_MSG_RESULT($with_rmi)
+    ;;
+  thrift)
+    RMI_TYPE=thrift
+    AC_MSG_RESULT($with_rmi)
+    ;;
+  *)
+    AC_MSG_ERROR(Unknown RMI type)
+    ;;
+  esac],
+[AC_MSG_RESULT(no)]
+)
+
+##################
 # XML-RPC supports
 
-XMLRPC_CPPFLAGS=
-XMLRPC_LIBADD=
-XMLRPC_LDFLAGS=
+if test x$RMI_TYPE = xxmlrpc ; then
 
-# AC_MSG_CHECKING(XML-RPC-C library location)
 AC_ARG_WITH(xmlrpc,
-[  --with-xmlrpc[=DIR]      Look for XML-RPC-C library in DIR (default=no) ],
+[  --with-xmlrpc=DIR      Look for XML-RPC-C library in DIR (default=no) ],
 [ case "$with_xmlrpc" in
   no)
-    
+    AC_MSG_ERROR(No xml-rpc directory specified)
     ;;
   *)
     AC_MSG_RESULT($with_xmlrpc)
@@ -480,7 +506,7 @@ AC_ARG_WITH(xmlrpc,
     AC_CHECK_HEADERS([xmlrpc-c/base.h],,[AC_MSG_ERROR(xmlrpc-c/base.h not found)],[])
 
     AC_CHECK_DECLS(xmlrpc_version,
-                   [XMLRPC_CPPFLAGS="-I$with_xmlrpc/include"],
+                   [RMI_CPPFLAGS="-I$with_xmlrpc/include"],
 		   [AC_MSG_ERROR(xmlrpc_version() not found)],
 		   [#include <xmlrpc-c/base.h>])
     CPPFLAGS=$_cppflags
@@ -490,8 +516,8 @@ AC_ARG_WITH(xmlrpc,
     LDFLAGS="-L$with_xmlrpc/lib $LDFLAGS"
     LIBS="-lxmlrpc_server_abyss++ -lxmlrpc_server++ -lxmlrpc_server_abyss -lxmlrpc_server -lxmlrpc_abyss -lpthread -lxmlrpc++ -lxmlrpc -lxmlrpc_util -lxmlrpc_xmlparse -lxmlrpc_xmltok $LIBS"
     AC_CHECK_LIB(xmlrpc, xmlrpc_version,
-                 [XMLRPC_LDFLAGS="-L$with_xmlrpc/lib"
-		  XMLRPC_LIBADD=" -lxmlrpc_server_abyss++ -lxmlrpc_server++ -lxmlrpc_server_abyss -lxmlrpc_server -lxmlrpc_abyss -lpthread -lxmlrpc++ -lxmlrpc -lxmlrpc_util -lxmlrpc_xmlparse -lxmlrpc_xmltok"],
+                 [RMI_LDFLAGS="-L$with_xmlrpc/lib"
+		  RMI_LIBADD=" -lxmlrpc_server_abyss++ -lxmlrpc_server++ -lxmlrpc_server_abyss -lxmlrpc_server -lxmlrpc_abyss -lpthread -lxmlrpc++ -lxmlrpc -lxmlrpc_util -lxmlrpc_xmlparse -lxmlrpc_xmltok"],
 		 [AC_MSG_ERROR(xmlrpc_version() not found)],
 		 [])
     LDFLAGS=$_ldflags
@@ -505,7 +531,7 @@ AC_ARG_WITH(xmlrpc,
 		   [AC_MSG_ERROR(xmlrpc_version() not found)],
 		   [#include <xmlrpc-c/base.h>])
     AC_CHECK_LIB(xmlrpc, xmlrpc_version,
-                 [XMLRPC_LIBADD=" -lxmlrpc_server_abyss++ -lxmlrpc_server++ -lxmlrpc_server_abyss -lxmlrpc_server -lxmlrpc_abyss -lpthread -lxmlrpc++ -lxmlrpc -lxmlrpc_util -lxmlrpc_xmlparse -lxmlrpc_xmltok"],
+                 [RMI_LIBADD=" -lxmlrpc_server_abyss++ -lxmlrpc_server++ -lxmlrpc_server_abyss -lxmlrpc_server -lxmlrpc_abyss -lpthread -lxmlrpc++ -lxmlrpc -lxmlrpc_util -lxmlrpc_xmlparse -lxmlrpc_xmltok"],
 		 [AC_MSG_ERROR(xmlrpc_version() not found)],
 		 [])
 ])
@@ -513,13 +539,77 @@ AC_ARG_WITH(xmlrpc,
 if test x$with_xmlrpc != xno ; then
   BUILD_SCR="$BUILD_SCR xmlrpc_bridge"
   SCR_LDADD="$SCR_LDADD -lxrbr"
-  SCR_LDFLAGS="$SCR_LDFLAGS -L../xmlrpc_bridge/ $XMLRPC_LDFLAGS"
+  SCR_LDFLAGS="$SCR_LDFLAGS -L../xmlrpc_bridge/ $RMI_LDFLAGS"
   AC_DEFINE([USE_XMLRPC], [1], [Use XML-RPC service])
 fi
 
-AC_SUBST(XMLRPC_CPPFLAGS)
-AC_SUBST(XMLRPC_LIBADD)
-AC_SUBST(XMLRPC_LDFLAGS)
+fi
+
+#######################################################
+# Apache-Thrift supports
+
+if test x$RMI_TYPE = xthrift ; then
+
+THRIFT_COMP=thrift
+AC_MSG_CHECKING(Apache-Thrift location)
+AC_ARG_WITH(thrift,
+[  --with-thrift=DIR      Look for Apache-Thrift location in DIR ],
+[ case "$with_thrift" in
+  no)
+    AC_MSG_ERROR(No Thrift directory specified)
+    ;;
+  *)
+    AC_MSG_RESULT($with_thrift)
+    _cppflags=${CPPFLAGS}
+    CPPFLAGS="-I$with_thrift/include $CPPFLAGS"
+    AC_CHECK_HEADERS([thrift/Thrift.h],,[AC_MSG_ERROR(thrift/Thrift.h not found)],[])
+
+dnl    AC_CHECK_DECLS(thrift_version,
+dnl                   [RMI_CPPFLAGS="-I$with_thrift/include"],
+dnl		   [AC_MSG_ERROR(thrift_version() not found)],
+dnl		   [#include <thrift-c/base.h>])
+    CPPFLAGS=$_cppflags
+dnl
+dnl    _ldflags=${LDFLAGS}
+dnl    _libs=${LIBS}
+dnl    LDFLAGS="-L$with_thrift/lib $LDFLAGS"
+dnl    LIBS="-lthrift_server_abyss++ -lthrift_server++ -lthrift_server_abyss -lthrift_server -lthrift_abyss -lpthread -lthrift++ -lthrift -lthrift_util -lthrift_xmlparse -lthrift_xmltok $LIBS"
+dnl    AC_CHECK_LIB(thrift, thrift_version,
+dnl                 [RMI_LDFLAGS="-L$with_thrift/lib"
+dnl		  RMI_LIBADD=" -lthrift_server_abyss++ -lthrift_server++ -lthrift_server_abyss -lthrift_server -lthrift_abyss -lpthread -lthrift++ -lthrift -lthrift_util -lthrift_xmlparse -lthrift_xmltok"],
+dnl		 [AC_MSG_ERROR(thrift_version() not found)],
+dnl		 [])
+dnl    LDFLAGS=$_ldflags
+dnl    LIBS=$_libs
+
+    RMI_CPPFLAGS="-I$with_thrift/include"
+    RMI_LDFLAGS="-L$with_thrift/lib"
+    RMI_LIBADD=" -lthrift"
+    THRIFT_COMP="$with_thrift/bin/thrift"
+    ;;
+  esac ],
+[AC_MSG_RESULT(XXX: no with-thrift specified.)])
+
+if test x$with_thrift != xno ; then
+  BUILD_SCR="$BUILD_SCR xmlrpc_bridge"
+  SCR_LDADD="$SCR_LDADD -lxrbr"
+  SCR_LDFLAGS="$SCR_LDFLAGS -L../xmlrpc_bridge/ $RMI_LDFLAGS"
+  AC_DEFINE([USE_THRIFT], [1], [Use Apache-Thrift service])
+fi
+
+dnl check thrift compiler
+AC_CHECK_PROG([THRIFT_COMP],[$THRIFT_COMP],[$THRIFT_COMP],[AC_MSG_ERROR(Thrift compiler not found)])
+AC_SUBST(THRIFT_COMP)
+fi
+
+AM_CONDITIONAL(COND_USE_XMLRPC, test x$RMI_TYPE = xxmlrpc)
+AM_CONDITIONAL(COND_USE_THRIFT, test x$RMI_TYPE = xthrift)
+
+##
+
+AC_SUBST(RMI_CPPFLAGS)
+AC_SUBST(RMI_LIBADD)
+AC_SUBST(RMI_LDFLAGS)
 
 ##
 

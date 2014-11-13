@@ -1,12 +1,13 @@
 //
-// XRBR: XML-RPC bridge module
+// XRBR: RMI bridge module
 //
 
 #include <common.h>
 #include <qlib/LString.hpp>
 
 #include "xrbr.hpp"
-#include "XmlRpcMgr.hpp"
+// #include "XmlRpcMgr.hpp"
+#include "RMIMgr.hpp"
 
 extern void xrbr_regClasses();
 
@@ -15,20 +16,15 @@ namespace xrbr {
   bool init()
   {
     xrbr_regClasses();
-    XmlRpcMgr::init();
+    // XmlRpcMgr::init();
+    RMIMgr::init();
     return true;
   }
 
   void fini()
   {
-    XmlRpcMgr::fini();
+    //XmlRpcMgr::fini();
+    RMIMgr::fini();
   }
 
-  /*
-  void serverRun()
-  {
-    XmlRpcMgr *pMgr = XmlRpcMgr::getInstance();
-    pMgr->run();
-  }
-  */
 }

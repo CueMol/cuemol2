@@ -23,6 +23,7 @@
 
 #ifdef USE_XMLRPC
 #  include <xmlrpc_bridge/xrbr.hpp>
+#  include <xmlrpc_bridge/XmlRpcMgr.hpp>
 #endif
 
 #if !defined(QM_BUILD_LW)
@@ -161,13 +162,20 @@ int main(int argc, const char *argv[])
 
   //////////
 
+  // Process input script(s)
   if (!loadscr.isEmpty()) {
     process_input(loadscr, args2);
   }
 
 #ifdef USE_XMLRPC
-  // Wait for XML-RPC requests
-  xrbr::serverRun();
+  {
+    // Start server thread
+    xrbr::XmlRpcMgr *pMgr = xrbr::XmlRpcMgr::getInstance();
+    pMgr->start();
+    for (;;) {
+      pMgr->processReq(1000*1000);
+    }
+  }
 #endif
 
   //////////
@@ -242,11 +250,7 @@ void process_input(const LString &loadscr, const std::deque<LString> &args)
     //rscene->writeTo(fos, true);
   }
   else if (full_path.extension()==".js") {
-    //qsys::ScenePtr rscene = pSM->createScene();
-    //qlib::uid_t scene_id = rscene->getUID();
-    //rscene->execJSFile(loadscr);
-    //pSM->destroyScene(scene_id);
-
+#ifdef HAVE_JAVASCRIPT
     jsbr::Interp *pInt = jsbr::createInterp(NULL);
     pInt->setCmdArgs(args);
 
@@ -264,6 +268,9 @@ void process_input(const LString &loadscr, const std::deque<LString> &args)
     pInt->execFile(loadscr);
 
     delete pInt;
+#else
+    LOG_DPRINTLN("Javascript not supported!!");
+#endif
   }
   else if (full_path.extension()==".py") {
 #ifdef HAVE_PYTHON

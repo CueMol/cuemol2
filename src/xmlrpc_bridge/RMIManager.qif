@@ -1,0 +1,20 @@
+// -*-Mode: C++;-*-
+//
+// RMI Manager
+//
+
+#ifndef RMI_MANAGER_QIF
+#define RMI_MANAGER_QIF
+
+runtime_class RMIManager
+{
+  client_hdr "RMIMgr.hpp";
+  client_name xrbr::RMIMgr;
+
+  scriptable;
+  singleton;
+
+  void start();
+};
+
+#endif

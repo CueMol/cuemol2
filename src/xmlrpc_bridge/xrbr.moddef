@@ -1,13 +1,15 @@
 // -*-Mode: C++;-*-
 //
 
-#include "XmlRpcManager.qif"
+// #include "XmlRpcManager.qif"
+#include "RMIManager.qif"
 
 module xrbr
 {
   init xrbr::init();
   fini xrbr::fini();
 
-  XmlRpcManager;
+  //  XmlRpcManager;
+  RMIManager;
 };
 
