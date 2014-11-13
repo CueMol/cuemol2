@@ -102,7 +102,7 @@ Qm2Main.prototype.doSetupRend = function(sc, result)
 
   // dd("doSetupRend> CALLED!! cls="+clsname);
 
-  if (clsname === "DensityMap" ||
+  if (// clsname === "DensityMap" ||
       clsname === "ElePotMap") {
     // no center
     result.center = false;
@@ -122,9 +122,17 @@ Qm2Main.prototype.doSetupRend = function(sc, result)
     rend.sel = result.sel;
 
   if (result.center) {
-    var pos = rend.getCenter();
-    var view = this.mMainWnd.currentViewW;
-    view.setViewCenter(pos);
+    let view = this.mMainWnd.currentViewW;
+    if (clsname === "DensityMap") {
+      // in the case of density map,
+      // we set the view center to the map center
+      let pos = view.getViewCenter();
+      rend.center = pos;
+    }
+    else {
+      var pos = rend.getCenter();
+      view.setViewCenter(pos);
+    }
   }
 
   return rend;
