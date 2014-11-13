@@ -10,8 +10,35 @@ ws.onDragStart = function (event)
   if (event.target.localName != "treechildren")
     return;
 
+  if (this.mViewObj.isMultiSelected()) {
+    let elemList = this.mViewObj.getSelectedNodeList();
+    let type = this.checkElemTypes(elemList);
+    dd("multi-type="+type);
+    if (type!="renderer") {
+      return;
+    }
+
+    let nsel = elemList.length;
+    let obj_id = 0;
+    for (let i=0; i<nsel; ++i) {
+      let elem = elemList[i];
+      dd("par_id="+elem.parent_id);
+      if (obj_id==0)
+	obj_id = elem.parent_id;
+      else if (obj_id!=elem.parent_id) {
+	dd("par_id!==obj_id "+obj_id);
+	return;
+      }
+    }
+
+    let dt = event.dataTransfer;
+    for (let i=0; i<nsel; ++i)
+      dt.mozSetDataAt(ITEM_DROP_TYPE, elemList[i], i);
+    event.stopPropagation();
+    return;
+  }
+
   var elem = this.mViewObj.getSelectedNode();
-  var irow = this.mViewObj.getSelectedRow();
   dd("elem: "+elem.type);
 
   if (elem.type!="object" &&
@@ -119,8 +146,15 @@ ws.drop = function (elem, ori, dt)
   if (types[0] != ITEM_DROP_TYPE)
     return;
 
-  var sourceElem = dt.mozGetDataAt(ITEM_DROP_TYPE, 0);
+  for (let i=0; i<dt.mozItemCount; ++i) {
+    let sourceElem = dt.mozGetDataAt(ITEM_DROP_TYPE, i);
+    this.dropImpl(elem, ori, dt, sourceElem);
+  }
+}
 
+
+ws.dropImpl = function (elem, ori, dt, sourceElem)
+{
   let dst_type = elem.type;
   let dst_parent_id = elem.parent_id;
   let dst_id = elem.obj_id;

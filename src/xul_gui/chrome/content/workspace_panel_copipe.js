@@ -50,7 +50,7 @@ ws.onMultiCopy = function (aEvent)
   if (nsel<=0)
     return;
   
-  var type = this.checkSelTypes(elemList);
+  var type = this.checkElemTypes(elemList);
   if (type=="mixed") {
     util.alert(window, "Multiple items with differnt types selected.");
     return;
@@ -87,7 +87,7 @@ function convElemNodeTypes(type)
   return type;
 };
 
-ws.checkSelTypes = function (elemList)
+ws.checkElemTypes = function (elemList)
 {
   var nsel = elemList.length;
   var rval = "";
