@@ -153,12 +153,15 @@ Qm2Main.prototype.setupRendByObjID = function(aObjID, aRendGrp)
   option.ok = false;
   option.bEditObjName = false;
 
+  if (!aRendGrp)
+    option.bRendGrp = true;
+
   let result = this.doSetupRendDlg(option);
   if (!result.ok)
     return null;
 
   result.new_obj = false;
-  sc.startUndoTxn("Create new representation");
+  sc.startUndoTxn("Create new "+result.rendtype+" renderer");
   try {
     rend = this.doSetupRend(sc, result);
     if (aRendGrp)

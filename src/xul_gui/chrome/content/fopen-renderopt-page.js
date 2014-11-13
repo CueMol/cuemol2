@@ -11,6 +11,7 @@ var FopenRenderOptPage;
 
 const histry_name_prefix = "cuemol2.ui.histories.new_renderer_type";
 const pref = require("preferences-service");
+const util = require("util");
 
 // constructor
 FopenRenderOptPage = function (aData)
@@ -100,6 +101,11 @@ klass.onRendTypeSelChanged = function (aEvent)
     return;
 
   this.setDefaultRendName();
+
+  // if (this.mRendTypeSel.selectedItem.value=="*group") {
+  // }
+  // else {
+  // }
 }
 
 klass.onRendNameChanged = function (aEvent)
@@ -120,7 +126,10 @@ klass.onRendNameChanged = function (aEvent)
 klass.setDefaultRendName = function ()
 {
   var selvalue = this.mRendTypeSel.selectedItem.value;
-  dd("setDefaultRendName: "+selvalue);
+  dd("setDefaultRendName> selected item="+selvalue);
+
+  if (selvalue.charAt(0)=="*")
+    selvalue = selvalue.substr(1);
 
   dd("setDefaultRendName: scene ID="+this.mData.sceneID);
   var scene = cuemol.getScene(this.mData.sceneID);
@@ -179,11 +188,18 @@ klass.setupRendTypeBox = function ()
     //window.alert("addtype: "+typl[i]);
     if (typl[i].charAt(0)=="*")
       continue;
-    if (typl[i]=="ms2test"||typl[i]=="symm"||typl[i]=="unitcell") //||typl[i]=="ribbon2")
+    if (typl[i]=="ms2test"||typl[i]=="symm") //||typl[i]=="unitcell")
       continue;
     
     this.mRendTypeSel.appendItem(typl[i], typl[i]);
   }
+  
+  if (this.mData.bRendGrp) {
+    // Add renderer group item
+    util.appendMenuSep(document, this.mRendTypeSel.menupopup);
+    this.mRendTypeSel.appendItem("Group", "*group");
+  }
+  
   this.mRendTypeSel.selectedIndex = 0;
   this.mRendTypeSel.disabled = false;
   
@@ -234,7 +250,7 @@ klass.onDialogAccept = function(event)
       if (selectedSel==null)
         return false; // prevent closing
       // Save selection to the history
-      require("util").selHistory.append(selectedSel.toString());
+      util.selHistory.append(selectedSel.toString());
     }
 
     if (!this.mRendTypeSel.value) {

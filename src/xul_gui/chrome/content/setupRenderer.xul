@@ -17,9 +17,5 @@
 
   <vbox id="tabpanels-overlay-target"/>
 
-<!--  <tabbox selectedIndex="0">
-    <tabs id="tabs-overlay-target"/>
-    <tabpanels id="tabpanels-overlay-target"/>
-  </tabbox>-->
 </dialog>
 
