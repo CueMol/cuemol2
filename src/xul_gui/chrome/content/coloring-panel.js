@@ -255,12 +255,17 @@ panel._setupData = function (aRend)
     return true;
   }
 
-  if (clsname!="PaintColoring") {
-    this._setupSolidColoring(aRend);
+  if (clsname=="PaintColoring") {
+    this._setupPaintColoring(aRend, coloring);
     return true;
   }
 
-  this._setupPaintColoring(aRend, coloring);
+  /*if (clsname=="AtomPropColoring") {
+    this._setupUnknownColoring(aRend);
+    return true;
+    }*/
+
+  this._setupSolidColoring(aRend);
   return true;
 };
 

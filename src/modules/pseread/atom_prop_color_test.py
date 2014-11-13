@@ -1,5 +1,7 @@
 import cuemol
 
+fname = '/Users/user/Dropbox/works/test_data/1CRN.pdb'
+
 #import xmlrpclib
 # cuemol.init(8080, "RPC2", "XXX")
 
@@ -82,7 +84,6 @@ if __name__ == "__main__":
     # view = scm.getView(scene.activeViewID);
     view = scm.getView(view_id);
 
-    fname = '/net3/ishitani/PLP.pdb'
     mol = readPDB(fname)
     mol.name = "PLP"
     scene.addObject(mol)

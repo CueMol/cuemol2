@@ -529,9 +529,14 @@ ColorPicker.prototype.setColorText = function(value)
 
 ColorPicker.prototype.setColorObj = function(value)
 {
-  var str = value.toString();
-  dd("colpicker.js setColorObj: str="+str);
-  this.setColorText(str);
+  if (value) {
+    var str = value.toString();
+    dd("colpicker.js setColorObj: str="+str);
+    this.setColorText(str);
+  }
+  else {
+    this.setColorText("");
+  }
 }
 
 ColorPicker.prototype.getColorObj = function()
