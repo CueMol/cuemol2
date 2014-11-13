@@ -9,6 +9,9 @@
 #include "PSEFileReader.hpp"
 #include <qsys/StreamManager.hpp>
 #include <qsys/SceneEvent.hpp>
+#include <qsys/SysConfig.hpp>
+#include <pybr/PythonBridge.hpp>
+
 // #include <qsys/ObjReader.hpp>
 // #include <qsys/style/AutoStyleCtxt.hpp>
 // #include <qsys/RendererFactory.hpp>
@@ -77,8 +80,14 @@ const char *PSEFileReader::getFileExt() const
 
 void PSEFileReader::read()
 {
+  //  LOG_DPRINTLN("PSEFileReader> File loaded: %s.", getPath().c_str());
 
-  //LOG_DPRINTLN("PSEFileReader> File loaded: %s.", localfile.c_str());
+  qsys::SysConfig *pconf = qsys::SysConfig::getInstance();
+  LString filename = pconf->convPathName("%%CONFDIR%%/data/python/pse_reader.py");
+
+  pybr::PythonBridge *pb = pybr::PythonBridge::getInstance();
+  LString arguments = LString::format("{\"filename\": \"%s\"}", getPath().c_str()); 
+  pb->runFile3(filename, m_pClient->getUID(), 0, arguments);
 
   //////////
   // fire the scene-loaded event

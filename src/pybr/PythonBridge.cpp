@@ -56,9 +56,13 @@ void PythonBridge::runFile(const LString &path)
 
 }
 
-void PythonBridge::runFile2(const LString &filename, qlib::uid_t scene_id, qlib::uid_t view_id)
+void PythonBridge::runFile3(const LString &filename, qlib::uid_t scene_id, qlib::uid_t view_id, const LString &args)
 {
   LString cmd;
+
+  // WARNING: args must be properly formatted!
+  cmd = LString("arguments = ") + args;
+  PyRun_SimpleString(cmd);
 
   cmd = LString::format("scene_id = %d", scene_id);
   PyRun_SimpleString(cmd);
@@ -69,4 +73,10 @@ void PythonBridge::runFile2(const LString &filename, qlib::uid_t scene_id, qlib:
   runFile(filename);
 }
 
+void PythonBridge::runFile2(const LString &filename, qlib::uid_t scene_id, qlib::uid_t view_id)
+{
+  LString argv = "None";
+
+  runFile3(filename, scene_id, view_id, argv);
+}
 
