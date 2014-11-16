@@ -58,6 +58,30 @@ namespace xrbr {
     virtual void doit();
   };
 
+  class ReoGetProp : public ReqEvtObj
+  {
+  public:
+    ReoGetProp() :m_pObj(NULL), m_pRval(NULL) {}
+
+    qlib::LScriptable *m_pObj;
+    LString m_propname;
+    qlib::LVariant *m_pRval;
+    
+    virtual void doit();
+  };
+
+  class ReoSetProp : public ReqEvtObj
+  {
+  public:
+    ReoSetProp() :m_pObj(NULL), m_pValue(NULL) {}
+
+    qlib::LScriptable *m_pObj;
+    LString m_propname;
+    const qlib::LVariant *m_pValue;
+    
+    virtual void doit();
+  };
+
   class ReoCallMethod : public ReqEvtObj
   {
   public:

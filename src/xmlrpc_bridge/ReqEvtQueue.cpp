@@ -62,6 +62,48 @@ void ReoDestroyObj::doit()
 {
   m_pObj->destruct();
   MB_DPRINTLN("Object destroyed.");
+  m_bOK = true;
+}
+
+void ReoGetProp::doit()
+{
+  MB_ASSERT(m_pObj!=NULL);
+  MB_ASSERT(m_pRval!=NULL);
+
+  if (!m_pObj->getProperty(m_propname, *m_pRval)) {
+    m_bOK = false;
+    m_errmsg =
+      LString::format("GetProp: getProperty(\"%s\") call failed.", m_propname.c_str());
+  }
+
+  m_bOK = true;
+}
+
+
+void ReoSetProp::doit()
+{
+  MB_ASSERT(m_pObj!=NULL);
+  MB_ASSERT(m_pValue!=NULL);
+
+  // perform setProperty
+  //   pobj possibly owns the copy of lvar's content
+
+  try {
+    m_bOK = m_pObj->setProperty(m_propname, *m_pValue);
+  }
+  catch (const qlib::LException &e) {
+    m_bOK = false;
+    m_errmsg = 
+      LString::format("SetProp(%s) failed: %s", m_propname.c_str(), e.getMsg().c_str());
+    MB_DPRINTLN("Err: %s", m_errmsg.c_str());
+  }
+  catch (...) {
+    m_bOK = false;
+    m_errmsg = 
+      LString::format("SetProp(%s) failed.", m_propname.c_str());
+    MB_DPRINTLN("Err: %s", m_errmsg.c_str());
+  }
+
 }
 
 void ReoCallMethod::doit()

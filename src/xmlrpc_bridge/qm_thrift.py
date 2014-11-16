@@ -60,23 +60,21 @@ class Wrapper:
 
         key = clsnm+"."+name
         print "classdb key=", key
-        if (classdb.get(key)):
+        if classdb.get(key):
             res = classdb[key]
             print "reuse hasProp result: "+str(res)
         else:
             res = proxy.hasProp(credential, uid, name);
-            classdb[key] = res
+            if res==1 or res==2 or res==3:
+                classdb[key] = res
 
-        if (res==1 or res==2):
+        if res==1 or res==2:
             print "getattr hasProp(",res,") OK"
-            # rval = proxy.getProp(credential, self.UID, name);
-            # if (isinstance(rval, dict)):
-            #     return Wrapper(rval["UID"])
-            # else:
-            #     return rval;
-        elif (res==3):
+            rval = proxy.getProp(credential, uid, name);
+            return self.convTVarToPyval(rval);
+        elif res==3:
             print "getattr hasMethod() OK"
-#            return MethodObj(self, name)
+            return MethodObj(self, name)
         else:
             # Report ERROR
             print "getattr hasProp() NG"
@@ -95,3 +93,98 @@ class Wrapper:
         # else:
         #     # Report ERROR
         #     print "getattr tryGetProp() NG"
+
+    def __setattr__(self, name, value):
+        global proxy, credential
+
+        uid = self.__dict__["__UID__"]
+        clsnm = self.__dict__["__clsnm__"]
+
+        tvar = self.convPyvalToTVar(value)
+
+        proxy.setProp(credential, uid, name, tvar)
+        return;
+
+
+    def convTVarToPyval(self, tvar):
+        typ = tvar.type
+        if typ == Type.LT_NULL:
+            return None
+        elif typ == Type.LT_BOOLEAN:
+            return tvar.boolValue
+        elif typ == Type.LT_INTEGER:
+            return tvar.intValue
+        elif typ == Type.LT_REAL:
+            return tvar.realValue
+        elif typ == Type.LT_REAL:
+            return tvar.realValue
+        elif typ == Type.LT_STRING:
+            return tvar.strValue
+        elif typ == Type.LT_OBJECT:
+            uid = tvar.objidValue
+            clsnm = tvar.className
+            return Wrapper(uid, clsnm)
+
+        # throw exception!!
+        return None
+
+    def convPyvalToTVar(self, value):
+        if isinstance(value, type(None)):
+            tvar = Variant(Type.LT_NULL)
+            return tvar
+        elif isinstance(value, bool):
+            tvar = Variant(Type.LT_BOOL)
+            tvar.boolValue = value
+            return tvar
+        elif isinstance(value, int):
+            tvar = Variant(Type.LT_INTEGER)
+            tvar.intValue = value
+            return tvar
+        elif isinstance(value, long):
+            tvar = Variant(Type.LT_INTEGER)
+            tvar.intValue = value
+            return tvar
+        elif isinstance(value, float):
+            tvar = Variant(Type.LT_REAL)
+            tvar.realValue = value
+            return tvar
+        elif isinstance(value, str):
+            tvar = Variant(Type.LT_STRING)
+            tvar.strValue = value
+            return tvar
+        elif isinstance(value, unicode):
+            tvar = Variant(Type.LT_STRING)
+            tvar.strValue = value
+            return tvar
+        elif isinstance(value, Wrapper):
+            tvar = Variant(Type.LT_OBJECT)
+            tvar.objidValue = value.__dict__["__UID__"]
+            tvar.className = value.__dict__["__clsnm__"]
+            return tvar
+        
+        raise Exception, "convPyval to TVar: unsupported python object"
+
+#################################
+
+class MethodObj:
+
+    def __init__(self, obj, name):
+        self.obj = obj;
+        self.name = name;
+
+    def __call__(self, *args):
+        global proxy, credential
+
+        uid = self.obj.__dict__["__UID__"]
+        nargs = len(args)
+        print "MethodObj ["+ str(uid)+ "]."+ self.name+"("+str(nargs)+") called"
+
+        arg2 = []
+        for item in args:
+            arg2.append(self.obj.convPyvalToTVar(item));
+
+        rval = proxy.callMethod(credential,
+                                uid, self.name, arg2);
+
+        return self.obj.convTVarToPyval(rval)
+

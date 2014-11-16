@@ -103,9 +103,8 @@ LScriptable *RMIMgr::getObj(qlib::uid_t uid)
 {
   ObjTable::const_iterator i = m_objtab.find(uid);
   if (i==m_objtab.end()) {
-    LString msg = LString::format("getObj unknown object ID: %d", uid);
-    MB_DPRINTLN(msg);
-    // throw( xmlrpc_c::fault(msg.c_str(), xmlrpc_c::fault::CODE_UNSPECIFIED) );
+    m_errmsg = LString::format("getObj unknown object ID: %d", uid);
+    MB_DPRINTLN(m_errmsg);
     return NULL;
   }
 
@@ -115,6 +114,8 @@ LScriptable *RMIMgr::getObj(qlib::uid_t uid)
 int RMIMgr::hasProp(qlib::uid_t uid, const LString &propnm)
 {
   qlib::LScriptable *pObj = getObj(uid);
+  if (pObj==NULL)
+    return 0;
 
   if (pObj->hasProperty(propnm)) {
     if (pObj->hasWritableProperty(propnm)) {
@@ -138,16 +139,54 @@ int RMIMgr::hasProp(qlib::uid_t uid, const LString &propnm)
 bool RMIMgr::getProp(qlib::uid_t uid, const LString &propnm, qlib::LVariant &result)
 {
   qlib::LScriptable *pObj = getObj(uid);
-
-  if (!pObj->hasProperty(propnm)) {
-    // TO DO: report error
+  if (pObj==NULL) {
+    m_errmsg = LString::format("GetProp error, object %d not found", uid);
     return false;
   }
 
-  if (!pObj->getProperty(propnm, result)) {
-    LString msg =
-      LString::format("GetProp: getProperty(\"%s\") call failed.", propnm.c_str());
-    //throw( xmlrpc_c::fault(msg.c_str(), xmlrpc_c::fault::CODE_UNSPECIFIED) );
+  if (!pObj->hasProperty(propnm)) {
+    m_errmsg =
+      LString::format("GetProp error, Property(\"%s\") not found.", propnm.c_str());
+    return false;
+  }
+
+  ReoGetProp evt;
+  evt.m_pObj = pObj;
+  evt.m_propname = propnm;
+  evt.m_pRval = &result;
+  m_que.putWait(&evt);
+
+  if (!evt.m_bOK) {
+    m_errmsg = evt.m_errmsg;
+    return false;
+  }
+
+  return true;
+}
+
+bool RMIMgr::setProp(qlib::uid_t uid, const LString &propnm, const qlib::LVariant &value)
+{
+  qlib::LScriptable *pObj = getObj(uid);
+  if (pObj==NULL) {
+    m_errmsg = LString::format("SetProp error, object %d not found", uid);
+    return false;
+  }
+  
+  if (!pObj->hasWritableProperty(propnm)) {
+    m_errmsg = LString::format("SetProp error, object %d not writable", uid);
+    return false;
+  }
+
+  MB_DPRINTLN("SetProp object %d ", uid);
+
+  ReoSetProp evt;
+  evt.m_pObj = pObj;
+  evt.m_propname = propnm;
+  evt.m_pValue = &value;
+  m_que.putWait(&evt);
+
+  if (!evt.m_bOK) {
+    m_errmsg = evt.m_errmsg;
     return false;
   }
 

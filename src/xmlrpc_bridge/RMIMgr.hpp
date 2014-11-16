@@ -76,11 +76,11 @@ namespace xrbr {
       return ++m_uidgen;
     }
 
+  public:
+
     qlib::uid_t registerObj(LScriptable *pObj);
 
     LScriptable *getObj(qlib::uid_t uid);
-
-  public:
 
     /// Push request of createObj
     ///  (server-thread side method)
@@ -93,6 +93,14 @@ namespace xrbr {
     int hasProp(qlib::uid_t uid, const LString &propnm);
 
     bool getProp(qlib::uid_t uid, const LString &propnm, qlib::LVariant &result);
+
+    bool setProp(qlib::uid_t uid, const LString &propnm, const qlib::LVariant &value);
+
+  private:
+    LString m_errmsg;
+
+  public:
+    const LString &getErrMsg() const { return m_errmsg; }
 
   private:
     std::set<LString> m_creds;
