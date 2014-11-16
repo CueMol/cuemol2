@@ -68,6 +68,9 @@ class Wrapper:
             if res==1 or res==2 or res==3:
                 classdb[key] = res
 
+#        res = proxy.hasProp(credential, uid, name);
+
+
         if res==1 or res==2:
             print "getattr hasProp(",res,") OK"
             rval = proxy.getProp(credential, uid, name);

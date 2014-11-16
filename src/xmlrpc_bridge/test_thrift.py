@@ -14,7 +14,7 @@ def test1():
   obj.set4(1,2,3,4);
   print "toString() =  ", obj.toString();
 
-for i in range (0,2):
+for i in range (0,10000):
   test1()
 
 #except AuthException, io:
