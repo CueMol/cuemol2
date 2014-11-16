@@ -12,6 +12,7 @@ SINGLETON_BASE_IMPL(RMIMgr);
 
 RMIMgr::RMIMgr()
 {
+  m_uidgen = 0;
   m_pMgrImpl = NULL;
 }
 
@@ -187,6 +188,29 @@ bool RMIMgr::setProp(qlib::uid_t uid, const LString &propnm, const qlib::LVarian
 
   if (!evt.m_bOK) {
     m_errmsg = evt.m_errmsg;
+    return false;
+  }
+
+  return true;
+}
+
+bool RMIMgr::callMethod(qlib::uid_t uid, const LString &mthnm,
+			qlib::LVarArgs &largs)
+{
+  qlib::LScriptable *pObj = getObj(uid);
+  if (pObj==NULL) {
+    m_errmsg = LString::format("CallMethod error, object %d not found", uid);
+    return false;
+  }
+  
+  ReoCallMethod evt;
+  evt.m_pObj = pObj;
+  evt.m_mthname = mthnm;
+  evt.m_pArgs = &largs;
+
+  m_que.putWait(&evt);
+  if (!evt.m_bOK) {
+    m_errmsg = evt.m_errmsg.c_str();
     return false;
   }
 

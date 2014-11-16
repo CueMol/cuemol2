@@ -96,6 +96,9 @@ namespace xrbr {
 
     bool setProp(qlib::uid_t uid, const LString &propnm, const qlib::LVariant &value);
 
+    bool callMethod(qlib::uid_t uid, const LString &mthnm,
+		    qlib::LVarArgs &largs);
+
   private:
     LString m_errmsg;
 

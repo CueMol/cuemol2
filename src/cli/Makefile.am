@@ -35,6 +35,7 @@ cli_main.cpp
 
 cuetty_CXXFLAGS = \
   @BOOST_CPPFLAGS@ \
+  @SCR_CPPFLAGS@ \
   -I$(top_srcdir) \
   -I$(srcdir) \
   -DDEFAULT_CONFIG=\"$(pkgdatadir)/sysconfig.xml\"

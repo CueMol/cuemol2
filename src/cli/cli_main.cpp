@@ -170,11 +170,10 @@ int main(int argc, const char *argv[])
     process_input(loadscr, args2);
   }
 
-  {
+  if (!cred.isEmpty()) {
     // Start server thread
     xrbr::RMIMgr *pMgr = xrbr::RMIMgr::getInstance();
-    if (!cred.isEmpty())
-      pMgr->registerCred(cred);
+    pMgr->registerCred(cred);
     if (pMgr->startServer()) {
       for (;;) {
 	pMgr->processReq(1000*1000);

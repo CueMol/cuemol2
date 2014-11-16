@@ -11,8 +11,10 @@ def test1():
   obj.x = 123.456
   print "v.x =  ", obj.x
   
+  obj.set4(1,2,3,4);
+  print "toString() =  ", obj.toString();
 
-for i in range (0,10000):
+for i in range (0,2):
   test1()
 
 #except AuthException, io:

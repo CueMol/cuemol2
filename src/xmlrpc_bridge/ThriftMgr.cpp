@@ -180,7 +180,25 @@ public:
 			  const std::string& mthnm,
 			  const std::vector<Variant> & argv)
   {
+    checkCred(cred);
+
+    const int nargs = argv.size();
+
+    // Convert arguments
+    qlib::LVarArgs largs(nargs);
+    int i;
     
+    for (i = 0; i < nargs; ++i)
+      convTVarToLVar(argv[i], largs.at(i));
+    
+    if (!m_pMgr->callMethod(objid, mthnm, largs)) {
+      PropertyException e;
+      e.why = m_pMgr->getErrMsg();
+      MB_DPRINTLN("callMethod ERROR: %s", e.why.c_str());
+      throw e;
+    }
+
+    convLVarToTVar(largs.retval(), _return);
   }
 
   /////////////////////////////////////////

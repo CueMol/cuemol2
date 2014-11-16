@@ -85,11 +85,11 @@ namespace xrbr {
   class ReoCallMethod : public ReqEvtObj
   {
   public:
-    ReoCallMethod(int nargs) : m_vargs(nargs) {}
+    ReoCallMethod() : m_pObj(NULL), m_pArgs(NULL) {}
 
     qlib::LScriptable *m_pObj;
     LString m_mthname;
-    qlib::LVarArgs m_vargs;
+    qlib::LVarArgs *m_pArgs;
 
     virtual void doit();
   };

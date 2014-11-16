@@ -108,6 +108,9 @@ void ReoSetProp::doit()
 
 void ReoCallMethod::doit()
 {
+  MB_ASSERT(m_pObj!=NULL);
+  MB_ASSERT(m_pArgs!=NULL);
+
   if (!m_pObj->hasMethod(m_mthname)) {
     m_bOK = false;
     m_errmsg = LString::format("CallMethod error, object %p not has method %s",
@@ -121,7 +124,7 @@ void ReoCallMethod::doit()
   m_errmsg = LString();
 
   try {
-    m_bOK = m_pObj->invokeMethod(m_mthname, m_vargs);
+    m_bOK = m_pObj->invokeMethod(m_mthname, *m_pArgs);
     if (!m_bOK)
       m_errmsg = LString::format("call method %s: failed", m_mthname.c_str());
   }
