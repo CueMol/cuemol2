@@ -21,10 +21,8 @@
 #  include <pybr/pybr.hpp>
 #endif
 
-#ifdef USE_XMLRPC
-#  include <xmlrpc_bridge/xrbr.hpp>
-#  include <xmlrpc_bridge/XmlRpcMgr.hpp>
-#endif
+#include <xmlrpc_bridge/xrbr.hpp>
+#include <xmlrpc_bridge/RMIMgr.hpp>
 
 #if !defined(QM_BUILD_LW)
 
@@ -95,6 +93,7 @@ int main(int argc, const char *argv[])
   int i;
   LString loadscr;
   LString confpath;
+  LString cred;
   std::deque<LString> args2;
 
   for (i=1; i<argc; ++i) {
@@ -105,6 +104,12 @@ int main(int argc, const char *argv[])
       ++i;
       if (i>=argc) break;
       confpath = argv[i];
+      ++i;
+    }
+    else if (value.equals("-c")) {
+      ++i;
+      if (i>=argc) break;
+      cred = argv[i];
       ++i;
     }
 
@@ -155,10 +160,8 @@ int main(int argc, const char *argv[])
   pybr::init();
 #endif
 
-#ifdef USE_XMLRPC
-  // load XML-RPC module
+  // load RMI module
   xrbr::init();
-#endif
 
   //////////
 
@@ -167,24 +170,23 @@ int main(int argc, const char *argv[])
     process_input(loadscr, args2);
   }
 
-#ifdef USE_XMLRPC
   {
     // Start server thread
-    xrbr::XmlRpcMgr *pMgr = xrbr::XmlRpcMgr::getInstance();
-    pMgr->start();
-    for (;;) {
-      pMgr->processReq(1000*1000);
+    xrbr::RMIMgr *pMgr = xrbr::RMIMgr::getInstance();
+    if (!cred.isEmpty())
+      pMgr->registerCred(cred);
+    if (pMgr->startServer()) {
+      for (;;) {
+	pMgr->processReq(1000*1000);
+      }
     }
   }
-#endif
 
   //////////
 
-#ifdef USE_XMLRPC
   // unload XML-RPC module
   xrbr::fini();
   MB_DPRINTLN("=== xrbr::fini() OK ===");
-#endif
 
 #ifdef HAVE_PYTHON
   // unload python module

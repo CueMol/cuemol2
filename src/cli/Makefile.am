@@ -48,7 +48,7 @@ cuetty_LDADD = \
   -lpcre \
   -lexpat \
   @JS_LDADD@ \
-  @XMLRPC_LIBADD@ \
+  @RMI_LIBADD@ \
   @BOOST_FILESYSTEM_LIB@ \
   @BOOST_SYSTEM_LIB@ \
   @BOOST_THREAD_LIB@ \
@@ -65,7 +65,7 @@ cuetty_LDFLAGS= \
   -L../pcre \
   -L../expat \
   @JS_LDFLAGS@ \
-  @XMLRPC_LDFLAGS@ \
+  @RMI_LDFLAGS@ \
   @BOOST_LDFLAGS@ \
   @CGAL_LDFLAGS@ \
 $(NULL)

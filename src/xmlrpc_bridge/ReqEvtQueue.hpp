@@ -50,6 +50,14 @@ namespace xrbr {
     virtual void doit();
   };
 
+  class ReoDestroyObj : public ReqEvtObj
+  {
+  public:
+    qlib::LScriptable *m_pObj;
+
+    virtual void doit();
+  };
+
   class ReoCallMethod : public ReqEvtObj
   {
   public:
@@ -62,7 +70,8 @@ namespace xrbr {
     virtual void doit();
   };
 
-
+  
+  /////////////////////////////////////////////////////
 
   class ReqEvtQueue
   {

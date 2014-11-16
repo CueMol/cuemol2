@@ -42,9 +42,6 @@ void ReoCreateObj::doit()
     m_errmsg = msg;
     m_bOK = false;
     return;
-
-    //throw ( xmlrpc_c::fault(msg.c_str(), xmlrpc_c::fault::CODE_UNSPECIFIED) );
-    //return qlib::invalid_uid;
   }
 
   qlib::LScriptable *pNewObj = dynamic_cast<qlib::LScriptable *>(pCls->createScrObj());
@@ -55,12 +52,16 @@ void ReoCreateObj::doit()
     m_errmsg = msg;
     m_bOK = false;
     return;
-    //throw ( xmlrpc_c::fault(msg.c_str(), xmlrpc_c::fault::CODE_UNSPECIFIED) );
-    //return qlib::invalid_uid;
   }
 
   m_pRval = pNewObj;
   m_bOK = true;
+}
+
+void ReoDestroyObj::doit()
+{
+  m_pObj->destruct();
+  MB_DPRINTLN("Object destroyed.");
 }
 
 void ReoCallMethod::doit()

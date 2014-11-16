@@ -40,9 +40,19 @@ endif
 
 if COND_USE_THRIFT
 THRIFT = @THRIFT_COMP@
-gen-cpp/CueMol.cpp : CueMolIf.thrift
+
+gen-cpp/CueMol.cpp gen-cpp/CueMolIf_types.cpp gen-cpp/CueMolIf_constants.cpp : CueMolIf.thrift
 	$(THRIFT) -o $(srcdir) --gen cpp -r $<
-libxrbr_la_SOURCES += gen-cpp/CueMol.cpp
+
+gen-py/cuemol2/CueMol.py : CueMolIf.thrift
+	$(THRIFT) -o $(srcdir) --gen py -r $<
+
+libxrbr_la_SOURCES += \
+  gen-cpp/CueMol.cpp \
+  gen-cpp/CueMolIf_types.cpp \
+  gen-cpp/CueMolIf_constants.cpp \
+  ThriftMgr.cpp
+
 endif
 
 libxrbr_la_CXXFLAGS = \
@@ -62,3 +72,7 @@ libxrbr_la_LDFLAGS = @RMI_LDFLAGS@
 
 include $(top_srcdir)/mcwgen_footer.am
 
+if COND_USE_THRIFT
+BUILT_SOURCES+=gen-py/cuemol2/CueMol.py
+CLEANFILES+=gen-py/cuemol2/CueMol.py
+endif

@@ -14,7 +14,10 @@ runtime_class RMIManager
   scriptable;
   singleton;
 
-  void start();
+  boolean startServer();
+
+  void registerCred(string c);
+  void unregisterCred(string c);
 };
 
 #endif
