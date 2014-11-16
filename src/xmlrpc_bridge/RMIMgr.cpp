@@ -69,7 +69,16 @@ qlib::uid_t RMIMgr::createObj(const LString &clsname)
 
 qlib::uid_t RMIMgr::getService(const LString &clsname)
 {
-  return qlib::invalid_uid;
+  ReoGetService evt;
+  evt.m_clsname = clsname;
+  evt.m_pRval = NULL;
+  m_que.putWait(&evt);
+
+  if (!evt.m_bOK || evt.m_pRval==NULL) {
+    return qlib::invalid_uid;
+  }
+
+  return registerObj(evt.m_pRval);
 }
 
 bool RMIMgr::destroyObj(qlib::uid_t uid)
@@ -269,6 +278,7 @@ bool RMIMgr::startServer()
 
   m_pMgrImpl->start();
 
+  LOG_DPRINTLN("RMIMgr> server started.");
   return true;
 }
 

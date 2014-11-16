@@ -4,8 +4,8 @@ import sys, glob
 sys.path.append('gen-py')
 sys.path.insert(0, glob.glob('/net3/ishitani/src/thrift-0.9.1/lib/py/build/lib.*')[0])
 
-from cuemol2 import CueMol
-from cuemol2.ttypes import *
+from qm2thrift import CueMol
+from qm2thrift.ttypes import *
 
 from thrift import Thrift
 from thrift.transport import TSocket
@@ -29,10 +29,16 @@ def init(portno, cred):
     credential = cred;
     classdb = {}
     
-
 def createObj(name):
     global proxy, credential
     id = proxy.createObj(credential, name);
+    obj = Wrapper(id, name);
+    return obj;
+
+def getService(name):
+    global proxy, credential
+    id = proxy.getService(credential, name);
+#    print "getService "+name+" objid="+str(id)
     obj = Wrapper(id, name);
     return obj;
 
@@ -41,14 +47,14 @@ def createObj(name):
 class Wrapper:
 
     def __init__(self, uid, name):
-        print "Wrapper.__init__ uid=", uid;
+#        print "Wrapper.__init__ uid=", uid;
         self.__dict__["__UID__"] = uid
         self.__dict__["__clsnm__"] = name
         
     def __del__(self):
         global proxy, credential
         uid = self.__dict__["__UID__"];
-        print "destructing obj: ", uid
+#        print "destructing obj: ", uid
         proxy.destroyObj(credential, uid);
 
     def __getattr__(self, name):
@@ -59,10 +65,10 @@ class Wrapper:
         clsnm = self.__dict__["__clsnm__"]
 
         key = clsnm+"."+name
-        print "classdb key=", key
+#        print "classdb key=", key
         if classdb.get(key):
             res = classdb[key]
-            print "reuse hasProp result: "+str(res)
+#            print "reuse hasProp result: "+str(res)
         else:
             res = proxy.hasProp(credential, uid, name);
             if res==1 or res==2 or res==3:
@@ -72,11 +78,11 @@ class Wrapper:
 
 
         if res==1 or res==2:
-            print "getattr hasProp(",res,") OK"
+#            print "getattr hasProp(",res,") OK"
             rval = proxy.getProp(credential, uid, name);
             return self.convTVarToPyval(rval);
         elif res==3:
-            print "getattr hasMethod() OK"
+#            print "getattr hasMethod() OK"
             return MethodObj(self, name)
         else:
             # Report ERROR
@@ -180,7 +186,7 @@ class MethodObj:
 
         uid = self.obj.__dict__["__UID__"]
         nargs = len(args)
-        print "MethodObj ["+ str(uid)+ "]."+ self.name+"("+str(nargs)+") called"
+#        print "MethodObj ["+ str(uid)+ "]."+ self.name+"("+str(nargs)+") called"
 
         arg2 = []
         for item in args:

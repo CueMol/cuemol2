@@ -314,9 +314,11 @@ Qm2Main.prototype.onLoad = function ()
   //////////
 
   try {
-    var xrmgr = cuemol.getService("XmlRpcManager");
-    if (xrmgr)
-      xrmgr.start();
+    var xrmgr = cuemol.getService("RMIManager");
+    if (xrmgr) {
+      xrmgr.registerCred("xxx");
+      xrmgr.startServer();
+    }
   }
   catch (e) {
   }

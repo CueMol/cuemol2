@@ -8,10 +8,11 @@ install_dir=$top_srcdir/xul_gui/
 debug="--enable-debug --enable-m64"
 #debug="--disable-debug --enable-m64"
 
-#usepybr="--enable-python"
-usepybr="--disable-python"
+usepybr="--enable-python"
+#usepybr="--disable-python"
 
-usexrbr="--with-xmlrpc=/net3/ishitani/app64"
+usexrbr="--with-rmi=thrift --with-thrift=/net3/ishitani/proj/thrift"
+#usexrbr="--with-xmlrpc=/net3/ishitani/app64"
 #usexrbr="--without-xmlrpc"
 
 ##

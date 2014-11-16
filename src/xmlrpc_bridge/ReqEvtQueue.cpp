@@ -58,6 +58,35 @@ void ReoCreateObj::doit()
   m_bOK = true;
 }
 
+void ReoGetService::doit()
+{
+  qlib::ClassRegistry *pMgr = qlib::ClassRegistry::getInstance();
+  MB_ASSERT(pMgr!=NULL);
+
+  qlib::LDynamic *pObj = NULL;
+  try {
+    pObj = pMgr->getSingletonObj(m_clsname);
+  }
+  catch (...) {
+    LString msg = LString::format("getService(%s) failed", m_clsname.c_str());
+    LOG_DPRINTLN(msg);
+    m_errmsg = msg;
+    m_bOK = false;
+    return;
+  }
+
+  if (pObj==NULL) {
+    LString msg = LString::format("getService %s failed", m_clsname.c_str());
+    LOG_DPRINTLN(msg);
+    m_errmsg = msg;
+    m_bOK = false;
+    return;
+  }
+
+  m_pRval = (qlib::LScriptable *) pObj;
+  m_bOK = true;
+}
+
 void ReoDestroyObj::doit()
 {
   m_pObj->destruct();

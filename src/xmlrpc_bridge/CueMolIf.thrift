@@ -3,7 +3,7 @@
 #
 
 namespace cpp xrbr
-namespace py cuemol2
+namespace py qm2thrift
 
 exception AuthException {
   1: string why

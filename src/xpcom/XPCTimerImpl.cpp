@@ -21,9 +21,7 @@
 #include <unistd.h>
 #endif
 
-#ifdef USE_XMLRPC
-#  include <xmlrpc_bridge/XmlRpcMgr.hpp>
-#endif
+#include <xmlrpc_bridge/RMIMgr.hpp>
 
 using namespace xpcom;
 
@@ -50,10 +48,8 @@ void XPCTimerImpl::timerCallbackFunc(nsITimer *aTimer, void *aClosure)
   pEM->messageLoop();
   pEM->checkTimerQueue();
 
-#ifdef USE_XMLRPC
-  xrbr::XmlRpcMgr *pXRM = xrbr::XmlRpcMgr::getInstance();
+  xrbr::RMIMgr *pXRM = xrbr::RMIMgr::getInstance();
   pXRM->processReq(1000);
-#endif
 
   qsys::SceneManager *pSM = qsys::SceneManager::getInstance();
   pSM->checkAndUpdateScenes();

@@ -50,6 +50,18 @@ namespace xrbr {
     virtual void doit();
   };
 
+  class ReoGetService : public ReqEvtObj
+  {
+  public:
+    LString m_clsname;
+    
+    qlib::LScriptable *m_pRval;
+
+    // virtual int getType() const;
+
+    virtual void doit();
+  };
+
   class ReoDestroyObj : public ReqEvtObj
   {
   public:
