@@ -393,12 +393,12 @@ PovRender.prototype.doRenderImpl = function (index, aAsync)
   var povFilePath = this.mPovFiles.path;
   var povFileDir =  this.mPovFiles.parent.path;
 
-  if (this.mPlfName == "Windows_NT") {
+  /*if (this.mPlfName == "Windows_NT") {
     outImgPath = outImgPath.split("\\").join("/");
     incDirPath = incDirPath.split("\\").join("/");
     povFilePath = povFilePath.split("\\").join("/");
     povFileDir = povFileDir.split("\\").join("/");
-  }
+  }*/
   
   dd("Output image file: " + outImgPath);
   dd("povinc dir: " + incDirPath);
@@ -407,10 +407,10 @@ PovRender.prototype.doRenderImpl = function (index, aAsync)
 
   //////////
 
-  var args = ["\"Input_File_Name="+povFilePath+"\"",
-	      "\"Output_File_Name="+outImgPath+"\"",
-	      "\"Library_Path="+incDirPath+"\"",
-	      "\"Library_Path="+povFileDir+"\"",
+  var args = ["\"Input_File_Name='"+povFilePath+"'\"",
+	      "\"Output_File_Name='"+outImgPath+"'\"",
+	      "\"Library_Path='"+incDirPath+"'\"",
+	      "\"Library_Path='"+povFileDir+"'\"",
 	      "Declare=_stereo=" + this.nStereo,
 	      "Declare=_iod=" + this.dSteDep,
 	      "Declare=_perspective="+(this.bOrtho?"0":"1"),
@@ -520,7 +520,7 @@ PovRender.prototype.startTimer = function ()
   }, 1000);
 };    
 
-var re = /Rendered (\d+) of (\d+) pixels \((\d+)%\)/g;
+var re = /Rendered (\d+) of (\d+) pixels \((\d+)%\)/;
 
 PovRender.prototype.filteredOutput = function (msg)
 {
@@ -536,7 +536,7 @@ PovRender.prototype.filteredOutput = function (msg)
   else
     cuemol.putLogMsg(msg);
 
-  // cuemol.putLogMsg("<"+msg+">");
+    //cuemol.putLogMsg("<"+msg+">");
 };
 
 PovRender.prototype.onTimer = function ()
