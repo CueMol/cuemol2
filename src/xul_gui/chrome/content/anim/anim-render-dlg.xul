@@ -7,6 +7,7 @@
   id     = "anim-render-dialog"
   windowtype="CueMol2:AnimRenderDlg"
   title  = "Animation rendering"
+  xmlns:html = "http://www.w3.org/1999/xhtml"
   xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
   buttons="extra1,accept,cancel"
   buttonlabelextra1="Stop"
@@ -25,6 +26,7 @@
       <tab label="Main options" id="main_tab"/>
       <tab label="Render options" id="povrender_tab"/>
       <tab label="Movie options" id="movie_tab"/>
+      <tab label="Preview" id="preview_tab"/>
     </tabs>
     <tabpanels id="tabpanels-overlay-target" flex="1">
       <tabpanel id="main_tabpanel" flex="1">
@@ -225,6 +227,20 @@
       </groupbox>
 	
 	
+      </tabpanel>
+
+      <!-- movie compression options -->
+      <tabpanel id="preview_tabpanel">
+	<vbox flex="1">
+	  <!--<hbox flex="0">
+	    <button label="Play" id="movie_preview_play" flex="0"/>
+	  </hbox>-->
+	  <richlistbox flex="1" width="100" style="min-height: 300px;" disabled="true">
+	    <richlistitem id="imagebox-item" disabled="true">
+	      <html:embed id="movie_preview"/>
+	    </richlistitem>
+	  </richlistbox>
+	</vbox>
       </tabpanel>
     </tabpanels>
   </tabbox>

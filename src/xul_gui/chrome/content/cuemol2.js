@@ -301,24 +301,28 @@ Qm2Main.prototype.onLoad = function ()
   
   //////////
 
-  try {
-    var pybr = cuemol.getService("PythonBridge");
-    if (pybr) {
-      var elem = document.getElementById("exec_scr_menuitem");
-      elem.disabled = false;
+  if (cuemol.hasClass("PythonBridge")) {
+    try {
+      var pybr = cuemol.getService("PythonBridge");
+      if (pybr) {
+        var elem = document.getElementById("exec_scr_menuitem");
+        elem.disabled = false;
+      }
+    }
+    catch (e) {
     }
   }
-  catch (e) {
-  }
-
+  
   //////////
 
-  try {
-    var xrmgr = cuemol.getService("XmlRpcManager");
-    if (xrmgr)
-      xrmgr.start();
-  }
-  catch (e) {
+  if (cuemol.hasClass("XmlRpcManager")) {
+    try {
+      var xrmgr = cuemol.getService("XmlRpcManager");
+      if (xrmgr)
+        xrmgr.start();
+    }
+    catch (e) {
+    }
   }
 }
   

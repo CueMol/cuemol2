@@ -19,10 +19,10 @@ runtime_class RainbowColoring extends ColoringScheme
 
 
   property real start_hue => redirect(getStartHue, setStartHue);
-  default start_hue = 0.0;
+  default start_hue = 240.0;
 
   property real end_hue => redirect(getEndHue, setEndHue);
-  default end_hue = 270.0;
+  default end_hue = 0.0;
 
   property real sat => m_dSat;
   default sat = 1.0;

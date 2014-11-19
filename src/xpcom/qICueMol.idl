@@ -27,6 +27,9 @@ interface qICueMol : nsISupports
   void fini();
   boolean isInitialized();
 
+  /// query the presence of the class
+  boolean hasClass(in string clsname);
+
   /// Get service objects by name
   qIObjWrapper getService(in string svcname);
 

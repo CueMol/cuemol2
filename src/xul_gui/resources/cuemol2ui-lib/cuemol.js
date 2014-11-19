@@ -91,6 +91,13 @@ exports.getErrMsg = function ()
   return xpc.getErrMsg();
 };
 
+exports.hasClass = function (name)
+{
+  if (!xpc.isInitialized())
+    return null;
+  return xpc.hasClass(name);
+};
+
 exports.getService = function (name)
 {
   if (!xpc.isInitialized())

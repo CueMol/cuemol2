@@ -348,6 +348,34 @@ NS_IMETHODIMP XPCCueMol::IsInitialized(bool *_retval)
 
 using qlib::ClassRegistry;
 
+NS_IMETHODIMP XPCCueMol::HasClass(const char * clsname, bool *_retval)
+{
+  ClassRegistry *pMgr = ClassRegistry::getInstance();
+  if (pMgr==NULL) {
+    LOG_DPRINTLN("XPCCueMol> ERROR: CueMol not initialized.");
+    return NS_ERROR_NOT_INITIALIZED;
+  }
+
+  qlib::LDynamic *pobj;
+  *_retval = false;
+  try {
+    qlib::LClass *pcls = pMgr->getClassObj(clsname);
+    if (pcls!=NULL)
+      *_retval = true;
+  }
+  catch (const qlib::LException &e) {
+    MB_DPRINTLN("HasObj> Caught exception <%s>", typeid(e).name());
+    MB_DPRINTLN("HasObj> Reason: %s", e.getMsg().c_str());
+    // return NS_ERROR_NOT_IMPLEMENTED;
+  }
+  catch (...) {
+    LOG_DPRINTLN("HasObj> Caught unknown exception");
+    // return NS_ERROR_NOT_IMPLEMENTED;
+  }
+
+  return NS_OK;
+}
+
 NS_IMETHODIMP XPCCueMol::GetService(const char *svcname,
                                     qIObjWrapper **_retval)
 {

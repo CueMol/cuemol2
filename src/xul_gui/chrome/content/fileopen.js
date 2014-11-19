@@ -894,25 +894,29 @@ Qm2Main.prototype.onExecScr = function ()
   let ftype = new Array();
 
   var pybr;
-  try {
+  if (cuemol.hasClass("PythonBridge")) {
+    try {
       pybr = cuemol.getService("PythonBridge");
       if (pybr) {
-	  fp.appendFilter("Python (*.py)", "*.py");
-	  ftype.push("py");
+	fp.appendFilter("Python (*.py)", "*.py");
+	ftype.push("py");
       }
+    }
+    catch (e) {}
   }
-  catch (e) {}
-
+  
   var jsbr;
-  try {
+  if (cuemol.hasClass("JSBridge")) {
+    try {
       jsbr = cuemol.getService("JSBridge");
       if (jsbr && typeof scene.execJSFile === 'function') {
-	  fp.appendFilter("Javascript (*.js)", "*.js");
-	  ftype.push("js");
+	fp.appendFilter("Javascript (*.js)", "*.js");
+	ftype.push("js");
       }
+    }
+    catch (e) {}
   }
-  catch (e) {}
-
+  
   fp.init(window, "Select a File", nsIFilePicker.modeOpen);
 
   let res=fp.show();

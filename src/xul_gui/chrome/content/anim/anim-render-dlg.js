@@ -87,6 +87,9 @@
 
     // setup ffmpeg settings page
     this.onLoadFFmpeg();
+
+    // setup preview tab page
+    this.onLoadPreviewPage();
   };
 
   dlg.onLoadPovRender = function ()
@@ -319,6 +322,8 @@
 	  this._bRender = false;
 	  this.mAnimMgr = null;
 	  this.mExp = null;
+
+	  this.startMovPreview();
 	}
 	else {
 	  dd("Timer> queue is not empty...");
@@ -715,9 +720,47 @@
 				strargs,
 				strdep);
     dd("submit movie task="+tid);
+
+    this.mOutMovPath = outmov;
   };
 
 
+  dlg.onLoadPreviewPage = function ()
+  {
+    this.mMovPreview = document.getElementById("movie_preview");
+    
+    /*
+    var elem = document.getElementById("movie_preview_play");
+    var that = this;
+    elem.addEventListener("command", function(event){
+      dd("xx:"+debug.dumpObjectTree(that.mMovPreview));
+      that.mMovPreview.playPlugin();
+    }, false);
+     */
+  };
+
+  dlg.startMovPreview = function ()
+  {
+    if (!this.mOutMovPath)
+      return;
+    if (!this.mOutMovPath.exists())
+      return;
+    if (!this.mOutMovPath.isFile())
+      return;
+
+    var ios = Cc["@mozilla.org/network/io-service;1"].getService(Ci.nsIIOService);
+    var URL = ios.newFileURI(this.mOutMovPath);
+    dd("URL.spec="+URL.spec);
+    var h = parseInt(this.mOutImgHeight.value);
+    this.mMovPreview.setAttribute("src", URL.spec);
+    this.mMovPreview.setAttribute("width", this.mOutImgWidth.value);
+    this.mMovPreview.setAttribute("height",h + 16);
+    // this.mMovPreview.setAttribute("loop", true);
+    
+  };
+
+
+  ////////////////////////////////////////////////////////
   // perform cleanup
   dlg.onUnload = function ()
   {
