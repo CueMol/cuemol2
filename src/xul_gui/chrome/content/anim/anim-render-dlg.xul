@@ -225,11 +225,15 @@
 	      <label value="kbps" class="unit-right"/>
 	    </row>
 
+	    <hbox>
+	      <textbox class="disable-target" id="ffmpeg-mainopt" flex="1"/>
+	      <button class="disable-target" label="Re-encode" id="ffmpeg-reenc" flex="0"/>
+	    </hbox>
+
 	  </rows>
 
 	</grid>
 
-	<textbox id="ffmpeg-mainopt" flex="0"/>
       </groupbox>
 	
 	

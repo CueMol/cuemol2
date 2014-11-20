@@ -27,6 +27,7 @@
 
   dlg.mPovRender = povrender.newPovRender();
   dlg._bRender = false;
+  dlg.mbRenderOK = false;
   dlg.mTasks = new Object;
 
   // XXX: ???
@@ -155,7 +156,7 @@
     this.mPovRender.bOrtho = ortho;
     this.mPovRender.img_width = img_width;
     this.mPovRender.img_height = img_height;
-    this.mPovRender.mDPI = -1.0; // don't set DPI
+    this.mPovRender.mDPI = 72;
     this.mPovRender.mbPostBlend = postblend;
 
     try {
@@ -184,6 +185,7 @@
       }
 
       this._bRender = true;
+      this.mbRenderOK = false;
       this.disableButtons(true);
 
       let tv_st = cuemol.createObj("TimeValue");
@@ -228,6 +230,7 @@
       procMgr.killAll();
       procMgr.setLogPath("");
       this._bRender = false;
+      this.mbRenderOK = false;
       this.disableButtons(false);
       this.appendLog("Tasks killed.");
     }
@@ -258,46 +261,72 @@
 
   const kConcSub = 1;
 
+  dlg.procTaskMsgs = function ()
+  {
+    var i;
+    var done_tasks = JSON.parse( procMgr.doneTaskListJSON() );
+    for (i=0; i<done_tasks.length; ++i) {
+      let tid = done_tasks[i];
+      let res = procMgr.getResultOutput(tid);
+      dd("task "+tid+" done: res = "+res);
+      //dd("task "+tid+" done");
+      
+      if (tid in this.mTasks) {
+	let tsk = this.mTasks[tid];
+	if ('msg' in tsk) {
+	  this.appendLog("Task "+tid+" ("+tsk.msg+"): done\n");
+	}
+	if ('frameno' in tsk) {
+	  this.mProgBar.value = (tsk.frameno/this.mFrames)*100.0;
+	  this.updatePreview(tsk.frameno);
+	}
+	if ('remvs' in tsk) {
+	  // remove temp pov/inc/png files
+	  let remvs = tsk.remvs;
+	  remvs.forEach( function (elem, ind, ary) {
+	    try {
+	      elem.remove(false);
+	    } catch (e) {}
+	  });
+	}
+	// delete task elem
+	delete this.mTasks[tid];
+      }
+    } // for (i=0; i<done_tasks.length; ++i)
+  };
+
+  dlg.finRenderTasks = function ()
+  {
+    dd("AnimRender.timer> all tasks done.");
+    this.appendLog("All tasks done\n");
+    
+    // stop the timer
+    timer.clearInterval(this.mTimer);
+    this.mTimer = null;
+    dd("AnimRender.timer> timer canceled.");
+    
+    this.mbRenderOK = true;
+    procMgr.setLogPath("");
+    this._bRender = false;
+    this.mAnimMgr = null;
+    this.mExp = null;
+    
+    this.disableButtons(false);
+    // this.startMovPreview();
+  };
+
   dlg.onTimer = function()
   {
     let i;
 
     try {
-      let done_tasks = JSON.parse( procMgr.doneTaskListJSON() );
-      for (i=0; i<done_tasks.length; ++i) {
-	let tid = done_tasks[i];
-	let res = procMgr.getResultOutput(tid);
-	dd("task "+tid+" done: res = "+res);
-	//dd("task "+tid+" done");
-
-	if (tid in this.mTasks) {
-	  let tsk = this.mTasks[tid];
-	  if ('msg' in tsk) {
-	    this.appendLog("Task "+tid+" ("+tsk.msg+"): done\n");
-	  }
-	  if ('frameno' in tsk) {
-	    this.mProgBar.value = (tsk.frameno/this.mFrames)*100.0;
-	    this.updatePreview(tsk.frameno);
-	  }
-	  if ('remvs' in tsk) {
-	    // remove temp pov/inc/png files
-	    let remvs = tsk.remvs;
-	    remvs.forEach( function (elem, ind, ary) {
-	      try {
-		elem.remove(false);
-	      } catch (e) {}
-	    });
-	  }
-	  // delete task elem
-	  delete this.mTasks[tid];
-	}
-      }
-
+      this.procTaskMsgs();
+      
       if (procMgr.queue_len>10) {
 	dd("Timer> queue is full");
 	return;
       }
-
+      
       // make new tasks
       let cf = this.mCurFrm;
       for (i=cf; i<cf+kConcSub && i<this.mFrames; ++i) {
@@ -306,25 +335,12 @@
 	  this.submitFFmpegTasks(tid);
 	}
       }
-
+      
       if (this.mCurFrm==this.mFrames) {
 	if (procMgr.isEmpty()) {
 	  // all tasks have been done
-	  dd("AnimRender.timer> all tasks done.");
-	  this.appendLog("All tasks done\n");
-
-	  // stop the timer
-	  timer.clearInterval(this.mTimer);
-	  this.mTimer = null;
-	  dd("AnimRender.timer> timer canceled.");
-
-	  this.disableButtons(false);
-	  procMgr.setLogPath("");
-	  this._bRender = false;
-	  this.mAnimMgr = null;
-	  this.mExp = null;
-
-	  // this.startMovPreview();
+	  // --> rendering completed
+	  this.finRenderTasks();
 	}
 	else {
 	  dd("Timer> queue is not empty...");
@@ -447,6 +463,12 @@
       // progressbar (stopped)
       this.mProgBar.value = 0;
       this.mProgBar.disabled = true;
+
+      // re-encode button (ffmpeg page)
+      if (this.mbRenderOK)
+	this.mReencBtn.disabled = false;
+      else
+	this.mReencBtn.disabled = true;
     }
     
 
@@ -551,6 +573,12 @@
   dlg.onLoadFFmpeg = function ()
   {
     var that = this;
+
+    this.mReencBtn = document.getElementById("ffmpeg-reenc");
+    this.mReencBtn.addEventListener("command", function(event){
+      try {that.startReenc(event);} catch (e) {debug.exception(e);}
+    }, false);
+
     this.mFfExePathBox = document.getElementById("ffmpeg-exe-path");
 
     if (prefsvc.has(ffmpeg_exe_key)) {
@@ -578,24 +606,30 @@
 
     this.mFfChk = document.getElementById("ffmpeg-enable-check");
     this.mFfChk.addEventListener("command", function(event){
-      try {that.toggleFFmpeg(event.target.checked);} catch (e) {debug.exception(e);}
+      try {that.enableFFmpegWidgets(event.target.checked);} catch (e) {debug.exception(e);}
     }, false);
 
-    that.toggleFFmpeg(this.mFfChk.checked);
+    that.enableFFmpegWidgets(this.mFfChk.checked);
     that.onOutFmtChg(this.mFfOFmtList.selectedItem.value);
+
   };
 
-  dlg.toggleFFmpeg = function (chk)
+  dlg.enableFFmpegWidgets = function (chk)
   {
     if (chk) {
       this.mFfExePathBox.disabled = false;
       this.mFfOFmtList.disabled = false;
       this.mFfBitrList.disabled = false;
+      if (this.mbRenderOK)
+	this.mReencBtn.disabled = false;
+      else
+	this.mReencBtn.disabled = true;
     }
     else {
       this.mFfExePathBox.disabled = true;
       this.mFfOFmtList.disabled = true;
       this.mFfBitrList.disabled = true;
+      this.mReencBtn.disabled = true;
     }
   };
   
@@ -716,6 +750,7 @@
     strargs += " "+outmov.path;
 
     let strdep = aDepTid.toString();
+    if (aDepTid==-1) strdep = "";
 
     dd("ffmpeg: "+this.mFfExePathBox.value);
     dd("strargs: "+strargs);
@@ -729,6 +764,54 @@
     this.mOutMovPath = outmov;
   };
 
+  dlg.startReenc = function (aEvent)
+  {
+    if (!this.mbRenderOK)
+      return;
+
+    var that = this;
+    this.mTimer = timer.setInterval(function() {
+      try {
+	that.onTimerReenc();
+      }
+      catch (e) {
+	dd("Error: "+e);
+	debug.exception(e);
+      }
+    }, 100);
+
+    this.disableButtons(true);
+    this.submitFFmpegTasks(-1);
+  };
+
+  dlg.onTimerReenc = function()
+  {
+    let i;
+
+    try {
+      this.procTaskMsgs();
+      if (procMgr.isEmpty()) {
+	// all tasks have been done
+	// --> reencoding completed
+	this.finRenderTasks();
+      }
+    }
+    catch (e) {
+      // error: stop
+      timer.clearInterval(this.mTimer);
+      this.mTimer = null;
+      procMgr.killAll();
+      procMgr.setLogPath("");
+      this._bRender = false;
+      this.disableButtons(false);
+      this.appendLog("Fatal error: "+e);
+      this.appendLog("Tasks killed.");
+      debug.exception(e);
+      return;
+    }
+  };
+
+  //////////////////////////////////////////////////////////////////
 
   dlg.onLoadPreviewPage = function ()
   {
@@ -763,6 +846,8 @@
     this.updatePreview(value);
   };
 
+  dlg.mSerial=0;
+  
   dlg.updatePreview = function (ifrm)
   {
     this.mSlider.min = 0;
@@ -788,8 +873,11 @@
     var ios = Cc["@mozilla.org/network/io-service;1"].getService(Ci.nsIIOService);
     var URL = ios.newFileURI(img);
     dd("URL.spec="+URL.spec);
+
     var h = parseInt(this.mOutImgHeight.value);
-    this.mImgPreview.setAttribute("src", URL.spec);
+    this.mImgPreview.setAttribute("src", URL.spec+"?dummy="+this.mSerial);
+    ++this.mSerial;
+
     this.mImgPreview.setAttribute("width", this.mOutImgWidth.value);
     this.mImgPreview.setAttribute("height",h);
 
