@@ -21,6 +21,12 @@
   <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
   <script type="application/javascript" src="chrome://cuemol2/content/anim/anim-render-dlg.js"/>
 
+<style xmlns="http://www.w3.org/1999/xhtml"><![CDATA[
+.animslider {
+  -moz-binding: url("chrome://cuemol2/content/anim/anim-slider-bindings.xml#animslider");
+}
+]]></style>
+
   <tabbox selectedIndex="0" flex="1">
     <tabs id="tabs-overlay-target">
       <tab label="Main options" id="main_tab"/>
@@ -232,11 +238,16 @@
       <!-- movie compression options -->
       <tabpanel id="preview_tabpanel">
 	<vbox flex="1">
-	  <!--<hbox flex="0">
-	    <button label="Play" id="movie_preview_play" flex="0"/>
-	  </hbox>-->
+	  <hbox flex="0">
+	    <label value="Frame:"/>
+	    <scale class="animslider" id="preview-anim-scale" flex="1" movetoclick="true"/>
+	    <!--<button label="Play" id="movie_preview_play" flex="0"/>-->
+	  </hbox>
 	  <richlistbox flex="1" width="100" style="min-height: 300px;" disabled="true">
-	    <richlistitem id="imagebox-item" disabled="true">
+	    <richlistitem id="imagebox-item" disabled="true" hidden="true">
+	      <image id="image_preview" validate="always" flex="0"/>
+	    </richlistitem>
+	    <richlistitem id="moviebox-item" disabled="true" hidden="true">
 	      <html:embed id="movie_preview"/>
 	    </richlistitem>
 	  </richlistbox>

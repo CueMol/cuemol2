@@ -22,7 +22,7 @@
   {
     let scene = cuemol.getScene(dlg.mTgtSceID);
     dlg.mSceName = scene.name;
-    delete scene;
+    // delete scene;
   }
 
   dlg.mPovRender = povrender.newPovRender();
@@ -277,6 +277,7 @@
 	  }
 	  if ('frameno' in tsk) {
 	    this.mProgBar.value = (tsk.frameno/this.mFrames)*100.0;
+	    this.updatePreview(tsk.frameno);
 	  }
 	  if ('remvs' in tsk) {
 	    // remove temp pov/inc/png files
@@ -323,7 +324,7 @@
 	  this.mAnimMgr = null;
 	  this.mExp = null;
 
-	  this.startMovPreview();
+	  // this.startMovPreview();
 	}
 	else {
 	  dd("Timer> queue is not empty...");
@@ -352,9 +353,11 @@
     let out2 = this.mOutPath.clone();
     let img = this.mOutPath.clone();
     
+    let base = this.mOutputBaseBox.value;
     let num = formatnum(ifrm, this.mFrames);
-    out.append("frm_" + num + ".pov");
-    out2.append("frm_" + num + ".inc");
+    base = base+"_frm_" + num;
+    out.append(base + ".pov");
+    out2.append(base + ".inc");
     
     dd("writing frame="+this.mAnimMgr.frameno+" output: "+out.path);
     exp.setPath(out.path);
@@ -371,7 +374,7 @@
     this.mPovRender.mPovFiles = out;
     this.mPovRender.mIncFile = out2;
 
-    this.mPovRender.startRenderImpl(img, "frm_" + num);
+    this.mPovRender.startRenderImpl(img, base);
     if (!this.mPovRender.mProcs)
       throw "startRenderImpl() failed";
 
@@ -661,7 +664,9 @@
     let nfrms = this.mFrames;
     let bitr = this.mFfBitrList.value;
     let inpath = this.mOutPath.clone();
-    inpath.append("frm_%04d.png");
+    let base = this.mOutputBaseBox.value;
+
+    inpath.append(base+"_frm_%04d.png");
 
     let outmov = this.mOutPath.clone();
     let outstem = this.mOutputBaseBox.value;
@@ -727,16 +732,72 @@
 
   dlg.onLoadPreviewPage = function ()
   {
+    var that = this;
+
     this.mMovPreview = document.getElementById("movie_preview");
+    this.mImgPreview = document.getElementById("image_preview");
     
+    this.mSlider = document.getElementById("preview-anim-scale");
+    this.mSlider.addEventListener(
+      "dragStateChange", function (a) { try {that.onSliChg(a)} catch(e) {debug.exception(e)} }, false);
+
+    dd("onLoadPreviewPage OK.");
+
     /*
     var elem = document.getElementById("movie_preview_play");
-    var that = this;
     elem.addEventListener("command", function(event){
       dd("xx:"+debug.dumpObjectTree(that.mMovPreview));
       that.mMovPreview.playPlugin();
     }, false);
      */
+  };
+
+  dlg.onSliChg = function (aEvent)
+  {
+    dd("isDrag "+aEvent.isDragging);
+    if (aEvent.isDragging)
+      return;
+      
+    let value = this.mSlider.value;
+    dd("Slider chg value="+value);
+    this.updatePreview(value);
+  };
+
+  dlg.updatePreview = function (ifrm)
+  {
+    this.mSlider.min = 0;
+    this.mSlider.max = this.mFrames-1;
+    this.mSlider.value = ifrm;
+
+    if (!this.mOutPath) return;
+    
+    let img = this.mOutPath.clone();
+    if (!img)
+      return;
+
+    let base = this.mOutputBaseBox.value;
+    let num = formatnum(ifrm, this.mFrames);
+    base = base+"_frm_" + num;
+    img.append(base + ".png");
+    
+    if (!img.exists())
+      return;
+    if (!img.isFile())
+      return;
+
+    var ios = Cc["@mozilla.org/network/io-service;1"].getService(Ci.nsIIOService);
+    var URL = ios.newFileURI(img);
+    dd("URL.spec="+URL.spec);
+    var h = parseInt(this.mOutImgHeight.value);
+    this.mImgPreview.setAttribute("src", URL.spec);
+    this.mImgPreview.setAttribute("width", this.mOutImgWidth.value);
+    this.mImgPreview.setAttribute("height",h);
+
+    this.mImgPreview.setAttribute("hidden",false);
+    document.getElementById("imagebox-item").setAttribute("hidden",false);
+    document.getElementById("moviebox-item").setAttribute("hidden",true);
+
+    this.miPreviewFrm = ifrm;
   };
 
   dlg.startMovPreview = function ()
@@ -755,6 +816,9 @@
     this.mMovPreview.setAttribute("src", URL.spec);
     this.mMovPreview.setAttribute("width", this.mOutImgWidth.value);
     this.mMovPreview.setAttribute("height",h + 16);
+
+    document.getElementById("imagebox-item").setAttribute("hidden",true);
+    document.getElementById("moviebox-item").setAttribute("hidden",false);
     // this.mMovPreview.setAttribute("loop", true);
     
   };
