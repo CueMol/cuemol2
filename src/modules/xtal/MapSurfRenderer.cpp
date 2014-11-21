@@ -28,18 +28,11 @@ using molstr::AtomIterator;
 MapSurfRenderer::MapSurfRenderer()
      : super_t()
 {
-//  m_nBufSize = 100;
-//  m_lw = 1.0;
   m_bPBC = false;
   m_bAutoUpdate = true;
   m_bDragUpdate = false;
   m_nDrawMode = MSRDRAW_FILL;
   m_lw = 1.2;
-
-  //resetAllProps();
-
-//  m_bUseMolBndry = false;
-
   m_pCMap = NULL;
 }
 
@@ -383,23 +376,94 @@ double MapSurfRenderer::getOffset(double fValue1, double fValue2, double fValueD
   return (fValueDesired - fValue1)/fDelta;
 }
 
+inline bool isInt(double x) {
+  const double m = ::fmod(x, 1.0);
+  if (qlib::isNear(m, 0.0))
+    return true;
+  if (qlib::isNear(m, 1.0))
+    return true;
+  return false;
+}
 
+Vector4D MapSurfRenderer::getGrdNorm(int x, int y, int z)
+{
+  Vector4D rval;
+
+  int ix = x+ (m_nStCol - m_pCMap->getStartCol());
+  int iy = y+ (m_nStRow - m_pCMap->getStartRow());
+  int iz = z+ (m_nStSec - m_pCMap->getStartSec());
+
+  rval.x() = getDen(ix-1, iy,   iz  ) - getDen(ix+1, iy,   iz );
+  rval.y() = getDen(ix,   iy-1, iz  ) - getDen(ix,   iy+1, iz  );
+  rval.z() = getDen(ix,   iy,   iz-1) - getDen(ix,   iy,   iz+1);
+  return rval;
+}
 
 //vGetNormal() finds the gradient of the scalar field at a point
 //This gradient can be used as a very accurate vertx normal for lighting calculations
-void MapSurfRenderer::getNormal(Vector4D &rfNormal, double fX, double fY, double fZ)
+Vector4D MapSurfRenderer::getNormal(const Vector4D &fV) //double fX, double fY, double fZ)
 {
-  rfNormal.x() = intrpX(fX-0.01, (int) fY, (int) fZ) - intrpX(fX+0.01, (int) fY, (int) fZ);
-  rfNormal.y() = intrpY((int) fX, fY-0.01, (int) fZ) - intrpY((int) fX, fY+0.01, (int) fZ);
-  rfNormal.z() = intrpZ((int) fX, (int) fY, fZ-0.01) - intrpZ((int) fX, (int) fY, fZ+0.01);
+  Vector4D rval;
+
+
+  bool bx = isInt( fV.x() );
+  bool by = isInt( fV.y() );
+  bool bz = isInt( fV.z() );
+
+  int ix, iy, iz;
+  double r;
+
+  Vector4D v1, v2;
+  if (bx&&by) {
+    ix = int(fV.x());
+    iy = int(fV.y());
+    iz = int( ::floor(fV.z()) );
+    r = fV.z() - double(iz);
+    v1 = getGrdNorm(ix, iy, iz);
+    v2 = getGrdNorm(ix, iy, iz+1);
+    rval = v1.scale(1.0-r) + v2.scale(r);
+  }
+  else if (by&&bz) {
+    ix = int( ::floor(fV.x()) );
+    iy = int(fV.y());
+    iz = int(fV.z());
+    r = fV.x() - double(ix);
+    v1 = getGrdNorm(ix, iy, iz);
+    v2 = getGrdNorm(ix+1, iy, iz);
+    rval = v1.scale(1.0-r) + v2.scale(r);
+  }
+  else if (bz&&bx) {
+    ix = int(fV.x());
+    iy = int( ::floor(fV.y()));
+    iz = int(fV.z());
+    r = fV.y() - double(iy);
+    v1 = getGrdNorm(ix, iy, iz);
+    v2 = getGrdNorm(ix, iy+1, iz);
+    rval = v1.scale(1.0-r) + v2.scale(r);
+  }
+  else {
+    // error!!
+    MB_DPRINTLN("getNormal error!!");
+    return Vector4D(1.0, 0.0, 0.0);
+  }
+
+/*
+  rval.x() = intrpX(fV.x()-0.01, (int) fV.y(), (int) fV.z()) - intrpX(fV.x()+0.01, (int) fV.y(), (int) fV.z());
+  rval.y() = intrpY((int) fV.x(), fV.y()-0.01, (int) fV.z()) - intrpY((int) fV.x(), fV.y()+0.01, (int) fV.z());
+  rval.z() = intrpZ((int) fV.x(), (int) fV.y(), fV.z()-0.01) - intrpZ((int) fV.x(), (int) fV.y(), fV.z()+0.01);
+*/
+  double len = rval.length();
+  if (qlib::isNear(len, 0.0))
+    return Vector4D(1.0, 0.0, 0.0);
+  
+  return rval.divide(len);
+  
+/*
   // vNormalizeVector(rfNormal, rfNormal);
 
-  rfNormal = rfNormal.normalizeThrows();
-/*
-  double len = rfNormal.length();
-  if (len>F_EPS16) {
-    rfNormal /= len;
-  }*/
+  rval = rval.normalizeThrows();
+  return rval;
+ */
 }
 
 /*
@@ -420,7 +484,7 @@ void MapSurfRenderer::getVertexColor(Vector4D &rfColor, Vector4D &rfPosition, Ve
 //////////////////////////////////////////
 
 
-void MapSurfRenderer::marchCube(DisplayContext *pdl, double fx, double fy, double fz, double *values)
+void MapSurfRenderer::marchCube(DisplayContext *pdl, int fx, int fy, int fz, double *values)
 {
   int iCorner, iVertex, iVertexTest, iEdge, iTriangle, iFlagIndex, iEdgeFlags;
   double fOffset;
@@ -428,7 +492,7 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl, double fx, double fy, doubl
   Vector4D asEdgeVertex[12];
   Vector4D asEdgeNorm[12];
 
-  const double fScale = 1.0;
+  // const double fScale = 1.0;
 
   // Find which vertices are inside of the surface and which are outside
   iFlagIndex = 0;
@@ -453,11 +517,19 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl, double fx, double fy, doubl
       fOffset = getOffset(values[ a2iEdgeConnection[iEdge][0] ], 
                           values[ a2iEdgeConnection[iEdge][1] ], m_dLevel);
       
-      asEdgeVertex[iEdge].x() = fx + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][0]  +  fOffset * a2fEdgeDirection[iEdge][0]) * fScale;
-      asEdgeVertex[iEdge].y() = fy + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][1]  +  fOffset * a2fEdgeDirection[iEdge][1]) * fScale;
-      asEdgeVertex[iEdge].z() = fz + (a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][2]  +  fOffset * a2fEdgeDirection[iEdge][2]) * fScale;
+      asEdgeVertex[iEdge].x() = double(fx) +
+        a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][0] +
+          fOffset * a2fEdgeDirection[iEdge][0];
+      asEdgeVertex[iEdge].y() = double(fy) +
+        a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][1] +
+          fOffset * a2fEdgeDirection[iEdge][1];
+      asEdgeVertex[iEdge].z() = double(fz) +
+        a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][2] +
+          fOffset * a2fEdgeDirection[iEdge][2];
       
-      getNormal(asEdgeNorm[iEdge], asEdgeVertex[iEdge].x(), asEdgeVertex[iEdge].y(), asEdgeVertex[iEdge].z());
+      //getNormal(asEdgeNorm[iEdge], asEdgeVertex[iEdge].x(), asEdgeVertex[iEdge].y(), asEdgeVertex[iEdge].z());
+
+      asEdgeNorm[iEdge] = getNormal(asEdgeVertex[iEdge]);
     }
   }
 

@@ -82,9 +82,7 @@ namespace xtal {
     double m_dLevel;
 
     /// for debug
-#ifdef SHOW_NORMAL
     std::deque<Vector4D> m_tmpv;
-#endif
     
   public:
 
@@ -130,10 +128,10 @@ namespace xtal {
 
     void makerange();
 
-    void marchCube(DisplayContext *pdl, double fx, double fy, double fz, double *values);
+    void marchCube(DisplayContext *pdl, int fx, int fy, int fz, double *values);
     double getOffset(double fValue1, double fValue2, double fValueDesired);
     void getVertexColor(Vector4D &rfColor, Vector4D &rfPosition, Vector4D &rfNormal);
-    void getNormal(Vector4D &rfNormal, double fX, double fY, double fZ);
+    Vector4D getNormal(const Vector4D &rfNormal);
 
     inline double getDen(int x, int y, int z) const
     {
@@ -157,6 +155,8 @@ namespace xtal {
       }
       
     }
+
+    Vector4D getGrdNorm(int ix, int iy, int iz);
 
     inline double intrpX(double x, int y, int z) const
     {

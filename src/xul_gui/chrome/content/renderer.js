@@ -102,12 +102,13 @@ Qm2Main.prototype.doSetupRend = function(sc, result)
 
   // dd("doSetupRend> CALLED!! cls="+clsname);
 
-  if (// clsname === "DensityMap" ||
-      clsname === "ElePotMap") {
+  if (clsname === "ElePotMap") {
     // no center
     result.center = false;
   }
   else if (clsname === "MolSurfObj") {
+  }
+  else if (clsname === "DensityMap") {
   }
   else {
     this.molPostProc(sc, mol, rend, result);
