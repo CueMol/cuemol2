@@ -53,7 +53,7 @@ if (!("AnimObjPropPage" in cuemolui)) {
 
       this.mTimeRefList = document.getElementById("comprop-time-refobj");
       this.mTimeRefList.addEventListener("select",
-				    function (event) { that.refObjChanged(event) },
+				    function (event) { that.validateWidgets(event) },
 				    false);
 
       this.mQuadSli = document.getElementById("comprop-quadric");
@@ -217,8 +217,12 @@ if (!("AnimObjPropPage" in cuemolui)) {
 
       util.appendMenu(document, menu, "", "(absolute)");
 
+      var target = this.mMain.mTgtObj;
+
       for (i=0; i<nlen; ++i) {
 	let ao = animMgr.getAt(i);
+	if (ao.name==target.name)
+	  continue;
 	let type = cuemol.getClassName(ao);
 	let label = ao.name + " ("+type+")";
 	let value = ao.name;
@@ -226,10 +230,10 @@ if (!("AnimObjPropPage" in cuemolui)) {
       }
     };
 
-    klass.refObjChanged = function (aEvent)
+    /*klass.refObjChanged = function (aEvent)
     {
       this.validateWidgets(aEvent);
-    };
+    };*/
 
     ////////////////////////////////////////////////
 
