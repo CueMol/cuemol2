@@ -75,6 +75,16 @@ if (!("anim" in cuemolui.panels)) {
       var scene = cuemol.getScene(this.mTgtSceID);
       var animMgr = scene.getAnimMgr();
 
+      var bTimeOK = false;
+      try {
+	animMgr.resolveRelTime();
+	bTimeOK = true;
+      }
+      catch (e) {
+	debug.exception(e);
+	dd("anim-panel resolveRelTime failed: "+e);
+      }
+      
       let nodes = new Array();
       var i, col, sel;
       var nlen = animMgr.size;
@@ -82,8 +92,8 @@ if (!("anim" in cuemolui.panels)) {
 	let ao = animMgr.getAt(i);
 	let node = new Object();
 	let type = cuemol.getClassName(ao);
-	let start = ao.start;
-	let end = ao.end;
+	let start = ao.absStart;
+	let end = ao.absEnd;
 
 	node.name = ao.name + " ("+type+")";
 	node.obj_id = i;

@@ -84,17 +84,18 @@ namespace qsys {
 
     /////////////
 
-    qlib::LScrTime getScrStart() const {
-      return qlib::LScrTime(getStart());
+    qlib::LScrTime getScrAbsStart() const {
+      return qlib::LScrTime(getAbsStart());
     }
 
-    qlib::time_value getStart() const {
+    qlib::time_value getAbsStart() const {
       return m_start;
     }
 
-    void setStart(qlib::time_value value) {
+    void setAbsStart(qlib::time_value value) {
       m_start = value;
     }
+
     //
 
     qlib::LScrTime getScrRelStart() const {
@@ -113,15 +114,15 @@ namespace qsys {
     
     /////////////
 
-    qlib::LScrTime getScrEnd() const {
-      return qlib::LScrTime(getEnd());
+    qlib::LScrTime getScrAbsEnd() const {
+      return qlib::LScrTime(getAbsEnd());
     }
 
-    qlib::time_value getEnd() const {
+    qlib::time_value getAbsEnd() const {
       return m_end;
     }
-
-    void setEnd(qlib::time_value value) {
+    
+    void setAbsEnd(qlib::time_value value) {
       m_end = value;
     }
 
@@ -181,15 +182,15 @@ namespace qsys {
     }
 
     double getRho(qlib::time_value elapsed) const {
-      double span = double(getEnd() - getStart());
+      double span = double(getAbsEnd() - getAbsStart());
       if (qlib::isNear4(span, 0.0)) {
         // degenerated case (end==start)
-        if (elapsed-getStart()<0)
+        if (elapsed-getAbsStart()<0)
           return 0.0;
         else
           return 1.0;
       }
-      double rho = double(elapsed-getStart())/span;
+      double rho = double(elapsed-getAbsStart())/span;
       rho = qlib::trunc(rho, 0.0, 1.0);
       return convRho(rho);
     }

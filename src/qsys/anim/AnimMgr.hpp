@@ -179,18 +179,18 @@ namespace qsys {
     /// @param index index of anim obj to delete
     bool removeAt(int index);
 
-  private:
-    /// update internal data structure (total length) after modification
-    void update();
-
     /// Resolve relative start/end times
     /// @throw throws exception when time resolution is failed
     void resolveRelTime();
 
+  private:
+    /// update internal data structure (total length) after modification
+    void update();
+
     /// append implementation (w/o event/undo op.)
     void appendImpl(AnimObjPtr pAnimObj);
 
-
+    /// Resolve relative start/end times (implementation)
     void resolveTimeImpl(AnimObjPtr pObj);
 
   public:

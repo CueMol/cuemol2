@@ -26,12 +26,12 @@ runtime_class AnimObj
 
   property string timeRefName => redirect(getTimeRefName, setTimeRefName);
 
-  property object<TimeValue> start => redirect(getScrStart, XXX) (readonly);
-  property object<TimeValue> end => redirect(getScrEnd, XXX) (readonly);
-
-  property object<TimeValue> relStart => redirect(getScrRelStart, setScrRelStart);
-  property object<TimeValue> relEnd => redirect(getScrRelEnd, setScrRelEnd);
+  property object<TimeValue> start => redirect(getScrRelStart, setScrRelStart);
+  property object<TimeValue> end => redirect(getScrRelEnd, setScrRelEnd);
   
+  property object<TimeValue> absStart => redirect(getScrAbsStart, XXX) (readonly);
+  property object<TimeValue> absEnd => redirect(getScrAbsEnd, XXX) (readonly);
+
   property real quadric => redirect(getQuadric, setQuadric);
   default quadric = 0.0;
 
