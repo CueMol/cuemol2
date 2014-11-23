@@ -366,10 +366,15 @@ if (!("anim" in cuemolui.panels)) {
 	break;
       }
 
-      var obj = null;
+      var obj = null, refobj = null;
+      if (bAppend)
+	refobj = animMgr.getAt(animMgr.size-1);
+      else if (id-1>=0)
+	refobj = animMgr.getAt(id-1);
+
       try {
 	obj = cuemol.createObj(val);
-	this.setDefaultValues(animMgr, origval, obj);
+	this.setDefaultValues(animMgr, origval, obj, refobj);
 	if ('hide' in obj)
 	  obj.hide = bhide;
       }
@@ -405,7 +410,7 @@ if (!("anim" in cuemolui.panels)) {
     };
     
     /// Setup animation object's default values (time, etc...)
-    panel.setDefaultValues = function (animMgr, type, obj)
+    panel.setDefaultValues = function (animMgr, type, obj, refobj)
     {
       var sgnm = util.makeUniqName2(
 	function (a) {return type+a; },
@@ -415,7 +420,11 @@ if (!("anim" in cuemolui.panels)) {
       
       // default: add to the last of the anim timeline (as 1 sec anim)
       // let ms_last = animMgr.length.intval;
-      let xx = obj.start = animMgr.length;
+      if (refobj) {
+	obj.timeRefName = refobj.name;
+      }
+      obj.start.intval = 0;
+      let xx = obj.start; //animMgr.length;
       xx.intval += 1000;
       obj.end = xx;
 

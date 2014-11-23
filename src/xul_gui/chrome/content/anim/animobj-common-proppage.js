@@ -51,10 +51,17 @@ if (!("AnimObjPropPage" in cuemolui)) {
 				     function (event) { that.validateWidgets(event) },
 				     false);
 
+      this.mTimeRefList = document.getElementById("comprop-time-refobj");
+      this.mTimeRefList.addEventListener("select",
+				    function (event) { that.refObjChanged(event) },
+				    false);
+
       this.mQuadSli = document.getElementById("comprop-quadric");
       this.mQuadSli.addEventListener("change",
 				     function (event) { that.validateWidgets(event) },
 				     false);
+
+      this.buildRefObjMenu();
 
       dd("AnimObjPropPage> onLoad OK");
 
@@ -108,6 +115,9 @@ if (!("AnimObjPropPage" in cuemolui)) {
 	let ms_en = this.mStartTime.convToIntValue(elem.value);
 	this.mDurTime.value = ms_en - ms_st;
       }
+
+      elem = this.mMain.findPropData("timeRefName");
+      util.selectMenuListByValue(this.mTimeRefList, elem.value);
 
       /////
       
@@ -166,6 +176,11 @@ if (!("AnimObjPropPage" in cuemolui)) {
 	this.mMain.updateData("end", str_end);
       }
 
+      if (tgt_id=="comprop-time-refobj" || tgt_id==null) {
+	new_val = this.mTimeRefList.selectedItem.value;
+	this.mMain.updateData("timeRefName", new_val);
+      }
+      
       /////
 
       if (tgt_id=="comprop-quadric" || tgt_id==null) {
@@ -189,6 +204,33 @@ if (!("AnimObjPropPage" in cuemolui)) {
       // this.updateWidgets();
     };
     
+    klass.buildRefObjMenu = function ()
+    {
+      var scid = this.mMain.getSceneID();
+      var scene = cuemol.getScene(scid);
+      var animMgr = scene.getAnimMgr();
+
+      var menu = this.mTimeRefList.menupopup;
+      util.clearMenu(menu);
+
+      var i, nlen = animMgr.size;
+
+      util.appendMenu(document, menu, "", "(absolute)");
+
+      for (i=0; i<nlen; ++i) {
+	let ao = animMgr.getAt(i);
+	let type = cuemol.getClassName(ao);
+	let label = ao.name + " ("+type+")";
+	let value = ao.name;
+	util.appendMenu(document, menu, value, label);
+      }
+    };
+
+    klass.refObjChanged = function (aEvent)
+    {
+      this.validateWidgets(aEvent);
+    };
+
     ////////////////////////////////////////////////
 
     klass.onLoadSimSpin = function()

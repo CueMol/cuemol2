@@ -150,16 +150,17 @@ void AnimMgr::start(ViewPtr pView)
   if (m_nState==AM_STOP) {
     m_timeStart = m_pEvMgr->getCurrentTime();
     m_timeEnd = m_timeStart + m_length;
-    m_pEvMgr->setTimer(this, m_length);
-
     m_pTgtView = pView;
     startImpl();
+
+    m_pEvMgr->setTimer(this, m_length);
   }
   else if (m_nState==AM_PAUSED) {
     m_timeStart = m_pEvMgr->getCurrentTime() - m_timeElapsed;
     m_timeEnd = m_timeStart + m_length;
-    m_pEvMgr->setTimer(this, m_timeRemain);
     m_nState = AM_RUNNING;
+
+    m_pEvMgr->setTimer(this, m_timeRemain);
   }
 }
 
@@ -680,7 +681,7 @@ void AnimMgr::resolveTimeImpl(AnimObjPtr pObj)
   if (pRefObj->isTimeResolved()) {
     time_value tv_st = pRefObj->getAbsStart();
     time_value tv_en = pRefObj->getAbsEnd();
-    pObj->setAbsStart(tv_st + pObj->getRelStart());
+    pObj->setAbsStart(tv_en + pObj->getRelStart());
     pObj->setAbsEnd(tv_en + pObj->getRelEnd());
     pObj->setTimeResolved(true);
     return;
@@ -699,7 +700,7 @@ void AnimMgr::resolveTimeImpl(AnimObjPtr pObj)
 
   time_value tv_st = pRefObj->getAbsStart();
   time_value tv_en = pRefObj->getAbsEnd();
-  pObj->setAbsStart(tv_st + pObj->getRelStart());
+  pObj->setAbsStart(tv_en + pObj->getRelStart());
   pObj->setAbsEnd(tv_en + pObj->getRelEnd());
   pObj->setTimeResolved(true);
 }

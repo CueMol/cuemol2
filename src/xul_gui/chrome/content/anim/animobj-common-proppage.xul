@@ -47,7 +47,13 @@ multiselect {
 
 	    <row align="center" class="propdlg-rowbox">
 	      <label value="Start time:"/>
-	      <timeedit id="comprop-starttime" flex="1"/>
+	      <hbox flex="1" align="center">
+		<timeedit id="comprop-starttime" flex="0"/>
+		<label value="Relative to:"/>
+		<menulist id="comprop-time-refobj" flex="1" class="propdlg-menulist">
+		  <menupopup/>
+		</menulist>		
+	      </hbox>
 	    </row>
 
 	    <row align="center" class="propdlg-rowbox">
