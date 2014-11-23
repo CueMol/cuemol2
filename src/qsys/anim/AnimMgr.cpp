@@ -54,6 +54,8 @@ ScenePtr AnimMgr::getTgtScene() const
 
 void AnimMgr::startImpl()
 {
+  resolveRelTime();
+
   m_pStartCam = CameraPtr();
 
   // set camera from the start camera name
@@ -466,7 +468,7 @@ void AnimMgr::fireEvent(AnimObjEvent &ev)
 void AnimMgr::update()
 {
   if (m_nState!=AM_STOP) {
-    // edited but running -> abort play
+    // edited but running -> abort the play
     stop();
   }
 
@@ -617,5 +619,82 @@ void AnimMgr::propChanged(qlib::LPropEvent &aEvent)
   MB_DPRINTLN("AnimMgr prop (%s) changed",
 	      aEvent.getName().c_str());
 
+}
+
+/// Resolve relative start/end times
+void AnimMgr::resolveRelTime()
+{
+  // set resolution flag
+  BOOST_FOREACH (AnimObjPtr pObj, m_data) {
+    pObj->setTimeResolved(false);
+  }
+
+  BOOST_FOREACH (AnimObjPtr pObj, m_data) {
+    BOOST_FOREACH (AnimObjPtr pObj2, m_data) {
+      pObj2->setMarked(false);
+    }
+    resolveTimeImpl(pObj);
+  }
+}
+
+void AnimMgr::resolveTimeImpl(AnimObjPtr pObj)
+{
+  if (pObj->isTimeResolved())
+    return;
+
+  if (pObj->isMarked()) {
+    LString msg = LString::format("AnimMgr.resolve failed: AnimObj <%s> cyclic ref", pObj->getName().c_str());
+    MB_THROW(qlib::RuntimeException, msg);
+    return;
+  }
+
+  LString ref = pObj->getTimeRefName();
+  if (ref.isEmpty()) {
+    // absolute time specification
+    pObj->setStart( pObj->getRelStart() );
+    pObj->setEnd( pObj->getRelEnd() );
+    pObj->setTimeResolved(true);
+    return;
+  }
+    
+  AnimObjPtr pRefObj;
+  BOOST_FOREACH (AnimObjPtr pObj, m_data) {
+    if (ref.equals(pObj->getName())) {
+      pRefObj = pObj;
+      break;
+    }
+  }
+
+  if (pRefObj.isnull()) {
+    LString msg = LString::format("AnimMgr.resolve failed: AnimObj <%s> not found", ref.c_str());
+    MB_THROW(qlib::RuntimeException, msg);
+    return;
+  }
+
+  if (pRefObj->isTimeResolved()) {
+    time_value tv_st = pRefObj->getStart();
+    time_value tv_en = pRefObj->getEnd();
+    pObj->setStart(tv_st + pObj->getRelStart());
+    pObj->setEnd(tv_en + pObj->getRelEnd());
+    pObj->setTimeResolved(true);
+    return;
+  }
+
+  // refObj's time is not resolved yet!!
+
+  pObj->setMarked(true);
+  resolveTimeImpl(pRefObj);
+
+  if (!pRefObj->isTimeResolved()) {
+    LString msg = LString::format("AnimMgr.resolve failed: AnimObj <%s> resolve failed", ref.c_str());
+    MB_THROW(qlib::RuntimeException, msg);
+    return;
+  }
+
+  time_value tv_st = pRefObj->getStart();
+  time_value tv_en = pRefObj->getEnd();
+  pObj->setStart(tv_st + pObj->getRelStart());
+  pObj->setEnd(tv_en + pObj->getRelEnd());
+  pObj->setTimeResolved(true);
 }
 
