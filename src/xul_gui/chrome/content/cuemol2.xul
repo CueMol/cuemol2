@@ -19,6 +19,8 @@
 <?xul-overlay href="chrome://cuemol2/content/fakedial-panel.xul"?>
 <?xul-overlay href="chrome://cuemol2/content/anim/anim-panel.xul"?>
 
+<?xul-overlay href="chrome://cuemol2/content/bottom-panels/btmpanel-holder.xul"?>
+
 <!-- <?xul-overlay href="chrome://global/content/globalOverlay.xul"?> -->
 
 <!DOCTYPE window SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
@@ -69,15 +71,12 @@
 
       <tabmolview id="main_view" flex="1" />
       <splitter id="bottombar-splitter" hidden="false" collapse="after"/>
-      <iframe id="output_log_wnd" persist="height" />
 
-      <!--<vbox persist="height" flex="1">
-	<iframe id="output_log_wnd" flex="1"/>
-	<hbox flex="0" align="center">
-	  <label class="plain" value="CMD&gt;" flex="0"/>
-	  <textbox flex="1"/>
-	</hbox>
-      </vbox>-->
+
+      <!-- Bottom panel UI will be inserted here by bottom-panels/btmpanel-holder.xul -->
+      <overlaytarget id="btmpanels-overlay-target"/>
+      <!--<iframe id="output_log_wnd" persist="height" />-->
+      
     </vbox>
   </hbox>
 

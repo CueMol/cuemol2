@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+<!DOCTYPE overlay SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+
+<overlay id="btmpanels-overlay"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <overlaytarget id="btmpanels-overlay-target">
+
+    <script type="application/javascript" src="logpanel.js"/>
+
+    <tabbox flex="1">
+      <tabpanels flex="1" id="btmpanel-tabpanels" class="ribbon-tabpanels" >
+	<tabpanel flex="1" id="log-btmpanel-tabpanel" class="ribbon-tabpanel">
+	  <vbox persist="height" flex="1">
+	    <iframe id="output_log_wnd" flex="1"/>
+	    <hbox flex="0" align="center">
+	      <label class="plain" value="CMD&gt;" flex="0"/>
+	      <textbox flex="1" id="output_cmdbox"/>
+	    </hbox>
+	  </vbox>
+	</tabpanel>
+	<tabpanel flex="1" id="seq-btmpanel-tabpanel" >
+	</tabpanel>
+      </tabpanels>
+
+      <tabs id="btmpanel-tabcontainer" flex="0" class="tabs-bottom">
+	<tab id="log-btmpanel-tab" label="Output" class="tab-bottom"/>
+	<tab id="seq-btmpanel-tab" label="Sequence" class="tab-bottom"/>
+      </tabs>
+
+    </tabbox>
+
+  </overlaytarget>
+</overlay>
+

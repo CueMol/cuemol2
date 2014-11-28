@@ -55,6 +55,9 @@ cuemol2.jar:
 #
   content/object-menulist.js
   content/treeview.js
+# Bottom panels
+  content/bottom-panels/btmpanel-holder.xul
+  content/bottom-panels/logpanel.js
 # Color picker widget
   content/colpicker-bindings.xml
   content/colpicker.js
