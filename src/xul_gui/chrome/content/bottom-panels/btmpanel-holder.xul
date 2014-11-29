@@ -3,11 +3,13 @@
 <!DOCTYPE overlay SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
 
 <overlay id="btmpanels-overlay"
+  xmlns:html="http://www.w3.org/1999/xhtml"
   xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
 
   <overlaytarget id="btmpanels-overlay-target">
 
     <script type="application/javascript" src="logpanel.js"/>
+    <script type="application/javascript" src="seqpanel.js"/>
 
     <tabbox flex="1">
       <tabpanels flex="1" id="btmpanel-tabpanels" class="ribbon-tabpanels" >
@@ -21,6 +23,10 @@
 	  </vbox>
 	</tabpanel>
 	<tabpanel flex="1" id="seq-btmpanel-tabpanel" >
+	  <div style="overflow:scroll;border:solid 1px gray" flex="1">
+	    <html:canvas flex="1" id="seq_canvas">
+	    </html:canvas>
+	  </div>
 	</tabpanel>
       </tabpanels>
 

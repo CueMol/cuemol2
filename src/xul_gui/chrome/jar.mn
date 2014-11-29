@@ -58,6 +58,7 @@ cuemol2.jar:
 # Bottom panels
   content/bottom-panels/btmpanel-holder.xul
   content/bottom-panels/logpanel.js
+  content/bottom-panels/seqpanel.js
 # Color picker widget
   content/colpicker-bindings.xml
   content/colpicker.js

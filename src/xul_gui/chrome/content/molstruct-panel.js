@@ -165,12 +165,6 @@ panel.loadAtoms = function(aNode, aMol)
 
 panel.removeObject = function (aId)
 {
-/*
-  dd("WS.removeObject ID="+aId);
-  this.mTreeView.removeNode( function(elem) {
-    return (elem.obj_id==aId)?true:false;
-  } );
-*/
 }
 
 //////////////////////////
@@ -179,20 +173,6 @@ panel.removeObject = function (aId)
 panel.onLoad = function ()
 {
   var that = this;
-
-  // var mainWnd = this._mainWnd = $("#main_view")[0];
-
-/*this.mTreeView.setData([
-  { "name": "aaa", values: {"object_id": 123} },
-  { "name": "bbb", values: {"object_id": 3} },
-  { "name": "ccc", values: {"object_id": 5}, childNodes: [
-    {"name": "xyzz", values: {"object_id": 53} },
-    {"name": "d903", values: {"object_id": 312} },
-    {"name": "-0fgl3", values: {"object_id": 5343} }
-    ], collapsed: true },
-  { "name": "ddd", values: {"object_id": 35} }
-]);
-this.mTreeView.buildView();*/
 
   this.mSelector.addSelChanged(function(aEvent) {
     try {
