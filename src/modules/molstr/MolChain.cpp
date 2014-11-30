@@ -109,9 +109,12 @@ LString MolChain::getResidsJSON() const
     if (bcomma) rval += ",";
     MolResiduePtr pRes = *iter;
     ResidIndex ind = pRes->getIndex();
+    LString single;
+    pRes->getPropStr("single", single);
 
     rval += "{";
     rval += "\"name\":\""+pRes->getName().escapeQuots()+"\",";
+    rval += "\"single\":\""+single.escapeQuots()+"\",";
     rval += "\"index\":\""+ind.toString().escapeQuots()+"\"";
     rval += "}";
     bcomma = true;

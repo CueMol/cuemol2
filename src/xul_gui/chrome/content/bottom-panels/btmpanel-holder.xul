@@ -23,10 +23,10 @@
 	  </vbox>
 	</tabpanel>
 	<tabpanel flex="1" id="seq-btmpanel-tabpanel" >
-	  <div style="overflow:scroll;border:solid 1px gray" flex="1">
-	    <html:canvas flex="1" id="seq_canvas">
+	  <vbox id="seq-scrollbox" style="overflow-x:auto; overflow-y:auto; border:solid 1px gray" flex="1">
+	    <html:canvas flex="0" id="seq_canvas">
 	    </html:canvas>
-	  </div>
+	  </vbox>
 	</tabpanel>
       </tabpanels>
 

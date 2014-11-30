@@ -33,6 +33,11 @@ if (!("seqpanel" in cuemolui)) {
       
       //////////
 
+      this.mCanvas = document.getElementById("seq_canvas");
+      this.mScrBox = document.getElementById("seq_scrollbox");
+      this.mScrBox.addEventListener("DOMMouseScroll", function(aEvent) {
+	  dd("***SCROLL***");
+	}, false);
     };
 
     panel.onUnLoad = function ()
@@ -61,6 +66,8 @@ if (!("seqpanel" in cuemolui)) {
 	
 	case cuemol.evtMgr.SEM_REMOVING:
 	dd("SeqPanel SEM_REMOVING:"+args.obj.target_uid);
+	that.removeMolData(args.obj.target_uid);
+	that.renderSeq();
 	break;
 	
 	case cuemol.evtMgr.SEM_CHANGED:
@@ -142,19 +149,34 @@ if (!("seqpanel" in cuemolui)) {
       this.mNames[aMolId] = mol.name;
     };
     
+    panel.removeMolData = function (aMolId)
+    {
+      if (this.mData[aMolId])
+	delete this.mData[aMolId];
+      if (this.mNames[aMolId])
+	delete this.mNames[aMolId];
+    };
+
     panel.renderSeq = function ()
     {
-      this.mCanvas = document.getElementById("seq_canvas");
       var ctx = this.mCanvas.getContext("2d");
 
       var key, chn, nsize=0;
+      var nres, res, nmax = 0;
       var row = new Array();
       for (key in this.mData) {
 	var moldata = this.mData[key];
 	for (chn in moldata) {
-	  if (moldata[chn]) {
+	  var chdata = moldata[chn];
+	  if (chdata) {
 	    nsize++;
-	    
+	    row.push({mol: key, chain: chn});
+	    nres = chdata.length;
+	    res = chdata[nres-1].index;
+	    res = parseInt(res);
+	    dd("chain "+chn+", nres="+nres+", lastind="+res);
+	    if (!isNaN(res) && res>nmax)
+	      nmax = res;
 	  }
 	}
       }
@@ -163,11 +185,11 @@ if (!("seqpanel" in cuemolui)) {
       var tw = mtx.width;
       var th = 14;
 
-      var nx = 1000;
+      var nx = nmax+10;
       var ny = nsize;
       
       this.mCanvas.width = tw * nx;
-      //var h = this.mCanvas.height = th * ny;
+      this.mCanvas.height = th * ny;
       //dd("canvas height="+h);
 
       ctx.font = "bold "+th+"px monospace";
@@ -176,9 +198,25 @@ if (!("seqpanel" in cuemolui)) {
       dd("********* canvas nx="+nx);
       dd("********* canvas ny="+ny);
 
-      for (var y=0; y<ny; ++y)
-	for (var x=0; x<nx; ++x)
-	  ctx.fillText("X", x*tw, (y+1)*th);
+      for (var y=0; y<ny; ++y) {
+	key = row[y].mol;
+	chn = row[y].chain;
+	dd("mol: "+key+", chain: "+chn);
+	
+	moldata = this.mData[key];
+	chdata = moldata[chn];
+
+	nres = chdata.length;
+	for (var i=0; i<nres; ++i) {
+	  var sg = chdata[i].single;
+	  if (sg=="") sg = "*";
+	  var ires = chdata[i].index;
+	  ires = parseInt(ires);
+	  if (isNaN(ires))
+	    continue;
+	  ctx.fillText(sg, ires*tw, (y+1)*th);
+	}
+      }
     };
 
   } )();

@@ -2,7 +2,7 @@
 <toppar>
   <topology>
 
-    <resid id="Ar" pivot="P">
+    <resid id="Ar" pivot="P" single="A">
       <synonyms>
         <synonym value="ADE"/>
         <synonym value="DA"/>
@@ -18,7 +18,7 @@
       <prop name="basetype" value="pur"/>
     </resid>
 
-    <resid id="Cr" pivot="P">
+    <resid id="Cr" pivot="P" single="C">
       <synonyms>
         <synonym value="CYT"/>
         <synonym value="DC"/>
@@ -33,7 +33,7 @@
       <prop name="basetype" value="pyr"/>
     </resid>
 
-    <resid id="Gr" pivot="P">
+    <resid id="Gr" pivot="P" single="G">
       <synonyms>
         <synonym value="GUA"/>
         <synonym value="DG"/>
@@ -49,7 +49,7 @@
       <prop name="basetype" value="pur"/>
     </resid>
 
-    <resid id="Td" pivot="P">
+    <resid id="Td" pivot="P" single="T">
       <synonyms>
         <synonym value="THY"/>
         <synonym value="DT"/>
@@ -63,7 +63,7 @@
       <prop name="basetype" value="pyr"/>
     </resid>
 
-    <resid id="Ur" pivot="P">
+    <resid id="Ur" pivot="P" single="U">
       <synonyms>
         <synonym value="URI"/>
         <synonym value="URA"/>
@@ -80,7 +80,7 @@
 
     <!-- Modified nucleosides -->
 
-    <resid id="H2U" pivot="P" group="nucl">
+    <resid id="H2U" pivot="P" group="nucl" single="U">
       <rings>
         <ring value="N1 C2 N3 C4 C5 C6"/>
         <ring value="C1' C2' C3' C4' O4'"/>
@@ -90,7 +90,7 @@
       <prop name="basetype" value="pyr"/>
     </resid>
 
-    <resid id="1MA" pivot="P" group="nucl">
+    <resid id="1MA" pivot="P" group="nucl" single="A">
       <rings>
         <ring value="N1 C2 N3 C4 C5 C6"/>
         <ring value="C4 C5 N7 C8 N9"/>
@@ -101,7 +101,7 @@
       <prop name="basetype" value="pur"/>
     </resid>
 
-    <resid id="2MG" pivot="P" group="nucl">
+    <resid id="2MG" pivot="P" group="nucl" single="G">
       <rings>
         <ring value="N1 C2 N3 C4 C5 C6"/>
         <ring value="C4 C5 N7 C8 N9"/>
@@ -112,7 +112,7 @@
       <prop name="basetype" value="pur"/>
     </resid>
 
-    <resid id="5MC" pivot="P" group="nucl">
+    <resid id="5MC" pivot="P" group="nucl" single="C">
       <rings>
         <ring value="N1 C2 N3 C4 C5 C6"/>
         <ring value="C1' C2' C3' C4' O4'"/>
@@ -122,7 +122,7 @@
       <prop name="basetype" value="pyr"/>
     </resid>
 
-    <resid id="5MU" pivot="P" group="nucl">
+    <resid id="5MU" pivot="P" group="nucl" single="U">
       <rings>
         <ring value="N1 C2 N3 C4 C5 C6"/>
         <ring value="C1' C2' C3' C4' O4'"/>
@@ -132,7 +132,7 @@
       <prop name="basetype" value="pyr"/>
     </resid>
 
-    <resid id="7MG" pivot="P" group="nucl">
+    <resid id="7MG" pivot="P" group="nucl" single="G">
       <rings>
         <ring value="N1 C2 N3 C4 C5 C6"/>
         <ring value="C4 C5 N7 C8 N9"/>
@@ -143,7 +143,7 @@
       <prop name="basetype" value="pur"/>
     </resid>
 
-    <resid id="M2G" pivot="P" group="nucl">
+    <resid id="M2G" pivot="P" group="nucl" single="G">
       <rings>
         <ring value="N1 C2 N3 C4 C5 C6"/>
         <ring value="C4 C5 N7 C8 N9"/>
@@ -154,7 +154,7 @@
       <prop name="basetype" value="pur"/>
     </resid>
 
-    <resid id="OMC" pivot="P" group="nucl">
+    <resid id="OMC" pivot="P" group="nucl" single="C">
       <rings>
         <ring value="N1 C2 N3 C4 C5 C6"/>
         <ring value="C1' C2' C3' C4' O4'"/>
@@ -164,7 +164,7 @@
       <prop name="basetype" value="pyr"/>
     </resid>
 
-    <resid id="OMG" pivot="P" group="nucl">
+    <resid id="OMG" pivot="P" group="nucl" single="G">
       <rings>
         <ring value="N1 C2 N3 C4 C5 C6"/>
         <ring value="C4 C5 N7 C8 N9"/>
@@ -175,7 +175,7 @@
       <prop name="basetype" value="pur"/>
     </resid>
 
-    <resid id="PSU" pivot="P" group="nucl">
+    <resid id="PSU" pivot="P" group="nucl" single="Y">
       <rings>
         <ring value="N1 C2 N3 C4 C5 C6"/>
         <ring value="C1' C2' C3' C4' O4'"/>
@@ -185,7 +185,7 @@
       <prop name="basetype" value="pyr"/>
     </resid>
 
-    <resid id="YYG" pivot="P" group="nucl">
+    <resid id="YYG" pivot="P" group="nucl" single="G">
       <rings>
         <ring value="N1 C2 N3 C4 C5 C6"/>
         <ring value="C4 C5 N7 C8 N9"/>
