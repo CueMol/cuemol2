@@ -15,6 +15,7 @@ if (!("seqpanel" in cuemolui)) {
     panel.mTgtSceneID = null;
     panel.mData = new Object();
     panel.mNames = new Object();
+    panel.mFontSize = 14;
 
     panel.onLoad = function ()
     {
@@ -34,10 +35,18 @@ if (!("seqpanel" in cuemolui)) {
       //////////
 
       this.mCanvas = document.getElementById("seq_canvas");
+      this.mRulerCanvas = document.getElementById("ruler_canvas");
       this.mScrBox = document.getElementById("seq_scrollbox");
-      this.mScrBox.addEventListener("DOMMouseScroll", function(aEvent) {
+      this.mScrBox.addEventListener("scroll", function(aEvent) {
 	  dd("***SCROLL***");
 	}, false);
+
+      var elem = document.getElementById("btmpanels-overlay-target");
+      elem.addEventListener("resize", function(aEvent) {
+        dd("***RESIZE***");
+      }, false);
+
+      this.renderRuler();
     };
 
     panel.onUnLoad = function ()
@@ -160,6 +169,11 @@ if (!("seqpanel" in cuemolui)) {
     panel.renderSeq = function ()
     {
       var ctx = this.mCanvas.getContext("2d");
+      ctx.font = "bold "+this.mFontSize+"px monospace";
+      ctx.textBaseline = "bottom";
+      var mtx = ctx.measureText("M");
+      var tw = mtx.width;
+      var th = this.mFontSize;
 
       var key, chn, nsize=0;
       var nres, res, nmax = 0;
@@ -181,10 +195,6 @@ if (!("seqpanel" in cuemolui)) {
 	}
       }
 
-      var mtx = ctx.measureText("M");
-      var tw = mtx.width;
-      var th = 14;
-
       var nx = nmax+10;
       var ny = nsize;
       
@@ -192,7 +202,7 @@ if (!("seqpanel" in cuemolui)) {
       this.mCanvas.height = th * ny;
       //dd("canvas height="+h);
 
-      ctx.font = "bold "+th+"px monospace";
+      ctx.font = "bold "+this.mFontSize+"px monospace";
       ctx.textBaseline = "bottom";
 
       dd("********* canvas nx="+nx);
@@ -219,6 +229,38 @@ if (!("seqpanel" in cuemolui)) {
       }
     };
 
+    panel.renderRuler = function ()
+    {
+      this.mRulerCanvas.width = 1000;
+      this.mRulerCanvas.height = 16;
+      dd("width: "+this.mRulerCanvas.width);
+
+      var ctx = this.mRulerCanvas.getContext("2d");
+      ctx.font = "bold "+this.mFontSize+"px monospace";
+      ctx.textBaseline = "bottom";
+      var mtx = ctx.measureText("M");
+      var tw = mtx.width;
+
+      var i;
+      var y=0;
+      var ntics = this.mRulerCanvas.width / tw;
+      dd("********** ruler ntics = "+ntics);
+      ctx.beginPath();
+      for (i=0; i<ntics; ++i) {
+        var x = i*tw;
+        ctx.moveTo(x, y);
+        ctx.lineTo(x, y+16);
+        dd("tick at "+x);
+      }
+      ctx.stroke();
+
+      ctx.font = "8px san-serif";
+      for (i=0; i<ntics; ++i) {
+        var x = i*tw;
+        ctx.fillText(i, x, 0+8);
+      }
+    };
+    
   } )();
 }
 
