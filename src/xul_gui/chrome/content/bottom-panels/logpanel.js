@@ -53,6 +53,7 @@ if (!("logpanel" in cuemolui)) {
       this.mCmdBox = document.getElementById("output_cmdbox");
       this.mCmdBox.addEventListener("keypress", function (e) {panel.onKeyPress(e);}, false);
       
+      this.mTabMolView = document.getElementById("main_view");
     };
     
     panel.onUnLoad = function ()
@@ -79,7 +80,10 @@ if (!("logpanel" in cuemolui)) {
     panel.execCmd = function (aCmd)
     {
       try {
-	eval(aCmd);
+        let scene = this.mTabMolView.currentSceneW
+        let fun = new Function("scene", aCmd);
+        fun(scene);
+        //eval(aCmd);
       }
       catch (e) {
 	cuemol.putLogMsg(e.message);
