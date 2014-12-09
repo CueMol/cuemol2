@@ -31,6 +31,11 @@ var ctor = function (id, aWindow, aFilterFn, aFilter)
   this._propChgLsnrs = new Object();
   this._changeLsnrs = new Object();
 
+  // pre-selected ID/Name
+  // (store ID or Name, when select*() method is called before the onLoad initialization)
+  this._preSelectedID = null;
+  this._preSelectedName = null;
+
   // selection UID history table for each scene (scene->UID hash)
   this.mSelHisTab = new Object();
   
@@ -82,7 +87,18 @@ ctor.prototype._onLoad = function ()
   // no item in the list
   if (this._widget.itemCount==0)
     return;
-  this._widget.selectedIndex = 0;
+
+  if (this._preSelectedID) {
+    this.selectObject(this._preSelectedID);
+  }
+  else if (this._preSelectedName) {
+    this.selectObjectByName(this._preSelectedName);
+  }
+  else {
+    // no preselected ID/Name
+    // --> select the first item (default)
+    this._widget.selectedIndex = 0;
+  }
 }
 
 ctor.prototype._onUnLoad = function ()
@@ -437,8 +453,11 @@ ctor.prototype.fireChangeEvent = function ()
 
 ctor.prototype.selectObject = function (aId)
 {
-  if (this._data==null)
+  if (this._data==null || this._widget==null) {
+    dd("ObjectMenu> preSelectedID is set: "+aId);
+    this._preSelectedID = aId;
     return false;
+  }
 
   var i = this.getIndexByID(aId);
   if (i===null) return false;
@@ -451,8 +470,11 @@ ctor.prototype.selectObject = function (aId)
 
 ctor.prototype.selectObjectByName = function (aName)
 {
-  if (this._data==null)
+  if (this._data==null || this._widget==null) {
+    dd("ObjectMenu> preSelectedName is set: "+aName);
+    this._preSelectedName = aName;
     return false;
+  }
   
   var i = this.getIndexByName(aName);
   if (i===null) return false;

@@ -85,6 +85,9 @@ Qm2Main.prototype.setDefaultStyles = function(mol, rend)
   else if (rend_type === "cpk") {
     rend.applyStyles("DefaultCPK,DefaultCPKColoring");
   }
+  else if (rend_type === "contour") {
+    rend.applyStyles("DefaultContour");
+  }
   else if ('coloring' in rend) {
     rend.applyStyles("DefaultCPKColoring");
   }
@@ -95,10 +98,10 @@ Qm2Main.prototype.setDefaultStyles = function(mol, rend)
 /// Create renderer, and set initial props.
 Qm2Main.prototype.doSetupRend = function(sc, result)
 {
-  let mol = sc.getObject(result.obj_id);
-  let rend = mol.createRenderer(result.rendtype);
+  let obj = sc.getObject(result.obj_id);
+  let rend = obj.createRenderer(result.rendtype);
 
-  let clsname = mol._wrapped.getClassName();
+  let clsname = obj._wrapped.getClassName();
 
   // dd("doSetupRend> CALLED!! cls="+clsname);
 
@@ -111,11 +114,12 @@ Qm2Main.prototype.doSetupRend = function(sc, result)
   else if (clsname === "DensityMap") {
   }
   else {
-    this.molPostProc(sc, mol, rend, result);
+    // perform default setup for MolCoord (and derived classes) specifics
+    this.molPostProc(sc, obj, rend, result);
   }
   
   // set default styles
-  this.setDefaultStyles(mol, rend);
+  this.setDefaultStyles(obj, rend);
 
   rend.name = result.rendname;
 

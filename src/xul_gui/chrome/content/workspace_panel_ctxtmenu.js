@@ -276,7 +276,7 @@ ws.onStyleShowing = function (aEvent)
       regex = /Ribbon$/;
     }
     else if (elem.type_name == "cartoon") {
-      regex = /Ribbon$/;
+      regex = /Cartoon$/;
     }
     else if (elem.type_name == "ballstick") {
       regex = /BallStick$/;
@@ -289,6 +289,9 @@ ws.onStyleShowing = function (aEvent)
     }
     else if (elem.type_name == "trace") {
       regex = /Trace$/;
+    }
+    else if (elem.type_name == "contour") {
+      regex = /Contour$/;
     }
 
     cuemolui.populateStyleMenus(this.mTgtSceneID, menu, regex, true);

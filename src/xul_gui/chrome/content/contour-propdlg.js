@@ -17,7 +17,7 @@ var util = require("util");
 
 var ContourPropEdit = function ()
 {
-  dd("ContourPropEdit> Constructor called");
+  // dd("ContourPropEdit> Constructor called");
   this.mLimTarg = new cuemolui.ObjMenuList("map-limtarg", window,
 					   function (elem) {
                                              return cuemol.implIface(elem.type, "MolCoord");
@@ -55,13 +55,13 @@ ContourPropEdit.prototype.onLoad = function ()
 
 ContourPropEdit.prototype.onActivate = function ()
 {
-  dd("ContourPropPage> ENTER");
+  // dd("ContourPropPage> ENTER");
   this.updateWidgets();
 };
 
 ContourPropEdit.prototype.onInactivate = function ()
 {
-  dd("ContourPropPage> LEAVE");
+  // dd("ContourPropPage> LEAVE");
   // MacOS UI requires to validate widgets here,
   // since the change event is not fired on the tabsel change or closing the dialog
   this.validateWidgets();
@@ -182,12 +182,14 @@ ContourPropEdit.prototype.validateWidgets = function (aEvent)
 ContourPropEdit.prototype.updateDisabledState = function ()
 {
   if (this.mMapLim.checked) {
-    this.mLimTarg._widget.disabled = false;
+    if (this.mLimTarg._widget)
+      this.mLimTarg._widget.disabled = false;
     this.mLimSel.disabled = false;
     this.mLimRng.disabled = false;
   }
   else {
-    this.mLimTarg._widget.disabled = true;
+    if (this.mLimTarg._widget)
+      this.mLimTarg._widget.disabled = true;
     this.mLimSel.disabled = true;
     this.mLimRng.disabled = true;
   }

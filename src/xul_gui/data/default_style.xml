@@ -51,6 +51,7 @@
     ===== Renderer Styles =====
     -->
 
+  <!-- ribbon styles -->
   <style id="DefaultRibbon" type="renderer" axialdetail="8" desc="Default">
     <helix type="rectangle" tuber="6.0" width="0.2"/>
     <helixhead type="smooth"/>
@@ -97,6 +98,7 @@
     <coloring type="CPKColoring"/>
   </style>
 
+  <!-- bs styles -->
   <style id="DefaultBallStick" type="renderer" desc="Default"
     bondw="0.2" sphr="0.3" detail="10" ringcolor="$molcol">
   </style>
@@ -127,6 +129,7 @@
     stipple0="0.25" stipple1="0.5" stipple2="0.001" stipple3="0.5"
     type="renderer"/>
 
+  <!-- cartoon styles -->
   <style id="DefaultCartoon" type="renderer" desc="Default"
     axialdetail="8" smoothcolor="false">
     <helix_waver value="true"/>
@@ -138,6 +141,19 @@
     <sheethead type="arrow" gamma="1.0"/>
   </style>
 
+  <style id="RoundCartoon" type="renderer" desc="Round"
+    axialdetail="8" smoothcolor="false">
+    <helix_waver value="true"/>
+    <helix_wplus value="0.2"/>
+    <helix type="elliptical" tuber="1.0" />
+    <sheet type="elliptical" tuber="7.0" width="0.2"/>
+    <sheet_smooth value="1.0"/>
+    <sheethead type="arrow" gamma="1.0"/>
+    <coil type="elliptical" width="0.2" />
+    <coil_smooth value="-2.0"/>
+  </style>
+
+  <!-- simple/trace styles -->
   <style id="DefaultSimple" desc="Default" type="renderer" width="1.2" />
   <style id="ThickSimple" desc="Thick" type="renderer" width="3.0" />
   <style id="ExThickSimple" desc="ExThick" type="renderer" width="6.0" />
@@ -146,6 +162,7 @@
   <style id="ThickTrace" desc="Thick" type="renderer" width="3.0" />
   <style id="ExThickTrace" desc="ExThick" type="renderer" width="6.0" />
 
+  <style id="DefaultContour" desc="Default" type="renderer" material="nolighting" width="1.0" />
 
   <!--
     ===== Edge Styles =====
