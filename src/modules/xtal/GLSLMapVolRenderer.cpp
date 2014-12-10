@@ -409,7 +409,7 @@ void GLSLMapVolRenderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
 
   glBindTexture(GL_TEXTURE_3D, 0);
 
-  genXfurFunMap();
+  genXferFunMap();
 
   m_pPO->enable();
 
@@ -427,7 +427,7 @@ void GLSLMapVolRenderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
   m_bMapTexOK = true;
 }
 
-void GLSLMapVolRenderer::genXfurFunMap()
+void GLSLMapVolRenderer::genXferFunMap()
 {
   CHK_GLERROR("(reset)");
 
@@ -438,21 +438,41 @@ void GLSLMapVolRenderer::genXfurFunMap()
   glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 
   quint8 *pData = new quint8[4*256];
-  for (int i=0; i<256; ++i) {
-    double d = double(i)/255.0;
-    d = pow(d, 1.5);
-    double dr, dg, db;
-    gfx::AbstractColor::HSBtoRGB(d, 1.0, 1.0, dr, dg, db);
+  if (m_nXferType==GLMV_AUTO1) {
+    for (int i=0; i<256; ++i) {
+      double d = double(i)/255.0;
+      d = pow(d, 1.5);
+      double dr, dg, db;
+      gfx::AbstractColor::HSBtoRGB(d, 1.0, 1.0, dr, dg, db);
 
-    Vector4D col(dr, dg, db);
-    if (i>m_isolevel)
-      col.w() = d*2.0;
-    else
-      col.w() = d*0.1;
-    pData[i*4 + 0] = (quint8) qlib::trunc(int(col.x()*255.0), 0, 255);
-    pData[i*4 + 1] = (quint8) qlib::trunc(int(col.y()*255.0), 0, 255);
-    pData[i*4 + 2] = (quint8) qlib::trunc(int(col.z()*255.0), 0, 255);
-    pData[i*4 + 3] = (quint8) qlib::trunc(int(col.w()*255.0), 0, 255);
+      Vector4D col(dr, dg, db);
+      if (i>m_isolevel)
+	col.w() = d*2.0;
+      else
+	col.w() = d*0.1;
+      pData[i*4 + 0] = (quint8) qlib::trunc(int(col.x()*255.0), 0, 255);
+      pData[i*4 + 1] = (quint8) qlib::trunc(int(col.y()*255.0), 0, 255);
+      pData[i*4 + 2] = (quint8) qlib::trunc(int(col.z()*255.0), 0, 255);
+      pData[i*4 + 3] = (quint8) qlib::trunc(int(col.w()*255.0), 0, 255);
+    }
+  }
+  else /*if (m_nXferType==GLMV_AUTO2)*/ {
+    for (int i=0; i<256; ++i) {
+      double d = double(i)/255.0;
+      d = pow(d, 1.5);
+      double dr, dg, db;
+      gfx::AbstractColor::HSBtoRGB(d, 1.0, 1.0, dr, dg, db);
+
+      Vector4D col(dr, dg, db);
+      if (i>m_isolevel)
+	col.w() = d*2.0;
+      else
+	col.w() = d*0.1;
+      pData[i*4 + 0] = (quint8) qlib::trunc(int(col.x()*255.0), 0, 255);
+      pData[i*4 + 1] = (quint8) qlib::trunc(int(col.y()*255.0), 0, 255);
+      pData[i*4 + 2] = (quint8) qlib::trunc(int(col.z()*255.0), 0, 255);
+      pData[i*4 + 3] = (quint8) qlib::trunc(int(col.w()*255.0), 0, 255);
+    }
   }
 
   glTexImage1D(GL_TEXTURE_1D, 0,
@@ -704,7 +724,7 @@ void GLSLMapVolRenderer::renderGPU(DisplayContext *pdc)
   // set variables
 
   // m_pPO->setUniform( "dataFieldTex", 0 );
-  m_pPO->setUniformF( "isolevel", float(m_isolevel)/255.0 );
+  // m_pPO->setUniformF( "isolevel", float(m_isolevel)/255.0 );
   m_pPO->setUniformF( "thickness", thickness );
   m_pPO->setMatrix4fv( "modelview_matrix_inverse", 1, GL_FALSE, mi );
 

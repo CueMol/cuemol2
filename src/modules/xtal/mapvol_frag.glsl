@@ -10,7 +10,7 @@ uniform sampler1D xferFunTex;
 uniform sampler3D dataFieldTex;
 uniform float thickness;
 
-uniform float isolevel;
+// uniform float isolevel;
 
 varying vec3 texcoor;
 

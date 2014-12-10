@@ -34,6 +34,7 @@ color_parser.yxx color_scanner.lxx \
 ColCompiler.cpp \
 DrawElem.cpp \
 LabelCacheImpl.cpp \
+MultiGradient.cpp \
 $(NULL)
 
 # CueMol interface definitions for MCWRAPGEN

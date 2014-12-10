@@ -6,8 +6,11 @@
 #include <common.h>
 
 #include "MultiGradient.hpp"
+#include "SolidColor.hpp"
+#include "GradientColor.hpp"
 #include <qlib/Utils.hpp>
 #include <qlib/Vector4D.hpp>
+#include <qlib/LDOM2Tree.hpp>
 
 using namespace gfx;
 
@@ -21,7 +24,7 @@ MultiGradient::MultiGradient()
 ColorPtr MultiGradient::getColor(double rho) const
 {
   if (m_data.empty())
-    return gfx::SolidColor::createRGB(0.0, 0.0, 0.0, 1.0);
+    return SolidColor::createRGB(0.0, 0.0, 0.0, 1.0);
 
   data_t::const_iterator iter = m_data.begin();
 
@@ -58,7 +61,7 @@ MultiGradient::data_t::const_iterator MultiGradient::getIterAt(int ind) const
   data_t::const_iterator iter = m_data.begin();
   data_t::const_iterator eiter = m_data.end();
 
-  if (ind=>m_data.size())
+  if (ind>=m_data.size())
     return eiter;
 
   int i=ind;
@@ -75,7 +78,7 @@ MultiGradient::data_t::iterator MultiGradient::getIterAt(int ind)
   data_t::iterator iter = m_data.begin();
   data_t::iterator eiter = m_data.end();
 
-  if (ind=>m_data.size())
+  if (ind>=m_data.size())
     return eiter;
 
   int i=ind;
@@ -120,22 +123,64 @@ bool MultiGradient::removeAt(int ind)
   return true;
 }
 
-bool MultiGradient::changeAt(int ind, double value, const ColorPtr &color)
-{
-  data_t::const_iterator iter = getIterAt(ind);
-
-  if (iter==m_data.end())
-    return false;
-
-  iter->value = value;
-  iter->pColor = color;
-}
-
 void MultiGradient::writeTo2(qlib::LDom2Node *pNode) const
 {
+  // write properties
+  super_t::writeTo2(pNode);
+
+  BOOST_FOREACH(const Node &pt, m_data) {
+    qlib::LDom2Node *pChNode = pNode->appendChild("gradnode");
+    // always in child element
+    pChNode->setAttrFlag(false);
+
+    {
+      // write num (value) of tuple (maybe stored as attribute)
+      LString val = LString::format("%f", pt.value);
+      pChNode->appendStrAttr("value", val);
+    }
+    {
+      // write color of tuple (maybe stored as attribute)
+      qlib::LDom2Node *pColNode = pChNode->appendChild("color");
+      pColNode->setupByObject(pt.pColor.get());
+    }
+
+  }
 }
 
 void MultiGradient::readFrom2(qlib::LDom2Node *pNode)
 {
+  // read properties
+  super_t::readFrom2(pNode);
+
+  for (pNode->firstChild(); pNode->hasMoreChild(); pNode->nextChild()) {
+    qlib::LDom2Node *pChNode = pNode->getCurChild();
+    LString tag = pChNode->getTagName();
+
+    if (!tag.equals("gradnode")) {
+      continue;
+    }
+
+    if (pChNode->findChild("value")==NULL) {
+      LOG_DPRINTLN("MultiGradient.readFrom> no value attr in gradnode tag!!");
+      continue;
+    }
+
+    LString valstr = pChNode->getStrAttr("value");
+    double val;
+    if (!valstr.toDouble(&val)) {
+      LOG_DPRINTLN("MultiGradient.readFrom> invalid value attr in gradnode tag!!");
+      continue;
+    }
+
+    qlib::LDom2Node *pColNode = pChNode->findChild("color");
+    if (pColNode==NULL) {
+      LOG_DPRINTLN("MultiGradient.readFrom> no color valule in gradnode tag!!");
+      continue;
+    }
+    ColorPtr pCol(gfx::AbstractColor::fromNode(pColNode));
+
+    insert(val, pCol);
+  }
+
 }
 

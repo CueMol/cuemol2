@@ -17,6 +17,8 @@
 #include <sysdep/OglDisplayContext.hpp>
 #include <sysdep/OglProgramObject.hpp>
 
+#include <gfx/MultiGradient.hpp>
+
 class GLSLMapVolRenderer_wrap;
 
 namespace sysdep {
@@ -58,6 +60,22 @@ namespace xtal {
     /// (default: false)
     bool m_bDragUpdate;
 
+    gfx::MultiGradient m_xferfn;
+
+  public:
+    /// Auto xfer function type ID
+    static const int GLMV_MULTIGRAD = 0;
+    static const int GLMV_AUTO1 = 1;
+    static const int GLMV_AUTO2 = 2;
+
+  private:
+    /// Auto xfer function type
+    int m_nXferType;
+
+  public:
+    int getXferFnType() const { return m_nXferType; }
+    void setXferFnType(int i) { m_nXferType = i; }
+
   private:
 
     // GLSL shader objects
@@ -68,9 +86,6 @@ namespace xtal {
 
     /// size of map (copy from m_pMap)
     int m_nMapColNo, m_nMapRowNo, m_nMapSecNo;
-
-    // /// size of section array
-    // int m_nColCrs, m_nRowCrs, m_nSecCrs;
 
     int m_nActCol, m_nActRow, m_nActSec;
     int m_nStCol, m_nStRow, m_nStSec;
@@ -86,13 +101,14 @@ namespace xtal {
     // planes to draw (not used??)
     // GLuint m_nVBOID;
     
+    /// isosurface level
+    //  (in int unit, calculated from MapRenderer::getSigLevel())
     unsigned int m_isolevel;
 
     typedef qlib::Array3D<quint8> MapTmp;
     MapTmp m_maptmp;
 
     void renderGPU(DisplayContext *pdc);
-    // void renderCPU(DisplayContext *pdc);
 
   public:
 
@@ -142,7 +158,7 @@ namespace xtal {
 
     void make3DTexMap(ScalarObject *pMap, DensityMap *pXtal);
 
-    void genXfurFunMap();
+    void genXferFunMap();
 
     bool m_bMapTexOK;
 

@@ -27,6 +27,8 @@ namespace gfx {
 
   private:
 
+    typedef qlib::LSimpleCopyScrObject super_t;
+
     struct Node
     {
       double value;
@@ -74,7 +76,14 @@ namespace gfx {
     double getValueAt(int ind) const;
 
     bool removeAt(int ind);
-    bool changeAt(int ind, double value, const ColorPtr &color);
+    bool changeAt(int ind, double value, const ColorPtr &color)
+    {
+      if (!removeAt(ind))
+	return false;
+      insert(value, color);
+      return true;
+    }
+
 
     //////////////////////////////////////////////////////
     // Serialization / deserialization impl for non-prop data
