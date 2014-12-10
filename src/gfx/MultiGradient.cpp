@@ -20,6 +20,10 @@ MultiGradient::MultiGradient()
 {
 }
 
+MultiGradient::~MultiGradient()
+{
+}
+
 /// get color
 ColorPtr MultiGradient::getColor(double rho) const
 {

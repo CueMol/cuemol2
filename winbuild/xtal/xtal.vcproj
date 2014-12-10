@@ -209,6 +209,14 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\modules\xtal\CCP4MapReader.qif"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\modules\xtal\CCP4MapReader_wrap.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\modules\xtal\DensityMap.cpp"
 				>
 			</File>

@@ -63,11 +63,11 @@ double GLSLMapVolRenderer::getMaxExtent() const
   GLSLMapVolRenderer *pthis = const_cast<GLSLMapVolRenderer *>(this);
   ScalarObject *pMap = (ScalarObject *) pthis->getClientObj().get();
 
-  const double xmax = 100 * pMap->getColGridSize() / 2.0;
-  const double ymax = 100 * pMap->getRowGridSize() / 2.0;
-  const double zmax = 100 * pMap->getSecGridSize() / 2.0;
+  const double xmax = pMap->getColNo() * pMap->getColGridSize() / 2.0;
+  const double ymax = pMap->getRowNo() * pMap->getRowGridSize() / 2.0;
+  const double zmax = pMap->getSecNo() * pMap->getSecGridSize() / 2.0;
 
-  return qlib::min(xmax, qlib::min(ymax, zmax));
+  return qlib::max(xmax, qlib::max(ymax, zmax));
 }
 
 void GLSLMapVolRenderer::setSceneID(qlib::uid_t nid)
