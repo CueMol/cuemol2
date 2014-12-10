@@ -38,7 +38,7 @@ if (!("seqpanel" in cuemolui)) {
       this.mRulerCanvas = document.getElementById("ruler_canvas");
       this.mScrBox = document.getElementById("seq_scrollbox");
       this.mScrBox.addEventListener("scroll", function(aEvent) {
-	  dd("***SCROLL***");
+        that.onSeqBoxScroll(aEvent);
 	}, false);
 
       var elem = document.getElementById("btmpanels-overlay-target");
@@ -172,7 +172,7 @@ if (!("seqpanel" in cuemolui)) {
       ctx.font = "bold "+this.mFontSize+"px monospace";
       ctx.textBaseline = "bottom";
       var mtx = ctx.measureText("M");
-      var tw = mtx.width;
+      var tw = mtx.width+2;
       var th = this.mFontSize;
 
       var key, chn, nsize=0;
@@ -224,7 +224,7 @@ if (!("seqpanel" in cuemolui)) {
 	  ires = parseInt(ires);
 	  if (isNaN(ires))
 	    continue;
-	  ctx.fillText(sg, ires*tw, (y+1)*th);
+	  ctx.fillText(sg, ires*tw+1, (y+1)*th);
 	}
       }
     };
@@ -239,28 +239,37 @@ if (!("seqpanel" in cuemolui)) {
       ctx.font = "bold "+this.mFontSize+"px monospace";
       ctx.textBaseline = "bottom";
       var mtx = ctx.measureText("M");
-      var tw = mtx.width;
+      var tw = mtx.width+2;
 
       var i;
       var y=0;
       var ntics = this.mRulerCanvas.width / tw;
-      dd("********** ruler ntics = "+ntics);
+      // dd("********** ruler ntics = "+ntics);
       ctx.beginPath();
       for (i=0; i<ntics; ++i) {
-        var x = i*tw;
-        ctx.moveTo(x, y);
+        var x = (i+0.5)*tw;
+        ctx.moveTo(x, y+12);
         ctx.lineTo(x, y+16);
-        dd("tick at "+x);
+        // dd("tick at "+x);
       }
       ctx.stroke();
 
-      ctx.font = "8px san-serif";
-      for (i=0; i<ntics; ++i) {
-        var x = i*tw;
-        ctx.fillText(i, x, 0+8);
+      ctx.font = "10px san-serif";
+      for (i=5; i<ntics; i+=5){
+        mtx = ctx.measureText(i);
+        var x = (i+0.5)*tw - mtx.width/2.0;
+        ctx.fillText(i, x, 0+10);
       }
     };
     
+    panel.onSeqBoxScroll = function (aEvent)
+    {
+      var scrollx = aEvent.currentTarget.scrollLeft;
+      //dd("scroll: "+scrollx);
+      this.mRulerCanvas.style.marginLeft = (-scrollx) + "px";
+      dd("marginLeft: "+this.mRulerCanvas.style.marginLeft);
+    };
+
   } )();
 }
 
