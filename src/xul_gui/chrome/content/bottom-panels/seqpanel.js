@@ -36,17 +36,20 @@ if (!("seqpanel" in cuemolui)) {
 
       this.mCanvas = document.getElementById("seq_canvas");
       this.mRulerCanvas = document.getElementById("ruler_canvas");
+      this.mNamesCanvas = document.getElementById("seq_name_canvas");
+
       this.mScrBox = document.getElementById("seq_scrollbox");
       this.mScrBox.addEventListener("scroll", function(aEvent) {
         that.onSeqBoxScroll(aEvent);
 	}, false);
 
       var elem = document.getElementById("btmpanels-overlay-target");
-      elem.addEventListener("resize", function(aEvent) {
+      /*elem.addEventListener("resize", function(aEvent) {
         dd("***RESIZE***");
-      }, false);
+      }, false);*/
 
-      this.renderRuler();
+      this.setupParams();
+      this.renderRuler(300);
     };
 
     panel.onUnLoad = function ()
@@ -166,14 +169,26 @@ if (!("seqpanel" in cuemolui)) {
 	delete this.mNames[aMolId];
     };
 
-    panel.renderSeq = function ()
+    panel.setupParams = function ()
     {
+      this.mRulerHeight = 16;
+      this.mSeqHSep = 2;
+      // this.mSeqVSep = 0;
+
       var ctx = this.mCanvas.getContext("2d");
       ctx.font = "bold "+this.mFontSize+"px monospace";
       ctx.textBaseline = "bottom";
       var mtx = ctx.measureText("M");
-      var tw = mtx.width+2;
-      var th = this.mFontSize;
+      this.mTextw = mtx.width+this.mSeqHSep;
+      this.mTexth = this.mFontSize;
+    };
+
+    panel.renderSeq = function ()
+    {
+      var ctx = this.mCanvas.getContext("2d");
+
+      var tw = this.mTextw;
+      var th = this.mTexth;
 
       var key, chn, nsize=0;
       var nres, res, nmax = 0;
@@ -205,8 +220,8 @@ if (!("seqpanel" in cuemolui)) {
       ctx.font = "bold "+this.mFontSize+"px monospace";
       ctx.textBaseline = "bottom";
 
-      dd("********* canvas nx="+nx);
-      dd("********* canvas ny="+ny);
+      //dd("********* canvas nx="+nx);
+      //dd("********* canvas ny="+ny);
 
       for (var y=0; y<ny; ++y) {
 	key = row[y].mol;
@@ -224,26 +239,52 @@ if (!("seqpanel" in cuemolui)) {
 	  ires = parseInt(ires);
 	  if (isNaN(ires))
 	    continue;
-	  ctx.fillText(sg, ires*tw+1, (y+1)*th);
+          ctx.fillText(sg, ires*tw+(this.mSeqHSep/2.0), (y+1)*th);
 	}
       }
+
+      var ctx = this.mNamesCanvas.getContext("2d");
+      ctx.font = " "+this.mFontSize+"px san-serif";
+      ctx.textBaseline = "bottom";
+
+      var name_max = 0;
+      for (var y=0; y<ny; ++y) {
+        key = row[y].mol;
+	chn = row[y].chain;
+        var nm = chn+":"+this.mNames[key];
+        mtx = ctx.measureText(nm);
+        dd("mol: "+nm+", width="+mtx.width);
+        if (name_max<mtx.width)
+          name_max = mtx.width;
+      }
+      dd("max width="+name_max);
+      this.mNamesCanvas.width = name_max + 5;
+      for (var y=0; y<ny; ++y) {
+        key = row[y].mol;
+	chn = row[y].chain;
+	dd("mol: "+key+", chain: "+chn);
+
+        var nm = chn+":"+this.mNames[key];
+        ctx.fillText(nm, 5, (y+1)*th + this.mRulerHeight);
+      }
+
+      this.renderRuler(nmax);
     };
 
-    panel.renderRuler = function ()
+    panel.renderRuler = function (aLen)
     {
-      this.mRulerCanvas.width = 1000;
-      this.mRulerCanvas.height = 16;
-      dd("width: "+this.mRulerCanvas.width);
-
       var ctx = this.mRulerCanvas.getContext("2d");
-      ctx.font = "bold "+this.mFontSize+"px monospace";
-      ctx.textBaseline = "bottom";
-      var mtx = ctx.measureText("M");
-      var tw = mtx.width+2;
+      var tw = this.mTextw;
+
+      var ntics = aLen;
+      
+      this.mRulerCanvas.width = tw * ntics;
+      // this.mRulerCanvas.width = 1000;
+      this.mRulerCanvas.height = this.mRulerHeight;
+      dd("Ruler width: "+this.mRulerCanvas.width);
 
       var i;
       var y=0;
-      var ntics = this.mRulerCanvas.width / tw;
       // dd("********** ruler ntics = "+ntics);
       ctx.beginPath();
       for (i=0; i<ntics; ++i) {
@@ -262,6 +303,7 @@ if (!("seqpanel" in cuemolui)) {
       }
     };
     
+
     panel.onSeqBoxScroll = function (aEvent)
     {
       var scrollx = aEvent.currentTarget.scrollLeft;

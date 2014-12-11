@@ -25,27 +25,32 @@
 	</tabpanel>
 
 	<tabpanel flex="1" id="seq-btmpanel-tabpanel" class="ribbon-tabpanel">
-	  <vbox flex="1">
-	    <hbox flex="0" style="overflow-x:hidden;">
-	      <html:canvas flex="0" id="ruler_canvas" width="1000px"/>
-	    </hbox>
-	    <grid id="seq_scrollbox" flex="1" style="overflow-x:auto; overflow-y:auto; background-color: white;">
-	      <columns>
-		<column flex="0"/>
-		<column flex="1"/>
-	      </columns>
-	      <rows>
-		<row flex="0">
+	  <hbox flex="1">
+	    <vbox width="50px" flex="1"
+	      style="overflow-x:hidden; overflow-y:hidden; background-color: white;">
+	      <hbox flex="0">
+		<html:canvas flex="0" id="seq_name_canvas"/>
+		<spacer flex="1"/>
+	      </hbox>
+	      <spacer flex="1"/>
+	    </vbox>
+	    <splitter id="sidebar-splitter" hidden="false"/>
+	    <vbox flex="1">
+	      <hbox flex="0" style="overflow-x:hidden;">
+		<html:canvas flex="0" id="ruler_canvas" width="1000px"/>
+	      </hbox>
+	      
+	      <vbox id="seq_scrollbox" flex="1"
+		style="overflow-x:auto; overflow-y:auto; background-color: white;">
+		<hbox flex="0">
 		  <html:canvas flex="0" id="seq_canvas"/>
-		  <spacer/>
-		</row>
-		<row flex="1">
-		  <spacer/>
-		  <spacer/>
-		</row>
-	      </rows>
-	    </grid>
-	  </vbox>
+		  <spacer flex="1"/>
+		</hbox>
+		<spacer flex="1"/>
+	      </vbox>
+	      
+	    </vbox>
+	  </hbox>
 	</tabpanel>
 
       </tabpanels>
