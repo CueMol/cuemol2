@@ -33,7 +33,10 @@ if (!("seqpanel" in cuemolui)) {
 
       this.mCanvas = document.getElementById("seq_canvas");
       this.mCanvas.addEventListener("click", function(aEvent) {
-        that.onSeqClick(aEvent);
+        that.onSeqClick(aEvent, false);
+	}, false);
+      this.mCanvas.addEventListener("contextmenu", function(aEvent) {
+        that.onSeqClick(aEvent, true);
 	}, false);
 
       this.mRulerCanvas = document.getElementById("ruler_canvas");
@@ -44,6 +47,12 @@ if (!("seqpanel" in cuemolui)) {
       this.mScrBox.addEventListener("scroll", function(aEvent) {
         that.onSeqBoxScroll(aEvent);
 	}, false);
+
+      this.mCtxtMenu = document.getElementById("seq_ctxtmenu");
+      this.mCtxtMenuResLabel = document.getElementById("seq-ctm-reslabel");
+      this.mCtxtMenu.addEventListener("command", function (aEvent) {
+        try { that.onCtxtMenu(aEvent) } catch (e) { debug.exception(e) }
+      },false);
 
       this.setupParams();
       // this.renderRuler(300);
@@ -368,43 +377,57 @@ if (!("seqpanel" in cuemolui)) {
       this.mNamesList.style.marginTop = (-scrolly) + "px";
     };
 
-    panel.onSeqClick = function (aEvent)
+    panel.getResidueByEvent = function (aClientX, aClientY)
     {
-      var rect = aEvent.target.getBoundingClientRect();
-
-      var x = aEvent.clientX - rect.left;
-      var y = aEvent.clientY - rect.top;
-
+      var rect = this.mCanvas.getBoundingClientRect();
+      var x = aClientX - rect.left;
+      var y = aClientY - rect.top;
       var ix = Math.floor( x / this.mTextW );
       var iy = Math.floor( y / this.mTextH );
-      dd("seq click: "+ix+", "+iy);
+      //dd("seq click: "+ix+", "+iy+" btn="+aEvent.button);
 
       if (!this.mRow||!this.mRow[iy])
-        return;
+        return null;
       
       var key = this.mRow[iy].mol;
       var chn = this.mRow[iy].chain;
-      dd("mol ID: "+key+", chain="+chn);
 
-      this.toggleResidSel(key, chn, ix);
+      var scene = cuemol.getScene(this.mTgtSceneID);
+      if (!scene) return null;
+      var mol = scene.getObject(key);
+      if (!mol) return null;
+      var res = mol.getResidue(chn, ix.toString());
+      if (!res) return null;
+
+      return {"mol": mol, "res": res, "x": x, "y": y};
     }
 
-    panel.toggleResidSel = function (key, chn, ix)
+    panel.onSeqClick = function (aEvent, aCtxtMenu)
+    {
+      var r = this.getResidueByEvent(aEvent.clientX, aEvent.clientY);
+      if (!r)
+        return;
+      
+      if (aCtxtMenu) {
+        this.mClickX = aEvent.clientX;
+        this.mClickY = aEvent.clientY;
+        this.showCtxtMenu(r.mol, r.res, r.x, r.y, aEvent);
+      }
+      else {
+        this.toggleResidSel(r.mol, r.res);
+        this.centerAt(r.res);
+      }
+    }
+
+    panel.toggleResidSel = function (mol, res)
     {
       var scene = cuemol.getScene(this.mTgtSceneID);
-
       if (!scene) return;
-      var mol = scene.getObject(key);
-      if (!mol)
-        return;
-      var res = mol.getResidue(chn, ix.toString());
-      if (!res)
-        return;
 
       let rrs = cuemol.createObj("ResidRangeSet");
       rrs.fromSel(mol, mol.sel);
   
-      let addsel = cuemol.makeSel(chn + "." + ix + ".*");
+      let addsel = cuemol.makeSel(res.chainName + "." + res.sindex + ".*");
       if (rrs.contains(res))
         rrs.remove(mol, addsel);
       else
@@ -420,11 +443,6 @@ if (!("seqpanel" in cuemolui)) {
           throw "cannot compile selstr:"+selstr;
         }
         mol.sel = sel;
-
-        let pos = res.getPivotPos();
-        view = gQm2Main.mMainWnd.currentViewW;
-        if (view)
-          view.setViewCenter(pos);
       }
       catch(e) {
         dd("SetSel error");
@@ -433,6 +451,54 @@ if (!("seqpanel" in cuemolui)) {
       
       scene.commitUndoTxn();
       // EDIT TXN END //
+    };
+
+    panel.centerAt = function (aRes)
+    {
+      let pos = aRes.getPivotPos();
+      view = gQm2Main.mMainWnd.currentViewW;
+      if (view)
+        view.setViewCenter(pos);
+    };
+
+
+    panel.showCtxtMenu = function (mol, res, x, y, aEvent)
+    {
+      var scene = cuemol.getScene(this.mTgtSceneID);
+      if (!scene) return;
+
+      var label = this.mNames[mol.uid] + " " + res.chainName + res.sindex +" "+res.name;
+      this.mCtxtMenuResLabel.label = label;
+      this.mCtxtMenu.openPopup(this.mCanvas,
+                               "overlap", x, y,
+                               true, false, aEvent);
+      
+    };
+
+    panel.onCtxtMenu = function (aEvent)
+    {
+      var r = this.getResidueByEvent(this.mClickX, this.mClickY);
+      if (!r)
+        return;
+
+      var tgtid = aEvent.target.id;
+      dd("seqpanel.onCtxtMenu ID="+tgtid);
+
+      switch (tgtid) {
+      case "seq-ctm-center": 
+        this.centerAt(r.res);
+        break;
+      case "seq-ctm-select": 
+        this.toggleResidSel(r.mol, r.res);
+        break;
+      case "seq-ctm-unselectall":
+        cuemolui.molSelClear(r.mol);
+        break;
+      case "seq-ctm-invsel":
+        cuemolui.molSelInvert(r.mol);
+        break;
+
+      }      
     };
 
   } )();

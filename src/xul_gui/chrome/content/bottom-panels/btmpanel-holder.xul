@@ -74,5 +74,39 @@
     </tabbox>
 
   </overlaytarget>
+
+  <overlaytarget id="menus-overlay-target">
+    <popupset>
+      <menupopup id="seq_ctxtmenu">
+	<menuitem id="seq-ctm-reslabel" label="res_label"/>
+
+	<menuseparator/>
+
+	<menuitem label="Center here" id="seq-ctm-center"/>
+	<menuitem label="Toggle sel" id="seq-ctm-select"/>
+	<menu label="Around Byresid">
+	  <menupopup>
+	    <menuitem label="3 &#0197;" id="seq-ctm-arbyres-3"/>
+	    <menuitem label="5 &#0197;" id="seq-ctm-arbyres-5"/>
+	    <menuitem label="7 &#0197;" id="seq-ctm-arbyres-7"/>
+	    <menuitem label="10 &#0197;" id="seq-ctm-arbyres-10"/>
+	  </menupopup>
+	</menu>
+	<menu label="Around">
+	  <menupopup>
+	    <menuitem label="3 &#0197;" id="seq-ctm-arnd-3"/>
+	    <menuitem label="5 &#0197;" id="seq-ctm-arnd-5"/>
+	    <menuitem label="7 &#0197;" id="seq-ctm-arnd-7"/>
+	    <menuitem label="10 &#0197;" id="seq-ctm-arnd-10"/>
+	  </menupopup>
+	</menu>
+
+	<menuseparator/>
+	
+	<menuitem label="Unselect all" id="seq-ctm-unselectall"/>
+	<menuitem label="Invert sel" id="seq-ctm-invsel"/>
+      </menupopup>
+    </popupset>
+  </overlaytarget>
 </overlay>
 

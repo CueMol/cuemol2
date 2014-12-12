@@ -18,6 +18,8 @@ runtime_class MolResidue
   // property integer index => redirect(getIndex, setIndex);
   property string sindex => redirect(getStrIndex, setStrIndex);
 
+  property string chainName => redirect(getChainName, xxx) (readonly);
+
   string toString();
 
   string getAtomsJSON();
