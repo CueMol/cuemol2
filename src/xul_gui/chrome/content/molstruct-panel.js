@@ -277,7 +277,6 @@ panel.onTreeItemClick = function (aEvent, node, col)
       mol.sel = sel;
       var pos = mol.getCenterPos(true);
       
-      //var view = $("#main_view")[0].currentViewW;
       view = gQm2Main.mMainWnd.currentViewW;
       if (view)
         view.setViewCenter(pos);

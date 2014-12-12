@@ -496,3 +496,13 @@ camerasel {
   -moz-binding: url("chrome://cuemol2/content/camerasel-binding.xml#camerasel");
 }
 
+.seqpanel-splitter {
+  min-width: 4px;
+  background-color: threedface;
+  border-left: 1px solid threedshadow;
+  border-right: 1px solid threedshadow;
+  border-top: none;
+  border-bottom: none;
+  padding: 0px;
+  margin: 0px;
+}

@@ -11,7 +11,7 @@
     <script type="application/javascript" src="logpanel.js"/>
     <script type="application/javascript" src="seqpanel.js"/>
 
-    <tabbox flex="1" persist="height">
+    <tabbox flex="1">
       <tabpanels flex="1" id="btmpanel-tabpanels" class="ribbon-tabpanels" >
 
 	<tabpanel flex="1" id="log-btmpanel-tabpanel" class="ribbon-tabpanel">
@@ -26,15 +26,26 @@
 
 	<tabpanel flex="1" id="seq-btmpanel-tabpanel" class="ribbon-tabpanel">
 	  <hbox flex="1">
+
+	    <!--
 	    <vbox width="50px" flex="1"
-	      style="overflow-x:hidden; overflow-y:hidden; background-color: white;">
+	      style="overflow-x:hidden; overflow-y:hidden; background-color: white; min-width: 50px">
 	      <hbox flex="0">
 		<html:canvas flex="0" id="seq_name_canvas"/>
 		<spacer flex="1"/>
 	      </hbox>
 	      <spacer flex="1"/>
-	    </vbox>
-	    <splitter id="sidebar-splitter" hidden="false"/>
+	    </vbox>-->
+
+	    <box
+	      id="seq_name_list_container"
+	      persist="width"
+	      style="background-color: white; min-width: 50px; margin: 0px; border: 0px; padding-top: 16px; overflow-x:hidden; overflow-y:hidden;">
+	      <vbox flex="0" id="seq_name_list" style="background-color: white; "/>
+	    </box>
+	    
+	    <splitter hidden="false" class="seqpanel-splitter"/>
+
 	    <vbox flex="1">
 	      <hbox flex="0" style="overflow-x:hidden;">
 		<html:canvas flex="0" id="ruler_canvas" width="1000px"/>

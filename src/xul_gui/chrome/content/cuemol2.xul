@@ -74,7 +74,7 @@
 
 
       <!-- Bottom panel UI will be inserted here by bottom-panels/btmpanel-holder.xul -->
-      <overlaytarget id="btmpanels-overlay-target"/>
+      <overlaytarget id="btmpanels-overlay-target" persist="height"/>
       <!--<iframe id="output_log_wnd" persist="height" />-->
       
     </vbox>

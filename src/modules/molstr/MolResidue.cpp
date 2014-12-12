@@ -284,3 +284,28 @@ LString MolResidue::getAtomsJSON() const
   return rval;
 }
 
+qlib::LScrVector4D MolResidue::getPivotPosScr() const
+{
+  MolAtomPtr pAtom = getPivotAtom();
+  if (!pAtom.isnull())
+    return pAtom->getPosScr();
+
+  MolCoordPtr pMol = getParent();
+
+  qlib::Vector4D rval;
+  int natoms = 0;
+  AtomCursor iter = atomBegin();
+  AtomCursor eiter = atomEnd();
+  for (; iter!=eiter; ++iter) {
+    MolAtomPtr pAtom = pMol->getAtom(iter->second);
+    rval += pAtom->getPos();
+    ++natoms;
+  }
+
+  if (natoms!=0)
+    rval = rval.divide(natoms);
+  
+  return qlib::LScrVector4D(rval);
+}
+
+

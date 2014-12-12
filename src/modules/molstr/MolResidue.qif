@@ -2,6 +2,7 @@
 //
 // $Id: MolResidue.qif,v 1.5 2011/03/15 05:05:41 rishitani Exp $
 
+#include <qlib/Vector.qif>
 
 runtime_class MolResidue
 {
@@ -20,5 +21,7 @@ runtime_class MolResidue
   string toString();
 
   string getAtomsJSON();
+
+  object<Vector> getPivotPos() => getPivotPosScr;
 };
 
