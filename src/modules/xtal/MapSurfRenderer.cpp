@@ -154,24 +154,15 @@ void MapSurfRenderer::render(DisplayContext *pdl)
 
   m_pCMap = pMap;
 
-
   // generate map-range information
   makerange();
 
-  //
   //  setup frac-->orth matrix
-  //
-
-  int ncol = m_nActCol;
-  int nrow = m_nActRow;
-  int nsec = m_nActSec;
-
   pdl->pushMatrix();
-
-  if (pXtal==NULL)
+  if (pXtal==NULL) {
     pdl->translate(pMap->getOrigin());
-
-  if (pXtal!=NULL) {
+  }
+  else {
     Matrix3D orthmat = pXtal->getXtalInfo().getOrthMat();
     //orthmat.transpose();
     pdl->multMatrix(Matrix4D(orthmat));
@@ -206,9 +197,31 @@ void MapSurfRenderer::render(DisplayContext *pdl)
     pdl->translate(vtmp);
   }
 
-  MB_DPRINTLN("MapSurfRenderer Rendereing...\n");
-  
+  MB_DPRINTLN("MapSurfRenderer Rendereing...");
   pdl->startTriangles();
+
+  renderImpl(pdl);
+
+  pdl->end();
+
+#ifdef SHOW_NORMAL
+  pdl->startLines();
+  BOOST_FOREACH (const Vector4D &elem, m_tmpv) {
+    pdl->vertex(elem);
+  }
+  pdl->end();
+  m_tmpv.clear();
+#endif
+  
+  MB_DPRINTLN("MapSurfRenderer Rendereing OK\n");
+
+  pdl->popMatrix();
+  m_pCMap = NULL;
+}
+
+void MapSurfRenderer::renderImpl(DisplayContext *pdl)
+{
+  ScalarObject *pMap = m_pCMap;
 
   /////////////////////
   // setup workarea
@@ -221,6 +234,10 @@ void MapSurfRenderer::render(DisplayContext *pdl)
 
   /////////////////////
   // do marching cubes
+
+  int ncol = m_nActCol;
+  int nrow = m_nActRow;
+  int nsec = m_nActSec;
 
   int i,j,k;
   for (i=0; i<ncol; i++)
@@ -259,23 +276,6 @@ void MapSurfRenderer::render(DisplayContext *pdl)
       }
         
 
-  //////////
-
-  pdl->end();
-
-#ifdef SHOW_NORMAL
-  pdl->startLines();
-  BOOST_FOREACH (const Vector4D &elem, m_tmpv) {
-    pdl->vertex(elem);
-  }
-  pdl->end();
-  m_tmpv.clear();
-#endif
-  
-  pdl->popMatrix();
-
-  MB_DPRINTLN("MapSurfRenderer Rendereing OK\n");
-  m_pCMap = NULL;
 }
 
 void MapSurfRenderer::makerange()
@@ -545,23 +545,93 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl, int fx, int fy, int fz, dou
       // glColor3f(sColor.x, sColor.y, sColor.z);
 
       if (getLevel()<0) {
-        pdl->normal(-asEdgeNorm[iVertex]);
+        if (pdl!=NULL) {
+          pdl->normal(-asEdgeNorm[iVertex]);
+          pdl->vertex(asEdgeVertex[iVertex]);
+        }
+        else {
+          addMSVert(asEdgeVertex[iVertex], -asEdgeNorm[iVertex]);
+        }
 #ifdef SHOW_NORMAL
         m_tmpv.push_back(asEdgeVertex[iVertex]);
         m_tmpv.push_back(asEdgeVertex[iVertex]-asEdgeNorm[iVertex]);
 #endif
+
       }
       else {
-        pdl->normal(asEdgeNorm[iVertex]);
+        if (pdl!=NULL) {
+          pdl->normal(asEdgeNorm[iVertex]);
+          pdl->vertex(asEdgeVertex[iVertex]);
+        }
+        else {
+          addMSVert(asEdgeVertex[iVertex], asEdgeNorm[iVertex]);
+        }
+        
 #ifdef SHOW_NORMAL
         m_tmpv.push_back(asEdgeVertex[iVertex]);
         m_tmpv.push_back(asEdgeVertex[iVertex]+asEdgeNorm[iVertex]);
 #endif
       }
-      pdl->vertex(asEdgeVertex[iVertex]);
-    }
-  }
+
+
+    } // for(iCorner = 0; iCorner < 3; iCorner++)
+
+  } // for(iTriangle = 0; iTriangle < 5; iTriangle++)
 
   return;
+}
+
+qsys::ObjectPtr MapSurfRenderer::generateSurfObj()
+{
+  ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
+  DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
+  m_pCMap = pMap;
+
+  // generate map-range information
+  makerange();
+
+  //  setup frac-->orth matrix
+  if (pXtal==NULL) {
+    m_xform = Matrix4D::makeTransMat(pMap->getOrigin());
+  }
+  else {
+    Matrix3D orthmat = pXtal->getXtalInfo().getOrthMat();
+    m_xform = Matrix4D(orthmat);
+  }
+
+  {  
+    Vector4D vtmp;
+    if (pXtal!=NULL)
+      vtmp = Vector4D(1.0/double(pXtal->getColInterval()),
+                      1.0/double(pXtal->getRowInterval()),
+                      1.0/double(pXtal->getSecInterval()));
+    else
+      vtmp = Vector4D(pMap->getColGridSize(),
+                      pMap->getRowGridSize(),
+                      pMap->getSecGridSize());
+
+    //pdl->scale(vtmp);
+    m_xform.matprod( Matrix4D::makeScaleMat(vtmp) );
+
+    vtmp = Vector4D(m_nStCol, m_nStRow, m_nStSec);
+    // pdl->translate(vtmp);
+    m_xform.matprod( Matrix4D::makeTransMat(vtmp) );
+  }
+
+  surface::MolSurfObj *pSurfObj = new surface::MolSurfObj();
+  m_msverts.clear();
+  renderImpl(NULL);
+  int nverts = m_msverts.size();
+  int nfaces = nverts/3;
+  pSurfObj->setVertSize(nverts);
+  for (int i=0; i<nverts; ++i)
+    pSurfObj->setVertex(i, m_msverts[i]);
+  pSurfObj->setFaceSize(nfaces);
+  for (int i=0; i<nfaces; ++i)
+    pSurfObj->setFace(i, i*3, i*3+1, i*3+2);
+  m_msverts.clear();
+
+  qsys::ObjectPtr rval = qsys::ObjectPtr(pSurfObj);
+  return rval;
 }
 

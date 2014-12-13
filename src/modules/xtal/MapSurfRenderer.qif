@@ -38,6 +38,8 @@ runtime_class MapSurfRenderer extends MapRenderer
   property real width => redirect(getLineWidth, setLineWidth);
   default width = 1.2;
 
+  object<Object$> generateSurfObj();
+
 };
 
 #endif

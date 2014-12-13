@@ -70,19 +70,12 @@ void DisplayContext::setEdgeLineColor(const ColorPtr &c)
 
 void DisplayContext::scale(const Vector4D &v)
 {
-  Matrix4D m;
-  m.aij(1,1) = v.x();
-  m.aij(2,2) = v.y();
-  m.aij(3,3) = v.z();
-  m.aij(4,4) = 1.0;
-  multMatrix(m);
+  multMatrix(Matrix4D::makeScaleMat(v));
 }
 
 void DisplayContext::translate(const Vector4D &v)
 {
-  Matrix4D m = Matrix4D::makeTransMat(v);
-//  m.aij(4,4) = 1.0;
-  multMatrix(m);
+  multMatrix( Matrix4D::makeTransMat(v) );
 }
 
 void DisplayContext::loadIdent()

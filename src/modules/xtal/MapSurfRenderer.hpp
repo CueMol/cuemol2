@@ -15,6 +15,8 @@
 #include <modules/molstr/molstr.hpp>
 #include <modules/molstr/BSPTree.hpp>
 
+#include <modules/surface/MolSurfObj.hpp>
+
 class MapSurfRenderer_wrap;
 
 namespace xtal {
@@ -141,6 +143,8 @@ namespace xtal {
 
     void makerange();
 
+    void renderImpl(DisplayContext *pdl);
+
     void marchCube(DisplayContext *pdl, int fx, int fy, int fz, double *values);
     double getOffset(double fValue1, double fValue2, double fValueDesired);
     void getVertexColor(Vector4D &rfColor, Vector4D &rfPosition, Vector4D &rfNormal);
@@ -171,50 +175,25 @@ namespace xtal {
 
     Vector4D getGrdNorm(int ix, int iy, int iz);
 
-    inline double intrpX(double x, int y, int z) const
+  private:
+    std::deque<surface::MSVert> m_msverts;
+    Matrix4D m_xform;
+
+    void addMSVert(const Vector4D &v, const Vector4D &n)
     {
-      double ix = x+double(m_nStCol - m_pCMap->getStartCol());
-      int iy    = y+      (m_nStRow - m_pCMap->getStartRow());
-      int iz    = z+      (m_nStSec - m_pCMap->getStartSec());
+      Vector4D vv(v);
+      vv.w() = 1.0;
+      m_xform.xform4D(vv);
 
-      double xlo = ::floor(ix);
-      double xhi = ::ceil(ix);
-      double xf = ix - xlo;
+      Vector4D nn(n);
+      nn.w() = 0.0;
+      m_xform.xform4D(nn);
 
-      return
-        getDen((int) xlo, (int) iy, (int) iz)*(1.0-xf) +
-          getDen((int) xhi, (int) iy, (int) iz)*xf;
+      m_msverts.push_back( surface::MSVert(vv, nn) );
     }
 
-    inline double intrpY(int x, double y, int z) const
-    {
-      int ix    = x+      (m_nStCol - m_pCMap->getStartCol());
-      double iy = y+double(m_nStRow - m_pCMap->getStartRow());
-      int iz    = z+      (m_nStSec - m_pCMap->getStartSec());
-
-      double ylo = ::floor(iy);
-      double yhi = ::ceil(iy);
-      double yf = iy - ylo;
-
-      return
-        getDen((int) ix, (int) ylo, (int) iz)*(1.0-yf) +
-          getDen((int) ix, (int) yhi, (int) iz)*yf;
-    }
-
-    inline double intrpZ(int x, int y, double z) const
-    {
-      int ix    = x+      (m_nStCol - m_pCMap->getStartCol());
-      int iy    = y+      (m_nStRow - m_pCMap->getStartRow());
-      double iz = z+double(m_nStSec - m_pCMap->getStartSec());
-
-      double zlo = ::floor(iz);
-      double zhi = ::ceil(iz);
-      double zf = iz - zlo;
-
-      return
-        getDen((int) ix, (int) iy, (int) zlo)*(1.0-zf) +
-          getDen((int) ix, (int) iy, (int) zhi)*zf;
-    }
+  public:    
+    qsys::ObjectPtr generateSurfObj();
 
   };
 

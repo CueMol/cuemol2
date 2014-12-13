@@ -195,6 +195,14 @@ namespace qlib {
       return rval;
     }
 
+    inline static Matrix4D makeScaleMat(const Vector4D &v) {
+      Matrix4D rval;
+      rval.aij(1,1) = v.x();
+      rval.aij(2,2) = v.y();
+      rval.aij(3,3) = v.z();
+      return rval;
+    }
+
     static Matrix4D makeRotMat(const Vector4D &e1, const Vector4D &e2);
     static Matrix4D makeRotTranMat(const Vector4D &e1, const Vector4D &e2, const Vector4D &tran);
 

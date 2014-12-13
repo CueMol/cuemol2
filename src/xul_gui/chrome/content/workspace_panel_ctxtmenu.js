@@ -104,10 +104,15 @@ ws.onRendCtxtMenuShowing = function (aEvent)
   var clrngitem = document.getElementById("wspcPanelRendColMenu");
   var selitem = document.getElementById("wspcPanelRendSelMenu");
   var editiitem = document.getElementById("wspcPanelEditIntrMenu");
+  var gensurfitem = document.getElementById("wspcPanelGenSurfObjMenu");
 
   editiitem.hidden = true;
-  if (this.checkIntrRend()!=null)
+  if (this.checkRend("atomintr")!=null)
     editiitem.hidden = false;
+
+  gensurfitem.hidden = true;
+  if (this.checkRend("isosurf")!=null)
+    gensurfitem.hidden = false;
 
   var rend = this.getSelectedRend();
   if (rend==null ||
@@ -237,24 +242,54 @@ ws.onPaintMol = function (aEvent)
 ////////////////////////////////
 // Interaction renderer related methods
 
-ws.checkIntrRend = function ()
+ws.checkRend = function (aName)
 {
   var target = this.getSelectedRend();
   if (target==null||
-      target.type_name !== "atomintr")
+      target.type_name !== aName)
     return null;
   return target;
 }
 
 ws.onEditIntr = function ()
 {
-  var rend = this.checkIntrRend();
+  var rend = this.checkRend("atomintr");
   
   var args = Cu.getWeakReference({target: rend});
   window.openDialog("chrome://cuemol2/content/tools/aintr-edit-dlg.xul",
                     null,
                     "chrome,modal,resizable=no,dependent,centerscreen",
                     args);
+}
+
+////////////////////////////////
+// MapSurf (isosurf) renderer related methods
+
+ws.onGenSurfObj = function ()
+{
+  var rend = this.checkRend("isosurf");
+  var obj = rend.getClientObj();
+  var newobj = rend.generateSurfObj();
+  var scene = rend.getScene();
+  
+  var sgnm = util.makeUniqName2(
+    function (a) {return obj.name+"_sf"+a},
+    function (a) {return scene.getObjectByName(a);} );
+
+  // EDIT TXN START //
+  scene.startUndoTxn("Generate surfobj");
+  try {
+    newobj.name = sgnm;
+    scene.addObject(newobj);
+  }
+  catch (e) {
+    debug.exception(e);
+    scene.rollbackUndoTxn();
+    return;
+  }
+
+  scene.commitUndoTxn();
+  // EDIT TXN END //
 }
 
 ///////////////////////////////////

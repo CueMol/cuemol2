@@ -246,6 +246,9 @@
 	<menuitem label="Edit interaction list..." id="wspcPanelEditIntrMenu"
 	  oncommand="cuemolui.panels.workspace.onEditIntr(event);"/>
 
+	<menuitem label="Generate surface obj" id="wspcPanelGenSurfObjMenu"
+	  oncommand="cuemolui.panels.workspace.onGenSurfObj(event);"/>
+
 	<menuseparator/>
 	<menuitem label="Copy" id="wspcPanelCopyMenu"
 	  oncommand="cuemolui.panels.workspace.onCopyCmd(event);"/>
