@@ -25,6 +25,19 @@ runtime_class MapSurfRenderer extends MapRenderer
   property boolean dragupdate => m_bDragUpdate;
   default dragupdate = false;
 
+  /// Mesh drawing mode
+  enumdef drawmode {
+    fill = xtal::MapSurfRenderer::MSRDRAW_FILL;
+    line = xtal::MapSurfRenderer::MSRDRAW_LINE;
+    point = xtal::MapSurfRenderer::MSRDRAW_POINT;
+  }
+  property enum drawmode => redirect(getDrawMode, setDrawMode);
+  default drawmode = "fill";
+
+  /// Line/Dot size in wireframe/dot mode
+  property real width => redirect(getLineWidth, setLineWidth);
+  default width = 1.2;
+
 };
 
 #endif

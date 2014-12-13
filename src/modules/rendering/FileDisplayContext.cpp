@@ -112,7 +112,24 @@ void FileDisplayContext::vertex(const Vector4D &aV)
 
     //////////////////////////////////////////////////////
   case POV_TRIGS:
-    m_pIntData->meshVertex(v, m_norm, m_pColor);
+    if (m_nPolyMode==POLY_POINT) {
+      m_pIntData->dot(v, m_linew, m_pColor);
+    }
+    else if (m_nPolyMode==POLY_LINE) {
+      // XXX: this impl draw each edge twice
+      MB_ASSERT(m_nVertCnt>=0&&m_nVertCnt<3);
+      m_vectmp[m_nVertCnt] = v;
+      ++m_nVertCnt;
+      if (m_nVertCnt>=3) {
+        m_nVertCnt = 0;
+        m_pIntData->line(m_vectmp[0], m_vectmp[1], m_linew, m_pColor);
+        m_pIntData->line(m_vectmp[1], m_vectmp[2], m_linew, m_pColor);
+        m_pIntData->line(m_vectmp[2], m_vectmp[0], m_linew, m_pColor);
+      }
+    }
+    else {
+      m_pIntData->meshVertex(v, m_norm, m_pColor);
+    }
     break;
 
     //////////////////////////////////////////////////////
@@ -320,7 +337,13 @@ void FileDisplayContext::startTriangles()
     return;
   }
   m_nDrawMode = POV_TRIGS;
-  m_pIntData->meshStart();
+
+  if (m_nPolyMode==POLY_FILL)
+    m_pIntData->meshStart();
+  else if (m_nPolyMode==POLY_LINE) {
+    m_nVertCnt = 0;
+    m_vectmp.resize(3);
+  }
 }
 
 void FileDisplayContext::startTriangleStrip()
@@ -359,7 +382,8 @@ void FileDisplayContext::end()
     break;
 
   case POV_TRIGS:
-    m_pIntData->meshEndTrigs();
+    if (m_nPolyMode==POLY_FILL)
+      m_pIntData->meshEndTrigs();
     break;
 
   case POV_TRIGFAN:

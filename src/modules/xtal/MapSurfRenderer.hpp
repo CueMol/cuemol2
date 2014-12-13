@@ -66,6 +66,19 @@ namespace xtal {
     /// Line width (used in LINE/POINT mode)
     double m_lw;
 
+  public:
+    int getDrawMode() const { return m_nDrawMode; }
+    void setDrawMode(int n) {
+      m_nDrawMode = n;
+      invalidateDisplayCache();
+    }
+    
+    void setLineWidth(double f) {
+      m_lw = f;
+      invalidateDisplayCache();
+    }
+    double getLineWidth() const { return m_lw; }
+    
   private:
 
     ///////////////////////////////////////////

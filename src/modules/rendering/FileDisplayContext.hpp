@@ -93,6 +93,10 @@ namespace render {
 
     bool m_bLighting;
 
+    int m_nVertCnt;
+
+    std::vector<Vector4D> m_vectmp;
+
   public:
 
     ////////////////////////////////////////////////////////////
