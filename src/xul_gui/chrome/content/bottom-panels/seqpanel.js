@@ -286,6 +286,9 @@ if (!("seqpanel" in cuemolui)) {
         name_height = bo.height;
       }
 
+      if (nmax*this.mTextW>30000) {
+        nmax = Math.floor(30000/this.mTextW);
+      }
       this.renderRuler((nmax>0)?nmax:300);
 
       var nx = nmax+10;
@@ -339,7 +342,10 @@ if (!("seqpanel" in cuemolui)) {
       var ctx = this.mRulerCanvas.getContext("2d");
       var tw = this.mTextW;
 
-      var ntics = aLen;
+      if (this.mRulerLen && this.mRulerLen>aLen)
+        return;
+      
+      var ntics = this.mRulerLen = aLen;
       
       this.mRulerCanvas.width = tw * ntics;
       // this.mRulerCanvas.width = 1000;
@@ -411,7 +417,7 @@ if (!("seqpanel" in cuemolui)) {
       if (aCtxtMenu) {
         this.mClickX = aEvent.clientX;
         this.mClickY = aEvent.clientY;
-        this.showCtxtMenu(r.mol, r.res, r.x, r.y, aEvent);
+        this.showCtxtMenu(r.mol, r.res, aEvent);
       }
       else {
         this.toggleResidSel(r.mol, r.res);
@@ -462,14 +468,18 @@ if (!("seqpanel" in cuemolui)) {
     };
 
 
-    panel.showCtxtMenu = function (mol, res, x, y, aEvent)
+    panel.showCtxtMenu = function (mol, res, aEvent)
     {
       var scene = cuemol.getScene(this.mTgtSceneID);
       if (!scene) return;
 
+      var x = aEvent.clientX;
+      var y = aEvent.clientY;
+
+      dd("SeqPanel.showCtctMenu> popup at ("+x+", "+y+")");
       var label = this.mNames[mol.uid] + " " + res.chainName + res.sindex +" "+res.name;
       this.mCtxtMenuResLabel.label = label;
-      this.mCtxtMenu.openPopup(this.mCanvas,
+      this.mCtxtMenu.openPopup(null, //this.mCanvas,
                                "overlap", x, y,
                                true, false, aEvent);
       
