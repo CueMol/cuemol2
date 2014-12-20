@@ -38,6 +38,8 @@ function PovRender()
   this.mbRadiosity = false;
   this.mnRadMode = 0;
   this.mbVerbose = true;
+  this.mbOutputAlpha = false;
+  this.mbUseFog = true;
 
   this.mTimer = null;
   this.mPlfName = util.getPlatformString();
@@ -431,6 +433,12 @@ PovRender.prototype.doRenderImpl = function (index, aAsync)
     args.push("+V");
   else
     args.push("-V");
+
+  if (this.mbOutputAlpha)
+    args.push("+UA");
+
+  if (!this.mbUseFog)
+    args.push("Declare=_no_fog=1");
 
   if (this.mbRadiosity) {
     dd("PovRender> Radiosity ON; mode="+this.mnRadMode);

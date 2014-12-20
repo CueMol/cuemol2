@@ -140,6 +140,7 @@
   
   dlg.onUnload = function ()
   {
+    util.persistChkBox("use-transp-bg", document);
     util.persistChkBox("enable-clip-plane", document);
     util.persistChkBox("enable-post-blend", document);
     util.persistChkBox("enable-shadow", document);
@@ -292,6 +293,16 @@
     elem = document.getElementById("proj-mode-list");
     this.mPovRender.bOrtho = (elem.selectedItem.value=="ortho");
 
+    elem = document.getElementById("use-transp-bg");
+    if (elem.checked) {
+      this.mPovRender.mbOutputAlpha = true;
+      this.mPovRender.mbUseFog = false;
+    }
+    else {
+      this.mPovRender.mbOutputAlpha = false;
+      this.mPovRender.mbUseFog = true;
+    }
+    
     elem = document.getElementById("enable-clip-plane");
     this.mPovRender.mbClip = elem.checked;
 

@@ -34,7 +34,7 @@ public:
 
   int m_nBitDepth, m_nColorType, m_nIntrType;
 
-  static const int NCOMP = 3;
+  // static const int NCOMP = 3;
 
   double m_alpha;
 
@@ -51,7 +51,7 @@ public:
       m_nIntrType(PNG_INTERLACE_NONE), m_alpha(1.0),
       m_dpi(-1.0)
   {
-    m_nRowSize = w * NCOMP;
+    m_nRowSize = w * 3;
     m_ppImage = new png_bytep[m_nHeight];
     for (int i = 0; i < m_nHeight; i++)
       m_ppImage[i] = (png_bytep) new unsigned char[m_nRowSize];
@@ -103,12 +103,18 @@ public:
 
   unsigned char getAt(int x, int y, int c) const
   {
-    return m_ppImage[y][x*NCOMP+c];
+    if (m_nColorType==PNG_COLOR_TYPE_RGB_ALPHA)
+      return m_ppImage[y][x*4+c];
+    else
+      return m_ppImage[y][x*3+c];
   }
 
   void setAt(int x, int y, int c, unsigned char val)
   {
-    m_ppImage[y][x*NCOMP+c] = val;
+    if (m_nColorType==PNG_COLOR_TYPE_RGB_ALPHA)
+      m_ppImage[y][x*4+c] = val;
+    else
+      m_ppImage[y][x*3+c] = val;
   }
 
   void cleanup()
@@ -162,7 +168,7 @@ public:
     png_init_io(png_ptr, fp);
 
     png_set_IHDR(png_ptr, info_ptr, m_nWidth, m_nHeight,
-		 8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
+		 m_nBitDepth, m_nColorType, PNG_INTERLACE_NONE,
 		 PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 
     // Store resolution in ppm
@@ -259,8 +265,7 @@ int blend1(int argc, const char *argv[])
   std::string file_bg = argv[1];
   std::string outfile = argv[argc-1];
 
-  std::cerr << "input file_bg: " << file_bg << std::endl;
-  std::cerr << "output file: " << outfile << std::endl;
+  std::cerr << "Input file_bg: " << file_bg << std::endl;
 
   PNGImage img_bg;
   if (!img_bg.read(file_bg)) {
@@ -274,6 +279,19 @@ int blend1(int argc, const char *argv[])
   std::cerr << "Image row size = " << img_bg.m_nRowSize << std::endl;
   std::cerr << "Image depth = " << img_bg.m_nBitDepth << std::endl;
   std::cerr << "Image color type = " << img_bg.m_nColorType << std::endl;
+
+  int nComp;
+  if (img_bg.m_nColorType==PNG_COLOR_TYPE_RGB) {
+    nComp=3;
+  }
+  else if (img_bg.m_nColorType==PNG_COLOR_TYPE_RGB_ALPHA) {
+    std::cerr << "Input is RGBA color image." << std::endl;
+    nComp=4;
+  }
+  else {
+    std::cerr << "ERROR: Image colortype is not RGB or RGBA." << std::endl;
+    return -1;
+  }
 
   int w = img_bg.m_nWidth;
   int h = img_bg.m_nHeight;
@@ -294,8 +312,8 @@ int blend1(int argc, const char *argv[])
     char *endptr;
     double alpha = strtod(salpha.c_str(), &endptr);
 
-    std::cerr << "input file" << ind << " : " << file2 << std::endl;
-    std::cerr << "blend alpha = " << alpha << std::endl;
+    std::cerr << "Input layer " << ind << " : " << file2 << std::endl;
+    std::cerr << "  blend alpha = " << alpha << std::endl;
 
     PNGImage *pimg2 = new PNGImage();
     if (!pimg2->read(file2)) {
@@ -323,10 +341,6 @@ int blend1(int argc, const char *argv[])
       std::cerr << "ERROR: Image colortype mismatch." << std::endl;
       return -1;
     }
-    if (img_bg.m_nColorType!=PNG_COLOR_TYPE_RGB) {
-      std::cerr << "ERROR: Image colortype is not RGB." << std::endl;
-      return -1;
-    }
 
     pimg2->allocAlpha();
     images.push_back(pimg2);
@@ -337,17 +351,26 @@ int blend1(int argc, const char *argv[])
   for (int y = 0; y < h; ++y) {
     for (int x = 0; x < w; ++x) {
 
-      unsigned char bg[3], c;
-      bg[0] = img_bg.getAt(x, y, 0);
-      bg[1] = img_bg.getAt(x, y, 1);
-      bg[2] = img_bg.getAt(x, y, 2);
+      unsigned char bg[4], c;
+      for (int ic=0; ic<nComp; ++ic) {
+        bg[ic] = img_bg.getAt(x, y, ic);
+        if (x==1&&y==1) {
+          std::cerr << "bg(1,1)=" << ic << ":" << int(bg[ic]) << std::endl;
+        }
+      }
+      //bg[0] = img_bg.getAt(x, y, 0);
+      //bg[1] = img_bg.getAt(x, y, 1);
+      //bg[2] = img_bg.getAt(x, y, 2);
 
       std::vector<PNGImage *>::const_iterator iter = images.begin();
       for (; iter!=images.end(); ++iter) {
         PNGImage *pimg = *iter;
         bool bdiff = false;
-        for (int i=0; i<3; ++i) {
+        for (int i=0; i<nComp; ++i) {
           c = pimg->getAt(x, y, i);
+          if (x==1&&y==1) {
+            std::cerr << "L(1,1)=" << i << ":" << int(c) << std::endl;
+          }
           if (c!=bg[i]) {
             bdiff = true;
             break;
@@ -363,13 +386,13 @@ int blend1(int argc, const char *argv[])
 
   for (int y = 0; y < h; ++y) {
     for (int x = 0; x < w; ++x) {
-      for (int i = 0; i < 3; ++i) {
+      for (int i = 0; i < nComp; ++i) {
         unsigned char bg = img_bg.getAt(x, y, i);
         double value = bg;
         std::vector<PNGImage *>::const_iterator iter = images.begin();
         for (; iter!=images.end(); ++iter) {
           PNGImage *pimg = *iter;
-          if (pimg->getAlpha(x, y)==0) continue;
+          //if (pimg->getAlpha(x, y)==0) continue;
           // if (isNear(bg,pimg->getAt(x, y, i))) continue;
           const double c = double( pimg->getAt(x, y, i) );
           const double alpha = pimg->m_alpha;
@@ -383,6 +406,7 @@ int blend1(int argc, const char *argv[])
     }
   }
 
+  std::cerr << "Output file: " << outfile << std::endl;
   imgout.write(outfile);
   
   return 0;

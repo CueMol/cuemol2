@@ -126,6 +126,9 @@
 	  <menuitem value="ortho" label="Orthographic"/>
 	</menupopup>
       </menulist>
+
+      <checkbox id="use-transp-bg" label="Transp background" checked="false" persist="checked"/>
+
     </hbox>
 
     <hbox align="center">
@@ -188,8 +191,9 @@
 	</menulist>
       </hbox>
       <richlistbox flex="1" width="100" style="min-height: 300px;" disabled="true">
-	<richlistitem id="imagebox-item" disabled="true">
-	  <image id="image-box" validate="always" flex="0"/>
+	<richlistitem id="imagebox-item" disabled="true" style="background: white;">
+	  <image id="image-box" validate="always" flex="0"
+	    style="background: url(../images/checker8.png) repeat;"/>
 	</richlistitem>
       </richlistbox>
     </groupbox>
