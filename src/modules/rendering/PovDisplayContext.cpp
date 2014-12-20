@@ -205,9 +205,9 @@ void PovDisplayContext::writeHeader()
     ps.println(preamble);
 
   ps.format("\n");
-  ps.format("#declare _bgcolor = rgb <%f,%f,%f>;\n", bgcolor.x(), bgcolor.y(), bgcolor.z());
-  ps.format("\n");
-  ps.format("background {color _bgcolor}\n");
+  //ps.format("#declare _bgcolor = rgb <%f,%f,%f>;\n", bgcolor.x(), bgcolor.y(), bgcolor.z());
+  //ps.format("\n");
+  ps.format("background {color rgbt <%f,%f,%f,0.999>}\n", bgcolor.x(), bgcolor.y(), bgcolor.z());
   ps.format("\n");
   ps.format("#declare _distance = %f;\n", m_dViewDist);
 
@@ -280,7 +280,8 @@ void PovDisplayContext::writeHeader()
   ps.format("sphere {\n");
   ps.format("  <0, 0, 0>, 1\n");
   ps.format("  texture {\n");
-  ps.format("  pigment { color _bgcolor }\n");
+  // ps.format("  pigment { color rgb <%f,%f,%f> }\n", bgcolor.x(), bgcolor.y(), bgcolor.z());
+  ps.format("  pigment { color rgb <1,1,1> }\n");
   ps.format("   finish { diffuse 0 emission 0.8 }\n");
   ps.format("  }\n");
   ps.format("  hollow on\n");
@@ -290,7 +291,8 @@ void PovDisplayContext::writeHeader()
   ps.format("\n");
   ps.format("plane {z,-1000 \n");
   ps.format("  texture {\n");
-  ps.format("  pigment { color _bgcolor }\n");
+  //ps.format("  pigment { color _bgcolor }\n");
+  ps.format("  pigment { color rgb <%f,%f,%f> }\n", bgcolor.x(), bgcolor.y(), bgcolor.z());
   ps.format("   finish { diffuse 0 emission 1 }\n");
   ps.format("  }\n");
   ps.format("}\n");

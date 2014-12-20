@@ -245,6 +245,7 @@ cuemol2.jar:
 #
   content/tools/render-pov-dlg.xul
   content/tools/render-pov-dlg.js
+  content/images/checker8.png
   content/tools/intr-tool.js
   content/tools/intr-tool-dlg.xul
   content/tools/prot2ndry-tool.js
