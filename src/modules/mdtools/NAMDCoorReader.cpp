@@ -100,13 +100,19 @@ void NAMDCoorReader::loadCoord(qlib::InStream &ins)
   qlib::BinInStream bins(ins);
 
   qint32 natoms = bins.tread<qint32>();
+
   if (m_pMol->getAtomSize()!=natoms) {
-    qlib::LByteSwapper<qint32>::swap(natoms);
-    if (m_pMol->getAtomSize()!=natoms) {
-      LString msg = LString::format("psf(%d) coor(%d) natoms mismatch", m_pMol->getAtomSize(), natoms);
+    qint32 natosm_sw = natoms;
+    qlib::LByteSwapper<qint32>::swap(natosm_sw);
+
+    if (m_pMol->getAtomSize()!=natosm_sw) {
+      LString msg = LString::format("psf(%d) coor(%d or %d) natoms mismatch",
+                                    m_pMol->getAtomSize(), natoms, natoms_sw);
       MB_THROW(qlib::FileFormatException, msg);
       return;
     }
+
+    natoms = natosm_sw;
     LOG_DPRINTLN("NAMDCoor> Input is byte-swapped!!");
     bins.setSwapMode(qlib::BinInStream::MODE_SWAP);
   }
