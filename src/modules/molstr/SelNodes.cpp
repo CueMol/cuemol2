@@ -315,7 +315,8 @@ bool SelNamesNode::matches(const LString &nam) const
 
     // LString ucnam = nam.toUpperCase();
     for ( ; iter!=endi; iter++) {
-      if ( nam.equalsIgnoreCase(*iter) )
+      //if ( nam.equalsIgnoreCase(*iter) )
+      if ( nam.equals(*iter) )
 	return true;
     }
   }

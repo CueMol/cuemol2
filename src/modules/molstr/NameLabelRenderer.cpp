@@ -143,7 +143,8 @@ bool NameLabelRenderer::makeLabelStr(NameLabel &nlab, LString &strlab, Vector4D 
   if (confid)
     sbuf += LString(":") + LString(confid);
   
-  strlab = sbuf.toUpperCase();
+  //strlab = sbuf.toUpperCase();
+  strlab = sbuf;
   return true;
 }
 

@@ -185,7 +185,7 @@ void PsfReader::read(qlib::InStream &ins)
     if (m_pMol->appendAtom(pAtom)<0) {
       LString stmp = m_line;
       stmp = stmp.chomp();
-      stmp = stmp.toUpperCase();
+      // stmp = stmp.toUpperCase();
       // m_nErrCount ++;
       // if (m_nErrCount<m_nErrMax)
       LOG_DPRINTLN("PsfReader> read ATOM line failed: %s", stmp.c_str());

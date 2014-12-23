@@ -161,13 +161,13 @@ void PDBFileReader::readContents(qlib::InStream &ins)
              recnam.equals("AUTHOR") ||
              recnam.equals("REVDAT")) {
       buf = readStr(1,70);
-      buf = buf.toUpperCase();
+      // buf = buf.toUpperCase();
       LOG_DPRINTLN("PDBFileReader> %s", buf.c_str());
     }
     else if (recnam.equals("HELIX")) {
       if (!readHelixRecord()) {
         buf = readStr(1,70);
-        buf = buf.toUpperCase();
+        // buf = buf.toUpperCase();
         m_nErrCount ++;
         if (m_nErrCount<m_nErrMax)
           LOG_DPRINTLN("PDBRead> invalid HELIX line %s", buf.c_str());
@@ -176,7 +176,7 @@ void PDBFileReader::readContents(qlib::InStream &ins)
     else if (recnam.equals("SHEET")) {
       if (!readSheetRecord()) {
         buf = readStr(1,70);
-        buf = buf.toUpperCase();
+        // buf = buf.toUpperCase();
         m_nErrCount ++;
         if (m_nErrCount<m_nErrMax)
           LOG_DPRINTLN("PDBRead> invalid SHEET line %s", buf.c_str());
@@ -229,7 +229,7 @@ void PDBFileReader::readContents(qlib::InStream &ins)
 void PDBFileReader::readError(const LString &recnam)
 {
   LString buf = readStr(1,70);
-  buf = buf.toUpperCase();
+  // buf = buf.toUpperCase();
   m_nErrCount ++;
   if (m_nErrCount<m_nErrMax)
     LOG_DPRINTLN("PDBRead> invalid %s line %s", recnam.c_str(), buf.c_str());
@@ -513,7 +513,8 @@ bool PDBFileReader::readAtom()
     MB_THROW(PDBFileFormatException,
              LString::format("Invalid ATOM line (X coord) at %d: %s",
                              m_lineno,
-                             m_recbuf.toUpperCase().c_str()));
+                             m_recbuf.c_str()));
+                             //m_recbuf.toUpperCase().c_str()));
     dbuf = 0.0;
   }
   pos.x() = dbuf;
@@ -522,7 +523,8 @@ bool PDBFileReader::readAtom()
     MB_THROW(PDBFileFormatException,
              LString::format("Invalid ATOM line (Y coord) at %d: %s",
                              m_lineno,
-                             m_recbuf.toUpperCase().c_str()));
+                             m_recbuf.c_str()));
+                             //m_recbuf.toUpperCase().c_str()));
     dbuf = 0.0;
   }
   pos.y() = dbuf;
@@ -531,7 +533,8 @@ bool PDBFileReader::readAtom()
     MB_THROW(PDBFileFormatException,
              LString::format("Invalid ATOM line (Z coord) at %d: %s",
                              m_lineno,
-                             m_recbuf.toUpperCase().c_str()));
+                             m_recbuf.c_str()));
+                             //m_recbuf.toUpperCase().c_str()));
     dbuf = 0.0;
   }
   pos.z() = dbuf;
@@ -569,7 +572,7 @@ bool PDBFileReader::readAtom()
   if (m_pMol->appendAtom(pAtom)<0) {
     LString stmp = m_recbuf;
     stmp = stmp.chomp();
-    stmp = stmp.toUpperCase();
+    //stmp = stmp.toUpperCase();
     m_nErrCount ++;
     if (m_nErrCount<m_nErrMax)
       LOG_DPRINTLN("PDBFileReader> read ATOM line failed: %s", stmp.c_str());
@@ -613,7 +616,8 @@ void PDBFileReader::readAnisou()
   if (!bOK) {
     LString msg = LString::format("Invalid ANISOU line at %d: %s",
                                   m_lineno,
-                                  m_recbuf.toUpperCase().c_str());
+                                  m_recbuf.c_str());
+                                  //m_recbuf.toUpperCase().c_str());
     m_nErrCount ++;
     if (m_nErrCount<m_nErrMax)
       LOG_DPRINTLN("PDBFile> %s", msg.c_str());
@@ -828,7 +832,7 @@ bool PDBFileReader::readRecord(qlib::LineStream &ins)
   if (m_recbuf.isEmpty())
     return false;
 
-  m_recbuf = m_recbuf.toUpperCase();
+  // m_recbuf = m_recbuf.toUpperCase();
   m_lineno = ins.getLineNo();
   return true;
 }
