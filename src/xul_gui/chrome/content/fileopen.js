@@ -352,7 +352,7 @@ Qm2Main.prototype.openSceneImpl = function(path)
     catch (e) {
       debug.exception(e);
       util.alert(window, "Read scene from \""+path+"\" was failed.\nReason: "+cuemol.getErrMsg());
-      scene.clearAllData();
+      // scene.clearAllData();
       return false;
     }
     if (errmsg) {
@@ -371,7 +371,6 @@ Qm2Main.prototype.openSceneImpl = function(path)
     catch (e) {
       debug.exception(e);
       util.alert(window, "Read scene from \""+path+"\" was failed.\nReason: "+cuemol.getErrMsg());
-      scene.clearAllData();
       return false;
     }
     if (errmsg) {
