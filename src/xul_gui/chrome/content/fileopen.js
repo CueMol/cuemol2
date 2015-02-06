@@ -313,6 +313,7 @@ Qm2Main.prototype.onFileSaveAs = function()
 {
   let targetID;
   let that = this;
+  let scene = this.mMainWnd.currentSceneW;
   
   targetID = util.doSelectObjPrompt(window, scene,
 				    "Select object to save",
@@ -324,8 +325,10 @@ Qm2Main.prototype.onFileSaveAs = function()
     return elem.name + " (" + elem.type + ", id="+elem.ID+")";
   });
 
-  if (targetID===null)
+  if (targetID===null) {
+    util.alert(window, "No object to save");
     return null;
+  }
 
   return this.onSaveAsObj(targetID);
 }
