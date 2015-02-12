@@ -569,15 +569,14 @@ bool PDBFileReader::readAtom()
     }
   }
 
-  if (m_pMol->appendAtom(pAtom)<0) {
+  int naid = m_pMol->appendAtom(pAtom);
+
+  if (naid<0) {
     LString stmp = m_recbuf;
     stmp = stmp.chomp();
-    //stmp = stmp.toUpperCase();
     m_nErrCount ++;
     if (m_nErrCount<m_nErrMax)
       LOG_DPRINTLN("PDBFileReader> read ATOM line failed: %s", stmp.c_str());
-    // delete pAtom;
-    // pAtom = NULL;
   }
 
   m_pPrevAtom = pAtom;

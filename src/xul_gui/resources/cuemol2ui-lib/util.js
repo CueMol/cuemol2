@@ -305,6 +305,9 @@ exports.doSelectObjPrompt = function(window, scene, dlg_title, filter_fn)
     return null;
   }
 
+  if (labellist.length==0)
+    return null; // No target object
+
   ok = promptSvc.select(window, "CueMol2", dlg_title, 
                         labellist.length, labellist, selected);
 
