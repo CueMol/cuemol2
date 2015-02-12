@@ -251,8 +251,6 @@ bool PDBFileReader::isOrganicAtom(int eleid) const
 
 bool PDBFileReader::checkAtomRecord(LString &chain, LString &resname, LString &atom)
 {
-  //if (chain=='\0')
-  //chain = '_';
   if (chain.isEmpty())
     chain = "_";
 
@@ -420,25 +418,35 @@ bool PDBFileReader::readAtom()
     for ( ;; ) {
       // check "type 1"
       elename = eleorig.trim(" ");
-      eleid = ElemSym::str2SymID((const char *)elename);
+      eleid = ElemSym::str2SymID(elename);
       if (eleid!=ElemSym::XX)
         break; // type 1 OK 
 
       // check "type 2"
       char ich = eleorig[0];
       elename = LString(eleorig[1]);
-      eleid = ElemSym::str2SymID((const char *)elename);
+      eleid = ElemSym::str2SymID(elename);
       if (eleid!=ElemSym::XX)
         break; // type 2 OK 
       
       // illegal type
-      eleid = ElemSym::str2SymID((const char *)atomname);
-      if (eleid==ElemSym::XX)
-        eleid = convFromAname(readStr(13,16));
+      eleid = ElemSym::str2SymID(atomname);
+      if (eleid!=ElemSym::XX)
+        break;
+      eleid = convFromAname(readStr(13,16));
+      if (eleid!=ElemSym::XX)
+        break;
+
+      LString pdb_elem = readStr(77,78).trim();
+      eleid = ElemSym::str2SymID(pdb_elem);
+      
       break;
     }
   }
   
+  if (atomname.isEmpty())
+    atomname = ElemSym::symID2Str(eleid);
+
   // read Residue name
   LString resname = readStr(18,20).trim();
   if (!isOrganicAtom(eleid)) {
@@ -454,6 +462,11 @@ bool PDBFileReader::readAtom()
     }
   }
   
+  if (resname.isEmpty()) {
+    // empty resname --> default resname
+    resname = "UNK";
+  }
+  
   // read conformation ID
   char confid = readChar(17);
 
@@ -462,26 +475,20 @@ bool PDBFileReader::readAtom()
   // if (cchain==' ') cchain = '\0';
   LString chain = readStr(22,22).trim();
 
-  // read X-plor segment ID field
+  // read X-plor segment ID field (non PDB std)
   if (m_bLoadSegID) {
     // read X-plor segment ID field as chain ID
     chain = readStr(73,76).trim();
   }
 
-//  char segname = readChar(73);
-//  if (segname==' ') segname = '\0';
-//  if (cchain=='\0' && segname!='\0' &&
-//      ((segname>='A' && segname<='Z') ||
-//       (segname>='0' && segname<='9'))) {
-//    cchain = segname;
-//  }
-  
   // read index of residue (residx)
   LString resSeq = readStr(23,26).trim();
   char iCode = readChar(27);
   int itmp;
-  if (!resSeq.toInt(&itmp))
-    return false;
+  if (!resSeq.toInt(&itmp)) {
+    // invalid res index --> default index (0)
+    itmp = 0;
+  }
   ResidIndex residx(itmp);
   if (iCode!=' ')
     residx.second = iCode;
@@ -569,14 +576,44 @@ bool PDBFileReader::readAtom()
     }
   }
 
-  int naid = m_pMol->appendAtom(pAtom);
+  int inum = 0, naid;
+  LString aname = pAtom->getName();
 
-  if (naid<0) {
-    LString stmp = m_recbuf;
-    stmp = stmp.chomp();
-    m_nErrCount ++;
-    if (m_nErrCount<m_nErrMax)
-      LOG_DPRINTLN("PDBFileReader> read ATOM line failed: %s", stmp.c_str());
+  for (;;++inum) {
+    naid = m_pMol->appendAtom(pAtom);
+
+    if (naid>=0)
+      break;
+
+    LString cname = pAtom->getChainName();
+    ResidIndex resid = pAtom->getResIndex();
+
+    MolAtomPtr ptmp =  m_pMol->getAtom(cname, resid, pAtom->getName(), pAtom->getConfID());
+    if (ptmp.isnull()) {
+      LString stmp = m_recbuf;
+      stmp = stmp.chomp();
+      m_nErrCount ++;
+      if (m_nErrCount<m_nErrMax)
+        LOG_DPRINTLN("PDBFileReader> read ATOM line failed: %s", stmp.c_str());
+      break;
+    }
+
+    // duplicated atom --> try to change the atom name
+    LString newanam;
+
+    if (inum<100)
+      newanam = LString::format("%s%02d", aname.c_str(), inum%100);
+    else {
+      if (aname.length()>1)
+        break; // ERR
+      else if (inum<1000)
+        newanam = LString::format("%d%s%02d", inum/100, aname.c_str(), inum%100);
+      else
+        break; // ERR
+    }
+    pAtom->setName(newanam);
+
+    // retry
   }
 
   m_pPrevAtom = pAtom;
