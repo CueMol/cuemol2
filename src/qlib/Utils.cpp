@@ -25,7 +25,7 @@ namespace qlib {
 
   LString getLeafName(const LString &aPath)
   {
-    fs::path path(aPath);
+    fs::path path(aPath.c_str());
 #if (BOOST_FILESYSTEM_VERSION==2)
     return LString(path.filename());
 #else
@@ -35,8 +35,8 @@ namespace qlib {
 
 LString makeRelativePath(const LString &aAbs, const LString &aBase)
 {
-  fs::path abspath(aAbs);
-  fs::path basepath(aBase);
+  fs::path abspath(aAbs.c_str());
+  fs::path basepath(aBase.c_str());
   if (!abspath.is_complete() || !basepath.is_complete())
     return aAbs; // aAbs or aBase is not absolute path
 
@@ -69,8 +69,8 @@ LString makeAbsolutePath(const LString &aRel, const LString &aBase)
 {
   MB_DPRINTLN("makeAbsPath rel=%s, base=%s", aRel.c_str(), aBase.c_str());
 
-  fs::path relpath(aRel);
-  fs::path basepath(aBase);
+  fs::path relpath(aRel.c_str());
+  fs::path basepath(aBase.c_str());
   if (relpath.is_complete())
     return aRel; // aRel is already in abs form
 
@@ -116,7 +116,7 @@ LString makeAbsolutePath(const LString &aRel, const LString &aBase)
 
 bool isAbsolutePath(const LString &aPath)
 {
-  fs::path path(aPath);
+  fs::path path(aPath.c_str());
   return path.is_complete();
 }
 

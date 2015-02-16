@@ -52,6 +52,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/Zm111"
 				Optimization="0"
 				AdditionalIncludeDirectories="$(SolutionDir)\..\src"
 				PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS;WIN32;_WINDOWS;_DEBUG;_USRDLL;_ATL_ATTRIBUTES"
@@ -108,6 +109,9 @@
 			<Tool
 				Name="VCAppVerifierTool"
 			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
 		</Configuration>
 		<Configuration
 			Name="Release|Win32"
@@ -145,6 +149,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalOptions="/Zm111"
 				AdditionalIncludeDirectories="$(SolutionDir)\..\src"
 				PreprocessorDefinitions="_CRT_SECURE_NO_WARNINGS;WIN32;_WINDOWS;NDEBUG;_USRDLL;_ATL_ATTRIBUTES"
 				StringPooling="true"
@@ -200,6 +205,9 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
 			/>
 		</Configuration>
 	</Configurations>

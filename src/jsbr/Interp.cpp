@@ -212,7 +212,7 @@ bool Interp::execFile(const qlib::LString &fname)
 
 LString Interp::resolvePath(const LString &fname) const
 {
-  fs::path inpath(fname);
+  fs::path inpath(fname.c_str());
 
 #if (BOOST_FILESYSTEM_VERSION==2)
   if (inpath.is_complete())
@@ -226,7 +226,7 @@ LString Interp::resolvePath(const LString &fname) const
   qlib::MapTable<LString>::const_iterator eiter = m_pathTab.end();
   for (; iter!=eiter; ++iter) {
     const LString &path = iter->second;
-    fs::path base_path(path);
+    fs::path base_path(path.c_str());
     fs::path test_path = fs::complete(inpath, base_path);
 
 #if (BOOST_FILESYSTEM_VERSION==2)

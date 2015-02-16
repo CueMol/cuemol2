@@ -50,7 +50,7 @@ void PovSceneExporter::write()
   if (m_bMakeRelIncPath) {
     if (!str_povpath.isEmpty() && !str_incpath.isEmpty()) {
       // Check and modify the main pov file path
-      fs::path povpath(str_povpath);
+      fs::path povpath(str_povpath.c_str());
       if (!povpath.is_complete()) {
 #if (BOOST_FILESYSTEM_VERSION==2)
         povpath = fs::complete(povpath);
@@ -62,7 +62,7 @@ void PovSceneExporter::write()
       }
       fs::path base_path = povpath.parent_path();
       // Check and modify the inc file path
-      fs::path incpath(str_incpath);
+      fs::path incpath(str_incpath.c_str());
       if (!incpath.is_complete()) {
         ppovdc->setIncFileName(str_incpath);
 #if (BOOST_FILESYSTEM_VERSION==2)

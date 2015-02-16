@@ -56,7 +56,7 @@ LString SceneExporter::makeRelSubPath(const LString &sub_name)
   LString rval;
 
   // Check and modify the mainpath to absolute form
-  fs::path mainpath(str_mainpath);
+  fs::path mainpath(str_mainpath.c_str());
   if (!mainpath.is_complete()) {
 #if (BOOST_FILESYSTEM_VERSION==2)
     // Make mainpath to be absolute using initial_path() (= PWD at the time when program starts)
@@ -71,7 +71,7 @@ LString SceneExporter::makeRelSubPath(const LString &sub_name)
   fs::path base_path = mainpath.parent_path();
 
   // Check and modify the inc file path
-  fs::path subpath(str_subpath_orig);
+  fs::path subpath(str_subpath_orig.c_str());
   if (!subpath.is_complete()) {
     // subpath is relative path (to the base_path) ==> return it
     rval = str_subpath_orig;
