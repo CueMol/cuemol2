@@ -69,7 +69,6 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="CGAL-vc90-mt-gd.lib"
 				OutputFile="$(XULDeployDir)\$(ProjectName).dll"
 				LinkIncremental="2"
 				GenerateManifest="false"
@@ -150,7 +149,6 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="CGAL-vc90-mt.lib"
 				OutputFile="$(XULDeployDir)\$(ProjectName).dll"
 				LinkIncremental="1"
 				GenerateManifest="false"

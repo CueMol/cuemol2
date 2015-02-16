@@ -12,15 +12,25 @@
 using qlib::Vector2D;
 using qlib::Vector4D;
 
-#define CGAL_NO_AUTOLINK
+// #define CGAL_NO_AUTOLINK
+#define CGAL_LIB_DIAGNOSTIC
 #define CGAL_HAS_NO_THREADS
 #define CGAL_DISABLE_ROUNDING_MATH_CHECK
-//#include <CGAL/basic.h>
+#define CGAL_INTERSECTION_VERSION 1
+#include <CGAL/basic.h>
+
 #include <CGAL/AABB_tree.h> // must be inserted before kernel
 #include <CGAL/AABB_traits.h>
 #include <CGAL/AABB_triangle_primitive.h>
 
 #include <CGAL/Simple_cartesian.h>
+
+#include <CGAL/version.h>
+#ifdef WIN32
+#if (CGAL_VERSION_NR/10000000%100)>3
+#pragma comment(lib, "libgmp-10.lib")
+#endif
+#endif
 
 typedef CGAL::Simple_cartesian<double> K;
 //typedef K::Point_3 Point;
