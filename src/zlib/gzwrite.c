@@ -529,15 +529,10 @@ int ZEXPORT gzclose_w(file)
     /* flush, free memory, and close file */
     ret += gz_comp(state, Z_FINISH);
     (void)deflateEnd(&(state->strm));
-fprintf(stdout, "************** 1\n");fflush(stdout);
     free(state->out);
-fprintf(stdout, "************** 2\n");fflush(stdout);
     free(state->in);
-fprintf(stdout, "************** 3\n");fflush(stdout);
     gz_error(state, Z_OK, NULL);
-fprintf(stdout, "************** 4\n");fflush(stdout);
     free(state->path);
-fprintf(stdout, "************** 5\n");fflush(stdout);
     ret += 0; /*close(state->fd);*/
     free(state);
     return ret ? Z_ERRNO : Z_OK;
