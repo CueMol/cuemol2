@@ -66,6 +66,8 @@ namespace sysdep {
     /// initialization
     void init();
 
+    virtual bool isFile() const;
+
     virtual void pushMatrix();
     virtual void popMatrix();
     virtual void multMatrix(const Matrix4D &mat);

@@ -156,6 +156,8 @@ namespace render {
     //////////////////////////////
     // generic implementation
 
+    virtual bool isFile() const;
+
     virtual void vertex(const Vector4D &v);
     virtual void normal(const Vector4D &v);
     virtual void color(const gfx::ColorPtr &c);

@@ -122,7 +122,7 @@ public:
     m_pVerts[index] = v;
   }
 
-  /** set face array size */
+  /// Set face array size
   bool setFaceSize(int n) {
     MB_ASSERT(n>=1);
     if (m_pFaces!=NULL)
@@ -133,7 +133,7 @@ public:
     return true;
   }
   
-  /** load [index]th face element */
+  /// Load [index]th face element
   bool setFace(int index, int id1, int id2, int id3) {
     MB_ASSERT(index>=0 && index<m_nFaces);
     m_pFaces[index].id1 = id1;

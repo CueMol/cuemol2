@@ -102,6 +102,11 @@ void OglDisplayContext::init()
 #endif
 }
 
+bool OglDisplayContext::isFile() const
+{
+  return false;
+}
+
 void OglDisplayContext::startSection(const LString &section_name)
 {
   if (!m_bUseShaderAlpha || m_pDefPO==NULL)

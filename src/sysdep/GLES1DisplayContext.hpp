@@ -86,6 +86,8 @@ namespace sysdep {
     GLES1DisplayContext(GLES1View *pView);
     virtual ~GLES1DisplayContext();
 
+    virtual bool isFile() const;
+
     // int getSceneID() const { return m_nSceneID; }
     //    int getViewID() const { return m_nViewID; }
 

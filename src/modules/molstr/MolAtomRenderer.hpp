@@ -48,6 +48,11 @@ namespace molstr {
     virtual void rendHitBond(DisplayContext *pdl, MolAtomPtr pAtom1, MolAtomPtr pAtom2);
     virtual bool isRendHitBond() const;
 
+    //////////////////////////////////////////////////////
+
+    bool countAtomBond(int &ratoms, int &rbonds);
+    void setupDetail(DisplayContext *pdl, int nDetail);
+
   };
 
 }

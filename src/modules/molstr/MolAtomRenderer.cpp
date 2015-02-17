@@ -178,4 +178,89 @@ void MolAtomRenderer::rendHitBond(DisplayContext *phl, MolAtomPtr pAtom1, MolAto
 
 /////////////////////////////////
 
+bool MolAtomRenderer::countAtomBond(int &ratoms, int &rbonds)
+{
+  MolCoordPtr rCliMol = getClientMol();
+  if (rCliMol.isnull()) {
+    MB_DPRINTLN("MolAtomRenderer::countAtomBond> Client mol is null");
+    return false;
+  }
+
+  std::set<int> bonded_atoms;
+
+  rbonds = 0;
+  if (isRendBond()) {
+    // Render bonds & nonb-atoms case (e.g. ball & stick model)
+    // TO DO: cache the result of iteration (???)
+    BondIterator biter(rCliMol, getSelection());
+    
+    for (biter.first(); biter.hasMore(); biter.next()) {
+      MolBond *pMB = biter.getBond();
+      int aid1 = pMB->getAtom1();
+      int aid2 = pMB->getAtom2();
+      //biter.getID(aid1, aid2);
+
+      MolAtomPtr pA1 = rCliMol->getAtom(aid1);
+      MolAtomPtr pA2 = rCliMol->getAtom(aid2);
+
+      if (pA1.isnull() || pA2.isnull())
+        continue; // skip invalid bonds
+
+      rbonds ++;
+
+      // mark as bonded
+      bonded_atoms.insert(aid1);
+      bonded_atoms.insert(aid2);
+    }
+  }
+
+  // render atoms (e.g. CPK model)
+  // TO DO: cache the result of iteration (???)
+  AtomIterator iter(rCliMol, getSelection());
+  ratoms = 0;
+  bool bbonded;
+  for (iter.first(); iter.hasMore(); iter.next()) {
+    int aid = iter.getID();
+    MolAtomPtr pAtom = rCliMol->getAtom(aid);
+    if (pAtom.isnull()) continue; // ignore errors
+
+    if (bonded_atoms.empty()) {
+      bbonded = false;
+    }
+    else {
+      // bbonded is true, if aid is found in bonded_atom
+      bbonded = bonded_atoms.find(aid)!=bonded_atoms.end();
+    }
+
+    ratoms ++;
+  }
+  
+  return true;
+}
+
+void MolAtomRenderer::setupDetail(DisplayContext *pdl, int nDetail)
+{
+  int ndet = nDetail;
+
+  if (pdl->isFile()) {
+    pdl->setDetail(ndet);
+    return;
+  }
+
+  const int npmax = 100000;
+  int natms, nbnds;
+  if (countAtomBond(natms, nbnds)) {
+    int ne = (ndet+1)*2*(  natms*( (ndet+1) ) + nbnds );
+    if (ne>npmax) {
+      LOG_DPRINTLN("MolAtomRend polygon size: %d exceeds %d", ne, npmax);
+      //natms*( (ndet+1)*2*(ndet+1) ) + nbnds*(ndet+1)*2;
+      //(ndet+1)*2*(  natms*( (ndet+1) ) + nbnds )
+      ndet = 1;
+      ne = (ndet+1)*2*(  natms*( (ndet+1) ) + nbnds );
+      LOG_DPRINTLN("--> clamped to %d", ne);
+    }
+  }
+  
+  pdl->setDetail(ndet);
+}
 

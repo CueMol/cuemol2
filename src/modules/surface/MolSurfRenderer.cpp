@@ -13,6 +13,7 @@
 #include <gfx/GradientColor.hpp>
 #include <qsys/ScalarObject.hpp>
 #include <qsys/Scene.hpp>
+#include <qsys/SceneManager.hpp>
 #include <modules/molstr/AtomPosMap.hpp>
 #include <modules/molstr/MolAtom.hpp>
 #include <modules/molstr/MolCoord.hpp>
@@ -24,6 +25,8 @@
 using namespace surface;
 using molstr::MolAtomPtr;
 using molstr::MolCoord;
+using qsys::ObjectPtr;
+using qsys::SceneManager;
 
 /// default constructor
 MolSurfRenderer::MolSurfRenderer()
@@ -33,12 +36,21 @@ MolSurfRenderer::MolSurfRenderer()
   m_nDrawMode = SFDRAW_FILL;
   m_nMode = SFREND_SIMPLE;
   m_lw = 1.2;
+
+  m_nTgtMolID = qlib::invalid_uid;
 }
 
 /** destructor */
 MolSurfRenderer::~MolSurfRenderer()
 {
   if (m_pAmap!=NULL) delete m_pAmap;
+  if (m_nTgtMolID!=qlib::invalid_uid) {
+    ObjectPtr pObj = SceneManager::getObjectS(m_nTgtMolID);
+    if (!pObj.isnull()) {
+      pObj->removeListener(this);
+    }
+    m_nTgtMolID=qlib::invalid_uid;
+  }
 }
 
 ///////////////////////////////////////////
@@ -209,8 +221,9 @@ void MolSurfRenderer::render(DisplayContext *pdl)
     }
     if (m_pScaObj==NULL) {
       // try "target" property (for old version compat)
-      if (!m_sTgtObj.isEmpty()) {
-        pobj = ensureNotNull(getScene())->getObjectByName(m_sTgtObj);
+      if (m_nTgtMolID!=qlib::invalid_uid) {
+        //pobj = ensureNotNull(getScene())->getObjectByName(m_sTgtObj);
+        pobj = SceneManager::getObjectS(m_nTgtMolID);
         m_pScaObj = dynamic_cast<qsys::ScalarObject*>(pobj.get());
       }
     }
@@ -221,24 +234,31 @@ void MolSurfRenderer::render(DisplayContext *pdl)
   }
   else if (m_nMode==SFREND_MOLFANC) {
     // MOLFANC mode --> resolve target name
-    if (!m_sTgtObj.isEmpty()) {
-      qsys::ObjectPtr pobj = ensureNotNull(getScene())->getObjectByName(m_sTgtObj);
-      m_pMol = MolCoordPtr(pobj, qlib::no_throw_tag());
 
-      if (!m_pMol.isnull()) {
-        // TO DO: re-generate atom-map only when Mol is changed.
-        // (this impl always updates atommap when the renderer is invalidated.)
-        makeAtomPosMap();
-        
-        // initialize the coloring scheme (with the target mol, but not this)
-        molstr::ColoringSchemePtr pCS = getColSchm();
-        if (!pCS.isnull())
-          pCS->init(m_pMol, this);
+    // re-set molID if not resolved (when deserialized from qsc file)
+    if (m_nTgtMolID==qlib::invalid_uid) {
+      if (!m_sTgtMolName.isEmpty()) {
+        //setTgtObjName(m_sTgtMolName);
+        m_pMol = resolveMolIDByName(m_sTgtMolName);
       }
     }
-    
-    if (m_pMol.isnull()) {
-      LOG_DPRINTLN("MolSurfRend> object \"%s\" is not found.", m_sTgtObj.c_str());
+    else {
+      qsys::ObjectPtr pobj = SceneManager::getObjectS(m_nTgtMolID);
+      m_pMol = MolCoordPtr(pobj, qlib::no_throw_tag());
+    }
+
+    if (!m_pMol.isnull()) {
+      // TO DO: re-generate atom-map only when Mol is changed.
+      // (this impl always updates atommap when the renderer is invalidated.)
+      makeAtomPosMap();
+      
+      // initialize the coloring scheme (with the target mol, but not this)
+      molstr::ColoringSchemePtr pCS = getColSchm();
+      if (!pCS.isnull())
+        pCS->init(m_pMol, this);
+    }
+    else {
+      LOG_DPRINTLN("MolSurfRend> object \"%d\" is not found.", m_nTgtMolID);
     }
   }
   
@@ -407,4 +427,78 @@ void MolSurfRenderer::makeAtomPosMap()
     m_pAmap->setSpacing(3.5);
     m_pAmap->generate(m_pMolSel);
   }
+}
+
+MolCoordPtr MolSurfRenderer::resolveMolIDByName(const LString &name)
+{
+  qsys::ScenePtr pScene = getScene();
+  if (pScene.isnull()) {
+    return MolCoordPtr();
+  }
+  qsys::ObjectPtr pobj = pScene->getObjectByName(name);
+  MolCoordPtr pMol= MolCoordPtr(pobj, qlib::no_throw_tag());
+  if (pMol.isnull()) {
+    return pMol;
+  }
+
+  m_nTgtMolID = pMol->getUID();
+
+  // event handling: attach to the new object
+  pMol->addListener(this);
+  return pMol;
+}
+
+void MolSurfRenderer::setTgtObjName(const LString &name)
+{
+  // detach from oldobj
+  if (m_nTgtMolID!=qlib::invalid_uid) {
+    ObjectPtr pObj = SceneManager::getObjectS(m_nTgtMolID);
+    if (!pObj.isnull()) {
+      pObj->removeListener(this);
+    }
+    m_nTgtMolID = qlib::invalid_uid;
+  }
+  
+  // get object by name
+  if (name.isEmpty())
+    return;
+  
+  m_sTgtMolName = name;
+
+  MolCoordPtr pMol = resolveMolIDByName(name);
+  if (pMol.isnull()) {
+    // TO DO: throw exception??
+    LOG_DPRINTLN("MolSurfRend> \"%s\" is not a MolCoord object.", name.c_str());
+    return;
+  }
+
+  invalidateDisplayCache();
+}
+
+LString MolSurfRenderer::getTgtObjName() const
+{
+  if (m_nTgtMolID==qlib::invalid_uid)
+    return LString();
+  ObjectPtr pObj = SceneManager::getObjectS(m_nTgtMolID);
+  if (pObj.isnull())
+    return LString();
+  return pObj->getName();
+}
+
+void MolSurfRenderer::objectChanged(qsys::ObjectEvent &ev)
+{
+  if (m_nMode==SFREND_MOLFANC &&
+      ev.getType()==qsys::ObjectEvent::OBE_PROPCHG) {
+    qlib::LPropEvent *pPE = ev.getPropEvent();
+    if (pPE) {
+      if (pPE->getName().equals("defaultcolor")||
+          pPE->getName().equals("coloring")||
+          pPE->getParentName().equals("coloring")||
+          pPE->getParentName().startsWith("coloring.")) {
+        invalidateDisplayCache();
+      }
+    }
+  }
+
+  super_t::objectChanged(ev);
 }

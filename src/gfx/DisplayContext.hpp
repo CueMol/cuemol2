@@ -66,6 +66,8 @@ namespace gfx {
     virtual bool isCurrent() const =0;
     virtual qsys::View *getTargetView() const;
 
+    virtual bool isFile() const =0;
+
     ////////////////
 
     /// Set current vertex vector by Vector4D

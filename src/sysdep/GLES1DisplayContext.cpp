@@ -46,6 +46,11 @@ GLES1DisplayContext::~GLES1DisplayContext()
   //::gluDeleteQuadric((GLUquadricObj *)m_pGluData);
 }
 
+bool GLES1DisplayContext::isFile() const
+{
+  return false;
+}
+
 ////////////////////////////////////////////////////////////////////
 // GLES1 supported operations
 

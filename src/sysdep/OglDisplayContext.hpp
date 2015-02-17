@@ -62,6 +62,8 @@ namespace sysdep {
     // OpenGL-level initialization
     virtual void init();
     
+    virtual bool isFile() const;
+
     // shader control
     virtual void startSection(const LString &section_name);
     virtual void endSection();

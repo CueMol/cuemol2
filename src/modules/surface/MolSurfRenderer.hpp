@@ -53,9 +53,14 @@ private:
   /// Mesh-drawing mode
   int m_nDrawMode;
 
-  /// molecule object name by which painting color is determined.
+  /// Molecule object ID by which painting color is determined.
   /// (used in MOLFANC mode)
-  LString m_sTgtObj;
+  qlib::uid_t m_nTgtMolID;
+
+  /// Molecule object name by which painting color is determined.
+  /// used in MOLFANC mode
+  /// used if MolID cannot be resolved (when deserialized from qsc file...)
+  LString m_sTgtMolName;
 
   /// potentialmap object name by which painting color is determined.
   /// (used in ELEPOT mode)
@@ -179,12 +184,11 @@ public:
     invalidateDisplayCache();
   }
 
-  /// reference molecule target (used in molecule mode)
-  LString getTgtObjName() const { return m_sTgtObj; }
-  void setTgtObjName(const LString &n) {
-    m_sTgtObj = n;
-    invalidateDisplayCache();
-  }
+  /// Get reference molecule target (used in molecule mode)
+  LString getTgtObjName() const;
+
+  /// Set reference molecule target (used in molecule mode)
+  void setTgtObjName(const LString &n);
 
   //////////
   // for "potential" mode
@@ -276,11 +280,16 @@ public:
 
   virtual void propChanged(qlib::LPropEvent &ev);
   
+  virtual void objectChanged(qsys::ObjectEvent &ev);
+
 private:
 
   bool getColorSca(const Vector4D &v, ColorPtr &rcol);
   bool getColorMol(const Vector4D &v, ColorPtr &rcol);
   bool isShowVert(const Vector4D &v);
+
+
+  MolCoordPtr resolveMolIDByName(const LString &name);
 };
 
 }

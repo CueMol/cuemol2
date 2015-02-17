@@ -49,11 +49,10 @@ void BallStickRenderer::postRender(DisplayContext *pdc)
 void BallStickRenderer::beginRend(DisplayContext *pdl)
 {
   if (m_atoms.size()>0)
-    m_atoms.erase(m_atoms.begin(), m_atoms.end());
+    m_atoms.clear(); //erase(m_atoms.begin(), m_atoms.end());
 
   m_nDetailOld = pdl->getDetail();
-  pdl->setDetail(m_nDetail);
-
+  setupDetail(pdl, m_nDetail);
 }
 
 void BallStickRenderer::endRend(DisplayContext *pdl)

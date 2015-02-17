@@ -49,6 +49,11 @@ GLES2DisplayContext::~GLES2DisplayContext()
   }
 }
 
+bool GLES2DisplayContext::isFile() const
+{
+  return false;
+}
+
 /// Initialization
 void GLES2DisplayContext::init()
 {

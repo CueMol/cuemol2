@@ -62,6 +62,11 @@ void FileDisplayContext::init()
   m_pIntData = NULL;
 }
 
+bool FileDisplayContext::isFile() const
+{
+  return true;
+}
+
 void FileDisplayContext::vertex(const Vector4D &aV)
 {
   Vector4D v(aV);

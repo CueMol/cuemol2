@@ -42,7 +42,7 @@ void CPKRenderer::beginRend(DisplayContext *pdl)
 {
   //pdl->recordStart();
   m_nDetailOld = pdl->getDetail();
-  pdl->setDetail(m_nDetail);
+  setupDetail(pdl, m_nDetail);
 }
 
 void CPKRenderer::endRend(DisplayContext *pdl)

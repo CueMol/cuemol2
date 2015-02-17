@@ -43,6 +43,8 @@ namespace lwview {
     LWRendDisplayContext();
     virtual ~LWRendDisplayContext();
 
+    virtual bool isFile() const;
+
     ///////////////////////////////
 
     void startRender();

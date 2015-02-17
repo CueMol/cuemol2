@@ -38,6 +38,11 @@ LWRendDisplayContext::~LWRendDisplayContext()
   m_data.clearAndDelete();
 }
 
+bool LWRendDisplayContext::isFile() const
+{
+  return false;
+}
+
 //////////////////////////////
 
 void LWRendDisplayContext::startSection(const LString &section_name)
