@@ -35,12 +35,12 @@ int GzipInFilterImpl::readImpl(char *buf, int len)
 ////
 
 GzipInFilterImpl::GzipInFilterImpl()
-     : super_t()
+  : super_t(), m_pdata(NULL)
 {
 }
 
 GzipInFilterImpl::GzipInFilterImpl(const impl_type &in)
-     : super_t(in)
+  : super_t(in)
 {
   m_pdata = gzfnopen(myreadfn, this, "r");
   // MB_DPRINTLN("GzipInFilterImpl gzfnopen: %p", m_pdata);
@@ -141,7 +141,7 @@ int GzipOutFilterImpl::writeImpl(char *buf, int len)
 //////
 
 GzipOutFilterImpl::GzipOutFilterImpl()
-  : super_t()
+  : super_t(), m_pdata(NULL)
 {
 }
 
@@ -153,8 +153,11 @@ GzipOutFilterImpl::GzipOutFilterImpl(const impl_type &out)
 
 GzipOutFilterImpl::~GzipOutFilterImpl()
 {
-  if (m_pdata!=NULL)
+  if (m_pdata!=NULL) {
+    gzflush((gzFile)m_pdata, Z_FINISH);
     gzclose((gzFile)m_pdata);
+  }
+  m_pdata = NULL;
 }
 
 int GzipOutFilterImpl::write(const char *buf, int off, int len)
@@ -174,17 +177,21 @@ void GzipOutFilterImpl::write(int b)
 
 void GzipOutFilterImpl::flush()
 {
-  if (m_pdata==NULL) {
-    MB_THROW(qlib::IOException, "GzipOut error");
-    return;
+  if (m_pdata!=NULL) {
+    gzflush((gzFile)m_pdata, Z_FINISH);
   }
-  gzflush((gzFile)m_pdata, Z_FINISH);
+
+  //MB_THROW(qlib::IOException, "GzipOut error");
+  //return;
 }
 
 void GzipOutFilterImpl::o_close()
 {
-  if (m_pdata!=NULL)
+  if (m_pdata!=NULL) {
+    gzflush((gzFile)m_pdata, Z_FINISH);
     gzclose((gzFile)m_pdata);
+  }
+  m_pdata = NULL;
 }
 
 
