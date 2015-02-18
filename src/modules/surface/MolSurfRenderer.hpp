@@ -289,7 +289,8 @@ private:
   bool isShowVert(const Vector4D &v);
 
 
-  MolCoordPtr resolveMolIDByName(const LString &name);
+  /// Resolve mol name, set m_nTgtMolID, listen the MolCoord events, and returns MolCoord object
+  MolCoordPtr resolveMolIDImpl(const LString &name);
 };
 
 }

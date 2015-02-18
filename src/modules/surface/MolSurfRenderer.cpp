@@ -239,7 +239,7 @@ void MolSurfRenderer::render(DisplayContext *pdl)
     if (m_nTgtMolID==qlib::invalid_uid) {
       if (!m_sTgtMolName.isEmpty()) {
         //setTgtObjName(m_sTgtMolName);
-        m_pMol = resolveMolIDByName(m_sTgtMolName);
+        m_pMol = resolveMolIDImpl(m_sTgtMolName);
       }
     }
     else {
@@ -429,7 +429,8 @@ void MolSurfRenderer::makeAtomPosMap()
   }
 }
 
-MolCoordPtr MolSurfRenderer::resolveMolIDByName(const LString &name)
+/// Resolve mol name, set m_nTgtMolID, listen the MolCoord events, and returns MolCoord object
+MolCoordPtr MolSurfRenderer::resolveMolIDImpl(const LString &name)
 {
   qsys::ScenePtr pScene = getScene();
   if (pScene.isnull()) {
@@ -465,7 +466,7 @@ void MolSurfRenderer::setTgtObjName(const LString &name)
   
   m_sTgtMolName = name;
 
-  MolCoordPtr pMol = resolveMolIDByName(name);
+  MolCoordPtr pMol = resolveMolIDImpl(name);
   if (pMol.isnull()) {
     // TO DO: throw exception??
     LOG_DPRINTLN("MolSurfRend> \"%s\" is not a MolCoord object.", name.c_str());
