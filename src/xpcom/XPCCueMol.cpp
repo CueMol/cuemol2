@@ -147,6 +147,7 @@ namespace mdtools {
 }
 #endif
 
+#define HAVE_PSEREAD_MODULE 1
 #ifdef HAVE_PSEREAD_MODULE
 namespace pseread {
   extern bool init();

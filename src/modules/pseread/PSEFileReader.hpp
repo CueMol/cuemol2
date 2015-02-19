@@ -12,17 +12,15 @@
 #include <qsys/InOutHandler.hpp>
 
 namespace qlib {
-  class LDom2InStream;
+  class LVarList;
 }
 
 namespace pseread {
 
   using qlib::LString;
-  using qlib::LDom2Node;
-  using qlib::LDataSrcContainer;
   using qsys::ScenePtr;
 
-  class PSEREAD_API PSEFileReader : public qsys::InOutHandler
+  class IMPORTER_API PSEFileReader : public qsys::InOutHandler
   {
     MC_SCRIPTABLE;
 
@@ -64,6 +62,10 @@ namespace pseread {
 
     /// Get file extension
     virtual const char *getFileExt() const;
+
+  private:
+
+    void procNames(qlib::LVarList *pNames);
 
     /*
   private:

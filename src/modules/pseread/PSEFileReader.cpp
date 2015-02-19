@@ -25,6 +25,8 @@
 // #include <boost/filesystem/path.hpp>
 // namespace fs = boost::filesystem;
 
+#include "PickleInStream.hpp"
+
 using namespace pseread;
 using qlib::LDom2Node;
 using qlib::LDataSrcContainer;
@@ -82,13 +84,38 @@ void PSEFileReader::read()
 {
   //  LOG_DPRINTLN("PSEFileReader> File loaded: %s.", getPath().c_str());
 
+/*
   qsys::SysConfig *pconf = qsys::SysConfig::getInstance();
   LString filename = pconf->convPathName("%%CONFDIR%%/data/python/pse_reader.py");
 
   pybr::PythonBridge *pb = pybr::PythonBridge::getInstance();
   LString arguments = LString::format("{\"filename\": \"%s\"}", getPath().c_str()); 
   pb->runFile3(filename, m_pClient->getUID(), 0, arguments);
+*/
+  
+  LString localfile = getPath();
+  
+  qlib::FileInStream fis;
+  fis.open(localfile);
+  PickleInStream ois(fis);
 
+  LVariant *pTop = ois.getMap();
+
+  if (!pTop->isDict()) {
+    delete pTop;
+    return;
+  }
+
+  LVarDict *pDict = pTop->getDictPtr();
+
+  int ver = pDict->getInt("version");
+  LOG_DPRINTLN("PyMOL version %d", ver);
+
+  LVarList *pNames = pDict->getList("names");
+  procNames(pNames);
+  
+  delete pTop;
+  
   //////////
   // fire the scene-loaded event
   {
@@ -96,6 +123,31 @@ void PSEFileReader::read()
     ev.setTarget(m_pClient->getUID());
     ev.setType(qsys::SceneEvent::SCE_SCENE_ONLOADED);
     m_pClient->fireSceneEvent(ev);
+  }
+}
+
+void PSEFileReader::procNames(LVarList *pNames)
+{
+  LVarList::const_iterator iter = pNames->begin();
+  LVarList::const_iterator eiter = pNames->end();
+
+  for (; iter!=eiter; ++iter) {
+    LVariant *pElem = *iter;
+    if (!pElem->isList()) {
+      // ERROR!!
+      LOG_DPRINTLN("Invalid elem in names");
+      continue;
+    }
+    LVarList *pList = pElem->getListPtr();
+
+    LString name = pList->getString(0);
+    int type = pList->getInt(1);
+    int visible = pList->getInt(2);
+    LVarList *pRepOn = pList->getList(3);
+    int extra_int = pList->getInt(4);
+    LVarList *pData = pList->getList(5);
+    
+    MB_DPRINTLN("Name %s type=%d", name.c_str(), type);
   }
 }
 

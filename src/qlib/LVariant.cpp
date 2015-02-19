@@ -10,6 +10,8 @@
 #include "LString.hpp"
 #include "LScriptable.hpp"
 #include "LVarArray.hpp"
+#include "LVarList.hpp"
+#include "LVarDict.hpp"
 
 using namespace qlib;
 
@@ -48,6 +50,21 @@ void LVariant::cleanup()
     value.pArrayValue = NULL;
     break;
   }
+
+  case LT_LIST: {
+    if (m_bOwned)
+      delete value.pListValue;
+    value.pListValue = NULL;
+    break;
+  }
+
+  case LT_DICT: {
+    if (m_bOwned)
+      delete value.pDictValue;
+    value.pDictValue = NULL;
+    break;
+  }
+
   }
 
   type = LT_NULL;
@@ -90,6 +107,14 @@ void LVariant::copyFrom(const LVariant &src)
     value.pArrayValue = MB_NEW LVarArray(*src.value.pArrayValue);
     break;
 
+  case LT_LIST:
+    value.pListValue = MB_NEW LVarList(*src.value.pListValue);
+    break;
+
+  case LT_DICT:
+    value.pDictValue = MB_NEW LVarDict(*src.value.pDictValue);
+    break;
+
   default:
     MB_ASSERT(false);
     break;
@@ -129,6 +154,14 @@ LString LVariant::toString() const
     return LString::format("array(len=%d)", value.pArrayValue->getSize());
     break;
 
+  case LT_LIST:
+    return LString::format("list(len=%d)", value.pListValue->size());
+    break;
+
+  case LT_DICT:
+    return LString::format("dict(len=%d)", value.pDictValue->size());
+    break;
+
   case LT_OBJECT:
     LScriptable *pSCC = value.pObjValue;
     if (pSCC->isStrConv())
@@ -148,6 +181,20 @@ void LVariant::setArrayValue(const LVarArray &array)
   cleanup();
   type = LT_ARRAY;
   value.pArrayValue = MB_NEW LVarArray(array);
+}
+
+void LVariant::setListValue(const LVarList &alist)
+{
+  cleanup();
+  type = LT_LIST;
+  value.pListValue = MB_NEW LVarList(alist);
+}
+
+void LVariant::setDictValue(const LVarDict &arg)
+{
+  cleanup();
+  type = LT_DICT;
+  value.pDictValue = MB_NEW LVarDict(arg);
 }
 
 LString LVariant::getTypeString() const
@@ -181,6 +228,14 @@ LString LVariant::getTypeString() const
     return LString("array");
     break;
 
+  case LT_LIST:
+    return LString("list");
+    break;
+
+  case LT_DICT:
+    return LString("dict");
+    break;
+
   case LT_OBJECT: {
     LScriptable *pObj = value.pObjValue;
     return LString::format("object(%s)", typeid(*pObj).name());
@@ -190,5 +245,72 @@ LString LVariant::getTypeString() const
   }
 
   return LString("unkown");
+}
+
+void LVariant::dump() const
+{
+  switch (type) {
+  case LT_NULL:
+    MB_DPRINT("(null)");
+    break;
+
+  case LT_BOOLEAN:
+    MB_DPRINT("bool(%s)", getBoolValue()?"true":"false");
+    break;
+
+  case LT_INTEGER:
+    MB_DPRINT("int(%d)", getIntValue());
+    break;
+
+  case LT_REAL:
+    MB_DPRINT("real(%f)", getRealValue());
+    break;
+
+  case LT_ENUM:
+    MB_DPRINT("enum(%s)", getEnumValue().c_str());
+    break;
+
+  case LT_STRING:
+    MB_DPRINT("string(%s)", getStringValue().c_str());
+    break;
+
+  case LT_ARRAY: {
+    int nsz = getArrayPtr()->size();
+    MB_DPRINTLN("array(%d)[", nsz);
+    for (int i=0; i<nsz; ++i) {
+      getArrayPtr()->at(i).dump();
+    }
+    MB_DPRINTLN("]");
+    break;
+  }
+    
+  case LT_LIST: {
+    int nsz = getListPtr()->size();
+    MB_DPRINTLN("list(%d)[", nsz);
+    for (int i=0; i<nsz; ++i) {
+      getListPtr()->at(i)->dump();
+    }
+    MB_DPRINTLN("]");
+    break;
+  }
+    
+  case LT_DICT: {
+    LVarDict::const_iterator iter = getDictPtr()->begin();
+    LVarDict::const_iterator eiter = getDictPtr()->end();
+    for (; iter!=eiter; ++iter) {
+      MB_DPRINT("%s: ", iter->first.c_str());
+      iter->second->dump();
+    }
+    break;
+  }
+    
+  case LT_OBJECT: {
+    LScriptable *pObj = value.pObjValue;
+    MB_DPRINT("object(%s)", typeid(*pObj).name());
+    break;
+  }
+    
+  }
+  
 }
 

@@ -15,6 +15,8 @@ namespace qlib {
 
   class LScriptable;
   class LVarArray;
+  class LVarList;
+  class LVarDict;
 
   class QLIB_API LVariant
   {
@@ -29,6 +31,8 @@ namespace qlib {
       LScriptable *pObjValue;
       LSupScrSp *pSpValue;
       LVarArray *pArrayValue;
+      LVarList *pListValue;
+      LVarDict *pDictValue;
     } value;
 
     bool m_bOwned;
@@ -44,6 +48,8 @@ namespace qlib {
     static const int LT_SMARTPTR  = 6;
     static const int LT_ENUM  = 7;
     static const int LT_ARRAY = 8;
+    static const int LT_LIST = 9;
+    static const int LT_DICT = 10;
 
     struct copy_tag {};
     struct no_copy_tag {};
@@ -56,9 +62,7 @@ namespace qlib {
     {
     }
     
-    /**
-      Copy ctor
-    */
+    /// Copy ctor
     LVariant(const LVariant &src)
     {
       LVariant::copyFrom(src);
@@ -106,6 +110,14 @@ namespace qlib {
       value.pArrayValue = v;
     }
 
+    LVariant(LVarList *v) : type(LT_LIST), m_bOwned(true) {
+      value.pListValue = v;
+    }
+
+    LVariant(LVarDict *v) : type(LT_DICT), m_bOwned(true) {
+      value.pDictValue = v;
+    }
+
     ///////////////////////////
 
     // = operator
@@ -127,10 +139,11 @@ namespace qlib {
     void cleanup();
 
     //
+    void dump() const;
 
     /// Variation of cleanup()
-    //   This never call destruct (for object) or delete (for array),
-    //   so inapropriate use may cause memory leaking.
+    ///   This never call destruct (for object) or delete (for array),
+    ///   so inapropriate use may cause memory leaking.
     inline void forget()
     {
       if (type == LT_OBJECT) {
@@ -140,6 +153,14 @@ namespace qlib {
       else if (type == LT_ARRAY) {
 	type = LT_NULL;
         value.pArrayValue = NULL;
+      }
+      else if (type == LT_LIST) {
+        type = LT_NULL;
+        value.pListValue = NULL;
+      }
+      else if (type == LT_DICT) {
+	type = LT_NULL;
+        value.pDictValue = NULL;
       }
       else {
 	cleanup();
@@ -163,6 +184,10 @@ namespace qlib {
 	return value.pObjValue->isStrConv();
       if (type==LT_ARRAY)
         return false; // Array cannot be converted to string
+      if (type==LT_LIST)
+        return false; // List cannot be converted to string
+      if (type==LT_DICT)
+        return false; // Dict cannot be converted to string
       return true;
     }
 
@@ -323,6 +348,38 @@ namespace qlib {
       return value.pArrayValue;
     }
 
+    //////
+
+    inline bool isList() const { return type==LT_LIST; }
+
+    /// This create a new copy of LVarList object form pList
+    void setListValue(const LVarList &array);
+
+    inline LVarList *getListPtr() const
+    {
+      if (type != LT_LIST) {
+	LString msg = LString::format("Cannot cast type \"%s\" to list", getTypeString().c_str());
+        MB_THROW(InvalidCastException, msg);
+      }
+      return value.pListValue;
+    }
+
+    //////
+
+    inline bool isDict() const { return type==LT_DICT; }
+
+    /// This create a new copy of LVarDict object form arg
+    void setDictValue(const LVarDict &arg);
+
+    inline LVarDict *getDictPtr() const
+    {
+      if (type != LT_DICT) {
+	LString msg = LString::format("Cannot cast type \"%s\" to dict", getTypeString().c_str());
+        MB_THROW(InvalidCastException, msg);
+      }
+      return value.pDictValue;
+    }
+    
     ////////////////////////////////////////////////////////////
     // Object (LScriptable ptr) handling
 
@@ -401,6 +458,12 @@ namespace qlib {
     }
 
   }; // class LVariant
+
+  /// Dummy Comparison method
+  inline bool operator==(const LVariant &arg1,const LVariant &arg2)
+  {
+    return false;
+  }
 
 
 }

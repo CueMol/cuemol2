@@ -11,25 +11,25 @@
 // for MS-Windows
 #define DLLEXPORT __declspec(dllexport)
 
-#ifdef PSEREAD_EXPORTS
-# define PSEREAD_API __declspec(dllexport)
+#ifdef IMPORTER_EXPORTS
+# define IMPORTER_API __declspec(dllexport)
 #else
-# define PSEREAD_API __declspec(dllimport)
+# define IMPORTER_API __declspec(dllimport)
 #endif
 
 #elif defined(MB_HAVE_GCC_VIS_ATTR)
 
 // for non-MS platforms (gcc4)
-#  ifdef PSEREAD_EXPORTS
-#    define PSEREAD_API __attribute__ ((visibility ("default")))
+#  ifdef IMPORTER_EXPORTS
+#    define IMPORTER_API __attribute__ ((visibility ("default")))
 #  else
-#    define PSEREAD_API
+#    define IMPORTER_API
 #  endif
 
 #else
 
 // for non-MS platforms (without visattr)
-#define PSEREAD_API
+#define IMPORTER_API
 
 #endif // WIN32
 
@@ -38,10 +38,10 @@
 namespace pseread {
 
   /// Common Initialization for the pseread library
-  PSEREAD_API bool init();
+  IMPORTER_API bool init();
   
   /// Common Finalization for the pseread library
-  PSEREAD_API void fini();
+  IMPORTER_API void fini();
   
 }
 

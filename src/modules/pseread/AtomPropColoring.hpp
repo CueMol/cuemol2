@@ -18,7 +18,7 @@ namespace pseread {
   using gfx::ColorPtr;
   using molstr::MolAtomPtr;
 
-  class PSEREAD_API AtomPropColoring : public molstr::ColoringScheme
+  class IMPORTER_API AtomPropColoring : public molstr::ColoringScheme
   {
     MC_SCRIPTABLE;
     MC_CLONEABLE;
