@@ -24,12 +24,20 @@ runtime_class TubeRenderer extends SplineRenderer
   /// putty type
   enumdef putty_mode {
     none = molvis::TubeRenderer::TBR_PUTTY_OFF;
-    bfac = molvis::TubeRenderer::TBR_PUTTY_BFAC;
-    occ = molvis::TubeRenderer::TBR_PUTTY_OCC;
+    linear1 = molvis::TubeRenderer::TBR_PUTTY_LINEAR1;
+    scale1 = molvis::TubeRenderer::TBR_PUTTY_SCALE1;
   }
   property enum putty_mode => redirect(getPuttyMode, setPuttyMode);
   default putty_mode = "none";
   
+  /// putty target
+  enumdef putty_tgt {
+    bfac = molvis::TubeRenderer::TBR_PUTTY_BFAC;
+    occ = molvis::TubeRenderer::TBR_PUTTY_OCC;
+  }
+  property enum putty_tgt => redirect(getPuttyTgt, setPuttyTgt);
+  default putty_tgt = "bfac";
+
   /// putty mode scale factor
   property real putty_hiscl => redirect(getPuttyHiScl, setPuttyHiScl);
   default putty_hiscl = 3.0;

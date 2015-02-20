@@ -31,7 +31,8 @@ TubeRenderer::TubeRenderer()
   m_dParHi= 20.0;
 
   m_dPuttyScl = 3.0;
-  m_nPuttyMode = TBR_PUTTY_BFAC;
+  m_nPuttyMode = TBR_PUTTY_OFF;
+  m_nPuttyTgt = TBR_PUTTY_BFAC;
 
   //resetAllProps();
 }
@@ -75,7 +76,7 @@ void TubeRenderer::beginRend(DisplayContext *pdl)
 
     if (pAtom.isnull()) continue;
     
-    if (m_nPuttyMode==TBR_PUTTY_OCC)
+    if (m_nPuttyTgt==TBR_PUTTY_OCC)
       val = pAtom->getOcc();
     else
       val = pAtom->getBfac();
@@ -243,7 +244,7 @@ qlib::Vector2D TubeRenderer::getEScl(double par, SplineCoeff *pCoeff)
 
   if (!pPrev.isnull()) {
     pAtom1 = getPivotAtom(pPrev);
-    if (m_nPuttyMode==TBR_PUTTY_OCC)
+    if (m_nPuttyTgt==TBR_PUTTY_OCC)
       par1 = pAtom1->getOcc();
     else
       par1 = pAtom1->getBfac();
@@ -251,12 +252,13 @@ qlib::Vector2D TubeRenderer::getEScl(double par, SplineCoeff *pCoeff)
   }
   if (!pNext.isnull()) {
     pAtom2 = getPivotAtom(pNext);
-    if (m_nPuttyMode==TBR_PUTTY_OCC)
+    if (m_nPuttyTgt==TBR_PUTTY_OCC)
       par2 = pAtom2->getOcc();
     else
       par2 = pAtom2->getBfac();
   }
       
+  // linear interpolation between two residues (if exists)
   double val;
   if (rho<F_EPS4)
     val = par1;
@@ -265,22 +267,30 @@ qlib::Vector2D TubeRenderer::getEScl(double par, SplineCoeff *pCoeff)
   else
     val = par1 * (1.0-rho) + par2 * rho;
 
-  // scale val to (1/Nlo -- 1.0 -- Nhi) for (min -- aver -- max)
-  /*
-  if (val<m_dParAver) {
-    val = (val-m_dParLo)/(m_dParAver-m_dParLo);
-    // val = ::pow(m_dPuttyLoScl, val-1.0);
-    val = ((m_dPuttyLoScl-1)*val+1.0)/m_dPuttyLoScl;
+  // convert val to scaling factor
+  if (m_nPuttyMode==TBR_PUTTY_LINEAR1) {
+    // linear conversion
+    val = (val-m_dParLo)/(m_dParHi-m_dParLo);
+    val = (m_dPuttyScl-1.0/m_dPuttyLoScl)*val + 1.0/m_dPuttyLoScl;
+  }
+  else if (m_nPuttyMode==TBR_PUTTY_SCALE1) {
+    // multiplication conversion 1
+    // scale val to (1/Nlo -- 1.0 -- Nhi) for (min -- aver -- max)
+    if (val<m_dParAver) {
+      val = (val-m_dParLo)/(m_dParAver-m_dParLo);
+      // val = ::pow(m_dPuttyLoScl, val-1.0);
+      val = ((m_dPuttyLoScl-1)*val+1.0)/m_dPuttyLoScl;
+    }
+    else {
+      val = (val-m_dParAver)/(m_dParHi-m_dParAver);
+      // val = ::pow(m_dPuttyScl, val);
+      val = (m_dPuttyScl-1.0)*val + 1.0;
+    }
   }
   else {
-    val = (val-m_dParAver)/(m_dParHi-m_dParAver);
-    // val = ::pow(m_dPuttyScl, val);
-    val = (m_dPuttyScl-1.0)*val + 1.0;
+    // ERROR
+    MB_ASSERT(false);
   }
-   */
-
-  val = (val-m_dParLo)/(m_dParHi-m_dParLo);
-  val = (m_dPuttyScl-1.0/m_dPuttyLoScl)*val + 1.0/m_dPuttyLoScl;
 
   return Vector2D(val, val);
 }

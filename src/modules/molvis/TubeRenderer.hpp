@@ -76,19 +76,38 @@ namespace molvis {
       m_pts->setTuber(f);
     }
 
+    ///////////////////////////////
+
   private:
     int m_nPuttyMode;
 
   public:
     static const int TBR_PUTTY_OFF = 0;
-    static const int TBR_PUTTY_BFAC = 1;
-    static const int TBR_PUTTY_OCC = 2;
+    static const int TBR_PUTTY_SCALE1 = 1;
+    static const int TBR_PUTTY_LINEAR1 = 2;
 
     void setPuttyMode(int nmode) {
       m_nPuttyMode = nmode;
       invalidateDisplayCache();
     }
     int getPuttyMode() const { return m_nPuttyMode; }
+
+    ///////////////////////////////
+
+  private:
+    int m_nPuttyTgt;
+
+  public:
+    static const int TBR_PUTTY_BFAC = 1;
+    static const int TBR_PUTTY_OCC = 2;
+
+    void setPuttyTgt(int ntgt) {
+      m_nPuttyTgt = ntgt;
+      invalidateDisplayCache();
+    }
+    int getPuttyTgt() const { return m_nPuttyTgt; }
+
+    ///////////////////////////////
 
   private:
     double m_dParHi;
