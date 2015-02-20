@@ -25,11 +25,19 @@
 // #include <boost/filesystem/path.hpp>
 // namespace fs = boost::filesystem;
 
+#include <molstr/MolCoord.hpp>
+
 #include "PickleInStream.hpp"
+#include "PSEConsts.hpp"
 
 using namespace pseread;
 using qlib::LDom2Node;
 using qlib::LDataSrcContainer;
+
+using molstr::MolCoord;
+using molstr::MolCoordPtr;
+using molstr::MolAtom;
+using molstr::MolAtomPtr;
 
 PSEFileReader::PSEFileReader()
 {
@@ -148,6 +156,79 @@ void PSEFileReader::procNames(LVarList *pNames)
     LVarList *pData = pList->getList(5);
     
     MB_DPRINTLN("Name %s type=%d", name.c_str(), type);
+    if (type == ExecObject) {
+      if (extra_int == ObjectMolecule) {
+        MolCoordPtr pMol(new MolCoord);
+        pMol->setName(name);
+        // mol = cuemol.createObj("MolCoord")
+        // mol.name = name
+        // scene.addObject(mol)
+
+        parseObjectMolecule(pData, pMol);
+        m_pClient->addObject(pMol);
+      }
+      else if (extra_int == ObjectMap) {
+        //pass
+      }
+      else if (extra_int == ObjectMesh) {
+        // pass
+      }
+      else if (extra_int == ObjectMeasurement) {
+        // pass    
+      }
+    }
+    else if (type == ExecSelection) {
+      // pass
+    }
+  }
+}
+
+void PSEFileReader::parseObject(LVarList *pData, qsys::ObjectPtr pObj)
+{
+}
+
+static const int AT_NAME = 6;
+static const int AT_ELEM = 7;
+static const int AT_BFAC = 14;
+static const int AT_OCC = 15;
+
+static const int CT_COORD = 2;
+
+void PSEFileReader::parseObjectMolecule(LVarList *pData, MolCoordPtr pMol)
+{
+  LVarList *pData0 = pData->getList(0);
+  parseObject(pData0, pMol);
+
+  int i; 
+  int ncset = pData->getInt(1);
+  int nbonds = pData->getInt(2);
+  int natoms = pData->getInt(3);
+
+  MB_DPRINTLN("ncset=%d, nbonds=%d, natoms=%d", ncset, nbonds, natoms);
+
+  for (i=0; i<ncset; ++i) {
+  }
+
+  for (i=0; i<nbonds; ++i) {
+  }
+
+  LVarList *pCSet = pData->getList(4)->getList(0);
+  LVarList *pCoord = pCSet->getList(CT_COORD);
+  LVarList *pAtmsDat = pData->getList(7);
+
+  for (i=0; i<natoms; ++i) {
+    LVarList *pAtmDat = pAtmsDat->getList(i);
+    
+    MolAtomPtr pAtom(new MolAtom);
+    pAtom->setName(pAtmDat->getString(AT_NAME));
+    pAtom->setElementName(pAtmDat->getString(AT_ELEM));
+    pAtom->setBfac(pAtmDat->getReal(AT_ELEM));
+    pAtom->setOcc(pAtmDat->getReal(AT_OCC));
+
+    double x = pCoord->getReal(i*3);
+    double y = pCoord->getReal(i*3+1);
+    double z = pCoord->getReal(i*3+2);
+    pAtom->setPos(Vector4D(x,y,z));
   }
 }
 

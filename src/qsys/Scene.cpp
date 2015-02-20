@@ -1289,7 +1289,11 @@ void Scene::setCamToViewAnim(qlib::uid_t viewid, const LString &name, bool bAnim
   ensureNotNull(rv);
 
   CameraPtr rc = getCamera(name);
-  ensureNotNull(rc);
+  //ensureNotNull(rc);
+  if (rc.isnull()) {
+    MB_THROW(qlib::NullPointerException, "camera <"+name+"> not found");
+    return;
+  }
 
   rv->setCameraAnim(rc, bAnim);
 

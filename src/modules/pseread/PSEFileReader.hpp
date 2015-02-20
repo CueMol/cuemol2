@@ -10,6 +10,7 @@
 
 #include <qsys/Scene.hpp>
 #include <qsys/InOutHandler.hpp>
+#include <molstr/molstr.hpp>
 
 namespace qlib {
   class LVarList;
@@ -66,6 +67,9 @@ namespace pseread {
   private:
 
     void procNames(qlib::LVarList *pNames);
+
+    void parseObject(qlib::LVarList *pData, qsys::ObjectPtr pObj);
+    void parseObjectMolecule(qlib::LVarList *pData, molstr::MolCoordPtr pMol);
 
     /*
   private:
