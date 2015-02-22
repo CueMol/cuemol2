@@ -68,7 +68,8 @@ namespace qlib {
     {
       LVariant *pval = super_t::at(ind);
       if (pval==NULL || !pval->isString()) {
-        MB_THROW(qlib::RuntimeException, "LVarDict, getString key not found");
+        LString msg = LString::format("LVarDict, getString index (%d) not found", ind);
+        MB_THROW(qlib::RuntimeException, msg);
         return LString();
       }
       return pval->getStringValue();
@@ -88,7 +89,8 @@ namespace qlib {
     {
       LVariant *pval = super_t::at(ind);
       if (pval==NULL || !pval->isReal()) {
-        MB_THROW(qlib::RuntimeException, "LVarDict, getReal key not found");
+        LString msg = LString::format("LVarDict, getReal index (%d) not found", ind);
+        MB_THROW(qlib::RuntimeException, msg);
         return 0.0;
       }
       return pval->getRealValue();
@@ -104,6 +106,7 @@ namespace qlib {
       return pval->getListPtr();
     }
 
+    void dump() const;
 
   };
 

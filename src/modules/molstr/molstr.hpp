@@ -67,7 +67,7 @@ namespace molstr {
   class ColoringScheme;
   typedef qlib::LScrSp<ColoringScheme> ColoringSchemePtr;
 
-
+  MC_DECL_SCRSP(MolRenderer);
 }
 
 #endif // MOLSTR_DLL_H__

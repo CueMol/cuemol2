@@ -285,12 +285,7 @@ void LVariant::dump() const
   }
     
   case LT_LIST: {
-    int nsz = getListPtr()->size();
-    MB_DPRINTLN("list(%d)[", nsz);
-    for (int i=0; i<nsz; ++i) {
-      getListPtr()->at(i)->dump();
-    }
-    MB_DPRINTLN("]");
+    getListPtr()->dump();
     break;
   }
     
@@ -313,4 +308,17 @@ void LVariant::dump() const
   }
   
 }
+
+//////////
+
+void LVarList::dump() const
+{
+  int nsz = size();
+  MB_DPRINTLN("list(%d)[", nsz);
+  for (int i=0; i<nsz; ++i) {
+    at(i)->dump();
+  }
+  MB_DPRINTLN("]");
+}
+
 
