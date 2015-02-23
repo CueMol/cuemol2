@@ -505,6 +505,58 @@ bool transformRotMatToQuaternion(
 
 #endif
 
+////////////////////////////////////////////////////////////
+// LQuat implementation
+//static
+LQuat LQuat::makeFromRotMat(const Matrix3D &m)
+{
+  double s;
+  double tr = m.aij(1,1) + m.aij(2,2) + m.aij(3,3) + 1.0;
+  if (tr >= 1.0) {
+    s = 0.5 / ::sqrt(tr);
+    return LQuat(0.25 / s,
+                 (m.aij(2,3) - m.aij(3,2)) * s,
+                 (m.aij(3,1) - m.aij(1,3)) * s,
+                 (m.aij(1,2) - m.aij(2,1)) * s);
+  }
+  else {
+    double max;
+    if(m.aij(2,2) > m.aij(3,3))
+      max = m.aij(2,2);
+    else
+      max = m.aij(3,3);
+
+    if (max < m.aij(1,1)) {
+      s = ::sqrt(m.aij(1,1) - (m.aij(2,2) + m.aij(3,3)) + 1.0);
+      double x = s * 0.5;
+      s = 0.5 / s;
+      return LQuat((m.aij(2,3) - m.aij(3,2)) * s,
+                   x,
+                   (m.aij(1,2) + m.aij(2,1)) * s,
+                   (m.aij(3,1) + m.aij(1,3)) * s);
+
+    }
+    else if (max == m.aij(2,2)) {
+      s = ::sqrt(m.aij(2,2) - (m.aij(3,3) + m.aij(1,1)) + 1.0);
+      double y = s * 0.5;
+      s = 0.5 / s;
+      return LQuat((m.aij(3,1) - m.aij(1,3)) * s,
+                   (m.aij(1,2) + m.aij(2,1)) * s,
+                   y,
+                   (m.aij(2,3) + m.aij(3,2)) * s);
+    }
+    else {
+      s = ::sqrt(m.aij(3,3) - (m.aij(1,1) + m.aij(2,2)) + 1.0);
+      double z = s * 0.5;
+      s = 0.5 / s;
+      return LQuat((m.aij(1,2) - m.aij(2,1)) * s,
+                   (m.aij(3,1) + m.aij(1,3)) * s,
+                   (m.aij(2,3) + m.aij(3,2)) * s,
+                   z);
+    }
+  }
+}
+
 //static
 LQuat LQuat::slerp(const LQuat &q, const LQuat &r, const value_type t)
 {

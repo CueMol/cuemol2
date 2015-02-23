@@ -66,22 +66,19 @@ namespace pseread {
 
   private:
 
+    qlib::LVarList *m_pSet;
+
+    void procViewSettings(qlib::LVarList *pView);
+
     void procNames(qlib::LVarList *pNames);
 
     void parseObject(qlib::LVarList *pData, qsys::ObjectPtr pObj);
     void parseObjectMolecule(qlib::LVarList *pData, molstr::MolCoordPtr pMol);
 
-    /*
-  private:
-    LString m_errmsg;
+    double getRealSetting(int id);
 
-  public:
-    /// Get error message
-    LString getErrMsg() const {
-      return m_errmsg;
-    }
-    */
-
+    int getIntSetting(int id);
+    
   };
 
   ////////////////////////////////////////////////////////////

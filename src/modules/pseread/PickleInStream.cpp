@@ -113,9 +113,12 @@ LVariant *PickleInStream::getMap()
     }
       
     case BININT2: {
-      int i = (read() & 0xff | ((read() & 0xff) << 8)) & 0xffff;
+      int b1 = read() & 0xff;
+      int b2 = read() & 0xff;
+      int i = b1 | (b2<<8);
+      // int i = (read() & 0xff | ((read() & 0xff) << 8)) & 0xffff;
       push(createInt(i));
-      // MB_DPRINTLN("BININT2 %d", i);
+      //LOG_DPRINTLN("BININT2 %d", i);
       break;
     }
       

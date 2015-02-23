@@ -101,7 +101,9 @@ namespace pseread {
     {
       qint32 rval;
       super_t::read((char*)&rval, 0, sizeof (qint32));
+      //LOG_DPRINTLN("ReadIntLE pre=%d", rval);
       qlib::LByteNormalize<qint32>::doit(rval);
+      //LOG_DPRINTLN("ReadIntLE post=%d", rval);
       return rval;
     }
 

@@ -26,7 +26,9 @@
 // namespace fs = boost::filesystem;
 
 #include <qlib/RangeSet.hpp>
+#include <qlib/Matrix3D.hpp>
 #include <qsys/Renderer.hpp>
+#include <qsys/Camera.hpp>
 #include <molstr/MolCoord.hpp>
 #include <molstr/MolRenderer.hpp>
 #include <molstr/SelCommand.hpp>
@@ -39,6 +41,8 @@ using qlib::LDom2Node;
 using qlib::LDataSrcContainer;
 
 using qsys::RendererPtr;
+using qsys::Camera;
+using qsys::CameraPtr;
 
 using molstr::MolCoord;
 using molstr::MolCoordPtr;
@@ -95,6 +99,20 @@ const char *PSEFileReader::getFileExt() const
 
 //////////////////////////////////////////////////
 
+double PSEFileReader::getRealSetting(int id)
+{
+  qlib::LVarList *pTuple = m_pSet->getList(id);
+  MB_ASSERT(pTuple->getInt(0)==id);
+  return pTuple->getReal(2);
+}
+
+int PSEFileReader::getIntSetting(int id)
+{
+  qlib::LVarList *pTuple = m_pSet->getList(id);
+  MB_ASSERT(pTuple->getInt(0)==id);
+  return pTuple->getInt(2);
+}
+
 void PSEFileReader::read()
 {
   //  LOG_DPRINTLN("PSEFileReader> File loaded: %s.", getPath().c_str());
@@ -126,6 +144,10 @@ void PSEFileReader::read()
   int ver = pDict->getInt("version");
   LOG_DPRINTLN("PyMOL version %d", ver);
 
+  LVarList *pView = pDict->getList("view");
+  m_pSet = pDict->getList("settings");
+  procViewSettings(pView);
+
   LVarList *pNames = pDict->getList("names");
   procNames(pNames);
   
@@ -139,6 +161,56 @@ void PSEFileReader::read()
     ev.setType(qsys::SceneEvent::SCE_SCENE_ONLOADED);
     m_pClient->fireSceneEvent(ev);
   }
+}
+
+void PSEFileReader::procViewSettings(LVarList *pView)
+{
+  int i, j, k=0;
+  qlib::Matrix3D mat;
+  for (j=1; j<=3; ++j) {
+    for (i=1; i<=3; ++i) {
+      mat.aij(i, j) = pView->getReal(k);
+      ++k;
+    }
+    ++k;
+  }
+  mat.dump();
+
+  LQuat q = LQuat::makeFromRotMat(mat);
+  MB_DPRINTLN("q=%s", q.toString().c_str());
+
+  k+=4;
+
+  qlib::Vector4D vec1;
+  for (i=1; i<=3; ++i) {
+    vec1.ai(i) = pView->getReal(k);
+    ++k;
+  }
+  MB_DPRINTLN("vec1=%s", vec1.toString().c_str());
+
+  qlib::Vector4D vec2;
+  for (i=1; i<=3; ++i) {
+    vec2.ai(i) = pView->getReal(k);
+    ++k;
+  }
+  MB_DPRINTLN("vec2=%s", vec2.toString().c_str());
+
+  double slabdist = pView->getReal(k);
+  ++k;
+  double depthdist = pView->getReal(k);
+  ++k;
+
+  double fov = getRealSetting(PSESC_field_of_view);
+  bool isOrtho = (bool) getIntSetting(PSESC_ortho);
+
+  CameraPtr pcam(new Camera);
+  pcam->setCenter(vec2);
+  pcam->setRotQuat(q);
+  pcam->setCamDist(-vec1.z());
+  pcam->setSlabDepth(slabdist);
+  pcam->setPerspec(!isOrtho);
+
+  m_pClient->setCamera("__current", pcam);
 }
 
 void PSEFileReader::procNames(LVarList *pNames)
