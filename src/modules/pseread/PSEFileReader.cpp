@@ -32,6 +32,10 @@
 #include <molstr/MolCoord.hpp>
 #include <molstr/MolRenderer.hpp>
 #include <molstr/SelCommand.hpp>
+#include <molvis/AtomIntrRenderer.hpp>
+
+#include <surface/MolSurfObj.hpp>
+#include <surface/MolSurfRenderer.hpp>
 
 #include "PickleInStream.hpp"
 #include "AtomPropColoring.hpp"
@@ -240,7 +244,7 @@ void PSEFileReader::procViewSettings(LVarList *pView)
   CameraPtr pcam(new Camera);
   pcam->setCenter(vec2);
   pcam->setRotQuat(q);
-  pcam->setCamDist(-vec1.z());
+  // pcam->setCamDist(-vec1.z());
   pcam->setSlabDepth(slabdist);
   pcam->setZoom(zoom);
   // pcam->setPerspec(!isOrtho);
@@ -257,7 +261,7 @@ void PSEFileReader::procNames(LVarList *pNames)
     LVariant *pElem = *iter;
     if (!pElem->isList()) {
       // ERROR!!
-      LOG_DPRINTLN("Invalid elem in names");
+      MB_DPRINTLN("Invalid elem in names");
       continue;
     }
     LVarList *pList = pElem->getListPtr();
@@ -269,26 +273,36 @@ void PSEFileReader::procNames(LVarList *pNames)
     int extra_int = pList->getInt(4);
     LVarList *pData = pList->getList(5);
     
+    MolCoordPtr pPrevMol;
+
     MB_DPRINTLN("Name %s type=%d", name.c_str(), type);
     if (type == ExecObject) {
       if (extra_int == ObjectMolecule) {
         MolCoordPtr pMol(new MolCoord);
         pMol->setName(name);
-        // mol = cuemol.createObj("MolCoord")
-        // mol.name = name
-        // scene.addObject(mol)
-
         parseObjectMolecule(pData, pMol);
         m_pClient->addObject(pMol);
+        pPrevMol = pMol;
       }
       else if (extra_int == ObjectMap) {
+        MB_DPRINTLN("ObjectMap");
         //pass
       }
       else if (extra_int == ObjectMesh) {
+        MB_DPRINTLN("ObjectMesh");
         // pass
       }
       else if (extra_int == ObjectMeasurement) {
-        // pass    
+        MB_DPRINTLN("ObjectMeasurement");
+        
+        MolCoordPtr pMol = pPrevMol;
+        if (pMol.isnull()) {
+          pMol = MolCoordPtr(new MolCoord);
+          pMol->setName("dummy");
+          m_pClient->addObject(pMol);
+        }
+        
+        parseObjectMeas(pData, pMol);
       }
     }
     else if (type == ExecSelection) {
@@ -367,6 +381,42 @@ namespace {
 
     return pRval;
   }
+
+  qsys::ObjectPtr createSurface(qsys::ScenePtr pScene, MolCoordPtr pMol,
+                                const qlib::RangeSet<int>&rs)
+  {
+    if (rs.isEmpty())
+      return qsys::ObjectPtr();
+    
+    surface::MolSurfObj *pmso = new surface::MolSurfObj;
+    qsys::ObjectPtr pRval = qsys::ObjectPtr(pmso);
+    pScene->addObject(pRval);
+
+    molstr::SelectionPtr sel(new molstr::SelCommand("*"));
+    pmso->createSESFromMol(pMol, sel, 1, 1.4);
+    LString sfname = pMol->getName() + "_surf";
+    pmso->setName(sfname);
+
+    qsys::RendererPtr pRend = pmso->createRenderer("molsurf");
+    surface::MolSurfRenderer *pMSRend = static_cast<surface::MolSurfRenderer *>(pRend.get());
+
+    pMSRend->setTgtObjName(pMol->getName());
+    pMSRend->setDefaultPropFlag("target", false);
+
+    LString str = qlib::rangeToString(rs);
+    molstr::SelectionPtr pShowSel(new molstr::SelCommand("aid "+str));
+    pMSRend->setShowSel(pShowSel);
+    pMSRend->setDefaultPropFlag("sel", false);
+
+    pMSRend->setColorMode(surface::MolSurfRenderer::SFREND_MOLFANC);
+    pMSRend->setDefaultPropFlag("colormode", false);
+
+    molstr::ColoringSchemePtr pColScm(new AtomPropColoring());
+    pMSRend->setColSchm(pColScm);
+    pMSRend->setDefaultPropFlag("coloring", false);
+
+    return pRval;
+  }
 }
 
 
@@ -404,6 +454,7 @@ void PSEFileReader::parseObjectMolecule(LVarList *pData, MolCoordPtr pMol)
   qlib::RangeSet<int> rsSpheres;
   qlib::RangeSet<int> rsCartoon;
   qlib::RangeSet<int> rsLines;
+  qlib::RangeSet<int> rsSurface;
 
   for (i=0; i<nind; ++i) {
     int aid = pIdxToAtm->getInt(i);
@@ -452,6 +503,9 @@ void PSEFileReader::parseObjectMolecule(LVarList *pData, MolCoordPtr pMol)
     if (pVisReps->getInt(REP_LINES)==1) {
       rsLines.append(res, res+1);
     }
+    if (pVisReps->getInt(REP_SURFACE)==1) {
+      rsSurface.append(res, res+1);
+    }
   }
 
   pMol->applyTopology();
@@ -463,5 +517,62 @@ void PSEFileReader::parseObjectMolecule(LVarList *pData, MolCoordPtr pMol)
   createRends(pMol, rsCartoon, "ribbon", "DefaultRibbon");
   createRends(pMol, rsLines, "simple", "DefaultSimple");
 
+  createSurface(m_pClient, pMol, rsSurface);
 }
 
+void PSEFileReader::parseObjectMeas(LVarList *pData, MolCoordPtr pMol)
+{
+  LVarList *pSetting = pData->getList(0);
+  // parseObject(pData0, pMol);
+
+  LVarList *pMeas = pData->getList(2)->getList(0);
+
+  int pt;
+  int nCoord;
+  if (pMeas->at(1)->isList()) {
+    // length
+    pt = 1;
+    nCoord = 2;
+  }
+  else if (pMeas->at(4)->isList()) {
+    // angle
+    pt = 4;
+    nCoord = 3;
+  }
+  else if (pMeas->at(6)->isList()) {
+    // torsion angle
+    pt = 6;
+    nCoord = 4;
+  }
+  else {
+    LOG_DPRINTLN("PSE> Invalid ObjectMeasure entry");
+    return;
+  }
+    
+  LVarList *pList = pMeas->getList(pt);
+  // LVarList *pOffs = pMeas->getList(8);
+  bool bHaveLabels = pMeas->size()>8;
+  int color = pSetting->getInt(2);
+  if (color < 0)
+    color = (int) getRealSetting(PSESC_dash_color);
+  
+  int nsz = pList->size();
+  int nelems = nsz/3/nCoord;
+
+  if (nelems<=0)
+    return;
+
+  qsys::RendererPtr pRend = pMol->createRenderer("atomintr");
+  pRend->applyStyles("DefaultLabel,DefaultAtomIntr");
+  molvis::AtomIntrRenderer *pAiRend = static_cast<molvis::AtomIntrRenderer *>(pRend.get());
+  
+  for (int i=0; i<nelems; ++i) {
+    std::vector<Vector4D> vecs(nCoord);
+    const int nBase = i*nCoord;
+    for (int j=0; j<nCoord; ++j) {
+      for (int k=0; k<3; ++k)
+        vecs[j].ai(k+1) = pList->getReal((nBase + j)*3 + k);
+    }
+    pAiRend->appendByVecs(vecs);
+  }
+}

@@ -174,6 +174,12 @@ public:
                         qlib::uid_t nMolID3, int nAid3,
                         qlib::uid_t nMolID4, int nAid4);
 
+  //////////
+
+  int appendByVecs(const std::vector<Vector4D> &vecs);
+
+  //////////
+
   /// Create intr data with ID (for REDO operation)
   void setAt(int index, const AtomIntrData &dat);
 

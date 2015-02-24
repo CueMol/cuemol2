@@ -75,6 +75,8 @@ namespace pseread {
     void parseObject(qlib::LVarList *pData, qsys::ObjectPtr pObj);
     void parseObjectMolecule(qlib::LVarList *pData, molstr::MolCoordPtr pMol);
 
+    void parseObjectMeas(qlib::LVarList *pData, molstr::MolCoordPtr pMol);
+
     double getRealSetting(int id);
 
     int getIntSetting(int id);
