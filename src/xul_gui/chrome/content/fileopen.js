@@ -378,7 +378,9 @@ Qm2Main.prototype.openSceneImpl = function(path, reader_name)
   }
 
   const mru = require("mru-files");
-  mru.addMRU(path, "qsc_xml");
+  //mru.addMRU(path, "qsc_xml");
+  dd("@@@ reader_name="+reader_name);
+  mru.addMRU(path, reader_name);
   mru.dumpMRU();
 
   // show the completion message
@@ -391,6 +393,9 @@ Qm2Main.prototype.openSceneImpl = function(path, reader_name)
 
 Qm2Main.prototype.onOpenScene = function()
 {
+  const hisname = "cuemol2.ui.histories.open_scene_name";
+  const pref = require("preferences-service");
+
   const nsIFilePicker = Ci.nsIFilePicker;
   let fp = Cc["@mozilla.org/filepicker;1"].createInstance(nsIFilePicker);
 
@@ -405,6 +410,18 @@ Qm2Main.prototype.onOpenScene = function()
     dd("Make filter is failed: "+e);
     return;
   }
+
+  // Preselect the previous (or default) reader
+  let prev_reader_name;
+  if (pref.has(hisname))
+    prev_reader_name = pref.get(hisname);
+  else
+    prev_reader_name = "qsc"; // default is QSC file reader
+
+  names.forEach( function (elem, index) {
+    if (elem.name==prev_reader_name)
+      fp.filterIndex = index;
+  } );
 
   let res=fp.show();
   if (res!=nsIFilePicker.returnOK) {

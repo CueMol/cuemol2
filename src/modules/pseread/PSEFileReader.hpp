@@ -78,6 +78,7 @@ namespace pseread {
     double getRealSetting(int id);
 
     int getIntSetting(int id);
+    void setupSettingList(qlib::LVarList *pSet);
     
   };
 

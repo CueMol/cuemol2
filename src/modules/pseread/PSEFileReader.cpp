@@ -34,6 +34,7 @@
 #include <molstr/SelCommand.hpp>
 
 #include "PickleInStream.hpp"
+#include "AtomPropColoring.hpp"
 #include "PSEConsts.hpp"
 
 using namespace pseread;
@@ -52,6 +53,7 @@ using molstr::ResidIndex;
 
 PSEFileReader::PSEFileReader()
 {
+  m_pSet = NULL;
 }
 
 PSEFileReader::~PSEFileReader()
@@ -101,16 +103,46 @@ const char *PSEFileReader::getFileExt() const
 
 double PSEFileReader::getRealSetting(int id)
 {
-  qlib::LVarList *pTuple = m_pSet->getList(id);
-  MB_ASSERT(pTuple->getInt(0)==id);
-  return pTuple->getReal(2);
+  //qlib::LVarList *pTuple = m_pSet->getList(id);
+  //MB_ASSERT(pTuple->getInt(0)==id);
+  return m_pSet->getReal(id);
 }
 
 int PSEFileReader::getIntSetting(int id)
 {
-  qlib::LVarList *pTuple = m_pSet->getList(id);
-  MB_ASSERT(pTuple->getInt(0)==id);
-  return pTuple->getInt(2);
+  //qlib::LVarList *pTuple = m_pSet->getList(id);
+  //MB_ASSERT(pTuple->getInt(0)==id);
+  return m_pSet->getInt(id);
+}
+
+void PSEFileReader::setupSettingList(qlib::LVarList *pSet)
+{
+  if (m_pSet==NULL)
+    m_pSet = new LVarList;
+  else
+    m_pSet->clear();
+  
+  LVarList::iterator iter = pSet->begin();
+  LVarList::iterator eiter = pSet->end();
+  
+  int nmax = 0;
+  for (; iter!=eiter; ++iter) {
+    qlib::LVarList *pTuple = (*iter)->getListPtr();
+    int id = pTuple->getInt(0);
+    nmax = qlib::max(nmax, id);
+  }
+
+  m_pSet->resize(nmax+1);
+
+  iter = pSet->begin();
+  // eiter = pSet->end();
+
+  for (; iter!=eiter; ++iter) {
+    qlib::LVarList *pTuple = (*iter)->getListPtr();
+    int id = pTuple->getInt(0);
+    m_pSet->at(id) = pTuple->at(2);
+  }
+  
 }
 
 void PSEFileReader::read()
@@ -145,7 +177,8 @@ void PSEFileReader::read()
   LOG_DPRINTLN("PyMOL version %d", ver);
 
   LVarList *pView = pDict->getList("view");
-  m_pSet = pDict->getList("settings");
+  // m_pSet = pDict->getList("settings");
+  setupSettingList( pDict->getList("settings") );
   procViewSettings(pView);
 
   LVarList *pNames = pDict->getList("names");
@@ -201,6 +234,7 @@ void PSEFileReader::procViewSettings(LVarList *pView)
   ++k;
 
   double fov = getRealSetting(PSESC_field_of_view);
+  double zoom = -vec1.z() * tan(qlib::toRadian(fov));
   bool isOrtho = (bool) getIntSetting(PSESC_ortho);
 
   CameraPtr pcam(new Camera);
@@ -208,7 +242,8 @@ void PSEFileReader::procViewSettings(LVarList *pView)
   pcam->setRotQuat(q);
   pcam->setCamDist(-vec1.z());
   pcam->setSlabDepth(slabdist);
-  pcam->setPerspec(!isOrtho);
+  pcam->setZoom(zoom);
+  // pcam->setPerspec(!isOrtho);
 
   m_pClient->setCamera("__current", pcam);
 }
@@ -274,6 +309,7 @@ static const int AT_ELEM = 7;
 static const int AT_BFAC = 14;
 static const int AT_OCC = 15;
 static const int AT_VISREP = 20;
+static const int AT_COLOR = 21;
 
 static const int CT_NINDEX = 0;
 static const int CT_NATINDEX = 1;
@@ -308,11 +344,12 @@ static const int REP_VOLUME = 20;
 static const int REP_MAX = 21;
 
 namespace {
-  void createRends(MolCoordPtr pMol,
-                   const qlib::RangeSet<int>&rs,
-                   const LString &rendname,
-                   const LString &styname)
+  RendererPtr createRends(MolCoordPtr pMol,
+                          const qlib::RangeSet<int>&rs,
+                          const LString &rendname,
+                          const LString &styname)
   {
+    RendererPtr pRval;
     if (!rs.isEmpty()) {
       LString str = qlib::rangeToString(rs);
       molstr::MolRendererPtr pRend = pMol->createRenderer(rendname);
@@ -321,7 +358,14 @@ namespace {
       molstr::SelectionPtr sel(new molstr::SelCommand("aid "+str));
       pRend->setSelection(sel);
       pRend->setDefaultPropFlag("sel", false);
+
+      molstr::ColoringSchemePtr pColScm(new AtomPropColoring());
+      pRend->setColSchm(pColScm);
+      pRend->setDefaultPropFlag("coloring", false);
+      pRval = pRend;
     }
+
+    return pRval;
   }
 }
 
@@ -384,6 +428,10 @@ void PSEFileReader::parseObjectMolecule(LVarList *pData, MolCoordPtr pMol)
     double y = pCoord->getReal(i*3+1);
     double z = pCoord->getReal(i*3+2);
     pAtom->setPos(Vector4D(x,y,z));
+
+    int ncol = pAtmDat->getInt(AT_COLOR);
+    MB_DPRINTLN("color for %d = %d", i, ncol);
+    pAtom->setAtomPropInt("col", PSE_colors[ncol]);
 
     int res = pMol->appendAtom(pAtom);
     if (res<0) {
