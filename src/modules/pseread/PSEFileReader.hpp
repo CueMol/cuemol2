@@ -10,7 +10,7 @@
 
 #include <qsys/Scene.hpp>
 #include <qsys/InOutHandler.hpp>
-#include <molstr/molstr.hpp>
+#include <modules/molstr/molstr.hpp>
 
 namespace qlib {
   class LVarList;

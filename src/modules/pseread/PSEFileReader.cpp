@@ -29,13 +29,13 @@
 #include <qlib/Matrix3D.hpp>
 #include <qsys/Renderer.hpp>
 #include <qsys/Camera.hpp>
-#include <molstr/MolCoord.hpp>
-#include <molstr/MolRenderer.hpp>
-#include <molstr/SelCommand.hpp>
-#include <molvis/AtomIntrRenderer.hpp>
+#include <modules/molstr/MolCoord.hpp>
+#include <modules/molstr/MolRenderer.hpp>
+#include <modules/molstr/SelCommand.hpp>
+#include <modules/molvis/AtomIntrRenderer.hpp>
 
-#include <surface/MolSurfObj.hpp>
-#include <surface/MolSurfRenderer.hpp>
+#include <modules/surface/MolSurfObj.hpp>
+#include <modules/surface/MolSurfRenderer.hpp>
 
 #include "PickleInStream.hpp"
 #include "AtomPropColoring.hpp"

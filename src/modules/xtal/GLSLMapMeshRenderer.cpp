@@ -275,8 +275,9 @@ void GLSLMapMeshRenderer::unloading()
   glDeleteBuffersARB(1, &m_nMapBufID);
   glDeleteBuffersARB(1, &m_nVBOID);
 
-  //if (m_pPO)
-  //delete m_pPO;
+  // ProgramObject is owned by DisplayContext
+  // and will be reused other renderes,
+  // so m_pPO should not be deleted here.
   m_pPO = NULL;
 
   super_t::unloading();

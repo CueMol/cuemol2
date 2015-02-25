@@ -16,6 +16,7 @@ include $(top_srcdir)/mcwgen.am
 CPP_SRC = \
 pseread.cpp \
 PSEFileReader.cpp \
+PickleInStream.cpp \
 AtomPropColoring.cpp \
 $(NULL)
 
