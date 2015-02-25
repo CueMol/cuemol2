@@ -35,7 +35,6 @@ AtomPropColoring::~AtomPropColoring()
 
 bool AtomPropColoring::getAtomColor(MolAtomPtr pAtom, gfx::ColorPtr &col)
 {
-  MB_DPRINTLN("***** AtomPropCol getAtomColor called");
   try {
     int ccode = pAtom->getAtomPropInt(m_propname);
     col = gfx::SolidColorPtr(new gfx::SolidColor(ccode)); 

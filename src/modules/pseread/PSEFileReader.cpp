@@ -320,6 +320,7 @@ static const int AT_RESI = 3;
 static const int AT_RESN = 5;
 static const int AT_NAME = 6;
 static const int AT_ELEM = 7;
+static const int AT_LABEL = 9;
 static const int AT_BFAC = 14;
 static const int AT_OCC = 15;
 static const int AT_VISREP = 20;
@@ -332,30 +333,6 @@ static const int CT_IDXTOATM = 3;
 static const int CT_ATOMTOIDX = 4;
 static const int CT_NAME = 5;
 
-static const int REP_STICKS = 0;
-static const int REP_SPHERES = 1;
-static const int REP_SURFACE = 2; // objSurface
-static const int REP_LABELS = 3;
-static const int REP_NBSPHERES = 4;
-static const int REP_CARTOON = 5;
-static const int REP_RIBBON = 6;
-static const int REP_LINES = 7;
-static const int REP_MESH = 8; // objMesh
-static const int REP_DOTS = 9; // dots; also used for objMap
-static const int REP_DASHES = 10;  // for measurements
-static const int REP_NONBONDED = 11;
-
-static const int REP_CELL = 12; // for objMesh, objSurface
-static const int REP_CGO = 13; // for sculpt mode, objAlignment, objCGO
-static const int REP_CALLBACK = 14; // for objCallback
-static const int REP_EXTENT = 15; // for objMap
-static const int REP_SLICE = 16; // for objSlice
-static const int REP_ANGLES = 17;
-static const int REP_DIHEDRALS = 18;
-static const int REP_ELLIPSOID = 19;
-static const int REP_VOLUME = 20;
-
-static const int REP_MAX = 21;
 
 namespace {
   RendererPtr createRends(MolCoordPtr pMol,
@@ -456,6 +433,8 @@ void PSEFileReader::parseObjectMolecule(LVarList *pData, MolCoordPtr pMol)
   qlib::RangeSet<int> rsLines;
   qlib::RangeSet<int> rsSurface;
 
+  std::map<int, LString> labelMap;
+
   for (i=0; i<nind; ++i) {
     int aid = pIdxToAtm->getInt(i);
 
@@ -481,7 +460,7 @@ void PSEFileReader::parseObjectMolecule(LVarList *pData, MolCoordPtr pMol)
     pAtom->setPos(Vector4D(x,y,z));
 
     int ncol = pAtmDat->getInt(AT_COLOR);
-    MB_DPRINTLN("color for %d = %d", i, ncol);
+    // MB_DPRINTLN("color for %d = %d", i, ncol);
     pAtom->setAtomPropInt("col", PSE_colors[ncol]);
 
     int res = pMol->appendAtom(pAtom);
@@ -505,6 +484,12 @@ void PSEFileReader::parseObjectMolecule(LVarList *pData, MolCoordPtr pMol)
     }
     if (pVisReps->getInt(REP_SURFACE)==1) {
       rsSurface.append(res, res+1);
+    }
+
+    LString label = pAtmDat->getString(AT_LABEL);
+    if (!label.isEmpty()) {
+      MB_DPRINTLN("atom %d label=%s", i, label.c_str());
+      labelMap.insert(std::pair<int, LString>(res, label));
     }
   }
 

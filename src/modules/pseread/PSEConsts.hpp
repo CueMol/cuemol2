@@ -20,7 +20,34 @@ static const int ObjectAlignment = 11;
 static const int ObjectGroup = 12;
 static const int ObjectVolume = 13;
 
-//
+// Representations
+static const int REP_STICKS = 0;
+static const int REP_SPHERES = 1;
+static const int REP_SURFACE = 2; // objSurface
+static const int REP_LABELS = 3;
+static const int REP_NBSPHERES = 4;
+static const int REP_CARTOON = 5;
+static const int REP_RIBBON = 6;
+static const int REP_LINES = 7;
+static const int REP_MESH = 8; // objMesh
+static const int REP_DOTS = 9; // dots; also used for objMap
+static const int REP_DASHES = 10;  // for measurements
+static const int REP_NONBONDED = 11;
+
+static const int REP_CELL = 12; // for objMesh, objSurface
+static const int REP_CGO = 13; // for sculpt mode, objAlignment, objCGO
+static const int REP_CALLBACK = 14; // for objCallback
+static const int REP_EXTENT = 15; // for objMap
+static const int REP_SLICE = 16; // for objSlice
+static const int REP_ANGLES = 17;
+static const int REP_DIHEDRALS = 18;
+static const int REP_ELLIPSOID = 19;
+static const int REP_VOLUME = 20;
+
+static const int REP_MAX = 21;
+
+// Settings
+
 static const int PSESC_active_selections                     = 351;
 static const int PSESC_alignment_as_cylinders                = 692;
 static const int PSESC_all_states                            =  49;
