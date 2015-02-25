@@ -32,10 +32,13 @@
 #include <modules/molstr/MolCoord.hpp>
 #include <modules/molstr/MolRenderer.hpp>
 #include <modules/molstr/SelCommand.hpp>
+#include <modules/molstr/NameLabelRenderer.hpp>
 #include <modules/molvis/AtomIntrRenderer.hpp>
 
 #include <modules/surface/MolSurfObj.hpp>
 #include <modules/surface/MolSurfRenderer.hpp>
+
+#include <boost/foreach.hpp>
 
 #include "PickleInStream.hpp"
 #include "AtomPropColoring.hpp"
@@ -353,6 +356,10 @@ namespace {
       molstr::ColoringSchemePtr pColScm(new AtomPropColoring());
       pRend->setColSchm(pColScm);
       pRend->setDefaultPropFlag("coloring", false);
+
+      pRend->setName(rendname+"1");
+      pRend->setDefaultPropFlag("name", false);
+
       pRval = pRend;
     }
 
@@ -394,6 +401,26 @@ namespace {
 
     return pRval;
   }
+
+  qsys::RendererPtr createLabels(MolCoordPtr pMol, const std::map<int, LString> &labelMap)
+  {
+    RendererPtr pRval;
+    if (labelMap.empty())
+      return pRval;
+
+    pRval = pMol->createRenderer("*namelabel");
+    pRval->applyStyles("DefaultLabel");
+    molstr::NameLabelRenderer *pNRend = static_cast<molstr::NameLabelRenderer*>(pRval.get());
+
+    std::map<int,LString>::const_iterator iter = labelMap.begin();
+    std::map<int,LString>::const_iterator eiter = labelMap.end();
+    for (; iter!=eiter; ++iter) {
+      pNRend->addLabelByID(iter->first, iter->second);
+    }
+
+    return pRval;
+  }
+
 }
 
 
@@ -501,6 +528,8 @@ void PSEFileReader::parseObjectMolecule(LVarList *pData, MolCoordPtr pMol)
   createRends(pMol, rsSpheres, "cpk", "DefaultCPK");
   createRends(pMol, rsCartoon, "ribbon", "DefaultRibbon");
   createRends(pMol, rsLines, "simple", "DefaultSimple");
+
+  createLabels(pMol, labelMap);
 
   createSurface(m_pClient, pMol, rsSurface);
 }

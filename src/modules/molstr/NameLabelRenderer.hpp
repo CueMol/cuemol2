@@ -104,8 +104,8 @@ public:
 
   MolCoordPtr getClientMol() const;
 
-  bool addLabelByID(int aid);
-  bool addLabel(MolAtomPtr patom);
+  bool addLabelByID(int aid, const LString &label = LString());
+  bool addLabel(MolAtomPtr patom, const LString &label = LString());
 
   bool removeLabelByID(int aid);
 
