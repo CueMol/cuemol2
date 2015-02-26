@@ -7,7 +7,7 @@
 
 #include "PickleInStream.hpp"
 
-using namespace pseread;
+using namespace importers;
 
 PickleInStream::~PickleInStream()
 {

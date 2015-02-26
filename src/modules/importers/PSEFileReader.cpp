@@ -9,21 +9,8 @@
 #include "PSEFileReader.hpp"
 #include <qsys/StreamManager.hpp>
 #include <qsys/SceneEvent.hpp>
-// #include <qsys/SysConfig.hpp>
-// #include <pybr/PythonBridge.hpp>
 
-// #include <qsys/ObjReader.hpp>
-// #include <qsys/style/AutoStyleCtxt.hpp>
-// #include <qsys/RendererFactory.hpp>
-
-// #include <qlib/LDOM2Stream.hpp>
 #include <qlib/FileStream.hpp>
-// #include <qlib/StringStream.hpp>
-// #include <qlib/LByteArray.hpp>
-
-// #include <boost/filesystem/operations.hpp>
-// #include <boost/filesystem/path.hpp>
-// namespace fs = boost::filesystem;
 
 #include <qlib/RangeSet.hpp>
 #include <qlib/Matrix3D.hpp>
@@ -44,7 +31,7 @@
 #include "AtomPropColoring.hpp"
 #include "PSEConsts.hpp"
 
-using namespace pseread;
+using namespace importers;
 using qlib::LDom2Node;
 using qlib::LDataSrcContainer;
 

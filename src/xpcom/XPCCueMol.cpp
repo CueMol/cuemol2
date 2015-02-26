@@ -149,7 +149,7 @@ namespace mdtools {
 
 #define HAVE_PSEREAD_MODULE 1
 #ifdef HAVE_PSEREAD_MODULE
-namespace pseread {
+namespace importers {
   extern bool init();
   extern void fini();
 }
@@ -230,7 +230,7 @@ NS_IMETHODIMP XPCCueMol::Init(const char *confpath, bool *_retval)
 #endif
 
 #ifdef HAVE_PSEREAD_MODULE
-  pseread::init();
+  importers::init();
 #endif
 
   initTextRender();
@@ -305,7 +305,7 @@ NS_IMETHODIMP XPCCueMol::Fini()
   }
 
 #ifdef HAVE_PSEREAD_MODULE
-  pseread::fini();
+  importers::fini();
 #endif
 
 #ifdef HAVE_MDTOOLS_MODULE

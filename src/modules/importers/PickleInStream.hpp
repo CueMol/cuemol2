@@ -6,7 +6,7 @@
 #ifndef PICKLE_INPUT_STREAM_HPP_INCLUDED
 #define PICKLE_INPUT_STREAM_HPP_INCLUDED
 
-#include "pseread.hpp"
+#include "importers.hpp"
 
 #include <qlib/BinStream.hpp>
 #include <qlib/LExceptions.hpp>
@@ -14,7 +14,7 @@
 #include <qlib/LVarList.hpp>
 #include <qlib/LVarDict.hpp>
 
-namespace pseread {
+namespace importers {
 
   using qlib::LString;
   using qlib::LVariant;
@@ -25,7 +25,7 @@ namespace pseread {
   ///  Python pickle binary input filter stream
   ///    Adapted from org.jmol.adapter.readers.pymol.PickleReader.java
   ///
-  class IMPORTER_API PickleInStream : public qlib::BinInStream
+  class IMPORTERS_API PickleInStream : public qlib::BinInStream
   {
   public:
     typedef qlib::BinInStream super_t;

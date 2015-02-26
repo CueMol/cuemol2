@@ -6,7 +6,7 @@
 #ifndef PSE_FILE_READER_HPP_INCLUDED
 #define PSE_FILE_READER_HPP_INCLUDED
 
-#include "pseread.hpp"
+#include "importers.hpp"
 
 #include <qsys/Scene.hpp>
 #include <qsys/InOutHandler.hpp>
@@ -16,12 +16,12 @@ namespace qlib {
   class LVarList;
 }
 
-namespace pseread {
+namespace importers {
 
   using qlib::LString;
   using qsys::ScenePtr;
 
-  class IMPORTER_API PSEFileReader : public qsys::InOutHandler
+  class IMPORTERS_API PSEFileReader : public qsys::InOutHandler
   {
     MC_SCRIPTABLE;
 

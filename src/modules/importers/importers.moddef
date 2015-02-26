@@ -4,10 +4,10 @@
 #include "PSEFileReader.qif"
 #include "AtomPropColoring.qif"
 
-module pseread
+module importers
 {
-  init pseread::init();
-  fini pseread::fini();
+  init importers::init();
+  fini importers::fini();
 
   PSEFileReader;
   AtomPropColoring;

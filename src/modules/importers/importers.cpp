@@ -5,37 +5,37 @@
 
 #include <common.h>
 
-#include "pseread.hpp"
+#include "importers.hpp"
 
 #include <qsys/RendererFactory.hpp>
 #include <qsys/StreamManager.hpp>
 #include "PSEFileReader.hpp"
 
-extern void pseread_regClasses();
-extern void pseread_unregClasses();
+extern void importers_regClasses();
+extern void importers_unregClasses();
 
-namespace pseread {
+namespace importers {
 
   using qsys::RendererFactory;
   using qsys::StreamManager;
 
   bool init()
   {
-    pseread_regClasses();
+    importers_regClasses();
 
     // register IO handlers
     StreamManager *pSM = StreamManager::getInstance();
     pSM->registWriter<PSEFileReader>();
 
-    MB_DPRINTLN("pseread init: OK");
+    MB_DPRINTLN("importers init: OK");
     return true;
   }
 
   void fini()
   {
-    // pseread_unregClasses();
+    // importers_unregClasses();
 
-    MB_DPRINTLN("pseread fini: OK");
+    MB_DPRINTLN("importers fini: OK");
   }
 
 }

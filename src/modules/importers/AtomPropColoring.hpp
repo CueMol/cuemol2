@@ -6,19 +6,19 @@
 #ifndef ATOM_PROP_COLORING_HPP_
 #define ATOM_PROP_COLORING_HPP_
 
-#include "pseread.hpp"
+#include "importers.hpp"
 
 #include <gfx/AbstractColor.hpp>
 #include <qlib/mcutils.hpp>
 
 #include <modules/molstr/ColoringScheme.hpp>
 
-namespace pseread {
+namespace importers {
 
   using gfx::ColorPtr;
   using molstr::MolAtomPtr;
 
-  class IMPORTER_API AtomPropColoring : public molstr::ColoringScheme
+  class IMPORTERS_API AtomPropColoring : public molstr::ColoringScheme
   {
     MC_SCRIPTABLE;
     MC_CLONEABLE;

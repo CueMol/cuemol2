@@ -9,7 +9,7 @@
 runtime_class PSEFileReader
 {
   client_hdr "PSEFileReader.hpp";
-  client_name pseread::PSEFileReader;
+  client_name importers::PSEFileReader;
 
   scriptable;
   smartptr;

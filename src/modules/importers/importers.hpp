@@ -11,37 +11,37 @@
 // for MS-Windows
 #define DLLEXPORT __declspec(dllexport)
 
-#ifdef IMPORTER_EXPORTS
-# define IMPORTER_API __declspec(dllexport)
+#ifdef IMPORTERS_EXPORTS
+# define IMPORTERS_API __declspec(dllexport)
 #else
-# define IMPORTER_API __declspec(dllimport)
+# define IMPORTERS_API __declspec(dllimport)
 #endif
 
 #elif defined(MB_HAVE_GCC_VIS_ATTR)
 
 // for non-MS platforms (gcc4)
-#  ifdef IMPORTER_EXPORTS
-#    define IMPORTER_API __attribute__ ((visibility ("default")))
+#  ifdef IMPORTERS_EXPORTS
+#    define IMPORTERS_API __attribute__ ((visibility ("default")))
 #  else
-#    define IMPORTER_API
+#    define IMPORTERS_API
 #  endif
 
 #else
 
 // for non-MS platforms (without visattr)
-#define IMPORTER_API
+#define IMPORTERS_API
 
 #endif // WIN32
 
 #include <qlib/LScrSmartPtr.hpp>
 
-namespace pseread {
+namespace importers {
 
-  /// Common Initialization for the pseread library
-  IMPORTER_API bool init();
+  /// Common Initialization for the importers library
+  IMPORTERS_API bool init();
   
-  /// Common Finalization for the pseread library
-  IMPORTER_API void fini();
+  /// Common Finalization for the importers library
+  IMPORTERS_API void fini();
   
 }
 

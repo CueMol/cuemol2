@@ -13,7 +13,7 @@
 #include <modules/molstr/MolAtom.hpp>
 #include <modules/molstr/MolResidue.hpp>
 
-using namespace pseread;
+using namespace importers;
 using gfx::SolidColor;
 
 AtomPropColoring::AtomPropColoring()
