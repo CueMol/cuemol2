@@ -68,20 +68,6 @@
     var view = cuemol.getView(this.mTgtViewID);
     var scene = cuemol.getScene(this.mTgtSceID);
 
-    var bbody = true;
-    var bsect = true;
-    switch (document.getElementById("cuttype-list").selectedItem.value) {
-    case "full":
-      break;
-    case "sect":
-      bbody = false;
-      bsect = true;
-      break;
-    case "body":
-      bbody = true;
-      bsect = false;
-      break;
-    }
     //if (!document.getElementById("make-sect-mesh").checked)
     //bnosec = true;
 
@@ -109,17 +95,53 @@
     norm = norm.scale(-1.0);
     dd("norm2="+norm);
 
+    var bbody = true;
+    var bsect = true;
+    var mode = document.getElementById("cuttype-list").selectedItem.value;
+    switch (mode) {
+    case "full":
+    case "separate":
+      break;
+    case "sect":
+      bbody = false;
+      bsect = true;
+      break;
+    case "body":
+      bbody = true;
+      bsect = false;
+      break;
+    }
+
+    // create section obj in the separate mode
+    var sectobj;
+    if (mode=="separate") {
+      let strMgr = cuemol.getService("StreamManager");
+      let xmldat = strMgr.toXML(tgtobj);
+      sectobj = strMgr.fromXML(xmldat, scene.uid);
+      let name = tgtobj.name;
+      sectobj.name = util.makeUniqName2(
+	function (a) {return "sect"+a+"_"+name; },
+	function (a) {return scene.getObjectByName(a);} );
+    }
+
+
     // EDIT TXN START //
     scene.startUndoTxn("Cut surface by plane");
     try {
-      tgtobj.cutByPlane2(cden, norm, vcen, bbody, bsect);
+      if (mode=="separate") {
+	scene.addObject(sectobj);
+	sectobj.cutByPlane2(cden, norm, vcen, false, true);
+	tgtobj.cutByPlane2(cden, norm, vcen, true, false);
+      }
+      else {
+	tgtobj.cutByPlane2(cden, norm, vcen, bbody, bsect);
+      }
     }
     catch (e) {
       debug.exception(e);
       scene.rollbackUndoTxn();
       return;
     }
-
     scene.commitUndoTxn();
     // EDIT TXN END //
   }

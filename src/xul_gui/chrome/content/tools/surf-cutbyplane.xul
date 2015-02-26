@@ -37,6 +37,7 @@
 	<menulist id="cuttype-list">
 	  <menupopup>
 	    <menuitem label="Complete" value="full"/>
+	    <menuitem label="Separately" value="separate"/>
 	    <menuitem label="Section only" value="sect"/>
 	    <menuitem label="No section" value="body"/>
 	  </menupopup>
