@@ -11,9 +11,13 @@ const cuemol = require("cuemol");
 const dd = dbg.dd;
 var StrMgr = cuemol.getService("StreamManager");
 
-exports.readSceneFile = function(sc, path, vwid)
+exports.readSceneFile = function(sc, path, vwid, reader_name)
 {
-  var reader = StrMgr.createHandler("qsc_xml", 3);
+    var reader;
+    if (reader_name)
+	reader = StrMgr.createHandler(reader_name, 3);
+    else
+	reader = StrMgr.createHandler("qsc_xml", 3);
 
   dd("read scene: "+path);
 
@@ -44,7 +48,7 @@ exports.readSceneFile = function(sc, path, vwid)
   return errmsg;
 }
 
-exports.createAndReadSceneFile = function(path)
+exports.createAndReadSceneFile = function(path, reader_name)
 {
   var sc = cuemol.sceMgr.createScene();
   if (!sc) {
@@ -59,7 +63,7 @@ exports.createAndReadSceneFile = function(path)
   vw.name = "0";
       
   // Load scene
-  var errmsg = exports.readSceneFile(sc, path, vwid);
+  var errmsg = exports.readSceneFile(sc, path, vwid, reader_name);
       
   return [scid, vwid, errmsg];
 }

@@ -358,6 +358,33 @@ int AtomIntrRenderer::appendTorsionById(int nAid1,
   return rval;
 }
 
+int AtomIntrRenderer::appendByVecs(const std::vector<Vector4D> &vecs)
+{
+  qlib::uid_t nMolID1 = getClientObjID();
+
+  AtomIntrData aidat;
+  int nvecs = vecs.size();
+  if (nvecs==2) {
+    aidat.nmode = 1;
+    aidat.elem0.nMode= AtomIntrElem::AI_POS;
+    aidat.elem0.nMolID = nMolID1;
+    aidat.elem0.pos = vecs[0];
+    aidat.elem1.nMode= AtomIntrElem::AI_POS;
+    aidat.elem1.nMolID = nMolID1;
+    aidat.elem1.pos = vecs[1];
+  }
+  if (nvecs==3) {
+    aidat.nmode = 2;
+  }
+  if (nvecs==4) {
+    aidat.nmode = 3;
+  }
+
+  int rval = appendImpl(aidat);
+
+  return rval;
+}
+
 int AtomIntrRenderer::appendImpl(const AtomIntrData &dat)
 {
   int nlast = m_data.size();

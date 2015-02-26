@@ -1269,7 +1269,7 @@ Qm2Main.prototype.onFileOpenMRU = function (aEvent)
   //alert("onFileOpenMRU: "+aEvent.target.localName);
   //alert("onFileOpenMRU: "+fname+", type="+ftype);
 
-  if (ftype=="qsc_xml")
+  if (ftype=="qsc_xml" || ftype=="psefile")
     this.openSceneImpl(fname, ftype);
   else
     this.fileOpenHelper1(fname, label, ftype);

@@ -16,6 +16,7 @@ runtime_class PythonBridge
 
   void runFile(string);
   void runFile2(string, integer, integer);
+  void runFile3(string, integer, integer, string);
 };
 
 #endif

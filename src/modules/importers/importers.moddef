@@ -1,0 +1,15 @@
+// -*-Mode: C++;-*-
+//
+
+#include "PSEFileReader.qif"
+#include "AtomPropColoring.qif"
+
+module importers
+{
+  init importers::init();
+  fini importers::fini();
+
+  PSEFileReader;
+  AtomPropColoring;
+};
+

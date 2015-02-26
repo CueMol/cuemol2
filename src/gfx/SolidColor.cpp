@@ -53,6 +53,7 @@ SolidColor::SolidColor(int r, int g, int b, int a)
 
 SolidColor::SolidColor(double r, double g, double b)
 {
+  /*
   r = (double) qlib::trunc<double>(r, 0.0, 1.0);
   g = (double) qlib::trunc<double>(g, 0.0, 1.0);
   b = (double) qlib::trunc<double>(b, 0.0, 1.0);
@@ -60,11 +61,14 @@ SolidColor::SolidColor(double r, double g, double b)
 			(int)(g*255.0+0.5),
 			(int)(b*255.0+0.5),
 			255);
+  */
+  setRGBA(r, g, b);
   m_nMode = CM_RGB;
 }
 
 SolidColor::SolidColor(double r, double g, double b, double a)
 {
+  /*
   r = (double) qlib::trunc<double>(r, 0.0, 1.0);
   g = (double) qlib::trunc<double>(g, 0.0, 1.0);
   b = (double) qlib::trunc<double>(b, 0.0, 1.0);
@@ -73,11 +77,14 @@ SolidColor::SolidColor(double r, double g, double b, double a)
 			(int)(g*255.0+0.5),
 			(int)(b*255.0+0.5),
 			(int)(a*255.0+0.5));
+  */
+  setRGBA(r, g, b, a);
   m_nMode = CM_RGB;
 }
 
 SolidColor::SolidColor(const qlib::Vector4D &v)
 {
+  /*
   double r = (double) qlib::trunc<double>(v.x(), 0.0, 1.0);
   double g = (double) qlib::trunc<double>(v.y(), 0.0, 1.0);
   double b = (double) qlib::trunc<double>(v.z(), 0.0, 1.0);
@@ -87,6 +94,8 @@ SolidColor::SolidColor(const qlib::Vector4D &v)
 			(int)(g*255.0+0.5),
 			(int)(b*255.0+0.5),
 			(int)(a*255.0+0.5));
+  */
+  setRGBA(v.x(), v.y(), v.z(), v.w());
   m_nMode = CM_RGB;
 }
 
@@ -236,3 +245,21 @@ LString SolidColor::toString() const
   return rval;
 }
 
+void SolidColor::setRGBA(double R, double G, double B, double A)
+{
+  const double r = (double) qlib::trunc<double>(R, 0.0, 1.0);
+  const double g = (double) qlib::trunc<double>(G, 0.0, 1.0);
+  const double b = (double) qlib::trunc<double>(B, 0.0, 1.0);
+  const double a = (double) qlib::trunc<double>(A, 0.0, 1.0);
+  m_code = makeRGBACode((int)(r*255.0+0.5),
+			(int)(g*255.0+0.5),
+			(int)(b*255.0+0.5),
+			(int)(a*255.0+0.5));
+}
+
+void SolidColor::setHSBA(double H, double S, double B, double A)
+{
+  double dr,dg,db;
+  AbstractColor::HSBtoRGB(H, S, B, dr, dg, db);
+  setRGBA(dr, dg, db, A);
+}

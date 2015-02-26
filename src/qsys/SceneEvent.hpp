@@ -18,7 +18,7 @@ namespace qsys {
   using qlib::LString;
 
   /// Scene-related event
-  class SceneEvent : public QsysEvent
+  class QSYS_API SceneEvent : public QsysEvent
   {
   public:
     enum {

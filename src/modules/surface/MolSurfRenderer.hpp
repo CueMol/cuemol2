@@ -35,7 +35,7 @@ using molstr::MolCoordPtr;
 using molstr::SelectionPtr;
 using molstr::AtomPosMap;
 
-class MolSurfRenderer : public qsys::DispListRenderer, public molstr::ColSchmHolder
+class SURFACE_API MolSurfRenderer : public qsys::DispListRenderer, public molstr::ColSchmHolder
 {
   MC_SCRIPTABLE;
   MC_CLONEABLE;

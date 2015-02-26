@@ -22,12 +22,16 @@ namespace molstr {
   {
   public:
     NameLabel() {}
-    NameLabel(const NameLabel &arg) : aid(arg.aid), strAid(arg.strAid) {}
+    NameLabel(const NameLabel &arg) : aid(arg.aid), strAid(arg.strAid), str(arg.str) {}
 
+    /// Target atom ID
     int aid;
+
+    /// Target atom in string representation
     LString strAid;
 
-    //LString str;
+    /// Custom label string
+    LString str;
 
     inline bool equals(const NameLabel &a) const {
       return aid==a.aid;
@@ -119,7 +123,7 @@ void NameLabelRenderer::displayLabels(DisplayContext *pdc)
   postRender(pdc);
 }
 
-bool NameLabelRenderer::makeLabelStr(NameLabel &nlab, LString &strlab, Vector4D &pos)
+bool NameLabelRenderer::makeLabelStr(NameLabel &nlab, LString &rstrlab, Vector4D &rpos)
 {
   MolCoordPtr pobj = getClientMol();
   MB_ASSERT(!pobj.isnull());
@@ -134,17 +138,23 @@ bool NameLabelRenderer::makeLabelStr(NameLabel &nlab, LString &strlab, Vector4D 
   if (pAtom.isnull())
     return false;
 
-  pos = pAtom->getPos();
-  LString sbuf = pAtom->getChainName() + " " +
-    pAtom->getResName() +
-      pAtom->getResIndex().toString() + " " +
-        pAtom->getName();
-  char confid = pAtom->getConfID();
-  if (confid)
-    sbuf += LString(":") + LString(confid);
+  rpos = pAtom->getPos();
+
+  if (!nlab.str.isEmpty()) {
+    rstrlab = nlab.str;
+  }
+  else {
+    LString sbuf = pAtom->getChainName() + " " +
+      pAtom->getResName() +
+        pAtom->getResIndex().toString() + " " +
+          pAtom->getName();
+    char confid = pAtom->getConfID();
+    if (confid)
+      sbuf += LString(":") + LString(confid);
+    
+    rstrlab = sbuf; //.toUpperCase();
+  }
   
-  //strlab = sbuf.toUpperCase();
-  strlab = sbuf;
   return true;
 }
 
@@ -199,7 +209,7 @@ void NameLabelRenderer::makeLabelImg()
 {
   m_pixCache.invalidate();
   return;
-
+/*
   LString strlab;
   Vector4D pos;
   NameLabelList::iterator iter = m_pdata->begin();
@@ -215,16 +225,18 @@ void NameLabelRenderer::makeLabelImg()
   }
   
   m_pixCache.setupFont(m_dFontSize, m_strFontName, m_strFontStyle, m_strFontWgt);
-  m_pixCache.render();
+  m_pixCache.render();*/
 }
 
 //////////////////////////////////////////////////////////////////////////
 // Label operations
 
-bool NameLabelRenderer::addLabel(MolAtomPtr patom)
+bool NameLabelRenderer::addLabel(MolAtomPtr patom, const LString &label /*= LString()*/)
 {
   NameLabel newlab;
   newlab.aid = patom->getID();
+  if (!label.isEmpty())
+    newlab.str = label;
 
   BOOST_FOREACH(NameLabel &nlab, *m_pdata) {
     if (newlab.equals(nlab))
@@ -249,13 +261,13 @@ bool NameLabelRenderer::addLabel(MolAtomPtr patom)
   return true;
 }
 
-bool NameLabelRenderer::addLabelByID(int aid)
+bool NameLabelRenderer::addLabelByID(int aid, const LString &label /*= LString()*/)
 {
   MolCoordPtr pobj = getClientMol();
   MB_ASSERT(!pobj.isnull());
   
   MolAtomPtr pAtom = pobj->getAtom(aid);
-  return addLabel(pAtom);
+  return addLabel(pAtom, label);
 }
 
 bool NameLabelRenderer::removeLabelByID(int aid)

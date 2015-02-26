@@ -138,15 +138,25 @@ namespace lwview {
   extern void fini();
 }
 
-namespace mdtools {
-  extern bool init();
-  extern void fini();
-}
-
 namespace anim {
   extern bool init();
   extern void fini();
 }
+
+#ifdef HAVE_MDTOOLS_MODULE
+namespace mdtools {
+  extern bool init();
+  extern void fini();
+}
+#endif
+
+#define HAVE_PSEREAD_MODULE 1
+#ifdef HAVE_PSEREAD_MODULE
+namespace importers {
+  extern bool init();
+  extern void fini();
+}
+#endif
 
 using namespace xpcom;
 
@@ -216,9 +226,15 @@ NS_IMETHODIMP XPCCueMol::Init(const char *confpath, bool *_retval)
   surface::init();
   molanl::init();
   lwview::init();
-  mdtools::init();
   anim::init();
-  // MB_DPRINTLN("---------- molanl::init() OK");
+
+#ifdef HAVE_MDTOOLS_MODULE
+  mdtools::init();
+#endif
+
+#ifdef HAVE_PSEREAD_MODULE
+  importers::init();
+#endif
 
   initTextRender();
   MB_DPRINTLN("---------- initTextRender() OK");
@@ -303,8 +319,15 @@ NS_IMETHODIMP XPCCueMol::Fini()
     return NS_ERROR_NOT_INITIALIZED;
   }
 
-  anim::fini();
+#ifdef HAVE_PSEREAD_MODULE
+  importers::fini();
+#endif
+
+#ifdef HAVE_MDTOOLS_MODULE
   mdtools::fini();
+#endif
+
+  anim::fini();
   lwview::fini();
   molanl::fini();
   surface::fini();

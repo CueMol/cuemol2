@@ -1,0 +1,23 @@
+// -*-Mode: C++;-*-
+//
+//  coloring class based on the atom properties
+//
+
+#ifndef ATOM_PROP_COLORING_QIF_INCLUDED
+#define ATOM_PROP_COLORING_QIF_INCLUDED
+
+#include <modules/molstr/ColoringScheme.qif>
+
+runtime_class AtomPropColoring extends ColoringScheme
+{
+  client_hdr "AtomPropColoring.hpp";
+  client_name importers::AtomPropColoring;
+
+  scriptable;
+  cloneable;
+  smartptr;
+
+};
+
+#endif
+

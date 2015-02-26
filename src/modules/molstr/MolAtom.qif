@@ -34,6 +34,13 @@ runtime_class MolAtom
 
   string formatMsg();
 
+  void setU(integer i, integer j, real uij);
+  real getU(integer i, integer j);
+
+  boolean removeAtomProp(string name);
+  string getPropTypeName(string name);
+  integer getAtomPropInt(string name);
+  void setAtomPropInt(string name, integer value);
 };
 
 #endif // MOL_ATOM_QIF_INCLUDED_

@@ -161,6 +161,9 @@ namespace qsys {
     void setRotQuat(const LScrQuat &q) {
       m_rotQuat = LQuat(q);
     }
+    void setRotQuat(const LQuat &q) {
+      m_rotQuat = q;
+    }
 
     ///
     LScrVector4D getCenter() const {
@@ -168,6 +171,10 @@ namespace qsys {
     }
     void setCenter(const LScrVector4D &q) {
       m_center = LScrVector4D(q);
+    }
+
+    void setCenter(const Vector4D &v) {
+      m_center = v;
     }
 
     ///

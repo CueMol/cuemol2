@@ -680,12 +680,25 @@ AC_ARG_ENABLE(gles2,
 BUILD_MODULES=
 MODULES_LDADD=
 MODULES_LDFLAGS=
+MODULES_CXXFLAGS=
 
 if test x$BUILD_LW != xyes ; then
   # Build full-functional editor version
-  BUILD_MODULES="modules/molstr modules/molvis modules/surface modules/molanl modules/symm modules/xtal modules/mdtools modules/lwview modules/rendering modules/anim"
-  MODULES_LDADD="-lanim -lrender -llwview -lmdtools -lxtal -lsymm -lmolanl -lsurface -lmolvis -lmolstr"
-  MODULES_LDFLAGS="-L../modules/anim -L../modules/rendering -L../modules/lwview -L../modules/mdtools -L../modules/xtal -L../modules/symm -L../modules/molanl -L../modules/surface -L../modules/molvis -L../modules/molstr"
+  BUILD_MODULES="modules/molstr modules/molvis modules/surface modules/molanl modules/symm modules/xtal modules/lwview modules/rendering modules/anim"
+  MODULES_LDADD="-lanim -lrender -llwview -lxtal -lsymm -lmolanl -lsurface -lmolvis -lmolstr"
+  MODULES_LDFLAGS="-L../modules/anim -L../modules/rendering -L../modules/lwview -L../modules/xtal -L../modules/symm -L../modules/molanl -L../modules/surface -L../modules/molvis -L../modules/molstr"
+
+  # MDTools module
+  BUILD_MODULES="$BUILD_MODULES modules/mdtools"
+  MODULES_LDADD="-lmdtools $MODULES_LDADD"
+  MODULES_LDFLAGS="-L../modules/mdtools $MODULES_LDFLAGS"
+  MODULES_CXXFLAGS="-DHAVE_MDTOOLS_MODULE $MODULES_CXXFLAGS"
+
+  # PSE Loader module (experimental)
+  BUILD_MODULES="$BUILD_MODULES modules/pseread"
+  MODULES_LDADD="-lpseread $MODULES_LDADD"
+  MODULES_LDFLAGS="-L../modules/pseread $MODULES_LDFLAGS"
+  MODULES_CXXFLAGS="-DHAVE_PSEREAD_MODULE $MODULES_CXXFLAGS"
 else
   # Build light-weight viewer version
   BUILD_MODULES="modules/molstr modules/lwview modules/anim"
@@ -696,6 +709,7 @@ fi
 AC_SUBST(BUILD_MODULES)
 AC_SUBST(MODULES_LDADD)
 AC_SUBST(MODULES_LDFLAGS)
+AC_SUBST(MODULES_CXXFLAGS)
 
 #
 # check for FFTW location  (for denmap module)
@@ -810,6 +824,7 @@ AC_CONFIG_FILES([
  modules/lwview/Makefile
  modules/rendering/Makefile
  modules/anim/Makefile
+ modules/pseread/Makefile
 	utils/Makefile
 	osxbuild/Makefile
 	osxbuild/make_distr.pl

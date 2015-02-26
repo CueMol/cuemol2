@@ -47,6 +47,13 @@ libpybr_la_CXXFLAGS = \
  @BOOST_CPPFLAGS@ \
  $(NULL)
 
+#libpybr_la_LDFLAGS = \
+# $(NULL)
+
+libpybr_la_LIBADD = \
+ @PYTHON_LDADD@ \
+ $(NULL)
+
 #####################################
 
 include $(top_srcdir)/mcwgen_footer.am

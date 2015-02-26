@@ -336,7 +336,7 @@ Qm2Main.prototype.onFileSaveAs = function()
 ///////////////////////////////////////////////////////
 // Scene file I/O
 
-Qm2Main.prototype.openSceneImpl = function(path)
+Qm2Main.prototype.openSceneImpl = function(path, reader_name)
 {
   let scene = this.mMainWnd.currentSceneW;
   let qsc_io = require("qsc-io");
@@ -347,7 +347,7 @@ Qm2Main.prototype.openSceneImpl = function(path)
   if (scene && scene.isJustCreated()) {
     // scene is just created and empty, so we read into it without adding new tab
     try {
-      errmsg = qsc_io.readSceneFile(scene, path, vwid);
+	errmsg = qsc_io.readSceneFile(scene, path, vwid, reader_name);
     }
     catch (e) {
       debug.exception(e);
@@ -365,7 +365,7 @@ Qm2Main.prototype.openSceneImpl = function(path)
     // Read into a new scene and view
     let result;
     try {
-      result = qsc_io.createAndReadSceneFile(path);
+	result = qsc_io.createAndReadSceneFile(path, reader_name);
       errmsg = result[2];
     }
     catch (e) {
@@ -382,7 +382,9 @@ Qm2Main.prototype.openSceneImpl = function(path)
   }
 
   const mru = require("mru-files");
-  mru.addMRU(path, "qsc_xml");
+  //mru.addMRU(path, "qsc_xml");
+  dd("@@@ reader_name="+reader_name);
+  mru.addMRU(path, reader_name);
   mru.dumpMRU();
 
   // show the completion message
@@ -395,26 +397,45 @@ Qm2Main.prototype.openSceneImpl = function(path)
 
 Qm2Main.prototype.onOpenScene = function()
 {
+  const hisname = "cuemol2.ui.histories.open_scene_name";
+  const pref = require("preferences-service");
+
   const nsIFilePicker = Ci.nsIFilePicker;
   let fp = Cc["@mozilla.org/filepicker;1"].createInstance(nsIFilePicker);
 
   fp.init(window, "Open Scene", nsIFilePicker.modeOpen);
 
+  var names;
   try {
     // 3 is category ID for scene reader
-    let names = this.makeFilter(fp, 3);
+    names = this.makeFilter(fp, 3);
   }
   catch (e) {
     dd("Make filter is failed: "+e);
     return;
   }
 
+  // Preselect the previous (or default) reader
+  let prev_reader_name;
+  if (pref.has(hisname))
+    prev_reader_name = pref.get(hisname);
+  else
+    prev_reader_name = "qsc"; // default is QSC file reader
+
+  names.forEach( function (elem, index) {
+    if (elem.name==prev_reader_name)
+      fp.filterIndex = index;
+  } );
+
   let res=fp.show();
   if (res!=nsIFilePicker.returnOK) {
       return;
   }
 
-  this.openSceneImpl(fp.file.path);
+  let findex = fp.filterIndex;
+  let reader_name = names[findex].name;
+
+  this.openSceneImpl(fp.file.path, reader_name);
 }
 
 Qm2Main.prototype.onReloadScene = function()
