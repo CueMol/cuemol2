@@ -157,6 +157,10 @@ public:
 
   /// Set string attribute (overwrite old value if exists)
   LDom2Node *setStrAttr(const LString &tag, const LString &value);
+  
+  LDom2Node *setBoolAttr(const LString &tag, bool value) {
+    return setStrAttr(tag, value?"true":"false");
+  }
 
   void setupByVariant(const LVariant &value);
   void setupByObject(const LScriptable *pObj);
@@ -204,6 +208,9 @@ public:
 
   /// get first matching child string node
   LString getStrAttr(const LString &key) const;
+
+  /// get first matching child boolean node
+  bool getBoolAttr(const LString &key) const;
 
   // /// Returns true if attribute exists
   // bool hasAttr(const LString &key) const;

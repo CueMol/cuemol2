@@ -158,6 +158,19 @@ RendererPtr Object::getRendByName(const LString &name)
   return RendererPtr();
 }
 
+RendererPtr Object::getRendByName(const LString &name, const LString &type)
+{
+  rendtab_t::const_iterator i = m_rendtab.begin();
+  rendtab_t::const_iterator e = m_rendtab.end();
+  for (; i!=e; ++i) {
+    if ( name.equals(i->second->getName()) &&
+         type.equals(i->second->getTypeName()))
+      return i->second;
+  }
+  
+  return RendererPtr();
+}
+
 RendererPtr Object::getRendererByType(const LString &type_name)
 {
   rendtab_t::const_iterator i = m_rendtab.begin();

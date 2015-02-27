@@ -533,6 +533,15 @@ bool Scene::removeRendCache(RendererPtr rrend)
   return true;
 }
 
+RendererPtr Scene::getRenderer(qlib::uid_t uid) const
+{
+  rendtab_t::const_iterator i = m_rendtab.find(uid);
+  if (i==m_rendtab.end()) {
+    return RendererPtr();
+  }
+  return i->second;
+}
+
 RendererPtr Scene::getRendByName(const LString &nm) const
 {
   rendtab_t::const_iterator riter = m_rendtab.begin();
@@ -1281,24 +1290,28 @@ bool Scene::saveViewToCam(qlib::uid_t viewid, const LString &name)
 /// Camera --> View restore
 void Scene::setCamToViewAnim(qlib::uid_t viewid, const LString &name, bool bAnim)
 {
-  if (viewid==qlib::invalid_uid) {
-    BOOST_FOREACH(const viewtab_t::value_type &i, m_viewtab) {
-      qlib::uid_t id = i.first;
-      if (id!=qlib::invalid_uid)
-	Scene::setCamToViewAnim(id, name, bAnim);
-    }
-    return;
-  }
-
-  ViewPtr rv = getView(viewid);
-  ensureNotNull(rv);
-
   CameraPtr rc = getCamera(name);
   //ensureNotNull(rc);
   if (rc.isnull()) {
     MB_THROW(qlib::NullPointerException, "camera <"+name+"> not found");
     return;
   }
+
+  /*if (bVisFlags) {
+    rc->loadVisSettings(ScenePtr(this));
+  }*/
+
+  if (viewid==qlib::invalid_uid) {
+    BOOST_FOREACH(const viewtab_t::value_type &i, m_viewtab) {
+      qlib::uid_t id = i.first;
+      if (id!=qlib::invalid_uid)
+        Scene::setCamToViewAnim(id, name, bAnim);
+    }
+    return;
+  }
+
+  ViewPtr rv = getView(viewid);
+  ensureNotNull(rv);
 
   rv->setCameraAnim(rc, bAnim);
 

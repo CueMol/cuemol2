@@ -9,6 +9,7 @@
 
 #include "qlib/Vector.qif"
 #include "qlib/Quat.qif"
+#include "Scene.qif"
 
 runtime_class Camera
 {
@@ -67,6 +68,11 @@ runtime_class Camera
 
   // TO DO: Origin mark
 
+  // Vis flag settings
+  void saveVisSettings(object<Scene$>);
+  void loadVisSettings(object<Scene$>);
+  void clearVisSettings();
+  string getVisSetJSON(object<Scene$>);
 
 };
 

@@ -115,6 +115,7 @@ runtime_class Scene
 
   boolean saveViewToCam(integer viewid, string nm);
   void loadViewFromCam(integer viewid, string nm);
+  void loadViewFromCamAnim(integer viewid, string nm);
 
   string getCameraInfoJSON();
 

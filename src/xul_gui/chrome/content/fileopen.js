@@ -435,6 +435,9 @@ Qm2Main.prototype.onOpenScene = function()
   let findex = fp.filterIndex;
   let reader_name = names[findex].name;
 
+  // save filter index
+  pref.set(hisname, reader_name);
+
   this.openSceneImpl(fp.file.path, reader_name);
 }
 

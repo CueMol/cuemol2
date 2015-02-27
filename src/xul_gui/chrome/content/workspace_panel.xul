@@ -306,9 +306,18 @@
 	<menuseparator/>
 
 	<menuitem label="Save from view" class="wspcCamCtxt-disable"
-	  oncommand="cuemolui.panels.workspace.onLoadSaveCam(event, false)"/>
+	  oncommand="cuemolui.panels.workspace.onLoadSaveCam(event, false, false)"/>
 	<menuitem label="Apply to view" class="wspcCamCtxt-disable"
-	  oncommand="cuemolui.panels.workspace.onLoadSaveCam(event, true)"/>
+	  oncommand="cuemolui.panels.workspace.onLoadSaveCam(event, true, false)"/>
+
+	<menuseparator/>
+
+	<menuitem label="Save from scene (with vis flags)" class="wspcCamCtxt-disable"
+	  oncommand="cuemolui.panels.workspace.onLoadSaveCam(event, false, true)"/>
+	<menuitem label="Apply to scene (with vis flags)" class="wspcCamCtxt-disable"
+	  oncommand="cuemolui.panels.workspace.onLoadSaveCam(event, true, true)"/>
+	<menuitem label="Clear vis flags" class="wspcCamCtxt-disable"
+	  oncommand="cuemolui.panels.workspace.onClearVisFlags(event)"/>
 
 	<menuseparator/>
 

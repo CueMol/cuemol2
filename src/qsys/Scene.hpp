@@ -314,11 +314,20 @@ namespace qsys {
     bool saveViewToCam(qlib::uid_t viewid, const LString &nm);
 
     /// Apply camera setting to the view (camera --> view)
-    void loadViewFromCam(qlib::uid_t viewid, const LString &nm) {
-      setCamToViewAnim(viewid, nm, false);
+    /// @param viewid target view ID to apply camera setting
+    /// @param camname name of the camera
+    void loadViewFromCam(qlib::uid_t viewid, const LString &camname) {
+      setCamToViewAnim(viewid, camname, false);
+    }
+
+    void loadViewFromCamAnim(qlib::uid_t viewid, const LString &camname) {
+      setCamToViewAnim(viewid, camname, true);
     }
 
     /// Apply camera setting to the view with anim (camera --> view)
+    /// @param viewid target view ID to apply camera setting
+    /// @param camname name of the camera
+    /// @param bAnim
     void setCamToViewAnim(qlib::uid_t viewid, const LString &camname, bool bAnim);
 
     /// retrieve camera information by JSON (for UI)
@@ -333,19 +342,13 @@ namespace qsys {
     ////////////////////////////////////////////////////////////
     // Renderer manager (cache for display)
 
-    //RendererPtr createRenderer(const LString &tpnm);
-    //RendererPtr getRenderer(qlib::uid_t uid) const;
-    //bool destroyRenderer(qlib::uid_t uid);
-
     bool addRendCache(RendererPtr rrend);
     bool removeRendCache(RendererPtr rrend);
-
-    //RendIter beginRend() const { return m_rendtab.begin(); }
-    //RendIter endRend() const { return m_rendtab.end(); }
 
     void display(DisplayContext *);
     void processHit(DisplayContext *);
 
+    RendererPtr getRenderer(qlib::uid_t uid) const;
     RendererPtr getRendByName(const LString &nm) const;
 
   private:

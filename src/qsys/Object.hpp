@@ -226,6 +226,7 @@ namespace qsys {
 
     RendererPtr getRenderer(qlib::uid_t uid) const;
     RendererPtr getRendByName(const LString &name);
+    RendererPtr getRendByName(const LString &name, const LString &tpnm);
     RendererPtr getRendererByType(const LString &tpnm);
     RendererPtr getRendererByIndex(int ind);
     bool destroyRenderer(qlib::uid_t uid);

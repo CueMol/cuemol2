@@ -24,6 +24,27 @@ namespace qsys {
   using qlib::LQuat;
   using qlib::LScrQuat;
 
+  //////////////////////////////////////////////////////////////////
+  // Visibility setting
+
+  struct VisSetElem
+  {
+    bool bVis;
+    bool bObj;
+  };
+  
+  class VisSetting : public std::map<qlib::uid_t, VisSetElem>
+  {
+    typedef std::map<qlib::uid_t, VisSetElem> super_t;
+  public:
+    void save(ObjectPtr pObj);
+    void save(RendererPtr pRend);
+    void set(ObjectPtr pObj, bool b);
+    void set(RendererPtr pRend, bool b);
+  };
+
+  //////////////////////////////////////////////////////////////////
+  // Camera object
 
   class QSYS_API Camera :
     public qlib::LSimpleCopyScrObject,
@@ -32,7 +53,7 @@ namespace qsys {
     MC_SCRIPTABLE;
     MC_CLONEABLE;
 
-    /////////////////////////////
+    typedef qlib::LSimpleCopyScrObject super_t;
 
   public:
 
@@ -212,6 +233,7 @@ namespace qsys {
     Camera();
 
     Camera(const Camera&r)
+         :  m_pVisSetNodes(NULL)
     {
       copyFrom(r);
     }
@@ -223,6 +245,32 @@ namespace qsys {
       }
       return *this;
     }
+
+    //////////
+    
+  private:
+    /// Object/renderer visibility settings
+    VisSetting m_visset;
+
+    /// temporary settings serialized from qsc file
+    qlib::LDom2Node *m_pVisSetNodes;
+
+    /// convert m_pVisSetNodes to m_visset data
+    void loadVisSetFromNodes(ScenePtr pScene);
+    
+  public:
+    /// Save the visibility settings of objects and renderers in the scene pScene
+    /// @param pScene target scene to save the visibility flags (should be const??)
+    void saveVisSettings(ScenePtr pScene);
+
+    /// Apply the visibility settings to the objects and renderers
+    /// @param pScene target scene to load the visibility flags
+    void loadVisSettings(ScenePtr pScene) const;
+
+    /// Clear visibility settings
+    void clearVisSettings();
+
+    LString getVisSetJSON(ScenePtr pScene) const;
 
     ////////////////////////////////////////
     // LDataSrcContainer implementation
@@ -236,6 +284,8 @@ namespace qsys {
 
     ////////////////////////////////////////////////////////////
     // Serialization/Deserialization
+    virtual void writeTo2(qlib::LDom2Node *pNode) const;
+    virtual void readFrom2(qlib::LDom2Node *pNode);
 
     /// Save camera to the local file
     void writeFile(const LString &aLocalFile) const;

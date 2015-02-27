@@ -428,7 +428,7 @@ ws.onCamCtxtShowing = function (aEvent)
       let widget = document.getElementById("wspcCamCtxtReload");
       let name = elem.obj_id;
       let scene = this._mainWnd.currentSceneW;
-      let cam = scene.getCamera(name);
+      let cam = scene.getCameraRef(name);
       let srcpath = cam.src;
       if (srcpath.length==0)
         widget.disabled = true;

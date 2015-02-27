@@ -8,6 +8,8 @@
 #include <common.h>
 
 #include "Camera.hpp"
+#include "Scene.hpp"
+#include "SceneManager.hpp"
 #include "ScrEventManager.hpp"
 
 #include <qlib/FileStream.hpp>
@@ -16,6 +18,7 @@
 using namespace qsys;
 
 Camera::Camera()
+     :  m_pVisSetNodes(NULL)
 {
   //m_fSlabDepth = 50.0;
   //m_fZoom = 50.0;
@@ -31,6 +34,10 @@ Camera::Camera()
 
 void Camera::copyFrom(const Camera&r)
 {
+  if (!r.m_visset.empty()) {
+    LOG_DPRINTLN("Warning: copy of non-empty visflags camera <%s>", r.m_name.c_str());
+  }
+  
   m_name = r.m_name;
   m_source = r.m_source;
 
@@ -96,6 +103,106 @@ bool Camera::equals(const Camera &r)
   return true;
 }
 
+/////////
+
+void Camera::writeTo2(qlib::LDom2Node *pNode) const
+{
+  super_t::writeTo2(pNode);
+
+  if (m_visset.empty())
+    return;
+  
+  // write visibility settings
+  qlib::LDom2Node *pChNode = pNode->appendChild("visibilities");
+  VisSetting::const_iterator i = m_visset.begin();
+  VisSetting::const_iterator ie = m_visset.end();
+  for (; i!=ie; ++i) {
+    qlib::uid_t uid = i->first;
+    if (i->second.bObj) {
+      ObjectPtr pObj = SceneManager::getObjectS(uid);
+      if (!pObj.isnull()) {
+        qlib::LDom2Node *pChChNode = pChNode->appendChild("object");
+        pChChNode->setValue(i->second.bVis?"true":"false");
+        pChChNode->setStrAttr("target", pObj->getName());
+        // pChChNode->setStrAttr("type", "object");
+      }
+    }
+    else {
+      RendererPtr pRend = SceneManager::getRendererS(uid);
+      ObjectPtr pObj = pRend->getClientObj();
+      if (!pRend.isnull()) {
+        qlib::LDom2Node *pChChNode = pChNode->appendChild("renderer");
+        pChChNode->setValue(i->second.bVis?"true":"false");
+        pChChNode->setStrAttr("target", pRend->getName());
+        pChChNode->setStrAttr("type", pRend->getTypeName());
+        if (!pObj.isnull())
+          pChChNode->setStrAttr("client", pObj->getName());
+      }
+    }
+  }  
+}
+
+void Camera::readFrom2(qlib::LDom2Node *pNode)
+{
+  super_t::readFrom2(pNode);
+
+  qlib::LDom2Node *pVisSet = pNode->findChild("visibilities");
+  if (pVisSet!=NULL) {
+    m_pVisSetNodes = MB_NEW qlib::LDom2Node(*pVisSet);
+    return;
+  }
+}
+
+void Camera::loadVisSetFromNodes(ScenePtr pScene)
+{
+  if (m_pVisSetNodes==NULL)
+    return;
+  m_visset.clear();
+  
+  qlib::LDom2Node *pVisSet = m_pVisSetNodes;
+  for (pVisSet->firstChild(); pVisSet->hasMoreChild(); pVisSet->nextChild()) {
+    qlib::LDom2Node *pChNode = pVisSet->getCurChild();
+    LString tag = pChNode->getTagName();
+    LString sVis = pChNode->getValue();
+    bool bVis = false;
+    if (sVis.equalsIgnoreCase("true"))
+      bVis = true;
+
+    if (tag.equals("object")) {
+      LString tgt = pChNode->getStrAttr("target");
+      ObjectPtr pObj = pScene->getObjectByName(tgt);
+      if (pObj.isnull()) {
+        LOG_DPRINTLN("loadVisSet> unknown target object <%s>", pObj->getName());
+        continue;
+      }
+      m_visset.set(pObj, bVis);
+    }
+    else if (tag.equals("renderer")) {
+      LString tgt = pChNode->getStrAttr("target");
+      LString cli = pChNode->getStrAttr("client");
+      LString type = pChNode->getStrAttr("type");
+      ObjectPtr pObj = pScene->getObjectByName(cli);
+      if (pObj.isnull()) {
+        LOG_DPRINTLN("loadVisSet> unknown client object <%s> for rend <%s>", cli.c_str(), tgt.c_str());
+        continue;
+      }
+      RendererPtr pRend;
+      pRend = pObj->getRendByName(tgt, type);
+      if (pRend.isnull()) {
+        LOG_DPRINTLN("loadVisSet> unknown renderer <%s>", tgt.c_str());
+        continue;
+      }
+      m_visset.set(pRend, bVis);
+    }
+    else {
+      // ERROR (ignore)
+      LOG_DPRINTLN("Camera.readFrom() unknown tag %s", tag.c_str());
+    }
+  }
+  
+}
+
+
 void Camera::updateSrcPath(const LString &srcpath)
 {
   m_source = srcpath;
@@ -134,6 +241,158 @@ void Camera::readFromStream(qlib::InStream &ins)
   tree.deserialize(this);
 }
 
+void Camera::saveVisSettings(ScenePtr pScene)
+{
+  m_visset.clear();
+  if (m_pVisSetNodes!=NULL) {
+    delete m_pVisSetNodes;
+    m_pVisSetNodes = NULL;
+  }
+  
+  Scene::ObjIter oi = pScene->beginObj();
+  Scene::ObjIter oie = pScene->endObj();
+  for (; oi!=oie; ++oi) {
+    ObjectPtr pObj = oi->second;
+    m_visset.save(pObj);
+
+    Object::RendIter ri = pObj->beginRend();
+    Object::RendIter rie = pObj->endRend();
+    for (; ri!=rie; ++ri) {
+      RendererPtr pRend = ri->second;
+      m_visset.save(pRend);
+    }
+    
+  }
+  
+}
+
+void Camera::loadVisSettings(ScenePtr pScene) const
+{
+  if (m_pVisSetNodes!=NULL) {
+    Camera *pthis = const_cast<Camera *>(this);
+    pthis->loadVisSetFromNodes(pScene);
+    delete pthis->m_pVisSetNodes;
+    pthis->m_pVisSetNodes = NULL;
+  }
+
+  if (m_visset.empty())
+    return;
+  
+  VisSetting::const_iterator i = m_visset.begin();
+  VisSetting::const_iterator ie = m_visset.end();
+  for (; i!=ie; ++i) {
+    qlib::uid_t uid = i->first;
+    if (i->second.bObj) {
+      ObjectPtr pObj = pScene->getObject(uid);
+      if (!pObj.isnull()) {
+        //pObj->setVisible(i->second.bVis);
+        pObj->setPropBool("visible", i->second.bVis);
+      }
+    }
+    else {
+      RendererPtr pRend = pScene->getRenderer(uid);
+      if (!pRend.isnull()) {
+        //pRend->setVisible(i->second.bVis);
+        pRend->setPropBool("visible", i->second.bVis);
+      }
+    }
+  }
+}
+
+void Camera::clearVisSettings()
+{
+  m_visset.clear();
+  if (m_pVisSetNodes!=NULL) {
+    delete m_pVisSetNodes;
+    m_pVisSetNodes = NULL;
+  }
+}
+
+LString Camera::getVisSetJSON(ScenePtr pScene) const
+{
+  if (m_pVisSetNodes!=NULL) {
+    Camera *pthis = const_cast<Camera *>(this);
+    pthis->loadVisSetFromNodes(pScene);
+    delete pthis->m_pVisSetNodes;
+    pthis->m_pVisSetNodes = NULL;
+  }
+
+  LString rval;
+
+  if (m_visset.empty())
+    return rval;
+  
+  rval += "[";
+
+  VisSetting::const_iterator i = m_visset.begin();
+  VisSetting::const_iterator ie = m_visset.end();
+  bool bfirst = true;
+  for (; i!=ie; ++i) {
+    if (bfirst) {
+      bfirst = false;
+    }
+    else {
+      rval += ",";
+    }
+
+    qlib::uid_t uid = i->first;
+    if (i->second.bObj) {
+      rval += "{";
+      rval += LString::format("\"id\": %d,", uid);
+      rval += "\"type\": \"object\",";
+      rval += "\"visible\":";
+      rval += (i->second.bVis)?"true":"false";
+      rval += "}";
+    }
+    else {
+      rval += "{";
+      rval += LString::format("\"id\": %d,", uid);
+      rval += "\"type\": \"renderer\",";
+      rval += "\"visible\":";
+      rval += (i->second.bVis)?"true":"false";
+      rval += "}";
+    }
+  }
+
+  rval += "]";
+  return rval;
+}
+
+void VisSetting::save(ObjectPtr pObj)
+{
+  VisSetElem vse;
+  vse.bVis = pObj->isVisible();
+  vse.bObj = true;
+  qlib::uid_t uid = pObj->getUID();
+  super_t::insert(super_t::value_type(uid, vse));
+}
+
+void VisSetting::save(RendererPtr pRend)
+{
+  VisSetElem vse;
+  vse.bVis = pRend->isVisible();
+  vse.bObj = false;
+  qlib::uid_t uid = pRend->getUID();
+  super_t::insert(super_t::value_type(uid, vse));
+}
+
+void VisSetting::set(ObjectPtr pObj, bool b)
+{
+  VisSetElem vse;
+  vse.bVis = b;
+  vse.bObj = true;
+  qlib::uid_t uid = pObj->getUID();
+  super_t::insert(super_t::value_type(uid, vse));
+}
+
+void VisSetting::set(RendererPtr pRend, bool b)
+{
+  VisSetElem vse;
+  vse.bVis = b;
+  vse.bObj = false;
+  qlib::uid_t uid = pRend->getUID();
+  super_t::insert(super_t::value_type(uid, vse));
+}
 
 //////////////////////////////////////////////////////////////////////////////////////////
 

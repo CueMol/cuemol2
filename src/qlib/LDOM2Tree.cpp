@@ -102,6 +102,16 @@ LString LDom2Node::getStrAttr(const LString &key) const
   return LString();
 }
 
+bool LDom2Node::getBoolAttr(const LString &key) const
+{
+  LString sval = getStrAttr(key);
+  if (sval.equalsIgnoreCase("true")||
+      sval.equalsIgnoreCase("yes"))
+    return true;
+      
+  return false;
+}
+
 /*bool LDom2Node::hasAttr(const LString &key) const
 {
   BOOST_FOREACH(LDom2Node *pnode, m_children) {

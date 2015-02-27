@@ -896,10 +896,8 @@ ws.onTreeItemClick = function (aEvent, elem, col)
   }
   else if (aEvent.detail==2) {
     if (elem.type=="camera") {
-      var scene = this._mainWnd.currentSceneW;
-      var view = this._mainWnd.currentViewW;
-      if (!scene || !view) return;
-      scene.loadViewFromCam(view.uid, elem.obj_id);
+      // also load visibility flags
+      this.loadCamImpl(elem.obj_id, true);
       aEvent.preventDefault();
       aEvent.stopPropagation();
       return;
@@ -1027,7 +1025,7 @@ ws.createCamera = function ()
   var i, name, res;
   for (i=0; ; ++i) {
     name = "camera_"+i;
-    if (!scene.getCamera(name)) {
+    if (!scene.getCameraRef(name)) {
       res = util.prompt(window, "Name for new camera: ", name);
       if (res===null) return;
       break;
@@ -1083,7 +1081,7 @@ ws.onRenameCamera = function (aEvent)
   var name = elem.obj_id;
 
   var scene = this._mainWnd.currentSceneW;
-  var cam = scene.getCamera(name);
+  var cam = scene.getCameraRef(name);
   if (cam==null) {
     dd("WS Error: camera "+name);
     return;
@@ -1148,7 +1146,7 @@ ws.onCamSaveFile = function (aEvent)
   var name = elem.obj_id;
 
   var scene = this._mainWnd.currentSceneW;
-  var cam = scene.getCamera(name);
+  var cam = scene.getCameraRef(name);
 
   if (cam.src.length==0) {
     // embeded camera (no src prop) --> perform save-as
@@ -1195,9 +1193,9 @@ ws.onCamLoadFile = function (aEvent)
   // EDIT TXN END //
 
   // apply the loaded camera to the view
-  var view = this._mainWnd.currentViewW;
-  if (!view) return;
-  scene.loadViewFromCam(view.uid, name);
+  // scene.loadViewFromCam(view.uid, name);
+  // also load vis settings...
+  this.loadCamImpl(name, true);
 };
 
 /// Reload file-linked camera
@@ -1208,7 +1206,7 @@ ws.onCamReloadFile = function (aEvent)
   var name = elem.obj_id;
 
   var scene = this._mainWnd.currentSceneW;
-  var cam = scene.getCamera(name);
+  var cam = scene.getCameraRef(name);
   if (cam==null) {
     util.alert(window, "Camera not found");
     return;
@@ -1245,24 +1243,48 @@ ws.onCamReloadFile = function (aEvent)
 
 };
 
-ws.onLoadSaveCam = function (aEvent, aLoad)
+ws.loadCamImpl = function (aCamName, aVisflags)
 {
-  var elem = this.mViewObj.getSelectedNode();
-  if (elem.type!="camera") return;
-
   var scene = this._mainWnd.currentSceneW;
   var view = this._mainWnd.currentViewW;
   if (!scene || !view) return;
 
-  if (aLoad) {
-    scene.loadViewFromCam(view.uid, elem.obj_id);
-    return;
+  scene.loadViewFromCam(view.uid, aCamName);
+  if (aVisflags) {
+    let cam = scene.getCameraRef(aCamName);
+    
+    // EDIT TXN START //
+    scene.startUndoTxn("Load camera "+aCamName+" settings");
+    try {
+      cam.loadVisSettings(scene);
+    }
+    catch (e) {
+      dd("***** ERROR: Load camera "+e);
+      debug.exception(e);
+      scene.rollBackUndoTxn();
+      return;
+    }
+    scene.commitUndoTxn();
+    // EDIT TXN END //
+    
   }
+  return;
+};
+
+ws.saveCamImpl = function (aCamName, aVisflags)
+{
+  var scene = this._mainWnd.currentSceneW;
+  var view = this._mainWnd.currentViewW;
+  if (!scene || !view) return;
 
   // EDIT TXN START //
-  scene.startUndoTxn("Change camera "+elem.obj_id);
+  scene.startUndoTxn("Change camera "+aCamName);
   try {
-    scene.saveViewToCam(view.uid, elem.obj_id);
+    scene.saveViewToCam(view.uid, aCamName);
+    if (aVisflags) {
+      let cam = scene.getCameraRef(aCamName);
+      cam.saveVisSettings(scene);
+    }
   }
   catch (e) {
     dd("***** ERROR: Chg camera "+e);
@@ -1274,6 +1296,36 @@ ws.onLoadSaveCam = function (aEvent, aLoad)
   // EDIT TXN END //
 
 };
+
+ws.onLoadSaveCam = function (aEvent, aLoad, aVisflags)
+{
+  var elem = this.mViewObj.getSelectedNode();
+  if (elem.type!="camera") return;
+
+  var scene = this._mainWnd.currentSceneW;
+  if (!scene) return;
+
+  if (aLoad)
+    this.loadCamImpl(elem.obj_id, aVisflags);
+  else
+    this.saveCamImpl(elem.obj_id, aVisflags);
+};
+
+ws.onClearVisFlags = function (aEvent)
+{
+  var elem = this.mViewObj.getSelectedNode();
+  if (elem.type!="camera") return;
+
+  var scene = this._mainWnd.currentSceneW;
+  if (!scene) return;
+
+  let cam = scene.getCameraRef(elem.obj_id);
+  let json = cam.getVisSetJSON(scene);
+  let obj = JSON.parse(json);
+  dd("visset="+debug.dumpObjectTree(obj));
+  cam.clearVisSettings();
+};
+
 
 ////////////////////////////////////////////////////
 // Style operation

@@ -65,6 +65,7 @@ Source: {#WinBuildDir}\lwview.dll; DestDir: {app}; Flags: ignoreversion
 Source: {#WinBuildDir}\mdtools.dll; DestDir: {app}; Flags: ignoreversion
 Source: {#WinBuildDir}\render.dll; DestDir: {app}; Flags: ignoreversion
 Source: {#WinBuildDir}\anim.dll; DestDir: {app}; Flags: ignoreversion
+Source: {#WinBuildDir}\importers.dll; DestDir: {app}; Flags: ignoreversion
 Source: {#WinBuildDir}\blendpng.exe; DestDir: {app}; Flags: ignoreversion
 
 Source: {#WinBuildDir}\components\xpcqm2.dll; DestDir: {app}\components; Flags: ignoreversion
