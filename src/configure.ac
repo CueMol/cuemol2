@@ -694,11 +694,11 @@ if test x$BUILD_LW != xyes ; then
   MODULES_LDFLAGS="-L../modules/mdtools $MODULES_LDFLAGS"
   MODULES_CXXFLAGS="-DHAVE_MDTOOLS_MODULE $MODULES_CXXFLAGS"
 
-  # PSE Loader module (experimental)
-  BUILD_MODULES="$BUILD_MODULES modules/pseread"
-  MODULES_LDADD="-lpseread $MODULES_LDADD"
-  MODULES_LDFLAGS="-L../modules/pseread $MODULES_LDFLAGS"
-  MODULES_CXXFLAGS="-DHAVE_PSEREAD_MODULE $MODULES_CXXFLAGS"
+  # Importers module (experimental)
+  BUILD_MODULES="$BUILD_MODULES modules/importers"
+  MODULES_LDADD="-limporters $MODULES_LDADD"
+  MODULES_LDFLAGS="-L../modules/importers $MODULES_LDFLAGS"
+  MODULES_CXXFLAGS="-DHAVE_IMPORTERS_MODULE $MODULES_CXXFLAGS"
 else
   # Build light-weight viewer version
   BUILD_MODULES="modules/molstr modules/lwview modules/anim"
@@ -824,7 +824,7 @@ AC_CONFIG_FILES([
  modules/lwview/Makefile
  modules/rendering/Makefile
  modules/anim/Makefile
- modules/pseread/Makefile
+ modules/importers/Makefile
 	utils/Makefile
 	osxbuild/Makefile
 	osxbuild/make_distr.pl

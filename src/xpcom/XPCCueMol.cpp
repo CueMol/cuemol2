@@ -150,8 +150,8 @@ namespace mdtools {
 }
 #endif
 
-#define HAVE_PSEREAD_MODULE 1
-#ifdef HAVE_PSEREAD_MODULE
+#define HAVE_IMPORTERS_MODULE 1
+#ifdef HAVE_IMPORTERS_MODULE
 namespace importers {
   extern bool init();
   extern void fini();
@@ -232,7 +232,7 @@ NS_IMETHODIMP XPCCueMol::Init(const char *confpath, bool *_retval)
   mdtools::init();
 #endif
 
-#ifdef HAVE_PSEREAD_MODULE
+#ifdef HAVE_IMPORTERS_MODULE
   importers::init();
 #endif
 
@@ -319,7 +319,7 @@ NS_IMETHODIMP XPCCueMol::Fini()
     return NS_ERROR_NOT_INITIALIZED;
   }
 
-#ifdef HAVE_PSEREAD_MODULE
+#ifdef HAVE_IMPORTERS_MODULE
   importers::fini();
 #endif
 
