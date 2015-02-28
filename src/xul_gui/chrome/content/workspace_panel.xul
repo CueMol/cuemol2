@@ -316,6 +316,8 @@
 	  oncommand="cuemolui.panels.workspace.onLoadSaveCam(event, false, true)"/>
 	<menuitem label="Apply to scene (with vis flags)" class="wspcCamCtxt-disable"
 	  oncommand="cuemolui.panels.workspace.onLoadSaveCam(event, true, true)"/>
+	<menuitem label="Edit vis flags" class="wspcCamCtxt-disable"
+	  oncommand="cuemolui.panels.workspace.onEditVisFlags(event)"/>
 	<menuitem label="Clear vis flags" class="wspcCamCtxt-disable"
 	  oncommand="cuemolui.panels.workspace.onClearVisFlags(event)"/>
 

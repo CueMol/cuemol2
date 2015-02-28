@@ -1320,10 +1320,29 @@ ws.onClearVisFlags = function (aEvent)
   if (!scene) return;
 
   let cam = scene.getCameraRef(elem.obj_id);
-  let json = cam.getVisSetJSON();
-  let obj = JSON.parse(json);
-  dd("visset="+debug.dumpObjectTree(obj));
+  //let json = cam.getVisSetJSON();
+  //let obj = JSON.parse(json);
+  //dd("visset="+debug.dumpObjectTree(obj));
   cam.clearVisSettings();
+};
+
+ws.onEditVisFlags = function (aEvent)
+{
+  var elem = this.mViewObj.getSelectedNode();
+  if (elem.type!="camera") return;
+
+  var scene = this._mainWnd.currentSceneW;
+  if (!scene) return;
+
+  var args = Cu.getWeakReference({
+    "target": scene.getCameraRef(elem.obj_id),
+    "scene": scene
+    });
+
+  window.openDialog("chrome://cuemol2/content/tools/visflagset-edit-dlg.xul",
+                    null,
+                    "chrome,modal,resizable=no,dependent,centerscreen",
+                    args);
 };
 
 

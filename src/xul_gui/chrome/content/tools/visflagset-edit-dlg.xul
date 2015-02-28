@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2-sysdep.css" type="text/css"?>
+
+<!-- -*- xml -*- -->
+
+<dialog
+  id     = "visflagset-edit-dlg"
+  title  = "Edit visibility flags"
+  xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  buttons="accept"
+  ondialogaccept="return window.gDlgObj.onDialogAccept(event);">
+
+  <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/treeview.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/tools/visflagset-edit-dlg.js"/>
+
+  <hbox>
+    
+    <tree id="visset-list-tree" flex="1" style="height: 20em; width: 20em;"
+      hidecolumnpicker="true">
+      <treecols>
+	<treecol id="treecol_objrend" label="Obj/Rend" flex="1" primary="true" persist="width"/>
+	<splitter class="tree-splitter"/>
+	<treecol id="treecol_vis" label="Visible" flex="1" persist="width"/>
+      </treecols>
+      <treechildren class="object-tree-children"/>
+    </tree>
+    
+    <vbox>
+      <button
+	id="include-btn"
+	label="&lt;-"
+	tooltiptext="Include"/>
+      <spacer/>
+      <button
+	id="exclude-btn"
+	label="-&gt;"
+	tooltiptext="Exclude"/>
+      </vbox>
+    
+    <listbox id="others-list">
+    </listbox>
+
+  </hbox>
+</dialog>

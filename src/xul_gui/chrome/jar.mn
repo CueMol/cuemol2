@@ -281,6 +281,9 @@ cuemol2.jar:
 # Style-editor dialog
   content/style/style_editor.xul
   content/style/style_editor.js
+# Visibility flag set editor
+  content/tools/visflagset-edit-dlg.xul
+  content/tools/visflagset-edit-dlg.js
 #####
 # Locale files
 #
