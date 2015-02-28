@@ -280,7 +280,11 @@ public:
 
   virtual void propChanged(qlib::LPropEvent &ev);
   
+  /// object-changed event handler
   virtual void objectChanged(qsys::ObjectEvent &ev);
+
+  /// scene-changed event handler (for onloaded event)
+  virtual void sceneChanged(qsys::SceneEvent &ev);
 
 private:
 

@@ -233,16 +233,10 @@ void MolSurfRenderer::render(DisplayContext *pdl)
     }
   }
   else if (m_nMode==SFREND_MOLFANC) {
-    // MOLFANC mode --> resolve target name
-
-    // re-set molID if not resolved (when deserialized from qsc file)
-    if (m_nTgtMolID==qlib::invalid_uid) {
-      if (!m_sTgtMolName.isEmpty()) {
-        //setTgtObjName(m_sTgtMolName);
-        m_pMol = resolveMolIDImpl(m_sTgtMolName);
-      }
-    }
-    else {
+    //
+    // MOLFANC mode
+    //
+    if (m_nTgtMolID!=qlib::invalid_uid) {
       qsys::ObjectPtr pobj = SceneManager::getObjectS(m_nTgtMolID);
       m_pMol = MolCoordPtr(pobj, qlib::no_throw_tag());
     }
@@ -502,4 +496,15 @@ void MolSurfRenderer::objectChanged(qsys::ObjectEvent &ev)
   }
 
   super_t::objectChanged(ev);
+}
+
+void MolSurfRenderer::sceneChanged(qsys::SceneEvent &ev)
+{
+  if (ev.getType()==qsys::SceneEvent::SCE_SCENE_ONLOADED) {
+    // resolve target mol name, if required
+    if (!m_sTgtMolName.isEmpty())
+      resolveMolIDImpl(m_sTgtMolName);
+  }
+
+  super_t::sceneChanged(ev);
 }
