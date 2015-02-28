@@ -969,13 +969,22 @@ void Scene::fireSceneEvent(SceneEvent &ev)
   ev.setSource(m_nUID);
   pSEM->fireEvent(ev);
 
-#ifndef NO_SCRIPT
-  // call the script event handlers
   if (ev.getType()==SceneEvent::SCE_SCENE_ONLOADED) {
+
+    // notify loaded to the cameras
+    camtab_t::const_iterator viter = m_camtab.begin();
+    camtab_t::const_iterator eiter = m_camtab.end();
+    for (; viter!=eiter; ++viter) {
+      CameraPtr obj = viter->second;
+      obj->notifySceneLoaded(ScenePtr(this));
+    }
+
+#ifndef NO_SCRIPT
+    // call the script event handlers
     if (m_pInterp!=NULL && !m_scrOnLoadEvent.isEmpty())
       m_pInterp->eval(m_scrOnLoadEvent);
-  }
 #endif
+  }
 }
 
 void Scene::propChanged(qlib::LPropEvent &ev)

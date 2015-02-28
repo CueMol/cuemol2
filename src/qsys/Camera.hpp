@@ -259,6 +259,26 @@ namespace qsys {
     void loadVisSetFromNodes(ScenePtr pScene);
     
   public:
+    
+    /// append vis flag
+    /// @param tgtid object/rend ID to remove (vis flag is initialized by the current one)
+    void visAppend(qlib::uid_t tgtid, bool bObj);
+
+    /// remove vis flag
+    /// @param tgtid target object/rend ID to remove
+    /// @return false if tgtid was not found
+    bool visRemove(qlib::uid_t tgtid);
+
+    /// change vis flag
+    /// @param tgtid target object/rend ID to change vis flag
+    /// @param bVis true for visible
+    /// @return false if tgtid was not found
+    bool visChange(qlib::uid_t tgtid, bool bVis);
+
+    int getVisSize() const {
+      return m_visset.size();
+    }
+
     /// Save the visibility settings of objects and renderers in the scene pScene
     /// @param pScene target scene to save the visibility flags (should be const??)
     void saveVisSettings(ScenePtr pScene);
@@ -270,7 +290,12 @@ namespace qsys {
     /// Clear visibility settings
     void clearVisSettings();
 
-    LString getVisSetJSON(ScenePtr pScene) const;
+    LString getVisSetJSON() const;
+
+    /// just call loadVisSetFromNodes()
+    void notifySceneLoaded(ScenePtr pScene) {
+      loadVisSetFromNodes(pScene);
+    }
 
     ////////////////////////////////////////
     // LDataSrcContainer implementation

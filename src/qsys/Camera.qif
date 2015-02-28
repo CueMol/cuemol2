@@ -72,7 +72,9 @@ runtime_class Camera
   void saveVisSettings(object<Scene$>);
   void loadVisSettings(object<Scene$>);
   void clearVisSettings();
-  string getVisSetJSON(object<Scene$>);
+  string getVisSetJSON();
+
+  property integer vis_size => redirect(getVisSize, XXX) (readonly);
 
 };
 

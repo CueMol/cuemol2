@@ -1320,7 +1320,7 @@ ws.onClearVisFlags = function (aEvent)
   if (!scene) return;
 
   let cam = scene.getCameraRef(elem.obj_id);
-  let json = cam.getVisSetJSON(scene);
+  let json = cam.getVisSetJSON();
   let obj = JSON.parse(json);
   dd("visset="+debug.dumpObjectTree(obj));
   cam.clearVisSettings();

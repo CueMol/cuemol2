@@ -159,6 +159,7 @@ void Camera::loadVisSetFromNodes(ScenePtr pScene)
     return;
   m_visset.clear();
   
+  // convert visset nodes to m_visset hash table
   qlib::LDom2Node *pVisSet = m_pVisSetNodes;
   for (pVisSet->firstChild(); pVisSet->hasMoreChild(); pVisSet->nextChild()) {
     qlib::LDom2Node *pChNode = pVisSet->getCurChild();
@@ -200,6 +201,9 @@ void Camera::loadVisSetFromNodes(ScenePtr pScene)
     }
   }
   
+  // cleanup the viset nodes
+  delete m_pVisSetNodes;
+  m_pVisSetNodes = NULL;
 }
 
 
@@ -241,25 +245,84 @@ void Camera::readFromStream(qlib::InStream &ins)
   tree.deserialize(this);
 }
 
-void Camera::saveVisSettings(ScenePtr pScene)
+////////////////////////////////////////////////////////////
+// Visibility flags management
+
+void Camera::visAppend(qlib::uid_t tgtid, bool bObj)
 {
-  m_visset.clear();
+  VisSetting::iterator i = m_visset.find(tgtid);
+  if (i!=m_visset.end())
+    return; // ERROR??
+  
+  if (bObj) {
+    ObjectPtr pObj = SceneManager::getObjectS(tgtid);
+    m_visset.save(pObj);
+  }
+  else {
+    RendererPtr pRend = SceneManager::getRendererS(tgtid);
+    m_visset.save(pRend);
+  }
+
+  // undo/redo
+}
+
+bool Camera::visRemove(qlib::uid_t tgtid)
+{
+  VisSetting::iterator i = m_visset.find(tgtid);
+  if (i==m_visset.end())
+    return false;
+  m_visset.erase(i);
+
+  // undo/redo
+
+  return true;
+}
+
+bool Camera::visChange(qlib::uid_t tgtid, bool bVis)
+{
+  VisSetting::iterator i = m_visset.find(tgtid);
+  if (i==m_visset.end())
+    return false;
+
+  i->second.bVis = bVis;
+
+  // undo/redo
+
+  return true;
+}
+
+/////
+
+void Camera::clearVisSettings()
+{
+  while (getVisSize()>0) {
+    VisSetting::iterator i = m_visset.begin();
+    visRemove(i->first);
+  }
+  // m_visset.clear();
   if (m_pVisSetNodes!=NULL) {
     delete m_pVisSetNodes;
     m_pVisSetNodes = NULL;
   }
+}
+
+void Camera::saveVisSettings(ScenePtr pScene)
+{
+  clearVisSettings();
   
   Scene::ObjIter oi = pScene->beginObj();
   Scene::ObjIter oie = pScene->endObj();
   for (; oi!=oie; ++oi) {
     ObjectPtr pObj = oi->second;
-    m_visset.save(pObj);
+    // m_visset.save(pObj);
+    visAppend(oi->first, true);
 
     Object::RendIter ri = pObj->beginRend();
     Object::RendIter rie = pObj->endRend();
     for (; ri!=rie; ++ri) {
-      RendererPtr pRend = ri->second;
-      m_visset.save(pRend);
+      // RendererPtr pRend = ri->second;
+      // m_visset.save(pRend);
+      visAppend(ri->first, false);
     }
     
   }
@@ -268,13 +331,6 @@ void Camera::saveVisSettings(ScenePtr pScene)
 
 void Camera::loadVisSettings(ScenePtr pScene) const
 {
-  if (m_pVisSetNodes!=NULL) {
-    Camera *pthis = const_cast<Camera *>(this);
-    pthis->loadVisSetFromNodes(pScene);
-    delete pthis->m_pVisSetNodes;
-    pthis->m_pVisSetNodes = NULL;
-  }
-
   if (m_visset.empty())
     return;
   
@@ -299,24 +355,8 @@ void Camera::loadVisSettings(ScenePtr pScene) const
   }
 }
 
-void Camera::clearVisSettings()
+LString Camera::getVisSetJSON() const
 {
-  m_visset.clear();
-  if (m_pVisSetNodes!=NULL) {
-    delete m_pVisSetNodes;
-    m_pVisSetNodes = NULL;
-  }
-}
-
-LString Camera::getVisSetJSON(ScenePtr pScene) const
-{
-  if (m_pVisSetNodes!=NULL) {
-    Camera *pthis = const_cast<Camera *>(this);
-    pthis->loadVisSetFromNodes(pScene);
-    delete pthis->m_pVisSetNodes;
-    pthis->m_pVisSetNodes = NULL;
-  }
-
   LString rval;
 
   if (m_visset.empty())
@@ -357,6 +397,9 @@ LString Camera::getVisSetJSON(ScenePtr pScene) const
   rval += "]";
   return rval;
 }
+
+
+//////////
 
 void VisSetting::save(ObjectPtr pObj)
 {
