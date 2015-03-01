@@ -362,7 +362,7 @@ LString Camera::getVisSetJSON() const
   if (m_visset.empty())
     return rval;
   
-  rval += "[";
+  rval += "{";
 
   VisSetting::const_iterator i = m_visset.begin();
   VisSetting::const_iterator ie = m_visset.end();
@@ -376,9 +376,10 @@ LString Camera::getVisSetJSON() const
     }
 
     qlib::uid_t uid = i->first;
+    rval += LString::format("\"%d\": ", uid);
+
     if (i->second.bObj) {
       rval += "{";
-      rval += LString::format("\"id\": %d,", uid);
       rval += "\"type\": \"object\",";
       rval += "\"visible\":";
       rval += (i->second.bVis)?"true":"false";
@@ -386,7 +387,6 @@ LString Camera::getVisSetJSON() const
     }
     else {
       rval += "{";
-      rval += LString::format("\"id\": %d,", uid);
       rval += "\"type\": \"renderer\",";
       rval += "\"visible\":";
       rval += (i->second.bVis)?"true":"false";
@@ -394,7 +394,8 @@ LString Camera::getVisSetJSON() const
     }
   }
 
-  rval += "]";
+  rval += "}";
+
   return rval;
 }
 
