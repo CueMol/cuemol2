@@ -76,7 +76,7 @@ runtime_class Camera
 
   void visAppend(integer tgtid, boolean bVis, boolean bObj);
   boolean visRemove(integer tgtid);
-  boolean visChange(integer tgtid, boolean bVis);
+  // boolean visChange(integer tgtid, boolean bVis);
 
   /// notify this obj is loaded from qsc stream
   void notifyLoaded(object<Scene$>);

@@ -179,7 +179,7 @@
     var cam = this.mCam;
 
     // EDIT TXN START //
-    scene.startUndoTxn("Change camera's visflags");
+    scene.startUndoTxn("Change visflags of "+this.mCam.name);
     
     try {
       this.mCam.clearVisSettings();

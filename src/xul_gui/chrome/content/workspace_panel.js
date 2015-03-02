@@ -1327,7 +1327,19 @@ ws.onClearVisFlags = function (aEvent)
   if (!res)
     return; // canceled
 
-  cam.clearVisSettings();
+  // EDIT TXN START //
+  scene.startUndoTxn("Clear visibility flags in "+elem.obj_id);
+  try {
+    cam.clearVisSettings();
+  }
+  catch (e) {
+    dd("***** ERROR: Clear cam visset "+e);
+    debug.exception(e);
+    scene.rollBackUndoTxn();
+    return;
+  }
+  scene.commitUndoTxn();
+  // EDIT TXN END //
 };
 
 ws.onEditVisFlags = function (aEvent)

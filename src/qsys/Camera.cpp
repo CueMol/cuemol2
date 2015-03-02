@@ -222,7 +222,8 @@ namespace {
     
     int m_nMode;
     
-    qlib::uid_t m_nTgtID;
+    LString m_camName;
+    qlib::uid_t m_nElemID;
     VisSetElem m_value;
 
   public:    
@@ -237,26 +238,59 @@ namespace {
     
     //////////
     
-    CameraPtr getTarget() const
+    CameraPtr getTargetCam() const
     {
-      return CameraPtr();
+      Scene *pTmp = dynamic_cast<Scene *>(getTarget());
+      if (pTmp==NULL)
+        return CameraPtr();
+      ScenePtr pScene(pTmp);
+      CameraPtr pCam = pScene->getCameraRef(m_camName);
+      return pCam;
     }
 
     /// Perform undo
     virtual bool undo()
     {
+      CameraPtr pCam = getTargetCam();
+      if (pCam.isnull()) return false;
+      if (m_nMode==VSE_ADD) {
+        // remove
+        pCam->visRemove(m_nElemID);
+        MB_DPRINTLN("VSE.undo> VSE_ADD remove(%d)", m_nElemID);
+      }
+      else {
+        // add
+        pCam->visAppend(m_nElemID, m_value.bVis, m_value.bObj);
+        MB_DPRINTLN("VSE.undo> VSE_REMOVE append(%d, %d, %d)", m_nElemID, m_value.bVis, m_value.bObj);
+      }
       return true;
     }
   
     /// Perform redo
     virtual bool redo() {
+      CameraPtr pCam = getTargetCam();
+      if (pCam.isnull()) return false;
+      if (m_nMode==VSE_ADD) {
+        // add
+        pCam->visAppend(m_nElemID, m_value.bVis, m_value.bObj);
+        MB_DPRINTLN("VSE.redo> VSE_ADD append(%d, %d, %d)", m_nElemID, m_value.bVis, m_value.bObj);
+      }
+      else {
+        // remove
+        pCam->visRemove(m_nElemID);
+        MB_DPRINTLN("VSE.redo> VSE_REMOVE remove(%d)", m_nElemID);
+      }
       return true;
     }
   
     virtual bool isUndoable() const {
+      CameraPtr pCam = getTargetCam();
+      if (pCam.isnull()) return false;
       return true;
     }
     virtual bool isRedoable() const {
+      CameraPtr pCam = getTargetCam();
+      if (pCam.isnull()) return false;
       return true;
     }
 
@@ -289,6 +323,9 @@ void Camera::visAppend(qlib::uid_t tgtid, bool bVis, bool bObj)
   if (uu.isOK()) {
     VisSetEditInfo *pInfo = MB_NEW VisSetEditInfo();
     pInfo->m_nMode = VisSetEditInfo::VSE_ADD;
+    pInfo->setTargetUID(pScene->getUID());
+    pInfo->m_camName = getName();
+    pInfo->m_nElemID = tgtid;
     pInfo->m_value.bVis = bVis;
     pInfo->m_value.bObj = bObj;
     uu.add(pInfo);
@@ -323,13 +360,18 @@ bool Camera::visRemove(qlib::uid_t tgtid)
   if (uu.isOK()) {
     VisSetEditInfo *pInfo = MB_NEW VisSetEditInfo();
     pInfo->m_nMode = VisSetEditInfo::VSE_REMOVE;
-    pInfo->m_value = vse;
+    pInfo->setTargetUID(pScene->getUID());
+    pInfo->m_camName = getName();
+    pInfo->m_nElemID = tgtid;
+    pInfo->m_value.bVis = vse.bVis;
+    pInfo->m_value.bObj = vse.bObj;
     uu.add(pInfo);
   }
 
   return true;
 }
 
+/*
 bool Camera::visChange(qlib::uid_t tgtid, bool bVis)
 {
   VisSetting::iterator i = m_visset.find(tgtid);
@@ -341,7 +383,7 @@ bool Camera::visChange(qlib::uid_t tgtid, bool bVis)
   // undo/redo
 
   return true;
-}
+}*/
 
 /////
 

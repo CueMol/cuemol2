@@ -269,12 +269,13 @@ namespace qsys {
     /// @return false if tgtid was not found
     bool visRemove(qlib::uid_t tgtid);
 
+    /*
     /// change vis flag
     /// @param tgtid target object/rend ID to change vis flag
     /// @param bVis true for visible
     /// @return false if tgtid was not found
     bool visChange(qlib::uid_t tgtid, bool bVis);
-
+     */
     int getVisSize() const {
       return m_visset.size();
     }
