@@ -381,6 +381,7 @@ LString Camera::getVisSetJSON() const
     if (i->second.bObj) {
       rval += "{";
       rval += "\"type\": \"object\",";
+      rval += "\"include\": true,";
       rval += "\"visible\":";
       rval += (i->second.bVis)?"true":"false";
       rval += "}";
@@ -388,6 +389,7 @@ LString Camera::getVisSetJSON() const
     else {
       rval += "{";
       rval += "\"type\": \"renderer\",";
+      rval += "\"include\": true,";
       rval += "\"visible\":";
       rval += (i->second.bVis)?"true":"false";
       rval += "}";

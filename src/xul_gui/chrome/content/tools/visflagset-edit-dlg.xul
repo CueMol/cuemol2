@@ -9,8 +9,23 @@
   id     = "visflagset-edit-dlg"
   title  = "Edit visibility flags"
   xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-  buttons="accept"
+  buttons="accept,cancel"
   ondialogaccept="return window.gDlgObj.onDialogAccept(event);">
+
+<style xmlns="http://www.w3.org/1999/xhtml">
+treechildren::-moz-tree-checkbox
+{
+  list-style-image: none;
+}
+treechildren::-moz-tree-checkbox(checked)
+{
+  list-style-image: url("chrome://global/skin/checkbox/cbox-check.gif");
+}
+treechildren::-moz-tree-checkbox(disabled)
+{
+  list-style-image: url("chrome://global/skin/checkbox/cbox-check-dis.gif");
+}
+</style>
 
   <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
   <script type="application/javascript" src="chrome://cuemol2/content/treeview.js"/>
@@ -19,15 +34,14 @@
   <hbox>
     
     <vbox>
-      <label value="Target:"/>
       <tree id="visset-list-tree" flex="1" style="height: 20em; width: 20em;"
-	hidecolumnpicker="true">
+	hidecolumnpicker="true" editable="true">
 	<treecols>
-	  <treecol id="treecol_inc" label="Inc" flex="1" persist="width"/>
+	  <treecol id="treecol_inc" label="Inc" type="checkbox" flex="0" persist="width" editable="true"/>
 	  <splitter class="tree-splitter"/>
 	  <treecol id="treecol_objrend" label="Obj/Rend" flex="1" primary="true" persist="width"/>
 	  <splitter class="tree-splitter"/>
-	  <treecol id="treecol_vis" label="Visible" flex="1" persist="width"/>
+	  <treecol id="treecol_vis" label="Vis" flex="0" persist="width"/>
 	</treecols>
 	<treechildren class="object-tree-children"/>
       </tree>

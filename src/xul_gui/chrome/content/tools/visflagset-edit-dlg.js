@@ -59,43 +59,16 @@
     var j, nobjs = this.mObjData.length;
     for (j=1; j<nobjs; ++j) {
       let obj = this.mObjData[j];
-      let vs = this.mVSet[obj.ID];
-      let vis = false;
-      if (vs && vs.visible)
-        vis = true;
 
-      let node = new Object();
-      node.name = obj.name;
-      if (node.name.length==0)
-	node.name = "(noname)";
-      node.name += " ("+obj.type+")";
-      node.collapsed = false;
-      node.obj_id = obj.ID;
-      node.type = "object";
-      node.props = {
-        "treecol_vis": (vis)?"visible":"invisible",
-        "treecol_inc": vs?"true":"false",
-      };
-      
+      let node = this.setupNodeImpl(obj, "object");
+
       var i, nrends = obj.rends.length;
       if (nrends>0) {
 	node.childNodes = new Array();
 	for (i=0; i<nrends; ++i) {
 	  let rend = obj.rends[i];
-          let vs = this.mVSet[rend.ID];
-          let vis = false;
-          if (vs && vs.visible)
-            vis = true;
 
-	  let rnode = new Object();
-	  rnode.name = rend.name;
-	  rnode.name += " ("+rend.type+")";
-	  rnode.obj_id = rend.ID;
-	  rnode.type = "renderer";
-	  rnode.props = {
-	    "treecol_vis": (vis)?"visible":"invisible",
-            "treecol_inc": vs?"true":"false",
-	  };
+          let rnode = this.setupNodeImpl(rend, "renderer");
 
 	  node.childNodes.push(rnode);
 	}
@@ -107,10 +80,95 @@
     aTreeView.buildView();
   }
 
+  dlg.setupNodeImpl = function (aObj, aTypeName)
+  {
+    let id = aObj.ID;
+    let vs = this.mVSet[id];
+    let incl = false;
+    if (vs)
+      incl = vs.include;
+    let vis = false;
+    if (vs && vs.visible)
+      vis = true;
+
+    let node = new Object();
+    node.name = aObj.name;
+    if (node.name.length==0)
+      node.name = "(noname)";
+    node.name += " ("+aObj.type+")";
+    node.collapsed = false;
+    node.obj_id = id;
+    node.type = aTypeName;
+    node.props = {
+      "treecol_vis": (vis)?"visible":"invisible",
+    };
+    node.values = {
+        "treecol_inc": incl?"true":"false",
+    };
+    if (!incl) {
+      node.props.treecol_vis = "invisible";
+      node.props.treecol_objrend = "disabled";
+    }
+
+    return node;
+  };
+
   dlg.onTreeItemClick = function(aEvent, aRow, aCol)
   {
+    try {
+      //dd("clicked!!");
+      if (aCol=="treecol_vis") {
+        this.toggleVisible(aRow);
+      }
+      else if (aCol=="treecol_inc") {
+        this.toggleIncl(aRow);
+      }
+    }
+    catch (e) {
+      debug.exception(e);
+    }
   }
 
+  dlg.toggleVisible = function (aElem)
+  {
+    var id = aElem.obj_id;
+    dd("id="+id);
+    var vs = this.mVSet[id];
+    if (!vs)
+      return;
+
+    dd("vs="+vs.visible);
+    vs.visible = !vs.visible;
+
+    this.mTreeView.saveSelection();
+    this.buildNodes(this.mTreeView, true);
+    this.mTreeView.restoreSelection();
+
+  };
+
+  dlg.toggleIncl = function (aElem)
+  {
+    var id = aElem.obj_id;
+    dd("id="+id);
+    var vs = this.mVSet[id];
+    if (!vs) {
+      this.mVSet[id] = {
+        "include": true,
+      };
+    }
+    else {
+      this.mVSet[id].include = !this.mVSet[id].include;
+    }
+
+    dd("vs="+vs.visible);
+    vs.visible = !vs.visible;
+
+    this.mTreeView.saveSelection();
+    this.buildNodes(this.mTreeView, true);
+    this.mTreeView.restoreSelection();
+
+  };
+  
   /// onDialogAccept event handler
   dlg.onDialogAccept = function(event)
   {
