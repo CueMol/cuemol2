@@ -298,7 +298,7 @@ ws.onCameraCopy = function (aEvent)
       return;
 
     var scene = cuemol.getScene(this.mTgtSceneID);
-    var target = scene.getCamera(elem.obj_id);
+    var target = scene.getCameraRef(elem.obj_id);
     if (target==null)
       return;
 

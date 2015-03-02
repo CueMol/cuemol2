@@ -74,6 +74,10 @@ runtime_class Camera
   void clearVisSettings();
   string getVisSetJSON();
 
+  void visAppend(integer tgtid, boolean bVis, boolean bObj);
+  boolean visRemove(integer tgtid);
+  boolean visChange(integer tgtid, boolean bVis);
+
   property integer vis_size => redirect(getVisSize, XXX) (readonly);
 
 };

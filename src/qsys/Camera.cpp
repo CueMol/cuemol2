@@ -173,7 +173,7 @@ void Camera::loadVisSetFromNodes(ScenePtr pScene)
       LString tgt = pChNode->getStrAttr("target");
       ObjectPtr pObj = pScene->getObjectByName(tgt);
       if (pObj.isnull()) {
-        LOG_DPRINTLN("loadVisSet> unknown target object <%s>", pObj->getName());
+        LOG_DPRINTLN("loadVisSet> unknown target object <%s>", pObj->getName().c_str());
         continue;
       }
       m_visset.set(pObj, bVis);
@@ -248,7 +248,7 @@ void Camera::readFromStream(qlib::InStream &ins)
 ////////////////////////////////////////////////////////////
 // Visibility flags management
 
-void Camera::visAppend(qlib::uid_t tgtid, bool bObj)
+void Camera::visAppend(qlib::uid_t tgtid, bool bVis, bool bObj)
 {
   VisSetting::iterator i = m_visset.find(tgtid);
   if (i!=m_visset.end())
@@ -256,11 +256,11 @@ void Camera::visAppend(qlib::uid_t tgtid, bool bObj)
   
   if (bObj) {
     ObjectPtr pObj = SceneManager::getObjectS(tgtid);
-    m_visset.save(pObj);
+    m_visset.set(pObj, bVis);
   }
   else {
     RendererPtr pRend = SceneManager::getRendererS(tgtid);
-    m_visset.save(pRend);
+    m_visset.set(pRend, bVis);
   }
 
   // undo/redo
@@ -314,15 +314,13 @@ void Camera::saveVisSettings(ScenePtr pScene)
   Scene::ObjIter oie = pScene->endObj();
   for (; oi!=oie; ++oi) {
     ObjectPtr pObj = oi->second;
-    // m_visset.save(pObj);
-    visAppend(oi->first, true);
+    visAppend(oi->first, pObj->isVisible(), true);
 
     Object::RendIter ri = pObj->beginRend();
     Object::RendIter rie = pObj->endRend();
     for (; ri!=rie; ++ri) {
-      // RendererPtr pRend = ri->second;
-      // m_visset.save(pRend);
-      visAppend(ri->first, false);
+      RendererPtr pRend = ri->second;
+      visAppend(ri->first, pRend->isVisible(), false);
     }
     
   }
@@ -380,6 +378,7 @@ LString Camera::getVisSetJSON() const
 
     if (i->second.bObj) {
       rval += "{";
+      rval += LString::format("\"uid\": %d,", uid);
       rval += "\"type\": \"object\",";
       rval += "\"include\": true,";
       rval += "\"visible\":";
@@ -388,6 +387,7 @@ LString Camera::getVisSetJSON() const
     }
     else {
       rval += "{";
+      rval += LString::format("\"uid\": %d,", uid);
       rval += "\"type\": \"renderer\",";
       rval += "\"include\": true,";
       rval += "\"visible\":";

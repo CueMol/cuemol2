@@ -262,7 +262,7 @@ namespace qsys {
     
     /// append vis flag
     /// @param tgtid object/rend ID to remove (vis flag is initialized by the current one)
-    void visAppend(qlib::uid_t tgtid, bool bObj);
+    void visAppend(qlib::uid_t tgtid, bool bVis, bool bObj);
 
     /// remove vis flag
     /// @param tgtid target object/rend ID to remove

@@ -151,6 +151,7 @@
     var id = aElem.obj_id;
     dd("id="+id);
     var vs = this.mVSet[id];
+
     if (!vs) {
       this.mVSet[id] = {
         "include": true,
@@ -159,9 +160,6 @@
     else {
       this.mVSet[id].include = !this.mVSet[id].include;
     }
-
-    dd("vs="+vs.visible);
-    vs.visible = !vs.visible;
 
     this.mTreeView.saveSelection();
     this.buildNodes(this.mTreeView, true);
@@ -172,6 +170,36 @@
   /// onDialogAccept event handler
   dlg.onDialogAccept = function(event)
   {
+    var scene = this.mScene;
+    var cam = this.mCam;
+
+    // EDIT TXN START //
+    scene.startUndoTxn("Change camera's visflags");
+    
+    try {
+      this.mCam.clearVisSettings();
+      for (let i in this.mVSet) {
+	let vs = this.mVSet[i];
+	if (vs.include) {
+	  if (vs.type=="object")
+	    this.mCam.visAppend(vs.uid, vs.visible, true);
+	  else
+	    this.mCam.visAppend(vs.uid, vs.visible, false);
+	  dd("visAppend "+vs.uid);
+	}
+      }
+    }
+    catch (e) {
+      dd("Change camera's visflags Error!!");
+      debug.exception(e);
+      scene.rollbackUndoTxn();
+      args.bOK = false;
+      return false;
+    }
+
+    scene.commitUndoTxn();
+    // EDIT TXN END //
+    
     args.bOK = true;
     return true;
   }

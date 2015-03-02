@@ -35,6 +35,10 @@
   cursor: pointer;
   list-style-image: url(chrome://cuemol2/content/images/visible1.png);
 }
+.object-tree-children::-moz-tree-image(invisible) {
+  cursor: pointer;
+  list-style-image: none;
+}
 .object-tree-children::-moz-tree-image(disabled) {
   cursor: pointer;
   list-style-image: url(chrome://cuemol2/content/images/visible1-dis.png);
