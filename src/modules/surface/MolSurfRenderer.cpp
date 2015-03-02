@@ -440,6 +440,8 @@ MolCoordPtr MolSurfRenderer::resolveMolIDImpl(const LString &name)
 
   // event handling: attach to the new object
   pMol->addListener(this);
+
+  MB_DPRINTLN("MolSurfRend.resolveMolID> resolved (%s), OK.", name.c_str());
   return pMol;
 }
 
@@ -501,6 +503,20 @@ void MolSurfRenderer::objectChanged(qsys::ObjectEvent &ev)
 void MolSurfRenderer::sceneChanged(qsys::SceneEvent &ev)
 {
   if (ev.getType()==qsys::SceneEvent::SCE_SCENE_ONLOADED) {
+    // resolve target mol name, if required
+    if (!m_sTgtMolName.isEmpty())
+      resolveMolIDImpl(m_sTgtMolName);
+  }
+  else if (ev.getType()==qsys::SceneEvent::SCE_OBJ_ADDED &&
+	   ev.getTarget()==getClientObjID()) {
+    MB_DPRINTLN("MolSurfRend.sceneChanged> This rend(obj) is loaded to the scene!!");
+    // resolve target mol name, if required
+    if (!m_sTgtMolName.isEmpty())
+      resolveMolIDImpl(m_sTgtMolName);
+  }
+  else if (ev.getType()==qsys::SceneEvent::SCE_REND_ADDED &&
+	   ev.getTarget()==getUID()) {
+    MB_DPRINTLN("MolSurfRend.sceneChanged> This rend is loaded to the scene!!");
     // resolve target mol name, if required
     if (!m_sTgtMolName.isEmpty())
       resolveMolIDImpl(m_sTgtMolName);

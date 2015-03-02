@@ -78,6 +78,9 @@ runtime_class Camera
   boolean visRemove(integer tgtid);
   boolean visChange(integer tgtid, boolean bVis);
 
+  /// notify this obj is loaded from qsc stream
+  void notifyLoaded(object<Scene$>);
+
   property integer vis_size => redirect(getVisSize, XXX) (readonly);
 
 };

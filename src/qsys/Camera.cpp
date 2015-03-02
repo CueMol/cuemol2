@@ -148,64 +148,11 @@ void Camera::readFrom2(qlib::LDom2Node *pNode)
 
   qlib::LDom2Node *pVisSet = pNode->findChild("visibilities");
   if (pVisSet!=NULL) {
+    MB_DPRINTLN("Camera.readFrom> copy vis nodes");
     m_pVisSetNodes = MB_NEW qlib::LDom2Node(*pVisSet);
     return;
   }
 }
-
-void Camera::loadVisSetFromNodes(ScenePtr pScene)
-{
-  if (m_pVisSetNodes==NULL)
-    return;
-  m_visset.clear();
-  
-  // convert visset nodes to m_visset hash table
-  qlib::LDom2Node *pVisSet = m_pVisSetNodes;
-  for (pVisSet->firstChild(); pVisSet->hasMoreChild(); pVisSet->nextChild()) {
-    qlib::LDom2Node *pChNode = pVisSet->getCurChild();
-    LString tag = pChNode->getTagName();
-    LString sVis = pChNode->getValue();
-    bool bVis = false;
-    if (sVis.equalsIgnoreCase("true"))
-      bVis = true;
-
-    if (tag.equals("object")) {
-      LString tgt = pChNode->getStrAttr("target");
-      ObjectPtr pObj = pScene->getObjectByName(tgt);
-      if (pObj.isnull()) {
-        LOG_DPRINTLN("loadVisSet> unknown target object <%s>", pObj->getName().c_str());
-        continue;
-      }
-      m_visset.set(pObj, bVis);
-    }
-    else if (tag.equals("renderer")) {
-      LString tgt = pChNode->getStrAttr("target");
-      LString cli = pChNode->getStrAttr("client");
-      LString type = pChNode->getStrAttr("type");
-      ObjectPtr pObj = pScene->getObjectByName(cli);
-      if (pObj.isnull()) {
-        LOG_DPRINTLN("loadVisSet> unknown client object <%s> for rend <%s>", cli.c_str(), tgt.c_str());
-        continue;
-      }
-      RendererPtr pRend;
-      pRend = pObj->getRendByName(tgt, type);
-      if (pRend.isnull()) {
-        LOG_DPRINTLN("loadVisSet> unknown renderer <%s>", tgt.c_str());
-        continue;
-      }
-      m_visset.set(pRend, bVis);
-    }
-    else {
-      // ERROR (ignore)
-      LOG_DPRINTLN("Camera.readFrom() unknown tag %s", tag.c_str());
-    }
-  }
-  
-  // cleanup the viset nodes
-  delete m_pVisSetNodes;
-  m_pVisSetNodes = NULL;
-}
-
 
 void Camera::updateSrcPath(const LString &srcpath)
 {
@@ -355,11 +302,10 @@ void Camera::loadVisSettings(ScenePtr pScene) const
 
 LString Camera::getVisSetJSON() const
 {
-  LString rval;
-
   if (m_visset.empty())
-    return rval;
+    return LString("{}");
   
+  LString rval;
   rval += "{";
 
   VisSetting::const_iterator i = m_visset.begin();
@@ -399,6 +345,59 @@ LString Camera::getVisSetJSON() const
   rval += "}";
 
   return rval;
+}
+
+void Camera::loadVisSetFromNodes(ScenePtr pScene)
+{
+  if (m_pVisSetNodes==NULL)
+    return;
+  m_visset.clear();
+  
+  // convert visset nodes to m_visset hash table
+  qlib::LDom2Node *pVisSet = m_pVisSetNodes;
+  for (pVisSet->firstChild(); pVisSet->hasMoreChild(); pVisSet->nextChild()) {
+    qlib::LDom2Node *pChNode = pVisSet->getCurChild();
+    LString tag = pChNode->getTagName();
+    LString sVis = pChNode->getValue();
+    bool bVis = false;
+    if (sVis.equalsIgnoreCase("true"))
+      bVis = true;
+
+    if (tag.equals("object")) {
+      LString tgt = pChNode->getStrAttr("target");
+      ObjectPtr pObj = pScene->getObjectByName(tgt);
+      if (pObj.isnull()) {
+        LOG_DPRINTLN("loadVisSet> unknown target object <%s>", pObj->getName().c_str());
+        continue;
+      }
+      m_visset.set(pObj, bVis);
+    }
+    else if (tag.equals("renderer")) {
+      LString tgt = pChNode->getStrAttr("target");
+      LString cli = pChNode->getStrAttr("client");
+      LString type = pChNode->getStrAttr("type");
+      ObjectPtr pObj = pScene->getObjectByName(cli);
+      if (pObj.isnull()) {
+        LOG_DPRINTLN("loadVisSet> unknown client object <%s> for rend <%s>", cli.c_str(), tgt.c_str());
+        continue;
+      }
+      RendererPtr pRend;
+      pRend = pObj->getRendByName(tgt, type);
+      if (pRend.isnull()) {
+        LOG_DPRINTLN("loadVisSet> unknown renderer <%s>", tgt.c_str());
+        continue;
+      }
+      m_visset.set(pRend, bVis);
+    }
+    else {
+      // ERROR (ignore)
+      LOG_DPRINTLN("Camera.readFrom() unknown tag %s", tag.c_str());
+    }
+  }
+  
+  // cleanup the viset nodes
+  delete m_pVisSetNodes;
+  m_pVisSetNodes = NULL;
 }
 
 

@@ -10,6 +10,7 @@
   title  = "Edit visibility flags"
   xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
   buttons="accept,cancel"
+  persist="screenX screenY width height"
   ondialogaccept="return window.gDlgObj.onDialogAccept(event);">
 
 <style xmlns="http://www.w3.org/1999/xhtml">
@@ -37,21 +38,19 @@ treechildren::-moz-tree-cell-text(disabled) {
   <script type="application/javascript" src="chrome://cuemol2/content/treeview.js"/>
   <script type="application/javascript" src="chrome://cuemol2/content/tools/visflagset-edit-dlg.js"/>
 
-  <hbox>
-    
-    <vbox>
-      <tree id="visset-list-tree" flex="1" style="height: 20em; width: 20em;"
-	hidecolumnpicker="true" editable="true">
-	<treecols>
-	  <treecol id="treecol_inc" label="Inc" type="checkbox" flex="0" persist="width" editable="true"/>
-	  <splitter class="tree-splitter"/>
-	  <treecol id="treecol_objrend" label="Obj/Rend" flex="1" primary="true" persist="width"/>
-	  <splitter class="tree-splitter"/>
-	  <treecol id="treecol_vis" label="Vis" flex="0" persist="width"/>
-	</treecols>
-	<treechildren class="object-tree-children"/>
-      </tree>
-    </vbox>
-    
-  </hbox>
+  <vbox flex="1">
+    <label value="Visibility settings:"/>
+    <tree id="visset-list-tree" flex="1" style="height: 20em; width: 20em;"
+	  hidecolumnpicker="true" editable="true">
+      <treecols>
+	<treecol id="treecol_inc" label="Inc" type="checkbox" flex="0" persist="width" editable="true"/>
+	<splitter class="tree-splitter"/>
+	<treecol id="treecol_objrend" label="Obj/Rend" flex="1" primary="true" persist="width"/>
+	<splitter class="tree-splitter"/>
+	<treecol id="treecol_vis" label="Vis" flex="0" persist="width"/>
+      </treecols>
+      <treechildren class="object-tree-children"/>
+    </tree>
+  </vbox>
+  
 </dialog>

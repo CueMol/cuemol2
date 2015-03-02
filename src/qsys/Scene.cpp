@@ -976,7 +976,7 @@ void Scene::fireSceneEvent(SceneEvent &ev)
     camtab_t::const_iterator eiter = m_camtab.end();
     for (; viter!=eiter; ++viter) {
       CameraPtr obj = viter->second;
-      obj->notifySceneLoaded(ScenePtr(this));
+      obj->notifyLoaded(ScenePtr(this));
     }
 
 #ifndef NO_SCRIPT

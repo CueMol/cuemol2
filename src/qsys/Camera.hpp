@@ -293,7 +293,7 @@ namespace qsys {
     LString getVisSetJSON() const;
 
     /// just call loadVisSetFromNodes()
-    void notifySceneLoaded(ScenePtr pScene) {
+    void notifyLoaded(ScenePtr pScene) {
       loadVisSetFromNodes(pScene);
     }
 

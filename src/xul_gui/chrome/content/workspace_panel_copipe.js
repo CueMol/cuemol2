@@ -346,6 +346,7 @@ ws.onCameraPaste = function (aEvent)
     scene.startUndoTxn("Paste camera");
     try {
       scene.setCamera(name, cam);
+      cam.notifyLoaded(scene);
     }
     catch (e) {
       dd("***** ERROR: Paste camera "+e);

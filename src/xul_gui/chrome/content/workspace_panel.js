@@ -1320,9 +1320,13 @@ ws.onClearVisFlags = function (aEvent)
   if (!scene) return;
 
   let cam = scene.getCameraRef(elem.obj_id);
-  //let json = cam.getVisSetJSON();
-  //let obj = JSON.parse(json);
-  //dd("visset="+debug.dumpObjectTree(obj));
+  if (cam.vis_size==0)
+    return;
+
+  let res = util.confirm(window, "Clear visibility flags: "+elem.obj_id);
+  if (!res)
+    return; // canceled
+
   cam.clearVisSettings();
 };
 
@@ -1341,7 +1345,7 @@ ws.onEditVisFlags = function (aEvent)
 
   window.openDialog("chrome://cuemol2/content/tools/visflagset-edit-dlg.xul",
                     null,
-                    "chrome,modal,resizable=no,dependent,centerscreen",
+                    "chrome,modal,resizable=yes,dependent,centerscreen",
                     args);
 };
 

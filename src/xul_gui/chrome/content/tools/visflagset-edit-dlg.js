@@ -153,8 +153,13 @@
     var vs = this.mVSet[id];
 
     if (!vs) {
+      // newly included to the flagset:
+      //   create entry
       this.mVSet[id] = {
         "include": true,
+	"uid": id,
+	"visible": false,
+	"type": aElem.type,
       };
     }
     else {
@@ -180,12 +185,12 @@
       this.mCam.clearVisSettings();
       for (let i in this.mVSet) {
 	let vs = this.mVSet[i];
+	dd("visAppend vs="+debug.dumpObjectTree(vs));
 	if (vs.include) {
 	  if (vs.type=="object")
 	    this.mCam.visAppend(vs.uid, vs.visible, true);
 	  else
 	    this.mCam.visAppend(vs.uid, vs.visible, false);
-	  dd("visAppend "+vs.uid);
 	}
       }
     }
