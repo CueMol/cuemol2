@@ -11,6 +11,7 @@
 #include "Scene.hpp"
 #include "SceneManager.hpp"
 #include "ScrEventManager.hpp"
+#include "PropEditInfo.hpp"
 
 #include <qlib/FileStream.hpp>
 #include <qlib/LDOM2Stream.hpp>
@@ -195,22 +196,104 @@ void Camera::readFromStream(qlib::InStream &ins)
 ////////////////////////////////////////////////////////////
 // Visibility flags management
 
+namespace {
+
+  /*
+    TO DO: event implementation
+  class VisSetEvent : public qlib::LPropEvent
+  {
+  public:
+    VisSetEvent() : qlib::LPropEvent() {}
+    VisSetEvent(const LString &name) : qlib::LPropEvent(name) {}
+
+    /// Internal data structure is changed by non-setter method(s)
+    /// (i.e. append/insertBefore, etc)
+    virtual bool isIntrDataChanged() const { return true; }
+  };
+  */
+
+  class VisSetEditInfo : public qsys::PropEditInfoBase
+  {
+  public:
+    enum {
+      VSE_ADD,
+      VSE_REMOVE,
+    };
+    
+    int m_nMode;
+    
+    qlib::uid_t m_nTgtID;
+    VisSetElem m_value;
+
+  public:    
+
+    VisSetEditInfo()
+    {
+    }
+    
+    virtual ~VisSetEditInfo()
+    {
+    }
+    
+    //////////
+    
+    CameraPtr getTarget() const
+    {
+      return CameraPtr();
+    }
+
+    /// Perform undo
+    virtual bool undo()
+    {
+      return true;
+    }
+  
+    /// Perform redo
+    virtual bool redo() {
+      return true;
+    }
+  
+    virtual bool isUndoable() const {
+      return true;
+    }
+    virtual bool isRedoable() const {
+      return true;
+    }
+
+  };
+
+}
+
+//////////
+
 void Camera::visAppend(qlib::uid_t tgtid, bool bVis, bool bObj)
 {
   VisSetting::iterator i = m_visset.find(tgtid);
   if (i!=m_visset.end())
     return; // ERROR??
   
+  ScenePtr pScene;
   if (bObj) {
     ObjectPtr pObj = SceneManager::getObjectS(tgtid);
     m_visset.set(pObj, bVis);
+    pScene = pObj->getScene();
   }
   else {
     RendererPtr pRend = SceneManager::getRendererS(tgtid);
     m_visset.set(pRend, bVis);
+    pScene = pRend->getScene();
   }
 
-  // undo/redo
+  // Setup undo/redo info
+  qsys::UndoUtil uu(pScene);
+  if (uu.isOK()) {
+    VisSetEditInfo *pInfo = MB_NEW VisSetEditInfo();
+    pInfo->m_nMode = VisSetEditInfo::VSE_ADD;
+    pInfo->m_value.bVis = bVis;
+    pInfo->m_value.bObj = bObj;
+    uu.add(pInfo);
+  }
+
 }
 
 bool Camera::visRemove(qlib::uid_t tgtid)
@@ -218,9 +301,31 @@ bool Camera::visRemove(qlib::uid_t tgtid)
   VisSetting::iterator i = m_visset.find(tgtid);
   if (i==m_visset.end())
     return false;
+
+  VisSetElem vse = i->second;
+
+  ScenePtr pScene;
+  if (vse.bObj) {
+    ObjectPtr pObj = SceneManager::getObjectS(tgtid);
+    ensureNotNull(pObj);
+    pScene = pObj->getScene();
+  }
+  else {
+    RendererPtr pRend = SceneManager::getRendererS(tgtid);
+    ensureNotNull(pRend);
+    pScene = pRend->getScene();
+  }
+
   m_visset.erase(i);
 
-  // undo/redo
+  // Setup undo/redo info
+  qsys::UndoUtil uu(pScene);
+  if (uu.isOK()) {
+    VisSetEditInfo *pInfo = MB_NEW VisSetEditInfo();
+    pInfo->m_nMode = VisSetEditInfo::VSE_REMOVE;
+    pInfo->m_value = vse;
+    uu.add(pInfo);
+  }
 
   return true;
 }
