@@ -77,7 +77,7 @@ namespace {
     LString rval = chnam;
     if (chnam.equals("none") || chnam.equals("_"))
       rval = " ";
-    rval = rval.toUpperCase();
+    // rval = rval.toUpperCase();
     return rval.getAt(0);
   }
 }
@@ -176,7 +176,7 @@ bool PDBFileWriter::write(qlib::OutStream &outs)
       resnam = pRes->getName();
       
       // format residue name
-      resnam = resnam.toUpperCase();
+      // resnam = resnam.toUpperCase();
       resnam = resnam.substr(0,3);
 
       // sort atom by AID
@@ -274,7 +274,7 @@ bool PDBFileWriter::writeAtomLine(int nserial, const ResidIndex &rindex,
   int resind = rindex.first;
   char inscode = rindex.second;
   LString atomnam = pa->getName().c_str();
-  atomnam = atomnam.toUpperCase();
+  // atomnam = atomnam.toUpperCase();
 
   // conv ILE's CD name
   // (CD is converted to CD1 in PDBFileReader, so this should not occur)
