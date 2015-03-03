@@ -15,6 +15,10 @@
 #include "SelCommand.hpp"
 #include "MolCoord.hpp"
 
+// case sensitivity flags (rex: case sensitive, str: case insensitive)
+// #define REXMATCH_ICASE
+#define STRMATCH_ICASE
+
 using namespace molstr;
 
 bool SelSuperNode::isSelected(MolAtomPtr pAtom)
@@ -294,7 +298,11 @@ bool SelNamesNode::matches(const LString &nam) const
     rex.setPattern(m_regex);
 
     // MB_DPRINTLN("sel regmatch: %s , %s", m_regex.c_str(), nam_uc.c_str());
+#ifdef REXMATCH_ICASE
     return (rex.matchIgnoreCase(nam));
+#else
+    return (rex.match(nam));
+#endif
   }
   else {
     //
@@ -315,9 +323,13 @@ bool SelNamesNode::matches(const LString &nam) const
 
     // LString ucnam = nam.toUpperCase();
     for ( ; iter!=endi; iter++) {
-      //if ( nam.equalsIgnoreCase(*iter) )
+#ifdef STRMATCH_ICASE
+      if ( nam.equalsIgnoreCase(*iter) )
+        return true;
+#else
       if ( nam.equals(*iter) )
-	return true;
+        return true;
+#endif
     }
   }
 
