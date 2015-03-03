@@ -514,7 +514,7 @@ void Camera::loadVisSetFromNodes(ScenePtr pScene)
       LString tgt = pChNode->getStrAttr("target");
       ObjectPtr pObj = pScene->getObjectByName(tgt);
       if (pObj.isnull()) {
-        LOG_DPRINTLN("loadVisSet> unknown target object <%s>", pObj->getName().c_str());
+        LOG_DPRINTLN("loadVisSet> unknown target object <%s>", tgt.c_str());
         continue;
       }
       m_visset.set(pObj, bVis);

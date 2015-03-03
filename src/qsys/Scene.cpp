@@ -1253,7 +1253,7 @@ bool Scene::saveCameraTo(const LString &aName, const LString &aLocalFile) const
     return true;
 
   // Change file linkage
-  // get before copy
+  // get copy before the change
   CameraPtr pBef = getCamera(aName);
 
   // convert to file-linked camera
