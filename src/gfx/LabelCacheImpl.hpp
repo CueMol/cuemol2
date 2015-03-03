@@ -69,13 +69,13 @@ namespace gfx {
     bool isEmpty() const { return m_data.empty(); }
 
     /// Draw the rendered text image to display (pdc)
-    void draw(DisplayContext *pdc);
+    void draw(DisplayContext *pdc, bool bUseCache=true);
 
     /// Invalidate pixel image data
     void invalidate();
 
     /// Render the image data from texts
-    void render();
+    void render(double pixscl);
 
   };  
 

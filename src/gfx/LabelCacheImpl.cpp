@@ -10,7 +10,7 @@
 
 using namespace gfx;
 
-void LabelCacheImpl::draw(DisplayContext *pdc)
+void LabelCacheImpl::draw(DisplayContext *pdc, bool bUseCache /*=true*/)
 {
   gfx::TextRenderManager *pTRM = gfx::TextRenderManager::getInstance();
   if (pTRM==NULL)
@@ -23,24 +23,34 @@ void LabelCacheImpl::draw(DisplayContext *pdc)
   PixBufCache::iterator eiter = m_data.end();
   for (; iter!=eiter; ++iter) {
     const Vector4D &pos = iter->pos;
-    gfx::PixelBuffer *pixbuf = iter->pPixBuf;
-    if (pixbuf==NULL) {
-      pixbuf = MB_NEW gfx::PixelBuffer();
+
+    if (!bUseCache) {
+      gfx::PixelBuffer *pixbuf = MB_NEW gfx::PixelBuffer();
       if (!pTRM->renderText(iter->str, *pixbuf))
         return;
-      iter->pPixBuf = pixbuf;
+      pdc->drawPixels(pos, *pixbuf, ColorPtr());
+      delete pixbuf;
     }
-    pdc->drawPixels(pos, *pixbuf, ColorPtr());
+    else {
+      gfx::PixelBuffer *pixbuf = iter->pPixBuf;
+      if (pixbuf==NULL) {
+        pixbuf = MB_NEW gfx::PixelBuffer();
+        if (!pTRM->renderText(iter->str, *pixbuf))
+          return;
+        iter->pPixBuf = pixbuf;
+      }
+      pdc->drawPixels(pos, *pixbuf, ColorPtr());
+    }
   }
 }
 
-void LabelCacheImpl::render()
+void LabelCacheImpl::render(double scl)
 {
   gfx::TextRenderManager *pTRM = gfx::TextRenderManager::getInstance();
   if (pTRM==NULL)
     return;
 
-  double scl = 1.0; //pdc->getPixSclFac();
+  // double scl = 1.0; //pdc->getPixSclFac();
   pTRM->setupFont(m_dFontSize * scl, m_strFontName, m_strFontStyle, m_strFontWgt);
 
   PixBufCache::iterator iter = m_data.begin();

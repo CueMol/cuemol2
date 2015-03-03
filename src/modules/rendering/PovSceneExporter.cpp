@@ -126,12 +126,14 @@ void PovSceneExporter::write()
     ViewPtr pView = pScene->beginView()->second;
     double hpix = pView->getHeight();
     ppovdc->setLineScale(zoom/hpix);
+    ppovdc->setPixSclFac(2.0);
   }
   else {
     MB_DPRINTLN("POV> hint image height=%d", height);
     const double fac = zoom/( double(height)*1.5 );
     MB_DPRINTLN("POV> line scale factor=%f", fac);
     ppovdc->setLineScale(fac);
+    ppovdc->setPixSclFac(2.0);
   }
 
   pScene->display(ppovdc);

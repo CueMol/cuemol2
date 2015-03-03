@@ -11,6 +11,7 @@
 #include <qlib/PrintStream.hpp>
 #include <qlib/Utils.hpp>
 #include <gfx/SolidColor.hpp>
+#include <gfx/PixelBuffer.hpp>
 #include <qsys/SceneManager.hpp>
 #include <qsys/style/StyleMgr.hpp>
 
@@ -371,7 +372,7 @@ void PovDisplayContext::writeObjects()
 
   m_pIntData->convDots();
   
-  if (m_pIntData->isEmpty())
+  if (m_pIntData->isEmpty() && m_imgList.empty())
     return;
 
   PrintStream ps(*m_pPovOut);
@@ -440,6 +441,8 @@ void PovDisplayContext::writeObjects()
 
   }
 
+  // image pixmaps
+  writeImages();
 }
 
 /// dump CLUT to POV file
@@ -955,5 +958,38 @@ int PovDisplayContext::convTexInd(MeshVert *p1)
 
     return m_pIntData->m_clut.size() + gind*256 + p1->c.getRhoI();
   }
+}
+
+void PovDisplayContext::drawPixels(const Vector4D &pos,
+                                   const gfx::PixelBuffer &data,
+                                   const gfx::ColorPtr &acol)
+{
+/*
+  int img_w = data.getWidth();
+  int img_h = data.getHeight();
+  MB_DPRINTLN("POV> Draw pixels %d, %d", img_w, img_h);
+
+  ImgData img;
+  img.m_pos = pos;
+  img.m_nWidth = img_w / getPixSclFac();
+  img.m_nHeight = img_h / getPixSclFac();
+  img.m_pData = MB_NEW gfx::PixelBuffer(data);
+
+  m_imgList.push_back(img);
+*/
+}
+
+void PovDisplayContext::writeImages()
+{
+/*
+  if (m_imgList.empty())
+    return;
+
+  BOOST_FOREACH (ImgData &img, m_imgList) {
+    delete img.m_pData;
+  }
+
+  m_imgList.clear();
+*/
 }
 

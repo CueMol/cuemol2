@@ -12,7 +12,7 @@
 #include "MolResidue.hpp"
 
 #include <gfx/PixelBuffer.hpp>
-#include <gfx/TextRenderManager.hpp>
+//#include <gfx/TextRenderManager.hpp>
 #include <gfx/DisplayContext.hpp>
 #include <qsys/SceneManager.hpp>
 
@@ -92,6 +92,20 @@ LString NameLabelRenderer::toString() const
 
 void NameLabelRenderer::display(DisplayContext *pdc)
 {
+  if (pdc->isFile()) {
+    preRender(pdc);
+    render(pdc);
+    postRender(pdc);
+  }
+}
+
+void NameLabelRenderer::displayLabels(DisplayContext *pdc)
+{
+  if (!pdc->isFile()) {
+    preRender(pdc);
+    render(pdc);
+    postRender(pdc);
+  }
 }
 
 void NameLabelRenderer::preRender(DisplayContext *pdc)
@@ -114,13 +128,6 @@ void NameLabelRenderer::postRender(DisplayContext *pdc)
 {
   pdc->popMatrix();
   pdc->enableDepthTest(true);
-}
-
-void NameLabelRenderer::displayLabels(DisplayContext *pdc)
-{
-  preRender(pdc);
-  render(pdc);
-  postRender(pdc);
 }
 
 bool NameLabelRenderer::makeLabelStr(NameLabel &nlab, LString &rstrlab, Vector4D &rpos)
@@ -186,7 +193,10 @@ void NameLabelRenderer::render(DisplayContext *pdc)
   
   m_pixCache.setupFont(m_dFontSize, m_strFontName, m_strFontStyle, m_strFontWgt);
   pdc->color(m_color);
-  m_pixCache.draw(pdc);
+  if (pdc->isFile())
+    m_pixCache.draw(pdc, false);
+  else
+    m_pixCache.draw(pdc);
 }
 
 Vector4D NameLabelRenderer::getCenter() const

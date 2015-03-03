@@ -106,6 +106,7 @@ namespace render {
     /// Main flag for edge line display
     void enableEdgeLines( bool b ) { m_bEnableEdgeLines = b; }
 
+
     ////////////////////////////////////////////////////////////
     // POV-Ray implementation
 
@@ -176,6 +177,26 @@ namespace render {
     void checkAndWriteEdges(PrintStream &ips, std::vector<char> &vvl, void *pTree, void *pFaceVec);
 
     void writeSilOnly(PrintStream &ips, void *pfvec);
+
+    //////////////////
+    // images
+  private:
+
+    struct ImgData {
+      Vector4D m_pos;
+      int m_nWidth;
+      int m_nHeight;
+      gfx::PixelBuffer *m_pData;
+    };
+    
+    std::deque<ImgData> m_imgList;
+
+    void writeImages();
+
+  public:
+    virtual void drawPixels(const Vector4D &pos,
+                            const gfx::PixelBuffer &data,
+                            const gfx::ColorPtr &acol);
 
   };
 
