@@ -18,8 +18,8 @@ using qlib::LChar;
 using qlib::LString;
 using namespace molstr;
 
-#include "parser_sel.h"
-
+#include "parser_sel.hxx"
+//#include "parser_sel.h"
 
 #undef YY_INPUT
 #define YY_INPUT(buf,result,max) (result = SelCompiler::getInstance()->yyInput(buf, max))
@@ -80,12 +80,14 @@ SEL_TOKEN  [_a-zA-Z0-9][_a-zA-Z0-9\'\*]*
  /* Quoted string (double quotation, mode start) */
 "\""	{
   string_buf = "";
+  MB_DPRINTLN("Scanner> DQSTR mode start");
   BEGIN SEL_DQSTR_STAT;
 }
 
  /* Quoted string (single quotation, mode start) */
 "'"	{
   string_buf = "";
+  MB_DPRINTLN("Scanner> SQSTR mode start");
   BEGIN SEL_SQSTR_STAT;
 }
 
@@ -122,47 +124,47 @@ SEL_TOKEN  [_a-zA-Z0-9][_a-zA-Z0-9\'\*]*
 
 "around"	{
   MB_DPRINTLN("AROUND token");
-  SelCompiler::setSelNumState();
-  MB_DPRINTLN("AROUND set num state");
+  // SelCompiler::setSelNumState();
+  // MB_DPRINTLN("AROUND set num state");
   return SEL_AROUND;
 }
 "a;"	{
   MB_DPRINTLN("AROUND token");
-  SelCompiler::setSelNumState();
-  MB_DPRINTLN("AROUND set num state");
+  // SelCompiler::setSelNumState();
+  // MB_DPRINTLN("AROUND set num state");
   return SEL_AROUND;
 }
 
 "expand"	{
   MB_DPRINTLN("EXPAND token");
-  SelCompiler::setSelNumState();
-  MB_DPRINTLN("EXPAND set num state");
+  // SelCompiler::setSelNumState();
+  // MB_DPRINTLN("EXPAND set num state");
   return SEL_EXPAND;
 }
 "ex;"	{
   MB_DPRINTLN("EXPAND token");
-  SelCompiler::setSelNumState();
-  MB_DPRINTLN("EXPAND set num state");
+  // SelCompiler::setSelNumState();
+  // MB_DPRINTLN("EXPAND set num state");
   return SEL_EXPAND;
 }
 
 "neighbor"	{
   MB_DPRINTLN("NBR token");
-  SelCompiler::setSelNumState();
-  MB_DPRINTLN("NBR set num state");
+  // SelCompiler::setSelNumState();
+  // MB_DPRINTLN("NBR set num state");
   return SEL_NBR;
 }
 "nbr;"	{
   MB_DPRINTLN("NBR token");
-  SelCompiler::setSelNumState();
-  MB_DPRINTLN("NBR set num state");
+  // SelCompiler::setSelNumState();
+  // MB_DPRINTLN("NBR set num state");
   return SEL_NBR;
 }
 
 "extend"	{
   MB_DPRINTLN("EXTEND token");
-  SelCompiler::setSelNumState();
-  MB_DPRINTLN("EXTEND set num state");
+  // SelCompiler::setSelNumState();
+  // MB_DPRINTLN("EXTEND set num state");
   return SEL_EXTEND;
 }
 
@@ -229,15 +231,11 @@ SEL_TOKEN  [_a-zA-Z0-9][_a-zA-Z0-9\'\*]*
 <SEL_REX_STAT>"\\/"	{
   MB_DPRINTLN("sel rex escaped slash [\\/]");
   string_buf += yytext;
-//  yylval.str = LChar::dup(yytext);
-//  return SEL_REGEXP;
 }
 
 <SEL_REX_STAT>.	{
   string_buf += yytext;
   MB_DPRINTLN("sel rex %s", string_buf.c_str());
-//  yylval.str = LChar::dup(yytext);
-//  return SEL_REGEXP;
 }
 
   /* Quoted String ("...") Mode */
@@ -246,7 +244,7 @@ SEL_TOKEN  [_a-zA-Z0-9][_a-zA-Z0-9\'\*]*
   MB_DPRINTLN("sel dqstr end %s", string_buf.c_str());
   string_buf = "";
   BEGIN INITIAL;
-  return SEL_STRING;
+  return SEL_DQSTR;
 }
 
 <SEL_DQSTR_STAT>"\\\""	{
@@ -265,7 +263,7 @@ SEL_TOKEN  [_a-zA-Z0-9][_a-zA-Z0-9\'\*]*
   MB_DPRINTLN("sel sqstr end %s", string_buf.c_str());
   string_buf = "";
   BEGIN INITIAL;
-  return SEL_STRING;
+  return SEL_QSTR;
 }
 
 <SEL_SQSTR_STAT>"\\'"	{
@@ -283,6 +281,7 @@ SEL_TOKEN  [_a-zA-Z0-9][_a-zA-Z0-9\'\*]*
 //static 
 void SelCompiler::setSelNumState()
 {
+  MB_DPRINTLN("Scanner> setSelNumState called");
   BEGIN SEL_NUM_STAT; 
 }
 

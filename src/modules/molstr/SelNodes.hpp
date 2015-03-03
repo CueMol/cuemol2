@@ -225,38 +225,52 @@ namespace molstr {
   class SelNamesNode : public SelSuperNode
   {
   private:
-    typedef std::list<LString> list_t;
+    typedef std::pair<LString,int> elem_type;
+    typedef std::list<elem_type> list_t;
 
     list_t m_list;
 
-    LString m_regex;
+    // LString m_regex;
 
   public:
+    enum {
+      SNN_STR,
+      SNN_QSTR,
+      SNN_DQSTR,
+      SNN_REGEX,
+    };
+
     SelNamesNode() {}
     SelNamesNode(const char *name) { append(name); }
     // ~SelNamesNode() {}
 
-    void append(const char *name) { m_list.push_front(LString(name)); }
-    void append_back(const char *name) { m_list.push_back(LString(name)); }
+    void append(const char *name, int nmode = SNN_STR) {
+      m_list.push_front(elem_type(LString(name), nmode));
+    }
+
+    void append_back(const char *name, int nmode = SNN_STR) {
+      m_list.push_back(elem_type(LString(name), nmode));
+    }
 
     LString pop_front() {
-      LString ret = m_list.front();
+      LString ret = m_list.front().first;
       m_list.pop_front();
       return ret;
     }
 
     LString pop_back() {
-      LString ret = m_list.back();
+      LString ret = m_list.back().first;
       m_list.pop_back();
       return ret;
     }
 
-    const std::list<LString> &getList() const { return m_list; }
+    // const std::list<LString> &getList() const { return m_list; }
 
     int size() const { return m_list.size(); }
 
     //////////
 
+    /*
     void setRegEx(const char *name) {
       m_regex = name;
     }
@@ -264,6 +278,7 @@ namespace molstr {
     const LString &getRegEx() const {
       return m_regex;
     }
+    */
 
     //////////
 
@@ -284,8 +299,8 @@ namespace molstr {
     /// check altconf specifier (for atom only)
     bool altConfMatches(const LString &aName, char altconf) const;
 
-    /// check '<-->* conversion (for atom only)
-    bool primeMatches(const LString &aName) const;
+    // /// check '<-->* conversion (for atom only)
+    // bool primeMatches(const LString &aName) const;
 
   };
 

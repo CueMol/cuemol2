@@ -66,7 +66,7 @@ using qlib::LChar;
 %token SEL_BYRES SEL_BYMAINCH SEL_BYSIDECH
 %token SEL_NBR SEL_EXTEND
 
-%token <str> SEL_STRING SEL_REGEXP
+%token <str> SEL_STRING SEL_QSTR SEL_DQSTR SEL_REGEXP
 %token <insres> SEL_INSRES
 %token <intnum> SEL_INTNUM
 %token <floatnum> SEL_FLOATNUM
@@ -84,7 +84,7 @@ using qlib::LChar;
  *      selection tokens
  */
 %type <seltok> select_terms select_term sel_name_list
-%type <str> sel_name
+%type <str> sel_name sel_molname
 %type <seltok> sel_hierar
 %type <seltok> sel_ranges
 %type <seltok> sel_resid_ranges
@@ -143,7 +143,7 @@ select_terms 	: select_terms SEL_AND select_terms
 		  pp->setValue($3);
 		  $$ = pp;
 		}
-		| select_terms SEL_AROUND SEL_LBRACK SEL_STRING SEL_RBRACK sel_number
+		| select_terms SEL_AROUND SEL_LBRACK sel_molname SEL_RBRACK sel_number
 		{
 		  SelCompiler::setSelState();
 		  SelOpNode *pp = new SelOpNode($1,SelOpNode::OP_AROUND);
@@ -188,6 +188,12 @@ select_terms 	: select_terms SEL_AND select_terms
 		| SEL_LPAREN select_terms SEL_RPAREN { $$ = $2; }
 		| select_term
 		;
+
+
+sel_molname	: SEL_STRING
+		| SEL_QSTR
+		| SEL_DQSTR
+
 
 select_term	: SEL_STRING
 		{
@@ -243,15 +249,15 @@ select_term	: SEL_STRING
 		  $$ = new SelTermNode((SelRangesNode *)$2,
 		                       SelTermNode::AIDRANGE);
 		}
-		| SEL_BFAC sel_compop { SelCompiler::setSelNumState();} sel_number
+		| SEL_BFAC sel_compop sel_number
 		{
 		  SelCompiler::setSelState();
-		  $$ = new SelCompNode(SelCompNode::COMP_BFAC, $2, $4);
+		  $$ = new SelCompNode(SelCompNode::COMP_BFAC, $2, $3);
 		}
-		| SEL_OCC sel_compop { SelCompiler::setSelNumState();} sel_number
+		| SEL_OCC sel_compop sel_number
 		{
 		  SelCompiler::setSelState();
-		  $$ = new SelCompNode(SelCompNode::COMP_OCC, $2, $4);
+		  $$ = new SelCompNode(SelCompNode::COMP_OCC, $2, $3);
 		}
 		| SEL_RPROP sel_name SEL_EQ sel_name
 		{
@@ -303,11 +309,52 @@ sel_name_list	: sel_name
 		  pp->append($3); delete [] $3;
 		  $$ = pp;
 		}
+		  /*=== regexp mode ===*/
 		| SEL_REGEXP
 		{
 		  SelNamesNode *pp = new SelNamesNode();
-		  pp->setRegEx($1);
+		  // pp->setRegEx($1);
+		  pp->append($1, SelNamesNode::SNN_REGEX);
 		  delete [] $1;
+		  $$ = pp;
+		}
+		| sel_name_list SEL_COMMA SEL_REGEXP
+		{
+		  SelNamesNode *pp  = (SelNamesNode *) $1;
+		  pp->append($3, SelNamesNode::SNN_REGEX);
+		  delete [] $3;
+		  $$ = pp;
+		}
+		  /*=== qstring mode ===*/
+		| SEL_QSTR
+		{
+		  SelNamesNode *pp = new SelNamesNode();
+		  // pp->append($1);
+		  pp->append($1, SelNamesNode::SNN_QSTR);
+		  delete [] $1;
+		  $$ = pp;
+		}
+		| sel_name_list SEL_COMMA SEL_QSTR
+		{
+		  SelNamesNode *pp  = (SelNamesNode *) $1;
+		  pp->append($3, SelNamesNode::SNN_QSTR);
+		  delete [] $3;
+		  $$ = pp;
+		}
+		  /*=== dqstring mode ===*/
+		| SEL_DQSTR
+		{
+		  SelNamesNode *pp = new SelNamesNode();
+		  // pp->append($1);
+		  pp->append($1, SelNamesNode::SNN_DQSTR);
+		  delete [] $1;
+		  $$ = pp;
+		}
+		| sel_name_list SEL_COMMA SEL_DQSTR
+		{
+		  SelNamesNode *pp  = (SelNamesNode *) $1;
+		  pp->append($3, SelNamesNode::SNN_DQSTR);
+		  delete [] $3;
 		  $$ = pp;
 		}
 		;
@@ -342,13 +389,13 @@ sel_compop	: SEL_EQ {$$ = SelCompNode::COMP_EQ;}
 		| SEL_GT {$$ = SelCompNode::COMP_GT;}
 		;
 
-sel_number	: SEL_INTNUM
+sel_number	: { SelCompiler::setSelNumState();} SEL_INTNUM
 		{
-		  $$=$1;
+		  $$=$2;
 		}
-		| SEL_FLOATNUM
+		| { SelCompiler::setSelNumState();} SEL_FLOATNUM
 		{
-		  $$=$1;
+		  $$=$2;
 		}
 		;
 

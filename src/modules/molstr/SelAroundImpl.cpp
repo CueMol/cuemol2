@@ -33,15 +33,18 @@ bool SelOpNode::chkAroundNode(MolAtomPtr patom, bool bExpn)
   SelSuperNode *pChild = getNode();
   MolCoordPtr pMol = patom->getParent();
   LString ar_molname = getAroundTarget();
+  bool bAcrossMol = false;
 
   if (!ar_molname.isEmpty()) {
     qsys::ScenePtr pSce = pMol->getScene();
     MolCoordPtr ptmp(pSce->getObjectByName(ar_molname), qlib::no_throw_tag());
     if (ptmp.isnull()) {
       // ERROR: around target mol is not found (ignore)
+      MB_DPRINTLN("Around target mol %s not found", ar_molname.c_str());
       return false;
     }
     pMol = ptmp;
+    bAcrossMol = true;
   }
 
   const double dist = getValue();
@@ -66,13 +69,15 @@ bool SelOpNode::chkAroundNode(MolAtomPtr patom, bool bExpn)
     return false;
   }
   
-  if (pSet->find(patom->getID()) != pSet->end()) {
+  if (!bAcrossMol &&
+      pSet->find(patom->getID()) != pSet->end()) {
     if (bExpn)
       return true; // OP_EXPAND includes childe node selected atoms
     else
       return false; // OP_AROUND does not includes childe node selected atoms
   }
   
+  // MB_DPRINTLN("Atom %s Around target mol %s(%d)", patom->formatMsg().c_str(), ar_molname.c_str(), pMol->getUID());
   return evalAroundHelper_bbox(pMol, pos, dist, *pBox, pSet);
 }
 

@@ -290,7 +290,7 @@ bool SelRefNode::isSelected(MolAtomPtr pAtom)
 
 bool SelNamesNode::matches(const LString &nam) const
 {
-  if (!m_regex.isEmpty()) {
+  /*if (!m_regex.isEmpty()) {
     //
     // Matching with Regular expression 
     //
@@ -304,34 +304,57 @@ bool SelNamesNode::matches(const LString &nam) const
     return (rex.match(nam));
 #endif
   }
-  else {
-    //
-    // Matching with plain string list
-    //
-    std::list<LString>::const_iterator iter = m_list.begin();
-    std::list<LString>::const_iterator endi = m_list.end();
+  else {*/
 
-    // MB_DPRINTLN("Nam<%s> isempty=%d,", nam.c_str(), nam.isEmpty());
-    if (nam.isEmpty()) {
-      for ( ; iter!=endi; iter++) {
-        // MB_DPRINTLN("match empty <%s> %d", iter->c_str(), iter->isEmpty());
-	if (iter->isEmpty())
-	  return true;
-      }
-      return false;
-    }
+  //
+  // Matching with plain string list
+  //
+  std::list<elem_type>::const_iterator iter = m_list.begin();
+  std::list<elem_type>::const_iterator endi = m_list.end();
 
-    // LString ucnam = nam.toUpperCase();
+  if (nam.isEmpty()) {
     for ( ; iter!=endi; iter++) {
-#ifdef STRMATCH_ICASE
-      if ( nam.equalsIgnoreCase(*iter) )
-        return true;
+      if (iter->first.isEmpty()) {
+	MB_DPRINTLN("matched empty string");
+	return true;
+      }
+    }
+    return false;
+  }
+
+  for ( ; iter!=endi; iter++) {
+    if (iter->second==SNN_QSTR||iter->second==SNN_DQSTR) {
+      // quoted string mode
+      if ( nam.equals(iter->first) )
+	return true;
+    }
+    else if (iter->second==SNN_REGEX) {
+      // regexp-match mode
+      qlib::LRegExpr rex;
+      rex.setPattern(iter->first);
+      MB_DPRINTLN("sel regmatch: %s , %s", iter->first.c_str(), nam.c_str());
+
+#ifdef REXMATCH_ICASE
+      if (rex.matchIgnoreCase(nam))
+	return true;
 #else
-      if ( nam.equals(*iter) )
-        return true;
+      if (rex.match(nam))
+	return true;
+#endif
+
+    }
+    else {
+      // plain string mode
+#ifdef STRMATCH_ICASE
+      if ( nam.equalsIgnoreCase(iter->first) )
+	return true;
+#else
+      if ( nam.equals(iter->first) )
+	return true;
 #endif
     }
   }
+  //}
 
   return false;
 }
@@ -342,21 +365,22 @@ bool SelNamesNode::altConfMatches(const LString &aName, char altconf) const
   if (altconf)
     nam += altconf;
 
-  std::list<LString>::const_iterator iter = m_list.begin();
-  std::list<LString>::const_iterator endi = m_list.end();
+  std::list<elem_type>::const_iterator iter = m_list.begin();
+  std::list<elem_type>::const_iterator endi = m_list.end();
   
   for ( ; iter!=endi; iter++) {
-    if (iter->indexOf(':')<0) {
+    if (iter->first.indexOf(':')<0) {
       // sel without altconf never matches
       continue;
     }
     // selection contains altconf specifier
-    if ( nam.equalsIgnoreCase(*iter) )
+    if ( nam.equalsIgnoreCase(iter->first) )
       return true;
   }
   return false;
 }
 
+/*
 /// check '<-->* conversion
 bool SelNamesNode::primeMatches(const LString &aName) const
 {
@@ -376,6 +400,7 @@ bool SelNamesNode::primeMatches(const LString &aName) const
 
   return false;
 }
+*/
 
 /// Atom selection check
 bool SelNamesNode::isAtomSelected(const LString &aName, char altconf) const
@@ -384,8 +409,12 @@ bool SelNamesNode::isAtomSelected(const LString &aName, char altconf) const
     return true;
 
   // check prime<->aster conversion
-  if (primeMatches(aName))
-    return true;
+  LString pmnam = aName;
+  int nrepl = pmnam.replace('*', '\'');
+  if (nrepl!=0) {
+    if (matches(aName))
+      return true;
+  }
 
   // check altconf
   if (altConfMatches(aName, altconf))
@@ -396,20 +425,23 @@ bool SelNamesNode::isAtomSelected(const LString &aName, char altconf) const
 
 void SelNamesNode::dump() const
 {
-  if (!m_regex.isEmpty()) {
+  /*
+    if (!m_regex.isEmpty()) {
     MB_DPRINT("re/%s/", m_regex.c_str());
   }
   else {
-    //MB_DPRINT("size=%d,", m_list.size());
-    std::list<LString>::const_iterator iter = m_list.begin();
-    for ( ; iter!=m_list.end(); iter++) {
-      LString name = *iter;
-      if (iter!=m_list.begin()) {
-	MB_DPRINT(",");
-      }
-      MB_DPRINT((const char *)name);
+  */
+
+  //MB_DPRINT("size=%d,", m_list.size());
+  std::list<elem_type>::const_iterator iter = m_list.begin();
+  for ( ; iter!=m_list.end(); iter++) {
+    LString name = iter->first;
+    if (iter!=m_list.begin()) {
+      MB_DPRINT(",");
     }
+    MB_DPRINT("%s(%d)", name.c_str(), iter->second);
   }
+  //}
 }
 
 int SelNamesNode::getType() const
@@ -420,11 +452,11 @@ int SelNamesNode::getType() const
 SelSuperNode *SelNamesNode::clone() const
 {
   SelNamesNode *pret = MB_NEW SelNamesNode();
-  pret->m_regex = m_regex;
+  // pret->m_regex = m_regex;
 
-  std::list<LString>::const_iterator iter = m_list.begin();
+  std::list<elem_type>::const_iterator iter = m_list.begin();
   for ( ; iter!=m_list.end(); iter++) {
-    LString name = *iter;
+    elem_type name = *iter;
     pret->m_list.push_back(name);
   }
 
@@ -433,24 +465,37 @@ SelSuperNode *SelNamesNode::clone() const
 
 LString SelNamesNode::toString() const
 {
-
-  if (!m_regex.isEmpty()) {
+  /*if (!m_regex.isEmpty()) {
     return LString::format("/%s/", m_regex.c_str());
   }
-  else {
-    LString rval;
-    std::list<LString>::const_iterator iter = m_list.begin();
-    for ( ; iter!=m_list.end(); iter++) {
-      const LString &str = *iter;
-      if (iter!=m_list.begin())
-        rval += ",";
+  else {*/
+
+  LString rval;
+  std::list<elem_type>::const_iterator iter = m_list.begin();
+  for ( ; iter!=m_list.end(); iter++) {
+    if (iter!=m_list.begin())
+      rval += ",";
+
+    const LString &str = iter->first;
+    if (iter->second==SNN_QSTR) {
+      rval += "'"+str+"'";
+    }
+    else if (iter->second==SNN_DQSTR) {
+      rval += '"'+str+'"';
+    }
+    else if (iter->second==SNN_REGEX) {
+      rval += '/'+str+'/';
+    }
+    else {
       if (str.isEmpty())
-	rval += "null";
+	rval += "(empty)";
       else
 	rval += str;
     }
-    return rval;
   }
+  return rval;
+
+  //  }
 
 }
 
