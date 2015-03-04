@@ -46,6 +46,9 @@ namespace render {
     /// Rise value from vertex position
     double m_dEdgeRise;
 
+    bool m_bWritePix;
+    LString m_strImgFileNames;
+
   public:
     PovSceneExporter();
     virtual ~PovSceneExporter();

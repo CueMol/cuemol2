@@ -46,6 +46,8 @@ PovDisplayContext::PovDisplayContext()
 
   m_dCreaseLimit = qlib::toRadian(85.0);
   m_dEdgeRise = 0.5;
+
+  m_bWritePix = true;
 }
 
 PovDisplayContext::~PovDisplayContext()
@@ -153,6 +155,8 @@ void PovDisplayContext::init(qlib::OutStream *pPovOut, qlib::OutStream *pIncOut)
 
   m_pPovOut = pPovOut;
   m_pIncOut = pIncOut;
+
+  m_imgFileNames.clear();
 }
 
 void PovDisplayContext::startRender()
@@ -169,6 +173,7 @@ void PovDisplayContext::endRender()
   if (m_pIncOut!=NULL) {
     m_pIncOut->close();
   }
+
 }
 
 void PovDisplayContext::writeHeader()
@@ -341,6 +346,35 @@ void PovDisplayContext::writeHeader()
   ips.format("\n");
   ips.format("\n");
 
+  // label macro
+  ips.format("#macro make_label(aCen, aW, aH, aPixFile)\n");
+  ips.format("#local scl = _zoomx/image_width;\n");
+  ips.format("#local tex_0 = texture {\n");
+  ips.format("  finish {\n");
+  ips.format("   ambient 0\n");
+  ips.format("   diffuse 1.0\n");
+  ips.format("  }\n");
+  ips.format("  pigment{\n");
+  ips.format("    image_map{\n");
+  ips.format("     png aPixFile\n");
+  ips.format("     gamma 1.0 \n");
+  ips.format("     once \n");
+  ips.format("     map_type 0\n");
+  ips.format("    }\n");
+  ips.format("    scale <aW,aH>*scl\n");
+  ips.format("    translate aCen\n");
+  ips.format("  }\n");
+  ips.format("}\n");
+  ips.format("\n");
+  ips.format("polygon { 4,\n");
+  ips.format("    aCen,\n");
+  ips.format("    aCen+<aW,0,0>*scl,\n");
+  ips.format("    aCen+<aW,aH,0>*scl,\n");
+  ips.format("    aCen+<0,aH,0>*scl\n");
+  ips.format("    texture{tex_0}}\n");
+  ips.format("#end\n");
+  ips.format("\n");
+
   ips.format("union {\n");
 }
 
@@ -372,7 +406,7 @@ void PovDisplayContext::writeObjects()
 
   m_pIntData->convDots();
   
-  if (m_pIntData->isEmpty() && m_imgList.empty())
+  if (m_pIntData->isEmpty() && m_pixList.empty())
     return;
 
   PrintStream ps(*m_pPovOut);
@@ -442,7 +476,13 @@ void PovDisplayContext::writeObjects()
   }
 
   // image pixmaps
-  writeImages();
+  if (m_bWritePix) {
+    ips.format("\n#if (_show%s)\n", getSecName().c_str());
+    writePixData();
+    ips.format("#end\n");
+    ips.format("\n");
+  }
+  
 }
 
 /// dump CLUT to POV file
@@ -964,32 +1004,133 @@ void PovDisplayContext::drawPixels(const Vector4D &pos,
                                    const gfx::PixelBuffer &data,
                                    const gfx::ColorPtr &acol)
 {
-/*
+  Vector4D v(pos);
+  xform_vec(v);
+
+  if (!m_bWritePix)
+    return;
+
+  gfx::ColorPtr col = acol;
+  if (col.isnull()) {
+    col = getCurrentColor();
+  }
+
   int img_w = data.getWidth();
   int img_h = data.getHeight();
   MB_DPRINTLN("POV> Draw pixels %d, %d", img_w, img_h);
 
-  ImgData img;
-  img.m_pos = pos;
+  PixData img;
+  img.m_pos = v;
   img.m_nWidth = img_w / getPixSclFac();
   img.m_nHeight = img_h / getPixSclFac();
-  img.m_pData = MB_NEW gfx::PixelBuffer(data);
+  img.m_pData = MB_NEW gfx::PixelBuffer();
 
-  m_imgList.push_back(img);
-*/
+  img.m_pData->setWidth(img_w);
+  img.m_pData->setHeight(img_h);
+  img.m_pData->setDepth(8*4);
+  img.m_pData->resize(img_w * img_h * 4);
+  QUE_BYTE *pnew = img.m_pData->data();
+  QUE_BYTE cr = (QUE_BYTE)col->r();
+  QUE_BYTE cg = (QUE_BYTE)col->g();
+  QUE_BYTE cb = (QUE_BYTE)col->b();
+  for (int j=0; j<img_h; ++j)
+    for (int i=0; i<img_w; ++i) {
+      QUE_BYTE pix = data.at(j*img_w+i);
+      pnew[(j*img_w+i)*4 + 0] = cr;
+      pnew[(j*img_w+i)*4 + 1] = cg;
+      pnew[(j*img_w+i)*4 + 2] = cb;
+      pnew[(j*img_w+i)*4 + 3] = pix;
+    }
+
+  m_pixList.push_back(img);
+
 }
 
-void PovDisplayContext::writeImages()
+#include <libpng/png.h>
+
+namespace {
+  void user_error_fn(png_structp png_ptr,
+                     png_const_charp error_msg)
+  {
+    LOG_DPRINTLN("PNG: error %s", error_msg);
+  }
+  
+  void user_warning_fn(png_structp png_ptr,
+                       png_const_charp warning_msg)
+  {
+    LOG_DPRINTLN("PNG: warning %s", warning_msg);
+  }
+}
+
+void PovDisplayContext::writePixData()
 {
-/*
-  if (m_imgList.empty())
+  if (m_pixList.empty())
     return;
 
-  BOOST_FOREACH (ImgData &img, m_imgList) {
+  PrintStream ips(*m_pIncOut);
+
+  
+  
+  int i = 0, j, k;
+  BOOST_FOREACH (PixData &img, m_pixList) {
+    LString fname = LString::format("%s_%04d.png", m_incFileName.c_str(), i);
+    
+    int nWidth, nHeight, nRow;
+    int nBitDepth, nColorType;
+    unsigned char **ppImage;
+
+    nWidth = img.m_pData->getWidth();
+    nRow = nWidth * 4;
+    nHeight = img.m_pData->getHeight();
+    nBitDepth = 8;
+    nColorType = PNG_COLOR_TYPE_RGB_ALPHA;
+
+    ppImage = new unsigned char *[nHeight];
+    for (j=0; j<nHeight; ++j)
+      ppImage[j] = new unsigned char [nRow];
+
+    for (j=0; j<nHeight; ++j)
+      for (k=0; k<nRow; ++k)
+        ppImage[j][k] = img.m_pData->at((nHeight-1-j)*nRow + k);
+
+    png_structp     png_ptr;
+    png_infop       info_ptr;
+    
+    FILE *fp = fopen(fname.c_str(), "wb");
+
+    png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+    info_ptr = png_create_info_struct(png_ptr);
+    png_init_io(png_ptr, fp);
+
+    png_set_IHDR(png_ptr, info_ptr, nWidth, nHeight,
+                 nBitDepth, nColorType, PNG_INTERLACE_NONE,
+		 PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+
+    png_write_info(png_ptr, info_ptr);
+    png_write_image(png_ptr, ppImage);
+    png_write_end(png_ptr, info_ptr);
+    png_destroy_write_struct(&png_ptr, &info_ptr);
+    fclose(fp);
+
+    for (j=0; j<nHeight; ++j)
+      delete [] ppImage[j];
+    delete [] ppImage;
+
     delete img.m_pData;
+
+    //////////
+
+    m_imgFileNames.push_back(fname);
+    fname = fname.escapeQuots();
+
+    Vector4D v1 = img.m_pos;
+    ips.format("make_label(<%f, %f, %f>, %d, %d, \"%s\")\n",
+               img.m_pos.x(), img.m_pos.y(), img.m_pos.z(),
+               img.m_nWidth, img.m_nHeight, fname.c_str());
+
+    ++i;
   }
 
-  m_imgList.clear();
-*/
+  m_pixList.clear();
 }
 

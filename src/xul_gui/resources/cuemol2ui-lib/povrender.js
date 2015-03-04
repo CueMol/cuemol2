@@ -40,6 +40,7 @@ function PovRender()
   this.mbVerbose = true;
   this.mbOutputAlpha = false;
   this.mbUseFog = true;
+  this.mbUsePixImgs = false;
 
   this.mTimer = null;
   this.mPlfName = util.getPlatformString();
@@ -114,6 +115,19 @@ PovRender.prototype.clearTmpFiles = function ()
     } catch (e) {}
     this.mIncFile = null;
   }
+
+  // remove pix files
+  if (this.mRmPixFiles) {
+    this.mRmPixFiles.forEach( function (elem) {
+      dd("remove tmp file: "+elem);
+      try {
+	var file = util.createMozFile(elem);
+	file.remove(false);
+      }
+      catch (e) {}
+    });
+    this.mRmPixFiles = null;
+  }
 };
 
 PovRender.prototype.clearImgFile = function ()
@@ -187,6 +201,9 @@ PovRender.prototype.makePovFileImpl = function (nSceID, nVwID)
       exporter.usePostBlend = true;
 
     exporter.showEdgeLines = this.mbShowEdgeLines;
+    exporter.usePixImgs = this.mbUsePixImgs;
+    dd("***** exporter.usePixImgs = "+exporter.usePixImgs);
+
 
     // use camera of the current view (TO DO: configurable)
     exporter.makeRelIncPath = false;
@@ -204,6 +221,11 @@ PovRender.prototype.makePovFileImpl = function (nSceID, nVwID)
       dd("BlendTab JSON: "+exporter.blendTable);
       this.mBlendTab = JSON.parse(exporter.blendTable);
     }
+
+    let str = exporter.imgFileNames;
+    dd("tmpix files: "+str);
+    this.mRmPixFiles = str.split(",");
+
   }
   catch (e) {
     dbg.exception(e);

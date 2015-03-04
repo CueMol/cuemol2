@@ -182,21 +182,32 @@ namespace render {
     // images
   private:
 
-    struct ImgData {
+    bool m_bWritePix;
+
+    struct PixData {
       Vector4D m_pos;
       int m_nWidth;
       int m_nHeight;
       gfx::PixelBuffer *m_pData;
     };
     
-    std::deque<ImgData> m_imgList;
+    std::deque<PixData> m_pixList;
 
-    void writeImages();
+    void writePixData();
 
+    std::list<LString> m_imgFileNames;
+    
   public:
     virtual void drawPixels(const Vector4D &pos,
                             const gfx::PixelBuffer &data,
                             const gfx::ColorPtr &acol);
+
+    void setWritePix(bool b) { m_bWritePix = b; }
+
+    LString getImgFileNames() const
+    {
+      return LString::join(",", m_imgFileNames);
+    }
 
   };
 

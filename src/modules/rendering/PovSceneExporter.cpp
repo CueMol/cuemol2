@@ -33,6 +33,8 @@ PovSceneExporter::PovSceneExporter()
   m_bEnableEdgeLines = true;
   m_dCreaseLimit = qlib::toRadian(60.0);
   m_dEdgeRise = 0.5;
+
+  m_bWritePix = false;
 }
 
 PovSceneExporter::~PovSceneExporter()
@@ -110,6 +112,7 @@ void PovSceneExporter::write()
   ppovdc->enableEdgeLines(m_bEnableEdgeLines);
   ppovdc->setCreaseLimit(m_dCreaseLimit);
   ppovdc->setEdgeRise(m_dEdgeRise);
+  ppovdc->setWritePix(m_bWritePix);
 
   const double zoom = pCam->getZoom();
   ppovdc->setZoom(zoom);
@@ -139,6 +142,8 @@ void PovSceneExporter::write()
   pScene->display(ppovdc);
 
   m_strBlendTab = ppovdc->getPostBlendTableJSON();
+  if (m_bWritePix)
+    m_strImgFileNames = ppovdc->getImgFileNames();
 
   //ppovdc->endPovRender();
   delete ppovdc;

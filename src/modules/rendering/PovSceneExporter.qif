@@ -37,6 +37,11 @@ runtime_class PovSceneExporter extends SceneExporter
 
   property real edgeRise => m_dEdgeRise;
 
+  //////////
+
+  property boolean usePixImgs => m_bWritePix;
+  property string imgFileNames => m_strImgFileNames;
+
 };
 
 #endif

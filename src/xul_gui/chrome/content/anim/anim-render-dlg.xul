@@ -158,6 +158,7 @@
 
 	  <hbox align="center">
 	    <checkbox id="pov-enable-edgelines" label="Edge lines" checked="true" persist="checked"/>
+	    <checkbox id="pov-enable-piximgs" label="Labels" checked="false" persist="checked"/>
 	    <label value="Radiosity: "/>
 	    <menulist id="pov-radio-mode-list" class="disable-target" >
 	      <menupopup>

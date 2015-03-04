@@ -136,6 +136,7 @@
     let clipplane = document.getElementById("pov-enable-clip-plane").checked;
     let shadow = document.getElementById("pov-enable-shadow").checked;
     let edgelines = document.getElementById("pov-enable-edgelines").checked;
+    let piximgs = document.getElementById("pov-enable-piximgs").checked;
 
     // radiosity settings
     if (this.mRadMode.value=="-1")
@@ -148,6 +149,7 @@
     this.mPovRender.nThreads = 1;
     this.mPovRender.mbShadow = shadow;
     this.mPovRender.mbShowEdgeLines = edgelines;
+    this.mPovRender.mbUsePixImgs = piximgs;
     this.mPovRender.mbVerbose = false;
 
     this.mPovRender.setPovExePath(this.mPovExePathBox.value);
@@ -204,6 +206,7 @@
       exp.useClipZ = clipplane;
       exp.usePostBlend = postblend;
       exp.showEdgeLines = edgelines;
+      exp.usePixImgs = piximgs;
 
       this.mAnimMgr = am;
       this.mExp = exp;
@@ -421,6 +424,17 @@
     remvs.push(out);
     remvs.push(out2);
 
+    dd("*** remove piximg files: "+exp.imgFileNames);
+    if (exp.imgFileNames) {
+      let ary = exp.imgFileNames.split(",");
+      ary.forEach( function (elem) {
+	dd("*** remove piximg file: "+elem);
+	var file = util.createMozFile(elem);
+	remvs.push(file);
+      } );
+    }
+    // this.mPovRender.mRmPixFiles = null;
+    
     this.mTasks[tid] = {
     remvs: remvs,
     //msg: "Render frame "+this.mPovRender.mImgFile[i].path
@@ -922,6 +936,7 @@
     util.persistChkBox("pov-enable-shadow", document);
     util.persistChkBox("pov-enable-edgelines", document);
     util.persistChkBox("ffmpeg-enable-check", document);
+    util.persistChkBox("pov-enable-piximgs", document);
 
     // disable log recording
     procMgr.setLogPath("");
