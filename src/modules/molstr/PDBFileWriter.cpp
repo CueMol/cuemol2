@@ -501,7 +501,7 @@ void PDBFileWriter::writeSecstr(qlib::PrintStream &prs)
     MolResiduePtr pRes = riter.get();
     pRes->getPropStr("secondary2", sec);
 
-    MB_DPRINTLN("%s%d => %s", pRes->getChainName().c_str(), pRes->getIndex().first, sec.c_str());
+    // MB_DPRINTLN("%s%d => %s", pRes->getChainName().c_str(), pRes->getIndex().first, sec.c_str());
 
     if (sec.length()>=2)
       pfx= sec.substr(1,1);
@@ -563,7 +563,7 @@ void PDBFileWriter::writeSecstr(qlib::PrintStream &prs)
     MolResiduePtr pRes = riter.get();
     pRes->getPropStr("secondary2", sec);
 
-    MB_DPRINTLN("%s%d => %s", pRes->getChainName().c_str(), pRes->getIndex().first, sec.c_str());
+    // MB_DPRINTLN("%s%d => %s", pRes->getChainName().c_str(), pRes->getIndex().first, sec.c_str());
 
     if (sec.length()>=2)
       pfx= sec.substr(1,1);

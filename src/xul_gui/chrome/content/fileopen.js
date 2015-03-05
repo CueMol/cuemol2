@@ -584,6 +584,13 @@ Qm2Main.prototype.onSaveScene = function ()
     return this.onSaveSceneAs();
 
   let qsc_io = require("qsc-io");
+  try {
+    qsc_io.backupSceneFile(path);
+  }
+  catch (e) {
+    cuemol.putLogMsg("WARNING: Cannot create backup file, "+e);
+  }
+
   let vwid = this.mMainWnd.getCurrentViewID();
   try {
     qsc_io.writeSceneFile(sc, path, vwid);
@@ -592,7 +599,7 @@ Qm2Main.prototype.onSaveScene = function ()
     util.alert(window, "ERROR, Write scene failed: "+e);
     return false;
   }
-
+  
   // show the completion message
   let msg = "Scene file: ["+path+"] is saved.";
   gQm2Main.mStatusLabel.label = msg;

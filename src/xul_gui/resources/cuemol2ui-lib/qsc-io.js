@@ -30,7 +30,7 @@ exports.readSceneFile = function(sc, path, vwid, reader_name)
 
   //dd("********** READ_SCENE_FILE OK: "+path);
   //dd("********** SET_SCENE_NAME: "+path);
-  var newname = require("util").getFileLeafName(path);
+  var newname = util.getFileLeafName(path);
   //dd("********** SET_SCENE_NAME: "+newname);
   sc.setName(newname);
 
@@ -46,7 +46,7 @@ exports.readSceneFile = function(sc, path, vwid, reader_name)
   }
 
   return errmsg;
-}
+};
 
 exports.createAndReadSceneFile = function(path, reader_name)
 {
@@ -66,7 +66,7 @@ exports.createAndReadSceneFile = function(path, reader_name)
   var errmsg = exports.readSceneFile(sc, path, vwid, reader_name);
       
   return [scid, vwid, errmsg];
-}
+};
 
 exports.writeSceneFile = function(sc, path, view_id, options)
 {
@@ -114,5 +114,49 @@ exports.writeSceneFile = function(sc, path, view_id, options)
   sc.clearUndoData();
   
   return;
-}
+};
+
+exports.backupSceneFile = function(path)
+{
+  var file = util.createMozFile(path);
+  
+  if (!file.exists())
+    return; // no file, no need to backup
+  
+  // var leafname = file.leafName;
+  // var dirname = file.parent;
+
+  // make backup file name
+  var bkpath = path + ".bak";
+  var bkfile = util.createMozFile(bkpath);
+  var bkleafname = bkfile.leafName;
+  
+  dd("creating scene backup file: "+bkpath);
+
+  if (bkfile.exists()) {
+    try {
+      bkfile.remove(false);
+    }
+    catch (e) {
+      let msg = "cannot remove old backup file "+bkpath;
+      dd(msg);
+      throw msg;
+    }
+  }
+
+  dd("file="+dbg.dumpObjectTree(file, 1));
+
+  try {
+    //file.renameTo(null, bkleafname);
+    file.moveTo(null, bkleafname);
+  }
+  catch (e) {
+    dbg.exception(e);
+    let msg = "cannot create backup file "+bkpath;
+    dd(msg);
+    throw msg;
+  }
+
+  return;
+};
 

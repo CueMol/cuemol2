@@ -950,7 +950,7 @@ void PDBFileReader::apply2ndry(const char *ss1, const char *ss2, const ResidSet 
           continue;
         pRes->setPropStr("secondary2", val);
         pRes->setPropStr("secondary", ss2);
-        MB_DPRINTLN("%s %d => %s", chain.c_str(), i, val.c_str());
+        // MB_DPRINTLN("%s %d => %s", chain.c_str(), i, val.c_str());
       }
     }
   }
