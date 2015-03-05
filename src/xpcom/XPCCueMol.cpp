@@ -666,7 +666,7 @@ NS_IMETHODIMP XPCCueMol::CreateBAryFromIStream(nsIInputStream *aInputStream, qIO
 
 NS_IMETHODIMP XPCCueMol::Test(nsISupports *arg)
 {
-  //*((int *) 0) = 100;
+  *((int *) 0) = 100;
   dumpWrappers();
   return NS_OK;
 }

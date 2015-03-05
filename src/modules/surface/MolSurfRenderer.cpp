@@ -427,9 +427,9 @@ void MolSurfRenderer::makeAtomPosMap()
 MolCoordPtr MolSurfRenderer::resolveMolIDImpl(const LString &name)
 {
   qsys::ScenePtr pScene = getScene();
-  if (pScene.isnull()) {
+  if (pScene.isnull())
     return MolCoordPtr();
-  }
+
   qsys::ObjectPtr pobj = pScene->getObjectByName(name);
   MolCoordPtr pMol= MolCoordPtr(pobj, qlib::no_throw_tag());
   if (pMol.isnull()) {
@@ -461,6 +461,9 @@ void MolSurfRenderer::setTgtObjName(const LString &name)
     return;
   
   m_sTgtMolName = name;
+
+  if (getScene().isnull())
+    return; // Scene is not loaded (when called in the scene-file loading)
 
   MolCoordPtr pMol = resolveMolIDImpl(name);
   if (pMol.isnull()) {

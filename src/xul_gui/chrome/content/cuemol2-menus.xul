@@ -43,11 +43,23 @@
       }
 
       function showCrashReporter() {
-      var cr = Cc['@mozilla.org/toolkit/crash-reporter;1'].getService(Ci.nsICrashReporter);
-      dd("crash enabled: "+cr.enabled);
-      dd("crash dump path: "+cr.minidumpPath.path);
+        var cr = Cc['@mozilla.org/toolkit/crash-reporter;1'].getService(Ci.nsICrashReporter);
+        var msg = "crash enabled: "+cr.enabled+"\n";
+        if (cr.enabled) {
+          try {
+            msg += "crash dump path: "+cr.minidumpPath.path+"\n";
+          } catch (e) {}
+          try {
+            msg += "crash dump URL: "+cr.serverURL+"\n";
+          } catch (e) {}
+        }
+        msg += "Crash test OK?";
+        if (confirm(msg)) {
+          cuemol.xpc.test(null);
+        }
+      //dd("crash enabled: "+cr.enabled);
+      //dd("crash dump path: "+cr.minidumpPath.path);
       //dd("crash dump URL: "+cr.serverURL);
-      cuemol.xpc.test(null);
       }
 
       function restoreDefaultPanels() {
@@ -402,8 +414,8 @@
 	      oncommand="openAboutDialog();"/>
 	    <menuseparator/>
 	    <menuitem label="Console" oncommand="showConsole();" />
-	    <menuitem label="DOM Inspector" oncommand="showDOMInspector();" />
-	    <!--<menuitem label="Crash reporter" oncommand="showCrashReporter();" />-->
+	    <!--<menuitem label="DOM Inspector" oncommand="showDOMInspector();" />-->
+	    <menuitem label="Test crash reporter" oncommand="showCrashReporter();" />
 	    <menuitem id="help-menu-update" label="Check for updates" oncommand="gQm2Main.checkForUpdates();" />
 	  </menupopup>
 	</menu>
