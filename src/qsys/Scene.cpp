@@ -1337,8 +1337,16 @@ LString Scene::getCameraInfoJSON() const
   for (; viter!=eiter; ++viter) {
     if (viter!=m_camtab.begin())
       rval += ",";
+
     CameraPtr obj = viter->second;
+
     rval += "{\"name\":\""+ viter->first.escapeQuots() +"\",";
+
+    if (obj->getVisSize() > 0)
+      rval += "\"hasVisSet\": true,";
+    else
+      rval += "\"hasVisSet\": false,";
+      
     LString src = obj->getSource();
     rval += "\"src\":\""+src.escapeQuots()+"\"}";
   }

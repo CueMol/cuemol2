@@ -128,7 +128,8 @@ ws.createCameraNodeData = function (aScene)
       rnode.menu_id = "wspcPanelCameraCtxtMenu";
       rnode.type = "camera";
       rnode.props = {
-      object_vis: (data[i].src==""?"":"linked")
+      object_vis: ( (data[i].src=="")? "" : "linked" ),
+      object_name: ( (data[i].hasVisSet) ? "visible" : ""),
       };
       node.childNodes.push(rnode);
     }

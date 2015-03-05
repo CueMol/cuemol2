@@ -130,8 +130,8 @@ void Camera::writeTo2(qlib::LDom2Node *pNode) const
     }
     else {
       RendererPtr pRend = SceneManager::getRendererS(uid);
-      ObjectPtr pObj = pRend->getClientObj();
       if (!pRend.isnull()) {
+        ObjectPtr pObj = pRend->getClientObj();
         qlib::LDom2Node *pChChNode = pChNode->appendChild("renderer");
         pChChNode->setValue(i->second.bVis?"true":"false");
         pChChNode->setStrAttr("target", pRend->getName());
@@ -303,17 +303,21 @@ namespace {
 void Camera::visAppend(qlib::uid_t tgtid, bool bVis, bool bObj)
 {
   VisSetting::iterator i = m_visset.find(tgtid);
-  if (i!=m_visset.end())
+  if (i!=m_visset.end()) {
+    LOG_DPRINTLN("Camera.visAppend> ERROR, tgt id=%d already exists", tgtid);
     return; // ERROR??
+  }
   
   ScenePtr pScene;
   if (bObj) {
     ObjectPtr pObj = SceneManager::getObjectS(tgtid);
+    ensureNotNull(pObj);
     m_visset.set(pObj, bVis);
     pScene = pObj->getScene();
   }
   else {
     RendererPtr pRend = SceneManager::getRendererS(tgtid);
+    ensureNotNull(pRend);
     m_visset.set(pRend, bVis);
     pScene = pRend->getScene();
   }
@@ -336,8 +340,10 @@ void Camera::visAppend(qlib::uid_t tgtid, bool bVis, bool bObj)
 bool Camera::visRemove(qlib::uid_t tgtid)
 {
   VisSetting::iterator i = m_visset.find(tgtid);
-  if (i==m_visset.end())
+  if (i==m_visset.end()) {
+    LOG_DPRINTLN("Camera.visRemove> ERROR, tgt id=%d is not found", tgtid);
     return false;
+  }
 
   VisSetElem vse = i->second;
 
