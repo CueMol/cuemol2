@@ -1,0 +1,475 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{DBD4410B-6495-4051-B5E4-4609BB8DA327}</ProjectGuid>
+    <RootNamespace>qsys</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="..\mcwrapgen3.props" />
+    <Import Project="..\glsl_shader.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\common.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\common.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>12.0.21005.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(XULDeployDir)\</OutDir>
+    <IntDir>$(Configuration)\</IntDir>
+    <LinkIncremental>true</LinkIncremental>
+    <GenerateManifest>false</GenerateManifest>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(XULDeployDir)\</OutDir>
+    <IntDir>$(Configuration)\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+    <GenerateManifest>false</GenerateManifest>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;QSYS_EXPORTS;SYSDEP_EXPORTS;JSBR_EXPORTS;GFX_EXPORTS;MOLSTR_EXPORTS;MOLVIS_EXPORTS;XTAL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>opengl32.lib;glu32.lib;glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(XULDeployDir)\$(ProjectName).dll</OutputFile>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;QSYS_EXPORTS;SYSDEP_EXPORTS;JSBR_EXPORTS;GFX_EXPORTS;MOLSTR_EXPORTS;MOLVIS_EXPORTS;XTAL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>opengl32.lib;glu32.lib;glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(XULDeployDir)\$(ProjectName).dll</OutputFile>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\qsys\Camera.cpp" />
+    <ClCompile Include="..\..\src\qsys\InDevEvent.cpp" />
+    <ClCompile Include="..\..\src\qsys\InOutHandler.cpp" />
+    <ClCompile Include="..\..\src\sysdep\MouseEventHandler.cpp" />
+    <ClCompile Include="..\..\src\qsys\Object.cpp" />
+    <ClCompile Include="..\..\src\qsys\ObjectEvent.cpp" />
+    <ClCompile Include="..\..\src\qsys\ObjLoadEditInfo.cpp" />
+    <ClCompile Include="..\..\src\qsys\ObjReader.cpp" />
+    <ClCompile Include="..\..\src\qsys\ObjWriter.cpp" />
+    <ClCompile Include="..\..\src\qsys\PropEditInfo.cpp" />
+    <ClCompile Include="..\..\src\qsys\QdfAbsReader.cpp" />
+    <ClCompile Include="..\..\src\qsys\QdfAbsWriter.cpp" />
+    <ClCompile Include="..\..\src\qsys\QdfStream.cpp" />
+    <ClCompile Include="..\..\src\qsys\qsys.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\Renderer.cpp" />
+    <ClCompile Include="..\..\src\qsys\RendererEvent.cpp" />
+    <ClCompile Include="..\..\src\qsys\RendererFactory.cpp" />
+    <ClCompile Include="..\..\src\qsys\RendGroup.cpp" />
+    <ClCompile Include="..\..\src\qsys\ScalarObject.cpp" />
+    <ClCompile Include="..\..\src\qsys\Scene.cpp" />
+    <ClCompile Include="..\..\src\qsys\SceneEvent.cpp" />
+    <ClCompile Include="..\..\src\qsys\SceneExporter.cpp" />
+    <ClCompile Include="..\..\src\qsys\SceneManager.cpp" />
+    <ClCompile Include="..\..\src\qsys\SceneXMLReader.cpp" />
+    <ClCompile Include="..\..\src\qsys\SceneXMLWriter.cpp" />
+    <ClCompile Include="..\..\src\qsys\ScrEventManager.cpp" />
+    <ClCompile Include="..\..\src\qsys\StreamManager.cpp" />
+    <ClCompile Include="..\..\src\qsys\style\StyleColor.cpp" />
+    <ClCompile Include="..\..\src\qsys\style\StyleEditInfo.cpp" />
+    <ClCompile Include="..\..\src\qsys\style\StyleFile.cpp" />
+    <ClCompile Include="..\..\src\qsys\style\StyleMgr.cpp" />
+    <ClCompile Include="..\..\src\qsys\style\StyleMgrStyleImpl.cpp" />
+    <ClCompile Include="..\..\src\qsys\style\StyleSet.cpp" />
+    <ClCompile Include="..\..\src\qsys\style\StyleSheet.cpp" />
+    <ClCompile Include="..\..\src\qsys\style\StyleStrData.cpp" />
+    <ClCompile Include="..\..\src\qsys\SysConfig.cpp" />
+    <ClCompile Include="..\..\src\qsys\UndoManager.cpp" />
+    <ClCompile Include="..\..\src\qsys\View.cpp" />
+    <ClCompile Include="..\..\src\qsys\ViewEvent.cpp" />
+    <ClCompile Include="..\..\src\qsys\ViewInputConfig.cpp" />
+    <ClCompile Include="..\..\src\qsys\Camera_wrap.cpp" />
+    <ClCompile Include="..\..\src\qsys\DrawObj_wrap.cpp" />
+    <ClCompile Include="..\..\src\qsys\InOutHandler_wrap.cpp" />
+    <ClCompile Include="..\..\src\qsys\Object_wrap.cpp" />
+    <ClCompile Include="..\..\src\qsys\ObjReader_wrap.cpp" />
+    <ClCompile Include="..\..\src\qsys\ObjWriter_wrap.cpp" />
+    <ClCompile Include="..\..\src\qsys\qsys_loader.cpp" />
+    <ClCompile Include="..\..\src\qsys\Renderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\qsys\RendGroup_wrap.cpp" />
+    <ClCompile Include="..\..\src\qsys\Scene_wrap.cpp" />
+    <ClCompile Include="..\..\src\qsys\SceneExporter_wrap.cpp" />
+    <ClCompile Include="..\..\src\qsys\SceneManager_wrap.cpp" />
+    <ClCompile Include="..\..\src\qsys\SceneXMLReader_wrap.cpp" />
+    <ClCompile Include="..\..\src\qsys\SceneXMLWriter_wrap.cpp" />
+    <ClCompile Include="..\..\src\qsys\ScrEventManager_wrap.cpp" />
+    <ClCompile Include="..\..\src\qsys\StreamManager_wrap.cpp" />
+    <ClCompile Include="..\..\src\qsys\style\StyleManager_wrap.cpp" />
+    <ClCompile Include="..\..\src\qsys\style\StyleSet_wrap.cpp" />
+    <ClCompile Include="..\..\src\qsys\View_wrap.cpp" />
+    <ClCompile Include="..\..\src\qsys\ViewInputConfig_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\AtomIterator.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\AtomIterator_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\AtomPosMap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\BfacColoring.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\BfacColoring_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\BondIterator.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\CnsParFile.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\ColoringScheme.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\ColoringScheme_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\CPKColoring.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\CPKColoring_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\ElemSym.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\MainChainRenderer.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\MainChainRenderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\MolArrayMap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\MolAtom.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\MolAtom_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\MolAtomRenderer.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\MolChain.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\MolChain_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\MolCoord.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\MolCoord_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\MolCoordGeomImpl.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\MolRenderer.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\MolRenderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\MolResidue.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\MolResidue_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\molstr.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\molstr_loader.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\MolXformEditInfo.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\NameLabelRenderer.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\NameLabelRenderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\NuclBasePair.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\ParamDB.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\parser_sel.cxx">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\PDBFileReader.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\PDBFileReader_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\PDBFileWriter.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\PDBFileWriter_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\Prot2ndry.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\QdfMolReader.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\QdfMolReader_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\QdfMolWriter.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\RectSelDrawObj.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\RectSelDrawObj_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\ResidIterator.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\ResidIterator_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\ResidRangeSet.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\ResidRangeSet_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\ResiPatch.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\ResiToppar.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\scanner_sel.cxx">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\SelAroundImpl.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\SelCacheMgr.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\SelCommand.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\SelCommand_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\SelCompiler.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\Selection_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\SelectionRenderer.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\SelectionRenderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\SelNodes.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\SimpleRenderer.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\SimpleRenderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\SolidColoring_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\TopoBuilder.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\TopoDB.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\TopparManager.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\TraceRenderer.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\TraceRenderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\XMLTopparFile.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\AnIsoURenderer.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\AnIsoURenderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\AtomIntrRenderer.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\AtomIntrRenderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\BallStickRenderer.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\BallStickRenderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\CPKRenderer.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\CPKRenderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\CubicSpline.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\DisoRenderer.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\DisoRenderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\DistPickDrawObj.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\DistPickDrawObj_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\JctTable.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\JctTable_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\molvis.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\molvis_loader.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\NARenderer.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\NARenderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\PaintColoring.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\PaintColoring_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\RainbowColoring.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\RainbowColoring_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\Ribbon2Renderer.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\Ribbon2Renderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\RibbonRenderer.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\RibbonRenderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\SplineCoeffSet.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\SplineRenderer.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\SplineRenderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\TubeRenderer.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\TubeRenderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\TubeSection.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\TubeSection_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\smospl\alglibinternal.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\smospl\ap.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\smospl\linalg.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\smospl\SmoothSpline.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\smospl\smoothspline_impl.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\smospl\spline_impl2.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\smospl\spline_internal.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\smospl\spline_util.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sysdep\OglDisplayContext.cpp" />
+    <ClCompile Include="..\..\src\sysdep\OglDisplayList.cpp" />
+    <ClCompile Include="..\..\src\sysdep\OglFBOView.cpp" />
+    <ClCompile Include="..\..\src\sysdep\OglProgramObject.cpp" />
+    <ClCompile Include="..\..\src\sysdep\OglView.cpp" />
+    <ClCompile Include="..\..\src\sysdep\sysdep.cpp" />
+    <ClCompile Include="..\..\src\sysdep\WglDisplayContext.cpp" />
+    <ClCompile Include="..\..\src\sysdep\WglView.cpp" />
+    <ClCompile Include="..\..\src\sysdep\WinTimerImpl.cpp" />
+    <ClCompile Include="..\..\src\qsys\anim\AnimMgr.cpp" />
+    <ClCompile Include="..\..\src\qsys\anim\AnimMgr_wrap.cpp" />
+    <ClCompile Include="..\..\src\qsys\anim\AnimObj.cpp" />
+    <ClCompile Include="..\..\src\qsys\anim\AnimObj_wrap.cpp" />
+    <ClCompile Include="..\..\src\qsys\anim\AnimObjEvent.cpp" />
+    <ClCompile Include="..\..\src\gfx\AbstractColor.cpp" />
+    <ClCompile Include="..\..\src\gfx\AbstractColor_wrap.cpp" />
+    <ClCompile Include="..\..\src\gfx\ColCompiler.cpp" />
+    <ClCompile Include="..\..\src\gfx\color_parser.cxx">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\src\gfx\color_scanner.cxx">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\src\gfx\Color_wrap.cpp" />
+    <ClCompile Include="..\..\src\gfx\ColorTable.cpp" />
+    <ClCompile Include="..\..\src\gfx\DisplayContext.cpp" />
+    <ClCompile Include="..\..\src\qsys\DispListRenderer.cpp" />
+    <ClCompile Include="..\..\src\gfx\DrawElem.cpp" />
+    <ClCompile Include="..\..\src\gfx\gfx.cpp" />
+    <ClCompile Include="..\..\src\gfx\gfx_loader.cpp" />
+    <ClCompile Include="..\..\src\gfx\GradientColor.cpp" />
+    <ClCompile Include="..\..\src\gfx\LabelCacheImpl.cpp" />
+    <ClCompile Include="..\..\src\gfx\Material.cpp" />
+    <ClCompile Include="..\..\src\gfx\Mesh.cpp" />
+    <ClCompile Include="..\..\src\gfx\MolColorRef.cpp" />
+    <ClCompile Include="..\..\src\gfx\MolColorRef_wrap.cpp" />
+    <ClCompile Include="..\..\src\gfx\NamedColor.cpp" />
+    <ClCompile Include="..\..\src\gfx\NamedColor_wrap.cpp" />
+    <ClCompile Include="..\..\src\gfx\PixelBuffer.cpp" />
+    <ClCompile Include="..\..\src\gfx\SolidColor.cpp" />
+    <ClCompile Include="..\..\src\gfx\StrColorFormat.cpp" />
+    <ClCompile Include="..\..\src\gfx\TextImgBuf_wrap.cpp" />
+    <ClCompile Include="..\..\src\gfx\TextRenderManager.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\src\qsys\AbstractColor.hpp" />
+    <ClInclude Include="..\..\src\qsys\Color.hpp" />
+    <ClInclude Include="..\..\src\qsys\Object.hpp" />
+    <ClInclude Include="..\..\src\qsys\qsys.hpp" />
+    <ClInclude Include="..\..\src\qsys\Renderer.hpp" />
+    <ClInclude Include="..\..\src\qsys\Scene.hpp" />
+    <ClInclude Include="..\..\src\qsys\SceneManager.hpp" />
+    <ClInclude Include="..\..\src\qsys\View.hpp" />
+    <ClInclude Include="..\..\src\modules\molstr\QdfMolReader.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <mcwrapgen3 Include="..\..\src\qsys\Camera.qif" />
+    <mcwrapgen3 Include="..\..\src\qsys\DrawObj.qif" />
+    <mcwrapgen3 Include="..\..\src\qsys\InOutHandler.qif" />
+    <mcwrapgen3 Include="..\..\src\qsys\Object.qif" />
+    <mcwrapgen3 Include="..\..\src\qsys\ObjReader.qif" />
+    <mcwrapgen3 Include="..\..\src\qsys\ObjWriter.qif" />
+    <mcwrapgen3 Include="..\..\src\qsys\Renderer.qif" />
+    <mcwrapgen3 Include="..\..\src\qsys\RendGroup.qif" />
+    <mcwrapgen3 Include="..\..\src\qsys\Scene.qif" />
+    <mcwrapgen3 Include="..\..\src\qsys\SceneExporter.qif" />
+    <mcwrapgen3 Include="..\..\src\qsys\SceneManager.qif" />
+    <mcwrapgen3 Include="..\..\src\qsys\SceneXMLReader.qif" />
+    <mcwrapgen3 Include="..\..\src\qsys\SceneXMLWriter.qif" />
+    <mcwrapgen3 Include="..\..\src\qsys\ScrEventManager.qif" />
+    <mcwrapgen3 Include="..\..\src\qsys\StreamManager.qif" />
+    <mcwrapgen3 Include="..\..\src\qsys\style\StyleManager.qif" />
+    <mcwrapgen3 Include="..\..\src\qsys\style\StyleSet.qif" />
+    <mcwrapgen3 Include="..\..\src\qsys\View.qif" />
+    <mcwrapgen3 Include="..\..\src\qsys\ViewInputConfig.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molstr\AtomIterator.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molstr\BfacColoring.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molstr\ColoringScheme.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molstr\CPKColoring.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molstr\MainChainRenderer.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molstr\MolAtom.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molstr\MolChain.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molstr\MolCoord.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molstr\MolRenderer.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molstr\MolResidue.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molstr\NameLabelRenderer.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molstr\PDBFileReader.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molstr\PDBFileWriter.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molstr\QdfMolReader.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molstr\RectSelDrawObj.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molstr\ResidIterator.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molstr\ResidRangeSet.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molstr\SelCommand.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molstr\Selection.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molstr\SelectionRenderer.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molstr\SimpleRenderer.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molstr\SolidColoring.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molstr\TraceRenderer.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molvis\AnIsoURenderer.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molvis\AtomIntrRenderer.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molvis\BallStickRenderer.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molvis\CPKRenderer.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molvis\DisoRenderer.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molvis\DistPickDrawObj.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molvis\JctTable.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molvis\NARenderer.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molvis\PaintColoring.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molvis\RainbowColoring.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molvis\Ribbon2Renderer.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molvis\RibbonRenderer.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molvis\SplineRenderer.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molvis\TubeRenderer.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molvis\TubeSection.qif" />
+    <mcwrapgen3 Include="..\..\src\qsys\anim\AnimMgr.qif" />
+    <mcwrapgen3 Include="..\..\src\qsys\anim\AnimObj.qif" />
+    <mcwrapgen3 Include="..\..\src\gfx\AbstractColor.qif" />
+    <mcwrapgen3 Include="..\..\src\gfx\Color.qif" />
+    <mcwrapgen3 Include="..\..\src\gfx\MolColorRef.qif" />
+    <mcwrapgen3 Include="..\..\src\gfx\NamedColor.qif" />
+    <mcwrapgen3 Include="..\..\src\gfx\TextImgBuf.qif" />
+  </ItemGroup>
+  <ItemGroup>
+    <mcw_loader Include="..\..\src\qsys\qsys.moddef" />
+    <mcw_loader Include="..\..\src\modules\molstr\molstr.moddef" />
+    <mcw_loader Include="..\..\src\modules\molvis\molvis.moddef" />
+    <mcw_loader Include="..\..\src\gfx\gfx.moddef" />
+  </ItemGroup>
+  <ItemGroup>
+    <glslshader Include="..\..\src\sysdep\default_frag.glsl" />
+    <glslshader Include="..\..\src\sysdep\default_vert.glsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\jsbr\jsbr.vcxproj">
+      <Project>{99dbf289-b4b8-43d0-8d74-8c0a26ffb5d1}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\qlib\qlib.vcxproj">
+      <Project>{17abbaff-4e0b-4cab-ae59-b5fc76a4e285}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="..\mcwrapgen3.targets" />
+    <Import Project="..\glsl_shader.targets" />
+  </ImportGroup>
+</Project>
