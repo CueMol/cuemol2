@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup
+    Condition="'$(mcwrapgen3BeforeTargets)' == '' and '$(mcwrapgen3AfterTargets)' == '' and '$(ConfigurationType)' != 'Makefile'">
+    <mcwrapgen3BeforeTargets>Midl</mcwrapgen3BeforeTargets>
+    <mcwrapgen3AfterTargets>CustomBuild</mcwrapgen3AfterTargets>
+  </PropertyGroup>
+  <PropertyGroup>
+    <mcwrapgen3DependsOn
+      Condition="'$(ConfigurationType)' != 'Makefile'">_SelectedFiles;$(mcwrapgen3DependsOn)</mcwrapgen3DependsOn>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <mcwrapgen3>
+      <CommandLineTemplate>perl.exe $(SolutionDir)..\src\perl\mcwrapgen3.pl -MSVC -I $(SolutionDir)..\src\ -m hdr  %(FullPath)
+perl.exe $(SolutionDir)..\src\perl\mcwrapgen3.pl -MSVC -I $(SolutionDir)..\src\ -m src  %(FullPath)
+perl.exe $(SolutionDir)..\src\perl\mcwrapgen3.pl -MSVC -I $(SolutionDir)..\src\ -m js  -jsdir $(SolutionDir)..\src\xul_gui\resources\cuemol-wrappers\ %(FullPath)
+</CommandLineTemplate>
+      <Outputs>%(RootDir)%(Directory)%(Filename)_wrap.cpp;%(RootDir)%(Directory)%(Filename)_wrap.hpp</Outputs>
+    </mcwrapgen3>
+  </ItemDefinitionGroup>
+  <PropertyGroup
+    Condition="'$(mcw_loaderBeforeTargets)' == '' and '$(mcw_loaderAfterTargets)' == '' and '$(ConfigurationType)' != 'Makefile'">
+    <mcw_loaderBeforeTargets>Midl</mcw_loaderBeforeTargets>
+    <mcw_loaderAfterTargets>CustomBuild</mcw_loaderAfterTargets>
+  </PropertyGroup>
+  <PropertyGroup>
+    <mcw_loaderDependsOn
+      Condition="'$(ConfigurationType)' != 'Makefile'">_SelectedFiles;$(mcw_loaderDependsOn)</mcw_loaderDependsOn>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <mcw_loader>
+      <CommandLineTemplate>perl.exe $(SolutionDir)..\src\perl\mcwrapgen3.pl -MSVC -I $(SolutionDir)..\src\ -m mod  %(FullPath)</CommandLineTemplate>
+      <Outputs>%(RootDir)%(Directory)%(Filename)_loader.cpp</Outputs>
+    </mcw_loader>
+  </ItemDefinitionGroup>
+</Project>
