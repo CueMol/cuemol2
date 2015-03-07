@@ -2,7 +2,6 @@
 // $Id: xpc_main.cpp,v 1.8 2011/02/12 13:51:19 rishitani Exp $
 //
 
-#include <common.h>
 #include "xpcom.hpp"
 
 #if (GECKO_SDK_MAJOR_VER>=2)

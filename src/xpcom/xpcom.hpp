@@ -19,6 +19,7 @@
 #  undef _X86_
 #endif
 
+#include <mozilla/Char16.h>
 #include <nsCOMPtr.h>
 #include <nsMemory.h>
 #include <nsISupportsUtils.h>
@@ -31,4 +32,5 @@
 #endif
 #include <nsStringAPI.h>
 
+#include <common.h>
 

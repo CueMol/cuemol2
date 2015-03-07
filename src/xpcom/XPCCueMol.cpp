@@ -6,8 +6,6 @@
 #define __STDC_LIMIT_MACROS
 #define __STDC_CONSTANT_MACROS
 
-#include <common.h>
-
 #include "xpcom.hpp"
 #include <nsIObserverService.h>
 
@@ -160,7 +158,11 @@ namespace importers {
 
 using namespace xpcom;
 
+#ifdef NS_IMPL_ISUPPORTS
+NS_IMPL_ISUPPORTS(XPCCueMol, qICueMol, nsIObserver)
+#else
 NS_IMPL_ISUPPORTS2(XPCCueMol, qICueMol, nsIObserver)
+#endif
 
 // singleton instance of XPCCueMol
 XPCCueMol *gpXPCCueMol;

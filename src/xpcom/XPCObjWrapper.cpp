@@ -2,10 +2,8 @@
 // $Id: XPCObjWrapper.cpp,v 1.58 2011/03/10 13:11:55 rishitani Exp $
 //
 
-#include <common.h>
-
-// XPCOM
 #include "xpcom.hpp"
+
 #include <nsIMutableArray.h>
 #include <nsISupportsPrimitives.h>
 #include <nsIVariant.h>
@@ -24,7 +22,11 @@ using qlib::LVariant;
 using qlib::LVarArray;
 using qlib::LString;
 
+#ifdef NS_IMPL_ISUPPORTS
+NS_IMPL_ISUPPORTS(XPCObjWrapper, qIObjWrapper);
+#else
 NS_IMPL_ISUPPORTS1(XPCObjWrapper, qIObjWrapper);
+#endif
 
 XPCObjWrapper::XPCObjWrapper(XPCCueMol *pParent, int ind)
 {

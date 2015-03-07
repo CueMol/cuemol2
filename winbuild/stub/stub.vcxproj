@@ -46,12 +46,14 @@
     <OutDir>$(XULDeployDir)\</OutDir>
     <IntDir>$(Configuration)\</IntDir>
     <LinkIncremental>true</LinkIncremental>
+    <TargetName>cuemol2</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(XULDeployDir)\</OutDir>
     <IntDir>$(Configuration)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>true</GenerateManifest>
+    <TargetName>cuemol2</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -66,7 +68,7 @@
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>xpcomglue.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>xpcomglue_x.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(XULDeployDir)\cuemol2.exe</OutputFile>
       <AdditionalLibraryDirectories>$(XULRunnerDir)lib\;$(XULRunnerDir)sdk\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -90,7 +92,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>xpcomglue.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>xpcomglue_x.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(XULDeployDir)\cuemol2.exe</OutputFile>
       <AdditionalLibraryDirectories>$(XULRunnerDir)lib\;$(XULRunnerDir)sdk\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>

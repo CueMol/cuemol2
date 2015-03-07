@@ -1,4 +1,5 @@
 
+#include <mozilla/Char16.h>
 #include <stdio.h>
 
 int internal_main(int argc, char **argv);

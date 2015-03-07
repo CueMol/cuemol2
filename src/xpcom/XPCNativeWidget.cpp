@@ -4,7 +4,7 @@
 // $Id: XPCNativeWidget.cpp,v 1.8 2011/02/12 13:51:19 rishitani Exp $
 //
 
-#include <common.h>
+#include "xpcom.hpp"
 
 //#undef XP_DARWIN
 //#include "nsMathUtils.h"
@@ -23,7 +23,11 @@
 using namespace xpcom;
 
 //NS_IMPL_ISUPPORTS2(XPCNativeWidget, qINativeWidget, nsIDOMEventListener)
+#ifdef NS_IMPL_ISUPPORTS
+NS_IMPL_ISUPPORTS(XPCNativeWidget, qINativeWidget)
+#else
 NS_IMPL_ISUPPORTS1(XPCNativeWidget, qINativeWidget)
+#endif
 
 XPCNativeWidget::XPCNativeWidget()
 {
@@ -359,8 +363,9 @@ void XPCNativeWidget::setupFromDOMEvent(nsIDOMEvent* aEvent,
 
   if (bMouseBtn) {
     // set modifier (mouse)
-    PRUint16 nbtn;
-    mouseEvent->GetButton(&nbtn);
+    //PRUint16 nbtn;
+	PRInt16 nbtn;
+	mouseEvent->GetButton(&nbtn);
     if (nbtn==0)
       modif |= qsys::InDevEvent::INDEV_LBTN;
     else if (nbtn==1)
