@@ -1,5 +1,5 @@
 manifest chrome/cuemol2.manifest
-manifest chrome/inspector.manifest
+# manifest chrome/inspector.manifest
 interfaces components/qICueMol.xpt
 interfaces components/qIObjWrapper.xpt
 interfaces components/qINativeWidget.xpt

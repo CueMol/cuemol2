@@ -249,7 +249,6 @@ if (!("MorphAnimTool" in cuemolui)) {
 	return;
 
       // EDIT TXN START //
-      let scene = cuemol.getScene(this.mTargetSceneID);
       scene.startUndoTxn("Add PDB to MorphMol");
 
       try {
