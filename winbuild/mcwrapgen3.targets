@@ -1,0 +1,157 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <PropertyPageSchema
+      Include="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml" />
+    <AvailableItemName
+      Include="mcwrapgen3">
+      <Targets>_mcwrapgen3</Targets>
+    </AvailableItemName>
+    <AvailableItemName
+      Include="mcw_loader">
+      <Targets>_mcw_loader</Targets>
+    </AvailableItemName>
+  </ItemGroup>
+  <UsingTask
+    TaskName="mcwrapgen3"
+    TaskFactory="XamlTaskFactory"
+    AssemblyName="Microsoft.Build.Tasks.v4.0, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <Task>$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml</Task>
+  </UsingTask>
+  <UsingTask
+    TaskName="mcw_loader"
+    TaskFactory="XamlTaskFactory"
+    AssemblyName="Microsoft.Build.Tasks.v4.0, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <Task>$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml</Task>
+  </UsingTask>
+  <Target
+    Name="_mcwrapgen3"
+    BeforeTargets="$(mcwrapgen3BeforeTargets)"
+    AfterTargets="$(mcwrapgen3AfterTargets)"
+    Condition="'@(mcwrapgen3)' != ''"
+    DependsOnTargets="$(mcwrapgen3DependsOn);Computemcwrapgen3Output"
+    Outputs="%(mcwrapgen3.Outputs)"
+    Inputs="%(mcwrapgen3.Identity);%(mcwrapgen3.AdditionalDependencies);$(MSBuildProjectFile)">
+    <ItemGroup
+      Condition="'@(SelectedFiles)' != ''">
+      <mcwrapgen3
+        Remove="@(mcwrapgen3)"
+        Condition="'%(Identity)' != '@(SelectedFiles)'" />
+    </ItemGroup>
+    <ItemGroup>
+      <mcwrapgen3_tlog
+        Include="%(mcwrapgen3.Outputs)"
+        Condition="'%(mcwrapgen3.Outputs)' != '' and '%(mcwrapgen3.ExcludedFromBuild)' != 'true'">
+        <Source>@(mcwrapgen3, '|')</Source>
+      </mcwrapgen3_tlog>
+    </ItemGroup>
+    <Message
+      Importance="High"
+      Text="%(mcwrapgen3.ExecutionDescription)" />
+    <WriteLinesToFile
+      Condition="'@(mcwrapgen3_tlog)' != '' and '%(mcwrapgen3_tlog.ExcludedFromBuild)' != 'true'"
+      File="$(TLogLocation)$(ProjectName).write.1u.tlog"
+      Lines="^%(mcwrapgen3_tlog.Source);@(mcwrapgen3_tlog-&gt;'%(Fullpath)')"
+      Encoding="Unicode" />
+    <mcwrapgen3
+      Condition="'@(mcwrapgen3)' != '' and '%(mcwrapgen3.ExcludedFromBuild)' != 'true'"
+      CommandLineTemplate="%(mcwrapgen3.CommandLineTemplate)"
+      AdditionalOptions="%(mcwrapgen3.AdditionalOptions)"
+      Inputs="%(mcwrapgen3.Identity)" />
+  </Target>
+  <PropertyGroup>
+    <ComputeLinkInputsTargets>
+            $(ComputeLinkInputsTargets);
+            Computemcwrapgen3Output;
+          </ComputeLinkInputsTargets>
+    <ComputeLibInputsTargets>
+            $(ComputeLibInputsTargets);
+            Computemcwrapgen3Output;
+          </ComputeLibInputsTargets>
+  </PropertyGroup>
+  <Target
+    Name="Computemcwrapgen3Output"
+    Condition="'@(mcwrapgen3)' != ''">
+    <ItemGroup>
+      <mcwrapgen3DirsToMake
+        Condition="'@(mcwrapgen3)' != '' and '%(mcwrapgen3.ExcludedFromBuild)' != 'true'"
+        Include="%(mcwrapgen3.Outputs)" />
+      <Link
+        Include="%(mcwrapgen3DirsToMake.Identity)"
+        Condition="'%(Extension)'=='.obj' or '%(Extension)'=='.res' or '%(Extension)'=='.rsc' or '%(Extension)'=='.lib'" />
+      <Lib
+        Include="%(mcwrapgen3DirsToMake.Identity)"
+        Condition="'%(Extension)'=='.obj' or '%(Extension)'=='.res' or '%(Extension)'=='.rsc' or '%(Extension)'=='.lib'" />
+      <ImpLib
+        Include="%(mcwrapgen3DirsToMake.Identity)"
+        Condition="'%(Extension)'=='.obj' or '%(Extension)'=='.res' or '%(Extension)'=='.rsc' or '%(Extension)'=='.lib'" />
+    </ItemGroup>
+    <MakeDir
+      Directories="@(mcwrapgen3DirsToMake-&gt;'%(RootDir)%(Directory)')" />
+  </Target>
+  <Target
+    Name="_mcw_loader"
+    BeforeTargets="$(mcw_loaderBeforeTargets)"
+    AfterTargets="$(mcw_loaderAfterTargets)"
+    Condition="'@(mcw_loader)' != ''"
+    DependsOnTargets="$(mcw_loaderDependsOn);Computemcw_loaderOutput"
+    Outputs="%(mcw_loader.Outputs)"
+    Inputs="%(mcw_loader.Identity);%(mcw_loader.AdditionalDependencies);$(MSBuildProjectFile)">
+    <ItemGroup
+      Condition="'@(SelectedFiles)' != ''">
+      <mcw_loader
+        Remove="@(mcw_loader)"
+        Condition="'%(Identity)' != '@(SelectedFiles)'" />
+    </ItemGroup>
+    <ItemGroup>
+      <mcw_loader_tlog
+        Include="%(mcw_loader.Outputs)"
+        Condition="'%(mcw_loader.Outputs)' != '' and '%(mcw_loader.ExcludedFromBuild)' != 'true'">
+        <Source>@(mcw_loader, '|')</Source>
+      </mcw_loader_tlog>
+    </ItemGroup>
+    <Message
+      Importance="High"
+      Text="%(mcw_loader.ExecutionDescription)" />
+    <WriteLinesToFile
+      Condition="'@(mcw_loader_tlog)' != '' and '%(mcw_loader_tlog.ExcludedFromBuild)' != 'true'"
+      File="$(TLogLocation)$(ProjectName).write.1u.tlog"
+      Lines="^%(mcw_loader_tlog.Source);@(mcw_loader_tlog-&gt;'%(Fullpath)')"
+      Encoding="Unicode" />
+    <mcw_loader
+      Condition="'@(mcw_loader)' != '' and '%(mcw_loader.ExcludedFromBuild)' != 'true'"
+      CommandLineTemplate="%(mcw_loader.CommandLineTemplate)"
+      AdditionalOptions="%(mcw_loader.AdditionalOptions)"
+      Inputs="%(mcw_loader.Identity)" />
+  </Target>
+  <PropertyGroup>
+    <ComputeLinkInputsTargets>
+            $(ComputeLinkInputsTargets);
+            Computemcw_loaderOutput;
+          </ComputeLinkInputsTargets>
+    <ComputeLibInputsTargets>
+            $(ComputeLibInputsTargets);
+            Computemcw_loaderOutput;
+          </ComputeLibInputsTargets>
+  </PropertyGroup>
+  <Target
+    Name="Computemcw_loaderOutput"
+    Condition="'@(mcw_loader)' != ''">
+    <ItemGroup>
+      <mcw_loaderDirsToMake
+        Condition="'@(mcw_loader)' != '' and '%(mcw_loader.ExcludedFromBuild)' != 'true'"
+        Include="%(mcw_loader.Outputs)" />
+      <Link
+        Include="%(mcw_loaderDirsToMake.Identity)"
+        Condition="'%(Extension)'=='.obj' or '%(Extension)'=='.res' or '%(Extension)'=='.rsc' or '%(Extension)'=='.lib'" />
+      <Lib
+        Include="%(mcw_loaderDirsToMake.Identity)"
+        Condition="'%(Extension)'=='.obj' or '%(Extension)'=='.res' or '%(Extension)'=='.rsc' or '%(Extension)'=='.lib'" />
+      <ImpLib
+        Include="%(mcw_loaderDirsToMake.Identity)"
+        Condition="'%(Extension)'=='.obj' or '%(Extension)'=='.res' or '%(Extension)'=='.rsc' or '%(Extension)'=='.lib'" />
+    </ItemGroup>
+    <MakeDir
+      Directories="@(mcw_loaderDirsToMake-&gt;'%(RootDir)%(Directory)')" />
+  </Target>
+</Project>
