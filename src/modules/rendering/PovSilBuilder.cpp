@@ -367,6 +367,27 @@ void PovDisplayContext::writeEdgeLine(PrintStream &ips,
                                       const Vector4D &n1, const Vector4D &n2,
                                       int flag /*=0*/)
 {
+  // check invalid vertex and normal
+  if (!qlib::isFinite(v1.x()) ||
+      !qlib::isFinite(v1.y()) ||
+      !qlib::isFinite(v1.z()) ||
+      !qlib::isFinite(n1.x()) ||
+      !qlib::isFinite(n1.y()) ||
+      !qlib::isFinite(n1.z())) {
+    LOG_DPRINTLN("PovSilBuilder> invalid vertex/normal for edge line ignored");
+    return;
+  }
+
+  if (!qlib::isFinite(v2.x()) ||
+      !qlib::isFinite(v2.y()) ||
+      !qlib::isFinite(v2.z()) ||
+      !qlib::isFinite(n2.x()) ||
+      !qlib::isFinite(n2.y()) ||
+      !qlib::isFinite(n2.z())) {
+    LOG_DPRINTLN("PovSilBuilder> invalid vertex/normal for edge line ignored");
+    return;
+  }
+
   if (qlib::isNear4(0.0, (v1-v2).sqlen()))
     return;
   
@@ -413,6 +434,17 @@ void PovDisplayContext::writePoint(PrintStream &ips,
                                    const Vector4D &v1, const Vector4D &n1,
                                    int flag /*=0*/)
 {
+  // check invalid vertex and normal
+  if (!qlib::isFinite(v1.x()) ||
+      !qlib::isFinite(v1.y()) ||
+      !qlib::isFinite(v1.z()) ||
+      !qlib::isFinite(n1.x()) ||
+      !qlib::isFinite(n1.y()) ||
+      !qlib::isFinite(n1.z())) {
+    LOG_DPRINTLN("PovSilBuilder> invalid vertex/normal for edge corner ignored");
+    return;
+  }
+
   LString secname = getSecName();
 
   double w = getEdgeLineWidth();
