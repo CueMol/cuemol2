@@ -64,6 +64,55 @@
 
 	</rows>
       </grid>
+
+    </groupbox>
+
+    <groupbox flex="0">
+      <caption label="Putty"/>
+
+      <grid flex="0">
+	<columns>
+	  <column flex="0"/>
+	  <column flex="1"/>
+	</columns>
+
+	<rows>
+	  <hbox flex="0">
+	    <hbox flex="1" align="center" class="propdlg-rowbox">
+	      <label value="Mode:" />
+	      <menulist id="tubepage-puttymode" flex="0" class="propdlg-menulist">
+		<menupopup>
+		  <menuitem label="off" value="none"/>
+		  <menuitem label="Linear" value="linear1"/>
+		  <menuitem label="Scaling" value="scale1"/>
+		</menupopup>
+	      </menulist>
+	    </hbox>
+	    <hbox flex="1" align="center" class="propdlg-rowbox">
+	      <label value="Target:" />
+	      <menulist id="tubepage-puttytgt" flex="0" class="propdlg-menulist">
+		<menupopup>
+		  <menuitem label="B-factor" value="bfac"/>
+		  <menuitem label="Occupancy" value="occ"/>
+		</menupopup>
+	      </menulist>
+	    </hbox>
+	  </hbox>
+	  
+	  <row align="center" class="propdlg-rowbox">
+	    <label value="Low scale:" flex="0"/>
+	    <numslider id="tubepage-puttyloscl" flex="1" size="2"
+		       decimalplaces="1" min="0.1" max="10" increment="0.1" unit="none"/>
+	  </row>
+	  <row align="center" class="propdlg-rowbox">
+	    <label value="High scale:" flex="0"/>
+	    <numslider id="tubepage-puttyhiscl" flex="1" size="2"
+		       decimalplaces="1" min="0.1" max="10" increment="0.1" unit="none"/>
+	  </row>
+
+	</rows>
+      </grid>
+
     </groupbox>
 
     <grid flex="0">
