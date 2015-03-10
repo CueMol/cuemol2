@@ -77,7 +77,13 @@ if (!("AnimUIToolRibbon" in cuemolui)) {
       let scn = cuemol.getScene(this.mParent.mTgtSceneID);
       let am = scn.getAnimMgr();
       if (this.mBtnPlayPause.getAttribute("state")=="play") {
-	am.start(this.mParent.getTgtView());
+	try {
+	  am.start(this.mParent.getTgtView());
+	}
+	catch (e) {
+	  util.alert(window, "Cannot start animation: "+e);
+	}
+
 	{
 	  let that = this;
 	  this.mTimerID = timers.setInterval( function () { that.onTimer(); }, 1000);

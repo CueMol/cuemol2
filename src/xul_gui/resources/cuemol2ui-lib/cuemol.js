@@ -86,6 +86,12 @@ exports.implIface = function (aClassName, aIfName)
   }
 };
 
+exports.implIface2 = function (aObj, aIfName)
+{
+  var clsnm = aObj._wrapped.getClassName();
+  return exports.implIface(clsnm, aIfName);
+};
+
 exports.getErrMsg = function ()
 {
   return xpc.getErrMsg();

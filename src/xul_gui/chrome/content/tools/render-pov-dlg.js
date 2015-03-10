@@ -161,7 +161,7 @@
     util.persistChkBox("enable-post-blend", document);
     util.persistChkBox("enable-shadow", document);
     util.persistChkBox("enable-edgelines", document);
-    util.persistChkBox("use-lightdefault", document);
+    util.persistChkBox("povopt-lightdefault", document);
     util.persistChkBox("enable-pixlabels", document);
 
     // close OK ==> remove tmp&img files

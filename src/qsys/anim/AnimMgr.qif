@@ -76,6 +76,7 @@ runtime_class AnimMgr
   void insertBefore(integer ind, object<AnimObj$> pObj);
   boolean removeAt(integer ind);
   
+  void resolveRelTime();
 
 };
 

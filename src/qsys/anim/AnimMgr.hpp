@@ -38,12 +38,13 @@ namespace qsys {
     public qlib::LPropEventListener,
     public SceneEventListener
   {
-  private:
     MC_SCRIPTABLE;
 
     friend class ::AnimMgr_wrap;
 
-    /// unique object ID
+  private:
+
+    /// unique ID of this object
     qlib::uid_t m_uid;
 
     qlib::EventManager *m_pEvMgr;
@@ -53,10 +54,10 @@ namespace qsys {
 
     qlib::time_value m_timeRemain;
 
-    // read-only prop elapsed
+    /// Elapsed time (read-only prop)
     qlib::time_value m_timeElapsed;
 
-    // state of anim
+    /// state of anim
     int m_nState;
 
     qlib::uid_t m_nTgtSceneID;
@@ -150,32 +151,47 @@ namespace qsys {
     
     void fireEvent(AnimObjEvent &ev);
 
-    /// update internal data structure after editing
-    void update();
-
   public:
 
-    ///////////////////////////////////////////////
-    // editor
+    ///////////////////////////////////////////////////
+    // methods that changes (edit/modify) the animation 
 
-    /// clear animation table
+    /// clear the animation table
     void clear();
 
     /// get animation object by index
     AnimObjPtr getAt(int index) const;
 
-    /// get animation object by name
+    /// Get animation object by name
+    /// @param name name of anim obj to retrieve
     AnimObjPtr getByName(const LString &name) const;
 
+    /// Append animation object to the last of the anim table
+    /// @param pAnimObj animation object to append
     void append(AnimObjPtr pAnimObj);
 
+    /// Insert animation object
+    /// @param nInsBef index of reference anim obj
+    /// @param pAnimObj animation object to insert before the nInsBef obj
     void insertBefore(int nInsBef, AnimObjPtr pAnimObj);
 
+    /// Remove the animation obj refered by the index
+    /// @param index index of anim obj to delete
     bool removeAt(int index);
 
+    /// Resolve relative start/end times
+    /// @throw throws exception when time resolution is failed
+    void resolveRelTime();
+
   private:
+    /// update internal data structure (total length) after modification
+    void update();
+
     /// append implementation (w/o event/undo op.)
     void appendImpl(AnimObjPtr pAnimObj);
+
+    /// Resolve relative start/end times (implementation)
+    void resolveTimeImpl(AnimObjPtr pObj);
 
   public:
     /////////////////////////////////////////////////

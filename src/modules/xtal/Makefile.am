@@ -36,6 +36,7 @@ MapMeshRenderer.qif \
 MapSurfRenderer.qif \
 MapRenderer.qif \
 MTZ2MapReader.qif \
+CCP4MapReader.qif \
 $(NULL)
 
 ######################################################

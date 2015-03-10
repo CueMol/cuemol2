@@ -44,9 +44,9 @@ function PovRender()
   this.mbShadow = false;
   this.mdLightInten = 1.3;
   this.mdFlashFrac = 0.8/1.3;
+  this.mdAmbFrac = 0;
   this.mbRadiosity = false;
   this.mnRadMode = 0;
-  this.mdAmbFrac = 0;
 
   this.mTimer = null;
   this.mPlfName = util.getPlatformString();

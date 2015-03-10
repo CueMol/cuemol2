@@ -120,44 +120,10 @@ function Qm2Main()
 }
 
 ////////////////////////////////
-// setup log output window
+// setup canvas text renderer
 
-Qm2Main.prototype.logInit = function ()
+Qm2Main.prototype.textRenderInit = function ()
 {
-  var logMgr = cuemol.getService("MsgLog");
-  var accumMsg = logMgr.getAccumMsg();
-  logMgr.removeAccumMsg();
-
-  // setup log display iframe
-  if (!this.mLogWnd) {
-    this.mLogWnd = document.getElementById("output_log_wnd");
-    this.mLogWndDoc = this.mLogWnd.contentDocument;
-    this.mLogWndDoc.writeln("<head><link rel='stylesheet' type='text/css' href='logwindow.css'></head><body><pre id='log_content' class='console-text'/></body>");
-    this.mLogWndDoc.close();
-    this.mLogWndWin = this.mLogWnd.contentWindow;
-    this.mLogWndPre = this.mLogWndDoc.getElementById("log_content");
-    this.mLogWndPre.appendChild(this.mLogWndDoc.createTextNode(accumMsg));
-    this.mLogWndWin.scrollTo(0, this.mLogWndPre.scrollHeight);
-  }
-
-  var that = this;
-  var handler = function (args) {
-    var msg = args.obj.content;
-    if (args.obj.newline)
-      msg += "\n";
-    that.mLogWndPre.appendChild(that.mLogWndDoc.createTextNode(msg));
-
-    //logInp.scrollTop = logInp.scrollHeight;
-    that.mLogWndWin.scrollTo(0, that.mLogWndPre.scrollHeight);
-  };
-
-  var cbid =
-    cuemol.evtMgr.addListener("log",
-                              cuemol.evtMgr.SEM_ANY, // source type
-                              cuemol.evtMgr.SEM_ANY, // event type
-                              cuemol.evtMgr.SEM_ANY, // source uid
-                              handler);
-  
   var canvas = document.createElementNS("http://www.w3.org/1999/xhtml", 'canvas');
   var handler2 = function (args) {
     var tr = args.obj;
@@ -207,7 +173,7 @@ Qm2Main.prototype.logInit = function ()
                               handler2);
   
   addEventListener("unload", function () {
-    cuemol.evtMgr.removeListener(cbid);
+    //cuemol.evtMgr.removeListener(cbid);
     cuemol.evtMgr.removeListener(cbid2);
   }, false);
   
@@ -215,9 +181,8 @@ Qm2Main.prototype.logInit = function ()
 
 Qm2Main.prototype.clearLogContents = function ()
 {
-  var pre = this.mLogWndPre;
-  while (pre.firstChild)
-    pre.removeChild(pre.firstChild);
+  if (cuemolui.logpanel)
+    cuemolui.logpanel.clearLogContents();
 };
 
 
@@ -226,8 +191,8 @@ Qm2Main.prototype.clearLogContents = function ()
 
 Qm2Main.prototype.onLoad = function ()
 {
-  // logwindow initialization
-  this.logInit();
+  // canvas text rendering initialization
+  this.textRenderInit();
 
   var xthis = this;
 

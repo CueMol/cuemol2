@@ -19,6 +19,10 @@ AnimObj::AnimObj()
 
   setQuadric(0.0);
   m_bDisabled = false;
+
+  //m_refName = LString();
+  m_relStart = 0;
+  m_relEnd = 0;
 }
 
 AnimObj::AnimObj(const AnimObj &arg)
@@ -28,11 +32,15 @@ AnimObj::AnimObj(const AnimObj &arg)
 
   setQuadric(arg.m_quadric);
   m_bDisabled = arg.m_bDisabled;
+
+  m_refName = arg.m_refName;
+  m_relStart = arg.m_relStart;
+  m_relEnd = arg.m_relEnd;
 }
 
 AnimObj::~AnimObj()
 {
-  //qlib::ObjectManager::sUnregObj(m_uid);
+  qlib::ObjectManager::sUnregObj(m_uid);
 }
 
 //////////////////////////////
@@ -53,23 +61,32 @@ void AnimObj::setQuadric(qlib::LReal val)
   }
 }
 
-void AnimObj::setStart(qlib::time_value value)
+void AnimObj::setRelStart(qlib::time_value value)
 {
-  m_start = value;
-  if (m_start>m_end) {
-    MB_DPRINTLN("warning: inconsistent end time (s=%d > e=%d) modified", int(m_start), int(m_end));
-    m_end = value;
+  m_relStart = value;
+  if (m_relStart>m_relEnd) {
+    MB_DPRINTLN("warning: inconsistent end time (s=%d > e=%d) modified",
+                 int(m_relStart), int(m_relEnd));
+    m_relEnd = value;
   }
 }
 
-void AnimObj::setEnd(qlib::time_value value)
+void AnimObj::setRelEnd(qlib::time_value value)
 {
-  m_end = value;
-  if (m_start>m_end) {
-    MB_DPRINTLN("warning: inconsistent start time (s=%d > e=%d) modified", int(m_start), int(m_end));
-    m_start = value;
+  m_relEnd = value;
+  if (m_relStart>m_relEnd) {
+    MB_DPRINTLN("warning: inconsistent start time (s=%d > e=%d) modified",
+                 int(m_relStart), int(m_relEnd));
+    m_relStart = value;
   }
 }
+
+void AnimObj::setTimeRefName(const LString &nm)
+{
+  m_refName = nm;
+}
+
+//////////////
 
 void AnimObj::onTimerPre(qlib::time_value elapsed, AnimMgr *pMgr)
 {

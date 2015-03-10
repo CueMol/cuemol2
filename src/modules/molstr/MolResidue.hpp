@@ -10,6 +10,7 @@
 
 #include <qlib/LString.hpp>
 #include <qlib/MapTable.hpp>
+#include <qlib/LScrVector4D.hpp>
 
 #include "MolAtom.hpp"
 
@@ -191,9 +192,11 @@ namespace molstr {
       return m_sPivAtomName;
     }
 
-    MolAtomPtr getPivotAtom() {
+    MolAtomPtr getPivotAtom() const {
       return getAtom(m_sPivAtomName);
     }
+
+    qlib::LScrVector4D getPivotPosScr() const;
 
   private:
     /** next linked residue */

@@ -142,8 +142,9 @@ public:
                      double alpha, double beta, double gamma,
                      int nsg = 1);
 
-  // TO DO: implementation
-  // void setMolBoundary(MolCoord *pMol, MolSelectPtr psel, double rng);
+  /// Histogram generation in JSON format
+  // (can be moved to ScalarObj level??)
+  LString getNormHistogramJSON();
 
   ///////////////////////////////////////////////////////////////
   // Get/set map properties.

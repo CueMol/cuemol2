@@ -405,8 +405,8 @@ bool CAxMolViewCtl::loadDataQSC(const qlib::LString &srcpath)
     pAM->setLength(qlib::time_value(10*1000)); // 10sec
     pAM->setStartCamName("__current");
     qlib::LScrSp<anim::SimpleSpin> pAnim = qlib::LScrSp<anim::SimpleSpin>(new anim::SimpleSpin());
-    pAnim->setStart(0);
-    pAnim->setEnd(10*1000);
+    pAnim->setRelStart(0);
+    pAnim->setRelEnd(10*1000);
     pAnim->setAngle(360.0);
     pAnim->setAxis(qlib::Vector4D(0,1,0));
     pAM->append(pAnim);

@@ -54,6 +54,8 @@ ScenePtr AnimMgr::getTgtScene() const
 
 void AnimMgr::startImpl()
 {
+  resolveRelTime();
+
   m_pStartCam = CameraPtr();
 
   // set camera from the start camera name
@@ -107,7 +109,7 @@ void AnimMgr::startImpl()
     // propanim object
     std::vector<qlib::uid_t> uids;
     pPropAnim->getTgtUIDs(this, uids);
-    qlib::time_value tv_start = pPropAnim->getStart();
+    qlib::time_value tv_start = pPropAnim->getAbsStart();
     LString propnm = pPropAnim->getPropName();
     MB_DPRINTLN("anim %s tgtprop=%s", pPropAnim->getName().c_str(), propnm.c_str());
 
@@ -117,7 +119,7 @@ void AnimMgr::startImpl()
       if (iter==tl.end()) {
         tl.insert(prop_tl::value_type(key, pPropAnim));
       }
-      else if (tv_start < iter->second->getStart()) {
+      else if (tv_start < iter->second->getAbsStart()) {
         iter->second = pPropAnim;
       }
     }
@@ -135,7 +137,7 @@ void AnimMgr::startImpl()
     qlib::LScrSp<PropAnim> pPropAnim = elem.second;
     MB_DPRINTLN("propanim %s (key=%s) is an initiator for Rend %d.",
                 pPropAnim->getName().c_str(),
-                //int( pPropAnim->getStart() ),
+                //int( pPropAnim->getAbsStart() ),
                 key.c_str(),
                 int(uid));
     pPropAnim->onPropInit(this, uid);
@@ -148,16 +150,17 @@ void AnimMgr::start(ViewPtr pView)
   if (m_nState==AM_STOP) {
     m_timeStart = m_pEvMgr->getCurrentTime();
     m_timeEnd = m_timeStart + m_length;
-    m_pEvMgr->setTimer(this, m_length);
-
     m_pTgtView = pView;
     startImpl();
+
+    m_pEvMgr->setTimer(this, m_length);
   }
   else if (m_nState==AM_PAUSED) {
     m_timeStart = m_pEvMgr->getCurrentTime() - m_timeElapsed;
     m_timeEnd = m_timeStart + m_length;
-    m_pEvMgr->setTimer(this, m_timeRemain);
     m_nState = AM_RUNNING;
+
+    m_pEvMgr->setTimer(this, m_timeRemain);
   }
 }
 
@@ -211,8 +214,8 @@ void AnimMgr::goTime(qlib::time_value to_tv, ViewPtr pView)
     // skip the disabled animobj
     if (pObj->isDisabled())
       continue;
-    qlib::time_value st = pObj->getStart();
-    qlib::time_value en = pObj->getEnd();
+    qlib::time_value st = pObj->getAbsStart();
+    qlib::time_value en = pObj->getAbsEnd();
     tl.insert(timeline::value_type(st, timeline_tuple(0, pObj)));
     tl.insert(timeline::value_type(en, timeline_tuple(1, pObj)));
   }
@@ -245,11 +248,11 @@ void AnimMgr::onTimerImpl(qlib::time_value elapsed)
     if (pObj->isDisabled())
       continue;
 
-    if (elapsed<pObj->getStart()) {
+    if (elapsed<pObj->getAbsStart()) {
       // BEFORE
       pObj->onTimerPre(elapsed, this);
     }
-    else if (pObj->getEnd()<elapsed) {
+    else if (pObj->getAbsEnd()<elapsed) {
       // AFTER
       if (pObj->getState()==AnimObj::AO_PRE) {
         pObj->setState(AnimObj::AO_ACTIVE);
@@ -466,15 +469,21 @@ void AnimMgr::fireEvent(AnimObjEvent &ev)
 void AnimMgr::update()
 {
   if (m_nState!=AM_STOP) {
-    // edited but running -> abort play
+    // edited but running -> abort the play
     stop();
+  }
+
+  try {
+    resolveRelTime();
+  }
+  catch (...) {
   }
 
   // adj total length
   qlib::time_value len = 0;
   BOOST_FOREACH (AnimObjPtr pObj, m_data) {
-    //qlib::time_value st = pObj->getStart();
-    qlib::time_value en = pObj->getEnd();
+    //qlib::time_value st = pObj->getAbsStart();
+    qlib::time_value en = pObj->getAbsEnd();
     if (en>len)
       len = en;
   }
@@ -617,5 +626,82 @@ void AnimMgr::propChanged(qlib::LPropEvent &aEvent)
   MB_DPRINTLN("AnimMgr prop (%s) changed",
 	      aEvent.getName().c_str());
 
+}
+
+/// Resolve relative start/end times
+void AnimMgr::resolveRelTime()
+{
+  // set resolution flag
+  BOOST_FOREACH (AnimObjPtr pObj, m_data) {
+    pObj->setTimeResolved(false);
+  }
+
+  BOOST_FOREACH (AnimObjPtr pObj, m_data) {
+    BOOST_FOREACH (AnimObjPtr pObj2, m_data) {
+      pObj2->setMarked(false);
+    }
+    resolveTimeImpl(pObj);
+  }
+}
+
+void AnimMgr::resolveTimeImpl(AnimObjPtr pObj)
+{
+  if (pObj->isTimeResolved())
+    return;
+
+  if (pObj->isMarked()) {
+    LString msg = LString::format("AnimMgr.resolve failed: AnimObj <%s> cyclic ref", pObj->getName().c_str());
+    MB_THROW(qlib::RuntimeException, msg);
+    return;
+  }
+
+  LString ref = pObj->getTimeRefName();
+  if (ref.isEmpty()) {
+    // no ref obj --> rel==abs time specification
+    pObj->setAbsStart( pObj->getRelStart() );
+    pObj->setAbsEnd( pObj->getRelEnd() );
+    pObj->setTimeResolved(true);
+    return;
+  }
+    
+  AnimObjPtr pRefObj;
+  BOOST_FOREACH (AnimObjPtr pObj, m_data) {
+    if (ref.equals(pObj->getName())) {
+      pRefObj = pObj;
+      break;
+    }
+  }
+
+  if (pRefObj.isnull()) {
+    LString msg = LString::format("AnimMgr.resolve failed: AnimObj <%s> not found", ref.c_str());
+    MB_THROW(qlib::RuntimeException, msg);
+    return;
+  }
+
+  if (pRefObj->isTimeResolved()) {
+    time_value tv_st = pRefObj->getAbsStart();
+    time_value tv_en = pRefObj->getAbsEnd();
+    pObj->setAbsStart(tv_en + pObj->getRelStart());
+    pObj->setAbsEnd(tv_en + pObj->getRelEnd());
+    pObj->setTimeResolved(true);
+    return;
+  }
+
+  // refObj's time is not resolved yet!!
+
+  pObj->setMarked(true);
+  resolveTimeImpl(pRefObj);
+
+  if (!pRefObj->isTimeResolved()) {
+    LString msg = LString::format("AnimMgr.resolve failed: AnimObj <%s> resolve failed", ref.c_str());
+    MB_THROW(qlib::RuntimeException, msg);
+    return;
+  }
+
+  time_value tv_st = pRefObj->getAbsStart();
+  time_value tv_en = pRefObj->getAbsEnd();
+  pObj->setAbsStart(tv_en + pObj->getRelStart());
+  pObj->setAbsEnd(tv_en + pObj->getRelEnd());
+  pObj->setTimeResolved(true);
 }
 

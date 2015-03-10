@@ -1,0 +1,85 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+<!DOCTYPE window SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+
+<overlay id="fopen-ccp4map-overlay"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <overlaytarget id="tabs-overlay-target">
+    <tab label="CCP4Map options" hidden="true" id="ccp4map_options_tab"/>
+  </overlaytarget>
+  
+  <overlaytarget id="tabpanels-overlay-target">
+    <tabpanel hidden="true" id="ccp4map_options_tabpanel">
+      <vbox>
+	<checkbox id="ccp4map_normalize" label="Normalize by mean and stdev"/>
+	<hbox align="center">
+	  <checkbox id="ccp4map_trunc_min" label="Truncate density lower than:"/>
+	  <textbox id="ccp4map_min" size="2" decimalplaces="1" increment="0.1" flex="0" type="number"/>
+	  <label flex="0" value="&#0963;"/>
+	</hbox>
+	<hbox align="center">
+	  <checkbox id="ccp4map_trunc_max" label="Truncate density higher than:"/>
+	  <textbox id="ccp4map_max" size="2" decimalplaces="1" increment="0.1" flex="0" type="number"/>
+	  <label flex="0" value="&#0963;"/>
+	</hbox>
+      </vbox>
+    </tabpanel>
+  </overlaytarget>
+
+<script type="application/javascript;version=1.8">
+( function () {
+let dlgdata = window.arguments[0];
+
+function onInit() {
+
+  if (window.gDlgObj.selectShowTab(dlgdata.target[0].reader_name, "ccp4map")) {
+  let rdr = dlgdata.target[0].reader;
+
+  document.getElementById('ccp4map_normalize').checked = (rdr.normalize == true);
+  document.getElementById('ccp4map_trunc_min').checked = (rdr.truncate_min == true);
+  document.getElementById('ccp4map_trunc_max').checked = (rdr.truncate_max == true);
+  document.getElementById('ccp4map_max').value = rdr.max;
+  document.getElementById('ccp4map_min').value = rdr.min;
+}
+}
+
+addEventListener("load", onInit, false);
+
+function setProp(rdr, propname, newval)
+{
+  let orig = rdr[propname];
+  if (newval!=orig)
+    rdr[propname] = newval;
+}
+
+dlgdata.ondlgok.push( function (aEvent) {
+if (document.getElementById("ccp4map_options_tabpanel")) {
+  
+  let rdr = dlgdata.target[0].reader;
+  var value;
+  try {
+    setProp(rdr, "normalize", document.getElementById('ccp4map_normalize').checked);
+    setProp(rdr, "truncate_min", document.getElementById('ccp4map_trunc_min').checked);
+    setProp(rdr, "truncate_max", document.getElementById('ccp4map_trunc_max').checked);
+    value = document.getElementById('ccp4map_max').value;
+    value = parseInt(value);
+    setProp(rdr, "max", value);
+    value = document.getElementById('ccp4map_min').value;
+    value = parseInt(value);
+    setProp(rdr, "min", value);
+  }
+  catch (e) {
+    dd("Fopen PDBOptPage SetProp error: "+e);
+    debug.exception(e);
+  }
+
+}
+
+});
+
+} )();
+  
+</script>
+</overlay>
+

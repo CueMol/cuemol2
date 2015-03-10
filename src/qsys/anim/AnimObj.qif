@@ -24,8 +24,13 @@ runtime_class AnimObj
   property boolean disabled => redirect(isDisabled, setDisabled);
   default disabled = false;
 
-  property object<TimeValue> start => redirect(getScrStart, setScrStart);
-  property object<TimeValue> end => redirect(getScrEnd, setScrEnd);
+  property string timeRefName => redirect(getTimeRefName, setTimeRefName);
+
+  property object<TimeValue> start => redirect(getScrRelStart, setScrRelStart);
+  property object<TimeValue> end => redirect(getScrRelEnd, setScrRelEnd);
+  
+  property object<TimeValue> absStart => redirect(getScrAbsStart, XXX) (readonly);
+  property object<TimeValue> absEnd => redirect(getScrAbsEnd, XXX) (readonly);
 
   property real quadric => redirect(getQuadric, setQuadric);
   default quadric = 0.0;

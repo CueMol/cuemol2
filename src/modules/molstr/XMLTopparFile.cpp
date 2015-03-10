@@ -110,6 +110,9 @@ void XMLTopparFile::startTopResid(const Attrs &attrs)
   if (attrs.containsKey("pivot"))
     m_pCurResid->addPivotAtom(attrs.get("pivot"));
   //m_pCurResid->setPropStr("pivot", attrs.get("pivot"));
+  // single-letter code
+  if (attrs.containsKey("single"))
+    m_pCurResid->setPropStr("single", attrs.get("single"));
 }
 
 void XMLTopparFile::endTopResid()

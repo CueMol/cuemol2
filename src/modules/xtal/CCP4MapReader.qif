@@ -1,0 +1,30 @@
+// -*-Mode: C++;-*-
+//
+// CCP4 map file reader
+//
+
+#ifndef CCP4_MAP_READER_QIF_INCLUDED
+#define CCP4_MAP_READER_QIF_INCLUDED
+
+#include <qsys/ObjReader.qif>
+
+runtime_class CCP4MapReader extends ObjReader
+{
+  client_hdr "CCP4MapReader.hpp";
+  client_name xtal::CCP4MapReader;
+
+  scriptable;
+  smartptr;
+
+  property boolean normalize => m_bNormalize;
+
+  property boolean truncate_min => m_bTruncMin;
+  property real min => m_dMin;
+
+  property boolean truncate_max => m_bTruncMax;
+  property real max => m_dMax;
+
+};
+
+#endif
+

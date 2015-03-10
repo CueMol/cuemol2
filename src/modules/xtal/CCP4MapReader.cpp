@@ -17,11 +17,18 @@
 using namespace xtal;
 using qlib::StrInStream;
 
-MC_DYNCLASS_IMPL(CCP4MapReader, CCP4MapReader, qlib::LSpecificClass<CCP4MapReader>);
+// MC_DYNCLASS_IMPL(CCP4MapReader, CCP4MapReader, qlib::LSpecificClass<CCP4MapReader>);
 
 // default constructor
 CCP4MapReader::CCP4MapReader()
 {
+  m_bNormalize = false;
+
+  m_bTruncMin = false;
+  m_dMin = 0.0;
+  
+  m_bTruncMax = true;
+  m_dMax = 5.0;
 }
 
 // destructor
@@ -187,10 +194,31 @@ bool CCP4MapReader::read(qlib::InStream &arg)
 
   in.fetch_floatArray(fbuf, ntotal);
 
+  if (m_bTruncMin) {
+    LOG_DPRINTLN("Truncate map lower than: %f sigma", m_dMin);
+    for (int i=0; i<ntotal; ++i)
+      fbuf[i] = qlib::max(fbuf[i], float(m_dMin * rhosig));
+  }
+
+  if (m_bTruncMax) {
+    LOG_DPRINTLN("Truncate map higher than: %f sigma", m_dMax);
+    for (int i=0; i<ntotal; ++i)
+      fbuf[i] = qlib::min(fbuf[i], float(m_dMax * rhosig));
+  }
+
+  if (m_bNormalize) {
+    LOG_DPRINTLN("Normalize map");
+    for (int i=0; i<ntotal; ++i) {
+      double v = fbuf[i];
+      v = (v - rhomean)/rhosig;
+      fbuf[i] = float(v);
+    }
+  }
+
   // copy fbuf array to the IfDenMap object.
   //  This method also performs axis rotation.
   pMap->setMapFloatArray(fbuf, ncol, nrow, nsect,
-				axcol-1, axrow-1, axsect-1);
+                         axcol-1, axrow-1, axsect-1);
 
   // rotate start index numbers
   rotate(stacol, starow, stasect, axcol-1, axrow-1, axsect-1);
