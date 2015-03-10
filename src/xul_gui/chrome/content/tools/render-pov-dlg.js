@@ -149,8 +149,8 @@
     this.mFlashFrac = document.getElementById("povopt-flashfrac");
     this.mAmbFrac = document.getElementById("povopt-ambinten");
 
-    if (this.mLightDef.checked)
-      this.setupLightDefault();
+    //if (this.mLightDef.checked)
+    this.setupLightDefault();
     this.setupDisableState();
   };
   
