@@ -367,7 +367,7 @@ if (!("anim" in cuemolui.panels)) {
       }
 
       var obj = null, refobj = null;
-      if (bAppend)
+      if (bAppend && animMgr.size-1>=0)
 	refobj = animMgr.getAt(animMgr.size-1);
       else if (id-1>=0)
 	refobj = animMgr.getAt(id-1);
