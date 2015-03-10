@@ -63,6 +63,8 @@
     this.mOutImgUnit = document.getElementById("output-image-unit");
     this.mNumThreads = document.getElementById("num-threads");
     this.mRadMode = document.getElementById("radio-mode-list");
+    this.mRadMode.addEventListener(
+      "select", function (a) { that.onRadioModeSel(a); } , false);
 
     this.mProgBar = document.getElementById("progress");
 
@@ -136,6 +138,20 @@
     this.mZoomMenuList = document.getElementById("ZoomList");
     this.mZoomMenuList.addEventListener(
       "command", function (a) { that.onZoomPreview(a); } , false);
+
+    this.mLightDef = document.getElementById("povopt-lightdefault");
+    this.mLightDef.addEventListener(
+      "command", function (a) { that.onLhtDefChk(a); } , false);
+
+    this.mLightSpr = document.getElementById("povopt-lightspread");
+    // this.mLightSpr.addEventListener("change", function (event) { that.validateWidgets(event) }, false);
+    this.mLightInten = document.getElementById("povopt-lightinten");
+    this.mFlashFrac = document.getElementById("povopt-flashfrac");
+    this.mAmbFrac = document.getElementById("povopt-ambinten");
+
+    if (this.mLightDef.checked)
+      this.setupLightDefault();
+    this.setupDisableState();
   };
   
   dlg.onUnload = function ()
@@ -145,6 +161,8 @@
     util.persistChkBox("enable-post-blend", document);
     util.persistChkBox("enable-shadow", document);
     util.persistChkBox("enable-edgelines", document);
+    util.persistChkBox("use-lightdefault", document);
+    util.persistChkBox("enable-pixlabels", document);
 
     // close OK ==> remove tmp&img files
     this.mPovRender.clearTmpFiles();
@@ -194,6 +212,8 @@
 	this.mCopyImgBtn.disabled = true;
       }
       this.mStartStopBtn.setAttribute("label", "Start");
+
+      this.setupDisableState();
     }
     
   };
@@ -237,110 +257,6 @@
     return value;
   };
 
-  dlg.onStartStopRender = function ()
-  {
-    this.mPovRender.setPovExePath(this.mPovExePathBox.value);
-    this.mPovRender.setPovIncPath(this.mPovIncPathBox.value);
-
-    if (this.mPovRender._bRender) {
-      this.mPovRender.stopRender();
-      this.disableButtons(false);
-      return;
-    }
-
-    var that = this;
-    var elem;
-
-    this.disableButtons(true);
-
-    // setup DPI
-    var dpi = parseInt(this.mOutImgDPI.value);
-    if (!isNaN(dpi)) {
-      this.mPovRender.mDPI = dpi;
-      // pref.set(pov_dpi_key, this.mOutImgDPI.value);
-    }
-    else {
-      dd("Invalid DPI value: "+this.mOutImgDPI.value);
-      dpi = 72;
-    }
-
-    // setup image size unit
-    var unit = this.mOutImgUnit.value;
-
-    // num of threads
-    this.mPovRender.nThreads = this.mNumThreads.value;
-
-    this.mPovRender.img_height = Math.round( this.convImgSizeUnit(this.mOutImgHeight.value, dpi, unit) );
-    this.mPovRender.img_width = Math.round( this.convImgSizeUnit(this.mOutImgWidth.value, dpi, unit) );
-    // alert("value:"+this.mOutImgHeight.value+", DPI="+dpi+", UNIT="+unit+"--> "+this.mPovRender.img_height);
-
-    var stereoElem = document.getElementById("stereo-mode-list");
-    var steDep = document.getElementById("stereo-depth");
-    let steDepVal = parseFloat(steDep.value);
-    if (isNaN(steDepVal) || steDepVal<0 || steDepVal>1)
-      steDepVal = 0.03; // default value
-    if (stereoElem.selectedItem.value=="right") {
-      this.mPovRender.nStereo = 1;
-      this.mPovRender.dSteDep = steDepVal;
-    }
-    else if (stereoElem.selectedItem.value=="left") {
-      this.mPovRender.nStereo = -1;
-      this.mPovRender.dSteDep = steDepVal;
-    }
-    else
-      this.mPovRender.nStereo = 0;
-
-    elem = document.getElementById("proj-mode-list");
-    this.mPovRender.bOrtho = (elem.selectedItem.value=="ortho");
-
-    elem = document.getElementById("use-transp-bg");
-    if (elem.checked) {
-      this.mPovRender.mbOutputAlpha = true;
-      this.mPovRender.mbUseFog = false;
-    }
-    else {
-      this.mPovRender.mbOutputAlpha = false;
-      this.mPovRender.mbUseFog = true;
-    }
-    
-    elem = document.getElementById("enable-clip-plane");
-    this.mPovRender.mbClip = elem.checked;
-
-    elem = document.getElementById("enable-post-blend");
-    this.mPovRender.mbPostBlend = elem.checked;
-
-    elem = document.getElementById("enable-shadow");
-    this.mPovRender.mbShadow = elem.checked;
-
-    elem = document.getElementById("enable-edgelines");
-    this.mPovRender.mbShowEdgeLines = elem.checked;
-    // alert("edge lines: "+this.mPovRender.mbShowEdgeLines);
-
-    // radiosity settings
-    if (this.mRadMode.value=="-1")
-      this.mPovRender.mbRadiosity=false;
-    else {
-      this.mPovRender.mbRadiosity=true;
-      this.mPovRender.mnRadMode = this.mRadMode.value;
-    }
-    this.mPovRender.mbShowEdgeLines = elem.checked;
-
-    setTimeout( function () {
-      try {
-        that.mPovRender.makePovFiles(dlg.mTgtSceID, dlg.mTgtVwID);
-        that.mPovRender.startRender();
-      }
-      catch (e) {
-        debug.exception(e);
-        that.mPovRender.stopRender();
-        that.disableButtons(false);
-        util.alert(window, "Rendering failed:\n"+e);
-        return;
-      }
-    }, 100);
-    return;
-  };
-
   dlg.onPovExePath = function ()
   {
     const nsIFilePicker = Ci.nsIFilePicker;
@@ -378,207 +294,6 @@
     
     this.mPovRender.setPovIncPath(fp.file.path);
     this.mPovIncPathBox.value = this.mPovRender.mPovIncPath;
-  };
-
-  dlg.onCloseClicked = function ()
-  {
-    return dlg.onCloseEvent(null);
-  };
-
-  dlg.onCloseEvent = function (evt)
-  {
-    this.mPovRender.stopRender();
-    //this.disableButtons(false);
-    
-    if (this.mPovRender._bTmpImageAvail &&
-        !this.mPovRender._bTmpImageSaved) {
-      // show query dialog
-      var result = util.confirmYesNoCancel(window, "Rendered image is not saved. Save image?");
-
-      if (result==0) {
-        // Yes -> save changes and close
-        if (!this.onSaveImage()) {
-          // save scene (as) is canceled --> cancel closing
-          return false;
-        }
-      }
-      else if (result==1) {
-        // Cancel -> cancel closing
-        return false;
-      }
-      else {
-        // No -> close immediately
-      }
-    }
-
-    return true;
-  };
-  
-  dlg.onSaveImage = function ()
-  {
-    if (!this.mPovRender._bTmpImageAvail)
-      return;
-    
-    const nsIFilePicker = Ci.nsIFilePicker;
-    var fp = Cc["@mozilla.org/filepicker;1"].createInstance(Ci.nsIFilePicker);
-    
-    fp.appendFilter("PNG (*.png)", "*.png");
-    
-    // make initial dir and filename
-    //var scene = cuemol.getScene(this.mTgtSceID);
-    var ini_name = util.removeFileExt( this.mSceName ); //scene.name;
-    
-    var stereoElem = document.getElementById("stereo-mode-list");
-    if (stereoElem.selectedItem.value=="right")
-      ini_name = ini_name + "_r";
-    else if (stereoElem.selectedItem.value=="left")
-      ini_name = ini_name + "_l";
-    
-    ini_name = ini_name + ".png";
-    fp.defaultString = ini_name;
-    fp.defaultExtension = "png";
-    
-    fp.init(window, "Save image", nsIFilePicker.modeSave);
-    var res = fp.show();
-    if (res==nsIFilePicker.returnCancel)
-      return false;
-    
-    this.mPovRender.saveImage(fp.file);
-    return true;
-  };
-
-  dlg.onCopyImage = function ()
-  {
-    if (!this.mPovRender._bTmpImageAvail)
-      return;
-    
-    try {
-      var imgfile = this.mPovRender.getCurrentImgFile();
-      
-      let clipboard = require("qsc-copipe");
-      clipboard.set(imgfile, "imagefilepng");
-    }
-    catch (e) {
-      debug.exception(e);
-      return;
-    }
-  };
-
-  dlg.onZoomPreview = function (aEvent)
-  {
-    var tgt = aEvent.target.id;
-    var sel = this.mZoomMenuList.selectedItem;
-
-    dd("onZoomPreview tagid = "+tgt);
-
-    switch (tgt) {
-    case "ZoomBtn":
-      var next = sel.nextElementSibling;
-      if (next)
-        this.mZoomMenuList.selectedItem = next;
-      else
-        return;
-      break;
-
-    case "UnzoomBtn":
-      var next = sel.previousElementSibling;
-      if (next)
-        this.mZoomMenuList.selectedItem = next;
-      else
-        return;
-      break;
-
-    }
-
-    sel = this.mZoomMenuList.selectedItem;
-    var value = parseInt(sel.value);
-    if (value>0 && value<=1000)
-      this.mZoomPc = value;
-
-    dd("onZoomPreview zoom="+this.mZoomPc);
-
-    this.updateImagePreview();
-  };
-
-  dlg.onTimer = function (bEnd)
-  {
-    dd("PovDlg.onTimer> called bEnd="+bEnd);
-    // this.updateImagePreview();
-    this.mProgBar.value = this.mPovRender.getProgress();
-
-    if (!bEnd)
-      return;
-
-    dd("PovDlg.onTimer> Timer END");
-    this.mProgBar.value = 0;
-    this.updateImagePreview();
-    this.disableButtons(false);
-
-    // Now the new temporary image file is available.
-    this.mSaveImgBtn.disabled = false;
-    this.mCopyImgBtn.disabled = false;
-  };
-
-  dlg.updateImagePreview = function ()
-  {
-    var imgfile = this.mPovRender.getCurrentImgFile();
-    if (imgfile==null) {
-      dd("ERROR: img file==null");
-      return;
-    }
-    try {
-      if (!imgfile.exists()) {
-	throw "file does not exist";
-      }
-      if (!imgfile.isFile()) {
-        throw "not a file";
-      }
-      //else if (this.mImgFile.fileSize<=0) {
-      //throw "zero size file";
-      //}
-    }
-    catch (e) {
-      dd("Cannot open file: "+imgfile);
-      debug.exception(e);
-      this.mImage.removeAttribute("src");
-      return;
-    }
-
-    /*
-  var fileStream = Cc['@mozilla.org/network/file-input-stream;1']
-    .createInstance(Ci.nsIFileInputStream);
-  fileStream.init(imgfile, 1, 0, false);
-  var binaryStream = Cc['@mozilla.org/binaryinputstream;1']
-    .createInstance(Ci.nsIBinaryInputStream);
-  binaryStream.setInputStream(fileStream);
-  var bytes = binaryStream.readBytes(fileStream.available());
-  binaryStream.close();
-  fileStream.close();
-  this.mImage.setAttribute("src", "data:image/png;base64,"+ btoa(bytes));
-     */
-
-    var ios = Cc["@mozilla.org/network/io-service;1"].getService(Ci.nsIIOService);
-    var URL = ios.newFileURI(imgfile);
-    dd("URL.spec="+URL.spec);
-    this.mImage.setAttribute("src", URL.spec+"?dummy="+this.mSerial);
-    ++this.mSerial;
-
-    //var height = this.mOutImgHeight.value * this.mZoomPc/100.0;
-    //var width = height; //this.mOutImgWidth.value * this.mZoomPc/100.0;
-    var height = this.mPovRender.img_height* this.mZoomPc/100.0;
-    var width = this.mPovRender.img_width* this.mZoomPc/100.0;
-
-    dd("image w="+width);
-    dd("image h="+height);
-
-    this.mImage.setAttribute("width", width);
-    this.mImage.setAttribute("height", height);
-
-    document.getElementById("imagebox-item").setAttribute("width", width);
-    document.getElementById("imagebox-item").setAttribute("height", height);
-
-    //binaryStream=null;
-    //fileStream=null;
   };
 
   dlg.onPresetSel = function (aEvent)
@@ -668,8 +383,385 @@
 
     this.mOutImgWidth.value = w;
     this.mOutImgHeight.value = h;
-
   };
+
+  dlg.onRadioModeSel = function (aEvent)
+  {
+    if (this.mLightDef.checked)
+      this.setupLightDefault();
+    this.setupDisableState();
+  };
+  
+  dlg.onLhtDefChk = function (aEvent)
+  {
+    dd("light default="+this.mLightDef.checked);
+    if (this.mLightDef.checked)
+      this.setupLightDefault();
+    this.setupDisableState();
+  };
+
+  dlg.setupLightDefault = function ()
+  {
+    this.mLightSpr.value = 1;
+    if (this.mRadMode.value==-1) {
+      // raytracing mode
+      this.mLightInten.value = 1.3;
+      this.mFlashFrac.value = 0.8/1.3;
+      this.mAmbFrac.value = 0.0;
+    }
+    else {
+      // ambient mode
+      this.mLightInten.value = 1.6;
+      this.mFlashFrac.value = 0.0;
+      this.mAmbFrac.value = 0.7;
+    }
+  };
+
+  dlg.setupDisableState = function ()
+  {
+    if (this.mLightDef.checked) {
+      // use default light settings (disable GUI)
+      this.mLightSpr.disabled = true;
+      this.mLightInten.disabled = true;
+      this.mFlashFrac.disabled = true;
+      this.mAmbFrac.disabled = true;
+    }
+    else {
+      this.mLightSpr.disabled = false;
+      this.mLightInten.disabled = false;
+      this.mFlashFrac.disabled = false;
+      //this.mAmbFrac.disabled = false;
+
+      if (this.mRadMode.value==-1) {
+	// raytracing mode
+	this.mAmbFrac.disabled = true;
+      }
+      else {
+	// radiosity mode
+	this.mAmbFrac.disabled = false;
+      }
+
+    }
+  };
+
+  /////////////////////////////////////
+  // rendering/image operations
+
+  dlg.onStartStopRender = function ()
+  {
+    this.mPovRender.setPovExePath(this.mPovExePathBox.value);
+    this.mPovRender.setPovIncPath(this.mPovIncPathBox.value);
+
+    if (this.mPovRender._bRender) {
+      this.mPovRender.stopRender();
+      this.disableButtons(false);
+      return;
+    }
+
+    var that = this;
+    var elem;
+
+    this.disableButtons(true);
+
+    // setup DPI
+    var dpi = parseInt(this.mOutImgDPI.value);
+    if (!isNaN(dpi)) {
+      this.mPovRender.mDPI = dpi;
+      // pref.set(pov_dpi_key, this.mOutImgDPI.value);
+    }
+    else {
+      dd("Invalid DPI value: "+this.mOutImgDPI.value);
+      dpi = 72;
+    }
+
+    // setup image size unit
+    var unit = this.mOutImgUnit.value;
+
+    // num of threads
+    this.mPovRender.nThreads = this.mNumThreads.value;
+
+    this.mPovRender.img_height = Math.round( this.convImgSizeUnit(this.mOutImgHeight.value, dpi, unit) );
+    this.mPovRender.img_width = Math.round( this.convImgSizeUnit(this.mOutImgWidth.value, dpi, unit) );
+    // alert("value:"+this.mOutImgHeight.value+", DPI="+dpi+", UNIT="+unit+"--> "+this.mPovRender.img_height);
+
+    var stereoElem = document.getElementById("stereo-mode-list");
+    var steDep = document.getElementById("stereo-depth");
+    let steDepVal = parseFloat(steDep.value);
+    if (isNaN(steDepVal) || steDepVal<0 || steDepVal>1)
+      steDepVal = 0.03; // default value
+    if (stereoElem.selectedItem.value=="right") {
+      this.mPovRender.nStereo = 1;
+      this.mPovRender.dSteDep = steDepVal;
+    }
+    else if (stereoElem.selectedItem.value=="left") {
+      this.mPovRender.nStereo = -1;
+      this.mPovRender.dSteDep = steDepVal;
+    }
+    else
+      this.mPovRender.nStereo = 0;
+
+    elem = document.getElementById("proj-mode-list");
+    this.mPovRender.bOrtho = (elem.selectedItem.value=="ortho");
+
+    elem = document.getElementById("use-transp-bg");
+    if (elem.checked) {
+      this.mPovRender.mbOutputAlpha = true;
+      this.mPovRender.mbUseFog = false;
+    }
+    else {
+      this.mPovRender.mbOutputAlpha = false;
+      this.mPovRender.mbUseFog = true;
+    }
+    
+    elem = document.getElementById("enable-clip-plane");
+    this.mPovRender.mbClip = elem.checked;
+
+    elem = document.getElementById("enable-post-blend");
+    this.mPovRender.mbPostBlend = elem.checked;
+
+    elem = document.getElementById("enable-edgelines");
+    this.mPovRender.mbShowEdgeLines = elem.checked;
+    // alert("edge lines: "+this.mPovRender.mbShowEdgeLines);
+
+    // lighting/radiosity settings
+    if (this.mRadMode.value=="-1") {
+      this.mPovRender.mbRadiosity=false;
+    }
+    else {
+      this.mPovRender.mbRadiosity=true;
+      this.mPovRender.mnRadMode = this.mRadMode.value;
+    }
+
+    elem = document.getElementById("enable-shadow");
+    this.mPovRender.mbShadow = elem.checked;
+
+    elem = document.getElementById("enable-pixlabels");
+    this.mPovRender.mbUsePixImgs = elem.checked;
+
+    this.mPovRender.mnLightSpread = this.mLightSpr.value;
+    this.mPovRender.mdLightInten = this.mLightInten.value;
+    this.mPovRender.mdFlashFrac = this.mFlashFrac.value;
+    this.mPovRender.mdAmbFrac = this.mAmbFrac.value;
+
+    setTimeout( function () {
+      try {
+        that.mPovRender.makePovFiles(dlg.mTgtSceID, dlg.mTgtVwID);
+        that.mPovRender.startRender();
+      }
+      catch (e) {
+        debug.exception(e);
+        that.mPovRender.stopRender();
+        that.disableButtons(false);
+        util.alert(window, "Rendering failed:\n"+e);
+        return;
+      }
+    }, 100);
+    return;
+  };
+
+  dlg.onCloseClicked = function ()
+  {
+    return dlg.onCloseEvent(null);
+  };
+
+  dlg.onCloseEvent = function (evt)
+  {
+    this.mPovRender.stopRender();
+    //this.disableButtons(false);
+    
+    if (this.mPovRender._bTmpImageAvail &&
+        !this.mPovRender._bTmpImageSaved) {
+      // show query dialog
+      var result = util.confirmYesNoCancel(window, "Rendered image is not saved. Save image?");
+
+      if (result==0) {
+        // Yes -> save changes and close
+        if (!this.onSaveImage()) {
+          // save scene (as) is canceled --> cancel closing
+          return false;
+        }
+      }
+      else if (result==1) {
+        // Cancel -> cancel closing
+        return false;
+      }
+      else {
+        // No -> close immediately
+      }
+    }
+
+    return true;
+  };
+  
+  dlg.onZoomPreview = function (aEvent)
+  {
+    var tgt = aEvent.target.id;
+    var sel = this.mZoomMenuList.selectedItem;
+
+    dd("onZoomPreview tagid = "+tgt);
+
+    switch (tgt) {
+    case "ZoomBtn":
+      var next = sel.nextElementSibling;
+      if (next)
+        this.mZoomMenuList.selectedItem = next;
+      else
+        return;
+      break;
+
+    case "UnzoomBtn":
+      var next = sel.previousElementSibling;
+      if (next)
+        this.mZoomMenuList.selectedItem = next;
+      else
+        return;
+      break;
+
+    }
+
+    sel = this.mZoomMenuList.selectedItem;
+    var value = parseInt(sel.value);
+    if (value>0 && value<=1000)
+      this.mZoomPc = value;
+
+    dd("onZoomPreview zoom="+this.mZoomPc);
+
+    this.updateImagePreview();
+  };
+
+
+  dlg.onTimer = function (bEnd)
+  {
+    dd("PovDlg.onTimer> called bEnd="+bEnd);
+    // this.updateImagePreview();
+    this.mProgBar.value = this.mPovRender.getProgress();
+
+    if (!bEnd)
+      return;
+
+    dd("PovDlg.onTimer> Timer END");
+    this.mProgBar.value = 0;
+    this.updateImagePreview();
+    this.disableButtons(false);
+
+    // Now the new temporary image file is available.
+    this.mSaveImgBtn.disabled = false;
+    this.mCopyImgBtn.disabled = false;
+  };
+
+  dlg.updateImagePreview = function ()
+  {
+    var imgfile = this.mPovRender.getCurrentImgFile();
+    if (imgfile==null) {
+      dd("ERROR: img file==null");
+      return;
+    }
+    try {
+      if (!imgfile.exists()) {
+	throw "file does not exist";
+      }
+      if (!imgfile.isFile()) {
+        throw "not a file";
+      }
+      //else if (this.mImgFile.fileSize<=0) {
+      //throw "zero size file";
+      //}
+    }
+    catch (e) {
+      dd("Cannot open file: "+imgfile);
+      debug.exception(e);
+      this.mImage.removeAttribute("src");
+      return;
+    }
+
+    /*
+  var fileStream = Cc['@mozilla.org/network/file-input-stream;1']
+    .createInstance(Ci.nsIFileInputStream);
+  fileStream.init(imgfile, 1, 0, false);
+  var binaryStream = Cc['@mozilla.org/binaryinputstream;1']
+    .createInstance(Ci.nsIBinaryInputStream);
+  binaryStream.setInputStream(fileStream);
+  var bytes = binaryStream.readBytes(fileStream.available());
+  binaryStream.close();
+  fileStream.close();
+  this.mImage.setAttribute("src", "data:image/png;base64,"+ btoa(bytes));
+     */
+
+    var ios = Cc["@mozilla.org/network/io-service;1"].getService(Ci.nsIIOService);
+    var URL = ios.newFileURI(imgfile);
+    dd("URL.spec="+URL.spec);
+    this.mImage.setAttribute("src", URL.spec+"?dummy="+this.mSerial);
+    ++this.mSerial;
+
+    //var height = this.mOutImgHeight.value * this.mZoomPc/100.0;
+    //var width = height; //this.mOutImgWidth.value * this.mZoomPc/100.0;
+    var height = this.mPovRender.img_height* this.mZoomPc/100.0;
+    var width = this.mPovRender.img_width* this.mZoomPc/100.0;
+
+    dd("image w="+width);
+    dd("image h="+height);
+
+    this.mImage.setAttribute("width", width);
+    this.mImage.setAttribute("height", height);
+
+    document.getElementById("imagebox-item").setAttribute("width", width);
+    document.getElementById("imagebox-item").setAttribute("height", height);
+
+    //binaryStream=null;
+    //fileStream=null;
+  };
+
+  dlg.onSaveImage = function ()
+  {
+    if (!this.mPovRender._bTmpImageAvail)
+      return;
+    
+    const nsIFilePicker = Ci.nsIFilePicker;
+    var fp = Cc["@mozilla.org/filepicker;1"].createInstance(Ci.nsIFilePicker);
+    
+    fp.appendFilter("PNG (*.png)", "*.png");
+    
+    // make initial dir and filename
+    //var scene = cuemol.getScene(this.mTgtSceID);
+    var ini_name = util.removeFileExt( this.mSceName ); //scene.name;
+    
+    var stereoElem = document.getElementById("stereo-mode-list");
+    if (stereoElem.selectedItem.value=="right")
+      ini_name = ini_name + "_r";
+    else if (stereoElem.selectedItem.value=="left")
+      ini_name = ini_name + "_l";
+    
+    ini_name = ini_name + ".png";
+    fp.defaultString = ini_name;
+    fp.defaultExtension = "png";
+    
+    fp.init(window, "Save image", nsIFilePicker.modeSave);
+    var res = fp.show();
+    if (res==nsIFilePicker.returnCancel)
+      return false;
+    
+    this.mPovRender.saveImage(fp.file);
+    return true;
+  };
+
+  dlg.onCopyImage = function ()
+  {
+    if (!this.mPovRender._bTmpImageAvail)
+      return;
+    
+    try {
+      var imgfile = this.mPovRender.getCurrentImgFile();
+      
+      let clipboard = require("qsc-copipe");
+      clipboard.set(imgfile, "imagefilepng");
+    }
+    catch (e) {
+      debug.exception(e);
+      return;
+    }
+  };
+
+
 
 } )();
 

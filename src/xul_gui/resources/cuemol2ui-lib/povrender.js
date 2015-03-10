@@ -32,15 +32,21 @@ function PovRender()
   this.bOrtho = true;
   this.mbClip = true;
   this.mbPostBlend = true;
-  this.mbShadow = false;
   this.mbShowEdgeLines = true;
   this.mDPI = -1.0;
-  this.mbRadiosity = false;
-  this.mnRadMode = 0;
   this.mbVerbose = true;
   this.mbOutputAlpha = false;
   this.mbUseFog = true;
   this.mbUsePixImgs = false;
+
+  // Lighting/Radiosity
+  this.mnLightSpread = 1;
+  this.mbShadow = false;
+  this.mdLightInten = 1.3;
+  this.mdFlashFrac = 0.8/1.3;
+  this.mbRadiosity = false;
+  this.mnRadMode = 0;
+  this.mdAmbFrac = 0;
 
   this.mTimer = null;
   this.mPlfName = util.getPlatformString();
@@ -431,6 +437,7 @@ PovRender.prototype.doRenderImpl = function (index, aAsync)
 
   //////////
 
+
   var args = ["\"Input_File_Name='"+povFilePath+"'\"",
 	      "\"Output_File_Name='"+outImgPath+"'\"",
 	      "\"Library_Path='"+incDirPath+"'\"",
@@ -439,6 +446,9 @@ PovRender.prototype.doRenderImpl = function (index, aAsync)
 	      "Declare=_iod=" + this.dSteDep,
 	      "Declare=_perspective="+(this.bOrtho?"0":"1"),
 	      "Declare=_shadow="+(this.mbShadow?"1":"0"),
+	      "Declare=_light_inten=" + this.mdLightInten,
+	      "Declare=_flash_frac=" + this.mdFlashFrac,
+	      "Declare=_amb_frac="+this.mdAmbFrac,
 	      "File_Gamma=1",
 	      "-D",
 	      "+WT" + this.nThreads,
@@ -451,13 +461,18 @@ PovRender.prototype.doRenderImpl = function (index, aAsync)
 	      "Antialias_Threshold=0.1",
 	      "Jitter=Off"];
 
+  if (this.mnLightSpread>1)
+    args.push("Declare=_light_spread="+this.mnLightSpread);
+
   if (this.mbVerbose)
     args.push("+V");
   else
     args.push("-V");
 
-  if (this.mbOutputAlpha)
+  if (this.mbOutputAlpha) {
     args.push("+UA");
+    args.push("Declare=_transpbg=1");
+  }
 
   if (!this.mbUseFog)
     args.push("Declare=_no_fog=1");
@@ -466,10 +481,8 @@ PovRender.prototype.doRenderImpl = function (index, aAsync)
     dd("PovRender> Radiosity ON; mode="+this.mnRadMode);
     args.push("Declare=_radiosity="+this.mnRadMode);
   }
-  //
-  //
-  //"Jitter_Amount=0.5",
-  //"Jitter=On"];
+  //args.push();
+
   if (this.mOptArgs && this.mOptArgs[index]) {
     dd("optargs: "+this.mOptArgs[index]);
     args = args.concat(this.mOptArgs[index]);
