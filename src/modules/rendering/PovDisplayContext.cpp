@@ -420,7 +420,7 @@ void PovDisplayContext::writeHeader()
   ips.format("  pigment{\n");
   ips.format("    image_map{\n");
   ips.format("     png aPixFile\n");
-  ips.format("     gamma 1.0 \n");
+  ips.format("     //gamma 1.0 \n");
   ips.format("     once \n");
   ips.format("     map_type 0\n");
   ips.format("    }\n");
