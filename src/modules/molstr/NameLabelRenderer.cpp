@@ -12,7 +12,6 @@
 #include "MolResidue.hpp"
 
 #include <gfx/PixelBuffer.hpp>
-//#include <gfx/TextRenderManager.hpp>
 #include <gfx/DisplayContext.hpp>
 #include <qsys/SceneManager.hpp>
 
@@ -55,9 +54,8 @@ NameLabelRenderer::NameLabelRenderer()
   //m_nMax = 5;
   //m_xdispl = 0.0;
   //m_ydispl = 0.0;
-
-  m_strFontStyle = "normal";
-  m_strFontWgt = "normal";
+  //m_strFontStyle = "normal";
+  //m_strFontWgt = "normal";
 
   // will be called by RendererFactory
   //resetAllProps();
@@ -90,25 +88,25 @@ LString NameLabelRenderer::toString() const
 
 //////////////////////////////////////////////////////////////////////////
 
-void NameLabelRenderer::display(DisplayContext *pdc)
+/*void NameLabelRenderer::display(DisplayContext *pdc)
 {
   if (pdc->isFile()) {
     preRender(pdc);
     render(pdc);
     postRender(pdc);
   }
-}
+  }*/
 
-void NameLabelRenderer::displayLabels(DisplayContext *pdc)
+ /*void NameLabelRenderer::displayLabels(DisplayContext *pdc)
 {
   if (!pdc->isFile()) {
     preRender(pdc);
     render(pdc);
     postRender(pdc);
   }
-}
+  }*/
 
-void NameLabelRenderer::preRender(DisplayContext *pdc)
+  /*void NameLabelRenderer::preRender(DisplayContext *pdc)
 {
   Vector4D dv;
   qsys::View *pview = pdc->getTargetView();
@@ -122,13 +120,13 @@ void NameLabelRenderer::preRender(DisplayContext *pdc)
 
 //  pdc->color(m_color);
   pdc->setLighting(false);
-}
+  }*/
 
-void NameLabelRenderer::postRender(DisplayContext *pdc)
+   /*void NameLabelRenderer::postRender(DisplayContext *pdc)
 {
   pdc->popMatrix();
   pdc->enableDepthTest(true);
-}
+  }*/
 
 bool NameLabelRenderer::makeLabelStr(NameLabel &nlab, LString &rstrlab, Vector4D &rpos)
 {
@@ -191,8 +189,12 @@ void NameLabelRenderer::render(DisplayContext *pdc)
     }
   }
   
-  m_pixCache.setupFont(m_dFontSize, m_strFontName, m_strFontStyle, m_strFontWgt);
-  pdc->color(m_color);
+  m_pixCache.setupFont(getFontSize(),
+		       getFontName(), 
+		       getFontStyle(),
+		       getFontWgt());
+
+  pdc->color(getColor());
   if (pdc->isFile())
     m_pixCache.draw(pdc, false);
   else
@@ -205,37 +207,15 @@ Vector4D NameLabelRenderer::getCenter() const
   return Vector4D();
 }
 
-bool NameLabelRenderer::isHitTestSupported() const
-{
-  return false;
-}
-
 const char *NameLabelRenderer::getTypeName() const
 {
   return "*namelabel";
 }
 
-void NameLabelRenderer::makeLabelImg()
+void NameLabelRenderer::invalidatePixCache()
 {
   m_pixCache.invalidate();
   return;
-/*
-  LString strlab;
-  Vector4D pos;
-  NameLabelList::iterator iter = m_pdata->begin();
-  NameLabelList::iterator eiter = m_pdata->end();
-  for (; iter!=eiter; iter++) {
-    NameLabel &nlab = *iter;
-    if (makeLabelStr(nlab, strlab, pos)) {
-      m_pixCache.addString(pos, strlab);
-    }
-    else {
-      MB_DPRINTLN("NameLabel: mklab failed in Atom %d", nlab.aid);
-    }
-  }
-  
-  m_pixCache.setupFont(m_dFontSize, m_strFontName, m_strFontStyle, m_strFontWgt);
-  m_pixCache.render();*/
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -259,7 +239,7 @@ bool NameLabelRenderer::addLabel(MolAtomPtr patom, const LString &label /*= LStr
   for (; nover>0; nover--)
     m_pdata->pop_front();
 
-  makeLabelImg();
+  invalidatePixCache();
   //m_pixCache.invalidate();
   //m_pixCache.render();
 
@@ -296,7 +276,7 @@ bool NameLabelRenderer::removeLabelByID(int aid)
       // already labeled --> remove it
       m_pdata->erase(iter);
 
-      makeLabelImg();
+      invalidatePixCache();
       //m_pixCache.invalidate();
       //m_pixCache.render();
       
@@ -315,7 +295,7 @@ bool NameLabelRenderer::removeLabelByID(int aid)
 
 ///////////////////////
 
-void NameLabelRenderer::propChanged(qlib::LPropEvent &ev)
+/*void NameLabelRenderer::propChanged(qlib::LPropEvent &ev)
 {
   const LString propnm = ev.getName();
   if (propnm.equals("color")) {
@@ -326,21 +306,19 @@ void NameLabelRenderer::propChanged(qlib::LPropEvent &ev)
       pScene->setUpdateFlag();
   }
   else if (propnm.startsWith("font_")) {
-    makeLabelImg();
+    invalidatePixCache();
     //m_pixCache.invalidate();
     //m_pixCache.render();
   }
 
   super_t::propChanged(ev);
-}
+  }*/
 
-void NameLabelRenderer::styleChanged(qsys::StyleEvent &ev)
+/*void NameLabelRenderer::styleChanged(qsys::StyleEvent &ev)
 {
   super_t::styleChanged(ev);
-  makeLabelImg();
-  //m_pixCache.invalidate();
-  //m_pixCache.render();
-}
+  invalidatePixCache();
+  }*/
 
 void NameLabelRenderer::writeTo2(qlib::LDom2Node *pNode) const
 {

@@ -6,6 +6,10 @@
 #include <common.h>
 #include "TextRenderer.hpp"
 
+#include <qlib/LDOM2Tree.hpp>
+#include <gfx/DisplayContext.hpp>
+#include <qsys/SceneManager.hpp>
+
 using namespace molstr;
 
 TextRenderer::TextRenderer()
@@ -13,6 +17,7 @@ TextRenderer::TextRenderer()
 {
   m_strFontStyle = "normal";
   m_strFontWgt = "normal";
+  m_nOfsUnit = TR_UNIT_PIXEL;
 }
 
 TextRenderer::~TextRenderer()
@@ -44,7 +49,8 @@ void TextRenderer::preRender(DisplayContext *pdc)
   Vector4D dv;
   qsys::View *pview = pdc->getTargetView();
   if (pview!=NULL)
-    pview->convXYTrans(m_offset.x(), m_offset.y(), dv);
+    pview->convTrans(m_offset, dv,
+		     (m_nOfsUnit==TR_UNIT_PIXEL)?true:false);
 
   pdc->enableDepthTest(false);
 
@@ -89,22 +95,35 @@ void TextRenderer::styleChanged(qsys::StyleEvent &ev)
   //  pScene->setUpdateFlag();
 }
 
-void NameLabelRenderer::readFrom2(qlib::LDom2Node *pNode)
+void TextRenderer::setDispX(double rc)
+{
+  m_offset.x() = rc;
+  setDefaultPropFlag("offset", false);
+}
+
+void TextRenderer::setDispY(double rc)
+{
+  m_offset.y() = -rc;
+  setDefaultPropFlag("offset", false);
+}
+
+void TextRenderer::readFrom2(qlib::LDom2Node *pNode)
 {
   super_t::readFrom2(pNode);
 
-  LString value = pChNode->getStrAttr("dispx");
+  LString value;
+  value = pNode->getStrAttr("dispx");
   if (!value.isEmpty()) {
     double d;
     if (value.toRealNum(&d))
-      m_offset.x() = d;
+      setDispX(d);
   }
 
-  LString value = pChNode->getStrAttr("dispy");
+  value = pNode->getStrAttr("dispy");
   if (!value.isEmpty()) {
     double d;
     if (value.toRealNum(&d))
-      m_offset.y() = d;
+      setDispY(d);
   }
 
 }

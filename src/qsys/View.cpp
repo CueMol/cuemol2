@@ -435,12 +435,14 @@ void View::convXYTrans(double adx, double ady, Vector4D &vec)
   rmat.xform3D(vec);
 }
 
-void View::convZTrans(double dz, Vector4D &vec)
+void View::convZTrans(double adz, Vector4D &vec)
 {
-  //double dz = idz;
+  // const double h = getHeight();
+  // const double zoom = m_curcam.getZoom();
+  // const double dz = adz*zoom/h;
+
   // XXX ???
-  //dz *= m_fViewWidth;
-  dz /= 4.0;
+  const double dz = adz/4.0;
 
   //lock();
   LQuat tmpq = m_curcam.m_rotQuat.conj();
@@ -450,6 +452,26 @@ void View::convZTrans(double dz, Vector4D &vec)
 
   vec = Vector4D(0, 0, -dz, 0);
   rmat.xform4D(vec);
+}
+
+void View::convTrans(const Vector4D &invec, Vector4D &outvec, bool bPixUnit)
+{
+  outvec = Vector4D(invec.x(),
+		    invec.y(),
+		    invec.z());
+  if (bPixUnit) {
+    const double h = getHeight();
+    const double zoom = m_curcam.getZoom();
+    outvec = outvec.scale(zoom).divide(h);
+  }
+
+  //lock();
+  LQuat tmpq = m_curcam.m_rotQuat.conj();
+  //unlock();
+  Matrix4D rmat = Matrix4D::makeRotMat(tmpq);
+
+  outvec.w() = 0;
+  rmat.xform3D(outvec);
 }
 
 void View::setPerspec(bool b)

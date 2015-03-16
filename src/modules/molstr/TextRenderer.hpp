@@ -15,8 +15,10 @@
 namespace molstr {
 
   using qlib::Vector4D;
+  using gfx::ColorPtr;
+  using gfx::DisplayContext;
 
-  class MOLVIS_API TextRenderer : public qsys::Renderer
+  class MOLSTR_API TextRenderer : public qsys::Renderer
   {
     MC_SCRIPTABLE;
 
@@ -58,10 +60,10 @@ namespace molstr {
 
   public:
     double getFontSize() const {
-      return m_strFontSize;
+      return m_dFontSize;
     }
     void setFontSize(double rc) {
-      m_strFontSize = rc;
+      m_dFontSize = rc;
       invalidatePixCache();
     }
 
@@ -103,13 +105,39 @@ namespace molstr {
       m_offset = rc;
     }
 
+    double getDispX() const {
+      return m_offset.x();
+    }
+    void setDispX(double rc);
+
+    double getDispY() const {
+      return m_offset.y();
+    }
+    void setDispY(double rc);
+
+  private:
+    /// Unit of displacement (offset)
+    int m_nOfsUnit;
+    
+  public:
+    static const int TR_UNIT_PIXEL = 0;
+    static const int TR_UNIT_ANGSTROM = 1;
+    static const int TR_UNIT_MOGE = 2;
+
+    int getOffsetUnit() const {
+      return m_nOfsUnit;
+    }
+    void setOffsetUnit(int n) {
+      m_nOfsUnit = n;
+    }
+
     //////////////////////////////////////////////////////
     // Renderer interface
 
     virtual void display(DisplayContext *pdc);
     virtual void displayLabels(DisplayContext *pdc);
     virtual void preRender(DisplayContext *pdc);
-    virtual void render(DisplayContext *pdc);
+    virtual void render(DisplayContext *pdc) =0;
     virtual void postRender(DisplayContext *pdc);
     virtual bool isHitTestSupported() const;
     virtual bool isTransp() const;
@@ -122,7 +150,8 @@ namespace molstr {
     //////
     // Event handlers
 
-    virtual void propChanged(qlib::LPropEvent &ev);
+    virtual void styleChanged(qsys::StyleEvent &);
+    //virtual void propChanged(qlib::LPropEvent &ev);
 
     //////
     // serialization (compatibility for xdisp, ydisp properties)

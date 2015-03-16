@@ -50,6 +50,7 @@ PDBFileReader.cpp \
 PDBFileWriter.cpp \
 NuclBasePair.cpp \
 MolRenderer.cpp \
+TextRenderer.cpp \
 NameLabelRenderer.cpp \
 SelectionRenderer.cpp \
 Prot2ndry.cpp \
@@ -79,6 +80,7 @@ MolResidue.qif \
 MolChain.qif \
 MolCoord.qif \
 MolRenderer.qif \
+TextRenderer.qif \
 NameLabelRenderer.qif \
 SelectionRenderer.qif \
 PDBFileReader.qif \

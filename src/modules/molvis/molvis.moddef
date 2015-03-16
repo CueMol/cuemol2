@@ -17,6 +17,7 @@
 #include "RainbowColoring.qif"
 #include "DistPickDrawObj.qif"
 #include "DisoRenderer.qif"
+// #include "SimpleTextRenderer.qif"
 
 module molvis
 {
@@ -38,5 +39,6 @@ module molvis
   Ribbon2Renderer;
   RainbowColoring;
   DistPickDrawObj;
+//  SimpleTextRenderer;
 };
 

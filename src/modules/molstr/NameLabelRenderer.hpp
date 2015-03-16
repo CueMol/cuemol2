@@ -8,116 +8,115 @@
 
 #include "molstr.hpp"
 
-#include <qsys/DispListRenderer.hpp>
-#include <gfx/SolidColor.hpp>
+#include "TextRenderer.hpp"
 #include <gfx/LabelCacheImpl.hpp>
 
 class NameLabelRenderer_wrap;
 
 namespace molstr {
 
-using qlib::Vector4D;
-using gfx::DisplayContext;
-
-struct NameLabel;
-struct NameLabelList;
-
-class MOLSTR_API NameLabelRenderer : public qsys::Renderer
-{
-  MC_SCRIPTABLE;
-  MC_CLONEABLE;
-
-  friend class ::NameLabelRenderer_wrap;
-
-private:
-  typedef qsys::Renderer super_t;
-
-  /// implementation
-  NameLabelList *m_pdata;
-
-  /// max labels
-  int m_nMax;
-
-  /// label's color
-  gfx::ColorPtr m_color;
-
-  /// displacement along the X axes
-  double m_xdispl;
-
-  /// displacement along the Y axes
-  double m_ydispl;
+  struct NameLabel;
+  struct NameLabelList;
   
-  /// label's font name
-  LString m_strFontName;
+  class MOLSTR_API NameLabelRenderer : public TextRenderer
+  {
+    MC_SCRIPTABLE;
+    MC_CLONEABLE;
 
-  /// label's font size
-  double m_dFontSize;
+    friend class ::NameLabelRenderer_wrap;
 
-  /// label's font style (corresponds to the font-style prop of CSS)
-  LString m_strFontStyle;
+  private:
+    typedef TextRenderer super_t;
 
-  /// label's font weight (corresponds to the font-weight prop of CSS)
-  LString m_strFontWgt;
+    /// implementation
+    NameLabelList *m_pdata;
 
-  /// label pixbuf cache
-  gfx::LabelCacheImpl m_pixCache;
+    /// max labels
+    int m_nMax;
 
-  //////////////////////////////////////////////////////
+    /*
+    /// label's color
+    gfx::ColorPtr m_color;
 
-public:
-  NameLabelRenderer();
-  virtual ~NameLabelRenderer();
+    /// displacement along the X axes
+    double m_xdispl;
 
-  //////////////////////////////////////////////////////
+    /// displacement along the Y axes
+    double m_ydispl;
+  
+    /// label's font name
+    LString m_strFontName;
 
-  virtual bool isCompatibleObj(qsys::ObjectPtr pobj) const;
-  virtual LString toString() const;
+    /// label's font size
+    double m_dFontSize;
 
-  virtual void display(DisplayContext *pdc);
-  virtual void displayLabels(DisplayContext *pdc);
+    /// label's font style (corresponds to the font-style prop of CSS)
+    LString m_strFontStyle;
 
-  virtual void preRender(DisplayContext *pdc);
-  virtual void render(DisplayContext *pdc);
-  virtual void postRender(DisplayContext *pdc);
-  virtual bool isHitTestSupported() const;
+    /// label's font weight (corresponds to the font-weight prop of CSS)
+    LString m_strFontWgt;
+    */
 
-  virtual Vector4D getCenter() const;
+    /// label pixbuf cache
+    gfx::LabelCacheImpl m_pixCache;
 
-  virtual const char *getTypeName() const;
+    //////////////////////////////////////////////////////
 
-  virtual bool isTransp() const { return true; }
+  public:
+    NameLabelRenderer();
+    virtual ~NameLabelRenderer();
 
-  //////
-  // Event handlers
+    //////////////////////////////////////////////////////
 
-  virtual void propChanged(qlib::LPropEvent &ev);
+    virtual bool isCompatibleObj(qsys::ObjectPtr pobj) const;
+    virtual LString toString() const;
 
-  virtual void styleChanged(qsys::StyleEvent &);
+    //virtual void display(DisplayContext *pdc);
+    //virtual void displayLabels(DisplayContext *pdc);
 
-  //////
-  // Serialization / deserialization impl for non-prop data
+    //virtual void preRender(DisplayContext *pdc);
+    virtual void render(DisplayContext *pdc);
+    //virtual void postRender(DisplayContext *pdc);
+    //virtual bool isHitTestSupported() const;
 
-  virtual void writeTo2(qlib::LDom2Node *pNode) const;
-  virtual void readFrom2(qlib::LDom2Node *pNode);
+    virtual Vector4D getCenter() const;
 
-  //////////////////////////////////////////////////////
+    virtual const char *getTypeName() const;
 
-  MolCoordPtr getClientMol() const;
+    // virtual bool isTransp() const { return true; }
 
-  bool addLabelByID(int aid, const LString &label = LString());
-  bool addLabel(MolAtomPtr patom, const LString &label = LString());
+    //////
+    // Event handlers
 
-  bool removeLabelByID(int aid);
+    // virtual void propChanged(qlib::LPropEvent &ev);
 
-  void setMaxLabel(int nmax) { m_nMax = nmax; }
-  int getMaxLabel() const { return m_nMax; }
+    // virtual void styleChanged(qsys::StyleEvent &);
 
-private:
-  bool makeLabelStr(NameLabel &n, LString &lab,Vector4D &pos);
+    //////
+    // Serialization / deserialization impl for non-prop data
 
-  void makeLabelImg();
+    virtual void writeTo2(qlib::LDom2Node *pNode) const;
+    virtual void readFrom2(qlib::LDom2Node *pNode);
 
-};
+    //////////////////////////////////////////////////////
+
+    MolCoordPtr getClientMol() const;
+
+    bool addLabelByID(int aid, const LString &label = LString());
+    bool addLabel(MolAtomPtr patom, const LString &label = LString());
+
+    bool removeLabelByID(int aid);
+
+    void setMaxLabel(int nmax) { m_nMax = nmax; }
+    int getMaxLabel() const { return m_nMax; }
+
+    // void makeLabelImg();
+    virtual void invalidatePixCache();
+
+  private:
+    bool makeLabelStr(NameLabel &n, LString &lab,Vector4D &pos);
+
+  };
 
 } // namespace
 

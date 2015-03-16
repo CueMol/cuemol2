@@ -32,9 +32,14 @@ runtime_class TextRenderer extends Renderer
   property string font_weight => redirect(getFontWgt, setFontWgt);
   default font_weight = "normal";
 
+  /// label position offset
   property object<Vector> offset => redirect(getOffset, setOffset);
   default offset = qlib::Vector4D();
 
+  // for compatibility (dispx, dispy)
+  property real dispx => redirect(getDispX, setDispX) (nopersist);
+  property real dispy => redirect(getDispY, setDispY) (nopersist);
+  
 };
 
 #endif

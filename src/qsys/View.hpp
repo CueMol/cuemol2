@@ -315,6 +315,9 @@ namespace qsys {
     void convZTrans(double dz, Vector4D &vec);
     void convXYTrans(double dx, double dy, Vector4D &vec);
 
+    /// reverse projection from view to world coord (pixel or angstrom unit)
+    void convTrans(const Vector4D &invec, Vector4D &outvec, bool bPixUnit);
+
     /////////////////////////////////////////////////////////
     // Viewport size
 
