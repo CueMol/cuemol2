@@ -21,13 +21,6 @@ runtime_class NameLabelRenderer extends TextRenderer
   property integer maxlabel => redirect(getMaxLabel, setMaxLabel);
   default maxlabel = 50;
   
-  /// unit of label position offset
-  enumdef offset_unit {
-    px = molstr::TextRenderer::TR_UNIT_PIXEL;
-    angstrom = molstr::TextRenderer::TR_UNIT_ANGSTROM;
-  }
-  property enum offset_unit => redirect(getOffsetUnit, setOffsetUnit);
-
   //////////
 
   // add new label for the atom

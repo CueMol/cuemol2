@@ -561,7 +561,7 @@ namespace qlib {
       }
       LString enumkey = value.toString();
       int rval;
-      LWrapperImpl *pthat = _Wrapper::getInstance();
+      LWrapperImpl *pthat = ensureNotNull( _Wrapper::getInstance() );
       if (!pthat->getEnumDef(name, enumkey, rval)) {
 	LString msg = LString::format("ConvEnum: cannot convert %s/%s to enum",
 				      name.c_str(), enumkey.c_str());
@@ -574,7 +574,7 @@ namespace qlib {
     template <class _Wrapper>
     static inline
     void setByEnumInt(LVariant &aDest, LInt aSrc, const LString &name) {
-      LWrapperImpl *pthat = _Wrapper::getInstance();
+      LWrapperImpl *pthat = ensureNotNull( _Wrapper::getInstance() );
       LString enumkey;
       // int-->enumkey conversion
       if (!pthat->getEnumDef(name, aSrc, enumkey)) {

@@ -16,6 +16,7 @@
 #include "CPKColoring.qif"
 #include "MainChainRenderer.qif"
 #include "TraceRenderer.qif"
+#include "TextRenderer.qif"
 #include "NameLabelRenderer.qif"
 #include "SelectionRenderer.qif"
 #include "PDBFileReader.qif"
@@ -41,6 +42,7 @@ module molstr
   TraceRenderer uuid e964c858-f906-4e55-a189-928e0bca65c1;
   NameLabelRenderer uuid e964c858-f906-4e55-a189-928e0bca65c1;
   SelectionRenderer uuid e964c858-f906-4e55-a189-928e0bca65c1;
+  TextRenderer;
 
   AtomIterator uuid 92570525-62d7-46e1-b3d7-8d4602071477;
   ResidIterator uuid 4a1daad1-fd75-494c-885a-11fadfff89b6;

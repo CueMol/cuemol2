@@ -14,7 +14,11 @@ runtime_class TextRenderer extends Renderer
   client_hdr "TextRenderer.hpp";
   client_name molstr::TextRenderer;
 
+  // This is required for implementing MolRenderer subclasses in other DLLs!!
+  dllexport MOLSTR_API;
+
   scriptable;
+  abstract;
   smartptr;
 
   property object<AbstractColor$> color => redirect(getColor, setColor);;
@@ -40,6 +44,13 @@ runtime_class TextRenderer extends Renderer
   property real dispx => redirect(getDispX, setDispX) (nopersist);
   property real dispy => redirect(getDispY, setDispY) (nopersist);
   
+  /// unit of label position offset
+  enumdef offset_unit {
+    px = molstr::TextRenderer::TR_UNIT_PIXEL;
+    angstrom = molstr::TextRenderer::TR_UNIT_ANGSTROM;
+  }
+  property enum offset_unit => redirect(getOffsetUnit, setOffsetUnit);
+
 };
 
 #endif
