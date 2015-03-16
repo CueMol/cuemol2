@@ -1,0 +1,41 @@
+// -*-Mode: C++;-*-
+//
+//  TextRenderer interface definition
+//
+
+#ifndef TEXT_RENDERER_QIF_INCLUDED
+#define TEXT_RENDERER_QIF_INCLUDED
+
+#include <gfx/AbstractColor.qif>
+#include <qsys/Renderer.qif>
+
+runtime_class TextRenderer extends Renderer
+{
+  client_hdr "TextRenderer.hpp";
+  client_name molstr::TextRenderer;
+
+  scriptable;
+  smartptr;
+
+  property object<AbstractColor$> color => redirect(getColor, setColor);;
+  default color = gfx::SolidColor::createRGB(1.0, 1.0, 0.0);
+
+  property real font_size => redirect(getFontSize, setFontSize);
+  default font_size = 12.0;
+
+  property string font_name => redirect(getFontName, setFontName);
+  default font_name = "sans-serif";
+
+  property string font_style => redirect(getFontStyle, setFontStyle);
+  default font_style = "normal";
+
+  property string font_weight => redirect(getFontWgt, setFontWgt);
+  default font_weight = "normal";
+
+  property object<Vector> offset => redirect(getOffset, setOffset);
+  default offset = qlib::Vector4D();
+
+};
+
+#endif
+
