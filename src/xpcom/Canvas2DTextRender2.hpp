@@ -15,9 +15,6 @@
 #include <gfx/TextRenderManager.hpp>
 #include <gfx/PixelBuffer.hpp>
 
-#include <boost/multi_array.hpp>
-#include <boost/shared_ptr.hpp>
-
 using qlib::LString;
 
 //////////
@@ -43,10 +40,25 @@ private:
   /// font descr in CSS font property name
   LString m_strCSSFont;
 
+  LString m_strColor;
+  LString m_strOlColor;
+  double m_outlSize;
+
 public:
-  bool setupFont(double fontsize, const LString &fontname,
+  virtual bool setupFont(double fontsize,
+		 const LString &fontname,
                  const LString &font_style,
                  const LString &font_wgt);
+  
+  /// setup font with color and outline width
+  virtual bool setupFont(double fontsize,
+			 const LString &fontname,
+			 const LString &font_style,
+			 const LString &font_wgt,
+			 const gfx::ColorPtr &col,
+			 double olsize,
+			 const gfx::ColorPtr &olcol);
+  
 
 }; //class Canvas2DTextRender2
 

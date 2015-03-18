@@ -32,6 +32,7 @@ AtomIntrRenderer.cpp \
 DisoRenderer.cpp \
 RainbowColoring.cpp \
 DistPickDrawObj.cpp \
+SimpleTextRenderer.cpp \
 smospl/SmoothSpline.cpp	\
 smospl/linalg.cpp \
 smospl/spline_internal.cpp \
@@ -62,6 +63,7 @@ AtomIntrRenderer.qif \
 DisoRenderer.qif \
 RainbowColoring.qif \
 DistPickDrawObj.qif \
+SimpleTextRenderer.qif \
 $(NULL)
 
 

@@ -34,29 +34,6 @@ namespace molstr {
     /// max labels
     int m_nMax;
 
-    /*
-    /// label's color
-    gfx::ColorPtr m_color;
-
-    /// displacement along the X axes
-    double m_xdispl;
-
-    /// displacement along the Y axes
-    double m_ydispl;
-  
-    /// label's font name
-    LString m_strFontName;
-
-    /// label's font size
-    double m_dFontSize;
-
-    /// label's font style (corresponds to the font-style prop of CSS)
-    LString m_strFontStyle;
-
-    /// label's font weight (corresponds to the font-weight prop of CSS)
-    LString m_strFontWgt;
-    */
-
     /// label pixbuf cache
     gfx::LabelCacheImpl m_pixCache;
 
@@ -71,26 +48,11 @@ namespace molstr {
     virtual bool isCompatibleObj(qsys::ObjectPtr pobj) const;
     virtual LString toString() const;
 
-    //virtual void display(DisplayContext *pdc);
-    //virtual void displayLabels(DisplayContext *pdc);
-
-    //virtual void preRender(DisplayContext *pdc);
     virtual void render(DisplayContext *pdc);
-    //virtual void postRender(DisplayContext *pdc);
-    //virtual bool isHitTestSupported() const;
 
     virtual Vector4D getCenter() const;
 
     virtual const char *getTypeName() const;
-
-    // virtual bool isTransp() const { return true; }
-
-    //////
-    // Event handlers
-
-    // virtual void propChanged(qlib::LPropEvent &ev);
-
-    // virtual void styleChanged(qsys::StyleEvent &);
 
     //////
     // Serialization / deserialization impl for non-prop data

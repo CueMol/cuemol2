@@ -13,11 +13,23 @@ runtime_class TextImgBuf
   cloneable;
   smartptr;
 
+  // Stereo mode
+  enumdef mode {
+    simple = gfx::TextImgBuf::TIB_SIMPLE;
+    outline = gfx::TextImgBuf::TIB_OUTLINE;
+    html = gfx::TextImgBuf::TIB_HTML;
+  }
+  property enum mode => redirect(getMode, setMode);
+
   property string text => redirect(getText, setText);
   property string font => redirect(getFont, setFont);
+  property real outlsize => redirect(getOlSize, setOlSize);
+  property string color => redirect(getColor, setColor);
+  property string outlcolor => redirect(getOlColor, setOlColor);
 
   property integer width => redirect(getWidth, setWidth);
   property integer height => redirect(getHeight, setHeight);
+  property integer depth => redirect(getDepth, setDepth);
 
   //////////
   

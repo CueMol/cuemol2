@@ -125,12 +125,15 @@ function Qm2Main()
 Qm2Main.prototype.textRenderInit = function ()
 {
   var canvas = document.createElementNS("http://www.w3.org/1999/xhtml", 'canvas');
+
+  // text rendering handler
   var handler2 = function (args) {
     var tr = args.obj;
     var text = tr.text;
     var fontstr = tr.font;
     var h = tr.height;
-    dd("renderText handler called: "+text+", font="+fontstr);
+    var mode = tr.mode;
+    dd("renderText handler called: "+text+", font="+fontstr+", mode="+mode);
 
     var width = ( function () {
       var ctx2 = canvas.getContext('2d');
@@ -151,18 +154,37 @@ Qm2Main.prototype.textRenderInit = function ()
     var ctx2 = canvas.getContext("2d");
     ctx2.font = fontstr;
     ctx2.textBaseline = "bottom";
-    ctx2.fillText(text, 0, h);
-    
-    var img = ctx2.getImageData(0,0,width, h);
-    dd("img: "+img);
-    var data = img.data;
-    dd("data: "+data);
-    var i, size = width * h;
-    tr.resize(size);
-    for (i=0; i<size; ++i) {
-      //tr.setAt(i, data[i*4 + 0]+data[i*4 + 1]+data[i*4 + 2]+data[i*4 + 3]);
-      tr.setAt(i, data[i*4 + 3]);
+
+    var i, size, img, data;
+    if (mode=="simple") {
+      ctx2.fillText(text, 0, h);
+      // transfer only the blue channel
+      img = ctx2.getImageData(0,0,width, h);
+      // dd("img: "+img);
+      data = img.data;
+      // dd("data: "+data);
+      size = width * h;
+      tr.resize(size);
+      for (i=0; i<size; ++i) {
+	//tr.setAt(i, data[i*4 + 0]+data[i*4 + 1]+data[i*4 + 2]+data[i*4 + 3]);
+	tr.setAt(i, data[i*4 + 3]);
+      }
     }
+    else if (mode=="outline") {
+      ctx2.fillText(text, 0, h);
+      // transfer all data
+      img = ctx2.getImageData(0, 0, width, h);
+      data = img.data;
+      size = width * h * 4;
+      tr.resize(size);
+      for (i=0; i<size; ++i) {
+	tr.setAt(i, data[i]);
+      }
+    }
+    else if (mode=="html") {
+      // TO DO: impl
+    }
+
   };
 
   var cbid2 =

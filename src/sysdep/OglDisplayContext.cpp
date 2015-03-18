@@ -536,6 +536,9 @@ void OglDisplayContext::drawPixels(const Vector4D &pos,
     glColor4ub(col->r(), col->g(), col->b(), col->a());
     glBitmap(w, h, 0, 0, 0, 0, pdata);
   }
+  else if (data.getDepth()==32) {
+    glDrawPixels(w, h, GL_ALPHA, GL_RGBA, pdata);
+  }
 
   //delete [] pdata;
 }

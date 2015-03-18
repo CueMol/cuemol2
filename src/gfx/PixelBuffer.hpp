@@ -67,6 +67,13 @@ namespace gfx {
 
     void clear();
 
+    bool isEmpty() const {
+      if (m_pData==NULL)
+	return true;
+      else
+	return m_pData->empty();
+    }
+
   };
 
 }
