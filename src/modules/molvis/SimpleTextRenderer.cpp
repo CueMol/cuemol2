@@ -55,21 +55,28 @@ void SimpleTextRenderer::render(DisplayContext *pdc)
 {
   if (m_pixbuf.isEmpty()) {
     gfx::TextRenderManager *pTRM = gfx::TextRenderManager::getInstance();
-    if (pTRM==NULL)
+    if (pTRM==NULL) {
+      MB_DPRINTLN("SimpleTextRenderer.render> Fatal error, cannot get TextRenderMgr");
       return;
+    }
     
     double scl = pdc->getPixSclFac();
     pTRM->setupFont(getFontSize() * scl, getFontName(),
 		    getFontStyle(), getFontWgt(),
 		    getColor(), m_outlSize, m_outlColor);
     
-    if (!pTRM->renderText(m_strLabel, m_pixbuf))
+    if (!pTRM->renderText(m_strLabel, m_pixbuf)) {
+      MB_DPRINTLN("SimpleTextRenderer.render> Fatal error, renderText() failed");
       return;
+    }
+    m_pixbuf.dump();
   }
 
   Vector4D pos;
-  if (!getLabelPos(pos))
+  if (!getLabelPos(pos)) {
+    MB_DPRINTLN("SimpleTextRenderer.render> Fatal error, cannot get label pos");
     return;
+  }
 
   pdc->drawPixels(pos, m_pixbuf, ColorPtr());
 }

@@ -38,4 +38,22 @@ void PixelBuffer::clear()
   m_pData = NULL;
 }
 
+void PixelBuffer::dump() const
+{
+  MB_DPRINTLN("width: %d", m_nWidth);
+  MB_DPRINTLN("height: %d", m_nHeight);
+  MB_DPRINTLN("depth: %d", m_nDepth);
+
+  int ndep = m_nDepth/8;
+  int i, j, k;
+  for (i=0; i<m_nHeight; ++i) {
+    for (j=0; j<m_nWidth; ++j) {
+      for (k=0; k<ndep; ++k) {
+	MB_DPRINT("%02X", m_pData->operator[]( (i*m_nWidth+j)*ndep+k ));
+      }
+      MB_DPRINT(" ");
+    }
+    MB_DPRINTLN("");
+  }
+}
 

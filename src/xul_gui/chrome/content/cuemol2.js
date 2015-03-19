@@ -171,6 +171,10 @@ Qm2Main.prototype.textRenderInit = function ()
       }
     }
     else if (mode=="outline") {
+      ctx2.strokeStyle = tr.outlcolor;
+      ctx2.lineWidth = tr.outlsize;
+      ctx2.fillStyle = tr.color;
+      ctx2.strokeText(text, 0, h);
       ctx2.fillText(text, 0, h);
       // transfer all data
       img = ctx2.getImageData(0, 0, width, h);
@@ -180,6 +184,7 @@ Qm2Main.prototype.textRenderInit = function ()
       for (i=0; i<size; ++i) {
 	tr.setAt(i, data[i]);
       }
+      dd("mode: "+mode+", size="+size);
     }
     else /*if (mode=="html")*/ {
       // TO DO: impl

@@ -74,6 +74,7 @@ namespace gfx {
 	return m_pData->empty();
     }
 
+    void dump() const;
   };
 
 }
