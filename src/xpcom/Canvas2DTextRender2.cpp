@@ -130,9 +130,11 @@ bool Canvas2DTextRender2::renderText(const qlib::LString &str, gfx::PixelBuffer 
 
   TextRenderEvent ev;
 
+
   ev.m_pAry = gfx::TextImgBufPtr(MB_NEW gfx::TextImgBuf());
   ev.m_pAry->setText(str);
   ev.m_pAry->setFont(m_strCSSFont);
+
 
   if (m_outlSize<0.0) {
     ev.m_pAry->setDepth(8);
@@ -146,8 +148,10 @@ bool Canvas2DTextRender2::renderText(const qlib::LString &str, gfx::PixelBuffer 
     ev.m_pAry->setOlColor(m_strOlColor);
   }
 
+
   int height = (int) ceil(m_dFontSize);
   ev.m_pAry->setHeight(height);
+
 
   LString category = "renderText";
 
@@ -156,34 +160,39 @@ bool Canvas2DTextRender2::renderText(const qlib::LString &str, gfx::PixelBuffer 
                         qsys::ScrEventManager::SEM_OTHER,
                         qlib::invalid_uid, ev);
 
+
   // ev.m_pAry->dump();
   // buf = *(ev.m_pAry);
   // delete ev.m_pAry;
+  {
+    int i, j, k;
+    QUE_BYTE *psrc = ev.m_pAry->data();
+    int w = ev.m_pAry->getWidth();
+    int h = ev.m_pAry->getHeight();
+    int ndep = ev.m_pAry->getDepth()/8;
+    int nsize = w*h*ndep;
+    if (buf.size()<nsize)
+      buf.resize(nsize);
+    
+    // copy and invert the image along the Y-axis direction
+    ConstArrayRef source(psrc, boost::extents[h][w][ndep]);
+    ArrayRef dest(buf.data(), boost::extents[h][w][ndep]);
 
-  int i, j, k;
-  QUE_BYTE *psrc = ev.m_pAry->data();
-  int w = ev.m_pAry->getWidth();
-  int h = ev.m_pAry->getHeight();
-  int ndep = ev.m_pAry->getDepth()/8;
-  int nsize = w*h*ndep;
-  if (buf.size()<nsize)
-    buf.resize(nsize);
-  
-  // copy and invert the image along the Y-axis direction
-  ConstArrayRef source(psrc, boost::extents[h][w][ndep]);
-  ArrayRef dest(buf.data(), boost::extents[h][w][ndep]);
-  for (j=0; j<h; j++) {
-    for (i=0; i<w; i++) {
-      for (k=0; k<ndep; k++) {
-	//MB_DPRINTLN("(x=%d,y=%d,c=%d) = %d", i,j,k,source[j][i][k]);
-	dest[h-j-1][i][k] = source[j][i][k];
+    for (j=0; j<h; j++) {
+      for (i=0; i<w; i++) {
+	// dest[h-j-1][i][0] = source[j][i][0];
+	for (k=0; k<ndep; k++) {
+	  //MB_DPRINTLN("(x=%d,y=%d,c=%d)", i,j,k);
+	  //MB_DPRINTLN("     = %d", source[j][i][k]);
+	  dest[h-j-1][i][k] = source[j][i][k];
+	}
       }
     }
+    
+    buf.setDepth(ndep*8);
+    buf.setWidth(w);
+    buf.setHeight(h);
   }
-  
-  buf.setDepth(ndep*8);
-  buf.setWidth(w);
-  buf.setHeight(h);
 
   return true;
 }  

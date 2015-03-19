@@ -181,8 +181,9 @@ Qm2Main.prototype.textRenderInit = function ()
 	tr.setAt(i, data[i]);
       }
     }
-    else if (mode=="html") {
+    else /*if (mode=="html")*/ {
       // TO DO: impl
+      dd("ERROR!! unknown mode: "+mode);
     }
 
   };

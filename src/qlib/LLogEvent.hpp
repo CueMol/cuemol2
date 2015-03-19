@@ -17,9 +17,9 @@ namespace qlib {
   class QLIB_API LLogEvent : public LEvent
   {
   private:
-    qlib::LString m_msg;
     int m_nType;
     bool m_bNL;
+    qlib::LString m_msg;
 
   public:
     LLogEvent() : m_nType(0) {}
