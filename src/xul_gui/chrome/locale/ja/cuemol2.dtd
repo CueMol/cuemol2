@@ -100,9 +100,8 @@
 <!ENTITY aboutDialog.title           "&brandShortName;のバージョン情報">
 <!ENTITY aboutDialog.version         "バージョン">
 <!ENTITY aboutDialog.build           "ビルド識別子">
-<!ENTITY aboutDialog.copyrightInfo   "&#169;1998-2014 Contributors. All Rights Reserved. CueMol and the 
-                                     CueMol logos are trademarks of the BKR Laboratory.  All rights 
-                                     reserved.">
+<!ENTITY aboutDialog.copyrightInfo   "&#169;1998-2015 Contributors. All Rights Reserved.
+Refer to http://www.cuemol.org/en/index.php?Licence for conditions of distribution and use.">
 
 <!-- ********** Panels ********** -->
 
