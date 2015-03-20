@@ -122,7 +122,10 @@ namespace molstr {
   public:
     static const int TR_UNIT_PIXEL = 0;
     static const int TR_UNIT_ANGSTROM = 1;
-    static const int TR_UNIT_MOGE = 2;
+    static const int TR_UNIT_POINT = 2;
+    static const int TR_UNIT_INCH = 3;
+    static const int TR_UNIT_MILLIMETER = 4;
+    static const int TR_UNIT_CENTIMETER = 5;
 
     int getOffsetUnit() const {
       return m_nOfsUnit;

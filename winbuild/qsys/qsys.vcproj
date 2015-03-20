@@ -979,6 +979,18 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\modules\molstr\TextRenderer.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\modules\molstr\TextRenderer.qif"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\modules\molstr\TextRenderer_wrap.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\modules\molstr\TopoBuilder.cpp"
 				>
 			</File>
@@ -1168,6 +1180,18 @@
 			</File>
 			<File
 				RelativePath="..\..\src\modules\molvis\RibbonRenderer_wrap.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\modules\molvis\SimpleTextRenderer.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\modules\molvis\SimpleTextRenderer.qif"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\modules\molvis\SimpleTextRenderer_wrap.cpp"
 				>
 			</File>
 			<File

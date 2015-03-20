@@ -17,16 +17,27 @@ runtime_class SimpleTextRenderer extends TextRenderer
   smartptr;
   cloneable;
 
+  property string label => redirect(getLabelStr, setLabelStr);
+  default label = "aaa";
+
   property object<AbstractColor$> outline_color => redirect(getOutlineColor, setOutlineColor);
   default outline_color = gfx::SolidColor::createRGB(0.0, 0.0, 0.0);
 
   property real outline_size => redirect(getOutlineSize, setOutlineSize);
   default outline_size = 2.0;
 
-  property string label => redirect(getLabelStr, setLabelStr);
-  default label = "aaa";
+  /// unit of label size (and offset,etc)
+  enumdef size_unit {
+    px = molstr::TextRenderer::TR_UNIT_PIXEL;
+    angstrom = molstr::TextRenderer::TR_UNIT_ANGSTROM;
+    pt = molstr::TextRenderer::TR_UNIT_POINT;
+    in = molstr::TextRenderer::TR_UNIT_INCH;
+    mm = molstr::TextRenderer::TR_UNIT_MILLIMETER;
+    cm = molstr::TextRenderer::TR_UNIT_CENTIMETER;
+  }
+  property enum size_unit => redirect(getSizeUnit, setSizeUnit);
 
-  property integer target_aid => redirect(getTargetAID, setTargetAID);
+  property string target_aid => redirect(getTargetAID, setTargetAID);
 
 };
 

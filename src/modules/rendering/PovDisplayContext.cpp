@@ -166,6 +166,14 @@ void PovDisplayContext::startRender()
 
 void PovDisplayContext::endRender()
 {
+  // image pixmaps
+  if (m_bWritePix) {
+    // ips.format("\n#if (_show%s)\n", getSecName().c_str());
+    writePixData();
+    // ips.format("#end\n");
+    // ips.format("\n");
+  }
+
   if (m_pPovOut!=NULL) {
     writeTailer();
     m_pPovOut->close();
@@ -538,14 +546,6 @@ void PovDisplayContext::writeObjects()
 
   }
 
-  // image pixmaps
-  if (m_bWritePix) {
-    ips.format("\n#if (_show%s)\n", getSecName().c_str());
-    writePixData();
-    ips.format("#end\n");
-    ips.format("\n");
-  }
-  
 }
 
 /// dump CLUT to POV file
@@ -1080,7 +1080,8 @@ void PovDisplayContext::drawPixels(const Vector4D &pos,
 
   int img_w = data.getWidth();
   int img_h = data.getHeight();
-  MB_DPRINTLN("POV> Draw pixels %d, %d", img_w, img_h);
+  int ndep = data.getDepth()/8;
+  MB_DPRINTLN("POV> Draw pixels %d x %d, %d", img_w, img_h, ndep);
 
   PixData img;
   img.m_pos = v;
@@ -1091,22 +1092,29 @@ void PovDisplayContext::drawPixels(const Vector4D &pos,
   img.m_pData->setWidth(img_w);
   img.m_pData->setHeight(img_h);
   img.m_pData->setDepth(8*4);
-  img.m_pData->resize(img_w * img_h * 4);
+  const int nsize = img_w * img_h * 4;
+  img.m_pData->resize(nsize);
   QUE_BYTE *pnew = img.m_pData->data();
   QUE_BYTE cr = (QUE_BYTE)col->r();
   QUE_BYTE cg = (QUE_BYTE)col->g();
   QUE_BYTE cb = (QUE_BYTE)col->b();
-  for (int j=0; j<img_h; ++j)
-    for (int i=0; i<img_w; ++i) {
-      QUE_BYTE pix = data.at(j*img_w+i);
-      pnew[(j*img_w+i)*4 + 0] = cr;
-      pnew[(j*img_w+i)*4 + 1] = cg;
-      pnew[(j*img_w+i)*4 + 2] = cb;
-      pnew[(j*img_w+i)*4 + 3] = pix;
-    }
 
+  if (ndep==1) {
+    for (int j=0; j<img_h; ++j)
+      for (int i=0; i<img_w; ++i) {
+        QUE_BYTE pix = data.at(j*img_w+i);
+        pnew[(j*img_w+i)*4 + 0] = cr;
+        pnew[(j*img_w+i)*4 + 1] = cg;
+        pnew[(j*img_w+i)*4 + 2] = cb;
+        pnew[(j*img_w+i)*4 + 3] = pix;
+      }
+  }
+  else if (ndep==4) {
+    for (int i=0; i<nsize; ++i)
+      pnew[i] = data.at(i);
+  }
+  
   m_pixList.push_back(img);
-
 }
 
 #include <libpng/png.h>

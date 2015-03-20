@@ -51,6 +51,7 @@ treechildren::-moz-tree-cell-text(disabled) {
       </treecols>
       <treechildren class="object-tree-children"/>
     </tree>
+
   </vbox>
   
 </dialog>

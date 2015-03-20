@@ -22,6 +22,7 @@ namespace molvis {
   using molstr::SelectionPtr;
   using molstr::MolCoord;
   using molstr::MolCoordPtr;
+  using molstr::MolAtomPtr;
 
   class MOLVIS_API SimpleTextRenderer : public molstr::TextRenderer
   {
@@ -76,15 +77,15 @@ namespace molvis {
     }
 
   private:
-    /// target atom ID
-    int m_nTgtAID;
+    /// target atom ID (in string format)
+    LString m_strTgtAID;
 
   public:
-    int getTargetAID() const {
-      return m_nTgtAID;
+    const LString &getTargetAID() const {
+      return m_strTgtAID;
     }
-    void setTargetAID(int n) {
-      m_nTgtAID = n;
+    void setTargetAID(const LString &n) {
+      m_strTgtAID = n;
     }
 
     /*
@@ -126,10 +127,23 @@ namespace molvis {
       m_outlSize = rc;
     }
 
+  private:
+    /// Unit of sizes
+    int m_nSizeUnit;
+    
+  public:
+    int getSizeUnit() const {
+      return m_nSizeUnit;
+    }
+    void setSizeUnit(int n) {
+      m_nSizeUnit = n;
+    }
+
     //////////////////////////////////////////////////////
 
   private:
     MolCoordPtr getClientMol() const;
+    MolAtomPtr getTargetAtom() const;
     
     gfx::PixelBuffer m_pixbuf;
 

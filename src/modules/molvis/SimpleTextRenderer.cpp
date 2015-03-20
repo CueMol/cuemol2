@@ -22,7 +22,7 @@ using molstr::MolAtomPtr;
 SimpleTextRenderer::SimpleTextRenderer()
      : super_t()
 {
-  m_nTgtAID = -1;
+  m_nSizeUnit = TR_UNIT_PIXEL;
 }
 
 SimpleTextRenderer::~SimpleTextRenderer()
@@ -69,7 +69,7 @@ void SimpleTextRenderer::render(DisplayContext *pdc)
       MB_DPRINTLN("SimpleTextRenderer.render> Fatal error, renderText() failed");
       return;
     }
-    m_pixbuf.dump();
+    // m_pixbuf.dump();
   }
 
   Vector4D pos;
@@ -97,7 +97,7 @@ Vector4D SimpleTextRenderer::getCenter() const
 
 const char *SimpleTextRenderer::getTypeName() const
 {
-  return "simpletext";
+  return "stext";
 }
 
 ///////////
@@ -107,19 +107,20 @@ void SimpleTextRenderer::invalidatePixCache()
   m_pixbuf.clear();
 }
 
-bool SimpleTextRenderer::getLabelPos(Vector4D &res) const
+MolAtomPtr SimpleTextRenderer::getTargetAtom() const
 {
   MolCoordPtr pobj = ensureNotNull( getClientMol() );
   
-  /*
-  if (nlab.aid<0) {
-    nlab.aid = pobj->fromStrAID(nlab.strAid);
-    if (nlab.aid<0)
-      return false;
-  }
-  */
+  int aid = pobj->fromStrAID(m_strTgtAID);
+  if (aid<0)
+    return MolAtomPtr();
 
-  MolAtomPtr pAtom = pobj->getAtom(m_nTgtAID);
+  return pobj->getAtom(aid);
+}
+
+bool SimpleTextRenderer::getLabelPos(Vector4D &res) const
+{
+  MolAtomPtr pAtom = getTargetAtom();
   if (pAtom.isnull())
     return false;
 
@@ -129,18 +130,7 @@ bool SimpleTextRenderer::getLabelPos(Vector4D &res) const
 
 bool SimpleTextRenderer::makeLabelStr()
 {
-  MolCoordPtr pobj = getClientMol();
-  MB_ASSERT(!pobj.isnull());
-  
-  /*
-  if (nlab.aid<0) {
-    nlab.aid = pobj->fromStrAID(nlab.strAid);
-    if (nlab.aid<0)
-      return false;
-  }
-  */
-
-  MolAtomPtr pAtom = pobj->getAtom(m_nTgtAID);
+  MolAtomPtr pAtom = getTargetAtom();
   if (pAtom.isnull())
     return false;
 

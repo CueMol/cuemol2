@@ -140,6 +140,8 @@ Qm2Main.prototype.textRenderInit = function ()
       ctx2.font = fontstr;
       var mtx = ctx2.measureText(text);
       var w = Math.ceil(mtx.width);
+      if (mode=="outline")
+        w += tr.outlsize*2;
       if (w%4 != 0)
         w += (4-w%4);
       return w;
@@ -173,9 +175,14 @@ Qm2Main.prototype.textRenderInit = function ()
     else if (mode=="outline") {
       ctx2.strokeStyle = tr.outlcolor;
       ctx2.lineWidth = tr.outlsize;
+      ctx2.lineJoin = "round";
       ctx2.fillStyle = tr.color;
-      ctx2.strokeText(text, 0, h);
-      ctx2.fillText(text, 0, h);
+      ctx2.shadowOffsetX = ctx2.shadowOffsetY = 2;
+      ctx2.shadowColor = tr.outlcolor;
+      ctx2.shadowBlur = 2;
+      ctx2.strokeText(text, tr.outlsize, h);
+      ctx2.shadowBlur = 0;
+      ctx2.fillText(text, tr.outlsize, h);
       // transfer all data
       img = ctx2.getImageData(0, 0, width, h);
       data = img.data;
