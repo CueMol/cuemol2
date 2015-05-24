@@ -191,6 +191,11 @@ void MolSurfObj::regenerateSES(double density, double probe_r, SelectionPtr pSel
   if (rad2<0.0)
     rad2 = m_dProbeRad;
 
+  SelectionPtr pSel2 = pSel;
+  if (pSel2.isnull()) {
+    pSel2 = getOrigSel();
+  }
+  
   // Record undo info
   qsys::UndoUtil uu(getScene());
   if (uu.isOK()) {
@@ -200,7 +205,7 @@ void MolSurfObj::regenerateSES(double density, double probe_r, SelectionPtr pSel
   }
 
   clean();
-  createSESFromMol(pMol, pSel, den2, rad2);
+  createSESFromMol(pMol, pSel2, den2, rad2);
 
   // notify update of structure
   {
