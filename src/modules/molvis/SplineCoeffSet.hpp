@@ -111,7 +111,11 @@ namespace molvis {
 
     SplineCoeffSet *m_pParent;
 
-    std::vector<bool> m_bnormDirs;
+    static const int SC_BDIR1=1;
+    static const int SC_BDIR2=2;
+    static const int SC_BDIR3=3;
+    static const int SC_BDIR4=4;
+    std::vector<int> m_bnormDirs;
 
   private:
     SplineCoeff() {}
@@ -183,8 +187,8 @@ namespace molvis {
       return true;
     }
 
-    bool getBnormDirFlag(int nres) const {
-      if (!( 0<=nres && nres<m_nResids )) return false;
+    int getBnormDirFlag(int nres) const {
+      if (!( 0<=nres && nres<m_nResids )) return 0;
       return m_bnormDirs[nres];
     }
 

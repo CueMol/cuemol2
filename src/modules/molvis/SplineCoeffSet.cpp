@@ -235,9 +235,6 @@ bool SplineCoeff::generate()
   //
   int nres;
   m_axisInt.setSize(m_nResids);
-  m_normInt.setSize(m_nResids);
-  Vector4D prev_bnorm;
-  m_bnormDirs.resize(m_nResids);
 
   for (nres=0; nres<m_nResids; ++nres) {
     // Get atoms (cur/prev/next)
@@ -249,6 +246,7 @@ bool SplineCoeff::generate()
     Vector4D curpos = pAtom->getPos();
     bool res = m_pivaid_map.insert(PivAidMap::value_type(pAtom->getID(), nres)).second;
 
+    // Apply smooth value
     double smooth = m_pParent->getSmoothByRes(getResidue(nres));
     if (!qlib::isNear4(smooth, 0.0)) {
       smooth = qlib::trunc(smooth, 0.0, 1.0);
@@ -290,38 +288,83 @@ bool SplineCoeff::generate()
       endpar = cpar+0.5;
     else
       endpar = cpar;
-    //endpar = 0.0f;
-    // MB_ASSERT(nres>=0);
 
     MB_ASSERT(nres+1<m_nParamTabSz);
     m_pParamTab[nres] = startpar;
     m_pParamTab[nres+1] = endpar;
     m_pParamCentTab[nres] = centpar;
-
-    //
-    // Calc (bi)normal vector
-    //
-
-    //Vector4D bnorm(1.0, 0.0, 0.0);
-    Vector4D bnorm = calcBnormVec(nres);
-
-    // preserve consistency of binormal vector directions
-    m_bnormDirs[nres] = false;
-    if (!prev_bnorm.isZero()) {
-      double costh = bnorm.dot(prev_bnorm);
-      if (costh<0) {
-        bnorm = -bnorm;
-        m_bnormDirs[nres] = true;
-      }
-    }
-    
-    //int res = m_normInt.addPoint(bnorm+curpos);
-    m_normInt.setPoint(nres, bnorm+curpos);
-    prev_bnorm = bnorm;
   }
 
   // Generate spline coeffs
   m_axisInt.generate();
+
+  //
+  // Setup binormal vector spline coeff
+  //
+  m_normInt.setSize(m_nResids);
+  Vector4D prev_bnorm;
+  m_bnormDirs.resize(m_nResids);
+
+  for (nres=0; nres<m_nResids; ++nres) {
+    Vector4D f1, vpt;
+    interpAxis(nres, &f1, &vpt);
+
+    Vector4D b1 = calcBnormVec(nres);
+    Vector4D b2 = ( b1.cross(vpt) ).normalize();
+    Vector4D b3 = -b1;
+    Vector4D b4 = -b2;
+
+    Vector4D bnorm;
+
+    if (prev_bnorm.isZero()) {
+      m_bnormDirs[nres] = SC_BDIR1;
+      bnorm = b1;
+    }
+    else {
+      // preserve consistency of binormal vector directions
+      double costh1 = b1.dot(prev_bnorm);
+      double costh2 = b2.dot(prev_bnorm);
+      double costh3 = b3.dot(prev_bnorm);
+      double costh4 = b4.dot(prev_bnorm);
+      //MB_DPRINTLN("%d costh=%.3f %.3f %.3f %.3f", nres,
+      //costh1, costh2, costh3, costh4);
+
+      if (costh1>costh2 && costh1>costh3 && costh1>costh4) {
+        //MB_DPRINTLN("  -->1");
+        bnorm = b1;
+        m_bnormDirs[nres] = SC_BDIR1;
+      }
+      else if (costh2>costh1 && costh2>costh3 && costh2>costh4) {
+        //MB_DPRINTLN("  -->2");
+        bnorm = b2;
+        m_bnormDirs[nres] = SC_BDIR2;
+      }
+      else if (costh3>costh1 && costh3>costh2 && costh3>costh4) {
+        //MB_DPRINTLN("  -->3");
+        bnorm = b3;
+        m_bnormDirs[nres] = SC_BDIR3;
+      }
+      else {
+        //MB_DPRINTLN("  -->4");
+        bnorm = b4;
+        m_bnormDirs[nres] = SC_BDIR4;
+      }
+
+      /*if (costh1>costh3) {
+        MB_DPRINTLN("  -->1");
+        bnorm = b1;
+      }
+      else {
+        MB_DPRINTLN("  -->3");
+        bnorm = b3;
+      }*/
+
+      MB_DPRINTLN("%d dir=%d", nres, m_bnormDirs[nres]);
+    }
+    
+    m_normInt.setPoint(nres, bnorm+f1);
+    prev_bnorm = bnorm;
+  }
   m_normInt.generate();
 
   int intrmax = m_axisInt.getPoints() -1;
