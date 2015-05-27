@@ -49,21 +49,26 @@ using namespace molstr;
       bool m_bBnormSpl;
       
       std::deque<Vector4D> m_posvec;
+      std::deque<MolResidue *> m_resvec;
 
       bool m_bStartExtend;
       bool m_bEndExtend;
 
       int m_nResDelta;
 
-      void addPoint(const Vector4D &pos)
-      {
-        m_posvec.push_back(pos);
-      }
-
-      void addPoint(const Vector4D &pos, double wgt)
+      void addPoint(const Vector4D &pos, double wgt=0.0)
       {
         m_posvec.push_back(pos);
         m_posvec.back().w() = wgt;
+        m_resvec.push_back(NULL);
+      }
+
+      void addPoint(MainChainRenderer *pthat, MolResiduePtr pRes, double wgt=0.0)
+      {
+        Vector4D pos = pthat->getPivotPos(pRes);
+        m_posvec.push_back(pos);
+        m_posvec.back().w() = wgt;
+        m_resvec.push_back(pRes.get());
       }
 
       void setStart()
@@ -82,6 +87,9 @@ using namespace molstr;
       bool generateHelix(double wrho);
       bool generateSheet();
       bool generateCoil();
+
+      Vector4D calcBinormVec(int i);
+      bool calcProtBinormVec(int nres, Vector4D &res);
 
       Vector4D getBnormVec(double t);
 

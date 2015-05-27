@@ -116,20 +116,7 @@ bool SecSplDat::generateSheet()
 
   int ind=0;
   for (int i=ist; i<=ien; ++i) {
-    Vector4D p0 = m_posvec[i-1];
-    Vector4D p1 = m_posvec[i];
-    Vector4D p2 = m_posvec[i+1];
-
-    // calc binormal vector
-    Vector4D bnorm = (p1 - p0).cross(p2 - p1);
-  
-    // normalization
-    double len = bnorm.length();
-    if (len>=F_EPS4)
-      bnorm = bnorm.scale(1.0/len);
-    else
-    // singularity case: cannot determine binomal vec.
-      bnorm = Vector4D(1.0, 0.0, 0.0);
+    Vector4D bnorm = calcBinormVec(i);
     
     // Preserve consistency of the direction
     if (!prev_bnorm.isZero()) {
@@ -153,6 +140,63 @@ bool SecSplDat::generateSheet()
   m_bBnormSpl = true;
 
   return true;
+}
+
+bool SecSplDat::calcProtBinormVec(int nres, Vector4D &res)
+{
+  // check protein case
+  MolResidue *pres = m_resvec[nres];
+  if (pres==NULL)
+    return false;
+
+  LString sec;
+  pres->getPropStr("secondary", sec);
+  if (!sec.equals("sheet"))
+    return false;
+
+  MolAtomPtr pAC = pres->getAtom("C");
+  MolAtomPtr pAO = pres->getAtom("O");
+  if (pAC.isnull()||pAO.isnull())
+    return false;
+
+  Vector4D v1 = pAO->getPos() - pAC->getPos();
+  
+  // normalization
+  double len = v1.length();
+  if (len>=F_EPS4)
+    res = v1.scale(1.0/len);
+  else
+    // singularity case: cannot determine binomal vec.
+    return false;
+
+  return true;
+}
+
+/// calc binormal vector
+Vector4D SecSplDat::calcBinormVec(int i)
+{
+  Vector4D bnorm;
+
+  // check protein case
+  if (calcProtBinormVec(i, bnorm))
+    return bnorm;
+
+  // generic case
+  Vector4D p0 = m_posvec[i-1];
+  Vector4D p1 = m_posvec[i];
+  Vector4D p2 = m_posvec[i+1];
+
+  bnorm = (p1 - p0).cross(p2 - p1);
+  
+  // normalization
+  double len = bnorm.length();
+  if (len>=F_EPS4)
+    bnorm = bnorm.scale(1.0/len);
+  else
+    // singularity case: cannot determine binomal vec.
+    bnorm = Vector4D(1.0, 0.0, 0.0);
+
+  return bnorm;
 }
 
 Vector4D SecSplDat::getBnormVec(double t)
@@ -378,18 +422,18 @@ void Ribbon2Renderer::buildHelixData()
       pCyl->m_nResDelta = i;
       if (!pPrevRes.isnull()) {
         pCyl->m_bStartExtend = true;
-        pCyl->addPoint( getPivotPos(pPrevRes) );
+        pCyl->addPoint( this, pPrevRes );
         pCyl->m_nResDelta = i-1;
       }
-      pCyl->addPoint( getPivotPos(pRes) );
+      pCyl->addPoint( this, pRes );
     }
     else if (nsw==2) {
       // end
       MB_ASSERT(pCyl!=NULL);
-      pCyl->addPoint( getPivotPos(pRes) );
+      pCyl->addPoint( this, pRes );
       if (!pNextRes.isnull()) {
         pCyl->m_bEndExtend = true;
-        pCyl->addPoint( getPivotPos(pNextRes) );
+        pCyl->addPoint( this, pNextRes );
       }
       bool res = pCyl->generateHelix(m_dWidthRho);
       m_cylinders.push_back(pCyl);
@@ -398,7 +442,7 @@ void Ribbon2Renderer::buildHelixData()
     }
     else {
       if (pCyl!=NULL)
-        pCyl->addPoint( getPivotPos(pRes) );
+        pCyl->addPoint( this, pRes );
     }
 
   } // for
@@ -580,7 +624,7 @@ void Ribbon2Renderer::buildSheetData()
       if (isSheet(prev_ss)) {
         // end of sheet (E x)
         MB_ASSERT(pSh!=NULL);
-        pSh->addPoint( getPivotPos(pRes), getAnchorWgt(pRes) );
+        pSh->addPoint( this, pRes, getAnchorWgt(pRes) );
         pSh->m_bEndExtend = true;
 
         bool res = pSh->generateSheet();
@@ -604,15 +648,15 @@ void Ribbon2Renderer::buildSheetData()
         pSh->m_nResDelta = i;
         if (!pPrevRes.isnull()) {
           pSh->m_bStartExtend = true;
-          pSh->addPoint( getPivotPos(pPrevRes), getAnchorWgt(pRes) );
+          pSh->addPoint( this, pPrevRes, getAnchorWgt(pRes) );
           pSh->m_nResDelta = i-1;
         }
-        pSh->addPoint( getPivotPos(pRes), getAnchorWgt(pRes) );
+        pSh->addPoint( this, pRes, getAnchorWgt(pRes) );
       }
       else {
         // mid of sheet (E E)
         if (pSh!=NULL)
-          pSh->addPoint( getPivotPos(pRes), getAnchorWgt(pRes) );
+          pSh->addPoint( this, pRes, getAnchorWgt(pRes) );
       }
     }
 
@@ -870,17 +914,17 @@ void Ribbon2Renderer::buildCoilData()
           // No previous residue (may be N-terminus; i.e. [. C])
           //  --> no extension
           pCoil->setStart(); // nstart should be zero...
-          pCoil->addPoint( getPivotPos(pRes) , getAnchorWgt(pRes));
+          pCoil->addPoint( this, pRes, getAnchorWgt(pRes));
         }
         else {
           if (isSheet(prev_ss)) {
             extendSheetCoil(pCoil, i-1);
-            pCoil->addPoint( getPivotPos(pRes), 1.0);
+            pCoil->addPoint( this, pRes, 1.0);
           }
           else {
             pCoil->setStart();
-            pCoil->addPoint( getPivotPos(pPrevRes), m_dAnchorWgt);
-            pCoil->addPoint( getPivotPos(pRes), m_dAnchorWgt);
+            pCoil->addPoint( this, pPrevRes, m_dAnchorWgt);
+            pCoil->addPoint( this, pRes, m_dAnchorWgt);
           }
           pCoil->m_bStartExtend = true;
           pCoil->m_nResDelta = i-1;
@@ -890,7 +934,7 @@ void Ribbon2Renderer::buildCoilData()
         // mid of coil (C C)
         if (pCoil!=NULL) {
           const double wgt = getAnchorWgt(pRes);
-          pCoil->addPoint( getPivotPos(pRes) , wgt);
+          pCoil->addPoint( this, pRes, wgt);
         }
       }
     }
@@ -906,7 +950,7 @@ void Ribbon2Renderer::buildCoilData()
         else {
           // coil-helix junction (C H)
           pCoil->m_posvec.back().w() = m_dAnchorWgt;
-          pCoil->addPoint( getPivotPos(pRes) , m_dAnchorWgt);
+          pCoil->addPoint( this, pRes, m_dAnchorWgt);
           pCoil->setEnd();
         }
         pCoil->m_bEndExtend = true;
