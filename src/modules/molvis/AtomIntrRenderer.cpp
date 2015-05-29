@@ -870,7 +870,6 @@ void AtomIntrRenderer::propChanged(qlib::LPropEvent &ev)
   else if (propnm.equals("showlabel")) {
     invalidateDisplayCache();
   }
-  
 
   super_t::propChanged(ev);
 }
@@ -1214,10 +1213,7 @@ void AtomIntrRenderer::displayLabels(DisplayContext *pdc)
   if (m_bShowLabel) {
     m_pixCache.setFont(m_dFontSize, m_strFontName, m_strFontStyle, m_strFontWgt);
     pdc->color(m_pcolor);
-    if (pdc->isFile())
-      m_pixCache.draw(pdc, false); // force to ignore cached data
-    else
-      m_pixCache.draw(pdc, true); // reuse cached label images
+    m_pixCache.draw(pdc);
   }
 }
 

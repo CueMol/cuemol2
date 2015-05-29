@@ -67,6 +67,7 @@ namespace gfx {
     virtual qsys::View *getTargetView() const;
 
     virtual bool isFile() const =0;
+    virtual bool isRenderPixmap() const;
 
     ////////////////
 

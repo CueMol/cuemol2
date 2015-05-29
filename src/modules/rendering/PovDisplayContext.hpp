@@ -209,6 +209,8 @@ namespace render {
       return LString::join(",", m_imgFileNames);
     }
 
+    bool isRenderPixmap() const;
+
   };
 
 }

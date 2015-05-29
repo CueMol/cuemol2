@@ -102,6 +102,8 @@ LString NameLabelRenderer::toString() const
 
 void NameLabelRenderer::display(DisplayContext *pdc)
 {
+  // if pdc target is file, label should be rendered here
+  //  (displayLabels() won't be called...)
   if (pdc->isFile()) {
     preRender(pdc);
     render(pdc);
@@ -177,8 +179,9 @@ bool NameLabelRenderer::makeLabelStr(NameLabel &nlab, LString &rstrlab, Vector4D
 
 void NameLabelRenderer::render(DisplayContext *pdc)
 {
-  // pdl->color(m_color);
-
+  if (!pdc->isRenderPixmap())
+    return;
+  
   MolCoordPtr rCliMol = getClientMol();
   if (rCliMol.isnull()) {
     MB_DPRINTLN("NameLabelRenderer::render> Client mol is null");
@@ -194,18 +197,19 @@ void NameLabelRenderer::render(DisplayContext *pdc)
       NameLabel &nlab = *iter;
       if (nlab.m_nCacheID<0) {
         makeLabelStr(nlab, strlab, pos);
-        int id = m_pixCache.addString(pos, strlab);
-        nlab.m_nCacheID = id;
+        nlab.m_nCacheID = m_pixCache.addString(pos, strlab);
       }
     }
   }
   
   m_pixCache.setFont(m_dFontSize, m_strFontName, m_strFontStyle, m_strFontWgt);
   pdc->color(m_color);
-  if (pdc->isFile())
-    m_pixCache.draw(pdc, false); // force to ignore cached data
-  else
-    m_pixCache.draw(pdc, true); // reuse cached label images
+  m_pixCache.draw(pdc);
+
+  // if (pdc->isFile())
+  // m_pixCache.draw(pdc, false); // force to ignore cached data
+  //   else
+  // m_pixCache.draw(pdc, true); // reuse cached label images
 }
 
 Vector4D NameLabelRenderer::getCenter() const

@@ -10,7 +10,7 @@
 
 using namespace gfx;
 
-void LabelCacheImpl::draw(DisplayContext *pdc, bool bUseCache /*=true*/)
+void LabelCacheImpl::draw(DisplayContext *pdc)
 {
   gfx::TextRenderManager *pTRM = gfx::TextRenderManager::getInstance();
   if (pTRM==NULL)
@@ -19,12 +19,26 @@ void LabelCacheImpl::draw(DisplayContext *pdc, bool bUseCache /*=true*/)
   double scl = pdc->getPixSclFac();
   pTRM->setupFont(m_dFontSize * scl, m_strFontName, m_strFontStyle, m_strFontWgt);
 
+  bool bUseCache = false;
+  if (m_dScaleFac<0.0) {
+    bUseCache = true;
+    m_dScaleFac = scl;
+  }
+  else if (qlib::isNear4(scl, m_dScaleFac)) {
+    MB_DPRINTLN("LabelCache> cache scl(%f) = draw scl (%f) --> use cache", m_dScaleFac, scl);
+    bUseCache = true;
+  }
+  else {
+    MB_DPRINTLN("LabelCache> cache scl(%f) != draw scl (%f) --> not use cache", m_dScaleFac, scl);
+  }
+  
   PixBufCache::iterator iter = m_data.begin();
   PixBufCache::iterator eiter = m_data.end();
   for (; iter!=eiter; ++iter) {
     const Vector4D &pos = iter->pos;
 
     if (!bUseCache) {
+      MB_DPRINTLN("LabelCache> Not use cache <%s>.", iter->str.c_str());
       gfx::PixelBuffer *pixbuf = MB_NEW gfx::PixelBuffer();
       if (!pTRM->renderText(iter->str, *pixbuf))
         return;

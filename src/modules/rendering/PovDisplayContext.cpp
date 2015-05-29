@@ -1197,3 +1197,8 @@ void PovDisplayContext::writePixData()
   m_pixList.clear();
 }
 
+bool PovDisplayContext::isRenderPixmap() const
+{
+  return m_bWritePix;
+}
+

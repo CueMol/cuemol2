@@ -44,8 +44,10 @@ namespace gfx {
 
     int m_nNextID;
 
+    double m_dScaleFac;
+    
   public:
-    LabelCacheImpl() : m_nNextID(0)
+    LabelCacheImpl() : m_nNextID(0), m_dScaleFac(-1.0)
     {
     }
     
@@ -75,7 +77,7 @@ namespace gfx {
     bool isEmpty() const { return m_data.empty(); }
 
     /// Draw the rendered text image to display (pdc)
-    void draw(DisplayContext *pdc, bool bUseCache=true);
+    void draw(DisplayContext *pdc);
 
     /// Invalidate all pixel image data
     void invalidateAll();
