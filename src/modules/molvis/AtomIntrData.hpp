@@ -88,11 +88,11 @@ struct AtomIntrData
   AtomIntrElem elem3;
 
   /// Label work area
-  int m_nLabelCacheID;
+  int nLabelCacheID;
 
   ////////////////////
 
-  AtomIntrData() : nmode(0), m_nLabelCacheID(-1)
+  AtomIntrData() : nmode(0), nLabelCacheID(-1)
   {
   }
 
@@ -103,7 +103,7 @@ struct AtomIntrData
   /// make distance data
   AtomIntrData(qlib::uid_t nMolID1, SelectionPtr pSel1,
                qlib::uid_t nMolID2, SelectionPtr pSel2)
-       : nmode(1)
+       : nmode(1), nLabelCacheID(-1)
     {
       elem0.setSel(pSel1);
       elem0.nMolID = nMolID1;
@@ -115,7 +115,7 @@ struct AtomIntrData
   /// make distance data by AID
   AtomIntrData(qlib::uid_t nMolID1, int nAid1, 
                qlib::uid_t nMolID2, int nAid2)
-       : nmode(1)
+       : nmode(1), nLabelCacheID(-1)
     {
       elem0.setAtomID(nAid1);
       elem0.nMolID = nMolID1;
@@ -128,7 +128,7 @@ struct AtomIntrData
   AtomIntrData(qlib::uid_t nMolID1, int nAid1, 
                qlib::uid_t nMolID2, int nAid2,
                qlib::uid_t nMolID3, int nAid3)
-       : nmode(2)
+       : nmode(2), nLabelCacheID(-1)
     {
       elem0.setAtomID(nAid1);
       elem0.nMolID = nMolID1;
@@ -145,7 +145,7 @@ struct AtomIntrData
                qlib::uid_t nMolID2, int nAid2,
                qlib::uid_t nMolID3, int nAid3,
                qlib::uid_t nMolID4, int nAid4)
-       : nmode(3)
+       : nmode(3), nLabelCacheID(-1)
     {
       elem0.setAtomID(nAid1);
       elem0.nMolID = nMolID1;

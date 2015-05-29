@@ -49,13 +49,10 @@ private:
   
   /// label's font name
   LString m_strFontName;
-
   /// label's font size
   double m_dFontSize;
-
   /// label's font style (corresponds to the font-style prop of CSS)
   LString m_strFontStyle;
-
   /// label's font weight (corresponds to the font-weight prop of CSS)
   LString m_strFontWgt;
 
@@ -112,10 +109,24 @@ public:
   void setMaxLabel(int nmax) { m_nMax = nmax; }
   int getMaxLabel() const { return m_nMax; }
 
+
+  void setFontSize(double val);
+  double getFontSize() const { return m_dFontSize; }
+  
+  void setFontName(const LString &val);
+  LString getFontName() const { return m_strFontName; }
+  
+  void setFontStyle(const LString &val);
+  LString getFontStyle() const { return m_strFontStyle; }
+  
+  void setFontWgt(const LString &val);
+  LString getFontWgt() const { return m_strFontWgt; }
+
 private:
   bool makeLabelStr(NameLabel &n, LString &lab,Vector4D &pos);
 
-  void makeLabelImg();
+  /// clear all cached data
+  void invalidateAll();
 
 };
 

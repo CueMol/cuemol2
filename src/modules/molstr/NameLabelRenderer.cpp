@@ -21,8 +21,15 @@ namespace molstr {
   struct NameLabel
   {
   public:
-    NameLabel() {}
-    NameLabel(const NameLabel &arg) : aid(arg.aid), strAid(arg.strAid), str(arg.str) {}
+
+    NameLabel(): m_nCacheID(-1)
+    {
+    }
+
+    NameLabel(const NameLabel &arg)
+         : aid(arg.aid), strAid(arg.strAid), str(arg.str), m_nCacheID(arg.m_nCacheID)
+    {
+    }
 
     /// Target atom ID
     int aid;
@@ -32,6 +39,9 @@ namespace molstr {
 
     /// Custom label string
     LString str;
+
+    /// cache entry ID
+    int m_nCacheID;
 
     inline bool equals(const NameLabel &a) const {
       return aid==a.aid;
@@ -175,28 +185,27 @@ void NameLabelRenderer::render(DisplayContext *pdc)
     return;
   }
   
-  if (m_pixCache.isEmpty()) {
+  /*if (m_pixCache.isEmpty())*/ {
     LString strlab;
     Vector4D pos;
     NameLabelList::iterator iter = m_pdata->begin();
     NameLabelList::iterator eiter = m_pdata->end();
     for (; iter!=eiter; iter++) {
       NameLabel &nlab = *iter;
-      if (makeLabelStr(nlab, strlab, pos)) {
-        m_pixCache.addString(pos, strlab);
-      }
-      else {
-        MB_DPRINTLN("NameLabel: mklab failed in Atom %d", nlab.aid);
+      if (nlab.m_nCacheID<0) {
+        makeLabelStr(nlab, strlab, pos);
+        int id = m_pixCache.addString(pos, strlab);
+        nlab.m_nCacheID = id;
       }
     }
   }
   
-  m_pixCache.setupFont(m_dFontSize, m_strFontName, m_strFontStyle, m_strFontWgt);
+  m_pixCache.setFont(m_dFontSize, m_strFontName, m_strFontStyle, m_strFontWgt);
   pdc->color(m_color);
   if (pdc->isFile())
-    m_pixCache.draw(pdc, false);
+    m_pixCache.draw(pdc, false); // force to ignore cached data
   else
-    m_pixCache.draw(pdc);
+    m_pixCache.draw(pdc, true); // reuse cached label images
 }
 
 Vector4D NameLabelRenderer::getCenter() const
@@ -213,29 +222,6 @@ bool NameLabelRenderer::isHitTestSupported() const
 const char *NameLabelRenderer::getTypeName() const
 {
   return "*namelabel";
-}
-
-void NameLabelRenderer::makeLabelImg()
-{
-  m_pixCache.invalidate();
-  return;
-/*
-  LString strlab;
-  Vector4D pos;
-  NameLabelList::iterator iter = m_pdata->begin();
-  NameLabelList::iterator eiter = m_pdata->end();
-  for (; iter!=eiter; iter++) {
-    NameLabel &nlab = *iter;
-    if (makeLabelStr(nlab, strlab, pos)) {
-      m_pixCache.addString(pos, strlab);
-    }
-    else {
-      MB_DPRINTLN("NameLabel: mklab failed in Atom %d", nlab.aid);
-    }
-  }
-  
-  m_pixCache.setupFont(m_dFontSize, m_strFontName, m_strFontStyle, m_strFontWgt);
-  m_pixCache.render();*/
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -256,12 +242,14 @@ bool NameLabelRenderer::addLabel(MolAtomPtr patom, const LString &label /*= LStr
   m_pdata->push_back(newlab);
   int nover = m_pdata->size() - m_nMax;
 
-  for (; nover>0; nover--)
+  for (; nover>0; nover--) {
+    NameLabel &nlab = m_pdata->front();
+    if (nlab.m_nCacheID>=0)
+      m_pixCache.remove(nlab.m_nCacheID);
     m_pdata->pop_front();
-
-  makeLabelImg();
-  //m_pixCache.invalidate();
-  //m_pixCache.render();
+  }
+  
+  // makeLabelImg();
 
   // to be redrawn
   qsys::ScenePtr pScene = getScene();
@@ -294,9 +282,11 @@ bool NameLabelRenderer::removeLabelByID(int aid)
     NameLabel &nlab = *iter;
     if (aid==nlab.aid) {
       // already labeled --> remove it
+      if (nlab.m_nCacheID>=0)
+        m_pixCache.remove(nlab.m_nCacheID);
       m_pdata->erase(iter);
 
-      makeLabelImg();
+      //makeLabelImg();
       //m_pixCache.invalidate();
       //m_pixCache.render();
       
@@ -313,6 +303,59 @@ bool NameLabelRenderer::removeLabelByID(int aid)
   return false;
 }
 
+void NameLabelRenderer::setFontSize(double val)
+{
+  if (qlib::isNear4(m_dFontSize, val))
+    return;
+
+  m_dFontSize = val;
+
+  // font info was changed --> invalidate all cached data
+  invalidateAll();
+}
+
+void NameLabelRenderer::setFontName(const LString &val)
+{
+  if (m_strFontName.equals(val))
+    return;
+  
+  m_strFontName = val;
+
+  // font info was changed --> invalidate all cached data
+  invalidateAll();
+}
+
+void NameLabelRenderer::setFontStyle(const LString &val)
+{
+  if (m_strFontStyle.equals(val))
+    return;
+
+  m_strFontStyle = val;
+
+  // font info was changed --> invalidate all cached data
+  invalidateAll();
+}
+
+void NameLabelRenderer::setFontWgt(const LString &val)
+{
+  if (m_strFontWgt.equals(val))
+    return;
+
+  m_strFontWgt = val;
+
+  // font info was changed --> invalidate all cached data
+  invalidateAll();
+}
+
+/// clear all cached data
+void NameLabelRenderer::invalidateAll()
+{
+  m_pixCache.invalidateAll();
+  BOOST_FOREACH(NameLabel &value, *m_pdata) {
+    value.m_nCacheID = -1;
+  }  
+}
+
 ///////////////////////
 
 void NameLabelRenderer::propChanged(qlib::LPropEvent &ev)
@@ -325,11 +368,11 @@ void NameLabelRenderer::propChanged(qlib::LPropEvent &ev)
     if (!pScene.isnull())
       pScene->setUpdateFlag();
   }
-  else if (propnm.startsWith("font_")) {
+  /*else if (propnm.startsWith("font_")) {
     makeLabelImg();
     //m_pixCache.invalidate();
     //m_pixCache.render();
-  }
+  }*/
 
   super_t::propChanged(ev);
 }
@@ -337,8 +380,11 @@ void NameLabelRenderer::propChanged(qlib::LPropEvent &ev)
 void NameLabelRenderer::styleChanged(qsys::StyleEvent &ev)
 {
   super_t::styleChanged(ev);
-  makeLabelImg();
-  //m_pixCache.invalidate();
+
+  // TO DO: ignore non-relevant styleChanged message
+  invalidateAll();
+
+  //makeLabelImg();
   //m_pixCache.render();
 }
 
