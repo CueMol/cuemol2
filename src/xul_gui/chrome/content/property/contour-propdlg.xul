@@ -8,7 +8,7 @@
 
 <dialog
    id     = "contour-propdlg"
-   title  = "Contour Rend Properties"
+   title  = "Contour renderer properties"
    xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
   buttons="extra1,extra2,accept,cancel"
   buttonlabelextra1="Reset all to default"
@@ -24,7 +24,7 @@
   <script type="application/javascript"
 	  src="chrome://cuemol2/content/property/renderer-common-page.js"/>
   <script type="application/javascript;version=1.8"
-	  src="chrome://cuemol2/content/contour-propdlg.js"/>
+	  src="chrome://cuemol2/content/property/contour-propdlg.js"/>
 
   <!--<overlaytarget id="scripts-overlay-target"/>-->
 

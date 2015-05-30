@@ -7,7 +7,6 @@
 #define MAPMESH_RENDERER_QIF_INCLUDED
 
 #include "MapRenderer.qif"
-#include <modules/molstr/SelCommand.qif>
 
 runtime_class MapMeshRenderer extends MapRenderer
 {
@@ -33,19 +32,6 @@ runtime_class MapMeshRenderer extends MapRenderer
   /// Automatically update (including mouse drag event)
   property boolean dragupdate => m_bDragUpdate;
   default dragupdate = false;
-
-  //////////////////////
-
-  property real bndry_rng => redirect(getBndryRng, setBndryRng);
-  default bndry_rng = 5.0;
-  
-  property string bndry_molname => redirect(getBndryMolName, setBndryMolName);
-  default bndry_molname = "";
-
-  using SelCommand;
-
-  property object<MolSelection$> bndry_sel => redirect(getBndrySel, setBndrySel);
-  default bndry_sel = molstr::SelectionPtr(new molstr::SelCommand());
 
 };
 

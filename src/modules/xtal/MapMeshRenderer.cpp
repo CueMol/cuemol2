@@ -12,8 +12,6 @@
 #include <qsys/ScrEventManager.hpp>
 #include <qsys/ViewEvent.hpp>
 #include <qsys/View.hpp>
-#include <qsys/Scene.hpp>
-#include <modules/molstr/AtomIterator.hpp>
 
 #define SCALE 0x1000
 //#define DBG_DRAW_AXIS 0
@@ -22,7 +20,6 @@ using namespace xtal;
 using qlib::Matrix4D;
 using qlib::Matrix3D;
 using qsys::ScrEventManager;
-using molstr::AtomIterator;
 
 // default constructor
 MapMeshRenderer::MapMeshRenderer()
@@ -42,7 +39,6 @@ MapMeshRenderer::MapMeshRenderer()
   // default work area size 100x100x100
   setCrossArraySize(m_nBufSize,m_nBufSize,m_nBufSize);
 
-  m_bUseMolBndry = false;
 }
 
 // destructor
@@ -804,78 +800,4 @@ void MapMeshRenderer::viewChanged(qsys::ViewEvent &ev)
 
 ///////////////////////////////////////////////////
 // Mol boundary mode routines
-
-void MapMeshRenderer::setBndryMolName(const LString &s)
-{
-  if (s.equals(m_strBndryMol))
-    return;
-  m_strBndryMol = s;
-
-  /// target mol is changed-->redraw map
-  super_t::invalidateDisplayCache();
-}
-
-void MapMeshRenderer::setBndrySel(const SelectionPtr &pSel)
-{
-  ensureNotNull(pSel);
-  
-  if (!m_pSelBndry.isnull())
-    if (m_pSelBndry->equals(pSel.get()))
-      return;
-
-  m_pSelBndry = pSel;
-  //setupMolBndry();
-
-  /// selection is changed-->redraw map
-  super_t::invalidateDisplayCache();
-}
-
-void MapMeshRenderer::setBndryRng(double d)
-{
-  if (qlib::isNear4(d, m_dBndryRng))
-    return;
-  m_dBndryRng = d;
-  if (m_dBndryRng<0.0)
-    m_dBndryRng = 0.0;
-  // setupMolBndry();
-
-  if (m_bUseMolBndry)
-    super_t::invalidateDisplayCache();
-}
-
-void MapMeshRenderer::setupMolBndry()
-{
-  m_boundary.clear();
-  m_bUseMolBndry = false;
-
-  if (m_strBndryMol.isEmpty())
-    return;
-
-  qsys::ObjectPtr pobj = ensureNotNull(getScene())->getObjectByName(m_strBndryMol);
-  MolCoordPtr pMol = MolCoordPtr(pobj, qlib::no_throw_tag());
-
-  if (pMol.isnull()) {
-    m_strBndryMol = LString();
-    return;
-  }
-
-  AtomIterator aiter(pMol, m_pSelBndry);
-  int i, natoms=0;
-  for (aiter.first();
-       aiter.hasMore();
-       aiter.next()) {
-    ++natoms;
-  }
-
-  m_boundary.alloc(natoms);
-
-  for (aiter.first(), i=0;
-       aiter.hasMore() && i<natoms ;
-       aiter.next(), ++i) {
-    m_boundary.setAt(i, aiter.get()->getPos(), aiter.getID());
-  }
-
-  m_boundary.build();
-  m_bUseMolBndry = true;
-}
 

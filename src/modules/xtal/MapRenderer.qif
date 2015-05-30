@@ -8,6 +8,7 @@
 
 #include <qsys/Renderer.qif>
 #include <gfx/Color.qif>
+#include <modules/molstr/SelCommand.qif>
 
 runtime_class MapRenderer extends Renderer
 {
@@ -35,8 +36,23 @@ runtime_class MapRenderer extends Renderer
   property object<Vector> center => redirect(getCenter, setCenter);
   default center = qlib::Vector4D();
 
-
+  /// contour level in the absolute scale
   property real level => redirect(getLevel, setLevel) (nopersist);
+
+  ///////////////
+  // mol boundary
+
+  property real bndry_rng => redirect(getBndryRng, setBndryRng);
+  default bndry_rng = 5.0;
+  
+  property string bndry_molname => redirect(getBndryMolName, setBndryMolName);
+  default bndry_molname = "";
+
+  using SelCommand;
+
+  property object<MolSelection$> bndry_sel => redirect(getBndrySel, setBndrySel);
+  default bndry_sel = molstr::SelectionPtr(new molstr::SelCommand());
+
 };
 
 #endif

@@ -25,6 +25,9 @@ runtime_class MapSurfRenderer extends MapRenderer
   property boolean dragupdate => m_bDragUpdate;
   default dragupdate = false;
 
+  property boolean cullface => redirect(isCullFace, setCullFace);
+  default cullface = false;
+
   /// Mesh drawing mode
   enumdef drawmode {
     fill = xtal::MapSurfRenderer::MSRDRAW_FILL;

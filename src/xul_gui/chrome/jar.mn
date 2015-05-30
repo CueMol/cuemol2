@@ -191,8 +191,10 @@ cuemol2.jar:
   content/property/molsurf-page.js
   content/property/molsurf-propdlg.xul
   content/property/molsurf-propdlg.js
-  content/contour-propdlg.xul
-  content/contour-propdlg.js
+  content/property/contour-propdlg.xul
+  content/property/contour-propdlg.js
+  content/property/isosurf-propdlg.xul
+  content/property/isosurf-propdlg.js
   content/dsurf-propdlg.xul
   content/dsurf-propdlg.js
   content/property/cpk-propdlg.xul
