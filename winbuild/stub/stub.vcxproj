@@ -68,7 +68,7 @@
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>xpcomglue_x.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>xpcomglue_x.lib;mozglue.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(XULDeployDir)\cuemol2.exe</OutputFile>
       <AdditionalLibraryDirectories>$(XULRunnerDir)lib\;$(XULRunnerDir)sdk\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -84,7 +84,7 @@
       <Optimization>MaxSpeed</Optimization>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <AdditionalIncludeDirectories>$(XULRunnerDir)include\;$(XULRunnerDir)include\nspr;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;XPCOM_GLUE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;XPCOM_GLUE;MOZ_NO_MOZALLOC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader />
@@ -92,7 +92,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>xpcomglue_x.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>xpcomglue_x.lib;mozglue.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(XULDeployDir)\cuemol2.exe</OutputFile>
       <AdditionalLibraryDirectories>$(XULRunnerDir)lib\;$(XULRunnerDir)sdk\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>

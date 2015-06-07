@@ -4,7 +4,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros">
     <SourceDir>$(SolutionDir)..\src\</SourceDir>
-    <XULRunnerDir>$(PROJ_DIR)\xulrunner\xulrunner-39.0b2-sdk\</XULRunnerDir>
+    <XULRunnerDir>$(PROJ_DIR)\xulrunner\xulrunner-39.0b3-sdk\</XULRunnerDir>
     <XULDeployDir>$(SolutionDir)xul_$(Configuration)\</XULDeployDir>
 
     <ExecutablePath>$(PROJ_DIR)\bin;$(XULRunnerDir)\bin;$(ExecutablePath)</ExecutablePath>
