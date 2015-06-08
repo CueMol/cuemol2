@@ -26,7 +26,7 @@ namespace xpcom {
   {
   private:
     // Timer used for double-click check
-    nsCOMPtr<nsITimer> m_timer;
+    //nsCOMPtr<nsITimer> m_timer;
 
   public:
     XPCNativeWidget();

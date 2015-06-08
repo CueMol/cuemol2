@@ -37,18 +37,18 @@ XPCNativeWidget::XPCNativeWidget()
   m_bUseMultiPad = false;
   m_bUseHiDPI = false;
 
-  m_timer = do_CreateInstance("@mozilla.org/timer;1");
-  printf("!! XPCNativeWidget ctor called.\n");
+  //m_timer = do_CreateInstance("@mozilla.org/timer;1");
+  //printf("!! XPCNativeWidget ctor called.\n");
 }
 
 XPCNativeWidget::~XPCNativeWidget()
 {
-  if (m_timer) {
+  /*if (m_timer) {
     m_timer->Cancel();
     m_timer = nullptr;
-  }
+  }*/
 
-  printf("!! XPCNativeWidget dtor called.\n");
+  //MB_DPRINT("!! XPCNativeWidget dtor called.\n");
 }
 
 /* void setBaseWin (in nsIBaseWindow arg); */
@@ -56,11 +56,12 @@ NS_IMETHODIMP XPCNativeWidget::Setup(nsIDocShell *docShell, nsIBaseWindow *baseW
 {
   nsresult rv;
 
-  printf("!! XPCNativeWindow::SetupByBaseWin(%p) called.\n", baseWindow);
+  //MB_DPRINTLN("!! XPCNativeWindow::SetupByBaseWin(%p) called.", baseWindow);
 
   nativeWindow hwnd;
   rv = baseWindow->GetParentNativeWindow(&hwnd);
   NS_ENSURE_SUCCESS(rv, rv);
+  MB_DPRINTLN("!! XPCNativeWindow HWND=%X.", hwnd);
 
   rv = setupImpl(hwnd);
   NS_ENSURE_SUCCESS(rv, rv);

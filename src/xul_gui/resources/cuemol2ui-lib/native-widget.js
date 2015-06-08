@@ -115,15 +115,20 @@ exports.setup = function (window, aFrm, aScID, aVwID)
     }
 
     // Get base window object
-    var docShell = window.QueryInterface(Components.interfaces.nsIInterfaceRequestor)
-      .getInterface(Components.interfaces.nsIWebNavigation)
-        .QueryInterface(Components.interfaces.nsIDocShellTreeItem)
-	  .treeOwner
-	    .QueryInterface(Components.interfaces.nsIInterfaceRequestor)
-	      .getInterface(Components.interfaces.nsIXULWindow)
-		.docShell;
+    var treeOwner = window.QueryInterface(Ci.nsIInterfaceRequestor)
+      .getInterface(Ci.nsIWebNavigation)
+        .QueryInterface(Ci.nsIDocShellTreeItem)
+          .treeOwner;
+    var docShell = treeOwner.QueryInterface(Ci.nsIInterfaceRequestor)
+      .getInterface(Ci.nsIXULWindow)
+        .docShell;
 
-    var baseWindow = docShell.QueryInterface(Components.interfaces.nsIBaseWindow);
+    var baseWindow = docShell.QueryInterface(Ci.nsIBaseWindow);
+    var baseWindow2 = treeOwner.QueryInterface(Ci.nsIInterfaceRequestor)
+      .QueryInterface(Ci.nsIBaseWindow);
+
+    //dd("**** Parent Native Window = " + baseWindow.parentNativeWindow);
+    dd("**** Native Handle = " + baseWindow2.nativeHandle);
 
     natwin.setup(docShell, baseWindow);
     aFrm.native_window = natwin;

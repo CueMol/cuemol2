@@ -68,7 +68,7 @@
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>xpcomglue_x.lib;mozglue.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>xpcomglue_x.lib;mozalloc.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(XULDeployDir)\cuemol2.exe</OutputFile>
       <AdditionalLibraryDirectories>$(XULRunnerDir)lib\;$(XULRunnerDir)sdk\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -92,7 +92,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>xpcomglue_x.lib;mozglue.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>xpcomglue_x.lib;mozalloc.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(XULDeployDir)\cuemol2.exe</OutputFile>
       <AdditionalLibraryDirectories>$(XULRunnerDir)lib\;$(XULRunnerDir)sdk\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
