@@ -1,0 +1,921 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="ヘッダー ファイル">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="リソース ファイル">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+    <Filter Include="QIF source">
+      <UniqueIdentifier>{b77ed78b-2e7a-4c9c-98cf-c0ff263ae678}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="QIF wrapper">
+      <UniqueIdentifier>{3ca9f884-0728-4ce9-a2ef-a2d2347bf783}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="molstr">
+      <UniqueIdentifier>{49436135-e962-4ce0-9aa2-a443c03b5874}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="molvis">
+      <UniqueIdentifier>{829a6f5a-8c44-4758-a45f-43a45e9bce31}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="molvis\smospl">
+      <UniqueIdentifier>{5f4dc86f-c136-4746-bb36-d0d6058bce74}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sysdep">
+      <UniqueIdentifier>{e4fe094e-1634-4c12-9a24-26837785b672}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="animation">
+      <UniqueIdentifier>{22315853-77dd-46d5-b282-b6ea1c97e769}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="gfx">
+      <UniqueIdentifier>{58e4a649-9357-4ee6-8528-35a66b24a6ba}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\qsys\Camera.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\InDevEvent.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\InOutHandler.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sysdep\MouseEventHandler.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\Object.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\ObjectEvent.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\ObjLoadEditInfo.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\ObjReader.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\ObjWriter.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\PropEditInfo.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\QdfAbsReader.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\QdfAbsWriter.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\QdfStream.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\qsys.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\Renderer.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\RendererEvent.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\RendererFactory.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\RendGroup.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\ScalarObject.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\Scene.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\SceneEvent.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\SceneExporter.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\SceneManager.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\SceneXMLReader.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\SceneXMLWriter.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\ScrEventManager.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\StreamManager.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\style\StyleColor.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\style\StyleEditInfo.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\style\StyleFile.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\style\StyleMgr.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\style\StyleMgrStyleImpl.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\style\StyleSet.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\style\StyleSheet.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\style\StyleStrData.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\SysConfig.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\UndoManager.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\View.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\ViewEvent.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\ViewInputConfig.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\Camera_wrap.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\DrawObj_wrap.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\InOutHandler_wrap.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\Object_wrap.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\ObjReader_wrap.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\ObjWriter_wrap.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\qsys_loader.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\Renderer_wrap.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\RendGroup_wrap.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\Scene_wrap.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\SceneExporter_wrap.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\SceneManager_wrap.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\SceneXMLReader_wrap.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\SceneXMLWriter_wrap.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\ScrEventManager_wrap.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\StreamManager_wrap.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\style\StyleManager_wrap.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\style\StyleSet_wrap.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\View_wrap.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\ViewInputConfig_wrap.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\AtomIterator.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\AtomIterator_wrap.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\AtomPosMap.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\BfacColoring.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\BfacColoring_wrap.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\BondIterator.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\CnsParFile.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\ColoringScheme.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\ColoringScheme_wrap.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\CPKColoring.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\CPKColoring_wrap.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\ElemSym.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\MainChainRenderer.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\MainChainRenderer_wrap.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\MolArrayMap.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\MolAtom.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\MolAtom_wrap.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\MolAtomRenderer.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\MolChain.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\MolChain_wrap.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\MolCoord.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\MolCoord_wrap.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\MolCoordGeomImpl.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\MolRenderer.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\MolRenderer_wrap.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\MolResidue.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\MolResidue_wrap.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\molstr.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\molstr_loader.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\MolXformEditInfo.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\NameLabelRenderer.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\NameLabelRenderer_wrap.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\NuclBasePair.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\ParamDB.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\parser_sel.cxx">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\PDBFileReader.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\PDBFileReader_wrap.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\PDBFileWriter.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\PDBFileWriter_wrap.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\Prot2ndry.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\QdfMolReader.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\QdfMolReader_wrap.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\QdfMolWriter.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\RectSelDrawObj.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\RectSelDrawObj_wrap.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\ResidIterator.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\ResidIterator_wrap.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\ResidRangeSet.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\ResidRangeSet_wrap.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\ResiPatch.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\ResiToppar.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\scanner_sel.cxx">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\SelAroundImpl.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\SelCacheMgr.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\SelCommand.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\SelCommand_wrap.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\SelCompiler.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\Selection_wrap.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\SelectionRenderer.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\SelectionRenderer_wrap.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\SelNodes.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\SimpleRenderer.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\SimpleRenderer_wrap.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\SolidColoring_wrap.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\TopoBuilder.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\TopoDB.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\TopparManager.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\TraceRenderer.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\TraceRenderer_wrap.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\XMLTopparFile.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\AnIsoURenderer.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\AnIsoURenderer_wrap.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\AtomIntrRenderer.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\AtomIntrRenderer_wrap.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\BallStickRenderer.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\BallStickRenderer_wrap.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\CPKRenderer.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\CPKRenderer_wrap.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\CubicSpline.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\DisoRenderer.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\DisoRenderer_wrap.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\DistPickDrawObj.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\DistPickDrawObj_wrap.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\JctTable.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\JctTable_wrap.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\molvis.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\molvis_loader.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\NARenderer.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\NARenderer_wrap.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\PaintColoring.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\PaintColoring_wrap.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\RainbowColoring.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\RainbowColoring_wrap.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\Ribbon2Renderer.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\Ribbon2Renderer_wrap.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\RibbonRenderer.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\RibbonRenderer_wrap.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\SplineCoeffSet.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\SplineRenderer.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\SplineRenderer_wrap.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\TubeRenderer.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\TubeRenderer_wrap.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\TubeSection.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\TubeSection_wrap.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\smospl\alglibinternal.cpp">
+      <Filter>molvis\smospl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\smospl\ap.cpp">
+      <Filter>molvis\smospl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\smospl\linalg.cpp">
+      <Filter>molvis\smospl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\smospl\SmoothSpline.cpp">
+      <Filter>molvis\smospl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\smospl\smoothspline_impl.cpp">
+      <Filter>molvis\smospl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\smospl\spline_impl2.cpp">
+      <Filter>molvis\smospl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\smospl\spline_internal.cpp">
+      <Filter>molvis\smospl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\smospl\spline_util.cpp">
+      <Filter>molvis\smospl</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sysdep\OglDisplayContext.cpp">
+      <Filter>sysdep</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sysdep\OglDisplayList.cpp">
+      <Filter>sysdep</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sysdep\OglFBOView.cpp">
+      <Filter>sysdep</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sysdep\OglProgramObject.cpp">
+      <Filter>sysdep</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sysdep\OglView.cpp">
+      <Filter>sysdep</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sysdep\sysdep.cpp">
+      <Filter>sysdep</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sysdep\WglDisplayContext.cpp">
+      <Filter>sysdep</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sysdep\WglView.cpp">
+      <Filter>sysdep</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sysdep\WinTimerImpl.cpp">
+      <Filter>sysdep</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\anim\AnimMgr.cpp">
+      <Filter>animation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\anim\AnimMgr_wrap.cpp">
+      <Filter>animation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\anim\AnimObj.cpp">
+      <Filter>animation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\anim\AnimObj_wrap.cpp">
+      <Filter>animation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\anim\AnimObjEvent.cpp">
+      <Filter>animation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\gfx\AbstractColor.cpp">
+      <Filter>gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\gfx\AbstractColor_wrap.cpp">
+      <Filter>gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\gfx\ColCompiler.cpp">
+      <Filter>gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\gfx\color_parser.cxx">
+      <Filter>gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\gfx\color_scanner.cxx">
+      <Filter>gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\gfx\Color_wrap.cpp">
+      <Filter>gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\gfx\ColorTable.cpp">
+      <Filter>gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\gfx\DisplayContext.cpp">
+      <Filter>gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\DispListRenderer.cpp">
+      <Filter>gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\gfx\DrawElem.cpp">
+      <Filter>gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\gfx\gfx.cpp">
+      <Filter>gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\gfx\gfx_loader.cpp">
+      <Filter>gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\gfx\GradientColor.cpp">
+      <Filter>gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\gfx\LabelCacheImpl.cpp">
+      <Filter>gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\gfx\Material.cpp">
+      <Filter>gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\gfx\Mesh.cpp">
+      <Filter>gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\gfx\MolColorRef.cpp">
+      <Filter>gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\gfx\MolColorRef_wrap.cpp">
+      <Filter>gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\gfx\NamedColor.cpp">
+      <Filter>gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\gfx\NamedColor_wrap.cpp">
+      <Filter>gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\gfx\PixelBuffer.cpp">
+      <Filter>gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\gfx\SolidColor.cpp">
+      <Filter>gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\gfx\StrColorFormat.cpp">
+      <Filter>gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\gfx\TextImgBuf_wrap.cpp">
+      <Filter>gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\gfx\TextRenderManager.cpp">
+      <Filter>gfx</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\src\qsys\AbstractColor.hpp">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qsys\Color.hpp">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qsys\Object.hpp">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qsys\qsys.hpp">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qsys\Renderer.hpp">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qsys\Scene.hpp">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qsys\SceneManager.hpp">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\qsys\View.hpp">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\modules\molstr\QdfMolReader.hpp">
+      <Filter>molstr</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <mcwrapgen3 Include="..\..\src\qsys\Camera.qif">
+      <Filter>QIF source</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qsys\DrawObj.qif">
+      <Filter>QIF source</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qsys\InOutHandler.qif">
+      <Filter>QIF source</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qsys\Object.qif">
+      <Filter>QIF source</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qsys\ObjReader.qif">
+      <Filter>QIF source</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qsys\ObjWriter.qif">
+      <Filter>QIF source</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qsys\Renderer.qif">
+      <Filter>QIF source</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qsys\RendGroup.qif">
+      <Filter>QIF source</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qsys\Scene.qif">
+      <Filter>QIF source</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qsys\SceneExporter.qif">
+      <Filter>QIF source</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qsys\SceneManager.qif">
+      <Filter>QIF source</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qsys\SceneXMLReader.qif">
+      <Filter>QIF source</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qsys\SceneXMLWriter.qif">
+      <Filter>QIF source</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qsys\ScrEventManager.qif">
+      <Filter>QIF source</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qsys\StreamManager.qif">
+      <Filter>QIF source</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qsys\style\StyleManager.qif">
+      <Filter>QIF source</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qsys\style\StyleSet.qif">
+      <Filter>QIF source</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qsys\View.qif">
+      <Filter>QIF source</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qsys\ViewInputConfig.qif">
+      <Filter>QIF source</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molstr\AtomIterator.qif">
+      <Filter>molstr</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molstr\BfacColoring.qif">
+      <Filter>molstr</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molstr\ColoringScheme.qif">
+      <Filter>molstr</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molstr\CPKColoring.qif">
+      <Filter>molstr</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molstr\MainChainRenderer.qif">
+      <Filter>molstr</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molstr\MolAtom.qif">
+      <Filter>molstr</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molstr\MolChain.qif">
+      <Filter>molstr</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molstr\MolCoord.qif">
+      <Filter>molstr</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molstr\MolRenderer.qif">
+      <Filter>molstr</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molstr\MolResidue.qif">
+      <Filter>molstr</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molstr\NameLabelRenderer.qif">
+      <Filter>molstr</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molstr\PDBFileReader.qif">
+      <Filter>molstr</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molstr\PDBFileWriter.qif">
+      <Filter>molstr</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molstr\QdfMolReader.qif">
+      <Filter>molstr</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molstr\RectSelDrawObj.qif">
+      <Filter>molstr</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molstr\ResidIterator.qif">
+      <Filter>molstr</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molstr\ResidRangeSet.qif">
+      <Filter>molstr</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molstr\SelCommand.qif">
+      <Filter>molstr</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molstr\Selection.qif">
+      <Filter>molstr</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molstr\SelectionRenderer.qif">
+      <Filter>molstr</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molstr\SimpleRenderer.qif">
+      <Filter>molstr</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molstr\SolidColoring.qif">
+      <Filter>molstr</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molstr\TraceRenderer.qif">
+      <Filter>molstr</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molvis\AnIsoURenderer.qif">
+      <Filter>molvis</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molvis\AtomIntrRenderer.qif">
+      <Filter>molvis</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molvis\BallStickRenderer.qif">
+      <Filter>molvis</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molvis\CPKRenderer.qif">
+      <Filter>molvis</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molvis\DisoRenderer.qif">
+      <Filter>molvis</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molvis\DistPickDrawObj.qif">
+      <Filter>molvis</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molvis\JctTable.qif">
+      <Filter>molvis</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molvis\NARenderer.qif">
+      <Filter>molvis</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molvis\PaintColoring.qif">
+      <Filter>molvis</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molvis\RainbowColoring.qif">
+      <Filter>molvis</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molvis\Ribbon2Renderer.qif">
+      <Filter>molvis</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molvis\RibbonRenderer.qif">
+      <Filter>molvis</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molvis\SplineRenderer.qif">
+      <Filter>molvis</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molvis\TubeRenderer.qif">
+      <Filter>molvis</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molvis\TubeSection.qif">
+      <Filter>molvis</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qsys\anim\AnimMgr.qif">
+      <Filter>animation</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qsys\anim\AnimObj.qif">
+      <Filter>animation</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\gfx\AbstractColor.qif">
+      <Filter>gfx</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\gfx\Color.qif">
+      <Filter>gfx</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\gfx\MolColorRef.qif">
+      <Filter>gfx</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\gfx\NamedColor.qif">
+      <Filter>gfx</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\gfx\TextImgBuf.qif">
+      <Filter>gfx</Filter>
+    </mcwrapgen3>
+  </ItemGroup>
+  <ItemGroup>
+    <mcw_loader Include="..\..\src\qsys\qsys.moddef">
+      <Filter>QIF source</Filter>
+    </mcw_loader>
+    <mcw_loader Include="..\..\src\modules\molstr\molstr.moddef">
+      <Filter>molstr</Filter>
+    </mcw_loader>
+    <mcw_loader Include="..\..\src\modules\molvis\molvis.moddef">
+      <Filter>molvis</Filter>
+    </mcw_loader>
+    <mcw_loader Include="..\..\src\gfx\gfx.moddef">
+      <Filter>gfx</Filter>
+    </mcw_loader>
+  </ItemGroup>
+  <ItemGroup>
+    <glslshader Include="..\..\src\sysdep\default_frag.glsl">
+      <Filter>sysdep</Filter>
+    </glslshader>
+    <glslshader Include="..\..\src\sysdep\default_vert.glsl">
+      <Filter>sysdep</Filter>
+    </glslshader>
+  </ItemGroup>
+</Project>

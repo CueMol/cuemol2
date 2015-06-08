@@ -1,0 +1,116 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\modules\anim\anim.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\anim\anim_loader.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\anim\CamMotion.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\anim\CamMotion_wrap.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\anim\MolAnim.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\anim\MolAnim_wrap.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\anim\MorphMol.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\anim\MorphMol_wrap.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\anim\NoopAnimObj.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\anim\NoopAnimObj_wrap.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\anim\RealPropAnim.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\anim\RealPropAnim_wrap.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\anim\RendPropAnim.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\anim\RendXformAnim.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\anim\RendXformAnim_wrap.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\anim\ShowHideAnim.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\anim\ShowHideAnim_wrap.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\anim\SimpleSpin.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\anim\SimpleSpin_wrap.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\anim\SlideInOutAnim.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\anim\SlideInOutAnim_wrap.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <mcw_loader Include="..\..\src\modules\anim\anim.moddef">
+      <Filter>Source files</Filter>
+    </mcw_loader>
+  </ItemGroup>
+  <ItemGroup>
+    <mcwrapgen3 Include="..\..\src\modules\anim\CamMotion.qif">
+      <Filter>Source files</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\anim\MolAnim.qif">
+      <Filter>Source files</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\anim\MorphMol.qif">
+      <Filter>Source files</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\anim\NoopAnimObj.qif">
+      <Filter>Source files</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\anim\RealPropAnim.qif">
+      <Filter>Source files</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\anim\RendXformAnim.qif">
+      <Filter>Source files</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\anim\ShowHideAnim.qif">
+      <Filter>Source files</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\anim\SimpleSpin.qif">
+      <Filter>Source files</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\anim\SlideInOutAnim.qif">
+      <Filter>Source files</Filter>
+    </mcwrapgen3>
+  </ItemGroup>
+</Project>

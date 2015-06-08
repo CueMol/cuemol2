@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source file">
+      <UniqueIdentifier>{cae944bb-7c03-4b30-b509-d83c6c2d9312}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\modules\mdtools\mdtools.cpp">
+      <Filter>Source file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\mdtools\mdtools_loader.cpp">
+      <Filter>Source file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\mdtools\NAMDCoorReader.cpp">
+      <Filter>Source file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\mdtools\NAMDCoorReader_wrap.cpp">
+      <Filter>Source file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\mdtools\PsfReader.cpp">
+      <Filter>Source file</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <mcw_loader Include="..\..\src\modules\mdtools\mdtools.moddef">
+      <Filter>Source file</Filter>
+    </mcw_loader>
+  </ItemGroup>
+  <ItemGroup>
+    <mcwrapgen3 Include="..\..\src\modules\mdtools\NAMDCoorReader.qif">
+      <Filter>Source file</Filter>
+    </mcwrapgen3>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,104 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="Header files">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="Resource files">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\modules\rendering\FileDisplayContext.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\rendering\ImgSceneExporter.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\rendering\ImgSceneExporter_wrap.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\rendering\MqoDisplayContext.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\rendering\MqoSceneExporter.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\rendering\MqoSceneExporter_wrap.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\rendering\PngSceneExporter.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\rendering\PngSceneExporter_wrap.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\rendering\PovDisplayContext.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\rendering\PovSceneExporter.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\rendering\PovSceneExporter_wrap.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\rendering\PovSilBuilder.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\rendering\render.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\rendering\render_loader.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\rendering\RendIntData.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\rendering\StlDisplayContext.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\rendering\StlSceneExporter.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\rendering\StlSceneExporter_wrap.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\rendering\WbpSceneExporter.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\rendering\WbpSceneExporter_wrap.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <mcwrapgen3 Include="..\..\src\modules\rendering\ImgSceneExporter.qif">
+      <Filter>Source files</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\rendering\MqoSceneExporter.qif">
+      <Filter>Source files</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\rendering\PngSceneExporter.qif">
+      <Filter>Source files</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\rendering\PovSceneExporter.qif">
+      <Filter>Source files</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\rendering\StlSceneExporter.qif">
+      <Filter>Source files</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\rendering\WbpSceneExporter.qif">
+      <Filter>Source files</Filter>
+    </mcwrapgen3>
+  </ItemGroup>
+  <ItemGroup>
+    <mcw_loader Include="..\..\src\modules\rendering\render.moddef">
+      <Filter>Source files</Filter>
+    </mcw_loader>
+  </ItemGroup>
+</Project>

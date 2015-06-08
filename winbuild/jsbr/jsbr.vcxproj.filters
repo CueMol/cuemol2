@@ -1,0 +1,134 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source files">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="js">
+      <UniqueIdentifier>{e2134c2e-7bfe-41c0-a7d9-b4b40febfe3d}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\jsbr\Interp.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\jsbr\jsbr.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\jsbr\ObjWrapper.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jsapi.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jsarena.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jsarray.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jsatom.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jsbool.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jscntxt.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jsdate.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jsdbgapi.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jsdhash.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jsdtoa.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jsemit.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jsexn.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jsfile.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jsfun.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jsgc.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jshash.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jsinterp.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jsiter.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jskwgen.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jslock.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jslog2.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jslong.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jsmath.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jsnum.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jsobj.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jsopcode.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jsparse.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jsprf.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jsregexp.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jsscan.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jsscope.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jsscript.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jsstr.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jsutil.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jsxdrapi.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\jsxml.c">
+      <Filter>js</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\js\src\prmjtime.c">
+      <Filter>js</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

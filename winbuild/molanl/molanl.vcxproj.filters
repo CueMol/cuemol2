@@ -1,0 +1,194 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="ソース ファイル">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="ソース ファイル\mmdb">
+      <UniqueIdentifier>{2db718e3-1ade-4716-887e-f25c8f835090}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\ssmlib">
+      <UniqueIdentifier>{9bf1e602-2b0d-4fbd-81e8-4e0d215fb3d4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ソース ファイル\minpack">
+      <UniqueIdentifier>{a66196ec-9614-4131-94d5-33d43b83fdc2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="リソース ファイル">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\modules\molanl\ContactMap.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\LsqFit.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\molanl.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\molanl_loader.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\MolAnlManager.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\MolAnlManager_wrap.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\bfgs_min.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\file_.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\hybrid_36.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\linalg_.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\machine_.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\math_.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\mattype_.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\mmdb_align.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\mmdb_atom.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\mmdb_bondmngr.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\mmdb_chain.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\mmdb_cifdefs.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\mmdb_coormngr.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\mmdb_cryst.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\mmdb_ficif.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\mmdb_file.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\mmdb_graph.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\mmdb_manager.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\mmdb_mask.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\mmdb_mmcif.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\mmdb_model.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\mmdb_rwbrook.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\mmdb_sbase.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\mmdb_sbase0.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\mmdb_selmngr.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\mmdb_symop.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\mmdb_tables.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\mmdb_title.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\mmdb_uddata.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\mmdb_utils.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\mmdb_xml.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\random_n.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\mmdb\stream_.cpp">
+      <Filter>ソース ファイル\mmdb</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\ssmlib\ss_csia.cpp">
+      <Filter>ソース ファイル\ssmlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\ssmlib\ss_graph.cpp">
+      <Filter>ソース ファイル\ssmlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\ssmlib\ss_vxedge.cpp">
+      <Filter>ソース ファイル\ssmlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\ssmlib\ssm_align.cpp">
+      <Filter>ソース ファイル\ssmlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\ssmlib\ssm_superpose.cpp">
+      <Filter>ソース ファイル\ssmlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\minpack\dpmpar.cpp">
+      <Filter>ソース ファイル\minpack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\minpack\enorm.cpp">
+      <Filter>ソース ファイル\minpack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\minpack\fdjac2.cpp">
+      <Filter>ソース ファイル\minpack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\minpack\lmdif.cpp">
+      <Filter>ソース ファイル\minpack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\minpack\LMMinimizer.cpp">
+      <Filter>ソース ファイル\minpack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\minpack\lmpar.cpp">
+      <Filter>ソース ファイル\minpack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\minpack\qrfac.cpp">
+      <Filter>ソース ファイル\minpack</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molanl\minpack\qrsolv.cpp">
+      <Filter>ソース ファイル\minpack</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <mcw_loader Include="..\..\src\modules\molanl\molanl.moddef">
+      <Filter>ソース ファイル</Filter>
+    </mcw_loader>
+  </ItemGroup>
+  <ItemGroup>
+    <mcwrapgen3 Include="..\..\src\modules\molanl\MolAnlManager.qif">
+      <Filter>ソース ファイル</Filter>
+    </mcwrapgen3>
+  </ItemGroup>
+</Project>
