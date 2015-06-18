@@ -505,6 +505,29 @@ bool transformRotMatToQuaternion(
 
 #endif
 
+Matrix3D Matrix3D::makeRotMat(const Vector4D &axis, double theta)
+{
+  return makeRotMat(axis, cos(theta), sin(theta));
+}
+
+Matrix3D Matrix3D::makeRotMat(const Vector4D &axis, double costh, double sinth)
+{
+  Matrix3D m;
+  const double t = 1.0 - costh;
+
+  m.aij(1,1) = t * axis.x() * axis.x() + costh;
+  m.aij(1,2) = t * axis.y() * axis.x() + sinth * axis.z();
+  m.aij(1,3) = t * axis.z() * axis.x() - sinth * axis.y();
+  m.aij(2,1) = t * axis.x() * axis.y() - sinth * axis.z();
+  m.aij(2,2) = t * axis.y() * axis.y() + costh;
+  m.aij(2,3) = t * axis.z() * axis.y() + sinth * axis.x();
+  m.aij(3,1) = t * axis.x() * axis.z() + sinth * axis.y();
+  m.aij(3,2) = t * axis.y() * axis.z() - sinth * axis.x();
+  m.aij(3,3) = t * axis.z() * axis.z() + costh;
+  
+  return m;
+}
+
 ////////////////////////////////////////////////////////////
 // LQuat implementation
 //static
@@ -581,3 +604,4 @@ LQuat LQuat::slerp(const LQuat &q, const LQuat &r, const value_type t)
 
   return p;
 }
+
