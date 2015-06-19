@@ -266,6 +266,7 @@ Qm2Main.prototype.onLoad = function ()
   
   //////////
 
+/*
   if (cuemol.hasClass("PythonBridge")) {
     try {
       var pybr = cuemol.getService("PythonBridge");
@@ -289,6 +290,7 @@ Qm2Main.prototype.onLoad = function ()
     catch (e) {
     }
   }
+*/
 }
   
 

@@ -223,6 +223,12 @@ namespace qsys {
       }
     }
 
+    // view direction vectors
+    /// Get up-direction vector (in world coord)
+    Vector4D getUpVector() const;
+    Vector4D getRightVector() const;
+    Vector4D getForwardVector() const;
+
     /////////////////////////////////////////////////////////
     // Stereo View
 
@@ -312,20 +318,20 @@ namespace qsys {
     virtual void setUpModelMat(int nid) =0;
 
     /// reverse projection from view to world coord
-    void convZTrans(double dz, Vector4D &vec);
-    void convXYTrans(double dx, double dy, Vector4D &vec);
+    void convZTrans(double dz, Vector4D &vec) const;
+    void convXYTrans(double dx, double dy, Vector4D &vec) const;
 
     /////////////////////////////////////////////////////////
     // Viewport size
 
     /// get view width in pixel
-    inline int getWidth()
+    inline int getWidth() const
     {
       return m_nWidth;
     }
     
     /// get view height in pixel
-    inline int getHeight()
+    inline int getHeight() const
     {
       return m_nHeight;
     }

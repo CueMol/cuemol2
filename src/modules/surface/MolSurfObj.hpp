@@ -183,6 +183,8 @@ public:
 
   void createSESFromMol(MolCoordPtr pMol, SelectionPtr pSel, double density, double probe_r);
 
+  void createHoleTest1(MolCoordPtr pMol, const Vector4D &dirnorm, const Vector4D &startpos);
+
   ////////////////////////////////////////////
 
  private:

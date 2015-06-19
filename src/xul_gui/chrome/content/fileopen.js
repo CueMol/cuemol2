@@ -950,6 +950,9 @@ Qm2Main.prototype.onExecScr = function ()
     catch (e) {}
   }
   
+  fp.appendFilter("Internal Javascript (*.js)", "*.js");
+  ftype.push("intjs");
+
   fp.init(window, "Select a File", nsIFilePicker.modeOpen);
 
   let res=fp.show();
@@ -964,8 +967,48 @@ Qm2Main.prototype.onExecScr = function ()
   else if (ftype[fp.filterIndex]=="js") {
       scene.execJSFile(fp.file.path);
   }
+  else if (ftype[fp.filterIndex]=="intjs") {
+    this.execIntJS(fp.file.path);
+  }
 
 };
+
+Qm2Main.prototype.execIntJS = function (path)
+{
+  var file = Cc["@mozilla.org/file/local;1"]
+    .createInstance(Ci.nsILocalFile);
+  file.initWithPath(path);
+
+  var data = "";
+  var fstream = Cc["@mozilla.org/network/file-input-stream;1"]
+    .createInstance(Ci.nsIFileInputStream);
+  var sstream = Cc["@mozilla.org/scriptableinputstream;1"]
+    .createInstance(Ci.nsIScriptableInputStream);
+  fstream.init(file, -1, 0, 0);
+  sstream.init(fstream); 
+
+  var str = sstream.read(4096);
+  while (str.length > 0) {
+    data += str;
+    str = sstream.read(4096);
+  }
+  
+  sstream.close();
+  fstream.close();  
+
+  dd("read file: "+data);
+
+  var scene = this.mMainWnd.currentSceneW;
+  var view = this.mMainWnd.currentViewW;
+  try {
+    let fun = new Function("scene", "view", data);
+    fun(scene, view);
+  }
+  catch (e) {
+    cuemol.putLogMsg(e.message);
+  }
+  
+}
 
 Qm2Main.prototype.onOpenURL = function ()
 {

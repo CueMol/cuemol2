@@ -416,7 +416,7 @@ void View::getTrackRotQuat(double curX, double curY,
   //return qlib::LQuat(vaxis, phi);
 }
 
-void View::convXYTrans(double adx, double ady, Vector4D &vec)
+void View::convXYTrans(double adx, double ady, Vector4D &vec) const
 {
   const double h = getHeight();
   const double zoom = m_curcam.getZoom();
@@ -435,7 +435,7 @@ void View::convXYTrans(double adx, double ady, Vector4D &vec)
   rmat.xform3D(vec);
 }
 
-void View::convZTrans(double dz, Vector4D &vec)
+void View::convZTrans(double dz, Vector4D &vec) const
 {
   //double dz = idz;
   // XXX ???
@@ -450,6 +450,30 @@ void View::convZTrans(double dz, Vector4D &vec)
 
   vec = Vector4D(0, 0, -dz, 0);
   rmat.xform4D(vec);
+}
+
+Vector4D View::getUpVector() const
+{
+  Vector4D res;
+  convXYTrans(0.0, -1.0, res);
+  res = res.normalize();
+  return res;
+}
+
+Vector4D View::getRightVector() const
+{
+  Vector4D res;
+  convXYTrans(1.0, 0.0, res);
+  res = res.normalize();
+  return res;
+}
+
+Vector4D View::getForwardVector() const
+{
+  Vector4D res;
+  convZTrans(-1.0, res);
+  res = res.normalize();
+  return res;
 }
 
 void View::setPerspec(bool b)

@@ -384,3 +384,123 @@ void MolSurfBuilder::drawArc(const Vector4D &n, double rad, const Vector4D &cen,
 
 #endif // SURF_BUILDER_TEST
 
+#include <modules/molstr/AtomPosMap.hpp>
+
+namespace {
+  Vector4D getInplaneDir(const Vector4D &norm, const Vector4D &in)
+  {
+    //Vector4D nin = in.normalize();
+    return in - norm.scale( norm.dot(in) );
+  }
+
+  double rand_real()
+  {
+    int i1 = rand();
+    int i2 = rand();
+    while(i1==RAND_MAX)
+      i1 =rand();
+    while(i2==RAND_MAX)
+      i2 =rand();
+    double mx = RAND_MAX;
+    return (i1+i2/mx)/mx;
+  }
+
+  Vector4D getRandDir(const Vector4D &norm)
+  {
+    Vector4D rvec(rand_real(),rand_real(),rand_real());
+    Vector4D res = getInplaneDir(norm, rvec);
+    return res.normalize();
+  }
+}
+
+void MolSurfObj::createHoleTest1(MolCoordPtr pMol, const Vector4D &dirnorm, const Vector4D &startpos)
+{
+  molstr::AtomPosMap amap;
+  amap.setTarget(pMol);
+  amap.setSpacing(3.5);
+  amap.generate();
+  
+  int i, j, nslice = 100;
+  double dstep = 0.25;
+  const double dmax = 0.3;
+  
+  Vector4D pos = startpos;
+
+  std::vector<Vector4D> cen_ary(nslice);
+  std::vector<double> rad_ary(nslice);
+
+  TopparManager *pTM = TopparManager::getInstance();
+  const double vdw_default = 2.0;
+
+  double rad=-1.0;
+  Vector4D dv = dirnorm.scale(dstep);
+
+  for (i=0; i<nslice && rad<5.0; ++i) {
+    rad = -1.0;
+    for (j=0; j<1000; ++j) {
+      Vector4D newpos = pos;
+      if (j>0)
+        newpos += getRandDir(dirnorm).scale(rand_real()*dmax);
+      int aid = amap.searchNearestAtom(newpos);
+      MolAtomPtr pAtom = pMol->getAtom(aid);
+      Vector4D rp = pAtom->getPos() - newpos;
+      double vdw = pTM->getVdwRadius(pAtom, false);
+      if (vdw<0)
+        vdw = vdw_default;
+      double new_r = rp.length() - vdw;
+
+      if (new_r>rad) {
+        // accept --> update
+        MB_DPRINTLN("trial accepted for new_r=%f, rad=%f", new_r, rad);
+        rad = new_r;
+        pos = newpos;
+      }
+    }        
+
+    MB_DPRINTLN("slice %d pos=%f,%f,%f rad=%f", i, pos.x(), pos.y(), pos.z(), rad);
+    rad_ary[i] = rad;
+    cen_ary[i] = pos;
+
+    pos = pos + dv;
+
+  }
+  for (;i<nslice; ++i) {
+    rad_ary[i] = rad;
+    cen_ary[i] = pos;
+    pos = pos + dv;
+  }
+
+  //////////
+  
+  const int ncdiv = 40;
+  const int nverts = ncdiv*nslice;
+  const int nfaces = nverts*2;
+
+  setVertSize(nverts);
+  setFaceSize(nfaces);
+
+  Vector4D e1 = getInplaneDir(dirnorm, Vector4D(1,0,0));
+  Vector4D e2 = e1.cross(dirnorm);
+
+  int vind = 0;
+  for (i=0; i<nslice; ++i) {
+    const double dth = 2.0*M_PI/double(ncdiv);
+    double th = 0.0;
+    for (j=0; j<ncdiv; ++j) {
+      const double rr = rad_ary[i];
+      Vector4D vrr = e1.scale(cos(th)) + e2.scale(sin(th));
+      setVertex(vind, cen_ary[i] + vrr.scale(rr), vrr);
+      ++vind;
+      th += dth;
+    }
+  }
+  
+  int find = 0;
+  for (i=0; i<nslice-1; ++i) {
+    for (j=0; j<ncdiv; ++j) {
+      setFace(find, i*3, i*3+1, i*3+2);
+      ++find;
+    }
+  }
+}
+

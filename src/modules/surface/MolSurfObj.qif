@@ -37,6 +37,7 @@ runtime_class MolSurfObj extends Object
 
   void regenerateSES1(real density) => regenerateSES;
 
+  void createHoleTest1(object<MolCoord$> pMol, object<Vector> dirnorm, object<Vector> startpos);
 };
 
 #endif

@@ -60,6 +60,10 @@ runtime_class View
 
   property boolean swapStereoEyes => redirect(isSwapStereoEyes, setSwapStereoEyes);
 
+  property object<Vector> up_vec => redirect(getUpVector, XXX) (readonly);
+  property object<Vector> right_vec => redirect(getRightVector, XXX) (readonly);
+  property object<Vector> forward_vec => redirect(getForwardVector, XXX) (readonly);
+
   ///////////////////////////////////////
   // Methods
   
