@@ -420,7 +420,7 @@ void MolSurfObj::createHoleTest1(MolCoordPtr pMol, const Vector4D &dirnorm, cons
   amap.setSpacing(3.5);
   amap.generate();
   
-  int i, j, nslice = 100;
+  int i, j, nslice = 50;
   double dstep = 0.25;
   const double dmax = 0.3;
   
@@ -435,9 +435,17 @@ void MolSurfObj::createHoleTest1(MolCoordPtr pMol, const Vector4D &dirnorm, cons
   double rad=-1.0;
   Vector4D dv = dirnorm.scale(dstep);
 
+  const int nmcs = 1000;
+
   for (i=0; i<nslice && rad<5.0; ++i) {
     rad = -1.0;
-    for (j=0; j<1000; ++j) {
+
+    double temp = 0.00001;
+    const double temp_scl = 0.9;
+
+    MB_DPRINTLN("Start MC steps=%d, init T=%f", nmcs, temp);
+
+    for (j=0; j<nmcs; ++j, temp *= temp_scl) {
       Vector4D newpos = pos;
       if (j>0)
         newpos += getRandDir(dirnorm).scale(rand_real()*dmax);
@@ -451,10 +459,21 @@ void MolSurfObj::createHoleTest1(MolCoordPtr pMol, const Vector4D &dirnorm, cons
 
       if (new_r>rad) {
         // accept --> update
-        MB_DPRINTLN("trial accepted for new_r=%f, rad=%f", new_r, rad);
+        MB_DPRINTLN("trial accepted for new_r=%f > rad=%f", new_r, rad);
         rad = new_r;
         pos = newpos;
       }
+      else {
+        double prob = exp( (new_r-rad)/temp );
+        double rnd = rand_real();
+        if (rnd < prob) {
+          // accept --> update
+          MB_DPRINTLN("T=%f, prob=%f, rnd=%f --> trial accepted for new_r=%f < rad=%f", temp, prob, rnd, new_r, rad);
+          rad = new_r;
+          pos = newpos;
+        }
+      }
+      
     }        
 
     MB_DPRINTLN("slice %d pos=%f,%f,%f rad=%f", i, pos.x(), pos.y(), pos.z(), rad);
@@ -474,7 +493,7 @@ void MolSurfObj::createHoleTest1(MolCoordPtr pMol, const Vector4D &dirnorm, cons
   
   const int ncdiv = 40;
   const int nverts = ncdiv*nslice;
-  const int nfaces = nverts*2;
+  const int nfaces = ncdiv*(nslice-1)*2;
 
   setVertSize(nverts);
   setFaceSize(nfaces);
@@ -497,8 +516,12 @@ void MolSurfObj::createHoleTest1(MolCoordPtr pMol, const Vector4D &dirnorm, cons
   
   int find = 0;
   for (i=0; i<nslice-1; ++i) {
+    int ibase = i*ncdiv;
     for (j=0; j<ncdiv; ++j) {
-      setFace(find, i*3, i*3+1, i*3+2);
+      //int vind = i*ncdiv + j;
+      setFace(find, ibase+(j+1)%ncdiv, ibase+j, ibase+ncdiv+j);
+      ++find;
+      setFace(find, ibase+ncdiv+j, ibase+ncdiv+(j+1)%ncdiv, ibase+(j+1)%ncdiv);
       ++find;
     }
   }
