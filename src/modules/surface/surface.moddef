@@ -11,6 +11,7 @@
 #include "DirectSurfRenderer.qif"
 #include "XYZRFileWriter.qif"
 #include "PQRFileWriter.qif"
+#include "HoleSurfBuilder.qif"
 
 module surface
 {
@@ -26,5 +27,6 @@ module surface
   DirectSurfRenderer;
   XYZRFileWriter;
   PQRFileWriter;
+  HoleSurfBuilder;
 };
 

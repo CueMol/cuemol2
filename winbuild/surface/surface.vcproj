@@ -230,6 +230,18 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\modules\surface\HoleSurfBuilder.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\modules\surface\HoleSurfBuilder.qif"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\modules\surface\HoleSurfBuilder_wrap.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\modules\surface\MolSurfBuilder.cpp"
 				>
 				<FileConfiguration

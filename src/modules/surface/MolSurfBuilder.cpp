@@ -50,6 +50,88 @@ namespace {
 
 }
 
+void MolSurfObj::createSESFromArray(const std::vector<Vector4D> &pr_ary, double density, double probe_r)
+{
+  Vector4D pos;
+  int i, natoms = pr_ary.size();
+  
+  std::vector< BALL::TSphere3<double> > spheres(natoms);
+  for (i=0; i<natoms; ++i)
+    spheres.at(i) = BALL::TSphere3<double>(BALL::TVector3<double>(pr_ary[i].x(), pr_ary[i].y(), pr_ary[i].z()), pr_ary[i].w());
+
+  double diff = probe_r < 1.5 ? 0.01 : -0.01;
+
+  bool ok = false;
+  double rad = probe_r;
+  BALL::ReducedSurface *pRS = NULL;
+  BALL::SolventExcludedSurface *pSES = NULL;
+  for (int i=0; !ok && i<10; ++i) {
+    pRS = new BALL::ReducedSurface(spheres, rad);
+    pRS->compute();
+    pSES = new BALL::SolventExcludedSurface(pRS);
+    pSES->compute();
+
+    if (pSES->check())
+      break;
+
+    // failed --> retry with different probe radius
+    delete pRS; pRS = NULL;
+    delete pSES; pSES = NULL;
+    rad += diff;
+    LOG_DPRINTLN("MolSurfBuilder> SES check failed --> retry (%d) with different probe r=%f", i, rad);
+  }
+
+  if (pSES==NULL) {
+    //std::cout << "ses check failed" << std::endl;
+    LOG_DPRINTLN("MolSurfBuilder> SES generation failed.");
+    MB_THROW(qlib::RuntimeException, "MolSurfBuilder> SES generation failed.");
+    return;
+  }
+
+  MB_ASSERT(pSES!=NULL&&pRS!=NULL);
+  BALL::TriangulatedSES surface(pSES, density);
+  surface.compute();
+
+  int nverts = surface.getNumberOfPoints();
+  int nfaces = surface.getNumberOfTriangles();
+
+  setVertSize(nverts);
+  setFaceSize(nfaces);
+
+  {
+    BALL::TriangulatedSES::ConstPointIterator iter = surface.beginPoint();
+    BALL::TriangulatedSES::ConstPointIterator eiter = surface.endPoint();
+    int i = 0;
+    for (;iter != eiter; ++iter) {
+      BALL::TrianglePoint& tri_point = **iter;
+      
+      Vector4D n(tri_point.normal_.x,tri_point.normal_.y,tri_point.normal_.z);
+      Vector4D v(tri_point.point_.x,tri_point.point_.y,tri_point.point_.z);
+
+      setVertex(i, v, n);
+      tri_point.setIndex(i);
+      i++;
+    }
+  }
+
+  {
+    BALL::TriangulatedSES::ConstTriangleIterator iter = surface.beginTriangle();
+    BALL::TriangulatedSES::ConstTriangleIterator eiter = surface.endTriangle();
+    int i=0;
+    for (; iter!=eiter; ++iter, ++i) {
+      //std::cout << (**iter) << std::endl;
+      int v1 = (*iter)->getVertex(0)->getIndex();
+      int v2 = (*iter)->getVertex(1)->getIndex();
+      int v3 = (*iter)->getVertex(2)->getIndex();
+      //printf("%6d %6d %6d\n", v1, v2, v3);
+      setFace(i, v1, v2, v3);
+    }
+  }
+
+  delete pSES;
+  delete pRS;
+}
+
 void MolSurfObj::createSESFromMol(MolCoordPtr pMol, SelectionPtr pSel, double density, double probe_r)
 {
   AtomIterator aiter(pMol, pSel);

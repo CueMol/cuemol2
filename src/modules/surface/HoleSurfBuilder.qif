@@ -1,0 +1,28 @@
+// -*-Mode: C++;-*-
+//
+
+#ifndef HOLE_SURF_BUILDER_QIF_INCLUDED
+#define HOLE_SURF_BUILDER_QIF_INCLUDED
+
+#include <modules/molstr/SelCommand.qif>
+#include "MolSurfObj.qif"
+
+runtime_class HoleSurfBuilder
+{
+  client_hdr "HoleSurfBuilder.hpp";
+  client_name surface::HoleSurfBuilder;
+
+  scriptable;
+  smartptr;
+
+  property object<MolCoord$> target_mol => redirect(getTargetMol, setTargetMol);
+  property object<Vector> dirnorm => redirect(getDirNorm, setDirNorm);
+  property object<Vector> startpos => redirect(getStartPos, setStartPos);
+
+  void doit();
+
+  property object<MolSurfObj$> result => redirect(getResult, XXX) (readonly);
+};
+
+#endif
+
