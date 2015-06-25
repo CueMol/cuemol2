@@ -52,7 +52,7 @@ using qlib::LChar;
 %token SEL_BFAC SEL_OCC
 
 /* single term selectors */
-%token SEL_ALL SEL_NONE
+%token SELTK_ALL SELTK_NONE
 
 /* Operators */
 %token SEL_LPAREN SEL_RPAREN
@@ -143,14 +143,13 @@ select_terms 	: select_terms SEL_AND select_terms
 		  pp->setValue($3);
 		  $$ = pp;
 		}
-		| select_terms SEL_AROUND SEL_LBRACK sel_molname SEL_RBRACK sel_number
+		| select_terms SEL_AROUND sel_number SEL_LBRACK sel_molname SEL_RBRACK
 		{
-		  SelCompiler::setSelState();
 		  SelOpNode *pp = new SelOpNode($1,SelOpNode::OP_AROUND);
-		  pp->setAroundTarget($4);
-		  pp->setValue($6);
+		  pp->setAroundTarget($5);
+		  pp->setValue($3);
 		  $$ = pp;
-		  delete [] $4;
+		  delete [] $5;
 		}
 		| select_terms SEL_EXPAND sel_number
 		{
@@ -206,9 +205,9 @@ select_term	: SEL_STRING
 		  delete [] $1;
 		}
 
-		| SEL_ALL { $$ = new SelAllNode(true); }
+		| SELTK_ALL { $$ = new SelAllNode(true); }
 
-		| SEL_NONE { $$ = new SelAllNode(false); }
+		| SELTK_NONE { $$ = new SelAllNode(false); }
 
 		| SEL_ELEM sel_name_list
 		{
@@ -370,15 +369,15 @@ sel_hierar	: selh_chexpr SEL_DOT selh_resexpr SEL_DOT selh_atmexpr
 		}
 		;
 
-selh_chexpr	: SEL_ALL { $$ = NULL; }
+selh_chexpr	: SELTK_ALL { $$ = NULL; }
 		| sel_name_list { $$ = $1; }
 		;
 
-selh_resexpr	: SEL_ALL { $$ = NULL; }
+selh_resexpr	: SELTK_ALL { $$ = NULL; }
 		| sel_resid_ranges { $$ = $1; }
 		;
 
-selh_atmexpr	: SEL_ALL { $$ = NULL; }
+selh_atmexpr	: SELTK_ALL { $$ = NULL; }
 		| sel_name_list { $$ = $1; }
 		;
 
@@ -389,13 +388,13 @@ sel_compop	: SEL_EQ {$$ = SelCompNode::COMP_EQ;}
 		| SEL_GT {$$ = SelCompNode::COMP_GT;}
 		;
 
-sel_number	: { SelCompiler::setSelNumState();} SEL_INTNUM
+sel_number	: SEL_INTNUM
 		{
-		  $$=$2;
+		  $$=$1;
 		}
-		| { SelCompiler::setSelNumState();} SEL_FLOATNUM
+		| SEL_FLOATNUM
 		{
-		  $$=$2;
+		  $$=$1;
 		}
 		;
 
