@@ -1342,11 +1342,15 @@ LString Scene::getCameraInfoJSON() const
 
     rval += "{\"name\":\""+ viter->first.escapeQuots() +"\",";
 
+    rval += LString::format("\"vis_size\": %d,", obj->getVisSize());
+
+    /*
     if (obj->getVisSize() > 0)
       rval += "\"hasVisSet\": true,";
     else
       rval += "\"hasVisSet\": false,";
-      
+     */
+
     LString src = obj->getSource();
     rval += "\"src\":\""+src.escapeQuots()+"\"}";
   }
