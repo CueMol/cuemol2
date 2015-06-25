@@ -373,6 +373,10 @@
 	  oncommand="cuemolui.panels.workspace.onCopyCmd(event);"/>
 	<menuitem id="wspcMulDel" label="Delete"
 	  oncommand="cuemolui.panels.workspace.onDeleteCmd(event);"/>
+	<menuitem id="wspcMulShow" label="Show"
+	  oncommand="cuemolui.panels.workspace.onShowHideCmd(event, true);"/>
+	<menuitem id="wspcMulHide" label="Hide"
+	  oncommand="cuemolui.panels.workspace.onShowHideCmd(event, false);"/>
       </menupopup>
       
       <!-- =============================== -->
