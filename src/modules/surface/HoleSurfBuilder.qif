@@ -19,6 +19,9 @@ runtime_class HoleSurfBuilder
   property object<Vector> dirnorm => redirect(getDirNorm, setDirNorm);
   property object<Vector> startpos => redirect(getStartPos, setStartPos);
 
+  property real surf_den => redirect(getSurfDen, setSurfDen);
+  property real surf_probe_r => redirect(getSurfProbeR, setSurfProbeR);
+
   void doit();
 
   property object<MolSurfObj$> result => redirect(getResult, XXX) (readonly);
