@@ -16,6 +16,7 @@ runtime_class HoleSurfBuilder
   smartptr;
 
   property object<MolCoord$> target_mol => redirect(getTargetMol, setTargetMol);
+  property object<MolSelection$> target_sel => redirect(getTargetSel, setTargetSel);
   property object<Vector> dirnorm => redirect(getDirNorm, setDirNorm);
   property object<Vector> startpos => redirect(getStartPos, setStartPos);
 

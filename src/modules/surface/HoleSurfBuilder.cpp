@@ -62,16 +62,24 @@ namespace {
 
 void HoleSurfBuilder::doit()
 {
-  MolCoordPtr pMol = m_pTgtMol;
+  LString selstr;
+  if (!m_pTgtSel.isnull())
+    selstr = m_pTgtSel->toString();
+  
+  LOG_DPRINTLN("Hole calc for mol %s, sel %s",
+               m_pTgtMol->getName().c_str(),
+               selstr.c_str());
+
   const Vector4D &dirnorm = m_dirnorm;
   const Vector4D &startpos = m_startpos;
 
   m_pAmap = new molstr::AtomPosMap;
-  m_pAmap->setTarget(pMol);
-  m_pAmap->setSpacing(3.5);
-  m_pAmap->generate();
+  m_pAmap->setTarget(m_pTgtMol);
+  //m_pAmap->setSpacing(3.5);
+  m_pAmap->setSpacing(5.0);
+  m_pAmap->generate(m_pTgtSel);
   
-  const double trytemp[] = {0.0, 0.01, 0.02};
+  const double trytemp[] = {0.0, 0.1, 0.2};
 
   int nslice;
   double score = 0.0, prev_score = -1.0;
@@ -99,6 +107,11 @@ void HoleSurfBuilder::doit()
   nslice = cen_ary.size();
   const int nskip = 2;
   int npore = nslice/nskip;
+  if (npore<1) {
+    LOG_DPRINTLN("Pore search failed");
+    return;
+  }
+
   std::vector< Vector4D > pore(npore);
 
   for (int i=0, isl=0; i<npore; ++i, isl+=nskip) {
@@ -106,6 +119,7 @@ void HoleSurfBuilder::doit()
     // pore[i].w() = rad_ary[isl];
   }  
 
+  LOG_DPRINTLN("Creating surface for pore %d pts", npore);
   m_pRes->createSESFromArray(pore, m_den, m_prober);
 
 /*
@@ -213,7 +227,7 @@ void HoleSurfBuilder::findPath(double start_temp,
 {
 
   // parameters
-  const int nslice = 50;
+  const int nslice = 1000;
   const double dstep = 0.25;
   const double rad_max = 5.0;
   const double rad_min = 1.0;
@@ -247,19 +261,19 @@ void HoleSurfBuilder::findPath(double start_temp,
     vol += res_rad * dstep;
 
     if (res_rad < rad_min) {
-      MB_DPRINTLN("Radius is too small (%f<%f); abort search", res_rad, rad_min);
+      LOG_DPRINTLN("Radius is too small (%f<%f); abort search", res_rad, rad_min);
       ++i;
       break;
     }
 
     if (res_rad > rad_max) {
-      MB_DPRINTLN("Radius is too large (%f>%f); abort search", res_rad, rad_max);
+      LOG_DPRINTLN("Radius is too large (%f>%f); abort search", res_rad, rad_max);
       ++i;
       break;
     }
   }
 
-  MB_DPRINTLN("Tst=%f --> nslice=%d, vol=%f", start_temp, i, vol);
+  LOG_DPRINTLN("Tst=%f --> nslice=%d, vol=%f", start_temp, i, vol);
 
   res_score = vol;
   isl_max = i;
