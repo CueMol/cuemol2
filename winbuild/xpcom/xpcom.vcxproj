@@ -67,7 +67,7 @@
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>xul.lib;xpcomglue_s_x.lib;mozalloc.lib;nss3.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>xul.lib;xpcomglue_s.lib;mozalloc.lib;nss3.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(XULDeployDir)components\xpcqm2.dll</OutputFile>
       <AdditionalLibraryDirectories>$(XULRunnerDir)lib\;$(XULRunnerDir)sdk\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -87,7 +87,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>xul.lib;xpcomglue_s_x.lib;mozalloc.lib;nss3.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>xul.lib;xpcomglue_s.lib;mozalloc.lib;nss3.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(XULDeployDir)components\xpcqm2.dll</OutputFile>
       <AdditionalLibraryDirectories>$(XULRunnerDir)lib\;$(XULRunnerDir)sdk\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
