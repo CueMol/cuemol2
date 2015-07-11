@@ -15,11 +15,10 @@ usexrbr="--without-xmlrpc"
 
 ##
 
-gecko_sdk_dir=$HOME/proj64/xulrunner/xulrunner-23.0.1-sdk
-# gecko_sdk_dir=$HOME/proj/xulrunner/xulrunner-6.0-obj/dist
-# gecko_sdk_dir=$HOME/proj/xulrunner/xulrunner-6.0-sdk
+gecko_sdk_dir=$HOME/proj64/xulrunner/xulrunner-39.0-sdk
+# gecko_sdk_dir=$HOME/proj64/xulrunner/xulrunner-23.0.1-sdk
 
-boost_dir=$HOME/proj64/boost/
+boost_dir=$HOME/proj64/boost_1_57/
 fftw_dir=$HOME/proj64/
 cgal_dir=$HOME/proj64/CGAL-3.8/
 glew_dir=$HOME/proj64/glew
@@ -40,7 +39,7 @@ fi
 env CC="clang" \
 CFLAGS="-O" \
 CXX="clang++" \
-CXXFLAGS="-O -std=c++11 -Wno-parentheses-equality -Wno-c++11-narrowing -Wno-extra-tokens -Wno-invalid-pp-token" \
+CXXFLAGS="-O -std=c++11 -stdlib=libc++ -Wno-parentheses-equality -Wno-c++11-narrowing -Wno-extra-tokens -Wno-invalid-pp-token" \
 $config_scr \
 --disable-static \
 --enable-shared \
