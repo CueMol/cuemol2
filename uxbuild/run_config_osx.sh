@@ -20,7 +20,7 @@ gecko_sdk_dir=$HOME/proj64/xulrunner/xulrunner-39.0-sdk
 
 boost_dir=$HOME/proj64/boost_1_57/
 fftw_dir=$HOME/proj64/
-cgal_dir=$HOME/proj64/CGAL-3.8/
+cgal_dir=$HOME/proj64/CGAL-4.5.2/
 glew_dir=$HOME/proj64/glew
 
 #######################
