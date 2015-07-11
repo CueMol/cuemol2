@@ -95,6 +95,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\gfx\MultiGradient.cpp" />
+    <ClCompile Include="..\..\src\gfx\MultiGradient_wrap.cpp" />
     <ClCompile Include="..\..\src\qsys\Camera.cpp" />
     <ClCompile Include="..\..\src\qsys\InDevEvent.cpp" />
     <ClCompile Include="..\..\src\qsys\InOutHandler.cpp" />
@@ -382,6 +384,7 @@
     <ClInclude Include="..\..\src\modules\molstr\QdfMolReader.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <mcwrapgen3 Include="..\..\src\gfx\MultiGradient.qif" />
     <mcwrapgen3 Include="..\..\src\qsys\Camera.qif" />
     <mcwrapgen3 Include="..\..\src\qsys\DrawObj.qif" />
     <mcwrapgen3 Include="..\..\src\qsys\InOutHandler.qif" />

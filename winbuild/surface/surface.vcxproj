@@ -100,6 +100,8 @@
     <ClCompile Include="..\..\src\modules\surface\DirectSurfRenderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\surface\ElePotMap.cpp" />
     <ClCompile Include="..\..\src\modules\surface\ElePotMap_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\surface\HoleSurfBuilder.cpp" />
+    <ClCompile Include="..\..\src\modules\surface\HoleSurfBuilder_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\surface\MolSurfBuilder.cpp">
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SourceDir)\modules\surface\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SourceDir)\modules\surface\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -299,6 +301,7 @@
   <ItemGroup>
     <mcwrapgen3 Include="..\..\src\modules\surface\DirectSurfRenderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\surface\ElePotMap.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\surface\HoleSurfBuilder.qif" />
     <mcwrapgen3 Include="..\..\src\modules\surface\MolSurfObj.qif" />
     <mcwrapgen3 Include="..\..\src\modules\surface\MolSurfRenderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\surface\MSMSFileReader.qif" />

@@ -672,6 +672,12 @@
     <ClCompile Include="..\..\src\gfx\TextRenderManager.cpp">
       <Filter>gfx</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\gfx\MultiGradient_wrap.cpp">
+      <Filter>gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\gfx\MultiGradient.cpp">
+      <Filter>gfx</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\qsys\AbstractColor.hpp">
@@ -893,6 +899,9 @@
       <Filter>gfx</Filter>
     </mcwrapgen3>
     <mcwrapgen3 Include="..\..\src\gfx\TextImgBuf.qif">
+      <Filter>gfx</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\gfx\MultiGradient.qif">
       <Filter>gfx</Filter>
     </mcwrapgen3>
   </ItemGroup>
