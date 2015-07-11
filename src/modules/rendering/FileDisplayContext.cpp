@@ -67,6 +67,11 @@ bool FileDisplayContext::isFile() const
   return true;
 }
 
+bool FileDisplayContext::isRenderPixmap() const
+{
+  return false;
+}
+
 void FileDisplayContext::vertex(const Vector4D &aV)
 {
   Vector4D v(aV);

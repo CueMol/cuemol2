@@ -52,6 +52,7 @@
 #define HAVE_GL_GLEW_H 1
 #define HAVE_GLEW 1
 #define USE_OPENGL 1
+#define HAVE_MDTOOLS_MODULE 1
 
 #define __STDC_LIMIT_MACROS
 #define __STDC_CONSTANT_MACROS

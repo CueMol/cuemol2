@@ -10,7 +10,7 @@
 
 using namespace gfx;
 
-void LabelCacheImpl::draw(DisplayContext *pdc, bool bUseCache /*=true*/)
+void LabelCacheImpl::draw(DisplayContext *pdc)
 {
   gfx::TextRenderManager *pTRM = gfx::TextRenderManager::getInstance();
   if (pTRM==NULL)
@@ -19,12 +19,26 @@ void LabelCacheImpl::draw(DisplayContext *pdc, bool bUseCache /*=true*/)
   double scl = pdc->getPixSclFac();
   pTRM->setupFont(m_dFontSize * scl, m_strFontName, m_strFontStyle, m_strFontWgt);
 
+  bool bUseCache = false;
+  if (m_dScaleFac<0.0) {
+    bUseCache = true;
+    m_dScaleFac = scl;
+  }
+  else if (qlib::isNear4(scl, m_dScaleFac)) {
+    MB_DPRINTLN("LabelCache> cache scl(%f) = draw scl (%f) --> use cache", m_dScaleFac, scl);
+    bUseCache = true;
+  }
+  else {
+    MB_DPRINTLN("LabelCache> cache scl(%f) != draw scl (%f) --> not use cache", m_dScaleFac, scl);
+  }
+  
   PixBufCache::iterator iter = m_data.begin();
   PixBufCache::iterator eiter = m_data.end();
   for (; iter!=eiter; ++iter) {
     const Vector4D &pos = iter->pos;
 
     if (!bUseCache) {
+      MB_DPRINTLN("LabelCache> Not use cache <%s>.", iter->str.c_str());
       gfx::PixelBuffer *pixbuf = MB_NEW gfx::PixelBuffer();
       if (!pTRM->renderText(iter->str, *pixbuf))
         return;
@@ -35,6 +49,7 @@ void LabelCacheImpl::draw(DisplayContext *pdc, bool bUseCache /*=true*/)
       gfx::PixelBuffer *pixbuf = iter->pPixBuf;
       if (pixbuf==NULL) {
         pixbuf = MB_NEW gfx::PixelBuffer();
+        MB_DPRINTLN("LabelCache> new pixbuf for <%s> created.", iter->str.c_str());
         if (!pTRM->renderText(iter->str, *pixbuf))
           return;
         iter->pPixBuf = pixbuf;
@@ -59,6 +74,7 @@ void LabelCacheImpl::render(double scl)
     const Vector4D &pos = iter->pos;
     gfx::PixelBuffer *pixbuf = iter->pPixBuf;
     if (pixbuf==NULL) {
+      MB_DPRINTLN("LabelCache> new pixbuf for <%s> created.", iter->str.c_str());
       pixbuf = MB_NEW gfx::PixelBuffer();
       if (!pTRM->renderText(iter->str, *pixbuf))
         return;
@@ -67,7 +83,7 @@ void LabelCacheImpl::render(double scl)
   }
 }
 
-void LabelCacheImpl::invalidate()
+void LabelCacheImpl::invalidateAll()
 {
   PixBufCache::iterator iter = m_data.begin();
   PixBufCache::iterator eiter = m_data.end();
@@ -99,5 +115,13 @@ bool LabelCacheImpl::remove(int id)
   }
 
   return false;
+}
+
+void LabelCacheImpl::setFont(double fs, const LString &fn, const LString &fsty, const LString &fw)
+{
+  m_dFontSize = fs;
+  m_strFontName = fn;
+  m_strFontStyle = fsty;
+  m_strFontWgt = fw;
 }
 

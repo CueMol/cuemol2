@@ -20,6 +20,13 @@ static const float a2fEdgeDirection[12][3] =
         {0.0, 0.0, 1.0},{0.0, 0.0, 1.0},{ 0.0, 0.0, 1.0},{0.0,  0.0, 1.0}
 };
 
+static const char iedir[12][3] =
+{
+        {1, 0, 0},{0, 1, 0},{-1, 0, 0},{0, -1, 0},
+        {1, 0, 0},{0, 1, 0},{-1, 0, 0},{0, -1, 0},
+        {0, 0, 1},{0, 0, 1},{ 0, 0, 1},{0,  0, 1}
+};
+
 //a2iEdgeConnection lists the index of the endpoint vertices for each of the 12 edges of the cube
 static const int a2iEdgeConnection[12][2] = 
 {

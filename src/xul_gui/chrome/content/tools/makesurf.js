@@ -78,10 +78,22 @@
       this.mSurfName.disabled = true;
       this.mObjBox._widget.disabled = true;
       document.getElementById("probe-radius").disabled = true;
+
+      let surf = cuemol.getObject(this.mTgtObjID);
       // set orig_den as a default value of point density
-      let mol = cuemol.getObject(this.mTgtObjID);
-      let orig_den = mol.orig_den;
+      let orig_den = surf.orig_den;
       document.getElementById("point-density-value").value = orig_den;
+      // set surf name
+      this.mSurfName.value = surf.name;
+      // set selection
+      let orig_sel = surf.orig_sel;
+      if (orig_sel!="") {
+	let mol = this.mObjBox.getSelectedObj();
+	this.mSelBox.molID = mol.uid;
+	this.mSelBox.selectedSel = orig_sel;
+	sel_chk.checked = true;
+	alert("origsel="+orig_sel);
+      }
     }
     else {
       var mol = this.mObjBox.getSelectedObj();
@@ -226,7 +238,7 @@
   {
     var scene = cuemol.getScene(this.mTgtSceID);
 
-    var tgtmol = cuemol.getObject(this.mTgtObjID);
+    var tgtsurf = cuemol.getObject(this.mTgtObjID);
 
     ////
     // density value
@@ -249,7 +261,7 @@
     scene.startUndoTxn("Regenerate mol surface");
 
     try {
-      tgtmol.regenerateSES1(nden);
+      tgtsurf.regenerateSES1(nden);
     }
     catch (e) {
       dd("Error: "+e);

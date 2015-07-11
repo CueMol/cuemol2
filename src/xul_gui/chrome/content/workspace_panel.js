@@ -129,8 +129,10 @@ ws.createCameraNodeData = function (aScene)
       rnode.type = "camera";
       rnode.props = {
       object_vis: ( (data[i].src=="")? "" : "linked" ),
-      object_name: ( (data[i].hasVisSet) ? "visible" : ""),
+      object_name: ( (data[i].vis_size>0) ? "visible" : ""),
+      //object_name: ( (data[i].hasVisSet) ? "visible" : ""),
       };
+      dd("camera "+data[i].name+" vis_size="+data[i].vis_size);
       node.childNodes.push(rnode);
     }
   }
@@ -296,6 +298,7 @@ ws.syncContents = function (scid)
   this.mViewObj.buildView();
 }
 
+/// Synchronize the contents' property change to the tree-view (mainly icons)
 ws.syncContentsPropChg = function (srcUID, propname)
 {
   var node = this.findNodeByObjId(srcUID);
@@ -315,6 +318,9 @@ ws.syncContentsPropChg = function (srcUID, propname)
   else if (node.type=="scene") {
     src = cuemol.getScene(srcUID);
     type2 = "";
+  }
+  else if (node.type=="camera") {
+    dd("camera syncContentsPropChg called!! *****");
   }
   else
     return;
@@ -358,8 +364,9 @@ ws.syncContentsPropChg = function (srcUID, propname)
       node.name = newval;
     }
   }
-  else
+  else {
     return;
+  }
 
   //this.mViewObj._tvi.invalidate();
   this.mViewObj.updateNode( function(elem) {
@@ -1251,8 +1258,8 @@ ws.loadCamImpl = function (aCamName, aVisflags)
   if (!scene || !view) return;
 
   scene.loadViewFromCam(view.uid, aCamName);
-  if (aVisflags) {
-    let cam = scene.getCameraRef(aCamName);
+  let cam = scene.getCameraRef(aCamName);
+  if (aVisflags && cam.vis_size>0) {
     
     // EDIT TXN START //
     scene.startUndoTxn("Load camera "+aCamName+" settings");
@@ -1272,11 +1279,28 @@ ws.loadCamImpl = function (aCamName, aVisflags)
   return;
 };
 
+/// Reflect the vissetflags in aCam to the tree-view's icon
+ws.updateVisSetFlagIcon = function (aCam)
+{
+  var id = aCam.name;
+  var node = this.findNodeByObjId(id);
+
+  if (aCam.vis_size>0)
+    node.props.object_name = "visible";
+  else
+    node.props.object_name = "";
+
+  this.mViewObj.updateNode( function(elem) {
+    return (elem.obj_id==id)?true:false;
+  } );
+};
+
 ws.saveCamImpl = function (aCamName, aVisflags)
 {
   var scene = this._mainWnd.currentSceneW;
   var view = this._mainWnd.currentViewW;
   if (!scene || !view) return;
+
 
   // EDIT TXN START //
   scene.startUndoTxn("Change camera "+aCamName);
@@ -1285,6 +1309,8 @@ ws.saveCamImpl = function (aCamName, aVisflags)
     if (aVisflags) {
       let cam = scene.getCameraRef(aCamName);
       cam.saveVisSettings(scene);
+      // update vissetflags icon
+      this.updateVisSetFlagIcon(cam);
     }
   }
   catch (e) {
@@ -1341,6 +1367,9 @@ ws.onClearVisFlags = function (aEvent)
   }
   scene.commitUndoTxn();
   // EDIT TXN END //
+
+  // update vissetflags icon
+  this.updateVisSetFlagIcon(cam);
 };
 
 ws.onEditVisFlags = function (aEvent)
@@ -1360,6 +1389,10 @@ ws.onEditVisFlags = function (aEvent)
                     null,
                     "chrome,modal,resizable=yes,dependent,centerscreen",
                     args);
+
+  // update vissetflags icon
+  let cam = scene.getCameraRef(elem.obj_id);
+  this.updateVisSetFlagIcon(cam);
 };
 
 

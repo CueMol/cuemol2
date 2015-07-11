@@ -229,6 +229,8 @@ public:
 
 private:
 
+  void invalidateAllLabels();
+
   int appendImpl(const AtomIntrData &dat);
 
   //bool getSelCenter(const MolCoordPtr pmol,

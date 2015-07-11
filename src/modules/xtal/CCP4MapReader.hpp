@@ -14,15 +14,25 @@
 
 #include "CCP4InStream.hpp"
 
+class CCP4MapReader_wrap;
+
 namespace xtal {
 
 // class DensityMap;
 
-class CCP4MapReader : public qsys::ObjReader
+class XTAL_API CCP4MapReader : public qsys::ObjReader
 {
-  MC_DYNCLASS;
+  MC_SCRIPTABLE;
+
+  friend class ::CCP4MapReader_wrap;
 
 private:
+
+  bool m_bNormalize;
+  bool m_bTruncMin;
+  double m_dMin;
+  bool m_bTruncMax;
+  double m_dMax;
 
   ///////////////////////////////////////////
 public:

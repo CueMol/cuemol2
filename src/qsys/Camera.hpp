@@ -276,7 +276,11 @@ namespace qsys {
     /// @return false if tgtid was not found
     bool visChange(qlib::uid_t tgtid, bool bVis);
      */
+
+    /// get size of the entries in the vissetflags
     int getVisSize() const {
+      if (m_visset.size()==0 && m_pVisSetNodes!=NULL)
+        return 1; // cannot return the actual number, but we can tell that there are more than one cameras...
       return m_visset.size();
     }
 
@@ -293,6 +297,7 @@ namespace qsys {
 
     LString getVisSetJSON() const;
 
+    /// Called when the parent scene loading is completed
     /// just call loadVisSetFromNodes()
     void notifyLoaded(ScenePtr pScene) {
       loadVisSetFromNodes(pScene);

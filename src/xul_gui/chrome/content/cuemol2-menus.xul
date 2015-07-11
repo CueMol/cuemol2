@@ -371,7 +371,7 @@
       
 	    <menuseparator/>
 
-	    <menuitem id="exec_scr_menuitem" label="Execute script..." oncommand="gQm2Main.onExecScr();" disabled="true" />
+	    <menuitem id="exec_scr_menuitem" label="Execute script..." oncommand="gQm2Main.onExecScr();"/>
 	  </menupopup>
 	</menu>
 

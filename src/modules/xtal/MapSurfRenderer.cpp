@@ -131,9 +131,10 @@ void MapSurfRenderer::preRender(DisplayContext *pdc)
     pdc->setPolygonMode(gfx::DisplayContext::POLY_FILL);
   }
   
-  //if (!m_bCullFace)
-  //pdc->setCullFace(false);
-  pdc->setCullFace(true);
+  if (m_bCullFace)
+    pdc->setCullFace(true);
+  else
+    pdc->setCullFace(false);
 }
 
 void MapSurfRenderer::postRender(DisplayContext *pdc)
@@ -153,6 +154,9 @@ void MapSurfRenderer::render(DisplayContext *pdl)
   DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
 
   m_pCMap = pMap;
+
+  // check and setup mol boundary data
+  setupMolBndry();
 
   // generate map-range information
   makerange();
@@ -225,6 +229,7 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
 
   /////////////////////
   // setup workarea
+
   //m_dLevel = getLevel()*pMap->getRmsdDensity();
   const double siglevel = getSigLevel();
   m_dLevel = pMap->getRmsdDensity() * siglevel;
@@ -238,6 +243,9 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
   int ncol = m_nActCol;
   int nrow = m_nActRow;
   int nsec = m_nActSec;
+
+  double values[8];
+  bool bary[8];
 
   int i,j,k;
   for (i=0; i<ncol; i++)
@@ -254,15 +262,25 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
               iz+1>=m_nMapSecNo)
             continue;
         }
-        double values[8];
-        
+
+        bool bin = false;
         int ii;
         for (ii=0; ii<8; ii++) {
-          // values[ii] = pMap->atFloat(ix+vtxoffs[ii][0], iy+vtxoffs[ii][1], iz+vtxoffs[ii][2]);
-          values[ii] = getDen(ix+vtxoffs[ii][0], iy+vtxoffs[ii][1], iz+vtxoffs[ii][2]);
+          const int ixx = ix+vtxoffs[ii][0];
+          const int iyy = iy+vtxoffs[ii][1];
+          const int izz = iz+vtxoffs[ii][2];
+          values[ii] = getDen(ixx, iyy, izz);
+
+          // check mol boundary
+          bary[ii] = inMolBndry(pMap, ixx, iyy, izz);
+          if (bary[ii])
+            bin = true;
         }
         
-        marchCube(pdl, i, j, k, values);
+        if (!bin)
+          continue;
+
+        marchCube(pdl, i, j, k, values, bary);
 
         /*
         pdl->startLines();
@@ -376,6 +394,7 @@ double MapSurfRenderer::getOffset(double fValue1, double fValue2, double fValueD
   return (fValueDesired - fValue1)/fDelta;
 }
 
+/*
 inline bool isInt(double x) {
   const double m = ::fmod(x, 1.0);
   if (qlib::isNear(m, 0.0))
@@ -383,7 +402,7 @@ inline bool isInt(double x) {
   if (qlib::isNear(m, 1.0))
     return true;
   return false;
-}
+}*/
 
 Vector4D MapSurfRenderer::getGrdNorm(int x, int y, int z)
 {
@@ -401,14 +420,13 @@ Vector4D MapSurfRenderer::getGrdNorm(int x, int y, int z)
 
 //vGetNormal() finds the gradient of the scalar field at a point
 //This gradient can be used as a very accurate vertx normal for lighting calculations
-Vector4D MapSurfRenderer::getNormal(const Vector4D &fV) //double fX, double fY, double fZ)
+Vector4D MapSurfRenderer::getNormal(const Vector4D &fV, bool bx, bool by, bool bz)
 {
   Vector4D rval;
 
-
-  bool bx = isInt( fV.x() );
-  bool by = isInt( fV.y() );
-  bool bz = isInt( fV.z() );
+  //bool bx = isInt( fV.x() );
+  //bool by = isInt( fV.y() );
+  //bool bz = isInt( fV.z() );
 
   int ix, iy, iz;
   double r;
@@ -447,52 +465,26 @@ Vector4D MapSurfRenderer::getNormal(const Vector4D &fV) //double fX, double fY, 
     return Vector4D(1.0, 0.0, 0.0);
   }
 
-/*
-  rval.x() = intrpX(fV.x()-0.01, (int) fV.y(), (int) fV.z()) - intrpX(fV.x()+0.01, (int) fV.y(), (int) fV.z());
-  rval.y() = intrpY((int) fV.x(), fV.y()-0.01, (int) fV.z()) - intrpY((int) fV.x(), fV.y()+0.01, (int) fV.z());
-  rval.z() = intrpZ((int) fV.x(), (int) fV.y(), fV.z()-0.01) - intrpZ((int) fV.x(), (int) fV.y(), fV.z()+0.01);
-*/
   double len = rval.length();
   if (qlib::isNear(len, 0.0))
     return Vector4D(1.0, 0.0, 0.0);
   
   return rval.divide(len);
-  
-/*
-  // vNormalizeVector(rfNormal, rfNormal);
 
-  rval = rval.normalizeThrows();
-  return rval;
- */
 }
-
-/*
-//vGetColor generates a color from a given position and normal of a point
-void MapSurfRenderer::getVertexColor(Vector4D &rfColor, Vector4D &rfPosition, Vector4D &rfNormal)
-{
-  double fX = rfNormal.x();
-  double fY = rfNormal.y();
-  double fZ = rfNormal.z();
-  rfColor.x() = (fX > 0.0 ? fX : 0.0) + (fY < 0.0 ? -0.5*fY : 0.0) + (fZ < 0.0 ? -0.5*fZ : 0.0);
-  rfColor.y() = (fY > 0.0 ? fY : 0.0) + (fZ < 0.0 ? -0.5*fZ : 0.0) + (fX < 0.0 ? -0.5*fX : 0.0);
-  rfColor.z() = (fZ > 0.0 ? fZ : 0.0) + (fX < 0.0 ? -0.5*fX : 0.0) + (fY < 0.0 ? -0.5*fY : 0.0);
-}
-*/
-
-/////////////////
 
 //////////////////////////////////////////
 
 
-void MapSurfRenderer::marchCube(DisplayContext *pdl, int fx, int fy, int fz, double *values)
+void MapSurfRenderer::marchCube(DisplayContext *pdl,
+                                int fx, int fy, int fz,
+                                double *values, bool *bary)
 {
   int iCorner, iVertex, iVertexTest, iEdge, iTriangle, iFlagIndex, iEdgeFlags;
-  double fOffset;
-  // Vector4D sColor;
+
   Vector4D asEdgeVertex[12];
   Vector4D asEdgeNorm[12];
-
-  // const double fScale = 1.0;
+  bool edgeBinFlags[12];
 
   // Find which vertices are inside of the surface and which are outside
   iFlagIndex = 0;
@@ -514,22 +506,33 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl, int fx, int fy, int fz, dou
   for(iEdge = 0; iEdge < 12; iEdge++) {
     //if there is an intersection on this edge
     if(iEdgeFlags & (1<<iEdge)) {
-      fOffset = getOffset(values[ a2iEdgeConnection[iEdge][0] ], 
-                          values[ a2iEdgeConnection[iEdge][1] ], m_dLevel);
+      const int ec0 = a2iEdgeConnection[iEdge][0];
+      const int ec1 = a2iEdgeConnection[iEdge][1];
+      if (bary[ec0]==false || bary[ec1]==false) {
+        edgeBinFlags[iEdge] = false;
+        continue;
+      }
+      edgeBinFlags[iEdge] = true;
+      
+      const double fOffset = getOffset(values[ ec0 ], 
+                                       values[ ec1 ], m_dLevel);
       
       asEdgeVertex[iEdge].x() = double(fx) +
-        a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][0] +
+        a2fVertexOffset[ ec0 ][0] +
           fOffset * a2fEdgeDirection[iEdge][0];
       asEdgeVertex[iEdge].y() = double(fy) +
-        a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][1] +
+        a2fVertexOffset[ ec0 ][1] +
           fOffset * a2fEdgeDirection[iEdge][1];
       asEdgeVertex[iEdge].z() = double(fz) +
-        a2fVertexOffset[ a2iEdgeConnection[iEdge][0] ][2] +
+        a2fVertexOffset[ ec0 ][2] +
           fOffset * a2fEdgeDirection[iEdge][2];
+      asEdgeVertex[iEdge].w() = 0;
       
-      //getNormal(asEdgeNorm[iEdge], asEdgeVertex[iEdge].x(), asEdgeVertex[iEdge].y(), asEdgeVertex[iEdge].z());
+      bool bx = (iedir[iEdge][0]==0);
+      bool by = (iedir[iEdge][1]==0);
+      bool bz = (iedir[iEdge][2]==0);
 
-      asEdgeNorm[iEdge] = getNormal(asEdgeVertex[iEdge]);
+      asEdgeNorm[iEdge] = getNormal(asEdgeVertex[iEdge], bx, by, bz);
     }
   }
 
@@ -538,6 +541,17 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl, int fx, int fy, int fz, dou
     if(a2iTriangleConnectionTable[iFlagIndex][3*iTriangle] < 0)
       break;
     
+    bool bNotDraw = false;
+    for(iCorner = 0; iCorner < 3; iCorner++) {
+      iVertex = a2iTriangleConnectionTable[iFlagIndex][3*iTriangle+iCorner];
+      if (!edgeBinFlags[iVertex]) {
+        bNotDraw = true;
+        break;
+      }
+    }
+    if (bNotDraw)
+      continue;
+
     for(iCorner = 0; iCorner < 3; iCorner++) {
       iVertex = a2iTriangleConnectionTable[iFlagIndex][3*iTriangle+iCorner];
       

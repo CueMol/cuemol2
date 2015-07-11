@@ -16,8 +16,11 @@
 #include <modules/molstr/ResidIterator.hpp>
 #include <modules/molstr/MainChainRenderer.hpp>
 
+#include <qlib/Matrix3D.hpp>
+
 using namespace molvis;
 using namespace molstr;
+using qlib::Matrix3D;
 
 SplineCoeffSet::SplineCoeffSet()
      : m_pCurCoeff(NULL)
@@ -235,9 +238,6 @@ bool SplineCoeff::generate()
   //
   int nres;
   m_axisInt.setSize(m_nResids);
-  m_normInt.setSize(m_nResids);
-  Vector4D prev_bnorm;
-  m_bnormDirs.resize(m_nResids);
 
   for (nres=0; nres<m_nResids; ++nres) {
     // Get atoms (cur/prev/next)
@@ -297,32 +297,10 @@ bool SplineCoeff::generate()
     m_pParamTab[nres] = startpar;
     m_pParamTab[nres+1] = endpar;
     m_pParamCentTab[nres] = centpar;
-
-    //
-    // Calc (bi)normal vector
-    //
-
-    //Vector4D bnorm(1.0, 0.0, 0.0);
-    Vector4D bnorm = calcBnormVec(nres);
-
-    // preserve consistency of binormal vector directions
-    m_bnormDirs[nres] = false;
-    if (!prev_bnorm.isZero()) {
-      double costh = bnorm.dot(prev_bnorm);
-      if (costh<0) {
-        bnorm = -bnorm;
-        m_bnormDirs[nres] = true;
-      }
-    }
-    
-    //int res = m_normInt.addPoint(bnorm+curpos);
-    m_normInt.setPoint(nres, bnorm+curpos);
-    prev_bnorm = bnorm;
   }
 
   // Generate spline coeffs
   m_axisInt.generate();
-  m_normInt.generate();
 
   int intrmax = m_axisInt.getPoints() -1;
   MB_ASSERT(intrmax==m_nResids-1);
@@ -330,6 +308,72 @@ bool SplineCoeff::generate()
 
   MB_ASSERT(nres+1<m_nParamTabSz);
   m_pParamTab[nres+1] = double( intrmax );
+
+  //
+  // calculate spline coeffs (binormal vector)
+  //
+
+  Vector4D prev_dv, prev_bnorm;
+
+  m_normInt.setSize(m_nResids);
+  m_bnormDirs.resize(m_nResids);
+
+  for (nres=0; nres<m_nResids; ++nres) {
+
+    Vector4D curpos, dv;
+    if (!m_axisInt.interpolate(nres, &curpos, &dv)) {
+      LOG_DPRINTLN("SplineCoeffSet> fatal error: cannot interpolate");
+      return false;
+    }
+    
+    // Calc (bi)normal vector
+
+    m_bnormDirs[nres] = false;
+    Vector4D bnorm = calcBnormVec(nres);
+
+    // preserve consistency of binormal vector directions in beta strands
+    if (!prev_bnorm.isZero() && !prev_dv.isZero()) {
+      dv = dv.normalize();
+      prev_dv = prev_dv.normalize();
+      Vector4D ax = dv.cross(prev_dv);
+      double axlen = ax.length();
+      if (axlen>F_EPS4) {
+        // align the previous binorm vectors based on the dv (tangential vector)
+        ax = ax.scale(1.0/axlen);
+        //MB_DPRINTLN("ax=(%f,%f,%f)", ax.x(), ax.y(), ax.z());
+        //double ph = prev_dv.angle(dv);
+        //double cosph = cos(ph);
+        //double sinph = sin(ph);
+        double cosph = prev_dv.dot(dv)/(prev_dv.length()*dv.length());
+        double sinph = sqrt(1.0-cosph*cosph);
+        //MB_DPRINTLN("ph=%f", qlib::toDegree(ph));
+        //MB_DPRINTLN("cosph = %f, %f", cosph, cosph2);
+        //MB_DPRINTLN("sinph = %f, %f", sinph, sinph2);
+        Matrix3D rotmat = Matrix3D::makeRotMat(ax, cosph, sinph);
+        //MB_DPRINTLN("dv=(%f,%f,%f)", dv.x(), dv.y(), dv.z());
+        //MB_DPRINTLN("prev_dv=(%f,%f,%f)", prev_dv.x(), prev_dv.y(), prev_dv.z());
+        //Vector4D dum = rotmat.mulvec(prev_dv);
+        //Vector4D dum2 = rotmat.mulvec(dv);
+        //MB_DPRINTLN("mat.prev_dv=(%f,%f,%f)", dum.x(), dum.y(), dum.z());
+        //MB_DPRINTLN("mat.dv=(%f,%f,%f)", dum2.x(), dum2.y(), dum2.z());
+        prev_bnorm = rotmat.mulvec(prev_bnorm);
+      }
+
+      double costh = bnorm.dot(prev_bnorm);
+      if (costh<0) {
+        bnorm = -bnorm;
+        m_bnormDirs[nres] = true;
+      }
+    }
+
+    m_normInt.setPoint(nres, bnorm+curpos);
+
+    prev_bnorm = bnorm;
+    prev_dv = dv;
+  }
+  m_normInt.generate();
+
+
 
   return true;
 }
@@ -339,6 +383,9 @@ Vector4D SplineCoeff::calcBnormVec(int nres)
   Vector4D rval(1.0, 0.0, 0.0);
   
   MolAtomPtr pAtom, pPrevAtom, pNextAtom;
+
+  if (calcProtBnormVec(nres, rval))
+    return rval;
 
   if (nres==0) {
     // Start point
@@ -380,6 +427,38 @@ Vector4D SplineCoeff::calcBnormVec(int nres)
   return rval;
 }
 
+bool SplineCoeff::calcProtBnormVec(int nres, Vector4D &res)
+{
+  // check protein case
+  MolResidue *pres = m_resid_array[nres];
+  if (pres==NULL)
+    return false;
+
+  LString sec;
+  pres->getPropStr("secondary", sec);
+  if (!sec.equals("sheet"))
+    return false;
+
+  // In the protein beta strands,
+  // the binormal vector is calculated
+  // based on the direction of the main chain >C=O group
+  MolAtomPtr pAC = pres->getAtom("C");
+  MolAtomPtr pAO = pres->getAtom("O");
+  if (pAC.isnull()||pAO.isnull())
+    return false;
+
+  Vector4D v1 = pAO->getPos() - pAC->getPos();
+  
+  // normalization
+  double len = v1.length();
+  if (len>=F_EPS4)
+    res = v1.scale(1.0/len);
+  else
+    // singularity case: cannot determine binomal vec.
+    return false;
+
+  return true;
+}
 
 bool SplineCoeff::contains(MolResidue *pres)
 {

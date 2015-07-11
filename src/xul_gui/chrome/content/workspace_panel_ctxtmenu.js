@@ -512,3 +512,42 @@ ws.onMulCtxtMenuShowing = function (event)
   }
 };
 
+ws.onShowHideCmd = function (aEvent, aShow)
+{
+  var elemList = this.mViewObj.getSelectedNodeList();
+  var nsel = elemList.length;
+  if (nsel<=0)
+    return;
+
+  var scene = cuemol.getScene(this.mTgtSceneID);
+
+  // EDIT TXN START //
+  scene.startUndoTxn("Change visibilities");
+  try {
+
+    for (var i=0; i<nsel; ++i) {
+      let elem = elemList[i];
+      if (elem.type=="object") {
+	let obj = cuemol.getObject(elem.obj_id);
+	if (obj.visible != aShow)
+	  obj.visible = aShow;
+      }
+      else if (elem.type=="renderer") {
+	let rend = cuemol.getRenderer(elem.obj_id);
+	if (rend.visible != aShow)
+	  rend.visible = aShow;
+      }
+      else if (elem.type=="rendGroup") {
+	// TO DO: renderer group impl
+      }
+    }
+  }
+  catch (e) {
+    dd("***** ERROR: Change group visibility "+e);
+    debug.exception(e);
+  }
+  scene.commitUndoTxn();
+  // EDIT TXN END //
+};
+
+

@@ -100,6 +100,9 @@ MolCoordPtr MolChain::getParent() const
 
 LString MolChain::getResidsJSON() const
 {
+  MolCoordPtr pMol = getParent();
+  SelectionPtr pSel = pMol->getSelection();
+
   LString rval = "[";
 
   ResidCursor iter = begin();
@@ -109,9 +112,20 @@ LString MolChain::getResidsJSON() const
     if (bcomma) rval += ",";
     MolResiduePtr pRes = *iter;
     ResidIndex ind = pRes->getIndex();
+    LString single;
+    pRes->getPropStr("single", single);
 
+    LString strsel("false");
+    if (!pSel->isEmpty()) {
+      int isel = pSel->isSelectedResid(pRes);
+      if (isel!=Selection::SEL_NONE)
+        strsel = "true";
+    }
+    
     rval += "{";
     rval += "\"name\":\""+pRes->getName().escapeQuots()+"\",";
+    rval += "\"single\":\""+single.escapeQuots()+"\",";
+    rval += "\"sel\":"+strsel+",";
     rval += "\"index\":\""+ind.toString().escapeQuots()+"\"";
     rval += "}";
     bcomma = true;

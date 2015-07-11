@@ -8,6 +8,7 @@
 #define SURFACE_HPP_INCLUDED
 
 #include <qlib/LString.hpp>
+#include <qlib/LScrSmartPtr.hpp>
 
 #ifdef WIN32
 
@@ -39,11 +40,14 @@
 
 namespace surface {
 
-/// Common Initialization for the molanl library
-SURFACE_API bool init();
+  /// Common Initialization for the molanl library
+  SURFACE_API bool init();
+  
+  /// Common Finalization for the molanl library
+  SURFACE_API void fini();
 
-/// Common Finalization for the molanl library
-SURFACE_API void fini();
+  // declare MolSurfObjPtr typedef
+  MC_DECL_SCRSP(MolSurfObj);
 
 }
 

@@ -29,6 +29,16 @@ runtime_class GLSLMapVolRenderer extends MapRenderer
 
   property object<AbstractColor$> color => redirect(getColor, setColor);
   default color = gfx::SolidColor::createRGB(0.0, 1.0, 0.0);
+
+  /// transfer-function type
+  enumdef xferfn_type {
+    multigrad = xtal::GLSLMapVolRenderer::GLMV_MULTIGRAD;
+    rainbow1 = xtal::GLSLMapVolRenderer::GLMV_AUTO1;
+    auto2 = xtal::GLSLMapVolRenderer::GLMV_AUTO2;
+  }
+  property enum xferfn_type => redirect(getXferFnType, setXferFnType);
+  default xferfn_type = "rainbow1";
+
 };
 
 #endif

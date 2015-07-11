@@ -574,12 +574,12 @@ int yy_flex_debug = 0;
 #define YY_MORE_ADJ 0
 #define YY_RESTORE_YY_MORE_OFFSET
 char *yytext;
-#line 1 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 1 "scanner_sel.lxx"
 /*
  *  Molecular selection grammer lexical scanner
  */
 
-#line 11 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 11 "scanner_sel.lxx"
 #include <common.h>
 #include <qlib/LChar.hpp>
 
@@ -590,8 +590,8 @@ using qlib::LChar;
 using qlib::LString;
 using namespace molstr;
 
-#include "parser_sel.hxx"
-//#include "parser_sel.h"
+//#include "parser_sel.hxx"
+#include "parser_sel.h"
 
 #undef YY_INPUT
 #define YY_INPUT(buf,result,max) (result = SelCompiler::getInstance()->yyInput(buf, max))
@@ -784,7 +784,7 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 37 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 37 "scanner_sel.lxx"
 
 
 
@@ -877,116 +877,116 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 48 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 48 "scanner_sel.lxx"
 ;
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 49 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 49 "scanner_sel.lxx"
 ;
 	YY_BREAK
 case 3:
 /* rule 3 can match eol */
 YY_RULE_SETUP
-#line 51 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 51 "scanner_sel.lxx"
 { ; }
 	YY_BREAK
 case 4:
 /* rule 4 can match eol */
 YY_RULE_SETUP
-#line 52 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 52 "scanner_sel.lxx"
 { ; }
 	YY_BREAK
 /* Operators */
 case 5:
 YY_RULE_SETUP
-#line 56 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 56 "scanner_sel.lxx"
 { return SEL_LPAREN; }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 57 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 57 "scanner_sel.lxx"
 { return SEL_RPAREN; }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 58 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 58 "scanner_sel.lxx"
 { return SEL_LBRACK; }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 59 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 59 "scanner_sel.lxx"
 { return SEL_RBRACK; }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 60 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 60 "scanner_sel.lxx"
 { return SEL_COLON; }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 61 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 61 "scanner_sel.lxx"
 { return SEL_DOT; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 62 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 62 "scanner_sel.lxx"
 { return SEL_COMMA; }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 63 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 63 "scanner_sel.lxx"
 { return SEL_AND; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 64 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 64 "scanner_sel.lxx"
 { return SEL_AND; }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 65 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 65 "scanner_sel.lxx"
 { return SEL_OR; }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 66 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 66 "scanner_sel.lxx"
 { return SEL_OR; }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 67 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 67 "scanner_sel.lxx"
 { return SEL_NOT; }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 68 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 68 "scanner_sel.lxx"
 { return SEL_NOT; }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 69 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 69 "scanner_sel.lxx"
 { return SEL_EQ; }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 70 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 70 "scanner_sel.lxx"
 { return SEL_GT; }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 71 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 71 "scanner_sel.lxx"
 { return SEL_LT; }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 72 "../../../src/modules/molstr/scanner_sel.lxx"
-{ return SEL_ALL; }
+#line 72 "scanner_sel.lxx"
+{ return SELTK_ALL; }
 	YY_BREAK
 /* Regular expression (mode start) */
 case 22:
 YY_RULE_SETUP
-#line 75 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 75 "scanner_sel.lxx"
 {
   string_buf = "";
   BEGIN SEL_REX_STAT;
@@ -995,7 +995,7 @@ YY_RULE_SETUP
 /* Quoted string (double quotation, mode start) */
 case 23:
 YY_RULE_SETUP
-#line 81 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 81 "scanner_sel.lxx"
 {
   string_buf = "";
   MB_DPRINTLN("Scanner> DQSTR mode start");
@@ -1005,7 +1005,7 @@ YY_RULE_SETUP
 /* Quoted string (single quotation, mode start) */
 case 24:
 YY_RULE_SETUP
-#line 88 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 88 "scanner_sel.lxx"
 {
   string_buf = "";
   MB_DPRINTLN("Scanner> SQSTR mode start");
@@ -1015,127 +1015,127 @@ YY_RULE_SETUP
 /* Reserved keywords */
 case 25:
 YY_RULE_SETUP
-#line 95 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 95 "scanner_sel.lxx"
 { return SEL_ELEM; }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 96 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 96 "scanner_sel.lxx"
 { return SEL_ELEM; }
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 98 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 98 "scanner_sel.lxx"
 { return SEL_ANAME; }
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 99 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 99 "scanner_sel.lxx"
 { return SEL_ANAME; }
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 101 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 101 "scanner_sel.lxx"
 { return SEL_ALTCONF; }
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 103 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 103 "scanner_sel.lxx"
 { return SEL_RESN; }
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 104 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 104 "scanner_sel.lxx"
 { return SEL_RESN; }
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 106 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 106 "scanner_sel.lxx"
 { return SEL_RESI; }
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 107 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 107 "scanner_sel.lxx"
 { return SEL_RESI; }
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 108 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 108 "scanner_sel.lxx"
 { return SEL_RESI; }
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 110 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 110 "scanner_sel.lxx"
 { return SEL_CHAIN; }
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 111 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 111 "scanner_sel.lxx"
 { return SEL_CHAIN; }
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 113 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 113 "scanner_sel.lxx"
 { return SEL_AID; }
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 115 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 115 "scanner_sel.lxx"
 { return SEL_APROP; }
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 116 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 116 "scanner_sel.lxx"
 { return SEL_RPROP; }
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 118 "../../../src/modules/molstr/scanner_sel.lxx"
-{ return SEL_ALL; }
+#line 118 "scanner_sel.lxx"
+{ return SELTK_ALL; }
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 119 "../../../src/modules/molstr/scanner_sel.lxx"
-{ return SEL_NONE; }
+#line 119 "scanner_sel.lxx"
+{ return SELTK_NONE; }
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 120 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 120 "scanner_sel.lxx"
 { return SEL_NULL; }
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 122 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 122 "scanner_sel.lxx"
 { return SEL_BFAC; }
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 123 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 123 "scanner_sel.lxx"
 { return SEL_OCC; }
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
-#line 125 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 125 "scanner_sel.lxx"
 {
   MB_DPRINTLN("AROUND token");
-  // SelCompiler::setSelNumState();
-  // MB_DPRINTLN("AROUND set num state");
+  SelCompiler::setSelNumState();
+  MB_DPRINTLN("AROUND set num state");
   return SEL_AROUND;
 }
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
-#line 131 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 131 "scanner_sel.lxx"
 {
   MB_DPRINTLN("AROUND token");
-  // SelCompiler::setSelNumState();
-  // MB_DPRINTLN("AROUND set num state");
+  SelCompiler::setSelNumState();
+  MB_DPRINTLN("AROUND set num state");
   return SEL_AROUND;
 }
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 138 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 138 "scanner_sel.lxx"
 {
   MB_DPRINTLN("EXPAND token");
   // SelCompiler::setSelNumState();
@@ -1145,7 +1145,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 48:
 YY_RULE_SETUP
-#line 144 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 144 "scanner_sel.lxx"
 {
   MB_DPRINTLN("EXPAND token");
   // SelCompiler::setSelNumState();
@@ -1155,7 +1155,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
-#line 151 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 151 "scanner_sel.lxx"
 {
   MB_DPRINTLN("NBR token");
   // SelCompiler::setSelNumState();
@@ -1165,7 +1165,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
-#line 157 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 157 "scanner_sel.lxx"
 {
   MB_DPRINTLN("NBR token");
   // SelCompiler::setSelNumState();
@@ -1175,7 +1175,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
-#line 164 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 164 "scanner_sel.lxx"
 {
   MB_DPRINTLN("EXTEND token");
   // SelCompiler::setSelNumState();
@@ -1185,27 +1185,27 @@ YY_RULE_SETUP
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
-#line 171 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 171 "scanner_sel.lxx"
 { return SEL_BYRES; }
 	YY_BREAK
 case 53:
 YY_RULE_SETUP
-#line 172 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 172 "scanner_sel.lxx"
 { return SEL_BYRES; }
 	YY_BREAK
 case 54:
 YY_RULE_SETUP
-#line 174 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 174 "scanner_sel.lxx"
 { return SEL_BYMAINCH; }
 	YY_BREAK
 case 55:
 YY_RULE_SETUP
-#line 175 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 175 "scanner_sel.lxx"
 { return SEL_BYSIDECH; }
 	YY_BREAK
 case 56:
 YY_RULE_SETUP
-#line 177 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 177 "scanner_sel.lxx"
 {
   // Residue number with insertion code
   //MB_DPRINTLN("selintnum %s", yytext);
@@ -1218,7 +1218,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 57:
 YY_RULE_SETUP
-#line 187 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 187 "scanner_sel.lxx"
 {
   MB_DPRINTLN("selintnum %s", yytext);
   yylval.intnum = atoi(yytext);
@@ -1227,7 +1227,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 58:
 YY_RULE_SETUP
-#line 193 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 193 "scanner_sel.lxx"
 {
  //MB_DPRINTLN("sel_token %s", yytext);
  yylval.str = LChar::dup(yytext);
@@ -1236,7 +1236,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 59:
 YY_RULE_SETUP
-#line 199 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 199 "scanner_sel.lxx"
 {
   yyerror("unknown char in selection statement");
   return LEX_ERROR;
@@ -1244,7 +1244,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 60:
 YY_RULE_SETUP
-#line 204 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 204 "scanner_sel.lxx"
 {
   yyerror("unknown char in selection statement");
   return LEX_ERROR;
@@ -1252,26 +1252,34 @@ YY_RULE_SETUP
 	YY_BREAK
 case 61:
 YY_RULE_SETUP
-#line 209 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 209 "scanner_sel.lxx"
 {
    MB_DPRINTLN("numstat-floatnum %s", yytext);
    yylval.floatnum = atof(yytext);
+
+   SelCompiler::setSelState();
+   MB_DPRINTLN("-->FLOATNUM reset state");
+
    return SEL_FLOATNUM;
 }
 	YY_BREAK
 case 62:
 YY_RULE_SETUP
-#line 215 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 219 "scanner_sel.lxx"
 {
-  MB_DPRINTLN("numstat-intnum %s", yytext);
-  yylval.intnum = atoi(yytext);
-  return SEL_INTNUM;
+   MB_DPRINTLN("numstat-intnum %s", yytext);
+   yylval.intnum = atoi(yytext);
+
+   SelCompiler::setSelState();
+   MB_DPRINTLN("-->FLOATNUM reset state");
+
+   return SEL_INTNUM;
 }
 	YY_BREAK
 /* Regular Expression Mode */
 case 63:
 YY_RULE_SETUP
-#line 223 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 231 "scanner_sel.lxx"
 {
   yylval.str = LChar::dup(string_buf);
   MB_DPRINTLN("sel rex end %s", string_buf.c_str());
@@ -1282,7 +1290,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 64:
 YY_RULE_SETUP
-#line 231 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 239 "scanner_sel.lxx"
 {
   MB_DPRINTLN("sel rex escaped slash [\\/]");
   string_buf += yytext;
@@ -1290,7 +1298,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 65:
 YY_RULE_SETUP
-#line 236 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 244 "scanner_sel.lxx"
 {
   string_buf += yytext;
   MB_DPRINTLN("sel rex %s", string_buf.c_str());
@@ -1299,7 +1307,7 @@ YY_RULE_SETUP
 /* Quoted String ("...") Mode */
 case 66:
 YY_RULE_SETUP
-#line 242 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 250 "scanner_sel.lxx"
 {
   yylval.str = LChar::dup(string_buf);
   MB_DPRINTLN("sel dqstr end %s", string_buf.c_str());
@@ -1310,7 +1318,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 67:
 YY_RULE_SETUP
-#line 250 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 258 "scanner_sel.lxx"
 {
   MB_DPRINTLN("sel dqstr escaped dquot [\\\"]");
   string_buf += yytext;
@@ -1318,7 +1326,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 68:
 YY_RULE_SETUP
-#line 255 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 263 "scanner_sel.lxx"
 {
   string_buf += yytext;
   MB_DPRINTLN("sel dqstr %s", string_buf.c_str());
@@ -1327,7 +1335,7 @@ YY_RULE_SETUP
 /* Signle-Quoted String ('...') Mode */
 case 69:
 YY_RULE_SETUP
-#line 261 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 269 "scanner_sel.lxx"
 {
   yylval.str = LChar::dup(string_buf);
   MB_DPRINTLN("sel sqstr end %s", string_buf.c_str());
@@ -1338,7 +1346,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 70:
 YY_RULE_SETUP
-#line 269 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 277 "scanner_sel.lxx"
 {
   MB_DPRINTLN("sel sqstr escaped squot [\\']");
   string_buf += yytext;
@@ -1346,7 +1354,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 71:
 YY_RULE_SETUP
-#line 274 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 282 "scanner_sel.lxx"
 {
   string_buf += yytext;
   MB_DPRINTLN("sel sqstr %s", string_buf.c_str());
@@ -1354,10 +1362,10 @@ YY_RULE_SETUP
 	YY_BREAK
 case 72:
 YY_RULE_SETUP
-#line 279 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 287 "scanner_sel.lxx"
 ECHO;
 	YY_BREAK
-#line 1361 "../../../src/modules/molstr/scanner_sel.cxx"
+#line 1369 "../../../src/modules/molstr/scanner_sel.cxx"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(SEL_NUM_STAT):
 case YY_STATE_EOF(SEL_REX_STAT):
@@ -2355,7 +2363,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 279 "../../../src/modules/molstr/scanner_sel.lxx"
+#line 287 "scanner_sel.lxx"
 
 
 

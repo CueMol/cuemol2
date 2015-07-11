@@ -11,10 +11,7 @@
 #include "MapRenderer.hpp"
 
 #include <qlib/ByteMap.hpp>
-#include <qsys/ScalarObject.hpp>
 #include <qsys/ViewEvent.hpp>
-#include <modules/molstr/molstr.hpp>
-#include <modules/molstr/BSPTree.hpp>
 
 class MapMeshRenderer_wrap;
 
@@ -22,9 +19,6 @@ namespace xtal {
 
 using gfx::DisplayContext;
 using qsys::ScalarObject;
-using molstr::SelectionPtr;
-using molstr::MolCoordPtr;
-using molstr::BSPTree;
 class DensityMap;
 
 class MapMeshRenderer : public MapRenderer,
@@ -83,9 +77,6 @@ private:
 
   /// delta
   double m_delta;
-
-  // /// cached client obj ptr
-  // ScalarObject *m_pMap;
 
 public:
 
@@ -185,44 +176,6 @@ private:
   }
 
   ///////////////////////////////////////////////////////////////
-
-public:
-  LString getBndryMolName() const { return m_strBndryMol; }
-  void setBndryMolName(const LString &s);
-
-  SelectionPtr getBndrySel() const { return m_pSelBndry; }
-  void setBndrySel(const SelectionPtr &pSel);
-
-  double getBndryRng() const { return m_dBndryRng; }
-  void setBndryRng(double d);
-
-private:
-
-  /// Boundary target mol name
-  LString m_strBndryMol;
-
-  /// Selection for mol boundary
-  SelectionPtr m_pSelBndry;
-
-  bool m_bUseMolBndry;
-  
-  BSPTree<int> m_boundary;
-
-  double m_dBndryRng;
-
-  void setupMolBndry();
-
-  bool inMolBndry(ScalarObject *pMap, int nx, int ny, int nz) const
-  {
-    if (!m_bUseMolBndry)
-      return true;
-    Vector4D tv(nx, ny, nz);
-    tv = pMap->convToOrth(tv);
-    if (!m_boundary.collChk(tv, m_dBndryRng))
-      return false;
-    return true;
-  }
-  
 
   
 };

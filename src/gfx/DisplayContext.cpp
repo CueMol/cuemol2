@@ -11,6 +11,11 @@
 
 using namespace gfx;
 
+bool DisplayContext::isRenderPixmap() const
+{
+  return true;
+}
+
 qsys::View *DisplayContext::getTargetView() const
 {
   return NULL;

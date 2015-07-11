@@ -44,23 +44,31 @@ namespace gfx {
 
     int m_nNextID;
 
+    double m_dScaleFac;
+    
   public:
-    LabelCacheImpl() : m_nNextID(0)
+    LabelCacheImpl() : m_nNextID(0), m_dScaleFac(-1.0)
     {
     }
     
     ~LabelCacheImpl()
     {
-      invalidate();
+      invalidateAll();
     }
 
-    void setupFont(double fs, const LString &fn, const LString &fsty, const LString &fw)
-    {
-      m_dFontSize = fs;
-      m_strFontName = fn;
-      m_strFontStyle = fsty;
-      m_strFontWgt = fw;
-    }
+    void setFont(double fs, const LString &fn, const LString &fsty, const LString &fw);
+
+    void setFontSize(double val);
+    double getFontSize() const { return m_dFontSize; }
+    
+    void setFontName(const LString &val);
+    LString getFontName() const { return m_strFontName; }
+    
+    void setFontStyle(const LString &val);
+    LString getFontStyle() const { return m_strFontStyle; }
+    
+    void setFontWgt(const LString &val);
+    LString getFontWgt() const { return m_strFontWgt; }
 
     int addString(const Vector4D &pos, const LString &str);
 
@@ -69,10 +77,10 @@ namespace gfx {
     bool isEmpty() const { return m_data.empty(); }
 
     /// Draw the rendered text image to display (pdc)
-    void draw(DisplayContext *pdc, bool bUseCache=true);
+    void draw(DisplayContext *pdc);
 
-    /// Invalidate pixel image data
-    void invalidate();
+    /// Invalidate all pixel image data
+    void invalidateAll();
 
     /// Render the image data from texts
     void render(double pixscl);

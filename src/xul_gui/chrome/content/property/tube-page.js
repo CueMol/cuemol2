@@ -33,7 +33,6 @@ if (!("RendTubePropPage" in cuemolui)) {
       this.mStartType = document.getElementById("tubepage-starttype");
       this.mEndType = document.getElementById("tubepage-endtype");
 
-
       // Add event listeners
       var that = this;
       this.mSectType.addEventListener("command", function (event) { that.validateWidgets(event) }, false);
@@ -52,6 +51,16 @@ if (!("RendTubePropPage" in cuemolui)) {
 
       this.mEndType.addEventListener("command", function (event) { that.validateWidgets(event) }, false);
       this.mStartType.addEventListener("command", function (event) { that.validateWidgets(event) }, false);
+
+      // Putty
+      this.mPuttyMode = document.getElementById("tubepage-puttymode");
+      this.mPuttyMode.addEventListener("command", function (event) { that.validateWidgets(event) }, false);
+      this.mPuttyTgt = document.getElementById("tubepage-puttytgt");
+      this.mPuttyTgt.addEventListener("command", function (event) { that.validateWidgets(event) }, false);
+      this.mPuttyLoScl = document.getElementById("tubepage-puttyloscl");
+      this.mPuttyLoScl.addEventListener("change", function (event) { that.validateWidgets(event) }, false);
+      this.mPuttyHiScl = document.getElementById("tubepage-puttyhiscl");
+      this.mPuttyHiScl.addEventListener("change", function (event) { that.validateWidgets(event) }, false);
 
     };
 
@@ -105,6 +114,19 @@ if (!("RendTubePropPage" in cuemolui)) {
       elem = gMain.findPropData("pivotatom");
       this.mPivotAtom.value = elem.value;
       this.mPivotChk.checked = !elem.isdefault;
+
+      // putty
+      elem = gMain.findPropData("putty_mode");
+      //dd("putty_mode = "+elem.value);
+      util.selectMenuListByValue(this.mPuttyMode, elem.value);
+      //dd("putty_mode set = "+this.mPuttyMode.value);
+      elem = gMain.findPropData("putty_tgt");
+      util.selectMenuListByValue(this.mPuttyTgt, elem.value);
+
+      elem = gMain.findPropData("putty_hiscl");
+      this.mPuttyHiScl.value = elem.value;
+      elem = gMain.findPropData("putty_loscl");
+      this.mPuttyLoScl.value = elem.value;
 
       this.updateDisabledState();
     }
@@ -199,10 +221,32 @@ if (!("RendTubePropPage" in cuemolui)) {
 	gMain.updateData("pivotatom", this.mPivotAtom.value);
 	break;
 
+	// putty
+      case "tubepage-puttymode":
+	gMain.updateData("putty_mode", aEvent.target.value);
+	break;
+      case "tubepage-puttytgt":
+	gMain.updateData("putty_tgt", aEvent.target.value);
+	break;
+      case "tubepage-puttyhiscl":
+	new_val = parseFloat(this.mPuttyHiScl.value);
+	if (isNaN(new_val) || new_val<0.01 || new_val>10)
+	  return;
+	gMain.updateData("putty_hiscl", new_val);
+	break;
+      case "tubepage-puttyloscl":
+	new_val = parseFloat(this.mPuttyLoScl.value);
+	if (isNaN(new_val) || new_val<0.01 || new_val>10)
+	  return;
+	gMain.updateData("putty_loscl", new_val);
+	break;
+
       default:
 	dd("Unknown target id:"+tgt_id);
 	break;
       }
+
+      this.updateDisabledState();
     };
     
     /// update the enable states of the widgets
@@ -226,6 +270,19 @@ if (!("RendTubePropPage" in cuemolui)) {
       }
 
       this.mPivotAtom.disabled = !(this.mPivotChk.checked);
+
+      dd("TubePropPage.updateDisabledStat:"+this.mPuttyMode.value);
+      if (this.mPuttyMode.value=="none") {
+	this.mPuttyTgt.disabled = true;
+	this.mPuttyHiScl.disabled = true;
+	this.mPuttyLoScl.disabled = true;
+      }
+      else {
+	this.mPuttyTgt.disabled = false;
+	this.mPuttyHiScl.disabled = false;
+	this.mPuttyLoScl.disabled = false;
+      }
+
     };
     
     TubePropPage.prototype.disableAll = function (bdis)
@@ -246,6 +303,11 @@ if (!("RendTubePropPage" in cuemolui)) {
 
       this.mStartType.disabled = bdis;
       this.mEndType.disabled = bdis;
+
+      this.mPuttyMode.disabled = bdis;
+      this.mPuttyTgt.disabled = bdis;
+      this.mPuttyHiScl.disabled = bdis;
+      this.mPuttyLoScl.disabled = bdis;
     };
 
     ///////////////////////////////////////////

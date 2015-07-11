@@ -145,7 +145,7 @@ AtomIntrRenderer::AtomIntrRenderer()
 AtomIntrRenderer::~AtomIntrRenderer()
 {
   // delete m_pdata;
-  m_pixCache.invalidate();
+  m_pixCache.invalidateAll();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -375,9 +375,30 @@ int AtomIntrRenderer::appendByVecs(const std::vector<Vector4D> &vecs)
   }
   if (nvecs==3) {
     aidat.nmode = 2;
+    aidat.elem0.nMode= AtomIntrElem::AI_POS;
+    aidat.elem0.nMolID = nMolID1;
+    aidat.elem0.pos = vecs[0];
+    aidat.elem1.nMode= AtomIntrElem::AI_POS;
+    aidat.elem1.nMolID = nMolID1;
+    aidat.elem1.pos = vecs[1];
+    aidat.elem2.nMode= AtomIntrElem::AI_POS;
+    aidat.elem2.nMolID = nMolID1;
+    aidat.elem2.pos = vecs[2];
   }
   if (nvecs==4) {
     aidat.nmode = 3;
+    aidat.elem0.nMode= AtomIntrElem::AI_POS;
+    aidat.elem0.nMolID = nMolID1;
+    aidat.elem0.pos = vecs[0];
+    aidat.elem1.nMode= AtomIntrElem::AI_POS;
+    aidat.elem1.nMolID = nMolID1;
+    aidat.elem1.pos = vecs[1];
+    aidat.elem2.nMode= AtomIntrElem::AI_POS;
+    aidat.elem2.nMolID = nMolID1;
+    aidat.elem2.pos = vecs[2];
+    aidat.elem3.nMode= AtomIntrElem::AI_POS;
+    aidat.elem3.nMolID = nMolID1;
+    aidat.elem3.pos = vecs[3];
   }
 
   int rval = appendImpl(aidat);
@@ -385,12 +406,20 @@ int AtomIntrRenderer::appendByVecs(const std::vector<Vector4D> &vecs)
   return rval;
 }
 
+void AtomIntrRenderer::invalidateAllLabels()
+{
+  m_pixCache.invalidateAll();
+  BOOST_FOREACH(AtomIntrData &value, m_data) {
+    value.nLabelCacheID = -1;
+  }
+}
+
 int AtomIntrRenderer::appendImpl(const AtomIntrData &dat)
 {
   int nlast = m_data.size();
   m_data.push_back(dat);
   invalidateDisplayCache();
-  m_pixCache.invalidate();
+  //m_pixCache.invalidateAll();
 
   qsys::ScenePtr pScene = getScene();
   if (pScene.isnull()) return nlast;
@@ -411,7 +440,7 @@ void AtomIntrRenderer::setAt(int index, const AtomIntrData &dat)
 {
   m_data.at(index) = dat;
   invalidateDisplayCache();
-  m_pixCache.invalidate();
+  // m_pixCache.invalidateAll();
 }
 
 bool AtomIntrRenderer::remove(int nid)
@@ -420,10 +449,16 @@ bool AtomIntrRenderer::remove(int nid)
     return false;
 
   AtomIntrData dat = m_data[nid];
+
+  // invalidate the cache data of the removing elem
+  m_pixCache.remove(dat.nLabelCacheID);
+  dat.nLabelCacheID = -1;
+
   // invalidate the removing element;
   m_data[nid] = AtomIntrData();
   invalidateDisplayCache();
-  m_pixCache.invalidate();
+
+  // m_pixCache.invalidateAll();
 
   qsys::ScenePtr pScene = getScene();
   if (pScene.isnull()) return true;
@@ -586,26 +621,10 @@ void AtomIntrRenderer::renderDistLabel(AtomIntrData &value, DisplayContext *pdl)
   if (m_bShowLabel) {
     Vector4D pos = (pos0+pos1).divide(2.0);
     LString msg = LString::format("%.2f", (pos0-pos1).length());
-    m_pixCache.addString(pos, msg);
+    if (value.nLabelCacheID<0)
+      value.nLabelCacheID = m_pixCache.addString(pos, msg);
   }
 
-/*
-  if (m_bShowLabel) {
-    if (value.m_nLabelCacheID<0) {
-      // no cached label --> create
-      Vector4D pos = (pos0+pos1).divide(2.0);
-      LString msg = LString::format("%.2f", (pos0-pos1).length());
-      value.m_nLabelCacheID = m_pixCache.addString(pos, msg);
-    }
-  }
-  else {
-    if (value.m_nLabelCacheID>=0) {
-      // cache exists --> remove it
-      m_pixCache.remove(value.m_nLabelCacheID);
-      value.m_nLabelCacheID = -1;
-    }
-  }
-*/
 }
 
 void AtomIntrRenderer::renderAngleLabel(AtomIntrData &value, DisplayContext *pdl)
@@ -639,7 +658,8 @@ void AtomIntrRenderer::renderAngleLabel(AtomIntrData &value, DisplayContext *pdl
     labpos = labpos.normalize().scale(sep*0.2);
     labpos += pos1;
 
-    m_pixCache.addString(labpos, LString::format("%.2f", angl));
+    if (value.nLabelCacheID<0)
+      value.nLabelCacheID = m_pixCache.addString(labpos, LString::format("%.2f", angl));
   }
 }
 
@@ -675,8 +695,9 @@ void AtomIntrRenderer::renderTorsionLabel(AtomIntrData &value, DisplayContext *p
     double dihe = qlib::toDegree(Vector4D::torsion(pos0, pos1, pos2, pos3));
     //showValue(labpos, dihe, pdl);
 
-    m_pixCache.addString( (pos1+pos2).divide(2.0),
-                          LString::format("%.2f", dihe) );
+    if (value.nLabelCacheID<0)
+      value.nLabelCacheID = m_pixCache.addString( (pos1+pos2).divide(2.0),
+                                                  LString::format("%.2f", dihe) );
   }
 }
 
@@ -833,7 +854,7 @@ void AtomIntrRenderer::drawArrow(DisplayContext *pdl,
 void AtomIntrRenderer::styleChanged(qsys::StyleEvent &ev)
 {
   super_t::styleChanged(ev);
-  m_pixCache.invalidate();
+  invalidateAllLabels();
 }
 
 void AtomIntrRenderer::propChanged(qlib::LPropEvent &ev)
@@ -843,14 +864,12 @@ void AtomIntrRenderer::propChanged(qlib::LPropEvent &ev)
     invalidateDisplayCache();
   }
   else if (propnm.startsWith("font_")) {
-    m_pixCache.invalidate();
-    // invalidateDisplayCache();
-  }
-  else if (propnm.equals("showlabel")) {
-    m_pixCache.invalidate();
+    invalidateAllLabels();
     invalidateDisplayCache();
   }
-  
+  else if (propnm.equals("showlabel")) {
+    invalidateDisplayCache();
+  }
 
   super_t::propChanged(ev);
 }
@@ -1192,7 +1211,7 @@ LString AtomIntrRenderer::getDefsJSON() const
 void AtomIntrRenderer::displayLabels(DisplayContext *pdc)
 {
   if (m_bShowLabel) {
-    m_pixCache.setupFont(m_dFontSize, m_strFontName, m_strFontStyle, m_strFontWgt);
+    m_pixCache.setFont(m_dFontSize, m_strFontName, m_strFontStyle, m_strFontWgt);
     pdc->color(m_pcolor);
     m_pixCache.draw(pdc);
   }

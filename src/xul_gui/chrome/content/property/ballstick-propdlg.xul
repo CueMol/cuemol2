@@ -61,14 +61,14 @@
 	    <row align="center">
 	      <label value="Bond width: " flex="0"/>
 	      <numslider id="bspage-bondwidth" flex="1" size="3"
-		decimalplaces="1" min="0" max="3" increment="0.1" unit="&#0197;"
+		decimalplaces="2" min="0" max="3" increment="0.01" unit="&#0197;"
 		onchange="gBals.validateWidgets()"/>
 	    </row>
 
 	    <row align="center">
 	      <label value="Atom radius: " flex="0"/>
 	      <numslider id="bspage-radius" flex="1" size="3"
-		decimalplaces="1" min="0" max="3" increment="0.1" unit="&#0197;"
+		decimalplaces="2" min="0" max="3" increment="0.01" unit="&#0197;"
 		onchange="gBals.validateWidgets()"/>
 	    </row>
 	  </rows>
@@ -89,7 +89,7 @@
 	      <row align="center">
 		<label value="Thickness: "/>
 		<numslider id="bspage-ring-thick" flex="1" size="3"
-		  decimalplaces="1" min="0" max="3" increment="0.1" unit="&#0197;"
+		  decimalplaces="2" min="0" max="3" increment="0.01" unit="&#0197;"
 		  onchange="gBals.validateWidgets()"/>
 	      </row>
 	      <row align="center">

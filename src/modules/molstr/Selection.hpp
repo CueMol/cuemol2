@@ -24,12 +24,10 @@ namespace molstr {
   public:
 
     /** selection ID returned by isSelectedXXX() method */
-    enum {
-      SEL_NONE,
-      SEL_ALL,
-      SEL_PART,
-      SEL_UNKNOWN
-    };
+    static const int SEL_NONE = 0;
+    static const int SEL_ALL = 1;
+    static const int SEL_PART = 2;
+    static const int SEL_UNKNOWN = 3;
   
   public:
     /** default ctor */

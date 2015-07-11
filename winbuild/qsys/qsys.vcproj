@@ -1579,6 +1579,18 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\src\gfx\MultiGradient.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\gfx\MultiGradient.qif"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\gfx\MultiGradient_wrap.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\gfx\NamedColor.cpp"
 				>
 			</File>

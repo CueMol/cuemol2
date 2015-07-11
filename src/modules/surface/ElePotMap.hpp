@@ -74,7 +74,7 @@ private:
   typedef std::vector<Delta> DeltaList;
   DeltaList m_deltas;
 
-  qlib::Array3D<bool> m_filter;
+  // qlib::Array3D<bool> m_filter;
 
 public:
   ///////////////////////////////////////////////

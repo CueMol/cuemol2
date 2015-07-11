@@ -157,6 +157,7 @@ namespace render {
     // generic implementation
 
     virtual bool isFile() const;
+    virtual bool isRenderPixmap() const;
 
     virtual void vertex(const Vector4D &v);
     virtual void normal(const Vector4D &v);

@@ -12,6 +12,7 @@
 #include "MapMeshRenderer.qif"
 #include "MapSurfRenderer.qif"
 #include "MTZ2MapReader.qif"
+#include "CCP4MapReader.qif"
 
 #ifdef USE_OPENGL
 #  include "GLSLMapMeshRenderer.qif"
@@ -27,6 +28,7 @@ module xtal
   MapMeshRenderer;
   MapSurfRenderer;
   MTZ2MapReader;
+  CCP4MapReader;
 
 #ifdef USE_OPENGL
   GLSLMapMeshRenderer;

@@ -47,7 +47,7 @@ PovDisplayContext::PovDisplayContext()
   m_dCreaseLimit = qlib::toRadian(85.0);
   m_dEdgeRise = 0.5;
 
-  m_bWritePix = true;
+  m_bWritePix = false;
 }
 
 PovDisplayContext::~PovDisplayContext()
@@ -211,9 +211,15 @@ void PovDisplayContext::writeHeader()
     ps.println(preamble);
 
   ps.format("\n");
-  //ps.format("#declare _bgcolor = rgb <%f,%f,%f>;\n", bgcolor.x(), bgcolor.y(), bgcolor.z());
-  //ps.format("\n");
+  ps.format("#declare _bgcolor = <%f,%f,%f>;\n", bgcolor.x(), bgcolor.y(), bgcolor.z());
+  ps.format("\n");
+  ps.format("#ifndef (_transpbg)\n");
+  ps.format("background {color rgb _bgcolor}\n");
+  ps.format("#else\n");
+  ps.format("// transparent background\n");
   ps.format("background {color rgbt <%f,%f,%f,0.999>}\n", bgcolor.x(), bgcolor.y(), bgcolor.z());
+  ps.format("#declare _no_fog = 1;\n");
+  ps.format("#end\n");
   ps.format("\n");
   ps.format("#declare _distance = %f;\n", m_dViewDist);
 
@@ -234,6 +240,10 @@ void PovDisplayContext::writeHeader()
 
   ps.format("#ifndef (_shadow)\n");
   ps.format("  #declare _shadow = 0;\n");
+  ps.format("#end\n");
+
+  ps.format("#ifndef (_light_spread)\n");
+  ps.format("  #declare _light_spread = 1;\n");
   ps.format("#end\n");
 
   ps.format("#declare _zoomy = %f;\n", m_dZoom);
@@ -261,67 +271,120 @@ void PovDisplayContext::writeHeader()
   ps.format("}\n");
   ps.format("\n");
 
-  //ps.format("light_source {<_stereo*_distance*_iod,0,_distance> color rgb 1}\n");
-  //ps.format("light_source {<-1,1,1>*10000 color rgb 0.5 shadowless}\n");
-
   ps.format("global_settings {\n");
   ps.format("  assumed_gamma 1.0\n");
   ps.format("}\n");
   ps.format("\n");
-
-  // Radiosity settings
-  ps.format("#ifdef (_radiosity)\n");
-  ps.format("  #include \"rad_def.inc\"\n");
-  ps.format("global_settings {\n");
-  ps.format("  radiosity {\n");
-  ps.format("    Rad_Settings(_radiosity, off, off)\n");
-  ps.format("  }\n");
-  ps.format("}\n");
   ps.format("\n");
+
+  ///////////
+  // Lighting
+
+  LString lighting = pSM->getConfig("pov", "lighting").trim(" \r\t\n");
+  if (!lighting.isEmpty())
+    ps.println(lighting);
+
+  // Lighting macro
+  ps.format("// Spec lighting macro\n");
+  ps.format("// aLightSpread: area light spread (1-10)\n");
+  ps.format("// aDist: overall distance (200)\n");
+  ps.format("// aInten: light intensity (0.8)\n");
+  ps.format("// aShadow: shadow flag (used in point light mode (aLightSpread==1))\n");
+  ps.format("#macro SpecLighting(aLightSpread, aDist, aInten, aShadow)\n");
+  ps.format("#local v1=<1,1,1>;\n");
+  ps.format("#local v2=<1,-0.5,-0.5>;\n");
+  ps.format("#local vecsz=aDist*aLightSpread/10;\n");
   ps.format("light_source {\n");
-  ps.format("   <1,1,1>*30000\n");
-  ps.format("   color rgb 0.6 parallel point_at <0,0,0> \n");
-  ps.format("}\n");
-  ps.format("\n");
-  ps.format("sphere {\n");
-  ps.format("  <0, 0, 0>, 1\n");
-  ps.format("  texture {\n");
-  // ps.format("  pigment { color rgb <%f,%f,%f> }\n", bgcolor.x(), bgcolor.y(), bgcolor.z());
-  ps.format("  pigment { color rgb <1,1,1> }\n");
-  ps.format("   finish { diffuse 0 emission 0.8 }\n");
-  ps.format("  }\n");
-  ps.format("  hollow on\n");
-  ps.format("  no_shadow\n");
-  ps.format("  scale 30000\n");
-  ps.format("}\n");
-  ps.format("\n");
-  ps.format("plane {z,-1000 \n");
-  ps.format("  texture {\n");
-  //ps.format("  pigment { color _bgcolor }\n");
-  ps.format("  pigment { color rgb <%f,%f,%f> }\n", bgcolor.x(), bgcolor.y(), bgcolor.z());
-  ps.format("   finish { diffuse 0 emission 1 }\n");
-  ps.format("  }\n");
-  ps.format("}\n");
+  ps.format("   vnormalize(v1)*aDist*2\n");
+  ps.format("   color rgb aInten\n");
+  ps.format("#if (aLightSpread>1)\n");
+  ps.format("   area_light vnormalize(v2)*vecsz, vcross(vnormalize(v1),vnormalize(v2))*vecsz, 10, 10\n");
+  ps.format("   adaptive 2\n");
   ps.format("#else\n");
-
-  // Raytrace settings
+  ps.format("   parallel point_at <0,0,0>\n");
+  ps.format("#if (!aShadow)\n");
+  ps.format("   shadowless\n");
+  ps.format("#end\n");
+  ps.format("#end\n");
+  ps.format("}\n");
+  ps.format("#end\n");
+  ps.format("\n");
+  ps.format("// Flash lighting macro\n");
+  ps.format("// aInten: light intensity (0.8)\n");
+  ps.format("#macro FlashLighting(aInten)\n");
   ps.format("light_source {\n");
   ps.format("   <_stereo*_distance*_iod,0,_distance>\n");
-  ps.format("   color rgb 0.8 \n");
+  ps.format("   color rgb aInten \n");
+  ps.format("   shadowless\n");
   ps.format("#if (!_perspective)\n");
   ps.format("   parallel point_at <0,0,0>\n");
   ps.format("#end\n");
   ps.format("}\n");
-  ps.format("light_source {\n");
-  ps.format("   <1,1,1>*10000\n");
-  ps.format("   color rgb 0.5 parallel point_at <0,0,0> \n");
-  ps.format("#if (!_shadow)\n");
-  ps.format("   shadowless\n");
   ps.format("#end\n");
+  ps.format("\n");
+  ps.format("\n");
+
+  ps.format("//////////////////////\n");
+  ps.format("//    Lighting\n");
+  ps.format("\n");
+
+  // Radiosity settings
+  ps.format("#ifdef (_radiosity)\n");
+  ps.format("\n");
+  ps.format("  #ifndef (_light_inten)\n");
+  // ps.format("    #declare _light_inten=0.8;\n");
+  // ps.format("    #declare _amb_inten=0.8;\n");
+  ps.format("    #declare _light_inten=1.6;\n");
+  ps.format("    #declare _amb_frac=0.5;\n");
+  ps.format("    #declare _flash_frac=0.5;\n");
+  ps.format("  #end\n");
+  ps.format("\n");
+  ps.format("  #include \"rad_def.inc\"\n");
+  ps.format("  global_settings {\n");
+  ps.format("    radiosity {\n");
+  ps.format("      Rad_Settings(_radiosity, off, off)\n");
+  ps.format("    }\n");
+  ps.format("  }\n");
+  ps.format("\n");
+  ps.format("sphere {\n");
+  ps.format("  <0, 0, 0>, 1\n");
+  ps.format("  texture {\n");
+  ps.format("  pigment { color rgb <1,1,1> }\n");
+  ps.format("   finish { diffuse 0 emission _light_inten*_amb_frac }\n");
+  ps.format("  }\n");
+  ps.format("  hollow on\n");
+  ps.format("  no_shadow\n");
+  ps.format("  scale _distance*10\n");
+  ps.format("}\n");
+  ps.format("\n");
+  ps.format("#ifdef (_no_fog)\n");
+  ps.format("plane {z,-_distance*2\n");
+  ps.format("  texture {\n");
+  ps.format("  pigment { color rgb _bgcolor }\n");
+  ps.format("   finish { diffuse 1 emission 0 }\n");
+  ps.format("  }\n");
   ps.format("}\n");
   ps.format("#end\n");
-  
   ps.format("\n");
+  ps.format("#else\n");
+  ps.format("\n");
+  ps.format("  #ifndef (_light_inten)\n");
+  ps.format("    #declare _light_inten=1.3;\n");
+  ps.format("    #declare _flash_frac=0.8/1.3;\n");
+  ps.format("    #declare _amb_frac=0;\n");
+  ps.format("  #end\n");
+  ps.format("\n");
+  ps.format("#end\n");
+  ps.format("\n");
+  ps.format("SpecLighting(_light_spread, _distance, _light_inten*(1-_amb_frac)*(1-_flash_frac), _shadow)\n");
+  ps.format("FlashLighting(_light_inten*(1-_amb_frac)*_flash_frac)\n");
+
+  ps.format("//////////////////////\n");
+  ps.format("//    Fog\n");
+  ps.format("\n");
+
+  /////////////////////////////////////////////
+  // Fog
 
   ps.format("#ifndef (_no_fog)\n");
   ps.format("fog {\n");
@@ -357,7 +420,7 @@ void PovDisplayContext::writeHeader()
   ips.format("  pigment{\n");
   ips.format("    image_map{\n");
   ips.format("     png aPixFile\n");
-  ips.format("     gamma 1.0 \n");
+  ips.format("     //gamma 1.0 \n");
   ips.format("     once \n");
   ips.format("     map_type 0\n");
   ips.format("    }\n");
@@ -1132,5 +1195,10 @@ void PovDisplayContext::writePixData()
   }
 
   m_pixList.clear();
+}
+
+bool PovDisplayContext::isRenderPixmap() const
+{
+  return m_bWritePix;
 }
 

@@ -81,6 +81,9 @@ public:
   /// Make rotation (unitary) matrix to converting basis of e1, e2, and e1xe2
   static Matrix3D makeRotMat(const Vector4D &e1, const Vector4D &e2);
 
+  static Matrix3D makeRotMat(const Vector4D &axis, double theta);
+  static Matrix3D makeRotMat(const Vector4D &axis, double costh, double sinth);
+
   /// Debug
   void dump() const
   {

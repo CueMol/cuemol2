@@ -52,7 +52,7 @@ else {
 my @lib_list = ("libqmpng", "libqmzlib",
 		"libqlib", "libqsys", "libgfx", "libjsbr", "libsysdep", 
 		"libmolstr", "libmolvis", "libsymm", "libsurface", "libxtal", "libmdtools",
-		"libmolanl", "liblwview", "libanim", "librender",
+		"libmolanl", "liblwview", "libanim", "librender", "libimporters",
 		"libboost_thread", "libboost_system", "libboost_filesystem", "libboost_iostreams",
 		"libCGAL", "libGLEW");
 

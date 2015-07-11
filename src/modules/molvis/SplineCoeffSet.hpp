@@ -215,6 +215,8 @@ namespace molvis {
     MolAtomPtr getSafeAtom(int nind) const;
 
     Vector4D calcBnormVec(int nres);
+
+    bool calcProtBnormVec(int nres, Vector4D &res);
   };
 
 

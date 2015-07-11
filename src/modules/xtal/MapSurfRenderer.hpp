@@ -81,6 +81,19 @@ namespace xtal {
     }
     double getLineWidth() const { return m_lw; }
     
+
+  private:
+    /// cull face
+    bool m_bCullFace;
+
+  public:
+    bool isCullFace() const { return m_bCullFace; }
+    void setCullFace(bool b) {
+      m_bCullFace = b;
+      invalidateDisplayCache();
+    }
+    
+
   private:
 
     ///////////////////////////////////////////
@@ -145,10 +158,11 @@ namespace xtal {
 
     void renderImpl(DisplayContext *pdl);
 
-    void marchCube(DisplayContext *pdl, int fx, int fy, int fz, double *values);
+    void marchCube(DisplayContext *pdl, int fx, int fy, int fz, double *values, bool *bary);
+
     double getOffset(double fValue1, double fValue2, double fValueDesired);
     void getVertexColor(Vector4D &rfColor, Vector4D &rfPosition, Vector4D &rfNormal);
-    Vector4D getNormal(const Vector4D &rfNormal);
+    Vector4D getNormal(const Vector4D &rfNormal,bool,bool,bool);
 
     inline double getDen(int x, int y, int z) const
     {

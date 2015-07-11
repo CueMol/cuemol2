@@ -367,9 +367,27 @@ void PovDisplayContext::writeEdgeLine(PrintStream &ips,
                                       const Vector4D &n1, const Vector4D &n2,
                                       int flag /*=0*/)
 {
-  if (qlib::isNear4(0.0, (v1-v2).sqlen()))
+  // check invalid vertex and normal
+  if (!qlib::isFinite(v1.x()) ||
+      !qlib::isFinite(v1.y()) ||
+      !qlib::isFinite(v1.z()) ||
+      !qlib::isFinite(n1.x()) ||
+      !qlib::isFinite(n1.y()) ||
+      !qlib::isFinite(n1.z())) {
+    LOG_DPRINTLN("PovSilBuilder> invalid vertex/normal for edge line ignored");
     return;
-  
+  }
+
+  if (!qlib::isFinite(v2.x()) ||
+      !qlib::isFinite(v2.y()) ||
+      !qlib::isFinite(v2.z()) ||
+      !qlib::isFinite(n2.x()) ||
+      !qlib::isFinite(n2.y()) ||
+      !qlib::isFinite(n2.z())) {
+    LOG_DPRINTLN("PovSilBuilder> invalid vertex/normal for edge line ignored");
+    return;
+  }
+
   LString secname = getSecName();
 
   double w = getEdgeLineWidth();
@@ -393,13 +411,41 @@ void PovDisplayContext::writeEdgeLine(PrintStream &ips,
     r=b=1.0;
   */
 
+  Vector4D x1, x2;
+
+  // always keep x1.z < x2.z
+  if (v1.z()>v2.z()) {
+    x1 = v2;
+    x2 = v1;
+  }
+  else {
+    x1 = v1;
+    x2 = v2;
+  }
+
+  Vector4D nn = x2 - x1;
+  double len = nn.length();
+
+  if (qlib::isNear4(0.0, len))
+    return;
+  
+  const double clipz = m_pIntData->m_dClipZ;
+  if (clipz>=0) {
+    // perform clipping by dClipZ
+    if (clipz < x1.z())
+      return; // completely clipped by z-plane
+    
+    if (clipz < x2.z()) // partially clipped
+      x2 = nn.scale((clipz-x1.z())/(nn.z())) + x1;
+  }
+  
   ips.format("cylinder{<%f, %f, %f> + %s_sl_rise*%f*<%f,%f,%f>, ",
-             v1.x(), v1.y(), v1.z(),
+             x1.x(), x1.y(), x1.z(),
              secname.c_str(), rise,
              n1.x(), n1.y(), n1.z());
   
   ips.format("<%f, %f, %f> + %s_sl_rise*%f*<%f,%f,%f>, ",
-             v2.x(), v2.y(), v2.z(),
+             x2.x(), x2.y(), x2.z(),
              secname.c_str(), rise,
              n1.x(), n1.y(), n1.z());
   
@@ -413,6 +459,17 @@ void PovDisplayContext::writePoint(PrintStream &ips,
                                    const Vector4D &v1, const Vector4D &n1,
                                    int flag /*=0*/)
 {
+  // check invalid vertex and normal
+  if (!qlib::isFinite(v1.x()) ||
+      !qlib::isFinite(v1.y()) ||
+      !qlib::isFinite(v1.z()) ||
+      !qlib::isFinite(n1.x()) ||
+      !qlib::isFinite(n1.y()) ||
+      !qlib::isFinite(n1.z())) {
+    LOG_DPRINTLN("PovSilBuilder> invalid vertex/normal for edge corner ignored");
+    return;
+  }
+
   LString secname = getSecName();
 
   double w = getEdgeLineWidth();
@@ -435,6 +492,12 @@ void PovDisplayContext::writePoint(PrintStream &ips,
   else if (flag==4)
     r=b=1.0;
   */
+
+  const double clipz = m_pIntData->m_dClipZ;
+  if (clipz>=0) {
+    if (clipz < v1.z())
+      return; // clipped out by z-plane
+  }
 
   ips.format("sphere{<%f, %f, %f> + %s_sl_rise*%f*<%f,%f,%f>, ",
              v1.x(), v1.y(), v1.z(),

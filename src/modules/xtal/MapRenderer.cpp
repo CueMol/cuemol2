@@ -11,18 +11,12 @@
 #include <qsys/ScalarObject.hpp>
 #include <gfx/SolidColor.hpp>
 
-/*
-#include <qlib/Utils.hpp>
-#include <qlib/LChar.hpp>
-#include <gfx/DisplayContext.hpp>
-#include <gfx/DisplayList.hpp>
-#include <mbsys/MbSysDB.hpp>
-#include <mbsys/ObjDict.hpp>
-using qlib::LChar;
-*/
+#include <qsys/Scene.hpp>
+#include <modules/molstr/AtomIterator.hpp>
 
 using namespace xtal;
 using qsys::ScalarObject;
+using molstr::AtomIterator;
 
 // default constructor
 MapRenderer::MapRenderer()
@@ -31,41 +25,13 @@ MapRenderer::MapRenderer()
   //m_pcolor = gfx::SolidColor::createRGB(0.0, 0.0, 1.0);
   //m_dSigLevel = 1.1;
   //m_dMapRange = 15.0;
+  m_bUseMolBndry = false;
 }
 
 // destructor
 MapRenderer::~MapRenderer()
 {
 }
-
-/*
-bool MapRenderer::setClientObj(MbObject *pobj)
-{
-  if (!pobj->instanceOf<ScalarObject>())
-    return false;
-
-  if (!RendererAdapter::setClientObj(pobj))
-    return false;
-
-  ScalarObject *pMap = (ScalarObject *)getClientObj();
-  Vector3D cen = pMap->getCenter();
-  m_center.x = cen.x;
-  m_center.y = cen.y;
-  m_center.z = cen.z;
-  m_clevel = pMap->getRmsdDensity()*1.1;
-  m_maprange = 15.0;
-
-  return true;
-}
-
- void MapRenderer::invalidateDisplayCache()
-{
-  if (m_pdl!=NULL)
-    delete m_pdl;
-  m_pdl = NULL;
-}
-*/
-
 
 bool MapRenderer::isCompatibleObj(qsys::ObjectPtr pobj) const
 {
@@ -114,5 +80,82 @@ void MapRenderer::setLevel(double value)
   ScalarObject *pMap = (ScalarObject *) pthis->getClientObj().get();
   double sig = pMap->getRmsdDensity();
   setSigLevel(value/sig);
+}
+
+///////////////////////////////////////////////////
+// Mol boundary mode routines
+
+void MapRenderer::setBndryMolName(const LString &s)
+{
+  if (s.equals(m_strBndryMol))
+    return;
+  m_strBndryMol = s;
+
+  /// target mol is changed-->redraw map
+  super_t::invalidateDisplayCache();
+}
+
+void MapRenderer::setBndrySel(const SelectionPtr &pSel)
+{
+  ensureNotNull(pSel);
+  
+  if (!m_pSelBndry.isnull())
+    if (m_pSelBndry->equals(pSel.get()))
+      return;
+
+  m_pSelBndry = pSel;
+  //setupMolBndry();
+
+  /// selection is changed-->redraw map
+  super_t::invalidateDisplayCache();
+}
+
+void MapRenderer::setBndryRng(double d)
+{
+  if (qlib::isNear4(d, m_dBndryRng))
+    return;
+  m_dBndryRng = d;
+  if (m_dBndryRng<0.0)
+    m_dBndryRng = 0.0;
+  // setupMolBndry();
+
+  if (m_bUseMolBndry)
+    super_t::invalidateDisplayCache();
+}
+
+void MapRenderer::setupMolBndry()
+{
+  m_boundary.clear();
+  m_bUseMolBndry = false;
+
+  if (m_strBndryMol.isEmpty())
+    return;
+
+  qsys::ObjectPtr pobj = ensureNotNull(getScene())->getObjectByName(m_strBndryMol);
+  MolCoordPtr pMol = MolCoordPtr(pobj, qlib::no_throw_tag());
+
+  if (pMol.isnull()) {
+    m_strBndryMol = LString();
+    return;
+  }
+
+  AtomIterator aiter(pMol, m_pSelBndry);
+  int i, natoms=0;
+  for (aiter.first();
+       aiter.hasMore();
+       aiter.next()) {
+    ++natoms;
+  }
+
+  m_boundary.alloc(natoms);
+
+  for (aiter.first(), i=0;
+       aiter.hasMore() && i<natoms ;
+       aiter.next(), ++i) {
+    m_boundary.setAt(i, aiter.get()->getPos(), aiter.getID());
+  }
+
+  m_boundary.build();
+  m_bUseMolBndry = true;
 }
 

@@ -742,9 +742,16 @@ klass.commitPropChange = function(aName, elem)
   }
 
   try {
-    if (elem.type=="object<MolSelection>" && elem.new_object) {
-      //dd("MolSelection, newobj="+elem.new_object._wrapped.getClassName());
-      this.mTgtObj._wrapped.setProp(aName, elem.new_object._wrapped);
+    if (elem.type=="object<MolSelection>") {
+      if (elem.new_object) {
+        //dd("MolSelection, newobj="+elem.new_object._wrapped.getClassName());
+        this.mTgtObj._wrapped.setProp(aName, elem.new_object._wrapped);
+      }
+      else {
+        // evalueta selstr here to resolve reference by using scene context ID (mTgtSceID)
+        let selobj = cuemol.makeSel(elem.value, this.mTgtSceID);
+        this.mTgtObj._wrapped.setProp(aName, selobj._wrapped);
+      }
     }
     else
       this.mTgtObj._wrapped.setProp(aName, elem.value);

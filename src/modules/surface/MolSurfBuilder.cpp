@@ -50,39 +50,14 @@ namespace {
 
 }
 
-void MolSurfObj::createSESFromMol(MolCoordPtr pMol, SelectionPtr pSel, double density, double probe_r)
+void MolSurfObj::createSESFromArray(const std::vector<Vector4D> &pr_ary, double density, double probe_r)
 {
-  AtomIterator aiter(pMol, pSel);
-  int i, natoms=0;
-
-  // count atom number
-  for (aiter.first(); aiter.hasMore(); aiter.next()) {
-    MolAtomPtr pAtom = aiter.get();
-    if (!chkAltConf(pAtom)) continue;
-    MB_ASSERT(!pAtom.isnull());
-    ++natoms;
-  }
-
-  std::vector< BALL::TSphere3<double> > spheres(natoms);
-
-  TopparManager *pTM = TopparManager::getInstance();
-  const double vdw_default = 2.0;
-
-  // copy to the m_data
   Vector4D pos;
-  for (i=0,aiter.first(); aiter.hasMore()&&i<natoms; aiter.next()) {
-    MolAtomPtr pAtom = aiter.get();
-    if (!chkAltConf(pAtom)) continue;
-
-    pos = pAtom->getPos();
-
-    double vdw = pTM->getVdwRadius(pAtom, false);
-    if (vdw<0)
-      vdw = vdw_default;
-
-    spheres.at(i) = BALL::TSphere3<double>(BALL::TVector3<double>(pos.x(), pos.y(), pos.z()), vdw);
-    ++i;
-  }
+  int i, natoms = pr_ary.size();
+  
+  std::vector< BALL::TSphere3<double> > spheres(natoms);
+  for (i=0; i<natoms; ++i)
+    spheres[i] = BALL::TSphere3<double>(BALL::TVector3<double>(pr_ary[i].x(), pr_ary[i].y(), pr_ary[i].z()), pr_ary[i].w());
 
   double diff = probe_r < 1.5 ? 0.01 : -0.01;
 
@@ -155,6 +130,44 @@ void MolSurfObj::createSESFromMol(MolCoordPtr pMol, SelectionPtr pSel, double de
 
   delete pSES;
   delete pRS;
+}
+
+void MolSurfObj::createSESFromMol(MolCoordPtr pMol, SelectionPtr pSel, double density, double probe_r)
+{
+  AtomIterator aiter(pMol, pSel);
+  int i, natoms=0;
+
+  // count atom number
+  for (aiter.first(); aiter.hasMore(); aiter.next()) {
+    MolAtomPtr pAtom = aiter.get();
+    if (!chkAltConf(pAtom)) continue;
+    MB_ASSERT(!pAtom.isnull());
+    ++natoms;
+  }
+
+  std::vector< Vector4D > spheres(natoms);
+
+  TopparManager *pTM = TopparManager::getInstance();
+  const double vdw_default = 2.0;
+
+  // copy to the m_data
+  Vector4D pos;
+  for (i=0,aiter.first(); aiter.hasMore()&&i<natoms; aiter.next()) {
+    MolAtomPtr pAtom = aiter.get();
+    if (!chkAltConf(pAtom)) continue;
+
+    pos = pAtom->getPos();
+
+    double vdw = pTM->getVdwRadius(pAtom, false);
+    if (vdw<0)
+      vdw = vdw_default;
+
+    pos.w() = vdw;
+    spheres[i] = pos;
+    ++i;
+  }
+
+  createSESFromArray(spheres, density, probe_r);
 
   // save data for re-generation
   m_sOrigMol = pMol->getName();
@@ -191,6 +204,11 @@ void MolSurfObj::regenerateSES(double density, double probe_r, SelectionPtr pSel
   if (rad2<0.0)
     rad2 = m_dProbeRad;
 
+  SelectionPtr pSel2 = pSel;
+  if (pSel2.isnull()) {
+    pSel2 = getOrigSel();
+  }
+  
   // Record undo info
   qsys::UndoUtil uu(getScene());
   if (uu.isOK()) {
@@ -200,7 +218,7 @@ void MolSurfObj::regenerateSES(double density, double probe_r, SelectionPtr pSel
   }
 
   clean();
-  createSESFromMol(pMol, pSel, den2, rad2);
+  createSESFromMol(pMol, pSel2, den2, rad2);
 
   // notify update of structure
   {
@@ -378,4 +396,147 @@ void MolSurfBuilder::drawArc(const Vector4D &n, double rad, const Vector4D &cen,
 }
 
 #endif // SURF_BUILDER_TEST
+
+#include <modules/molstr/AtomPosMap.hpp>
+
+namespace {
+  Vector4D getInplaneDir(const Vector4D &norm, const Vector4D &in)
+  {
+    //Vector4D nin = in.normalize();
+    return in - norm.scale( norm.dot(in) );
+  }
+
+  double rand_real()
+  {
+    int i1 = rand();
+    int i2 = rand();
+    while(i1==RAND_MAX)
+      i1 =rand();
+    while(i2==RAND_MAX)
+      i2 =rand();
+    double mx = RAND_MAX;
+    return (i1+i2/mx)/mx;
+  }
+
+  Vector4D getRandDir(const Vector4D &norm)
+  {
+    Vector4D rvec(rand_real(),rand_real(),rand_real());
+    Vector4D res = getInplaneDir(norm, rvec);
+    return res.normalize();
+  }
+}
+
+void MolSurfObj::createHoleTest1(MolCoordPtr pMol, const Vector4D &dirnorm, const Vector4D &startpos)
+{
+  molstr::AtomPosMap amap;
+  amap.setTarget(pMol);
+  amap.setSpacing(3.5);
+  amap.generate();
+  
+  int i, j, nslice = 50;
+  double dstep = 0.25;
+  const double dmax = 0.3;
+  
+  Vector4D pos = startpos;
+
+  std::vector<Vector4D> cen_ary(nslice);
+  std::vector<double> rad_ary(nslice);
+
+  TopparManager *pTM = TopparManager::getInstance();
+  const double vdw_default = 2.0;
+
+  double rad=-1.0;
+  Vector4D dv = dirnorm.scale(dstep);
+
+  const int nmcs = 1000;
+
+  for (i=0; i<nslice && rad<5.0; ++i) {
+    rad = -1.0;
+
+    double temp = 0.00001;
+    const double temp_scl = 0.9;
+
+    MB_DPRINTLN("Start MC steps=%d, init T=%f", nmcs, temp);
+
+    for (j=0; j<nmcs; ++j, temp *= temp_scl) {
+      Vector4D newpos = pos;
+      if (j>0)
+        newpos += getRandDir(dirnorm).scale(rand_real()*dmax);
+      int aid = amap.searchNearestAtom(newpos);
+      MolAtomPtr pAtom = pMol->getAtom(aid);
+      Vector4D rp = pAtom->getPos() - newpos;
+      double vdw = pTM->getVdwRadius(pAtom, false);
+      if (vdw<0)
+        vdw = vdw_default;
+      double new_r = rp.length() - vdw;
+
+      if (new_r>rad) {
+        // accept --> update
+        MB_DPRINTLN("trial accepted for new_r=%f > rad=%f", new_r, rad);
+        rad = new_r;
+        pos = newpos;
+      }
+      else {
+        double prob = exp( (new_r-rad)/temp );
+        double rnd = rand_real();
+        if (rnd < prob) {
+          // accept --> update
+          MB_DPRINTLN("T=%f, prob=%f, rnd=%f --> trial accepted for new_r=%f < rad=%f", temp, prob, rnd, new_r, rad);
+          rad = new_r;
+          pos = newpos;
+        }
+      }
+      
+    }        
+
+    MB_DPRINTLN("slice %d pos=%f,%f,%f rad=%f", i, pos.x(), pos.y(), pos.z(), rad);
+    rad_ary[i] = rad;
+    cen_ary[i] = pos;
+
+    pos = pos + dv;
+
+  }
+  for (;i<nslice; ++i) {
+    rad_ary[i] = rad;
+    cen_ary[i] = pos;
+    pos = pos + dv;
+  }
+
+  //////////
+  
+  const int ncdiv = 40;
+  const int nverts = ncdiv*nslice;
+  const int nfaces = ncdiv*(nslice-1)*2;
+
+  setVertSize(nverts);
+  setFaceSize(nfaces);
+
+  Vector4D e1 = getInplaneDir(dirnorm, Vector4D(1,0,0));
+  Vector4D e2 = e1.cross(dirnorm);
+
+  int vind = 0;
+  for (i=0; i<nslice; ++i) {
+    const double dth = 2.0*M_PI/double(ncdiv);
+    double th = 0.0;
+    for (j=0; j<ncdiv; ++j) {
+      const double rr = rad_ary[i];
+      Vector4D vrr = e1.scale(cos(th)) + e2.scale(sin(th));
+      setVertex(vind, cen_ary[i] + vrr.scale(rr), vrr);
+      ++vind;
+      th += dth;
+    }
+  }
+  
+  int find = 0;
+  for (i=0; i<nslice-1; ++i) {
+    int ibase = i*ncdiv;
+    for (j=0; j<ncdiv; ++j) {
+      //int vind = i*ncdiv + j;
+      setFace(find, ibase+(j+1)%ncdiv, ibase+j, ibase+ncdiv+j);
+      ++find;
+      setFace(find, ibase+ncdiv+j, ibase+ncdiv+(j+1)%ncdiv, ibase+(j+1)%ncdiv);
+      ++find;
+    }
+  }
+}
 

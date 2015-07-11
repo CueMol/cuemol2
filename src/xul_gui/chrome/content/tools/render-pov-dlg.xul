@@ -2,6 +2,7 @@
 <!-- -*- xml -*- -->
 
 <?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
 
 <dialog
   id     = "render-pov-dialog"
@@ -39,165 +40,229 @@
   <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
   <script type="application/javascript" src="render-pov-dlg.js"/>
 
-  <vbox flex="1">
-    <grid>
-      <columns>
-	<column flex="0"/>
-	<column flex="1"/>
-	<column flex="0"/>
-      </columns>
-      <rows>
-	<row align="center">
-	  <label class="disable-target" value="Povray-exe-path:"/>
-	  <textbox class="disable-target" id="povray-exe-path"/>
-	  <button class="disable-target" id="povray-exe-path-btn" label="Change ..." oncommand="window.gDlgObj.onPovExePath()"/>
-	</row>
+  <tabbox selectedIndex="0" flex="0">
+    <tabs id="tabs-overlay-target">
+      <tab label="Main options" id="main_tab"/>
+      <tab label="POV-Ray options" id="povrender_tab"/>
+    </tabs>
+    <tabpanels id="tabpanels-overlay-target" flex="0">
+      <tabpanel id="main_tabpanel" flex="0">
+	
+	<vbox flex="1">
+	  <groupbox flex="0" align="center" orient="horizontal">
+	    <caption label="Image size"/>
 
-	<row align="center">
-	  <label class="disable-target" value="Povray-inc-path:"/>
-	  <textbox class="disable-target" id="povray-inc-path"/>
-	  <button class="disable-target" id="povray-inc-path-btn" label="Change ..." oncommand="window.gDlgObj.onPovIncPath()"/>
-	</row>
-      </rows>
-    </grid>
+	    <label value="W:"/>
+	    <textbox class="disable-target" id="output-image-width"
+	      value="1000" size="4" type="number" min="1" max="10000" hidespinbuttons="true"/>
+	    
+	    <label value="H:"/>
+	    <textbox class="disable-target" id="output-image-height"
+	      value="1000" size="4" type="number" min="1" max="10000" hidespinbuttons="true"/>
+	    
+	    <menulist id="output-image-unit" class="disable-target" onselect="window.gDlgObj.onImgSzUnitSel(event)">
+	      <menupopup>
+		<menuitem value="px" label="pixel" selected="true"/>
+		<menuitem value="in" label="inch"/>
+		<menuitem value="mm" label="mm"/>
+		<menuitem value="cm" label="cm"/>
+	      </menupopup>
+	    </menulist>
+	    
+	    <label value="DPI:"/>
+	    <menulist class="disable-target" id="output-image-dpi" editable="true">
+	      <menupopup>
+		<menuitem label="72" value="72"/>
+		<menuitem label="150" value="150" />
+		<menuitem label="300" value="300"/>
+		<menuitem label="600" value="600" selected="true"/>
+	      </menupopup>
+	    </menulist>
+	    
+	    <button type="menu" label="Preset size" id="preset-size-list" class="disable-target" oncommand="window.gDlgObj.onPresetSel(event)">
+	      <menupopup>
+		<menuitem value="view" label="Same as view"/>
+		<menuitem value="100,100,72" label="100x100@72dpi"/>
+		<menuitem value="300,300,300" label="300x300@300dpi"/>
+		<menuitem value="600,600,300" label="600x600@300dpi"/>
+		<menuitem value="1200,1200,600" label="1200x1200@600dpi"/>
+	      </menupopup>
+	    </button>
+	    
+	  </groupbox>
+	  
+	  <hbox align="center">
+	    <label value="Projection: "/>
+	    <menulist id="proj-mode-list" class="disable-target" >
+	      <menupopup>
+		<menuitem value="perspec" label="Perspective" selected="true"/>
+		<menuitem value="ortho" label="Orthographic"/>
+	      </menupopup>
+	    </menulist>
+	    
+	    <label value="Stereo: "/>
+	    <menulist id="stereo-mode-list" class="disable-target" >
+	      <menupopup>
+		<menuitem value="none" label="None" selected="true"/>
+		<menuitem value="right" label="Right eye"/>
+		<menuitem value="left" label="Left eye"/>
+	      </menupopup>
+	    </menulist>
+	    
+	    <label value="Stereo depth: "/>
+	    <textbox class="disable-target" id="stereo-depth"
+	      value="0.03" size="3" type="number" min="0" max="1" increment="0.01" decimalplaces="2"/>
+	  </hbox>
+	  
+	  <hbox align="center">
+	    <label value="CPU: "/>
+	    <textbox class="disable-target" id="num-threads"
+	      value="2" size="2" type="number" min="0" max="32" increment="1"/>
+	    <checkbox id="use-transp-bg" label="Transp background" checked="false" persist="checked"/>
+	  </hbox>
+	  
+	  <hbox align="center">
+	    <checkbox id="enable-clip-plane" label="Clipping plane" checked="true" persist="checked"/>
+	    <checkbox id="enable-post-blend" label="Post-render alpha blending" checked="true" persist="checked"/>
+	    <checkbox id="enable-edgelines" label="Edge lines" checked="true" persist="checked"/>
+	    <checkbox id="enable-pixlabels" label="Pix labels" checked="false" persist="checked"/>
+	  </hbox>
+
+	</vbox>	  
+      </tabpanel>
+      
+      <!-- povray options -->
+      <tabpanel id="povrender_tabpanel">
+	<vbox flex="1">
+	  <grid>
+	    <columns>
+	      <column flex="0"/>
+	      <column flex="1"/>
+	      <column flex="0"/>
+	    </columns>
+	    <rows>
+	      <row align="center">
+		<label class="disable-target" value="Povray-exe-path:"/>
+		<textbox class="disable-target" id="povray-exe-path"/>
+		<button class="disable-target" id="povray-exe-path-btn" label="Change ..." oncommand="window.gDlgObj.onPovExePath()"/>
+	      </row>
+	      
+	      <row align="center">
+		<label class="disable-target" value="Povray-inc-path:"/>
+		<textbox class="disable-target" id="povray-inc-path"/>
+		<button class="disable-target" id="povray-inc-path-btn" label="Change ..." oncommand="window.gDlgObj.onPovIncPath()"/>
+	      </row>
+	    </rows>
+	  </grid>
+	  
+	  <hbox align="center">
+	    <label value="Radiosity: "/>
+	    <menulist id="radio-mode-list" class="disable-target">
+	      <menupopup>
+		<menuitem value="-1" label="Disable" selected="true"/>
+		<menuitem value="2" label="Fast"/>
+		<menuitem value="6" label="OutdoorLQ"/>
+		<menuitem value="7" label="OutdoorHQ"/>
+		<menuseparator/>
+		<menuitem value="0" label="Default"/>
+		<menuitem value="1" label="Debug"/>
+		<menuitem value="3" label="Normal"/>
+		<menuitem value="4" label="2Bounce"/>
+		<menuitem value="5" label="Final"/>
+		<menuitem value="8" label="OutdoorLight"/>
+		<menuitem value="9" label="IndoorLQ"/>
+		<menuitem value="10" label="IndoorHQ"/>
+	      </menupopup>
+	    </menulist>
+	  </hbox>
+	  
+	  
+	  <groupbox flex="0">
+	    <caption label="Lighting"/>
+
+	    <grid flex="0">
+	      <columns>
+		<column flex="0"/>
+		<column flex="1"/>
+		<column flex="0"/>
+		<column flex="1"/>
+	      </columns>
+	      
+	      <rows>
+		
+		<hbox align="center">
+		  <checkbox id="enable-shadow" label="Shadow" checked="false" persist="checked" class="disable-target"/>
+		  <checkbox id="povopt-lightdefault" label="Use default settings" checked="true" persist="checked" class="disable-target"/>
+		</hbox>
+		
+		<row align="center" class="propdlg-rowbox">
+		  <label value="Spread:" flex="0"/>
+		  <numslider id="povopt-lightspread" flex="1" size="2" class="disable-target"
+		    decimalplaces="0" min="1" max="10" increment="1" unit="none"/>
+		  <label value="Intensity:" flex="0"/>
+		  <numslider id="povopt-lightinten" flex="1" size="2" class="disable-target"
+		    decimalplaces="1" min="0" max="2" increment="0.1" unit="none"/>
+		</row>
+		<row align="center" class="propdlg-rowbox">
+		  <label value="Flash fraction:" flex="0"/>
+		  <numslider id="povopt-flashfrac" flex="1" size="2" class="disable-target"
+		    decimalplaces="1" min="0" max="1" increment="0.1" unit="none"/>
+		  <label value="Ambient fraction:" flex="0"/>
+		  <numslider id="povopt-ambinten" flex="1" size="2" class="disable-target"
+		    decimalplaces="1" min="0" max="1" increment="0.1" unit="none"/>
+		</row>
+	      </rows>
+	    </grid>
+	  </groupbox>
+	  
+	</vbox>
+	
+      </tabpanel>
+    </tabpanels>
+  </tabbox>
+  
+  
+  <!-- preview box -->
+  <groupbox flex="1">
+    <caption label="Result"/>
 
     <hbox align="center">
-      <label value="W:"/>
-      <textbox class="disable-target" id="output-image-width"
-	value="1000" size="4" type="number" min="1" max="10000" hidespinbuttons="true"/>
-
-      <label value="H:"/>
-      <textbox class="disable-target" id="output-image-height"
-	value="1000" size="4" type="number" min="1" max="10000" hidespinbuttons="true"/>
-
-      <menulist id="output-image-unit" class="disable-target" onselect="window.gDlgObj.onImgSzUnitSel(event)">
+      <spacer width="10px"/>
+      <toolbarbutton
+	id="ZoomBtn"
+	class="zoom-button"
+	tooltiptext="Zoom"/>
+      <toolbarbutton
+	id="UnzoomBtn"
+	class="unzoom-button"
+	tooltiptext="Unzoom"/>
+      <menulist id="ZoomList">
 	<menupopup>
-	  <menuitem value="px" label="pixel" selected="true"/>
-	  <menuitem value="in" label="inch"/>
-	  <menuitem value="mm" label="mm"/>
-	  <menuitem value="cm" label="cm"/>
+	  <menuitem value="10" label="10%"/>
+	  <menuitem value="25" label="25%"/>
+	  <menuitem value="50" label="50%"/>
+	  <menuitem value="75" label="75%"/>
+	  <menuitem value="100" label="100%" selected="true"/>
+	  <menuitem value="125" label="125%"/>
+	  <menuitem value="150" label="150%"/>
+	  <menuitem value="200" label="200%"/>
+	  <menuitem value="300" label="300%"/>
 	</menupopup>
       </menulist>
 
-      <label value="DPI:"/>
-      <menulist class="disable-target" id="output-image-dpi" editable="true">
-	<menupopup>
-	  <menuitem label="72" value="72"/>
-	  <menuitem label="150" value="150" />
-	  <menuitem label="300" value="300"/>
-	  <menuitem label="600" value="600" selected="true"/>
-	</menupopup>
-      </menulist>
-
-      <button type="menu" label="Preset size" id="preset-size-list" class="disable-target" oncommand="window.gDlgObj.onPresetSel(event)">
-	<menupopup>
-	  <menuitem value="view" label="Same as view"/>
-	  <menuitem value="100,100,72" label="100x100@72dpi"/>
-	  <menuitem value="300,300,300" label="300x300@300dpi"/>
-	  <menuitem value="600,600,300" label="600x600@300dpi"/>
-	  <menuitem value="1200,1200,600" label="1200x1200@600dpi"/>
-	</menupopup>
-      </button>
-
-      <label value="CPU: "/>
-      <textbox class="disable-target" id="num-threads"
-	value="2" size="2" type="number" min="0" max="32" increment="1"/>
-
-    </hbox>      
-
-    <hbox align="center">
-      <label value="Stereo: "/>
-      <menulist id="stereo-mode-list" class="disable-target" >
-	<menupopup>
-	  <menuitem value="none" label="None" selected="true"/>
-	  <menuitem value="right" label="Right eye"/>
-	  <menuitem value="left" label="Left eye"/>
-	</menupopup>
-      </menulist>
-
-      <label value="Stereo depth: "/>
-      <textbox class="disable-target" id="stereo-depth"
-	value="0.03" size="3" type="number" min="0" max="1" increment="0.01" decimalplaces="2"/>
-
-      <label value="Projection: "/>
-      <menulist id="proj-mode-list" class="disable-target" >
-	<menupopup>
-	  <menuitem value="perspec" label="Perspective" selected="true"/>
-	  <menuitem value="ortho" label="Orthographic"/>
-	</menupopup>
-      </menulist>
-
-      <checkbox id="use-transp-bg" label="Transp background" checked="false" persist="checked"/>
-
-    </hbox>
-
-    <hbox align="center">
-      <checkbox id="enable-clip-plane" label="Clipping plane" checked="true" persist="checked"/>
-      <checkbox id="enable-post-blend" label="Post-render alpha blending" checked="true" persist="checked"/>
-      <checkbox id="enable-shadow" label="Shadow" checked="false" persist="checked"/>
-      <checkbox id="enable-edgelines" label="Edge lines" checked="true" persist="checked"/>
-
-      <label value="Radiosity: "/>
-      <menulist id="radio-mode-list" class="disable-target" >
-	<menupopup>
-	  <menuitem value="-1" label="Disable" selected="true"/>
-	  <menuitem value="0" label="Default"/>
-	  <menuitem value="1" label="Debug"/>
-	  <menuitem value="2" label="Fast"/>
-	  <menuitem value="3" label="Normal"/>
-	  <menuitem value="4" label="2Bounce"/>
-	  <menuitem value="5" label="Final"/>
-	  <menuitem value="6" label="OutdoorLQ"/>
-	  <menuitem value="7" label="OutdoorHQ"/>
-	  <menuitem value="8" label="OutdoorLight"/>
-	  <menuitem value="9" label="IndoorLQ"/>
-	  <menuitem value="10" label="IndoorHQ"/>
-	</menupopup>
-      </menulist>
-    </hbox>      
-
-    <!-- Progress bar -->
-    <hbox align="center">
+      <!-- Progress bar -->
       <label value="Progress: "/>
       <progressmeter id="progress" flex="1"/>
-    </hbox>
-    
 
-    <!-- preview box -->
-    <groupbox flex="1">
-      <caption label="Result"/>
-      <hbox align="center">
-	<spacer width="10px"/>
-	<toolbarbutton
-	  id="ZoomBtn"
-	  class="zoom-button"
-	  tooltiptext="Zoom"/>
-	<toolbarbutton
-	  id="UnzoomBtn"
-	  class="unzoom-button"
-	  tooltiptext="Unzoom"/>
-	<menulist id="ZoomList">
-	  <menupopup>
-	    <menuitem value="10" label="10%"/>
-	    <menuitem value="25" label="25%"/>
-	    <menuitem value="50" label="50%"/>
-	    <menuitem value="75" label="75%"/>
-	    <menuitem value="100" label="100%" selected="true"/>
-	    <menuitem value="125" label="125%"/>
-	    <menuitem value="150" label="150%"/>
-	    <menuitem value="200" label="200%"/>
-	    <menuitem value="300" label="300%"/>
-	  </menupopup>
-	</menulist>
-      </hbox>
-      <richlistbox flex="1" width="100" style="min-height: 300px;" disabled="true">
-	<richlistitem id="imagebox-item" disabled="true" style="background: white;">
-	  <image id="image-box" validate="always" flex="0"
-	    style="background: url(../images/checker8.png) repeat;"/>
-	</richlistitem>
-      </richlistbox>
-    </groupbox>
-    
+    </hbox>
+    <richlistbox flex="1" width="100" style="min-height: 300px;" disabled="true">
+      <richlistitem id="imagebox-item" disabled="true" style="background: white;">
+	<image id="image-box" validate="always" flex="0"
+	  style="background: url(../images/checker8.png) repeat;"/>
+      </richlistitem>
+    </richlistbox>
+  </groupbox>
+	  
     <!--
     <hbox align="center">
       <spacer flex="1"/>
@@ -207,6 +272,5 @@
     </hbox>
       -->
 
-  </vbox>
 </dialog>
 
