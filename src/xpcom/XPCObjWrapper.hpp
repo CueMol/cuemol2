@@ -35,10 +35,11 @@ namespace xpcom {
     LString m_dbgmsg;
 #endif
 
-  public:
-
-    XPCObjWrapper(XPCCueMol *pParent, int ind);
+  private:
     virtual ~XPCObjWrapper();
+
+  public:
+    XPCObjWrapper(XPCCueMol *pParent, int ind);
 
     // Implementation
 

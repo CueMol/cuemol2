@@ -206,24 +206,24 @@ nsresult NSVarToLVar(nsIVariant *aValue, qlib::LVariant &variant)
   case nsIDataType::VTYPE_WSTRING_SIZE_IS:
   case nsIDataType::VTYPE_ASTRING:
     {
-
-    PRUnichar *psz;
-    PRUint32 nlen;
-    rv = aValue->GetAsWStringWithSize(&nlen, &psz);
-    NS_ENSURE_SUCCESS(rv,rv);
-
-    if (psz && nlen>0) {
-      LString retval;
-      qlib::UCS16toUTF8(psz, nlen, retval);
-      // MB_DPRINTLN("NSVar: wstring(%s)", retval.c_str());
-      variant.setStringValue(retval);
-      nsMemory::Free(psz);
+      //PRUnichar *psz;
+      char16_t *psz;
+      PRUint32 nlen;
+      rv = aValue->GetAsWStringWithSize(&nlen, &psz);
+      NS_ENSURE_SUCCESS(rv,rv);
+      
+      if (psz && nlen>0) {
+	LString retval;
+	qlib::UCS16toUTF8((U16Char *)psz, nlen, retval);
+	// MB_DPRINTLN("NSVar: wstring(%s)", retval.c_str());
+	variant.setStringValue(retval);
+	nsMemory::Free(psz);
+      }
+      else {
+	variant.setStringValue(LString());
+      }
+      return NS_OK;
     }
-    else {
-      variant.setStringValue(LString());
-    }
-    return NS_OK;
-  }
 
     //
     // Case of the "Object"

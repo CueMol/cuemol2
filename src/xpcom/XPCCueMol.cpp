@@ -192,7 +192,7 @@ XPCCueMol *XPCCueMol::getInstance()
 
 NS_IMETHODIMP
 XPCCueMol::Observe(nsISupports* aSubject, const char* aTopic,
-                   const PRUnichar* aData)
+		   const char16_t * aData)
 {
   // dumpWrappers();
   return NS_OK;

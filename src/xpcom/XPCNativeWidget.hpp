@@ -28,9 +28,11 @@ namespace xpcom {
     // Timer used for double-click check
     //nsCOMPtr<nsITimer> m_timer;
 
+  protected:
+    virtual ~XPCNativeWidget();
+
   public:
     XPCNativeWidget();
-    virtual ~XPCNativeWidget();
 
   public:
     NS_DECL_ISUPPORTS;
