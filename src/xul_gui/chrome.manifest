@@ -13,3 +13,5 @@ component {4349a533-9aa1-4760-85ef-f537cc69d13c} components/cuemol2-cmdline.js
 contract @cuemol.org/cuemol2-clh;1 {4349a533-9aa1-4760-85ef-f537cc69d13c}
 category command-line-handler m-cuemol2 @cuemol.org/cuemol2-clh;1
 
+resource gre jar:omni.ja!/
+resource app .
