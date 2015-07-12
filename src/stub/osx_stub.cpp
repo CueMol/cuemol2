@@ -77,22 +77,28 @@ int main(int argc, char **argv)
   ////////////////////////////////////////
 
   // Check for <bundle>/Contents/Frameworks/XUL.framework/libxpcom.dylib
-  CFURLRef fwurl = CFBundleCopyPrivateFrameworksURL(appBundle);
-  CFURLRef absfwurl = nullptr;
-  if (fwurl) {
-    absfwurl = CFURLCopyAbsoluteURL(fwurl);
-    CFRelease(fwurl);
+  //CFURLRef fwurl = CFBundleCopyPrivateFrameworksURL(appBundle);
+  CFURLRef exurl = CFBundleCopyExecutableURL(appBundle);
+  CFURLRef absexurl = nullptr;
+  if (exurl) {
+    absexurl = CFURLCopyAbsoluteURL(exurl);
+    CFRelease(exurl);
   }
   
   char tbuffer[MAXPATHLEN];
-
-  CFURLGetFileSystemRepresentation(absfwurl, true,
+  
+  CFURLGetFileSystemRepresentation(absexurl, true,
 				   (UInt8*) tbuffer,
 				   sizeof(tbuffer));
-  printf("abs fwurl = %s\n", tbuffer);
-  CFRelease(absfwurl);
+  printf("abs exe url = %s\n", tbuffer);
+  CFRelease(absexurl);
 
-  snprintf(greDir, sizeof(greDir), "%s/XUL.framework/Versions/Current/xulrunner", tbuffer);
+  //snprintf(greDir, sizeof(greDir), "%s/XUL.framework/Versions/Current/xulrunner", tbuffer);
+  snprintf(greDir, sizeof(greDir), "%s", tbuffer);
+  //if (realpath(tbuffer, greDir)) {
+  //greFound = true;
+  //}
+
   printf("greDir = %s\n", greDir);
   if (access(greDir, R_OK | X_OK) == 0)
     greFound = true;

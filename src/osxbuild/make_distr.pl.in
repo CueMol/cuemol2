@@ -60,7 +60,7 @@ my @copylib = ("$boost_dir/libboost_thread*.dylib",
 	       "$boost_dir/libboost_system*.dylib",
 	       "$boost_dir/libboost_filesystem*.dylib",
 	       "$boost_dir/libboost_iostreams*.dylib",
-	       "$cgal_dir/libCGAL.7.dylib",
+	       "$cgal_dir/libCGAL.10.dylib",
 	       "$glew_dir/libGLEW.1.7.0.dylib"
 );
 my $RSYNC = "rsync";
