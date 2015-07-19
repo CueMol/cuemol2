@@ -120,6 +120,7 @@
     <ClCompile Include="..\..\src\qlib\LScrTime.cpp" />
     <ClCompile Include="..\..\src\qlib\LScrVector4D.cpp" />
     <ClCompile Include="..\..\src\qlib\LString.cpp" />
+    <ClCompile Include="..\..\src\qlib\LThread.cpp" />
     <ClCompile Include="..\..\src\qlib\LUnicode.cpp" />
     <ClCompile Include="..\..\src\qlib\LVariant.cpp" />
     <ClCompile Include="..\..\src\qlib\LWrapper.cpp" />
