@@ -78,20 +78,25 @@ int main(int argc, char **argv)
 
   // Check for <bundle>/Contents/Frameworks/XUL.framework/libxpcom.dylib
   //CFURLRef fwurl = CFBundleCopyPrivateFrameworksURL(appBundle);
-  CFURLRef exurl = CFBundleCopyExecutableURL(appBundle);
-  CFURLRef absexurl = nullptr;
-  if (exurl) {
-    absexurl = CFURLCopyAbsoluteURL(exurl);
-    CFRelease(exurl);
+  CFURLRef url = CFBundleCopyExecutableURL(appBundle);
+  //CFURLRef url = CFBundleCopyResourceURL(appBundle, CFSTR("omni"), CFSTR("ja"), NULL);
+  CFURLRef absurl = nullptr;
+  if (url) {
+    CFURLRef url2 = url;
+    //CFURLRef url2 = CFURLCreateCopyDeletingLastPathComponent(NULL, url);
+    //CFRelease(url);
+
+    absurl = CFURLCopyAbsoluteURL(url2);
+    CFRelease(url2);
   }
   
   char tbuffer[MAXPATHLEN];
   
-  CFURLGetFileSystemRepresentation(absexurl, true,
+  CFURLGetFileSystemRepresentation(absurl, true,
 				   (UInt8*) tbuffer,
 				   sizeof(tbuffer));
-  printf("abs exe url = %s\n", tbuffer);
-  CFRelease(absexurl);
+  printf("abs res url = %s\n", tbuffer);
+  CFRelease(absurl);
 
   //snprintf(greDir, sizeof(greDir), "%s/XUL.framework/Versions/Current/xulrunner", tbuffer);
   snprintf(greDir, sizeof(greDir), "%s", tbuffer);
@@ -158,16 +163,43 @@ int main(int argc, char **argv)
   }
 
   NS_ASSERTION(pAppData->directory, "Failed to get app directory.");
+  {
+    nsAutoString path;
+    pAppData->directory->GetPath(path);
+
+    nsAutoCString nsstr;
+    ::CopyUTF16toUTF8(path, nsstr);
+
+    printf("appData.directory=%s\n", nsstr.get());
+  }
 
   if (!pAppData->xreDirectory) {
-    // chop "xulrunner" off the GRE path
-    char *lastSlash = strrchr(greDir, '/');
-    if (lastSlash) {
-      *lastSlash = '\0';
+    CFURLRef url = CFBundleCopyResourceURL(appBundle, CFSTR("omni"), CFSTR("ja"), NULL);
+    CFURLRef absurl = nullptr;
+    if (url) {
+      CFURLRef url2 = url; //CFURLCreateCopyDeletingLastPathComponent(NULL, url);
+      //CFRelease(url);
+      absurl = CFURLCopyAbsoluteURL(url2);
+      CFRelease(url2);
     }
-    printf("xreDir: %s.\n", greDir);
-    NS_NewNativeLocalFile(nsDependentCString(greDir), PR_FALSE,
+    
+    char tbuffer[MAXPATHLEN];
+    CFURLGetFileSystemRepresentation(absurl, true,
+				     (UInt8*) tbuffer,
+				     sizeof(tbuffer));
+    printf("abs res url = %s\n", tbuffer);
+    CFRelease(absurl);
+    snprintf(greDir, sizeof(greDir), "%s", tbuffer);
+    printf("xreDir: %s\n", greDir);
+
+    nsAutoString path;
+    pAppData->directory->GetPath(path);
+    nsAutoCString nsstr;
+    ::CopyUTF16toUTF8(path, nsstr);
+
+    NS_NewNativeLocalFile(nsstr, PR_FALSE,
                           &pAppData->xreDirectory);
+
   }
   
   printf("### ENTERING XRE_MAIN ###\n");

@@ -16,6 +16,7 @@ usexrbr="--without-xmlrpc"
 ##
 
 gecko_sdk_dir=$HOME/proj64/xulrunner/xulrunner-39.0-sdk
+#gecko_sdk_dir=$HOME/proj64/xulrunner/xulrunner-39.0-obj/dist
 # gecko_sdk_dir=$HOME/proj64/xulrunner/xulrunner-23.0.1-sdk
 
 boost_dir=$HOME/proj64/boost_1_57/
