@@ -73,8 +73,7 @@ libxpcqm_la_EXTRA_CXXFLAGS = \
   -DXP_MACOSX=1 -DNO_X11=1 -DUSE_SYSTEM_CONSOLE=1 \
   -pipe -fmessage-length=0
 libxpcqm_la_EXTRA_LDFLAGS = \
-  -shrext .dylib -Wl,-framework,Carbon -Wl,-framework,System \
-  -Wl,-framework,XUL
+  -shrext .dylib -Wl,-framework,Carbon -Wl,-framework,System
 libxpcqm_la_EXTRA_LIBS = libxpcqmobjc.a
 
 noinst_LIBRARIES = libxpcqmobjc.a

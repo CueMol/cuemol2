@@ -161,7 +161,7 @@ LString LScrObjBase::getPropTypeName(const LString &propnm) const
 
   PropSpec spec;
   bool res = getPropSpecImpl(propnm, &spec);
-  if (!res) return false;
+  if (!res) return LString();
   
   return spec.type_name;
 }
