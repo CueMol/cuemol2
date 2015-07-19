@@ -13,19 +13,32 @@
 #include "FileStream.hpp"
 #include "PrintStream.hpp"
 
+#include <boost/thread.hpp>
+
+namespace qlib {
+
+  /// OS-dependent process mgr implementation
+  class ProcInThread : public LThread
+  {
+  public:
+    LString m_sbuf;
+    int m_nExitCode;
+
+    /// lock obj for m_sbuf access
+    mutable boost::mutex m_lock;
+  };
+  
+  SINGLETON_BASE_IMPL(LProcMgr);
+}
+
 #ifdef WIN32
 #  include <windows.h>
+#  include "WinProcImpl.hpp"
+#else
+#  include "PosixProcImpl.hpp"
 #endif
 
 using namespace qlib;
-
-#ifdef WIN32
-#include "WinProcImpl.hpp"
-#else
-#include "PosixProcImpl.hpp"
-#endif
-
-SINGLETON_BASE_IMPL(LProcMgr);
 
 // automatic initialization by ClassRegistry
 bool LProcMgr::initClass(qlib::LClass *pcls)

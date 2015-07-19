@@ -14,7 +14,19 @@
 #  include <windows.h>
 #endif
 
+#include "MthrEventCaster.hpp"
+
 namespace qlib {
+
+  class LLogEventCaster
+    : public LMthrEventCaster<LLogEvent, LLogEventListener>
+  {
+    virtual void execute(LLogEvent &ev, LLogEventListener *p)
+    {
+      p->logAppended(ev);
+    }
+  };
+  
   class LMsgLogImpl {
   public:
     FILE *m_fp;

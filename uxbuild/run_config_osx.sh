@@ -39,7 +39,7 @@ fi
 env CC="clang" \
 CFLAGS="-O" \
 CXX="clang++" \
-CXXFLAGS="-O -std=c++11 -stdlib=libc++ -Wno-parentheses-equality -Wno-c++11-narrowing -Wno-extra-tokens -Wno-invalid-pp-token" \
+CXXFLAGS="-O -Wno-parentheses-equality -Wno-c++11-narrowing -Wno-extra-tokens -Wno-invalid-pp-token" \
 $config_scr \
 --disable-static \
 --enable-shared \
@@ -53,4 +53,5 @@ $usexrbr \
 --with-glew=$glew_dir \
 $debug
 
+#-std=c++11 -stdlib=libc++ 
 # --enable-npruntime

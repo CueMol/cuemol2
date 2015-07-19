@@ -24,6 +24,7 @@ LScrSmartPtr.cpp \
 LChar.cpp \
 LString.cpp \
 LUnicode.cpp \
+LThread.cpp \
 ObjectManager.cpp \
 Utils.cpp \
  \

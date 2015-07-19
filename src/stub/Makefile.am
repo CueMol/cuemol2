@@ -13,6 +13,7 @@ $(libxpcqm_la_EXTRA_CXXFLAGS) \
 -DUSE_XPCOM -DMOZ_NO_MOZALLOC -Wall -Wno-non-virtual-dtor \
 -I$(top_srcdir) -I$(srcdir) \
 @XPCOM_CPPFLAGS@ \
+-std=c++11 \
 $(NULL)
 
 cuemol_LDFLAGS = \

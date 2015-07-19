@@ -15,17 +15,8 @@
 
 namespace qlib {
 
-  /// OS-dependent process mgr implementation
-  class ProcInThread : public LThread
-  {
-  public:
-    LString m_sbuf;
-    int m_nExitCode;
+  class ProcInThread;
 
-    /// lock obj for m_sbuf access
-    mutable boost::mutex m_lock;
-  };
-  
   /// OS-dependent process mgr implementation
   class LProcMgrImpl
   {

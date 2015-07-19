@@ -88,7 +88,8 @@ namespace qlib {
   //inline bool operator < (const TimerTuple &a, const TimerTuple &b) {
   //return a.when<b.when;
   //}
-
+  
+  struct EMThreadImpl;
 
   ///
   /// Event/Timer manager
@@ -96,10 +97,13 @@ namespace qlib {
   class QLIB_API EventManager : public SingletonBase<EventManager>
   {
   private:
+    EMThreadImpl *m_pthr;
+    /*
 #ifdef HAVE_BOOST_THREAD
     boost::thread::id m_mainthr;
     mutable boost::mutex m_mu;
 #endif
+    */
 
     /// Event entry data structure
     typedef std::pair<LEvent *, LEventCasterBase *> tuple_t;

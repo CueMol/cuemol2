@@ -54,6 +54,7 @@ namespace qlib {
 
   //
 
+  /*
   class LLogEventCaster
        : public LMthrEventCaster<LLogEvent, LLogEventListener>
   {
@@ -62,7 +63,7 @@ namespace qlib {
       p->logAppended(ev);
     }
   };
-
+  */
 }
 
 #endif
