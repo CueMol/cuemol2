@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2-sysdep.css" type="text/css"?>
+
+<?xul-overlay href="chrome://cuemol2/content/cuemol2-menus.xul"?>
+
+<!DOCTYPE window SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+<window
+  xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  xmlns:html="http://www.w3.org/1999/xhtml"
+  id     = "cuemol2"
+  windowtype = "cuemol2"
+  title  = "&cuemol2.title;"
+  width  = "1024"
+  height = "768"
+  persist = "screenX screenY width height">
+
+  <!-- menus/popup menus will be inserted here by cuemol2-menus.xul -->
+  <overlaytarget id="menus-overlay-target"/>
+
+</window>
+
