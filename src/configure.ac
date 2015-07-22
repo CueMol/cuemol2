@@ -804,6 +804,7 @@ AC_CONFIG_FILES([
 	osxbuild/make_distr.pl
 	osxbuild/add_povray.pl
 	osxbuild/Info.plist
+	osxbuild/make_appbundle.sh
 	uxdist/Makefile
 	uxdist/run_cuemol2.sh
 	stub/Makefile

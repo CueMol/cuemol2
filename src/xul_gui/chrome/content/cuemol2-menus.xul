@@ -400,7 +400,7 @@
 	</menu>
 
 	<menu id="help-menu" label="&menu_help.label;" accesskey="&menu_help.accesskey;">
-	<menupopup id="help-popup">
+	  <menupopup id="help-popup">
 	    <menuitem label="About plugins..." oncommand="window.open('about:plugins', 'mywindow1', 'chrome,width=600,height=300,resizable');" />
 	    <menuitem label="About config..." oncommand="showConfig()" />
 	    <menuitem label="Addon manager..." oncommand="showAddonMgr()" />
@@ -411,7 +411,7 @@
 #else
 	      label="&help_about.label;"
 #endif
-	      oncommand="openAboutDialog();"/>
+	      oncommand="gQm2Main.openAboutDialog();"/>
 	    <menuseparator/>
 	    <menuitem label="Console" oncommand="showConsole();" />
 	    <!--<menuitem label="DOM Inspector" oncommand="showDOMInspector();" />-->

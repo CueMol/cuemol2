@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+
+<!DOCTYPE overlay [
+  <!ENTITY % brandDTD SYSTEM "chrome://global/locale/brand.dtd">
+  %brandDTD;
+  <!ENTITY % cuemol2DTD SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+  %cuemol2DTD;
+]>
+
+<overlay id="cuemol2-menus-overlay"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+  
+  <overlaytarget id="menus-overlay-target">
+    
+    <script type="application/x-javascript">
+      <![CDATA[
+function getQm2MainObj() {
+  return Components.classes['@mozilla.org/appshell/window-mediator;1'].
+    getService(Components.interfaces.nsIWindowMediator).
+      getMostRecentWindow('cuemol2').gQm2Main;
+}
+      	]]>
+    </script>
+
+    <commandset id="mainCommandSet">
+      <command id="cmd_quitApplication" oncommand="if(getQm2MainObj().onCloseEvent()) goQuitApplication();"/>
+      <command id="cmd_config" oncommand="getQm2MainObj().showConfigDlg()"/>
+    </commandset>
+
+    <keyset id="mainKeyset">
+      <key id="key_configCmdMac"
+	   key="&configCmdMac.commandkey;"
+	   command="cmd_config"
+	   modifiers="accel"/>
+      <key id="key_hideThisAppCmdMac"
+           key="&hideThisAppCmdMac.commandkey;"
+           modifiers="accel"/>
+      <key id="key_hideOtherAppsCmdMac"
+           key="&hideOtherAppsCmdMac.commandkey;"
+           modifiers="accel,alt"/>
+      <key id="key_quitApplication"
+	   key="&quitApplicationCmdMac.key;"
+	   command="cmd_quitApplication"
+	   modifiers="accel"/>
+    </keyset>
+
+# MacOSX Application menu
+    <menupopup id="menu_ToolsPopup">
+      <menuitem id="menu_preferences" label="&configCmdMac.label;" key="key_configCmdMac"
+		command="cmd_config"/>
+      <menuitem id="menu_mac_services" label="&servicesMenuMac.label;"/>
+      <menuitem id="menu_mac_hide_app" label="&hideThisAppCmdMac.label;" key="key_hideThisAppCmdMac"/>
+      <menuitem id="menu_mac_hide_others" label="&hideOtherAppsCmdMac.label;" key="key_hideOtherAppsCmdMac"/>
+      <menuitem id="menu_mac_show_all" label="&showAllAppsCmdMac.label;"/>
+      <menuitem id="menu_FileQuitItem"
+		label="&quitApplicationCmdMac.label;"
+		key="key_quitApplication"
+		command="cmd_quitApplication" />
+    </menupopup>
+
+  </overlaytarget>
+</overlay>
+

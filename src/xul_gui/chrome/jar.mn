@@ -7,6 +7,7 @@ cuemol2.jar:
   content/cuemol2-scripts.xul
   content/jquery.js
 * content/hiddenWindow.xul
+* content/cuemol2-macos-menus.xul
 # Styles
   content/cuemol2.css
 #ifdef XP_MACOSX

@@ -711,11 +711,9 @@ Qm2Main.prototype.onNewTabWindow = function(bWin)
   }
 }
 
-function openAboutDialog()
+Qm2Main.prototype.openAboutDialog = function()
 {
-  var wm = Components.classes["@mozilla.org/appshell/window-mediator;1"]
-                     .getService(Components.interfaces.nsIWindowMediator);
-  var win = wm.getMostRecentWindow("CueMol2:About");
+  var win = this.mWinMed.getMostRecentWindow("CueMol2:About");
   if (win)
     win.focus();
   else
