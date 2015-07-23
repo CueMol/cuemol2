@@ -416,6 +416,10 @@ void FileDisplayContext::sphere(double r, const Vector4D &vec)
     return;
   }
 
+  // Ignore very small spheres
+  if (r<F_EPS4)
+    return;
+
   Vector4D v(vec);
   xform_vec(v);
   m_pIntData->sphere(v, r, m_nDetail);

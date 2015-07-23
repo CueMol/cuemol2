@@ -108,6 +108,9 @@ void DisplayContext::sphere()
 /// Display sphere with radius of r at position vec
 void DisplayContext::sphere(double r, const Vector4D &vec)
 {
+  // Ignore very small spheres
+  if (r<F_EPS4)
+    return;
   pushMatrix();
   translate(vec);
   scale(Vector4D(r,r,r));
