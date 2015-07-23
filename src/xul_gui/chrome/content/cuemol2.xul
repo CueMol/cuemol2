@@ -37,7 +37,6 @@
   fullscreenbutton = "true"
   onclose = "if (gQm2Main.onCloseEvent(event)) return goQuitApplication();">
 
-  <script src="chrome://cuemol2/content/jquery.js"/>
   <script src="chrome://cuemol2/content/cuemol2-utils.js"/>
   <script src="chrome://cuemol2/content/cuemol2-panels.js"/>
   <script src="chrome://cuemol2/content/shortcut-manager.js"/>

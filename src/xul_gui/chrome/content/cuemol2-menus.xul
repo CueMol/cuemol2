@@ -377,10 +377,6 @@
 
 	<menu id="window-menu" label="&menu_window.label;" accesskey="&menu_window.accesskey;">
 	  <menupopup id="window-popup">
-	    <!-- <menuitem id="window-testsave-menu"
-	      label="TEST: save sidepanel"
-	      oncommand="$('#left_side_panel')[0].saveSession('left');"/>-->
-
 	    <menuitem id="window-toggleribbon-menu"
 	      label="Show/Hide Topbar"
 	      oncommand="window.gToolRibbon.toggleCollapse()"/>
