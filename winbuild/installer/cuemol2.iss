@@ -2,17 +2,15 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 ; $Id: cuemol2.iss,v 1.15 2011/04/03 12:50:02 rishitani Exp $
 
-; #define CueMolReleaseID "@VERSION_RELEASE_ID@"
-; #define CueMolBuildID "@VERSION_BUILD_ID@"
-
 #define WinBuildDir "..\xul_Release"
 ; #define WinBuildDir "..\xul_Debug"
 #define XulGUIDir "..\..\src\xul_gui"
 
 #define SysDLLDir PROJ_DIR+"\bin"
-#define XulRTDir PROJ_DIR+"\xulrunner\xulrunner2-sdk\bin"
+; #define XulRTDir PROJ_DIR+"\xulrunner\xulrunner2-sdk\bin"
 
-#define BoostVer "vc90-mt-1_44"
+#define BoostVer "vc120-mt-1_57"
+; #define BoostVer "vc90-mt-1_44"
 
 #define CueMolVer CueMolReleaseID+"."+CueMolBuildID
 
@@ -48,7 +46,6 @@ Name: desktopicon\common; Description: For all users; GroupDescription: Addition
 Name: desktopicon\user; Description: "For the current user only"; GroupDescription: "Additional icons:"; Flags: exclusive unchecked
 Name: quicklaunchicon; Description: "Create a &Quick Launch icon"; GroupDescription: "Additional icons:"; Flags: unchecked
 Name: fileassoc_qsc; Description: "{cm:AssocFileExtension,CueMol2 scene file,.qsc}"
-Name: activexctrl; Description: "Register the CueMol2 &ActiveX control"; GroupDescription: "ActiveX Control:";  Flags: unchecked
 
 [Files]
 ; Main executables
@@ -80,9 +77,11 @@ Source: {#SysDLLDir}\msvcr90.dll; DestDir: {app}; Flags: ignoreversion
 Source: {#SysDLLDir}\msvcm90.dll; DestDir: {app}; Flags: ignoreversion
 Source: {#SysDLLDir}\Microsoft.VC90.CRT.manifest; DestDir: {app}; Flags: ignoreversion
 Source: {#SysDLLDir}\boost_thread-{#BoostVer}.dll; DestDir: {app}; Flags: ignoreversion
+Source: {#SysDLLDir}\boost_chrono-{#BoostVer}.dll; DestDir: {app}; Flags: ignoreversion
 Source: {#SysDLLDir}\boost_date_time-{#BoostVer}.dll; DestDir: {app}; Flags: ignoreversion
 Source: {#SysDLLDir}\boost_system-{#BoostVer}.dll; DestDir: {app}; Flags: ignoreversion
 Source: {#SysDLLDir}\boost_filesystem-{#BoostVer}.dll; DestDir: {app}; Flags: ignoreversion
+Source: {#SysDLLDir}\CGAL-vc120-mt-4.6.1.dll; DestDir: {app}; Flags: ignoreversion
 Source: {#SysDLLDir}\libfftw3f-3.dll; DestDir: {app}; Flags: ignoreversion
 Source: {#SysDLLDir}\glew32.dll; DestDir: {app}; Flags: ignoreversion
 
@@ -147,10 +146,6 @@ Source: "{#FFmpegBundleDir}\bin\ffmpeg.exe"; DestDir: "{app}\ffmpeg\bin"; Flags:
 #ifdef APBSBundleDir
 Source: "{#APBSBundleDir}\*"; DestDir: "{app}\apbs"; Flags: ignoreversion recursesubdirs createallsubdirs
 #endif
-
-; ActiveX control
-Source: {#WinBuildDir}\CueMol2Ctl.ocx;   DestDir: {app};   Flags: ignoreversion regserver;   Tasks: activexctrl
-; Source: {#WinBuildDir}\CueMol2Ctl.ocx;   DestDir: {app};   Flags: ignoreversion regserver;   AfterInstall: RegisterServerXX('{app}\CueMol2Ctl.ocx');   Tasks: activexctrl
 
 [Icons]
 Name: {group}\CueMol; Filename: {app}\cuemol2.exe

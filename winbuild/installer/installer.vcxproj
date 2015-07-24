@@ -32,9 +32,11 @@
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\common.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\common.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
@@ -53,11 +55,11 @@
   <ItemGroup>
     <CustomBuild Include="cuemol2.iss">
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">echo "" &gt; $(SolutionDir)\build\setup.ok
-perl iss-version.pl %(FullPath) $(SolutionDir)..\src\version.hpp %(RootDir)%(Directory)_tmp.iss $(PROJ_DIR)</Command>
+perl iss-version.pl %(FullPath) $(SolutionDir)..\src\version.hpp $(XULRunnerDir) $(PROJ_DIR)</Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)..\src\version.hpp;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)\build\setup.ok;%(Outputs)</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">echo "" &gt; $(SolutionDir)\build\setup.ok
-perl iss-version.pl %(FullPath) $(SolutionDir)..\src\version.hpp %(RootDir)%(Directory)_tmp.iss $(PROJ_DIR)</Command>
+perl iss-version.pl %(FullPath) $(SolutionDir)..\src\version.hpp $(XULRunnerDir) $(PROJ_DIR)</Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)..\src\version.hpp;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)\build\setup.ok;%(Outputs)</Outputs>
     </CustomBuild>

@@ -3,14 +3,19 @@
 # $Id: iss-version.pl,v 1.2 2011/02/15 10:05:38 rishitani Exp $
 #
 # Embed the version number into InnoSetup iss file
-# usage: perl <InnoSetup input file template> <version.hpp file> <output file> <proj_dir>
+# usage: perl <InnoSetup input file> <version.hpp file> <xulrunner_bindir> <proj_dir>
 
 use strict;
 
 my $input_iss = $ARGV[0];
 my $version_file = $ARGV[1];
-my $output_iss = $ARGV[2];
+my $xulbin_dir = $ARGV[2]."\\bin";
 my $proj_dir = $ARGV[3];
+
+print "xulbin_dir=$xulbin_dir\n";
+die unless (-d $xulbin_dir);
+print "proj_dir=$proj_dir\n";
+die unless (-d $proj_dir);
 
 # extract version no
 open(IN, $version_file) || die "$version_file : $!";
@@ -73,14 +78,14 @@ if (-d "$proj_dir/apbs-bundle") {
   $apbs_cmd = "\"/dAPBSBundleDir=$proj_dir/apbs-bundle\"";
 }
 
-my $cmd = "iscc \"/dPROJ_DIR=$proj_dir\" \"/dCueMolReleaseID=$release_ID\" \"/dCueMolBuildID=$build_ID\" $povray_cmd $ffmpeg_cmd $apbs_cmd $input_iss";
+my $cmd = "iscc \"/dPROJ_DIR=$proj_dir\" \"/dXulRTDir=$xulbin_dir\" \"/dCueMolReleaseID=$release_ID\" \"/dCueMolBuildID=$build_ID\" $povray_cmd $ffmpeg_cmd $apbs_cmd $input_iss";
 print("RUN: $cmd\n");
 system($cmd);
 
-if ($povray_cmd) {
-  # build non-pov version
-  my $cmd = "iscc \"/dPROJ_DIR=$proj_dir\" \"/dCueMolReleaseID=$release_ID\" \"/dCueMolBuildID=$build_ID\" $input_iss";
-  print("RUN: $cmd\n");
-  system($cmd);
-}
+#if ($povray_cmd) {
+#  # build non-pov version
+#  my $cmd = "iscc \"/dPROJ_DIR=$proj_dir\" \"/dCueMolReleaseID=$release_ID\" \"/dCueMolBuildID=$build_ID\" $input_iss";
+#  print("RUN: $cmd\n");
+#  system($cmd);
+#}
 

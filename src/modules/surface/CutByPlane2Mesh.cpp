@@ -20,12 +20,12 @@
 
 #include <CGAL/Triangulation_vertex_base_with_info_2.h>
 
-#include <CGAL/version.h>
+/*#include <CGAL/version.h>
 #ifdef WIN32
 #if (CGAL_VERSION_NR/10000000%100)>3
 #pragma comment(lib, "libgmp-10.lib")
 #endif
-#endif
+#endif*/
 
 struct VertInfo
 {
