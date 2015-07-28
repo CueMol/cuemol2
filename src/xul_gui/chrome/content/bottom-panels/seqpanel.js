@@ -16,6 +16,10 @@ if (!("seqpanel" in cuemolui)) {
     panel.mData = new Object();
     panel.mNames = new Object();
 
+    // marker position
+    panel.mMarkRow = null;
+    panel.mMarkPos = null;
+
     panel.onLoad = function ()
     {
       var that = this;
@@ -351,6 +355,16 @@ if (!("seqpanel" in cuemolui)) {
 	}
       }
       
+      if (this.mMarkRow!=null && this.mMarkPos!=null) {
+        // display marker
+        let x = this.mMarkPos * tw;
+        let y = this.mMarkRow * th;
+        let old = ctx.strokeStyle;
+        ctx.strokeStyle = "rgb(255, 0, 0)";
+        ctx.strokeRect(x,y,tw,th);
+        ctx.strokeStyle = old;
+      }
+
     };
 
     panel.renderRuler = function (aLen)
@@ -421,6 +435,14 @@ if (!("seqpanel" in cuemolui)) {
       var iy = Math.floor( y / this.mTextH );
       //dd("seq click: "+ix+", "+iy+" btn="+aEvent.button);
 
+      var res = this.getResidueByPos(ix, iy);
+      res.x = x;
+      res.y = y;
+      return res;
+    }
+
+    panel.getResidueByPos = function (ix, iy)
+    {
       if (!this.mRow||!this.mRow[iy])
         return null;
       
@@ -434,7 +456,7 @@ if (!("seqpanel" in cuemolui)) {
       var res = mol.getResidue(chn, ix.toString());
       if (!res) return null;
 
-      return {"mol": mol, "chain": chn, "res": res, "x": x, "y": y};
+      return {"mol": mol, "chain": chn, "res": res, "ix": ix, "iy": iy};
     }
 
     panel.toggleResidSel = function (mol, res)
@@ -469,6 +491,7 @@ if (!("seqpanel" in cuemolui)) {
       
       scene.commitUndoTxn();
       // EDIT TXN END //
+
     };
 
     panel.centerAt = function (aRes)
@@ -528,18 +551,28 @@ if (!("seqpanel" in cuemolui)) {
       case "seq-ctm-invsel":
         cuemolui.molSelInvert(r.mol);
         break;
-
       }      
+
+      // move the marker
+      this.mMarkRow = r.iy;
+      this.mMarkPos = r.ix;
     };
 
     panel.onMouseDown = function (aEvent)
     {
       aEvent.target.setCapture();
       this.mPrevRes = this.getResidueByEvent(aEvent.clientX, aEvent.clientY);
-
+      
       // var that = this;
       // aEvent.target.addEventListener("mousemove", that.onMouseMoved, false);
 
+      if (! aEvent.shiftKey) {
+        // move the marker
+        this.mMarkRow = this.mPrevRes.iy;
+        this.mMarkPos = this.mPrevRes.ix;
+        this.renderSeq();
+      }
+      
       dd("Mouse down called; prev_res="+this.mPrevRes);
     };
 
@@ -567,17 +600,42 @@ if (!("seqpanel" in cuemolui)) {
 
       if (this.mPrevRes.res.sindex==res.res.sindex) {
 	dd("seqpanel mouseup res match --> click");
-        this.toggleResidSel(res.mol, res.res);
-        this.centerAt(res.res);
+        if (aEvent.shiftKey) {
+          dd("seqpanel SHIFT click!!!");
+          if (this.mMarkPos!=null && this.mMarkRow!=null) {
+            this.mPrevRes = this.getResidueByPos(this.mMarkPos, this.mMarkRow);
+            dd("Res=" + debug.dumpObjectTree(res));
+            dd("PrevRes=" + debug.dumpObjectTree(this.mPrevRes));
+            if (this.mPrevRes.chain==res.chain) {
+              // move the marker
+              this.mMarkRow = res.iy;
+              this.mMarkPos = res.ix;
+              // range select (no toggle)
+              this.rangeSelect(res, false);
+            }
+          }
+        }
+        else {
+          // move the marker
+          this.mMarkRow = res.iy;
+          this.mMarkPos = res.ix;
+          // change sel (and redraw)
+          this.toggleResidSel(res.mol, res.res);
+          this.centerAt(res.res);
+        }
 	return;
       }
 
       dd("seqpanel mouseup range select");
       
-      this.rangeSelect(res);
+      // move the marker
+      this.mMarkRow = res.iy;
+      this.mMarkPos = res.ix;
+      // change sel (toggle mode, redraw seq)
+      this.rangeSelect(res, true);
     };
 
-    panel.rangeSelect = function (res)
+    panel.rangeSelect = function (res, bToggle)
     {
       var scene = cuemol.getScene(this.mTgtSceneID);
       if (!scene) return;
@@ -586,10 +644,13 @@ if (!("seqpanel" in cuemolui)) {
       let rrs = cuemol.createObj("ResidRangeSet");
       rrs.fromSel(mol, mol.sel);
   
-      let addsel = cuemol.makeSel(res.res.chainName + "." +
-				  res.res.sindex + ":" + this.mPrevRes.res.sindex +
-				  ".*");
-      if (rrs.contains(this.mPrevRes.res))
+      let selstr = res.res.chainName + "." +
+        res.res.sindex + ":" + this.mPrevRes.res.sindex +
+          ".*";
+      dd("seqpanel> rangeSelect selstr="+selstr);
+      let addsel = cuemol.makeSel(selstr);
+
+      if (bToggle && rrs.contains(this.mPrevRes.res))
         rrs.remove(mol, addsel);
       else
         rrs.append(mol, addsel);
