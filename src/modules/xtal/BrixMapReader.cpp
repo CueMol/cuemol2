@@ -4,12 +4,17 @@
 //
 // $Id: BrixMapReader.cpp,v 1.1 2010/01/16 15:32:08 rishitani Exp $
 
-#include "denmap_com.hpp"
+#include <common.h>
 
 #include "BrixMapReader.hpp"
-
 #include "DensityMap.hpp"
-#include <qlib/LChar.hpp>
+
+#include <qlib/StringStream.hpp>
+#include <qlib/ClassRegistry.hpp>
+#include <qlib/LClassUtils.hpp>
+
+using namespace xtal;
+using qlib::StrInStream;
 using qlib::LChar;
 
 // default constructor
@@ -27,46 +32,29 @@ BrixMapReader::~BrixMapReader()
 
 ///////////////////////////////////////////
 
-// attach DensityMap obj to this I/O obj
-void BrixMapReader::attach(MbObject *pMap)
+/// create default object for this reader
+qsys::ObjectPtr BrixMapReader::createDefaultObj() const
 {
-  if (!pMap->instanceOf<DensityMap>()) {
-    MB_ASSERT(false);
-    // TO DO: throw exception
-    return;
-  }
-  m_pMap = (DensityMap *) pMap;
+  return qsys::ObjectPtr(new DensityMap());
+  //return new DensityMap();
 }
 
-// detach DensityMap obj from this I/O obj
-MbObject *BrixMapReader::detach()
-{
-  DensityMap *pMap = m_pMap;
-  m_pMap = NULL;
-  return pMap;
-}
-
-/** create default object for this reader */
-MbObject *BrixMapReader::createDefaultObj() const
-{
-  return new DensityMap();
-}
-
-/** get file-type description */
-const char *BrixMapReader::getTypeDescr() const
-{
-  return "BRIX Density Map(*.brix)";
-}
-
-/** get file extension */
-const char *BrixMapReader::getFileExt() const
+/// get nickname for scripting
+const char *BrixMapReader::getName() const
 {
   return "brix";
 }
 
-bool BrixMapReader::isCompat(MbObject *pobj) const
+/// get file-type description
+const char *BrixMapReader::getTypeDescr() const
 {
-  return pobj->instanceOf<DensityMap>();
+  return "BRIX Density Map(*.brix;*.omap)";
+}
+
+/// get file extension
+const char *BrixMapReader::getFileExt() const
+{
+  return "*.brix; *.omap; *.omap.gz";
 }
 
 ///////////////////////////////////////////
@@ -106,7 +94,9 @@ bool BrixMapReader::read(qlib::InStream &ins)
   LOG_DPRINT("BRIX> memory allocation %d bytes\n", ntotal*4);
   
   // fseek(fp, 512, SEEK_SET);
-
+  double sum;
+  int nadd=0;
+  
   int ibx, iby, ibz, ix, iy, iz;
   for (ibz=0; ibz<zbri; ibz++)
     for (iby=0; iby<ybri; iby++)
@@ -131,13 +121,18 @@ bool BrixMapReader::read(qlib::InStream &ins)
                 continue;
               setmap(bx+ix, by+iy, bz+iz,
                      buf[ix+(iy+iz*8)*8]);
+              sum += double(buf[ix+(iy+iz*8)*8]);
+              ++nadd;
             }
       }
-  
+
+  double mean = (sum/double(nadd)-m_plus)/m_prod;
+  LOG_DPRINTLN("mean density=%f", mean);
+
   //
   // setup DensityMap object
   //
-  m_pMap->setMapByteArray(m_denbuf, m_ncol, m_nrow, m_nsect, rmin, rmax, m_sigma);
+  m_pMap->setMapByteArray(m_denbuf, m_ncol, m_nrow, m_nsect, rmin, rmax, mean, m_sigma);
 
   delete [] m_denbuf;
   m_denbuf = NULL;
@@ -147,7 +142,7 @@ bool BrixMapReader::read(qlib::InStream &ins)
   // setup crystal parameters (BRIX format doesn't contain spgrp info: defaulting to P1)
   m_pMap->setXtalParams(m_cella, m_cellb, m_cellc, m_alpha, m_beta, m_gamma);
 
-  m_pMap->setOrigFileType("brix");
+  //m_pMap->setOrigFileType("brix");
   return true;
 }
 

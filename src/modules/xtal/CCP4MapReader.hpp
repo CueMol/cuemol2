@@ -36,10 +36,10 @@ private:
 
   ///////////////////////////////////////////
 public:
-  /** default constructor */
+  /// default constructor
   CCP4MapReader();
 
-  /** destructor */
+  /// destructor
   virtual ~CCP4MapReader();
 
   //////////////////////////////////////////////

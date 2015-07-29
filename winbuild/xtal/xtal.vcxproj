@@ -95,6 +95,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\modules\xtal\BrixMapReader.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\BrixMapReader_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\CCP4InStream.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\CCP4MapReader.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\CCP4MapReader_wrap.cpp" />
@@ -122,6 +124,7 @@
     <ClCompile Include="..\..\src\modules\xtal\xtal_loader.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <mcwrapgen3 Include="..\..\src\modules\xtal\BrixMapReader.qif" />
     <mcwrapgen3 Include="..\..\src\modules\xtal\CCP4MapReader.qif" />
     <mcwrapgen3 Include="..\..\src\modules\xtal\DensityMap.qif" />
     <mcwrapgen3 Include="..\..\src\modules\xtal\GLSLMapMeshRenderer.qif" />

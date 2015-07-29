@@ -13,6 +13,7 @@
 #include "MapSurfRenderer.qif"
 #include "MTZ2MapReader.qif"
 #include "CCP4MapReader.qif"
+#include "BrixMapReader.qif"
 
 #ifdef USE_OPENGL
 #  include "GLSLMapMeshRenderer.qif"
@@ -29,6 +30,7 @@ module xtal
   MapSurfRenderer;
   MTZ2MapReader;
   CCP4MapReader;
+  BrixMapReader;
 
 #ifdef USE_OPENGL
   GLSLMapMeshRenderer;
