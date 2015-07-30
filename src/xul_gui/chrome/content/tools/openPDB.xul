@@ -52,25 +52,54 @@ window.gPdbDlg = {
     var uri = this.mIoService.newURI(pdb_url, null, null);
 
     try {
-      var httpChannel = this.mIoService.newChannelFromURI(uri)
+      let httpChannel = this.mIoService.newChannelFromURI(uri)
         .QueryInterface(Components.interfaces.nsIHttpChannel);
       httpChannel.requestMethod = "HEAD";
       httpChannel.redirectionLimit = 0;
       httpChannel.open();
-      dd("Response "+httpChannel.responseStatus+httpChannel.responseStatusText);
-      if (httpChannel.responseStatus==200) {
-        this.mArgs[0](pdbid);
-        return true;
+      dd("Response "+httpChannel.responseStatus+httpChannel.responseStatusText+" for URL: "+pdb_url);
+      if (httpChannel.responseStatus!=200) {
+        this.mResBox.value = "PDB Entry "+pdbid+" not found.";
+        this.mPdbIdBox.select();
+        this.mPdbIdBox.focus();
+        return false;
       }
     }
     catch (e) {
       debug.exception(e);
+      return false;
     }
 
-    this.mResBox.value = "PDB Entry "+pdbid+" not found.";
-    this.mPdbIdBox.select();
-    this.mPdbIdBox.focus();
-    return false;
+    var mapchk = document.getElementById('chk-get-map');
+    if (!mapchk.checked) {
+      this.mArgs[0](pdbid, false);
+      return true;
+    }
+
+    var eds_url = "http://eds.bmc.uu.se/eds/sfd/"+pdbid+"/"+pdbid+"_sigmaa.mtz";
+    uri = this.mIoService.newURI(eds_url, null, null);
+
+    try {
+      let httpChannel = this.mIoService.newChannelFromURI(uri)
+        .QueryInterface(Components.interfaces.nsIHttpChannel);
+      httpChannel.requestMethod = "HEAD";
+      httpChannel.redirectionLimit = 0;
+      httpChannel.open();
+      dd("Response "+httpChannel.responseStatus+httpChannel.responseStatusText+" for URL: "+eds_url);
+      if (httpChannel.responseStatus!=200) {
+        this.mResBox.value = "EDS Entry "+pdbid+" not found.";
+        this.mPdbIdBox.select();
+        this.mPdbIdBox.focus();
+        return false;
+      }
+    }
+    catch (e) {
+      debug.exception(e);
+      return false;
+    }
+
+    this.mArgs[0](pdbid, true);
+    return true;
   }
 };
 ]]>  
@@ -79,6 +108,7 @@ window.gPdbDlg = {
 <vbox>
   <description value="Enter PDB ID:"/>
   <textbox id="pdbid" />
+  <checkbox id="chk-get-map" label="Fetch map" checked="false"/>
   <description id="result-text" value=""/>
 
 <!-- <hbox>

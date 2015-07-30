@@ -501,7 +501,7 @@ XPCObjWrapper *XPCCueMol::createWrapper()
 
 void XPCCueMol::notifyDestr(int nind)
 {
-  MB_DPRINTLN("======\ndestroy obj ind=%d, dbgmsg=%s\n======", nind, m_pool[nind].dbgmsg.c_str());
+  //MB_DPRINTLN("======\ndestroy obj ind=%d, dbgmsg=%s\n======", nind, m_pool[nind].dbgmsg.c_str());
   m_pool[nind].ptr = NULL;
 
 #ifdef MB_DEBUG
