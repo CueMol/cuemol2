@@ -90,7 +90,7 @@ bool Canvas2DTextRender2::renderText(const qlib::LString &str, gfx::PixelBuffer 
   qsys::ScrEventManager *pSEM = qsys::ScrEventManager::getInstance();
 
   TextRenderEvent ev;
-  ev.m_pAry = gfx::TextImgBufPtr(new gfx::TextImgBuf());
+  ev.m_pAry = gfx::TextImgBufPtr(MB_NEW gfx::TextImgBuf());
   ev.m_pAry->setText(str);
   ev.m_pAry->setFont(m_strCSSFont);
 

@@ -81,9 +81,12 @@ namespace xtal {
     
   private:
     
-    /// read header / file type check
+    /// read BRIX header / file type check
     bool readHeader(qlib::InStream &ins);
     
+    /// read DNS6 header
+    bool readDns6Header(const char *sbuf);
+
     inline void setmap(int i, int j, int k, unsigned char rho) {
       m_denbuf[i + (j + k*m_nrow)*m_ncol] = rho;
     }
