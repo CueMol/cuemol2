@@ -2,7 +2,7 @@
 // Text rendering routine using HTML5 Canvas 2D
 //
 
-#include "xpcom.hpp"
+#include <common.h>
 
 #include "Canvas2DTextRender2.hpp"
 
@@ -11,6 +11,7 @@
 #include <qsys/ScrEventManager.hpp>
 #include <gfx/TextImgBuf.hpp>
 
+using namespace sysdep;
 using qlib::LString;
 
 //////////////////////////////
@@ -134,18 +135,19 @@ bool Canvas2DTextRender2::renderText(const qlib::LString &str, gfx::PixelBuffer 
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-gfx::TextRenderImpl *createTextRender()
-{
-  Canvas2DTextRender2 *pTTR = new Canvas2DTextRender2;
-  pTTR->setupFont(12.0, "sans-serif", "normal", "normal");
-  //pTTR->setupFont(20.0, "Times New Roman", FONT_STYLE_NORMAL, FONT_WEIGHT_NORMAL);
-
-  return pTTR;
-}
-
-void destroyTextRender(void *pTR)
-{
-  Canvas2DTextRender2 *pTTR = static_cast<Canvas2DTextRender2 *>(pTR);
-  delete pTTR;
+namespace sysdep {
+  void *createTextRender()
+  {
+    Canvas2DTextRender2 *pTTR = new Canvas2DTextRender2;
+    pTTR->setupFont(12.0, "sans-serif", "normal", "normal");
+    //pTTR->setupFont(20.0, "Times New Roman", FONT_STYLE_NORMAL, FONT_WEIGHT_NORMAL);
+    return pTTR;
+  }
+  
+  void destroyTextRender(void *pTR)
+  {
+    Canvas2DTextRender2 *pTTR = static_cast<Canvas2DTextRender2 *>(pTR);
+    delete pTTR;
+  }
 }
 
