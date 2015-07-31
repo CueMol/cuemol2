@@ -100,7 +100,7 @@ StreamListener.prototype.onStopRequest = function (aRequest, aContext, aStatus)
     let pdbid = this.mPDBID;
     window.setTimeout(function () {
       gQm2Main.onOpenEDSsite(pdbid);
-    }, 1000);
+    }, 0);
   }
 };
 
