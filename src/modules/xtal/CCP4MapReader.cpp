@@ -174,6 +174,7 @@ bool CCP4MapReader::read(qlib::InStream &arg)
   LOG_DPRINT("  unit cell a=%.2fA, b=%.2fA, c=%.2fA,\n", alen, blen, clen);
   LOG_DPRINT("    alpha=%.2fdeg, beta=%.2fdeg, gamma=%.2fdeg,\n",
 	    alpha, beta, gamma);
+  LOG_DPRINT("  SG number  : %d\n", nspgrp);
   LOG_DPRINT("  map minimum density  : %f\n", rhomin);
   LOG_DPRINT("  map maximum density  : %f\n", rhomax);
   LOG_DPRINT("  map mean density     : %f\n", rhomean);

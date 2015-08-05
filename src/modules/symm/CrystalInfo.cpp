@@ -158,9 +158,9 @@ LString CrystalInfo::getLatticeName() const
 LString CrystalInfo::getHMSpaceGroupName() const
 {
   SymOpDB *pdb = SymOpDB::getInstance();
-  LString sgname = pdb->getCName(m_nSG);
-  //if (sgname.isEmpty())
-  //sgname = "(unknown)";
+  const char *sgname = pdb->getCName(m_nSG);
+  if (sgname==NULL)
+    return LString("(unknown)");
   return sgname;
 }
 
@@ -168,41 +168,10 @@ LString CrystalInfo::getHMSpaceGroupName() const
 LString CrystalInfo::getSpaceGroupName() const
 {
   SymOpDB *pdb = SymOpDB::getInstance();
-  LString sgname = pdb->getName(m_nSG);
-  //if (sgname.isEmpty())
-  //sgname = "(unknown)";
+  // LString sgname = pdb->getName(m_nSG);
+  const char *sgname = pdb->getName(m_nSG);
+  if (sgname==NULL)
+    return LString("(unknown)");
   return sgname;
 }
-
-
-
-#if 0
-#include <mbsys/QsysModule.hpp>
-
-//static
-CrystalInfo *CrystalInfo::getInfo(const LString &objname)
-{
-  MbObject *pobj = QsysModule::getObjByName_throw(objname);
-  return getInfo(pobj);
-}
-
-//static
-void CrystalInfo::registerInfo(const LString &objname, CrystalInfo *pxi)
-{
-  MbObject *pobj = QsysModule::getObjByName_throw(objname);
-  pobj->setExtData("symminfo", pxi);
-}
-
-#include "SymmChangedEvent.hpp"
-
-//static
-void CrystalInfo::fireChangedEvent(const LString &objname)
-{
-  MbObject *pobj = QsysModule::getObjByName_throw(objname);
-  SymmChangedEvent ev;
-  ev.setTarget(pobj);
-  pobj->fireMbObjEvent(ev);
-}
-#endif
-
 
