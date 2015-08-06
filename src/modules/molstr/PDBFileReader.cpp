@@ -795,8 +795,12 @@ bool PDBFileReader::readSSBond()
   int resi2;
   if (!sbuf.toInt(&resi2))
     return false;
-  char ins2 = readChar(36);
-  if (ins2==' ') ins2 = '\0';
+
+  char ins2 = '\0';
+  if (isAvailChar(36)) {
+    ins2 = readChar(36);
+    if (ins2==' ') ins2 = '\0';
+  }
 
   m_linkdat.push_back(Linkage());
   Linkage &dat = m_linkdat.back();
@@ -864,7 +868,7 @@ bool PDBFileReader::readRecord(qlib::LineStream &ins)
   //if (!ins.ready())
   //return false;
   
-  m_recbuf = ins.readLine();
+  m_recbuf = ins.readLine().chomp();
   if (m_recbuf.isEmpty())
     return false;
 
@@ -881,7 +885,7 @@ void PDBFileReader::postProcess()
   // Apply manually defined linkage info (SSBOND, LINK)
   BOOST_FOREACH (const Linkage &elem, m_linkdat) {
     if (elem.bSSBond) {
-      MB_DPRINTLN("PDBRead> SSBOND %s%s - %s%s",
+      MB_DPRINTLN("PDBRead> SSBOND [%s%s] - [%s%s]",
                   elem.ch1.c_str(), elem.resi1.toString().c_str(),
                   elem.ch2.c_str(), elem.resi2.toString().c_str());
 

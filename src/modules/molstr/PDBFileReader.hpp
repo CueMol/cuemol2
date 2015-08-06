@@ -130,7 +130,8 @@ namespace molstr {
        The returned region includes 'end' position,
        e.g. length is (end-start+1).
     */
-    LString readStr(int start, int end) {
+    LString readStr(int start, int end) const
+    {
       start --; end --;
 
       if (end >= m_recbuf.length())
@@ -143,7 +144,22 @@ namespace molstr {
       return m_recbuf.substr(start, end-start+1);
     }
 
-    char readChar(int start) {
+    bool isAvailStr(int start, int end) const
+    {
+      start --; end --;
+
+      if (end >= m_recbuf.length())
+	return false;
+      if (start<0)
+	return false;
+      if (start>end)
+	return false;
+
+      return true;
+    }
+
+    char readChar(int start) const
+    {
       start --;
 
       if (start >= m_recbuf.length())
@@ -152,6 +168,18 @@ namespace molstr {
 	start = 0;
 
       return m_recbuf[start];
+    }
+
+    bool isAvailChar(int start) const
+    {
+      start --;
+
+      if (start >= m_recbuf.length())
+	return false;
+      if (start<0)
+	return false;
+
+      return true;
     }
 
     bool checkAtomRecord(LString &chain, LString &resname, LString &atom);
