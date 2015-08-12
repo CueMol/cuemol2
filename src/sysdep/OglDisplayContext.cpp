@@ -107,6 +107,11 @@ bool OglDisplayContext::isFile() const
   return false;
 }
 
+bool OglDisplayContext::isDrawElemSupported() const
+{
+  return true;
+}
+
 void OglDisplayContext::startSection(const LString &section_name)
 {
   if (!m_bUseShaderAlpha || m_pDefPO==NULL)

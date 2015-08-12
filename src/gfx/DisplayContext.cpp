@@ -16,6 +16,11 @@ bool DisplayContext::isRenderPixmap() const
   return true;
 }
 
+bool DisplayContext::isDrawElemSupported() const
+{
+  return false;
+}
+
 qsys::View *DisplayContext::getTargetView() const
 {
   return NULL;

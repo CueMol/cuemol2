@@ -66,8 +66,14 @@ namespace gfx {
     virtual bool isCurrent() const =0;
     virtual qsys::View *getTargetView() const;
 
+    /// Returns whether the rendering target of this context is a file or not.
     virtual bool isFile() const =0;
+
+    /// Returns whether this context can render pixmap or not.
     virtual bool isRenderPixmap() const;
+
+    /// Returns whether this context support VA/VBO (DrawElem()) method
+    virtual bool isDrawElemSupported() const;
 
     ////////////////
 

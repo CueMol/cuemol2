@@ -21,6 +21,8 @@ namespace gfx {
     virtual ~VBORep() {}
   };
 
+  /// Draw element class
+  /// abstraction of VA/VBO implementation of OpenGL
   class GFX_API DrawElem
   {
   public:

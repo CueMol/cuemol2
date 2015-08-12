@@ -97,6 +97,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\src\gfx\MultiGradient.cpp" />
     <ClCompile Include="..\..\src\gfx\MultiGradient_wrap.cpp" />
+    <ClCompile Include="..\..\src\gfx\SphereSet.cpp" />
     <ClCompile Include="..\..\src\qsys\Camera.cpp" />
     <ClCompile Include="..\..\src\qsys\InDevEvent.cpp" />
     <ClCompile Include="..\..\src\qsys\InOutHandler.cpp" />

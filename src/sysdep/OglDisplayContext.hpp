@@ -64,6 +64,9 @@ namespace sysdep {
     
     virtual bool isFile() const;
 
+    /// Returns whether this context support VA/VBO (DrawElem()) method
+    virtual bool isDrawElemSupported() const;
+    
     // shader control
     virtual void startSection(const LString &section_name);
     virtual void endSection();
@@ -148,19 +151,6 @@ namespace sysdep {
     virtual void drawMesh(const gfx::Mesh &l);    
 
     virtual void drawElem(const gfx::DrawElem &l);
-
-#if 0
-    virtual void useTexture(const LTexture &) ;
-    virtual void unuseTexture() ;
-    virtual void texCoord(float, float) ;
-
-    /** call display list */
-    virtual void callDisplayList(DisplayList *pdl) ;
-  
-    /** Is display list supported in this implementation? */
-    virtual bool isDisplayListSupported() const ;
-
-#endif
 
     ///////////////////////////////
     // Display List support

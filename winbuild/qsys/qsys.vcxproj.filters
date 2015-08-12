@@ -681,6 +681,9 @@
     <ClCompile Include="..\..\src\sysdep\Canvas2DTextRender2.cpp">
       <Filter>sysdep</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\gfx\SphereSet.cpp">
+      <Filter>gfx</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\qsys\AbstractColor.hpp">
