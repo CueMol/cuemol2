@@ -1,0 +1,78 @@
+#!/bin/sh
+
+APP_NAME="CueMol2.app"
+
+top_srcdir=@top_srcdir@
+srcdir=@srcdir@
+XUL_FRAMEWORK_DIR=@XULRUNNER_SDK_PATH@/bin/XUL.framework
+XUL_BINDIR=$XUL_FRAMEWORK_DIR/Versions/Current
+TARGET_CONTENTSDIR=$APP_NAME/Contents
+TARGET_BINDIR=$TARGET_CONTENTSDIR/MacOS
+TARGET_RESDIR=$TARGET_CONTENTSDIR/Resources
+DEPLOY_DIR=$top_srcdir/xul_gui
+REL_DEPLOY_DIR=../../../$DEPLOY_DIR
+
+# Remove first, if it exists
+if [ -d "CueMol2.app" ]; then
+  rm -rf "CueMol2.app"
+fi
+
+# Create Contents
+mkdir -p $TARGET_CONTENTSDIR
+install -m 644 Info.plist $TARGET_CONTENTSDIR/Info.plist
+install -m 644 $top_srcdir/osxbuild/PkgInfo $TARGET_CONTENTSDIR/PkgInfo
+
+# Create macosx bindir
+mkdir -p $TARGET_BINDIR
+ln -s $XUL_BINDIR/XUL $TARGET_BINDIR/XUL
+ln -s $XUL_BINDIR/libfreebl3.dylib $TARGET_BINDIR/libfreebl3.dylib
+ln -s $XUL_BINDIR/libmozalloc.dylib $TARGET_BINDIR/libmozalloc.dylib
+ln -s $XUL_BINDIR/libmozglue.dylib $TARGET_BINDIR/libmozglue.dylib
+ln -s $XUL_BINDIR/libnss3.dylib $TARGET_BINDIR/libnss3.dylib
+ln -s $XUL_BINDIR/libnssckbi.dylib $TARGET_BINDIR/libnssckbi.dylib
+ln -s $XUL_BINDIR/libnssdbm3.dylib $TARGET_BINDIR/libnssdbm3.dylib
+ln -s $XUL_BINDIR/libplugin_child_interpose.dylib $TARGET_BINDIR/libplugin_child_interpose.dylib
+ln -s $XUL_BINDIR/libsoftokn3.dylib $TARGET_BINDIR/libsoftokn3.dylib
+ln -s $XUL_BINDIR/plugin-container.app $TARGET_BINDIR/plugin-container.app
+ln -s $XUL_BINDIR/updater.app $TARGET_BINDIR/updater.app
+ln -s $REL_DEPLOY_DIR/bin/cuemol $TARGET_BINDIR/cuemol
+
+# Create resources dir
+ln -s ../../$top_srcdir/xul_gui CueMol2.app/Contents/Resources
+install -m 644 $DEPLOY_DIR/chrome/icons/default/cuemol2.icns $TARGET_RESDIR/cuemol2.icns
+if [ -L $TARGET_RESDIR/dependentlibs.list ]; then
+  rm $TARGET_RESDIR/dependentlibs.list
+fi
+ln -s $XUL_BINDIR/dependentlibs.list $TARGET_RESDIR/dependentlibs.list
+#ln -s $XUL_BINDIR/dictionaries $TARGET_RESDIR/dictionaries
+#ln -s $XUL_BINDIR/gmp-clearkey $TARGET_RESDIR/gmp-clearkey
+
+# Create frameworks dir
+mkdir -p "CueMol2.app/Contents/Frameworks"
+ln -s $XUL_FRAMEWORK_DIR CueMol2.app/Contents/Frameworks/XUL.framework
+
+
+# 	$(LN_S) $(XUL_BINDIR)/omni.ja $(TARGET_RESDIR)/omni.ja
+#	$(LN_S) $(XUL_BINDIR)/platform.ini $(TARGET_RESDIR)/platform.ini
+#	$(LN_S) $(XUL_BINDIR)/res $(TARGET_RESDIR)/res
+
+#	$(INSTALL) -d "CueMol2.app/Contents/PlugIns"
+#	$(LN_S) ../Frameworks/XUL.framework/Versions/Current/libmozutils.dylib "CueMol2.app/Contents/MacOS/libmozutils.dylib"
+#	$(LN_S) ../../$(top_srcdir)/xul_gui CueMol2.app/Contents/Resources
+
+# 	$(LN_S) $(REL_DEPLOY_DIR)/application.ini $(TARGET_RESDIR)/application.ini
+# 	$(LN_S) $(REL_DEPLOY_DIR)/bin $(TARGET_RESDIR)/bin
+# 	$(LN_S) $(REL_DEPLOY_DIR)/chrome $(TARGET_RESDIR)/chrome
+# 	$(LN_S) $(REL_DEPLOY_DIR)/chrome.manifest $(TARGET_RESDIR)/chrome.manifest
+# 	$(LN_S) $(REL_DEPLOY_DIR)/components $(TARGET_RESDIR)/components
+# 	$(LN_S) $(REL_DEPLOY_DIR)/data $(TARGET_RESDIR)/data
+# 	$(LN_S) $(REL_DEPLOY_DIR)/defaults $(TARGET_RESDIR)/defaults
+# 	$(LN_S) $(REL_DEPLOY_DIR)/document-pdb.icns $(TARGET_RESDIR)/document-pdb.icns
+# 	$(LN_S) $(REL_DEPLOY_DIR)/document-qsc.icns $(TARGET_RESDIR)/document-qsc.icns
+# 	$(LN_S) $(REL_DEPLOY_DIR)/document-qsl.icns $(TARGET_RESDIR)/document-qsl.icns
+# 	$(LN_S) $(REL_DEPLOY_DIR)/harness-options.json $(TARGET_RESDIR)/harness-options.json
+# 	$(LN_S) $(REL_DEPLOY_DIR)/lib $(TARGET_RESDIR)/lib
+# 	$(LN_S) $(REL_DEPLOY_DIR)/resources $(TARGET_RESDIR)/resources
+# 	$(LN_S) $(REL_DEPLOY_DIR)/scripts $(TARGET_RESDIR)/scripts
+# 	$(LN_S) $(REL_DEPLOY_DIR)/sysconfig.xml $(TARGET_RESDIR)/sysconfig.xml
+
