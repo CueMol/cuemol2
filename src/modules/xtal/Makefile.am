@@ -25,6 +25,7 @@ MapSurfRenderer.cpp \
 MapRenderer.cpp \
 QdfDenMapReader.cpp \
 QdfDenMapWriter.cpp \
+BrixMapReader.cpp \
 $(NULL)
 
 #
@@ -37,6 +38,7 @@ MapSurfRenderer.qif \
 MapRenderer.qif \
 MTZ2MapReader.qif \
 CCP4MapReader.qif \
+BrixMapReader.qif \
 $(NULL)
 
 ######################################################

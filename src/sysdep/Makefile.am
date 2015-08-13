@@ -23,6 +23,7 @@ OglDisplayList.cpp \
 OglDisplayContext.cpp \
 OglFBOView.cpp \
 OglProgramObject.cpp \
+Canvas2DTextRender2.cpp \
 $(NULL)
 endif
 
@@ -38,6 +39,7 @@ OglDisplayList.cpp \
 OglDisplayContext.cpp \
 OglFBOView.cpp \
 OglProgramObject.cpp \
+Canvas2DTextRender2.cpp \
 $(NULL)
 endif
 

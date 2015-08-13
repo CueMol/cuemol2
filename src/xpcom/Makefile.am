@@ -49,7 +49,6 @@ XPCCueMol.cpp \
 XPCObjWrapper.cpp \
 XPCNativeWidget.cpp \
 XPCTimerImpl.cpp \
-Canvas2DTextRender2.cpp \
 xpc_main.cpp
 
 # @XULRUNNER_SDK_PATH@/sdk/lib/libxpcomglue_s.a
