@@ -58,7 +58,6 @@ namespace xpcom {
   private:
     nsresult invokeChk1(const char *name);
     nsresult invokeImpl(const char *name, LVarArgs &largs, nsIVariant **_retval);
-    LString getPropsJSONImpl(LScriptable *pObj);
     
     nsresult checkPropImpl(const char *propname, bool *rval = NULL);
 

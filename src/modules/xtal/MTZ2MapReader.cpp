@@ -400,22 +400,22 @@ void MTZ2MapReader::readHeader(qlib::InStream &ins) throw (qlib::FileFormatExcep
 {
   char sbuf[256];
 
-  ins.read(sbuf, 0, 4*sizeof(char));
+  ins.readFully(sbuf, 0, 4*sizeof(char));
   if (strncmp(sbuf, "MTZ ", 4)!=0) {
     MB_THROW(qlib::FileFormatException, "Not a MTZ file");
     return;
   }
 
   unsigned int nhdrst;
-  ins.read((char*)&nhdrst, 0, 1*sizeof(int));
+  ins.readFully((char*)&nhdrst, 0, 1*sizeof(int));
 
   unsigned char mtstring[4];
-  ins.read((char*) &mtstring, 0, 1*sizeof(int));
+  ins.readFully((char*) &mtstring, 0, 1*sizeof(int));
   // printf("mark %X\n", mark);
   m_nConvInt = (mtstring[1]>>4) & 0x0f;
   m_nConvFlt = (mtstring[0]>>4) & 0x0f;
-  MB_DPRINTLN("iconv %X", m_nConvInt);
-  MB_DPRINTLN("fconv %X", m_nConvFlt);
+  MB_DPRINTLN("MTZ> iconv %X", m_nConvInt);
+  MB_DPRINTLN("MTZ> fconv %X", m_nConvFlt);
 
   if (m_nConvInt!=4 || m_nConvFlt!=4) {
     MB_THROW(qlib::FileFormatException, "Unsupported byteorder\n");
@@ -423,10 +423,10 @@ void MTZ2MapReader::readHeader(qlib::InStream &ins) throw (qlib::FileFormatExcep
   }
 
   m_nhdrst = nhdrst;
-  MB_DPRINTLN("nhdrst %X (*4=%d)\n", m_nhdrst, m_nhdrst*4);
+  MB_DPRINTLN("MTZ> nhdrst %X (*4=%d)\n", m_nhdrst, m_nhdrst*4);
 
   // skip header
-  ins.read(sbuf, 0, (20-3)*4*sizeof(char));
+  ins.readFully(sbuf, 0, (20-3)*4*sizeof(char));
 
   // OK
 }
@@ -441,7 +441,7 @@ void MTZ2MapReader::readBody(qlib::InStream &ins) throw (qlib::FileFormatExcepti
   }
   MB_DPRINTLN("MTZ2MapReader> alloc %d bytes\n", m_nrawdat);
 
-  ins.read(m_pbuf, 0, m_nrawdat*sizeof(char));
+  ins.readFully(m_pbuf, 0, m_nrawdat*sizeof(char));
 }
 
 void MTZ2MapReader::skipBody(qlib::InStream &ins) throw (qlib::FileFormatException)
@@ -651,7 +651,7 @@ void MTZ2MapReader::readFooter(qlib::LineStream &ins) throw (qlib::FileFormatExc
   char sbuf[256];
   
   while (ins.ready()) {
-    ins.read(sbuf, 0, 80);
+    ins.readFully(sbuf, 0, 80);
     sbuf[80] = '\0';
     
     //fprintf(stderr, "record [%s]\n", sbuf);

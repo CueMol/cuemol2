@@ -1,0 +1,22 @@
+// -*-Mode: C++;-*-
+//
+// BRIX/OMAP map file reader
+//
+
+#ifndef BRIX_MAP_READER_QIF_INCLUDED
+#define BRIX_MAP_READER_QIF_INCLUDED
+
+#include <qsys/ObjReader.qif>
+
+runtime_class BrixMapReader extends ObjReader
+{
+  client_hdr "BrixMapReader.hpp";
+  client_name xtal::BrixMapReader;
+
+  scriptable;
+  smartptr;
+
+};
+
+#endif
+

@@ -159,8 +159,10 @@ klass.onLoad = function ()
 
   ( function () {
     dd("GenPropEdit.onLoad> TABS=" + this.mTabs); 
-    for (var i in this.mTabs)
+    for (var i in this.mTabs) {
+      dd("call onload : "+i);
       this.notifyTab("onLoad", i);
+    }
   } ).call(this);
 
   var that = this;
@@ -245,7 +247,7 @@ klass.onLoad = function ()
 klass.populateData = function (obj)
 {
   var json = obj._wrapped.getPropsJSON();
-  //dd("GenPropEdit> jsonobj: "+json);
+  dd("GenPropEdit.populateData> jsonobj: "+json);
 
   this.mObjData = this.expandChildNodes(JSON.parse(json));
 

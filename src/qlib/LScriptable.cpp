@@ -103,3 +103,5 @@ void LNoCopyScrObject::setDefaultPropFlag(const LString &propnm, bool bflag)
   m_df.setDefaultPropFlag(propnm, bflag, this);
 }
 
+/////////////////////////////////////////
+

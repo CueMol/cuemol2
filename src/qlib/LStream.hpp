@@ -69,6 +69,8 @@ namespace qlib {
 
     ///////////////////////
 
+    void readFully(char *b, int off, int len);
+
   };
 
   /// Input stream adaptor with default implementations.

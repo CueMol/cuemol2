@@ -2,6 +2,9 @@
 // XPCOM-related include files
 //
 
+#ifdef _DEBUG
+#define MB_DEBUG
+#endif
 
 #ifdef WINVER
 #  undef WINVER

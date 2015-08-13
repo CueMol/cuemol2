@@ -11,6 +11,7 @@
 #include "MapMeshRenderer.hpp"
 #include "MapSurfRenderer.hpp"
 #include "CCP4MapReader.hpp"
+#include "BrixMapReader.hpp"
 #include "MTZ2MapReader.hpp"
 #include "XplorMapReader.hpp"
 #include "QdfDenMapWriter.hpp"
@@ -36,6 +37,7 @@ bool init()
 {
   xtal_regClasses();
   CCP4MapReader::regClass();
+  BrixMapReader::regClass();
   XplorMapReader::regClass();
   QdfDenMapWriter::regClass();
   QdfDenMapReader::regClass();
@@ -51,6 +53,7 @@ bool init()
 
   StreamManager *pSM = StreamManager::getInstance();
   pSM->registReader<CCP4MapReader>();
+  pSM->registReader<BrixMapReader>();
   pSM->registReader<MTZ2MapReader>();
   pSM->registReader<XplorMapReader>();
   pSM->registWriter<QdfDenMapWriter>();

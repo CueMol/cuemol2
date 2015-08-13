@@ -4,12 +4,19 @@
 //
 // $Id: BrixMapReader.cpp,v 1.1 2010/01/16 15:32:08 rishitani Exp $
 
-#include "denmap_com.hpp"
+#include <common.h>
 
 #include "BrixMapReader.hpp"
-
 #include "DensityMap.hpp"
-#include <qlib/LChar.hpp>
+
+#include <qlib/StringStream.hpp>
+#include <qlib/BinStream.hpp>
+#include <qlib/ClassRegistry.hpp>
+#include <qlib/LClassUtils.hpp>
+
+using namespace xtal;
+using qlib::StrInStream;
+using qlib::BinInStream;
 using qlib::LChar;
 
 // default constructor
@@ -27,52 +34,39 @@ BrixMapReader::~BrixMapReader()
 
 ///////////////////////////////////////////
 
-// attach DensityMap obj to this I/O obj
-void BrixMapReader::attach(MbObject *pMap)
+/// create default object for this reader
+qsys::ObjectPtr BrixMapReader::createDefaultObj() const
 {
-  if (!pMap->instanceOf<DensityMap>()) {
-    MB_ASSERT(false);
-    // TO DO: throw exception
-    return;
-  }
-  m_pMap = (DensityMap *) pMap;
+  return qsys::ObjectPtr(new DensityMap());
+  //return new DensityMap();
 }
 
-// detach DensityMap obj from this I/O obj
-MbObject *BrixMapReader::detach()
-{
-  DensityMap *pMap = m_pMap;
-  m_pMap = NULL;
-  return pMap;
-}
-
-/** create default object for this reader */
-MbObject *BrixMapReader::createDefaultObj() const
-{
-  return new DensityMap();
-}
-
-/** get file-type description */
-const char *BrixMapReader::getTypeDescr() const
-{
-  return "BRIX Density Map(*.brix)";
-}
-
-/** get file extension */
-const char *BrixMapReader::getFileExt() const
+/// get nickname for scripting
+const char *BrixMapReader::getName() const
 {
   return "brix";
 }
 
-bool BrixMapReader::isCompat(MbObject *pobj) const
+/// get file-type description
+const char *BrixMapReader::getTypeDescr() const
 {
-  return pobj->instanceOf<DensityMap>();
+  return "BRIX Density Map(*.brix;*.omap)";
+}
+
+/// get file extension
+const char *BrixMapReader::getFileExt() const
+{
+  return "*.brix; *.omap; *.omap.gz";
 }
 
 ///////////////////////////////////////////
 
 bool BrixMapReader::read(qlib::InStream &ins)
 {
+  // get the target object (DensityMap)
+  m_pMap = getTarget<DensityMap>();
+  if (m_pMap==NULL) return false;
+
   bool fOK = readHeader(ins);
   if (!fOK)
     return false;
@@ -83,7 +77,7 @@ bool BrixMapReader::read(qlib::InStream &ins)
   LOG_DPRINTLN("BRIX> grid   %d %d %d", m_na, m_nb, m_nc);
   LOG_DPRINTLN("BRIX> cell   %.2f %.2f %.2f", m_cella, m_cellb, m_cellc);
   LOG_DPRINTLN("BRIX>        %.2f %.2f %.2f", m_alpha, m_beta, m_gamma);
-  LOG_DPRINTLN("BRIX> prod %.2f plus %.2f sigma %.2f", m_prod, m_plus, m_sigma);
+  LOG_DPRINTLN("BRIX> prod %.2f plus %.2f", m_prod, m_plus);
 
   int xbri = m_ncol/8;
   if (m_ncol%8>0) xbri++;
@@ -106,7 +100,10 @@ bool BrixMapReader::read(qlib::InStream &ins)
   LOG_DPRINT("BRIX> memory allocation %d bytes\n", ntotal*4);
   
   // fseek(fp, 512, SEEK_SET);
-
+  double sum=0.0;
+  double sqsum=0.0;
+  int nadd=0;
+  
   int ibx, iby, ibz, ix, iy, iz;
   for (ibz=0; ibz<zbri; ibz++)
     for (iby=0; iby<ybri; iby++)
@@ -129,15 +126,25 @@ bool BrixMapReader::read(qlib::InStream &ins)
                   by+iy>=m_nrow ||
                   bz+iz>=m_nsect)
                 continue;
+              unsigned char val = buf[ix+(iy+iz*8)*8];
               setmap(bx+ix, by+iy, bz+iz,
-                     buf[ix+(iy+iz*8)*8]);
+                     val);
+              sum += double(val);
+              sqsum += double( int(val) * int(val) );
+              ++nadd;
             }
       }
-  
+
+  double mean = (sum/double(nadd)) * m_prod + m_plus;
+  double sqmean = (sqsum/double(nadd)) * m_prod + m_plus;
+  double sigma = sqrt(sqmean-mean*mean);
+  LOG_DPRINTLN("mean density=%f", mean);
+  LOG_DPRINTLN("rms density=%f", sigma);
+
   //
   // setup DensityMap object
   //
-  m_pMap->setMapByteArray(m_denbuf, m_ncol, m_nrow, m_nsect, rmin, rmax, m_sigma);
+  m_pMap->setMapByteArray(m_denbuf, m_ncol, m_nrow, m_nsect, rmin, rmax, mean, sigma);
 
   delete [] m_denbuf;
   m_denbuf = NULL;
@@ -147,7 +154,7 @@ bool BrixMapReader::read(qlib::InStream &ins)
   // setup crystal parameters (BRIX format doesn't contain spgrp info: defaulting to P1)
   m_pMap->setXtalParams(m_cella, m_cellb, m_cellc, m_alpha, m_beta, m_gamma);
 
-  m_pMap->setOrigFileType("brix");
+  //m_pMap->setOrigFileType("brix");
   return true;
 }
 
@@ -167,8 +174,9 @@ bool BrixMapReader::readHeader(qlib::InStream &in)
   char *tok = strtok(sbuf, delimitor);
   if (tok==NULL)
     return false;
-  if (!LChar::equals(tok, ":-)"))
-    return false;
+  if (!LChar::equals(tok, ":-)")) {
+    return readDns6Header(sbuf);
+  }
   
   //
   // read origin
@@ -395,4 +403,83 @@ bool BrixMapReader::readHeader(qlib::InStream &in)
   return true;
 }
 
+bool BrixMapReader::readDns6Header(const char *sbuf)
+{
+  StrInStream sin(sbuf, 512);
+  BinInStream bin(sin);
+
+  int header[19];
+  
+  for (int i = 0; i < 19; i++)
+    header[i] = bin.readInt16();
+
+  if (header[18] != 100) {
+    StrInStream sin2(sbuf, 512);
+    BinInStream bin2(sin2);
+    bin2.setSwapMode(BinInStream::MODE_SWAP);
+    for (int i = 0; i < 19; i++)
+      header[i] = bin2.readInt16();
+  }
+
+  for (int i = 0; i < 19; i++)
+    MB_DPRINTLN("hdr %d = %d", i, header[i]);
+
+  if (header[18] != 100)
+    return false;
+
+  m_stacol = header[0];
+  m_starow = header[1];
+  m_stasect = header[2];
+
+  m_ncol = header[3];
+  m_nrow = header[4];
+  m_nsect = header[5];
+
+  m_endcol = m_stacol + header[3];
+  m_endrow = m_starow + header[4];
+  m_endsect = m_stasect + header[5];
+
+  m_na = header[6];
+  m_nb = header[7];
+  m_nc = header[8];
+
+  double a = header[9];
+  double b = header[10];
+  double c = header[11];
+  double alpha = header[12];
+  double beta = header[13];
+  double gamma = header[14];
+
+  double header16 = header[15]; // 100 * 255 / (dmax - dmin)
+  double header17 = header[16]; // -255dmin / (dmax - dmin)
+  double scalingFactor = header[17];
+  double header19 = header[18];
+
+  double dmin = (0 - header17) * header19 / header16;
+  double dmax = (255 - header17) * header19 / header16;
+  double drange = dmax - dmin;
+  double byteFactor = drange / 255;
+  
+  double dminError1 = (0 - header17 - 0.5f) * header19 / (header16 - 0.5f);
+  double dminError2 = (0 - header17 + 0.5f) * header19 / (header16 + 0.5f);
+  double dmaxError1 = (255 - header17 - 0.5f) * header19 / (header16 - 0.5f);
+  double dmaxError2 = (255 - header17 + 0.5f) * header19 / (header16 + 0.5f);
+  
+  double dminError = (int)((dminError2 - dminError1) / 0.002f) * 0.001f;
+  double dmaxError = (int)((dmaxError2 - dmaxError1) / 0.002f) * 0.001f;
+  
+  MB_DPRINTLN("DNS6 dmin,dmax = %f+/-%f,%f+/-%f", dmin, dminError, dmax, dmaxError);
+
+  m_cella = a / scalingFactor;
+  m_cellb = b / scalingFactor;
+  m_cellc = c / scalingFactor;
+  m_alpha = alpha / scalingFactor;
+  m_beta = beta / scalingFactor;
+  m_gamma = gamma / scalingFactor;
+  
+  m_prod = byteFactor;
+  m_plus = dmin;
+  
+  return true;
+}
 
