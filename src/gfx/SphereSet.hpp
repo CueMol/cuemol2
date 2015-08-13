@@ -10,6 +10,7 @@
 #include <qlib/Vector4D.hpp>
 #include <qlib/LTypes.hpp>
 #include "SolidColor.hpp"
+#include "DrawElem.hpp"
 
 namespace gfx {
 
@@ -29,13 +30,24 @@ namespace gfx {
     /// tesselation detail
     int m_nDetail;
 
+    /// built draw elem object
+    DrawElem *m_pDrawElem;
+
   public:
     SphereSet();
     virtual ~SphereSet();
 
-    void create(int nsize);
+    /// estimate size / allocate draw elem object
+    void create(int nsize, int ndetail);
+
+    /// render a sphere
     void sphere(int index, const Vector4D &pos, double r, const ColorPtr &col);
-    void buildDrawElem(nDet);
+
+    /// build draw elem objects
+    DrawElem *buildDrawElem();
+
+  private:
+    void estimateMeshSize();
 
   };
 

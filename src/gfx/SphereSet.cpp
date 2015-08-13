@@ -17,9 +17,14 @@ SphereSet::~SphereSet()
 {
 }
 
-void SphereSet::create(int nsize)
+void SphereSet::create(int nsize, int ndetail)
 {
+  m_nDetail = ndetail;
   m_data.resize(nsize);
+}
+
+void SphereSet::estimateMeshSize()
+{
 }
 
 void SphereSet::sphere(int i, const Vector4D &pos, double r, const ColorPtr &col)
@@ -29,11 +34,13 @@ void SphereSet::sphere(int i, const Vector4D &pos, double r, const ColorPtr &col
   m_data[i].ccode = col->getCode();
 }
 
-void SphereSet::buildDrawElem(int nDet)
+DrawElem *SphereSet::buildDrawElem()
 {
-  m_nDetail = nDet;
+  // TO DO: Create DrawElemVNCI (or VNI?) object
+  return NULL;
 }
 
+#if 0
 // convert single sphere to mesh data
 void RendIntData::convSphere(int ind)
 {
@@ -159,3 +166,5 @@ void RendIntData::convSphere(int ind)
     delete [] ppindx[i];
   delete [] ppindx;
 }
+#endif
+

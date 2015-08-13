@@ -5,6 +5,7 @@
 #include "BallStickRenderer.qif"
 #include "AnIsoURenderer.qif"
 #include "CPKRenderer.qif"
+#include "CPK2Renderer.qif"
 #include "SplineRenderer.qif"
 #include "TubeRenderer.qif"
 #include "TubeSection.qif"
@@ -26,6 +27,7 @@ module molvis
   BallStickRenderer;
   AnIsoURenderer;
   CPKRenderer;
+  CPK2Renderer;
   SplineRenderer;
   TubeRenderer;
   TubeSection;
