@@ -35,6 +35,7 @@ ColCompiler.cpp \
 DrawElem.cpp \
 LabelCacheImpl.cpp \
 MultiGradient.cpp \
+SphereSet.cpp \
 $(NULL)
 
 # CueMol interface definitions for MCWRAPGEN

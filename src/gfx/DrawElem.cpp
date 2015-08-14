@@ -94,6 +94,16 @@ bool DrawElemVC::vertex(int ind, const Vector4D &v)
   return true;
 }
 
+bool DrawElemVC::getVertex(int ind, Vector4D &v) const
+{
+  if (ind<0 || getSize()<=ind) return false;
+
+  v.x() = m_pData[ind].x;
+  v.y() = m_pData[ind].y;
+  v.z() = m_pData[ind].z;
+  return true;
+}
+
 bool DrawElemVC::color(int ind, quint32 c)
 {
   if (ind<0 || getSize()<=ind) return false;
@@ -135,6 +145,16 @@ bool DrawElemV::vertex(int ind, const Vector4D &v)
   return true;
 }
 
+bool DrawElemV::getVertex(int ind, Vector4D &v) const
+{
+  if (ind<0 || getSize()<=ind) return false;
+
+  v.x() = m_pData[ind].x;
+  v.y() = m_pData[ind].y;
+  v.z() = m_pData[ind].z;
+  return true;
+}
+
 //////////////////////////
 
 DrawElemVNC::DrawElemVNC() : m_pData(NULL)
@@ -162,6 +182,16 @@ bool DrawElemVNC::vertex(int ind, const Vector4D &v)
   m_pData[ind].x = qfloat32(v.x());
   m_pData[ind].y = qfloat32(v.y());
   m_pData[ind].z = qfloat32(v.z());
+  return true;
+}
+
+bool DrawElemVNC::getVertex(int ind, Vector4D &v) const
+{
+  if (ind<0 || getSize()<=ind) return false;
+
+  v.x() = m_pData[ind].x;
+  v.y() = m_pData[ind].y;
+  v.z() = m_pData[ind].z;
   return true;
 }
 
@@ -212,6 +242,40 @@ void DrawElemVNCI::allocIndex(int ninds)
 }
 
 void DrawElemVNCI::invalidateCache() const
+{
+  super_t::invalidateCache();
+  
+  if (m_pIndVBO!=NULL)
+    delete m_pIndVBO;
+  m_pIndVBO = NULL;
+}
+
+////////////
+
+DrawElemVNCI32::DrawElemVNCI32()
+     : m_pIndData(NULL), m_pIndVBO(NULL)
+{
+}
+
+DrawElemVNCI32::~DrawElemVNCI32()
+{
+  if (m_pIndData!=NULL)
+    delete [] m_pIndData;
+  
+  if (m_pIndVBO!=NULL)
+    delete m_pIndVBO;
+}
+
+void DrawElemVNCI32::allocIndex(int ninds)
+{
+  MB_ASSERT(m_pIndData==NULL);
+  MB_ASSERT(m_pIndVBO==NULL);
+
+  m_nIndSize = ninds;
+  m_pIndData = new index_t[ninds];
+}
+
+void DrawElemVNCI32::invalidateCache() const
 {
   super_t::invalidateCache();
   

@@ -310,7 +310,6 @@ void LWRendDisplayContext::writeMesh(RendIntData *pDat, render::Mesh &mesh)
     pDat->m_clut.getColor(pp->c, pcol);
     quint32 cc = pcol->getCode();
     pVary->color(i, mulAlpha(cc, calpha));
-    //pVary->color(i, cc);
     pVary->normal(i, pp->n);
     pVary->vertex(i, pp->v);
   }

@@ -57,6 +57,9 @@ namespace gfx {
     /// texture map ( to be implemented )
     static const int VA_TEXTURE = 7;
 
+    /// vertex, normal, color, and 32-bit index
+    static const int VA_VNCI32 = 8;
+
     //////////////////////////////////////////////////
 
     DrawElem();
@@ -140,6 +143,8 @@ namespace gfx {
 
     virtual bool color(int ind, quint32 cc);
 
+    bool getVertex(int ind, Vector4D &v) const;
+
   private:
       Elem *m_pData;
 
@@ -165,6 +170,8 @@ namespace gfx {
     virtual void alloc(int nsize);
 
     virtual bool vertex(int ind, const Vector4D &v);
+
+    bool getVertex(int ind, Vector4D &v) const;
 
   private:
       Elem *m_pData;
@@ -200,6 +207,7 @@ namespace gfx {
 
     virtual bool normal(int ind, const Vector4D &v);
 
+    bool getVertex(int ind, Vector4D &v) const;
   };
 
   /// Draw element with vertex, normal, color, and index
@@ -217,6 +225,63 @@ namespace gfx {
     index_t *getIndexData() const { return m_pIndData; }
 
     virtual int getType() const { return VA_VNCI; }
+
+    /// allocate index buffer (for general use)
+    void allocIndex(int ninds);
+
+    void setIndex(int ind, index_t n1) {
+      MB_ASSERT( ind <m_nIndSize);
+      m_pIndData[ind] = n1;
+    }
+
+    /// start indexed triangles mode (shortcut method)
+    void startIndexTriangles(int nverts, int nfaces) {
+      DrawElem::startTriangles(nverts);
+      allocIndex(nfaces*3);
+    }
+
+    /// set face index for triangles mode (shortcut method)
+    void setIndex3(int ind, index_t n1, index_t n2, index_t n3) {
+      MB_ASSERT( (ind*3+2) <m_nIndSize);
+      m_pIndData[ind*3 + 0] = n1;
+      m_pIndData[ind*3 + 1] = n2;
+      m_pIndData[ind*3 + 2] = n3;
+    }
+
+    int getIndexSize() const { return m_nIndSize; }
+
+    /// index VBO object access
+    VBORep *getIndexVBO() const { return m_pIndVBO; }
+    void setIndexVBO(VBORep *p) const { m_pIndVBO = p; }
+
+    /// clear cached data (--> delete VBO & index VBO)
+    virtual void invalidateCache() const;
+
+  private:
+    /// buffer ID (for GL VBO impl)
+    mutable VBORep *m_pIndVBO;
+
+    int m_nIndSize;
+    index_t *m_pIndData;
+
+
+  };
+
+  /// Draw element with vertex, normal, color, and index (32-bit)
+  class GFX_API DrawElemVNCI32 : public DrawElemVNC
+  {
+    typedef DrawElemVNC super_t;
+
+  public:
+    typedef quint32 index_t;
+
+    DrawElemVNCI32();
+
+    virtual ~DrawElemVNCI32();
+
+    index_t *getIndexData() const { return m_pIndData; }
+
+    virtual int getType() const { return VA_VNCI32; }
 
     /// allocate index buffer (for general use)
     void allocIndex(int ninds);

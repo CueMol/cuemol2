@@ -47,6 +47,7 @@ using gfx::DrawElemV;
 using gfx::DrawElemVC;
 using gfx::DrawElemVNC;
 using gfx::DrawElemVNCI;
+using gfx::DrawElemVNCI32;
 using gfx::DrawElemPix;
 
 OglDisplayContext::OglDisplayContext(int sceneid)
@@ -984,6 +985,24 @@ void OglDisplayContext::drawElem(const DrawElem &de)
                    devnci.getIndexData(),
                    GL_STATIC_DRAW);
     }
+    else if (ntype==DrawElem::VA_VNCI32) {
+      const DrawElemVNCI32 &devnci = static_cast<const DrawElemVNCI32&>(de);
+      const qbyte *pdata = (const qbyte *) devnci.getData();
+      glBufferData(GL_ARRAY_BUFFER, sizeof(DrawElemVNCI32::Elem)*nelems, pdata, GL_STATIC_DRAW);
+
+      glGenBuffers(1, &nvbo_ind);
+      OglVBORep *pRep = MB_NEW OglVBORep();
+      pRep->m_nBufID = nvbo_ind;
+      pRep->m_nSceneID = m_nSceneID;
+      devnci.setIndexVBO(pRep);
+      ninds = devnci.getIndexSize();
+
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, nvbo_ind);
+      glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+                   sizeof(DrawElemVNCI32::index_t)*ninds,
+                   devnci.getIndexData(),
+                   GL_STATIC_DRAW);
+    }
 
     //glBindBuffer(GL_ARRAY_BUFFER, 0);
   }
@@ -995,6 +1014,13 @@ void OglDisplayContext::drawElem(const DrawElem &de)
 
     if (ntype==DrawElem::VA_VNCI) {
       const DrawElemVNCI &devnci = static_cast<const DrawElemVNCI&>(de);
+      OglVBORep *pRep = (OglVBORep *) devnci.getIndexVBO();
+      nvbo_ind = pRep->m_nBufID;
+      ninds = devnci.getIndexSize();
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, nvbo_ind);
+    }
+    else if (ntype==DrawElem::VA_VNCI32) {
+      const DrawElemVNCI32 &devnci = static_cast<const DrawElemVNCI32&>(de);
       OglVBORep *pRep = (OglVBORep *) devnci.getIndexVBO();
       nvbo_ind = pRep->m_nBufID;
       ninds = devnci.getIndexSize();
@@ -1024,7 +1050,9 @@ void OglDisplayContext::drawElem(const DrawElem &de)
     glEnableClientState(GL_VERTEX_ARRAY);
     glVertexPointer(3, GL_FLOAT, sizeof(DrawElemV::Elem), 0);
   }
-  else if (ntype==DrawElem::VA_VNC || ntype==DrawElem::VA_VNCI ) {
+  else if (ntype==DrawElem::VA_VNC ||
+	   ntype==DrawElem::VA_VNCI ||
+	   ntype==DrawElem::VA_VNCI32) {
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_NORMAL_ARRAY);
     glEnableClientState(GL_COLOR_ARRAY);
@@ -1040,6 +1068,12 @@ void OglDisplayContext::drawElem(const DrawElem &de)
     // element index array
     setLighting(true);
     glDrawElements(mode, ninds, GL_UNSIGNED_SHORT, 0);
+    setLighting(false);
+  }
+  else if (ntype==DrawElem::VA_VNCI32) {
+    // element 32-bit index array
+    setLighting(true);
+    glDrawElements(mode, ninds, GL_UNSIGNED_INT, 0);
     setLighting(false);
   }
   else {

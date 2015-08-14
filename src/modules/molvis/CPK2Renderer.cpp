@@ -33,6 +33,8 @@ void CPK2Renderer::display(DisplayContext *pdc)
 {
   if (m_pDrawElem==NULL) {
     renderImpl();
+    if (m_pDrawElem==NULL)
+      return; // Error, Cannot draw anything (ignore)
   }
 
   preRender(pdc);

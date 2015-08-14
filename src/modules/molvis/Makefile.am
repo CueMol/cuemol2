@@ -18,6 +18,7 @@ molvis.cpp \
 AnIsoURenderer.cpp \
 BallStickRenderer.cpp \
 CPKRenderer.cpp \
+CPK2Renderer.cpp \
 CubicSpline.cpp \
 SplineCoeffSet.cpp \
 SplineRenderer.cpp \
@@ -49,6 +50,7 @@ $(NULL)
 MCWG_SRC= \
 AnIsoURenderer.qif \
 CPKRenderer.qif \
+CPK2Renderer.qif \
 BallStickRenderer.qif \
 SplineRenderer.qif \
 TubeRenderer.qif \

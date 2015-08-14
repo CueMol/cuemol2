@@ -31,7 +31,7 @@ namespace gfx {
     int m_nDetail;
 
     /// built draw elem object
-    DrawElem *m_pDrawElem;
+    DrawElemVNCI32 *m_pDrawElem;
 
   public:
     SphereSet();
@@ -47,8 +47,10 @@ namespace gfx {
     DrawElem *buildDrawElem();
 
   private:
-    void estimateMeshSize();
-
+    void estimateMeshSize(int &, int &);
+    void buildSphere(int i, int &ivt, int &ifc);
+    int selectTrig(int j, int k, int j1, int k1);
+    
   };
 
 }
