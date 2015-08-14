@@ -92,11 +92,23 @@ libmolvis_la_CXXFLAGS = \
   @CXXFLAGS_VIS_HIDDEN@ \
   -DMOLVIS_EXPORTS=1 \
   -I$(top_srcdir) -I$(srcdir) \
+  @GLEW_CPPFLAGS@ \
   @BOOST_CPPFLAGS@ \
   $(NULL)
 
-libmolvis_la_LIBADD = -lqsys -lgfx -lqlib
-libmolvis_la_LDFLAGS = -L../../qsys -L../../gfx -L../../qlib
+libmolvis_la_LIBADD = \
+  -lqsys \
+  -lgfx \
+  -lqlib \
+  @GLEW_LIBADD@ \
+  $(NULL)
+
+libmolvis_la_LDFLAGS = \
+  -L../../qsys \
+  -L../../gfx \
+  -L../../qlib \
+  @GLEW_LDFLAGS@ \
+  $(NULL)
 
 #-Wall
 

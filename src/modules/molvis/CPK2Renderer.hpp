@@ -11,6 +11,9 @@
 
 #include <modules/molstr/MolAtomRenderer.hpp>
 
+#include <sysdep/OglDisplayContext.hpp>
+#include <sysdep/OglProgramObject.hpp>
+
 // namespace molstr { class MolCoord; }
 
 class CPK2Renderer_wrap;
@@ -26,6 +29,8 @@ namespace molvis {
     MC_CLONEABLE;
 
     friend class ::CPK2Renderer_wrap;
+
+    typedef MolAtomRenderer super_t;
 
   private:
 
@@ -45,11 +50,18 @@ namespace molvis {
     /// cached vertex array/VBO
     gfx::DrawElem *m_pDrawElem;
 
+    sysdep::OglProgramObject *m_pPO;
+
+    bool m_bUseShader;
+
   public:
     CPK2Renderer();
     virtual ~CPK2Renderer();
 
     virtual const char *getTypeName() const;
+
+    /// override to initialize the shader
+    virtual void setSceneID(qlib::uid_t nid);
 
     //////////////////////////////////////////////////////
 
@@ -79,7 +91,19 @@ namespace molvis {
     double getVdWRadius(MolAtomPtr pAtom);
 
     /// Rendering implementation
-    void renderImpl();
+    void renderVBOImpl();
+
+    void initShader();
+    void renderShaderImpl();
+    void drawShaderImpl();
+
+    GLuint m_nVertexLoc;
+    GLuint m_nImposLoc;
+    GLuint m_nRadLoc;
+
+    GLuint m_nVBO;
+    GLuint m_nVBO_ind;
+    int m_nIndSize;
   };
 
 }
