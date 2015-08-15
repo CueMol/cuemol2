@@ -13,7 +13,7 @@ attribute vec4 a_vertex;
 attribute float a_radius;
 
 // color
-//attribute vec4 a_color;
+attribute vec4 a_color;
 
 // impostor
 attribute vec2 a_impos;
@@ -27,6 +27,7 @@ attribute vec2 a_impos;
 ////////////////////
 // Varying variables
 
+varying vec4 v_color;
 varying vec2 v_impos;
 varying vec4 v_ecpos;
 varying float v_radius;
@@ -49,6 +50,7 @@ void main()
 
   v_impos = a_impos;
   v_radius = a_radius;
+  v_color = a_color;
 
   //gl_Position = vec4(0,0,0,0);
   //v_color = vec4(1,1,1,1);

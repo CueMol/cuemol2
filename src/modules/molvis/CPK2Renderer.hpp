@@ -100,6 +100,7 @@ namespace molvis {
     GLuint m_nVertexLoc;
     GLuint m_nImposLoc;
     GLuint m_nRadLoc;
+    GLuint m_nColLoc;
 
     GLuint m_nVBO;
     GLuint m_nVBO_ind;

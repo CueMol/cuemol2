@@ -271,7 +271,7 @@ void CPK2Renderer::initShader()
   m_nVertexLoc = glGetAttribLocation(m_pPO->getHandle(), "a_vertex");
   m_nImposLoc = glGetAttribLocation(m_pPO->getHandle(), "a_impos");
   m_nRadLoc = glGetAttribLocation(m_pPO->getHandle(), "a_radius");
-
+  m_nColLoc = glGetAttribLocation(m_pPO->getHandle(), "a_color");
 
   MB_DPRINTLN("CPK2 sphere shader OK");
   m_bUseShader = true;
@@ -282,6 +282,7 @@ namespace {
     qfloat32 cenx, ceny, cenz;
     qfloat32 dspx, dspy;
     qfloat32 rad;
+    qbyte r, g, b, a;
   };
 }
 
@@ -326,6 +327,7 @@ void CPK2Renderer::renderShaderImpl()
       int aid = iter.getID();
       MolAtomPtr pAtom = pMol->getAtom(aid);
       if (pAtom.isnull()) continue; // ignore errors
+      ColorPtr &pc = ColSchmHolder::getColor(pAtom);
 
       SphElem data;
       pos = pAtom->getPos();
@@ -333,6 +335,10 @@ void CPK2Renderer::renderShaderImpl()
       data.ceny = (qfloat32) pos.y();
       data.cenz = (qfloat32) pos.z();
       data.rad = (qfloat32) getVdWRadius(pAtom);
+      data.r = (qbyte) pc->r();
+      data.g = (qbyte) pc->g();
+      data.b = (qbyte) pc->b();
+      data.a = (qbyte) pc->a();
 
       pind[ifc] = i + 0; ++ifc;
       pind[ifc] = i + 1; ++ifc;
@@ -381,10 +387,13 @@ void CPK2Renderer::drawShaderImpl()
   glVertexAttribPointer(m_nImposLoc, 2, GL_FLOAT, GL_FALSE,
 			sizeof(SphElem), (void*)(sizeof(qfloat32)*3));
   glVertexAttribPointer(m_nRadLoc, 1, GL_FLOAT, GL_FALSE,
-			sizeof(SphElem), (void*)(sizeof(qfloat32)*3 + sizeof(qfloat32)*2));
+			sizeof(SphElem), (void*)(sizeof(qfloat32)*(3 + 2)));
+  glVertexAttribPointer(m_nColLoc, 4, GL_UNSIGNED_BYTE, GL_TRUE,
+                        sizeof(SphElem), (void*)(sizeof(qfloat32)*(3 + 2 + 1)));
   glEnableVertexAttribArray(m_nVertexLoc);
   glEnableVertexAttribArray(m_nImposLoc);
   glEnableVertexAttribArray(m_nRadLoc);
+  glEnableVertexAttribArray(m_nColLoc);
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nVBO_ind);
   glDrawElements(GL_TRIANGLES, m_nIndSize, GL_UNSIGNED_SHORT, 0);
@@ -392,6 +401,7 @@ void CPK2Renderer::drawShaderImpl()
   glDisableVertexAttribArray(m_nVertexLoc);
   glDisableVertexAttribArray(m_nImposLoc);
   glDisableVertexAttribArray(m_nRadLoc);
+  glDisableVertexAttribArray(m_nColLoc);
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); 
   glBindBuffer(GL_ARRAY_BUFFER, 0); 

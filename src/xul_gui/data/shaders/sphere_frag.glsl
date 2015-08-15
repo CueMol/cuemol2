@@ -6,6 +6,7 @@
 // define default precision for float, vec, mat.
 // precision highp float;
 
+varying vec4 v_color;
 varying vec2 v_impos;
 varying vec4 v_ecpos;
 varying float v_radius;
@@ -79,11 +80,22 @@ void main()
 
     float ndc_depth = clip_space_pos.z / clip_space_pos.w;
 
-    gl_FragDepth = (((far-near) * ndc_depth) + near + far) / 2.0;
+    float fd = (((far-near) * ndc_depth) + near + far) / 2.0;
 
-    vec4 col = flight(normal, ecpos, vec4(1.0, 1.0, 0.5, 1.0));
+    if (fd>far) {
+      discard;
+    }
+    else if (fd<near) {
+      discard;
+      //normal = vec3(0.0, 0.0, 1.0);
+      //fd = near;
+    }
 
-    gl_FragColor = col; //vec4(dist, 1.0-dist, 0.5, 1.0);//gl_Color;
+    gl_FragDepth = fd;
+    vec4 col = flight(normal, ecpos, v_color);
+    gl_FragColor = col;
+    //vec4(dist, 1.0-dist, 0.5, 1.0);//gl_Color;
+
   }
 }
 
