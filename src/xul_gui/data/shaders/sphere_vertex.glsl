@@ -27,7 +27,8 @@ attribute vec2 a_impos;
 ////////////////////
 // Varying variables
 
-// varying vec4 v_color;
+varying vec2 v_impos;
+varying vec3 v_ecpos;
 
 ////////////////////
 // Program
@@ -40,13 +41,15 @@ void main()
   
   pos = gl_ModelViewMatrix * pos;
   pos.xy = pos.xy + a_impos.xy * a_radius;
+  v_ecpos = pos;
   pos = gl_ProjectionMatrix * pos;
 
   gl_Position = pos; //vec4(pos, 1.0);
 
-  gl_FrontColor = gl_Color;
+  v_impos = a_impos;
 
   //gl_Position = vec4(0,0,0,0);
   //v_color = vec4(1,1,1,1);
+  // gl_FrontColor = gl_Color;
 }
 
