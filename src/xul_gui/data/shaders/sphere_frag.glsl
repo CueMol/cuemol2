@@ -82,6 +82,7 @@ void main()
 
     float fd = (((far-near) * ndc_depth) + near + far) / 2.0;
 
+    // re-apply clipping by the view volume
     if (fd>far) {
       discard;
     }
@@ -90,18 +91,21 @@ void main()
       //normal = vec3(0.0, 0.0, 1.0);
       //fd = near;
     }
-
-    gl_FragDepth = fd;
-    vec4 color = flight(normal, ecpos, v_color);
-
-    // fog calculation
-    float fogz = abs(ecpos.z);
-    float fog;
-    fog = (gl_Fog.end - fogz) * gl_Fog.scale;
-    fog = clamp(fog, 0.0, 1.0);
-    color = vec4(mix( vec3(gl_Fog.color), vec3(color), fog), color.a /** frag_alpha*/);
-
-    gl_FragColor = color;
+    else {
+      gl_FragDepth = fd;
+      
+      // color calculation
+      vec4 color = flight(normal, ecpos, v_color);
+      
+      // fog calculation
+      float fogz = abs(ecpos.z);
+      float fog;
+      fog = (gl_Fog.end - fogz) * gl_Fog.scale;
+      fog = clamp(fog, 0.0, 1.0);
+      color = vec4(mix( vec3(gl_Fog.color), vec3(color), fog), color.a);
+      
+      gl_FragColor = color;
+    }
   }
 }
 
