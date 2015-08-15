@@ -92,10 +92,16 @@ void main()
     }
 
     gl_FragDepth = fd;
-    vec4 col = flight(normal, ecpos, v_color);
-    gl_FragColor = col;
-    //vec4(dist, 1.0-dist, 0.5, 1.0);//gl_Color;
+    vec4 color = flight(normal, ecpos, v_color);
 
+    // fog calculation
+    float fogz = abs(ecpos.z);
+    float fog;
+    fog = (gl_Fog.end - fogz) * gl_Fog.scale;
+    fog = clamp(fog, 0.0, 1.0);
+    color = vec4(mix( vec3(gl_Fog.color), vec3(color), fog), color.a /** frag_alpha*/);
+
+    gl_FragColor = color;
   }
 }
 
