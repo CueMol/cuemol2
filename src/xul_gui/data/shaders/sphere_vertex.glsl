@@ -28,7 +28,8 @@ attribute vec2 a_impos;
 // Varying variables
 
 varying vec2 v_impos;
-varying vec3 v_ecpos;
+varying vec4 v_ecpos;
+varying float v_radius;
 
 ////////////////////
 // Program
@@ -47,6 +48,7 @@ void main()
   gl_Position = pos; //vec4(pos, 1.0);
 
   v_impos = a_impos;
+  v_radius = a_radius;
 
   //gl_Position = vec4(0,0,0,0);
   //v_color = vec4(1,1,1,1);
