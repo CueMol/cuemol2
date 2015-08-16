@@ -111,7 +111,7 @@ namespace gfx {
     virtual ~DrawAttrArray() {}
 
     virtual int getType() const {
-      return VA_ATTRS;
+      return AbstDrawElem::VA_ATTRS;
     }
 
     virtual void alloc(int nsize)
@@ -155,7 +155,7 @@ namespace gfx {
     //virtual ~DrawAttrElems() {}
 
     virtual int getType() const {
-      return VA_ATTR_INDS;
+      return AbstDrawElem::VA_ATTR_INDS;
     }
 
     void allocInd(int nsize)
