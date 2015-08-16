@@ -301,10 +301,17 @@ namespace sysdep {
     void setProgParam(GLenum pname, GLint param);
 
   };
+}
 
-  /////////////////////////////////////////////////////////
 
-  class OglDisplayContext;
+/////////////////////////////////////////////////////////
+
+
+#include <qsys/View.hpp>
+#include <qsys/Scene.hpp>
+#include "OglDisplayContext.hpp"
+
+namespace sysdep {
 
   template <class _ClientType>
   class ShaderSetupHelper
