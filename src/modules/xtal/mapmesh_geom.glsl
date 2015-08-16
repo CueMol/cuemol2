@@ -4,8 +4,12 @@
 //    geometry shader
 //
 
-//GLSL version 1.30
+// GLSL version 1.30
 #version 130
+
+// //GLSL version 1.40
+// #version 140
+// #extension GL_ARB_compatibility : enable
 
 //New G80 extensions
 #extension GL_EXT_geometry_shader4 : enable

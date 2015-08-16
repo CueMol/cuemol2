@@ -4,18 +4,12 @@
 //    vertex shader
 //
 
-#version 120
-
-//attribute ivec4 InVertex;
-//varying ivec4 GeomVertex;
+#version 140
+#extension GL_ARB_compatibility : enable
 
 void main(void)
 {
-  // gl_TexCoord[0]=gl_MultiTexCoord0;
-
-  // gl_Position=ftransform();
   gl_Position=gl_Vertex;
-
   gl_FrontColor=gl_Color;
 }
 

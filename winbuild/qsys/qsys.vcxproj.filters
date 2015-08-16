@@ -37,6 +37,9 @@
     <Filter Include="gfx">
       <UniqueIdentifier>{58e4a649-9357-4ee6-8528-35a66b24a6ba}</UniqueIdentifier>
     </Filter>
+    <Filter Include="molvis\Shaders">
+      <UniqueIdentifier>{2f6498cd-dedf-4c4a-ac95-a5da71ac77dd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\qsys\Camera.cpp">
@@ -940,6 +943,12 @@
     </glslshader>
     <glslshader Include="..\..\src\sysdep\default_vert.glsl">
       <Filter>sysdep</Filter>
+    </glslshader>
+    <glslshader Include="..\..\src\modules\molvis\sphere_frag.glsl">
+      <Filter>molvis\Shaders</Filter>
+    </glslshader>
+    <glslshader Include="..\..\src\modules\molvis\sphere_vertex.glsl">
+      <Filter>molvis\Shaders</Filter>
     </glslshader>
   </ItemGroup>
 </Project>

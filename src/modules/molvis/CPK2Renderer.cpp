@@ -216,70 +216,31 @@ void CPK2Renderer::setSceneID(qlib::uid_t nid)
 void CPK2Renderer::initShader()
 {
   MB_DPRINTLN("CPK2Renderer::initShader");
-  if (!qsys::View::hasVBO() || !qsys::View::hasVS()) {
+
+  sysdep::ShaderSetupHelper<CPK2Renderer> ssh(this);
+
+  if (!ssh.checkEnvVS()) {
     MB_DPRINTLN("GLShader not supported");
     m_bUseShader = false;
     return;
   }
 
-  // get GL context
-  sysdep::OglDisplayContext *pOglDC = NULL;
-  qsys::ScenePtr pScene = getScene();
-  qsys::Scene::ViewIter vi = pScene->beginView();
-  qsys::Scene::ViewIter vie = pScene->endView();
-  for (; vi!=vie; ++vi) {
-    qsys::ViewPtr pView = vi->second;
-    gfx::DisplayContext *pDC = pView->getDisplayContext();
-    pDC->setCurrent();
-    pOglDC = dynamic_cast<sysdep::OglDisplayContext *>(pDC);
-    if (pOglDC!=NULL)
-      break;
-  }
-
-  if (pOglDC==NULL) {
+  if (m_pPO==NULL)
+    m_pPO = ssh.createProgObj("gpu_sphere",
+                              "%%CONFDIR%%/data/shaders/sphere_vertex.glsl",
+                              "%%CONFDIR%%/data/shaders/sphere_frag.glsl");
+  
+  if (m_pPO==NULL) {
+    LOG_DPRINTLN("GPUSphere> ERROR: cannot create progobj.");
     m_bUseShader = false;
     return;
   }
 
-  // setup shaders
-  bool res;
-  if (m_pPO==NULL) {
-    m_pPO = pOglDC->getProgramObject("gpu_sphere");
-
-    if (m_pPO==NULL) {
-      m_pPO = pOglDC->createProgramObject("gpu_sphere");
-      if (m_pPO==NULL) {
-        LOG_DPRINTLN("GPUSphere> ERROR: cannot create progobj.");
-	m_bUseShader = false;
-        return;
-      }
-
-      try {
-	m_pPO->loadShader("vert",
-			  "%%CONFDIR%%/data/shaders/sphere_vertex.glsl",
-			  GL_VERTEX_SHADER);
-	m_pPO->loadShader("frag",
-			  "%%CONFDIR%%/data/shaders/sphere_frag.glsl",
-			  GL_FRAGMENT_SHADER);
-	m_pPO->link();
-      }
-      catch (...) {
-	LOG_DPRINTLN("FATAL ERROR: loadShader failed!!");
-	m_pPO = NULL;
-	m_bUseShader = false;
-	return;
-      }
-
-      //m_pPO->enable();
-      //m_pPO->disable();
-    }
-  }
-  
   // setup attributes
-  m_nVertexLoc = glGetAttribLocation(m_pPO->getHandle(), "a_vertex");
-  m_nImposLoc = glGetAttribLocation(m_pPO->getHandle(), "a_impos");
-  m_nRadLoc = glGetAttribLocation(m_pPO->getHandle(), "a_radius");
-  m_nColLoc = glGetAttribLocation(m_pPO->getHandle(), "a_color");
+  m_nVertexLoc = m_pPO->getAttribLocation("a_vertex");
+  m_nImposLoc = m_pPO->getAttribLocation("a_impos");
+  m_nRadLoc = m_pPO->getAttribLocation("a_radius");
+  m_nColLoc = m_pPO->getAttribLocation("a_color");
 
   MB_DPRINTLN("CPK2 sphere shader OK");
   m_bUseShader = true;

@@ -302,6 +302,94 @@ namespace sysdep {
 
   };
 
+  /////////////////////////////////////////////////////////
+
+  class OglDisplayContext;
+
+  template <class _ClientType>
+  class ShaderSetupHelper
+  {
+  private:
+    _ClientType *m_pCli;
+    
+  public:
+    ShaderSetupHelper(_ClientType *pCli)
+         : m_pCli(pCli)
+    {
+    }
+
+    ~ShaderSetupHelper() {}
+
+    bool checkEnvVS() const
+    {
+      if (!qsys::View::hasVBO() || !qsys::View::hasVS()) {
+        return false;
+      }
+      return true;
+    }
+
+    bool checkEnvGS() const
+    {
+      if (!qsys::View::hasVBO() || !qsys::View::hasGS()) {
+        return false;
+      }
+      return true;
+    }
+
+    OglDisplayContext *getContext()
+    {
+      OglDisplayContext *pOglDC = NULL;
+      qsys::ScenePtr pScene = m_pCli->getScene();
+      qsys::Scene::ViewIter vi = pScene->beginView();
+      qsys::Scene::ViewIter vie = pScene->endView();
+      for (; vi!=vie; ++vi) {
+        qsys::ViewPtr pView = vi->second;
+        gfx::DisplayContext *pDC = pView->getDisplayContext();
+        pDC->setCurrent();
+        pOglDC = dynamic_cast<sysdep::OglDisplayContext *>(pDC);
+        if (pOglDC!=NULL)
+          break;
+      }
+      return pOglDC;
+    }
+
+    OglProgramObject *createProgObj(const LString &name,
+                                    const LString &vert_path,
+                                    const LString &frag_path,
+                                    const LString &geom_path = LString())
+    {
+      OglDisplayContext *pOglDC = getContext();
+      
+      if (pOglDC==NULL)
+        return NULL;
+      
+      // setup shaders
+      OglProgramObject *pPO = pOglDC->getProgramObject(name);
+      if (pPO==NULL) {
+        pPO = pOglDC->createProgramObject(name);
+        if (pPO==NULL) {
+          LOG_DPRINTLN("ShaderSetupHelper> ERROR: cannot create progobj <%s>.", name.c_str());
+          return NULL;
+        }
+        
+        try {
+          pPO->loadShader("vert", vert_path, GL_VERTEX_SHADER);
+          pPO->loadShader("frag", frag_path, GL_FRAGMENT_SHADER);
+          if (!geom_path.isEmpty())
+            pPO->loadShader("geom", geom_path, GL_GEOMETRY_SHADER);
+          pPO->link();
+        }
+        catch (...) {
+          LOG_DPRINTLN("FATAL ERROR: loadShader(%s) failed!!", name.c_str());
+          return NULL;
+        }
+      }
+      
+      return pPO;
+    }
+
+  };
+
 }
 
 #endif

@@ -462,6 +462,8 @@
     <mcw_loader Include="..\..\src\gfx\gfx.moddef" />
   </ItemGroup>
   <ItemGroup>
+    <glslshader Include="..\..\src\modules\molvis\sphere_frag.glsl" />
+    <glslshader Include="..\..\src\modules\molvis\sphere_vertex.glsl" />
     <glslshader Include="..\..\src\sysdep\default_frag.glsl" />
     <glslshader Include="..\..\src\sysdep\default_vert.glsl" />
   </ItemGroup>
