@@ -149,7 +149,7 @@ void DisplayContext::drawMesh(const Mesh &)
 {
 }
 
-void DisplayContext::drawElem(const DrawElem &)
+void DisplayContext::drawElem(const AbstDrawElem &)
 {
 }
 

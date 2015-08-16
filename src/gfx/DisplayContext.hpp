@@ -24,6 +24,7 @@ namespace qsys { class View; }
 namespace gfx {
 
   class Mesh;
+  class AbstDrawElem;
   class DrawElem;
   class AbstractColor;
   class PixelBuffer;
@@ -212,7 +213,7 @@ namespace gfx {
     virtual void drawMesh(const Mesh &);
 
     /// Drawing element support (vertex array version)
-    virtual void drawElem(const DrawElem &);
+    virtual void drawElem(const AbstDrawElem &);
 
     ///////////////////////////////
     // Display List support

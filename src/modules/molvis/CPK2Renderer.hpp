@@ -7,7 +7,7 @@
 #define CPK2_RENDERER_HPP_INCLUDED
 
 #include "molvis.hpp"
-#include <gfx/DrawElem.hpp>
+#include <gfx/DrawAttrArray.hpp>
 
 #include <modules/molstr/MolAtomRenderer.hpp>
 
@@ -47,11 +47,6 @@ namespace molvis {
 
     int m_nDetailOld;
 
-    /// cached vertex array/VBO
-    gfx::DrawElem *m_pDrawElem;
-
-    sysdep::OglProgramObject *m_pPO;
-
     bool m_bUseShader;
 
   public:
@@ -90,9 +85,22 @@ namespace molvis {
   private:
     double getVdWRadius(MolAtomPtr pAtom);
 
-    /// Rendering implementation
+    ///////////////////////////////////
+    // VBO Rendering implementation
+
+    /// cached vertex array/VBO
+    gfx::AbstDrawElem *m_pDrawElem;
+
     void renderVBOImpl();
 
+  private:
+    ///////////////////////////////////
+    // shader rendering implementations
+
+    sysdep::OglProgramObject *m_pPO;
+
+    // SphElemAry *m_pDrawData;
+    
     void initShader();
     void renderShaderImpl();
     void drawShaderImpl();
@@ -104,7 +112,7 @@ namespace molvis {
 
     GLuint m_nVBO;
     GLuint m_nVBO_ind;
-    int m_nIndSize;
+    //int m_nIndSize;
   };
 
 }

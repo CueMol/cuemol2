@@ -10,36 +10,42 @@
 
 using namespace gfx;
 
+AbstDrawElem::AbstDrawElem()
+     : m_nSize(0), m_pVBORep(NULL), m_pIndVBO(NULL)
+{
+}
+
+AbstDrawElem::~AbstDrawElem()
+{
+  if (m_pVBORep!=NULL)
+    delete m_pVBORep;
+  if (m_pIndVBO!=NULL)
+    delete m_pIndVBO;
+}
+
+void AbstDrawElem::invalidateCache() const
+{
+  if (m_pVBORep!=NULL)
+    delete m_pVBORep;
+  m_pVBORep = NULL;
+
+  if (m_pIndVBO!=NULL)
+    delete m_pIndVBO;
+  m_pIndVBO = NULL;
+}
+
+//////////
+
 DrawElem::DrawElem()
-  : m_nSize(0), m_nDrawMode(DRAW_POINTS),
+  : super_t(),
+    m_nDrawMode(DRAW_POINTS),
     m_fLineWidth(1.0f),
-    m_nDefColor(0xFFFFFFFF), // default color: white
-    m_pVBORep(NULL)
+    m_nDefColor(0xFFFFFFFF) // default color: white
 {
 }
 
 DrawElem::~DrawElem()
 {
-  if (m_pVBORep!=NULL)
-    delete m_pVBORep;
-}
-
-void DrawElem::startPoints(int nsize)
-{
-  m_nDrawMode = DRAW_POINTS;
-  alloc(nsize);
-}
-
-void DrawElem::startLines(int nsize)
-{
-  m_nDrawMode = DRAW_LINES;
-  alloc(nsize);
-}
-
-void DrawElem::startTriangles(int nsize)
-{
-  m_nDrawMode = DRAW_TRIANGLES;
-  alloc(nsize);
 }
 
 void DrawElem::setDefColor(const ColorPtr &col)
@@ -57,16 +63,9 @@ bool DrawElem::color(int ind, quint32 c)
   return false;
 }
 
-void DrawElem::invalidateCache() const
-{
-  if (m_pVBORep!=NULL)
-    delete m_pVBORep;
-  m_pVBORep = NULL;
-}
-
 //////////////////////////
 
-DrawElemVC::DrawElemVC() : m_pData(NULL)
+DrawElemVC::DrawElemVC() : super_t(), m_pData(NULL)
 {
 }
 
@@ -117,7 +116,7 @@ bool DrawElemVC::color(int ind, quint32 c)
 
 //////////////////////////
 
-DrawElemV::DrawElemV() : m_pData(NULL)
+DrawElemV::DrawElemV() : super_t(), m_pData(NULL)
 {
 }
 
@@ -157,7 +156,7 @@ bool DrawElemV::getVertex(int ind, Vector4D &v) const
 
 //////////////////////////
 
-DrawElemVNC::DrawElemVNC() : m_pData(NULL)
+DrawElemVNC::DrawElemVNC() : super_t(), m_pData(NULL)
 {
 }
 
@@ -219,7 +218,7 @@ bool DrawElemVNC::normal(int ind, const Vector4D &v)
 ////////////
 
 DrawElemVNCI::DrawElemVNCI()
-     : m_pIndData(NULL), m_pIndVBO(NULL)
+     : super_t(), m_pIndData(NULL)
 {
 }
 
@@ -228,32 +227,20 @@ DrawElemVNCI::~DrawElemVNCI()
   if (m_pIndData!=NULL)
     delete [] m_pIndData;
   
-  if (m_pIndVBO!=NULL)
-    delete m_pIndVBO;
 }
 
 void DrawElemVNCI::allocIndex(int ninds)
 {
   MB_ASSERT(m_pIndData==NULL);
-  MB_ASSERT(m_pIndVBO==NULL);
 
   m_nIndSize = ninds;
   m_pIndData = new index_t[ninds];
 }
 
-void DrawElemVNCI::invalidateCache() const
-{
-  super_t::invalidateCache();
-  
-  if (m_pIndVBO!=NULL)
-    delete m_pIndVBO;
-  m_pIndVBO = NULL;
-}
-
 ////////////
 
 DrawElemVNCI32::DrawElemVNCI32()
-     : m_pIndData(NULL), m_pIndVBO(NULL)
+     : super_t(), m_pIndData(NULL)
 {
 }
 
@@ -261,33 +248,20 @@ DrawElemVNCI32::~DrawElemVNCI32()
 {
   if (m_pIndData!=NULL)
     delete [] m_pIndData;
-  
-  if (m_pIndVBO!=NULL)
-    delete m_pIndVBO;
 }
 
 void DrawElemVNCI32::allocIndex(int ninds)
 {
   MB_ASSERT(m_pIndData==NULL);
-  MB_ASSERT(m_pIndVBO==NULL);
 
   m_nIndSize = ninds;
   m_pIndData = new index_t[ninds];
 }
 
-void DrawElemVNCI32::invalidateCache() const
-{
-  super_t::invalidateCache();
-  
-  if (m_pIndVBO!=NULL)
-    delete m_pIndVBO;
-  m_pIndVBO = NULL;
-}
-
 ////////////
 
 DrawElemPix::DrawElemPix()
-     : m_pPixBuf(NULL)
+     : super_t(), m_pPixBuf(NULL)
 {
 }
 
