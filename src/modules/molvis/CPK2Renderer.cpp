@@ -315,7 +315,7 @@ void CPK2Renderer::renderShaderImpl()
       int aid = iter.getID();
       MolAtomPtr pAtom = pMol->getAtom(aid);
       if (pAtom.isnull()) continue; // ignore errors
-      ColorPtr &pc = ColSchmHolder::getColor(pAtom);
+      ColorPtr pc = ColSchmHolder::getColor(pAtom);
 
       SphElem data;
       pos = pAtom->getPos();
