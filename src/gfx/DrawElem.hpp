@@ -21,24 +21,48 @@ namespace gfx {
     virtual ~VBORep() {}
   };
 
-  /// Draw element class
-  /// abstraction of VA/VBO implementation of OpenGL
-  class GFX_API DrawElem
+  /// Common abstract class for both
+  ///   fixed pipeline verteces and glsl attributes
+  class GFX_API AbstDrawElem
   {
+  private:
+    /// size of vertices
+    int m_nSize;
+
   public:
-    // drawing mode IDs
-    static const int DRAW_POINTS = 1;
-    static const int DRAW_LINE_STRIP =2;
-    static const int DRAW_LINE_LOOP = 3;
-    static const int DRAW_LINES = 4;
-    static const int DRAW_TRIANGLE_STRIP = 5;
-    static const int DRAW_TRIANGLE_FAN = 6;
-    static const int DRAW_TRIANGLES = 7;
-    static const int DRAW_QUAD_STRIP = 8;
-    static const int DRAW_QUADS = 9;
-    static const int DRAW_POLYGON = 10;
+    
+    AbstDrawElem();
+    virtual ~AbstDrawElem();
+
+    // virtual void alloc(int nsize) =0;
+
+    virtual int getType() const =0;
+
+    /// clear cached data (--> delete VBO)
+    virtual void invalidateCache() const;
+
+    int getSize() const { return m_nSize; }
+    void setSize(int n) { m_nSize = n; }
+
+  private:
+    /// buffer ID (for GL VBO impl)
+    mutable VBORep *m_pVBORep;
+
+  public:
+    VBORep *getVBO() const { return m_pVBORep; }
+    void setVBO(VBORep *p) const { m_pVBORep = p; }
+
+  private:
+    /// buffer ID (for GL VBO impl)
+    mutable VBORep *m_pIndVBO;
+
+  public:
+    /// index VBO object access
+    VBORep *getIndexVBO() const { return m_pIndVBO; }
+    void setIndexVBO(VBORep *p) const { m_pIndVBO = p; }
 
     //////////////////////////////////////////////////
+    // Type ID definitions
 
     /// vertex, normal, color
     static const int VA_VNC = 1;
@@ -60,12 +84,37 @@ namespace gfx {
     /// vertex, normal, color, and 32-bit index
     static const int VA_VNCI32 = 8;
 
+    /// arbitary attribute array (for shader impl)
+    static const int VA_ATTRS = 9;
+
+    /// arbitary attribute array with indices (for shader impl)
+    static const int VA_ATTR_INDS = 10;
+
+  };
+
+  /// Draw element class
+  /// abstraction of VA/VBO implementation of OpenGL
+  class GFX_API DrawElem : public AbstDrawElem
+  {
+    typedef AbstDrawElem super_t;
+
+  public:
+    // drawing mode IDs
+    static const int DRAW_POINTS = 1;
+    static const int DRAW_LINE_STRIP =2;
+    static const int DRAW_LINE_LOOP = 3;
+    static const int DRAW_LINES = 4;
+    static const int DRAW_TRIANGLE_STRIP = 5;
+    static const int DRAW_TRIANGLE_FAN = 6;
+    static const int DRAW_TRIANGLES = 7;
+    static const int DRAW_QUAD_STRIP = 8;
+    static const int DRAW_QUADS = 9;
+    static const int DRAW_POLYGON = 10;
+
     //////////////////////////////////////////////////
 
     DrawElem();
     virtual ~DrawElem();
-
-    virtual void alloc(int nsize) =0;
 
     virtual bool vertex(int ind, const Vector4D &v) =0;
 
@@ -76,14 +125,9 @@ namespace gfx {
 
     virtual bool normal(int ind, const Vector4D &v);
 
-    virtual int getType() const =0;
-
-    void startPoints(int nsize);
-    void startLines(int nsize);
-    void startTriangles(int nsize);
-
-    int getSize() const { return m_nSize; }
-    void setSize(int n) { m_nSize = n; }
+    //void startPoints(int nsize);
+    //void startLines(int nsize);
+    //void startTriangles(int nsize);
 
     int getDrawMode() const { return m_nDrawMode; }
     void setDrawMode(int n) { m_nDrawMode = n; }
@@ -95,16 +139,7 @@ namespace gfx {
     void setDefColor(quint32 cc) { m_nDefColor = cc; }
     void setDefColor(const ColorPtr &col);
 
-    VBORep *getVBO() const { return m_pVBORep; }
-    void setVBO(VBORep *p) const { m_pVBORep = p; }
-
-    /// clear cached data (--> delete VBO)
-    virtual void invalidateCache() const;
-
   private:
-    /// size of vertices
-    int m_nSize;
-
     /// drawing mode
     int m_nDrawMode;
     
@@ -114,14 +149,13 @@ namespace gfx {
     /// default color
     quint32 m_nDefColor;
 
-    /// buffer ID (for GL VBO impl)
-    mutable VBORep *m_pVBORep;
-
   };
   
   /// Draw element with vertex and color
   class GFX_API DrawElemVC : public DrawElem
   {
+    typedef DrawElem super_t;
+    
   public:
     DrawElemVC();
 
@@ -153,6 +187,8 @@ namespace gfx {
   /// Draw element with only vertex
   class GFX_API DrawElemV : public DrawElem
   {
+    typedef DrawElem super_t;
+
   public:
     DrawElemV();
 
@@ -181,6 +217,8 @@ namespace gfx {
   /// Draw element with vertex, normal and color
   class GFX_API DrawElemVNC : public DrawElem
   {
+    typedef DrawElem super_t;
+
   public:
     DrawElemVNC();
 
@@ -236,7 +274,9 @@ namespace gfx {
 
     /// start indexed triangles mode (shortcut method)
     void startIndexTriangles(int nverts, int nfaces) {
-      DrawElem::startTriangles(nverts);
+      //DrawElem::startTriangles(nverts);
+      super_t::setDrawMode(DRAW_TRIANGLES);
+      super_t::alloc(nverts);
       allocIndex(nfaces*3);
     }
 
@@ -250,17 +290,7 @@ namespace gfx {
 
     int getIndexSize() const { return m_nIndSize; }
 
-    /// index VBO object access
-    VBORep *getIndexVBO() const { return m_pIndVBO; }
-    void setIndexVBO(VBORep *p) const { m_pIndVBO = p; }
-
-    /// clear cached data (--> delete VBO & index VBO)
-    virtual void invalidateCache() const;
-
   private:
-    /// buffer ID (for GL VBO impl)
-    mutable VBORep *m_pIndVBO;
-
     int m_nIndSize;
     index_t *m_pIndData;
 
@@ -293,7 +323,9 @@ namespace gfx {
 
     /// start indexed triangles mode (shortcut method)
     void startIndexTriangles(int nverts, int nfaces) {
-      DrawElem::startTriangles(nverts);
+      //DrawElem::startTriangles(nverts);
+      super_t::setDrawMode(DRAW_TRIANGLES);
+      super_t::alloc(nverts);
       allocIndex(nfaces*3);
     }
 
@@ -307,17 +339,7 @@ namespace gfx {
 
     int getIndexSize() const { return m_nIndSize; }
 
-    /// index VBO object access
-    VBORep *getIndexVBO() const { return m_pIndVBO; }
-    void setIndexVBO(VBORep *p) const { m_pIndVBO = p; }
-
-    /// clear cached data (--> delete VBO & index VBO)
-    virtual void invalidateCache() const;
-
   private:
-    /// buffer ID (for GL VBO impl)
-    mutable VBORep *m_pIndVBO;
-
     int m_nIndSize;
     index_t *m_pIndData;
 
@@ -331,6 +353,8 @@ namespace gfx {
   /// Draw element for pixel data (2D bitmap)
   class GFX_API DrawElemPix : public DrawElem
   {
+    typedef DrawElem super_t;
+
   public:
     DrawElemPix();
 

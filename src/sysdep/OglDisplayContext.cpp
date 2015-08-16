@@ -34,7 +34,7 @@
 #include <gfx/PixelBuffer.hpp>
 #include <gfx/SolidColor.hpp>
 #include <gfx/Mesh.hpp>
-#include <gfx/DrawElem.hpp>
+#include <gfx/DrawAttrArray.hpp>
 
 #include <qsys/Scene.hpp>
 #include <qsys/SceneManager.hpp>
@@ -42,6 +42,7 @@
 
 using namespace sysdep;
 using gfx::DisplayContext;
+using gfx::AbstDrawElem;
 using gfx::DrawElem;
 using gfx::DrawElemV;
 using gfx::DrawElemVC;
@@ -923,23 +924,41 @@ namespace {
 }
 #endif
 
-void OglDisplayContext::drawElem(const DrawElem &de)
+void OglDisplayContext::drawElem(const AbstDrawElem &ade)
 {
-  const int ntype = de.getType();
+  const int ntype = ade.getType();
 
   if (ntype==DrawElem::VA_PIXEL) {
-    drawElemPix(static_cast<const DrawElemPix &>(de));
+    drawElemPix(static_cast<const DrawElemPix &>(ade));
     return;
   }
 
-  //if (!hasVBO()) {
   if (!qsys::View::hasVBO()) {
-    // fall back to the vertex array impl
-    drawElemVA(de);
+    if (ntype==AbstDrawElem::VA_ATTRS||
+        ntype==AbstDrawElem::VA_ATTR_INDS) {
+      // ERROR: not supported
+      MB_DPRINTLN("Ogl.drawElem> Fatal Error: no VBO --> drawing attr array not supported!!");
+    }
+    else {
+      // fall back to the vertex array impl
+      drawElemVA(static_cast<const DrawElem &>(ade));
+    }
+    return;
+  }
+
+  if (ntype==AbstDrawElem::VA_ATTRS||
+      ntype==AbstDrawElem::VA_ATTR_INDS) {
+    // shader attribute impl
+    drawElemAttrs(static_cast<const gfx::AbstDrawAttrs &>(ade));
     return;
   }
 
 #ifdef HAVE_GLEW
+  //
+  // implementation using OpenGL fixed pipeline
+  //
+
+  const DrawElem &de = static_cast<const DrawElem &>(ade);
   const int nelems = de.getSize();
   int ninds = 0;
   GLuint nvbo = 0;
@@ -1171,6 +1190,121 @@ void OglDisplayContext::drawElemVA(const DrawElem &de)
   glDisableClientState(GL_NORMAL_ARRAY);
   glDisableClientState(GL_COLOR_ARRAY);
 }
+
+namespace {
+int convGLConsts(int id) {
+  switch (id) {
+  case qlib::type_consts::QTC_BOOL:
+    return GL_BOOL;
+  case qlib::type_consts::QTC_UINT8:
+    return GL_UNSIGNED_BYTE;
+  case qlib::type_consts::QTC_UINT16:
+    return GL_UNSIGNED_SHORT;
+  case qlib::type_consts::QTC_UINT32:
+    return GL_UNSIGNED_INT;
+  case qlib::type_consts::QTC_INT8:
+    return GL_BYTE;
+  case qlib::type_consts::QTC_INT16:
+    return GL_SHORT;
+  case qlib::type_consts::QTC_INT32:
+    return GL_INT;
+  case qlib::type_consts::QTC_FLOAT32:
+    return GL_FLOAT;
+  case qlib::type_consts::QTC_FLOAT64:
+    return GL_DOUBLE;
+  default:
+    return -1;
+  }
+}
+
+int convGLNorm(int id) {
+  if (id==qlib::type_consts::QTC_FLOAT32 ||
+      id==qlib::type_consts::QTC_FLOAT64)
+    return GL_FALSE;
+  else
+    return GL_TRUE;
+}
+}
+
+void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
+{
+  int itype = ada.getType();
+  
+  GLuint nvbo = 0;
+  GLuint nvbo_ind = 0;
+
+  if (ada.getVBO()==NULL) {
+    // Make VBO for attribute array
+    glGenBuffers(1, &nvbo);
+    OglVBORep *pRep = MB_NEW OglVBORep();
+    pRep->m_nBufID = nvbo;
+    pRep->m_nSceneID = m_nSceneID;
+    ada.setVBO(pRep);
+
+    // Init VBO & copy data
+    glBindBuffer(GL_ARRAY_BUFFER, nvbo);
+    glBufferData(GL_ARRAY_BUFFER, ada.getDataSize(), ada.getData(), GL_STATIC_DRAW);
+
+    if (itype==AbstDrawElem::VA_ATTR_INDS) {
+      // Make VBO for indices
+      glGenBuffers(1, &nvbo_ind);
+      OglVBORep *pRep = MB_NEW OglVBORep();
+      pRep->m_nBufID = nvbo_ind;
+      pRep->m_nSceneID = m_nSceneID;
+      ada.setIndexVBO(pRep);
+
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, nvbo_ind);
+      glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+                   ada.getIndDataSize(),
+                   ada.getIndData(),
+                   GL_STATIC_DRAW);
+    }
+  }
+  else {
+    OglVBORep *pRep = (OglVBORep *) ada.getVBO();
+    nvbo = pRep->m_nBufID;
+    glBindBuffer(GL_ARRAY_BUFFER, nvbo);
+
+    if (itype==AbstDrawElem::VA_ATTR_INDS) {
+      OglVBORep *pRep = (OglVBORep *) ada.getIndexVBO();
+      nvbo_ind = pRep->m_nBufID;
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, nvbo_ind);
+    }
+  }
+
+  size_t nattr = ada.getAttrSize();
+  for (int i=0; i<nattr; ++i) {
+    int al = ada.getAttrLoc(i);
+    int az = ada.getAttrElemSize(i);
+    int at = ada.getAttrTypeID(i);
+    int ap = ada.getAttrPos(i);
+    glVertexAttribPointer(al,
+                          az,
+                          convGLConsts(at),
+                          convGLNorm(at),
+                          ada.getElemSize(),
+                          (void *) ap);
+    glEnableVertexAttribArray(al);
+  }
+
+  if (itype==AbstDrawElem::VA_ATTR_INDS) {
+    glDrawElements(GL_TRIANGLES, ada.getIndSize(), GL_UNSIGNED_SHORT, 0);
+  }
+  else {
+    // ??? XXX:GL_TRIANGLES
+    glDrawArrays(GL_TRIANGLES, 0, ada.getSize());
+  }
+  
+  for (int i=0; i<nattr; ++i) {
+    int al = ada.getAttrLoc(i);
+    glDisableVertexAttribArray(al);
+  }
+
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); 
+  glBindBuffer(GL_ARRAY_BUFFER, 0); 
+
+}
+
 
 OglProgramObject *OglDisplayContext::createProgramObject(const LString &name)
 {

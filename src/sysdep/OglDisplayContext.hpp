@@ -13,6 +13,7 @@
 
 namespace gfx {
   class DrawElemPix;
+  class AbstDrawAttrs;
 }
 
 namespace sysdep {
@@ -150,7 +151,7 @@ namespace sysdep {
 
     virtual void drawMesh(const gfx::Mesh &l);    
 
-    virtual void drawElem(const gfx::DrawElem &l);
+    virtual void drawElem(const gfx::AbstDrawElem &l);
 
     ///////////////////////////////
     // Display List support
@@ -175,6 +176,8 @@ namespace sysdep {
     void drawElemVA(const gfx::DrawElem &l);
 
     void drawElemPix(const gfx::DrawElemPix &de);
+
+    void drawElemAttrs(const gfx::AbstDrawAttrs &ada);
 
     ///////////////////////////////
     // OpenGL SL support
