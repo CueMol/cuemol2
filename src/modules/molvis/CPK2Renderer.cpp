@@ -12,22 +12,24 @@
 
 #include "CPK2Renderer.hpp"
 
+#include <gfx/DrawAttrArray.hpp>
+#include <sysdep/OglDisplayContext.hpp>
+#include <sysdep/OglProgramObject.hpp>
+#include "GLSLSphereHelper.hpp"
+
 using namespace molvis;
 using namespace molstr;
 
 CPK2Renderer::CPK2Renderer()
 {
   m_pDrawElem = NULL;
-  // m_pDrawData = NULL;
-  m_pPO = NULL;
   m_bUseShader = false;
-
-  m_nVBO = 0;
-  m_nVBO_ind = 0;
+  m_pSlSph = MB_NEW GLSLSphereHelper();
 }
 
 CPK2Renderer::~CPK2Renderer()
 {
+  delete m_pSlSph;
 }
 
 const char *CPK2Renderer::getTypeName() const
@@ -40,17 +42,14 @@ const char *CPK2Renderer::getTypeName() const
 void CPK2Renderer::display(DisplayContext *pdc)
 {
   if (m_bUseShader) {
-    if (m_pDrawElem==NULL) {
+    if (m_pSlSph->getDrawElem()==NULL) {
       renderShaderImpl();
-      if (m_pDrawElem==NULL)
+      if (m_pSlSph->getDrawElem()==NULL)
         return; // Error, Cannot draw anything (ignore)
     }
     
     preRender(pdc);
-    m_pPO->enable();
-    //drawShaderImpl();
-    pdc->drawElem(*m_pDrawElem);
-    m_pPO->disable();
+    m_pSlSph->draw(pdc);
     postRender(pdc);
   }
   else if (pdc->isDrawElemSupported()) {
@@ -72,10 +71,28 @@ void CPK2Renderer::display(DisplayContext *pdc)
 
 void CPK2Renderer::invalidateDisplayCache()
 {
+  super_t::invalidateDisplayCache();
+  
   if (m_pDrawElem!=NULL) {
     delete m_pDrawElem;
     m_pDrawElem = NULL;
   }
+  if (m_bUseShader) {
+    m_pSlSph->invalidate();
+  }
+}
+
+void CPK2Renderer::unloading()
+{
+  if (m_pDrawElem!=NULL) {
+    delete m_pDrawElem;
+    m_pDrawElem = NULL;
+  }
+  if (m_bUseShader) {
+    m_pSlSph->invalidate();
+  }
+
+  super_t::unloading();
 }
 
 double CPK2Renderer::getVdWRadius(MolAtomPtr pAtom)
@@ -210,9 +227,16 @@ void CPK2Renderer::setSceneID(qlib::uid_t nid)
   if (nid==qlib::invalid_uid)
     return;
 
-  initShader();
+  if (m_pSlSph->initShader(this)) {
+    MB_DPRINTLN("CPK2 sphere shader OK");
+    m_bUseShader = true;
+  }
+  else {
+    m_bUseShader = false;
+  }
 }
 
+/*
 void CPK2Renderer::initShader()
 {
   MB_DPRINTLN("CPK2Renderer::initShader");
@@ -242,9 +266,8 @@ void CPK2Renderer::initShader()
   m_nRadLoc = m_pPO->getAttribLocation("a_radius");
   m_nColLoc = m_pPO->getAttribLocation("a_color");
 
-  MB_DPRINTLN("CPK2 sphere shader OK");
-  m_bUseShader = true;
 }
+*/
 
 namespace {
     struct SphElem {
@@ -285,6 +308,23 @@ void CPK2Renderer::renderShaderImpl()
   if (nsphs==0)
     return; // nothing to draw
   
+  m_pSlSph->alloc(nsphs);
+
+  {
+    AtomIterator iter(pMol, getSelection());
+    int i=0; //, j, ifc=0;
+    Vector4D pos;
+    for (iter.first(); iter.hasMore(); iter.next()) {
+      int aid = iter.getID();
+      MolAtomPtr pAtom = pMol->getAtom(aid);
+      if (pAtom.isnull()) continue; // ignore errors
+
+      m_pSlSph->setData(i, pAtom->getPos(), getVdWRadius(pAtom), ColSchmHolder::getColor(pAtom));
+      ++i;
+    }
+  }
+
+/*
   qfloat32 dsps[4][2] = {
     {-1.0f, -1.0f},
     { 1.0f, -1.0f},
@@ -292,9 +332,6 @@ void CPK2Renderer::renderShaderImpl()
     { 1.0f,  1.0f},
   };
   
-  //SphElem *pdata = MB_NEW SphElem[nsphs*4];
-  //quint16 *pind = MB_NEW quint16[nsphs*6];
-
   SphElemAry *pdata = MB_NEW SphElemAry();
   m_pDrawElem = pdata;
   SphElemAry &sphdata = *pdata;
@@ -327,14 +364,7 @@ void CPK2Renderer::renderShaderImpl()
       data.g = (qbyte) pc->g();
       data.b = (qbyte) pc->b();
       data.a = (qbyte) pc->a();
-/*
-      pind[ifc] = i + 0; ++ifc;
-      pind[ifc] = i + 1; ++ifc;
-      pind[ifc] = i + 2; ++ifc;
-      pind[ifc] = i + 2; ++ifc;
-      pind[ifc] = i + 1; ++ifc;
-      pind[ifc] = i + 3; ++ifc;
-*/
+
       sphdata.atind(ifc) = i + 0; ++ifc;
       sphdata.atind(ifc) = i + 1; ++ifc;
       sphdata.atind(ifc) = i + 2; ++ifc;
@@ -346,116 +376,13 @@ void CPK2Renderer::renderShaderImpl()
         sphdata.at(i) = data;
         sphdata.at(i).dspx = dsps[j][0];
         sphdata.at(i).dspy = dsps[j][1];
-/*        
-	pdata[i] = data;
-	pdata[i].dspx = dsps[j][0];
-	pdata[i].dspy = dsps[j][1];
-*/
 	++i;
       }
-
-
     }
   }
 
-/*
-  glGenBuffers(1, &m_nVBO);
-  glBindBuffer(GL_ARRAY_BUFFER, m_nVBO);
-  glBufferData(GL_ARRAY_BUFFER, sphdata.getElemSize()*nsphs*4, sphdata.getData(), GL_STATIC_DRAW);
-  glBindBuffer(GL_ARRAY_BUFFER, 0); 
-  
-  glGenBuffers(1, &m_nVBO_ind);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nVBO_ind);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sphdata.getIndElemSize()*nsphs*6, sphdata.getIndData(), GL_STATIC_DRAW);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); 
-*/
-//  delete [] pdata;
-//  delete [] pind;
-//  m_nIndSize = nsphs*6;
-
   MB_DPRINTLN("RenderShader nsphs=%d", nsphs);
-//  MB_DPRINTLN("RenderShader ninds=%d", m_nIndSize);
-}
-
-/*
-int convGLConsts(int id) {
-  switch (id) {
-  case qlib::type_consts::QTC_BOOL:
-    return GL_BOOL;
-  case qlib::type_consts::QTC_UINT8:
-    return GL_UNSIGNED_BYTE;
-  case qlib::type_consts::QTC_UINT16:
-    return GL_UNSIGNED_SHORT;
-  case qlib::type_consts::QTC_UINT32:
-    return GL_UNSIGNED_INT;
-  case qlib::type_consts::QTC_INT8:
-    return GL_BYTE;
-  case qlib::type_consts::QTC_INT16:
-    return GL_SHORT;
-  case qlib::type_consts::QTC_INT32:
-    return GL_INT;
-  case qlib::type_consts::QTC_FLOAT32:
-    return GL_FLOAT;
-  case qlib::type_consts::QTC_FLOAT64:
-    return GL_DOUBLE;
-  default:
-    return -1;
-  }
-}
-
-int convGLNorm(int id) {
-  if (id==qlib::type_consts::QTC_FLOAT32 ||
-      id==qlib::type_consts::QTC_FLOAT64)
-    return GL_FALSE;
-  else
-    return GL_TRUE;
-}
 */
-
-void CPK2Renderer::drawShaderImpl()
-{
-#if 0
-  glColor3f(1.0f, 1.0f, 1.0f);
-
-  glBindBuffer(GL_ARRAY_BUFFER, m_nVBO);
-
-  size_t nattr = m_pDrawData->getAttrSize();
-  for (int i=0; i<nattr; ++i) {
-    int al = m_pDrawData->getAttrLoc(i);
-    int az = m_pDrawData->getAttrElemSize(i);
-    int at = m_pDrawData->getAttrTypeID(i);
-    int ap = m_pDrawData->getAttrPos(i);
-    glVertexAttribPointer(al,
-                          az,
-                          convGLConsts(at),
-                          convGLNorm(at),
-                          sizeof(SphElem),
-                          (void *) ap);
-  }
-/*
-  glVertexAttribPointer(m_nVertexLoc, 3, GL_FLOAT, GL_FALSE,
-			sizeof(SphElem), 0);
-  glVertexAttribPointer(m_nImposLoc, 2, GL_FLOAT, GL_FALSE,
-			sizeof(SphElem), (void*)(sizeof(qfloat32)*3));
-  glVertexAttribPointer(m_nRadLoc, 1, GL_FLOAT, GL_FALSE,
-			sizeof(SphElem), (void*)(sizeof(qfloat32)*(3 + 2)));
-  glVertexAttribPointer(m_nColLoc, 4, GL_UNSIGNED_BYTE, GL_TRUE,
-                        sizeof(SphElem), (void*)(sizeof(qfloat32)*(3 + 2 + 1)));
-*/
-  glEnableVertexAttribArray(m_nVertexLoc);
-  glEnableVertexAttribArray(m_nImposLoc);
-  glEnableVertexAttribArray(m_nRadLoc);
-  glEnableVertexAttribArray(m_nColLoc);
-
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_nVBO_ind);
-  glDrawElements(GL_TRIANGLES, m_pDrawData->getIndSize(), GL_UNSIGNED_SHORT, 0);
-
-  glDisableVertexAttribArray(m_nVertexLoc);
-  glDisableVertexAttribArray(m_nImposLoc);
-  glDisableVertexAttribArray(m_nRadLoc);
-  glDisableVertexAttribArray(m_nColLoc);
-
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); 
-  glBindBuffer(GL_ARRAY_BUFFER, 0); 
-#endif
 }
+
+

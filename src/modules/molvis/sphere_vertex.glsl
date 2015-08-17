@@ -1,6 +1,6 @@
 // -*-Mode: C++;-*-
 //
-//  vertex shader for sphere
+//  vertex shader for spheres
 //
 
 ////////////////////

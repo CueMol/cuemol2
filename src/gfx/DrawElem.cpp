@@ -11,7 +11,7 @@
 using namespace gfx;
 
 AbstDrawElem::AbstDrawElem()
-     : m_nSize(0), m_pVBORep(NULL), m_pIndVBO(NULL)
+     : m_nSize(0), m_pVBORep(NULL), m_pIndVBO(NULL), m_nDrawMode(DRAW_POINTS)
 {
 }
 
@@ -38,7 +38,6 @@ void AbstDrawElem::invalidateCache() const
 
 DrawElem::DrawElem()
   : super_t(),
-    m_nDrawMode(DRAW_POINTS),
     m_fLineWidth(1.0f),
     m_nDefColor(0xFFFFFFFF) // default color: white
 {

@@ -950,5 +950,11 @@
     <glslshader Include="..\..\src\modules\molvis\sphere_vertex.glsl">
       <Filter>molvis\Shaders</Filter>
     </glslshader>
+    <glslshader Include="..\..\src\modules\molvis\cylinder_frag.glsl">
+      <Filter>molvis\Shaders</Filter>
+    </glslshader>
+    <glslshader Include="..\..\src\modules\molvis\cylinder_vertex.glsl">
+      <Filter>molvis\Shaders</Filter>
+    </glslshader>
   </ItemGroup>
 </Project>

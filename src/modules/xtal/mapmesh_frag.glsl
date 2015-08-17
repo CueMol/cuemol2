@@ -4,8 +4,8 @@
 //    fragment shader
 //
 
-#version 140
-#extension GL_ARB_compatibility : enable
+//#version 140
+//#extension GL_ARB_compatibility : enable
 
 // for fog calc
 varying float FogFragCoord; 

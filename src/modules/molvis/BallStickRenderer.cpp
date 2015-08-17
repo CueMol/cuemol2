@@ -13,6 +13,14 @@
 #include <modules/molstr/MolChain.hpp>
 #include <modules/molstr/MolResidue.hpp>
 #include <modules/molstr/ResiToppar.hpp>
+#include <modules/molstr/AtomIterator.hpp>
+#include <modules/molstr/BondIterator.hpp>
+
+#include <gfx/DrawAttrArray.hpp>
+#include <sysdep/OglDisplayContext.hpp>
+#include <sysdep/OglProgramObject.hpp>
+#include "GLSLSphereHelper.hpp"
+#include "GLSLCylinderHelper.hpp"
 
 using namespace molvis;
 using namespace molstr;
@@ -22,16 +30,84 @@ using gfx::ColorPtr;
 
 BallStickRenderer::BallStickRenderer()
 {
+  m_bUseShader = false;
+  m_pSlSph = MB_NEW GLSLSphereHelper();
+  m_pSlCyl = MB_NEW GLSLCylinderHelper();
 }
 
 BallStickRenderer::~BallStickRenderer()
 {
   MB_DPRINTLN("BallStickRenderer destructed %p", this);
+  delete m_pSlSph;
+  delete m_pSlCyl;
 }
 
 const char *BallStickRenderer::getTypeName() const
 {
   return "ballstick";
+}
+
+void BallStickRenderer::setSceneID(qlib::uid_t nid)
+{
+  super_t::setSceneID(nid);
+  if (nid==qlib::invalid_uid)
+    return;
+
+  if (m_pSlSph->initShader(this) &&
+      m_pSlCyl->initShader(this)) {
+    MB_DPRINTLN("BallStick sphere shader OK");
+    m_bUseShader = true;
+  }
+  else {
+    m_bUseShader = false;
+  }
+}
+
+void BallStickRenderer::display(DisplayContext *pdc)
+{
+  if (m_bUseShader) {
+    if (m_pSlSph->getDrawElem()==NULL) {
+      renderShaderImpl();
+      if (m_pSlSph->getDrawElem()==NULL)
+        return; // Error, Cannot draw anything (ignore)
+    }
+    
+    preRender(pdc);
+    m_pSlSph->draw(pdc);
+    m_pSlCyl->draw(pdc);
+    postRender(pdc);
+  }
+  /*else if (pdc->isDrawElemSupported()) {
+    if (m_pDrawElem==NULL) {
+      renderVBOImpl();
+      if (m_pDrawElem==NULL)
+	return; // Error, Cannot draw anything (ignore)
+    }
+    
+    preRender(pdc);
+    pdc->drawElem(*m_pDrawElem);
+    postRender(pdc);
+  }*/
+  else {
+    // old version (uses DisplayContext::sphere)
+    super_t::display(pdc);
+  }
+}
+
+void BallStickRenderer::invalidateDisplayCache()
+{
+  super_t::invalidateDisplayCache();
+  
+  if (m_bUseShader) {
+    m_pSlSph->invalidate();
+    m_pSlCyl->invalidate();
+  }
+
+  /*if (m_pDrawElem!=NULL) {
+    delete m_pDrawElem;
+    m_pDrawElem = NULL;
+  }*/
+  
 }
 
 ////////////
@@ -276,12 +352,6 @@ void BallStickRenderer::drawRingImpl(const std::list<int> atoms, DisplayContext 
 
 }
 
-//Renderer *BallStickRenderer::create()
-//{
-//  return MB_NEW BallStickRenderer();
-//}
-
-
 void BallStickRenderer::propChanged(qlib::LPropEvent &ev)
 {
   if (ev.getName().equals("bondw") ||
@@ -298,5 +368,120 @@ void BallStickRenderer::propChanged(qlib::LPropEvent &ev)
   }
 
   MolAtomRenderer::propChanged(ev);
+}
+
+////////////
+
+void BallStickRenderer::renderShaderImpl()
+{
+  MolCoordPtr pMol = getClientMol();
+  if (pMol.isnull()) {
+    MB_DPRINTLN("CPK2Renderer::render> Client mol is null");
+    return;
+  }
+
+  // initialize the coloring scheme
+  getColSchm()->init(pMol, this);
+  pMol->getColSchm()->init(pMol, this);
+
+  // estimate the size of drawing elements
+  int nsphs = 0;
+  {
+    AtomIterator iter(pMol, getSelection());
+    for (iter.first(); iter.hasMore(); iter.next()) {
+      int aid = iter.getID();
+      MolAtomPtr pAtom = pMol->getAtom(aid);
+      if (pAtom.isnull()) continue; // ignore errors
+      ++nsphs;
+    }
+  }
+  
+  if (nsphs!=0) {
+    m_pSlSph->alloc(nsphs);
+
+    AtomIterator iter(pMol, getSelection());
+    int i=0, j, ifc=0;
+    Vector4D pos;
+    for (iter.first(); iter.hasMore(); iter.next()) {
+      int aid = iter.getID();
+      MolAtomPtr pAtom = pMol->getAtom(aid);
+      if (pAtom.isnull()) continue; // ignore errors
+
+      m_pSlSph->setData(i, pAtom->getPos(), m_sphr, ColSchmHolder::getColor(pAtom));
+      ++i;
+    }
+  }
+
+  ///////////////////
+
+  int nbons = 0;
+  {
+    // Render bonds & nonb-atoms case (e.g. ball & stick model)
+    // TO DO: cache the result of iteration (???)
+    BondIterator biter(pMol, getSelection());
+    
+    for (biter.first(); biter.hasMore(); biter.next()) {
+      MolBond *pMB = biter.getBond();
+      int aid1 = pMB->getAtom1();
+      int aid2 = pMB->getAtom2();
+
+      MolAtomPtr pA1 = pMol->getAtom(aid1);
+      MolAtomPtr pA2 = pMol->getAtom(aid2);
+
+      if (pA1.isnull() || pA2.isnull())
+        continue; // skip invalid bonds
+
+      ColorPtr pcol1 = ColSchmHolder::getColor(pA1);
+      ColorPtr pcol2 = ColSchmHolder::getColor(pA2);
+      if ( pcol1->equals(*pcol2.get()) ) {
+        // same color --> one bond
+        ++nbons;
+      }
+      else {
+        // different color --> two bonds
+        ++nbons;
+        ++nbons;
+      }
+    }
+  }
+
+  if (nbons!=0) {
+    m_pSlCyl->alloc(nbons);
+
+    BondIterator biter(pMol, getSelection());
+    int i=0;
+    for (biter.first(); biter.hasMore(); biter.next()) {
+      MolBond *pMB = biter.getBond();
+      int aid1 = pMB->getAtom1();
+      int aid2 = pMB->getAtom2();
+
+      MolAtomPtr pA1 = pMol->getAtom(aid1);
+      MolAtomPtr pA2 = pMol->getAtom(aid2);
+
+      if (pA1.isnull() || pA2.isnull())
+        continue; // skip invalid bonds
+
+      const Vector4D pos1 = pA1->getPos();
+      const Vector4D pos2 = pA2->getPos();
+
+      ColorPtr pcol1 = ColSchmHolder::getColor(pA1);
+      ColorPtr pcol2 = ColSchmHolder::getColor(pA2);
+
+      if ( pcol1->equals(*pcol2.get()) ) {
+        // same color --> one bond
+        m_pSlCyl->setData(i, pos1, pos2, m_bondw, pcol1);
+        ++i;
+      }
+      else {
+        // different color --> two bonds
+        const Vector4D mpos = (pos1 + pos2).divide(2.0);
+        m_pSlCyl->setData(i, pos1, mpos, m_bondw, pcol1);
+        ++i;
+        m_pSlCyl->setData(i, mpos, pos2, m_bondw, pcol2);
+        ++i;
+      }
+
+    }
+  }
 }
 

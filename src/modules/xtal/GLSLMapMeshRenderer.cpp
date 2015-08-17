@@ -154,7 +154,8 @@ void GLSLMapMeshRenderer::initShader()
     m_pPO = ssh.createProgObj("gpu_mapmesh",
                               "%%CONFDIR%%/data/shaders/mapmesh_vertex.glsl",
                               "%%CONFDIR%%/data/shaders/mapmesh_frag.glsl",
-                              "%%CONFDIR%%/data/shaders/mapmesh_geom.glsl");
+                              "%%CONFDIR%%/data/shaders/mapmesh_geom.glsl",
+                              GL_POINTS, GL_LINE_STRIP, 16);
   
   if (m_pPO==NULL) {
     LOG_DPRINTLN("GPUMapMesh> ERROR: cannot create progobj.");
@@ -162,7 +163,7 @@ void GLSLMapMeshRenderer::initShader()
   }
 
   m_pPO->enable();
-  
+
   // Setup the index displacement array
   // X-Y plane
   m_pPO->setUniform("ivdel[0]", 0, 0, 0);

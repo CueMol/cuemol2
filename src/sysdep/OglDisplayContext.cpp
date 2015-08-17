@@ -1287,12 +1287,13 @@ void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
     glEnableVertexAttribArray(al);
   }
 
+  GLenum mode = convDrawMode(ada.getDrawMode());
+
   if (itype==AbstDrawElem::VA_ATTR_INDS) {
-    glDrawElements(GL_TRIANGLES, ada.getIndSize(), GL_UNSIGNED_SHORT, 0);
+    glDrawElements(mode, ada.getIndSize(), GL_UNSIGNED_SHORT, 0);
   }
   else {
-    // ??? XXX:GL_TRIANGLES
-    glDrawArrays(GL_TRIANGLES, 0, ada.getSize());
+    glDrawArrays(mode, 0, ada.getSize());
   }
   
   for (int i=0; i<nattr; ++i) {

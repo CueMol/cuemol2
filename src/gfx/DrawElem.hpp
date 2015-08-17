@@ -90,14 +90,12 @@ namespace gfx {
     /// arbitary attribute array with indices (for shader impl)
     static const int VA_ATTR_INDS = 10;
 
-  };
+    //////////////////////////////////////////////////
 
-  /// Draw element class
-  /// abstraction of VA/VBO implementation of OpenGL
-  class GFX_API DrawElem : public AbstDrawElem
-  {
-    typedef AbstDrawElem super_t;
-
+  private:
+    /// drawing mode
+    int m_nDrawMode;
+    
   public:
     // drawing mode IDs
     static const int DRAW_POINTS = 1;
@@ -111,7 +109,17 @@ namespace gfx {
     static const int DRAW_QUADS = 9;
     static const int DRAW_POLYGON = 10;
 
-    //////////////////////////////////////////////////
+    int getDrawMode() const { return m_nDrawMode; }
+    void setDrawMode(int n) { m_nDrawMode = n; }
+  };
+
+  /// Draw element class
+  /// abstraction of VA/VBO implementation of OpenGL
+  class GFX_API DrawElem : public AbstDrawElem
+  {
+    typedef AbstDrawElem super_t;
+
+  public:
 
     DrawElem();
     virtual ~DrawElem();
@@ -129,9 +137,6 @@ namespace gfx {
     //void startLines(int nsize);
     //void startTriangles(int nsize);
 
-    int getDrawMode() const { return m_nDrawMode; }
-    void setDrawMode(int n) { m_nDrawMode = n; }
-
     float getLineWidth() const { return m_fLineWidth; }
     void setLineWidth(float f) { m_fLineWidth = f; }
 
@@ -140,9 +145,6 @@ namespace gfx {
     void setDefColor(const ColorPtr &col);
 
   private:
-    /// drawing mode
-    int m_nDrawMode;
-    
     /// line width/point size
     float m_fLineWidth;
 

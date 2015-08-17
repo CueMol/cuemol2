@@ -1,10 +1,7 @@
 // -*-Mode: C++;-*-
 //
-//  Default fragment shader for OpenGL ES2
+//  fragment shader for spheres
 //
-
-// define default precision for float, vec, mat.
-// precision highp float;
 
 varying vec4 v_color;
 varying vec2 v_impos;

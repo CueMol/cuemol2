@@ -7,12 +7,9 @@
 #define CPK2_RENDERER_HPP_INCLUDED
 
 #include "molvis.hpp"
-#include <gfx/DrawAttrArray.hpp>
+#include <gfx/DrawElem.hpp>
 
 #include <modules/molstr/MolAtomRenderer.hpp>
-
-#include <sysdep/OglDisplayContext.hpp>
-#include <sysdep/OglProgramObject.hpp>
 
 // namespace molstr { class MolCoord; }
 
@@ -22,6 +19,7 @@ namespace molvis {
 
   using namespace molstr;
   using gfx::DisplayContext;
+  class GLSLSphereHelper;
 
   class MOLVIS_API CPK2Renderer : public MolAtomRenderer
   {
@@ -57,6 +55,9 @@ namespace molvis {
 
     /// override to initialize the shader
     virtual void setSceneID(qlib::uid_t nid);
+
+    /// cleanup the shaders
+    virtual void unloading();
 
     //////////////////////////////////////////////////////
 
@@ -97,22 +98,11 @@ namespace molvis {
     ///////////////////////////////////
     // shader rendering implementations
 
-    sysdep::OglProgramObject *m_pPO;
+    GLSLSphereHelper *m_pSlSph;
 
-    // SphElemAry *m_pDrawData;
-    
     void initShader();
     void renderShaderImpl();
-    void drawShaderImpl();
 
-    GLuint m_nVertexLoc;
-    GLuint m_nImposLoc;
-    GLuint m_nRadLoc;
-    GLuint m_nColLoc;
-
-    GLuint m_nVBO;
-    GLuint m_nVBO_ind;
-    //int m_nIndSize;
   };
 
 }
