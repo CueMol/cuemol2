@@ -59,6 +59,7 @@ vec4 flight(in vec3 normal, in vec4 ecPosition, in vec4 matcol)
 
 void main()
 {
+  /*
   float adj_cen = sqrt(1.0 - v_impos.x*v_impos.x);
   float disp_cir = adj_cen * v_ndec;
 
@@ -66,9 +67,16 @@ void main()
       v_impos.y >= ( 1.0+disp_cir)) {
     discard;
     return;
-  }
+  }*/
 
-  gl_FragColor = v_color;
+  // fog calculation
+  float fogz = abs(v_ecpos.z);
+  float fog;
+  fog = (gl_Fog.end - fogz) * gl_Fog.scale;
+  fog = clamp(fog, 0.0, 1.0);
+  gl_FragColor = vec4(mix( vec3(gl_Fog.color), vec3(v_color), fog), v_color.a);
+
+  // gl_FragColor = v_color;
 
 /*
   float dist = length(v_impos);

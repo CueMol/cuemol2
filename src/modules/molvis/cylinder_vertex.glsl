@@ -60,10 +60,8 @@ void main()
   dec = a_radius * ec_dir.z / len;
   v_ndec = 2.0 * dec / vw_len;
 
-/*
   dec_dir.xy = dec * rf;
   dec_dir.z = ec_dir.z * dec / len;
-*/
 
   /*if ( (dec*v_impos.t) > 0.0 ) {
     vert_dsp.x =  a_impos.x * n_ecdir.y * a_radius + dec_dir.x;
@@ -83,11 +81,19 @@ void main()
   //v_ecpos = ec_tpos + vec4(vert_dsp, 0.0);
   //gl_Position = gl_ProjectionMatrix * v_ecpos;
 
-  vert_dsp.x = a_impos.x * a_impos.y * -n_ecdir.y*a_radius;
-  vert_dsp.y = a_impos.x * a_impos.y *  n_ecdir.x*a_radius;
-  vert_dsp.z = 0.0;
-  v_impos = a_impos;
-
+  if ( dec > 0.0 ) {
+    vert_dsp.x = a_impos.x * a_impos.y * -n_ecdir.y*a_radius - dec_dir.x;
+    vert_dsp.y = a_impos.x * a_impos.y *  n_ecdir.x*a_radius - dec_dir.y;
+    vert_dsp.z = - dec_dir.z;
+    v_impos = a_impos;
+  }
+  else {
+    vert_dsp.x = a_impos.x * a_impos.y * -n_ecdir.y*a_radius;
+    vert_dsp.y = a_impos.x * a_impos.y *  n_ecdir.x*a_radius;
+    vert_dsp.z = 0.0;
+    v_impos = a_impos;
+  }
+  
   vec4 tmp = gl_ModelViewMatrix * vec4(a_vertex, 1.0) + vec4(vert_dsp, 0.0);
   gl_Position = gl_ProjectionMatrix * tmp;
 
