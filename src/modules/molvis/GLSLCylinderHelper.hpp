@@ -157,9 +157,11 @@ namespace molvis {
 
     void draw(DisplayContext *pdc)
     {
-      m_pPO->enable();
-      pdc->drawElem(*m_pDrawElem);
-      m_pPO->disable();
+      if (m_pDrawElem!=NULL) {
+        m_pPO->enable();
+        pdc->drawElem(*m_pDrawElem);
+        m_pPO->disable();
+      }
     }
 
     void invalidate()
