@@ -270,7 +270,8 @@ Ribbon2Renderer::Ribbon2Renderer()
   m_dCoilSmo = 0.0;
 
   m_bDumpCurv = false;
-  m_bCylHelix = true;
+  //m_bCylHelix = true;
+  m_bCylHelix = false;
 
   // setup sub properties (call LScrObjBase::setupParentData())
   super_t::setupParentData("helix");
@@ -830,6 +831,13 @@ void Ribbon2Renderer::renderSheet(DisplayContext *pdl, detail::SecSplDat *pC)
 ////////////////////////////////////////////////////////////////////////////////
 // Coil routines
 
+double Ribbon2Renderer::getAnchorWgt2(MolResiduePtr pRes, const LString &sstr) const
+{
+  if (!m_bCylHelix && isHelix(sstr))
+    return 10.0; // strong weight for stick to the Ca position in ribbon helix
+  return getAnchorWgt(pRes);
+}
+
 gfx::ColorPtr Ribbon2Renderer::calcColor2(double at, SecSplDat *pCyl)
 {
   double t = at;
@@ -941,14 +949,16 @@ void Ribbon2Renderer::buildCoilData()
           // No previous residue (may be N-terminus; i.e. [. C])
           //  --> no extension
           pCoil->setStart(); // nstart should be zero...
-          pCoil->addPoint( this, pRes, getAnchorWgt(pRes));
+          pCoil->addPoint( this, pRes, getAnchorWgt2(pRes, sec) );
         }
         else {
           if (isSheet(prev_ss)) {
+            // Prev res is sheet (E C)
             extendSheetCoil(pCoil, i-1);
             pCoil->addPoint( this, pRes, 1.0);
           }
           else {
+            // Prev res is helix (H C)
             pCoil->setStart();
             pCoil->addPoint( this, pPrevRes, m_dAnchorWgt);
             pCoil->addPoint( this, pRes, m_dAnchorWgt);
@@ -960,10 +970,11 @@ void Ribbon2Renderer::buildCoilData()
       else {
         // mid of coil (C C)
         if (pCoil!=NULL) {
-          const double wgt = getAnchorWgt(pRes);
+          const double wgt = getAnchorWgt2(pRes, sec);
           pCoil->addPoint( this, pRes, wgt);
         }
       }
+
     }
     else {
       // non-coil

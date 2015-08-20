@@ -276,6 +276,7 @@ public:
   }
 
   double getAnchorWgt(MolResiduePtr pRes) const;
+  double getAnchorWgt2(MolResiduePtr pRes, const LString &sstr) const;
 
   void invalidateSplineCoeffs();
 
