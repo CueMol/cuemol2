@@ -335,7 +335,9 @@ void Ribbon2Renderer::endSegment(DisplayContext *pdl, MolResiduePtr pEndRes)
     }
     
     m_ptsCoil->setupSectionTable();
-    renderCoil(pdl);
+    BOOST_FOREACH (SecSplDat *pElem, m_coils) {
+      renderCoil(pdl, pElem);
+    }
   }
   else {
     // tube-shaped helix mode
@@ -353,7 +355,9 @@ void Ribbon2Renderer::endSegment(DisplayContext *pdl, MolResiduePtr pEndRes)
     m_ptsHelix->setupSectionTable();
 
     m_ptsCoil->setupSectionTable();
-    renderCoil(pdl);
+    BOOST_FOREACH (SecSplDat *pElem, m_coils) {
+      renderHelixCoil(pdl, pElem);
+    }
   }
   
   if (m_bDumpCurv)
@@ -505,8 +509,6 @@ gfx::ColorPtr Ribbon2Renderer::calcColor(double at, SecSplDat *pCyl)
   if (0<=nnext && nnext<m_resvec.size())
     pNext= m_resvec[nnext];
 
-  gfx::ColorPtr pCol1, pCol2;
-  
   return super_t::calcColor(rho, isSmoothColor(), pPrev, pNext);
 }
 
@@ -838,7 +840,10 @@ double Ribbon2Renderer::getAnchorWgt2(MolResiduePtr pRes, const LString &sstr) c
   return getAnchorWgt(pRes);
 }
 
-gfx::ColorPtr Ribbon2Renderer::calcColor2(double at, SecSplDat *pCyl)
+void Ribbon2Renderer::getCoilResids(double at, SecSplDat *pCyl,
+                                    MolResiduePtr &pResPrev,
+                                    MolResiduePtr &pResNext,
+                                    double &resrho)
 {
   double t = at;
   double tstart = 0.0;
@@ -854,19 +859,22 @@ gfx::ColorPtr Ribbon2Renderer::calcColor2(double at, SecSplDat *pCyl)
   
   int nprev = int(::floor(t));
   int nnext = nprev+1; //int(::ceil(t));
-  const double rho = t - double(nprev);
+  resrho = t - double(nprev);
 
   nprev += pCyl->m_nResDelta;
   nnext += pCyl->m_nResDelta;
 
-  MolResiduePtr pPrev, pNext;
   if (0<=nprev && nprev<m_resvec.size())
-    pPrev= m_resvec[nprev];
+    pResPrev= m_resvec[nprev];
   if (0<=nnext && nnext<m_resvec.size())
-    pNext= m_resvec[nnext];
+    pResNext= m_resvec[nnext];
+}
 
-  gfx::ColorPtr pCol1, pCol2;
-  
+gfx::ColorPtr Ribbon2Renderer::calcCoilColor(double at, SecSplDat *pCyl)
+{
+  double rho;
+  MolResiduePtr pPrev;
+  MolResiduePtr pNext;
   return super_t::calcColor(rho, isSmoothColor(), pPrev, pNext);
 }
 
@@ -1015,79 +1023,221 @@ void Ribbon2Renderer::buildCoilData()
 
 }
 
-void Ribbon2Renderer::renderCoil(DisplayContext *pdl)
+void Ribbon2Renderer::renderCoil(DisplayContext *pdl, detail::SecSplDat *pC)
 {
   Vector4D zerovec(0,0,0);
 
   const int naxdet = getAxialDetail();
-  int ncyls = m_coils.size();
-  for (int i=0; i<ncyls; ++i) {
-    SecSplDat *pC = m_coils[i];
-
-    double tstart = 0.0;
-    //double tend = pC->m_spl.getPoints()-1.0;
-    double tend = pC->m_nRealSize -1.0;
-
-    int ndelta = (int) ::floor( (tend-tstart)* naxdet );
-    if (ndelta<=0) {
-      // degenerated (single point)
-      // TO DO: impl
-      continue;
-    }
-    const double fdelta = (tend-tstart)/double(ndelta);
-
-    Vector4D bntmp;
-    Vector4D e11, e12, e21, e22;
-    Vector4D f1, f2, vpt;
-
-    // Color objects used in the axial-loop
-    ColorPtr pCol;
-
-    //MB_DPRINTLN("Sheet %d (t: %f->%f)", i, tstart, tend);
-
-    m_ptsCoil->startTess();
-    //pdl->startLineStrip();
+  double tstart = 0.0;
+  double tend = pC->m_nRealSize -1.0;
+  
+  int ndelta = (int) ::floor( (tend-tstart)* naxdet );
+  if (ndelta<=0) {
+    // degenerated (single point)
+    // TO DO: impl
+    return;
+  }
+  const double fdelta = (tend-tstart)/double(ndelta);
+  
+  Vector4D bntmp;
+  Vector4D e11, e12, e21, e22;
+  Vector4D f1, f2, vpt;
+  
+  // Color objects used in the axial-loop
+  ColorPtr pCol;
+  
+  //MB_DPRINTLN("Sheet %d (t: %f->%f)", i, tstart, tend);
+  
+  m_ptsCoil->startTess();
+  
+  // axial step loop
+  for (int j=0; j<=ndelta; ++j) {
+    double t = tstart + double(j) * fdelta; // /double(naxdet);
+    //double col_t = t;
+    pCol = calcCoilColor(t, pC);
+    pC->m_spl.interpolate(t, &f1, &vpt);
+    //vpt = vpt.normalize();
     
-    // axial step loop
-    for (int j=0; j<=ndelta; ++j) {
-      double t = tstart + double(j) * fdelta; // /double(naxdet);
-      //double col_t = t;
-      pCol = calcColor2(t, pC);
-      pC->m_spl.interpolate(t, &f1, &vpt);
-      //vpt = vpt.normalize();
-
-      if (j==0) {
-        bntmp = Vector4D(1,0,0);
-      }
-
-      Vector4D e11 = bntmp.cross(vpt).normalize();
-      Vector4D e12 = vpt.cross(e11).normalize();
-
-      if (j==0) {
-        // make the tube cap.
-        pdl->color(pCol);
-        m_ptsCoil->makeCap(pdl, true, getStartCapType(), f1, vpt, e11, e12);
-      }
-
-      m_ptsCoil->doTess(pdl, f1, pCol, isSmoothColor(), e11, e12, zerovec );
-      //pdl->color(pCol);
-      //pdl->vertex(f1);
-
-      if (j==ndelta) {
-        // make cap at the end point.
-        pdl->color(pCol);
-        m_ptsCoil->makeCap(pdl, false, getEndCapType(), f1, vpt, e11, e12);
-      }
-
-      bntmp = e12;
+    if (j==0) {
+      bntmp = Vector4D(1,0,0);
     }
     
-    m_ptsCoil->endTess();
-    //pdl->end();
+    Vector4D e11 = bntmp.cross(vpt).normalize();
+    Vector4D e12 = vpt.cross(e11).normalize();
+    
+    if (j==0) {
+      // make the tube cap.
+      pdl->color(pCol);
+      m_ptsCoil->makeCap(pdl, true, getStartCapType(), f1, vpt, e11, e12);
+    }
+    
+    m_ptsCoil->doTess(pdl, f1, pCol, isSmoothColor(), e11, e12, zerovec );
+
+    if (j==ndelta) {
+      // make cap at the end point.
+      pdl->color(pCol);
+      m_ptsCoil->makeCap(pdl, false, getEndCapType(), f1, vpt, e11, e12);
+      }
+    
+    bntmp = e12;
   }
   
+  m_ptsCoil->endTess();
 }
 
+namespace {
+  struct HCTab {
+    int jst;
+    int jen;
+    int flag;
+  };
+
+#define HC_COIL 0
+#define HC_HELIX 1
+#define HC_HELIX_TAIL 2
+#define HC_HELIX_HEAD 3
+}
+
+void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC)
+{
+  Vector4D zerovec(0,0,0);
+
+  const int naxdet = getAxialDetail();
+  double tstart = 0.0;
+  double tend = pC->m_nRealSize -1.0;
+  
+  int ndelta = (int) ::floor( (tend-tstart)* naxdet );
+  if (ndelta<=0) {
+    // degenerated (single point)
+    // TO DO: impl
+    return;
+  }
+  const double fdelta = (tend-tstart)/double(ndelta);
+  
+  Vector4D bntmp;
+  Vector4D e11, e12, e21, e22;
+  Vector4D f1, f2, vpt;
+  
+  // Color objects used in the axial-loop
+  ColorPtr pCol;
+  
+  //MB_DPRINTLN("Sheet %d (t: %f->%f)", i, tstart, tend);
+  
+  // make helix-coil table
+  std::deque<HCTab> hstabs;
+  LString sec_prev="E";
+  HCTab hstelem;
+  for (int j=0; j<=ndelta; ++j) {
+    double t = tstart + double(j) * fdelta; // /double(naxdet);
+
+    MolResiduePtr pResPrev;
+    MolResiduePtr pResNext;
+    double rho;
+    getCoilResids(t, pC, pResPrev, pResNext, rho);
+
+    LString sec;
+    pResPrev->getPropStr("secondary2", sec);
+    //MB_DPRINTLN("%d sec <%s>", j, sec.c_str());
+
+    if (j==0 || !sec.equals(sec_prev)) {
+      if (j>0) {
+        // push the previous segment
+        hstelem.jen = j-1;
+        hstabs.push_back(hstelem);
+      }
+      // setup the start of the next segment
+      int flag = HC_COIL;
+      LString pfx;
+      if (sec.length()>=2)
+        pfx= sec.substr(1,1);
+      
+      if (sec.startsWith("H")||sec.startsWith("G")||sec.startsWith("I")) {
+        if (pfx.equals("s"))
+          flag = HC_HELIX_TAIL;
+        else if (pfx.equals("e"))
+          flag = HC_HELIX_HEAD;
+        else
+          flag = HC_HELIX;
+      }
+      
+      hstelem.jst = j;
+      hstelem.flag = flag;
+    }
+
+    sec_prev = sec;
+  }
+  
+  
+  TubeSectionPtr pTS;
+  BOOST_FOREACH (HCTab elem, hstabs) {
+    LString tp;
+    switch (elem.flag) {
+    case HC_COIL: {
+      tp = "coil";
+      pTS = m_ptsCoil;
+      break;
+    }
+    case HC_HELIX:
+      tp = "helix";
+      pTS = m_ptsHelix;
+      break;
+    case HC_HELIX_HEAD:
+      tp = "helix head";
+      break;
+    case HC_HELIX_TAIL:
+      tp = "helix tail";
+      break;
+    }
+    MB_DPRINTLN("%d -- %d type=<%s>", elem.jst, elem.jen, tp.c_str());
+
+    if (elem.flag==HC_COIL || elem.flag==HC_HELIX) {
+      pTS->startTess();
+      
+      // axial step loop
+      for (int j=elem.jst; j<=elem.jen; ++j) {
+        double t = tstart + double(j) * fdelta; // /double(naxdet);
+        
+        MolResiduePtr pResPrev;
+        MolResiduePtr pResNext;
+        double rho;
+        getCoilResids(t, pC, pResPrev, pResNext, rho);
+        
+        pCol = super_t::calcColor(rho, isSmoothColor(), pResPrev, pResNext);
+        pC->m_spl.interpolate(t, &f1, &vpt);
+        //vpt = vpt.normalize();
+        
+        if (j==0) {
+          bntmp = Vector4D(1,0,0);
+        }
+        
+        Vector4D e11 = bntmp.cross(vpt).normalize();
+        Vector4D e12 = vpt.cross(e11).normalize();
+        
+        if (j==0) {
+          // make the tube cap.
+          pdl->color(pCol);
+          pTS->makeCap(pdl, true, getStartCapType(), f1, vpt, e11, e12);
+        }
+        
+        pTS->doTess(pdl, f1, pCol, isSmoothColor(), e11, e12, zerovec );
+        
+        if (j==ndelta) {
+          // make cap at the end point.
+          pdl->color(pCol);
+          pTS->makeCap(pdl, false, getEndCapType(), f1, vpt, e11, e12);
+        }
+        
+        bntmp = e12;
+      }
+      
+      pTS->endTess();
+    }
+    else {
+      // TO DO: render H/C junction
+    }
+  }
+
+}
 
 //////////////////////////////////////////////////
 

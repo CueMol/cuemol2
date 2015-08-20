@@ -126,6 +126,12 @@ private:
   /// Sheet junction (arrow head)
   JctTablePtr m_pSheetHead;
 
+  /// Coil-Helix junction (used in ribbonhelix mode)
+  JctTablePtr m_pHelixTail;
+
+  /// Helix-Coil junction (used in ribbonhelix mode)
+  JctTablePtr m_pHelixHead;
+
   /// Num of interporation point to the axial direction (axialdetail)
   int m_nAxialDetail;
 
@@ -224,7 +230,16 @@ private:
 
   void buildCoilData();
   void clearCoilData();
-  void renderCoil(DisplayContext *pdl);
+  void renderCoil(DisplayContext *pdl, detail::SecSplDat *pSh);
+  void renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pSh);
+
+  void getCoilResids(double at, detail::SecSplDat *pCyl,
+                     MolResiduePtr &pResPrev,
+                     MolResiduePtr &pResNext,
+                     double &resrho);
+
+  gfx::ColorPtr calcCoilColor(double at, detail::SecSplDat *pCyl);
+
 
   /// Sheet to Coil junction
   void extendSheetCoil(detail::SecSplDat *pSh, int nPrevInd);
@@ -315,7 +330,6 @@ private:
 public:
   
   gfx::ColorPtr calcColor(double t, detail::SecSplDat *pCyl);
-  gfx::ColorPtr calcColor2(double t, detail::SecSplDat *pCyl);
 
   TubeSectionPtr getHelixSection() const { return m_ptsHelix; }
   TubeSectionPtr getSheetSection() const { return m_ptsSheet; }
