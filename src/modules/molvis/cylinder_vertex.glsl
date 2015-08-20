@@ -33,7 +33,6 @@ attribute vec2 a_impos;
 varying vec4 v_color;
 varying vec2 v_impos;
 varying vec4 v_ecpos;
-varying float v_radius;
 
 varying float v_ndec;
 //varying float v_dec;
@@ -91,7 +90,6 @@ void main()
   if ( dec > 0.0 ) {
     // extend the end of the cap
     vert_dsp -= dec_dir;
-    // dec is positive --> v_ndec is also positive!!
     v_impos = a_impos + vec2(0, v_ndec * a_impos.y);
     //v_impos = a_impos;
   }
@@ -99,12 +97,11 @@ void main()
     v_impos = a_impos;
   }
 
-  vec4 tmp = gl_ModelViewMatrix * vec4(a_vertex, 1.0) + vec4(vert_dsp, 0.0);
-  gl_Position = gl_ProjectionMatrix * tmp;
+  vec4 ec_pos_dsp = ec_tpos + vec4(vert_dsp, 0.0);
+  gl_Position = gl_ProjectionMatrix * ec_pos_dsp;
 
-  v_radius = a_radius;
   v_color = a_color;
-  v_ecpos = tmp;
+  v_ecpos = ec_pos_dsp;
 
   //gl_Position = vec4(0,0,0,0);
   //v_color = vec4(1,1,1,1);

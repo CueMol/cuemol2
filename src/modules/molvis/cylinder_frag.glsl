@@ -6,7 +6,6 @@
 varying vec4 v_color;
 varying vec2 v_impos;
 varying vec4 v_ecpos;
-varying float v_radius;
 varying float v_ndec;
 //varying float v_dec;
 //varying float vw_len;
@@ -67,7 +66,6 @@ varying vec2 v_vwdir;
 
 void main()
 {
-  // discard the impostor pixels out of the cylinder
   float adj_cen = sqrt(1.0 - v_impos.x*v_impos.x);
   float disp_cir = adj_cen * v_ndec;
 
@@ -82,6 +80,7 @@ void main()
 
   imy -= disp_cir * v_flag;
   
+  // discard the impostor pixels out of the cylinder
   if (imy <= -1.0 ||
       1.0 <= imy) {
     discard;
@@ -95,8 +94,9 @@ void main()
   mat2 rmat = mat2(v_vwdir.x, v_vwdir.y,
                    -v_vwdir.y, v_vwdir.x);
 
-  //normal.xy = rmat * normal.xy;
   normal.xy *= rmat;
+
+  //normal.xy = rmat * normal.xy;
   //float tx =  v_vwdir.x*normal.x + v_vwdir.y*normal.y;
   //float ty = -v_vwdir.y*normal.x + v_vwdir.x*normal.y;
   //normal.x = tx;
