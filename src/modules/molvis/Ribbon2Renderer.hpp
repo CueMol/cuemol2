@@ -332,7 +332,12 @@ private:
   void updateDiffVecsImpl(detail::SecSplDat *pC);
 
 public:
+  /// Returns 1-st differential vector as to the axial (t) parameter.
+  ///  (used for the tangential vector calculation for the disorder renderer)
   virtual bool getDiffVec(MolResiduePtr pRes, Vector4D &rpos, Vector4D &rvec);
+
+  /// Cylinder-shaped helix flag
+  bool m_bCylHelix;
 
 };
 

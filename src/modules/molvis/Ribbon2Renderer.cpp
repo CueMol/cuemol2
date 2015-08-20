@@ -270,6 +270,7 @@ Ribbon2Renderer::Ribbon2Renderer()
   m_dCoilSmo = 0.0;
 
   m_bDumpCurv = false;
+  m_bCylHelix = true;
 
   // setup sub properties (call LScrObjBase::setupParentData())
   super_t::setupParentData("helix");
@@ -315,30 +316,51 @@ void Ribbon2Renderer::rendResid(DisplayContext *pdl, MolResiduePtr pRes)
 void Ribbon2Renderer::endSegment(DisplayContext *pdl, MolResiduePtr pEndRes)
 {
   m_indvec.resize( m_resvec.size() );
-  buildHelixData();
-  buildSheetData();
-  buildCoilData();
 
-  m_ptsHelix->setWidth(1.0);
-  m_ptsHelix->setupSectionTable();
-  renderHelix(pdl);
+  if (m_bCylHelix) {
+    buildHelixData();
+    buildSheetData();
+    buildCoilData();
+    
+    m_ptsHelix->setWidth(1.0);
+    m_ptsHelix->setupSectionTable();
+    renderHelix(pdl);
+    
+    m_ptsSheet->setupSectionTable();
+    m_pSheetHead->setup(getAxialDetail()+1, m_ptsSheet.get(), m_ptsCoil.get(), true);
+    
+    BOOST_FOREACH (SecSplDat *pElem, m_sheets) {
+      renderSheet(pdl, pElem);
+    }
+    
+    m_ptsCoil->setupSectionTable();
+    renderCoil(pdl);
+  }
+  else {
+    // tube-shaped helix mode
+    buildSheetData();
+    buildCoilData();
+    
+    m_ptsSheet->setupSectionTable();
+    m_pSheetHead->setup(getAxialDetail()+1, m_ptsSheet.get(), m_ptsCoil.get(), true);
+    
+    BOOST_FOREACH (SecSplDat *pElem, m_sheets) {
+      renderSheet(pdl, pElem);
+    }
+    
+    m_ptsHelix->setWidth(1.0);
+    m_ptsHelix->setupSectionTable();
 
-  m_ptsSheet->setupSectionTable();
-  m_pSheetHead->setup(getAxialDetail()+1, m_ptsSheet.get(), m_ptsCoil.get(), true);
-
-  BOOST_FOREACH (SecSplDat *pElem, m_sheets) {
-    renderSheet(pdl, pElem);
+    m_ptsCoil->setupSectionTable();
+    renderCoil(pdl);
   }
   
-  m_ptsCoil->setupSectionTable();
-  renderCoil(pdl);
-
   if (m_bDumpCurv)
     curvature();
-
+  
   // update diffvecs table
   updateDiffVecs();
-
+  
   m_indvec.clear();
   m_resvec.clear();
 }
@@ -356,11 +378,15 @@ static inline bool isSheet(const LString &sec)
   return sec.startsWith("E");
 }
 
-static inline bool isCoil(const LString &sec)
+static inline bool isCoil(const LString &sec, bool bCylHlx)
 {
   //return !sec.equals("E") &&
   //!sec.equals("H") && !sec.equals("G") && !sec.equals("I");
-  return !isSheet(sec) && !isHelix(sec);
+
+  if (bCylHlx)
+    return !isSheet(sec) && !isHelix(sec);
+  else
+    return !isSheet(sec);
 }
 
 void Ribbon2Renderer::clearHelixData()
@@ -892,7 +918,7 @@ void Ribbon2Renderer::buildCoilData()
   clearCoilData();
 
   int nresvec = m_resvec.size();
-  LString prev_ss = "H"; // dummy for starting coil
+  LString prev_ss = "E"; // dummy for starting coil
 
   SecSplDat *pCoil = NULL;
   MolResiduePtr pPrevRes;
@@ -902,9 +928,10 @@ void Ribbon2Renderer::buildCoilData()
     LString sec;
     pRes->getPropStr("secondary2", sec);
     sec = sec.substr(0,1);
+    MB_DPRINTLN("%d sec=%s, prev=%s", i, sec.c_str(), prev_ss.c_str());
 
-    if ( isCoil(sec) ) {
-      if ( !isCoil(prev_ss) ) {
+    if ( isCoil(sec, m_bCylHelix) ) {
+      if ( !isCoil(prev_ss, m_bCylHelix) ) {
         // Start of coil (x C) or (. C)
         MB_ASSERT(pCoil==NULL);
         pCoil = MB_NEW SecSplDat(this);
@@ -940,7 +967,7 @@ void Ribbon2Renderer::buildCoilData()
     }
     else {
       // non-coil
-      if ( isCoil(prev_ss) ) {
+      if ( isCoil(prev_ss, m_bCylHelix) ) {
         // end of coil (C x)
         MB_ASSERT(pCoil!=NULL);
         if (isSheet(sec)) {
