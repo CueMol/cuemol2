@@ -635,6 +635,22 @@ void TubeSection::doTess(DisplayContext *pdl,
     nts[k] = ( getNormVec(k, e11, e12) + norm_shift ).normalize();
   }
 
+  /*{
+    double scale = 3.0;
+    pdl->setLineWidth(3.0);
+    pdl->startLines();
+    for (int k=0; k<=nsize; k++) {
+      pdl->color(1,0,0,1);
+      pdl->vertex(f1);
+      pdl->vertex(f1+e11.scale(scale));
+      pdl->color(0,1,0,1);
+      pdl->vertex(f1);
+      pdl->vertex(f1+e12.scale(scale));
+    }
+    pdl->end();
+
+  }*/
+
   if (!m_bTessEmpty) {
     pdl->startTriangleStrip();
     for (int k=0; k<=nsize; k++) {
@@ -648,6 +664,7 @@ void TubeSection::doTess(DisplayContext *pdl,
       pdl->vertex(m_vtess[k]);
     }
     pdl->end();
+
   }
 
   for (int k=0; k<=nsize; k++) {
@@ -656,6 +673,7 @@ void TubeSection::doTess(DisplayContext *pdl,
   }
   m_pPrevCol = pCol;
   m_bTessEmpty = false;
+
 
 }
 

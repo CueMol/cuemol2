@@ -92,6 +92,8 @@ using namespace molstr;
       bool calcProtBinormVec(int nres, Vector4D &res);
 
       Vector4D getBnormVec(double t);
+      Vector4D getCoilBnormVec(double t);
+      
 
       Ribbon2Renderer *m_pParent;
 
@@ -117,7 +119,7 @@ private:
   /// Section data for coil
   TubeSectionPtr m_ptsCoil;
 
-  /// Section data for helix
+  /// Section data for cylinder helix
   TubeSectionPtr m_ptsHelix;
 
   /// Section data for sheet
@@ -126,11 +128,14 @@ private:
   /// Sheet junction (arrow head)
   JctTablePtr m_pSheetHead;
 
+  /// Section data for ribbon helix
+  TubeSectionPtr m_ptsRibHelix;
+
   /// Coil-Helix junction (used in ribbonhelix mode)
-  JctTablePtr m_pHelixTail;
+  JctTablePtr m_pRibHelixTail;
 
   /// Helix-Coil junction (used in ribbonhelix mode)
-  JctTablePtr m_pHelixHead;
+  JctTablePtr m_pRibHelixHead;
 
   /// Num of interporation point to the axial direction (axialdetail)
   int m_nAxialDetail;
@@ -336,6 +341,10 @@ public:
   TubeSectionPtr getCoilSection() const { return m_ptsCoil; }
 
   JctTablePtr getSheetHead() const { return m_pSheetHead; }
+
+  TubeSectionPtr getRibHelixSection() const { return m_ptsRibHelix; }
+  JctTablePtr getRibHelixHead() const { return m_pRibHelixHead; }
+  JctTablePtr getRibHelixTail() const { return m_pRibHelixTail; }
 
   //////////
 

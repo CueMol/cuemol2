@@ -7,6 +7,7 @@
 
 #include "LPropSupport.hpp"
 #include "LVariant.hpp"
+#include "NestedPropHandler.hpp"
 
 using namespace qlib;
 
@@ -126,4 +127,40 @@ int LPropSupport::getPropNames(LString **ppStrNames,
 }
 #endif
 
+
+bool LPropSupport::hasNestedProperty(const LString &propname) const
+{
+  NestedPropHandler nph(propname, const_cast<LPropSupport*>(this));
+  return nph.apply()->hasProperty(nph.last_name());
+}
+
+bool LPropSupport::getNestedProperty(const LString &propname, LVariant &presult) const
+{
+  NestedPropHandler nph(propname, const_cast<LPropSupport*>(this));
+  return nph.apply()->getProperty(nph.last_name(), presult);
+}
+
+bool LPropSupport::setNestedProperty(const LString &propname, const LVariant &pvalue)
+{
+  NestedPropHandler nph(propname, this);
+  return nph.apply()->setProperty(nph.last_name(), pvalue);
+}
+
+bool LPropSupport::resetNestedProperty(const LString &propname)
+{
+  NestedPropHandler nph(propname, this);
+  return nph.apply()->resetProperty(nph.last_name());
+}
+
+bool LPropSupport::hasNestedPropDefault(const LString &propname) const
+{
+  NestedPropHandler nph(propname, const_cast<LPropSupport*>(this));
+  return nph.apply()->hasPropDefault(nph.last_name());
+}
+
+bool LPropSupport::isNestedPropDefault(const LString &propname) const
+{
+  NestedPropHandler nph(propname, const_cast<LPropSupport*>(this));
+  return nph.apply()->isPropDefault(nph.last_name());
+}
 

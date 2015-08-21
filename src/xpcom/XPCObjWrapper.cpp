@@ -15,7 +15,7 @@
 #include <qlib/LVarArray.hpp>
 #include <qlib/LUnicode.hpp>
 #include <qlib/PropSpec.hpp>
-#include <qlib/NestedPropHandler.hpp>
+//#include <qlib/NestedPropHandler.hpp>
 
 using namespace xpcom;
 using qlib::LVariant;
@@ -472,11 +472,7 @@ nsresult XPCObjWrapper::checkPropImpl(const char *propname, bool *rval /*= NULL*
     return NS_ERROR_INVALID_POINTER;
   }
 
-  bool hasProperty;
-  {
-    qlib::NestedPropHandler nph(propname, m_pWrapped);
-    hasProperty = nph.apply()->hasProperty(nph.last_name());
-  }
+  bool hasProperty = m_pWrapped->hasNestedProperty(propname);
 
   if (rval!=NULL)
     *rval = hasProperty;
@@ -504,8 +500,9 @@ NS_IMETHODIMP XPCObjWrapper::GetProp(const char *propname, nsIVariant **_retval)
   LString errmsg;
 
   try {
-    qlib::NestedPropHandler nph(propname, m_pWrapped);
-    ok = nph.apply()->getProperty(nph.last_name(), lvar);
+    //qlib::NestedPropHandler nph(propname, m_pWrapped);
+    //ok = nph.apply()->getProperty(nph.last_name(), lvar);
+    ok = m_pWrapped->getNestedProperty(propname, lvar);
   }
   catch (qlib::LException &e) {
     ok = false;
@@ -551,16 +548,10 @@ NS_IMETHODIMP XPCObjWrapper::SetProp(const char *propname, nsIVariant *value)
   LString errmsg;
 
   try {
-    qlib::NestedPropHandler nph(propname, m_pWrapped);
-    ok = nph.apply()->setProperty(nph.last_name(), lvar);
-    /*
-    LString last;
-    LVariant rval;
-    if (handleNestedProp(propname, last, rval))
-      ok = rval.getObjectPtr()->setProperty(last, lvar);
-    else
-      ok = m_pWrapped->setProperty(propname, lvar);
-      */
+    //qlib::NestedPropHandler nph(propname, m_pWrapped);
+    //ok = nph.apply()->setProperty(nph.last_name(), lvar);
+
+    ok = m_pWrapped->setNestedProperty(propname, lvar);
   }
   catch (qlib::LException &e) {
     ok = false;
@@ -600,8 +591,9 @@ NS_IMETHODIMP XPCObjWrapper::ResetProp(const char *propname)
   LString errmsg;
 
   try {
-    qlib::NestedPropHandler nph(propname, m_pWrapped);
-    ok = nph.apply()->resetProperty(nph.last_name());
+    //qlib::NestedPropHandler nph(propname, m_pWrapped);
+    //ok = nph.apply()->resetProperty(nph.last_name());
+    ok = m_pWrapped->resetNestedProperty(propname);
   }
   catch (qlib::LException &e) {
     ok = false;
@@ -641,11 +633,20 @@ NS_IMETHODIMP XPCObjWrapper::IsPropDefault(const char *propname, PRInt32 *_retva
   LString errmsg;
 
   try {
-    qlib::NestedPropHandler nph(propname, m_pWrapped);
-    qlib::LPropSupport *pTmp = nph.apply();
+    //qlib::NestedPropHandler nph(propname, m_pWrapped);
+    //qlib::LPropSupport *pTmp = nph.apply();
+    /*
     if (! pTmp->hasPropDefault(nph.last_name()) )
       result = 0; // no default value
     else if (! pTmp->isPropDefault(nph.last_name()) )
+      result = 1; // has default but not default now
+    else
+      result = 2; // has default and now is default
+      */
+
+    if (! m_pWrapped->hasNestedPropDefault(propname) )
+      result = 0; // no default value
+    else if (! m_pWrapped->isPropDefault(propname) )
       result = 1; // has default but not default now
     else
       result = 2; // has default and now is default

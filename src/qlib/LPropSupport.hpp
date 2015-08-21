@@ -61,6 +61,16 @@ namespace qlib {
     // int getPropNames(LString **ppStrNames) const;
     // int getPropNames(LString **ppStrNames, LString **ppTypeNames) const;
     
+    ///////////////////////////
+    // convenience methods for nested prop handling
+
+    bool hasNestedProperty(const LString &propnm) const;
+    bool getNestedProperty(const LString &propnm, LVariant &presult) const;
+    bool setNestedProperty(const LString &propnm, const LVariant &pvalue);
+    bool resetNestedProperty(const LString &propnm);
+    bool hasNestedPropDefault(const LString &propnm) const;
+    bool isNestedPropDefault(const LString &propnm) const;
+
   };
 
   //

@@ -182,6 +182,9 @@ Vector4D SecSplDat::calcBinormVec(int i)
     return bnorm;
 
   // generic case
+  if (i-1<0 || i+1>=m_posvec.size()) {
+    return Vector4D(1.0, 0.0, 0.0);
+  }
   Vector4D p0 = m_posvec[i-1];
   Vector4D p1 = m_posvec[i];
   Vector4D p2 = m_posvec[i+1];
@@ -218,21 +221,31 @@ Vector4D SecSplDat::getBnormVec(double t)
     par -= 1;
   m_bnspl.interpolate(par, &rval);
   return rval.normalize();
+}
 
-/*
-  const double len = rval.length();
-  if (qlib::isNear4(len, 0.0)) {
-    // ERROR!!
-    return Vector4D(1,0,0);
+Vector4D SecSplDat::getCoilBnormVec(double t)
+{
+  Vector4D rval;
+
+  if (!m_bBnormSpl) {
+    if (m_bnorm_ave.isZero3D(F_EPS4)) {
+      // singularity case: bnorm vec wasn't determined correctly
+      return Vector4D(1,0,0);
+    }
+    else {
+      return m_bnorm_ave;
+    }
   }
-  return rval.divide(len);
-*/
+
+  m_bnspl.interpolate(t, &rval);
+  return rval;
 }
 
 bool SecSplDat::generateCoil()
 {
-  const double def_w = 1.0;
-  
+  m_bBnormSpl = false;
+  // m_bnorm_ave = Vector4D();
+
   int nsize = m_posvec.size();
   m_spl.setSize(nsize);
   m_spl.setUseWeight(true);
@@ -241,20 +254,132 @@ bool SecSplDat::generateCoil()
   if (m_bFixEnd)
     m_spl.setFixEnd(m_vEndD1);
   
-  if (!generate())
+  if (!generate()) {
+    LOG_DPRINTLN("Generate coil generate failed!!");
     return false;
+  }
+  
+  //////////
+  // Generate binormal vector interpolator
+
+/*
+  int ist = 1, ien = nsize-2;
+  if (m_bStartExtend)
+    ist += 1;
+  if (m_bEndExtend)
+    ien -= 1;
+
+  if (ien-ist+1<=0) {
+    ist = 1;
+    ien = nsize-1;    
+  }
+*/
+  
+  m_bnspl.setSize(nsize);
+  m_bnspl.setRho(-10.0);
+
+  Vector4D prev_bnorm;
+  for (int i=0; i<nsize; ++i) {
+
+    Vector4D curpos, dv;
+    if (!m_spl.interpolate(i, &curpos, &dv)) {
+      LOG_DPRINTLN("CalcBnorm> fatal error: cannot interpolate");
+      return false;
+    }
+    dv = dv.normalize();
+
+    int ii = i;
+    if (i==0 && nsize>=3)
+      ii = 1;
+    if (i==nsize-1 && nsize>=3)
+      ii = nsize-2;
+
+    Vector4D bnorm = calcBinormVec(ii);
+    
+    // Preserve consistency of the direction
+    if (!prev_bnorm.isZero()) {
+      double costh = bnorm.dot(prev_bnorm);
+      if (costh<0)
+        bnorm = -bnorm;
+    }
+
+    m_bnspl.setPoint(i, curpos + bnorm);
+    prev_bnorm = bnorm;
+  }
+
+ // m_bnorm_ave = bnorm_ave.normalize();
+
+  if (!m_bnspl.generate()) {
+    LOG_DPRINTLN("Generate coil bnspl generate failed!!");
+    return false;
+  }
+  
+  m_bBnormSpl = true;
 
   return true;
 }
+
+/*
+/// calc binormal vector for helix (and coil) segments
+Vector4D SecSplDat::calcHelixBinormVec(int i)
+{
+  Vector4D bnorm;
+
+  // check protein case
+  for (;;) {
+    MolResidue *pres = m_resvec[nres];
+    if (pres==NULL)
+      break;
+
+    MolAtomPtr pAC = pres->getAtom("C");
+    MolAtomPtr pAO = pres->getAtom("O");
+    if (pAC.isnull()||pAO.isnull())
+      break;
+    
+    Vector4D v1 = pAO->getPos() - pAC->getPos();
+    
+    // normalization
+    double len = v1.length();
+    if (len>=F_EPS4)
+      bnorm = v1.scale(1.0/len);
+    else
+      // singularity case: cannot determine binomal vec.
+      break;
+
+    return bnorm;
+  }
+
+  
+
+  // generic case
+  Vector4D p0 = m_posvec[i-1];
+  Vector4D p1 = m_posvec[i];
+  Vector4D p2 = m_posvec[i+1];
+
+  bnorm = (p1 - p0).cross(p2 - p1);
+  
+  // normalization
+  double len = bnorm.length();
+  if (len>=F_EPS4)
+    bnorm = bnorm.scale(1.0/len);
+  else
+    // singularity case: cannot determine binomal vec.
+    bnorm = Vector4D(1.0, 0.0, 0.0);
+
+  return bnorm;
+}*/
 
 //////////////////////////////////////////
 
 Ribbon2Renderer::Ribbon2Renderer()
      : super_t(),
+       m_ptsCoil(MB_NEW TubeSection()),
        m_ptsHelix(MB_NEW TubeSection()),
        m_ptsSheet(MB_NEW TubeSection()),
-       m_ptsCoil(MB_NEW TubeSection()),
-       m_pSheetHead(MB_NEW JctTable())
+       m_pSheetHead(MB_NEW JctTable()),
+       m_ptsRibHelix(MB_NEW TubeSection()),
+       m_pRibHelixTail(MB_NEW JctTable()),
+       m_pRibHelixHead(MB_NEW JctTable())
 {
 
   m_dHelixSmo = 3.0;
@@ -278,6 +403,10 @@ Ribbon2Renderer::Ribbon2Renderer()
   super_t::setupParentData("sheet");
   super_t::setupParentData("coil");
   super_t::setupParentData("sheethead");
+
+  super_t::setupParentData("ribhelix");
+  super_t::setupParentData("ribhelix_head");
+  super_t::setupParentData("ribhelix_tail");
 }
 
 Ribbon2Renderer::~Ribbon2Renderer()
@@ -340,7 +469,7 @@ void Ribbon2Renderer::endSegment(DisplayContext *pdl, MolResiduePtr pEndRes)
     }
   }
   else {
-    // tube-shaped helix mode
+    // ribbon-shaped helix mode
     buildSheetData();
     buildCoilData();
     
@@ -351,10 +480,11 @@ void Ribbon2Renderer::endSegment(DisplayContext *pdl, MolResiduePtr pEndRes)
       renderSheet(pdl, pElem);
     }
     
-    m_ptsHelix->setWidth(1.0);
-    m_ptsHelix->setupSectionTable();
-
     m_ptsCoil->setupSectionTable();
+    m_ptsRibHelix->setupSectionTable();
+    m_pRibHelixHead->setup(getAxialDetail()+1, m_ptsRibHelix.get(), m_ptsCoil.get(), true);
+    m_pRibHelixTail->setup(getAxialDetail()+1, m_ptsCoil.get(), m_ptsRibHelix.get());
+
     BOOST_FOREACH (SecSplDat *pElem, m_coils) {
       renderHelixCoil(pdl, pElem);
     }
@@ -875,6 +1005,7 @@ gfx::ColorPtr Ribbon2Renderer::calcCoilColor(double at, SecSplDat *pCyl)
   double rho;
   MolResiduePtr pPrev;
   MolResiduePtr pNext;
+  getCoilResids(at, pCyl, pPrev, pNext, rho);
   return super_t::calcColor(rho, isSmoothColor(), pPrev, pNext);
 }
 
@@ -913,7 +1044,7 @@ void Ribbon2Renderer::extendCoilSheet(detail::SecSplDat *pCoil, int nNextInd)
 {
   int isheet = m_indvec[nNextInd];
   SecSplDat *pNextSheet = m_sheets[isheet];
-  double tstart = 0.0;
+  // double tstart = 0.0;
   Vector4D f1, vpt;
 
   pNextSheet->m_spl.interpolate(0.5, &f1, &vpt);
@@ -1000,7 +1131,10 @@ void Ribbon2Renderer::buildCoilData()
           pCoil->setEnd();
         }
         pCoil->m_bEndExtend = true;
-        bool res = pCoil->generateCoil();
+        if (!pCoil->generateCoil()) {
+          LOG_DPRINTLN("ERROR!!! GenerateCoil failed");
+        }
+          
         m_coils.push_back(pCoil);
         pCoil = NULL;
       }
@@ -1016,7 +1150,9 @@ void Ribbon2Renderer::buildCoilData()
     if (pCoil->m_posvec.size()>0)
       pCoil->m_posvec.back().w() = m_dAnchorWgt;
     pCoil->setEnd();
-    bool res = pCoil->generateCoil();
+    if (!pCoil->generateCoil()) {
+      LOG_DPRINTLN("ERROR!!! GenerateCoil failed");
+    }
     m_coils.push_back(pCoil);
     pCoil = NULL;
   }
@@ -1028,16 +1164,17 @@ void Ribbon2Renderer::renderCoil(DisplayContext *pdl, detail::SecSplDat *pC)
   Vector4D zerovec(0,0,0);
 
   const int naxdet = getAxialDetail();
-  double tstart = 0.0;
-  double tend = pC->m_nRealSize -1.0;
+  const double tstart = 0.0;
+  const double tend = pC->m_nRealSize -1.0;
   
-  int ndelta = (int) ::floor( (tend-tstart)* naxdet );
+  int ndelta = (pC->m_nRealSize -1.0) * naxdet;
   if (ndelta<=0) {
     // degenerated (single point)
     // TO DO: impl
     return;
   }
-  const double fdelta = (tend-tstart)/double(ndelta);
+
+  const double fdelta = tend/double(ndelta);
   
   Vector4D bntmp;
   Vector4D e11, e12, e21, e22;
@@ -1121,13 +1258,14 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
   // Color objects used in the axial-loop
   ColorPtr pCol;
   
-  //MB_DPRINTLN("Sheet %d (t: %f->%f)", i, tstart, tend);
-  
+  ////////////////////////////////////////
   // make helix-coil table
+
   std::deque<HCTab> hstabs;
   LString sec_prev="E";
   HCTab hstelem;
-  for (int j=0; j<=ndelta; ++j) {
+  int j;
+  for (j=0; j<=ndelta; ++j) {
     double t = tstart + double(j) * fdelta; // /double(naxdet);
 
     MolResiduePtr pResPrev;
@@ -1142,7 +1280,7 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
     if (j==0 || !sec.equals(sec_prev)) {
       if (j>0) {
         // push the previous segment
-        hstelem.jen = j-1;
+        hstelem.jen = j;
         hstabs.push_back(hstelem);
       }
       // setup the start of the next segment
@@ -1167,42 +1305,48 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
     sec_prev = sec;
   }
   
+  // push the previous segment
+  hstelem.jen = j-1;
+  hstabs.push_back(hstelem);
+  
+  ////////////////////////////////////////
   
   TubeSectionPtr pTS;
+  LString tp;
+  int ielem=0, nelem = hstabs.size();
+  int isft = naxdet/2;
+  MB_DPRINTLN("naxdet=%d", naxdet);
   BOOST_FOREACH (HCTab elem, hstabs) {
-    LString tp;
+    int jstart = elem.jst;
+    int jend = elem.jen;
+    if (ielem==0 && nelem==1) {
+      // single element --> no shift
+      MB_DPRINTLN("ielem=0 nelem=1, shift=0", isft);
+    }
+    else if (ielem==0) {
+      jend -= isft;
+      MB_DPRINTLN("ielem=0, shift=-%d", isft);
+    }
+    else if (ielem==nelem-1) {
+      jstart -= isft;
+      MB_DPRINTLN("ielem=%d(end), shift=-%d", ielem, isft);
+    }
+    else {
+      MB_DPRINTLN("ielem=%d, shift=-%d", ielem, isft);
+      jstart -= isft;
+      jend -= isft;
+    }
+    
     switch (elem.flag) {
-    case HC_COIL: {
+    case HC_COIL: /*{
       tp = "coil";
       pTS = m_ptsCoil;
-      break;
-    }
-    case HC_HELIX:
-      tp = "helix";
-      pTS = m_ptsHelix;
-      break;
-    case HC_HELIX_HEAD:
-      tp = "helix head";
-      break;
-    case HC_HELIX_TAIL:
-      tp = "helix tail";
-      break;
-    }
-    MB_DPRINTLN("%d -- %d type=<%s>", elem.jst, elem.jen, tp.c_str());
-
-    if (elem.flag==HC_COIL || elem.flag==HC_HELIX) {
       pTS->startTess();
-      
       // axial step loop
-      for (int j=elem.jst; j<=elem.jen; ++j) {
-        double t = tstart + double(j) * fdelta; // /double(naxdet);
-        
-        MolResiduePtr pResPrev;
-        MolResiduePtr pResNext;
-        double rho;
-        getCoilResids(t, pC, pResPrev, pResNext, rho);
-        
-        pCol = super_t::calcColor(rho, isSmoothColor(), pResPrev, pResNext);
+      for (int j=jstart; j<=jend; ++j) {
+        double t = tstart + double(j) * fdelta;
+        //MB_DPRINTLN("j=%d, t=%f", j, t);
+        pCol = calcCoilColor(t, pC);
         pC->m_spl.interpolate(t, &f1, &vpt);
         //vpt = vpt.normalize();
         
@@ -1229,12 +1373,138 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
         
         bntmp = e12;
       }
+      pTS->endTess();
+      break;
+    }*/
+
+    case HC_HELIX: {
+      if (elem.flag==HC_COIL) {
+        tp = "coil";
+        pTS = m_ptsCoil;
+      }
+      else {
+        tp = "helix";
+        pTS = m_ptsRibHelix;
+      }
+
+      pTS->startTess();
+      // axial step loop
+      for (int j=jstart; j<=jend; ++j) {
+        double t = tstart + double(j) * fdelta;
+        //MB_DPRINTLN("j=%d, t=%f", j, t);
+        pCol = calcCoilColor(t, pC);
+        pC->m_spl.interpolate(t, &f1, &vpt);
+        vpt = vpt.normalize();
+        
+        bntmp = pC->getCoilBnormVec(t);
+        e12 = (bntmp - f1).normalize();
+        e11 = e12.cross(vpt);
+
+        if (j==0) {
+          // make the tube cap.
+          pTS->makeCap(pdl, true, getStartCapType(), f1, vpt, e11, e12);
+        }
+        
+        pTS->doTess(pdl, f1, pCol, isSmoothColor(), e11, e12, zerovec );
+        
+        if (j==ndelta) {
+          // make cap at the end point.
+          pdl->color(pCol);
+          pTS->makeCap(pdl, false, getEndCapType(), f1, vpt, e11, e12);
+        }
+        
+        pdl->setLineWidth(3.0);
+        pdl->startLines();
+        pdl->color(1,0,0,1);
+        pdl->vertex(f1);
+        pdl->vertex(bntmp);
+        pdl->end();
+
+      }
+      pTS->endTess();
+      break;
+    }
+
+    case HC_HELIX_HEAD:
+    case HC_HELIX_TAIL: {
+      JctTablePtr pJCT;
+      if (elem.flag == HC_HELIX_HEAD) {
+        tp = "helix head";
+        pJCT = m_pRibHelixHead;
+      }
+      else {
+        tp = "helix tail";
+        pJCT = m_pRibHelixTail;
+      }
+      
+      double tbase = double(jstart) * fdelta;
+      ndelta = pJCT->getSize();
+      
+      Vector4D escl, prev_escl, xe11, xe12;
+      double dpar;
+      double prev_dpar = -1.0;
+      
+      // initialize previous E scale
+      pJCT->get(0, dpar, prev_escl);
+      
+      pTS = m_ptsRibHelix;
+      // pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NOEGLN);
+      pTS->startTess();
+      
+      for (int i=0; i<ndelta; i++) {
+        // Get E-scale value
+        pJCT->get(i, dpar, escl);
+        const double t = tbase + dpar;
+        //MB_DPRINTLN("t=%f", t);
+        
+        pCol = calcCoilColor(t, pC);
+        pC->m_spl.interpolate(t, &f1, &vpt);
+        const Vector4D ev = vpt.normalize();
+        
+        bntmp = pC->getCoilBnormVec(t);
+        e12 = (bntmp - f1).normalize();
+        e11 = e12.cross(ev);
+        //e11 = bntmp.cross(ev).normalize();
+        //e12 = ev.cross(e11);
+        
+        xe11 = e11.scale(escl.x());
+        xe12 = e12.scale(escl.y());
+        
+        if ( qlib::isNear4(dpar,prev_dpar) ) {
+          // uncontinuous point of arrow head
+          // make partition polygons
+          pTS->endTess();
+          
+          pdl->color(pCol);
+          pTS->makeDisconJct(pdl, f1, ev, e11, e12, prev_escl, escl);
+          pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NOEGLN);
+          pTS->startTess();
+        }
+        
+        pTS->doTess(pdl, f1, pCol, isSmoothColor(), xe11, xe12,
+                           escl, vpt);
+        
+        ////////////////
+        
+        prev_escl = escl;
+        prev_dpar = dpar;
+
+        pdl->setLineWidth(3.0);
+        pdl->startLines();
+        pdl->color(1,0,0,1);
+        pdl->vertex(f1);
+        pdl->vertex(bntmp);
+        pdl->end();
+      }
       
       pTS->endTess();
+      // pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL);
+
     }
-    else {
-      // TO DO: render H/C junction
     }
+
+    MB_DPRINTLN("%d -- %d type=<%s>", jstart, jend, tp.c_str());
+    ++ielem;
   }
 
 }
@@ -1392,7 +1662,7 @@ void Ribbon2Renderer::updateDiffVecsImpl(SecSplDat *pC)
     if (pRes.isnull())
       continue;
 
-    MB_DPRINTLN("DiffVec %f %d (%s)", t, nres, pRes->toString().c_str());
+    //MB_DPRINTLN("DiffVec %f %d (%s)", t, nres, pRes->toString().c_str());
     m_diffvecs.insert(DiffVecMap::value_type(pRes.get(), DiffVecMap::mapped_type(f1, vpt)));
   }
 }
