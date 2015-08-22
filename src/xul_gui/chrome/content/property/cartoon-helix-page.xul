@@ -30,10 +30,13 @@
 	</menulist>
       </hbox>
 
-      <deck>
+      <deck id="helixpage-deck">
+
+	<!-- ========== Ribbon mode ========== -->
+
 	<vbox>
 	  <groupbox flex="0">
-	    <caption label="Helix Section"/>
+	    <caption label="Section"/>
 
 	    <grid flex="0">
 	      <columns>
@@ -72,18 +75,58 @@
 		    decimalplaces="2" min="0" max="1" increment="0.05" unit="none"/>
 		</row>
 
-		<row align="center" class="propdlg-rowbox">
-		  <label value="Smoothness: " flex="0"/>
-		  <numslider id="ribhlxpage-smooth" flex="1" size="3"
-		    decimalplaces="2" min="0" max="0.5" increment="0.01" unit="none"/>
-		</row>
-
 	      </rows>
 	    </grid>
 	  </groupbox>
+	  
+	  <groupbox flex="0">
+	    <caption label="Head/Tail"/>
+	    
+	    <grid flex="0">
+	      <columns>
+		<column flex="0"/>
+		<column flex="1"/>
+	      </columns>
+	      
+	      <rows>
+		<hbox flex="0" align="center" class="propdlg-rowbox">
+		  <label value="Type:" />
+		  <menulist id="helixpage-head-type" flex="0" class="propdlg-menulist">
+		    <menupopup>
+		      <menuitem label="Round" value="smooth"/>
+		      <menuitem label="Flat" value="flat"/>
+		      <menuitem label="Arrow" value="arrow"/>
+		    </menupopup>
+		  </menulist>
+		</hbox>
+		
+		<row align="center" class="propdlg-rowbox">
+		  <label value="Power: " flex="0"/>
+		  <numslider id="helixpage-head-gamma" flex="1" size="3"
+		    ticktype="exp1"
+		    decimalplaces="2" min="0.1" max="10" increment="0.1" unit="none"/>
+		</row>
+		
+		<row align="center" class="propdlg-rowbox">
+		  <label value="Arrow height:" flex="0"/>
+		  <numslider id="helixpage-head-basw" flex="1" size="3"
+		    min="0" max="100" increment="10" unit="%"/>
+		</row>
+		
+		<row align="center" class="propdlg-rowbox">
+		  <label value="Arrow width:" flex="0"/>
+		  <numslider id="helixpage-head-arrow" flex="1" size="3"
+		    min="0" max="100" increment="10" unit="%"/>
+		</row>
+	      </rows>
+	    </grid>
+	  </groupbox>
+	  
 	</vbox>
-	<vbox>
+	
+	<!-- ========== Cylinder mode ========== -->
 
+	<vbox>
 	  <groupbox>
 	    <caption label="Spline"/>
 	    <hbox align="center" class="propdlg-rowbox">
