@@ -25,7 +25,7 @@ void LabelCacheImpl::draw(DisplayContext *pdc)
     m_dScaleFac = scl;
   }
   else if (qlib::isNear4(scl, m_dScaleFac)) {
-    MB_DPRINTLN("LabelCache> cache scl(%f) = draw scl (%f) --> use cache", m_dScaleFac, scl);
+    //MB_DPRINTLN("LabelCache> cache scl(%f) = draw scl (%f) --> use cache", m_dScaleFac, scl);
     bUseCache = true;
   }
   else {

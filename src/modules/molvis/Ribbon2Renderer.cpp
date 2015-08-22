@@ -15,10 +15,12 @@
 #include <modules/molstr/MolResidue.hpp>
 
 #include <gfx/GradientColor.hpp>
+#include <qlib/Matrix3D.hpp>
 
 using namespace molvis;
 using namespace molvis::detail;
 using namespace molstr;
+using qlib::Matrix3D;
 
 /////////////////////////////
 
@@ -238,6 +240,24 @@ Vector4D SecSplDat::getCoilBnormVec(double t)
   }
 
   m_bnspl.interpolate(t, &rval);
+
+  double dprev = ::floor(t);
+  if (qlib::isNear4(dprev, t)) {
+    int i = (int) dprev;
+    if (0<=i && i<m_resvec.size()) {
+      MolResidue *pRes = m_resvec[i];
+      if (pRes!=NULL && pRes->getIndex()==102) {
+        
+        Vector4D curpos, dv;
+        m_spl.interpolate(t, &curpos, &dv);
+        Vector4D bnorm = rval - curpos;
+
+        LOG_DPRINTLN("Get %s i=%d, curpos=%s, bnorm=%s, point=%s", pRes->toString().c_str(), i,
+                     curpos.toString().c_str(), bnorm.toString().c_str(), rval.toString().c_str());
+      }
+    }
+  }
+  
   return rval;
 }
 
@@ -277,16 +297,11 @@ bool SecSplDat::generateCoil()
   
   m_bnspl.setSize(nsize);
   m_bnspl.setRho(-10.0);
+  m_bnspl.setStartId(m_nStartId);
 
-  Vector4D prev_bnorm;
+  Vector4D prev_dv, prev_bnorm;
+
   for (int i=0; i<nsize; ++i) {
-
-    Vector4D curpos, dv;
-    if (!m_spl.interpolate(i, &curpos, &dv)) {
-      LOG_DPRINTLN("CalcBnorm> fatal error: cannot interpolate");
-      return false;
-    }
-    dv = dv.normalize();
 
     int ii = i;
     if (i==0 && nsize>=3)
@@ -296,15 +311,45 @@ bool SecSplDat::generateCoil()
 
     Vector4D bnorm = calcBinormVec(ii);
     
-    // Preserve consistency of the direction
-    if (!prev_bnorm.isZero()) {
+    // get curpos and dv/dt(=dv)
+    Vector4D curpos, dv;
+    if (!m_spl.interpolate(i+m_nStartId, &curpos, &dv)) {
+      LOG_DPRINTLN("CalcBnorm> fatal error: cannot interpolate");
+      return false;
+    }
+    dv = dv.normalize();
+
+    // preserve consistency of binormal vector directions
+    if (!prev_bnorm.isZero() && !prev_dv.isZero()) {
+      Vector4D ax = dv.cross(prev_dv);
+      double axlen = ax.length();
+      if (axlen>F_EPS4) {
+        // align the previous binorm vectors based on the dv (tangential vector)
+        ax = ax.scale(1.0/axlen);
+        double cosph = prev_dv.dot(dv)/(prev_dv.length()*dv.length());
+        double sinph = sqrt(1.0-cosph*cosph);
+        Matrix3D rotmat = Matrix3D::makeRotMat(ax, cosph, sinph);
+        prev_bnorm = rotmat.mulvec(prev_bnorm);
+      }
       double costh = bnorm.dot(prev_bnorm);
       if (costh<0)
         bnorm = -bnorm;
     }
 
-    m_bnspl.setPoint(i, curpos + bnorm);
+    Vector4D intp = curpos + bnorm;
+
+    MolResidue *pRes = m_resvec[i];
+    if (pRes!=NULL && pRes->getIndex()==102) {
+      LOG_DPRINTLN("%s [%s] i=%d, curpos=%s, bnorm=%s, point=%s",
+                   pRes->toString().c_str(),
+                   pRes->getPivotAtom()->getPos().toString().c_str(),i,
+                   curpos.toString().c_str(), bnorm.toString().c_str(), intp.toString().c_str());
+    }
+
+    m_bnspl.setPoint(i+m_nStartId, intp);
+
     prev_bnorm = bnorm;
+    prev_dv = dv;
   }
 
  // m_bnorm_ave = bnorm_ave.normalize();
@@ -318,56 +363,6 @@ bool SecSplDat::generateCoil()
 
   return true;
 }
-
-/*
-/// calc binormal vector for helix (and coil) segments
-Vector4D SecSplDat::calcHelixBinormVec(int i)
-{
-  Vector4D bnorm;
-
-  // check protein case
-  for (;;) {
-    MolResidue *pres = m_resvec[nres];
-    if (pres==NULL)
-      break;
-
-    MolAtomPtr pAC = pres->getAtom("C");
-    MolAtomPtr pAO = pres->getAtom("O");
-    if (pAC.isnull()||pAO.isnull())
-      break;
-    
-    Vector4D v1 = pAO->getPos() - pAC->getPos();
-    
-    // normalization
-    double len = v1.length();
-    if (len>=F_EPS4)
-      bnorm = v1.scale(1.0/len);
-    else
-      // singularity case: cannot determine binomal vec.
-      break;
-
-    return bnorm;
-  }
-
-  
-
-  // generic case
-  Vector4D p0 = m_posvec[i-1];
-  Vector4D p1 = m_posvec[i];
-  Vector4D p2 = m_posvec[i+1];
-
-  bnorm = (p1 - p0).cross(p2 - p1);
-  
-  // normalization
-  double len = bnorm.length();
-  if (len>=F_EPS4)
-    bnorm = bnorm.scale(1.0/len);
-  else
-    // singularity case: cannot determine binomal vec.
-    bnorm = Vector4D(1.0, 0.0, 0.0);
-
-  return bnorm;
-}*/
 
 //////////////////////////////////////////
 
@@ -1400,26 +1395,28 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
         e12 = (bntmp - f1).normalize();
         e11 = e12.cross(vpt);
 
-        if (j==0) {
+        if (j==jstart && elem.flag==HC_COIL) {
           // make the tube cap.
+          pdl->color(pCol);
           pTS->makeCap(pdl, true, getStartCapType(), f1, vpt, e11, e12);
         }
         
         pTS->doTess(pdl, f1, pCol, isSmoothColor(), e11, e12, zerovec );
         
-        if (j==ndelta) {
+        if (j==jend && elem.flag==HC_COIL) {
           // make cap at the end point.
           pdl->color(pCol);
           pTS->makeCap(pdl, false, getEndCapType(), f1, vpt, e11, e12);
         }
         
+        /*
         pdl->setLineWidth(3.0);
         pdl->startLines();
         pdl->color(1,0,0,1);
         pdl->vertex(f1);
         pdl->vertex(bntmp);
         pdl->end();
-
+         */
       }
       pTS->endTess();
       break;
@@ -1477,24 +1474,39 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
           
           pdl->color(pCol);
           pTS->makeDisconJct(pdl, f1, ev, e11, e12, prev_escl, escl);
-          pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NOEGLN);
+          //pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NOEGLN);
           pTS->startTess();
+        }
+        
+
+        if (i==0 && elem.flag==HC_HELIX_TAIL) {
+          // make the tube cap.
+          pdl->color(pCol);
+          pTS->makeCap(pdl, true, getStartCapType(), f1, vpt, xe11, xe12);
         }
         
         pTS->doTess(pdl, f1, pCol, isSmoothColor(), xe11, xe12,
                            escl, vpt);
         
+        if (i==ndelta-1 && elem.flag==HC_HELIX_HEAD) {
+          // make cap at the end point.
+          pdl->color(pCol);
+          pTS->makeCap(pdl, false, getEndCapType(), f1, vpt, xe11, xe12);
+        }
+
         ////////////////
         
         prev_escl = escl;
         prev_dpar = dpar;
 
+        /*
         pdl->setLineWidth(3.0);
         pdl->startLines();
         pdl->color(1,0,0,1);
         pdl->vertex(f1);
         pdl->vertex(bntmp);
         pdl->end();
+         */
       }
       
       pTS->endTess();
