@@ -163,10 +163,12 @@ cuemolui.CtnHscPropEdit = ( function () {
 	(this.mHeadType.value=="arrow") ? false : true;
     }
 
-    if (this.mHelixType.selectedItem.value=="ribbon")
-      this.mHelixDeck.selectedIndex = 0;
-    else
-      this.mHelixDeck.selectedIndex = 1;
+    if (this.mIdPfx=="helixpage") {
+      if (this.mHelixType.selectedItem.value=="ribbon")
+	this.mHelixDeck.selectedIndex = 0;
+      else
+	this.mHelixDeck.selectedIndex = 1;
+    }
   }
 
   ////////////////////////////////////////////////////////

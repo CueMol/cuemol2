@@ -241,6 +241,8 @@ Vector4D SecSplDat::getCoilBnormVec(double t)
 
   m_bnspl.interpolate(t, &rval);
 
+/*
+XXX: DEBUG
   double dprev = ::floor(t);
   if (qlib::isNear4(dprev, t)) {
     int i = (int) dprev;
@@ -257,6 +259,7 @@ Vector4D SecSplDat::getCoilBnormVec(double t)
       }
     }
   }
+*/
   
   return rval;
 }
@@ -338,6 +341,8 @@ bool SecSplDat::generateCoil()
 
     Vector4D intp = curpos + bnorm;
 
+/*
+  XXX: DEBUG
     MolResidue *pRes = m_resvec[i];
     if (pRes!=NULL && pRes->getIndex()==102) {
       LOG_DPRINTLN("%s [%s] i=%d, curpos=%s, bnorm=%s, point=%s",
@@ -345,7 +350,7 @@ bool SecSplDat::generateCoil()
                    pRes->getPivotAtom()->getPos().toString().c_str(),i,
                    curpos.toString().c_str(), bnorm.toString().c_str(), intp.toString().c_str());
     }
-
+ */
     m_bnspl.setPoint(i+m_nStartId, intp);
 
     prev_bnorm = bnorm;
@@ -937,7 +942,8 @@ void Ribbon2Renderer::renderSheet(DisplayContext *pdl, detail::SecSplDat *pC)
       m_ptsSheet->startTess();
     }
     
-    m_ptsSheet->doTess(pdl, f1, pCol, isSmoothColor(), xe11, xe12,
+    m_ptsSheet->doTess(pdl, f1, pCol, isSmoothColor(),
+                       e11, e12,
                        escl, vpt);
 
     ////////////////
@@ -1333,45 +1339,7 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
     }
     
     switch (elem.flag) {
-    case HC_COIL: /*{
-      tp = "coil";
-      pTS = m_ptsCoil;
-      pTS->startTess();
-      // axial step loop
-      for (int j=jstart; j<=jend; ++j) {
-        double t = tstart + double(j) * fdelta;
-        //MB_DPRINTLN("j=%d, t=%f", j, t);
-        pCol = calcCoilColor(t, pC);
-        pC->m_spl.interpolate(t, &f1, &vpt);
-        //vpt = vpt.normalize();
-        
-        if (j==0) {
-          bntmp = Vector4D(1,0,0);
-        }
-        
-        Vector4D e11 = bntmp.cross(vpt).normalize();
-        Vector4D e12 = vpt.cross(e11).normalize();
-        
-        if (j==0) {
-          // make the tube cap.
-          pdl->color(pCol);
-          pTS->makeCap(pdl, true, getStartCapType(), f1, vpt, e11, e12);
-        }
-        
-        pTS->doTess(pdl, f1, pCol, isSmoothColor(), e11, e12, zerovec );
-        
-        if (j==ndelta) {
-          // make cap at the end point.
-          pdl->color(pCol);
-          pTS->makeCap(pdl, false, getEndCapType(), f1, vpt, e11, e12);
-        }
-        
-        bntmp = e12;
-      }
-      pTS->endTess();
-      break;
-    }*/
-
+    case HC_COIL:
     case HC_HELIX: {
       if (elem.flag==HC_COIL) {
         tp = "coil";
@@ -1466,6 +1434,8 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
         
         xe11 = e11.scale(escl.x());
         xe12 = e12.scale(escl.y());
+        //te11 = e11.scale(escl.y());
+        //te12 = e12.scale(escl.x());
         
         if ( qlib::isNear4(dpar,prev_dpar) ) {
           // uncontinuous point of arrow head
@@ -1485,8 +1455,9 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
           pTS->makeCap(pdl, true, getStartCapType(), f1, vpt, xe11, xe12);
         }
         
-        pTS->doTess(pdl, f1, pCol, isSmoothColor(), xe11, xe12,
-                           escl, vpt);
+        pTS->doTess(pdl, f1, pCol, isSmoothColor(),
+                    e11, e12,
+                    escl, vpt);
         
         if (i==ndelta-1 && elem.flag==HC_HELIX_HEAD) {
           // make cap at the end point.
@@ -1544,7 +1515,8 @@ void Ribbon2Renderer::propChanged(qlib::LPropEvent &ev)
   }
   else if (ev.getParentName().startsWith("helix") ||
            ev.getParentName().startsWith("sheet") ||
-           ev.getParentName().startsWith("coil")) {
+           ev.getParentName().startsWith("coil") ||
+           ev.getParentName().startsWith("ribhelix")) {
     invalidateSplineCoeffs();
     invalidateDisplayCache();
   }

@@ -686,9 +686,14 @@ void TubeSection::doTess(DisplayContext *pdl,
   const int nsize = getSize();
   std::vector<Vector4D> vts(nsize+1), nts(nsize+1);
 
+  Vector4D xe11 = e11.scale(escl.x());
+  Vector4D xe12 = e12.scale(escl.y());
+  Vector4D te11 = e11.scale(escl.y());
+  Vector4D te12 = e12.scale(escl.x());
+
   for (int k=0; k<=nsize; k++) {
-    vts[k] = f1 + getVec(k, e11, e12);
-    nts[k] = ( getNormVec(k, e11, e12).normalize() + calcDnorm(k, escl, vpt) ).normalize();
+    vts[k] = f1 + getVec(k, xe11, xe12);
+    nts[k] = ( getNormVec(k, te11, te12).normalize() + calcDnorm(k, escl, vpt) ).normalize();
     //nts[k] = ( getNormVec(k, e11, e12) ).normalize();
   }
 
