@@ -390,8 +390,8 @@ Ribbon2Renderer::Ribbon2Renderer()
   m_dCoilSmo = 0.0;
 
   m_bDumpCurv = false;
-  //m_bCylHelix = true;
-  m_bCylHelix = false;
+  //m_bRibbonHelix = true;
+  m_bRibbonHelix = false;
 
   // setup sub properties (call LScrObjBase::setupParentData())
   super_t::setupParentData("helix");
@@ -442,7 +442,7 @@ void Ribbon2Renderer::endSegment(DisplayContext *pdl, MolResiduePtr pEndRes)
 {
   m_indvec.resize( m_resvec.size() );
 
-  if (m_bCylHelix) {
+  if (!m_bRibbonHelix) {
     buildHelixData();
     buildSheetData();
     buildCoilData();
@@ -960,7 +960,7 @@ void Ribbon2Renderer::renderSheet(DisplayContext *pdl, detail::SecSplDat *pC)
 
 double Ribbon2Renderer::getAnchorWgt2(MolResiduePtr pRes, const LString &sstr) const
 {
-  if (!m_bCylHelix && isHelix(sstr))
+  if (m_bRibbonHelix && isHelix(sstr))
     return 10.0; // strong weight for stick to the Ca position in ribbon helix
   return getAnchorWgt(pRes);
 }
@@ -1072,8 +1072,8 @@ void Ribbon2Renderer::buildCoilData()
     sec = sec.substr(0,1);
     MB_DPRINTLN("%d sec=%s, prev=%s", i, sec.c_str(), prev_ss.c_str());
 
-    if ( isCoil(sec, m_bCylHelix) ) {
-      if ( !isCoil(prev_ss, m_bCylHelix) ) {
+    if ( isCoil(sec, !m_bRibbonHelix) ) {
+      if ( !isCoil(prev_ss, !m_bRibbonHelix) ) {
         // Start of coil (x C) or (. C)
         MB_ASSERT(pCoil==NULL);
         pCoil = MB_NEW SecSplDat(this);
@@ -1112,7 +1112,7 @@ void Ribbon2Renderer::buildCoilData()
     }
     else {
       // non-coil
-      if ( isCoil(prev_ss, m_bCylHelix) ) {
+      if ( isCoil(prev_ss, !m_bRibbonHelix) ) {
         // end of coil (C x)
         MB_ASSERT(pCoil!=NULL);
         if (isSheet(sec)) {

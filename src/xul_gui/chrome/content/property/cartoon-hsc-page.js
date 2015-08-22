@@ -22,6 +22,13 @@ cuemolui.CtnHscPropEdit = ( function () {
 
   ctor.prototype.onLoad = function ()
   {
+    var that = this;
+
+    if (this.mIdPfx=="helix") {
+      this.mType = document.getElementById(this.mIdPfx+"-type");
+      this.mType.addEventListener("command", function (event) { that.validateWidgets(event) }, false);
+    }
+
     this.mSectType = document.getElementById(this.mIdPfx+"-secttype");
     this.mLineWidth = document.getElementById(this.mIdPfx+"-width");
     this.mSharp = document.getElementById(this.mIdPfx+"-sharp");
@@ -29,7 +36,6 @@ cuemolui.CtnHscPropEdit = ( function () {
     this.mSmooth = document.getElementById(this.mIdPfx+"-smooth");
     
     // Add event listeners
-    var that = this;
     this.mSectType.addEventListener("command", function (event) { that.validateWidgets(event) }, false);
     this.mLineWidth.addEventListener("change", function (event) { that.validateWidgets(event) }, false);
     this.mSharp.addEventListener("change", function (event) { that.validateWidgets(event) }, false);
@@ -131,7 +137,17 @@ cuemolui.CtnHscPropEdit = ( function () {
     dd("validateWidgets> called, cur target_id="+tgt_id);
 
     var new_val;
+
     switch (tgt_id) {
+
+    case "helixpage-type":
+      new_val = aEvent.target.value;
+      this.updateDisabledState();
+      if (new_val=="ribbon")
+	gMain.updateData("helix_ribbon", true);
+      else
+	gMain.updateData("helix_ribbon", false);
+      break;
 
     case this.mIdPfx+"-smooth":
       new_val = parseFloat(this.mSmooth.value);

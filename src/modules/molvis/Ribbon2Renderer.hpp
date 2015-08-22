@@ -360,8 +360,8 @@ public:
   ///  (used for the tangential vector calculation for the disorder renderer)
   virtual bool getDiffVec(MolResiduePtr pRes, Vector4D &rpos, Vector4D &rvec);
 
-  /// Cylinder-shaped helix flag
-  bool m_bCylHelix;
+  /// Ribbon shaped helix flag
+  bool m_bRibbonHelix;
 
 };
 

@@ -41,6 +41,9 @@ runtime_class Ribbon2Renderer extends MainChainRenderer
 
   // Helix properties
 
+  property boolean helix_ribbon => m_bRibbonHelix;
+  default helix_ribbon = false;
+
   property real helix_smooth => m_dHelixSmo;
   default helix_smooth = 3.0;
 
