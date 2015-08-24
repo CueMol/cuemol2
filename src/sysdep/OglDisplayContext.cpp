@@ -265,9 +265,9 @@ void OglDisplayContext::color(double r, double g, double b, double a)
   m_color.z() = b;
 
   if (useShaderAlpha())
-    m_color.w() = a * getAlpha();
-  else
     m_color.w() = a;
+  else
+    m_color.w() = a * getAlpha();
   
   ::glColor4d(m_color.x(), m_color.y(), m_color.z(), m_color.w());
 }
@@ -1288,9 +1288,16 @@ void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
   }
 
   GLenum mode = convDrawMode(ada.getDrawMode());
-
+  size_t indsz = ada.getIndElemSize();
   if (itype==AbstDrawElem::VA_ATTR_INDS) {
-    glDrawElements(mode, ada.getIndSize(), GL_UNSIGNED_SHORT, 0);
+    if (indsz==2)
+      glDrawElements(mode, ada.getIndSize(), GL_UNSIGNED_SHORT, 0);
+    else if (indsz==4)
+      glDrawElements(mode, ada.getIndSize(), GL_UNSIGNED_INT, 0);
+    else {
+      LOG_DPRINTLN("unsupported index element size %d", indsz);
+      MB_ASSERT(false);
+    }
   }
   else {
     glDrawArrays(mode, 0, ada.getSize());

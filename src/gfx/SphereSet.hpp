@@ -33,12 +33,17 @@ namespace gfx {
     /// built draw elem object
     DrawElemVNCI32 *m_pDrawElem;
 
+    /// default alpha (multiplied to all alpha comp)
+    double m_defAlpha;
+
   public:
     SphereSet();
     virtual ~SphereSet();
 
     /// estimate size / allocate draw elem object
     void create(int nsize, int ndetail);
+
+    void setAlpha(double d) { m_defAlpha = d; }
 
     /// render a sphere
     void sphere(int index, const Vector4D &pos, double r, const ColorPtr &col);

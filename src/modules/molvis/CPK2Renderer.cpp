@@ -34,7 +34,7 @@ CPK2Renderer::~CPK2Renderer()
 
 const char *CPK2Renderer::getTypeName() const
 {
-  return "cpk2";
+  return "cpk";
 }
 
 /////////
@@ -198,6 +198,9 @@ void CPK2Renderer::renderVBOImpl()
   
   gfx::SphereSet sphs;
   sphs.create(nsphs, m_nDetail);
+  if (!useShaderAlpha()) {
+    sphs.setAlpha(getDefaultAlpha());
+  }
 
   // build meshes / DrawElemVNCI
   {
@@ -234,51 +237,6 @@ void CPK2Renderer::setSceneID(qlib::uid_t nid)
   else {
     m_bUseShader = false;
   }
-}
-
-/*
-void CPK2Renderer::initShader()
-{
-  MB_DPRINTLN("CPK2Renderer::initShader");
-
-  sysdep::ShaderSetupHelper<CPK2Renderer> ssh(this);
-
-  if (!ssh.checkEnvVS()) {
-    MB_DPRINTLN("GLShader not supported");
-    m_bUseShader = false;
-    return;
-  }
-
-  if (m_pPO==NULL)
-    m_pPO = ssh.createProgObj("gpu_sphere",
-                              "%%CONFDIR%%/data/shaders/sphere_vertex.glsl",
-                              "%%CONFDIR%%/data/shaders/sphere_frag.glsl");
-  
-  if (m_pPO==NULL) {
-    LOG_DPRINTLN("GPUSphere> ERROR: cannot create progobj.");
-    m_bUseShader = false;
-    return;
-  }
-
-  // setup attributes
-  m_nVertexLoc = m_pPO->getAttribLocation("a_vertex");
-  m_nImposLoc = m_pPO->getAttribLocation("a_impos");
-  m_nRadLoc = m_pPO->getAttribLocation("a_radius");
-  m_nColLoc = m_pPO->getAttribLocation("a_color");
-
-}
-*/
-
-namespace {
-    struct SphElem {
-      qfloat32 cenx, ceny, cenz;
-      qfloat32 dspx, dspy;
-      qfloat32 rad;
-      qbyte r, g, b, a;
-    };
-    
-    typedef gfx::DrawAttrElems<quint16, SphElem> SphElemAry;
-
 }
 
 void CPK2Renderer::renderShaderImpl()
@@ -324,65 +282,6 @@ void CPK2Renderer::renderShaderImpl()
     }
   }
 
-/*
-  qfloat32 dsps[4][2] = {
-    {-1.0f, -1.0f},
-    { 1.0f, -1.0f},
-    {-1.0f,  1.0f},
-    { 1.0f,  1.0f},
-  };
-  
-  SphElemAry *pdata = MB_NEW SphElemAry();
-  m_pDrawElem = pdata;
-  SphElemAry &sphdata = *pdata;
-  sphdata.setAttrSize(4);
-  sphdata.setAttrInfo(0, m_nVertexLoc, 3, qlib::type_consts::QTC_FLOAT32,  offsetof(SphElem, cenx));
-  sphdata.setAttrInfo(1, m_nImposLoc, 2, qlib::type_consts::QTC_FLOAT32, offsetof(SphElem, dspx));
-  sphdata.setAttrInfo(2, m_nRadLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(SphElem, rad));
-  sphdata.setAttrInfo(3, m_nColLoc, 4, qlib::type_consts::QTC_UINT8, offsetof(SphElem, r));
-
-  sphdata.alloc(nsphs*4);
-  sphdata.allocInd(nsphs*6);
-
-  {
-    AtomIterator iter(pMol, getSelection());
-    int i=0, j, ifc=0;
-    Vector4D pos;
-    for (iter.first(); iter.hasMore(); iter.next()) {
-      int aid = iter.getID();
-      MolAtomPtr pAtom = pMol->getAtom(aid);
-      if (pAtom.isnull()) continue; // ignore errors
-      ColorPtr pc = ColSchmHolder::getColor(pAtom);
-
-      SphElem data;
-      pos = pAtom->getPos();
-      data.cenx = (qfloat32) pos.x();
-      data.ceny = (qfloat32) pos.y();
-      data.cenz = (qfloat32) pos.z();
-      data.rad = (qfloat32) getVdWRadius(pAtom);
-      data.r = (qbyte) pc->r();
-      data.g = (qbyte) pc->g();
-      data.b = (qbyte) pc->b();
-      data.a = (qbyte) pc->a();
-
-      sphdata.atind(ifc) = i + 0; ++ifc;
-      sphdata.atind(ifc) = i + 1; ++ifc;
-      sphdata.atind(ifc) = i + 2; ++ifc;
-      sphdata.atind(ifc) = i + 2; ++ifc;
-      sphdata.atind(ifc) = i + 1; ++ifc;
-      sphdata.atind(ifc) = i + 3; ++ifc;
-
-      for (j=0; j<4; ++j) {
-        sphdata.at(i) = data;
-        sphdata.at(i).dspx = dsps[j][0];
-        sphdata.at(i).dspy = dsps[j][1];
-	++i;
-      }
-    }
-  }
-
-  MB_DPRINTLN("RenderShader nsphs=%d", nsphs);
-*/
 }
 
 

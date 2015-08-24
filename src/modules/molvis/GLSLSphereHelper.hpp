@@ -19,7 +19,8 @@ namespace molvis {
       qbyte r, g, b, a;
     };
     
-    typedef gfx::DrawAttrElems<quint16, SphElem> SphElemAry;
+    typedef gfx::DrawAttrElems<quint16, SphElem> SphElemAry16;
+    typedef gfx::DrawAttrElems<quint32, SphElem> SphElemAry32;
 
     GLuint m_nVertexLoc;
     GLuint m_nImposLoc;
@@ -28,7 +29,7 @@ namespace molvis {
 
     sysdep::OglProgramObject *m_pPO;
 
-    SphElemAry *m_pDrawElem;
+    SphElemAry32 *m_pDrawElem;
 
     qfloat32 dsps[4][2];
 
@@ -79,9 +80,9 @@ namespace molvis {
 
     void alloc(int nsphs)
     {
-      SphElemAry *pdata = MB_NEW SphElemAry();
+      SphElemAry32 *pdata = MB_NEW SphElemAry32();
       m_pDrawElem = pdata;
-      SphElemAry &sphdata = *pdata;
+      SphElemAry32 &sphdata = *pdata;
       sphdata.setAttrSize(4);
       sphdata.setAttrInfo(0, m_nVertexLoc, 3, qlib::type_consts::QTC_FLOAT32,  offsetof(SphElem, cenx));
       sphdata.setAttrInfo(1, m_nImposLoc, 2, qlib::type_consts::QTC_FLOAT32, offsetof(SphElem, dspx));
@@ -100,7 +101,7 @@ namespace molvis {
       int i = ind * 4;
       int ifc = ind * 6;
 
-      SphElemAry &sphdata = *m_pDrawElem;
+      SphElemAry32 &sphdata = *m_pDrawElem;
       SphElem data;
 
       data.cenx = (qfloat32) pos.x();
@@ -136,6 +137,7 @@ namespace molvis {
     {
       if (m_pDrawElem!=NULL) {
         m_pPO->enable();
+        m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
         pdc->drawElem(*m_pDrawElem);
         m_pPO->disable();
       }

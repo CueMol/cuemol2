@@ -20,7 +20,8 @@ namespace molvis {
       qbyte r, g, b, a;
     };
     
-    typedef gfx::DrawAttrElems<quint16, CylElem> CylElemAry;
+    typedef gfx::DrawAttrElems<quint16, CylElem> CylElemAry16;
+    typedef gfx::DrawAttrElems<quint32, CylElem> CylElemAry32;
 
     GLuint m_nVertexLoc;
     GLuint m_nDirLoc;
@@ -30,7 +31,7 @@ namespace molvis {
 
     sysdep::OglProgramObject *m_pPO;
 
-    CylElemAry *m_pDrawElem;
+    CylElemAry32 *m_pDrawElem;
 
     qfloat32 dsps[4][2];
 
@@ -82,9 +83,9 @@ namespace molvis {
 
     void alloc(int nsphs)
     {
-      CylElemAry *pdata = MB_NEW CylElemAry();
+      CylElemAry32 *pdata = MB_NEW CylElemAry32();
       m_pDrawElem = pdata;
-      CylElemAry &sphdata = *pdata;
+      CylElemAry32 &sphdata = *pdata;
       sphdata.setAttrSize(5);
       sphdata.setAttrInfo(0, m_nVertexLoc, 3, qlib::type_consts::QTC_FLOAT32,  offsetof(CylElem, cenx));
       sphdata.setAttrInfo(1, m_nDirLoc, 3, qlib::type_consts::QTC_FLOAT32,  offsetof(CylElem, dirx));
@@ -101,7 +102,7 @@ namespace molvis {
     {
       Vector4D dir = pos2-pos1;
 
-      CylElemAry &sphdata = *m_pDrawElem;
+      CylElemAry32 &sphdata = *m_pDrawElem;
 
       int i = ind * 4, j;
       int ifc = ind * 6;
@@ -159,6 +160,7 @@ namespace molvis {
     {
       if (m_pDrawElem!=NULL) {
         m_pPO->enable();
+        m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
         pdc->drawElem(*m_pDrawElem);
         m_pPO->disable();
       }

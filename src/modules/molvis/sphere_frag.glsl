@@ -7,6 +7,7 @@ varying vec4 v_color;
 varying vec2 v_impos;
 varying vec4 v_ecpos;
 varying float v_radius;
+uniform float frag_alpha;
 
 vec4 Ambient;
 vec4 Diffuse;
@@ -99,7 +100,7 @@ void main()
       float fog;
       fog = (gl_Fog.end - fogz) * gl_Fog.scale;
       fog = clamp(fog, 0.0, 1.0);
-      color = vec4(mix( vec3(gl_Fog.color), vec3(color), fog), color.a);
+      color = vec4(mix( vec3(gl_Fog.color), vec3(color), fog), v_color.a*frag_alpha);
       
       gl_FragColor = color;
     }
