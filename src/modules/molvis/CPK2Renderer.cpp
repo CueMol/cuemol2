@@ -25,6 +25,7 @@ CPK2Renderer::CPK2Renderer()
   m_pDrawElem = NULL;
   m_bUseShader = false;
   m_pSlSph = MB_NEW GLSLSphereHelper();
+  m_nGlRendMode = REND_DEFAULT;
 }
 
 CPK2Renderer::~CPK2Renderer()
@@ -41,7 +42,10 @@ const char *CPK2Renderer::getTypeName() const
 
 void CPK2Renderer::display(DisplayContext *pdc)
 {
-  if (m_bUseShader) {
+  if (m_bUseShader &&
+      (m_nGlRendMode==REND_DEFAULT ||
+       m_nGlRendMode==REND_SHADER)) {
+    // shader rendering mode
     if (m_pSlSph->getDrawElem()==NULL) {
       renderShaderImpl();
       if (m_pSlSph->getDrawElem()==NULL)
@@ -52,7 +56,10 @@ void CPK2Renderer::display(DisplayContext *pdc)
     m_pSlSph->draw(pdc);
     postRender(pdc);
   }
-  else if (pdc->isDrawElemSupported()) {
+  else if (pdc->isDrawElemSupported() &&
+           (m_nGlRendMode==REND_DEFAULT ||
+            m_nGlRendMode==REND_VBO)) {
+    // VBO rendering mode
     if (m_pDrawElem==NULL) {
       renderVBOImpl();
       if (m_pDrawElem==NULL)

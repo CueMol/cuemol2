@@ -103,6 +103,17 @@ namespace molvis {
     void initShader();
     void renderShaderImpl();
 
+  private:
+    int m_nGlRendMode;
+
+  public:
+    static const int REND_DEFAULT=0;
+    static const int REND_SHADER=1;
+    static const int REND_VBO=2;
+    static const int REND_GLU=3;
+
+    int getGLRenderMode() const { return m_nGlRendMode; }
+    void setGLRenderMode(int n) { m_nGlRendMode = n; } 
   };
 
 }

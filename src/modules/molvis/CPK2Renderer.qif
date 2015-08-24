@@ -42,6 +42,15 @@ runtime_class CPK2Renderer extends MolRenderer
   property integer detail => m_nDetail;
   default detail = 10;
 
+  /// OpenGL Sphere rendering mode
+  enumdef glrender_mode {
+    default = molvis::CPK2Renderer::REND_DEFAULT;
+    shader = molvis::CPK2Renderer::REND_SHADER;
+    vbo = molvis::CPK2Renderer::REND_VBO;
+    glu = molvis::CPK2Renderer::REND_GLU;
+  }
+  property enum glrender_mode => redirect(getGLRenderMode, setGLRenderMode);
+  default glrender_mode = "default";
 };
 
 #endif
