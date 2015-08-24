@@ -38,7 +38,16 @@ window.gPdbDlg = {
   },
 
   onFind: function () {
-    var pdbid = this.mPdbIdBox.value;
+    var pdbid = this.mPdbIdBox.value.toLowerCase();
+
+    var pdbchk = document.getElementById('chk-get-pdb').checked;
+    var mapchk_2fofc = document.getElementById('chk-get-map-2fofc').checked;
+    var mapchk_fofc = document.getElementById('chk-get-map-fofc').checked;
+
+    if (!pdbchk && !mapchk_2fofc && !mapchk_fofc) {
+      this.mResBox.value = "Neither pdb nor map selected";
+      return false;
+    }
 
     if (!this.validation(pdbid)) {
       this.mResBox.value = "Invalid PDB ID: "+pdbid;
@@ -47,58 +56,56 @@ window.gPdbDlg = {
       return false;
     }
 
-    var pdb_url = "http://www.rcsb.org/pdb/download/downloadFile.do?"+
-      "fileFormat=pdb&compression=NO&structureId="+pdbid;
-    var uri = this.mIoService.newURI(pdb_url, null, null);
-
-    try {
-      let httpChannel = this.mIoService.newChannelFromURI(uri)
-        .QueryInterface(Components.interfaces.nsIHttpChannel);
-      httpChannel.requestMethod = "HEAD";
-      httpChannel.redirectionLimit = 0;
-      httpChannel.open();
-      dd("Response "+httpChannel.responseStatus+httpChannel.responseStatusText+" for URL: "+pdb_url);
-      if (httpChannel.responseStatus!=200) {
-        this.mResBox.value = "PDB Entry "+pdbid+" not found.";
-        this.mPdbIdBox.select();
-        this.mPdbIdBox.focus();
+    if (pdbchk) {
+      let pdb_url = "http://www.rcsb.org/pdb/download/downloadFile.do?"+
+        "fileFormat=pdb&compression=NO&structureId="+pdbid;
+      let uri = this.mIoService.newURI(pdb_url, null, null);
+  
+      try {
+        let httpChannel = this.mIoService.newChannelFromURI(uri)
+          .QueryInterface(Components.interfaces.nsIHttpChannel);
+        httpChannel.requestMethod = "HEAD";
+        httpChannel.redirectionLimit = 0;
+        httpChannel.open();
+        dd("Response "+httpChannel.responseStatus+httpChannel.responseStatusText+" for URL: "+pdb_url);
+        if (httpChannel.responseStatus!=200) {
+          this.mResBox.value = "PDB Entry "+pdbid+" not found.";
+          this.mPdbIdBox.select();
+          this.mPdbIdBox.focus();
+          return false;
+        }
+      }
+      catch (e) {
+        debug.exception(e);
         return false;
       }
     }
-    catch (e) {
-      debug.exception(e);
-      return false;
-    }
 
-    var mapchk = document.getElementById('chk-get-map');
-    if (!mapchk.checked) {
-      this.mArgs[0](pdbid, false);
-      return true;
-    }
-
-    var eds_url = "http://eds.bmc.uu.se/eds/sfd/"+pdbid+"/"+pdbid+"_sigmaa.mtz";
-    uri = this.mIoService.newURI(eds_url, null, null);
-
-    try {
-      let httpChannel = this.mIoService.newChannelFromURI(uri)
-        .QueryInterface(Components.interfaces.nsIHttpChannel);
-      httpChannel.requestMethod = "HEAD";
-      httpChannel.redirectionLimit = 0;
-      httpChannel.open();
-      dd("Response "+httpChannel.responseStatus+httpChannel.responseStatusText+" for URL: "+eds_url);
-      if (httpChannel.responseStatus!=200) {
-        this.mResBox.value = "EDS Entry "+pdbid+" not found.";
-        this.mPdbIdBox.select();
-        this.mPdbIdBox.focus();
+    if (mapchk_2fofc || mapchk_fofc) {
+      let eds_url = "http://eds.bmc.uu.se/eds/sfd/"+pdbid+"/"+pdbid+"_sigmaa.mtz";
+      let uri = this.mIoService.newURI(eds_url, null, null);
+  
+      try {
+        let httpChannel = this.mIoService.newChannelFromURI(uri)
+          .QueryInterface(Components.interfaces.nsIHttpChannel);
+        httpChannel.requestMethod = "HEAD";
+        httpChannel.redirectionLimit = 0;
+        httpChannel.open();
+        dd("Response "+httpChannel.responseStatus+httpChannel.responseStatusText+" for URL: "+eds_url);
+        if (httpChannel.responseStatus!=200) {
+          this.mResBox.value = "EDS Entry "+pdbid+" not found.";
+          this.mPdbIdBox.select();
+          this.mPdbIdBox.focus();
+          return false;
+        }
+      }
+      catch (e) {
+        debug.exception(e);
         return false;
       }
     }
-    catch (e) {
-      debug.exception(e);
-      return false;
-    }
 
-    this.mArgs[0](pdbid, true);
+    this.mArgs[0](pdbid, pdbchk, mapchk_2fofc, mapchk_fofc);
     return true;
   }
 };
@@ -108,7 +115,9 @@ window.gPdbDlg = {
 <vbox>
   <description value="Enter PDB ID:"/>
   <textbox id="pdbid" />
-  <checkbox id="chk-get-map" label="Fetch map" checked="false"/>
+  <checkbox id="chk-get-pdb" label="Fetch pdb file" checked="true"/>
+  <checkbox id="chk-get-map-2fofc" label="Fetch map file (2Fo-Fc)" checked="false"/>
+  <checkbox id="chk-get-map-fofc" label="Fetch map file (Fo-Fc)" checked="false"/>
   <description id="result-text" value=""/>
 
 <!-- <hbox>

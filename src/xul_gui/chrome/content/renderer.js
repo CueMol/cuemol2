@@ -140,6 +140,15 @@ Qm2Main.prototype.doSetupRend = function(sc, result)
     }
   }
 
+  // special treatment for the call from netpdbopen.js
+  if (clsname === "DensityMap") {
+    if (result.mapcolor && result.mapsigma) {
+      // in fo-fc map case, change the default color and sigma
+      rend.color = cuemol.makeColor(result.mapcolor, sc.uid);
+      rend.siglevel = result.mapsigma;
+    }
+  }
+  
   return rend;
 }
 

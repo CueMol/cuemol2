@@ -15,7 +15,10 @@ function StreamListener(tid)
   this.m_strmgr = null;
   this.m_window = null;
   this.mChannel = null;
-  this.mLoadEDS = false;
+  //this.mLoadPDB = false;
+  //this.mLoadEDS_2fofc = false;
+  //this.mLoadEDS_fofc = false;
+  this.mFuncs = null;
 }
 
 // nsIStreamListener
@@ -96,10 +99,12 @@ StreamListener.prototype.onStopRequest = function (aRequest, aContext, aStatus)
   this.mChannel = null;
   this.m_window.close();
 
-  if (this.mLoadEDS) {
-    let pdbid = this.mPDBID;
+  if (this.mFuncs) {
+    // let pdbid = this.mPDBID;
+    let funcs = this.mFuncs;
     window.setTimeout(function () {
-      gQm2Main.onOpenEDSsite(pdbid);
+      if (funcs.length>0)
+	funcs.shift().call();
     }, 0);
   }
 };
@@ -173,19 +178,54 @@ StreamListener.prototype.QueryInterface = function(aIID)
 
 Qm2Main.prototype.onOpenPDBsite = function ()
 {
-  var scene = this.mMainWnd.currentSceneW;
-  var pdb_url = "";
   var pdbid = null;
-  var bmap = false;
+  var bpdb = false;
+  var bmap_2fofc = false;
+  var bmap_fofc = false;
 
   window.openDialog("chrome://cuemol2/content/tools/openPDB.xul",
 		    "openPDB",
 		    "chrome,modal,resizable=no,dependent,centerscreen",
-		    function(aArg, aMap) { pdbid = aArg; bmap = aMap; });
+		    function(aArg, aPDB, aMap2FoFc, aMapFoFc) {
+		      pdbid = aArg;
+		      bpdb = aPDB;
+		      bmap_2fofc = aMap2FoFc;
+		      bmap_fofc = aMapFoFc;
+		    });
 
   if (!pdbid)
     return;
 
+  var funcs = new Array();
+  
+  if (bpdb) {
+    funcs.push( function () {
+      gQm2Main.openPDBsiteImpl(pdbid, funcs);
+    });
+  }
+
+  if (bmap_2fofc) {
+    funcs.push( function () {
+      gQm2Main.openEDSsiteImpl(pdbid, true, funcs);
+    });
+  }
+
+  if (bmap_fofc) {
+    funcs.push( function () {
+      gQm2Main.openEDSsiteImpl(pdbid, false, funcs);
+    });
+  }
+
+
+  if (funcs.length>0)
+    funcs.shift().call();
+}
+
+
+Qm2Main.prototype.openPDBsiteImpl = function (pdbid, afuncs)
+{
+  var pdb_url = "";
+  var scene = this.mMainWnd.currentSceneW;
   var listener;
 
   //pdb_url = "http://www.rcsb.org/pdb/download/downloadFile.do?"+
@@ -243,7 +283,7 @@ Qm2Main.prototype.onOpenPDBsite = function ()
   listener.mPDBID = pdbid;
   listener.mDlgRes = dlgdata;
   listener.mChannel = ioService.newChannelFromURI(uri);
-  listener.mLoadEDS = bmap;
+  listener.mFuncs = afuncs;
 
   function onLoad(aDlg) {
     listener.m_window = aDlg;
@@ -259,7 +299,7 @@ Qm2Main.prototype.onOpenPDBsite = function ()
 
 }
 
-Qm2Main.prototype.onOpenEDSsite = function (pdbid)
+Qm2Main.prototype.openEDSsiteImpl = function (pdbid, b2fofc, afuncs)
 {
   var scene = this.mMainWnd.currentSceneW;
   var eds_url="";
@@ -269,7 +309,12 @@ Qm2Main.prototype.onOpenEDSsite = function (pdbid)
   eds_url = "http://eds.bmc.uu.se/eds/sfd/"+pdbid+"/"+pdbid+"_sigmaa.mtz";
   dd("open EDS site: URL=\""+eds_url+"\"");
 
-  var new_obj_name = pdbid+"_2fofc";
+  var new_obj_name;
+  if (b2fofc)
+    new_obj_name = pdbid+"_2fofc";
+  else
+    new_obj_name = pdbid+"_fofc";
+
 
   //////////
   // show the setup-rend dialog
@@ -280,8 +325,14 @@ Qm2Main.prototype.onOpenEDSsite = function (pdbid)
   var rend_types;
   var reader = smg.createHandler("mtzmap", 0);
   // reader.compress = "gzip";
-  reader.clmn_F = "FWT";
-  reader.clmn_PHI = "FC";
+  if (b2fofc) {
+    reader.clmn_F = "2FOFCWT";
+    reader.clmn_PHI = "PH2FOFCWT";
+  }
+  else {
+    reader.clmn_F = "FOFCWT";
+    reader.clmn_PHI = "PHFOFCWT";
+  }
   reader.gridsize = 0.25;
   ( function () {
     var tmpobj = reader.createDefaultObj();
@@ -305,6 +356,11 @@ Qm2Main.prototype.onOpenEDSsite = function (pdbid)
   dlgdata.rendtype = "contour";
   dlgdata.rendname = "contour1";
 
+  if (!b2fofc) {
+    dlgdata.mapcolor = "#00FF00";
+    dlgdata.mapsigma = 3.0;
+  }
+
   //////////
   // start asynchronous loading
 
@@ -318,6 +374,7 @@ Qm2Main.prototype.onOpenEDSsite = function (pdbid)
   listener.mNewObjName = new_obj_name;
   listener.mDlgRes = dlgdata;
   listener.mChannel = ioService.newChannelFromURI(uri);
+  listener.mFuncs = afuncs;
 
   function onLoad(aDlg) {
     listener.m_window = aDlg;
