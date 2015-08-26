@@ -196,6 +196,8 @@ void CPK2Renderer::renderVBOImpl()
   if (nsphs==0)
     return; // nothing to draw
   
+  gfx::SphereSetTmpl<gfx::VBOSphereSet_traits> xxx;
+
   gfx::SphereSet sphs;
   sphs.create(nsphs, m_nDetail);
   if (!useShaderAlpha()) {

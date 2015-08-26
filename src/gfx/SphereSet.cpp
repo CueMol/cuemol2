@@ -32,14 +32,7 @@ void SphereSet::sphere(int i, const Vector4D &pos, double r, const ColorPtr &col
     m_data[i].ccode = col->getCode();
   }
   else {
-    quint32 cc = col->getCode();
-    int r = gfx::getRCode(cc);
-    int g = gfx::getGCode(cc);
-    int b = gfx::getBCode(cc);
-    int a = gfx::getACode(cc);
-    int aa = double(a) * m_defAlpha;
-    
-    m_data[i].ccode = gfx::makeRGBACode(r,g,b,aa);
+    m_data[i].ccode = gfx::mixAlpha(col->getCode(), m_defAlpha);
   }
 }
 
