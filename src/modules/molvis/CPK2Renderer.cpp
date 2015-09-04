@@ -42,6 +42,11 @@ const char *CPK2Renderer::getTypeName() const
 
 void CPK2Renderer::display(DisplayContext *pdc)
 {
+  if (pdc->isFile()) {
+    super_t::display(pdc);
+    return;
+  }
+
   if (m_bUseShader &&
       (m_nGlRendMode==REND_DEFAULT ||
        m_nGlRendMode==REND_SHADER)) {
@@ -203,12 +208,14 @@ void CPK2Renderer::renderVBOImpl()
   if (nsphs==0)
     return; // nothing to draw
   
-  gfx::SphereSetTmpl<gfx::VBOSphereSet_traits> xxx;
+  gfx::SphereSetTmpl<gfx::VBOSphereSet_traits> sphs2;
 
-  gfx::SphereSet sphs;
-  sphs.create(nsphs, m_nDetail);
+  //gfx::SphereSet sphs;
+  //sphs.create(nsphs, m_nDetail);
+  sphs2.getdata().create(nsphs, m_nDetail);
   if (!useShaderAlpha()) {
-    sphs.setAlpha(getDefaultAlpha());
+    //sphs.setAlpha(getDefaultAlpha());
+    sphs2.getdata().setAlpha(getDefaultAlpha());
   }
 
   // build meshes / DrawElemVNCI
@@ -220,14 +227,20 @@ void CPK2Renderer::renderVBOImpl()
       MolAtomPtr pAtom = pMol->getAtom(aid);
       if (pAtom.isnull()) continue; // ignore errors
 
-      sphs.sphere(i, pAtom->getPos(),
-                  getVdWRadius(pAtom),
-                  ColSchmHolder::getColor(pAtom));
+      //sphs.sphere(i, pAtom->getPos(),
+      //getVdWRadius(pAtom),
+      //ColSchmHolder::getColor(pAtom));
+
+      sphs2.getdata().sphere(i, pAtom->getPos(),
+                             getVdWRadius(pAtom),
+                             ColSchmHolder::getColor(pAtom));
+
       ++i;
     }
   }
 
-  m_pDrawElem = sphs.buildDrawElem();
+  //m_pDrawElem = sphs.buildDrawElem();
+  m_pDrawElem = sphs2.getdata().buildDrawElem(&sphs2);
 }
 
 //////////////////////

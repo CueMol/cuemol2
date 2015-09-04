@@ -125,7 +125,7 @@ namespace gfx {
 	  int g = gfx::getGCode(ccode);
 	  int b = gfx::getBCode(ccode);
 	  int a = gfx::getACode(ccode);
-    int aa = double(a) * alpha;
+    int aa = int( double(a) * alpha );
     return makeRGBACode(r,g,b,aa);
 
   }

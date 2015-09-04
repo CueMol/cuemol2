@@ -81,10 +81,10 @@ namespace gfx {
       // int col = pSph->ccode;
       const double dmax = (M_PI*rad)/double(ndetail+1);
 
-      int i, j;
+      quint32 i, j;
       int ivtbase = ivt;
       int ifcbase = ifc;
-      int nLat = ndetail+1;
+      quint32 nLat = ndetail+1;
 
       // detail in longitude direction is automatically determined by stack radius
       quint32 nLng;
@@ -258,8 +258,9 @@ namespace gfx {
 
   //////////////////////////////////////////////////////////////////////////////
 
-  struct VBOSphereSet_traits
+  class VBOSphereSet_traits
   {
+  private:
     struct Sphere {
       Vector4D posr;
       quint32 ccode;
@@ -276,6 +277,15 @@ namespace gfx {
 
     /// tesselation detail (common to all spheres)
     int m_nDetail;
+
+  public:
+    VBOSphereSet_traits() : m_defAlpha(1.0), m_nDetail(10)
+    {
+    }
+    
+    ~VBOSphereSet_traits()
+    {
+    }
 
     void setAlpha(double d) { m_defAlpha = d; }
 
@@ -316,7 +326,7 @@ namespace gfx {
 
     void color(quint32 isph, quint32 ivert)
     {
-      int col = m_data[isph].ccode;
+      quint32 col = m_data[isph].ccode;
       m_pVary->color(ivert, col);
     }
 
@@ -368,6 +378,8 @@ namespace gfx {
 
   ////////////////////////////////////////////////////////////////////////////////
 
+/*
+
   class GFX_API SphereSet
   {
   private:
@@ -409,6 +421,8 @@ namespace gfx {
     int selectTrig(int j, int k, int j1, int k1);
     
   };
+
+*/
 
 }
 

@@ -7,6 +7,7 @@
 
 #include "SphereSet.hpp"
 
+#if 0
 using namespace gfx;
 
 SphereSet::SphereSet()
@@ -276,4 +277,6 @@ int SphereSet::selectTrig(int j, int k, int j1, int k1)
   MB_DPRINTLN("SelectTrig warning; (%d,%d,%d,%d) detj=%f, detk=%f", j, k, j1, k1, detj, detk);
   return 2;
 }
+
+#endif
 

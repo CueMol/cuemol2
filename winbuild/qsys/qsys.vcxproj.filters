@@ -684,9 +684,6 @@
     <ClCompile Include="..\..\src\sysdep\Canvas2DTextRender2.cpp">
       <Filter>sysdep</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\gfx\SphereSet.cpp">
-      <Filter>gfx</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\modules\molvis\CPK2Renderer.cpp">
       <Filter>molvis</Filter>
     </ClCompile>
