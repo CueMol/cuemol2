@@ -502,6 +502,11 @@ if (!("seqpanel" in cuemolui)) {
         view.setViewCenter(pos);
     };
 
+    panel.selAround = function (aRes, aByres, aDist)
+    {
+      let mol = aRes.mol;
+      cuemolui.molSelAround(mol, aDist, aByres);
+    };
 
     panel.showCtxtMenu = function (aEvent)
     {
@@ -551,6 +556,32 @@ if (!("seqpanel" in cuemolui)) {
       case "seq-ctm-invsel":
         cuemolui.molSelInvert(r.mol);
         break;
+
+      case "seq-ctm-arbyres-3":
+	this.selAround(r, true, 3);
+	break;
+      case "seq-ctm-arbyres-5":
+	this.selAround(r, true, 5);
+	break;
+      case "seq-ctm-arbyres-7":
+	this.selAround(r, true, 7);
+	break;
+      case "seq-ctm-arbyres-10":
+	this.selAround(r, true, 10);
+	break;
+
+      case "seq-ctm-arnd-3":
+	this.selAround(r, false, 3);
+	break;
+      case "seq-ctm-arnd-5":
+	this.selAround(r, false, 5);
+	break;
+      case "seq-ctm-arnd-7":
+	this.selAround(r, false, 7);
+	break;
+      case "seq-ctm-arnd-10":
+	this.selAround(r, false, 10);
+	break;
       }      
 
       // move the marker
