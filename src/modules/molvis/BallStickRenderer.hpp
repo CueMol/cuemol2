@@ -112,17 +112,18 @@ namespace molvis {
     void drawRings(DisplayContext *pdl);
     void drawRingImpl(const std::list<int> atoms, DisplayContext *pdl);
 
+    bool m_bDrawRingOnly;
+
   protected:
     void checkRing(int aid) {
       if (m_fRing)
         m_atoms.insert(aid);
     }
 
-    //////////////////////////////////////////////////////
+    //////////////////////////
     // GLSL implementations
 
   private:
-
     bool m_bUseShader;
 
     GLSLSphereHelper *m_pSlSph;
@@ -131,6 +132,17 @@ namespace molvis {
     void initShader();
     void renderShaderImpl();
 
+  private:
+    int m_nGlRendMode;
+
+  public:
+    static const int REND_DEFAULT=0;
+    static const int REND_SHADER=1;
+    static const int REND_VBO=2;
+    static const int REND_GLU=3;
+
+    int getGLRenderMode() const { return m_nGlRendMode; }
+    void setGLRenderMode(int n) { m_nGlRendMode = n; } 
 
   };
 

@@ -31,6 +31,7 @@ using gfx::ColorPtr;
 BallStickRenderer::BallStickRenderer()
 {
   m_bUseShader = false;
+  m_bDrawRingOnly = false;
   m_pSlSph = MB_NEW GLSLSphereHelper();
   m_pSlCyl = MB_NEW GLSLCylinderHelper();
 }
@@ -65,19 +66,45 @@ void BallStickRenderer::setSceneID(qlib::uid_t nid)
 
 void BallStickRenderer::display(DisplayContext *pdc)
 {
-  if (m_bUseShader) {
+  if (pdc->isFile()) {
+    // case of the file (non-ogl) rendering
+    // always use the old version.
+    super_t::display(pdc);
+    return;
+  }
+
+  if (m_bUseShader &&
+      (m_nGlRendMode==REND_DEFAULT ||
+       m_nGlRendMode==REND_SHADER)) {
+
+
+    if (m_fRing) {
+      // only draw rings using old displist version
+      MB_DPRINTLN("Ballstick ring render");
+      m_bDrawRingOnly = true;
+      super_t::display(pdc);
+      m_bDrawRingOnly = false;
+    }
+
+    // shader rendering mode
     if (m_pSlSph->getDrawElem()==NULL) {
       renderShaderImpl();
       if (m_pSlSph->getDrawElem()==NULL)
         return; // Error, Cannot draw anything (ignore)
     }
     
+    MB_DPRINTLN("Ballstick shader render");
     preRender(pdc);
     m_pSlSph->draw(pdc);
     m_pSlCyl->draw(pdc);
     postRender(pdc);
+
   }
-  /*else if (pdc->isDrawElemSupported()) {
+  /*
+  else if (pdc->isDrawElemSupported() &&
+           (m_nGlRendMode==REND_DEFAULT ||
+            m_nGlRendMode==REND_VBO)) {
+    // VBO rendering mode
     if (m_pDrawElem==NULL) {
       renderVBOImpl();
       if (m_pDrawElem==NULL)
@@ -87,6 +114,13 @@ void BallStickRenderer::display(DisplayContext *pdc)
     preRender(pdc);
     pdc->drawElem(*m_pDrawElem);
     postRender(pdc);
+
+    if (m_fRing) {
+      // draw rings using old displist version
+      m_bDrawRingOnly = true;
+      super_t::display(pdc);
+      m_bDrawRingOnly = false;
+    }
   }*/
   else {
     // old version (uses DisplayContext::sphere)
@@ -114,11 +148,13 @@ void BallStickRenderer::invalidateDisplayCache()
 
 void BallStickRenderer::preRender(DisplayContext *pdc)
 {
+  MB_DPRINTLN("BallStickRenderer::preRender setLit TRUE");
   pdc->setLighting(true);
 }
 
 void BallStickRenderer::postRender(DisplayContext *pdc)
 {
+  MB_DPRINTLN("BallStickRenderer::postRender setLit FALSE");
   pdc->setLighting(false);
 }
 
@@ -145,21 +181,30 @@ void BallStickRenderer::endRend(DisplayContext *pdl)
 
 bool BallStickRenderer::isRendBond() const
 {
+  if (m_bDrawRingOnly)
+    return false;
+
   return true;
 }
 
 void BallStickRenderer::rendAtom(DisplayContext *pdl, MolAtomPtr pAtom, bool)
 {
+  checkRing(pAtom->getID());
+
+  if (m_bDrawRingOnly)
+    return;
+
   if (m_sphr>0.0) {
     pdl->color(ColSchmHolder::getColor(pAtom));
     pdl->sphere(m_sphr, pAtom->getPos());
   }
-  
-  checkRing(pAtom->getID());
 }
 
 void BallStickRenderer::rendBond(DisplayContext *pdl, MolAtomPtr pAtom1, MolAtomPtr pAtom2, MolBond *pMB)
 {
+  if (m_bDrawRingOnly)
+    return;
+
   if (m_bondw>0.0)
     drawInterAtomLine(pAtom1, pAtom2, pdl);
 }
@@ -359,7 +404,8 @@ void BallStickRenderer::propChanged(qlib::LPropEvent &ev)
       ev.getName().equals("detail") ||
       ev.getName().equals("ring") ||
       ev.getName().equals("thickness") ||
-      ev.getName().equals("ringcolor")) {
+      ev.getName().equals("ringcolor") ||
+      ev.getName().equals("glrender_mode")) {
     invalidateDisplayCache();
   }
   else if (ev.getParentName().equals("coloring")||

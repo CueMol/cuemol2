@@ -43,6 +43,8 @@ const char *CPK2Renderer::getTypeName() const
 void CPK2Renderer::display(DisplayContext *pdc)
 {
   if (pdc->isFile()) {
+    // case of the file (non-ogl) rendering
+    // always use the old version.
     super_t::display(pdc);
     return;
   }
