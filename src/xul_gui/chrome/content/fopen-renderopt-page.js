@@ -125,6 +125,9 @@ klass.onRendNameChanged = function (aEvent)
 
 klass.setDefaultRendName = function ()
 {
+  if (this.mRendTypeSel.selectedItem==null)
+    return;
+  
   var selvalue = this.mRendTypeSel.selectedItem.value;
   dd("setDefaultRendName> selected item="+selvalue);
 

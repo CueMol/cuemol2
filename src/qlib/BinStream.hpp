@@ -127,8 +127,6 @@ namespace qlib {
       else return false;
     }
 
-    void readFully(char *b, int off, int len);
-
   }; // class BinInStream
 
   ////////////////////////////////////////

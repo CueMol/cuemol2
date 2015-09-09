@@ -134,12 +134,25 @@ void GLSLMapVolRenderer::viewChanged(qsys::ViewEvent &ev)
 
 void GLSLMapVolRenderer::initShader()
 {
-  if (!qsys::View::hasVBO() || !qsys::View::hasVS()) {
+  sysdep::ShaderSetupHelper<GLSLMapVolRenderer> ssh(this);
+
+  if (!ssh.checkEnvVS()) {
     LOG_DPRINTLN("GPUMapMesh> ERROR: OpenGL GPU shading not supported.");
     MB_THROW(qlib::RuntimeException, "OpenGL GPU shading not supported");
     return;
   }
 
+  if (m_pPO==NULL)
+    m_pPO = ssh.createProgObj("gpu_mapvol",
+                              "%%CONFDIR%%/data/shaders/mapvol_vertex.glsl",
+                              "%%CONFDIR%%/data/shaders/mapvol_frag.glsl");
+  
+  if (m_pPO==NULL) {
+    LOG_DPRINTLN("GPUMapMesh> ERROR: cannot create progobj.");
+    return;
+  }
+
+#if 0
   // get GL context
   sysdep::OglDisplayContext *pOglDC = NULL;
   qsys::ScenePtr pScene = getScene();
@@ -187,6 +200,8 @@ void GLSLMapVolRenderer::initShader()
       m_pPO->disable();
     }
   }
+#endif
+  
   LOG_DPRINTLN("Init MapVol shader OK.");
 
   // glGenBuffersARB(1, &m_nVBOID);

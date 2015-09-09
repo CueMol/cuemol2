@@ -142,113 +142,68 @@ void GLSLMapMeshRenderer::viewChanged(qsys::ViewEvent &ev)
 
 void GLSLMapMeshRenderer::initShader()
 {
-  if (!qsys::View::hasVBO() || !qsys::View::hasGS()) {
+  sysdep::ShaderSetupHelper<GLSLMapMeshRenderer> ssh(this);
+
+  if (!ssh.checkEnvGS()) {
     LOG_DPRINTLN("GPUMapMesh> ERROR: OpenGL GPU geom program not supported.");
     MB_THROW(qlib::RuntimeException, "OpenGL GPU geom program not supported");
     return;
   }
 
-  // get GL context
-  sysdep::OglDisplayContext *pOglDC = NULL;
-  qsys::ScenePtr pScene = getScene();
-  qsys::Scene::ViewIter vi = pScene->beginView();
-  qsys::Scene::ViewIter vie = pScene->endView();
-  for (; vi!=vie; ++vi) {
-    qsys::ViewPtr pView = vi->second;
-    gfx::DisplayContext *pDC = pView->getDisplayContext();
-    pDC->setCurrent();
-    pOglDC = dynamic_cast<sysdep::OglDisplayContext *>(pDC);
-    if (pOglDC!=NULL)
-      break;
-  }
-
-  if (pOglDC==NULL) {
-    LOG_DPRINTLN("GPUMapMesh> ERROR: OpenGL GPU shading not supported.");
-    MB_THROW(qlib::RuntimeException, "OpenGL GPU geom program not supported");
+  if (m_pPO==NULL)
+    m_pPO = ssh.createProgObj("gpu_mapmesh",
+                              "%%CONFDIR%%/data/shaders/mapmesh_vertex.glsl",
+                              "%%CONFDIR%%/data/shaders/mapmesh_frag.glsl",
+                              "%%CONFDIR%%/data/shaders/mapmesh_geom.glsl",
+                              GL_POINTS, GL_LINE_STRIP, 16);
+  
+  if (m_pPO==NULL) {
+    LOG_DPRINTLN("GPUMapMesh> ERROR: cannot create progobj.");
     return;
   }
 
-  // setup shaders
-  bool res;
-  if (m_pPO==NULL) {
-    m_pPO = pOglDC->getProgramObject("gpu_mapmesh");
+  m_pPO->enable();
 
-    if (m_pPO==NULL) {
-      m_pPO = pOglDC->createProgramObject("gpu_mapmesh");
-      if (m_pPO==NULL) {
-        LOG_DPRINTLN("GPUMapMesh> ERROR: cannot create progobj.");
-        return;
-      }
-
-      try {
-	m_pPO->loadShader("vert",
-			  "%%CONFDIR%%/data/shaders/mapmesh_vertex.glsl",
-			  GL_VERTEX_SHADER);
-	m_pPO->loadShader("frag",
-			  "%%CONFDIR%%/data/shaders/mapmesh_frag.glsl",
-			  GL_FRAGMENT_SHADER);
-	m_pPO->loadShader("geom",
-			  "%%CONFDIR%%/data/shaders/mapmesh_geom.glsl",
-			  GL_GEOMETRY_SHADER);
-
-	m_pPO->setProgParam(GL_GEOMETRY_INPUT_TYPE_EXT, GL_POINTS);
-	m_pPO->setProgParam(GL_GEOMETRY_OUTPUT_TYPE_EXT, GL_LINE_STRIP);
-	//m_pPO->setProgParam(GL_GEOMETRY_OUTPUT_TYPE_EXT, GL_POINTS);
-	m_pPO->setProgParam(GL_GEOMETRY_VERTICES_OUT_EXT, 16);
-	
-	m_pPO->link();
-      }
-      //catch (qlib::LException &e) {
-      catch (...) {
-	LOG_DPRINTLN("FATAL ERROR: loadShader failed!!");
-	m_pPO = NULL;
-	return;
-      }
-
-      m_pPO->enable();
-
-      // Setup the index displacement array
-      // X-Y plane
-      m_pPO->setUniform("ivdel[0]", 0, 0, 0);
-      m_pPO->setUniform("ivdel[1]", 1, 0, 0);
-      m_pPO->setUniform("ivdel[2]", 1, 1, 0);
-      m_pPO->setUniform("ivdel[3]", 0, 1, 0);
-
-      // Y-Z plane
-      m_pPO->setUniform("ivdel[4]", 0, 0, 0);
-      m_pPO->setUniform("ivdel[5]", 0, 1, 0);
-      m_pPO->setUniform("ivdel[6]", 0, 1, 1);
-      m_pPO->setUniform("ivdel[7]", 0, 0, 1);
-
-      // Z-X plane
-      m_pPO->setUniform("ivdel[8]" , 0, 0, 0);
-      m_pPO->setUniform("ivdel[9]" , 0, 0, 1);
-      m_pPO->setUniform("ivdel[10]", 1, 0, 1);
-      m_pPO->setUniform("ivdel[11]", 1, 0, 0);
-
-      // setup the edge table
-      m_pPO->setUniform("edgetab[0]" , -1,-1); // 0000
-      m_pPO->setUniform("edgetab[1]" ,  0, 3); // 0001
-      m_pPO->setUniform("edgetab[2]" ,  0, 1); // 0010
-      m_pPO->setUniform("edgetab[3]" ,  1, 3); // 0011
-      m_pPO->setUniform("edgetab[4]" ,  1, 2); // 0100
-      m_pPO->setUniform("edgetab[5]" , -1,-1); // 0101
-      m_pPO->setUniform("edgetab[6]" ,  0, 2); // 0110
-      m_pPO->setUniform("edgetab[7]" ,  2, 3); // 0111
-      m_pPO->setUniform("edgetab[8]" ,  2, 3); // 1000
-      m_pPO->setUniform("edgetab[9]" ,  0, 2); // 1001
-      m_pPO->setUniform("edgetab[10]", -1,-1); // 1010
-      m_pPO->setUniform("edgetab[11]",  1, 2); // 1011
-      m_pPO->setUniform("edgetab[12]",  1, 3); // 1100
-      m_pPO->setUniform("edgetab[13]",  0, 1); // 1101
-      m_pPO->setUniform("edgetab[14]",  0, 3); // 1110
-      m_pPO->setUniform("edgetab[15]", -1,-1); // 1111
-
-      //m_nVertexLoc = glGetAttribLocation(m_pPO->getHandle(), "InVertex");
-
-      m_pPO->disable();
-    }
-  }
+  // Setup the index displacement array
+  // X-Y plane
+  m_pPO->setUniform("ivdel[0]", 0, 0, 0);
+  m_pPO->setUniform("ivdel[1]", 1, 0, 0);
+  m_pPO->setUniform("ivdel[2]", 1, 1, 0);
+  m_pPO->setUniform("ivdel[3]", 0, 1, 0);
+  
+  // Y-Z plane
+  m_pPO->setUniform("ivdel[4]", 0, 0, 0);
+  m_pPO->setUniform("ivdel[5]", 0, 1, 0);
+  m_pPO->setUniform("ivdel[6]", 0, 1, 1);
+  m_pPO->setUniform("ivdel[7]", 0, 0, 1);
+  
+  // Z-X plane
+  m_pPO->setUniform("ivdel[8]" , 0, 0, 0);
+  m_pPO->setUniform("ivdel[9]" , 0, 0, 1);
+  m_pPO->setUniform("ivdel[10]", 1, 0, 1);
+  m_pPO->setUniform("ivdel[11]", 1, 0, 0);
+  
+  // setup the edge table
+  m_pPO->setUniform("edgetab[0]" , -1,-1); // 0000
+  m_pPO->setUniform("edgetab[1]" ,  0, 3); // 0001
+  m_pPO->setUniform("edgetab[2]" ,  0, 1); // 0010
+  m_pPO->setUniform("edgetab[3]" ,  1, 3); // 0011
+  m_pPO->setUniform("edgetab[4]" ,  1, 2); // 0100
+  m_pPO->setUniform("edgetab[5]" , -1,-1); // 0101
+  m_pPO->setUniform("edgetab[6]" ,  0, 2); // 0110
+  m_pPO->setUniform("edgetab[7]" ,  2, 3); // 0111
+  m_pPO->setUniform("edgetab[8]" ,  2, 3); // 1000
+  m_pPO->setUniform("edgetab[9]" ,  0, 2); // 1001
+  m_pPO->setUniform("edgetab[10]", -1,-1); // 1010
+  m_pPO->setUniform("edgetab[11]",  1, 2); // 1011
+  m_pPO->setUniform("edgetab[12]",  1, 3); // 1100
+  m_pPO->setUniform("edgetab[13]",  0, 1); // 1101
+  m_pPO->setUniform("edgetab[14]",  0, 3); // 1110
+  m_pPO->setUniform("edgetab[15]", -1,-1); // 1111
+  
+  //m_nVertexLoc = glGetAttribLocation(m_pPO->getHandle(), "InVertex");
+  
+  m_pPO->disable();
 
   glGenBuffersARB(1, &m_nMapBufID);
   glGenBuffersARB(1, &m_nVBOID);
@@ -258,6 +213,7 @@ void GLSLMapMeshRenderer::initShader()
   glActiveTexture(GL_TEXTURE0);
   glEnable(MY_MAPTEX_DIM);
   glBindTexture(MY_MAPTEX_DIM, m_nMapTexID);
+
   //glTexParameteri(MY_MAPTEX_DIM, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   //glTexParameteri(MY_MAPTEX_DIM, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   //glTexParameteri(MY_MAPTEX_DIM, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);

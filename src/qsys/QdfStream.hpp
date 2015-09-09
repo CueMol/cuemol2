@@ -24,6 +24,7 @@ namespace qsys {
 
   /// Data type constants
   ///  (These defs should be persistent and part of API)
+  /// TO DO: use qlib::type_consts definitions
   class QdfDataType
   {
   public:

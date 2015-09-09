@@ -139,6 +139,9 @@
     <sheet_smooth value="3.0"/>
     <coil type="elliptical" width="0.2" />
     <sheethead type="arrow" gamma="1.0"/>
+    <ribhelix type="rectangle" tuber="6.0" width="0.2"/>
+    <ribhelix_head type="smooth"/>
+    <ribhelix_tail type="smooth"/>
   </style>
 
   <style id="RoundCartoon" type="renderer" desc="Round"

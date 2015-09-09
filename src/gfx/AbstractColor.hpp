@@ -119,7 +119,16 @@ namespace gfx {
     return (color >> 24) & 0xff;
   }
 
+  inline quint32 mixAlpha(quint32 ccode, double alpha)
+  {
+	  int r = gfx::getRCode(ccode);
+	  int g = gfx::getGCode(ccode);
+	  int b = gfx::getBCode(ccode);
+	  int a = gfx::getACode(ccode);
+    int aa = int( double(a) * alpha );
+    return makeRGBACode(r,g,b,aa);
 
+  }
 
 }
 

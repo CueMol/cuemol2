@@ -16,6 +16,11 @@ bool DisplayContext::isRenderPixmap() const
   return true;
 }
 
+bool DisplayContext::isDrawElemSupported() const
+{
+  return false;
+}
+
 qsys::View *DisplayContext::getTargetView() const
 {
   return NULL;
@@ -147,7 +152,7 @@ void DisplayContext::drawMesh(const Mesh &)
 {
 }
 
-void DisplayContext::drawElem(const DrawElem &)
+void DisplayContext::drawElem(const AbstDrawElem &)
 {
 }
 

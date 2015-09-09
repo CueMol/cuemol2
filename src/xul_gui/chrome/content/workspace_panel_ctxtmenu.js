@@ -193,7 +193,6 @@ ws.onPaintMol = function (aEvent)
   let value = aEvent.target.value;
   dd("WS.paintMol: "+value);
 
-  let coloring = null;
   let elem = this.mViewObj.getSelectedNode();
   let uobj = cuemol.getUIDObj(elem.obj_id);
   if (!('coloring' in uobj))

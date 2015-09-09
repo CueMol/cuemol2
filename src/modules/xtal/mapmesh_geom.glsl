@@ -4,8 +4,13 @@
 //    geometry shader
 //
 
-//GLSL version 1.30
-#version 130
+// // GLSL version 1.30
+// #version 130
+// #extension GL_ARB_compatibility : enable
+
+//GLSL version 1.40
+#version 140
+#extension GL_ARB_compatibility : enable
 
 //New G80 extensions
 #extension GL_EXT_geometry_shader4 : enable
@@ -76,6 +81,7 @@ vec4 wvertex(vec4 v)
   return gl_ProjectionMatrix * ecPosition;
 }
 
+
 void main(void)
 {
   int i;
@@ -126,87 +132,8 @@ void main(void)
 /*
 void main(void)
 {
-  int i;
-  gl_FrontColor = gl_FrontColorIn[0];
-  
-  ivec3 ipos = GeomVertex[0].xyz;
-  int iplane = GeomVertex[0].w;
-
-  uint val[4];
-  uint uisolev = uint(isolevel);
-  int ii;
-
-  uint flag = 0U;
-  uint mask = 1U;
-  int ibase = iplane*4;
-
-  for (ii=0; ii<4; ++ii) {
-    ivec3 iv = ipos + ivdel[ii + ibase];
-    val[ii] = getDensity(iv);
-    if (val[ii]>uisolev)
-      flag += mask;
-    mask = mask << 1U;
-  }
-
-  if (flag==0U || flag>=15U)
-    continue;
-
-  ivec2 i01 = edgetab[flag];
-  float crs0 = getCrossVal(val[i01.x], val[(i01.x+1)%4]);
-  float crs1 = getCrossVal(val[i01.y], val[(i01.y+1)%4]);
-
-  if (crs0<-0.0 || crs1<-0.0)
-    continue;
-
-  vec4 v0 = calcVecCrs(ipos, i01.x, crs0, ibase);
-  vec4 v1 = calcVecCrs(ipos, i01.y, crs1, ibase);
-  wvertex(v0);
-  wvertex(v1);
-
-  EndPrimitive();
-}
-*/
-
-/*
-void main(void)
-{
   vec4 pos = gl_PositionIn[0];
-
-  ivec3 ipos = ivec3(pos.xyz);
-  uint val = getDensity(ipos);
-
-  gl_FrontColor = vec4(float(val)/255.0, float(val)/255.0, float(isolevel)/255.0, 1.0);
-  // gl_FrontColor = vec4(1, 1, 0, 1);
-
-  //pos = gl_ProjectionMatrix * gl_ModelViewMatrix * pos;
-  //pos = gl_ModelViewMatrix * pos;
-
-  vec4 pos2;
-
-  gl_Position = wvertex(pos);
-  EmitVertex();
-  pos2 = pos;
-  pos2.x += 0.1;
-  gl_Position = wvertex(pos2);
-  EmitVertex();
-  EndPrimitive();	
-
-  gl_Position = wvertex(pos);
-  EmitVertex();
-  pos2 = pos;
-  pos2.y += 0.1;
-  gl_Position = wvertex(pos2);
-  EmitVertex();
-  EndPrimitive();	
-
-  gl_Position = wvertex(pos);
-  EmitVertex();
-  pos2 = pos;
-  pos2.z += 0.1;
-  gl_Position = wvertex(pos2);
-  EmitVertex();
-  EndPrimitive();	
-
+  gl_FrontColor = gl_FrontColorIn[0];
 }
 */
 

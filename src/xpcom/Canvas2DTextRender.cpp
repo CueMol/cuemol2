@@ -2,7 +2,7 @@
 // Text rendering routine using HTML5 Canvas 2D
 //
 
-#include <common.h>
+#include "xpcom.hpp"
 
 #include <nsICanvasRenderingContextInternal.h>
 

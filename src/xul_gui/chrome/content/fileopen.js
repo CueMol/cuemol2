@@ -523,7 +523,7 @@ Qm2Main.prototype.onSaveSceneAs = function ()
 
   // Add extension to the file name, if there isn't.
   let path = fp.file.path;
-  let res = util.splitFileName2(path, names[fp.filterIndex].fext);
+  res = util.splitFileName2(path, names[fp.filterIndex].fext);
   if (res) {
     path = res.path;
   }
@@ -654,12 +654,12 @@ Qm2Main.prototype.onSaveCamera = function (aName)
     return false;
 
   let path = fp.file.path;
-  let res = util.splitFileName2(path, "*.cam");
+  res = util.splitFileName2(path, "*.cam");
   if (res) {
     path = res.path;
   }
 
-  var res = false;
+  res = false;
   if (aName=="__current") {
     res = scene.saveCameraTo(aName, path);
   }
@@ -707,7 +707,7 @@ Qm2Main.prototype.onLoadCamera = function ()
     return null;
 
   let path = fp.file.path;
-  let res = util.splitFileName2(path, "*.cam");
+  res = util.splitFileName2(path, "*.cam");
   if (res) {
     path = res.path;
   }

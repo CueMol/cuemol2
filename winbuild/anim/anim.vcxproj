@@ -1,0 +1,148 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{B894856F-F978-4874-92A5-6898372A2D66}</ProjectGuid>
+    <RootNamespace>anim</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="..\mcwrapgen3.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\common.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\common.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>12.0.21005.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(XULDeployDir)\</OutDir>
+    <IntDir>$(Configuration)\</IntDir>
+    <LinkIncremental>true</LinkIncremental>
+    <GenerateManifest>false</GenerateManifest>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(XULDeployDir)\</OutDir>
+    <IntDir>$(Configuration)\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+    <GenerateManifest>false</GenerateManifest>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;ANIM_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <OutputFile>$(XULDeployDir)\$(ProjectName).dll</OutputFile>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;ANIM_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <OutputFile>$(XULDeployDir)\$(ProjectName).dll</OutputFile>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\modules\anim\anim.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\anim\anim_loader.cpp" />
+    <ClCompile Include="..\..\src\modules\anim\CamMotion.cpp" />
+    <ClCompile Include="..\..\src\modules\anim\CamMotion_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\anim\MolAnim.cpp" />
+    <ClCompile Include="..\..\src\modules\anim\MolAnim_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\anim\MorphMol.cpp" />
+    <ClCompile Include="..\..\src\modules\anim\MorphMol_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\anim\NoopAnimObj.cpp" />
+    <ClCompile Include="..\..\src\modules\anim\NoopAnimObj_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\anim\RealPropAnim.cpp" />
+    <ClCompile Include="..\..\src\modules\anim\RealPropAnim_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\anim\RendPropAnim.cpp" />
+    <ClCompile Include="..\..\src\modules\anim\RendXformAnim.cpp" />
+    <ClCompile Include="..\..\src\modules\anim\RendXformAnim_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\anim\ShowHideAnim.cpp" />
+    <ClCompile Include="..\..\src\modules\anim\ShowHideAnim_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\anim\SimpleSpin.cpp" />
+    <ClCompile Include="..\..\src\modules\anim\SimpleSpin_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\anim\SlideInOutAnim.cpp" />
+    <ClCompile Include="..\..\src\modules\anim\SlideInOutAnim_wrap.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <mcw_loader Include="..\..\src\modules\anim\anim.moddef" />
+  </ItemGroup>
+  <ItemGroup>
+    <mcwrapgen3 Include="..\..\src\modules\anim\CamMotion.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\anim\MolAnim.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\anim\MorphMol.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\anim\NoopAnimObj.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\anim\RealPropAnim.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\anim\RendXformAnim.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\anim\ShowHideAnim.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\anim\SimpleSpin.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\anim\SlideInOutAnim.qif" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\qlib\qlib.vcxproj">
+      <Project>{17abbaff-4e0b-4cab-ae59-b5fc76a4e285}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\qsys\qsys.vcxproj">
+      <Project>{dbd4410b-6495-4051-b5e4-4609bb8da327}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="..\mcwrapgen3.targets" />
+  </ImportGroup>
+</Project>

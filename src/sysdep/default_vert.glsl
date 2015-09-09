@@ -15,8 +15,8 @@ vec4 Specular;
 
 uniform bool enable_lighting;
 
-varying vec3 gNormal;
-varying vec4 gEcPosition;
+//varying vec3 gNormal;
+//varying vec4 gEcPosition;
 
 void DirectionalLight(in int i, in vec3 normal)
 {
@@ -51,7 +51,7 @@ vec3 fnormal(void)
   return normal;
 }
 
-void flight(in vec3 normal, in vec4 ecPosition)
+vec4 flight(in vec3 normal, in vec4 ecPosition)
 {
   vec4 color;
   vec3 ecPosition3;
@@ -77,7 +77,7 @@ void flight(in vec3 normal, in vec4 ecPosition)
   color += Diffuse  * gl_Color;
   color += Specular * gl_FrontMaterial.specular;
   //color = clamp( color, 0.0, 1.0 );
-  gl_FrontColor = color;
+  return color;
 }
 
 
@@ -87,14 +87,14 @@ void main (void)
 
   // Eye-coordinate position of vertex, needed in various calculations
   vec4 ecPosition = gl_ModelViewMatrix * gl_Vertex;
-  gEcPosition = ecPosition;
+  //gEcPosition = ecPosition;
 
   // Do fixed functionality vertex transform
   gl_Position = ftransform();
 
   if (enable_lighting) {
-    gNormal = fnormal();
-    flight(gNormal, ecPosition);
+    vec3 normal = fnormal();
+    gl_FrontColor = flight(normal, ecPosition);
   }
   else {
     gl_FrontColor=gl_Color;

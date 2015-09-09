@@ -30,13 +30,69 @@ XRE_mainType XRE_main;
 
 /////////
 
+bool getExePath(char *respath)
+{
+  CFBundleRef appBundle = CFBundleGetMainBundle();
+  if (!appBundle)
+    return false;
+
+  CFURLRef url = CFBundleCopyExecutableURL(appBundle);
+  if (!url)
+    return false;
+  CFURLRef absurl = nullptr;
+  // CFURLRef url2 = url;
+  CFURLRef url2 = CFURLCreateCopyDeletingLastPathComponent(NULL, url);
+  CFRelease(url);
+
+  absurl = CFURLCopyAbsoluteURL(url2);
+  CFRelease(url2);
+  
+  char tbuffer[MAXPATHLEN];
+  
+  CFURLGetFileSystemRepresentation(absurl, true,
+				   (UInt8*) tbuffer,
+				   sizeof(tbuffer));
+  printf("abs exec url = %s\n", tbuffer);
+  CFRelease(absurl);
+
+  snprintf(respath, MAXPATHLEN, "%s/XUL", tbuffer);
+  return true;
+}
+
+bool getFrameworkPath(char *respath)
+{
+  char tmpPath[MAXPATHLEN];
+
+  CFBundleRef appBundle = CFBundleGetMainBundle();
+  if (!appBundle)
+    return false;
+
+  CFURLRef frameworksURL = CFBundleCopyPrivateFrameworksURL(appBundle);
+  if (!frameworksURL)
+    return false;
+  
+  CFURLRef absFrameworksURL = CFURLCopyAbsoluteURL(frameworksURL);
+  CFRelease(frameworksURL);
+  if (!absFrameworksURL)
+    return false;
+  
+  CFURLGetFileSystemRepresentation(absFrameworksURL, true,
+				   (UInt8*) tmpPath,
+				   sizeof(tmpPath));
+  printf("abs fw url = %s\n", tmpPath);
+  CFRelease(absFrameworksURL);
+
+  snprintf(respath, MAXPATHLEN, "%s/XUL.framework/Versions/Current", tmpPath);
+
+  return true;
+}
+
 int main(int argc, char **argv)
 {
   nsresult rv;
   char *lastSlash;
 
   char iniPath[MAXPATHLEN];
-  char tmpPath[MAXPATHLEN];
   char greDir[MAXPATHLEN];
   bool greFound = false;
 
@@ -76,23 +132,17 @@ int main(int argc, char **argv)
 
   ////////////////////////////////////////
 
-  // Check for <bundle>/Contents/Frameworks/XUL.framework/libxpcom.dylib
-  CFURLRef fwurl = CFBundleCopyPrivateFrameworksURL(appBundle);
-  CFURLRef absfwurl = nullptr;
-  if (fwurl) {
-    absfwurl = CFURLCopyAbsoluteURL(fwurl);
-    CFRelease(fwurl);
+  if (!getExePath(greDir)) {
+    return 1;
   }
-  
-  char tbuffer[MAXPATHLEN];
 
-  CFURLGetFileSystemRepresentation(absfwurl, true,
-				   (UInt8*) tbuffer,
-				   sizeof(tbuffer));
-  printf("abs fwurl = %s\n", tbuffer);
-  CFRelease(absfwurl);
+  /*if (!getFrameworkPath(greDir)) {
+    return 1;
+    }*/
+  /*if (realpath(tmpPath, greDir)) {
+    greFound = true;
+    }*/
 
-  snprintf(greDir, sizeof(greDir), "%s/XUL.framework/Versions/Current/xulrunner", tbuffer);
   printf("greDir = %s\n", greDir);
   if (access(greDir, R_OK | X_OK) == 0)
     greFound = true;
@@ -152,16 +202,23 @@ int main(int argc, char **argv)
   }
 
   NS_ASSERTION(pAppData->directory, "Failed to get app directory.");
+  {
+    nsAutoString path;
+    pAppData->directory->GetPath(path);
+
+    nsAutoCString nsstr;
+    ::CopyUTF16toUTF8(path, nsstr);
+
+    printf("appData.directory=%s\n", nsstr.get());
+  }
 
   if (!pAppData->xreDirectory) {
-    // chop "xulrunner" off the GRE path
-    char *lastSlash = strrchr(greDir, '/');
-    if (lastSlash) {
-      *lastSlash = '\0';
-    }
-    printf("xreDir: %s.\n", greDir);
-    NS_NewNativeLocalFile(nsDependentCString(greDir), PR_FALSE,
-                          &pAppData->xreDirectory);
+    char xreDir[MAXPATHLEN];
+    if (!getFrameworkPath(xreDir))
+      return 1;
+
+    rv = NS_NewNativeLocalFile(nsDependentCString(xreDir), PR_FALSE,
+			       &pAppData->xreDirectory);
   }
   
   printf("### ENTERING XRE_MAIN ###\n");

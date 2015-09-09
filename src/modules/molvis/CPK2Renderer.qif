@@ -1,0 +1,57 @@
+// -*-Mode: C++;-*-
+//
+// Interface definition for CPK2Renderer
+//
+
+#ifndef CPK2_RENDERER_QIF
+#define CPK2_RENDERER_QIF
+
+#include <modules/molstr/MolRenderer.qif>
+#include <modules/molstr/Selection.qif>
+
+runtime_class CPK2Renderer extends MolRenderer
+{
+  client_hdr "CPK2Renderer.hpp";
+  client_name molvis::CPK2Renderer;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  property real vdwr_H => m_vdwr_H;
+  default vdwr_H = 1.2;
+
+  property real vdwr_C => m_vdwr_C;
+  default vdwr_C = 1.7;
+
+  property real vdwr_N => m_vdwr_N;
+  default vdwr_N = 1.55;
+
+  property real vdwr_O => m_vdwr_O;
+  default vdwr_O = 1.52;
+
+  property real vdwr_S => m_vdwr_S;
+  default vdwr_S = 1.8;
+
+  property real vdwr_P => m_vdwr_P;
+  default vdwr_P = 1.8;
+
+  property real vdwr_X => m_vdwr_X;
+  default vdwr_X = 1.7;
+
+  property integer detail => m_nDetail;
+  default detail = 10;
+
+  /// OpenGL Sphere rendering mode
+  enumdef glrender_mode {
+    default = molvis::CPK2Renderer::REND_DEFAULT;
+    shader = molvis::CPK2Renderer::REND_SHADER;
+    vbo = molvis::CPK2Renderer::REND_VBO;
+    glu = molvis::CPK2Renderer::REND_GLU;
+  }
+  property enum glrender_mode => redirect(getGLRenderMode, setGLRenderMode);
+  default glrender_mode = "default";
+};
+
+#endif
+

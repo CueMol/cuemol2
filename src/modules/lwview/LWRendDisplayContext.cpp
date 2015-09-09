@@ -182,14 +182,20 @@ void LWRendDisplayContext::writeDots(RendIntData *pDat)
 
   DrawElem *pVary;
   if (bEqual) {
-    pVary = new gfx::DrawElemV();
-    pVary->setDefColor(prev_code);
+    gfx::DrawElemV *pV = MB_NEW gfx::DrawElemV();
+    pV->setDefColor(prev_code);
+    pV->setDrawMode(gfx::DrawElem::DRAW_POINTS);
+    pV->alloc(ndots);
+    pVary = pV;
   }
   else {
-    pVary = new gfx::DrawElemVC();
+    gfx::DrawElemVC *pV = MB_NEW gfx::DrawElemVC();
+    pV->setDrawMode(gfx::DrawElem::DRAW_POINTS);
+    pV->alloc(ndots);
+    pVary = pV;
   }
 
-  pVary->startPoints(ndots);
+  //pVary->startPoints(ndots);
 
   int calpha = int(getAlpha()* 255.0 + 0.5);
 
@@ -248,14 +254,20 @@ void LWRendDisplayContext::writeLines(RendIntData *pDat)
 
   DrawElem *pVary;
   if (bEqual) {
-    pVary = new gfx::DrawElemV();
-    pVary->setDefColor(prev_code);
+    gfx::DrawElemV *pV = MB_NEW gfx::DrawElemV();
+    pV->setDefColor(prev_code);
+    pV->setDrawMode(gfx::DrawElem::DRAW_LINES);
+    pV->alloc(nlines*2);
+    pVary = pV;
   }
   else {
-    pVary = new gfx::DrawElemVC();
+    gfx::DrawElemVC *pV = MB_NEW gfx::DrawElemVC();
+    pV->setDrawMode(gfx::DrawElem::DRAW_LINES);
+    pV->alloc(nlines*2);
+    pVary = pV;
   }
 
-  pVary->startLines(nlines*2);
+  //pVary->startLines(nlines*2);
 
   int calpha = int(getAlpha()* 255.0 + 0.5);
 
@@ -310,7 +322,6 @@ void LWRendDisplayContext::writeMesh(RendIntData *pDat, render::Mesh &mesh)
     pDat->m_clut.getColor(pp->c, pcol);
     quint32 cc = pcol->getCode();
     pVary->color(i, mulAlpha(cc, calpha));
-    //pVary->color(i, cc);
     pVary->normal(i, pp->n);
     pVary->vertex(i, pp->v);
   }

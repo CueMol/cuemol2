@@ -32,6 +32,11 @@ symm.onLoad = function ()
   this.mBeta = document.getElementById("symm_beta");
   this.mGamma = document.getElementById("symm_gamma");
 
+  this.mLattice = document.getElementById("symm_lattice");
+  this.mCella = document.getElementById("symm_cella");
+  this.mCellb = document.getElementById("symm_cellb");
+  this.mCellc = document.getElementById("symm_cellc");
+
   this.mChgBtn = document.getElementById("symm-panel-change");
   this.mShowSymmBtn = document.getElementById("symm-panel-showsymm");
   this.mShowCellBtn = document.getElementById("symm-panel-showcell");
@@ -113,20 +118,26 @@ symm.updateWidget = function ()
   let lat = xi.lattice;
   //dd("symmPanel symminfo: "+lat);
 
-  $("#symm_lattice").text(lat.substr(0, 1) + lat.substr(1).toLowerCase());
-  html.replace(this.mSpcGrp, this.formatSg(xi.hm_spacegroup));
+  // $("#symm_lattice").text(lat.substr(0, 1) + lat.substr(1).toLowerCase());
+  html.replace(this.mLattice,
+               html.text(document, lat.substr(0, 1) + lat.substr(1).toLowerCase()));
+  html.replace(this.mSpcGrp,
+               this.formatSg(xi.hm_spacegroup));
 
-  $("#symm_cella").text(this.formatNum(xi.a));
-  $("#symm_cellb").text(this.formatNum(xi.b));
-  $("#symm_cellc").text(this.formatNum(xi.c));
-
+  // $("#symm_cella").text(this.formatNum(xi.a));
+  // $("#symm_cellb").text(this.formatNum(xi.b));
+  // $("#symm_cellc").text(this.formatNum(xi.c));
+  html.replace(this.mCella, html.text(document, this.formatNum(xi.a)));
+  html.replace(this.mCellb, html.text(document, this.formatNum(xi.b)));
+  html.replace(this.mCellc, html.text(document, this.formatNum(xi.c)));
+  
   html.replace(this.mAlpha, html.text(document, this.formatNum(xi.alpha)));
   html.replace(this.mBeta,  html.text(document, this.formatNum(xi.beta)));
   html.replace(this.mGamma, html.text(document, this.formatNum(xi.gamma)));
-
+  
   xi = null;
 };
-
+ 
 symm.formatNum = function (aNum)
 {
   return aNum.toFixed(2);
@@ -155,14 +166,18 @@ symm.setDisabled = function (aValue)
 {
   if (aValue) {
     // All buttons are disabled
-    $("#symm_lattice").text("Unknown");
-    $("#symm_spacegrp").text("Unknown");
-    $("#symm_cella").text("-");
-    $("#symm_cellb").text("-");
-    $("#symm_cellc").text("-");
-    // $("#symm_alpha").text("?");
-    // $("#symm_beta").text("?");
-    // $("#symm_gamma").text("?");
+    //$("#symm_lattice").text("Unknown");
+    //$("#symm_spacegrp").text("Unknown");
+    //$("#symm_cella").text("-");
+    //$("#symm_cellb").text("-");
+    //$("#symm_cellc").text("-");
+
+    html.replace(this.mLattice, html.text(document, "Unknown"));
+    html.replace(this.mSpcGrp, html.text(document, "Unknown"));
+
+    html.replace(this.mCella, html.text(document, "-"));
+    html.replace(this.mCellb, html.text(document, "-"));
+    html.replace(this.mCellc, html.text(document, "-"));
 
     html.replace(this.mAlpha, html.text(document, "-"));
     html.replace(this.mBeta,  html.text(document, "-"));

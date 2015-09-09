@@ -20,6 +20,7 @@ sinclude(conftools/ax_boost_system.m4)
 sinclude(conftools/ax_boost_filesystem.m4)
 dnl sinclude(conftools/ax_boost_iostreams.m4)
 sinclude(conftools/ax_cxx_compile_stdcxx_0x.m4)
+sinclude(conftools/ax_cxx_compile_stdcxx_11.m4)
 
 #######################################################
 # LIBTOOL
@@ -207,6 +208,16 @@ case $host_os in
 	    OSXDISTR_LSAP=x86_64
 	fi    
         AC_SUBST(OSXDISTR_LSAP)
+
+        dnl OSX/Gecko39 build requires std=c++11 feature (char16_t, etc...)
+	_cxxflags=${CXXFLAGS}
+        AX_CXX_COMPILE_STDCXX_11(noext,optional)
+	if test x$HAVE_CXX11 = x1 ; then
+	    dnl if cxx has c++11 feature, save the cxxflags enabling the feature
+	    CXX11_CXXFLAGS=${CXXFLAGS}
+	fi
+	CXXFLAGS=${_cxxflags}
+	echo "XXX $CXXFLAGS, $HAVE_CXX11, $CXX11_CXXFLAGS"
      ;;
      *)
 	GUI_ARCH=X11
@@ -303,6 +314,7 @@ if test x$GUI_ARCH != xCLI ; then
 # check for XULRUNNER SDK location
 #
 XULRUNNER_SDK_PATH=
+BUILD_XULGUI=
 test "${with_xulrunner_sdk+set}" != "set" && with_xulrunner_sdk=no
 AC_MSG_CHECKING(XULRUNNER SDK location)
 AC_ARG_WITH(xulrunner_sdk,
@@ -310,78 +322,40 @@ AC_ARG_WITH(xulrunner_sdk,
 [  case "$with_xulrunner_sdk" in
   no)
     AC_MSG_RESULT($with_xulrunner_sdk)
-dnl    AC_MSG_ERROR(require xulrunner SDK)
     ;;
   *)
     AC_MSG_RESULT($with_xulrunner_sdk)
     _cppflags=${CPPFLAGS}
+    _cxxflags=${CXXFLAGS}
     CPPFLAGS="-I$with_xulrunner_sdk/include $CPPFLAGS"
-    AC_CHECK_HEADERS(nsXPCOM.h, XULRUNNER_SDK_PATH=$with_xulrunner_sdk,,[#include <mozilla-config.h>])
-dnl    AC_CHECK_HEADERS(mozilla-config.h, XULRUNNER_SDK_PATH=$with_xulrunner_sdk)
-    CPPFLAGS=$_cppflags
-    if test x$XULRUNNER_SDK_PATH = x ; then
-      AC_MSG_ERROR(incorrect xulrunner SDK location)
+    if test x$HAVE_CXX11 = x1 ; then
+        CXXFLAGS="$CXX11_CXXFLAGS"
     fi
-    ;;
-  esac]
-)
-	
-#
-# check for XULRUNNER runtime location
-#
-XULRUNNER_RUNTIME_PATH=
-if test x$with_xulrunner_sdk != xno ; then
-    test "${with_xulrunner_runtime+set}" != "set" && with_xulrunner_runtime=no
-    AC_MSG_CHECKING(XULRUNNER runtime location)
-    AC_ARG_WITH(xulrunner_runtime,
-    [  --with-xulrunner-runtime[=DIR]      Look for xulrunner runtime in DIR (default=no) ],
-    [  case "$with_xulrunner_runtime" in
-      no)
-        case $host_os in
-          darwin*)
-            with_xulrunner_runtime="$with_xulrunner_sdk/XUL.Framework"
-          ;;
-          *)
-            with_xulrunner_runtime="$with_xulrunner_sdk/bin"
-          ;;
-        esac
-    
-        AC_MSG_RESULT($with_xulrunner_runtime)
-        XULRUNNER_RUNTIME_PATH=$with_xulrunner_runtime
-        ;;
-      *)
-        AC_MSG_RESULT($with_xulrunner_runtime)
-        XULRUNNER_RUNTIME_PATH=$with_xulrunner_runtime
-        ;;
-      esac
-    ])
-fi
+    AC_CHECK_HEADERS(nsXPCOM.h, XULRUNNER_SDK_PATH=$with_xulrunner_sdk,,[#include <mozilla-config.h>])
 
-#
-# check mozilla/XPCOM build
-#
-BUILD_XULGUI=
-if test x$with_xulrunner_sdk != xno ; then
-    _cppflags=${CPPFLAGS}
-    CPPFLAGS="-I$with_xulrunner_sdk/include $CPPFLAGS"
     AC_CHECK_DECL(NS_InitXPCOM2,
 	[XPCOM_CPPFLAGS="-I$with_xulrunner_sdk/include -I$with_xulrunner_sdk/include/nspr";
 	 XPCOM_LDFLAGS="-L$with_xulrunner_sdk/lib";
 	 BUILD_XULGUI="xpcom xul_gui"],,
 	[#include <mozilla-config.h>
 	 #include<nsXPCOM.h>])
+
     CPPFLAGS=$_cppflags
+    CXXFLAGS=$_cxxflags
+    if test x$XULRUNNER_SDK_PATH = x ; then
+      AC_MSG_ERROR(incorrect xulrunner SDK location)
+    fi
 
-    CFLAGS="-fshort-wchar $CFLAGS"
-    CXXFLAGS="-fshort-wchar $CXXFLAGS"
+dnl    CFLAGS="-fshort-wchar $CFLAGS"
+dnl    CXXFLAGS="-fshort-wchar $CXXFLAGS"
 
-    dnl GECKO SDK version (major)
-    AC_DEFINE([GECKO_SDK_MAJOR_VER], [9], [Gecko SDK version])
-fi
+    ;;
+  esac]
+)
+	
 
 AC_SUBST(BUILD_XULGUI)
 AC_SUBST(XULRUNNER_SDK_PATH)
-AC_SUBST(XULRUNNER_RUNTIME_PATH)
 AC_SUBST(XPCOM_CPPFLAGS)
 AC_SUBST(XPCOM_LDFLAGS)
 
@@ -830,6 +804,7 @@ AC_CONFIG_FILES([
 	osxbuild/make_distr.pl
 	osxbuild/add_povray.pl
 	osxbuild/Info.plist
+	osxbuild/make_appbundle.sh
 	uxdist/Makefile
 	uxdist/run_cuemol2.sh
 	stub/Makefile

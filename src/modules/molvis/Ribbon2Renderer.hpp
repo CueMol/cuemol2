@@ -92,6 +92,8 @@ using namespace molstr;
       bool calcProtBinormVec(int nres, Vector4D &res);
 
       Vector4D getBnormVec(double t);
+      Vector4D getCoilBnormVec(double t);
+      
 
       Ribbon2Renderer *m_pParent;
 
@@ -117,7 +119,7 @@ private:
   /// Section data for coil
   TubeSectionPtr m_ptsCoil;
 
-  /// Section data for helix
+  /// Section data for cylinder helix
   TubeSectionPtr m_ptsHelix;
 
   /// Section data for sheet
@@ -125,6 +127,15 @@ private:
 
   /// Sheet junction (arrow head)
   JctTablePtr m_pSheetHead;
+
+  /// Section data for ribbon helix
+  TubeSectionPtr m_ptsRibHelix;
+
+  /// Coil-Helix junction (used in ribbonhelix mode)
+  JctTablePtr m_pRibHelixTail;
+
+  /// Helix-Coil junction (used in ribbonhelix mode)
+  JctTablePtr m_pRibHelixHead;
 
   /// Num of interporation point to the axial direction (axialdetail)
   int m_nAxialDetail;
@@ -224,7 +235,16 @@ private:
 
   void buildCoilData();
   void clearCoilData();
-  void renderCoil(DisplayContext *pdl);
+  void renderCoil(DisplayContext *pdl, detail::SecSplDat *pSh);
+  void renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pSh);
+
+  void getCoilResids(double at, detail::SecSplDat *pCyl,
+                     MolResiduePtr &pResPrev,
+                     MolResiduePtr &pResNext,
+                     double &resrho);
+
+  gfx::ColorPtr calcCoilColor(double at, detail::SecSplDat *pCyl);
+
 
   /// Sheet to Coil junction
   void extendSheetCoil(detail::SecSplDat *pSh, int nPrevInd);
@@ -276,6 +296,7 @@ public:
   }
 
   double getAnchorWgt(MolResiduePtr pRes) const;
+  double getAnchorWgt2(MolResiduePtr pRes, const LString &sstr) const;
 
   void invalidateSplineCoeffs();
 
@@ -314,13 +335,16 @@ private:
 public:
   
   gfx::ColorPtr calcColor(double t, detail::SecSplDat *pCyl);
-  gfx::ColorPtr calcColor2(double t, detail::SecSplDat *pCyl);
 
   TubeSectionPtr getHelixSection() const { return m_ptsHelix; }
   TubeSectionPtr getSheetSection() const { return m_ptsSheet; }
   TubeSectionPtr getCoilSection() const { return m_ptsCoil; }
 
   JctTablePtr getSheetHead() const { return m_pSheetHead; }
+
+  TubeSectionPtr getRibHelixSection() const { return m_ptsRibHelix; }
+  JctTablePtr getRibHelixHead() const { return m_pRibHelixHead; }
+  JctTablePtr getRibHelixTail() const { return m_pRibHelixTail; }
 
   //////////
 
@@ -332,7 +356,12 @@ private:
   void updateDiffVecsImpl(detail::SecSplDat *pC);
 
 public:
+  /// Returns 1-st differential vector as to the axial (t) parameter.
+  ///  (used for the tangential vector calculation for the disorder renderer)
   virtual bool getDiffVec(MolResiduePtr pRes, Vector4D &rpos, Vector4D &rvec);
+
+  /// Ribbon shaped helix flag
+  bool m_bRibbonHelix;
 
 };
 

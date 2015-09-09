@@ -2,8 +2,6 @@
 // XPCOM timer implementation
 //
 
-#include <common.h>
-
 #include "xpcom.hpp"
 #include "XPCTimerImpl.hpp"
 

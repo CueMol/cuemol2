@@ -797,22 +797,22 @@ klass.vcmAddSelectMol = function(mode)
 
   scene.commitUndoTxn();
   // EDIT TXN END //
-}
+};
 
 klass.vcmUnSelectMol = function()
 {
   var res = this.mParent.getHittestRes();
   var obj = cuemol.getObject(res.obj_id);
   cuemolui.molSelClear(obj);
-}
+};
 
 klass.vcmArndMolSel = function(aDist, aByres)
 {
   var res = this.mParent.getHittestRes();
   var obj = cuemol.getObject(res.obj_id);
 
-  cuemolui.molSelAround(obj, aDist, aByres)
-}
+  cuemolui.molSelAround(obj, aDist, aByres);
+};
 
 klass.showAtomLabel = function(objid, atomid)
 {

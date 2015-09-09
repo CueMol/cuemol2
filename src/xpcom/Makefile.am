@@ -49,7 +49,6 @@ XPCCueMol.cpp \
 XPCObjWrapper.cpp \
 XPCNativeWidget.cpp \
 XPCTimerImpl.cpp \
-Canvas2DTextRender2.cpp \
 xpc_main.cpp
 
 # @XULRUNNER_SDK_PATH@/sdk/lib/libxpcomglue_s.a
@@ -66,21 +65,19 @@ if COND_BUILD_OSX
 # -fno-rtti
 
 libxpcqm_la_EXTRA_CXXFLAGS = \
--Wall -Wpointer-arith -Woverloaded-virtual -Wsynth -Wno-ctor-dtor-privacy -Wno-non-virtual-dtor \
+ -Wall -Wpointer-arith -Woverloaded-virtual -Wsynth -Wno-ctor-dtor-privacy -Wno-non-virtual-dtor \
  -Wcast-align -Wno-invalid-offsetof -Wno-variadic-macros -Werror=return-type  \
--fno-strict-aliasing -fpascal-strings -fno-common -fshort-wchar -pthread \
+ -fno-strict-aliasing -fpascal-strings -fno-common -fshort-wchar -pthread \
   -Wmost -Wno-four-char-constants -Wno-unknown-pragmas \
   -DXP_MACOSX=1 -DNO_X11=1 -DUSE_SYSTEM_CONSOLE=1 \
-  -pipe -fmessage-length=0
+  -pipe -fmessage-length=0 -std=c++11
 libxpcqm_la_EXTRA_LDFLAGS = \
-  -shrext .dylib -Wl,-framework,Carbon -Wl,-framework,System \
-  -Wl,-framework,XUL
+  -shrext .dylib -Wl,-framework,Carbon -Wl,-framework,System
 libxpcqm_la_EXTRA_LIBS = libxpcqmobjc.a
 
 noinst_LIBRARIES = libxpcqmobjc.a
 libxpcqmobjc_a_SOURCES = XPCNativeWidgetCocoa.cpp
 libxpcqmobjc_a_CXXFLAGS = -ObjC++ $(libxpcqm_la_CXXFLAGS)
-
 
 else
 

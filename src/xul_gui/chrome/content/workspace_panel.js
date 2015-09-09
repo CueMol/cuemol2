@@ -1529,7 +1529,7 @@ ws.onStySaveFileAs = function (aEvent)
     return;
 
   let path = fp.file.path;
-  let res = util.splitFileName2(path, "*.xml");
+  res = util.splitFileName2(path, "*.xml");
   if (res)
     path = res.path;
 
@@ -1606,7 +1606,7 @@ ws.onStyLoadFile = function (aEvent)
     return;
 
   let path = fp.file.path;
-  let res = util.splitFileName2(path, "*.xml");
+  res = util.splitFileName2(path, "*.xml");
   if (res)
     path = res.path;
 

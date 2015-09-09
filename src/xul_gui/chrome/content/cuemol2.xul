@@ -6,6 +6,7 @@
 
 <?xul-overlay href="chrome://cuemol2/content/cuemol2-scripts.xul"?>
 <?xul-overlay href="chrome://cuemol2/content/cuemol2-menus.xul"?>
+<?xul-overlay href="chrome://cuemol2/content/cuemol2-macos-menus.xul"?>
 <?xul-overlay href="chrome://cuemol2/content/topbar/cuemol2-ribbon.xul"?>
 <?xul-overlay href="chrome://cuemol2/content/anim/anim-ribbon.xul"?>
 
@@ -34,9 +35,8 @@
   height = "768"
   persist = "screenX screenY width height"
   fullscreenbutton = "true"
-  onclose = "return gQm2Main.onCloseEvent(event);">
+  onclose = "if (gQm2Main.onCloseEvent(event)) return goQuitApplication();">
 
-  <script src="chrome://cuemol2/content/jquery.js"/>
   <script src="chrome://cuemol2/content/cuemol2-utils.js"/>
   <script src="chrome://cuemol2/content/cuemol2-panels.js"/>
   <script src="chrome://cuemol2/content/shortcut-manager.js"/>

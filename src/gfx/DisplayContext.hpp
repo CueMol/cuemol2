@@ -24,6 +24,7 @@ namespace qsys { class View; }
 namespace gfx {
 
   class Mesh;
+  class AbstDrawElem;
   class DrawElem;
   class AbstractColor;
   class PixelBuffer;
@@ -66,8 +67,14 @@ namespace gfx {
     virtual bool isCurrent() const =0;
     virtual qsys::View *getTargetView() const;
 
+    /// Returns whether the rendering target of this context is a file or not.
     virtual bool isFile() const =0;
+
+    /// Returns whether this context can render pixmap or not.
     virtual bool isRenderPixmap() const;
+
+    /// Returns whether this context support VA/VBO (DrawElem()) method
+    virtual bool isDrawElemSupported() const;
 
     ////////////////
 
@@ -206,7 +213,7 @@ namespace gfx {
     virtual void drawMesh(const Mesh &);
 
     /// Drawing element support (vertex array version)
-    virtual void drawElem(const DrawElem &);
+    virtual void drawElem(const AbstDrawElem &);
 
     ///////////////////////////////
     // Display List support

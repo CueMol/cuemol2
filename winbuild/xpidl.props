@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup
+    Condition="'$(XPIDLBeforeTargets)' == '' and '$(XPIDLAfterTargets)' == '' and '$(ConfigurationType)' != 'Makefile'">
+    <XPIDLBeforeTargets>Midl</XPIDLBeforeTargets>
+    <XPIDLAfterTargets>CustomBuild</XPIDLAfterTargets>
+  </PropertyGroup>
+  <PropertyGroup>
+    <XPIDLDependsOn
+      Condition="'$(ConfigurationType)' != 'Makefile'">_SelectedFiles;$(XPIDLDependsOn)</XPIDLDependsOn>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <XPIDL>
+      <CommandLineTemplate>python $(XULRunnerDir)\sdk\bin\header.py -I $(XULRunnerDir)\idl -I $(SourceDir)\$(ProjectName) --cachedir=. -o %(RootDir)%(Directory)%(Filename).h %(FullPath) 
+ python $(XULRunnerDir)\sdk\bin\typelib.py -I $(XULRunnerDir)\idl -I $(SourceDir)\$(ProjectName) --cachedir=. -o $(XULDeployDir)components\%(Filename).xpt %(FullPath)</CommandLineTemplate>
+      <Outputs>%(RootDir)%(Directory)%(Filename).h;$(XULDeployDir)components\%(Filename).xpt</Outputs>
+    </XPIDL>
+  </ItemDefinitionGroup>
+</Project>

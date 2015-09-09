@@ -33,3 +33,5 @@ pref("webgl.force-enabled", true);
 
 // pref("cuemol2.ui.mouse-momentum-scroll", true);
 
+// Needed due to https://bugzilla.mozilla.org/show_bug.cgi?id=1181977
+pref("browser.hiddenWindowChromeURL", "chrome://cuemol2/content/hiddenWindow.xul");

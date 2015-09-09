@@ -45,10 +45,11 @@ namespace xpcom {
     bool initTextRender();
     void finiTextRender();
 
-  public:
-
-    XPCCueMol();
+  protected:
     virtual ~XPCCueMol();
+
+  public:
+    XPCCueMol();
 
     NS_DECL_ISUPPORTS;
 

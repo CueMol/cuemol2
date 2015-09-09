@@ -41,6 +41,9 @@ runtime_class Ribbon2Renderer extends MainChainRenderer
 
   // Helix properties
 
+  property boolean helix_ribbon => m_bRibbonHelix;
+  default helix_ribbon = false;
+
   property real helix_smooth => m_dHelixSmo;
   default helix_smooth = 3.0;
 
@@ -85,7 +88,7 @@ runtime_class Ribbon2Renderer extends MainChainRenderer
 
   ///////////////////////////
 
-  // Section of helix
+  // Section of helix (cylinder style)
   property object<TubeSection$> helix => redirect(getHelixSection, x) (readonly);
 
   // Section of sheet
@@ -96,6 +99,15 @@ runtime_class Ribbon2Renderer extends MainChainRenderer
 
   // Junction of sheet head
   property object<JctTable$> sheethead => redirect(getSheetHead, x) (readonly);
+
+  // Section of ribbon-style helix
+  property object<TubeSection$> ribhelix => redirect(getRibHelixSection, x) (readonly);
+
+  // Junction of ribbon-style helix head
+  property object<JctTable$> ribhelix_head => redirect(getRibHelixHead, x) (readonly);
+
+  // Junction of ribbon-style helix tail
+  property object<JctTable$> ribhelix_tail => redirect(getRibHelixTail, x) (readonly);
 
   ///////////////////////////
   

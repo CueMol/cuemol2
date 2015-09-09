@@ -16,6 +16,10 @@ if (!("seqpanel" in cuemolui)) {
     panel.mData = new Object();
     panel.mNames = new Object();
 
+    // marker position
+    panel.mMarkRow = null;
+    panel.mMarkPos = null;
+
     panel.onLoad = function ()
     {
       var that = this;
@@ -32,11 +36,24 @@ if (!("seqpanel" in cuemolui)) {
       //////////
 
       this.mCanvas = document.getElementById("seq_canvas");
-      this.mCanvas.addEventListener("click", function(aEvent) {
-        that.onSeqClick(aEvent, false);
+      /*this.mCanvas.addEventListener("click", function(aEvent) {
+	  dd("click called.");
+	  if (aEvent.button!=0)
+	    return; // non-left click
+	  that.onSeqClick(aEvent, false);
+	  }, false);*/
+      this.mCanvas.addEventListener("mousedown", function(aEvent) {
+	  if (aEvent.button!=0)
+	    return; // non-left click
+	  that.onMouseDown(aEvent);
+	}, false);
+      this.mCanvas.addEventListener("mouseup", function(aEvent) {
+	  if (aEvent.button!=0)
+	    return; // non-left click
+	  that.onMouseUp(aEvent);
 	}, false);
       this.mCanvas.addEventListener("contextmenu", function(aEvent) {
-        that.onSeqClick(aEvent, true);
+	  that.showCtxtMenu(aEvent);
 	}, false);
 
       this.mRulerCanvas = document.getElementById("ruler_canvas");
@@ -94,6 +111,9 @@ if (!("seqpanel" in cuemolui)) {
 	if (args.method=="sceneAllCleared" ||
 	    args.method=="sceneLoaded") {
 	  dd("SeqPanel SEM_CHANGED:"+args.srcUID);
+	  let scene = cuemol.getScene(args.srcUID);
+	  that.loadScene(scene);
+	  that.renderSeq();
 	}
 	break;
 	
@@ -145,7 +165,7 @@ if (!("seqpanel" in cuemolui)) {
       let uids = util.toIntArray( aScene.obj_uids );
       let that = this;
       uids.some( function (elem) {
-        // dd("SeqPalen loadscene ID="+elem);
+	  dd("SeqPanel load obj ID="+elem);
         let o = cuemol.getObject(elem);
         if (o)
           that.addMolData(o);
@@ -335,26 +355,49 @@ if (!("seqpanel" in cuemolui)) {
 	}
       }
       
+      if (this.mMarkRow!=null && this.mMarkPos!=null) {
+        // display marker
+        let x = this.mMarkPos * tw;
+        let y = this.mMarkRow * th;
+        let old = ctx.strokeStyle;
+        ctx.strokeStyle = "rgb(255, 0, 0)";
+        ctx.strokeRect(x,y,tw,th);
+        ctx.strokeStyle = old;
+      }
+
     };
 
     panel.renderRuler = function (aLen)
     {
-      var ctx = this.mRulerCanvas.getContext("2d");
-      var tw = this.mTextW;
-
       if (this.mRulerLen && this.mRulerLen>aLen)
         return;
       
       var ntics = this.mRulerLen = aLen;
       
+      var ctx = this.mRulerCanvas.getContext("2d");
+      var dpr = window.devicePixelRatio;
+
+      var tw = this.mTextW;
       this.mRulerCanvas.width = tw * ntics;
-      // this.mRulerCanvas.width = 1000;
       this.mRulerCanvas.height = this.mRulerHeight;
+
+      /*
+      var cw = this.mRulerCanvas.width;
+      var ch = this.mRulerCanvas.height;
+      this.mRulerCanvas.width = cw*dpr;
+      this.mRulerCanvas.height = ch*dpr;
+      this.mRulerCanvas.style.width = cw + 'px';
+      this.mRulerCanvas.style.height = ch + 'px';
       dd("Ruler width: "+this.mRulerCanvas.width);
+      dd("Ruler height: "+this.mRulerCanvas.height);
+      dd("Ruler style.width: "+this.mRulerCanvas.style.width);
+      dd("Ruler style.height: "+this.mRulerCanvas.style.height);
+      */
 
       var i;
       var y=0;
       // dd("********** ruler ntics = "+ntics);
+      // ctx.scale(dpr,dpr);
       ctx.beginPath();
       for (i=0; i<ntics; ++i) {
         var x = (i+0.5)*tw;
@@ -366,8 +409,8 @@ if (!("seqpanel" in cuemolui)) {
 
       ctx.font = "10px san-serif";
       for (i=5; i<ntics; i+=5){
-        mtx = ctx.measureText(i);
-        var x = (i+0.5)*tw - mtx.width/2.0;
+        let mtx = ctx.measureText(i);
+        let x = (i+0.5)*tw - mtx.width/2.0;
         ctx.fillText(i, x, 0+10);
       }
     };
@@ -392,6 +435,14 @@ if (!("seqpanel" in cuemolui)) {
       var iy = Math.floor( y / this.mTextH );
       //dd("seq click: "+ix+", "+iy+" btn="+aEvent.button);
 
+      var res = this.getResidueByPos(ix, iy);
+      res.x = x;
+      res.y = y;
+      return res;
+    }
+
+    panel.getResidueByPos = function (ix, iy)
+    {
       if (!this.mRow||!this.mRow[iy])
         return null;
       
@@ -405,24 +456,7 @@ if (!("seqpanel" in cuemolui)) {
       var res = mol.getResidue(chn, ix.toString());
       if (!res) return null;
 
-      return {"mol": mol, "res": res, "x": x, "y": y};
-    }
-
-    panel.onSeqClick = function (aEvent, aCtxtMenu)
-    {
-      var r = this.getResidueByEvent(aEvent.clientX, aEvent.clientY);
-      if (!r)
-        return;
-      
-      if (aCtxtMenu) {
-        this.mClickX = aEvent.clientX;
-        this.mClickY = aEvent.clientY;
-        this.showCtxtMenu(r.mol, r.res, aEvent);
-      }
-      else {
-        this.toggleResidSel(r.mol, r.res);
-        this.centerAt(r.res);
-      }
+      return {"mol": mol, "chain": chn, "res": res, "ix": ix, "iy": iy};
     }
 
     panel.toggleResidSel = function (mol, res)
@@ -457,6 +491,7 @@ if (!("seqpanel" in cuemolui)) {
       
       scene.commitUndoTxn();
       // EDIT TXN END //
+
     };
 
     panel.centerAt = function (aRes)
@@ -467,8 +502,13 @@ if (!("seqpanel" in cuemolui)) {
         view.setViewCenter(pos);
     };
 
+    panel.selAround = function (aRes, aByres, aDist)
+    {
+      let mol = aRes.mol;
+      cuemolui.molSelAround(mol, aDist, aByres);
+    };
 
-    panel.showCtxtMenu = function (mol, res, aEvent)
+    panel.showCtxtMenu = function (aEvent)
     {
       var scene = cuemol.getScene(this.mTgtSceneID);
       if (!scene) return;
@@ -476,13 +516,22 @@ if (!("seqpanel" in cuemolui)) {
       var x = aEvent.clientX;
       var y = aEvent.clientY;
 
+      var r = this.getResidueByEvent(x, y);
+      if (!r)
+        return;
+      
+      var mol = r.mol;
+      var res = r.res
+
+      this.mClickX = x;
+      this.mClickY = y;
+
       dd("SeqPanel.showCtctMenu> popup at ("+x+", "+y+")");
       var label = this.mNames[mol.uid] + " " + res.chainName + res.sindex +" "+res.name;
       this.mCtxtMenuResLabel.label = label;
       this.mCtxtMenu.openPopup(null, //this.mCanvas,
                                "overlap", x, y,
                                true, false, aEvent);
-      
     };
 
     panel.onCtxtMenu = function (aEvent)
@@ -508,7 +557,158 @@ if (!("seqpanel" in cuemolui)) {
         cuemolui.molSelInvert(r.mol);
         break;
 
+      case "seq-ctm-arbyres-3":
+	this.selAround(r, true, 3);
+	break;
+      case "seq-ctm-arbyres-5":
+	this.selAround(r, true, 5);
+	break;
+      case "seq-ctm-arbyres-7":
+	this.selAround(r, true, 7);
+	break;
+      case "seq-ctm-arbyres-10":
+	this.selAround(r, true, 10);
+	break;
+
+      case "seq-ctm-arnd-3":
+	this.selAround(r, false, 3);
+	break;
+      case "seq-ctm-arnd-5":
+	this.selAround(r, false, 5);
+	break;
+      case "seq-ctm-arnd-7":
+	this.selAround(r, false, 7);
+	break;
+      case "seq-ctm-arnd-10":
+	this.selAround(r, false, 10);
+	break;
       }      
+
+      // move the marker
+      this.mMarkRow = r.iy;
+      this.mMarkPos = r.ix;
+    };
+
+    panel.onMouseDown = function (aEvent)
+    {
+      aEvent.target.setCapture();
+      this.mPrevRes = this.getResidueByEvent(aEvent.clientX, aEvent.clientY);
+      
+      // var that = this;
+      // aEvent.target.addEventListener("mousemove", that.onMouseMoved, false);
+
+      if (! aEvent.shiftKey) {
+        // move the marker
+        this.mMarkRow = this.mPrevRes.iy;
+        this.mMarkPos = this.mPrevRes.ix;
+        this.renderSeq();
+      }
+      
+      dd("Mouse down called; prev_res="+this.mPrevRes);
+    };
+
+    panel.onMouseUp = function (aEvent)
+    {
+      // var that = this;
+      // aEvent.target.removeEventListener("mousemove", that.onMouseMoved, false);
+
+      var res = this.getResidueByEvent(aEvent.clientX, aEvent.clientY);
+      dd("Mouse up called; res="+res);
+
+      if (!this.mPrevRes || !res) {
+	return;
+      }
+
+      if (this.mPrevRes.mol.uid!=res.mol.uid) {
+	dd("seqpanel mouseup mol mismatch");
+	return;
+      }
+
+      if (this.mPrevRes.chain!=res.chain) {
+	dd("seqpanel mouseup mol chain mismatch");
+	return;
+      }
+
+      if (this.mPrevRes.res.sindex==res.res.sindex) {
+	dd("seqpanel mouseup res match --> click");
+        if (aEvent.shiftKey) {
+          dd("seqpanel SHIFT click!!!");
+          if (this.mMarkPos!=null && this.mMarkRow!=null) {
+            this.mPrevRes = this.getResidueByPos(this.mMarkPos, this.mMarkRow);
+            dd("Res=" + debug.dumpObjectTree(res));
+            dd("PrevRes=" + debug.dumpObjectTree(this.mPrevRes));
+            if (this.mPrevRes.chain==res.chain) {
+              // move the marker
+              this.mMarkRow = res.iy;
+              this.mMarkPos = res.ix;
+              // range select (no toggle)
+              this.rangeSelect(res, false);
+            }
+          }
+        }
+        else {
+          // move the marker
+          this.mMarkRow = res.iy;
+          this.mMarkPos = res.ix;
+          // change sel (and redraw)
+          this.toggleResidSel(res.mol, res.res);
+          this.centerAt(res.res);
+        }
+	return;
+      }
+
+      dd("seqpanel mouseup range select");
+      
+      // move the marker
+      this.mMarkRow = res.iy;
+      this.mMarkPos = res.ix;
+      // change sel (toggle mode, redraw seq)
+      this.rangeSelect(res, true);
+    };
+
+    panel.rangeSelect = function (res, bToggle)
+    {
+      var scene = cuemol.getScene(this.mTgtSceneID);
+      if (!scene) return;
+      var mol = res.mol;
+ 
+      let rrs = cuemol.createObj("ResidRangeSet");
+      rrs.fromSel(mol, mol.sel);
+  
+      let selstr = res.res.chainName + "." +
+        res.res.sindex + ":" + this.mPrevRes.res.sindex +
+          ".*";
+      dd("seqpanel> rangeSelect selstr="+selstr);
+      let addsel = cuemol.makeSel(selstr);
+
+      if (bToggle && rrs.contains(this.mPrevRes.res))
+        rrs.remove(mol, addsel);
+      else
+        rrs.append(mol, addsel);
+  
+      let sel = rrs.toSel(mol);
+
+      // EDIT TXN START //
+      scene.startUndoTxn("Toggle select atom(s)");
+      
+      try {
+        if (sel===null) {
+          throw "cannot compile selstr:"+selstr;
+        }
+        mol.sel = sel;
+      }
+      catch(e) {
+        dd("SetSel error");
+        debug.exception(e);
+      }
+      
+      scene.commitUndoTxn();
+      // EDIT TXN END //
+    };
+
+    panel.onMouseMoved = function (aEvent)
+    {
+      //dd("Mouse moved called.");
     };
 
   } )();

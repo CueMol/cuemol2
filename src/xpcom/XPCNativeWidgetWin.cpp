@@ -4,7 +4,7 @@
 // $Id: XPCNativeWidgetWin.cpp,v 1.11 2011/02/20 09:34:26 rishitani Exp $
 //
 
-#include <common.h>
+#include "xpcom.hpp"
 
 #include "XPCNativeWidgetWin.hpp"
 

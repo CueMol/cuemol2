@@ -6,8 +6,6 @@
 #define __STDC_LIMIT_MACROS
 #define __STDC_CONSTANT_MACROS
 
-#include <common.h>
-
 #include "xpcom.hpp"
 #include <nsIObserverService.h>
 
@@ -46,9 +44,6 @@
 #ifdef USE_XMLRPC
 #include <xmlrpc_bridge/xrbr.hpp>
 #endif
-
-gfx::TextRenderImpl *createTextRender();
-void destroyTextRender(void *pTR);
 
 //#define _num_to_str(num) #num
 //#define num_to_str(num) _num_to_str(num)
@@ -160,7 +155,11 @@ namespace importers {
 
 using namespace xpcom;
 
+#ifdef NS_IMPL_ISUPPORTS
+NS_IMPL_ISUPPORTS(XPCCueMol, qICueMol, nsIObserver)
+#else
 NS_IMPL_ISUPPORTS2(XPCCueMol, qICueMol, nsIObserver)
+#endif
 
 // singleton instance of XPCCueMol
 XPCCueMol *gpXPCCueMol;
@@ -190,7 +189,7 @@ XPCCueMol *XPCCueMol::getInstance()
 
 NS_IMETHODIMP
 XPCCueMol::Observe(nsISupports* aSubject, const char* aTopic,
-                   const PRUnichar* aData)
+		   const char16_t * aData)
 {
   // dumpWrappers();
   return NS_OK;
@@ -299,7 +298,7 @@ NS_IMETHODIMP XPCCueMol::Fini()
 #endif
 
   //finiTextRender();
-  destroyTextRender(m_pTR);
+  sysdep::destroyTextRender(m_pTR);
 
   MB_DPRINTLN("=== Cleaning up the unreleased wrappers... ===");
   for (i=0; i<m_pool.size(); ++i) {
@@ -348,11 +347,7 @@ NS_IMETHODIMP XPCCueMol::Fini()
 
 bool XPCCueMol::initTextRender()
 {
-  //ThebesTextRender *pTTR = new ThebesTextRender;
-  //pTTR->setupFont(12.0, "sans-serif", "normal", "normal");
-  //pTTR->setupFont(20.0, "Times New Roman", FONT_STYLE_NORMAL, FONT_WEIGHT_NORMAL);
-
-  gfx::TextRenderImpl *pTR = createTextRender();
+  gfx::TextRenderImpl *pTR = (gfx::TextRenderImpl *) sysdep::createTextRender();
   gfx::TextRenderManager *pTRM = gfx::TextRenderManager::getInstance();
   pTRM->setImpl(pTR);
 
@@ -506,6 +501,7 @@ XPCObjWrapper *XPCCueMol::createWrapper()
 
 void XPCCueMol::notifyDestr(int nind)
 {
+  //MB_DPRINTLN("======\ndestroy obj ind=%d, dbgmsg=%s\n======", nind, m_pool[nind].dbgmsg.c_str());
   m_pool[nind].ptr = NULL;
 
 #ifdef MB_DEBUG
@@ -520,7 +516,11 @@ void XPCCueMol::setWrapperDbgMsg(int nind, const char *dbgmsg)
 #ifdef MB_DEBUG
   if (m_pool[nind].ptr==NULL)
     return; // unused wrapper
-  m_pool[nind].dbgmsg = dbgmsg;
+  
+  XPCObjWrapper *pWr = m_pool[nind].ptr;
+  LString clsnm = typeid(*(pWr->getWrappedObj())).name();
+  m_pool[nind].dbgmsg = LString("Wrapper for ["+clsnm+"] created at:\n");
+  m_pool[nind].dbgmsg += dbgmsg;
 #endif
 }
 

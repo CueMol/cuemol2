@@ -15,7 +15,12 @@ var appStartup = Cc['@mozilla.org/toolkit/app-startup;1'].getService(Ci.nsIAppSt
 
 const XPCCUEMOL_CID = "@cuemol.org/XPCCueMol";
 if (!(XPCCUEMOL_CID in Cc)) {
-  alert("FATAL ERROR!!\nCueMol XPCOM component is not registered!!");
+  try {
+    dump("FATAL ERROR!!\nCueMol XPCOM component is not registered!!\n");
+    alert("FATAL ERROR!!\nCueMol XPCOM component is not registered!!");
+  }
+  catch (e) {
+  }
   appStartup.quit(appStartup.eForceQuit);
 }
 

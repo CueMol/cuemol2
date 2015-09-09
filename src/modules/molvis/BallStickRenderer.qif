@@ -36,6 +36,16 @@ runtime_class BallStickRenderer extends MolRenderer
   property object<AbstractColor$> ringcolor => m_ringcol;
   default ringcolor = gfx::SolidColor::createRGB(1.0, 1.0, 0.75);
 
+  /// OpenGL Sphere rendering mode
+  enumdef glrender_mode {
+    default = molvis::BallStickRenderer::REND_DEFAULT;
+    shader = molvis::BallStickRenderer::REND_SHADER;
+    vbo = molvis::BallStickRenderer::REND_VBO;
+    glu = molvis::BallStickRenderer::REND_GLU;
+  }
+  property enum glrender_mode => redirect(getGLRenderMode, setGLRenderMode);
+  default glrender_mode = "default";
+
 };
 
 #endif // BALL_STICK_RENDERER_QIF

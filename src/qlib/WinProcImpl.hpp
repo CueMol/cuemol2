@@ -2,6 +2,8 @@
 // Win32 thread/process manager implementation
 //
 
+namespace qlib {
+
 class WinInThread : public ProcInThread
 {
 public:
@@ -115,4 +117,6 @@ public:
   }
 
 };
+
+} // namespace qlib
 

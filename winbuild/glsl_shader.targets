@@ -1,0 +1,82 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <PropertyPageSchema
+      Include="$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml" />
+    <AvailableItemName
+      Include="glslshader">
+      <Targets>_glslshader</Targets>
+    </AvailableItemName>
+  </ItemGroup>
+  <UsingTask
+    TaskName="glslshader"
+    TaskFactory="XamlTaskFactory"
+    AssemblyName="Microsoft.Build.Tasks.v4.0, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <Task>$(MSBuildThisFileDirectory)$(MSBuildThisFileName).xml</Task>
+  </UsingTask>
+  <Target
+    Name="_glslshader"
+    BeforeTargets="$(glslshaderBeforeTargets)"
+    AfterTargets="$(glslshaderAfterTargets)"
+    Condition="'@(glslshader)' != ''"
+    DependsOnTargets="$(glslshaderDependsOn);ComputeglslshaderOutput"
+    Outputs="%(glslshader.Outputs)"
+    Inputs="%(glslshader.Identity);%(glslshader.AdditionalDependencies);$(MSBuildProjectFile)">
+    <ItemGroup
+      Condition="'@(SelectedFiles)' != ''">
+      <glslshader
+        Remove="@(glslshader)"
+        Condition="'%(Identity)' != '@(SelectedFiles)'" />
+    </ItemGroup>
+    <ItemGroup>
+      <glslshader_tlog
+        Include="%(glslshader.Outputs)"
+        Condition="'%(glslshader.Outputs)' != '' and '%(glslshader.ExcludedFromBuild)' != 'true'">
+        <Source>@(glslshader, '|')</Source>
+      </glslshader_tlog>
+    </ItemGroup>
+    <Message
+      Importance="High"
+      Text="%(glslshader.ExecutionDescription)" />
+    <WriteLinesToFile
+      Condition="'@(glslshader_tlog)' != '' and '%(glslshader_tlog.ExcludedFromBuild)' != 'true'"
+      File="$(TLogLocation)$(ProjectName).write.1u.tlog"
+      Lines="^%(glslshader_tlog.Source);@(glslshader_tlog-&gt;'%(Fullpath)')"
+      Encoding="Unicode" />
+    <glslshader
+      Condition="'@(glslshader)' != '' and '%(glslshader.ExcludedFromBuild)' != 'true'"
+      CommandLineTemplate="%(glslshader.CommandLineTemplate)"
+      AdditionalOptions="%(glslshader.AdditionalOptions)"
+      Inputs="%(glslshader.Identity)" />
+  </Target>
+  <PropertyGroup>
+    <ComputeLinkInputsTargets>
+            $(ComputeLinkInputsTargets);
+            ComputeglslshaderOutput;
+          </ComputeLinkInputsTargets>
+    <ComputeLibInputsTargets>
+            $(ComputeLibInputsTargets);
+            ComputeglslshaderOutput;
+          </ComputeLibInputsTargets>
+  </PropertyGroup>
+  <Target
+    Name="ComputeglslshaderOutput"
+    Condition="'@(glslshader)' != ''">
+    <ItemGroup>
+      <glslshaderDirsToMake
+        Condition="'@(glslshader)' != '' and '%(glslshader.ExcludedFromBuild)' != 'true'"
+        Include="%(glslshader.Outputs)" />
+      <Link
+        Include="%(glslshaderDirsToMake.Identity)"
+        Condition="'%(Extension)'=='.obj' or '%(Extension)'=='.res' or '%(Extension)'=='.rsc' or '%(Extension)'=='.lib'" />
+      <Lib
+        Include="%(glslshaderDirsToMake.Identity)"
+        Condition="'%(Extension)'=='.obj' or '%(Extension)'=='.res' or '%(Extension)'=='.rsc' or '%(Extension)'=='.lib'" />
+      <ImpLib
+        Include="%(glslshaderDirsToMake.Identity)"
+        Condition="'%(Extension)'=='.obj' or '%(Extension)'=='.res' or '%(Extension)'=='.rsc' or '%(Extension)'=='.lib'" />
+    </ItemGroup>
+    <MakeDir
+      Directories="@(glslshaderDirsToMake-&gt;'%(RootDir)%(Directory)')" />
+  </Target>
+</Project>

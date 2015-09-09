@@ -75,7 +75,7 @@ void MolAtomRenderer::render(DisplayContext *pdl)
   }
 
   // render atoms (e.g. CPK model)
-    // TO DO: cache the result of iteration (???)
+  // TO DO: cache the result of iteration (???)
   AtomIterator iter(rCliMol, getSelection());
     
   bool bbonded;

@@ -50,6 +50,8 @@
 #endif 
 
 
+namespace qlib {
+
 class PosixInThread : public ProcInThread
 {
 public:
@@ -266,23 +268,23 @@ public:
   virtual void kill(ProcInThread *pAData)
   {
     PosixInThread *pData = (PosixInThread *) pAData;
-    pid_t pid = pData->m_childpid;
+    pid_t childpid = pData->m_childpid;
 
-    bool result = ::kill(pid, SIGTERM) == 0;
+    bool result = ::kill(childpid, SIGTERM) == 0;
 
     //if (result && wait) {
     if (result) {
       int tries = 60;
       // The process may not end immediately due to pending I/O
       while (tries-- > 0) {
-	int pid = HANDLE_EINTR( ::waitpid(pid, NULL, WNOHANG) );
-	if (pid == pid)
+	int pid = HANDLE_EINTR( ::waitpid(childpid, NULL, WNOHANG) );
+	if (pid == childpid)
 	  break;
 
 	sleep(1);
       }
 
-      result = ::kill(pid, SIGKILL) == 0;
+      result = ::kill(childpid, SIGKILL) == 0;
     }
 
     if (!result)
@@ -291,3 +293,4 @@ public:
 
 };
 
+}

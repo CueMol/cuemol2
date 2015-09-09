@@ -32,8 +32,6 @@ namespace qsys {
     DisplayContext *m_pdl;
     DisplayContext *m_phl;
 
-    bool m_bShaderAlpha;
-
   public:
 
     DispListRenderer();
@@ -77,6 +75,14 @@ namespace qsys {
 
     /// Style event listener
     virtual void styleChanged(StyleEvent &);
+    
+  private:
+    bool m_bShaderAlpha;
+
+  public:
+    bool useShaderAlpha() const {
+      return m_bShaderAlpha;
+    }
   };
 
 }

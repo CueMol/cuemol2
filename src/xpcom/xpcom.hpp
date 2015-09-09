@@ -2,6 +2,9 @@
 // XPCOM-related include files
 //
 
+#ifdef _DEBUG
+#define MB_DEBUG
+#endif
 
 #ifdef WINVER
 #  undef WINVER
@@ -19,6 +22,7 @@
 #  undef _X86_
 #endif
 
+#include <mozilla/Char16.h>
 #include <nsCOMPtr.h>
 #include <nsMemory.h>
 #include <nsISupportsUtils.h>
@@ -31,4 +35,5 @@
 #endif
 #include <nsStringAPI.h>
 
+#include <common.h>
 

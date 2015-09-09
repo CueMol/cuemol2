@@ -1,0 +1,238 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{17ABBAFF-4E0B-4CAB-AE59-B5FC76A4E285}</ProjectGuid>
+    <RootNamespace>qlib</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="..\mcwrapgen3.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\common.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\common.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>12.0.21005.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(XULDeployDir)\</OutDir>
+    <IntDir>$(Configuration)\</IntDir>
+    <LinkIncremental>true</LinkIncremental>
+    <GenerateManifest>false</GenerateManifest>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(XULDeployDir)\</OutDir>
+    <IntDir>$(Configuration)\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+    <GenerateManifest>false</GenerateManifest>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;QLIB_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <BrowseInformation>true</BrowseInformation>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <OutputFile>$(XULDeployDir)\$(ProjectName).dll</OutputFile>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;QLIB_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <OutputFile>$(XULDeployDir)\$(ProjectName).dll</OutputFile>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\qlib\ArrayIOImpl.cpp" />
+    <ClCompile Include="..\..\src\qlib\Base64Stream.cpp" />
+    <ClCompile Include="..\..\src\qlib\BinStream.cpp" />
+    <ClCompile Include="..\..\src\qlib\ClassRegistry.cpp" />
+    <ClCompile Include="..\..\src\qlib\EventManager.cpp" />
+    <ClCompile Include="..\..\src\qlib\ExpatInStream.cpp" />
+    <ClCompile Include="..\..\src\qlib\GzipStream.cpp" />
+    <ClCompile Include="..\..\src\qlib\LChar.cpp" />
+    <ClCompile Include="..\..\src\qlib\LClass.cpp" />
+    <ClCompile Include="..\..\src\qlib\LDataSrcContainer.cpp" />
+    <ClCompile Include="..\..\src\qlib\LDOM2Stream.cpp" />
+    <ClCompile Include="..\..\src\qlib\LDOM2Tree.cpp" />
+    <ClCompile Include="..\..\src\qlib\LineStream.cpp" />
+    <ClCompile Include="..\..\src\qlib\LLogEvent.cpp" />
+    <ClCompile Include="..\..\src\qlib\LMsgLog.cpp" />
+    <ClCompile Include="..\..\src\qlib\LProcMgr.cpp" />
+    <ClCompile Include="..\..\src\qlib\LPropSupport.cpp" />
+    <ClCompile Include="..\..\src\qlib\LRcObject.cpp" />
+    <ClCompile Include="..\..\src\qlib\LRegExpr.cpp" />
+    <ClCompile Include="..\..\src\qlib\LScrMatrix4D.cpp" />
+    <ClCompile Include="..\..\src\qlib\LScrObjects.cpp" />
+    <ClCompile Include="..\..\src\qlib\LScrQuat.cpp" />
+    <ClCompile Include="..\..\src\qlib\LScrRangeSet.cpp" />
+    <ClCompile Include="..\..\src\qlib\LScrSmartPtr.cpp" />
+    <ClCompile Include="..\..\src\qlib\LScrTime.cpp" />
+    <ClCompile Include="..\..\src\qlib\LScrVector4D.cpp" />
+    <ClCompile Include="..\..\src\qlib\LString.cpp" />
+    <ClCompile Include="..\..\src\qlib\LThread.cpp" />
+    <ClCompile Include="..\..\src\qlib\LUnicode.cpp" />
+    <ClCompile Include="..\..\src\qlib\LVariant.cpp" />
+    <ClCompile Include="..\..\src\qlib\LWrapper.cpp" />
+    <ClCompile Include="..\..\src\qlib\MatrixHelper.cpp" />
+    <ClCompile Include="..\..\src\qlib\NamedObject.cpp" />
+    <ClCompile Include="..\..\src\qlib\ObjectManager.cpp" />
+    <ClCompile Include="..\..\src\qlib\PipeStream.cpp" />
+    <ClCompile Include="..\..\src\qlib\PosixFileStream.cpp" />
+    <ClCompile Include="..\..\src\qlib\PrintStream.cpp" />
+    <ClCompile Include="..\..\src\qlib\qlib.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\StringStream.cpp" />
+    <ClCompile Include="..\..\src\qlib\Utils.cpp" />
+    <ClCompile Include="..\..\src\qlib\VectorHelper.cpp" />
+    <ClCompile Include="..\..\src\qlib\XmlInStream.cpp" />
+    <ClCompile Include="..\..\src\qlib\ByteArray_wrap.cpp" />
+    <ClCompile Include="..\..\src\qlib\LScrCallBack_wrap.cpp" />
+    <ClCompile Include="..\..\src\qlib\Matrix_wrap.cpp" />
+    <ClCompile Include="..\..\src\qlib\MsgLog_wrap.cpp" />
+    <ClCompile Include="..\..\src\qlib\ProcessManager_wrap.cpp" />
+    <ClCompile Include="..\..\src\qlib\qlib_loader.cpp" />
+    <ClCompile Include="..\..\src\qlib\Quat_wrap.cpp" />
+    <ClCompile Include="..\..\src\qlib\RangeSet_wrap.cpp" />
+    <ClCompile Include="..\..\src\qlib\RegExpr_wrap.cpp" />
+    <ClCompile Include="..\..\src\qlib\TimeValue_wrap.cpp" />
+    <ClCompile Include="..\..\src\qlib\Vector_wrap.cpp" />
+    <ClCompile Include="..\..\src\pcre\get.c">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">POSIX_MALLOC_THRESHOLD=10;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </PrecompiledHeader>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">POSIX_MALLOC_THRESHOLD=10;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\src\pcre\maketables.c">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">POSIX_MALLOC_THRESHOLD=10;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </PrecompiledHeader>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">POSIX_MALLOC_THRESHOLD=10;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\src\pcre\pcre.c">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">POSIX_MALLOC_THRESHOLD=10;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </PrecompiledHeader>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">POSIX_MALLOC_THRESHOLD=10;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\src\pcre\study.c">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">POSIX_MALLOC_THRESHOLD=10;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </PrecompiledHeader>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">POSIX_MALLOC_THRESHOLD=10;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\src\expat\xmlparse.c">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">COMPILED_FROM_DSP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </PrecompiledHeader>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">COMPILED_FROM_DSP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\src\expat\xmlrole.c">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">COMPILED_FROM_DSP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </PrecompiledHeader>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">COMPILED_FROM_DSP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\src\expat\xmltok.c">
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">COMPILED_FROM_DSP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </PrecompiledHeader>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">COMPILED_FROM_DSP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\src\common.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <mcwrapgen3 Include="..\..\src\qlib\ByteArray.qif" />
+    <mcwrapgen3 Include="..\..\src\qlib\LScrCallBack.qif" />
+    <mcwrapgen3 Include="..\..\src\qlib\LScrObject.qif" />
+    <mcwrapgen3 Include="..\..\src\qlib\Matrix.qif" />
+    <mcwrapgen3 Include="..\..\src\qlib\MsgLog.qif" />
+    <mcwrapgen3 Include="..\..\src\qlib\ProcessManager.qif" />
+    <mcwrapgen3 Include="..\..\src\qlib\Quat.qif" />
+    <mcwrapgen3 Include="..\..\src\qlib\RangeSet.qif" />
+    <mcwrapgen3 Include="..\..\src\qlib\RegExpr.qif" />
+    <mcwrapgen3 Include="..\..\src\qlib\TimeValue.qif" />
+    <mcwrapgen3 Include="..\..\src\qlib\Vector.qif" />
+  </ItemGroup>
+  <ItemGroup>
+    <mcw_loader Include="..\..\src\qlib\qlib.moddef" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\zlib\zlib.vcxproj">
+      <Project>{f76f5626-feaf-46f1-8f81-e60cbcb3320d}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="..\mcwrapgen3.targets" />
+  </ImportGroup>
+</Project>

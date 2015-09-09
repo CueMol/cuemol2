@@ -67,6 +67,9 @@ namespace qlib {
 
   };
 
+  LString QLIB_API getPropsJSONImpl(LScriptable *pObj);
+
+
 }
 
 #endif // __QLIB_SCR_OBJECT_HPP__

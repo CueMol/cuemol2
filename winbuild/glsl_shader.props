@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup
+    Condition="'$(glslshaderBeforeTargets)' == '' and '$(glslshaderAfterTargets)' == '' and '$(ConfigurationType)' != 'Makefile'">
+    <glslshaderBeforeTargets>Midl</glslshaderBeforeTargets>
+    <glslshaderAfterTargets>CustomBuild</glslshaderAfterTargets>
+  </PropertyGroup>
+  <PropertyGroup>
+    <glslshaderDependsOn
+      Condition="'$(ConfigurationType)' != 'Makefile'">_SelectedFiles;$(glslshaderDependsOn)</glslshaderDependsOn>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <glslshader>
+      <CommandLineTemplate>mkdir $(XULDeployDir)\data\shaders
+copy /Y %(FullPath) $(XULDeployDir)\data\shaders\
+</CommandLineTemplate>
+      <Outputs>$(XULDeployDir)\data\shaders\%(Filename)%(Extension)</Outputs>
+    </glslshader>
+  </ItemDefinitionGroup>
+</Project>

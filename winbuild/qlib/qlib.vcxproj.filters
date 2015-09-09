@@ -1,0 +1,256 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="ソース ファイル">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="ヘッダー ファイル">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="リソース ファイル">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+    <Filter Include="QIF source">
+      <UniqueIdentifier>{7d99fd3a-6318-4026-abd5-dbf88241ce7b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="QIF wrapper">
+      <UniqueIdentifier>{0a4d8cb3-72e7-412e-83be-390af89b8bd1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="pcre">
+      <UniqueIdentifier>{4409d7c1-56f7-42b2-8bfb-acaa79999336}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="expat">
+      <UniqueIdentifier>{f19c05eb-8150-4761-bcc9-74b75af77cde}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\qlib\ArrayIOImpl.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\Base64Stream.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\BinStream.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\ClassRegistry.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\EventManager.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\ExpatInStream.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\GzipStream.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\LChar.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\LClass.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\LDataSrcContainer.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\LDOM2Stream.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\LDOM2Tree.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\LineStream.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\LLogEvent.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\LMsgLog.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\LProcMgr.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\LPropSupport.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\LRcObject.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\LRegExpr.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\LScrMatrix4D.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\LScrObjects.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\LScrQuat.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\LScrRangeSet.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\LScrSmartPtr.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\LScrTime.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\LScrVector4D.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\LString.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\LUnicode.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\LVariant.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\LWrapper.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\MatrixHelper.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\NamedObject.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\ObjectManager.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\PipeStream.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\PosixFileStream.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\PrintStream.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\qlib.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\StringStream.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\Utils.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\VectorHelper.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\XmlInStream.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\ByteArray_wrap.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\LScrCallBack_wrap.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\Matrix_wrap.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\MsgLog_wrap.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\ProcessManager_wrap.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\qlib_loader.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\Quat_wrap.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\RangeSet_wrap.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\RegExpr_wrap.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\TimeValue_wrap.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\Vector_wrap.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\pcre\get.c">
+      <Filter>pcre</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\pcre\maketables.c">
+      <Filter>pcre</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\pcre\pcre.c">
+      <Filter>pcre</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\pcre\study.c">
+      <Filter>pcre</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\expat\xmlparse.c">
+      <Filter>expat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\expat\xmlrole.c">
+      <Filter>expat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\expat\xmltok.c">
+      <Filter>expat</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qlib\LThread.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\src\common.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <mcwrapgen3 Include="..\..\src\qlib\ByteArray.qif">
+      <Filter>QIF source</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qlib\LScrCallBack.qif">
+      <Filter>QIF source</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qlib\LScrObject.qif">
+      <Filter>QIF source</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qlib\Matrix.qif">
+      <Filter>QIF source</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qlib\MsgLog.qif">
+      <Filter>QIF source</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qlib\ProcessManager.qif">
+      <Filter>QIF source</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qlib\Quat.qif">
+      <Filter>QIF source</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qlib\RangeSet.qif">
+      <Filter>QIF source</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qlib\RegExpr.qif">
+      <Filter>QIF source</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qlib\TimeValue.qif">
+      <Filter>QIF source</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qlib\Vector.qif">
+      <Filter>QIF source</Filter>
+    </mcwrapgen3>
+  </ItemGroup>
+  <ItemGroup>
+    <mcw_loader Include="..\..\src\qlib\qlib.moddef">
+      <Filter>QIF source</Filter>
+    </mcw_loader>
+  </ItemGroup>
+</Project>

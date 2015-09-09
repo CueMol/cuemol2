@@ -4,16 +4,8 @@
 //    fragment shader
 //
 
-#version 120
-
-/*
-void main(void)
-{
-  gl_FragColor=gl_Color;
-  //gl_FragColor = vec4(1,1,0,1);
-}
-*/
-
+//#version 140
+//#extension GL_ARB_compatibility : enable
 
 // for fog calc
 varying float FogFragCoord; 

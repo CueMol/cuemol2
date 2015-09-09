@@ -161,7 +161,7 @@ LString LScrObjBase::getPropTypeName(const LString &propnm) const
 
   PropSpec spec;
   bool res = getPropSpecImpl(propnm, &spec);
-  if (!res) return false;
+  if (!res) return LString();
   
   return spec.type_name;
 }
@@ -621,3 +621,129 @@ void LSingletonScrObject::destruct()
 //{
 //}
 
+////////////////////////////////
+
+  using qlib::LString;
+  using qlib::LScriptable;
+
+namespace qlib {
+
+  LString getPropsJSONImpl(qlib::LScriptable *pObj)
+  {
+    std::set<LString> nameset;
+    pObj->getPropNames(nameset);
+
+    LString rval;
+    //return rval;
+    rval += "[\n";
+
+    std::set<LString>::const_iterator iter = nameset.begin();
+    std::set<LString>::const_iterator end = nameset.end();
+    for (bool bfirst=true; iter!=end; ++iter) {
+
+      if (!bfirst)
+        rval += ",\n";
+
+      // TO DO: ignore property generating errors in getProp()
+
+      rval += "{";
+
+      const LString &key = *iter;
+      qlib::PropSpec spec;
+      if ( !pObj->getPropSpecImpl(key, &spec) ) {
+        MB_DPRINTLN("XPCObjWrapper::getPropsJSON> "
+                    "Fatal error, prop %s is not found", key.c_str());
+        continue;
+      }
+
+      const LString &tn = spec.type_name;
+      rval += "\"name\": \""+key+"\",\n";
+      rval += LString("\"readonly\": ") + LString::fromBool(spec.bReadOnly) + ",\n";
+      rval += LString("\"hasdefault\": ") + LString::fromBool(spec.bHasDefault) + ",\n";
+      if (spec.bHasDefault) {
+        bool bIsDef = pObj->isPropDefault(key);
+        rval += LString("\"isdefault\": ") + LString::fromBool(bIsDef) + ",\n";
+      }
+
+      if (!tn.startsWith("object")) {
+        rval += "\"type\": \""+tn+"\",\n";
+
+        if (tn.equals("boolean")) {
+          bool v;
+          pObj->getPropBool(key, v);
+          rval += LString("\"value\": ") + LString::fromBool(v) + "\n";
+        }
+        else if (tn.equals("integer")) {
+          int v;
+          pObj->getPropInt(key, v);
+          rval += LString::format("\"value\": %d\n", v);
+        }
+        else if (tn.equals("real")) {
+          double v;
+          pObj->getPropReal(key, v);
+          rval += LString::format("\"value\": %f\n", v);
+        }
+        else if (tn.equals("string")) {
+          LString v;
+          pObj->getPropStr(key, v);
+          rval += "\"value\": \""+v.escapeQuots()+"\"\n";
+        }
+        else if (tn.equals("enum")) {
+          if (spec.pEnumDef==NULL) {
+            LOG_DPRINTLN("invalid enum data: %s", key.c_str());
+            MB_ASSERT(false);
+            return LString();
+          }
+          rval += "\"enumdef\": [";
+          int i=0;
+          BOOST_FOREACH(qlib::EnumDef::value_type ii, *(spec.pEnumDef)) {
+            if (i!=0) rval += ",";
+            rval += LString('"') + ii.first + '"';
+            ++i;
+          }
+          rval += "],";
+          qlib::LVariant lvar;
+          pObj->getProperty(key, lvar);
+          LString strval = lvar.toString();
+          rval += "\"value\": \""+strval.escapeQuots()+"\"\n";
+        }
+        else {
+          // Other unknown non-object types (array?)
+          rval += "\"value\": \"\"\n";
+        }
+      }
+      else {
+        rval += "\"type\": \""+tn+"\",\n";
+
+        qlib::LVariant lvar;
+        pObj->getProperty(key, lvar);
+        if (!lvar.isObject()) {
+          // FATAL ERROR!!
+          LString msg = LString::format("inconsistent object name of prop <%s>",
+                                        key.c_str());
+          MB_THROW(qlib::RuntimeException, msg);
+          return rval;
+        }
+
+        if (lvar.isStrConv()) {
+          // String-convertable object (ex. color, selection)
+          LString strval = lvar.toString();
+          rval += "\"value\": \""+strval.escapeQuots()+"\"\n";
+        }
+        else {
+          // Other unknown object types
+          LScriptable *pChObj = lvar.getObjectPtr();
+          LString childjson = getPropsJSONImpl(pChObj);
+          rval += "\"value\": "+ childjson +"\n";
+        }
+      }
+
+      rval += "}";
+      bfirst = false;
+    }
+
+    rval += "]";
+    return rval;
+  }
+
+}

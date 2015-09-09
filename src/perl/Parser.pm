@@ -91,7 +91,7 @@ sub appendReferQIF($$$) {
 sub loadQifFile($) {
   my $in_fname = shift;
   debug("CPP: $CPPCMD $CPPOPT $in_fname\n");
-  open(IN, "$CPPCMD $CPPOPT $in_fname |") || die("QIF File open $in_fname : $!");
+  open(IN, "$CPPCMD $CPPOPT $in_fname |") || die("Error: QIF File open $in_fname, $!");
   $cur_file = $in_fname;
 
   while (<IN>){
@@ -242,13 +242,13 @@ sub parseTypeName($) {
       $ptr = 0;
     }
     else {
-      die "invalid type in prop def: $cpptype";
+      die "Error: invalid type in prop def: $cpptype";
     }
 
     return ($typenm, $ptr, $qifname);
   }
 
-  die "invalid type name: $typenm";
+  die "Error: invalid type name: $typenm at $cur_file, line $lineno\n";
 
   # "type"=>$proptype,
   # "ptr"=>$ptr,
@@ -406,11 +406,11 @@ sub clsdefState($) {
       my @ls = parseOpt($1);
       my @extends;
       foreach my $i (@ls) {
-	  die "Fatal error: extends_wrapper invalid class name $i" unless ($i =~ /[\w\:]+/);
+	  die "Error: extends_wrapper invalid class name $i" unless ($i =~ /[\w\:]+/);
 	  unshift @extends, $i;
       }
       if ( int(@extends)!=int($db{$curcls}->{"extends"}) ) {
-	  die "Fatal error: extends_wrapper and extends values are inconsisntent.";
+	  die "Error: extends_wrapper and extends values are inconsisntent.";
       }
       $db{$curcls}->{"extends_wrapper"} = \@extends;
     return;
@@ -449,14 +449,14 @@ sub clsdefState($) {
   if ($line =~ /^smartptr\s*;/) {
     unshift @{$db{$curcls}{"options"}}, "smartptr";
     if (contains($db{$curcls}{"options"}, "singleton")) {
-      die "$curcls : cannot use both singleton and smartptr options";
+      die "Error: $curcls cannot use both singleton and smartptr options";
     }
     return;
   }
   if ($line =~ /^singleton\s*;/) {
     unshift @{$db{$curcls}{"options"}}, "singleton";
     if (contains($db{$curcls}{"options"}, "smartptr")) {
-      die "$curcls : cannot use both singleton and smartptr options";
+      die "Error: $curcls cannot use both singleton and smartptr options";
     }
     return;
   }
@@ -558,7 +558,7 @@ sub clsdefState($) {
     return;
   }
 
-  die("ERROR: Unknown words at $cur_file, $lineno: \"$line\"\n");
+  die("Error: Unknown words at $cur_file, $lineno: \"$line\"\n");
 }
 
 ###################################
@@ -626,7 +626,7 @@ sub moddefState($) {
     # starting brace
   }
   else {
-    die("unknown words at $.: $line\n");
+    die("Error: unknown words at $.: $line\n");
   }
 }
 

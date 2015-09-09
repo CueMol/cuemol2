@@ -2,10 +2,8 @@
 // $Id: XPCObjWrapper.cpp,v 1.58 2011/03/10 13:11:55 rishitani Exp $
 //
 
-#include <common.h>
-
-// XPCOM
 #include "xpcom.hpp"
+
 #include <nsIMutableArray.h>
 #include <nsISupportsPrimitives.h>
 #include <nsIVariant.h>
@@ -17,14 +15,18 @@
 #include <qlib/LVarArray.hpp>
 #include <qlib/LUnicode.hpp>
 #include <qlib/PropSpec.hpp>
-#include <qlib/NestedPropHandler.hpp>
+//#include <qlib/NestedPropHandler.hpp>
 
 using namespace xpcom;
 using qlib::LVariant;
 using qlib::LVarArray;
 using qlib::LString;
 
+#ifdef NS_IMPL_ISUPPORTS
+NS_IMPL_ISUPPORTS(XPCObjWrapper, qIObjWrapper);
+#else
 NS_IMPL_ISUPPORTS1(XPCObjWrapper, qIObjWrapper);
+#endif
 
 XPCObjWrapper::XPCObjWrapper(XPCCueMol *pParent, int ind)
 {
@@ -204,24 +206,24 @@ nsresult NSVarToLVar(nsIVariant *aValue, qlib::LVariant &variant)
   case nsIDataType::VTYPE_WSTRING_SIZE_IS:
   case nsIDataType::VTYPE_ASTRING:
     {
-
-    PRUnichar *psz;
-    PRUint32 nlen;
-    rv = aValue->GetAsWStringWithSize(&nlen, &psz);
-    NS_ENSURE_SUCCESS(rv,rv);
-
-    if (psz && nlen>0) {
-      LString retval;
-      qlib::UCS16toUTF8(psz, nlen, retval);
-      // MB_DPRINTLN("NSVar: wstring(%s)", retval.c_str());
-      variant.setStringValue(retval);
-      nsMemory::Free(psz);
+      //PRUnichar *psz;
+      char16_t *psz;
+      PRUint32 nlen;
+      rv = aValue->GetAsWStringWithSize(&nlen, &psz);
+      NS_ENSURE_SUCCESS(rv,rv);
+      
+      if (psz && nlen>0) {
+	LString retval;
+	qlib::UCS16toUTF8((U16Char *)psz, nlen, retval);
+	// MB_DPRINTLN("NSVar: wstring(%s)", retval.c_str());
+	variant.setStringValue(retval);
+	nsMemory::Free(psz);
+      }
+      else {
+	variant.setStringValue(LString());
+      }
+      return NS_OK;
     }
-    else {
-      variant.setStringValue(LString());
-    }
-    return NS_OK;
-  }
 
     //
     // Case of the "Object"
@@ -470,11 +472,7 @@ nsresult XPCObjWrapper::checkPropImpl(const char *propname, bool *rval /*= NULL*
     return NS_ERROR_INVALID_POINTER;
   }
 
-  bool hasProperty;
-  {
-    qlib::NestedPropHandler nph(propname, m_pWrapped);
-    hasProperty = nph.apply()->hasProperty(nph.last_name());
-  }
+  bool hasProperty = m_pWrapped->hasNestedProperty(propname);
 
   if (rval!=NULL)
     *rval = hasProperty;
@@ -502,8 +500,9 @@ NS_IMETHODIMP XPCObjWrapper::GetProp(const char *propname, nsIVariant **_retval)
   LString errmsg;
 
   try {
-    qlib::NestedPropHandler nph(propname, m_pWrapped);
-    ok = nph.apply()->getProperty(nph.last_name(), lvar);
+    //qlib::NestedPropHandler nph(propname, m_pWrapped);
+    //ok = nph.apply()->getProperty(nph.last_name(), lvar);
+    ok = m_pWrapped->getNestedProperty(propname, lvar);
   }
   catch (qlib::LException &e) {
     ok = false;
@@ -549,16 +548,10 @@ NS_IMETHODIMP XPCObjWrapper::SetProp(const char *propname, nsIVariant *value)
   LString errmsg;
 
   try {
-    qlib::NestedPropHandler nph(propname, m_pWrapped);
-    ok = nph.apply()->setProperty(nph.last_name(), lvar);
-    /*
-    LString last;
-    LVariant rval;
-    if (handleNestedProp(propname, last, rval))
-      ok = rval.getObjectPtr()->setProperty(last, lvar);
-    else
-      ok = m_pWrapped->setProperty(propname, lvar);
-      */
+    //qlib::NestedPropHandler nph(propname, m_pWrapped);
+    //ok = nph.apply()->setProperty(nph.last_name(), lvar);
+
+    ok = m_pWrapped->setNestedProperty(propname, lvar);
   }
   catch (qlib::LException &e) {
     ok = false;
@@ -598,8 +591,9 @@ NS_IMETHODIMP XPCObjWrapper::ResetProp(const char *propname)
   LString errmsg;
 
   try {
-    qlib::NestedPropHandler nph(propname, m_pWrapped);
-    ok = nph.apply()->resetProperty(nph.last_name());
+    //qlib::NestedPropHandler nph(propname, m_pWrapped);
+    //ok = nph.apply()->resetProperty(nph.last_name());
+    ok = m_pWrapped->resetNestedProperty(propname);
   }
   catch (qlib::LException &e) {
     ok = false;
@@ -639,11 +633,20 @@ NS_IMETHODIMP XPCObjWrapper::IsPropDefault(const char *propname, PRInt32 *_retva
   LString errmsg;
 
   try {
-    qlib::NestedPropHandler nph(propname, m_pWrapped);
-    qlib::LPropSupport *pTmp = nph.apply();
+    //qlib::NestedPropHandler nph(propname, m_pWrapped);
+    //qlib::LPropSupport *pTmp = nph.apply();
+    /*
     if (! pTmp->hasPropDefault(nph.last_name()) )
       result = 0; // no default value
     else if (! pTmp->isPropDefault(nph.last_name()) )
+      result = 1; // has default but not default now
+    else
+      result = 2; // has default and now is default
+      */
+
+    if (! m_pWrapped->hasNestedPropDefault(propname) )
+      result = 0; // no default value
+    else if (! m_pWrapped->isPropDefault(propname) )
       result = 1; // has default but not default now
     else
       result = 2; // has default and now is default
@@ -1152,7 +1155,7 @@ NS_IMETHODIMP XPCObjWrapper::GetPropsJSON(nsAString &_retval)
   }
 
   try {
-    LString str = getPropsJSONImpl(m_pWrapped);
+    LString str = qlib::getPropsJSONImpl(m_pWrapped);
     nsAutoCString nsstr(str.c_str());
     ::CopyUTF8toUTF16(nsstr, _retval);
   }
@@ -1173,124 +1176,6 @@ NS_IMETHODIMP XPCObjWrapper::GetPropsJSON(nsAString &_retval)
   //*_retval = ToNewCString(nsstr);
 
   return NS_OK;
-}
-
-LString XPCObjWrapper::getPropsJSONImpl(qlib::LScriptable *pObj)
-{
-  std::set<LString> nameset;
-  pObj->getPropNames(nameset);
-  
-  LString rval;
-//return rval;
-  rval += "[\n";
-
-  std::set<LString>::const_iterator iter = nameset.begin();
-  std::set<LString>::const_iterator end = nameset.end();
-  for (bool bfirst=true; iter!=end; ++iter) {
-
-    if (!bfirst)
-      rval += ",\n";
-      
-    // TO DO: ignore property generating errors in getProp()
-
-    rval += "{";
-
-    const LString &key = *iter;
-    qlib::PropSpec spec;
-    if ( !pObj->getPropSpecImpl(key, &spec) ) {
-      MB_DPRINTLN("XPCObjWrapper::getPropsJSON> "
-                  "Fatal error, prop %s is not found", key.c_str());
-      continue;
-    }
-
-    const LString &tn = spec.type_name;
-    rval += "\"name\": \""+key+"\",\n";
-    rval += LString("\"readonly\": ") + LString::fromBool(spec.bReadOnly) + ",\n";
-    rval += LString("\"hasdefault\": ") + LString::fromBool(spec.bHasDefault) + ",\n";
-    if (spec.bHasDefault) {
-      bool bIsDef = pObj->isPropDefault(key);
-      rval += LString("\"isdefault\": ") + LString::fromBool(bIsDef) + ",\n";
-    }
-
-    if (!tn.startsWith("object")) {
-      rval += "\"type\": \""+tn+"\",\n";
-
-      if (tn.equals("boolean")) {
-        bool v;
-        pObj->getPropBool(key, v);
-        rval += LString("\"value\": ") + LString::fromBool(v) + "\n";
-      }
-      else if (tn.equals("integer")) {
-        int v;
-        pObj->getPropInt(key, v);
-        rval += LString::format("\"value\": %d\n", v);
-      }
-      else if (tn.equals("real")) {
-        double v;
-        pObj->getPropReal(key, v);
-        rval += LString::format("\"value\": %f\n", v);
-      }
-      else if (tn.equals("string")) {
-        LString v;
-        pObj->getPropStr(key, v);
-        rval += "\"value\": \""+v.escapeQuots()+"\"\n";
-      }
-      else if (tn.equals("enum")) {
-        if (spec.pEnumDef==NULL) {
-          LOG_DPRINTLN("invalid enum data: %s", key.c_str());
-          MB_ASSERT(false);
-          return LString();
-        }
-        rval += "\"enumdef\": [";
-        int i=0;
-        BOOST_FOREACH(qlib::EnumDef::value_type ii, *(spec.pEnumDef)) {
-          if (i!=0) rval += ",";
-          rval += LString('"') + ii.first + '"';
-          ++i;
-        }
-        rval += "],";
-        qlib::LVariant lvar;
-        pObj->getProperty(key, lvar);
-        LString strval = lvar.toString();
-        rval += "\"value\": \""+strval.escapeQuots()+"\"\n";
-      }
-      else {
-        // Other unknown non-object types (array?)
-        rval += "\"value\": \"\"\n";
-      }
-    }
-    else {
-      rval += "\"type\": \""+tn+"\",\n";
-
-      qlib::LVariant lvar;
-      pObj->getProperty(key, lvar);
-      if (!lvar.isObject()) {
-        // FATAL ERROR!!
-	LString msg = LString::format("inconsistent object name of prop <%s>",
-				      key.c_str());
-        MB_THROW(qlib::RuntimeException, msg);
-        return rval;
-      }
-
-      if (lvar.isStrConv()) {
-        // String-convertable object (ex. color, selection)
-        LString strval = lvar.toString();
-        rval += "\"value\": \""+strval.escapeQuots()+"\"\n";
-      }
-      else {
-        // Other unknown object types
-        LScriptable *pChObj = lvar.getObjectPtr();
-        LString childjson = getPropsJSONImpl(pChObj);
-        rval += "\"value\": "+ childjson +"\n";
-      }
-    }
-
-    rval += "}";
-    bfirst = false;
-  }
-
-  rval += "]";
-  return rval;
 }
 
 //////////////////////////////////////

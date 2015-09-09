@@ -105,11 +105,16 @@
 // Multithread support
 
 #ifdef __cplusplus
+
+/*
 #  ifdef HAVE_BOOST_THREAD
 //#    define BOOST_LIB_DIAGNOSTIC 1
 #    define BOOST_ALL_DYN_LINK 1
 #    include <boost/thread.hpp>
 #  endif  
+*/
+
+#define BOOST_ALL_DYN_LINK 1
 
 // TO DO: use conf values
 #  include <boost/foreach.hpp>

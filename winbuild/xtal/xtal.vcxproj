@@ -1,0 +1,170 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{A0ACECA2-0C73-4A1A-9736-F3F7A3158878}</ProjectGuid>
+    <RootNamespace>xtal</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+    <Import Project="..\mcwrapgen3.props" />
+    <Import Project="..\glsl_shader.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\common.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\common.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>12.0.21005.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <OutDir>$(XULDeployDir)\</OutDir>
+    <IntDir>$(Configuration)\</IntDir>
+    <LinkIncremental>true</LinkIncremental>
+    <GenerateManifest>false</GenerateManifest>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <OutDir>$(XULDeployDir)\</OutDir>
+    <IntDir>$(Configuration)\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+    <GenerateManifest>false</GenerateManifest>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;XTAL_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>true</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>libfftw3f-3.lib;opengl32.lib;glu32.lib;glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(XULDeployDir)\$(ProjectName).dll</OutputFile>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;XTAL_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>libfftw3f-3.lib;opengl32.lib;glu32.lib;glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(XULDeployDir)\$(ProjectName).dll</OutputFile>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\src\modules\xtal\BrixMapReader.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\BrixMapReader_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\CCP4InStream.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\CCP4MapReader.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\CCP4MapReader_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\DensityMap.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\DensityMap_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\GLSLMapMeshRenderer.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\GLSLMapMeshRenderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\GLSLMapVolRenderer.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\GLSLMapVolRenderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\MapMeshRenderer.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\MapMeshRenderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\MapRenderer.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\MapRenderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\MapSurfRenderer.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\MapSurfRenderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\MTZ2MapReader.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\MTZ2MapReader_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\QdfDenMapReader.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\QdfDenMapWriter.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\XplorMapReader.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\xtal.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\xtal\xtal_loader.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <mcwrapgen3 Include="..\..\src\modules\xtal\BrixMapReader.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\xtal\CCP4MapReader.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\xtal\DensityMap.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\xtal\GLSLMapMeshRenderer.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\xtal\GLSLMapVolRenderer.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\xtal\MapMeshRenderer.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\xtal\MapRenderer.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\xtal\MapSurfRenderer.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\xtal\MTZ2MapReader.qif" />
+  </ItemGroup>
+  <ItemGroup>
+    <mcw_loader Include="..\..\src\modules\xtal\xtal.moddef" />
+  </ItemGroup>
+  <ItemGroup>
+    <glslshader Include="..\..\src\modules\xtal\mapmesh_frag.glsl" />
+    <glslshader Include="..\..\src\modules\xtal\mapmesh_geom.glsl" />
+    <glslshader Include="..\..\src\modules\xtal\mapmesh_vertex.glsl" />
+    <glslshader Include="..\..\src\modules\xtal\mapvol_frag.glsl" />
+    <glslshader Include="..\..\src\modules\xtal\mapvol_vertex.glsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\qlib\qlib.vcxproj">
+      <Project>{17abbaff-4e0b-4cab-ae59-b5fc76a4e285}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\qsys\qsys.vcxproj">
+      <Project>{dbd4410b-6495-4051-b5e4-4609bb8da327}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\surface\surface.vcxproj">
+      <Project>{b59ec231-1731-4fbe-9e2a-dbad581be05d}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+    <ProjectReference Include="..\symm\symm.vcxproj">
+      <Project>{7cad1179-b1cf-4e17-bbfa-dbd5aea51e7b}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+    <Import Project="..\mcwrapgen3.targets" />
+    <Import Project="..\glsl_shader.targets" />
+  </ImportGroup>
+</Project>
