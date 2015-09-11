@@ -380,7 +380,7 @@ dnl if test x$GUI_ARCH = xCLI ; then
     # overall settings
     SCR_CPPFLAGS="-DHAVE_JAVASCRIPT"
     SCR_LDADD="-ljsbr"
-    SCR_LDFLAGS="-L../jsbr/"
+    SCR_LDFLAGS="-L../jsbr"
     # jsbr module settings
     JS_CPPFLAGS="-I../js/src/ -DUSE_INTERNAL_JS"
     JS_LDADD="-ljs"

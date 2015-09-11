@@ -135,8 +135,6 @@ libqsys_la_CXXFLAGS = \
 # -Wall
 
 libqsys_la_LIBADD = \
-  @SCR_LDADD@ \
-  @GL_LIBADD@ \
   @BOOST_THREAD_LIB@ \
   @BOOST_SYSTEM_LIB@ \
   @BOOST_FILESYSTEM_LIB@ \
@@ -146,10 +144,6 @@ libqsys_la_LIBADD = \
 
 
 libqsys_la_LDFLAGS = \
-  -L../gfx \
-  -L../qlib \
-  @SCR_LDFLAGS@ \
-  @GL_LDFLAGS@ \
   @BOOST_LDFLAGS@ \
  $(NULL)
 
