@@ -3,7 +3,9 @@
 import sys
 
 rwrite = [("FAILIFMISMATCH:\"_ITERATOR_DEBUG_LEVEL=0\"","FAILIFMISMATCH:\"_JTERATOR_DEBUG_LEVEL=0\""),
-          ("FAILIFMISMATCH:\"RuntimeLibrary=MD_DynamicRelease\"","FAILIFMISMATCH:\"SuntimeLibrary=MD_DynamicRelease\"")]
+          ("FAILIFMISMATCH:\"RuntimeLibrary=MD_DynamicRelease\"","FAILIFMISMATCH:\"SuntimeLibrary=MD_DynamicRelease\""),
+          ("FAILIFMISMATCH:\"RuntimeLibrary=MT_StaticRelease\"","FAILIFMISMATCH:\"SuntimeLibrary=MT_StaticRelease\""),
+          ]
 
 print sys.argv[1]
 infile = sys.argv[1]

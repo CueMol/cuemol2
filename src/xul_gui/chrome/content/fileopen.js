@@ -938,16 +938,9 @@ Qm2Main.prototype.onExecScr = function ()
     catch (e) {}
   }
   
-  var jsbr;
-  if (cuemol.hasClass("JSBridge")) {
-    try {
-      jsbr = cuemol.getService("JSBridge");
-      if (jsbr && typeof scene.execJSFile === 'function') {
-	fp.appendFilter("Javascript (*.js)", "*.js");
-	ftype.push("js");
-      }
-    }
-    catch (e) {}
+  if (typeof scene.execJSFile === 'function') {
+    fp.appendFilter("Javascript (*.js)", "*.js");
+    ftype.push("js");
   }
   
   fp.appendFilter("Internal Javascript (*.js)", "*.js");
