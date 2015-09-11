@@ -33,7 +33,7 @@
 
 #include "anim/AnimMgr.hpp"
 
-#define NO_SCRIPT 1
+// #define NO_SCRIPT 1
 #ifndef NO_SCRIPT
 // for JS interpreter
 #include <jsbr/jsbr.hpp>

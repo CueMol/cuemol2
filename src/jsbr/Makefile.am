@@ -27,3 +27,10 @@ libjsbr_la_CXXFLAGS = \
  @BOOST_CPPFLAGS@ \
  $(NULL)
 
+libjsbr_la_LIBADD = \
+ @JS_LDADD@ \
+ $(NULL)
+
+libjsbr_la_LDFLAGS = \
+ @JS_LDFLAGS@ \
+ $(NULL)

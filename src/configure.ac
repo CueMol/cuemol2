@@ -374,7 +374,7 @@ SCR_CPPFLAGS=
 SCR_LDADD=
 SCR_LDFLAGS=
 
-if test x$GUI_ARCH = xCLI ; then
+dnl if test x$GUI_ARCH = xCLI ; then
     # Use internal js impl in the standalone CLI build
     BUILD_SCR="$BUILD_SCR js jsbr"
     # overall settings
@@ -386,10 +386,10 @@ if test x$GUI_ARCH = xCLI ; then
     JS_LDADD="-ljs"
     JS_LDFLAGS="-L../js/"
     AC_CONFIG_SUBDIRS([js])
-else
-    # no script supports
-    SCR_CPPFLAGS=-DNO_SCRIPT
-fi
+dnl else
+dnl     # no script supports
+dnl     SCR_CPPFLAGS=-DNO_SCRIPT
+dnl fi
 
 dnl    XXX TO DO: impl of external JS for GUI build
 dnl    # Xulrunner SDK has its own js implementation
