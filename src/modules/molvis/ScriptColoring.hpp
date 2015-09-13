@@ -47,6 +47,8 @@ namespace molvis {
 
     jsbr::Interp *m_pInterp;
 
+    bool m_bOK;
+
   public:
     ScriptColoring();
     virtual ~ScriptColoring();
@@ -58,9 +60,12 @@ namespace molvis {
     virtual bool start(MolCoordPtr pMol, Renderer *pRend);
   
     virtual bool getAtomColor(MolAtomPtr pAtom, ColorPtr &color);
-    virtual bool getResidColor(MolResiduePtr pResid, ColorPtr &color);
+    // virtual bool getResidColor(MolResiduePtr pResid, ColorPtr &color);
 
     virtual void end();
+
+  private:
+    ColorPtr findAndFillCache(MolAtomPtr pAtom);
 
   private:
     ////////////////////////
@@ -73,6 +78,13 @@ namespace molvis {
     void setScript(const LString & s) {
       m_script = s;
     }
+
+  public:
+    ///////////////////////////////////////
+    // Serialization / deserialization impl
+
+    virtual void writeTo2(qlib::LDom2Node *pNode) const;
+    virtual void readFrom2(qlib::LDom2Node *pNode);
 
   };
 

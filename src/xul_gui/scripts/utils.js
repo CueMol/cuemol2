@@ -111,6 +111,23 @@ var util = {};
 
 } )();
 
+var color = {};
+( function () {
+  color.rgb = function (aR, aG, aB)
+  {
+    var c = cuemol.Color();
+    c.setRGB(aR, aG, aB);
+    return c;
+  };
+
+  color.hsb = function (aH, aS, aB)
+  {
+    var c = cuemol.Color();
+    c.setHSB(aH, aS, aB);
+    return c;
+  };
+} )();
+
 var debug = {};
 
 ( function () {

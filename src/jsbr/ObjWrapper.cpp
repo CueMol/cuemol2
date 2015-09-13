@@ -906,7 +906,7 @@ JSBool ObjWrapper::execFileImpl(JSContext *pcx, JSObject *pobj, const LString &f
 #endif
   pscr = JS_CompileFile(pcx, pobj, scrpath);
   if (pscr==NULL) {
-    LString msg = LString::format("JS> exec() cannot compile: %s", scrpath.c_str());
+    LString msg = LString::format("execFileImpl() cannot compile: %s", scrpath.c_str());
     // LOG_DPRINTLN(msg);
     return throwError(pcx, msg);
   }

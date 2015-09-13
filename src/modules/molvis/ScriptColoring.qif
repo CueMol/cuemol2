@@ -17,7 +17,7 @@ runtime_class ScriptColoring extends ColoringScheme
   cloneable;
   smartptr;
 
-  property string script => redirect(getScript, setScript);
+  property string script => redirect(getScript, setScript) (nopersist);
   default script = "";
 
 };

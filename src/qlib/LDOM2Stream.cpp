@@ -142,9 +142,20 @@ void LDom2OutStream::write(LDom2Node *pNode)
   
   LString val = pNode->getValue();
   if (pNode->getChildCount()==0) {
-    writeAttr("value", val);
-    closeEmptyTag();
-    return;
+    if (pNode->getContents().isEmpty()) {
+      writeAttr("value", val);
+      closeEmptyTag();
+      return;
+    }
+    else {
+      // write contents
+      //closeTag();
+      writeStr("><![CDATA[");
+      writeStr(pNode->getContents());
+      //writeEndTag(tag);
+      writeStr("]]></"+tag+">\n");
+      return;
+    }
   }
 
   // write value attr if val is not empty
