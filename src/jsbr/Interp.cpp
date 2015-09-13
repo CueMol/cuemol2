@@ -233,6 +233,8 @@ void Interp::eval(const qlib::LString &scr)
   JSString *str;
   JSBool ok;
 
+  MB_DPRINTLN("JSEval> scr=%s", scr.c_str());
+
   ok = JS_EvaluateScript(pcx, pJsGlob, script, strlen(script),
 			 filename, lineno, &rval);
 

@@ -36,6 +36,14 @@ bool ScriptColoring::start(MolCoordPtr pMol, Renderer *pRend)
   ScenePtr pSc = m_pMol->getScene();
   m_pInterp = jsbr::createInterp(pSc.copy());
 
+  LString scr;
+  if (!m_script.isEmpty()) {
+    scr += "function main(atom, resid) {\n";
+    scr += m_script;
+    scr += "\n};\n";
+    m_pInterp->eval(scr);
+  }
+
   return true;
 }
 
@@ -46,7 +54,7 @@ bool ScriptColoring::getAtomColor(MolAtomPtr pAtom, ColorPtr &color)
   if (!res) {
     return false;
   }
-  return true;
+  return false;
 }
 
 bool ScriptColoring::getResidColor(MolResiduePtr pResid, ColorPtr &rColor)
