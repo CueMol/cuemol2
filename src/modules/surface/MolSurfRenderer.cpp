@@ -246,10 +246,10 @@ void MolSurfRenderer::render(DisplayContext *pdl)
       // (this impl always updates atommap when the renderer is invalidated.)
       makeAtomPosMap();
       
-      // initialize the coloring scheme (with the target mol, but not this)
+      // initialize the coloring scheme (with the target mol, but not surface obj)
       molstr::ColoringSchemePtr pCS = getColSchm();
       if (!pCS.isnull())
-        pCS->init(m_pMol, this);
+        pCS->start(m_pMol, this);
     }
     else {
       LOG_DPRINTLN("MolSurfRend> object \"%d\" is not found.", m_nTgtMolID);
@@ -345,6 +345,15 @@ void MolSurfRenderer::render(DisplayContext *pdl)
 
   // do it!!
   pdl->drawMesh(mesh);
+
+  // cleanup
+
+  if (m_nMode==SFREND_MOLFANC && !m_pMol.isnull()) {
+    // finalize the coloring scheme
+    molstr::ColoringSchemePtr pCS = getColSchm();
+    if (!pCS.isnull())
+      pCS->end();
+  }
 
   if (m_pAmap!=NULL) {
     delete m_pAmap;

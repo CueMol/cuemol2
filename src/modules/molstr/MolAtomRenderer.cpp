@@ -34,15 +34,15 @@ MolAtomRenderer::~MolAtomRenderer()
 
 void MolAtomRenderer::render(DisplayContext *pdl)
 {
-  MolCoordPtr rCliMol = getClientMol();
-  if (rCliMol.isnull()) {
+  MolCoordPtr pCliMol = getClientMol();
+  if (pCliMol.isnull()) {
     MB_DPRINTLN("MolAtomRenderer::render> Client mol is null");
     return;
   }
 
   // initialize the coloring scheme
-  getColSchm()->init(rCliMol, this);
-  rCliMol->getColSchm()->init(rCliMol, this);
+  getColSchm()->start(pCliMol, this);
+  pCliMol->getColSchm()->start(pCliMol, this);
 
   beginRend(pdl);
   
@@ -51,7 +51,7 @@ void MolAtomRenderer::render(DisplayContext *pdl)
   if (isRendBond()) {
     // Render bonds & nonb-atoms case (e.g. ball & stick model)
     // TO DO: cache the result of iteration (???)
-    BondIterator biter(rCliMol, getSelection());
+    BondIterator biter(pCliMol, getSelection());
     
     for (biter.first(); biter.hasMore(); biter.next()) {
       MolBond *pMB = biter.getBond();
@@ -59,8 +59,8 @@ void MolAtomRenderer::render(DisplayContext *pdl)
       int aid2 = pMB->getAtom2();
       //biter.getID(aid1, aid2);
 
-      MolAtomPtr pA1 = rCliMol->getAtom(aid1);
-      MolAtomPtr pA2 = rCliMol->getAtom(aid2);
+      MolAtomPtr pA1 = pCliMol->getAtom(aid1);
+      MolAtomPtr pA2 = pCliMol->getAtom(aid2);
 
       if (pA1.isnull() || pA2.isnull())
         continue; // skip invalid bonds
@@ -76,12 +76,12 @@ void MolAtomRenderer::render(DisplayContext *pdl)
 
   // render atoms (e.g. CPK model)
   // TO DO: cache the result of iteration (???)
-  AtomIterator iter(rCliMol, getSelection());
+  AtomIterator iter(pCliMol, getSelection());
     
   bool bbonded;
   for (iter.first(); iter.hasMore(); iter.next()) {
     int aid = iter.getID();
-    MolAtomPtr pAtom = rCliMol->getAtom(aid);
+    MolAtomPtr pAtom = pCliMol->getAtom(aid);
     if (pAtom.isnull()) continue; // ignore errors
 
     if (bonded_atoms.empty()) {
@@ -97,6 +97,9 @@ void MolAtomRenderer::render(DisplayContext *pdl)
   
   endRend(pdl);
   
+  getColSchm()->end();
+  pCliMol->getColSchm()->end();
+
   // MB_DPRINTLN("MolAtomRenderer::display() end OK.");
 }
 
@@ -180,8 +183,8 @@ void MolAtomRenderer::rendHitBond(DisplayContext *phl, MolAtomPtr pAtom1, MolAto
 
 bool MolAtomRenderer::countAtomBond(int &ratoms, int &rbonds)
 {
-  MolCoordPtr rCliMol = getClientMol();
-  if (rCliMol.isnull()) {
+  MolCoordPtr pCliMol = getClientMol();
+  if (pCliMol.isnull()) {
     MB_DPRINTLN("MolAtomRenderer::countAtomBond> Client mol is null");
     return false;
   }
@@ -192,7 +195,7 @@ bool MolAtomRenderer::countAtomBond(int &ratoms, int &rbonds)
   if (isRendBond()) {
     // Render bonds & nonb-atoms case (e.g. ball & stick model)
     // TO DO: cache the result of iteration (???)
-    BondIterator biter(rCliMol, getSelection());
+    BondIterator biter(pCliMol, getSelection());
     
     for (biter.first(); biter.hasMore(); biter.next()) {
       MolBond *pMB = biter.getBond();
@@ -200,8 +203,8 @@ bool MolAtomRenderer::countAtomBond(int &ratoms, int &rbonds)
       int aid2 = pMB->getAtom2();
       //biter.getID(aid1, aid2);
 
-      MolAtomPtr pA1 = rCliMol->getAtom(aid1);
-      MolAtomPtr pA2 = rCliMol->getAtom(aid2);
+      MolAtomPtr pA1 = pCliMol->getAtom(aid1);
+      MolAtomPtr pA2 = pCliMol->getAtom(aid2);
 
       if (pA1.isnull() || pA2.isnull())
         continue; // skip invalid bonds
@@ -216,12 +219,12 @@ bool MolAtomRenderer::countAtomBond(int &ratoms, int &rbonds)
 
   // render atoms (e.g. CPK model)
   // TO DO: cache the result of iteration (???)
-  AtomIterator iter(rCliMol, getSelection());
+  AtomIterator iter(pCliMol, getSelection());
   ratoms = 0;
   bool bbonded;
   for (iter.first(); iter.hasMore(); iter.next()) {
     int aid = iter.getID();
-    MolAtomPtr pAtom = rCliMol->getAtom(aid);
+    MolAtomPtr pAtom = pCliMol->getAtom(aid);
     if (pAtom.isnull()) continue; // ignore errors
 
     if (bonded_atoms.empty()) {

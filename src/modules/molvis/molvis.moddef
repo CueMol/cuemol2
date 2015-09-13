@@ -16,6 +16,7 @@
 #include "AtomIntrRenderer.qif"
 #include "Ribbon2Renderer.qif"
 #include "RainbowColoring.qif"
+#include "ScriptColoring.qif"
 #include "DistPickDrawObj.qif"
 #include "DisoRenderer.qif"
 
@@ -39,6 +40,7 @@ module molvis
   DisoRenderer;
   Ribbon2Renderer;
   RainbowColoring;
+  ScriptColoring;
   DistPickDrawObj;
 };
 

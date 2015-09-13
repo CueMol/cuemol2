@@ -48,7 +48,7 @@ bool RainbowColoring::getResidColor(MolResiduePtr pResid, ColorPtr &rColor)
   return true;
 }
 
-bool RainbowColoring::init(MolCoordPtr pMol, Renderer *pRend)
+bool RainbowColoring::start(MolCoordPtr pMol, Renderer *pRend)
 {
   // MolCoordPtr pMol(pRend->getClientObj(), qlib::no_throw_tag());
   if (pMol.isnull()) {

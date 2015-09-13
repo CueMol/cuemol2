@@ -184,16 +184,16 @@ void DisoRenderer::render(DisplayContext *pdl)
     return;
   }
 
-  // initialize the coloring scheme
-  getColSchm()->init(pCliMol, this);
-  pCliMol->getColSchm()->init(pCliMol, this);
-
   // setup the target renderer
   m_pTgtRend = getTgtRend();
   if (m_pTgtRend==NULL) {
     LOG_DPRINTLN("DisoRenderer> Cannot display, target rend is null");
     return;
   }
+
+  // initialize the coloring scheme
+  getColSchm()->start(pCliMol, this);
+  pCliMol->getColSchm()->start(pCliMol, this);
 
   pdl->setDetail(m_nDetail);
 
@@ -219,6 +219,9 @@ void DisoRenderer::render(DisplayContext *pdl)
   }
   
   m_pTgtRend = NULL;
+
+  getColSchm()->end();
+  pCliMol->getColSchm()->end();
 }
 
 void DisoRenderer::rendDiso(DisplayContext *pdl, MolResiduePtr pRes, MolResiduePtr pPrevRes)

@@ -24,9 +24,13 @@ ColoringScheme::~ColoringScheme()
   MB_DPRINTLN("Destroy ColoringScheme(%p)", this);
 }
 
-bool ColoringScheme::init(MolCoordPtr,Renderer*)
+bool ColoringScheme::start(MolCoordPtr,Renderer*)
 {
   return true;
+}
+
+void ColoringScheme::end()
+{
 }
 
 bool ColoringScheme::getResidColor(MolResiduePtr pResid, ColorPtr &color)

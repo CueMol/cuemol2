@@ -191,10 +191,6 @@ void CPK2Renderer::renderVBOImpl()
     return;
   }
 
-  // initialize the coloring scheme
-  getColSchm()->init(pMol, this);
-  pMol->getColSchm()->init(pMol, this);
-
   // estimate the size of drawing elements
   int nsphs=0;
   {
@@ -210,6 +206,11 @@ void CPK2Renderer::renderVBOImpl()
   if (nsphs==0)
     return; // nothing to draw
   
+  // initialize the coloring scheme
+  getColSchm()->start(pMol, this);
+  pMol->getColSchm()->start(pMol, this);
+
+
   gfx::SphereSetTmpl<gfx::VBOSphereSet_traits> sphs2;
 
   //gfx::SphereSet sphs;
@@ -243,6 +244,11 @@ void CPK2Renderer::renderVBOImpl()
 
   //m_pDrawElem = sphs.buildDrawElem();
   m_pDrawElem = sphs2.getdata().buildDrawElem(&sphs2);
+
+  // finalize the coloring scheme
+  getColSchm()->end();
+  pMol->getColSchm()->end();
+
 }
 
 //////////////////////
@@ -271,10 +277,6 @@ void CPK2Renderer::renderShaderImpl()
     return;
   }
 
-  // initialize the coloring scheme
-  getColSchm()->init(pMol, this);
-  pMol->getColSchm()->init(pMol, this);
-
   // estimate the size of drawing elements
   int nsphs=0;
   {
@@ -290,6 +292,10 @@ void CPK2Renderer::renderShaderImpl()
   if (nsphs==0)
     return; // nothing to draw
   
+  // initialize the coloring scheme
+  getColSchm()->start(pMol, this);
+  pMol->getColSchm()->start(pMol, this);
+
   m_pSlSph->alloc(nsphs);
 
   {
@@ -306,6 +312,9 @@ void CPK2Renderer::renderShaderImpl()
     }
   }
 
-}
+  // finalize the coloring scheme
+  getColSchm()->end();
+  pMol->getColSchm()->end();
 
+}
 

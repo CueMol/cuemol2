@@ -19,6 +19,8 @@
 #include "ObjWrapper.hpp"
 //#include "AutoJSRequest.hpp"
 
+#include <qlib/LVarArgs.hpp>
+
 namespace fs = boost::filesystem;
 
 using namespace jsbr;
@@ -170,6 +172,51 @@ bool Interp::init(qlib::LScriptable *pMainObj)
 
   // set private data
   JS_SetContextPrivate(pcx, this);
+
+  return true;
+}
+
+bool Interp::defineVar(const LString &varnm, qlib::LScriptable *pvalue)
+{
+  JSBool res;
+  JSContext *pcx = (JSContext *)m_pdata;
+  JSObject *pJsGlob = (JSObject *)m_pGlob;
+
+  JSObject *pJsObj = ObjWrapper::makeWrapper(pcx, pvalue);
+
+  res = JS_DefineProperty(pcx, pJsGlob, varnm, OBJECT_TO_JSVAL(pJsObj),
+			  NULL, NULL, JSPROP_ENUMERATE|JSPROP_PERMANENT|JSPROP_READONLY);
+
+  // res = JS_SetParent(pcx, pMainObj, ppar);
+  if (!res) return false;
+
+  return true;
+}
+
+bool Interp::invokeMethod(const LString &mthnm, qlib::LVarArgs &args, qlib::LScriptable *pobj)
+{
+  JSBool res;
+  JSContext *pcx = (JSContext *)m_pdata;
+  JSObject *pJsGlob = (JSObject *)m_pGlob;
+
+  JSObject *pJsObj = pJsGlob;
+  if (pobj!=NULL)
+    pJsObj = ObjWrapper::makeWrapper(pcx, pobj);
+
+  int argc = args.getSize();
+  jsval *argv = MB_NEW jsval[argc];
+  jsval rval;
+
+  for (int i=0; i<argc; ++i) {
+    argv[i] = ObjWrapper::LVarToJSVal(pcx, args.at(i));
+  }
+
+  res = JS_CallFunctionName(pcx, pJsObj, mthnm.c_str(),
+			    argc, argv, &rval);
+  delete [] argv;
+  if (!res) return false;
+
+  ObjWrapper::JSValToLVar(pcx, rval, args.retval());
 
   return true;
 }

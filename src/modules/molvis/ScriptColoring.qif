@@ -1,0 +1,26 @@
+// -*-Mode: C++;-*-
+//
+// Script coloring scripting interface
+//
+
+#ifndef SCRIPT_COLORING_QIF_INCLUDED
+#define SCRIPT_COLORING_QIF_INCLUDED
+
+#include <modules/molstr/ColoringScheme.qif>
+
+runtime_class ScriptColoring extends ColoringScheme
+{
+  client_hdr "ScriptColoring.hpp";
+  client_name molvis::ScriptColoring;
+
+  scriptable;
+  cloneable;
+  smartptr;
+
+  property string script => redirect(getScript, setScript);
+  default script = "";
+
+};
+
+#endif
+

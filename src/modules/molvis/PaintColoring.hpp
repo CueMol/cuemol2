@@ -77,15 +77,6 @@ namespace molvis {
     virtual void writeTo2(qlib::LDom2Node *pNode) const;
     virtual void readFrom2(qlib::LDom2Node *pNode);
 
-    //////////////////////////////////////////////////////
-    // XXX: ???
-    // void setDefaultColor(const ColorPtr &c) { m_defaultColor = c; }
-    // ColorPtr getDefaultColor() const { return m_defaultColor; }
-    // void setMaskColor(const ColorPtr &c) { m_maskColor = c; }
-    // ColorPtr getMaskColor() const { return m_maskColor; }
-    // ColorPtr applyMaskColor(const ColorPtr &c1);
-    // void setScriptColoring(qs::IrHandle *pctxt);
-
   private:
 
     //////////////////////////////////////////////////////
@@ -95,11 +86,9 @@ namespace molvis {
 
     qsys::ScenePtr getScene() const;
 
-    // void performScriptColoring(MolAtom *pAtom, ColorPtr &color);
-
   };
 
 } // namespace molvis
 
-#endif // Paint_COLORING_H__
+#endif
 

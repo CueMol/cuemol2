@@ -30,7 +30,6 @@ NARenderer::NARenderer()
   m_nBaseDetail = 3;
   m_bShowBP = true;
 
-  //m_pBSRend = BallStickRendererPtr(MB_NEW BallStickRenderer());
   m_pBSRend = MB_NEW BallStickRenderer();
   m_pBSRend->resetAllProps();
   m_pBSRend->setShowRing(true);
@@ -53,13 +52,12 @@ void NARenderer::beginRend(DisplayContext *pdl)
 {
   if (m_nType==NAREND_DETAIL1 || m_nType==NAREND_DETAIL2) {
     // initialize the coloring scheme
-    m_pBSRend->getColSchm()->init(getClientMol(), this);
+    m_pBSRend->getColSchm()->start(getClientMol(), this);
+
     m_pBSRend->setDetail(m_nBaseDetail);
     m_pBSRend->setBondw(m_bondw);
     m_pBSRend->setSphr(m_bondw);
     m_pBSRend->setRingThick(m_bsthick);
-    // rCliMol->getColSchm()->init(rCliMol, this);
-    // m_pBSRend->beginRend(pdl);
   }
   
   if (m_pBpTmp!=NULL)
@@ -72,6 +70,11 @@ void NARenderer::beginRend(DisplayContext *pdl)
 
 void NARenderer::endRend(DisplayContext *pdl)
 {
+  if (m_nType==NAREND_DETAIL1 || m_nType==NAREND_DETAIL2) {
+    // finalize the coloring scheme
+    m_pBSRend->getColSchm()->end();
+  }
+
   if (m_pBpTmp!=NULL)
     delete m_pBpTmp;
   m_pBpTmp = NULL;

@@ -422,15 +422,15 @@ void BallStickRenderer::renderShaderImpl()
 {
   MolCoordPtr pMol = getClientMol();
   if (pMol.isnull()) {
-    MB_DPRINTLN("CPK2Renderer::render> Client mol is null");
+    MB_DPRINTLN("BallStickRenderer::render> Client mol is null");
     return;
   }
 
   // initialize the coloring scheme
-  getColSchm()->init(pMol, this);
-  pMol->getColSchm()->init(pMol, this);
+  getColSchm()->start(pMol, this);
+  pMol->getColSchm()->start(pMol, this);
 
-  // estimate the size of drawing elements
+  // estimate the size of drawing elements for spheres
   int nsphs = 0;
   {
     AtomIterator iter(pMol, getSelection());
@@ -458,12 +458,11 @@ void BallStickRenderer::renderShaderImpl()
     }
   }
 
-  ///////////////////
+  /////////////////////////////////////////////////////////
 
+  // estimate the size of drawing elements for bonds
   int nbons = 0;
   {
-    // Render bonds & nonb-atoms case (e.g. ball & stick model)
-    // TO DO: cache the result of iteration (???)
     BondIterator biter(pMol, getSelection());
     
     for (biter.first(); biter.hasMore(); biter.next()) {
@@ -528,6 +527,12 @@ void BallStickRenderer::renderShaderImpl()
       }
 
     }
-  }
+  } // if (nbons!=0)
+
+
+  // initialize the coloring scheme
+  getColSchm()->end();
+  pMol->getColSchm()->end();
+
 }
 

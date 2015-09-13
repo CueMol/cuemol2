@@ -40,13 +40,13 @@ namespace jsbr {
 
   class Interp;
 
-  /** Initialize the qlib library */
+  /// Initialize the jsbr library
   JSBR_API bool init();
 
-  /** create a new interpreter object (with specified gloabl object) */
+  /// create a new interpreter object (with specified gloabl object)
   JSBR_API Interp *createInterp(qlib::LScriptable *pObj);
-
-  /** Cleanup the qlib library */
+  
+  /// Cleanup the jsbr library
   JSBR_API void fini();
 }
 

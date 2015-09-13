@@ -75,7 +75,7 @@ namespace molstr {
     virtual ~BfacColoring();
 
     //virtual bool init(Renderer *pRend);
-    virtual bool init(MolCoordPtr pMol, Renderer *pRend);
+    virtual bool start(MolCoordPtr pMol, Renderer *pRend);
     virtual bool getAtomColor(MolAtomPtr pAtom, gfx::ColorPtr &color);
 
     bool isAutoMode() const {

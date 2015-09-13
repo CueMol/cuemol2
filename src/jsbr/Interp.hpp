@@ -77,26 +77,32 @@ using qlib::LString;
 
     //////////////////////////
 
-    /**
-       Setup the JS interperter.
-    */
-
+    ///
+    ///  Setup the JS interperter.
+    ///
     bool init(qlib::LScriptable *pGlob);
 
-    /**
-       Cleanup the JS interpreter and related objects.
-    */
+    ///
+    ///  Cleanup the JS interpreter and related objects.
+    ///
     void fini();
 
-    /**
-       Evaluate the JS expressions
-    */
-    void eval(const qlib::LString &scr);
+    ///
+    ///  Define the variable (in the global context)
+    ///
+    bool defineVar(const LString &varnm, qlib::LScriptable *pvalue);
 
-    /**
-       Execute the JS program file
-    */
-    bool execFile(const qlib::LString &fname);
+    bool invokeMethod(const LString &mthnm, qlib::LVarArgs &args, qlib::LScriptable *pobj=NULL);
+
+    ///
+    ///  Evaluate the JS expressions
+    ///
+    void eval(const LString &scr);
+
+    ///
+    ///  Execute the JS program file
+    ///
+    bool execFile(const LString &fname);
 
   };
 

@@ -32,6 +32,7 @@ NARenderer.cpp \
 AtomIntrRenderer.cpp \
 DisoRenderer.cpp \
 RainbowColoring.cpp \
+ScriptColoring.cpp \
 DistPickDrawObj.cpp \
 smospl/SmoothSpline.cpp	\
 smospl/linalg.cpp \
@@ -63,6 +64,7 @@ NARenderer.qif \
 AtomIntrRenderer.qif \
 DisoRenderer.qif \
 RainbowColoring.qif \
+ScriptColoring.qif \
 DistPickDrawObj.qif \
 $(NULL)
 

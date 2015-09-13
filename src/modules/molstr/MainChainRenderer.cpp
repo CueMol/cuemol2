@@ -64,21 +64,21 @@ bool MainChainRenderer::isNewSegment(MolResiduePtr pcur, MolResiduePtr pprev)
 
 void MainChainRenderer::render(DisplayContext *pdl)
 {
-  MolCoordPtr rCliMol = getClientMol();
-  if (rCliMol.isnull()) {
+  MolCoordPtr pCliMol = getClientMol();
+  if (pCliMol.isnull()) {
     MB_DPRINTLN("MolAtomRenderer::render> Client mol is null");
     return;
   }
 
   // initialize the coloring scheme
-  getColSchm()->init(rCliMol, this);
-  rCliMol->getColSchm()->init(rCliMol, this);
+  getColSchm()->start(pCliMol, this);
+  pCliMol->getColSchm()->start(pCliMol, this);
 
   beginRend(pdl);
   
   {
     // visit selected residues
-    ResidIterator iter(rCliMol, getSelection());
+    ResidIterator iter(pCliMol, getSelection());
     
     MolResiduePtr pPrevResid;
     for (iter.first(); iter.hasMore(); iter.next()) {
@@ -116,6 +116,9 @@ void MainChainRenderer::render(DisplayContext *pdl)
 
   endRend(pdl);
   
+  getColSchm()->end();
+  pCliMol->getColSchm()->end();
+
   // MB_DPRINTLN("MainChainRenderer::display() end OK.");
 }
 
@@ -213,8 +216,8 @@ void MainChainRenderer::rendHitResid(DisplayContext *phl, MolResiduePtr pRes)
 
 LString MainChainRenderer::interpHit(const gfx::RawHitData &rhit)
 {
-  MolCoordPtr rCliMol = getClientMol();
-  if (rCliMol.isnull()) {
+  MolCoordPtr pCliMol = getClientMol();
+  if (pCliMol.isnull()) {
     MB_DPRINTLN("MolAtomRenderer::render> Client mol is null");
     return LString();
   }
@@ -240,7 +243,7 @@ LString MainChainRenderer::interpHit(const gfx::RawHitData &rhit)
     }
 
     // add common atom results
-    MolAtomPtr pAtom = rCliMol->getAtom(aid);
+    MolAtomPtr pAtom = pCliMol->getAtom(aid);
     rval += interpHitAidImpl(pAtom);
 
     // Selection str (residue)
@@ -265,7 +268,7 @@ LString MainChainRenderer::interpHit(const gfx::RawHitData &rhit)
         MB_DPRINTLN("MolRend> invalid hitdata entry (%d) ignored", ii);
         continue;
       }
-      MolAtomPtr pAtom = rCliMol->getAtom(aid);
+      MolAtomPtr pAtom = pCliMol->getAtom(aid);
       if (pAtom.isnull())
         continue;
 

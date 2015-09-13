@@ -50,7 +50,7 @@ BfacColoring::~BfacColoring()
   MB_DPRINTLN("BfacColoring: destructing (%p).", this);
 }
 
-bool BfacColoring::init(MolCoordPtr pMol, Renderer *pRend)
+bool BfacColoring::start(MolCoordPtr pMol, Renderer *pRend)
 {
   if (m_nMode!=BFC_CENTER && !isAutoMode()) return true;
 

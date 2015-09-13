@@ -261,8 +261,8 @@ void DirectSurfRenderer::render(DisplayContext *pdl)
   MolCoordPtr pmol = getClientMol();
 
   // initialize the coloring scheme
-  getColSchm()->init(pmol, this);
-  pmol->getColSchm()->init(pmol, this);
+  getColSchm()->start(pmol, this);
+  pmol->getColSchm()->start(pmol, this);
 
   int i, j;
   int nverts = m_verts.size();
@@ -351,6 +351,10 @@ void DirectSurfRenderer::render(DisplayContext *pdl)
   pdl->setLineWidth(1.0);
   pdl->setCullFace(true);
   pdl->setLighting(false);
+
+  // finalize the coloring scheme
+  getColSchm()->end();
+  pmol->getColSchm()->end();
 }
 
 void DirectSurfRenderer::propChanged(qlib::LPropEvent &ev)
