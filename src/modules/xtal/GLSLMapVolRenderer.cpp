@@ -30,6 +30,8 @@ using qsys::ScrEventManager;
 GLSLMapVolRenderer::GLSLMapVolRenderer()
      : super_t()
 {
+  m_bChkShaderDone = false;
+
   // m_nBufSize = 100;
   m_bPBC = false;
   m_bAutoUpdate = true;
@@ -79,7 +81,7 @@ void GLSLMapVolRenderer::setSceneID(qlib::uid_t nid)
   ScrEventManager *pSEM = ScrEventManager::getInstance();
   pSEM->addViewListener(nid, this);
 
-  initShader();
+  // initShader();
 }
 
 qlib::uid_t GLSLMapVolRenderer::detachObj()
@@ -139,6 +141,7 @@ void GLSLMapVolRenderer::initShader()
   if (!ssh.checkEnvVS()) {
     LOG_DPRINTLN("GPUMapMesh> ERROR: OpenGL GPU shading not supported.");
     MB_THROW(qlib::RuntimeException, "OpenGL GPU shading not supported");
+    m_bChkShaderDone = true;
     return;
   }
 
@@ -149,59 +152,10 @@ void GLSLMapVolRenderer::initShader()
   
   if (m_pPO==NULL) {
     LOG_DPRINTLN("GPUMapMesh> ERROR: cannot create progobj.");
+    m_bChkShaderDone = true;
     return;
   }
 
-#if 0
-  // get GL context
-  sysdep::OglDisplayContext *pOglDC = NULL;
-  qsys::ScenePtr pScene = getScene();
-  qsys::Scene::ViewIter vi = pScene->beginView();
-  qsys::Scene::ViewIter vie = pScene->endView();
-  for (; vi!=vie; ++vi) {
-    qsys::ViewPtr pView = vi->second;
-    gfx::DisplayContext *pDC = pView->getDisplayContext();
-    pDC->setCurrent();
-    pOglDC = dynamic_cast<sysdep::OglDisplayContext *>(pDC);
-    if (pOglDC!=NULL)
-      break;
-  }
-
-  if (pOglDC==NULL) {
-    LOG_DPRINTLN("GPUMapMesh> ERROR: OpenGL GPU shading not supported.");
-    MB_THROW(qlib::RuntimeException, "OpenGL GPU shading not supported");
-    return;
-  }
-
-  // setup shaders
-  if (m_pPO==NULL) {
-    m_pPO = pOglDC->getProgramObject("gpu_mapvol");
-
-    if (m_pPO==NULL) {
-      m_pPO = pOglDC->createProgramObject("gpu_mapvol");
-      if (m_pPO==NULL) {
-        LOG_DPRINTLN("GPUMapMesh> ERROR: cannot create progobj (shader may not be supported).");
-        return;
-      }
-
-      m_pPO->loadShader("vert",
-                        "%%CONFDIR%%/data/shaders/mapvol_vertex.glsl",
-                        GL_VERTEX_SHADER);
-      m_pPO->loadShader("frag",
-                        "%%CONFDIR%%/data/shaders/mapvol_frag.glsl",
-                        GL_FRAGMENT_SHADER);
-
-      m_pPO->link();
-
-      m_pPO->enable();
-
-      // initialize const values
-
-      m_pPO->disable();
-    }
-  }
-#endif
-  
   LOG_DPRINTLN("Init MapVol shader OK.");
 
   // glGenBuffersARB(1, &m_nVBOID);
@@ -231,6 +185,8 @@ void GLSLMapVolRenderer::initShader()
   glDisable(GL_TEXTURE_1D);
 
   glActiveTexture(GL_TEXTURE0);
+
+  m_bChkShaderDone = true;
 }
 
 void GLSLMapVolRenderer::unloading()
@@ -503,6 +459,9 @@ void GLSLMapVolRenderer::genXferFunMap()
 
 void GLSLMapVolRenderer::display(DisplayContext *pdc)
 {
+  if (!m_bChkShaderDone)
+    initShader();
+
   ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
   DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
 

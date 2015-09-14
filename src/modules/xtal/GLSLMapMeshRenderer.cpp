@@ -35,6 +35,8 @@ using qsys::ScrEventManager;
 GLSLMapMeshRenderer::GLSLMapMeshRenderer()
      : super_t()
 {
+  m_bChkShaderDone = false;
+  
   m_nBufSize = 100;
   m_lw = 1.0;
   m_bPBC = false;
@@ -89,7 +91,7 @@ void GLSLMapMeshRenderer::setSceneID(qlib::uid_t nid)
   ScrEventManager *pSEM = ScrEventManager::getInstance();
   pSEM->addViewListener(nid, this);
 
-  initShader();
+  // initShader();
 }
 
 qlib::uid_t GLSLMapMeshRenderer::detachObj()
@@ -147,6 +149,7 @@ void GLSLMapMeshRenderer::initShader()
   if (!ssh.checkEnvGS()) {
     LOG_DPRINTLN("GPUMapMesh> ERROR: OpenGL GPU geom program not supported.");
     MB_THROW(qlib::RuntimeException, "OpenGL GPU geom program not supported");
+    m_bChkShaderDone = true;
     return;
   }
 
@@ -159,6 +162,7 @@ void GLSLMapMeshRenderer::initShader()
   
   if (m_pPO==NULL) {
     LOG_DPRINTLN("GPUMapMesh> ERROR: cannot create progobj.");
+    m_bChkShaderDone = true;
     return;
   }
 
@@ -222,6 +226,7 @@ void GLSLMapMeshRenderer::initShader()
   
   glBindTexture(MY_MAPTEX_DIM, 0);
 
+  m_bChkShaderDone = true;
 }
 
 void GLSLMapMeshRenderer::unloading()
@@ -521,6 +526,9 @@ void GLSLMapMeshRenderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
 
 void GLSLMapMeshRenderer::display(DisplayContext *pdc)
 {
+  if (!m_bChkShaderDone)
+    initShader();
+  
   if (m_pPO==NULL) {
     // TO DO: fallback to non-GPU rendering mode
     return;

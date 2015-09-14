@@ -43,6 +43,7 @@ namespace xtal {
     typedef MapRenderer super_t;
     friend class ::GLSLMapMeshRenderer_wrap;
 
+  private:
     ///////////////////////////////////////////
     // properties
 
@@ -67,11 +68,11 @@ namespace xtal {
 
   private:
 
-    // GLSL shader objects
+    /// GLSL support check flag
+    bool m_bChkShaderDone;
+
+    /// GLSL shader objects
     OglProgramObject *m_pPO;
-    //OglShaderObject *m_pVS;
-    //OglShaderObject *m_pFS;
-    //OglShaderObject *m_pGS;
 
     ///////////////////////////////////////////
     // work area
@@ -148,17 +149,6 @@ namespace xtal {
     ///////////////////////////////////////////////////////////////
 
     void make3DTexMap(ScalarObject *pMap, DensityMap *pXtal);
-
-    /// Generate contour level lines
-    //bool generate(ScalarObject *pMap, DensityMap *pXtal);
-
-    /// Set internal buffer size
-    //bool setCrossArraySize(int ncol, int nrow, int nsec);
-
-    /// Get internal buffer size (in col direction)
-    //int getColCrsSize() const { return m_nColCrs; }
-    //int getRowCrsSize() const { return m_nRowCrs; }
-    //int getSecCrsSize() const { return m_nSecCrs; }
 
     ///////////////////////////////////////////////////////////////
 

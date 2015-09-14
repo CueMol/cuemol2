@@ -44,6 +44,7 @@ namespace xtal {
     typedef MapRenderer super_t;
     friend class ::GLSLMapVolRenderer_wrap;
 
+  private:
     ///////////////////////////////////////////
     // properties
 
@@ -83,6 +84,9 @@ namespace xtal {
 
     ///////////////////////////////////////////
     // work area
+
+    /// GLSL support check flag
+    bool m_bChkShaderDone;
 
     /// size of map (copy from m_pMap)
     int m_nMapColNo, m_nMapRowNo, m_nMapSecNo;
