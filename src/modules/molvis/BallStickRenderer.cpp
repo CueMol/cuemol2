@@ -75,16 +75,22 @@ void BallStickRenderer::display(DisplayContext *pdc)
     return;
   }
 
+  //////////
+
   if (!m_bCheckShaderOK) {
-    if (m_pSlSph->initShader(this)) {
-      MB_DPRINTLN("CPK2 sphere shader OK");
+    if (m_pSlSph->initShader(this) &&
+	m_pSlCyl->initShader(this)) {
+      MB_DPRINTLN("BallStick sphere shader OK");
       m_bUseShader = true;
     }
     else {
       m_bUseShader = false;
     }
+    
     m_bCheckShaderOK = true;
   }
+
+  //////////
 
   if (m_bUseShader &&
       (m_nGlRendMode==REND_DEFAULT ||
