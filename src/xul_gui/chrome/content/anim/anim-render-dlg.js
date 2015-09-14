@@ -14,6 +14,7 @@
   const output_dir_key = "cuemol2.ui.animrender.output-path";
   const ffmpeg_exe_key = "cuemol2.ui.animrender.ffmpeg-exe-path";
   const ncpu_key = "cuemol2.ui.animrender.ncpu";
+  const outbase_key = "cuemol2.ui.animrender.outbase";
 
   var dlg = window.gDlgObj = new Object();
   dlg.mTgtSceID = window.arguments[0];
@@ -79,6 +80,10 @@
     if (prefsvc.has(ncpu_key)) {
       let ncpu = prefsvc.get(ncpu_key);
       document.getElementById("task-concr-run").value = ncpu;
+    }
+
+    if (prefsvc.has(outbase_key)) {
+      this.mOutputBaseBox.value = prefsvc.get(outbase_key);
     }
 
     this.mProgBar = document.getElementById("progress");
@@ -175,6 +180,7 @@
       {
 	let out = out_dir.clone();
 	let base = this.mOutputBaseBox.value;
+	prefsvc.set(outbase_key, base);
 	out.append(base+".log");
 	procMgr.setLogPath(out.path);
       }
