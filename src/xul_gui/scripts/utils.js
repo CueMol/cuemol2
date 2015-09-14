@@ -109,6 +109,18 @@ var util = {};
     aView.setViewCenter(pos);
   }
 
+  util.forEachAtom = function (aMol, aSel, aFunc)
+  {
+    var iter = cuemol.AtomIterator();
+    iter.target = aMol;
+    iter.sel = aSel;
+    for (iter.first(); iter.hasMore(); iter.next()) {
+      var atom = iter.get();
+      if (aFunc(atom))
+	break;
+    }
+  };
+
 } )();
 
 var color = {};

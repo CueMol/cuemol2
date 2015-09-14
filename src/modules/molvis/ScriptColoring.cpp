@@ -60,9 +60,9 @@ bool ScriptColoring::start(MolCoordPtr pMol, Renderer *pRend)
   m_pInterp->eval(scr);
 
   // define the global variables
-  m_pInterp->defineVar("obj", pMol.get()->copy());
+  m_pInterp->defineVar("obj", pMol.copy());
   if (pRend!=NULL) {
-    m_pInterp->defineVar("rend", pRend->copy());
+    m_pInterp->defineVar("rend", m_pRend.copy());
   }
   
   return true;
@@ -84,8 +84,8 @@ ColorPtr ScriptColoring::findAndFillCache(MolAtomPtr pAtom)
   //qlib::LVarArgs args;
 
   qlib::LVarArgs args(2);
-  args.at(0) = qlib::LVariant(pAtom.get()->copy());
-  args.at(1) = qlib::LVariant(pRes.get()->copy());
+  args.at(0) = qlib::LVariant(pAtom.copy());
+  args.at(1) = qlib::LVariant(pRes.copy());
 
   bool res = m_pInterp->invokeMethod("main", args);
   if (!res) {
