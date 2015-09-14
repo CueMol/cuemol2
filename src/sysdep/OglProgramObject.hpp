@@ -352,7 +352,7 @@ namespace sysdep {
       for (; vi!=vie; ++vi) {
         qsys::ViewPtr pView = vi->second;
         gfx::DisplayContext *pDC = pView->getDisplayContext();
-        pDC->setCurrent();
+        //pDC->setCurrent();
         pOglDC = dynamic_cast<sysdep::OglDisplayContext *>(pDC);
         if (pOglDC!=NULL)
           break;
