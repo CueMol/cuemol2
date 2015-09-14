@@ -24,6 +24,7 @@ runtime_class MolChain
 
   object<MolResidue$> getResidue(string index);
   
+  string toString();
 };
 
 #endif

@@ -217,6 +217,8 @@ namespace molstr {
     /// get atom info string
     LString formatMsg() const;
 
+    virtual LString toString() const;
+
     //////////////////////////////////////////////////////////////////////
     // unisotropic B factor
   private:

@@ -33,6 +33,7 @@ runtime_class MolAtom
   property string residName => redirect(getResName, xxx) (readonly);
 
   string formatMsg();
+  string toString();
 
   void setU(integer i, integer j, real uij);
   real getU(integer i, integer j);

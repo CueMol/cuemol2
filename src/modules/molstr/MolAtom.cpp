@@ -113,6 +113,11 @@ LString MolAtom::formatMsg() const
   return msg;
 }
 
+LString MolAtom::toString() const
+{
+  return formatMsg();
+}
+
 bool MolAtom::isBonded(int aid) const
 {
   BOOST_FOREACH(MolBond *pelem, m_bonded) {

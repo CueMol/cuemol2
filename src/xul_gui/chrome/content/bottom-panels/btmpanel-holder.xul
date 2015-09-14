@@ -62,7 +62,7 @@
 	      
 	      <vbox id="seq_scrollbox" flex="1"
 		style="overflow-x:auto; overflow-y:auto; background-color: white;">
-		<hbox flex="0" tooltiptext="XXX">
+		<hbox flex="0">
 		  <html:canvas id="seq_canvas" flex="0"/>
 		  <spacer flex="1"/>
 		</hbox>

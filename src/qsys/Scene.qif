@@ -157,11 +157,12 @@ runtime_class Scene
 
   ////////////////////
 
-  void dump();
-
   /// Execute javascript in this scene
   boolean execJSFile(string);
 
+  void dump();
+
+  string toString();
 };
 
 #endif

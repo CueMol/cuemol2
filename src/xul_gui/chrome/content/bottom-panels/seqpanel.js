@@ -365,7 +365,7 @@ if (!("seqpanel" in cuemolui)) {
         ctx.strokeStyle = old;
       }
 
-      // draw the drag tracking rect
+      // draw the drag tracking rect (mMarkPos - mTRPos2, mMarkRow)
       if (this.mbDrawTrackRect) {
         let ix1 = this.mMarkPos;
         let ix2 = this.mTRPos2;

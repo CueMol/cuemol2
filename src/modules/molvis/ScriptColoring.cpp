@@ -59,6 +59,12 @@ bool ScriptColoring::start(MolCoordPtr pMol, Renderer *pRend)
   scr += "\n};\n";
   m_pInterp->eval(scr);
 
+  // define the global variables
+  m_pInterp->defineVar("obj", pMol.get()->copy());
+  if (pRend!=NULL) {
+    m_pInterp->defineVar("rend", pRend->copy());
+  }
+  
   return true;
 }
 
@@ -73,7 +79,14 @@ ColorPtr ScriptColoring::findAndFillCache(MolAtomPtr pAtom)
     return iter->second;
   }
   
-  qlib::LVarArgs args;
+  MolResiduePtr pRes = pAtom->getParentResidue();
+
+  //qlib::LVarArgs args;
+
+  qlib::LVarArgs args(2);
+  args.at(0) = qlib::LVariant(pAtom.get()->copy());
+  args.at(1) = qlib::LVariant(pRes.get()->copy());
+
   bool res = m_pInterp->invokeMethod("main", args);
   if (!res) {
     // ERROR: main is not defined!! --> stop script coloring
