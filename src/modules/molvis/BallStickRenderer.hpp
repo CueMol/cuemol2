@@ -60,8 +60,8 @@ namespace molvis {
 
     virtual const char *getTypeName() const;
 
-    /// override to initialize the gl shaders
-    virtual void setSceneID(qlib::uid_t nid);
+    // /// override to initialize the gl shaders
+    // virtual void setSceneID(qlib::uid_t nid);
 
     //////////////////////////////////////////////////////
 
@@ -125,6 +125,7 @@ namespace molvis {
 
   private:
     bool m_bUseShader;
+    bool m_bCheckShaderOK;
 
     GLSLSphereHelper *m_pSlSph;
     GLSLCylinderHelper *m_pSlCyl;

@@ -47,14 +47,16 @@ namespace molvis {
 
     bool m_bUseShader;
 
+    bool m_bCheckShaderOK;
+
   public:
     CPK2Renderer();
     virtual ~CPK2Renderer();
 
     virtual const char *getTypeName() const;
 
-    /// override to initialize the shader
-    virtual void setSceneID(qlib::uid_t nid);
+    // /// override to initialize the shader
+    // virtual void setSceneID(qlib::uid_t nid);
 
     /// cleanup the shaders
     virtual void unloading();

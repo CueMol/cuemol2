@@ -24,6 +24,7 @@ CPK2Renderer::CPK2Renderer()
 {
   m_pDrawElem = NULL;
   m_bUseShader = false;
+  m_bCheckShaderOK = false;
   m_pSlSph = MB_NEW GLSLSphereHelper();
   m_nGlRendMode = REND_DEFAULT;
 }
@@ -47,6 +48,17 @@ void CPK2Renderer::display(DisplayContext *pdc)
     // always use the old version.
     super_t::display(pdc);
     return;
+  }
+
+  if (!m_bCheckShaderOK) {
+    if (m_pSlSph->initShader(this)) {
+      MB_DPRINTLN("CPK2 sphere shader OK");
+      m_bUseShader = true;
+    }
+    else {
+      m_bUseShader = false;
+    }
+    m_bCheckShaderOK = true;
   }
 
   if (m_bUseShader &&
@@ -253,21 +265,6 @@ void CPK2Renderer::renderVBOImpl()
 
 //////////////////////
 // GLSL implementation
-
-void CPK2Renderer::setSceneID(qlib::uid_t nid)
-{
-  super_t::setSceneID(nid);
-  if (nid==qlib::invalid_uid)
-    return;
-
-  if (m_pSlSph->initShader(this)) {
-    MB_DPRINTLN("CPK2 sphere shader OK");
-    m_bUseShader = true;
-  }
-  else {
-    m_bUseShader = false;
-  }
-}
 
 void CPK2Renderer::renderShaderImpl()
 {

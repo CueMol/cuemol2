@@ -31,6 +31,7 @@ using gfx::ColorPtr;
 BallStickRenderer::BallStickRenderer()
 {
   m_bUseShader = false;
+  m_bCheckShaderOK = false;
   m_bDrawRingOnly = false;
   m_pSlSph = MB_NEW GLSLSphereHelper();
   m_pSlCyl = MB_NEW GLSLCylinderHelper();
@@ -47,7 +48,7 @@ const char *BallStickRenderer::getTypeName() const
 {
   return "ballstick";
 }
-
+/*
 void BallStickRenderer::setSceneID(qlib::uid_t nid)
 {
   super_t::setSceneID(nid);
@@ -63,6 +64,7 @@ void BallStickRenderer::setSceneID(qlib::uid_t nid)
     m_bUseShader = false;
   }
 }
+*/
 
 void BallStickRenderer::display(DisplayContext *pdc)
 {
@@ -71,6 +73,17 @@ void BallStickRenderer::display(DisplayContext *pdc)
     // always use the old version.
     super_t::display(pdc);
     return;
+  }
+
+  if (!m_bCheckShaderOK) {
+    if (m_pSlSph->initShader(this)) {
+      MB_DPRINTLN("CPK2 sphere shader OK");
+      m_bUseShader = true;
+    }
+    else {
+      m_bUseShader = false;
+    }
+    m_bCheckShaderOK = true;
   }
 
   if (m_bUseShader &&
