@@ -355,13 +355,32 @@ if (!("seqpanel" in cuemolui)) {
 	}
       }
       
+      // draw the seqpos marker
       if (this.mMarkRow!=null && this.mMarkPos!=null) {
-        // display marker
         let x = this.mMarkPos * tw;
         let y = this.mMarkRow * th;
         let old = ctx.strokeStyle;
         ctx.strokeStyle = "rgb(255, 0, 0)";
         ctx.strokeRect(x,y,tw,th);
+        ctx.strokeStyle = old;
+      }
+
+      // draw the drag tracking rect
+      if (this.mbDrawTrackRect) {
+        let ix1 = this.mMarkPos;
+        let ix2 = this.mTRPos2;
+        if (ix1>ix2) {
+          // xchg ix1&ix2 to keep ix1<ix2
+          let tmp = ix1;
+          ix1 = ix2;
+          ix2 = tmp;
+        }
+        let x = ix1 * tw;
+        let w = (ix2-ix1+1) * tw;
+        let y = this.mMarkRow * th;
+        let old = ctx.strokeStyle;
+        ctx.strokeStyle = "rgb(0, 128, 0)";
+        ctx.strokeRect(x,y,w,th);
         ctx.strokeStyle = old;
       }
 
@@ -436,8 +455,10 @@ if (!("seqpanel" in cuemolui)) {
       //dd("seq click: "+ix+", "+iy+" btn="+aEvent.button);
 
       var res = this.getResidueByPos(ix, iy);
-      res.x = x;
-      res.y = y;
+      if (res) {
+        res.x = x;
+        res.y = y;
+      }
       return res;
     }
 
@@ -594,25 +615,35 @@ if (!("seqpanel" in cuemolui)) {
       aEvent.target.setCapture();
       this.mPrevRes = this.getResidueByEvent(aEvent.clientX, aEvent.clientY);
       
-      // var that = this;
-      // aEvent.target.addEventListener("mousemove", that.onMouseMoved, false);
+      var that = this;
+      this.mouseMoveHandler = function(aEvent) {
+        that.onMouseMoved(aEvent);
+      }
+      aEvent.target.addEventListener("mousemove", this.mouseMoveHandler, false);
+      this.mMouseDownY = aEvent.clientY;
 
-      if (! aEvent.shiftKey) {
+      if (!aEvent.shiftKey) {
         // move the marker
         this.mMarkRow = this.mPrevRes.iy;
         this.mMarkPos = this.mPrevRes.ix;
-        this.renderSeq();
       }
       
+      this.mbDrawTrackRect = true;
+      this.mTRPos2 = this.mPrevRes.ix;
+
+      this.renderSeq();
+
       dd("Mouse down called; prev_res="+this.mPrevRes);
     };
 
     panel.onMouseUp = function (aEvent)
     {
-      // var that = this;
-      // aEvent.target.removeEventListener("mousemove", that.onMouseMoved, false);
+      this.mbDrawTrackRect = false;
 
-      var res = this.getResidueByEvent(aEvent.clientX, aEvent.clientY);
+      aEvent.target.removeEventListener("mousemove", this.mouseMoveHandler, false);
+
+      //var res = this.getResidueByEvent(aEvent.clientX, aEvent.clientY);
+      var res = this.getResidueByEvent(aEvent.clientX, this.mMouseDownY);
       dd("Mouse up called; res="+res);
 
       if (!this.mPrevRes || !res) {
@@ -666,6 +697,20 @@ if (!("seqpanel" in cuemolui)) {
       this.rangeSelect(res, true);
     };
 
+    panel.onMouseMoved = function (aEvent)
+    {
+      var res = this.getResidueByEvent(aEvent.clientX, this.mMouseDownY);
+      dd("Mouse moved called. ix="+res.ix+", iy="+res.iy);
+
+      if (this.mTRPos2==res.ix)
+        return; // track rect not changed
+
+      // update the track rect
+      this.mTRPos2 = res.ix;
+      this.renderSeq();
+    };
+
+
     panel.rangeSelect = function (res, bToggle)
     {
       var scene = cuemol.getScene(this.mTgtSceneID);
@@ -704,11 +749,6 @@ if (!("seqpanel" in cuemolui)) {
       
       scene.commitUndoTxn();
       // EDIT TXN END //
-    };
-
-    panel.onMouseMoved = function (aEvent)
-    {
-      //dd("Mouse moved called.");
     };
 
   } )();
