@@ -36,9 +36,7 @@
 	      <menupopup>
 		<menuitem label="Chain" value="chain"/>
 		<menuitem label="Residue" value="resid"/>
-		<menuitem label="Helix" value="ss_helix"/>
-		<menuitem label="Sheet" value="ss_sheet"/>
-		<menuitem label="Helix/Sheet" value="ss_hs"/>
+		<menuitem label="Prot secstr" value="protss"/>
 	      </menupopup>
 	    </menulist>
 	  </row>

@@ -141,6 +141,10 @@ namespace qlib {
       return m_data.empty();
     }
 
+    size_t size() const {
+      return m_data.size();
+    }
+
     /// Append new unit range
     void append(const _Type &nstart, const _Type &nend)
     {

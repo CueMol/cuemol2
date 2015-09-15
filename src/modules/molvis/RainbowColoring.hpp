@@ -11,6 +11,7 @@
 #include <gfx/AbstractColor.hpp>
 #include <modules/molstr/ColoringScheme.hpp>
 #include <modules/molstr/Selection.hpp>
+#include <modules/molstr/ResidRangeSet.hpp>
 
 class RainbowColoring_wrap;
 
@@ -84,6 +85,7 @@ namespace molvis {
     static const int RBC_INCR_SSHELIX = 2;
     static const int RBC_INCR_SSSHEET = 3;
     static const int RBC_INCR_SSHELIXSHEET = 4;
+    static const int RBC_INCR_PROTSS = 5;
 
     int getIncrMode() const { return m_nIncrMode; }
 
@@ -105,6 +107,9 @@ namespace molvis {
 
     mapping_t m_map;
 
+    std::set<key_tuple> m_mkset;
+    ResidRangeSet m_resset;
+
   public:
     RainbowColoring();
     virtual ~RainbowColoring();
@@ -122,8 +127,16 @@ namespace molvis {
     //////////////////////////////////////////////////////
     // Implementation
 
-    void makeMolMap(MolCoordPtr pMol);
-    void makeChainMap(MolChainPtr pCh);
+    //void makeMolMap(MolCoordPtr pMol);
+    //void makeChainMap(MolChainPtr pCh);
+
+    void makeMolMap2(MolCoordPtr pMol);
+    void makeChainMap2(MolChainPtr pCh);
+
+    void procRes_Chain(MolResiduePtr pRes, MolResiduePtr pPrevRes);
+    void procRes_ProtSS(MolResiduePtr pRes);
+    void mkInkPos_ProtSS();
+
   };
 
 } // namespace molvis

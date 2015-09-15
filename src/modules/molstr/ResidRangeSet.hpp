@@ -51,9 +51,18 @@ namespace molstr {
     MC_SCRIPTABLE;
     MC_CLONEABLE;
 
+  public:
     typedef qlib::RangeSet<ResidIndex> elem_type;
     typedef qlib::MapPtrTable<elem_type> data_type;
+
+    typedef data_type::const_iterator const_iterator;
+
+  private:
     data_type m_data;
+
+  public:
+    const_iterator begin() const { return m_data.begin(); }
+    const_iterator end() const { return m_data.end(); }
 
   public:
     /// default constructor

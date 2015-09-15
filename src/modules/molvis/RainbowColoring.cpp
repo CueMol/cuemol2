@@ -60,14 +60,14 @@ bool RainbowColoring::start(MolCoordPtr pMol, Renderer *pRend)
   m_map.clear();
 
   if (m_nMode==RBC_MOL) {
-    makeMolMap(pMol);
+    makeMolMap2(pMol);
   }
   else {
     MolCoord::ChainIter ci = pMol->begin();
     MolCoord::ChainIter cie = pMol->end();
     for (; ci!=cie; ++ci) {
       MolChainPtr pCh = ci->second;
-      makeChainMap(pCh);
+      makeChainMap2(pCh);
     }
   }
   
@@ -75,257 +75,195 @@ bool RainbowColoring::start(MolCoordPtr pMol, Renderer *pRend)
   return true;
 }
 
-namespace {
-  bool ssHelixIncrCond(MolResiduePtr pRes, MolResiduePtr pPrevRes)
-  {
-    if (pPrevRes.isnull())
-      return false;
+///////////////////
+// Implementation
 
-    LString ss, ss_prev;
-    pRes->getPropStr("secondary", ss);
-    pPrevRes->getPropStr("secondary", ss_prev);
-
-    if (ss.equals(ss_prev))
-      return false;
-
-    // ss_prev==helix && ss!=helix --> increment color!!
-    if (ss_prev.equals("helix"))
-      return true;
-
-    return false;
-  }
-
-  bool ssSheetIncrCond(MolResiduePtr pRes, MolResiduePtr pPrevRes)
-  {
-    if (pPrevRes.isnull())
-      return false;
-
-    LString ss, ss_prev;
-    pRes->getPropStr("secondary", ss);
-    pPrevRes->getPropStr("secondary", ss_prev);
-
-    if (ss.equals(ss_prev))
-      return false;
-
-    // ss_prev==sheet && ss!=sheet --> increment color!!
-    if (ss_prev.equals("sheet"))
-      return true;
-
-    return false;
-  }
-
-  bool ssHelixSheetIncrCond(MolResiduePtr pRes, MolResiduePtr pPrevRes)
-  {
-    if (pPrevRes.isnull())
-      return false;
-
-    LString ss, ss_prev;
-    pRes->getPropStr("secondary", ss);
-    pPrevRes->getPropStr("secondary", ss_prev);
-
-    if (ss.equals(ss_prev))
-      return false;
-
-    // ss_prev==(sheet|helix) && ss!=ss_prev --> increment color!!
-    if (ss_prev.equals("sheet") || ss_prev.equals("helix"))
-      return true;
-
-    return false;
-  }
+void RainbowColoring::procRes_ProtSS(MolResiduePtr pRes)
+{
+  LString ss, grp;
+  pRes->getPropStr("group", grp);
+  pRes->getPropStr("secondary", ss);
   
-  bool chainIncrCond(MolResiduePtr pRes, MolResiduePtr pPrevRes)
-  {
-    if (pPrevRes.isnull())
-      return false;
+  if (ss.equals("helix") || ss.equals("sheet"))
+    m_resset.append(pRes);
+}
 
-    // prev chain!=curr chain --> increment color!!
-    if (!pRes->getChainName().equals( pPrevRes->getChainName() ))
-      return true;
-
-    return false;
+void RainbowColoring::mkInkPos_ProtSS()
+{
+  ResidRangeSet::const_iterator riter = m_resset.begin();
+  ResidRangeSet::const_iterator rend = m_resset.end();
+  for (; riter!=rend; ++riter) {
+    LString chname = riter->first;
+    ResidRangeSet::elem_type &range = *(riter->second);
+    ResidRangeSet::elem_type::const_iterator eiter = range.begin();
+    ResidRangeSet::elem_type::const_iterator eend = range.end();
+    int j = 0, rsize = range.size();
+    for (; eiter!=eend; ++eiter, j++) {
+      ResidRangeSet::elem_type::const_iterator enx = eiter;
+      enx++;
+      if (enx!=eend) {
+        ResidIndex ibeg = eiter->nend;
+        ResidIndex iend = enx->nstart;
+        key_tuple kt(chname, (ibeg.toInt()+iend.toInt())/2);
+        m_mkset.insert(kt);
+        MB_DPRINTLN("RNB Incr at %s %d", kt.first.c_str(), int(kt.second.toInt()));
+      }
+    }
+    
   }
 }
 
-void RainbowColoring::makeMolMap(MolCoordPtr pMol)
+void RainbowColoring::procRes_Chain(MolResiduePtr pRes, MolResiduePtr pPrevRes)
 {
-  int nresid = 0;
+  if (pPrevRes.isnull())
+    return;
+  
+  // prev chain!=curr chain --> increment color!!
+  if (!pRes->getChainName().equals( pPrevRes->getChainName() )) {
+    key_tuple kt(pPrevRes->getChainName(), pPrevRes->getIndex());
+    m_mkset.insert(kt);
+  }
+  
+}
 
-  // count color elements
+void RainbowColoring::makeMolMap2(MolCoordPtr pMol)
+{
+  m_resset.clear();
+  m_mkset.clear();
+  int nresid = 0;
+  
   ResidIterator iter(pMol);
   MolResiduePtr pPrevRes;
   for (iter.first(); iter.hasMore(); iter.next()) {
     MolResiduePtr pRes = iter.get();
-
-    // // initialize by start-hue
-    // key_tuple key(pRes->getChainName(), pRes->getIndex()); 
-    // m_map.insert(mapping_t::value_type(key, m_dStartHue));
-
-    if (m_nIncrMode==RBC_INCR_RESID) {
+    switch (m_nIncrMode) {
+    case RBC_INCR_RESID:
       if (!pRes->getPivotAtom().isnull())
         ++nresid;
+      break;
+    case RBC_INCR_PROTSS:
+      procRes_ProtSS(pRes);
+      break;
+    case RBC_INCR_CHAIN:
+      procRes_Chain(pRes, pPrevRes);
+      break;
     }
-    else if (m_nIncrMode==RBC_INCR_SSHELIX) {
-      if (ssHelixIncrCond(pRes, pPrevRes))
-        ++nresid;
-    }
-    else if (m_nIncrMode==RBC_INCR_SSSHEET) {
-      if (ssSheetIncrCond(pRes, pPrevRes))
-        ++nresid;
-    }
-    else if (m_nIncrMode==RBC_INCR_SSHELIXSHEET) {
-      if (ssHelixSheetIncrCond(pRes, pPrevRes))
-        ++nresid;
-    }
-    else if (m_nIncrMode==RBC_INCR_CHAIN) {
-      if (chainIncrCond(pRes, pPrevRes))
-        ++nresid;
-    }
-
+    
     pPrevRes = pRes;
   }
+  
+  if (m_nIncrMode==RBC_INCR_PROTSS)
+    mkInkPos_ProtSS();
+  
+  int ninc = m_mkset.size();
+
+  if (m_nIncrMode==RBC_INCR_RESID)
+    ninc = nresid;
 
   double delHue = 0.0;
-  if (nresid==0) {
-    MB_DPRINTLN("Rainbow> makeMolMap(): nresid is zero!!");
+
+  if (ninc==0) {
+    MB_DPRINTLN("Rainbow> makeChainMap(): nresid is zero!!");
     // return;
   }
   else {
-    delHue = (m_dEndHue-m_dStartHue)/double(nresid);
+    delHue = (m_dEndHue-m_dStartHue)/double(ninc);
   }
-  
-  // calculate color for each element
-  int i = 0;
-  double hue = 0.0;
-  pPrevRes = MolResiduePtr();
-  
+
+  double hue;
+  int i=0;
   for (iter.first(); iter.hasMore(); iter.next()) {
     MolResiduePtr pRes = iter.get();
-    key_tuple key(pRes->getChainName(), pRes->getIndex()); 
+    key_tuple key(pRes->getChainName(), pRes->getIndex());
+
+    hue = m_dStartHue + i*delHue;
+    m_map.insert(mapping_t::value_type(key, hue));
 
     if (m_nIncrMode==RBC_INCR_RESID) {
-      if (!pRes->getPivotAtom().isnull()) {
-        hue = m_dStartHue + i*delHue;
+      if (!pRes->getPivotAtom().isnull())
         ++i;
-      }
     }
-    else if (m_nIncrMode==RBC_INCR_SSHELIX) {
-      if (ssHelixIncrCond(pRes, pPrevRes))
+    else {
+      std::set<key_tuple>::const_iterator jj = m_mkset.find(key);
+      if (jj!=m_mkset.end())
         ++i;
-      hue = m_dStartHue + i*delHue;
     }
-    else if (m_nIncrMode==RBC_INCR_SSSHEET) {
-      if (ssSheetIncrCond(pRes, pPrevRes))
-        ++i;
-      hue = m_dStartHue + i*delHue;
-    }
-    else if (m_nIncrMode==RBC_INCR_SSHELIXSHEET) {
-      if (ssHelixSheetIncrCond(pRes, pPrevRes))
-        ++i;
-      hue = m_dStartHue + i*delHue;
-    }
-    else if (m_nIncrMode==RBC_INCR_CHAIN) {
-      if (chainIncrCond(pRes, pPrevRes))
-        ++i;
-      hue = m_dStartHue + i*delHue;
-    }
-
-    m_map.insert(mapping_t::value_type(key, hue));
-    pPrevRes = pRes;
   }
 
-  MB_DPRINTLN("RainbowColoring> init nres=%d, delHue=%f, OK.", nresid, delHue);
+  m_resset.clear();
+  m_mkset.clear();
 }
 
-void RainbowColoring::makeChainMap(MolChainPtr pCh)
+void RainbowColoring::makeChainMap2(MolChainPtr pCh)
 {
+  m_resset.clear();
+  m_mkset.clear();
+
   int nresid = 0;
   MolResiduePtr pPrevRes;
 
-  // count color elements
   MolChain::ResidCursor rc = pCh->begin();
   MolChain::ResidCursor rce = pCh->end();
   for (; rc!=rce; ++rc) {
     MolResiduePtr pRes = *rc;
 
-    // // init by start-hue color
-    // key_tuple key(pRes->getChainName(), pRes->getIndex()); 
-    // m_map.insert(mapping_t::value_type(key, m_dStartHue));
-
-    if (m_nIncrMode==RBC_INCR_RESID) {
+    switch (m_nIncrMode) {
+    case RBC_INCR_RESID:
       if (!pRes->getPivotAtom().isnull())
         ++nresid;
+      break;
+    case RBC_INCR_PROTSS:
+      procRes_ProtSS(pRes);
+      break;
+    case RBC_INCR_CHAIN:
+      procRes_Chain(pRes, pPrevRes);
+      break;
     }
-    else if (m_nIncrMode==RBC_INCR_SSHELIX) {
-      if (ssHelixIncrCond(pRes, pPrevRes))
-        ++nresid;
-    }
-    else if (m_nIncrMode==RBC_INCR_SSSHEET) {
-      if (ssSheetIncrCond(pRes, pPrevRes))
-        ++nresid;
-    }
-    else if (m_nIncrMode==RBC_INCR_SSHELIXSHEET) {
-      if (ssHelixSheetIncrCond(pRes, pPrevRes))
-        ++nresid;
-    }
-    else if (m_nIncrMode==RBC_INCR_CHAIN) {
-      if (chainIncrCond(pRes, pPrevRes))
-        ++nresid;
-    }
-
+    
     pPrevRes = pRes;
   }
   
+  
+  if (m_nIncrMode==RBC_INCR_PROTSS)
+    mkInkPos_ProtSS();
+  
+  int ninc = m_mkset.size();
+
+  if (m_nIncrMode==RBC_INCR_RESID)
+    ninc = nresid;
+
   double delHue = 0.0;
 
-  if (nresid==0) {
+  if (ninc==0) {
     MB_DPRINTLN("Rainbow> makeChainMap(): nresid is zero!!");
     // return;
   }
   else {
-    delHue = (m_dEndHue-m_dStartHue)/double(nresid);
+    delHue = (m_dEndHue-m_dStartHue)/double(ninc);
   }
-  
+
+  double hue;
   int i=0;
-  double hue = 0.0;
-  pPrevRes = MolResiduePtr();
 
   rc = pCh->begin();
   for (; rc!=rce; ++rc) {
     MolResiduePtr pRes = *rc;
-    key_tuple key(pRes->getChainName(), pRes->getIndex()); 
+    key_tuple key(pRes->getChainName(), pRes->getIndex());
+
+    hue = m_dStartHue + i*delHue;
+    m_map.insert(mapping_t::value_type(key, hue));
 
     if (m_nIncrMode==RBC_INCR_RESID) {
-      if (!pRes->getPivotAtom().isnull()) {
-        hue = m_dStartHue + i*delHue;
+      if (!pRes->getPivotAtom().isnull())
         ++i;
-      }
     }
-    else if (m_nIncrMode==RBC_INCR_SSHELIX) {
-      if (ssHelixIncrCond(pRes, pPrevRes))
+    else {
+      std::set<key_tuple>::const_iterator jj = m_mkset.find(key);
+      if (jj!=m_mkset.end())
         ++i;
-      hue = m_dStartHue + i*delHue;
     }
-    else if (m_nIncrMode==RBC_INCR_SSSHEET) {
-      if (ssSheetIncrCond(pRes, pPrevRes))
-        ++i;
-      hue = m_dStartHue + i*delHue;
-    }
-    else if (m_nIncrMode==RBC_INCR_SSHELIXSHEET) {
-      if (ssHelixSheetIncrCond(pRes, pPrevRes))
-        ++i;
-      hue = m_dStartHue + i*delHue;
-    }
-    else if (m_nIncrMode==RBC_INCR_CHAIN) {
-      if (chainIncrCond(pRes, pPrevRes))
-        ++i;
-      hue = m_dStartHue + i*delHue;
-    }
-
-    m_map.insert(mapping_t::value_type(key, hue));
-    pPrevRes = pRes;
   }
-  
-  MB_DPRINTLN("RainbowColoring> chain %s nres=%d, delHue=%f",
-              pCh->getName().c_str(), nresid, delHue);
-}
 
+  m_resset.clear();
+  m_mkset.clear();
+}
