@@ -28,6 +28,21 @@
 	      </menupopup>
 	    </menulist>
 	  </row>
+
+	  <row align="center" class="propdlg-rowbox">
+	    <label value="Change by:" flex="0"/>
+	    <menulist id="paint-rnb-incrmode" flex="0" class="propdlg-menulist"
+	      oncommand="cuemolui.panels.paint.onRainbowChange(event)">
+	      <menupopup>
+		<menuitem label="Chain" value="chain"/>
+		<menuitem label="Residue" value="resid"/>
+		<menuitem label="Helix" value="ss_helix"/>
+		<menuitem label="Sheet" value="ss_sheet"/>
+		<menuitem label="Helix/Sheet" value="ss_hs"/>
+	      </menupopup>
+	    </menulist>
+	  </row>
+
 	  <row align="center" class="propdlg-rowbox">
 	    <label value="Start H: " flex="0"/>
 	    <numslider id="paint-rnb-starth" flex="1" size="2"
@@ -35,6 +50,7 @@
 	      increment="1" pageincrement="30" unit="&#0176;"
 	      onchange="cuemolui.panels.paint.onRainbowChange(event)"/>
 	  </row>
+
 	  <row align="center" class="propdlg-rowbox">
 	    <label value="End H: " flex="0"/>
 	    <numslider id="paint-rnb-endh" flex="1" size="2"
@@ -42,12 +58,14 @@
 	      increment="1" pageincrement="30" unit="&#0176;"
 	      onchange="cuemolui.panels.paint.onRainbowChange(event)"/>
 	  </row>
+
 	  <row align="center" class="propdlg-rowbox">
 	    <label value="Brightness: " flex="0"/>
 	    <numslider id="paint-rnb-bri" flex="1" size="2"
 	      decimalplaces="0" min="0" max="100" increment="1" unit="%"
 	      onchange="cuemolui.panels.paint.onRainbowChange(event)"/>
 	  </row>
+
 	  <row align="center" class="propdlg-rowbox">
 	    <label value="Saturation: " flex="0"/>
 	    <numslider id="paint-rnb-sat" flex="1" size="2"

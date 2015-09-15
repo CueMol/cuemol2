@@ -37,6 +37,15 @@ runtime_class RainbowColoring extends ColoringScheme
   property enum mode => redirect(getMode, setMode);
   default mode = "mol";
   
+  enumdef incr_mode {
+    resid = molvis::RainbowColoring::RBC_INCR_RESID;
+    chain = molvis::RainbowColoring::RBC_INCR_CHAIN;
+    ss_helix = molvis::RainbowColoring::RBC_INCR_SSHELIX;
+    ss_sheet = molvis::RainbowColoring::RBC_INCR_SSSHEET;
+    ss_hs = molvis::RainbowColoring::RBC_INCR_SSHELIXSHEET;
+  }
+  property enum incr_mode => redirect(getIncrMode, setIncrMode);
+  default incr_mode = "resid";
 
 };
 

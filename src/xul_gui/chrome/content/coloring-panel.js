@@ -1296,6 +1296,7 @@ panel.onCPKColChanged = function (aEvent)
 panel.loadRainbowWidgets = function ()
 {
   this.mRnbMode = document.getElementById("paint-rnb-mode");
+  this.mRnbIncrMode = document.getElementById("paint-rnb-incrmode");
   this.mRnbStaH = document.getElementById("paint-rnb-starth");
   this.mRnbEndH = document.getElementById("paint-rnb-endh");
   this.mRnbBri = document.getElementById("paint-rnb-bri");
@@ -1310,6 +1311,12 @@ panel.updateRainbowWidgets = function (aRend, aPropName)
   if (aPropName==undefined ||
       aPropName=="mode") {
     util.selectMenuListByValue(this.mRnbMode, coloring.mode);
+  }
+
+  if (aPropName==undefined ||
+      aPropName=="incr_mode") {
+    dd("updateRainbowWidgets prop="+aPropName+", value="+coloring.incr_mode);
+    util.selectMenuListByValue(this.mRnbIncrMode, coloring.incr_mode);
   }
   
   if (aPropName==undefined ||
@@ -1351,6 +1358,11 @@ panel.onRainbowChange = function (aEvent)
   switch (tgtid) {
   case "paint-rnb-mode":
     propname = "mode";
+    val = aEvent.target.value;
+    break;
+
+  case "paint-rnb-incrmode":
+    propname = "incr_mode";
     val = aEvent.target.value;
     break;
 
