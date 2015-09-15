@@ -121,6 +121,30 @@ var util = {};
     }
   };
 
+  util.forEachResid = function (aMol, aSel, aFunc)
+  {
+    var iter = cuemol.ResidIterator();
+    iter.target = aMol;
+    iter.sel = aSel;
+    for (iter.first(); iter.hasMore(); iter.next()) {
+      var res = iter.get();
+      if (aFunc(res))
+	break;
+    }
+  };
+
+  util.forEachChain = function (aMol, aSel, aFunc)
+  {
+    var iter = cuemol.ChainIterator();
+    iter.target = aMol;
+    iter.sel = aSel;
+    for (iter.first(); iter.hasMore(); iter.next()) {
+      var ch = iter.get();
+      if (aFunc(ch))
+	break;
+    }
+  };
+
 } )();
 
 var color = {};
@@ -138,6 +162,19 @@ var color = {};
     c.setHSB(aH, aS, aB);
     return c;
   };
+
+  color.mix2 = function (aCol1, aCol2, aRho, aRhoMin, aRhoMax)
+  {
+    var r = (aRho-aRhoMin)/(aRhoMax-aRhoMin);
+    if (r<0.0) r = 0.0;
+    if (r>1.0) r = 1.0;
+    var c = cuemol.GradientColor();
+    c.col1 = aCol1;
+    c.col2 = aCol2;
+    c.rho = r;
+    return c;
+  };
+
 } )();
 
 var debug = {};
@@ -212,5 +249,5 @@ var debug = {};
   };
 } )();
   
-print("Utils loaded.");
+// print("Utils loaded.");
 

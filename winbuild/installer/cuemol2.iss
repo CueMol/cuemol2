@@ -128,6 +128,7 @@ Source: {#XulGUIDir}\data\mono_top.xml; DestDir: {app}\data; Flags: ignoreversio
 Source: {#XulGUIDir}\data\default_params.xml; DestDir: {app}\data; Flags: ignoreversion
 
 Source: {#WinBuildDir}\data\shaders\*; Excludes: "*~,CVS,.svn"; DestDir: {app}\data\shaders; Flags: ignoreversion
+Source: {#WinBuildDir}\scripts\*; Excludes: "*~,CVS,.svn"; DestDir: {app}\scripts; Flags: ignoreversion
 
 ; Source: {#XulGUIDir}\data\amb_all03chg_prot.xml; DestDir: {app}\data; Flags: ignoreversion
 

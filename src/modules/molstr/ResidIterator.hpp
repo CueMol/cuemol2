@@ -1,6 +1,6 @@
 // -*-Mode: C++;-*-
 //
-// Residterator : residue iterator class
+// ResidIterator : residue iterator class
 //
 // $Id: ResidIterator.hpp,v 1.3 2009/02/25 12:27:43 rishitani Exp $
 
@@ -26,10 +26,10 @@ namespace molstr {
     MC_CLONEABLE;
 
   private:
-    /** target mol object */
+    /// target mol object
     MolCoordPtr m_pTarg;
 
-    /** target selection */
+    /// target selection
     SelectionPtr m_pSel;
 
     MolCoord::ChainIter m_citer;
@@ -37,18 +37,18 @@ namespace molstr {
 
   public:
 
-    /** construct iterator pointing to nothing */
+    /// construct iterator pointing to nothing
     ResidIterator()
     {
     }
 
-    /** construct iterator for the all part of the mol pmol */
+    /// construct iterator for the all part of the mol pmol
     ResidIterator(MolCoordPtr pmol)
       : m_pTarg(pmol)
     {
     }
 
-    /** construct iterator for part of pmol selected by psel */
+    /// construct iterator for part of pmol selected by psel
     ResidIterator(MolCoordPtr pmol, SelectionPtr psel)
       : m_pTarg(pmol), m_pSel(psel)
     {

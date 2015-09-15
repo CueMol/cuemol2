@@ -27,6 +27,7 @@ runtime_class NamedColor extends AbstractColor
   default mod_s = 0.0;
   property real mod_b => m_dModBri;
   default mod_b = 0.0;
+
 };
 
 #endif

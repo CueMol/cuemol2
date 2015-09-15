@@ -95,8 +95,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\gfx\GradientColor_wrap.cpp" />
     <ClCompile Include="..\..\src\gfx\MultiGradient.cpp" />
     <ClCompile Include="..\..\src\gfx\MultiGradient_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\ChainIterator.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\ChainIterator_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\CPK2Renderer.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\CPK2Renderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\ScriptColoring.cpp" />
@@ -389,7 +392,9 @@
     <ClInclude Include="..\..\src\modules\molstr\QdfMolReader.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <mcwrapgen3 Include="..\..\src\gfx\GradientColor.qif" />
     <mcwrapgen3 Include="..\..\src\gfx\MultiGradient.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molstr\ChainIterator.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\CPK2Renderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\ScriptColoring.qif" />
     <mcwrapgen3 Include="..\..\src\qsys\Camera.qif" />

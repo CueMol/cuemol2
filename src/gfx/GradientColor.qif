@@ -1,0 +1,28 @@
+// -*-Mode: C++;-*-
+//
+//  Gradient Color scripting interface
+
+#ifndef GRADIENT_COLOR_QIF_INCLUDED
+#define GRADIENT_COLOR_QIF_INCLUDED
+
+#include "AbstractColor.qif"
+
+runtime_class GradientColor extends AbstractColor
+{
+  client_hdr "GradientColor.hpp";
+  client_name gfx::GradientColor;
+
+  scriptable;
+  cloneable;
+  smartptr;
+
+  property real rho => redirect(getGradParam, setGradParam);
+  default rho = 0.0;
+  
+  property object<AbstractColor$> col1 => redirect(getGradColor1, setGradColor1);
+  property object<AbstractColor$> col2 => redirect(getGradColor2, setGradColor2);
+  
+};
+
+#endif
+

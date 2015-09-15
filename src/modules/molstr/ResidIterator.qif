@@ -18,10 +18,15 @@ runtime_class ResidIterator
 
   property object<MolCoord$> target => redirect(getTarget, setTarget);
 
+  property object<MolSelection$> sel => redirect(getSelection, setSelection);
+
+
   void first();
   void next();
   boolean hasMore();
   // integer getID();
   object<MolResidue$> get();
   
+  string toString();
 };
+

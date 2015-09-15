@@ -8,6 +8,7 @@
 #include "MolColorRef.qif"
 #include "TextImgBuf.qif"
 #include "MultiGradient.qif"
+#include "GradientColor.qif"
 
 module gfx
 {
@@ -20,6 +21,7 @@ module gfx
   MolColorRef;
   TextImgBuf;
   MultiGradient;
+  GradientColor;
 };
 
 

@@ -101,6 +101,7 @@ cuemol2.jar:
   content/coloring-deck-rainbow.xul
   content/coloring-deck-bfac.xul
   content/coloring-deck-elepot.xul
+  content/coloring-deck-script.xul
   content/paintpanel-bindings.xml
   content/paint-propdlg.xul
   content/paint-propdlg.js

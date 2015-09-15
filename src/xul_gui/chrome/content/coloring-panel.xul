@@ -5,6 +5,7 @@
 <?xul-overlay href="chrome://cuemol2/content/coloring-deck-rainbow.xul"?>
 <?xul-overlay href="chrome://cuemol2/content/coloring-deck-bfac.xul"?>
 <?xul-overlay href="chrome://cuemol2/content/coloring-deck-elepot.xul"?>
+<?xul-overlay href="chrome://cuemol2/content/coloring-deck-script.xul"?>
 <!DOCTYPE overlay SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
 
 <overlay id="coloring-panel"

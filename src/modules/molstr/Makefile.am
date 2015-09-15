@@ -32,6 +32,7 @@ parser_sel.yxx scanner_sel.lxx \
 BondIterator.cpp \
 TopoBuilder.cpp \
 ResidIterator.cpp \
+ChainIterator.cpp \
 ResiPatch.cpp \
 ResiToppar.cpp \
 ParamDB.cpp \
@@ -73,6 +74,7 @@ SimpleRenderer.qif \
 SelCommand.qif \
 Selection.qif \
 ResidIterator.qif \
+ChainIterator.qif \
 AtomIterator.qif \
 MolAtom.qif \
 MolResidue.qif \

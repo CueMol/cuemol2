@@ -127,6 +127,7 @@ void ScriptColoring::end()
   m_pRend = RendererPtr();
   if (m_pInterp!=NULL)
     delete m_pInterp;
+  m_map.clear();
 }
 
 void ScriptColoring::writeTo2(qlib::LDom2Node *pNode) const

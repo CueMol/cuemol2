@@ -12,7 +12,7 @@
 
 using namespace gfx;
 
-MC_CLONEABLE_IMPL(gfx::GradientColor);
+// MC_CLONEABLE_IMPL(gfx::GradientColor);
 
 GradientColor::GradientColor()
 {

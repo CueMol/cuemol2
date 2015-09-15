@@ -17,6 +17,7 @@ if (!("paint" in cuemolui.panels)) {
     const COL_RAINBOW = 5;
     const COL_BFAC    = 6;
     const COL_ELEPOT  = 7;
+    const COL_SCRIPT  = 8;
 
     var panel = cuemolui.panels.paint = new Object();
 
@@ -254,6 +255,11 @@ panel._setupData = function (aRend)
     this.mTgtColType = COL_BFAC;
     return true;
   }
+  else if (clsname == "ScriptColoring") {
+    this._selectDeckById("coloring-deck-script");
+    this.mTgtColType = COL_SCRIPT;
+    return true;
+  }
 
   if (clsname=="PaintColoring") {
     this._setupPaintColoring(aRend, coloring);
@@ -320,13 +326,17 @@ panel.setupColoringSelector = function (aRend, clsname)
 panel._initWidgets = function (aRend)
 {
   var type = this.mTgtColType;
-  if (type == COL_PAINT) {
+
+  switch (type) {
+  case  COL_PAINT: {
     this.mTreeView.buildView();
+    break;
   }
-  else if (type == COL_SOLID) {
+  case COL_SOLID: {
     this.updateSolidWidgets(aRend);
+    break;
   }
-  else if (type == COL_CPK) {
+  case COL_CPK: {
     this.mCPKColC.setTargetSceneID(this.mTgtSceID);
     this.mCPKColN.setTargetSceneID(this.mTgtSceID);
     this.mCPKColO.setTargetSceneID(this.mTgtSceID);
@@ -335,18 +345,24 @@ panel._initWidgets = function (aRend)
     this.mCPKColH.setTargetSceneID(this.mTgtSceID);
     this.mCPKColX.setTargetSceneID(this.mTgtSceID);
     this.updateCPKAll(aRend);
+    break;
   }
-  else if (type == COL_RAINBOW) {
-    //
+  case COL_RAINBOW: {
     this.updateRainbowWidgets(aRend);
+    break;
   }
-  else if (type == COL_BFAC) {
-    //
+  case COL_BFAC: {
     this.updateBfacWidgets(aRend);
+    break;
   }
-  else if (type == COL_ELEPOT) {
-    //
+  case COL_ELEPOT: {
     this.updateElepotWidgets(aRend);
+    break;
+  }
+  case COL_SCRIPT: {
+    this.updateScriptWidgets(aRend);
+    break;
+  }
   }
 }
 
@@ -393,6 +409,10 @@ panel._updateWidgets = function (aRend, aPropName, aParentName)
       this.updateElepotWidgets(aRend, aPropName);
     return;
   }
+  case COL_SCRIPT: {
+    this.updateScriptWidgets(aRend);
+    break;
+  }
   }
 }
 
@@ -425,48 +445,50 @@ panel.onLoad = function ()
 {
   try {
 
-  var that = this;
+    var that = this;
 
-  this.mColMenu = document.getElementById("colpanel-coloring-menu");
+    this.mColMenu = document.getElementById("colpanel-coloring-menu");
 
-  // Setup the toolbuttons/widgets
-  this.mPanelDeck = document.getElementById("colpanel-deck");
-  this.mColClassName = document.getElementById("colpanel-clsname");
+    // Setup the toolbuttons/widgets
+    this.mPanelDeck = document.getElementById("colpanel-deck");
+    this.mColClassName = document.getElementById("colpanel-clsname");
 
-  this.mBtnNew = document.getElementById("paintpanel-addbtn");
-  this.mBtnDel = document.getElementById("paintpanel-delbtn");
-  this.mBtnProp = document.getElementById("paintpanel-propbtn");
-  this.mBtnUp = document.getElementById("paintpanel-moveupbtn");
-  this.mBtnDown = document.getElementById("paintpanel-movedownbtn");
+    this.mBtnNew = document.getElementById("paintpanel-addbtn");
+    this.mBtnDel = document.getElementById("paintpanel-delbtn");
+    this.mBtnProp = document.getElementById("paintpanel-propbtn");
+    this.mBtnUp = document.getElementById("paintpanel-moveupbtn");
+    this.mBtnDown = document.getElementById("paintpanel-movedownbtn");
 
-  // Setup event handlers
+    // Setup event handlers
 
-  this.mSelector.addSelChanged(function(aEvent) {
-    try { that.targetChanged(aEvent);}
-    catch (e) { debug.exception(e); }
-  });
-  
-  this.mTreeView.addEventListener("select", function(e) { that.onTreeSelChanged(); }, false);
-    
-  // Setup Solid coloring panel
-  this.loadSolidWidgets();
+    this.mSelector.addSelChanged(function(aEvent) {
+      try { that.targetChanged(aEvent);}
+      catch (e) { debug.exception(e); }
+    });
 
-  // Setup CPKColoring panel
-  this.loadCPKWidgets();
+    this.mTreeView.addEventListener("select", function(e) { that.onTreeSelChanged(); }, false);
 
-  /// Rainbow coloring panel
-  this.loadRainbowWidgets();
+    // Setup Solid coloring panel
+    this.loadSolidWidgets();
 
-  /// Bfac coloring panel
-  this.loadBfacWidgets();
+    // Setup CPKColoring panel
+    this.loadCPKWidgets();
 
-  /// Elepot coloring panel
-  this.loadElepotWidgets();
+    /// Rainbow coloring panel
+    this.loadRainbowWidgets();
 
-  // set listener for elepot-obj-selector "select" change event
-  this.mPotSel.addSelChanged(function(args) {that.onPotSelChanged(args)});
+    /// Bfac coloring panel
+    this.loadBfacWidgets();
 
-  this.mLoaded = true;
+    /// Elepot coloring panel
+    this.loadElepotWidgets();
+
+    this.loadScriptWidgets();
+
+    // set listener for elepot-obj-selector "select" change event
+    this.mPotSel.addSelChanged(function(args) {that.onPotSelChanged(args)});
+
+    this.mLoaded = true;
   }
   catch (e) {
     debug.exception(e);
@@ -1666,6 +1688,51 @@ panel.commitElepotPropChange = function (propname, val)
   }
   scene.commitUndoTxn();
   // EDIT TXN END //
+};
+
+////////////////////////////////////////////////////////////////
+// Script coloring implementation
+
+panel.loadScriptWidgets = function ()
+{
+  this.mScriptText = document.getElementById("paint-sciprt-textbox");
+  this.mScrUpdateBtn = document.getElementById("paint-script-updatebtn");
+  this.mScrUpdateBtn.disabled = true;
+  this.mScriptText.addEventListener("change", function(e) { panel.onChgScrTest(e); }, false);
+};
+
+panel.onChgScrTest = function (aEvent)
+{
+  dd("Change script text");
+  this.mScrUpdateBtn.disabled = false;
+};
+
+panel.updateScriptWidgets = function (aRend)
+{
+  this.mScriptText.value = aRend.coloring.script;
+  this.mScrUpdateBtn.disabled = true;
+};
+
+panel.onLoadColoringScript = function (aEvent)
+{
+  var rend = cuemol.getUIDObj(this.mTgtRendID);
+  var scene = rend.getScene();
+  var val = this.mScriptText.value;
+
+  // EDIT TXN START //
+  scene.startUndoTxn("Change Script coloring");
+  try {
+    rend._wrapped.setProp("coloring.script", val);
+  }
+  catch (e) {
+    dd("PaintPanel.commitPropChg> FATAL ERROR: "+e);
+    debug.exception(e);
+    scene.rollbackUndoTxn();
+    return;
+  }
+  scene.commitUndoTxn();
+  // EDIT TXN END //
+
 };
 
 ////////////////////////////////////////////////////////////////
