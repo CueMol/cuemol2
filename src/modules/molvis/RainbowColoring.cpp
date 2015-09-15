@@ -8,6 +8,7 @@
 #include "molvis.hpp"
 #include "RainbowColoring.hpp"
 #include <modules/molstr/ResidIterator.hpp>
+#include <modules/molstr/SelCommand.hpp>
 
 using namespace molvis;
 using namespace molstr;
@@ -52,11 +53,11 @@ bool RainbowColoring::getResidColor(MolResiduePtr pResid, ColorPtr &rColor)
 
 bool RainbowColoring::start(MolCoordPtr pMol, Renderer *pRend)
 {
-  // MolCoordPtr pMol(pRend->getClientObj(), qlib::no_throw_tag());
   if (pMol.isnull()) {
     return false;
   }
 
+  m_pMol = pMol;
   m_map.clear();
 
   if (m_nMode==RBC_MOL) {
@@ -71,6 +72,7 @@ bool RainbowColoring::start(MolCoordPtr pMol, Renderer *pRend)
     }
   }
   
+  m_pMol = MolCoordPtr();
   m_bInit = true;
   return true;
 }
@@ -86,6 +88,39 @@ void RainbowColoring::procRes_ProtSS(MolResiduePtr pRes)
   
   if (ss.equals("helix") || ss.equals("sheet"))
     m_resset.append(pRes);
+}
+
+MolResiduePtr RainbowColoring::getCentRes(const LString &chname, ResidIndex ibeg, ResidIndex iend)
+{
+  int icen = (ibeg.first+iend.first)/2;
+  MolResiduePtr pTes = m_pMol->getResidue(chname, ResidIndex(icen));
+  if (!pTes.isnull())
+    return pTes;
+
+  LString sbeg, send;
+  if (!ibeg.second)
+    sbeg = LString::format("%d", ibeg.first);
+  else
+    sbeg = LString::format("%d%c", ibeg.first, ibeg.second);
+  if (!iend.second)
+    send = LString::format("%d", iend.first);
+  else
+    send = LString::format("%d%c", iend.first, iend.second);
+
+  LString selstr = chname + "." + sbeg + ":" + send + ".*";
+  SelectionPtr psel(new SelCommand(selstr));
+  std::deque<MolResiduePtr> resvec;
+  
+  ResidIterator iter(m_pMol, psel);
+  for (iter.first(); iter.hasMore(); iter.next()) {
+    resvec.push_back(iter.get());
+  }
+  int nsz = resvec.size();
+  icen = nsz/2;
+  if (icen<0||icen>=nsz)
+    return MolResiduePtr();
+
+  return resvec[icen];
 }
 
 void RainbowColoring::mkInkPos_ProtSS()
@@ -104,9 +139,12 @@ void RainbowColoring::mkInkPos_ProtSS()
       if (enx!=eend) {
         ResidIndex ibeg = eiter->nend;
         ResidIndex iend = enx->nstart;
-        key_tuple kt(chname, (ibeg.toInt()+iend.toInt())/2);
-        m_mkset.insert(kt);
-        MB_DPRINTLN("RNB Incr at %s %d", kt.first.c_str(), int(kt.second.toInt()));
+        MolResiduePtr pcres = getCentRes(chname, ibeg, iend);
+        if (!pcres.isnull()) {
+          key_tuple kt(chname, pcres->getIndex());
+          m_mkset.insert(kt);
+          MB_DPRINTLN("RNB Incr at %s %d", kt.first.c_str(), int(kt.second.toInt()));
+        }
       }
     }
     

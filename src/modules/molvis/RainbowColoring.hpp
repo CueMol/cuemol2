@@ -110,6 +110,8 @@ namespace molvis {
     std::set<key_tuple> m_mkset;
     ResidRangeSet m_resset;
 
+    MolCoordPtr m_pMol;
+    
   public:
     RainbowColoring();
     virtual ~RainbowColoring();
@@ -123,6 +125,7 @@ namespace molvis {
     virtual bool getAtomColor(MolAtomPtr pAtom, ColorPtr &color);
     virtual bool getResidColor(MolResiduePtr pResid, ColorPtr &color);
 
+    // virtual bool end();
 
     //////////////////////////////////////////////////////
     // Implementation
@@ -136,6 +139,8 @@ namespace molvis {
     void procRes_Chain(MolResiduePtr pRes, MolResiduePtr pPrevRes);
     void procRes_ProtSS(MolResiduePtr pRes);
     void mkInkPos_ProtSS();
+
+    MolResiduePtr getCentRes(const LString &chname, ResidIndex ibeg, ResidIndex iend);
 
   };
 
