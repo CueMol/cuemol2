@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+
+<!DOCTYPE overlay SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+
+<overlay id="coloring-deck-paint-overlay"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <overlaytarget id="colpanel-deck">
+
+    <vbox id="coloring-deck-script">
+
+      <hbox align="center">
+	<description value="Script coloring:"/>
+	<spacer flex="1"/>
+	<button id="paint-script-updatebtn" label="Update"
+	  oncommand="cuemolui.panels.paint.onLoadColoringScript(event)"/>
+      </hbox>
+      <textbox id="paint-sciprt-textbox" flex="1"
+	emptytext="(noscript)" multiline="true"/>
+      
+    </vbox>
+
+  </overlaytarget>
+
+</overlay>
+

@@ -1,0 +1,30 @@
+// -*-Mode: C++;-*-
+//
+// Chain iterator scripting interface
+
+#include "MolChain.qif"
+#include "MolCoord.qif"
+
+runtime_class ChainIterator
+{
+  client_hdr "ChainIterator.hpp";
+  client_name molstr::ChainIterator;
+
+  scriptable;
+  cloneable;
+  smartptr;
+
+  property object<MolCoord$> target => redirect(getTarget, setTarget);
+
+  property object<MolSelection$> sel => redirect(getSelection, setSelection);
+
+
+  void first();
+  void next();
+  boolean hasMore();
+  // integer getID();
+  object<MolChain$> get();
+  
+  string toString();
+};
+
