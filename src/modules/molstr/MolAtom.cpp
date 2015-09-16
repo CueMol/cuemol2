@@ -121,6 +121,8 @@ LString MolAtom::toString() const
 bool MolAtom::isBonded(int aid) const
 {
   BOOST_FOREACH(MolBond *pelem, m_bonded) {
+    if (pelem->getAtom1()==aid)
+      return true;
     if (pelem->getAtom2()==aid)
       return true;
   }
@@ -130,6 +132,8 @@ bool MolAtom::isBonded(int aid) const
 MolBond *MolAtom::getBond(int aid) const
 {
   BOOST_FOREACH(MolBond *pelem, m_bonded) {
+    if (pelem->getAtom1()==aid)
+      return pelem;
     if (pelem->getAtom2()==aid)
       return pelem;
   }
@@ -138,10 +142,19 @@ MolBond *MolAtom::getBond(int aid) const
 
 bool MolAtom::addBond(MolBond *pBond)
 {
-  MB_ASSERT(pBond->getAtom1()==getID());
-  int aid = pBond->getAtom2();
-  if (isBonded(aid))
-    return false;
+  if (pBond->getAtom1()==getID()) {
+    int aid = pBond->getAtom2();
+    if (isBonded(aid))
+      return false;
+  }
+  else if (pBond->getAtom2()==getID()) {
+    int aid = pBond->getAtom1();
+    if (isBonded(aid))
+      return false;
+  }
+  else {
+    MB_ASSERT(false);
+  }
 
   if (m_bonded.capacity()<=m_bonded.size())
     m_bonded.reserve(m_bonded.size()+4);

@@ -99,19 +99,19 @@
         <atom id="O" elem="O" type="O" charge="-0.422"/>
       </atoms>
       <bonds>
-        <bond id1="N" id2="H" type="coval" value="0.860" esd="0.020"/>
-        <bond id1="N" id2="CA" type="coval" value="1.458" esd="0.019"/>
-        <bond id1="CA" id2="HA" type="coval" value="0.980" esd="0.020"/>
-        <bond id1="CA" id2="CB" type="coval" value="1.530" esd="0.020"/>
-        <bond id1="CB" id2="HB2" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="HB3" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="CG" type="coval" value="1.516" esd="0.025"/>
-        <bond id1="CG" id2="OD1" type="coval" value="1.231" esd="0.019"/>
-        <bond id1="CG" id2="ND2" type="coval" value="1.328" esd="0.021"/>
-        <bond id1="ND2" id2="HD21" type="coval" value="0.980" esd="0.020"/>
-        <bond id1="ND2" id2="HD22" type="coval" value="0.980" esd="0.020"/>
-        <bond id1="CA" id2="C" type="coval" value="1.525" esd="0.021"/>
-        <bond id1="C" id2="O" type="coval" value="1.231" esd="0.020"/>
+        <bond id1="N" id2="H" type="single" value="0.860" esd="0.020"/>
+        <bond id1="N" id2="CA" type="single" value="1.458" esd="0.019"/>
+        <bond id1="CA" id2="HA" type="single" value="0.980" esd="0.020"/>
+        <bond id1="CA" id2="CB" type="single" value="1.530" esd="0.020"/>
+        <bond id1="CB" id2="HB2" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="HB3" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="CG" type="single" value="1.516" esd="0.025"/>
+        <bond id1="CG" id2="OD1" type="double" value="1.231" esd="0.019"/>
+        <bond id1="CG" id2="ND2" type="single" value="1.328" esd="0.021"/>
+        <bond id1="ND2" id2="HD21" type="single" value="0.980" esd="0.020"/>
+        <bond id1="ND2" id2="HD22" type="single" value="0.980" esd="0.020"/>
+        <bond id1="CA" id2="C" type="single" value="1.525" esd="0.021"/>
+        <bond id1="C" id2="O" type="double" value="1.231" esd="0.020"/>
       </bonds>
     </resid>
   

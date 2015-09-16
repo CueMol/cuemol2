@@ -366,6 +366,7 @@ MolBond *MolCoord::makeBond(int aaid1, int aaid2, bool bPersist /*=false*/)
   pB->setAtom2(aid2);
 
   pA1->addBond(pB);
+  pA2->addBond(pB);
 
   return pB;
 }
