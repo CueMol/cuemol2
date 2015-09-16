@@ -15,15 +15,15 @@
         <atom id="O" elem="O" type="O" charge="-0.422"/>
       </atoms>
       <bonds>
-        <bond id1="N" id2="H" type="coval" value="0.860" esd="0.020"/>
-        <bond id1="N" id2="CA" type="coval" value="1.458" esd="0.019"/>
-        <bond id1="CA" id2="HA" type="coval" value="0.980" esd="0.020"/>
-        <bond id1="CA" id2="CB" type="coval" value="1.521" esd="0.033"/>
-        <bond id1="CB" id2="HB1" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="CB" id2="HB2" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="CB" id2="HB3" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="CA" id2="C" type="coval" value="1.525" esd="0.021"/>
-        <bond id1="C" id2="O" type="coval" value="1.231" esd="0.020"/>
+        <bond id1="N" id2="H" type="single" value="0.860" esd="0.020"/>
+        <bond id1="N" id2="CA" type="single" value="1.458" esd="0.019"/>
+        <bond id1="CA" id2="HA" type="single" value="0.980" esd="0.020"/>
+        <bond id1="CA" id2="CB" type="single" value="1.521" esd="0.033"/>
+        <bond id1="CB" id2="HB1" type="single" value="0.960" esd="0.020"/>
+        <bond id1="CB" id2="HB2" type="single" value="0.960" esd="0.020"/>
+        <bond id1="CB" id2="HB3" type="single" value="0.960" esd="0.020"/>
+        <bond id1="CA" id2="C" type="single" value="1.525" esd="0.021"/>
+        <bond id1="C" id2="O" type="double" value="1.231" esd="0.020"/>
       </bonds>
     </resid>
   
@@ -55,29 +55,29 @@
         <atom id="O" elem="O" type="O" charge="-0.422"/>
       </atoms>
       <bonds>
-        <bond id1="N" id2="H" type="coval" value="0.860" esd="0.020"/>
-        <bond id1="N" id2="CA" type="coval" value="1.458" esd="0.019"/>
-        <bond id1="CA" id2="HA" type="coval" value="0.980" esd="0.020"/>
-        <bond id1="CA" id2="CB" type="coval" value="1.530" esd="0.020"/>
-        <bond id1="CB" id2="HB2" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="HB3" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="CG" type="coval" value="1.520" esd="0.030"/>
-        <bond id1="CG" id2="HG2" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CG" id2="HG3" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CG" id2="CD" type="coval" value="1.520" esd="0.030"/>
-        <bond id1="CD" id2="HD2" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CD" id2="HD3" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CD" id2="NE" type="coval" value="1.460" esd="0.018"/>
-        <bond id1="NE" id2="HE" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="NE" id2="CZ" type="coval" value="1.329" esd="0.014"/>
-        <bond id1="CZ" id2="NH1" type="coval" value="1.326" esd="0.018"/>
-        <bond id1="NH1" id2="HH11" type="coval" value="0.860" esd="0.020"/>
-        <bond id1="NH1" id2="HH12" type="coval" value="0.860" esd="0.020"/>
-        <bond id1="CZ" id2="NH2" type="coval" value="1.326" esd="0.018"/>
-        <bond id1="NH2" id2="HH21" type="coval" value="0.860" esd="0.020"/>
-        <bond id1="NH2" id2="HH22" type="coval" value="0.860" esd="0.020"/>
-        <bond id1="CA" id2="C" type="coval" value="1.525" esd="0.021"/>
-        <bond id1="C" id2="O" type="coval" value="1.231" esd="0.020"/>
+        <bond id1="N" id2="H" type="single" value="0.860" esd="0.020"/>
+        <bond id1="N" id2="CA" type="single" value="1.458" esd="0.019"/>
+        <bond id1="CA" id2="HA" type="single" value="0.980" esd="0.020"/>
+        <bond id1="CA" id2="CB" type="single" value="1.530" esd="0.020"/>
+        <bond id1="CB" id2="HB2" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="HB3" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="CG" type="single" value="1.520" esd="0.030"/>
+        <bond id1="CG" id2="HG2" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CG" id2="HG3" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CG" id2="CD" type="single" value="1.520" esd="0.030"/>
+        <bond id1="CD" id2="HD2" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CD" id2="HD3" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CD" id2="NE" type="single" value="1.460" esd="0.018"/>
+        <bond id1="NE" id2="HE" type="single" value="0.970" esd="0.020"/>
+        <bond id1="NE" id2="CZ" type="single" value="1.329" esd="0.014"/>
+        <bond id1="CZ" id2="NH1" type="double" value="1.326" esd="0.018"/>
+        <bond id1="NH1" id2="HH11" type="single" value="0.860" esd="0.020"/>
+        <bond id1="NH1" id2="HH12" type="single" value="0.860" esd="0.020"/>
+        <bond id1="CZ" id2="NH2" type="single" value="1.326" esd="0.018"/>
+        <bond id1="NH2" id2="HH21" type="single" value="0.860" esd="0.020"/>
+        <bond id1="NH2" id2="HH22" type="single" value="0.860" esd="0.020"/>
+        <bond id1="CA" id2="C" type="single" value="1.525" esd="0.021"/>
+        <bond id1="C" id2="O" type="double" value="1.231" esd="0.020"/>
       </bonds>
     </resid>
   
@@ -131,17 +131,17 @@
         <atom id="O" elem="O" type="O" charge="-0.422"/>
       </atoms>
       <bonds>
-        <bond id1="N" id2="H" type="coval" value="0.860" esd="0.020"/>
-        <bond id1="N" id2="CA" type="coval" value="1.458" esd="0.019"/>
-        <bond id1="CA" id2="HA" type="coval" value="0.980" esd="0.020"/>
-        <bond id1="CA" id2="CB" type="coval" value="1.530" esd="0.020"/>
-        <bond id1="CB" id2="HB2" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="HB3" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="CG" type="coval" value="1.516" esd="0.025"/>
-        <bond id1="CG" id2="OD1" type="coval" value="1.249" esd="0.019"/>
-        <bond id1="CG" id2="OD2" type="coval" value="1.249" esd="0.019"/>
-        <bond id1="CA" id2="C" type="coval" value="1.525" esd="0.021"/>
-        <bond id1="C" id2="O" type="coval" value="1.231" esd="0.020"/>
+        <bond id1="N" id2="H" type="single" value="0.860" esd="0.020"/>
+        <bond id1="N" id2="CA" type="single" value="1.458" esd="0.019"/>
+        <bond id1="CA" id2="HA" type="single" value="0.980" esd="0.020"/>
+        <bond id1="CA" id2="CB" type="single" value="1.530" esd="0.020"/>
+        <bond id1="CB" id2="HB2" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="HB3" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="CG" type="single" value="1.516" esd="0.025"/>
+        <bond id1="CG" id2="OD1" type="double" value="1.249" esd="0.019"/>
+        <bond id1="CG" id2="OD2" type="single" value="1.249" esd="0.019"/>
+        <bond id1="CA" id2="C" type="single" value="1.525" esd="0.021"/>
+        <bond id1="C" id2="O" type="single" value="1.231" esd="0.020"/>
       </bonds>
     </resid>
   
@@ -160,16 +160,16 @@
         <atom id="O" elem="O" type="O" charge="-0.422"/>
       </atoms>
       <bonds>
-        <bond id1="N" id2="H" type="coval" value="0.860" esd="0.020"/>
-        <bond id1="N" id2="CA" type="coval" value="1.458" esd="0.019"/>
-        <bond id1="CA" id2="HA" type="coval" value="0.980" esd="0.020"/>
-        <bond id1="CA" id2="CB" type="coval" value="1.530" esd="0.020"/>
-        <bond id1="CB" id2="HB2" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="HB3" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="SG" type="coval" value="1.808" esd="0.033"/>
-        <bond id1="HG" id2="SG" type="coval" value="1.340" esd="0.020"/>
-        <bond id1="CA" id2="C" type="coval" value="1.525" esd="0.021"/>
-        <bond id1="C" id2="O" type="coval" value="1.231" esd="0.020"/>
+        <bond id1="N" id2="H" type="single" value="0.860" esd="0.020"/>
+        <bond id1="N" id2="CA" type="single" value="1.458" esd="0.019"/>
+        <bond id1="CA" id2="HA" type="single" value="0.980" esd="0.020"/>
+        <bond id1="CA" id2="CB" type="single" value="1.530" esd="0.020"/>
+        <bond id1="CB" id2="HB2" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="HB3" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="SG" type="single" value="1.808" esd="0.033"/>
+        <bond id1="HG" id2="SG" type="single" value="1.340" esd="0.020"/>
+        <bond id1="CA" id2="C" type="single" value="1.525" esd="0.021"/>
+        <bond id1="C" id2="O" type="double" value="1.231" esd="0.020"/>
       </bonds>
     </resid>
   
@@ -194,22 +194,22 @@
         <atom id="O" elem="O" type="O" charge="-0.422"/>
       </atoms>
       <bonds>
-        <bond id1="N" id2="H" type="coval" value="0.860" esd="0.020"/>
-        <bond id1="N" id2="CA" type="coval" value="1.458" esd="0.019"/>
-        <bond id1="CA" id2="HA" type="coval" value="0.980" esd="0.020"/>
-        <bond id1="CA" id2="CB" type="coval" value="1.530" esd="0.020"/>
-        <bond id1="CB" id2="HB2" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="HB3" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="CG" type="coval" value="1.520" esd="0.030"/>
-        <bond id1="CG" id2="HG2" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CG" id2="HG3" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CG" id2="CD" type="coval" value="1.516" esd="0.025"/>
-        <bond id1="CD" id2="OE1" type="coval" value="1.231" esd="0.019"/>
-        <bond id1="CD" id2="NE2" type="coval" value="1.328" esd="0.021"/>
-        <bond id1="NE2" id2="HE21" type="coval" value="0.860" esd="0.020"/>
-        <bond id1="NE2" id2="HE22" type="coval" value="0.860" esd="0.020"/>
-        <bond id1="CA" id2="C" type="coval" value="1.525" esd="0.021"/>
-        <bond id1="C" id2="O" type="coval" value="1.231" esd="0.020"/>
+        <bond id1="N" id2="H" type="single" value="0.860" esd="0.020"/>
+        <bond id1="N" id2="CA" type="single" value="1.458" esd="0.019"/>
+        <bond id1="CA" id2="HA" type="single" value="0.980" esd="0.020"/>
+        <bond id1="CA" id2="CB" type="single" value="1.530" esd="0.020"/>
+        <bond id1="CB" id2="HB2" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="HB3" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="CG" type="single" value="1.520" esd="0.030"/>
+        <bond id1="CG" id2="HG2" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CG" id2="HG3" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CG" id2="CD" type="single" value="1.516" esd="0.025"/>
+        <bond id1="CD" id2="OE1" type="double" value="1.231" esd="0.019"/>
+        <bond id1="CD" id2="NE2" type="single" value="1.328" esd="0.021"/>
+        <bond id1="NE2" id2="HE21" type="single" value="0.860" esd="0.020"/>
+        <bond id1="NE2" id2="HE22" type="single" value="0.860" esd="0.020"/>
+        <bond id1="CA" id2="C" type="single" value="1.525" esd="0.021"/>
+        <bond id1="C" id2="O" type="double" value="1.231" esd="0.020"/>
       </bonds>
     </resid>
   
@@ -232,20 +232,20 @@
         <atom id="O" elem="O" type="O" charge="-0.422"/>
       </atoms>
       <bonds>
-        <bond id1="N" id2="H" type="coval" value="0.860" esd="0.020"/>
-        <bond id1="N" id2="CA" type="coval" value="1.458" esd="0.019"/>
-        <bond id1="CA" id2="HA" type="coval" value="0.980" esd="0.020"/>
-        <bond id1="CA" id2="CB" type="coval" value="1.530" esd="0.020"/>
-        <bond id1="CB" id2="HB2" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="HB3" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="CG" type="coval" value="1.520" esd="0.030"/>
-        <bond id1="CG" id2="HG2" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CG" id2="HG3" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CG" id2="CD" type="coval" value="1.516" esd="0.025"/>
-        <bond id1="CD" id2="OE1" type="coval" value="1.249" esd="0.019"/>
-        <bond id1="CD" id2="OE2" type="coval" value="1.249" esd="0.019"/>
-        <bond id1="CA" id2="C" type="coval" value="1.525" esd="0.021"/>
-        <bond id1="C" id2="O" type="coval" value="1.231" esd="0.020"/>
+        <bond id1="N" id2="H" type="single" value="0.860" esd="0.020"/>
+        <bond id1="N" id2="CA" type="single" value="1.458" esd="0.019"/>
+        <bond id1="CA" id2="HA" type="single" value="0.980" esd="0.020"/>
+        <bond id1="CA" id2="CB" type="single" value="1.530" esd="0.020"/>
+        <bond id1="CB" id2="HB2" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="HB3" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="CG" type="single" value="1.520" esd="0.030"/>
+        <bond id1="CG" id2="HG2" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CG" id2="HG3" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CG" id2="CD" type="single" value="1.516" esd="0.025"/>
+        <bond id1="CD" id2="OE1" type="double" value="1.249" esd="0.019"/>
+        <bond id1="CD" id2="OE2" type="single" value="1.249" esd="0.019"/>
+        <bond id1="CA" id2="C" type="single" value="1.525" esd="0.021"/>
+        <bond id1="C" id2="O" type="double" value="1.231" esd="0.020"/>
       </bonds>
     </resid>
   
@@ -260,12 +260,12 @@
         <atom id="O" elem="O" type="O" charge="-0.422"/>
       </atoms>
       <bonds>
-        <bond id1="N" id2="H" type="coval" value="0.860" esd="0.020"/>
-        <bond id1="N" id2="CA" type="coval" value="1.451" esd="0.016"/>
-        <bond id1="CA" id2="HA2" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CA" id2="HA3" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CA" id2="C" type="coval" value="1.516" esd="0.018"/>
-        <bond id1="C" id2="O" type="coval" value="1.231" esd="0.020"/>
+        <bond id1="N" id2="H" type="single" value="0.860" esd="0.020"/>
+        <bond id1="N" id2="CA" type="single" value="1.451" esd="0.016"/>
+        <bond id1="CA" id2="HA2" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CA" id2="HA3" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CA" id2="C" type="single" value="1.516" esd="0.018"/>
+        <bond id1="C" id2="O" type="double" value="1.231" esd="0.020"/>
       </bonds>
     </resid>
   
@@ -291,24 +291,24 @@
         <atom id="O" elem="O" type="O" charge="-0.422"/>
       </atoms>
       <bonds>
-        <bond id1="N" id2="H" type="coval" value="0.860" esd="0.020"/>
-        <bond id1="N" id2="CA" type="coval" value="1.458" esd="0.019"/>
-        <bond id1="CA" id2="HA" type="coval" value="0.980" esd="0.020"/>
-        <bond id1="CA" id2="CB" type="coval" value="1.530" esd="0.020"/>
-        <bond id1="CB" id2="HB2" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="HB3" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="CG" type="coval" value="1.497" esd="0.014"/>
-        <bond id1="CG" id2="CD2" type="coval" value="1.354" esd="0.011"/>
-        <bond id1="CG" id2="ND1" type="coval" value="1.378" esd="0.011"/>
-        <bond id1="ND1" id2="HD1" type="coval" value="0.860" esd="0.020"/>
-        <bond id1="ND1" id2="CE1" type="coval" value="1.321" esd="0.010"/>
-        <bond id1="CE1" id2="HE1" type="coval" value="0.930" esd="0.020"/>
-        <bond id1="CE1" id2="NE2" type="coval" value="1.321" esd="0.010"/>
-        <bond id1="NE2" id2="HE2" type="coval" value="0.860" esd="0.020"/>
-        <bond id1="NE2" id2="CD2" type="coval" value="1.374" esd="0.011"/>
-        <bond id1="CD2" id2="HD2" type="coval" value="0.930" esd="0.020"/>
-        <bond id1="CA" id2="C" type="coval" value="1.525" esd="0.021"/>
-        <bond id1="C" id2="O" type="coval" value="1.231" esd="0.020"/>
+        <bond id1="N" id2="H" type="single" value="0.860" esd="0.020"/>
+        <bond id1="N" id2="CA" type="single" value="1.458" esd="0.019"/>
+        <bond id1="CA" id2="HA" type="single" value="0.980" esd="0.020"/>
+        <bond id1="CA" id2="CB" type="single" value="1.530" esd="0.020"/>
+        <bond id1="CB" id2="HB2" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="HB3" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="CG" type="single" value="1.497" esd="0.014"/>
+        <bond id1="CG" id2="CD2" type="double" value="1.354" esd="0.011"/>
+        <bond id1="CG" id2="ND1" type="single" value="1.378" esd="0.011"/>
+        <bond id1="ND1" id2="HD1" type="single" value="0.860" esd="0.020"/>
+        <bond id1="ND1" id2="CE1" type="double" value="1.321" esd="0.010"/>
+        <bond id1="CE1" id2="HE1" type="single" value="0.930" esd="0.020"/>
+        <bond id1="CE1" id2="NE2" type="single" value="1.321" esd="0.010"/>
+        <bond id1="NE2" id2="HE2" type="single" value="0.860" esd="0.020"/>
+        <bond id1="NE2" id2="CD2" type="single" value="1.374" esd="0.011"/>
+        <bond id1="CD2" id2="HD2" type="single" value="0.930" esd="0.020"/>
+        <bond id1="CA" id2="C" type="single" value="1.525" esd="0.021"/>
+        <bond id1="C" id2="O" type="double" value="1.231" esd="0.020"/>
       </bonds>
     </resid>
   
@@ -338,24 +338,24 @@
         <atom id="O" elem="O" type="O" charge="-0.422"/>
       </atoms>
       <bonds>
-        <bond id1="N" id2="H" type="coval" value="0.860" esd="0.020"/>
-        <bond id1="N" id2="CA" type="coval" value="1.458" esd="0.019"/>
-        <bond id1="CA" id2="HA" type="coval" value="0.980" esd="0.020"/>
-        <bond id1="CA" id2="CB" type="coval" value="1.540" esd="0.027"/>
-        <bond id1="CB" id2="HB" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="CG1" type="coval" value="1.530" esd="0.020"/>
-        <bond id1="CG1" id2="HG12" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CG1" id2="HG13" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CG1" id2="CD1" type="coval" value="1.513" esd="0.039"/>
-        <bond id1="CD1" id2="HD11" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="CD1" id2="HD12" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="CD1" id2="HD13" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="CB" id2="CG2" type="coval" value="1.521" esd="0.033"/>
-        <bond id1="CG2" id2="HG21" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="CG2" id2="HG22" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="CG2" id2="HG23" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="CA" id2="C" type="coval" value="1.525" esd="0.021"/>
-        <bond id1="C" id2="O" type="coval" value="1.231" esd="0.020"/>
+        <bond id1="N" id2="H" type="single" value="0.860" esd="0.020"/>
+        <bond id1="N" id2="CA" type="single" value="1.458" esd="0.019"/>
+        <bond id1="CA" id2="HA" type="single" value="0.980" esd="0.020"/>
+        <bond id1="CA" id2="CB" type="single" value="1.540" esd="0.027"/>
+        <bond id1="CB" id2="HB" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="CG1" type="single" value="1.530" esd="0.020"/>
+        <bond id1="CG1" id2="HG12" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CG1" id2="HG13" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CG1" id2="CD1" type="single" value="1.513" esd="0.039"/>
+        <bond id1="CD1" id2="HD11" type="single" value="0.960" esd="0.020"/>
+        <bond id1="CD1" id2="HD12" type="single" value="0.960" esd="0.020"/>
+        <bond id1="CD1" id2="HD13" type="single" value="0.960" esd="0.020"/>
+        <bond id1="CB" id2="CG2" type="single" value="1.521" esd="0.033"/>
+        <bond id1="CG2" id2="HG21" type="single" value="0.960" esd="0.020"/>
+        <bond id1="CG2" id2="HG22" type="single" value="0.960" esd="0.020"/>
+        <bond id1="CG2" id2="HG23" type="single" value="0.960" esd="0.020"/>
+        <bond id1="CA" id2="C" type="single" value="1.525" esd="0.021"/>
+        <bond id1="C" id2="O" type="double" value="1.231" esd="0.020"/>
       </bonds>
     </resid>
   
@@ -382,24 +382,24 @@
         <atom id="O" elem="O" type="O" charge="-0.422"/>
       </atoms>
       <bonds>
-        <bond id1="N" id2="H" type="coval" value="0.860" esd="0.020"/>
-        <bond id1="N" id2="CA" type="coval" value="1.458" esd="0.019"/>
-        <bond id1="CA" id2="HA" type="coval" value="0.980" esd="0.020"/>
-        <bond id1="CA" id2="CB" type="coval" value="1.530" esd="0.020"/>
-        <bond id1="CB" id2="HB2" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="HB3" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="CG" type="coval" value="1.530" esd="0.020"/>
-        <bond id1="CG" id2="HG" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CG" id2="CD1" type="coval" value="1.521" esd="0.033"/>
-        <bond id1="CD1" id2="HD11" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="CD1" id2="HD12" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="CD1" id2="HD13" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="CG" id2="CD2" type="coval" value="1.521" esd="0.033"/>
-        <bond id1="CD2" id2="HD21" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="CD2" id2="HD22" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="CD2" id2="HD23" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="CA" id2="C" type="coval" value="1.525" esd="0.021"/>
-        <bond id1="C" id2="O" type="coval" value="1.231" esd="0.020"/>
+        <bond id1="N" id2="H" type="single" value="0.860" esd="0.020"/>
+        <bond id1="N" id2="CA" type="single" value="1.458" esd="0.019"/>
+        <bond id1="CA" id2="HA" type="single" value="0.980" esd="0.020"/>
+        <bond id1="CA" id2="CB" type="single" value="1.530" esd="0.020"/>
+        <bond id1="CB" id2="HB2" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="HB3" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="CG" type="single" value="1.530" esd="0.020"/>
+        <bond id1="CG" id2="HG" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CG" id2="CD1" type="single" value="1.521" esd="0.033"/>
+        <bond id1="CD1" id2="HD11" type="single" value="0.960" esd="0.020"/>
+        <bond id1="CD1" id2="HD12" type="single" value="0.960" esd="0.020"/>
+        <bond id1="CD1" id2="HD13" type="single" value="0.960" esd="0.020"/>
+        <bond id1="CG" id2="CD2" type="single" value="1.521" esd="0.033"/>
+        <bond id1="CD2" id2="HD21" type="single" value="0.960" esd="0.020"/>
+        <bond id1="CD2" id2="HD22" type="single" value="0.960" esd="0.020"/>
+        <bond id1="CD2" id2="HD23" type="single" value="0.960" esd="0.020"/>
+        <bond id1="CA" id2="C" type="single" value="1.525" esd="0.021"/>
+        <bond id1="C" id2="O" type="double" value="1.231" esd="0.020"/>
       </bonds>
     </resid>
   
@@ -429,27 +429,27 @@
         <atom id="O" elem="O" type="O" charge="-0.422"/>
       </atoms>
       <bonds>
-        <bond id1="N" id2="H" type="coval" value="0.860" esd="0.020"/>
-        <bond id1="N" id2="CA" type="coval" value="1.458" esd="0.019"/>
-        <bond id1="CA" id2="HA" type="coval" value="0.980" esd="0.020"/>
-        <bond id1="CA" id2="CB" type="coval" value="1.530" esd="0.020"/>
-        <bond id1="CB" id2="HB2" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="HB3" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="CG" type="coval" value="1.520" esd="0.030"/>
-        <bond id1="CG" id2="HG2" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CG" id2="HG3" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CG" id2="CD" type="coval" value="1.520" esd="0.030"/>
-        <bond id1="CD" id2="HD2" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CD" id2="HD3" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CD" id2="CE" type="coval" value="1.520" esd="0.030"/>
-        <bond id1="CE" id2="HE2" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CE" id2="HE3" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CE" id2="NZ" type="coval" value="1.489" esd="0.030"/>
-        <bond id1="NZ" id2="HZ1" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="NZ" id2="HZ2" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="NZ" id2="HZ3" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="CA" id2="C" type="coval" value="1.525" esd="0.021"/>
-        <bond id1="C" id2="O" type="coval" value="1.231" esd="0.020"/>
+        <bond id1="N" id2="H" type="single" value="0.860" esd="0.020"/>
+        <bond id1="N" id2="CA" type="single" value="1.458" esd="0.019"/>
+        <bond id1="CA" id2="HA" type="single" value="0.980" esd="0.020"/>
+        <bond id1="CA" id2="CB" type="single" value="1.530" esd="0.020"/>
+        <bond id1="CB" id2="HB2" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="HB3" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="CG" type="single" value="1.520" esd="0.030"/>
+        <bond id1="CG" id2="HG2" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CG" id2="HG3" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CG" id2="CD" type="single" value="1.520" esd="0.030"/>
+        <bond id1="CD" id2="HD2" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CD" id2="HD3" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CD" id2="CE" type="single" value="1.520" esd="0.030"/>
+        <bond id1="CE" id2="HE2" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CE" id2="HE3" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CE" id2="NZ" type="single" value="1.489" esd="0.030"/>
+        <bond id1="NZ" id2="HZ1" type="single" value="0.960" esd="0.020"/>
+        <bond id1="NZ" id2="HZ2" type="single" value="0.960" esd="0.020"/>
+        <bond id1="NZ" id2="HZ3" type="single" value="0.960" esd="0.020"/>
+        <bond id1="CA" id2="C" type="single" value="1.525" esd="0.021"/>
+        <bond id1="C" id2="O" type="double" value="1.231" esd="0.020"/>
       </bonds>
     </resid>
   
@@ -474,22 +474,22 @@
         <atom id="O" elem="O" type="O" charge="-0.422"/>
       </atoms>
       <bonds>
-        <bond id1="N" id2="H" type="coval" value="0.860" esd="0.020"/>
-        <bond id1="N" id2="CA" type="coval" value="1.458" esd="0.019"/>
-        <bond id1="CA" id2="HA" type="coval" value="0.980" esd="0.020"/>
-        <bond id1="CA" id2="CB" type="coval" value="1.530" esd="0.020"/>
-        <bond id1="CB" id2="HB2" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="HB3" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="CG" type="coval" value="1.520" esd="0.030"/>
-        <bond id1="CG" id2="HG2" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CG" id2="HG3" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CG" id2="SD" type="coval" value="1.803" esd="0.025"/>
-        <bond id1="SD" id2="CE" type="coval" value="1.791" esd="0.025"/>
-        <bond id1="CE" id2="HE1" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="CE" id2="HE2" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="CE" id2="HE3" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="CA" id2="C" type="coval" value="1.525" esd="0.021"/>
-        <bond id1="C" id2="O" type="coval" value="1.231" esd="0.020"/>
+        <bond id1="N" id2="H" type="single" value="0.860" esd="0.020"/>
+        <bond id1="N" id2="CA" type="single" value="1.458" esd="0.019"/>
+        <bond id1="CA" id2="HA" type="single" value="0.980" esd="0.020"/>
+        <bond id1="CA" id2="CB" type="single" value="1.530" esd="0.020"/>
+        <bond id1="CB" id2="HB2" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="HB3" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="CG" type="single" value="1.520" esd="0.030"/>
+        <bond id1="CG" id2="HG2" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CG" id2="HG3" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CG" id2="SD" type="single" value="1.803" esd="0.025"/>
+        <bond id1="SD" id2="CE" type="single" value="1.791" esd="0.025"/>
+        <bond id1="CE" id2="HE1" type="single" value="0.960" esd="0.020"/>
+        <bond id1="CE" id2="HE2" type="single" value="0.960" esd="0.020"/>
+        <bond id1="CE" id2="HE3" type="single" value="0.960" esd="0.020"/>
+        <bond id1="CA" id2="C" type="single" value="1.525" esd="0.021"/>
+        <bond id1="C" id2="O" type="double" value="1.231" esd="0.020"/>
       </bonds>
     </resid>
   
@@ -514,22 +514,22 @@
         <atom id="O" elem="O" type="O" charge="-0.422"/>
       </atoms>
       <bonds>
-        <bond id1="N" id2="H" type="coval" value="0.860" esd="0.020"/>
-        <bond id1="N" id2="CA" type="coval" value="1.458" esd="0.019"/>
-        <bond id1="CA" id2="HA" type="coval" value="0.980" esd="0.020"/>
-        <bond id1="CA" id2="CB" type="coval" value="1.530" esd="0.020"/>
-        <bond id1="CB" id2="HB2" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="HB3" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="CG" type="coval" value="1.520" esd="0.030"/>
-        <bond id1="CG" id2="HG2" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CG" id2="HG3" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CG" id2="SE" type="coval" value="1.950" esd="0.030"/>
-        <bond id1="SE" id2="CE" type="coval" value="1.950" esd="0.030"/>
-        <bond id1="CE" id2="HE1" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="CE" id2="HE2" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="CE" id2="HE3" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="CA" id2="C" type="coval" value="1.525" esd="0.021"/>
-        <bond id1="C" id2="O" type="coval" value="1.231" esd="0.020"/>
+        <bond id1="N" id2="H" type="single" value="0.860" esd="0.020"/>
+        <bond id1="N" id2="CA" type="single" value="1.458" esd="0.019"/>
+        <bond id1="CA" id2="HA" type="single" value="0.980" esd="0.020"/>
+        <bond id1="CA" id2="CB" type="single" value="1.530" esd="0.020"/>
+        <bond id1="CB" id2="HB2" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="HB3" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="CG" type="single" value="1.520" esd="0.030"/>
+        <bond id1="CG" id2="HG2" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CG" id2="HG3" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CG" id2="SE" type="single" value="1.950" esd="0.030"/>
+        <bond id1="SE" id2="CE" type="single" value="1.950" esd="0.030"/>
+        <bond id1="CE" id2="HE1" type="single" value="0.960" esd="0.020"/>
+        <bond id1="CE" id2="HE2" type="single" value="0.960" esd="0.020"/>
+        <bond id1="CE" id2="HE3" type="single" value="0.960" esd="0.020"/>
+        <bond id1="CA" id2="C" type="single" value="1.525" esd="0.021"/>
+        <bond id1="C" id2="O" type="double" value="1.231" esd="0.020"/>
       </bonds>
     </resid>
   
@@ -557,26 +557,26 @@
         <atom id="O" elem="O" type="O" charge="-0.422"/>
       </atoms>
       <bonds>
-        <bond id1="N" id2="H" type="coval" value="0.860" esd="0.020"/>
-        <bond id1="N" id2="CA" type="coval" value="1.458" esd="0.019"/>
-        <bond id1="CA" id2="HA" type="coval" value="0.980" esd="0.020"/>
-        <bond id1="CA" id2="CB" type="coval" value="1.530" esd="0.020"/>
-        <bond id1="CB" id2="HB2" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="HB3" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="CG" type="coval" value="1.502" esd="0.023"/>
-        <bond id1="CG" id2="CD2" type="coval" value="1.384" esd="0.021"/>
-        <bond id1="CG" id2="CD1" type="coval" value="1.384" esd="0.021"/>
-        <bond id1="CD1" id2="HD1" type="coval" value="0.930" esd="0.020"/>
-        <bond id1="CD1" id2="CE1" type="coval" value="1.382" esd="0.030"/>
-        <bond id1="CE1" id2="HE1" type="coval" value="0.930" esd="0.020"/>
-        <bond id1="CE1" id2="CZ" type="coval" value="1.382" esd="0.030"/>
-        <bond id1="CZ" id2="HZ" type="coval" value="0.930" esd="0.020"/>
-        <bond id1="CZ" id2="CE2" type="coval" value="1.382" esd="0.030"/>
-        <bond id1="CE2" id2="HE2" type="coval" value="0.930" esd="0.020"/>
-        <bond id1="CE2" id2="CD2" type="coval" value="1.382" esd="0.030"/>
-        <bond id1="CD2" id2="HD2" type="coval" value="0.930" esd="0.020"/>
-        <bond id1="CA" id2="C" type="coval" value="1.525" esd="0.021"/>
-        <bond id1="C" id2="O" type="coval" value="1.231" esd="0.020"/>
+        <bond id1="N" id2="H" type="single" value="0.860" esd="0.020"/>
+        <bond id1="N" id2="CA" type="single" value="1.458" esd="0.019"/>
+        <bond id1="CA" id2="HA" type="single" value="0.980" esd="0.020"/>
+        <bond id1="CA" id2="CB" type="single" value="1.530" esd="0.020"/>
+        <bond id1="CB" id2="HB2" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="HB3" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="CG" type="single" value="1.502" esd="0.023"/>
+        <bond id1="CG" id2="CD2" type="single" value="1.384" esd="0.021"/>
+        <bond id1="CG" id2="CD1" type="double" value="1.384" esd="0.021"/>
+        <bond id1="CD1" id2="HD1" type="single" value="0.930" esd="0.020"/>
+        <bond id1="CD1" id2="CE1" type="single" value="1.382" esd="0.030"/>
+        <bond id1="CE1" id2="HE1" type="single" value="0.930" esd="0.020"/>
+        <bond id1="CE1" id2="CZ" type="double" value="1.382" esd="0.030"/>
+        <bond id1="CZ" id2="HZ" type="single" value="0.930" esd="0.020"/>
+        <bond id1="CZ" id2="CE2" type="single" value="1.382" esd="0.030"/>
+        <bond id1="CE2" id2="HE2" type="single" value="0.930" esd="0.020"/>
+        <bond id1="CE2" id2="CD2" type="double" value="1.382" esd="0.030"/>
+        <bond id1="CD2" id2="HD2" type="single" value="0.930" esd="0.020"/>
+        <bond id1="CA" id2="C" type="single" value="1.525" esd="0.021"/>
+        <bond id1="C" id2="O" type="double" value="1.231" esd="0.020"/>
       </bonds>
     </resid>
   
@@ -601,20 +601,20 @@
         <atom id="O" elem="O" type="O" charge="-0.425"/>
       </atoms>
       <bonds>
-        <bond id1="N" id2="CA" type="coval" value="1.466" esd="0.015"/>
-        <bond id1="CA" id2="HA" type="coval" value="0.980" esd="0.020"/>
-        <bond id1="CA" id2="CB" type="coval" value="1.530" esd="0.020"/>
-        <bond id1="CB" id2="HB2" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="HB3" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="CG" type="coval" value="1.492" esd="0.050"/>
-        <bond id1="CG" id2="HG2" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CG" id2="HG3" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CG" id2="CD" type="coval" value="1.503" esd="0.034"/>
-        <bond id1="CD" id2="HD2" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CD" id2="HD3" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CD" id2="N" type="coval" value="1.473" esd="0.014"/>
-        <bond id1="CA" id2="C" type="coval" value="1.525" esd="0.021"/>
-        <bond id1="C" id2="O" type="coval" value="1.231" esd="0.020"/>
+        <bond id1="N" id2="CA" type="single" value="1.466" esd="0.015"/>
+        <bond id1="CA" id2="HA" type="single" value="0.980" esd="0.020"/>
+        <bond id1="CA" id2="CB" type="single" value="1.530" esd="0.020"/>
+        <bond id1="CB" id2="HB2" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="HB3" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="CG" type="single" value="1.492" esd="0.050"/>
+        <bond id1="CG" id2="HG2" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CG" id2="HG3" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CG" id2="CD" type="single" value="1.503" esd="0.034"/>
+        <bond id1="CD" id2="HD2" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CD" id2="HD3" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CD" id2="N" type="single" value="1.473" esd="0.014"/>
+        <bond id1="CA" id2="C" type="single" value="1.525" esd="0.021"/>
+        <bond id1="C" id2="O" type="double" value="1.231" esd="0.020"/>
       </bonds>
     </resid>
   
@@ -633,16 +633,16 @@
         <atom id="O" elem="O" type="O" charge="-0.422"/>
       </atoms>
       <bonds>
-        <bond id1="N" id2="H" type="coval" value="0.860" esd="0.020"/>
-        <bond id1="N" id2="CA" type="coval" value="1.458" esd="0.019"/>
-        <bond id1="CA" id2="HA" type="coval" value="0.980" esd="0.020"/>
-        <bond id1="CA" id2="CB" type="coval" value="1.530" esd="0.020"/>
-        <bond id1="CB" id2="HB2" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="HB3" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="OG" type="coval" value="1.417" esd="0.020"/>
-        <bond id1="OG" id2="HG" type="coval" value="0.820" esd="0.020"/>
-        <bond id1="CA" id2="C" type="coval" value="1.525" esd="0.021"/>
-        <bond id1="C" id2="O" type="coval" value="1.231" esd="0.020"/>
+        <bond id1="N" id2="H" type="single" value="0.860" esd="0.020"/>
+        <bond id1="N" id2="CA" type="single" value="1.458" esd="0.019"/>
+        <bond id1="CA" id2="HA" type="single" value="0.980" esd="0.020"/>
+        <bond id1="CA" id2="CB" type="single" value="1.530" esd="0.020"/>
+        <bond id1="CB" id2="HB2" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="HB3" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="OG" type="single" value="1.417" esd="0.020"/>
+        <bond id1="OG" id2="HG" type="single" value="0.820" esd="0.020"/>
+        <bond id1="CA" id2="C" type="single" value="1.525" esd="0.021"/>
+        <bond id1="C" id2="O" type="double" value="1.231" esd="0.020"/>
       </bonds>
     </resid>
   
@@ -667,19 +667,19 @@
         <atom id="O" elem="O" type="O" charge="-0.422"/>
       </atoms>
       <bonds>
-        <bond id1="N" id2="H" type="coval" value="0.860" esd="0.020"/>
-        <bond id1="N" id2="CA" type="coval" value="1.458" esd="0.019"/>
-        <bond id1="CA" id2="HA" type="coval" value="0.980" esd="0.020"/>
-        <bond id1="CA" id2="CB" type="coval" value="1.540" esd="0.027"/>
-        <bond id1="CB" id2="HB" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="OG1" type="coval" value="1.433" esd="0.016"/>
-        <bond id1="OG1" id2="HG1" type="coval" value="0.820" esd="0.020"/>
-        <bond id1="CB" id2="CG2" type="coval" value="1.521" esd="0.033"/>
-        <bond id1="CG2" id2="HG21" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="CG2" id2="HG22" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="CG2" id2="HG23" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="CA" id2="C" type="coval" value="1.525" esd="0.021"/>
-        <bond id1="C" id2="O" type="coval" value="1.231" esd="0.020"/>
+        <bond id1="N" id2="H" type="single" value="0.860" esd="0.020"/>
+        <bond id1="N" id2="CA" type="single" value="1.458" esd="0.019"/>
+        <bond id1="CA" id2="HA" type="single" value="0.980" esd="0.020"/>
+        <bond id1="CA" id2="CB" type="single" value="1.540" esd="0.027"/>
+        <bond id1="CB" id2="HB" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="OG1" type="single" value="1.433" esd="0.016"/>
+        <bond id1="OG1" id2="HG1" type="single" value="0.820" esd="0.020"/>
+        <bond id1="CB" id2="CG2" type="single" value="1.521" esd="0.033"/>
+        <bond id1="CG2" id2="HG21" type="single" value="0.960" esd="0.020"/>
+        <bond id1="CG2" id2="HG22" type="single" value="0.960" esd="0.020"/>
+        <bond id1="CG2" id2="HG23" type="single" value="0.960" esd="0.020"/>
+        <bond id1="CA" id2="C" type="single" value="1.525" esd="0.021"/>
+        <bond id1="C" id2="O" type="double" value="1.231" esd="0.020"/>
       </bonds>
     </resid>
   
@@ -714,31 +714,31 @@
         <atom id="O" elem="O" type="O" charge="-0.422"/>
       </atoms>
       <bonds>
-        <bond id1="N" id2="H" type="coval" value="0.860" esd="0.020"/>
-        <bond id1="N" id2="CA" type="coval" value="1.458" esd="0.019"/>
-        <bond id1="CA" id2="HA" type="coval" value="0.980" esd="0.020"/>
-        <bond id1="CA" id2="CB" type="coval" value="1.530" esd="0.020"/>
-        <bond id1="CB" id2="HB2" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="HB3" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="CG" type="coval" value="1.498" esd="0.031"/>
-        <bond id1="CG" id2="CD2" type="coval" value="1.433" esd="0.018"/>
-        <bond id1="CG" id2="CD1" type="coval" value="1.365" esd="0.025"/>
-        <bond id1="CD1" id2="HD1" type="coval" value="0.930" esd="0.020"/>
-        <bond id1="CD1" id2="NE1" type="coval" value="1.374" esd="0.021"/>
-        <bond id1="NE1" id2="HE1" type="coval" value="0.860" esd="0.020"/>
-        <bond id1="NE1" id2="CE2" type="coval" value="1.370" esd="0.011"/>
-        <bond id1="CE2" id2="CZ2" type="coval" value="1.394" esd="0.021"/>
-        <bond id1="CE2" id2="CD2" type="coval" value="1.409" esd="0.017"/>
-        <bond id1="CD2" id2="CE3" type="coval" value="1.398" esd="0.016"/>
-        <bond id1="CE3" id2="HE3" type="coval" value="0.930" esd="0.020"/>
-        <bond id1="CE3" id2="CZ3" type="coval" value="1.382" esd="0.030"/>
-        <bond id1="CZ3" id2="HZ3" type="coval" value="0.930" esd="0.020"/>
-        <bond id1="CZ3" id2="CH2" type="coval" value="1.400" esd="0.025"/>
-        <bond id1="CH2" id2="HH2" type="coval" value="0.930" esd="0.020"/>
-        <bond id1="CH2" id2="CZ2" type="coval" value="1.368" esd="0.019"/>
-        <bond id1="CZ2" id2="HZ2" type="coval" value="0.930" esd="0.020"/>
-        <bond id1="CA" id2="C" type="coval" value="1.525" esd="0.021"/>
-        <bond id1="C" id2="O" type="coval" value="1.231" esd="0.020"/>
+        <bond id1="N" id2="H" type="single" value="0.860" esd="0.020"/>
+        <bond id1="N" id2="CA" type="single" value="1.458" esd="0.019"/>
+        <bond id1="CA" id2="HA" type="single" value="0.980" esd="0.020"/>
+        <bond id1="CA" id2="CB" type="single" value="1.530" esd="0.020"/>
+        <bond id1="CB" id2="HB2" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="HB3" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="CG" type="single" value="1.498" esd="0.031"/>
+        <bond id1="CG" id2="CD2" type="single" value="1.433" esd="0.018"/>
+        <bond id1="CG" id2="CD1" type="double" value="1.365" esd="0.025"/>
+        <bond id1="CD1" id2="HD1" type="single" value="0.930" esd="0.020"/>
+        <bond id1="CD1" id2="NE1" type="single" value="1.374" esd="0.021"/>
+        <bond id1="NE1" id2="HE1" type="single" value="0.860" esd="0.020"/>
+        <bond id1="NE1" id2="CE2" type="single" value="1.370" esd="0.011"/>
+        <bond id1="CE2" id2="CZ2" type="single" value="1.394" esd="0.021"/>
+        <bond id1="CE2" id2="CD2" type="double" value="1.409" esd="0.017"/>
+        <bond id1="CD2" id2="CE3" type="single" value="1.398" esd="0.016"/>
+        <bond id1="CE3" id2="HE3" type="single" value="0.930" esd="0.020"/>
+        <bond id1="CE3" id2="CZ3" type="double" value="1.382" esd="0.030"/>
+        <bond id1="CZ3" id2="HZ3" type="single" value="0.930" esd="0.020"/>
+        <bond id1="CZ3" id2="CH2" type="single" value="1.400" esd="0.025"/>
+        <bond id1="CH2" id2="HH2" type="single" value="0.930" esd="0.020"/>
+        <bond id1="CH2" id2="CZ2" type="double" value="1.368" esd="0.019"/>
+        <bond id1="CZ2" id2="HZ2" type="single" value="0.930" esd="0.020"/>
+        <bond id1="CA" id2="C" type="single" value="1.525" esd="0.021"/>
+        <bond id1="C" id2="O" type="double" value="1.231" esd="0.020"/>
       </bonds>
     </resid>
   
@@ -767,27 +767,27 @@
         <atom id="O" elem="O" type="O" charge="-0.422"/>
       </atoms>
       <bonds>
-        <bond id1="N" id2="H" type="coval" value="0.860" esd="0.020"/>
-        <bond id1="N" id2="CA" type="coval" value="1.458" esd="0.019"/>
-        <bond id1="CA" id2="HA" type="coval" value="0.980" esd="0.020"/>
-        <bond id1="CA" id2="CB" type="coval" value="1.530" esd="0.020"/>
-        <bond id1="CB" id2="HB2" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="HB3" type="coval" value="0.970" esd="0.020"/>
-        <bond id1="CB" id2="CG" type="coval" value="1.512" esd="0.022"/>
-        <bond id1="CG" id2="CD2" type="coval" value="1.389" esd="0.021"/>
-        <bond id1="CG" id2="CD1" type="coval" value="1.389" esd="0.021"/>
-        <bond id1="CD1" id2="HD1" type="coval" value="0.930" esd="0.020"/>
-        <bond id1="CD1" id2="CE1" type="coval" value="1.382" esd="0.030"/>
-        <bond id1="CE1" id2="HE1" type="coval" value="0.930" esd="0.020"/>
-        <bond id1="CE1" id2="CZ" type="coval" value="1.378" esd="0.024"/>
-        <bond id1="CZ" id2="OH" type="coval" value="1.376" esd="0.021"/>
-        <bond id1="OH" id2="HH" type="coval" value="0.820" esd="0.020"/>
-        <bond id1="CZ" id2="CE2" type="coval" value="1.378" esd="0.024"/>
-        <bond id1="CE2" id2="HE2" type="coval" value="0.930" esd="0.020"/>
-        <bond id1="CE2" id2="CD2" type="coval" value="1.382" esd="0.030"/>
-        <bond id1="CD2" id2="HD2" type="coval" value="0.930" esd="0.020"/>
-        <bond id1="CA" id2="C" type="coval" value="1.525" esd="0.021"/>
-        <bond id1="C" id2="O" type="coval" value="1.231" esd="0.020"/>
+        <bond id1="N" id2="H" type="single" value="0.860" esd="0.020"/>
+        <bond id1="N" id2="CA" type="single" value="1.458" esd="0.019"/>
+        <bond id1="CA" id2="HA" type="single" value="0.980" esd="0.020"/>
+        <bond id1="CA" id2="CB" type="single" value="1.530" esd="0.020"/>
+        <bond id1="CB" id2="HB2" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="HB3" type="single" value="0.970" esd="0.020"/>
+        <bond id1="CB" id2="CG" type="single" value="1.512" esd="0.022"/>
+        <bond id1="CG" id2="CD2" type="single" value="1.389" esd="0.021"/>
+        <bond id1="CG" id2="CD1" type="double" value="1.389" esd="0.021"/>
+        <bond id1="CD1" id2="HD1" type="single" value="0.930" esd="0.020"/>
+        <bond id1="CD1" id2="CE1" type="single" value="1.382" esd="0.030"/>
+        <bond id1="CE1" id2="HE1" type="single" value="0.930" esd="0.020"/>
+        <bond id1="CE1" id2="CZ" type="double" value="1.378" esd="0.024"/>
+        <bond id1="CZ" id2="OH" type="single" value="1.376" esd="0.021"/>
+        <bond id1="OH" id2="HH" type="single" value="0.820" esd="0.020"/>
+        <bond id1="CZ" id2="CE2" type="single" value="1.378" esd="0.024"/>
+        <bond id1="CE2" id2="HE2" type="single" value="0.930" esd="0.020"/>
+        <bond id1="CE2" id2="CD2" type="double" value="1.382" esd="0.030"/>
+        <bond id1="CD2" id2="HD2" type="single" value="0.930" esd="0.020"/>
+        <bond id1="CA" id2="C" type="single" value="1.525" esd="0.021"/>
+        <bond id1="C" id2="O" type="double" value="1.231" esd="0.020"/>
       </bonds>
     </resid>
   
@@ -811,21 +811,21 @@
         <atom id="O" elem="O" type="O" charge="-0.422"/>
       </atoms>
       <bonds>
-        <bond id1="N" id2="H" type="coval" value="0.860" esd="0.020"/>
-        <bond id1="N" id2="CA" type="coval" value="1.458" esd="0.019"/>
-        <bond id1="CA" id2="HA" type="coval" value="0.980" esd="0.020"/>
-        <bond id1="CA" id2="CB" type="coval" value="1.540" esd="0.027"/>
-        <bond id1="CB" id2="HB" type="coval" value="0.980" esd="0.020"/>
-        <bond id1="CB" id2="CG1" type="coval" value="1.521" esd="0.033"/>
-        <bond id1="CG1" id2="HG11" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="CG1" id2="HG12" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="CG1" id2="HG13" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="CB" id2="CG2" type="coval" value="1.521" esd="0.033"/>
-        <bond id1="CG2" id2="HG21" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="CG2" id2="HG22" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="CG2" id2="HG23" type="coval" value="0.960" esd="0.020"/>
-        <bond id1="CA" id2="C" type="coval" value="1.525" esd="0.021"/>
-        <bond id1="C" id2="O" type="coval" value="1.231" esd="0.020"/>
+        <bond id1="N" id2="H" type="single" value="0.860" esd="0.020"/>
+        <bond id1="N" id2="CA" type="single" value="1.458" esd="0.019"/>
+        <bond id1="CA" id2="HA" type="single" value="0.980" esd="0.020"/>
+        <bond id1="CA" id2="CB" type="single" value="1.540" esd="0.027"/>
+        <bond id1="CB" id2="HB" type="single" value="0.980" esd="0.020"/>
+        <bond id1="CB" id2="CG1" type="single" value="1.521" esd="0.033"/>
+        <bond id1="CG1" id2="HG11" type="single" value="0.960" esd="0.020"/>
+        <bond id1="CG1" id2="HG12" type="single" value="0.960" esd="0.020"/>
+        <bond id1="CG1" id2="HG13" type="single" value="0.960" esd="0.020"/>
+        <bond id1="CB" id2="CG2" type="single" value="1.521" esd="0.033"/>
+        <bond id1="CG2" id2="HG21" type="single" value="0.960" esd="0.020"/>
+        <bond id1="CG2" id2="HG22" type="single" value="0.960" esd="0.020"/>
+        <bond id1="CG2" id2="HG23" type="single" value="0.960" esd="0.020"/>
+        <bond id1="CA" id2="C" type="single" value="1.525" esd="0.021"/>
+        <bond id1="C" id2="O" type="double" value="1.231" esd="0.020"/>
       </bonds>
     </resid>
   
