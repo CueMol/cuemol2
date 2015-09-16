@@ -42,6 +42,7 @@ $(NULL)
 MCWG_SRC= \
 AbstractColor.qif \
 Color.qif \
+GradientColor.qif \
 NamedColor.qif \
 MolColorRef.qif \
 TextImgBuf.qif \
