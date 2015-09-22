@@ -448,6 +448,7 @@ void Ribbon2Renderer::endSegment(DisplayContext *pdl, MolResiduePtr pEndRes)
   m_indvec.resize( m_resvec.size() );
 
   if (!m_bRibbonHelix) {
+    // Cylinder-shaped helix mode
     buildHelixData();
     buildSheetData();
     buildCoilData();
@@ -985,6 +986,7 @@ void Ribbon2Renderer::getCoilResids(double at, SecSplDat *pCyl,
   if (pCyl->m_bEndExtend)
     tend -= 1.0;
 
+  // MB_DPRINTLN("getCoilRes> t=%f, tst=%f, ten-1=%f", t, tstart, tend-1.0);
   // truncate between tstart ~ tend-1.0
   t = qlib::trunc(t, tstart, tend-1.0);
   
@@ -1229,12 +1231,12 @@ namespace {
     int jen;
     int flag;
   };
+}
 
 #define HC_COIL 0
 #define HC_HELIX 1
 #define HC_HELIX_TAIL 2
 #define HC_HELIX_HEAD 3
-}
 
 void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC)
 {
@@ -1262,6 +1264,8 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
   ////////////////////////////////////////
   // make helix-coil table
 
+  MB_DPRINTLN("start extend=%d", pC->m_bStartExtend);
+  MB_DPRINTLN("end extend=%d", pC->m_bEndExtend);
   std::deque<HCTab> hstabs;
   LString sec_prev="E";
   HCTab hstelem;
@@ -1276,7 +1280,7 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
 
     LString sec;
     pResPrev->getPropStr("secondary2", sec);
-    //MB_DPRINTLN("%d sec <%s>", j, sec.c_str());
+    //MB_DPRINTLN("%d [%s] sec=<%s> t=%f", j, pResPrev->toString().c_str(), sec.c_str(), t);
 
     if (j==0 || !sec.equals(sec_prev)) {
       if (j>0) {
@@ -1306,20 +1310,80 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
     sec_prev = sec;
   }
   
-  // push the previous segment
+  // push the previous (last) segment
   hstelem.jen = j-1;
   hstabs.push_back(hstelem);
   
   ////////////////////////////////////////
   
+  {
+    // adjust the helix-coil table
+    // 1. shift 0.5 residues so that the junction comes to the middle of the Calpha(or pivot) atoms
+    // 2. adjust head/tail segments (head and tail segments should be the length of 1)
+    MB_DPRINTLN("Axial detail = %d", naxdet);
+    int ielem=0, nelem = hstabs.size();
+    int isft = naxdet/2;
+    std::deque<HCTab>::iterator iter = hstabs.begin();
+    std::deque<HCTab>::iterator eiter = hstabs.end();
+    for (; iter!=eiter; ++iter) {
+      //BOOST_FOREACH (HCTab &elem, hstabs) {
+      HCTab &elem = *iter;
+      int jstart = elem.jst;
+      int jend = elem.jen;
+      if (ielem==0 && nelem==1) {
+        // single element --> no shift
+        MB_DPRINTLN("ielem=0 nelem=1, shift=0", isft);
+      }
+      else if (ielem==0) {
+        jend -= isft;
+        MB_DPRINTLN("ielem=0, shift=-%d", isft);
+      }
+      else if (ielem==nelem-1) {
+        jstart -= isft;
+        MB_DPRINTLN("ielem=%d(end), shift=-%d", ielem, isft);
+      }
+      else {
+        MB_DPRINTLN("ielem=%d, shift=-%d", ielem, isft);
+        jstart -= isft;
+        jend -= isft;
+      }
+      
+      MB_DPRINTLN("HST elem %d type=%d, jst=%d(%d), jen=%d(%d)", ielem, elem.flag, elem.jst, jstart, elem.jen, jend);
+
+      elem.jst = jstart;
+      elem.jen = jend;
+      if (elem.flag==HC_HELIX_TAIL) {
+        if (jend-jstart>naxdet) {
+          MB_DPRINTLN("*****");
+          elem.jen = elem.jst + naxdet;
+          std::deque<HCTab>::iterator jj = iter;
+          ++jj;
+          if (jj!=eiter) {
+            MB_DPRINTLN("overwrite jst=%d to %d", jj->jst, elem.jen+isft);
+            jj->jst = elem.jen+isft;
+          }
+          
+        }
+      }
+      if (elem.flag==HC_HELIX_HEAD) {
+        if (jend-jstart>naxdet) {
+          MB_DPRINTLN("*****");
+        }
+      }
+      ++ielem;
+    }
+  }
+
+  ////////////////////////////////////////
+
   TubeSectionPtr pTS;
   LString tp;
   int ielem=0, nelem = hstabs.size();
   int isft = naxdet/2;
-  MB_DPRINTLN("naxdet=%d", naxdet);
   BOOST_FOREACH (HCTab elem, hstabs) {
     int jstart = elem.jst;
     int jend = elem.jen;
+    /*
     if (ielem==0 && nelem==1) {
       // single element --> no shift
       MB_DPRINTLN("ielem=0 nelem=1, shift=0", isft);
@@ -1338,6 +1402,8 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
       jend -= isft;
     }
     
+    MB_DPRINTLN("HST elem %d type=%d, jst=%d(%d), jen=%d(%d)", ielem, elem.flag, elem.jst, jstart, elem.jen, jend);
+     */
     switch (elem.flag) {
     case HC_COIL:
     case HC_HELIX: {
@@ -1354,7 +1420,8 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
       // axial step loop
       for (int j=jstart; j<=jend; ++j) {
         double t = tstart + double(j) * fdelta;
-        //MB_DPRINTLN("j=%d, t=%f", j, t);
+        MB_DPRINTLN("%s j=%d, t=%f", tp.c_str(), j, t);
+
         pCol = calcCoilColor(t, pC);
         pC->m_spl.interpolate(t, &f1, &vpt);
         vpt = vpt.normalize();
@@ -1420,7 +1487,7 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
         // Get E-scale value
         pJCT->get(i, dpar, escl);
         const double t = tbase + dpar;
-        //MB_DPRINTLN("t=%f", t);
+        MB_DPRINTLN("%s i=%d, t=%f", tp.c_str(), i, t);
         
         pCol = calcCoilColor(t, pC);
         pC->m_spl.interpolate(t, &f1, &vpt);
@@ -1486,7 +1553,7 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
     }
     }
 
-    MB_DPRINTLN("%d -- %d type=<%s>", jstart, jend, tp.c_str());
+    // MB_DPRINTLN("%d -- %d type=<%s>", jstart, jend, tp.c_str());
     ++ielem;
   }
 

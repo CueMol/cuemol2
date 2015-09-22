@@ -97,29 +97,62 @@ void SimpleRenderer::drawInterAtomLine(MolAtomPtr pAtom1, MolAtomPtr pAtom2,
     Vector4D dvd = nv.cross(dv);
     dvd = dvd.normalize();
 
-    if ( pcol1->equals(*pcol2.get()) ) {
-      pdl->color(pcol1);
-      pdl->vertex(pos1 + dvd.scale(m_dCvScl1));
-      pdl->vertex(pos2 + dvd.scale(m_dCvScl1));
-      pdl->vertex(pos1 + dvd.scale(m_dCvScl2));
-      pdl->vertex(pos2 + dvd.scale(m_dCvScl2));
-      ++m_nBondDrawn;
-      return;
+    if (nBondType==MolBond::DOUBLE) {
+      // double bond
+      if ( pcol1->equals(*pcol2.get()) ) {
+        pdl->color(pcol1);
+        pdl->vertex(pos1 + dvd.scale(m_dCvScl1));
+        pdl->vertex(pos2 + dvd.scale(m_dCvScl1));
+        pdl->vertex(pos1 + dvd.scale(m_dCvScl2));
+        pdl->vertex(pos2 + dvd.scale(m_dCvScl2));
+      }
+      else {
+        const Vector4D minpos = (pos1 + pos2).divide(2.0);
+        
+        pdl->color(pcol1);
+        pdl->vertex(pos1 + dvd.scale(m_dCvScl1));
+        pdl->vertex(minpos + dvd.scale(m_dCvScl1));
+        pdl->vertex(pos1 + dvd.scale(m_dCvScl2));
+        pdl->vertex(minpos + dvd.scale(m_dCvScl2));
+        
+        pdl->color(pcol2);
+        pdl->vertex(pos2 + dvd.scale(m_dCvScl1));
+        pdl->vertex(minpos + dvd.scale(m_dCvScl1));
+        pdl->vertex(pos2 + dvd.scale(m_dCvScl2));
+        pdl->vertex(minpos + dvd.scale(m_dCvScl2));
+      }
     }
-
-    const Vector4D minpos = (pos1 + pos2).divide(2.0);
-    
-    pdl->color(pcol1);
-    pdl->vertex(pos1 + dvd.scale(m_dCvScl1));
-    pdl->vertex(minpos + dvd.scale(m_dCvScl1));
-    pdl->vertex(pos1 + dvd.scale(m_dCvScl2));
-    pdl->vertex(minpos + dvd.scale(m_dCvScl2));
-    
-    pdl->color(pcol2);
-    pdl->vertex(pos2 + dvd.scale(m_dCvScl1));
-    pdl->vertex(minpos + dvd.scale(m_dCvScl1));
-    pdl->vertex(pos2 + dvd.scale(m_dCvScl2));
-    pdl->vertex(minpos + dvd.scale(m_dCvScl2));
+    else {
+      // triple bond
+      if ( pcol1->equals(*pcol2.get()) ) {
+        pdl->color(pcol1);
+        pdl->vertex(pos1);
+        pdl->vertex(pos2);
+        pdl->vertex(pos1 + dvd.scale(m_dCvScl1));
+        pdl->vertex(pos2 + dvd.scale(m_dCvScl1));
+        pdl->vertex(pos1 + dvd.scale(-m_dCvScl1));
+        pdl->vertex(pos2 + dvd.scale(-m_dCvScl1));
+      }
+      else {
+        const Vector4D minpos = (pos1 + pos2).divide(2.0);
+        
+        pdl->color(pcol1);
+        pdl->vertex(pos1);
+        pdl->vertex(minpos);
+        pdl->vertex(pos1 + dvd.scale(m_dCvScl1));
+        pdl->vertex(minpos + dvd.scale(m_dCvScl1));
+        pdl->vertex(pos1 + dvd.scale(-m_dCvScl1));
+        pdl->vertex(minpos + dvd.scale(-m_dCvScl1));
+        
+        pdl->color(pcol2);
+        pdl->vertex(pos2);
+        pdl->vertex(minpos);
+        pdl->vertex(pos2 + dvd.scale(m_dCvScl1));
+        pdl->vertex(minpos + dvd.scale(m_dCvScl1));
+        pdl->vertex(pos2 + dvd.scale(-m_dCvScl1));
+        pdl->vertex(minpos + dvd.scale(-m_dCvScl1));
+      }
+    }
     
     ++m_nBondDrawn;
     return;
@@ -129,20 +162,19 @@ void SimpleRenderer::drawInterAtomLine(MolAtomPtr pAtom1, MolAtomPtr pAtom2,
     pdl->color(pcol1);
     pdl->vertex(pos1);
     pdl->vertex(pos2);
-    ++m_nBondDrawn;
-    return;
   }
+  else {
+    const Vector4D minpos = (pos1 + pos2).divide(2.0);
+    
+    pdl->color(pcol1);
+    pdl->vertex(pos1);
+    pdl->vertex(minpos);
 
-  const Vector4D minpos = (pos1 + pos2).divide(2.0);
-
-  pdl->color(pcol1);
-  pdl->vertex(pos1);
-  pdl->vertex(minpos);
-
-  pdl->color(pcol2);
-  pdl->vertex(pos2);
-  pdl->vertex(minpos);
-
+    pdl->color(pcol2);
+    pdl->vertex(pos2);
+    pdl->vertex(minpos);
+  }
+  
   ++m_nBondDrawn;
   return;
 
