@@ -1317,16 +1317,15 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
   ////////////////////////////////////////
   
   {
-    // adjust the helix-coil table
+    // Perform adjustment for the helix-coil table
     // 1. shift 0.5 residues so that the junction comes to the middle of the Calpha(or pivot) atoms
-    // 2. adjust head/tail segments (head and tail segments should be the length of 1)
+    // 2. adjust head/tail segments (head and tail segments should have a length of 1.0 (in nresid unit))
     MB_DPRINTLN("Axial detail = %d", naxdet);
     int ielem=0, nelem = hstabs.size();
     int isft = naxdet/2;
     std::deque<HCTab>::iterator iter = hstabs.begin();
-    std::deque<HCTab>::iterator eiter = hstabs.end();
+    const std::deque<HCTab>::iterator eiter = hstabs.end();
     for (; iter!=eiter; ++iter) {
-      //BOOST_FOREACH (HCTab &elem, hstabs) {
       HCTab &elem = *iter;
       int jstart = elem.jst;
       int jend = elem.jen;
@@ -1349,28 +1348,36 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
       }
       
       MB_DPRINTLN("HST elem %d type=%d, jst=%d(%d), jen=%d(%d)", ielem, elem.flag, elem.jst, jstart, elem.jen, jend);
-
       elem.jst = jstart;
       elem.jen = jend;
+      ++ielem;
+    }
+
+    // ielem = 0;
+    iter = hstabs.begin();
+    for (; iter!=eiter; ++iter) {
+      HCTab &elem = *iter;
+      int jstart = elem.jst;
+      int jend = elem.jen;
       if (elem.flag==HC_HELIX_TAIL) {
         if (jend-jstart>naxdet) {
-          MB_DPRINTLN("*****");
+          MB_DPRINTLN("*** HST elem %d type=%d, jst=%d, jen=%d>naxdet", ielem, elem.flag, elem.jst, elem.jen);
           elem.jen = elem.jst + naxdet;
           std::deque<HCTab>::iterator jj = iter;
           ++jj;
           if (jj!=eiter) {
-            MB_DPRINTLN("overwrite jst=%d to %d", jj->jst, elem.jen+isft);
-            jj->jst = elem.jen+isft;
+            MB_DPRINTLN("overwrite jst=%d to %d", jj->jst, elem.jen);
+            jj->jst = elem.jen;
           }
           
         }
       }
       if (elem.flag==HC_HELIX_HEAD) {
         if (jend-jstart>naxdet) {
-          MB_DPRINTLN("*****");
+          LOG_DPRINTLN("*** HST elem %d type=%d, jst=%d, jen=%d>naxdet", ielem, elem.flag, elem.jst, elem.jen);
+          LOG_DPRINTLN("Rendering of cartoon may become incorrect!!");
         }
       }
-      ++ielem;
     }
   }
 
@@ -1383,27 +1390,7 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
   BOOST_FOREACH (HCTab elem, hstabs) {
     int jstart = elem.jst;
     int jend = elem.jen;
-    /*
-    if (ielem==0 && nelem==1) {
-      // single element --> no shift
-      MB_DPRINTLN("ielem=0 nelem=1, shift=0", isft);
-    }
-    else if (ielem==0) {
-      jend -= isft;
-      MB_DPRINTLN("ielem=0, shift=-%d", isft);
-    }
-    else if (ielem==nelem-1) {
-      jstart -= isft;
-      MB_DPRINTLN("ielem=%d(end), shift=-%d", ielem, isft);
-    }
-    else {
-      MB_DPRINTLN("ielem=%d, shift=-%d", ielem, isft);
-      jstart -= isft;
-      jend -= isft;
-    }
-    
-    MB_DPRINTLN("HST elem %d type=%d, jst=%d(%d), jen=%d(%d)", ielem, elem.flag, elem.jst, jstart, elem.jen, jend);
-     */
+
     switch (elem.flag) {
     case HC_COIL:
     case HC_HELIX: {

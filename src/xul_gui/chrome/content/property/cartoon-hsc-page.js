@@ -283,13 +283,13 @@ cuemolui.CtnHscPropEdit = ( function () {
       let idpfx = "ribhlxpage";
       let pfx = "ribhelix";
       if (tgt_id==idpfx+"-secttype") {
-	new_val = aEvent.target.value;
+	new_val = this.mRhSectType.value;
 	this.updateDisabledState();
 	gMain.updateData(pfx+".type", new_val);
       }
       
       if (tgt_id==idpfx+"-width") {
-	new_val = parseFloat(this.mLineWidth.value);
+	new_val = parseFloat(mRhLineWidth.value);
 	if (isNaN(new_val)) return;
 	if (new_val<0.0) new_val = 0.0;
 	if (new_val>5.0) new_val = 5.0;
@@ -297,14 +297,14 @@ cuemolui.CtnHscPropEdit = ( function () {
       }
       
       if (tgt_id==idpfx+"-tuber") {
-	new_val = parseFloat(this.mTuber.value);
+	new_val = parseFloat(this.mRhTuber.value);
 	if (isNaN(new_val) || new_val<0.1 || new_val>10)
 	  return;
 	gMain.updateData(pfx+".tuber", new_val);
       }
       
       if (tgt_id==idpfx+"-sharp") {
-	new_val = parseFloat(this.mSharp.value);
+	new_val = parseFloat(this.mRhSharp.value);
 	if (isNaN(new_val) || new_val<0 || new_val>1)
 	  return;
 	gMain.updateData(pfx+".sharp", new_val);
@@ -312,7 +312,7 @@ cuemolui.CtnHscPropEdit = ( function () {
 
       pfx = "ribhelix_";
       if (tgt_id==this.mIdPfx+"-head-type") {
-	new_val = aEvent.target.value;
+	new_val = this.mHeadType.value;
 	this.updateDisabledState();
 	gMain.updateData(pfx+"head.type", new_val);
 	gMain.updateData(pfx+"tail.type", new_val);
