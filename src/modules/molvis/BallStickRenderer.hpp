@@ -31,8 +31,9 @@ namespace molvis {
     typedef MolAtomRenderer super_t;
 
   private:
-    /// Coloring scheme
-    // ColoringSchemePtr m_pcoloring;
+
+    /////////////
+    // Properties
 
     double m_bondw;
 
@@ -49,7 +50,37 @@ namespace molvis {
     /// default color
     // gfx::SolidColor m_defaultColor;
 
-    //////////
+  public:
+    double getSphr() const { return m_sphr; }
+    void setSphr(double s) { m_sphr = s; }
+
+    double getBondw() const { return m_bondw; }
+    void setBondw(double s) { m_bondw = s; }
+
+    int getDetail() const { return m_nDetail; }
+    void setDetail(int n) { m_nDetail = n; }
+
+    bool isShowRing() const { return m_fRing; }
+    void setShowRing(bool b) { m_fRing = b; }
+
+    void setRingColor(const gfx::ColorPtr &col) { m_ringcol = col; }
+
+    double getRingThick() const { return m_tickness; }
+    void setRingThick(double s) { m_tickness = s; }
+
+  private:
+    /// Valence-Bond drawing mode
+    int m_nVBMode;
+
+  public:
+    static const int VBMODE_OFF = 0;
+    static const int VBMODE_TYPE1 = 1;
+
+    int getVBMode() const { return m_nVBMode; }
+    void setVBMode(int n) { m_nVBMode = n; }
+
+    /////////////
+    // workarea
 
     std::set<int> m_atoms;
     int m_nDetailOld;
@@ -82,25 +113,6 @@ namespace molvis {
 
     //////////////////////////////////////////////////////
 
-    double getSphr() const { return m_sphr; }
-    void setSphr(double s) { m_sphr = s; }
-
-    double getBondw() const { return m_bondw; }
-    void setBondw(double s) { m_bondw = s; }
-
-    int getDetail() const { return m_nDetail; }
-    void setDetail(int n) { m_nDetail = n; }
-
-    bool isShowRing() const { return m_fRing; }
-    void setShowRing(bool b) { m_fRing = b; }
-
-    void setRingColor(const gfx::ColorPtr &col) { m_ringcol = col; }
-
-    double getRingThick() const { return m_tickness; }
-    void setRingThick(double s) { m_tickness = s; }
-
-    //////////////////////////////////////////////////////
-
     virtual void propChanged(qlib::LPropEvent &ev);
 
     //////////////////////////////////////////////////////
@@ -108,6 +120,9 @@ namespace molvis {
   private:
     void drawInterAtomLine(MolAtomPtr pAtom1, MolAtomPtr pAtom2,
                            DisplayContext *pdl);
+
+    void drawVBondType1(MolAtomPtr pAtom1, MolAtomPtr pAtom2,
+                        MolBond *pMB, DisplayContext *pdl);
 
     void drawRings(DisplayContext *pdl);
     void drawRingImpl(const std::list<int> atoms, DisplayContext *pdl);

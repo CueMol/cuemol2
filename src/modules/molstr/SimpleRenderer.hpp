@@ -96,7 +96,7 @@ namespace molstr {
 
   private:
     void drawInterAtomLine(MolAtomPtr pAtom1, MolAtomPtr pAtom2,
-                           int nBondType,
+                           MolBond *pMB,
 			   DisplayContext *pdl);
     void drawAtom(MolAtomPtr pAtom, DisplayContext *pdl);
 

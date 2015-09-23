@@ -35,6 +35,7 @@ BallStickRenderer::BallStickRenderer()
   m_bDrawRingOnly = false;
   m_pSlSph = MB_NEW GLSLSphereHelper();
   m_pSlCyl = MB_NEW GLSLCylinderHelper();
+  m_nVBMode = VBMODE_OFF;
 }
 
 BallStickRenderer::~BallStickRenderer()
@@ -68,7 +69,7 @@ void BallStickRenderer::setSceneID(qlib::uid_t nid)
 
 void BallStickRenderer::display(DisplayContext *pdc)
 {
-  if (pdc->isFile()) {
+  if (pdc->isFile() || m_nVBMode!=VBMODE_OFF) {
     // case of the file (non-ogl) rendering
     // always use the old version.
     super_t::display(pdc);
@@ -224,8 +225,12 @@ void BallStickRenderer::rendBond(DisplayContext *pdl, MolAtomPtr pAtom1, MolAtom
   if (m_bDrawRingOnly)
     return;
 
-  if (m_bondw>0.0)
-    drawInterAtomLine(pAtom1, pAtom2, pdl);
+  if (m_bondw>0.0) {
+    if (m_nVBMode==VBMODE_TYPE1)
+      drawVBondType1(pAtom1, pAtom2, pMB, pdl);
+    else
+      drawInterAtomLine(pAtom1, pAtom2, pdl);
+  }
 }
 
 void BallStickRenderer::drawInterAtomLine(MolAtomPtr pAtom1, MolAtomPtr pAtom2,
@@ -249,6 +254,60 @@ void BallStickRenderer::drawInterAtomLine(MolAtomPtr pAtom1, MolAtomPtr pAtom2,
     pdl->cylinder(m_bondw, pos1, mpos);
     pdl->color(pcol2);
     pdl->cylinder(m_bondw, pos2, mpos);
+  }
+}
+
+void BallStickRenderer::drawVBondType1(MolAtomPtr pAtom1, MolAtomPtr pAtom2,
+                                       MolBond *pMB, DisplayContext *pdl)
+{
+  if (pAtom1.isnull() || pAtom2.isnull()) return;
+
+  int nBondType = pMB->getType();
+  
+  if (!(nBondType==MolBond::DOUBLE ||
+        nBondType==MolBond::TRIPLE)) {
+    drawInterAtomLine(pAtom1, pAtom2, pdl);
+    return;
+  }
+
+  const Vector4D pos1 = pAtom1->getPos();
+  const Vector4D pos2 = pAtom2->getPos();
+
+  MolCoordPtr pMol = getClientMol();
+  Vector4D dvd = pMB->getDblBondDir(pMol);
+  Vector4D dv = (pos2-pos1).normalize();
+  
+  ColorPtr pcol1 = ColSchmHolder::getColor(pAtom1);
+  ColorPtr pcol2 = ColSchmHolder::getColor(pAtom2);
+
+  const double vbscl1 = m_bondw * 2.5;
+  const double vbscl2 = m_sphr * 2.0;
+  
+  const Vector4D del1 = dv.scale(vbscl2) + dvd.scale(vbscl1);
+  const Vector4D del2 = dv.scale(-vbscl2) + dvd.scale(vbscl1);
+
+  if ( pcol1->equals(*pcol2.get()) ) {
+    // single-color bond
+    pdl->color(pcol1);
+    pdl->cylinder(m_bondw, pos1, pos2);
+    
+    pdl->cylinder(m_bondw, pos1+del1, pos2+del2);
+    pdl->sphere(m_bondw, pos1+del1);
+    pdl->sphere(m_bondw, pos2+del2);
+  }
+  else {
+    // double-color bond
+    const Vector4D mpos = (pos1 + pos2).divide(2.0);
+    const Vector4D mpos2 = mpos+ dvd.scale(vbscl1);
+    pdl->color(pcol1);
+    pdl->cylinder(m_bondw, pos1, mpos);
+    pdl->cylinder(m_bondw, pos1+del1, mpos2);
+    pdl->sphere(m_bondw, pos1+del1);
+
+    pdl->color(pcol2);
+    pdl->cylinder(m_bondw, pos2, mpos);
+    pdl->cylinder(m_bondw, pos2+del2, mpos2);
+    pdl->sphere(m_bondw, pos2+del2);
   }
 }
 

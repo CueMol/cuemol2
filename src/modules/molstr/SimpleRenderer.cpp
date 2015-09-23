@@ -71,7 +71,7 @@ namespace {
 }
 
 void SimpleRenderer::drawInterAtomLine(MolAtomPtr pAtom1, MolAtomPtr pAtom2,
-                                       int nBondType,
+                                       MolBond *pMB,
                                        DisplayContext *pdl)
 {
   if (pAtom1.isnull() || pAtom2.isnull()) return;
@@ -82,11 +82,13 @@ void SimpleRenderer::drawInterAtomLine(MolAtomPtr pAtom1, MolAtomPtr pAtom2,
   ColorPtr pcol1 = ColSchmHolder::getColor(pAtom1);
   ColorPtr pcol2 = ColSchmHolder::getColor(pAtom2);
 
+  int nBondType = pMB->getType();
   if (m_bValBond &&
       (nBondType==MolBond::DOUBLE ||
        nBondType==MolBond::TRIPLE)) {
     MolCoordPtr pMol = getClientMol();
 
+    /*
     bool bOK;
     Vector4D nv;
     nv = getNormalVec(pAtom1, pMol, bOK);
@@ -96,7 +98,9 @@ void SimpleRenderer::drawInterAtomLine(MolAtomPtr pAtom1, MolAtomPtr pAtom2,
     Vector4D dv = (pos1-pos2).normalize();
     Vector4D dvd = nv.cross(dv);
     dvd = dvd.normalize();
-
+*/
+    Vector4D dvd = pMB->getDblBondDir(pMol);
+    
     if (nBondType==MolBond::DOUBLE) {
       // double bond
       if ( pcol1->equals(*pcol2.get()) ) {
@@ -217,7 +221,7 @@ void SimpleRenderer::rendAtom(DisplayContext *pdl, MolAtomPtr pAtom, bool fbonde
 
 void SimpleRenderer::rendBond(DisplayContext *pdl, MolAtomPtr pAtom1, MolAtomPtr pAtom2, MolBond *pMB)
 {
-  drawInterAtomLine(pAtom1, pAtom2, pMB->getType(), pdl);
+  drawInterAtomLine(pAtom1, pAtom2, pMB, pdl);
 }
 
 bool SimpleRenderer::isRendBond() const
