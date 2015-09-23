@@ -42,6 +42,7 @@ XMLTopparFile.cpp \
 TopparManager.cpp \
 ElemSym.cpp \
 MolAtom.cpp \
+MolBond.cpp \
 MolResidue.cpp \
 MolChain.cpp \
 MolCoord.cpp \

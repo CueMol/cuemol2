@@ -705,6 +705,9 @@
     <ClCompile Include="..\..\src\gfx\GradientColor_wrap.cpp">
       <Filter>gfx</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\MolBond.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\qsys\AbstractColor.hpp">

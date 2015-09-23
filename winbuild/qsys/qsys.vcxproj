@@ -100,6 +100,7 @@
     <ClCompile Include="..\..\src\gfx\MultiGradient_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\ChainIterator.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\ChainIterator_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\MolBond.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\CPK2Renderer.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\CPK2Renderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\ScriptColoring.cpp" />
