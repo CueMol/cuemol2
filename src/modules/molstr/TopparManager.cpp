@@ -55,6 +55,7 @@ bool TopparManager::readPrmTop(const char *fname, const char *filetype)
     return true;
   }
   else if (LString(filetype).equals("xml")) {
+    LOG_DPRINTLN("Toppar> Loading XML format top/par file \"%s\"...", fname);
 
     XMLTopparFile pario;
     pario.attach(m_pParamDB, m_pTopoDB);
@@ -62,7 +63,6 @@ bool TopparManager::readPrmTop(const char *fname, const char *filetype)
     if (!pario.read(fname))
       return false;
     
-    LOG_DPRINTLN("Toppar> XML format top/par file \"%s\" is loaded.", fname);
     return true;
   }
   else {

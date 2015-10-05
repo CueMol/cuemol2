@@ -74,6 +74,9 @@ namespace molstr {
     // building residue topology/param dictionaly
     TopoDB *m_pTopoDB;
 
+    int m_nResids;
+    int m_nLinks;
+    
   public:
     typedef qlib::MapTable<LString> Attrs;
 

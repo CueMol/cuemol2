@@ -21,6 +21,8 @@ using namespace molstr;
 XMLTopparFile::XMLTopparFile()
   : m_pParamDB(NULL), m_pTopoDB(NULL)
 {
+  m_nResids = 0;
+  m_nLinks = 0;
 }
 
 XMLTopparFile::~XMLTopparFile()
@@ -49,7 +51,7 @@ bool XMLTopparFile::read(const char *filename)
 {
   if (m_pParamDB==NULL ||
       m_pTopoDB==NULL) {
-    LOG_DPRINTLN("CNSParFile> Error: XMLTopparFile:read() : dictionary not attached !!");
+    LOG_DPRINTLN("XMLToppar> Error: XMLTopparFile:read() : dictionary not attached !!");
     return false;
   }
 
@@ -63,6 +65,8 @@ bool XMLTopparFile::read(const char *filename)
     return false;
   }
 
+  LOG_DPRINTLN("XMLToppar> read %d residues.", m_nResids);
+  LOG_DPRINTLN("XMLToppar> read %d links.", m_nLinks);
   return true;
 }
 
@@ -117,6 +121,10 @@ void XMLTopparFile::startTopResid(const Attrs &attrs)
 
 void XMLTopparFile::endTopResid()
 {
+  if (m_pCurResid!=NULL) {
+    m_nResids++;
+    LOG_DPRINTLN("Read resid %s done.", m_pCurResid->getName().c_str());
+  }
   m_pCurResid = NULL;
 }
 
@@ -167,6 +175,7 @@ void XMLTopparFile::startTopAtom(const Attrs &attrs)
     if (attrs.get("charge").toDouble(&val))
       pAtom->charge = val;
   }
+
 }
 
 //static
@@ -337,6 +346,11 @@ void XMLTopparFile::startLink(const Attrs &attrs)
 
 void XMLTopparFile::endLink()
 {
+  if (m_pCurPatch!=NULL) {
+    m_nLinks++;
+    LOG_DPRINTLN("Read link %s done.", m_pCurPatch->getName().c_str());
+  }
+
   m_pCurPatch = NULL;
 }
 
