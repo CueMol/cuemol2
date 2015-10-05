@@ -15,6 +15,7 @@
 #include <string>
 #include <locale>
 #include <iostream>
+#include <sstream>
 #include <vector>
 #include <algorithm>
 
@@ -207,6 +208,30 @@ bool isNear(int a, int b)
   return false;
 }
 
+double my_strtod(const char *str, bool &res)
+{
+  std::string s(str);
+
+  if (s.empty()) {
+    res = false;
+    return 0.0;
+  }
+
+  std::istringstream iss(s);
+  iss.imbue(std::locale::classic());
+
+  double retval;
+  iss >> retval;
+  if (iss.eof()) {
+    res = true;
+    return retval;
+  }
+  else {
+    res = false;
+    return retval;
+  }
+}
+
 bool compare_alpha(const PNGImage *pImg1, const PNGImage *pImg2)
 {
   return pImg1->m_alpha > pImg2->m_alpha;
@@ -214,9 +239,9 @@ bool compare_alpha(const PNGImage *pImg1, const PNGImage *pImg2)
 
 void writeDPI(const char *inpath, const char *outpath, const char *sdpi)
 {
-  char *endptr;
-  double dpi = strtod(sdpi, &endptr);
-  if (sdpi==endptr)
+  bool res;
+  double dpi = my_strtod(sdpi, res);
+  if (!res)
     dpi = -1.0;
 
   PNGImage img;
@@ -251,13 +276,14 @@ int blend1(int argc, const char *argv[])
   if (argc%2!=1) {
     std::string sdpi = argv[argc-1];
     --argc;
-    std::cerr << "SetDPI: " << sdpi << std::endl;
 
-    char *endptr;
+    bool res;
     const char *nptr = sdpi.c_str();
-    dpi = strtod(nptr, &endptr);
-    if (nptr==endptr)
+    dpi = my_strtod(nptr, res);
+    if (!res)
       dpi = -1.0;
+
+    std::cerr << "SetDPI: " << dpi << std::endl;
   }
 
   int nblend = (argc-3)/2;
@@ -309,8 +335,12 @@ int blend1(int argc, const char *argv[])
     std::string file2 = argv[2+ind*2];
     std::string salpha = argv[3+ind*2];
 
-    char *endptr;
-    double alpha = strtod(salpha.c_str(), &endptr);
+    bool res;
+    double alpha = my_strtod(salpha.c_str(), res);
+    if (!res) {
+      std::cerr << "Invalid alpha value: " << salpha << std::endl;
+      return false;
+    }
 
     std::cerr << "Input layer " << ind << " : " << file2 << std::endl;
     std::cerr << "  blend alpha = " << alpha << std::endl;
@@ -420,13 +450,14 @@ int blend2(int argc, const char *argv[])
 
   std::string sdpi = argv[argc-1];
   --argc;
-  std::cerr << "SetDPI: " << sdpi << std::endl;
 
-  char *endptr;
+  bool res;
   const char *nptr = sdpi.c_str();
-  double dpi = strtod(nptr, &endptr);
-  if (nptr==endptr)
+  double dpi = my_strtod(nptr, res);
+  if (!res)
     dpi = -1.0;
+
+  std::cerr << "SetDPI: " << dpi << std::endl;
 
   int nblend = (argc-4)/2;
   std::cerr << "Nblend: " << nblend << std::endl;

@@ -60,13 +60,23 @@ bool LString::toDouble(double *retval) const
 {
   MB_ASSERT(retval!=NULL);
 
-  char *sptr;
-  const char *cstr = m_data.c_str();
-  *retval = ::strtod(cstr, &sptr);
-  if(sptr==cstr) return false;
+  if (m_data.empty())
+    return false;
 
-  return true;
+  std::istringstream iss(m_data);
+  iss.imbue(std::locale::classic());
 
+  iss >> *retval;
+  if (iss.eof())
+    return true;
+  else
+    return false;
+
+  // char *sptr;
+  // const char *cstr = m_data.c_str();
+  // *retval = ::strtod(cstr, &sptr);
+  // if(sptr==cstr) return false;
+  // return true;
 }
 
 LString LString::trim(const char *ws /*= " \t"*/) const
