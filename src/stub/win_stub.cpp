@@ -308,6 +308,10 @@ int internal_main(int argc, char **argv)
   }
 #endif
   
+
+  Outputf(pFileLog, "#setlocale to C\n");
+  setlocale(LC_ALL, "C");
+
   Outputf(pFileLog, "### ENTERING XRE_MAIN ###\n");
   //qlib::init();
   
