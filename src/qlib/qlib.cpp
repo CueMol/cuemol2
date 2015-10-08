@@ -34,6 +34,7 @@ bool qlib::init()
   bool res;
 
   if (s_nInitCount==0) {
+    LString::initLocale();
     LMsgLog::init();
     EventManager::init();
     ObjectManager::init();
@@ -64,6 +65,7 @@ void qlib::fini()
     ObjectManager::fini();
     EventManager::fini();
     LMsgLog::fini();
+    LString::finiLocale();
   }
 
   return;
@@ -74,47 +76,35 @@ void qlib::fini()
 ////////////////////////////////////////////////////////////////////////////////
 // LOG functions
 
-#define MAX_SBUF_SIZE 1024*64
-
-#define CALL_VSNPRINTF(sbuf, msg) \
-  char sbuf[MAX_SBUF_SIZE];\
-  va_list marker;\
-  va_start(marker, msg);\
-  myvsnprintf(sbuf, sizeof sbuf, msg, marker);\
-  va_end(marker);
-
-namespace {
-  inline void myvsnprintf(char *sbuf, size_t nsize, const char *msg, va_list marker) {
-#ifdef WIN32
-    _vsnprintf(sbuf, nsize, msg, marker);
-    //      _vsnprintf_s(sbuf, nsize, _TRUNCATE, msg, marker);
-#else
-# ifdef HAVE_VSNPRINTF
-    vsnprintf(sbuf, nsize, msg, marker);
-# else
-    vsprintf(sbuf, msg, marker);
-# endif
-#endif
-  }
-}
-
 namespace qlib {
 
-void LOG_verb_printfmt(const char *msg, ...)
+void LOG_verb_printfmt(const char *fmt, ...)
 {
-  CALL_VSNPRINTF(sbuf,msg);
+  LString sbuf;
+
+  va_list marker;
+  va_start(marker, fmt);
+  sbuf.vformat(fmt, marker);
+  va_end(marker);
+
   LMsgLog *pML = LMsgLog::getInstance();
   if (pML==NULL) {
-    fputs(sbuf, stderr);
+    fputs(sbuf.c_str(), stderr);
     fflush(stderr);
   }
   else
     pML->writeLog(LMsgLog::DL_VERBOSE, sbuf);
 }
 
-void LOG_verb_printlnfmt(const char *msg, ...)
+void LOG_verb_printlnfmt(const char *fmt, ...)
 {
-  CALL_VSNPRINTF(sbuf,msg);
+  LString sbuf;
+
+  va_list marker;
+  va_start(marker, fmt);
+  sbuf.vformat(fmt, marker);
+  va_end(marker);
+
   LMsgLog *pML = LMsgLog::getInstance();
   if (pML==NULL) {
     fputs(sbuf, stderr);
@@ -125,9 +115,15 @@ void LOG_verb_printlnfmt(const char *msg, ...)
     pML->writeLog(LMsgLog::DL_VERBOSE, sbuf, true);
 }
 
-void LOG_err_printfmt(const char *msg, ...)
+void LOG_err_printfmt(const char *fmt, ...)
 {
-  CALL_VSNPRINTF(sbuf,msg);
+  LString sbuf;
+
+  va_list marker;
+  va_start(marker, fmt);
+  sbuf.vformat(fmt, marker);
+  va_end(marker);
+
   LMsgLog *pML = LMsgLog::getInstance();
   if (pML==NULL) {
     fputs(sbuf, stderr);
@@ -137,9 +133,15 @@ void LOG_err_printfmt(const char *msg, ...)
     pML->writeLog(LMsgLog::DL_ERROR, sbuf);
 }
 
-void LOG_err_printlnfmt(const char *msg, ...)
+void LOG_err_printlnfmt(const char *fmt, ...)
 {
-  CALL_VSNPRINTF(sbuf,msg);
+  LString sbuf;
+
+  va_list marker;
+  va_start(marker, fmt);
+  sbuf.vformat(fmt, marker);
+  va_end(marker);
+
   LMsgLog *pML = LMsgLog::getInstance();
   if (pML==NULL) {
     fputs(sbuf, stderr);
@@ -150,9 +152,15 @@ void LOG_err_printlnfmt(const char *msg, ...)
     pML->writeLog(LMsgLog::DL_ERROR, sbuf, true);
 }
 
-void LOG_printfmt(int nlev, const char *msg, ...)
+void LOG_printfmt(int nlev, const char *fmt, ...)
 {
-  CALL_VSNPRINTF(sbuf,msg);
+  LString sbuf;
+
+  va_list marker;
+  va_start(marker, fmt);
+  sbuf.vformat(fmt, marker);
+  va_end(marker);
+
   LMsgLog *pML = LMsgLog::getInstance();
   if (pML==NULL) {
     fputs(sbuf, stderr);
@@ -162,9 +170,15 @@ void LOG_printfmt(int nlev, const char *msg, ...)
     pML->writeLog(nlev, sbuf);
 }
 
-void LOG_printlnfmt(int nlev, const char *msg, ...)
+void LOG_printlnfmt(int nlev, const char *fmt, ...)
 {
-  CALL_VSNPRINTF(sbuf,msg);
+  LString sbuf;
+
+  va_list marker;
+  va_start(marker, fmt);
+  sbuf.vformat(fmt, marker);
+  va_end(marker);
+
   LMsgLog *pML = LMsgLog::getInstance();
   if (pML==NULL) {
     fputs(sbuf, stderr);

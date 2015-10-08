@@ -62,53 +62,25 @@ void PrintStream::print(const Vector4D &n)
 
 void PrintStream::format(const char *fmt, ...)
 {
-  const int bufsize = 1024;
-  char sbuf[bufsize];
+  LString sbuf;
   va_list marker;
 
   va_start(marker, fmt);
-
-#ifdef WIN32
-  _vsnprintf(sbuf, sizeof sbuf, fmt, marker);
-#else
-
-# ifdef HAVE_VSNPRINTF
-  vsnprintf(sbuf, sizeof sbuf, fmt, marker);
-# else
-  vsprintf(sbuf, fmt, marker);
-# endif
-
-#endif
-
+  sbuf.vformat(fmt, marker);
   va_end(marker);
 
-  sbuf[bufsize-1] = '\0';
   print(sbuf);
 }
 
 void PrintStream::formatln(const char *fmt, ...)
 {
-  const int bufsize = 1024;
-  char sbuf[bufsize];
+  LString sbuf;
   va_list marker;
 
   va_start(marker, fmt);
-
-#ifdef WIN32
-  _vsnprintf(sbuf, sizeof sbuf, fmt, marker);
-#else
-
-# ifdef HAVE_VSNPRINTF
-  vsnprintf(sbuf, sizeof sbuf, fmt, marker);
-# else
-  vsprintf(sbuf, fmt, marker);
-# endif
-
-#endif
-
+  sbuf.vformat(fmt, marker);
   va_end(marker);
 
-  sbuf[bufsize-1] = '\0';
   println(sbuf);
 }
 

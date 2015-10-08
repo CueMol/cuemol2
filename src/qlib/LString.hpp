@@ -318,9 +318,11 @@ namespace qlib {
     ///////////////////////////////////////////
     // formatting/conversion methods
 
-    static LString format(const char *msg, ...);
+    void vformat(const char *msg, va_list marker);
 
     void format2(const char *fmt, ...);
+
+    static LString format(const char *msg, ...);
 
     static inline LString fromBool(bool b) { return LString(b?"true":"false"); }
 
@@ -427,9 +429,12 @@ namespace qlib {
       return m_data.c_str() + c;
     }
 
-    // serialization
-    // virtual void writeObj(ObjOutStream &dos) const;
-    // virtual void readObj(ObjInStream &dis);
+  private:
+    static void *m_pLocale;
+
+  public:
+    static void initLocale();
+    static void finiLocale();
 
   };
 

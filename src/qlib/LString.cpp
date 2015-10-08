@@ -223,56 +223,23 @@ LString LString::join(const char *sep, const LString *ps, int nsize)
 
 void LString::format2(const char *fmt, ...)
 {
-  const int bufsize = 1024;
-  char sbuf[bufsize];
   va_list marker;
-
   va_start(marker, fmt);
-
-#ifdef WIN32
-//  _vsnprintf_s(sbuf, sizeof sbuf, _TRUNCATE, fmt, marker);
-  _vsnprintf(sbuf, sizeof sbuf, fmt, marker);
-#else
-
-# ifdef HAVE_VSNPRINTF
-  vsnprintf(sbuf, sizeof sbuf, fmt, marker);
-# else
-  vsprintf(sbuf, fmt, marker);
-# endif
-
-#endif
-
+  vformat(fmt, marker);
   va_end(marker);
-
-  sbuf[bufsize-1] = '\0';
-  m_data = sbuf;
 }
 
 //static
 QLIB_API LString LString::format(const char *fmt, ...)
 {
-  const int bufsize = 1024;
-  char sbuf[bufsize];
+  LString retval;
+
   va_list marker;
-
   va_start(marker, fmt);
-
-#ifdef WIN32
-  _vsnprintf(sbuf, sizeof sbuf, fmt, marker);
-#else
-
-# ifdef HAVE_VSNPRINTF
-  vsnprintf(sbuf, sizeof sbuf, fmt, marker);
-# else
-  vsprintf(sbuf, fmt, marker);
-# endif
-
-#endif
-
+  retval.vformat(fmt, marker);
   va_end(marker);
 
-  sbuf[bufsize-1] = '\0';
-  return LString(sbuf);
+  return retval;
 }
 
 // for debugging
@@ -349,5 +316,67 @@ QLIB_API LString LString::fromReal(LReal value, int nMaxDigit /*=6*/)
   
   rval = rval.substr(0, i+1);
   return rval;
+}
+
+namespace {
+  struct Locale {
+    Locale() {}
+    virtual ~Locale() {}
+  };
+
+#ifdef WIN32
+  struct WinLocale {
+
+    _locale_t m_cloc;
+
+    WinLocale() {
+      m_cloc = _create_locale(LC_ALL, "C");
+    }
+    virtual ~WinLocale() {
+      _free_locale(m_cloc);
+    }
+  };
+#endif
+}
+
+//static
+void *LString::m_pLocale;
+
+//static
+void LString::initLocale()
+{
+#ifdef WIN32
+  m_pLocale = new WinLocale();
+#endif
+}
+
+//static
+void LString::finiLocale()
+{
+  if (m_pLocale!=NULL)
+    delete m_pLocale;
+}
+
+#define MAX_SBUF_SIZE 1024*64
+
+void LString::vformat(const char *msg, va_list marker)
+{
+  char sbuf[MAX_SBUF_SIZE];\
+
+#ifdef WIN32
+  WinLocale *pLoc = static_cast<WinLocale *>(m_pLocale);
+  //_vsnprintf(sbuf, nsize, msg, marker);
+  //_vsnprintf_s(sbuf, sizeof sbuf-1, _TRUNCATE, msg, marker);
+  _vsnprintf_l(sbuf, sizeof sbuf-1, msg, pLoc->m_cloc, marker);
+#else
+# ifdef HAVE_VSNPRINTF
+  vsnprintf(sbuf, sizeof sbuf-1, msg, marker);
+# else
+  vsprintf(sbuf, msg, marker);
+# endif
+#endif
+
+  sbuf[MAX_SBUF_SIZE-1] = '\0';
+  m_data = sbuf;
 }
 
