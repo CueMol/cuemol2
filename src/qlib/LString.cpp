@@ -10,6 +10,12 @@
 #include "LString.hpp"
 #include "LChar.hpp"
 
+#if defined(HAVE_XLOCALE_H)
+#include <xlocale.h>
+#elif defined(HAVE_LOCALE_H)
+#include <locale.h>
+#endif
+
 using namespace qlib;
 
 // hash value generator
@@ -318,14 +324,14 @@ QLIB_API LString LString::fromReal(LReal value, int nMaxDigit /*=6*/)
   return rval;
 }
 
-namespace {
-  struct Locale {
-    Locale() {}
-    virtual ~Locale() {}
+namespace qlib { namespace detail {
+  struct LLocale {
+    LLocale() {}
+    virtual ~LLocale() {}
   };
 
 #ifdef WIN32
-  struct WinLocale {
+  struct WinLocale : public LLocale {
 
     _locale_t m_cloc;
 
@@ -336,32 +342,52 @@ namespace {
       _free_locale(m_cloc);
     }
   };
+#else
+  struct PosixLocale : public LLocale {
+
+#ifdef HAVE_NEWLOCALE
+    locale_t m_cloc;
 #endif
-}
+
+    PosixLocale() {
+#ifdef HAVE_NEWLOCALE
+      m_cloc = newlocale(LC_ALL, "C", NULL);
+#endif
+    }
+    virtual ~PosixLocale() {
+#ifdef HAVE_FREELOCALE
+      freelocale(m_cloc);
+#endif
+    }
+  };
+#endif
+}}
 
 //static
-void *LString::m_pLocale;
+qlib::detail::LLocale *LString::m_pLocale;
 
 //static
 void LString::initLocale()
 {
 #ifdef WIN32
-  m_pLocale = new WinLocale();
+  m_pLocale = new qlib::detail::WinLocale();
+#else
+  m_pLocale = new qlib::detail::PosixLocale();
 #endif
 }
 
 //static
 void LString::finiLocale()
 {
-  if (m_pLocale!=NULL)
-    delete m_pLocale;
+  //if (m_pLocale!=NULL)
+  //delete m_pLocale;
 }
 
-#define MAX_SBUF_SIZE 1024*64
+#define MAX_SBUF_SIZE (1024*64)
 
 void LString::vformat(const char *msg, va_list marker)
 {
-  char sbuf[MAX_SBUF_SIZE];\
+  char sbuf[MAX_SBUF_SIZE];
 
 #ifdef WIN32
   WinLocale *pLoc = static_cast<WinLocale *>(m_pLocale);
@@ -369,7 +395,11 @@ void LString::vformat(const char *msg, va_list marker)
   //_vsnprintf_s(sbuf, sizeof sbuf-1, _TRUNCATE, msg, marker);
   _vsnprintf_l(sbuf, sizeof sbuf-1, msg, pLoc->m_cloc, marker);
 #else
-# ifdef HAVE_VSNPRINTF
+  qlib::detail::PosixLocale *pLoc =
+    static_cast<qlib::detail::PosixLocale *>(m_pLocale);
+# if defined(HAVE_VSNPRINTF_L)
+  vsnprintf_l(sbuf, sizeof sbuf-1, pLoc->m_cloc, msg, marker);
+# elif defined(HAVE_VSNPRINTF)
   vsnprintf(sbuf, sizeof sbuf-1, msg, marker);
 # else
   vsprintf(sbuf, msg, marker);

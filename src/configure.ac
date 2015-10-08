@@ -91,7 +91,7 @@ AC_SUBST(CXXFLAGS_VIS_HIDDEN)
 
 AC_CHECK_FUNCS(strdup strstr strcasecmp strncasecmp)
 AC_CHECK_FUNCS(strerror select signal)
-AC_CHECK_FUNCS(vsnprintf)
+AC_CHECK_FUNCS(vsnprintf newlocale freelocale vsnprintf_l strtod_l)
 AC_CHECK_FUNCS(memmove bcopy)
 
 AC_CHECK_LIB([m],[cos])
@@ -101,6 +101,7 @@ AC_CHECK_FUNCS(finite)
 AC_CHECK_HEADERS(stdarg.h)
 AC_CHECK_HEADERS(dirent.h)
 AC_CHECK_HEADERS(fcntl.h unistd.h sys/wait.h spawn.h)
+AC_CHECK_HEADERS(locale.h xlocale.h)
 
 #######################################################
 #

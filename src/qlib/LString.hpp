@@ -16,6 +16,10 @@
 
 namespace qlib {
 
+  namespace detail {
+    struct LLocale;
+  }
+
   class QLIB_API LString : public LObject
   {
   private:
@@ -430,7 +434,7 @@ namespace qlib {
     }
 
   private:
-    static void *m_pLocale;
+    static detail::LLocale *m_pLocale;
 
   public:
     static void initLocale();
