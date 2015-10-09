@@ -390,7 +390,7 @@ void LString::vformat(const char *msg, va_list marker)
   char sbuf[MAX_SBUF_SIZE];
 
 #ifdef WIN32
-  WinLocale *pLoc = static_cast<WinLocale *>(m_pLocale);
+  qlib::detail::WinLocale *pLoc = static_cast<qlib::detail::WinLocale *>(m_pLocale);
   //_vsnprintf(sbuf, nsize, msg, marker);
   //_vsnprintf_s(sbuf, sizeof sbuf-1, _TRUNCATE, msg, marker);
   _vsnprintf_l(sbuf, sizeof sbuf-1, msg, pLoc->m_cloc, marker);
