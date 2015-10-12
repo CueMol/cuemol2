@@ -254,7 +254,7 @@ NS_IMETHODIMP XPCCueMol::Init(const char *confpath, bool *_retval)
 #ifdef HAVE_JAVASCRIPT
   // load internal JS module
   jsbr::init();
-  //MB_DPRINTLN("---------- jsbr::init() OK");
+  MB_DPRINTLN("---------- jsbr::init() OK");
 #endif
 
 #ifdef HAVE_PYTHON
@@ -378,6 +378,7 @@ NS_IMETHODIMP XPCCueMol::HasClass(const char * clsname, bool *_retval)
   *_retval = false;
   try {
     qlib::LClass *pcls = pMgr->getClassObj(clsname);
+    //MB_DPRINTLN("XPCCueMol.hasClass(%s)=%p", clsname, pcls);
     if (pcls!=NULL)
       *_retval = true;
   }

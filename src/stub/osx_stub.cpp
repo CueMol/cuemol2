@@ -221,8 +221,6 @@ int main(int argc, char **argv)
 			       &pAppData->xreDirectory);
   }
   
-  printf("#setlocale to C\n");
-  setlocale(LC_ALL, "C");
   printf("### ENTERING XRE_MAIN ###\n");
 
   retval = XRE_main(argc, argv, pAppData, 0);

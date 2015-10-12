@@ -395,9 +395,9 @@ void LString::vformat(const char *msg, va_list marker)
   //_vsnprintf_s(sbuf, sizeof sbuf-1, _TRUNCATE, msg, marker);
   _vsnprintf_l(sbuf, sizeof sbuf-1, msg, pLoc->m_cloc, marker);
 #else
+# if defined(HAVE_VSNPRINTF_L)
   qlib::detail::PosixLocale *pLoc =
     static_cast<qlib::detail::PosixLocale *>(m_pLocale);
-# if defined(HAVE_VSNPRINTF_L)
   vsnprintf_l(sbuf, sizeof sbuf-1, pLoc->m_cloc, msg, marker);
 # elif defined(HAVE_VSNPRINTF)
   vsnprintf(sbuf, sizeof sbuf-1, msg, marker);
