@@ -6,6 +6,12 @@
 #ifndef PYBR_HPP_INCLUDED__
 #define PYBR_HPP_INCLUDED__
 
+#ifdef PYMODULE_EXPORTS
+#define PYBR_EXPORTS
+#else
+#undef PYBR_EXPORTS
+#endif
+
 #ifdef WIN32
 
 // for MS-Windows

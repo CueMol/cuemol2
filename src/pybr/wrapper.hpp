@@ -27,6 +27,9 @@ namespace pybr {
     /// create new cuemol object
     static PyObject *createObj(PyObject *self, PyObject *args);
 
+    /// get class names
+    static PyObject *getAllClassNamesJSON(PyObject *self, PyObject *args);
+
     //////////
 
     /// create wrapper object

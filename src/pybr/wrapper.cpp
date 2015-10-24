@@ -295,9 +295,45 @@ PyObject *Wrapper::createObj(PyObject *self, PyObject *args)
   //return (PyObject *) pPyObj;
 }
 
+//static
+PyObject *Wrapper::getAllClassNamesJSON(PyObject *self, PyObject *args)
+{
+  qlib::ClassRegistry *pMgr = qlib::ClassRegistry::getInstance();
+  MB_ASSERT(pMgr!=NULL);
+
+  std::list<qlib::LString> ls;
+  pMgr->getAllClassNames(ls);
+
+  LString rstr = "[";
+  bool ffirst = true;
+  BOOST_FOREACH (const LString &str, ls) {
+    MB_DPRINTLN("GACNJSON> class %s", str.c_str());
+    if (!ffirst)
+      rstr += ",";
+    rstr += "\"" + str + "\"";
+    ffirst = false;
+  }
+  rstr += "]";
+
+  return Py_BuildValue("s", rstr.c_str());
+}
+
+namespace pybr {
+#ifndef PYMODULE_EXPORTS
+  PyObject *initCueMol(PyObject *self, PyObject *args)
+  {
+    return Py_BuildValue("");
+  }
+#else
+  PyObject *initCueMol(PyObject *self, PyObject *args);
+#endif
+}
+
 static PyMethodDef cuemol_methods[] = {
   {"getService", (PyCFunction)Wrapper::getService, METH_VARARGS, "get CueMol service object.\n"},
   {"createObj", (PyCFunction)Wrapper::createObj, METH_VARARGS, "create CueMol object.\n"},
+  {"getAllClassNamesJSON", (PyCFunction)Wrapper::getAllClassNamesJSON, METH_VARARGS, "get all class names in JSON format.\n"},
+  {"initCueMol", (PyCFunction)initCueMol, METH_VARARGS, "initialize CueMol system.\n"},
   {NULL}  /* Sentinel */
 };
 

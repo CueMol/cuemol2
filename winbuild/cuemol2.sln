@@ -45,6 +45,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "anim", "anim\anim.vcxproj",
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "importers", "importers\importers.vcxproj", "{02E9D2E5-F0AA-4F6B-8390-2B7ECB4CC2EA}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pymodule", "pymodule\pymodule.vcxproj", "{9CD188B6-4950-4A27-8538-3D5184618B6B}"
+	ProjectSection(ProjectDependencies) = postProject
+		{17ABBAFF-4E0B-4CAB-AE59-B5FC76A4E285} = {17ABBAFF-4E0B-4CAB-AE59-B5FC76A4E285}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -129,6 +134,10 @@ Global
 		{02E9D2E5-F0AA-4F6B-8390-2B7ECB4CC2EA}.Debug|Win32.Build.0 = Debug|Win32
 		{02E9D2E5-F0AA-4F6B-8390-2B7ECB4CC2EA}.Release|Win32.ActiveCfg = Release|Win32
 		{02E9D2E5-F0AA-4F6B-8390-2B7ECB4CC2EA}.Release|Win32.Build.0 = Release|Win32
+		{9CD188B6-4950-4A27-8538-3D5184618B6B}.Debug|Win32.ActiveCfg = Debug|Win32
+		{9CD188B6-4950-4A27-8538-3D5184618B6B}.Debug|Win32.Build.0 = Debug|Win32
+		{9CD188B6-4950-4A27-8538-3D5184618B6B}.Release|Win32.ActiveCfg = Release|Win32
+		{9CD188B6-4950-4A27-8538-3D5184618B6B}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

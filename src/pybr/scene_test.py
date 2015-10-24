@@ -1,9 +1,5 @@
 import cuemol
 
-import wx
-
-print "wc.veersion= "+wx.version()
-
 print "scene ID = "+str(scene_id);
 print "view ID = "+str(view_id);
 
