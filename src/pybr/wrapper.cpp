@@ -318,6 +318,19 @@ PyObject *Wrapper::getAllClassNamesJSON(PyObject *self, PyObject *args)
   return Py_BuildValue("s", rstr.c_str());
 }
 
+//static
+PyObject *Wrapper::print(PyObject *self, PyObject *args)
+{
+  const char *msg;
+
+  if (!PyArg_ParseTuple(args, "s", &msg))
+    return NULL;
+
+  LOG_DPRINTLN("%s", msg);
+
+  return Py_BuildValue("");
+}
+
 namespace pybr {
 #ifndef PYMODULE_EXPORTS
   PyObject *initCueMol(PyObject *self, PyObject *args)
@@ -333,6 +346,7 @@ static PyMethodDef cuemol_methods[] = {
   {"getService", (PyCFunction)Wrapper::getService, METH_VARARGS, "get CueMol service object.\n"},
   {"createObj", (PyCFunction)Wrapper::createObj, METH_VARARGS, "create CueMol object.\n"},
   {"getAllClassNamesJSON", (PyCFunction)Wrapper::getAllClassNamesJSON, METH_VARARGS, "get all class names in JSON format.\n"},
+  {"printlog", (PyCFunction)Wrapper::print, METH_VARARGS, "print log message.\n"},
   {"initCueMol", (PyCFunction)initCueMol, METH_VARARGS, "initialize CueMol system.\n"},
   {NULL}  /* Sentinel */
 };

@@ -9,11 +9,66 @@
 #include <qlib/LVarArgs.hpp>
 #include <qlib/LVarArray.hpp>
 #include <qlib/ClassRegistry.hpp>
+#include <qlib/LScrCallBack.hpp>
 
 #include "wrapper.hpp"
 
 using namespace pybr;
 using qlib::LScriptable;
+
+/// Callback object
+namespace pybr {
+  class QpyCallBackObj : public qlib::LScrCallBack
+  {
+  private:
+    PyObject *m_pCB;
+
+  public:
+
+    QpyCallBackObj(PyObject *p)
+    {
+      Py_INCREF(p);
+      m_pCB = p;
+    }
+
+    virtual ~QpyCallBackObj()
+    {
+      MB_DPRINTLN("~QpyCallBackObj (%p) called", m_pCB);
+      Py_DECREF(m_pCB);
+    }
+
+    virtual bool invoke(qlib::LVarArgs &args)
+    {
+      const int nargs = args.getSize();
+      PyObject *pPyArgs, *pPyRes;
+
+      // conv args
+      pPyArgs = PyTuple_New(nargs);
+      for (int i=0; i<nargs; ++i) {
+        PyObject *pObj = Wrapper::lvarToPyObj(args.at(i));
+        PyTuple_SetItem(pPyArgs, i, pObj);
+      }
+
+      // call python method/function
+      pPyRes = PyObject_CallObject(m_pCB, pPyArgs);
+
+      Py_DECREF(pPyArgs);
+
+      if (pPyRes==NULL) {
+        // ERROR!!
+        return false;
+      }
+
+      Py_DECREF(pPyRes);
+      return true;
+    }
+
+    virtual LCloneableObject *clone() const {
+      MB_ASSERT(false);
+      return NULL;
+    }
+  };
+}
 
 /// convert LVariant to PyObject
 PyObject *Wrapper::lvarToPyObj(qlib::LVariant &variant)
@@ -91,12 +146,27 @@ void Wrapper::pyObjToLVar(PyObject *pPyObj, qlib::LVariant &rvar)
     return;
   }
 
-  // TO DO: conv long integer
+  // long integer (any precision)
+  if (PyLong_Check(pPyObj)) {
+    // TO DO: check overflow error
+    long tmp = PyLong_AsLong(pPyObj);
+    rvar.setIntValue(tmp);
+    return;
+  }
 
   // string
   if (PyString_Check(pPyObj)) {
     const char *pstr = PyString_AsString(pPyObj);
     rvar.setStringValue(pstr);
+    return;
+  }
+  // string (unicode)
+  if (PyUnicode_Check(pPyObj)) {
+    // TO DO: debug
+    PyObject *pUTF8Obj = PyUnicode_AsUTF8String(pPyObj);
+    const char *pstr = PyString_AsString(pUTF8Obj);
+    rvar.setStringValue(pstr);
+    Py_DECREF(pUTF8Obj);
     return;
   }
 
@@ -106,11 +176,21 @@ void Wrapper::pyObjToLVar(PyObject *pPyObj, qlib::LVariant &rvar)
     return;
   }
 
+  // callable object
+  if (PyCallable_Check(pPyObj)) {
+    qlib::LScrCallBack *pCB = new QpyCallBackObj(pPyObj);
+    qlib::LSCBPtr *ppCBObj = new qlib::LSCBPtr(pCB);
+    // ppCBObj should be freed after the call of CueMol (native) method, etc...
+    // --> dtor of LVariant will free ppCBObj
+    rvar.setObjectPtr(ppCBObj);
+    return;
+  }
+
   // convert object
   //   try to get wrapped scrobj
   qlib::LScriptable *pScr = getWrapped(pPyObj);
   if (pScr!=NULL) {
-    // pobj is owned by python interp (?)
+    // pobj is owned by the python interpreter (?)
     // (variant share the ptr and won't have the ownership!!)
     rvar.shareObjectPtr(pScr);
     return;

@@ -30,6 +30,9 @@ namespace pybr {
     /// get class names
     static PyObject *getAllClassNamesJSON(PyObject *self, PyObject *args);
 
+    /// print log
+    static PyObject *print(PyObject *self, PyObject *args);
+
     //////////
 
     /// create wrapper object

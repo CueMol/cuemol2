@@ -33,8 +33,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zlib", "zlib\zlib.vcxproj",
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libpng", "libpng\libpng.vcxproj", "{D3F094B8-DA6D-4FCA-86AC-1576477B610A}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CueMol2Ctl", "activex\CueMol2Ctl.vcxproj", "{2376C5AD-5384-4A6F-8729-A8168204F56B}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lwview", "lwview\lwview.vcxproj", "{2F145560-B55C-430D-80A0-111153651540}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mdtools", "mdtools\mdtools.vcxproj", "{986D044C-EA72-49CA-BC1F-9430493D621C}"
@@ -112,8 +110,6 @@ Global
 		{D3F094B8-DA6D-4FCA-86AC-1576477B610A}.Debug|Win32.Build.0 = Debug|Win32
 		{D3F094B8-DA6D-4FCA-86AC-1576477B610A}.Release|Win32.ActiveCfg = Release|Win32
 		{D3F094B8-DA6D-4FCA-86AC-1576477B610A}.Release|Win32.Build.0 = Release|Win32
-		{2376C5AD-5384-4A6F-8729-A8168204F56B}.Debug|Win32.ActiveCfg = Debug|Win32
-		{2376C5AD-5384-4A6F-8729-A8168204F56B}.Release|Win32.ActiveCfg = Release|Win32
 		{2F145560-B55C-430D-80A0-111153651540}.Debug|Win32.ActiveCfg = Debug|Win32
 		{2F145560-B55C-430D-80A0-111153651540}.Debug|Win32.Build.0 = Debug|Win32
 		{2F145560-B55C-430D-80A0-111153651540}.Release|Win32.ActiveCfg = Release|Win32
