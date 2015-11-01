@@ -41,6 +41,7 @@ namespace qsys {
   class StyleSheet;
   class MomentumScroll;
   class ViewCap;
+  class ViewFactory;
 
   class QSYS_API View :
     public qlib::LNoCopyScrObject,
@@ -562,10 +563,15 @@ namespace qsys {
     ////////////////////////////////////////
     // Static methods
 
+    static void setViewFactory(ViewFactory *pVF);
+
     /// Create system-dependent view object
     static View *createView();
 
   private:
+    /// view factory
+    static ViewFactory *m_spViewFac;
+
     /// view capability info
     static ViewCap * m_spViewCap;
     
@@ -585,6 +591,16 @@ namespace qsys {
 
   };
 
+  /// View factory superclass
+  class QSYS_API ViewFactory
+  {
+  public:
+    ViewFactory() {}
+    virtual ~ViewFactory() {}
+
+    virtual View* create() =0;
+
+  };
 }
 
 #endif

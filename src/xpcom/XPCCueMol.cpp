@@ -49,11 +49,46 @@
 //#define num_to_str(num) _num_to_str(num)
 //#pragma message ("new = " num_to_str(new))
 
+
 #if defined(XP_WIN)
+#include <sysdep/WglView.hpp>
+namespace {
+  class WglViewFactory : public qsys::ViewFactory
+  {
+  public:
+    WglViewFactory() {}
+    virtual ~WglViewFactory() {}
+    virtual qsys::View* create() {
+      return new sysdep::WglView();
+    }
+  };
+  void registerViewFactory()
+  {
+    qsys::View::setViewFactory(new WglViewFactory);
+  }
+}
+
 void registerFileType()
 {
 }
 #elif defined(XP_MACOSX)
+
+#include <sysdep/CglView.hpp>
+namespace {
+  class CglViewFactory : public qsys::ViewFactory
+  {
+  public:
+    CglViewFactory() {}
+    virtual ~CglViewFactory() {}
+    virtual qsys::View* create() {
+      return new sysdep::CglView();
+    }
+  };
+  void registerViewFactory()
+  {
+    qsys::View::setViewFactory(new CglViewFactory);
+  }
+}
 
 #include <Carbon/Carbon.h>
 #include <ApplicationServices/ApplicationServices.h>
@@ -88,10 +123,27 @@ void registerFileType()
   MB_DPRINTLN(">>>>> registerFileType OK (%s)!! <<<<<", sbuf);
 }
 #else
+#include <sysdep/XglView.hpp>
+namespace {
+  class XglViewFactory : public qsys::ViewFactory
+  {
+  public:
+    XglViewFactory() {}
+    virtual ~XglViewFactory() {}
+    virtual qsys::View* create() {
+      return new sysdep::XglView();
+    }
+  };
+  void registerViewFactory()
+  {
+    qsys::View::setViewFactory(new XglViewFactory);
+  }
+}
 void registerFileType()
 {
 }
 #endif
+
 
 namespace render {
   extern bool init();
@@ -210,6 +262,7 @@ NS_IMETHODIMP XPCCueMol::Init(const char *confpath, bool *_retval)
   }
 
   registerFileType();
+  registerViewFactory();
 
   // CueMol2 Application initialization
   qsys::init(confpath);

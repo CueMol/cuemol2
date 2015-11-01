@@ -287,6 +287,7 @@ bool WglView::hasHWStereo() const
 
 ////////////////////////////////////////////
 
+#if 0
 namespace qsys {
   //static
   qsys::View *View::createView()
@@ -297,3 +298,7 @@ namespace qsys {
 //    return NULL;
   }
 }
+#endif
+
+
+  

@@ -285,6 +285,7 @@ void XglView::handleEvent(XEvent *xevent, Boolean *b)
 
 ////////////////////////////////////////////
 
+/*
 namespace qsys {
   //static
   SYSDEP_API qsys::View *View::createView()
@@ -294,3 +295,6 @@ namespace qsys {
     return pret;
   }
 }
+  */
+
+

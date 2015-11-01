@@ -10,8 +10,7 @@
 #  include <windows.h>
 #endif
 
-#include <GL/gl.h>
-#include <GL/glu.h>
+#include "ogl.hpp"
 
 #include "WglDisplayContext.hpp"
 #include "WglView.hpp"

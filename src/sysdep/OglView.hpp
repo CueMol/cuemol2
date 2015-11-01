@@ -10,6 +10,8 @@
 
 #include "sysdep.hpp"
 
+#include "ogl.hpp"
+
 #include <qsys/qsys.hpp>
 #include <qsys/View.hpp>
 #include "OglHitData.hpp"

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros">
+
+    <PythonDir>$(PROJ_DIR)\tmp\Python-2.7.10</PythonDir>
+
+    <QtDir>$(PROJ_DIR)\tmp\Qt5.5.0\5.5\msvc2013</QtDir>
+    <MocExt>hpp</MocExt>
+    <Moc>$(QtDir)\bin\moc.exe</Moc>
+    <Sip>$(PythonDir)\sip.exe</Sip>
+
+    <IncludePath>$(PythonDir)\Include;$(QtDir)\include;$(QtDir)\include\QtCore;$(QtDir)\include\QtGui;$(QtDir)\include\QtWidgets;$(QtDir)\include\QtOpenGL;$(IncludePath)</IncludePath>
+    <LibraryPath>$(PythonDir)\libs;$(QtDir)\lib;$(LibraryPath)</LibraryPath>
+
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <MocFlags>-DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_CORE_LIB -I$(QtDir)\include\ -I$(QtDir)\include\Qt -I$(QtDir)\include\QtCore -I$(QtDir)\include\QtDeclarative -I$(QtDir)\include\QtGui</MocFlags>
+    <SipFlags>-x VendorID -t WS_WIN -t Qt_5_5_0 -x Py_v3 -I $(PythonDir)/sip/PyQt5</SipFlags>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <MocFlags>-DUNICODE -DWIN32 -DQT_LARGEFILE_SUPPORT -DQT_NO_DEBUG=1 -DQT_CORE_LIB -I$(QtDir)\include\ -I$(QtDir)\include\Qt -I$(QtDir)\include\QtCore -I$(QtDir)\include\QtDeclarative -I$(QtDir)\include\QtGui</MocFlags>
+    <SipFlags>-x VendorID -t WS_WIN -t Qt_5_5_0 -x Py_v3 -I $(PythonDir)/sip/PyQt5</SipFlags>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup />
+
+  <ItemGroup>
+  </ItemGroup>
+</Project>

@@ -6,9 +6,7 @@
 
 #include <common.h>
 
-#include <OpenGL/OpenGL.h>
-#include <OpenGL/gl.h>
-#include <OpenGL/glu.h>
+#include "ogl.hpp"
 
 #include "CglView.hpp"
 #include "CglDisplayContext.hpp"
@@ -85,6 +83,7 @@ DisplayContext *CglView::getDisplayContext()
 
 ////////////////////////////////////////////
 
+/*
 namespace qsys {
   //static
   SYSDEP_API qsys::View *View::createView()
@@ -94,3 +93,5 @@ namespace qsys {
     return pret;
   }
 }
+*/
+

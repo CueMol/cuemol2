@@ -2,7 +2,13 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros">
+
     <PythonDir>$(PROJ_DIR)\tmp\Python-2.7.10</PythonDir>
+
+    <QtDir>$(PROJ_DIR)\tmp\Qt5.5.0\5.5\msvc2013</QtDir>
+    <MocExt>hpp</MocExt>
+    <Moc>$(QtDir)\bin\moc.exe</Moc>
+    <Sip>$(PythonDir)\sip.exe</Sip>
 
     <IncludePath>$(PythonDir)\Include;$(IncludePath)</IncludePath>
     <LibraryPath>$(PythonDir)\libs;$(LibraryPath)</LibraryPath>

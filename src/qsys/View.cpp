@@ -1191,3 +1191,24 @@ bool View::hasVBO()
   return m_spViewCap->hasVBO();
 }
 
+//////////////////////////////////
+// view factory methods
+
+//static
+ViewFactory *View::m_spViewFac;
+
+//static
+void View::setViewFactory(ViewFactory *pVF)
+{
+  m_spViewFac = pVF;
+}
+
+//static
+View *View::createView()
+{
+  if (m_spViewFac==NULL)
+    return NULL;
+
+  return m_spViewFac->create();
+}
+

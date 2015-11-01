@@ -365,6 +365,7 @@ Boolean AglView::handleEvent(EventRecord *pev, int w, int h)
 
 ////////////////////////////////////////////
 
+/*
 namespace qsys {
   //static
   qsys::View *View::createView()
@@ -374,3 +375,5 @@ namespace qsys {
     return pret;
   }
 }
+  */
+

@@ -264,6 +264,7 @@ namespace qlib {
 
 }
 
+#ifndef NO_USING_QTYPES
 using qlib::qint8;
 using qlib::qint16;
 using qlib::qint32;
@@ -276,6 +277,7 @@ using qlib::quint32;
 
 using qlib::qfloat32;
 using qlib::qfloat64;
+#endif
 
 #endif // QUE_DATA_TYPES_HPP_INCLUDED_
 
