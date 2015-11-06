@@ -15,13 +15,16 @@
 #include <qlib/LScrSmartPtr.hpp>
 #include <qlib/mcutils.hpp>
 
-using qlib::LString;
 
 namespace gfx {
 
-  /**
-     Abstract color class
-  */
+  using qlib::LString;
+  using qlib::quint32;
+  using qlib::qbyte;
+
+  ///
+  ///  Abstract color class
+  ///
   class GFX_API AbstractColor : public qlib::LSimpleCopyScrObject
   {
     MC_SCRIPTABLE;

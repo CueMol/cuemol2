@@ -123,7 +123,7 @@ void XMLTopparFile::endTopResid()
 {
   if (m_pCurResid!=NULL) {
     m_nResids++;
-    MB_DPRINTLN("Read resid %s done.", m_pCurResid->getName().c_str());
+    // MB_DPRINTLN("Read resid %s done.", m_pCurResid->getName().c_str());
   }
   m_pCurResid = NULL;
 }
@@ -348,7 +348,7 @@ void XMLTopparFile::endLink()
 {
   if (m_pCurPatch!=NULL) {
     m_nLinks++;
-    MB_DPRINTLN("Read link %s done.", m_pCurPatch->getName().c_str());
+    // MB_DPRINTLN("Read link %s done.", m_pCurPatch->getName().c_str());
   }
 
   m_pCurPatch = NULL;

@@ -56,9 +56,11 @@ namespace qtgui {
     ///////////////////////////////
     // System dependent implementations
 
-    bool attach();
+    bool initGL(void *pWidget);
 
   private:
+    void *m_pWidget;
+
     bool m_bHasQuadBuffer;
 
     // bool setupShareList();

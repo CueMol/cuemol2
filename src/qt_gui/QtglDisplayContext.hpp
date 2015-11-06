@@ -17,8 +17,10 @@ namespace qtgui {
 
     QtglView *m_pTargetView;
 
+    void *m_pCtxt;
+
   public:
-    QtglDisplayContext(int sceneid, QtglView *pView);
+    QtglDisplayContext(int sceneid, QtglView *pView, void *pCtxt);
 
     virtual ~QtglDisplayContext();
 

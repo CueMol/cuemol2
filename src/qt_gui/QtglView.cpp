@@ -3,27 +3,15 @@
 //  QtGL dependent molecular viewer implementation
 //
 
+#define NO_USING_QTYPES
 #include <common.h>
 
-#ifdef WIN32
-#  include <windows.h>
-#endif
-
-#ifdef HAVE_GLEW
-#include <GL/glew.h>
-#ifdef WIN32
-#pragma comment(lib, "glew32.lib")
-#endif
-#endif
-
-#include <GL/gl.h>
-#include <GL/glu.h>
-
 #include "QtglView.hpp"
+#include "QtglDisplayContext.hpp"
+
+#include "QtMolWidget_moc.hpp"
 
 #include <qlib/Utils.hpp>
-
-#include "QtglDisplayContext.hpp"
 
 using qsys::InDevEvent;
 
@@ -31,6 +19,9 @@ using namespace qtgui;
 
 QtglView::QtglView()
 {
+  m_pCtxt = NULL;
+  m_pWidget = NULL;
+  m_bHasQuadBuffer = false;
 }
 
 QtglView::~QtglView()
@@ -45,8 +36,8 @@ LString QtglView::toString() const
 
 void QtglView::swapBuffers()
 {
-  //if (m_hDC!=NULL)
-  //::SwapBuffers(m_hDC);
+  QGLWidget *pGLWidget = static_cast<QGLWidget *>(m_pWidget);
+  pGLWidget->swapBuffers();
 }
 
 DisplayContext *QtglView::getDisplayContext()
@@ -56,13 +47,33 @@ DisplayContext *QtglView::getDisplayContext()
 
 ////////////////////////////////////////////
 
-bool QtglView::attach()
+bool QtglView::initGL(void *pWidget)
 {
+  MB_ASSERT(m_pCtxt==NULL);
+  m_pWidget = pWidget;
+  QGLWidget *pGLWidget = static_cast<QGLWidget *>(pWidget);
+
+  // TO DO: setup context sharing
+
+  m_pCtxt = MB_NEW QtglDisplayContext(getSceneID(), this, pGLWidget->context());
+
+  m_pCtxt->setCurrent();
+
+  // perform OpenGL-common initialization tasks
+  OglView::setup();
+
+  m_bInitOK = true;
+
+  setCenterMark(qsys::Camera::CCM_CROSS);
   return true;
 }
 
 void QtglView::unloading()
 {
+  if (m_pCtxt!=NULL) {
+    delete m_pCtxt;
+    m_pCtxt = NULL;
+  }
 }
 
 /// Query hardware stereo capability

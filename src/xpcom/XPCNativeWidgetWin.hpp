@@ -14,8 +14,8 @@
 
 #include <windows.h>
 #include <windowsx.h>
-#include <gl/gl.h>
-#include <gl/glu.h>
+//#include <gl/gl.h>
+//#include <gl/glu.h>
 
 namespace sysdep { class WglView; }
 namespace qsys { class InDevEvent; }

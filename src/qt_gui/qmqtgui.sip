@@ -13,6 +13,7 @@ class QtMolWidget : QGLWidget
 
 public:
   explicit QtMolWidget(QWidget *parent /TransferThis/ = 0);
+  explicit QtMolWidget(const QGLFormat &format, QWidget *parent /TransferThis/ = 0);
 
   void bind(int scid, int vwid);
   
