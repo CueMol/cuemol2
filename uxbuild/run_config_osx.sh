@@ -7,7 +7,8 @@ install_dir=$top_srcdir/xul_gui/
 #debug="--disable-debug --enable-m64"
 debug="--enable-debug --enable-m64"
 
-usepybr="--enable-python"
+#usepybr="--enable-python"
+usepybr="--enable-pymodule"
 #usepybr="--disable-python"
 
 #usexrbr="--with-xmlrpc=$HOME/proj64/xmlrpc-c"

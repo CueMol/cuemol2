@@ -22,6 +22,8 @@ dnl sinclude(conftools/ax_boost_iostreams.m4)
 sinclude(conftools/ax_cxx_compile_stdcxx_0x.m4)
 sinclude(conftools/ax_cxx_compile_stdcxx_11.m4)
 
+sinclude(conftools/ax_have_qt.m4)
+
 #######################################################
 # LIBTOOL
 
@@ -170,81 +172,6 @@ i?86 | x86_64)
     ;;
 esac
 
-dnl Check iOS build flag
-AC_ARG_ENABLE(iphoneos,
-    [--enable-iphoneos         enable iOS support],
-    [if test $enableval = yes ; then
-	GUI_ARCH=IPHONEOS
-        BUILD_OSDEP=sysdep
-	AC_DEFINE([GUI_ARCH], [IPHONEOS], [name of the GUI archtecture])
-     fi],
-[])
-
-dnl Check CLI/GUI build
-AC_ARG_ENABLE(cli,
-    [--enable-cli         enable command line interface],
-    [
-dnl CLI option supplied --> enable CLI build
-if test $enableval = yes ; then
-    GUI_ARCH=CLI
-    BUILD_OSDEP=
-    BUILD_CLI=cli
-    AC_DEFINE([GUI_ARCH], [CLI], [name of the GUI archtecture])
-fi],
-    [
-dnl no option --> use GUI (X11/OSX)
-if test x$GUI_ARCH = x ; then
-case $host_os in
-     darwin*)
-	GUI_ARCH=OSX
-	BUILD_OSDEP="sysdep osxbuild utils stub"
-	AC_DEFINE([GUI_ARCH], [OSX], [name of the GUI archtecture])
-
-        # make_distr.pl substitutions
-        OSXDISTR_ARCH=MacOSX-Intel$BUILD_BIT
-        AC_SUBST(OSXDISTR_ARCH)
-	if test x$BUILD_BIT = x32 ; then
-	    OSXDISTR_LSAP=i386
-	else
-	    OSXDISTR_LSAP=x86_64
-	fi    
-        AC_SUBST(OSXDISTR_LSAP)
-
-        dnl OSX/Gecko39 build requires std=c++11 feature (char16_t, etc...)
-	_cxxflags=${CXXFLAGS}
-        AX_CXX_COMPILE_STDCXX_11(noext,optional)
-	if test x$HAVE_CXX11 = x1 ; then
-	    dnl if cxx has c++11 feature, save the cxxflags enabling the feature
-	    CXX11_CXXFLAGS=${CXXFLAGS}
-	fi
-	CXXFLAGS=${_cxxflags}
-	echo "XXX $CXXFLAGS, $HAVE_CXX11, $CXX11_CXXFLAGS"
-     ;;
-     *)
-	GUI_ARCH=X11
-	BUILD_OSDEP="sysdep uxdist utils"
-	AC_DEFINE([GUI_ARCH], [X11], [name of the GUI archtecture])
-        dnl Linux/Gecko23 build requires std=c++0x feature (char16_t)
-        AX_CXX_COMPILE_STDCXX_0X
-	if test $ax_cv_cxx_compile_cxx0x_cxx = yes ; then
-	   CXXFLAGS="$CXXFLAGS -std=c++0x"
-	else
-	   AC_MSG_ERROR(requires c++ with -std=c++0x support)
-	fi
-     ;;
-esac
-fi])
-
-
-AM_CONDITIONAL(COND_BUILD_OSX, test x$GUI_ARCH = xOSX)
-AM_CONDITIONAL(COND_BUILD_X11, test x$GUI_ARCH = xX11)
-AM_CONDITIONAL(COND_BUILD_IPHONEOS, test x$GUI_ARCH = xIPHONEOS)
-AC_SUBST(BUILD_OSDEP)
-AC_SUBST(BUILD_CLI)
-
-echo GUI_ARCH: $GUI_ARCH
-
-
 #######################################################
 #
 # for expat XML parser (local)
@@ -308,217 +235,11 @@ fi
 AC_SUBST(BOOST_LDFLAGS)
 AC_SUBST(BOOST_CPPFLAGS)
 
-if test x$GUI_ARCH != xCLI ; then
-
-#######################################################
-#
-# check for XULRUNNER SDK location
-#
-XULRUNNER_SDK_PATH=
-BUILD_XULGUI=
-test "${with_xulrunner_sdk+set}" != "set" && with_xulrunner_sdk=no
-AC_MSG_CHECKING(XULRUNNER SDK location)
-AC_ARG_WITH(xulrunner_sdk,
-[  --with-xulrunner-sdk[=DIR]      Look for xulrunner SDK in DIR (default=no) ],
-[  case "$with_xulrunner_sdk" in
-  no)
-    AC_MSG_RESULT($with_xulrunner_sdk)
-    ;;
-  *)
-    AC_MSG_RESULT($with_xulrunner_sdk)
-    _cppflags=${CPPFLAGS}
-    _cxxflags=${CXXFLAGS}
-    CPPFLAGS="-I$with_xulrunner_sdk/include $CPPFLAGS"
-    if test x$HAVE_CXX11 = x1 ; then
-        CXXFLAGS="$CXX11_CXXFLAGS"
-    fi
-    AC_CHECK_HEADERS(nsXPCOM.h, XULRUNNER_SDK_PATH=$with_xulrunner_sdk,,[#include <mozilla-config.h>])
-
-    AC_CHECK_DECL(NS_InitXPCOM2,
-	[XPCOM_CPPFLAGS="-I$with_xulrunner_sdk/include -I$with_xulrunner_sdk/include/nspr";
-	 XPCOM_LDFLAGS="-L$with_xulrunner_sdk/lib";
-	 BUILD_XULGUI="xpcom xul_gui"],,
-	[#include <mozilla-config.h>
-	 #include<nsXPCOM.h>])
-
-    CPPFLAGS=$_cppflags
-    CXXFLAGS=$_cxxflags
-    if test x$XULRUNNER_SDK_PATH = x ; then
-      AC_MSG_ERROR(incorrect xulrunner SDK location)
-    fi
-
-dnl    CFLAGS="-fshort-wchar $CFLAGS"
-dnl    CXXFLAGS="-fshort-wchar $CXXFLAGS"
-
-    ;;
-  esac]
-)
-	
-
-AC_SUBST(BUILD_XULGUI)
-AC_SUBST(XULRUNNER_SDK_PATH)
-AC_SUBST(XPCOM_CPPFLAGS)
-AC_SUBST(XPCOM_LDFLAGS)
-
-fi
-
-#######################################################
-#
-# check for libjs (SpiderMonkey) location
-#
-
-BUILD_SCR=
-JS_CPPFLAGS=
-JS_LDADD=
-JS_LDFLAGS=
-SCR_CPPFLAGS=
-SCR_LDADD=
-SCR_LDFLAGS=
-
-dnl if test x$GUI_ARCH = xCLI ; then
-    # Use internal js impl in the standalone CLI build
-    BUILD_SCR="$BUILD_SCR js jsbr"
-    # overall settings
-    SCR_CPPFLAGS="-DHAVE_JAVASCRIPT"
-    SCR_LDADD="-ljsbr"
-    SCR_LDFLAGS="-L../jsbr"
-    # jsbr module settings
-    JS_CPPFLAGS="-I../js/src/ -DUSE_INTERNAL_JS"
-    JS_LDADD="-ljs"
-    JS_LDFLAGS="-L../js/"
-    AC_CONFIG_SUBDIRS([js])
-dnl else
-dnl     # no script supports
-dnl     SCR_CPPFLAGS=-DNO_SCRIPT
-dnl fi
-
-dnl    XXX TO DO: impl of external JS for GUI build
-dnl    # Xulrunner SDK has its own js implementation
-dnl    BUILD_SCR=jsbr
-dnl    _cppflags=${CPPFLAGS}
-dnl    CPPFLAGS="-I$with_xulrunner_sdk/include $CPPFLAGS"
-dnl    AC_CHECK_HEADER(jsapi.h)
-dnl    AC_CHECK_DECL(JS_NewRuntime,
-dnl                  [],
-dnl                  [AC_MSG_ERROR(JSAPI not found)],
-dnl                  [#include<jsapi.h>])
-dnl    CPPFLAGS=$_cppflags
-dnl    JS_CPPFLAGS="-I$with_xulrunner_sdk/include"
-dnl    SCR_LDADD="-ljsbr"
-dnl    SCR_LDFLAGS="-L../jsbr/"
-
-AC_SUBST(JS_CPPFLAGS)
-AC_SUBST(JS_LDADD)
-AC_SUBST(JS_LDFLAGS)
-
-#######################################################
-# Python supports
-
-AC_ARG_ENABLE(python,
-    [--enable-python         Enable python support],
-    [
-if test $enableval = yes ; then
-   dnl check python inc/lib
-   AM_PATH_PYTHON(2.6.0)
-   PY_PREFIX=`$PYTHON -c 'import sys ; print sys.prefix'`
-   PYTHON_LDADD="-lpython$PYTHON_VERSION"
-   PYTHON_CPPFLAGS="-I$PY_PREFIX/include/python$PYTHON_VERSION"
-   echo "Python prefix: " $PY_PREFIX ", version: " $PYTHON_VERSION
-   AC_SUBST([PYTHON_LDADD])
-   AC_SUBST([PYTHON_CPPFLAGS])
-   BUILD_SCR="$BUILD_SCR pybr"
-   SCR_CPPFLAGS="$SCR_CPPFLAGS -DHAVE_PYTHON"
-   SCR_LDADD="$SCR_LDADD -lpybr $PYTHON_LDADD"
-   SCR_LDFLAGS="$SCR_LDFLAGS -L../pybr/"
-fi
-    ],
-    [])
-
-#######################################################
-# XML-RPC supports
-
-XMLRPC_CPPFLAGS=
-XMLRPC_LIBADD=
-XMLRPC_LDFLAGS=
-
-# AC_MSG_CHECKING(XML-RPC-C library location)
-AC_ARG_WITH(xmlrpc,
-[  --with-xmlrpc[=DIR]      Look for XML-RPC-C library in DIR (default=no) ],
-[ case "$with_xmlrpc" in
-  no)
-    
-    ;;
-  *)
-    AC_MSG_RESULT($with_xmlrpc)
-    _cppflags=${CPPFLAGS}
-    CPPFLAGS="-I$with_xmlrpc/include $CPPFLAGS"
-    AC_CHECK_HEADERS([xmlrpc-c/base.h],,[AC_MSG_ERROR(xmlrpc-c/base.h not found)],[])
-
-    AC_CHECK_DECLS(xmlrpc_version,
-                   [XMLRPC_CPPFLAGS="-I$with_xmlrpc/include"],
-		   [AC_MSG_ERROR(xmlrpc_version() not found)],
-		   [#include <xmlrpc-c/base.h>])
-    CPPFLAGS=$_cppflags
-
-    _ldflags=${LDFLAGS}
-    _libs=${LIBS}
-    LDFLAGS="-L$with_xmlrpc/lib $LDFLAGS"
-    LIBS="-lxmlrpc_server_abyss++ -lxmlrpc_server++ -lxmlrpc_server_abyss -lxmlrpc_server -lxmlrpc_abyss -lpthread -lxmlrpc++ -lxmlrpc -lxmlrpc_util -lxmlrpc_xmlparse -lxmlrpc_xmltok $LIBS"
-    AC_CHECK_LIB(xmlrpc, xmlrpc_version,
-                 [XMLRPC_LDFLAGS="-L$with_xmlrpc/lib"
-		  XMLRPC_LIBADD=" -lxmlrpc_server_abyss++ -lxmlrpc_server++ -lxmlrpc_server_abyss -lxmlrpc_server -lxmlrpc_abyss -lpthread -lxmlrpc++ -lxmlrpc -lxmlrpc_util -lxmlrpc_xmlparse -lxmlrpc_xmltok"],
-		 [AC_MSG_ERROR(xmlrpc_version() not found)],
-		 [])
-    LDFLAGS=$_ldflags
-    LIBS=$_libs
-
-    ;;
-  esac ],
-[   AC_CHECK_HEADERS([xmlrpc-c/base.h],,[AC_MSG_ERROR(xmlrpc-c/base.h not found)],[])
-    AC_CHECK_DECLS(xmlrpc_version,
-                   [],
-		   [AC_MSG_ERROR(xmlrpc_version() not found)],
-		   [#include <xmlrpc-c/base.h>])
-    AC_CHECK_LIB(xmlrpc, xmlrpc_version,
-                 [XMLRPC_LIBADD=" -lxmlrpc_server_abyss++ -lxmlrpc_server++ -lxmlrpc_server_abyss -lxmlrpc_server -lxmlrpc_abyss -lpthread -lxmlrpc++ -lxmlrpc -lxmlrpc_util -lxmlrpc_xmlparse -lxmlrpc_xmltok"],
-		 [AC_MSG_ERROR(xmlrpc_version() not found)],
-		 [])
-])
-
-if test x$with_xmlrpc != xno ; then
-  BUILD_SCR="$BUILD_SCR xmlrpc_bridge"
-  SCR_LDADD="$SCR_LDADD -lxrbr"
-  SCR_LDFLAGS="$SCR_LDFLAGS -L../xmlrpc_bridge/ $XMLRPC_LDFLAGS"
-  AC_DEFINE([USE_XMLRPC], [1], [Use XML-RPC service])
-fi
-
-AC_SUBST(XMLRPC_CPPFLAGS)
-AC_SUBST(XMLRPC_LIBADD)
-AC_SUBST(XMLRPC_LDFLAGS)
-
-##
-
-AC_SUBST(BUILD_SCR)
-AC_SUBST(SCR_CPPFLAGS)
-AC_SUBST(SCR_LDADD)
-AC_SUBST(SCR_LDFLAGS)
-
-#######################################################
-#
-# pkg-config (for Linux & X11 & gtk2)
-#
-
-m4_ifdef([PKG_CHECK_MODULES], [], [define(PKG_CHECK_MODULES)])
-
-if test x$GUI_ARCH = xX11 ; then
-    echo
-    PKG_CHECK_MODULES(GTK2, gtk+-2.0 >= 2.10.0 glib-2.0 gobject-2.0 gdk-x11-2.0)
-fi
-
 #######################################################
 #
 # check for OpenGL (CGL for mac; XGL for unix)
 #
+
 USE_OPENGL=
 
 if test x$GUI_ARCH != xCLI ; then
@@ -636,16 +357,318 @@ AC_SUBST(GLEW_LDFLAGS)
 AC_SUBST(GLEW_LIBADD)
 
 #
-#  Check GLES1/GLES2 (for mobile device version)
+#  Check GLES1/GLES2 (usually for mobile device)
 #
-# if test x$BUILD_LW == xyes ; then
 AC_ARG_ENABLE(gles2,
     [--enable-gles2         Use GLES2 API],
     [if test $enableval = yes ; then
 	AC_DEFINE(USE_GLES2, [1], [Use GLES2 API],,)
      fi],
     [])
-# fi
+
+#########################################
+#
+# Check for scripting/rmi interfaces
+#
+
+#
+# Javascript supports (internal JS)
+#
+
+BUILD_SCR=
+JS_CPPFLAGS=
+JS_LDADD=
+JS_LDFLAGS=
+SCR_CPPFLAGS=
+SCR_LDADD=
+SCR_LDFLAGS=
+
+dnl if test x$GUI_ARCH = xCLI ; then
+    # Use internal js impl in the standalone CLI build
+    BUILD_SCR="$BUILD_SCR js jsbr"
+    # overall settings
+    SCR_CPPFLAGS="-DHAVE_JAVASCRIPT"
+    SCR_LDADD="-ljsbr"
+    SCR_LDFLAGS="-L../jsbr"
+    # jsbr module settings
+    JS_CPPFLAGS="-I../js/src/ -DUSE_INTERNAL_JS"
+    JS_LDADD="-ljs"
+    JS_LDFLAGS="-L../js/"
+    AC_CONFIG_SUBDIRS([js])
+
+AC_SUBST(JS_CPPFLAGS)
+AC_SUBST(JS_LDADD)
+AC_SUBST(JS_LDFLAGS)
+
+#
+# Python supports
+#
+
+AC_ARG_ENABLE(python,
+    [--enable-python         Enable python embedding support],
+    [
+if test $enableval = yes ; then
+   dnl check python inc/lib
+   AM_PATH_PYTHON(2.7.0)
+   PY_PREFIX=`$PYTHON -c 'import sys ; print sys.prefix'`
+   PYTHON_LDADD="-lpython$PYTHON_VERSION"
+   PYTHON_CPPFLAGS="-I$PY_PREFIX/include/python$PYTHON_VERSION"
+   echo "Python prefix: " $PY_PREFIX ", version: " $PYTHON_VERSION
+   AC_SUBST([PYTHON_LDADD])
+   AC_SUBST([PYTHON_CPPFLAGS])
+   BUILD_SCR="$BUILD_SCR pybr"
+   SCR_CPPFLAGS="$SCR_CPPFLAGS -DHAVE_PYTHON"
+   SCR_LDADD="$SCR_LDADD -lpybr $PYTHON_LDADD"
+   SCR_LDFLAGS="$SCR_LDFLAGS -L../pybr/"
+fi
+    ],
+    [])
+
+BUILD_PYMODULE=
+AC_ARG_ENABLE(pymodule,
+    [--enable-pymodule         Enable python module support],
+    [
+if test $enableval = yes ; then
+   if test x$PYTHON_CPPFLAGS != x ; then
+      AC_MSG_ERROR(--enable-python and --enable-pymodule are exclusive)
+   fi
+   dnl check python inc/lib
+   AM_PATH_PYTHON(2.7.0)
+   PY_PREFIX=`$PYTHON -c 'import sys ; print sys.prefix'`
+   PYTHON_LDADD="-lpython$PYTHON_VERSION"
+   PYTHON_CPPFLAGS="-I$PY_PREFIX/include/python$PYTHON_VERSION"
+   echo "Python prefix: " $PY_PREFIX ", version: " $PYTHON_VERSION
+   AC_SUBST([PYTHON_LDADD])
+   AC_SUBST([PYTHON_CPPFLAGS])
+   BUILD_PYMODULE=yes
+   BUILD_SCR="$BUILD_SCR pybr"
+dnl   SCR_CPPFLAGS="$SCR_CPPFLAGS -DHAVE_PYTHON"
+dnl   SCR_LDADD="$SCR_LDADD -lpybr $PYTHON_LDADD"
+dnl   SCR_LDFLAGS="$SCR_LDFLAGS -L../pybr/"
+fi
+    ],
+    [])
+
+AM_CONDITIONAL(COND_BUILD_PYMODULE, test x$BUILD_PYMODULE = xyes)
+
+#
+# XML-RPC supports
+#
+
+XMLRPC_CPPFLAGS=
+XMLRPC_LIBADD=
+XMLRPC_LDFLAGS=
+
+# AC_MSG_CHECKING(XML-RPC-C library location)
+AC_ARG_WITH(xmlrpc,
+[  --with-xmlrpc[=DIR]      Look for XML-RPC-C library in DIR (default=no) ],
+[ case "$with_xmlrpc" in
+  no)
+    
+    ;;
+  *)
+    AC_MSG_RESULT($with_xmlrpc)
+    _cppflags=${CPPFLAGS}
+    CPPFLAGS="-I$with_xmlrpc/include $CPPFLAGS"
+    AC_CHECK_HEADERS([xmlrpc-c/base.h],,[AC_MSG_ERROR(xmlrpc-c/base.h not found)],[])
+
+    AC_CHECK_DECLS(xmlrpc_version,
+                   [XMLRPC_CPPFLAGS="-I$with_xmlrpc/include"],
+		   [AC_MSG_ERROR(xmlrpc_version() not found)],
+		   [#include <xmlrpc-c/base.h>])
+    CPPFLAGS=$_cppflags
+
+    _ldflags=${LDFLAGS}
+    _libs=${LIBS}
+    LDFLAGS="-L$with_xmlrpc/lib $LDFLAGS"
+    LIBS="-lxmlrpc_server_abyss++ -lxmlrpc_server++ -lxmlrpc_server_abyss -lxmlrpc_server -lxmlrpc_abyss -lpthread -lxmlrpc++ -lxmlrpc -lxmlrpc_util -lxmlrpc_xmlparse -lxmlrpc_xmltok $LIBS"
+    AC_CHECK_LIB(xmlrpc, xmlrpc_version,
+                 [XMLRPC_LDFLAGS="-L$with_xmlrpc/lib"
+		  XMLRPC_LIBADD=" -lxmlrpc_server_abyss++ -lxmlrpc_server++ -lxmlrpc_server_abyss -lxmlrpc_server -lxmlrpc_abyss -lpthread -lxmlrpc++ -lxmlrpc -lxmlrpc_util -lxmlrpc_xmlparse -lxmlrpc_xmltok"],
+		 [AC_MSG_ERROR(xmlrpc_version() not found)],
+		 [])
+    LDFLAGS=$_ldflags
+    LIBS=$_libs
+
+    ;;
+  esac ],
+[   AC_CHECK_HEADERS([xmlrpc-c/base.h],,[AC_MSG_ERROR(xmlrpc-c/base.h not found)],[])
+    AC_CHECK_DECLS(xmlrpc_version,
+                   [],
+		   [AC_MSG_ERROR(xmlrpc_version() not found)],
+		   [#include <xmlrpc-c/base.h>])
+    AC_CHECK_LIB(xmlrpc, xmlrpc_version,
+                 [XMLRPC_LIBADD=" -lxmlrpc_server_abyss++ -lxmlrpc_server++ -lxmlrpc_server_abyss -lxmlrpc_server -lxmlrpc_abyss -lpthread -lxmlrpc++ -lxmlrpc -lxmlrpc_util -lxmlrpc_xmlparse -lxmlrpc_xmltok"],
+		 [AC_MSG_ERROR(xmlrpc_version() not found)],
+		 [])
+])
+
+if test x$with_xmlrpc != xno ; then
+  BUILD_SCR="$BUILD_SCR xmlrpc_bridge"
+  SCR_LDADD="$SCR_LDADD -lxrbr"
+  SCR_LDFLAGS="$SCR_LDFLAGS -L../xmlrpc_bridge/ $XMLRPC_LDFLAGS"
+  AC_DEFINE([USE_XMLRPC], [1], [Use XML-RPC service])
+fi
+
+AC_SUBST(XMLRPC_CPPFLAGS)
+AC_SUBST(XMLRPC_LIBADD)
+AC_SUBST(XMLRPC_LDFLAGS)
+
+#######################################################
+#
+# check for GUI plathome
+#
+
+dnl Check iOS build flag
+AC_ARG_ENABLE(iphoneos,
+    [--enable-iphoneos         enable iOS support],
+    [if test $enableval = yes ; then
+	GUI_ARCH=IPHONEOS
+        BUILD_OSDEP=sysdep
+	AC_DEFINE([GUI_ARCH], [IPHONEOS], [name of the GUI archtecture])
+     fi],
+[])
+
+dnl Check Qt/PyQt5 build flag
+
+dnl Check CLI/GUI build
+AC_ARG_ENABLE(cli,
+    [--enable-cli         enable command line interface],
+    [
+dnl CLI option supplied --> enable CLI build
+if test $enableval = yes ; then
+    GUI_ARCH=CLI
+    BUILD_OSDEP=
+    BUILD_CLI=cli
+    AC_DEFINE([GUI_ARCH], [CLI], [name of the GUI archtecture])
+fi],
+    [
+dnl No CLI option --> use GUI (X11/OSX)
+if test x$GUI_ARCH = x ; then
+case $host_os in
+     darwin*)
+	GUI_ARCH=OSX
+	BUILD_OSDEP="sysdep osxbuild utils stub"
+	AC_DEFINE([GUI_ARCH], [OSX], [name of the GUI archtecture])
+
+        # make_distr.pl substitutions
+        OSXDISTR_ARCH=MacOSX-Intel$BUILD_BIT
+        AC_SUBST(OSXDISTR_ARCH)
+	if test x$BUILD_BIT = x32 ; then
+	    OSXDISTR_LSAP=i386
+	else
+	    OSXDISTR_LSAP=x86_64
+	fi    
+        AC_SUBST(OSXDISTR_LSAP)
+
+        dnl OSX/Gecko39 build requires std=c++11 feature (char16_t, etc...)
+	_cxxflags=${CXXFLAGS}
+        AX_CXX_COMPILE_STDCXX_11(noext,optional)
+	if test x$HAVE_CXX11 = x1 ; then
+	    dnl if cxx has c++11 feature, save the cxxflags enabling the feature
+	    CXX11_CXXFLAGS=${CXXFLAGS}
+	fi
+	CXXFLAGS=${_cxxflags}
+	echo "XXX $CXXFLAGS, $HAVE_CXX11, $CXX11_CXXFLAGS"
+     ;;
+     *)
+	GUI_ARCH=X11
+	BUILD_OSDEP="sysdep uxdist utils"
+	AC_DEFINE([GUI_ARCH], [X11], [name of the GUI archtecture])
+        dnl Linux/Gecko39 build requires std=c++0x feature (char16_t)
+        AX_CXX_COMPILE_STDCXX_0X
+	if test $ax_cv_cxx_compile_cxx0x_cxx = yes ; then
+	   CXXFLAGS="$CXXFLAGS -std=c++0x"
+	else
+	   AC_MSG_ERROR(requires c++ with -std=c++0x support)
+	fi
+     ;;
+esac
+fi])
+
+
+AM_CONDITIONAL(COND_BUILD_OSX, test x$GUI_ARCH = xOSX)
+AM_CONDITIONAL(COND_BUILD_X11, test x$GUI_ARCH = xX11)
+AM_CONDITIONAL(COND_BUILD_IPHONEOS, test x$GUI_ARCH = xIPHONEOS)
+AC_SUBST(BUILD_OSDEP)
+AC_SUBST(BUILD_CLI)
+
+echo GUI_ARCH: $GUI_ARCH
+
+
+#######################################################
+#
+# check for XULRUNNER SDK location
+#
+
+if test x$GUI_ARCH != xCLI ; then
+
+XULRUNNER_SDK_PATH=
+BUILD_XULGUI=
+test "${with_xulrunner_sdk+set}" != "set" && with_xulrunner_sdk=no
+AC_MSG_CHECKING(XULRUNNER SDK location)
+AC_ARG_WITH(xulrunner_sdk,
+[  --with-xulrunner-sdk[=DIR]      Look for xulrunner SDK in DIR (default=no) ],
+[  case "$with_xulrunner_sdk" in
+  no)
+    AC_MSG_RESULT($with_xulrunner_sdk)
+    ;;
+  *)
+    AC_MSG_RESULT($with_xulrunner_sdk)
+    _cppflags=${CPPFLAGS}
+    _cxxflags=${CXXFLAGS}
+    CPPFLAGS="-I$with_xulrunner_sdk/include $CPPFLAGS"
+    if test x$HAVE_CXX11 = x1 ; then
+        CXXFLAGS="$CXX11_CXXFLAGS"
+    fi
+    AC_CHECK_HEADERS(nsXPCOM.h, XULRUNNER_SDK_PATH=$with_xulrunner_sdk,,[#include <mozilla-config.h>])
+
+    AC_CHECK_DECL(NS_InitXPCOM2,
+	[XPCOM_CPPFLAGS="-I$with_xulrunner_sdk/include -I$with_xulrunner_sdk/include/nspr";
+	 XPCOM_LDFLAGS="-L$with_xulrunner_sdk/lib";
+	 BUILD_XULGUI="xpcom xul_gui"],,
+	[#include <mozilla-config.h>
+	 #include<nsXPCOM.h>])
+
+    CPPFLAGS=$_cppflags
+    CXXFLAGS=$_cxxflags
+    if test x$XULRUNNER_SDK_PATH = x ; then
+      AC_MSG_ERROR(incorrect xulrunner SDK location)
+    fi
+
+dnl    CFLAGS="-fshort-wchar $CFLAGS"
+dnl    CXXFLAGS="-fshort-wchar $CXXFLAGS"
+
+    ;;
+  esac]
+)
+	
+
+AC_SUBST(BUILD_XULGUI)
+AC_SUBST(XULRUNNER_SDK_PATH)
+AC_SUBST(XPCOM_CPPFLAGS)
+AC_SUBST(XPCOM_LDFLAGS)
+
+fi
+
+##
+
+AC_SUBST(BUILD_SCR)
+AC_SUBST(SCR_CPPFLAGS)
+AC_SUBST(SCR_LDADD)
+AC_SUBST(SCR_LDFLAGS)
+
+#######################################################
+#
+# pkg-config (for Linux & X11 & gtk2)
+#
+
+m4_ifdef([PKG_CHECK_MODULES], [], [define(PKG_CHECK_MODULES)])
+
+if test x$GUI_ARCH = xX11 ; then
+    echo
+    PKG_CHECK_MODULES(GTK2, gtk+-2.0 >= 2.10.0 glib-2.0 gobject-2.0 gdk-x11-2.0)
+fi
 
 #######################################################
 #
@@ -737,7 +760,7 @@ AC_SUBST(FFTW_LIBADD)
 
 
 #
-# check for CGAL location  (for the surface module)
+# check for CGAL location  (for the surface/rendering module)
 #
 
 AC_MSG_CHECKING(CGAL library location)

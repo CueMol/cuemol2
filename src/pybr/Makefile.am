@@ -23,15 +23,59 @@ MC_HDRS = $(MCWG_SRC:.qif=_wrap.hpp)
 MODLDR_SRC = pybr_loader.cpp 
 $(MODLDR_SRC): pybr.moddef $(MCWG_SRC)
 
-######################################################
-
-lib_LTLIBRARIES = libpybr.la
-
-libpybr_la_SOURCES = \
-pybr.cpp \
+COMMON_SRC = \
 wrapper.cpp \
 convert.cpp \
 methodobj.cpp \
+$(NULL)
+
+######################################################
+
+if COND_BUILD_PYMODULE
+
+# Build Python module
+lib_LTLIBRARIES = cuemol.la
+
+cuemol_la_SOURCES = \
+$(COMMON_SRC) \
+initcuemol.cpp \
+$(NULL)
+
+cuemol_la_CXXFLAGS = \
+  @CFLAGS_VIS_HIDDEN@ \
+  @CXXFLAGS_VIS_HIDDEN@ \
+  -DPYMODULE_EXPORTS=1 \
+  -I$(top_srcdir) -I$(srcdir) \
+  @PYTHON_CPPFLAGS@ \
+  @BOOST_CPPFLAGS@ \
+  $(NULL)
+
+cuemol_la_LDFLAGS = \
+ -module -avoid-version -export-symbols-regex initcuemol \
+  -L../qlib \
+  @SCR_LDFLAGS@ \
+  -L../qsys \
+  -L../sysdep \
+  @MODULES_LDFLAGS@ \
+$(NULL)
+
+cuemol_la_LIBADD = \
+  @PYTHON_LDADD@ \
+  -lqlib \
+  @SCR_LDADD@ \
+  -lqsys \
+  -lsysdep \
+  @MODULES_LDADD@ \
+  $(NULL)
+
+else
+
+# Build Python embedding support
+lib_LTLIBRARIES = libpybr.la
+
+libpybr_la_SOURCES = \
+$(COMMON_SRC) \
+pybr.cpp \
 PythonBridge.cpp \
 $(MODLDR_SRC) \
 $(MC_SRCS) \
@@ -41,7 +85,6 @@ libpybr_la_CXXFLAGS = \
   @CFLAGS_VIS_HIDDEN@ \
   @CXXFLAGS_VIS_HIDDEN@ \
   -DPYBR_EXPORTS=1 \
- -DXP_UNIX \
  -I$(top_srcdir) -I$(srcdir) \
  @PYTHON_CPPFLAGS@ \
  @BOOST_CPPFLAGS@ \
@@ -53,6 +96,8 @@ libpybr_la_CXXFLAGS = \
 libpybr_la_LIBADD = \
  @PYTHON_LDADD@ \
  $(NULL)
+
+endif
 
 #####################################
 

@@ -13,6 +13,7 @@
 
 #include "wrapper.hpp"
 
+
 using namespace pybr;
 
 /// DLL entrance routine
@@ -83,37 +84,37 @@ namespace importers {
 
 
 namespace pybr {
-/// CueMol initialization routine
-PyObject *initCueMol(PyObject *self, PyObject *args)
-{
-  const char *config;
+  /// CueMol initialization routine
+  PyObject *initCueMol(PyObject *self, PyObject *args)
+  {
+    const char *config;
 
-  if (!PyArg_ParseTuple(args, "s", &config))
-    return NULL;
+    if (!PyArg_ParseTuple(args, "s", &config))
+      return NULL;
   
-  qsys::init(config);
-  sysdep::init();
+    qsys::init(config);
+    sysdep::init();
 
-  // load other modules
-  render::init();
-  molstr::init();
-  molvis::init();
-  xtal::init();
-  symm::init();
-  surface::init();
-  molanl::init();
-  lwview::init();
-  anim::init();
-  mdtools::init();
-  importers::init();
+    // load other modules
+    render::init();
+    molstr::init();
+    molvis::init();
+    xtal::init();
+    symm::init();
+    surface::init();
+    molanl::init();
+    lwview::init();
+    anim::init();
+    mdtools::init();
+    importers::init();
 
-  // initTextRender();
-  // MB_DPRINTLN("---------- initTextRender() OK");
+    // initTextRender();
+    // MB_DPRINTLN("---------- initTextRender() OK");
 
-  // // setup timer
-  // qlib::EventManager::getInstance()->initTimer(new XPCTimerImpl);
+    // // setup timer
+    // qlib::EventManager::getInstance()->initTimer(new XPCTimerImpl);
 
-  return Py_BuildValue("");
-}
+    return Py_BuildValue("");
+  }
 }
 
