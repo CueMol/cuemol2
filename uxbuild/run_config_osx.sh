@@ -45,6 +45,7 @@ $config_scr \
 --disable-static \
 --enable-shared \
 --prefix=$install_dir \
+--with-ui=xul \
 $usepybr \
 $usexrbr \
 --with-xulrunner-sdk=$gecko_sdk_dir \

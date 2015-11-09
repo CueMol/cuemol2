@@ -514,42 +514,39 @@ AC_SUBST(XMLRPC_CPPFLAGS)
 AC_SUBST(XMLRPC_LIBADD)
 AC_SUBST(XMLRPC_LDFLAGS)
 
+##
+
+AC_SUBST(BUILD_SCR)
+AC_SUBST(SCR_CPPFLAGS)
+AC_SUBST(SCR_LDADD)
+AC_SUBST(SCR_LDFLAGS)
+
 #######################################################
 #
 # check for GUI plathome
 #
 
-dnl Check iOS build flag
-AC_ARG_ENABLE(iphoneos,
-    [--enable-iphoneos         enable iOS support],
-    [if test $enableval = yes ; then
-	GUI_ARCH=IPHONEOS
-        BUILD_OSDEP=sysdep
-	AC_DEFINE([GUI_ARCH], [IPHONEOS], [name of the GUI archtecture])
-     fi],
-[])
+AC_ARG_WITH(ui,
+[  --with-ui[=UI_type]      Set build UI type (default=cli) ],
+[ case "$with_ui" in
+  no)
+    AC_MSG_ERROR(requires --with-ui option)
+    ;;
 
-dnl Check Qt/PyQt5 build flag
-
-dnl Check CLI/GUI build
-AC_ARG_ENABLE(cli,
-    [--enable-cli         enable command line interface],
-    [
-dnl CLI option supplied --> enable CLI build
-if test $enableval = yes ; then
+  cli)
+    AC_MSG_RESULT($with_ui)
     GUI_ARCH=CLI
     BUILD_OSDEP=
     BUILD_CLI=cli
-    AC_DEFINE([GUI_ARCH], [CLI], [name of the GUI archtecture])
-fi],
-    [
-dnl No CLI option --> use GUI (X11/OSX)
-if test x$GUI_ARCH = x ; then
+    ;;
+
+  xul)
+    AC_MSG_RESULT($with_ui)
+dnl XUL GUI (X11/OSX)
 case $host_os in
      darwin*)
 	GUI_ARCH=OSX
 	BUILD_OSDEP="sysdep osxbuild utils stub"
-	AC_DEFINE([GUI_ARCH], [OSX], [name of the GUI archtecture])
 
         # make_distr.pl substitutions
         OSXDISTR_ARCH=MacOSX-Intel$BUILD_BIT
@@ -574,7 +571,6 @@ case $host_os in
      *)
 	GUI_ARCH=X11
 	BUILD_OSDEP="sysdep uxdist utils"
-	AC_DEFINE([GUI_ARCH], [X11], [name of the GUI archtecture])
         dnl Linux/Gecko39 build requires std=c++0x feature (char16_t)
         AX_CXX_COMPILE_STDCXX_0X
 	if test $ax_cv_cxx_compile_cxx0x_cxx = yes ; then
@@ -582,26 +578,62 @@ case $host_os in
 	else
 	   AC_MSG_ERROR(requires c++ with -std=c++0x support)
 	fi
+
+#######################################################
+#
+# pkg-config (for XUL & Linux & X11 & gtk2)
+#
+
+m4_ifdef([PKG_CHECK_MODULES], [], [define(PKG_CHECK_MODULES)])
+
+if test x$GUI_ARCH = xX11 ; then
+    echo
+    PKG_CHECK_MODULES(GTK2, gtk+-2.0 >= 2.10.0 glib-2.0 gobject-2.0 gdk-x11-2.0)
+fi
+
      ;;
 esac
-fi])
+    ;;
 
+  iphoneos)
+    AC_MSG_RESULT($with_ui)
+    GUI_ARCH=IPHONEOS
+    BUILD_OSDEP=sysdep
+    ;;
 
+  qt)
+    AC_MSG_RESULT($with_ui)
+    GUI_ARCH=QT
+    BUILD_OSDEP="sysdep utils"
+    #BUILD_OSDEP="sysdep utils qt_gui"
+    ;;
+
+  *)
+    AC_MSG_ERROR(requires valid --with-ui option)
+    ;;
+
+  esac],
+[
+    dnl No --with-ui flag
+    AC_MSG_ERROR(requires --with-ui option)
+]
+)
+
+echo GUI_ARCH: $GUI_ARCH
+
+AC_DEFINE([GUI_ARCH], [$GUI_ARCH], [GUI archtecture])
 AM_CONDITIONAL(COND_BUILD_OSX, test x$GUI_ARCH = xOSX)
 AM_CONDITIONAL(COND_BUILD_X11, test x$GUI_ARCH = xX11)
 AM_CONDITIONAL(COND_BUILD_IPHONEOS, test x$GUI_ARCH = xIPHONEOS)
 AC_SUBST(BUILD_OSDEP)
 AC_SUBST(BUILD_CLI)
 
-echo GUI_ARCH: $GUI_ARCH
-
-
 #######################################################
 #
 # check for XULRUNNER SDK location
 #
 
-if test x$GUI_ARCH != xCLI ; then
+if test x$GUI_ARCH == xOSX -o x$GUI_ARCH == xX11 ; then
 
 XULRUNNER_SDK_PATH=
 BUILD_XULGUI=
@@ -649,25 +681,6 @@ AC_SUBST(XULRUNNER_SDK_PATH)
 AC_SUBST(XPCOM_CPPFLAGS)
 AC_SUBST(XPCOM_LDFLAGS)
 
-fi
-
-##
-
-AC_SUBST(BUILD_SCR)
-AC_SUBST(SCR_CPPFLAGS)
-AC_SUBST(SCR_LDADD)
-AC_SUBST(SCR_LDFLAGS)
-
-#######################################################
-#
-# pkg-config (for Linux & X11 & gtk2)
-#
-
-m4_ifdef([PKG_CHECK_MODULES], [], [define(PKG_CHECK_MODULES)])
-
-if test x$GUI_ARCH = xX11 ; then
-    echo
-    PKG_CHECK_MODULES(GTK2, gtk+-2.0 >= 2.10.0 glib-2.0 gobject-2.0 gdk-x11-2.0)
 fi
 
 #######################################################
