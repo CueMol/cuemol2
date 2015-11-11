@@ -12,9 +12,22 @@ MouseEventHandler.cpp \
 $(NULL)
 
 ######################################################
+# Qt Build definitions
+
+if COND_BUILD_QT
+DEP_SRC = \
+OglView.cpp \
+OglDisplayList.cpp \
+OglDisplayContext.cpp \
+OglFBOView.cpp \
+OglProgramObject.cpp \
+$(NULL)
+endif
+
+######################################################
 # UN*X/XGL Build definitions
 
-if COND_BUILD_X11
+if COND_BUILD_XULX11
 DEP_SRC = \
 XglView.cpp \
 XglDisplayContext.cpp \
@@ -30,7 +43,7 @@ endif
 ######################################################
 # MacOS X/CGL Build definitions
 
-if COND_BUILD_OSX
+if COND_BUILD_XULOSX
 DEP_SRC = \
 CglView.cpp \
 CglDisplayContext.cpp \

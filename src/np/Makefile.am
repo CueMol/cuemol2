@@ -17,7 +17,7 @@ CPP_SRC = \
   NP_ScrPluginObj.cpp \
   NP_Wrapper.cpp
 
-if COND_BUILD_OSX
+if COND_BUILD_NPOSX
 
 ############################
 # MacOS X Build definitions

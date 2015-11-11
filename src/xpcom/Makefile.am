@@ -58,7 +58,7 @@ xpc_main.cpp
 ############################
 # MacOS X Build definitions
 
-if COND_BUILD_OSX
+if COND_BUILD_XULOSX
 
 #  -isysroot /Developer/SDKs/MacOSX10.5.sdk
 #-fno-exceptions

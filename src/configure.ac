@@ -23,6 +23,7 @@ sinclude(conftools/ax_cxx_compile_stdcxx_0x.m4)
 sinclude(conftools/ax_cxx_compile_stdcxx_11.m4)
 
 sinclude(conftools/ax_have_qt.m4)
+dnl sinclude(conftools/bnv_have_qt.m4)
 
 #######################################################
 # LIBTOOL
@@ -545,7 +546,7 @@ AC_ARG_WITH(ui,
 dnl XUL GUI (X11/OSX)
 case $host_os in
      darwin*)
-	GUI_ARCH=OSX
+	GUI_ARCH=XUL_OSX
 	BUILD_OSDEP="sysdep osxbuild utils stub"
 
         # make_distr.pl substitutions
@@ -569,7 +570,7 @@ case $host_os in
 	echo "XXX $CXXFLAGS, $HAVE_CXX11, $CXX11_CXXFLAGS"
      ;;
      *)
-	GUI_ARCH=X11
+	GUI_ARCH=XUL_X11
 	BUILD_OSDEP="sysdep uxdist utils"
         dnl Linux/Gecko39 build requires std=c++0x feature (char16_t)
         AX_CXX_COMPILE_STDCXX_0X
@@ -579,14 +580,13 @@ case $host_os in
 	   AC_MSG_ERROR(requires c++ with -std=c++0x support)
 	fi
 
-#######################################################
 #
 # pkg-config (for XUL & Linux & X11 & gtk2)
 #
 
 m4_ifdef([PKG_CHECK_MODULES], [], [define(PKG_CHECK_MODULES)])
 
-if test x$GUI_ARCH = xX11 ; then
+if test x$GUI_ARCH = xXUL_X11 ; then
     echo
     PKG_CHECK_MODULES(GTK2, gtk+-2.0 >= 2.10.0 glib-2.0 gobject-2.0 gdk-x11-2.0)
 fi
@@ -602,7 +602,7 @@ esac
     ;;
 
   qt)
-    AC_MSG_RESULT($with_ui)
+    AC_MSG_RESULT(User interface: $with_ui)
     GUI_ARCH=QT
     BUILD_OSDEP="sysdep utils"
     #BUILD_OSDEP="sysdep utils qt_gui"
@@ -622,18 +622,47 @@ esac
 echo GUI_ARCH: $GUI_ARCH
 
 AC_DEFINE([GUI_ARCH], [$GUI_ARCH], [GUI archtecture])
-AM_CONDITIONAL(COND_BUILD_OSX, test x$GUI_ARCH = xOSX)
-AM_CONDITIONAL(COND_BUILD_X11, test x$GUI_ARCH = xX11)
+AM_CONDITIONAL(COND_BUILD_QT, test x$GUI_ARCH = xQT)
+AM_CONDITIONAL(COND_BUILD_XULOSX, test x$GUI_ARCH = xXUL_OSX)
+AM_CONDITIONAL(COND_BUILD_XULX11, test x$GUI_ARCH = xXUL_X11)
 AM_CONDITIONAL(COND_BUILD_IPHONEOS, test x$GUI_ARCH = xIPHONEOS)
 AC_SUBST(BUILD_OSDEP)
 AC_SUBST(BUILD_CLI)
 
 #######################################################
 #
+# check for QT
+#
+
+if test x$GUI_ARCH == xQT ; then
+AC_ARG_WITH(qtdir,
+[  --with-qtdir=DIR        Look for QT in DIR ],
+[
+  QTDIR=$with_qtdir
+  QTMOC=$QTDIR/bin/moc
+
+    _cppflags=${CPPFLAGS}
+    _cxxflags=${CXXFLAGS}
+    CPPFLAGS="-I$with_qtdir/include $CPPFLAGS"
+    AC_CHECK_HEADERS(QtCore/QObject)
+    CPPFLAGS=$_cppflags
+    CXXFLAGS=$_cxxflags
+],
+[
+  # No --with-qtdir flag
+  AC_CHECK_PROG([QTMOC], [$QTDIR/bin/moc], [$QTDIR/bin/moc])
+]
+)
+
+fi
+
+
+#######################################################
+#
 # check for XULRUNNER SDK location
 #
 
-if test x$GUI_ARCH == xOSX -o x$GUI_ARCH == xX11 ; then
+if test x$GUI_ARCH == xXUL_OSX -o x$GUI_ARCH == xXUL_X11 ; then
 
 XULRUNNER_SDK_PATH=
 BUILD_XULGUI=

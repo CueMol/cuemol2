@@ -748,7 +748,7 @@ bool View::mouseDragEnd(InDevEvent &ev)
     setViewCenter(getViewCenter());
   }
 
-#if (GUI_ARCH==OSX)
+#if (GUI_ARCH==XUL_OSX)
   setCursor("auto");
 #else
   setCursor("default");
