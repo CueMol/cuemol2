@@ -106,7 +106,8 @@ class MainWindow(QWidget):
 
         strMgr = cuemol.getService("StreamManager")
         reader = strMgr.createHandler("pdb", 0);
-        reader.setPath("D:/works_drop/Dropbox/works/test_data/1AB0.pdb");
+#        reader.setPath("D:/works_drop/Dropbox/works/test_data/1AB0.pdb");
+        reader.setPath("/Users/user/Dropbox/works/test_data/1AB0.pdb");
         
         newobj = reader.createDefaultObj();
         reader.attach(newobj);

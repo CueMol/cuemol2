@@ -412,11 +412,13 @@ if test $enableval = yes ; then
    dnl check python inc/lib
    AM_PATH_PYTHON(2.7.0)
    PY_PREFIX=`$PYTHON -c 'import sys ; print sys.prefix'`
-   PYTHON_LDADD="-lpython$PYTHON_VERSION"
    PYTHON_CPPFLAGS="-I$PY_PREFIX/include/python$PYTHON_VERSION"
+   PYTHON_LDADD="-lpython$PYTHON_VERSION"
+   PYTHON_LDFLAGS="-L$PY_PREFIX/lib"
    echo "Python prefix: " $PY_PREFIX ", version: " $PYTHON_VERSION
-   AC_SUBST([PYTHON_LDADD])
    AC_SUBST([PYTHON_CPPFLAGS])
+   AC_SUBST([PYTHON_LDADD])
+   AC_SUBST([PYTHON_LDFLAGS])
    BUILD_SCR="$BUILD_SCR pybr"
    SCR_CPPFLAGS="$SCR_CPPFLAGS -DHAVE_PYTHON"
    SCR_LDADD="$SCR_LDADD -lpybr $PYTHON_LDADD"
@@ -436,11 +438,13 @@ if test $enableval = yes ; then
    dnl check python inc/lib
    AM_PATH_PYTHON(2.7.0)
    PY_PREFIX=`$PYTHON -c 'import sys ; print sys.prefix'`
-   PYTHON_LDADD="-lpython$PYTHON_VERSION"
    PYTHON_CPPFLAGS="-I$PY_PREFIX/include/python$PYTHON_VERSION"
+   PYTHON_LDFLAGS="-L$PY_PREFIX/lib"
+   PYTHON_LDADD="-lpython$PYTHON_VERSION"
    echo "Python prefix: " $PY_PREFIX ", version: " $PYTHON_VERSION
-   AC_SUBST([PYTHON_LDADD])
    AC_SUBST([PYTHON_CPPFLAGS])
+   AC_SUBST([PYTHON_LDADD])
+   AC_SUBST([PYTHON_LDFLAGS])
    BUILD_PYMODULE=yes
    BUILD_SCR="$BUILD_SCR pybr"
 dnl   SCR_CPPFLAGS="$SCR_CPPFLAGS -DHAVE_PYTHON"
@@ -604,8 +608,8 @@ esac
   qt)
     AC_MSG_RESULT(User interface: $with_ui)
     GUI_ARCH=QT
-    BUILD_OSDEP="sysdep utils"
-    #BUILD_OSDEP="sysdep utils qt_gui"
+    # BUILD_OSDEP="sysdep utils"
+    BUILD_OSDEP="sysdep utils qt_gui"
     ;;
 
   *)
@@ -645,14 +649,70 @@ AC_ARG_WITH(qtdir,
     _cxxflags=${CXXFLAGS}
     CPPFLAGS="-I$with_qtdir/include $CPPFLAGS"
     AC_CHECK_HEADERS(QtCore/QObject)
+
+    AC_CHECK_DECLS(QT_VERSION,
+                   [],
+		   ,
+		   [#include <QtCore/QtGlobal>])
+
     CPPFLAGS=$_cppflags
     CXXFLAGS=$_cxxflags
+
+if test "x$ac_cv_header_QtCore_QObject" = xyes -a  "x$ac_cv_have_decl_QT_VERSION" = xyes ; then :
+
+fi
+    QT_CPPFLAGS="-I$with_qtdir/include -I$with_qtdir/include/QtCore -I$with_qtdir/include/QtGui  -I$with_qtdir/include/QtOpenGL  -I$with_qtdir/include/QtWidgets"
+
+case $host_os in
+     darwin*)
+     QT_LDFLAGS="-F$with_qtdir/lib"
+     QT_LDADD="-framework QtCore -framework QtGui -framework QtOpenGL -framework QtWidgets"
+     ;;
+     *)
+     QT_LDFLAGS="-L$with_qtdir/lib"
+     QT_LDADD="-lQtCore -lQtGui -lQtOpenGL -lQtWidgets"
+     ;;
+esac
 ],
 [
   # No --with-qtdir flag
-  AC_CHECK_PROG([QTMOC], [$QTDIR/bin/moc], [$QTDIR/bin/moc])
+  QTMOC=moc
+  QT_CPPFLAGS=
+  QT_LDFLAGS=
+  QT_LDADD=
 ]
 )
+
+AC_SUBST(QT_CPPFLAGS)
+AC_SUBST(QT_LDADD)
+AC_SUBST(QT_LDFLAGS)
+AC_SUBST(QTMOC)
+
+AC_ARG_WITH(pyqtdir,
+[  --with-pyqtdir=DIR        Look for PyQT in DIR ],
+[
+  SIP=sip
+  SIPFLAGS="-x VendorID -x Py_v3 -t Qt_5_4_2 -I $with_pyqtdir/share/sip/Qt5"
+
+case $host_os in
+     darwin*)
+     SIPFLAGS="$SIPFLAGS -t WS_MACX"
+     ;;
+     *)
+
+     ;;
+esac
+],
+[
+  # No --with-pyqtdir flag
+  SIP=sip
+  SIPFLAGS=
+]
+)
+
+echo SIPFLAGS=$SIPFLAGS
+AC_SUBST(SIP)
+AC_SUBST(SIPFLAGS)
 
 fi
 
@@ -854,6 +914,7 @@ AC_CONFIG_FILES([
 	xpcom/Makefile
 	xul_gui/Makefile
 	sysdep/Makefile
+	qt_gui/Makefile
  modules/molstr/Makefile
  modules/molvis/Makefile
  modules/surface/Makefile
