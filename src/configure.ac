@@ -136,7 +136,7 @@ AC_ARG_ENABLE(debug,
     ])
 
 if test x$enable_shared = xyes ; then
-    LIBQLIB_LIBADD="../pcre/libpcre.a ../expat/libexpat.a"
+    LIBQLIB_LIBADD="\$(top_builddir)/pcre/libpcre.a \$(top_builddir)/expat/libexpat.a"
     AC_SUBST(LIBQLIB_LIBADD)
 fi
 
@@ -148,7 +148,7 @@ fi
 echo "host_os: $host_os"
 echo "target_os: $target_os"
 
-BUILD_CLI=
+BUILD_UI=
 BUILD_OSDEP=
 BUILD_BIT=
 
@@ -390,11 +390,11 @@ dnl if test x$GUI_ARCH = xCLI ; then
     # overall settings
     SCR_CPPFLAGS="-DHAVE_JAVASCRIPT"
     SCR_LDADD="-ljsbr"
-    SCR_LDFLAGS="-L../jsbr"
+    SCR_LDFLAGS="-L\$(top_builddir)/jsbr"
     # jsbr module settings
     JS_CPPFLAGS="-I../js/src/ -DUSE_INTERNAL_JS"
     JS_LDADD="-ljs"
-    JS_LDFLAGS="-L../js/"
+    JS_LDFLAGS="-L\$(top_builddir)/js"
     AC_CONFIG_SUBDIRS([js])
 
 AC_SUBST(JS_CPPFLAGS)
@@ -405,6 +405,7 @@ AC_SUBST(JS_LDFLAGS)
 # Python supports
 #
 
+# embedding type support
 AC_ARG_ENABLE(python,
     [--enable-python         Enable python embedding support],
     [
@@ -422,11 +423,12 @@ if test $enableval = yes ; then
    BUILD_SCR="$BUILD_SCR pybr"
    SCR_CPPFLAGS="$SCR_CPPFLAGS -DHAVE_PYTHON"
    SCR_LDADD="$SCR_LDADD -lpybr $PYTHON_LDADD"
-   SCR_LDFLAGS="$SCR_LDFLAGS -L../pybr/"
+   SCR_LDFLAGS="$SCR_LDFLAGS -L\$(top_builddir)/pybr"
 fi
     ],
     [])
 
+# module type support
 BUILD_PYMODULE=
 AC_ARG_ENABLE(pymodule,
     [--enable-pymodule         Enable python module support],
@@ -446,10 +448,7 @@ if test $enableval = yes ; then
    AC_SUBST([PYTHON_LDADD])
    AC_SUBST([PYTHON_LDFLAGS])
    BUILD_PYMODULE=yes
-   BUILD_SCR="$BUILD_SCR pybr"
-dnl   SCR_CPPFLAGS="$SCR_CPPFLAGS -DHAVE_PYTHON"
-dnl   SCR_LDADD="$SCR_LDADD -lpybr $PYTHON_LDADD"
-dnl   SCR_LDFLAGS="$SCR_LDFLAGS -L../pybr/"
+   BUILD_UI="$BUILD_UI pybr"
 fi
     ],
     [])
@@ -511,7 +510,7 @@ AC_ARG_WITH(xmlrpc,
 if test x$with_xmlrpc != xno ; then
   BUILD_SCR="$BUILD_SCR xmlrpc_bridge"
   SCR_LDADD="$SCR_LDADD -lxrbr"
-  SCR_LDFLAGS="$SCR_LDFLAGS -L../xmlrpc_bridge/ $XMLRPC_LDFLAGS"
+  SCR_LDFLAGS="$SCR_LDFLAGS -L\$(top_builddir)/xmlrpc_bridge $XMLRPC_LDFLAGS"
   AC_DEFINE([USE_XMLRPC], [1], [Use XML-RPC service])
 fi
 
@@ -542,7 +541,7 @@ AC_ARG_WITH(ui,
     AC_MSG_RESULT($with_ui)
     GUI_ARCH=CLI
     BUILD_OSDEP=
-    BUILD_CLI=cli
+    BUILD_UI=cli
     ;;
 
   xul)
@@ -610,6 +609,7 @@ esac
     GUI_ARCH=QT
     # BUILD_OSDEP="sysdep utils"
     BUILD_OSDEP="sysdep utils qt_gui"
+    BUILD_UI="qt_gui"
     ;;
 
   *)
@@ -631,7 +631,6 @@ AM_CONDITIONAL(COND_BUILD_XULOSX, test x$GUI_ARCH = xXUL_OSX)
 AM_CONDITIONAL(COND_BUILD_XULX11, test x$GUI_ARCH = xXUL_X11)
 AM_CONDITIONAL(COND_BUILD_IPHONEOS, test x$GUI_ARCH = xIPHONEOS)
 AC_SUBST(BUILD_OSDEP)
-AC_SUBST(BUILD_CLI)
 
 #######################################################
 #
@@ -688,25 +687,17 @@ AC_SUBST(QT_LDADD)
 AC_SUBST(QT_LDFLAGS)
 AC_SUBST(QTMOC)
 
+SIPFLAGS=`$PYTHON -c 'import PyQt5.QtCore; print PyQt5.QtCore.PYQT_CONFIGURATION[["sip_flags"]]'`
+
 AC_ARG_WITH(pyqtdir,
 [  --with-pyqtdir=DIR        Look for PyQT in DIR ],
 [
   SIP=sip
-  SIPFLAGS="-x VendorID -x Py_v3 -t Qt_5_4_2 -I $with_pyqtdir/share/sip/Qt5"
-
-case $host_os in
-     darwin*)
-     SIPFLAGS="$SIPFLAGS -t WS_MACX"
-     ;;
-     *)
-
-     ;;
-esac
+  SIPFLAGS="$SIPFLAGS -I $with_pyqtdir/share/sip/Qt5"
 ],
 [
   # No --with-pyqtdir flag
   SIP=sip
-  SIPFLAGS=
 ]
 )
 
@@ -725,7 +716,6 @@ fi
 if test x$GUI_ARCH == xXUL_OSX -o x$GUI_ARCH == xXUL_X11 ; then
 
 XULRUNNER_SDK_PATH=
-BUILD_XULGUI=
 test "${with_xulrunner_sdk+set}" != "set" && with_xulrunner_sdk=no
 AC_MSG_CHECKING(XULRUNNER SDK location)
 AC_ARG_WITH(xulrunner_sdk,
@@ -747,7 +737,7 @@ AC_ARG_WITH(xulrunner_sdk,
     AC_CHECK_DECL(NS_InitXPCOM2,
 	[XPCOM_CPPFLAGS="-I$with_xulrunner_sdk/include -I$with_xulrunner_sdk/include/nspr";
 	 XPCOM_LDFLAGS="-L$with_xulrunner_sdk/lib";
-	 BUILD_XULGUI="xpcom xul_gui"],,
+	 BUILD_UI="$BUILD_UI xpcom xul_gui"],,
 	[#include <mozilla-config.h>
 	 #include<nsXPCOM.h>])
 
@@ -765,7 +755,6 @@ dnl    CXXFLAGS="-fshort-wchar $CXXFLAGS"
 )
 	
 
-AC_SUBST(BUILD_XULGUI)
 AC_SUBST(XULRUNNER_SDK_PATH)
 AC_SUBST(XPCOM_CPPFLAGS)
 AC_SUBST(XPCOM_LDFLAGS)
@@ -786,24 +775,24 @@ if test x$BUILD_LW != xyes ; then
   # Build full-functional editor version
   BUILD_MODULES="modules/molstr modules/molvis modules/surface modules/molanl modules/symm modules/xtal modules/lwview modules/rendering modules/anim"
   MODULES_LDADD="-lanim -lrender -llwview -lxtal -lsymm -lmolanl -lsurface -lmolvis -lmolstr"
-  MODULES_LDFLAGS="-L../modules/anim -L../modules/rendering -L../modules/lwview -L../modules/xtal -L../modules/symm -L../modules/molanl -L../modules/surface -L../modules/molvis -L../modules/molstr"
+  MODULES_LDFLAGS="-L\$(top_builddir)/modules/anim -L\$(top_builddir)/modules/rendering -L\$(top_builddir)/modules/lwview -L\$(top_builddir)/modules/xtal -L\$(top_builddir)/modules/symm -L\$(top_builddir)/modules/molanl -L\$(top_builddir)/modules/surface -L\$(top_builddir)/modules/molvis -L\$(top_builddir)/modules/molstr"
 
   # MDTools module
   BUILD_MODULES="$BUILD_MODULES modules/mdtools"
   MODULES_LDADD="-lmdtools $MODULES_LDADD"
-  MODULES_LDFLAGS="-L../modules/mdtools $MODULES_LDFLAGS"
+  MODULES_LDFLAGS="-L\$(top_builddir)/modules/mdtools $MODULES_LDFLAGS"
   MODULES_CXXFLAGS="-DHAVE_MDTOOLS_MODULE $MODULES_CXXFLAGS"
 
   # Importers module (experimental)
   BUILD_MODULES="$BUILD_MODULES modules/importers"
   MODULES_LDADD="-limporters $MODULES_LDADD"
-  MODULES_LDFLAGS="-L../modules/importers $MODULES_LDFLAGS"
+  MODULES_LDFLAGS="-L\$(top_builddir)/modules/importers $MODULES_LDFLAGS"
   MODULES_CXXFLAGS="-DHAVE_IMPORTERS_MODULE $MODULES_CXXFLAGS"
 else
   # Build light-weight viewer version
   BUILD_MODULES="modules/molstr modules/lwview modules/anim"
   MODULES_LDADD="-lmolstr -llwview -lanim"
-  MODULES_LDFLAGS="-L../modules/molstr -L../modules/lwview -L../modules/anim"
+  MODULES_LDFLAGS="-L\$(top_builddir)/modules/molstr -L\$(top_builddir)/modules/lwview -L\$(top_builddir)/modules/anim"
 fi
 
 AC_SUBST(BUILD_MODULES)
@@ -894,6 +883,7 @@ AC_SUBST(CGAL_LIBADD)
 
 AC_SUBST(INCLTDL)
 AC_SUBST(LIBLTDL)
+AC_SUBST(BUILD_UI)
 
 LIBS="$LIBS -lm"
 CFLAGS="-DQM_UNIX $CFLAGS"

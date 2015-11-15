@@ -89,7 +89,7 @@ static PyObject *meth_alloc(const char *name, PyObject *self)
   QpyMethObj *op;
   op = free_list;
 
-  MB_DPRINTLN("meth_alloc: numfree=%d", numfree);
+  //MB_DPRINTLN("meth_alloc: numfree=%d", numfree);
 
   if (op != NULL) {
     free_list = (QpyMethObj *)(op->m_self);
@@ -119,7 +119,7 @@ static void meth_dealloc(QpyMethObj *m)
   PyObject_GC_UnTrack(m);
   Py_XDECREF(m->m_self);
 
-  MB_DPRINTLN("meth_dealloc: numfree=%d", numfree);
+  //MB_DPRINTLN("meth_dealloc: numfree=%d", numfree);
 
   if (m->m_pName!=NULL)
     delete m->m_pName;
@@ -201,7 +201,7 @@ static PyObject *meth_call(PyObject *func, PyObject *arg, PyObject *kw)
     }
   }
 
-  MB_DPRINTLN("invoke method %s nargs=%d", name, nargs);
+  // MB_DPRINTLN("invoke method %s nargs=%d", name, nargs);
 
   // Invoke method
 

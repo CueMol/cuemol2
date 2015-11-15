@@ -96,7 +96,9 @@ namespace qlib {
   public:
     virtual LDynamic *createObj() const
     {
-      return createObj_helper(integral_constant<bool, qlib::is_abstract<_Type>::value>());
+      LDynamic *pRet = createObj_helper(integral_constant<bool, qlib::is_abstract<_Type>::value>());
+      //MB_DPRINTLN("createObj for %s called, result = %p", typeid(_Type).name(), pRet);
+      return pRet;
     }
 
     virtual LDynamic *createFromString(const LString &aStr) const
@@ -157,7 +159,10 @@ namespace qlib {
     virtual LDynamic *createScrObj() const
     {
       //return LSpecificClass<_Type>::createObj();
-      return MB_NEW qlib::LScrSp<_Type>(static_cast<_Type *>( LSpecificClass<_Type>::createObj() ));
+      _Type *pObj = static_cast<_Type *>( LSpecificClass<_Type>::createObj() );
+      qlib::LScrSp<_Type> *pRet = MB_NEW qlib::LScrSp<_Type>( pObj );
+      //MB_DPRINTLN("createScrObj for %s called, result = %p (createObj=%p)", typeid(_Type).name(), pRet, pObj);
+      return pRet;
     }
 
     /*

@@ -22,6 +22,5 @@ SUBDIRS = \
  qsys \
  @BUILD_OSDEP@ \
  @BUILD_MODULES@ \
- @BUILD_CLI@ \
- @BUILD_XULGUI@ \
+ @BUILD_UI@ \
 $(NULL)
