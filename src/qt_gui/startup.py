@@ -3,10 +3,13 @@ import sys
 import PyQt5
 print PyQt5
 
-from PyQt5.QtWidgets import (QApplication, QWidget,
+from PyQt5.QtWidgets import (QApplication, QWidget, QMainWindow,
                              QGridLayout, QVBoxLayout, QHBoxLayout,
                              QLabel, QLineEdit, QPushButton)
 from PyQt5.QtOpenGL import QGLFormat
+from PyQt5.QtWidgets import QAction
+from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtGui import QIcon
 
 import cuemol
 print cuemol
@@ -22,54 +25,66 @@ from qmqtgui import QtMolWidget
 print QtMolWidget
 
 
-class MainWindow(QWidget):
+class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
 
+        self.initUI()
+
         self.setupScene()
 
-        self.inputLine = QLineEdit()
-        self.outputLine = QLineEdit()
-        self.outputLine.setReadOnly(True)
-
-        self.calcButton = QPushButton("&Calc")
-        self.calcButton.clicked.connect(self.calc)
-
         # fmt = QGLFormat::defaultFormat()
-        fmt = QGLFormat()
-        oglver = QGLFormat.openGLVersionFlags()
-        print("xxx "+str(dir(oglver)))
-        print("OpenGL version flag="+str(int(oglver)))
+        # fmt = QGLFormat()
+        # oglver = QGLFormat.openGLVersionFlags()
+        # print("xxx "+str(dir(oglver)))
+        # print("OpenGL version flag="+str(int(oglver)))
         #print("OpenGL version flag="+int(oglver.testFlag(QGLFormat.OpenGLVersionFlag.OpenGL_Version_None)))
         # print("OpenGL version flag="+qenum_key(fmt, oglver))
         
-        fmt.setProfile(QGLFormat.CompatibilityProfile)
-        oglpro = fmt.profile()
-        print("OpenGL version profile="+str(oglpro))
-        fmt.setDoubleBuffer(True)
+        # fmt.setProfile(QGLFormat.CompatibilityProfile)
+        # oglpro = fmt.profile()
+        # print("OpenGL version profile="+str(oglpro))
+        # fmt.setDoubleBuffer(True)
 
         #self.myw = QtMolWidget(fmt, self)
-        self.myw = QtMolWidget(self)
+        cw = QWidget()
+
+        self.myw = QtMolWidget(None)
         self.myw.bind(self._scid, self._vwid)
-        #buttonLayout.addWidget(self.myw)
+        # buttonLayout.addWidget(self.myw)
+        self.setCentralWidget(self.myw)
 
-        lineLayout = QGridLayout()
-        lineLayout.addWidget(QLabel("num"), 0, 0)
-        lineLayout.addWidget(self.inputLine, 0, 1)
-        lineLayout.addWidget(QLabel("result"), 1, 0)
-        #lineLayout.addWidget(self.outputLine, 1, 1)
-        lineLayout.addWidget(self.myw, 1, 1)
 
-        buttonLayout = QVBoxLayout()
-        buttonLayout.addWidget(self.calcButton)
+    def onOpenFile(self):
+        fname = QFileDialog.getOpenFileName(self, 'Open file')
+        print("get OFN: "+str(fname[0]))
+        #self.loadPDBFile(fname[0])
+        self.loadQSCFile(fname[0])
 
-        mainLayout = QVBoxLayout()
-        mainLayout.addLayout(lineLayout)
-        mainLayout.addLayout(buttonLayout)
-        #mainLayout.addWidget(QLabel("xxx"))
+    def initUI(self):
 
-        self.setLayout(mainLayout)
-        self.setWindowTitle("Factorial")
+        #fopenAction = QAction(QIcon('exit.png'), '&Exit', self)
+        fopenAction = QAction('&Open file', self)
+        fopenAction.setShortcut('Ctrl+O')
+        fopenAction.setStatusTip('Open file')
+        fopenAction.triggered.connect(self.onOpenFile)
+
+        exitAction = QAction(QIcon('exit.png'), '&Exit', self)
+        exitAction.setShortcut('Ctrl+Q')
+        exitAction.setStatusTip('Exit application')
+        exitAction.triggered.connect(QApplication.instance().quit)
+
+        self.statusBar()
+        
+        menubar = self.menuBar()
+        fileMenu = menubar.addMenu('&File')
+        fileMenu.addAction(fopenAction)
+        fileMenu.addAction(exitAction)
+        
+        self.setGeometry(300, 300, 300, 200)
+        self.setWindowTitle('CueMol')
+        self.show()
+        
 
     def setupScene(self):
         scMgr = cuemol.getService("SceneManager")
@@ -98,7 +113,25 @@ class MainWindow(QWidget):
         return sel;
 
 
-    def calc(self):
+    def loadQSCFile(self, fname):
+        scMgr = cuemol.getService("SceneManager")
+        scene = scMgr.getScene(self._scid);
+
+        scene.clearAllData()
+        
+        strMgr = cuemol.getService("StreamManager")
+	reader = strMgr.createHandler("qsc_xml", 3);
+        reader.setPath(fname);
+        
+        reader.attach(scene);
+        reader.read();
+        reader.detach();
+
+        scene.loadViewFromCam(self._vwid, "__current");
+
+        self.myw.update()
+
+    def loadPDBFile(self, fname):
         #n = int(self.inputLine.text())
 
         scMgr = cuemol.getService("SceneManager")
@@ -106,8 +139,7 @@ class MainWindow(QWidget):
 
         strMgr = cuemol.getService("StreamManager")
         reader = strMgr.createHandler("pdb", 0);
-#        reader.setPath("D:/works_drop/Dropbox/works/test_data/1AB0.pdb");
-        reader.setPath("/Users/user/Dropbox/works/test_data/1AB0.pdb");
+        reader.setPath(fname);
         
         newobj = reader.createDefaultObj();
         reader.attach(newobj);
@@ -134,6 +166,6 @@ class MainWindow(QWidget):
 app = QApplication(sys.argv)
 main_window = MainWindow()
 
-main_window.show()
+#main_window.show()
 sys.exit(app.exec_())
 

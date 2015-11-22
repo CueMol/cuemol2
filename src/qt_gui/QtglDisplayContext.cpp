@@ -25,7 +25,7 @@ QtglDisplayContext::~QtglDisplayContext()
 bool QtglDisplayContext::setCurrent()
 {
   QGLContext *pqctxt = static_cast<QGLContext *>(m_pCtxt);
-  pqctxt->makeCurrent();
+   pqctxt->makeCurrent();
   return true;
 }
 
