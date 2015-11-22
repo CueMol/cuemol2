@@ -10,6 +10,7 @@ from PyQt5.QtOpenGL import QGLFormat
 from PyQt5.QtWidgets import QAction
 from PyQt5.QtWidgets import QFileDialog
 from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import QSettings
 
 import cuemol
 print cuemol
@@ -56,10 +57,62 @@ class MainWindow(QMainWindow):
 
 
     def onOpenFile(self):
-        fname = QFileDialog.getOpenFileName(self, 'Open file')
+        qset = QSettings("BKR-LAB", "CueMol")
+        
+        qfdlg = QFileDialog(self)
+        qset.beginGroup( "fileopendlg" );
+        qfdlg.restoreState(qset.value( "savestate", qfdlg.saveState() ));
+        qset.endGroup()
+
+        qfdlg.setNameFilter(self.tr("CueMol Scene (*.qsc)"));
+
+        res = qfdlg.exec_()
+
+        qset.beginGroup( "fileopendlg" );
+        qset.setValue( "savestate", qfdlg.saveState() );
+        qset.endGroup()
+
+        if not res:
+            return
+        fname = qfdlg.selectedFiles()
+        
+        #fname = QFileDialog.getOpenFileName(self, 'Open file')
         print("get OFN: "+str(fname[0]))
+
         #self.loadPDBFile(fname[0])
         self.loadQSCFile(fname[0])
+
+    def onExitApp(self):
+        self.saveSettings()
+        QApplication.instance().quit()
+
+    def saveSettings(self):
+        qset = QSettings("BKR-LAB", "CueMol")
+        qset.beginGroup( "mainwindow" )
+
+        qset.setValue( "geometry", self.saveGeometry() )
+        qset.setValue( "savestate", self.saveState() )
+        qset.setValue( "maximized", self.isMaximized() )
+        if not self.isMaximized():
+            qset.setValue( "pos", self.pos() )
+            qset.setValue( "size", self.size() )
+
+
+        qset.endGroup()
+
+    def loadSettings(self):
+        qset = QSettings("BKR-LAB", "CueMol")
+
+        qset.beginGroup( "mainwindow" )
+
+        self.restoreGeometry(qset.value( "geometry", self.saveGeometry() ));
+        self.restoreState(qset.value( "savestate", self.saveState() ));
+        self.move(qset.value( "pos", self.pos() ));
+        self.resize(qset.value( "size", self.size() ));
+        if qset.value( "maximized", self.isMaximized() ):
+            self.showMaximized();
+
+        qset.endGroup();
 
     def initUI(self):
 
@@ -72,7 +125,7 @@ class MainWindow(QMainWindow):
         exitAction = QAction(QIcon('exit.png'), '&Exit', self)
         exitAction.setShortcut('Ctrl+Q')
         exitAction.setStatusTip('Exit application')
-        exitAction.triggered.connect(QApplication.instance().quit)
+        exitAction.triggered.connect(self.onExitApp)
 
         self.statusBar()
         
@@ -82,6 +135,7 @@ class MainWindow(QMainWindow):
         fileMenu.addAction(exitAction)
         
         self.setGeometry(300, 300, 300, 200)
+        self.loadSettings()
         self.setWindowTitle('CueMol')
         self.show()
         
