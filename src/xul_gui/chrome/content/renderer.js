@@ -163,8 +163,12 @@ Qm2Main.prototype.doSetupCompRend = function (sc, result)
   if (result.center) {
     let view = this.mMainWnd.currentViewW;
     let obj = sc.getObject(result.obj_id);
-    let pos = obj.getCenterPos(false);
-    view.setViewCenter(pos);
+    //let pos = obj.getCenterPos(false);
+    //view.setViewCenter(pos);
+    if (orig_selstr)
+      obj.fitView2(result.sel, view);
+    else
+      obj.fitView(false, view);
   }  
 
 };
