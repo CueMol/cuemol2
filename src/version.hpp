@@ -2,12 +2,12 @@
 // Version info
 //
 
-#define FILEVER       2,2,2,370
-#define PRODUCTVER    2,2,2,370
-#define STRFILEVER    "2.2.2.370"
-#define STRPRODUCTVER "2.2.2.370"
-#define BUILD_ID 20151009173017
-#define STRBUILD_ID "20151009173017"
+#define FILEVER       2,2,2,371
+#define PRODUCTVER    2,2,2,371
+#define STRFILEVER    "2.2.2.371"
+#define STRPRODUCTVER "2.2.2.371"
+#define BUILD_ID 20151125142052
+#define STRBUILD_ID "20151125142052"
 
 #define QUE_VERSION_STRING "Version " STRPRODUCTVER " build " STRBUILD_ID
 

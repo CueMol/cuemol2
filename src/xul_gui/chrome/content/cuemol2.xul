@@ -35,7 +35,7 @@
   height = "768"
   persist = "screenX screenY width height"
   fullscreenbutton = "true"
-  onclose = "if (gQm2Main.onCloseEvent(event)) return goQuitApplication();">
+  onclose = "return gQm2Main.onCloseEvent(event);">
 
   <script src="chrome://cuemol2/content/cuemol2-utils.js"/>
   <script src="chrome://cuemol2/content/cuemol2-panels.js"/>

@@ -187,6 +187,12 @@ klass.setupRendTypeBox = function ()
   }
 
   this.mRendTypeSel.removeAllItems();
+
+  if (objs[0].obj_type=="MolCoord" &&
+      (this.mData.bRendGrp || this.mData.bEditObjName)) {
+    this.mRendTypeSel.appendItem("Composite", "composite");
+  }
+
   for (var i=0; i<typl.length; ++i) {
     //window.alert("addtype: "+typl[i]);
     if (typl[i].charAt(0)=="*")

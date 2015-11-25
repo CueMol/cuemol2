@@ -79,7 +79,7 @@ if (!("seqpanel" in cuemolui)) {
 
     panel.onUnLoad = function ()
     {
-      this.detachScene(that.mTgtSceneID);
+      this.detachScene(this.mTgtSceneID);
     };
 
     panel.attachScene = function (scid)
