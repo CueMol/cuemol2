@@ -19,7 +19,7 @@ namespace pybr {
   {
   public:
     /// initialize wrapper
-    static bool setup();
+    static PyObject *init();
 
     /// get cuemol service object
     static PyObject *getService(PyObject *self, PyObject *args);

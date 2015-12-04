@@ -1,5 +1,5 @@
 //
-// Object wrapper for PyObject
+// python module initialization
 //
 
 #include <Python.h>
@@ -13,16 +13,25 @@
 
 #include "wrapper.hpp"
 
-
 using namespace pybr;
 
-/// DLL entrance routine
+/// DLL entrance routine for pymodule
+
+#if PY_MAJOR_VERSION >= 3
+PyObject *
+PyInit_initcuemol()
+#else
 PyMODINIT_FUNC
 initcuemol()
+#endif
 {
   qlib::init();
-  MB_DPRINTLN("CueMol2 XPCOM : INITIALIZED");
-  Wrapper::setup();
+  MB_DPRINTLN("CueMol2 pymodule : INITIALIZED");
+  PyObject *module = Wrapper::init();
+
+#if PY_MAJOR_VERSION >= 3
+  return module;
+#endif
 }
 
 ////////////////////////////////////////////////

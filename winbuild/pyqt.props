@@ -3,9 +3,9 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros">
 
-    <PythonDir>$(PROJ_DIR)\tmp\Python-2.7.10</PythonDir>
+    <PythonDir>$(PROJ_DIR)\Trtiyam\Python-3.5.0</PythonDir>
 
-    <QtDir>$(PROJ_DIR)\tmp\Qt5.5.0\5.5\msvc2013</QtDir>
+    <QtDir>$(PROJ_DIR)\Trtiyam\Qt5.5\5.5\msvc2013</QtDir>
     <MocExt>hpp</MocExt>
     <Moc>$(QtDir)\bin\moc.exe</Moc>
     <Sip>$(PythonDir)\sip.exe</Sip>

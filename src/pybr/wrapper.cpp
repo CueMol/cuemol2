@@ -359,19 +359,61 @@ static PyMethodDef cuemol_methods[] = {
 //////////////////////////////////////////////////////////////////////
 // initialization
 
+struct module_state {
+  PyObject *error;
+};
+
+#if PY_MAJOR_VERSION >= 3
+#define GETSTATE(m) ((struct module_state*)PyModule_GetState(m))
+#endif
+
+#if PY_MAJOR_VERSION >= 3
+
+static int cuemol_traverse(PyObject *m, visitproc visit, void *arg) {
+    Py_VISIT(GETSTATE(m)->error);
+    return 0;
+}
+
+static int cuemol_clear(PyObject *m) {
+    Py_CLEAR(GETSTATE(m)->error);
+    return 0;
+}
+
+
+static struct PyModuleDef moduledef = {
+        PyModuleDef_HEAD_INIT,
+        "cuemol",
+        NULL,
+        sizeof(struct module_state),
+        cuemol_methods,
+        NULL,
+        cuemol_traverse,
+        cuemol_clear,
+        NULL
+};
+#endif
+
 //static
-bool Wrapper::setup()
+PyObject *Wrapper::init()
 {
   PyObject* m;
 
   gWrapperType.tp_new = PyType_GenericNew;
   if (PyType_Ready(&gWrapperType) < 0)
-    return false;
+    return NULL;
 
+
+#if PY_MAJOR_VERSION >= 3
+  m = PyModule_Create(&moduledef);
+#else
   m = Py_InitModule3("cuemol", cuemol_methods, "CueMol module.");
+#endif
+
 
   Py_INCREF(&gWrapperType);
   PyModule_AddObject(m, "Wrapper", (PyObject *)&gWrapperType);
 
-  return setupMethObj();
+  setupMethObj();
+
+  return m;
 }
