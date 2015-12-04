@@ -88,7 +88,11 @@ PyObject *Wrapper::lvarToPyObj(qlib::LVariant &variant)
 
   case qlib::LVariant::LT_INTEGER:
     // MB_DPRINTLN("LVar: integer(%d)", variant.getIntValue());
+#if PY_MAJOR_VERSION >= 3
+    return PyLong_FromLong(variant.getIntValue());
+#else
     return PyInt_FromLong(variant.getIntValue());
+#endif
 
   case qlib::LVariant::LT_REAL: 
     // MB_DPRINTLN("LVar: real(%f)", variant.getRealValue());
@@ -96,7 +100,11 @@ PyObject *Wrapper::lvarToPyObj(qlib::LVariant &variant)
 
   case qlib::LVariant::LT_STRING: {
     //MB_DPRINTLN("LVar: string(%s)", str.c_str());
+#if PY_MAJOR_VERSION >= 3
+    return PyBytes_FromString(variant.getStringValue().c_str());
+#else
     return PyString_FromString(variant.getStringValue().c_str());
+#endif
   }
 
   case qlib::LVariant::LT_OBJECT: {
@@ -128,13 +136,22 @@ void Wrapper::pyObjToLVar(PyObject *pPyObj, qlib::LVariant &rvar)
 {
   // boolean
   if (PyBool_Check(pPyObj)) {
+#if PY_MAJOR_VERSION >= 3
+    rvar.setBoolValue((bool)PyLong_AsLong(pPyObj));
+#else
     rvar.setBoolValue((bool)PyInt_AsLong(pPyObj));
+#endif
     return;
   }
 
   // plain integer
+#if PY_MAJOR_VERSION >= 3
+  if (PyLong_Check(pPyObj)) {
+    long tmp = PyLong_AsLong(pPyObj);
+#else
   if (PyInt_Check(pPyObj)) {
     long tmp = PyInt_AsLong(pPyObj);
+#endif
     rvar.setIntValue(tmp);
     return;
   }
@@ -155,8 +172,13 @@ void Wrapper::pyObjToLVar(PyObject *pPyObj, qlib::LVariant &rvar)
   }
 
   // string
+#if PY_MAJOR_VERSION >= 3
+  if (PyBytes_Check(pPyObj)) {
+    const char *pstr = PyBytes_AsString(pPyObj);
+#else
   if (PyString_Check(pPyObj)) {
     const char *pstr = PyString_AsString(pPyObj);
+#endif
     rvar.setStringValue(pstr);
     return;
   }
@@ -164,7 +186,11 @@ void Wrapper::pyObjToLVar(PyObject *pPyObj, qlib::LVariant &rvar)
   if (PyUnicode_Check(pPyObj)) {
     // TO DO: debug
     PyObject *pUTF8Obj = PyUnicode_AsUTF8String(pPyObj);
+#if PY_MAJOR_VERSION >= 3
+    const char *pstr = PyBytes_AsString(pUTF8Obj);
+#else
     const char *pstr = PyString_AsString(pUTF8Obj);
+#endif
     rvar.setStringValue(pstr);
     Py_DECREF(pUTF8Obj);
     return;

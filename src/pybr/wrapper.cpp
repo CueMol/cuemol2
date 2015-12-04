@@ -35,8 +35,9 @@ static PyObject *wr_str(QpyWrapObj *pSelf);
 
 /// wrapper class type definition
 static PyTypeObject gWrapperType = {
-  PyObject_HEAD_INIT(NULL)
-  0,                         /*ob_size*/
+  PyVarObject_HEAD_INIT(NULL, 0)
+//  PyObject_HEAD_INIT(NULL)
+//  0,                         /*ob_size*/
   "cuemol.Wrapper",             /*tp_name*/
   sizeof(QpyWrapObj), /*tp_basicsize*/
   0,                         /*tp_itemsize*/
@@ -57,17 +58,17 @@ static PyTypeObject gWrapperType = {
   0,                         /*tp_as_buffer*/
   Py_TPFLAGS_DEFAULT,        /*tp_flags*/
   "CueMol wrapper objects",  /* tp_doc */
-  0,                         /* tp_traverse */
-  0,                         /* tp_clear */
-  0,                         /* tp_richcompare */
-  0,                         /* tp_weaklistoffset */
-  0,                         /* tp_iter */
-  0,                         /* tp_iternext */
-  0,                         /* tp_methods */
-  0,                         /* tp_members */
-  0,                         /* tp_getset */
-  0,                         /* tp_base */
-  0,                         /* tp_dict */
+//  0,                         /* tp_traverse */
+//  0,                         /* tp_clear */
+//  0,                         /* tp_richcompare */
+//  0,                         /* tp_weaklistoffset */
+//  0,                         /* tp_iter */
+//  0,                         /* tp_iternext */
+//  0,                         /* tp_methods */
+//  0,                         /* tp_members */
+//  0,                         /* tp_getset */
+//  0,                         /* tp_base */
+//  0,                         /* tp_dict */
 };
 
 /// get the wrapped object ptr
@@ -223,7 +224,12 @@ static PyObject *wr_str(QpyWrapObj *pSelf)
   }
 
   LString str = pObj->toString();
+
+#if PY_MAJOR_VERSION >= 3
+  return PyBytes_FromString(str);
+#else
   return PyString_FromString(str);
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////

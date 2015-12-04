@@ -17,11 +17,10 @@ using namespace pybr;
 
 /// DLL entrance routine for pymodule
 
-#if PY_MAJOR_VERSION >= 3
-PyObject *
-PyInit_initcuemol()
-#else
 PyMODINIT_FUNC
+#if PY_MAJOR_VERSION >= 3
+PyInit_cuemol()
+#else
 initcuemol()
 #endif
 {
