@@ -1,7 +1,7 @@
 import sys
 
 import PyQt5
-print PyQt5
+print(PyQt5)
 
 from PyQt5.QtWidgets import (QApplication, QWidget, QMainWindow,
                              QGridLayout, QVBoxLayout, QHBoxLayout,
@@ -13,7 +13,7 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import QSettings
 
 import cuemol
-print cuemol
+print(cuemol)
 
 confpath = ""
 
@@ -23,7 +23,7 @@ if len(sys.argv)>=2:
 cuemol.initCueMol(confpath)
 
 from qmqtgui import QtMolWidget
-print QtMolWidget
+print(QtMolWidget)
 
 
 class MainWindow(QMainWindow):
@@ -151,8 +151,8 @@ class MainWindow(QMainWindow):
         vw.name = "1"
         self._vwid = vw.uid;
 
-        print "setupScene new scene ID="+str(self._scid)
-        print "setupScene new view ID="+str(self._vwid)
+        print("setupScene new scene ID="+str(self._scid))
+        print("setupScene new view ID="+str(self._vwid))
 
     def makeSel(self, selstr, uid):
         sel = cuemol.createObj("SelCommand");
@@ -174,14 +174,14 @@ class MainWindow(QMainWindow):
         scene.clearAllData()
         
         strMgr = cuemol.getService("StreamManager")
-	reader = strMgr.createHandler("qsc_xml", 3);
-        reader.setPath(fname);
+        reader = strMgr.createHandler("qsc_xml", 3)
+        reader.setPath(fname)
         
-        reader.attach(scene);
-        reader.read();
-        reader.detach();
+        reader.attach(scene)
+        reader.read()
+        reader.detach()
 
-        scene.loadViewFromCam(self._vwid, "__current");
+        scene.loadViewFromCam(self._vwid, "__current")
 
         self.myw.update()
 
