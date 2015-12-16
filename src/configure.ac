@@ -412,7 +412,7 @@ AC_ARG_ENABLE(python,
 if test $enableval = yes ; then
    dnl check python inc/lib
    AM_PATH_PYTHON(2.7.0)
-   PY_PREFIX=`$PYTHON -c 'import sys ; print sys.prefix'`
+   PY_PREFIX=`$PYTHON -c 'import sys ; print(sys.prefix)'`
    PYTHON_CPPFLAGS="-I$PY_PREFIX/include/python$PYTHON_VERSION"
    PYTHON_LDADD="-lpython$PYTHON_VERSION"
    PYTHON_LDFLAGS="-L$PY_PREFIX/lib"
@@ -439,7 +439,7 @@ if test $enableval = yes ; then
    fi
    dnl check python inc/lib
    AM_PATH_PYTHON(2.7.0)
-   PY_PREFIX=`$PYTHON -c 'import sys ; print sys.prefix'`
+   PY_PREFIX=`$PYTHON -c 'import sys ; print(sys.prefix)'`
    PYTHON_CPPFLAGS="-I$PY_PREFIX/include/python$PYTHON_VERSION"
    PYTHON_LDFLAGS="-L$PY_PREFIX/lib"
    PYTHON_LDADD="-lpython$PYTHON_VERSION"
@@ -687,7 +687,7 @@ AC_SUBST(QT_LDADD)
 AC_SUBST(QT_LDFLAGS)
 AC_SUBST(QTMOC)
 
-SIPFLAGS=`$PYTHON -c 'import PyQt5.QtCore; print PyQt5.QtCore.PYQT_CONFIGURATION[["sip_flags"]]'`
+SIPFLAGS=`$PYTHON -c 'import PyQt5.QtCore; print(PyQt5.QtCore.PYQT_CONFIGURATION[["sip_flags"]])'`
 
 AC_ARG_WITH(pyqtdir,
 [  --with-pyqtdir=DIR        Look for PyQT in DIR ],

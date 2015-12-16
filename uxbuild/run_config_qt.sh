@@ -25,13 +25,7 @@ fftw_dir=$HOME/proj64/fftw
 cgal_dir=$HOME/proj64/CGAL-4.6.1/
 glew_dir=$HOME/proj64/glew
 
-qt_dir=/usr/local/Cellar/qt5/5.4.2
-
 #######################
-
-#qt_bindir=$qt_dir/bin
-#export PATH=$PATH:$qt_bindir
-#which qmake
 
 config_scr=../src/configure
 
@@ -44,7 +38,9 @@ if test ! -f $config_scr; then
     )	
 fi
 
-env CC="clang" \
+env \
+PYTHON="python3" \
+CC="clang" \
 CFLAGS="-O" \
 CXX="clang++" \
 CXXFLAGS=" -O -Wno-parentheses-equality -Wno-c++11-narrowing -Wno-extra-tokens -Wno-invalid-pp-token" \
@@ -53,8 +49,8 @@ $config_scr \
 --enable-shared \
 --prefix=$install_dir \
 --with-ui=qt \
---with-qtdir=/usr/local/Cellar/qt5/5.4.2 \
---with-pyqtdir=/usr/local/Cellar/pyqt5/5.4.2 \
+--with-qtdir=/usr/local/Cellar/qt5/5.5.1_2 \
+--with-pyqtdir=/usr/local/Cellar/pyqt5/5.5.1 \
 $usepybr \
 $usexrbr \
 --with-boost=$boost_dir \
