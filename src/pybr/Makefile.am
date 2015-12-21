@@ -51,7 +51,7 @@ cuemol_la_CXXFLAGS = \
   $(NULL)
 
 cuemol_la_LDFLAGS = \
- -module -avoid-version -export-symbols-regex initcuemol \
+ -module -avoid-version \
   @PYTHON_LDFLAGS@ \
   -L$(top_builddir)/qlib \
   @SCR_LDFLAGS@ \

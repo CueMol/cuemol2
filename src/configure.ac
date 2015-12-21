@@ -439,11 +439,18 @@ if test $enableval = yes ; then
    fi
    dnl check python inc/lib
    AM_PATH_PYTHON(2.7.0)
-   PY_PREFIX=`$PYTHON -c 'import sys ; print(sys.prefix)'`
-   PYTHON_CPPFLAGS="-I$PY_PREFIX/include/python$PYTHON_VERSION"
-   PYTHON_LDFLAGS="-L$PY_PREFIX/lib"
-   PYTHON_LDADD="-lpython$PYTHON_VERSION"
+   PYTHON_CONFIG=${PYTHON}-config
+   PY_PREFIX=`$PYTHON_CONFIG --prefix`
+   PYTHON_CPPFLAGS=`$PYTHON_CONFIG --cflags`
+   PYTHON_LDFLAGS=`$PYTHON_CONFIG --ldflags`
+   PYTHON_LDADD=
+#   PY_PREFIX=`$PYTHON -c 'import sys ; print(sys.prefix)'`
+#   PYTHON_CPPFLAGS="-I$PY_PREFIX/include/python$PYTHON_VERSION"
+#   PYTHON_LDFLAGS="-L$PY_PREFIX/lib"
+#   PYTHON_LDADD="-lpython$PYTHON_VERSION"
    echo "Python prefix: " $PY_PREFIX ", version: " $PYTHON_VERSION
+   echo "Python cflags: " $PYTHON_CPPFLAGS
+   echo "Python ldlags: " $PYTHON_LDFLAGS
    AC_SUBST([PYTHON_CPPFLAGS])
    AC_SUBST([PYTHON_LDADD])
    AC_SUBST([PYTHON_LDFLAGS])
@@ -609,7 +616,7 @@ esac
     GUI_ARCH=QT
     # BUILD_OSDEP="sysdep utils"
     BUILD_OSDEP="sysdep utils qt_gui"
-    BUILD_UI="qt_gui"
+    BUILD_UI="$BUILD_UI qt_gui"
     ;;
 
   *)

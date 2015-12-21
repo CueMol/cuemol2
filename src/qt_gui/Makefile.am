@@ -47,7 +47,7 @@ qmqtgui_la_CXXFLAGS = \
   $(NULL)
 
 qmqtgui_la_LDFLAGS = \
- -module -avoid-version -export-symbols-regex initqmqtgui \
+ -module -avoid-version \
   @PYTHON_LDFLAGS@ \
   @QT_LDFLAGS@ \
   -L../qlib \
