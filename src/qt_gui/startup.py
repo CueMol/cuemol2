@@ -48,13 +48,15 @@ class MainWindow(QMainWindow):
         # fmt.setDoubleBuffer(True)
 
         #self.myw = QtMolWidget(fmt, self)
-        cw = QWidget()
 
+        print("create QtMolWidget(None)")
         self.myw = QtMolWidget(None)
+        print("bind(self._scid, self._vwid)")
         self.myw.bind(self._scid, self._vwid)
         # buttonLayout.addWidget(self.myw)
-        self.setCentralWidget(self.myw)
 
+        print("setCentralWidget(self.myw)")
+        self.setCentralWidget(self.myw)
 
     def onOpenFile(self):
         qset = QSettings("BKR-LAB", "CueMol")
