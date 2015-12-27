@@ -1,0 +1,202 @@
+<?xml version="1.0"?>
+<toppar>
+  <topology>
+
+    <resid id="Ar" pivot="P" single="A">
+      <synonyms>
+        <synonym value="ADE"/>
+        <synonym value="DA"/>
+        <synonym value="AR"/>
+      </synonyms>
+      <rings>
+        <ring value="N1 C2 N3 C4 C5 C6"/>
+        <ring value="C4 C5 N7 C8 N9"/>
+        <ring value="C1' C2' C3' C4' O4'"/>
+      </rings>
+      <sidech value="C1' N9 C4 N3 C2 N1 C6 N6 H61 H62 C5 N7 C8"/>
+      <mainch value="P O1P O2P O5' C5' C4' O4' C1' C2' O2' H2' C3' O3'"/>
+      <prop name="basetype" value="pur"/>
+    </resid>
+
+    <resid id="Cr" pivot="P" single="C">
+      <synonyms>
+        <synonym value="CYT"/>
+        <synonym value="DC"/>
+        <synonym value="CR"/>
+      </synonyms>
+      <rings>
+        <ring value="N1 C2 N3 C4 C5 C6"/>
+        <ring value="C1' C2' C3' C4' O4'"/>
+      </rings>
+      <sidech value="C1' N1 C6 C2 O2 N3 C4 N4 H41 H42 C5"/>
+      <mainch value="P O1P O2P O5' C5' C4' O4' C1' C2' O2' C3' O3'"/>
+      <prop name="basetype" value="pyr"/>
+    </resid>
+
+    <resid id="Gr" pivot="P" single="G">
+      <synonyms>
+        <synonym value="GUA"/>
+        <synonym value="DG"/>
+        <synonym value="GR"/>
+      </synonyms>
+      <rings>
+        <ring value="N1 C2 N3 C4 C5 C6"/>
+        <ring value="C4 C5 N7 C8 N9"/>
+        <ring value="C1' C2' C3' C4' O4'"/>
+      </rings>
+      <sidech value="C1' N9  C4  N3  C2  N2  H21 H22 N1  H1  C6  O6  C5  N7  C8"/>
+      <mainch value="P O1P O2P O5' C5' C4' O4' C1' C2' O2' H2' C3' O3'"/>
+      <prop name="basetype" value="pur"/>
+    </resid>
+
+    <resid id="Td" pivot="P" single="T">
+      <synonyms>
+        <synonym value="THY"/>
+        <synonym value="DT"/>
+      </synonyms>
+      <rings>
+        <ring value="N1 C2 N3 C4 C5 C6"/>
+        <ring value="C1' C2' C3' C4' O4'"/>
+      </rings>
+      <sidech value="C1' N1 C6 C2 O2 N3 H3 C4 O4 C5 C5A"/>
+      <mainch value="P O1P O2P O5' C5' C4' O4' C1' C2' O2' C3' O3'"/>
+      <prop name="basetype" value="pyr"/>
+    </resid>
+
+    <resid id="Ur" pivot="P" single="U">
+      <synonyms>
+        <synonym value="URI"/>
+        <synonym value="URA"/>
+        <synonym value="UR"/>
+      </synonyms>
+      <rings>
+        <ring value="N1 C2 N3 C4 C5 C6"/>
+        <ring value="C1' C2' C3' C4' O4'"/>
+      </rings>
+      <sidech value="C1' N1 C6 C2 O2 N3 H3 C4 O4 C5"/>
+      <mainch value="P O1P O2P O5' C5' C4' O4' C1' C2' O2' C3' O3'"/>
+      <prop name="basetype" value="pyr"/>
+    </resid>
+
+    <!-- Modified nucleosides -->
+
+    <resid id="H2U" pivot="P" group="nucl" single="U">
+      <rings>
+        <ring value="N1 C2 N3 C4 C5 C6"/>
+        <ring value="C1' C2' C3' C4' O4'"/>
+      </rings>
+      <sidech value="C1' N1 C6 C2 O2 N3 C4 O4 C5"/>
+      <mainch value="P O1P O2P O5' C5' C4' O4' C1' C2' O2' C3' O3'"/>
+      <prop name="basetype" value="pyr"/>
+    </resid>
+
+    <resid id="1MA" pivot="P" group="nucl" single="A">
+      <rings>
+        <ring value="N1 C2 N3 C4 C5 C6"/>
+        <ring value="C4 C5 N7 C8 N9"/>
+        <ring value="C1' C2' C3' C4' O4'"/>
+      </rings>
+      <sidech value="C1' N9 C4 N3 C2 N1 C6 N6 C5 N7 C8 CM1"/>
+      <mainch value="P O1P O2P O5' C5' C4' O4' C1' C2' O2' C3' O3'"/>
+      <prop name="basetype" value="pur"/>
+    </resid>
+
+    <resid id="2MG" pivot="P" group="nucl" single="G">
+      <rings>
+        <ring value="N1 C2 N3 C4 C5 C6"/>
+        <ring value="C4 C5 N7 C8 N9"/>
+        <ring value="C1' C2' C3' C4' O4'"/>
+      </rings>
+      <sidech value="C1' N9  C4  N3  C2  N2  CM2 N1 C6  O6  C5  N7  C8"/>
+      <mainch value="P O1P O2P O5' C5' C4' O4' C1' C2' O2' C3' O3'"/>
+      <prop name="basetype" value="pur"/>
+    </resid>
+
+    <resid id="5MC" pivot="P" group="nucl" single="C">
+      <rings>
+        <ring value="N1 C2 N3 C4 C5 C6"/>
+        <ring value="C1' C2' C3' C4' O4'"/>
+      </rings>
+      <sidech value="C1' N1 C6 C2 O2 N3 C4 N4 C5 CM5"/>
+      <mainch value="P O1P O2P O5' C5' C4' O4' C1' C2' O2' C3' O3'"/>
+      <prop name="basetype" value="pyr"/>
+    </resid>
+
+    <resid id="5MU" pivot="P" group="nucl" single="U">
+      <rings>
+        <ring value="N1 C2 N3 C4 C5 C6"/>
+        <ring value="C1' C2' C3' C4' O4'"/>
+      </rings>
+      <sidech value="C1' N1 C6 C2 O2 N3 H3 C4 O4 C5 C5M"/>
+      <mainch value="P O1P O2P O5' C5' C4' O4' C1' C2' O2' C3' O3'"/>
+      <prop name="basetype" value="pyr"/>
+    </resid>
+
+    <resid id="7MG" pivot="P" group="nucl" single="G">
+      <rings>
+        <ring value="N1 C2 N3 C4 C5 C6"/>
+        <ring value="C4 C5 N7 C8 N9"/>
+        <ring value="C1' C2' C3' C4' O4'"/>
+      </rings>
+      <sidech value="C1' N9  C4  N3  C2  N2 N1  C6  O6  C5  N7  CM7 C8"/>
+      <mainch value="P O1P O2P O5' C5' C4' O4' C1' C2' O2' C3' O3'"/>
+      <prop name="basetype" value="pur"/>
+    </resid>
+
+    <resid id="M2G" pivot="P" group="nucl" single="G">
+      <rings>
+        <ring value="N1 C2 N3 C4 C5 C6"/>
+        <ring value="C4 C5 N7 C8 N9"/>
+        <ring value="C1' C2' C3' C4' O4'"/>
+      </rings>
+      <sidech value="C1' N9  C4  N3  C2  N2 CM1 CM2 N1 C6  O6  C5  N7  C8"/>
+      <mainch value="P O1P O2P O5' C5' C4' O4' C1' C2' O2' C3' O3'"/>
+      <prop name="basetype" value="pur"/>
+    </resid>
+
+    <resid id="OMC" pivot="P" group="nucl" single="C">
+      <rings>
+        <ring value="N1 C2 N3 C4 C5 C6"/>
+        <ring value="C1' C2' C3' C4' O4'"/>
+      </rings>
+      <sidech value="C1' N1 C6 C2 O2 N3 C4 N4 C5"/>
+      <mainch value="P O1P O2P O5' C5' C4' O4' C1' C2' O2' CM2 C3' O3'"/>
+      <prop name="basetype" value="pyr"/>
+    </resid>
+
+    <resid id="OMG" pivot="P" group="nucl" single="G">
+      <rings>
+        <ring value="N1 C2 N3 C4 C5 C6"/>
+        <ring value="C4 C5 N7 C8 N9"/>
+        <ring value="C1' C2' C3' C4' O4'"/>
+      </rings>
+      <sidech value="C1' N9  C4  N3  C2  N2 N1 C6  O6  C5  N7  C8"/>
+      <mainch value="P O1P O2P O5' C5' C4' O4' C1' C2' O2' CM2 C3' O3'"/>
+      <prop name="basetype" value="pur"/>
+    </resid>
+
+    <resid id="PSU" pivot="P" group="nucl" single="Y">
+      <rings>
+        <ring value="N1 C2 N3 C4 C5 C6"/>
+        <ring value="C1' C2' C3' C4' O4'"/>
+      </rings>
+      <sidech value="C1' N1 C6 C2 O2 N3 C4 O4 C5"/>
+      <mainch value="P O1P O2P O5' C5' C4' O4' C1' C2' O2' C3' O3'"/>
+      <prop name="basetype" value="pyr"/>
+    </resid>
+
+    <resid id="YYG" pivot="P" group="nucl" single="G">
+      <rings>
+        <ring value="N1 C2 N3 C4 C5 C6"/>
+        <ring value="C4 C5 N7 C8 N9"/>
+        <ring value="C1' C2' C3' C4' O4'"/>
+        <ring value="N1 C12 C11 N2 C2"/>
+      </rings>
+      <sidech value="C1' N9  C4  N3 C3 C2  N2 N1 C6  O6  C5  N7  C8 C10 C11 C12 C13 C14 C15 C16 O17 O18 C19 N20 C21 O22 O23 C24"/>
+      <mainch value="P O1P O2P O5' C5' C4' O4' C1' C2' O2' C3' O3'"/>
+      <prop name="basetype" value="pur"/>
+    </resid>
+
+  </topology>
+</toppar>
+

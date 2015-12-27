@@ -1,0 +1,151 @@
+<?xml version="1.0"?>
+<toppar>
+  <topology>
+    <resid id="ALA" pivot="CA" single="A">
+      <sidech value="CA CB"/>
+      <mainch value="CA C N H O"/>
+    </resid>
+  
+    <resid id="ARG" pivot="CA" single="R">
+      <sidech value="CA CB CG CD NE HE CZ NH1 HH11 HH12 NH2 HH21 HH22"/>
+      <mainch value="CA C N H O"/>
+    </resid>
+  
+    <resid id="ASN" pivot="CA" single="N">
+      <synonyms>
+        <synonym value="NLN"/>
+      </synonyms>
+      <sidech value="CA CB CG OD1 ND2 HD21 HD22"/>
+      <mainch value="CA C N H O"/>
+    </resid>
+  
+    <resid id="ASP" pivot="CA" single="D">
+      <sidech value="CA CB CG OD1 OD2"/>
+      <mainch value="CA C N H O"/>
+    </resid>
+  
+    <resid id="CPR" pivot="CA" single="P">
+      <rings>
+        <ring value="CA CB CG CD N"/>
+      </rings>
+      <sidech value="CA CB CG CD N"/>
+      <mainch value="CA C N O"/>
+    </resid>
+  
+    <resid id="CYS" pivot="CA" single="C">
+      <synonyms>
+        <synonym value="CYX"/>
+      </synonyms>
+      <sidech value="CA CB SG"/>
+      <mainch value="CA C N H O"/>
+    </resid>
+  
+    <resid id="GLN" pivot="CA" single="Q">
+      <sidech value="CA CB CG CD OE1 NE2 HE21 HE22"/>
+      <mainch value="CA C N H O"/>
+    </resid>
+  
+    <resid id="GLU" pivot="CA" single="E">
+      <sidech value="CA CB CG CD OE1 OE2"/>
+      <mainch value="CA C N H O"/>
+    </resid>
+  
+    <resid id="GLY" pivot="CA" single="G">
+      <mainch value="CA C N H O"/>
+    </resid>
+  
+    <resid id="HIS" pivot="CA" single="H">
+      <synonyms>
+        <synonym value="HSE"/>
+        <synonym value="HSD"/>
+        <synonym value="HSP"/>
+        <synonym value="HIE"/>
+        <synonym value="HID"/>
+        <synonym value="HIP"/>
+      </synonyms>
+      <rings>
+        <ring value="CG ND1 CE1 NE2 CD2"/>
+      </rings>
+      <sidech value="CA CB CG CD2 ND1 HD1 CE1 NE2 HE2"/>
+      <mainch value="CA C N H O"/>
+    </resid>
+  
+    <resid id="ILE" pivot="CA" single="I">
+      <sidech value="CA CB CG2 CG1 CD1"/>
+      <mainch value="CA C N H O"/>
+    </resid>
+  
+    <resid id="LEU" pivot="CA" single="L">
+      <sidech value="CA CB CG CD1 CD2"/>
+      <mainch value="CA C N H O"/>
+    </resid>
+  
+    <resid id="LYS" pivot="CA" single="K">
+      <synonyms>
+        <synonym value="LYR"/>
+      </synonyms>
+      <sidech value="CA CB CG CD CE NZ HZ1 HZ2 HZ3"/>
+      <mainch value="CA C N H O"/>
+    </resid>
+  
+    <resid id="MET" pivot="CA" single="M">
+      <sidech value="CA CB CG SD CE"/>
+      <mainch value="CA C N H O"/>
+    </resid>
+  
+    <resid id="MSE" pivot="CA" single="M">
+      <sidech value="CA CB CG SE CE"/>
+      <mainch value="CA C N H O"/>
+    </resid>
+  
+    <resid id="PHE" pivot="CA" single="F">
+      <rings>
+        <ring value="CG CD1 CE1 CZ CE2 CD2"/>
+      </rings>
+      <sidech value="CA CB CG CD1 CD2 CE1 CE2 CZ"/>
+      <mainch value="CA C N H O"/>
+    </resid>
+  
+    <resid id="PRO" pivot="CA" single="P">
+      <rings>
+        <ring value="CA CB CG CD N"/>
+      </rings>
+      <sidech value="CA CB CG CD N"/>
+      <mainch value="CA C N O"/>
+    </resid>
+  
+    <resid id="SER" pivot="CA" single="S">
+      <sidech value="CA CB OG HG"/>
+      <mainch value="CA C N H O"/>
+    </resid>
+  
+    <resid id="THR" pivot="CA" single="T">
+      <sidech value="CA CB OG1 HG1 CG2"/>
+      <mainch value="CA C N H O"/>
+    </resid>
+  
+    <resid id="TRP" pivot="CA" single="W">
+      <rings>
+        <ring value="CG CD1 NE1 CE2 CD2"/>
+        <ring value="CD2 CE2 CZ2 CH2 CZ3 CE3"/>
+      </rings>
+      <sidech value="CA CB CG CD2 CE2 CE3 CD1 NE1 HE1 CZ2 CZ3 CH2"/>
+      <mainch value="CA C N H O"/>
+    </resid>
+  
+    <resid id="TYR" pivot="CA" single="Y">
+      <rings>
+        <ring value="CG CD1 CE1 CZ CE2 CD2"/>
+      </rings>
+      <sidech value="CA CB CG CD1 CE1 CZ CE2 CD2 OH HH"/>
+      <mainch value="CA C N H O"/>
+    </resid>
+  
+    <resid id="VAL" pivot="CA" single="V">
+      <sidech value="CA CB CG1 CG2"/>
+      <mainch value="CA C N H O"/>
+    </resid>
+  
+  </topology>
+</toppar>
+

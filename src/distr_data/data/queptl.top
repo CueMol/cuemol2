@@ -1,0 +1,2540 @@
+remarks file toppar/protein.top  
+remarks   protein topology for crystallographic structure determination 
+
+!
+! Please cite the following reference when using these parameters:
+! Engh, R.A. and  Huber, R. (1991). Accurate Bond and 
+!  Angle Parameters for X-ray Protein-Structure Refinement, 
+!  Acta Cryst. A47, 392-400.
+!
+!
+
+set echo=false end
+
+checkversion 1.0
+
+AUTOGENERATE  ANGLES=TRUE  END
+{*===========================*}
+
+{* protein default masses *}
+MASS   H      1.00800! hydrogen which can h-bond to neutral atom
+MASS   HC     1.00800!    ="=     ="=     ="=    to charged atom
+MASS   C     12.01100! carbonyl carbon
+MASS   C5W   12.01100! new
+MASS   CW    12.01100! new
+MASS   CF    12.01100! new
+MASS   CY    12.01100! new
+MASS   CY2   12.01100! new
+MASS   C5    12.01100! new
+MASS   CH1E  13.01900! extended atom carbon with one hydrogen
+MASS   CH2E  14.02700!    ="=      ="=     ="=   two hydrogens
+MASS   CH2P  14.02700! new
+MASS   CH2G  14.02700! new
+MASS   CH3E  15.03500!    ="=      ="=     ="=   three hydrogens
+MASS   CR1E  13.01900!    ="=      ="=      in an aromatic ring with one H
+MASS   CR1W  13.01900! new
+MASS   CRH   13.01900! new
+MASS   CRHH  13.01900! new
+MASS   CR1H  13.01900! new
+MASS   N     14.00670! peptide nitrogen with no hydrogens attached
+MASS   NR    14.00670! nitrogen in an aromatic ring with no hydrogens
+MASS   NP    14.00670! pyrole nitrogen
+MASS   NH1   14.00670! peptide nitrogen bound to one hydrogen
+MASS   NH2   14.00670!    ="=       ="=      ="= two hydrogens
+MASS   NH3   14.00670! nitrogen bound to three hydrogens
+MASS   NC2   14.00670! charged guandinium nitrogen bound to two hydrogens
+MASS   O     15.99940! carbonyl oxygen
+MASS   OC    15.99940! carboxy oxygen
+MASS   OH1   15.99940! hydroxy oxygen
+MASS   S     32.06000! sulphur
+MASS   SM    32.06000! new 
+MASS   SH1E  33.06800! extended atom sulfur with one hydrogen
+MASS   SE    78.96000! selenium
+
+!some empirical rules for the following topologies:
+!
+! 1. angles are taken between all permutations of atoms bonded to
+!    a particular atom. Exception: 2 angles linking the THR double ring
+! 2. each bond with non-terminal atoms creates one dihedral. Exception:
+!    ring bonds in aromatic side chains (but not PRO).
+! 3. each planar atom vertex creates one improper-planar term
+!    execption: ARG head groups.
+! 4. each 1-extended-H carbon atom creates one improper-tetrahedral term
+!    (for chirality)
+! 5. Each bond in an aromatic ring creates one improper-torsion term
+!    (exception: PRO)
+! 6. LYS head groups and methyl head groups create one dihedral for 
+!    each hydrogen
+! 7. all 1:2 and 1:3 nonbonded interactions are assumed to be excluded
+!
+
+! ---------------------------------------------------------------------
+
+RESIdue ALA
+ GROUp
+  ATOM N    TYPE=NH1   CHARge=-0.35   END
+  ATOM H    TYPE=H     CHARge= 0.25   END
+  ATOM CA   TYPE=CH1E  CHARge= 0.10   END
+  ATOM CB   TYPE=CH3E  CHARge= 0.00   END
+  ATOM C    TYPE=C     CHARge= 0.55   END  
+  ATOM O    TYPE=O     CHARge=-0.55   END  
+
+ BOND N    CA
+ BOND CA   C
+ BOND C    O
+ BOND N    H
+ BOND CA   CB
+
+ IMPRoper  CA     N    C  CB  !tetrahedral CA
+
+
+END {ALA}
+
+!------------------------------------------------------------------
+
+RESIdue ARG
+ GROUp
+  ATOM N     TYPE=NH1   CHARge=-0.35   END
+  ATOM H     TYPE=H     CHARge= 0.25   END
+  ATOM CA    TYPE=CH1E  CHARge= 0.10   END
+  ATOM CB    TYPE=CH2E  CHARge= 0.00   END
+  ATOM CG    TYPE=CH2E  CHARge= 0.00   END
+  ATOM CD    TYPE=CH2E  CHARge= 0.10   END  
+  ATOM NE    TYPE=NH1   CHARge=-0.40   END  
+  ATOM HE    TYPE=H     CHARge= 0.30   END  
+  ATOM CZ    TYPE=C     CHARge= 0.50   END  
+  ATOM NH1   TYPE=NC2   CHARge= -0.45  END  
+  ATOM HH11  TYPE=HC    CHARge=  0.35  END  
+  ATOM HH12  TYPE=HC    CHARge=  0.35  END  
+  ATOM NH2   TYPE=NC2   CHARge= -0.45  END  
+  ATOM HH21  TYPE=HC    CHARge=  0.35  END  
+  ATOM HH22  TYPE=HC    CHARge=  0.35  END  
+  ATOM C     TYPE=C     CHARge=  0.55  END  
+  ATOM O     TYPE=O     CHARge= -0.55  END  
+
+ BOND N    CA
+ BOND CA   C
+ BOND C    O
+ BOND N    H
+ BOND CA   CB
+ BOND CB   CG
+ BOND CG   CD
+ BOND CD   NE
+ BOND NE   HE
+ BOND NE   CZ
+ BOND CZ   NH1
+ BOND CZ   NH2
+ BOND NH1  HH11
+ BOND NH1  HH12
+ BOND NH2  HH21
+ BOND NH2  HH22
+
+ DIHEdral N    CA   CB   CG
+ DIHEdral CA   CB   CG   CD
+ DIHEdral CB   CG   CD   NE
+ DIHEdral CG   CD   NE   CZ
+ DIHEdral CD   NE   CZ   NH1
+ DIHEdral NE   CZ   NH1  HH11 !note: one dihedral for each hydrogen
+ DIHEdral NE   CZ   NH2  HH21 !
+ DIHEdral NE   CZ   NH1  HH12 !
+ DIHEdral NE   CZ   NH2  HH22 !
+
+ IMPRoper CA   N    C    CB !tetrahedral CA
+ IMPRoper NE   CD   CZ   HE !planar NE
+ IMPRoper CZ   NH1  NH2  NE !planar CZ
+ IMPRoper NH1  CZ   HH11 HH12
+ IMPRoper NH2  CZ   HH21 HH22
+ IMPRoper NE   CZ   NH1  HH11
+ IMPRoper NE   CZ   NH2  HH21
+
+
+END {ARG}
+
+!------------------------------------------------------------------
+
+RESIdue ASN
+ GROUp
+  ATOM N    TYPE=NH1   CHARge=-0.35   END
+  ATOM H    TYPE=H     CHARge= 0.25   END
+  ATOM CA   TYPE=CH1E  CHARge= 0.10   END
+  ATOM CB   TYPE=CH2E  CHARge= 0.00   END
+  ATOM CG   TYPE=C     CHARge= 0.55   END  
+  ATOM OD1  TYPE=O     CHARge=-0.55   END  
+  ATOM ND2  TYPE=NH2   CHARge=-0.60   END  
+  ATOM HD21 TYPE=H     CHARge= 0.30   END  
+  ATOM HD22 TYPE=H     CHARge= 0.30   END  
+  ATOM C    TYPE=C     CHARge= 0.55   END  
+  ATOM O    TYPE=O     CHARge=-0.55   END  
+
+ BOND N    CA
+ BOND CA   C
+ BOND C    O
+ BOND N    H
+ BOND CA   CB
+ BOND CB   CG
+ BOND CG   OD1
+ BOND CG   ND2
+ BOND ND2  HD21
+ BOND ND2  HD22
+
+ DIHEdral N    CA   CB   CG
+ DIHEdral CA   CB   CG   OD1
+ DIHEdral CB   CG   ND2  HD21
+
+ IMPRoper CA   N    C    CB  !tetrahedral CA
+ IMPRoper CG   OD1  ND2  CB  !planar CG
+ IMPRoper ND2  HD21 HD22 CG  !planar ND2
+
+
+END {ASN}
+
+!------------------------------------------------------------------
+
+RESIdue ASP
+ GROUp
+  ATOM N    TYPE=NH1   CHARge=-0.35   END
+  ATOM H    TYPE=H     CHARge= 0.25   END
+  ATOM CA   TYPE=CH1E  CHARge= 0.10   END
+  ATOM CB   TYPE=CH2E  CHARge=-0.16   END
+  ATOM CG   TYPE=C     CHARge= 0.36   END
+  ATOM OD1  TYPE=OC    CHARge=-0.60   END
+  ATOM OD2  TYPE=OC    CHARge=-0.60   END
+  ATOM C    TYPE=C     CHARge= 0.55   END  
+  ATOM O    TYPE=O     CHARge=-0.55   END  
+
+ BOND N    CA
+ BOND CA   C
+ BOND C    O
+ BOND N    H
+ BOND CA   CB
+ BOND CB   CG
+ BOND CG   OD1
+ BOND CG   OD2
+
+ DIHEdral N    CA   CB   CG
+ DIHEdral CA   CB   CG   OD1
+
+ IMPRoper CA   N    C    CB  !tetrahedral CA
+ IMPRoper CG   OD1  OD2  CB  !planar CG
+
+
+END {ASP}
+
+!------------------------------------------------------------------
+
+RESIdue CYS
+ GROUp
+  ATOM N    TYPE=NH1   CHARge=-0.35   END
+  ATOM H    TYPE=H     CHARge= 0.25   END
+  ATOM CA   TYPE=CH1E  CHARge= 0.10   END
+  ATOM CB   TYPE=CH2E  CHARge= 0.19   END
+  ATOM SG   TYPE=SH1E  CHARge=-0.19   END
+  ATOM C    TYPE=C     CHARge= 0.55   END  
+  ATOM O    TYPE=O     CHARge=-0.55   END  
+
+ BOND N    CA
+ BOND CA   C
+ BOND C    O
+ BOND N    H
+ BOND CA   CB
+ BOND CB   SG
+
+ DIHEdral N    CA   CB   SG
+
+ IMPRoper CA   N    C    CB   !tetrahedral CA
+
+
+END {CYS}
+
+!------------------------------------------------------------------
+
+RESIdue GLN
+ GROUp
+  ATOM N    TYPE=NH1   CHARge=-0.35   END
+  ATOM H    TYPE=H     CHARge= 0.25   END
+  ATOM CA   TYPE=CH1E  CHARge= 0.10   END
+  ATOM CB   TYPE=CH2E  CHARge= 0.00   END
+  ATOM CG   TYPE=CH2E  CHARge= 0.00   END
+  ATOM CD   TYPE=C     CHARge= 0.55   END 
+  ATOM OE1  TYPE=O     CHARge=-0.55   END 
+  ATOM NE2  TYPE=NH2   CHARge=-0.60   END
+  ATOM HE21 TYPE=H     CHARge= 0.30   END
+  ATOM HE22 TYPE=H     CHARge= 0.30   END
+  ATOM C    TYPE=C     CHARge= 0.55   END
+  ATOM O    TYPE=O     CHARge=-0.55   END
+
+ BOND N    CA
+ BOND CA   C
+ BOND C    O
+ BOND N    H
+ BOND CA   CB
+ BOND CB   CG
+ BOND CG   CD
+ BOND CD   OE1
+ BOND CD   NE2
+ BOND NE2  HE21
+ BOND NE2  HE22
+
+ DIHEdral N    CA   CB   CG
+ DIHEdral CA   CB   CG   CD 
+ DIHEdral CB   CG   CD   OE1
+ DIHEdral CG   CD   NE2  HE21
+
+ IMPRoper CA   N    C    CB   !tetrahedral CA
+ IMPRoper CD   OE1  NE2  CG   !planar CD
+ IMPRoper NE2  HE21 HE22 CD   !planar NE2
+
+
+END {GLN}
+
+!------------------------------------------------------------------
+
+RESIdue GLU
+ GROUp
+  ATOM N    TYPE=NH1   CHARge=-0.35   END
+  ATOM H    TYPE=H     CHARge= 0.25   END
+  ATOM CA   TYPE=CH1E  CHARge= 0.10   END
+  ATOM CB   TYPE=CH2E  CHARge= 0.00   END
+  ATOM CG   TYPE=CH2E  CHARge=-0.16   END
+  ATOM CD   TYPE=C     CHARge= 0.36   END
+  ATOM OE1  TYPE=OC    CHARge=-0.60   END
+  ATOM OE2  TYPE=OC    CHARge=-0.60   END
+  ATOM C    TYPE=C     CHARge= 0.55   END   
+  ATOM O    TYPE=O     CHARge=-0.55   END   
+
+ BOND N    CA
+ BOND CA   C
+ BOND C    O
+ BOND N    H
+ BOND CA   CB
+ BOND CB   CG
+ BOND CG   CD
+ BOND CD   OE1
+ BOND CD   OE2
+
+ DIHEdral N    CA   CB   CG
+ DIHEdral CA   CB   CG   CD
+ DIHEdral CB   CG   CD   OE1  !note: only one dihedral for CG-CD
+
+ IMPRoper CA   N    C    CB  !tetrahedral CA
+ IMPRoper CD   OE1  OE2  CG  !planar CD
+
+
+END {GLU}
+
+!------------------------------------------------------------------
+
+RESIdue GLY
+ GROUp
+  ATOM N    TYPE=NH1   CHARge=-0.35   END
+  ATOM H    TYPE=H     CHARge= 0.25   END
+  ATOM CA   TYPE=CH2G  CHARge= 0.10   END
+  ATOM C    TYPE=C     CHARge= 0.55   END  
+  ATOM O    TYPE=O     CHARge=-0.55   END  
+
+ BOND N    CA
+ BOND CA   C
+ BOND C    O
+ BOND N    H
+
+
+END {GLY}
+
+!------------------------------------------------------------------
+
+
+RESIdue HISH   { Doubly protonated histidine.  Ring charges
+                 Hayes and Kollman jacs 98:3335 (1976)      }
+ GROUp
+  ATOM N    TYPE=NH1   CHARge=-0.35   END
+  ATOM H    TYPE=H     CHARge= 0.25   END
+  ATOM CA   TYPE=CH1E  CHARge= 0.10   END
+  ATOM CB   TYPE=CH2E  CHARge= 0.10   END
+  ATOM CG   TYPE=C5    CHARge= 0.15   END
+  ATOM CD2  TYPE=CR1H  CHARge= 0.20   END
+  ATOM ND1  TYPE=NH1   CHARge=-0.30   END  
+  ATOM HD1  TYPE=H     CHARge= 0.35   END  
+  ATOM CE1  TYPE=CRHH  CHARge= 0.45   END  
+  ATOM NE2  TYPE=NH1   CHARge=-0.30   END  
+  ATOM HE2  TYPE=H     CHARge= 0.35   END  
+  ATOM C    TYPE=C     CHARge= 0.55   END  
+  ATOM O    TYPE=O     CHARge=-0.55   END  
+
+ BOND N    CA
+ BOND CA   C
+ BOND C    O
+ BOND N    H
+ BOND CA   CB
+ BOND CB   CG
+ BOND CG   ND1
+ BOND CG   CD2
+ BOND ND1  HD1
+ BOND ND1  CE1
+ BOND CD2  NE2
+ BOND CE1  NE2
+ BOND NE2  HE2
+
+ DIHEdral N    CA   CB   CG 
+ DIHEdral CA   CB   CG   ND1
+
+ IMPRoper CA   N    C    CB  !tetrahedral CA
+ IMPRoper CG   ND1  CD2  CB  !planar CG
+ IMPRoper ND1  CG   CE1  HD1 !planar ND1
+ IMPRoper NE2  CD2  CE1  HE2 !planar NE2
+
+ IMPRoper CG   ND1  CE1  NE2 !!
+ IMPRoper ND1  CE1  NE2  CD2 !!
+ IMPRoper CE1  NE2  CD2  CG  !! ring torsions
+ IMPRoper NE2  CD2  CG   ND1 !!
+ IMPRoper CD2  CG   ND1  CE1 !!
+END {HISH}
+
+RESIdue HIS
+ GROUp
+  ATOM N    TYPE=NH1   CHARge=-0.35   END
+  ATOM H    TYPE=H     CHARge= 0.25   END
+  ATOM CA   TYPE=CH1E  CHARge= 0.10   END
+  ATOM CB   TYPE=CH2E  CHARge= 0.10   END
+  ATOM CG   TYPE=C5    CHARge= 0.15   END
+  ATOM CD2  TYPE=CR1H  CHARge= 0.20   END
+  ATOM ND1  TYPE=NH1   CHARge=-0.30   END  
+  ATOM HD1  TYPE=H     CHARge= 0.35   END  
+  ATOM CE1  TYPE=CRHH  CHARge= 0.45   END  
+  ATOM NE2  TYPE=NH1   CHARge=-0.30   END  
+  ATOM HE2  TYPE=H     CHARge= 0.35   END  
+  ATOM C    TYPE=C     CHARge= 0.55   END  
+  ATOM O    TYPE=O     CHARge=-0.55   END  
+
+ BOND N    CA
+ BOND CA   C
+ BOND C    O
+ BOND N    H
+ BOND CA   CB
+ BOND CB   CG
+ BOND CG   ND1
+ BOND CG   CD2
+ BOND ND1  HD1
+ BOND ND1  CE1
+ BOND CD2  NE2
+ BOND CE1  NE2
+ BOND NE2  HE2
+
+ DIHEdral N    CA   CB   CG 
+ DIHEdral CA   CB   CG   ND1
+
+ IMPRoper CA   N    C    CB  !tetrahedral CA
+ IMPRoper CG   ND1  CD2  CB  !planar CG
+ IMPRoper ND1  CG   CE1  HD1 !planar ND1
+ IMPRoper NE2  CD2  CE1  HE2 !planar NE2
+
+ IMPRoper CG   ND1  CE1  NE2 !!
+ IMPRoper ND1  CE1  NE2  CD2 !!
+ IMPRoper CE1  NE2  CD2  CG  !! ring torsions
+ IMPRoper NE2  CD2  CG   ND1 !!
+ IMPRoper CD2  CG   ND1  CE1 !!
+END {HIS}
+
+RESIdue HIE
+ GROUp
+  ATOM N    TYPE=NH1   CHARge=-0.35   END
+  ATOM H    TYPE=H     CHARge= 0.25   END
+  ATOM CA   TYPE=CH1E  CHARge= 0.10   END
+  ATOM CB   TYPE=CH2E  CHARge= 0.10   END
+  ATOM CG   TYPE=C5    CHARge= 0.15   END
+  ATOM CD2  TYPE=CR1H  CHARge= 0.20   END
+  ATOM ND1  TYPE=NH1   CHARge=-0.30   END  
+  ATOM HD1  TYPE=H     CHARge= 0.35   END  
+  ATOM CE1  TYPE=CRHH  CHARge= 0.45   END  
+  ATOM NE2  TYPE=NH1   CHARge=-0.30   END  
+  ATOM HE2  TYPE=H     CHARge= 0.35   END  
+  ATOM C    TYPE=C     CHARge= 0.55   END  
+  ATOM O    TYPE=O     CHARge=-0.55   END  
+
+ BOND N    CA
+ BOND CA   C
+ BOND C    O
+ BOND N    H
+ BOND CA   CB
+ BOND CB   CG
+ BOND CG   ND1
+ BOND CG   CD2
+ BOND ND1  HD1
+ BOND ND1  CE1
+ BOND CD2  NE2
+ BOND CE1  NE2
+ BOND NE2  HE2
+
+ DIHEdral N    CA   CB   CG 
+ DIHEdral CA   CB   CG   ND1
+
+ IMPRoper CA   N    C    CB  !tetrahedral CA
+ IMPRoper CG   ND1  CD2  CB  !planar CG
+ IMPRoper ND1  CG   CE1  HD1 !planar ND1
+ IMPRoper NE2  CD2  CE1  HE2 !planar NE2
+
+ IMPRoper CG   ND1  CE1  NE2 !!
+ IMPRoper ND1  CE1  NE2  CD2 !!
+ IMPRoper CE1  NE2  CD2  CG  !! ring torsions
+ IMPRoper NE2  CD2  CG   ND1 !!
+ IMPRoper CD2  CG   ND1  CE1 !!
+END {HIE}
+
+!------------------------------------------------------------------
+
+
+RESIdue ILE
+ GROUp
+  ATOM N    TYPE=NH1   CHARge=-0.35   END
+  ATOM H    TYPE=H     CHARge= 0.25   END
+  ATOM CA   TYPE=CH1E  CHARge= 0.10   END
+  ATOM CB   TYPE=CH1E  CHARge= 0.00   END
+  ATOM CG2  TYPE=CH3E  CHARge= 0.00   END
+  ATOM CG1  TYPE=CH2E  CHARge= 0.00   END
+  ATOM CD   TYPE=CH3E  CHARge= 0.00   END
+  ATOM C    TYPE=C     CHARge= 0.55   END  
+  ATOM O    TYPE=O     CHARge=-0.55   END  
+
+ BOND N    CA
+ BOND CA   C
+ BOND C    O
+ BOND N    H
+ BOND CA   CB
+ BOND CB   CG1
+ BOND CB   CG2
+ BOND CG1  CD
+
+ DIHEdral N    CA   CB   CG1  !note: only one dihedral around CA-CB
+ DIHEdral CA   CB   CG1  CD
+
+ IMPRoper CA   N    C    CB  !tetrahedral CA
+ IMPRoper CB   CG1  CG2  CA  !planar CB
+
+
+END {ILE}
+
+!------------------------------------------------------------------
+
+RESIdue LEU
+ GROUp
+  ATOM N    TYPE=NH1   CHARge=-0.35   END
+  ATOM H    TYPE=H     CHARge= 0.25   END
+  ATOM CA   TYPE=CH1E  CHARge= 0.10   END
+  ATOM CB   TYPE=CH2E  CHARge= 0.00   END
+  ATOM CG   TYPE=CH1E  CHARge= 0.00   END
+  ATOM CD1  TYPE=CH3E  CHARge= 0.00   END
+  ATOM CD2  TYPE=CH3E  CHARge= 0.00   END
+  ATOM C    TYPE=C     CHARge= 0.55   END  
+  ATOM O    TYPE=O     CHARge=-0.55   END  
+
+ BOND N    CA
+ BOND CA   C
+ BOND C    O
+ BOND N    H
+ BOND CA   CB
+ BOND CB   CG
+ BOND CG   CD1
+ BOND CG   CD2
+
+ DIHEdral N    CA   CB   CG
+ DIHEdral CA   CB   CG   CD2  !note: only one dihedral around CB-CG
+
+ IMPRoper CA   N    C    CB  !tetrahedral CA
+ IMPRoper CG   CD2  CD1  CB  !planar CG
+
+
+END {LEU}
+
+!------------------------------------------------------------------
+
+RESIdue LYS
+ GROUp
+  ATOM N    TYPE=NH1   CHARge=-0.35   END
+  ATOM H    TYPE=H     CHARge= 0.25   END
+  ATOM CA   TYPE=CH1E  CHARge= 0.10   END
+  ATOM CB   TYPE=CH2E  CHARge= 0.00   END
+  ATOM CG   TYPE=CH2E  CHARge= 0.00   END
+  ATOM CD   TYPE=CH2E  CHARge= 0.00   END
+  ATOM CE   TYPE=CH2E  CHARge= 0.25   END  
+  ATOM NZ   TYPE=NH3   CHARge=-0.30   END  
+  ATOM HZ1  TYPE=HC    CHARge= 0.35   END  
+  ATOM HZ2  TYPE=HC    CHARge= 0.35   END  
+  ATOM HZ3  TYPE=HC    CHARge= 0.35   END  
+  ATOM C    TYPE=C     CHARge= 0.55   END  
+  ATOM O    TYPE=O     CHARge=-0.55   END  
+
+ BOND N    CA
+ BOND CA   C
+ BOND C    O
+ BOND N    H
+ BOND CA   CB
+ BOND CB   CG
+ BOND CG   CD
+ BOND CD   CE
+ BOND CE   NZ
+ BOND NZ   HZ1
+ BOND NZ   HZ2
+ BOND NZ   HZ3
+
+ DIHEdral N    CA   CB   CG
+ DIHEdral CA   CB   CG   CD
+ DIHEdral CB   CG   CD   CE
+ DIHEdral CG   CD   CE   NZ
+ DIHEdral CD   CE   NZ   HZ1  !!
+ DIHEdral CD   CE   NZ   HZ2  !!note: dihedrals for each hydrogen
+ DIHEdral CD   CE   NZ   HZ3  !!
+
+ IMPRoper CA   N    C    CB  !tetrahedral CA
+
+
+END {LYS}
+
+!------------------------------------------------------------------
+
+RESIdue MET
+ GROUp
+  ATOM N    TYPE=NH1   CHARge=-0.35   END
+  ATOM H    TYPE=H     CHARge= 0.25   END
+  ATOM CA   TYPE=CH1E  CHARge= 0.10   END
+  ATOM CB   TYPE=CH2E  CHARge= 0.00   END
+  ATOM CG   TYPE=CH2E  CHARge= 0.06   END
+  ATOM SD   TYPE=SM    CHARge=-0.12   END
+  ATOM CE   TYPE=CH3E  CHARge= 0.06   END
+  ATOM C    TYPE=C     CHARge= 0.55   END  
+  ATOM O    TYPE=O     CHARge=-0.55   END  
+
+ BOND N    CA
+ BOND CA   C
+ BOND C    O
+ BOND N    H
+ BOND CA   CB
+ BOND CB   CG
+ BOND CG   SD
+ BOND SD   CE
+
+ DIHEdral N    CA   CB   CG
+ DIHEdral CA   CB   CG   SD
+ DIHEdral CB   CG   SD   CE
+
+ IMPRoper CA   N    C    CB  !tetrahedral CA
+
+
+END {MET}
+
+!------------------------------------------------------------------
+
+RESIdue MSE
+ GROUp
+  ATOM N    TYPE=NH1   CHARge=-0.35   END
+  ATOM H    TYPE=H     CHARge= 0.25   END
+  ATOM CA   TYPE=CH1E  CHARge= 0.10   END
+  ATOM CB   TYPE=CH2E  CHARge= 0.00   END
+  ATOM CG   TYPE=CH2E  CHARge= 0.06   END
+  ATOM SE   TYPE=SE    CHARge=-0.12   END
+  ATOM CE   TYPE=CH3E  CHARge= 0.06   END
+  ATOM C    TYPE=C     CHARge= 0.55   END  
+  ATOM O    TYPE=O     CHARge=-0.55   END  
+
+ BOND N    CA
+ BOND CA   C
+ BOND C    O
+ BOND N    H
+ BOND CA   CB
+ BOND CB   CG
+ BOND CG   SE
+ BOND SE   CE
+
+ DIHEdral N    CA   CB   CG
+ DIHEdral CA   CB   CG   SE
+ DIHEdral CB   CG   SE   CE
+
+ IMPRoper CA   N    C    CB  !tetrahedral CA
+
+
+END {MSE}
+
+!------------------------------------------------------------------
+
+RESIdue PHE
+ GROUp
+  ATOM N    TYPE=NH1   CHARge=-0.35   END
+  ATOM H    TYPE=H     CHARge= 0.25   END
+  ATOM CA   TYPE=CH1E  CHARge= 0.10   END
+  ATOM CB   TYPE=CH2E  CHARge= 0.00   END
+  ATOM CG   TYPE=CF    CHARge= 0.00   END
+  ATOM CD1  TYPE=CR1E  CHARge= 0.00   END
+  ATOM CD2  TYPE=CR1E  CHARge= 0.00   END
+  ATOM CE1  TYPE=CR1E  CHARge= 0.00   END
+  ATOM CE2  TYPE=CR1E  CHARge= 0.00   END
+  ATOM CZ   TYPE=CR1E  CHARge= 0.00   END
+  ATOM C    TYPE=C     CHARge= 0.55   END  
+  ATOM O    TYPE=O     CHARge=-0.55   END  
+
+ BOND N    CA
+ BOND CA   C
+ BOND C    O
+ BOND N    H
+ BOND CA   CB
+ BOND CB   CG
+ BOND CG   CD1
+ BOND CG   CD2
+ BOND CD1  CE1
+ BOND CD2  CE2
+ BOND CE1  CZ
+ BOND CE2  CZ
+
+ DIHEdral N    CA   CB   CG
+ DIHEdral CA   CB   CG   CD1  !note: only one dihedral around CB-CG
+
+ IMPRoper CA   N    C    CB  !tetrahedral CA
+ IMPRoper CG   CD1  CD2  CB  !planar CG
+
+ IMPRoper CG   CD1  CE1  CZ  !!
+ IMPRoper CD1  CE1  CZ   CE2 !!
+ IMPRoper CE1  CZ   CE2  CD2 !! ring torsions
+ IMPRoper CZ   CE2  CD2  CG  !!
+ IMPRoper CE2  CD2  CG   CD1 !!
+ IMPRoper CD2  CG   CD1  CE1 !!
+
+
+END {PHE}
+
+!------------------------------------------------------------------
+
+RESIdue PRO
+ GROUp
+  ATOM N    TYPE=N     CHARge=-0.20   END
+  ATOM CD   TYPE=CH2P  CHARge= 0.10   END
+  ATOM CA   TYPE=CH1E  CHARge= 0.10   END
+  ATOM CB   TYPE=CH2E  CHARge= 0.00   END
+  ATOM CG   TYPE=CH2P  CHARge= 0.00   END
+  ATOM C    TYPE=C     CHARge= 0.55   END
+  ATOM O    TYPE=O     CHARge=-0.55   END
+
+ BOND N    CA
+ BOND CA   C 
+ BOND C    O
+ BOND N    CD
+ BOND CA   CB
+ BOND CB   CG
+ BOND CG   CD
+
+ DIHEdral N    CA   CB   CG  !! 
+ DIHEdral CA   CB   CG   CD  !!
+ DIHEdral CB   CG   CD   N   !! the PROline ring is represented by dihedrals
+ DIHEdral CG   CD   N    CA  !!
+
+ IMPRoper CA   N    C    CB  !tetrahedral CA
+
+
+END {PRO}
+
+!------------------------------------------------------------------
+
+RESIdue CPR            ! CPR from O - a cis-proline PDA 10/98
+ GROUp
+  ATOM N    TYPE=N     CHARge=-0.20   END
+  ATOM CD   TYPE=CH2P  CHARge= 0.10   END
+  ATOM CA   TYPE=CH1E  CHARge= 0.10   END
+  ATOM CB   TYPE=CH2E  CHARge= 0.00   END
+  ATOM CG   TYPE=CH2P  CHARge= 0.00   END
+  ATOM C    TYPE=C     CHARge= 0.55   END
+  ATOM O    TYPE=O     CHARge=-0.55   END
+
+ BOND N    CA
+ BOND CA   C 
+ BOND C    O
+ BOND N    CD
+ BOND CA   CB
+ BOND CB   CG
+ BOND CG   CD
+
+ DIHEdral N    CA   CB   CG  !! 
+ DIHEdral CA   CB   CG   CD  !!
+ DIHEdral CB   CG   CD   N   !! the PROline ring is represented by dihedrals
+ DIHEdral CG   CD   N    CA  !!
+
+ IMPRoper CA   N    C    CB  !tetrahedral CA
+
+
+END {CPR}
+
+!------------------------------------------------------------------
+
+RESIdue SER
+ GROUp
+  ATOM N    TYPE=NH1   CHARge=-0.35   END
+  ATOM H    TYPE=H     CHARge= 0.25   END
+  ATOM CA   TYPE=CH1E  CHARge= 0.10   END
+  ATOM CB   TYPE=CH2E  CHARge= 0.25   END  
+  ATOM OG   TYPE=OH1   CHARge=-0.65   END  
+  ATOM HG   TYPE=H     CHARge= 0.40   END  
+  ATOM C    TYPE=C     CHARge= 0.55   END  
+  ATOM O    TYPE=O     CHARge=-0.55   END  
+
+ BOND N    CA
+ BOND CA   C
+ BOND C    O
+ BOND N    H
+ BOND CA   CB
+ BOND CB   OG
+ BOND OG   HG
+
+ DIHEdral N    CA   CB   OG
+ DIHEdral CA   CB   OG   HG
+
+ IMPRoper CA   N    C    CB  !tetrahedral CA
+
+
+END {SER}
+
+!------------------------------------------------------------------
+
+RESIdue THR
+ GROUp
+  ATOM N    TYPE=NH1   CHARge=-0.35   END
+  ATOM H    TYPE=H     CHARge= 0.25   END
+  ATOM CA   TYPE=CH1E  CHARge= 0.10   END
+  ATOM CB   TYPE=CH1E  CHARge= 0.25   END  
+  ATOM OG1  TYPE=OH1   CHARge=-0.65   END  
+  ATOM HG1  TYPE=H     CHARge= 0.40   END  
+  ATOM CG2  TYPE=CH3E  CHARge= 0.00   END
+  ATOM C    TYPE=C     CHARge= 0.55   END  
+  ATOM O    TYPE=O     CHARge=-0.55   END  
+
+ BOND N    CA
+ BOND CA   C
+ BOND C    O
+ BOND N    H
+ BOND CA   CB
+ BOND CB   OG1
+ BOND CB   CG2
+ BOND OG1  HG1
+
+ DIHEdral N    CA   CB   OG1  !note: only one dihedral around CA-CB
+ DIHEdral CA   CB   OG1  HG1
+
+ IMPRoper CA   N    C    CB  !tetrahedral CA
+ IMPRoper CB   OG1  CG2  CA  !planar CB
+
+
+END {THR}
+
+!------------------------------------------------------------------
+
+RESIdue TRP
+ GROUp
+  ATOM N    TYPE=NH1   CHARge=-0.35   END
+  ATOM H    TYPE=H     CHARge= 0.25   END
+  ATOM CA   TYPE=CH1E  CHARge= 0.10   END
+  ATOM CB   TYPE=CH2E  CHARge= 0.00   END
+  ATOM CG   TYPE=C5W   CHARge=-0.03   END
+  ATOM CD2  TYPE=CW    CHARge= 0.10   END
+  ATOM CE2  TYPE=CW    CHARge=-0.04   END
+  ATOM CE3  TYPE=CR1E  CHARge=-0.03   END
+  ATOM CD1  TYPE=CR1E  CHARge= 0.06   END 
+  ATOM NE1  TYPE=NH1   CHARge=-0.36   END 
+  ATOM HE1  TYPE=H     CHARge= 0.30   END                                   
+  ATOM CZ2  TYPE=CR1W  CHARge= 0.00   END
+  ATOM CZ3  TYPE=CR1E  CHARge= 0.00   END
+  ATOM CH2  TYPE=CR1W  CHARge= 0.00   END
+  ATOM C    TYPE=C     CHARge= 0.55   END
+  ATOM O    TYPE=O     CHARge=-0.55   END
+
+ BOND N    CA
+ BOND CA   C
+ BOND C    O
+ BOND N    H
+ BOND CA   CB
+ BOND CB   CG
+ BOND CG   CD1
+ BOND CG   CD2
+ BOND CD1  NE1
+ BOND CD2  CE2
+ BOND NE1  HE1
+ BOND NE1  CE2
+ BOND CD2  CE3
+ BOND CE2  CZ2
+ BOND CE3  CZ3
+ BOND CZ2  CH2
+ BOND CZ3  CH2
+
+! OMIT ANGLe CG CD2 CE3
+! OMIT ANGLe NE1 CE2 CZ2
+! The ring angles are only assigned for the five and six member rings.
+! The angles CG CD2 CE3  and NE1 CE2 CZ2 are left out to avoid conflicts
+! with the histidine angle parameters and to preserve symmetry.
+
+ DIHEdral N    CA   CB   CG
+ DIHEdral CA   CB   CG   CD1
+ DIHEdral CD1  CE2  CD2  CZ3  !!
+ DIHEdral CD1  CD2  CE2  CH2  !! these dihedrals span the rings and keep
+ DIHEdral CZ2  CE2  CD2  CG   !! them parallel
+ DIHEdral CE3  CD2  CE2  NE1  !!
+
+ IMPRoper CA   N    C    CB   !tetrahedral CA
+ IMPRoper CG   CD1  CD2  CB   !planar CG
+ IMPRoper NE1  CD1  CE2  HE1  !planar NE1
+
+ IMPRoper CD2  CE2  CZ2  CH2  !!
+ IMPRoper CE2  CZ2  CH2  CZ3  !!
+ IMPRoper CZ2  CH2  CZ3  CE3  !! torsions ring 2
+ IMPRoper CH2  CZ3  CE3  CD2  !!
+ IMPRoper CZ3  CE3  CD2  CE2  !!
+ IMPRoper CE3  CD2  CE2  CZ2  !!
+
+ IMPRoper CG   CD1  NE1  CE2  !!
+ IMPRoper CD1  NE1  CE2  CD2  !!
+ IMPRoper NE1  CE2  CD2  CG   !! torsions ring 1
+ IMPRoper CE2  CD2  CG   CD1  !!
+ IMPRoper CD2  CG   CD1  NE1  !!
+
+
+END {TRP}
+
+!------------------------------------------------------------------
+
+RESIdue M3L
+ GROUp
+  ATOM N    TYPE=NH1   CHARge=-0.35   END
+  ATOM H    TYPE=H     CHARge= 0.25   END
+  ATOM CA   TYPE=CH1E  CHARge= 0.10   END
+  ATOM CB   TYPE=CH2E  CHARge= 0.00   END
+  ATOM CG   TYPE=CH2E  CHARge= 0.00   END
+  ATOM CD   TYPE=CH2E  CHARge= 0.00   END
+  ATOM CE   TYPE=CH2E  CHARge= 0.25   END  
+  ATOM NZ   TYPE=N     CHARge=-0.25   END  
+  ATOM CM1  TYPE=CH3E  CHARge= 0.00   END  
+  ATOM CM2  TYPE=CH3E  CHARge= 0.00   END  
+  ATOM CM3  TYPE=CH3E  CHARge= 0.00   END  
+  ATOM C    TYPE=C     CHARge= 0.55   END  
+  ATOM O    TYPE=O     CHARge=-0.55   END  
+
+ BOND N    CA
+ BOND CA   C
+ BOND C    O
+ BOND N    H
+ BOND CA   CB
+ BOND CB   CG
+ BOND CG   CD
+ BOND CD   CE
+ BOND CE   NZ
+ BOND NZ   CM1
+ BOND NZ   CM2
+ BOND NZ   CM3
+
+ DIHEdral N    CA   CB   CG
+ DIHEdral CA   CB   CG   CD
+ DIHEdral CB   CG   CD   CE
+ DIHEdral CG   CD   CE   NZ
+ DIHEdral CD   CE   NZ   CM1  !!
+ DIHEdral CD   CE   NZ   CM2  !!note: dihedrals for each methyl
+ DIHEdral CD   CE   NZ   CM3  !!
+
+ IMPRoper CA   N    C    CB  !tetrahedral CA
+
+
+END {M3L}
+
+!------------------------------------------------------------------
+
+RESIdue TYR
+ GROUp
+  ATOM N    TYPE=NH1   CHARge=-0.35   END
+  ATOM H    TYPE=H     CHARge= 0.25   END
+  ATOM CA   TYPE=CH1E  CHARge= 0.10   END
+  ATOM CB   TYPE=CH2E  CHARge= 0.00   END
+  ATOM CG   TYPE=CY    CHARge= 0.00   END
+  ATOM CD1  TYPE=CR1E  CHARge= 0.00   END
+  ATOM CE1  TYPE=CR1E  CHARge= 0.00   END
+  ATOM CD2  TYPE=CR1E  CHARge= 0.00   END
+  ATOM CE2  TYPE=CR1E  CHARge= 0.00   END
+  ATOM CZ   TYPE=CY2   CHARge= 0.25   END
+  ATOM OH   TYPE=OH1   CHARge=-0.65   END
+  ATOM HH   TYPE=H     CHARge= 0.40   END
+  ATOM C    TYPE=C     CHARge= 0.55   END
+  ATOM O    TYPE=O     CHARge=-0.55   END
+
+ BOND N    CA
+ BOND CA   C
+ BOND C    O
+ BOND N    H
+ BOND CA   CB
+ BOND CB   CG
+ BOND CG   CD1
+ BOND CG   CD2
+ BOND CD1  CE1
+ BOND CD2  CE2
+ BOND CE1  CZ 
+ BOND CE2  CZ
+ BOND CZ   OH
+ BOND OH   HH
+
+ DIHEdral N    CA   CB   CG
+ DIHEdral CA   CB   CG   CD1
+ DIHEdral CE2  CZ   OH   HH
+
+ IMPRoper CA   N    C    CB !tetrahedral CA
+ IMPRoper CG   CD1  CD2  CB !planar CG
+ IMPRoper CZ   CE1  CE2  OH !planar CZ
+
+ IMPRoper CG   CD1  CE1  CZ  !!
+ IMPRoper CD1  CE1  CZ   CE2 !!
+ IMPRoper CE1  CZ   CE2  CD2 !! ring torsions
+ IMPRoper CZ   CE2  CD2  CG  !!
+ IMPRoper CE2  CD2  CG   CD1 !!
+ IMPRoper CD2  CG   CD1  CE1 !!
+
+
+END {TYR}
+
+!------------------------------------------------------------------
+
+RESIdue VAL
+ GROUp
+  ATOM N    TYPE=NH1   CHARge=-0.35   END
+  ATOM H    TYPE=H     CHARge= 0.25   END
+  ATOM CA   TYPE=CH1E  CHARge= 0.10   END
+  ATOM CB   TYPE=CH1E  CHARge= 0.00   END
+  ATOM CG1  TYPE=CH3E  CHARge= 0.00   END
+  ATOM CG2  TYPE=CH3E  CHARge= 0.00   END
+  ATOM C    TYPE=C     CHARge= 0.55   END
+  ATOM O    TYPE=O     CHARge=-0.55   END
+
+ BOND N    CA
+ BOND CA   C
+ BOND C    O
+ BOND N    H
+ BOND CA   CB
+ BOND CB   CG1
+ BOND CB   CG2
+
+ DIHEdral N    CA   CB   CG1  !note: only one dihedral around CA-CB
+
+ IMPRoper CA   N    C    CB  !tetrahedral CA
+ IMPRoper CB   CG2  CG1  CA  !planar CB
+
+
+END {VAL}
+
+!------------------------------------------------------------------
+PRESidue DISU       { disulfide bridge  ...CYS      CYS...
+                                              \DISU/            }
+ GROUP
+  MODIfy ATOM 1CB           CHARge= 0.19  END
+  MODIfy ATOM 1SG  TYPE=S   CHARge=-0.19  END
+ GROUP
+  MODIfy ATOM 2CB           CHARge= 0.19  END
+  MODIfy ATOM 2SG  TYPE=S   CHARge=-0.19  END
+
+ ADD BOND 1SG 2SG
+
+ ADD ANGLe  1CB 1SG 2SG
+ ADD ANGLe  1SG 2SG 2CB
+
+ ADD DIHEdral   1CA 1CB 1SG 2SG
+ ADD DIHEdral   1CB 1SG 2SG 2CB
+ ADD DIHEdral   1SG 2SG 2CB 2CA
+
+END {DISU}
+
+!----------------------------------------------------------------------
+
+PRESidue PEPT { PEPTide bond link, for all 
+               amino acids ...*(-)     (+)*...
+                                \ PEPT /
+
+               except the  *(-) - (+)PRO link        }
+
+ ADD BOND -C +N 
+
+ ADD ANGLE -CA -C +N
+ ADD ANGLE -O  -C +N
+ ADD ANGLE -C  +N +CA
+ ADD ANGLE -C  +N +H
+
+ ADD DIHEdral  -C +N +CA +C
+ ADD DIHEdral  -N -CA -C +N
+ ADD DIHEdral  -CA -C +N +CA
+
+ ADD IMPRoper  -C -CA +N -O  {planar -C}
+ ADD IMPRoper  +N -C +CA +H  {planar +N}
+
+ LINKDIST 1.6 { link distance between C-N bond }
+
+END {PEPT}
+
+!----------------------------------------------------------------------
+
+PRESidue PEPP  { for  ...*(-) - (+)PRO  link
+               same as PEPT except replacement H by CD
+               and improper +N +CA +CD -C              }
+
+ ADD BOND -C +N 
+
+ ADD ANGLE -CA -C +N
+ ADD ANGLE -O  -C +N
+ ADD ANGLE -C  +N +CA
+ ADD ANGLE -C  +N +CD
+
+ ADD DIHEdral  -C +N +CA +C
+ ADD DIHEdral  -N -CA -C +N
+ ADD DIHEdral  -CA -C +N +CA
+
+ ADD IMPRoper  -C -CA +N -O  {planar -C}
+ ADD IMPRoper  +N +CA +CD -C  {planar +N}
+
+ LINKDIST 1.6 { link distance between C-N bond }
+
+END {PEPP}
+
+!------------------------------------------------------------------
+
+PRESidue NTER             { can be patched ( as NTER - * ... )
+                            to any amino acid except PRO        }
+ GROUp
+  ADD    ATOM +HT1  TYPE=HC   CHARge=0.35  END
+  ADD    ATOM +HT2  TYPE=HC   CHARge=0.35  END
+  MODIfy ATOM +N    TYPE=NH3  CHARge=-0.30 END
+  ADD    ATOM +HT3  TYPE=HC   CHARge=0.35  END
+  DELETE ATOM +H                           END
+  MODIfy ATOM +CA             CHARge=0.25  END
+
+ ADD BOND +HT1 +N
+ ADD BOND +HT2 +N
+ ADD BOND +HT3 +N
+
+ ADD ANGLe +HT1  +N    +HT2
+ ADD ANGLe +HT2  +N    +HT3
+ ADD ANGLe +HT2  +N    +CA
+ ADD ANGLe +HT1  +N    +HT3
+ ADD ANGLe +HT1  +N    +CA
+ ADD ANGLe +HT3  +N    +CA
+
+ ADD DIHEdral +HT2  +N    +CA   +C
+ ADD DIHEdral +HT1  +N    +CA   +C
+ ADD DIHEdral +HT3  +N    +CA   +C
+
+
+END {NTER}
+
+!------------------------------------------------------------------
+
+PRESidue PROP                { this is the N-terminal for PROlines
+                               PROP - PRO -...                      }
+ GROUp
+  ADD    ATOM +HT1  TYPE=HC   CHARge= 0.35   END
+  ADD    ATOM +HT2  TYPE=HC   CHARge= 0.35   END
+  MODIfy ATOM +N    TYPE=NH3  CHARge=-0.20   END
+  MODIfy ATOM +CD             CHARge= 0.25   END
+  MODIfy ATOM +CA             CHARge= 0.25   END
+
+ ADD BOND +HT1  +N
+ ADD BOND +HT2  +N
+
+ ADD ANGLe +HT1  +N    +HT2
+ ADD ANGLe +HT2  +N    +CA
+ ADD ANGLe +HT1  +N    +CD
+ ADD ANGLe +HT1  +N    +CA
+ ADD ANGLe +CD   +N    +HT2
+
+ ADD DIHEdral +HT2  +N    +CA   +C
+ ADD DIHEdral +HT1  +N    +CA   +C
+
+
+END {PROP}
+
+!------------------------------------------------------------------
+
+PRESidue CTER                { C-terminal for all amino acids
+                                           ... * - CTER          }
+ GROUp
+  MODIfy ATOM -C             CHARge= 0.14  END
+  ADD    ATOM -OT1  TYPE=OC  CHARge=-0.57  END
+  ADD    ATOM -OT2  TYPE=OC  CHARge=-0.57  END
+  DELETE ATOM -O                           END
+
+ ADD BOND -C    -OT1
+ ADD BOND -C    -OT2
+
+ ADD ANGLe -CA   -C   -OT1
+ ADD ANGLe -CA   -C   -OT2
+ ADD ANGLe -OT1  -C   -OT2
+
+ ADD DIHEdral -N    -CA    -C   -OT2
+
+ ADD IMPRoper -C    -CA    -OT2 -OT1
+
+
+
+END {CTER}
+
+set echo=true end
+
+!------------------------------------------------------------------------
+!------------------------------------------------------------------------
+!------------------------------------------------------------------------
+!------------------------------------------------------------------------
+
+remarks file toppar/dna-rna.top
+remarks   dna/rna topology for crystallographic structure determination 
+
+! removed references to CA, CF, CS, MG, NH3, OS (ATB 12/30/94)
+! removed TIP3 water model (ATB 12/30/94)
+! mapped NA->NNA, CH3E->CC3E (ATB 12/30/94)
+
+!
+!Please cite the following reference when using these parameters:
+!G. Parkinson, J. Vojtechovsky, L. Clowney, A.T. Brunger, H.M. Berman,
+!  New Parameters for the Refinement of Nucleic Acid Containing Structures,
+!  Acta Cryst. D, 52, 57-64 (1996).
+!
+! Oct. 8, 1996 - Modified by Alexey Bochkarev (McMaster University)
+!                to process properly 5PHO (5'-terminus with phosphate) patch.
+!                Geometry and charges of -O5'-PO3 group were taken from
+!                Saenger W. 1984.  Principles of Nucleic Acid Structure
+!                All modifications are placed between:
+!***AB***
+!....included fragment
+!***AB end***
+!                New atomic types were introduced to describe
+!                -O5'-PO3 group: O5H (O5') O1PH (O1P) O2PH (O2P) 
+!                                in addition to existing OH (O5T)
+
+set echo=false end
+
+checkversion 1.0
+
+AUTOGENERATE  ANGLES=TRUE  END
+{*==========================*}
+
+{* DNA/RNA default masses *}
+
+MASS   P     30.97400! phosphorus
+MASS   O1P   15.99940! O in phosphate
+MASS   O2P   15.99940! O in phosphate
+MASS   O5R   15.99940! ester -P-O-C-
+!***AB***
+MASS   O5H   15.99940! ester -C-O-PO3
+MASS   O1PH  15.99940! O in 5'-terminus phosphate
+MASS   O2PH  15.99940! O in 5'-terminus phosphate (One more O is OH)
+!***AB end***
+MASS   C5R   14.02700! corresp. to CH2E
+MASS   C4R   13.01900! corresp. to CH1E
+MASS   C3R   13.01900! corresp. to CH1E
+MASS   C2R   13.01900! corresp. to CH1E
+MASS   C1R   13.01900! corresp. to CH1E
+MASS   O4R   15.99940! ester -P-O-C-
+MASS   O3R   15.99940! ester -P-O-C-
+MASS   O2R   15.99940! ester -P-O-C-
+MASS   OH    15.99940! corresp. to OH1
+
+!DEOXY SUGAR
+MASS   C5D   14.02700! corresp. to CH2E
+MASS   C4D   13.01900! corresp. to CH1E
+MASS   C3D   13.01900! corresp. to CH1E
+MASS   C2D   13.01900! corresp. to CH1E
+MASS   C1D   13.01900! corresp. to CH1E
+MASS   O4D   15.99940! ester -P-O-C-
+
+! Insert Bases
+! Generic
+
+MASS   N2    14.00670! nitrogen in -NH2
+MASS   NNA   14.00670! corresp. to NH1
+MASS   ON    15.99940! corresp. to O
+MASS   NC    14.00670! corresp. to NR
+MASS   NS    14.00670! nitrogen in ring >N-
+
+! Insert 4 Bases
+!  GUA
+MASS   N9G    14.00670! nitrogen in ring >N-
+MASS   C2G    13.01900! (prev CE)
+MASS   N3G    14.00670! (prev NC)
+MASS   C4G    12.01100! (prev CB)
+MASS   C5G    12.01100! (prev CB)
+MASS   C6G    12.01100! (prev CN)
+MASS   N7G    14.00670! (prev NB)
+MASS   C8G    13.01900! (prev CE)
+MASS   O6G    15.99940! (prev CE)
+MASS   N2G    14.00670! nitrogen in -NH2
+!  ADE
+MASS   N9A    14.00670! nitrogen in ring >N-
+MASS   C2A    13.01900! (prev CE)
+MASS   N3A    14.00670! (prev NC)
+MASS   C4A    12.01100! (prev CB)
+MASS   C5A    12.01100! (prev CB)
+MASS   C6A    12.01100! (prev CA)
+MASS   N7A    14.00670! (prev NB)
+MASS   C8A    13.01900! (prev CE)
+MASS   N6A    14.00670! nitrogen in -NH2
+
+!  CYT
+MASS   N1C    14.00670! nitrogen in ring >N-
+MASS   C2C    12.01100! (prev CN)
+MASS   C4C    12.01100! (prev CA)
+MASS   C5C    13.01900! (prev CF)
+MASS   C6C    13.01900! (prev CF)
+MASS   N4C    14.00670! nitrogen in -NH2
+
+!  THY
+MASS   N1T    14.00670! nitrogen in ring >N-
+MASS   C2T    12.01100! (prev CN)
+MASS   C4T    12.01100! (prev CN)
+MASS   C5T    13.01900! (prev CS)
+MASS   C6T    13.01900! (prev CF)
+MASS   CC3E   15.03500! (prev CF)
+
+! END
+
+
+MASS   HN     1.00800! corresp. to H
+MASS   H2     1.00800! hydrogen in -NH2
+MASS   HHO     1.00800! hydroxy hydrogen
+
+!  URI
+MASS   N1U    14.00670! nitrogen in ring >N-
+MASS   C2U    12.01100! (prev CN)
+MASS   C4U    12.01100! (prev CA)
+MASS   C5U    13.01900! (prev CF)
+MASS   C6U    13.01900! (prev CF)
+MASS   N3U    14.00670! nitrogen in -NH2
+
+MASS   I5U    126.9045! iodine in modified uracil
+
+! ---------------------------------------------------------------------
+
+! ---------------------------------------------------------------------
+!  Modifications to the param11.dna were made to include
+!  C5'-C4'-C3'-O3' (delta), C4'-O4'-C1'-N9/N1 and remove O5'-C5'-C4'-O4'
+
+RESIdue GUA
+ GROUp
+  ATOM P    TYPE=P     CHARGE=1.20    END
+  ATOM O1P  TYPE=O1P   CHARGE=-0.40   END
+  ATOM O2P  TYPE=O2P   CHARGE=-0.40   END
+  ATOM O5'  TYPE=O5R   CHARGE=-0.36   END
+ GROUp
+  ATOM C5'  TYPE=C5R   CHARGE=0.00    END
+ GROUp
+  ATOM C4'  TYPE=C4R   CHARGE=0.10    END
+  ATOM O4'  TYPE=O4R   CHARGE=-0.30   END
+  ATOM C1'  TYPE=C1R   CHARGE=0.20    END
+
+! Insert Base
+ GROUp
+  ATOM N9   TYPE=N9G    CHARGE=-0.19   END
+  ATOM C4   TYPE=C4G    CHARGE=0.19    EXCLusion=( N1 )   END
+ GROUp
+  ATOM N3   TYPE=N3G    CHARGE=-0.35   EXCLusion=( C6 )   END !H
+  ATOM C2   TYPE=C2G    CHARGE=0.35    EXCLusion=( C5 )   END !H
+ GROUp
+  ATOM N2   TYPE=N2G   CHARGE=-0.42   END !H
+  ATOM H21  TYPE=H2    CHARGE=0.21    END !H
+  ATOM H22  TYPE=H2    CHARGE=0.21    END !H
+ GROUp
+  ATOM N1   TYPE=NNA   CHARGE=-0.26   END !H
+  ATOM H1   TYPE=HN    CHARGE=0.26    END !H
+ GROUp
+  ATOM C6   TYPE=C6G   CHARGE=0.30    END !H
+  ATOM O6   TYPE=O6G    CHARGE=-0.30   END !H
+ GROUp
+  ATOM C5   TYPE=C5G   CHARGE=0.02    END
+  ATOM N7   TYPE=N7G   CHARGE=-0.25   END
+  ATOM C8   TYPE=C8G   CHARGE=0.23    END
+
+!
+
+ GROUP
+  ATOM C2'  TYPE=C2R   CHARGE=0.15    END
+  ATOM O2'  TYPE=O2R   CHARGE=-0.40   END !H
+  ATOM H2'  TYPE=HHO    CHARGE=0.25    END !H
+ GROUP
+  ATOM C3'  TYPE=C3R    CHARGE=0.00    END
+ GROUP
+  ATOM O3'  TYPE=O3R   CHARGE=-0.36   END
+
+ BOND P    O1P         BOND P    O2P           BOND P    O5'    
+
+ BOND O5'  C5'         BOND C5'  C4'           BOND C4'  O4'
+ BOND C4'  C3'         BOND O4'  C1'           BOND C1'  N9
+ BOND C1'  C2'         BOND N9   C4            BOND N9   C8
+ BOND C4   N3          BOND C4   C5            BOND N3   C2
+ BOND C2   N2          BOND C2   N1            BOND N2   H21 
+
+ BOND N2   H22         BOND N1   H1            BOND N1   C6
+ BOND C6   O6          BOND C6   C5            BOND C5   N7
+ BOND N7   C8          BOND C2'  C3'           BOND C3'  O3'
+ BOND C2'  O2'         BOND O2'  H2'
+
+ DIHEdral  P    O5'  C5'  C4'        !DIHEdral  O5'  C5'  C4'  O4'
+ DIHEdral  O5'  C5'  C4'  C3' 
+
+ DIHEdral  C3'  C4'  O4'  C1'
+ DIHEdral  C4'  O4'  C1'  C2'        DIHEdral  O4'  C1'  C2'  C3' 
+
+ DIHEdral  C1'  C2'  C3'  C4'        DIHEdral  O4'  C4'  C3'  O3'
+ DIHEdral  C5'  C4'  C3'  C2'        DIHEdral  O3'  C3'  C2'  O2'
+ DIHEdral  O4'  C1'  N9   C4         DIHEdral  N3   C2   N2   H21
+ DIHEdral  C3'  C2'  O2'  H2'
+ ! Dihedrals to keep the two purine rings parallel:
+ DIHEdral C8   C4   C5   N1          DIHEdral C8   C5   C4   C2
+ DIHEdral N3   C4   C5   N7          DIHEdral C6   C5   C4   N9
+ ! New dihedrals
+ DIHEdral  C5'  C4'  C3'  O3'        DIHEdral  C4'  O4'  C1'  N9
+
+ ! The ring-spanning impropers have been left out.
+ IMPRoper C5'  O4'  C3'  C4'         IMPRoper O3'  C2'  C4'  C3'
+ IMPRoper N9   C2'  O4'  C1'         IMPRoper C1'  C4   C8   N9
+ IMPRoper N9   C4   C5   N7          IMPRoper C4   C5   N7   C8
+ IMPRoper C5   N7   C8   N9          IMPRoper N7   C8   N9   C4
+ IMPRoper C8   N9   C4   C5          IMPRoper N2   N3   N1   C2  
+
+ IMPRoper H1   C2   C6   N1          IMPRoper O6   N1   C5   C6
+ IMPRoper C4   N3   C2   N1          IMPRoper N3   C2   N1   C6
+ IMPRoper C2   N1   C6   C5          IMPRoper N1   C6   C5   C4  
+
+ IMPRoper C6   C5   C4   N3          IMPRoper C5   C4   N3   C2
+ IMPRoper H22  H21  C2   N2          IMPRoper C2'  C3'  C1'  O2'
+
+
+
+
+ END {GUA}
+
+! ---------------------------------------------------------------------
+
+! ---------------------------------------------------------------------
+
+RESIdue ADE
+ GROUp
+  ATOM P    TYPE=P     CHARGE=1.20    END
+  ATOM O1P  TYPE=O1P   CHARGE=-0.40   END
+  ATOM O2P  TYPE=O2P   CHARGE=-0.40   END
+  ATOM O5'  TYPE=O5R   CHARGE=-0.36   END
+ GROUp
+  ATOM C5'  TYPE=C5R   CHARGE=0.00    END
+ GROUp
+  ATOM C4'  TYPE=C4R   CHARGE=0.10    END
+  ATOM O4'  TYPE=O4R   CHARGE=-0.30   END
+  ATOM C1'  TYPE=C1R   CHARGE=0.20    END
+
+! Insert Base
+ GROUp
+  ATOM N9    TYPE=N9A   CHARGE=-0.19   END
+  ATOM C4    TYPE=C4A   CHARGE=0.19   EXCLusion=( N1 )  END
+ GROUp
+  ATOM N3    TYPE=N3A   CHARGE=-0.26  EXCLusion=( C6 )  END  !H
+  ATOM C2    TYPE=C2A   CHARGE=0.26   EXCLusion=( C5 )  END  !H
+ GROUp
+  ATOM N1    TYPE=NC    CHARGE=-0.28   END  !H
+  ATOM C6    TYPE=C6A   CHARGE=0.28    END  !H
+ GROUp
+  ATOM N6    TYPE=N6A    CHARGE=-0.42   END  !H
+  ATOM H61   TYPE=H2    CHARGE=0.21    END  !H
+  ATOM H62   TYPE=H2    CHARGE=0.21    END  !H
+ GROUp
+  ATOM C5    TYPE=C5A   CHARGE=0.02    END
+  ATOM N7    TYPE=N7A   CHARGE=-0.25   END
+  ATOM C8    TYPE=C8A   CHARGE=0.23    END
+! END
+
+ GROUP
+  ATOM C2'  TYPE=C2R   CHARGE=0.15    END
+  ATOM O2'  TYPE=O2R   CHARGE=-0.40   END !H
+  ATOM H2'  TYPE=HHO    CHARGE=0.25    END !H
+ GROUP
+  ATOM C3'  TYPE=C3R    CHARGE=0.00    END
+ GROUP
+  ATOM O3'  TYPE=O3R   CHARGE=-0.36   END
+
+ BOND P    O1P              BOND P    O2P              BOND P     O5'
+ BOND O5'  C5'              BOND C5'  C4'              BOND C4'  O4'
+ BOND C4'  C3'              BOND O4'  C1'              BOND C1'  N9
+ BOND C1'  C2'              BOND N9   C4               BOND N9   C8
+ BOND C4   N3               BOND C4   C5               BOND N3   C2
+ BOND C2   N1               BOND N1   C6               BOND C6   N6  
+
+ BOND N6   H61              BOND N6   H62              BOND C6   C5   
+
+ BOND C5   N7               BOND N7   C8               BOND C2'  C3'
+ BOND C2'  O2'              BOND O2'  H2'              BOND C3'  O3'
+
+ DIHEdral P   O5'  C5'  C4'              !DIHEdral O5'  C5'  C4'  O4'
+ DIHEdral O5'  C5'  C4'  C3'  
+
+ DIHEdral C3'  C4'  O4'  C1'
+ DIHEdral C4'  O4'  C1'  C2'             DIHEdral O4'  C1'  C2'  C3' 
+
+ DIHEdral C1'  C2'  C3'  C4'             DIHEdral O4'  C4'  C3'  O3'
+ DIHEdral C5'  C4'  C3'  C2'             DIHEdral O2'  C2'  C3'  O3'
+ DIHEdral O4'  C1'  N9   C4              DIHEdral C5   C6   N6   H61
+ DIHEdral C3'  C2'  O2'  H2'
+ ! Dihedrals to keep the two purine rings parallel:
+ DIHEdral C8   C4   C5   N1              DIHEdral C8   C5   C4   C2
+ DIHEdral N3   C4   C5   N7              DIHEdral C6   C5   C4   N9
+ ! New dihedrals
+ DIHEdral  C5'  C4'  C3'  O3'        DIHEdral  C4'  O4'  C1'  N9
+
+ ! The ring-spanning impropers have been left out.
+ IMPRoper C5'  O4'  C3'  C4'             IMPRoper O3'  C2'  C4'  C3'
+ IMPRoper N9   C2'  O4'  C1'             IMPRoper C1'  C4   C8   N9
+ IMPRoper N9   C4   C5   N7              IMPRoper C4   C5   N7   C8  
+
+ IMPRoper C5   N7   C8   N9              IMPRoper N7   C8   N9   C4 
+
+ IMPRoper C8   N9   C4   C5              IMPRoper N6   N1   C5   C6  
+
+ IMPRoper H62  C6   H61  N6              IMPRoper C4   N3   C2   N1      
+
+ IMPRoper N3   C2   N1   C6              IMPRoper C2   N1   C6   C5
+ IMPRoper N1   C6   C5   C4              IMPRoper C6   C5   C4   N3
+ IMPRoper C5   C4   N3   C2              IMPRoper C2'  C3'  C1'  O2'
+
+
+
+ END {ADE}
+
+! ---------------------------------------------------------------------
+
+! ---------------------------------------------------------------------
+
+RESIdue CYT
+ GROUp
+  ATOM P    TYPE=P     CHARGE=1.20    END
+  ATOM O1P  TYPE=O1P   CHARGE=-0.40   END
+  ATOM O2P  TYPE=O2P   CHARGE=-0.40   END
+  ATOM O5'  TYPE=O5R   CHARGE=-0.36   END
+ GROUp
+  ATOM C5'  TYPE=C5R   CHARGE=0.00    END
+ GROUp
+  ATOM C4'  TYPE=C4R   CHARGE=0.10    END
+  ATOM O4'  TYPE=O4R   CHARGE=-0.30   END
+  ATOM C1'  TYPE=C1R   CHARGE=0.20    END
+
+! Insert Base
+
+ GROUp
+  ATOM N1    TYPE=N1C   CHARGE=-0.19  EXCLUSION=( C4 )  END
+  ATOM C6    TYPE=C6C   CHARGE=0.19   EXCLUSION=( N3 )  END
+ GROUp
+  ATOM C2    TYPE=C2C   CHARGE=0.30   EXCLUSION=( C5 )  END  !H
+  ATOM O2    TYPE=ON    CHARGE=-0.30   END                   !H
+ GROUp
+  ATOM N3    TYPE=NC    CHARGE=-0.28   END  !H
+  ATOM C4    TYPE=C4C   CHARGE=0.28    END  !H
+ GROUp
+  ATOM N4    TYPE=N4C   CHARGE=-0.42   END  !H
+  ATOM H41   TYPE=H2    CHARGE=0.21    END  !H
+  ATOM H42   TYPE=H2    CHARGE=0.21    END  !H
+ GROUp
+  ATOM C5    TYPE=C5C   CHARGE=0.00    END
+ GROUp
+
+! END
+
+
+ GROUP
+  ATOM C2'  TYPE=C2R   CHARGE=0.15    END
+  ATOM O2'  TYPE=O2R   CHARGE=-0.40   END !H
+  ATOM H2'  TYPE=HHO    CHARGE=0.25    END !H
+ GROUP
+  ATOM C3'  TYPE=C3R    CHARGE=0.00    END
+ GROUP
+  ATOM O3'  TYPE=O3R   CHARGE=-0.36   END
+
+ BOND P    O1P             BOND P    O2P             BOND P     O5'
+ BOND O5'  C5'             BOND C5'  C4'             BOND C4'  O4'
+ BOND C4'  C3'             BOND O4'  C1'             BOND C1'  N1
+ BOND C1'  C2'             BOND N1   C2              BOND N1   C6
+ BOND C2   O2              BOND C2   N3              BOND N3   C4
+ BOND C4   N4              BOND N4   H41             BOND N4   H42 
+
+ BOND C4   C5              BOND C5   C6              BOND C2'  C3'
+ BOND C3'  O3'             BOND C2'  O2'             BOND O2'  H2'
+
+ DIHEdral C3'  C2'  O2'  H2'               DIHEdral P   O5'  C5'  C4'
+!DIHEdral O5'  C5'  C4'  O4'              
+ DIHEdral O5'  C5'  C4'  C3' 
+
+ DIHEdral C3'  C4'  O4'  C1'               DIHEdral C4'  O4'  C1'  C2' 
+
+ DIHEdral O4'  C1'  C2'  C3' !modified    ! DIHEdral O4'  C1'  C2'  O2' ! **** 
+
+ DIHEdral O2'  C2'  C3'  O3' !added, ATB, 6-9-84
+ DIHEdral C1'  C2'  C3'  C4'
+ DIHEdral O4'  C4'  C3'  O3'           ! DIHEdral O4'  C4'  C3'  O3' ! ****
+ DIHEdral C5'  C4'  C3'  C2'               DIHEdral O4'  C1'  N1   C2
+ DIHEdral C5   C4   N4   H41 
+ ! New dihedrals
+ DIHEdral  C5'  C4'  C3'  O3'        DIHEdral  C4'  O4'  C1'  N1
+
+
+ IMPRoper C5'  O4'  C3'  C4'               IMPRoper O3'  C2'  C4'  C3'
+ IMPRoper N1   C2'  O4'  C1'               IMPRoper C1'  C2   C6   N1
+ IMPRoper O2   N1   N3   C2                IMPRoper N4   N3   C5   C4
+ IMPRoper N1   C2   N3   C4                IMPRoper C2   N3   C4   C5
+ IMPRoper N3   C4   C5   C6                IMPRoper C4   C5   C6   N1
+ IMPRoper C5   C6   N1   C2                IMPRoper C6   N1   C2   N3
+ IMPRoper H42  C4   H41  N4                IMPRoper C2'  C3'  C1'  O2'
+
+
+
+ END {CYT}
+
+
+
+
+
+! ---------------------------------------------------------------------
+
+! ---------------------------------------------------------------------
+
+RESIdue THY
+ GROUp
+  ATOM P    TYPE=P     CHARGE=1.20    END
+  ATOM O1P  TYPE=O1P   CHARGE=-0.40   END
+  ATOM O2P  TYPE=O2P   CHARGE=-0.40   END
+  ATOM O5'  TYPE=O5R   CHARGE=-0.36   END
+ GROUp
+  ATOM C5'  TYPE=C5R   CHARGE=0.00    END
+ GROUp
+  ATOM C4'  TYPE=C4R   CHARGE=0.10    END
+  ATOM O4'  TYPE=O4R   CHARGE=-0.30   END
+  ATOM C1'  TYPE=C1R   CHARGE=0.20    END
+
+! Insert Base
+ GROUp
+  ATOM N1    TYPE=N1T   CHARGE=-0.19  EXCLUSION=( C4 )  END
+  ATOM C6    TYPE=C6T   CHARGE=0.19   EXCLUSION=( N3 )  END
+ GROUp
+  ATOM C2    TYPE=C2T   CHARGE=0.35   EXCLUSION=( C5 )  END  !H
+  ATOM O2    TYPE=ON    CHARGE=-0.35   END                   !H
+ GROUp
+  ATOM N3    TYPE=NNA   CHARGE=-0.26   END   !H
+  ATOM H3    TYPE=HN    CHARGE=0.26    END   !H
+ GROUp
+  ATOM C4    TYPE=C4T   CHARGE=0.30    END   !H
+  ATOM O4    TYPE=ON    CHARGE=-0.30   END   !H
+ GROUp
+  ATOM C5    TYPE=C5T   CHARGE=0.00    END
+  ATOM C5A   TYPE=CC3E  CHARGE=0.00    END
+ GROUp
+
+! END 
+
+
+ GROUP
+  ATOM C2'  TYPE=C2R   CHARGE=0.15    END
+  ATOM O2'  TYPE=O2R   CHARGE=-0.40   END !H
+  ATOM H2'  TYPE=HHO    CHARGE=0.25    END !H
+ GROUP
+  ATOM C3'  TYPE=C3R    CHARGE=0.00    END
+ GROUP
+  ATOM O3'  TYPE=O3R   CHARGE=-0.36   END
+
+
+ BOND P    O1P               BOND P    O2P               BOND P    O5'
+ BOND O5'  C5'               BOND C5'  C4'               BOND C4'  O4'
+ BOND C4'  C3'               BOND O4'  C1'               BOND C1'  N1
+ BOND C1'  C2'               BOND N1   C2                BOND N1   C6
+ BOND C2   O2                BOND C2   N3                BOND N3   H3
+ BOND N3   C4                BOND C4   O4                BOND C4   C5
+ BOND C5   C5A               BOND C5   C6                BOND C2'  C3'
+ BOND C3'  O3'               BOND C2'  O2'               BOND O2'  H2'
+
+ DIHEdral C3'  C2'  O2'  H2'                DIHEdral O3'  C3'  C2'  O2'
+ DIHEdral P   O5'  C5'  C4'                 !DIHEdral O5'  C5'  C4'  O4'
+ DIHEdral O5'  C5'  C4'  C3'   
+
+ DIHEdral C3'  C4'  O4'  C1'
+ DIHEdral C4'  O4'  C1'  C2'                DIHEdral O4'  C1'  C2'  C3' 
+
+ DIHEdral C1'  C2'  C3'  C4'                DIHEdral O4'  C4'  C3'  O3'
+ DIHEdral C5'  C4'  C3'  C2'                DIHEdral O4'  C1'  N1   C2
+ ! New dihedrals
+ DIHEdral  C5'  C4'  C3'  O3'        DIHEdral  C4'  O4'  C1'  N1
+
+ IMPRoper C5'  O4'  C3'  C4'                IMPRoper O3'  C2'  C4'  C3'
+ IMPRoper N1   C2'  O4'  C1'                IMPRoper C1'  C2   C6   N1
+ IMPRoper O2   N1   N3   C2                 IMPRoper H3   C2   C4   N3
+ IMPRoper O4   N3   C5   C4                 IMPRoper C5A  C4   C6   C5
+ IMPRoper N1   C2   N3   C4                 IMPRoper C2   N3   C4   C5
+ IMPRoper N3   C4   C5   C6                 IMPRoper C4   C5   C6   N1
+ IMPRoper C5   C6   N1   C2                 IMPRoper C6   N1   C2   N3
+ IMPRoper C2'  C3'  C1'  O2'
+
+
+
+
+ END {THY}
+
+
+!------------------------------------------------------------------
+
+RESIdue CMP
+
+ GROUp
+  ATOM P    TYPE=P     CHARGE=1.20    END
+  ATOM O1P  TYPE=O1P   CHARGE=-0.40   END
+  ATOM O2P  TYPE=O2P   CHARGE=-0.40   END
+  ATOM O5'  TYPE=O5R   CHARGE=-0.36   END
+ GROUp
+  ATOM C5'  TYPE=C5R   CHARGE=0.00    END
+ GROUp
+  ATOM C4'  TYPE=C4R   CHARGE=0.10    END
+  ATOM O4'  TYPE=O4R   CHARGE=-0.30   END
+  ATOM C1'  TYPE=C1R   CHARGE=0.20    END
+
+! Insert Base
+ GROUp
+  ATOM N9    TYPE=N9A   CHARGE=-0.19   END
+  ATOM C4    TYPE=C4A   CHARGE=0.19   EXCLusion=( N1 )  END
+ GROUp
+  ATOM N3    TYPE=N3A   CHARGE=-0.26  EXCLusion=( C6 )  END  !H
+  ATOM C2    TYPE=C2A   CHARGE=0.26   EXCLusion=( C5 )  END  !H
+ GROUp
+  ATOM N1    TYPE=NC    CHARGE=-0.28   END  !H
+  ATOM C6    TYPE=C6A   CHARGE=0.28    END  !H
+ GROUp
+  ATOM N6    TYPE=N6A    CHARGE=-0.42   END  !H
+  ATOM H61   TYPE=H2    CHARGE=0.21    END  !H
+  ATOM H62   TYPE=H2    CHARGE=0.21    END  !H
+ GROUp
+  ATOM C5    TYPE=C5A   CHARGE=0.02    END
+  ATOM N7    TYPE=N7A   CHARGE=-0.25   END
+  ATOM C8    TYPE=C8A   CHARGE=0.23    END
+! END
+
+ GROUP
+  ATOM C2'  TYPE=C2R   CHARGE=0.15    END
+  ATOM O2'  TYPE=O2R   CHARGE=-0.40   END !H
+  ATOM H2'  TYPE=HHO    CHARGE=0.25    END !H
+ GROUP
+  ATOM C3'  TYPE=C3R    CHARGE=0.00    END
+ GROUP
+  ATOM O3'  TYPE=O3R   CHARGE=-0.36   END
+
+
+ BOND P    O1P              BOND P    O2P              BOND P     O5'
+ BOND O5'  C5'              BOND C5'  C4'              BOND C4'  O4'
+ BOND C4'  C3'              BOND O4'  C1'              BOND C1'  N9
+ BOND C1'  C2'              BOND N9   C4               BOND N9   C8
+ BOND C4   N3               BOND C4   C5               BOND N3   C2
+ BOND C2   N1               BOND N1   C6               BOND C6   N6  
+
+ BOND N6   H61              BOND N6   H62              BOND C6   C5   
+
+ BOND C5   N7               BOND N7   C8               BOND C2'  C3'
+ BOND C2'  O2'              BOND O2'  H2'              BOND C3'  O3'
+ BOND P    O3'
+
+ DIHEdral P   O5'  C5'  C4'              !DIHEdral O5'  C5'  C4'  O4'
+ DIHEdral O5'  C5'  C4'  C3'  
+
+ DIHEdral C3'  C4'  O4'  C1'
+ DIHEdral C4'  O4'  C1'  C2'             DIHEdral O4'  C1'  C2'  C3' 
+
+ DIHEdral C1'  C2'  C3'  C4'             DIHEdral O4'  C4'  C3'  O3'
+ DIHEdral C5'  C4'  C3'  C2'             DIHEdral O2'  C2'  C3'  O3'
+ DIHEdral O4'  C1'  N9   C4              DIHEdral C5   C6   N6   H61
+ DIHEdral C3'  C2'  O2'  H2'
+ ! Dihedrals to keep the two purine rings parallel:
+ DIHEdral C8   C4   C5   N1              DIHEdral C8   C5   C4   C2
+ DIHEdral N3   C4   C5   N7              DIHEdral C6   C5   C4   N9
+ DIHEdral P    O3'  C3'  C2'             DIHEdral P    O3'  C3'  C4'           
+ ! New dihedrals
+ DIHEdral  C5'  C4'  C3'  O3'        DIHEdral  C4'  O4'  C1'  N9
+
+ ! The ring-spanning impropers have been left out.
+ IMPRoper C5'  O4'  C3'  C4'             IMPRoper O3'  C2'  C4'  C3'
+ IMPRoper N9   C2'  O4'  C1'             IMPRoper C1'  C4   C8   N9
+ IMPRoper N9   C4   C5   N7              IMPRoper C4   C5   N7   C8  
+
+ IMPRoper C5   N7   C8   N9              IMPRoper N7   C8   N9   C4 
+
+ IMPRoper C8   N9   C4   C5              IMPRoper N6   N1   C5   C6  
+
+ IMPRoper H62  C6   H61  N6              IMPRoper C4   N3   C2   N1      
+
+ IMPRoper N3   C2   N1   C6              IMPRoper C2   N1   C6   C5
+ IMPRoper N1   C6   C5   C4              IMPRoper C6   C5   C4   N3
+ IMPRoper C5   C4   N3   C2              IMPRoper C2'  C3'  C1'  O2'
+
+
+
+ END {CMP}
+
+!------------------------------------------------------------------
+
+RESIdue URI
+ GROUp
+  ATOM P    TYPE=P     CHARGE=1.20    END
+  ATOM O1P  TYPE=O1P   CHARGE=-0.40   END
+  ATOM O2P  TYPE=O2P   CHARGE=-0.40   END
+  ATOM O5'  TYPE=O5R   CHARGE=-0.36   END
+ GROUp
+  ATOM C5'  TYPE=C5R   CHARGE=0.00    END
+ GROUp
+  ATOM C4'  TYPE=C4R   CHARGE=0.10    END
+  ATOM O4'  TYPE=O4R   CHARGE=-0.30   END
+  ATOM C1'  TYPE=C1R   CHARGE=0.20    END
+
+
+ GROUp
+  ATOM N1    TYPE=N1U   CHARGE=-0.19  EXCLUSION=( C4 )  END
+  ATOM C6    TYPE=C6U   CHARGE=0.19   EXCLUSION=( N3 )  END
+ GROUp
+  ATOM C2    TYPE=C2U   CHARGE=0.30   EXCLUSION=( C5 )  END  !H
+  ATOM O2    TYPE=ON    CHARGE=-0.30   END                   !H
+ GROUp
+  ATOM N3    TYPE=N3U    CHARGE=-0.28   END  !H
+  ATOM H3    TYPE=HN    CHARGE=0.26    END   !H
+ GROUp
+  ATOM C4    TYPE=C4U   CHARGE=0.28    END  !H
+  ATOM O4    TYPE=ON    CHARGE=-0.30   END    !H
+ GROUp
+  ATOM C5    TYPE=C5U   CHARGE=0.00    END
+
+ GROUP
+  ATOM C2'  TYPE=C2R   CHARGE=0.15    END
+  ATOM O2'  TYPE=O2R   CHARGE=-0.40   END !H
+  ATOM H2'  TYPE=HHO    CHARGE=0.25    END !H
+ GROUP
+  ATOM C3'  TYPE=C3R    CHARGE=0.00    END
+ GROUP
+  ATOM O3'  TYPE=O3R   CHARGE=-0.36   END
+
+ BOND P    O1P                BOND P    O2P              BOND P    O5'
+ BOND O5'  C5'                BOND C5'  C4'              BOND C4'  O4'
+ BOND C4'  C3'                BOND O4'  C1'              BOND C1'  N1
+ BOND C1'  C2'                BOND N1   C2               BOND N1   C6
+ BOND C2   O2                 BOND C2   N3               BOND N3   H3
+ BOND N3   C4                 BOND C4   O4               BOND C4   C5  
+
+ BOND C5   C6                 BOND C2'  C3'              BOND C3'  O3'
+ BOND C2'  O2'                BOND O2'  H2'
+
+ DIHEdral C3'  C2'  O2'  H2'                DIHEdral O3'  C3'  C2'  O2'
+ DIHEdral P   O5'  C5'  C4'                 !DIHEdral O5'  C5'  C4'  O4'
+ DIHEdral O5'  C5'  C4'  C3'                DIHEdral C3'  C4'  O4'  C1'
+ DIHEdral C4'  O4'  C1'  C2'                DIHEdral O4'  C1'  C2'  C3'
+ DIHEdral C1'  C2'  C3'  C4'                DIHEdral O4'  C4'  C3'  O3'
+ DIHEdral C5'  C4'  C3'  C2'                DIHEdral O4'  C1'  N1   C2
+ ! New dihedrals
+ DIHEdral  C5'  C4'  C3'  O3'        DIHEdral  C4'  O4'  C1'  N1
+
+ IMPRoper C5'  O4'  C3'  C4'                IMPRoper O3'  C2'  C4'  C3'
+ IMPRoper N1   C2'  O4'  C1'                IMPRoper C1'  C2   C6   N1
+ IMPRoper O2   N1   N3   C2                 IMPRoper H3   C2   C4   N3
+ IMPRoper O4   N3   C5   C4                 IMPRoper N1   C2   N3   C4
+ IMPRoper C2   N3   C4   C5                 IMPRoper N3   C4   C5   C6
+ IMPRoper C4   C5   C6   N1                 IMPRoper C5   C6   N1   C2
+ IMPRoper C6   N1   C2   N3                 IMPRoper C2'  C3'  C1'  O2'
+
+END {URI}
+
+!------------------------------------------------------------------
+
+RESIdue PSU
+ GROUp
+  ATOM P    TYPE=P     CHARGE=1.20    END
+  ATOM O1P  TYPE=O1P   CHARGE=-0.40   END
+  ATOM O2P  TYPE=O2P   CHARGE=-0.40   END
+  ATOM O5'  TYPE=O5R   CHARGE=-0.36   END
+ GROUp
+  ATOM C5'  TYPE=C5R   CHARGE=0.00    END
+ GROUp
+  ATOM C4'  TYPE=C4R   CHARGE=0.10    END
+  ATOM O4'  TYPE=O4R   CHARGE=-0.30   END
+  ATOM C1'  TYPE=C1R   CHARGE=0.20    END
+
+
+ GROUp
+  ATOM N1    TYPE=N1U   CHARGE=-0.19  EXCLUSION=( C4 )  END
+  ATOM C6    TYPE=C6U   CHARGE=0.19   EXCLUSION=( N3 )  END
+ GROUp
+  ATOM C2    TYPE=C2U   CHARGE=0.30   EXCLUSION=( C5 )  END  !H
+  ATOM O2    TYPE=ON    CHARGE=-0.30   END                   !H
+ GROUp
+  ATOM N3    TYPE=N3U    CHARGE=-0.28   END  !H
+  ATOM H3    TYPE=HN    CHARGE=0.26    END   !H
+ GROUp
+  ATOM C4    TYPE=C4U   CHARGE=0.28    END  !H
+  ATOM O4    TYPE=ON    CHARGE=-0.30   END    !H
+ GROUp
+  ATOM C5    TYPE=C5U   CHARGE=0.00    END
+
+ GROUP
+  ATOM C2'  TYPE=C2R   CHARGE=0.15    END
+  ATOM O2'  TYPE=O2R   CHARGE=-0.40   END !H
+  ATOM H2'  TYPE=HHO    CHARGE=0.25    END !H
+ GROUP
+  ATOM C3'  TYPE=C3R    CHARGE=0.00    END
+ GROUP
+  ATOM O3'  TYPE=O3R   CHARGE=-0.36   END
+
+ BOND P    O1P                BOND P    O2P              BOND P    O5'
+ BOND O5'  C5'                BOND C5'  C4'              BOND C4'  O4'
+ BOND C4'  C3'                BOND O4'  C1'              BOND C1'  C5
+ BOND C1'  C2'                BOND N1   C2               BOND N1   C6
+ BOND C2   O2                 BOND C2   N3               BOND N3   H3
+ BOND N3   C4                 BOND C4   O4               BOND C4   C5  
+
+ BOND C5   C6                 BOND C2'  C3'              BOND C3'  O3'
+ BOND C2'  O2'                BOND O2'  H2'
+
+! DIHEdral C3'  C2'  O2'  H2'                DIHEdral O3'  C3'  C2'  O2'
+!  DIHEdral P   O5'  C5'  C4'                 !DIHEdral O5'  C5'  C4'  O4'
+!  DIHEdral O5'  C5'  C4'  C3'                DIHEdral C3'  C4'  O4'  C1'
+!  DIHEdral C4'  O4'  C1'  C2'                DIHEdral O4'  C1'  C2'  C3'
+!  DIHEdral C1'  C2'  C3'  C4'                DIHEdral O4'  C4'  C3'  O3'
+!  DIHEdral C5'  C4'  C3'  C2'                DIHEdral O4'  C1'  N1   C2
+!  DIHEdral  C5'  C4'  C3'  O3'        DIHEdral  C4'  O4'  C1'  N1
+
+!  IMPRoper C5'  O4'  C3'  C4'                IMPRoper O3'  C2'  C4'  C3'
+!  IMPRoper N1   C2'  O4'  C1'                IMPRoper C1'  C2   C6   N1
+!  IMPRoper O2   N1   N3   C2                 IMPRoper H3   C2   C4   N3
+!  IMPRoper O4   N3   C5   C4                 IMPRoper N1   C2   N3   C4
+!  IMPRoper C2   N3   C4   C5                 IMPRoper N3   C4   C5   C6
+!  IMPRoper C4   C5   C6   N1                 IMPRoper C5   C6   N1   C2
+!  IMPRoper C6   N1   C2   N3                 IMPRoper C2'  C3'  C1'  O2'
+
+END {PSU}
+
+RESIdue G4C
+ GROUp
+  ATOM P    TYPE=P     CHARGE=1.20    END
+  ATOM O1P  TYPE=O1P   CHARGE=-0.40   END
+  ATOM O2P  TYPE=O2P   CHARGE=-0.40   END
+  ATOM O5'  TYPE=O5R   CHARGE=-0.36   END
+ GROUp
+  ATOM C5'  TYPE=C5R   CHARGE=0.00    END
+ GROUp
+  ATOM C4'  TYPE=C4R   CHARGE=0.10    END
+  ATOM C6'  TYPE=O4R   CHARGE=-0.30   END
+  ATOM C1'  TYPE=C1R   CHARGE=0.20    END
+
+! Insert Base
+ GROUp
+  ATOM N9   TYPE=N9G    CHARGE=-0.19   END
+  ATOM C4   TYPE=C4G    CHARGE=0.19    EXCLusion=( N1 )   END
+ GROUp
+  ATOM N3   TYPE=N3G    CHARGE=-0.35   EXCLusion=( C6 )   END !H
+  ATOM C2   TYPE=C2G    CHARGE=0.35    EXCLusion=( C5 )   END !H
+ GROUp
+  ATOM N2   TYPE=N2G   CHARGE=-0.42   END !H
+  ATOM H21  TYPE=H2    CHARGE=0.21    END !H
+  ATOM H22  TYPE=H2    CHARGE=0.21    END !H
+ GROUp
+  ATOM N1   TYPE=NNA   CHARGE=-0.26   END !H
+  ATOM H1   TYPE=HN    CHARGE=0.26    END !H
+ GROUp
+  ATOM C6   TYPE=C6G   CHARGE=0.30    END !H
+  ATOM O6   TYPE=O6G    CHARGE=-0.30   END !H
+ GROUp
+  ATOM C5   TYPE=C5G   CHARGE=0.02    END
+  ATOM N7   TYPE=N7G   CHARGE=-0.25   END
+  ATOM C8   TYPE=C8G   CHARGE=0.23    END
+
+!
+ GROUP
+  ATOM C2'  TYPE=C2R   CHARGE=0.15    END
+  ATOM O2'  TYPE=O2R   CHARGE=-0.40   END !H
+  ATOM H2'  TYPE=HHO    CHARGE=0.25    END !H
+ GROUP
+  ATOM C3'  TYPE=C3R    CHARGE=0.00    END
+ GROUP
+  ATOM O3'  TYPE=O3R   CHARGE=-0.36   END
+
+ BOND P    O1P         BOND P    O2P           BOND P    O5'    
+
+ BOND O5'  C5'         BOND C5'  C4'           BOND C4'  C6'
+ BOND C4'  C3'         BOND C6'  C1'           BOND C1'  N9
+ BOND C1'  C2'         BOND N9   C4            BOND N9   C8
+ BOND C4   N3          BOND C4   C5            BOND N3   C2
+ BOND C2   N2          BOND C2   N1            BOND N2   H21 
+
+ BOND N2   H22         BOND N1   H1            BOND N1   C6
+ BOND C6   O6          BOND C6   C5            BOND C5   N7
+ BOND N7   C8          BOND C2'  C3'           BOND C3'  O3'
+ BOND C2'  O2'         BOND O2'  H2'
+
+ DIHEdral  P    O5'  C5'  C4'        !DIHEdral  O5'  C5'  C4'  C6'
+ DIHEdral  O5'  C5'  C4'  C3' 
+
+ DIHEdral  C3'  C4'  C6'  C1'
+ DIHEdral  C4'  C6'  C1'  C2'        DIHEdral  C6'  C1'  C2'  C3' 
+
+ DIHEdral  C1'  C2'  C3'  C4'        DIHEdral  C6'  C4'  C3'  O3'
+ DIHEdral  C5'  C4'  C3'  C2'        DIHEdral  O3'  C3'  C2'  O2'
+ DIHEdral  C6'  C1'  N9   C4         DIHEdral  N3   C2   N2   H21
+ DIHEdral  C3'  C2'  O2'  H2'
+ ! Dihedrals to keep the two purine rings parallel:
+ DIHEdral C8   C4   C5   N1          DIHEdral C8   C5   C4   C2
+ DIHEdral N3   C4   C5   N7          DIHEdral C6   C5   C4   N9
+ ! New dihedrals
+ DIHEdral  C5'  C4'  C3'  O3'        DIHEdral  C4'  C6'  C1'  N9
+
+ ! The ring-spanning impropers have been left out.
+ IMPRoper C5'  C6'  C3'  C4'         IMPRoper O3'  C2'  C4'  C3'
+ IMPRoper N9   C2'  C6'  C1'         IMPRoper C1'  C4   C8   N9
+ IMPRoper N9   C4   C5   N7          IMPRoper C4   C5   N7   C8
+ IMPRoper C5   N7   C8   N9          IMPRoper N7   C8   N9   C4
+ IMPRoper C8   N9   C4   C5          IMPRoper N2   N3   N1   C2  
+
+ IMPRoper H1   C2   C6   N1          IMPRoper O6   N1   C5   C6
+ IMPRoper C4   N3   C2   N1          IMPRoper N3   C2   N1   C6
+ IMPRoper C2   N1   C6   C5          IMPRoper N1   C6   C5   C4  
+
+ IMPRoper C6   C5   C4   N3          IMPRoper C5   C4   N3   C2
+ IMPRoper H22  H21  C2   N2          IMPRoper C2'  C3'  C1'  O2'
+
+ END {G4C}
+
+PRESidue DEOX    ! Patch to make DEOXYribose of the ribose
+ DELETE ATOM O2'   END
+ DELETE ATOM H2'   END
+GROUP
+ MODIFY  ATOM C2'  TYPE=C2D   CHARGE=0.00    END
+ MODIFY  ATOM C5'  TYPE=C5D   CHARGE=0.00    END
+ MODIFY  ATOM C4'  TYPE=C4D   CHARGE=0.10    END
+ MODIFY  ATOM O4'  TYPE=O4D   CHARGE=-0.30   END
+ MODIFY  ATOM C1'  TYPE=C1D   CHARGE=0.20    END
+ MODIFY  ATOM C3'  TYPE=C3D   CHARGE=0.00    END
+
+
+END {DEOX}
+
+!------------------------------------------------------------------
+!------------------------------------------------------------------
+
+
+PRESidue 5PHO           ! 5-terminus (with phosphate)
+ !                      ! should be used as "FIRST  5PHO  TAIL + * END"
+ GROUp                  ! i.e. to be patched to the first RNA residue
+!***AB***
+!  ADD ATOM +H5T   TYPE=HHO    CHARGE=0.15    END
+!  ADD ATOM +O5T   TYPE=OH    CHARGE=-0.15   END
+!
+        !PERHAPS ONE SHOULD CHANGE THE P CHARGE AS WELL????
+        !
+        ! I do not think it is necessary. At least for X-ray.
+        ! We discharge all atoms any way. But ...  A.B.
+        !
+  ADD    ATOM +O5T    TYPE=OH     CHARGE=-0.84    END     
+  ADD    ATOM +H5T    TYPE=HHO    CHARGE= 0.15    END
+  MODIFY ATOM +P      TYPE=P      CHARGE= 0.75    END     
+  MODIFY ATOM +O1P    TYPE=O1PH   CHARGE=-0.84    END     
+  MODIFY ATOM +O2P    TYPE=O2PH   CHARGE=-0.84    END     
+  MODIFY ATOM +O5'    TYPE=O5H    CHARGE=-0.47    END     
+!***AB end***
+!
+  ADD BOND +H5T  +O5T
+  ADD BOND +O5T  +P
+  ADD ANGLe +H5T  +O5T  +P
+  ADD ANGLe +O5'  +P  +O5T
+  ADD ANGLe +O5T  +P  +O1P
+  ADD ANGLe +O5T  +P  +O2P 
+
+  ADD DIHEdral +O5'  +P   +O5T   +H5T
+  ADD DIHEdral +C5'  +O5'  +P    +O5T
+END {5PHO}
+
+!------------------------------------------------------------------
+
+
+PRESidue 3TER               ! 3-terminus (without phosphate)
+                            ! should be used as "LAST 3TER  HEAD - * END"
+ GROUp                      ! i.e. to be patched to the last RNA residue
+  MODIFY ATOM -C3'    TYPE=C3R    CHARGE=0.15    END    !H
+  MODIFY ATOM -O3'    TYPE=OH     CHARGE=-0.40   END    !H
+  ADD ATOM -H3T  TYPE=HHO     CHARGE=0.25        END    !H
+ !
+ ADD BOND -O3'  -H3T
+ ADD ANGLe -C3'  -O3'  -H3T
+ ADD DIHEdral -C4'  -C3'  -O3'  -H3T
+END {3TER}
+
+!------------------------------------------------------------------
+
+
+PRESidue 5TER        ! 5-terminus (without phosphate)
+ !                   ! should be used as "FIRST  5TER  TAIL + * END"
+ GROUp               ! i.e. to be patched to the first RNA residue
+  ADD ATOM +H5T  TYPE=HHO    CHARGE=0.25    END   !H
+  MODIFY ATOM +O5'  TYPE=OH  CHARGE=-0.40  END   !H
+  MODIFY ATOM +C5'  TYPE=C5R  CHARGE=0.15   END   !H
+  DELETE ATOM +P   END
+  DELETE ATOM +O1P END
+  DELETE ATOM +O2P END
+ !
+ ADD BOND +H5T   +O5'
+ ADD ANGLe +H5T   +O5'  +C5'
+ ADD DIHEdral +H5T   +O5'  +C5'  +C4'
+END {5TER}
+
+! ---------------------------------------------------------------------
+!------------------------------------------------------------------
+
+PRESidue NUC         ! patch for nucleic acid backbone
+                     ! should be used as "LINK NUC  HEAD - *  TAIL + *  END"
+                     ! i.e. it links the previous RNA residue (-) with
+                     ! the current one (+)
+ GROUp               
+
+  MODIFY ATOM -O3' END   !
+  MODIFY ATOM +P   END   !
+  MODIFY ATOM +O1P END   ! this should correctly define the electrostatic 
+
+  MODIFY ATOM +O2P END   ! group boundary 
+
+  MODIFY ATOM +O5' END   !
+ ADD BOND -O3' +P
+ ADD ANGLE -C3' -O3' +P
+ ADD ANGLE -O3' +P  +O1P
+ ADD ANGLE -O3' +P  +O2P
+ ADD ANGLE -O3' +P  +O5'
+ ADD DIHEdral -O3' +P  +O5'  +C5'   
+
+ ADD DIHEdral -C4' -C3' -O3'  +P
+ ADD DIHEdral -C3' -O3' +P   +O5'  
+
+ LINKDIST 1.8 { link distance between P-O bond }
+END {NUC}
+
+!------------------------------------------------------------------
+
+PRESidue U5I    ! Patch to add I to C5 of uracil
+
+ GROUp
+   MODIFY ATOM C5   END
+   ADD    ATOM I5 TYPE=I5U CHARge=0.0  END
+
+ ADD BOND     C5  I5
+ ADD ANGLe    I5  C5  C4
+ ADD ANGLe    I5  C5  C6
+ ADD IMPRoper I5  O4  C6  C5
+
+END {U5I}
+
+
+!------------------------------------------------------------------
+!------------------------------------------------------------------
+
+
+!------------------------------------------------------------------
+! Que's extension commands
+
+PropResid ALA
+  Pivot CA
+  SideCh CA CB END
+  MainCh CA C N H O END
+  Prop type prot
+END
+
+PropResid ARG
+  Pivot CA
+  SideCh CA CB CG CD NE HE CZ NH1 HH11 HH12 NH2 HH21 HH22 END
+  MainCh CA C N H O END
+  Prop type prot
+END {ARG}
+
+PropResid ASN
+  Pivot CA
+  SideCh CA CB CG OD1 ND2 HD21 HD22 END
+  MainCh CA C N H O END
+  Prop type prot
+END {ASN}
+
+PropResid ASP
+  Pivot CA
+  SideCh CA CB CG OD1 OD2 END
+  MainCh CA C N H O END
+  Prop type prot
+END {ASP}
+
+PropResid CYS
+  Pivot CA
+  SideCh CA CB SG END
+  MainCh CA C N H O END
+  Prop type prot
+END {CYS}
+
+PropResid GLN
+  Pivot CA
+  SideCh CA CB CG CD OE1 NE2 HE21 HE22 END
+  MainCh CA C N H O END
+  Prop type prot
+END {GLN}
+
+PropResid GLU
+  Pivot CA
+  SideCh CA CB CG CD OE1 OE2 END
+  MainCh CA C N H O END
+  Prop type prot
+END {GLU}
+
+PropResid GLY
+  Pivot CA
+  SideCh END
+  MainCh CA C N H O END
+  Prop type prot
+END {GLY}
+
+PropResid HISH
+  Pivot CA
+  Ring CG ND1 CE1 NE2 CD2 END
+  SideCh CA CB CG CD2 ND1 HD1 CE1 NE2 HE2 END
+  MainCh CA C N H O END
+  Alias HIP
+  Alias HSP
+  Prop type prot
+END {HISH}
+
+PropResid HIS
+  Pivot CA
+  Ring CG ND1 CE1 NE2 CD2 END
+  SideCh CA CB CG CD2 ND1 HD1 CE1 NE2 HE2 END
+  MainCh CA C N H O END
+  Alias HID
+  Alias HSD
+  Prop type prot
+END {HIS}
+
+PropResid HIE
+  Pivot CA
+  Ring CG ND1 CE1 NE2 CD2 END
+  SideCh CA CB CG CD2 ND1 HD1 CE1 NE2 HE2 END
+  MainCh CA C N H O END
+  Alias HSE
+  Prop type prot
+END {HIE}
+
+PropResid ILE
+  Pivot CA
+  SideCh CA CB CG2 CG1 CD END
+  MainCh CA C N H O END
+  Prop type prot
+END {ILE}
+
+PropResid LEU
+  Pivot CA
+  SideCh CA CB CG CD1 CD2 END
+  MainCh CA C N H O END
+  Prop type prot
+END {LEU}
+
+PropResid LYS
+  Pivot CA
+  SideCh CA CB CG CD CE NZ HZ1 HZ2 HZ3 END
+  MainCh CA C N H O END
+  Prop type prot
+END {LYS}
+
+PropResid MET
+  Pivot CA
+  SideCh CA CB CG SD CE END
+  MainCh CA C N H O END
+  Prop type prot
+END {MET}
+
+PropResid MSE
+  Pivot CA
+  SideCh CA CB CG SE CE END
+  MainCh CA C N H O END
+  Prop type prot
+END {MSE}
+
+PropResid PHE
+  Pivot CA
+  Ring CG CD1 CE1 CZ CE2 CD2 END
+  SideCh CA CB CG CD1 CD2 CE1 CE2 CZ END
+  MainCh CA C N H O END
+  Prop type prot
+END {PHE}
+
+PropResid PRO
+  Pivot CA
+  Ring CA CB CG CD N END
+  SideCh CA CB CG CD N END
+  MainCh CA C N O END
+  Prop type prot
+END {PRO}
+
+PropResid CPR
+  Pivot CA
+  Ring CA CB CG CD N END
+  SideCh CA CB CG CD N END
+  MainCh CA C N O END
+  Prop type prot
+END {CPR}
+
+PropResid SER
+  Pivot CA
+  SideCh CA CB OG HG END
+  MainCh CA C N H O END
+  Prop type prot
+END {SER}
+
+PropResid THR
+  Pivot CA
+  SideCh CA CB OG1 HG1 CG2 END
+  MainCh CA C N H O END
+  Prop type prot
+END {THR}
+
+PropResid TRP
+  Pivot CA
+  Ring CG CD1 NE1 CE2 CD2 END
+  Ring CD2 CE2 CZ2 CH2 CZ3 CE3 END
+  SideCh CA CB CG CD2 CE2 CE3 CD1 NE1 HE1 CZ2 CZ3 CH2 END
+  MainCh CA C N H O END
+  Prop type prot
+END {M3L}
+
+PropResid TYR
+  Pivot CA
+  Ring CG CD1 CE1 CZ CE2 CD2 END
+  SideCh CA CB CG CD1 CE1 CZ CE2 CD2 OH HH END
+  MainCh CA C N H O END
+  Prop type prot
+END {TYR}
+
+PropResid VAL
+  Pivot CA
+  SideCh CA CB CG1 CG2 END
+  MainCh CA C N H O END
+  Prop type prot
+END {VAL}
+
+!------------------------------------------------------------------
+
+PropResid GUA
+  Pivot P
+  SideCh C1' N9  C4  N3  C2  N2  H21 H22 N1  H1  C6  O6  C5  N7  C8 END
+  MainCh P O1P O2P O5' C5' C4' O4' C1' C2' O2' H2' C3' O3' END
+  Ring N1 C2 N3 C4 C5 C6 END
+  Ring C4 C5 N7 C8 N9 END
+  Ring C1' C2' C3' C4' O4' END
+  Prop type nuc
+  Prop basetype pur
+  Alias DG
+  Alias GR
+END {GUA}
+
+PropResid 2MG
+  Pivot P
+  SideCh C1' N9  C4  N3  C2  N2  CM2 N1 C6  O6  C5  N7  C8 END
+  MainCh P O1P O2P O5' C5' C4' O4' C1' C2' O2' C3' O3' END
+  Ring N1 C2 N3 C4 C5 C6 END
+  Ring C4 C5 N7 C8 N9 END
+  Ring C1' C2' C3' C4' O4' END
+  Prop type nuc
+  Prop basetype pur
+END {GUA}
+
+PropResid 7MG
+  Pivot P
+  SideCh C1' N9  C4  N3  C2  N2 N1  C6  O6  C5  N7  CM7 C8 END
+  MainCh P O1P O2P O5' C5' C4' O4' C1' C2' O2' C3' O3' END
+  Ring N1 C2 N3 C4 C5 C6 END
+  Ring C4 C5 N7 C8 N9 END
+  Ring C1' C2' C3' C4' O4' END
+  Prop type nuc
+  Prop basetype pur
+END {GUA}
+
+PropResid M2G
+  Pivot P
+  SideCh C1' N9  C4  N3  C2  N2 CM1 CM2 N1 C6  O6  C5  N7  C8 END
+  MainCh P O1P O2P O5' C5' C4' O4' C1' C2' O2' C3' O3' END
+  Ring N1 C2 N3 C4 C5 C6 END
+  Ring C4 C5 N7 C8 N9 END
+  Ring C1' C2' C3' C4' O4' END
+  Prop type nuc
+  Prop basetype pur
+END {GUA}
+
+PropResid OMG
+  Pivot P
+  SideCh C1' N9  C4  N3  C2  N2 N1 C6  O6  C5  N7  C8 END
+  MainCh P O1P O2P O5' C5' C4' O4' C1' C2' O2' CM2 C3' O3' END
+  Ring N1 C2 N3 C4 C5 C6 END
+  Ring C4 C5 N7 C8 N9 END
+  Ring C1' C2' C3' C4' O4' END
+  Prop type nuc
+  Prop basetype pur
+END {GUA}
+
+PropResid YYG
+  Pivot P
+  SideCh C1' N9  C4  N3 C3 C2  N2 N1 C6  O6  C5  N7  C8 C10 C11 C12 C13 C14 C15 C16 O17 O18 C19 N20 C21 O22 O23 C24 END
+  MainCh P O1P O2P O5' C5' C4' O4' C1' C2' O2' C3' O3' END
+  Ring N1 C2 N3 C4 C5 C6 END
+  Ring C4 C5 N7 C8 N9 END
+  Ring C1' C2' C3' C4' O4' END
+  Ring N1 C12 C11 N2 C2 END
+  Prop type nuc
+  Prop basetype pur
+END {GUA}
+
+PropResid GTP
+  Ring N1 C2 N3 C4 C5 C6 END
+  Ring C4 C5 N7 C8 N9 END
+  Ring C1' C2' C3' C4' O4' END
+END
+
+!!!
+
+PropResid ADE
+  Pivot P
+  SideCh C1' N9 C4 N3 C2 N1 C6 N6 H61 H62 C5 N7 C8 END
+  MainCh P O1P O2P O5' C5' C4' O4' C1' C2' O2' H2' C3' O3' END
+  Ring N1 C2 N3 C4 C5 C6 END
+  Ring C4 C5 N7 C8 N9 END
+  Ring C1' C2' C3' C4' O4' END
+  Prop type nuc
+  Prop basetype pur
+  Alias DA
+  Alias AR
+END {ADE}
+
+PropResid ATP
+  Ring N1 C2 N3 C4 C5 C6 END
+  Ring C4 C5 N7 C8 N9 END
+  Ring C1' C2' C3' C4' O4' END
+END
+
+PropResid 1MA
+  Pivot P
+  SideCh C1' N9 C4 N3 C2 N1 C6 N6 C5 N7 C8 CM1 END
+  MainCh P O1P O2P O5' C5' C4' O4' C1' C2' O2' C3' O3' END
+  Ring N1 C2 N3 C4 C5 C6 END
+  Ring C4 C5 N7 C8 N9 END
+  Ring C1' C2' C3' C4' O4' END
+  Prop type nuc
+  Prop basetype pur
+END {ADE}
+
+!!!
+
+PropResid CYT
+  Pivot P
+  SideCh C1' N1 C6 C2 O2 N3 C4 N4 H41 H42 C5 END
+  MainCh P O1P O2P O5' C5' C4' O4' C1' C2' O2' C3' O3' END
+  Ring N1 C2 N3 C4 C5 C6 END
+  Ring C1' C2' C3' C4' O4' END
+  Prop type nuc
+  Prop basetype pyr
+  Alias DC
+  Alias CR
+END {CYT}
+
+PropResid 5MC
+  Pivot P
+  SideCh C1' N1 C6 C2 O2 N3 C4 N4 C5 CM5 END
+  MainCh P O1P O2P O5' C5' C4' O4' C1' C2' O2' C3' O3' END
+  Ring N1 C2 N3 C4 C5 C6 END
+  Ring C1' C2' C3' C4' O4' END
+  Prop type nuc
+  Prop basetype pyr
+END {CYT}
+
+PropResid OMC
+  Pivot P
+  SideCh C1' N1 C6 C2 O2 N3 C4 N4 C5 END
+  MainCh P O1P O2P O5' C5' C4' O4' C1' C2' O2' CM2 C3' O3' END
+  Ring N1 C2 N3 C4 C5 C6 END
+  Ring C1' C2' C3' C4' O4' END
+  Prop type nuc
+  Prop basetype pyr
+END {CYT}
+
+PropResid CTP
+  Ring N1 C2 N3 C4 C5 C6 END
+  Ring C1' C2' C3' C4' O4' END
+END {CYT}
+
+PropResid CMP
+  Ring N1 C2 N3 C4 C5 C6 END
+  Ring C1' C2' C3' C4' O4' END
+END {CMP}
+
+!!!
+
+PropResid URI
+  Pivot P
+  SideCh C1' N1 C6 C2 O2 N3 H3 C4 O4 C5 END
+  MainCh P O1P O2P O5' C5' C4' O4' C1' C2' O2' C3' O3' END
+  Ring N1 C2 N3 C4 C5 C6 END
+  Ring C1' C2' C3' C4' O4' END
+  Prop type nuc
+  Prop basetype pyr
+  Alias UR
+END {URI}
+
+PropResid THY
+  Pivot P
+  SideCh C1' N1 C6 C2 O2 N3 H3 C4 O4 C5 C5A END
+  MainCh P O1P O2P O5' C5' C4' O4' C1' C2' O2' C3' O3' END
+  Ring N1 C2 N3 C4 C5 C6 END
+  Ring C1' C2' C3' C4' O4' END
+  Prop type nuc
+  Prop basetype pyr
+  Alias DT
+END {THY}
+
+PropResid 5MU
+  Pivot P
+  SideCh C1' N1 C6 C2 O2 N3 H3 C4 O4 C5 C5M END
+  MainCh P O1P O2P O5' C5' C4' O4' C1' C2' O2' C3' O3' END
+  Ring N1 C2 N3 C4 C5 C6 END
+  Ring C1' C2' C3' C4' O4' END
+  Prop type nuc
+  Prop basetype pyr
+END {PSU}
+
+PropResid PSU
+  Pivot P
+  SideCh C1' N1 C6 C2 O2 N3 C4 O4 C5 END
+  MainCh P O1P O2P O5' C5' C4' O4' C1' C2' O2' C3' O3' END
+  Ring N1 C2 N3 C4 C5 C6 END
+  Ring C1' C2' C3' C4' O4' END
+  Prop type nuc
+  Prop basetype pyr
+END {PSU}
+
+PropResid H2U
+  Pivot P
+  SideCh C1' N1 C6 C2 O2 N3 C4 O4 C5 END
+  MainCh P O1P O2P O5' C5' C4' O4' C1' C2' O2' C3' O3' END
+  Ring N1 C2 N3 C4 C5 C6 END
+  Ring C1' C2' C3' C4' O4' END
+  Prop type nuc
+  Prop basetype pyr
+END {URI}
+
+PropResid G4C
+  Pivot P
+  Ring N1 C2 N3 C4 C5 C6 END
+  Ring C4 C5 N7 C8 N9 END
+  Ring C1' C2' C3' C4' C6' END
+  Prop type nuc
+  Prop basetype pur
+END {GUA}
+
+!------------------------------------------------------------------
+
+PropResid HOH
+  Prop type water
+END
+
+PropResid WAT
+  Prop type water
+END
+
+PropResid TIP
+  Prop type water
+END
+
+set echo=true end
