@@ -9,6 +9,7 @@
 #include <qlib/LVarArgs.hpp>
 #include <qlib/LVarArray.hpp>
 #include <qlib/ClassRegistry.hpp>
+#include <qlib/PropSpec.hpp>
 
 #include "wrapper.hpp"
 
@@ -390,35 +391,175 @@ PyObject *Wrapper::hasPropDefault(PyObject *self, PyObject *args)
     return NULL;
 
   qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
+  if (pScObj==NULL)
+    return NULL;
 
+  bool ok = true;
+  bool result;
+  LString errmsg;
+
+  try {
+    result = pScObj->hasNestedPropDefault(propname);
+  }
+  catch (qlib::LException &e) {
+    ok = false;
+    errmsg = 
+      LString::format("Exception occured in hasPropDef for %s: %s",
+                      propname, e.getFmtMsg().c_str());
+  }
+  catch (...) {
+    ok = false;
+    errmsg = 
+      LString::format("Unknown Exception occured in hasPropDef for %s",
+                      propname);
+  }
   
-  return Py_BuildValue("");
+  if (!ok) {
+    LOG_DPRINTLN("Error: hasPropDef for property \"%s\" failed.", propname);
+    if (!errmsg.isEmpty()) {
+      LOG_DPRINTLN("Reason: %s", errmsg.c_str());
+    }
+    PyErr_SetString(PyExc_RuntimeError, errmsg.c_str());
+    return NULL;
+  }
+
+  if (result)
+    Py_RETURN_TRUE;
+  else
+    Py_RETURN_FALSE;
 }
 
 //static
 PyObject *Wrapper::resetProp(PyObject *self, PyObject *args)
 {
-  const char *msg;
+  const char *propname;
   PyObject *pPyObj;
 
-  if (!PyArg_ParseTuple(args, "Os", &pPyObj, &msg))
+  if (!PyArg_ParseTuple(args, "Os", &pPyObj, &propname))
     return NULL;
 
   qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
+  if (pScObj==NULL)
+    return NULL;
 
-  return Py_BuildValue("");
+  bool ok;
+  LString errmsg;
+
+  try {
+    if (pScObj->hasNestedProperty(propname)) {
+      ok = pScObj->resetNestedProperty(propname);
+    }
+    else {
+      ok = false;
+      errmsg = 
+        LString::format("Prop <%s> not found in resetProp", propname);
+    }
+  }
+  catch (qlib::LException &e) {
+    ok = false;
+    errmsg = 
+      LString::format("Exception occured in resetProp for %s: %s",
+                      propname, e.getFmtMsg().c_str());
+  }
+  catch (...) {
+    ok = false;
+    errmsg = 
+      LString::format("Unknown Exception occured in resetProp for %s",
+                      propname);
+  }
+  
+  if (!ok) {
+    LOG_DPRINTLN("Error: ReSetProp for property \"%s\" failed.", propname);
+    if (!errmsg.isEmpty()) {
+      LOG_DPRINTLN("Reason: %s", errmsg.c_str());
+    }
+    PyErr_SetString(PyExc_RuntimeError, errmsg.c_str());
+    return NULL;
+  }
+
+  Py_RETURN_NONE;
 }
 
 //static
 PyObject *Wrapper::getPropsJSON(PyObject *self, PyObject *args)
 {
-  return Py_BuildValue("");
+  PyObject *pPyObj;
+
+  if (!PyArg_ParseTuple(args, "O", &pPyObj))
+    return NULL;
+
+  qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
+  if (pScObj==NULL)
+    return NULL;
+
+  LString str;
+
+  try {
+    str = qlib::getPropsJSONImpl(pScObj);
+  }
+  catch (qlib::LException &e) {
+    LString errmsg = 
+      LString::format("Exception occured in getPropsJSON: %s",
+                      e.getFmtMsg().c_str());
+    LOG_DPRINTLN(errmsg);
+    PyErr_SetString(PyExc_RuntimeError, errmsg.c_str());
+    return NULL;
+  }
+  catch (...) {
+    LString errmsg = 
+      LString::format("Unknown Exception occured in getPropsJSON");
+    LOG_DPRINTLN(errmsg);
+    PyErr_SetString(PyExc_RuntimeError, errmsg.c_str());
+    return NULL;
+  }
+
+#if PY_MAJOR_VERSION >= 3
+  return PyBytes_FromString(str.c_str());
+#else
+  return PyString_FromString(str.c_str());
+#endif
 }
 
 //static
 PyObject *Wrapper::getEnumDefsJSON(PyObject *self, PyObject *args)
 {
-  return Py_BuildValue("");
+  const char *propname;
+  PyObject *pPyObj;
+
+  if (!PyArg_ParseTuple(args, "Os", &pPyObj, &propname))
+    return NULL;
+
+  qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
+  if (pScObj==NULL)
+    return NULL;
+
+  qlib::PropSpec spec;
+  if ( !pScObj->getPropSpecImpl(propname, &spec) ) {
+    LString errmsg = 
+      LString::format("getEnumDefsJSON: prop %s is not found", propname);
+    LOG_DPRINTLN(errmsg);
+    PyErr_SetString(PyExc_RuntimeError, errmsg.c_str());
+    return NULL;
+  }
+
+  LString rval;
+  
+  rval += "{";
+  if (spec.pEnumDef) {
+    int i=0;
+    BOOST_FOREACH(qlib::EnumDef::value_type ii, *(spec.pEnumDef)) {
+      if (i!=0) rval += ",";
+      rval += LString::format("\"%s\": %d", ii.first.c_str(), ii.second);
+      ++i;
+    }
+  }
+  rval += "}";
+
+#if PY_MAJOR_VERSION >= 3
+  return PyBytes_FromString(rval.c_str());
+#else
+  return PyString_FromString(rval.c_str());
+#endif
 }
 
 //static
