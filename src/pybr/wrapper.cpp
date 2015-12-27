@@ -72,6 +72,7 @@ static PyTypeObject gWrapperType = {
 };
 
 /// get the wrapped object ptr
+// static
 qlib::LScriptable *Wrapper::getWrapped(PyObject *pPyObj)
 {
   if (Py_TYPE(pPyObj) != &gWrapperType)
@@ -94,7 +95,7 @@ PyObject *Wrapper::createWrapper(qlib::LScriptable *pObj)
 static void wr_dealloc(QpyWrapObj *pSelf)
 {
   if (pSelf->m_pObj!=NULL) {
-    LOG_DPRINTLN("QpyWrapObj destruct: %p", pSelf->m_pObj);
+    MB_DPRINTLN("QpyWrapObj destruct: %p", pSelf->m_pObj);
     pSelf->m_pObj->destruct();
     pSelf->m_pObj = NULL;
   }
@@ -330,6 +331,97 @@ PyObject *Wrapper::getAllClassNamesJSON(PyObject *self, PyObject *args)
 }
 
 //static
+PyObject *Wrapper::isPropDefault(PyObject *self, PyObject *args)
+{
+  const char *propname;
+  PyObject *pPyObj;
+
+  if (!PyArg_ParseTuple(args, "Os", &pPyObj, &propname))
+    return NULL;
+
+  qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
+  if (pScObj==NULL)
+    return NULL;
+
+  bool ok = true;
+  int result;
+  LString errmsg;
+
+  try {
+    if (! pScObj->hasNestedPropDefault(propname) )
+      result = 0; // no default value
+    else if (! pScObj->isNestedPropDefault(propname) )
+      result = 1; // has default but not default now
+    else
+      result = 2; // has default and now is default
+  }
+  catch (qlib::LException &e) {
+    ok = false;
+    errmsg = 
+      LString::format("Exception occured in isPropDef for %s: %s",
+                      propname, e.getFmtMsg().c_str());
+  }
+  catch (...) {
+    ok = false;
+    errmsg = 
+      LString::format("Unknown Exception occured in isPropDef for %s",
+                      propname);
+  }
+  
+  if (!ok) {
+    LOG_DPRINTLN("Error: isPropDef for property \"%s\" failed.", propname);
+    if (!errmsg.isEmpty()) {
+      LOG_DPRINTLN("Reason: %s", errmsg.c_str());
+    }
+    PyErr_SetString(PyExc_RuntimeError, errmsg.c_str());
+    return NULL;
+  }
+
+  return Py_BuildValue("i", result);
+}
+
+//static
+PyObject *Wrapper::hasPropDefault(PyObject *self, PyObject *args)
+{
+  const char *propname;
+  PyObject *pPyObj;
+
+  if (!PyArg_ParseTuple(args, "Os", &pPyObj, &propname))
+    return NULL;
+
+  qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
+
+  
+  return Py_BuildValue("");
+}
+
+//static
+PyObject *Wrapper::resetProp(PyObject *self, PyObject *args)
+{
+  const char *msg;
+  PyObject *pPyObj;
+
+  if (!PyArg_ParseTuple(args, "Os", &pPyObj, &msg))
+    return NULL;
+
+  qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
+
+  return Py_BuildValue("");
+}
+
+//static
+PyObject *Wrapper::getPropsJSON(PyObject *self, PyObject *args)
+{
+  return Py_BuildValue("");
+}
+
+//static
+PyObject *Wrapper::getEnumDefsJSON(PyObject *self, PyObject *args)
+{
+  return Py_BuildValue("");
+}
+
+//static
 PyObject *Wrapper::print(PyObject *self, PyObject *args)
 {
   const char *msg;
@@ -341,6 +433,8 @@ PyObject *Wrapper::print(PyObject *self, PyObject *args)
 
   return Py_BuildValue("");
 }
+
+//////////////////////////////////////////////////////
 
 namespace pybr {
 #ifndef PYMODULE_EXPORTS
@@ -357,6 +451,13 @@ static PyMethodDef cuemol_methods[] = {
   {"getService", (PyCFunction)Wrapper::getService, METH_VARARGS, "get CueMol service object.\n"},
   {"createObj", (PyCFunction)Wrapper::createObj, METH_VARARGS, "create CueMol object.\n"},
   {"getAllClassNamesJSON", (PyCFunction)Wrapper::getAllClassNamesJSON, METH_VARARGS, "get all class names in JSON format.\n"},
+
+  {"isPropDefault", (PyCFunction)Wrapper::isPropDefault, METH_VARARGS, "\n"},
+  {"hasPropDefault", (PyCFunction)Wrapper::hasPropDefault, METH_VARARGS, "\n"},
+  {"resetProp", (PyCFunction)Wrapper::resetProp, METH_VARARGS, "\n"},
+  {"getPropsJSON", (PyCFunction)Wrapper::getPropsJSON, METH_VARARGS, "\n"},
+  {"getEnumDefsJSON", (PyCFunction)Wrapper::getEnumDefsJSON, METH_VARARGS, "\n"},
+
   {"printlog", (PyCFunction)Wrapper::print, METH_VARARGS, "print log message.\n"},
   {"initCueMol", (PyCFunction)initCueMol, METH_VARARGS, "initialize CueMol system.\n"},
   {NULL}  /* Sentinel */

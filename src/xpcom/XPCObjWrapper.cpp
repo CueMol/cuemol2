@@ -646,7 +646,7 @@ NS_IMETHODIMP XPCObjWrapper::IsPropDefault(const char *propname, PRInt32 *_retva
 
     if (! m_pWrapped->hasNestedPropDefault(propname) )
       result = 0; // no default value
-    else if (! m_pWrapped->isPropDefault(propname) )
+    else if (! m_pWrapped->isNestedPropDefault(propname) )
       result = 1; // has default but not default now
     else
       result = 2; // has default and now is default

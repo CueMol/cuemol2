@@ -34,7 +34,7 @@ interface qIObjWrapper : nsISupports
   // reset property to default state
   void resetProp(in string propname);
 
-  // get properties' structure by JSON (for UI)
+  // get properties' structure in JSON format (for UI)
   AString getPropsJSON();
 
   //////////////////////
