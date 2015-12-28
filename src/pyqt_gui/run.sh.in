@@ -1,0 +1,8 @@
+#!/bin/sh
+
+PYTHON=@PYTHON@
+prefix=@prefix@
+
+env PYTHONPATH=$prefix/lib \
+  $PYTHON startup.py $prefix/sysconfig.xml
+

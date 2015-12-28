@@ -932,6 +932,9 @@ AC_CONFIG_FILES([
 	uxdist/Makefile
 	uxdist/run_cuemol2.sh
 	stub/Makefile
+	distr_data/Makefile
+	pyqt_gui/Makefile
+	pyqt_gui/run.sh
 ])
 
 AC_OUTPUT

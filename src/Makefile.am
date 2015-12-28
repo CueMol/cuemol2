@@ -23,4 +23,6 @@ SUBDIRS = \
  @BUILD_OSDEP@ \
  @BUILD_MODULES@ \
  @BUILD_UI@ \
+ distr_data \
 $(NULL)
+
