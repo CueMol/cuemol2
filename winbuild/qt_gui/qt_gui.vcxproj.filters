@@ -36,12 +36,21 @@
     <ClCompile Include="..\..\src\qt_gui\qtgui.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\qt_gui\QtTimerImpl.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qt_gui\moc_QtTimerImpl_moc.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="..\..\src\qt_gui\QtMolWidget_moc.hpp">
       <Filter>ソース ファイル</Filter>
     </CustomBuild>
     <CustomBuild Include="..\..\src\qt_gui\qmqtgui.sip">
+      <Filter>ソース ファイル</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\src\qt_gui\QtTimerImpl_moc.hpp">
       <Filter>ソース ファイル</Filter>
     </CustomBuild>
   </ItemGroup>

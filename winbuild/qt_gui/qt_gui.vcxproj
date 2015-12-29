@@ -89,10 +89,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\qt_gui\moc_QtMolWidget_moc.cpp" />
+    <ClCompile Include="..\..\src\qt_gui\moc_QtTimerImpl_moc.cpp" />
     <ClCompile Include="..\..\src\qt_gui\QtglDisplayContext.cpp" />
     <ClCompile Include="..\..\src\qt_gui\QtglView.cpp" />
     <ClCompile Include="..\..\src\qt_gui\qtgui.cpp" />
     <ClCompile Include="..\..\src\qt_gui\QtMolWidget.cpp" />
+    <ClCompile Include="..\..\src\qt_gui\QtTimerImpl.cpp" />
     <ClCompile Include="..\..\src\qt_gui\sipqmqtguicmodule.cpp" />
     <ClCompile Include="..\..\src\qt_gui\sipqmqtguiQtMolWidget.cpp" />
   </ItemGroup>
@@ -124,6 +126,16 @@
     <ProjectReference Include="..\qsys\qsys.vcxproj">
       <Project>{dbd4410b-6495-4051-b5e4-4609bb8da327}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\src\qt_gui\QtTimerImpl_moc.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Moc) "%(FullPath)" -o "%(RootDir)%(Directory)moc_%(Filename).cpp" $(MocFlags)</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Moc) "%(FullPath)" -o "%(RootDir)%(Directory)moc_%(Filename).cpp" $(MocFlags)</Command>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compiling %(Filename)%(Extension) using MOC</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compiling %(Filename)%(Extension) using MOC</Message>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)moc_%(Filename).cpp</Outputs>
+    </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

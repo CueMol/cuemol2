@@ -7,9 +7,9 @@
 #include "QtglView.hpp"
 
 #include "QtMolWidget_moc.hpp"
+#include "QtTimerImpl_moc.hpp"
 
 #include <QtGui/QMouseEvent>
-#include <QtCore/QTimer>
 
 #include <qlib/qlib.hpp>
 #include <qsys/SceneManager.hpp>
@@ -148,12 +148,66 @@ void QtMolWidget::mouseMoveEvent(QMouseEvent *event)
   m_pView->fireInDevEvent(ev);
 }
 
-/*
-void QtMolWidget::advanceGears()
-{
-    gear1Rot += 2 * 16;
-    updateGL();
-}
-*/
+//////////////////////////////////////////////////
 
+#ifdef WIN32
+#  include <windows.h>
+#endif
+
+#ifdef XP_MACOSX
+#include <CoreServices/CoreServices.h>
+#include <mach/mach.h>
+#include <mach/mach_time.h>
+#include <unistd.h>
+#endif
+
+namespace {
+  class MyTimerImpl : public qlib::TimerImpl
+  {
+  private:
+    QtTimerImpl m_impl;
+
+  public:
+    MyTimerImpl()
+    {
+    }
+    
+    virtual ~MyTimerImpl()
+    {
+    }
+
+    virtual qlib::time_value getCurrentTime()
+    {
+      qlib::time_value tval;
+#ifdef WIN32
+      tval = (qlib::time_value) ::GetTickCount();
+#endif
+#ifdef XP_MACOSX
+      uint64_t abstime = mach_absolute_time();
+      Nanoseconds nanos = AbsoluteToNanoseconds( *(AbsoluteTime *) &abstime );
+      tval = UnsignedWideToUInt64(nanos)/1000000;
+#endif
+      
+      return tval;
+    }
+
+    virtual void start()
+    {
+      m_impl.start(0);
+    }
+
+    virtual void stop()
+    {
+      m_impl.stop();
+    }
+
+    //static void timerCallbackFunc(nsITimer *aTimer, void *aClosure);
+  };
+}
+
+//static
+void QtMolWidget::setupEventTimer()
+{
+  qlib::EventManager::getInstance()->initTimer(new MyTimerImpl);
+}
 

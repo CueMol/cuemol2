@@ -1,14 +1,15 @@
 //
-// python module initialization
+// Python CueMol module initialization
 //
 
 #include <Python.h>
 
 #include <common.h>
 #include <qlib/qlib.hpp>
-#include <qlib/LDebug.hpp>
-
+#include <qlib/LProcMgr.hpp>
+#include <qlib/EventManager.hpp>
 #include <qsys/qsys.hpp>
+#include <qsys/SceneManager.hpp>
 #include <sysdep/sysdep.hpp>
 
 #include "wrapper.hpp"
@@ -90,6 +91,25 @@ namespace importers {
   extern void fini();
 }
 
+namespace {
+  class ProcMgrChkQueue : public qlib::IdleTask
+  {
+  public:
+    void perform() {
+      qlib::LProcMgr *pPM = qlib::LProcMgr::getInstance();
+      pPM->checkQueue();
+    }
+  };
+
+  class SceneMgrChkUpdate : public qlib::IdleTask
+  {
+  public:
+    void perform() {
+      qsys::SceneManager *pSM = qsys::SceneManager::getInstance();
+      pSM->checkAndUpdateScenes();
+    }
+  };
+}
 
 namespace pybr {
   /// CueMol initialization routine
@@ -119,8 +139,11 @@ namespace pybr {
     // initTextRender();
     // MB_DPRINTLN("---------- initTextRender() OK");
 
-    // // setup timer
-    // qlib::EventManager::getInstance()->initTimer(new XPCTimerImpl);
+    // setup timer
+    
+    qlib::EventManager *pEM = qlib::EventManager::getInstance();
+    pEM->addIdleTask(new ProcMgrChkQueue, false);
+    pEM->addIdleTask(new SceneMgrChkUpdate, true);
 
     return Py_BuildValue("");
   }

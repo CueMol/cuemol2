@@ -112,10 +112,14 @@ void EventManager::initTimer(TimerImpl *pimpl)
 {
   MB_ASSERT(m_pImpl==NULL);
   m_pImpl = pimpl;
+
+  m_pImpl->start();
 }
 
 void EventManager::finiTimer()
 {
+  m_pImpl->stop();
+
   if (m_pImpl!=NULL)
     delete m_pImpl;
   m_pImpl = NULL;
@@ -154,5 +158,30 @@ void EventManager::checkTimerQueue()
 
 TimerImpl::~TimerImpl()
 {
+}
+
+/*
+void TimerImpl::timerCallback()
+{
+  EventManager *pEM = EventManager::getInstance();
+  pEM->performIdleTasks();
+}
+*/
+
+IdleTask::~IdleTask()
+{
+}
+
+void EventManager::performIdleTasks()
+{
+  // process events
+  messageLoop();
+
+  // process timer events
+  checkTimerQueue();
+
+  BOOST_FOREACH (IdleTask *pTask, m_idleTasks) {
+    pTask->perform();
+  }
 }
 

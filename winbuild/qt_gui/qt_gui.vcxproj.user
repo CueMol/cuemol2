@@ -2,14 +2,14 @@
 <Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LocalDebuggerCommand>$(PythonDir)\bin\python_d.exe </LocalDebuggerCommand>
-    <LocalDebuggerCommandArguments>-i $(SourceDir)\pyqt_gui\startup.py $(DeployDir)\xul_gui\sysconfig.xml</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-i $(SourceDir)\pyqt_gui\startup.py $(DeployDir)\sysconfig.xml</LocalDebuggerCommandArguments>
     <LocalDebuggerEnvironment>PYTHONPATH=$(TargetDir)</LocalDebuggerEnvironment>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LocalDebuggerCommand>$(PythonDir)\bin\python.exe </LocalDebuggerCommand>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerCommandArguments>-i $(SourceDir)\pyqt_gui\startup.py $(DeployDir)\xul_gui\sysconfig.xml</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-i $(SourceDir)\pyqt_gui\startup.py $(DeployDir)\sysconfig.xml</LocalDebuggerCommandArguments>
     <LocalDebuggerEnvironment>PYTHONPATH=$(TargetDir)</LocalDebuggerEnvironment>
   </PropertyGroup>
 </Project>

@@ -17,6 +17,8 @@ public:
 
   void bind(int scid, int vwid);
   
+  static void setupEventTimer();
+
 private:
     QtMolWidget(const QtMolWidget &);
 };

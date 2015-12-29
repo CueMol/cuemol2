@@ -124,7 +124,7 @@ class MainWindow(QMainWindow):
         fileMenu.addAction(exitAction)
         
         self.setGeometry(300, 300, 300, 200)
-        self.loadSettings()
+        #self.loadSettings()
         self.setWindowTitle('CueMol')
         self.show()
         
@@ -138,6 +138,8 @@ class MainWindow(QMainWindow):
 
         vw = sc.createView()
         vw.name = "1"
+        vw.trans_mms = True
+        vw.rot_mms = True
         self._vwid = vw.uid;
 
         print("setupScene new scene ID="+str(self._scid))

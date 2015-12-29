@@ -1,5 +1,5 @@
 //
-//
+// Mol view widget implementation using QT5 QGLWidget
 //
 
 #ifndef QT_MOL_WIDGET_HPP_INCLUDED
@@ -37,6 +37,8 @@ private:
   
 public:
   void bind(int scid, int vwid);
+
+  static void setupEventTimer();
 
 public slots:
   

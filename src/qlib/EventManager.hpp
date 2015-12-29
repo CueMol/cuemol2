@@ -74,8 +74,17 @@ namespace qlib {
     TimerImpl() {}
     virtual ~TimerImpl();
     virtual time_value getCurrentTime() =0;
-    virtual void start(qlib::time_value period) =0;
+    virtual void start() =0;
     virtual void stop() =0;
+  };
+
+  /// Idle task interface
+  class QLIB_API IdleTask
+  {
+  public:
+    IdleTask() {}
+    virtual ~IdleTask();
+    virtual void perform() =0;
   };
 
   /// Timer entry data structure
@@ -85,10 +94,7 @@ namespace qlib {
     TimerListener *pobj;
   };
 
-  //inline bool operator < (const TimerTuple &a, const TimerTuple &b) {
-  //return a.when<b.when;
-  //}
-  
+
   struct EMThreadImpl;
 
   ///
@@ -98,12 +104,6 @@ namespace qlib {
   {
   private:
     EMThreadImpl *m_pthr;
-    /*
-#ifdef HAVE_BOOST_THREAD
-    boost::thread::id m_mainthr;
-    mutable boost::mutex m_mu;
-#endif
-    */
 
     /// Event entry data structure
     typedef std::pair<LEvent *, LEventCasterBase *> tuple_t;
@@ -121,6 +121,11 @@ namespace qlib {
 
     /// Timer object table
     TimerQueue m_timerq;
+
+    ///////////////////////
+
+    /// Idle task list
+    std::list<IdleTask*> m_idleTasks;
 
   public:
     EventManager();
@@ -156,6 +161,16 @@ namespace qlib {
       return getInstance()->getCurrentTime();
     }
     
+    void addIdleTask(IdleTask *pTask, bool bLast=false) {
+      if (bLast) {
+        m_idleTasks.push_back(pTask);
+      }
+      else {
+        m_idleTasks.push_front(pTask);
+      }
+    }
+
+    void performIdleTasks();
 
   };
 

@@ -3,6 +3,7 @@ import sys
 from PyQt5.QtWidgets import QApplication
 import cuemol
 from main import MainWindow, event
+from qmqtgui import QtMolWidget
 
 confpath = ""
 
@@ -29,6 +30,8 @@ evm = event.getEventManager()
 
 app = QApplication(sys.argv)
 main_window = MainWindow()
+
+QtMolWidget.setupEventTimer()
 
 #main_window.show()
 sys.exit(app.exec_())
