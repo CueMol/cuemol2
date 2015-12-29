@@ -42,6 +42,8 @@ namespace pybr {
       const int nargs = args.getSize();
       PyObject *pPyArgs, *pPyRes;
 
+      PyGILState_STATE gstate = PyGILState_Ensure();
+
       // conv args
       pPyArgs = PyTuple_New(nargs);
       for (int i=0; i<nargs; ++i) {
@@ -54,12 +56,19 @@ namespace pybr {
 
       Py_DECREF(pPyArgs);
 
-      if (pPyRes==NULL) {
+      bool bErr = true;
+      if (pPyRes!=NULL) {
+        Py_DECREF(pPyRes);
+        bErr = false;
+      }
+
+      PyGILState_Release(gstate);
+
+      if (bErr) {
         // ERROR!!
         return false;
       }
 
-      Py_DECREF(pPyRes);
       return true;
     }
 

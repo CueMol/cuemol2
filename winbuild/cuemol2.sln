@@ -50,6 +50,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pymodule", "pymodule\pymodu
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "qt_gui", "qt_gui\qt_gui.vcxproj", "{909D6EAF-139C-4C72-AF5F-EFFB04D4DD3E}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "distr_data", "distr_data\distr_data.vcxproj", "{CD20494C-0683-4B4E-8413-C92E519C3718}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -134,6 +136,10 @@ Global
 		{909D6EAF-139C-4C72-AF5F-EFFB04D4DD3E}.Debug|Win32.Build.0 = Debug|Win32
 		{909D6EAF-139C-4C72-AF5F-EFFB04D4DD3E}.Release|Win32.ActiveCfg = Release|Win32
 		{909D6EAF-139C-4C72-AF5F-EFFB04D4DD3E}.Release|Win32.Build.0 = Release|Win32
+		{CD20494C-0683-4B4E-8413-C92E519C3718}.Debug|Win32.ActiveCfg = Debug|Win32
+		{CD20494C-0683-4B4E-8413-C92E519C3718}.Debug|Win32.Build.0 = Debug|Win32
+		{CD20494C-0683-4B4E-8413-C92E519C3718}.Release|Win32.ActiveCfg = Release|Win32
+		{CD20494C-0683-4B4E-8413-C92E519C3718}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

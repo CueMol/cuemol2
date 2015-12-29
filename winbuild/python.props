@@ -5,14 +5,8 @@
 
     <PythonDir>$(PROJ_DIR)\Trtiyam\Python-3.5.0</PythonDir>
 
-    <QtDir>$(PROJ_DIR)\Trtiyam\Qt5.5\5.5\msvc2013</QtDir>
-    <MocExt>hpp</MocExt>
-    <Moc>$(QtDir)\bin\moc.exe</Moc>
-    <Sip>$(PythonDir)\sip.exe</Sip>
-
     <IncludePath>$(PythonDir)\Include;$(IncludePath)</IncludePath>
     <LibraryPath>$(PythonDir)\libs;$(LibraryPath)</LibraryPath>
-    <DeployDir>$(SolutionDir)xul_$(Configuration)\</DeployDir>
 
   </PropertyGroup>
   <PropertyGroup />
@@ -20,9 +14,6 @@
   <ItemGroup>
     <BuildMacro Include="PythonDir">
       <Value>$(PythonDir)</Value>
-    </BuildMacro>
-    <BuildMacro Include="DeployDir">
-      <Value>$(DeployDir)</Value>
     </BuildMacro>
   </ItemGroup>
 </Project>
