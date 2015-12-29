@@ -6,7 +6,8 @@
     <SourceDir>$(SolutionDir)..\src\</SourceDir>
     <XULRunnerDir>$(PROJ_DIR)\xulrunner\xulrunner-39.0-sdk\</XULRunnerDir>
     <XULDeployDir>$(SolutionDir)xul_$(Configuration)\</XULDeployDir>
-    <DeployDir>$(SolutionDir)xul_$(Configuration)\</DeployDir>
+
+    <DeployDir>$(SolutionDir)pyqt_$(Configuration)\</DeployDir>
 
     <ExecutablePath>$(PROJ_DIR)\bin;$(XULRunnerDir)\bin;$(ExecutablePath)</ExecutablePath>
     <IncludePath>$(PROJ_DIR)\include;$(PROJ_DIR)\CGAL-4.6.1\include;$(PROJ_DIR)\boost\boost_1_57_0;$(IncludePath)</IncludePath>
@@ -34,5 +35,10 @@
     <BuildMacro Include="XULDeployDir">
       <Value>$(XULDeployDir)</Value>
     </BuildMacro>
+
+    <BuildMacro Include="DeployDir">
+      <Value>$(DeployDir)</Value>
+    </BuildMacro>
   </ItemGroup>
 </Project>
+
