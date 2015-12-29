@@ -69,7 +69,7 @@ LClass *ClassRegistry::getClassObjByAbiName(const LString &name)
 
 bool ClassRegistry::regClassObj(LClass *pcls)
 {
-  MB_ASSERT(this!=NULL);
+  //MB_ASSERT(this!=NULL);
   const LString &abiname = pcls->getAbiClassName();
 
   //

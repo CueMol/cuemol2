@@ -19,9 +19,11 @@ sipqmqtguicmodule.cpp sipqmqtguiQtMolWidget.cpp: qmqtgui.sip
 COMMON_SRC = \
 qtgui.cpp \
 QtMolWidget.cpp \
+QtTimerImpl.cpp \
 QtglDisplayContext.cpp \
 QtglView.cpp \
 QtMolWidget_mocmoc.cpp \
+QtTimerImpl_mocmoc.cpp \
 sipqmqtguicmodule.cpp \
 sipqmqtguiQtMolWidget.cpp \
 $(NULL)

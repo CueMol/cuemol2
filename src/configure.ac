@@ -614,9 +614,8 @@ esac
   qt)
     AC_MSG_RESULT(User interface: $with_ui)
     GUI_ARCH=QT
-    # BUILD_OSDEP="sysdep utils"
-    BUILD_OSDEP="sysdep utils qt_gui"
-    BUILD_UI="$BUILD_UI qt_gui"
+    BUILD_OSDEP="sysdep utils"
+    BUILD_UI="$BUILD_UI qt_gui pyqt_gui"
     ;;
 
   *)
