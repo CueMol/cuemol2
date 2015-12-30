@@ -22,7 +22,7 @@ dnl sinclude(conftools/ax_boost_iostreams.m4)
 sinclude(conftools/ax_cxx_compile_stdcxx_0x.m4)
 sinclude(conftools/ax_cxx_compile_stdcxx_11.m4)
 
-sinclude(conftools/ax_have_qt.m4)
+dnl sinclude(conftools/ax_have_qt.m4)
 dnl sinclude(conftools/bnv_have_qt.m4)
 
 #######################################################
@@ -145,12 +145,29 @@ fi
 # check for OS type
 #
 
-echo "host_os: $host_os"
-echo "target_os: $target_os"
+#echo "host_os: $host_os"
+#echo "target_os: $target_os"
 
 BUILD_UI=
 BUILD_OSDEP=
 BUILD_BIT=
+MB_OSTYPE=
+# check OS
+case $host_os in
+     darwin*)
+     # MacOSX
+     AC_DEFINE(MB_MACOSX, [1], [OS Type])
+     MB_OSTYPE="MACOSX"
+     ;;
+
+     *)
+     # Linux, etc
+     AC_DEFINE(MB_LINUX, [1], [OS Type])
+     MB_OSTYPE="LINUX"
+     ;;
+esac
+
+echo "OS Type: $MB_OSTYPE"
 
 dnl Whether 32- or 64-bit build?
 case "$host_cpu" in
@@ -283,8 +300,9 @@ m4_define([CHECK_GL_PROGRAM],
 
 gl_save_LIBS="${LIBS}"
 
-case $host_os in
-     darwin*)
+if test x$MB_OSTYPE = xMACOSX ; then
+#case $host_os in
+#     darwin*)
        # Check OpenGL/GLU functions
        LIBS="-framework OpenGL ${gl_save_LIBS}"
        AC_LINK_IFELSE([CHECK_GL_PROGRAM],
@@ -301,15 +319,17 @@ case $host_os in
 
        LIBS=${gl_save_LIBS}
        USE_OPENGL=yes
-     ;;
-     *)
+else
+#     ;;
+#     *)
        # TO DO: Check OpenGL/GLU, and XGL functions HERE!!
        GL_CPPFLAGS=
        GL_LDFLAGS=
        GL_LIBADD="-lGLU -lGL"
        USE_OPENGL=yes
-     ;;
-esac
+#     ;;
+#esac
+fi
 
 AC_SUBST(GL_CPPFLAGS)
 AC_SUBST(GL_LIBADD)
@@ -553,9 +573,10 @@ AC_ARG_WITH(ui,
 
   xul)
     AC_MSG_RESULT($with_ui)
-dnl XUL GUI (X11/OSX)
-case $host_os in
-     darwin*)
+    dnl XUL GUI (X11/OSX)
+    if test x$MB_OSTYPE = xMACOSX ; then
+#case $host_os in
+#     darwin*)
 	GUI_ARCH=XUL_OSX
 	BUILD_OSDEP="sysdep osxbuild utils stub"
 
@@ -578,8 +599,9 @@ case $host_os in
 	fi
 	CXXFLAGS=${_cxxflags}
 	echo "XXX $CXXFLAGS, $HAVE_CXX11, $CXX11_CXXFLAGS"
-     ;;
-     *)
+    else
+#     ;;
+#     *)
 	GUI_ARCH=XUL_X11
 	BUILD_OSDEP="sysdep uxdist utils"
         dnl Linux/Gecko39 build requires std=c++0x feature (char16_t)
@@ -590,19 +612,18 @@ case $host_os in
 	   AC_MSG_ERROR(requires c++ with -std=c++0x support)
 	fi
 
-#
-# pkg-config (for XUL & Linux & X11 & gtk2)
-#
+	#
+	# pkg-config (for XUL & Linux & X11 & gtk2)
+	#
+	m4_ifdef([PKG_CHECK_MODULES], [], [define(PKG_CHECK_MODULES)])
 
-m4_ifdef([PKG_CHECK_MODULES], [], [define(PKG_CHECK_MODULES)])
-
-if test x$GUI_ARCH = xXUL_X11 ; then
-    echo
-    PKG_CHECK_MODULES(GTK2, gtk+-2.0 >= 2.10.0 glib-2.0 gobject-2.0 gdk-x11-2.0)
-fi
-
-     ;;
-esac
+	if test x$GUI_ARCH = xXUL_X11 ; then
+	    echo
+            PKG_CHECK_MODULES(GTK2, gtk+-2.0 >= 2.10.0 glib-2.0 gobject-2.0 gdk-x11-2.0)
+	fi
+    fi
+#     ;;
+#esac
     ;;
 
   iphoneos)
@@ -631,7 +652,7 @@ esac
 
 echo GUI_ARCH: $GUI_ARCH
 
-AC_DEFINE([GUI_ARCH], [$GUI_ARCH], [GUI archtecture])
+dnl AC_DEFINE([GUI_ARCH], ["$GUI_ARCH"], [GUI archtecture])
 AM_CONDITIONAL(COND_BUILD_QT, test x$GUI_ARCH = xQT)
 AM_CONDITIONAL(COND_BUILD_XULOSX, test x$GUI_ARCH = xXUL_OSX)
 AM_CONDITIONAL(COND_BUILD_XULX11, test x$GUI_ARCH = xXUL_X11)

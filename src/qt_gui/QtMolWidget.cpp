@@ -317,7 +317,7 @@ void QtMolWidget::panTriggered(QPanGesture *gesture)
 #  include <windows.h>
 #endif
 
-#ifdef XP_MACOSX
+#ifdef MB_MACOSX
 #include <CoreServices/CoreServices.h>
 #include <mach/mach.h>
 #include <mach/mach_time.h>
@@ -345,7 +345,7 @@ namespace {
 #ifdef WIN32
       tval = (qlib::time_value) ::GetTickCount();
 #endif
-#ifdef XP_MACOSX
+#ifdef MB_MACOSX
       uint64_t abstime = mach_absolute_time();
       Nanoseconds nanos = AbsoluteToNanoseconds( *(AbsoluteTime *) &abstime );
       tval = UnsignedWideToUInt64(nanos)/1000000;
