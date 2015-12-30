@@ -26,9 +26,7 @@ QtMolWidget::QtMolWidget(QWidget *parent)
   m_nViewID = qlib::invalid_uid;
   m_pMeh = new sysdep::MouseEventHandler();
 
-  //QTimer *timer = new QTimer(this);
-  //connect(timer, SIGNAL(timeout()), this, SLOT(advanceGears()));
-  //timer->start(20);
+  grabGesture(Qt::PinchGesture);
 }
 
 QtMolWidget::QtMolWidget(const QGLFormat &format ,QWidget *parent)
@@ -70,8 +68,12 @@ void QtMolWidget::initializeGL()
 
   // TO DO: set useshader flag
   // pWglView->setUseGlShader(m_bUseGlShader);
+
   // TO DO: set HiDPI scaling value
   // pWglView->setSclFac(m_sclX, m_sclY);
+  double r = windowHandle()->devicePixelRatio();
+  if (!qlib::isNear4(r, 1.0))
+    m_pView->setSclFac(r, r);
 
   if (!m_pView->initGL(this)) {
     LOG_DPRINTLN("QtMolWidget> FatalError; initGL() failed!!");
@@ -121,6 +123,7 @@ void QtMolWidget::mouseReleaseEvent(QMouseEvent *event)
     return; // click/drag state error --> skip event invokation
   m_pView->fireInDevEvent(ev);
 
+  MB_DPRINTLN("mouse release %d, %d", ev.getX(), ev.getY());
   event->accept();
 }
 
@@ -163,12 +166,18 @@ void QtMolWidget::wheelEvent(QWheelEvent * event)
 void QtMolWidget::setupMouseEvent(QMouseEvent *event, qsys::InDevEvent &ev)
 {
   double r = windowHandle()->devicePixelRatio();
-
-  ev.setX(int( double(event->x())*r ));
-  ev.setY(int( double(event->y())*r ));
-
-  ev.setRootX(int( double(event->globalX())*r ));
-  ev.setRootY(int( double(event->globalY())*r ));
+  if (!qlib::isNear4(r, 1.0)) {
+    ev.setX(int( double(event->x())*r ));
+    ev.setY(int( double(event->y())*r ));
+    ev.setRootX(int( double(event->globalX())*r ));
+    ev.setRootY(int( double(event->globalY())*r ));
+  }
+  else {
+    ev.setX(event->x());
+    ev.setY(event->y());
+    ev.setRootX(event->globalX());
+    ev.setRootY(event->globalY());
+  }
 
   // set modifier
   int modif = 0;
@@ -220,6 +229,65 @@ void QtMolWidget::setupWheelEvent(QWheelEvent *event, qsys::InDevEvent &ev)
   ev.setModifier(modif);
 
   return;
+}
+
+bool QtMolWidget::event(QEvent * event)
+{
+  if (event->type() == QEvent::Gesture)
+    return gestureEvent(static_cast<QGestureEvent*>(event));
+  return QGLWidget::event(event);
+}
+
+bool QtMolWidget::gestureEvent(QGestureEvent * event)
+{
+  // MB_DPRINTLN("***** gestureEvent called!!");
+
+  if (QGesture *swipe = event->gesture(Qt::SwipeGesture)) {
+    // swipeTriggered(static_cast<QSwipeGesture *>(swipe));
+    MB_DPRINTLN("* SwipeGesture!!");
+  }
+  else if (QGesture *pan = event->gesture(Qt::PanGesture)) {
+    // panTriggered(static_cast<QPanGesture *>(pan));
+    MB_DPRINTLN("* PanGesture!!");
+  }
+
+  if (QGesture *pinch = event->gesture(Qt::PinchGesture)) {
+    pinchTriggered(static_cast<QPinchGesture *>(pinch));
+  }
+
+  return true;
+}
+
+void QtMolWidget::pinchTriggered(QPinchGesture *gesture)
+{
+  MB_DPRINTLN("* PinchGesture!!");
+
+  QPinchGesture::ChangeFlags changeFlags = gesture->changeFlags();
+  if (changeFlags & QPinchGesture::RotationAngleChanged) {
+    double rot = gesture->rotationAngle() - gesture->lastRotationAngle();
+    MB_DPRINTLN("** Pinch gesture rotation %f", rot);
+    m_pView->rotateView(0.0f, 0.0f, rot*4.0);
+  }
+
+  if (changeFlags & QPinchGesture::ScaleFactorChanged) {
+    MB_DPRINTLN("** Pinch gesture scale %f", gesture->scaleFactor());
+    MB_DPRINTLN("** Pinch gesture total scale %f", gesture->totalScaleFactor());
+
+    double delta = gesture->scaleFactor() - gesture->lastScaleFactor();
+
+    double vw = m_pView->getZoom();
+    double dw = double(-delta) * vw;
+    m_pView->setZoom(vw+dw);
+    m_pView->setUpProjMat(-1, -1);
+  }
+
+  if (gesture->state() == Qt::GestureFinished) {
+    //scaleFactor *= currentStepScaleFactor;
+    //currentStepScaleFactor = 1;
+    MB_DPRINTLN("** Pinch gesture finished");
+  }
+
+  //update();
 }
 
 

@@ -7,6 +7,7 @@
 
 #include "qtgui.hpp"
 #include <QtOpenGL/QGLWidget>
+#include <QtWidgets/QGestureEvent>
 
 namespace qtgui {
   class QtglView;
@@ -55,6 +56,8 @@ protected:
   
   void wheelEvent(QWheelEvent * event) Q_DECL_OVERRIDE;
 
+  bool event(QEvent * event) Q_DECL_OVERRIDE;
+
 private slots:
   
 private:
@@ -62,6 +65,8 @@ private:
   void setupWheelEvent(QWheelEvent *event, qsys::InDevEvent &ev);
   sysdep::MouseEventHandler *m_pMeh;
 
+  bool gestureEvent(QGestureEvent * event);
+  void pinchTriggered(QPinchGesture *gesture);
 };
 
 #endif // GLWIDGET_H
