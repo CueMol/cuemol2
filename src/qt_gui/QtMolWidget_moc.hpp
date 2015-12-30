@@ -67,6 +67,7 @@ private:
 
   bool gestureEvent(QGestureEvent * event);
   void pinchTriggered(QPinchGesture *gesture);
+  void panTriggered(QPanGesture *gesture);
 };
 
 #endif // GLWIDGET_H

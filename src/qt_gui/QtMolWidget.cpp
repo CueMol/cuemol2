@@ -27,6 +27,7 @@ QtMolWidget::QtMolWidget(QWidget *parent)
   m_pMeh = new sysdep::MouseEventHandler();
 
   grabGesture(Qt::PinchGesture);
+  // grabGesture(Qt::PanGesture);
 }
 
 QtMolWidget::QtMolWidget(const QGLFormat &format ,QWidget *parent)
@@ -240,16 +241,17 @@ bool QtMolWidget::event(QEvent * event)
 
 bool QtMolWidget::gestureEvent(QGestureEvent * event)
 {
-  // MB_DPRINTLN("***** gestureEvent called!!");
+  MB_DPRINTLN("***** gestureEvent called!!");
 
+  /*
   if (QGesture *swipe = event->gesture(Qt::SwipeGesture)) {
     // swipeTriggered(static_cast<QSwipeGesture *>(swipe));
     MB_DPRINTLN("* SwipeGesture!!");
   }
   else if (QGesture *pan = event->gesture(Qt::PanGesture)) {
-    // panTriggered(static_cast<QPanGesture *>(pan));
-    MB_DPRINTLN("* PanGesture!!");
+  panTriggered(static_cast<QPanGesture *>(pan));
   }
+  */
 
   if (QGesture *pinch = event->gesture(Qt::PinchGesture)) {
     pinchTriggered(static_cast<QPinchGesture *>(pinch));
@@ -290,6 +292,24 @@ void QtMolWidget::pinchTriggered(QPinchGesture *gesture)
   //update();
 }
 
+void QtMolWidget::panTriggered(QPanGesture *gesture)
+{
+  MB_DPRINTLN("* PanGesture!!");
+
+#ifndef QT_NO_CURSOR
+  switch (gesture->state()) {
+  case Qt::GestureStarted:
+  case Qt::GestureUpdated:
+    setCursor(Qt::SizeAllCursor);
+    break;
+  default:
+    setCursor(Qt::ArrowCursor);
+  }
+#endif
+
+  QPointF delta = gesture->delta();
+  MB_DPRINTLN("  delta=%f, %f", delta.x(), delta.y());
+}
 
 //////////////////////////////////////////////////
 
