@@ -10,6 +10,7 @@
 #include "QtTimerImpl_moc.hpp"
 
 #include <QtGui/QMouseEvent>
+#include <QtGui/QWindow>
 
 #include <qlib/qlib.hpp>
 #include <qsys/SceneManager.hpp>
@@ -88,7 +89,14 @@ void QtMolWidget::paintGL()
 
 void QtMolWidget::resizeGL(int width, int height)
 {
-  // MB_DPRINTLN("calling sizeChanged(%d,%d)", width, height);
+  double r = windowHandle()->devicePixelRatio();
+
+  //double rx = double(width)/r;
+  //double ry = double(height)/r;
+  //MB_DPRINTLN("calling sizeChanged(%f,%f), DPR=%f", rx, ry, r);
+  //m_pView->sizeChanged(int(rx), int(ry));
+
+  MB_DPRINTLN("calling sizeChanged(%d,%d), DPR=%f", width, height, r);
   m_pView->sizeChanged(width, height);
 }
 
@@ -154,11 +162,13 @@ void QtMolWidget::wheelEvent(QWheelEvent * event)
 
 void QtMolWidget::setupMouseEvent(QMouseEvent *event, qsys::InDevEvent &ev)
 {
-  ev.setX(event->x());
-  ev.setY(event->y());
+  double r = windowHandle()->devicePixelRatio();
 
-  ev.setRootX(event->globalX());
-  ev.setRootY(event->globalY());
+  ev.setX(int( double(event->x())*r ));
+  ev.setY(int( double(event->y())*r ));
+
+  ev.setRootX(int( double(event->globalX())*r ));
+  ev.setRootY(int( double(event->globalY())*r ));
 
   // set modifier
   int modif = 0;
