@@ -92,6 +92,66 @@ void QtMolWidget::resizeGL(int width, int height)
   m_pView->sizeChanged(width, height);
 }
 
+/////////////////
+// Event handling
+
+void QtMolWidget::mousePressEvent(QMouseEvent *event)
+{
+  qsys::InDevEvent ev;
+  setupMouseEvent(event, ev);
+  m_pMeh->buttonDown(ev);
+  m_pView->fireInDevEvent(ev);
+
+  event->accept();
+}
+
+void QtMolWidget::mouseReleaseEvent(QMouseEvent *event)
+{
+  qsys::InDevEvent ev;
+  setupMouseEvent(event, ev);
+  if (!m_pMeh->buttonUp(ev))
+    return; // click/drag state error --> skip event invokation
+  m_pView->fireInDevEvent(ev);
+
+  event->accept();
+}
+
+void QtMolWidget::mouseMoveEvent(QMouseEvent *event)
+{
+  qsys::InDevEvent ev;
+  setupMouseEvent(event, ev);
+  if (!m_pMeh->move(ev))
+    return; // drag checking/state error --> skip event invokation
+  m_pView->fireInDevEvent(ev);
+
+  event->accept();
+}
+
+void QtMolWidget::wheelEvent(QWheelEvent * event)
+{
+  QPoint numPixels = event->pixelDelta();
+  QPoint numDegrees = event->angleDelta();
+  
+  qsys::InDevEvent ev;
+  setupWheelEvent(event, ev);
+
+  if (!numPixels.isNull()) {
+    // scrollWithPixels(numPixels);
+  }
+  else if (!numDegrees.isNull()) {
+    int zDelta = numDegrees.y();
+
+    ev.setType(qsys::InDevEvent::INDEV_WHEEL);
+    ev.setDeltaX((int) zDelta);
+    m_pView->fireInDevEvent(ev);
+  }
+  
+  event->accept();
+
+  //MB_DPRINTLN("*** WheelEvent: X=%d", event->angleDelta().x());
+  //MB_DPRINTLN("*** WheelEvent: Y=%d", event->angleDelta().y());
+}
+
 void QtMolWidget::setupMouseEvent(QMouseEvent *event, qsys::InDevEvent &ev)
 {
   ev.setX(event->x());
@@ -122,31 +182,36 @@ void QtMolWidget::setupMouseEvent(QMouseEvent *event, qsys::InDevEvent &ev)
   return;
 }
 
-void QtMolWidget::mousePressEvent(QMouseEvent *event)
+void QtMolWidget::setupWheelEvent(QWheelEvent *event, qsys::InDevEvent &ev)
 {
-  qsys::InDevEvent ev;
-  setupMouseEvent(event, ev);
-  m_pMeh->buttonDown(ev);
-  m_pView->fireInDevEvent(ev);
+  ev.setX(event->x());
+  ev.setY(event->y());
+
+  ev.setRootX(event->globalX());
+  ev.setRootY(event->globalY());
+
+  // set modifier
+  int modif = 0;
+  Qt::MouseButtons btns = event->buttons();
+  Qt::KeyboardModifiers mdfs = event->modifiers();
+
+  if (mdfs & Qt::ControlModifier)
+    modif |= qsys::InDevEvent::INDEV_CTRL;
+  if (mdfs & Qt::ShiftModifier)
+    modif |= qsys::InDevEvent::INDEV_SHIFT;
+  if (btns & Qt::LeftButton)
+    modif |= qsys::InDevEvent::INDEV_LBTN;
+  if (btns & Qt::MidButton)
+    modif |= qsys::InDevEvent::INDEV_MBTN;
+  if (btns & Qt::RightButton)
+    modif |= qsys::InDevEvent::INDEV_RBTN;
+
+  // ev.setSource(this);
+  ev.setModifier(modif);
+
+  return;
 }
 
-void QtMolWidget::mouseReleaseEvent(QMouseEvent *event)
-{
-  qsys::InDevEvent ev;
-  setupMouseEvent(event, ev);
-  if (!m_pMeh->buttonUp(ev))
-    return; // click/drag state error --> skip event invokation
-  m_pView->fireInDevEvent(ev);
-}
-
-void QtMolWidget::mouseMoveEvent(QMouseEvent *event)
-{
-  qsys::InDevEvent ev;
-  setupMouseEvent(event, ev);
-  if (!m_pMeh->move(ev))
-    return; // drag checking/state error --> skip event invokation
-  m_pView->fireInDevEvent(ev);
-}
 
 //////////////////////////////////////////////////
 

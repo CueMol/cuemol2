@@ -53,10 +53,13 @@ protected:
   void mouseReleaseEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
   void mouseMoveEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
   
+  void wheelEvent(QWheelEvent * event) Q_DECL_OVERRIDE;
+
 private slots:
   
 private:
   void setupMouseEvent(QMouseEvent *event, qsys::InDevEvent &ev);
+  void setupWheelEvent(QWheelEvent *event, qsys::InDevEvent &ev);
   sysdep::MouseEventHandler *m_pMeh;
 
 };

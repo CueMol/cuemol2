@@ -610,8 +610,8 @@ bool View::handleMouseDragImpl(int xid, double delta)
   case ViewInputConfig::VIEW_ZOOM: {
     double vw = getZoom();
     double dw = double(delta)/200.0 * vw;
+    MB_DPRINTLN("Vw= %f, delta = %f, Delta zoom=%f", vw, double(delta), dw);
     setZoom(vw+dw);
-    // setUpProjMat(-1, -1);
     fupdate = true;
     break;
   }
@@ -732,6 +732,8 @@ bool View::mouseWheel(InDevEvent &ev)
   //  MB_DPRINTLN("zoom: %f", cv);
    */
   bool fupdate;
+  double deltax = ev.getDeltaX();
+  MB_DPRINTLN("mouseWheel deltaX=%f", deltax);
   fupdate = handleMouseDragImpl(xid, ev.getDeltaX()/2.5);
 
   //setZoom(cv);
