@@ -31,6 +31,7 @@ evm = event.getEventManager()
 app = QApplication(sys.argv)
 main_window = MainWindow()
 
+QtMolWidget.setupTextRender()
 QtMolWidget.setupEventTimer()
 
 #main_window.show()

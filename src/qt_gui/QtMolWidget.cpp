@@ -350,6 +350,7 @@ namespace {
       Nanoseconds nanos = AbsoluteToNanoseconds( *(AbsoluteTime *) &abstime );
       tval = UnsignedWideToUInt64(nanos)/1000000;
 #endif
+      // TO DO: Linux implementation
       
       return tval;
     }
@@ -372,5 +373,99 @@ namespace {
 void QtMolWidget::setupEventTimer()
 {
   qlib::EventManager::getInstance()->initTimer(new MyTimerImpl);
+}
+
+//////////////////////////////////////////////////
+
+#include <gfx/TextRenderManager.hpp>
+#include <gfx/PixelBuffer.hpp>
+
+class QtTextRender : public gfx::TextRenderImpl
+{
+public:
+  QtTextRender()
+  {
+    m_dFontSize = 12.0;
+    m_strFontName = "san-serif";
+  }
+  
+  virtual ~QtTextRender()
+  {
+  }
+  
+  virtual bool renderText(const LString &str, gfx::PixelBuffer &buf)
+  {
+    //MB_DPRINTLN("QTrenderText: font=%s, size=%f, str=%s", m_strFontName.c_str(), m_dFontSize, str.c_str());
+
+    QFont font;
+    font.setFamily(m_strFontName.c_str());
+    font.setPixelSize(int(m_dFontSize));
+
+    QFontMetrics fm(font);
+    int w = fm.width(str.c_str());
+    int h = fm.height();
+    if (w%4 != 0)
+      w += (4-w%4);
+
+    MB_DPRINTLN("QTrenderText: str=%s, size=(%d,%d)", str.c_str(), w, h);
+
+    int nsize = w*h;
+    if (buf.size()<nsize)
+      buf.resize(nsize);
+
+    buf.setDepth(8);
+    buf.setWidth(w);
+    buf.setHeight(h);
+
+    QUE_BYTE *pdata = buf.data();
+    int i,j;
+    for (j=0; j<h; j++) {
+      for (i=0; i<w; i++) {
+        pdata[j*w+i] = 0; //QUE_BYTE(i);
+      }
+    }
+
+    QImage img(pdata, w, h, QImage::Format_Grayscale8);
+    QPainter p(&img);
+    p.setRenderHint(QPainter::TextAntialiasing);
+    p.setFont(font);
+    p.setPen(Qt::white);
+    p.drawText(img.rect(), Qt::AlignCenter, str.c_str());
+    
+    buf.dump();
+    return true;
+  }
+  
+  virtual bool setupFont(double fontsize, const LString &fontname,
+                         const LString &font_style,
+                         const LString &font_wgt)
+  {
+    m_dFontSize = fontsize;
+    m_strFontName = fontname;
+
+    return true;
+  }
+
+  virtual void setMouseCursor(int ncursor) {}
+  
+  ///////////////////////////////////////////////
+  
+private:
+  
+  double m_dFontSize;
+  LString m_strFontName;
+  
+  /// font descr in CSS font property name
+  LString m_strCSSFont;
+  
+    
+}; //class QtTextRender2
+
+//static
+void QtMolWidget::setupTextRender()
+{
+  gfx::TextRenderImpl *pTR = MB_NEW QtTextRender();
+  gfx::TextRenderManager *pTRM = gfx::TextRenderManager::getInstance();
+  pTRM->setImpl(pTR);
 }
 

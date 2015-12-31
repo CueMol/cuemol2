@@ -168,13 +168,13 @@ void BallStickRenderer::invalidateDisplayCache()
 
 void BallStickRenderer::preRender(DisplayContext *pdc)
 {
-  MB_DPRINTLN("BallStickRenderer::preRender setLit TRUE");
+  // MB_DPRINTLN("BallStickRenderer::preRender setLit TRUE");
   pdc->setLighting(true);
 }
 
 void BallStickRenderer::postRender(DisplayContext *pdc)
 {
-  MB_DPRINTLN("BallStickRenderer::postRender setLit FALSE");
+  // MB_DPRINTLN("BallStickRenderer::postRender setLit FALSE");
   pdc->setLighting(false);
 }
 

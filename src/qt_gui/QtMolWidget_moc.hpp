@@ -39,7 +39,10 @@ private:
 public:
   void bind(int scid, int vwid);
 
+  /// Setup Event/Timer manager
   static void setupEventTimer();
+
+  static void setupTextRender();
 
 public slots:
   

@@ -9,10 +9,12 @@
 #include "gfx.hpp"
 
 #include <qlib/LString.hpp>
+#include <qlib/LExceptions.hpp>
 
 namespace gfx {
 
   using qlib::LString;
+  using qlib::IndexOutOfBoundsException;
 
   class GFX_API PixelBuffer
   {
@@ -66,6 +68,79 @@ namespace gfx {
     QUE_BYTE at(int index) const { return m_pData->at(index); }
 
     void clear();
+
+    //////////
+
+    void setAt(int ind, int value)
+    {
+      QUE_BYTE *pdata = data();
+      if (pdata==NULL) {
+        MB_THROW(IndexOutOfBoundsException,
+                 LString("TextImgBuf setAt() array is null"));
+      }
+      if (ind>=(int)size()||ind<0) {
+        MB_THROW(IndexOutOfBoundsException,
+                 LString::format("TextImgBuf setAt() out of index %d", ind));
+      }
+      pdata[ind] = (QUE_BYTE) value;
+    }
+    
+    int getAt(int ind) const
+    {
+      const QUE_BYTE *pdata = data();
+      if (pdata==NULL) {
+        MB_THROW(IndexOutOfBoundsException,
+                 LString("TextImgBuf setAt() array is null"));
+      }
+      if (ind>=(int)size()||ind<0) {
+        MB_THROW(IndexOutOfBoundsException,
+                 LString::format("TextImgBuf setAt() out of index %d", ind));
+      }
+      return pdata[ind];
+    }
+
+    //////////
+
+    void setAt2D(int x, int y, int value)
+    {
+      QUE_BYTE *pdata = data();
+      if (pdata==NULL) {
+        MB_THROW(IndexOutOfBoundsException,
+                 LString("TextImgBuf setAt() array is null"));
+      }
+      size_t ind = x + y*getWidth();
+      if (ind>=(int)size()||ind<0) {
+        MB_THROW(IndexOutOfBoundsException,
+                 LString::format("TextImgBuf setAt() out of index %d", ind));
+      }
+      pdata[ind] = (QUE_BYTE) value;
+    }
+    
+    int getAt2D(int x, int y) const
+    {
+      const QUE_BYTE *pdata = data();
+      if (pdata==NULL) {
+        MB_THROW(IndexOutOfBoundsException,
+                 LString("TextImgBuf setAt() array is null"));
+      }
+      size_t ind = x + y*getWidth();
+      if (ind>=(int)size()||ind<0) {
+        MB_THROW(IndexOutOfBoundsException,
+                 LString::format("TextImgBuf setAt() out of index %d", ind));
+      }
+      return pdata[ind];
+    }
+
+    void dump() const
+    {
+      for (int y=0; y<getHeight(); ++y) {
+        for (int x=0; x<getWidth(); ++x) {
+          int val = getAt2D(x, y);
+          MB_DPRINT("%02X", val);
+        }
+        MB_DPRINTLN("");
+      }
+    }
 
   };
 
