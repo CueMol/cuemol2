@@ -73,11 +73,12 @@ class MainWindow(QMainWindow):
 #     print("  target ID="+str(aTgtTypeID))
 #     print("  event ID="+str(aEvtTypeID))
 #     print("  src ID="+str(aSrcID))
-        print("LogEvent info : "+aInfoStr)
+        #print("LogEvent info : "+aInfoStr)
         info = json.loads(str(aInfoStr))
         print("info : "+str(info))
-#        self.appendLog(info.content)
-#        if info.newline:
+        print("info.content : "+str(info["content"]))
+        self.appendLog(info["content"])
+#        if info["newline"]:
 #            self.appendLog("\n")
 
     def appendLog(self, msg):

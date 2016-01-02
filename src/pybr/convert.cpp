@@ -110,7 +110,9 @@ PyObject *Wrapper::lvarToPyObj(qlib::LVariant &variant)
   case qlib::LVariant::LT_STRING: {
     //MB_DPRINTLN("LVar: string(%s)", str.c_str());
 #if PY_MAJOR_VERSION >= 3
-    return PyBytes_FromString(variant.getStringValue().c_str());
+    //return PyBytes_FromString(variant.getStringValue().c_str());
+    LString str = variant.getStringValue();
+    return PyUnicode_DecodeUTF8(str.c_str(), str.length(), "xxx");
 #else
     return PyString_FromString(variant.getStringValue().c_str());
 #endif
