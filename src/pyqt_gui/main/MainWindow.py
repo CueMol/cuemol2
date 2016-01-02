@@ -1,5 +1,9 @@
 import sys
-import PyQt5
+import json
+from PyQt5 import QtWidgets
+from PyQt5 import QtGui
+from PyQt5 import QtCore
+
 from PyQt5.QtWidgets import (QApplication, QWidget, QMainWindow,
                              QGridLayout, QVBoxLayout, QHBoxLayout,
                              QLabel, QLineEdit, QPushButton)
@@ -12,6 +16,8 @@ from PyQt5.QtCore import QSettings
 import cuemol
 
 from qmqtgui import QtMolWidget
+
+from main import event
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
@@ -36,14 +42,47 @@ class MainWindow(QMainWindow):
 
         #self.myw = QtMolWidget(fmt, self)
 
+        self._logwnd = QtWidgets.QPlainTextEdit()
+        self._logwnd.setReadOnly(True)
+        print("Logwnd minimumSizeHint=" + str( self._logwnd.minimumSizeHint() ))
+        self._logwnd.setMinimumSize(1,1)
+
         print("create QtMolWidget(None)")
-        self.myw = QtMolWidget(None)
+        self.myw = QtMolWidget(self)
         print("bind(self._scid, self._vwid)")
         self.myw.bind(self._scid, self._vwid)
         # buttonLayout.addWidget(self.myw)
 
-        print("setCentralWidget(self.myw)")
-        self.setCentralWidget(self.myw)
+        splitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
+        splitter.addWidget(self.myw)
+        splitter.addWidget(self._logwnd)
+
+        splitter.setStretchFactor(0, 20)
+        splitter.setStretchFactor(1, 1)
+
+        print("setCentralWidget()")
+        #self.setCentralWidget(self.myw)
+        self.setCentralWidget(splitter)
+
+        evm = event.getEventManager()
+        evm.addListener("log", -1, -1, -1, self.logEvent)
+
+    def logEvent(self, aSlotID, aCatStr, aTgtTypeID, aEvtTypeID, aSrcID, aInfoStr):
+#     print("  slot ID="+str(aSlotID))
+#     print("  cat str="+str(aCatStr))
+#     print("  target ID="+str(aTgtTypeID))
+#     print("  event ID="+str(aEvtTypeID))
+#     print("  src ID="+str(aSrcID))
+        print("LogEvent info : "+aInfoStr)
+        info = json.loads(str(aInfoStr))
+        print("info : "+str(info))
+#        self.appendLog(info.content)
+#        if info.newline:
+#            self.appendLog("\n")
+
+    def appendLog(self, msg):
+        self._logwnd.appendPlainText(msg)
+        self._logwnd.verticalScrollBar().setValue(self._logwnd.verticalScrollBar().maximum())
 
     def onOpenFile(self):
         qset = QSettings("BKR-LAB", "CueMol")

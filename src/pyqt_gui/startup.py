@@ -12,21 +12,12 @@ if len(sys.argv)>=2:
 
 cuemol.initCueMol(confpath)
 evm = event.getEventManager()
-def logEvent(aSlotID, aCatStr, aTgtTypeID, aEvtTypeID, aSrcID, aInfoStr):
-#     print("  slot ID="+str(aSlotID))
-#     print("  cat str="+str(aCatStr))
-#     print("  target ID="+str(aTgtTypeID))
-#     print("  event ID="+str(aEvtTypeID))
-#     print("  src ID="+str(aSrcID))
-    print("LogEvent info : "+str(aInfoStr))
-
-evm.addListener("log", -1, -1, -1, logEvent)
 
 logMgr = cuemol.getService("MsgLog")
 accumMsg = logMgr.getAccumMsg()
 logMgr.removeAccumMsg()
 
-evm = event.getEventManager()
+# evm = event.getEventManager()
 
 app = QApplication(sys.argv)
 main_window = MainWindow()
