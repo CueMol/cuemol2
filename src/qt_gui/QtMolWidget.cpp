@@ -417,22 +417,37 @@ public:
     buf.setWidth(w);
     buf.setHeight(h);
 
-    QUE_BYTE *pdata = buf.data();
-    int i,j;
-    for (j=0; j<h; j++) {
-      for (i=0; i<w; i++) {
-        pdata[j*w+i] = 0; //QUE_BYTE(i);
-      }
-    }
+    gfx::PixelBuffer buf1;
+    buf1.resize(nsize);
+    buf1.setDepth(8);
+    buf1.setWidth(w);
+    buf1.setHeight(h);
 
-    QImage img(pdata, w, h, QImage::Format_Grayscale8);
+    QUE_BYTE *pdata1 = buf1.data();
+    int i,j;
+    for (i=0; i<nsize; i++)
+      pdata1[i] = 0;
+
+    QImage img(pdata1, w, h, QImage::Format_Grayscale8);
     QPainter p(&img);
+
     p.setRenderHint(QPainter::TextAntialiasing);
+    p.setRenderHint(QPainter::Antialiasing);
+    p.setRenderHint(QPainter::HighQualityAntialiasing);
+
     p.setFont(font);
     p.setPen(Qt::white);
     p.drawText(img.rect(), Qt::AlignCenter, str.c_str());
     
-    buf.dump();
+    // Reflect image along with the horizontal direction
+    QUE_BYTE *pdata = buf.data();
+    for (j=0; j<h; j++) {
+      for (i=0; i<w; i++) {
+        pdata[j*w+i] = pdata1[((h-1)-j)*w+i];
+      }
+    }
+
+    // buf.dump();
     return true;
   }
   

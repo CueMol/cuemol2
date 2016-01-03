@@ -42,10 +42,20 @@ class MainWindow(QMainWindow):
 
         #self.myw = QtMolWidget(fmt, self)
 
-        self._logwnd = QtWidgets.QPlainTextEdit()
+        self._logwnd = QtWidgets.QPlainTextEdit(self)
         self._logwnd.setReadOnly(True)
         print("Logwnd minimumSizeHint=" + str( self._logwnd.minimumSizeHint() ))
         self._logwnd.setMinimumSize(1,1)
+
+        self._cmdinput = QtWidgets.QLineEdit(self)
+
+        loggrp = QtWidgets.QWidget(self)
+        loggrp_layout = QVBoxLayout()
+        loggrp_layout.setSpacing(0)
+        loggrp_layout.setContentsMargins(0,0,0,0)
+        loggrp_layout.addWidget(self._logwnd)
+        loggrp_layout.addWidget(self._cmdinput)
+        loggrp.setLayout(loggrp_layout)
 
         print("create QtMolWidget(None)")
         self.myw = QtMolWidget(self)
@@ -55,7 +65,8 @@ class MainWindow(QMainWindow):
 
         splitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
         splitter.addWidget(self.myw)
-        splitter.addWidget(self._logwnd)
+        #splitter.addWidget(self._logwnd)
+        splitter.addWidget(loggrp)
 
         splitter.setStretchFactor(0, 20)
         splitter.setStretchFactor(1, 1)
@@ -163,7 +174,8 @@ class MainWindow(QMainWindow):
         fileMenu.addAction(fopenAction)
         fileMenu.addAction(exitAction)
         
-        self.setGeometry(300, 300, 300, 200)
+        #self.setGeometry(300, 300, 300, 200)
+        self.resize(800, 600)
         #self.loadSettings()
         self.setWindowTitle('CueMol')
         self.show()
