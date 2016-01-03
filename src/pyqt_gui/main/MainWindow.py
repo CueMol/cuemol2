@@ -48,6 +48,10 @@ class MainWindow(QMainWindow):
         self._logwnd.setMinimumSize(1,1)
 
         self._cmdinput = QtWidgets.QLineEdit(self)
+        completer = QtWidgets.QCompleter(["alpha", "aloha", "foo", "bar", "omega", "omicron", "zeta"], self)
+        completer.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        #completer.setCompletionMode(QtWidgets.QCompleter.UnfilteredPopupCompletion)
+        self._cmdinput.setCompleter(completer);
 
         loggrp = QtWidgets.QWidget(self)
         loggrp_layout = QVBoxLayout()
