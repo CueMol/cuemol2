@@ -185,9 +185,10 @@ class MainWindow(QMainWindow):
     def setupScene(self):
         scMgr = cuemol.getService("SceneManager")
 
-        sc = scMgr.createScene();
+        sc = scMgr.createScene()
         sc.setName("Untitled")
-        self._scid = sc.uid;
+        self._scid = sc.uid
+        scMgr.activeSceneID = sc.uid
 
         vw = sc.createView()
         vw.name = "1"

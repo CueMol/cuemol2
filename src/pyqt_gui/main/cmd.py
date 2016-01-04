@@ -1,5 +1,4 @@
-import sys
-import os
+import sys, os, traceback
 import cuemol
 
 def load(filename, name=None, scene=None, format=None):
@@ -43,6 +42,8 @@ def _loadScene(filename, name, scene, format):
         scene.name = name
     except:
         print("loadScene error")
+        msg = traceback.format_exc()
+        print(msg)
         return None
 
     return scene
@@ -65,10 +66,13 @@ def _loadObject(filename, name, scene, format):
         scene.addObject(newobj)
     except:
         print("loadObject error")
+        msg = traceback.format_exc()
+        print(msg)
+        scene.rollbackUndoTxn()
         return None
-    finally:
-        scene.commitUndoTxn();
-        ## EDIT TXN END ##
+
+    scene.commitUndoTxn()
+    ## EDIT TXN END ##
 
     return newobj
 
@@ -77,15 +81,18 @@ def _guessFormatFromFname(pathname):
     basenm, ext = os.path.splitext( filenm )
     comp = ""
 
-    if ext == "gz":
+    if ext == ".gz":
         comp = "gz"
         basenm, ext = os.path.splitext( path )
     #elif ext == "bz2":
 
-    if ext == "qsc":
+    if ext == ".qsc":
         return ("qsc_xml", basenm, comp)
 
-    return (ext, basenm, comp)
+    if ext == "":
+        raise "invalid pathname: "+pathname
+
+    return (ext[1:], basenm, comp)
 
 
 def _getReaderCategoryID(format):
