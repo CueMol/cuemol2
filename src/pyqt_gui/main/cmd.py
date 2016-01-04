@@ -23,12 +23,60 @@ def load(filename, name=None, scene=None, format=None):
     ncat = _getReaderCategoryID(format)
 
     if ncat == 0:
-        return _loadObject(filename, name, scene, format)
+        obj = _loadObject(filename, name, scene, format)
+        _setupDefaultRenderer(obj)
+        
     elif ncat == 3:
         return _loadScene(filename, name, scene, format)
         
     # TO DO: Unknown category ID, throw exception here
     return None
+
+def _setupDefaultRenderer(obj):
+    rend = None
+    try:
+        scene = obj.getScene()
+        
+        ## EDIT TXN START ##
+        scene.startUndoTxn("Create default renderer")
+        try:
+            rend = obj.createRenderer("simple")
+            rend.applyStyles("DefaultCPKColoring")
+            rend.name = "simple1"
+            rend.sel = _sel("*")
+            print("active view ID="+str(scene.activeViewID))
+            view = scene.getActiveView()
+            if view is None:
+                print("setupDefault renderer: view is null, cannot recenter")
+            else:
+                pos = rend.getCenter()
+                view.setViewCenter(pos)
+        except:
+            print("setupDefaultRenderer error")
+            msg = traceback.format_exc()
+            print(msg)
+            scene.rollbackUndoTxn()
+            return None
+        else:
+            scene.commitUndoTxn()
+            ## EDIT TXN END ##
+    except:
+        print("setupDefaultRenderer error")
+        msg = traceback.format_exc()
+        print(msg)
+
+    return rend
+
+def _sel(selstr, uid=None):
+    selobj = cuemol.createObj("SelCommand")
+    if not uid is None:
+        if not selobj.compile(selstr, uid):
+            return None
+    else:
+        if not selobj.compile(selstr, 0):
+            return None
+    return selobj
+    
 
 def _loadScene(filename, name, scene, format):
     strMgr = cuemol.getService("StreamManager")
@@ -70,9 +118,9 @@ def _loadObject(filename, name, scene, format):
         print(msg)
         scene.rollbackUndoTxn()
         return None
-
-    scene.commitUndoTxn()
-    ## EDIT TXN END ##
+    else:
+        scene.commitUndoTxn()
+        ## EDIT TXN END ##
 
     return newobj
 

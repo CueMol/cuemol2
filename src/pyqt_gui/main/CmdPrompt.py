@@ -1,9 +1,44 @@
-import sys, traceback
+import sys, traceback, re
 
 from PyQt5 import QtWidgets
 from PyQt5 import QtGui
 from PyQt5 import QtCore
 from main import cmd
+
+class Parser:
+    def __init__(self, instr):
+        self._tgtstr = instr.strip()
+
+    def parse(self):
+        # find main command
+        p = re.compile(r"[a-zA-Z]+")
+        m = p.match(self._tgtstr)
+        #print("cmd="+str(m))
+        if m is None:
+            return False
+        self._cmd = m.group()
+        self._tgtstr = self._tgtstr[m.end():]
+
+        print("cmd="+self._cmd)
+        print("rem="+self._tgtstr)
+        self._args = []
+
+        p = re.compile(r",")
+        while len(self._tgtstr)>0:
+            self._tgtstr = self._tgtstr.strip()
+            m = p.search(self._tgtstr)
+            if m is None:
+                break;
+            arg = self._tgtstr[:m.start()]
+            print("arg="+arg)
+            self._tgtstr = self._tgtstr[m.end():]
+            self._args.append(arg)
+
+        if len(self._tgtstr)>0:
+            self._args.append(self._tgtstr)
+
+        print("args: "+str(self._args))
+        
 
 class CmdPrompt(QtWidgets.QLineEdit):
     def __init__(self, parent=None):
@@ -27,9 +62,14 @@ class CmdPrompt(QtWidgets.QLineEdit):
 
     def execCmd(self, cmdstr):
         #print("Exec cmd:"+cmd)
+        p = Parser(cmdstr)
+        p.parse()
+        
         try:
             #eval(cmd, self._cmdglobal)
-            eval(cmdstr)
+            #eval(cmdstr)
+            if p._cmd=="load":
+                cmd.load(p._args[0])
         except:
             print("Error: "+cmdstr)
             msg = traceback.format_exc()

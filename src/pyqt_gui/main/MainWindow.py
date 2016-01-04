@@ -188,13 +188,14 @@ class MainWindow(QMainWindow):
         sc = scMgr.createScene()
         sc.setName("Untitled")
         self._scid = sc.uid
-        scMgr.activeSceneID = sc.uid
+        scMgr.activeSceneID = self._scid
 
         vw = sc.createView()
         vw.name = "1"
         vw.trans_mms = True
         vw.rot_mms = True
         self._vwid = vw.uid;
+        sc.activeViewID = self._vwid
 
         print("setupScene new scene ID="+str(self._scid))
         print("setupScene new view ID="+str(self._vwid))
