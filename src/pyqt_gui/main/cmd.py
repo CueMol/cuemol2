@@ -1,20 +1,96 @@
 import sys
+import os
 import cuemol
 
 def load(filename, name=None, scene=None, format=None):
 
     scMgr = cuemol.getService("SceneManager")
-    scene = scMgr.getScene(self._scid);
 
-        scene.clearAllData()
+    if scene is None:
+        scene = scMgr.getActiveScene()
+
+    gformat, gname, comp = _guessFormatFromFname(filename)
+
+    print("guessed format: "+gformat)
+    print("guessed objname: "+gname)
+    print("guessed comp mode: "+comp)
+
+    if format is None:
+        format = gformat
+
+    if name is None:
+        name = gname
+
+    ncat = _getReaderCategoryID(format)
+
+    if ncat == 0:
+        return _loadObject(filename, name, scene, format)
+    elif ncat == 3:
+        return _loadScene(filename, name, scene, format)
         
-        strMgr = cuemol.getService("StreamManager")
-        reader = strMgr.createHandler("qsc_xml", 3)
-        reader.setPath(fname)
+    # TO DO: Unknown category ID, throw exception here
+    return None
+
+def _loadScene(filename, name, scene, format):
+    strMgr = cuemol.getService("StreamManager")
+    reader = strMgr.createHandler(format, 3)
+    reader.setPath(filename)
         
+    try:
         reader.attach(scene)
         reader.read()
         reader.detach()
+        scene.name = name
+    except:
+        print("loadScene error")
+        return None
 
-        scene.loadViewFromCam(self._vwid, "__current")
+    return scene
+        
+def _loadObject(filename, name, scene, format):
+    strMgr = cuemol.getService("StreamManager")
+    reader = strMgr.createHandler(format, 0)
+    reader.setPath(filename)
+    newobj = reader.createDefaultObj()
+
+    ## EDIT TXN START ##
+    scene.startUndoTxn("Open file")
+
+    try:
+        reader.attach(newobj)
+        # reader.base64 = true;
+        reader.read();
+        reader.detach();
+        newobj.name = name
+        scene.addObject(newobj)
+    except:
+        print("loadObject error")
+        return None
+    finally:
+        scene.commitUndoTxn();
+        ## EDIT TXN END ##
+
+    return newobj
+
+def _guessFormatFromFname(pathname):
+    filenm = os.path.basename(pathname)
+    basenm, ext = os.path.splitext( filenm )
+    comp = ""
+
+    if ext == "gz":
+        comp = "gz"
+        basenm, ext = os.path.splitext( path )
+    #elif ext == "bz2":
+
+    if ext == "qsc":
+        return ("qsc_xml", basenm, comp)
+
+    return (ext, basenm, comp)
+
+
+def _getReaderCategoryID(format):
+    if format == "qsc_xml":
+        return 3
+
+    return 0
 

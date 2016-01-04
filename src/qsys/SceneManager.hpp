@@ -31,9 +31,6 @@ namespace qsys {
     /// Scenes in this instance
     data_t m_data;
 
-    /// Active scene's ID
-    qlib::uid_t m_nActiveSceneID;
-
   public:
     SceneManager();
 
@@ -64,13 +61,29 @@ namespace qsys {
     /// Check and update all scenes
     void checkAndUpdateScenes() const;
 
+    //
+    // Active scene management
+    //
+
+  private:
+    /// Active scene's ID
+    qlib::uid_t m_nActiveSceneID;
+
+  public:
+    /// Set active scene ID
     void setActiveSceneID(qlib::uid_t uid);
 
+    /// Get active scene ID
     qlib::uid_t getActiveSceneID() const {
       return m_nActiveSceneID;
     }
     
 
+    /// Get active scene object
+    ScenePtr getActiveScene() const {
+      return getScene(getActiveSceneID());
+    }
+    
     //////////
 
     qlib::LScrSp<qlib::LScrObjBase> getUIDObj(qlib::uid_t uid) const;

@@ -14,10 +14,11 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import QSettings
 
 import cuemol
+import main
 
 from qmqtgui import QtMolWidget
 
-from main import event
+from main import event, CmdPrompt
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
@@ -47,11 +48,7 @@ class MainWindow(QMainWindow):
         print("Logwnd minimumSizeHint=" + str( self._logwnd.minimumSizeHint() ))
         self._logwnd.setMinimumSize(1,1)
 
-        self._cmdinput = QtWidgets.QLineEdit(self)
-        completer = QtWidgets.QCompleter(["alpha", "aloha", "foo", "bar", "omega", "omicron", "zeta"], self)
-        completer.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
-        #completer.setCompletionMode(QtWidgets.QCompleter.UnfilteredPopupCompletion)
-        self._cmdinput.setCompleter(completer);
+        self._cmdinput = CmdPrompt.CmdPrompt(self)
 
         loggrp = QtWidgets.QWidget(self)
         loggrp_layout = QVBoxLayout()
