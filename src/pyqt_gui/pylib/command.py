@@ -11,8 +11,12 @@ AT_LIST = 9
 AT_DICT = 10
 
 AT_PATH  = 11
-AT_OBJNAME  = 12
-AT_RENDNAME  = 13
+AT_SCENENAME  = 12
+AT_OBJNAME  = 13
+AT_RENDNAME  = 14
+
+AT_COLSTR  = 15
+AT_SELSTR  = 16
 
 class _CmdEntry(object):
     def __init__(self):
@@ -76,7 +80,7 @@ class Parser(object):
 
     def parse(self):
         # find main command
-        p = re.compile(r"[a-zA-Z]+")
+        p = re.compile(r"[a-zA-Z_]+")
         m = p.match(self._tgtstr)
         #print("cmd="+str(m))
         if m is None:

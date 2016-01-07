@@ -13,13 +13,13 @@ def makesel(selstr, uid=None):
     return selobj
     
 
-def makecolor(colstr, uid=None):
+def makecol(colstr, uid=None):
     stylem = cuemol.getService("StyleManager")
     color = None
     if uid:
         color = stylem.compileColor(colstr, uid)
     else:
-        color = stylem.compileColor(str, 0)
+        color = stylem.compileColor(colstr, 0)
     
     return color;
 

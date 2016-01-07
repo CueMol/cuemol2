@@ -10,7 +10,7 @@ from pylib import command
 class CmdPrompt(QtWidgets.QLineEdit):
     def __init__(self, parent=None):
         super(CmdPrompt, self).__init__(parent)
-
+        self._parent = parent
         self._cmdset = command.CommandSet.getInstance()
 
         completer = QtWidgets.QCompleter(["alpha", "aloha", "foo", "bar", "load", "omega", "omicron", "zeta"], self)
@@ -38,7 +38,10 @@ class CmdPrompt(QtWidgets.QLineEdit):
         try:
             if self._cmdset.hasCommand(cmdname):
                 self._cmdset.invokeCmd(cmdname, p.getArgs())
-
+            else:
+                msg = "ERROR; command "+cmdname+" not found"
+                print(msg)
+                self._parent.appendLog(msg)
             #eval(cmd, self._cmdglobal)
             #eval(cmdstr)
             #if p._cmd=="load":
@@ -48,3 +51,4 @@ class CmdPrompt(QtWidgets.QLineEdit):
             print("Error: "+cmdstr)
             msg = traceback.format_exc()
             print(msg)
+            self._parent.appendLog(msg)

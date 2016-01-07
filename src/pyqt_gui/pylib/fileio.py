@@ -35,9 +35,6 @@ def load(filename, name=None, format=None, scene=None):
     # Unknown category ID, throw exception here
     raise Exception("Unknown category ID")
 
-from . import command
-
-command.register("load", load, [command.AT_PATH, command.AT_STRING, command.AT_STRING, command.AT_INTEGER], "load scene or object")
 
 def _setupDefaultRenderer(obj):
     rend = None
@@ -134,7 +131,7 @@ def _guessFormatFromFname(pathname):
         return ("qsc_xml", basenm, comp)
 
     if ext == "":
-        raise "invalid pathname: "+pathname
+        raise Exception("invalid pathname: "+pathname)
 
     return (ext[1:], basenm, comp)
 
