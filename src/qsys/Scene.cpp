@@ -114,6 +114,7 @@ Scene::Scene()
 
   m_bLoading = false;
 
+  m_nActiveObjID = qlib::invalid_uid;
   m_nActiveViewID = qlib::invalid_uid;
 
   MB_DPRINTLN("Scene (%d) created.", m_nUID);
@@ -448,6 +449,24 @@ LString Scene::getObjUIDList() const
   }
 
   return rval;
+}
+
+void Scene::setActiveObjID(qlib::uid_t uid)
+{
+  ObjectPtr pObj = getObject(uid);
+  if (pObj.isnull()) {
+    MB_THROW(qlib::IllegalArgumentException, "Unknown object ID");
+    return;
+  }
+    
+  m_nActiveObjID = uid;
+
+  // set this Scene as active scene to the scene manager.
+  // (active view's scene should always be active)
+  SceneManager *pMgr = SceneManager::getInstance();
+  pMgr->setActiveSceneID(m_nUID);
+
+  // TO DO: fire event? (activeObjChanged??)
 }
 
 // private
@@ -830,13 +849,11 @@ void Scene::setActiveViewID(qlib::uid_t uid)
   m_nActiveViewID = uid;
 
   // set this Scene as active scene to the scene manager.
+  // (active view's scene should always be active)
   SceneManager *pMgr = SceneManager::getInstance();
   pMgr->setActiveSceneID(m_nUID);
-}
 
-ViewPtr Scene::getActiveView() const
-{
-  return getView(m_nActiveViewID);
+  // TO DO: fire event??
 }
 
 void Scene::checkAndUpdate()

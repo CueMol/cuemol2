@@ -76,6 +76,8 @@ runtime_class Scene
   /// Get scene information in JSON format (w/ rend groups)
   string getSceneDataJSON();
 
+  property integer activeObjID => redirect(getActiveObjID, setActiveObjID) (nopersist);
+
   ////////////////////
   // Renderer related methods
 
