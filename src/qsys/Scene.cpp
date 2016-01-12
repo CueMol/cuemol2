@@ -574,6 +574,24 @@ RendererPtr Scene::getRendByName(const LString &nm) const
   return RendererPtr();
 }
 
+void Scene::setActiveRendID(qlib::uid_t uid)
+{
+  RendererPtr pRend = getRenderer(uid);
+  if (pRend.isnull()) {
+    MB_THROW(qlib::IllegalArgumentException, "Unknown renderer ID");
+    return;
+  }
+    
+  m_nActiveRendID = uid;
+
+  // set this Scene as active scene to the scene manager.
+  // (active view's scene should always be active)
+  SceneManager *pMgr = SceneManager::getInstance();
+  pMgr->setActiveSceneID(m_nUID);
+
+  // TO DO: fire event? (activeRendChanged??)
+}
+
 ///////////////////////////////////////
 // Rendering of the scene
 

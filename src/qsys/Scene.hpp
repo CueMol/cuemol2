@@ -245,9 +245,9 @@ namespace qsys {
       return m_nActiveObjID;
     }
 
-    ObjectPtr getActiveObj() const {
-      return getObject(m_nActiveObjID);
-    }
+    // ObjectPtr getActiveObj() const {
+    // return getObject(m_nActiveObjID);
+    // }
 
     //
     // Scripting interface wrapper
@@ -385,6 +385,20 @@ namespace qsys {
   private:
     void displayRendImpl(DisplayContext *pdc, ObjectPtr pObj, RendererPtr pRend);
     
+    // Active renderer
+  private:
+    /// Active renderer's ID
+    qlib::uid_t m_nActiveRendID;
+    
+  public:
+    /// Set active renderer ID in this scene.
+    /// This scene also become active as a side effect.
+    void setActiveRendID(qlib::uid_t uid);
+
+    qlib::uid_t getActiveRendID() const {
+      return m_nActiveRendID;
+    }
+
   public:
     ////////////////////////////////////////////////////////////
     // Undo/Redo

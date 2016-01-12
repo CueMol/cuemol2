@@ -84,6 +84,8 @@ runtime_class Scene
   /// Get the first matching renderer object by name
   object<Renderer$> getRendByName(string);
 
+  property integer activeRendID => redirect(getActiveRendID, setActiveRendID) (nopersist);
+
   ////////////////////
   // View manager
 
