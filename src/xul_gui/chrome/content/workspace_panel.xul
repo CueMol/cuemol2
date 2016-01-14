@@ -257,6 +257,10 @@
 	<menuitem label="Delete" oncommand="cuemolui.panels.workspace.onDeleteCmd(event);"/>
 	<menuseparator/>
 	<menuitem label="Properties..." oncommand="cuemolui.panels.workspace.onPropCmd(event)"/>
+
+	<menuitem label="Create style..." id="wspcPanelCreateStyleMenu"
+	  oncommand="cuemolui.panels.workspace.onCreateStyle(event);"/>
+
       </menupopup>
 
       <!--

@@ -551,3 +551,27 @@ ws.onShowHideCmd = function (aEvent, aShow)
 };
 
 
+ws.onCreateStyle = function (aEvent)
+{
+  if (this.mViewObj.isMultiSelected()) {
+    return;
+  }
+  
+  var elem = this.mViewObj.getSelectedNode();
+  if (!elem) return;
+  var id = elem.obj_id;
+
+  if (elem.type!="renderer")
+    return;
+
+  try {
+    let clipboard = require("qsc-copipe");
+
+    let rend = cuemol.getRenderer(id);
+    let scene = rend.getScene();
+    let stylem = cuemol.getService("StyleManager");
+    stylem.createStyleFromObj(scene.uid, "test", "test", rend)
+
+  } catch (e) { debug.exception(e); }
+};
+

@@ -15,6 +15,7 @@
 #include <qlib/FileStream.hpp>
 #include <qlib/LDOM2Stream.hpp>
 #include <qlib/ObjectManager.hpp>
+#include <qlib/PropSpec.hpp>
 #include <gfx/NamedColor.hpp>
 #include <qsys/SceneManager.hpp>
 
@@ -148,7 +149,7 @@ LString StyleMgr::getStyleValue(qlib::uid_t ctxt,
   LString style_name;
   LString prop_names;
   if (!splitKeyName(dotname, style_name, prop_names)) {
-    LString msg = LString::format("StyleMgr.getStyleNode2> invalid key name: %s",dotname.c_str());
+    LString msg = LString::format("StyleMgr.getStyleValue> invalid key name: %s",dotname.c_str());
     MB_THROW(qlib::RuntimeException, msg);
     return LString();
   }
@@ -167,7 +168,7 @@ void StyleMgr::setStyleValue(qlib::uid_t ctxt,
   LString style_name;
   LString prop_names;
   if (!splitKeyName(dotname, style_name, prop_names)) {
-    LString msg = LString::format("StyleMgr.getStyleNode2> invalid key name: %s",dotname.c_str());
+    LString msg = LString::format("StyleMgr.setStyleValue> invalid key name: %s",dotname.c_str());
     MB_THROW(qlib::RuntimeException, msg);
     return;
   }
@@ -514,15 +515,94 @@ bool StyleMgr::isModified(qlib::uid_t nSceneID) const
   return false;
 }
 
-//////////////////////////////////////////////////
-// style event class
-
-StyleEvent::~StyleEvent()
+void StyleMgr::createStyleFromObj(qlib::uid_t ctxt, const LString &setid,
+                                  const LString &name,
+                                  const qlib::LScrSp<qlib::LScrObjBase> &pSObj)
 {
+  LDom2Node *pNode = extractStyleNodeFromObj(ctxt, pSObj.get(), true);
 }
 
-qlib::LCloneableObject *StyleEvent::clone() const
+LDom2Node *StyleMgr::extractStyleNodeFromObj(qlib::uid_t ctxt,
+                                             qlib::LScrObjBase *pSObj,
+                                             bool bResolveStyle)
 {
-  return MB_NEW StyleEvent(*this);
+  LDom2Node *pNode = NULL;
+  
+  std::set<LString> names;
+  pSObj->getPropNames(names);
+
+  BOOST_FOREACH(const LString &nm, names) {
+
+    qlib::PropSpec spec;
+    if (!pSObj->getPropSpecImpl(nm, &spec))
+      continue;
+
+    if (nm.equals("type") ||
+        nm.equals("name"))
+      continue;
+
+    // Ignore prop with the nopersist attribute
+    if (spec.bNoPersist)
+      continue;
+
+    // Ignore read-only array object
+    // (In future, this impl should be modified to save array ??)
+    if (spec.bReadOnly &&
+        spec.type_name.equals("array")) {
+      continue;
+    }
+    
+    //MB_DPRINTLN("> write(%s) prop=%s, isDef=%d",
+    //typeid().name(),
+    //nm.c_str(),
+    //isPropDefault(nm));
+
+    if (!spec.bHasDefault)
+      continue;
+
+    qlib::LVariant value;
+
+    // check default flag
+    if (pSObj->isPropDefault(nm)) {
+      if (!bResolveStyle)
+        continue;
+      if (!StyleSheet::resolve3(nm, pSObj, value))
+        continue;
+      MB_DPRINT("Style: ");
+    }
+    else {
+      if (!pSObj->getProperty(nm, value))
+        continue;
+    }
+      
+    if (value.isNull())
+      continue;
+
+    if (value.isStrConv() && !spec.bReadOnly) {
+      LString sval = value.toString();
+      MB_DPRINTLN("Extract prop <%s>=%s", nm.c_str(), sval.c_str());
+      continue;
+    }
+
+    if (value.isObject()) {
+      if (spec.bReadOnly) {
+        qlib::LScrObjBase *pChObj = value.getObjectPtrT<qlib::LScrObjBase>();
+        pNode = extractStyleNodeFromObj(ctxt, pChObj, bResolveStyle);
+      }
+      else {
+        MB_DPRINTLN("Extract prop <%s>=(OBJECT)", nm.c_str());
+      }
+    }
+
+    /*
+    LDom2Node *pChNode = pNode->appendChild(nm);
+    pChNode->setupByVariant(value);
+    
+    pChNode->setReadOnly(spec.bReadOnly);
+    pChNode->setDefaultFlag(bDefault);
+     */
+  } // for (; iter!=names.end(); ++iter) {
+
+  return pNode;
 }
 

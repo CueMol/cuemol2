@@ -38,7 +38,7 @@ namespace qsys {
   class QSYS_API StyleSupports //: public StyleEventListener
   {
   public:
-    virtual ~StyleSupports() {}
+    virtual ~StyleSupports();
     virtual StyleSheet *getStyleSheet() const =0;
     virtual void styleChanged(StyleEvent &) =0;
     virtual qlib::uid_t getStyleCtxtID() const =0;
@@ -89,9 +89,10 @@ namespace qsys {
   {
   public:
     /// Utility method: reset property to default/style value
-	  bool resetProperty(const qlib::LString &propnm, qlib::LDefSupportScrObjBase *pThat);
+    bool resetProperty(const qlib::LString &propnm, qlib::LDefSupportScrObjBase *pThat);
   };
   
+
 /*
   ///
   /// Scriptable object class with stylesheet client implementation

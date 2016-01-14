@@ -222,6 +222,12 @@ namespace qsys {
     void setStyleValue(qlib::uid_t ctxt, const LString &setid, const LString &dotname,
                        const LString &value);
 
+    void createStyleFromObj(qlib::uid_t ctxt, const LString &setid, const LString &name,
+                            const qlib::LScrSp<qlib::LScrObjBase> &pSObj);
+
+  private:
+    LDom2Node *extractStyleNodeFromObj(qlib::uid_t ctxt, qlib::LScrObjBase *pSObj, bool bResolveStyle);
+
   private:
     /// Search style nodes recursively to get a node with name, keyname
     LDom2Node *findStyleNodeByName(LDom2Node *pSty, const LString &keyname, bool bCreate);

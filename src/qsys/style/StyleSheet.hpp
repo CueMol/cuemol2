@@ -73,6 +73,8 @@ namespace qsys {
 
     bool resolveStyleSheet2(const LString &keyname, qlib::LVariant &variant);
 
+    static bool resolve3(const LString &keyname, qlib::LScrObjBase *pThat, qlib::LVariant &variant);
+
   private:
     void applyStyleHelper(const LString &parent_name, qlib::LScriptable *pthat);
 
