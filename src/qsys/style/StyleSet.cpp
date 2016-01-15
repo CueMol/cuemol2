@@ -229,6 +229,31 @@ Material *StyleSet::getMaterial(const LString &id) const
   return m_matdata.get(id);
 }
 
+LString StyleSet::getMaterialNamesJSON(bool bParen/*=true*/) const
+{
+  LString rval = "";
+  if (bParen)
+    rval += "[";
+
+  bool bfirst = true;
+  matdata_iterator iter = matBegin();
+  matdata_iterator eiter = matEnd();
+  for (; iter!=eiter; ++iter) {
+    const LString &fkey = iter->first;
+    
+    if (!bfirst)
+      rval += ",";
+    else
+      bfirst = false;
+    
+    rval += "\""+fkey.escapeQuots()+"\"";
+  }
+
+  if (bParen)
+    rval += "]";
+  return rval;
+}
+
 //////////////////////////////////////////////////
 // serialization / deserialization
 

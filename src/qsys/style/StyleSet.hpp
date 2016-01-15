@@ -144,18 +144,52 @@ namespace qsys {
     strdata_iterator strBegin() const { return m_strdata.begin(); }
     strdata_iterator strEnd() const { return m_strdata.end(); }
 
-    //////////
+    //////////////////////////
     // Structured data methods
 
+    /// get structured data (LDom2Node) by key
     LDom2Node *getData(const LString &key) const;
+    /// Put structured data (LDom2Node) with key name
+    ///  this method returns false if key name is already used
     bool putData(const LString &key, LDom2Node *pNode);
+    /// Remove structured data by key name
     bool removeData(const LString &key);
 
     typedef data_t::const_iterator data_iterator;
     data_iterator dataBegin() const { return m_data.begin(); }
     data_iterator dataEnd() const { return m_data.end(); }
 
-    LString getStyleDefsJSON() const;
+    // style-specific structured data methods
+
+    /// Get style node by style name
+    ///  This method is a wrapper for getData() for style nodes.
+    LDom2Node *getStyleNode(const LString &name) const {
+      LString key = StyleSet::makeStyleKey(name);
+      return getData(key);
+    }
+
+    /// Put style node by style name
+    ///  This method is a wrapper for putData() for style nodes.
+    ///  This method returns false if key name is already used
+    bool putStyleNode(const LString &name, LDom2Node *pNode) {
+      LString key = StyleSet::makeStyleKey(name);
+      return putData(key, pNode);
+    }
+    /// Remove style node by style name
+    ///  This method is a wrapper of removeData() for style nodes.
+    bool removeStyleNode(const LString &name) {
+      LString key = StyleSet::makeStyleKey(name);
+      return removeData(key);
+    }
+
+    /// Get style info in JSON format (without array parens)
+    /// This method returns comma separated objects without array parens
+    /// and intended to be used by StyleMgr::getStyleNamesJSON(), which returns all style names in the context
+    LString getStyleKeysJSON() const;
+
+    /// Get style info in JSON format
+    LString getStyleNamesJSON() const;
+
 
     //////////
     // Material data methods
@@ -166,6 +200,9 @@ namespace qsys {
     typedef matdata_t::const_iterator matdata_iterator;
     matdata_iterator matBegin() const { return m_matdata.begin(); }
     matdata_iterator matEnd() const { return m_matdata.end(); }
+
+	LString getMaterialNamesJSON(bool bParen = true) const;
+    
 
     //////////
     // serialization/deserialization methods
@@ -185,8 +222,13 @@ namespace qsys {
 
     //////////
 
+    /// decode string data key
     static bool decodeStrDataKey(const LString &inkey, LString &dbname, LString &tagname, LString &id);
 
+    /// Convert selection, etc to the string data key
+    /// dbname:
+    /// tagname:
+    /// id:
     static inline LString makeStrDataKey(const LString &dbname, const LString &tagname, const LString &id)
     {
       return dbname + STYLEMGR_DB_DELIM  + tagname  +STYLEMGR_DB_DELIM + id;
@@ -194,6 +236,7 @@ namespace qsys {
 
     //
 
+    /// Convert the style name to the structured data key name
     static inline LString makeStyleKey(const LString &arg)
     {
       return arg + STYLEMGR_DB_DELIM + "style";
@@ -201,9 +244,10 @@ namespace qsys {
 
     //
 
+    /// Get string data keys with specified category in JSON format
+    /// dbname: data base name
+    /// cat: category
     LString getStrDataKeysJSON(const LString &dbname, const LString &cat) const;
-    LString getStyleKeysJSON() const;
-    LString getStyleNamesJSON() const;
 
   };
 

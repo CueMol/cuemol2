@@ -531,11 +531,10 @@ void StyleMgr::createStyleFromObj(qlib::uid_t scene_uid, qlib::uid_t set_uid,
   pNode->setTagName("style");
   pNode->appendStrAttr("type", "renderer");
 
-  LString key = StyleSet::makeStyleKey(name);
-  if (pSet->getData(key))
-    pSet->removeData(key);
-
-  pSet->putData(key, pNode);
+  if (pSet->getStyleNode(name))
+	  pSet->removeStyleNode(name);
+  
+  pSet->putStyleNode(name, pNode);
 
   // fire event(s) to update the scene
   qlib::uid_t ctxt = pSet->getContextID();

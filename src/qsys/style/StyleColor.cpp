@@ -201,6 +201,14 @@ LString StyleMgr::getMaterialNamesJSON(qlib::uid_t nScopeID,
         continue; // skip non-target stylesets
     }
 
+    if (!bfirst)
+      rval += ",";
+    else
+      bfirst = false;
+
+    rval += pSet->getMaterialNamesJSON(false);
+
+    /*
     StyleSet::matdata_iterator iter = pSet->matBegin();
     StyleSet::matdata_iterator eiter = pSet->matEnd();
     for (; iter!=eiter; ++iter) {
@@ -212,7 +220,7 @@ LString StyleMgr::getMaterialNamesJSON(qlib::uid_t nScopeID,
         bfirst = false;
 
       rval += "\""+fkey.escapeQuots()+"\"";
-    }
+    }*/
   }  
 
   rval += "]";
