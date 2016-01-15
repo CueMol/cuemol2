@@ -572,11 +572,14 @@ LDom2Node *StyleMgr::extractStyleNodeFromObj(qlib::uid_t ctxt,
       continue;
     }
     
+    qlib::LVariant value;
+    if (!pSObj->getProperty(nm, value))
+      continue;
+    if (value.isNull())
+      continue;
+
     // handle object type property
-    if (spec.type_name.equals("object")) {
-      qlib::LVariant value;
-      if (!pSObj->getProperty(nm, value))
-        continue;
+    if (!value.isStrConv()) {
       if (spec.bReadOnly) {
         // nested object property
         qlib::LScrObjBase *pChObj = value.getObjectPtrT<qlib::LScrObjBase>();
@@ -601,23 +604,16 @@ LDom2Node *StyleMgr::extractStyleNodeFromObj(qlib::uid_t ctxt,
     if (!spec.bHasDefault)
       continue;
 
-    qlib::LVariant value;
-
     // check default flag
     if (pSObj->isPropDefault(nm)) {
       if (!bResolveStyle)
         continue;
       if (!StyleSheet::resolve3(nm, pSObj, value))
         continue;
+      if (value.isNull())
+        continue;
       MB_DPRINT("Style: ");
     }
-    else {
-      if (!pSObj->getProperty(nm, value))
-        continue;
-    }
-      
-    if (value.isNull())
-      continue;
 
     if (value.isStrConv()) {
       LString sval = value.toString();

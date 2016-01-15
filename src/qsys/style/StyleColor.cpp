@@ -109,8 +109,17 @@ bool StyleMgr::removeColor(const LString &key, qlib::uid_t nScopeID, qlib::uid_t
 
 ColorPtr StyleMgr::compileColor(const LString &rep, qlib::uid_t nScopeID)
 {
+  ColorPtr rval;
   pushContextID(nScopeID);
-  ColorPtr rval(AbstractColor::fromStringS(rep));
+
+  try {
+    rval = ColorPtr(AbstractColor::fromStringS(rep));
+  }
+  catch (...) {
+    popContextID();
+    throw;
+  }
+
   popContextID();
   return rval;
 }
@@ -129,6 +138,14 @@ LString StyleMgr::getColorDefsJSON(qlib::uid_t nScopeID,
         continue; // skip non-target stylesets
     }
 
+    if (!bfirst)
+      rval += ",";
+    else
+      bfirst = false;
+
+    rval += pSet->getColorDefsJSON(false);
+
+    /*
     StyleSet::coldata_iterator iter = pSet->colBegin();
     StyleSet::coldata_iterator eiter = pSet->colEnd();
     for (; iter!=eiter; ++iter) {
@@ -140,15 +157,15 @@ LString StyleMgr::getColorDefsJSON(qlib::uid_t nScopeID,
         bfirst = false;
 
       rval += "\""+fkey.escapeQuots()+"\"";
-    }
+    }*/
   }  
 
   rval += "]";
   return rval;
 }
 
-//////////
-// material operations
+//////////////////////////////////////////////////
+// Material operations
 
 Material *StyleMgr::getMaterial(const LString &mat_id, qlib::uid_t nScopeID)
 {

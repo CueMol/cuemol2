@@ -44,6 +44,7 @@ LString StyleMgr::getStrData(const LString &cat, const LString &key, qlib::uid_t
   return getStrImpl(ckey, nScopeID);
 }
 
+// TO DO: remove impl (use StyleSet method)
 LString StyleMgr::getStrData(const LString &cat, const LString &key,
                              qlib::uid_t nScopeID,
                              qlib::uid_t nStyleSetID)
@@ -65,6 +66,7 @@ LString StyleMgr::getStrData(const LString &cat, const LString &key,
   return rval;
 }
 
+// TO DO: remove impl (use StyleSet method)
 bool StyleMgr::setStrData(const LString &cat, const LString &key,
                           const LString &value,
                           qlib::uid_t nScopeID,
@@ -87,6 +89,7 @@ bool StyleMgr::setStrData(const LString &cat, const LString &key,
   return res;
 }
 
+// TO DO: remove impl (use StyleSet method)
 bool StyleMgr::removeStrData(const LString &cat, const LString &key,
                              qlib::uid_t nScopeID, qlib::uid_t nStyleSetID)
 {
@@ -120,13 +123,13 @@ LString StyleMgr::getStrDataDefsJSON(const LString &cat,
       MB_THROW(qlib::RuntimeException, msg);
       return LString();
     }
-    rval += pTgtSet->getStrDataKeysJSON("string", cat);
+    rval += pTgtSet->getStrDataNamesJSON("string", cat, false);
   }
   else {
     StyleList *pSL = getCreateStyleList(nScopeID);
     bool bfirst = true;
     BOOST_FOREACH(StyleList::value_type pSet, *pSL) {
-      LString elem = pSet->getStrDataKeysJSON("string", cat);
+      LString elem = pSet->getStrDataNamesJSON("string", cat, false);
       if (elem.isEmpty())
         continue;
       

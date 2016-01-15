@@ -120,17 +120,27 @@ namespace qsys {
     //////////
     // Color data methods
 
+    typedef palette_t::const_iterator coldata_iterator;
+    coldata_iterator colBegin() const { return m_palette.begin(); }
+    coldata_iterator colEnd() const { return m_palette.end(); }
+
     bool getColor(const LString &key, ColorPtr &rcol) const;
     bool hasColor(const LString &rkey) const;
     bool setColor(const LString &rkey, const ColorPtr &pCol);
     bool removeColor(const LString &rkey);
 
-    typedef palette_t::const_iterator coldata_iterator;
-    coldata_iterator colBegin() const { return m_palette.begin(); }
-    coldata_iterator colEnd() const { return m_palette.end(); }
+    /// Get color by color name (for scripting interface)
+    ColorPtr getColor(const LString &key) const;
+
+    /// Get list of color definitions in JSON format
+    LString getColorDefsJSON(bool bParen=true) const;
 
     //////////
     // String data methods
+
+    typedef strdata_t::const_iterator strdata_iterator;
+    strdata_iterator strBegin() const { return m_strdata.begin(); }
+    strdata_iterator strEnd() const { return m_strdata.end(); }
 
     /// get string data (returns true if found)
     bool getString(const LString &key, LString &rval) const;
@@ -140,9 +150,22 @@ namespace qsys {
     /// remove string data (returns true if removed)
     bool removeString(const LString &key);
 
-    typedef strdata_t::const_iterator strdata_iterator;
-    strdata_iterator strBegin() const { return m_strdata.begin(); }
-    strdata_iterator strEnd() const { return m_strdata.end(); }
+    LString getStrData(const LString &cat, const LString &key) const;
+
+    bool hasStrData(const LString &cat, const LString &key) const;
+
+    bool setStrData(const LString &cat, const LString &key, const LString &value);
+
+    bool removeStrData(const LString &cat, const LString &key);
+
+    /// Get string data names with specified category in JSON format
+    /// dbname: data base name
+    /// cat: category
+    LString getStrDataNamesJSON(const LString &dbname, const LString &cat, bool bParen) const;
+
+    LString getStrDataNamesJSON(const LString &cat) const {
+      return getStrDataNamesJSON("string", cat, true);
+    }
 
     //////////////////////////
     // Structured data methods
@@ -182,14 +205,9 @@ namespace qsys {
       return removeData(key);
     }
 
-    /// Get style info in JSON format (without array parens)
-    /// This method returns comma separated objects without array parens
-    /// and intended to be used by StyleMgr::getStyleNamesJSON(), which returns all style names in the context
-    LString getStyleKeysJSON() const;
-
     /// Get style info in JSON format
-    LString getStyleNamesJSON() const;
-
+    /// bParen: with/without array parens
+    LString getStyleNamesJSON(bool bParen=true) const;
 
     //////////
     // Material data methods
@@ -201,7 +219,7 @@ namespace qsys {
     matdata_iterator matBegin() const { return m_matdata.begin(); }
     matdata_iterator matEnd() const { return m_matdata.end(); }
 
-	LString getMaterialNamesJSON(bool bParen = true) const;
+    LString getMaterialNamesJSON(bool bParen = true) const;
     
 
     //////////
@@ -243,11 +261,6 @@ namespace qsys {
     }
 
     //
-
-    /// Get string data keys with specified category in JSON format
-    /// dbname: data base name
-    /// cat: category
-    LString getStrDataKeysJSON(const LString &dbname, const LString &cat) const;
 
   };
 
