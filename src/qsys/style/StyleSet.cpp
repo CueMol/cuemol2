@@ -182,6 +182,20 @@ bool StyleSet::putData(const LString &key, LDom2Node *pNode)
   return res;
 }
 
+bool StyleSet::removeData(const LString &key)
+{
+  data_t::iterator iter = m_data.find(key);
+  if (iter==m_data.end())
+    return false;
+
+  LDom2Node *pNode = iter->second;
+  if (pNode!=NULL)
+    delete pNode;
+
+  m_data.erase(iter);
+  return true;
+}
+
 //////////
 
 bool StyleSet::putMaterial(const LString &id, const LString &type, const LString &value)
@@ -350,6 +364,7 @@ LString StyleSet::getStyleKeysJSON() const
     
     LDom2Node *pNode = iter->second;
     LString desc = pNode->getStrAttr("desc");
+    LString type = pNode->getStrAttr("type");
     
     if (!bfirst)
       rval += ",";
@@ -359,10 +374,17 @@ LString StyleSet::getStyleKeysJSON() const
     rval += "{\"name\":";
     rval += "\""+key.escapeQuots()+"\",";
     rval += "\"desc\":";
-    rval += "\""+desc.escapeQuots()+"\"}";
+    rval += "\""+desc.escapeQuots()+"\",";
+    rval += "\"type\":";
+    rval += "\""+type.escapeQuots()+"\"}";
   }
 
   return rval;
+}
+
+LString StyleSet::getStyleNamesJSON() const
+{
+  return "[" + getStyleKeysJSON() + "]";
 }
 
 // TO DO: deserialization code should be moved to here.

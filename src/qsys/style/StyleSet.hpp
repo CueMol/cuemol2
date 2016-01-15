@@ -17,7 +17,7 @@
 
 #include <gfx/Material.hpp>
 
-#define STYLEMGR_DB_DELIM "\a"
+#define STYLEMGR_DB_DELIM ":"
 
 namespace qlib {
   class PrintStream;
@@ -72,7 +72,7 @@ namespace qsys {
     /// source file name this style is loaded from
     LString m_source;
 
-    /// ID of this style set
+    /// Name (string ID) of this style set
     LString m_name;
 
     /// ID override flag (for deserialization)
@@ -149,10 +149,13 @@ namespace qsys {
 
     LDom2Node *getData(const LString &key) const;
     bool putData(const LString &key, LDom2Node *pNode);
+    bool removeData(const LString &key);
 
     typedef data_t::const_iterator data_iterator;
     data_iterator dataBegin() const { return m_data.begin(); }
     data_iterator dataEnd() const { return m_data.end(); }
+
+    LString getStyleDefsJSON() const;
 
     //////////
     // Material data methods
@@ -200,6 +203,7 @@ namespace qsys {
 
     LString getStrDataKeysJSON(const LString &dbname, const LString &cat) const;
     LString getStyleKeysJSON() const;
+    LString getStyleNamesJSON() const;
 
   };
 

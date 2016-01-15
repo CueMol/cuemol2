@@ -306,28 +306,30 @@ ws.onStyleShowing = function (aEvent)
     var menu = aEvent.currentTarget.menupopup;
 
     var regex = null;
+    regex = RegExp(elem.type_name+"$", "i");
+    /*
     if (elem.type_name == "ribbon") {
-      regex = /Ribbon$/;
+      regex = /Ribbon$/i;
     }
     else if (elem.type_name == "cartoon") {
-      regex = /Cartoon$/;
+      regex = /Cartoon$/i;
     }
     else if (elem.type_name == "ballstick") {
-      regex = /BallStick$/;
+      regex = /BallStick$/i;
     }
     else if (elem.type_name == "atomintr") {
-      regex = /AtomIntr$/;
+      regex = /AtomIntr$/i;
     }
     else if (elem.type_name == "simple") {
-      regex = /Simple$/;
+      regex = /Simple$/i;
     }
     else if (elem.type_name == "trace") {
-      regex = /Trace$/;
+      regex = /Trace$/i;
     }
     else if (elem.type_name == "contour") {
-      regex = /Contour$/;
+      regex = /Contour$/i;
     }
-
+     */
     cuemolui.populateStyleMenus(this.mTgtSceneID, menu, regex, true);
     
     // add edge styles
@@ -564,14 +566,39 @@ ws.onCreateStyle = function (aEvent)
   if (elem.type!="renderer")
     return;
 
-  try {
-    let clipboard = require("qsc-copipe");
+  let rend = cuemol.getRenderer(elem.obj_id);
+  let scene = rend.getScene();
 
+  var argobj = {
+    //scene_id: elem.scene_id
+  scene_id: scene.uid,
+  rend_id: rend.uid
+  };
+  var args = Cu.getWeakReference(argobj);
+  
+  var stylestr = "chrome,modal,resizable=no,dependent,centerscreen";
+
+  var win = gQm2Main.mWinMed.getMostRecentWindow("CueMol2:RendStyleCreateDlg");
+  if (win)
+    win.focus();
+  else
+    window.openDialog("chrome://cuemol2/content/style/rendstyle_create.xul",
+		      "", stylestr, argobj);
+
+  dd("dialg result: "+debug.dumpObjectTree(argobj, 1));
+  if (!argobj.bOK)
+    return;
+  
+  let ssetid = argobj.style_setid;
+  let stylename = argobj.style_name;
+
+  try {
     let rend = cuemol.getRenderer(id);
     let scene = rend.getScene();
     let stylem = cuemol.getService("StyleManager");
-    stylem.createStyleFromObj(scene.uid, "test", "test", rend)
-
-  } catch (e) { debug.exception(e); }
+    stylem.createStyleFromObj(scene.uid, ssetid, stylename, rend)
+  } catch (e) {
+    debug.exception(e);
+  }
 };
 

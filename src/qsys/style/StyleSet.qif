@@ -19,11 +19,13 @@ runtime_class StyleSet
   // properties
   //
 
+  property integer uid => redirect(getUID, xxx) (readonly);
   property string src => redirect(getSource, XXX) (readonly);
   property boolean readonly => redirect(isReadOnly, setReadOnly);
   property boolean modified => redirect(isModified, XXX) (readonly);
 
-
+  string getStyleNamesJSON();
+  
 };
 
 #endif

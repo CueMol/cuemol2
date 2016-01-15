@@ -222,7 +222,7 @@ namespace qsys {
     void setStyleValue(qlib::uid_t ctxt, const LString &setid, const LString &dotname,
                        const LString &value);
 
-    void createStyleFromObj(qlib::uid_t ctxt, const LString &setid, const LString &name,
+    void createStyleFromObj(qlib::uid_t ctxt, qlib::uid_t setid, const LString &name,
                             const qlib::LScrSp<qlib::LScrObjBase> &pSObj);
 
   private:

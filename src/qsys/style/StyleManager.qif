@@ -92,7 +92,7 @@ runtime_class StyleManager
   string getStyleValue(integer nSceneID, string setId, string key);
   void setStyleValue(integer nSceneID, string setId, string key, string value);
 
-  void createStyleFromObj(integer nSceneID, string setId, string key, object<LScrObject$> obj);
+  void createStyleFromObj(integer nSceneID, integer setId, string key, object<LScrObject$> obj);
 
   void firePendingEvents();
 };
