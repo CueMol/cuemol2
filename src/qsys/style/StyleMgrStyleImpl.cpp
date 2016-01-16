@@ -527,12 +527,19 @@ void StyleMgr::createStyleFromObj(qlib::uid_t scene_uid, qlib::uid_t set_uid,
     return;
   }
 
-  LDom2Node *pNode = extractStyleNodeFromObj(scene_uid, pSObj.get(), true);
+  LDom2Node *pNode = extractStyleNodeFromObj(scene_uid, pSObj.get(), 0, true);
   pNode->setTagName("style");
+
+  // remove the type and name attributes,
+  //  which should not be present in the style nodes
+  bool res;
+  res = pNode->removeChild("type");
+  res = pNode->removeChild("name");
+
   pNode->appendStrAttr("type", "renderer");
 
   if (pSet->getStyleNode(name))
-	  pSet->removeStyleNode(name);
+    pSet->removeStyleNode(name);
   
   pSet->putStyleNode(name, pNode);
 
@@ -544,6 +551,7 @@ void StyleMgr::createStyleFromObj(qlib::uid_t scene_uid, qlib::uid_t set_uid,
 
 LDom2Node *StyleMgr::extractStyleNodeFromObj(qlib::uid_t ctxt,
                                              qlib::LScrObjBase *pSObj,
+                                             int nLevel,
                                              bool bResolveStyle)
 {
   LDom2Node *pNode = MB_NEW LDom2Node();
@@ -555,10 +563,6 @@ LDom2Node *StyleMgr::extractStyleNodeFromObj(qlib::uid_t ctxt,
 
     qlib::PropSpec spec;
     if (!pSObj->getPropSpecImpl(nm, &spec))
-      continue;
-
-    if (nm.equals("type") ||
-        nm.equals("name"))
       continue;
 
     // Ignore prop with the nopersist attribute
@@ -583,7 +587,7 @@ LDom2Node *StyleMgr::extractStyleNodeFromObj(qlib::uid_t ctxt,
       if (spec.bReadOnly) {
         // nested object property
         qlib::LScrObjBase *pChObj = value.getObjectPtrT<qlib::LScrObjBase>();
-        LDom2Node *pChNode = extractStyleNodeFromObj(ctxt, pChObj, bResolveStyle);
+        LDom2Node *pChNode = extractStyleNodeFromObj(ctxt, pChObj, nLevel+1, bResolveStyle);
         pChNode->setTagName(nm);
         pNode->appendChild(pChNode);
       }

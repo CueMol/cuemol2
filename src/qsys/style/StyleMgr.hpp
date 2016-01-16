@@ -240,7 +240,7 @@ namespace qsys {
                             const qlib::LScrSp<qlib::LScrObjBase> &pSObj);
 
   private:
-    LDom2Node *extractStyleNodeFromObj(qlib::uid_t ctxt, qlib::LScrObjBase *pSObj, bool bResolveStyle);
+    LDom2Node *extractStyleNodeFromObj(qlib::uid_t ctxt, qlib::LScrObjBase *pSObj, int nLevel, bool bResolveStyle);
 
   private:
     /// Search style nodes recursively to get a node with name, keyname
