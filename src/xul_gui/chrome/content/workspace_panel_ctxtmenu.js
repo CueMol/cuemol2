@@ -307,29 +307,6 @@ ws.onStyleShowing = function (aEvent)
 
     var regex = null;
     regex = RegExp(elem.type_name+"$", "i");
-    /*
-    if (elem.type_name == "ribbon") {
-      regex = /Ribbon$/i;
-    }
-    else if (elem.type_name == "cartoon") {
-      regex = /Cartoon$/i;
-    }
-    else if (elem.type_name == "ballstick") {
-      regex = /BallStick$/i;
-    }
-    else if (elem.type_name == "atomintr") {
-      regex = /AtomIntr$/i;
-    }
-    else if (elem.type_name == "simple") {
-      regex = /Simple$/i;
-    }
-    else if (elem.type_name == "trace") {
-      regex = /Trace$/i;
-    }
-    else if (elem.type_name == "contour") {
-      regex = /Contour$/i;
-    }
-     */
     cuemolui.populateStyleMenus(this.mTgtSceneID, menu, regex, true);
     
     // add edge styles
@@ -552,10 +529,43 @@ ws.onShowHideCmd = function (aEvent, aShow)
   // EDIT TXN END //
 };
 
+ws.onApplyStyle = function (aEvent)
+{
+  if (this.mViewObj.isMultiSelected()) {
+    // TO DO: show error msg
+    return;
+  }
+
+  var elem = this.mViewObj.getSelectedNode();
+  if (!elem) return;
+  var id = elem.obj_id;
+
+  if (elem.type!="renderer")
+    return;
+
+  let rend = cuemol.getRenderer(id);
+  let scene = rend.getScene();
+
+  // Show Modal Dialog to apply styles to rend
+  var argobj = {
+  scene_id: scene.uid,
+  rend_id: id
+  };
+  
+  var stylestr = "chrome,modal,resizable=yes,dependent,centerscreen";
+  window.openDialog("chrome://cuemol2/content/style/apply_rend_style.xul",
+		    "", stylestr, argobj);
+
+  dd("dialg result: "+debug.dumpObjectTree(argobj, 1));
+  if (!argobj.bOK)
+    return;
+
+};
 
 ws.onCreateStyle = function (aEvent)
 {
   if (this.mViewObj.isMultiSelected()) {
+    // TO DO: show error msg
     return;
   }
   
@@ -566,29 +576,24 @@ ws.onCreateStyle = function (aEvent)
   if (elem.type!="renderer")
     return;
 
-  let rend = cuemol.getRenderer(elem.obj_id);
+  let rend = cuemol.getRenderer(id);
   let scene = rend.getScene();
 
+  // Show Modal Dialog to get new style's name, etc.
   var argobj = {
-    //scene_id: elem.scene_id
   scene_id: scene.uid,
-  rend_id: rend.uid
+  rend_id: id
   };
-  var args = Cu.getWeakReference(argobj);
   
   var stylestr = "chrome,modal,resizable=no,dependent,centerscreen";
+  window.openDialog("chrome://cuemol2/content/style/rendstyle_create.xul",
+		    "", stylestr, argobj);
 
-  var win = gQm2Main.mWinMed.getMostRecentWindow("CueMol2:RendStyleCreateDlg");
-  if (win)
-    win.focus();
-  else
-    window.openDialog("chrome://cuemol2/content/style/rendstyle_create.xul",
-		      "", stylestr, argobj);
-
-  dd("dialg result: "+debug.dumpObjectTree(argobj, 1));
+  // dd("dialg result: "+debug.dumpObjectTree(argobj, 1));
   if (!argobj.bOK)
     return;
   
+  // Create new style
   let ssetid = argobj.style_setid;
   let stylename = argobj.style_name;
 

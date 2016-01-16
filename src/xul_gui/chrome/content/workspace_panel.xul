@@ -242,14 +242,20 @@
 	  oncommand="cuemolui.panels.workspace.styleMol(event)">
 	  <menupopup/>
 	</menu>
+	<menuitem label="Apply style..." id="wspcPanelApplyStyleMenu"
+	  oncommand="cuemolui.panels.workspace.onApplyStyle(event);"/>
+	<menuitem label="Create style..." id="wspcPanelCreateStyleMenu"
+	  oncommand="cuemolui.panels.workspace.onCreateStyle(event);"/>
 
+	<menuseparator/>
+
+	<!-- Rendere specific menus -->
 	<menuitem label="Edit interaction list..." id="wspcPanelEditIntrMenu"
 	  oncommand="cuemolui.panels.workspace.onEditIntr(event);"/>
 
 	<menuitem label="Generate surface obj" id="wspcPanelGenSurfObjMenu"
 	  oncommand="cuemolui.panels.workspace.onGenSurfObj(event);"/>
 
-	<menuseparator/>
 	<menuitem label="Copy" id="wspcPanelCopyMenu"
 	  oncommand="cuemolui.panels.workspace.onCopyCmd(event);"/>
 	<menuseparator/>
@@ -257,9 +263,6 @@
 	<menuitem label="Delete" oncommand="cuemolui.panels.workspace.onDeleteCmd(event);"/>
 	<menuseparator/>
 	<menuitem label="Properties..." oncommand="cuemolui.panels.workspace.onPropCmd(event)"/>
-
-	<menuitem label="Create style..." id="wspcPanelCreateStyleMenu"
-	  oncommand="cuemolui.panels.workspace.onCreateStyle(event);"/>
 
       </menupopup>
 

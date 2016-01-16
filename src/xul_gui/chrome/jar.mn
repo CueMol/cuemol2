@@ -293,6 +293,8 @@ cuemol2.jar:
   content/style/style_editor.js
   content/style/rendstyle_create.xul
   content/style/rendstyle_create.js
+  content/style/apply_rend_style.xul
+  content/style/apply_rend_style.js
 # Visibility flag set editor
   content/tools/visflagset-edit-dlg.xul
   content/tools/visflagset-edit-dlg.js
