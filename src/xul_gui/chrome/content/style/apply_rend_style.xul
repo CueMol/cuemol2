@@ -22,7 +22,7 @@
     </hbox>
 
     <label value="Styles:"/>
-    <listbox id="styleset-list" rows="5" flex="1"/>
+    <listbox id="style-list" rows="5" flex="1" onselect="return gMain.onStySelChg(event);"/>
 
     <hbox>
       <toolbarbutton
@@ -30,27 +30,27 @@
 	type="menu"
 	class="toolbar-button add-button"
 	disabled="true"
-	oncommand="cuemolui.panels.workspace.onNewCmd(event);"
+	oncommand="return gMain.onAddCmd(event);"
 	tooltiptext="Add style">
-	<menupopup id="animPanelAddPopup"/>
+	<menupopup id="add-btn-popup"/>
       </toolbarbutton>
       <toolbarbutton
 	id="delete-button"
 	class="toolbar-button delete-button"
 	disabled="true"
-	oncommand="cuemolui.panels.workspace.onDeleteCmd(event);"
+	oncommand="return gMain.onDeleteCmd(event);"
 	tooltiptext="Delete"/>
       <toolbarbutton
 	id="moveup-button"
 	class="toolbar-button moveup-button"
 	disabled="true"
-	oncommand="cuemolui.panels.anim.onMoveUpCmd(event);"
+	oncommand="return gMain.onMoveUpCmd(event);"
 	tooltiptext="Move up"/>
       <toolbarbutton
 	id="movedown-button"
 	class="toolbar-button movedown-button"
 	disabled="true"
-	oncommand="cuemolui.panels.anim.onMoveDownCmd(event);"
+	oncommand="return gMain.onMoveDownCmd(event);"
 	tooltiptext="Move down"/>
     </hbox>
   </vbox>
