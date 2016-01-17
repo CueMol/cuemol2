@@ -247,7 +247,7 @@ klass.onLoad = function ()
 klass.populateData = function (obj)
 {
   var json = obj._wrapped.getPropsJSON();
-  dd("GenPropEdit.populateData> jsonobj: "+json);
+  // dd("GenPropEdit.populateData> jsonobj: "+json);
 
   this.mObjData = this.expandChildNodes(JSON.parse(json));
 

@@ -242,7 +242,7 @@
 	  oncommand="cuemolui.panels.workspace.styleMol(event)">
 	  <menupopup/>
 	</menu>
-	<menuitem label="Apply style..." id="wspcPanelApplyStyleMenu"
+	<menuitem label="Edit style..." id="wspcPanelApplyStyleMenu"
 	  oncommand="cuemolui.panels.workspace.onApplyStyle(event);"/>
 	<menuitem label="Create style..." id="wspcPanelCreateStyleMenu"
 	  oncommand="cuemolui.panels.workspace.onCreateStyle(event);"/>

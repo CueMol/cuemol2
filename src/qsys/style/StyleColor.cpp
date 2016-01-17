@@ -138,12 +138,16 @@ LString StyleMgr::getColorDefsJSON(qlib::uid_t nScopeID,
         continue; // skip non-target stylesets
     }
 
+    LString str = pSet->getColorDefsJSON(false);
+    if (str.isEmpty())
+      continue;
+
     if (!bfirst)
       rval += ",";
     else
       bfirst = false;
 
-    rval += pSet->getColorDefsJSON(false);
+    rval += str;
 
     /*
     StyleSet::coldata_iterator iter = pSet->colBegin();
@@ -218,12 +222,16 @@ LString StyleMgr::getMaterialNamesJSON(qlib::uid_t nScopeID,
         continue; // skip non-target stylesets
     }
 
+    LString str = pSet->getMaterialNamesJSON(false);
+    if (str.isEmpty())
+      continue; // no material defs in this set, skip
+
     if (!bfirst)
       rval += ",";
     else
       bfirst = false;
 
-    rval += pSet->getMaterialNamesJSON(false);
+    rval += str;
 
     /*
     StyleSet::matdata_iterator iter = pSet->matBegin();

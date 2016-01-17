@@ -42,8 +42,17 @@ if (!("ApplyRendStyle" in cuemolui)) {
       this.mDownBtn = document.getElementById("movedown-button");
 
       this.populateStyleList();
-      this.populateAddMenu();
+      // this.populateAddMenu();
       this.updateDisabledStates();
+
+      let rend = cuemol.getRenderer(this.mRendID);
+      let type_name = rend.type_name;
+      this.mRendInfoLabel.value = rend.name + " ("+type_name+")";
+    };
+
+    klass.onAddBtnPopupShowing = function (aEvent)
+    {
+      this.populateAddMenu();
     };
 
     klass.populateStyleList = function ()
@@ -54,7 +63,7 @@ if (!("ApplyRendStyle" in cuemolui)) {
 	let rend = cuemol.getRenderer(this.mRendID);
 	let stylestr = rend.style;
 	dd("target rend style: "+stylestr);
-	style_list = stylestr.split(",");
+	style_list = stylestr.split(/[,\s]/);
       }
       catch (e) {
 	debug.exception(e);
@@ -86,8 +95,10 @@ if (!("ApplyRendStyle" in cuemolui)) {
       let menu = this.mAddBtnPopup;
       let rend = cuemol.getRenderer(this.mRendID);
       let type_name = rend.type_name;
-      regex = RegExp(type_name+"$", "i");
-      cuemolui.populateStyleMenus(this.mSceneID, menu, regex, true);
+      let regex = RegExp(type_name+"$", "i");
+      let nadd = 0;
+
+      nadd += this.populateStyleMenus(regex, true);
       
       if (type_name != "simple" &&
 	  type_name != "trace" &&
@@ -97,11 +108,79 @@ if (!("ApplyRendStyle" in cuemolui)) {
 	  type_name != "coutour") {
 	regex = /^EgLine/;
 	util.appendMenuSep(document, menu);
-	cuemolui.populateStyleMenus(this.mSceneID, menu, regex, false);
+	nadd += this.populateStyleMenus(regex, false);
       }
 
-      this.mRendInfoLabel.value = rend.name + " ("+type_name+")";
+      if ("coloring" in rend) {
+	regex = /(Coloring|Paint)$/;
+	util.appendMenuSep(document, menu);
+	nadd += this.populateStyleMenus(regex, false);
+      }
 
+
+      if (nadd==0) {
+	let item = util.appendMenu(document, menu, "", "(no styles)");
+	item.setAttribute("disabled", "true");
+      }
+    };
+
+
+    klass.populateStyleMenus = function (regexp, bClear)
+    {
+      let menu = this.mAddBtnPopup;
+      let scene_id = this.mSceneID;
+
+      if (bClear)
+	util.clearMenu(menu);
+
+      if (regexp==null) {
+	return 0;
+      }
+
+      var stylem = cuemol.getService("StyleManager");
+
+      json = stylem.getStyleNamesJSON(0);
+      //dd("JSON: "+json);
+      var names = JSON.parse(json);
+
+      json = stylem.getStyleNamesJSON(scene_id);
+      //dd("JSON: "+json);
+      names = names.concat( JSON.parse(json) );
+
+      var nitems = names.length;
+      var name, value, label, res;
+      var nadd=0;
+      for (var i=0; i<nitems; ++i) {
+	name = names[i].name;
+	res = name.match(regexp);
+	if (res==null) {
+	  //dd("Style "+name+" no match: "+regexp);
+	  continue;
+	}
+	if (this.isInCurrentStyles(name))
+	  continue;
+	value = name;
+	if (names[i].desc)
+	  label = name + " ("+names[i].desc+")";
+	else
+	  label = name;
+	util.appendMenu(document, menu, value, label);
+	++nadd;
+      }
+
+      return nadd;
+    };
+
+    klass.isInCurrentStyles = function (aName)
+    {
+      let n = this.mStyList.itemCount;
+      for (let i=0; i<n; ++i) {
+	let item = this.mStyList.getItemAtIndex(i);
+	dd("item.value="+item.value+", aName="+aName);
+	if (item.value==aName)
+	  return true;
+      }
+      return false;
     };
 
     klass.updateDisabledStates = function ()
@@ -118,11 +197,47 @@ if (!("ApplyRendStyle" in cuemolui)) {
 	this.mUpBtn.disabled = false;
 	this.mDownBtn.disabled = false;
       }
+
+      let selind = this.mStyList.selectedIndex;
+      if (selind==0)
+	this.mUpBtn.disabled = true;
+      else if (selind==this.mStyList.itemCount-1)
+	this.mDownBtn.disabled = true;
+
       return true;
     };
 
     klass.onDialogAccept = function ()
     {
+      // commit change
+      
+      let scene = cuemol.getScene(this.mSceneID);
+      let rend = cuemol.getRenderer(this.mRendID);
+
+      let nitems = this.mStyList.itemCount;
+      let sty_list = [];
+      for (let i=0; i<nitems; ++i) {
+	let item = this.mStyList.getItemAtIndex(i);
+	sty_list.push(item.value);
+      }
+      stylestr = sty_list.join(",");
+      dd("apply style: "+stylestr);
+      
+      // EDIT TXN START //
+      scene.startUndoTxn("Change style");
+      
+      try {
+	rend.applyStyles(stylestr);
+      }
+      catch (e) {
+	dd("***** ERROR: pushStyle "+e);
+	debug.exception(e);
+	scene.rollbackUndoTxn();
+	return;
+      }
+      scene.commitUndoTxn();
+      // EDIT TXN END //
+      
       return true;
     };
 
@@ -139,10 +254,16 @@ if (!("ApplyRendStyle" in cuemolui)) {
       dd("selind: "+selind);
       dd("addCmd: "+addval);
 
-      if (selind>=0)
-	this.mStyList.insertItemAt(selind+1, addval, addval);
-      else
+      let ins = selind+1;
+      let nitems = this.mStyList.itemCount;
+      if (ins>=0 && ins<nitems) {
+	this.mStyList.insertItemAt(ins, addval, addval);
+	this.mStyList.selectedIndex = ins;
+      }
+      else {
 	this.mStyList.appendItem(addval, addval);
+	this.mStyList.selectedIndex = this.mStyList.itemCount-1;
+      }
       return true;
     };
 
@@ -150,17 +271,52 @@ if (!("ApplyRendStyle" in cuemolui)) {
     {
       let selind = this.mStyList.selectedIndex;
       dd("selind: "+selind);
+
+      if (selind<0)
+	return;
+      
       this.mStyList.removeItemAt(selind);
+      let nitems = this.mStyList.itemCount;
+      if (selind>=0 && selind<nitems) {
+	this.mStyList.selectedIndex = selind;
+      }
       return true;
     };
 
-    klass.onMoveUpCmd = function ()
+    klass.onMoveUpDownCmd = function (aEvent)
     {
-      return true;
-    };
-    
-    klass.onMoveDownCmd = function ()
-    {
+      let selind = this.mStyList.selectedIndex;
+      dd("selind: "+selind);
+      if (selind<0)
+	return;
+      
+      let label = this.mStyList.selectedItem.label;
+      let value = this.mStyList.selectedItem.value;
+
+      let nitems = this.mStyList.itemCount;
+      let ins = selind+1;
+      if (aEvent.target.id=="moveup-button") {
+	// move-up
+	if (selind==0)
+	  return;
+	ins = selind-1;
+      }
+      else {
+	// move-down
+	if (selind==nitems-1)
+	  return;
+      }
+      
+      this.mStyList.removeItemAt(selind);
+      nitems--;
+      
+      if (ins>=0 && ins<nitems)
+	this.mStyList.insertItemAt(ins, label, value);
+      else
+	this.mStyList.appendItem(label, value);
+
+      this.mStyList.selectedIndex = ins;
+
       return true;
     };
 
