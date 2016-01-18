@@ -72,7 +72,7 @@ runtime_class Object
   object<Renderer$> createRenderer(string type_name);
 
   /// Create preset renderer (=renderer group)
-  object<Renderer$> createPresetRenderer(string preset_name, string name_prefix);
+  object<Renderer$> createPresetRenderer(string preset_name, string grp_name, string name_prefix);
 
   /// Attach existing renderer to this object
   void attachRenderer(object<Renderer$>);

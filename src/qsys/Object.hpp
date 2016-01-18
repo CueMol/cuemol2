@@ -250,6 +250,7 @@ namespace qsys {
 
     /// Create preset renderer (=renderer group)
     RendererPtr createPresetRenderer(const LString &preset_name,
+                                     const LString &grp_name,
                                      const LString &name_prefix);
 
     //////////

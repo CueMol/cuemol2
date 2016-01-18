@@ -490,9 +490,10 @@ LString Object::getFilteredRendListJSON(const LString &grpfilt) const
 }
 
 RendererPtr Object::createPresetRenderer(const LString &preset_name,
+                                         const LString &grp_name,
                                          const LString &name_prefix)
 {
-  LString grp_name = name_prefix;
+  // LString grp_name = name_prefix;
 
   StyleMgr *pSMgr = StyleMgr::getInstance();
   qlib::LDom2Node *pNode = pSMgr->getStyleNode(preset_name, m_nSceneID);
@@ -513,8 +514,7 @@ RendererPtr Object::createPresetRenderer(const LString &preset_name,
 
   RendererPtr pRendGrp = pRF->create("*group");
   pRendGrp->setName(grp_name);
-  registerRendererImpl(pRendGrp);
-
+  attachRenderer(pRendGrp);
 
   for (pNode->firstChild(); pNode->hasMoreChild(); pNode->nextChild()) {
     qlib::LDom2Node *pChNode = pNode->getCurChild();
@@ -538,7 +538,7 @@ RendererPtr Object::createPresetRenderer(const LString &preset_name,
     pRend->setGroupName(grp_name);
 
     // Register the built renderer
-    registerRendererImpl(pRend);
+    attachRenderer(pRend);
   }
 
   return pRendGrp;
