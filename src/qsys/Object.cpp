@@ -20,10 +20,12 @@
 #include "RendererFactory.hpp"
 #include "UndoManager.hpp"
 #include "PropEditInfo.hpp"
-#include "style/AutoStyleCtxt.hpp"
 #include "StreamManager.hpp"
 #include "ObjReader.hpp"
 #include "RendGroup.hpp"
+
+#include "style/AutoStyleCtxt.hpp"
+#include "style/StyleMgr.hpp"
 
 using namespace qsys;
 
@@ -102,15 +104,9 @@ RendererPtr Object::createRenderer(const LString &type_name)
   RendererFactory *pRF = RendererFactory::getInstance();
   RendererPtr pRend = pRF->create(type_name);
 
-  if (!registerRendererImpl(pRend)) {
-    // error !! cannot register renderer.
-    LOG_DPRINTLN("ERROR !! cannot register renderer");
-    LString msg = LString::format("Cannot register renderer %s", type_name.c_str());
-    MB_THROW(qlib::RuntimeException, msg);
-    return RendererPtr();
-  }
+  registerRendererImpl(pRend);
 
-MB_DPRINTLN("createRenderer clientObjID=%d OK", (int)pRend->getClientObjID());
+  //MB_DPRINTLN("createRenderer clientObjID=%d OK", (int)pRend->getClientObjID());
   return pRend;
 }
 
@@ -123,14 +119,9 @@ void Object::attachRenderer(const RendererPtr &pRend)
     MB_THROW(qlib::RuntimeException, msg);
     return;
   }
-MB_DPRINTLN("attachRenderer clientObjID=%d", (int)pRend->getClientObjID());
-  if (!registerRendererImpl(pRend)) {
-    // Error !! cannot register renderer.
-    LOG_DPRINTLN("ERROR !! cannot register renderer");
-    LString msg = LString::format("Cannot register renderer %s", pRend->getName().c_str());
-    MB_THROW(qlib::RuntimeException, msg);
-    return;
-  }
+
+  //MB_DPRINTLN("attachRenderer clientObjID=%d", (int)pRend->getClientObjID());
+  registerRendererImpl(pRend);
 
   // update stylesheet settings
   pRend->reapplyStyle();
@@ -267,18 +258,27 @@ LString Object::searchCompatibleRendererNames()
   return LString::join(",", ls);
 }
 
-bool Object::registerRendererImpl(RendererPtr rrend)
+void Object::registerRendererImpl(RendererPtr rrend)
 {
   bool res = m_rendtab.insert(rendtab_t::value_type(rrend->getUID(), rrend)).second;
-  if (!res)
-    return false;
+  if (!res) {
+    // Error !! cannot register renderer.
+    LOG_DPRINTLN("ERROR !! cannot register renderer");
+    const char *type_name = rrend->getTypeName();
+    LString msg = LString::format("Cannot register renderer %s", type_name);
+    MB_THROW(qlib::RuntimeException, msg);
+    return;
+  }
 
   rrend->setSceneID(getSceneID());
   rrend->attachObj(this->m_uid);
 
   ScenePtr pScene = getScene();
-  if (pScene.isnull())
-    return true;
+  if (pScene.isnull()) {
+    // scene is not available (not initialized??)
+    // --> skip scene related tasks
+    return;
+  }
   
   // add the new rend to the scene's cache list
   pScene->addRendCache(rrend);
@@ -305,7 +305,7 @@ bool Object::registerRendererImpl(RendererPtr rrend)
     pUM->addEditInfo(pPEI);
   }
 
-  return true;
+  return;
 }
 
 LString Object::getRendUIDList() const
@@ -489,7 +489,63 @@ LString Object::getFilteredRendListJSON(const LString &grpfilt) const
   return rval;
 }
 
+RendererPtr Object::createPresetRenderer(const LString &preset_name,
+                                         const LString &name_prefix)
+{
+  LString grp_name = name_prefix;
+
+  StyleMgr *pSMgr = StyleMgr::getInstance();
+  qlib::LDom2Node *pNode = pSMgr->getStyleNode(preset_name, m_nSceneID);
+  if (pNode==NULL) {
+    LString msg = LString::format("Unknown renderer preset %s", preset_name.c_str());
+    MB_THROW(qlib::RuntimeException, msg);
+    return RendererPtr();
+  }
+
+  LString type = pNode->getStrAttr("type");
+  if (!type.equals("renderer-preset")) {
+    LString msg = LString::format("%s is not a renderer preset (%s)", preset_name.c_str(), type.c_str());
+    MB_THROW(qlib::RuntimeException, msg);
+    return RendererPtr();
+  }
+  
+  RendererFactory *pRF = RendererFactory::getInstance();
+
+  RendererPtr pRendGrp = pRF->create("*group");
+  pRendGrp->setName(grp_name);
+  registerRendererImpl(pRendGrp);
+
+
+  for (pNode->firstChild(); pNode->hasMoreChild(); pNode->nextChild()) {
+    qlib::LDom2Node *pChNode = pNode->getCurChild();
+    LString tag = pChNode->getTagName();
+    LString type_name = pChNode->getTypeName();
+
+    if (!tag.equals("renderer"))
+      continue;
+
+    if (type_name.isEmpty())
+      continue;
+
+    RendererPtr pRend = pRF->create(type_name);
+
+    // Renderer's properties should be built before registration to the scene,
+    //   to prevent event propargation.
+    pRend->readFrom2(pChNode);
+
+    // setup props
+    pRend->setName(name_prefix+type_name);
+    pRend->setGroupName(grp_name);
+
+    // Register the built renderer
+    registerRendererImpl(pRend);
+  }
+
+  return pRendGrp;
+}
+
 ////////////////////////////////
+// Event handling
 
 int Object::addListener(ObjectEventListener *pL)
 {
@@ -540,6 +596,7 @@ void Object::propChanged(qlib::LPropEvent &ev)
 }
 
 ////////////////////////////////
+// (De)Serialization
 
 void Object::writeTo2(qlib::LDom2Node *pNode) const
 {
@@ -630,92 +687,6 @@ void Object::convSrcPath(const LString &aSrc,
     if (bSetProp)
       pthis->setAltSource(res.second);
   }
-
-/*
-  LString src_str = aSrc;
-  LString alt_src_str = aAltSrc;
-
-  if (aSrc.isEmpty() && aAltSrc.isEmpty()) {
-    LOG_DPRINTLN("convSrcPath error!!; no src/altsrc path");
-    return;
-  }
-  else if (aSrc.isEmpty()) {
-    src_str = alt_src_str;
-  }
-  else if (aAltSrc.isEmpty()) {
-    alt_src_str = src_str;
-  }
-
-  // get basedir of the scene
-  LString basedir = pScene->getBasePath();
-
-  // Make writable object; this is required to update the src and alt_src properties.
-  Object *pthis = const_cast<Object *>(this);
-  
-  LString rel_path;
-  LString abs_path;
-
-  bool bSrcAbs = qlib::isAbsolutePath(src_str);
-  bool bAltAbs = qlib::isAbsolutePath(alt_src_str);
-
-  if (bSrcAbs&&bAltAbs) {
-    // src&alt are absolute path
-    abs_path = src_str;
-    if (!basedir.isEmpty()) {
-      // convert to relative path using basedir
-      rel_path = qlib::makeRelativePath(abs_path, basedir);
-    }
-  }
-  else if (!bSrcAbs&&bAltAbs) {
-    // src is relative / alt is absolute path
-    rel_path = src_str;
-    abs_path = alt_src_str;
-  }
-  else if (bSrcAbs&&!bAltAbs) {
-    // src is absolute / alt is relative path
-    rel_path = alt_src_str;
-    abs_path = src_str;
-  }
-  else {
-    // src&alt are relative path
-    rel_path = src_str;
-    if (!basedir.isEmpty()) {
-      // convert to absolute path using basedir
-      abs_path = qlib::makeAbsolutePath(rel_path, basedir);
-    }
-  }
-
-  // Set src path(in relative-path form) / alt_src path (in abs-path form)
-
-  if (!rel_path.isEmpty() && !abs_path.isEmpty()) {
-    src_str = rel_path;
-    alt_src_str = abs_path;
-  }
-  else if (!rel_path.isEmpty() && abs_path.isEmpty()) {
-    src_str = rel_path;
-    alt_src_str = "";
-  }
-  else if (rel_path.isEmpty() && !abs_path.isEmpty()) {
-    src_str = abs_path;
-    alt_src_str = "";
-  }
-  else {
-    // ERROR!!
-    LOG_DPRINTLN("Object> convPath failed, rel/abs empty");
-    return;
-  }
-  
-  pNode->setStrAttr("src", src_str);
-  if (bSetProp && !basedir.isEmpty())
-    pthis->setSource(src_str);
-
-  // Set the alternative path representation (in absolute form)
-  if (!alt_src_str.isEmpty() && !alt_src_str.equals(src_str)) {
-    pNode->setStrAttr("alt_src", alt_src_str);
-    if (bSetProp)
-      pthis->setAltSource(alt_src_str);
-  }
-*/
 }
 
 void Object::readFrom2(qlib::LDom2Node *pNode)
@@ -769,13 +740,7 @@ void Object::readFrom2(qlib::LDom2Node *pNode)
       }
 
       // Register the built renderer
-      if (!registerRendererImpl(rrend)) {
-        // error !! cannot register renderer.
-        LOG_DPRINTLN("ERROR !! cannot register renderer");
-        LString msg = LString::format("Cannot register renderer %s", type_name.c_str());
-        MB_THROW(qlib::RuntimeException, msg);
-        // return RendererPtr();
-      }
+      registerRendererImpl(rrend);
 
     }
     else {

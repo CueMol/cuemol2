@@ -143,6 +143,9 @@ namespace qsys {
     /// Load styleset from file and returns styleset UID (impl: StyleMgrStyleImpl.cpp)
     qlib::uid_t loadStyleSetFromFile(qlib::uid_t nScopeID, const LString &path, bool bReadOnly);
 
+    /// Retrieve info for style sets of the scene
+    LString getStyleSetsJSON(qlib::uid_t nSceneID);
+
     //////////////////////////////////////////////////////////////////////
     // Color methods
 
@@ -218,23 +221,34 @@ namespace qsys {
 
   public:
     /////////////////////////////////////////////////////////
-    // Style manipulations (impl is in StyleMgrStyleImpl.cpp)
+    // Style methods (impl is partly in StyleMgrStyleImpl.cpp)
 
-    /// Get style node by name in dot notation
+    /// Get style node by style name
+    LDom2Node *getStyleNode(const LString &stylename, qlib::uid_t ctxt)
+    {
+      return getStyleNodeImpl(LString(), stylename, LString(), ctxt, false);
+    }
+
+    /// Get style node by style name and prop name in dot notation
     LDom2Node *getStyleNode2(const LString &stylename,
                              const LString &prop_names,
-                             qlib::uid_t ctxt);
+                             qlib::uid_t ctxt) {
+      return getStyleNodeImpl(LString(), stylename, prop_names, ctxt, false);
+    }
 
-    LDom2Node *getStyleNode2(const LString &set_id,
+  private:
+    LDom2Node *getStyleNodeImpl(const LString &set_id,
                              const LString &stylename,
                              const LString &prop_names,
                              qlib::uid_t ctxt,
                              bool bCreate);
-
+  public:
     LString getStyleValue(qlib::uid_t ctxt, const LString &setid, const LString &dotname);
     
     void setStyleValue(qlib::uid_t ctxt, const LString &setid, const LString &dotname,
                        const LString &value);
+
+    LString getStyleNamesJSON(qlib::uid_t nSceneID);
 
     void createStyleFromObj(qlib::uid_t ctxt, qlib::uid_t setid, const LString &name,
                             const qlib::LScrSp<qlib::LScrObjBase> &pSObj);
@@ -248,9 +262,10 @@ namespace qsys {
 
     void fireEventImpl(qlib::uid_t uid, const LString &setname);
 
-  private:
     ////////////////////////////////////////////////////////////
     // Style event management
+
+  private:
     StyleEventCaster *m_pLsnrs;
 
     typedef std::set<std::pair<qlib::uid_t, LString> > PendEventSet;
@@ -268,14 +283,6 @@ namespace qsys {
 
     void clearPendingEvents();
     void firePendingEvents();
-
-    ////////////////////////////////////////////////////////////
-    // script specific interface
-
-    LString getStyleNamesJSON(qlib::uid_t nSceneID);
-
-    /// Retrieve info for style sets of the scene
-    LString getStyleSetsJSON(qlib::uid_t nSceneID);
 
     //////////
     // Initializer/finalizer

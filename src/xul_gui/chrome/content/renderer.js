@@ -177,13 +177,20 @@ Qm2Main.prototype.doSetupCompRend = function (sc, result)
 /// Create renderer, and set initial props.
 Qm2Main.prototype.doSetupRend = function(sc, result)
 {
-  if (result.rendtype=="composite") {
-    this.doSetupCompRend(sc, result);
-    return;
-  }
+  //if (result.rendtype=="composite") {
+  //this.doSetupCompRend(sc, result);
+  //return;
+  //}
 
   let obj = sc.getObject(result.obj_id);
-  let rend = obj.createRenderer(result.rendtype);
+  let rend = null;
+
+  if (result.rendtype=="composite") {
+    rend = obj.createPresetRenderer("Default1RendPreset", result.rendname);
+  }
+  else {
+    rend = obj.createRenderer(result.rendtype);
+  }
 
   let clsname = obj._wrapped.getClassName();
 

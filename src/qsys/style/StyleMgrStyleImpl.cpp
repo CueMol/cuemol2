@@ -40,18 +40,11 @@ namespace {
   }
 }
 
-LDom2Node *StyleMgr::getStyleNode2(const LString &stylename,
-                                   const LString &prop_names,
-                                   qlib::uid_t ctxt)
-{
-  return getStyleNode2(LString(), stylename, prop_names, ctxt, false);
-}
-
-LDom2Node *StyleMgr::getStyleNode2(const LString &aSetID,
-                                   const LString &stylename,
-                                   const LString &prop_names,
-                                   qlib::uid_t ctxt,
-                                   bool bCreate)
+LDom2Node *StyleMgr::getStyleNodeImpl(const LString &aSetID,
+                                      const LString &stylename,
+                                      const LString &prop_names,
+                                      qlib::uid_t ctxt,
+                                      bool bCreate)
 {
   StyleList *pSList = getCreateStyleList(ctxt);
   LDom2Node *pStyle=NULL, *pNode=NULL;
@@ -84,6 +77,10 @@ LDom2Node *StyleMgr::getStyleNode2(const LString &aSetID,
       }
     }
 
+    // property name is not specified --> just returns the style
+    if (prop_names.isEmpty())
+      return pStyle;
+
     pNode = findStyleNodeByName(pStyle, prop_names, bCreate);
     if (pNode==NULL) {
       // the style pStyle does not contain style definition for "prop_names"
@@ -100,7 +97,7 @@ LDom2Node *StyleMgr::getStyleNode2(const LString &aSetID,
 
   // fall-back to the global context search
   if (ctxt!=qlib::invalid_uid)
-    return getStyleNode2(aSetID, stylename, prop_names, qlib::invalid_uid, bCreate);
+    return getStyleNodeImpl(aSetID, stylename, prop_names, qlib::invalid_uid, bCreate);
 
   // not found!!
   return NULL;
@@ -154,7 +151,7 @@ LString StyleMgr::getStyleValue(qlib::uid_t ctxt,
     return LString();
   }
 
-  LDom2Node *pNode = getStyleNode2(setid, style_name, prop_names, ctxt, false);
+  LDom2Node *pNode = getStyleNodeImpl(setid, style_name, prop_names, ctxt, false);
   if (pNode==NULL)
     return LString();
   return pNode->getValue();
@@ -173,7 +170,7 @@ void StyleMgr::setStyleValue(qlib::uid_t ctxt,
     return;
   }
 
-  LDom2Node *pNode = getStyleNode2(setid, style_name, prop_names, ctxt, true);
+  LDom2Node *pNode = getStyleNodeImpl(setid, style_name, prop_names, ctxt, true);
   if (pNode==NULL) {
     MB_ASSERT(false);
     return;

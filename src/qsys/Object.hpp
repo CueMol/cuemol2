@@ -221,7 +221,10 @@ namespace qsys {
   public:
     typedef rendtab_t::const_iterator RendIter;
 
+    /// Create new renderer (and attach to this object)
     RendererPtr createRenderer(const LString &tpnm);
+
+    /// Attach existing renderer to this object
     void attachRenderer(const RendererPtr &pRend);
 
     RendererPtr getRenderer(qlib::uid_t uid) const;
@@ -244,6 +247,10 @@ namespace qsys {
     LString getFlatRendListJSON() const;
     LString getGroupedRendListJSON() const;
     LString getFilteredRendListJSON(const LString &grpfilt) const;
+
+    /// Create preset renderer (=renderer group)
+    RendererPtr createPresetRenderer(const LString &preset_name,
+                                     const LString &name_prefix);
 
     //////////
     // Scripting interface wrapper
@@ -290,7 +297,7 @@ namespace qsys {
     virtual void setDataChunkName(const LString &name, LDom2Node *pNode);
 
   private:
-    bool registerRendererImpl(RendererPtr);
+    void registerRendererImpl(RendererPtr);
 
   };
 
