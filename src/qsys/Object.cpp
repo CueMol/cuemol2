@@ -514,7 +514,6 @@ RendererPtr Object::createPresetRenderer(const LString &preset_name,
 
   RendererPtr pRendGrp = pRF->create("*group");
   pRendGrp->setName(grp_name);
-  attachRenderer(pRendGrp);
 
   for (pNode->firstChild(); pNode->hasMoreChild(); pNode->nextChild()) {
     qlib::LDom2Node *pChNode = pNode->getCurChild();
@@ -534,13 +533,16 @@ RendererPtr Object::createPresetRenderer(const LString &preset_name,
     pRend->readFrom2(pChNode);
 
     // setup props
-    pRend->setName(name_prefix+type_name);
-    pRend->setGroupName(grp_name);
+    pRend->setPropStr("name", name_prefix+type_name);
+    pRend->setPropStr("group", grp_name);
 
     // Register the built renderer
     attachRenderer(pRend);
+    //registerRendererImpl(pRend);
   }
 
+  //attachRenderer(pRendGrp);
+  registerRendererImpl(pRendGrp);
   return pRendGrp;
 }
 

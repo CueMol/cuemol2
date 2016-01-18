@@ -186,7 +186,7 @@ Qm2Main.prototype.doSetupRend = function(sc, result)
   let rend = null;
 
   if (result.rendtype=="composite") {
-    rend = obj.createPresetRenderer("Default1RendPreset", result.rendname);
+    rend = obj.createPresetRenderer("Default1RendPreset", result.rendname, result.rendname);
   }
   else {
     rend = obj.createRenderer(result.rendtype);
