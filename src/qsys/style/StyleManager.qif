@@ -46,8 +46,6 @@ runtime_class StyleManager
 
   string getStyleSetsJSON(integer nScopeID);
 
-  string getStyleNamesJSON(integer nScopeID);
-
   /////////////////////////////////////////////////////////////
   // File I/O
 
@@ -87,11 +85,20 @@ runtime_class StyleManager
   boolean removeStrData(string cat, string key, integer nSceneID, integer nStyleSetID);
 
   /////////////////////////////////////////////////////////////
-  // String-based style value operations
+  // Style value operations
 
+  // String-based methods
+
+  /// Get style's value by string key in dot notation
   string getStyleValue(integer nSceneID, string setId, string key);
+
+  /// Set style's value by string key in dot notation
   void setStyleValue(integer nSceneID, string setId, string key, string value);
 
+  /// Get names (IDs) of defined styles in this
+  string getStyleNamesJSON(integer nScopeID);
+
+  /// Create a new style based on the LScrObject (i.e. renderer, etc)
   void createStyleFromObj(integer nSceneID, integer setId, string key, object<LScrObject$> obj);
 
   void firePendingEvents();
