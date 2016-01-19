@@ -51,13 +51,33 @@ qlib::Vector4D RendGroup::getCenter() const
     RendererPtr pRend = iter->second;
     if (!pRend->getGroupName().equals(getName()))
       continue;
-    resvec += pRend->getCenter();
-    ++nsum;
+    if (pRend->hasCenter()) {
+      resvec += pRend->getCenter();
+      ++nsum;
+    }
   }
   if (nsum>0)
     return resvec.divide(nsum);
   else
     return qlib::Vector4D();
+}
+
+bool RendGroup::hasCenter() const
+{
+  ObjectPtr pObj = getClientObj();
+  Object::RendIter iter = pObj->beginRend();
+  Object::RendIter eiter = pObj->endRend();
+  for (;iter!=eiter;++iter) {
+    RendererPtr pRend = iter->second;
+    if (!pRend->getGroupName().equals(getName()))
+      continue;
+    if (pRend->hasCenter()) {
+      return true;
+    }
+  }
+
+  // none of the renderers in this group has valid center
+  return false;
 }
 
 void RendGroup::display(DisplayContext *pdc)

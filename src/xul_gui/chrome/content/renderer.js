@@ -225,7 +225,7 @@ Qm2Main.prototype.doSetupRend = function(sc, result)
       let pos = view.getViewCenter();
       rend.center = pos;
     }
-    else {
+    else if (rend.has_center) {
       var pos = rend.getCenter();
       view.setViewCenter(pos);
     }

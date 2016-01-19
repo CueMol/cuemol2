@@ -46,6 +46,7 @@ namespace qsys {
     virtual void unloading();
 
     virtual qlib::Vector4D getCenter() const;
+    virtual bool hasCenter() const;
 
     /// Display renderers in the scene to the frame buffer
     virtual void display(DisplayContext *pdc);

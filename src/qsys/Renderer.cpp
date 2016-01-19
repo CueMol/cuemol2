@@ -384,3 +384,7 @@ void Renderer::unloading()
 {
 }
 
+bool Renderer::hasCenter() const
+{
+  return true;
+}

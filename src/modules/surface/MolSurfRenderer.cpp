@@ -399,6 +399,19 @@ Vector4D MolSurfRenderer::getCenter() const
   return pos;
 }
 
+bool MolSurfRenderer::hasCenter() const
+{
+  MolSurfObj *pSurf = dynamic_cast<MolSurfObj *>(getClientObj().get());
+  if (pSurf==NULL) {
+    return false;
+  }
+  int nvert = pSurf->getVertSize();
+  if (nvert==0)
+    return false;
+
+  return true;
+}
+
 void MolSurfRenderer::propChanged(qlib::LPropEvent &ev)
 {
   if (ev.getName().equals("coloring")||

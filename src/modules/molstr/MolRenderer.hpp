@@ -47,6 +47,7 @@ namespace molstr {
     // Renderer implementation
 
     virtual qlib::Vector4D getCenter() const;
+    virtual bool hasCenter() const;
 
     virtual bool isCompatibleObj(qsys::ObjectPtr pobj) const;
 

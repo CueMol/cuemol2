@@ -141,6 +141,7 @@ public:
   // virtual qlib::uid_t detachObj();
 
   virtual Vector4D getCenter() const;
+  virtual bool hasCenter() const;
 
   ///////////////////////////////////////////
   // DispListRenderer implemention
