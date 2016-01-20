@@ -173,6 +173,34 @@ Qm2Main.prototype.doSetupCompRend = function (sc, result)
 
 };
 
+Qm2Main.prototype.getCompatibleRendPresetNames = function(aObjTypeName, aSceneID)
+{
+  let stylem = cuemol.getService("StyleManager");
+  let json_str = stylem.getStyleNamesJSON(aSceneID);
+  alert("getCompatibleRendPresetNames("+aObjTypeName+","+aSceneID+") JSON="+json_str);
+  let styles = JSON.parse(json_str);
+  
+  let nlen = styles.length;
+  if (nlen==0) {
+    return [];
+  }
+
+  let typenm = aObjTypeName + "-rendpreset";
+  let rval = [];
+  for (let i=0; i<nlen; ++i) {
+    if (styles[i].type!=typenm)
+      continue;
+    let name = styles[i].name;
+    let desc = styles[i].desc;
+	
+    rval.push({"name": name, "desc": desc});
+  }
+
+  dd("getCompatibleRendPresetNames result="+rval.join(","));
+  return rval;
+};
+
+
 /// Do actual task for renderer setup:
 /// Create renderer, and set initial props.
 Qm2Main.prototype.doSetupRend = function(sc, result)
@@ -250,6 +278,7 @@ Qm2Main.prototype.setupRendByObjID = function(aObjID, aRendGrp)
   var rend;
   let obj = cuemol.getObject(aObjID);
   let sc = obj.getScene();
+  let sceneID = sc.uid;
 
   let data  = new Array();
   let i = 0;
@@ -260,9 +289,11 @@ Qm2Main.prototype.setupRendByObjID = function(aObjID, aRendGrp)
   data[i].rend_types = obj.searchCompatibleRendererNames();
   data[i].obj_type = obj._wrapped.getClassName();
 
+  data[i].preset_types = this.getCompatibleRendPresetNames(data[i].obj_type, sceneID);
+
   let option = new Object();
   option.target = data;
-  option.sceneID = sc.uid;
+  option.sceneID = sceneID;
   option.ok = false;
   option.bEditObjName = false;
 

@@ -266,13 +266,13 @@
 
   <!-- ===== Renderer Presets ===== -->
 
-  <style id="Default1RendPreset" type="renderer-preset" desc="Default preset 1">
+  <style id="Default1RendPreset" type="MolCoord-rendpreset" desc="Default preset 1">
     <renderer type="ribbon" sel="protein" style="DefaultRibbon,DefaultHSCPaint"/>
     <renderer type="nucl" sel="nucleic" style="DefaultNucl"/>
     <renderer type="ballstick" sel="!nucleic&amp;!protein" style="DefaultBallStick,DefaultCPKColoring"/>
   </style>
 
-  <style id="Simple1RendPreset" type="renderer-preset" desc="Simple preset 1">
+  <style id="Simple1RendPreset" type="MolCoord-rendpreset" desc="Simple preset 1">
     <renderer type="trace" sel="protein|nucleic" style="DefaultCPKColoring"/>
     <renderer type="simple" sel="!nucleic&amp;!protein" style="DefaultCPKColoring"/>
   </style>

@@ -188,9 +188,20 @@ klass.setupRendTypeBox = function ()
 
   this.mRendTypeSel.removeAllItems();
 
+  /*
   if (objs[0].obj_type=="MolCoord" &&
       (this.mData.bRendGrp || this.mData.bEditObjName)) {
     this.mRendTypeSel.appendItem("Composite", "composite");
+  }
+  */
+  if (objs[ind].preset_types!=null &&
+      objs[ind].preset_types.length>0) {
+    let nlen = objs[ind].preset_types.length;
+    for (let i=0; i<nlen; ++i) {
+      this.mRendTypeSel.appendItem(objs[ind].preset_types[i].desc,
+				   objs[ind].preset_types[i].name);
+    }
+    util.appendMenuSep(document, this.mRendTypeSel.menupopup);
   }
 
   for (var i=0; i<typl.length; ++i) {

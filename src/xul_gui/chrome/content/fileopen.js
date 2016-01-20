@@ -147,6 +147,9 @@ Qm2Main.prototype.fileOpenHelper1 = function(path, newobj_name, reader_name)
   dlgdata.target[0].reader = reader;
   dlgdata.target[0].path = path;
 
+  dlgdata.target[0].preset_types
+  = this.getCompatibleRendPresetNames(obj_type, dlgdata.sceneID);
+
   window.openDialog("chrome://cuemol2/content/fopen-option-dlg.xul",
                     "Setup renderer",
                     "chrome,modal,resizable=yes,dependent,centerscreen",
