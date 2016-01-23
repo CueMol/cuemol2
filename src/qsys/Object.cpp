@@ -504,7 +504,8 @@ RendererPtr Object::createPresetRenderer(const LString &preset_name,
   }
 
   LString type = pNode->getStrAttr("type");
-  if (!type.equals("renderer-preset")) {
+  // if (!type.equals("renderer-preset")) {
+  if (!type.endsWith("-rendpreset")) {
     LString msg = LString::format("%s is not a renderer preset (%s)", preset_name.c_str(), type.c_str());
     MB_THROW(qlib::RuntimeException, msg);
     return RendererPtr();

@@ -176,9 +176,16 @@ Qm2Main.prototype.doSetupCompRend = function (sc, result)
 Qm2Main.prototype.getCompatibleRendPresetNames = function(aObjTypeName, aSceneID)
 {
   let stylem = cuemol.getService("StyleManager");
-  let json_str = stylem.getStyleNamesJSON(aSceneID);
-  alert("getCompatibleRendPresetNames("+aObjTypeName+","+aSceneID+") JSON="+json_str);
+
+  let json_str = stylem.getStyleNamesJSON(0);
+  dd("getCompatibleRendPresetNames("+aObjTypeName+",0) JSON="+json_str);
   let styles = JSON.parse(json_str);
+
+  if (aSceneID) {
+    json_str = stylem.getStyleNamesJSON(aSceneID);
+    dd("getCompatibleRendPresetNames("+aObjTypeName+","+aSceneID+") JSON="+json_str);
+    styles = styles.concat( JSON.parse(json_str) );
+  }
   
   let nlen = styles.length;
   if (nlen==0) {
@@ -213,8 +220,10 @@ Qm2Main.prototype.doSetupRend = function(sc, result)
   let obj = sc.getObject(result.obj_id);
   let rend = null;
 
-  if (result.rendtype=="composite") {
-    rend = obj.createPresetRenderer("Default1RendPreset", result.rendname, result.rendname);
+  let preset_re = /RendPreset$/;
+  //if (result.rendtype=="composite") {
+  if (result.rendtype.match(preset_re)) {
+    rend = obj.createPresetRenderer(result.rendtype, result.rendname, result.rendname);
   }
   else {
     rend = obj.createRenderer(result.rendtype);
