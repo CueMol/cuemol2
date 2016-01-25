@@ -352,7 +352,7 @@ Qm2Main.prototype.deleteRendByID = function(aRendID)
   var objname = "";
   try { name = rend.name; objname = obj.name; } catch (e) {}
   
-  scene.startUndoTxn("Delete renderer "+objname+"/"+name);
+  scene.startUndoTxn("Delete renderer: "+objname+"/"+name);
   var ok;
   try {
     ok = obj.destroyRenderer(aRendID);
