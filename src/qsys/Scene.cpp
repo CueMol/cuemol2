@@ -1511,15 +1511,14 @@ void Scene::stylesWriteTo(qlib::LDom2Node *pNode) const
     if ( src.isEmpty() ) {
       // Internal style description
       pSet->writeToDataNode(pChNode);
+      // Reset the modified flag (because the contents was synchronized to the scene file)
+      pSet->setModified(false);
     }
     else {
       // External style reference is serialized as external reference node.
       // setup src and altsrc attributes
       std::pair<LString, LString> res =
         setPathsToNode(src, LString(), pChNode);
-
-      //LString relpath = qlib::makeRelativePath(src, basedir);
-      //pChNode->appendStrAttr("src", relpath);
 
       if (pSet->isOverrideID()) {
         pChNode->appendStrAttr("id", id);
@@ -1540,6 +1539,7 @@ void Scene::stylesWriteTo(qlib::LDom2Node *pNode) const
         if (!bRes) {
           LOG_DPRINTLN("Scene> write external style file %s failed.", abspath.c_str());
         }
+        // StyleMgr.saveStyleSetToFile() method always reset the modified flag if save is succeeded.
       }
     }
 
