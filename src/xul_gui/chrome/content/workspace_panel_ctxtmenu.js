@@ -40,6 +40,7 @@ ws.onCtxtMenuShowing = function (aEvent)
       else
         item.disabled = true;
     }
+
   } catch (e) { debug.exception(e); }
 }
 
@@ -429,14 +430,26 @@ ws.onStyCtxtShowing = function (aEvent)
     var tgt = Array.prototype.slice.call(this.mStyCtxtDisableTgt, 0);
     
     if (elem.type=="style") {
+      // Style item node is selected
       tgt.forEach( function (elem, ind, ary) {
 	  elem.setAttribute("disabled", false);
 	});
     }
     else {
+      // Style top node is selected
       tgt.forEach( function (elem, ind, ary) {
 	  elem.setAttribute("disabled", true);
 	});
+    }
+
+    // Update the style-paste menu
+    {
+      let clipboard = require("qsc-copipe");
+      let item = document.getElementById("wspcStyleCtxtMenu-Paste");
+      if (clipboard.check("qscsty"))
+	item.disabled = false;
+      else
+	item.disabled = true;
     }
 
     dd("elem type="+elem.type);

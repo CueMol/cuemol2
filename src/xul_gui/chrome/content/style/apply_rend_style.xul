@@ -41,8 +41,7 @@
 	oncommand="return gMain.onAddCmd(event);"
 	tooltiptext="Add style">
 	<menupopup id="add-btn-popup"
-	  onpopupshowing="return gMain.onAddBtnPopupShowing(event)"	  
-	  />
+	  onpopupshowing="return gMain.onAddBtnPopupShowing(event)"/>
       </toolbarbutton>
       <toolbarbutton
 	id="delete-button"

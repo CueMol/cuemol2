@@ -46,6 +46,7 @@
     <tabs id="tabs-overlay-target">
       <tab label="Color" id="color-tab"/>
       <tab label="Selection" id="sel-tab"/>
+      <tab label="Styles" id="style-tab"/>
     </tabs>
 
     <tabpanels id="tabpanels-overlay-target" flex="1">
@@ -139,6 +140,22 @@
 	</hbox>
       </tabpanel>
 
+      <!-- Style list viewer -->
+      <tabpanel flex="1" orient="vertical">
+	<hbox flex="1">
+	  <listbox id="style-listbox" flex="1"/>
+	  <spacer width="5px"/>
+	  <vbox flex="0">
+	    <toolbarbutton
+	      id="style-delbtn"
+	      disabled="true"
+	      class="toolbar-button delete-button"
+	      oncommand="gMain.onDelStyle(event);"
+	      tooltiptext="Delete"/>
+	  </vbox>
+	</hbox>
+      </tabpanel>
+      
     </tabpanels>
   </tabbox>
 </dialog>

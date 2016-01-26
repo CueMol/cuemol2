@@ -342,6 +342,13 @@
 	onpopupshowing="cuemolui.panels.workspace.onStyCtxtShowing(event)">
 	<menuitem label="New Style..."
 		  oncommand="cuemolui.panels.workspace.onNewCmd(event);"/>
+
+	<menuitem id="wspcStyleCtxtMenu-Copy" label="Copy" class="wspcStyCtxt-disable"
+	  oncommand="cuemolui.panels.workspace.onCopyCmd(event);"/>
+
+	<menuitem id="wspcStyleCtxtMenu-Paste" label="Paste"
+	  oncommand="cuemolui.panels.workspace.onPasteCmd(event);"/>
+
 	<menuitem label="Delete" class="wspcStyCtxt-disable"
 		  oncommand="cuemolui.panels.workspace.onDeleteCmd(event);"/>
 
@@ -369,6 +376,7 @@
 	  oncommand="cuemolui.panels.workspace.onRenameStyle(event)"/>
 	<menuitem label="Edit..." class="wspcStyCtxt-disable"
 	  oncommand="cuemolui.panels.workspace.onPropCmd(event)"/>
+
       </menupopup>
 
       <!--
