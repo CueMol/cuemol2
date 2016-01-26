@@ -344,10 +344,10 @@
 		  oncommand="cuemolui.panels.workspace.onNewCmd(event);"/>
 
 	<menuitem id="wspcStyleCtxtMenu-Copy" label="Copy" class="wspcStyCtxt-disable"
-	  oncommand="cuemolui.panels.workspace.onCopyCmd(event);"/>
+	  oncommand="cuemolui.panels.workspace.onCopyStyle(event);"/>
 
 	<menuitem id="wspcStyleCtxtMenu-Paste" label="Paste"
-	  oncommand="cuemolui.panels.workspace.onPasteCmd(event);"/>
+	  oncommand="cuemolui.panels.workspace.onPasteStyle(event);"/>
 
 	<menuitem label="Delete" class="wspcStyCtxt-disable"
 		  oncommand="cuemolui.panels.workspace.onDeleteCmd(event);"/>

@@ -59,20 +59,23 @@ qlib::uid_t StyleFile::loadStream(qlib::InStream &ins, qlib::uid_t scope, const 
 
 qlib::uid_t StyleFile::loadNodes(LDom2Node *pRoot, qlib::uid_t nScopeID, const LString &src, const LString &aId)
 {
-  if (!pRoot->getTagName().equals("styles")) {
+  /*if (!pRoot->getTagName().equals("styles")) {
     LString msg = LString::format("Invalid tag <%s> in style file", pRoot->getTagName().c_str());
     MB_THROW(qlib::FileFormatException, msg);
     return qlib::invalid_uid;
-  }
+  }*/
 
   LString style_id;
   bool bOvr = false;
   if (!aId.isEmpty()) {
+    // ID is specified --> override style_id with the specified one
     bOvr = true;
     style_id = aId;
   }
-  else
+  else {
+    // use ID attribute in the data node as a style_id (--> bOvr=false)
     style_id = pRoot->getStrAttr("id");
+  }
 
   if (!src.isEmpty()) {
     // External src
@@ -87,8 +90,7 @@ qlib::uid_t StyleFile::loadNodes(LDom2Node *pRoot, qlib::uid_t nScopeID, const L
   StyleList *pSL = m_pTarg->getCreateStyleList(nScopeID);
   MB_ASSERT(pSL!=NULL);
 
-  StyleSetPtr pSet = StyleSetPtr();
-  pSet = pSL->findSet(style_id);
+  StyleSetPtr pSet = pSL->findSet(style_id);
   if (!pSet.isnull()) {
     // style with the same id is already defined.
     if (!style_id.isEmpty()) {
@@ -100,11 +102,15 @@ qlib::uid_t StyleFile::loadNodes(LDom2Node *pRoot, qlib::uid_t nScopeID, const L
     }
   }
   else {
-    // New style set
-    StyleSet *pXX = MB_NEW StyleSet;
-    pSet = StyleSetPtr( pXX );
+    // Create New style set
+    pSet = StyleSetPtr( MB_NEW StyleSet() );
     pSL->push_front(pSet);
   }
+
+  // define the loading style in the nScopeID context
+  AutoStyleCtxt asc(nScopeID);
+
+  pSet = loadNodes(pRoot, pSet);
 
   // set generic info
   pSet->setContextID(nScopeID);
@@ -112,41 +118,57 @@ qlib::uid_t StyleFile::loadNodes(LDom2Node *pRoot, qlib::uid_t nScopeID, const L
   pSet->setName(style_id);
   pSet->setOverrideID(bOvr);
 
-  // define the loading style in the nScopeID context
-  AutoStyleCtxt asc(nScopeID);
+  return pSet->getUID();
+}
 
+StyleSetPtr StyleFile::loadNodes(LDom2Node *pRoot, StyleSetPtr pMergeSet)
+{
+  StyleSetPtr pSet = pMergeSet;
+  
+  if (!pRoot->getTagName().equals("styles")) {
+    LString msg = LString::format("Invalid tag <%s> in style file", pRoot->getTagName().c_str());
+    MB_THROW(qlib::FileFormatException, msg);
+    return pSet;
+  }
+
+  if (pSet.isnull()) {
+    // Create New style set
+    pSet = StyleSetPtr( MB_NEW StyleSet() );
+  }
+  
   for (pRoot->firstChild(); pRoot->hasMoreChild(); pRoot->nextChild()) {
     LDom2Node *pChNode = pRoot->getCurChild();
-    if (pChNode->getTagName().equals("id")) continue;
-
-    if (pChNode->getTagName().equals("color")) {
+    LString tag_name = pChNode->getTagName();
+    if (tag_name.equals("id")) {
+      LString style_id = pChNode->getValue();
+      pSet->setName(style_id);
+    }
+    else if (tag_name.equals("color")) {
       loadPalette(pChNode, pSet.get());
-      continue;
     }
-    if (pChNode->getTagName().equals("material")) {
+    else if (tag_name.equals("material")) {
       loadMaterial(pChNode, pSet.get());
-      continue;
     }
-    if (pChNode->getTagName().equals("setting")) {
+    else if (tag_name.equals("setting")) {
       loadSetting(pChNode, pSet.get());
-      continue;
     }
-
-    if (pChNode->getTagName().equals("style")) {
+    else if (tag_name.equals("style")) {
       loadStyle(pChNode, pSet.get());
       pRoot->detachCurChild();
-      continue;
     }
-
-    // default: string data node
-    loadStrData(pChNode, pSet.get());
+    else {
+      // default: string data node
+      loadStrData(pChNode, pSet.get());
+    }
   }
 
   // Loading completed --> reset modified flag
   pSet->setModified(false);
 
-  return pSet->getUID();
+  return pSet;
 }
+
+//////////////////////////////////////////////////////////
 
 void StyleFile::loadStyle(LDom2Node *pNode, StyleSet *pSet)
 {

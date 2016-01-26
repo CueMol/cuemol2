@@ -236,6 +236,7 @@ exports.get = function(aDataType)
     
   case "application/x-cuemol2-scenexml-rend":
   case "application/x-cuemol2-scenexml-obj": 
+  case "application/x-cuemol2-scenexml-style": 
   case "application/x-cuemol2-scenexml-cam": {
     let str = data.value.QueryInterface(Ci.nsISupportsString).data;
     data = cuemol.convPolymObj( cuemol.xpc.createBAryFromStr(str) );

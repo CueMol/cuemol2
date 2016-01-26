@@ -23,6 +23,7 @@ runtime_class StyleSet
 
   property integer uid => redirect(getUID, xxx) (readonly);
   property string src => redirect(getSource, XXX) (readonly);
+  property string name => redirect(getName, setName);
   property boolean readonly => redirect(isReadOnly, setReadOnly);
   property boolean modified => redirect(isModified, XXX) (readonly);
 

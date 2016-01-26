@@ -273,6 +273,18 @@ bool StyleMgr::registerStyleSet(StyleSetPtr pSet, int nbefore, qlib::uid_t ctxt)
     pScene->fireSceneEvent(ev);
   }
 
+  // setup event
+  // put the style-update event to the pending list
+  m_pendEvts.insert(PendEventSet::value_type(ctxt, ""));
+
+  // Record undo/redo info
+  UndoUtil uu(ctxt);
+  if (uu.isOK()) {
+    StyleCreateEditInfo *pInfo = MB_NEW StyleCreateEditInfo();
+    pInfo->setupCreate(ctxt, pSet, nbefore);
+    uu.add(pInfo);
+  }
+
   return true;
 }
 

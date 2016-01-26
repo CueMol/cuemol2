@@ -39,7 +39,11 @@ runtime_class StyleManager
 
   /// destroy styleset by ID (and scope ID)
   boolean destroyStyleSet(integer nScopeID, integer nStyleSetID);
-    
+  
+  /// Register the (scene-unbound) StyleSet
+  boolean registerStyleSet(object<StyleSet$> pSet, integer nbefore, integer nScopeID);
+
+  /// Get style set by UID
   object<StyleSet$> getStyleSet(integer nStyleSetID) => getStyleSetById2;
 
   string getStyleSetSource(integer nStyleSetID);

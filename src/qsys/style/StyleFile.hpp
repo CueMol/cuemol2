@@ -10,6 +10,7 @@
 
 #include <gfx/gfx.hpp>
 #include <gfx/Material.hpp>
+#include "StyleSet.hpp"
 
 namespace qlib {
   class PrintStream;
@@ -20,7 +21,6 @@ namespace qlib {
 
 namespace qsys {
 
-  class StyleSet;
   class StyleList;
   class StyleMgr;
 
@@ -50,6 +50,8 @@ namespace qsys {
     qlib::uid_t loadNodes(LDom2Node *pRoot, qlib::uid_t scope) {
       return loadNodes(pRoot, scope, LString(), LString());
     }
+
+    StyleSetPtr loadNodes(LDom2Node *pRoot, StyleSetPtr pMergeSet=StyleSetPtr());
 
     /// Load style from stream (in XML format)
     qlib::uid_t loadStream(qlib::InStream &ins, qlib::uid_t scope, const LString &src, const LString &id);

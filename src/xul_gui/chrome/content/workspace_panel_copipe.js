@@ -365,4 +365,101 @@ ws.onCameraPaste = function (aEvent)
   }
 };
 
+/////////////////////
+// style copy&paste
+
+
+ws.onCopyStyle = function (aEvent)
+{
+  if (this.mViewObj.isMultiSelected()) {
+    // TO DO: show error msg
+    util.alert(window, "Multiple items are selected.");
+    return;
+  }
+
+  var elem = this.mViewObj.getSelectedNode();
+  if (!elem) return;
+  if (elem.type!="style") {
+    throw "onCopyStyle called for a non-style node";
+  }
+
+  let stylem = cuemol.getService("StyleManager");
+  let styleset = stylem.getStyleSet(elem.obj_id);
+  if (styleset==null) {
+    throw "onCopyStyle called for a non-existing style: "+elem.obj_id;
+  }
+
+  try {
+    let clipboard = require("qsc-copipe");
+    
+    let xmldat = gQm2Main.mStrMgr.toXML(styleset);
+    clipboard.set(xmldat, "qscsty");
+  }
+  catch (e) { debug.exception(e); }
+
+};
+
+ws.onPasteStyle = function (aEvent)
+{
+  var new_name = "";
+  var styleset;
+  var sceneid = this.mTgtSceneID;
+  var scene = cuemol.getScene(sceneid);
+  var clipboard = require("qsc-copipe");
+  var stylem = cuemol.getService("StyleManager");
+  var bDestroy = false;
+
+  var elem = this.mViewObj.getSelectedNode();
+  if (!elem) return;
+  if (elem.type!="styleRoot" && elem.type!="style") return;
+
+  try {
+    let xmldat = clipboard.get("qscsty");
+    if (!xmldat) {
+      dd("PasteStyle, ERROR: "+xmldat);
+      return;
+    }
+
+    dd("XML: "+xmldat);
+    styleset = gQm2Main.mStrMgr.fromXML(xmldat, sceneid);
+
+    if (styleset==null) {
+      dd("PasteStyle, fromXML ERROR: "+xmldat);
+      return;
+    }
+
+    new_name = styleset.name;
+    let oldsetid = stylem.hasStyleSet(new_name, sceneid);
+    if (oldsetid!=0) {
+      let res = util.confirm(window, "Style \""+new_name+"\" already exists. Replace?");
+      if (!res)
+	return;
+      bDestroy = true;
+    }
+
+  }
+  catch (e) {
+    debug.exception(e);
+    return;
+  }
+  
+
+  // EDIT TXN START //
+  scene.startUndoTxn("Paste style");
+  try {
+    if (bDestroy)
+      stylem.destroyStyleSet(sceneid, new_name);
+    stylem.registerStyleSet(styleset, 0, sceneid);
+  }
+  catch (e) {
+    debug.exception(e);
+    scene.rollBackUndoTxn();
+    return;
+  }
+  scene.commitUndoTxn();
+  // EDIT TXN END //
+
+
+};
+
 

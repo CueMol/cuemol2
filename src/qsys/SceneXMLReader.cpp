@@ -10,8 +10,9 @@
 #include "StreamManager.hpp"
 #include "SceneEvent.hpp"
 #include "ObjReader.hpp"
-#include "style/AutoStyleCtxt.hpp"
 #include "RendererFactory.hpp"
+#include "style/AutoStyleCtxt.hpp"
+#include "style/StyleFile.hpp"
 
 #include <qlib/LDOM2Stream.hpp>
 #include <qlib/FileStream.hpp>
@@ -290,8 +291,14 @@ qlib::LScrObjBasePtr SceneXMLReader::fromByteArray(const qlib::LByteArrayPtr &pb
     pCam->readFrom2(pNode);
     pSObj = pCam;
   }
+  else if (tag.equals("styles")) {
+    // pbuf contains StyleSet
+    StyleFile sfile;
+    StyleSetPtr pStySet = sfile.loadNodes(pNode);
+    pSObj = pStySet;
+  }
   else {
-    MB_DPRINTLN("readRendFromXML> ERROR, Invalid QSC XML");
+    MB_DPRINTLN("readRendFromXML> ERROR, Invalid QSC XML: <%s>", tag.c_str());
     return pSObj;
   }
 

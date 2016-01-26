@@ -473,10 +473,21 @@ ws.onStyCtxtShowing = function (aEvent)
       else
         widget.removeAttribute("checked");
       
-      if (elem.scene_id==0)
+      let item_copy = document.getElementById("wspcStyleCtxtMenu-Copy");
+      if (elem.scene_id==0) {
+	// global styles
+	// disable "toggle readonly" menu
         widget.setAttribute("disabled", true);
-      else
+	// disable copy menu
+	item_copy.setAttribute("disabled", true);
+      }
+      else {
+	// local styles
+	// enable "toggle readonly" menu
         widget.setAttribute("disabled", false);
+	// enable copy menu
+	item_copy.setAttribute("disabled", false);
+      }
 
       // modified style cannot be changed to read-only mode!!
       if (!styleset.readonly && styleset.modified)
@@ -546,6 +557,7 @@ ws.onApplyStyle = function (aEvent)
 {
   if (this.mViewObj.isMultiSelected()) {
     // TO DO: show error msg
+    util.alert(window, "Multiple items are selected.");
     return;
   }
 
@@ -579,6 +591,7 @@ ws.onCreateStyle = function (aEvent)
 {
   if (this.mViewObj.isMultiSelected()) {
     // TO DO: show error msg
+    util.alert(window, "Multiple items are selected.");
     return;
   }
   

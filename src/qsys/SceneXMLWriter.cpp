@@ -10,6 +10,7 @@
 #include "SceneEvent.hpp"
 #include "ObjWriter.hpp"
 #include "style/AutoStyleCtxt.hpp"
+#include "style/StyleSet.hpp"
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -271,6 +272,7 @@ qlib::LScrSp<qlib::LByteArray> SceneXMLWriter::toByteArray(const qlib::LScrSp<ql
   ObjectPtr pObj(pSObj, qlib::no_throw_tag());
   RendererPtr pRend;
   CameraPtr pCam;
+  StyleSetPtr pStySet;
   bool bEmbed = false;
 
   if (!pObj.isnull()) {
@@ -312,8 +314,15 @@ qlib::LScrSp<qlib::LByteArray> SceneXMLWriter::toByteArray(const qlib::LScrSp<ql
 	top_type = "camera";
       }
       else {
-	MB_THROW(qlib::InvalidCastException, "toXML: obj is not obj or renderer or camera");
-	return qlib::LScrSp<qlib::LByteArray>();
+        pStySet = StyleSetPtr(pSObj, qlib::no_throw_tag());
+        if (!pStySet.isnull()) {
+          // pSObj is StyleSet
+          top_type = "styles";
+        }
+        else {
+          MB_THROW(qlib::InvalidCastException, "toXML: obj is not obj or renderer or camera");
+          return qlib::LScrSp<qlib::LByteArray>();
+        }
       }
     }
   }
@@ -347,25 +356,33 @@ qlib::LScrSp<qlib::LByteArray> SceneXMLWriter::toByteArray(const qlib::LScrSp<ql
     // always in attrs
     // pChNode->setAttrFlag(true);
   }
+  else if (!pStySet.isnull()) {
+  }
   else {
     MB_ASSERT(false);
     return qlib::LScrSp<qlib::LByteArray>();
   }
   
-  // Enter the context
-  AutoStyleCtxt style_ctxt(nSceneID);
-
-  pSObj->writeTo2(pChNode);
-
-  // process data chunks
-  procDataChunks(oos, pChNode);
-
+  if (pStySet.isnull()) {
+    // Enter the context
+    AutoStyleCtxt style_ctxt(nSceneID);
+    
+    pSObj->writeTo2(pChNode);
+    
+    // process data chunks
+    procDataChunks(oos, pChNode);
+  }
+  else {
+    pStySet->writeToDataNode(pChNode);
+  }
+  
+  // Write the Data nodes to the byte stream
   oos.write(&tree);
   oos.close();
-
+  
   // End of writing
   fos.close();
-
+    
   qlib::LScrSp<qlib::LByteArray> pRet = fos.getByteArray();
 
   //if (!pCam.isnull()) {
