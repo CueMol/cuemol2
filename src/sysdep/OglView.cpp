@@ -533,7 +533,8 @@ void OglView::setUpHitProjMat(gfx::DisplayContext *pdc, const Vector4D &parm, do
             -vw, vw, slabnear, slabfar);
   }
   else {
-    double vang = qlib::toDegree(::atan(vw/dist));
+    //double vang = qlib::toDegree(::atan(vw/dist));
+    double vang = qlib::toDegree<double>(::atan(vw/dist))*2.0;
     gluPerspective(vang, fasp, slabnear, slabfar);
   }
 
