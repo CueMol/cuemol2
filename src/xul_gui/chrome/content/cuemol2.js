@@ -356,10 +356,10 @@ Qm2Main.prototype.activeViewChanged = function (aEvent)
       newsce.uid, // source uid
       handler_scene);
     this.mTgtScene = newsce;
-
-    this.setWindowTitle(this.mTgtScene.name);
   }
 
+  let title = newsce.name + ":" + newview.name;
+  this.setWindowTitle(title);
 }
 
 //////////
@@ -380,7 +380,11 @@ Qm2Main.prototype.sceneChanged = function(args)
   else
   if (type_id==cuemol.evtMgr.SEM_PROPCHG &&
            args.obj.propname=="name") {
-    this.setWindowTitle(this.mTgtScene.name);
+    //this.setWindowTitle(this.mTgtScene.name);
+    let newview = this.mMainWnd.currentViewW;
+    let newsce = newview.getScene();
+    let title = newsce.name + ":" + newview.name;
+    this.setWindowTitle(title);
   }
   return;
 }
@@ -596,9 +600,10 @@ Qm2Main.prototype.onCloseEvent = function()
     return false;
   }
 
+  // close window and quit application if required
   closeWindow(true);
   //goQuitApplication();
-  // dd("goQuitApplication() OK");
+
   return true;
 }
 
@@ -1335,6 +1340,107 @@ Qm2Main.prototype.onViewMarkChg = function (aEvent)
   }
   else {
     target.centerMark="none";
+  }
+};
+
+Qm2Main.prototype.onWinListPopupShowing = function (aEvent)
+{
+  let typ = null;
+  let enm = this.mWinMed.getEnumerator(typ);
+  
+  let base = this.mWndTitleBase+" - ";
+
+  let win_list = [];
+  let dlg_list = [];
+
+  while (enm.hasMoreElements()) {
+    let win = enm.getNext();
+    let nm = "";
+    
+    let win_elem_list = win.document.getElementsByTagName("window");
+    if (win_elem_list.length>0) {
+      let win_elem = win_elem_list[0];
+      nm = win_elem.getAttribute("title");
+      if (nm.lastIndexOf(base)==0) {
+        let label = nm.substr(base.length);
+        win_list.push([nm, label]);
+      }
+      else {
+        dlg_list.push([nm, nm]);
+      }
+    }
+    else {
+      let dlg_elem_list = win.document.getElementsByTagName("dialog");
+      if (dlg_elem_list.length>0) {
+        let dlg_elem = dlg_elem_list[0];
+        nm = dlg_elem.getAttribute("title");
+        dlg_list.push([nm, nm]);
+      }
+    }
+    
+    dd("Win: "+nm);
+  }
+
+  const util = require("util");
+  let menu = aEvent.target;
+  util.clearMenu(menu);
+
+  let win_elem = document.getElementById("cuemol2");
+  let thiswnd = win_elem.getAttribute("title");
+  let n = win_list.length;
+  let i;
+  for (i=0; i<n; i++) {
+    let value = win_list[i][0];
+    let label = win_list[i][1];
+    var item = util.appendMenu(document, menu, value, label);
+    item.setAttribute("oncommand", "gQm2Main.onWinListSel(event)");
+    item.setAttribute("type", "radio");
+    item.setAttribute("autocheck", "false");
+    if (value==thiswnd)
+      item.setAttribute("checked", "true");
+  }
+
+  n = dlg_list.length;
+  if (n>0)
+    util.appendMenuSep(document, menu);
+
+  for (i=0; i<n; i++) {
+    let value = dlg_list[i][0];
+    let label = dlg_list[i][1];
+    var item = util.appendMenu(document, menu, value, label);
+    item.setAttribute("oncommand", "gQm2Main.onWinListSel(event)");
+  }
+};
+
+Qm2Main.prototype.onWinListSel = function (aEvent)
+{
+  let typ=null;
+  let value = aEvent.target.value;
+  dd("Window: "+value);
+
+  let enm = this.mWinMed.getEnumerator(typ);
+  while (enm.hasMoreElements()) {
+    let win = enm.getNext();
+    let win_elem_list = win.document.getElementsByTagName("window");
+    if (win_elem_list.length>0) {
+      let win_elem = win_elem_list[0];
+      nm = win_elem.getAttribute("title");
+      if (nm==value) {
+        win.focus();
+        return;
+      }
+    }
+    else {
+      let dlg_elem_list = win.document.getElementsByTagName("dialog");
+      if (dlg_elem_list.length>0) {
+        let dlg_elem = dlg_elem_list[0];
+        nm = dlg_elem.getAttribute("title");
+        if (nm==value) {
+          win.focus();
+          return;
+        }
+      }
+    }
   }
 };
 

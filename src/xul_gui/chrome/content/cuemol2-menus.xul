@@ -399,6 +399,11 @@
 	    <menu label="Panels" id="window-leftpanels-menu">
 	      <menupopup id="window-leftpanels-popup"/>
 	    </menu>
+
+	    <menu label="Windows" id="window-windowlist-menu">
+	      <menupopup id="window-windowlist-popup"
+		onpopupshowing="gQm2Main.onWinListPopupShowing(event)"/>
+	    </menu>
 	  </menupopup>
 	</menu>
 
