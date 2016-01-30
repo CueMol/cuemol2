@@ -596,7 +596,8 @@ Qm2Main.prototype.onCloseEvent = function()
     return false;
   }
 
-  goQuitApplication();
+  closeWindow(true);
+  //goQuitApplication();
   // dd("goQuitApplication() OK");
   return true;
 }
@@ -682,7 +683,7 @@ Qm2Main.prototype.onNewTabWindow = function(bWin)
     return;
 
   if (args.bInhr && args.bView) {
-    var vwid = this.mMainWnd.getCurrentViewID();
+    let vwid = this.mMainWnd.getCurrentViewID();
     //cursc.invoke2("saveViewToCam", vwid, "__current");
     cursc.saveViewToCam(vwid, "__current");
   }
@@ -690,9 +691,9 @@ Qm2Main.prototype.onNewTabWindow = function(bWin)
   if (!args.bWin) {
     // Open in tab
     if (args.bView) {
-      var newvw = this.createNewView(cursc, args.name, args.bInhr);
-      var newvw_id = newvw.uid;
-      var cursc_id = cursc.uid;
+      let newvw = this.createNewView(cursc, args.name, args.bInhr);
+      let newvw_id = newvw.uid;
+      let cursc_id = cursc.uid;
       this.mMainWnd.addMolViewTab(cursc_id, newvw_id);
       cursc.loadViewFromCam(newvw_id, "__current");
     }
@@ -702,10 +703,10 @@ Qm2Main.prototype.onNewTabWindow = function(bWin)
   }
   else {
     // Open in new window
-    var newvw_id = -1;
-    var cursc_id = -1;
-    if (bView) {
-      var vw = this.createNewView(cursc, args.name, args.bInhr);
+    let newvw_id = -1;
+    let cursc_id = -1;
+    if (args.bView) {
+      let vw = this.createNewView(cursc, args.name, args.bInhr);
       if (!vw)
         return;
       cursc_id = cursc.uid;
