@@ -601,11 +601,39 @@ Qm2Main.prototype.onCloseEvent = function()
   }
 
   // close window and quit application if required
-  closeWindow(true);
-  //goQuitApplication();
+  this.closeWindow();
 
   return true;
 }
+
+// 
+Qm2Main.prototype.closeWindow = function()
+{
+  var windowCount = 0;
+  var wm = this.mWinMed;
+  var e = wm.getEnumerator("cuemol2:mainwnd");
+  
+  while (e.hasMoreElements()) {
+    var w = e.getNext();
+    if (++windowCount == 2) 
+      break;
+  }
+  
+  // If we're down to the last window and someone tries to shut down, check to make sure we can!
+  if (windowCount == 1) {
+    if (!canQuitApplication("lastwindow")) {
+      return false;
+    }
+    else {
+      window.close();
+      goQuitApplication();
+      return true;
+    }
+  }
+
+  window.close();
+  return true;
+};
 
 ////////////////////////////////
 
@@ -1392,6 +1420,7 @@ Qm2Main.prototype.onWinListPopupShowing = function (aEvent)
   for (i=0; i<n; i++) {
     let value = win_list[i][0];
     let label = win_list[i][1];
+    dd("Win "+i+", val="+value+", lab="+label);
     var item = util.appendMenu(document, menu, value, label);
     item.setAttribute("oncommand", "gQm2Main.onWinListSel(event)");
     item.setAttribute("type", "radio");
@@ -1415,8 +1444,10 @@ Qm2Main.prototype.onWinListPopupShowing = function (aEvent)
 Qm2Main.prototype.onWinListSel = function (aEvent)
 {
   let typ=null;
-  let value = aEvent.target.value;
-  dd("Window: "+value);
+  //let value = aEvent.target.value;
+  //dd("Window: val="+value);
+  let value = aEvent.target.getAttribute("value");
+  dd("Window: val2="+value);
 
   let enm = this.mWinMed.getEnumerator(typ);
   while (enm.hasMoreElements()) {
@@ -1424,7 +1455,7 @@ Qm2Main.prototype.onWinListSel = function (aEvent)
     let win_elem_list = win.document.getElementsByTagName("window");
     if (win_elem_list.length>0) {
       let win_elem = win_elem_list[0];
-      nm = win_elem.getAttribute("title");
+      let nm = win_elem.getAttribute("title");
       if (nm==value) {
         win.focus();
         return;
@@ -1434,7 +1465,7 @@ Qm2Main.prototype.onWinListSel = function (aEvent)
       let dlg_elem_list = win.document.getElementsByTagName("dialog");
       if (dlg_elem_list.length>0) {
         let dlg_elem = dlg_elem_list[0];
-        nm = dlg_elem.getAttribute("title");
+        let nm = dlg_elem.getAttribute("title");
         if (nm==value) {
           win.focus();
           return;
