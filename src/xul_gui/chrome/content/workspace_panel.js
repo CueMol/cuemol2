@@ -802,16 +802,22 @@ ws.onBtnZoomCmd = function ()
   var view = this._mainWnd.currentViewW;
   if (elem.type=="object") {
     target = cuemol.getObject(id);
-    if (!('fitView' in target))
+    if ('fitView' in target) {
+      target.fitView(false, view);
       return;
-    target.fitView(false, view);
+    }
   }
   else if (elem.type=="renderer") {
     var rend = cuemol.getRenderer(id);
     target = rend.getClientObj();
-    if (!('sel' in rend) || !('fitView' in target))
+    if (('sel' in rend) && ('fitView' in target)) {
+      target.fitView2(rend.sel, view);
       return;
-    target.fitView2(rend.sel, view);
+    }
+    else if (rend.has_center) {
+      let pos = rend.getCenter();
+      view.setViewCenter(pos);
+    }
   }
   else {
     return;

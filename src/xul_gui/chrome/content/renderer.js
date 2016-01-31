@@ -176,8 +176,8 @@ Qm2Main.prototype.doSetupRend = function(sc, result)
     rend.sel = result.sel;
 
   if (result.center) {
-    alert("result.center="+result.center);
-    alert("rend.has_center="+rend.has_center);
+    //alert("result.center="+result.center);
+    //alert("rend.has_center="+rend.has_center);
     let view = this.mMainWnd.currentViewW;
     if (clsname === "DensityMap") {
       // in the case of density map,

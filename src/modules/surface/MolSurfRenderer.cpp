@@ -96,7 +96,7 @@ bool MolSurfRenderer::getColorMol(const Vector4D &v, ColorPtr &rcol)
   //pdl->color(col);
 }
 
-bool MolSurfRenderer::isShowVert(const Vector4D &v)
+bool MolSurfRenderer::isShowVert(const Vector4D &v) const
 {
   if (m_pShowSel->isEmpty())
     return true;
@@ -378,7 +378,8 @@ void MolSurfRenderer::render(DisplayContext *pdl)
 
 Vector4D MolSurfRenderer::getCenter() const
 {
-  Vector4D pos;
+  Vector4D pos, p;
+  MSVert v;
   int i, n=0;
 
   MolSurfObj *pSurf = dynamic_cast<MolSurfObj *>(getClientObj().get());
@@ -389,10 +390,20 @@ Vector4D MolSurfRenderer::getCenter() const
   int nvert = pSurf->getVertSize();
   int nskip = qlib::max<int>(1, nvert/1000-1);
 
+  if (!m_pMol.isnull() && !m_pShowSel->isEmpty()) {
+    nskip = 1;
+  }
+
   for (i=0; i<nvert; i+=nskip) {
-    pos.x() += (pSurf->getVertAt(i)).x;
-    pos.y() += (pSurf->getVertAt(i)).y;
-    pos.z() += (pSurf->getVertAt(i)).z;
+    v = pSurf->getVertAt(i);
+    p = v.v3d();
+    if (m_pAmap!=NULL) {
+      if (!isShowVert(pos)) {
+        // skip hidden verteces by molsel
+        continue;
+      }
+    }
+    pos += p;
     n++;
   }
 
@@ -405,7 +416,7 @@ Vector4D MolSurfRenderer::getCenter() const
     return Vector4D();
   }
 
-  pos = pos.scale(1.0/double(n));
+  pos = pos.divide(double(n));
   return pos;
 }
 
