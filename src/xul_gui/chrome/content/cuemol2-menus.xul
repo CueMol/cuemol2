@@ -80,7 +80,7 @@
       <command id="cmd_reload_scene" oncommand="gQm2Main.onReloadScene()" tooltiptext="&reload_scene.label;"/>
       <command id="cmd_undo" oncommand="gQm2Main.undo()" tooltiptext="&edit_undo.label;"/>
       <command id="cmd_redo" oncommand="gQm2Main.redo()" tooltiptext="&edit_redo.label;"/>
-      <command id="cmd_quitApplication" oncommand="if(gQm2Main.onCloseEvent()) goQuitApplication();"/>
+      <command id="cmd_quitApplication" oncommand="return gQm2Main.onCloseEvent();"/>
 
       <command id="cmd_file_open" oncommand="gQm2Main.onFileOpen()"
 	tooltiptext="&open_file.label;"/>

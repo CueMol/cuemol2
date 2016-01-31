@@ -24,7 +24,7 @@ function getQm2MainObj() {
     </script>
 
     <commandset id="mainCommandSet">
-      <command id="cmd_quitApplication" oncommand="if(getQm2MainObj().onCloseEvent()) goQuitApplication();"/>
+      <command id="cmd_quitApplication" oncommand="return getQm2MainObj().onCloseEvent();"/>
       <command id="cmd_config" oncommand="getQm2MainObj().showConfigDlg()"/>
     </commandset>
 

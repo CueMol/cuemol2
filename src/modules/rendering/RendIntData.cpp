@@ -715,8 +715,8 @@ void RendIntData::convCyl(Cyl *pCyl)
 
   int i, j;
   double th;
-  const double w1 = pCyl->w1;
-  const double w2 = pCyl->w2;
+  const double w2 = pCyl->w1;
+  const double w1 = pCyl->w2;
   const bool bcap = pCyl->bcap;
   
   const int NDIVR = 2*(pCyl->ndetail+1);

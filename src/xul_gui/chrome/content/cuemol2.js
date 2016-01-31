@@ -532,6 +532,7 @@ Qm2Main.prototype.closeTabImpl = function(tab, bCloseLastTab)
     var result = util.confirmYesNoCancel(
       window, "Scene \""+scene_name+"\" is not saved. Save changes?");
 
+    // alert("result="+result);
     if (result==0) {
       // Yes -> save changes and close
       if (!this.onSaveScene()) {
@@ -578,7 +579,10 @@ Qm2Main.prototype.onCloseEvent = function()
     var res;
     while (this.mMainWnd.getTabCount()>0) {
       res = this.closeTabImpl(this.mMainWnd.selectedTab, true);
-      if (!res) return false;
+      if (!res) {
+        // alert("Close-app cancel requested");
+        return false;
+      }
     }
     
     // save panel arrangement
@@ -591,6 +595,9 @@ Qm2Main.prototype.onCloseEvent = function()
     debug.exception(e);
     return false;
   }
+
+  goQuitApplication();
+  // dd("goQuitApplication() OK");
   return true;
 }
 

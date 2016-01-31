@@ -92,12 +92,96 @@ Qm2Main.prototype.setDefaultStyles = function(mol, rend)
     rend.applyStyles("DefaultCPKColoring");
   }
     
-}
+};
+
+Qm2Main.prototype.doSetupCompRend = function (sc, result)
+{
+  var rendopt = {
+  obj_id: result.obj_id,
+  center: false
+  };
+
+  var orig_selstr = "";
+  var res;
+  
+  if (result.sel) {
+    orig_selstr = result.sel.toString();
+  }
+  
+  /////
+
+  rendopt.rendtype = "*group";
+  rendopt.rendname = result.rendname;
+  rendopt.new_obj = true;
+
+  let resgrp = this.doSetupRend(sc, rendopt);
+
+  /////
+
+  rendopt.rendtype = "ribbon";
+  rendopt.rendname = result.rendname+"prot";
+  if (orig_selstr)
+    selstr = "protein & ("+orig_selstr+")";
+  else
+    selstr = "protein";
+  rendopt.sel = cuemol.makeSel(selstr);
+  rendopt.new_obj = false;;
+
+  res = this.doSetupRend(sc, rendopt);
+  res.group = resgrp.name;
+
+  /////
+
+  rendopt.rendtype = "nucl";
+  rendopt.rendname = result.rendname+"nucl";
+  if (orig_selstr)
+    selstr = "nucleic & ("+orig_selstr+")";
+  else
+    selstr = "nucleic";
+  rendopt.sel = cuemol.makeSel(selstr);
+  rendopt.new_obj = false;
+
+  res = this.doSetupRend(sc, rendopt);
+  res.group = resgrp.name;
+
+  /////
+
+  rendopt.rendtype = "ballstick";
+  rendopt.rendname = result.rendname+"lgnd";
+  if (orig_selstr)
+    selstr = "(!nucleic&!protein) & ("+orig_selstr+")";
+  else
+    selstr = "!nucleic&!protein";
+  rendopt.sel = cuemol.makeSel(selstr);
+  rendopt.new_obj = false;
+
+  res = this.doSetupRend(sc, rendopt);
+  res.group = resgrp.name;
+
+  /////
+
+  if (result.center) {
+    let view = this.mMainWnd.currentViewW;
+    let obj = sc.getObject(result.obj_id);
+    //let pos = obj.getCenterPos(false);
+    //view.setViewCenter(pos);
+    if (orig_selstr)
+      obj.fitView2(result.sel, view);
+    else
+      obj.fitView(false, view);
+  }  
+
+};
 
 /// Do actual task for renderer setup:
 /// Create renderer, and set initial props.
 Qm2Main.prototype.doSetupRend = function(sc, result)
 {
+  if (result.rendtype=="composite") {
+    this.doSetupCompRend(sc, result);
+    return;
+  }
+
   let obj = sc.getObject(result.obj_id);
   let rend = obj.createRenderer(result.rendtype);
 
@@ -186,8 +270,10 @@ Qm2Main.prototype.setupRendByObjID = function(aObjID, aRendGrp)
   sc.startUndoTxn("Create new "+result.rendtype+" renderer");
   try {
     rend = this.doSetupRend(sc, result);
-    if (aRendGrp)
+    if (aRendGrp) {
+      // move the new renderer into the group aRendGrp
       rend.group = aRendGrp;
+    }
   }
   catch (e) {
     dd("CreateRend> failed: "+e);
@@ -233,64 +319,4 @@ Qm2Main.prototype.deleteRendByID = function(aRendID)
 
   return;
 }
-
-/*
-Qm2Main.prototype.doSelectObjPrompt = function(dlg_title, filter_fn)
-{
-  var id, label, ok;
-  var labellist = new Array();
-  var uidlist = new Array();
-  var selected = {};
-  var re = /\(([0-9]+)\)$/, match;
-  var scene;
-
-  try {
-    scene = this.mMainWnd.currentSceneW;
-    var json = scene.getObjectTreeJSON();
-    var obj = JSON.parse(json);
-    for (var i=0; i<obj.length; ++i) {
-      // if (i==0 && !(type_flag&this.SELOBJP_SCENE) )
-      // continue;
-      var target = obj[i];
-      label = filter_fn((i==0)?"scene":"object", target);
-      if (label!==null) {
-        labellist.push(label);
-        uidlist.push(target.ID);
-      }
-      //id = obj[i].ID;
-      //label = ( (i===0)?"Scn ":"Obj " ) + obj[i].name + " (" + id + ")";
-      //if (type_flag&this.SELOBJP_OBJECT)
-
-      var rnds = target.rends;
-      if (typeof rnds!='undefined' && 'length' in rnds) {
-        for (var j=0; j<rnds.length; ++j) {
-          target = rnds[j];
-          label = filter_fn("renderer", target);
-          if (label!==null) {
-            labellist.push(label);
-            uidlist.push(target.ID);
-          }
-
-          //id = rnds[j].ID;
-          //label = "Rnd " + rnds[j].name + " (" + id + ")";
-          //labellist.push(label);
-        }
-      }
-    }
-  }
-  catch (e) {
-    debug.exception(e);
-    return null;
-  }
-
-  ok = this.mPrompts.select(window, document.title, dlg_title, 
-                                labellist.length, labellist, selected);
-
-  if (!ok)
-    return null;
-
-  target_ID = uidlist[selected.value];
-
-  return target_ID;
-}*/
 
