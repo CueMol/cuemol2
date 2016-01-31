@@ -25,10 +25,11 @@
     <listbox id="styleset-list" rows="5"/>
 
     <label value="Style name:"/>
-    <!--<menulist id="rendstyle-list" editable="true" sizetopopup="none"/>
-    <textbox id="rendstyle-desc"/>
-    <label value="Description:"/>-->
-    <textbox id="rendstyle-desc"/>
+
+    <hbox align="center">
+      <textbox id="rendstyle-name" size="5" flex="1"/>
+      <label id="rendstyle-postfix" flex="0" style="margin-left: 0px; "/>
+    </hbox>
   </vbox>
 
 </dialog>

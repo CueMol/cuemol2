@@ -35,7 +35,7 @@ if (!("RendStyleCreate" in cuemolui)) {
       this.mSSetList = document.getElementById("styleset-list");
       //this.mRendStyList = document.getElementById("rendstyle-list");
 
-      this.mRendStyName = document.getElementById("rendstyle-desc");
+      this.mRendStyName = document.getElementById("rendstyle-name");
       this.mOrigRendDesc = document.getElementById("orig-rend");
 
       /*
@@ -56,6 +56,9 @@ if (!("RendStyleCreate" in cuemolui)) {
       this.mRendName = rend.name;
       this.mRendTypeName = rend.type_name;
       this.mOrigRendDesc.value = rend.name+" ("+rend.type_name+")";
+
+      let w = document.getElementById("rendstyle-postfix");
+      w.value = rend.type_name;
     };
 
     klass.onDialogAccept = function ()
