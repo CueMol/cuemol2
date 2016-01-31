@@ -120,10 +120,10 @@ public:
   ///////////////////////////////////////////
   // constructors / destructor
 
-  /** default constructor */
+  /// default constructor
   MolSurfRenderer();
 
-  /** destructor */
+  /// destructor
   virtual ~MolSurfRenderer();
 
   //////////////////////////////////////////////////////

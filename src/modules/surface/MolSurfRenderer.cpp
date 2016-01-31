@@ -40,7 +40,7 @@ MolSurfRenderer::MolSurfRenderer()
   m_nTgtMolID = qlib::invalid_uid;
 }
 
-/** destructor */
+/// destructor
 MolSurfRenderer::~MolSurfRenderer()
 {
   if (m_pAmap!=NULL) delete m_pAmap;
@@ -208,11 +208,25 @@ void MolSurfRenderer::render(DisplayContext *pdl)
 
   // pdl->sphere(10.0, getCenter());
 
+  // check and get the associated molecule obj
+  // and position to atom mapping
+  if (m_nTgtMolID!=qlib::invalid_uid) {
+    qsys::ObjectPtr pobj = SceneManager::getObjectS(m_nTgtMolID);
+    m_pMol = MolCoordPtr(pobj, qlib::no_throw_tag());
+    if (!m_pMol.isnull()) {
+      // TO DO: re-generate atom-map only when Mol is changed.
+      // (this impl always updates atommap when the renderer is invalidated.)
+      makeAtomPosMap();
+    }
+  }
+
   mesh.color(getDefaultColor());
   if (m_nMode==SFREND_SIMPLE) {
   }
   else if (m_nMode==SFREND_SCAPOT) {
+    //
     // ELEPOT mode --> resolve target name
+    //
     qsys::ObjectPtr pobj;
     m_pScaObj = NULL;
     if (!m_sTgtElePot.isEmpty()) {
@@ -236,16 +250,7 @@ void MolSurfRenderer::render(DisplayContext *pdl)
     //
     // MOLFANC mode
     //
-    if (m_nTgtMolID!=qlib::invalid_uid) {
-      qsys::ObjectPtr pobj = SceneManager::getObjectS(m_nTgtMolID);
-      m_pMol = MolCoordPtr(pobj, qlib::no_throw_tag());
-    }
-
     if (!m_pMol.isnull()) {
-      // TO DO: re-generate atom-map only when Mol is changed.
-      // (this impl always updates atommap when the renderer is invalidated.)
-      makeAtomPosMap();
-      
       // initialize the coloring scheme (with the target mol, but not surface obj)
       molstr::ColoringSchemePtr pCS = getColSchm();
       if (!pCS.isnull())
@@ -257,6 +262,8 @@ void MolSurfRenderer::render(DisplayContext *pdl)
   }
   
 
+  ////////////////////////////////////////////
+
   std::vector<int> idmap(nvsiz);
 
   // setup verteces
@@ -265,6 +272,16 @@ void MolSurfRenderer::render(DisplayContext *pdl)
     MSVert v = pSurf->getVertAt(i);
     Vector4D pos = v.v3d();
     Vector4D norm = v.n3d();
+
+    // check pos-atom map
+    if (!m_pMol.isnull()) {
+      if (!isShowVert(pos)) {
+        // skip hidden vertex by mol selection
+        idmap[i] = -1;
+        continue;
+      }
+    }
+
     if (m_nMode==SFREND_SCAPOT) {
       bool res;
       if (m_bRampAbove) {
@@ -277,12 +294,7 @@ void MolSurfRenderer::render(DisplayContext *pdl)
         mesh.color(col);
       }
     }
-    else if (m_nMode>=SFREND_MOLSIMP) {
-      if (!isShowVert(pos)) {
-        // skip hidden vertex
-        idmap[i] = -1;
-        continue;
-      }
+    else if (m_nMode==SFREND_MOLFANC) {
       if (getColorMol(pos, col))
         mesh.color(col);
     }
@@ -363,8 +375,6 @@ void MolSurfRenderer::render(DisplayContext *pdl)
   m_pScaObj = NULL;
 
 }
-
-
 
 Vector4D MolSurfRenderer::getCenter() const
 {

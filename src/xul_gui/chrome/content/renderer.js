@@ -94,85 +94,6 @@ Qm2Main.prototype.setDefaultStyles = function(mol, rend)
     
 };
 
-Qm2Main.prototype.doSetupCompRend = function (sc, result)
-{
-  var rendopt = {
-  obj_id: result.obj_id,
-  center: false
-  };
-
-  var orig_selstr = "";
-  var res;
-  
-  if (result.sel) {
-    orig_selstr = result.sel.toString();
-  }
-  
-  /////
-
-  rendopt.rendtype = "*group";
-  rendopt.rendname = result.rendname;
-  rendopt.new_obj = true;
-
-  let resgrp = this.doSetupRend(sc, rendopt);
-
-  /////
-
-  rendopt.rendtype = "ribbon";
-  rendopt.rendname = result.rendname+"prot";
-  if (orig_selstr)
-    selstr = "protein & ("+orig_selstr+")";
-  else
-    selstr = "protein";
-  rendopt.sel = cuemol.makeSel(selstr);
-  rendopt.new_obj = false;;
-
-  res = this.doSetupRend(sc, rendopt);
-  res.group = resgrp.name;
-
-  /////
-
-  rendopt.rendtype = "nucl";
-  rendopt.rendname = result.rendname+"nucl";
-  if (orig_selstr)
-    selstr = "nucleic & ("+orig_selstr+")";
-  else
-    selstr = "nucleic";
-  rendopt.sel = cuemol.makeSel(selstr);
-  rendopt.new_obj = false;
-
-  res = this.doSetupRend(sc, rendopt);
-  res.group = resgrp.name;
-
-  /////
-
-  rendopt.rendtype = "ballstick";
-  rendopt.rendname = result.rendname+"lgnd";
-  if (orig_selstr)
-    selstr = "(!nucleic&!protein) & ("+orig_selstr+")";
-  else
-    selstr = "!nucleic&!protein";
-  rendopt.sel = cuemol.makeSel(selstr);
-  rendopt.new_obj = false;
-
-  res = this.doSetupRend(sc, rendopt);
-  res.group = resgrp.name;
-
-  /////
-
-  if (result.center) {
-    let view = this.mMainWnd.currentViewW;
-    let obj = sc.getObject(result.obj_id);
-    //let pos = obj.getCenterPos(false);
-    //view.setViewCenter(pos);
-    if (orig_selstr)
-      obj.fitView2(result.sel, view);
-    else
-      obj.fitView(false, view);
-  }  
-
-};
-
 Qm2Main.prototype.getCompatibleRendPresetNames = function(aObjTypeName, aSceneID)
 {
   let stylem = cuemol.getService("StyleManager");
@@ -255,6 +176,8 @@ Qm2Main.prototype.doSetupRend = function(sc, result)
     rend.sel = result.sel;
 
   if (result.center) {
+    alert("result.center="+result.center);
+    alert("rend.has_center="+rend.has_center);
     let view = this.mMainWnd.currentViewW;
     if (clsname === "DensityMap") {
       // in the case of density map,
