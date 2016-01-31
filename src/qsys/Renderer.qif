@@ -31,6 +31,7 @@ runtime_class Renderer
   property string type_name => redirect(getTypeName, xxx) (readonly);
 
   property object<Vector> center => redirect(getCenterScr, xxx) (readonly);
+  property boolean has_center => redirect(hasCenter, xxx) (readonly);
 
   property string name => redirect(getName, setName);
   default name = "";

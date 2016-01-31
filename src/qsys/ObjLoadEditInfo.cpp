@@ -89,8 +89,13 @@ bool ObjLoadEditInfo::undo()
     pObj = qlib::ObjectManager::sGetObj<Object>(m_nObjID);
     if (pObj==NULL) return false;
     // restore from the trash
-    res = pObj->registerRendererImpl(m_pTgtRend);
-    return res;
+    try {
+      pObj->registerRendererImpl(m_pTgtRend);
+    }
+    catch (...) {
+      return false;
+    }
+    return true;
 
   default:
     break;
@@ -122,7 +127,13 @@ bool ObjLoadEditInfo::redo()
     pObj = qlib::ObjectManager::sGetObj<Object>(m_nObjID);
     if (pObj==NULL) return false;
     // restore from the trash
-    return pObj->registerRendererImpl(m_pTgtRend);
+    try {
+      pObj->registerRendererImpl(m_pTgtRend);
+    }
+    catch (...) {
+      return false;
+    }
+    return true;
 
   case OLEI_REND_DESTROY:
     pObj = qlib::ObjectManager::sGetObj<Object>(m_nObjID);

@@ -124,6 +124,12 @@ if (!("StyleEditor" in cuemolui)) {
       else {
 	this.enableSelNameValBoxes(this.mSelTreeView.isSelected());
       }
+
+      ////////////
+      // style panel setup
+      this.mStyleList = document.getElementById("style-listbox");
+      this.loadStyleDefs();
+
     };
     
     ////////////////////////
@@ -511,6 +517,34 @@ if (!("StyleEditor" in cuemolui)) {
 	this.mSelTreeView.buildView();
 	this.mSelTreeView.restoreSelection();
       }
+    };
+
+    //////////////////////////////////////////////////
+    // style editor (viewer)
+
+    klass.loadStyleDefs = function ()
+    {
+      var stylem = this.mStylem;
+      var scene_id = this.mSceneID;
+      var tgt_id = this.mTgtID;
+
+      var sset = stylem.getStyleSet(tgt_id);
+      if (sset==null) {
+	// ERROR!!
+	return;
+      }
+      
+      var json = sset.getStyleNamesJSON();
+      dd("StyleEditor> SetupStyleDefs json="+json);
+
+      var defs = JSON.parse(json);
+
+      var nitems = defs.length;
+      for (var i=0; i<nitems; ++i) {
+	let id = defs[i].name;
+	this.mStyleList.appendItem(id,id);
+      }
+      
     };
 
     //////////////////////////////////////////////////

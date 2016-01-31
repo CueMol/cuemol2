@@ -708,6 +708,9 @@
     <ClCompile Include="..\..\src\modules\molstr\MolBond.cpp">
       <Filter>molstr</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\qsys\style\StyleSupports.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\qsys\AbstractColor.hpp">

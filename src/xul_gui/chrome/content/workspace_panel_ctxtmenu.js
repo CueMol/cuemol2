@@ -40,6 +40,7 @@ ws.onCtxtMenuShowing = function (aEvent)
       else
         item.disabled = true;
     }
+
   } catch (e) { debug.exception(e); }
 }
 
@@ -306,28 +307,7 @@ ws.onStyleShowing = function (aEvent)
     var menu = aEvent.currentTarget.menupopup;
 
     var regex = null;
-    if (elem.type_name == "ribbon") {
-      regex = /Ribbon$/;
-    }
-    else if (elem.type_name == "cartoon") {
-      regex = /Cartoon$/;
-    }
-    else if (elem.type_name == "ballstick") {
-      regex = /BallStick$/;
-    }
-    else if (elem.type_name == "atomintr") {
-      regex = /AtomIntr$/;
-    }
-    else if (elem.type_name == "simple") {
-      regex = /Simple$/;
-    }
-    else if (elem.type_name == "trace") {
-      regex = /Trace$/;
-    }
-    else if (elem.type_name == "contour") {
-      regex = /Contour$/;
-    }
-
+    regex = RegExp(elem.type_name+"$", "i");
     cuemolui.populateStyleMenus(this.mTgtSceneID, menu, regex, true);
     
     // add edge styles
@@ -450,14 +430,26 @@ ws.onStyCtxtShowing = function (aEvent)
     var tgt = Array.prototype.slice.call(this.mStyCtxtDisableTgt, 0);
     
     if (elem.type=="style") {
+      // Style item node is selected
       tgt.forEach( function (elem, ind, ary) {
 	  elem.setAttribute("disabled", false);
 	});
     }
     else {
+      // Style top node is selected
       tgt.forEach( function (elem, ind, ary) {
 	  elem.setAttribute("disabled", true);
 	});
+    }
+
+    // Update the style-paste menu
+    {
+      let clipboard = require("qsc-copipe");
+      let item = document.getElementById("wspcStyleCtxtMenu-Paste");
+      if (clipboard.check("qscsty"))
+	item.disabled = false;
+      else
+	item.disabled = true;
     }
 
     dd("elem type="+elem.type);
@@ -481,10 +473,21 @@ ws.onStyCtxtShowing = function (aEvent)
       else
         widget.removeAttribute("checked");
       
-      if (elem.scene_id==0)
+      let item_copy = document.getElementById("wspcStyleCtxtMenu-Copy");
+      if (elem.scene_id==0) {
+	// global styles
+	// disable "toggle readonly" menu
         widget.setAttribute("disabled", true);
-      else
+	// disable copy menu
+	item_copy.setAttribute("disabled", true);
+      }
+      else {
+	// local styles
+	// enable "toggle readonly" menu
         widget.setAttribute("disabled", false);
+	// enable copy menu
+	item_copy.setAttribute("disabled", false);
+      }
 
       // modified style cannot be changed to read-only mode!!
       if (!styleset.readonly && styleset.modified)
@@ -550,4 +553,83 @@ ws.onShowHideCmd = function (aEvent, aShow)
   // EDIT TXN END //
 };
 
+ws.onApplyStyle = function (aEvent)
+{
+  if (this.mViewObj.isMultiSelected()) {
+    // TO DO: show error msg
+    util.alert(window, "Multiple items are selected.");
+    return;
+  }
+
+  var elem = this.mViewObj.getSelectedNode();
+  if (!elem) return;
+  var id = elem.obj_id;
+
+  if (elem.type!="renderer")
+    return;
+
+  let rend = cuemol.getRenderer(id);
+  let scene = rend.getScene();
+
+  // Show Modal Dialog to apply styles to rend
+  var argobj = {
+  scene_id: scene.uid,
+  rend_id: id
+  };
+  
+  var stylestr = "chrome,modal,resizable=yes,dependent,centerscreen";
+  window.openDialog("chrome://cuemol2/content/style/apply_rend_style.xul",
+		    "", stylestr, argobj);
+
+  dd("dialg result: "+debug.dumpObjectTree(argobj, 1));
+  if (!argobj.bOK)
+    return;
+
+};
+
+ws.onCreateStyle = function (aEvent)
+{
+  if (this.mViewObj.isMultiSelected()) {
+    // TO DO: show error msg
+    util.alert(window, "Multiple items are selected.");
+    return;
+  }
+  
+  var elem = this.mViewObj.getSelectedNode();
+  if (!elem) return;
+  var id = elem.obj_id;
+
+  if (elem.type!="renderer")
+    return;
+
+  let rend = cuemol.getRenderer(id);
+  let scene = rend.getScene();
+
+  // Show Modal Dialog to get new style's name, etc.
+  var argobj = {
+  scene_id: scene.uid,
+  rend_id: id
+  };
+  
+  var stylestr = "chrome,modal,resizable=no,dependent,centerscreen";
+  window.openDialog("chrome://cuemol2/content/style/rendstyle_create.xul",
+		    "", stylestr, argobj);
+
+  // dd("dialg result: "+debug.dumpObjectTree(argobj, 1));
+  if (!argobj.bOK)
+    return;
+  
+  // Create new style
+  let ssetid = argobj.style_setid;
+  let stylename = argobj.style_name;
+
+  try {
+    let rend = cuemol.getRenderer(id);
+    let scene = rend.getScene();
+    let stylem = cuemol.getService("StyleManager");
+    stylem.createStyleFromObj(scene.uid, ssetid, stylename, rend)
+  } catch (e) {
+    debug.exception(e);
+  }
+};
 

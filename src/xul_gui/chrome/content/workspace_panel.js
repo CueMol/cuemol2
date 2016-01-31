@@ -694,18 +694,10 @@ ws.deleteCmdImpl = function (elem)
     gQm2Main.deleteObject(id);
   }
   else if (elem.type=="renderer") {
-    // this.mViewObj.saveSelection();
     gQm2Main.deleteRendByID(id);
-    // this.mViewObj.restoreSelection();
   }
   else if (elem.type=="rendGroup") {
-    if (elem.childNodes.length>0)
-      util.alert(window, "Group is not empty");
-    else {
-      // this.mViewObj.saveSelection();
-      gQm2Main.deleteRendByID(id);
-      // this.mViewObj.restoreSelection();
-    }
+    this.deleteRendGrp(elem);
   }
   else if (elem.type=="camera") {
     this.destroyCamera(id);
@@ -713,6 +705,37 @@ ws.deleteCmdImpl = function (elem)
   else if (elem.type=="style") {
     this.destroyStyle(elem);
   }
+};
+
+ws.deleteRendGrp = function (aElem)
+{
+  if (aElem.type!="rendGroup")
+    return;
+  
+  var scene = cuemol.getScene(this.mTgtSceneID);
+  var rendgrp = cuemol.getRenderer(aElem.obj_id);
+  var rends = new Array();
+  for (var i=0; i<aElem.childNodes.length; ++i) {
+    rends.push( aElem.childNodes[i].obj_id );
+  }
+  
+  var obj = rendgrp.getClientObj();
+  var objname = obj.name;
+  var rendname = rendgrp.name;
+
+  // EDIT TXN START //
+  scene.startUndoTxn("Delete rend group: "+objname+"/"+rendname);
+  try {
+    for (var i=0; i<rends.length; ++i)
+      obj.destroyRenderer( rends[i] );
+    obj.destroyRenderer( aElem.obj_id );
+  }
+  catch (e) {
+    dd("***** ERROR: DeleteRendGrp "+e);
+    debug.exception(e);
+  }
+  scene.commitUndoTxn();
+  // EDIT TXN END //
 };
 
 ws.onPropCmd = function ()
@@ -779,16 +802,22 @@ ws.onBtnZoomCmd = function ()
   var view = this._mainWnd.currentViewW;
   if (elem.type=="object") {
     target = cuemol.getObject(id);
-    if (!('fitView' in target))
+    if ('fitView' in target) {
+      target.fitView(false, view);
       return;
-    target.fitView(false, view);
+    }
   }
   else if (elem.type=="renderer") {
     var rend = cuemol.getRenderer(id);
     target = rend.getClientObj();
-    if (!('sel' in rend) || !('fitView' in target))
+    if (('sel' in rend) && ('fitView' in target)) {
+      target.fitView2(rend.sel, view);
       return;
-    target.fitView2(rend.sel, view);
+    }
+    else if (rend.has_center) {
+      let pos = rend.getCenter();
+      view.setViewCenter(pos);
+    }
   }
   else {
     return;

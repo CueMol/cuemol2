@@ -827,7 +827,7 @@ klass.showAtomLabel = function(objid, atomid)
   scene.startUndoTxn("Add atom label");
 
   try {
-    let label_rend = obj.getRendererByType(labeltype);
+    let label_rend = obj.getRendererByNameType("", labeltype);
     if (!label_rend) {
       // create new renderer
       label_rend = obj.createRenderer(labeltype);

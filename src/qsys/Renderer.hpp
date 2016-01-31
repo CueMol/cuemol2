@@ -105,7 +105,11 @@ namespace qsys {
     /// Called just before this object is unloaded
     virtual void unloading();
 
+    /// Get the center coordinates of the rendering contents
     virtual qlib::Vector4D getCenter() const =0;
+
+    /// Returns True if getCenter() can return valid center.
+    virtual bool hasCenter() const;
 
     /// Returns true if rendering contains transparent objects.
     /// (In OpenGL impl, transparent objects should be rendered without depth testing.)

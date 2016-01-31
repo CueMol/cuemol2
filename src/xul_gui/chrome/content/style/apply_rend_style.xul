@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+
+<!-- -*- xml -*- -->
+
+<dialog
+  id     = "apply-rendstyle-dialog"
+  windowtype="CueMol2:ApplyRendStyleDlg"
+  title  = "Apply Renderer Style"
+  xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  buttons="accept,cancel"
+  ondialogaccept="return gMain.onDialogAccept(event);">
+
+  <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/style/apply_rend_style.js"/>
+
+  <vbox flex="1">
+    <hbox>
+      <label value="Renderer:"/>
+      <label id="rend-info"/>
+    </hbox>
+
+    <label value="Styles:"/>
+    <hbox flex="1">
+      <spacer flex="1"/>
+      <label value="(low priority)"/>
+    </hbox>
+    <listbox id="style-list" rows="5" flex="1" onselect="return gMain.onStySelChg(event);"/>
+    <hbox flex="1">
+      <spacer flex="1"/>
+      <label value="(high priority)"/>
+    </hbox>
+
+    <hbox>
+      <toolbarbutton
+	id="add-button"
+	type="menu"
+	class="toolbar-button add-button"
+	disabled="true"
+	oncommand="return gMain.onAddCmd(event);"
+	tooltiptext="Add style">
+	<menupopup id="add-btn-popup"
+	  onpopupshowing="return gMain.onAddBtnPopupShowing(event)"/>
+      </toolbarbutton>
+      <toolbarbutton
+	id="delete-button"
+	class="toolbar-button delete-button"
+	disabled="true"
+	oncommand="return gMain.onDeleteCmd(event);"
+	tooltiptext="Delete"/>
+      <toolbarbutton
+	id="moveup-button"
+	class="toolbar-button moveup-button"
+	disabled="true"
+	oncommand="return gMain.onMoveUpDownCmd(event);"
+	tooltiptext="Move up"/>
+      <toolbarbutton
+	id="movedown-button"
+	class="toolbar-button movedown-button"
+	disabled="true"
+	oncommand="return gMain.onMoveUpDownCmd(event);"
+	tooltiptext="Move down"/>
+    </hbox>
+  </vbox>
+
+</dialog>
+

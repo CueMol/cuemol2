@@ -68,12 +68,19 @@ runtime_class Object
   ////
   // Renderer management
 
-  object<Renderer$> createRenderer(string);
+  /// Create new renderer (and attach to this object)
+  object<Renderer$> createRenderer(string type_name);
+
+  /// Create preset renderer (=renderer group)
+  object<Renderer$> createPresetRenderer(string preset_name, string grp_name, string name_prefix);
+
+  /// Attach existing renderer to this object
   void attachRenderer(object<Renderer$>);
 
   object<Renderer$> getRenderer(integer);
   object<Renderer$> getRendererByType(string);
   object<Renderer$> getRendererByName(string) => getRendByName;
+  object<Renderer$> getRendererByNameType(string name, string type) => getRendByName;
   boolean destroyRenderer(integer);
   string searchCompatibleRendererNames();
 

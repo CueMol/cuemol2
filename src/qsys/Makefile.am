@@ -48,6 +48,7 @@ style/StyleFile.cpp \
 style/StyleEditInfo.cpp \
 style/StyleColor.cpp \
 style/StyleStrData.cpp \
+style/StyleSupports.cpp \
 anim/AnimMgr.cpp \
 anim/AnimObj.cpp \
 anim/AnimObjEvent.cpp \

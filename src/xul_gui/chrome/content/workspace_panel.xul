@@ -242,14 +242,20 @@
 	  oncommand="cuemolui.panels.workspace.styleMol(event)">
 	  <menupopup/>
 	</menu>
+	<menuitem label="Edit style..." id="wspcPanelApplyStyleMenu"
+	  oncommand="cuemolui.panels.workspace.onApplyStyle(event);"/>
+	<menuitem label="Create style..." id="wspcPanelCreateStyleMenu"
+	  oncommand="cuemolui.panels.workspace.onCreateStyle(event);"/>
 
+	<menuseparator/>
+
+	<!-- Rendere specific menus -->
 	<menuitem label="Edit interaction list..." id="wspcPanelEditIntrMenu"
 	  oncommand="cuemolui.panels.workspace.onEditIntr(event);"/>
 
 	<menuitem label="Generate surface obj" id="wspcPanelGenSurfObjMenu"
 	  oncommand="cuemolui.panels.workspace.onGenSurfObj(event);"/>
 
-	<menuseparator/>
 	<menuitem label="Copy" id="wspcPanelCopyMenu"
 	  oncommand="cuemolui.panels.workspace.onCopyCmd(event);"/>
 	<menuseparator/>
@@ -257,6 +263,7 @@
 	<menuitem label="Delete" oncommand="cuemolui.panels.workspace.onDeleteCmd(event);"/>
 	<menuseparator/>
 	<menuitem label="Properties..." oncommand="cuemolui.panels.workspace.onPropCmd(event)"/>
+
       </menupopup>
 
       <!--
@@ -335,6 +342,13 @@
 	onpopupshowing="cuemolui.panels.workspace.onStyCtxtShowing(event)">
 	<menuitem label="New Style..."
 		  oncommand="cuemolui.panels.workspace.onNewCmd(event);"/>
+
+	<menuitem id="wspcStyleCtxtMenu-Copy" label="Copy" class="wspcStyCtxt-disable"
+	  oncommand="cuemolui.panels.workspace.onCopyStyle(event);"/>
+
+	<menuitem id="wspcStyleCtxtMenu-Paste" label="Paste"
+	  oncommand="cuemolui.panels.workspace.onPasteStyle(event);"/>
+
 	<menuitem label="Delete" class="wspcStyCtxt-disable"
 		  oncommand="cuemolui.panels.workspace.onDeleteCmd(event);"/>
 
@@ -362,6 +376,7 @@
 	  oncommand="cuemolui.panels.workspace.onRenameStyle(event)"/>
 	<menuitem label="Edit..." class="wspcStyCtxt-disable"
 	  oncommand="cuemolui.panels.workspace.onPropCmd(event)"/>
+
       </menupopup>
 
       <!--

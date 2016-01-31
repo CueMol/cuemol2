@@ -118,9 +118,6 @@ namespace qsys {
     /// Cameras in this scene
     camtab_t m_camtab;
 
-    /// Active view's ID
-    qlib::uid_t m_nActiveViewID;
-    
     SceneEventCaster *m_pEvtCaster;
 
     /// Undo/Redo manager for this scene
@@ -234,7 +231,29 @@ namespace qsys {
     /// get the number of object in the scene
     int getObjectCount() const { return m_data.size(); }
 
+    // Active object
+  private:
+    /// Active object's ID
+    qlib::uid_t m_nActiveObjID;
+    
+  public:
+    /// Set active object ID in this scene.
+    /// This scene also become active as a side effect.
+    void setActiveObjID(qlib::uid_t uid);
+
+    qlib::uid_t getActiveObjID() const {
+      return m_nActiveObjID;
+    }
+
+    // ObjectPtr getActiveObj() const {
+    // return getObject(m_nActiveObjID);
+    // }
+
+    //
     // Scripting interface wrapper
+    //
+
+    /// get all Object's UID list in comma-separated string
     LString getObjUIDList() const;
 
     /// Get current data structure in JSON string representation.
@@ -265,15 +284,27 @@ namespace qsys {
     /// Get current view count (size)
     int getViewCount() const { return m_viewtab.size(); }
 
+    // Active view
+  private:
+    /// Active view's ID
+    qlib::uid_t m_nActiveViewID;
+    
+  public:
+    /// Set active view
+    /// This scene also become active as a side effect.
     void setActiveViewID(qlib::uid_t uid);
+
     qlib::uid_t getActiveViewID() const {
       return m_nActiveViewID;
     }
 
-    ViewPtr getActiveView() const;
+    ViewPtr getActiveView() const {
+      return getView(m_nActiveViewID);
+    }
 
     //////////
     // Scripting interface wrapper
+
     LString getViewUIDList() const;
     // qlib::LVarArray getViewArray() const;
 
@@ -354,6 +385,20 @@ namespace qsys {
   private:
     void displayRendImpl(DisplayContext *pdc, ObjectPtr pObj, RendererPtr pRend);
     
+    // Active renderer
+  private:
+    /// Active renderer's ID
+    qlib::uid_t m_nActiveRendID;
+    
+  public:
+    /// Set active renderer ID in this scene.
+    /// This scene also become active as a side effect.
+    void setActiveRendID(qlib::uid_t uid);
+
+    qlib::uid_t getActiveRendID() const {
+      return m_nActiveRendID;
+    }
+
   public:
     ////////////////////////////////////////////////////////////
     // Undo/Redo

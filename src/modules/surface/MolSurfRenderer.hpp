@@ -120,10 +120,10 @@ public:
   ///////////////////////////////////////////
   // constructors / destructor
 
-  /** default constructor */
+  /// default constructor
   MolSurfRenderer();
 
-  /** destructor */
+  /// destructor
   virtual ~MolSurfRenderer();
 
   //////////////////////////////////////////////////////
@@ -141,6 +141,7 @@ public:
   // virtual qlib::uid_t detachObj();
 
   virtual Vector4D getCenter() const;
+  virtual bool hasCenter() const;
 
   ///////////////////////////////////////////
   // DispListRenderer implemention
@@ -290,7 +291,7 @@ private:
 
   bool getColorSca(const Vector4D &v, ColorPtr &rcol);
   bool getColorMol(const Vector4D &v, ColorPtr &rcol);
-  bool isShowVert(const Vector4D &v);
+  bool isShowVert(const Vector4D &v) const;
 
 
   /// Resolve mol name, set m_nTgtMolID, listen the MolCoord events, and returns MolCoord object

@@ -285,79 +285,16 @@ bool StyleSheet::removeByRe(const LString &regex)
   return (nremove>0);
 }
 
-////////////////////////////////////////////////////////////
-
-//StyleScrObject::~StyleScrObject()
-//{
-//}
-
-#if 0
-bool StyleScrObject::resetProperty(const LString &propnm)
+//static
+bool StyleSheet::resolve3(const LString &propnm, qlib::LScrObjBase *pThat, qlib::LVariant &variant)
 {
-  if (isPropDefault(propnm))
-    // we do not have to do anything
-    return true;
-
-  StyleSheet *pSS;
-  LString nested_name = propnm;
-  if (m_rootuid!=qlib::invalid_uid) {
-    StyleSupports *pRoot = qlib::ensureNotNull(qlib::ObjectManager::sGetObj<StyleSupports>(m_rootuid));
-    pSS = pRoot->getStyleSheet();
-    if (!m_thisname.isEmpty())
-      nested_name = m_thisname + "." + propnm;
-  }
-  else {
-    StyleSupports *pRoot = qlib::ensureNotNull(dynamic_cast<StyleSupports*>(this));
-    pSS = pRoot->getStyleSheet();
-  }
-
-  qlib::LVariant styleval;
-  if (!pSS->resolveStyleSheet2(nested_name, styleval))
-    // stylesheet value is not found --> default behaviour
-    return super_t::resetProperty(propnm);
-
-  ////////////
-  // postprocessing
-
-  // event supports & record old value
-  qlib::LPropEvent ev(propnm);
-  {
-    qlib::LVariant oldvalue;
-    bool res = getPropertyImpl(propnm, oldvalue);
-    if (res) {
-      ev.setOldValue(oldvalue);
-    }
-  }
-  ev.setNewDefault(true);
-
-  // set default flag
-  setDefaultPropFlag(propnm, true);
-
-  // Overwrite the property with stylesheet's value
-  bool res = setPropertyImpl(propnm, styleval);
-
-  // fire event
-  nodePropChgImpl(ev);
-
-  return res;
-}
-#endif
-
-bool StyleResetPropImpl::resetProperty(const LString &propnm,
-                                      qlib::LDefSupportScrObjBase *pThat)
-{
-  if (pThat->isPropDefault(propnm))
-    // we do not have to do anything
-    return true;
-
-  ////////////
-  // stylesheet resolution
-
   StyleSheet *pSS;
   StyleSupports *pRoot = NULL;
+
   LString nested_name = propnm;
   qlib::uid_t rootuid = pThat->getRootUID();
   LString thisname = pThat->getThisName();
+
   if (rootuid!=qlib::invalid_uid) {
     pRoot = qlib::ensureNotNull(qlib::ObjectManager::sGetObj<StyleSupports>(rootuid));
     if (!thisname.isEmpty())
@@ -366,40 +303,9 @@ bool StyleResetPropImpl::resetProperty(const LString &propnm,
   else {
     pRoot = qlib::ensureNotNull(dynamic_cast<StyleSupports*>(pThat));
   }
+
   pSS = pRoot->getStyleSheet();
 
-  qlib::LVariant styleval;
-  if (!pSS->resolveStyleSheet2(nested_name, styleval))
-    // stylesheet value is not found --> default behaviour
-    // return super_t::resetProperty(propnm);
-    return false; // caller should call super_t::resetProperty(propnm) to reset to default!!
-
-  ////////////
-  // reset to the stylesheet value
-
-  // event supports & record old value
-  qlib::LPropEvent ev(propnm);
-  {
-    qlib::LVariant oldvalue;
-    bool res = pThat->getPropertyImpl(propnm, oldvalue);
-    if (res)
-      ev.setOldValue(oldvalue);
-  }
-  ev.setNewDefault(true);
-
-  // set default flag
-  pThat->setDefaultPropFlag(propnm, true);
-
-  // Overwrite the property with stylesheet's value
-  pThat->setPropertyImpl(propnm, styleval);
-
-  ////////////
-  // postprocessing
-
-  // fire event
-  pThat->nodePropChgImpl(ev);
-
-  return true;
-  //return res;
+  return pSS->resolveStyleSheet2(nested_name, variant);
 }
 

@@ -18,7 +18,7 @@
 function getQm2MainObj() {
   return Components.classes['@mozilla.org/appshell/window-mediator;1'].
     getService(Components.interfaces.nsIWindowMediator).
-      getMostRecentWindow('cuemol2').gQm2Main;
+      getMostRecentWindow('cuemol2:mainwnd').gQm2Main;
 }
       	]]>
     </script>

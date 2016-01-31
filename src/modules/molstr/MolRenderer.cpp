@@ -206,6 +206,31 @@ Vector4D MolRenderer::getCenter() const
   return pos;
 }
 
+bool MolRenderer::hasCenter() const
+{
+  MolCoordPtr pMol = getClientMol();
+  if (pMol.isnull())
+    return false;
+  
+  AtomIterator iter(pMol, getSelection());
+    
+  // check if the selection matches more than one atoms.
+  int i=0;
+  for (iter.first(); iter.hasMore(); iter.next()) {
+    //MolAtomPtr pAtom = iter.get();
+    //pos += pAtom->getPos();
+    i++;
+    break;
+  }
+
+  if (i==0) {
+    return false;
+  }
+
+  return true;
+}
+
+
 //static
 ColorPtr MolRenderer::evalMolColor(ColorPtr pCol, ColorPtr pCol2)
 {

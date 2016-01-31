@@ -6,7 +6,9 @@
 
 <?xul-overlay href="chrome://cuemol2/content/cuemol2-scripts.xul"?>
 <?xul-overlay href="chrome://cuemol2/content/cuemol2-menus.xul"?>
+#ifdef XP_MACOSX
 <?xul-overlay href="chrome://cuemol2/content/cuemol2-macos-menus.xul"?>
+#endif
 <?xul-overlay href="chrome://cuemol2/content/topbar/cuemol2-ribbon.xul"?>
 <?xul-overlay href="chrome://cuemol2/content/anim/anim-ribbon.xul"?>
 
@@ -29,7 +31,7 @@
   xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
   xmlns:html="http://www.w3.org/1999/xhtml"
   id     = "cuemol2"
-  windowtype = "cuemol2"
+  windowtype = "cuemol2:mainwnd"
   title  = "&cuemol2.title;"
   width  = "1024"
   height = "768"

@@ -94,96 +94,61 @@ Qm2Main.prototype.setDefaultStyles = function(mol, rend)
     
 };
 
-Qm2Main.prototype.doSetupCompRend = function (sc, result)
+Qm2Main.prototype.getCompatibleRendPresetNames = function(aObjTypeName, aSceneID)
 {
-  var rendopt = {
-  obj_id: result.obj_id,
-  center: false
-  };
+  let stylem = cuemol.getService("StyleManager");
 
-  var orig_selstr = "";
-  var res;
-  
-  if (result.sel) {
-    orig_selstr = result.sel.toString();
+  let json_str = stylem.getStyleNamesJSON(0);
+  dd("getCompatibleRendPresetNames("+aObjTypeName+",0) JSON="+json_str);
+  let styles = JSON.parse(json_str);
+
+  if (aSceneID) {
+    json_str = stylem.getStyleNamesJSON(aSceneID);
+    dd("getCompatibleRendPresetNames("+aObjTypeName+","+aSceneID+") JSON="+json_str);
+    styles = styles.concat( JSON.parse(json_str) );
   }
   
-  /////
+  let nlen = styles.length;
+  if (nlen==0) {
+    return [];
+  }
 
-  rendopt.rendtype = "*group";
-  rendopt.rendname = result.rendname;
-  rendopt.new_obj = true;
+  let typenm = aObjTypeName + "-rendpreset";
+  let rval = [];
+  for (let i=0; i<nlen; ++i) {
+    if (styles[i].type!=typenm)
+      continue;
+    let name = styles[i].name;
+    let desc = styles[i].desc;
+	
+    rval.push({"name": name, "desc": desc});
+  }
 
-  let resgrp = this.doSetupRend(sc, rendopt);
-
-  /////
-
-  rendopt.rendtype = "ribbon";
-  rendopt.rendname = result.rendname+"prot";
-  if (orig_selstr)
-    selstr = "protein & ("+orig_selstr+")";
-  else
-    selstr = "protein";
-  rendopt.sel = cuemol.makeSel(selstr);
-  rendopt.new_obj = false;;
-
-  res = this.doSetupRend(sc, rendopt);
-  res.group = resgrp.name;
-
-  /////
-
-  rendopt.rendtype = "nucl";
-  rendopt.rendname = result.rendname+"nucl";
-  if (orig_selstr)
-    selstr = "nucleic & ("+orig_selstr+")";
-  else
-    selstr = "nucleic";
-  rendopt.sel = cuemol.makeSel(selstr);
-  rendopt.new_obj = false;
-
-  res = this.doSetupRend(sc, rendopt);
-  res.group = resgrp.name;
-
-  /////
-
-  rendopt.rendtype = "ballstick";
-  rendopt.rendname = result.rendname+"lgnd";
-  if (orig_selstr)
-    selstr = "(!nucleic&!protein) & ("+orig_selstr+")";
-  else
-    selstr = "!nucleic&!protein";
-  rendopt.sel = cuemol.makeSel(selstr);
-  rendopt.new_obj = false;
-
-  res = this.doSetupRend(sc, rendopt);
-  res.group = resgrp.name;
-
-  /////
-
-  if (result.center) {
-    let view = this.mMainWnd.currentViewW;
-    let obj = sc.getObject(result.obj_id);
-    //let pos = obj.getCenterPos(false);
-    //view.setViewCenter(pos);
-    if (orig_selstr)
-      obj.fitView2(result.sel, view);
-    else
-      obj.fitView(false, view);
-  }  
-
+  dd("getCompatibleRendPresetNames result="+rval.join(","));
+  return rval;
 };
+
 
 /// Do actual task for renderer setup:
 /// Create renderer, and set initial props.
 Qm2Main.prototype.doSetupRend = function(sc, result)
 {
-  if (result.rendtype=="composite") {
-    this.doSetupCompRend(sc, result);
-    return;
-  }
+  //if (result.rendtype=="composite") {
+  //this.doSetupCompRend(sc, result);
+  //return;
+  //}
 
   let obj = sc.getObject(result.obj_id);
-  let rend = obj.createRenderer(result.rendtype);
+  let rend = null;
+
+  let preset_re = /RendPreset$/;
+  //if (result.rendtype=="composite") {
+  if (result.rendtype.match(preset_re)) {
+    rend = obj.createPresetRenderer(result.rendtype, result.rendname, result.rendname);
+  }
+  else {
+    rend = obj.createRenderer(result.rendtype);
+  }
 
   let clsname = obj._wrapped.getClassName();
 
@@ -211,6 +176,8 @@ Qm2Main.prototype.doSetupRend = function(sc, result)
     rend.sel = result.sel;
 
   if (result.center) {
+    //alert("result.center="+result.center);
+    //alert("rend.has_center="+rend.has_center);
     let view = this.mMainWnd.currentViewW;
     if (clsname === "DensityMap") {
       // in the case of density map,
@@ -218,7 +185,7 @@ Qm2Main.prototype.doSetupRend = function(sc, result)
       let pos = view.getViewCenter();
       rend.center = pos;
     }
-    else {
+    else if (rend.has_center) {
       var pos = rend.getCenter();
       view.setViewCenter(pos);
     }
@@ -243,6 +210,7 @@ Qm2Main.prototype.setupRendByObjID = function(aObjID, aRendGrp)
   var rend;
   let obj = cuemol.getObject(aObjID);
   let sc = obj.getScene();
+  let sceneID = sc.uid;
 
   let data  = new Array();
   let i = 0;
@@ -253,9 +221,11 @@ Qm2Main.prototype.setupRendByObjID = function(aObjID, aRendGrp)
   data[i].rend_types = obj.searchCompatibleRendererNames();
   data[i].obj_type = obj._wrapped.getClassName();
 
+  data[i].preset_types = this.getCompatibleRendPresetNames(data[i].obj_type, sceneID);
+
   let option = new Object();
   option.target = data;
-  option.sceneID = sc.uid;
+  option.sceneID = sceneID;
   option.ok = false;
   option.bEditObjName = false;
 
@@ -305,7 +275,7 @@ Qm2Main.prototype.deleteRendByID = function(aRendID)
   var objname = "";
   try { name = rend.name; objname = obj.name; } catch (e) {}
   
-  scene.startUndoTxn("Delete renderer "+objname+"/"+name);
+  scene.startUndoTxn("Delete renderer: "+objname+"/"+name);
   var ok;
   try {
     ok = obj.destroyRenderer(aRendID);

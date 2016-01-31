@@ -120,7 +120,7 @@ if (!("MolSurfCommPage" in cuemolui)) {
       if (elem)
 	this.mTargObj.selectObjectByName(elem.value);
 
-      var elem = this.mMain.findPropData("showsel");
+      elem = this.mMain.findPropData("showsel");
       var selstr = elem.value;
       this.mShowSel.origSel = selstr;
       this.mShowSel.buildBox();
@@ -194,7 +194,9 @@ if (!("MolSurfCommPage" in cuemolui)) {
 
     klass.updateDisabledState = function ()
     {
-      let id = this.mDrawMode.value;
+      var id;
+
+      id = this.mDrawMode.value;
       switch (id) {
       case "fill":
 	this.mLinew.disabled = true;
@@ -215,7 +217,7 @@ if (!("MolSurfCommPage" in cuemolui)) {
       this.mSurfType.disabled = true;
       this.mDetail.disabled = true;
 
-      var id = this.mPaintMode.value;
+      id = this.mPaintMode.value;
       switch (id) {
       case "solid":
       case "potential":
@@ -232,5 +234,8 @@ if (!("MolSurfCommPage" in cuemolui)) {
     return ctor;
 
   } ) ();
+
 }
+
+dd("cuemolui.MolSurfCommPage="+cuemolui.MolSurfCommPage);
 

@@ -80,6 +80,13 @@ bool StyleSet::getColor(const LString &rkey, ColorPtr &rcol) const
   return true;
 }
 
+ColorPtr StyleSet::getColor(const LString &key) const
+{
+  ColorPtr pRet;
+  getColor(key, pRet);
+  return pRet;
+}
+
 bool StyleSet::setColor(const LString &rkey, const ColorPtr &pCol)
 {
   LString key = rkey.toLowerCase();
@@ -94,6 +101,7 @@ bool StyleSet::setColor(const LString &rkey, const ColorPtr &pCol)
   MB_ASSERT(res);
   m_bModified = true;
   return true;
+  // TO DO: set pending event!!
 }
 
 bool StyleSet::hasColor(const LString &rkey) const
@@ -115,6 +123,31 @@ bool StyleSet::removeColor(const LString &rkey)
   m_bModified = true;
   m_palette.erase(iter);
   return true;
+}
+
+LString StyleSet::getColorDefsJSON(bool bParen/*=true*/) const
+{
+  LString rval;
+  if (bParen)
+    rval += "[";
+
+  bool bfirst = true;
+  StyleSet::coldata_iterator iter = colBegin();
+  StyleSet::coldata_iterator eiter = colEnd();
+  for (; iter!=eiter; ++iter) {
+    const LString &fkey = iter->first;
+    
+    if (!bfirst)
+      rval += ",";
+    else
+      bfirst = false;
+    
+    rval += "\""+fkey.escapeQuots()+"\"";
+  }
+
+  if (bParen)
+    rval += "]";
+  return rval;
 }
 
 /////////////////////////
@@ -164,7 +197,67 @@ bool StyleSet::removeString(const LString &key)
   return true;
 }
 
-/////////////////////////
+LString StyleSet::getStrData(const LString &cat, const LString &key) const
+{
+  LString ckey = StyleSet::makeStrDataKey("string", cat, key);
+  LString rval;
+  getString(ckey, rval);
+  return rval;
+}
+
+bool StyleSet::hasStrData(const LString &cat, const LString &key) const
+{
+  LString ckey = StyleSet::makeStrDataKey("string", cat, key);
+  return hasString(ckey);
+}
+
+bool StyleSet::setStrData(const LString &cat, const LString &key, const LString &value)
+{
+  LString ckey = StyleSet::makeStrDataKey("string", cat, key);
+  return setString(ckey, value);
+  // TO DO: set pending event!!
+}
+
+bool StyleSet::removeStrData(const LString &cat, const LString &key)
+{
+  LString ckey = StyleSet::makeStrDataKey("string", cat, key);
+  return removeString(ckey);
+}
+
+/// Get string data names with specified category in JSON format
+LString StyleSet::getStrDataNamesJSON(const LString &dbname, const LString &cat, bool bParen) const
+{
+  LString prefix = dbname + DELIM + cat + DELIM;
+  int nPsLen = prefix.length();
+
+  LString rval;
+  if (bParen)
+	  rval += "[";
+  bool bfirst = true;
+
+  strdata_iterator iter = strBegin();
+  strdata_iterator eiter = strEnd();
+
+  for (; iter!=eiter; ++iter) {
+    const LString &fkey = iter->first;
+    if (!fkey.startsWith(prefix)) continue;
+    LString key = fkey.substr(nPsLen);
+    
+    if (!bfirst)
+      rval += ",";
+    else
+      bfirst = false;
+    
+    rval += "\""+key.escapeQuots()+"\"";
+  }
+
+  if (bParen)
+	  rval += "]";
+  return rval;
+}
+
+////////////////////////////////////////////////////////////////////
+// Node data (styles) implementation
 
 LDom2Node *StyleSet::getData(const LString &key) const
 {
@@ -180,6 +273,60 @@ bool StyleSet::putData(const LString &key, LDom2Node *pNode)
   if (res)
     m_bModified = true;
   return res;
+}
+
+bool StyleSet::removeData(const LString &key)
+{
+  data_t::iterator iter = m_data.find(key);
+  if (iter==m_data.end())
+    return false;
+
+  LDom2Node *pNode = iter->second;
+  if (pNode!=NULL)
+    delete pNode;
+
+  m_data.erase(iter);
+  return true;
+}
+
+LString StyleSet::getStyleNamesJSON(bool bParen) const
+{
+  LString postfix = LString(DELIM) + "style";
+  int nPsLen = postfix.length();
+
+  LString rval;
+  if (bParen)
+    rval += "[";
+  bool bfirst = true;
+
+  data_iterator iter = dataBegin();
+  data_iterator eiter = dataEnd();
+
+  for (; iter!=eiter; ++iter) {
+    const LString &fkey = iter->first;
+    if (!fkey.endsWith(postfix)) continue;
+    LString key = fkey.substr(0, fkey.length()-nPsLen);
+    
+    LDom2Node *pNode = iter->second;
+    LString desc = pNode->getStrAttr("desc");
+    LString type = pNode->getStrAttr("type");
+    
+    if (!bfirst)
+      rval += ",";
+    else
+      bfirst = false;
+    
+    rval += "{\"name\":";
+    rval += "\""+key.escapeQuots()+"\",";
+    rval += "\"desc\":";
+    rval += "\""+desc.escapeQuots()+"\",";
+    rval += "\"type\":";
+    rval += "\""+type.escapeQuots()+"\"}";
+  }
+
+  if (bParen)
+    rval += "]";
+  return rval;
 }
 
 //////////
@@ -213,6 +360,31 @@ bool StyleSet::putMaterial(const LString &id, int type, double value)
 Material *StyleSet::getMaterial(const LString &id) const
 {
   return m_matdata.get(id);
+}
+
+LString StyleSet::getMaterialNamesJSON(bool bParen/*=true*/) const
+{
+  LString rval = "";
+  if (bParen)
+    rval += "[";
+
+  bool bfirst = true;
+  matdata_iterator iter = matBegin();
+  matdata_iterator eiter = matEnd();
+  for (; iter!=eiter; ++iter) {
+    const LString &fkey = iter->first;
+    
+    if (!bfirst)
+      rval += ",";
+    else
+      bfirst = false;
+    
+    rval += "\""+fkey.escapeQuots()+"\"";
+  }
+
+  if (bParen)
+    rval += "]";
+  return rval;
 }
 
 //////////////////////////////////////////////////
@@ -302,67 +474,6 @@ void StyleSet::writeStyleToDataNode(qlib::LDom2Node *pNode) const
 void StyleSet::writeMatToDataNode(qlib::LDom2Node *pNode) const
 {
   // TO DO: implementation
-}
-
-/// serialization (to JSON string, key only)
-LString StyleSet::getStrDataKeysJSON(const LString &dbname, const LString &cat) const
-{
-  LString prefix = dbname + DELIM + cat + DELIM;
-  int nPsLen = prefix.length();
-
-  LString rval;
-  bool bfirst = true;
-
-  strdata_iterator iter = strBegin();
-  strdata_iterator eiter = strEnd();
-
-  for (; iter!=eiter; ++iter) {
-    const LString &fkey = iter->first;
-    if (!fkey.startsWith(prefix)) continue;
-    LString key = fkey.substr(nPsLen);
-    
-    if (!bfirst)
-      rval += ",";
-    else
-      bfirst = false;
-    
-    rval += "\""+key.escapeQuots()+"\"";
-  }
-
-  return rval;
-}
-
-LString StyleSet::getStyleKeysJSON() const
-{
-  LString postfix = LString(DELIM) + "style";
-  int nPsLen = postfix.length();
-
-  LString rval;
-  bool bfirst = true;
-
-  data_iterator iter = dataBegin();
-  data_iterator eiter = dataEnd();
-
-  for (; iter!=eiter; ++iter) {
-    const LString &fkey = iter->first;
-    if (!fkey.endsWith(postfix)) continue;
-    LString key = fkey.substr(0, fkey.length()-nPsLen);
-    
-    LDom2Node *pNode = iter->second;
-    LString desc = pNode->getStrAttr("desc");
-    
-    if (!bfirst)
-      rval += ",";
-    else
-      bfirst = false;
-    
-    rval += "{\"name\":";
-    rval += "\""+key.escapeQuots()+"\",";
-    rval += "\"desc\":";
-    rval += "\""+desc.escapeQuots()+"\"}";
-  }
-
-  return rval;
 }
 
 // TO DO: deserialization code should be moved to here.

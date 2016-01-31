@@ -74,6 +74,8 @@
     <commandset id="mainCommandSet">
       <command id="cmd_new_tab" oncommand="gQm2Main.onNewTabWindow(false);"
 	tooltiptext="&new_tab.label;"/>
+      <command id="cmd_new_window" oncommand="gQm2Main.onNewTabWindow(true)"
+	tooltiptext="&new_window.label;"/>
       <command id="cmd_close_tab" oncommand="gQm2Main.onCloseTab()"/>
       <command id="cmd_open_scene" oncommand="gQm2Main.onOpenScene();" tooltiptext="&open_scene.label;"/>
       <command id="cmd_save_scene" oncommand="gQm2Main.onSaveScene()" tooltiptext="&save_scene.label;"/>
@@ -91,12 +93,17 @@
       <command id="cmd_config" oncommand="gQm2Main.showConfigDlg()"/>
 
       <command id="cmd_toggle_hwstereo" oncommand="gQm2Main.toggleHWStereo()"/>
+
     </commandset>
 
     <keyset id="mainKeyset">
       <key id="mkNewTab"
 	key="&new_tab.commandkey;"
 	command="cmd_new_tab"
+	modifiers="accel"/>
+      <key id="mkNewWindow"
+	key="&new_window.commandkey;"
+	command="cmd_new_window"
 	modifiers="accel"/>
       <key id="mkOpenFile"
 	key="&open_file.commandkey;"
@@ -178,11 +185,11 @@
 	<menu id="file-menu" label="&menu_file.label;" accesskey="&menu_file.accesskey;">
 	  <menupopup id="file-popup">
 
-	    <!--
-	      <menuitem label="&new_window.label;"
+	    <menuitem label="&new_window.label;"
 	      accesskey="&new_window.accesskey;"
-	      oncommand="gQm2Main.onNewTabWindow(true);" />
-	      -->
+	      key="mkNewWindow"
+	      command="cmd_new_window"/>
+
 	    <menuitem label="&new_tab.label;"
 	      accesskey="&new_tab.accesskey;"
 	      key="mkNewTab"
@@ -391,6 +398,11 @@
 
 	    <menu label="Panels" id="window-leftpanels-menu">
 	      <menupopup id="window-leftpanels-popup"/>
+	    </menu>
+
+	    <menu label="Windows" id="window-windowlist-menu">
+	      <menupopup id="window-windowlist-popup"
+		onpopupshowing="gQm2Main.onWinListPopupShowing(event)"/>
 	    </menu>
 	  </menupopup>
 	</menu>

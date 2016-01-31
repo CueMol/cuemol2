@@ -17,7 +17,7 @@
 
 #include <gfx/Material.hpp>
 
-#define STYLEMGR_DB_DELIM "\a"
+#define STYLEMGR_DB_DELIM ":"
 
 namespace qlib {
   class PrintStream;
@@ -72,7 +72,7 @@ namespace qsys {
     /// source file name this style is loaded from
     LString m_source;
 
-    /// ID of this style set
+    /// Name (string ID) of this style set
     LString m_name;
 
     /// ID override flag (for deserialization)
@@ -120,17 +120,27 @@ namespace qsys {
     //////////
     // Color data methods
 
+    typedef palette_t::const_iterator coldata_iterator;
+    coldata_iterator colBegin() const { return m_palette.begin(); }
+    coldata_iterator colEnd() const { return m_palette.end(); }
+
     bool getColor(const LString &key, ColorPtr &rcol) const;
     bool hasColor(const LString &rkey) const;
     bool setColor(const LString &rkey, const ColorPtr &pCol);
     bool removeColor(const LString &rkey);
 
-    typedef palette_t::const_iterator coldata_iterator;
-    coldata_iterator colBegin() const { return m_palette.begin(); }
-    coldata_iterator colEnd() const { return m_palette.end(); }
+    /// Get color by color name (for scripting interface)
+    ColorPtr getColor(const LString &key) const;
+
+    /// Get list of color definitions in JSON format
+    LString getColorDefsJSON(bool bParen=true) const;
 
     //////////
     // String data methods
+
+    typedef strdata_t::const_iterator strdata_iterator;
+    strdata_iterator strBegin() const { return m_strdata.begin(); }
+    strdata_iterator strEnd() const { return m_strdata.end(); }
 
     /// get string data (returns true if found)
     bool getString(const LString &key, LString &rval) const;
@@ -140,19 +150,64 @@ namespace qsys {
     /// remove string data (returns true if removed)
     bool removeString(const LString &key);
 
-    typedef strdata_t::const_iterator strdata_iterator;
-    strdata_iterator strBegin() const { return m_strdata.begin(); }
-    strdata_iterator strEnd() const { return m_strdata.end(); }
+    LString getStrData(const LString &cat, const LString &key) const;
 
-    //////////
+    bool hasStrData(const LString &cat, const LString &key) const;
+
+    bool setStrData(const LString &cat, const LString &key, const LString &value);
+
+    bool removeStrData(const LString &cat, const LString &key);
+
+    /// Get string data names with specified category in JSON format
+    /// dbname: data base name
+    /// cat: category
+    LString getStrDataNamesJSON(const LString &dbname, const LString &cat, bool bParen) const;
+
+    LString getStrDataNamesJSON(const LString &cat) const {
+      return getStrDataNamesJSON("string", cat, true);
+    }
+
+    //////////////////////////
     // Structured data methods
 
+    /// get structured data (LDom2Node) by key
     LDom2Node *getData(const LString &key) const;
+    /// Put structured data (LDom2Node) with key name
+    ///  this method returns false if key name is already used
     bool putData(const LString &key, LDom2Node *pNode);
+    /// Remove structured data by key name
+    bool removeData(const LString &key);
 
     typedef data_t::const_iterator data_iterator;
     data_iterator dataBegin() const { return m_data.begin(); }
     data_iterator dataEnd() const { return m_data.end(); }
+
+    // style-specific structured data methods
+
+    /// Get style node by style name
+    ///  This method is a wrapper for getData() for style nodes.
+    LDom2Node *getStyleNode(const LString &name) const {
+      LString key = StyleSet::makeStyleKey(name);
+      return getData(key);
+    }
+
+    /// Put style node by style name
+    ///  This method is a wrapper for putData() for style nodes.
+    ///  This method returns false if key name is already used
+    bool putStyleNode(const LString &name, LDom2Node *pNode) {
+      LString key = StyleSet::makeStyleKey(name);
+      return putData(key, pNode);
+    }
+    /// Remove style node by style name
+    ///  This method is a wrapper of removeData() for style nodes.
+    bool removeStyleNode(const LString &name) {
+      LString key = StyleSet::makeStyleKey(name);
+      return removeData(key);
+    }
+
+    /// Get style info in JSON format
+    /// bParen: with/without array parens
+    LString getStyleNamesJSON(bool bParen=true) const;
 
     //////////
     // Material data methods
@@ -163,6 +218,9 @@ namespace qsys {
     typedef matdata_t::const_iterator matdata_iterator;
     matdata_iterator matBegin() const { return m_matdata.begin(); }
     matdata_iterator matEnd() const { return m_matdata.end(); }
+
+    LString getMaterialNamesJSON(bool bParen = true) const;
+    
 
     //////////
     // serialization/deserialization methods
@@ -182,8 +240,13 @@ namespace qsys {
 
     //////////
 
+    /// decode string data key
     static bool decodeStrDataKey(const LString &inkey, LString &dbname, LString &tagname, LString &id);
 
+    /// Convert selection, etc to the string data key
+    /// dbname:
+    /// tagname:
+    /// id:
     static inline LString makeStrDataKey(const LString &dbname, const LString &tagname, const LString &id)
     {
       return dbname + STYLEMGR_DB_DELIM  + tagname  +STYLEMGR_DB_DELIM + id;
@@ -191,15 +254,13 @@ namespace qsys {
 
     //
 
+    /// Convert the style name to the structured data key name
     static inline LString makeStyleKey(const LString &arg)
     {
       return arg + STYLEMGR_DB_DELIM + "style";
     }
 
     //
-
-    LString getStrDataKeysJSON(const LString &dbname, const LString &cat) const;
-    LString getStyleKeysJSON() const;
 
   };
 

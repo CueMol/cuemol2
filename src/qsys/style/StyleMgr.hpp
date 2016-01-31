@@ -104,73 +104,10 @@ namespace qsys {
     /// Check whether the styles belong to the scene (scene ID) is modified or not.
     bool isModified(qlib::uid_t nSceneID) const;
 
-    //////////////////////////////
-    // basic access operations
-
-    /// get style color
-    ColorPtr getColor(const LString &key);
-    /// get style color (in scene scope)
-    ColorPtr getColor(const LString &key, qlib::uid_t nScopeID);
-
-    /// get color from the specified style set (nScopeID:nStyleSetID)
-    ColorPtr getColor(const LString &key, qlib::uid_t nScopeID, qlib::uid_t nStyleSetID);
-
-    /// set color to the specified style set (nScopeID:nStyleSetID)
-    ///  returns true if new color is appended (impl: StyleColor.cpp)
-    bool setColor(const LString &key, const ColorPtr &color,
-                  qlib::uid_t nScopeID, qlib::uid_t nStyleSetID);
-
-    /// remove color from the specified style set (nScopeID:nStyleSetID)
-    ///   returns true if color is removed successfully (impl: StyleColor.cpp)
-    bool removeColor(const LString &key, qlib::uid_t nScopeID, qlib::uid_t nStyleSetID);
-
-    /// Get color definitions (for GUI, defined in StyleColor.cpp)
-    LString getColorDefsJSON(qlib::uid_t nScopeID, qlib::uid_t nStyleSetID = qlib::invalid_uid);
-
-    /// Compile and create new color object (for GUI)
-    ColorPtr compileColor(const LString &rep, qlib::uid_t nScopeID);
     
-    //////////
-
-    Material *getMaterial(const LString &mat_id, qlib::uid_t nScopeID);
-
-    /// Get renderer-type-dependent string material definition
-    LString getMaterial(const LString &mat_id, const LString &rend_type);
-
-    /// Get material definition for internal (OpenGL) renderer
-    ///  (nType is type enum defined in Material.hpp)
-    double getMaterial(const LString &mat_id, int nType);
-
-    /// Get material name list (for GUI)
-    LString getMaterialNamesJSON(qlib::uid_t nScopeID, qlib::uid_t nStyleSetID = qlib::invalid_uid);
-
-    //////////
-
-    LString getConfig(const LString &key, const LString &rend_type);
-
-    LString getStrData(const LString &cat, const LString &key, qlib::uid_t nScopeID);
-    LString getStrData(const LString &cat, const LString &key, qlib::uid_t nScopeID, qlib::uid_t nStyleSetID);
-
-    /// set string data to the specified style set (nScopeID:nStyleSetID)
-    ///  returns true if new data is appended
-    bool setStrData(const LString &cat, const LString &key, const LString &value,
-                    qlib::uid_t nScopeID, qlib::uid_t nStyleSetID);
-
-    /// remove string data from the specified style set (nScopeID:nStyleSetID)
-    ///   returns true if data is removed successfully
-    bool removeStrData(const LString &cat, const LString &key, qlib::uid_t nScopeID, qlib::uid_t nStyleSetID);
-
-    /// Get string definitions (for GUI)
-    LString getStrDataDefsJSON(const LString &cat,
-                               qlib::uid_t nScopeID,
-                               qlib::uid_t nStyleSetID = qlib::invalid_uid);
-
-  private:
-    LString getStrImpl(const LString &key, qlib::uid_t nScopeID);
-
-  public:
-    ////////////////////////////////////////////////////////////
-    // StyleSet manipulations (impl is in StyleMgrStyleImpl.cpp)
+    //////////////////////////////////////
+    // StyleSet operation methods
+    //  (impl is in StyleMgrStyleImpl.cpp)
     
     qlib::uid_t hasStyleSet(const LString &id, qlib::uid_t ctxt);
 
@@ -186,41 +123,138 @@ namespace qsys {
     /// Destroy style set by UID (nStyleSetID)
     bool destroyStyleSet(qlib::uid_t nScopeID, qlib::uid_t nStyleSetID);
 
-    /// Save style set to file (impl: StyleMgrStyleImpl.cpp)
-    bool saveStyleSetToFile(qlib::uid_t nScopeID, qlib::uid_t nStyleSetID, const LString &path);
-
-    /// Load styleset from file and returns styleset UID (impl: StyleMgrStyleImpl.cpp)
-    qlib::uid_t loadStyleSetFromFile(qlib::uid_t nScopeID, const LString &path, bool bReadOnly);
-
+    // TO DO: remove impl (use StyleSet method)
+    /// Get source property of the style set
     LString getStyleSetSource(qlib::uid_t nStyleSetID) const;
     
     /// Get StyleSet by StyleSetID
     StyleSetPtr getStyleSetById2(qlib::uid_t nStyleSetID) const;
 
+    // TO DO: remove impl
     /// Get StyleSet by StyleSetID (old impl)
     StyleSetPtr getStyleSetById(qlib::uid_t nScopeID, qlib::uid_t nStyleSetID)
     {
       return getStyleSetById2(nStyleSetID);
     }
 
-    ////////
-    // Style manipulations (impl is in StyleMgrStyleImpl.cpp)
+    /// Save style set to file (impl: StyleMgrStyleImpl.cpp)
+    bool saveStyleSetToFile(qlib::uid_t nScopeID, qlib::uid_t nStyleSetID, const LString &path);
 
-    /// Get style node by name in dot notation
+    /// Load styleset from file and returns styleset UID (impl: StyleMgrStyleImpl.cpp)
+    qlib::uid_t loadStyleSetFromFile(qlib::uid_t nScopeID, const LString &path, bool bReadOnly);
+
+    /// Retrieve info for style sets of the scene
+    LString getStyleSetsJSON(qlib::uid_t nSceneID);
+
+    //////////////////////////////////////////////////////////////////////
+    // Color methods
+
+    /// get style color
+    ColorPtr getColor(const LString &key);
+    /// get style color (in scene scope)
+    ColorPtr getColor(const LString &key, qlib::uid_t nScopeID);
+
+    // TO DO: remove impl (use StyleSet method)
+    /// get color from the specified style set (nScopeID:nStyleSetID)
+    ColorPtr getColor(const LString &key, qlib::uid_t nScopeID, qlib::uid_t nStyleSetID);
+
+    // TO DO: remove impl (use StyleSet method)
+    /// set color to the specified style set (nScopeID:nStyleSetID)
+    ///  returns true if new color is appended (impl: StyleColor.cpp)
+    bool setColor(const LString &key, const ColorPtr &color,
+                  qlib::uid_t nScopeID, qlib::uid_t nStyleSetID);
+
+    // TO DO: remove impl (use StyleSet method)
+    /// remove color from the specified style set (nScopeID:nStyleSetID)
+    ///   returns true if color is removed successfully (impl: StyleColor.cpp)
+    bool removeColor(const LString &key, qlib::uid_t nScopeID, qlib::uid_t nStyleSetID);
+
+    /// Get color definitions (for GUI, defined in StyleColor.cpp)
+    LString getColorDefsJSON(qlib::uid_t nScopeID, qlib::uid_t nStyleSetID = qlib::invalid_uid);
+
+    /// Compile and create new color object (for GUI)
+    ColorPtr compileColor(const LString &rep, qlib::uid_t nScopeID);
+    
+    //////////////////////////////////////////////////////////////////////
+    // Material methods
+
+    Material *getMaterial(const LString &mat_id, qlib::uid_t nScopeID);
+
+    /// Get renderer-type-dependent string material definition
+    LString getMaterial(const LString &mat_id, const LString &rend_type);
+
+    /// Get material definition for internal (OpenGL) renderer
+    ///  (nType is type enum defined in Material.hpp)
+    double getMaterial(const LString &mat_id, int nType);
+
+    /// Get material name list (for GUI)
+    LString getMaterialNamesJSON(qlib::uid_t nScopeID, qlib::uid_t nStyleSetID = qlib::invalid_uid);
+
+    //////////////////////////////////////////////////////////////////////
+    // String data methods
+
+    LString getConfig(const LString &key, const LString &rend_type);
+
+    LString getStrData(const LString &cat, const LString &key, qlib::uid_t nScopeID);
+
+    /// Get string definitions (for GUI)
+    LString getStrDataDefsJSON(const LString &cat,
+                               qlib::uid_t nScopeID,
+                               qlib::uid_t nStyleSetID = qlib::invalid_uid);
+
+    // TO DO: remove impl (use StyleSet method)
+    LString getStrData(const LString &cat, const LString &key, qlib::uid_t nScopeID, qlib::uid_t nStyleSetID);
+
+    // TO DO: remove impl (use StyleSet method)
+    /// set string data to the specified style set (nScopeID:nStyleSetID)
+    ///  returns true if new data is appended
+    bool setStrData(const LString &cat, const LString &key, const LString &value,
+                    qlib::uid_t nScopeID, qlib::uid_t nStyleSetID);
+
+    // TO DO: remove impl (use StyleSet method)
+    /// remove string data from the specified style set (nScopeID:nStyleSetID)
+    ///   returns true if data is removed successfully
+    bool removeStrData(const LString &cat, const LString &key, qlib::uid_t nScopeID, qlib::uid_t nStyleSetID);
+
+  private:
+    LString getStrImpl(const LString &key, qlib::uid_t nScopeID);
+
+  public:
+    /////////////////////////////////////////////////////////
+    // Style methods (impl is partly in StyleMgrStyleImpl.cpp)
+
+    /// Get style node by style name
+    LDom2Node *getStyleNode(const LString &stylename, qlib::uid_t ctxt)
+    {
+      return getStyleNodeImpl(LString(), stylename, LString(), ctxt, false);
+    }
+
+    /// Get style node by style name and prop name in dot notation
     LDom2Node *getStyleNode2(const LString &stylename,
                              const LString &prop_names,
-                             qlib::uid_t ctxt);
+                             qlib::uid_t ctxt) {
+      return getStyleNodeImpl(LString(), stylename, prop_names, ctxt, false);
+    }
 
-    LDom2Node *getStyleNode2(const LString &set_id,
+  private:
+    LDom2Node *getStyleNodeImpl(const LString &set_id,
                              const LString &stylename,
                              const LString &prop_names,
                              qlib::uid_t ctxt,
                              bool bCreate);
-
+  public:
     LString getStyleValue(qlib::uid_t ctxt, const LString &setid, const LString &dotname);
     
     void setStyleValue(qlib::uid_t ctxt, const LString &setid, const LString &dotname,
                        const LString &value);
+
+    LString getStyleNamesJSON(qlib::uid_t nSceneID);
+
+    void createStyleFromObj(qlib::uid_t ctxt, qlib::uid_t setid, const LString &name,
+                            const qlib::LScrSp<qlib::LScrObjBase> &pSObj);
+
+  private:
+    LDom2Node *extractStyleNodeFromObj(qlib::uid_t ctxt, qlib::LScrObjBase *pSObj, int nLevel, bool bResolveStyle);
 
   private:
     /// Search style nodes recursively to get a node with name, keyname
@@ -228,9 +262,10 @@ namespace qsys {
 
     void fireEventImpl(qlib::uid_t uid, const LString &setname);
 
-  private:
     ////////////////////////////////////////////////////////////
     // Style event management
+
+  private:
     StyleEventCaster *m_pLsnrs;
 
     typedef std::set<std::pair<qlib::uid_t, LString> > PendEventSet;
@@ -248,14 +283,6 @@ namespace qsys {
 
     void clearPendingEvents();
     void firePendingEvents();
-
-    ////////////////////////////////////////////////////////////
-    // script specific interface
-
-    LString getStyleNamesJSON(qlib::uid_t nSceneID);
-
-    /// Retrieve info for style sets of the scene
-    LString getStyleSetsJSON(qlib::uid_t nSceneID);
 
     //////////
     // Initializer/finalizer

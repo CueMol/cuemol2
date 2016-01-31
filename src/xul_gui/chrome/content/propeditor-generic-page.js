@@ -247,7 +247,7 @@ klass.onLoad = function ()
 klass.populateData = function (obj)
 {
   var json = obj._wrapped.getPropsJSON();
-  dd("GenPropEdit.populateData> jsonobj: "+json);
+  // dd("GenPropEdit.populateData> jsonobj: "+json);
 
   this.mObjData = this.expandChildNodes(JSON.parse(json));
 
@@ -684,13 +684,15 @@ klass.applyChangesImpl = function ()
   scene.startUndoTxn("Change props");
   try {
 
+    //var chgRecur = function (aObjData, aPfx) {
     function chgRecur(aObjData, aPfx) {
       for (var i=0; i<aObjData.length; ++i) {
         var elem = aObjData[i];
         var test_name = aPfx+elem.name;
 
-        // dd("GenPropEdit.onDlgAc> prop name="+test_name+", type="+typeof elem.value);
+        //dd("GenPropEdit.onDlgAc> prop name="+test_name+", type="+typeof elem.value);
         if (typeof elem.value == 'object') {
+          dd("GenPropEditor> recursive chgRecur called for "+test_name);
           chgRecur.call(this, elem.value, test_name+".");
           continue;
         }

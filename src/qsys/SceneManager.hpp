@@ -61,16 +61,13 @@ namespace qsys {
     /// Check and update all scenes
     void checkAndUpdateScenes() const;
 
-    //
-    // Active scene management
-    //
-
+    // Active scene (in this process)
   private:
     /// Active scene's ID
+    /// Only one scene becomes active in one process
     qlib::uid_t m_nActiveSceneID;
 
   public:
-    /// Set active scene ID
     void setActiveSceneID(qlib::uid_t uid);
 
     /// Get active scene ID

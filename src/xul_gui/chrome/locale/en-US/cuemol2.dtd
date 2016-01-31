@@ -5,15 +5,13 @@
 <!ENTITY menu_file.label "File">
 <!ENTITY menu_file.accesskey "F">
 
-<!--
 <!ENTITY new_window.label "New Window">
 <!ENTITY new_window.accesskey "N">
 <!ENTITY new_window.commandkey "n">
--->
 
 <!ENTITY new_tab.label "New Tab">
-<!ENTITY new_tab.accesskey "N">
-<!ENTITY new_tab.commandkey "n">
+<!ENTITY new_tab.accesskey "T">
+<!ENTITY new_tab.commandkey "t">
 
 <!ENTITY open_file.label "Open File...">
 <!ENTITY open_file.accesskey "O">

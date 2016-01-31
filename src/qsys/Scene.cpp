@@ -114,6 +114,7 @@ Scene::Scene()
 
   m_bLoading = false;
 
+  m_nActiveObjID = qlib::invalid_uid;
   m_nActiveViewID = qlib::invalid_uid;
 
   MB_DPRINTLN("Scene (%d) created.", m_nUID);
@@ -450,6 +451,24 @@ LString Scene::getObjUIDList() const
   return rval;
 }
 
+void Scene::setActiveObjID(qlib::uid_t uid)
+{
+  ObjectPtr pObj = getObject(uid);
+  if (pObj.isnull()) {
+    MB_THROW(qlib::IllegalArgumentException, "Unknown object ID");
+    return;
+  }
+    
+  m_nActiveObjID = uid;
+
+  // set this Scene as active scene to the scene manager.
+  // (active view's scene should always be active)
+  SceneManager *pMgr = SceneManager::getInstance();
+  pMgr->setActiveSceneID(m_nUID);
+
+  // TO DO: fire event? (activeObjChanged??)
+}
+
 // private
 
 /// Common implementation for the object registration
@@ -553,6 +572,24 @@ RendererPtr Scene::getRendByName(const LString &nm) const
   }
 
   return RendererPtr();
+}
+
+void Scene::setActiveRendID(qlib::uid_t uid)
+{
+  RendererPtr pRend = getRenderer(uid);
+  if (pRend.isnull()) {
+    MB_THROW(qlib::IllegalArgumentException, "Unknown renderer ID");
+    return;
+  }
+    
+  m_nActiveRendID = uid;
+
+  // set this Scene as active scene to the scene manager.
+  // (active view's scene should always be active)
+  SceneManager *pMgr = SceneManager::getInstance();
+  pMgr->setActiveSceneID(m_nUID);
+
+  // TO DO: fire event? (activeRendChanged??)
 }
 
 ///////////////////////////////////////
@@ -830,13 +867,11 @@ void Scene::setActiveViewID(qlib::uid_t uid)
   m_nActiveViewID = uid;
 
   // set this Scene as active scene to the scene manager.
+  // (active view's scene should always be active)
   SceneManager *pMgr = SceneManager::getInstance();
   pMgr->setActiveSceneID(m_nUID);
-}
 
-ViewPtr Scene::getActiveView() const
-{
-  return getView(m_nActiveViewID);
+  // TO DO: fire event??
 }
 
 void Scene::checkAndUpdate()
@@ -1476,15 +1511,14 @@ void Scene::stylesWriteTo(qlib::LDom2Node *pNode) const
     if ( src.isEmpty() ) {
       // Internal style description
       pSet->writeToDataNode(pChNode);
+      // Reset the modified flag (because the contents was synchronized to the scene file)
+      pSet->setModified(false);
     }
     else {
       // External style reference is serialized as external reference node.
       // setup src and altsrc attributes
       std::pair<LString, LString> res =
         setPathsToNode(src, LString(), pChNode);
-
-      //LString relpath = qlib::makeRelativePath(src, basedir);
-      //pChNode->appendStrAttr("src", relpath);
 
       if (pSet->isOverrideID()) {
         pChNode->appendStrAttr("id", id);
@@ -1505,6 +1539,7 @@ void Scene::stylesWriteTo(qlib::LDom2Node *pNode) const
         if (!bRes) {
           LOG_DPRINTLN("Scene> write external style file %s failed.", abspath.c_str());
         }
+        // StyleMgr.saveStyleSetToFile() method always reset the modified flag if save is succeeded.
       }
     }
 

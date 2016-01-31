@@ -20,6 +20,8 @@ if (!("RendCommPropEdit" in cuemolui)) {
 
     klass.onLoad = function ()
     {
+      dd("PropEditCommon onLoad called");
+
       var that = this;
 
       this.mRendName = document.getElementById("comprop-name");

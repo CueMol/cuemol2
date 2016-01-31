@@ -211,7 +211,7 @@ LString StyleMgr::getStyleNamesJSON(qlib::uid_t nSceneID)
 
   bool bfirst = true;
   BOOST_FOREACH (StyleSetPtr pSet, *pSL) {
-    LString elem = pSet->getStyleKeysJSON();
+    LString elem = pSet->getStyleNamesJSON(false);
     if (elem.isEmpty()) continue;
 
     if (!bfirst)
