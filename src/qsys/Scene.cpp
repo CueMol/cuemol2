@@ -114,6 +114,7 @@ Scene::Scene()
 
   m_bLoading = false;
 
+  m_nActiveRendID = qlib::invalid_uid;
   m_nActiveObjID = qlib::invalid_uid;
   m_nActiveViewID = qlib::invalid_uid;
 

@@ -40,3 +40,39 @@ def redo(scene=None):
         scene = scMgr.getActiveScene()
     scene.redo(0)
 
+def current(rend_name=None):
+    scMgr = cuemol.getService("SceneManager")
+    scene = scMgr.getActiveScene()
+
+    curr_rendid = scene.activeRendID
+
+    if rend_name is None:
+        # print current renderer
+        if curr_rendid==0:
+            cuemol.printlog("No current renderer")
+            return
+
+        rend = scMgr.getRenderer(curr_rendid)
+        if rend is None:
+            msg = "Invalid current renderer (ID="+str(curr_rendid)+")"
+            cuemol.printlog(msg)
+            return
+
+        obj = rend.getClientObj()
+        cuemol.printlog("Current renderer:")
+        cuemol.printlog("  id="+str(curr_rendid))
+        cuemol.printlog("  name="+rend.name+" ("+rend.type_name+")")
+        cuemol.printlog("  Object="+obj.name+" ("+cuemol.getClassName(obj)+")")
+        return
+    else:
+        # set current renderer
+        rend = scene.getRendByName(rend_name)
+        if rend is None:
+            cuemol.printlog("Error, renderer name="+rend_name+" is not found.")
+            return;
+
+        scene.activeRendID = rend.uid
+        cuemol.printlog("Current renderer is changed to "+rend_name+" ("+rend.type_name+")")
+
+    return
+

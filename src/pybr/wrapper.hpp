@@ -33,6 +33,9 @@ namespace pybr {
     /// get class names
     static PyObject *getAllClassNamesJSON(PyObject *self, PyObject *args);
 
+    static PyObject *getAbiClassName(PyObject *self, PyObject *args);
+    static PyObject *getClassName(PyObject *self, PyObject *args);
+
     //////////
     // Property operations
 

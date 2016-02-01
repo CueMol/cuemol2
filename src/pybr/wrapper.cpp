@@ -332,6 +332,58 @@ PyObject *Wrapper::getAllClassNamesJSON(PyObject *self, PyObject *args)
 }
 
 //static
+PyObject *Wrapper::getAbiClassName(PyObject *self, PyObject *args)
+{
+  PyObject *pPyObj;
+
+  if (!PyArg_ParseTuple(args, "O", &pPyObj))
+    return NULL;
+
+  qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
+  if (pScObj==NULL)
+    return NULL;
+  
+  LString str;
+  if (pScObj!=NULL) {
+    qlib::LClass *pCls = pScObj->getClassObj();
+    if (pCls!=NULL) {
+      str = pCls->getAbiClassName();
+    }
+  }
+  else {
+    str = "(null)";
+  }
+
+  return Py_BuildValue("s", str.c_str());
+}
+
+//static
+PyObject *Wrapper::getClassName(PyObject *self, PyObject *args)
+{
+  PyObject *pPyObj;
+
+  if (!PyArg_ParseTuple(args, "O", &pPyObj))
+    return NULL;
+
+  qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
+  if (pScObj==NULL)
+    return NULL;
+  
+  LString str;
+  if (pScObj!=NULL) {
+    qlib::LClass *pCls = pScObj->getClassObj();
+    if (pCls!=NULL) {
+      str = pCls->getClassName();
+    }
+  }
+  else {
+    str = "(null)";
+  }
+
+  return Py_BuildValue("s", str.c_str());
+}
+
+//static
 PyObject *Wrapper::isPropDefault(PyObject *self, PyObject *args)
 {
   const char *propname;
@@ -592,6 +644,9 @@ static PyMethodDef cuemol_methods[] = {
   {"getService", (PyCFunction)Wrapper::getService, METH_VARARGS, "get CueMol service object.\n"},
   {"createObj", (PyCFunction)Wrapper::createObj, METH_VARARGS, "create CueMol object.\n"},
   {"getAllClassNamesJSON", (PyCFunction)Wrapper::getAllClassNamesJSON, METH_VARARGS, "get all class names in JSON format.\n"},
+
+  {"getAbiClassName", (PyCFunction)Wrapper::getAbiClassName, METH_VARARGS, "get C++ABI class name.\n"},
+  {"getClassName", (PyCFunction)Wrapper::getClassName, METH_VARARGS, "get class name.\n"},
 
   {"isPropDefault", (PyCFunction)Wrapper::isPropDefault, METH_VARARGS, "\n"},
   {"hasPropDefault", (PyCFunction)Wrapper::hasPropDefault, METH_VARARGS, "\n"},
