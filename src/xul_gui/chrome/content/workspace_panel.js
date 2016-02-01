@@ -922,6 +922,8 @@ ws.onTreeItemClick = function (aEvent, elem, col)
 {
   //dd("WS onClick: row="+row+", col="+col);
   // dd("WS onClick: detail="+aEvent.detail);
+  if (elem==null)
+    return;
 
   if (col=="object_vis") {
     this.toggleVisible(elem);
