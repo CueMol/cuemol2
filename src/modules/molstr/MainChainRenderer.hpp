@@ -84,7 +84,10 @@ namespace molstr {
     virtual void setPivAtomName(const LString &aname);
     const LString &getPivAtomName() const { return m_sPivAtomName; }
   
-    gfx::ColorPtr calcColor(double rho, bool bSmoCol, MolResiduePtr pRes1, MolResiduePtr pRes2);
+    /// Calculate (and interporate) color between two residues
+    gfx::ColorPtr calcColor(double rho, bool bSmoCol,
+                            MolResiduePtr pRes1, MolResiduePtr pRes2,
+                            bool bRes1Transp=false, bool bRes2Transp=false);
 
     virtual bool getDiffVec(MolResiduePtr pRes, Vector4D &rpos, Vector4D &rvec);
 

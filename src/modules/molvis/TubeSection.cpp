@@ -7,6 +7,7 @@
 #include <common.h>
 
 #include "TubeSection.hpp"
+#include "SplineRenderer.hpp"
 #include <qlib/Vector4D.hpp>
 
 #include <gfx/DisplayContext.hpp>
@@ -388,19 +389,20 @@ void TubeSection::makeCap(DisplayContext *pdl,
                            const Vector4D &e1, const Vector4D &e2)
 {
   switch (nType) {
-  case 2:
-  default:
-    // no cap (transparent)
-    break;
-
-  case 1:
+  case SplineRenderer::TUBE_CAP_FLAT:
     // Flat cap
     makeFlatCap(pdl, fStart, f, vpt, e1, e2);
     break;
 
-  case 0:
+  case SplineRenderer::TUBE_CAP_SPHR:
     // Spherical cap
     makeSpherCap(pdl, fStart, f, vpt, e1, e2);
+    break;
+
+  case SplineRenderer::TUBE_CAP_NONE:
+  //case SplineRenderer::TUBE_CAP_FADE:
+  default:
+    // no cap (transparent)
     break;
   }
 }

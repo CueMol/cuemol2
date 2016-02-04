@@ -387,7 +387,9 @@ void MainChainRenderer::setPivAtomName(const LString &aname)
 
 //////////////////////////////////////////////////////////////////////////
 
-gfx::ColorPtr MainChainRenderer::calcColor(double rho, bool bSmoCol, MolResiduePtr pRes1, MolResiduePtr pRes2)
+gfx::ColorPtr MainChainRenderer::calcColor(double rho, bool bSmoCol,
+                                           MolResiduePtr pRes1, MolResiduePtr pRes2,
+                                           bool bRes1Transp/*=false*/, bool bRes2Transp/*=false*/)
 {
   gfx::ColorPtr pCol1, pCol2;
   
@@ -405,6 +407,21 @@ gfx::ColorPtr MainChainRenderer::calcColor(double rho, bool bSmoCol, MolResidueP
   
   if (pCol1.isnull() && pCol2.isnull())
     return gfx::SolidColor::createRGB(0.7, 0.7, 0.7); // ERROR!!
+
+  if (bRes1Transp && !pCol1.isnull()) {
+    // make pCol1 transparent
+    double r = pCol1->fr();
+    double g = pCol1->fg();
+    double b = pCol1->fb();
+    pCol1 = gfx::SolidColor::createRGB(r, g, b, 0.0);
+  }
+  if (bRes2Transp && !pCol2.isnull()) {
+    // make pCol2 transparent
+    double r = pCol2->fr();
+    double g = pCol2->fg();
+    double b = pCol2->fb();
+    pCol2 = gfx::SolidColor::createRGB(r, g, b, 0.0);
+  }
 
   if (!bSmoCol) {
     if (rho>0.5)

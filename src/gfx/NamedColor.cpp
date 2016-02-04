@@ -46,11 +46,12 @@ NamedColor::NamedColor()
 
 NamedColor::NamedColor(const NamedColor &r)
      : super_t(r),
-       m_name(r.m_name), //m_material(r.m_material),
+       m_name(r.m_name),
        m_nCtxtID(r.m_nCtxtID),
        m_nCacheID(qlib::invalid_uid)
 {
   //LOG_DPRINTLN("Color copy (%p) created\n", this);
+  m_material = r.m_material;
   m_dSetAlpha = r.m_dSetAlpha;
   m_dModHue = r.m_dModHue;
   m_dModSat = r.m_dModSat;

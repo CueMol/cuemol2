@@ -30,8 +30,8 @@ namespace gfx {
 
     int m_nMode;
 
-    /// Cache validity flag for named color
-    mutable bool m_bNamedColCache;
+    // /// Cache validity flag for named color
+    // mutable bool m_bNamedColCache;
 
     /// Name of material (empty means default material)
     LString m_material;

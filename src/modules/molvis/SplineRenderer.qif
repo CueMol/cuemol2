@@ -50,6 +50,11 @@ runtime_class SplineRenderer extends MainChainRenderer
   property enum end_captype => redirect(getEndCapType, setEndCapType);
   default end_captype = "sphere";
 
+  /// segment end fade out
+  property boolean segend_fade => redirect(isSegEndFade, setSegEndFade);
+  default segend_fade = false;
+
+
 };
 
 #endif // SPLINE_RENDERER_QIF

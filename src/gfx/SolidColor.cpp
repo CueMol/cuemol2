@@ -19,7 +19,7 @@ SolidColor::SolidColor()
 }
 
 SolidColor::SolidColor(const SolidColor &r)
-     : m_code(r.m_code), m_nMode(r.m_nMode)
+     : m_code(r.m_code), m_nMode(r.m_nMode), m_material(r.m_material)
 {
   //LOG_DPRINTLN("Color copy (%p) created\n", this);
 }
@@ -29,6 +29,7 @@ const SolidColor &SolidColor::operator=(const SolidColor &r)
   if(&r!=this){
     m_code = r.m_code;
     m_nMode = r.m_nMode;
+	m_material = r.m_material;
   }
   return *this;
 }

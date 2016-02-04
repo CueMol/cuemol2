@@ -26,6 +26,14 @@ SplineRenderer::SplineRenderer()
 {
   m_scs.setParent(this);
   m_scs.setSmooth(0.0);
+
+  m_nAxialDetail = 6;
+  m_bInterpColor = true;
+  m_dLineWidth = 1.2;
+  m_nStCapType = TUBE_CAP_SPHR;
+  m_nEnCapType = TUBE_CAP_SPHR;
+  m_bSegEndFade = false;
+
 }
 
 SplineRenderer::~SplineRenderer()
@@ -225,7 +233,62 @@ ColorPtr SplineRenderer::calcColor(double par, SplineCoeff *pCoeff)
   MolResiduePtr pNext(pCoeff->getResidue(nnext));
   MolResiduePtr pPrev(pCoeff->getResidue(nprev));
 
-  return super_t::calcColor(rho, isSmoothColor(), pPrev, pNext);
+  bool bRes1Tp = false;
+  bool bRes2Tp = false;
+
+  if (m_bSegEndFade) {
+    int nprev_prev = nprev-1;
+    MolResiduePtr pPrevPrev(pCoeff->getResidue(nprev_prev));
+    if (!pPrevPrev.isnull() && !pPrev.isnull()) {
+      MolAtomPtr pPrevPrevAtm = getPivotAtom(pPrevPrev);
+      MolAtomPtr pPrevAtm = getPivotAtom(pPrev);
+      SelectionPtr pSel = getSelection();
+      if (!pSel->isSelected(pPrevPrevAtm) &&
+          pSel->isSelected(pPrevAtm)) {
+        bRes1Tp = true;
+      }
+    }
+
+    int nnext_next = nnext+1;
+    MolResiduePtr pNextNext(pCoeff->getResidue(nnext_next));
+    if (!pNextNext.isnull() && !pNext.isnull()) {
+      MolAtomPtr pNextNextAtm = getPivotAtom(pNextNext);
+      MolAtomPtr pNextAtm = getPivotAtom(pNext);
+      SelectionPtr pSel = getSelection();
+      if (!pSel->isSelected(pNextNextAtm) &&
+          pSel->isSelected(pNextAtm)) {
+        bRes2Tp = true;
+        if (qlib::isNear(rho, 0.0))
+          rho = 1.0;
+      }
+    }
+    
+    //}
+    //if (m_bSegEndFade) {
+    /*
+    if (!pPrev.isnull() && !pNext.isnull()) {
+      MolAtomPtr pPrevAtm = getPivotAtom(pPrev);
+      MolAtomPtr pNextAtm = getPivotAtom(pNext);
+      SelectionPtr pSel = getSelection();
+      if (!pSel->isSelected(pNextAtm) &&
+          pSel->isSelected(pPrevAtm)) {
+        bRes2Tp = true;
+      }
+      else {
+        int nnext_next = nnext+1;
+        MolResiduePtr pNextNext(pCoeff->getResidue(nnext_next));
+        if (!pNextNext.isnull() && !pNext.isnull()) {
+          MolAtomPtr pNextNextAtm = getPivotAtom(pNextNext);
+          if (!pSel->isSelected(pNextNextAtm) &&
+              pSel->isSelected(pNextAtm)) {
+            bRes2Tp = true;
+          }
+        }
+      }
+    }*/
+  }
+  
+  return super_t::calcColor(rho, isSmoothColor(), pPrev, pNext, bRes1Tp, bRes2Tp);
 }
 
 bool SplineRenderer::getDiffVec(MolResiduePtr pRes, Vector4D &rpos, Vector4D &rvec)

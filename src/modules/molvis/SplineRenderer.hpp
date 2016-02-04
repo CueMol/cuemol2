@@ -17,12 +17,12 @@
 class SplineRenderer_wrap;
 
 namespace molvis {
-
-using qlib::Vector4D;
-using gfx::ColorPtr;
-using namespace molstr;
-
-class TubeSection;
+  
+  using qlib::Vector4D;
+  using gfx::ColorPtr;
+  using namespace molstr;
+  
+  class TubeSection;
 
   /// Exception(s)
   MB_DECL_EXCPT_CLASS(MOLVIS_API, SplineRenderingException, qlib::RuntimeException);
@@ -44,20 +44,23 @@ private:
   /// interpolate color or not
   bool m_bInterpColor;
 
-/*
-  /// cap type (flat=0, spherical=1, none=2)
-  //MCINFO: int m_nStartCapType => start_captype
-  int m_nStartCapType;
-
-  //MCINFO: int m_nEndCapType => end_captype
-  int m_nEndCapType;
-*/
-  
+  //////////////////////////////////////////////////////
+private:
   /// width of line drawing (in pixel unit)
   double m_dLineWidth;
 
-  ////////////
+public:
+  void setLineWidth(double d) {
+    super_t::invalidateDisplayCache();
+    m_dLineWidth = d;
+  }
+  double getLineWidth() const {
+    return m_dLineWidth;
+  }
 
+  ////////////
+  // work area
+private:
   SplineCoeffSet m_scs;
   MolResiduePtr m_pStartRes;
 
@@ -108,14 +111,20 @@ public:
   void invalidateSplineCoeffs();
 
   //////////////////////////////////////////////////////
-  // Tube capping routine
+  // Tube capping
+
+private:
+
+  /// start cap type
+  int m_nStCapType;
+  int m_nEnCapType;
 
 public:
   /// cap type ID
   enum {
     TUBE_CAP_SPHR = 0,
     TUBE_CAP_FLAT = 1,
-    TUBE_CAP_NONE = 2
+    TUBE_CAP_NONE = 2,
   };
 
   int getStartCapType() const { return m_nStCapType; }
@@ -130,20 +139,16 @@ public:
     m_nEnCapType = nType;
   }
 
-  void setLineWidth(double d) {
-    super_t::invalidateDisplayCache();
-    m_dLineWidth = d;
-  }
-  double getLineWidth() const {
-    return m_dLineWidth;
-  }
-
-  
 private:
+  /// Fade out flag of the end of the segment
+  bool m_bSegEndFade;
 
-  /// start cap type
-  int m_nStCapType;
-  int m_nEnCapType;
+public:
+  void setSegEndFade(bool b) {
+    super_t::invalidateDisplayCache();
+    m_bSegEndFade = b;
+  }
+  bool isSegEndFade() const { return m_bSegEndFade; }
 
 public:
   
