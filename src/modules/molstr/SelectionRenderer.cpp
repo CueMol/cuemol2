@@ -40,8 +40,8 @@ const char *SelectionRenderer::getTypeName() const
 
 SelectionPtr SelectionRenderer::getSelection() const
 {
-  MolCoordPtr pClient = getClientMol();
-  MB_ASSERT(!pClient.isnull());
+  MolCoordPtr pClient = qlib::ensureNotNull( getClientMol() );
+  // MB_ASSERT(!pClient.isnull());
   SelectionPtr psel = pClient->getSelection();
   if (psel.isnull())
     return m_pSel;
