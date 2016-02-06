@@ -242,10 +242,21 @@ ColorPtr SplineRenderer::calcColor(double par, SplineCoeff *pCoeff)
     if (!pPrevPrev.isnull() && !pPrev.isnull()) {
       MolAtomPtr pPrevPrevAtm = getPivotAtom(pPrevPrev);
       MolAtomPtr pPrevAtm = getPivotAtom(pPrev);
+      // MolAtomPtr pNextAtm = getPivotAtom(pNext);
       SelectionPtr pSel = getSelection();
-      if (!pSel->isSelected(pPrevPrevAtm) &&
+
+      bool bSel0 = pSel->isSelected(pPrevPrevAtm);
+      bool bSel1 = pSel->isSelected(pPrevAtm);
+      // bool bSel2 = pSel->isSelected(pNextAtm);
+
+      /*if (!pSel->isSelected(pPrevPrevAtm) &&
           pSel->isSelected(pPrevAtm)) {
         bRes1Tp = true;
+      }*/
+      if (!bSel0) {
+        bRes1Tp = true;
+        if (!bSel1)
+          bRes2Tp = true;
       }
     }
 
@@ -255,37 +266,22 @@ ColorPtr SplineRenderer::calcColor(double par, SplineCoeff *pCoeff)
       MolAtomPtr pNextNextAtm = getPivotAtom(pNextNext);
       MolAtomPtr pNextAtm = getPivotAtom(pNext);
       SelectionPtr pSel = getSelection();
-      if (!pSel->isSelected(pNextNextAtm) &&
-          pSel->isSelected(pNextAtm)) {
+
+      // MolAtomPtr pPrevAtm = getPivotAtom(pPrev);
+      // bool bSel1 = pSel->isSelected(pPrevAtm);
+      bool bSel2 = pSel->isSelected(pNextAtm);
+      bool bSel3 = pSel->isSelected(pNextNextAtm);
+
+      if (!bSel3) {
         bRes2Tp = true;
         if (qlib::isNear(rho, 0.0))
           rho = 1.0;
+        if (!bSel2)
+          bRes1Tp = true;
       }
+
+      // LOG_DPRINTLN("CalcCol prev,next,nn=%d(%d):%d(%d):%d(%d)", nprev, bSel1, nnext, bSel2, nnext_next, bSel3);
     }
-    
-    //}
-    //if (m_bSegEndFade) {
-    /*
-    if (!pPrev.isnull() && !pNext.isnull()) {
-      MolAtomPtr pPrevAtm = getPivotAtom(pPrev);
-      MolAtomPtr pNextAtm = getPivotAtom(pNext);
-      SelectionPtr pSel = getSelection();
-      if (!pSel->isSelected(pNextAtm) &&
-          pSel->isSelected(pPrevAtm)) {
-        bRes2Tp = true;
-      }
-      else {
-        int nnext_next = nnext+1;
-        MolResiduePtr pNextNext(pCoeff->getResidue(nnext_next));
-        if (!pNextNext.isnull() && !pNext.isnull()) {
-          MolAtomPtr pNextNextAtm = getPivotAtom(pNextNext);
-          if (!pSel->isSelected(pNextNextAtm) &&
-              pSel->isSelected(pNextAtm)) {
-            bRes2Tp = true;
-          }
-        }
-      }
-    }*/
   }
   
   return super_t::calcColor(rho, isSmoothColor(), pPrev, pNext, bRes1Tp, bRes2Tp);
