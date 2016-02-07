@@ -363,6 +363,31 @@ public:
   /// Ribbon shaped helix flag
   bool m_bRibbonHelix;
 
+  ////////////////////////////////
+  
+private:
+  /// Fade out flag of the end of the segment
+  bool m_bSegEndFade;
+
+public:
+  void setSegEndFade(bool b) {
+    super_t::invalidateDisplayCache();
+    m_bSegEndFade = b;
+  }
+  bool isSegEndFade() const { return m_bSegEndFade; }
+
+  /// Returns true, if par is at the internal end of the segment
+  ///  (returns false, if par is at the external end.)
+  //bool isSegEnd(double par, detail::SecSplDat *pCyl);
+
+private:
+
+  MolResiduePtr getResByIndex(int n) const {
+    if (0<=n && n<m_resvec.size())
+      return m_resvec[n];
+    else
+      return MolResiduePtr();
+  }
 };
 
 }

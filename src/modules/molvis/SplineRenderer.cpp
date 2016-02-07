@@ -224,6 +224,54 @@ void SplineRenderer::invalidateSplineCoeffs()
   invalidateDisplayCache();
 }
 
+void SplineRenderer::getSegEndImpl(int nprev, MolResiduePtr pPrev,
+                                   int nnext, MolResiduePtr pNext,
+                                   SplineCoeff *pCoeff,
+                                   double &rho, bool &bRes1Tp, bool &bRes2Tp)
+{
+  int nprev_prev = nprev-1;
+  MolResiduePtr pPrevPrev(pCoeff->getResidue(nprev_prev));
+  if (!pPrevPrev.isnull() && !pPrev.isnull()) {
+    MolAtomPtr pPrevPrevAtm = getPivotAtom(pPrevPrev);
+    MolAtomPtr pPrevAtm = getPivotAtom(pPrev);
+    // MolAtomPtr pNextAtm = getPivotAtom(pNext);
+    SelectionPtr pSel = getSelection();
+    
+    bool bSel0 = pSel->isSelected(pPrevPrevAtm);
+    bool bSel1 = pSel->isSelected(pPrevAtm);
+    // bool bSel2 = pSel->isSelected(pNextAtm);
+    
+    if (!bSel0) {
+      bRes1Tp = true;
+      if (!bSel1)
+        bRes2Tp = true;
+    }
+  }
+  
+  int nnext_next = nnext+1;
+  MolResiduePtr pNextNext(pCoeff->getResidue(nnext_next));
+  if (!pNextNext.isnull() && !pNext.isnull()) {
+    MolAtomPtr pNextNextAtm = getPivotAtom(pNextNext);
+    MolAtomPtr pNextAtm = getPivotAtom(pNext);
+    SelectionPtr pSel = getSelection();
+    
+    // MolAtomPtr pPrevAtm = getPivotAtom(pPrev);
+    // bool bSel1 = pSel->isSelected(pPrevAtm);
+    bool bSel2 = pSel->isSelected(pNextAtm);
+    bool bSel3 = pSel->isSelected(pNextNextAtm);
+    
+    if (!bSel3) {
+      bRes2Tp = true;
+      if (qlib::isNear(rho, 0.0))
+        rho = 1.0;
+      if (!bSel2)
+        bRes1Tp = true;
+    }
+    
+    // LOG_DPRINTLN("CalcCol prev,next,nn=%d(%d):%d(%d):%d(%d)", nprev, bSel1, nnext, bSel2, nnext_next, bSel3);
+  }
+}
+
 ColorPtr SplineRenderer::calcColor(double par, SplineCoeff *pCoeff)
 {
   int nprev = int(::floor(par));
@@ -237,54 +285,30 @@ ColorPtr SplineRenderer::calcColor(double par, SplineCoeff *pCoeff)
   bool bRes2Tp = false;
 
   if (m_bSegEndFade) {
-    int nprev_prev = nprev-1;
-    MolResiduePtr pPrevPrev(pCoeff->getResidue(nprev_prev));
-    if (!pPrevPrev.isnull() && !pPrev.isnull()) {
-      MolAtomPtr pPrevPrevAtm = getPivotAtom(pPrevPrev);
-      MolAtomPtr pPrevAtm = getPivotAtom(pPrev);
-      // MolAtomPtr pNextAtm = getPivotAtom(pNext);
-      SelectionPtr pSel = getSelection();
-
-      bool bSel0 = pSel->isSelected(pPrevPrevAtm);
-      bool bSel1 = pSel->isSelected(pPrevAtm);
-      // bool bSel2 = pSel->isSelected(pNextAtm);
-
-      /*if (!pSel->isSelected(pPrevPrevAtm) &&
-          pSel->isSelected(pPrevAtm)) {
-        bRes1Tp = true;
-      }*/
-      if (!bSel0) {
-        bRes1Tp = true;
-        if (!bSel1)
-          bRes2Tp = true;
-      }
-    }
-
-    int nnext_next = nnext+1;
-    MolResiduePtr pNextNext(pCoeff->getResidue(nnext_next));
-    if (!pNextNext.isnull() && !pNext.isnull()) {
-      MolAtomPtr pNextNextAtm = getPivotAtom(pNextNext);
-      MolAtomPtr pNextAtm = getPivotAtom(pNext);
-      SelectionPtr pSel = getSelection();
-
-      // MolAtomPtr pPrevAtm = getPivotAtom(pPrev);
-      // bool bSel1 = pSel->isSelected(pPrevAtm);
-      bool bSel2 = pSel->isSelected(pNextAtm);
-      bool bSel3 = pSel->isSelected(pNextNextAtm);
-
-      if (!bSel3) {
-        bRes2Tp = true;
-        if (qlib::isNear(rho, 0.0))
-          rho = 1.0;
-        if (!bSel2)
-          bRes1Tp = true;
-      }
-
-      // LOG_DPRINTLN("CalcCol prev,next,nn=%d(%d):%d(%d):%d(%d)", nprev, bSel1, nnext, bSel2, nnext_next, bSel3);
-    }
+    getSegEndImpl(nprev, pPrev, nnext, pNext, pCoeff, rho, bRes1Tp, bRes2Tp);
   }
   
   return super_t::calcColor(rho, isSmoothColor(), pPrev, pNext, bRes1Tp, bRes2Tp);
+}
+
+bool SplineRenderer::isSegEnd(double par, SplineCoeff *pCoeff)
+{
+  int nprev = int(::floor(par));
+  int nnext = int(::ceil(par));
+  double rho = par - double(nprev);
+
+  MolResiduePtr pNext(pCoeff->getResidue(nnext));
+  MolResiduePtr pPrev(pCoeff->getResidue(nprev));
+
+  bool bRes1Tp = false;
+  bool bRes2Tp = false;
+
+  getSegEndImpl(nprev, pPrev, nnext, pNext, pCoeff, rho, bRes1Tp, bRes2Tp);
+
+  if (bRes1Tp || bRes2Tp)
+    return true;
+
+  return false;
 }
 
 bool SplineRenderer::getDiffVec(MolResiduePtr pRes, Vector4D &rpos, Vector4D &rvec)

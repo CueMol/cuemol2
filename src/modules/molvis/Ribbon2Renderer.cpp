@@ -398,6 +398,8 @@ Ribbon2Renderer::Ribbon2Renderer()
   //m_bRibbonHelix = true;
   m_bRibbonHelix = false;
 
+  m_bSegEndFade = false;
+
   // setup sub properties (call LScrObjBase::setupParentData())
   super_t::setupParentData("helix");
   super_t::setupParentData("sheet");
@@ -634,11 +636,8 @@ gfx::ColorPtr Ribbon2Renderer::calcColor(double at, SecSplDat *pCyl)
   nprev += pCyl->m_nResDelta;
   nnext += pCyl->m_nResDelta;
 
-  MolResiduePtr pPrev, pNext;
-  if (0<=nprev && nprev<m_resvec.size())
-    pPrev= m_resvec[nprev];
-  if (0<=nnext && nnext<m_resvec.size())
-    pNext= m_resvec[nnext];
+  MolResiduePtr pPrev = getResByIndex(nprev);
+  MolResiduePtr pNext = getResByIndex(nnext);
 
   return super_t::calcColor(rho, isSmoothColor(), pPrev, pNext);
 }
@@ -997,10 +996,8 @@ void Ribbon2Renderer::getCoilResids(double at, SecSplDat *pCyl,
   nprev += pCyl->m_nResDelta;
   nnext += pCyl->m_nResDelta;
 
-  if (0<=nprev && nprev<m_resvec.size())
-    pResPrev= m_resvec[nprev];
-  if (0<=nnext && nnext<m_resvec.size())
-    pResNext= m_resvec[nnext];
+  pResPrev = getResByIndex(nprev);
+  pResNext = getResByIndex(nnext);
 }
 
 gfx::ColorPtr Ribbon2Renderer::calcCoilColor(double at, SecSplDat *pCyl)
@@ -1622,9 +1619,7 @@ void Ribbon2Renderer::dumpCyls(SecSplDat *pC)
     int nres = int(::floor(t));
     nres += pC->m_nResDelta;
 
-    MolResiduePtr pRes;
-    if (0<=nres && nres<m_resvec.size())
-      pRes= m_resvec[nres];
+    MolResiduePtr pRes = getResByIndex(nres);
     if (!pRes.isnull())
       LOG_DPRINT("%s ", pRes->toString().c_str());
     

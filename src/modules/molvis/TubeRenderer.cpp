@@ -112,7 +112,7 @@ void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
   const double fdelta = (fend-fstart)/double(ndelta);
 
   pdl->setLighting(true);
-  pdl->setPolygonMode(DisplayContext::POLY_FILL);
+  pdl->setPolygonMode(DisplayContext::POLY_FILL_NOEGLN);
   //pdl->setPolygonMode(DisplayContext::POLY_LINE);
 
   // ???
@@ -157,10 +157,11 @@ void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
       prev_f = f1;
       pPrevCol = pCol;
 
-      // make the tube cap.
-      pdl->color(pCol);
-      m_pts->makeCap(pdl, true, getStartCapType(), f1, vpt, e11, e12);
-
+      if (!isSegEndFade() || !isSegEnd(par, pCoeff)) {
+        // make the tube cap.
+        pdl->color(pCol);
+        m_pts->makeCap(pdl, true, getStartCapType(), f1, vpt, e11, e12);
+      }
       continue;
     }
 
@@ -210,9 +211,11 @@ void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
 
     // Post processing
     if (i==ndelta) {
-      // make cap at the end point.
-      pdl->color(pCol);
-      m_pts->makeCap(pdl, false, getEndCapType(), f1, vpt, e11, e12);
+      if (!isSegEndFade() || !isSegEnd(par, pCoeff)) {
+        // make cap at the end point.
+        pdl->color(pCol);
+        m_pts->makeCap(pdl, false, getEndCapType(), f1, vpt, e11, e12);
+      }
     }
 
     prev_e1 = e11;

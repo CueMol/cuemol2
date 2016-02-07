@@ -125,6 +125,10 @@ runtime_class Ribbon2Renderer extends MainChainRenderer
   property enum end_captype => redirect(getEndCapType, setEndCapType);
   default end_captype = "flat";
 
+  /// segment end fade out
+  property boolean segend_fade => redirect(isSegEndFade, setSegEndFade);
+  default segend_fade = false;
+
   ///////////////////////////
 
   property boolean dump_curvature => m_bDumpCurv;

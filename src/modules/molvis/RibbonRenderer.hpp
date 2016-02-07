@@ -217,11 +217,14 @@ private:
   Vector4D m_prev_e1, m_prev_e2, m_prev_f1, m_prev_vpt;
   Vector4D m_prev_escl;
 
+  double m_par, m_prev_par;
+
   bool setupHelper(DisplayContext *pdl,
                    TubeSection *pCurTs,
                    int index, double par, SplineCoeff *pCoeff);
   
   void updatePrevValues() {
+    m_prev_par = m_par;
     m_prev_e1 = m_e11;
     m_prev_e2 = m_e12;
     m_prev_f1 = m_f1;

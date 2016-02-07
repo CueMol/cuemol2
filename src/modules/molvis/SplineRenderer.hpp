@@ -110,6 +110,12 @@ public:
 
   void invalidateSplineCoeffs();
 
+private:
+  void getSegEndImpl(int nprev, MolResiduePtr pPrev,
+                     int nnext, MolResiduePtr pNext,
+                     SplineCoeff *pCoeff,
+                     double &rho, bool &bRes1Tp, bool &bRes2Tp);
+  
   //////////////////////////////////////////////////////
   // Tube capping
 
@@ -149,6 +155,11 @@ public:
     m_bSegEndFade = b;
   }
   bool isSegEndFade() const { return m_bSegEndFade; }
+
+  /// Returns true, if par is at the internal end of the segment
+  ///  (returns false, if par is at the external end.)
+  bool isSegEnd(double par, SplineCoeff *pCoeff);
+  
 
 public:
   

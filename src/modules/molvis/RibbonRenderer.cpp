@@ -305,16 +305,18 @@ void RibbonRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
 
 
   // postprocessing
-  pdl->color(m_pPrevCol);
-  if (ccurr==RB_COIL)
-    pCurTs->makeCap(pdl, false, getEndCapType(), m_prev_f1, m_prev_vpt,
-                    m_prev_e1.scale(m_prev_escl.x()),
-                    m_prev_e2.scale(m_prev_escl.y()));
-  else
-    pCurTs->makeFlatCap(pdl, false, m_prev_f1, m_prev_vpt,
-                        m_prev_e1.scale(m_prev_escl.x()),
-                        m_prev_e2.scale(m_prev_escl.y()));
-
+  if (!isSegEndFade() || !isSegEnd(m_prev_par, pCoeff)) {
+    pdl->color(m_pPrevCol);
+    if (ccurr==RB_COIL)
+      pCurTs->makeCap(pdl, false, getEndCapType(), m_prev_f1, m_prev_vpt,
+                      m_prev_e1.scale(m_prev_escl.x()),
+                      m_prev_e2.scale(m_prev_escl.y()));
+    else
+      pCurTs->makeFlatCap(pdl, false, m_prev_f1, m_prev_vpt,
+                          m_prev_e1.scale(m_prev_escl.x()),
+                          m_prev_e2.scale(m_prev_escl.y()));
+  }
+  
   m_pPrevCol = ColorPtr();
   m_pCol = ColorPtr();
 
@@ -337,6 +339,7 @@ bool RibbonRenderer::setupHelper(DisplayContext *pdl,
   if (m_bSheetSideCol)
     m_pCurSSCol = evalMolColor(m_pSheetSideCol, m_pCol);
 
+  m_par = par;
   pCoeff->interpNormal(par, &m_bnorm);
   pCoeff->interpAxis(par, &m_f1, &m_vpt);
 
@@ -406,12 +409,14 @@ void RibbonRenderer::renderTube(DisplayContext *pdl,
     // MB_DPRINTLN("Ribbon> i=%d par=%f", i, par);
 
     if (!setupHelper(pdl, pCurTs, i, par, pCoeff)) {
-      // Make the tube's start cap.
-      pdl->color(m_pCol);
-      if (ss_type==RB_COIL)
-        pCurTs->makeCap(pdl, true, getStartCapType(), m_f1, m_vpt, m_e11, m_e12);
-      else {
-        pCurTs->makeFlatCap(pdl, true, m_f1, m_vpt, m_e11, m_e12);
+      if (!isSegEndFade() || !isSegEnd(par, pCoeff)) {
+        // Make the tube's start cap.
+        pdl->color(m_pCol);
+        if (ss_type==RB_COIL)
+          pCurTs->makeCap(pdl, true, getStartCapType(), m_f1, m_vpt, m_e11, m_e12);
+        else {
+          pCurTs->makeFlatCap(pdl, true, m_f1, m_vpt, m_e11, m_e12);
+        }
       }
       // update prev values
       updatePrevValues();
