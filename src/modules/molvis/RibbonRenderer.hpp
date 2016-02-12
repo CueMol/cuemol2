@@ -232,6 +232,8 @@ private:
     m_pPrevCol = m_pCol;
   }
 
+  // ColorPtr calcColor(double par, SplineCoeff *pCoeff);
+
 };
 
 } // namespace molvis

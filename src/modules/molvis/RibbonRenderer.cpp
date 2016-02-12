@@ -644,3 +644,11 @@ double RibbonRenderer::getCoilSmooth() const
   return m_pSmoothEval->m_coil;
 }
 
+/*
+ColorPtr RibbonRenderer::calcColor(double par, SplineCoeff *pCoeff)
+{
+  if (!isSegEndFade())
+    return super_t::calcColor(par, pCoeff);
+  
+}*/
+
