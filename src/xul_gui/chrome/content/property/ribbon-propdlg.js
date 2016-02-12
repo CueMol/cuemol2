@@ -39,8 +39,10 @@ window.gComm = ( function () { try {
     this.mSmoCol = document.getElementById("compage-smocol");
     this.mPivotChk = document.getElementById("compage-pivotcheck");
     this.mPivotAtom = document.getElementById("compage-pivotatom");
-    this.mStartType = document.getElementById("compage-starttype");
-    this.mEndType = document.getElementById("compage-endtype");
+    this.mCapType = document.getElementById("compage-captype");
+    // this.mEndType = document.getElementById("compage-endtype");
+    this.mSegEndFade = document.getElementById("compage-segendfade");
+
     dd("CommPropEdit> OnLoad called");
 
     gRendComm.onLoad();
@@ -78,10 +80,13 @@ window.gComm = ( function () { try {
     this.mSmoCol.checked = elem.value;
 
     elem = gMain.findPropData("start_captype");
-    util.selectMenuListByValue(this.mStartType, elem.value);
-    elem = gMain.findPropData("end_captype");
-    util.selectMenuListByValue(this.mEndType, elem.value);
+    util.selectMenuListByValue(this.mCapType, elem.value);
+    // elem = gMain.findPropData("end_captype");
+    // util.selectMenuListByValue(this.mEndType, elem.value);
     
+    elem = gMain.findPropData("segend_fade");
+    this.mSegEndFade.checked = elem.value;
+
     elem = gMain.findPropData("pivotatom");
     this.mPivotAtom.value = elem.value;
     this.mPivotChk.checked = !elem.isdefault;
@@ -125,12 +130,16 @@ window.gComm = ( function () { try {
       gMain.updateData("smoothcolor", this.mSmoCol.checked);
       break;
 
-    case "compage-starttype":
+    case "compage-captype":
       gMain.updateData("start_captype", aEvent.target.value);
-      break;
-      
-    case "compage-endtype":
       gMain.updateData("end_captype", aEvent.target.value);
+      break;
+      // case "compage-endtype":
+      // gMain.updateData("end_captype", aEvent.target.value);
+      // break;
+
+    case "compage-segendfade":
+      gMain.updateData("segend_fade", this.mSegEndFade.checked);
       break;
 
     case "compage-pivotcheck":

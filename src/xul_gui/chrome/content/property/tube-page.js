@@ -30,8 +30,8 @@ if (!("RendTubePropPage" in cuemolui)) {
       this.mPivotChk = document.getElementById("tubepage-pivotcheck");
       this.mPivotAtom = document.getElementById("tubepage-pivotatom");
 
-      this.mStartType = document.getElementById("tubepage-starttype");
-      this.mEndType = document.getElementById("tubepage-endtype");
+      this.mCapType = document.getElementById("tubepage-captype");
+      this.mSegEndFade = document.getElementById("tubepage-segendfade");
 
       // Add event listeners
       var that = this;
@@ -49,8 +49,8 @@ if (!("RendTubePropPage" in cuemolui)) {
       this.mPivotChk.addEventListener("command", function (event) { that.validateWidgets(event) }, false);
       this.mPivotAtom.addEventListener("change", function (event) { that.validateWidgets(event) }, false);
 
-      this.mEndType.addEventListener("command", function (event) { that.validateWidgets(event) }, false);
-      this.mStartType.addEventListener("command", function (event) { that.validateWidgets(event) }, false);
+      this.mCapType.addEventListener("command", function (event) { that.validateWidgets(event) }, false);
+      this.mSegEndFade.addEventListener("command", function (event) { that.validateWidgets(event) }, false);
 
       // Putty
       this.mPuttyMode = document.getElementById("tubepage-puttymode");
@@ -107,10 +107,13 @@ if (!("RendTubePropPage" in cuemolui)) {
       this.mSmoCol.checked = elem.value;
 
       elem = gMain.findPropData("start_captype");
-      util.selectMenuListByValue(this.mStartType, elem.value);
-      elem = gMain.findPropData("end_captype");
-      util.selectMenuListByValue(this.mEndType, elem.value);
+      util.selectMenuListByValue(this.mCapType, elem.value);
+      // elem = gMain.findPropData("end_captype");
+      // util.selectMenuListByValue(this.mEndType, elem.value);
 
+      elem = gMain.findPropData("segend_fade");
+      this.mSegEndFade.checked = elem.value;
+      
       elem = gMain.findPropData("pivotatom");
       this.mPivotAtom.value = elem.value;
       this.mPivotChk.checked = !elem.isdefault;
@@ -203,13 +206,18 @@ if (!("RendTubePropPage" in cuemolui)) {
 	gMain.updateData("smoothcolor", this.mSmoCol.checked);
 	break;
 
-      case "tubepage-starttype":
+      case "tubepage-captype":
 	gMain.updateData("start_captype", aEvent.target.value);
-	break;
-
-      case "tubepage-endtype":
 	gMain.updateData("end_captype", aEvent.target.value);
 	break;
+
+      case "tubepage-segendfade":
+	gMain.updateData("segend_fade", this.mSegEndFade.checked);
+	break;
+
+	//case "tubepage-endtype":
+	//gMain.updateData("end_captype", aEvent.target.value);
+	//break;
 
       case "tubepage-pivotcheck":
 	new_val = aEvent.target.checked;
@@ -301,8 +309,9 @@ if (!("RendTubePropPage" in cuemolui)) {
       this.mPivotChk.disabled = bdis;
       this.mPivotAtom.disabled = bdis;
 
-      this.mStartType.disabled = bdis;
-      this.mEndType.disabled = bdis;
+      this.mCapType.disabled = bdis;
+      //this.mEndType.disabled = bdis;
+      this.mSegEndFade.disabled = bdis;
 
       this.mPuttyMode.disabled = bdis;
       this.mPuttyTgt.disabled = bdis;

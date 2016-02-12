@@ -148,23 +148,19 @@
 	</hbox>
 	
 	<hbox flex="0" align="center" class="propdlg-rowbox">
-	  <label value="Start type:" />
-	  <menulist id="tubepage-starttype" flex="0" class="propdlg-menulist">
+
+	  <label value="Cap type:" />
+	  <menulist id="tubepage-captype" flex="0" class="propdlg-menulist">
 	    <menupopup>
 	      <menuitem label="flat" value="flat"/>
 	      <menuitem label="sphere" value="sphere"/>
 	      <menuitem label="none" value="none"/>
 	    </menupopup>
 	  </menulist>
-	  <spacer width="5px"/>
-	  <label value="End type:" />
-	  <menulist id="tubepage-endtype" flex="0" class="propdlg-menulist">
-	    <menupopup>
-	      <menuitem label="flat" value="flat"/>
-	      <menuitem label="sphere" value="sphere"/>
-	      <menuitem label="none" value="none"/>
-	    </menupopup>
-	  </menulist>
+	  <spacer width="10px"/>
+	  
+	  <checkbox id="tubepage-segendfade" flex="0" label="Segment-end fade out"/>
+	    
 	</hbox>
       </rows>
     </grid>
