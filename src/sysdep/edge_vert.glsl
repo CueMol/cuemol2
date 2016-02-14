@@ -4,8 +4,12 @@
 //
 
 uniform float frag_alpha;
+uniform float frag_zdisp;
 uniform float edge_width;
 uniform vec4 edge_color;
+
+varying vec3 gNormal;
+varying vec4 gEcPosition;
 
 float ffog(in float ecDistance)
 {
@@ -28,12 +32,21 @@ void main (void)
   vec4 ecPosition = gl_ModelViewMatrix * gl_Vertex;
 
   vec3 normal = fnormal();
+  gNormal = normal;
 
-  vec3 disp = normal*edge_width;
-  ecPosition = ecPosition + vec4(disp.x, disp.y, 0, 0);
+  vec2 normxy = vec2(normal.x, normal.y);
+  float tan = normal.z/length(normxy);
+
+  vec2 xydisp = normalize( normxy ) *edge_width;
+  
+  ecPosition = ecPosition + vec4(xydisp.x, xydisp.y, 0, 0);
+  ecPosition.z -= abs(edge_width/min(edge_width, tan));
+  gEcPosition = ecPosition;
 
   // Do fixed functionality vertex transform
   vec4 pos = gl_ProjectionMatrix * ecPosition;
+
+  //pos.z += frag_zdisp; //max(0, disp.z*0.001);
 
   gl_Position = pos;
 

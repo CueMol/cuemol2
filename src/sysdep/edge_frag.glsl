@@ -6,9 +6,16 @@
 uniform float frag_alpha;
 uniform float frag_zdisp;
 
+varying vec3 gNormal;
+varying vec4 gEcPosition;
+
 void main (void)
 {
   vec4 color;
+
+  float nDot = dot(gNormal, normalize(vec3(gEcPosition)));
+//  if (nDot<-0.5||nDot>0.5)
+//    discard;
 
   color = gl_Color;
   float z = gl_FogFragCoord;
@@ -20,6 +27,6 @@ void main (void)
 
   gl_FragColor = color;
 
-  gl_FragDepth = gl_FragCoord.z + frag_zdisp;
+  //gl_FragDepth = gl_FragCoord.z + frag_zdisp;
 }
 

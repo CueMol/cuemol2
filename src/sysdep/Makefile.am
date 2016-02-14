@@ -66,6 +66,8 @@ shaderdir = $(prefix)/data/shaders/
 shader_DATA = \
 default_vert.glsl \
 default_frag.glsl \
+edge_vert.glsl \
+edge_frag.glsl \
 es2_default_vert.glsl \
 es2_default_frag.glsl \
 $(NULL)
