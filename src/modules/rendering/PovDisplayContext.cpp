@@ -38,10 +38,8 @@ PovDisplayContext::PovDisplayContext()
   m_pPovOut = NULL;
   m_pIncOut = NULL;
   m_bPostBlend = false;
-  m_dEdgeLineWidth = -1.0;
   m_bEnableEdgeLines = true;
 
-  m_nEdgeLineType = ELT_NONE;
   m_nEdgeCornerType = ECT_ALL;
 
   m_dCreaseLimit = qlib::toRadian(85.0);
@@ -98,6 +96,7 @@ void PovDisplayContext::endSection()
   m_secName = LString();
 }
 
+/*
 void PovDisplayContext::setEdgeLineType( int n )
 {
   m_nEdgeLineType = n;
@@ -112,6 +111,17 @@ void PovDisplayContext::setEdgeLineColor(const ColorPtr &c)
 {
   m_egLineCol = c;
 }
+
+double PovDisplayContext::getEdgeLineWidth() const
+{
+  return m_dEdgeLineWidth;
+}
+
+ColorPtr PovDisplayContext::getEdgeLineColor() const
+{
+  return m_egLineCol;
+}
+*/
 
 bool PovDisplayContext::isPostBlend() const
 {
@@ -488,9 +498,10 @@ void PovDisplayContext::writeObjects()
 
   blin = writeLines();
 
+  int nEdgeLineType = getEdgeLineType();
   if (m_bEnableEdgeLines &&
-      (m_nEdgeLineType==ELT_OPQ_EDGES||
-       m_nEdgeLineType==ELT_OPQ_SILHOUETTE)) {
+      (nEdgeLineType==ELT_OPQ_EDGES||
+       nEdgeLineType==ELT_OPQ_SILHOUETTE)) {
     // opaque edges/silhouettes
     m_pIntData->convSpheres();
     m_pIntData->convCylinders();
@@ -516,8 +527,8 @@ void PovDisplayContext::writeObjects()
     ps.format("\n");
   }
   else if (m_bEnableEdgeLines &&
-           (m_nEdgeLineType==ELT_EDGES||
-            m_nEdgeLineType==ELT_SILHOUETTE)) {
+           (nEdgeLineType==ELT_EDGES||
+            nEdgeLineType==ELT_SILHOUETTE)) {
     // normal edges/silhouettes
     m_pIntData->convSpheres();
     m_pIntData->convCylinders();

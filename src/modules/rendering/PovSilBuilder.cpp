@@ -394,10 +394,11 @@ void PovDisplayContext::writeEdgeLine(PrintStream &ips,
   double rise = w/2.0;
   
   double r=.0,g=.0,b=.0;
-  if (!m_egLineCol.isnull()) {
-    r = m_egLineCol->fr();
-    g = m_egLineCol->fg();
-    b = m_egLineCol->fb();
+  ColorPtr pcol = getEdgeLineColor();
+  if (!pcol.isnull()) {
+    r = pcol->fr();
+    g = pcol->fg();
+    b = pcol->fb();
   }
 
   /*
@@ -476,10 +477,11 @@ void PovDisplayContext::writePoint(PrintStream &ips,
   double rise = w/2.0;
   
   double r=.0,g=.0,b=.0;
-  if (!m_egLineCol.isnull()) {
-    r = m_egLineCol->fr();
-    g = m_egLineCol->fg();
-    b = m_egLineCol->fb();
+  ColorPtr pcol = getEdgeLineColor();
+  if (!pcol.isnull()) {
+    r = pcol->fr();
+    g = pcol->fg();
+    b = pcol->fb();
   }
 
   /*
@@ -953,8 +955,9 @@ void PovDisplayContext::writeSilEdges()
   ///////////////////////////////////////
   // Write results to the inc file
 
-  if (m_nEdgeLineType==ELT_SILHOUETTE ||
-      m_nEdgeLineType==ELT_OPQ_SILHOUETTE) {
+  int nEdgeLineType = getEdgeLineType();
+  if (nEdgeLineType==ELT_SILHOUETTE ||
+      nEdgeLineType==ELT_OPQ_SILHOUETTE) {
     // write silhouette only
     writeSilOnly(ips, &fvec);
   }

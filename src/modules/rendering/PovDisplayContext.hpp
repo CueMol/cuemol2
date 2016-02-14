@@ -64,6 +64,7 @@ namespace render {
     /// Main flag for edge line display
     bool m_bEnableEdgeLines;
 
+    /*
     /// Edge line type (defined in gfx::DisplayContext)
     int m_nEdgeLineType;
 
@@ -72,14 +73,14 @@ namespace render {
 
     /// Edge line color
     gfx::ColorPtr m_egLineCol;
-
+     */
     /// Crease detection angle limit (in radian unit)
     double m_dCreaseLimit;
 
     /// Rise value from vertex position
     double m_dEdgeRise;
 
-    /// Edge corner type (defined in gfx::DisplayContext)
+    /// Edge corner type
     int m_nEdgeCornerType;
 
   public:
@@ -91,13 +92,16 @@ namespace render {
     };
 
   public:
+/*
     /// Set edge (silhouette) line props
     virtual void setEdgeLineWidth(double w);
     virtual void setEdgeLineColor(const ColorPtr &c);
     virtual void setEdgeLineType( int n );
 
-    double getEdgeLineWidth() const { return m_dEdgeLineWidth; }
-
+    virtual double getEdgeLineWidth() const { return m_dEdgeLineWidth; }
+    virtual ColorPtr getEdgeLineColor() const;
+*/
+    
     /// Crease detection angle limit (in radian unit)
     void setCreaseLimit(double d) { m_dCreaseLimit = d; }
 

@@ -719,7 +719,8 @@ void Scene::displayRendImpl(DisplayContext *pdc, ObjectPtr pObj, RendererPtr pRe
   pdc->setStyleNames(pRend->getStyleNames());
   
   // transfer the edge settings
-  pdc->setEdgeLineType(pRend->getEdgeLineType());
+  int nelt = pRend->getEdgeLineType();
+  pdc->setEdgeLineType(nelt);
   pdc->setEdgeLineWidth(pRend->getEdgeLineWidth());
   pdc->setEdgeLineColor(pRend->getEdgeLineColor());
   
@@ -729,6 +730,12 @@ void Scene::displayRendImpl(DisplayContext *pdc, ObjectPtr pObj, RendererPtr pRe
     pdc->pushMatrix();
     pdc->multMatrix(xform);
     bmat = true;
+  }
+  
+  if (nelt != DisplayContext::ELT_NONE && !pdc->isFile()) {
+    pdc->startEdgeSection();
+    pRend->display(pdc);
+    pdc->endEdgeSection();
   }
   
   // alpha should be set before startSection,

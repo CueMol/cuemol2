@@ -46,6 +46,8 @@ namespace sysdep {
     /// Default program object (shader)
     OglProgramObject *m_pDefPO;
     
+    OglProgramObject *m_pEdgePO;
+
     //////////
 
   public:
@@ -71,6 +73,11 @@ namespace sysdep {
     // shader control
     virtual void startSection(const LString &section_name);
     virtual void endSection();
+
+    virtual void startEdgeSection();
+    virtual void endEdgeSection();
+
+    ////////////////
 
     virtual void vertex(const Vector4D &);
     virtual void vertex(double x, double y, double z);

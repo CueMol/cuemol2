@@ -41,6 +41,15 @@ namespace gfx {
     /// Pixel scaling factor
     double m_dPixSclFac;
 
+    /// Edge line type (defined in gfx::DisplayContext)
+    int m_nEdgeLineType;
+
+    /// Edge line width
+    double m_dEdgeLineWidth;
+
+    /// Edge line color
+    ColorPtr m_egLineCol;
+
   public:
     /// Polygon rendering mode
     enum {
@@ -60,7 +69,7 @@ namespace gfx {
     };
 
   public:
-    DisplayContext() : m_defMatName(), m_defAlpha(1.0), m_dPixSclFac(1.0) {}
+    DisplayContext();
     virtual ~DisplayContext() {}
 
     virtual bool setCurrent() =0;
@@ -94,9 +103,15 @@ namespace gfx {
     virtual void setStyleNames(const LString &names);
 
     /// Set edge (silhouette) line props
+    virtual int getEdgeLineType() const;
     virtual void setEdgeLineType(int n);
+
+    virtual double getEdgeLineWidth() const;
     virtual void setEdgeLineWidth(double w);
+
+    virtual ColorPtr getEdgeLineColor() const;
     virtual void setEdgeLineColor(const ColorPtr &c);
+
 
     LString getMaterial() const { return m_defMatName; }
     double getAlpha() const { return m_defAlpha; }
@@ -153,6 +168,9 @@ namespace gfx {
     virtual void endRender();
     virtual void startSection(const LString &section_name);
     virtual void endSection();
+
+    virtual void startEdgeSection();
+    virtual void endEdgeSection();
 
     ////////////////
     // image/text drawing (default: do nothing)

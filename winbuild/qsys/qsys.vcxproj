@@ -477,6 +477,8 @@
     <glslshader Include="..\..\src\modules\molvis\sphere_vertex.glsl" />
     <glslshader Include="..\..\src\sysdep\default_frag.glsl" />
     <glslshader Include="..\..\src\sysdep\default_vert.glsl" />
+    <glslshader Include="..\..\src\sysdep\edge_frag.glsl" />
+    <glslshader Include="..\..\src\sysdep\edge_vert.glsl" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\jsbr\jsbr.vcxproj">

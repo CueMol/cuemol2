@@ -60,6 +60,7 @@ OglDisplayContext::OglDisplayContext(int sceneid)
 
   m_bUseShaderAlpha = false;
   m_pDefPO = NULL;
+  m_pEdgePO = NULL;
 }
 
 OglDisplayContext::~OglDisplayContext()
@@ -101,6 +102,29 @@ void OglDisplayContext::init()
   m_pDefPO->setUniform("enable_lighting", 0);
   m_pDefPO->setUniformF("frag_alpha", 1.0);
   m_pDefPO->disable();
+
+  //////////
+
+  m_pEdgePO = createProgramObject("edge");
+  if (m_pEdgePO==NULL) {
+    LOG_DPRINTLN("Failed to load Edge ProgramObject");
+    return;
+  }
+  m_pEdgePO->loadShader("vert",
+                        "%%CONFDIR%%/data/shaders/edge_vert.glsl",
+                       GL_VERTEX_SHADER);
+  m_pEdgePO->loadShader("frag",
+                        "%%CONFDIR%%/data/shaders/edge_frag.glsl",
+                        GL_FRAGMENT_SHADER);
+  m_pEdgePO->link();
+  
+  m_pEdgePO->enable();
+  m_pEdgePO->setUniformF("frag_alpha", 1.0);
+  m_pEdgePO->setUniformF("frag_zdisp", 0.001);
+  m_pEdgePO->setUniformF("edge_width", 0.001);
+  m_pEdgePO->setUniformF("edge_color", 0,0,0,1);
+  m_pEdgePO->disable();
+
 #endif
 }
 
@@ -121,6 +145,8 @@ void OglDisplayContext::startSection(const LString &section_name)
 
   m_pDefPO->enable();
   m_pDefPO->setUniformF("frag_alpha", getAlpha());
+
+  // m_pEdgePO->enable();
 }
 
 void OglDisplayContext::endSection()
@@ -130,7 +156,40 @@ void OglDisplayContext::endSection()
 
   m_pDefPO->setUniformF("frag_alpha", 1.0);
   m_pDefPO->disable();
+
+  // m_pEdgePO->disable();
 }
+
+void OglDisplayContext::startEdgeSection()
+{
+  if (m_pEdgePO) {
+    double r=.0,g=.0,b=.0;
+    ColorPtr pcol = getEdgeLineColor();
+    if (!pcol.isnull()) {
+      r = pcol->fr();
+      g = pcol->fg();
+      b = pcol->fb();
+    }
+    double alpha = getAlpha();
+    
+    m_pEdgePO->enable();
+    m_pEdgePO->setUniformF("frag_alpha", alpha);
+    m_pEdgePO->setUniformF("edge_width", getEdgeLineWidth());
+    m_pEdgePO->setUniformF("edge_color", r,g,b,alpha);
+    if (getEdgeLineType()==ELT_EDGES)
+      m_pEdgePO->setUniformF("frag_zdisp", 0.001);
+    else
+      m_pEdgePO->setUniformF("frag_zdisp", 0.1);
+  }
+}
+
+void OglDisplayContext::endEdgeSection()
+{
+  if (m_pEdgePO)
+    m_pEdgePO->disable();
+}
+
+//////////////////////////////////////////////////////////
 
 void OglDisplayContext::vertex(const Vector4D &v)
 {

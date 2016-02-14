@@ -11,6 +11,15 @@
 
 using namespace gfx;
 
+DisplayContext::DisplayContext()
+{
+  //m_defMatName = LString();
+  m_defAlpha = 1.0;
+  m_dPixSclFac = 1.0;
+  m_dEdgeLineWidth = -1.0;
+  m_nEdgeLineType = ELT_NONE;
+}
+
 bool DisplayContext::isRenderPixmap() const
 {
   return true;
@@ -66,17 +75,6 @@ void DisplayContext::setStyleNames(const LString &name)
   m_styleNames = name;
 }
 
-void DisplayContext::setEdgeLineType(int n)
-{
-}
-
-void DisplayContext::setEdgeLineWidth(double w)
-{
-}
-
-void DisplayContext::setEdgeLineColor(const ColorPtr &c)
-{
-}
 
 void DisplayContext::scale(const Vector4D &v)
 {
@@ -224,3 +222,43 @@ void DisplayContext::endRender() {}
 void DisplayContext::startSection(const LString &section_name) {}
 void DisplayContext::endSection() {}
 
+//////////
+
+void DisplayContext::startEdgeSection() {}
+void DisplayContext::endEdgeSection() {}
+
+//
+
+void DisplayContext::setEdgeLineType( int n )
+{
+  m_nEdgeLineType = n;
+}
+
+int DisplayContext::getEdgeLineType() const
+{
+  return m_nEdgeLineType;
+}
+
+//
+
+void DisplayContext::setEdgeLineWidth(double w)
+{
+  m_dEdgeLineWidth = w;
+}
+
+double DisplayContext::getEdgeLineWidth() const
+{
+  return m_dEdgeLineWidth;
+}
+
+//
+
+void DisplayContext::setEdgeLineColor(const ColorPtr &c)
+{
+  m_egLineCol = c;
+}
+
+ColorPtr DisplayContext::getEdgeLineColor() const
+{
+  return m_egLineCol;
+}

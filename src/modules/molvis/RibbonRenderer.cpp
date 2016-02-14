@@ -211,6 +211,7 @@ void RibbonRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
                                   MolResiduePtr pEndRes, double fend)
 {
   pdl->setPolygonMode(DisplayContext::POLY_FILL);
+  // pdl->setPolygonMode(DisplayContext::POLY_LINE);
 
   const int naxdet = getAxialDetail();
   const int istart = pCoeff->getIndex(pStartRes);
@@ -430,6 +431,7 @@ void RibbonRenderer::renderTube(DisplayContext *pdl,
     }
 
     pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NOEGLN);
+    //pdl->setPolygonMode(gfx::DisplayContext::POLY_LINE);
     pdl->startTriangleStrip();
     
     for (j=0; j<=pCurTs->getSize(); j++) {
@@ -460,6 +462,7 @@ void RibbonRenderer::renderTube(DisplayContext *pdl,
     
     pdl->end();
     pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL);
+    // pdl->setPolygonMode(gfx::DisplayContext::POLY_LINE);
 
     // postprocessing
     updatePrevValues();
@@ -534,6 +537,7 @@ void RibbonRenderer::renderJct(DisplayContext *pdl,
       continue;
     }
 
+    //pdl->setPolygonMode(gfx::DisplayContext::POLY_LINE);
     pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NOEGLN);
     pdl->startTriangleStrip();
     
@@ -578,6 +582,7 @@ void RibbonRenderer::renderJct(DisplayContext *pdl,
     
     pdl->end();
     pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL);
+    //pdl->setPolygonMode(gfx::DisplayContext::POLY_LINE);
 
     // postprocessing
     updatePrevValues();
