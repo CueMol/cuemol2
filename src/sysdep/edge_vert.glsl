@@ -34,6 +34,8 @@ void main (void)
   vec3 normal = fnormal();
   gNormal = normal;
 
+  
+/*
   vec2 normxy = vec2(normal.x, normal.y);
   float tan = normal.z/length(normxy);
 
@@ -41,13 +43,16 @@ void main (void)
   
   ecPosition = ecPosition + vec4(xydisp.x, xydisp.y, 0, 0);
   ecPosition.z -= abs(edge_width/min(edge_width, tan));
+*/
+  
+  ecPosition += vec4(normal*edge_width, 0);
   gEcPosition = ecPosition;
 
   // Do fixed functionality vertex transform
   vec4 pos = gl_ProjectionMatrix * ecPosition;
 
   //pos.z += frag_zdisp; //max(0, disp.z*0.001);
-
+  
   gl_Position = pos;
 
   gl_FrontColor=edge_color;

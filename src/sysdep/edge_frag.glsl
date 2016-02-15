@@ -13,7 +13,7 @@ void main (void)
 {
   vec4 color;
 
-  float nDot = dot(gNormal, normalize(vec3(gEcPosition)));
+//  float nDot = dot(gNormal, normalize(vec3(gEcPosition)));
 //  if (nDot<-0.5||nDot>0.5)
 //    discard;
 

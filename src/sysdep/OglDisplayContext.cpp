@@ -176,17 +176,23 @@ void OglDisplayContext::startEdgeSection()
     m_pEdgePO->setUniformF("frag_alpha", alpha);
     m_pEdgePO->setUniformF("edge_width", getEdgeLineWidth());
     m_pEdgePO->setUniformF("edge_color", r,g,b,alpha);
+    /*
     if (getEdgeLineType()==ELT_EDGES)
       m_pEdgePO->setUniformF("frag_zdisp", 0.001);
     else
       m_pEdgePO->setUniformF("frag_zdisp", 0.1);
+     */
+    glEnable(GL_CULL_FACE);
+    glFrontFace(GL_CW);
   }
 }
 
 void OglDisplayContext::endEdgeSection()
 {
-  if (m_pEdgePO)
+  if (m_pEdgePO) {
     m_pEdgePO->disable();
+    glFrontFace(GL_CCW);
+  }
 }
 
 //////////////////////////////////////////////////////////
