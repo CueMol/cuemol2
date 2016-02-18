@@ -3,11 +3,26 @@
 //  fragment shader for spheres
 //
 
+////////////////////
+// Uniform variables
+
+// edge rendering
+uniform float u_edge;
+
+// edge color
+uniform vec4 u_edgecolor;
+
+// total transparency
+uniform float frag_alpha;
+
+////////////////////
+// Varying variables
+
 varying vec4 v_color;
 varying vec2 v_impos;
 varying vec4 v_ecpos;
 varying float v_radius;
-uniform float frag_alpha;
+varying float v_edgeratio;
 
 vec4 Ambient;
 vec4 Diffuse;
@@ -60,8 +75,51 @@ vec4 flight(in vec3 normal, in vec4 ecPosition, in vec4 matcol)
 void main()
 {
   float dist = length(v_impos);
-  if (dist>1.0) {
+  if (dist>v_edgeratio) {
     discard;
+  }
+  else if (dist>1.0) {
+    // edge
+    float nd = 0.0;
+    vec3 normal = vec3(v_impos.xy, 0.0);
+
+    float depth = 0.0;
+
+    float far=gl_DepthRange.far;
+    float near=gl_DepthRange.near;
+
+    vec4 ecpos = v_ecpos;
+    //ecpos.z += depth;
+    vec4 clip_space_pos = gl_ProjectionMatrix * ecpos;
+
+    float ndc_depth = clip_space_pos.z / clip_space_pos.w;
+
+    float fd = (((far-near) * ndc_depth) + near + far) / 2.0;
+
+    // re-apply clipping by the view volume
+    if (fd>far) {
+      discard;
+    }
+    else if (fd<near) {
+      discard;
+      //normal = vec3(0.0, 0.0, 1.0);
+      //fd = near;
+    }
+    else {
+      gl_FragDepth = fd;
+      
+      vec4 color = u_edgecolor;
+      
+      // fog calculation
+      float fogz = abs(ecpos.z);
+      float fog;
+      fog = (gl_Fog.end - fogz) * gl_Fog.scale;
+      fog = clamp(fog, 0.0, 1.0);
+      color = vec4(mix( vec3(gl_Fog.color), vec3(color), fog), v_color.a*frag_alpha);
+      
+      gl_FragColor = color;
+    }
+
   }
   else {
     float nd = sqrt(1.0-dist*dist);

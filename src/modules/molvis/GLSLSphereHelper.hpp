@@ -138,6 +138,23 @@ namespace molvis {
       if (m_pDrawElem!=NULL) {
         m_pPO->enable();
         m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
+        if (pdc->getEdgeLineType()!=DisplayContext::ELT_NONE) {
+          m_pPO->setUniformF("u_edge", pdc->getEdgeLineWidth());
+
+          double r=.0,g=.0,b=.0;
+          ColorPtr pcol = pdc->getEdgeLineColor();
+          if (!pcol.isnull()) {
+            r = pcol->fr();
+            g = pcol->fg();
+            b = pcol->fb();
+          }
+
+          m_pPO->setUniformF("u_edgecolor", r,g,b,1);
+        }
+        else {
+          m_pPO->setUniformF("u_edge", 0.0);
+          m_pPO->setUniformF("u_edgecolor", 0,0,0,1);
+        }
         pdc->drawElem(*m_pDrawElem);
         m_pPO->disable();
       }
