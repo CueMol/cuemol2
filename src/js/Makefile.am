@@ -45,6 +45,8 @@ src/jsxdrapi.c  \
 src/jsxml.c  \
 src/prmjtime.c 
 
+libjs_a_CFLAGS = -fPIC
+
 ##
 
 src/jsautokw.h: jskwgen

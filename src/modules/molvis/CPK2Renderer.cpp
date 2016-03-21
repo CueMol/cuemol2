@@ -13,9 +13,12 @@
 #include "CPK2Renderer.hpp"
 
 #include <gfx/DrawAttrArray.hpp>
+
+#ifdef USE_OPENGL
 #include <sysdep/OglDisplayContext.hpp>
 #include <sysdep/OglProgramObject.hpp>
 #include "GLSLSphereHelper.hpp"
+#endif
 
 using namespace molvis;
 using namespace molstr;
@@ -25,13 +28,18 @@ CPK2Renderer::CPK2Renderer()
   m_pDrawElem = NULL;
   m_bUseShader = false;
   m_bCheckShaderOK = false;
-  m_pSlSph = MB_NEW GLSLSphereHelper();
   m_nGlRendMode = REND_DEFAULT;
+
+#ifdef USE_OPENGL
+  m_pSlSph = MB_NEW GLSLSphereHelper();
+#endif
 }
 
 CPK2Renderer::~CPK2Renderer()
 {
+#ifdef USE_OPENGL
   delete m_pSlSph;
+#endif
 }
 
 const char *CPK2Renderer::getTypeName() const
@@ -43,6 +51,9 @@ const char *CPK2Renderer::getTypeName() const
 
 void CPK2Renderer::display(DisplayContext *pdc)
 {
+#ifndef USE_OPENGL
+  super_t::display(pdc);
+#else
   if (pdc->isFile()) {
     // case of the file (non-ogl) rendering
     // always use the old version.
@@ -93,12 +104,14 @@ void CPK2Renderer::display(DisplayContext *pdc)
     // old version (uses DisplayContext::sphere)
     super_t::display(pdc);
   }
+#endif
 }
 
 void CPK2Renderer::invalidateDisplayCache()
 {
   super_t::invalidateDisplayCache();
   
+#ifdef USE_OPENGL
   if (m_pDrawElem!=NULL) {
     delete m_pDrawElem;
     m_pDrawElem = NULL;
@@ -106,10 +119,12 @@ void CPK2Renderer::invalidateDisplayCache()
   if (m_bUseShader) {
     m_pSlSph->invalidate();
   }
+#endif
 }
 
 void CPK2Renderer::unloading()
 {
+#ifdef USE_OPENGL
   if (m_pDrawElem!=NULL) {
     delete m_pDrawElem;
     m_pDrawElem = NULL;
@@ -117,6 +132,7 @@ void CPK2Renderer::unloading()
   if (m_bUseShader) {
     m_pSlSph->invalidate();
   }
+#endif
 
   super_t::unloading();
 }
@@ -266,6 +282,7 @@ void CPK2Renderer::renderVBOImpl()
 //////////////////////
 // GLSL implementation
 
+#ifdef USE_OPENGL
 void CPK2Renderer::renderShaderImpl()
 {
   MolCoordPtr pMol = getClientMol();
@@ -314,4 +331,5 @@ void CPK2Renderer::renderShaderImpl()
   pMol->getColSchm()->end();
 
 }
+#endif
 

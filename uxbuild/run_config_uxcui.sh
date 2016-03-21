@@ -3,21 +3,24 @@
 cwd=`pwd`
 top_srcdir=$cwd/../src/
 
-install_dir=/net3/ishitani/app64/cuemol2
+install_dir=$HOME/app/cuemol2
 debug="--enable-debug --enable-m64"
 #debug="--disable-debug --enable-m64"
+
+usepybr="--enable-python"
+#usepybr="--disable-python"
+
+#usexrbr="--with-xmlrpc=$HOME/proj64/xmlrpc-c"
+usexrbr="--without-xmlrpc"
 
 ##
 
 #boost_dir=/usr/local
 
 #boost_dir=/net3/ishitani/app64/boost_static
-boost_dir=/net3/ishitani/app64/boost_1_56_0
-
+boost_dir=/net3/ishitani/app64/boost_1_57_0
 fftw_dir=/net3/ishitani/app64/fftw
-cgal_dir=/net3/ishitani/app64/CGAL-3.8
-
-xmlrpc_dir=/net3/ishitani/app64/xmlrpc-c
+cgal_dir=/net3/ishitani/app64/CGAL-4.6.1/
 
 #######################
 
@@ -28,7 +31,8 @@ if test ! -f $config_scr; then
 	cd ../src
 	aclocal; libtoolize; aclocal; autoheader; automake -a; autoconf;
 	cd js
-	aclocal; autoheader; automake -a; autoconf;
+#	aclocal; autoheader; automake -a; autoconf;
+	aclocal; libtoolize; aclocal; autoheader; automake -a; autoconf;
     )	
 fi
 
@@ -36,12 +40,14 @@ fi
 
 env CC=gcc CXX=g++ \
 $config_scr \
---enable-cli \
---enable-python \
---with-xmlrpc=$xmlrpc_dir \
---enable-static --disable-shared \
+--disable-static \
+--enable-shared \
 --prefix=$install_dir \
 --with-boost=$boost_dir \
+$usepybr \
+$usexrbr \
+--enable-cli \
+--enable-python \
 --with-fftw=$fftw_dir \
 --with-cgal=$cgal_dir \
 $debug

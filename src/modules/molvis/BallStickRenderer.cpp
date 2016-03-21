@@ -17,10 +17,13 @@
 #include <modules/molstr/BondIterator.hpp>
 
 #include <gfx/DrawAttrArray.hpp>
-#include <sysdep/OglDisplayContext.hpp>
-#include <sysdep/OglProgramObject.hpp>
-#include "GLSLSphereHelper.hpp"
-#include "GLSLCylinderHelper.hpp"
+
+#ifdef USE_OPENGL
+# include <sysdep/OglDisplayContext.hpp>
+# include <sysdep/OglProgramObject.hpp>
+# include "GLSLSphereHelper.hpp"
+# include "GLSLCylinderHelper.hpp"
+#endif
 
 using namespace molvis;
 using namespace molstr;
@@ -33,42 +36,33 @@ BallStickRenderer::BallStickRenderer()
   m_bUseShader = false;
   m_bCheckShaderOK = false;
   m_bDrawRingOnly = false;
+#ifdef USE_OPENGL
   m_pSlSph = MB_NEW GLSLSphereHelper();
   m_pSlCyl = MB_NEW GLSLCylinderHelper();
+#endif
   m_nVBMode = VBMODE_OFF;
 }
 
 BallStickRenderer::~BallStickRenderer()
 {
   MB_DPRINTLN("BallStickRenderer destructed %p", this);
+#ifdef USE_OPENGL
   delete m_pSlSph;
   delete m_pSlCyl;
+#endif
 }
 
 const char *BallStickRenderer::getTypeName() const
 {
   return "ballstick";
 }
-/*
-void BallStickRenderer::setSceneID(qlib::uid_t nid)
-{
-  super_t::setSceneID(nid);
-  if (nid==qlib::invalid_uid)
-    return;
-
-  if (m_pSlSph->initShader(this) &&
-      m_pSlCyl->initShader(this)) {
-    MB_DPRINTLN("BallStick sphere shader OK");
-    m_bUseShader = true;
-  }
-  else {
-    m_bUseShader = false;
-  }
-}
-*/
 
 void BallStickRenderer::display(DisplayContext *pdc)
 {
+#ifndef USE_OPENGL
+  super_t::display(pdc);
+  return;
+#else
   if (pdc->isFile() || m_nVBMode!=VBMODE_OFF) {
     // case of the file (non-ogl) rendering
     // always use the old version.
@@ -146,16 +140,20 @@ void BallStickRenderer::display(DisplayContext *pdc)
     // old version (uses DisplayContext::sphere)
     super_t::display(pdc);
   }
+
+#endif
 }
 
 void BallStickRenderer::invalidateDisplayCache()
 {
   super_t::invalidateDisplayCache();
   
+#ifdef USE_OPENGL
   if (m_bUseShader) {
     m_pSlSph->invalidate();
     m_pSlCyl->invalidate();
   }
+#endif
 
   /*if (m_pDrawElem!=NULL) {
     delete m_pDrawElem;
@@ -496,6 +494,7 @@ void BallStickRenderer::propChanged(qlib::LPropEvent &ev)
 
 ////////////
 
+#ifdef USE_OPENGL
 void BallStickRenderer::renderShaderImpl()
 {
   MolCoordPtr pMol = getClientMol();
@@ -611,6 +610,6 @@ void BallStickRenderer::renderShaderImpl()
   // initialize the coloring scheme
   getColSchm()->end();
   pMol->getColSchm()->end();
-
 }
 
+#endif

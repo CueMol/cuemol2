@@ -23,6 +23,7 @@ namespace {
 
     virtual bool setCurrent() { return true; }
     virtual bool isCurrent() const { return true; }
+    virtual bool isFile() const { return true; }
 
     virtual void vertex(const qlib::Vector4D &) {}
     virtual void normal(const qlib::Vector4D &) {}

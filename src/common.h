@@ -61,6 +61,7 @@
 #endif
 
 #ifdef __cplusplus
+#include <typeinfo>
 #include <list>
 #include <deque>
 #include <vector>

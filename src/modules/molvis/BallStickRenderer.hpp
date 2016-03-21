@@ -18,8 +18,10 @@ namespace molvis {
   using namespace molstr;
   using gfx::DisplayContext;
 
+#ifdef USE_OPENGL
   class GLSLSphereHelper;
   class GLSLCylinderHelper;
+#endif
 
   class MOLVIS_API BallStickRenderer : public MolAtomRenderer
   {
@@ -142,11 +144,12 @@ namespace molvis {
     bool m_bUseShader;
     bool m_bCheckShaderOK;
 
+#ifdef USE_OPENGL
     GLSLSphereHelper *m_pSlSph;
     GLSLCylinderHelper *m_pSlCyl;
-
     void initShader();
     void renderShaderImpl();
+#endif
 
   private:
     int m_nGlRendMode;
