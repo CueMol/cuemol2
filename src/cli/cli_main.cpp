@@ -19,6 +19,7 @@
 
 #ifdef HAVE_PYTHON
 #  include <pybr/pybr.hpp>
+#  include <pybr/PythonBridge.hpp>
 #endif
 
 #ifdef USE_XMLRPC
@@ -267,7 +268,9 @@ void process_input(const LString &loadscr, const std::deque<LString> &args)
   }
   else if (full_path.extension()==".py") {
 #ifdef HAVE_PYTHON
-    pybr::runFile(loadscr);
+    pybr::PythonBridge *pSvc = pybr::PythonBridge::getInstance();
+    pSvc->setCmdArgs(args);
+    pSvc->runFile(loadscr);
 #else
     LOG_DPRINTLN("Python not supported!!");
 #endif

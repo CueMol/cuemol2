@@ -24,4 +24,5 @@ SUBDIRS = \
  @BUILD_MODULES@ \
  @BUILD_CLI@ \
  @BUILD_XULGUI@ \
+ utils \
 $(NULL)

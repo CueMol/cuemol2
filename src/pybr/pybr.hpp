@@ -41,13 +41,13 @@ namespace pybr {
 
   class Interp;
 
-  /** Initialize the qlib library */
+  /// Initialize the qlib library
   PYBR_API bool init();
 
-  /** Cleanup the qlib library */
+  /// Cleanup the qlib library
   PYBR_API void fini();
 
-  /** run python script file */
+  /// run python script file
   PYBR_API bool runFile(const qlib::LString &path);
 }
 

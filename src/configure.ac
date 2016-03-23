@@ -197,7 +197,7 @@ if test x$GUI_ARCH = x ; then
 case $host_os in
      darwin*)
 	GUI_ARCH=OSX
-	BUILD_OSDEP="sysdep osxbuild utils stub"
+	BUILD_OSDEP="sysdep osxbuild stub"
 	AC_DEFINE([GUI_ARCH], [OSX], [name of the GUI archtecture])
 
         # make_distr.pl substitutions
@@ -222,7 +222,7 @@ case $host_os in
      ;;
      *)
 	GUI_ARCH=X11
-	BUILD_OSDEP="sysdep uxdist utils"
+	BUILD_OSDEP="sysdep uxdist"
 	AC_DEFINE([GUI_ARCH], [X11], [name of the GUI archtecture])
         dnl Linux/Gecko23 build requires std=c++0x feature (char16_t)
         AX_CXX_COMPILE_STDCXX_0X

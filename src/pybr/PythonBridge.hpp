@@ -25,6 +25,10 @@ namespace pybr {
   {
     MC_SCRIPTABLE;
 
+  private:
+    /// command line arguments
+    std::deque<LString> m_cmdargs;
+
   public:
     PythonBridge();
     virtual ~PythonBridge();
@@ -32,6 +36,16 @@ namespace pybr {
     void runFile(const LString &filename);
     void runFile2(const LString &filename, qlib::uid_t scene_id, qlib::uid_t view_id);
     void runFile3(const LString &filename, qlib::uid_t scene_id, qlib::uid_t view_id, const LString &argv);
+
+    const std::deque<LString> &getCmdArgs() const
+    {
+      return m_cmdargs;
+    }
+
+    void setCmdArgs(const std::deque<LString> &args)
+    {
+      m_cmdargs = args;
+    }
 
   public:
     // these methods are called by ClassReg (ignore)

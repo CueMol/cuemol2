@@ -141,6 +141,5 @@ bool isFileReadable(const LString &strpath)
   return false;
 }
 
-
 }
 

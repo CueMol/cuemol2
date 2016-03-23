@@ -4,8 +4,8 @@ cwd=`pwd`
 top_srcdir=$cwd/../src/
 
 install_dir=$HOME/app/cuemol2
-debug="--enable-debug --enable-m64"
-#debug="--disable-debug --enable-m64"
+#debug="--enable-debug --enable-m64"
+debug="--disable-debug --enable-m64"
 
 usepybr="--enable-python"
 #usepybr="--disable-python"

@@ -9,6 +9,7 @@
 
 #include "pybr.hpp"
 #include "wrapper.hpp"
+#include "PythonBridge.hpp"
 
 extern void pybr_regClasses();
 
@@ -17,6 +18,7 @@ namespace pybr {
   bool init()
   {
     pybr_regClasses();
+    Py_SetProgramName("cuemol2");
     Py_Initialize();
     bool res = Wrapper::setup();
     return res;
@@ -35,12 +37,18 @@ namespace pybr {
       return false;
     }
     
-    int res = PyRun_SimpleFile(fp, path.c_str());
+    PythonBridge *pSvc = PythonBridge::getInstance();
+
+    bool res = true;
+    try {
+      pSvc->runFile(path);
+    }
+    catch (...) {
+      res = false;
+    }
 
     fclose(fp);
     
-    if (res<0)
-      return false;
-    return true;
+    return res;
   }
 }
