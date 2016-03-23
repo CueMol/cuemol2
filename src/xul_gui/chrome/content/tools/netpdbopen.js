@@ -228,10 +228,12 @@ Qm2Main.prototype.openPDBsiteImpl = function (pdbid, afuncs)
   var scene = this.mMainWnd.currentSceneW;
   var listener;
 
-  //pdb_url = "http://www.rcsb.org/pdb/download/downloadFile.do?"+
-  //"fileFormat=pdb&compression=NO&structureId="+pdbid;
-  pdb_url = "http://www.rcsb.org/pdb/files/"+pdbid+".pdb.gz";
+  pdb_url = "http://www.rcsb.org/pdb/download/downloadFile.do?"+"fileFormat=pdb&compression=YES&structureId="+pdbid;
+  //pdb_url = "http://www.rcsb.org/pdb/files/"+pdbid+".pdb.gz";
   //pdb_url = "http://www.rcsb.org/pdb/files/"+pdbid+".pdb"
+
+  //var mid = pdbid.substr(1,2);
+  //pdb_url = "ftp://ftp.wwpdb.org/pub/pdb/data/structures/divided/pdb/"+mid+"/pdb"+pdbid+".ent.gz"
 
   dd("open PDB site: URL=\""+pdb_url+"\"");
   // alert("OK PDBID="+pdb_url);
