@@ -161,16 +161,14 @@ namespace render {
 
     void writeEdgeLine(PrintStream &ips, const Edge &elem, int flag=0);
 
-    // void writeEdgeLine(PrintStream &ips, int iv1, int iv2, int flag=0);
-
     void writeEdgeLine(PrintStream &ips,
                        const Vector4D &v1, const Vector4D &v2,
                        const Vector4D &n1, const Vector4D &n2,
+                       int alpha1, int alpha2,
                        int flag=0);
 
     void writePoint(PrintStream &ips,
-                    const Vector4D &v1, const Vector4D &n1,
-                    int flag /*=0*/);
+                    const Vector4D &v1, const Vector4D &n1);
 
     void writeCornerPoints(PrintStream &ips);
 

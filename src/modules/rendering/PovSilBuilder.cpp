@@ -359,12 +359,20 @@ void PovDisplayContext::writeEdgeLine(PrintStream &ips, const Edge &elem, int fl
 
   MeshVert *pv1 = m_vertvec[elem.iv1];
   MeshVert *pv2 = m_vertvec[elem.iv2];
-  writeEdgeLine(ips, pv1->v, pv2->v, pv1->n, pv2->n, flag);
+
+  ColorPtr col1, col2;
+  m_pIntData->m_clut.getColor(pv1->c, col1);
+  m_pIntData->m_clut.getColor(pv1->c, col2);
+  int alpha1 = col1->a();
+  int alpha2 = col2->a();
+
+  writeEdgeLine(ips, pv1->v, pv2->v, pv1->n, pv2->n, alpha1, alpha2, flag);
 }
 
 void PovDisplayContext::writeEdgeLine(PrintStream &ips,
                                       const Vector4D &v1, const Vector4D &v2,
                                       const Vector4D &n1, const Vector4D &n2,
+                                      int alpha1, int alpha2,
                                       int flag /*=0*/)
 {
   // check invalid vertex and normal
@@ -451,14 +459,20 @@ void PovDisplayContext::writeEdgeLine(PrintStream &ips,
              n1.x(), n1.y(), n1.z());
   
   ips.format("%f*%s_sl_scl ", w, secname.c_str());
-  ips.format("texture { %s_sl_tex pigment { color rgb <%f,%f,%f> }}\n",
-             secname.c_str(), r, g, b);
+
+  int alpha = (alpha1+alpha2)/2;
+
+  if (alpha==255)
+    ips.format("texture { %s_sl_tex pigment { color rgb <%f,%f,%f> }}\n",
+               secname.c_str(), r, g, b);
+  else
+    ips.format("texture { %s_sl_tex pigment { color rgbt <%f,%f,%f,%f> }}\n",
+               secname.c_str(), r, g, b, 1.0-alpha/255.0);
   ips.format("}\n");
 }
 
 void PovDisplayContext::writePoint(PrintStream &ips,
-                                   const Vector4D &v1, const Vector4D &n1,
-                                   int flag /*=0*/)
+                                   const Vector4D &v1, const Vector4D &n1)
 {
   // check invalid vertex and normal
   if (!qlib::isFinite(v1.x()) ||
@@ -553,7 +567,12 @@ void PovDisplayContext::writeCornerPoints(PrintStream &ips)
      */
 
     pv1 = m_vertvec[elem.first];
-    writePoint(ips, pv1->v, pv1->n, 0);
+
+    ColorPtr col1;
+    m_pIntData->m_clut.getColor(pv1->c, col1);
+    int alpha = col1->a();
+    if (alpha==255)
+      writePoint(ips, pv1->v, pv1->n);
   }
 
   MB_DPRINTLN("Write corner points OK");
@@ -631,7 +650,6 @@ void PovDisplayContext::checkAndWriteEdges(PrintStream &ips, std::vector<char> &
     if (nmode==MFMOD_MESH ||
         nmode==MFMOD_OPNCYL ||
         nmode==MFMOD_CLSCYL) {
-      //writeEdgeLine(ips, pv1->v, pv2->v, pv1->n, pv2->n, 0);
       writeEdgeLine(ips, elem);
       continue;
     }
@@ -677,28 +695,32 @@ void PovDisplayContext::checkAndWriteEdges(PrintStream &ips, std::vector<char> &
     MB_DPRINTLN(" nisec = %d", nisec);
 
     if (nisec==0) {
-      // if (vvl[elem.iv1] && vvl[elem.iv2])
-      //writeEdgeLine(ips, pv1->v, pv2->v, pv1->n, pv2->n, 0);
       writeEdgeLine(ips, elem, 0);
     }
     else if (nisec==1) {
       // show the truncated edge line
       Vector4D vsec(psec.x(), psec.y(), psec.z());
       if (vvl[elem.iv1] && !vvl[elem.iv2]) {
-        writeEdgeLine(ips, pv1->v, vsec, pv1->n, pv2->n, 1);
-        //writeEdgeLine(ips, pv1->v, pv2->v, pv1->n, pv2->n, 1);
+        ColorPtr col1, col2;
+        m_pIntData->m_clut.getColor(pv1->c, col1);
+        m_pIntData->m_clut.getColor(pv1->c, col2);
+        int alpha1 = col1->a();
+        int alpha2 = col2->a();
+        writeEdgeLine(ips, pv1->v, vsec, pv1->n, pv2->n, alpha1, alpha2, 1);
       }
       else if (!vvl[elem.iv1] && vvl[elem.iv2]) {
-        writeEdgeLine(ips, vsec, pv2->v, pv1->n, pv2->n, 2);
-        //writeEdgeLine(ips, pv1->v, pv2->v, pv1->n, pv2->n, 2);
+        ColorPtr col1, col2;
+        m_pIntData->m_clut.getColor(pv1->c, col1);
+        m_pIntData->m_clut.getColor(pv1->c, col2);
+        int alpha1 = col1->a();
+        int alpha2 = col2->a();
+        writeEdgeLine(ips, vsec, pv2->v, pv1->n, pv2->n, alpha1, alpha2, 2);
       }
       else {
-        //writeEdgeLine(ips, pv1->v, pv2->v, pv1->n, pv2->n, 3);
         writeEdgeLine(ips, elem, 3);
       }
     }
     else {
-      //writeEdgeLine(ips, pv1->v, pv2->v, pv1->n, pv2->n, 4);
       writeEdgeLine(ips, elem, 4);
     }
   }
@@ -831,7 +853,7 @@ void PovDisplayContext::writeSilOnly(PrintStream &ips, void *pfvec)
     // write the visible devided edges
     for (i=0; i<ndiv+1; ++i) {
       if (bvvis[i] || bvvis[i+1]) {
-        writeEdgeLine(ips, vins[i], vins[i+1], nvins[i], nvins[i+1], 0);
+        writeEdgeLine(ips, vins[i], vins[i+1], nvins[i], nvins[i+1], 255, 255, 0);
       }
     }
   }
