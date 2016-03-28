@@ -397,6 +397,12 @@ texture {
     </def>
   </material>
 
+  <material id="wood14scl2">
+    <def type="pov">
+      texture {T_Wood14 scale 2}
+    </def>
+  </material>
+  
   <!-- ========== Selection aliases ========== -->
 
   <sel id="helix" value="rprop secondary=helix"/>

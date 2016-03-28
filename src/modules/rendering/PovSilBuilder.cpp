@@ -362,7 +362,7 @@ void PovDisplayContext::writeEdgeLine(PrintStream &ips, const Edge &elem, int fl
 
   ColorPtr col1, col2;
   m_pIntData->m_clut.getColor(pv1->c, col1);
-  m_pIntData->m_clut.getColor(pv1->c, col2);
+  m_pIntData->m_clut.getColor(pv2->c, col2);
   int alpha1 = col1->a();
   int alpha2 = col2->a();
 
@@ -421,20 +421,27 @@ void PovDisplayContext::writeEdgeLine(PrintStream &ips,
   */
 
   Vector4D x1, x2;
+  int xa1, xa2;
 
-  // always keep x1.z < x2.z
+  // always keep x1.z < x2.z (for Z-plane clipping)
   if (v1.z()>v2.z()) {
+    // swap 1 and 2
     x1 = v2;
     x2 = v1;
+    xa1 = alpha2;
+    xa2 = alpha1;
   }
   else {
     x1 = v1;
     x2 = v2;
+    xa1 = alpha1;
+    xa2 = alpha2;
   }
 
   Vector4D nn = x2 - x1;
   double len = nn.length();
 
+  // ignore too-short lines
   if (qlib::isNear4(0.0, len))
     return;
   
@@ -448,27 +455,32 @@ void PovDisplayContext::writeEdgeLine(PrintStream &ips,
       x2 = nn.scale((clipz-x1.z())/(nn.z())) + x1;
   }
   
-  ips.format("cylinder{<%f, %f, %f> + %s_sl_rise*%f*<%f,%f,%f>, ",
-             x1.x(), x1.y(), x1.z(),
-             secname.c_str(), rise,
-             n1.x(), n1.y(), n1.z());
-  
-  ips.format("<%f, %f, %f> + %s_sl_rise*%f*<%f,%f,%f>, ",
-             x2.x(), x2.y(), x2.z(),
-             secname.c_str(), rise,
-             n1.x(), n1.y(), n1.z());
-  
-  ips.format("%f*%s_sl_scl ", w, secname.c_str());
+  if (alpha1==255 && alpha2==255) {
+    // solid lines
+    ips.format("edge_line(<%f, %f, %f>, <%f,%f,%f>, <%f, %f, %f>, <%f,%f,%f>, %s_sl_rise*%f,",
+               x1.x(), x1.y(), x1.z(),
+               n1.x(), n1.y(), n1.z(),
+               x2.x(), x2.y(), x2.z(),
+               n2.x(), n2.y(), n2.z(),
+               secname.c_str(), rise);
+    ips.format("%f*%s_sl_scl, ", w, secname.c_str());
+    ips.format("%s_sl_tex, <%f,%f,%f>)\n",secname.c_str(), r, g, b);
 
-  int alpha = (alpha1+alpha2)/2;
+  }
+  else {
+    // semi-transparent lines
+    ips.format("edge_line2(<%f, %f, %f>, <%f,%f,%f>, %f, <%f, %f, %f>, <%f,%f,%f>, %f, %s_sl_rise*%f,",
+               x1.x(), x1.y(), x1.z(),
+               n1.x(), n1.y(), n1.z(),
+               1.0-xa1/255.0,
+               x2.x(), x2.y(), x2.z(),
+               n2.x(), n2.y(), n2.z(),
+               1.0-xa2/255.0,
+               secname.c_str(), rise);
+    ips.format("%f*%s_sl_scl, ", w, secname.c_str());
+    ips.format("%s_sl_tex, <%f,%f,%f>)\n",secname.c_str(), r, g, b);
 
-  if (alpha==255)
-    ips.format("texture { %s_sl_tex pigment { color rgb <%f,%f,%f> }}\n",
-               secname.c_str(), r, g, b);
-  else
-    ips.format("texture { %s_sl_tex pigment { color rgbt <%f,%f,%f,%f> }}\n",
-               secname.c_str(), r, g, b, 1.0-alpha/255.0);
-  ips.format("}\n");
+  }
 }
 
 void PovDisplayContext::writePoint(PrintStream &ips,

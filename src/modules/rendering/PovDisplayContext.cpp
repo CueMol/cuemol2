@@ -448,6 +448,37 @@ void PovDisplayContext::writeHeader()
   ips.format("#end\n");
   ips.format("\n");
 
+  // Edge line macros
+  ips.format("#macro cyl_xform(v1, v2, r)\n");
+  ips.format("#local v21 = v2-v1;\n");
+  ips.format("#local len=vlength(v21);\n");
+  ips.format("#local vec=v21/len;\n");
+  ips.format("#local a = sqrt(vec.x * vec.x + vec.y * vec.y);\n");
+  ips.format("//  if (a > 1.0e-6) {\n");
+  ips.format("scale <r,r,len>\n");
+  ips.format("#if (a>1.0e-6)\n");
+  ips.format("#local f = 1.0 / a;\n");
+  ips.format("matrix <vec.x*vec.z*f, vec.y*vec.z*f, -a,\n");
+  ips.format("        -vec.y*f, vec.x*f, 0.0,\n");
+  ips.format("        vec.x, vec.y, vec.z,\n");
+  ips.format("        0,0,0>\n");
+  ips.format("#end\n");
+  ips.format("translate v1\n");
+  ips.format("#end\n");
+  ips.format("\n");
+
+  ips.format("#macro edge_line(v1, n1, v2, n2, raise, w, tex, col)\n");
+  ips.format("cylinder{v1 + raise*n1, v2 + raise*n2, w open texture { tex pigment { color rgb col }}}\n");
+  ips.format("#end\n");
+  ips.format("\n");
+
+  ips.format("#macro edge_line2(v1, n1, a1, v2, n2, a2, raise, w, tex, col)\n");
+  ips.format("cylinder{<0,0,0>,<0,0,1>,1 open texture{tex pigment{gradient z color_map {[0 color rgbt col+<0,0,0,a1>][1 color rgbt col+<0,0,0,a2>]}}}\n");
+  ips.format("cyl_xform(v1 + raise*n1, v2 + raise*n2, w)}\n");
+  ips.format("#end\n");
+  ips.format("\n");
+
+  // Start contents
   ips.format("union {\n");
 }
 
