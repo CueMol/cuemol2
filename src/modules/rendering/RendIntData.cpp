@@ -770,7 +770,7 @@ void RendIntData::convCyl(Cyl *pCyl)
   // connect verteces & make faces
   //
 
-  int nfmode = bcap?3:1;
+  int nfmode = bcap ? MFMOD_CLSCYL : MFMOD_OPNCYL;
 
   // bottom disk
   if (bcap) {
