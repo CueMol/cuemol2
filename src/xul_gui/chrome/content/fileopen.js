@@ -1001,9 +1001,10 @@ Qm2Main.prototype.execIntJS = function (path)
     fun(scene, view);
   }
   catch (e) {
-    cuemol.putLogMsg(e.message);
+    cuemol.putLogMsg("Exec internal JS error:\n"+e.message);
   }
   
+  cuemol.putLogMsg("Exec internal JS: "+path+" done.");
 }
 
 Qm2Main.prototype.onOpenURL = function ()

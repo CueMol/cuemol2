@@ -14,26 +14,26 @@
 
 using namespace qlib;
 
-/**
-   File I/O implementation using C's stdio functions
-*/
+///
+///  File I/O implementation using C's stdio functions
+///
 class PosixFIOImpl : public qlib::detail::AbstFIOImpl
 {
 private:
   
-  /** file descriptor */
+  /// file descriptor
   FILE *m_fp;
   
   LString m_origFname;
 
 public:
-  /** default ctor */
+  /// default ctor
   PosixFIOImpl() : m_fp(NULL)
   {
     // MB_DPRINTLN("PosixFIOImpl(%p) ctor called", this);
   }
 
-  /** dtor */
+  /// dtor
   virtual ~PosixFIOImpl()
   {
     // MB_DPRINTLN("PosixFIOImpl(%p) dtor called", this);

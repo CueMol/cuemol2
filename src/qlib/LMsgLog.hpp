@@ -15,17 +15,17 @@ namespace qlib {
   class LMsgLogImpl;
   class LLogEventListener;
 
-  /**
-     Debug Log class LMsgLog
-  */
+  ///
+  ///  Debug Log class LMsgLog
+  ///
   class QLIB_API LMsgLog : public LSingletonScrObject
   {
     MC_SCRIPTABLE;
     
   public:
-    /**
-       Log level constants
-    */
+    ///
+    ///  Log level constants
+    ///
     enum {
       DL_ERROR  =0,
       DL_WARN   =10,
@@ -42,7 +42,11 @@ namespace qlib {
     virtual ~LMsgLog();
 
     void writeLog(int nlev, const char *msg, bool bNL =false);
+
+    // log file redirection
     void setRedirect(FILE *fp);
+    void setFileRedirPath(const LString &path);
+    LString getFileRedirPath() const;
 
     int addListener(LLogEventListener *plsn);
     bool removeListener(int nid);

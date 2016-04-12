@@ -38,12 +38,23 @@ namespace qsys {
     virtual void run()
     {
       //MB_DPRINTLN("*** Thread %p started ***", m_pthr);
-
-      m_pipeImpl = qlib::sp<PipeStreamImpl>(MB_NEW PipeStreamImpl);
-      m_in.setImpl(m_pipeImpl);
-      ObjectPtr pret = m_pRdr->load(m_in);
-      m_pObj = pret;
-
+      try {
+        m_pipeImpl = qlib::sp<PipeStreamImpl>(MB_NEW PipeStreamImpl);
+        m_in.setImpl(m_pipeImpl);
+        ObjectPtr pret = m_pRdr->load(m_in);
+        m_pObj = pret;
+      }
+      catch (qlib::LException &e) {
+        LOG_DPRINTLN("Exception %s occured in worker thread: %s",
+                     typeid(e).name(), e.getMsg().c_str());
+        m_pObj = ObjectPtr();
+        return;
+      }
+      catch (...) {
+        LOG_DPRINTLN("Unknown Exception occured in worker thread");
+        m_pObj = ObjectPtr();
+        return;
+      }
       //MB_DPRINTLN("*** Thread %p end ***", m_pthr);
     }
 

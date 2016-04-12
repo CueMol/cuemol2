@@ -30,4 +30,7 @@ runtime_class MsgLog
 
   string getAccumMsg();
   void removeAccumMsg();
+
+  void setFileRedirPath(string);
+  string getFileRedirPath();
 };

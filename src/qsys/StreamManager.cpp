@@ -89,7 +89,9 @@ ObjectPtr StreamManager::waitLoadAsync(int id)
   m_iotab.remove(id);
   delete pThr;
 
-  pret->setSource("");
+  if (!pret.isnull())
+    pret->setSource("");
+
   return pret;
 }
 

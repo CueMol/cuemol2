@@ -9,6 +9,7 @@
 #include "LLogEvent.hpp"
 #include "LVarArgs.hpp"
 #include "LScrCallBack.hpp"
+#include "LUnicode.hpp"
 
 #ifdef WIN32
 #  include <windows.h>
@@ -27,8 +28,10 @@ namespace qlib {
     }
   };
   
-  class LMsgLogImpl {
+  class LMsgLogImpl
+  {
   public:
+    LString m_filepath;
     FILE *m_fp;
     LLogEventCaster m_evcaster;
     LString m_accumMsg;
@@ -41,11 +44,16 @@ using namespace qlib;
 LMsgLog::LMsgLog()
      : m_pImpl( MB_NEW LMsgLogImpl() )
 {
-#if defined(MB_DEBUG) || !defined(WIN32)
-  m_pImpl->m_fp = stderr;
-#else
+//#if defined(MB_DEBUG) || !defined(WIN32)
+
+#if defined(WIN32)
+  // windows: no stderr
   m_pImpl->m_fp = NULL;
+#else
+  // unix: write msgs to stderr
+  m_pImpl->m_fp = stderr;
 #endif
+
   m_pImpl->m_bAccumMsg = true;
 }
 
@@ -74,6 +82,38 @@ LMsgLog *LMsgLog::s_pLog;
 void LMsgLog::setRedirect(FILE *fp)
 {
   m_pImpl->m_fp = fp;
+}
+
+void LMsgLog::setFileRedirPath(const LString &path)
+{
+  // close the current stream
+  if (!m_pImpl->m_filepath.isEmpty() && m_pImpl->m_fp)
+    ::fclose(m_pImpl->m_fp);
+  m_pImpl->m_filepath = "";
+
+  if (path.isEmpty()) {
+    // reset to default
+#ifdef _WIN32
+    m_pImpl->m_fp = NULL;
+#else
+    m_pImpl->m_fp = stderr;
+#endif
+  }
+  else {
+#ifdef _WIN32
+    m_pImpl->m_fp = qlib::fopen_utf8(path.c_str(), "wb");
+#else
+    m_pImpl->m_fp = qlib::fopen_utf8(path.c_str(), "w");
+#endif
+    if (m_pImpl->m_fp==NULL) {
+      MB_THROW(IOException, ("Cannot open file:"+path));
+    }
+  }    
+}
+
+LString LMsgLog::getFileRedirPath() const
+{
+  return m_pImpl->m_filepath;
 }
 
 int LMsgLog::addListener(LLogEventListener *plsn)
