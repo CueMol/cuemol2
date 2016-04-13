@@ -228,21 +228,37 @@ void MTZ2MapReader::doFFT()
   checkMapResoln();
   calcgrid();
   int ncc = m_nc/2+1;
+  int ninalloc, noutalloc;
 
 #ifdef HERMIT
-  std::complex<float> *in =
-    (std::complex<float> *) fftwf_malloc(sizeof(fftwf_complex) * m_na * m_nb * ncc);
-  float *out = (float *) fftwf_malloc(sizeof(float) * m_na * m_nb * m_nc);
+  ninalloc = sizeof(fftwf_complex) * m_na * m_nb * ncc;
+  noutalloc = sizeof(float) * m_na * m_nb * m_nc;
+  std::complex<float> *in = (std::complex<float> *) fftwf_malloc(ninalloc);
+  float *out = (float *) fftwf_malloc(noutalloc);
 # define IND(h,k,l) ((l) + ncc*((k) + m_nb*(h)))
 # define NCS ncc
 #else
-  std::complex<float> *in =
-    (std::complex<float> *) fftwf_malloc(sizeof(fftwf_complex) * m_na * m_nb * m_nc);
-  std::complex<float> *out =
-    (std::complex<float> *) fftwf_malloc(sizeof(fftwf_complex) * m_na * m_nb * m_nc);
+  ninalloc = sizeof(fftwf_complex) * m_na * m_nb * m_nc;
+  noutalloc = sizeof(fftwf_complex) * m_na * m_nb * m_nc;
+  std::complex<float> *in = (std::complex<float> *) fftwf_malloc(ninalloc);
+  std::complex<float> *out = (std::complex<float> *) fftwf_malloc(noutalloc);
 # define IND(h,k,l) ((l) + m_nc*((k) + m_nb*(h)))
 # define NCS m_nc
 #endif
+
+  // check the memory allocation results
+  if (in==NULL) {
+    LString msg = LString::format("MTZ.doFFT> cannot allocate in-memory (%d w)", ninalloc);
+    LOG_DPRINTLN("MTZ.doFFT> %s", msg.c_str());
+    MB_THROW(qlib::RuntimeException, msg);
+    return;
+  }
+  if (out==NULL) {
+    LString msg = LString::format("MTZ.doFFT> cannot allocate out-memory (%d w)", noutalloc);
+    LOG_DPRINTLN("MTZ.doFFT> %s", msg.c_str());
+    MB_THROW(qlib::RuntimeException, msg);
+    return;
+  }
 
   int h, k, l;
   for (l=0; l<NCS; ++l)
