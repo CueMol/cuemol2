@@ -394,6 +394,7 @@ void MTZ2MapReader::doFFT()
 
   fftwf_free(out);
 #endif
+
 }
 
 void MTZ2MapReader::readHeader(qlib::InStream &ins) throw (qlib::FileFormatException)
