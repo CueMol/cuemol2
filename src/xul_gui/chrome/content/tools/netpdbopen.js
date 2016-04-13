@@ -15,10 +15,11 @@ function StreamListener(tid)
   this.m_strmgr = null;
   this.m_window = null;
   this.mChannel = null;
-  //this.mLoadPDB = false;
-  //this.mLoadEDS_2fofc = false;
-  //this.mLoadEDS_fofc = false;
   this.mFuncs = null;
+
+  this.mLoadPDB = false;
+  this.mLoadEDS_2fofc = false;
+  this.mLoadEDS_fofc = false;
 }
 
 // nsIStreamListener
@@ -81,12 +82,34 @@ StreamListener.prototype.onStopRequest = function (aRequest, aContext, aStatus)
   obj.name = this.mNewObjName;
 
   // EDIT TXN START //
-  this.m_scene.startUndoTxn("Get PDB");
+  if (this.mLoadPDB)
+    this.m_scene.startUndoTxn("Get PDB");
+  else
+    this.m_scene.startUndoTxn("Get EDS");
+
   try {
     this.m_scene.addObject(obj);
     this.mDlgRes.obj_id = obj.uid;
     this.mDlgRes.new_obj = true;
-    gQm2Main.doSetupRend(this.m_scene, this.mDlgRes);
+    if (this.mLoadEDS_2fofc) {
+	this.mDlgRes.rendname = "contour1";
+	this.mDlgRes.mapcolor = "#0000FF";
+	this.mDlgRes.mapsigma = 1.0;
+	gQm2Main.doSetupRend(this.m_scene, this.mDlgRes);
+    }
+    else if (this.mLoadEDS_fofc) {
+	this.mDlgRes.rendname = "pos-cont";
+	this.mDlgRes.mapcolor = "#00FF00";
+	this.mDlgRes.mapsigma = 3.0;
+	gQm2Main.doSetupRend(this.m_scene, this.mDlgRes);
+	this.mDlgRes.rendname = "neg-cont";
+	this.mDlgRes.mapcolor = "#FF0000";
+	this.mDlgRes.mapsigma = -3.0;
+	gQm2Main.doSetupRend(this.m_scene, this.mDlgRes);
+    }
+    else {
+	gQm2Main.doSetupRend(this.m_scene, this.mDlgRes);
+    }
   }
   catch (e) {
     dd("Exception occured: "+e);
@@ -288,6 +311,7 @@ Qm2Main.prototype.openPDBsiteImpl = function (pdbid, afuncs)
   listener.mDlgRes = dlgdata;
   listener.mChannel = ioService.newChannelFromURI(uri);
   listener.mFuncs = afuncs;
+  listener.mLoadPDB = true;
 
   function onLoad(aDlg) {
     listener.m_window = aDlg;
@@ -360,11 +384,6 @@ Qm2Main.prototype.openEDSsiteImpl = function (pdbid, b2fofc, afuncs)
   dlgdata.rendtype = "contour";
   dlgdata.rendname = "contour1";
 
-  if (!b2fofc) {
-    dlgdata.mapcolor = "#00FF00";
-    dlgdata.mapsigma = 3.0;
-  }
-
   //////////
   // start asynchronous loading
 
@@ -379,6 +398,13 @@ Qm2Main.prototype.openEDSsiteImpl = function (pdbid, b2fofc, afuncs)
   listener.mDlgRes = dlgdata;
   listener.mChannel = ioService.newChannelFromURI(uri);
   listener.mFuncs = afuncs;
+
+  if (b2fofc) {
+    listener.mLoadEDS_2fofc = true;
+  }
+  else {
+    listener.mLoadEDS_fofc = true;
+  }
 
   function onLoad(aDlg) {
     listener.m_window = aDlg;
