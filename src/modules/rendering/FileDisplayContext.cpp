@@ -498,6 +498,8 @@ void FileDisplayContext::startSection(const LString &name)
     m_pIntData->m_dClipZ = m_dSlabDepth/2.0;
   else
     m_pIntData->m_dClipZ = -1.0;
+
+  m_secName = name;
 }
 
 void FileDisplayContext::endSection()
@@ -510,5 +512,7 @@ void FileDisplayContext::endSection()
   // m_pIntData->end();
   delete m_pIntData;
   m_pIntData = NULL;
+
+  m_secName = LString();
 }
 

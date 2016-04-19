@@ -97,6 +97,9 @@ namespace render {
 
     std::vector<Vector4D> m_vectmp;
 
+    /// Section name
+    LString m_secName;
+
   public:
 
     ////////////////////////////////////////////////////////////
@@ -146,6 +149,8 @@ namespace render {
     int getPolygonMode() const { return m_nPolyMode; }
 
     double getLineWidth() const { return m_linew; }
+
+    inline const LString &getSecName() const { return m_secName; }
 
     ////////////////////////////////////////////////////////////
 

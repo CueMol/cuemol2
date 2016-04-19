@@ -57,7 +57,7 @@ void PovDisplayContext::startSection(const LString &name)
   // start of rendering section
   super_t::startSection(name);
   m_pIntData->start(m_pPovOut, m_pIncOut, name);
-  m_secName = name;
+  // m_secName = name;
 
   if (!m_bPostBlend) {
     // no post-alpha blending
@@ -93,7 +93,6 @@ void PovDisplayContext::endSection()
   // end of rendering section
   writeObjects();
   super_t::endSection();
-  m_secName = LString();
 }
 
 /*

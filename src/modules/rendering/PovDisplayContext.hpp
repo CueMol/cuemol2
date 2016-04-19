@@ -42,9 +42,6 @@ namespace render {
     /// Blend table (alpha value (in string) ==> secname list)
     BlendTab m_blendTab;
 
-    /// Section name
-    LString m_secName;
-
     /// Material's @COLOR@ replaced flag table
     std::set<LString> m_matColReplTab;
     
@@ -137,8 +134,6 @@ namespace render {
     void writeTextureList();
     void writeGradTexture();
     int convTexInd(MeshVert *p1);
-
-    inline const LString &getSecName() const { return m_secName; }
 
     inline bool getMatColRepl(const LString &matname) const {
       std::set<LString>::const_iterator iter = m_matColReplTab.find(matname);

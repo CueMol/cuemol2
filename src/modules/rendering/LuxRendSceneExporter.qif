@@ -1,0 +1,28 @@
+// -*-Mode: C++;-*-
+//
+// LuxRender scene output class
+//
+
+#ifndef LUXREND_SCENE_EXPORTER_QIF_INCLUDED
+#define LUXREND_SCENE_EXPORTER_QIF_INCLUDED
+
+#include <qsys/SceneExporter.qif>
+
+runtime_class LuxRendSceneExporter extends SceneExporter
+{
+  client_hdr "LuxRendSceneExporter.hpp";
+  client_name render::LuxRendSceneExporter;
+
+  scriptable;
+  smartptr;
+
+  ////////////////////
+  // Property definition
+
+  // /// scale (1 angstrom <--> 1 mm)
+  // property real scale => m_scale;
+
+};
+
+#endif
+

@@ -7,6 +7,7 @@
 #include "PovSceneExporter.qif"
 #include "WbpSceneExporter.qif"
 #include "StlSceneExporter.qif"
+#include "LuxRendSceneExporter.qif"
 
 module render
 {
@@ -19,6 +20,7 @@ module render
   PovSceneExporter;
   WbpSceneExporter;
   StlSceneExporter;
+  LuxRendSceneExporter;
 
 };
 

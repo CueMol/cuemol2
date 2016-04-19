@@ -12,6 +12,7 @@
 #include "PovSceneExporter.hpp"
 #include "WbpSceneExporter.hpp"
 #include "StlSceneExporter.hpp"
+#include "LuxRendSceneExporter.hpp"
 
 #include <qsys/StreamManager.hpp>
 
@@ -39,6 +40,7 @@ namespace render {
     pSM->registWriter<PovSceneExporter>();
     pSM->registWriter<WbpSceneExporter>();
     pSM->registWriter<StlSceneExporter>();
+    pSM->registWriter<LuxRendSceneExporter>();
 
 #ifndef QM_BUILD_LW
 #endif
