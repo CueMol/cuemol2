@@ -70,6 +70,39 @@ private:
 
   void writeMeshes();
 
+  static inline bool isEqualGradCol(const ColorTable::elem_t &ic1,
+                                    const ColorTable::elem_t &ic2)
+  {
+    if (ic1.isGrad() && ic2.isGrad()) {
+      if (ic1.cid1==ic2.cid1 &&
+          ic1.cid2==ic2.cid2)
+        return true;
+      
+      if (ic1.cid1==ic2.cid2 &&
+          ic1.cid2==ic2.cid1)
+        return true;
+    }
+    else if (!ic1.isGrad() && ic2.isGrad()) {
+      // ic1 is solid color
+      if (ic1.cid1==ic2.cid1 ||
+          ic1.cid1==ic2.cid2)
+        return true;
+    }
+    else if (ic1.isGrad() && !ic2.isGrad()) {
+      // ic2 is solid color
+      if (ic2.cid1==ic1.cid1 ||
+          ic2.cid1==ic1.cid2)
+        return true;
+    }
+    else {
+      // both are solid color
+      if (ic1.cid1==ic2.cid1)
+        return true;
+    }
+    
+    return false;
+  }
+
 };
 
 }

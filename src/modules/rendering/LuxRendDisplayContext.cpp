@@ -101,16 +101,45 @@ void LuxRendDisplayContext::endSection()
 
 void LuxRendDisplayContext::writeHeader()
 {
-  double fovy = qlib::toDegree(::atan((m_dZoom/2.0)/m_dViewDist))*2.0;
-
   int width = m_pParent->getWidth();
   int height = m_pParent->getHeight();
+
+  double zoomy = m_dZoom;
+  double zoomx = zoomy * double(width) / double(height);
+  double fovx = qlib::toDegree(::atan((zoomx/2.0)/m_dViewDist))*2.0;
+  double fovy = qlib::toDegree(::atan((zoomy/2.0)/m_dViewDist))*2.0;
+
+  double fov;
+  if (height<width)
+    fov = fovy;
+  else
+    fov = fovx;
+
+  bool bPerspec = m_fPerspective;
+
+  if (bPerspec) {
+    if (fov<10.0) {
+      // fov is too small --> change to orthographic
+      bPerspec = false;
+    }
+  }
 
   // 
   PrintStream ps(*m_pOut);
   
-  ps.format("LookAt 0 0 %f 0 0 0 0 1 0\n", m_dViewDist);
-  ps.format("Camera \"perspective\" \"float fov\" [%f]\n", fovy);
+  ps.format("# CueMol LuxRender exporter output\n");
+  ps.format("\n");
+
+  if (bPerspec)  {
+    ps.format("LookAt 0 0 %f 0 0 0 0 1 0\n", m_dViewDist);
+    ps.format("Camera \"perspective\" \"float fov\" [%f]\n", fov);
+  }
+  else {
+    ps.format("LookAt 0 0 %f 0 0 0 0 1 0\n", m_dSlabDepth);
+    ps.format("Camera \"orthographic\"\n");
+    ps.format("       \"float screenwindow\" [%f %f %f %f]\n", -zoomx/2.0, zoomx/2.0, -zoomy/2.0, zoomy/2.0);
+  }
+
   ps.format("\n");
   ps.format("Film \"fleximage\"\n");
   ps.format("     \"integer xresolution\" [%d]\n", width);
@@ -145,6 +174,12 @@ void LuxRendDisplayContext::writeLights()
   m_vSpotLightPos = Vector4D(-100, 100, 100);
   double zback = -m_dSlabDepth;
 
+  int width = m_pParent->getWidth();
+  int height = m_pParent->getHeight();
+  double zoomy = m_dZoom;
+  double zoomx = zoomy * double(width) / double(height);
+  double disksize = qlib::max(zoomx/2.0, zoomy/2.0)+10.0;
+
   ps.format("AttributeBegin # Spot light\n");
   ps.format("Translate %f %f %f\n", m_vSpotLightPos.x(), m_vSpotLightPos.y(), m_vSpotLightPos.z());
   ps.format("AreaLightSource \"area\" \"float gain\" [1000] \"color L\" [1.0 1.0 1.0]\n");
@@ -159,7 +194,7 @@ void LuxRendDisplayContext::writeLights()
   ps.format("AttributeBegin # Background\n");
   ps.format("Translate 0 0 %f\n", zback);
   ps.format("Material \"matte\"\n");
-  ps.format("Shape \"disk\" \"float radius\" [100.0] \"float height\" [0]\n");
+  ps.format("Shape \"disk\" \"float radius\" [%f] \"float height\" [0]\n", disksize);
   ps.format("AttributeEnd\n");
   ps.format("\n");
 }
@@ -393,11 +428,18 @@ void LuxRendDisplayContext::writeMeshes()
 
   // convert vertex list to array
   MeshVert **pmary = MB_NEW MeshVert *[nverts];
+  int nsolid=0, ngrad=0;
   i=0;
   BOOST_FOREACH (MeshVert *pelem, pMesh->m_verts) {
+    ColorTable::elem_t ic = pelem->c;
+    if (!ic.isGrad())
+      ++nsolid;
+    else
+      ++ngrad;
     pmary[i] = pelem;
     ++i;
   }
+  LOG_DPRINTLN("Mesh verts=%d (solid color=%d, grad color=%d)", nverts, nsolid, ngrad);
 
   ps.format("# Mesh nvert=%d, nface=%d\n", nverts, nfaces);
   ps.print("Shape \"trianglemesh\" \"point P\" [");
@@ -436,6 +478,10 @@ void LuxRendDisplayContext::writeMeshes()
   }
   ps.print("]\n");
 
+  int nsolidf = 0;
+  int nhomo = 0;
+  int nhetero = 0;
+
   ps.print("\"integer indices\" [");
   Mesh::FCIter iter2 = pMesh->m_faces.begin();
   Mesh::FCIter iend2 = pMesh->m_faces.end();
@@ -448,8 +494,29 @@ void LuxRendDisplayContext::writeMeshes()
     const int i3 = iter2->iv3;
 
     ps.format("%d %d %d ", i1, i2, i3);
+
+    ColorTable::elem_t ic1 = pmary[i1]->c;
+    ColorTable::elem_t ic2 = pmary[i2]->c;
+    ColorTable::elem_t ic3 = pmary[i3]->c;
+    if (!ic1.isGrad() &&
+        !ic2.isGrad() &&
+        !ic3.isGrad()) {
+      nsolidf ++;
+    }
+    else {
+      if (isEqualGradCol(ic1, ic2) &&
+          isEqualGradCol(ic2, ic3) &&
+          isEqualGradCol(ic3, ic1)) {
+        nhomo ++;
+      }
+      else {
+        nhetero ++;
+      }
+    }
   }
   ps.print("]\n");
+
+  LOG_DPRINTLN("Mesh faces=%d (solid color=%d, homograd=%d, heterograd=%d)", nfaces, nsolidf, nhomo, nhetero);
 
   // clean up
   delete [] pmary;

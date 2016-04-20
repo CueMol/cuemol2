@@ -53,6 +53,10 @@ public:
 
       return false;
     }
+
+    bool isGrad() const {
+      return (cid2<0)?false:true;
+    }
   };
 
   typedef IntColor elem_t;
