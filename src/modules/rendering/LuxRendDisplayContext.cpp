@@ -156,6 +156,12 @@ void LuxRendDisplayContext::writeHeader()
   ps.format("WorldBegin\n");
   ps.format("\n");
 
+  ps.print("Texture \"utex\" \"float\" \"bilerp\"\n");
+  ps.print(" \"float v00\" [0]\n");
+  ps.print(" \"float v10\" [1]\n");
+  ps.print(" \"float v01\" [0]\n");
+  ps.print(" \"float v11\" [1]\n");
+  
   writeLights();
 }
 
@@ -242,41 +248,33 @@ void LuxRendDisplayContext::writeMaterials()
     Vector4D vc;
     m_pIntData->m_clut.getRGBAVecColor(cind, vc);
       
+    LString colname = LString::format("%s_tex_%d", getSecName().c_str(), i);
+    LString icolname = LString::format("%s_inv_%d", getSecName().c_str(), i);
+    ps.format("Texture \"%s\" \"color\" \"constant\" \"color value\" [%f %f %f]\n",
+              colname.c_str(), vc.x(), vc.y(), vc.z());
+    ps.format("Texture \"%s\" \"color\" \"constant\" \"color value\" [%f %f %f]\n",
+              icolname.c_str(), 1.0-vc.x(), 1.0-vc.y(), 1.0-vc.z());
+
     LString matname = makeColorMatName(i);
     ps.print("MakeNamedMaterial \""+matname+"\"\n");
-    ps.format("    \"color Kd\" [%f %f %f]\n", vc.x(), vc.y(), vc.z());
-    ps.format("    \"string type\" [\"matte\"]\n");
-    ps.format("\n");
+    ps.print("    \"texture Kd\" [\""+colname+"\"]\n");
+    ps.print("    \"string type\" [\"matte\"]\n");
+    ps.print("\n");
 
+  }
 
-/*
-    // write color
-    ps.format("#declare %s_col_%d = ", getSecName().c_str(), i);
-    if (!bDefAlpha && qlib::Util::isNear4(vc.w(), 1.0))
-      ps.format("<%f,%f,%f>;\n", vc.x(), vc.y(), vc.z());
-    else
-      ps.format("<%f,%f,%f,%f>;\n", vc.x(), vc.y(), vc.z(), 1.0-(vc.w()*defalpha));
+  BOOST_FOREACH(ColorTable::grads_type::value_type &entry, m_pIntData->m_clut.m_grads) {
+    const RendIntData::ColIndex &gd = entry.first;
+    LString mat1 = makeColorMatName(gd.cid1);
+    LString mat2 = makeColorMatName(gd.cid2);
+    LString gmat = makeGradMatName(gd);
 
-    LString colortext = LString::format("%s_col_%d", getSecName().c_str(), i);
-
-    // get material
-    LString mat;
-    m_pIntData->m_clut.getMaterial(cind, mat);
-    if (mat.isEmpty()) mat = "default";
-    LString matdef = pSM->getMaterial(mat, "pov");
-    matdef = matdef.trim(" \r\n\t");
-      
-    // write material
-    ps.format("#declare %s_tex_%d = ", getSecName().c_str(), i);
-    if (!matdef.isEmpty()) {
-      if (matdef.replace("@COLOR@", colortext)>0)
-        m_matColReplTab.insert(mat);
-      ps.println(matdef);
-    }
-    else
-      ps.println("texture {pigment{color rgbt "+colortext+"}}");
-*/
-    
+    ps.format("MakeNamedMaterial \"%s\"\n", gmat.c_str());
+    ps.print("    \"string type\" [\"mix\"]\n");
+    ps.format("    \"string namedmaterial1\" [\"%s\"]\n", mat1.c_str());
+    ps.format("    \"string namedmaterial2\" [\"%s\"]\n", mat2.c_str());
+    ps.print("    \"texture amount\" [\"utex\"]\n");
+    ps.print("\n");
   }
 }
 
@@ -476,6 +474,7 @@ void LuxRendDisplayContext::writeMeshes()
       }
     }
     else {
+      /*
       if (isEqualGradCol(ic1, ic2) &&
           isEqualGradCol(ic2, ic3) &&
           isEqualGradCol(ic3, ic1)) {
@@ -495,10 +494,20 @@ void LuxRendDisplayContext::writeMeshes()
         MB_ASSERT(icol1!=icol2);
         if (icol1>icol2)
           std::swap(icol1, icol2);
+        
+        BOOST_FOREACH(ColorTable::grads_type::value_type &entry, m_pIntData->m_clut.m_grads) {
+          const RendIntData::ColIndex &gd = entry.first;
+          pic.cid1 = gd.cid1;
+          pic.cid2 = gd.cid2;
+
+            writeColor(pic);
+          }
+        }
+        
       }
       else {
         nhetero ++;
-      }
+      }*/
     }
   }
   
@@ -520,8 +529,10 @@ void LuxRendDisplayContext::writeMeshes()
     iend2 = pMesh->m_faces.end();
     int npr=0;
     for (i=0; iter2!=iend2; iter2++, i++) {
-      if (npr%4==0)
+      if (npr>4) {
         ps.format("\n");
+        npr=0;
+      }
       
       const int i1 = iter2->iv1;
       const int i2 = iter2->iv2;
@@ -538,11 +549,77 @@ void LuxRendDisplayContext::writeMeshes()
           ++npr;
         }
       }
-
     }
     ps.print("]\n");
   }
 
+  BOOST_FOREACH(ColorTable::grads_type::value_type &entry, m_pIntData->m_clut.m_grads) {
+    const RendIntData::ColIndex &gd = entry.first;
+
+    LString matname = makeGradMatName(gd);
+    ps.format("NamedMaterial \""+matname+"\"\n");
+
+    writeMeshVerts(ps, nverts, pmary);
+
+    std::vector<double> uary(nverts);
+    ps.print("\"float uv\" [");
+    for (i=0; i<nverts; i++) {
+      if (i%12==0)
+        ps.print("\n");
+      MeshVert *p = pmary[i];
+      uary[i] = -1.0;
+      ColorTable::elem_t ic = p->c;
+      if (ic.isGrad()) {
+        if (ic.cid1==gd.cid1 && ic.cid2==gd.cid2)
+          uary[i] = 1.0-ic.getRhoF();
+      }
+      else {
+        if (ic.cid1==gd.cid1)
+          uary[i] = 0.0;
+        else if (ic.cid1==gd.cid2)
+          uary[i] = 1.0;
+      }
+      ps.format("%f 0 ", uary[i]);
+    }
+    ps.print("]\n");
+
+    // Write triangle face indices
+    ps.print("\"integer indices\" [");
+    iter2 = pMesh->m_faces.begin();
+    iend2 = pMesh->m_faces.end();
+    int npr=0;
+    for (i=0; iter2!=iend2; iter2++, i++) {
+      if (npr>4) {
+        ps.format("\n");
+        npr=0;
+      }
+      
+      const int i1 = iter2->iv1;
+      const int i2 = iter2->iv2;
+      const int i3 = iter2->iv3;
+      
+      ColorTable::elem_t ic1 = pmary[i1]->c;
+      ColorTable::elem_t ic2 = pmary[i2]->c;
+      ColorTable::elem_t ic3 = pmary[i3]->c;
+
+      if (!ic1.isGrad() &&
+          !ic2.isGrad() &&
+          !ic3.isGrad() &&
+          ic1.cid1==ic2.cid1 && ic2.cid1==ic3.cid1) {
+        // solid color face --> skip
+      }
+      else {
+        if (uary[i1]>=0.0 &&
+            uary[i2]>=0.0 &&
+            uary[i3]>=0.0) {
+          ps.format("%d %d %d ", i1, i2, i3);
+          ++npr;
+        }
+      }
+    }
+    ps.print("]\n");
+  }
+  
   // clean up
   delete [] pmary;
 }

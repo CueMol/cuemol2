@@ -65,7 +65,11 @@ private:
   void writeMaterials();
 
   LString makeColorMatName(int icol) const {
-    return LString::format("%s_col_%d", getSecName().c_str(), icol);
+    return LString::format("%s_mat_%d", getSecName().c_str(), icol);
+  }
+
+  LString makeGradMatName(const ColorTable::elem_t &ic) const {
+    return LString::format("%s_grd_%d_%d", getSecName().c_str(), ic.cid1, ic.cid2);
   }
 
   void writeMeshes();
