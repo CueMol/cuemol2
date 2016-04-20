@@ -70,6 +70,8 @@ private:
 
   void writeMeshes();
 
+  void writeMeshVerts(PrintStream &ps, int nverts, MeshVert **pmary);
+
   static inline bool isEqualGradCol(const ColorTable::elem_t &ic1,
                                     const ColorTable::elem_t &ic2)
   {

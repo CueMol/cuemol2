@@ -421,6 +421,7 @@ void LuxRendDisplayContext::writeMeshes()
   int nverts = pMesh->getVertexSize();
   int nfaces = pMesh->getFaceSize();
 
+
   if (nverts<=0 || nfaces<=0)
     return;
 
@@ -441,7 +442,118 @@ void LuxRendDisplayContext::writeMeshes()
   }
   LOG_DPRINTLN("Mesh verts=%d (solid color=%d, grad color=%d)", nverts, nsolid, ngrad);
 
-  ps.format("# Mesh nvert=%d, nface=%d\n", nverts, nfaces);
+  // Enumerate used colors
+  Mesh::FCIter iter2, iend2;
+
+  typedef std::map<short, short> ColorMap;
+  ColorMap solidcols;
+
+
+
+  int nsolidf = 0, nsolidc=0;
+  int nhomo = 0;
+  int nhetero = 0;
+
+  iter2 = pMesh->m_faces.begin();
+  iend2 = pMesh->m_faces.end();
+  for (i=0; iter2!=iend2; iter2++, i++) {
+    const int i1 = iter2->iv1;
+    const int i2 = iter2->iv2;
+    const int i3 = iter2->iv3;
+    ColorTable::elem_t ic1 = pmary[i1]->c;
+    ColorTable::elem_t ic2 = pmary[i2]->c;
+    ColorTable::elem_t ic3 = pmary[i3]->c;
+    if (!ic1.isGrad() &&
+        !ic2.isGrad() &&
+        !ic3.isGrad() &&
+        ic1.cid1==ic2.cid1 &&
+        ic2.cid1==ic3.cid1) {
+      nsolidf ++;
+      std::map<short, short>::const_iterator mi = solidcols.find(ic1.cid1);
+      if (mi==solidcols.end()) {
+        solidcols.insert(std::pair<short, short>(ic1.cid1, nsolidc));
+        ++nsolidc;
+      }
+    }
+    else {
+      if (isEqualGradCol(ic1, ic2) &&
+          isEqualGradCol(ic2, ic3) &&
+          isEqualGradCol(ic3, ic1)) {
+        nhomo ++;
+        short icol1 = ic1.cid1;
+        short icol2 = icol1;
+        if (ic1.cid2>=0 && ic1.cid2!=icol1)
+          icol2 = ic1.cid2;
+        else if (ic2.cid1!=icol1)
+          icol2 = ic2.cid1;
+        else if (ic2.cid2>=0 && ic2.cid2!=icol1)
+          icol2 = ic2.cid2;
+        else if (ic3.cid1!=icol1)
+          icol2 = ic3.cid1;
+        else if (ic3.cid2>=0 && ic3.cid2!=icol1)
+          icol2 = ic3.cid2;
+        MB_ASSERT(icol1!=icol2);
+        if (icol1>icol2)
+          std::swap(icol1, icol2);
+      }
+      else {
+        nhetero ++;
+      }
+    }
+  }
+  
+  LOG_DPRINTLN("Mesh faces=%d (solid color=%d, homograd=%d, heterograd=%d)", nfaces, nsolidf, nhomo, nhetero);
+  LOG_DPRINTLN("Mesh solid cols=%d", nsolidc);
+
+  BOOST_FOREACH (ColorMap::value_type &elem, solidcols) {
+    short ic_out = elem.first;
+    MB_DPRINTLN("write solid color: %d", ic_out);
+
+    LString matname = makeColorMatName(ic_out);
+    ps.format("NamedMaterial \""+matname+"\"\n");
+
+    writeMeshVerts(ps, nverts, pmary);
+    
+    // Write triangle face indices
+    ps.print("\"integer indices\" [");
+    iter2 = pMesh->m_faces.begin();
+    iend2 = pMesh->m_faces.end();
+    int npr=0;
+    for (i=0; iter2!=iend2; iter2++, i++) {
+      if (npr%4==0)
+        ps.format("\n");
+      
+      const int i1 = iter2->iv1;
+      const int i2 = iter2->iv2;
+      const int i3 = iter2->iv3;
+      
+      ColorTable::elem_t ic1 = pmary[i1]->c;
+      ColorTable::elem_t ic2 = pmary[i2]->c;
+      ColorTable::elem_t ic3 = pmary[i3]->c;
+      if (!ic1.isGrad() &&
+          !ic2.isGrad() &&
+          !ic3.isGrad()) {
+        if (ic1.cid1==ic2.cid1 && ic2.cid1==ic3.cid1 && ic1.cid1==ic_out) {
+          ps.format("%d %d %d ", i1, i2, i3);
+          ++npr;
+        }
+      }
+
+    }
+    ps.print("]\n");
+  }
+
+  // clean up
+  delete [] pmary;
+}
+
+void LuxRendDisplayContext::writeMeshVerts(PrintStream &ps, int nverts, MeshVert **pmary)
+{
+  int i;
+
+  // Write vertex points
+  //ps.format("# Mesh nvert=%d, nface=%d\n", nverts, nfaces);
+  ps.format("# Mesh nvert=%d\n", nverts);
   ps.print("Shape \"trianglemesh\" \"point P\" [");
   for (i=0; i<nverts; i++) {
     MeshVert *p = pmary[i];
@@ -460,6 +572,7 @@ void LuxRendDisplayContext::writeMeshes()
   }
   ps.print("]\n");
 
+  // Write vertex normals
   ps.print("\"normal N\" [");
   for (i=0; i<nverts; i++) {
     MeshVert *p = pmary[i];
@@ -477,48 +590,5 @@ void LuxRendDisplayContext::writeMeshes()
     }
   }
   ps.print("]\n");
-
-  int nsolidf = 0;
-  int nhomo = 0;
-  int nhetero = 0;
-
-  ps.print("\"integer indices\" [");
-  Mesh::FCIter iter2 = pMesh->m_faces.begin();
-  Mesh::FCIter iend2 = pMesh->m_faces.end();
-  for (i=0; iter2!=iend2; iter2++, i++) {
-    if (i%4==0)
-      ps.format("\n");
-    
-    const int i1 = iter2->iv1;
-    const int i2 = iter2->iv2;
-    const int i3 = iter2->iv3;
-
-    ps.format("%d %d %d ", i1, i2, i3);
-
-    ColorTable::elem_t ic1 = pmary[i1]->c;
-    ColorTable::elem_t ic2 = pmary[i2]->c;
-    ColorTable::elem_t ic3 = pmary[i3]->c;
-    if (!ic1.isGrad() &&
-        !ic2.isGrad() &&
-        !ic3.isGrad()) {
-      nsolidf ++;
-    }
-    else {
-      if (isEqualGradCol(ic1, ic2) &&
-          isEqualGradCol(ic2, ic3) &&
-          isEqualGradCol(ic3, ic1)) {
-        nhomo ++;
-      }
-      else {
-        nhetero ++;
-      }
-    }
-  }
-  ps.print("]\n");
-
-  LOG_DPRINTLN("Mesh faces=%d (solid color=%d, homograd=%d, heterograd=%d)", nfaces, nsolidf, nhomo, nhetero);
-
-  // clean up
-  delete [] pmary;
 }
 

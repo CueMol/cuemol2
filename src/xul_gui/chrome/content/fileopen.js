@@ -825,6 +825,9 @@ Qm2Main.prototype.exportScene = function()
   ////////////////////////////////////
   // Do filetype specific actions
   
+  exporter.width = view.width;
+  exporter.height = view.height;
+
   if (exporter.name == "png") {
     // show PNG option dialog
     let dlgdata = new Object();
