@@ -166,6 +166,15 @@ public:
     if (gmi==m_grads.end()) return -1;
     return gmi->second;
   }
+
+  const IntColor *findGradByIndex(int gind) const {
+    BOOST_FOREACH(const grads_type::value_type &entry, m_grads) {
+      if (entry.second==gind)
+        return &entry.first;
+    }
+    return NULL;
+  }
+  
 };
 
 } // namespace gfx
