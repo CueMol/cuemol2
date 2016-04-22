@@ -144,12 +144,16 @@ void LuxRendDisplayContext::writeHeader()
   ps.format("Film \"fleximage\"\n");
   ps.format("     \"integer xresolution\" [%d]\n", width);
   ps.format("     \"integer yresolution\" [%d]\n", height);
-  ps.format("     \"string filename\" [\"test1\"]\n");
+  if (!m_pParent->m_sOutputBase.isEmpty())
+    ps.format("     \"string filename\" [\"%s\"]\n", m_pParent->m_sOutputBase.c_str());
   ps.format("     \"bool premultiplyalpha\" [\"true\"]\n");
   ps.format("     \"bool write_png\" [\"true\"]\n");
+  ps.format("     \"bool write_exr\" [\"true\"]\n");
   ps.format("     \"string write_png_channels\" [\"RGB\"]\n");
   ps.format("     \"integer displayinterval\" [1]\n");
-  ps.format("     \"integer writeinterval\" [600]\n");
+  ps.format("     \"integer writeinterval\" [60]\n");
+  if (m_pParent->m_nHaltSPP>0)
+    ps.format("     \"integer haltspp\" [%d]\n", m_pParent->m_nHaltSPP);
   ps.format("\n");
   ps.format("PixelFilter \"mitchell\" \"float xwidth\" [2] \"float ywidth\" [2] \"bool supersample\" [\"true\"]\n");
   ps.format("Sampler \"metropolis\"\n");
@@ -161,7 +165,11 @@ void LuxRendDisplayContext::writeHeader()
   ps.print(" \"float v10\" [1]\n");
   ps.print(" \"float v01\" [0]\n");
   ps.print(" \"float v11\" [1]\n");
+  ps.print("\n");
   
+  ps.print("MakeNamedMaterial \"NullMat\" \"string type\" [\"null\"]\n");
+  ps.print("\n");
+
   writeLights();
 }
 
@@ -236,9 +244,9 @@ void LuxRendDisplayContext::writeMaterials()
   StyleMgr *pSM = StyleMgr::getInstance();
   double defalpha = getAlpha();
 
-  bool bDefAlpha = false;
-  if (!qlib::Util::isNear4(defalpha, 1.0))
-    bDefAlpha =true;
+  // bool bDefAlpha = false;
+  // if (!qlib::Util::isNear4(defalpha, 1.0))
+  // bDefAlpha =true;
 
   // write solid color entries
   int i;
@@ -251,7 +259,12 @@ void LuxRendDisplayContext::writeMaterials()
     // get color
     Vector4D vc;
     m_pIntData->m_clut.getRGBAVecColor(cind, vc);
-      
+    double alpha = vc.w() * defalpha;
+
+    bool bUseAlpha = false;
+    if (!qlib::Util::isNear4(alpha, 1.0))
+      bUseAlpha =true;
+
     LString colname = LString::format("%s_tex_%d", getSecName().c_str(), i);
     ps.format("Texture \"%s\" \"color\" \"constant\" \"color value\" [%f %f %f]\n",
               colname.c_str(), vc.x(), vc.y(), vc.z());
@@ -260,10 +273,7 @@ void LuxRendDisplayContext::writeMaterials()
     //ps.format("Texture \"%s\" \"color\" \"constant\" \"color value\" [%f %f %f]\n",
     //icolname.c_str(), 1.0-vc.x(), 1.0-vc.y(), 1.0-vc.z());
 
-    LString matname = makeColorMatName(i);
-    ps.print("MakeNamedMaterial \""+matname+"\"\n");
-
-    // get material
+    // Get material
     LString mat;
     m_pIntData->m_clut.getMaterial(cind, mat);
     if (mat.isEmpty()) mat = "default";
@@ -273,15 +283,38 @@ void LuxRendDisplayContext::writeMaterials()
       matdef  = "    \"string type\" [\"glossy\"]\n";
       matdef += "    \"texture Kd\" [\"@COLOR@\"]\n";
       matdef += "    \"color Ks\" [0.2 0.2 0.2]\n";
-      matdef += "    \"float uroughness\" [0.05]\n";
-      matdef += "    \"float vroughness\" [0.05]\n";
+      matdef += "    \"float uroughness\" [0.4]\n";
+      matdef += "    \"float vroughness\" [0.4]\n";
     }
     matdef = matdef.trim(" \r\n\t");
     
-    // write material
+    // perform color replacement
     matdef.replace("@COLOR@", colname);
-    ps.println(matdef);
+
+    // write material
+    LString matname = makeColorMatName(i);
+    if (!bUseAlpha) {
+      // opaque color
+      ps.print("MakeNamedMaterial \""+matname+"\"\n");
+      ps.println(matdef);
+    }
+    else {
+      // have default alpha (transparent color)
+      LString matname2 = matname + "_o";
+
+      ps.print("MakeNamedMaterial \""+matname2+"\"\n");
+      ps.println(matdef);
+
+      ps.print("MakeNamedMaterial \""+matname+"\"\n");
+      ps.format("    \"string type\" [\"mix\"]\n");
+      ps.format("    \"string namedmaterial1\" [\"NullMat\"]\n");
+      ps.format("    \"string namedmaterial2\" [\"%s\"]\n", matname2.c_str());
+      ps.format("    \"float amount\" [%f]\n", alpha);
+    }
+
+    ps.print("\n");
   }
+
 
   // assign sequential index number to the gradients
   m_pIntData->m_clut.indexGradients();
@@ -699,230 +732,5 @@ void LuxRendDisplayContext::writeMeshes()
     ps.print("]\n");
   }
 
-#if 0
-  typedef std::map<short, short> ColorMap;
-  ColorMap solidcols;
-  int nsolidf = 0, nsolidc=0;
-  int nhomo = 0;
-  int nhetero = 0;
-
-  iter2 = pMesh->m_faces.begin();
-  iend2 = pMesh->m_faces.end();
-  for (i=0; iter2!=iend2; iter2++, i++) {
-    const int i1 = iter2->iv1;
-    const int i2 = iter2->iv2;
-    const int i3 = iter2->iv3;
-    ColorTable::elem_t ic1 = pmary[i1]->c;
-    ColorTable::elem_t ic2 = pmary[i2]->c;
-    ColorTable::elem_t ic3 = pmary[i3]->c;
-    if (!ic1.isGrad() &&
-        !ic2.isGrad() &&
-        !ic3.isGrad() &&
-        ic1.cid1==ic2.cid1 &&
-        ic2.cid1==ic3.cid1) {
-      nsolidf ++;
-      std::map<short, short>::const_iterator mi = solidcols.find(ic1.cid1);
-      if (mi==solidcols.end()) {
-        solidcols.insert(std::pair<short, short>(ic1.cid1, nsolidc));
-        ++nsolidc;
-      }
-    }
-    else {
-      /*
-      if (isEqualGradCol(ic1, ic2) &&
-          isEqualGradCol(ic2, ic3) &&
-          isEqualGradCol(ic3, ic1)) {
-        nhomo ++;
-        
-        BOOST_FOREACH(ColorTable::grads_type::value_type &entry, m_pIntData->m_clut.m_grads) {
-          const RendIntData::ColIndex &gd = entry.first;
-          pic.cid1 = gd.cid1;
-          pic.cid2 = gd.cid2;
-
-            writeColor(pic);
-          }
-        }
-        
-      }
-      else {
-        nhetero ++;
-      }*/
-    }
-  }
-  
-  LOG_DPRINTLN("Mesh faces=%d (solid color=%d, homograd=%d, heterograd=%d)", nfaces, nsolidf, nhomo, nhetero);
-  LOG_DPRINTLN("Mesh solid cols=%d", nsolidc);
-
-  BOOST_FOREACH (ColorMap::value_type &elem, solidcols) {
-    short ic_out = elem.first;
-    MB_DPRINTLN("write solid color: %d", ic_out);
-
-    LString matname = makeColorMatName(ic_out);
-    ps.format("NamedMaterial \""+matname+"\"\n");
-
-    writeMeshVerts(ps, nverts, pmary);
-    
-    // Write triangle face indices
-    ps.print("\"integer indices\" [");
-    iter2 = pMesh->m_faces.begin();
-    iend2 = pMesh->m_faces.end();
-    int npr=0;
-    for (i=0; iter2!=iend2; iter2++, i++) {
-      if (npr>4) {
-        ps.format("\n");
-        npr=0;
-      }
-      
-      const int i1 = iter2->iv1;
-      const int i2 = iter2->iv2;
-      const int i3 = iter2->iv3;
-      
-      ColorTable::elem_t ic1 = pmary[i1]->c;
-      ColorTable::elem_t ic2 = pmary[i2]->c;
-      ColorTable::elem_t ic3 = pmary[i3]->c;
-      if (!ic1.isGrad() &&
-          !ic2.isGrad() &&
-          !ic3.isGrad()) {
-        if (ic1.cid1==ic2.cid1 && ic2.cid1==ic3.cid1 && ic1.cid1==ic_out) {
-          ps.format("%d %d %d ", i1, i2, i3);
-          ++npr;
-        }
-      }
-    }
-    ps.print("]\n");
-  }
-
-  BOOST_FOREACH(ColorTable::grads_type::value_type &entry, m_pIntData->m_clut.m_grads) {
-    const RendIntData::ColIndex &gd = entry.first;
-
-    LString matname = makeGradMatName(entry.second);
-    ps.format("NamedMaterial \""+matname+"\"\n");
-
-    writeMeshVerts(ps, nverts, pmary);
-
-    std::vector<double> uary(nverts);
-    ps.print("\"float uv\" [");
-    for (i=0; i<nverts; i++) {
-      if (i%12==0)
-        ps.print("\n");
-      MeshVert *p = pmary[i];
-      uary[i] = -1.0;
-      ColorTable::elem_t ic = p->c;
-      if (ic.isGrad()) {
-        if (ic.cid1==gd.cid1 && ic.cid2==gd.cid2)
-          uary[i] = 1.0-ic.getRhoF();
-      }
-      else {
-        if (ic.cid1==gd.cid1)
-          uary[i] = 0.0;
-        else if (ic.cid1==gd.cid2)
-          uary[i] = 1.0;
-      }
-      ps.format("%f 0 ", double(uary[i]<0.0?0.0:uary[i]));
-    }
-    ps.print("]\n");
-
-    // Write triangle face indices
-    ps.print("\"integer indices\" [");
-    iter2 = pMesh->m_faces.begin();
-    iend2 = pMesh->m_faces.end();
-    int npr=0;
-    for (i=0; iter2!=iend2; iter2++, i++) {
-      if (npr>4) {
-        ps.format("\n");
-        npr=0;
-      }
-      
-      const int i1 = iter2->iv1;
-      const int i2 = iter2->iv2;
-      const int i3 = iter2->iv3;
-      
-      ColorTable::elem_t ic1 = pmary[i1]->c;
-      ColorTable::elem_t ic2 = pmary[i2]->c;
-      ColorTable::elem_t ic3 = pmary[i3]->c;
-
-      if (!ic1.isGrad() &&
-          !ic2.isGrad() &&
-          !ic3.isGrad() &&
-          ic1.cid1==ic2.cid1 && ic2.cid1==ic3.cid1) {
-        // solid color face --> skip
-      }
-      else {
-        if (uary[i1]>=0.0 &&
-            uary[i2]>=0.0 &&
-            uary[i3]>=0.0) {
-          ps.format("%d %d %d ", i1, i2, i3);
-          ++npr;
-        }
-        else if (uary[i1]<0.0 &&
-                 uary[i2]>=0.0 &&
-                 uary[i3]>=0.0) {
-          ps.format("%d %d %d ", i1, i2, i3);
-          ++npr;
-        }
-        else if (uary[i1]>=0.0 &&
-                 uary[i2]<0.0 &&
-                 uary[i3]>=0.0) {
-          ps.format("%d %d %d ", i1, i2, i3);
-        }
-        else if (uary[i1]>=0.0 &&
-                 uary[i2]>=0.0 &&
-                 uary[i3]<0.0) {
-          ps.format("%d %d %d ", i1, i2, i3);
-        }
-      }
-    }
-    ps.print("]\n");
-  }
-  
-  // clean up
-  //delete [] pmary;
-#endif
 }
 
-/*
-void LuxRendDisplayContext::writeMeshVerts(PrintStream &ps, int nverts, MeshVert **pmary)
-{
-  int i;
-
-  // Write vertex points
-  //ps.format("# Mesh nvert=%d, nface=%d\n", nverts, nfaces);
-  ps.format("# Mesh nvert=%d\n", nverts);
-  ps.print("Shape \"trianglemesh\" \"point P\" [");
-  for (i=0; i<nverts; i++) {
-    MeshVert *p = pmary[i];
-    if (i%6==0)
-      ps.print("\n");
-
-    if (!qlib::isFinite(p->v.x()) ||
-        !qlib::isFinite(p->v.y()) ||
-        !qlib::isFinite(p->v.z())) {
-      LOG_DPRINTLN("PovWriter> ERROR: invalid mesh vertex");
-      ps.print("0 0 0 ");
-    }
-    else {
-      ps.format("%f %f %f ", p->v.x(), p->v.y(), p->v.z());
-    }
-  }
-  ps.print("]\n");
-
-  // Write vertex normals
-  ps.print("\"normal N\" [");
-  for (i=0; i<nverts; i++) {
-    MeshVert *p = pmary[i];
-    if (i%6==0)
-      ps.print("\n");
-
-    if (!qlib::isFinite(p->n.x()) ||
-        !qlib::isFinite(p->n.y()) ||
-        !qlib::isFinite(p->n.z())) {
-      LOG_DPRINTLN("PovWriter> ERROR: invalid mesh vertex");
-      ps.print("0 0 0 ");
-    }
-    else {
-      ps.format("%f %f %f ", p->n.x(), p->n.y(), p->n.z());
-    }
-  }
-  ps.print("]\n");
-}
-*/

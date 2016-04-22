@@ -41,6 +41,11 @@ namespace render {
     /// Get file extension
     virtual const char *getFileExt() const;
 
+    /// Halt condition
+    int m_nHaltSPP;
+
+    /// output base name
+    LString m_sOutputBase;
   };
 
 }
