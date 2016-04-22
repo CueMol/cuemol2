@@ -582,6 +582,7 @@ void LuxRendDisplayContext::writeMeshes()
   int npr;
   std::vector<int> vidmap(nverts);
   
+  int nprfaces = 0;
   BOOST_FOREACH (const facetype_t &elem, tpflags) {
     bool bGrad = elem.first;
     // make VID map
@@ -662,6 +663,7 @@ void LuxRendDisplayContext::writeMeshes()
     
     if (bGrad) {
       // Write UV vectors
+      int ndis = 0;
       const ColorTable::elem_t *pgd = m_pIntData->m_clut.findGradByIndex(elem.second);
       if (pgd==NULL) {
         LOG_DPRINTLN("FATAL ERROR!!");
@@ -681,23 +683,27 @@ void LuxRendDisplayContext::writeMeshes()
           }
           else if (ic.cid1==pgd->cid1) {
             u = 0.0;
+            ndis ++;
           }
           else if (ic.cid1==pgd->cid2) {
-            u = 1.0;
+            u = 0.9999;
+            ndis ++;
           }
           else {
             //LOG_DPRINTLN("FATAL ERROR!!");
             //continue;
             u = 0.0;
+            ndis ++;
           }
         }
         else {
           if (ic.cid1==pgd->cid1)
             u = 0.0;
           else if (ic.cid1==pgd->cid2)
-            u = 1.0;
+            u = 0.9999;
         }
         ps.format("%f 0 ", u);
+        //ps.format("1 0 ", u);
         ++npr;
         
         if (npr>12) {
@@ -707,6 +713,7 @@ void LuxRendDisplayContext::writeMeshes()
         
       }
       ps.print("]\n");
+      MB_DPRINTLN("grad %d-%d: ndis=%d", pgd->cid1, pgd->cid2, ndis);
     } // if (bGrad)
 
     // Write triangle face indices
@@ -722,6 +729,7 @@ void LuxRendDisplayContext::writeMeshes()
 
         ps.format("%d %d %d ", i1, i2, i3);
         ++npr;
+        ++nprfaces;
 
         if (npr>12) {
           ps.print("\n");
@@ -732,5 +740,6 @@ void LuxRendDisplayContext::writeMeshes()
     ps.print("]\n");
   }
 
+  LOG_DPRINTLN("faces=%d; output faces=%d", nfaces, nprfaces);
 }
 
