@@ -1,6 +1,6 @@
 // -*-Mode: C++;-*-
 //
-//  STL (Stereolithography) Display context implementation class
+//  LuxRender Display context implementation class
 //
 
 #include <common.h>
@@ -13,17 +13,17 @@
 #include <qlib/Utils.hpp>
 #include <gfx/SolidColor.hpp>
 #include <qsys/style/StyleMgr.hpp>
+#include <qsys/SceneManager.hpp>
 
 using namespace render;
 
-using qlib::PrintStream;
 using qlib::BinOutStream;
 //using qlib::Matrix4D;
 using qlib::Matrix3D;
 using qlib::MapPtrTable;
 
 using qsys::StyleMgr;
-//using qsys::SceneManager;
+using qsys::SceneManager;
 
 LuxRendDisplayContext::LuxRendDisplayContext()
      : FileDisplayContext(), m_pParent(NULL)
@@ -101,6 +101,12 @@ void LuxRendDisplayContext::endSection()
 
 void LuxRendDisplayContext::writeHeader()
 {
+  SceneManager *pmod = SceneManager::getInstance();
+  LString ver = LString::format("Version %d.%d.%d.%d (build %s)",
+                                pmod->getMajorVer(),pmod->getMinorVer(),
+                                pmod->getRevision(),pmod->getBuildNo(),
+                                pmod->getBuildID().c_str());
+
   int width = m_pParent->getWidth();
   int height = m_pParent->getHeight();
 
@@ -127,8 +133,13 @@ void LuxRendDisplayContext::writeHeader()
   // 
   PrintStream ps(*m_pOut);
   
-  ps.format("# CueMol LuxRender exporter output\n");
+  ps.format("# CueMol %s LuxRender exporter output\n", ver.c_str());
   ps.format("\n");
+
+  StyleMgr *pSM = StyleMgr::getInstance();
+  LString preamble = pSM->getConfig("lux", "preamble").trim(" \r\t\n");
+  if (!preamble.isEmpty())
+    ps.println(preamble);
 
   if (bPerspec)  {
     ps.format("LookAt 0 0 %f 0 0 0 0 1 0\n", m_dViewDist);
@@ -218,9 +229,6 @@ void LuxRendDisplayContext::writeLights()
 
 void LuxRendDisplayContext::writeObjects()
 {
-  // convert dot primitive to spheres
-  m_pIntData->convDots();
-
   // write material/texture section
   writeMaterials();
 
@@ -230,7 +238,14 @@ void LuxRendDisplayContext::writeObjects()
 
   // write sphere primitives
   writeSpheres();
+
+  // write cylinders
   writeCyls();
+
+  // write lines
+  writeLines(ps);
+
+  // write meshes
   writeMeshes();
 
   ps.format("AttributeEnd\n");
@@ -269,10 +284,6 @@ void LuxRendDisplayContext::writeMaterials()
     ps.format("Texture \"%s\" \"color\" \"constant\" \"color value\" [%f %f %f]\n",
               colname.c_str(), vc.x(), vc.y(), vc.z());
 
-    //LString icolname = LString::format("%s_inv_%d", getSecName().c_str(), i);
-    //ps.format("Texture \"%s\" \"color\" \"constant\" \"color value\" [%f %f %f]\n",
-    //icolname.c_str(), 1.0-vc.x(), 1.0-vc.y(), 1.0-vc.z());
-
     // Get material
     LString mat;
     m_pIntData->m_clut.getMaterial(cind, mat);
@@ -292,11 +303,23 @@ void LuxRendDisplayContext::writeMaterials()
     matdef.replace("@COLOR@", colname);
 
     // write material
+
+    // make material name
     LString matname = makeColorMatName(i);
+
+    // make line color (matte) name
+    //LString lincname = LString::format("%s_lcol_%d", getSecName().c_str(), i);
+    LString lincname = makeLineColorName(i);
+
+
     if (!bUseAlpha) {
       // opaque color
       ps.print("MakeNamedMaterial \""+matname+"\"\n");
       ps.println(matdef);
+
+      ps.print("MakeNamedMaterial \""+lincname+"\"\n");
+      ps.print("    \"string type\" [\"matte\"]\n");
+      ps.print("    \"texture Kd\" [\""+colname+"\"]\n");
     }
     else {
       // have default alpha (transparent color)
@@ -309,6 +332,17 @@ void LuxRendDisplayContext::writeMaterials()
       ps.format("    \"string type\" [\"mix\"]\n");
       ps.format("    \"string namedmaterial1\" [\"NullMat\"]\n");
       ps.format("    \"string namedmaterial2\" [\"%s\"]\n", matname2.c_str());
+      ps.format("    \"float amount\" [%f]\n", alpha);
+
+      LString lincname2 = lincname + "_o";
+      ps.print("MakeNamedMaterial \""+lincname2+"\"\n");
+      ps.print("    \"string type\" [\"matte\"]\n");
+      ps.print("    \"texture Kd\" [\""+colname+"\"]\n");
+      
+      ps.print("MakeNamedMaterial \""+lincname+"\"\n");
+      ps.print("    \"string type\" [\"mix\"]\n");
+      ps.print("    \"string namedmaterial1\" [\"NullMat\"]\n");
+      ps.print("    \"string namedmaterial2\" [\""+lincname2+"\"]\n");
       ps.format("    \"float amount\" [%f]\n", alpha);
     }
 
@@ -414,19 +448,14 @@ void LuxRendDisplayContext::writeCyls()
     double a = sqrt(vec.x() * vec.x() + vec.y() * vec.y());
     if (a > 1.0e-6) {
       double f = 1.0/a;
-
       ps.format("Transform [%f %f %f 0  ",
                 vec.x()*vec.z()*f, vec.y()*vec.z()*f, -a);
-      
       ps.format("%f %f 0 0  ",
                 -vec.y()*f, vec.x()*f);
-      
       ps.format("%f %f %f 0  ",
                 vec.x(), vec.y(), vec.z());
-      
       ps.format("%f %f %f 1]\n",
                 v1.x(), v1.y(), v1.z());
-
     }
     else {
       // no transformation required
@@ -440,7 +469,9 @@ void LuxRendDisplayContext::writeCyls()
       ps.format("NamedMaterial \""+matname+"\"\n");
     }
     else {
-      // gradient color (TO DO: implementation)
+      // gradient color (TO DO: correct implementation)
+      LString matname = makeColorMatName(ic.cid1);
+      ps.format("NamedMaterial \""+matname+"\"\n");
     }
 
     // no clipping Z
@@ -741,5 +772,74 @@ void LuxRendDisplayContext::writeMeshes()
   }
 
   LOG_DPRINTLN("faces=%d; output faces=%d", nfaces, nprfaces);
+}
+
+void LuxRendDisplayContext::writeLines(PrintStream &ps)
+{
+  if (m_pIntData->m_lines.size()<=0)
+    return;
+
+  const double line_scale = getLineScale();
+
+  BOOST_FOREACH(RendIntData::Line *p, m_pIntData->m_lines) {
+
+    Vector4D v1 = p->v1, v2 = p->v2;
+    double w = p->w;
+
+    // always keep v1.z < v2.z
+    if (v1.z()>v2.z())
+      std::swap(v1, v2);
+
+    Vector4D v21 = v2 - v1;
+    double len = v21.length();
+    if (len<=F_EPS4) {
+      // ignore degenerated cylinder
+      continue;
+    }
+    
+    // calculate transformation matrix
+    Vector4D vec = v21.divide(len);
+    double a = sqrt(vec.x() * vec.x() + vec.y() * vec.y());
+    if (a > 1.0e-6) {
+      double f = 1.0/a;
+      ps.format("Transform [%f %f %f 0  ",
+                vec.x()*vec.z()*f, vec.y()*vec.z()*f, -a);
+      ps.format("%f %f 0 0  ",
+                -vec.y()*f, vec.x()*f);
+      ps.format("%f %f %f 0  ",
+                vec.x(), vec.y(), vec.z());
+      ps.format("%f %f %f 1]\n",
+                v1.x(), v1.y(), v1.z());
+    }
+    else {
+      // no transformation required
+      ps.format("Transform [1 0 0 0  0 1 0 0  0 0 1 0  %f %f %f 1]\n",
+                v1.x(), v1.y(), v1.z());
+    }
+
+    const RendIntData::ColIndex &ic = p->col;
+    if (ic.cid2<0) {
+      //LString matname = makeLineColorName(ic.cid1);
+      LString matname = makeLineColorName(ic.cid1);
+      ps.format("NamedMaterial \""+matname+"\"\n");
+    }
+    else {
+      // gradient color (TO DO: implementation)
+      LString matname = makeLineColorName(ic.cid1);
+      ps.format("NamedMaterial \""+matname+"\"\n");
+    }
+
+    // no clipping Z
+    ps.format("Shape \"cylinder\" \"float radius\" [%f] ", w*line_scale);
+    ps.print("\"float zmin\" [0] ");
+    ps.format("\"float zmax\" [%f]\n", len);
+
+    // ips.format("%s_lw*%f ", getSecName().c_str(), w);
+
+    // TO DO: Clipping implementation
+  }
+
+  m_pIntData->eraseLines();
+
 }
 
