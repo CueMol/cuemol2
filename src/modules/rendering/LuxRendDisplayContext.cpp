@@ -150,6 +150,7 @@ void LuxRendDisplayContext::writeHeader()
     ps.format("Camera \"orthographic\"\n");
     ps.format("       \"float screenwindow\" [%f %f %f %f]\n", -zoomx/2.0, zoomx/2.0, -zoomy/2.0, zoomy/2.0);
   }
+  ps.format("      \"float hither\" [%f]\n", m_dSlabDepth/2.0);
 
   ps.format("\n");
   ps.format("Film \"fleximage\"\n");
@@ -163,8 +164,8 @@ void LuxRendDisplayContext::writeHeader()
   ps.format("     \"string write_png_channels\" [\"RGB\"]\n");
   ps.format("     \"integer displayinterval\" [1]\n");
   ps.format("     \"integer writeinterval\" [60]\n");
-  if (m_pParent->m_nHaltSPP>0)
-    ps.format("     \"integer haltspp\" [%d]\n", m_pParent->m_nHaltSPP);
+  if (m_pParent->m_dHaltThr>0.0)
+    ps.format("     \"integer haltthreshold\" [%f]\n", m_pParent->m_dHaltThr);
   ps.format("\n");
   ps.format("PixelFilter \"mitchell\" \"float xwidth\" [2] \"float ywidth\" [2] \"bool supersample\" [\"true\"]\n");
   ps.format("Sampler \"metropolis\"\n");
@@ -377,33 +378,28 @@ void LuxRendDisplayContext::writeSpheres()
 
   PrintStream ps(*m_pOut);
 
-  // const double clipz = m_pIntData->m_dClipZ;
+  const double clipz = m_pIntData->m_dClipZ;
 
   BOOST_FOREACH (RendIntData::Sph *p, m_pIntData->m_spheres) {
-    // no clipping
-    //ps.format("sphere{<%f, %f, %f>, ", p->v1.x(), p->v1.y(), p->v1.z());
-    //ps.format("%f ", p->r);
-    //writeColor(p->col);
-    //ps.format("}\n");
-    
-    const RendIntData::ColIndex &ic = p->col;
-    if (ic.cid2<0) {
-      LString matname = makeColorMatName(ic.cid1);
-      ps.format("NamedMaterial \""+matname+"\"\n");
+
+    if (clipz<0.0 ||
+        clipz > (p->v1.z() - p->r)) {
+
+      // no clipping (or partially clipped)
+      const RendIntData::ColIndex &ic = p->col;
+      if (ic.cid2<0) {
+        LString matname = makeColorMatName(ic.cid1);
+        ps.format("NamedMaterial \""+matname+"\"\n");
+      }
+      else {
+        // gradient color (TO DO: implementation)
+      }
+      
+      ps.format("Transform [1 0 0 0  0 1 0 0  0 0 1 0  %f %f %f 1]\n", p->v1.x(), p->v1.y(), p->v1.z());
+      //ps.format("Material \"matte\"\n");
+      ps.format("Shape \"sphere\" \"float radius\" [%f]\n", p->r);
     }
-    else {
-      // gradient color (TO DO: implementation)
-    }
-
-    ps.format("Transform [1 0 0 0  0 1 0 0  0 0 1 0  %f %f %f 1]\n", p->v1.x(), p->v1.y(), p->v1.z());
-    //ps.format("Material \"matte\"\n");
-    ps.format("Shape \"sphere\" \"float radius\" [%f]\n", p->r);
-
-
-    // TO DO: Clipping implementation
   }
-
-  m_pIntData->eraseSpheres();
 }
 
 void LuxRendDisplayContext::writeCyls()
@@ -413,7 +409,7 @@ void LuxRendDisplayContext::writeCyls()
 
   PrintStream ps(*m_pOut);
 
-  // const double clipz = m_pIntData->m_dClipZ;
+  const double clipz = m_pIntData->m_dClipZ;
 
   BOOST_FOREACH (RendIntData::Cyl *p, m_pIntData->m_cylinders) {
 
@@ -474,31 +470,26 @@ void LuxRendDisplayContext::writeCyls()
       ps.format("NamedMaterial \""+matname+"\"\n");
     }
 
-    // no clipping Z
-    if (qlib::isNear4(w1, w2)) {
-      // cyliner
+    // clipping threshold
+    const double delw = qlib::max(w1, w2);
+    const double thr1 = v1.z() - delw;
+    // const double thr2 = v2.z() + delw;
 
-      ps.format("Shape \"cylinder\" \"float radius\" [%f] ", w1);
-      ps.print("\"float zmin\" [0] ");
-      ps.format("\"float zmax\" [%f]\n", len);
-      
-
-      //ips.format("cylinder{<%f,%f,%f>,", v1.x(), v1.y(), v1.z());
-      //ips.format("<%f,%f,%f>,", v2.x(), v2.y(), v2.z());
-      //ips.format("%s_lw*%f ", getSecName().c_str(), w1);
-    }
-    else {
-      // TO DO: cone
-      //ips.format("cone{<%f,%f,%f>,", v1.x(), v1.y(), v1.z());
-      //ips.format("%s_lw*%f,", getSecName().c_str(), w1);
-      //ips.format("<%f,%f,%f>,", v2.x(), v2.y(), v2.z());
-      //ips.format("%s_lw*%f ", getSecName().c_str(), w2);
-    }
-    
-    // TO DO: Clipping implementation
+    if (clipz<0 ||
+        clipz>thr1) {
+      // no clipping Z (or partially clipped)
+      if (qlib::isNear4(w1, w2)) {
+        // cyliner
+        
+        ps.format("Shape \"cylinder\" \"float radius\" [%f] ", w1);
+        ps.print("\"float zmin\" [0] ");
+        ps.format("\"float zmax\" [%f]\n", len);
+      }
+      else {
+        // TO DO: cone
+      }
+    }      
   }
-
-  m_pIntData->eraseCyls();
 }
 
 void LuxRendDisplayContext::writeMeshes()
@@ -780,6 +771,7 @@ void LuxRendDisplayContext::writeLines(PrintStream &ps)
     return;
 
   const double line_scale = getLineScale();
+  const double clipz = m_pIntData->m_dClipZ;
 
   BOOST_FOREACH(RendIntData::Line *p, m_pIntData->m_lines) {
 
@@ -829,17 +821,12 @@ void LuxRendDisplayContext::writeLines(PrintStream &ps)
       ps.format("NamedMaterial \""+matname+"\"\n");
     }
 
-    // no clipping Z
-    ps.format("Shape \"cylinder\" \"float radius\" [%f] ", w*line_scale);
-    ps.print("\"float zmin\" [0] ");
-    ps.format("\"float zmax\" [%f]\n", len);
-
-    // ips.format("%s_lw*%f ", getSecName().c_str(), w);
-
-    // TO DO: Clipping implementation
+    if (clipz<0 ||
+        clipz>v1.z()) {
+      ps.format("Shape \"cylinder\" \"float radius\" [%f] ", w*line_scale);
+      ps.print("\"float zmin\" [0] ");
+      ps.format("\"float zmax\" [%f]\n", len);
+    }
   }
-
-  m_pIntData->eraseLines();
-
 }
 
