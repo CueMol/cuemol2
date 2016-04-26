@@ -621,6 +621,16 @@ void MTZ2MapReader::readSyminf(const char *sbuf)
     return;
   }
   sls.pop_front();
+
+  // SG name
+  LString sgname = sls.front();
+  sgname = sgname.trim("'\"");
+  SymOpDB *pSODB = SymOpDB::getInstance();
+  int i = pSODB->getSgIDByName(sgname);
+  if (i>=1 && i!=m_nSG) {
+    LOG_DPRINTLN("MTZ2Map> Inconsistemt sgno(%d) and sgname(%s) --> use sgname", m_nSG, sgname.c_str());
+    m_nSG = i;
+  }
 }
 
 void MTZ2MapReader::readResoln(const char *sbuf)
