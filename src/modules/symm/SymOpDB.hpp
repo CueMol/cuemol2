@@ -97,7 +97,10 @@ public:
   ///
   int getSymOps(int nsg, Matrix4D *&pvec, LString *&popnames) const;
 
+  /// Find space group no by canonical name (HM name)
   int getSgIDByCName(const LString &name) const;
+
+  /// Find space group no by name
   int getSgIDByName(const LString &name) const;
 
   iterator begin() const { return m_psgtab->begin(); }
