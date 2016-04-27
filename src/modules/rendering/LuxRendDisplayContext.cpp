@@ -182,7 +182,57 @@ void LuxRendDisplayContext::writeHeader()
   ps.print("MakeNamedMaterial \"NullMat\" \"string type\" [\"null\"]\n");
   ps.print("\n");
 
-  writeLights();
+  // writeLights(ps);
+
+  m_vSpotLightPos = Vector4D(-100, 100, 100);
+  double zback = -m_dSlabDepth;
+
+  double zoomd = sqrt(zoomx*zoomx + zoomy*zoomy);
+
+  double disksize = (m_dSlabDepth + m_dViewDist) * zoomd / m_dViewDist;
+  //double disksize = qlib::max(zoomx/2.0, zoomy/2.0)+10.0;
+
+/*
+  ps.format("AttributeBegin # Spot light\n");
+  ps.format("Translate %f %f %f\n", m_vSpotLightPos.x(), m_vSpotLightPos.y(), m_vSpotLightPos.z());
+  ps.format("AreaLightSource \"area\" \"float gain\" [1000] \"color L\" [1.0 1.0 1.0]\n");
+  ps.format("Shape \"sphere\" \"float radius\" [10]\n");
+  ps.format("AttributeEnd\n");
+  ps.format("\n");
+  */
+
+  ps.print("AttributeBegin # Light\n");
+  ps.print("LightSource \"distant\"\n");
+  ps.print("  \"color L\" [1 1 1]\n");
+  ps.print("  \"float gain\" [1000]\n");
+  ps.print("  \"point from\" [-1 1 1]\n");
+  ps.print("  \"point to\" [0 0 0]\n");
+  ps.print("  \"float theta\" [20]\n");
+  ps.print("AttributeEnd\n");
+
+  ps.format("AttributeBegin # Infinit light\n");
+  ps.format("LightSource \"infinite\" \"color L\" [1.0 1.0 1.0] \"float gain\" [0.1]\n");
+  ps.format("AttributeEnd\n");
+  ps.format("\n");
+
+  ps.format("AttributeBegin # Background\n");
+  if (bPerspec) {
+    ps.format("Translate 0 0 %f\n", zback);
+    ps.format("Material \"matte\"\n");
+    ps.format("Shape \"disk\" \"float radius\" [%f] \"float height\" [0]\n", disksize);
+  }
+  else {
+
+    ps.format("Shape \"mesh\"\n");
+    ps.format("  \"point P\" [%f %f %f\n", -zoomx/2.0, zoomy/2.0, zback);
+    ps.format("  %f %f %f\n", -zoomx/2.0, -zoomy/2.0, zback);
+    ps.format("  %f %f %f\n", zoomx/2.0, -zoomy/2.0, zback);
+    ps.format("  %f %f %f]\n", zoomx/2.0, zoomy/2.0, zback);
+    ps.format("  \"integer quadindices\" [0 1 2 3]\n");
+
+  }
+  ps.format("AttributeEnd\n");
+  ps.format("\n");
 }
 
 void LuxRendDisplayContext::writeTailer()
@@ -193,47 +243,16 @@ void LuxRendDisplayContext::writeTailer()
 }
 
 /// Write light sources, etc
-void LuxRendDisplayContext::writeLights()
+void LuxRendDisplayContext::writeLights(PrintStream &ps)
 {
-  PrintStream ps(*m_pOut);
-
-  m_vSpotLightPos = Vector4D(-100, 100, 100);
-  double zback = -m_dSlabDepth;
-
-  int width = m_pParent->getWidth();
-  int height = m_pParent->getHeight();
-  double zoomy = m_dZoom;
-  double zoomx = zoomy * double(width) / double(height);
-  double zoomd = sqrt(zoomx*zoomx + zoomy*zoomy);
-
-  double disksize = (m_dSlabDepth + m_dViewDist) * zoomd / m_dViewDist;
-  //double disksize = qlib::max(zoomx/2.0, zoomy/2.0)+10.0;
-
-  ps.format("AttributeBegin # Spot light\n");
-  ps.format("Translate %f %f %f\n", m_vSpotLightPos.x(), m_vSpotLightPos.y(), m_vSpotLightPos.z());
-  ps.format("AreaLightSource \"area\" \"float gain\" [1000] \"color L\" [1.0 1.0 1.0]\n");
-  ps.format("Shape \"sphere\" \"float radius\" [10]\n");
-  ps.format("AttributeEnd\n");
-  ps.format("\n");
-  ps.format("AttributeBegin # Infinit light\n");
-  ps.format("LightSource \"infinite\" \"color L\" [1.0 1.0 1.0] \"float gain\" [0.1]\n");
-  ps.format("AttributeEnd\n");
-  ps.format("\n");
-
-  ps.format("AttributeBegin # Background\n");
-  ps.format("Translate 0 0 %f\n", zback);
-  ps.format("Material \"matte\"\n");
-  ps.format("Shape \"disk\" \"float radius\" [%f] \"float height\" [0]\n", disksize);
-  ps.format("AttributeEnd\n");
-  ps.format("\n");
 }
 
 void LuxRendDisplayContext::writeObjects()
 {
-  // write material/texture section
-  writeMaterials();
-
   PrintStream ps(*m_pOut);
+
+  // write material/texture section
+  writeMaterials(ps);
 
   ps.format("AttributeBegin # Object %s\n", getSecName().c_str());
 
@@ -253,10 +272,8 @@ void LuxRendDisplayContext::writeObjects()
   ps.format("\n");
 }
 
-void LuxRendDisplayContext::writeMaterials()
+void LuxRendDisplayContext::writeMaterials(PrintStream &ps)
 {
-  PrintStream ps(*m_pOut);
-
   StyleMgr *pSM = StyleMgr::getInstance();
   double defalpha = getAlpha();
 

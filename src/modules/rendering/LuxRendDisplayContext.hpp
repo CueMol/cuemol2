@@ -58,15 +58,15 @@ namespace render {
     void writeHeader();
     void writeTailer();
 
-    void writeLights();
+    void writeLights(PrintStream &ps);
 
     void writeObjects();
     void writeSpheres();
     void writeCyls();
 
     void writeLines(PrintStream &ps);
-
-    void writeMaterials();
+    
+    void writeMaterials(PrintStream &ps);
 
     LString makeColorMatName(int icol) const {
       return LString::format("%s_mat_%d", getSecName().c_str(), icol);
