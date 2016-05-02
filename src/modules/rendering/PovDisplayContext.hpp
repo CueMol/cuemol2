@@ -61,16 +61,6 @@ namespace render {
     /// Main flag for edge line display
     bool m_bEnableEdgeLines;
 
-    /*
-    /// Edge line type (defined in gfx::DisplayContext)
-    int m_nEdgeLineType;
-
-    /// Edge line width
-    double m_dEdgeLineWidth;
-
-    /// Edge line color
-    gfx::ColorPtr m_egLineCol;
-     */
     /// Crease detection angle limit (in radian unit)
     double m_dCreaseLimit;
 
@@ -89,16 +79,6 @@ namespace render {
     };
 
   public:
-/*
-    /// Set edge (silhouette) line props
-    virtual void setEdgeLineWidth(double w);
-    virtual void setEdgeLineColor(const ColorPtr &c);
-    virtual void setEdgeLineType( int n );
-
-    virtual double getEdgeLineWidth() const { return m_dEdgeLineWidth; }
-    virtual ColorPtr getEdgeLineColor() const;
-*/
-    
     /// Crease detection angle limit (in radian unit)
     void setCreaseLimit(double d) { m_dCreaseLimit = d; }
 
@@ -147,14 +127,19 @@ namespace render {
 
     std::vector<MeshVert*> m_vertvec;
 
-    EdgeSet m_silEdges;
+    SEEdgeSet m_silEdges;
 
     typedef std::map<int, int> VertSet;
     VertSet m_silVertSet;
 
+    void writeSilEdges2();
+    void writeEdgeLine2(PrintStream &ips, const SEEdge &elem);
+    void writeEdgeLine3(PrintStream &ips, MeshVert *pv, const Vector4D &vsec);
+    void writeCornerPoints2(PrintStream &ips);
+
     void writeSilEdges();
 
-    void writeEdgeLine(PrintStream &ips, const Edge &elem, int flag=0);
+    void writeEdgeLine(PrintStream &ips, const SEEdge &elem, int flag=0);
 
     void writeEdgeLine(PrintStream &ips,
                        const Vector4D &v1, const Vector4D &v2,

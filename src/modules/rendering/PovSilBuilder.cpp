@@ -94,16 +94,6 @@ using qlib::Matrix3D;
 
 namespace {
 
-  class Face
-  {
-  public:
-    // int ind;
-    int iv1, iv2, iv3;
-    int nmode;
-    Vector4D n;
-
-  };
-
   // for debug
   void writePointMark(PrintStream &ips,
                       const Vector4D &v1,
@@ -158,7 +148,7 @@ namespace {
       return;
 
     double r=.0,g=.0,b=.0;
-    double w = 0.05;
+    double w = 0.01;
     if (flag==1)
       r=1.0;
     else if (flag==2)
@@ -345,7 +335,7 @@ namespace {
 
 //////////////////////////////////////////////////
 
-void PovDisplayContext::writeEdgeLine(PrintStream &ips, const Edge &elem, int flag/*=0*/)
+void PovDisplayContext::writeEdgeLine(PrintStream &ips, const SEEdge &elem, int flag/*=0*/)
 {
   std::pair<VertSet::iterator,bool> ret;  
 
@@ -540,7 +530,7 @@ void PovDisplayContext::writePoint(PrintStream &ips,
 void PovDisplayContext::writeAllEdges(PrintStream &ips)
 {
   // write edge lines
-  BOOST_FOREACH (const Edge &elem, m_silEdges) {
+  BOOST_FOREACH (const SEEdge &elem, m_silEdges) {
     writeEdgeLine(ips, elem);
   }
 
@@ -608,7 +598,7 @@ void PovDisplayContext::buildVertVisList(std::vector<char> &vvl, void *pTree)
 
   Tree &tree = *static_cast<Tree *>(pTree);
 
-  BOOST_FOREACH (const Edge &elem, m_silEdges) {
+  BOOST_FOREACH (const SEEdge &elem, m_silEdges) {
     const int iv1 = elem.iv1;
     const int iv2 = elem.iv2;
     pv1 = m_vertvec[iv1];
@@ -645,11 +635,11 @@ void PovDisplayContext::checkAndWriteEdges(PrintStream &ips, std::vector<char> &
 //  MeshVert *pv3;
 
   Tree &tree = *static_cast<Tree *>(pTree);
-  std::vector<Face> &fvec = *static_cast<std::vector<Face> *>(pFaceVec);
+  std::vector<SEFace> &fvec = *static_cast<std::vector<SEFace> *>(pFaceVec);
 
   Segment segq;
 
-  BOOST_FOREACH (const Edge &elem, m_silEdges) {
+  BOOST_FOREACH (const SEEdge &elem, m_silEdges) {
     pv1 = m_vertvec[elem.iv1];
     pv2 = m_vertvec[elem.iv2];
 
@@ -741,7 +731,7 @@ void PovDisplayContext::checkAndWriteEdges(PrintStream &ips, std::vector<char> &
 
 void PovDisplayContext::writeSilOnly(PrintStream &ips, void *pfvec)
 {
-  const std::vector<Face> &fvec = * static_cast<std::vector<Face> *>(pfvec);
+  const std::vector<SEFace> &fvec = * static_cast<std::vector<SEFace> *>(pfvec);
   int i;
 
   const int nfaces = fvec.size();
@@ -753,7 +743,7 @@ void PovDisplayContext::writeSilOnly(PrintStream &ips, void *pfvec)
   MeshVert *pv3;
   
   for (i=0; i<nfaces; ++i) {
-    const Face &ff = fvec[i];
+    const SEFace &ff = fvec[i];
     if (ff.iv1<0 || ff.iv2<0 || ff.iv3<0)
       continue;
     pv1 = m_vertvec[ff.iv1];
@@ -783,7 +773,7 @@ void PovDisplayContext::writeSilOnly(PrintStream &ips, void *pfvec)
   std::vector<char> vvl(nverts, -1);
   //buildVertVisList(vvl, &tree);
   
-  BOOST_FOREACH (const Edge &elem, m_silEdges) {
+  BOOST_FOREACH (const SEEdge &elem, m_silEdges) {
     const int iv1 = elem.iv1;
     const int iv2 = elem.iv2;
     pv1 = m_vertvec[iv1];
@@ -819,7 +809,7 @@ void PovDisplayContext::writeSilOnly(PrintStream &ips, void *pfvec)
 
   }
 
-  BOOST_FOREACH (const Edge &elem, m_silEdges) {
+  BOOST_FOREACH (const SEEdge &elem, m_silEdges) {
     pv1 = m_vertvec[elem.iv1];
     pv2 = m_vertvec[elem.iv2];
     MB_ASSERT (vvl[elem.iv1]>=0 && vvl[elem.iv2]>=0);
@@ -830,7 +820,7 @@ void PovDisplayContext::writeSilOnly(PrintStream &ips, void *pfvec)
       continue;
     Vector4D e12 = pv12.divide(length);
     const double sinth = ::sqrt( 1.0 - e12.z()*e12.z() );
-    const double w = getEdgeLineWidth();
+    const double w = getEdgeLineWidth()/2.0;
 
     int ndiv = int( ::floor( (length*sinth)/w ) );
     if (ndiv>0)
@@ -913,18 +903,17 @@ void PovDisplayContext::writeSilEdges()
 
   // convert vertex list to array
   m_vertvec.resize(nverts);
-  
   std::copy(pMesh->m_verts.begin(), pMesh->m_verts.end(), m_vertvec.begin());
 
   // convert face list to array (and calc face norms)
   // make edge set
-  EdgeSet eset;
-  std::vector<Face> fvec(nfaces);
+  SEEdgeSet eset;
+  std::vector<SEFace> fvec(nfaces);
 
   {
     Mesh::FCIter iter2 = pMesh->m_faces.begin();
     Mesh::FCIter iend2 = pMesh->m_faces.end();
-    Face ff;
+    SEFace ff;
     for (int fid=0; iter2!=iend2; iter2++, fid++) {
       int ia1 = iter2->iv1;
       int ia2 = iter2->iv2;
@@ -956,7 +945,7 @@ void PovDisplayContext::writeSilEdges()
   Vector4D v1, v2, n1, n2;
 
   // Select crease & silhouette lines (m_silEdges) from mesh edges (eset)
-  BOOST_FOREACH (const Edge &elem, eset) {
+  BOOST_FOREACH (const SEEdge &elem, eset) {
     // MB_DPRINTLN("edge <%d, %d> f=(%d,%d)", elem.iv1, elem.iv2, elem.if1, elem.if2);
 
     v1 = m_vertvec[elem.iv1]->v;
@@ -990,8 +979,7 @@ void PovDisplayContext::writeSilEdges()
   // Write results to the inc file
 
   int nEdgeLineType = getEdgeLineType();
-  if (nEdgeLineType==ELT_SILHOUETTE ||
-      nEdgeLineType==ELT_OPQ_SILHOUETTE) {
+  if (nEdgeLineType==ELT_SILHOUETTE) {
     // write silhouette only
     writeSilOnly(ips, &fvec);
   }
@@ -1004,7 +992,7 @@ void PovDisplayContext::writeSilEdges()
     // create mesh face array of cylinders and spheres
     FaceVec faces;
     for (i=0; i<nfaces; ++i) {
-      const Face &ff = fvec[i];
+      const SEFace &ff = fvec[i];
       if (ff.iv1<0 || ff.iv2<0 || ff.iv3<0)
         continue;
       // only handle cyl and sph meshes
@@ -1046,4 +1034,142 @@ void PovDisplayContext::writeSilEdges()
   delete pMesh;
 
   MB_DPRINTLN("Silhouette edges done.");
+}
+
+/////////////////////////////////////////////////////////////////////////////
+
+void PovDisplayContext::writeEdgeLine2(PrintStream &ips, const SEEdge &elem)
+{
+  m_pIntData->m_secpts[elem.icp1].nshow ++;
+  m_pIntData->m_secpts[elem.icp2].nshow ++;
+
+  MeshVert *pv1 = m_pIntData->m_vertvec[elem.iv1];
+  MeshVert *pv2 = m_pIntData->m_vertvec[elem.iv2];
+
+  ColorPtr col1, col2;
+  m_pIntData->m_clut.getColor(pv1->c, col1);
+  m_pIntData->m_clut.getColor(pv2->c, col2);
+  int alpha1 = col1->a();
+  int alpha2 = col2->a();
+
+  writeEdgeLine(ips, pv1->v, pv2->v, pv1->n, pv2->n, alpha1, alpha2, 0);
+}
+
+void PovDisplayContext::writeEdgeLine3(PrintStream &ips, MeshVert *pv, const Vector4D &vsec)
+{
+  ColorPtr col;
+  m_pIntData->m_clut.getColor(pv->c, col);
+  int alpha = col->a();
+
+  writeEdgeLine(ips, pv->v, vsec, pv->n, pv->n, alpha, alpha, 0);
+}
+
+void PovDisplayContext::writeCornerPoints2(PrintStream &ips)
+{
+  if (m_nEdgeCornerType==ECT_NONE)
+    return;
+
+  MeshVert *pv1;
+
+  // write corner points
+  BOOST_FOREACH (const SEVertex &elem, m_pIntData->m_secpts) {
+    /*
+    pv1 = m_pIntData->m_vertvec[elem.iv];
+    if (elem.bvis)
+      writePointMark(ips, pv1->v, 1);
+    else
+      writePointMark(ips, pv1->v, 2);
+      */
+
+    //if (!elem.bvis)
+    //continue;
+
+    if (elem.nshow<=1)
+      continue;
+    
+    pv1 = m_pIntData->m_vertvec[elem.iv];
+
+    ColorPtr col1;
+    m_pIntData->m_clut.getColor(pv1->c, col1);
+    int alpha = col1->a();
+    if (alpha==255)
+      writePoint(ips, pv1->v, pv1->n);
+  }
+
+  return;
+}
+
+void PovDisplayContext::writeSilEdges2()
+{
+  int i, j;
+  //Vector4D v;
+
+  {
+    const int nverts = m_pIntData->m_mesh.getVertexSize();
+    const int nfaces = m_pIntData->m_mesh.getFaceSize();
+    
+    if (nverts<=0 || nfaces<=0)
+      return;
+  }
+  
+  PrintStream ps(*m_pPovOut);
+  PrintStream ips(*m_pIncOut);
+
+  ps.format("#declare %s_sl_scl = 1.00;\n", getSecName().c_str());
+  ps.format("#declare %s_sl_rise = %f;\n", getSecName().c_str(), m_dEdgeRise);
+  ps.format("#declare %s_sl_tex = \n", getSecName().c_str());
+  ps.format("  texture{finish{ambient 1.0 diffuse 0 specular 0}};\n");
+
+  if (getEdgeLineType()==ELT_SILHOUETTE)
+    m_pIntData->m_bSilhouette = true;
+  else
+    m_pIntData->m_bSilhouette = false;
+  m_pIntData->calcSilEdgeLines(m_dViewDist, m_dCreaseLimit);
+  m_pIntData->calcEdgeIntrsec();
+
+  BOOST_FOREACH (const SEEdge &elem, m_pIntData->m_silEdges) {
+    const int iv1 = elem.iv1;
+    const int iv2 = elem.iv2;
+    MeshVert *pv1 = m_pIntData->m_vertvec[iv1];
+    MeshVert *pv2 = m_pIntData->m_vertvec[iv2];
+    Vector4D v1 = pv1->v;
+    Vector4D v2 = pv2->v;
+    const int icp1 = elem.icp1;
+    const int icp2 = elem.icp2;
+    
+    if (elem.bForceShow ||
+        m_pIntData->m_secpts[icp1].bvis ||
+        m_pIntData->m_secpts[icp2].bvis) {
+      writeEdgeLine2(ips, elem);
+      //writeLineMark(ips, pv1->v, pv2->v, 0);
+    }
+
+/*
+    if (elem.getIsecSize()==0) {
+      if (elem.bForceShow ||
+          m_pIntData->m_secpts[icp1].bvis ||
+          m_pIntData->m_secpts[icp2].bvis) {
+        //writeEdgeLine2(ips, elem);
+        writeLineMark(ips, pv1->v, pv2->v, 0);
+      }
+    }
+    else {
+      
+      std::deque<Vector4D> icpts;
+      elem.calcIsecPoints(v1, v2, icpts);
+      
+      if (m_pIntData->m_secpts[icp1].bvis) {
+        //writeEdgeLine3(ips, pv1, icpts.front());
+        writeLineMark(ips, pv1->v, icpts.front(), 1);
+      }
+      if (m_pIntData->m_secpts[icp2].bvis) {
+        //writeEdgeLine3(ips, pv2, icpts.back());
+        writeLineMark(ips, pv2->v, icpts.back(), 2);
+      }
+    }*/
+  }
+
+  writeCornerPoints2(ips);
+
+  m_pIntData->cleanupSilEdgeLines();
 }

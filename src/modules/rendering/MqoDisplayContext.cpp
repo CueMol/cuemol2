@@ -84,7 +84,7 @@ void MqoDisplayContext::startSection(const LString &name)
     return ;
   }
   m_pIntData = MB_NEW RendIntData(this);
-  m_pIntData->start(NULL, NULL, name);
+  m_pIntData->start(name);
 }
 
 void MqoDisplayContext::endSection()

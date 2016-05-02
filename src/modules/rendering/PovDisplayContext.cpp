@@ -56,8 +56,7 @@ void PovDisplayContext::startSection(const LString &name)
 {
   // start of rendering section
   super_t::startSection(name);
-  m_pIntData->start(m_pPovOut, m_pIncOut, name);
-  // m_secName = name;
+  m_pIntData->start(name);
 
   if (!m_bPostBlend) {
     // no post-alpha blending
@@ -94,33 +93,6 @@ void PovDisplayContext::endSection()
   writeObjects();
   super_t::endSection();
 }
-
-/*
-void PovDisplayContext::setEdgeLineType( int n )
-{
-  m_nEdgeLineType = n;
-}
-
-void PovDisplayContext::setEdgeLineWidth(double w)
-{
-  m_dEdgeLineWidth = w;
-}
-
-void PovDisplayContext::setEdgeLineColor(const ColorPtr &c)
-{
-  m_egLineCol = c;
-}
-
-double PovDisplayContext::getEdgeLineWidth() const
-{
-  return m_dEdgeLineWidth;
-}
-
-ColorPtr PovDisplayContext::getEdgeLineColor() const
-{
-  return m_egLineCol;
-}
-*/
 
 bool PovDisplayContext::isPostBlend() const
 {
@@ -530,40 +502,16 @@ void PovDisplayContext::writeObjects()
 
   int nEdgeLineType = getEdgeLineType();
   if (m_bEnableEdgeLines &&
-      (nEdgeLineType==ELT_OPQ_EDGES||
-       nEdgeLineType==ELT_OPQ_SILHOUETTE)) {
-    // opaque edges/silhouettes
-    m_pIntData->convSpheres();
-    m_pIntData->convCylinders();
-    
-    writeMeshes();
-    ips.format("\n#end\n");
-    
-    /*
-    // write mask meshes
-    ips.format("\n#if (!_show%s)\n", getSecName().c_str());
-    writeMeshes(true);
-    ips.format("\n#end\n");
-    */
-    
-    // TO DO: clip the occluded edges by visibility calculation
-    ips.format("\n#if (_show%s_edges)\n", getSecName().c_str());
-    writeSilEdges();
-    ips.format("\n#end\n");
-    
-    ps.format("#ifndef (_show%s_edges)\n", getSecName().c_str());
-    ps.format("#declare _show%s_edges = 1;\n", getSecName().c_str());
-    ps.format("#end\n");
-    ps.format("\n");
-  }
-  else if (m_bEnableEdgeLines &&
-           (nEdgeLineType==ELT_EDGES||
-            nEdgeLineType==ELT_SILHOUETTE)) {
+      (nEdgeLineType==ELT_EDGES||
+       nEdgeLineType==ELT_SILHOUETTE)) {
     // normal edges/silhouettes
+    // convert sphere to mesh
     m_pIntData->convSpheres();
+    // convert cylinder to mesh
     m_pIntData->convCylinders();
     writeMeshes();
     writeSilEdges();
+    // writeSilEdges2();
     ips.format("\n#end\n");
     ps.format("\n");
   }
@@ -915,12 +863,17 @@ bool PovDisplayContext::writeMeshes(bool bMask/*=false*/)
   int nfaces = pMesh->getFaceSize();
 
   // convert vertex list to array
+  std::vector<MeshVert*> pmary(nverts);
+  std::copy(pMesh->m_verts.begin(), pMesh->m_verts.end(), pmary.begin());
+
+  /*
   MeshVert **pmary = MB_NEW MeshVert *[nverts];
   i=0;
   BOOST_FOREACH (MeshVert *pelem, pMesh->m_verts) {
     pmary[i] = pelem;
     ++i;
   }
+  */
   
   //
   // generate mesh2 statement
@@ -1036,7 +989,7 @@ bool PovDisplayContext::writeMeshes(bool bMask/*=false*/)
   //
   if (bdel)
     delete pMesh;
-  delete [] pmary;
+  // delete [] pmary;
 
   // m_pIntData->m_mesh.clear();
 

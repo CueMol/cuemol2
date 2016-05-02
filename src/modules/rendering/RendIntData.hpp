@@ -1,6 +1,6 @@
 // -*-Mode: C++;-*-
 //
-//  File display context implementation class
+//  File display context rendering internal data
 //
 
 #ifndef REND_INTERNAL_DATA_HPP_INCLUDED
@@ -14,6 +14,7 @@
 #include <qlib/LStream.hpp>
 
 #include "MeshData.hpp"
+#include "GraphEdge.hpp"
 
 namespace qlib {
   class PrintStream;
@@ -37,12 +38,6 @@ namespace render {
   public:
 
     typedef ColorTable::elem_t ColIndex;
-
-    /// output pov file
-    OutStream *m_pPovOut;
-
-    /// output inc file
-    OutStream *m_pIncOut;
 
     /// target name
     LString m_name;
@@ -145,7 +140,8 @@ namespace render {
     RendIntData(FileDisplayContext *pdc);
     virtual ~RendIntData();
 
-    void start(OutStream *fp, OutStream *ifp, const char *name);
+    //void start(OutStream *fp, OutStream *ifp, const char *name);
+    void start(const char *name);
     void end();
 
     /// Append line segment
@@ -237,6 +233,53 @@ namespace render {
     Mesh *simplifyMesh(Mesh *pMesh, int nmode=2);
     
 
+    /////////////////////////////////////////////////
+    // workarea for silhouette/edge extraction
+  //private:
+  public:
+    
+    /// camera position
+    double m_dViewDist;
+
+    /// Target mesh (simplified by vertex-compare mode)
+    Mesh *m_pEgMesh;
+
+    /// Silhouette (or edge) lines
+    SEEdgeSet m_silEdges;
+
+    /// Silhouette/Edge corner points
+    std::vector<SEVertex> m_secpts;
+
+    // typedef std::map<int, int> VertSet;
+    // VertSet m_silVertSet;
+
+    /// vertex array of m_pEgMesh
+    std::vector<MeshVert*> m_vertvec;
+    /// face array of m_pEgMesh
+    std::vector<SEFace> m_facevec;
+
+    /// AABB Tree
+    void *m_pTree;
+
+    /// silhouette mode
+    bool m_bSilhouette;
+
+    /// Build vertex-visibility list using AABB tree (m_pTree)
+    void buildVertVisList();
+
+  public:
+
+    void calcSilEdgeLines(double dViewDist, double dnangl);
+
+    void calcEdgeIntrsec();
+
+    void buildSELines();
+
+    void cleanupSilEdgeLines();
+
+    /////////////////////////////////////////////////
+
+  public:
     const LString &getStyleNames() const {
       return m_styleNames;
     }

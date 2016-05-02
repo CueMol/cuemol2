@@ -19,11 +19,14 @@ using gfx::DisplayContext;
 using qsys::StyleMgr;
 
 RendIntData::RendIntData(FileDisplayContext *pdc)
-     : m_pPovOut(NULL), m_pIncOut(NULL)
+//     : m_pPovOut(NULL), m_pIncOut(NULL)
 {
   m_pdc = pdc;
   m_dClipZ = -1.0;
 //  m_mesh.m_pPar = this;
+
+  m_pEgMesh = NULL;
+  m_bSilhouette = false;
 }
 
 RendIntData::~RendIntData()
@@ -35,13 +38,13 @@ RendIntData::~RendIntData()
 
 /////
 
-void RendIntData::start(OutStream *fp, OutStream *ifp, const char *name)
+//void RendIntData::start(OutStream *fp, OutStream *ifp, const char *name)
+void RendIntData::start(const char *name)
 {
-  m_pPovOut = fp;
-  m_pIncOut = ifp;
   m_name = name;
-  //m_fUseTexBlend = false;
+
   m_fUseTexBlend = true;
+  //m_fUseTexBlend = false;
 }
 
 void RendIntData::meshStart()
@@ -297,6 +300,7 @@ RendIntData::ColIndex RendIntData::convCol(const ColorPtr &pcol)
   return m_clut.newColor(pcol, defmtr);
 }
 
+// Create and return the clipped mesh object by m_dClipZ
 Mesh *RendIntData::calcMeshClip()
 {
   int i, j;
@@ -858,7 +862,10 @@ namespace {
   }
 }
 
-
+/// Create a simplified mesh object by eliminating the degenerated points
+/// nmode==0: vertex compare
+/// nmode==1: vertex&norm compare
+/// nmode==2: vertex&norm&color compare
 Mesh *RendIntData::simplifyMesh(Mesh *pMesh, int nmode /*=2*/)
 {
   int i, j;
@@ -957,7 +964,7 @@ Mesh *RendIntData::simplifyMesh(Mesh *pMesh, int nmode /*=2*/)
                              vertvec[io2]->v,
                              vertvec[io3]->v);
     if (S<eps) {
-      MB_DPRINTLN("A Degen: (%d,%d,%d)", i1, i2, i3);
+      MB_DPRINTLN("TriArea Degen: (%d,%d,%d)", i1, i2, i3);
       continue;
     }
 
@@ -965,5 +972,421 @@ Mesh *RendIntData::simplifyMesh(Mesh *pMesh, int nmode /*=2*/)
   }
 
   return pMesh2;
+}
+
+namespace {
+  bool checkSilEdge(const Vector4D &vwvec, const Vector4D &n1, const Vector4D &n2, double norm_limit)
+  {
+    double dot1 = vwvec.dot(n1);
+    double dot2 = vwvec.dot(n2);
+    if (dot1*dot2<0)
+      return true;
+
+    double ang = ::acos( n1.dot(n2) );
+    if (std::abs(ang)>norm_limit)
+      return true;
+
+    return false;
+  }
+
+  inline Vector4D calcNorm(const Vector4D &v1, const Vector4D &v2, const Vector4D &v3)
+  {
+    Vector4D tmp = (v2-v1).cross(v3-v1);
+    return tmp.normalize();
+  }
+  
+}
+
+void RendIntData::calcSilEdgeLines(double dViewDist, double dnangl)
+{
+  // set view position
+  m_dViewDist = dViewDist;
+
+  // simplify degenerated verteces
+  // nmode==0 (-->only account for verteces)
+  m_pEgMesh = simplifyMesh(&m_mesh, 0);
+
+  const int nverts = m_pEgMesh->getVertexSize();
+  const int nfaces = m_pEgMesh->getFaceSize();
+
+  // convert vertex list to array
+  m_vertvec.resize(nverts);
+  std::copy(m_pEgMesh->m_verts.begin(), m_pEgMesh->m_verts.end(), m_vertvec.begin());
+
+  // convert face list to array (and calc face norms)
+  // make edge set
+  SEEdgeSet eset;
+  m_facevec.resize(nfaces);
+
+  {
+    Mesh::FCIter iter2 = m_pEgMesh->m_faces.begin();
+    Mesh::FCIter iend2 = m_pEgMesh->m_faces.end();
+    SEFace ff;
+    for (int fid=0; iter2!=iend2; iter2++, fid++) {
+      int ia1 = iter2->iv1;
+      int ia2 = iter2->iv2;
+      int ia3 = iter2->iv3;
+
+      ff.nmode = iter2->nmode;
+      ff.iv1 = ia1;
+      ff.iv2 = ia2;
+      ff.iv3 = ia3;
+      ff.n = calcNorm(m_vertvec[ia1]->v,m_vertvec[ia2]->v,m_vertvec[ia3]->v);
+
+      m_facevec[fid] = ff;
+      // MB_DPRINTLN(" (%d,%d,%d)", ia1, ia2, ia3);
+
+      eset.insertEdge(ia1, ia2, fid);
+      eset.insertEdge(ia2, ia3, fid);
+      eset.insertEdge(ia3, ia1, fid);
+    }
+  }
+
+  MB_DPRINTLN("Build triedges done");
+
+  // current view point
+  Vector4D vcam(0,0,m_dViewDist);
+
+  // Limit angle of normals for creating crease lines
+  // const double dnangl = m_dCreaseLimit;
+
+  Vector4D v1, v2, n1, n2;
+
+  // Select crease & silhouette lines (m_silEdges) from mesh edges (eset)
+  BOOST_FOREACH (const SEEdge &elem, eset) {
+    // MB_DPRINTLN("edge <%d, %d> f=(%d,%d)", elem.iv1, elem.iv2, elem.if1, elem.if2);
+
+    v1 = m_vertvec[elem.iv1]->v;
+    v2 = m_vertvec[elem.iv2]->v;
+
+    if (elem.if1<0 || elem.if2<0) {
+      // edge is ridge
+      MB_DPRINTLN("Ridge <%d, %d> f=(%d,%d)", elem.iv1, elem.iv2, elem.if1, elem.if2);
+      int nmode = MFMOD_MESH;
+      if (elem.if1>=0)
+        nmode = m_facevec[elem.if1].nmode;
+      else if (elem.if2>=0)
+        nmode = m_facevec[elem.if2].nmode;
+
+      // nmode==1 --> ridge triangle without silhouette line
+      if (nmode!=MFMOD_OPNCYL) {
+        m_silEdges.insert(elem);
+      }
+    }
+    else if (checkSilEdge(v1-vcam, m_facevec[elem.if1].n, m_facevec[elem.if2].n, dnangl) ||
+             checkSilEdge(v2-vcam, m_facevec[elem.if1].n, m_facevec[elem.if2].n, dnangl)) {
+      // edge is silhouette/edge line
+      m_silEdges.insert(elem);
+    }
+
+  }
+
+  // collect corner points
+  std::vector<int> idmap(nverts, -1);
+  std::deque<int> secpts;
+  int idnew = 0;
+  //  std::set<int> secpts;
+  BOOST_FOREACH (const SEEdge &elem, m_silEdges) {
+    if (idmap[elem.iv1]<0) {
+      idmap[elem.iv1] = idnew;
+      ++idnew;
+      secpts.push_back(elem.iv1);
+    }
+    if (idmap[elem.iv2]<0) {
+      idmap[elem.iv2] = idnew;
+      ++idnew;
+      secpts.push_back(elem.iv2);
+    }
+    //secpts.insert(elem.iv1);
+    //secpts.insert(elem.iv2);
+  }
+
+  // calculate the corner point array index
+  BOOST_FOREACH (const SEEdge &elem, m_silEdges) {
+    int newiv1 = idmap[elem.iv1];
+    MB_ASSERT(elem.iv1==secpts[newiv1]);
+    int newiv2 = idmap[elem.iv2];
+    MB_ASSERT(elem.iv2==secpts[newiv2]);
+    elem.setCpIndex(newiv1, newiv2);
+  }
+
+  int ncorner = secpts.size();
+  m_secpts.resize(ncorner);
+  for (int i=0; i<ncorner; ++i) {
+    m_secpts[i].iv = secpts[i];
+    m_secpts[i].bvis = false;
+  }
+
+  MB_DPRINTLN("Silhouette extraction done. (%d edges, %d corners)", m_silEdges.size(), ncorner);
+}
+
+
+#define CGAL_LIB_DIAGNOSTIC
+#define CGAL_HAS_NO_THREADS
+#define CGAL_DISABLE_ROUNDING_MATH_CHECK
+#define CGAL_INTERSECTION_VERSION 1
+#include <CGAL/basic.h>
+
+#include <CGAL/AABB_tree.h> // must be inserted before kernel
+#include <CGAL/AABB_traits.h>
+#include <CGAL/AABB_triangle_primitive.h>
+
+#include <CGAL/Simple_cartesian.h>
+
+namespace {
+
+  typedef CGAL::Simple_cartesian<double> K;
+  //typedef K::Point_3 Point;
+  class Point : public K::Point_3
+  {
+    typedef K::Point_3 super_t;
+  public:
+    Point() : super_t() {}
+    Point(const Vector4D &av) : super_t(av.x(), av.y(), av.z()) {}
+    int id;
+  };
+  typedef K::Plane_3 Plane;
+  typedef K::Vector_3 Vector;
+  typedef K::Segment_3 Segment;
+  
+  //typedef K::Triangle_3 Triangle;
+  class Triangle : public K::Triangle_3
+  {
+    typedef K::Triangle_3 super_t;
+  public:
+    Triangle() : super_t() {}
+    
+    Triangle(const Vector4D &v1,
+             const Vector4D &v2,
+             const Vector4D &v3,
+             int aiv1, int aiv2, int aiv3)
+         : super_t(Point(v1),Point(v2),Point(v3)),
+           iv1(aiv1), iv2(aiv2), iv3(aiv3) {}
+    
+    int iv1, iv2, iv3;
+  };
+  
+  typedef std::vector<Triangle> FaceVec;
+  typedef FaceVec::iterator FaceVecIterator;
+  typedef CGAL::AABB_triangle_primitive<K, FaceVecIterator> Primitive;
+  
+  typedef CGAL::AABB_traits<K, Primitive> AABB_triangle_traits;
+  typedef CGAL::AABB_tree<AABB_triangle_traits> Tree;
+  typedef boost::optional< Tree::Object_and_primitive_id > Segment_intrsec;
+  typedef std::list<Tree::Object_and_primitive_id>  IntrsecList;
+  
+  //////////
+
+  bool isVertVisible(Tree &tree,
+		    const Vector4D &vcam,
+		    const Vector4D &vert,
+		    int iv)
+  {
+    // check vert visibility from vcam
+    K::Point_3 pcam(vcam.x(), vcam.y(), vcam.z());
+    K::Point_3 pvert(vert.x(), vert.y(), vert.z());
+    
+    Segment segq(pcam, pvert);
+    
+    IntrsecList ilst;
+    tree.all_intersections(segq, std::back_inserter(ilst));
+    
+    BOOST_FOREACH (const IntrsecList::value_type &isec, ilst) {
+      FaceVecIterator fiter = isec.second;
+      if (iv == fiter->iv1 ||
+          iv == fiter->iv2 ||
+          iv == fiter->iv3)
+        continue;
+      return false;
+    }
+    
+    return true;
+  }
+
+  bool isVertSilVisible(Tree &tree,
+                        const Vector4D &vcam,
+                        const Vector4D &vert,
+                        int iv)
+  {
+    // check vert visibility from vcam
+    K::Point_3 pcam(vcam.x(), vcam.y(), vcam.z());
+    K::Point_3 pvert(vert.x(), vert.y(), vert.z());
+    
+    K::Ray_3 rayq(pcam, pvert);
+    
+    IntrsecList ilst;
+    tree.all_intersections(rayq, std::back_inserter(ilst));
+    
+    BOOST_FOREACH (const IntrsecList::value_type &isec, ilst) {
+      FaceVecIterator fiter = isec.second;
+      if (iv == fiter->iv1 ||
+          iv == fiter->iv2 ||
+          iv == fiter->iv3)
+        continue;
+      return false;
+    }
+    
+    return true;
+  }
+
+  bool contains_id(int iv1, int iv2,
+                   int if1, int if2, int if3)
+  {
+    if (iv1==if1 ||
+        iv1==if2 ||
+        iv1==if3)
+      return true;
+
+    if (iv2==if1 ||
+        iv2==if2 ||
+        iv2==if3)
+      return true;
+
+    return false;
+  }
+
+}
+
+void RendIntData::buildVertVisList()
+{
+  Vector4D vcam(0,0,m_dViewDist);
+
+  MeshVert *pv;
+
+  Tree &tree = *static_cast<Tree *>(m_pTree);
+
+  int nc = m_secpts.size();
+  for (int i=0; i<nc; ++i) {
+    const int iv = m_secpts[i].iv;
+    pv = m_vertvec[iv];
+    m_secpts[i].bvis = isVertVisible(tree, vcam, pv->v, iv);
+
+    m_secpts[i].nshow = 0;
+
+    m_secpts[i].bsil = false;
+    if (m_bSilhouette && m_secpts[i].bvis) {
+      m_secpts[i].bsil = isVertSilVisible(tree, vcam, pv->v, iv);
+    }
+
+  }
+
+  MB_DPRINTLN("Vertex visibility list generated.");
+}
+
+
+
+void RendIntData::calcEdgeIntrsec()
+{
+  int i;
+  MeshVert *pv1, *pv2, *pv3;
+  
+  FaceVec faces;
+  int nverts = m_vertvec.size();
+  int nfaces = m_facevec.size();
+  
+  for (i=0; i<nfaces; ++i) {
+    const SEFace &ff = m_facevec[i];
+    if (ff.iv1<0 || ff.iv2<0 || ff.iv3<0)
+      continue;
+
+    // only handle cyl and sph meshes
+    if (ff.nmode==MFMOD_MESH)
+      continue;
+
+    pv1 = m_vertvec[ff.iv1];
+    pv2 = m_vertvec[ff.iv2];
+    pv3 = m_vertvec[ff.iv3];
+    
+    faces.push_back(Triangle(pv1->v,pv2->v,pv3->v,
+                             ff.iv1, ff.iv2, ff.iv3));
+  }
+
+  // find occluded verteces by mesh faces
+  // --> write only the visible edges
+  MB_DPRINTLN("AABB Tree constructing...");
+  // Tree tree(faces.begin(), faces.end());
+  Tree *ptree = new Tree(faces.begin(), faces.end());
+  m_pTree = ptree;
+  MB_DPRINTLN("Done.");
+  
+  buildVertVisList();
+  
+  BOOST_FOREACH (const SEEdge &elem, m_silEdges) {
+    pv1 = m_vertvec[elem.iv1];
+    pv2 = m_vertvec[elem.iv2];
+
+    int nmode = MFMOD_MESH;
+    if (elem.if1>0)
+      nmode = m_facevec[elem.if1].nmode;
+    else if (elem.if2>0)
+      nmode = m_facevec[elem.if2].nmode;
+
+    if (nmode==MFMOD_MESH ||
+        nmode==MFMOD_OPNCYL ||
+        nmode==MFMOD_CLSCYL) {
+      SEEdge &welem = const_cast<SEEdge &>(elem);
+      welem.bForceShow = true;
+      continue;
+    }
+
+    const int icp1 = elem.icp1;
+    const int icp2 = elem.icp2;
+
+    if (!m_secpts[icp1].bvis &&
+        !m_secpts[icp2].bvis) {
+      // hidden edge line
+      continue;
+    }
+
+    Segment segq(Point(pv1->v), Point(pv2->v));
+
+    IntrsecList ilst;
+    ptree->all_intersections(segq, std::back_inserter(ilst));
+    
+    if (ilst.empty())
+      continue;
+
+    Vector4D v12 = pv2->v - pv1->v;
+    double l12 = v12.length();
+    K::Point_3 psec;
+    BOOST_FOREACH (const IntrsecList::value_type &isec, ilst) {
+      FaceVecIterator fiter = isec.second;
+
+      if (contains_id(elem.iv1, elem.iv2,
+                      fiter->iv1, fiter->iv2, fiter->iv3))
+        continue;
+
+      CGAL::Object obj = isec.first;
+      if (CGAL::assign(psec, obj)) {
+        Vector4D vsec(psec.x(), psec.y(), psec.z());
+        double fsec = (vsec - pv1->v).length()/l12;
+        elem.pushIsecList(fsec);
+      }
+      else {
+        MB_DPRINTLN("ERROR assign to pointer failed!!");
+      }
+    }
+
+  }
+  
+}
+
+
+void RendIntData::cleanupSilEdgeLines()
+{
+  delete m_pEgMesh;
+  m_pEgMesh = NULL;
+
+  Tree *ptree = static_cast<Tree *>(m_pTree);
+  delete ptree;
+  m_pTree = NULL;
+
+  m_vertvec.clear();
+  m_facevec.clear();
+  m_silEdges.clear();
+  m_secpts.clear();
+  
+  //m_silVertSet.clear();
+  //m_vvl.clear();
 }
 

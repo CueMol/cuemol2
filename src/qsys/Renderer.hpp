@@ -285,8 +285,8 @@ namespace qsys {
       ELT_NONE = gfx::DisplayContext::ELT_NONE,
       ELT_EDGES = gfx::DisplayContext::ELT_EDGES,
       ELT_SILHOUETTE = gfx::DisplayContext::ELT_SILHOUETTE,
-      ELT_OPQ_EDGES = gfx::DisplayContext::ELT_OPQ_EDGES,
-      ELT_OPQ_SILHOUETTE = gfx::DisplayContext::ELT_OPQ_SILHOUETTE
+      //ELT_OPQ_EDGES = gfx::DisplayContext::ELT_OPQ_EDGES,
+      //ELT_OPQ_SILHOUETTE = gfx::DisplayContext::ELT_OPQ_SILHOUETTE
     };
 
     int getEdgeLineType() const {
