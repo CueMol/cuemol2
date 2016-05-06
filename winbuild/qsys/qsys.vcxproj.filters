@@ -989,5 +989,11 @@
     <glslshader Include="..\..\src\sysdep\edge_vert.glsl">
       <Filter>sysdep</Filter>
     </glslshader>
+    <glslshader Include="..\..\src\sysdep\silh_frag.glsl">
+      <Filter>sysdep</Filter>
+    </glslshader>
+    <glslshader Include="..\..\src\sysdep\silh_vert.glsl">
+      <Filter>sysdep</Filter>
+    </glslshader>
   </ItemGroup>
 </Project>

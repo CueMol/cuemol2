@@ -1,6 +1,6 @@
 // -*-Mode: C++;-*-
 //
-//  Default vertex shader for OpenGL
+//  Silhouette vertex shader for OpenGL
 //
 
 uniform float frag_alpha;

@@ -125,47 +125,22 @@ namespace render {
     //////////
     // edge extraction
 
-    std::vector<MeshVert*> m_vertvec;
-
-    SEEdgeSet m_silEdges;
-
-    typedef std::map<int, int> VertSet;
-    VertSet m_silVertSet;
-
     void writeSilEdges2();
 
     void writeEdgeLines(PrintStream &ips);
     void writeSilhLines(PrintStream &ips);
-
-    void writeEdgeLine2(PrintStream &ips, const SEEdge &elem);
-
-    //void writeEdgeLine3(PrintStream &ips, MeshVert *pv, const Vector4D &vsec);
-    void writeEdgeLine3(PrintStream &ips, const SEEdge &elem, double fsec1, double fsec2);
-
-    void writeCornerPoints2(PrintStream &ips);
-
-    void writeSilEdges();
-
-    void writeEdgeLine(PrintStream &ips, const SEEdge &elem, int flag=0);
 
     void writeEdgeLine(PrintStream &ips,
                        const Vector4D &v1, const Vector4D &v2,
                        const Vector4D &n1, const Vector4D &n2,
                        int alpha1, int alpha2,
                        int flag=0);
+    void writeEdgeLine2(PrintStream &ips, const SEEdge &elem);
+    void writeEdgeLine3(PrintStream &ips, const SEEdge &elem, double fsec1, double fsec2);
 
+    void writeCornerPoints2(PrintStream &ips);
     void writePoint(PrintStream &ips,
                     const Vector4D &v1, const Vector4D &n1);
-
-    void writeCornerPoints(PrintStream &ips);
-
-    void buildVertVisList(std::vector<char> &vvl, void *pTree);
-
-    void writeAllEdges(PrintStream &ips);
-
-    void checkAndWriteEdges(PrintStream &ips, std::vector<char> &vvl, void *pTree, void *pFaceVec);
-
-    void writeSilOnly(PrintStream &ips, void *pfvec);
 
     //////////////////
     // images
