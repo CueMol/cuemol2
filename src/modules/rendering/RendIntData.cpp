@@ -27,6 +27,10 @@ RendIntData::RendIntData(FileDisplayContext *pdc)
 
   m_pEgMesh = NULL;
   m_bSilhouette = false;
+
+  // AABB tree
+  m_pTree = NULL;
+  m_pTreeFaces = NULL;
 }
 
 RendIntData::~RendIntData()
@@ -34,6 +38,7 @@ RendIntData::~RendIntData()
   std::for_each(m_lines.begin(), m_lines.end(), qlib::delete_ptr<Line *>());
   std::for_each(m_cylinders.begin(), m_cylinders.end(), qlib::delete_ptr<Cyl *>());
   std::for_each(m_spheres.begin(), m_spheres.end(), qlib::delete_ptr<Sph *>());
+  MB_ASSERT(m_pTree==NULL);
 }
 
 /////
@@ -1245,6 +1250,31 @@ namespace {
     return false;
   }
 
+  bool isVertSilVisible2(Tree &tree,
+                         const Vector4D &vcam,
+                         const Vector4D &vert,
+                         int iv1, int iv2)
+  {
+    // check vert visibility from vcam
+    K::Point_3 pcam(vcam.x(), vcam.y(), vcam.z());
+    K::Point_3 pvert(vert.x(), vert.y(), vert.z());
+    
+    K::Ray_3 rayq(pcam, pvert);
+    
+    IntrsecList ilst;
+    tree.all_intersections(rayq, std::back_inserter(ilst));
+    
+    BOOST_FOREACH (const IntrsecList::value_type &isec, ilst) {
+      FaceVecIterator fiter = isec.second;
+      if (contains_id(iv1, iv2,
+                      fiter->iv1, fiter->iv2, fiter->iv3))
+        continue;
+      return false;
+    }
+    
+    return true;
+  }
+
 }
 
 void RendIntData::buildVertVisList()
@@ -1259,28 +1289,32 @@ void RendIntData::buildVertVisList()
   for (int i=0; i<nc; ++i) {
     const int iv = m_secpts[i].iv;
     pv = m_vertvec[iv];
-    m_secpts[i].bvis = isVertVisible(tree, vcam, pv->v, iv);
-
+    if (!m_bSilhouette)
+      m_secpts[i].bvis = isVertVisible(tree, vcam, pv->v, iv);
+    else
+      m_secpts[i].bvis = isVertSilVisible(tree, vcam, pv->v, iv);
+    
     m_secpts[i].nshow = 0;
 
+    /*
     m_secpts[i].bsil = false;
     if (m_bSilhouette && m_secpts[i].bvis) {
       m_secpts[i].bsil = isVertSilVisible(tree, vcam, pv->v, iv);
-    }
+    }*/
 
   }
 
   MB_DPRINTLN("Vertex visibility list generated.");
 }
 
-
-
-void RendIntData::calcEdgeIntrsec()
+void RendIntData::buildAABBTree(int nexcl_mode)
 {
+  MB_ASSERT(m_pTree==NULL);
+  
   int i;
   MeshVert *pv1, *pv2, *pv3;
   
-  FaceVec faces;
+  FaceVec *pfaces = MB_NEW FaceVec;
   int nverts = m_vertvec.size();
   int nfaces = m_facevec.size();
   
@@ -1289,25 +1323,33 @@ void RendIntData::calcEdgeIntrsec()
     if (ff.iv1<0 || ff.iv2<0 || ff.iv3<0)
       continue;
 
-    // only handle cyl and sph meshes
-    if (ff.nmode==MFMOD_MESH)
+    if (ff.nmode==nexcl_mode)
       continue;
 
     pv1 = m_vertvec[ff.iv1];
     pv2 = m_vertvec[ff.iv2];
     pv3 = m_vertvec[ff.iv3];
     
-    faces.push_back(Triangle(pv1->v,pv2->v,pv3->v,
-                             ff.iv1, ff.iv2, ff.iv3));
+    pfaces->push_back(Triangle(pv1->v,pv2->v,pv3->v,
+                               ff.iv1, ff.iv2, ff.iv3));
   }
 
   // find occluded verteces by mesh faces
   // --> write only the visible edges
   MB_DPRINTLN("AABB Tree constructing...");
   // Tree tree(faces.begin(), faces.end());
-  Tree *ptree = new Tree(faces.begin(), faces.end());
-  m_pTree = ptree;
+  m_pTree = MB_NEW Tree(pfaces->begin(), pfaces->end());
+  m_pTreeFaces = pfaces;
   MB_DPRINTLN("Done.");
+}
+
+void RendIntData::calcEdgeIntrsec()
+{
+  MB_ASSERT(m_pTree!=NULL);
+  Tree &tree = *static_cast<Tree *>(m_pTree);
+
+  int i;
+  MeshVert *pv1, *pv2, *pv3;
   
   buildVertVisList();
   
@@ -1341,7 +1383,7 @@ void RendIntData::calcEdgeIntrsec()
     Segment segq(Point(pv1->v), Point(pv2->v));
 
     IntrsecList ilst;
-    ptree->all_intersections(segq, std::back_inserter(ilst));
+    tree.all_intersections(segq, std::back_inserter(ilst));
     
     if (ilst.empty())
       continue;
@@ -1371,6 +1413,88 @@ void RendIntData::calcEdgeIntrsec()
   
 }
 
+void RendIntData::calcSilhIntrsec(double divw)
+{
+  MB_ASSERT(m_pTree!=NULL);
+  Tree &tree = *static_cast<Tree *>(m_pTree);
+
+  int i;
+  MeshVert *pv1, *pv2, *pv3;
+  
+  // build SEC point list and vertex visibility list (in silh mode)
+  buildVertVisList();
+  
+  Vector4D vcam(0,0,m_dViewDist);
+
+  BOOST_FOREACH (const SEEdge &elem, m_silEdges) {
+    pv1 = m_vertvec[elem.iv1];
+    pv2 = m_vertvec[elem.iv2];
+
+    // calculate subdivision number of the segment
+    Vector4D v12 = pv2->v - pv1->v;
+    const double len12 = v12.length();
+    if (qlib::isNear4(len12, 0.0)) {
+      MB_DPRINTLN("Edge %d,%d too short,skipped", elem.iv1, elem.iv2);
+      continue; // segment is too small (ignore)
+    }
+    Vector4D e12 = v12.divide(len12);
+    const double sinth = ::sqrt( 1.0 - e12.z()*e12.z() );
+    // (orthographic) projected length
+    const double pjlen = len12*sinth;
+    if (qlib::isNear4(pjlen, 0.0)) {
+      MB_DPRINTLN("Edge %d,%d too short,skipped", elem.iv1, elem.iv2);
+      continue; // segment is too small (ignore)
+    }
+    
+    int ndiv = int( ::ceil( pjlen/divw ) );
+    // if (ndiv>0)
+
+    const int icp1 = elem.icp1;
+    const int icp2 = elem.icp2;
+
+    bool bvprev = m_secpts[icp1].bvis;
+    double rho_prev = 0.0;
+
+    /*
+    if (!m_secpts[icp1].bvis &&
+        !m_secpts[icp2].bvis) {
+      // hidden edge line
+      continue;
+    }*/
+
+    // check subdivided points
+    for (i=1; i<=ndiv+1; ++i) {
+      const double rho = double(i)/double(ndiv+1);
+
+      Vector4D vintr;
+      bool bvis;
+
+      if (i==ndiv+1) {
+        vintr = pv2->v;
+        bvis = m_secpts[icp2].bvis;
+      }
+      else {
+        vintr = pv1->v + v12.scale(rho);
+        bvis = isVertSilVisible2(tree, vcam, vintr, elem.iv1, elem.iv2);
+      }
+      
+      if (bvprev!=bvis) {
+        // visibility changed --> add an intersection point
+        // intrsec pt is a middle point of i and i-1 th points
+        const double fsec = (rho + rho_prev)/2.0;
+        elem.pushIsecList(fsec);
+      }
+
+      bvprev = bvis;
+      rho_prev = rho;
+    }
+
+    MB_DPRINTLN("Edge %d,%d ndiv=%d, isec=%d", elem.iv1, elem.iv2, ndiv, elem.getIsecSize());
+
+  }
+  
+}
+
 
 void RendIntData::cleanupSilEdgeLines()
 {
@@ -1380,6 +1504,10 @@ void RendIntData::cleanupSilEdgeLines()
   Tree *ptree = static_cast<Tree *>(m_pTree);
   delete ptree;
   m_pTree = NULL;
+
+  FaceVec *pfaces = static_cast<FaceVec *>(m_pTreeFaces); 
+  delete pfaces;
+  m_pTreeFaces = NULL;
 
   m_vertvec.clear();
   m_facevec.clear();

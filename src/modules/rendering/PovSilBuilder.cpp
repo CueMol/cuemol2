@@ -1055,13 +1055,36 @@ void PovDisplayContext::writeEdgeLine2(PrintStream &ips, const SEEdge &elem)
   writeEdgeLine(ips, pv1->v, pv2->v, pv1->n, pv2->n, alpha1, alpha2, 0);
 }
 
-void PovDisplayContext::writeEdgeLine3(PrintStream &ips, MeshVert *pv, const Vector4D &vsec)
+void PovDisplayContext::writeEdgeLine3(PrintStream &ips, const SEEdge &elem, double fsec1, double fsec2)
 {
-  ColorPtr col;
-  m_pIntData->m_clut.getColor(pv->c, col);
-  int alpha = col->a();
+  MeshVert *pv1 = m_pIntData->m_vertvec[elem.iv1];
+  MeshVert *pv2 = m_pIntData->m_vertvec[elem.iv2];
+  ColorPtr col1, col2;
+  m_pIntData->m_clut.getColor(pv1->c, col1);
+  m_pIntData->m_clut.getColor(pv2->c, col2);
+  int alpha1 = col1->a();
+  int alpha2 = col2->a();
 
-  writeEdgeLine(ips, pv->v, vsec, pv->n, pv->n, alpha, alpha, 0);
+  if (qlib::isNear4(fsec1, 0.0))
+    m_pIntData->m_secpts[elem.icp1].nshow ++;
+  
+  if (qlib::isNear4(fsec2, 1.0))
+    m_pIntData->m_secpts[elem.icp2].nshow ++;
+
+  Vector4D v12 = pv2->v - pv1->v;
+
+  Vector4D vs1 = pv1->v + v12.scale(fsec1);
+  Vector4D vs2 = pv1->v + v12.scale(fsec2);
+
+  bool bs1 = (fsec1<0.5);
+  bool bs2 = (fsec2<0.5);
+
+  writeEdgeLine(ips, vs1, vs2,
+                bs1?(pv1->n):(pv2->n),
+                bs2?(pv1->n):(pv2->n),
+                bs1?alpha1:alpha2,
+                bs2?alpha1:alpha2,
+                0);
 }
 
 void PovDisplayContext::writeCornerPoints2(PrintStream &ips)
@@ -1124,9 +1147,26 @@ void PovDisplayContext::writeSilEdges2()
     m_pIntData->m_bSilhouette = true;
   else
     m_pIntData->m_bSilhouette = false;
-  m_pIntData->calcSilEdgeLines(m_dViewDist, m_dCreaseLimit);
-  m_pIntData->calcEdgeIntrsec();
 
+  m_pIntData->calcSilEdgeLines(m_dViewDist, m_dCreaseLimit);
+  m_pIntData->buildAABBTree(-1);
+
+  if (getEdgeLineType()==ELT_SILHOUETTE) {
+    writeSilhLines(ips);
+  }
+  else {
+    writeEdgeLines(ips);
+  }
+  
+  writeCornerPoints2(ips);
+
+  m_pIntData->cleanupSilEdgeLines();
+}
+
+void PovDisplayContext::writeEdgeLines(PrintStream &ips)
+{
+  m_pIntData->calcEdgeIntrsec();
+  
   BOOST_FOREACH (const SEEdge &elem, m_pIntData->m_silEdges) {
     const int iv1 = elem.iv1;
     const int iv2 = elem.iv2;
@@ -1143,33 +1183,75 @@ void PovDisplayContext::writeSilEdges2()
       writeEdgeLine2(ips, elem);
       //writeLineMark(ips, pv1->v, pv2->v, 0);
     }
+  }
+}
 
-/*
+void PovDisplayContext::writeSilhLines(PrintStream &ips)
+{
+  int j;
+  
+  m_pIntData->calcSilhIntrsec(getEdgeLineWidth()/2.0);
+  BOOST_FOREACH (const SEEdge &elem, m_pIntData->m_silEdges) {
+    const int iv1 = elem.iv1;
+    const int iv2 = elem.iv2;
+    MeshVert *pv1 = m_pIntData->m_vertvec[iv1];
+    MeshVert *pv2 = m_pIntData->m_vertvec[iv2];
+    Vector4D v1 = pv1->v;
+    Vector4D v2 = pv2->v;
+    const int icp1 = elem.icp1;
+    const int icp2 = elem.icp2;
+
+
     if (elem.getIsecSize()==0) {
-      if (elem.bForceShow ||
-          m_pIntData->m_secpts[icp1].bvis ||
-          m_pIntData->m_secpts[icp2].bvis) {
-        //writeEdgeLine2(ips, elem);
-        writeLineMark(ips, pv1->v, pv2->v, 0);
-      }
+
+      // no intersections
+      //   --> edges with invisible verteces are invisible
+      if (!m_pIntData->m_secpts[icp1].bvis)
+        continue;
+      if (!m_pIntData->m_secpts[icp2].bvis)
+        continue;
+
+      writeEdgeLine2(ips, elem);
+      // writeLineMark(ips, pv1->v, pv2->v, 0);
     }
     else {
-      
-      std::deque<Vector4D> icpts;
-      elem.calcIsecPoints(v1, v2, icpts);
-      
-      if (m_pIntData->m_secpts[icp1].bvis) {
-        //writeEdgeLine3(ips, pv1, icpts.front());
-        writeLineMark(ips, pv1->v, icpts.front(), 1);
+
+      std::deque< std::pair<double,double> > icvals;
+      elem.getIsecValues(m_pIntData->m_secpts[icp1].bvis,
+                         icvals);
+      const int nvals = icvals.size();
+      for (j=0; j<nvals; ++j) {
+        writeEdgeLine3(ips, elem, icvals[j].first, icvals[j].second);
       }
-      if (m_pIntData->m_secpts[icp2].bvis) {
-        //writeEdgeLine3(ips, pv2, icpts.back());
-        writeLineMark(ips, pv2->v, icpts.back(), 2);
-      }
-    }*/
+
+      /*
+        std::deque<Vector4D> icpts;
+        elem.calcIsecPoints(v1, v2, icpts);
+
+        bool bprev = m_pIntData->m_secpts[icp1].bvis;
+        Vector4D vprev = pv1->v;
+
+        for (j=0; j<=icpts.size(); ++j) {
+          Vector4D vc;
+          if (j<icpts.size()) {
+            vc = icpts[j];
+          else {
+            vc = pv2->v;
+          }
+
+          if (bprev) {
+            writeLineMark(ips, vprev, vc, 1);
+          }
+          else {
+            writeLineMark(ips, vprev, vc, 2);
+          }
+
+          bprev = !bprev;
+          vprev = vc;
+        } // for
+       */
+
+    }
   }
-
-  writeCornerPoints2(ips);
-
-  m_pIntData->cleanupSilEdgeLines();
 }
+

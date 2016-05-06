@@ -260,6 +260,7 @@ namespace render {
 
     /// AABB Tree
     void *m_pTree;
+    void *m_pTreeFaces;
 
     /// silhouette mode
     bool m_bSilhouette;
@@ -271,9 +272,12 @@ namespace render {
 
     void calcSilEdgeLines(double dViewDist, double dnangl);
 
-    void calcEdgeIntrsec();
+    void buildAABBTree(int nmode);
 
-    void buildSELines();
+    void calcEdgeIntrsec();
+    void calcSilhIntrsec(double);
+
+    // void buildSELines();
 
     void cleanupSilEdgeLines();
 

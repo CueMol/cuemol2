@@ -510,8 +510,8 @@ void PovDisplayContext::writeObjects()
     // convert cylinder to mesh
     m_pIntData->convCylinders();
     writeMeshes();
-    writeSilEdges();
-    // writeSilEdges2();
+    //writeSilEdges();
+    writeSilEdges2();
     ips.format("\n#end\n");
     ps.format("\n");
   }

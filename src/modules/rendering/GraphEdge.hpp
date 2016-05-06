@@ -38,8 +38,8 @@ namespace render {
     /// visibility flag
     bool bvis;
 
-    /// silhouette vis flag
-    bool bsil;
+    // /// silhouette vis flag
+    // bool bsil;
 
     /// show counter for corner-point display
     int nshow;
@@ -160,6 +160,32 @@ namespace render {
       int nret = 0;
       BOOST_FOREACH (double fsec, *m_pIsecList) {
         pts.push_back( v1 + v12.scale(fsec) );
+        ++nret;
+      }
+
+      return nret;
+    }
+
+    int getIsecValues(bool bStart, std::deque< std::pair<double,double> > &pts) const
+    {
+      if (m_pIsecList==NULL)
+        return 0;
+
+      int nret = 0;
+      bool bprev = bStart;
+      double fprev = 0.0;
+
+      BOOST_FOREACH (double fsec, *m_pIsecList) {
+        if (bprev) {
+          pts.push_back( std::pair<double,double>( fprev, fsec ) );
+          ++nret;
+        }
+        bprev = !bprev;
+        fprev = fsec;
+      }
+
+      if (bprev) {
+        pts.push_back( std::pair<double,double>( fprev, 1.0 ) );
         ++nret;
       }
 

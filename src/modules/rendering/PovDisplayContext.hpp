@@ -133,8 +133,15 @@ namespace render {
     VertSet m_silVertSet;
 
     void writeSilEdges2();
+
+    void writeEdgeLines(PrintStream &ips);
+    void writeSilhLines(PrintStream &ips);
+
     void writeEdgeLine2(PrintStream &ips, const SEEdge &elem);
-    void writeEdgeLine3(PrintStream &ips, MeshVert *pv, const Vector4D &vsec);
+
+    //void writeEdgeLine3(PrintStream &ips, MeshVert *pv, const Vector4D &vsec);
+    void writeEdgeLine3(PrintStream &ips, const SEEdge &elem, double fsec1, double fsec2);
+
     void writeCornerPoints2(PrintStream &ips);
 
     void writeSilEdges();
