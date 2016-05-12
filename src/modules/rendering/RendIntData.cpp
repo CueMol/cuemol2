@@ -1548,6 +1548,16 @@ void RendIntData::writeEdgeLine(PrintStream &ps, const SEEdge &elem)
   MeshVert *pv1 = m_vertvec[elem.iv1];
   MeshVert *pv2 = m_vertvec[elem.iv2];
 
+  // check invalid vertex and normal
+  if (!pv1->isFinite()) {
+    LOG_DPRINTLN("PovSilBuilder> invalid vertex/normal for edge line ignored");
+    return;
+  }
+  if (!pv2->isFinite()) {
+    LOG_DPRINTLN("PovSilBuilder> invalid vertex/normal for edge line ignored");
+    return;
+  }
+
   ColorPtr col1, col2;
   m_clut.getColor(pv1->c, col1);
   m_clut.getColor(pv2->c, col2);
@@ -1563,27 +1573,6 @@ void RendIntData::writeEdgeLine(PrintStream &ips,
                                 int alpha1, int alpha2,
                                 int flag /*=0*/)
 {
-  // check invalid vertex and normal
-  if (!qlib::isFinite(v1.x()) ||
-      !qlib::isFinite(v1.y()) ||
-      !qlib::isFinite(v1.z()) ||
-      !qlib::isFinite(n1.x()) ||
-      !qlib::isFinite(n1.y()) ||
-      !qlib::isFinite(n1.z())) {
-    LOG_DPRINTLN("PovSilBuilder> invalid vertex/normal for edge line ignored");
-    return;
-  }
-
-  if (!qlib::isFinite(v2.x()) ||
-      !qlib::isFinite(v2.y()) ||
-      !qlib::isFinite(v2.z()) ||
-      !qlib::isFinite(n2.x()) ||
-      !qlib::isFinite(n2.y()) ||
-      !qlib::isFinite(n2.z())) {
-    LOG_DPRINTLN("PovSilBuilder> invalid vertex/normal for edge line ignored");
-    return;
-  }
-
   /*
   if (flag==1)
     r=1.0;
@@ -1733,3 +1722,43 @@ void RendIntData::writeSilhLines(PrintStream &ps)
   }
 }
 
+void RendIntData::writeCornerPoints(PrintStream &ps)
+{
+  MeshVert *pv1;
+  const double clipz = m_dClipZ;
+
+  // write corner points
+  BOOST_FOREACH (const SEVertex &elem, m_secpts) {
+    /*
+    pv1 = m_pIntData->m_vertvec[elem.iv];
+    if (elem.bvis)
+      writePointMark(ips, pv1->v, 1);
+    else
+      writePointMark(ips, pv1->v, 2);
+      */
+
+    if (elem.nshow<=1)
+      continue;
+    
+    pv1 = m_vertvec[elem.iv];
+
+    ColorPtr col1;
+    m_clut.getColor(pv1->c, col1);
+    int alpha = col1->a();
+    // writePoint(ips, pv1->v, pv1->n, alpha);
+
+    // check invalid vertex and normal
+    if (!pv1->isFinite()) {
+      LOG_DPRINTLN("PovSilBuilder> invalid vertex/normal for edge corner ignored");
+      continue;
+    }
+    
+    if (clipz>=0) {
+      if (clipz < pv1->v.z())
+	continue; // clipped out by z-plane
+    }
+    
+    m_pdc->writePointImpl(ps, pv1->v, pv1->n, alpha);
+    
+  }
+}

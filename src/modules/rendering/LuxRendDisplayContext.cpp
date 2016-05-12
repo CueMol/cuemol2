@@ -134,16 +134,15 @@ void LuxRendDisplayContext::writeHeader()
   if (!preamble.isEmpty())
     ps.println(preamble);
 
+  ps.format("LookAt 0 0 %f 0 0 0 0 1 0\n", m_dViewDist);
   if (bPerspec)  {
-    ps.format("LookAt 0 0 %f 0 0 0 0 1 0\n", m_dViewDist);
     ps.format("Camera \"perspective\" \"float fov\" [%f]\n", fov);
   }
   else {
-    ps.format("LookAt 0 0 %f 0 0 0 0 1 0\n", m_dSlabDepth);
     ps.format("Camera \"orthographic\"\n");
     ps.format("       \"float screenwindow\" [%f %f %f %f]\n", -zoomx/2.0, zoomx/2.0, -zoomy/2.0, zoomy/2.0);
   }
-  ps.format("      \"float hither\" [%f]\n", m_dSlabDepth/2.0);
+  ps.format("      \"float hither\" [%f]\n", m_dViewDist-m_dSlabDepth/2.0);
 
   ps.format("\n");
   ps.format("Film \"fleximage\"\n");
@@ -857,6 +856,7 @@ void LuxRendDisplayContext::writeLines(PrintStream &ps)
   }
 }
 
+/////////////////////////////////////////////////////////////
 
 void LuxRendDisplayContext::writeSilEdges(PrintStream &ps)
 {
@@ -871,5 +871,106 @@ void LuxRendDisplayContext::writeSilEdges(PrintStream &ps)
   //ps.format("#declare %s_sl_tex = \n", getSecName().c_str());
   //ps.format("  texture{finish{ambient 1.0 diffuse 0 specular 0}};\n");
 
+  if (getEdgeLineType()==ELT_SILHOUETTE)
+    m_pIntData->m_bSilhouette = true;
+  else
+    m_pIntData->m_bSilhouette = false;
+
+  double dCreaseLimit = qlib::toRadian(85.0);
+  m_pIntData->calcSilEdgeLines(m_dViewDist, dCreaseLimit);
+
+  if (getEdgeLineType()==ELT_SILHOUETTE) {
+    m_pIntData->buildAABBTree(-1);
+    m_pIntData->calcSilhIntrsec(getEdgeLineWidth()/2.0);
+    m_pIntData->writeSilhLines(ps);
+  }
+  else {
+    // in the edge mode,
+    // only calculate intersections for cyl and sph meshes 
+    m_pIntData->buildAABBTree(MFMOD_MESH);
+    m_pIntData->calcEdgeIntrsec();
+    m_pIntData->writeEdgeLines(ps);
+  }
+  
+  // if (m_nEdgeCornerType!=ECT_NONE)
+  m_pIntData->writeCornerPoints(ps);
+
+  m_pIntData->cleanupSilEdgeLines();
+
 }
 
+void LuxRendDisplayContext::writeEdgeLineImpl(PrintStream &ps, int xa1, int xa2,
+					     const Vector4D &x1, const Vector4D &n1,
+					     const Vector4D &x2, const Vector4D &n2)
+{
+  double r=.0,g=.0,b=.0;
+  ColorPtr pcol = getEdgeLineColor();
+  if (!pcol.isnull()) {
+    r = pcol->fr();
+    g = pcol->fg();
+    b = pcol->fb();
+  }
+
+  const double w = getEdgeLineWidth();
+  const double rise = w/2.0;
+  LString secname = getSecName();
+
+  if (xa1==255 && xa2==255) {
+    // solid lines
+    /*
+    ips.format("edge_line(<%f, %f, %f>, <%f,%f,%f>, <%f, %f, %f>, <%f,%f,%f>, %s_sl_rise*%f,",
+               x1.x(), x1.y(), x1.z(),
+               n1.x(), n1.y(), n1.z(),
+               x2.x(), x2.y(), x2.z(),
+               n2.x(), n2.y(), n2.z(),
+               secname.c_str(), rise);
+    ips.format("%f*%s_sl_scl, ", w, secname.c_str());
+    ips.format("%s_sl_tex, <%f,%f,%f>)\n",secname.c_str(), r, g, b);
+    */
+  }
+  else {
+    // semi-transparent lines
+    /*
+    ips.format("edge_line2(<%f, %f, %f>, <%f,%f,%f>, %f, <%f, %f, %f>, <%f,%f,%f>, %f, %s_sl_rise*%f,",
+               x1.x(), x1.y(), x1.z(),
+               n1.x(), n1.y(), n1.z(),
+               1.0-xa1/255.0,
+               x2.x(), x2.y(), x2.z(),
+               n2.x(), n2.y(), n2.z(),
+               1.0-xa2/255.0,
+               secname.c_str(), rise);
+    ips.format("%f*%s_sl_scl, ", w, secname.c_str());
+    ips.format("%s_sl_tex, <%f,%f,%f>)\n",secname.c_str(), r, g, b);
+    */
+  }
+}
+
+void LuxRendDisplayContext::writePointImpl(PrintStream &ps,
+					   const Vector4D &v1,
+					   const Vector4D &n1,
+					   int alpha)
+{
+  double r=.0,g=.0,b=.0;
+  ColorPtr pcol = getEdgeLineColor();
+  if (!pcol.isnull()) {
+    r = pcol->fr();
+    g = pcol->fg();
+    b = pcol->fb();
+  }
+  const double w = getEdgeLineWidth();
+  const double rise = w/2.0;
+  LString secname = getSecName();
+
+  /*
+  ips.format("sphere{<%f, %f, %f> + %s_sl_rise*%f*<%f,%f,%f>, ",
+             v1.x(), v1.y(), v1.z(),
+             secname.c_str(), rise,
+             n1.x(), n1.y(), n1.z());
+  ips.format("%f*%s_sl_scl ", w, secname.c_str());
+  if (alpha==255) {
+    ips.format("texture { %s_sl_tex pigment { color rgb <%f,%f,%f> }}\n",
+               secname.c_str(), r, g, b);
+  }
+  ips.format("}\n");*/
+
+}

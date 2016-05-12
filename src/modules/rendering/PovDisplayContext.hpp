@@ -147,7 +147,8 @@ namespace render {
                                    const Vector4D &x2, const Vector4D &b2);
     virtual void writePointImpl(PrintStream &ips,
                                 const Vector4D &v1,
-                                const Vector4D &n1);
+                                const Vector4D &n1,
+				int alpha);
 
 
     //////////////////

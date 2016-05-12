@@ -27,6 +27,8 @@ RendIntData.cpp \
 WbpSceneExporter.cpp \
 StlDisplayContext.cpp \
 StlSceneExporter.cpp \
+LuxRendDisplayContext.cpp \
+LuxRendSceneExporter.cpp \
 $(NULL)
 
 #
@@ -39,6 +41,7 @@ PngSceneExporter.qif \
 PovSceneExporter.qif \
 WbpSceneExporter.qif \
 StlSceneExporter.qif \
+LuxRendSceneExporter.qif \
 $(NULL)
 
 

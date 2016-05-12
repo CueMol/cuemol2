@@ -40,6 +40,19 @@ namespace render {
          : v(av), n(an), c(ac)
     {
     }
+
+    bool isFinite() const {
+      if (qlib::isFinite(v.x()) &&
+	  qlib::isFinite(v.y()) &&
+	  qlib::isFinite(v.z()) &&
+	  qlib::isFinite(n.x()) &&
+	  qlib::isFinite(n.y()) &&
+	  qlib::isFinite(n.z()))
+	return true;
+      else
+	return false;
+    }
+
   };
 
   ///////////////////////////////////////////////////

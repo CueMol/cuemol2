@@ -283,6 +283,8 @@ namespace render {
     void writeEdgeLines(PrintStream &ps);
     void writeSilhLines(PrintStream &ps);
 
+    void writeCornerPoints(PrintStream &ps);
+
   private:
     void writeEdgeLine(PrintStream &ps, const SEEdge &elem);
     void writeEdgeLine(PrintStream &ips, const SEEdge &elem,
@@ -292,6 +294,7 @@ namespace render {
                        const Vector4D &n1, const Vector4D &n2,
                        int alpha1, int alpha2,
                        int flag =0);
+
     /////////////////////////////////////////////////
 
   public:

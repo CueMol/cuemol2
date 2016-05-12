@@ -522,3 +522,11 @@ void FileDisplayContext::writeEdgeLineImpl(PrintStream &ips, int xa1, int xa2,
 {
 }
 
+void FileDisplayContext::writePointImpl(PrintStream &ips,
+					const Vector4D &v1,
+					const Vector4D &n1,
+					int alpha)
+{
+}
+
+
