@@ -56,13 +56,6 @@ void LuxRendDisplayContext::endRender()
 
   writeTailer();
 
-/*
-  qlib::MapPtrTable<RendIntData>::iterator iter = m_data.begin();
-  qlib::MapPtrTable<RendIntData>::iterator eiter = m_data.end();
-  for (; iter!=eiter; ++iter) {
-    RendIntData *pDat = iter->second;
-  }
-*/  
   m_pOut->close();
 }
 
@@ -216,20 +209,26 @@ void LuxRendDisplayContext::writeHeader()
   ps.format("\n");
 
   ps.format("AttributeBegin # Background\n");
+  ps.format("Material \"matte\"\n");
   if (bPerspec) {
-    ps.format("Translate 0 0 %f\n", zback);
-    ps.format("Material \"matte\"\n");
-    ps.format("Shape \"disk\" \"float radius\" [%f] \"float height\" [0]\n", disksize);
+    const double xx = (m_dSlabDepth + m_dViewDist)*zoomx/(m_dViewDist*2.0);
+    const double yy = (m_dSlabDepth + m_dViewDist)*zoomy/(m_dViewDist*2.0);
+    ps.format("Shape \"mesh\"\n");
+    ps.format("  \"point P\" [%f %f %f\n", -xx, yy, zback);
+    ps.format("  %f %f %f\n", -xx, -yy, zback);
+    ps.format("  %f %f %f\n", xx, -yy, zback);
+    ps.format("  %f %f %f]\n", xx, yy, zback);
+    ps.format("  \"integer quadindices\" [0 1 2 3]\n");
+    //ps.format("Translate 0 0 %f\n", zback);
+    //ps.format("Shape \"disk\" \"float radius\" [%f] \"float height\" [0]\n", disksize);
   }
   else {
-
     ps.format("Shape \"mesh\"\n");
     ps.format("  \"point P\" [%f %f %f\n", -zoomx/2.0, zoomy/2.0, zback);
     ps.format("  %f %f %f\n", -zoomx/2.0, -zoomy/2.0, zback);
     ps.format("  %f %f %f\n", zoomx/2.0, -zoomy/2.0, zback);
     ps.format("  %f %f %f]\n", zoomx/2.0, zoomy/2.0, zback);
     ps.format("  \"integer quadindices\" [0 1 2 3]\n");
-
   }
   ps.format("AttributeEnd\n");
   ps.format("\n");
@@ -256,17 +255,30 @@ void LuxRendDisplayContext::writeObjects()
 
   ps.format("AttributeBegin # Object %s\n", getSecName().c_str());
 
-  // write sphere primitives
-  writeSpheres();
-
-  // write cylinders
-  writeCyls();
-
   // write lines
   writeLines(ps);
 
-  // write meshes
-  writeMeshes();
+  int nEdgeLineType = getEdgeLineType();
+  if (nEdgeLineType==ELT_EDGES||
+      nEdgeLineType==ELT_SILHOUETTE) {
+    //// Edge/silhouette
+    // convert sphere to mesh
+    m_pIntData->convSpheres();
+    // convert cylinder to mesh
+    m_pIntData->convCylinders();
+    // write meshes
+    writeMeshes(ps);
+    // write edge/silhouette
+    writeSilEdges(ps);
+  }
+  else {
+    // write sphere primitives
+    writeSpheres(ps);
+    // write cylinder primitives
+    writeCyls(ps);
+    // write meshes
+    writeMeshes(ps);
+  }
 
   ps.format("AttributeEnd\n");
   ps.format("\n");
@@ -388,12 +400,12 @@ void LuxRendDisplayContext::writeMaterials(PrintStream &ps)
   }
 }
 
-void LuxRendDisplayContext::writeSpheres()
+void LuxRendDisplayContext::writeSpheres(PrintStream &ps)
 {
   if (m_pIntData->m_spheres.size()<=0)
     return;
 
-  PrintStream ps(*m_pOut);
+  //PrintStream ps(*m_pOut);
 
   const double clipz = m_pIntData->m_dClipZ;
 
@@ -419,12 +431,12 @@ void LuxRendDisplayContext::writeSpheres()
   }
 }
 
-void LuxRendDisplayContext::writeCyls()
+void LuxRendDisplayContext::writeCyls(PrintStream &ps)
 {
   if (m_pIntData->m_cylinders.size()<=0)
     return;
 
-  PrintStream ps(*m_pOut);
+  //PrintStream ps(*m_pOut);
 
   const double clipz = m_pIntData->m_dClipZ;
 
@@ -509,7 +521,7 @@ void LuxRendDisplayContext::writeCyls()
   }
 }
 
-void LuxRendDisplayContext::writeMeshes()
+void LuxRendDisplayContext::writeMeshes(PrintStream &ps)
 {
   Mesh *pMesh = &m_pIntData->m_mesh;
   int i;
@@ -519,8 +531,6 @@ void LuxRendDisplayContext::writeMeshes()
 
   if (nverts<=0 || nfaces<=0)
     return;
-
-  PrintStream ps(*m_pOut);
 
   // convert vertex list to array
   std::vector<MeshVert *> pmary(nverts); // = MB_NEW MeshVert *[nverts];
@@ -845,5 +855,21 @@ void LuxRendDisplayContext::writeLines(PrintStream &ps)
       ps.format("\"float zmax\" [%f]\n", len);
     }
   }
+}
+
+
+void LuxRendDisplayContext::writeSilEdges(PrintStream &ps)
+{
+  const int nverts = m_pIntData->m_mesh.getVertexSize();
+  const int nfaces = m_pIntData->m_mesh.getFaceSize();
+  
+  if (nverts<=0 || nfaces<=0)
+    return;
+  
+  //ps.format("#declare %s_sl_scl = 1.00;\n", getSecName().c_str());
+  //ps.format("#declare %s_sl_rise = %f;\n", getSecName().c_str(), m_dEdgeRise);
+  //ps.format("#declare %s_sl_tex = \n", getSecName().c_str());
+  //ps.format("  texture{finish{ambient 1.0 diffuse 0 specular 0}};\n");
+
 }
 

@@ -277,10 +277,21 @@ namespace render {
     void calcEdgeIntrsec();
     void calcSilhIntrsec(double);
 
-    // void buildSELines();
-
     void cleanupSilEdgeLines();
 
+
+    void writeEdgeLines(PrintStream &ps);
+    void writeSilhLines(PrintStream &ps);
+
+  private:
+    void writeEdgeLine(PrintStream &ps, const SEEdge &elem);
+    void writeEdgeLine(PrintStream &ips, const SEEdge &elem,
+                       double fsec1, double fsec2);
+    void writeEdgeLine(PrintStream &ips,
+                       const Vector4D &v1, const Vector4D &v2,
+                       const Vector4D &n1, const Vector4D &n2,
+                       int alpha1, int alpha2,
+                       int flag =0);
     /////////////////////////////////////////////////
 
   public:

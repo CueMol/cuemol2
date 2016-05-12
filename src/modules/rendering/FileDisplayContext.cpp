@@ -516,3 +516,9 @@ void FileDisplayContext::endSection()
   m_secName = LString();
 }
 
+void FileDisplayContext::writeEdgeLineImpl(PrintStream &ips, int xa1, int xa2,
+                                           const Vector4D &x1, const Vector4D &n1,
+                                           const Vector4D &x2, const Vector4D &n2)
+{
+}
+

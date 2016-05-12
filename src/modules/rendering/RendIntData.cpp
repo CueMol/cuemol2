@@ -1518,3 +1518,218 @@ void RendIntData::cleanupSilEdgeLines()
   //m_vvl.clear();
 }
 
+void RendIntData::writeEdgeLines(PrintStream &ps)
+{
+  
+  BOOST_FOREACH (const SEEdge &elem, m_silEdges) {
+    const int iv1 = elem.iv1;
+    const int iv2 = elem.iv2;
+    MeshVert *pv1 = m_vertvec[iv1];
+    MeshVert *pv2 = m_vertvec[iv2];
+    Vector4D v1 = pv1->v;
+    Vector4D v2 = pv2->v;
+    const int icp1 = elem.icp1;
+    const int icp2 = elem.icp2;
+    
+    if (elem.bForceShow ||
+        m_secpts[icp1].bvis ||
+        m_secpts[icp2].bvis) {
+      writeEdgeLine(ps, elem);
+      //writeLineMark(ips, pv1->v, pv2->v, 0);
+    }
+  }
+}
+
+void RendIntData::writeEdgeLine(PrintStream &ps, const SEEdge &elem)
+{
+  m_secpts[elem.icp1].nshow ++;
+  m_secpts[elem.icp2].nshow ++;
+
+  MeshVert *pv1 = m_vertvec[elem.iv1];
+  MeshVert *pv2 = m_vertvec[elem.iv2];
+
+  ColorPtr col1, col2;
+  m_clut.getColor(pv1->c, col1);
+  m_clut.getColor(pv2->c, col2);
+  int alpha1 = col1->a();
+  int alpha2 = col2->a();
+
+  writeEdgeLine(ps, pv1->v, pv2->v, pv1->n, pv2->n, alpha1, alpha2, 0);
+}
+
+void RendIntData::writeEdgeLine(PrintStream &ips,
+                                const Vector4D &v1, const Vector4D &v2,
+                                const Vector4D &n1, const Vector4D &n2,
+                                int alpha1, int alpha2,
+                                int flag /*=0*/)
+{
+  // check invalid vertex and normal
+  if (!qlib::isFinite(v1.x()) ||
+      !qlib::isFinite(v1.y()) ||
+      !qlib::isFinite(v1.z()) ||
+      !qlib::isFinite(n1.x()) ||
+      !qlib::isFinite(n1.y()) ||
+      !qlib::isFinite(n1.z())) {
+    LOG_DPRINTLN("PovSilBuilder> invalid vertex/normal for edge line ignored");
+    return;
+  }
+
+  if (!qlib::isFinite(v2.x()) ||
+      !qlib::isFinite(v2.y()) ||
+      !qlib::isFinite(v2.z()) ||
+      !qlib::isFinite(n2.x()) ||
+      !qlib::isFinite(n2.y()) ||
+      !qlib::isFinite(n2.z())) {
+    LOG_DPRINTLN("PovSilBuilder> invalid vertex/normal for edge line ignored");
+    return;
+  }
+
+  /*
+  if (flag==1)
+    r=1.0;
+  else if (flag==2)
+    g=1.0;
+  else if (flag==3)
+    b=1.0;
+  else if (flag==4)
+    r=b=1.0;
+  */
+
+  Vector4D x1, x2;
+  int xa1, xa2;
+
+  // always keep x1.z < x2.z (for Z-plane clipping)
+  if (v1.z()>v2.z()) {
+    // swap 1 and 2
+    x1 = v2;
+    x2 = v1;
+    xa1 = alpha2;
+    xa2 = alpha1;
+  }
+  else {
+    x1 = v1;
+    x2 = v2;
+    xa1 = alpha1;
+    xa2 = alpha2;
+  }
+
+  Vector4D nn = x2 - x1;
+  double len = nn.length();
+
+  // ignore too-short lines
+  if (qlib::isNear4(0.0, len))
+    return;
+  
+  const double clipz = m_dClipZ;
+  if (clipz>=0) {
+    // perform clipping by dClipZ
+    if (clipz < x1.z())
+      return; // completely clipped by z-plane
+    
+    if (clipz < x2.z()) // partially clipped
+      x2 = nn.scale((clipz-x1.z())/(nn.z())) + x1;
+  }
+  
+  m_pdc->writeEdgeLineImpl(ips, xa1, xa2, x1, n1, x2, n2);
+}
+
+void RendIntData::writeEdgeLine(PrintStream &ips, const SEEdge &elem, double fsec1, double fsec2)
+{
+  MeshVert *pv1 = m_vertvec[elem.iv1];
+  MeshVert *pv2 = m_vertvec[elem.iv2];
+  ColorPtr col1, col2;
+  m_clut.getColor(pv1->c, col1);
+  m_clut.getColor(pv2->c, col2);
+  int alpha1 = col1->a();
+  int alpha2 = col2->a();
+
+  if (qlib::isNear4(fsec1, 0.0))
+    m_secpts[elem.icp1].nshow ++;
+  
+  if (qlib::isNear4(fsec2, 1.0))
+    m_secpts[elem.icp2].nshow ++;
+
+  Vector4D v12 = pv2->v - pv1->v;
+
+  Vector4D vs1 = pv1->v + v12.scale(fsec1);
+  Vector4D vs2 = pv1->v + v12.scale(fsec2);
+
+  bool bs1 = (fsec1<0.5);
+  bool bs2 = (fsec2<0.5);
+
+  writeEdgeLine(ips, vs1, vs2,
+                bs1?(pv1->n):(pv2->n),
+                bs2?(pv1->n):(pv2->n),
+                bs1?alpha1:alpha2,
+                bs2?alpha1:alpha2,
+                0);
+}
+
+void RendIntData::writeSilhLines(PrintStream &ps)
+{
+  int j;
+  
+  BOOST_FOREACH (const SEEdge &elem, m_silEdges) {
+    const int iv1 = elem.iv1;
+    const int iv2 = elem.iv2;
+    MeshVert *pv1 = m_vertvec[iv1];
+    MeshVert *pv2 = m_vertvec[iv2];
+    Vector4D v1 = pv1->v;
+    Vector4D v2 = pv2->v;
+    const int icp1 = elem.icp1;
+    const int icp2 = elem.icp2;
+
+
+    if (elem.getIsecSize()==0) {
+
+      // no intersections
+      //   --> edges with invisible verteces are invisible
+      if (!m_secpts[icp1].bvis)
+        continue;
+      if (!m_secpts[icp2].bvis)
+        continue;
+
+      writeEdgeLine(ps, elem);
+      // writeLineMark(ips, pv1->v, pv2->v, 0);
+    }
+    else {
+
+      std::deque< std::pair<double,double> > icvals;
+      elem.getIsecValues(m_secpts[icp1].bvis,
+                         icvals);
+      const int nvals = icvals.size();
+      for (j=0; j<nvals; ++j) {
+        writeEdgeLine(ps, elem, icvals[j].first, icvals[j].second);
+      }
+
+      /*
+        std::deque<Vector4D> icpts;
+        elem.calcIsecPoints(v1, v2, icpts);
+
+        bool bprev = m_secpts[icp1].bvis;
+        Vector4D vprev = pv1->v;
+
+        for (j=0; j<=icpts.size(); ++j) {
+          Vector4D vc;
+          if (j<icpts.size()) {
+            vc = icpts[j];
+          else {
+            vc = pv2->v;
+          }
+
+          if (bprev) {
+            writeLineMark(ips, vprev, vc, 1);
+          }
+          else {
+            writeLineMark(ips, vprev, vc, 2);
+          }
+
+          bprev = !bprev;
+          vprev = vc;
+        } // for
+       */
+
+    }
+  }
+}
+

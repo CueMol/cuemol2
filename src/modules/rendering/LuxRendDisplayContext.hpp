@@ -61,8 +61,8 @@ namespace render {
     void writeLights(PrintStream &ps);
 
     void writeObjects();
-    void writeSpheres();
-    void writeCyls();
+    void writeSpheres(PrintStream &ps);
+    void writeCyls(PrintStream &ps);
 
     void writeLines(PrintStream &ps);
     
@@ -84,7 +84,7 @@ namespace render {
       return LString::format("%s_lcol_%d", getSecName().c_str(), icol);
     }
     
-    void writeMeshes();
+    void writeMeshes(PrintStream &ps);
 
     void writeMeshVerts(PrintStream &ps, int nverts, MeshVert **pmary);
 
@@ -213,6 +213,12 @@ namespace render {
 
       return rval;
     }
+
+    ////////////////////////
+
+    void writeSilEdges(PrintStream &ps);
+    void writeEdgeLines(PrintStream &ps);
+    
 
   };
 

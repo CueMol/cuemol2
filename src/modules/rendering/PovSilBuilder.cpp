@@ -163,19 +163,6 @@ void PovDisplayContext::writeEdgeLine(PrintStream &ips,
     return;
   }
 
-  LString secname = getSecName();
-
-  double w = getEdgeLineWidth();
-  double rise = w/2.0;
-  
-  double r=.0,g=.0,b=.0;
-  ColorPtr pcol = getEdgeLineColor();
-  if (!pcol.isnull()) {
-    r = pcol->fr();
-    g = pcol->fg();
-    b = pcol->fb();
-  }
-
   /*
   if (flag==1)
     r=1.0;
@@ -222,7 +209,26 @@ void PovDisplayContext::writeEdgeLine(PrintStream &ips,
       x2 = nn.scale((clipz-x1.z())/(nn.z())) + x1;
   }
   
-  if (alpha1==255 && alpha2==255) {
+  writeEdgeLineImpl(ips, xa1, xa2, x1, n1, x2, n2);
+}
+
+void PovDisplayContext::writeEdgeLineImpl(PrintStream &ips, int xa1, int xa2,
+                                          const Vector4D &x1, const Vector4D &n1,
+                                          const Vector4D &x2, const Vector4D &n2)
+{
+  double r=.0,g=.0,b=.0;
+  ColorPtr pcol = getEdgeLineColor();
+  if (!pcol.isnull()) {
+    r = pcol->fr();
+    g = pcol->fg();
+    b = pcol->fb();
+  }
+
+  const double w = getEdgeLineWidth();
+  const double rise = w/2.0;
+  LString secname = getSecName();
+
+  if (xa1==255 && xa2==255) {
     // solid lines
     ips.format("edge_line(<%f, %f, %f>, <%f,%f,%f>, <%f, %f, %f>, <%f,%f,%f>, %s_sl_rise*%f,",
                x1.x(), x1.y(), x1.z(),
@@ -251,7 +257,8 @@ void PovDisplayContext::writeEdgeLine(PrintStream &ips,
 }
 
 void PovDisplayContext::writePoint(PrintStream &ips,
-                                   const Vector4D &v1, const Vector4D &n1)
+                                   const Vector4D &v1, const Vector4D &n1,
+                                   int alpha)
 {
   // check invalid vertex and normal
   if (!qlib::isFinite(v1.x()) ||
@@ -264,11 +271,20 @@ void PovDisplayContext::writePoint(PrintStream &ips,
     return;
   }
 
-  LString secname = getSecName();
+  const double clipz = m_pIntData->m_dClipZ;
+  if (clipz>=0) {
+    if (clipz < v1.z())
+      return; // clipped out by z-plane
+  }
 
-  double w = getEdgeLineWidth();
-  double rise = w/2.0;
-  
+  writePointImpl(ips, v1, n1, alpha);
+}
+
+void PovDisplayContext::writePointImpl(PrintStream &ips,
+                                       const Vector4D &v1,
+                                       const Vector4D &n1,
+                                       int alpha)
+{
   double r=.0,g=.0,b=.0;
   ColorPtr pcol = getEdgeLineColor();
   if (!pcol.isnull()) {
@@ -276,31 +292,20 @@ void PovDisplayContext::writePoint(PrintStream &ips,
     g = pcol->fg();
     b = pcol->fb();
   }
-
-  /*
-  if (flag==1)
-    r=1.0;
-  else if (flag==2)
-    g=1.0;
-  else if (flag==3)
-    b=1.0;
-  else if (flag==4)
-    r=b=1.0;
-  */
-
-  const double clipz = m_pIntData->m_dClipZ;
-  if (clipz>=0) {
-    if (clipz < v1.z())
-      return; // clipped out by z-plane
-  }
+  const double w = getEdgeLineWidth();
+  const double rise = w/2.0;
+  LString secname = getSecName();
 
   ips.format("sphere{<%f, %f, %f> + %s_sl_rise*%f*<%f,%f,%f>, ",
              v1.x(), v1.y(), v1.z(),
              secname.c_str(), rise,
              n1.x(), n1.y(), n1.z());
   ips.format("%f*%s_sl_scl ", w, secname.c_str());
-  ips.format("texture { %s_sl_tex pigment { color rgb <%f,%f,%f> }}\n",
-             secname.c_str(), r, g, b);
+  if (alpha==255) {
+    ips.format("texture { %s_sl_tex pigment { color rgb <%f,%f,%f> }}\n",
+               secname.c_str(), r, g, b);
+  }
+  
   ips.format("}\n");
 }
 
@@ -361,9 +366,6 @@ void PovDisplayContext::writeEdgeLine3(PrintStream &ips, const SEEdge &elem, dou
 
 void PovDisplayContext::writeCornerPoints2(PrintStream &ips)
 {
-  if (m_nEdgeCornerType==ECT_NONE)
-    return;
-
   MeshVert *pv1;
 
   // write corner points
@@ -376,9 +378,6 @@ void PovDisplayContext::writeCornerPoints2(PrintStream &ips)
       writePointMark(ips, pv1->v, 2);
       */
 
-    //if (!elem.bvis)
-    //continue;
-
     if (elem.nshow<=1)
       continue;
     
@@ -387,8 +386,7 @@ void PovDisplayContext::writeCornerPoints2(PrintStream &ips)
     ColorPtr col1;
     m_pIntData->m_clut.getColor(pv1->c, col1);
     int alpha = col1->a();
-    if (alpha==255)
-      writePoint(ips, pv1->v, pv1->n);
+    writePoint(ips, pv1->v, pv1->n, alpha);
   }
 
   return;
@@ -396,8 +394,6 @@ void PovDisplayContext::writeCornerPoints2(PrintStream &ips)
 
 void PovDisplayContext::writeSilEdges2()
 {
-  int i, j;
-  //Vector4D v;
 
   {
     const int nverts = m_pIntData->m_mesh.getVertexSize();
@@ -424,16 +420,19 @@ void PovDisplayContext::writeSilEdges2()
 
   if (getEdgeLineType()==ELT_SILHOUETTE) {
     m_pIntData->buildAABBTree(-1);
-    writeSilhLines(ips);
+    m_pIntData->calcSilhIntrsec(getEdgeLineWidth()/2.0);
+    m_pIntData->writeSilhLines(ips);
   }
   else {
     // in the edge mode,
     // only calculate intersections for cyl and sph meshes 
     m_pIntData->buildAABBTree(MFMOD_MESH);
-    writeEdgeLines(ips);
+    m_pIntData->calcEdgeIntrsec();
+    m_pIntData->writeEdgeLines(ips);
   }
   
-  writeCornerPoints2(ips);
+  if (m_nEdgeCornerType!=ECT_NONE)
+    writeCornerPoints2(ips);
 
   m_pIntData->cleanupSilEdgeLines();
 }

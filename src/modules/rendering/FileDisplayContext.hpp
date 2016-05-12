@@ -13,10 +13,12 @@
 
 namespace qlib {
   class OutStream;
+  class PrintStream;
 }
 
 namespace render {
 
+  using qlib::PrintStream;
   class RendIntData;
 
   class RENDER_API FileDisplayContext : public gfx::DisplayContext
@@ -270,6 +272,12 @@ namespace render {
     /// Draw a single line segment from v1 to v2 to the output
     /// v1 and v2 should be transformed by matrix stack
     void drawLine(const Vector4D &v1, const Vector4D &v2);
+
+    // FileDisplayContext interface
+    virtual void writeEdgeLineImpl(PrintStream &ips, int xa1, int xa2,
+                                   const Vector4D &x1, const Vector4D &n1,
+                                   const Vector4D &x2, const Vector4D &n2);
+
   };
 
 }
