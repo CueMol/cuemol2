@@ -430,7 +430,7 @@ void RibbonRenderer::renderTube(DisplayContext *pdl,
       continue;
     }
 
-    pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NOEGLN);
+    pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
     //pdl->setPolygonMode(gfx::DisplayContext::POLY_LINE);
     pdl->startTriangleStrip();
     
@@ -528,7 +528,9 @@ void RibbonRenderer::renderJct(DisplayContext *pdl,
     }
     
     if ( qlib::isNear4(dpar,prev_dpar) ) {
-      //renderDisconJct(pdl, pCurTs, escl);
+      // dpar value is degenerated (i.e. is the same as the previous one)
+      // --> discontinuous part of the junction, such as the arrow head
+      // --> Render the partitions at the arrowhead junction
       pdl->color(m_pCol);
       pCurTs->makeDisconJct(pdl, m_f1, m_vpt.normalize(), m_e11, m_e12, m_prev_escl, escl);
       updatePrevValues();
@@ -538,7 +540,8 @@ void RibbonRenderer::renderJct(DisplayContext *pdl,
     }
 
     //pdl->setPolygonMode(gfx::DisplayContext::POLY_LINE);
-    pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NOEGLN);
+    pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
+    //pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL);
     pdl->startTriangleStrip();
     
     const Vector4D xe11 = m_e11.scale(escl.x());

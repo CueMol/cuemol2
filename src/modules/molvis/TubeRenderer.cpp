@@ -112,7 +112,7 @@ void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
   const double fdelta = (fend-fstart)/double(ndelta);
 
   pdl->setLighting(true);
-  pdl->setPolygonMode(DisplayContext::POLY_FILL_NOEGLN);
+  pdl->setPolygonMode(DisplayContext::POLY_FILL_NORGLN);
   //pdl->setPolygonMode(DisplayContext::POLY_LINE);
 
   // ???

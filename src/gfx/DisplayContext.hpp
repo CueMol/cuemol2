@@ -56,7 +56,9 @@ namespace gfx {
       POLY_POINT,
       POLY_LINE,
       POLY_FILL,
-      POLY_FILL_NOEGLN
+      // filled face without ridge lines
+      POLY_FILL_NORGLN,
+      POLY_FILL_XX,
     };
 
     /// Edge line types

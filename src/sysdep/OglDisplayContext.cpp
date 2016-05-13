@@ -680,7 +680,8 @@ void OglDisplayContext::setPolygonMode(int id)
   switch (id) {
   default:
   case DisplayContext::POLY_FILL:
-  case DisplayContext::POLY_FILL_NOEGLN:
+  case DisplayContext::POLY_FILL_NORGLN:
+  case DisplayContext::POLY_FILL_XX:
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     break;

@@ -449,7 +449,7 @@ void BallStickRenderer::drawRingImpl(const std::list<int> atoms, DisplayContext 
   }
   */
   
-  pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NOEGLN);
+  pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
   pdl->startTriangleFan();
   pdl->normal(norm);
   pdl->color(col);

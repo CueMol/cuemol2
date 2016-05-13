@@ -866,7 +866,7 @@ void Ribbon2Renderer::renderSheet(DisplayContext *pdl, detail::SecSplDat *pC)
   
   // Draw sheet body
 
-  pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NOEGLN);
+  pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
   //pdl->setPolygonMode(gfx::DisplayContext::POLY_LINE);
   m_ptsSheet->startTess();
   
@@ -912,7 +912,7 @@ void Ribbon2Renderer::renderSheet(DisplayContext *pdl, detail::SecSplDat *pC)
   // initialize previous E scale
   m_pSheetHead->get(0, dpar, prev_escl);
 
-  pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NOEGLN);
+  pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
   m_ptsSheet->startTess();
 
   for (int i=0; i<ndelta; i++) {
@@ -938,7 +938,7 @@ void Ribbon2Renderer::renderSheet(DisplayContext *pdl, detail::SecSplDat *pC)
 
       pdl->color(pCol);
       m_ptsSheet->makeDisconJct(pdl, f1, ev, e11, e12, prev_escl, escl);
-      pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NOEGLN);
+      pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
       m_ptsSheet->startTess();
     }
     
@@ -1464,7 +1464,7 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
       pJCT->get(0, dpar, prev_escl);
       
       pTS = m_ptsRibHelix;
-      // pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NOEGLN);
+      // pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
       pTS->startTess();
       
       for (int i=0; i<ndelta; i++) {
@@ -1495,7 +1495,7 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
           
           pdl->color(pCol);
           pTS->makeDisconJct(pdl, f1, ev, e11, e12, prev_escl, escl);
-          //pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NOEGLN);
+          //pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
           pTS->startTess();
         }
         

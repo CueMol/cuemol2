@@ -773,8 +773,9 @@ void TubeSection::makeDisconJct(DisplayContext *pdl,
   const Vector4D ne1 = e11.scale(escl.x());
   const Vector4D ne2 = e12.scale(escl.y());
 
-  pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL);
-//  pdl->setPolygonMode(gfx::DisplayContext::POLY_LINE);
+  //pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
+  pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_XX);
+  //pdl->setPolygonMode(gfx::DisplayContext::POLY_LINE);
   pdl->startTriangleStrip();
   pdl->normal(-ev);
 
@@ -787,18 +788,5 @@ void TubeSection::makeDisconJct(DisplayContext *pdl,
   }
 
   pdl->end();
-
-
-  //m_ptsSheet->makeFlatCap(pdl, false,
-  // f1,
-  // ev,
-  // e11.scale(prev_escl.x()),
-  // e12.scale(prev_escl.y()));
-  //
-  //m_ptsSheet->makeFlatCap(pdl, true,
-  // f1,
-  // ev,
-  // e11.scale(escl.x()),
-  // e12.scale(escl.y()));
 
 }

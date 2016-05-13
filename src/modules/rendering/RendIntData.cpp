@@ -66,8 +66,8 @@ void RendIntData::meshEndTrigs()
 
   int nfmode = MFMOD_MESH;
   const int nPolyMode = m_pdc->getPolygonMode();
-  if (nPolyMode == DisplayContext::POLY_FILL_NOEGLN)
-    nfmode = MFMOD_OPNCYL;
+  if (nPolyMode == DisplayContext::POLY_FILL_NORGLN)
+    nfmode = MFMOD_NORGLN;
 
   int nFaces = nVerts/3;
   int i;
@@ -87,11 +87,26 @@ void RendIntData::meshEndTrigStrip()
 
   int nfmode = MFMOD_MESH;
   const int nPolyMode = m_pdc->getPolygonMode();
-  if (nPolyMode == DisplayContext::POLY_FILL_NOEGLN)
-    nfmode = MFMOD_OPNCYL;
+  if (nPolyMode == DisplayContext::POLY_FILL_NORGLN)
+    nfmode = MFMOD_NORGLN;
+  else if (nPolyMode == DisplayContext::POLY_FILL_XX)
+    nfmode = MFMOD_MESHXX;
 
   int i;
+
   for (i=2; i<nVerts; i++) {
+    /*
+      int imode = nfmode;
+    Vector4D v1, v2, v3;
+    v1 = m_mesh.m_verts[m_nMeshPivot + i]->v;
+    v2 = m_mesh.m_verts[m_nMeshPivot + i-1]->v;
+    v3 = m_mesh.m_verts[m_nMeshPivot + i-2]->v;
+    double area = (v2-v1).cross(v3-v1).length();
+    //MB_DPRINTLN("Trig %d --> %f", i, area);
+    //if (area<1) {
+      imode = MFMOD_NORGLN;
+      //}
+      */
     if (i%2==0) {
       m_mesh.addFace(m_nMeshPivot + i-2,
                      m_nMeshPivot + i-1,
@@ -116,8 +131,8 @@ void RendIntData::meshEndFan()
 
   int nfmode = MFMOD_MESH;
   const int nPolyMode = m_pdc->getPolygonMode();
-  if (nPolyMode == DisplayContext::POLY_FILL_NOEGLN)
-    nfmode = MFMOD_OPNCYL;
+  if (nPolyMode == DisplayContext::POLY_FILL_NORGLN)
+    nfmode = MFMOD_NORGLN;
 
   int i;
   for (i=2; i<nVerts; i++) {
@@ -143,10 +158,10 @@ void RendIntData::mesh(const Matrix4D &mat, const gfx::Mesh &rmesh)
   const double lw = m_pdc->getLineWidth();
 
   if (nPolyMode == DisplayContext::POLY_FILL ||
-      nPolyMode == DisplayContext::POLY_FILL_NOEGLN) {
+      nPolyMode == DisplayContext::POLY_FILL_NORGLN) {
     int nfmode = MFMOD_MESH;
-    if (nPolyMode == DisplayContext::POLY_FILL_NOEGLN)
-      nfmode = MFMOD_OPNCYL;
+    if (nPolyMode == DisplayContext::POLY_FILL_NORGLN)
+      nfmode = MFMOD_NORGLN;
 
     for (i=0; i<nverts; ++i) {
       v = rmesh.getVertex(i);
@@ -779,7 +794,7 @@ void RendIntData::convCyl(Cyl *pCyl)
   // connect verteces & make faces
   //
 
-  int nfmode = bcap ? MFMOD_CLSCYL : MFMOD_OPNCYL;
+  int nfmode = bcap ? MFMOD_CYL : MFMOD_NORGLN;
 
   // bottom disk
   if (bcap) {
@@ -980,16 +995,21 @@ Mesh *RendIntData::simplifyMesh(Mesh *pMesh, int nmode /*=2*/)
 }
 
 namespace {
-  bool checkSilEdge(const Vector4D &vwvec, const Vector4D &n1, const Vector4D &n2, double norm_limit)
+  bool checkSilEdge(const Vector4D &vwvec, const Vector4D &n1, const Vector4D &n2)
   {
     double dot1 = vwvec.dot(n1);
     double dot2 = vwvec.dot(n2);
     if (dot1*dot2<0)
-      return true;
+      return true; // silhouette/edge line
 
+    return false;
+  }
+
+  bool checkCrease(const Vector4D &n1, const Vector4D &n2, double norm_limit)
+  {
     double ang = ::acos( n1.dot(n2) );
     if (std::abs(ang)>norm_limit)
-      return true;
+      return true; // crease line
 
     return false;
   }
@@ -1073,17 +1093,31 @@ void RendIntData::calcSilEdgeLines(double dViewDist, double dnangl)
       else if (elem.if2>=0)
         nmode = m_facevec[elem.if2].nmode;
 
-      // nmode==1 --> ridge triangle without silhouette line
-      if (nmode!=MFMOD_OPNCYL) {
+      // nmode==MFMOD_NORGLN --> ridge triangle without silhouette line
+      if (nmode!=MFMOD_NORGLN) {
         m_silEdges.insert(elem);
       }
     }
-    else if (checkSilEdge(v1-vcam, m_facevec[elem.if1].n, m_facevec[elem.if2].n, dnangl) ||
-             checkSilEdge(v2-vcam, m_facevec[elem.if1].n, m_facevec[elem.if2].n, dnangl)) {
-      // edge is silhouette/edge line
-      m_silEdges.insert(elem);
-    }
+    else {
+      const Vector4D &n1 = m_facevec[elem.if1].n;
+      const Vector4D &n2 = m_facevec[elem.if2].n;
 
+      int nm1 = m_facevec[elem.if1].nmode;
+      int nm2 = m_facevec[elem.if2].nmode;
+
+      if (checkSilEdge(v1-vcam, n1, n2) ||
+	  checkSilEdge(v2-vcam, n1, n2)) {
+	// edge is silhouette/edge line
+	m_silEdges.insert(elem);
+      }
+      else {
+	if (nm1==MFMOD_MESHXX || nm2==MFMOD_MESHXX) {
+	}
+	else if (checkCrease(n1, n2, dnangl)) {
+	  m_silEdges.insert(elem);
+	}
+      }
+    }
   }
 
   // collect corner points
@@ -1363,9 +1397,7 @@ void RendIntData::calcEdgeIntrsec()
     else if (elem.if2>0)
       nmode = m_facevec[elem.if2].nmode;
 
-    if (nmode==MFMOD_MESH ||
-        nmode==MFMOD_OPNCYL ||
-        nmode==MFMOD_CLSCYL) {
+    if (nmode!=MFMOD_SPHERE) {
       SEEdge &welem = const_cast<SEEdge &>(elem);
       welem.bForceShow = true;
       continue;
