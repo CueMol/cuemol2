@@ -545,6 +545,12 @@ if (!("AnimObjPropPage" in cuemolui)) {
 				     function (event) { that.validateShowHideWidgets(event) },
 				     false);
 
+      this.mTgtASli = document.getElementById("showhide-tgtalpha");
+      this.mTgtASli.addEventListener("change",
+				     function (event) { that.validateWidgets(event) },
+				     false);
+
+
     };
 
     /// Intrn-data --> widget
@@ -561,14 +567,23 @@ if (!("AnimObjPropPage" in cuemolui)) {
 
       /////
 
+      // Show/Hide
       elem = this.mMain.findPropData("hide");
       if (elem.value)
 	this.mMenuShowHide.selectedIndex = 1; // hide
       else
 	this.mMenuShowHide.selectedIndex = 0; // show
 
+      // Fade
       elem = this.mMain.findPropData("fade");
       this.mChkFade.checked = elem.value;
+
+      // Target alpha
+      elem = this.mMain.findPropData("tgt_alpha");
+      if (elem)
+	  this.mTgtASli.value = elem.value;
+      else
+	  this.mTgtASli.disabled = true;
 
       dd("AnimObjPropPage> updateShowHideWidgets OK");
 
@@ -602,6 +617,12 @@ if (!("AnimObjPropPage" in cuemolui)) {
       if (tgt_id=="showhide-chk-fade" || tgt_id==null) {
 	new_val = this.mChkFade.checked;
 	this.mMain.updateData("fade", new_val);
+      }
+
+      if (tgt_id=="showhide-tgtalpha" || tgt_id==null) {
+	  var new_val = parseFloat(this.mTgtASli.value);
+	  if (!(isNaN(new_val) || new_val<0.0 || new_val>1.0))
+	      this.mMain.updateData("tgt_alpha", new_val);
       }
 
     };
