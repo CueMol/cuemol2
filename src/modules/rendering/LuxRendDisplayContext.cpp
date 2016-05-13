@@ -397,6 +397,63 @@ void LuxRendDisplayContext::writeMaterials(PrintStream &ps)
     ps.print("    \"texture amount\" [\"utex\"]\n");
     ps.print("\n");
   }
+
+  // Write definition for the edgeline color's material/texture, if used
+  int nEdgeLineType = getEdgeLineType();
+  if (nEdgeLineType==ELT_EDGES||
+      nEdgeLineType==ELT_SILHOUETTE) {
+    double r=.0,g=.0,b=.0;
+    ColorPtr pcol = getEdgeLineColor();
+    if (!pcol.isnull()) {
+      r = pcol->fr();
+      g = pcol->fg();
+      b = pcol->fb();
+    }
+
+    ps.format("Texture \"EdgeLineCol_%s\" \"color\" \"constant\" \"color value\" [%f %f %f]\n",
+              getSecName().c_str(), r, g, b);
+    
+    ps.format("MakeNamedMaterial \"EdgeLineMat_%s\"\n", getSecName().c_str());
+    ps.format("    \"string type\" [\"matte\"]\n");
+    ps.format("    \"texture Kd\" [\"EdgeLineCol_%s\"]\n", getSecName().c_str());
+    ps.format("\n");
+  }
+}
+
+bool LuxRendDisplayContext::writeCylXform(PrintStream &ps,
+					  const Vector4D &v1, const Vector4D &v2,
+					  double &rlen)
+{
+  // calculate transformation matrix
+  Vector4D v21 = v2-v1;
+  double len = v21.length();
+  if (len<=F_EPS4) {
+    // ignore degenerated cylinder
+    return false;
+  }
+  
+  Vector4D vec = v21.divide(len);
+  double a = sqrt(vec.x() * vec.x() + vec.y() * vec.y());
+
+  if (a > 1.0e-6) {
+    double f = 1.0/a;
+    ps.format("Transform [%f %f %f 0  ",
+	      vec.x()*vec.z()*f, vec.y()*vec.z()*f, -a);
+    ps.format("%f %f 0 0  ",
+	      -vec.y()*f, vec.x()*f);
+    ps.format("%f %f %f 0  ",
+	      vec.x(), vec.y(), vec.z());
+    ps.format("%f %f %f 1]\n",
+	      v1.x(), v1.y(), v1.z());
+  }
+  else {
+    // no rotational transformation required
+    ps.format("Transform [1 0 0 0  0 1 0 0  0 0 1 0  %f %f %f 1]\n",
+	      v1.x(), v1.y(), v1.z());
+  }
+
+  rlen = len;
+  return true;
 }
 
 void LuxRendDisplayContext::writeSpheres(PrintStream &ps)
@@ -465,6 +522,11 @@ void LuxRendDisplayContext::writeCyls(PrintStream &ps)
     }
     MB_ASSERT(v2.z()>v1.z());
 
+    double len;
+    if (!writeCylXform(ps, v1, v2, len))
+      continue;  // ignore degenerated cylinder
+      
+    /*
     // calculate transformation matrix
     Vector4D v21 = v2-v1;
     double len = v21.length();
@@ -485,7 +547,7 @@ void LuxRendDisplayContext::writeCyls(PrintStream &ps)
       // no transformation required
       ps.format("Transform [1 0 0 0  0 1 0 0  0 0 1 0  %f %f %f 1]\n",
                 v1.x(), v1.y(), v1.z());
-    }
+		}*/
 
     const RendIntData::ColIndex &ic = p->col;
     if (ic.cid2<0) {
@@ -808,6 +870,11 @@ void LuxRendDisplayContext::writeLines(PrintStream &ps)
     if (v1.z()>v2.z())
       std::swap(v1, v2);
 
+    double len;
+    if (!writeCylXform(ps, v1, v2, len))
+      continue;  // ignore degenerated cylinder
+      
+    /*
     Vector4D v21 = v2 - v1;
     double len = v21.length();
     if (len<=F_EPS4) {
@@ -834,6 +901,7 @@ void LuxRendDisplayContext::writeLines(PrintStream &ps)
       ps.format("Transform [1 0 0 0  0 1 0 0  0 0 1 0  %f %f %f 1]\n",
                 v1.x(), v1.y(), v1.z());
     }
+    */
 
     const RendIntData::ColIndex &ic = p->col;
     if (ic.cid2<0) {
@@ -866,10 +934,8 @@ void LuxRendDisplayContext::writeSilEdges(PrintStream &ps)
   if (nverts<=0 || nfaces<=0)
     return;
   
-  //ps.format("#declare %s_sl_scl = 1.00;\n", getSecName().c_str());
-  //ps.format("#declare %s_sl_rise = %f;\n", getSecName().c_str(), m_dEdgeRise);
-  //ps.format("#declare %s_sl_tex = \n", getSecName().c_str());
-  //ps.format("  texture{finish{ambient 1.0 diffuse 0 specular 0}};\n");
+  ps.format("\n");
+  ps.format("# Edge/silh lines for obj %s\n", getSecName().c_str());
 
   if (getEdgeLineType()==ELT_SILHOUETTE)
     m_pIntData->m_bSilhouette = true;
@@ -897,80 +963,50 @@ void LuxRendDisplayContext::writeSilEdges(PrintStream &ps)
 
   m_pIntData->cleanupSilEdgeLines();
 
+  ps.format("\n");
 }
 
 void LuxRendDisplayContext::writeEdgeLineImpl(PrintStream &ps, int xa1, int xa2,
 					     const Vector4D &x1, const Vector4D &n1,
 					     const Vector4D &x2, const Vector4D &n2)
 {
-  double r=.0,g=.0,b=.0;
-  ColorPtr pcol = getEdgeLineColor();
-  if (!pcol.isnull()) {
-    r = pcol->fr();
-    g = pcol->fg();
-    b = pcol->fb();
-  }
-
   const double w = getEdgeLineWidth();
   const double rise = w/2.0;
   LString secname = getSecName();
 
+  Vector4D v1 = x1 + n1.scale(rise*0.5);
+  Vector4D v2 = x2 + n2.scale(rise*0.5);
+  double len;
+  if (!writeCylXform(ps, v1, v2, len))
+    return;  // ignore degenerated cylinder
+
+  ps.format("NamedMaterial \"EdgeLineMat_%s\"\n", secname.c_str());
+  ps.format("Shape \"cylinder\" \"float radius\" [%f] ", w);
+  ps.print("\"float zmin\" [0] ");
+  ps.format("\"float zmax\" [%f]\n", len);
+
+  // TO DO: correctly handle semitransparent edge lines
+  /*
   if (xa1==255 && xa2==255) {
     // solid lines
-    /*
-    ips.format("edge_line(<%f, %f, %f>, <%f,%f,%f>, <%f, %f, %f>, <%f,%f,%f>, %s_sl_rise*%f,",
-               x1.x(), x1.y(), x1.z(),
-               n1.x(), n1.y(), n1.z(),
-               x2.x(), x2.y(), x2.z(),
-               n2.x(), n2.y(), n2.z(),
-               secname.c_str(), rise);
-    ips.format("%f*%s_sl_scl, ", w, secname.c_str());
-    ips.format("%s_sl_tex, <%f,%f,%f>)\n",secname.c_str(), r, g, b);
-    */
   }
   else {
     // semi-transparent lines
-    /*
-    ips.format("edge_line2(<%f, %f, %f>, <%f,%f,%f>, %f, <%f, %f, %f>, <%f,%f,%f>, %f, %s_sl_rise*%f,",
-               x1.x(), x1.y(), x1.z(),
-               n1.x(), n1.y(), n1.z(),
-               1.0-xa1/255.0,
-               x2.x(), x2.y(), x2.z(),
-               n2.x(), n2.y(), n2.z(),
-               1.0-xa2/255.0,
-               secname.c_str(), rise);
-    ips.format("%f*%s_sl_scl, ", w, secname.c_str());
-    ips.format("%s_sl_tex, <%f,%f,%f>)\n",secname.c_str(), r, g, b);
-    */
   }
+  */
 }
 
 void LuxRendDisplayContext::writePointImpl(PrintStream &ps,
-					   const Vector4D &v1,
+					   const Vector4D &x1,
 					   const Vector4D &n1,
 					   int alpha)
 {
-  double r=.0,g=.0,b=.0;
-  ColorPtr pcol = getEdgeLineColor();
-  if (!pcol.isnull()) {
-    r = pcol->fr();
-    g = pcol->fg();
-    b = pcol->fb();
-  }
   const double w = getEdgeLineWidth();
   const double rise = w/2.0;
   LString secname = getSecName();
 
-  /*
-  ips.format("sphere{<%f, %f, %f> + %s_sl_rise*%f*<%f,%f,%f>, ",
-             v1.x(), v1.y(), v1.z(),
-             secname.c_str(), rise,
-             n1.x(), n1.y(), n1.z());
-  ips.format("%f*%s_sl_scl ", w, secname.c_str());
-  if (alpha==255) {
-    ips.format("texture { %s_sl_tex pigment { color rgb <%f,%f,%f> }}\n",
-               secname.c_str(), r, g, b);
-  }
-  ips.format("}\n");*/
-
+  Vector4D v1 = x1 + n1.scale(rise*0.5);
+  ps.format("Transform [1 0 0 0  0 1 0 0  0 0 1 0  %f %f %f 1]\n", v1.x(), v1.y(), v1.z());
+  ps.format("NamedMaterial \"EdgeLineMat_%s\"\n", secname.c_str());
+  ps.format("Shape \"sphere\" \"float radius\" [%f]\n", w);
 }

@@ -60,6 +60,10 @@ namespace render {
 
     void writeLights(PrintStream &ps);
 
+    bool writeCylXform(PrintStream &ps,
+		       const Vector4D &v1, const Vector4D &v2,
+		       double &rlen);
+
     void writeObjects();
     void writeSpheres(PrintStream &ps);
     void writeCyls(PrintStream &ps);
@@ -218,6 +222,7 @@ namespace render {
 
     void writeSilEdges(PrintStream &ps);
     
+  public:
     virtual void writeEdgeLineImpl(PrintStream &ips, int xa1, int xa2,
 				   const Vector4D &x1, const Vector4D &n1,
 				   const Vector4D &x2, const Vector4D &n2);
