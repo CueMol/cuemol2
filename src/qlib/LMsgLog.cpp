@@ -46,8 +46,8 @@ LMsgLog::LMsgLog()
 {
 //#if defined(MB_DEBUG) || !defined(WIN32)
 
-#if defined(WIN32)
-  // windows: no stderr
+#if defined(WIN32) && !defined(MB_DEBUG)
+  // windows (release ver): no stderr
   m_pImpl->m_fp = NULL;
 #else
   // unix: write msgs to stderr

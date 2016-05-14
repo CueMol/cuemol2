@@ -766,20 +766,42 @@ void TubeSection::makeDisconJct(DisplayContext *pdl,
                                 const Vector4D &e11, const Vector4D &e12,
                                 const Vector4D &escl, const Vector4D &escl_prev)
 {
-
   const Vector4D pe1 = e11.scale(escl_prev.x());
   const Vector4D pe2 = e12.scale(escl_prev.y());
 
   const Vector4D ne1 = e11.scale(escl.x());
   const Vector4D ne2 = e12.scale(escl.y());
 
+/*
+  double ratio = pe1.length()/ne1.length();
+  bool bx = true;
+  if (qlib::isNear4(ratio, 1.0)) {
+    ratio = pe2.length()/ne2.length();
+    bx = false;
+  }
+  MB_DPRINTLN("makeDJ ratio=%f", ratio);
+
+  if (ratio>1.0) ratio = 1.0/ratio;
+  
+  int j, nsize = getSize();
+  for (j=0; j<=nsize; j++) {
+    if (bx) {
+      if (m_pSectTab[j].x()<ratio) {
+      }
+    }
+    else {
+      if (m_pSectTab[j].y()<ratio) {
+      }
+    }
+  }
+*/
+  
   //pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
   pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_XX);
   //pdl->setPolygonMode(gfx::DisplayContext::POLY_LINE);
   pdl->startTriangleStrip();
   pdl->normal(-ev);
 
-  int j, nsize = getSize();
   for (j=0; j<=nsize; j++) {
     Vector4D pg = getVec(j, pe1, pe2);
     Vector4D ng = getVec(j, ne1, ne2);

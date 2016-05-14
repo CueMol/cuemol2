@@ -90,34 +90,45 @@ void RendIntData::meshEndTrigStrip()
   if (nPolyMode == DisplayContext::POLY_FILL_NORGLN)
     nfmode = MFMOD_NORGLN;
   else if (nPolyMode == DisplayContext::POLY_FILL_XX)
-    nfmode = MFMOD_MESHXX;
+    nfmode = MFMOD_NORGLN;
 
   int i;
 
   for (i=2; i<nVerts; i++) {
+
+    int imode = nfmode;
+
     /*
-      int imode = nfmode;
-    Vector4D v1, v2, v3;
-    v1 = m_mesh.m_verts[m_nMeshPivot + i]->v;
-    v2 = m_mesh.m_verts[m_nMeshPivot + i-1]->v;
-    v3 = m_mesh.m_verts[m_nMeshPivot + i-2]->v;
-    double area = (v2-v1).cross(v3-v1).length();
-    //MB_DPRINTLN("Trig %d --> %f", i, area);
-    //if (area<1) {
-      imode = MFMOD_NORGLN;
-      //}
-      */
+    if (nPolyMode == DisplayContext::POLY_FILL_XX) {
+      Vector4D v1, v2;
+
+      if (i%2==0) {
+        v1 = m_mesh.m_verts[m_nMeshPivot + i-2]->v;
+        v2 = m_mesh.m_verts[m_nMeshPivot + i-1]->v;
+      }
+      else {
+        v1 = m_mesh.m_verts[m_nMeshPivot + i-1]->v;
+        v2 = m_mesh.m_verts[m_nMeshPivot + i]->v;
+      }
+      double len = (v2-v1).length();
+      MB_DPRINTLN("Trig %d --> %f", i, len);
+      if (len<1.0) {
+        imode = MFMOD_MESHXX;
+        MB_DPRINTLN(">>>Trig %d MESHXX", i);
+      }
+    }*/
+    
     if (i%2==0) {
       m_mesh.addFace(m_nMeshPivot + i-2,
                      m_nMeshPivot + i-1,
                      m_nMeshPivot + i,
-                     nfmode);
+                     imode);
     }
     else {
       m_mesh.addFace(m_nMeshPivot + i,
                      m_nMeshPivot + i-1,
                      m_nMeshPivot + i-2,
-                     nfmode);
+                     imode);
     }
   }
 }
@@ -1105,17 +1116,17 @@ void RendIntData::calcSilEdgeLines(double dViewDist, double dnangl)
       int nm1 = m_facevec[elem.if1].nmode;
       int nm2 = m_facevec[elem.if2].nmode;
 
+      if (nm1==MFMOD_MESHXX || nm2==MFMOD_MESHXX) {
+        continue;
+      }
+
       if (checkSilEdge(v1-vcam, n1, n2) ||
 	  checkSilEdge(v2-vcam, n1, n2)) {
 	// edge is silhouette/edge line
 	m_silEdges.insert(elem);
       }
-      else {
-	if (nm1==MFMOD_MESHXX || nm2==MFMOD_MESHXX) {
-	}
-	else if (checkCrease(n1, n2, dnangl)) {
-	  m_silEdges.insert(elem);
-	}
+      else if (checkCrease(n1, n2, dnangl)) {
+        m_silEdges.insert(elem);
       }
     }
   }
