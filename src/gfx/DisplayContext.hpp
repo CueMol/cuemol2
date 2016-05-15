@@ -68,6 +68,12 @@ namespace gfx {
       ELT_SILHOUETTE,
     };
 
+    /// Vertex attribute types (used as hint for edge rendering)
+    enum {
+      DVA_NONE,
+      DVA_NOEDGE,
+    };
+
   public:
     DisplayContext();
     virtual ~DisplayContext() {}
@@ -95,6 +101,9 @@ namespace gfx {
 
     /// Set current color
     virtual void color(const ColorPtr &c) =0;
+
+    /// Set current vertex attribute
+    virtual void attribute(int n);
 
     ////////////////
 

@@ -31,6 +31,7 @@ FileDisplayContext::FileDisplayContext()
   m_nPolyMode = POLY_FILL;
   m_bLighting = false;
 
+  m_nCurAttrib = DVA_NONE;
 }
 
 FileDisplayContext::~FileDisplayContext()
@@ -144,7 +145,7 @@ void FileDisplayContext::vertex(const Vector4D &aV)
 
     //////////////////////////////////////////////////////
   case POV_TRIGSTRIP:
-    m_pIntData->meshVertex(v, m_norm, m_pColor);
+    m_pIntData->meshVertex(v, m_norm, m_pColor, m_nCurAttrib);
     break;
 
     //////////////////////////////////////////////////////
@@ -180,6 +181,11 @@ void FileDisplayContext::normal(const Vector4D &av)
 void FileDisplayContext::color(const gfx::ColorPtr &c)
 {
   m_pColor = c;
+}
+
+void FileDisplayContext::attribute(int n)
+{
+  m_nCurAttrib = n;
 }
 
 ////////////////////////////////////////////////
@@ -349,7 +355,7 @@ void FileDisplayContext::startTriangles()
   m_nDrawMode = POV_TRIGS;
 
   if (m_nPolyMode==POLY_FILL)
-    m_pIntData->meshStart();
+    m_pIntData->meshStart(m_nDrawMode);
   else if (m_nPolyMode==POLY_LINE) {
     m_nVertCnt = 0;
     m_vectmp.resize(3);
@@ -363,13 +369,13 @@ void FileDisplayContext::startTriangleStrip()
     return;
   }
   m_nDrawMode = POV_TRIGSTRIP;
-  m_pIntData->meshStart();
+  m_pIntData->meshStart(m_nDrawMode);
 }
 
 void FileDisplayContext::startTriangleFan()
 {
   m_nDrawMode = POV_TRIGFAN;
-  m_pIntData->meshStart();
+  m_pIntData->meshStart(m_nDrawMode);
 }
 
 void FileDisplayContext::startQuadStrip()

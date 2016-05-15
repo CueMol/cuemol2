@@ -25,6 +25,22 @@ namespace render {
   {
     typedef gfx::DisplayContext super_t;
 
+  public:
+    /// ID for the drawing mode
+    enum {
+      POV_NONE,
+      POV_POINTS,
+      POV_POLYGON,
+      POV_LINES,
+      POV_LINESTRIP,
+      POV_TRIGS,
+      POV_TRIGSTRIP,
+      POV_TRIGFAN,
+      POV_QUADS,
+      POV_QUADSTRIP
+    };
+
+    
   protected:
     /// Internal data structure
     RendIntData *m_pIntData;
@@ -51,21 +67,11 @@ namespace render {
     /// current normal vec
     Vector4D m_norm;
 
+    /// current vertex attribute
+    int m_nCurAttrib;
+
     /// current drawing mode
     int m_nDrawMode;
-
-    enum {
-      POV_NONE,
-      POV_POINTS,
-      POV_POLYGON,
-      POV_LINES,
-      POV_LINESTRIP,
-      POV_TRIGS,
-      POV_TRIGSTRIP,
-      POV_TRIGFAN,
-      POV_QUADS,
-      POV_QUADSTRIP
-    };
 
     bool m_fPrevPosValid;
     Vector4D m_prevPos, m_prevCol, m_prevNorm;
@@ -169,6 +175,7 @@ namespace render {
     virtual void vertex(const Vector4D &v);
     virtual void normal(const Vector4D &v);
     virtual void color(const gfx::ColorPtr &c);
+    virtual void attribute(int n);
 
     virtual void pushMatrix();
     virtual void popMatrix();

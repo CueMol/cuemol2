@@ -195,6 +195,13 @@ public:
                      const Vector4D &e11, const Vector4D &e12,
                      const Vector4D &escl, const Vector4D &escl_prev);
 
+private:
+  void makeDJEllip(DisplayContext *pdl,
+                   const Vector4D &f1, const Vector4D &ev,
+                   const Vector4D &pe1, const Vector4D &pe2,
+                   const Vector4D &ne1, const Vector4D &ne2);
+
+public:
   ////////////////////////////////////////
   // Tesselation routines
 

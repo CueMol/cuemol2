@@ -28,6 +28,7 @@ namespace render {
   using gfx::ColorTable;
   using gfx::ColorPtr;
   using qlib::PrintStream;
+  using gfx::DisplayContext;
 
   class FileDisplayContext;
 
@@ -136,6 +137,11 @@ namespace render {
     /// Mesh pivot
     int m_nMeshPivot;
 
+    /// Mesh vertex's attribute array
+    ///  only used for special case,
+    ///  in which hint data of edge rendering is required
+    std::deque<int> *m_pVAttrAry;
+
   public:
     RendIntData(FileDisplayContext *pdc);
     virtual ~RendIntData();
@@ -162,15 +168,17 @@ namespace render {
     //////////
     // Mesh drawing operations
 
-    void meshStart();
+    void meshStart(int nmode);
     void meshEndTrigs();
     void meshEndTrigStrip();
     void meshEndFan();
 
     /// Mesh generation for trigs & trigstrip
-    void meshVertex(const Vector4D &v1, const Vector4D &n1, const ColorPtr &col)
+    void meshVertex(const Vector4D &v1, const Vector4D &n1, const ColorPtr &col, int nattr=DisplayContext::DVA_NONE)
     {
       m_mesh.addVertex(v1, n1, convCol(col));
+      if (m_pVAttrAry!=NULL)
+        m_pVAttrAry->push_back(nattr);
     }
 
     // / mesh generation for trigfan

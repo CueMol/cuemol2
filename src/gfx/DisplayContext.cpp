@@ -262,3 +262,8 @@ ColorPtr DisplayContext::getEdgeLineColor() const
 {
   return m_egLineCol;
 }
+
+void DisplayContext::attribute(int n)
+{
+}
+

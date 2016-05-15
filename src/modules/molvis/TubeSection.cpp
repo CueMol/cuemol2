@@ -772,7 +772,34 @@ void TubeSection::makeDisconJct(DisplayContext *pdl,
   const Vector4D ne1 = e11.scale(escl.x());
   const Vector4D ne2 = e12.scale(escl.y());
 
-/*
+  if (m_nSectType==TS_ELLIPTICAL) {
+    makeDJEllip(pdl, f1, ev, pe1, pe2, ne1, ne2);
+    return;
+  }
+
+  int j, nsize = getSize();
+
+  pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
+  pdl->startTriangleStrip();
+  pdl->normal(-ev);
+
+  for (j=0; j<=nsize; j++) {
+    Vector4D pg = getVec(j, pe1, pe2);
+    Vector4D ng = getVec(j, ne1, ne2);
+    pdl->vertex(f1+pg);
+    pdl->vertex(f1+ng);
+  }
+
+  pdl->end();
+}
+
+void TubeSection::makeDJEllip(DisplayContext *pdl,
+                              const Vector4D &f1, const Vector4D &ev,
+                              const Vector4D &pe1, const Vector4D &pe2,
+                              const Vector4D &ne1, const Vector4D &ne2)
+{
+  int j, nsize = getSize();
+
   double ratio = pe1.length()/ne1.length();
   bool bx = true;
   if (qlib::isNear4(ratio, 1.0)) {
@@ -781,20 +808,17 @@ void TubeSection::makeDisconJct(DisplayContext *pdl,
   }
   MB_DPRINTLN("makeDJ ratio=%f", ratio);
 
-  if (ratio>1.0) ratio = 1.0/ratio;
-  
-  int j, nsize = getSize();
-  for (j=0; j<=nsize; j++) {
-    if (bx) {
-      if (m_pSectTab[j].x()<ratio) {
-      }
-    }
-    else {
-      if (m_pSectTab[j].y()<ratio) {
-      }
-    }
+  bool bplarge = false;
+  if (ratio>1.0) {
+    ratio = 1.0/ratio;
+    bplarge = true;
   }
-*/
+  MB_DPRINTLN("bplarge=%d", bplarge);
+  MB_DPRINTLN("bx=%d", bx);
+  
+  //for (j=0; j<=nsize; j++) {
+  //}
+
   
   //pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
   pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_XX);
@@ -805,7 +829,44 @@ void TubeSection::makeDisconJct(DisplayContext *pdl,
   for (j=0; j<=nsize; j++) {
     Vector4D pg = getVec(j, pe1, pe2);
     Vector4D ng = getVec(j, ne1, ne2);
+
+    int pattr = DisplayContext::DVA_NONE;
+    int nattr = DisplayContext::DVA_NONE;
+
+    if (bplarge)
+      nattr = DisplayContext::DVA_NOEDGE;
+    else
+      pattr = DisplayContext::DVA_NOEDGE;
+    
+
+    if (bx) {
+      if (qlib::abs(m_pSectTab[j%nsize].x())<ratio ||
+          qlib::abs(m_pSectTab[(j-1+nsize)%nsize].x())<ratio) {
+        if (bplarge)
+          pattr = DisplayContext::DVA_NOEDGE;
+        else
+          nattr = DisplayContext::DVA_NOEDGE;
+      }
+    }
+    else {
+      if (qlib::abs(m_pSectTab[j%nsize].y())<ratio ||
+          qlib::abs(m_pSectTab[(j-1+nsize)%nsize].y())<ratio) {
+        if (bplarge)
+          pattr = DisplayContext::DVA_NOEDGE;
+        else
+          nattr = DisplayContext::DVA_NOEDGE;
+      }
+    }
+
+    MB_DPRINTLN("j=%d ry=%f r=%f, n/pattr=%d/%d", j,qlib::abs(m_pSectTab[j%nsize].y()),ratio,
+                nattr, pattr);
+
+    //pattr = DisplayContext::DVA_NOEDGE;
+    //nattr = DisplayContext::DVA_NOEDGE;
+
+    pdl->attribute(pattr);
     pdl->vertex(f1+pg);
+    pdl->attribute(nattr);
     pdl->vertex(f1+ng);
   }
 

@@ -25,6 +25,9 @@ RendIntData::RendIntData(FileDisplayContext *pdc)
   m_dClipZ = -1.0;
 //  m_mesh.m_pPar = this;
 
+  // mesh vertex attributes
+  m_pVAttrAry = NULL;
+
   m_pEgMesh = NULL;
   m_bSilhouette = false;
 
@@ -35,6 +38,9 @@ RendIntData::RendIntData(FileDisplayContext *pdc)
 
 RendIntData::~RendIntData()
 {
+  if (m_pVAttrAry!=NULL)
+    delete m_pVAttrAry;
+
   std::for_each(m_lines.begin(), m_lines.end(), qlib::delete_ptr<Line *>());
   std::for_each(m_cylinders.begin(), m_cylinders.end(), qlib::delete_ptr<Cyl *>());
   std::for_each(m_spheres.begin(), m_spheres.end(), qlib::delete_ptr<Sph *>());
@@ -52,9 +58,15 @@ void RendIntData::start(const char *name)
   //m_fUseTexBlend = false;
 }
 
-void RendIntData::meshStart()
+void RendIntData::meshStart(int nmode)
 {
   m_nMeshPivot = m_mesh.getVertexSize();
+  if (m_pdc->getPolygonMode()==DisplayContext::POLY_FILL_XX &&
+      nmode==FileDisplayContext::POV_TRIGSTRIP) {
+    if (m_pVAttrAry!=NULL)
+      delete m_pVAttrAry;
+    m_pVAttrAry = MB_NEW std::deque<int>();
+  }
 }
 
 void RendIntData::meshEndTrigs()
@@ -87,9 +99,8 @@ void RendIntData::meshEndTrigStrip()
 
   int nfmode = MFMOD_MESH;
   const int nPolyMode = m_pdc->getPolygonMode();
-  if (nPolyMode == DisplayContext::POLY_FILL_NORGLN)
-    nfmode = MFMOD_NORGLN;
-  else if (nPolyMode == DisplayContext::POLY_FILL_XX)
+  if (nPolyMode == DisplayContext::POLY_FILL_NORGLN ||
+      nPolyMode == DisplayContext::POLY_FILL_XX)
     nfmode = MFMOD_NORGLN;
 
   int i;
@@ -98,26 +109,13 @@ void RendIntData::meshEndTrigStrip()
 
     int imode = nfmode;
 
-    /*
-    if (nPolyMode == DisplayContext::POLY_FILL_XX) {
-      Vector4D v1, v2;
-
-      if (i%2==0) {
-        v1 = m_mesh.m_verts[m_nMeshPivot + i-2]->v;
-        v2 = m_mesh.m_verts[m_nMeshPivot + i-1]->v;
-      }
-      else {
-        v1 = m_mesh.m_verts[m_nMeshPivot + i-1]->v;
-        v2 = m_mesh.m_verts[m_nMeshPivot + i]->v;
-      }
-      double len = (v2-v1).length();
-      MB_DPRINTLN("Trig %d --> %f", i, len);
-      if (len<1.0) {
+    if (m_pVAttrAry!=NULL) {
+      MB_ASSERT(i<m_pVAttrAry->size());
+      int nattr = m_pVAttrAry->at(i);
+      if (nattr==DisplayContext::DVA_NOEDGE)
         imode = MFMOD_MESHXX;
-        MB_DPRINTLN(">>>Trig %d MESHXX", i);
-      }
-    }*/
-    
+    }
+
     if (i%2==0) {
       m_mesh.addFace(m_nMeshPivot + i-2,
                      m_nMeshPivot + i-1,
@@ -130,6 +128,11 @@ void RendIntData::meshEndTrigStrip()
                      m_nMeshPivot + i-2,
                      imode);
     }
+  }
+
+  if (m_pVAttrAry!=NULL) {
+    delete m_pVAttrAry;
+    m_pVAttrAry = NULL;
   }
 }
 
