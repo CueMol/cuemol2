@@ -42,7 +42,8 @@ namespace render {
     virtual const char *getFileExt() const;
 
     /// Halt condition
-    double m_dHaltThr;
+    //double m_dHaltThr;
+    int m_nHaltSPP;
 
     /// output base name
     LString m_sOutputBase;

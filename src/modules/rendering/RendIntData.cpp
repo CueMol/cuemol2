@@ -23,6 +23,7 @@ RendIntData::RendIntData(FileDisplayContext *pdc)
 {
   m_pdc = pdc;
   m_dClipZ = -1.0;
+  m_bPerspec = true;
 //  m_mesh.m_pPar = this;
 
   // mesh vertex attributes
@@ -1119,18 +1120,35 @@ void RendIntData::calcSilEdgeLines(double dViewDist, double dnangl)
       int nm1 = m_facevec[elem.if1].nmode;
       int nm2 = m_facevec[elem.if2].nmode;
 
+      // nmode==MESHXX --> force no edge/crease
       if (nm1==MFMOD_MESHXX || nm2==MFMOD_MESHXX) {
         continue;
       }
 
-      if (checkSilEdge(v1-vcam, n1, n2) ||
-	  checkSilEdge(v2-vcam, n1, n2)) {
-	// edge is silhouette/edge line
-	m_silEdges.insert(elem);
-      }
-      else if (checkCrease(n1, n2, dnangl)) {
+      if (checkCrease(n1, n2, dnangl)) {
         m_silEdges.insert(elem);
       }
+      else {
+        if (!m_bPerspec) {
+          vcam.x() = v1.x();
+          vcam.y() = v1.y();
+        }
+        if (checkSilEdge(v1-vcam, n1, n2)) {
+          // edge is silhouette/edge line
+          m_silEdges.insert(elem);
+        }
+        else {
+          if (!m_bPerspec) {
+            vcam.x() = v2.x();
+            vcam.y() = v2.y();
+          }
+          if (checkSilEdge(v2-vcam, n1, n2)) {
+            // edge is silhouette/edge line
+            m_silEdges.insert(elem);
+          }
+        }
+      }
+      
     }
   }
 
@@ -1230,58 +1248,6 @@ namespace {
   
   //////////
 
-  bool isVertVisible(Tree &tree,
-		    const Vector4D &vcam,
-		    const Vector4D &vert,
-		    int iv)
-  {
-    // check vert visibility from vcam
-    K::Point_3 pcam(vcam.x(), vcam.y(), vcam.z());
-    K::Point_3 pvert(vert.x(), vert.y(), vert.z());
-    
-    Segment segq(pcam, pvert);
-    
-    IntrsecList ilst;
-    tree.all_intersections(segq, std::back_inserter(ilst));
-    
-    BOOST_FOREACH (const IntrsecList::value_type &isec, ilst) {
-      FaceVecIterator fiter = isec.second;
-      if (iv == fiter->iv1 ||
-          iv == fiter->iv2 ||
-          iv == fiter->iv3)
-        continue;
-      return false;
-    }
-    
-    return true;
-  }
-
-  bool isVertSilVisible(Tree &tree,
-                        const Vector4D &vcam,
-                        const Vector4D &vert,
-                        int iv)
-  {
-    // check vert visibility from vcam
-    K::Point_3 pcam(vcam.x(), vcam.y(), vcam.z());
-    K::Point_3 pvert(vert.x(), vert.y(), vert.z());
-    
-    K::Ray_3 rayq(pcam, pvert);
-    
-    IntrsecList ilst;
-    tree.all_intersections(rayq, std::back_inserter(ilst));
-    
-    BOOST_FOREACH (const IntrsecList::value_type &isec, ilst) {
-      FaceVecIterator fiter = isec.second;
-      if (iv == fiter->iv1 ||
-          iv == fiter->iv2 ||
-          iv == fiter->iv3)
-        continue;
-      return false;
-    }
-    
-    return true;
-  }
-
   bool contains_id(int iv1, int iv2,
                    int if1, int if2, int if3)
   {
@@ -1298,36 +1264,120 @@ namespace {
     return false;
   }
 
-  bool isVertSilVisible2(Tree &tree,
-                         const Vector4D &vcam,
-                         const Vector4D &vert,
-                         int iv1, int iv2)
-  {
-    // check vert visibility from vcam
-    K::Point_3 pcam(vcam.x(), vcam.y(), vcam.z());
-    K::Point_3 pvert(vert.x(), vert.y(), vert.z());
-    
-    K::Ray_3 rayq(pcam, pvert);
-    
-    IntrsecList ilst;
-    tree.all_intersections(rayq, std::back_inserter(ilst));
-    
-    BOOST_FOREACH (const IntrsecList::value_type &isec, ilst) {
-      FaceVecIterator fiter = isec.second;
-      if (contains_id(iv1, iv2,
-                      fiter->iv1, fiter->iv2, fiter->iv3))
-        continue;
-      return false;
-    }
-    
-    return true;
+}
+
+bool RendIntData::isVertVisible(const Vector4D &vert,
+                                int iv)
+{
+  Tree &tree = *static_cast<Tree *>(m_pTree);
+
+  double vx, vy;
+  if (m_bPerspec) {
+    vx = 0.0;
+    vy = 0.0;
+  }
+  else {
+    vx = vert.x();
+    vy = vert.y();
   }
 
+  // check vert visibility from vcam
+  K::Point_3 pcam(vx, vy, m_dViewDist);
+  K::Point_3 pvert(vert.x(), vert.y(), vert.z());
+  
+  Segment segq(pcam, pvert);
+    
+  IntrsecList ilst;
+  tree.all_intersections(segq, std::back_inserter(ilst));
+  
+  BOOST_FOREACH (const IntrsecList::value_type &isec, ilst) {
+    FaceVecIterator fiter = isec.second;
+    if (iv == fiter->iv1 ||
+        iv == fiter->iv2 ||
+        iv == fiter->iv3)
+      continue;
+    return false;
+  }
+  
+  return true;
+}
+
+bool RendIntData::isVertSilVisible(const Vector4D &vert,
+                                   int iv)
+{
+  Tree &tree = *static_cast<Tree *>(m_pTree);
+
+  double vx, vy;
+  if (m_bPerspec) {
+    vx = 0.0;
+    vy = 0.0;
+  }
+  else {
+    vx = vert.x();
+    vy = vert.y();
+  }
+
+  // check vert visibility from vcam
+  K::Point_3 pcam(vx, vy, m_dViewDist);
+  // K::Point_3 pcam(vcam.x(), vcam.y(), vcam.z());
+  K::Point_3 pvert(vert.x(), vert.y(), vert.z());
+  
+  K::Ray_3 rayq(pcam, pvert);
+  
+  IntrsecList ilst;
+  tree.all_intersections(rayq, std::back_inserter(ilst));
+  
+  BOOST_FOREACH (const IntrsecList::value_type &isec, ilst) {
+    FaceVecIterator fiter = isec.second;
+    if (iv == fiter->iv1 ||
+        iv == fiter->iv2 ||
+        iv == fiter->iv3)
+      continue;
+    return false;
+  }
+  
+  return true;
+}
+
+bool RendIntData::isVertSilVisible2(const Vector4D &vert,
+                                    int iv1, int iv2)
+{
+  Tree &tree = *static_cast<Tree *>(m_pTree);
+
+  double vx, vy;
+  if (m_bPerspec) {
+    vx = 0.0;
+    vy = 0.0;
+  }
+  else {
+    vx = vert.x();
+    vy = vert.y();
+  }
+
+  // check vert visibility from vcam
+  K::Point_3 pcam(vx, vy, m_dViewDist);
+  //K::Point_3 pcam(vcam.x(), vcam.y(), vcam.z());
+  K::Point_3 pvert(vert.x(), vert.y(), vert.z());
+  
+  K::Ray_3 rayq(pcam, pvert);
+  
+  IntrsecList ilst;
+  tree.all_intersections(rayq, std::back_inserter(ilst));
+  
+  BOOST_FOREACH (const IntrsecList::value_type &isec, ilst) {
+    FaceVecIterator fiter = isec.second;
+    if (contains_id(iv1, iv2,
+                    fiter->iv1, fiter->iv2, fiter->iv3))
+      continue;
+    return false;
+  }
+  
+  return true;
 }
 
 void RendIntData::buildVertVisList()
 {
-  Vector4D vcam(0,0,m_dViewDist);
+  // Vector4D vcam(0,0,m_dViewDist);
 
   MeshVert *pv;
 
@@ -1338,16 +1388,16 @@ void RendIntData::buildVertVisList()
     const int iv = m_secpts[i].iv;
     pv = m_vertvec[iv];
     if (!m_bSilhouette)
-      m_secpts[i].bvis = isVertVisible(tree, vcam, pv->v, iv);
+      m_secpts[i].bvis = isVertVisible(pv->v, iv);
     else
-      m_secpts[i].bvis = isVertSilVisible(tree, vcam, pv->v, iv);
+      m_secpts[i].bvis = isVertSilVisible(pv->v, iv);
     
     m_secpts[i].nshow = 0;
 
     /*
     m_secpts[i].bsil = false;
     if (m_bSilhouette && m_secpts[i].bvis) {
-      m_secpts[i].bsil = isVertSilVisible(tree, vcam, pv->v, iv);
+      m_secpts[i].bsil = isVertSilVisible(pv->v, iv);
     }*/
 
   }
@@ -1470,8 +1520,6 @@ void RendIntData::calcSilhIntrsec(double divw)
   // build SEC point list and vertex visibility list (in silh mode)
   buildVertVisList();
   
-  Vector4D vcam(0,0,m_dViewDist);
-
   BOOST_FOREACH (const SEEdge &elem, m_silEdges) {
     pv1 = m_vertvec[elem.iv1];
     pv2 = m_vertvec[elem.iv2];
@@ -1521,7 +1569,7 @@ void RendIntData::calcSilhIntrsec(double divw)
       }
       else {
         vintr = pv1->v + v12.scale(rho);
-        bvis = isVertSilVisible2(tree, vcam, vintr, elem.iv1, elem.iv2);
+        bvis = isVertSilVisible2(vintr, elem.iv1, elem.iv2);
       }
       
       if (bvprev!=bvis) {

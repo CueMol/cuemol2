@@ -143,6 +143,8 @@ namespace render {
 
     // void setTexBlend(bool f) { m_fUseTexBlend = f; }
     void setClipZ(bool f) { m_bUseClipZ = f; }
+
+    bool isPerspective() const { return m_fPerspective; }
     void setPerspective(bool f) { m_fPerspective = f; }
 
     const gfx::ColorPtr &getCurrentColor() const { return m_pColor; }

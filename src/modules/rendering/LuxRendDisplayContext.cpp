@@ -70,6 +70,7 @@ void LuxRendDisplayContext::startSection(const LString &name)
 
   // create RendIntData (m_pIntData), etc.
   super_t::startSection(name);
+  m_pIntData->m_bPerspec = isPerspective();
 }
 
 void LuxRendDisplayContext::endSection()
@@ -114,7 +115,7 @@ void LuxRendDisplayContext::writeHeader()
   else
     fov = fovx;
 
-  bool bPerspec = m_fPerspective;
+  bool bPerspec = isPerspective();
 
   if (bPerspec) {
     if (fov<10.0) {
@@ -134,15 +135,23 @@ void LuxRendDisplayContext::writeHeader()
   if (!preamble.isEmpty())
     ps.println(preamble);
 
-  ps.format("LookAt 0 0 %f 0 0 0 0 1 0\n", m_dViewDist);
+  LString scmt_pers, scmt_orth;
   if (bPerspec)  {
-    ps.format("Camera \"perspective\" \"float fov\" [%f]\n", fov);
+    scmt_pers = "";
+    scmt_orth = "# ";
   }
   else {
-    ps.format("Camera \"orthographic\"\n");
-    ps.format("       \"float screenwindow\" [%f %f %f %f]\n", -zoomx/2.0, zoomx/2.0, -zoomy/2.0, zoomy/2.0);
+    scmt_orth = "";
+    scmt_pers = "# ";
   }
-  ps.format("      \"float hither\" [%f]\n", m_dViewDist-m_dSlabDepth/2.0);
+
+  ps.format(scmt_pers+"LookAt 0 0 %f 0 0 0 0 1 0\n", m_dViewDist);
+  ps.format(scmt_pers+"Camera \"perspective\" \"float fov\" [%f]\n", fov);
+  ps.format(scmt_pers+"      \"float hither\" [%f]\n", m_dViewDist-m_dSlabDepth/2.0);
+
+  ps.format(scmt_orth+"LookAt 0 0 %f 0 0 0 0 1 0\n", m_dSlabDepth/2.0);
+  ps.format(scmt_orth+"Camera \"orthographic\"\n");
+  ps.format(scmt_orth+"       \"float screenwindow\" [%f %f %f %f]\n", -zoomx/2.0, zoomx/2.0, -zoomy/2.0, zoomy/2.0);
 
   ps.format("\n");
   ps.format("Film \"fleximage\"\n");
@@ -156,13 +165,21 @@ void LuxRendDisplayContext::writeHeader()
   ps.format("     \"string write_png_channels\" [\"RGB\"]\n");
   ps.format("     \"integer displayinterval\" [1]\n");
   ps.format("     \"integer writeinterval\" [60]\n");
-  if (m_pParent->m_dHaltThr>0.0)
-    ps.format("     \"integer haltthreshold\" [%f]\n", m_pParent->m_dHaltThr);
+  if (m_pParent->m_nHaltSPP>0.0)
+    ps.format("     \"integer haltspp\" [%d]\n", m_pParent->m_nHaltSPP);
   ps.format("\n");
   ps.format("PixelFilter \"mitchell\" \"float xwidth\" [2] \"float ywidth\" [2] \"bool supersample\" [\"true\"]\n");
   ps.format("Sampler \"metropolis\"\n");
+
+  //////////
+
+  ps.format("\n");
   ps.format("WorldBegin\n");
   ps.format("\n");
+
+  preamble = pSM->getConfig("lux", "worldpreamble").trim(" \r\t\n");
+  if (!preamble.isEmpty())
+    ps.println(preamble);
 
   ps.print("Texture \"utex\" \"float\" \"bilerp\"\n");
   ps.print(" \"float v00\" [0]\n");
@@ -231,6 +248,9 @@ void LuxRendDisplayContext::writeHeader()
   }
   ps.format("AttributeEnd\n");
   ps.format("\n");
+
+  // overwrite perspec flag
+  setPerspective(bPerspec);
 }
 
 void LuxRendDisplayContext::writeTailer()
@@ -938,9 +958,9 @@ void LuxRendDisplayContext::writeSilEdges(PrintStream &ps)
   ps.format("# Edge/silh lines for obj %s\n", getSecName().c_str());
 
   if (getEdgeLineType()==ELT_SILHOUETTE)
-    m_pIntData->m_bSilhouette = true;
+    m_pIntData->setSilhMode(true);
   else
-    m_pIntData->m_bSilhouette = false;
+    m_pIntData->setSilhMode(false);
 
   double dCreaseLimit = qlib::toRadian(85.0);
   m_pIntData->calcSilEdgeLines(m_dViewDist, dCreaseLimit);

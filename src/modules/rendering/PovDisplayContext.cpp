@@ -54,8 +54,10 @@ PovDisplayContext::~PovDisplayContext()
 
 void PovDisplayContext::startSection(const LString &name)
 {
-  // start of rendering section
+  // start of rendering section 
+  // --> create RendIntData (m_pIntData), etc.
   super_t::startSection(name);
+  m_pIntData->m_bPerspec = isPerspective();
   m_pIntData->start(name);
 
   if (!m_bPostBlend) {

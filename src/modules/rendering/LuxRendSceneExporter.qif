@@ -19,8 +19,8 @@ runtime_class LuxRendSceneExporter extends SceneExporter
   ////////////////////
   // Property definition
 
-  // /// scale (1 angstrom <--> 1 mm)
-  // property real scale => m_scale;
+  /// halt condition (sample per pixel)
+  property integer haltspp => m_nHaltSPP;
 
 };
 

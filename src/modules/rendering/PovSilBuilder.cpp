@@ -235,9 +235,9 @@ void PovDisplayContext::writeSilEdges2()
   ps.format("  texture{finish{ambient 1.0 diffuse 0 specular 0}};\n");
 
   if (getEdgeLineType()==ELT_SILHOUETTE)
-    m_pIntData->m_bSilhouette = true;
+    m_pIntData->setSilhMode(true);
   else
-    m_pIntData->m_bSilhouette = false;
+    m_pIntData->setSilhMode(false);
 
   m_pIntData->calcSilEdgeLines(m_dViewDist, m_dCreaseLimit);
 

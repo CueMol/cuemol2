@@ -26,8 +26,7 @@ using qsys::ViewPtr;
 LuxRendSceneExporter::LuxRendSceneExporter()
      : SceneExporter()
 {
-  //m_dHaltThr = -1.0;
-  m_dHaltThr = 0.01;
+  m_nHaltSPP = 10000;
   m_sOutputBase = "";
 }
 
