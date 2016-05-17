@@ -45,6 +45,8 @@ namespace render {
     //double m_dHaltThr;
     int m_nHaltSPP;
 
+    LString m_sFilmOpts;
+
     /// output base name
     LString m_sOutputBase;
   };

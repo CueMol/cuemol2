@@ -167,6 +167,10 @@ void LuxRendDisplayContext::writeHeader()
   ps.format("     \"integer writeinterval\" [60]\n");
   if (m_pParent->m_nHaltSPP>0.0)
     ps.format("     \"integer haltspp\" [%d]\n", m_pParent->m_nHaltSPP);
+  if (!m_pParent->m_sFilmOpts.isEmpty()) {
+    ps.print(m_pParent->m_sFilmOpts);
+    ps.format("\n");
+  }
   ps.format("\n");
   ps.format("PixelFilter \"mitchell\" \"float xwidth\" [2] \"float ywidth\" [2] \"bool supersample\" [\"true\"]\n");
   ps.format("Sampler \"metropolis\"\n");
