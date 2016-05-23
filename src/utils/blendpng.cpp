@@ -6,6 +6,7 @@
 # include "config.h"
 #elif defined(WIN32)
 # define HAVE_PNG_H
+# define HAVE_LCMS2_H
 #endif
 
 #include <stdio.h>
@@ -21,9 +22,18 @@
 
 #include <libpng/png.h>
 
+#ifdef HAVE_LCMS2_H
+#define CMS_DLL
+#include <lcms2.h>
+#endif
+
 void usage()
 {
-  std::cerr << "Usage: blendpng file1 file2 alpha2 [file3 alpha3 ...] output" << std::endl;
+  std::cerr << "Usage: blendpng file1 file2 alpha2 [file3 alpha3 ...] outfile DPI (Blend mode)" << std::endl;
+  std::cerr << "       blendpng infile outfile DPI (Set DPI mode)" << std::endl;
+#ifdef HAVE_LCMS2_H
+  std::cerr << "       blendpng -icc profile infile outfile (Change color space mode)" << std::endl;
+#endif
 }
 
 class PNGImage
@@ -467,6 +477,67 @@ int blend2(int argc, const char *argv[])
 
 ////////////////////////////////////////////////
 
+void chgColSpc(const char *iccpath, const char *inpath, const char *outpath)
+{
+#ifdef HAVE_LCMS2_H
+  PNGImage img;
+  if (!img.read(inpath)) {
+    std::cerr << "Open input :[" << inpath << "] was failed." << std::endl;
+    return;
+  }
+
+  std::cerr << "Image width = " << img.m_nWidth << std::endl;
+  std::cerr << "Image height = " << img.m_nHeight << std::endl;
+  std::cerr << "Image row size = " << img.m_nRowSize << std::endl;
+  std::cerr << "Image depth = " << img.m_nBitDepth << std::endl;
+  std::cerr << "Image color type = " << img.m_nColorType << std::endl;
+
+  int height = img.m_nHeight;
+  int width = img.m_nWidth;
+  
+  //////////
+
+  cmsHPROFILE hInProf1 = cmsCreate_sRGBProfile();
+
+  // open the icc file
+  cmsHPROFILE hOutProf1 = cmsOpenProfileFromFile(iccpath, "r");
+  if (hOutProf1==NULL) {
+    std::cerr << "Open input ICC :[" << iccpath << "] was failed." << std::endl;
+    return;
+  }
+
+  cmsHTRANSFORM hTr1 = cmsCreateTransform(hInProf1,
+                                          TYPE_RGB_8,
+                                          hOutProf1,
+                                          TYPE_CMYK_8,
+                                          INTENT_PERCEPTUAL, 0);
+
+  cmsHTRANSFORM hTr2 = cmsCreateTransform(hOutProf1,
+                                          TYPE_CMYK_8,
+                                          hInProf1,
+                                          TYPE_RGB_8,
+                                          INTENT_PERCEPTUAL, 0);
+
+  int i,j;
+
+  std::vector<unsigned char> cmykbuf(width * 4);
+  for (i=0; i<height; ++i) {
+    cmsDoTransform(hTr1, img.m_ppImage[i],
+                   &cmykbuf[0],
+                   width);
+
+    cmsDoTransform(hTr2,
+                   &cmykbuf[0],
+                   img.m_ppImage[i],
+                   width);
+  }
+
+  img.write(outpath);
+#endif
+}
+
+////////////////////////////////////////////////
+
 int main(int argc, const char *argv[])
 {
   std::cerr << "=======================" << std::endl;
@@ -485,6 +556,11 @@ int main(int argc, const char *argv[])
     return 0;
   }
 
+  if (argc==5 && 
+      std::string(argv[1])=="-icc") {
+    chgColSpc(argv[2], argv[3], argv[4]);
+  }
+  
   return blend1(argc, argv);
   // return blend2(argc, argv);
 
