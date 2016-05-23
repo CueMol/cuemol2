@@ -202,6 +202,7 @@ PovRender.prototype.makePovFileImpl = function (nSceID, nVwID)
     dd("write inc: " + incFileName);
     
     exporter.useClipZ = this.mbClip;
+    exporter.perspective = !this.bOrtho;
 
     if (this.mbPostBlend)
       exporter.usePostBlend = true;

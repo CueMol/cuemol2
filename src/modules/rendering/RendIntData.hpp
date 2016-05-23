@@ -52,6 +52,10 @@ namespace render {
     /// Clipping plane (negative value: no clipping)
     double m_dClipZ;
 
+    /// projection mode (true=perspective/false=orthographic)
+    bool m_bPerspec;
+
+    /// XXX: only used in warabi project writer
     /// style name list of Renderer used for this rendering
     LString m_styleNames;
 
@@ -243,8 +247,7 @@ namespace render {
 
     /////////////////////////////////////////////////
     // workarea for silhouette/edge extraction
-  //private:
-  public:
+  private:
     
     /// camera position
     double m_dViewDist;
@@ -276,7 +279,17 @@ namespace render {
     /// Build vertex-visibility list using AABB tree (m_pTree)
     void buildVertVisList();
 
+    bool isVertVisible(const Vector4D &vert,
+                       int iv);
+    bool isVertSilVisible(const Vector4D &vert,
+                          int iv);
+
+    bool isVertSilVisible2(const Vector4D &vert,
+                           int iv1, int iv2);
+
   public:
+
+    void setSilhMode(bool b) { m_bSilhouette = b; }
 
     void calcSilEdgeLines(double dViewDist, double dnangl);
 
@@ -306,6 +319,7 @@ namespace render {
     /////////////////////////////////////////////////
 
   public:
+    /// XXX: only used in warabi project writer
     const LString &getStyleNames() const {
       return m_styleNames;
     }

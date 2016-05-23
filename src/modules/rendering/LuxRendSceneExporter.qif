@@ -19,8 +19,14 @@ runtime_class LuxRendSceneExporter extends SceneExporter
   ////////////////////
   // Property definition
 
-  // /// scale (1 angstrom <--> 1 mm)
-  // property real scale => m_scale;
+  /// halt condition (sample per pixel)
+  property integer haltspp => m_nHaltSPP;
+
+  /// Base name for image output (empty-->use default/same as lxs file)
+  property string outputbase => m_sOutputBase;
+
+  /// Film output options (tonemapping param, etc)
+  property string filmopts => m_sFilmOpts;
 
 };
 
