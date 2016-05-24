@@ -16,6 +16,8 @@
 #include <qlib/LDOM2Stream.hpp>
 #include <qlib/ObjectManager.hpp>
 
+#include <qsys/SysConfig.hpp>
+
 using namespace qsys;
 using qlib::LDom2Node;
 using gfx::SolidColor;
@@ -253,6 +255,19 @@ LString StyleSet::getStrDataNamesJSON(const LString &dbname, const LString &cat,
 
   if (bParen)
 	  rval += "]";
+  return rval;
+}
+
+LString StyleSet::getPath(const LString &key) const
+{
+  if (!hasStrData("path", key))
+    return LString();
+
+  LString dbval = getStrData("path", key);
+
+  SysConfig *pconf = SysConfig::getInstance();
+  LString rval = pconf->convPathName(dbval);
+  
   return rval;
 }
 

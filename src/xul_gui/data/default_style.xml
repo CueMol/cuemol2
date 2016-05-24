@@ -2,6 +2,8 @@
 
 <styles id="system">
 
+  <path id="icc_profile_dir" value="%%CONFDIR%%/data/icc_profiles"/>
+
   <!-- Mouse Configuration Styles -->
   <style id="DefaultViewInConf" type="view" desc="Default"
     conf_rotx = "LBUTTON|MOUSE_X"

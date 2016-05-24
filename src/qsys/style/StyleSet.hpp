@@ -167,6 +167,10 @@ namespace qsys {
       return getStrDataNamesJSON("string", cat, true);
     }
 
+    /// special access method for path category string data
+    /// (string is separated by comma and %%CONFDIR%% is replaced with conf dir path)
+    LString getPath(const LString &key) const;
+
     //////////////////////////
     // Structured data methods
 
