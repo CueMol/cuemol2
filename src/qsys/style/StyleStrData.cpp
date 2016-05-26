@@ -8,6 +8,8 @@
 #include "StyleMgr.hpp"
 #include "StyleSet.hpp"
 
+#include <qsys/SysConfig.hpp>
+
 using namespace qsys;
 using qlib::LDom2Node;
 
@@ -43,6 +45,30 @@ LString StyleMgr::getStrData(const LString &cat, const LString &key, qlib::uid_t
   LString ckey = StyleSet::makeStrDataKey("string", cat, key);
   return getStrImpl(ckey, nScopeID);
 }
+
+int StyleMgr::getMultiPath(const LString &akey, qlib::uid_t nScopeID, std::list<LString> &ls)
+{
+  // LString ckey = StyleSet::makeStrDataKey("string", "path", akey);
+  int nret = 0;
+
+  StyleList *pSL = getCreateStyleList(nScopeID);
+
+  BOOST_FOREACH(StyleList::value_type pSet, *pSL) {
+    LString rval = pSet->getPath(akey);
+    if (!rval.isEmpty()) {
+      ls.push_back(rval);
+      ++nret;
+    }
+  }  
+
+  // check global context
+  if (nScopeID!=qlib::invalid_uid) {
+    nret += getMultiPath(akey, qlib::invalid_uid, ls);
+  }
+  
+  return nret;
+}
+
 
 // TO DO: remove impl (use StyleSet method)
 LString StyleMgr::getStrData(const LString &cat, const LString &key,

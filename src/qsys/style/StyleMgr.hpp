@@ -193,9 +193,15 @@ namespace qsys {
     //////////////////////////////////////////////////////////////////////
     // String data methods
 
+    /// Retrieve the rendering-type specific configuration by key name (e.g. preamble, etc)
     LString getConfig(const LString &key, const LString &rend_type);
 
+    /// Retrieve the string data by key name (e.g. selection, etc)
     LString getStrData(const LString &cat, const LString &key, qlib::uid_t nScopeID);
+
+    /// Special access method for path category string data
+    /// (string is separated by comma and %%CONFDIR%% is replaced with conf dir path)
+    int getMultiPath(const LString &key, qlib::uid_t nScopeID, std::list<LString> &ls);
 
     /// Get string definitions (for GUI)
     LString getStrDataDefsJSON(const LString &cat,

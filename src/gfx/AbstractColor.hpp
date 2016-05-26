@@ -43,17 +43,24 @@ namespace gfx {
     ///////////////////////////
     // Common access interfaces
 
-    virtual int r() const =0;
-    virtual int g() const =0;
-    virtual int b() const =0;
-    virtual int a() const =0;
-
     virtual quint32 getCode() const =0;
     
     virtual LString getMaterial() const =0;
 
     virtual bool equals(const AbstractColor &c) const =0;
     
+    // these methods have default implementation to use getCode() method,
+    // but can be overloaded for performance
+    virtual int r() const;
+    virtual int g() const;
+    virtual int b() const;
+    virtual int a() const;
+
+    // access interface for the rendering device
+
+    /// Get color after conversion for proofing
+    virtual quint32 getDevCode(qlib::uid_t ctxtid) const;
+
     ///////////////////////////
 
     double fr() const {

@@ -154,6 +154,14 @@ runtime_class Scene
   object<AnimMgr$> getAnimMgr();
 
   ////////////////////
+  // Color management & CMYK proofing
+  property boolean usecmykproof => redirect(isUseCMYKProofing, setUseCMYKProofing);
+  default usecmykproof = false;
+
+  property string iccfilename => redirect(getIccFileName, setIccFileName);
+  default iccfilename = "";
+
+  ////////////////////
   // Event
 
   integer addListener(object<LScrCallBack$>);

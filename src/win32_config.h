@@ -60,4 +60,6 @@
 #define __STDC_LIMIT_MACROS
 #define __STDC_CONSTANT_MACROS
 
+#define HAVE_LCMS2_H 1
+
 #endif

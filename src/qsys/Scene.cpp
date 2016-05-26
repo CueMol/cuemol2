@@ -116,6 +116,7 @@ Scene::Scene()
 
   m_nActiveObjID = qlib::invalid_uid;
   m_nActiveViewID = qlib::invalid_uid;
+  m_nActiveRendID = qlib::invalid_uid;
 
   MB_DPRINTLN("Scene (%d) created.", m_nUID);
 }
@@ -1894,4 +1895,38 @@ void Scene::forceEmbed()
 
 }
 
+void Scene::setIccFileName(const LString &fn)
+{
+  if (fn.isEmpty()) {
+    m_cmsxfm.reset();
+    m_iccFileName = LString();
+    return;
+  }
+
+  StyleMgr *pMgr = StyleMgr::getInstance();
+  std::list<LString> ls;
+  pMgr->getMultiPath("icc_profile_dir", getUID(), ls);
+
+  fs::path fname(fn.c_str()), iccpath;
+
+  BOOST_FOREACH (const LString &pathstr, ls) {
+    fs::path spath(pathstr.c_str());
+    spath /= fname;
+    if (fs::is_regular_file(spath)) {
+      iccpath = spath;
+      break;
+    }
+  }
+
+  if (!fs::is_regular_file(iccpath)) {
+    MB_THROW(qlib::RuntimeException, "icc profile not found: "+fn);
+    return;
+  }
+
+  m_cmsxfm.loadIccFile(iccpath.string());
+
+  LOG_DPRINTLN("Load ICC profile: %s OK", iccpath.string().c_str());
+
+  m_iccFileName = fn;
+}
 

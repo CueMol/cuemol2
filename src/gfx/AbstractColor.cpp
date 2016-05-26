@@ -18,6 +18,31 @@ AbstractColor::~AbstractColor()
   //LOG_DPRINTLN("AbstractColor(%p) destructed\n", this);
 }
 
+int AbstractColor::r() const
+{
+  return getRCode(getCode());
+}
+
+int AbstractColor::g() const
+{
+  return getGCode(getCode());
+}
+
+int AbstractColor::b() const
+{
+  return getBCode(getCode());
+}
+
+int AbstractColor::a() const
+{
+  return getACode(getCode());
+}
+
+quint32 AbstractColor::getDevCode(qlib::uid_t ctxtid) const
+{
+  return getCode();
+}
+
 ////////////////////////////////
 
 void AbstractColor::HSBtoRGB(double hue, double saturation, double brightness,

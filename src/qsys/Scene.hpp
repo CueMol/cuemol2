@@ -15,6 +15,7 @@
 #include <qlib/LPropEvent.hpp>
 
 #include <gfx/AbstractColor.hpp>
+#include <gfx/CmsXform.hpp>
 
 #include "Object.hpp"
 #include "ObjectEvent.hpp"
@@ -245,10 +246,6 @@ namespace qsys {
       return m_nActiveObjID;
     }
 
-    // ObjectPtr getActiveObj() const {
-    // return getObject(m_nActiveObjID);
-    // }
-
     //
     // Scripting interface wrapper
     //
@@ -263,6 +260,11 @@ namespace qsys {
     /// Get scene information in JSON format (w/ rend groups)
     LString getSceneDataJSON(bool bGroup = true) const;
 
+  private:
+    // Object Implementation
+    bool registerObjectImpl(ObjectPtr robj);
+    
+  public:
     ////////////////////////////////////////////////////////////
     // View manager
 
@@ -540,12 +542,26 @@ namespace qsys {
     /// Show debug dump to the debug stream
     void dump() const;
 
-  private:
-
     ////////////////////////////////////////////////////////////
-    // Implementation
+    // color management
+  private:
+    /// CMYK proofing flag
+    bool m_bUseCMYKProofing;
 
-    bool registerObjectImpl(ObjectPtr robj);
+    /// icc profile file name
+    LString m_iccFileName;
+
+    /// color transformation object
+    gfx::CmsXform m_cmsxfm;
+
+  public:
+    bool isUseCMYKProofing() const { return m_bUseCMYKProofing; }
+    void setUseCMYKProofing(bool b) { m_bUseCMYKProofing = b; }
+    
+    const LString &getIccFileName() const { return m_iccFileName; }
+    void setIccFileName(const LString &fn);
+
+    const gfx::CmsXform &getCmsXformObj() const { return m_cmsxfm; }
 
   };
 
