@@ -711,6 +711,12 @@
     <ClCompile Include="..\..\src\qsys\style\StyleSupports.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\gfx\ColProfMgr.cpp">
+      <Filter>gfx</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\gfx\CmsXform.cpp">
+      <Filter>gfx</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\qsys\AbstractColor.hpp">

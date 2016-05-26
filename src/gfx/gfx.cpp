@@ -6,6 +6,7 @@
 
 #include "GradientColor.hpp"
 #include "ColCompiler.hpp"
+#include "ColProfMgr.hpp"
 
 extern void gfx_regClasses();
 
@@ -17,6 +18,7 @@ namespace gfx {
     GradientColor::regClass();
     TextRenderManager::init();
     ColCompiler::init();
+    ColProfMgr::init();
     return true;
   }
 
@@ -24,6 +26,7 @@ namespace gfx {
   {
     TextRenderManager::fini();
     ColCompiler::fini();
+    ColProfMgr::fini();
   }
 
 }

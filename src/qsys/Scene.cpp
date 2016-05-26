@@ -27,6 +27,7 @@
 #include <qlib/LByteArray.hpp>
 
 #include <gfx/DisplayContext.hpp>
+#include <gfx/ColProfMgr.hpp>
 #include "style/StyleMgr.hpp"
 #include "style/StyleFile.hpp"
 #include "style/StyleSet.hpp"
@@ -118,6 +119,8 @@ Scene::Scene()
   m_nActiveViewID = qlib::invalid_uid;
   m_nActiveRendID = qlib::invalid_uid;
 
+  gfx::ColProfMgr::sRegUID(m_nUID);
+
   MB_DPRINTLN("Scene (%d) created.", m_nUID);
 }
 
@@ -146,12 +149,14 @@ void Scene::init()
 
 Scene::~Scene()
 {
-   removePropListener(this);
-  clearAll();
+  gfx::ColProfMgr::sUnregUID(m_nUID);
 
+  removePropListener(this);
+  clearAll();
+  
   m_pAnimMgr = qlib::LScrSp<AnimMgr>();
 
- delete m_pEvtCaster;
+  delete m_pEvtCaster;
   qlib::ObjectManager::sUnregObj(m_nUID);
 
   MB_DPRINTLN("Scene (%d/%p) destructed", m_nUID, this);
@@ -1895,17 +1900,23 @@ void Scene::forceEmbed()
 
 }
 
+using gfx::ColProfMgr;
+using gfx::CmsXform;
+
 void Scene::setIccFileName(const LString &fn)
 {
+  ColProfMgr *pMgr = ColProfMgr::getInstance();
+  CmsXform *pXfm = pMgr->getCmsByID(getUID());
+
   if (fn.isEmpty()) {
-    m_cmsxfm.reset();
+    pXfm->reset();
     m_iccFileName = LString();
     return;
   }
 
-  StyleMgr *pMgr = StyleMgr::getInstance();
+  StyleMgr *pSMgr = StyleMgr::getInstance();
   std::list<LString> ls;
-  pMgr->getMultiPath("icc_profile_dir", getUID(), ls);
+  pSMgr->getMultiPath("icc_profile_dir", getUID(), ls);
 
   fs::path fname(fn.c_str()), iccpath;
 
@@ -1923,7 +1934,7 @@ void Scene::setIccFileName(const LString &fn)
     return;
   }
 
-  m_cmsxfm.loadIccFile(iccpath.string());
+  pXfm->loadIccFile(iccpath.string());
 
   LOG_DPRINTLN("Load ICC profile: %s OK", iccpath.string().c_str());
 

@@ -139,15 +139,24 @@ namespace qlib {
     return (_Type)(((long)(x*10))/1.0e1);
   }
 
-  /**
-    Functor to delete pointers, for std::for_each()
-   */
+  ///
+  ///  Functor to delete pointers, for std::for_each()
+  ///
   template <class _T>
   class delete_ptr
   {
   public:
     void operator() (_T p) {
       delete p;
+    }
+  };
+
+  template <class _T>
+  class delete_ptr2
+  {
+  public:
+    void operator() (_T p) {
+      delete p.second;
     }
   };
 

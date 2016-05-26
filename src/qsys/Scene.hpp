@@ -14,8 +14,8 @@
 #include <qlib/LScrCallBack.hpp>
 #include <qlib/LPropEvent.hpp>
 
-#include <gfx/AbstractColor.hpp>
-#include <gfx/CmsXform.hpp>
+// #include <gfx/AbstractColor.hpp>
+// #include <gfx/CmsXform.hpp>
 
 #include "Object.hpp"
 #include "ObjectEvent.hpp"
@@ -551,8 +551,8 @@ namespace qsys {
     /// icc profile file name
     LString m_iccFileName;
 
-    /// color transformation object
-    gfx::CmsXform m_cmsxfm;
+    // /// color transformation object
+    // gfx::CmsXform m_cmsxfm;
 
   public:
     bool isUseCMYKProofing() const { return m_bUseCMYKProofing; }
@@ -561,7 +561,7 @@ namespace qsys {
     const LString &getIccFileName() const { return m_iccFileName; }
     void setIccFileName(const LString &fn);
 
-    const gfx::CmsXform &getCmsXformObj() const { return m_cmsxfm; }
+    // const gfx::CmsXform &getCmsXformObj() const { return m_cmsxfm; }
 
   };
 
