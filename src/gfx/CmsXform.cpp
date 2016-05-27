@@ -104,7 +104,8 @@ void CmsXform::doxform(quint32 incode, quint32 &routcode) const
 {
 #ifdef HAVE_LCMS2_H
   if (m_pimpl->m_hTr1==NULL || m_pimpl->m_hTr2==NULL) {
-    MB_THROW(qlib::RuntimeException, "profile not loaded");
+    //MB_THROW(qlib::RuntimeException, "profile not loaded");
+    routcode = incode;
     return;
   }
   

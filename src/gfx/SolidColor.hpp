@@ -83,11 +83,13 @@ namespace gfx {
     void setA(int r);
 
     void setAlpha(double alpha) {
-      setA(int(alpha * 255.0 + 0.5));
+      //setA(int(alpha * 255.0 + 0.5));
+      setA( convF2I(alpha) );
     }
 
     double getAlpha() const {
-      return double( a()/255.0 );
+      //return double( a()/255.0 );
+      return convI2F( a() );
     }
 
     void setMaterial(const LString &mat)

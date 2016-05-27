@@ -35,6 +35,7 @@
 #include <gfx/SolidColor.hpp>
 #include <gfx/Mesh.hpp>
 #include <gfx/DrawAttrArray.hpp>
+#include <gfx/ColProfMgr.hpp>
 
 #include <qsys/Scene.hpp>
 #include <qsys/SceneManager.hpp>
@@ -187,6 +188,7 @@ void OglDisplayContext::startEdgeSection()
     if (m_pEdgePO==NULL)
       return;
 
+    // TO DO: conv to devcolor
     double r=.0,g=.0,b=.0;
     ColorPtr pcol = getEdgeLineColor();
     if (!pcol.isnull()) {
@@ -351,9 +353,13 @@ void OglDisplayContext::color(const ColorPtr &c)
 {
   //::glColor4ub(c->r(), c->g(), c->b(), c->a());
 
-  m_color.x() = c->fr();
-  m_color.y() = c->fg();
-  m_color.z() = c->fb();
+  quint32 devcolc;
+  gfx::ColProfMgr *pCPM = gfx::ColProfMgr::getInstance();
+  pCPM->doxform(m_nSceneID, c->getCode(), devcolc);
+
+  m_color.x() = gfx::getFR(devcolc); //c->fr();
+  m_color.y() = gfx::getFG(devcolc); //c->fg();
+  m_color.z() = gfx::getFB(devcolc); //c->fb();
   if (useShaderAlpha())
     m_color.w() = c->fa();
   else
@@ -375,9 +381,13 @@ void OglDisplayContext::color(const ColorPtr &c)
 
 void OglDisplayContext::color(double r, double g, double b, double a)
 {
-  m_color.x() = r;
-  m_color.y() = g;
-  m_color.z() = b;
+  Vector4D vcol(r,g,b);
+  gfx::ColProfMgr *pCPM = gfx::ColProfMgr::getInstance();
+  pCPM->doxform(m_nSceneID, vcol, m_color);
+
+  //m_color.x() = r;
+  //m_color.y() = g;
+  //m_color.z() = b;
 
   if (useShaderAlpha())
     m_color.w() = a;
@@ -389,9 +399,13 @@ void OglDisplayContext::color(double r, double g, double b, double a)
 
 void OglDisplayContext::color(double r, double g, double b)
 {
-  m_color.x() = r;
-  m_color.y() = g;
-  m_color.z() = b;
+  Vector4D vcol(r,g,b);
+  gfx::ColProfMgr *pCPM = gfx::ColProfMgr::getInstance();
+  pCPM->doxform(m_nSceneID, vcol, m_color);
+
+  //m_color.x() = r;
+  //m_color.y() = g;
+  //m_color.z() = b;
 
   if (useShaderAlpha())
     m_color.w() = 1.0;
@@ -623,6 +637,7 @@ void OglDisplayContext::drawPixels(const Vector4D &pos,
                                    const gfx::PixelBuffer &data,
                                    const gfx::ColorPtr &acol)
 {
+  // TO DO: use devcolor
   gfx::ColorPtr col = acol;
   if (col.isnull()) {
     //gfx::SolidColor col(m_color);

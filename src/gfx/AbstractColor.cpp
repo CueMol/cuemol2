@@ -11,6 +11,8 @@
 #include <qlib/LDOM2Tree.hpp>
 #include <qlib/PropSpec.hpp>
 
+#include "ColProfMgr.hpp"
+
 using namespace gfx;
 
 AbstractColor::~AbstractColor()
@@ -40,7 +42,13 @@ int AbstractColor::a() const
 
 quint32 AbstractColor::getDevCode(qlib::uid_t ctxtid) const
 {
-  return getCode();
+  ColProfMgr *pMgr = ColProfMgr::getInstance();
+  CmsXform *pxfm = pMgr->getCmsByID(ctxtid);
+  if (pxfm==NULL)
+    return getCode();
+  quint32 rval;
+  pxfm->doxform(getCode(), rval);
+  return rval;
 }
 
 ////////////////////////////////

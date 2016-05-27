@@ -19,9 +19,20 @@ using qlib::LString;
 
 namespace gfx {
 
-  /**
-     Abstract color class
-  */
+  inline double convB2F(qbyte color) {
+    return double(color)/255.0;
+  }
+  inline double convI2F(int color) {
+    return double(color)/255.0;
+  }
+  inline int convF2I(double color) {
+    return int(color * 255.0 + 0.5);
+  }
+  
+
+  ///
+  /// Abstract color class
+  ///
   class GFX_API AbstractColor : public qlib::LSimpleCopyScrObject
   {
     MC_SCRIPTABLE;
@@ -64,19 +75,19 @@ namespace gfx {
     ///////////////////////////
 
     double fr() const {
-      return double(r())/255.0;
+      return convI2F(r());
     }
     
     double fg() const {
-      return double(g())/255.0;
+      return convI2F(g());
     }
     
     double fb() const {
-      return double(b())/255.0;
+      return convI2F(b());
     }
     
     double fa() const {
-      return double(a())/255.0;
+      return convI2F(a());
     }
 
     ////////////////////////////////////////////
@@ -125,13 +136,29 @@ namespace gfx {
   inline qbyte getACode(quint32 color) {
     return (color >> 24) & 0xff;
   }
+  
+  inline double getFR(quint32 color) {
+    return convB2F( getRCode(color) );
+  }
+
+  inline double getFG(quint32 color) {
+    return convB2F( getGCode(color) );
+  }
+  
+  inline double getFB(quint32 color) {
+    return convB2F( getBCode(color) );
+  }
+  
+  inline double getFA(quint32 color) {
+    return convB2F( getACode(color) );
+  }
 
   inline quint32 mixAlpha(quint32 ccode, double alpha)
   {
-	  int r = gfx::getRCode(ccode);
-	  int g = gfx::getGCode(ccode);
-	  int b = gfx::getBCode(ccode);
-	  int a = gfx::getACode(ccode);
+    int r = gfx::getRCode(ccode);
+    int g = gfx::getGCode(ccode);
+    int b = gfx::getBCode(ccode);
+    int a = gfx::getACode(ccode);
     int aa = int( double(a) * alpha );
     return makeRGBACode(r,g,b,aa);
 

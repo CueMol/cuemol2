@@ -9,11 +9,13 @@
 #include "gfx.hpp"
 
 #include <qlib/SingletonBase.hpp>
+#include <qlib/Vector4D.hpp>
 #include "CmsXform.hpp"
 
 namespace gfx {
 
   using qlib::LString;
+  using qlib::Vector4D;
 
   //
   //  Color profile manager class
@@ -40,6 +42,9 @@ namespace gfx {
     void unregCms(qlib::uid_t uid);
 
     CmsXform *getCmsByID(qlib::uid_t uid) const;
+
+    void doxform(qlib::uid_t uid, const quint32 &incol, quint32 &outcol) const;
+    void doxform(qlib::uid_t uid, const Vector4D &incol, Vector4D &outcol) const;
 
   private:
     
