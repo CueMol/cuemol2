@@ -276,6 +276,24 @@ void writeDPI(const char *inpath, const char *outpath, const char *sdpi)
   img.write(outpath);
 }
 
+void solvebeta(std::vector<double> &alphavec)
+{
+  std::vector<double> betavec = alphavec;
+  int i,j,k, nblend = alphavec.size();
+
+  for (i=nblend-1; i>=0; --i) {
+    alphavec[i] = betavec[i];
+    for (j=i+1; j<nblend; ++j) {
+      alphavec[i] /= (1.0-alphavec[j]);
+    }
+  }
+
+  for (i=0; i<nblend; ++i) {
+    std::cerr << "b" << i << "=" << betavec[i] << " --> a" << i << "=" << alphavec[i] << std::endl;
+  }
+}
+
+
 int blend1(int argc, const char *argv[])
 {
   int ind;
@@ -340,6 +358,22 @@ int blend1(int argc, const char *argv[])
   std::vector<PNGImage *> images;
   // images.push_back(&img_bg);
 
+  std::vector<double> alphavec(nblend);
+
+  for (ind=0; ind<nblend; ++ind) {
+    std::string salpha = argv[3+ind*2];
+    bool res;
+    double alpha = my_strtod(salpha.c_str(), res);
+    if (!res) {
+      std::cerr << "Invalid alpha value: " << salpha << std::endl;
+      return false;
+    }
+    alphavec[ind] = alpha;
+  }
+
+  // perform conversion from beta to alpha (blending coefficient) values
+  solvebeta(alphavec);
+
   for (ind=0; ind<nblend; ++ind) {
 
     std::string file2 = argv[2+ind*2];
@@ -382,12 +416,14 @@ int blend1(int argc, const char *argv[])
       return -1;
     }
 
-    pimg2->allocAlpha();
+    //pimg2->allocAlpha();
+    pimg2->m_alpha = alphavec[ind];
     images.push_back(pimg2);
   } // for
     
   // std::sort(images.begin(), images.end(), compare_alpha);
 
+  /*
   for (int y = 0; y < h; ++y) {
     for (int x = 0; x < w; ++x) {
 
@@ -398,9 +434,6 @@ int blend1(int argc, const char *argv[])
           std::cerr << "bg(1,1)=" << ic << ":" << int(bg[ic]) << std::endl;
         }
       }
-      //bg[0] = img_bg.getAt(x, y, 0);
-      //bg[1] = img_bg.getAt(x, y, 1);
-      //bg[2] = img_bg.getAt(x, y, 2);
 
       std::vector<PNGImage *>::const_iterator iter = images.begin();
       for (; iter!=images.end(); ++iter) {
@@ -422,7 +455,9 @@ int blend1(int argc, const char *argv[])
       }
 
     }
-  }
+  }*/
+
+  // std::vector<float> accumbuf(w*h*nComp);
 
   for (int y = 0; y < h; ++y) {
     for (int x = 0; x < w; ++x) {
