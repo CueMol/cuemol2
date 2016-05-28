@@ -119,9 +119,9 @@ void CmsXform::doxform(quint32 incode, quint32 &routcode) const
   cmsDoTransform(static_cast<cmsHTRANSFORM>(m_pimpl->m_hTr1), inbuf, cmykbuf, 1);
   cmsDoTransform(static_cast<cmsHTRANSFORM>(m_pimpl->m_hTr2), cmykbuf, inbuf, 1);
   
-  inbuf[3] = getACode(incode);
-
-  routcode = *((quint32 *)inbuf);
+  //inbuf[3] = getACode(incode);
+  //routcode = *((quint32 *)inbuf);
+  routcode = makeRGBACode(inbuf[0], inbuf[1], inbuf[2], getACode(incode));
 #else
   routcode = incode;
 #endif

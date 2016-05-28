@@ -13,7 +13,7 @@
 
 using namespace gfx;
 
-ColorTable::elem_t ColorTable::newColor(const ColorPtr &pCol, const LString &defmat)
+ColorTable::elem_t ColorTable::newColor(const ColorPtr &pCol, const LString &defmat, qlib::uid_t nSceneID)
 {
   elem_t rval;
 
@@ -39,8 +39,8 @@ ColorTable::elem_t ColorTable::newColor(const ColorPtr &pCol, const LString &def
 
     // simple gradient
     // canonicalize: cid1<cid2
-    rval.cid1 = clutNewColorImpl(pc1, mat1);
-    rval.cid2 = clutNewColorImpl(pc2, mat2);
+    rval.cid1 = clutNewColorImpl(pc1, mat1, nSceneID);
+    rval.cid2 = clutNewColorImpl(pc2, mat2, nSceneID);
     if (rval.cid1>rval.cid2) {
       std::swap(rval.cid1, rval.cid2);
       rval.rho = convRho(rho, true);
@@ -60,22 +60,22 @@ ColorTable::elem_t ColorTable::newColor(const ColorPtr &pCol, const LString &def
       mat1 = defmat;
 
     rval.cid2 = -1;
-    rval.cid1 = clutNewColorImpl(pCol, mat1);
+    rval.cid1 = clutNewColorImpl(pCol, mat1, nSceneID);
     rval.rho = 0;
   }
   return rval;
 }
 
-int ColorTable::clutNewColorImpl(const ColorPtr &pCol, const LString &mtr)
+int ColorTable::clutNewColorImpl(const ColorPtr &pCol, const LString &mtr, qlib::uid_t nSceneID)
 {
   int i;
   int nsize = m_clut.size();
 
-  //int aaa = pCol->a();
-  //if (aaa!=255) {
-  //MB_DPRINTLN("XXX %08X", aaa);
-  //}
-  quint32 ccode = pCol->getCode();
+  quint32 ccode;
+  if (nSceneID==qlib::invalid_uid)
+    ccode = pCol->getCode();
+  else
+    ccode= pCol->getDevCode(nSceneID);
 
   // LString mat = pCol->getMaterial();
   ClutElem ent(ccode, mtr);

@@ -530,7 +530,7 @@ void BallStickRenderer::renderShaderImpl()
       MolAtomPtr pAtom = pMol->getAtom(aid);
       if (pAtom.isnull()) continue; // ignore errors
 
-      m_pSlSph->setData(i, pAtom->getPos(), m_sphr, ColSchmHolder::getColor(pAtom));
+      m_pSlSph->setData(i, pAtom->getPos(), m_sphr, ColSchmHolder::getColor(pAtom), getSceneID());
       ++i;
     }
   }
@@ -591,15 +591,15 @@ void BallStickRenderer::renderShaderImpl()
 
       if ( pcol1->equals(*pcol2.get()) ) {
         // same color --> one bond
-        m_pSlCyl->setData(i, pos1, pos2, m_bondw, pcol1);
+        m_pSlCyl->setData(i, pos1, pos2, m_bondw, pcol1, getSceneID());
         ++i;
       }
       else {
         // different color --> two bonds
         const Vector4D mpos = (pos1 + pos2).divide(2.0);
-        m_pSlCyl->setData(i, pos1, mpos, m_bondw, pcol1);
+        m_pSlCyl->setData(i, pos1, mpos, m_bondw, pcol1, getSceneID());
         ++i;
-        m_pSlCyl->setData(i, mpos, pos2, m_bondw, pcol2);
+        m_pSlCyl->setData(i, mpos, pos2, m_bondw, pcol2, getSceneID());
         ++i;
       }
 

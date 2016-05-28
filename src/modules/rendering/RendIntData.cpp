@@ -325,14 +325,22 @@ RendIntData::ColIndex RendIntData::convCol()
 {
   const ColorPtr &pcol = m_pdc->getCurrentColor();
   LString defmtr = m_pdc->getMaterial();
-  return m_clut.newColor(pcol, defmtr);
+
+  qsys::StyleMgr *pPM = qsys::StyleMgr::getInstance();
+  qlib::uid_t nScopeID = pPM->getContextID();
+
+  return m_clut.newColor(pcol, defmtr, nScopeID);
 }
 
 /// Convert color to internal representation (2)
 RendIntData::ColIndex RendIntData::convCol(const ColorPtr &pcol)
 {
   LString defmtr = m_pdc->getMaterial();
-  return m_clut.newColor(pcol, defmtr);
+
+  qsys::StyleMgr *pPM = qsys::StyleMgr::getInstance();
+  qlib::uid_t nScopeID = pPM->getContextID();
+
+  return m_clut.newColor(pcol, defmtr, nScopeID);
 }
 
 // Create and return the clipped mesh object by m_dClipZ

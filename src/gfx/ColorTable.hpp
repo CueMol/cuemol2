@@ -115,7 +115,7 @@ public:
 
   int size() const { return m_clut.size(); } // m_nClutTop; }
 
-  elem_t newColor(const ColorPtr &pCol, const LString &mtr);
+  elem_t newColor(const ColorPtr &pCol, const LString &mtr, qlib::uid_t nSceneID = qlib::invalid_uid);
 
   static inline
   unsigned char convRho(double rho, bool inv=false) {
@@ -130,7 +130,7 @@ public:
   //}
 
 private:
-  int clutNewColorImpl(const ColorPtr &pCol, const LString &mtr);
+  int clutNewColorImpl(const ColorPtr &pCol, const LString &mtr, qlib::uid_t nSceneID);
 
 public:  
 

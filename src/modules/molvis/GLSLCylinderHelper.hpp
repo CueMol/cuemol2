@@ -98,7 +98,7 @@ namespace molvis {
       sphdata.setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
     }
 
-    void setData(int ind, const Vector4D &pos1, const Vector4D &pos2, double rad, ColorPtr pc)
+    void setData(int ind, const Vector4D &pos1, const Vector4D &pos2, double rad, ColorPtr pc, qlib::uid_t nSceneID = qlib::invalid_uid)
     {
       Vector4D dir = pos2-pos1;
 
@@ -123,10 +123,12 @@ namespace molvis {
       data.diry = (qfloat32) dir.y();
       data.dirz = (qfloat32) dir.z();
       data.rad = (qfloat32) rad;
-      data.r = (qbyte) pc->r();
-      data.g = (qbyte) pc->g();
-      data.b = (qbyte) pc->b();
-      data.a = (qbyte) pc->a();
+
+      quint32 devcode = pc->getDevCode(nSceneID);
+      data.r = (qbyte) gfx::getRCode(devcode);
+      data.g = (qbyte) gfx::getGCode(devcode);
+      data.b = (qbyte) gfx::getBCode(devcode);
+      data.a = (qbyte) gfx::getACode(devcode);
 
       for (j=0; j<2; ++j) {
         sphdata.at(i) = data;

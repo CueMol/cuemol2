@@ -321,7 +321,7 @@ void CPK2Renderer::renderShaderImpl()
       MolAtomPtr pAtom = pMol->getAtom(aid);
       if (pAtom.isnull()) continue; // ignore errors
 
-      m_pSlSph->setData(i, pAtom->getPos(), getVdWRadius(pAtom), ColSchmHolder::getColor(pAtom));
+      m_pSlSph->setData(i, pAtom->getPos(), getVdWRadius(pAtom), ColSchmHolder::getColor(pAtom), getSceneID());
       ++i;
     }
   }

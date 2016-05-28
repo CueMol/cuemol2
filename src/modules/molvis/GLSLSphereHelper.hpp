@@ -94,7 +94,7 @@ namespace molvis {
       sphdata.setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
     }
 
-    void setData(int ind, const Vector4D &pos, double rad, ColorPtr pc)
+    void setData(int ind, const Vector4D &pos, double rad, ColorPtr pc, qlib::uid_t nSceneID = qlib::invalid_uid)
     {
       //qfloat32 dsps[4][2] = ;
       
@@ -108,10 +108,12 @@ namespace molvis {
       data.ceny = (qfloat32) pos.y();
       data.cenz = (qfloat32) pos.z();
       data.rad = (qfloat32) rad;
-      data.r = (qbyte) pc->r();
-      data.g = (qbyte) pc->g();
-      data.b = (qbyte) pc->b();
-      data.a = (qbyte) pc->a();
+
+      quint32 devcode = pc->getDevCode(nSceneID);
+      data.r = (qbyte) gfx::getRCode(devcode);
+      data.g = (qbyte) gfx::getGCode(devcode);
+      data.b = (qbyte) gfx::getBCode(devcode);
+      data.a = (qbyte) gfx::getACode(devcode);
 
       sphdata.atind(ifc) = i + 0; ++ifc;
       sphdata.atind(ifc) = i + 1; ++ifc;
@@ -141,6 +143,7 @@ namespace molvis {
         if (pdc->getEdgeLineType()!=DisplayContext::ELT_NONE) {
           m_pPO->setUniformF("u_edge", pdc->getEdgeLineWidth());
 
+          // TO DO: use device dependent color!!
           double r=.0,g=.0,b=.0;
           ColorPtr pcol = pdc->getEdgeLineColor();
           if (!pcol.isnull()) {

@@ -353,9 +353,7 @@ void OglDisplayContext::color(const ColorPtr &c)
 {
   //::glColor4ub(c->r(), c->g(), c->b(), c->a());
 
-  quint32 devcolc;
-  gfx::ColProfMgr *pCPM = gfx::ColProfMgr::getInstance();
-  pCPM->doxform(m_nSceneID, c->getCode(), devcolc);
+  quint32 devcolc = c->getDevCode(m_nSceneID);
 
   m_color.x() = gfx::getFR(devcolc); //c->fr();
   m_color.y() = gfx::getFG(devcolc); //c->fg();
