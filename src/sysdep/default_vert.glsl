@@ -76,7 +76,7 @@ vec4 flight(in vec3 normal, in vec4 ecPosition)
   color += Ambient  * gl_Color;
   color += Diffuse  * gl_Color;
   color += Specular * gl_FrontMaterial.specular;
-  //color = clamp( color, 0.0, 1.0 );
+  color = clamp( color, 0.0, 1.0 );
   return color;
 }
 

@@ -19,8 +19,14 @@ void main (void)
   float fog;
   fog = (gl_Fog.end - z) * gl_Fog.scale;
   fog = clamp(fog, 0.0, 1.0);
-  color = vec4(mix( vec3(gl_Fog.color), vec3(color), fog), color.a * frag_alpha);
-  //color = vec4(mix( vec3(gl_Fog.color), vec3(color), fog), color.a);
+
+  float alpha = color.a * frag_alpha;
+  vec3 fogmixed = mix( vec3(gl_Fog.color), vec3(color), fog );
+
+  //color = vec4(mix( vec3(gl_Fog.color), vec3(color), fog), color.a * frag_alpha);
+  //color = vec4(mix( vec3(gl_Fog.color), vec3(color), fog), clamp(color.a, 0.0, 1.0) * frag_alpha);
+  color = vec4(fogmixed, alpha);
+
   gl_FragColor = color;
   
 }
