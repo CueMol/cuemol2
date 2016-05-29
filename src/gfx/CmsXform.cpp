@@ -43,12 +43,12 @@ void CmsXformRep::cleanup()
 //////////////////////////////////////////////
 
 CmsXform::CmsXform()
-     : m_pimpl(MB_NEW detail::CmsXformRep())
+     : m_pimpl(MB_NEW detail::CmsXformRep()), m_bEnabled(true)
 {
 }
 
 CmsXform::CmsXform(const CmsXform &r)
-     : m_pimpl(r.m_pimpl)
+     : m_pimpl(r.m_pimpl), m_bEnabled(r.m_bEnabled)
 {
 }
 
@@ -56,6 +56,7 @@ const CmsXform &CmsXform::operator=(const CmsXform &arg)
 {
   if(&arg!=this){
     m_pimpl = arg.m_pimpl;
+    m_bEnabled = arg.m_bEnabled;
   }
   return *this;
 }
@@ -103,7 +104,8 @@ bool CmsXform::isProfOK() const
 void CmsXform::doxform(quint32 incode, quint32 &routcode) const
 {
 #ifdef HAVE_LCMS2_H
-  if (m_pimpl->m_hTr1==NULL || m_pimpl->m_hTr2==NULL) {
+  if (!m_bEnabled ||
+      m_pimpl->m_hTr1==NULL || m_pimpl->m_hTr2==NULL) {
     //MB_THROW(qlib::RuntimeException, "profile not loaded");
     routcode = incode;
     return;

@@ -42,6 +42,8 @@ namespace gfx {
   private:
     qlib::sp<detail::CmsXformRep> m_pimpl;
     
+    bool m_bEnabled;
+
   public:
     /// default ctor
     CmsXform();
@@ -60,6 +62,9 @@ namespace gfx {
     bool isProfOK() const;
 
     void doxform(quint32 incode, quint32 &routcode) const;
+
+    bool isEnabled() const { return m_bEnabled; }
+    void setEnabled(bool b) { m_bEnabled = b; }
 
   };
   

@@ -48,53 +48,49 @@ using namespace qsys;
 namespace fs = boost::filesystem;
 
 namespace {
-class ScrScEvtLsnr : public SceneEventListener
-{
-private:
-  //qlib::LScrCallBack *m_pCb;
-  qlib::LSCBPtr m_pCb;
-  
-public:
-  ScrScEvtLsnr(qlib::LSCBPtr pcb) : m_pCb(pcb) {}
-  
-  virtual ~ScrScEvtLsnr()
+  // is this used ???
+  class ScrScEvtLsnr : public SceneEventListener
   {
-    MB_DPRINTLN("ScrScEvtLsnr destr %p", this);
-    m_pCb = qlib::LSCBPtr();
-  }
-  
-  void set(qlib::LSCBPtr pcb) { m_pCb = pcb; }
+  private:
+    //qlib::LScrCallBack *m_pCb;
+    qlib::LSCBPtr m_pCb;
 
-  virtual void sceneChanged(SceneEvent &ev)
-  {
-    // avoid frequent event from script calling (TO DO: configurable)
-    int ntype = ev.getType();
-    //if (ntype==SceneEvent::SCE_VIEW_PROPCHG_DRG) return;
-    //if (ntype==SceneEvent::SCE_VIEW_SIZECHG) return;
-    //if (ntype==SceneEvent::SCE_VIEW_ACTIVATED) return;
+  public:
+    ScrScEvtLsnr(qlib::LSCBPtr pcb) : m_pCb(pcb) {}
 
-    qlib::uid_t scid = ev.getSource();
-    qlib::uid_t objid = ev.getTarget();
-    qlib::LVarArgs args(5);
-    
-    // Method name
-    args.at(0).setStringValue("sceneChanged");
-    // type ID of the event
-    args.at(1).setIntValue(ntype);
-    // target scene ID
-    args.at(2).setIntValue(scid);
-    // target object/renderer/view ID
-    args.at(3).setIntValue(objid);
-    // target message/property name
-    args.at(4).setStringValue(ev.getDescr());
-    // // event object (in JSON format)
-    // args.at(5).setStringValue(ev.getJSON());
+    virtual ~ScrScEvtLsnr()
+    {
+      MB_DPRINTLN("ScrScEvtLsnr destr %p", this);
+      m_pCb = qlib::LSCBPtr();
+    }
+
+    void set(qlib::LSCBPtr pcb) { m_pCb = pcb; }
+
+    virtual void sceneChanged(SceneEvent &ev)
+    {
+      int ntype = ev.getType();
+
+      qlib::uid_t scid = ev.getSource();
+      qlib::uid_t objid = ev.getTarget();
+      qlib::LVarArgs args(5);
+
+      // Method name
+      args.at(0).setStringValue("sceneChanged");
+      // type ID of the event
+      args.at(1).setIntValue(ntype);
+      // target scene ID
+      args.at(2).setIntValue(scid);
+      // target object/renderer/view ID
+      args.at(3).setIntValue(objid);
+      // target message/property name
+      args.at(4).setStringValue(ev.getDescr());
+      // // event object (in JSON format)
+      // args.at(5).setStringValue(ev.getJSON());
 
 
-    m_pCb->invoke(args);
-  }
-      
-};
+      m_pCb->invoke(args);
+    }
+  };
 }
 
 Scene::Scene()
@@ -1060,6 +1056,13 @@ void Scene::propChanged(qlib::LPropEvent &ev)
     sev.setPropEvent(&ev);
     fireSceneEvent(sev);
   }
+
+  // check color profile change
+  //  and set update flag to redraw all views
+  if (ev.getName()=="iccfilename" ||
+      ev.getName()=="usecmykproof")
+    setUpdateFlag();
+    
 }
 
 void Scene::objectChanged(ObjectEvent &ev)
@@ -1935,9 +1938,18 @@ void Scene::setIccFileName(const LString &fn)
   }
 
   pXfm->loadIccFile(iccpath.string());
+  pXfm->setEnabled(m_bUseCMYKProofing);
 
   LOG_DPRINTLN("Load ICC profile: %s OK", iccpath.string().c_str());
 
   m_iccFileName = fn;
+}
+
+void Scene::setUseCMYKProofing(bool b)
+{
+  m_bUseCMYKProofing = b;
+  ColProfMgr *pMgr = ColProfMgr::getInstance();
+  CmsXform *pXfm = pMgr->getCmsByID(getUID());
+  pXfm->setEnabled(m_bUseCMYKProofing);
 }
 

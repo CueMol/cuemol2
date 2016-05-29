@@ -76,6 +76,9 @@ namespace qsys {
     /// Style event listener
     virtual void styleChanged(StyleEvent &);
     
+    /// Scene event listener (for detecting color profile change)
+    virtual void sceneChanged(SceneEvent &ev);
+    
   private:
     bool m_bShaderAlpha;
 

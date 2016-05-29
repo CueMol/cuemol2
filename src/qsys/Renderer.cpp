@@ -289,12 +289,16 @@ void Renderer::sceneChanged(SceneEvent &ev)
   if (!getStyleNames().isEmpty())
     m_pStyles->applyStyle(this);
 
+  // XXX 2016/05/29: Scene event has to be handled for detecting
+  //   the color profile change (and resulting redraw)
+/*
   // Scene event is no more required, after the styles are applied.
   // --> Detach from scene events.
   ScenePtr pScene = getScene();
   if (!pScene.isnull())
     pScene->removeListener(this);
-
+*/
+  
   return;
 }
 

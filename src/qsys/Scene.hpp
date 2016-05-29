@@ -556,7 +556,7 @@ namespace qsys {
 
   public:
     bool isUseCMYKProofing() const { return m_bUseCMYKProofing; }
-    void setUseCMYKProofing(bool b) { m_bUseCMYKProofing = b; }
+    void setUseCMYKProofing(bool b);
     
     const LString &getIccFileName() const { return m_iccFileName; }
     void setIccFileName(const LString &fn);

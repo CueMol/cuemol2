@@ -204,3 +204,14 @@ void DispListRenderer::styleChanged(StyleEvent &ev)
   invalidateDisplayCache();
 }
 
+void DispListRenderer::sceneChanged(SceneEvent &ev)
+{
+  super_t::sceneChanged(ev);
+  if (ev.getType()==SceneEvent::SCE_SCENE_PROPCHG) {
+    if (ev.getDescr()=="iccfilename" ||
+        ev.getDescr()=="usecmykproof" ) {
+      invalidateDisplayCache();
+    }
+  }
+}
+
