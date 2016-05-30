@@ -13,6 +13,8 @@ usepybr="--enable-python"
 #usexrbr="--with-xmlrpc=$HOME/proj64/xmlrpc-c"
 usexrbr="--without-xmlrpc"
 
+lcms="--with-lcms=$HOME/proj64/lcms2"
+
 ##
 
 gecko_sdk_dir=$HOME/proj64/xulrunner/xulrunner-39.0-sdk
@@ -44,6 +46,7 @@ $config_scr \
 --disable-static \
 --enable-shared \
 --prefix=$install_dir \
+$lcms \
 $usepybr \
 $usexrbr \
 --with-xulrunner-sdk=$gecko_sdk_dir \

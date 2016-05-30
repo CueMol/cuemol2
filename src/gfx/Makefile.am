@@ -36,6 +36,8 @@ DrawElem.cpp \
 LabelCacheImpl.cpp \
 MultiGradient.cpp \
 SphereSet.cpp \
+CmsXform.cpp \
+ColProfMgr.cpp \
 $(NULL)
 
 # CueMol interface definitions for MCWRAPGEN
@@ -74,13 +76,18 @@ libgfx_la_CXXFLAGS = \
   -DGFX_EXPORTS=1 \
   -I$(top_srcdir) -I$(srcdir) \
   @BOOST_CPPFLAGS@ \
+  @LCMS_CPPFLAGS@ \
   $(NULL)
 
-libgfx_la_LIBADD = -lqlib
+libgfx_la_LIBADD = \
+  -lqlib \
+  @LCMS_LIBADD@ \
+  $(NULL)
 
-libgfx_la_LDFLAGS = -L../qlib
-
-#-Wall
+libgfx_la_LDFLAGS = \
+  -L../qlib \
+  @LCMS_LDFLAGS@ \
+  $(NULL)
 
 #####################################
 

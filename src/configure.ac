@@ -272,6 +272,63 @@ AC_SUBST(PNG_LIBADD)
 
 #######################################################
 #
+# check for LittleCMS location
+#
+
+LCMS_CPPFLAGS=
+LCMS_LDFLAGS=
+LCMS_LIBADD=
+
+AC_ARG_WITH(lcms,
+[  --with-lcms[=DIR]      Look for LittleCMS library in DIR (default=no) ],
+[ case "$with_lcms" in
+  no)
+    ;;
+  *)
+    dnl LCMS2 location specified
+    AC_MSG_RESULT($with_lcms)
+    _cppflags=${CPPFLAGS}
+    CPPFLAGS="-I$with_lcms/include $CPPFLAGS"
+    AC_CHECK_HEADERS([lcms2.h],,[AC_MSG_ERROR(lcms2.h not found)],[])
+
+    AC_CHECK_DECLS(cmsGetEncodedCMMversion,
+                   [LCMS_CPPFLAGS="-I$with_lcms/include"],
+		   [AC_MSG_ERROR(cmsGetEncodedCMMversion() not found)],
+		   [#include <lcms2.h>])
+    CPPFLAGS=$_cppflags
+
+    _ldflags=${LDFLAGS}
+    _libs=${LIBS}
+    LDFLAGS="-L$with_lcms/lib $LDFLAGS"
+    LIBS="-llcms2 $LIBS"
+    AC_CHECK_LIB(lcms2, cmsGetEncodedCMMversion,
+                 [LCMS_LDFLAGS="-L$with_lcms/lib"
+		  LCMS_LIBADD=" -llcms2"],
+		 [AC_MSG_ERROR(cmsGetEncodedCMMversion() not found)],
+		 [])
+    LDFLAGS=$_ldflags
+    LIBS=$_libs
+
+    ;;
+  esac ],
+[   dnl default LCMS2 location (/usr, etc)
+    AC_CHECK_HEADERS([lcms2.h],,[AC_MSG_ERROR(lcms2.h not found)],[])
+    AC_CHECK_DECLS(cmsGetEncodedCMMversion,
+                   [],
+		   [AC_MSG_ERROR(cmsGetEncodedCMMversion() not found)],
+		   [#include <lcms2.h>])
+    AC_CHECK_LIB(lcms, cmsGetEncodedCMMversion,
+                 [LCMS_LIBADD=" -llcms2"],
+		 [AC_MSG_ERROR(cmsGetEncodedCMMversion() not found)],
+		 [])
+])
+
+AC_SUBST(LCMS_CPPFLAGS)
+AC_SUBST(LCMS_LDFLAGS)
+AC_SUBST(LCMS_LIBADD)
+
+#######################################################
+#
 # check for BOOST C++ library
 #
 

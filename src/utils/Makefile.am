@@ -9,8 +9,14 @@ blendpng_SOURCES   = blendpng.cpp
 
 blendpng_CXXFLAGS = \
   -I$(top_srcdir) -I$(srcdir) \
+  @LCMS_CPPFLAGS@ \
 $(NULL)
 
-blendpng_LDADD = ../libpng/libqmpng.la ../zlib/libqmzlib.la
+blendpng_LDADD = \
+  ../libpng/libqmpng.la ../zlib/libqmzlib.la \
+  @LCMS_LIBADD@ \
+$(NULL)
 
-
+blendpng_LDFLAGS = \
+  @LCMS_LDFLAGS@ \
+  $(NULL)
