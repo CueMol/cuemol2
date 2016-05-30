@@ -7,8 +7,8 @@ uniform float frag_alpha;
 uniform float edge_width;
 uniform vec4 edge_color;
 
-varying vec3 gNormal;
-varying vec4 gEcPosition;
+// varying vec3 gNormal;
+// varying vec4 gEcPosition;
 
 float ffog(in float ecDistance)
 {
@@ -31,7 +31,7 @@ void main (void)
   vec4 ecPosition = gl_ModelViewMatrix * gl_Vertex;
 
   vec3 normal = fnormal();
-  gNormal = normal;
+  // gNormal = normal;
 
   
 /*
@@ -45,7 +45,7 @@ void main (void)
 */
   
   ecPosition += vec4(normal*edge_width, 0);
-  gEcPosition = ecPosition;
+  // gEcPosition = ecPosition;
 
   // Do fixed functionality vertex transform
   vec4 pos = gl_ProjectionMatrix * ecPosition;
