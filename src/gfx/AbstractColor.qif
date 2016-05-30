@@ -7,8 +7,6 @@
 
 runtime_class AbstractColor
 {
-  uuid fff6e75c-a18e-46f6-9e2d-7122d2817f8c;
-
   client_hdr "AbstractColor.hpp";
   client_name gfx::AbstractColor;
 
@@ -29,6 +27,9 @@ runtime_class AbstractColor
   real fa();
   
   string toString();
+
+  // property integer ccode => redirect(getCode, XXX) (readonly);
+  integer getDevCode(integer);
 
   // boolean equals(object<AbstractColor$>);
 };

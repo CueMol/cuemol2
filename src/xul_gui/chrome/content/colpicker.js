@@ -33,12 +33,15 @@ var ColorPicker = function (aOuter)
   this.mTgtSceID = 0; // 0==invalid_uid
 
   this.mRGBValue = null;
+  this.mDevRGBValue = null;
   this.mHSBValue = null;
   this.mNamedValue = null;
 
   this.mSelectedCell = null;
 
   this.mOrigValue = null;
+
+  this.mDevColor = cuemol.createObj("Color");
 }
 
 ColorPicker.prototype.setTargetSceneID = function(aSceID)
@@ -49,7 +52,7 @@ ColorPicker.prototype.setTargetSceneID = function(aSceID)
 ColorPicker.prototype.convToRGB = function(aText)
 {
   try {
-    var color = this._stylem.compileColor(aText, this.mTgtSceID);
+    let color = this._stylem.compileColor(aText, this.mTgtSceID);
     return [color.r(), color.g(), color.b()];
   }
   catch (e) {
@@ -90,7 +93,8 @@ ColorPicker.prototype.init = function()
   //////////
   // main widget
   this.mMainTxtBox = this._anonid('main_textbox');
-  this.mMainLabel = this._anonid('main_colorbox');
+  this.mColorBox = this._anonid('main_colorbox');
+  this.mDevColorBox = this._anonid('dev_colorbox');
 
   this.mMainTxtBox.addEventListener('change', function(a) { that.onMainTxtChanged(a); }, false);
 
@@ -176,13 +180,13 @@ ColorPicker.prototype.onMainTxtChanged = function(aEvent)
   if (!rgb) {
     this.mMainTxtBox.value = this.mOrigValue;
     this.mRGBValue = this.convToRGB(this.mOrigValue);
-    this.mMainLabel.style.backgroundColor = packToHTMLColor(this.mRGBValue);
+    this.updateColorBox();
     // this.mRGBValue = unpackToRGB(this.mOrigValue);
   }
   else {
     // this.mMainTxtBox.value = value;
     this.mRGBValue = rgb;
-    this.mMainLabel.style.backgroundColor = packToHTMLColor(rgb);
+    this.updateColorBox();
   }
   
   if (this.mMode == MODE_RGB) {
@@ -317,6 +321,31 @@ ColorPicker.prototype.onDragStateChanged = function(aEvent)
 /////////////////////////////////////////////////////
 // UI update methods
 
+ColorPicker.prototype.updateColorBox = function()
+{
+  var text = packToHTMLColor(this.mRGBValue);
+  this.mColorBox.style.backgroundColor = text;
+
+  var ccode =
+    (0xFF << 24) |
+      ((this.mRGBValue[0] & 0xFF) << 16) |
+        ((this.mRGBValue[1] & 0xFF) << 8)  |
+          ((this.mRGBValue[2] & 0xFF));
+  this.mDevColor.setCode(ccode);
+  var devcc = this.mDevColor.getDevCode(this.mTgtSceID);
+//  alert("ccode="+packToHTMLColor([(ccode >> 16) & 0xFF, (ccode >> 8) & 0xFF, ccode & 0xFF])+
+//        ", devcc="+packToHTMLColor([(devcc >> 16) & 0xFF, (devcc >> 8) & 0xFF, devcc & 0xFF]));
+  if (ccode!=devcc) {
+    this.mDevColorBox.hidden = false;
+    this.mDevColorBox.style.backgroundColor =
+      packToHTMLColor([(devcc >> 16) & 0xFF, (devcc >> 8) & 0xFF, devcc & 0xFF]);
+    dd("ColorBox: orig="+this.mColorBox.style.backgroundColor+", dev="+this.mDevColorBox.style.backgroundColor);
+  }
+  else {
+    this.mDevColorBox.hidden = true;
+  }
+}
+
 ColorPicker.prototype.updateRGBText = function()
 {
   this.mCmpvBox1.value = this.mRGBValue[0];
@@ -417,8 +446,9 @@ ColorPicker.prototype.updateHSBThumbs = function()
 
 ColorPicker.prototype.updateMain = function()
 {
+  this.updateColorBox();
+
   var textv = packToHTMLColor(this.mRGBValue);
-  this.mMainLabel.style.backgroundColor = textv;
 
   if (this.mMode==MODE_RGB || this.mMode==MODE_PALETTE)
     this.mMainTxtBox.value = textv.toUpperCase();
@@ -504,12 +534,12 @@ ColorPicker.prototype.setColorText = function(value)
     this.mRGBValue = [0,0,0];
     this.mOrigValue = "#000";
     this.mMainTxtBox.value = "#000";
-    this.mMainLabel.style.backgroundColor = "#000";
+    this.updateColorBox();
   }
   else {
     this.mOrigValue = value;
     this.mMainTxtBox.value = value;
-    this.mMainLabel.style.backgroundColor = packToHTMLColor(this.mRGBValue);
+    this.updateColorBox();
   }
 
   this.mHSBValue = convRGB2HSB(this.mRGBValue);
@@ -587,7 +617,7 @@ ColorPicker.prototype.showRGB = function()
   //this.mSliderGrid.collapsed = false;
   //this.mNamedBox.collapsed = true;
 
-  this.mSliderPopup.openPopup(this.mMainLabel, "after_start", 0, 0, false, false);
+  this.mSliderPopup.openPopup(this.mColorBox, "after_start", 0, 0, false, false);
 }
 
 ColorPicker.prototype.showHSB = function()
@@ -596,7 +626,7 @@ ColorPicker.prototype.showHSB = function()
   //this.mSliderGrid.collapsed = false;
   //this.mNamedBox.collapsed = true;
 
-  this.mSliderPopup.openPopup(this.mMainLabel, "after_start", 0, 0, false, false);
+  this.mSliderPopup.openPopup(this.mColorBox, "after_start", 0, 0, false, false);
 }
 
 
@@ -605,7 +635,7 @@ ColorPicker.prototype.showHSB = function()
 
 ColorPicker.prototype.showNamed = function()
 {
-  this.mNamedPopup.openPopup(this.mMainLabel, "after_start", 0, 0, false, false);
+  this.mNamedPopup.openPopup(this.mColorBox, "after_start", 0, 0, false, false);
   this.setupNamedList();
   //this.mSliderGrid.collapsed = true;
   //this.mNamedBox.collapsed = false;
@@ -736,7 +766,7 @@ ColorPicker.prototype.onNamedListClicked = function (aEvent)
 
 ColorPicker.prototype.showPalette = function()
 {
-  this.mPalettePopup.openPopup(this.mMainLabel, "after_start", 0, 0, false, false);
+  this.mPalettePopup.openPopup(this.mColorBox, "after_start", 0, 0, false, false);
   this.setupPalette();
   //this.mSliderGrid.collapsed = true;
   //this.mNamedBox.collapsed = false;

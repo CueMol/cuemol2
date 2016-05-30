@@ -13,6 +13,8 @@
 #include <qlib/SmartPtr.hpp>
 #include "AbstractColor.hpp"
 
+#define USEPROOFING 1
+
 namespace gfx {
 
   using qlib::LString;
@@ -23,17 +25,17 @@ namespace gfx {
     class GFX_API CmsXformRep
     {
     public:
-      /*
+#ifdef USEPROOFING
+      /// transformation handle proofing transform
+      void *m_hTr;
+#else
       /// transformation handle RGB->CMYK
       void *m_hTr1;
 
       /// transformation handle CMYK->RGB
       void *m_hTr2;
-       */
+#endif
       
-      /// transformation handle proofing transform
-      void *m_hTr;
-
       CmsXformRep();
 
       ~CmsXformRep();

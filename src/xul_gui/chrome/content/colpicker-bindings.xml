@@ -12,6 +12,10 @@
 	<xul:hbox flex="1">
 	  <xul:label anonid="main_colorbox" value="" pack="end" width="32px" flex="0"
 	    style="border: 1px solid black; margin: 3px 0px 3px 6px;"/>
+
+	  <xul:label anonid="dev_colorbox" value="" pack="end" width="32px" flex="0" hidden="true"
+	    style="border: 1px solid black; margin: 3px 0px 3px 6px;" tooltiptext="Click to limit to colorspace"/>
+
 	  <xul:textbox anonid="main_textbox" value="#000000" flex="1"
 		       xbl:inherits="width,disabled,size"/>
 	  <xul:toolbarbutton type="menu" class="dropdown-button"
@@ -85,6 +89,10 @@
     <implementation>
       <field name="mColorBox" readonly="true">
         document.getAnonymousElementByAttribute(this, "anonid", "main_colorbox");
+      </field>
+
+      <field name="mDevColorBox" readonly="true">
+        document.getAnonymousElementByAttribute(this, "anonid", "dev_colorbox");
       </field>
 
       <field name="mTextBox" readonly="true">
