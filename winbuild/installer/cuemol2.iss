@@ -86,6 +86,7 @@ Source: {#SysDLLDir}\boost_filesystem-{#BoostVer}.dll; DestDir: {app}; Flags: ig
 Source: {#SysDLLDir}\CGAL-vc120-mt-4.6.1.dll; DestDir: {app}; Flags: ignoreversion
 Source: {#SysDLLDir}\libfftw3f-3.dll; DestDir: {app}; Flags: ignoreversion
 Source: {#SysDLLDir}\glew32.dll; DestDir: {app}; Flags: ignoreversion
+Source: {#SysDLLDir}\lcms2.dll; DestDir: {app}; Flags: ignoreversion
 
 ; Source: {#SysDLLDir}\libpng15.dll; DestDir: {app}; Flags: ignoreversion
 ; Source: {#SysDLLDir}\zlib1.dll; DestDir: {app}; Flags: ignoreversion
@@ -131,6 +132,7 @@ Source: {#XulGUIDir}\data\default_params.xml; DestDir: {app}\data; Flags: ignore
 
 Source: {#WinBuildDir}\data\shaders\*; Excludes: "*~,CVS,.svn"; DestDir: {app}\data\shaders; Flags: ignoreversion
 Source: {#WinBuildDir}\scripts\*; Excludes: "*~,CVS,.svn"; DestDir: {app}\scripts; Flags: ignoreversion
+Source: {#WinBuildDir}\data\icc_profiles\*; Excludes: "*~,CVS,.svn"; DestDir: {app}\data\icc_profiles; Flags: ignoreversion
 
 ; Source: {#XulGUIDir}\data\amb_all03chg_prot.xml; DestDir: {app}\data; Flags: ignoreversion
 

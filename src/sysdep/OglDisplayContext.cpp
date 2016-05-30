@@ -106,7 +106,7 @@ void OglDisplayContext::init()
   m_pDefPO->disable();
 
   //////////
-/*
+
   m_pEdgePO = createProgramObject("edge");
   if (m_pEdgePO==NULL) {
     LOG_DPRINTLN("Failed to load Edge ProgramObject");
@@ -148,7 +148,7 @@ void OglDisplayContext::init()
   m_pSilhPO->setUniformF("edge_width", 0.001);
   m_pSilhPO->setUniformF("edge_color", 0,0,0,1);
   m_pSilhPO->disable();
-*/
+
 #endif
 }
 
