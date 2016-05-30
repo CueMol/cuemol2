@@ -19,7 +19,7 @@ using namespace gfx::detail;
 
 CmsXformRep::CmsXformRep()
 #ifdef USEPROOFING
-     : m_hTr(NULL)
+     : m_hTr(NULL), m_hTrChk(NULL)
 #else
      : m_hTr1(NULL), m_hTr2(NULL)
 #endif
@@ -39,6 +39,9 @@ void CmsXformRep::cleanup()
   if (m_hTr)
     cmsDeleteTransform(static_cast<cmsHTRANSFORM>(m_hTr));
   m_hTr = NULL;
+  if (m_hTrChk)
+    cmsDeleteTransform(static_cast<cmsHTRANSFORM>(m_hTrChk));
+  m_hTrChk = NULL;
 #else
   if (m_hTr1)
     cmsDeleteTransform(static_cast<cmsHTRANSFORM>(m_hTr1));
@@ -89,25 +92,48 @@ void CmsXform::loadIccFile(const LString &path)
   
 
 #ifdef USEPROOFING
+  cmsUInt16Number alarm[cmsMAXCHANNELS];
+  for (int i=0; i < cmsMAXCHANNELS; i++)
+    alarm[i] = 0xFFFF;
+  cmsSetAlarmCodes(alarm);
+
   m_pimpl->m_hTr = cmsCreateProofingTransform(hInProf,
                                               TYPE_RGB_8,
                                               hInProf,
                                               TYPE_RGB_8,
                                               hOutProf,
                                               nProofIntent,
-                                              INTENT_ABSOLUTE_COLORIMETRIC,//INTENT_PERCEPTUAL,
+                                              //INTENT_ABSOLUTE_COLORIMETRIC,
+                                              INTENT_PERCEPTUAL,
                                               cmsFLAGS_SOFTPROOFING);
+
+  cmsHPROFILE hNullProf = cmsCreateNULLProfile();
+  m_pimpl->m_hTrChk = cmsCreateProofingTransform(hInProf,
+                                                 TYPE_RGB_DBL,
+                                                 hNullProf,
+                                                 TYPE_GRAY_DBL,
+                                                 hOutProf,
+                                                 nProofIntent,
+                                                 nProofIntent,
+                                                 cmsFLAGS_SOFTPROOFING|cmsFLAGS_GAMUTCHECK|cmsFLAGS_NOCACHE);
+  LOG_DPRINTLN("dwin=%X, dwout=%X, dwflags=%x\n", TYPE_RGB_DBL, TYPE_GRAY_DBL, cmsFLAGS_SOFTPROOFING|cmsFLAGS_GAMUTCHECK|cmsFLAGS_NOCACHE);
+  cmsCloseProfile(hNullProf);
 #else
   m_pimpl->m_hTr1 = cmsCreateTransform(hInProf,
                                        TYPE_RGB_8,
                                        hOutProf,
-                                       TYPE_CMYK_8,
+                                       //TYPE_CMYK_8,
+                                       TYPE_CMYK_FLT,
                                        nProofIntent, 0);
   m_pimpl->m_hTr2 = cmsCreateTransform(hOutProf,
-                                       TYPE_CMYK_8,
+                                       //TYPE_CMYK_8,
+                                       TYPE_CMYK_FLT,
                                        hInProf,
                                        TYPE_RGB_8,
-                                       INTENT_PERCEPTUAL, 0);
+                                       //INTENT_ABSOLUTE_COLORIMETRIC,
+                                       INTENT_PERCEPTUAL,
+                                       0);
+
 #endif
 
   cmsCloseProfile(hInProf);
@@ -138,10 +164,11 @@ void CmsXform::doxform(quint32 incode, quint32 &routcode) const
 #ifdef HAVE_LCMS2_H
   if (!m_bEnabled ||
 #ifdef USEPROOFING
-      m_pimpl->m_hTr==NULL) {
+      m_pimpl->m_hTr==NULL
 #else
-      m_pimpl->m_hTr1==NULL || m_pimpl->m_hTr2==NULL) {
+      m_pimpl->m_hTr1==NULL || m_pimpl->m_hTr2==NULL
 #endif
+      ) {
     routcode = incode;
     return;
   }
@@ -155,10 +182,25 @@ void CmsXform::doxform(quint32 incode, quint32 &routcode) const
   
 #ifdef USEPROOFING
   cmsDoTransform(static_cast<cmsHTRANSFORM>(m_pimpl->m_hTr), inbuf, outbuf, 1);
+  double gamutchk;
+  double inbuf2[4];
+  inbuf2[0] = getRCode(incode);
+  inbuf2[1] = getGCode(incode);
+  inbuf2[2] = getBCode(incode);
+  cmsDoTransform(static_cast<cmsHTRANSFORM>(m_pimpl->m_hTrChk), inbuf2, &gamutchk, 1);
+  MB_DPRINTLN("CMS> %02X:%02X:%02X --> %02X:%02X:%02X (%f)",
+              inbuf[0],inbuf[1],inbuf[2],
+              outbuf[0],outbuf[1],outbuf[2],
+              gamutchk);
 #else  
-  quint8 cmykbuf[4];
+  //quint8 cmykbuf[4];
+  float cmykbuf[4];
   cmsDoTransform(static_cast<cmsHTRANSFORM>(m_pimpl->m_hTr1), inbuf, cmykbuf, 1);
   cmsDoTransform(static_cast<cmsHTRANSFORM>(m_pimpl->m_hTr2), cmykbuf, outbuf, 1);
+MB_DPRINTLN("CMS> %02X:%02X:%02X --> %.2f:%.2f:%.2f:%.2f --> %02X:%02X:%02X",
+            inbuf[0],inbuf[1],inbuf[2],
+            cmykbuf[0],cmykbuf[1],cmykbuf[2],cmykbuf[3],
+            outbuf[0],outbuf[1],outbuf[2]);
 #endif
 
   routcode = makeRGBACode(outbuf[0], outbuf[1], outbuf[2], getACode(incode));

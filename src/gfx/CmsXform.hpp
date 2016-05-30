@@ -28,6 +28,7 @@ namespace gfx {
 #ifdef USEPROOFING
       /// transformation handle proofing transform
       void *m_hTr;
+      void *m_hTrChk;
 #else
       /// transformation handle RGB->CMYK
       void *m_hTr1;
