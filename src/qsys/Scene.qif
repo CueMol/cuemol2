@@ -155,11 +155,22 @@ runtime_class Scene
 
   ////////////////////
   // Color management & CMYK proofing
-  property boolean usecmykproof => redirect(isUseCMYKProofing, setUseCMYKProofing);
-  default usecmykproof = false;
 
-  property string iccfilename => redirect(getIccFileName, setIccFileName);
-  default iccfilename = "";
+  property boolean use_colproof => redirect(isUseColProof, setUseColProof);
+  default use_colproof = false;
+
+  property string icc_filename => redirect(getIccFileName, setIccFileName);
+  default icc_filename = "";
+
+  enumdef icc_intent {
+    perceptual = 0;
+    relative_colorimetric = 1;
+    saturation = 2;
+    absolute_colorimetric = 3;
+  }
+  property enum icc_intent => redirect(getIccIntent, setIccIntent);
+  default icc_intent = "perceptual";
+
 
   ////////////////////
   // Event

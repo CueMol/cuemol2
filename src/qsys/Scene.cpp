@@ -116,6 +116,7 @@ Scene::Scene()
   m_nActiveRendID = qlib::invalid_uid;
 
   gfx::ColProfMgr::sRegUID(m_nUID);
+  m_bUseColProof = false;
 
   MB_DPRINTLN("Scene (%d) created.", m_nUID);
 }
@@ -1059,8 +1060,9 @@ void Scene::propChanged(qlib::LPropEvent &ev)
 
   // check color profile change
   //  and set update flag to redraw all views
-  if (ev.getName()=="iccfilename" ||
-      ev.getName()=="usecmykproof")
+  if (ev.getName()=="icc_filename" ||
+      ev.getName()=="use_colproof" ||
+      ev.getName()=="icc_intent")
     setUpdateFlag();
     
 }
@@ -1938,18 +1940,42 @@ void Scene::setIccFileName(const LString &fn)
   }
 
   pXfm->loadIccFile(iccpath.string());
-  pXfm->setEnabled(m_bUseCMYKProofing);
+  pXfm->setEnabled(m_bUseColProof);
 
-  LOG_DPRINTLN("Load ICC profile: %s OK", iccpath.string().c_str());
+  LOG_DPRINTLN("Scene> Load ICC profile: %s OK", iccpath.string().c_str());
 
   m_iccFileName = fn;
 }
 
-void Scene::setUseCMYKProofing(bool b)
+void Scene::setUseColProof(bool b)
 {
-  m_bUseCMYKProofing = b;
+  m_bUseColProof = b;
   ColProfMgr *pMgr = ColProfMgr::getInstance();
   CmsXform *pXfm = pMgr->getCmsByID(getUID());
-  pXfm->setEnabled(m_bUseCMYKProofing);
+  pXfm->setEnabled(m_bUseColProof);
+}
+
+int Scene::getIccIntent() const
+{
+  ColProfMgr *pMgr = ColProfMgr::getInstance();
+  CmsXform *pXfm = pMgr->getCmsByID(getUID());
+  if (pXfm==NULL)
+    return 0;
+  return pXfm->getIccIntent();
+}
+
+void Scene::setIccIntent(int n)
+{
+  ColProfMgr *pMgr = ColProfMgr::getInstance();
+  CmsXform *pXfm = pMgr->getCmsByID(getUID());
+  if (pXfm==NULL)
+    return;
+  if (n==pXfm->getIccIntent())
+    return;
+
+  // Reload of ICC profile is required to change the intent value
+  pXfm->reset();
+  pXfm->setIccIntent(n);
+  setIccFileName(m_iccFileName);
 }
 

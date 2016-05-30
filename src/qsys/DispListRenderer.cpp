@@ -208,8 +208,9 @@ void DispListRenderer::sceneChanged(SceneEvent &ev)
 {
   super_t::sceneChanged(ev);
   if (ev.getType()==SceneEvent::SCE_SCENE_PROPCHG) {
-    if (ev.getDescr()=="iccfilename" ||
-        ev.getDescr()=="usecmykproof" ) {
+    if (ev.getDescr()=="icc_filename" ||
+        ev.getDescr()=="use_colproof" ||
+        ev.getDescr()=="icc_intent" ) {
       invalidateDisplayCache();
     }
   }

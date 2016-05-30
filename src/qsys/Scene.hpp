@@ -546,7 +546,7 @@ namespace qsys {
     // color management
   private:
     /// CMYK proofing flag
-    bool m_bUseCMYKProofing;
+    bool m_bUseColProof;
 
     /// icc profile file name
     LString m_iccFileName;
@@ -555,14 +555,14 @@ namespace qsys {
     // gfx::CmsXform m_cmsxfm;
 
   public:
-    bool isUseCMYKProofing() const { return m_bUseCMYKProofing; }
-    void setUseCMYKProofing(bool b);
+    bool isUseColProof() const { return m_bUseColProof; }
+    void setUseColProof(bool b);
     
     const LString &getIccFileName() const { return m_iccFileName; }
     void setIccFileName(const LString &fn);
 
-    // const gfx::CmsXform &getCmsXformObj() const { return m_cmsxfm; }
-
+    int getIccIntent() const;
+    void setIccIntent(int n);
   };
 
 }

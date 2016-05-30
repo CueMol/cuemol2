@@ -23,11 +23,16 @@ namespace gfx {
     class GFX_API CmsXformRep
     {
     public:
+      /*
       /// transformation handle RGB->CMYK
       void *m_hTr1;
 
       /// transformation handle CMYK->RGB
       void *m_hTr2;
+       */
+      
+      /// transformation handle proofing transform
+      void *m_hTr;
 
       CmsXformRep();
 
@@ -43,6 +48,8 @@ namespace gfx {
     qlib::sp<detail::CmsXformRep> m_pimpl;
     
     bool m_bEnabled;
+
+    int m_nIntent;
 
   public:
     /// default ctor
@@ -65,6 +72,9 @@ namespace gfx {
 
     bool isEnabled() const { return m_bEnabled; }
     void setEnabled(bool b) { m_bEnabled = b; }
+
+    int getIccIntent() const { return m_nIntent; }
+    void setIccIntent(int n) { m_nIntent = n; }
 
   };
   

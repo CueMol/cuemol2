@@ -18,7 +18,8 @@ using namespace gfx;
 using namespace gfx::detail;
 
 CmsXformRep::CmsXformRep()
-     : m_hTr1(NULL), m_hTr2(NULL)
+//     : m_hTr1(NULL), m_hTr2(NULL)
+     : m_hTr(NULL)
 {
 }
 
@@ -30,12 +31,19 @@ CmsXformRep::~CmsXformRep()
 void CmsXformRep::cleanup()
 {
 #ifdef HAVE_LCMS2_H
+/*
   if (m_hTr1)
     cmsDeleteTransform(static_cast<cmsHTRANSFORM>(m_hTr1));
   m_hTr1 = NULL;
   if (m_hTr2)
     cmsDeleteTransform(static_cast<cmsHTRANSFORM>(m_hTr2));
   m_hTr2 = NULL;
+*/
+
+  if (m_hTr)
+    cmsDeleteTransform(static_cast<cmsHTRANSFORM>(m_hTr));
+  m_hTr = NULL;
+
 #endif
 }
 
@@ -43,7 +51,7 @@ void CmsXformRep::cleanup()
 //////////////////////////////////////////////
 
 CmsXform::CmsXform()
-     : m_pimpl(MB_NEW detail::CmsXformRep()), m_bEnabled(true)
+     : m_pimpl(MB_NEW detail::CmsXformRep()), m_bEnabled(true), m_nIntent(0)
 {
 }
 
@@ -72,16 +80,31 @@ void CmsXform::loadIccFile(const LString &path)
     MB_THROW(qlib::IOException, "cannot open icc file: "+path);
     return;
   }
+
+  int nProofIntent = m_nIntent;
+  
+  /*
   m_pimpl->m_hTr1 = cmsCreateTransform(hInProf,
                                        TYPE_RGB_8,
                                        hOutProf,
                                        TYPE_CMYK_8,
-                                       INTENT_PERCEPTUAL, 0);
+                                       nProofIntent, 0);
   m_pimpl->m_hTr2 = cmsCreateTransform(hOutProf,
                                        TYPE_CMYK_8,
                                        hInProf,
                                        TYPE_RGB_8,
                                        INTENT_PERCEPTUAL, 0);
+   */
+
+  m_pimpl->m_hTr = cmsCreateProofingTransform(hInProf,
+                                              TYPE_RGB_8,
+                                              hInProf,
+                                              TYPE_RGB_8,
+                                              hOutProf,
+                                              INTENT_PERCEPTUAL,
+                                              nProofIntent, cmsFLAGS_SOFTPROOFING);
+
+
   cmsCloseProfile(hInProf);
   cmsCloseProfile(hOutProf);
 #endif
@@ -95,7 +118,8 @@ void CmsXform::reset()
 
 bool CmsXform::isProfOK() const
 {
-  if (m_pimpl->m_hTr1!=NULL && m_pimpl->m_hTr2!=NULL)
+//  if (m_pimpl->m_hTr1!=NULL && m_pimpl->m_hTr2!=NULL)
+  if (m_pimpl->m_hTr!=NULL)
     return true;
   else
     return false;
@@ -105,25 +129,27 @@ void CmsXform::doxform(quint32 incode, quint32 &routcode) const
 {
 #ifdef HAVE_LCMS2_H
   if (!m_bEnabled ||
-      m_pimpl->m_hTr1==NULL || m_pimpl->m_hTr2==NULL) {
-    //MB_THROW(qlib::RuntimeException, "profile not loaded");
+//      m_pimpl->m_hTr1==NULL || m_pimpl->m_hTr2==NULL) {
+      m_pimpl->m_hTr==NULL) {
     routcode = incode;
     return;
   }
   
   quint8 inbuf[4];
-  quint8 cmykbuf[4];
   
   inbuf[0] = getRCode(incode);
   inbuf[1] = getGCode(incode);
   inbuf[2] = getBCode(incode);
   
-  cmsDoTransform(static_cast<cmsHTRANSFORM>(m_pimpl->m_hTr1), inbuf, cmykbuf, 1);
-  cmsDoTransform(static_cast<cmsHTRANSFORM>(m_pimpl->m_hTr2), cmykbuf, inbuf, 1);
+  // quint8 cmykbuf[4];
+  //cmsDoTransform(static_cast<cmsHTRANSFORM>(m_pimpl->m_hTr1), inbuf, cmykbuf, 1);
+  //cmsDoTransform(static_cast<cmsHTRANSFORM>(m_pimpl->m_hTr2), cmykbuf, inbuf, 1);
+  //routcode = makeRGBACode(inbuf[0], inbuf[1], inbuf[2], getACode(incode));
+
+  quint8 outbuf[4];
+  cmsDoTransform(static_cast<cmsHTRANSFORM>(m_pimpl->m_hTr), inbuf, outbuf, 1);
+  routcode = makeRGBACode(outbuf[0], outbuf[1], outbuf[2], getACode(incode));
   
-  //inbuf[3] = getACode(incode);
-  //routcode = *((quint32 *)inbuf);
-  routcode = makeRGBACode(inbuf[0], inbuf[1], inbuf[2], getACode(incode));
 #else
   routcode = incode;
 #endif
