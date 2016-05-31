@@ -848,6 +848,26 @@ Qm2Main.prototype.exportScene = function()
       return;
     }
   }
+  else if (exporter.name == "luxrend") {
+    // show LuxRender option dialog
+    let dlgdata = new Object();
+    dlgdata.exporter = exporter;
+    dlgdata.path = path;
+    dlgdata.ok = false;
+    dlgdata.width = view.width;
+    dlgdata.height = view.height;
+
+    window.openDialog("chrome://cuemol2/content/exportpng-opt-dlg.xul",
+		      "LuxRender options",
+                      "chrome,modal,resizable=yes,dependent,centerscreen",
+                      dlgdata);
+    if (!dlgdata.ok) {
+      dd("option dialog canceled");
+      dlgdata = null;
+      exporter = null;
+      return;
+    }
+  }
   else if (exporter.name == "pov") {
     // POV specific case
     let incfile = path.substr(0, extpos) + ".inc";

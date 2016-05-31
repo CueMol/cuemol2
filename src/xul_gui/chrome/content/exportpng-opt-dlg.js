@@ -14,12 +14,26 @@ onLoad: function ()
 
   this.mDlgData.faspect = this.mDlgData.width/this.mDlgData.height;
   dd("onLoad faspect = "+this.mDlgData.faspect);
-  this.mDlgData.dpi = "72";
-  this.mDlgData.unit = "mm";
+  if (this.mDlgData.exporter.name=="luxrend") {
+    this.mDlgData.dpi = "72";
+    this.mDlgData.unit = "px";
+  }
+  else {
+    this.mDlgData.dpi = "72";
+    this.mDlgData.unit = "mm";
+  }
   //this.mTextWidth.value = this.mDlgData.width;
   //this.mTextHeight.value = this.mDlgData.height;
 
   this.updateWidgets();
+
+  if (this.mDlgData.exporter.name=="luxrend") {
+    this.mListResoln.disabled = true;
+    this.mListUnit.disabled = true;
+    //this.mChkReasp.disabled = true;
+    document.getElementById("chk_alpha").hidden = true;
+    document.getElementById("PNGOptDlg").setAttribute("title", "LuxRender options");
+  }
 },
 
 ////////
@@ -144,15 +158,18 @@ onAccept: function ()
   try {
     this.validateUnitRes();
     this.validateSizeText();
-    //this.mDlgData.intrl = document.getElementById("chk_intrl").checked;
-    this.mDlgData.alpha = document.getElementById("chk_alpha").checked;
     this.mDlgData.ok = true;
 
     this.mDlgData.exporter.width = this.mDlgData.width;
     this.mDlgData.exporter.height = this.mDlgData.height;
-    //this.mDlgData.exporter.interlace = this.mDlgData.intrl;
-    this.mDlgData.exporter.alpha = this.mDlgData.alpha;
-    this.mDlgData.exporter.resoln = this.mDlgData.fdpi;
+
+    if (this.mDlgData.exporter.name=="png") {
+      //this.mDlgData.intrl = document.getElementById("chk_intrl").checked;
+      this.mDlgData.alpha = document.getElementById("chk_alpha").checked;
+      //this.mDlgData.exporter.interlace = this.mDlgData.intrl;
+      this.mDlgData.exporter.alpha = this.mDlgData.alpha;
+      this.mDlgData.exporter.resoln = this.mDlgData.fdpi;
+    }
     return true;
   }
   catch (e) { debug.exception(e); }
