@@ -9,13 +9,16 @@
   <binding id="colpicker">
     <content>
       <xul:vbox flex="1">
-	<xul:hbox flex="1">
-	  <xul:label anonid="main_colorbox" value="" pack="end" width="32px" flex="0"
+	<xul:hbox flex="1" align="center">
+	  <xul:label anonid="main_colorbox" value="" width="32px" flex="0"
 	    style="border: 1px solid black; margin: 3px 0px 3px 6px;"/>
 
-	  <xul:label anonid="dev_colorbox" value="" pack="end" width="32px" flex="0" hidden="true"
-	    style="border: 1px solid black; margin: 3px 0px 3px 6px;" tooltiptext="Click to limit to colorspace"/>
-
+	  <xul:box anonid="dev_warnbox" width="16px" height="16px" flex="0" hidden="true"
+	    style="margin: 3px 1px 3px 6px; background-image: url('images/warning.png'); background-repeat: no-repeat; background-position: center center"
+	    tooltiptext="Click to select in-gamut color"/>
+	  <xul:label anonid="dev_colorbox" value="" width="16px" flex="0" hidden="true"
+	    style="border: 1px solid black; margin: 3px 0px 3px 0px;" tooltiptext="Click to select in-gamut color"/>
+	  
 	  <xul:textbox anonid="main_textbox" value="#000000" flex="1"
 		       xbl:inherits="width,disabled,size"/>
 	  <xul:toolbarbutton type="menu" class="dropdown-button"

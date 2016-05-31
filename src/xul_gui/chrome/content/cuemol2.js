@@ -960,6 +960,7 @@ Qm2Main.prototype.setBgColor = function (aStrCol)
   dd("Qm2Main.setBgColor> OK.");
 };
 
+
 Qm2Main.prototype.setRendColoring = function (aType, aRend)
 {
   var rend, coloring = null, clsname = "", scene;
@@ -1290,7 +1291,48 @@ Qm2Main.prototype.clearMRUMenu = function (aEvent)
 };
 
 /////////
-// View menu routines
+// View/Scene menu routines
+
+Qm2Main.prototype.showScenePropDlg = function ()
+{
+  var target = this.mMainWnd.currentSceneW;
+  this.showPropDlg(target,
+                   target,
+		   window, "scene");
+};
+
+Qm2Main.prototype.onSceneMenuShowing = function (aEvent)
+{
+  var scene = this.mMainWnd.currentSceneW;
+
+  item = document.getElementById("mainmenuUseColProof");
+  if (scene.use_colproof &&
+      scene.icc_filename!="") {
+    item.setAttribute("checked", "true");
+      }
+  else {
+    item.removeAttribute("checked");
+  }
+};
+
+Qm2Main.prototype.onToggleColProof = function (aEvent)
+{
+  var scene = this.mMainWnd.currentSceneW;
+
+  if (scene.use_colproof &&
+      scene.icc_filename!="") {
+    // turn of proofing
+    scene.use_colproof = false;
+  }
+  else {
+    // turn on proofing
+    scene.use_colproof = true;
+    if (scene.icc_filename=="") {
+      // use default CMYK colorspace
+      scene.icc_filename="GenericCMYK.icm";
+    }
+  }
+};
 
 Qm2Main.prototype.showViewPropDlg = function ()
 {

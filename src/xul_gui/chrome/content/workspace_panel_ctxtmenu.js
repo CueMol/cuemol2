@@ -39,10 +39,25 @@ ws.onCtxtMenuShowing = function (aEvent)
         item.disabled = false;
       else
         item.disabled = true;
+
+      // Update color proofing mode
+      item = document.getElementById("wspcUseColProof");
+      var scene = cuemol.getScene(this.mTgtSceneID);
+      if (scene.use_colproof &&
+	  scene.icc_filename!="") {
+	item.setAttribute("checked", "true");
+      }
+      else {
+	item.removeAttribute("checked");
+      }
     }
 
   } catch (e) { debug.exception(e); }
 }
+
+/////////////////
+// scene menus
+
 
 /////////////////
 // molsurf menus

@@ -76,6 +76,32 @@ const CmsXform &CmsXform::operator=(const CmsXform &arg)
   return *this;
 }
 
+#ifdef HAVE_LCMS2_H
+static
+LString GetProfileInfo(cmsHPROFILE h, cmsInfoType Info)
+{
+  char* text;
+  int len;
+
+  len = cmsGetProfileInfoASCII(h, Info, "en", "US", NULL, 0);
+  if (len == 0) return LString();
+
+  text = (char*) malloc(len * sizeof(char));
+  if (text == NULL) return LString();
+
+  cmsGetProfileInfoASCII(h, Info, "en", "US", text, len);
+
+  //if (strlen(text) > 0)
+  //printf("%s\n", text);
+
+  LString rval(text);
+
+  free(text);
+
+  return rval;
+}
+#endif
+
 /// load from icc file
 void CmsXform::loadIccFile(const LString &path)
 {
@@ -90,6 +116,28 @@ void CmsXform::loadIccFile(const LString &path)
 
   int nProofIntent = m_nIntent;
   
+  m_info = LString();
+  LString info;
+
+  info = GetProfileInfo(hOutProf, cmsInfoDescription);
+  info = info.chomp();
+  if (!info.isEmpty())
+    m_info += info+"\n";
+
+  info = GetProfileInfo(hOutProf, cmsInfoManufacturer);
+  info = info.chomp();
+  if (!info.isEmpty())
+    m_info += info+"\n";
+
+  info = GetProfileInfo(hOutProf, cmsInfoModel);
+  info = info.chomp();
+  if (!info.isEmpty())
+    m_info += info+"\n";
+
+  info = GetProfileInfo(hOutProf, cmsInfoCopyright);
+  info = info.chomp();
+  if (!info.isEmpty())
+    m_info += info+"\n";
 
 #ifdef USEPROOFING
   cmsUInt16Number alarm[cmsMAXCHANNELS];
@@ -103,10 +151,11 @@ void CmsXform::loadIccFile(const LString &path)
                                               TYPE_RGB_8,
                                               hOutProf,
                                               nProofIntent,
+                                              nProofIntent,
                                               //INTENT_ABSOLUTE_COLORIMETRIC,
-                                              INTENT_PERCEPTUAL,
+                                              //INTENT_PERCEPTUAL,
                                               cmsFLAGS_SOFTPROOFING);
-
+  
   cmsHPROFILE hNullProf = cmsCreateNULLProfile();
   m_pimpl->m_hTrChk = cmsCreateProofingTransform(hInProf,
                                                  TYPE_RGB_DBL,
@@ -116,8 +165,8 @@ void CmsXform::loadIccFile(const LString &path)
                                                  nProofIntent,
                                                  nProofIntent,
                                                  cmsFLAGS_SOFTPROOFING|cmsFLAGS_GAMUTCHECK|cmsFLAGS_NOCACHE);
-  LOG_DPRINTLN("dwin=%X, dwout=%X, dwflags=%x\n", TYPE_RGB_DBL, TYPE_GRAY_DBL, cmsFLAGS_SOFTPROOFING|cmsFLAGS_GAMUTCHECK|cmsFLAGS_NOCACHE);
   cmsCloseProfile(hNullProf);
+
 #else
   m_pimpl->m_hTr1 = cmsCreateTransform(hInProf,
                                        TYPE_RGB_8,
@@ -159,7 +208,7 @@ bool CmsXform::isProfOK() const
     return false;
 }
 
-void CmsXform::doxform(quint32 incode, quint32 &routcode) const
+void CmsXform::doXForm(quint32 incode, quint32 &routcode) const
 {
 #ifdef HAVE_LCMS2_H
   if (!m_bEnabled ||
@@ -182,16 +231,7 @@ void CmsXform::doxform(quint32 incode, quint32 &routcode) const
   
 #ifdef USEPROOFING
   cmsDoTransform(static_cast<cmsHTRANSFORM>(m_pimpl->m_hTr), inbuf, outbuf, 1);
-  double gamutchk;
-  double inbuf2[4];
-  inbuf2[0] = getRCode(incode);
-  inbuf2[1] = getGCode(incode);
-  inbuf2[2] = getBCode(incode);
-  cmsDoTransform(static_cast<cmsHTRANSFORM>(m_pimpl->m_hTrChk), inbuf2, &gamutchk, 1);
-  MB_DPRINTLN("CMS> %02X:%02X:%02X --> %02X:%02X:%02X (%f)",
-              inbuf[0],inbuf[1],inbuf[2],
-              outbuf[0],outbuf[1],outbuf[2],
-              gamutchk);
+
 #else  
   //quint8 cmykbuf[4];
   float cmykbuf[4];
@@ -208,5 +248,39 @@ MB_DPRINTLN("CMS> %02X:%02X:%02X --> %.2f:%.2f:%.2f:%.2f --> %02X:%02X:%02X",
 #else
   routcode = incode;
 #endif
+}
+
+bool CmsXform::isInGamut(quint32 incode) const
+{
+#ifdef HAVE_LCMS2_H
+
+  if (!m_bEnabled ||
+#ifdef USEPROOFING
+      m_pimpl->m_hTrChk==NULL
+#else
+      false
+#endif
+      ) {
+    return true;
+  }
+
+  double gamutchk;
+  double inbuf2[4];
+
+  inbuf2[0] = convI2F( getRCode(incode) );
+  inbuf2[1] = convI2F( getGCode(incode) );
+  inbuf2[2] = convI2F( getBCode(incode) );
+
+  cmsDoTransform(static_cast<cmsHTRANSFORM>(m_pimpl->m_hTrChk), inbuf2, &gamutchk, 1);
+  /*MB_DPRINTLN("CMS> %02X:%02X:%02X --> %02X:%02X:%02X (%f)",
+              inbuf[0],inbuf[1],inbuf[2],
+              outbuf[0],outbuf[1],outbuf[2],
+              gamutchk);*/
+
+  if (gamutchk<0.0)
+    return false;
+#endif
+
+  return true;
 }
 

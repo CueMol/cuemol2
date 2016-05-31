@@ -95,6 +95,9 @@ ColorPicker.prototype.init = function()
   this.mMainTxtBox = this._anonid('main_textbox');
   this.mColorBox = this._anonid('main_colorbox');
   this.mDevColorBox = this._anonid('dev_colorbox');
+  this.mDevWarnBox = this._anonid('dev_warnbox');
+  this.mDevColorBox.addEventListener("click", function(a) { that.onGamutWarnClicked(a); }, false);
+  this.mDevWarnBox.addEventListener("click", function(a) { that.onGamutWarnClicked(a); }, false);
 
   this.mMainTxtBox.addEventListener('change', function(a) { that.onMainTxtChanged(a); }, false);
 
@@ -331,20 +334,39 @@ ColorPicker.prototype.updateColorBox = function()
       ((this.mRGBValue[0] & 0xFF) << 16) |
         ((this.mRGBValue[1] & 0xFF) << 8)  |
           ((this.mRGBValue[2] & 0xFF));
+
   this.mDevColor.setCode(ccode);
   var devcc = this.mDevColor.getDevCode(this.mTgtSceID);
+  var ingamut = this.mDevColor.isInGamut(this.mTgtSceID);
+  this.mDevRGBValues = [(devcc >> 16) & 0xFF, (devcc >> 8) & 0xFF, devcc & 0xFF];
+
 //  alert("ccode="+packToHTMLColor([(ccode >> 16) & 0xFF, (ccode >> 8) & 0xFF, ccode & 0xFF])+
 //        ", devcc="+packToHTMLColor([(devcc >> 16) & 0xFF, (devcc >> 8) & 0xFF, devcc & 0xFF]));
-  if (ccode!=devcc) {
+
+  if (!ingamut) {
     this.mDevColorBox.hidden = false;
+    this.mDevWarnBox.hidden = false;
     this.mDevColorBox.style.backgroundColor =
-      packToHTMLColor([(devcc >> 16) & 0xFF, (devcc >> 8) & 0xFF, devcc & 0xFF]);
+      packToHTMLColor(this.mDevRGBValues);
     dd("ColorBox: orig="+this.mColorBox.style.backgroundColor+", dev="+this.mDevColorBox.style.backgroundColor);
   }
   else {
     this.mDevColorBox.hidden = true;
+    this.mDevWarnBox.hidden = true;
   }
 }
+
+/// fix the out-of-gamut color
+ColorPicker.prototype.onGamutWarnClicked = function (aEvent)
+{
+  dd("onGamutWarnClicked");
+  if (!this.mDevRGBValues)
+    return;
+  var value = packToHTMLColor(this.mDevRGBValues);
+  dd("fixGamutWarn="+value);
+  this.setColorText(value);
+  this.notifyChanged(true);
+};
 
 ColorPicker.prototype.updateRGBText = function()
 {

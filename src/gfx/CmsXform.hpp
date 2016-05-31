@@ -54,6 +54,8 @@ namespace gfx {
 
     int m_nIntent;
 
+    LString m_info;
+    
   public:
     /// default ctor
     CmsXform();
@@ -71,7 +73,10 @@ namespace gfx {
 
     bool isProfOK() const;
 
-    void doxform(quint32 incode, quint32 &routcode) const;
+    void doXForm(quint32 incode, quint32 &routcode) const;
+
+    /// check if the color is in the gamut
+    bool isInGamut(quint32 incode) const;
 
     bool isEnabled() const { return m_bEnabled; }
     void setEnabled(bool b) { m_bEnabled = b; }
@@ -79,6 +84,7 @@ namespace gfx {
     int getIccIntent() const { return m_nIntent; }
     void setIccIntent(int n) { m_nIntent = n; }
 
+    const LString &getInfo() const { return m_info; }
   };
   
 }// namespace gfx

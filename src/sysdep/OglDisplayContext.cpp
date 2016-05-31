@@ -381,7 +381,7 @@ void OglDisplayContext::color(double r, double g, double b, double a)
 {
   Vector4D vcol(r,g,b);
   gfx::ColProfMgr *pCPM = gfx::ColProfMgr::getInstance();
-  pCPM->doxform(m_nSceneID, vcol, m_color);
+  pCPM->doXForm(m_nSceneID, vcol, m_color);
 
   //m_color.x() = r;
   //m_color.y() = g;
@@ -399,7 +399,7 @@ void OglDisplayContext::color(double r, double g, double b)
 {
   Vector4D vcol(r,g,b);
   gfx::ColProfMgr *pCPM = gfx::ColProfMgr::getInstance();
-  pCPM->doxform(m_nSceneID, vcol, m_color);
+  pCPM->doXForm(m_nSceneID, vcol, m_color);
 
   //m_color.x() = r;
   //m_color.y() = g;

@@ -42,18 +42,18 @@ CmsXform *ColProfMgr::getCmsByID(qlib::uid_t uid) const
   return iter->second;
 }
 
-void ColProfMgr::doxform(qlib::uid_t uid, const quint32 &incol, quint32 &outcol) const
+void ColProfMgr::doXForm(qlib::uid_t uid, const quint32 &incol, quint32 &outcol) const
 {
   CmsXform *pxfm = getCmsByID(uid);
   if (pxfm==NULL || !pxfm->isProfOK()) {
     outcol = incol;
   }
   else {
-    pxfm->doxform(incol, outcol);
+    pxfm->doXForm(incol, outcol);
   }
 }
 
-void ColProfMgr::doxform(qlib::uid_t uid, const Vector4D &incol, Vector4D &outcol) const
+void ColProfMgr::doXForm(qlib::uid_t uid, const Vector4D &incol, Vector4D &outcol) const
 {
   quint32 incode = makeRGBACode( convF2I(incol.x()),
                                  convF2I(incol.y()),
@@ -61,7 +61,7 @@ void ColProfMgr::doxform(qlib::uid_t uid, const Vector4D &incol, Vector4D &outco
                                  convF2I(incol.w()) );
   quint32 outcode;
   
-  doxform(uid, incode, outcode);
+  doXForm(uid, incode, outcode);
   outcol.x() = getFR(outcode);
   outcol.y() = getFG(outcode);
   outcol.z() = getFB(outcode);

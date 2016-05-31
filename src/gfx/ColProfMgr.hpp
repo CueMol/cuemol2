@@ -43,8 +43,8 @@ namespace gfx {
 
     CmsXform *getCmsByID(qlib::uid_t uid) const;
 
-    void doxform(qlib::uid_t uid, const quint32 &incol, quint32 &outcol) const;
-    void doxform(qlib::uid_t uid, const Vector4D &incol, Vector4D &outcol) const;
+    void doXForm(qlib::uid_t uid, const quint32 &incol, quint32 &outcol) const;
+    void doXForm(qlib::uid_t uid, const Vector4D &incol, Vector4D &outcol) const;
 
   private:
     

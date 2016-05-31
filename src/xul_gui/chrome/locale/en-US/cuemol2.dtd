@@ -31,7 +31,7 @@
 <!ENTITY save_scene_as.label "Save Scene As...">
 
 <!ENTITY open_PDB.label "Get PDB using accession code ...">
-<!ENTITY saveCurrCam.label "Save current view">
+<!ENTITY saveCurrCam.label "Save current view...">
 
 <!ENTITY close_tab.label "Close Tab">
 
@@ -50,8 +50,11 @@
 <!ENTITY edit_config.accesskey "O">
 <!ENTITY edit_config.commandkey "k">
 
-<!ENTITY menu_render.label "Render">
+<!ENTITY menu_render.label "Rendering">
 <!ENTITY menu_render.accesskey "R">
+
+<!ENTITY menu_scene.label "Scene">
+<!ENTITY menu_scene.accesskey "S">
 
 <!ENTITY render_exportscene.label "Export scene...">
 <!ENTITY render_exportscene.accesskey "E">

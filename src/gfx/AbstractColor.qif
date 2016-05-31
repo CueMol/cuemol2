@@ -31,6 +31,9 @@ runtime_class AbstractColor
   // property integer ccode => redirect(getCode, XXX) (readonly);
   integer getDevCode(integer);
 
+  // check if the color is in the gamut of the current proofing profile
+  boolean isInGamut(integer);
+
   // boolean equals(object<AbstractColor$>);
 };
 

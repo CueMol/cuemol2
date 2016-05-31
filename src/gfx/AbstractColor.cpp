@@ -40,17 +40,6 @@ int AbstractColor::a() const
   return getACode(getCode());
 }
 
-quint32 AbstractColor::getDevCode(qlib::uid_t ctxtid) const
-{
-  ColProfMgr *pMgr = ColProfMgr::getInstance();
-  CmsXform *pxfm = pMgr->getCmsByID(ctxtid);
-  if (pxfm==NULL)
-    return getCode();
-  quint32 rval;
-  pxfm->doxform(getCode(), rval);
-  return rval;
-}
-
 ////////////////////////////////
 
 void AbstractColor::HSBtoRGB(double hue, double saturation, double brightness,
@@ -246,4 +235,25 @@ LString AbstractColor::makeModifFromProps() const
   pNode->setTypeName(LString());
   }*/
 
+////////////////////////////////////////////////////////////
+
+quint32 AbstractColor::getDevCode(qlib::uid_t ctxtid) const
+{
+  ColProfMgr *pMgr = ColProfMgr::getInstance();
+  CmsXform *pxfm = pMgr->getCmsByID(ctxtid);
+  if (pxfm==NULL)
+    return getCode();
+  quint32 rval;
+  pxfm->doXForm(getCode(), rval);
+  return rval;
+}
+
+bool AbstractColor::isInGamut(qlib::uid_t ctxtid) const
+{
+  ColProfMgr *pMgr = ColProfMgr::getInstance();
+  CmsXform *pxfm = pMgr->getCmsByID(ctxtid);
+  if (pxfm==NULL)
+    return true;
+  return pxfm->isInGamut(getCode());
+}
 

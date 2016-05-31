@@ -72,6 +72,9 @@ namespace gfx {
     /// Get color after conversion for proofing
     virtual quint32 getDevCode(qlib::uid_t ctxtid) const;
 
+    /// check if the color is in the gamut of the current proofing profile
+    virtual bool isInGamut(qlib::uid_t ctxtid) const;
+
     ///////////////////////////
 
     double fr() const {

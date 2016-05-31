@@ -309,6 +309,25 @@
 	  </menupopup>
 	</menu>
 
+	<menu id="scene-menu" label="&menu_scene.label;" accesskey="&menu_scene.accesskey;">
+	  <menupopup id="scene-popup"
+	    onpopupshowing="gQm2Main.onSceneMenuShowing(event)">
+	    <menu label="Background color">
+	      <menupopup>
+		<menuitem class="color-menuitem menuitem-iconic" color="white"
+		  label="White" id="mainmenu-bg-white"
+		  oncommand="gQm2Main.setBgColor('white');"/>
+		<menuitem class="color-menuitem menuitem-iconic" color="black"
+		  label="Black" id="mainmenu-bg-black"
+		  oncommand="gQm2Main.setBgColor('black');"/>
+	      </menupopup>
+	    </menu>
+	    <menuitem id="mainmenuUseColProof"
+	      label="Use color proofing" type="checkbox" oncommand="gQm2Main.onToggleColProof(event)"/>
+	    <menuitem label="Properties..." oncommand="gQm2Main.showScenePropDlg(event)" />
+	  </menupopup>
+	</menu>
+
 	<menu id="view-menu" label="View" accesskey="V">
 	  <menupopup id="view-menu-popup"
 	    onpopupshowing="gQm2Main.onViewMenuShowing(event)">

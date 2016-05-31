@@ -67,6 +67,7 @@ cuemol2.jar:
   content/colorSlider.xml
   content/colorSlider.css
   content/arrow-up-sharp.gif
+  content/images/warning.png
 # Number slider widget
   content/numslider-binding.xml
   content/numslider.css

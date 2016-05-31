@@ -91,6 +91,8 @@
 	      oncommand="gQm2Main.setBgColor('black');"/>
 	  </menupopup>
 	</menu>
+	<menuitem id="wspcUseColProof"
+	  label="Use color proofing" type="checkbox" oncommand="gQm2Main.onToggleColProof(event)"/>
 	<menuitem id="wspcPanelSceneCtxtMenu-Paste"
 	  label="Paste" oncommand="cuemolui.panels.workspace.onPasteObj(event);"/>
 	<menuitem label="Properties..." oncommand="cuemolui.panels.workspace.onPropCmd(event)" />

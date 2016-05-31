@@ -1942,7 +1942,11 @@ void Scene::setIccFileName(const LString &fn)
   pXfm->loadIccFile(iccpath.string());
   pXfm->setEnabled(m_bUseColProof);
 
-  LOG_DPRINTLN("Scene> Load ICC profile: %s OK", iccpath.string().c_str());
+  LOG_DPRINTLN("Scene> Load ICC profile [%s]: OK", iccpath.string().c_str());
+  LOG_DPRINTLN("Scene> ICC profile info:");
+  LOG_DPRINTLN("=====");
+  LOG_DPRINTLN("%s", pXfm->getInfo().chomp().c_str());
+  LOG_DPRINTLN("=====");
 
   m_iccFileName = fn;
 }
