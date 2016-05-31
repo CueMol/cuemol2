@@ -6,8 +6,10 @@
 # include "config.h"
 #elif defined(WIN32)
 # define HAVE_PNG_H
-# define HAVE_LCMS2_H
+//# define HAVE_LCMS2_H
 #endif
+
+#undef HAVE_LCMS2_H
 
 #include <stdio.h>
 #include <math.h>
