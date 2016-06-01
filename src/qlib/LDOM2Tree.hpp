@@ -169,6 +169,7 @@ public:
 
   void clearContents() { m_contents = ""; }
   void appendContents(const LString &data) { m_contents += data; }
+  void setContents(const LString &data) { m_contents = data; }
   const LString &getContents() const { return m_contents; }
 
   ///////////////////////////

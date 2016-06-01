@@ -460,13 +460,21 @@ void StyleSet::writeStrToDataNode(qlib::LDom2Node *pNode) const
       continue; // ERROR !! (ignore)
     }
 
-    if (!dbname.equals("string"))
-      continue; // ignore non-string database
-
-    qlib::LDom2Node *pCCNode = pNode->appendChild();
-    pCCNode->setTagName(tagname);
-    pCCNode->appendStrAttr("id", id);
-    pCCNode->setValue(value);
+    if (dbname.equals("string")) {
+      qlib::LDom2Node *pCNode = pNode->appendChild();
+      pCNode->setTagName(tagname);
+      pCNode->appendStrAttr("id", id);
+      pCNode->setValue(value);
+    }
+    else if (dbname.equals("cfg")) {
+      // non-string type data (i.e., settings, etc)
+      qlib::LDom2Node *pCNode = pNode->appendChild();
+      pCNode->setTagName("setting");
+      pCNode->appendStrAttr("type", id);
+      qlib::LDom2Node *pCCNode = pCNode->appendChild();
+      pCCNode->setTagName(tagname);
+      pCCNode->setContents(value);
+    }
   }
 }
 
@@ -479,9 +487,9 @@ void StyleSet::writeStyleToDataNode(qlib::LDom2Node *pNode) const
     LString style_id = iter->first.c_str();
     style_id = style_id.substr(0, style_id.length()-6);
     //MB_DPRINTLN("write style node: %s.%s", id.c_str(), style_id.c_str());
-    LDom2Node *pCCNode = MB_NEW LDom2Node(*iter->second);
-    pCCNode->appendStrAttr("id", style_id);
-    pNode->appendChild(pCCNode);
+    LDom2Node *pCNode = MB_NEW LDom2Node(*iter->second);
+    pCNode->appendStrAttr("id", style_id);
+    pNode->appendChild(pCNode);
   }
 }
 
@@ -489,6 +497,18 @@ void StyleSet::writeStyleToDataNode(qlib::LDom2Node *pNode) const
 void StyleSet::writeMatToDataNode(qlib::LDom2Node *pNode) const
 {
   // TO DO: implementation
+  matdata_iterator iter = matBegin();
+  matdata_iterator eiter = matEnd();
+  for (; iter!=eiter; ++iter) {
+    const LString &key = iter->first;
+    const Material *pMat = iter->second;
+
+    qlib::LDom2Node *pCNode = pNode->appendChild();
+    pCNode->setTagName("material");
+    pCNode->appendStrAttr("id", key);
+    //pCNode->setValue(value);
+    pMat->writeTo(pCNode);
+  }
 }
 
 // TO DO: deserialization code should be moved to here.

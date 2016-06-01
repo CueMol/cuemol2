@@ -10,6 +10,7 @@ int internal_main(int argc, char **argv);
 //#define XPCOM_GLUE 1
 
 #include <windows.h>
+
 #include <tchar.h>
 #include <io.h>
 
@@ -150,6 +151,7 @@ int internal_main(int argc, char **argv)
   char grePath[256];
   char appPath[256];
   PRBool greFound = PR_FALSE, appFound = PR_FALSE;
+
 
   int i;
   for (i=0; i<argc; ++i) {

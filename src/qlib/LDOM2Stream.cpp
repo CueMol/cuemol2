@@ -140,27 +140,18 @@ void LDom2OutStream::write(LDom2Node *pNode)
     }
   }
   
-  LString val = pNode->getValue();
-  if (pNode->getChildCount()==0) {
-    if (pNode->getContents().isEmpty()) {
-      writeAttr("value", val);
-      closeEmptyTag();
-      return;
-    }
-    else {
-      // write contents
-      //closeTag();
-      writeStr("><![CDATA[");
-      writeStr(pNode->getContents());
-      //writeEndTag(tag);
-      writeStr("]]></"+tag+">\n");
-      return;
-    }
-  }
-
   // write value attr if val is not empty
+  LString val = pNode->getValue();
   if (!val.isEmpty())
     writeAttr("value", val);
+
+  bool bHasContents = !pNode->getContents().isEmpty();
+  if (pNode->getChildCount()==0 && !bHasContents) {
+    // no contents and no child elems/attrs
+    // --> close empty tag and exit
+    closeEmptyTag();
+    return;
+  }
 
   bool bHasElems = false;
   for (pNode->firstChild(); pNode->hasMoreChild(); pNode->nextChild()) {
@@ -192,7 +183,9 @@ void LDom2OutStream::write(LDom2Node *pNode)
     }
   }
     
-  if (!bHasElems) {
+  if (!bHasElems && !bHasContents) {
+    // no contents and no child elems
+    // --> close empty tag and exit
     closeEmptyTag();
     return;
   }
@@ -223,6 +216,14 @@ void LDom2OutStream::write(LDom2Node *pNode)
   }
   --m_nLevel;
     
+  if (bHasContents) {
+    // If contents are present, write them as the CDATA section with the end tag
+    writeStr("<![CDATA[");
+    writeStr(pNode->getContents());
+    writeStr("]]></"+tag+">\n");
+    return;
+  }
+
   writeEndTag(tag);
 }
 

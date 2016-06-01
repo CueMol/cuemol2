@@ -1736,6 +1736,7 @@ void Scene::readFrom2(qlib::LDom2Node *pNode)
 
         LString value = pChNode->getValue();
         LString contents = pChNode->getContents();
+        contents = contents.trim("\r\n");
         if (value.isEmpty() && !contents.isEmpty())
           value = contents;
 

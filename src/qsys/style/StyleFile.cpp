@@ -196,6 +196,7 @@ void StyleFile::loadStrData(LDom2Node *pChNode, StyleSet *pSet)
 
   LString value = pChNode->getValue();
   LString contents = pChNode->getContents();
+  contents = contents.trim("\r\n ");
   if (value.isEmpty() && !contents.isEmpty())
     value = contents;
 
@@ -384,6 +385,7 @@ void StyleFile::loadMaterial(LDom2Node *pNode, StyleSet *pSet)
       // renderer-type-dependent string material definition
       value = pChNode->getValue();
       LString contents = pChNode->getContents();
+      contents = contents.trim("\r\n ");
       if (value.isEmpty() && !contents.isEmpty())
       value = contents;
       
@@ -439,6 +441,7 @@ void StyleFile::loadSetting(LDom2Node *pNode, StyleSet *pSet)
     if (tagname.equals("type")) continue;
     LString value = pChNode->getValue();
     LString contents = pChNode->getContents();
+    contents = contents.trim("\r\n ");
     if (value.isEmpty() && !contents.isEmpty())
       value = contents;
     

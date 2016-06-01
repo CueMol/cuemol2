@@ -30,6 +30,12 @@ private:
   /// Name of the material
   LString m_name;
 
+  /// has the system values (double value)
+  bool m_bHasSysVal;
+
+  /// has the dependent values (string value)
+  bool m_bHasDepVal;
+
 public:
   /// System's material type enum
   enum {
@@ -55,6 +61,10 @@ public:
 
   void setDepValue(const LString &type, const LString &value);
   LString getDepValue(const LString &type) const;
+
+  /// serialization to the data node
+  void writeTo(qlib::LDom2Node *pNode) const;
+  
 };
 
 
