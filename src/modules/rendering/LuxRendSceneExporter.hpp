@@ -49,6 +49,9 @@ namespace render {
 
     /// output base name
     LString m_sOutputBase;
+
+    bool m_bBgTransp;
+
   };
 
 }

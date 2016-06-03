@@ -28,6 +28,7 @@ LuxRendSceneExporter::LuxRendSceneExporter()
 {
   m_nHaltSPP = 10000;
   m_sOutputBase = "";
+  m_bBgTransp = true;
 }
 
 LuxRendSceneExporter::~LuxRendSceneExporter()

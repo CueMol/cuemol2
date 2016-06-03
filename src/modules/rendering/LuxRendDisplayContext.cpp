@@ -152,6 +152,7 @@ void LuxRendDisplayContext::writeHeader()
   ps.format(scmt_orth+"LookAt 0 0 %f 0 0 0 0 1 0\n", m_dSlabDepth/2.0);
   ps.format(scmt_orth+"Camera \"orthographic\"\n");
   ps.format(scmt_orth+"       \"float screenwindow\" [%f %f %f %f]\n", -zoomx/2.0, zoomx/2.0, -zoomy/2.0, zoomy/2.0);
+  ps.format(scmt_orth+"      \"float hither\" [%f]\n", m_dViewDist-m_dSlabDepth/2.0);
 
   ps.format("\n");
   ps.format("Film \"fleximage\"\n");
@@ -228,30 +229,60 @@ void LuxRendDisplayContext::writeHeader()
   ps.format("AttributeEnd\n");
   ps.format("\n");
 
-  ps.format("AttributeBegin # Background\n");
+  if (!m_pParent->m_bBgTransp) {
+    ps.format("AttributeBegin # Background\n");
+    ps.format("Material \"matte\"\n");
+    ps.format("    \"color Kd\" [%.4f %.4f %.4f]\n", m_bgcolor->fr(), m_bgcolor->fg(), m_bgcolor->fb());
+    if (bPerspec) {
+      const double xx = (m_dSlabDepth + m_dViewDist)*zoomx/(m_dViewDist*2.0);
+      const double yy = (m_dSlabDepth + m_dViewDist)*zoomy/(m_dViewDist*2.0);
+      ps.format("Shape \"mesh\"\n");
+      ps.format("  \"point P\" [%f %f %f\n", -xx, yy, zback);
+      ps.format("  %f %f %f\n", -xx, -yy, zback);
+      ps.format("  %f %f %f\n", xx, -yy, zback);
+      ps.format("  %f %f %f]\n", xx, yy, zback);
+      ps.format("  \"integer quadindices\" [0 1 2 3]\n");
+      //ps.format("Translate 0 0 %f\n", zback);
+      //ps.format("Shape \"disk\" \"float radius\" [%f] \"float height\" [0]\n", disksize);
+    }
+    else {
+      ps.format("Shape \"mesh\"\n");
+      ps.format("  \"point P\" [%f %f %f\n", -zoomx/2.0, zoomy/2.0, zback);
+      ps.format("  %f %f %f\n", -zoomx/2.0, -zoomy/2.0, zback);
+      ps.format("  %f %f %f\n", zoomx/2.0, -zoomy/2.0, zback);
+      ps.format("  %f %f %f]\n", zoomx/2.0, zoomy/2.0, zback);
+      ps.format("  \"integer quadindices\" [0 1 2 3]\n");
+    }
+    ps.format("AttributeEnd\n");
+    ps.format("\n");
+  }
+  
+  // floor
+  ps.format("AttributeBegin # Floor\n");
   ps.format("Material \"matte\"\n");
+  ps.format("    \"color Kd\" [0.5 0.5 0.5]\n");
   if (bPerspec) {
-    const double xx = (m_dSlabDepth + m_dViewDist)*zoomx/(m_dViewDist*2.0);
-    const double yy = (m_dSlabDepth + m_dViewDist)*zoomy/(m_dViewDist*2.0);
-    ps.format("Shape \"mesh\"\n");
-    ps.format("  \"point P\" [%f %f %f\n", -xx, yy, zback);
-    ps.format("  %f %f %f\n", -xx, -yy, zback);
-    ps.format("  %f %f %f\n", xx, -yy, zback);
-    ps.format("  %f %f %f]\n", xx, yy, zback);
-    ps.format("  \"integer quadindices\" [0 1 2 3]\n");
-    //ps.format("Translate 0 0 %f\n", zback);
-    //ps.format("Shape \"disk\" \"float radius\" [%f] \"float height\" [0]\n", disksize);
   }
   else {
+    double scl = 10.0;
     ps.format("Shape \"mesh\"\n");
-    ps.format("  \"point P\" [%f %f %f\n", -zoomx/2.0, zoomy/2.0, zback);
-    ps.format("  %f %f %f\n", -zoomx/2.0, -zoomy/2.0, zback);
+    ps.format("  \"point P\" [\n");
+    ps.format("  %f %f %f\n", -zoomx/2.0*scl, -zoomy/2.0*scl, zback*scl);
+    ps.format("  %f %f %f\n", -zoomx/2.0*scl, -zoomy/2.0*scl, -zback*scl);
+    ps.format("  %f %f %f\n", zoomx/2.0*scl, -zoomy/2.0*scl, -zback*scl);
+    ps.format("  %f %f %f\n", zoomx/2.0*scl, -zoomy/2.0*scl, zback*scl);
+/*
+    ps.format("  %f %f %f\n", zoomx/2.0, zoomy/2.0, zback);
+    ps.format("  %f %f %f\n", zoomx/2.0, zoomy/2.0, -zback);
+    ps.format("  %f %f %f\n", zoomx/2.0, -zoomy/2.0, -zback);
     ps.format("  %f %f %f\n", zoomx/2.0, -zoomy/2.0, zback);
-    ps.format("  %f %f %f]\n", zoomx/2.0, zoomy/2.0, zback);
+*/
+    ps.format("]\n");
     ps.format("  \"integer quadindices\" [0 1 2 3]\n");
   }
   ps.format("AttributeEnd\n");
   ps.format("\n");
+  
 
   // overwrite perspec flag
   setPerspective(bPerspec);
@@ -281,6 +312,21 @@ void LuxRendDisplayContext::writeObjects()
   // write lines
   writeLines(ps);
 
+  // convert sphere to mesh
+  m_pIntData->convSpheres();
+  // convert cylinder to mesh
+  m_pIntData->convCylinders();
+  // write meshes
+  writeMeshes(ps);
+
+  int nEdgeLineType = getEdgeLineType();
+  if (nEdgeLineType==ELT_EDGES||
+      nEdgeLineType==ELT_SILHOUETTE) {
+    // Extract&write edge/silhouette lines
+    writeSilEdges(ps);
+  }
+
+/*
   int nEdgeLineType = getEdgeLineType();
   if (nEdgeLineType==ELT_EDGES||
       nEdgeLineType==ELT_SILHOUETTE) {
@@ -302,7 +348,7 @@ void LuxRendDisplayContext::writeObjects()
     // write meshes
     writeMeshes(ps);
   }
-
+*/
   ps.format("AttributeEnd\n");
   ps.format("\n");
 }

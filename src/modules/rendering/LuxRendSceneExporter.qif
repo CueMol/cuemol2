@@ -28,6 +28,9 @@ runtime_class LuxRendSceneExporter extends SceneExporter
   /// Film output options (tonemapping param, etc)
   property string filmopts => m_sFilmOpts;
 
+  /// transparent background
+  property boolean bg_transp => m_bBgTransp;
+
 };
 
 #endif
