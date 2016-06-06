@@ -779,7 +779,8 @@ void TubeSection::makeDisconJct(DisplayContext *pdl,
 
   int j, nsize = getSize();
 
-  pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
+  //pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
+  pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL);
   pdl->startTriangleStrip();
   pdl->normal(-ev);
 
