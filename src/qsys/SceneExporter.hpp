@@ -20,8 +20,11 @@ namespace qsys {
 
   class QSYS_API SceneExporter : public InOutHandler
   {
-  private:
     MC_SCRIPTABLE;
+
+    typedef InOutHandler super_t;
+
+  private:
 
     ScenePtr m_pClient;
 

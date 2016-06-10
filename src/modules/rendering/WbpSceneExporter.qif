@@ -18,7 +18,7 @@ runtime_class WbpSceneExporter extends SceneExporter
   // Property definition
 
   // property boolean perspective => m_bPerspective;
-  property string camera => m_cameraName;
+  property string camera => redirect(getCameraName, setCameraName);
 
   property boolean useClipZ => m_bUseClipZ;
 

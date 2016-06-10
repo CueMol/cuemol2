@@ -34,11 +34,15 @@ void ObjReader::attach(ObjectPtr pObj)
 {
   m_pTarget = pObj;
   m_pTarget->readerAttached();
+
+  super_t::startTimerMes();
 }
     
 /// Detach from the target object
 ObjectPtr ObjReader::detach()
 {
+  super_t::endTimerMes();
+
   ObjectPtr pret = m_pTarget;
   m_pTarget = ObjectPtr();
   pret->readerDetached();

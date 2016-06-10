@@ -60,6 +60,8 @@ public:
       MB_THROW(IOException, ("Cannot open file:"+fname));
     }
 
+    //setvbuf(m_fp, NULL, _IOFBF, 256*1024*1024);
+
     setFileInfo(fname);
   }
 
@@ -133,6 +135,8 @@ public:
     if (m_fp==NULL) {
       MB_THROW(IOException, ("Cannot open file:"+fname));
     }
+
+    //setvbuf(m_fp, NULL, _IOFBF, 256*1024*1024);
 
     setFileInfo(fname);
   }

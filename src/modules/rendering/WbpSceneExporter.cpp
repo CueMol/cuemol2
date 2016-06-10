@@ -316,7 +316,7 @@ void WbpSceneExporter::writeDefaultRendOpts()
   gfx::ColorPtr bgcol = pScene->getBgColor();
 
   ps.println("RenderingOptions \"RenderingOption 1\" : {");
-  ps.formatln("  Camera : \"%s\"", m_cameraName.c_str());
+  ps.formatln("  Camera : \"%s\"", getCameraName().c_str());
   ps.println("  OutputWidth : 1000");
   ps.println("  OutputHeight : 1000");
   ps.println("  AntiAliasing : true");
@@ -411,7 +411,7 @@ void WbpSceneExporter::writeWbp()
   ps.println("    }");
 
   {
-    const LString &camname = m_cameraName;
+    const LString &camname = getCameraName();
     CameraPtr pCam = pScene->getCamera(camname);
     double dist = pCam->getCamDist();
     if (!pCam->isPerspec())

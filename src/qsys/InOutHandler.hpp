@@ -49,6 +49,8 @@ namespace qsys {
 
     ///////////////////////////
     // Constructor / Destructor
+    InOutHandler();
+
     virtual ~InOutHandler();
 
     ////////////////////////////////////////
@@ -112,6 +114,16 @@ namespace qsys {
 
     virtual void writeTo2(qlib::LDom2Node *pNode) const;
     virtual void readFrom2(qlib::LDom2Node *pNode);
+
+    ////////////////////////////////
+    // I/O Benchmark
+
+  private:
+    void *m_pTimerObj;
+
+  public:
+    void startTimerMes();
+    void endTimerMes();
 
   };
 

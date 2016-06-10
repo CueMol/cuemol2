@@ -25,6 +25,8 @@ namespace qsys {
   {
     MC_SCRIPTABLE;
 
+    typedef InOutHandler super_t;
+
   private:
 
     ScenePtr m_pClient;

@@ -24,6 +24,8 @@ namespace qsys {
   {
     MC_SCRIPTABLE;
 
+    typedef InOutHandler super_t;
+
     //////////////////////////////////////////////
   private:
     ObjectPtr m_pTarget;

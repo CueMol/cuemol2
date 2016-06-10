@@ -147,7 +147,6 @@ bool StreamManager::isReaderRegistered(const LString &abiname)
   return m_rdrinfotab.containsKey(abiname);
 }
 
-
 InOutHandler *StreamManager::createHandlerPtr(const LString &nickname, int nCatID) const
 {
   BOOST_FOREACH(const data_t::value_type &entry, m_rdrinfotab) {

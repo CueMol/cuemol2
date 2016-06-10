@@ -152,7 +152,7 @@ void LuxRendDisplayContext::writeHeader()
   ps.format(scmt_orth+"LookAt 0 0 %f 0 0 0 0 1 0\n", m_dSlabDepth/2.0);
   ps.format(scmt_orth+"Camera \"orthographic\"\n");
   ps.format(scmt_orth+"       \"float screenwindow\" [%f %f %f %f]\n", -zoomx/2.0, zoomx/2.0, -zoomy/2.0, zoomy/2.0);
-  ps.format(scmt_orth+"      \"float hither\" [%f]\n", m_dViewDist-m_dSlabDepth/2.0);
+  //  ps.format(scmt_orth+"      \"float hither\" [%f]\n", m_dViewDist-m_dSlabDepth/2.0);
 
   ps.format("\n");
   ps.format("Film \"fleximage\"\n");
@@ -163,7 +163,7 @@ void LuxRendDisplayContext::writeHeader()
   ps.format("     \"bool premultiplyalpha\" [\"true\"]\n");
   ps.format("     \"bool write_png\" [\"true\"]\n");
   ps.format("     \"bool write_exr\" [\"true\"]\n");
-  ps.format("     \"string write_png_channels\" [\"RGB\"]\n");
+  ps.format("     \"string write_png_channels\" [\"RGBA\"]\n");
   ps.format("     \"integer displayinterval\" [1]\n");
   ps.format("     \"integer writeinterval\" [60]\n");
   if (m_pParent->m_nHaltSPP>0.0)

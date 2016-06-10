@@ -10,7 +10,18 @@
 #include <qlib/FileStream.hpp>
 #include <qlib/LDOM2Tree.hpp>
 
+//#ifdef HAVE_BOOST_THREAD
+#define BOOST_LIB_DIAGNOSTIC 1
+//#define BOOST_DYN_LINK 1
+#define BOOST_ALL_DYN_LINK 1
+#include <boost/timer/timer.hpp>
+
 using namespace qsys;
+
+InOutHandler::InOutHandler()
+     : m_pTimerObj(NULL)
+{
+}
 
 InOutHandler::~InOutHandler()
 {
@@ -98,5 +109,27 @@ void InOutHandler::readFrom2(qlib::LDom2Node *pNode)
     LString value2 = pCNode->getStrAttr("alt_src");
     m_stab.set(key, value);
   }
+}
+
+void InOutHandler::startTimerMes()
+{
+  boost::timer::cpu_timer *p = new boost::timer::cpu_timer();
+  p->start();
+  m_pTimerObj = p;
+}
+
+void InOutHandler::endTimerMes()
+{
+  boost::timer::cpu_timer *p = static_cast<boost::timer::cpu_timer *>(m_pTimerObj);
+  boost::timer::cpu_times t = p->elapsed();
+  delete p;
+  m_pTimerObj = NULL;
+
+  qlib::LClass *pCls = getClassObj();
+  LString msg = boost::timer::format(t);
+  msg = msg.chomp();
+  LOG_DPRINTLN( "%s> %s",
+                pCls->getClassName().c_str(),
+                msg.c_str() );
 }
 

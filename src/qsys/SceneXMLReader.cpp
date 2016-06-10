@@ -45,11 +45,14 @@ void SceneXMLReader::attach(ScenePtr pScene)
 {
   // TO DO: lock scene
   m_pClient = pScene;
+  super_t::startTimerMes();
 }
     
 /// detach from the target object
 ScenePtr SceneXMLReader::detach()
 {
+  super_t::endTimerMes();
+
   // TO DO: unlock scene
   ScenePtr p = m_pClient;
   m_pClient = ScenePtr();
