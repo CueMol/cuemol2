@@ -41,6 +41,11 @@ double Material::getSysValue(int nID) const
   return m_sysmat[nID];
 }
 
+bool Material::hasSysValue(int nID) const
+{
+  return m_bHasSysVal;
+}
+
 void Material::setDepValue(const LString &type, const LString &value)
 {
   m_depmat.forceSet(type, value);
@@ -50,6 +55,14 @@ void Material::setDepValue(const LString &type, const LString &value)
 LString Material::getDepValue(const LString &type) const
 {
   return m_depmat.get(type);
+}
+
+bool Material::hasDepValue(const LString &type) const
+{
+  if (m_depmat.containsKey(type))
+    return true;
+  else
+    return false;
 }
 
 void Material::writeTo(qlib::LDom2Node *pNode) const

@@ -93,24 +93,28 @@ if (!("RendCommPropEdit" in cuemolui)) {
       var menu = this.mMateName.menupopup;
       util.appendMenu(document, menu, "", "(none)");
 
-      var json, defs;
+      var json, defs = {};
       if (gMain.mTgtSceID!=0) {
         json = stylem.getMaterialNamesJSON(gMain.mTgtSceID);
         dd("scene material defs: "+json);
-        defs = JSON.parse(json);
+        let ls = JSON.parse(json);
         //this.appendMatList(defs);
-        defs.forEach(function (aElem) {
-          util.appendMenu(document, menu, aElem, aElem);
+        ls.forEach(function (aElem) {
+          defs[aElem] = aElem;
         });
       }
 
       json = stylem.getMaterialNamesJSON(0);
       dd("global material defs: "+json);
-      defs = JSON.parse(json);
+      let ls = JSON.parse(json);
       //this.appendMatList(defs);
-      defs.forEach(function (aElem) {
-        util.appendMenu(document, menu, aElem, aElem);
+      ls.forEach(function (aElem) {
+        defs[aElem] = aElem;
       });
+
+      for (aElem in defs) {
+        util.appendMenu(document, menu, aElem, aElem);
+      }
 
       /*var that = this;
       setTimeout( function () {

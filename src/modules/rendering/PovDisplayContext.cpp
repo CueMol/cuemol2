@@ -578,6 +578,11 @@ void PovDisplayContext::dumpClut(OutStream *fp)
     LString matdef = pSM->getMaterial(mat, "pov");
     matdef = matdef.trim(" \r\n\t");
       
+    if (matdef.isEmpty()) {
+      matdef = pSM->getMaterial("default", "pov");
+      matdef = matdef.trim(" \r\n\t");
+    }
+
     // write material
     ps.format("#declare %s_tex_%d = ", getSecName().c_str(), i);
     if (!matdef.isEmpty()) {

@@ -386,8 +386,13 @@ void LuxRendDisplayContext::writeMaterials(PrintStream &ps)
     // Get material
     LString mat;
     m_pIntData->m_clut.getMaterial(cind, mat);
-    if (mat.isEmpty()) mat = "default";
+    if (mat.isEmpty())
+      mat = "default";
     LString matdef = pSM->getMaterial(mat, "lux");
+
+    if (matdef.isEmpty())
+      matdef = pSM->getMaterial("default", "lux");
+
     if (matdef.isEmpty()) {
       // hard-coded default
       matdef  = "    \"string type\" [\"glossy\"]\n";

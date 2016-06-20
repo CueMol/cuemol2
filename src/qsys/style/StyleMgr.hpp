@@ -175,10 +175,11 @@ namespace qsys {
     /// Compile and create new color object (for GUI)
     ColorPtr compileColor(const LString &rep, qlib::uid_t nScopeID);
     
+  public:
     //////////////////////////////////////////////////////////////////////
     // Material methods
 
-    Material *getMaterial(const LString &mat_id, qlib::uid_t nScopeID);
+    //Material *getMaterial(const LString &mat_id, qlib::uid_t nScopeID);
 
     /// Get renderer-type-dependent string material definition
     LString getMaterial(const LString &mat_id, const LString &rend_type);
@@ -190,6 +191,10 @@ namespace qsys {
     /// Get material name list (for GUI)
     LString getMaterialNamesJSON(qlib::uid_t nScopeID, qlib::uid_t nStyleSetID = qlib::invalid_uid);
 
+  private:
+    Material *getMaterialImpl(const LString &mat_id, const LString &rend_type, int nType, qlib::uid_t nScopeID);
+
+  public:
     //////////////////////////////////////////////////////////////////////
     // String data methods
 

@@ -58,9 +58,11 @@ public:
 
   void setSysValue(int nID, double value);
   double getSysValue(int nID) const;
+  bool hasSysValue(int nID) const;
 
   void setDepValue(const LString &type, const LString &value);
   LString getDepValue(const LString &type) const;
+  bool hasDepValue(const LString &type) const;
 
   /// serialization to the data node
   void writeTo(qlib::LDom2Node *pNode) const;

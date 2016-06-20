@@ -170,7 +170,7 @@ LString StyleMgr::getColorDefsJSON(qlib::uid_t nScopeID,
 
 //////////////////////////////////////////////////
 // Material operations
-
+/*
 Material *StyleMgr::getMaterial(const LString &mat_id, qlib::uid_t nScopeID)
 {
   StyleList *pSL = getCreateStyleList(nScopeID);
@@ -188,11 +188,43 @@ Material *StyleMgr::getMaterial(const LString &mat_id, qlib::uid_t nScopeID)
   
   // not found
   return NULL;
+}*/
+
+Material *StyleMgr::getMaterialImpl(const LString &mat_id, const LString &rend_type, int nType, qlib::uid_t nScopeID)
+{
+  StyleList *pSL = getCreateStyleList(nScopeID);
+  bool bSys;
+  if (rend_type.isEmpty() && nType>=0)
+    bSys = true;
+  else
+    bSys = false;
+
+  Material *pMat;
+  BOOST_FOREACH(StyleList::value_type pSet, *pSL) {
+    pMat = pSet->getMaterial(mat_id);
+    if (pMat!=NULL) {
+      if (bSys) {
+        if (pMat->hasSysValue(nType))
+          return pMat;
+      }
+      else {
+        if (pMat->hasDepValue(rend_type))
+          return pMat;
+      }
+    }
+  }  
+
+  // check global context
+  if (nScopeID!=qlib::invalid_uid)
+    return getMaterialImpl(mat_id, rend_type, nType, qlib::invalid_uid);
+  
+  // not found
+  return NULL;
 }
 
 LString StyleMgr::getMaterial(const LString &mat_id, const LString &rend_type)
 {
-  Material *pMat = getMaterial(mat_id, getContextID());
+  Material *pMat = getMaterialImpl(mat_id, rend_type, -1, getContextID());
   if (pMat==NULL)
     return LString();
   
@@ -201,7 +233,7 @@ LString StyleMgr::getMaterial(const LString &mat_id, const LString &rend_type)
 
 double StyleMgr::getMaterial(const LString &mat_id, int nType)
 {
-  Material *pMat = getMaterial(mat_id, getContextID());
+  Material *pMat = getMaterialImpl(mat_id, LString(), nType, getContextID());
   if (pMat==NULL)
     return -1.0;
   
