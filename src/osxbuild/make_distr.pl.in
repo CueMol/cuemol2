@@ -62,13 +62,15 @@ my @lib_list = ("libqmpng", "libqmzlib",
 		"libqlib", "libqsys", "libgfx", "libjsbr", "libsysdep", 
 		"libmolstr", "libmolvis", "libsymm", "libsurface", "libxtal", "libmdtools",
 		"libmolanl", "liblwview", "libanim", "librender", "libimporters",
-		"libboost_thread", "libboost_system", "libboost_filesystem", "libboost_iostreams",
+		"libboost_thread", "libboost_system", "libboost_filesystem", "libboost_iostreams", "libboost_timer", "libboost_chrono",
 		"libCGAL", "libGLEW", "liblcms2");
 
 my @copylib = ("$boost_dir/libboost_thread*.dylib",
 	       "$boost_dir/libboost_system*.dylib",
 	       "$boost_dir/libboost_filesystem*.dylib",
 	       "$boost_dir/libboost_iostreams*.dylib",
+	       "$boost_dir/libboost_timer*.dylib",
+	       "$boost_dir/libboost_chrono*.dylib",
 	       "$cgal_dir/libCGAL.11.dylib",
 	       "$glew_dir/libGLEW.1.12.0.dylib",
 	       "$lcms_dir/liblcms2.2.dylib"
