@@ -139,6 +139,7 @@ libqsys_la_LIBADD = \
   @BOOST_THREAD_LIB@ \
   @BOOST_SYSTEM_LIB@ \
   @BOOST_FILESYSTEM_LIB@ \
+  -lboost_timer \
   ../libpng/libqmpng.la \
   ../zlib/libqmzlib.la \
  $(NULL)

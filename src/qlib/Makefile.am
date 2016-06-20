@@ -54,10 +54,14 @@ LScrTime.cpp \
 LScrRangeSet.cpp \
 LWrapper.cpp \
 LDataSrcContainer.cpp \
+LObjStream3.cpp \
+LProcMgr.cpp \
  \
 qlib.cpp
 
-CPP_SRC += LProcMgr.cpp
+if COND_USE_XZ
+CPP_SRC += XzStream.cpp
+endif
 
 # CueMol interface definitions for MCWRAPGEN
 MCWG_SRC= \
@@ -99,6 +103,7 @@ libqlib_la_CXXFLAGS = \
   @CXXFLAGS_VIS_HIDDEN@ \
   -DQLIB_EXPORTS=1 \
   @BOOST_CPPFLAGS@ \
+  @XZ_CPPFLAGS@ \
   -I$(top_srcdir) \
   -I$(srcdir) \
   $(NULL)
@@ -108,12 +113,14 @@ libqlib_la_LIBADD = \
   @BOOST_THREAD_LIB@ \
   @BOOST_SYSTEM_LIB@ \
   @BOOST_FILESYSTEM_LIB@ \
+  @XZ_LIBADD@ \
  ../zlib/libqmzlib.la \
  $(NULL)
 
 libqlib_la_LDFLAGS = \
- @BOOST_LDFLAGS@ \
- $(NULL)
+  @BOOST_LDFLAGS@ \
+  @XZ_LDFLAGS@ \
+  $(NULL)
 
 ######################################################
 # Test code

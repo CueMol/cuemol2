@@ -15,6 +15,9 @@ usexrbr="--without-xmlrpc"
 
 lcms="--with-lcms=$HOME/proj64/lcms2"
 
+xz="--with-xz=$HOME/proj64/xz"
+#xz="--with-xz"
+
 ##
 
 gecko_sdk_dir=$HOME/proj64/xulrunner/xulrunner-39.0-sdk
@@ -47,6 +50,7 @@ $config_scr \
 --enable-shared \
 --prefix=$install_dir \
 $lcms \
+$xz \
 $usepybr \
 $usexrbr \
 --with-xulrunner-sdk=$gecko_sdk_dir \

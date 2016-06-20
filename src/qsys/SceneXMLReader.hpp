@@ -13,6 +13,7 @@
 
 namespace qlib {
   class LDom2InStream;
+  class LObjInStream3;
 }
 
 namespace qsys {
@@ -82,6 +83,21 @@ namespace qsys {
     }
 
   private:
+    int m_nBufSz;
+
+  public:
+    /// Get buffer size
+    int getBufSize() const {
+      return m_nBufSz;
+    }
+    void setBufSize(int n) {
+      m_nBufSz = n;
+    }
+
+  private:
+
+    void procDataSrcLoad(qlib::LObjInStream3 &ois, LDom2Node *pNode);
+    void procDataChunks(qlib::LObjInStream3 &ois, LDom2Node *pNode);
 
     void procDataSrcLoad(qlib::LDom2InStream &ois, LDom2Node *pNode);
     void procDataChunks(qlib::LDom2InStream &ois, LDom2Node *pNode);

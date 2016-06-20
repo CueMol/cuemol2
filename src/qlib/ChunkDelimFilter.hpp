@@ -1,6 +1,5 @@
 //
 // Stream filter for delimiting the "Multi-chunk file"
-// ()
 //
 
 #ifndef QLIB_CHUNK_DELIM_FILTER_HPP_INCLUDED
@@ -138,97 +137,6 @@ public:
   }
   
 };
-
-#if 0
-class ChunkFilterImpl : public detail::InFilterImpl
-{
-public:
-  typedef qlib::detail::InFilterImpl super_t;
-  
-private:
-  LString m_nextMark;
-  bool m_bReady;
-  std::deque<unsigned char> m_deq;
-
-  int qread() {
-    if (m_deq.empty())
-      return super_t::read();
-    unsigned char c = m_deq.back();
-    m_deq.pop_back();
-    return c;
-  }
-
-  void unread(unsigned char c) {
-    m_deq.push_front(c);
-  }
-
-  int readOneImpl() {
-    int i;
-    std::deque<unsigned char> cmp;
-    for (i=0; i<m_nextMark.length(); ++i) {
-      int c = qread();
-      if (c>=0) {
-        cmp.push_front(c);
-        if (c==m_nextMark[i]) {
-	  // MB_DPRINTLN("MM> %s", m_nextMark.substr(0, i).c_str());
-          continue;
-	}
-      }
-      else {
-
-        // EOF
-        if (cmp.size()<=0)
-          break;
-      }
-
-      unsigned char ret = cmp.back();
-      cmp.pop_back();
-      std::deque<unsigned char>::const_iterator iter = cmp.begin();
-      std::deque<unsigned char>::const_iterator iend = cmp.end();
-      for (; iter!=iend; ++iter)
-        unread(*iter);
-      return ret;
-
-    }
-
-    m_bReady = false;
-    return -1;
-  }
-  
-public:
-  ChunkFilterImpl(sp<qlib::detail::InImpl> src) : super_t(src), m_bReady(true) {}
-
-  void setMark(const LString &mark) {
-    m_bReady = true;
-    m_nextMark = mark;
-  }
-
-  virtual bool ready() {
-    if (!m_bReady) return false;
-    return super_t::ready();
-  }
-  
-  virtual int read() {
-    return readOneImpl();
-  }
-  
-  virtual int read(char *abuf, int aoff, int alen) {
-    int i;
-    for (i=0; i<alen; ++i) {
-      int c = readOneImpl();
-      if (c<0) break;
-      abuf[aoff+i] = c;
-    }
-    return i;
-  }
-  
-  virtual int skip(int len) {
-    MB_THROW(FileFormatException, "skip() not supported");
-    return super_t::skip(len);
-  }
-  
-};
-#endif
 
 }
 

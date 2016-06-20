@@ -260,6 +260,77 @@ AC_DEFINE([XML_CONTEXT_BYTES], 1024,
 
 #######################################################
 #
+# check for XZ
+#
+
+USE_XZ=
+XZ_CPPFLAGS=
+XZ_LDFLAGS=
+XZ_LIBADD=
+AC_MSG_CHECKING(XZ library location)
+AC_ARG_WITH(xz,
+[  --with-xz[=DIR]      Look for XZ library in DIR (default=no) ],
+[ case "$with_xz" in
+  no)
+    AC_MSG_RESULT($with_xz)
+    USE_XZ=no
+    ;;
+
+  yes)
+    AC_MSG_RESULT($with_xz)
+
+    AC_CHECK_HEADERS([lzma.h],,[AC_MSG_ERROR(lzma.h not found)],[])
+    AC_CHECK_DECLS(lzma_version_number,
+                   [],
+		   [AC_MSG_ERROR(lzma_version_number() not found)],
+		   [#include <lzma.h>])
+    AC_CHECK_LIB(lzma, lzma_version_number,
+                 [XZ_LIBADD=" -llzma"],
+		 [AC_MSG_ERROR(lzma_version_number() not found)],
+		 [])
+    USE_XZ=yes
+    ;;
+
+  *)
+    AC_MSG_RESULT($with_xz)
+    _cppflags=${CPPFLAGS}
+    CPPFLAGS="-I$with_xz/include $CPPFLAGS"
+    AC_CHECK_HEADERS([lzma.h],,[AC_MSG_ERROR(lzma.h not found)],[])
+
+    AC_CHECK_DECLS(lzma_version_number,
+                   [XZ_CPPFLAGS="-I$with_xz/include"],
+		   [AC_MSG_ERROR(lzma_version_number() not found)],
+		   [#include <lzma.h>])
+
+    CPPFLAGS=$_cppflags
+
+    _ldflags=${LDFLAGS}
+    _libs=${LIBS}
+    LDFLAGS="-L$with_xz/lib $LDFLAGS"
+    LIBS="-llzma $LIBS"
+    AC_CHECK_LIB(lzma, lzma_version_number,
+                 [XZ_LDFLAGS="-L$with_xz/lib"
+		 XZ_LIBADD=" -llzma"],
+		 [AC_MSG_ERROR(lzma_version_number() not found)],
+		 [])
+    LDFLAGS=$_ldflags
+    LIBS=$_libs
+
+    USE_XZ=yes
+    ;;
+  esac ],
+[
+    AC_MSG_RESULT(no)
+    USE_XZ=no
+])
+
+AC_SUBST(XZ_CPPFLAGS)
+AC_SUBST(XZ_LDFLAGS)
+AC_SUBST(XZ_LIBADD)
+AM_CONDITIONAL(COND_USE_XZ, test x$USE_XZ = xyes)
+
+#######################################################
+#
 # check for PNG location (local)
 #
 
@@ -279,11 +350,29 @@ LCMS_CPPFLAGS=
 LCMS_LDFLAGS=
 LCMS_LIBADD=
 
+AC_MSG_CHECKING(LittleCMS library location)
 AC_ARG_WITH(lcms,
 [  --with-lcms[=DIR]      Look for LittleCMS library in DIR (default=no) ],
 [ case "$with_lcms" in
   no)
+    AC_MSG_RESULT(no)
     ;;
+
+  yes)
+    dnl default LCMS2 location (/usr, etc)
+    AC_MSG_RESULT(yes)
+    AC_CHECK_HEADERS([lcms2.h],,[AC_MSG_ERROR(lcms2.h not found)],[])
+    AC_CHECK_DECLS(cmsGetEncodedCMMversion,
+                   [],
+		   [AC_MSG_ERROR(cmsGetEncodedCMMversion() not found)],
+		   [#include <lcms2.h>])
+    AC_CHECK_LIB(lcms, cmsGetEncodedCMMversion,
+                 [LCMS_LIBADD=" -llcms2"],
+		 [AC_MSG_ERROR(cmsGetEncodedCMMversion() not found)],
+		 [])
+
+    ;;
+
   *)
     dnl LCMS2 location specified
     AC_MSG_RESULT($with_lcms)
@@ -311,16 +400,8 @@ AC_ARG_WITH(lcms,
 
     ;;
   esac ],
-[   dnl default LCMS2 location (/usr, etc)
-    AC_CHECK_HEADERS([lcms2.h],,[AC_MSG_ERROR(lcms2.h not found)],[])
-    AC_CHECK_DECLS(cmsGetEncodedCMMversion,
-                   [],
-		   [AC_MSG_ERROR(cmsGetEncodedCMMversion() not found)],
-		   [#include <lcms2.h>])
-    AC_CHECK_LIB(lcms, cmsGetEncodedCMMversion,
-                 [LCMS_LIBADD=" -llcms2"],
-		 [AC_MSG_ERROR(cmsGetEncodedCMMversion() not found)],
-		 [])
+[
+    AC_MSG_RESULT(no)
 ])
 
 AC_SUBST(LCMS_CPPFLAGS)

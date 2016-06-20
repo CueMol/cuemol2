@@ -20,6 +20,8 @@ runtime_class SceneXMLReader
   // Property definition
   property string error => redirect(getErrMsg, XXX) (readonly);
 
+  property integer bufsize => redirect(getBufSize, setBufSize);
+
   ////////////////////
   // Method definition
 

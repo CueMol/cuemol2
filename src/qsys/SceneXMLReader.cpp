@@ -6,6 +6,8 @@
 
 #include <common.h>
 
+#define USE_OBJSTR3 1
+
 #include "SceneXMLReader.hpp"
 #include "StreamManager.hpp"
 #include "SceneEvent.hpp"
@@ -14,10 +16,15 @@
 #include "style/AutoStyleCtxt.hpp"
 #include "style/StyleFile.hpp"
 
-#include <qlib/LDOM2Stream.hpp>
 #include <qlib/FileStream.hpp>
 #include <qlib/StringStream.hpp>
 #include <qlib/LByteArray.hpp>
+
+#ifdef USE_OBJSTR3
+#include <qlib/LObjStream3.hpp>
+#else
+#include <qlib/LDOM2Stream.hpp>
+#endif
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -29,6 +36,8 @@ using qlib::LDataSrcContainer;
 
 SceneXMLReader::SceneXMLReader()
 {
+  // default buffer size (16M bytes)
+  m_nBufSz = 16*1024*1024;
 }
 
 SceneXMLReader::~SceneXMLReader()
@@ -103,7 +112,14 @@ void SceneXMLReader::read()
   //
   qlib::FileInStream fis;
   fis.open(localfile);
+
+#ifdef USE_OBJSTR3
+  qlib::LObjInStream3 ois(fis);
+  ois.setBufSize(m_nBufSz);
+  ois.start();
+#else
   qlib::LDom2InStream ois(fis);
+#endif
 
   //
   // Construct data structure
@@ -141,7 +157,13 @@ void SceneXMLReader::read()
   }
 }
 
+#ifdef USE_OBJSTR3
+void SceneXMLReader::procDataChunks(qlib::LDom2InStream &ois, LDom2Node *pNode) {}
+void SceneXMLReader::procDataChunks(qlib::LObjInStream3 &ois, LDom2Node *pNode)
+#else
+void SceneXMLReader::procDataChunks(qlib::LObjInStream3 &ois, LDom2Node *pNode) {}
 void SceneXMLReader::procDataChunks(qlib::LDom2InStream &ois, LDom2Node *pNode)
+#endif
 {
   for (;;) {
     try {
@@ -150,7 +172,6 @@ void SceneXMLReader::procDataChunks(qlib::LDom2InStream &ois, LDom2Node *pNode)
         return;
       MB_DPRINTLN("SceneXMLReader> load datachunk: %s", chunkid.c_str());
 
-      //LDataSrcContainer *pCnt = findChunkObj(chunkid);
       LDataSrcContainer *pCnt = ois.findChunkObj(chunkid);
       if (pCnt==NULL) {
         LOG_DPRINTLN("SceneXMLReader> data container for chunk %s not found.", chunkid.c_str());
@@ -173,7 +194,13 @@ void SceneXMLReader::procDataChunks(qlib::LDom2InStream &ois, LDom2Node *pNode)
   }
 }
 
+#ifdef USE_OBJSTR3
+void SceneXMLReader::procDataSrcLoad(qlib::LDom2InStream &ois, LDom2Node *pNode) {}
+void SceneXMLReader::procDataSrcLoad(qlib::LObjInStream3 &ois, LDom2Node *pNode)
+#else
+void SceneXMLReader::procDataSrcLoad(qlib::LObjInStream3 &ois, LDom2Node *pNode) {}
 void SceneXMLReader::procDataSrcLoad(qlib::LDom2InStream &ois, LDom2Node *pNode)
+#endif
 {
   //////////
   // Recursively check the data src load requests
@@ -252,7 +279,14 @@ qlib::LScrObjBasePtr SceneXMLReader::fromByteArray(const qlib::LByteArrayPtr &pb
 
   // Setup streams
   qlib::StrInStream fis(pbuf);
+
+#ifdef USE_OBJSTR3
+  qlib::LObjInStream3 ois(fis);
+  ois.setBufSize(m_nBufSz);
+  ois.start();
+#else
   qlib::LDom2InStream ois(fis);
+#endif
 
   // Construct nodes from stream
   qlib::LDom2Tree tree;
@@ -282,11 +316,8 @@ qlib::LScrObjBasePtr SceneXMLReader::fromByteArray(const qlib::LByteArrayPtr &pb
 
     pSObj = pObj;
 
-    // clearChunkMap();
     procDataSrcLoad(ois, pNode);
     procDataChunks(ois, pNode);
-    // clearChunkMap();
-
   }
   else if (tag.equals("camera")) {
     // pbuf contains Camera
@@ -302,8 +333,10 @@ qlib::LScrObjBasePtr SceneXMLReader::fromByteArray(const qlib::LByteArrayPtr &pb
   }
   else {
     MB_DPRINTLN("readRendFromXML> ERROR, Invalid QSC XML: <%s>", tag.c_str());
-    return pSObj;
+    // return pSObj;
   }
+
+  ois.close();
 
   return pSObj;
 }
@@ -322,13 +355,21 @@ void SceneXMLReader::rendArrayFromByteArray(const qlib::LByteArrayPtr &pbuf,
   
   // Setup streams
   qlib::StrInStream fis(pbuf);
+
+#ifdef USE_OBJSTR3
+  qlib::LObjInStream3 ois(fis);
+  ois.setBufSize(m_nBufSz);
+  ois.start();
+#else
   qlib::LDom2InStream ois(fis);
+#endif
 
   // Construct nodes from stream
   qlib::LDom2Tree tree;
   ois.read(tree);
   qlib::LDom2Node *pNode = tree.top();
   //pNode->dump();
+  ois.close();
 
   LString tagname = pNode->getTagName();
   if (!tagname.equals("renderers")) {

@@ -91,9 +91,14 @@ public:
   virtual int read(char *buf, int off, int len) {
     MB_ASSERT(m_fp!=NULL);
     size_t res = ::fread(&buf[off], sizeof(char), len, m_fp);
-    if (res==0 && feof(m_fp))
+    if (res==0 && feof(m_fp)) {
       return -1;
       //MB_THROW(EOFException, "Reached to EOF.");
+    }
+
+    //if (res==0 && ferror(m_fp))
+    //MB_THROW(IOException, "fread error.");
+
     //MB_DPRINTLN("fpos: %d", ::ftell(m_fp));
     return res;
   }

@@ -60,54 +60,6 @@ namespace qlib {
     static const int QTC_RGBA = 54;
   };
 
-#if 0
-// ATTN: is_integral and is_float is defined in TypeTraits.hpp
-#define QLIB_DECL_TT_SPEC_CLS(CLASS_NAME, TYPE_NAME, RES_VALUE) \
-  template<> \
-  class CLASS_NAME<TYPE_NAME> \
-  { public: static const bool value=RES_VALUE; };
-
-
-  ////////////////////////////////////////////////////////////////
-  // is_integral
-  
-  template <typename _Type>
-  class is_integral
-  {
-  public:
-    static const bool value=false;
-  };
-
-  QLIB_DECL_TT_SPEC_CLS(is_integral, bool, true);
-  QLIB_DECL_TT_SPEC_CLS(is_integral, char, true);
-  
-  QLIB_DECL_TT_SPEC_CLS(is_integral,unsigned char,true);
-  QLIB_DECL_TT_SPEC_CLS(is_integral,unsigned short,true);
-  QLIB_DECL_TT_SPEC_CLS(is_integral,unsigned int,true);
-  QLIB_DECL_TT_SPEC_CLS(is_integral,unsigned long,true);
-          
-  QLIB_DECL_TT_SPEC_CLS(is_integral,signed char,true);
-  QLIB_DECL_TT_SPEC_CLS(is_integral,signed short,true);
-  QLIB_DECL_TT_SPEC_CLS(is_integral,signed int,true);
-  QLIB_DECL_TT_SPEC_CLS(is_integral,signed long,true);
-
-  ////////////////////////////////////////////////////////////////
-  // is_float
-
-  template <typename _Type>
-  class is_float
-  {
-  public:
-    static const bool value=false;
-  };
-
-  QLIB_DECL_TT_SPEC_CLS(is_float, float, true);
-  QLIB_DECL_TT_SPEC_CLS(is_float, double, true);
-  QLIB_DECL_TT_SPEC_CLS(is_float, long double, true);
-
-  ////////////////////////////////////////////////////////////////
-#endif
-
   namespace detail {
     inline void swapByteImpl(char *buf, int pos1, int pos2)
     {
