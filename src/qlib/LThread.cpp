@@ -10,8 +10,9 @@
 #include <boost/bind.hpp>
 
 namespace qlib {
-  struct LTThreadImpl
+  class LTThreadImpl
   {
+  public:
     boost::thread *m_pthr;
   };
 }

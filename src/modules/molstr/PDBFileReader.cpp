@@ -112,7 +112,6 @@ bool PDBFileReader::read(qlib::InStream &ins)
   if (m_nErrCount>m_nErrMax)
     LOG_DPRINTLN("PDBFileReader> Too many errors (%d) were supressed", m_nErrCount-m_nErrMax);
   LOG_DPRINTLN("PDBFileReader> read %d atom(s)", m_nReadAtoms);
-  LOG_DPRINTLN("");
 
   // Clean-up the workspace
   m_pMol = MolCoordPtr();

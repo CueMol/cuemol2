@@ -6,7 +6,7 @@
 
 #include <common.h>
 
-#define USE_OBJSTR3 1
+//#define USE_OBJSTR3 1
 
 #include "SceneXMLReader.hpp"
 #include "StreamManager.hpp"
@@ -36,8 +36,8 @@ using qlib::LDataSrcContainer;
 
 SceneXMLReader::SceneXMLReader()
 {
-  // default buffer size (16M bytes)
-  m_nBufSz = 16*1024*1024;
+  // default buffer size (1M bytes)
+  m_nBufSz = 1024*1024;
 }
 
 SceneXMLReader::~SceneXMLReader()
@@ -117,6 +117,7 @@ void SceneXMLReader::read()
   qlib::LObjInStream3 ois(fis);
   ois.setBufSize(m_nBufSz);
   ois.start();
+  LOG_DPRINTLN("SceneXML> Using %d-kb buffered objstream", m_nBufSz/1024);
 #else
   qlib::LDom2InStream ois(fis);
 #endif

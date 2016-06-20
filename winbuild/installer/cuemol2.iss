@@ -72,17 +72,17 @@ Source: {#WinBuildDir}\qmlibpng.dll; DestDir: {app}; Flags: ignoreversion
 Source: {#WinBuildDir}\qmzlib.dll; DestDir: {app}; Flags: ignoreversion
 
 ; Runtime (C/C++), BOOST, and other DLLs
-; Source: {#SysDLLDir}\msvcp90.dll; DestDir: {app}; Flags: ignoreversion
-; Source: {#SysDLLDir}\msvcr90.dll; DestDir: {app}; Flags: ignoreversion
-; Source: {#SysDLLDir}\msvcm90.dll; DestDir: {app}; Flags: ignoreversion
-; Source: {#SysDLLDir}\Microsoft.VC90.CRT.manifest; DestDir: {app}; Flags: ignoreversion
+; C/C++ stdlib
 Source: {#SysDLLDir}\msvcp120.dll; DestDir: {app}; Flags: ignoreversion
 Source: {#SysDLLDir}\msvcr120.dll; DestDir: {app}; Flags: ignoreversion
+; boost
 Source: {#SysDLLDir}\boost_thread-{#BoostVer}.dll; DestDir: {app}; Flags: ignoreversion
 Source: {#SysDLLDir}\boost_chrono-{#BoostVer}.dll; DestDir: {app}; Flags: ignoreversion
 Source: {#SysDLLDir}\boost_date_time-{#BoostVer}.dll; DestDir: {app}; Flags: ignoreversion
 Source: {#SysDLLDir}\boost_system-{#BoostVer}.dll; DestDir: {app}; Flags: ignoreversion
 Source: {#SysDLLDir}\boost_filesystem-{#BoostVer}.dll; DestDir: {app}; Flags: ignoreversion
+Source: {#SysDLLDir}\boost_timer-{#BoostVer}.dll; DestDir: {app}; Flags: ignoreversion
+; others
 Source: {#SysDLLDir}\CGAL-vc120-mt-4.6.1.dll; DestDir: {app}; Flags: ignoreversion
 Source: {#SysDLLDir}\libfftw3f-3.dll; DestDir: {app}; Flags: ignoreversion
 Source: {#SysDLLDir}\glew32.dll; DestDir: {app}; Flags: ignoreversion
