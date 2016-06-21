@@ -6,7 +6,7 @@
 
 #include <common.h>
 
-//#define USE_OBJSTR3 1
+#define USE_OBJSTR3 1
 
 #include "SceneXMLReader.hpp"
 #include "StreamManager.hpp"

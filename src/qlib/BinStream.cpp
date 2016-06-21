@@ -29,6 +29,9 @@ void InStream::readFully(char *b, int off, int len)
     len -= numread;
     off += numread;
 
+    if (len<=0)
+      break;
+    
     // facilitate context switching here, not to block the input thread
     boost::thread::yield();
   }
