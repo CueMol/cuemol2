@@ -581,20 +581,25 @@ LQuat LQuat::makeFromRotMat(const Matrix3D &m)
 }
 
 //static
-LQuat LQuat::slerp(const LQuat &q, const LQuat &ar, const value_type t)
+LQuat LQuat::slerp(const LQuat &q, const LQuat &ar, const value_type t, bool bKeepPositive)
 {
-  LQuat p, r;
+  LQuat p;
+  LQuat r = ar;
 
-  double qr = q.m_data.dot( r.m_data );
+  double qr;
+
+  qr = q.m_data.dot( r.m_data );
+
+  if (bKeepPositive) {
+    if (qr<0.0) {
+      r = -ar;
+      qr = -qr; //q.m_data.dot( r.m_data );
+    }
+  }
+  
   double ss = 1.0 - qr * qr;
   
-  r = ar;
-/*  if (qr>0.0)
-    r = ar;
-  else
-    r = -ar;
-*/
-  // MB_DPRINTLN("qr=%f, ss=%f", qr, ss);
+  MB_DPRINTLN("qr=%f, ss=%f", qr, ss);
   if (qlib::isNear4(ss, 0.0)) {
     p = r;
   }

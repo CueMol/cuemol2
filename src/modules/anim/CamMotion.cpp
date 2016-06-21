@@ -21,6 +21,7 @@ CamMotion::CamMotion()
   m_bIgnoreRotate = false;
   m_bIgnoreZoom = false;
   m_bIgnoreSlab = false;
+  m_bKeepQuatPositive = true;
 }
 
 CamMotion::CamMotion(const CamMotion &arg)
@@ -30,6 +31,7 @@ CamMotion::CamMotion(const CamMotion &arg)
   m_bIgnoreRotate = arg.m_bIgnoreRotate;
   m_bIgnoreZoom = arg.m_bIgnoreZoom;
   m_bIgnoreSlab = arg.m_bIgnoreSlab;
+  m_bKeepQuatPositive = arg.m_bKeepQuatPositive;
 }
 
 CamMotion::~CamMotion()
@@ -67,7 +69,8 @@ void CamMotion::onTimer(qlib::time_value elapsed, AnimMgr *pMgr)
   if (!m_bIgnoreRotate) {
     // rotation
     LQuat qnow = LQuat::slerp(m_pStaCam->m_rotQuat,
-                              m_pEndCam->m_rotQuat, rho);
+                              m_pEndCam->m_rotQuat, rho,
+                              m_bKeepQuatPositive);
     pCam->m_rotQuat = qnow;
   }
   

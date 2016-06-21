@@ -383,7 +383,7 @@ namespace qlib {
       return rmat;
     }
     
-    static LQuat slerp(const LQuat &q, const LQuat &r, const value_type t);
+    static LQuat slerp(const LQuat &q, const LQuat &r, const value_type t, bool bKeepPositive=true);
 
     static LQuat makeFromRotMat(const Matrix3D &m);
   };

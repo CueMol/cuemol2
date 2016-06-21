@@ -39,6 +39,9 @@ namespace anim {
     bool m_bIgnoreZoom;
     bool m_bIgnoreSlab;
 
+    /// Keep positivity of quaternion in slerp
+    bool m_bKeepQuatPositive;
+
     // temporary work area
     CameraPtr m_pStaCam;
     CameraPtr m_pEndCam;
