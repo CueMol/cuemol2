@@ -388,6 +388,7 @@ LString StyleSet::getMaterialNamesJSON(bool bParen/*=true*/) const
   matdata_iterator eiter = matEnd();
   for (; iter!=eiter; ++iter) {
     const LString &fkey = iter->first;
+    // Material *pMat = iter->second;
     
     if (!bfirst)
       rval += ",";
