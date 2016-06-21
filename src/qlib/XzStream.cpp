@@ -56,7 +56,7 @@ bool XzInFilterImpl::ready()
 int XzInFilterImpl::read(char *buf, int off, int len)
 {
   MB_DPRINTLN("XZIn.read> called");
-  
+  /*  
   quint8 *pretbuf = (quint8 *) &abuf[off];
   int nretbuf = alen;
   int i=0;
@@ -101,7 +101,7 @@ int XzInFilterImpl::read(char *buf, int off, int len)
   } while (action != LZMA_FINISH);
 
   lzma_end(&stream);
-
+  */
   return 0;
 }
 

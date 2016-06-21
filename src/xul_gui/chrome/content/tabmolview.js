@@ -41,11 +41,21 @@ if (!("TabMolView" in cuemolui)) {
       window.addEventListener("activate", function(aEvent) {
         //dd("XXXX activate XXXX: "+debug.dumpObjectTree(aEvent));
         dd("XXXX activate XXXX: "+aEvent.target.windowState);
-        if (aEvent.target.windowState==Ci.nsIDOMChromeWindow.STATE_MINIMIZED &&
+
+        /*if (aEvent.target.windowState==Ci.nsIDOMChromeWindow.STATE_MINIMIZED &&
             that.mCurrentFrm && that.mCurrentFrm.native_window) {
           that.mCurrentFrm.native_window.hide();
           that.mCurrentFrm.native_window.show();
-        }
+	  }*/
+
+	if (that.mCurrentFrm &&
+	    that.mCurrentFrm.native_window) {
+	  setTimeout( function () {
+	      that.mCurrentFrm.native_window.hide();
+	      that.mCurrentFrm.native_window.show();
+	    }, 0);
+	}
+
       }, false);
 #endif
 

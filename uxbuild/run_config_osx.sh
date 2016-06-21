@@ -15,7 +15,7 @@ usexrbr="--without-xmlrpc"
 
 lcms="--with-lcms=$HOME/proj64/lcms2"
 
-#xz="--with-xz=$HOME/proj64/xz"
+xz="--with-xz=$HOME/proj64/xz"
 #xz="--with-xz"
 
 ##

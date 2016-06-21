@@ -697,9 +697,6 @@ Qm2Main.prototype.onNewScene = function(scname)
 
 Qm2Main.prototype.onNewTabWindow = function(bWin)
 {
-  //var cursc = this.mMainWnd.getCurrentScene();
-  //var curscname = cursc.getProp("name");
-
   var args = new Object();
   var cursc = args.cursc = this.mMainWnd.currentSceneW;
   args.bWin = bWin;
