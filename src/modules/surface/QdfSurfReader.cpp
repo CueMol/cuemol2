@@ -68,10 +68,15 @@ bool QdfSurfReader::read(qlib::InStream &ins)
     return false;
   }
 
-  readVertData();
-
-  readFaceData();
-
+  if (getStream().isIntByteSwap()) {
+    readVertData();
+    readFaceData();
+  }
+  else {
+    readVertData2();
+    readFaceData2();
+  }
+  
   end();
 
   m_pObj = NULL;
@@ -119,4 +124,58 @@ void QdfSurfReader::readFaceData()
   }
 
 }
+
+void QdfSurfReader::readVertData2()
+{
+  int nverts = readDataDef("vert");
+  m_pObj->setVertSize(nverts);
+  
+  readRecordDef();
+
+  MSVert *pv = m_pObj->getVertPtr();
+  getStream().readFxRecords(nverts, pv, sizeof (MSVert)*nverts);
+
+#if 0
+  MSVert v;
+  for (int ind=0; ind<nverts; ++ind) {
+    getStream().readFxRecords(1, &v, sizeof (MSVert));
+    /*
+    startRecord();
+    v.x = getRecValFloat32("x");
+    v.y = getRecValFloat32("y");
+    v.z = getRecValFloat32("z");
+    v.nx = getRecValFloat32("nx");
+    v.ny = getRecValFloat32("ny");
+    v.nz = getRecValFloat32("nz");
+    getRecValStr("id");*/
+    endRecord();
+    m_pObj->setVertex(ind, v);
+  }
+#endif
+  
+}
+
+
+void QdfSurfReader::readFaceData2()
+{
+  int nfaces = readDataDef("face");
+  m_pObj->setFaceSize(nfaces);
+  
+  readRecordDef();
+
+  MSFace *pf = m_pObj->getFacePtr();
+  getStream().readFxRecords(nfaces, pf, sizeof (MSFace)*nfaces);
+  /*
+  MSFace f;
+  for (int ind=0; ind<nfaces; ++ind) {
+    startRecord();
+    f.id1 = getRecValInt32("id1");
+    f.id2 = getRecValInt32("id2");
+    f.id3 = getRecValInt32("id3");
+    endRecord();
+    m_pObj->setFace(ind, f);
+  }
+*/
+}
+
 

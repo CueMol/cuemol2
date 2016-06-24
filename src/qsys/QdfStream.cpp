@@ -15,6 +15,68 @@
 using namespace qsys;
 using qlib::Vector4D;
 
+//static
+int QdfDataType::getSize(int nrecid, bool fixed/*=true*/)
+{
+  switch (nrecid) {
+  case QDF_TYPE_FLOAT32:
+    return sizeof (qfloat32);
+
+  case QDF_TYPE_FLOAT64:
+    return sizeof (qfloat64);
+    
+  case QDF_TYPE_INT64:
+  case QDF_TYPE_UINT64:
+    return sizeof (qint64);
+
+    case QDF_TYPE_INT32:
+  case QDF_TYPE_UINT32:
+    return sizeof (qint32);
+
+  case QDF_TYPE_INT16:
+  case QDF_TYPE_UINT16:
+    return sizeof (qint16);
+
+  case QDF_TYPE_INT8:
+  case QDF_TYPE_UINT8:
+    return sizeof (qint8);
+
+
+  case QDF_TYPE_UTF8STR:
+    if (fixed)
+      return sizeof (qint32);
+    else {
+      MB_THROW(qlib::RuntimeException, "getSize() for UTF8STR is not supported");
+      return 0;
+    }
+    break;
+
+  case QDF_TYPE_VEC3:
+    return sizeof (qfloat32)*3;
+
+  case QDF_TYPE_VEC4:
+    return sizeof (qfloat32)*4;
+
+  case QDF_TYPE_RGB:
+    return sizeof (quint8)*3;
+
+  case QDF_TYPE_RGBA:
+    return sizeof (quint8)*4;
+
+
+  default: {
+    MB_THROW(qlib::RuntimeException, "getSize() for UTF8STR is not supported");
+    return 0;
+  }
+
+  }
+
+  return 0;
+}
+
+///////////////////////////
+
+
 QdfInStream::~QdfInStream()
 {
   if (m_pBinIn!=NULL)
@@ -80,14 +142,19 @@ void QdfInStream::start()
 
   // BOM
   int int_bo = m_pBinIn->read();
+  m_bIntByteSwap = false;
 #if (BYTEORDER==1234)
   // litte endian host
-  if (int_bo==qlib::BinOutStream::INTBO_BE)
+  if (int_bo==qlib::BinOutStream::INTBO_BE) {
     m_pBinIn->setSwapMode(qlib::BinInStream::MODE_SWAP);
+    m_bIntByteSwap = true;
+  }
 #elif (BYTEORDER==4321)
   // big endian host
-  if (int_bo==qlib::BinOutStream::INTBO_LE)
+  if (int_bo==qlib::BinOutStream::INTBO_LE) {
     m_pBinIn->setSwapMode(qlib::BinInStream::MODE_SWAP);
+    m_bIntByteSwap = true;
+  }
 #else
 #error "Unsupported host intnum format"
 #endif
@@ -104,6 +171,7 @@ void QdfInStream::start()
   }
 
   // FBOM
+  // XXX: only the same byte order as integer is supported
   int flt_bo = m_pBinIn->read();
   MB_ASSERT(flt_bo==int_bo);
   if (!m_pBinIn->assertValue<qfloat32>(1.2345678f)) {
@@ -388,6 +456,20 @@ void QdfInStream::readColorRGBA(const LString &name, qbyte *pvec)
   pvec[1] = (quint8) m_pBinIn->readInt8();
   pvec[2] = (quint8) m_pBinIn->readInt8();
   pvec[3] = (quint8) m_pBinIn->readInt8();
+}
+
+//////////
+
+void QdfInStream::readFxRecords(int nrec, void *pbuf, int nbufsz)
+{
+  int nrecsz = getFxRecordSize();
+
+  int ntotal = nrecsz * nrec;
+  MB_ASSERT(nbufsz>=ntotal);
+
+  m_pBinIn->readFully((char *)pbuf, 0, ntotal);
+
+  m_nRecInd = m_recdefs.size();
 }
 
 ////////////////////////////////////////////////////////

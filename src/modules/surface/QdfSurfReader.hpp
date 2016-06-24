@@ -64,6 +64,8 @@ private:
   void readVertData();
   void readFaceData();
 
+  void readVertData2();
+  void readFaceData2();
 };
 
 }

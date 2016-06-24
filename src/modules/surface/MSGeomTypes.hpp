@@ -9,6 +9,7 @@
 #include "surface.hpp"
 #include <qlib/Vector4D.hpp>
 #include <qlib/Array.hpp>
+#include <qlib/LTypes.hpp>
 
 namespace surface {
 
@@ -19,13 +20,13 @@ namespace surface {
   public:
     
     /// vertex position
-    float x, y, z;
+    qfloat32 x, y, z;
 
     /// vertex normal
-    float nx, ny, nz;
+    qfloat32 nx, ny, nz;
 
     /// vertex's atom info (aid)
-    int info;
+    quint32 info;
 
 #ifdef USE_VERT_TYPE_ID
     /** for debug */
@@ -100,10 +101,10 @@ namespace surface {
   ///
   struct MSFace
   {
-    int id1, id2, id3;
+    quint32 id1, id2, id3;
 
     MSFace() {}
-    MSFace(int rid1, int rid2, int rid3)
+    MSFace(quint32 rid1, quint32 rid2, quint32 rid3)
          : id1(rid1), id2(rid2), id3(rid3)
       {}
   };

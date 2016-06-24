@@ -43,10 +43,7 @@ namespace qsys {
     static const int QDF_TYPE_FLOAT32 = 21;
     static const int QDF_TYPE_FLOAT64 = 22;
     static const int QDF_TYPE_FLOAT128 = 23;
-
-    // static const int QDF_TYPE_CHAR8 = 31;
-    // static const int QDF_TYPE_CHAR16 = 32;
-    // static const int QDF_TYPE_CHAR32 = 33;
+    static const int QDF_TYPE_FLOAT16 = 24;
 
     static const int QDF_TYPE_UTF8STR = 41;
 
@@ -64,6 +61,9 @@ namespace qsys {
     typedef std::pair<LString, int> RecElem;
     typedef std::vector<RecElem> RecElemList;
     typedef qlib::MapTable<int> RecIndMap;
+
+    static int getSize(int nrecid, bool fixed=true);
+
   };
 
   ////////////////////////////////////////
@@ -105,9 +105,14 @@ namespace qsys {
 
     LString getFileType() const { return m_strFileType; }
 
+    /// Read data definition section and returns the total record count
     int readDataDef(const LString &name, bool skipUnknown = true);
 
+    /// Read record definition
     void readRecordDef();
+
+    /////////////////
+    //  old interface
 
     void startRecord();
     void endRecord();
@@ -117,8 +122,6 @@ namespace qsys {
     qint8 readInt8(const LString &name);
     LString readStr(const LString &name);
 
-    //qlib::Vector4D readVec3D(const LString &name);
-    
     void readVec3D(const LString &name, qfloat32 *pvec);
     Vector4D readVec3D(const LString &name);
 
@@ -128,6 +131,25 @@ namespace qsys {
     void skipRecord();
 
     void skipAllRecords();
+
+    /////////////////
+    // New interface for no byte-swaping
+
+    /// Read multiple records into the buffer (without byte swapping)
+    void readFxRecords(int nrec, void *pbuf, int nbufsz);
+
+    int getFxRecordSize()
+    {
+      int nrecsz = 0;
+      int i, nrec = m_recdefs.size();
+	  for (i = 0; i < nrec; ++i) {
+        nrecsz += QdfDataType::getSize(m_recdefs[i].second, true);
+      }
+      
+      return nrecsz;
+    }
+    
+    bool isIntByteSwap() const { return m_bIntByteSwap; }
 
   private:
     void setupStream();
@@ -148,6 +170,9 @@ namespace qsys {
 
     /// QDF version no
     int m_nVer;
+
+    /// Byte order
+    int m_bIntByteSwap;
 
     RecElemList m_recdefs;
 
