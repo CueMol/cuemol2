@@ -123,6 +123,14 @@ namespace qlib {
     {
       //MB_DPRINTLN("cp RBuf start nrbuf=%d, i=%d", nrbuf, i);
       //MB_DPRINTLN(" iread=%d, navail=%d", m_iRead, m_nAvail);
+
+      int ncopy = qlib::min(nrbuf, m_nAvail);
+      memcpy(&prbuf[i], &m_buffer[m_iRead], ncopy);
+      i += ncopy;
+      m_iRead += ncopy;
+      nrbuf -= ncopy;
+      m_nAvail -= ncopy;
+      /*
       while (nrbuf>0 && m_nAvail>0) {
 	prbuf[i] = m_buffer[m_iRead];
 	i++;
@@ -131,6 +139,7 @@ namespace qlib {
 	nrbuf--;
 	m_nAvail--;
       }
+       */
       //MB_DPRINTLN("cp RBuf end nrbuf=%d, i=%d", nrbuf, i);
       //MB_DPRINTLN(" iread=%d, navail=%d", m_iRead, m_nAvail);
     }

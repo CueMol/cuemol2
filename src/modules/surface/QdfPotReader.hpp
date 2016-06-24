@@ -63,6 +63,12 @@ private:
 
   void readData();
 
+  int m_nx, m_ny, m_nz;
+
+  void readDataArray(float *);
+
+  //void readDataArray2();
+
 };
 
 }

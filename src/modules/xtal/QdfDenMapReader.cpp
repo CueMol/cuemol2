@@ -150,29 +150,64 @@ void QdfDenMapReader::readData()
   }
   
   //  allocate memory
-  qbyte *fbuf = MB_NEW qbyte[ntotal];
+  qbyte *buf = MB_NEW qbyte[ntotal];
   LOG_DPRINTLN("QdfDenMap> memory allocation %f Mbytes", double(ntotal*4.0)/(1024.0*1024.0));
-  if (fbuf==NULL) {
+  if (buf==NULL) {
     MB_THROW(qlib::OutOfMemoryException, "cannot allocate memory");
     return;
   }
 
-  o.readRecordDef();
+  m_nx = nx;
+  m_ny = ny;
+  m_nz = nz;
+  if (!o.isIntByteSwap())
+    readDataArray2(buf);
+  else
+    readDataArray(buf);
+  
 
-  for (int iz=0; iz<nz; iz++) {
-    for (int iy=0; iy<ny; iy++) {
-      for (int ix=0; ix<nx; ix++) {
-        startRecord();
-        qbyte rho = qbyte(o.readInt8("v"));
-        endRecord();
-        const int ii = ix + (iy + iz*ny)*nx;
-        fbuf[ii] = rho;
-      }
-    }
-  }
-
-  m_pObj->setMapByteArray(fbuf, nx, ny, nz,
+  m_pObj->setMapByteArray(buf, nx, ny, nz,
                           rmin, rmax, rmean, rsig);
   
 }
+
+void QdfDenMapReader::readDataArray(qbyte *buf)
+{
+  QdfInStream &o = getStream();
+  o.readRecordDef();
+
+  for (int iz=0; iz<m_nz; iz++) {
+    for (int iy=0; iy<m_ny; iy++) {
+      for (int ix=0; ix<m_nx; ix++) {
+        startRecord();
+        qbyte rho = qbyte(o.readInt8("v"));
+        endRecord();
+        const int ii = ix + (iy + iz*m_ny)*m_nx;
+        buf[ii] = rho;
+      }
+    }
+  }
+}
+
+void QdfDenMapReader::readDataArray2(qbyte *buf)
+{
+  QdfInStream &o = getStream();
+  o.readRecordDef();
+
+  const int ntotal = m_nx*m_ny*m_nz;
+  o.readFxRecords(ntotal, buf, sizeof (qbyte)*ntotal);
+/*
+  for (int iz=0; iz<m_nz; iz++) {
+    for (int iy=0; iy<m_ny; iy++) {
+      for (int ix=0; ix<m_nx; ix++) {
+        startRecord();
+        qbyte rho = qbyte(o.readInt8("v"));
+        endRecord();
+        const int ii = ix + (iy + iz*m_ny)*m_nx;
+        buf[ii] = rho;
+      }
+    }
+  }*/
+}
+
 

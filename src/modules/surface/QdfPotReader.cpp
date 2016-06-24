@@ -87,11 +87,11 @@ void QdfPotReader::readData()
   readRecordDef();
 
   startRecord();
-  const int nx = getRecValInt32("nx");
-  const int ny = getRecValInt32("ny");
-  const int nz = getRecValInt32("nz");
-  const int ntotal = nx*ny*nz;
-  LOG_DPRINTLN("QdfPot> map size (%d,%d,%d)=%d", nx, ny, nz, ntotal);
+  m_nx = getRecValInt32("nx");
+  m_ny = getRecValInt32("ny");
+  m_nz = getRecValInt32("nz");
+  const int ntotal = m_nx*m_ny*m_nz;
+  LOG_DPRINTLN("QdfPot> map size (%d,%d,%d)=%d", m_nx, m_ny, m_nz, ntotal);
 
   const double gx = getRecValFloat32("gx");
   const double gy = getRecValFloat32("gy");
@@ -132,20 +132,30 @@ void QdfPotReader::readData()
 
   readRecordDef();
 
-  for (int ix=0; ix<nx; ix++) {
-    for (int iy=0; iy<ny; iy++) {
-      for (int iz=0; iz<nz; iz++) {
+  readDataArray(fbuf);
+
+  m_pObj->setMapFloatArray(fbuf, m_nx, m_ny, m_nz,
+                           gx, gy, gz, orig);
+
+}
+
+void QdfPotReader::readDataArray(float *fbuf)
+{
+  for (int ix=0; ix<m_nx; ix++) {
+    for (int iy=0; iy<m_ny; iy++) {
+      for (int iz=0; iz<m_nz; iz++) {
         startRecord();
         float rho = getRecValFloat32("val");
         endRecord();
-        const int ii = ix + (iy + iz*ny)*nx;
+        const int ii = ix + (iy + iz*m_ny)*m_nx;
         fbuf[ii] = (float)rho;
       }
     }
   }
 
-  m_pObj->setMapFloatArray(fbuf, nx, ny, nz,
-                           gx, gy, gz, orig);
-
 }
+
+/*void readDataArray2()
+{
+}*/
 

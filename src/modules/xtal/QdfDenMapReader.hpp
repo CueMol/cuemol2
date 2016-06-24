@@ -62,6 +62,11 @@ namespace xtal {
 
     void readData();
 
+    int m_nx, m_ny, m_nz;
+    
+    void readDataArray(qbyte *);
+    void readDataArray2(qbyte *);
+
   };
 
 }
