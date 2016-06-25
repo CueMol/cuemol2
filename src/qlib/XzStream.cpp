@@ -15,13 +15,13 @@ using namespace qlib;
 using namespace qlib::detail;
 
 XzInFilterImpl::XzInFilterImpl()
-  : super_t(), m_pdata(NULL)
+  : super_t(), m_pdata(NULL), m_buffer(BUFSZ)
 {
   init();
 }
 
 XzInFilterImpl::XzInFilterImpl(const impl_type &in)
-  : super_t(in), m_pdata(NULL)
+     : super_t(in), m_pdata(NULL), m_buffer(BUFSZ)
 {
   init();
 }
@@ -53,56 +53,71 @@ bool XzInFilterImpl::ready()
 }
 
 /// read into mem block
-int XzInFilterImpl::read(char *buf, int off, int len)
+int XzInFilterImpl::read(char *abuf, int off, int alen)
 {
   MB_DPRINTLN("XZIn.read> called");
-  /*  
+
+  lzma_stream *pstream = (lzma_stream *) m_pdata;
+  lzma_ret ret;
+  
   quint8 *pretbuf = (quint8 *) &abuf[off];
   int nretbuf = alen;
-  int i=0;
+  int i=0, nres=0;
 
-  char input_buf[64*1024];
+  // char input_buf[BUFSZ];
 
-  do {
-	
+  for (;;) {
     // input from lower level
-    int nres = super_t::read(input_buf, 0, sizeof(input_buf));
+    if (m_buffer.avail()==0)
+      nres = super_t::read((char *)m_buffer.wptr(), 0, m_buffer.size());
+    // int nres = super_t::read(input_buf, 0, BUFSZ);
 
     if (nres<0) {
-      action = LZMA_FINISH;
+      // action = LZMA_FINISH;
+      if (i==0)
+        return -1;
+      else
+        return i;
     }
 
-    stream.avail_in = nres;
-    stream.next_in = (uint8_t*) input_buf;
+    m_buffer.fill(nres);
+    int navail = pstream->avail_in = m_buffer.avail();
+    pstream->next_in = m_buffer.rptr();
 
-    do {
-      stream.next_out = pretbuf;
-      stream.avail_out = nretbuf;
-      ret = lzma_code(&stream, action);
+    //pstream->avail_in = nres;
+    //pstream->next_in = (const uint8_t *)input_buf;
+
+    for (;;) {
+      pstream->next_out = pretbuf;
+      pstream->avail_out = nretbuf;
+      ret = lzma_code(pstream, LZMA_RUN);
       if ((ret != LZMA_OK) && (ret != LZMA_STREAM_END)) {
-	LString msg = LString::format("lzma_code error %d", ret);
-	MB_THROW(FileFormatException, msg);
-	return -1;
+        LString msg = LString::format("lzma_code error %d", ret);
+        MB_THROW(FileFormatException, msg);
+        return -1;
       }
 
-      //fwrite(sbuf, sizeof(sbuf) - stream.avail_out, 1, stdout);
+      //fwrite(sbuf, sizeof(sbuf) - pstream->avail_out, 1, stdout);
+      m_buffer.consume(navail-pstream->avail_in);
 
-      int nread = nretbuf - stream.avail_out;
+      int nread = nretbuf - pstream->avail_out;
       i += nread;
       pretbuf += nread;
       nretbuf -= nread;
 
+      MB_ASSERT(nretbuf>=0);
       if (nretbuf==0) {
-	return i;
+        // MB_ASSERT(pstream->avail_in==0);
+        return i;
       }
-      //} while ((stream.avail_out == 0) && (ret != LZMA_STREAM_END));
-    } while (stream.avail_out == 0);
 
-  } while (action != LZMA_FINISH);
+      if (pstream->avail_out > 0)
+        break;
+    }
 
-  lzma_end(&stream);
-  */
-  return 0;
+  }
+
+  return -1;
 }
 
 /// close the stream

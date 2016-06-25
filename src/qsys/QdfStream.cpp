@@ -129,6 +129,12 @@ void QdfInStream::setupStream()
       m_pZIn = new qlib::GzipInStream(*pTIn);
       pTIn = m_pZIn;
     }
+#ifdef HAVE_XZ
+    else if (comp=='3') {
+      m_pZIn = new qlib::XzInStream(*pTIn);
+      pTIn = m_pZIn;
+    }
+#endif
     else {
       MB_THROW(qlib::FileFormatException, "Unsupported compression method");
       return;

@@ -72,29 +72,6 @@ namespace qsys {
   private:
     QdfInStream *m_pQdfIn;
 
-    /*
-    void setupStream(qlib::InStream &ins);
-
-    // QDF implementation data
-
-    /// Binary input stream
-    qlib::BinInStream *m_pBinIn;
-
-    /// Base64 decoding (for QDF1 format)
-    qlib::InStream *m_pB64In;
-    qlib::InStream *m_pZIn;
-
-    /// File type string
-    LString m_strFileType;
-
-    /// QDF version no
-    int m_nVer;
-
-    RecElemList m_recdefs;
-
-    int m_nRecInd;
-     */
-
   };
 
 }

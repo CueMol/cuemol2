@@ -76,14 +76,17 @@ void ObjReader::read2(qlib::InStream &ins)
   qlib::InStream *pB64In = NULL;
   qlib::InStream *pZIn = NULL;
 
-  if (getBase64Flag()) {
+  bool bb64 = getBase64Flag();
+  int ncomp = getCompressMode();
+
+  if (bb64) {
     pB64In = new qlib::Base64InStream(*pTIn);
     pTIn = pB64In;
   }
   
-  if (getCompressMode()==COMP_NONE) {
+  if (ncomp==COMP_NONE) {
   }
-  else if (getCompressMode()==COMP_GZIP) {
+  else if (ncomp==COMP_GZIP) {
     pZIn = new qlib::GzipInStream(*pTIn);
     pTIn = pZIn;
   }

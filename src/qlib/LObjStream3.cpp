@@ -81,8 +81,10 @@ void LObjInStream3::read(LDom2Tree &tree)
 
 LString LObjInStream3::getNextDataChunkID()
 {
-  if (!m_nextChunkID.isEmpty())
-    return m_nextChunkID;
+  if (!m_nextChunkID.isEmpty()) {
+    return LString();
+    //return m_nextChunkID;
+  }
 
   ChunkInStream *pcis = (ChunkInStream *) m_pInStream;
   sp<ChunkFilterImpl2> pcf = static_pointer_cast<ChunkFilterImpl2>(pcis->getImpl());
