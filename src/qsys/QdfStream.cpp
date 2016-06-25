@@ -5,12 +5,18 @@
 
 #include <common.h>
 
+#define HAVE_XZ
+
 #include "QdfStream.hpp"
 
 #include <qlib/BinStream.hpp>
 #include <qlib/Base64Stream.hpp>
 #include <qlib/GzipStream.hpp>
 #include <gfx/AbstractColor.hpp>
+
+#ifdef HAVE_XZ
+#include <qlib/XzStream.hpp>
+#endif
 
 using namespace qsys;
 using qlib::Vector4D;
@@ -527,6 +533,12 @@ void QdfOutStream::setupStream()
     m_pZOut = new qlib::GzipOutStream(*pTOut);
     pTOut = m_pZOut;
   }
+#ifdef HAVE_XZ
+  else if (comp=='3') {
+    m_pZOut = new qlib::XzOutStream(*pTOut);
+    pTOut = m_pZOut;
+  }
+#endif
   else {
     MB_THROW(qlib::FileFormatException, "Unsupported compression method");
     return;

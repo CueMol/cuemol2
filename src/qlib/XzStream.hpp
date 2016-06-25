@@ -73,7 +73,11 @@ namespace qlib {
       virtual void flush();
       virtual void o_close();
 
+    private:
+      static const size_t BUFSZ = 1024;
       int writeImpl(char *buf, int len);
+      void init();
+      // FILE *m_fp;
     };
 
   } // namespace detail

@@ -158,20 +158,92 @@ int XzInFilterImpl::skip(int n)
 XzOutFilterImpl::XzOutFilterImpl()
   : super_t(), m_pdata(NULL)
 {
+  init();
 }
 
 XzOutFilterImpl::XzOutFilterImpl(const impl_type &out)
   : super_t(out)
 {
+  init();
 }
 
 XzOutFilterImpl::~XzOutFilterImpl()
 {
+  o_close();
+}
+
+//////////
+
+void XzOutFilterImpl::init()
+{
+  lzma_stream *pstream = new lzma_stream;
+  lzma_stream xx = LZMA_STREAM_INIT;
+  *pstream = xx;
+
+  lzma_ret ret = lzma_easy_encoder(pstream, 6, LZMA_CHECK_CRC64);
+  if (ret != LZMA_OK) {
+    MB_THROW(IOException, "cannto create lzma encoder");
+    return;
+  }
+
+  m_pdata = pstream;
+  // m_fp = fopen("d:\\xztest.xz","wb");
 }
 
 int XzOutFilterImpl::write(const char *buf, int off, int len)
 {
-  return 0;
+  //std::vector buffer<uint8_t>(len);
+  uint8_t buffer[BUFSZ];
+  int nwr = 0;
+  
+  lzma_stream *pstream = (lzma_stream *) m_pdata;
+
+  lzma_action action = LZMA_RUN;
+  lzma_ret ret = LZMA_OK;
+
+  pstream->next_in = (const uint8_t *) &buf[off];
+  pstream->avail_in = len;
+
+  for (;;) {
+    pstream->next_out = &buffer[0];
+    pstream->avail_out = BUFSZ;
+    ret = lzma_code(pstream, action);
+
+    if ((ret != LZMA_OK) && (ret != LZMA_STREAM_END)) {
+      MB_THROW(IOException, "cannto lzma encoder");
+      return -1;
+    }
+    
+    const int nenc = BUFSZ - pstream->avail_out;
+    if (nenc>0) {
+      int nres = super_t::write((const char *)&buffer[0], 0, nenc);
+      //fwrite((const char *)&buffer[0], BUFSZ - pstream->avail_out, sizeof(char), m_fp);
+
+      if (nres<0) {
+        MB_THROW(IOException, "cannot write");
+        return -1;
+      }
+
+    }
+
+    if (pstream->avail_out > 0)
+      break;
+  }
+
+  nwr += len;
+
+  if (pstream->avail_in != 0) {
+    MB_THROW(IOException, "cannto lzma encoder");
+    return -1;
+  }
+  
+/*
+  if (ret != LZMA_STREAM_END) {
+    MB_THROW(IOException, "failed to finish encode");
+    return -1;
+  }
+  */
+  return nwr;
 }
 
 void XzOutFilterImpl::write(int b)
@@ -186,5 +258,32 @@ void XzOutFilterImpl::flush()
 
 void XzOutFilterImpl::o_close()
 {
+  if (m_pdata!=NULL) {
+    lzma_stream *pstream = (lzma_stream *) m_pdata;
+
+    uint8_t inbuffer[1];
+    uint8_t buffer[BUFSZ];
+    for (;;) {
+      pstream->next_in = inbuffer;
+      pstream->avail_in = 0;
+      pstream->next_out = &buffer[0];
+      pstream->avail_out = BUFSZ;
+      lzma_ret ret = lzma_code(pstream, LZMA_FINISH);
+      int nenc = BUFSZ - pstream->avail_out;
+      if (nenc>0) {
+        int nres = super_t::write((const char *)&buffer[0], 0, nenc);
+        // fwrite((const char *)&buffer[0], nenc, sizeof(char), m_fp);
+      }
+      if (nenc<BUFSZ) {
+        break;
+      }
+      
+    }
+    
+    lzma_end(pstream);
+    // fclose(m_fp);
+    delete pstream;
+  }
+  m_pdata = NULL;
 }
 

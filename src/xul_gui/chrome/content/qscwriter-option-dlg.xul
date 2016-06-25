@@ -39,7 +39,8 @@
     else {
     dlgdata.base64 = document.getElementById('chk_base64').checked;
     if (document.getElementById('chk_comp_gzip').checked)
-      dlgdata.compress = "gzip";
+//      dlgdata.compress = "gzip";
+      dlgdata.compress = "xzip";
     else
       dlgdata.compress = "none";
     }

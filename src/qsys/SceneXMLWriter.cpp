@@ -149,6 +149,9 @@ void SceneXMLWriter::write()
   else if (m_nCompMode==COMP_GZIP) {
     encflag += "1";
   }
+  else if (m_nCompMode==COMP_XZIP) {
+    encflag += "3";
+  }
   else {
     MB_THROW(qlib::FileFormatException, "Unsupported compression mode");
     return;
