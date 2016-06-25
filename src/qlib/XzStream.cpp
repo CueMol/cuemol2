@@ -67,25 +67,27 @@ int XzInFilterImpl::read(char *abuf, int off, int alen)
   // char input_buf[BUFSZ];
 
   for (;;) {
-    // input from lower level
-    if (m_buffer.avail()==0)
-      nres = super_t::read((char *)m_buffer.wptr(), 0, m_buffer.size());
-    // int nres = super_t::read(input_buf, 0, BUFSZ);
-
-    if (nres<0) {
-      // action = LZMA_FINISH;
-      if (i==0)
-        return -1;
-      else
-        return i;
+    //if (m_buffer.avail()==0)
+    if (pstream->avail_in==0) {
+      // input from lower level
+      nres = super_t::read((char *)&m_buffer[0], 0, BUFSZ);
+      //nres = super_t::read((char *)m_buffer.wptr(), 0, m_buffer.size());
+      // int nres = super_t::read(input_buf, 0, BUFSZ);
+      
+      if (nres<0) {
+        if (i==0)
+          return -1;
+        else
+          return i;
+      }
+      
+      //m_buffer.fill(nres);
+      //int navail = pstream->avail_in = m_buffer.avail();
+      //pstream->next_in = m_buffer.rptr();
+      
+      pstream->avail_in = nres;
+      pstream->next_in = &m_buffer[0];
     }
-
-    m_buffer.fill(nres);
-    int navail = pstream->avail_in = m_buffer.avail();
-    pstream->next_in = m_buffer.rptr();
-
-    //pstream->avail_in = nres;
-    //pstream->next_in = (const uint8_t *)input_buf;
 
     for (;;) {
       pstream->next_out = pretbuf;
@@ -97,8 +99,7 @@ int XzInFilterImpl::read(char *abuf, int off, int alen)
         return -1;
       }
 
-      //fwrite(sbuf, sizeof(sbuf) - pstream->avail_out, 1, stdout);
-      m_buffer.consume(navail-pstream->avail_in);
+      // m_buffer.consume(navail-pstream->avail_in);
 
       int nread = nretbuf - pstream->avail_out;
       i += nread;
@@ -107,7 +108,6 @@ int XzInFilterImpl::read(char *abuf, int off, int alen)
 
       MB_ASSERT(nretbuf>=0);
       if (nretbuf==0) {
-        // MB_ASSERT(pstream->avail_in==0);
         return i;
       }
 

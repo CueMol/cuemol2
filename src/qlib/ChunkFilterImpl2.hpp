@@ -186,6 +186,7 @@ namespace qlib {
     /// check delimiter in m_buffer, and then update m_iMatch & m_nMatch
     void checkdelim(int ioff, int anbufsz)
     {
+      MB_DPRINTLN("CF3> checkdelim(ioff=%d, bufsz=%d)", ioff, anbufsz);
       if (m_iMatch>=0 && m_nMatch==m_nMark) {
 	// delimiter has been found
 	return;
@@ -227,13 +228,19 @@ namespace qlib {
 	    break;
 	  }
 	}
-	if (ib==nbufsz) {
-	  // partial match
-	  m_nMatch = i;
-	  m_iMatch = jst;
-	  MB_DPRINTLN("CF3> delim partmatch imatch=%d, nmatch=%d (%d)",
-		      m_iMatch, m_nMatch, m_iMatch+m_nMatch);
-	  return;
+        if (ib==nbufsz) {
+          if (i>0) {
+            // partial match
+            m_nMatch = i;
+            m_iMatch = jst;
+            MB_DPRINTLN("CF3> delim partmatch imatch=%d, nmatch=%d (%d)",
+                        m_iMatch, m_nMatch, m_iMatch+m_nMatch);
+            return;
+          }
+          else {
+            // no match
+            break;
+          }
 	}
 	else if (i==m_nMark) {
 	  // full match
@@ -309,9 +316,14 @@ namespace qlib {
 	  m_iMatch = 0;
 	  int nr = fillbuffer(m_nMatch);
 	  if (nr<0) {
-	    // EOF (or error)
-	    MB_DPRINTLN("CF3::read() ERR; delim partially mached, but EOF reached");
-	    return -1;
+            if (i==0) {
+              // EOF (or error)
+              MB_DPRINTLN("CF3::read() ERR; delim partially mached, but EOF reached");
+              return -1;
+            }
+            else {
+              return i;
+            }
 	  }
 	  // check m_buffer from 0 to nmatch+nr again...
 	  m_iRead = 0;
@@ -335,9 +347,13 @@ namespace qlib {
 	    // fill m_buffer from the beginning (iread=0)
 	    int nr = fillbuffer(0);
 	    if (nr<0 && m_nAvail==0) {
-	      // EOF (or error)
-	      MB_DPRINTLN("CF3::read() ERR; delim not mached, but EOF reached");
-	      return -1;
+              if (i==0) {
+                // EOF (or error)
+                MB_DPRINTLN("CF3::read() ERR; delim not mached, but EOF reached");
+                return -1;
+              }
+              else
+                return i;
 	    }
 	  }
 	  else {

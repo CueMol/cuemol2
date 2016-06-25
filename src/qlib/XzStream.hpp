@@ -82,11 +82,12 @@ namespace qlib {
     class QLIB_API XzInFilterImpl : public InFilterImpl
     {
     private:
-      static const size_t BUFSZ = 1024;
+      static const size_t BUFSZ = 1024*1024;
 
       void *m_pdata;
 
-      IOBuffer m_buffer;
+      //IOBuffer m_buffer;
+      std::vector<quint8> m_buffer;
 
     public:
       typedef InFilterImpl super_t;
@@ -143,7 +144,7 @@ namespace qlib {
       virtual void o_close();
 
     private:
-      static const size_t BUFSZ = 1024;
+      static const size_t BUFSZ = 1024*1024;
       int writeImpl(char *buf, int len);
       void init();
       // FILE *m_fp;
