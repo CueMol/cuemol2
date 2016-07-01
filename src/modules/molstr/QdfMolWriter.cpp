@@ -102,7 +102,7 @@ void QdfMolWriter::writeChainData()
   MB_DPRINTLN("QdfMolWr> max chain name length: %d", nmax_name);
   
   int nChains = m_pMol->getChainSize();
-  QdfOutStream &os = getStream();
+  qsys::QdfOutStream &os = getStream();
   
   os.defData("chai", nChains);
 
@@ -120,7 +120,7 @@ void QdfMolWriter::writeChainData()
     os.writeUInt32("id", ind);
     os.writeFixedStr("name", chnam);
     endRecord();
-    m_chmap.insert((qlib::qvoidp)pChn.get(), ind);
+    m_chmap.insert(std::pair<qlib::qvoidp, quint32>((qlib::qvoidp)pChn.get(), ind));
   }
 
   endData();
