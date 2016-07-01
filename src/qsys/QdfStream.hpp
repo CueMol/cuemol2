@@ -35,6 +35,9 @@ namespace qsys {
     static const int QDF_TYPE_UINT32 = 3;
     static const int QDF_TYPE_UINT64 = 4;
 
+    // alias
+    static const int QDF_TYPE_UID = QDF_TYPE_UINT32;
+
     static const int QDF_TYPE_INT8 = 11;
     static const int QDF_TYPE_INT16 = 12;
     static const int QDF_TYPE_INT32 = 13;
@@ -295,6 +298,10 @@ namespace qsys {
 
     void defFixedStr(const LString &name, int nmaxlen);
 
+    inline void defUID(const LString &name) {
+      defineRecord(name, QDF_TYPE_UID);
+    }
+
     ////////////////////////
     // write data
 
@@ -309,6 +316,7 @@ namespace qsys {
     void writeInt8(const LString &name, qint8 value);
     void writeInt16(const LString &name, qint16 value);
     void writeInt32(const LString &name, int value);
+    void writeUInt32(const LString &name, quint32 value);
     void writeFloat32(const LString &name, qfloat32 value);
 
     void writeVec3D(const LString &pfx, const qlib::Vector4D &vec);

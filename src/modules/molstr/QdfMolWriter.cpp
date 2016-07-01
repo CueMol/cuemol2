@@ -73,7 +73,7 @@ bool QdfMolWriter::write(qlib::OutStream &outs)
   }
 
   m_pMol = pMol;
-  setFileType("MOL1");
+  setFileType("MOL2");
 
   start(outs);
 
@@ -91,24 +91,36 @@ bool QdfMolWriter::write(qlib::OutStream &outs)
 
 void QdfMolWriter::writeChainData()
 {
-  MolCoord::ChainIter iter = m_pMol->begin();
-  MolCoord::ChainIter iend = m_pMol->end();
-  int nChains = m_pMol->getChainSize();
-  
-  defineData("chai", nChains);
+  MolCoord::ChainIter iter, iend = m_pMol->end();
 
-  defineRecord("name", QDF_TYPE_UTF8STR);
-  defineRecord("id", QDF_TYPE_INT32);
+  int nmax_name = 0;
+  for (iter = m_pMol->begin(); iter!=iend; ++iter) {
+    MolChainPtr pChn = iter->second;
+    int len = pChn->getName().length();
+    nmax_name = qlib::max(len, nmax_name);
+  }
+  MB_DPRINTLN("QdfMolWr> max chain name length: %d", nmax_name);
+  
+  int nChains = m_pMol->getChainSize();
+  QdfOutStream &os = getStream();
+  
+  os.defData("chai", nChains);
+
+  os.defUID("id");
+  os.defFixedStr("name", nmax_name);
   
   startData();
-
-  for (int ind=0; iter!=iend; ++iter, ++ind) {
+  
+  quint32 ind=0;
+  iter = m_pMol->begin();
+  for (; iter!=iend; ++iter, ++ind) {
     MolChainPtr pChn = iter->second;
-    LString chnam = (pChn->getName().c_str()); 
+    LString chnam = pChn->getName();
     startRecord();
-    setRecValStr("name", chnam);
-    setRecValInt32("id", ind);
+    os.writeUInt32("id", ind);
+    os.writeFixedStr("name", chnam);
     endRecord();
+    m_chmap.insert((qlib::qvoidp)pChn.get(), ind);
   }
 
   endData();

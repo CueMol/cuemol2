@@ -51,6 +51,9 @@ public:
 private:
   //
 
+  /// chain obj ptr --> chain UID table
+  std::map<qlib::qvoidp, quint32> m_chmap;
+
   /// aid-->rid table
   std::map<int, int> m_ridmap;
 

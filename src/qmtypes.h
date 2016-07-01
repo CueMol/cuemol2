@@ -52,15 +52,37 @@
 // INT_64
 #if (SIZEOF_SHORT==8)
 #  define QUE_INT_64 short
+#  define QUE_UINT_64 unsigned short
 #elif (SIZEOF_INT==8)
 #  define QUE_INT_64 int
+#  define QUE_UINT_64 unsigned int
 #elif (SIZEOF_LONG==8)
 #  define QUE_INT_64 long
+#  define QUE_UINT_64 unsigned long
 #elif (SIZEOF_LONG_LONG==8)
 #  define QUE_INT_64 long long
+#  define QUE_UINT_64 unsigned long long
 #else
 #  error "System with sizeof(XXX)==8 is not found."
 #endif
+
+#if (SIZEOF_VOIDP==1)
+// 8bit arch
+#  define QUE_VOIDP QUE_UINT_8
+#elif (SIZEOF_VOIDP==2)
+// 16bit arch
+#  define QUE_VOIDP QUE_UINT_16
+#elif (SIZEOF_VOIDP==4)
+// 32bit arch
+#  define QUE_VOIDP QUE_UINT_32
+#elif (SIZEOF_VOIDP==8)
+// 64bit arch
+#  define QUE_VOIDP QUE_UINT_64
+#else
+#  error "System with sizeof(voidp)>8 is not found."
+#endif
+
+
 
 // FLT_32
 #if (SIZEOF_FLOAT!=4)

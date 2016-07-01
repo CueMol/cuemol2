@@ -20,10 +20,14 @@ namespace qlib {
   typedef QUE_UINT_8 quint8;
   typedef QUE_UINT_16 quint16;
   typedef QUE_UINT_32 quint32;
+  typedef QUE_UINT_64 quint64;
 
   typedef QUE_FLT_32 qfloat32;
   typedef QUE_FLT_64 qfloat64;
 
+  typedef QUE_VOIDP qvoidp;
+
+  // TO DO: XXX higher precision (nanosec) time base is required for 30fps, 60fps, etc
   /// Internal time/time-span representation (milli seconds)
   typedef qint64 time_value;
 
@@ -225,9 +229,12 @@ using qlib::qbyte;
 using qlib::quint8;
 using qlib::quint16;
 using qlib::quint32;
+using qlib::quint64;
 
 using qlib::qfloat32;
 using qlib::qfloat64;
+
+using qlib::qvoidp;
 
 #endif // QUE_DATA_TYPES_HPP_INCLUDED_
 

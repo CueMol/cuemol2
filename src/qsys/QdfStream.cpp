@@ -721,6 +721,18 @@ void QdfOutStream::writeInt32(const LString &name, int value)
   ++m_nRecInd;
 }
 
+void QdfOutStream::writeUInt32(const LString &name, quint32 value)
+{
+  const RecElem &elem = m_recdefs[m_nRecInd];
+  if (!elem.first.equals(name) || elem.second!=QDF_TYPE_UINT32) {
+    MB_THROW(qlib::FileFormatException, "writeInt inconsistent record order");
+    return;
+  }
+
+  m_pOut->twrite(value);
+  ++m_nRecInd;
+}
+
 void QdfOutStream::writeInt16(const LString &name, qint16 value)
 {
   const RecElem &elem = m_recdefs[m_nRecInd];
