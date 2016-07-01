@@ -13,6 +13,7 @@ namespace qlib {
 
   namespace detail {
 
+#if 0
     class QLIB_API IOBuffer
     {
     private:
@@ -76,6 +77,7 @@ namespace qlib {
         }
       }
     };
+#endif
    
 
     /// Input filter class with xz compression (implementation)

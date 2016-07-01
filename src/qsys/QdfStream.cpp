@@ -624,6 +624,21 @@ void QdfOutStream::defineRecord(const LString &name, int ntype)
   m_recmap.set(name, nid);
 }
 
+void QdfOutStream::defFixedStr(const LString &name, int nmaxlen)
+{
+  int ntype;
+  if (nmaxlen<=0xFF)
+    ntype = QDF_TYPE_FIXSTR8;
+  else if (nmaxlen<=0xFFFF)
+    ntype = QDF_TYPE_FIXSTR16;
+  else
+    ntype = QDF_TYPE_FIXSTR32;
+
+  int nid = m_recdefs.size();
+  m_recdefs.push_back(RecElem(name, ntype, nmaxlen));
+  m_recmap.set(name, nid);
+}
+
 void QdfOutStream::startData()
 {
   int nreclen = m_recdefs.size();
@@ -633,6 +648,17 @@ void QdfOutStream::startData()
   BOOST_FOREACH (const RecElem &elem, m_recdefs) {
     m_pOut->writeStr(elem.first);
     m_pOut->writeInt8(elem.second);
+
+    // extra-field for the fixed-length string mode
+    if (elem.second==QDF_TYPE_FIXSTR8) {
+      m_pOut->writeInt8(elem.nmaxlen);
+    }
+    else if (elem.second==QDF_TYPE_FIXSTR16) {
+      m_pOut->writeInt16(elem.nmaxlen);
+    }
+    else if (elem.second==QDF_TYPE_FIXSTR32) {
+      m_pOut->writeInt32(elem.nmaxlen);
+    }
   }
 }
 
@@ -660,6 +686,26 @@ void QdfOutStream::writeStr(const LString &name, const LString &value)
   }
 
   m_pOut->writeStr(value);
+  ++m_nRecInd;
+}
+
+void QdfOutStream::writeFixedStr(const LString &name, const LString &value)
+{
+  const RecElem &elem = m_recdefs[m_nRecInd];
+  if (!elem.first.equals(name)) {
+    MB_THROW(qlib::FileFormatException, "writeFixStr inconsistent record order");
+    return;
+  }
+
+  int nmaxlen = elem.nmaxlen;
+  int nlen = value.length();
+
+  if (nlen>nmaxlen) {
+    MB_THROW(qlib::FileFormatException, "writeFixStr strlen too long");
+    return;
+  }
+
+  m_pOut->writeFixedStr(value, nmaxlen);
   ++m_nRecInd;
 }
 

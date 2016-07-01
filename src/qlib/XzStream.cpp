@@ -49,7 +49,15 @@ XzInFilterImpl::~XzInFilterImpl()
 /// Check if input is available
 bool XzInFilterImpl::ready()
 {
-  return false;
+  lzma_stream *pstream = (lzma_stream *) m_pdata;
+
+  if (pstream->avail_in>0) {
+    // still stream has non-processed input data
+    return true;
+  }
+  else {
+    return getImpl()->ready();
+  }
 }
 
 /// read into mem block
@@ -70,7 +78,7 @@ int XzInFilterImpl::read(char *abuf, int off, int alen)
     //if (m_buffer.avail()==0)
     if (pstream->avail_in==0) {
       // input from lower level
-      nres = super_t::read((char *)&m_buffer[0], 0, BUFSZ);
+      nres = getImpl()->read((char *)&m_buffer[0], 0, BUFSZ);
       //nres = super_t::read((char *)m_buffer.wptr(), 0, m_buffer.size());
       // int nres = super_t::read(input_buf, 0, BUFSZ);
       
@@ -231,7 +239,7 @@ int XzOutFilterImpl::write(const char *buf, int off, int len)
     
     const int nenc = BUFSZ - pstream->avail_out;
     if (nenc>0) {
-      int nres = super_t::write((const char *)&buffer[0], 0, nenc);
+      int nres = getImpl()->write((const char *)&buffer[0], 0, nenc);
       //fwrite((const char *)&buffer[0], BUFSZ - pstream->avail_out, sizeof(char), m_fp);
 
       if (nres<0) {
@@ -269,6 +277,7 @@ void XzOutFilterImpl::write(int b)
 
 void XzOutFilterImpl::flush()
 {
+  getImpl()->flush();
 }
 
 void XzOutFilterImpl::o_close()
@@ -286,7 +295,7 @@ void XzOutFilterImpl::o_close()
       lzma_ret ret = lzma_code(pstream, LZMA_FINISH);
       int nenc = BUFSZ - pstream->avail_out;
       if (nenc>0) {
-        int nres = super_t::write((const char *)&buffer[0], 0, nenc);
+        int nres = getImpl()->write((const char *)&buffer[0], 0, nenc);
         // fwrite((const char *)&buffer[0], nenc, sizeof(char), m_fp);
       }
       if (nenc<BUFSZ) {

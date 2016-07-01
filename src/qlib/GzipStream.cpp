@@ -27,7 +27,7 @@ int GzipInFilterImpl::readImpl(char *buf, int len)
 {
   // MB_DPRINTLN("GzipInFilterImpl.readImpl: called");
 
-  int res = m_pin->read(buf, 0, len);
+  int res = getImpl()->read(buf, 0, len);
   if (res<0) return 0;
   return res;
 }
@@ -133,7 +133,7 @@ namespace {
 
 int GzipOutFilterImpl::writeImpl(char *buf, int len)
 {
-  int res = m_pout->write(buf, 0, len);
+  int res = getImpl()->write(buf, 0, len);
   if (res<0) return 0;
   return res;
 }

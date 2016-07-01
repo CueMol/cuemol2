@@ -167,6 +167,16 @@ namespace qlib {
       super_t::write(str, 0, nlen);
     }
     
+    void writeFixedStr(const char *str, int nmaxlen)
+    {
+      int nlen = LChar::length(str);
+      int npad = nmaxlen - nlen;
+      super_t::write(str, 0, nlen);
+      // XXX write padding zero; TO DO: more efficient impl
+      for (int i=0; i<npad; ++i)
+        super_t::write(0);
+    }
+
     void writeInt8(qint8 value)
     {
       super_t::write((const char *)&value, 0, sizeof(qint8));

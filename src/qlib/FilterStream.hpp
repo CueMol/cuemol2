@@ -21,11 +21,11 @@ namespace qlib {
     ///
     class QLIB_API InFilterImpl : public InImpl
     {
-    protected:
-
+    public:
       typedef sp<detail::InImpl> impl_type;
 
-      /** underlying stream */
+    private:
+      /// underlying stream
       impl_type m_pin;
 
     public:
@@ -66,6 +66,10 @@ namespace qlib {
         return m_pin->getSrcURI();
       }
 
+      inline impl_type getImpl() const {
+        return m_pin;
+      }
+
     }; // class InFilterImpl
 
     ///
@@ -73,10 +77,11 @@ namespace qlib {
     ///
     class QLIB_API OutFilterImpl : public OutImpl
     {
-    protected:
 
+    public:
       typedef sp<detail::OutImpl> impl_type;
 
+    private:
       /// underlying stream
       impl_type m_pout;
 
@@ -113,6 +118,11 @@ namespace qlib {
       virtual LString getDestURI() const {
         return m_pout->getDestURI();
       }
+
+      inline impl_type getImpl() const {
+        return m_pout;
+      }
+
     }; // class OutFilterImpl
 
   } // namespace detail

@@ -95,7 +95,7 @@ int Base64OutFilterImpl::writeImpl()
   //*out = '\0';
   *out++ = '\n';
 
-  m_pout->write(sbuf, 0, (out-sbuf));
+  getImpl()->write(sbuf, 0, (out-sbuf));
 
   return 0;
 }
@@ -120,7 +120,7 @@ Base64InFilterImpl::Base64InFilterImpl(const impl_type &in)
  bool Base64InFilterImpl::ready()
 {
   if (m_buf.size()>0) return true;
-  return m_pin->ready();
+  return getImpl()->ready();
 }
 
 /// read one byte
@@ -332,7 +332,7 @@ void Base64InFilterImpl::readImpl()
     
     int i, j;
     unsigned char sbuf0[INBUF_SIZE];
-    int inlen0 = m_pin->read((char *)sbuf0, 0, INBUF_SIZE-nrem);
+    int inlen0 = getImpl()->read((char *)sbuf0, 0, INBUF_SIZE-nrem);
     if (inlen0<=0)
       return; // EOF reached
 

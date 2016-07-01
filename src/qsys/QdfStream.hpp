@@ -47,6 +47,11 @@ namespace qsys {
 
     static const int QDF_TYPE_UTF8STR = 41;
 
+    // fixed-length string data types (from version 2.2.2.39x)
+    static const int QDF_TYPE_FIXSTR8 = 42;
+    static const int QDF_TYPE_FIXSTR16 = 43;
+    static const int QDF_TYPE_FIXSTR32 = 44;
+
     // extended data types (from version 2.0.1.182)
 
     /// float32 x 3 elem vector
@@ -58,7 +63,17 @@ namespace qsys {
     /// qbyte x 4 RGBA color
     static const int QDF_TYPE_RGBA = 54;
 
-    typedef std::pair<LString, int> RecElem;
+    // typedef std::pair<LString, int> RecElem;
+    struct RecElem : public std::pair<LString, int>
+    {
+      typedef std::pair<LString, int> super_t;
+
+      RecElem(const LString &a1, int a2) : super_t(a1, a2), nmaxlen(0) {}
+      RecElem(const LString &a1, int a2, int a3) : super_t(a1, a2), nmaxlen(a3) {}
+
+      /// Maximum length of the string (valid if mode is in FIXSTR)
+      int nmaxlen;
+    };
     typedef std::vector<RecElem> RecElemList;
     typedef qlib::MapTable<int> RecIndMap;
 
@@ -68,7 +83,9 @@ namespace qsys {
 
   ////////////////////////////////////////
 
+  ///
   /// Input stream for QDF binary data
+  ///
   class QSYS_API QdfInStream : public qlib::FormatInStream, public QdfDataType
   {
   public:
@@ -181,9 +198,11 @@ namespace qsys {
   };
 
   
-  ////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////////////////////
 
+  ///
   /// Output stream for QDF binary data
+  ///
   class QSYS_API QdfOutStream : public qlib::FormatOutStream, public QdfDataType
   {
   public:
@@ -274,6 +293,8 @@ namespace qsys {
       defineRecord(name, QDF_TYPE_UTF8STR);
     }
 
+    void defFixedStr(const LString &name, int nmaxlen);
+
     ////////////////////////
     // write data
 
@@ -284,6 +305,7 @@ namespace qsys {
     void endRecord();
 
     void writeStr(const LString &name, const LString &value);
+    void writeFixedStr(const LString &name, const LString &value);
     void writeInt8(const LString &name, qint8 value);
     void writeInt16(const LString &name, qint16 value);
     void writeInt32(const LString &name, int value);

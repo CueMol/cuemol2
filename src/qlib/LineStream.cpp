@@ -14,7 +14,7 @@ using namespace qlib::detail;
 
 bool LineInImpl::ready()
 {
-  if (m_pin->ready()) return true;
+  if (getImpl()->ready()) return true;
   
   // underlying stream has reached EOF
   // returns ready, if there are still buffered contents.
@@ -45,7 +45,7 @@ void LineInImpl::readLine(LString &r)
   //while (m_pin->available()>0) {
   for (;;) {
     char sbuf[bufsize];
-    int res = m_pin->read(sbuf, 0, bufsize-1);
+    int res = getImpl()->read(sbuf, 0, bufsize-1);
     if (res<=0) {
       // Reached to the EOF/EOT
       break;
