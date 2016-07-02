@@ -53,6 +53,18 @@ private:
 
   /// chain obj ptr --> chain UID table
   std::map<qlib::qvoidp, quint32> m_chmap;
+  
+  quint32 getChainUID(MolChainPtr pCh) const {
+    qlib::qvoidp p = (qlib::qvoidp) pCh.get();
+    std::map<qlib::qvoidp, quint32>::const_iterator i = m_chmap.find(p);
+    if (i==m_chmap.end()) {
+      MB_THROW(qlib::RuntimeException, "inconsistent mol data in QdfMolWriter");
+    }
+    return i->second;
+  }
+
+  /// resid obj ptr --> chain UID table
+  std::map<qlib::qvoidp, quint32> m_resmap;
 
   /// aid-->rid table
   std::map<int, int> m_ridmap;

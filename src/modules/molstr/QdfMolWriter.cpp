@@ -129,80 +129,117 @@ void QdfMolWriter::writeChainData()
 void QdfMolWriter::writeResidData()
 {
   int nresid = 0;
+  int nmax_name = 0;
+  bool bHasIns = false;
+
+  // propset (property name --> value str's max length
   std::map<LString, int> propset;
   {
-    MolCoord::ChainIter iter = m_pMol->begin();
+    MolCoord::ChainIter citer = m_pMol->begin();
     MolCoord::ChainIter cend = m_pMol->end();
-    for (; iter!=cend; ++iter) {
-      MolChainPtr pChn = iter->second;
+    for (; citer!=cend; ++citer) {
+      MolChainPtr pChn = citer->second;
       nresid += pChn->getSize();
 
       MolChain::ResidCursor riter = pChn->begin();
       MolChain::ResidCursor rend = pChn->end();
       for (; riter!=rend; ++riter) {
         MolResiduePtr pRes = *riter;
+
+        // check name length
+        nmax_name = qlib::max( nmax_name, pRes->getName().length() );
+
+        // check ins code
+        ResidIndex resid = pRes->getIndex();
+        if (resid.second!='\0')
+          bHasIns = true;
+
+        // check strprops (and value maxlen)
         MolResidue::StrPropTab::const_iterator rpiter = pRes->m_strProps.begin();
         MolResidue::StrPropTab::const_iterator rpend = pRes->m_strProps.end();
         for (; rpiter!=rpend; ++rpiter) {
           const LString &key = rpiter->first;
-          const int type = QDF_TYPE_UTF8STR;
-          propset.insert(std::pair<LString, int>(key, type));
-        }
-      }
-    }
+          const LString &val = rpiter->second;
+          std::map<LString, int>::iterator ii = propset.find(key);
+          if (ii==propset.end()) {
+            propset.insert(std::pair<LString, int>(key, val.length()));
+          }
+          else {
+            int nmax = qlib::max(ii->second, val.length());
+            ii->second = nmax;
+          }
+        } // for (; rpiter!=rpend; ++rpiter) {
+
+      } // for (; riter!=rend; ++riter) {
+
+    } // for (; iter!=cend; ++iter) {
   }
 
-  defineData("resi", nresid);
+  qsys::QdfOutStream &os = getStream();
 
-  defineRecord("name", QDF_TYPE_UTF8STR);
-  defineRecord("id", QDF_TYPE_INT32);
-  defineRecord("sind", QDF_TYPE_UTF8STR);
-  defineRecord("chid", QDF_TYPE_INT32);
+  os.defData("resi", nresid);
 
-  startData();
+  // residue UID
+  os.defUID("id");
+  // parent UID (chain ID)
+  os.defUID("pid");
+  os.defFixedStr("name", nmax_name);
+  os.defInt32("idx");
+  if (bHasIns)
+    os.defInt8("ins");
 
   // define resid props
   {
     std::map<LString, int>::const_iterator rpiter = propset.begin();
     std::map<LString, int>::const_iterator rpend = propset.end();
     for (; rpiter!=rpend; ++rpiter) {
-      defineRecord("prop_"+rpiter->first, rpiter->second);
+      os.defFixedStr("prop_"+(rpiter->first), rpiter->second);
     }
   }
 
+  startData();
+
   {
+    quint32 iResID = 0;
+
     m_ridmap.clear();
     MolCoord::ChainIter citer = m_pMol->begin();
     MolCoord::ChainIter cend = m_pMol->end();
-    for (int ind=0; citer!=cend; ++citer, ++ind) {
+    for (; citer!=cend; ++citer) {
       MolChainPtr pChn = citer->second;
+      quint32 iChID = getChainUID(pChn);
       MolChain::ResidCursor riter = pChn->begin();
       MolChain::ResidCursor rend = pChn->end();
-      for (int rind=0; riter!=rend; ++riter, ++rind) {
+      for (; riter!=rend; ++riter, ++iResID) {
         MolResiduePtr pRes = *riter;
         startRecord();
 
-        setRecValStr("name", pRes->getName());
-        setRecValInt32("id", rind);
-        setRecValStr("sind", pRes->getStrIndex());
-        setRecValInt32("chid", ind);
+        os.writeUInt32("id", iResID);
+        os.writeUInt32("pid", iChID);
+        os.writeFixedStr("name", pRes->getName());
+        ResidIndex idx = pRes->getIndex();
+        os.writeInt32("idx", idx.first);
+        if (bHasIns)
+          os.writeInt8("ins", idx.second);
 
         MolResidue::StrPropTab::const_iterator rpiter = pRes->m_strProps.begin();
         MolResidue::StrPropTab::const_iterator rpend = pRes->m_strProps.end();
         for (; rpiter!=rpend; ++rpiter) {
           const LString &key = rpiter->first;
-          setRecValStr("prop_"+key, rpiter->second);
+          os.writeFixedStr("prop_"+key, rpiter->second);
         }
         
         endRecord();
+        m_resmap.insert(std::pair<qlib::qvoidp, quint32>((qlib::qvoidp)pRes.get(), iResID));
 
+        /*
         // make rid map
         MolResidue::AtomCursor aiter = pRes->atomBegin();
         MolResidue::AtomCursor aiend = pRes->atomEnd();
         for (; aiter!=aiend; ++aiter) {
-          m_ridmap.insert(std::pair<int,int>(aiter->second, rind));
+          m_ridmap.insert(std::pair<int,int>(aiter->second, iResID));
         }
-
+         */
       }
     }
   }
