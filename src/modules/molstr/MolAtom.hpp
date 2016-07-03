@@ -162,7 +162,7 @@ namespace molstr {
       m_occ = occup;
     }
 
-    /// Canonical name
+    /// Get canonical name of atom in the topology definition
     const LString &getCName() const {
       return m_canonName;
     }
@@ -272,25 +272,6 @@ namespace molstr {
     LString getAtomPropStr(const LString &propnm) const;
     void setAtomPropStr(const LString &propnm, const LString &pvalue);
 
-/*
-    double getCharge() const
-    {
-      return m_charge;
-    }
-    void setCharge(double val)
-    {
-      m_charge = val;
-    }
-
-    double getRadius() const
-    {
-      return m_radius;
-    }
-    void setRadius(double val)
-    {
-      m_radius = val;
-    }
-*/
   };
 
 }

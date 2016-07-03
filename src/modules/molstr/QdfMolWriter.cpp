@@ -77,6 +77,8 @@ bool QdfMolWriter::write(qlib::OutStream &outs)
 
   start(outs);
 
+  // TO DO: write mol-level properties (cell params, etc)
+  
   writeChainData();
 
   writeResidData();
@@ -250,6 +252,22 @@ void QdfMolWriter::writeResidData()
 void QdfMolWriter::writeAtomData()
 {
   int natoms = m_pMol->getAtomSize();
+  int nmax_name = 0;
+  
+  MolCoord::AtomIter aiter, aiend = m_pMol->endAtom();
+  std::map<LString, RecElem> prop_typemap;
+  for (aiter = m_pMol->beginAtom(); aiter!=aiend; ++aiter) {
+    MolAtomPtr pAtom = aiter->second;
+    nmax_name = qlib::max(nmax_name, pAtom->getName().length());
+    std::set<LString> propnames;
+    pAtom->getAtomPropNames(propnames);
+    BOOST_FOREACH (const LString &elem, propnames) {
+      LString type = pAtom->getPropTypeName(elem);
+      //if (type.
+      prop_typemap.insert(std::pair<LString, LString>(elem, type));
+    }
+  }
+  
   defineData("atom", natoms);
   
   // name of atom
