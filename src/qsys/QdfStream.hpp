@@ -71,6 +71,7 @@ namespace qsys {
     {
       typedef std::pair<LString, int> super_t;
 
+      RecElem() : super_t(), nmaxlen(0) {}
       RecElem(const LString &a1, int a2) : super_t(a1, a2), nmaxlen(0) {}
       RecElem(const LString &a1, int a2, int a3) : super_t(a1, a2), nmaxlen(a3) {}
 

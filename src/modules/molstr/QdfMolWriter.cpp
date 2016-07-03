@@ -185,7 +185,9 @@ void QdfMolWriter::writeResidData()
   os.defUID("id");
   // parent UID (chain ID)
   os.defUID("pid");
+  // residue name
   os.defFixedStr("name", nmax_name);
+  // residue index (and insertion code)
   os.defInt32("idx");
   if (bHasIns)
     os.defInt8("ins");
@@ -204,7 +206,7 @@ void QdfMolWriter::writeResidData()
   {
     quint32 iResID = 0;
 
-    m_ridmap.clear();
+    //m_ridmap.clear();
     MolCoord::ChainIter citer = m_pMol->begin();
     MolCoord::ChainIter cend = m_pMol->end();
     for (; citer!=cend; ++citer) {
@@ -251,69 +253,127 @@ void QdfMolWriter::writeResidData()
 
 void QdfMolWriter::writeAtomData()
 {
-  int natoms = m_pMol->getAtomSize();
   int nmax_name = 0;
   
+  typedef std::map<LString, RecElem> TypeMap;
+
   MolCoord::AtomIter aiter, aiend = m_pMol->endAtom();
-  std::map<LString, RecElem> prop_typemap;
+  TypeMap prop_typemap;
   for (aiter = m_pMol->beginAtom(); aiter!=aiend; ++aiter) {
     MolAtomPtr pAtom = aiter->second;
     nmax_name = qlib::max(nmax_name, pAtom->getName().length());
     std::set<LString> propnames;
     pAtom->getAtomPropNames(propnames);
-    BOOST_FOREACH (const LString &elem, propnames) {
-      LString type = pAtom->getPropTypeName(elem);
-      //if (type.
-      prop_typemap.insert(std::pair<LString, LString>(elem, type));
-    }
+    BOOST_FOREACH (const LString &nm, propnames) {
+      
+      LString type = pAtom->getPropTypeName(nm);
+      RecElem re;
+      re.first = nm;
+      if (type.equals("boolean")) {
+        re.second = QDF_TYPE_BOOL;
+      }
+      else if (type.equals("integer")) {
+        re.second = QDF_TYPE_INT32;
+      }
+      else if (type.equals("real")) {
+        re.second = QDF_TYPE_FLOAT32;
+      }
+      else if (type.equals("string")) {
+        re.second = QDF_TYPE_FIXSTR8;
+        LString value = pAtom->getAtomPropStr(nm);
+        re.nmaxlen = value.length();
+      }
+      else {
+        MB_THROW(qlib::RuntimeException, "");
+      }
+
+      TypeMap::iterator ii = prop_typemap.find(nm);
+      if (ii==prop_typemap.end()) {
+        prop_typemap.insert(TypeMap::value_type(nm, re));
+      }
+      else {
+        if (re.second==QDF_TYPE_FIXSTR8) {
+          re.nmaxlen = qlib::max(ii->second.nmaxlen, re.nmaxlen);
+        }
+        ii->second = re;
+      }
+    } // BOOST_FOREACH (const LString &nm, propnames) {
   }
   
-  defineData("atom", natoms);
-  
-  // name of atom
-  defineRecord("name", QDF_TYPE_UTF8STR);
-  // aid of atom
-  defineRecord("id", QDF_TYPE_INT32);
-  // residue index
-  defineRecord("rid", QDF_TYPE_INT32);
+  int natoms = m_pMol->getAtomSize();
+  qsys::QdfOutStream &os = getStream();
 
-  // element
-  defineRecord("elem", QDF_TYPE_INT8);
+  os.defData("atom", natoms);
+
+  // Atom UID
+  os.defUID("id");
+
+  // parent UID (residue UID)
+  os.defUID("pid");
+
+  // atom name
+  os.defFixedStr("name", nmax_name);
+
+  // XXX TO DO: save cname!!
 
   // conf ID
-  defineRecord("conf", QDF_TYPE_INT8);
+  os.defInt8("conf");
 
-  defineRecord("posx", QDF_TYPE_FLOAT32);
-  defineRecord("posy", QDF_TYPE_FLOAT32);
-  defineRecord("posz", QDF_TYPE_FLOAT32);
-  defineRecord("bfac", QDF_TYPE_FLOAT32);
-  defineRecord("occ", QDF_TYPE_FLOAT32);
+  // element ID
+  os.defInt8("elem");
+
+  // xyzob
+  os.defFloat32("posx");
+  os.defFloat32("posy");
+  os.defFloat32("posz");
+  os.defFloat32("bfac");
+  os.defFloat32("occ");
+
+  // XXX TO DO: save ANISOU!!
+
+  // props
+  BOOST_FOREACH (const TypeMap::value_type &elem, prop_typemap) {
+    const LString &nm = elem.first;
+    const RecElem &re = elem.second;
+    LString recname = "prop_"+nm;
+    if (re.second==QDF_TYPE_FIXSTR8)
+      os.defFixedStr(recname, re.nmaxlen);
+    else
+      os.defineRecord(recname, re.second);
+  }
 
   startData();
 
-  MolCoord::AtomIter aiter = m_pMol->beginAtom();
-  MolCoord::AtomIter aiend = m_pMol->endAtom();
-
-  for (; aiter!=aiend; ++aiter) {
+  aiter = m_pMol->beginAtom();
+  quint32 iAtomID = 0;
+  for (; aiter!=aiend; ++aiter, ++iAtomID) {
     MolAtomPtr pAtom = aiter->second;
-    int aid = aiter->first;
-    std::map<int,int>::const_iterator irid = m_ridmap.find(aid);
-    int rid = -1;
-    if (irid!=m_ridmap.end())
-      rid = irid->second;
-    startRecord();
-    setRecValStr("name", pAtom->getName());
-    setRecValInt32("id", aiter->first);
-    setRecValInt32("rid", rid);
-    setRecValInt8("elem", pAtom->getElement());
-    setRecValInt8("conf", pAtom->getConfID());
+    MolResiduePtr pRes = pAtom->getParentResidue();
+    quint32 iResID = getResidUID(pRes);
 
-    setRecValFloat32("posx", qfloat32(pAtom->getPos().x()));
-    setRecValFloat32("posy", qfloat32(pAtom->getPos().y()));
-    setRecValFloat32("posz", qfloat32(pAtom->getPos().z()));
-    setRecValFloat32("bfac", qfloat32(pAtom->getBfac()));
-    setRecValFloat32("occ", qfloat32(pAtom->getOcc()));
+    startRecord();
+    os.writeUInt32("id", iAtomID);
+    os.writeUInt32("pid", iResID);
+    os.writeFixedStr("name", pAtom->getName());
+    
+    // XXX TO DO: save cname!!
+    
+    os.writeInt8("conf", pAtom->getConfID());
+    os.writeInt8("elem", pAtom->getElement());
+
+    os.writeFloat32("posx", qfloat32(pAtom->getPos().x()));
+    os.writeFloat32("posy", qfloat32(pAtom->getPos().y()));
+    os.writeFloat32("posz", qfloat32(pAtom->getPos().z()));
+    os.writeFloat32("bfac", qfloat32(pAtom->getBfac()));
+    os.writeFloat32("occ", qfloat32(pAtom->getOcc()));
+
+    // XXX TO DO: save ANISOU!!
+
+    // XXX TO DO: save PROPS!!
+
     endRecord();
+
+    m_atommap.insert(std::pair<int, quint32>(aiter->first, iAtomID));
   }
 
   endData();
