@@ -437,6 +437,16 @@ void TopoBuilder::autogen(MolResiduePtr pRes, ResiToppar *pTop)
       MolAtomPtr pAtom2 = pmol->getAtom(iter2->second);
       if (pAtom.get()==pAtom2.get())
         continue;
+
+      // check altconfs (create bonds in the same altconf IDs, if confID exists)
+      char conf1 = pAtom->getConfID();
+      char conf2 = pAtom2->getConfID();
+      
+      if (conf1!=0 && conf2!=0) {
+        if (conf1!=conf2)
+          continue;
+      }
+
       TopAtom *pra1 = pNewTop->getAtom(pAtom->getName());
       TopAtom *pra2 = pNewTop->getAtom(pAtom2->getName());
       if (pra1==NULL || pra2==NULL)
@@ -449,6 +459,11 @@ void TopoBuilder::autogen(MolResiduePtr pRes, ResiToppar *pTop)
 
       double dist = (pAtom->getPos() - pAtom2->getPos()).length();
       pNewTop->addBond(pra1->name, pra2->name, 6000.0, dist);
+      MB_DPRINTLN("Autogen> %s bond created for %s <--> %s (%f)",
+                  pRes->getName().c_str(),
+                  pAtom->formatMsg().c_str(),
+                  pAtom2->formatMsg().c_str(),
+                  dist);
     }
   }
 

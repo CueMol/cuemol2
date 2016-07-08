@@ -136,6 +136,10 @@ void PDBFileReader::readContents(qlib::InStream &ins)
     if (!readRecord(lin))
       break;
 
+    // Skip empty lines
+    if (m_recbuf.isEmpty())
+      continue;
+    
     // read record name string
     LString recnam = readStr(1,6);
     recnam = recnam.trim();
@@ -867,9 +871,11 @@ bool PDBFileReader::readRecord(qlib::LineStream &ins)
   //if (!ins.ready())
   //return false;
   
-  m_recbuf = ins.readLine().chomp();
-  if (m_recbuf.isEmpty())
+  LString str = ins.readLine();
+  if (str.isEmpty())
     return false;
+
+  m_recbuf = str.chomp();
 
   // m_recbuf = m_recbuf.toUpperCase();
   m_lineno = ins.getLineNo();
