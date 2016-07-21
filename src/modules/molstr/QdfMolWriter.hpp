@@ -84,6 +84,7 @@ private:
   void writeChainData();
   void writeResidData();
   void writeAtomData();
+  void writeBondData();
 
   MolCoord *mol() const {
     return super_t::getTarget<MolCoord>();

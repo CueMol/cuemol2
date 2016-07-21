@@ -22,7 +22,7 @@
 #include "NameLabelRenderer.hpp"
 #include "SelectionRenderer.hpp"
 #include "SelCacheMgr.hpp"
-//#include "QdfMolWriter.hpp"
+#include "QdfMolWriter.hpp"
 
 extern void molstr_regClasses();
 extern void molstr_unregClasses();
@@ -61,6 +61,7 @@ ResidIndex ResidIndex::fromString(const LString &str_ind)
 bool init()
 {
   molstr_regClasses();
+  QdfMolWriter::regClass();
 
   ElemSym::init();
   SelCompiler::init();
@@ -76,7 +77,7 @@ bool init()
   pSM->registReader<PDBFileReader>();
   pSM->registWriter<PDBFileWriter>();
   pSM->registReader<QdfMolReader>();
-  //pSM->registWriter<QdfMolWriter>();
+  pSM->registWriter<QdfMolWriter>();
   
   RendererFactory *pRF = RendererFactory::getInstance();
   pRF->regist<SimpleRenderer>();

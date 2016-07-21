@@ -693,7 +693,8 @@ void QdfOutStream::writeFixedStr(const LString &name, const LString &value)
 {
   const RecElem &elem = m_recdefs[m_nRecInd];
   if (!elem.first.equals(name)) {
-    MB_THROW(qlib::FileFormatException, "writeFixStr inconsistent record order");
+    LString msg = LString::format("writeFixStr(%s,%s) inconsistent record order", name.c_str(), value.c_str());
+    MB_THROW(qlib::FileFormatException, msg);
     return;
   }
 
@@ -701,7 +702,8 @@ void QdfOutStream::writeFixedStr(const LString &name, const LString &value)
   int nlen = value.length();
 
   if (nlen>nmaxlen) {
-    MB_THROW(qlib::FileFormatException, "writeFixStr strlen too long");
+    LString msg = LString::format("writeFixStr(%s,%s) strlen too long", name.c_str(), value.c_str());
+    MB_THROW(qlib::FileFormatException, msg);
     return;
   }
 

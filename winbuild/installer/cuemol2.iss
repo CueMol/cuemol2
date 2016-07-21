@@ -87,6 +87,7 @@ Source: {#SysDLLDir}\CGAL-vc120-mt-4.6.1.dll; DestDir: {app}; Flags: ignoreversi
 Source: {#SysDLLDir}\libfftw3f-3.dll; DestDir: {app}; Flags: ignoreversion
 Source: {#SysDLLDir}\glew32.dll; DestDir: {app}; Flags: ignoreversion
 Source: {#SysDLLDir}\lcms2.dll; DestDir: {app}; Flags: ignoreversion
+Source: {#SysDLLDir}\liblzma.dll; DestDir: {app}; Flags: ignoreversion
 
 ; Source: {#SysDLLDir}\libpng15.dll; DestDir: {app}; Flags: ignoreversion
 ; Source: {#SysDLLDir}\zlib1.dll; DestDir: {app}; Flags: ignoreversion

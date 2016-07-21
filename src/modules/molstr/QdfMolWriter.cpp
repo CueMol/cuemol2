@@ -85,6 +85,8 @@ bool QdfMolWriter::write(qlib::OutStream &outs)
 
   writeAtomData();
 
+  writeBondData();
+
   end();
 
   m_pMol = NULL;
@@ -198,7 +200,9 @@ void QdfMolWriter::writeResidData()
     std::map<LString, int>::const_iterator rpend = propset.end();
     for (; rpiter!=rpend; ++rpiter) {
       os.defFixedStr("prop_"+(rpiter->first), rpiter->second);
+      MB_DPRINTLN("QdfMolWriter> resid prop <%s> defined", rpiter->first.c_str());
     }
+    MB_DPRINTLN("QdfMolWriter> %d resid props defined", propset.size());
   }
 
   startData();
@@ -226,11 +230,16 @@ void QdfMolWriter::writeResidData()
         if (bHasIns)
           os.writeInt8("ins", idx.second);
 
-        MolResidue::StrPropTab::const_iterator rpiter = pRes->m_strProps.begin();
-        MolResidue::StrPropTab::const_iterator rpend = pRes->m_strProps.end();
-        for (; rpiter!=rpend; ++rpiter) {
-          const LString &key = rpiter->first;
-          os.writeFixedStr("prop_"+key, rpiter->second);
+        {
+          LString value;
+          std::map<LString, int>::const_iterator rpiter = propset.begin();
+          std::map<LString, int>::const_iterator rpend = propset.end();
+          for (; rpiter!=rpend; ++rpiter) {
+            const LString &key = rpiter->first;
+            if (!pRes->getPropStr(key, value))
+              value = LString();
+            os.writeFixedStr("prop_"+key, value);
+          }
         }
         
         endRecord();
@@ -340,7 +349,9 @@ void QdfMolWriter::writeAtomData()
       os.defFixedStr(recname, re.nmaxlen);
     else
       os.defineRecord(recname, re.second);
+    MB_DPRINTLN("QdfMolWriter> atom prop <%s> defined", nm.c_str());
   }
+  MB_DPRINTLN("QdfMolWriter> %d atom props defined", prop_typemap.size());
 
   startData();
 
@@ -377,5 +388,11 @@ void QdfMolWriter::writeAtomData()
   }
 
   endData();
+}
+
+void QdfMolWriter::writeBondData()
+{
+  MolCoord::BondIter iter = m_pMol->beginBond();
+  MolCoord::BondIter iend = m_pMol->endBond();
 }
 
