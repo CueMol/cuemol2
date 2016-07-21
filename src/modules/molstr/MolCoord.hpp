@@ -108,6 +108,11 @@ namespace molstr {
     BondIter beginBond() const { return m_bondPool.begin(); }
     BondIter endBond() const { return m_bondPool.end(); }
 
+    /// Get the number of bonds in this molecule
+    int getBondSize() const {
+      return m_bondPool.size();
+    }
+
   public:
     typedef ChainPool::const_iterator ChainIter;
 

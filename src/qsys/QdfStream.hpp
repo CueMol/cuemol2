@@ -261,12 +261,12 @@ namespace qsys {
 
     void defineRecord(const LString &name, int ntype);
 
-    inline void defFloat32(const LString &name) {
-      defineRecord(name, QDF_TYPE_FLOAT32);
-    }
-
     inline void defInt8(const LString &name) {
       defineRecord(name, QDF_TYPE_INT8);
+    }
+
+    inline void defUInt8(const LString &name) {
+      defineRecord(name, QDF_TYPE_UINT8);
     }
 
     inline void defInt16(const LString &name) {
@@ -275,6 +275,18 @@ namespace qsys {
 
     inline void defInt32(const LString &name) {
       defineRecord(name, QDF_TYPE_INT32);
+    }
+
+    inline void defUID(const LString &name) {
+      defineRecord(name, QDF_TYPE_UID);
+    }
+
+    inline void defFloat32(const LString &name) {
+      defineRecord(name, QDF_TYPE_FLOAT32);
+    }
+
+    inline void defFloat64(const LString &name) {
+      defineRecord(name, QDF_TYPE_FLOAT64);
     }
 
     void defVec3D(const LString &name) {
@@ -299,10 +311,6 @@ namespace qsys {
 
     void defFixedStr(const LString &name, int nmaxlen);
 
-    inline void defUID(const LString &name) {
-      defineRecord(name, QDF_TYPE_UID);
-    }
-
     ////////////////////////
     // write data
 
@@ -315,6 +323,7 @@ namespace qsys {
     void writeStr(const LString &name, const LString &value);
     void writeFixedStr(const LString &name, const LString &value);
     void writeInt8(const LString &name, qint8 value);
+    void writeUInt8(const LString &name, quint8 value);
     void writeInt16(const LString &name, qint16 value);
     void writeInt32(const LString &name, int value);
     void writeUInt32(const LString &name, quint32 value);

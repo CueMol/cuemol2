@@ -392,7 +392,47 @@ void QdfMolWriter::writeAtomData()
 
 void QdfMolWriter::writeBondData()
 {
+  int nbons = m_pMol->getBondSize();
+  qsys::QdfOutStream &os = getStream();
+
+  os.defData("bond", nbons);
+
+  // Bond UID
+  os.defUID("id");
+
+  // Atom UID 1,1
+  os.defUID("aid1");
+  os.defUID("aid2");
+
+  // Bond valence type
+  os.defUInt8("type");
+
+  // User-defined bond flag
+  os.defUInt8("udef");
+
+  startData();
+
   MolCoord::BondIter iter = m_pMol->beginBond();
   MolCoord::BondIter iend = m_pMol->endBond();
+  quint32 iBondID = 0;
+  for (; iter!=iend; ++iter, ++iBondID) {
+    MolBond *pBond = iter->second;
+
+    quint32 aid1 = getAtomUID(pBond->getAtom1());
+    quint32 aid2 = getAtomUID(pBond->getAtom2());
+
+    startRecord();
+
+    os.writeUInt32("id", iBondID);
+    os.writeUInt32("aid1", aid1);
+    os.writeUInt32("aid2", aid2);
+
+    os.writeUInt8("type", pBond->getType());
+    os.writeUInt8("udef", pBond->isPersist()?1:0 );
+
+    endRecord();
+  }
+
+  endData();
 }
 
