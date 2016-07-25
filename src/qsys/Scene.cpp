@@ -263,11 +263,19 @@ void Scene::setSource(const LString &name)
 
 LString Scene::getBasePath() const
 {
+  //fs::detail::utf8_codecvt_facet utf8; 
+  //fs::path srcpath(m_source.c_str(), utf8);
+  
   fs::path srcpath(m_source.c_str());
+
+  fs::path ppath = srcpath.parent_path();
+
 #if (BOOST_FILESYSTEM_VERSION==2)
-  return srcpath.parent_path().directory_string();
+  return ppath.directory_string();
 #else
-  return srcpath.parent_path().string();
+  //std::string rval = ppath.string(utf8);
+  std::string rval = ppath.string();
+  return rval;
 #endif
 }
 

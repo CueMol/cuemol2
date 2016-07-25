@@ -75,7 +75,16 @@ public:
     }
 
     LString nargs = "\"" + path + "\" " + args;
-    wchar_t *pwcsCmdLine = (wchar_t *)qlib::UTF8toUCS16(nargs);
+    wchar_t *pwcsCmdLine;
+    try {
+      pwcsCmdLine = (wchar_t *)qlib::UTF8toUCS16(nargs);
+    }
+    catch (const LException &ex) {
+      // conversion error: rethrow exception
+      LString msg = LString::format("WinProcMgr: cannot convert UTF8 argments <%s>", nargs.c_str());
+      LOG_DPRINTLN(msg);
+      return NULL;
+    }
 
     // Now create the child process
     PROCESS_INFORMATION proc_info = { 0 };

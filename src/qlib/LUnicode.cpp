@@ -166,10 +166,30 @@ FILE *qlib::fopen_utf8(const LString &utf8name, const LString &utf8mode)
   FILE *fp = NULL;
 
 #ifdef _WIN32
-  // conv pathname
-  wchar_t *pwcs = (wchar_t *)qlib::UTF8toUCS16(utf8name);
-  // conv modestring
-  wchar_t *wcsmode = (wchar_t *)qlib::UTF8toUCS16(utf8mode);
+
+  wchar_t *pwcs, *wcsmode;
+  try {
+    // conv pathname
+    pwcs = (wchar_t *)qlib::UTF8toUCS16(utf8name);
+  }
+  catch (const LException &ex) {
+    LString msg = LString::format("fopen_utf8: cannot convert UTF8 file name <%s>", utf8name.c_str());
+    LOG_DPRINTLN(msg);
+    MB_THROW(IOException, msg);
+    return NULL;
+  }
+    
+  try {
+    // conv modestring
+    wcsmode = (wchar_t *)qlib::UTF8toUCS16(utf8mode);
+  }
+  catch (const LException &ex) {
+    LString msg = LString::format("fopen_utf8: cannot convert UTF8 mode str <%s>", utf8name.c_str());
+    LOG_DPRINTLN(msg);
+    MB_THROW(IOException, msg);
+    return NULL;
+  }
+
   fp = _wfopen(pwcs, wcsmode);
   delete [] pwcs;
   delete [] wcsmode;
@@ -220,7 +240,18 @@ char *qlib::UTF8toNative(const LString &utf8)
   char *pmbsbuf;
   
 #ifdef _WIN32
-  pwcsbuf = (wchar_t *)UTF8toUCS16(utf8);
+  // convert to UCS16 chars
+  try {
+    pwcsbuf = (wchar_t *)UTF8toUCS16(utf8);
+  }
+  catch (const LException &ex) {
+    // conversion error: rethrow exception
+    LString msg = LString::format("cannot convert UTF8 <%s> to native encoding", utf8.c_str());
+    LOG_DPRINTLN(msg);
+    MB_THROW(RuntimeException, msg);
+    return NULL;
+  }
+  
   nmblen = ::WideCharToMultiByte(CP_ACP,0, pwcsbuf,-1, NULL,0, NULL,NULL);
   if (nmblen<=0) {
     delete [] pwcsbuf;

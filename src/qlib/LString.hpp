@@ -422,7 +422,7 @@ namespace qlib {
     friend LString operator+(char c,const LString &arg);
 
     // for debugging
-    virtual void dump();
+    virtual void dump() const;
 
     // deprecated !!
   

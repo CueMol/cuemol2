@@ -13,6 +13,12 @@
 #include "EventManager.hpp"
 // #include "TestClass.hpp"
 
+#include <boost/filesystem/path.hpp>
+#if (BOOST_FILESYSTEM_VERSION>2)
+#  include <boost/filesystem/detail/utf8_codecvt_facet.hpp>
+#  include <locale>
+#endif
+
 /*
 //static
 ClassA *ClassA::fromStringS(const LString &aStr)
@@ -41,6 +47,13 @@ bool qlib::init()
     ClassRegistry::init();
     qlib_regClasses();
     res = true;
+
+#if (BOOST_FILESYSTEM_VERSION>2)
+    std::locale global_loc = std::locale();
+    std::locale loc(global_loc, new boost::filesystem::detail::utf8_codecvt_facet);
+    boost::filesystem::path::imbue(loc);
+#endif
+
   }
   else
     res = false;

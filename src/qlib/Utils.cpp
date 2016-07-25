@@ -9,6 +9,7 @@
 #include "LString.hpp"
 #include "LDebug.hpp"
 #include "Utils.hpp"
+#include "LExceptions.hpp"
 
 #ifdef _WIN32
 #  include "LUnicode.hpp"
@@ -123,8 +124,23 @@ bool isAbsolutePath(const LString &aPath)
 bool isFileReadable(const LString &strpath)
 {
 #ifdef _WIN32
-  // conv pathname
-  U16Char *pwcs = qlib::UTF8toUCS16(strpath);
+  U16Char *pwcs;
+
+  try {
+    // conv pathname
+    pwcs = qlib::UTF8toUCS16(strpath);
+  }
+  catch (const LException &ex) {
+    // conversion error
+    // --> file is not readable
+    //return false;
+
+    LString msg = LString::format("isFileReadable: cannot convert UTF8 file name <%s>", strpath.c_str());
+    LOG_DPRINTLN(msg);
+    MB_THROW(RuntimeException, msg);
+    return NULL;
+  }
+  
   struct _stat buf;
   int result = _wstat( (wchar_t *)pwcs, &buf );
   delete [] pwcs;

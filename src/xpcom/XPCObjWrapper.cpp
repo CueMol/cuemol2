@@ -360,11 +360,6 @@ nsresult LVarToNSVar(qlib::LVariant &variant, nsIVariant **aValue, XPCCueMol *pP
       NS_ENSURE_SUCCESS(rv, rv);
     }
     else {
-      // int ucs16len;
-      // U16Char *pucs16 = qlib::UTF8toUCS16(str, &ucs16len);
-      // rv = nsvar->SetAsWString(pucs16);
-      // delete [] pucs16;
-
       nsAutoString ucs16;
       nsAutoCString nsstr(str.c_str());
       ::CopyUTF8toUTF16(nsstr, ucs16);

@@ -20,6 +20,8 @@
 #include <qlib/StringStream.hpp>
 #include <qlib/LByteArray.hpp>
 
+#include <qlib/LUnicode.hpp>
+
 #ifdef USE_OBJSTR3
 #include <qlib/LObjStream3.hpp>
 #else
@@ -247,6 +249,22 @@ void SceneXMLReader::procDataSrcLoad(qlib::LDom2InStream &ois, LDom2Node *pNode)
   //robj->readFromPath(src, altsrc, m_pClient);
   bool bAlt = false;
   LString basedir = m_pClient->getBasePath();
+  MB_DPRINTLN("basedir>");
+  basedir.dump();
+  LString scenesrc = m_pClient->getSource();
+  MB_DPRINTLN("scenesrc>");
+  scenesrc.dump();
+
+/*
+  try {
+    int xx;
+    qlib::UTF8toUCS16(basedir, &xx);
+  }
+  catch (...) {
+    basedir.dump();
+    MB_DPRINTLN("XXX invalid basedir");
+  }*/
+
   LString abs_path = pCnt->readFromSrcAltSrc(src, altsrc, basedir, bAlt);
 
   // ATTN 14/06/29:

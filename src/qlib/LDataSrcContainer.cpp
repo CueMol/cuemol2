@@ -53,6 +53,10 @@ LString  LDataSrcContainer::selectSrcAltSrc(const LString &src,
                                             const LString &base_path,
                                             bool &rbReadFromAltSrc)
 {
+  LOG_DPRINTLN("selSrcAltSrc> called src=%s", src.c_str());
+  LOG_DPRINTLN("  > altsrc=%s", altsrc.c_str());
+  LOG_DPRINTLN("  > base_path=%s", base_path.c_str());
+
   bool bReadFromAltSrc = false;
 
   LString abs_path;
@@ -60,9 +64,17 @@ LString  LDataSrcContainer::selectSrcAltSrc(const LString &src,
   // First, try to convert "src" to abs path
   if (isAbsolutePath(src))
     abs_path = src;
-  else if (!base_path.isEmpty())
+  else if (!base_path.isEmpty()) {
+    MB_DPRINTLN("Abs path (orig)>");
+    abs_path.dump();
+    MB_DPRINTLN("Base path>");
+    base_path.dump();
     abs_path = makeAbsolutePath(src, base_path);
-  
+    MB_DPRINTLN("Abs path (changed)>");
+    abs_path.dump();
+    LOG_DPRINTLN("selSrcAltSrc> abs_path is changed to %s", abs_path.c_str());
+  }  
+
   if (abs_path.isEmpty() || !isFileReadable(abs_path)) {
     // Second, try to convert "altsrc" to abs path
     if (altsrc.isEmpty()) {

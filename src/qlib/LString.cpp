@@ -249,9 +249,21 @@ QLIB_API LString LString::format(const char *fmt, ...)
 }
 
 // for debugging
-void LString::dump()
+void LString::dump() const
 {
   // MB_DPRINT("LString (%s)\n", c_str());
+  const LString &src = *this;
+  int nlen = src.length();
+  for (int i=0; i<nlen; ++i) {
+    char c = src[i];
+    if (i<nlen-1) {
+      MB_DPRINT("%02X:", c);
+    }
+    else {
+      MB_DPRINT("%02X", c);
+    }
+  }
+  MB_DPRINTLN("");
 }
 
 LString LString::escapeQuots() const
