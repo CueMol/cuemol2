@@ -140,6 +140,7 @@ namespace qsys {
 
     qfloat32 readFloat32(const LString &name);
     qint32 readInt32(const LString &name);
+    quint32 readUInt32(const LString &name);
     qint8 readInt8(const LString &name);
     LString readStr(const LString &name);
 

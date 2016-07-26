@@ -260,7 +260,21 @@ void QdfInStream::readRecordDef()
   for (int i=0; i<nrec; ++i) {
     LString name = m_pBinIn->readStr();
     int ntype = m_pBinIn->readInt8();
-    m_recdefs.push_back(RecElem(name, ntype));
+    
+    RecElem elem(name, ntype);
+
+    // extra-field for the fixed-length string mode
+    if (ntype==QDF_TYPE_FIXSTR8) {
+      elem.nmaxlen = m_pBinIn->tread<quint8>();
+    }
+    else if (ntype==QDF_TYPE_FIXSTR16) {
+      elem.nmaxlen = m_pBinIn->tread<quint16>();
+    }
+    else if (ntype==QDF_TYPE_FIXSTR32) {
+      elem.nmaxlen = m_pBinIn->tread<quint32>();
+    }
+
+    m_recdefs.push_back(elem);
   }
 }
 
@@ -302,6 +316,9 @@ void QdfInStream::skipRecord()
     break;
   case QDF_TYPE_INT32:
     readInt32(nm);
+    break;
+  case QDF_TYPE_UINT32:
+    readUInt32(nm);
     break;
   case QDF_TYPE_INT8:
     readInt8(nm);
@@ -375,7 +392,20 @@ qint32 QdfInStream::readInt32(const LString &name)
 
   m_nRecInd++;
 
-  return m_pBinIn->readInt32();
+  return m_pBinIn->tread<qint32>();
+}
+
+quint32 QdfInStream::readUInt32(const LString &name)
+{
+  const RecElem &elem = m_recdefs[m_nRecInd];
+  if (!elem.first.equals(name) || elem.second!=QDF_TYPE_UINT32) {
+    MB_THROW(qlib::FileFormatException, "readUInt32 inconsistent record order");
+    return 0;
+  }
+
+  m_nRecInd++;
+
+  return m_pBinIn->tread<quint32>();
 }
 
 qint8 QdfInStream::readInt8(const LString &name)
@@ -394,14 +424,35 @@ qint8 QdfInStream::readInt8(const LString &name)
 LString QdfInStream::readStr(const LString &name)
 {
   const RecElem &elem = m_recdefs[m_nRecInd];
-  if (!elem.first.equals(name) || elem.second!=QDF_TYPE_UTF8STR) {
-    MB_THROW(qlib::FileFormatException, "setRecValStr inconsistent record order");
+  if (!elem.first.equals(name)) {
+    MB_THROW(qlib::FileFormatException, "readStr inconsistent record order");
     return LString();
   }
 
+  LString rval;
+  
+  if (elem.second==QDF_TYPE_UTF8STR) {
+    // variable length string
+    rval = m_pBinIn->readStr();
+  }
+  else if (elem.second==QDF_TYPE_FIXSTR8 ||
+           elem.second==QDF_TYPE_FIXSTR16 ||
+           elem.second==QDF_TYPE_FIXSTR32) {
+    // fixed length string
+    const int nlen = elem.nmaxlen;
+    std::vector<char> sbuf(nlen+1);
+    sbuf[nlen] = '\0';
+    m_pBinIn->read(&sbuf[0], 0, nlen);
+    rval = LString(&sbuf[0]);
+  }
+  else {
+    // error; unknown type
+    MB_THROW(qlib::FileFormatException, "readStr inconsistent record order");
+    return rval;
+  }
+  
   ++m_nRecInd;
-
-  return m_pBinIn->readStr();
+  return rval;
 }
 
 void QdfInStream::readVec3D(const LString &name, qfloat32 *pvec)
@@ -651,13 +702,13 @@ void QdfOutStream::startData()
 
     // extra-field for the fixed-length string mode
     if (elem.second==QDF_TYPE_FIXSTR8) {
-      m_pOut->writeInt8(elem.nmaxlen);
+      m_pOut->twrite<quint8>((quint8)(elem.nmaxlen));
     }
     else if (elem.second==QDF_TYPE_FIXSTR16) {
-      m_pOut->writeInt16(elem.nmaxlen);
+      m_pOut->twrite<quint16>((quint16)(elem.nmaxlen));
     }
     else if (elem.second==QDF_TYPE_FIXSTR32) {
-      m_pOut->writeInt32(elem.nmaxlen);
+      m_pOut->twrite<quint32>((quint32)(elem.nmaxlen));
     }
   }
 }

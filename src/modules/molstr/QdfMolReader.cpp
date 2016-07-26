@@ -85,6 +85,17 @@ bool QdfMolReader::read(qlib::InStream &ins)
 
 void QdfMolReader::readChainData()
 {
+  qsys::QdfInStream &in = getStream();
+  int nchains = in.readDataDef("chai");
+  in.readRecordDef();
+
+  for (int i=0; i<nchains; ++i) {
+    in.startRecord();
+    quint32 id = in.readUInt32("id");
+    LString chname = in.readStr("name");
+
+    in.endRecord();
+  }
 }
 
 void QdfMolReader::readResidData()
