@@ -6,13 +6,17 @@
 #include <common.h>
 
 #include "QdfMolReader.hpp"
+#include <qlib/ClassRegistry.hpp>
+#include <qlib/LClassUtils.hpp>
+#include "MolCoord.hpp"
 
 using namespace molstr;
+
+MC_DYNCLASS_IMPL(QdfMolReader, QdfMolReader, qlib::LSpecificClass<QdfMolReader>);
 
 QdfMolReader::QdfMolReader()
      : super_t()
 {
-  m_bBuild2ndry = false;
 }
 
 QdfMolReader::~QdfMolReader()
@@ -22,24 +26,24 @@ QdfMolReader::~QdfMolReader()
 
 /////////////
 
-const char *QdfMolReader::getName() const
-{
-  return "qdfpdb";
-}
-
 const char *QdfMolReader::getTypeDescr() const
 {
-  return "QDF-PDB (*.qdfpdb)";
+  return "CueMol data file (*.qdf)";
 }
 
 const char *QdfMolReader::getFileExt() const
 {
-  return "*.qdfpdb";
+  return "*.qdf";
+}
+
+const char *QdfMolReader::getName() const
+{
+  return "qdfmol";
 }
 
 qsys::ObjectPtr QdfMolReader::createDefaultObj() const
 {
-  return super_t::createDefaultObj();
+  return qsys::ObjectPtr(MB_NEW MolCoord());
 }
 
 /////////
@@ -47,6 +51,51 @@ qsys::ObjectPtr QdfMolReader::createDefaultObj() const
 // read PDB file from stream
 bool QdfMolReader::read(qlib::InStream &ins)
 {
-  return super_t::read(ins);
+  MolCoord *pObj = super_t::getTarget<MolCoord>();
+
+  if (pObj==NULL) {
+    LOG_DPRINTLN("QDFReader> MolCoord is not attached !!");
+    return false;
+  }
+
+  m_pMol = pObj;
+
+  start(ins);
+
+  if (!getFileType().equals("MOL2")) {
+    MB_THROW(qlib::FileFormatException, "invalid file format signature");
+    return false;
+  }
+
+  // TO DO: read mol-level properties (cell params, etc)
+  
+  readChainData();
+
+  readResidData();
+
+  readAtomData();
+
+  readBondData();
+  
+  end();
+
+  m_pMol = NULL;
+  return true;
+}
+
+void QdfMolReader::readChainData()
+{
+}
+
+void QdfMolReader::readResidData()
+{
+}
+
+void QdfMolReader::readAtomData()
+{
+}
+
+void QdfMolReader::readBondData()
+{
 }
 

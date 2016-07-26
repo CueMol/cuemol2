@@ -22,7 +22,7 @@ class QdfMolWriter : public qsys::QdfAbsWriter
   MC_DYNCLASS;
 
 private:
-  typedef ObjWriter super_t;
+  typedef qsys::QdfAbsWriter super_t;
 
   MolCoord *m_pMol;
 

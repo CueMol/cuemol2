@@ -14,7 +14,7 @@
 #include "ElemSym.hpp"
 #include "PDBFileReader.hpp"
 #include "PDBFileWriter.hpp"
-#include "QdfMolReader.hpp"
+#include "QdfPdbReader.hpp"
 #include "SimpleRenderer.hpp"
 #include "TopparManager.hpp"
 #include "SelCompiler.hpp"
@@ -23,6 +23,7 @@
 #include "SelectionRenderer.hpp"
 #include "SelCacheMgr.hpp"
 #include "QdfMolWriter.hpp"
+#include "QdfMolReader.hpp"
 
 extern void molstr_regClasses();
 extern void molstr_unregClasses();
@@ -62,6 +63,7 @@ bool init()
 {
   molstr_regClasses();
   QdfMolWriter::regClass();
+  QdfMolReader::regClass();
 
   ElemSym::init();
   SelCompiler::init();
@@ -69,15 +71,16 @@ bool init()
 
   // for external record handler registrer
   PDBFileReader::init();
-  QdfMolReader::init();
+  QdfPdbReader::init();
   
   TopparManager::getInstance()->load();
   
   StreamManager *pSM = StreamManager::getInstance();
   pSM->registReader<PDBFileReader>();
   pSM->registWriter<PDBFileWriter>();
-  pSM->registReader<QdfMolReader>();
+  pSM->registReader<QdfPdbReader>();
   pSM->registWriter<QdfMolWriter>();
+  pSM->registReader<QdfMolReader>();
   
   RendererFactory *pRF = RendererFactory::getInstance();
   pRF->regist<SimpleRenderer>();
@@ -102,7 +105,7 @@ void fini()
   
   // for external record handler registrer
   PDBFileReader::fini();
-  QdfMolReader::fini();
+  QdfPdbReader::fini();
 
   // PDBFileReader::unregClass();
   // molstr_unregClasses();

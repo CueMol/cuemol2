@@ -3,32 +3,39 @@
 // QDF MolCoord Reader class
 //
 
-#ifndef MOLSTR_QDFMOLREADER_HPP
-#define MOLSTR_QDFMOLREADER_HPP
+#ifndef MOLSTR_QDFPDBREADER_HPP
+#define MOLSTR_QDFPDBREADER_HPP
 
 #include "molstr.hpp"
 
 #include <qlib/mcutils.hpp>
 #include <qlib/LExceptions.hpp>
-#include <qsys/QdfAbsReader.hpp>
+#include "PDBFileReader.hpp"
 
 namespace molstr {
 
   using qlib::LString;
 
-  class QdfMolReader : public qsys::QdfAbsReader
+  class QdfPdbReader : public PDBFileReader
   {
-    //MC_SCRIPTABLE;
-    MC_DYNCLASS;
+    MC_SCRIPTABLE;
 
   private:
-    typedef qsys::QdfAbsReader super_t;
+    typedef PDBFileReader super_t;
 
   public:
     
-    QdfMolReader();
+    QdfPdbReader();
 
-    virtual ~QdfMolReader();
+    virtual ~QdfPdbReader();
+
+    //////////////////////////////////////////////
+    // Read/build methods
+  
+    ///
+    ///  Read from the input stream ins, and build the attached object.
+    ///
+    virtual bool read(qlib::InStream &ins);
 
     //////////////////////////////////////////////
     // Information query methods
@@ -44,26 +51,6 @@ namespace molstr {
 
     /// Create default object for this reader
     virtual qsys::ObjectPtr createDefaultObj() const;
-
-    //////////////////////////////////////////////
-    // Read/build methods
-  
-    ///
-    ///  Read from the input stream ins, and build the attached object.
-    ///
-    virtual bool read(qlib::InStream &ins);
-
-  private:
-
-    MolCoord *m_pMol;
-
-    void readChainData();
-    
-    void readResidData();
-
-    void readAtomData();
-
-    void readBondData();
 
   };
 

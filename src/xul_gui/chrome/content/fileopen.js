@@ -21,7 +21,8 @@ Qm2Main.prototype.makeFilter = function(fp, nCatID)
       continue;
     
     // skip QDF format in the obj-reader mode (cat==0)
-    if (nCatID==0 && elem.name.indexOf("qdf")==0) {
+    if (nCatID==0 && elem.name.indexOf("qdf")==0
+	&& elem.name!="qdfmol") {
       dd("Skip the individual QDF format ("+elem.name+")");
       continue;
     }

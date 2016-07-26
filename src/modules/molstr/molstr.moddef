@@ -21,7 +21,7 @@
 #include "SelectionRenderer.qif"
 #include "PDBFileReader.qif"
 #include "PDBFileWriter.qif"
-#include "QdfMolReader.qif"
+#include "QdfPdbReader.qif"
 #include "BfacColoring.qif"
 #include "RectSelDrawObj.qif"
 #include "SolidColoring.qif"
@@ -58,7 +58,7 @@ module molstr
 
   PDBFileReader;
   PDBFileWriter;
-  QdfMolReader;
+  QdfPdbReader;
 
   RectSelDrawObj;
 };

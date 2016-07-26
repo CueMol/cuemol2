@@ -103,6 +103,8 @@
     <ClCompile Include="..\..\src\modules\molstr\ChainIterator.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\ChainIterator_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\MolBond.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\QdfPdbReader.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\QdfPdbReader_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\CPK2Renderer.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\CPK2Renderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\ScriptColoring.cpp" />
@@ -218,7 +220,6 @@
     <ClCompile Include="..\..\src\modules\molstr\PDBFileWriter_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\Prot2ndry.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\QdfMolReader.cpp" />
-    <ClCompile Include="..\..\src\modules\molstr\QdfMolReader_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\QdfMolWriter.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\RectSelDrawObj.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\RectSelDrawObj_wrap.cpp" />
@@ -393,12 +394,12 @@
     <ClInclude Include="..\..\src\qsys\Scene.hpp" />
     <ClInclude Include="..\..\src\qsys\SceneManager.hpp" />
     <ClInclude Include="..\..\src\qsys\View.hpp" />
-    <ClInclude Include="..\..\src\modules\molstr\QdfMolReader.hpp" />
   </ItemGroup>
   <ItemGroup>
     <mcwrapgen3 Include="..\..\src\gfx\GradientColor.qif" />
     <mcwrapgen3 Include="..\..\src\gfx\MultiGradient.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molstr\ChainIterator.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molstr\QdfPdbReader.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\CPK2Renderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\ScriptColoring.qif" />
     <mcwrapgen3 Include="..\..\src\qsys\Camera.qif" />
@@ -433,7 +434,6 @@
     <mcwrapgen3 Include="..\..\src\modules\molstr\NameLabelRenderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molstr\PDBFileReader.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molstr\PDBFileWriter.qif" />
-    <mcwrapgen3 Include="..\..\src\modules\molstr\QdfMolReader.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molstr\RectSelDrawObj.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molstr\ResidIterator.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molstr\ResidRangeSet.qif" />
