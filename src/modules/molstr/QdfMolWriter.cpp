@@ -20,6 +20,8 @@
 #include "MolAtom.hpp"
 // #include "ChainIterator.hpp"
 
+#define PROP_PFX "$"
+
 using namespace molstr;
 
 MC_DYNCLASS_IMPL(QdfMolWriter, QdfMolWriter, qlib::LSpecificClass<QdfMolWriter>);
@@ -199,7 +201,7 @@ void QdfMolWriter::writeResidData()
     std::map<LString, int>::const_iterator rpiter = propset.begin();
     std::map<LString, int>::const_iterator rpend = propset.end();
     for (; rpiter!=rpend; ++rpiter) {
-      os.defFixedStr("prop_"+(rpiter->first), rpiter->second);
+      os.defFixedStr(PROP_PFX+(rpiter->first), rpiter->second);
       MB_DPRINTLN("QdfMolWriter> resid prop <%s> defined", rpiter->first.c_str());
     }
     MB_DPRINTLN("QdfMolWriter> %d resid props defined", propset.size());
@@ -238,7 +240,7 @@ void QdfMolWriter::writeResidData()
             const LString &key = rpiter->first;
             if (!pRes->getPropStr(key, value))
               value = LString();
-            os.writeFixedStr("prop_"+key, value);
+            os.writeFixedStr(PROP_PFX+key, value);
           }
         }
         
@@ -329,7 +331,7 @@ void QdfMolWriter::writeAtomData()
   os.defInt8("conf");
 
   // element ID
-  os.defInt8("elem");
+  os.defUInt8("elem");
 
   // xyzob
   os.defFloat32("posx");
@@ -344,7 +346,7 @@ void QdfMolWriter::writeAtomData()
   BOOST_FOREACH (const TypeMap::value_type &elem, prop_typemap) {
     const LString &nm = elem.first;
     const RecElem &re = elem.second;
-    LString recname = "prop_"+nm;
+    LString recname = PROP_PFX+nm;
     if (re.second==QDF_TYPE_FIXSTR8)
       os.defFixedStr(recname, re.nmaxlen);
     else
@@ -370,7 +372,7 @@ void QdfMolWriter::writeAtomData()
     // XXX TO DO: save cname!!
     
     os.writeInt8("conf", pAtom->getConfID());
-    os.writeInt8("elem", pAtom->getElement());
+    os.writeUInt8("elem", pAtom->getElement());
 
     os.writeFloat32("posx", qfloat32(pAtom->getPos().x()));
     os.writeFloat32("posy", qfloat32(pAtom->getPos().y()));

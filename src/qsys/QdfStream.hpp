@@ -132,6 +132,9 @@ namespace qsys {
     /// Read record definition
     void readRecordDef();
 
+    /// check element definition the record
+    bool isDefined(const LString &name) const;
+
     /////////////////
     //  old interface
 
@@ -142,6 +145,7 @@ namespace qsys {
     qint32 readInt32(const LString &name);
     quint32 readUInt32(const LString &name);
     qint8 readInt8(const LString &name);
+    quint8 readUInt8(const LString &name);
     LString readStr(const LString &name);
 
     void readVec3D(const LString &name, qfloat32 *pvec);

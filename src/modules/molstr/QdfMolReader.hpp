@@ -57,6 +57,15 @@ namespace molstr {
 
     MolCoord *m_pMol;
 
+    typedef std::map<quint32, MolChainPtr> ChainTab;
+    ChainTab m_chainTab;
+    
+    typedef std::map<quint32, MolResiduePtr> ResidTab;
+    ResidTab m_residTab;
+
+    typedef std::map<quint32, MolAtomPtr> AtomTab;
+    AtomTab m_atomTab;
+
     void readChainData();
     
     void readResidData();

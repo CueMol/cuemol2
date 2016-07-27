@@ -189,19 +189,7 @@ namespace molstr {
     /// Get chain by name
     MolChainPtr getChain(const LString &chname) const;
     
-  private:
-    /**
-       Appends chain at the tail of chain vector
-       and returns index of it.
-       (returns -1, if the chain of the same name already exists)
-    */
-    bool appendChain(MolChainPtr pChain);
-
-    /** remove chain by name */
-    bool removeChain(const LString &cname);
-
-  public:
-    /** get the number of chains in this molecule */
+    /// get the number of chains in this molecule
     int getChainSize() const {
       return m_chains.size();
     }
@@ -209,6 +197,13 @@ namespace molstr {
     /// Get chain names (in JSON array format; for UI)
     LString getChainsJSON() const;
     
+    /// Appends chain at the tail of chain vector
+    /// (returns false, if the chain of the same name already exists)
+    bool appendChain(MolChainPtr pChain);
+
+    /// remove chain by name
+    bool removeChain(const LString &cname);
+
     /////////////////////////////////////////////////////
     // selection operations
     //

@@ -11,6 +11,8 @@
 
 #include <qlib/LString.hpp>
 #include <qlib/HashTable.hpp>
+#include <qlib/HashTable.hpp>
+#include <qlib/LTypes.hpp>
 
 namespace molstr {
 
@@ -147,7 +149,7 @@ namespace molstr {
 
   };
 
-  typedef unsigned char ElemID;
+  typedef quint8 ElemID;
 
 }
 

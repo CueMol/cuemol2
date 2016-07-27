@@ -278,6 +278,16 @@ void QdfInStream::readRecordDef()
   }
 }
 
+bool QdfInStream::isDefined(const LString &name) const
+{
+  BOOST_FOREACH (const RecElem &elem, m_recdefs) {
+    if (name.equals(elem.first)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void QdfInStream::startRecord()
 {
   m_nRecInd = 0;
@@ -323,7 +333,13 @@ void QdfInStream::skipRecord()
   case QDF_TYPE_INT8:
     readInt8(nm);
     break;
+  case QDF_TYPE_UINT8:
+    readUInt8(nm);
+    break;
   case QDF_TYPE_UTF8STR:
+  case QDF_TYPE_FIXSTR8:
+  case QDF_TYPE_FIXSTR16:
+  case QDF_TYPE_FIXSTR32:
     readStr(nm);
     break;
   case QDF_TYPE_VEC3:
@@ -412,13 +428,26 @@ qint8 QdfInStream::readInt8(const LString &name)
 {
   const RecElem &elem = m_recdefs[m_nRecInd];
   if (!elem.first.equals(name) || elem.second!=QDF_TYPE_INT8) {
-    MB_THROW(qlib::FileFormatException, "setRecValInt8 inconsistent record order");
+    MB_THROW(qlib::FileFormatException, "readInt8 inconsistent record order");
     return 0;
   }
 
   m_nRecInd++;
 
-  return m_pBinIn->readInt8();
+  return m_pBinIn->tread<qint8>();
+}
+
+quint8 QdfInStream::readUInt8(const LString &name)
+{
+  const RecElem &elem = m_recdefs[m_nRecInd];
+  if (!elem.first.equals(name) || elem.second!=QDF_TYPE_UINT8) {
+    MB_THROW(qlib::FileFormatException, "readUInt8 inconsistent record order");
+    return 0;
+  }
+
+  m_nRecInd++;
+
+  return m_pBinIn->tread<quint8>();
 }
 
 LString QdfInStream::readStr(const LString &name)
