@@ -8,6 +8,7 @@
 #include "QdfMolReader.hpp"
 #include <qlib/ClassRegistry.hpp>
 #include <qlib/LClassUtils.hpp>
+#include <qlib/Utils.hpp>
 #include "MolCoord.hpp"
 
 #define PROP_PFX "$"
@@ -138,7 +139,22 @@ void QdfMolReader::readResidData()
     
     pRes = MolResiduePtr(MB_NEW MolResidue());
 
-    // TO DO: read residue props
+    // Read residue props
+    while (!in.isRecEnd()) {
+      const RecElem &re = in.getNextElem();
+      if (!re.first.startsWith(PROP_PFX)) {
+        break;
+      }
+      if (re.second!=QDF_TYPE_FIXSTR8 &&
+          re.second!=QDF_TYPE_FIXSTR16 &&
+          re.second!=QDF_TYPE_FIXSTR32) {
+        break;
+      }
+      // 1==strlen(PROP_PFX)
+      LString propname = re.first.substr(1);
+      LString value = in.readStr(re.first);
+      pRes->setPropStr(propname, value);
+    }
 
     citer = m_chainTab.find(pid);
     if (citer==m_chainTab.end()) {
@@ -164,6 +180,10 @@ void QdfMolReader::readAtomData()
   int nelems = in.readDataDef("atom");
   in.readRecordDef();
   
+  bool bHasAnisou = false;
+  if (in.isDefined("u00"))
+    bHasAnisou = true;
+
   MolAtomPtr pAtom;
   MolResiduePtr pRes;
   MolChainPtr pCh;
@@ -174,6 +194,7 @@ void QdfMolReader::readAtomData()
     quint32 id = in.readUInt32("id");
     quint32 pid = in.readUInt32("pid");
     LString atomname = in.readStr("name");
+    LString cname = in.readStr("cnam");
     qint8 conf = in.readInt8("conf");
     ElemID elem = in.readUInt8("elem");
     qfloat32 posx = in.readFloat32("posx");
@@ -182,10 +203,26 @@ void QdfMolReader::readAtomData()
     qfloat32 bfac = in.readFloat32("bfac");
     qfloat32 occ = in.readFloat32("occ");
 
+    qfloat32 u00 = 0.0f;
+    qfloat32 u01 = 0.0f;
+    qfloat32 u02 = 0.0f;
+    qfloat32 u11 = 0.0f;
+    qfloat32 u12 = 0.0f;
+    qfloat32 u22 = 0.0f;
+    if (bHasAnisou) {
+      u00 = in.readFloat32("u00");
+      u01 = in.readFloat32("u01");
+      u02 = in.readFloat32("u02");
+      u11 = in.readFloat32("u11");
+      u12 = in.readFloat32("u12");
+      u22 = in.readFloat32("u22");
+    }
+    
     pAtom = MolAtomPtr(MB_NEW MolAtom());
 
     pAtom->setParentUID(m_pMol->getUID());
     pAtom->setName(atomname);
+    pAtom->setCName(cname);
     pAtom->setConfID(conf);
     pAtom->setElement(elem);
 
@@ -206,6 +243,23 @@ void QdfMolReader::readAtomData()
     pAtom->setPos(qlib::Vector4D(posx, posy, posz));
     pAtom->setBfac(bfac);
     pAtom->setOcc(occ);
+
+    if (qlib::isNear(u00, 0.0f) &&
+        qlib::isNear(u01, 0.0f) &&
+        qlib::isNear(u02, 0.0f) &&
+        qlib::isNear(u11, 0.0f) &&
+        qlib::isNear(u12, 0.0f) &&
+        qlib::isNear(u22, 0.0f)) {
+      ;
+    }
+    else {
+      pAtom->setU(0,0,u00);
+      pAtom->setU(0,1,u01);
+      pAtom->setU(0,2,u02);
+      pAtom->setU(1,1,u11);
+      pAtom->setU(1,2,u12);
+      pAtom->setU(2,2,u22);
+    }
 
     int naid = m_pMol->appendAtom(pAtom);
     if (naid<0) {

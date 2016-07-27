@@ -265,6 +265,8 @@ void QdfMolWriter::writeResidData()
 void QdfMolWriter::writeAtomData()
 {
   int nmax_name = 0;
+  int nmax_cname = 0;
+  bool bHasAnisou = false;
   
   typedef std::map<LString, RecElem> TypeMap;
 
@@ -273,6 +275,9 @@ void QdfMolWriter::writeAtomData()
   for (aiter = m_pMol->beginAtom(); aiter!=aiend; ++aiter) {
     MolAtomPtr pAtom = aiter->second;
     nmax_name = qlib::max(nmax_name, pAtom->getName().length());
+    nmax_cname = qlib::max(nmax_cname, pAtom->getCName().length());
+    if (pAtom->hasAnIsoU())
+      bHasAnisou = true;
     std::set<LString> propnames;
     pAtom->getAtomPropNames(propnames);
     BOOST_FOREACH (const LString &nm, propnames) {
@@ -311,6 +316,7 @@ void QdfMolWriter::writeAtomData()
     } // BOOST_FOREACH (const LString &nm, propnames) {
   }
   
+  int nprops = prop_typemap.size();
   int natoms = m_pMol->getAtomSize();
   qsys::QdfOutStream &os = getStream();
 
@@ -325,7 +331,8 @@ void QdfMolWriter::writeAtomData()
   // atom name
   os.defFixedStr("name", nmax_name);
 
-  // XXX TO DO: save cname!!
+  // canonical atom name
+  os.defFixedStr("cnam", nmax_cname);
 
   // conf ID
   os.defInt8("conf");
@@ -340,7 +347,15 @@ void QdfMolWriter::writeAtomData()
   os.defFloat32("bfac");
   os.defFloat32("occ");
 
-  // XXX TO DO: save ANISOU!!
+  // save ANISOU
+  if (bHasAnisou) {
+    os.defFloat32("u00");
+    os.defFloat32("u01");
+    os.defFloat32("u02");
+    os.defFloat32("u11");
+    os.defFloat32("u12");
+    os.defFloat32("u22");
+  }    
 
   // props
   BOOST_FOREACH (const TypeMap::value_type &elem, prop_typemap) {
@@ -353,7 +368,9 @@ void QdfMolWriter::writeAtomData()
       os.defineRecord(recname, re.second);
     MB_DPRINTLN("QdfMolWriter> atom prop <%s> defined", nm.c_str());
   }
-  MB_DPRINTLN("QdfMolWriter> %d atom props defined", prop_typemap.size());
+  MB_DPRINTLN("QdfMolWriter> %d atom props defined", nprops);
+
+  /////////
 
   startData();
 
@@ -368,8 +385,7 @@ void QdfMolWriter::writeAtomData()
     os.writeUInt32("id", iAtomID);
     os.writeUInt32("pid", iResID);
     os.writeFixedStr("name", pAtom->getName());
-    
-    // XXX TO DO: save cname!!
+    os.writeFixedStr("cnam", pAtom->getCName());
     
     os.writeInt8("conf", pAtom->getConfID());
     os.writeUInt8("elem", pAtom->getElement());
@@ -380,7 +396,25 @@ void QdfMolWriter::writeAtomData()
     os.writeFloat32("bfac", qfloat32(pAtom->getBfac()));
     os.writeFloat32("occ", qfloat32(pAtom->getOcc()));
 
-    // XXX TO DO: save ANISOU!!
+    // save ANISOU
+    if (bHasAnisou) {
+      if (pAtom->hasAnIsoU()) {
+        os.writeFloat32("u00", (qfloat32) pAtom->getU(0,0));
+        os.writeFloat32("u01", (qfloat32) pAtom->getU(0,1));
+        os.writeFloat32("u02", (qfloat32) pAtom->getU(0,2));
+        os.writeFloat32("u11", (qfloat32) pAtom->getU(1,1));
+        os.writeFloat32("u12", (qfloat32) pAtom->getU(1,2));
+        os.writeFloat32("u22", (qfloat32) pAtom->getU(2,2));
+      }
+      else {
+        os.writeFloat32("u00", 0.0);
+        os.writeFloat32("u01", 0.0);
+        os.writeFloat32("u02", 0.0);
+        os.writeFloat32("u11", 0.0);
+        os.writeFloat32("u12", 0.0);
+        os.writeFloat32("u22", 0.0);
+      }
+    }
 
     // XXX TO DO: save PROPS!!
 

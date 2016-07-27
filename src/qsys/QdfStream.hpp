@@ -141,6 +141,17 @@ namespace qsys {
     void startRecord();
     void endRecord();
 
+    const RecElem &getNextElem() const {
+      return m_recdefs[m_nRecInd];
+    }
+
+    bool isRecEnd() const {
+      if (m_nRecInd>=m_recdefs.size())
+        return true;
+      else
+        return false;
+    }
+
     qfloat32 readFloat32(const LString &name);
     qint32 readInt32(const LString &name);
     quint32 readUInt32(const LString &name);
