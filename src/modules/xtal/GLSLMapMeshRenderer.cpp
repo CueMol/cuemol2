@@ -462,19 +462,6 @@ void GLSLMapMeshRenderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
   m_pPO->setUniform("dataFieldTex", 0);
   CHK_GLERROR("setUniform dataFieldTex");
 
-/*
-  m_pPO->setUniform("isolevel", m_isolevel);
-  CHK_GLERROR("setUniform isolevel");
-
-  m_pPO->setUniform("ncol", ncol);
-  CHK_GLERROR("setUniform ncol");
-
-  m_pPO->setUniform("nrow", nrow);
-  CHK_GLERROR("setUniform nrow");
-
-  //m_pPO->setUniform("nsec", nsec);
-  //CHK_GLERROR("setUniform nsec");
- */
   m_pPO->disable();
 
   // glBindTexture(MY_MAPTEX_DIM, 0);

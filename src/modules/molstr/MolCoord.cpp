@@ -14,7 +14,7 @@
 #include <qsys/SceneManager.hpp>
 #include "AtomIterator.hpp"
 
-//#define USE_QDFMOL_QSC 1
+#define USE_QDFMOL_QSC 1
 
 // For QSC file data chunk processing
 #ifdef USE_QDFMOL_QSC
