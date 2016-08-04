@@ -59,8 +59,10 @@ AtomPosMap.cpp \
 MolArrayMap.cpp \
 MolXformEditInfo.cpp \
 RectSelDrawObj.cpp \
-QdfMolReader.cpp \
+QdfPdbReader.cpp \
 ResidRangeSet.cpp \
+QdfMolReader.cpp \
+QdfMolWriter.cpp \
 $(NULL)
 
 # CueMol interface definitions for MCWRAPGEN
@@ -87,7 +89,7 @@ SelectionRenderer.qif \
 PDBFileReader.qif \
 PDBFileWriter.qif \
 RectSelDrawObj.qif \
-QdfMolReader.qif \
+QdfPdbReader.qif \
 ResidRangeSet.qif \
 $(NULL)
 

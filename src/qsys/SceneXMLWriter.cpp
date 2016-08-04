@@ -250,13 +250,13 @@ void SceneXMLWriter::procDataChunks(qlib::LDom2OutStream &oos, qlib::LDom2Node *
     return;
 
   LString src = oos.prepareDataChunk(pCnt);
-  LString srctype = pCnt->getDataChunkReaderName();
+  // LString srctype = pCnt->getDataChunkReaderName();
   pCnt->setDataChunkName(src, pNode);
 
   // obj->setSource(src);
   // obj->setSourceType(srctype);
-  MB_DPRINTLN("SceneXMLWr> embeding src=%s, srctype=%s",
-              src.c_str(), srctype.c_str());
+  //MB_DPRINTLN("SceneXMLWr> embeding src=%s, srctype=%s",
+  //src.c_str(), srctype.c_str());
 }
 
 qlib::LScrSp<qlib::LByteArray> SceneXMLWriter::toByteArray(const qlib::LScrSp<qlib::LScrObjBase> &pSObj,

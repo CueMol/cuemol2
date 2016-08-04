@@ -85,6 +85,10 @@ bool QdfMolReader::read(qlib::InStream &ins)
   m_chainTab.clear();
   m_residTab.clear();
   m_atomTab.clear();
+
+  // Apply automatic topology/linkage information
+  m_pMol->applyTopology();
+
   m_pMol = NULL;
 
   return true;
@@ -309,8 +313,12 @@ void QdfMolReader::readBondData()
     quint8 ntype = in.readUInt8("type");
     quint8 nudef = in.readUInt8("udef");
     
-    MolBond *pBond = m_pMol->makeBond(pAtom1->getID(), pAtom2->getID(), (nudef==1)?true:false);
-    pBond->setType(ntype);
+    if (nudef==1) {
+      // load only the user-defined bonds
+      // (other bonds will be created by applyTopology())
+      MolBond *pBond = m_pMol->makeBond(pAtom1->getID(), pAtom2->getID(), true);
+      pBond->setType(ntype);
+    }
 
     in.endRecord();
   }

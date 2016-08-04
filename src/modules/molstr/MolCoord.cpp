@@ -14,8 +14,14 @@
 #include <qsys/SceneManager.hpp>
 #include "AtomIterator.hpp"
 
+//#define USE_QDFMOL_QSC 1
+
 // For QSC file data chunk processing
-#include "PDBFileWriter.hpp"
+#ifdef USE_QDFMOL_QSC
+#  include "QdfMolWriter.hpp"
+#else
+#  include "PDBFileWriter.hpp"
+#endif
 
 using namespace molstr;
 
@@ -441,13 +447,20 @@ bool MolCoord::isDataSrcWritable() const
 
 LString MolCoord::getDataChunkReaderName() const
 {
+#ifdef USE_QDFMOL_QSC
+  return LString("qdfmol");
+#else
   return LString("qdfpdb");
+#endif
 }
 
 void MolCoord::writeDataChunkTo(qlib::LDom2OutStream &oos) const
 {
+#ifdef USE_QDFMOL_QSC
+  QdfMolWriter writer;
+#else
   PDBFileWriter writer;
-  // writer.setCompressMode(qsys::InOutHandler::COMP_GZIP);
+#endif
 
   MolCoord *pthis = const_cast<MolCoord *>(this);
   writer.attach(qsys::ObjectPtr(pthis));
