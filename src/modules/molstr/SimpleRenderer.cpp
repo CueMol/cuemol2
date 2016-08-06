@@ -11,6 +11,7 @@
 #include "MolChain.hpp"
 #include "MolResidue.hpp"
 #include "ResiToppar.hpp"
+#include "BondIterator.hpp"
 
 #include <gfx/DisplayContext.hpp>
 #include <gfx/SolidColor.hpp>
@@ -27,6 +28,8 @@ SimpleRenderer::SimpleRenderer()
   m_bValBond = true;
   m_dCvScl1 = -0.05;
   m_dCvScl2 = 0.05;
+
+  m_pBondVBO = NULL;
 }
 
 SimpleRenderer::~SimpleRenderer()
@@ -34,41 +37,12 @@ SimpleRenderer::~SimpleRenderer()
   MB_DPRINTLN("SimpleRenderer destructed %p", this);
 }
 
-namespace {
-  Vector4D getNormalVec(MolAtomPtr pAtom1, MolCoordPtr pMol, bool &bOK)
-  {
-    bOK = false;
-    int nbon1 = pAtom1->getBondCount();
-    int aid1 = pAtom1->getID();
-    Vector4D nv1;
-    std::deque<Vector4D> atoms1;
-    atoms1.push_back(pAtom1->getPos());
-    if (nbon1>=2) {
-      MolAtom::BondIter biter = pAtom1->bondBegin();
-      MolAtom::BondIter bend = pAtom1->bondEnd();
-      for (; biter!=bend; ++biter) {
-	MolBond *pBon = *biter;
-	MolAtomPtr pBonAtm1 = pMol->getAtom(pBon->getAtom1());
-	MolAtomPtr pBonAtm2 = pMol->getAtom(pBon->getAtom2());
-	MB_DPRINTLN("Bond %s <--> %s",
-		    pBonAtm1->toString().c_str(),
-		    pBonAtm2->toString().c_str());
-	if (pBon->getAtom1()==aid1)
-	  atoms1.push_back(pBonAtm2->getPos());
-	else if (pBon->getAtom2()==aid1)
-	  atoms1.push_back(pBonAtm1->getPos());
-      }
-
-      Vector4D v1 = atoms1[1] - atoms1[0];
-      Vector4D v2 = atoms1[2] - atoms1[0];
-      nv1 = v1.cross(v2);
-      nv1 = nv1.normalize();
-      bOK = true;
-    }
-    MB_DPRINTLN("DblBon nbon=%d, nv=%s", nbon1, nv1.toString().c_str());
-    return nv1;
-  }
+const char *SimpleRenderer::getTypeName() const
+{
+  return "simple";
 }
+
+/////////////////////////
 
 void SimpleRenderer::drawInterAtomLine(MolAtomPtr pAtom1, MolAtomPtr pAtom2,
                                        MolBond *pMB,
@@ -230,25 +204,164 @@ bool SimpleRenderer::isRendBond() const
 }
 
 //////////////////////////////////////////////////////////////////////
-// simple renderer (with simple coloring scheme)
 
-const char *SimpleRenderer::getTypeName() const
+void SimpleRenderer::display(DisplayContext *pdc)
 {
-  return "simple";
+
+  if (pdc->isFile() || !pdc->isDrawElemSupported()) {
+    // case of the file (non-ogl) rendering
+    // always use the old version.
+    super_t::display(pdc);
+    return;
+  }
+
+  // new rendering routine using VBO (DrawElem)
+
+  if (m_pBondVBO==NULL) {
+    renderVBO();
+    if (m_pBondVBO==NULL)
+      return; // Error, Cannot draw anything (ignore)
+  }
+  
+  preRender(pdc);
+  m_pBondVBO->setLineWidth(m_lw);
+  pdc->drawElem(*m_pBondVBO);
+  postRender(pdc);
 }
 
-/*
-void SimpleRenderer::propChanged(qlib::LPropEvent &ev)
+
+void SimpleRenderer::renderVBO()
 {
-  if (ev.getName().equals("linew")) {
-    invalidateDisplayCache();
+  int i;
+  int nbons = 0, nva;
+  MolCoordPtr pMol = getClientMol();
+
+  if (m_drbonds.size()==0) {
+    // build bond data structure/estimate VBO size
+
+    BondIterator biter(pMol, getSelection());
+
+    for (biter.first(); biter.hasMore(); biter.next()) {
+      MolBond *pMB = biter.getBond();
+      int aid1 = pMB->getAtom1();
+      int aid2 = pMB->getAtom2();
+
+      MolAtomPtr pA1 = pMol->getAtom(aid1);
+      MolAtomPtr pA2 = pMol->getAtom(aid2);
+
+      if (pA1.isnull() || pA2.isnull())
+        continue; // skip invalid bonds
+
+      ++nbons;
+    }
+
+    m_drbonds.resize(nbons);
+
+    i=0;
+    int iva = 0;
+    for (biter.first(); biter.hasMore(); biter.next()) {
+      MolBond *pMB = biter.getBond();
+      int aid1 = pMB->getAtom1();
+      int aid2 = pMB->getAtom2();
+
+      MolAtomPtr pA1 = pMol->getAtom(aid1);
+      MolAtomPtr pA2 = pMol->getAtom(aid2);
+
+      if (pA1.isnull() || pA2.isnull())
+        continue; // skip invalid bonds
+
+      m_drbonds[i].aid1 = aid1;
+      m_drbonds[i].aid2 = aid2;
+      m_drbonds[i].vaind = iva;
+
+      ColorPtr pcol1 = ColSchmHolder::getColor(pA1);
+      ColorPtr pcol2 = ColSchmHolder::getColor(pA2);
+      if ( pcol1->equals(*pcol2.get()) ) {
+        // same color --> one bond
+        iva+=2;
+        m_drbonds[i].itype = IBON_1C_1V;
+        m_drbonds[i].nelems = 2;
+      }
+      else {
+        // different color --> two bonds
+        iva+=4;
+        m_drbonds[i].itype = IBON_2C_1V;
+        m_drbonds[i].nelems = 4;
+      }
+
+      // TO DO: double/triple bonds
+
+      ++i;
+    }
+
+    nva = iva;
   }
-  else
-  if (ev.getParentName().equals("coloring")||
-      ev.getParentName().startsWith("coloring.")) {
-    invalidateDisplayCache();
+    
+  if (m_pBondVBO==NULL) {
+    m_pBondVBO = MB_NEW gfx::DrawElemVC();
+    m_pBondVBO->alloc(nva);
+    m_pBondVBO->setDrawMode(gfx::DrawElemVC::DRAW_LINES);
   }
-  MolAtomRenderer::propChanged(ev);
+  
+  quint32 j = 0;
+  for (i=0; i<nbons; ++i) {
+    quint32 aid1 = m_drbonds[i].aid1;
+    quint32 aid2 = m_drbonds[i].aid2;
+    //quint32 j = m_drbonds[i].vaind;
+
+    MolAtomPtr pA1 = pMol->getAtom(aid1);
+    MolAtomPtr pA2 = pMol->getAtom(aid2);
+    
+    ColorPtr pcol1 = ColSchmHolder::getColor(pA1);
+
+    quint32 cc1 = pcol1->getCode();
+
+    Vector4D pos1 = pA1->getPos();
+    Vector4D pos2 = pA2->getPos();
+
+    switch (m_drbonds[i].itype) {
+    case IBON_1C_1V:
+      m_pBondVBO->color(j, cc1);
+      m_pBondVBO->vertex(j, pos1);
+      ++j;
+      m_pBondVBO->color(j, cc1);
+      m_pBondVBO->vertex(j, pos2);
+      ++j;
+      break;
+
+    case IBON_2C_1V: {
+      ColorPtr pcol2 = ColSchmHolder::getColor(pA2);
+      quint32 cc2 = pcol2->getCode();
+      Vector4D midpos = (pos1+pos2).divide(2.0);
+      m_pBondVBO->color(j, cc1);
+      m_pBondVBO->vertex(j, pos1);
+      ++j;
+      m_pBondVBO->color(j, cc1);
+      m_pBondVBO->vertex(j, midpos);
+      ++j;
+      m_pBondVBO->color(j, cc2);
+      m_pBondVBO->vertex(j, pos2);
+      ++j;
+      m_pBondVBO->color(j, cc2);
+      m_pBondVBO->vertex(j, midpos);
+      ++j;
+      break;
+    }
+      
+    default:
+      break;
+    }
+  }
 }
-*/
+
+void SimpleRenderer::invalidateDisplayCache()
+{
+  if (m_pBondVBO!=NULL) {
+    delete m_pBondVBO;
+    m_pBondVBO = NULL;
+    m_drbonds.clear();
+  }
+
+  super_t::invalidateDisplayCache();
+}
 

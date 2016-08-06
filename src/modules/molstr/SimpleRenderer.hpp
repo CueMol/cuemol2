@@ -9,6 +9,7 @@
 
 #include "molstr.hpp"
 #include "MolAtomRenderer.hpp"
+#include <gfx/DrawElem.hpp>
 
 class SimpleRenderer_wrap;
 
@@ -33,7 +34,7 @@ namespace molstr {
   public:
     void setLineWidth(double f) {
       m_lw = f;
-      super_t::invalidateDisplayCache();
+      // super_t::invalidateDisplayCache();
     }
     double getLineWidth() const { return m_lw; }
 
@@ -67,10 +68,33 @@ namespace molstr {
     }
     double getVBScl2() const { return m_dCvScl2; }
 
-    ////////////
+    //////////////////////////////////////////////////////
+    //
     // workarea
+    //
 
     int m_nAtomDrawn, m_nBondDrawn;
+
+    /// one color - single valence
+    static const int IBON_1C_1V = 0;
+    /// two color - single valence
+    static const int IBON_2C_1V = 1;
+
+    struct IntBond
+    {
+      quint32 itype;
+      quint32 aid1, aid2;
+      quint32 vaind, nelems;
+    };
+
+    typedef std::vector<IntBond> IntBondArray;
+    
+    IntBondArray m_drbonds;
+
+    /// cached vertex array/VBO
+    gfx::DrawElemVC *m_pBondVBO;
+
+    //////////////////////////////////////////////////////
 
   public:
     SimpleRenderer();
@@ -79,6 +103,8 @@ namespace molstr {
     virtual const char *getTypeName() const;
 
     //////////////////////////////////////////////////////
+
+    // old rendering interface (using GL compatible prof)
 
     virtual bool isRendBond() const;
 
@@ -90,15 +116,23 @@ namespace molstr {
     virtual void rendAtom(DisplayContext *pdl, MolAtomPtr pAtom, bool fbonded);
     virtual void rendBond(DisplayContext *pdl, MolAtomPtr pAtom1, MolAtomPtr pAtom2, MolBond *pMB);
 
-    //////////////////////////////////////////////////////
-
-    // virtual void propChanged(qlib::LPropEvent &ev);
-
   private:
     void drawInterAtomLine(MolAtomPtr pAtom1, MolAtomPtr pAtom2,
                            MolBond *pMB,
 			   DisplayContext *pdl);
     void drawAtom(MolAtomPtr pAtom, DisplayContext *pdl);
+
+    //////////////////////////////////////////////////////
+
+  public:
+    // new rendering interface (using GL VBO)
+    virtual void display(DisplayContext *pdc);
+
+    virtual void invalidateDisplayCache();
+    
+
+  private:
+    void renderVBO();
 
   };
 }
