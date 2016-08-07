@@ -80,6 +80,17 @@ namespace molstr {
     /// two color - single valence
     static const int IBON_2C_1V = 1;
 
+    /// one color - double valence
+    static const int IBON_1C_2V = 2;
+    /// two color - double valence
+    static const int IBON_2C_2V = 3;
+
+    /// one color - triple valence
+    static const int IBON_1C_3V = 4;
+    /// two color - triple valence
+    static const int IBON_2C_3V = 5;
+
+    // single valence bonds
     struct IntBond
     {
       quint32 itype;
@@ -89,8 +100,22 @@ namespace molstr {
 
     typedef std::vector<IntBond> IntBondArray;
     
-    IntBondArray m_drbonds;
+    // IntBondArray m_sbonds;
 
+    // multivalence bonds
+    struct IntMBond
+    {
+      quint32 itype;
+      quint32 aid1, aid2;
+      quint32 vaind, nelems;
+      qfloat32 nx, ny, nz;
+    };
+    
+    typedef std::vector<IntMBond> IntMBondArray;
+    
+    // IntMBondArray m_mbonds;
+
+    // isolated atoms
     struct IntAtom
     {
       quint32 aid1;
@@ -99,7 +124,7 @@ namespace molstr {
 
     typedef std::vector<IntAtom> IntAtomArray;
     
-    IntAtomArray m_dratoms;
+    // IntAtomArray m_atoms;
 
     /// cached vertex array/VBO
     gfx::DrawElemVC *m_pBondVBO;

@@ -121,6 +121,18 @@
       </bonds>
     </resid>
 
+    <resid id="SCN" three="SCN" desc="THIOCYANATE ION" group="non-polymer">
+      <atoms>
+        <atom id="N" elem="N" type="NS" charge="0.000"/>
+        <atom id="C" elem="C" type="CSP" charge="0.000"/>
+        <atom id="S" elem="S" type="S1" charge="-1.000"/>
+      </atoms>
+      <bonds>
+        <bond id1="S" id2="C" type="single" value="1.490" esd="0.020"/>
+        <bond id1="C" id2="N" type="triple" value="1.158" esd="0.020"/>
+      </bonds>
+    </resid>
+
     <resid id="ATP">
       <rings>
         <ring value="N1 C2 N3 C4 C5 C6"/>

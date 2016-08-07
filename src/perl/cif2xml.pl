@@ -16,54 +16,56 @@ my $mon_lib = "$CCP4/lib/data/monomers";
 $MakeTopparXML::ns = "ccp4";
 
 my @load_cifs = (
+		"s/SCN.cif"
+
 		# amino acids
-		"a/ALA.cif",
-		"a/ASP.cif",
-		"a/ASN.cif",
-		"c/CYS.cif",
-		"g/GLN.cif",
-		"g/GLY.cif",
-		"g/GLU.cif",
-		"p/PHE.cif",
-		"h/HIS.cif",
-		"i/ILE.cif",
-		"l/LYS.cif",
-		"l/LEU.cif",
-		"m/MET.cif",
-		"m/MSE.cif",
-		"p/PRO.cif",
-		"a/ARG.cif",
-		"s/SER.cif",
-		"t/THR.cif",
-		"v/VAL.cif",
-		"t/TRP.cif",
-		"t/TYR.cif",
+#		"a/ALA.cif",
+#		"a/ASP.cif",
+#		"a/ASN.cif",
+#		"c/CYS.cif",
+#		"g/GLN.cif",
+#		"g/GLY.cif",
+#		"g/GLU.cif",
+#		"p/PHE.cif",
+#		"h/HIS.cif",
+#		"i/ILE.cif",
+#		"l/LYS.cif",
+#		"l/LEU.cif",
+#		"m/MET.cif",
+#		"m/MSE.cif",
+#		"p/PRO.cif",
+#		"a/ARG.cif",
+#		"s/SER.cif",
+#		"t/THR.cif",
+#		"v/VAL.cif",
+#		"t/TRP.cif",
+#		"t/TYR.cif",
 
 		# nucleic acids
-		"a/AR.cif",
-		"a/AD.cif",
-		"c/CR.cif",
-		"c/CD.cif",
-		"g/GR.cif",
-		"g/GD.cif",
-		"t/TD.cif",
-		"u/UR.cif",
+#		"a/AR.cif",
+#		"a/AD.cif",
+#		"c/CR.cif",
+#		"c/CD.cif",
+#		"g/GR.cif",
+#		"g/GD.cif",
+#		"t/TD.cif",
+#		"u/UR.cif",
 
 		# sugars
-		"n/NAG-B-D.cif",
-		"m/MAN-B-D.cif",
-		"g/GAL-B-D.cif",
-		"g/GLC-B-D.cif",
-		"f/FUC-A-L.cif",
-		"s/SIA.cif",
+#		"n/NAG-B-D.cif",
+#		"m/MAN-B-D.cif",
+#		"g/GAL-B-D.cif",
+#		"g/GLC-B-D.cif",
+#		"f/FUC-A-L.cif",
+#		"s/SIA.cif",
 
 		# monomers
-		"h/HOH.cif",
-		"p/PO4.cif",
-		"s/SO4.cif",
-		"g/GOL.cif",
-		"e/EDO.cif",
-		"c/CIT.cif"
+#		"h/HOH.cif",
+#		"p/PO4.cif",
+#		"s/SO4.cif",
+#		"g/GOL.cif",
+#		"e/EDO.cif",
+#		"c/CIT.cif"
 		);
 
 foreach my $i (@load_cifs) {
@@ -81,7 +83,7 @@ MakeTopparXML::makeXML(\%topo, \%links, \%parm);
 sub loadResid($)
 {
     my $fname = shift;
-    open(IN, $fname) || die;
+    open(IN, $fname) || die "$fname $?:$!";
 
     my $state = "none";
 

@@ -22,7 +22,7 @@ runtime_class SimpleRenderer extends MolRenderer
   default width = 1.2;
 
   property boolean valbond => redirect(getValBond, setValBond);
-  default valbond = false;
+  default valbond = true;
 
   property real vb_scl1 => redirect(getVBScl1, setVBScl1);
   default vb_scl1 = 0.1;
