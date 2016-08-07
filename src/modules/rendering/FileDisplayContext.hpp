@@ -266,13 +266,13 @@ namespace render {
 
     void checkUnitary();
 
-    void xform_vec(Vector4D &v) {
+    void xform_vec(Vector4D &v) const {
       const Matrix4D &mtop = m_matstack.front();
       v.w() = 1.0;
       mtop.xform4D(v);
     }
 
-    void xform_norm(Vector4D &v) {
+    void xform_norm(Vector4D &v) const {
       const Matrix4D &mtop = m_matstack.front();
       v.w() = 0.0;
       mtop.xform4D(v);

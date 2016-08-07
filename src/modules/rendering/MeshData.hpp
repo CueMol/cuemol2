@@ -90,7 +90,6 @@ namespace render {
   struct Mesh
   {
     bool m_bLighting;
-
     // RendIntData *m_pPar;
 
     typedef std::deque<MeshFace> MeshFaceSet;
@@ -102,10 +101,14 @@ namespace render {
     typedef MeshVertSet::const_iterator VCIter;
     MeshVertSet m_verts;
 
+    //////////
+
     ~Mesh()
     {
       clear();
     }
+
+    //////////
 
     int getVertexSize() const { return m_verts.size(); }
     int getFaceSize() const { return m_faces.size(); }
@@ -129,11 +132,6 @@ namespace render {
 
       return addVertex(xv, xn, c);
     }
-
-    /*int addVertex(const Vector4D &v, const Vector4D &n, const ColorPtr &c)
-    {
-      return addVertex(v, n, m_pPar->convCol(c));
-    }*/
 
     int addVertex(MeshVert *p)
     {

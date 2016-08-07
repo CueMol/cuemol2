@@ -533,6 +533,21 @@ void RendIntData::convSpheres()
 void RendIntData::convSphere(Sph *pSph)
 {
   const Vector4D v1 = pSph->v1;
+
+  Vector4D vcam(0,0,m_dViewDist);
+  if (!m_bPerspec) {
+    vcam.x() = v1.x();
+    vcam.y() = v1.y();
+  }
+  Vector4D e3 = (vcam - v1).normalize();
+  Vector4D e1 = e3.cross(v1);
+  e1 = e1.normalize();
+  Vector4D e2 = e1.cross(e3);
+
+  Matrix4D xform = Matrix4D::makeTransMat(v1);
+  xform.matprod( Matrix4D::makeRotMat(e1, e2) );
+  xform.matprod( Matrix4D::makeTransMat(-v1) );
+
   const double rad = pSph->r;
   ColIndex col = pSph->col;
   const double dmax = (M_PI*rad)/double(pSph->ndetail+1);
@@ -559,7 +574,7 @@ void RendIntData::convSphere(Sph *pSph)
     if (i==0) {
       ind = m_mesh.addVertex(Vector4D(0, 0, rad) + v1,
                              Vector4D(0, 0, 1),
-                             col);
+                             col, xform);
       //ind = putVert(Vector4D(0, 0, rad) + v1);
 
       ppindx[i] = new int[1];
@@ -568,7 +583,7 @@ void RendIntData::convSphere(Sph *pSph)
     else if (i==nLat) {
       ind = m_mesh.addVertex(Vector4D(0, 0, -rad) + v1,
                              Vector4D(0, 0, -1),
-                             col);
+                             col, xform);
       //ind = putVert(Vector4D(0, 0, -rad) + v1);
       //ilst.push_back(ind);
 
@@ -590,7 +605,7 @@ void RendIntData::convSphere(Sph *pSph)
         vec.x() = ri*::cos(ph);
         vec.y() = ri*::sin(ph);
         norm = vec.normalize();
-        ind = m_mesh.addVertex(vec + v1, norm, col);
+        ind = m_mesh.addVertex(vec + v1, norm, col, xform);
         //ind = putVert(vec + v1);
 
         ppindx[i][j+1] = ind;

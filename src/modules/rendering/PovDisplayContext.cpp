@@ -58,6 +58,7 @@ void PovDisplayContext::startSection(const LString &name)
   // --> create RendIntData (m_pIntData), etc.
   super_t::startSection(name);
   m_pIntData->m_bPerspec = isPerspective();
+  m_pIntData->m_dViewDist = m_dViewDist;
   m_pIntData->start(name);
 
   if (!m_bPostBlend) {
@@ -507,13 +508,18 @@ void PovDisplayContext::writeObjects()
       (nEdgeLineType==ELT_EDGES||
        nEdgeLineType==ELT_SILHOUETTE)) {
     // normal edges/silhouettes
-    // convert sphere to mesh
+
+    // // convert sphere to mesh
     m_pIntData->convSpheres();
+    // writeSpheres();
+
     // convert cylinder to mesh
     m_pIntData->convCylinders();
     writeMeshes();
-    //writeSilEdges();
+
+    // calculate and write edge/silhouette
     writeSilEdges2();
+
     ips.format("\n#end\n");
     ps.format("\n");
   }

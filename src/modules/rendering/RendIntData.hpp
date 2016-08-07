@@ -55,6 +55,9 @@ namespace render {
     /// projection mode (true=perspective/false=orthographic)
     bool m_bPerspec;
 
+    /// camera position
+    double m_dViewDist;
+
     /// XXX: only used in warabi project writer
     /// style name list of Renderer used for this rendering
     LString m_styleNames;
@@ -249,9 +252,6 @@ namespace render {
     // workarea for silhouette/edge extraction
   private:
     
-    /// camera position
-    double m_dViewDist;
-
     /// Target mesh (simplified by vertex-compare mode)
     Mesh *m_pEgMesh;
 
