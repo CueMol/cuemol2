@@ -91,6 +91,16 @@ namespace molstr {
     
     IntBondArray m_drbonds;
 
+    struct IntAtom
+    {
+      quint32 aid1;
+      quint32 vaind;
+    };
+
+    typedef std::vector<IntAtom> IntAtomArray;
+    
+    IntAtomArray m_dratoms;
+
     /// cached vertex array/VBO
     gfx::DrawElemVC *m_pBondVBO;
 
@@ -132,6 +142,7 @@ namespace molstr {
     
 
   private:
+    void renderSimpleVBO();
     void renderVBO();
 
   };

@@ -11,7 +11,9 @@
 #include "MolChain.hpp"
 #include "MolResidue.hpp"
 #include "ResiToppar.hpp"
+
 #include "BondIterator.hpp"
+#include "AtomIterator.hpp"
 
 #include <gfx/DisplayContext.hpp>
 #include <gfx/SolidColor.hpp>
@@ -230,21 +232,29 @@ void SimpleRenderer::display(DisplayContext *pdc)
 }
 
 
+//////////
+
 void SimpleRenderer::renderVBO()
 {
   int i;
-  int nbons = 0, nva;
+  int nbons = 0, natoms, nva;
   MolCoordPtr pMol = getClientMol();
 
+  std::deque<int> isolated_atoms;
+  
   if (m_drbonds.size()==0) {
     // build bond data structure/estimate VBO size
 
+    std::set<int> bonded_atoms;
     BondIterator biter(pMol, getSelection());
 
     for (biter.first(); biter.hasMore(); biter.next()) {
       MolBond *pMB = biter.getBond();
       int aid1 = pMB->getAtom1();
       int aid2 = pMB->getAtom2();
+
+      bonded_atoms.insert(aid1);
+      bonded_atoms.insert(aid2);
 
       MolAtomPtr pA1 = pMol->getAtom(aid1);
       MolAtomPtr pA2 = pMol->getAtom(aid2);
@@ -294,6 +304,24 @@ void SimpleRenderer::renderVBO()
       ++i;
     }
 
+    // calculate isolated atoms
+    AtomIterator aiter(pMol, getSelection());
+    for (aiter.first(); aiter.hasMore(); aiter.next()) {
+      int aid = aiter.getID();
+      MolAtomPtr pAtom = pMol->getAtom(aid);
+      if (pAtom.isnull()) continue; // ignore errors
+      if (bonded_atoms.find(aid)!=bonded_atoms.end())
+        continue; // already bonded
+      isolated_atoms.push_back(aid);
+    }
+    natoms = isolated_atoms.size();
+    m_dratoms.resize(natoms);
+    for (i=0; i<natoms; ++i) {
+      m_dratoms[i].aid1 = isolated_atoms[i];
+      m_dratoms[i].vaind = iva;
+      iva += 2*3;
+    }
+
     nva = iva;
   }
     
@@ -301,6 +329,7 @@ void SimpleRenderer::renderVBO()
     m_pBondVBO = MB_NEW gfx::DrawElemVC();
     m_pBondVBO->alloc(nva);
     m_pBondVBO->setDrawMode(gfx::DrawElemVC::DRAW_LINES);
+    MB_DPRINTLN("SimpleRenderer> %d elems VBO created", nva);
   }
   
   quint32 j = 0;
@@ -352,6 +381,45 @@ void SimpleRenderer::renderVBO()
       break;
     }
   }
+
+  // size of the star
+  const double rad = 0.25;
+  const Vector4D xdel(rad,0,0);
+  const Vector4D ydel(0,rad,0);
+  const Vector4D zdel(0,0,rad);
+
+  for (i=0; i<natoms; ++i) {
+    quint32 aid1 = m_dratoms[i].aid1;
+    MolAtomPtr pA1 = pMol->getAtom(aid1);
+    ColorPtr pcol1 = ColSchmHolder::getColor(pA1);
+    quint32 cc1 = pcol1->getCode();
+    Vector4D pos1 = pA1->getPos();
+
+    m_pBondVBO->color(j, cc1);
+    m_pBondVBO->vertex(j, pos1-xdel);
+    ++j;
+
+    m_pBondVBO->color(j, cc1);
+    m_pBondVBO->vertex(j, pos1+xdel);
+    ++j;
+
+    m_pBondVBO->color(j, cc1);
+    m_pBondVBO->vertex(j, pos1-ydel);
+    ++j;
+
+    m_pBondVBO->color(j, cc1);
+    m_pBondVBO->vertex(j, pos1+ydel);
+    ++j;
+    
+    m_pBondVBO->color(j, cc1);
+    m_pBondVBO->vertex(j, pos1-zdel);
+    ++j;
+
+    m_pBondVBO->color(j, cc1);
+    m_pBondVBO->vertex(j, pos1+zdel);
+    ++j;
+  }
+  
 }
 
 void SimpleRenderer::invalidateDisplayCache()
