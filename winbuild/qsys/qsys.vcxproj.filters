@@ -621,9 +621,6 @@
     <ClCompile Include="..\..\src\gfx\DisplayContext.cpp">
       <Filter>gfx</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\qsys\DispListRenderer.cpp">
-      <Filter>gfx</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\gfx\DrawElem.cpp">
       <Filter>gfx</Filter>
     </ClCompile>
@@ -719,6 +716,12 @@
     </ClCompile>
     <ClCompile Include="..\..\src\modules\molstr\QdfPdbReader_wrap.cpp">
       <Filter>molstr</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\DispListRenderer.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\DispCacheRenderer.cpp">
+      <Filter>Source files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

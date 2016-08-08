@@ -110,6 +110,7 @@
     <ClCompile Include="..\..\src\modules\molvis\ScriptColoring.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\ScriptColoring_wrap.cpp" />
     <ClCompile Include="..\..\src\qsys\Camera.cpp" />
+    <ClCompile Include="..\..\src\qsys\DispCacheRenderer.cpp" />
     <ClCompile Include="..\..\src\qsys\InDevEvent.cpp" />
     <ClCompile Include="..\..\src\qsys\InOutHandler.cpp" />
     <ClCompile Include="..\..\src\qsys\style\StyleSupports.cpp" />

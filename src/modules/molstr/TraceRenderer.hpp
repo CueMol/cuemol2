@@ -10,6 +10,7 @@
 #include "molstr.hpp"
 #include "MainChainRenderer.hpp"
 //#include "ColoringScheme.hpp"
+#include <gfx/DrawElem.hpp>
 
 class TraceRenderer_wrap;
 
@@ -24,11 +25,28 @@ namespace molstr {
 
     friend class ::TraceRenderer_wrap;
     typedef MainChainRenderer super_t;
+
   private:
     /// Line width
     double m_lw;
     
     // ColoringSchemePtr m_pcoloring;
+
+    bool m_bUseVBO;
+
+    struct IntBond {
+      quint32 aid1, aid2;
+    };
+
+    bool m_bPrevAidValid;
+    quint32 m_nPrevAid;
+    quint32 m_nBonds;
+    quint32 m_nVA;
+
+    std::deque<IntBond> m_bonds;
+    std::deque<quint32> m_atoms;
+
+    gfx::DrawElemVC *m_pVBO;
 
     ////////////
     
@@ -38,20 +56,29 @@ namespace molstr {
     
     virtual const char *getTypeName() const;
 
-    // virtual void propChanged(qlib::LPropEvent &ev);
-
     //////////////////////////////////////////////////////
+    // Renderer interface
     
+    virtual void display(DisplayContext *pdc);
+    
+    //////////////////////////////////////////////////////
+    // DispCacheRenderer interface
+
     virtual void preRender(DisplayContext *pdc);
-    virtual void beginRend(DisplayContext *pdl);
-    virtual void endRend(DisplayContext *pdl);
     
+    //////////////////////////////////////////////////////
+    // MainChainRenderer interface
+
+    virtual void beginRend(DisplayContext *pdl);
     virtual void beginSegment(DisplayContext *pdl, MolResiduePtr pRes);
     virtual void rendResid(DisplayContext *pdl, MolResiduePtr pRes);
     virtual void endSegment(DisplayContext *pdl, MolResiduePtr pRes);
+    virtual void endRend(DisplayContext *pdl);
     
     //////////////////////////////////////////////////////
     
+    // virtual void propChanged(qlib::LPropEvent &ev);
+
     void setLineWidth(double f) {
       m_lw = f;
       super_t::invalidateDisplayCache();

@@ -407,7 +407,6 @@ void SimpleRenderer::renderVBO()
     MolAtomPtr pA2 = pMol->getAtom(aid2);
     
     ColorPtr pcol1 = ColSchmHolder::getColor(pA1);
-
     quint32 cc1 = pcol1->getCode();
 
     Vector4D pos1 = pA1->getPos();
