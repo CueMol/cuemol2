@@ -23,23 +23,33 @@
 #  include <xmlrpc_bridge/XmlRpcMgr.hpp>
 #endif
 
+#include <boost/timer/timer.hpp>
+
 using namespace xpcom;
 
 XPCTimerImpl::XPCTimerImpl()
 {
   m_timer = do_CreateInstance("@mozilla.org/timer;1");
   start(30);
+
+  m_pMesTimer = new boost::timer::cpu_timer();
 }
 
 XPCTimerImpl::~XPCTimerImpl()
 {
   stop();
+  
+  boost::timer::cpu_timer *p = static_cast<boost::timer::cpu_timer *>(m_pMesTimer);
+  delete p;
 }
 
 //static
 void XPCTimerImpl::timerCallbackFunc(nsITimer *aTimer, void *aClosure)
 {
   //MB_DPRINTLN("Timer: notified");
+  XPCTimerImpl *pthis = static_cast<XPCTimerImpl *>(aClosure);
+  boost::timer::cpu_timer *p = static_cast<boost::timer::cpu_timer *>(pthis->m_pMesTimer);
+  p->start();
 
   qlib::LProcMgr *pPM = qlib::LProcMgr::getInstance();
   pPM->checkQueue();
@@ -55,6 +65,13 @@ void XPCTimerImpl::timerCallbackFunc(nsITimer *aTimer, void *aClosure)
 
   qsys::SceneManager *pSM = qsys::SceneManager::getInstance();
   pSM->checkAndUpdateScenes();
+
+  p->stop();
+  boost::timer::cpu_times t = p->elapsed();
+  //LString msg = boost::timer::format(t);
+  //MB_DPRINTLN("Block time=%s", msg.c_str());
+  pSM->setBusyTime(t.wall);
+
   return;
 }
 

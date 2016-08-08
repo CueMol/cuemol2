@@ -136,6 +136,19 @@ namespace qsys {
     /// Get ID of this release
     const LString &getBuildID() const { return m_verInfo.build_id; }
     
+  private:
+    ///////////////////////
+    // performance measure
+
+    static const int NAVERSIZE = 100;
+
+    std::vector<qint64> m_busytimes;
+
+    int m_nBusyTimeIndex;
+
+  public:
+    void setBusyTime(quint64 nanosec);
+
   };
 
 }

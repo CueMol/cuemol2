@@ -100,7 +100,7 @@ namespace molstr {
 
     typedef std::vector<IntBond> IntBondArray;
     
-    // IntBondArray m_sbonds;
+    IntBondArray m_sbonds;
 
     // multivalence bonds
     struct IntMBond
@@ -113,7 +113,7 @@ namespace molstr {
     
     typedef std::vector<IntMBond> IntMBondArray;
     
-    // IntMBondArray m_mbonds;
+    IntMBondArray m_mbonds;
 
     // isolated atoms
     struct IntAtom
@@ -124,10 +124,10 @@ namespace molstr {
 
     typedef std::vector<IntAtom> IntAtomArray;
     
-    // IntAtomArray m_atoms;
+    IntAtomArray m_atoms;
 
     /// cached vertex array/VBO
-    gfx::DrawElemVC *m_pBondVBO;
+    gfx::DrawElemVC *m_pVBO;
 
     //////////////////////////////////////////////////////
 
@@ -170,6 +170,14 @@ namespace molstr {
     void renderSimpleVBO();
     void renderVBO();
 
+    /// update VBO using m_sbonds, m_mbonds, m_atoms and MolCoord's data
+    void updateVBO();
+
+    //////////////////////////////////////////////////////
+    // Event handling
+  public:
+    /// object changed event (--> update vertex positions if required)
+    virtual void objectChanged(qsys::ObjectEvent &ev);
   };
 }
 

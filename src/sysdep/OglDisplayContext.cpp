@@ -1155,11 +1155,21 @@ void OglDisplayContext::drawElem(const AbstDrawElem &ade)
     //glBindBuffer(GL_ARRAY_BUFFER, 0);
   }
   else {
-    // reuse buffer
+    // Reuse buffer
+
     OglVBORep *pRep = (OglVBORep *) de.getVBO();
     nvbo = pRep->m_nBufID;
     glBindBuffer(GL_ARRAY_BUFFER, nvbo);
 
+    if (de.isUpdated()) {
+      // VBO updated --> call glBufferSubData
+      if (ntype==DrawElem::VA_VC) {
+        const qbyte *pdata = (const qbyte *) static_cast<const DrawElemVC&>(de).getData();
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(DrawElemVC::Elem)*nelems, pdata);
+      }
+      de.setUpdated(false);
+    }
+    
     if (ntype==DrawElem::VA_VNCI) {
       const DrawElemVNCI &devnci = static_cast<const DrawElemVNCI&>(de);
       OglVBORep *pRep = (OglVBORep *) devnci.getIndexVBO();

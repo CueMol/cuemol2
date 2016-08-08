@@ -61,6 +61,14 @@ namespace gfx {
     VBORep *getIndexVBO() const { return m_pIndVBO; }
     void setIndexVBO(VBORep *p) const { m_pIndVBO = p; }
 
+  private:
+    /// update flag
+    mutable bool m_bUpdate;
+
+  public:
+    bool isUpdated() const { return m_bUpdate; }
+    void setUpdated(bool b) const { m_bUpdate = b; }
+    
     //////////////////////////////////////////////////
     // Type ID definitions
 

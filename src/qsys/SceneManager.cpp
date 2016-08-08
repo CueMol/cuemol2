@@ -29,6 +29,7 @@ void SceneManager::finiClass(qlib::LClass *pcls)
 ///////////////
 
 SceneManager::SceneManager()
+     :  m_busytimes(NAVERSIZE), m_nBusyTimeIndex(0)
 {
   MB_DPRINTLN("SceneManager(%p) created", this);
 
@@ -39,6 +40,7 @@ SceneManager::SceneManager()
                                  m_verInfo.minor_version,
                                  m_verInfo.revision,
                                  m_verInfo.build_no);
+
 }
 
 SceneManager::~SceneManager()
@@ -223,3 +225,23 @@ void SceneManager::setActiveSceneID(qlib::uid_t uid)
     
   m_nActiveSceneID = uid;
 }
+
+void SceneManager::setBusyTime(quint64 nanosec)
+{
+//  if (nanosec<1000)
+//    return;
+  
+  m_busytimes[m_nBusyTimeIndex] = nanosec;
+  m_nBusyTimeIndex ++;
+  if (m_nBusyTimeIndex>=NAVERSIZE) {
+    m_nBusyTimeIndex = 0;
+    double aver = 0.0;
+    for (int i=0; i<NAVERSIZE; ++i) {
+      aver += double(m_busytimes[i]);
+    }
+    aver /= double(NAVERSIZE);
+    LOG_DPRINTLN("Average busy time: %f msec", aver/1000.0);
+  }
+    
+}
+

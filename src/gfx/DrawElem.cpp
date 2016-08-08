@@ -11,7 +11,7 @@
 using namespace gfx;
 
 AbstDrawElem::AbstDrawElem()
-     : m_nSize(0), m_pVBORep(NULL), m_pIndVBO(NULL), m_nDrawMode(DRAW_POINTS)
+     : m_nSize(0), m_pVBORep(NULL), m_pIndVBO(NULL), m_nDrawMode(DRAW_POINTS), m_bUpdate(false)
 {
 }
 

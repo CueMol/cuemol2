@@ -24,6 +24,9 @@ namespace xpcom {
     nsCOMPtr<nsITimer> m_timer;
 
   public:
+    void *m_pMesTimer;
+
+  public:
     XPCTimerImpl();
     virtual ~XPCTimerImpl();
 

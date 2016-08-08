@@ -243,7 +243,7 @@ void MolCoord::fireAtomsMoved()
   qsys::ObjectEvent obe;
   obe.setType(qsys::ObjectEvent::OBE_CHANGED);
   obe.setTarget(getUID());
-  obe.setDescr("structure");
+  obe.setDescr("atomsMoved");
   fireObjectEvent(obe);
 }
 
@@ -253,7 +253,7 @@ void MolCoord::fireTopologyChanged()
   qsys::ObjectEvent obe;
   obe.setType(qsys::ObjectEvent::OBE_CHANGED);
   obe.setTarget(getUID());
-  obe.setDescr("structure");
+  obe.setDescr("topologyChanged");
   fireObjectEvent(obe);
 }
 

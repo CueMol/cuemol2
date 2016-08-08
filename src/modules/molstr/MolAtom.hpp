@@ -126,7 +126,7 @@ namespace molstr {
       m_confid = id;
     }
 
-    /// Atom posotion
+    /// Atom position
     const Vector4D &getPos() const {
       return m_pos;
     }
@@ -135,13 +135,14 @@ namespace molstr {
       m_pos = vec;
     }
 
-    /// Atom posotion-script version
+    /// Atom position-script version
     LScrVector4D getPosScr() const {
-      return LScrVector4D(m_pos);
+      return LScrVector4D(getPos());
     }
     void setPosScr(const LScrVector4D &vec)
     {
-      m_pos = vec;
+      setPos(vec);
+      //m_pos = vec;
     }
 
     double getBfac() const
