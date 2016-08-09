@@ -164,20 +164,21 @@ namespace molstr {
     virtual void display(DisplayContext *pdc);
 
     virtual void invalidateDisplayCache();
-    
 
   private:
-    void renderSimpleVBO();
+    /// Rendering using VBO (builds sbonds, mbonds, and atoms data structure)
     void renderVBO();
 
     /// update VBO using m_sbonds, m_mbonds, m_atoms and MolCoord's data
-    void updateVBO();
+    void updateVBO(bool bUpdateColor);
 
     //////////////////////////////////////////////////////
     // Event handling
   public:
+
     /// object changed event (--> update vertex positions if required)
     virtual void objectChanged(qsys::ObjectEvent &ev);
+
   };
 }
 

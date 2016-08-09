@@ -5,6 +5,7 @@
 // $Id: SimpleRenderer.cpp,v 1.20 2011/03/29 11:03:44 rishitani Exp $
 
 #include <common.h>
+
 #include "SimpleRenderer.hpp"
 
 #include "MolCoord.hpp"
@@ -22,6 +23,9 @@
 using namespace molstr;
 using qlib::Vector4D;
 using gfx::ColorPtr;
+
+// Use OpenGL VBO implementation
+#define USE_OPENGL_VBO
 
 SimpleRenderer::SimpleRenderer()
 {
@@ -65,17 +69,6 @@ void SimpleRenderer::drawInterAtomLine(MolAtomPtr pAtom1, MolAtomPtr pAtom2,
        nBondType==MolBond::TRIPLE)) {
     MolCoordPtr pMol = getClientMol();
 
-    /*
-    bool bOK;
-    Vector4D nv;
-    nv = getNormalVec(pAtom1, pMol, bOK);
-    if (!bOK)
-      nv = getNormalVec(pAtom2, pMol, bOK);
-
-    Vector4D dv = (pos1-pos2).normalize();
-    Vector4D dvd = nv.cross(dv);
-    dvd = dvd.normalize();
-*/
     Vector4D dvd = pMB->getDblBondDir(pMol);
     
     if (nBondType==MolBond::DOUBLE) {
@@ -210,7 +203,7 @@ bool SimpleRenderer::isRendBond() const
 
 void SimpleRenderer::display(DisplayContext *pdc)
 {
-
+#ifdef USE_OPENGL_VBO
   if (pdc->isFile() || !pdc->isDrawElemSupported()) {
     // case of the file (non-ogl) rendering
     // always use the old version.
@@ -230,6 +223,9 @@ void SimpleRenderer::display(DisplayContext *pdc)
   m_pVBO->setLineWidth(m_lw);
   pdc->drawElem(*m_pVBO);
   postRender(pdc);
+#else
+  super_t::display(pdc);
+#endif
 }
 
 
@@ -397,58 +393,53 @@ void SimpleRenderer::renderVBO()
   m_pVBO->setDrawMode(gfx::DrawElemVC::DRAW_LINES);
   MB_DPRINTLN("SimpleRenderer> %d elems VBO created", nva);
   
-  updateVBO();
+  updateVBO(true);
 }
 
-void SimpleRenderer::updateVBO()
+void SimpleRenderer::updateVBO(bool bUpdateColor)
 {
-  // quint32 j = 0;
+  quint32 j = 0;
   quint32 i;
   quint32 nbons = m_sbonds.size();
   quint32 nmbons = m_mbonds.size();
   quint32 natoms = m_atoms.size();
   
   MolCoordPtr pMol = getClientMol();
+  MolAtomPtr pA1, pA2;
+
+  // ColorPtr pcol1, pcol2;
+  quint32 cc1, cc2;
+  Vector4D midpos, pos1, pos2;
+  quint32 aid1, aid2;
 
   // Single bonds
   for (i=0; i<nbons; ++i) {
-    quint32 aid1 = m_sbonds[i].aid1;
-    quint32 aid2 = m_sbonds[i].aid2;
-    quint32 j = m_sbonds[i].vaind;
+    aid1 = m_sbonds[i].aid1;
+    aid2 = m_sbonds[i].aid2;
+    j = m_sbonds[i].vaind;
 
-    MolAtomPtr pA1 = pMol->getAtom(aid1);
-    MolAtomPtr pA2 = pMol->getAtom(aid2);
+    pA1 = pMol->getAtom(aid1);
+    pA2 = pMol->getAtom(aid2);
     
-    ColorPtr pcol1 = ColSchmHolder::getColor(pA1);
-    quint32 cc1 = pcol1->getCode();
-
-    Vector4D pos1 = pA1->getPos();
-    Vector4D pos2 = pA2->getPos();
+    pos1 = pA1->getPos();
+    pos2 = pA2->getPos();
 
     switch (m_sbonds[i].itype) {
     case IBON_1C_1V:
-      m_pVBO->color(j, cc1);
       m_pVBO->vertex(j, pos1);
       ++j;
-      m_pVBO->color(j, cc1);
       m_pVBO->vertex(j, pos2);
       ++j;
       break;
 
     case IBON_2C_1V: {
-      ColorPtr pcol2 = ColSchmHolder::getColor(pA2);
-      quint32 cc2 = pcol2->getCode();
-      Vector4D midpos = (pos1+pos2).divide(2.0);
-      m_pVBO->color(j, cc1);
+      midpos = (pos1+pos2).divide(2.0);
       m_pVBO->vertex(j, pos1);
       ++j;
-      m_pVBO->color(j, cc1);
       m_pVBO->vertex(j, midpos);
       ++j;
-      m_pVBO->color(j, cc2);
       m_pVBO->vertex(j, pos2);
       ++j;
-      m_pVBO->color(j, cc2);
       m_pVBO->vertex(j, midpos);
       ++j;
       break;
@@ -461,65 +452,47 @@ void SimpleRenderer::updateVBO()
 
   // Double/triple bonds
   for (i=0; i<nmbons; ++i) {
-    quint32 aid1 = m_mbonds[i].aid1;
-    quint32 aid2 = m_mbonds[i].aid2;
-    quint32 j = m_mbonds[i].vaind;
+    aid1 = m_mbonds[i].aid1;
+    aid2 = m_mbonds[i].aid2;
+    j = m_mbonds[i].vaind;
 
-    MolAtomPtr pA1 = pMol->getAtom(aid1);
-    MolAtomPtr pA2 = pMol->getAtom(aid2);
+    pA1 = pMol->getAtom(aid1);
+    pA2 = pMol->getAtom(aid2);
     
-    ColorPtr pcol1 = ColSchmHolder::getColor(pA1);
-
-    quint32 cc1 = pcol1->getCode();
-
-    Vector4D pos1 = pA1->getPos();
-    Vector4D pos2 = pA2->getPos();
+    pos1 = pA1->getPos();
+    pos2 = pA2->getPos();
     Vector4D dvd(m_mbonds[i].nx, m_mbonds[i].ny, m_mbonds[i].nz);
 
     switch (m_mbonds[i].itype) {
     case IBON_1C_2V: {
-      m_pVBO->color(j, cc1);
       m_pVBO->vertex(j, pos1 + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->color(j, cc1);
       m_pVBO->vertex(j, pos2 + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->color(j, cc1);
       m_pVBO->vertex(j, pos1 + dvd.scale(m_dCvScl2));
       ++j;
-      m_pVBO->color(j, cc1);
       m_pVBO->vertex(j, pos2 + dvd.scale(m_dCvScl2));
       ++j;
       break;
     }
     case IBON_2C_2V: {
-      ColorPtr pcol2 = ColSchmHolder::getColor(pA2);
-      quint32 cc2 = pcol2->getCode();
-      Vector4D midpos = (pos1+pos2).divide(2.0);
+      midpos = (pos1+pos2).divide(2.0);
 
-      m_pVBO->color(j, cc1);
       m_pVBO->vertex(j, pos1 + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->color(j, cc1);
       m_pVBO->vertex(j, midpos + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->color(j, cc1);
       m_pVBO->vertex(j, pos1 + dvd.scale(m_dCvScl2));
       ++j;
-      m_pVBO->color(j, cc1);
       m_pVBO->vertex(j, midpos + dvd.scale(m_dCvScl2));
       ++j;
 
-      m_pVBO->color(j, cc2);
       m_pVBO->vertex(j, pos2 + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->color(j, cc2);
       m_pVBO->vertex(j, midpos + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->color(j, cc2);
       m_pVBO->vertex(j, pos2 + dvd.scale(m_dCvScl2));
       ++j;
-      m_pVBO->color(j, cc2);
       m_pVBO->vertex(j, midpos + dvd.scale(m_dCvScl2));
       ++j;
 
@@ -527,66 +500,46 @@ void SimpleRenderer::updateVBO()
     }
 
     case IBON_1C_3V: {
-      m_pVBO->color(j, cc1);
       m_pVBO->vertex(j, pos1);
       ++j;
-      m_pVBO->color(j, cc1);
       m_pVBO->vertex(j, pos2);
       ++j;
-      m_pVBO->color(j, cc1);
       m_pVBO->vertex(j, pos1 + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->color(j, cc1);
       m_pVBO->vertex(j, pos2 + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->color(j, cc1);
       m_pVBO->vertex(j, pos1 + dvd.scale(-m_dCvScl1));
       ++j;
-      m_pVBO->color(j, cc1);
       m_pVBO->vertex(j, pos2 + dvd.scale(-m_dCvScl1));
       ++j;
       break;
     }
     case IBON_2C_3V: {
-      ColorPtr pcol2 = ColSchmHolder::getColor(pA2);
-      quint32 cc2 = pcol2->getCode();
-      Vector4D midpos = (pos1+pos2).divide(2.0);
+      midpos = (pos1+pos2).divide(2.0);
 
-      m_pVBO->color(j, cc1);
       m_pVBO->vertex(j, pos1);
       ++j;
-      m_pVBO->color(j, cc1);
       m_pVBO->vertex(j, midpos);
       ++j;
-      m_pVBO->color(j, cc1);
       m_pVBO->vertex(j, pos1 + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->color(j, cc1);
       m_pVBO->vertex(j, midpos + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->color(j, cc1);
       m_pVBO->vertex(j, pos1 + dvd.scale(-m_dCvScl1));
       ++j;
-      m_pVBO->color(j, cc1);
       m_pVBO->vertex(j, midpos + dvd.scale(-m_dCvScl1));
       ++j;
 
-      m_pVBO->color(j, cc2);
       m_pVBO->vertex(j, pos2);
       ++j;
-      m_pVBO->color(j, cc2);
       m_pVBO->vertex(j, midpos);
       ++j;
-      m_pVBO->color(j, cc2);
       m_pVBO->vertex(j, pos2 + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->color(j, cc2);
       m_pVBO->vertex(j, midpos + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->color(j, cc2);
       m_pVBO->vertex(j, pos2 + dvd.scale(-m_dCvScl1));
       ++j;
-      m_pVBO->color(j, cc2);
       m_pVBO->vertex(j, midpos + dvd.scale(-m_dCvScl1));
       ++j;
 
@@ -596,7 +549,7 @@ void SimpleRenderer::updateVBO()
       break;
     }
   }
-
+  
   // Isolated atoms
   
   // size of the star
@@ -610,38 +563,111 @@ void SimpleRenderer::updateVBO()
     quint32 j = m_atoms[i].vaind;
 
     MolAtomPtr pA1 = pMol->getAtom(aid1);
-    ColorPtr pcol1 = ColSchmHolder::getColor(pA1);
-    quint32 cc1 = pcol1->getCode();
     Vector4D pos1 = pA1->getPos();
 
-    m_pVBO->color(j, cc1);
     m_pVBO->vertex(j, pos1-xdel);
     ++j;
-
-    m_pVBO->color(j, cc1);
     m_pVBO->vertex(j, pos1+xdel);
     ++j;
-
-    m_pVBO->color(j, cc1);
     m_pVBO->vertex(j, pos1-ydel);
     ++j;
-
-    m_pVBO->color(j, cc1);
     m_pVBO->vertex(j, pos1+ydel);
     ++j;
-    
-    m_pVBO->color(j, cc1);
     m_pVBO->vertex(j, pos1-zdel);
     ++j;
-
-    m_pVBO->color(j, cc1);
     m_pVBO->vertex(j, pos1+zdel);
     ++j;
   }
+
+  if (bUpdateColor) {
+    // single bond colors
+    for (i=0; i<nbons; ++i) {
+      aid1 = m_sbonds[i].aid1;
+      aid2 = m_sbonds[i].aid2;
+      j = m_sbonds[i].vaind;
+      
+      pA1 = pMol->getAtom(aid1);
+      cc1 = ColSchmHolder::getColor(pA1)->getCode();
+      
+      m_pVBO->color(j, cc1);
+      ++j;
+      m_pVBO->color(j, cc1);
+      ++j;
+
+      if (m_sbonds[i].itype==IBON_2C_1V) {
+        pA2 = pMol->getAtom(aid2);
+        cc2 = ColSchmHolder::getColor(pA2)->getCode();
+        m_pVBO->color(j, cc2);
+        ++j;
+        m_pVBO->color(j, cc2);
+        ++j;
+      }
+    }
+
+    // Double/triple bond colors
+    for (i=0; i<nmbons; ++i) {
+      aid1 = m_mbonds[i].aid1;
+      aid2 = m_mbonds[i].aid2;
+      j = m_mbonds[i].vaind;
+      
+      pA1 = pMol->getAtom(aid1);
+      cc1 = ColSchmHolder::getColor(pA1)->getCode();
+      
+      switch (m_mbonds[i].itype) {
+      case IBON_1C_2V: {
+        for (int k=0; k<4; ++k, ++j)
+          m_pVBO->color(j, cc1);
+        break;
+      }
+      case IBON_2C_2V: {
+        pA2 = pMol->getAtom(aid2);
+        cc2 = ColSchmHolder::getColor(pA2)->getCode();
+        for (int k=0; k<4; ++k, ++j)
+          m_pVBO->color(j, cc1);
+        for (int k=0; k<4; ++k, ++j)
+          m_pVBO->color(j, cc2);
+        break;
+      }
+
+      case IBON_1C_3V: {
+        for (int k=0; k<6; ++k, ++j)
+          m_pVBO->color(j, cc1);
+        break;
+      }
+      case IBON_2C_3V: {
+        pA2 = pMol->getAtom(aid2);
+        cc2 = ColSchmHolder::getColor(pA2)->getCode();
+        
+        for (int k=0; k<6; ++k, ++j)
+          m_pVBO->color(j, cc1);
+        for (int k=0; k<6; ++k, ++j)
+          m_pVBO->color(j, cc2);
+        break;
+      }
+      default:
+        break;
+      }
+    }
+    
+    // atom colors
+    for (i=0; i<natoms; ++i) {
+      aid1 = m_atoms[i].aid1;
+      j = m_atoms[i].vaind;
+      
+      pA1 = pMol->getAtom(aid1);
+      cc1 = ColSchmHolder::getColor(pA1)->getCode();
+      
+      for (int k=0; k<6; ++k,++j)
+        m_pVBO->color(j, cc1);
+    }
+
+  }
+
 }
 
 void SimpleRenderer::invalidateDisplayCache()
 {
+#ifdef USE_OPENGL_VBO
   if (m_pVBO!=NULL) {
     delete m_pVBO;
     m_pVBO = NULL;
@@ -650,12 +676,14 @@ void SimpleRenderer::invalidateDisplayCache()
     m_mbonds.clear();
     m_atoms.clear();
   }
+#endif
 
   super_t::invalidateDisplayCache();
 }
 
 void SimpleRenderer::objectChanged(qsys::ObjectEvent &ev)
 {
+#ifdef USE_OPENGL_VBO
   if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED) {
     if (!ev.getDescr().equals("atomsMoved")) {
       invalidateDisplayCache();
@@ -667,7 +695,8 @@ void SimpleRenderer::objectChanged(qsys::ObjectEvent &ev)
 
   // OBE_CHANGED && descr=="atomsMoved"
   if (m_pVBO!=NULL) {
-    updateVBO();
+    // only update positions
+    updateVBO(false);
     /*
     qsys::ScenePtr pScene = getScene();
     if (!pScene.isnull())
@@ -676,6 +705,9 @@ void SimpleRenderer::objectChanged(qsys::ObjectEvent &ev)
     m_pVBO->setUpdated(true);
     return;
   }
+#else
+  super_t::objectChanged(ev);
+#endif
 
 }
 
