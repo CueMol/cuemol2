@@ -33,6 +33,8 @@
 	  <radio label="Recalc secondry str" id="radio_recalc" selected="true"/>
 	</caption>
 
+	<checkbox id="ign_bulge" label="Ignore &#0946; bulge" checked="false"/>
+
 	<hbox align="center">
 	  <label value="Max hbond energy (cal/mol):"/>
 	  <textbox id="hbmax" type="number"

@@ -584,8 +584,7 @@ namespace {
   }
 }
 
-
-void MolAnlManager::calcProt2ndry(MolCoordPtr pMol, double hbmax)
+void MolAnlManager::calcProt2ndry(MolCoordPtr pMol, double hbmax, bool bignb)
 {
   // Record undo info
   Prot2ndryEditInfo *pPEI = NULL;
@@ -596,7 +595,7 @@ void MolAnlManager::calcProt2ndry(MolCoordPtr pMol, double hbmax)
     pPEI->saveBefore(pMol);
   }
 
-  pMol->calcProt2ndry(hbmax);
+  pMol->calcProt2ndry(hbmax, bignb);
 
   // Record redo info
   if (pPEI!=NULL && uu.isOK()) {

@@ -69,7 +69,7 @@ runtime_class MolCoord extends Object
   integer appendAtom1(object<MolAtom$> pAtom, string chain, integer resid, string resn) => appendAtomScr1;
 
   void applyTopology();
-  void calcProt2ndry(real hb_high);
+  void calcProt2ndry(real hb_high, boolean bIgnoreBulge);
   void calcBasePair(real cutoff, real tilt);
 };
 

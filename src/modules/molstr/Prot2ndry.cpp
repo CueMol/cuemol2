@@ -347,6 +347,10 @@ namespace {
     /// HBHIGH - HIGHEST ALLOWED ENERGY OF A HYDROGEN BOND IN CAL/MOL
     double m_hbhigh;
 
+    /// Ignore-bulge flag
+    /// Do not link beta strand connected by a bulge
+    bool m_bIgnoreBulge;
+
     //////////////////////////////////
 
     ///
@@ -680,12 +684,12 @@ namespace {
 	MB_DPRINTLN("%s sheet", (with.btyp==parallel)?"parallel":"antiparallel");
 
 	MB_DPRINTLN("  %s%d (%d) <--> %s%d (%d)",
-		    pr_ib->getChainName().c_str(), pr_ib->getIndex(), with.ib,
-		    pr_jb->getChainName().c_str(), pr_jb->getIndex(), with.jb);
+		    pr_ib->getChainName().c_str(), pr_ib->getIndex().toInt(), with.ib,
+		    pr_jb->getChainName().c_str(), pr_jb->getIndex().toInt(), with.jb);
 
 	MB_DPRINTLN("  %s%d (%d) <--> %s%d (%d)",
-		    pr_ie->getChainName().c_str(), pr_ie->getIndex(), with.ie,
-		    pr_je->getChainName().c_str(), pr_je->getIndex(), with.je);
+		    pr_ie->getChainName().c_str(), pr_ie->getIndex().toInt(), with.ie,
+		    pr_je->getChainName().c_str(), pr_je->getIndex().toInt(), with.je);
       }
 #endif
     }
@@ -783,9 +787,9 @@ namespace {
     }
 
     /*
-      link the two bridges connected by a buldge
+      link the two bridges connected by a bulge
      */
-    void linkBuldge(Bridge &Abr, Bridge &Bbr)
+    void linkBulge(Bridge &Abr, Bridge &Bbr)
     {
       if (Abr.btyp==parallel) {
 	MB_DPRINTLN("linking par: (%d:%d) --> (%d:%d)",
@@ -809,7 +813,7 @@ namespace {
        If two the same b-type bridges are separated 1 and 4 residues,
        they are defined to be connected by a buldge region.
     */
-    bool checkBuldge(Bridge &Abr, Bridge &Bbr)
+    bool checkBulge(Bridge &Abr, Bridge &Bbr)
     {
       int idiff, jdiff;
 
@@ -820,7 +824,7 @@ namespace {
 	if (1<=idiff && 1<=jdiff) {
 	  if ((idiff<=2 && jdiff<=5) ||
 	      (idiff<=5 && jdiff<=2)) {
-	    linkBuldge(Abr, Bbr);
+	    linkBulge(Abr, Bbr);
 	    return true;
 	  }
 	}
@@ -831,7 +835,7 @@ namespace {
 	if (1<=idiff && 1<=jdiff) {
 	  if ((idiff<=2 && jdiff<=5) ||
 	      (idiff<=5 && jdiff<=2)) {
-	    linkBuldge(Bbr, Abr);
+	    linkBulge(Bbr, Abr);
 	    return true;
 	  }
 	}
@@ -843,7 +847,7 @@ namespace {
 	if (1<=idiff && 1<=jdiff) {
 	  if ((idiff<=2 && jdiff<=5) ||
 	      (idiff<=5 && jdiff<=2)) {
-	    linkBuldge(Abr, Bbr);
+	    linkBulge(Abr, Bbr);
 	    return true;
 	  }
 	}
@@ -854,7 +858,7 @@ namespace {
 	if (1<=idiff && 1<=jdiff) {
 	  if ((idiff<=2 && jdiff<=5) ||
 	      (idiff<=5 && jdiff<=2)) {
-	    linkBuldge(Bbr, Abr);
+	    linkBulge(Bbr, Abr);
 	    return true;
 	  }
 	}
@@ -879,13 +883,18 @@ namespace {
 	if (iwith.ib!=iwith.ie)
 	  iwith.bIsolated = false;
 	  
-        BridgeList::iterator jter = iter; //m_bridges.begin();
-	++jter;
-        for (; jter!=eiter; ++jter) {
-          Bridge &jwith = *jter;
-	  if (!checkBuldge(iwith, jwith)) continue;
-	  iwith.bIsolated = false;
-	  jwith.bIsolated = false;
+        if (!m_bIgnoreBulge) {
+          BridgeList::iterator jter = iter;
+          ++jter;
+          for (; jter!=eiter; ++jter) {
+            Bridge &jwith = *jter;
+            if (!checkBulge(iwith, jwith)) continue;
+            MB_DPRINTLN("Buldge detected for %d:%d/%d:%d - %d:%d/%d:%d",
+                        iwith.ib, iwith.ie, iwith.jb, iwith.je,
+                        jwith.ib, jwith.ie, jwith.jb, jwith.je);
+            iwith.bIsolated = false;
+            jwith.bIsolated = false;
+          }
 	}	
       }
 
@@ -1224,13 +1233,14 @@ namespace {
 
 //////////////////////////////////////
 
-void MolCoord::calcProt2ndry(double hb_high)
+void MolCoord::calcProt2ndry(double hb_high /*= -500.0*/, bool bIgnoreBulge /*=false*/)
 {
   MolCoordPtr pMol(this);
 
   Prot2ndry ps;
   ps.init(pMol);
   ps.m_hbhigh = hb_high;
+  ps.m_bIgnoreBulge = bIgnoreBulge;
   if (ps.m_chains.size()<=0) {
     MB_DPRINTLN("calcProt2ndry> no amino acid residues in %d/%s",
                 getUID(), getName().c_str());

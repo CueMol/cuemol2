@@ -281,7 +281,7 @@ namespace molstr {
     ///
     /// Calculate secondary structure (impl: Prot2ndry.cpp)
     ///
-    void calcProt2ndry(double hb_high = -500.0);
+    void calcProt2ndry(double hb_high = -500.0, bool bIgnoreBulge=false);
 
     void calcBasePair(double cutoff, double tilt);
 

@@ -38,9 +38,9 @@ namespace {
 
       MolAtomPtr pBonAtm1 = pMol->getAtom(pb->getAtom1());
       MolAtomPtr pBonAtm2 = pMol->getAtom(pb->getAtom2());
-      MB_DPRINTLN("Bond %s <--> %s",
-                  pBonAtm1->toString().c_str(),
-                  pBonAtm2->toString().c_str());
+      //MB_DPRINTLN("Bond %s <--> %s",
+      //pBonAtm1->toString().c_str(),
+      //pBonAtm2->toString().c_str());
       if (pb->getAtom1()==aid1)
         atoms1.push_back(pBonAtm2->getPos());
       else if (pb->getAtom2()==aid1)
@@ -64,7 +64,7 @@ namespace {
 
     bOK = true;
 
-    MB_DPRINTLN("DblBon nbon=%d, nv=%s", nbon1, nv1.toString().c_str());
+    //MB_DPRINTLN("DblBon nbon=%d, nv=%s", nbon1, nv1.toString().c_str());
     return nv1;
   }
 }
