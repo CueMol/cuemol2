@@ -18,7 +18,6 @@
 #include "MolChain.hpp"
 #include "Selection.hpp"
 #include "ColoringScheme.hpp"
-#include "MolArrayMap.hpp"
 
 namespace qlib { class Matrix4D; }
 
@@ -110,6 +109,8 @@ namespace molstr {
     void setAtomArray(int aid, const Vector4D &pos);
 
     float *getAtomArray();
+
+    void updateCrdArray();
 
   private:
     ////

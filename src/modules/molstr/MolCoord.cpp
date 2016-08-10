@@ -13,6 +13,7 @@
 #include "MolAtom.hpp"
 #include <qsys/SceneManager.hpp>
 #include "AtomIterator.hpp"
+#include "MolArrayMap.hpp"
 
 // #define USE_QDFMOL_QSC 1
 
@@ -560,15 +561,70 @@ void MolCoord::setAtomArray(int aid, const Vector4D &pos)
   m_crdarray[ind*3+2] = (float) pos.z();
 }
 
+void MolCoord::updateCrdArray()
+{
+  if (m_nValidFlag==CRD_BOTH_VALID)
+    return;
+ 
+ if (m_nValidFlag==CRD_ATOM_VALID) {
+    // copy from atom to array
+    // (Update crdarray)
+    MolArrayMap mam;
+    mam.setup(MolCoordPtr(this));
+    
+    // make index mapping
+    m_indmap.clear();
+    MolArrayMap::const_iterator iter = mam.begin();
+    MolArrayMap::const_iterator eiter = mam.end();
+    for (; iter!=eiter; ++iter) {
+      int aid = iter->first.pA->getID();
+      quint32 ind = iter->second;
+      m_indmap.insert(CrdIndexMap::value_type(aid, ind));
+    }
+    
+    // make float array
+    quint32 natoms = m_indmap.size();
+    m_crdarray.resize( natoms*3 );
+    iter = mam.begin();
+    for (; iter!=eiter; ++iter) {
+      MolAtomPtr pA = iter->first.pA;
+      int aid = pA->getID();
+      quint32 ind = iter->second;
+      Vector4D pos = pA->getPosCache();
+      m_crdarray[ind*3+0] = (float) pos.x();
+      m_crdarray[ind*3+1] = (float) pos.y();
+      m_crdarray[ind*3+2] = (float) pos.z();
+    }
+    
+    m_nValidFlag=CRD_BOTH_VALID;
+  }
+  else if (m_nValidFlag==CRD_ARRAY_VALID) {
+    // copy from array to atom
+    AtomIter iter = beginAtom();
+    AtomIter eiter = endAtom();
+    for (; iter!=eiter; ++iter) {
+      int aid = iter->first;
+      MolAtomPtr pAtom = iter->second;
+      CrdIndexMap::const_iterator iter = m_indmap.find(aid);
+      if (iter==m_indmap.end())
+        continue; // TO DO: throw exception
+
+      quint32 ind = iter->second;
+      Vector4D pos(m_crdarray[ind*3+0],
+                   m_crdarray[ind*3+1],
+                   m_crdarray[ind*3+2]);
+      pAtom->setPosCache(pos);
+    }
+  }
+}
+
 float *MolCoord::getAtomArray()
 {
   if (m_nValidFlag!=CRD_ATOM_VALID)
     return &m_crdarray[0];
 
-  // Update crdarray
-
-
-  return NULL;
+  updateCrdArray();
+  return &m_crdarray[0];
 }
 
 
