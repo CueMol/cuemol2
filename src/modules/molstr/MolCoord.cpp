@@ -14,6 +14,7 @@
 #include <qsys/SceneManager.hpp>
 #include "AtomIterator.hpp"
 
+// Use qdfmol format for qsc chunk stream
 // #define USE_QDFMOL_QSC 1
 
 // For QSC file data chunk processing

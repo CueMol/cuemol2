@@ -6,6 +6,7 @@
 
 #include <common.h>
 
+/// Use new chank-stream parser class (qlib::ObjStream3)
 #define USE_OBJSTR3 1
 
 #include "SceneXMLReader.hpp"

@@ -126,6 +126,12 @@ if (!("Prot2ndryTool" in cuemolui)) {
       else
 	relem.selectedItem = this.mRadAsgn;
       this.onRadSelChg(mode);
+
+      // checkbox (ignore-bulge)
+      his_name = history_name_prefix + ".ignblg";
+      if (pref.has(his_name)) {
+	this.mIgnBlg.checked = pref.get(his_name);
+      }
     };
     
     klass.onRadSelChg = function (tgtid)
@@ -181,6 +187,11 @@ if (!("Prot2ndryTool" in cuemolui)) {
       his_name = history_name_prefix + ".sectype";
       pref.set(his_name, nsectype);
       dd("Save his: "+his_name+" = "+pref.get(his_name));
+
+      // checkbox (ignore-bulge)
+      his_name = history_name_prefix + ".ignblg";
+      pref.set(his_name, this.mIgnBlg.checked);
+      //alert("Save his: "+his_name+" = "+pref.get(his_name));
 
       if (this.mRadRecalc.selected)
 	return this.doRecalc(tgtmol);
