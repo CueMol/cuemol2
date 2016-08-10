@@ -12,6 +12,7 @@ include $(top_srcdir)/mcwgen.am
 
 # Common C++ source files
 BASE_SRC = \
+DispCacheRenderer.cpp \
 DispListRenderer.cpp \
 SceneManager.cpp \
 Scene.cpp \
