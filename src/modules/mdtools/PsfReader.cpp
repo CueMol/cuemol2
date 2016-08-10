@@ -175,7 +175,8 @@ void PsfReader::read(qlib::InStream &ins)
     //(*pAtoms)[i].chain.c_str());
 
     MolAtomPtr pAtom = MolAtomPtr(MB_NEW MolAtom());
-    pAtom->setParentUID(m_pMol->getUID());
+    //pAtom->setParentUID(m_pMol->getUID());
+    pAtom->setParent(m_pMol);
     pAtom->setName(name);
     pAtom->setElement(eleid);
     pAtom->setChainName(chain);

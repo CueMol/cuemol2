@@ -224,7 +224,8 @@ void QdfMolReader::readAtomData()
     
     pAtom = MolAtomPtr(MB_NEW MolAtom());
 
-    pAtom->setParentUID(m_pMol->getUID());
+    // pAtom->setParentUID(m_pMol->getUID());
+    pAtom->setParent(MolCoordPtr(m_pMol));
     pAtom->setName(atomname);
     pAtom->setCName(cname);
     pAtom->setConfID(conf);

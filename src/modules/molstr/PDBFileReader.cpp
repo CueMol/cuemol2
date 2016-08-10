@@ -506,7 +506,8 @@ bool PDBFileReader::readAtom()
     schain = encodeModelInChain(chain, m_nCurrModel);
 
   MolAtomPtr pAtom = MolAtomPtr(MB_NEW MolAtom());
-  pAtom->setParentUID(m_pMol->getUID());
+  //pAtom->setParentUID(m_pMol->getUID());
+  pAtom->setParent(m_pMol);
   pAtom->setName(atomname);
   pAtom->setElement(eleid);
   pAtom->setChainName(schain);

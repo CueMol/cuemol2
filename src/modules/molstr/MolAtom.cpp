@@ -10,15 +10,14 @@
 #include "MolCoord.hpp"
 #include "MolResidue.hpp"
 #include "MolChain.hpp"
-// #include "atomobj_inst.hpp"
+
 #include <qsys/SceneManager.hpp>
-// using qlib::LChar;
+
 using namespace molstr;
 
-/** default ctor */
+/// default ctor
 MolAtom::MolAtom()
 {
-
   m_molID = qlib::invalid_uid;
   m_nresid = 0;
   m_nID = -1;
@@ -33,15 +32,18 @@ MolAtom::MolAtom()
 
   // m_charge = 0.0;
   // m_radius = 0.0;
+
+  m_pMol = NULL;
 }
 
-/** copy ctor */
+/// copy ctor
 MolAtom::MolAtom(const MolAtom &src)
 {
   // Do not copy parent Mol ID
   // (copied obj does not belong to the original one's mol)
   // m_molID = src.m_molID;
   m_molID = qlib::invalid_uid;
+  m_pMol = NULL;
 
   m_name = src.m_name;
   m_chain = src.m_chain;
@@ -68,7 +70,7 @@ MolAtom::MolAtom(const MolAtom &src)
   
 }
 
-/** dtor */
+/// dtor
 MolAtom::~MolAtom()
 {
   // m_props.clearAndDelete();
@@ -77,11 +79,45 @@ MolAtom::~MolAtom()
 
 ////////////////////////////////////////
 
+/// Get Atom position
+Vector4D MolAtom::getPos() const
+{
+  if (m_pMol==NULL)
+    return m_pos;
+
+  char vf = m_pMol->getCrdValidFlag();
+  if (vf!=MolCoord::CRD_ARRAY_VALID)
+    return m_pos;
+
+  // array is valid
+  return m_pMol->getAtomArray(m_nID);
+}
+
+/// Set Atom position
+void MolAtom::setPos(const Vector4D &vec)
+{
+  m_pos = vec;
+
+  if (m_pMol==NULL)
+    return;
+
+  // update mol's crd array
+  m_pMol->setAtomArray(m_nID, vec);
+}
+
+void MolAtom::setParent(MolCoordPtr pMol)
+{
+  // smartptr cannot be stored to avoid cyclic reference
+  m_pMol = pMol.get();
+  m_molID = pMol->getUID();
+}
+
 MolCoordPtr MolAtom::getParent() const
 {
-  qsys::ObjectPtr robj = qsys::SceneManager::getObjectS(m_molID);
-  if (robj.isnull()) return MolCoordPtr();
-  return MolCoordPtr(robj);
+  // qsys::ObjectPtr robj = qsys::SceneManager::getObjectS(m_molID);
+  // if (robj.isnull()) return MolCoordPtr();
+  // return MolCoordPtr(robj);
+  return MolCoordPtr(m_pMol);
 }
 
 MolChainPtr MolAtom::getParentChain() const

@@ -176,7 +176,8 @@ int MolCoord::fromStrAID(const LString &strid) const
 
 int MolCoord::appendAtom(MolAtomPtr pAtom)
 {
-  pAtom->setParentUID(getUID());
+  //pAtom->setParentUID(getUID());
+  pAtom->setParent(MolCoordPtr(this));
   const LString &cname = pAtom->getChainName();
   const LString &rname = pAtom->getResName();
   const LString &aname = pAtom->getName();
@@ -263,7 +264,8 @@ int MolCoord::appendAtomScrHelper(MolAtomPtr pAtom, const LString &ch,
     return -1;
   }
 
-  pAtom->setParentUID(getUID());
+  //pAtom->setParentUID(getUID());
+  pAtom->setParent(MolCoordPtr(this));
   pAtom->setChainName(ch);
   pAtom->setResIndex(resid);
 
@@ -521,4 +523,52 @@ void MolCoord::propChanged(qlib::LPropEvent &ev)
   super_t::propChanged(ev);
 }
 */
+
+////////////////////////////////////////
+
+Vector4D MolCoord::getAtomArray(int aid) const
+{
+  if (m_nValidFlag==CRD_ATOM_VALID ||
+      m_indmap.size()==0 ||
+      m_crdarray.size()==0)
+    return Vector4D();
+
+  CrdIndexMap::const_iterator iter = m_indmap.find(aid);
+  if (iter==m_indmap.end())
+    return Vector4D();
+
+  quint32 ind = iter->second;
+  return Vector4D(m_crdarray[ind*3+0],
+                  m_crdarray[ind*3+1],
+                  m_crdarray[ind*3+2]);
+                  
+}
+
+void MolCoord::setAtomArray(int aid, const Vector4D &pos)
+{
+  if (m_indmap.size()==0 ||
+      m_crdarray.size()==0)
+    return; // TO DO: throw exception
+
+  CrdIndexMap::const_iterator iter = m_indmap.find(aid);
+  if (iter==m_indmap.end())
+    return; // TO DO: throw exception
+
+  quint32 ind = iter->second;
+  m_crdarray[ind*3+0] = (float) pos.x();
+  m_crdarray[ind*3+1] = (float) pos.y();
+  m_crdarray[ind*3+2] = (float) pos.z();
+}
+
+float *MolCoord::getAtomArray()
+{
+  if (m_nValidFlag!=CRD_ATOM_VALID)
+    return &m_crdarray[0];
+
+  // Update crdarray
+
+
+  return NULL;
+}
+
 

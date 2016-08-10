@@ -18,6 +18,7 @@
 #include "MolChain.hpp"
 #include "Selection.hpp"
 #include "ColoringScheme.hpp"
+#include "MolArrayMap.hpp"
 
 namespace qlib { class Matrix4D; }
 
@@ -40,6 +41,9 @@ namespace molstr {
     /////////////////////////////////////////////////////
     // Definition of types for internal use
     
+    ////
+    // Chain
+
     /// comparison operator that defines chain ordering
     struct chain_comp : std::binary_function <const LString &,const LString &, bool> {
       bool operator() (const LString &x, const LString &y) const
@@ -49,6 +53,12 @@ namespace molstr {
     };
 
     typedef std::map<LString, MolChainPtr, chain_comp> ChainPool;
+
+    /// Chain data
+    ChainPool m_chains;
+
+    ////
+    // Atoms
 
     class AtomPool : public std::map<int, MolAtomPtr>
     {
@@ -72,18 +82,49 @@ namespace molstr {
       }
     };
     
+    /// All atoms in this molecule
+    AtomPool m_atomPool;
+
+  public:
+    // validity flag's constants
+    static const char CRD_BOTH_VALID = 0;
+    static const char CRD_ARRAY_VALID = 1;
+    static const char CRD_ATOM_VALID = 2;
+
+    char getCrdValidFlag() const {
+      return m_nValidFlag;
+    }
+
+  private:
+    /// MolAtom/CrdArray validity flag
+    char m_nValidFlag;
+
+    // MolArrayMap m_indmap;
+    typedef std::map<int, quint32> CrdIndexMap;
+    CrdIndexMap m_indmap;
+    
+    std::vector<float> m_crdarray;
+
+  public:
+    Vector4D getAtomArray(int aid) const;
+    void setAtomArray(int aid, const Vector4D &pos);
+
+    float *getAtomArray();
+
+  private:
+    ////
+    // Bonds
+
     class BondPool : public qlib::IndexedTable<MolBond>
     {
     public:
       BondPool() : qlib::IndexedTable<MolBond>() {}
     };
 
+    /// All bonds in this molecule
+    BondPool m_bondPool;
+  
     /////////////////////////////////////////////////////
-
-    ChainPool m_chains;
-
-    /// All atoms in this molecule
-    AtomPool m_atomPool;
 
     /// Selection (as a property)
     SelectionPtr m_pSel;
@@ -91,9 +132,6 @@ namespace molstr {
     /////////////////////////////////////////////////////
     // non-persistent properties
 
-    /// All bonds in this molecule
-    BondPool m_bondPool;
-  
     /// Regexp for parsing string AID
     mutable qlib::LRegExpr m_reAid;
     

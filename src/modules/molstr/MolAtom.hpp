@@ -77,6 +77,10 @@ namespace molstr {
     /// canonical name in the topology definition
     LString m_canonName;
 
+    /// pointer to parent mol.
+    /// NULL if this obj is not attached to mol.
+    MolCoord *m_pMol;
+
   public:
 
     ////////////////////////////
@@ -126,14 +130,11 @@ namespace molstr {
       m_confid = id;
     }
 
-    /// Atom position
-    const Vector4D &getPos() const {
-      return m_pos;
-    }
-    void setPos(const Vector4D &vec)
-    {
-      m_pos = vec;
-    }
+    /// Get Atom position
+    Vector4D getPos() const;
+
+    /// Set Atom position
+    void setPos(const Vector4D &vec);
 
     /// Atom position-script version
     LScrVector4D getPosScr() const {
@@ -190,9 +191,13 @@ namespace molstr {
     // scripting interface (handle insertion code)
     LString getResIndexScr() const;
 
+    /// Get parent mol (returns nullptr if this obj is not attached to mol)
     MolCoordPtr getParent() const;
+    /// Get parent mol's UID (returns invalid_uid if this obj is not attached to mol)
     qlib::uid_t getParentUID() const { return m_molID; }
-    void setParentUID(qlib::uid_t uid) { m_molID = uid; }
+
+    /// Set parent mol. This method changes the owner of this MolAtom object.
+    void setParent(MolCoordPtr pMol);
 
     MolChainPtr getParentChain() const;
     MolResiduePtr getParentResidue() const;
