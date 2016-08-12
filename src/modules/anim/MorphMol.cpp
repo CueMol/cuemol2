@@ -484,7 +484,9 @@ void MorphMol::update(double dframe)
   double rho = xx - double(ifrm);
 
   int ncrd = m_nAtoms*3;
-  PosArray curtmp(ncrd);
+  //PosArray curtmp(ncrd);
+  qfloat32 *curtmp = getAtomArray();
+  crdArrayChanged();
 
   if (ifrm==m_frames.size()-1 || qlib::isNear4(rho, 0.0) ) {
     // ifrm is the last frame
@@ -503,6 +505,8 @@ void MorphMol::update(double dframe)
     }
   }
   
+  
+  /*
   for (i=0; i<m_nAtoms; ++i) {
     int aid = m_id2aid[i];
     MolAtomPtr pAtom = getAtom(aid);
@@ -513,7 +517,7 @@ void MorphMol::update(double dframe)
                        curtmp[i*3+1],
                        curtmp[i*3+2]);
     pAtom->setPos(pos);
-  }
+  }*/
 
   // broadcast modification event
   fireAtomsMoved();

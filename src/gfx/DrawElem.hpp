@@ -134,6 +134,8 @@ namespace gfx {
 
     virtual bool vertex(int ind, const Vector4D &v) =0;
 
+    virtual bool vertex(int ind, qfloat32 *pcrd);
+
     //bool color(int ind, const ColorPtr &c) {
     //return color(ind, c->getCode());
     //}
@@ -184,6 +186,7 @@ namespace gfx {
     virtual void alloc(int nsize);
 
     virtual bool vertex(int ind, const Vector4D &v);
+    virtual bool vertex(int ind, qfloat32 *pcrd);
 
     virtual bool color(int ind, quint32 cc);
 

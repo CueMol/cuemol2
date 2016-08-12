@@ -17,7 +17,7 @@ namespace molstr {
   struct MOLSTR_API MolArrayMapElem
   {
     LString chain;
-    int resid;
+    ResidIndex resid;
     LString atom;
     MolAtomPtr pA;
 
@@ -38,6 +38,8 @@ namespace molstr {
 
   private:
     void setupIndex();
+    
+    void insertAtom(MolAtomPtr pa);
     
   public:
     typedef data_t::const_iterator const_iterator;

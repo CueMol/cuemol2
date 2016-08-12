@@ -95,6 +95,7 @@ namespace molstr {
     {
       quint32 itype;
       quint32 aid1, aid2;
+      quint32 ind1, ind2;
       quint32 vaind, nelems;
     };
 
@@ -107,6 +108,7 @@ namespace molstr {
     {
       quint32 itype;
       quint32 aid1, aid2;
+      quint32 ind1, ind2;
       quint32 vaind, nelems;
       qfloat32 nx, ny, nz;
     };
@@ -119,6 +121,7 @@ namespace molstr {
     struct IntAtom
     {
       quint32 aid1;
+      quint32 ind1;
       quint32 vaind;
     };
 

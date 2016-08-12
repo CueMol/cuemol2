@@ -62,6 +62,14 @@ bool DrawElem::color(int ind, quint32 c)
   return false;
 }
 
+bool DrawElem::vertex(int ind, qfloat32 *pcrd)
+{
+  return vertex(ind, Vector4D(pcrd[0],
+                              pcrd[1],
+                              pcrd[2]));
+}
+
+
 //////////////////////////
 
 DrawElemVC::DrawElemVC() : super_t(), m_pData(NULL)
@@ -89,6 +97,16 @@ bool DrawElemVC::vertex(int ind, const Vector4D &v)
   m_pData[ind].x = qfloat32(v.x());
   m_pData[ind].y = qfloat32(v.y());
   m_pData[ind].z = qfloat32(v.z());
+  return true;
+}
+
+bool DrawElemVC::vertex(int ind, qfloat32 *pcrd)
+{
+  if (ind<0 || getSize()<=ind) return false;
+
+  m_pData[ind].x = pcrd[0];
+  m_pData[ind].y = pcrd[1];
+  m_pData[ind].z = pcrd[2];
   return true;
 }
 

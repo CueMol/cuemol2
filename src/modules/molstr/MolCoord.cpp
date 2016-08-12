@@ -28,6 +28,8 @@ using namespace molstr;
 
 MolCoord::MolCoord()
 {
+  m_nValidFlag = CRD_ATOM_VALID;
+
   resetAllProps();
   // m_pSel = SelectionPtr(MB_NEW SelCommand());
 
@@ -251,6 +253,9 @@ int MolCoord::appendAtom(MolAtomPtr pAtom)
     return -1;
   }
   
+  // invalidate crdarray
+  invalidateCrdArray();
+
   return atomid;
 }
 
@@ -303,6 +308,9 @@ bool MolCoord::removeAtom(int atomid)
 
   // invalidate ID
   pAtom->setID(-1);
+
+  // invalidate crdarray
+  invalidateCrdArray();
 
   const LString &aname = pAtom->getName();
   ResidIndex nresid = pAtom->getResIndex();
@@ -565,8 +573,8 @@ void MolCoord::updateCrdArray()
 {
   if (m_nValidFlag==CRD_BOTH_VALID)
     return;
- 
- if (m_nValidFlag==CRD_ATOM_VALID) {
+  
+  if (m_nValidFlag==CRD_ATOM_VALID) {
     // copy from atom to array
     // (Update crdarray)
     MolArrayMap mam;
@@ -596,6 +604,7 @@ void MolCoord::updateCrdArray()
       m_crdarray[ind*3+2] = (float) pos.z();
     }
     
+    LOG_DPRINTLN("CrdArray/IndMap created: natoms=%d", natoms);
     m_nValidFlag=CRD_BOTH_VALID;
   }
   else if (m_nValidFlag==CRD_ARRAY_VALID) {
@@ -627,4 +636,27 @@ float *MolCoord::getAtomArray()
   return &m_crdarray[0];
 }
 
+
+quint32 MolCoord::getCrdArrayInd(int aid) const
+{
+  if (m_nValidFlag==CRD_ATOM_VALID) {
+    MolCoord *pthis = const_cast<MolCoord *>(this);
+    pthis->updateCrdArray();
+  }
+
+  CrdIndexMap::const_iterator iter = m_indmap.find(aid);
+  if (iter==m_indmap.end()) {
+    MB_THROW(qlib::RuntimeException, "getCrdArrayInd failed");
+    return (quint32) -1;
+  }
+
+  return iter->second;
+}
+
+void MolCoord::invalidateCrdArray()
+{
+  m_nValidFlag = CRD_ATOM_VALID;
+  m_indmap.clear();
+  m_crdarray.clear();
+}
 

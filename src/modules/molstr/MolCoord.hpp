@@ -100,6 +100,7 @@ namespace molstr {
 
     // MolArrayMap m_indmap;
     typedef std::map<int, quint32> CrdIndexMap;
+    /// Atom ID --> CrdArray index mapping
     CrdIndexMap m_indmap;
     
     std::vector<float> m_crdarray;
@@ -108,9 +109,17 @@ namespace molstr {
     Vector4D getAtomArray(int aid) const;
     void setAtomArray(int aid, const Vector4D &pos);
 
-    float *getAtomArray();
+    qfloat32 *getAtomArray();
 
     void updateCrdArray();
+
+    void crdArrayChanged() {
+      m_nValidFlag = CRD_ARRAY_VALID;
+    }
+
+    quint32 getCrdArrayInd(int aid) const;
+
+    void invalidateCrdArray();
 
   private:
     ////

@@ -29,6 +29,21 @@ bool MolArrayMapElem::less_fcn::operator() (const MolArrayMapElem &x, const MolA
   return ::strcmp(x.atom.c_str(), y.atom.c_str())<0;
 }
 
+void MolArrayMap::insertAtom(MolAtomPtr pa)
+{
+  char confid = pa->getConfID();
+  MolArrayMapElem a;
+  a.chain = pa->getChainName().c_str();
+  a.resid = pa->getResIndex();
+  if (confid=='\0')
+    a.atom = pa->getName();
+  else
+    a.atom = pa->getName() + ":" + confid;
+  a.pA = pa;
+  m_data.insert(data_t::value_type(a, -1));
+  //MB_DPRINTLN("fitref %s %d %s", a.chain.c_str(), a.resid, a.atom.c_str());
+}
+
 void MolArrayMap::setup(MolCoordPtr pRefMol, SelectionPtr pRefSel)
 {
   m_data.erase(m_data.begin(), m_data.end());
@@ -36,13 +51,7 @@ void MolArrayMap::setup(MolCoordPtr pRefMol, SelectionPtr pRefSel)
   AtomIterator iter(pRefMol, pRefSel);
   for (iter.first(); iter.hasMore(); iter.next(), ++i) {
     MolAtomPtr pa = iter.get();
-    MolArrayMapElem a;
-    a.chain = pa->getChainName().c_str();
-    a.resid = pa->getResIndex().toInt();
-    a.atom = pa->getName().c_str();
-    a.pA = pa;
-    m_data.insert(data_t::value_type(a, -1));
-    //MB_DPRINTLN("fitref %s %d %s", a.chain.c_str(), a.resid, a.atom.c_str());
+    insertAtom(pa);
   }
 
   setupIndex();
@@ -55,13 +64,7 @@ void MolArrayMap::setup(MolCoordPtr pRefMol)
   AtomIterator iter(pRefMol);
   for (iter.first(); iter.hasMore(); iter.next(), ++i) {
     MolAtomPtr pa = iter.get();
-    MolArrayMapElem a;
-    a.chain = pa->getChainName().c_str();
-    a.resid = pa->getResIndex().toInt();
-    a.atom = pa->getName().c_str();
-    a.pA = pa;
-    m_data.insert(data_t::value_type(a, -1));
-    //MB_DPRINTLN("fitref %s %d %s", a.chain.c_str(), a.resid, a.atom.c_str());
+    insertAtom(pa);
   }
 
   setupIndex();
