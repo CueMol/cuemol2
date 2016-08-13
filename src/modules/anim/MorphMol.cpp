@@ -463,6 +463,8 @@ void MorphMol::update(double dframe)
   // check data loaded
   for (i=0; i<nframes; ++i) {
     if (m_frames[i]->m_crds.size()<=0) {
+      // non-prepared frame found
+      // --> setup all frames and quit checking
       setupData();
       break;
     }
