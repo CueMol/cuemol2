@@ -20,6 +20,7 @@ namespace molstr {
     //operator int&() { return std::pair<int, char>::first; }
     int toInt() const { return std::pair<int, char>::first; }
     qlib::LString toString() const;
+    // const char *c_str() const;
     static ResidIndex fromString(const qlib::LString &stridx);
   };
 

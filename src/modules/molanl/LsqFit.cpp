@@ -363,8 +363,8 @@ double MolAnlManager::calcRMSD(MolCoordPtr pRefMol, SelectionPtr pRefSel,
       double distsq = SQR(difary[i*3+0]) + SQR(difary[i*3+1]) + SQR(difary[i*3+2]);
       LString msg =
         LString::format("ref %s %d  mov %s %d %f",
-                        iter_ref->first.chain.c_str(), iter_ref->first.resid,
-                        iter_mov->first.chain.c_str(), iter_mov->first.resid, ::sqrt(distsq));
+                        iter_ref->first.chain.c_str(), iter_ref->first.resid.toInt(),
+                        iter_mov->first.chain.c_str(), iter_mov->first.resid.toInt(), ::sqrt(distsq));
       MB_DPRINTLN(msg);
       if (pPS!=NULL)
         pPS->println(msg);
