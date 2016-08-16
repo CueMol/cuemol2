@@ -52,8 +52,8 @@ namespace molstr {
       m_residTab.forceSet(value->getName(), value);
     }
 
-    /// Get topology obj by name (resolving alias name)
-    ResiToppar *get(const LString &key) const;
+    /// Get topology obj by name (resolving alias name/UID local name)
+    ResiToppar *get(const LString &key, qlib::uid_t uid = qlib::invalid_uid) const;
 
     /// Unregister topology object (by name)
     ResiToppar *remove(const LString &key) {
@@ -67,6 +67,11 @@ namespace molstr {
 
     void putAliasName(const LString &alias, const LString &cname) {
       m_aliasTab.insert(AliasTab::value_type(alias, cname));
+    }
+
+    /// Create UID-decorated name of resid topology
+    static LString getUIDDecName(const LString &key, qlib::uid_t uid) {
+      return LString::format("%s_UID%d", key.c_str(), uid);
     }
 
     //////////////////////////////////////////////

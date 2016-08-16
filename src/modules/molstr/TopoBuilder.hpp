@@ -31,6 +31,16 @@ namespace molstr {
     double m_distmat[4][4];
 
   public:
+    static const int AUTOGEN_GLOBAL = 0;
+    static const int AUTOGEN_SCENE = 1;
+    static const int AUTOGEN_OBJECT = 2;
+
+    void setAutogenMode(int nmode) { m_nAutogenMode = nmode; }
+
+  private:
+    int m_nAutogenMode;
+
+  public:
     TopoBuilder(TopoDB *pdic);
     virtual ~TopoBuilder();
 
@@ -69,7 +79,7 @@ namespace molstr {
        Auto-generate topology data for unknown residue
     */
     // void autogen(MolResidue *pRes);
-    void autogen(MolResiduePtr pRes, ResiToppar *pTop);
+    void autogen(MolResiduePtr pRes, ResiToppar *pTop, qlib::uid_t uid = qlib::invalid_uid);
 
     bool chkBondDist(MolAtomPtr pAtom, MolAtomPtr pAtom2);
 

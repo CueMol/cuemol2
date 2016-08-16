@@ -426,11 +426,14 @@ bool PDBFileReader::readAtom()
         break; // type 1 OK 
 
       // check "type 2"
-      char ich = eleorig[0];
-      elename = LString(eleorig[1]);
-      eleid = ElemSym::str2SymID(elename);
-      if (eleid!=ElemSym::XX)
-        break; // type 2 OK 
+      LString ich = eleorig.substr(0,1);
+      int dum;
+      if (ich.toInt(&dum)) {
+        elename = eleorig.substr(1,1);
+        eleid = ElemSym::str2SymID(elename);
+        if (eleid!=ElemSym::XX)
+          break; // type 2 OK 
+      }
       
       // illegal type
       eleid = ElemSym::str2SymID(atomname);
