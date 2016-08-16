@@ -158,6 +158,7 @@ namespace render {
     void end();
 
     /// Append line segment
+    void line(const Vector4D &v1, const Vector4D &v2, double w, ColIndex ci);
     void line(const Vector4D &v1, const Vector4D &v2, double w, const ColorPtr &col = ColorPtr());
 
     /// Append point
@@ -200,29 +201,40 @@ namespace render {
     ColIndex convCol(const ColorPtr &col);
 
     /// convert line to cylinder
-    void convLines();
+    void convLines(bool bErase = true);
 
     /// convert dot to sphere
-    void convDots();
+    void convDots(bool bErase = true);
 
     /// convert spheres to mesh
-    void convSpheres();
+    void convSpheres(bool bErase = true);
 
     /// convert cylinders to mesh
-    void convCylinders();
+    void convCylinders(bool bErase = true);
 
     void eraseLines() {
-      m_lines.erase(m_lines.begin(), m_lines.end());
+      // m_lines.erase(m_lines.begin(), m_lines.end());
+      qlib::delete_and_clear<std::deque<Line *>, Line>(m_lines);
     }
 
     void eraseCyls() {
-      m_cylinders.erase(m_cylinders.begin(), m_cylinders.end());
+      // m_cylinders.erase(m_cylinders.begin(), m_cylinders.end());
+      qlib::delete_and_clear<CylList, Cyl>(m_cylinders);
     }
     
     void eraseSpheres() {
-      m_spheres.erase(m_spheres.begin(), m_spheres.end());
+      //m_spheres.erase(m_spheres.begin(), m_spheres.end());
+      qlib::delete_and_clear<SphList, Sph>(m_spheres);
+    }
+
+    void eraseDots() {
+      //m_spheres.erase(m_spheres.begin(), m_spheres.end());
+      qlib::delete_and_clear<SphList, Sph>(m_dots);
     }
     
+    /// converte meshe to line segments (for debug)
+    void convMeshToLines(double lw);
+
   private:
     void convSphere(Sph *);
     void convCyl(Cyl *);

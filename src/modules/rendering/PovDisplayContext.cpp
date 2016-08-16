@@ -501,6 +501,15 @@ void PovDisplayContext::writeObjects()
 
   dumpClut(m_pIncOut);
 
+
+/*
+  // DEBUG: convert sphere to mesh
+  m_pIntData->convSpheres();
+  m_pIntData->convMeshToLines(1);
+  writeLines();
+*/
+  
+
   blin = writeLines();
 
   int nEdgeLineType = getEdgeLineType();
@@ -511,17 +520,17 @@ void PovDisplayContext::writeObjects()
 
     // // convert sphere to mesh
     m_pIntData->convSpheres();
-    // writeSpheres();
+    //m_pIntData->convSpheres(false);
+    //writeSpheres();
 
     // convert cylinder to mesh
     m_pIntData->convCylinders();
+
+    // Write all meshes here
     writeMeshes();
 
     // calculate and write edge/silhouette
     writeSilEdges2();
-
-    ips.format("\n#end\n");
-    ps.format("\n");
   }
   else {
     // no edges/silhouettes
@@ -530,10 +539,11 @@ void PovDisplayContext::writeObjects()
     bmes = writeMeshes();
     if (bcyl)
       ps.format("#declare %s_lw = 1.00;\n", getSecName().c_str());
-    ips.format("\n#end\n");
-    ps.format("\n");
-
   }
+
+
+  ips.format("\n#end\n");
+  ps.format("\n");
 
   // image pixmaps
   if (m_bWritePix) {
@@ -667,7 +677,7 @@ bool PovDisplayContext::writeLines()
     double len = nn.length();
     if (len<=F_EPS4) {
       // ignore degenerated cylinder
-      delete p;
+      // delete p;
       continue;
     }
     
@@ -690,7 +700,7 @@ bool PovDisplayContext::writeLines()
 
       ips.format("}\n");
     }
-    delete p;
+    // delete p;
   }
 
   m_pIntData->eraseLines();
@@ -729,7 +739,7 @@ bool PovDisplayContext::writeCyls()
     double len = nn.length();
     if (len<=F_EPS4) {
       // ignore the degenerated cylinder
-      delete p;
+      // delete p;
       continue;
     }
 
@@ -807,7 +817,7 @@ bool PovDisplayContext::writeCyls()
       }
     }
 
-    delete p;
+    // delete p;
   }
 
   m_pIntData->eraseCyls();
@@ -846,10 +856,8 @@ bool PovDisplayContext::writeSpheres()
       ips.format("}\n");
     }
     
-    delete p;
   }
 
-  m_pIntData->eraseSpheres();
   return true;
 }
 
@@ -879,15 +887,6 @@ bool PovDisplayContext::writeMeshes(bool bMask/*=false*/)
   std::vector<MeshVert*> pmary(nverts);
   std::copy(pMesh->m_verts.begin(), pMesh->m_verts.end(), pmary.begin());
 
-  /*
-  MeshVert **pmary = MB_NEW MeshVert *[nverts];
-  i=0;
-  BOOST_FOREACH (MeshVert *pelem, pMesh->m_verts) {
-    pmary[i] = pelem;
-    ++i;
-  }
-  */
-  
   //
   // generate mesh2 statement
   //
@@ -1002,9 +1001,6 @@ bool PovDisplayContext::writeMeshes(bool bMask/*=false*/)
   //
   if (bdel)
     delete pMesh;
-  // delete [] pmary;
-
-  // m_pIntData->m_mesh.clear();
 
   return true;
 }

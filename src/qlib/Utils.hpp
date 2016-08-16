@@ -151,6 +151,13 @@ namespace qlib {
     }
   };
 
+  template <typename _Cont, typename _Type>
+  void delete_and_clear(_Cont &cont) {
+    std::for_each(cont.begin(), cont.end(), delete_ptr<_Type *>());
+    cont.clear();
+  }
+  
+
   template <class _T>
   class delete_ptr2
   {

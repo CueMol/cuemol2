@@ -394,8 +394,9 @@ void LProcMgr::killAll()
     }
   }
 
-  std::for_each(m_endq.begin(), m_endq.end(), delete_ptr<ProcEnt *>());
-  m_endq.clear();
+  //std::for_each(m_endq.begin(), m_endq.end(), delete_ptr<ProcEnt *>());
+  //m_endq.clear();
+  delete_and_clear<endq_t,ProcEnt>(m_endq);
 }
 
 bool LProcMgr::isEmpty() const

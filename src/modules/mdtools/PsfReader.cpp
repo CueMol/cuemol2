@@ -35,39 +35,50 @@ void PsfReader::attach(MolCoordPtr pMol)
   m_pMol = pMol;
 }
 
+inline bool isNearMass(double x, double y)
+{
+  const double dtol = 0.1;
+  
+  //if (qlib::isNear4( ::floor(x+0.5), ::floor(y+0.5) ))
+  if (y-dtol < x && x < y+dtol)
+    return true;
+  else
+    return false;
+}
+
 ElemID convMassElem(double mass)
 {
-  if (qlib::isNear4(mass, 1.0080))
+  if (isNearMass(mass, 1.0080))
     return ElemSym::H;
 
-  if (qlib::isNear4(mass, 12.0110))
+  if (isNearMass(mass, 12.0110))
     return ElemSym::C;
-  if (qlib::isNear4(mass, 14.0070))
+  if (isNearMass(mass, 14.0070))
     return ElemSym::N;
-  if (qlib::isNear4(mass, 15.9994))
+  if (isNearMass(mass, 15.9994))
     return ElemSym::O;
-  if (qlib::isNear4(mass, 18.998))
+  if (isNearMass(mass, 18.998))
     return ElemSym::F;
 
-  if (qlib::isNear4(mass, 22.9898))
+  if (isNearMass(mass, 22.9898))
     return ElemSym::Na;
-  if (qlib::isNear4(mass, 24.305))
+  if (isNearMass(mass, 24.305))
     return ElemSym::Mg;
 
-  if (qlib::isNear4(mass, 30.9740))
+  if (isNearMass(mass, 30.9740))
     return ElemSym::P;
-  if (qlib::isNear4(mass, 32.0600))
+  if (isNearMass(mass, 32.0600))
     return ElemSym::S;
-  if (qlib::isNear4(mass, 35.4500))
+  if (isNearMass(mass, 35.4500))
     return ElemSym::Cl;
 
-  if (qlib::isNear4(mass, 39.102000))
+  if (isNearMass(mass, 39.102000))
     return ElemSym::K;
-  if (qlib::isNear4(mass, 40.08))
+  if (isNearMass(mass, 40.08))
     return ElemSym::Ca;
-  if (qlib::isNear4(mass, 55.847))
+  if (isNearMass(mass, 55.847))
     return ElemSym::Fe;
-  if (qlib::isNear4(mass, 65.37))
+  if (isNearMass(mass, 65.37))
     return ElemSym::Zn;
 
   return ElemSym::XX;
@@ -158,10 +169,10 @@ void PsfReader::read(qlib::InStream &ins)
     }
 
     // mass
-    stmp = m_line.substr(51, 8);
+    stmp = m_line.substr(50, 8);
     double mass;
     if (!stmp.toDouble(&mass)) {
-      LString msg = LString::format("cannot convert mass %s", stmp.c_str());
+      LString msg = LString::format("cannot convert mass <%s>", stmp.c_str());
       MB_THROW(qlib::FileFormatException, msg);
       return;
     }
