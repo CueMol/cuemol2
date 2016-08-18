@@ -9,7 +9,7 @@
 #include "anim.hpp"
 #include <qlib/Array.hpp>
 
-#include <modules/molstr/MolCoord.hpp>
+#include <modules/molstr/AnimMol.hpp>
 
 namespace anim {
 
@@ -43,14 +43,19 @@ namespace anim {
     virtual void updateSrcPath(const LString &srcpath);
   };
 
-  class ANIM_API MorphMol : public molstr::MolCoord
+  ////////////////////////////////////////////////////////////
+
+  ///
+  /// Molecular morphing animation object class
+  ///
+  class ANIM_API MorphMol : public molstr::AnimMol
   {
     MC_SCRIPTABLE;
 
   private:
-    typedef molstr::MolCoord super_t;
+    typedef molstr::AnimMol super_t;
 
-    /////////////////////////////////////////////////////
+    /////////////////
     // specific data
 
     double m_dframe;
@@ -58,7 +63,7 @@ namespace anim {
     /// number of atoms in each frame
     int m_nAtoms;
     
-    std::vector<int> m_id2aid;
+    // std::vector<int> m_id2aid;
 
     typedef std::deque<FrameData *> FrameArray;
 
@@ -118,7 +123,7 @@ namespace anim {
 
     virtual void forceEmbed();
 
-    virtual void writeDataChunkTo(qlib::LDom2OutStream &oos) const;
+    // virtual void writeDataChunkTo(qlib::LDom2OutStream &oos) const;
 
   private:
     /// Create from mol

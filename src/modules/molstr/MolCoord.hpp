@@ -90,36 +90,9 @@ namespace molstr {
     static const char CRD_ARRAY_VALID = 1;
     static const char CRD_ATOM_VALID = 2;
 
-    char getCrdValidFlag() const {
-      return m_nValidFlag;
-    }
+    virtual char getCrdValidFlag() const;
 
-  private:
-    /// MolAtom/CrdArray validity flag
-    char m_nValidFlag;
-
-    // MolArrayMap m_indmap;
-    typedef std::map<int, quint32> CrdIndexMap;
-    /// Atom ID --> CrdArray index mapping
-    CrdIndexMap m_indmap;
-    
-    std::vector<float> m_crdarray;
-
-  public:
-    Vector4D getAtomArray(int aid) const;
-    void setAtomArray(int aid, const Vector4D &pos);
-
-    qfloat32 *getAtomArray();
-
-    void updateCrdArray();
-
-    void crdArrayChanged() {
-      m_nValidFlag = CRD_ARRAY_VALID;
-    }
-
-    quint32 getCrdArrayInd(int aid) const;
-
-    void invalidateCrdArray();
+    virtual void invalidateCrdArray();
 
   private:
     ////

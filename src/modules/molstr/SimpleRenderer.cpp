@@ -9,6 +9,7 @@
 #include "SimpleRenderer.hpp"
 
 #include "MolCoord.hpp"
+#include "AnimMol.hpp"
 #include "MolChain.hpp"
 #include "MolResidue.hpp"
 #include "ResiToppar.hpp"
@@ -37,6 +38,7 @@ SimpleRenderer::SimpleRenderer()
   m_dCvScl2 = 0.05;
 
   m_pVBO = NULL;
+  m_bUseVBO = false;
 }
 
 SimpleRenderer::~SimpleRenderer()
@@ -47,6 +49,18 @@ SimpleRenderer::~SimpleRenderer()
 const char *SimpleRenderer::getTypeName() const
 {
   return "simple";
+}
+
+void SimpleRenderer::attachObj(qlib::uid_t obj_uid)
+{
+  super_t::attachObj(obj_uid);
+  
+  MolCoordPtr pObj = getClientMol();
+  qlib::LScrSp<AnimMol> pAM(pObj, qlib::no_throw_tag());
+  if (pAM.isnull())
+    m_bUseVBO = false;
+  else
+    m_bUseVBO = true;
 }
 
 /////////////////////////
@@ -204,7 +218,7 @@ bool SimpleRenderer::isRendBond() const
 void SimpleRenderer::display(DisplayContext *pdc)
 {
 #ifdef USE_OPENGL_VBO
-  if (pdc->isFile() || !pdc->isDrawElemSupported()) {
+  if (!m_bUseVBO || pdc->isFile() || !pdc->isDrawElemSupported()) {
     // case of the file (non-ogl) rendering
     // always use the old version.
     super_t::display(pdc);
@@ -235,7 +249,9 @@ void SimpleRenderer::renderVBO()
 {
   quint32 i, j;
   quint32 nbons = 0, natoms = 0, nmbons = 0, nva = 0;
-  MolCoordPtr pMol = getClientMol();
+  MolCoordPtr pCMol = getClientMol();
+
+  AnimMol *pMol = static_cast<AnimMol *>(pCMol.get());
 
   std::deque<int> isolated_atoms;
   
@@ -243,7 +259,7 @@ void SimpleRenderer::renderVBO()
     // build bond data structure/estimate VBO size
 
     std::set<int> bonded_atoms;
-    BondIterator biter(pMol, getSelection());
+    BondIterator biter(pCMol, getSelection());
 
     for (biter.first(); biter.hasMore(); biter.next()) {
       MolBond *pMB = biter.getBond();
@@ -297,7 +313,7 @@ void SimpleRenderer::renderVBO()
           (nBondType==MolBond::DOUBLE ||
            nBondType==MolBond::TRIPLE)) {
 
-        Vector4D dvd = pMB->getDblBondDir(pMol);
+        Vector4D dvd = pMB->getDblBondDir(pCMol);
         
         m_mbonds[j].aid1 = aid1;
         m_mbonds[j].aid2 = aid2;
@@ -365,7 +381,7 @@ void SimpleRenderer::renderVBO()
     }
 
     // calculate isolated atoms
-    AtomIterator aiter(pMol, getSelection());
+    AtomIterator aiter(pCMol, getSelection());
     for (aiter.first(); aiter.hasMore(); aiter.next()) {
       int aid = aiter.getID();
       MolAtomPtr pAtom = pMol->getAtom(aid);
@@ -406,7 +422,9 @@ void SimpleRenderer::updateVBO(bool bUpdateColor)
   quint32 nmbons = m_mbonds.size();
   quint32 natoms = m_atoms.size();
   
-  MolCoordPtr pMol = getClientMol();
+  MolCoordPtr pCMol = getClientMol();
+  AnimMol *pMol = static_cast<AnimMol *>(pCMol.get());
+  
   qfloat32 *crd = pMol->getAtomArray();
 
   MolAtomPtr pA1, pA2;

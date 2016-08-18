@@ -132,6 +132,8 @@ namespace molstr {
     /// cached vertex array/VBO
     gfx::DrawElemVC *m_pVBO;
 
+    bool m_bUseVBO;
+    
     //////////////////////////////////////////////////////
 
   public:
@@ -139,6 +141,8 @@ namespace molstr {
     virtual ~SimpleRenderer();
 
     virtual const char *getTypeName() const;
+
+    virtual void attachObj(qlib::uid_t obj_uid);
 
     //////////////////////////////////////////////////////
 

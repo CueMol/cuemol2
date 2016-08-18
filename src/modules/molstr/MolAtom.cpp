@@ -10,7 +10,7 @@
 #include "MolCoord.hpp"
 #include "MolResidue.hpp"
 #include "MolChain.hpp"
-
+#include "AnimMol.hpp"
 #include <qsys/SceneManager.hpp>
 
 using namespace molstr;
@@ -89,8 +89,9 @@ Vector4D MolAtom::getPos() const
   if (vf!=MolCoord::CRD_ARRAY_VALID)
     return m_pos;
 
-  // array is valid
-  return m_pMol->getAtomArray(m_nID);
+  // array is valid --> pMol is AnimMol
+  AnimMol *pAM = static_cast<AnimMol *>(m_pMol);
+  return pAM->getAtomArray(m_nID);
 }
 
 /// Set Atom position
@@ -101,8 +102,11 @@ void MolAtom::setPos(const Vector4D &vec)
   if (m_pMol==NULL)
     return;
 
+  // array is valid --> pMol is AnimMol
   // update mol's crd array
-  m_pMol->setAtomArray(m_nID, vec);
+  AnimMol *pAM = dynamic_cast<AnimMol *>(m_pMol);
+  if (pAM!=NULL)
+    pAM->setAtomArray(m_nID, vec);
 }
 
 void MolAtom::setParent(MolCoordPtr pMol)

@@ -96,38 +96,10 @@ void FrameData::updateSrcPath(const LString &srcpath)
 /////////////////////////////////////////////////////
 // MorphMol specific operations
 
-void MorphMol::writeDataChunkTo(qlib::LDom2OutStream &oos) const
+/*void MorphMol::writeDataChunkTo(qlib::LDom2OutStream &oos) const
 {
-#if 0
-  int i;
-  int nfrms = m_frames.size();
-  int nthis = -1;
-  for (int i=0; i<nfrms; ++i) {
-    FrameData *pFrm = m_frames[i];
-
-    if ( pFrm->m_srctype.equals("<this>") ) {
-      nthis = i;
-      break;
-    }
-  }
-
-  if (0<=nthis && nthis<nfrms && m_frames[nthis]!=NULL) {
-    for (i=0; i<m_nAtoms; ++i) {
-      int aid = m_id2aid[i];
-      MolAtomPtr pAtom = getAtom(aid);
-      if (pAtom.isnull()) {
-        LOG_DPRINTLN("MorphMol::update mol mismatch at ID=%d (ignored)", i);
-      }
-      qlib::Vector4D pos(m_frames[nthis]->m_crds.at(i*3),
-                         m_frames[nthis]->m_crds.at(i*3+1),
-                         m_frames[nthis]->m_crds.at(i*3+2));
-      pAtom->setPos(pos);
-    }
-  }
-#endif
-  
   super_t::writeDataChunkTo(oos);
-}
+}*/
 
 void MorphMol::forceEmbed()
 {
@@ -155,8 +127,8 @@ void MorphMol::readFromStream(qlib::InStream &ins)
   MolArrayMap thisset;
   thisset.setup(pthis);
   m_nAtoms = thisset.size();
-  m_id2aid.resize(m_nAtoms);
-  thisset.convertID(m_id2aid);
+  // m_id2aid.resize(m_nAtoms);
+  // thisset.convertID(m_id2aid);
 
   int nfrms = m_frames.size();
   for (int i=0; i<nfrms; ++i) {
@@ -188,6 +160,7 @@ void MorphMol::setupData()
     if ( pFrm->m_srctype.equals("<this>") ) {
       //pFrm->m_crds.resize(m_nAtoms*3);
       //thisset.convertf( pFrm->m_crds );
+      
       // <this> should have been setup here
       continue;
     }
@@ -441,8 +414,8 @@ void MorphMol::appendThisFrame()
   MolArrayMap thisset;
   thisset.setup(pthis);
   m_nAtoms = thisset.size();
-  m_id2aid.resize(m_nAtoms);
-  thisset.convertID(m_id2aid);
+  // m_id2aid.resize(m_nAtoms);
+  // thisset.convertID(m_id2aid);
 
   FrameData *pFrm = MB_NEW FrameData;
   pFrm->m_srctype = "<this>";
@@ -506,19 +479,6 @@ void MorphMol::update(double dframe)
   }
   
   
-  /*
-  for (i=0; i<m_nAtoms; ++i) {
-    int aid = m_id2aid[i];
-    MolAtomPtr pAtom = getAtom(aid);
-    if (pAtom.isnull()) {
-      LOG_DPRINTLN("MorphMol::update mol mismatch at ID=%d (ignored)", i);
-    }
-    qlib::Vector4D pos(curtmp[i*3],
-                       curtmp[i*3+1],
-                       curtmp[i*3+2]);
-    pAtom->setPos(pos);
-  }*/
-
   // broadcast modification event
   fireAtomsMoved();
 }

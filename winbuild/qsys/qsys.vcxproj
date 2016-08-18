@@ -100,6 +100,7 @@
     <ClCompile Include="..\..\src\gfx\GradientColor_wrap.cpp" />
     <ClCompile Include="..\..\src\gfx\MultiGradient.cpp" />
     <ClCompile Include="..\..\src\gfx\MultiGradient_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\AnimMol.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\ChainIterator.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\ChainIterator_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\MolBond.cpp" />
