@@ -1,0 +1,22 @@
+// -*-Mode: C++;-*-
+//
+// DCD trajectory file reader scripting interface
+//
+
+#ifndef DCD_TRAJ_READER_QIF_INCLUDED
+#define DCD_TRAJ_READER_QIF_INCLUDED
+
+#include <qsys/ObjReader.qif>
+
+runtime_class DCDTrajReader extends ObjReader
+{
+  client_hdr "DCDTrajReader.hpp";
+  client_name mdtools::DCDTrajReader;
+
+  scriptable;
+  smartptr;
+
+};
+
+#endif
+

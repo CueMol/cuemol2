@@ -1,0 +1,25 @@
+// -*-Mode: C++;-*-
+//
+// MD trajectory object
+//
+
+#ifndef TRAJECTORY_QIF_INCLUDED
+#define TRAJECTORY_QIF_INCLUDED
+
+#include <qsys/Object.qif>
+#include "TrajBlock.qif"
+
+runtime_class Trajectory extends Object
+{
+  client_hdr "Trajectory.hpp";
+  client_name mdtools::Trajectory;
+
+  scriptable;
+  smartptr;
+
+  void append(object<TrajBlock$> pblk);
+
+};
+
+#endif
+
