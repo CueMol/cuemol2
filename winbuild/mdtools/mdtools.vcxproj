@@ -92,6 +92,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\modules\mdtools\FortBinStream.cpp" />
     <ClCompile Include="..\..\src\modules\mdtools\mdtools.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -100,12 +101,14 @@
     <ClCompile Include="..\..\src\modules\mdtools\NAMDCoorReader.cpp" />
     <ClCompile Include="..\..\src\modules\mdtools\NAMDCoorReader_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\mdtools\PsfReader.cpp" />
+    <ClCompile Include="..\..\src\modules\mdtools\PsfReader_wrap.cpp" />
   </ItemGroup>
   <ItemGroup>
     <mcw_loader Include="..\..\src\modules\mdtools\mdtools.moddef" />
   </ItemGroup>
   <ItemGroup>
     <mcwrapgen3 Include="..\..\src\modules\mdtools\NAMDCoorReader.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\mdtools\PsfReader.qif" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\qlib\qlib.vcxproj">
