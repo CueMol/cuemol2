@@ -49,6 +49,9 @@ namespace molstr {
 
     qfloat32 *getAtomArray();
 
+    void createIndexMap();
+    void createLinearMap();
+
     void updateCrdArray();
 
     void crdArrayChanged() {

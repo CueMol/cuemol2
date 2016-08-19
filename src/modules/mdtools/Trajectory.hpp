@@ -39,6 +39,8 @@ namespace mdtools {
     /// current frame no (frame index; i.e., in-block index)
     int m_nFrmInd;
 
+    bool m_bInit;
+    
   public:
     
     /////////////////////////////////////////////////////

@@ -11,6 +11,9 @@ using namespace mdtools;
 
 Trajectory::Trajectory()
 {
+  m_bInit = false;
+  m_nBlkInd = -1;
+  m_nFrmInd = -1;
 }
 
 Trajectory::~Trajectory()
@@ -43,7 +46,13 @@ void Trajectory::append(TrajBlockPtr pBlk)
   }
   pBlk->setStartIndex(nnext);
   m_blocks.push_back(pBlk);
-  update(0);
+
+  if (!m_bInit) {
+    update(0);
+    createLinearMap();
+    applyTopology();
+    m_bInit = true;
+  }
 
   LOG_DPRINTLN("Traj> append blk start=%d, size=%d", nnext, pBlk->getSize());
 }
@@ -72,6 +81,8 @@ void Trajectory::update(int iframe)
   //qfloat32 *pcrd = pBlk->getCrdArray(ind2);
   m_nBlkInd = ind1;
   m_nFrmInd = ind2;
+
+  crdArrayChanged();
 }
 
 void Trajectory::writeTo2(qlib::LDom2Node *pNode) const

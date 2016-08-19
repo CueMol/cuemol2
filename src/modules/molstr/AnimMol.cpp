@@ -60,6 +60,37 @@ void AnimMol::setAtomArray(int aid, const Vector4D &pos)
   pcrd[ind*3+2] = (float) pos.z();
 }
 
+void AnimMol::createIndexMap()
+{
+  MolArrayMap mam;
+  mam.setup(MolCoordPtr(this));
+  
+  // make index mapping
+  m_indmap.clear();
+  MolArrayMap::const_iterator iter = mam.begin();
+  MolArrayMap::const_iterator eiter = mam.end();
+  for (; iter!=eiter; ++iter) {
+    int aid = iter->first.pA->getID();
+    quint32 ind = iter->second;
+    m_indmap.insert(CrdIndexMap::value_type(aid, ind));
+  }
+}
+
+void AnimMol::createLinearMap()
+{
+  // make index mapping
+  m_indmap.clear();
+
+  AtomIter aiter = beginAtom();
+  AtomIter eiter = endAtom();
+  quint32 ind = 0;
+  for (; aiter!=eiter; ++aiter, ++ind) {
+    int aid = aiter->first;
+    MolAtomPtr pAtom = aiter->second;
+    m_indmap.insert(CrdIndexMap::value_type(aid, ind));
+  }
+}
+
 void AnimMol::updateCrdArray()
 {
   if (m_nValidFlag==CRD_BOTH_VALID)
@@ -68,6 +99,8 @@ void AnimMol::updateCrdArray()
   if (m_nValidFlag==CRD_ATOM_VALID) {
     // copy from atom to array
     // (Update crdarray)
+
+    /*
     MolArrayMap mam;
     mam.setup(MolCoordPtr(this));
     
@@ -80,12 +113,30 @@ void AnimMol::updateCrdArray()
       quint32 ind = iter->second;
       m_indmap.insert(CrdIndexMap::value_type(aid, ind));
     }
-    
+    */
+    createIndexMap();
     // make float array
     quint32 natoms = m_indmap.size();
     //m_crdarray.resize( natoms*3 );
     qfloat32 *pcrd = getCrdArrayImpl();
     
+    AtomIter aiter = beginAtom();
+    AtomIter eiter = endAtom();
+    for (; aiter!=eiter; ++aiter) {
+      int aid = aiter->first;
+      MolAtomPtr pAtom = aiter->second;
+      CrdIndexMap::const_iterator iter = m_indmap.find(aid);
+      if (iter==m_indmap.end())
+        continue; // TO DO: throw exception
+      
+      quint32 ind = iter->second;
+      Vector4D pos = pAtom->getPosCache();
+      pcrd[ind*3+0] = (float) pos.x();
+      pcrd[ind*3+1] = (float) pos.y();
+      pcrd[ind*3+2] = (float) pos.z();
+    }
+
+    /*
     iter = mam.begin();
     for (; iter!=eiter; ++iter) {
       MolAtomPtr pA = iter->first.pA;
@@ -95,7 +146,7 @@ void AnimMol::updateCrdArray()
       pcrd[ind*3+0] = (float) pos.x();
       pcrd[ind*3+1] = (float) pos.y();
       pcrd[ind*3+2] = (float) pos.z();
-    }
+    }*/
     
     LOG_DPRINTLN("CrdArray/IndMap created: natoms=%d", natoms);
     m_nValidFlag=CRD_BOTH_VALID;
@@ -103,11 +154,11 @@ void AnimMol::updateCrdArray()
   else if (m_nValidFlag==CRD_ARRAY_VALID) {
     // copy from array to atom
     qfloat32 *pcrd = getCrdArrayImpl();
-    AtomIter iter = beginAtom();
+    AtomIter aiter = beginAtom();
     AtomIter eiter = endAtom();
-    for (; iter!=eiter; ++iter) {
-      int aid = iter->first;
-      MolAtomPtr pAtom = iter->second;
+    for (; aiter!=eiter; ++aiter) {
+      int aid = aiter->first;
+      MolAtomPtr pAtom = aiter->second;
       CrdIndexMap::const_iterator iter = m_indmap.find(aid);
       if (iter==m_indmap.end())
         continue; // TO DO: throw exception

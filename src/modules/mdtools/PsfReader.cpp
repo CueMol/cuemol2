@@ -104,6 +104,7 @@ bool PsfReader::read(qlib::InStream &ins)
   m_pls = &ls;
 
   MolCoordPtr pMol(getTarget<MolCoord>());
+  // TrajectoryPtr pMol(getTarget<Trajectory>());
 
   // skip header line
   readLine();
