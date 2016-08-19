@@ -2,6 +2,10 @@
 //
 
 #include "NAMDCoorReader.qif"
+#include "DCDTrajReader.qif"
+#include "PsfReader.qif"
+#include "TrajBlock.qif"
+#include "Trajectory.qif"
 
 module mdtools
 {
@@ -9,5 +13,10 @@ module mdtools
   fini mdtools::fini();
 
   NAMDCoorReader;
+  DCDTrajReader;
+  PsfReader;
+  
+  TrajBlock;
+  Trajectory;
 };
 

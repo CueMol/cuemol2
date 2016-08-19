@@ -28,17 +28,20 @@ namespace molstr {
     /// Atom ID --> CrdArray index mapping
     CrdIndexMap m_indmap;
     
-    std::vector<float> m_crdarray;
+    // std::vector<float> m_crdarray;
 
   public:
     AnimMol() : m_nValidFlag(CRD_ATOM_VALID), MolCoord()
     {
     }
 
-    virtual char getCrdValidFlag() const
-    {
-      return m_nValidFlag;
-    }
+    virtual char getCrdValidFlag() const;
+
+    virtual void invalidateCrdArray();
+
+    virtual qfloat32 *getCrdArrayImpl() =0;
+
+    ////////
 
     Vector4D getAtomArray(int aid) const;
 
@@ -54,7 +57,6 @@ namespace molstr {
 
     quint32 getCrdArrayInd(int aid) const;
 
-    virtual void invalidateCrdArray();
 
 
   };

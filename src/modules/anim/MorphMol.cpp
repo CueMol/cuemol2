@@ -43,6 +43,19 @@ void MorphMol::readerDetached()
 }
 */
 
+void MorphMol::invalidateCrdArray()
+{
+  m_crdarray.clear();
+}
+
+qfloat32 *MorphMol::getCrdArrayImpl()
+{
+  int ncrds = getAtomSize() * 3;
+  if (m_crdarray.size()<ncrds)
+    m_crdarray.resize(ncrds);
+  return &m_crdarray[0];
+}
+
 /////////////////////////////////////////////////////
 // Frame data implementation
 

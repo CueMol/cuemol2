@@ -71,6 +71,8 @@ namespace anim {
 
     bool m_bScaleDframe;
 
+    std::vector<float> m_crdarray;
+
   public:
     
     /////////////////////////////////////////////////////
@@ -82,6 +84,9 @@ namespace anim {
     
     /// Detached from ObjReader (i.e. end of loading)
     // virtual void readerDetached();
+
+    virtual void invalidateCrdArray();
+    virtual qfloat32 *getCrdArrayImpl();
 
     /////////////////////////////////////////////////////
     // specific operations

@@ -46,7 +46,7 @@ int FortBinInStream::readRecord(void *buf, int nsize)
 
   char *pp = (char *) buf;
 
-  int nret;
+  int nret = 0;
   if (pp==NULL) {
     // skip all
     int nskip = m_nCurRecSize;

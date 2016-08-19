@@ -6,6 +6,7 @@
 #include <common.h>
 
 #include "PsfReader.hpp"
+#include "Trajectory.hpp"
 #include <qlib/LineStream.hpp>
 
 #include <modules/molstr/MolCoord.hpp>
@@ -52,8 +53,7 @@ const char *PsfReader::getFileExt() const
 
 qsys::ObjectPtr PsfReader::createDefaultObj() const
 {
-  // TO DO: Return new Topology object!!
-  return qsys::ObjectPtr();
+  return qsys::ObjectPtr(MB_NEW Trajectory);
 }
 
 ///////////////////////////////////////////
@@ -103,7 +103,7 @@ bool PsfReader::read(qlib::InStream &ins)
   qlib::LineStream ls(ins);
   m_pls = &ls;
 
-  MolCoordPtr pMol = MolCoordPtr(getTarget<MolCoord>());
+  MolCoordPtr pMol(getTarget<MolCoord>());
 
   // skip header line
   readLine();

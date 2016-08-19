@@ -10,6 +10,8 @@
 #include <qsys/RendererFactory.hpp>
 #include <qsys/StreamManager.hpp>
 #include "NAMDCoorReader.hpp"
+#include "PsfReader.hpp"
+#include "DCDTrajReader.hpp"
 
 extern void mdtools_regClasses();
 extern void mdtools_unregClasses();
@@ -26,6 +28,8 @@ namespace mdtools {
     // register IO handlers
     StreamManager *pSM = StreamManager::getInstance();
     pSM->registWriter<NAMDCoorReader>();
+    pSM->registWriter<PsfReader>();
+    pSM->registWriter<DCDTrajReader>();
 
     MB_DPRINTLN("mdtools init: OK");
     return true;

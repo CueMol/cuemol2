@@ -782,6 +782,13 @@ nsresult XPCObjWrapper::invokeImpl(const char *name, LVarArgs &largs, nsIVariant
                       name, e.getMsg().c_str());
     m_pParent->setErrMsg(e.getMsg());
   }
+  catch (std::exception &e) {
+    ok = false;
+    errmsg = 
+      LString::format("Exception occured in native method \"%s\"\nReason: %s",
+                      name, e.what());
+    m_pParent->setErrMsg(e.what());
+  }
   catch (...) {
     ok = false;
     errmsg = 
