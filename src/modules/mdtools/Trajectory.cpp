@@ -14,6 +14,8 @@ Trajectory::Trajectory()
   m_bInit = false;
   m_nBlkInd = -1;
   m_nFrmInd = -1;
+  m_nTotalFrms = 0;
+  m_nCurFrm = 0;
 }
 
 Trajectory::~Trajectory()
@@ -54,6 +56,8 @@ void Trajectory::append(TrajBlockPtr pBlk)
     m_bInit = true;
   }
 
+  m_nTotalFrms += pBlk->getSize();
+  
   LOG_DPRINTLN("Traj> append blk start=%d, size=%d", nnext, pBlk->getSize());
 }
 
@@ -61,6 +65,7 @@ void Trajectory::update(int iframe)
 {
   int ind1 = 0;
   int ind2 = -1;
+
   TrajBlockPtr pBlk;
   BOOST_FOREACH (TrajBlockPtr pelem, m_blocks) {
     int istart = pelem->getStartIndex();
@@ -75,14 +80,34 @@ void Trajectory::update(int iframe)
 
   if (ind2<0) {
     // ERROR: iframe out of range
+    MB_THROW(qlib::RuntimeException, "update(): iframe out of range");
     return;
   }
 
   //qfloat32 *pcrd = pBlk->getCrdArray(ind2);
+  m_nCurFrm = iframe;
   m_nBlkInd = ind1;
   m_nFrmInd = ind2;
 
   crdArrayChanged();
+  
+  // broadcast modification event
+  fireAtomsMoved();
+}
+
+int Trajectory::getFrame() const
+{
+  return m_nCurFrm;
+}
+
+void Trajectory::setFrame(int ifrm)
+{
+  update(ifrm);
+}
+
+int Trajectory::getFrameSize() const
+{
+  return m_nTotalFrms;
 }
 
 void Trajectory::writeTo2(qlib::LDom2Node *pNode) const

@@ -17,7 +17,15 @@ runtime_class Trajectory extends Object
   scriptable;
   smartptr;
 
+  property integer frame => redirect(getFrame, setFrame) (nopersist);
+  default frame = 0;
+
+  property integer nframe => redirect(getFrameSize, XX) (readonly);
+
+  /////
+
   void append(object<TrajBlock$> pblk);
+
 
 };
 

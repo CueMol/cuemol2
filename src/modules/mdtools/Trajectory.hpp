@@ -63,7 +63,19 @@ namespace mdtools {
 
     void update(int n);
 
-    /////
+    /////////////
+    // properties
+
+  private:
+    int m_nCurFrm;
+  public:
+    int getFrame() const;
+    void setFrame(int ifrm);
+
+  private:
+    int m_nTotalFrms;
+  public:
+    int getFrameSize() const;
 
 
     ////////////////////////////////////////////////////
