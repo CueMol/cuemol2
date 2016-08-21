@@ -425,7 +425,7 @@ void SimpleRenderer::updateVBO(bool bUpdateColor)
   MolCoordPtr pCMol = getClientMol();
   AnimMol *pMol = static_cast<AnimMol *>(pCMol.get());
   
-  qfloat32 *crd = pMol->getAtomArray();
+  qfloat32 *crd = pMol->getAtomCrdArray();
 
   MolAtomPtr pA1, pA2;
 

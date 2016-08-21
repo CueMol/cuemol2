@@ -10,11 +10,14 @@
 
 #include <qlib/mcutils.hpp>
 #include <qsys/ObjReader.hpp>
+#include <molstr/molstr.hpp>
 
 namespace mdtools {
 
-class MolSelection;
-class Trajectory;
+  class MolSelection;
+  class Trajectory;
+
+  using molstr::SelectionPtr;
 
   class MDTOOLS_API DCDTrajReader : public qsys::ObjReader
   {
@@ -31,7 +34,30 @@ class Trajectory;
     // /// atom nums in the file
     // int m_nFileAtoms;
     
+  private:
     int m_nSkip;
+
+  public:
+    int getSkipNo() const {
+      return m_nSkip;
+    }
+      
+    void setSkipNo(int n) {
+      m_nSkip = n;
+    }
+
+  private:
+    SelectionPtr m_pReadSel;
+    
+  public:
+    SelectionPtr getReadSel() const {
+      return m_pReadSel;
+    }
+
+    void setReadSel(SelectionPtr pNewSel)
+    {
+      m_pReadSel = pNewSel;
+    }
 
     ///////////////////////////////////////////
 

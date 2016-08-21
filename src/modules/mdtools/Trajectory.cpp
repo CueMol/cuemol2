@@ -8,6 +8,7 @@
 #include "Trajectory.hpp"
 
 using namespace mdtools;
+using molstr::MolAtomPtr;
 
 Trajectory::Trajectory()
 {
@@ -24,6 +25,10 @@ Trajectory::~Trajectory()
 
 qfloat32 *Trajectory::getCrdArrayImpl()
 {
+  if (m_nBlkInd==-1 || m_nFrmInd==-1) {
+    MB_THROW(qlib::RuntimeException, "getCrdArrayImpl: no data in the trajectory");
+    return NULL;
+  }
   TrajBlockPtr pBlk = m_blocks[m_nBlkInd];
   return pBlk->getCrdArray(m_nFrmInd);
 }
@@ -31,6 +36,28 @@ qfloat32 *Trajectory::getCrdArrayImpl()
 void Trajectory::invalidateCrdArray()
 {
 }
+
+void Trajectory::createIndexMapImpl(CrdIndexMap &indmap, AidIndexMap &aidmap)
+{
+  // make index mapping
+  indmap.clear();
+
+  const int natoms = getAtomSize();
+  aidmap.resize(natoms);
+
+  AtomIter aiter = beginAtom();
+  AtomIter eiter = endAtom();
+  quint32 ind = 0;
+  for (; aiter!=eiter; ++aiter, ++ind) {
+    int aid = aiter->first;
+    MolAtomPtr pAtom = aiter->second;
+    indmap.insert(CrdIndexMap::value_type(aid, ind));
+    aidmap[ind] = aid;
+  }
+}
+
+
+//////////////////////////////////////////
 
 void Trajectory::append(TrajBlockPtr pBlk)
 {
@@ -49,15 +76,17 @@ void Trajectory::append(TrajBlockPtr pBlk)
   pBlk->setStartIndex(nnext);
   m_blocks.push_back(pBlk);
 
+  m_nTotalFrms += pBlk->getSize();
+
   if (!m_bInit) {
     update(0);
-    createLinearMap();
+    updateCrdArray();
+    //createLinearMap();
     applyTopology();
     m_bInit = true;
   }
 
-  m_nTotalFrms += pBlk->getSize();
-  
+
   LOG_DPRINTLN("Traj> append blk start=%d, size=%d", nnext, pBlk->getSize());
 }
 

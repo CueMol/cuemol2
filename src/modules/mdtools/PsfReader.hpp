@@ -21,6 +21,7 @@ namespace mdtools {
 
   using qlib::LString;
   using molstr::MolCoordPtr;
+  using molstr::SelectionPtr;
 
   ///
   ///   CHARMM/NAMD topology file reader class
@@ -30,7 +31,17 @@ namespace mdtools {
     MC_SCRIPTABLE;
 
   private:
-    // MolCoordPtr m_pMol;
+    SelectionPtr m_pReadSel;
+    
+  public:
+    SelectionPtr getReadSel() const {
+      return m_pReadSel;
+    }
+
+    void setReadSel(SelectionPtr pNewSel)
+    {
+      m_pReadSel = pNewSel;
+    }
 
     ///////////////////////////////////////////
   public:

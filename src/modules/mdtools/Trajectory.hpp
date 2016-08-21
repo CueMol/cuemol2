@@ -55,6 +55,8 @@ namespace mdtools {
 
     virtual qfloat32 *getCrdArrayImpl();
 
+    virtual void createIndexMapImpl(CrdIndexMap &indmap, AidIndexMap &aidmap) ;
+
     /////////////////////////////////////////////////////
     // specific operations
     

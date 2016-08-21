@@ -91,7 +91,7 @@ Vector4D MolAtom::getPos() const
 
   // array is valid --> pMol is AnimMol
   AnimMol *pAM = static_cast<AnimMol *>(m_pMol);
-  return pAM->getAtomArray(m_nID);
+  return pAM->getAtomCrd(m_nID);
 }
 
 /// Set Atom position
@@ -106,7 +106,7 @@ void MolAtom::setPos(const Vector4D &vec)
   // update mol's crd array
   AnimMol *pAM = dynamic_cast<AnimMol *>(m_pMol);
   if (pAM!=NULL)
-    pAM->setAtomArray(m_nID, vec);
+    pAM->setAtomCrd(m_nID, vec);
 }
 
 void MolAtom::setParent(MolCoordPtr pMol)

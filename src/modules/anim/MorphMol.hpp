@@ -88,6 +88,8 @@ namespace anim {
     virtual void invalidateCrdArray();
     virtual qfloat32 *getCrdArrayImpl();
 
+    virtual void createIndexMapImpl(CrdIndexMap &indmap, AidIndexMap &aidmap) ;
+
     /////////////////////////////////////////////////////
     // specific operations
     

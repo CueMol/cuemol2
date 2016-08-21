@@ -7,6 +7,7 @@
 #define PSF_READER_QIF_INCLUDED
 
 #include <qsys/ObjReader.qif>
+#include <modules/molstr/SelCommand.qif>
 
 runtime_class PsfReader extends ObjReader
 {
@@ -15,6 +16,8 @@ runtime_class PsfReader extends ObjReader
 
   scriptable;
   smartptr;
+
+  property object<MolSelection$> readsel => redirect(getReadSel, setReadSel);
 
 };
 

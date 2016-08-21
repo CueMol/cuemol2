@@ -9,8 +9,7 @@
 #include "TrajBlock.hpp"
 #include "FortBinStream.hpp"
 #include <qlib/Array.hpp>
-
-// #include <modules/molstr/MolSelection.hpp>
+#include <modules/molstr/Selection.hpp>
 
 using qlib::Array;
 // using qlib::LChar;

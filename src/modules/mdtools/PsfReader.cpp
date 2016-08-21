@@ -16,6 +16,7 @@
 #include <modules/molstr/ResidIterator.hpp>
 #include <modules/molstr/TopparManager.hpp>
 #include <modules/molstr/ElemSym.hpp>
+#include <modules/molstr/Selection.hpp>
 
 using namespace mdtools;
 using namespace molstr;

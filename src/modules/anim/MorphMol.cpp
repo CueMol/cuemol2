@@ -56,6 +56,26 @@ qfloat32 *MorphMol::getCrdArrayImpl()
   return &m_crdarray[0];
 }
 
+void MorphMol::createIndexMapImpl(CrdIndexMap &indmap, AidIndexMap &aidmap)
+{
+  indmap.clear();
+
+  MolArrayMap mam;
+  mam.setup(MolCoordPtr(this));
+  const int natoms = getAtomSize();
+  
+  // make index mapping
+  aidmap.resize(natoms);
+  MolArrayMap::const_iterator iter = mam.begin();
+  MolArrayMap::const_iterator eiter = mam.end();
+  for (; iter!=eiter; ++iter) {
+    int aid = iter->first.pA->getID();
+    quint32 ind = iter->second;
+    indmap.insert(CrdIndexMap::value_type(aid, ind));
+    aidmap[ind] = aid;
+  }
+}
+
 /////////////////////////////////////////////////////
 // Frame data implementation
 
@@ -471,7 +491,7 @@ void MorphMol::update(double dframe)
 
   int ncrd = m_nAtoms*3;
   //PosArray curtmp(ncrd);
-  qfloat32 *curtmp = getAtomArray();
+  qfloat32 *curtmp = getAtomCrdArray();
   crdArrayChanged();
 
   if (ifrm==m_frames.size()-1 || qlib::isNear4(rho, 0.0) ) {
