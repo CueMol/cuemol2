@@ -181,8 +181,16 @@ void DCDTrajReader::readBody(qlib::InStream &ins)
 
   int nread = m_nfile/m_nSkip;
   LOG_DPRINTLN("DCDTraj> Read %d frames (skip=%d)", nread, m_nSkip);
-  
-  pTraj->allocate(m_natom, nread);
+  double dmem = double(m_natom*3*sizeof(qfloat32)*nread)/1024.0/1024.0;
+
+  try {
+    pTraj->allocate(m_natom, nread);
+  }
+  catch (std::exception &e) {
+    LOG_DPRINTLN("DCDTraj> Mem alloc %f Mbytes failed: %s", dmem, e.what());
+    throw e;
+  }
+  LOG_DPRINTLN("DCDTraj> Alloc %f Mbytes", dmem);
 
   int jj, istep, nrlen;
   std::vector<float> tmpv(m_natom);

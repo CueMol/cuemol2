@@ -23,6 +23,7 @@
 
 using namespace molstr;
 using qlib::Vector4D;
+using qlib::Vector3F;
 using gfx::ColorPtr;
 
 // Use OpenGL VBO implementation
@@ -61,6 +62,8 @@ void SimpleRenderer::attachObj(qlib::uid_t obj_uid)
     m_bUseVBO = false;
   else
     m_bUseVBO = true;
+
+  LOG_DPRINTLN("SimpleRenderer> UseVBO = %d", m_bUseVBO);
 }
 
 /////////////////////////
@@ -431,7 +434,7 @@ void SimpleRenderer::updateVBO(bool bUpdateColor)
 
   // ColorPtr pcol1, pcol2;
   quint32 cc1, cc2;
-  Vector4D midpos, pos1, pos2;
+  Vector3F midpos, pos1, pos2, dvd;
   quint32 aid1, aid2;
 
   // Single bonds
@@ -439,11 +442,6 @@ void SimpleRenderer::updateVBO(bool bUpdateColor)
     aid1 = m_sbonds[i].ind1;
     aid2 = m_sbonds[i].ind2;
     j = m_sbonds[i].vaind;
-
-    // pA1 = pMol->getAtom(aid1);
-    // pA2 = pMol->getAtom(aid2);
-    // pos1 = pA1->getPos();
-    // pos2 = pA2->getPos();
 
     switch (m_sbonds[i].itype) {
     case IBON_1C_1V:
@@ -454,8 +452,11 @@ void SimpleRenderer::updateVBO(bool bUpdateColor)
       break;
 
     case IBON_2C_1V: {
-      midpos = (Vector4D(crd[aid1+0],crd[aid1+1],crd[aid1+2])+
-                Vector4D(crd[aid2+0],crd[aid2+1],crd[aid2+2])).divide(2.0);
+      // calc mid point
+      midpos.set(&crd[aid1]);
+      midpos.addSelf(&crd[aid2]);
+      midpos.divideSelf(2.0f);
+
       m_pVBO->vertex(j, &crd[aid1]);
       ++j;
       m_pVBO->vertex(j, midpos);
@@ -478,12 +479,9 @@ void SimpleRenderer::updateVBO(bool bUpdateColor)
     aid2 = m_mbonds[i].ind2;
     j = m_mbonds[i].vaind;
 
-    // pA1 = pMol->getAtom(aid1);
-    // pA2 = pMol->getAtom(aid2);
-    
-    pos1 = Vector4D(crd[aid1+0],crd[aid1+1],crd[aid1+2]);
-    pos2 = Vector4D(crd[aid2+0],crd[aid2+1],crd[aid2+2]);
-    Vector4D dvd(m_mbonds[i].nx, m_mbonds[i].ny, m_mbonds[i].nz);
+    pos1 = Vector3F(&crd[aid1]);
+    pos2 = Vector3F(&crd[aid2]);
+    dvd = Vector3F(m_mbonds[i].nx, m_mbonds[i].ny, m_mbonds[i].nz);
 
     switch (m_mbonds[i].itype) {
     case IBON_1C_2V: {
@@ -498,7 +496,9 @@ void SimpleRenderer::updateVBO(bool bUpdateColor)
       break;
     }
     case IBON_2C_2V: {
-      midpos = (pos1+pos2).divide(2.0);
+      midpos.set(&crd[aid1]);
+      midpos.addSelf(&crd[aid2]);
+      midpos.divideSelf(2.0f);
 
       m_pVBO->vertex(j, pos1 + dvd.scale(m_dCvScl1));
       ++j;
@@ -537,7 +537,9 @@ void SimpleRenderer::updateVBO(bool bUpdateColor)
       break;
     }
     case IBON_2C_3V: {
-      midpos = (pos1+pos2).divide(2.0);
+      midpos.set(&crd[aid1]);
+      midpos.addSelf(&crd[aid2]);
+      midpos.divideSelf(2.0f);
 
       m_pVBO->vertex(j, pos1);
       ++j;
@@ -575,29 +577,41 @@ void SimpleRenderer::updateVBO(bool bUpdateColor)
   // Isolated atoms
   
   // size of the star
-  const double rad = 0.25;
-  const Vector4D xdel(rad,0,0);
-  const Vector4D ydel(0,rad,0);
-  const Vector4D zdel(0,0,rad);
+  const qfloat32 rad = 0.25;
+  const qfloat32 rad2 = rad*2.0f;
+
+  //const Vector3F xdel(rad,0,0);
+  //const Vector3F ydel(0,rad,0);
+  //const Vector3F zdel(0,0,rad);
 
   for (i=0; i<natoms; ++i) {
     quint32 aid1 = m_atoms[i].ind1;
     quint32 j = m_atoms[i].vaind;
 
     // MolAtomPtr pA1 = pMol->getAtom(aid1);
-    Vector4D pos1 = Vector4D(crd[aid1+0],crd[aid1+1],crd[aid1+2]);
+    pos1.set(&crd[aid1]);
 
-    m_pVBO->vertex(j, pos1-xdel);
+    pos1.x() -= rad;
+    m_pVBO->vertex(j, pos1);
     ++j;
-    m_pVBO->vertex(j, pos1+xdel);
+    pos1.x() += rad2;
+    m_pVBO->vertex(j, pos1);
+    pos1.x() -= rad;
     ++j;
-    m_pVBO->vertex(j, pos1-ydel);
+
+    pos1.y() -= rad;
+    m_pVBO->vertex(j, pos1);
     ++j;
-    m_pVBO->vertex(j, pos1+ydel);
+    pos1.y() += rad2;
+    m_pVBO->vertex(j, pos1);
     ++j;
-    m_pVBO->vertex(j, pos1-zdel);
+    pos1.y() -= rad;
+
+    pos1.z() -= rad;
+    m_pVBO->vertex(j, pos1);
     ++j;
-    m_pVBO->vertex(j, pos1+zdel);
+    pos1.z() += rad2;
+    m_pVBO->vertex(j, pos1);
     ++j;
   }
 

@@ -23,7 +23,7 @@
 #  include <xmlrpc_bridge/XmlRpcMgr.hpp>
 #endif
 
-// #define USE_PERFTIMER 1
+#define USE_PERFTIMER 1
 
 #ifdef USE_PERFTIMER
 #  include <boost/timer/timer.hpp>

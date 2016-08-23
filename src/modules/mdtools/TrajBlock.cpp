@@ -15,6 +15,7 @@ TrajBlock::TrajBlock()
 
 TrajBlock::~TrajBlock()
 {
+  clear();
 }
 
 void TrajBlock::allocate(int natom, int nsize)
@@ -22,6 +23,20 @@ void TrajBlock::allocate(int natom, int nsize)
   m_nCrds = natom * 3;
   m_nSize = nsize;
 
-  m_data.resize(m_nCrds * m_nSize);
+  //m_data.allocate(m_nCrds * m_nSize);
+  m_data.allocate(m_nSize);
+  for (int i=0; i<m_nSize; ++i) {
+    m_data[i] = MB_NEW PosArray();
+    m_data[i]->allocate(m_nCrds);
+  }
+}
+
+void TrajBlock::clear()
+{
+  for (int i=0; i<m_nSize; ++i) {
+    delete m_data[i];
+  }
+  //m_data.clear();
+  m_data.destroy();
 }
 

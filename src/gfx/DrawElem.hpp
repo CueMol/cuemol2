@@ -8,12 +8,14 @@
 
 #include "gfx.hpp"
 #include <qlib/Vector4D.hpp>
+#include <qlib/Vector3F.hpp>
 #include <qlib/LTypes.hpp>
 #include "SolidColor.hpp"
 
 namespace gfx {
 
   using qlib::Vector4D;
+  using qlib::Vector3F;
   
   class GFX_API VBORep
   {
@@ -134,7 +136,11 @@ namespace gfx {
 
     virtual bool vertex(int ind, const Vector4D &v) =0;
 
-    virtual bool vertex(int ind, qfloat32 *pcrd);
+    virtual bool vertex(int ind, const qfloat32 *pcrd);
+
+    inline bool vertex(int ind, const Vector3F &v) {
+      return vertex(ind, v.getData());
+    }
 
     //bool color(int ind, const ColorPtr &c) {
     //return color(ind, c->getCode());
@@ -186,11 +192,15 @@ namespace gfx {
     virtual void alloc(int nsize);
 
     virtual bool vertex(int ind, const Vector4D &v);
-    virtual bool vertex(int ind, qfloat32 *pcrd);
+    virtual bool vertex(int ind, const qfloat32 *pcrd);
 
     virtual bool color(int ind, quint32 cc);
 
     bool getVertex(int ind, Vector4D &v) const;
+
+    inline bool vertex(int ind, const Vector3F &v) {
+      return vertex(ind, v.getData());
+    }
 
   private:
       Elem *m_pData;

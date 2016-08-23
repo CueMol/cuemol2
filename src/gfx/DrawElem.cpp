@@ -62,7 +62,7 @@ bool DrawElem::color(int ind, quint32 c)
   return false;
 }
 
-bool DrawElem::vertex(int ind, qfloat32 *pcrd)
+bool DrawElem::vertex(int ind, const qfloat32 *pcrd)
 {
   return vertex(ind, Vector4D(pcrd[0],
                               pcrd[1],
@@ -100,7 +100,7 @@ bool DrawElemVC::vertex(int ind, const Vector4D &v)
   return true;
 }
 
-bool DrawElemVC::vertex(int ind, qfloat32 *pcrd)
+bool DrawElemVC::vertex(int ind, const qfloat32 *pcrd)
 {
   if (ind<0 || getSize()<=ind) return false;
 

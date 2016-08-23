@@ -23,10 +23,13 @@ namespace mdtools {
     // LString m_altsrc;
     // LString m_srctype;
     
-    typedef std::vector<float> PosArray;
+    //typedef std::vector<float> PosArray;
+    typedef qlib::Array<qfloat32> PosArray;
+
+    typedef qlib::Array<PosArray *> data_t;
 
     /// coordinates array (m_nCrds*m_nSize)
-    PosArray m_data;
+    data_t m_data;
     
     /// start frame index of this block
     int m_nIndex;
@@ -47,13 +50,19 @@ namespace mdtools {
     /// Allocate coord array (natom x nsize frames)
     void allocate(int natom, int nsize);
 
+    void clear();
+
     /// get coordinate array pointer of the specified frame
     qfloat32 *getCrdArray(int ifrm) {
       MB_ASSERT(0<=ifrm);
       MB_ASSERT(ifrm<m_nSize);
-      const int ind = m_nCrds * ifrm;
-      MB_ASSERT(ind<m_data.size());
-      return &m_data[ind];
+
+      PosArray *p = m_data[ifrm];
+      return &(*p)[0];
+
+      //const int ind = m_nCrds * ifrm;
+      //MB_ASSERT(ind<m_data.size());
+      //return &m_data[ind];
     }
     
     void setStartIndex(int n) {
