@@ -46,19 +46,6 @@ namespace mdtools {
       m_nSkip = n;
     }
 
-  private:
-    SelectionPtr m_pReadSel;
-    
-  public:
-    SelectionPtr getReadSel() const {
-      return m_pReadSel;
-    }
-
-    void setReadSel(SelectionPtr pNewSel)
-    {
-      m_pReadSel = pNewSel;
-    }
-
     ///////////////////////////////////////////
 
   public:

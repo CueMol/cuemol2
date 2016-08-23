@@ -7,6 +7,7 @@
 
 #include "DCDTrajReader.hpp"
 #include "TrajBlock.hpp"
+#include "Trajectory.hpp"
 #include "FortBinStream.hpp"
 #include <qlib/Array.hpp>
 #include <modules/molstr/Selection.hpp>
@@ -51,8 +52,8 @@ const char *DCDTrajReader::getFileExt() const
 
 qsys::ObjectPtr DCDTrajReader::createDefaultObj() const
 {
-  //return qsys::ObjectPtr();
-  return qsys::ObjectPtr(MB_NEW TrajBlock());
+  return qsys::ObjectPtr();
+  // return qsys::ObjectPtr(MB_NEW TrajBlock());
 }
 
 ///////////////////////////////////////////
@@ -69,6 +70,8 @@ bool DCDTrajReader::read(qlib::InStream &ins)
 
 void DCDTrajReader::readHeader(qlib::InStream &ins)
 {
+  TrajectoryPtr pTraj( getTarget<Trajectory>() );
+
   int i;
   int nrlen;
 
@@ -161,6 +164,7 @@ void DCDTrajReader::readHeader(qlib::InStream &ins)
   m_nfile = nfile;
   m_fcell = fcell?true:false;
   
+
 /*
   // check consistency with m_pTraj
   if (natom!=pTraj->getAllAtomNo()) {
@@ -175,7 +179,8 @@ void DCDTrajReader::readHeader(qlib::InStream &ins)
 
 void DCDTrajReader::readBody(qlib::InStream &ins)
 {
-  TrajBlockPtr pTraj( getTarget<TrajBlock>() );
+  TrajectoryPtr pTraj( getTarget<Trajectory>() );
+  TrajBlockPtr pTB(MB_NEW TrajBlock);
   
   FortBinInStream fbis(ins);
 
@@ -184,7 +189,7 @@ void DCDTrajReader::readBody(qlib::InStream &ins)
   double dmem = double(m_natom*3*sizeof(qfloat32)*nread)/1024.0/1024.0;
 
   try {
-    pTraj->allocate(m_natom, nread);
+    pTB->allocate(m_natom, nread);
   }
   catch (std::exception &e) {
     LOG_DPRINTLN("DCDTraj> Mem alloc %f Mbytes failed: %s", dmem, e.what());
@@ -215,7 +220,7 @@ void DCDTrajReader::readBody(qlib::InStream &ins)
   for (istep=0; istep<m_nfile; ++istep) {
     // MB_DPRINTLN("reading %d/%d", istep, nfile);
     if (istep%m_nSkip==0)
-      pcoord = pTraj->getCrdArray(nInd);
+      pcoord = pTB->getCrdArray(nInd);
     else
       pcoord = NULL;
 
@@ -305,5 +310,7 @@ void DCDTrajReader::readBody(qlib::InStream &ins)
     if (pcoord!=NULL)
       nInd ++;
   }
+
+  pTraj->append(pTB);
 }
 

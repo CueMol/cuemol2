@@ -100,12 +100,14 @@ ElemID convMassElem(double mass)
 // read from stream
 bool PsfReader::read(qlib::InStream &ins)
 {
+  bool bUseSel = !m_pReadSel.isnull();
+
   int i, ires;
   qlib::LineStream ls(ins);
   m_pls = &ls;
 
   MolCoordPtr pMol(getTarget<MolCoord>());
-  // TrajectoryPtr pMol(getTarget<Trajectory>());
+  TrajectoryPtr pTraj(pMol, qlib::no_throw_tag());
 
   // skip header line
   readLine();
@@ -131,7 +133,8 @@ bool PsfReader::read(qlib::InStream &ins)
   readLine();
 
   ///////////////////
-  // read atoms
+
+  // Read NATOM
   readLine();
   removeComment();
 
@@ -142,10 +145,20 @@ bool PsfReader::read(qlib::InStream &ins)
   MB_DPRINTLN("natoms=%d", m_natom);
   
   LString stmp;
+  quint32 iatom;
 
+  // Read atoms
   for (i=0; i<m_natom; ++i) {
     readLine();
     // LOG_DPRINTLN("%s", m_line.c_str());
+
+    stmp = m_line.substr(0, 8);
+    stmp = stmp.trim(" ");
+    if (!stmp.toNum<quint32>(&iatom)) {
+      LString msg = LString::format("cannot convert atom number: %s", stmp.c_str());
+      MB_THROW(qlib::FileFormatException, msg);
+      return false;
+    }
 
     // chain name
     stmp = m_line.substr(9, 3);
@@ -201,16 +214,30 @@ bool PsfReader::read(qlib::InStream &ins)
     //(*pAtoms)[i].resid,
     //(*pAtoms)[i].chain.c_str());
 
-    MolAtomPtr pAtom = MolAtomPtr(MB_NEW MolAtom());
-    //pAtom->setParentUID(pMol->getUID());
-    pAtom->setParent(pMol);
+    MolAtomPtr pAtom(MB_NEW MolAtom());
+
     pAtom->setName(name);
     pAtom->setElement(eleid);
     pAtom->setChainName(chain);
     pAtom->setResIndex(residx);
     pAtom->setResName(resn);
     
-    if (pMol->appendAtom(pAtom)<0) {
+    if (bUseSel) {
+      bool bsel = true;
+      try {
+        if (m_pReadSel->isSelected(pAtom)) {
+          // non selected atom for reading --> skip
+          continue;
+        }
+      }
+      catch (...) {
+        LOG_DPRINTLN("PsfRead> read selection <%s> cannot be used.", m_pReadSel->toString().c_str());
+        bUseSel = false;
+      }
+    }
+
+    int aid = pMol->appendAtom(pAtom);
+    if (aid<0) {
       LString stmp = m_line;
       stmp = stmp.chomp();
       // stmp = stmp.toUpperCase();
@@ -218,9 +245,16 @@ bool PsfReader::read(qlib::InStream &ins)
       // if (m_nErrCount<m_nErrMax)
       LOG_DPRINTLN("PsfReader> read ATOM line failed: %s", stmp.c_str());
     }
-    
+    else if (!pTraj.isnull()) {
+      pTraj->appendSelIndex(aid, iatom);
+    }
   }
   readLine();
+
+  if (!pTraj.isnull()) {
+    pTraj->setupSelIndexArray();
+  }
+
 
   return true;
 }

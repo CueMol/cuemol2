@@ -139,6 +139,26 @@ int Trajectory::getFrameSize() const
   return m_nTotalFrms;
 }
 
+void Trajectory::appendSelIndex(quint32 aid, quint32 iatom)
+{
+  m_siatmp.insert(std::pair<quint32, quint32>(aid, iatom));
+}
+
+void Trajectory::setupSelIndexArray()
+{
+  typedef std::map<quint32, quint32>::value_type mapelem_t;
+  m_selIndArray.resize( m_siatmp.size() );
+  quint32 i=0;
+  BOOST_FOREACH (const mapelem_t &elem, m_siatmp) {
+    m_selIndArray[i] = elem.second;
+    ++i;
+  }
+  m_siatmp.clear();
+}
+
+
+///////////////////////////////////////////////////////
+
 void Trajectory::writeTo2(qlib::LDom2Node *pNode) const
 {
 }

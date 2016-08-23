@@ -50,6 +50,9 @@ namespace mdtools {
     
     virtual ~Trajectory();
     
+    /////////////////////
+    // AnimMol interface
+
     /// topology structure was changed: this should not be called!!
     virtual void invalidateCrdArray();
 
@@ -65,8 +68,19 @@ namespace mdtools {
 
     void update(int n);
 
-    /////////////
+  private:
+    std::vector<quint32> m_selIndArray;
+    
+    std::map<quint32, quint32> m_siatmp;
+
+  public:
+    void appendSelIndex(quint32 aid, quint32 iatom);
+    void setupSelIndexArray();
+
+    /////////////////////////////////////////////////////
     // properties
+
+    ////
 
   private:
     int m_nCurFrm;
@@ -80,9 +94,18 @@ namespace mdtools {
     int getFrameSize() const;
 
 
+  private:
+    int m_nAllAtomNo;
+    
+  public:
+    int getAllAtomNo() const {
+      return m_nAllAtomNo;
+    }
+
     ////////////////////////////////////////////////////
     // Serialization/Deserialization
 
+  public:
     virtual void writeTo2(qlib::LDom2Node *pNode) const;
     virtual void readFrom2(qlib::LDom2Node *pNode);
 

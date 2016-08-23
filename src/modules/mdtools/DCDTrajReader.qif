@@ -19,7 +19,7 @@ runtime_class DCDTrajReader extends ObjReader
 
   property integer nevery => redirect(getSkipNo, setSkipNo);
 
-  property object<MolSelection$> readsel => redirect(getReadSel, setReadSel);
+  // property object<MolSelection$> readsel => redirect(getReadSel, setReadSel);
 
 
 };
