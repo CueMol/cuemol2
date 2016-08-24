@@ -22,7 +22,7 @@ Trajectory::Trajectory()
   m_nTotalFrms = 0;
   m_nCurFrm = 0;
 
-  m_pAllMol = MolCoordPtr(MB_NEW MolCoord());
+  // m_pAllMol = MolCoordPtr(MB_NEW MolCoord());
 }
 
 Trajectory::~Trajectory()
@@ -32,6 +32,16 @@ Trajectory::~Trajectory()
 /// Append a new atom.
 int Trajectory::appendAtom(MolAtomPtr pAtom)
 {
+  if (super_t::getAtomSize()!=0) {
+    // already constructed --> cannot append new atoms
+    MB_THROW(qlib::RuntimeException, "Trajectory: appendAtom to created traj not supported");
+    return -1;
+  }
+  
+  if (m_pAllMol.isnull()) {
+    m_pAllMol = MolCoordPtr(MB_NEW MolCoord());
+    m_pAllMol->setSceneID(getSceneID());
+  }
   return m_pAllMol->appendAtom(pAtom);
 }
 
@@ -44,6 +54,12 @@ bool Trajectory::removeAtom(int atomid)
 
 void Trajectory::createMol(SelectionPtr pSel)
 {
+  if (super_t::getAtomSize()!=0) {
+    // already constructed --> cannot append new atoms
+    MB_THROW(qlib::RuntimeException, "Trajectory: appendAtom to created traj not supported");
+    return;
+  }
+
   m_pAllMol->applyTopology();
   
   std::deque<int> aidmap;
@@ -126,6 +142,7 @@ void Trajectory::append(TrajBlockPtr pBlk)
     nnext = pLast->getStartIndex() + pLast->getSize();
   }
   pBlk->setStartIndex(nnext);
+  pBlk->setSceneID(getSceneID());
   m_blocks.push_back(pBlk);
 
   m_nTotalFrms += pBlk->getSize();
@@ -137,7 +154,6 @@ void Trajectory::append(TrajBlockPtr pBlk)
     applyTopology();
     m_bInit = true;
   }
-
 
   LOG_DPRINTLN("Traj> append blk start=%d, size=%d", nnext, pBlk->getSize());
 }
@@ -193,8 +209,21 @@ int Trajectory::getFrameSize() const
 
 ///////////////////////////////////////////////////////
 
+using qlib::LDom2Node;
+
 void Trajectory::writeTo2(qlib::LDom2Node *pNode) const
 {
+  super_t::writeTo2(pNode);
+
+  LDom2Node *pFSNode = pNode->appendChild("frames");
+
+  int nblks = m_blocks.size();
+  for (int i=0; i<nblks; ++i) {
+    TrajBlockPtr pBlk = m_blocks[i];
+    
+    LDom2Node *pCCNode = pFSNode->appendChild("frame");
+    pBlk->writeTo2(pCCNode);
+  }
 }
 
 void Trajectory::readFrom2(qlib::LDom2Node *pNode)
