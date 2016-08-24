@@ -18,6 +18,7 @@ runtime_class DCDTrajReader extends ObjReader
   smartptr;
 
   property integer nevery => redirect(getSkipNo, setSkipNo);
+  default nevery = 1;
 
   property object<Trajectory$> targ_traj => redirect(getTargTraj, setTargTraj) (nopersist);
 

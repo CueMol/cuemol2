@@ -215,19 +215,40 @@ void Trajectory::writeTo2(qlib::LDom2Node *pNode) const
 {
   super_t::writeTo2(pNode);
 
-  LDom2Node *pFSNode = pNode->appendChild("frames");
+  LDom2Node *pFSNode = pNode->appendChild("trajfiles");
 
   int nblks = m_blocks.size();
   for (int i=0; i<nblks; ++i) {
     TrajBlockPtr pBlk = m_blocks[i];
     
-    LDom2Node *pCCNode = pFSNode->appendChild("frame");
+    LDom2Node *pCCNode = pFSNode->appendChild("trajfile");
     pBlk->writeTo2(pCCNode);
   }
 }
 
 void Trajectory::readFrom2(qlib::LDom2Node *pNode)
 {
+  super_t::readFrom2(pNode);
+
+  LDom2Node *pFSNode = pNode->findChild("trajfiles");
+  if (pFSNode==NULL)
+    return;
+
+  for (pFSNode->firstChild(); pFSNode->hasMoreChild(); pFSNode->nextChild()) {
+    LDom2Node *pChNode = pFSNode->getCurChild();
+    LString tag = pChNode->getTagName();
+
+    if (tag.equals("trajfile")) {
+      TrajBlockPtr pobj(MB_NEW TrajBlock());
+      pobj->readFrom2(pChNode);
+      append(pobj);
+    }
+    else {
+      // Unknown tag --> ignore??
+      MB_DPRINTLN("Unknown tag: %s", tag.c_str());
+    }
+  }
+
 }
 
 void Trajectory::readFromStream(qlib::InStream &ins)
