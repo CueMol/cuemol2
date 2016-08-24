@@ -24,8 +24,8 @@ namespace mdtools {
     MC_SCRIPTABLE;
 
   private:
-    // /// target trajectory object
-    // Trajectory *m_pTraj;
+    /// target trajectory object
+    TrajectoryPtr m_pTraj;
     
     // MolSelection *m_pSel;
     
@@ -80,8 +80,9 @@ namespace mdtools {
     
     /////////////////////////////////////////////////////
     
-    // /// set selection to read
-    // void setSelToRead(const MolSelection *psel);
+    TrajectoryPtr getTargTraj() const { return m_pTraj; }
+    void setTargTraj(const TrajectoryPtr &p) { m_pTraj = p; }
+
     
   private:
     int m_natom;

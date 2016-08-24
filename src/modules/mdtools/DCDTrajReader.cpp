@@ -52,8 +52,8 @@ const char *DCDTrajReader::getFileExt() const
 
 qsys::ObjectPtr DCDTrajReader::createDefaultObj() const
 {
-  return qsys::ObjectPtr();
-  // return qsys::ObjectPtr(MB_NEW TrajBlock());
+  //return qsys::ObjectPtr();
+  return qsys::ObjectPtr(MB_NEW TrajBlock());
 }
 
 ///////////////////////////////////////////
@@ -70,7 +70,8 @@ bool DCDTrajReader::read(qlib::InStream &ins)
 
 void DCDTrajReader::readHeader(qlib::InStream &ins)
 {
-  TrajectoryPtr pTraj( getTarget<Trajectory>() );
+  TrajBlockPtr pTrajBlk( getTarget<TrajBlock>() );
+  TrajectoryPtr pTraj = m_pTraj;
 
   int i;
   int nrlen;
@@ -177,8 +178,8 @@ void DCDTrajReader::readHeader(qlib::InStream &ins)
 
 void DCDTrajReader::readBody(qlib::InStream &ins)
 {
-  TrajectoryPtr pTraj( getTarget<Trajectory>() );
-  TrajBlockPtr pTB(MB_NEW TrajBlock);
+  TrajBlockPtr pTB( getTarget<TrajBlock>() );
+  TrajectoryPtr pTraj = m_pTraj;
   
   FortBinInStream fbis(ins);
 
