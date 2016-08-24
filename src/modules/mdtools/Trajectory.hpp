@@ -15,6 +15,8 @@
 namespace mdtools {
 
   using molstr::MolCoordPtr;
+  using molstr::MolAtomPtr;
+  using molstr::SelectionPtr;
 
   ///
   /// MD trajectory object class
@@ -41,6 +43,7 @@ namespace mdtools {
 
     bool m_bInit;
     
+
   public:
     
     /////////////////////////////////////////////////////
@@ -49,6 +52,12 @@ namespace mdtools {
     Trajectory();
     
     virtual ~Trajectory();
+    
+    /// Append a new atom.
+    virtual int appendAtom(MolAtomPtr pAtom);
+
+    /// Remove an atom by atom ID
+    virtual bool removeAtom(int atomid);
     
     /////////////////////
     // AnimMol interface
@@ -69,13 +78,22 @@ namespace mdtools {
     void update(int n);
 
   private:
+    MolCoordPtr m_pAllMol;
+    SelectionPtr m_pReadSel;
     std::vector<quint32> m_selIndArray;
     
-    std::map<quint32, quint32> m_siatmp;
-
   public:
-    void appendSelIndex(quint32 aid, quint32 iatom);
-    void setupSelIndexArray();
+
+    /// create molecule from the appended atoms and selection
+    void createMol(SelectionPtr pSel);
+
+    quint32 getAllAtomSize() const {
+      return m_pAllMol->getAtomSize();
+    }
+
+    const quint32 *getSelIndexArray() const {
+      return &m_selIndArray[0];
+    }
 
     /////////////////////////////////////////////////////
     // properties

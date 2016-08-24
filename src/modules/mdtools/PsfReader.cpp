@@ -100,8 +100,6 @@ ElemID convMassElem(double mass)
 // read from stream
 bool PsfReader::read(qlib::InStream &ins)
 {
-  bool bUseSel = !m_pReadSel.isnull();
-
   int i, ires;
   qlib::LineStream ls(ins);
   m_pls = &ls;
@@ -222,20 +220,6 @@ bool PsfReader::read(qlib::InStream &ins)
     pAtom->setResIndex(residx);
     pAtom->setResName(resn);
     
-    if (bUseSel) {
-      bool bsel = true;
-      try {
-        if (m_pReadSel->isSelected(pAtom)) {
-          // non selected atom for reading --> skip
-          continue;
-        }
-      }
-      catch (...) {
-        LOG_DPRINTLN("PsfRead> read selection <%s> cannot be used.", m_pReadSel->toString().c_str());
-        bUseSel = false;
-      }
-    }
-
     int aid = pMol->appendAtom(pAtom);
     if (aid<0) {
       LString stmp = m_line;
@@ -245,14 +229,11 @@ bool PsfReader::read(qlib::InStream &ins)
       // if (m_nErrCount<m_nErrMax)
       LOG_DPRINTLN("PsfReader> read ATOM line failed: %s", stmp.c_str());
     }
-    else if (!pTraj.isnull()) {
-      pTraj->appendSelIndex(aid, iatom);
-    }
   }
   readLine();
 
   if (!pTraj.isnull()) {
-    pTraj->setupSelIndexArray();
+    pTraj->createMol(m_pReadSel);
   }
 
 

@@ -151,20 +151,18 @@ namespace molstr {
 
     /////////////////////////////////////////////////////
 
-    ///
     /// Append a new atom.
-    /// pAtom should contain enough information,
-    /// i.e. chain, residue, name, element, etc.
-    /// The atom ID will be set after successfull addition.
-    ///
-    int appendAtom(MolAtomPtr pAtom);
+    ///   pAtom should contain enough information,
+    ///   i.e. chain, residue, name, element, etc.
+    ///   The atom ID will be set after successfull addition.
+    virtual int appendAtom(MolAtomPtr pAtom);
 
     int appendAtomScrHelper(MolAtomPtr pAtom, const LString &ch,
 			    ResidIndex resid, const LString &resn);
     int appendAtomScr1(MolAtomPtr pAtom, const LString &ch, int nresid, const LString &resn);
 
     /// Remove an atom by atom ID
-    bool removeAtom(int atomid);
+    virtual bool removeAtom(int atomid);
   
     /// Bond two atoms.
     /// In the inter-residue bond case,

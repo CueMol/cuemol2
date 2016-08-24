@@ -164,17 +164,15 @@ void DCDTrajReader::readHeader(qlib::InStream &ins)
   m_nfile = nfile;
   m_fcell = fcell?true:false;
   
-
-/*
   // check consistency with m_pTraj
-  if (natom!=pTraj->getAllAtomNo()) {
+  if (natom!=pTraj->getAllAtomSize()) {
     LString msg =
       LString::format("DCD: Inconsistent NATOM with param %d!=%d",
-		      natom, m_pTraj->getAllAtomNo());
+		      natom, pTraj->getAllAtomNo());
     LOG_DPRINTLN("%s ",msg.c_str());
-    return false;
+    return;
   }
-*/
+
 }
 
 void DCDTrajReader::readBody(qlib::InStream &ins)
@@ -188,8 +186,10 @@ void DCDTrajReader::readBody(qlib::InStream &ins)
   LOG_DPRINTLN("DCDTraj> Read %d frames (skip=%d)", nread, m_nSkip);
   double dmem = double(m_natom*3*sizeof(qfloat32)*nread)/1024.0/1024.0;
 
+  quint32 nReadAtoms = pTraj->getAtomSize();
+
   try {
-    pTB->allocate(m_natom, nread);
+    pTB->allocate(nReadAtoms, nread);
   }
   catch (std::exception &e) {
     LOG_DPRINTLN("DCDTraj> Mem alloc %f Mbytes failed: %s", dmem, e.what());
@@ -198,7 +198,7 @@ void DCDTrajReader::readBody(qlib::InStream &ins)
   LOG_DPRINTLN("DCDTraj> Alloc %f Mbytes", dmem);
 
   int jj, istep, nrlen;
-  std::vector<float> tmpv(m_natom);
+  std::vector<float> tmpv(m_natom * 3);
   
   std::vector<double> *pEng[6];
   /*
@@ -260,12 +260,7 @@ void DCDTrajReader::readBody(qlib::InStream &ins)
       MB_THROW(qlib::FileFormatException, msg);
       return;
     }
-    fbis.readRecord(&tmpv[0], //const_cast<float *>(pTmp->data()),
-                    sizeof(float)*m_natom);
-    
-    if (pcoord!=NULL)
-      for (jj=0; jj<m_natom; ++jj)
-        pcoord[jj*3+0] = tmpv[jj];
+    fbis.readRecord(&tmpv[0], sizeof(float)*m_natom);
     
     //
     // Read Y coordinates record
@@ -280,12 +275,7 @@ void DCDTrajReader::readBody(qlib::InStream &ins)
       MB_THROW(qlib::FileFormatException, msg);
       return;
     }
-    fbis.readRecord(&tmpv[0], //const_cast<float *>(pTmp->data()),
-		    sizeof(float)*m_natom);
-    
-    if (pcoord!=NULL)
-      for (jj=0; jj<m_natom; ++jj)
-        pcoord[jj*3+1] = tmpv[jj];
+    fbis.readRecord(&tmpv[m_natom], sizeof(float)*m_natom);
     
     //
     // Read Z coordinates record
@@ -300,15 +290,20 @@ void DCDTrajReader::readBody(qlib::InStream &ins)
       MB_THROW(qlib::FileFormatException, msg);
       return;
     }
-    fbis.readRecord(&tmpv[0], //const_cast<float *>(pTmp->data()),
-		    sizeof(float)*m_natom);
+    fbis.readRecord(&tmpv[m_natom*2], sizeof(float)*m_natom);
     
-    if (pcoord!=NULL)
-      for (jj=0; jj<m_natom; ++jj)
-        pcoord[jj*3+2] = tmpv[jj];
-    
-    if (pcoord!=NULL)
+    // copy to coord buffer
+    if (pcoord!=NULL) {
+      const quint32 *psia = pTraj->getSelIndexArray();
+      for (jj=0; jj<nReadAtoms; ++jj) {
+        const int k = psia[jj];
+        pcoord[jj*3+0] = tmpv[k+m_natom*0];
+        pcoord[jj*3+1] = tmpv[k+m_natom*1];
+        pcoord[jj*3+2] = tmpv[k+m_natom*2];
+      }
       nInd ++;
+    }
+
   }
 
   pTraj->append(pTB);

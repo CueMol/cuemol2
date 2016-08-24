@@ -6,9 +6,13 @@
 #include <common.h>
 
 #include "Trajectory.hpp"
+#include <modules/molstr/MolCoord.hpp>
 
 using namespace mdtools;
+using molstr::MolAtom;
 using molstr::MolAtomPtr;
+using molstr::MolCoord;
+using molstr::MolCoordPtr;
 
 Trajectory::Trajectory()
 {
@@ -17,11 +21,59 @@ Trajectory::Trajectory()
   m_nFrmInd = -1;
   m_nTotalFrms = 0;
   m_nCurFrm = 0;
+
+  m_pAllMol = MolCoordPtr(MB_NEW MolCoord());
 }
 
 Trajectory::~Trajectory()
 {
 }
+
+/// Append a new atom.
+int Trajectory::appendAtom(MolAtomPtr pAtom)
+{
+  return m_pAllMol->appendAtom(pAtom);
+}
+
+/// Remove an atom by atom ID
+bool Trajectory::removeAtom(int atomid)
+{
+  MB_THROW(qlib::RuntimeException, "Trajectory: removeAtom not supported");
+  return false;
+}
+
+void Trajectory::createMol(SelectionPtr pSel)
+{
+  m_pAllMol->applyTopology();
+  
+  std::deque<int> aidmap;
+  AtomIter aiter = m_pAllMol->beginAtom();
+  AtomIter eiter = m_pAllMol->endAtom();
+
+  int i=0, j=0;
+  for (; aiter!=eiter; ++aiter, ++i) {
+    MolAtomPtr pAtom = aiter->second;
+    int aid = aiter->first;
+    MB_ASSERT(aid==i);
+
+    if (pSel.isnull() || pSel->isSelected(pAtom)) {
+      // add the copy of the original atom
+      MolAtomPtr pNewAtom(static_cast<MolAtom *>(pAtom->clone()));
+      int aid2 = super_t::appendAtom(pNewAtom);
+      MB_ASSERT(aid2==j);
+      aidmap.push_back(aid);
+      ++j;
+    }
+  }
+  
+  m_pReadSel = pSel;
+
+  m_selIndArray.resize( aidmap.size() );
+  m_selIndArray.assign( aidmap.begin(), aidmap.end() );
+}
+
+
+//////////
 
 qfloat32 *Trajectory::getCrdArrayImpl()
 {
@@ -138,24 +190,6 @@ int Trajectory::getFrameSize() const
 {
   return m_nTotalFrms;
 }
-
-void Trajectory::appendSelIndex(quint32 aid, quint32 iatom)
-{
-  m_siatmp.insert(std::pair<quint32, quint32>(aid, iatom));
-}
-
-void Trajectory::setupSelIndexArray()
-{
-  typedef std::map<quint32, quint32>::value_type mapelem_t;
-  m_selIndArray.resize( m_siatmp.size() );
-  quint32 i=0;
-  BOOST_FOREACH (const mapelem_t &elem, m_siatmp) {
-    m_selIndArray[i] = elem.second;
-    ++i;
-  }
-  m_siatmp.clear();
-}
-
 
 ///////////////////////////////////////////////////////
 
