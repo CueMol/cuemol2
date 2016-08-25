@@ -206,6 +206,68 @@ void SceneXMLReader::procDataSrcLoad(qlib::LDom2InStream &ois, LDom2Node *pNode)
 #endif
 {
   //////////
+  // Do data source loading
+
+  for (;;) {
+    LDataSrcContainer *pCnt = pNode->getDataSrcContainer();
+    if (pCnt==NULL)
+      break;
+    
+    LString src = pNode->getDataSrc();
+    LString altsrc = pNode->getDataAltSrc();
+    LString srctype = pNode->getDataSrcType();
+    
+    if (src.isEmpty())
+      break;
+    
+    if (srctype.isEmpty()) {
+      // ERROR!! (TO DO: handling)
+      LOG_DPRINTLN("SceneXML> src %s: srctype is not defined. (ignored)", src.c_str());
+      break;
+    }
+    
+    if (src.startsWith("datachunk:") && src.length()==15) {
+      // Data source is in datachunk
+      // --> Prepare for reading from data chunk of the stream
+      MB_DPRINTLN("Data chunk found %s, %s ",
+                  src.c_str(), srctype.c_str());
+      // addChunkMap(src, pCnt, srctype);
+      ois.addChunkMap(src, pCnt);
+      break;
+    }
+    
+    //robj->readFromPath(src, altsrc, m_pClient);
+    bool bAlt = false;
+    LString basedir = m_pClient->getBasePath();
+    MB_DPRINTLN("basedir>");
+    basedir.dump();
+    LString scenesrc = m_pClient->getSource();
+    MB_DPRINTLN("scenesrc>");
+    scenesrc.dump();
+    
+    LString abs_path = pCnt->readFromSrcAltSrc(src, altsrc, basedir, bAlt);
+    
+    // ATTN 14/06/29:
+    // Update src/altsrc properties based on where the data source has been loaded.
+    // (In the qsc file, there are two alternative sources. However, only one src is actually loaded.)
+    // This is required to keep consistency between the "src prop" and "actual data src".
+    if (bAlt) {
+      // loaded from altsrc; altsrc --> src
+      if (!qlib::isAbsolutePath(altsrc))
+        altsrc = qlib::makeAbsolutePath(altsrc, basedir);
+      pCnt->updateSrcPath(altsrc);
+    }
+    else {
+      // loaded from src; keep src
+      if (!qlib::isAbsolutePath(src))
+        src = qlib::makeAbsolutePath(src, basedir);
+      pCnt->updateSrcPath(src);
+    }
+    break;
+  }
+
+  //////////////////////////////////////////////////
+  //
   // Recursively check the data src load requests
 
   LDom2Node::NodeList::const_iterator iter = pNode->childBegin();
@@ -214,74 +276,6 @@ void SceneXMLReader::procDataSrcLoad(qlib::LDom2InStream &ois, LDom2Node *pNode)
     LDom2Node *pChNode = *iter;
     if (pChNode!=NULL)
       procDataSrcLoad(ois, pChNode);
-  }
-
-  //////////
-  // Do data source loading
-
-  LDataSrcContainer *pCnt = pNode->getDataSrcContainer();
-  if (pCnt==NULL)
-    return;
-  
-  LString src = pNode->getDataSrc();
-  LString altsrc = pNode->getDataAltSrc();
-  LString srctype = pNode->getDataSrcType();
-
-  if (src.isEmpty())
-    return;
-
-  if (srctype.isEmpty()) {
-    // ERROR!! (TO DO: handling)
-    LOG_DPRINTLN("SceneXML> src %s: srctype is not defined. (ignored)", src.c_str());
-    return;
-  }
-
-  if (src.startsWith("datachunk:") && src.length()==15) {
-    // Data source is in datachunk
-    // --> Prepare for reading from data chunk of the stream
-    MB_DPRINTLN("Data chunk found %s, %s ",
-                src.c_str(), srctype.c_str());
-    // addChunkMap(src, pCnt, srctype);
-    ois.addChunkMap(src, pCnt);
-    return;
-  }
-  
-  //robj->readFromPath(src, altsrc, m_pClient);
-  bool bAlt = false;
-  LString basedir = m_pClient->getBasePath();
-  MB_DPRINTLN("basedir>");
-  basedir.dump();
-  LString scenesrc = m_pClient->getSource();
-  MB_DPRINTLN("scenesrc>");
-  scenesrc.dump();
-
-/*
-  try {
-    int xx;
-    qlib::UTF8toUCS16(basedir, &xx);
-  }
-  catch (...) {
-    basedir.dump();
-    MB_DPRINTLN("XXX invalid basedir");
-  }*/
-
-  LString abs_path = pCnt->readFromSrcAltSrc(src, altsrc, basedir, bAlt);
-
-  // ATTN 14/06/29:
-  // Update src/altsrc properties based on where the data source has been loaded.
-  // (In the qsc file, there are two alternative sources. However, only one src is actually loaded.)
-  // This is required to keep consistency between the "src prop" and "actual data src".
-  if (bAlt) {
-    // loaded from altsrc; altsrc --> src
-    if (!qlib::isAbsolutePath(altsrc))
-      altsrc = qlib::makeAbsolutePath(altsrc, basedir);
-    pCnt->updateSrcPath(altsrc);
-  }
-  else {
-    // loaded from src; keep src
-    if (!qlib::isAbsolutePath(src))
-      src = qlib::makeAbsolutePath(src, basedir);
-    pCnt->updateSrcPath(src);
   }
 
 }

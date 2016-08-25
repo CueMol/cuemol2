@@ -7,7 +7,7 @@
 #define DCD_TRAJ_READER_QIF_INCLUDED
 
 #include <qsys/ObjReader.qif>
-#include "Trajectory.qif"
+// #include "Trajectory.qif"
 
 runtime_class DCDTrajReader extends ObjReader
 {
@@ -20,7 +20,7 @@ runtime_class DCDTrajReader extends ObjReader
   property integer nevery => redirect(getSkipNo, setSkipNo);
   default nevery = 1;
 
-  property object<Trajectory$> targ_traj => redirect(getTargTraj, setTargTraj) (nopersist);
+  property integer targTrajUID => redirect(getTargTrajUID, setTargTrajUID) (nopersist);
 
 };
 

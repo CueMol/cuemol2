@@ -81,6 +81,18 @@ namespace mdtools {
       return m_nCrds;
     }
 
+  private:
+    qlib::uid_t m_nTrajUID;
+    
+  public:
+    void setTrajUID(qlib::uid_t traj_uid) {
+      m_nTrajUID = traj_uid;
+    }
+
+    qlib::uid_t getTrajUID() const {
+      return m_nTrajUID;
+    }
+
   };
 
 }

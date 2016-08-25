@@ -23,29 +23,6 @@ namespace mdtools {
   {
     MC_SCRIPTABLE;
 
-  private:
-    /// target trajectory object
-    TrajectoryPtr m_pTraj;
-    
-    // MolSelection *m_pSel;
-    
-    // std::vector<int> *m_pSelAtoms;
-    
-    // /// atom nums in the file
-    // int m_nFileAtoms;
-    
-  private:
-    int m_nSkip;
-
-  public:
-    int getSkipNo() const {
-      return m_nSkip;
-    }
-      
-    void setSkipNo(int n) {
-      m_nSkip = n;
-    }
-
     ///////////////////////////////////////////
 
   public:
@@ -79,10 +56,25 @@ namespace mdtools {
     virtual bool read(qlib::InStream &ins);
     
     /////////////////////////////////////////////////////
-    
-    TrajectoryPtr getTargTraj() const { return m_pTraj; }
-    void setTargTraj(const TrajectoryPtr &p) { m_pTraj = p; }
 
+  private:
+    int m_nSkip;
+
+  public:
+    int getSkipNo() const {
+      return m_nSkip;
+    }
+      
+    void setSkipNo(int n) {
+      m_nSkip = n;
+    }
+
+  private:
+    qlib::uid_t m_nTrajUID;
+    
+  public:
+    qlib::uid_t getTargTrajUID() const { return m_nTrajUID; }
+    void setTargTrajUID(qlib::uid_t uid) { m_nTrajUID = uid; }
     
   private:
     int m_natom;
@@ -91,6 +83,8 @@ namespace mdtools {
     
     void readHeader(qlib::InStream &ins);
     void readBody(qlib::InStream &ins);
+
+    TrajectoryPtr getTargTraj() const;
   };
 
 }

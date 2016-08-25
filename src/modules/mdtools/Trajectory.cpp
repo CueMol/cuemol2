@@ -239,9 +239,15 @@ void Trajectory::readFrom2(qlib::LDom2Node *pNode)
     LString tag = pChNode->getTagName();
 
     if (tag.equals("trajfile")) {
-      TrajBlockPtr pobj(MB_NEW TrajBlock());
-      pobj->readFrom2(pChNode);
-      append(pobj);
+      TrajBlockPtr pBlk(MB_NEW TrajBlock());
+      pBlk->readFrom2(pChNode);
+
+      // start index should be initialized later
+      pBlk->setStartIndex(-1);
+      //pBlk->setSceneID(getSceneID());
+      pBlk->setTrajUID(getUID());
+      m_blocks.push_back(pBlk);
+
     }
     else {
       // Unknown tag --> ignore??
@@ -251,7 +257,42 @@ void Trajectory::readFrom2(qlib::LDom2Node *pNode)
 
 }
 
-void Trajectory::readFromStream(qlib::InStream &ins)
+/*void Trajectory::readFromStream(qlib::InStream &ins)
 {
+}*/
+
+void Trajectory::sceneChanged(qsys::SceneEvent &ev)
+{
+  if (ev.getType()==qsys::SceneEvent::SCE_SCENE_ONLOADED &&
+      ev.getTarget()==getSceneID()) {
+    // update trajblock data
+    updateTrajBlockDataImpl();
+  }
+  // super_t::sceneChanged(ev);
+}
+
+void Trajectory::updateTrajBlockDataImpl()
+{
+  // should not be initialized here
+  MB_ASSERT(!m_bInit);
+
+  const int nblks = m_blocks.size();
+  int nnext = 0;
+
+  for (int i=0; i<nblks; ++i) {
+    TrajBlockPtr pBlk = m_blocks[i];
+    
+    pBlk->setSceneID(getSceneID());
+    pBlk->setStartIndex(nnext);
+    nnext += pBlk->getSize();
+  }
+
+  m_nTotalFrms = nnext;
+
+  update(0);
+  updateCrdArray();
+
+  applyTopology();
+  m_bInit = true;
 }
 

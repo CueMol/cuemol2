@@ -10,6 +10,7 @@
 #include "Trajectory.hpp"
 #include "FortBinStream.hpp"
 #include <qlib/Array.hpp>
+#include <qsys/SceneManager.hpp>
 #include <modules/molstr/Selection.hpp>
 
 using qlib::Array;
@@ -21,6 +22,7 @@ DCDTrajReader::DCDTrajReader()
 {
   // : m_pSel(NULL), m_pSelAtoms(NULL)
   m_nSkip = 1;
+  m_nTrajUID = qlib::invalid_uid;
 }
 
 DCDTrajReader::~DCDTrajReader()
@@ -68,10 +70,24 @@ bool DCDTrajReader::read(qlib::InStream &ins)
 
 }
 
+TrajectoryPtr DCDTrajReader::getTargTraj() const
+{
+  TrajectoryPtr pTraj;
+  if (m_nTrajUID!=qlib::invalid_uid) {
+    pTraj = qsys::SceneManager::getObjectS(m_nTrajUID);
+  }
+  else {
+    TrajBlockPtr pTrajBlk( getTarget<TrajBlock>() );
+    qlib::uid_t nTrajUID = pTrajBlk->getTrajUID();
+    pTraj = qsys::SceneManager::getObjectS(nTrajUID);
+  }
+  return pTraj;
+}
+
 void DCDTrajReader::readHeader(qlib::InStream &ins)
 {
   TrajBlockPtr pTrajBlk( getTarget<TrajBlock>() );
-  TrajectoryPtr pTraj = m_pTraj;
+  TrajectoryPtr pTraj = getTargTraj();
 
   int i;
   int nrlen;
@@ -169,7 +185,7 @@ void DCDTrajReader::readHeader(qlib::InStream &ins)
   if (natom!=pTraj->getAllAtomSize()) {
     LString msg =
       LString::format("DCD: Inconsistent NATOM with param %d!=%d",
-		      natom, pTraj->getAllAtomNo());
+		      natom, pTraj->getAllAtomSize());
     LOG_DPRINTLN("%s ",msg.c_str());
     return;
   }
@@ -179,7 +195,7 @@ void DCDTrajReader::readHeader(qlib::InStream &ins)
 void DCDTrajReader::readBody(qlib::InStream &ins)
 {
   TrajBlockPtr pTB( getTarget<TrajBlock>() );
-  TrajectoryPtr pTraj = m_pTraj;
+  TrajectoryPtr pTraj = getTargTraj();
   
   FortBinInStream fbis(ins);
 
@@ -307,6 +323,6 @@ void DCDTrajReader::readBody(qlib::InStream &ins)
 
   }
 
-  pTraj->append(pTB);
+  //pTraj->append(pTB);
 }
 

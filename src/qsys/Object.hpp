@@ -16,6 +16,7 @@
 #include <qlib/LDataSrcContainer.hpp>
 
 #include "ObjectEvent.hpp"
+#include "SceneEvent.hpp"
 #include "Renderer.hpp"
 
 namespace qlib {
@@ -34,7 +35,8 @@ namespace qsys {
     public qlib::LNoCopyScrObject,
     public qlib::LUIDObject,
     public qlib::LDataSrcContainer,
-    public qlib::LPropEventListener
+    public qlib::LPropEventListener,
+    public SceneEventListener
   {
     MC_SCRIPTABLE;
 
@@ -281,6 +283,10 @@ namespace qsys {
     /// property event handler for object properties
     virtual void propChanged(qlib::LPropEvent &ev);
 
+    /// scene event handler
+    virtual void sceneChanged(SceneEvent &ev);
+    
+    
     ////////////////////////////////////////////////////////////
     // Serialization/Deserialization
 

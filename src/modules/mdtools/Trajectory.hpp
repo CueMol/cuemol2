@@ -7,9 +7,10 @@
 #define MDTOOLS_TRAJECTORY_HPP_INCLUDED
 
 #include "mdtools.hpp"
-#include <qlib/Array.hpp>
 
+#include <qlib/Array.hpp>
 #include <modules/molstr/AnimMol.hpp>
+
 #include "TrajBlock.hpp"
 
 namespace mdtools {
@@ -69,10 +70,20 @@ namespace mdtools {
 
     virtual void createIndexMapImpl(CrdIndexMap &indmap, AidIndexMap &aidmap) ;
 
+
+    /////////////////////////////////////////////////////
+    // Event handling
+    
+  public:
+    virtual void sceneChanged(qsys::SceneEvent &ev);
+
+  private:
+    void updateTrajBlockDataImpl();
+
     /////////////////////////////////////////////////////
     // specific operations
     
-
+  public:
     void append(TrajBlockPtr pBlk);
 
     void update(int n);
@@ -112,14 +123,6 @@ namespace mdtools {
     int getFrameSize() const;
 
 
-  private:
-    int m_nAllAtomNo;
-    
-  public:
-    int getAllAtomNo() const {
-      return m_nAllAtomNo;
-    }
-
     ////////////////////////////////////////////////////
     // Serialization/Deserialization
 
@@ -127,7 +130,7 @@ namespace mdtools {
     virtual void writeTo2(qlib::LDom2Node *pNode) const;
     virtual void readFrom2(qlib::LDom2Node *pNode);
 
-    virtual void readFromStream(qlib::InStream &ins);
+    // virtual void readFromStream(qlib::InStream &ins);
 
   private:
 
