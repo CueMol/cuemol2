@@ -22,12 +22,14 @@
 // for $molcol implementation
 #include <gfx/MolColorRef.hpp>
 #include "MolCoord.hpp"
+#include "AnimMol.hpp"
 
 using namespace molstr;
 
 MolRenderer::MolRenderer()
   : super_t(), ColSchmHolder()
 {
+  m_bUseVBO = false;
 }
 
 MolRenderer::MolRenderer(const MolRenderer &r)
@@ -40,6 +42,8 @@ MolRenderer::~MolRenderer()
 {
 }
 
+//////////////////////////////////////////////////////////////////////////
+
 void MolRenderer::setSelection(SelectionPtr pSel)
 {
   m_pSel = pSel;
@@ -50,7 +54,20 @@ SelectionPtr MolRenderer::getSelection() const
   return m_pSel;
 }
 
-//////////////////////////////////////////////////////////////////////////
+void MolRenderer::attachObj(qlib::uid_t obj_uid)
+{
+  super_t::attachObj(obj_uid);
+  
+  MolCoordPtr pObj = getClientMol();
+  qlib::LScrSp<AnimMol> pAM(pObj, qlib::no_throw_tag());
+  if (pAM.isnull())
+    m_bUseVBO = false;
+  else
+    m_bUseVBO = true;
+
+  LOG_DPRINTLN("MolRenderer> UseVBO = %d", m_bUseVBO);
+}
+
 
 MolCoordPtr MolRenderer::getClientMol() const
 {

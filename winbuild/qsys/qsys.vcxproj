@@ -101,6 +101,7 @@
     <ClCompile Include="..\..\src\gfx\MultiGradient.cpp" />
     <ClCompile Include="..\..\src\gfx\MultiGradient_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\AnimMol.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\AnimMol_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\ChainIterator.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\ChainIterator_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\MolBond.cpp" />
@@ -400,6 +401,7 @@
   <ItemGroup>
     <mcwrapgen3 Include="..\..\src\gfx\GradientColor.qif" />
     <mcwrapgen3 Include="..\..\src\gfx\MultiGradient.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molstr\AnimMol.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molstr\ChainIterator.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molstr\QdfPdbReader.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\CPK2Renderer.qif" />

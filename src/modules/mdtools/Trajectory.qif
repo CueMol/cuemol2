@@ -6,10 +6,10 @@
 #ifndef TRAJECTORY_QIF_INCLUDED
 #define TRAJECTORY_QIF_INCLUDED
 
-#include <qsys/Object.qif>
+#include <modules/molstr/AnimMol.qif>
 #include "TrajBlock.qif"
 
-runtime_class Trajectory extends Object
+runtime_class Trajectory extends AnimMol
 {
   client_hdr "Trajectory.hpp";
   client_name mdtools::Trajectory;

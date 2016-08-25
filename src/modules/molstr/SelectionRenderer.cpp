@@ -8,29 +8,35 @@
 #include "SelectionRenderer.hpp"
 
 #include "MolCoord.hpp"
-#include "MolChain.hpp"
-#include "MolResidue.hpp"
-#include "ResiToppar.hpp"
-
 #include "SelCommand.hpp"
+#include "AnimMol.hpp"
+#include "AtomIterator.hpp"
+#include "BondIterator.hpp"
+#include <qsys/View.hpp>
+#include <qlib/Vector3F.hpp>
 
-#include <gfx/DisplayContext.hpp>
-#include <gfx/SolidColor.hpp>
-#include <qsys/SceneManager.hpp>
+// Use OpenGL VBO implementation
+#define USE_OPENGL_VBO
 
 using namespace molstr;
 
 using qlib::Vector4D;
+using qlib::Vector3F;
 using gfx::ColorPtr;
 
 SelectionRenderer::SelectionRenderer()
 {
   m_nMode = MODE_STICK;
-  m_pSel = molstr::SelectionPtr(MB_NEW molstr::SelCommand(LString("!*")));
+  m_pNullSel = molstr::SelectionPtr(MB_NEW molstr::SelCommand(LString("!*")));
+  m_pVBO = NULL;
 }
 
 SelectionRenderer::~SelectionRenderer()
 {
+  // VBO should be cleaned up here
+  //  invalidateDisplayCache() has been called
+  //  in unloading() method of DispCacheRend impl.
+  MB_ASSERT(m_pVBO==NULL);
 }
 
 const char *SelectionRenderer::getTypeName() const
@@ -41,13 +47,17 @@ const char *SelectionRenderer::getTypeName() const
 SelectionPtr SelectionRenderer::getSelection() const
 {
   MolCoordPtr pClient = qlib::ensureNotNull( getClientMol() );
-  // MB_ASSERT(!pClient.isnull());
+
   SelectionPtr psel = pClient->getSelection();
   if (psel.isnull())
-    return m_pSel;
+    return m_pNullSel;
   if (psel->toString().isEmpty())
-    return m_pSel;
+    return m_pNullSel;
   return psel;
+}
+
+void SelectionRenderer::setSelection(SelectionPtr pSel)
+{
 }
 
 void SelectionRenderer::propChanged(qlib::LPropEvent &ev)
@@ -66,12 +76,6 @@ void SelectionRenderer::propChanged(qlib::LPropEvent &ev)
     }
   }
 
-  /*qlib::LPropSupport *pmol = getClientMol().get();
-  if (ev.getTarget()==pmol) {
-    if (ev.getName().equals("sel")) {
-      invalidateDisplayCache();
-    }
-  }*/
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -172,10 +176,26 @@ void SelectionRenderer::postRender(DisplayContext *pdc)
 
 void SelectionRenderer::objectChanged(qsys::ObjectEvent &ev)
 {
+
+#ifdef USE_OPENGL_VBO
+  if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED) {
+    if (ev.getDescr().equals("atomsMoved")) {
+      // OBE_CHANGED && descr=="atomsMoved"
+      if (m_pVBO!=NULL) {
+        // only update positions
+        updateVBO();
+        m_pVBO->setUpdated(true);
+        return;
+      }
+    }
+    super_t::objectChanged(ev);
+    return;
+  }
+#endif
+
   if (ev.getType()==qsys::ObjectEvent::OBE_PROPCHG) {
     if (ev.getDescr().equals("sel")) {
       invalidateDisplayCache();
-      //return;
     }
   }
 
@@ -184,13 +204,207 @@ void SelectionRenderer::objectChanged(qsys::ObjectEvent &ev)
 
 bool SelectionRenderer::isTransp() const
 {
-/*
-  if (m_nMode==MODE_STICK &&
-      m_color.fa()<1.0)
-    return true;
-  else
-    return false;
-  */
   return true;
+}
+
+///////////////////////////////////////////////////////////////////
+// VBO implementation
+
+void SelectionRenderer::display(DisplayContext *pdc)
+{
+#ifdef USE_OPENGL_VBO
+  if (!isUseVBO() || pdc->isFile() || !pdc->isDrawElemSupported()) {
+    // case of the file (non-ogl) rendering
+    // always use the old version.
+    super_t::display(pdc);
+    return;
+  }
+
+  // new rendering routine using VBO (DrawElem)
+
+  if (m_pVBO==NULL) {
+    createVBO();
+    updateVBO();
+    if (m_pVBO==NULL)
+      return; // Error, Cannot draw anything (ignore)
+  }
+  
+  preRender(pdc);
+  m_pVBO->setLineWidth(m_linew);
+  m_pVBO->setDefColor(m_color);
+  pdc->drawElem(*m_pVBO);
+  postRender(pdc);
+#else
+  super_t::display(pdc);
+#endif
+}
+
+void SelectionRenderer::createVBO()
+{
+  quint32 i, j;
+  quint32 nbons = 0, natoms = 0, nmbons = 0, nva = 0;
+  MolCoordPtr pCMol = getClientMol();
+
+  AnimMol *pMol = static_cast<AnimMol *>(pCMol.get());
+
+  std::deque<int> isolated_atoms;
+  
+  // build bond data structure/estimate VBO size
+
+    std::set<int> bonded_atoms;
+    BondIterator biter(pCMol, getSelection());
+
+    for (biter.first(); biter.hasMore(); biter.next()) {
+      MolBond *pMB = biter.getBond();
+      int aid1 = pMB->getAtom1();
+      int aid2 = pMB->getAtom2();
+
+      bonded_atoms.insert(aid1);
+      bonded_atoms.insert(aid2);
+
+      MolAtomPtr pA1 = pMol->getAtom(aid1);
+      MolAtomPtr pA2 = pMol->getAtom(aid2);
+
+      if (pA1.isnull() || pA2.isnull())
+        continue; // skip invalid bonds
+
+      ++nbons;
+    }
+
+    m_sbonds.resize(nbons);
+
+    i=0;
+    j=0;
+    int iva = 0;
+    for (biter.first(); biter.hasMore(); biter.next()) {
+      MolBond *pMB = biter.getBond();
+      int aid1 = pMB->getAtom1();
+      int aid2 = pMB->getAtom2();
+
+      MolAtomPtr pA1 = pMol->getAtom(aid1);
+      MolAtomPtr pA2 = pMol->getAtom(aid2);
+
+      if (pA1.isnull() || pA2.isnull())
+        continue; // skip invalid bonds
+      
+      m_sbonds[i].aid1 = aid1;
+      m_sbonds[i].aid2 = aid2;
+      m_sbonds[i].ind1 = pMol->getCrdArrayInd(aid1) * 3;
+      m_sbonds[i].ind2 = pMol->getCrdArrayInd(aid2) * 3;
+      m_sbonds[i].vaind = iva;
+      iva+=4;
+      ++i;
+    }
+
+  // build isolated atom data structure/estimate VBO size
+  AtomIterator aiter(pCMol, getSelection());
+  for (aiter.first(); aiter.hasMore(); aiter.next()) {
+    int aid = aiter.getID();
+    MolAtomPtr pAtom = pMol->getAtom(aid);
+    if (pAtom.isnull()) continue; // ignore errors
+    if (bonded_atoms.find(aid)!=bonded_atoms.end())
+      continue; // already bonded
+    isolated_atoms.push_back(aid);
+  }
+  natoms = isolated_atoms.size();
+  m_atoms.resize(natoms);
+  for (i=0; i<natoms; ++i) {
+    int aid1 = isolated_atoms[i];
+    m_atoms[i].aid1 = aid1;
+    m_atoms[i].ind1 = pMol->getCrdArrayInd(aid1) * 3;
+    m_atoms[i].vaind = iva;
+    iva += 2*3;
+  }
+  
+  nva = iva;
+    
+  if (m_pVBO!=NULL)
+    delete m_pVBO;
+    
+  m_pVBO = MB_NEW gfx::DrawElemV();
+  m_pVBO->alloc(nva);
+  m_pVBO->setDrawMode(gfx::DrawElemVC::DRAW_LINES);
+  LOG_DPRINTLN("SelectionRenderer> %d elems VBO created", nva);
+}
+
+void SelectionRenderer::updateVBO()
+{
+  quint32 i = 0, j = 0;
+  quint32 aid1, aid2;
+  quint32 nbons = m_sbonds.size();
+  quint32 natoms = m_atoms.size();
+  
+  MolCoordPtr pCMol = getClientMol();
+  AnimMol *pMol = static_cast<AnimMol *>(pCMol.get());
+  
+  qfloat32 *crd = pMol->getAtomCrdArray();
+
+  MolAtomPtr pA1, pA2;
+
+  // ColorPtr pcol1, pcol2;
+  Vector3F pos1, pos2;
+
+  // Single bonds
+  for (i=0; i<nbons; ++i) {
+    aid1 = m_sbonds[i].ind1;
+    aid2 = m_sbonds[i].ind2;
+    j = m_sbonds[i].vaind;
+
+    m_pVBO->vertexfp(j, &crd[aid1]);
+    ++j;
+    m_pVBO->vertexfp(j, &crd[aid2]);
+    //++j;
+  }
+
+  // Isolated atoms
+  
+  // size of the star
+  const qfloat32 rad = 0.25;
+  const qfloat32 rad2 = rad*2.0f;
+
+  for (i=0; i<natoms; ++i) {
+    quint32 aid1 = m_atoms[i].ind1;
+    quint32 j = m_atoms[i].vaind;
+
+    pos1.set(&crd[aid1]);
+
+    pos1.x() -= rad;
+    m_pVBO->vertex3f(j, pos1);
+    ++j;
+    pos1.x() += rad2;
+    m_pVBO->vertex3f(j, pos1);
+    pos1.x() -= rad;
+    ++j;
+
+    pos1.y() -= rad;
+    m_pVBO->vertex3f(j, pos1);
+    ++j;
+    pos1.y() += rad2;
+    m_pVBO->vertex3f(j, pos1);
+    ++j;
+    pos1.y() -= rad;
+
+    pos1.z() -= rad;
+    m_pVBO->vertex3f(j, pos1);
+    ++j;
+    pos1.z() += rad2;
+    m_pVBO->vertex3f(j, pos1);
+    ++j;
+  }
+}
+
+void SelectionRenderer::invalidateDisplayCache()
+{
+#ifdef USE_OPENGL_VBO
+  if (m_pVBO!=NULL) {
+    delete m_pVBO;
+    m_pVBO = NULL;
+
+    m_sbonds.clear();
+    m_atoms.clear();
+  }
+#endif
+
+  super_t::invalidateDisplayCache();
 }
 

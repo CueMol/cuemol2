@@ -21,13 +21,13 @@
 #include <gfx/SolidColor.hpp>
 #include <qsys/Scene.hpp>
 
+// Use OpenGL VBO implementation
+#define USE_OPENGL_VBO
+
 using namespace molstr;
 using qlib::Vector4D;
 using qlib::Vector3F;
 using gfx::ColorPtr;
-
-// Use OpenGL VBO implementation
-#define USE_OPENGL_VBO
 
 SimpleRenderer::SimpleRenderer()
 {
@@ -39,31 +39,21 @@ SimpleRenderer::SimpleRenderer()
   m_dCvScl2 = 0.05;
 
   m_pVBO = NULL;
-  m_bUseVBO = false;
 }
 
 SimpleRenderer::~SimpleRenderer()
 {
+  // VBO should be cleaned up here
+  //  invalidateDisplayCache() has been called
+  //  in unloading() method of DispCacheRend impl.
+  MB_ASSERT(m_pVBO==NULL);
+
   MB_DPRINTLN("SimpleRenderer destructed %p", this);
 }
 
 const char *SimpleRenderer::getTypeName() const
 {
   return "simple";
-}
-
-void SimpleRenderer::attachObj(qlib::uid_t obj_uid)
-{
-  super_t::attachObj(obj_uid);
-  
-  MolCoordPtr pObj = getClientMol();
-  qlib::LScrSp<AnimMol> pAM(pObj, qlib::no_throw_tag());
-  if (pAM.isnull())
-    m_bUseVBO = false;
-  else
-    m_bUseVBO = true;
-
-  LOG_DPRINTLN("SimpleRenderer> UseVBO = %d", m_bUseVBO);
 }
 
 /////////////////////////
@@ -221,7 +211,7 @@ bool SimpleRenderer::isRendBond() const
 void SimpleRenderer::display(DisplayContext *pdc)
 {
 #ifdef USE_OPENGL_VBO
-  if (!m_bUseVBO || pdc->isFile() || !pdc->isDrawElemSupported()) {
+  if (!isUseVBO() || pdc->isFile() || !pdc->isDrawElemSupported()) {
     // case of the file (non-ogl) rendering
     // always use the old version.
     super_t::display(pdc);
@@ -445,9 +435,9 @@ void SimpleRenderer::updateVBO(bool bUpdateColor)
 
     switch (m_sbonds[i].itype) {
     case IBON_1C_1V:
-      m_pVBO->vertex(j, &crd[aid1]);
+      m_pVBO->vertexfp(j, &crd[aid1]);
       ++j;
-      m_pVBO->vertex(j, &crd[aid2]);
+      m_pVBO->vertexfp(j, &crd[aid2]);
       ++j;
       break;
 
@@ -457,13 +447,13 @@ void SimpleRenderer::updateVBO(bool bUpdateColor)
       midpos.addSelf(&crd[aid2]);
       midpos.divideSelf(2.0f);
 
-      m_pVBO->vertex(j, &crd[aid1]);
+      m_pVBO->vertexfp(j, &crd[aid1]);
       ++j;
-      m_pVBO->vertex(j, midpos);
+      m_pVBO->vertex3f(j, midpos);
       ++j;
-      m_pVBO->vertex(j, &crd[aid2]);
+      m_pVBO->vertexfp(j, &crd[aid2]);
       ++j;
-      m_pVBO->vertex(j, midpos);
+      m_pVBO->vertex3f(j, midpos);
       ++j;
       break;
     }
@@ -485,13 +475,13 @@ void SimpleRenderer::updateVBO(bool bUpdateColor)
 
     switch (m_mbonds[i].itype) {
     case IBON_1C_2V: {
-      m_pVBO->vertex(j, pos1 + dvd.scale(m_dCvScl1));
+      m_pVBO->vertex3f(j, pos1 + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->vertex(j, pos2 + dvd.scale(m_dCvScl1));
+      m_pVBO->vertex3f(j, pos2 + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->vertex(j, pos1 + dvd.scale(m_dCvScl2));
+      m_pVBO->vertex3f(j, pos1 + dvd.scale(m_dCvScl2));
       ++j;
-      m_pVBO->vertex(j, pos2 + dvd.scale(m_dCvScl2));
+      m_pVBO->vertex3f(j, pos2 + dvd.scale(m_dCvScl2));
       ++j;
       break;
     }
@@ -500,39 +490,39 @@ void SimpleRenderer::updateVBO(bool bUpdateColor)
       midpos.addSelf(&crd[aid2]);
       midpos.divideSelf(2.0f);
 
-      m_pVBO->vertex(j, pos1 + dvd.scale(m_dCvScl1));
+      m_pVBO->vertex3f(j, pos1 + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->vertex(j, midpos + dvd.scale(m_dCvScl1));
+      m_pVBO->vertex3f(j, midpos + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->vertex(j, pos1 + dvd.scale(m_dCvScl2));
+      m_pVBO->vertex3f(j, pos1 + dvd.scale(m_dCvScl2));
       ++j;
-      m_pVBO->vertex(j, midpos + dvd.scale(m_dCvScl2));
+      m_pVBO->vertex3f(j, midpos + dvd.scale(m_dCvScl2));
       ++j;
 
-      m_pVBO->vertex(j, pos2 + dvd.scale(m_dCvScl1));
+      m_pVBO->vertex3f(j, pos2 + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->vertex(j, midpos + dvd.scale(m_dCvScl1));
+      m_pVBO->vertex3f(j, midpos + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->vertex(j, pos2 + dvd.scale(m_dCvScl2));
+      m_pVBO->vertex3f(j, pos2 + dvd.scale(m_dCvScl2));
       ++j;
-      m_pVBO->vertex(j, midpos + dvd.scale(m_dCvScl2));
+      m_pVBO->vertex3f(j, midpos + dvd.scale(m_dCvScl2));
       ++j;
 
       break;
     }
 
     case IBON_1C_3V: {
-      m_pVBO->vertex(j, pos1);
+      m_pVBO->vertex3f(j, pos1);
       ++j;
-      m_pVBO->vertex(j, pos2);
+      m_pVBO->vertex3f(j, pos2);
       ++j;
-      m_pVBO->vertex(j, pos1 + dvd.scale(m_dCvScl1));
+      m_pVBO->vertex3f(j, pos1 + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->vertex(j, pos2 + dvd.scale(m_dCvScl1));
+      m_pVBO->vertex3f(j, pos2 + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->vertex(j, pos1 + dvd.scale(-m_dCvScl1));
+      m_pVBO->vertex3f(j, pos1 + dvd.scale(-m_dCvScl1));
       ++j;
-      m_pVBO->vertex(j, pos2 + dvd.scale(-m_dCvScl1));
+      m_pVBO->vertex3f(j, pos2 + dvd.scale(-m_dCvScl1));
       ++j;
       break;
     }
@@ -541,30 +531,30 @@ void SimpleRenderer::updateVBO(bool bUpdateColor)
       midpos.addSelf(&crd[aid2]);
       midpos.divideSelf(2.0f);
 
-      m_pVBO->vertex(j, pos1);
+      m_pVBO->vertex3f(j, pos1);
       ++j;
-      m_pVBO->vertex(j, midpos);
+      m_pVBO->vertex3f(j, midpos);
       ++j;
-      m_pVBO->vertex(j, pos1 + dvd.scale(m_dCvScl1));
+      m_pVBO->vertex3f(j, pos1 + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->vertex(j, midpos + dvd.scale(m_dCvScl1));
+      m_pVBO->vertex3f(j, midpos + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->vertex(j, pos1 + dvd.scale(-m_dCvScl1));
+      m_pVBO->vertex3f(j, pos1 + dvd.scale(-m_dCvScl1));
       ++j;
-      m_pVBO->vertex(j, midpos + dvd.scale(-m_dCvScl1));
+      m_pVBO->vertex3f(j, midpos + dvd.scale(-m_dCvScl1));
       ++j;
 
-      m_pVBO->vertex(j, pos2);
+      m_pVBO->vertex3f(j, pos2);
       ++j;
-      m_pVBO->vertex(j, midpos);
+      m_pVBO->vertex3f(j, midpos);
       ++j;
-      m_pVBO->vertex(j, pos2 + dvd.scale(m_dCvScl1));
+      m_pVBO->vertex3f(j, pos2 + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->vertex(j, midpos + dvd.scale(m_dCvScl1));
+      m_pVBO->vertex3f(j, midpos + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->vertex(j, pos2 + dvd.scale(-m_dCvScl1));
+      m_pVBO->vertex3f(j, pos2 + dvd.scale(-m_dCvScl1));
       ++j;
-      m_pVBO->vertex(j, midpos + dvd.scale(-m_dCvScl1));
+      m_pVBO->vertex3f(j, midpos + dvd.scale(-m_dCvScl1));
       ++j;
 
       break;
@@ -592,26 +582,26 @@ void SimpleRenderer::updateVBO(bool bUpdateColor)
     pos1.set(&crd[aid1]);
 
     pos1.x() -= rad;
-    m_pVBO->vertex(j, pos1);
+    m_pVBO->vertex3f(j, pos1);
     ++j;
     pos1.x() += rad2;
-    m_pVBO->vertex(j, pos1);
+    m_pVBO->vertex3f(j, pos1);
     pos1.x() -= rad;
     ++j;
 
     pos1.y() -= rad;
-    m_pVBO->vertex(j, pos1);
+    m_pVBO->vertex3f(j, pos1);
     ++j;
     pos1.y() += rad2;
-    m_pVBO->vertex(j, pos1);
+    m_pVBO->vertex3f(j, pos1);
     ++j;
     pos1.y() -= rad;
 
     pos1.z() -= rad;
-    m_pVBO->vertex(j, pos1);
+    m_pVBO->vertex3f(j, pos1);
     ++j;
     pos1.z() += rad2;
-    m_pVBO->vertex(j, pos1);
+    m_pVBO->vertex3f(j, pos1);
     ++j;
   }
 

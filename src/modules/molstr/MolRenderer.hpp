@@ -25,9 +25,9 @@ namespace molstr {
   using qlib::Vector4D;
   using gfx::DisplayContext;
 
-  /**
-     Abstract class for molecular renderers
-  */
+  ///
+  ///  Abstract class for molecular renderers
+  ///
   class MOLSTR_API MolRenderer : public qsys::DispListRenderer, public ColSchmHolder
   {
     MC_SCRIPTABLE;
@@ -35,8 +35,6 @@ namespace molstr {
   private:
     typedef qsys::DispListRenderer super_t;
     
-    SelectionPtr m_pSel;
-
   public:
 
     MolRenderer();
@@ -46,7 +44,10 @@ namespace molstr {
     //////////////////////////////////////////////////////
     // Renderer implementation
 
+    virtual void attachObj(qlib::uid_t obj_uid);
+
     virtual qlib::Vector4D getCenter() const;
+
     virtual bool hasCenter() const;
 
     virtual bool isCompatibleObj(qsys::ObjectPtr pobj) const;
@@ -63,6 +64,11 @@ namespace molstr {
     //////////////////////////////////////////////////////
     // MolRenderer interface (selection)
 
+  private:
+    /// Rendering target selection of the molecule
+    SelectionPtr m_pSel;
+
+  public:
     // Set selection object
     //  (copy of the selection object is retained)
     virtual void setSelection(SelectionPtr pSel);
@@ -72,6 +78,15 @@ namespace molstr {
 
     //////////////////////////////////////////////////////
     // Final methods
+
+  private:
+    /// VBO enable flag
+    bool m_bUseVBO;
+
+  public:
+    inline bool isUseVBO() const {
+      return m_bUseVBO;
+    }
 
     MolCoordPtr getClientMol() const;
 

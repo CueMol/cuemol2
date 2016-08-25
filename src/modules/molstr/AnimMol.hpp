@@ -16,7 +16,7 @@ namespace molstr {
   ///
   class MOLSTR_API AnimMol : public MolCoord
   {
-    // MC_SCRIPTABLE;
+    MC_SCRIPTABLE;
 
   public:
     typedef std::map<int, quint32> CrdIndexMap;

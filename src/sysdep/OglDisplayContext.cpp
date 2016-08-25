@@ -1167,6 +1167,10 @@ void OglDisplayContext::drawElem(const AbstDrawElem &ade)
         const qbyte *pdata = (const qbyte *) static_cast<const DrawElemVC&>(de).getData();
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(DrawElemVC::Elem)*nelems, pdata);
       }
+      else if (ntype==DrawElem::VA_V) {
+        const qbyte *pdata = (const qbyte *) static_cast<const DrawElemV&>(de).getData();
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(DrawElemV::Elem)*nelems, pdata);
+      }
       de.setUpdated(false);
     }
     

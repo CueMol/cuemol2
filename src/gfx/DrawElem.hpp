@@ -136,10 +136,10 @@ namespace gfx {
 
     virtual bool vertex(int ind, const Vector4D &v) =0;
 
-    virtual bool vertex(int ind, const qfloat32 *pcrd);
+    virtual bool vertexfp(int ind, const qfloat32 *pcrd);
 
-    inline bool vertex(int ind, const Vector3F &v) {
-      return vertex(ind, v.getData());
+    inline bool vertex3f(int ind, const Vector3F &v) {
+      return vertexfp(ind, v.getData());
     }
 
     //bool color(int ind, const ColorPtr &c) {
@@ -192,15 +192,11 @@ namespace gfx {
     virtual void alloc(int nsize);
 
     virtual bool vertex(int ind, const Vector4D &v);
-    virtual bool vertex(int ind, const qfloat32 *pcrd);
+    virtual bool vertexfp(int ind, const qfloat32 *pcrd);
 
     virtual bool color(int ind, quint32 cc);
 
     bool getVertex(int ind, Vector4D &v) const;
-
-    inline bool vertex(int ind, const Vector3F &v) {
-      return vertex(ind, v.getData());
-    }
 
   private:
       Elem *m_pData;
@@ -229,6 +225,7 @@ namespace gfx {
     virtual void alloc(int nsize);
 
     virtual bool vertex(int ind, const Vector4D &v);
+    virtual bool vertexfp(int ind, const qfloat32 *pcrd);
 
     bool getVertex(int ind, Vector4D &v) const;
 
