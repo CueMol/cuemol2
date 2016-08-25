@@ -40,6 +40,10 @@ namespace molstr {
 
     void applyTopology();
 
+    /// Topology Auto-generation flag
+    ///   (false: only make bonds defined in the topology database)
+    bool m_bAutoGen;
+
   private:
 
     /**

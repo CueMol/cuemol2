@@ -412,7 +412,7 @@ void SimpleRenderer::renderVBO()
   m_pVBO = MB_NEW gfx::DrawElemVC();
   m_pVBO->alloc(nva);
   m_pVBO->setDrawMode(gfx::DrawElemVC::DRAW_LINES);
-  MB_DPRINTLN("SimpleRenderer> %d elems VBO created", nva);
+  LOG_DPRINTLN("SimpleRenderer> %d elems VBO created", nva);
   
   updateVBO(true);
 }

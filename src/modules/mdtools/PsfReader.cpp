@@ -27,6 +27,7 @@ PsfReader::PsfReader()
 
 PsfReader::~PsfReader()
 {
+  MB_DPRINTLN("PsfReader destructed.");
 }
 
 ///////////////////////////////////////////

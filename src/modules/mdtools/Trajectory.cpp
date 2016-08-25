@@ -27,6 +27,7 @@ Trajectory::Trajectory()
 
 Trajectory::~Trajectory()
 {
+  m_pAllMol = MolCoordPtr();
 }
 
 /// Append a new atom.
@@ -60,7 +61,7 @@ void Trajectory::createMol(SelectionPtr pSel)
     return;
   }
 
-  m_pAllMol->applyTopology();
+  m_pAllMol->applyTopology(false);
   
   std::deque<int> aidmap;
   AtomIter aiter = m_pAllMol->beginAtom();
@@ -82,10 +83,13 @@ void Trajectory::createMol(SelectionPtr pSel)
     }
   }
   
-  m_pReadSel = pSel;
+  // m_pReadSel = pSel;
 
   m_selIndArray.resize( aidmap.size() );
   m_selIndArray.assign( aidmap.begin(), aidmap.end() );
+
+  m_nAllAtomSize = m_pAllMol->getAtomSize();
+  m_pAllMol = MolCoordPtr();
 }
 
 

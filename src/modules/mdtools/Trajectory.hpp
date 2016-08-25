@@ -90,16 +90,17 @@ namespace mdtools {
 
   private:
     MolCoordPtr m_pAllMol;
-    SelectionPtr m_pReadSel;
+    // SelectionPtr m_pReadSel;
     std::vector<quint32> m_selIndArray;
     
+    int m_nAllAtomSize;
   public:
 
     /// create molecule from the appended atoms and selection
     void createMol(SelectionPtr pSel);
 
     quint32 getAllAtomSize() const {
-      return m_pAllMol->getAtomSize();
+      return m_nAllAtomSize;
     }
 
     const quint32 *getSelIndexArray() const {

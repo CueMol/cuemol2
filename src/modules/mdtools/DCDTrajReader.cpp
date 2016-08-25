@@ -27,10 +27,7 @@ DCDTrajReader::DCDTrajReader()
 
 DCDTrajReader::~DCDTrajReader()
 {
-  //if (m_pSel!=NULL)
-  //delete m_pSel;
-  //if (m_pSelAtoms!=NULL)
-  //delete m_pSelAtoms;
+  MB_DPRINTLN("DCDTrajReader destructed.");
 }
 
 ///////////////////////////////////////////
