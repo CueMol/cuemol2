@@ -10,7 +10,7 @@
 
 #include <qlib/mcutils.hpp>
 #include <qsys/ObjReader.hpp>
-#include <molstr/molstr.hpp>
+#include <modules/molstr/molstr.hpp>
 
 namespace mdtools {
 

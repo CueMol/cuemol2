@@ -63,6 +63,7 @@ QdfPdbReader.cpp \
 ResidRangeSet.cpp \
 QdfMolReader.cpp \
 QdfMolWriter.cpp \
+AnimMol.cpp \
 $(NULL)
 
 # CueMol interface definitions for MCWRAPGEN
@@ -91,6 +92,7 @@ PDBFileWriter.qif \
 RectSelDrawObj.qif \
 QdfPdbReader.qif \
 ResidRangeSet.qif \
+AnimMol.qif \
 $(NULL)
 
 
