@@ -19,6 +19,9 @@ runtime_class MorphMol extends MolCoord
   property real frame => redirect(getFrame, setFrame) (nopersist);
   default frame = 0.0;
 
+  property boolean scale_frame => redirect(isScaleFrame, setScaleFrame);
+  default scale_frame = false;
+
   property integer nframe => redirect(getFrameSize, XX) (readonly);
 
   //////////////////////

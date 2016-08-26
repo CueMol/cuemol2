@@ -53,8 +53,6 @@ namespace anim {
     /////////////////////////////////////////////////////
     // specific data
 
-    double m_dframe;
-
     /// number of atoms in each frame
     int m_nAtoms;
     
@@ -63,8 +61,6 @@ namespace anim {
     typedef std::deque<FrameData *> FrameArray;
 
     FrameArray m_frames;
-
-    bool m_bScaleDframe;
 
   public:
     
@@ -99,6 +95,11 @@ namespace anim {
       return m_frames.size();
     }
     
+  private:
+    /// current frame value
+    double m_dframe;
+
+  public:
     void setFrame(double dframe) {
       m_dframe = dframe;
       update(dframe);
@@ -108,6 +109,22 @@ namespace anim {
       return m_dframe;
     }
 
+  private: 
+    /// Scale frame value
+    ///  (i.e. scale 0~nframe-1 vs noscale 0~1)
+    bool m_bScaleDframe;
+
+  public:
+    void setScaleFrame(bool b) {
+      m_bScaleDframe = b;
+      update(m_dframe);
+    }
+
+    bool isScaleFrame() const {
+      return m_bScaleDframe;
+    }
+
+  public:
     ////////////////////////////////////////////////////
     // Serialization/Deserialization
 

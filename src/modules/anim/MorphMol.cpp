@@ -521,6 +521,12 @@ void MorphMol::update(double dframe)
   fireAtomsMoved();
 }
 
+/*void MorphMol::setScaleFrame(bool b)
+{
+  m_bScaleDframe = b;
+  update(m_dframe);
+  }*/
+
 void MorphMol::writeTo2(LDom2Node *pNode) const
 {
   super_t::writeTo2(pNode);
