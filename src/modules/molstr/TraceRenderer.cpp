@@ -52,32 +52,12 @@ void TraceRenderer::beginRend(DisplayContext *pdl)
 {
   pdl->setLineWidth(m_lw);
   return;
-
-/*
-  if (!m_bUseVBO) {
-    pdl->setLineWidth(m_lw);
-    return;
-  }
-
-  m_bPrevAidValid = false;
-  m_nVA = 0;
-*/
 }
 
 void TraceRenderer::beginSegment(DisplayContext *pdl, MolResiduePtr pRes)
 {
   pdl->startLineStrip();
   return;
-
-/*
-  if (!m_bUseVBO) {
-    pdl->startLineStrip();
-    return;
-  }
-
-  m_bPrevAidValid = false;
-  m_nBonds = 0;
-*/
 }
 
 void TraceRenderer::rendResid(DisplayContext *pdl, MolResiduePtr pRes)
@@ -88,151 +68,19 @@ void TraceRenderer::rendResid(DisplayContext *pdl, MolResiduePtr pRes)
   pdl->color(ColSchmHolder::getColor(pRes));
   pdl->vertex(curpt);
   return;
-
-/*
-  if (!m_bUseVBO) {
-    Vector4D curpt = pAtom1->getPos();
-    pdl->color(ColSchmHolder::getColor(pRes));
-    pdl->vertex(curpt);
-    return;
-  }
-
-  // VBO implementation
-
-  if (!m_bPrevAidValid) {
-    m_nPrevAid = pAtom1->getID();
-    m_bPrevAidValid = true;
-  }
-  else {
-    IntBond val;
-    val.aid1 = m_nPrevAid;
-    val.aid2 = pAtom1->getID();
-    m_bonds.push_back(val);
-    m_nPrevAid = val.aid2;
-    m_nBonds ++;
-  }
-*/
 }
 
 void TraceRenderer::endSegment(DisplayContext *pdl, MolResiduePtr pRes)
 {
   pdl->end();
   return;
-
-/*
-  if (!m_bUseVBO) {
-    pdl->end();
-    return;
-  }
-
-  // VBO implementation
-  if (m_nBonds>0) {
-    m_nVA += m_nBonds * 2;
-  }
-  else if (m_bPrevAidValid) {
-    // isolated segment
-    m_nVA += 3*2;
-    m_atoms.push_back(m_nPrevAid);
-  }
-*/
 }
 
 void TraceRenderer::endRend(DisplayContext *pdl)
 {
   pdl->setLineWidth(1.0f);
   return;
-
-/*
-  if (!m_bUseVBO) {
-    pdl->setLineWidth(1.0f);
-    return;
-  }
-
-  if (m_pVBO!=NULL)
-    delete m_pVBO;
-    
-  m_pVBO = MB_NEW gfx::DrawElemVC();
-  m_pVBO->alloc(m_nVA);
-  m_pVBO->setDrawMode(gfx::DrawElemVC::DRAW_LINES);
-  
-  MB_DPRINTLN("TraceRend> %d elems VBO created", m_nVA);
-
-  quint32 i, j, nbonds = m_bonds.size();
-  MolCoordPtr pMol = getClientMol();
-
-  j=0;
-
-  for (i=0; i<nbonds; ++i) {
-    MolAtomPtr pA1 = pMol->getAtom(m_bonds[i].aid1);
-    MolAtomPtr pA2 = pMol->getAtom(m_bonds[i].aid2);
-    
-    quint32 cc1 = ColSchmHolder::getColor(pA1)->getCode();
-    quint32 cc2 = ColSchmHolder::getColor(pA2)->getCode();
-
-    Vector4D pos1 = pA1->getPos();
-    Vector4D pos2 = pA2->getPos();
-
-    m_pVBO->color(j, cc1);
-    m_pVBO->vertex(j, pos1);
-    ++j;
-    m_pVBO->color(j, cc2);
-    m_pVBO->vertex(j, pos2);
-    ++j;
-  }
-
-  quint32 natoms = m_atoms.size();
-
-  // size of the star
-  const double rad = 0.25;
-  const Vector4D xdel(rad,0,0);
-  const Vector4D ydel(0,rad,0);
-  const Vector4D zdel(0,0,rad);
-
-  for (i=0; i<natoms; ++i) {
-    MolAtomPtr pA1 = pMol->getAtom(m_atoms[i]);
-    quint32 cc1 = ColSchmHolder::getColor(pA1)->getCode();
-    Vector4D pos1 = pA1->getPos();
-
-    m_pVBO->color(j, cc1);
-    m_pVBO->vertex(j, pos1-xdel);
-    ++j;
-
-    m_pVBO->color(j, cc1);
-    m_pVBO->vertex(j, pos1+xdel);
-    ++j;
-
-    m_pVBO->color(j, cc1);
-    m_pVBO->vertex(j, pos1-ydel);
-    ++j;
-
-    m_pVBO->color(j, cc1);
-    m_pVBO->vertex(j, pos1+ydel);
-    ++j;
-    
-    m_pVBO->color(j, cc1);
-    m_pVBO->vertex(j, pos1-zdel);
-    ++j;
-
-    m_pVBO->color(j, cc1);
-    m_pVBO->vertex(j, pos1+zdel);
-    ++j;
-
-  }
-*/
 }
-
-/*void TraceRenderer::propChanged(qlib::LPropEvent &ev)
-{
-  if (ev.getName().equals("linew")) {
-    invalidateDisplayCache();
-  }
-  else if (ev.getParentName().equals("coloring")||
-      ev.getParentName().startsWith("coloring.")) {
-    invalidateDisplayCache();
-  }
-
-  MainChainRenderer::propChanged(ev);
-}*/
 
 ///////////////////////////////////////////////////////////
 // New VBO implementation
@@ -254,8 +102,8 @@ void TraceRenderer::display(DisplayContext *pdc)
       updateDynamicVBO();
     else
       updateStaticVBO();
-    //m_bondAids.clear();
-    //m_atomAids.clear();
+    m_bondAids.clear();
+    m_atomAids.clear();
     if (m_pVBO==NULL)
       return; // Error, Cannot draw anything (ignore)
   }
@@ -286,6 +134,9 @@ void TraceRenderer::invalidateDisplayCache()
 void TraceRenderer::createVBO()
 {
   MolCoordPtr pCMol = getClientMol();
+
+  ////////////////////////////////
+  // Estimate bond/atom array sizes
 
   // visit selected residues
   ResidIterator iter(pCMol, getSelection());
@@ -330,6 +181,7 @@ void TraceRenderer::createVBO()
   m_nAtoms = natom;
 
   ////////////////////////////////
+  // Create AID/Index arrays
 
   m_bondAids.resize(nbond*2);
   m_atomAids.resize(natom);

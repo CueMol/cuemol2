@@ -62,11 +62,11 @@ namespace molstr {
     TraceRenderer();
     virtual ~TraceRenderer();
     
-    virtual const char *getTypeName() const;
-
     //////////////////////////////////////////////////////
     // Renderer interface
     
+    virtual const char *getTypeName() const;
+
     virtual void display(DisplayContext *pdc);
     
     //////////////////////////////////////////////////////

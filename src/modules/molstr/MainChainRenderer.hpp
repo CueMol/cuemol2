@@ -51,12 +51,12 @@ namespace molstr {
     virtual LString interpHit(const gfx::RawHitData &hdat);
 
     //////////////////////////////////////////////////////
-    // pure virtual methods
+    // MainChainRenderer interface
 
-    virtual void beginRend(DisplayContext *pdl) =0;
-    virtual void endRend(DisplayContext *pdl) =0;
+    virtual void beginRend(DisplayContext *pdl) {}
+    virtual void endRend(DisplayContext *pdl) {}
     virtual void beginSegment(DisplayContext *pdl, MolResiduePtr pres) {}
-    virtual void rendResid(DisplayContext *pdl, MolResiduePtr pRes) =0;
+    virtual void rendResid(DisplayContext *pdl, MolResiduePtr pRes) {}
     virtual void endSegment(DisplayContext *pdl, MolResiduePtr pres) {}
 
     //////////////////////////////////////////////////////

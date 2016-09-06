@@ -13,6 +13,7 @@
 //#include "CPKRenderer.hpp"
 #include "CPK2Renderer.hpp"
 #include "SplineRenderer.hpp"
+#include "Spline2Renderer.hpp"
 #include "TubeRenderer.hpp"
 #include "RibbonRenderer.hpp"
 #include "NARenderer.hpp"
@@ -38,6 +39,7 @@ bool init()
   // pRF->regist<CPKRenderer>();
   pRF->regist<CPK2Renderer>();
   pRF->regist<SplineRenderer>();
+  pRF->regist<Spline2Renderer>();
   pRF->regist<TubeRenderer>();
   pRF->regist<RibbonRenderer>();
   pRF->regist<NARenderer>();
