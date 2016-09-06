@@ -50,17 +50,11 @@ namespace molstr {
     /// (Implementation is different in the derived classes)
     virtual qfloat32 *getCrdArrayImpl() =0;
 
+    /// Create mappings betwee AID and array index suitable for the implementation
     virtual void createIndexMapImpl(CrdIndexMap &indmap, AidIndexMap &aidmap) =0;
 
     ////////
 
-/*
-    /// Create aid/crdarray index map (based on the atom name order)
-    void createIndexMap();
-
-    /// Create aid/crdarray index map (based on the AID order)
-    void createLinearMap();
-*/
     /// get crdarray index from AID
     quint32 getCrdArrayInd(int aid) const;
 

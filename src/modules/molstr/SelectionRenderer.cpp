@@ -213,7 +213,7 @@ bool SelectionRenderer::isTransp() const
 void SelectionRenderer::display(DisplayContext *pdc)
 {
 #ifdef USE_OPENGL_VBO
-  if (!isUseVBO() || pdc->isFile() || !pdc->isDrawElemSupported()) {
+  if (!isUseVBO(pdc)) {
     // case of the file (non-ogl) rendering
     // always use the old version.
     super_t::display(pdc);
@@ -221,10 +221,14 @@ void SelectionRenderer::display(DisplayContext *pdc)
   }
 
   // new rendering routine using VBO (DrawElem)
-
   if (m_pVBO==NULL) {
     createVBO();
-    updateVBO();
+    if (isUseAnim())
+      updateVBO();
+    else
+      updateStaticVBO();
+    m_bondAids.clear();
+    m_atomAids.clear();
     if (m_pVBO==NULL)
       return; // Error, Cannot draw anything (ignore)
   }
@@ -242,77 +246,89 @@ void SelectionRenderer::display(DisplayContext *pdc)
 void SelectionRenderer::createVBO()
 {
   quint32 i, j;
-  quint32 nbons = 0, natoms = 0, nmbons = 0, nva = 0;
+  quint32 nbons = 0, natoms = 0, nva = 0;
   MolCoordPtr pCMol = getClientMol();
 
-  AnimMol *pMol = static_cast<AnimMol *>(pCMol.get());
+  AnimMol *pAMol = NULL;
+  if (isUseAnim())
+    pAMol = static_cast<AnimMol *>(pCMol.get());
 
   std::deque<int> isolated_atoms;
   
   // build bond data structure/estimate VBO size
+  
+  std::set<int> bonded_atoms;
+  BondIterator biter(pCMol, getSelection());
+  
+  for (biter.first(); biter.hasMore(); biter.next()) {
+    MolBond *pMB = biter.getBond();
+    int aid1 = pMB->getAtom1();
+    int aid2 = pMB->getAtom2();
+    
+    bonded_atoms.insert(aid1);
+    bonded_atoms.insert(aid2);
+    
+    MolAtomPtr pA1 = pCMol->getAtom(aid1);
+    MolAtomPtr pA2 = pCMol->getAtom(aid2);
+    
+    if (pA1.isnull() || pA2.isnull())
+      continue; // skip invalid bonds
+    
+    ++nbons;
+  }
+  
+  m_nBonds = nbons;
+  m_bondAids.resize(m_nBonds*2);
+  if (isUseAnim())
+    m_bondInds.resize(m_nBonds*2);
 
-    std::set<int> bonded_atoms;
-    BondIterator biter(pCMol, getSelection());
-
-    for (biter.first(); biter.hasMore(); biter.next()) {
-      MolBond *pMB = biter.getBond();
-      int aid1 = pMB->getAtom1();
-      int aid2 = pMB->getAtom2();
-
-      bonded_atoms.insert(aid1);
-      bonded_atoms.insert(aid2);
-
-      MolAtomPtr pA1 = pMol->getAtom(aid1);
-      MolAtomPtr pA2 = pMol->getAtom(aid2);
-
-      if (pA1.isnull() || pA2.isnull())
-        continue; // skip invalid bonds
-
-      ++nbons;
+  i=0;
+  j=0;
+  int iva = 0;
+  for (biter.first(); biter.hasMore(); biter.next()) {
+    MolBond *pMB = biter.getBond();
+    int aid1 = pMB->getAtom1();
+    int aid2 = pMB->getAtom2();
+    
+    MolAtomPtr pA1 = pCMol->getAtom(aid1);
+    MolAtomPtr pA2 = pCMol->getAtom(aid2);
+    
+    if (pA1.isnull() || pA2.isnull())
+      continue; // skip invalid bonds
+    
+    m_bondAids[i*2+0] = aid1;
+    m_bondAids[i*2+1] = aid2;
+    if (isUseAnim()) {
+      m_bondInds[i*2+0] = pAMol->getCrdArrayInd(aid1) * 3;
+      m_bondInds[i*2+1] = pAMol->getCrdArrayInd(aid2) * 3;
     }
-
-    m_sbonds.resize(nbons);
-
-    i=0;
-    j=0;
-    int iva = 0;
-    for (biter.first(); biter.hasMore(); biter.next()) {
-      MolBond *pMB = biter.getBond();
-      int aid1 = pMB->getAtom1();
-      int aid2 = pMB->getAtom2();
-
-      MolAtomPtr pA1 = pMol->getAtom(aid1);
-      MolAtomPtr pA2 = pMol->getAtom(aid2);
-
-      if (pA1.isnull() || pA2.isnull())
-        continue; // skip invalid bonds
-      
-      m_sbonds[i].aid1 = aid1;
-      m_sbonds[i].aid2 = aid2;
-      m_sbonds[i].ind1 = pMol->getCrdArrayInd(aid1) * 3;
-      m_sbonds[i].ind2 = pMol->getCrdArrayInd(aid2) * 3;
-      m_sbonds[i].vaind = iva;
-      iva+=4;
-      ++i;
-    }
+    // m_sbonds[i].vaind = iva;
+    iva+=2;
+    ++i;
+  }
 
   // build isolated atom data structure/estimate VBO size
   AtomIterator aiter(pCMol, getSelection());
   for (aiter.first(); aiter.hasMore(); aiter.next()) {
     int aid = aiter.getID();
-    MolAtomPtr pAtom = pMol->getAtom(aid);
+    MolAtomPtr pAtom = pCMol->getAtom(aid);
     if (pAtom.isnull()) continue; // ignore errors
     if (bonded_atoms.find(aid)!=bonded_atoms.end())
       continue; // already bonded
     isolated_atoms.push_back(aid);
   }
   natoms = isolated_atoms.size();
-  m_atoms.resize(natoms);
+  m_nAtoms = natoms;
+  m_atomAids.resize(m_nAtoms);
+  if (isUseAnim())
+    m_atomInds.resize(m_nAtoms);
+
   for (i=0; i<natoms; ++i) {
     int aid1 = isolated_atoms[i];
-    m_atoms[i].aid1 = aid1;
-    m_atoms[i].ind1 = pMol->getCrdArrayInd(aid1) * 3;
-    m_atoms[i].vaind = iva;
+    m_atomAids[i] = aid1;
+    if (isUseAnim())
+      m_atomInds[i] = pAMol->getCrdArrayInd(aid1) * 3;
+    // m_atoms[i].vaind = iva;
     iva += 2*3;
   }
   
@@ -323,37 +339,34 @@ void SelectionRenderer::createVBO()
     
   m_pVBO = MB_NEW gfx::DrawElemV();
   m_pVBO->alloc(nva);
-  m_pVBO->setDrawMode(gfx::DrawElemVC::DRAW_LINES);
+  m_pVBO->setDrawMode(gfx::DrawElem::DRAW_LINES);
   LOG_DPRINTLN("SelectionRenderer> %d elems VBO created", nva);
 }
 
 void SelectionRenderer::updateVBO()
 {
   quint32 i = 0, j = 0;
-  quint32 aid1, aid2;
-  quint32 nbons = m_sbonds.size();
-  quint32 natoms = m_atoms.size();
+  quint32 ind1, ind2;
   
   MolCoordPtr pCMol = getClientMol();
   AnimMol *pMol = static_cast<AnimMol *>(pCMol.get());
   
   qfloat32 *crd = pMol->getAtomCrdArray();
 
-  MolAtomPtr pA1, pA2;
-
+  // MolAtomPtr pA1, pA2;
   // ColorPtr pcol1, pcol2;
   Vector3F pos1, pos2;
 
   // Single bonds
-  for (i=0; i<nbons; ++i) {
-    aid1 = m_sbonds[i].ind1;
-    aid2 = m_sbonds[i].ind2;
-    j = m_sbonds[i].vaind;
+  for (i=0; i<m_nBonds; ++i) {
+    ind1 = m_bondInds[i*2+0];
+    ind2 = m_bondInds[i*2+1];
+    // j = m_sbonds[i].vaind;
 
-    m_pVBO->vertexfp(j, &crd[aid1]);
+    m_pVBO->vertexfp(j, &crd[ind1]);
     ++j;
-    m_pVBO->vertexfp(j, &crd[aid2]);
-    //++j;
+    m_pVBO->vertexfp(j, &crd[ind2]);
+    ++j;
   }
 
   // Isolated atoms
@@ -362,11 +375,11 @@ void SelectionRenderer::updateVBO()
   const qfloat32 rad = 0.25;
   const qfloat32 rad2 = rad*2.0f;
 
-  for (i=0; i<natoms; ++i) {
-    quint32 aid1 = m_atoms[i].ind1;
-    quint32 j = m_atoms[i].vaind;
+  for (i=0; i<m_nAtoms; ++i) {
+    quint32 ind1 = m_atomInds[i];
+    // quint32 j = m_atoms[i].vaind;
 
-    pos1.set(&crd[aid1]);
+    pos1.set(&crd[ind1]);
 
     pos1.x() -= rad;
     m_pVBO->vertex3f(j, pos1);
@@ -393,6 +406,61 @@ void SelectionRenderer::updateVBO()
   }
 }
 
+void SelectionRenderer::updateStaticVBO()
+{
+  quint32 i = 0, j = 0;
+  quint32 aid1, aid2;
+  
+  MolCoordPtr pCMol = getClientMol();
+
+  MolAtomPtr pA1, pA2;
+  Vector4D pos1, pos2;
+
+  // Single bonds
+  for (i=0; i<m_nBonds; ++i) {
+    // j = m_sbonds[i].vaind;
+    m_pVBO->vertex(j, pCMol->getAtom(m_bondAids[i*2+0])->getPos() );
+    ++j;
+    m_pVBO->vertex(j, pCMol->getAtom(m_bondAids[i*2+1])->getPos() );
+    ++j;
+  }
+
+  // Isolated atoms
+  
+  // size of the star
+  const qfloat32 rad = 0.25;
+  const qfloat32 rad2 = rad*2.0f;
+
+  for (i=0; i<m_nAtoms; ++i) {
+    pos1 = pCMol->getAtom(m_atomAids[i])->getPos();
+    // quint32 j = m_atoms[i].vaind;
+
+    pos1.x() -= rad;
+    m_pVBO->vertex(j, pos1);
+    ++j;
+    pos1.x() += rad2;
+    m_pVBO->vertex(j, pos1);
+    pos1.x() -= rad;
+    ++j;
+
+    pos1.y() -= rad;
+    m_pVBO->vertex(j, pos1);
+    ++j;
+    pos1.y() += rad2;
+    m_pVBO->vertex(j, pos1);
+    ++j;
+    pos1.y() -= rad;
+
+    pos1.z() -= rad;
+    m_pVBO->vertex(j, pos1);
+    ++j;
+    pos1.z() += rad2;
+    m_pVBO->vertex(j, pos1);
+    ++j;
+  }
+
+}
+
 void SelectionRenderer::invalidateDisplayCache()
 {
 #ifdef USE_OPENGL_VBO
@@ -400,8 +468,10 @@ void SelectionRenderer::invalidateDisplayCache()
     delete m_pVBO;
     m_pVBO = NULL;
 
-    m_sbonds.clear();
-    m_atoms.clear();
+    m_bondAids.clear();
+    m_bondInds.clear();
+    m_atomAids.clear();
+    m_atomInds.clear();
   }
 #endif
 

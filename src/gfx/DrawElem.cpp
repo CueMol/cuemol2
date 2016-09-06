@@ -62,12 +62,12 @@ bool DrawElem::color(int ind, quint32 c)
   return false;
 }
 
-bool DrawElem::vertexfp(int ind, const qfloat32 *pcrd)
+/*bool DrawElem::vertexfp(int ind, const qfloat32 *pcrd)
 {
   return vertex(ind, Vector4D(pcrd[0],
                               pcrd[1],
                               pcrd[2]));
-}
+}*/
 
 
 //////////////////////////
@@ -100,6 +100,7 @@ bool DrawElemVC::vertex(int ind, const Vector4D &v)
   return true;
 }
 
+/*
 bool DrawElemVC::vertexfp(int ind, const qfloat32 *pcrd)
 {
   if (ind<0 || getSize()<=ind) return false;
@@ -108,7 +109,7 @@ bool DrawElemVC::vertexfp(int ind, const qfloat32 *pcrd)
   m_pData[ind].y = pcrd[1];
   m_pData[ind].z = pcrd[2];
   return true;
-}
+}*/
 
 bool DrawElemVC::getVertex(int ind, Vector4D &v) const
 {
@@ -161,7 +162,7 @@ bool DrawElemV::vertex(int ind, const Vector4D &v)
   return true;
 }
 
-bool DrawElemV::vertexfp(int ind, const qfloat32 *pcrd)
+/*bool DrawElemV::vertexfp(int ind, const qfloat32 *pcrd)
 {
   if (ind<0 || getSize()<=ind) return false;
 
@@ -169,7 +170,7 @@ bool DrawElemV::vertexfp(int ind, const qfloat32 *pcrd)
   m_pData[ind].y = pcrd[1];
   m_pData[ind].z = pcrd[2];
   return true;
-}
+}*/
 
 bool DrawElemV::getVertex(int ind, Vector4D &v) const
 {

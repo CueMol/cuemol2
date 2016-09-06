@@ -1075,7 +1075,7 @@ void Ribbon2Renderer::buildCoilData()
     LString sec;
     pRes->getPropStr("secondary2", sec);
     sec = sec.substr(0,1);
-    MB_DPRINTLN("%d sec=%s, prev=%s", i, sec.c_str(), prev_ss.c_str());
+    // MB_DPRINTLN("%d sec=%s, prev=%s", i, sec.c_str(), prev_ss.c_str());
 
     if ( isCoil(sec, !m_bRibbonHelix) ) {
       if ( !isCoil(prev_ss, !m_bRibbonHelix) ) {

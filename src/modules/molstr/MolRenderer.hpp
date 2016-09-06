@@ -81,11 +81,16 @@ namespace molstr {
 
   private:
     /// VBO enable flag
-    bool m_bUseVBO;
+    bool m_bUseAnim;
 
   public:
-    inline bool isUseVBO() const {
-      return m_bUseVBO;
+    inline bool isUseAnim() const {
+      return m_bUseAnim;
+    }
+
+    inline bool isUseVBO(DisplayContext *pdc) {
+      return !pdc->isFile() && pdc->isDrawElemSupported();
+      //return isUseAnim() && !pdc->isFile() && pdc->isDrawElemSupported();
     }
 
     MolCoordPtr getClientMol() const;

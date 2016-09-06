@@ -102,31 +102,21 @@ namespace molstr {
   private:
     // Line mode impl
 
-    /// bonds
-    struct IntBond
-    {
-      quint32 aid1, aid2;
-      quint32 ind1, ind2;
-      quint32 vaind;
-    };
+    typedef std::vector<quint32> IDArray;
 
-    typedef std::vector<IntBond> IntBondArray;
+    int m_nBonds, m_nAtoms;
 
-    /// bonds
-    IntBondArray m_sbonds;
+    /// Bond AID array
+    IDArray m_bondAids;
 
-    /// isolated atoms
-    struct IntAtom
-    {
-      quint32 aid1;
-      quint32 ind1;
-      quint32 vaind;
-    };
+    /// Bond CrdArray index array
+    IDArray m_bondInds;
 
-    typedef std::vector<IntAtom> IntAtomArray;
-    
-    /// isolated atoms
-    IntAtomArray m_atoms;
+    /// Isolated atom AID array
+    IDArray m_atomAids;
+
+    /// Isolated atom CrdArray index array
+    IDArray m_atomInds;
 
     /// cached vertex array/VBO
     gfx::DrawElemV *m_pVBO;
@@ -141,8 +131,12 @@ namespace molstr {
     /// Create VBO (and associated data structures)
     void createVBO();
     
-    /// update VBO using m_sbonds and m_atoms and MolCoord's data
+    /// update VBO using m_bondInds, m_atomInds and CrdArray
     void updateVBO();
+
+    /// update VBO without CrdArray
+    void updateStaticVBO();
+
   };
 
 }

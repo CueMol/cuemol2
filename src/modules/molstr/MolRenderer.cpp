@@ -29,7 +29,7 @@ using namespace molstr;
 MolRenderer::MolRenderer()
   : super_t(), ColSchmHolder()
 {
-  m_bUseVBO = false;
+  m_bUseAnim = false;
 }
 
 MolRenderer::MolRenderer(const MolRenderer &r)
@@ -61,11 +61,11 @@ void MolRenderer::attachObj(qlib::uid_t obj_uid)
   MolCoordPtr pObj = getClientMol();
   qlib::LScrSp<AnimMol> pAM(pObj, qlib::no_throw_tag());
   if (pAM.isnull())
-    m_bUseVBO = false;
+    m_bUseAnim = false;
   else
-    m_bUseVBO = true;
+    m_bUseAnim = true;
 
-  LOG_DPRINTLN("MolRenderer> UseVBO = %d", m_bUseVBO);
+  LOG_DPRINTLN("MolRenderer> UseAnim = %d", m_bUseAnim);
 }
 
 

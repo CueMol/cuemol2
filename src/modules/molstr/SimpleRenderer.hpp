@@ -172,10 +172,16 @@ namespace molstr {
 
   private:
     /// Rendering using VBO (builds sbonds, mbonds, and atoms data structure)
-    void renderVBO();
+    void createVBO();
 
-    /// update VBO using m_sbonds, m_mbonds, m_atoms and MolCoord's data
-    void updateVBO(bool bUpdateColor);
+    /// update VBO positions using m_sbonds, m_mbonds, m_atoms and CrdArray data
+    void updateDynamicVBO();
+
+    /// update VBO positions without CrdArray
+    void updateStaticVBO();
+
+    /// update VBO colors
+    void updateVBOColor();
 
     //////////////////////////////////////////////////////
     // Event handling

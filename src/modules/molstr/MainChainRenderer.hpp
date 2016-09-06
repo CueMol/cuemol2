@@ -21,11 +21,7 @@ namespace molstr {
     friend class ::MainChainRenderer_wrap;
 
   private:
-    //MCINFO: LString m_sPivAtomName => pivotatom
     LString m_sPivAtomName;
-
-    // //MCINFO: double m_dBondBrkDist => autobreak
-    // double m_dBondBrkDist;
 
   public:
     typedef MolRenderer super_t;
