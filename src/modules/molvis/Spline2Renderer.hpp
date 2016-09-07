@@ -33,13 +33,19 @@ namespace molvis {
     /// Pivot atom AID array
     IDArray m_aids;
 
+    IDArray m_inds;
+
     /// cached vertex array/VBO
     gfx::DrawElemVC *m_pVBO;
 
     std::deque<quint32> m_aidtmp;
 
-    int m_nSize;
+    int m_nPoints;
     
+    int m_nDetail;
+    int m_nVA;
+
+
     typedef std::vector<Vector3F> VecArray;
 
     VecArray m_pos;
@@ -56,7 +62,7 @@ namespace molvis {
 
     void generate(Spline2Renderer *pthis);
 
-    quint32 getSize() const { return m_nSize; }
+    quint32 getSize() const { return m_nPoints; }
 
     MolAtomPtr getAtom(MolCoordPtr pMol, quint32 ind) const {
       quint32 aid = m_aids[ind];
@@ -74,7 +80,16 @@ namespace molvis {
 
     void updateVBOColor(Spline2Renderer *pthis);
 
-    void draw(Spline2Renderer *pthis);
+    void draw(Spline2Renderer *pthis, DisplayContext *pdc);
+
+  private:
+    void generateNaturalSpline();
+    void allocWorkArea();
+    void freeWorkArea();
+
+    void interpolate(float par, Vector3F *vec,
+                     Vector3F *dvec = NULL,
+                     Vector3F *ddvec = NULL);
 
   };
 

@@ -12,6 +12,7 @@
 #include <modules/molstr/MolChain.hpp>
 #include <modules/molstr/MolResidue.hpp>
 #include <modules/molstr/ResidIterator.hpp>
+#include <modules/molstr/AnimMol.hpp>
 
 using namespace molvis;
 using namespace molstr;
@@ -52,23 +53,24 @@ void Spline2Renderer::display(DisplayContext *pdc)
   if (m_seglist.empty()) {
     createSegList();
 
-    if (m_seglist.empty())
-      return; // Error, Cannot draw anything (ignore)
+    //if (m_seglist.empty())
+    //return; // Error, Cannot draw anything (ignore)
 
     BOOST_FOREACH (Spline2Seg &elem, m_seglist) {
-      elem.updateVBOColor(this);
-      if (isUseAnim())
-        elem.updateDynamicVBO(this);
-      else
-        elem.updateStaticVBO(this);
+      if (elem.getSize()>0) {
+        elem.updateVBOColor(this);
+        if (isUseAnim())
+          elem.updateDynamicVBO(this);
+        else
+          elem.updateStaticVBO(this);
+      }
     }
   }
 
   preRender(pdc);
   BOOST_FOREACH (Spline2Seg &elem, m_seglist) {
-    //m_pVBO->setLineWidth(m_dLineWidth);
-    //pdc->drawElem(*m_pVBO);
-    elem.draw(this);
+    if (elem.getSize()>0)
+      elem.draw(this, pdc);
   }
   postRender(pdc);
 
@@ -95,12 +97,23 @@ void Spline2Renderer::propChanged(qlib::LPropEvent &ev)
 
 void Spline2Renderer::objectChanged(qsys::ObjectEvent &ev)
 {
-  if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED) {
-    // invalidateSplineCoeffs();
-    invalidateDisplayCache();
-    return;
+  if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED &&
+      ev.getDescr().equals("atomsMoved")) {
+
+    // OBE_CHANGED && descr=="atomsMoved"
+
+    if (isUseAnim()) {
+      BOOST_FOREACH (Spline2Seg &elem, m_seglist) {
+        if (elem.getSize()>0) {
+          // only update positions
+          elem.updateDynamicVBO(this);
+        }
+      }
+      return;
+    }
+
   }
-  
+
   super_t::objectChanged(ev);
 }
 
@@ -152,6 +165,9 @@ void Spline2Renderer::createSegList()
 Spline2Seg::Spline2Seg()
 {
   m_pVBO = NULL;
+  m_nDetail = 10;
+  m_nVA = 0;
+  m_nPoints = 0;
 }
 
 Spline2Seg::~Spline2Seg()
@@ -165,6 +181,26 @@ void Spline2Seg::append(MolAtomPtr pAtom)
   m_aidtmp.push_back(pAtom->getID());
 }
 
+void Spline2Seg::allocWorkArea()
+{
+  m_pos.resize(m_nPoints);
+  m_coeff0.resize(m_nPoints);
+  m_coeff1.resize(m_nPoints);
+  m_coeff2.resize(m_nPoints);
+  m_coeff3.resize(m_nPoints);
+}
+
+void Spline2Seg::freeWorkArea()
+{
+/*
+  m_pos.clear();
+  m_coeff0.clear();
+  m_coeff1.clear();
+  m_coeff2.clear();
+  m_coeff3.clear();
+*/
+}
+
 void Spline2Seg::generate(Spline2Renderer *pthis)
 {
   quint32 nsz = m_aidtmp.size();
@@ -176,26 +212,110 @@ void Spline2Seg::generate(Spline2Renderer *pthis)
   m_aids.resize(nsz);
   m_aids.assign(m_aidtmp.begin(), m_aidtmp.end());
   m_aidtmp.clear();
-  m_nSize = nsz;
+  m_nPoints = nsz;
 
   MolCoordPtr pCMol = pthis->getClientMol();
 
-  m_pos.resize(nsz);
+  if (pthis->isUseAnim()) {
+    AnimMol *pAMol = static_cast<AnimMol *>(pCMol.get());
+    m_inds.resize(nsz);
+    quint32 i;
+    for (i=0; i<nsz; ++i) {
+      m_inds[i] = pAMol->getCrdArrayInd(m_aids[i]) * 3;
+    }
+  }
+
+  allocWorkArea();
+
+  m_nVA = m_nDetail * (m_nPoints - 1) + 1;
+
+  if (m_pVBO!=NULL)
+    delete m_pVBO;
+    
+  m_pVBO = MB_NEW gfx::DrawElemVC();
+  m_pVBO->alloc(m_nVA);
+  m_pVBO->setDrawMode(gfx::DrawElem::DRAW_LINE_STRIP);
+  LOG_DPRINTLN("Spline2Seg> %d elems VBO created", m_nVA);
+
+}
+
+void Spline2Seg::updateDynamicVBO(Spline2Renderer *pthis)
+{
+  MolCoordPtr pCMol = pthis->getClientMol();
+  AnimMol *pAMol = static_cast<AnimMol *>(pCMol.get());
+
+  qfloat32 *crd = pAMol->getAtomCrdArray();
+
   MolAtomPtr pAtom;
   Vector4D pos4d;
-  quint32 i;
-  for (i=0; i<m_nSize; ++i) {
+  int i;
+  for (i=0; i<m_nPoints; ++i) {
+    m_pos[i] = Vector3F(&crd[m_inds[i]]);
+  }
+
+  generateNaturalSpline();
+
+  float par;
+  Vector3F pos;
+  
+  for (i=0; i<m_nVA; ++i) {
+    par = float(i)/float(m_nDetail);
+    interpolate(par, &pos);
+    m_pVBO->vertex3f(i, pos);
+  }
+
+  m_pVBO->setUpdated(true);
+}
+
+void Spline2Seg::updateStaticVBO(Spline2Renderer *pthis)
+{
+  MolCoordPtr pCMol = pthis->getClientMol();
+  MolAtomPtr pAtom;
+  Vector4D pos4d;
+  int i;
+  for (i=0; i<m_nPoints; ++i) {
     pAtom = pCMol->getAtom(m_aids[i]);
     pos4d = pAtom->getPos();
     m_pos[i] = Vector3F(pos4d.x(), pos4d.y(), pos4d.z());
   }
 
-  m_coeff0.resize(nsz);
-  m_coeff1.resize(nsz);
-  m_coeff2.resize(nsz);
-  m_coeff3.resize(nsz);
+  generateNaturalSpline();
 
-  if (nsz==2) {
+  float par;
+  Vector3F pos;
+  
+  for (i=0; i<m_nVA; ++i) {
+    par = float(i)/float(m_nDetail);
+    interpolate(par, &pos);
+    m_pVBO->vertex3f(i, pos);
+  }
+
+}
+
+void Spline2Seg::updateVBOColor(Spline2Renderer *pthis)
+{
+  quint32 i;
+  quint32 cc1 = 0xFFFFFFFF;
+  for (i=0; i<m_nVA; ++i) {
+    m_pVBO->color(i, cc1);
+  }
+}
+
+void Spline2Seg::draw(Spline2Renderer *pthis, DisplayContext *pdc)
+{
+  const double lw = pthis->getLineWidth();
+  m_pVBO->setLineWidth(lw);
+  pdc->drawElem(*m_pVBO);
+}
+
+///////////////////////////////////////////////
+// Spline routines
+
+void Spline2Seg::generateNaturalSpline()
+{
+  int i;
+
+  if (m_nPoints==2) {
     // Degenerated case (line)
     const Vector3F &p0 = m_pos[0];
     const Vector3F &p1 = m_pos[1];
@@ -210,7 +330,7 @@ void Spline2Seg::generate(Spline2Renderer *pthis)
   ///////////////////////////////////////////////////
   // calculate natural spline coeffs
 
-  int intNo = nsz - 1;  // number of intervals
+  int intNo = m_nPoints - 1;  // number of intervals
   int equNo = intNo - 1;  // number of equations
 
   // interval sizes
@@ -288,25 +408,43 @@ void Spline2Seg::generate(Spline2Renderer *pthis)
     m_coeff2[i] = d0.scale(0.5f*hsq);
     m_coeff1[i] = invec[i+1] - invec[i] - (d1 + d0.scale(2.0f)).scale(hsq/6.0f);
     m_coeff0[i] = invec[i];
+  }
+}
 
+void Spline2Seg::interpolate(float par, Vector3F *vec,
+                             Vector3F *dvec /*= NULL*/,
+                             Vector3F *ddvec /*= NULL*/)
+{
+  // check parameter value f
+  int ncoeff = int(::floor(par));
+  if (ncoeff<0)
+    ncoeff = 0;
+  if (ncoeff>=(m_nPoints-1))
+    ncoeff = m_nPoints-2;
+
+  const Vector3F &coeff0 = m_coeff0[ncoeff];
+  const Vector3F &coeff1 = m_coeff1[ncoeff];
+  const Vector3F &coeff2 = m_coeff2[ncoeff];
+  const Vector3F &coeff3 = m_coeff3[ncoeff];
+
+  float f = par - float(ncoeff);
+
+  Vector3F tmp;
+  tmp = coeff3.scale(f) + coeff2;
+  tmp = tmp.scale(f) + coeff1;
+  tmp = tmp.scale(f) + coeff0;
+  *vec = tmp;
+
+  if (dvec != NULL) {
+    // calculate tangential vector
+    tmp = coeff3.scale(3.0f*f) + coeff2.scale(2.0f);
+    tmp = tmp.scale(f) + coeff1;
+    *dvec = tmp;
   }
 
+  if (ddvec != NULL) {
+    // calculate curvature vector
+    tmp = coeff3.scale(6.0f*f) + coeff2.scale(2.0f);
+    *ddvec = tmp;
+  }
 }
-
-void Spline2Seg::updateDynamicVBO(Spline2Renderer *pthis)
-{
-}
-
-void Spline2Seg::updateStaticVBO(Spline2Renderer *pthis)
-{
-}
-
-void Spline2Seg::updateVBOColor(Spline2Renderer *pthis)
-{
-}
-
-void Spline2Seg::draw(Spline2Renderer *pthis)
-{
-}
-
-

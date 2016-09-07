@@ -48,7 +48,7 @@ namespace qlib {
     {
       super_t::ai(1) = ax;
       super_t::ai(2) = ay;
-      super_t::ai(3) = ay;
+      super_t::ai(3) = az;
     }
 
   public:
