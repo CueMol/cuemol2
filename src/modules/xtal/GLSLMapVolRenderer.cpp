@@ -13,6 +13,8 @@
 #include <qsys/View.hpp>
 #include <qsys/Scene.hpp>
 
+#include <gfx/Texture.hpp>
+
 #define CHK_GLERROR(MSG)\
 { \
   GLenum errc; \
@@ -39,6 +41,8 @@ GLSLMapVolRenderer::GLSLMapVolRenderer()
   m_pPO = NULL;
 
   m_nMapTexID = 0;
+  m_pMapTex = NULL;
+
   m_nXfunTexID = 0;
 
   m_bMapTexOK = false;
@@ -134,6 +138,186 @@ void GLSLMapVolRenderer::viewChanged(qsys::ViewEvent &ev)
 
 //////////////////////////////////////////////////////////////////
 
+#include <qsys/SceneManager.hpp>
+
+namespace {
+
+  using namespace gfx;
+
+  class OglTextureRep : public gfx::TextureRep
+  {
+  private:
+    qlib::uid_t m_nSceneID;
+
+    /// OpenGL ID of resource
+    GLuint m_nTexID;
+
+    /// Dimension type
+    GLenum m_iDimType;
+
+    /// size of data
+    int m_nWidth;
+    int m_nHeight;
+    int m_nDepth;
+
+    bool m_bInit;
+
+  public:
+    OglTextureRep(qlib::uid_t nSceneID)
+      : m_nSceneID(nSceneID)
+    {
+      m_nWidth = 0;
+      m_nHeight = 0;
+      m_nDepth = 0;
+      m_bInit = false;
+    }
+
+    virtual ~OglTextureRep() {
+      destroy();
+    }
+
+    virtual void setup(int iDim, int iPixFmt, int iPixType)
+    {
+      switch (iDim) {
+      case 1:
+	m_iDimType = GL_TEXTURE_1D;
+	break;
+      case 2:
+	m_iDimType = GL_TEXTURE_2D;
+	break;
+      case 3:
+	m_iDimType = GL_TEXTURE_3D;
+	break;
+      default:
+	MB_THROW(qlib::RuntimeException, "Unsupported dimension");
+	break;
+      }
+
+      switch (iPixFmt) {
+      case AbstTexture::FMT_R:
+	break;
+      case AbstTexture::FMT_RG:
+	break;
+      case AbstTexture::FMT_RGB:
+	break;
+      case AbstTexture::FMT_RGBA:
+	break;
+      default:
+	MB_THROW(qlib::RuntimeException, "Unsupported pixel format");
+	break;
+      }
+
+      createGL();
+      setupGL();
+    }
+
+    /*void setData1D(void *pdata, int w)
+    {
+      setData(pdata, w, 1, 1);
+      }*/
+
+    virtual void setData(int width, int height, int depth, const void *pdata)
+    {
+      if (m_nWidth!=width ||
+	  m_nHeight!=height ||
+	  m_nDepth!=depth)
+	m_bInit = false;
+      
+      m_nWidth = width;
+      m_nHeight = height;
+      m_nDepth = depth;
+      setDataGL(pdata);
+    }
+
+    virtual void use(int nUnit)
+    {
+      glActiveTexture(GL_TEXTURE0 + nUnit);
+      glBindTexture(GL_TEXTURE_3D, m_nTexID);
+    }
+
+    virtual void unuse()
+    {
+      glActiveTexture(GL_TEXTURE0);
+      glBindTexture(GL_TEXTURE_3D, 0);
+    }
+
+  private:
+    void createGL()
+    {
+      glGenTextures(1, &m_nTexID);
+    }
+
+    void setupGL()
+    {
+      glEnable(GL_TEXTURE_3D);
+      glBindTexture(GL_TEXTURE_3D, m_nTexID);
+      glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+      glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+      glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+      glBindTexture(GL_TEXTURE_3D, 0);
+      glDisable(GL_TEXTURE_3D);
+    }
+
+    void setDataGL(const void *pdata)
+    {
+      glEnable(GL_TEXTURE_3D);
+      glBindTexture(GL_TEXTURE_3D, m_nTexID);
+      glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
+      glPixelStorei( GL_UNPACK_ALIGNMENT, 1 );
+
+      if (!m_bInit) {
+	glTexImage3D(GL_TEXTURE_3D, 0,
+		     GL_LUMINANCE,
+		     m_nWidth, m_nHeight, m_nDepth, 0,
+		     GL_LUMINANCE, GL_UNSIGNED_BYTE, pdata);
+	m_bInit = true;
+      }
+      else {
+	glTexSubImage3D(GL_TEXTURE_3D,
+			0, // LOD
+			0, 0, 0, // offset
+			m_nWidth, m_nHeight, m_nDepth, // size
+			GL_LUMINANCE, // format
+			GL_UNSIGNED_BYTE, // type
+			pdata);
+      }
+    }
+
+    void setCurrentContext()
+    {
+      qsys::ScenePtr rsc = qsys::SceneManager::getSceneS(m_nSceneID);
+      if (rsc.isnull()) {
+        MB_DPRINTLN("OglVBO> unknown scene, VBO %d cannot be deleted", m_nTexID);
+        return;
+      }
+
+      qsys::Scene::ViewIter viter = rsc->beginView();
+      if (viter==rsc->endView()) {
+        MB_DPRINTLN("OglVBO> no view, VBO %d cannot be deleted", m_nTexID);
+        return;
+      }
+
+      qsys::ViewPtr rvw = viter->second;
+      if (rvw.isnull()) {
+        // If any views aren't found, it is no problem,
+        // because the parent context (and also all DLs) may be already destructed.
+        return;
+      }
+      gfx::DisplayContext *pctxt = rvw->getDisplayContext();
+      pctxt->setCurrent();
+    }
+
+    void destroy()
+    {
+      setCurrentContext();
+      glDeleteTextures(1, &m_nTexID);
+    }
+  };
+
+}
+
 void GLSLMapVolRenderer::initShader()
 {
   sysdep::ShaderSetupHelper<GLSLMapVolRenderer> ssh(this);
@@ -161,6 +345,7 @@ void GLSLMapVolRenderer::initShader()
   // glGenBuffersARB(1, &m_nVBOID);
 
   // setup texture (map 3D tex)
+  /*
   glGenTextures(1, &m_nMapTexID);
   glActiveTexture(GL_TEXTURE0);
   glEnable(GL_TEXTURE_3D);
@@ -172,7 +357,12 @@ void GLSLMapVolRenderer::initShader()
   glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
   glBindTexture(GL_TEXTURE_3D, 0);
   glDisable(GL_TEXTURE_3D);
-  
+  */
+  qlib::uid_t nSceneID = getSceneID();
+  m_pMapTex = MB_NEW gfx::Texture3D();
+  m_pMapTex->setRep(MB_NEW OglTextureRep(nSceneID));
+  m_pMapTex->setup();
+
   // setup texture (xfer function 1D tex; unit 1)
   glGenTextures(1, &m_nXfunTexID);
   glActiveTexture(GL_TEXTURE1);
@@ -192,7 +382,12 @@ void GLSLMapVolRenderer::initShader()
 void GLSLMapVolRenderer::unloading()
 {
   // delete texture
-  glDeleteTextures(1, &m_nMapTexID);
+  //glDeleteTextures(1, &m_nMapTexID);
+  if (m_pMapTex!=NULL) {
+    delete m_pMapTex;
+    m_pMapTex = NULL;
+  }
+
   glDeleteTextures(1, &m_nXfunTexID);
   // glDeleteBuffersARB(1, &m_nVBOID);
 
@@ -341,6 +536,7 @@ void GLSLMapVolRenderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
         //dataField[i + ncol*(j + nrow*k)] = float(i)/float(ncol);
       }
 
+  /*
   glActiveTexture(GL_TEXTURE0);
   glEnable(GL_TEXTURE_3D);
   glBindTexture(GL_TEXTURE_3D, m_nMapTexID);
@@ -362,6 +558,9 @@ void GLSLMapVolRenderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
                     GL_UNSIGNED_BYTE, // type
                     m_maptmp.data());
   }
+  */
+  //m_pMapTex->setDimension(ncol, nrow, nsec);
+  m_pMapTex->setData(ncol, nrow, nsec, m_maptmp.data());
 
   {
     //
@@ -685,9 +884,12 @@ void GLSLMapVolRenderer::renderGPU(DisplayContext *pdc)
 
   //////////////////////////////
 
+  /*
   glActiveTexture(GL_TEXTURE0);
   //glEnable(GL_TEXTURE_3D);
   glBindTexture(GL_TEXTURE_3D, m_nMapTexID);
+  */
+  m_pMapTex->use(0);
 
   glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_1D, m_nXfunTexID);
@@ -719,6 +921,8 @@ void GLSLMapVolRenderer::renderGPU(DisplayContext *pdc)
   glActiveTexture( GL_TEXTURE0 );
   glDisable( GL_TEXTURE_3D );
   glBindTexture(GL_TEXTURE_3D, 0);
+
+  m_pMapTex->unuse();
 
   if (m_pPO)
     m_pPO->disable();

@@ -18,6 +18,7 @@
 #include <sysdep/OglProgramObject.hpp>
 
 #include <gfx/MultiGradient.hpp>
+#include <gfx/Texture.hpp>
 
 class GLSLMapVolRenderer_wrap;
 
@@ -98,6 +99,8 @@ namespace xtal {
 
     /// map 3D texture ID
     GLuint m_nMapTexID;
+
+    gfx::Texture3D *m_pMapTex;
 
     // transfer function 1D texture
     GLuint m_nXfunTexID;

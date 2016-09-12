@@ -8,6 +8,8 @@
 
 #include "Spline2Renderer.hpp"
 
+#include <qsys/SceneManager.hpp>
+
 #include <modules/molstr/MolCoord.hpp>
 #include <modules/molstr/MolChain.hpp>
 #include <modules/molstr/MolResidue.hpp>
@@ -449,62 +451,3 @@ void Spline2Seg::interpolate(float par, Vector3F *vec,
   }
 }
 
-/////////////////////////////////////////
-
-namespace {
-
-  class OglTextureRep : public TextureRep
-  {
-  private:
-    qlib::uid_t m_nSceneID;
-    GLuint m_nTexID;
-
-  public:
-    OglTextureRep(qlib::uid_t nSceneID)
-      : m_nSceneID(nSceneID)
-    {
-      create();
-    }
-
-    virtual ~OglTextureRep() {
-      destroy();
-    }
-
-  private:
-    void create()
-    {
-      glGenTextures(1, &m_nTexID);
-    }
-
-    void setCurrentContext()
-    {
-      qsys::ScenePtr rsc = qsys::SceneManager::getSceneS(m_nSceneID);
-      if (rsc.isnull()) {
-        MB_DPRINTLN("OglVBO> unknown scene, VBO %d cannot be deleted", m_nBufID);
-        return;
-      }
-
-      qsys::Scene::ViewIter viter = rsc->beginView();
-      if (viter==rsc->endView()) {
-        MB_DPRINTLN("OglVBO> no view, VBO %d cannot be deleted", m_nBufID);
-        return;
-      }
-
-      qsys::ViewPtr rvw = viter->second;
-      if (rvw.isnull()) {
-        // If any views aren't found, it is no problem,
-        // because the parent context (and also all DLs) may be already destructed.
-        return;
-      }
-      gfx::DisplayContext *pctxt = rvw->getDisplayContext();
-      pctxt->setCurrent();
-    }
-
-    void destroy()
-    {
-      setCurrentContext();
-      glDeleteTextures(1, &m_nTexID);
-    }
-  };
-
-}
