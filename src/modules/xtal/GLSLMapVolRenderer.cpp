@@ -138,224 +138,7 @@ void GLSLMapVolRenderer::viewChanged(qsys::ViewEvent &ev)
 
 //////////////////////////////////////////////////////////////////
 
-#include <qsys/SceneManager.hpp>
-
-namespace {
-
-  using namespace gfx;
-
-  class OglTextureRep : public gfx::TextureRep
-  {
-  private:
-    qlib::uid_t m_nSceneID;
-
-    /// OpenGL ID of resource
-    GLuint m_nTexID;
-
-    /// Dimension type
-    GLenum m_iGlDimType;
-
-    /// size of data
-    int m_nWidth;
-    int m_nHeight;
-    int m_nDepth;
-
-    bool m_bInit;
-
-  public:
-    OglTextureRep(qlib::uid_t nSceneID)
-      : m_nSceneID(nSceneID)
-    {
-      m_nWidth = 0;
-      m_nHeight = 0;
-      m_nDepth = 0;
-      m_bInit = false;
-    }
-
-    virtual ~OglTextureRep() {
-      destroy();
-    }
-
-    virtual void setup(int iDim, int iPixFmt, int iPixType)
-    {
-      switch (iDim) {
-      case 1:
-	m_iGlDimType = GL_TEXTURE_1D;
-	break;
-      case 2:
-	m_iGlDimType = GL_TEXTURE_2D;
-	break;
-      case 3:
-	m_iGlDimType = GL_TEXTURE_3D;
-	break;
-      default:
-	MB_THROW(qlib::RuntimeException, "Unsupported dimension");
-	break;
-      }
-
-      switch (iPixFmt) {
-      case AbstTexture::FMT_R:
-	break;
-      case AbstTexture::FMT_RG:
-	break;
-      case AbstTexture::FMT_RGB:
-	break;
-      case AbstTexture::FMT_RGBA:
-	break;
-      default:
-	MB_THROW(qlib::RuntimeException, "Unsupported pixel format");
-	break;
-      }
-
-      createGL();
-      setupGL();
-    }
-
-    /*void setData1D(void *pdata, int w)
-    {
-      setData(pdata, w, 1, 1);
-      }*/
-
-    virtual void setData(int width, int height, int depth, const void *pdata)
-    {
-      if (m_nWidth!=width ||
-	  m_nHeight!=height ||
-	  m_nDepth!=depth)
-	m_bInit = false;
-      
-      m_nWidth = width;
-      m_nHeight = height;
-      m_nDepth = depth;
-      setDataGL(pdata);
-    }
-
-    virtual void use(int nUnit)
-    {
-      glActiveTexture(GL_TEXTURE0 + nUnit);
-      glBindTexture(m_iGlDimType, m_nTexID);
-    }
-
-    virtual void unuse()
-    {
-      glActiveTexture(GL_TEXTURE0);
-      glBindTexture(m_iGlDimType, 0);
-    }
-
-  private:
-    void createGL()
-    {
-      glGenTextures(1, &m_nTexID);
-    }
-
-    void setupGL()
-    {
-      glEnable(m_iGlDimType);
-      glBindTexture(m_iGlDimType, m_nTexID);
-      // filter setting
-      glTexParameteri(m_iGlDimType, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-      glTexParameteri(m_iGlDimType, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-      // clamp setting
-      glTexParameteri(m_iGlDimType, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-      if (m_iGlDimType==GL_TEXTURE_3D ||
-	  m_iGlDimType==GL_TEXTURE_2D) {
-	glTexParameteri(m_iGlDimType, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	if (m_iGlDimType==GL_TEXTURE_3D) {
-	  glTexParameteri(m_iGlDimType, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	}
-      }
-      glBindTexture(m_iGlDimType, 0);
-      glDisable(m_iGlDimType);
-    }
-
-    void setDataGL(const void *pdata)
-    {
-      glEnable(m_iGlDimType);
-      glBindTexture(m_iGlDimType, m_nTexID);
-      glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
-      glPixelStorei( GL_UNPACK_ALIGNMENT, 1 );
-
-      if (m_iGlDimType==GL_TEXTURE_1D)
-	setDataGL1D(pdata);
-      else if (m_iGlDimType==GL_TEXTURE_3D)
-	setDataGL3D(pdata);
-    }
-
-    void setDataGL1D(const void *pdata)
-    {
-      if (!m_bInit) {
-	glTexImage1D(GL_TEXTURE_1D, 0,
-		     GL_RGBA,
-		     m_nWidth, 0,
-		     GL_RGBA, GL_UNSIGNED_BYTE, pdata);
-	CHK_GLERROR("glTexImage1D xferFunTex");
-	MB_DPRINTLN("OglTex1D glTexImage1D %d OK", m_nWidth);
-	m_bInit = true;
-      }
-      else {
-	glTexSubImage1D(GL_TEXTURE_1D,
-			0, // LOD
-			0, // offset
-			m_nWidth, // size
-			GL_RGBA, // format
-			GL_UNSIGNED_BYTE, // type
-			pdata);
-      }
-    }
-      
-    void setDataGL3D(const void *pdata)
-    {
-      if (!m_bInit) {
-	glTexImage3D(GL_TEXTURE_3D, 0,
-		     GL_RED,
-		     m_nWidth, m_nHeight, m_nDepth, 0,
-		     GL_RED, GL_UNSIGNED_BYTE, pdata);
-	m_bInit = true;
-      }
-      else {
-	glTexSubImage3D(GL_TEXTURE_3D,
-			0, // LOD
-			0, 0, 0, // offset
-			m_nWidth, m_nHeight, m_nDepth, // size
-			GL_RED, // format
-			GL_UNSIGNED_BYTE, // type
-			pdata);
-      }
-    }
-
-    void setCurrentContext()
-    {
-      qsys::ScenePtr rsc = qsys::SceneManager::getSceneS(m_nSceneID);
-      if (rsc.isnull()) {
-        MB_DPRINTLN("OglVBO> unknown scene, VBO %d cannot be deleted", m_nTexID);
-        return;
-      }
-
-      qsys::Scene::ViewIter viter = rsc->beginView();
-      if (viter==rsc->endView()) {
-        MB_DPRINTLN("OglVBO> no view, VBO %d cannot be deleted", m_nTexID);
-        return;
-      }
-
-      qsys::ViewPtr rvw = viter->second;
-      if (rvw.isnull()) {
-        // If any views aren't found, it is no problem,
-        // because the parent context (and also all DLs) may be already destructed.
-        return;
-      }
-      gfx::DisplayContext *pctxt = rvw->getDisplayContext();
-      pctxt->setCurrent();
-    }
-
-    void destroy()
-    {
-      setCurrentContext();
-      glDeleteTextures(1, &m_nTexID);
-    }
-  };
-
-}
-
-void GLSLMapVolRenderer::initShader()
+void GLSLMapVolRenderer::initShader(DisplayContext *pdc)
 {
   sysdep::ShaderSetupHelper<GLSLMapVolRenderer> ssh(this);
 
@@ -396,15 +179,18 @@ void GLSLMapVolRenderer::initShader()
   glDisable(GL_TEXTURE_3D);
   */
 
-  qlib::uid_t nSceneID = getSceneID();
-  m_pMapTex = MB_NEW gfx::Texture3D();
-  m_pMapTex->setRep(MB_NEW OglTextureRep(nSceneID));
+  //qlib::uid_t nSceneID = getSceneID();
+  //m_pMapTex = MB_NEW gfx::Texture3D();
+  //m_pMapTex->setRep(MB_NEW OglTextureRep(nSceneID));
+  m_pMapTex = pdc->createTexture3D();
   m_pMapTex->setup();
 
   // setup texture (xfer function 1D tex; unit 1)
-  m_pXfnTex = MB_NEW gfx::Texture1D();
-  m_pXfnTex->setRep(MB_NEW OglTextureRep(nSceneID));
-  m_pXfnTex->setup();
+  //m_pXfnTex = MB_NEW gfx::Texture1D();
+  //m_pXfnTex->setRep(MB_NEW OglTextureRep(nSceneID));
+  m_pXfnTex = pdc->createTexture1D();
+  m_pXfnTex->setup(gfx::AbstTexture::FMT_RGBA,
+		   gfx::AbstTexture::TYPE_UINT8);
   /*
   glGenTextures(1, &m_nXfunTexID);
   glActiveTexture(GL_TEXTURE1);
@@ -712,7 +498,7 @@ void GLSLMapVolRenderer::genXferFunMap()
 void GLSLMapVolRenderer::display(DisplayContext *pdc)
 {
   if (!m_bChkShaderDone)
-    initShader();
+    initShader(pdc);
 
   ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
   DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);

@@ -157,6 +157,14 @@ namespace sysdep {
     virtual void setDetail(int n);
     virtual int getDetail() const;
 
+    ///////////////////////////////
+    // texture
+    virtual gfx::Texture1D *createTexture1D();
+    virtual gfx::Texture2D *createTexture2D();
+    virtual gfx::Texture3D *createTexture3D();
+
+    //
+
     virtual void drawMesh(const gfx::Mesh &l);    
 
     virtual void drawElem(const gfx::AbstDrawElem &l);

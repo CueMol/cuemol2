@@ -96,9 +96,9 @@ namespace gfx {
   private:
 
   public:
-    void setup()
+    void setup(int iFmt, int iType)
     {
-      getRep()->setup(1, FMT_R, TYPE_UINT8);
+      getRep()->setup(1, iFmt, iType);
     }
 
     void setData(int w, const void *pdata)
