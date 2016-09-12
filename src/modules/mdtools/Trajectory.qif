@@ -1,0 +1,33 @@
+// -*-Mode: C++;-*-
+//
+// MD trajectory object
+//
+
+#ifndef TRAJECTORY_QIF_INCLUDED
+#define TRAJECTORY_QIF_INCLUDED
+
+#include <modules/molstr/AnimMol.qif>
+#include "TrajBlock.qif"
+
+runtime_class Trajectory extends AnimMol
+{
+  client_hdr "Trajectory.hpp";
+  client_name mdtools::Trajectory;
+
+  scriptable;
+  smartptr;
+
+  property integer frame => redirect(getFrame, setFrame) (nopersist);
+  default frame = 0;
+
+  property integer nframe => redirect(getFrameSize, XX) (readonly);
+
+  /////
+
+  void append(object<TrajBlock$> pblk);
+
+
+};
+
+#endif
+

@@ -73,6 +73,7 @@ libanim_la_CXXFLAGS = \
 
 libanim_la_LIBADD = -lqsys -lgfx -lqlib
 libanim_la_LDFLAGS = \
+  -headerpad 64 \
   -L../../qsys \
   -L../../gfx \
   -L../../qlib \
@@ -82,4 +83,3 @@ $(NULL)
 #####################################
 
 include $(top_srcdir)/mcwgen_footer.am
-

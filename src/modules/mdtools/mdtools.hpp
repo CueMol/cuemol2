@@ -43,7 +43,11 @@ namespace mdtools {
   /// Common Finalization for the mdtools library
   MDTOOLS_API void fini();
   
+  MC_DECL_SCRSP(TrajBlock);
+  MC_DECL_SCRSP(Trajectory);
 }
+
+
 
 #endif
 

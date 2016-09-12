@@ -1,0 +1,24 @@
+// -*-Mode: C++;-*-
+//
+// animated molecule object
+//
+
+#ifndef ANIM_MOL_QIF_INCLUDED
+#define ANIM_MOL_QIF_INCLUDED
+
+#include "MolCoord.qif"
+
+runtime_class AnimMol extends MolCoord
+{
+  client_hdr "AnimMol.hpp";
+  client_name molstr::AnimMol;
+  dllexport MOLSTR_API;
+
+  scriptable;
+  abstract;
+  smartptr;
+
+};
+
+#endif
+

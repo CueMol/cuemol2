@@ -26,25 +26,31 @@ namespace qlib {
     /////////////////
     // constructors
 
-    /** default constructor */
+    /// default constructor
     VectorND()
     {
       zero();
     }
 
-    /** constructor without initialization */
+    /// constructor without initialization
     explicit
     VectorND(int, detail::no_init_tag)
     {
     }
 
-    /** copy constructor */
+    /// copy constructor
     VectorND(const VectorND &arg)
     {
       for (int i=0; i<_N_ELEM; ++i)
 	m_value[i] = arg.m_value[i];
     }
 
+    /// construction from ptr
+    VectorND(const _ValueType *parg)
+    {
+      for (int i=0; i<_N_ELEM; ++i)
+        m_value[i] = parg[i];
+    }
 
   public:
 
@@ -148,6 +154,12 @@ namespace qlib {
       return ret;
     }
 
+    void scaleSelf(value_type arg) {
+      for (int i=0; i<_N_ELEM; ++i) {
+        this->m_value[i] *= arg;
+      }
+    }
+
     /// Division by constant arg
     VectorND divide(value_type arg) const
     {
@@ -155,6 +167,12 @@ namespace qlib {
       for (int i=0; i<_N_ELEM; ++i)
 	ret.m_value[i] = m_value[i]/arg;
       return ret;
+    }
+
+    void divideSelf(value_type arg) {
+      for (int i=0; i<_N_ELEM; ++i) {
+        this->m_value[i] /= arg;
+      }
     }
 
     /// Division by constant arg (throws exception)
@@ -165,6 +183,13 @@ namespace qlib {
       return divide(arg);
     }
     
+    void divideSelfThrows(value_type arg) {
+      if (isNear(arg, 0.0))
+        MB_THROW(qlib::IllegalArgumentException, "Vector: zero division error");
+      divideSelf(arg);
+    }
+
+    /// Add two vectors
     VectorND add(const VectorND &arg) const {
       VectorND retval(0, detail::no_init_tag());
       for (int i=0; i<_N_ELEM; ++i) {
@@ -173,12 +198,25 @@ namespace qlib {
       return retval;
     }
 
+    /// Add to this vector
+    void addSelf(const _ValueType *parg) {
+      for (int i=0; i<_N_ELEM; ++i) {
+        this->m_value[i] += parg[i];
+      }
+    }
+
     VectorND sub(const VectorND &arg) const {
       VectorND retval(0, detail::no_init_tag());
       for (int i=0; i<_N_ELEM; ++i) {
 	retval.m_value[i] = this->m_value[i] - arg.m_value[i];
       }
       return retval;
+    }
+
+    void subSelf(const _ValueType *parg) {
+      for (int i=0; i<_N_ELEM; ++i) {
+        this->m_value[i] -= parg[i];
+      }
     }
 
     /// normalization (without zero check)
@@ -205,6 +243,15 @@ namespace qlib {
       for (int i=0; i<_N_ELEM; ++i)
         m_value[i] = value_type(0);
     }
+
+    void set(const _ValueType *parg)
+    {
+      for (int i=0; i<_N_ELEM; ++i)
+        m_value[i] = parg[i];
+    }
+
+    _ValueType *getData() { return &m_value[0]; }
+    const _ValueType *getData() const { return &m_value[0]; }
 
   };
 

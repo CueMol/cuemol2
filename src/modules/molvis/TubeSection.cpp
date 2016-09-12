@@ -91,7 +91,7 @@ void TubeSection::setupEllipticalSection()
     //m_nSectTabSz = m_nSectDetail * 2;
   m_nSectTabSz = thset.size();
   m_pSectTab = MB_NEW Vector4D[m_nSectTabSz];
-  MB_DPRINTLN("TS.ses> detail= %d , tabsz = %d", m_nSectDetail, m_nSectTabSz);
+  //MB_DPRINTLN("TS.ses> detail= %d , tabsz = %d", m_nSectDetail, m_nSectTabSz);
   
   m_sftypes.resize(m_nSectTabSz);
 
@@ -103,7 +103,7 @@ void TubeSection::setupEllipticalSection()
 
   i=0;
   BOOST_FOREACH (double th, thset) {
-    MB_DPRINTLN("TS.ses> i= %d , th= %f", i, qlib::toDegree(th));
+    //MB_DPRINTLN("TS.ses> i= %d , th= %f", i, qlib::toDegree(th));
     const double si = ::sin(th);
     const double co = ::cos(th);
     const double dlen = ::sqrt(co*co*m_tuber*m_tuber + si*si);

@@ -100,6 +100,8 @@
     <ClCompile Include="..\..\src\gfx\GradientColor_wrap.cpp" />
     <ClCompile Include="..\..\src\gfx\MultiGradient.cpp" />
     <ClCompile Include="..\..\src\gfx\MultiGradient_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\AnimMol.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\AnimMol_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\ChainIterator.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\ChainIterator_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\MolBond.cpp" />
@@ -109,6 +111,8 @@
     <ClCompile Include="..\..\src\modules\molvis\CPK2Renderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\ScriptColoring.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\ScriptColoring_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\Spline2Renderer.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\Spline2Renderer_wrap.cpp" />
     <ClCompile Include="..\..\src\qsys\Camera.cpp" />
     <ClCompile Include="..\..\src\qsys\DispCacheRenderer.cpp" />
     <ClCompile Include="..\..\src\qsys\InDevEvent.cpp" />
@@ -399,10 +403,12 @@
   <ItemGroup>
     <mcwrapgen3 Include="..\..\src\gfx\GradientColor.qif" />
     <mcwrapgen3 Include="..\..\src\gfx\MultiGradient.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molstr\AnimMol.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molstr\ChainIterator.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molstr\QdfPdbReader.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\CPK2Renderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\ScriptColoring.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molvis\Spline2Renderer.qif" />
     <mcwrapgen3 Include="..\..\src\qsys\Camera.qif" />
     <mcwrapgen3 Include="..\..\src\qsys\DrawObj.qif" />
     <mcwrapgen3 Include="..\..\src\qsys\InOutHandler.qif" />

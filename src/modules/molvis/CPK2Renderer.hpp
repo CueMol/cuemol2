@@ -61,7 +61,7 @@ namespace molvis {
     // /// override to initialize the shader
     // virtual void setSceneID(qlib::uid_t nid);
 
-    /// cleanup the shaders
+    /// cleanup the shaders/VBO
     virtual void unloading();
 
     //////////////////////////////////////////////////////

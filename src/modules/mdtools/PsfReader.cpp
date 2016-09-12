@@ -6,6 +6,7 @@
 #include <common.h>
 
 #include "PsfReader.hpp"
+#include "Trajectory.hpp"
 #include <qlib/LineStream.hpp>
 
 #include <modules/molstr/MolCoord.hpp>
@@ -15,6 +16,7 @@
 #include <modules/molstr/ResidIterator.hpp>
 #include <modules/molstr/TopparManager.hpp>
 #include <modules/molstr/ElemSym.hpp>
+#include <modules/molstr/Selection.hpp>
 
 using namespace mdtools;
 using namespace molstr;
@@ -23,17 +25,40 @@ PsfReader::PsfReader()
 {
 }
 
-/** destructor */
 PsfReader::~PsfReader()
 {
+  MB_DPRINTLN("PsfReader destructed.");
 }
 
 ///////////////////////////////////////////
 
-void PsfReader::attach(MolCoordPtr pMol)
+/*void PsfReader::attach(MolCoordPtr pMol)
 {
   m_pMol = pMol;
+}*/
+
+
+const char *PsfReader::getName() const
+{
+  return "psf";
 }
+
+const char *PsfReader::getTypeDescr() const
+{
+  return "CHARMM/NAMD topology (*.psf)";
+}
+
+const char *PsfReader::getFileExt() const
+{
+  return "*.psf";
+}
+
+qsys::ObjectPtr PsfReader::createDefaultObj() const
+{
+  return qsys::ObjectPtr(MB_NEW Trajectory);
+}
+
+///////////////////////////////////////////
 
 ElemID convMassElem(double mass)
 {
@@ -74,11 +99,14 @@ ElemID convMassElem(double mass)
 }
 
 // read from stream
-void PsfReader::read(qlib::InStream &ins)
+bool PsfReader::read(qlib::InStream &ins)
 {
   int i, ires;
   qlib::LineStream ls(ins);
   m_pls = &ls;
+
+  MolCoordPtr pMol(getTarget<MolCoord>());
+  TrajectoryPtr pTraj(pMol, qlib::no_throw_tag());
 
   // skip header line
   readLine();
@@ -92,7 +120,7 @@ void PsfReader::read(qlib::InStream &ins)
   int ncomment;
   if (!m_line.toInt(&ncomment)) {
     MB_THROW(qlib::FileFormatException, "Cannot read ncomment line");
-    return;
+    return false;
   }
   MB_DPRINTLN("ncomment=%d", ncomment);
   
@@ -104,21 +132,32 @@ void PsfReader::read(qlib::InStream &ins)
   readLine();
 
   ///////////////////
-  // read atoms
+
+  // Read NATOM
   readLine();
   removeComment();
 
   if (!m_line.toInt(&m_natom)) {
     MB_THROW(qlib::FileFormatException, "Cannot read natom line");
-    return;
+    return false;
   }
   MB_DPRINTLN("natoms=%d", m_natom);
   
   LString stmp;
+  quint32 iatom;
 
+  // Read atoms
   for (i=0; i<m_natom; ++i) {
     readLine();
     // LOG_DPRINTLN("%s", m_line.c_str());
+
+    stmp = m_line.substr(0, 8);
+    stmp = stmp.trim(" ");
+    if (!stmp.toNum<quint32>(&iatom)) {
+      LString msg = LString::format("cannot convert atom number: %s", stmp.c_str());
+      MB_THROW(qlib::FileFormatException, msg);
+      return false;
+    }
 
     // chain name
     stmp = m_line.substr(9, 3);
@@ -132,7 +171,7 @@ void PsfReader::read(qlib::InStream &ins)
     if (!stmp.toInt(&nresi)) {
       LString msg = LString::format("cannot convert resid number: %s", stmp.c_str());
       MB_THROW(qlib::FileFormatException, msg);
-      return;
+      return false;
     }
     ResidIndex residx(nresi);
 
@@ -154,16 +193,16 @@ void PsfReader::read(qlib::InStream &ins)
     if (!stmp.toDouble(&charge)) {
       LString msg = LString::format("cannot convert charge %s", stmp.c_str());
       MB_THROW(qlib::FileFormatException, msg);
-      return;
+      return false;
     }
 
     // mass
-    stmp = m_line.substr(51, 8);
+    stmp = m_line.substr(50, 8);
     double mass;
     if (!stmp.toDouble(&mass)) {
       LString msg = LString::format("cannot convert mass %s", stmp.c_str());
       MB_THROW(qlib::FileFormatException, msg);
-      return;
+      return false;
     }
 
     ElemID eleid = convMassElem(mass);
@@ -174,16 +213,16 @@ void PsfReader::read(qlib::InStream &ins)
     //(*pAtoms)[i].resid,
     //(*pAtoms)[i].chain.c_str());
 
-    MolAtomPtr pAtom = MolAtomPtr(MB_NEW MolAtom());
-    //pAtom->setParentUID(m_pMol->getUID());
-    pAtom->setParent(m_pMol);
+    MolAtomPtr pAtom(MB_NEW MolAtom());
+
     pAtom->setName(name);
     pAtom->setElement(eleid);
     pAtom->setChainName(chain);
     pAtom->setResIndex(residx);
     pAtom->setResName(resn);
     
-    if (m_pMol->appendAtom(pAtom)<0) {
+    int aid = pMol->appendAtom(pAtom);
+    if (aid<0) {
       LString stmp = m_line;
       stmp = stmp.chomp();
       // stmp = stmp.toUpperCase();
@@ -191,10 +230,15 @@ void PsfReader::read(qlib::InStream &ins)
       // if (m_nErrCount<m_nErrMax)
       LOG_DPRINTLN("PsfReader> read ATOM line failed: %s", stmp.c_str());
     }
-    
   }
   readLine();
 
+  if (!pTraj.isnull()) {
+    pTraj->createMol(m_pReadSel);
+  }
+
+
+  return true;
 }
 
 void PsfReader::readLine()

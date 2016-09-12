@@ -32,6 +32,11 @@ bool SelOpNode::chkAroundNode(MolAtomPtr patom, bool bExpn)
 {
   SelSuperNode *pChild = getNode();
   MolCoordPtr pMol = patom->getParent();
+  if (pMol.isnull()) {
+    MB_THROW(qlib::NullPointerException, "Around op: Parent mol is null");
+    return false;
+  }
+  
   LString ar_molname = getAroundTarget();
   bool bAcrossMol = false;
 
@@ -323,6 +328,10 @@ namespace {
 bool SelOpNode::chkByresNode(MolAtomPtr patom)
 {
   MolCoordPtr pMol = patom->getParent();
+  if (pMol.isnull()) {
+    MB_THROW(qlib::NullPointerException, "Byres op: Parent mol is null");
+    return false;
+  }
 
   SelCacheMgr *pSCMgr = SelCacheMgr::getInstance();
 
@@ -380,6 +389,10 @@ bool SelOpNode::chkByresNode(MolAtomPtr patom)
 bool SelOpNode::chkMainSideChainNode(MolAtomPtr patom, bool bSide)
 {
   MolCoordPtr pMol = patom->getParent();
+  if (pMol.isnull()) {
+    MB_THROW(qlib::NullPointerException, "Bymain/sidech op: Parent mol is null");
+    return false;
+  }
 
   SelCacheMgr *pSCMgr = SelCacheMgr::getInstance();
 
@@ -448,217 +461,4 @@ bool SelOpNode::chkMainSideChainNode(MolAtomPtr patom, bool bSide)
     return false;
   
 }
-
-/*
-/// BYRES: Using the cached child node selection
-bool SelOpNode::chkByresNode(MolAtomPtr patom)
-{
-  SelSuperNode *pChild = getNode();
-  MolCoordPtr pMol = patom->getParent();
-
-  SelCacheMgr *pSCMgr = SelCacheMgr::getInstance();
-
-  SelectionPtr pChSel(MB_NEW SelCommand(pChild));
-  const SelCacheData *pSCDat = pSCMgr->findOrMakeCacheData(pMol, pChSel);
-  if (pSCDat==NULL) {
-    LOG_DPRINTLN("SelAround> Fatal error, cannot create cache data.");
-    MB_THROW(qlib::RuntimeException, "cannot create/get sel cache data");
-    return false;
-  }
-
-  const std::set<int> *pSet = & pSCDat->getAtomIdSet();
-  if (pSet==NULL) {
-    LOG_DPRINTLN("SelAround> Fatal error, cannot create cache data.");
-    MB_THROW(qlib::RuntimeException, "Fatal error, cannot create cache data.");
-    return false;
-  }
-
-  if (pSet->find(patom->getID()) != pSet->end())
-    return true;
-
-  MolResiduePtr pRes = patom->getParentResidue();
-  MolResidue::AtomCursor iter = pRes->atomBegin();
-  int aid_self = patom->getID();
-  for ( ; iter!=pRes->atomEnd(); iter++) {
-    int aid = iter->second;
-    if (aid==aid_self)
-      continue;
-
-    if (pSet->find(aid) != pSet->end())
-      return true;
-  }
-
-  return false;
-}
-*/
-
-/*
-///BYRES: most primitive version  
-bool SelOpNode::chkByresNode(MolAtomPtr patom)
-{
-  SelSuperNode *pChild = getNode();
-
-  if (isSelImpl(pc, patom))
-    return true;
-
-  MolResidue *pRes = patom->getParentResidue();
-  MolResidue::AtomCursor iter = pRes->atomBegin();
-  for ( ; iter!=pRes->atomEnd(); iter++) {
-    MolAtom *pA = m_pCurClient->getAtom((*iter).second);
-    if (patom==pA)
-      continue;
-    if (isSelImpl(pc, pA))
-      return true;
-  }
-
-  return false;
-}
-*/
-
-
-#if 0
-namespace {
-  struct ByresCacheData : public qlib::LObject
-  {
-    MolCoord *pmol;
-    int cid;
-  };
-
-  const std::set<int> *buildByresCacheData(SelOpNode *pByNode, MolCoord *pTgt)
-  {
-    std::set<u_long> resset;
-    
-    ByresCacheData *pCache = MB_NEW ByresCacheData;
-    pByNode->m_pCacheData = pCache;
-    SelSuperNode *pChild = pByNode->getNode();
-    qlib::sp<MolCachedSel> pcsel(MB_NEW CnstrSel(pChild->clone()));
-    pcsel->makeAtomCache(pTgt);
-    
-    {
-      // enumerate selected residues
-      AtomIterator iter(pTgt, pcsel);
-      for (iter.first(); iter.hasMore(); iter.next()) {
-        MolAtom *pa = iter.get();
-        u_long resID = (u_long)(pa->getParentResidue());
-        resset.insert(resID);
-      }
-    }
-    
-    std::set<int> *pset2 = MB_NEW std::set<int>;
-    {
-      // build set2
-      std::set<u_long>::const_iterator iter = resset.begin();
-      for (; iter!=resset.end(); ++iter) {
-        MolResidue *pres = (MolResidue *)(*iter);
-        MolResidue::AtomCursor iter = pres->atomBegin();
-        for ( ; iter!=pres->atomEnd(); iter++) {
-          MolAtom *pa = pres->getAtom(iter->first);
-          MB_ASSERT(pa!=NULL);
-          pset2->insert(pa->getID());
-        }
-      }
-    }
-    
-    SelCacheMgr *pMgr = pTgt->getSelCacheMgr();
-    pCache->pmol = pTgt;
-    pCache->cid = pMgr->makeAtomCache(pset2);
-
-    return pset2;
-  }
-}
-#endif
-
-// XXX: Why this code is disabled ??? (2007/9/21)
-#if 0
-bool CnstrSel::chkByresNode(SelOpNode *pByNode, MolAtom *patom)
-{
-  // pByNode is BYRES node
-  
-  SelSuperNode *pChild = pByNode->getNode();
-
-  ByresCacheData *pCache = dynamic_cast<ByresCacheData*>(pByNode->m_pCacheData);
-
-  if (pCache!=NULL && pCache->pmol!=m_pCurClient) {
-    // pCache is ByresCache but for another molecule
-    delete pByNode->m_pCacheData;
-    pCache = NULL;
-    pByNode->m_pCacheData = NULL;
-  }
-
-  const std::set<int> *pset;
-  if (pCache==NULL) {
-    // cache is not found
-    //  --> evaluate child node & create AID set
-    pset = buildByresCacheData(pByNode, m_pCurClient);
-  }
-  else {
-    // use cache data
-    SelCacheMgr *pMgr = m_pCurClient->getSelCacheMgr();
-    pset = pMgr->searchAtomCache(pCache->cid);
-  }
-  
-  if (pset==NULL)
-    return false; // pChild selection is empty 
-  
-  if (pset->find(patom->getID()) == pset->end())
-    return false;
-
-  return true;
-}
-#endif
-
-
-
-#if 0
-bool CnstrSel::chkAroundNode_Position(qs::SelOpNode *pArNode, qs::SelPosNode *pChild, MolAtom *patom)
-{
-  const double dist = pArNode->getValue();
-  const double dsq = dist*dist;
-  const Vector4D &pos1 = pChild->getValue();
-  Vector4D del = patom->getPos() - pos1;
-
-  if (del.sqlen()<dsq)
-    return true;
-  return false;
-
-#if 0
-  int i;
-  BSPTreeCacheData *pCache = dynamic_cast<BSPTreeCacheData*>(pArNode->m_pCacheData);
-
-  if (pCache!=NULL && pCache->pmol!=m_pCurClient) {
-    // pCache is BBoxCache but for another molecule
-    delete pArNode->m_pCacheData;
-    pArNode->m_pCacheData = pCache = NULL;
-  }
-
-  if (pCache==NULL) {
-    pCache = MB_NEW BSPTreeCacheData;
-    pCache->pmol = m_pCurClient;
-
-    int natoms = m_pCurClient->getAtomSize();
-    pCache->bsptree.alloc(natoms);
-    
-    AtomPool::const_iterator ait = m_pCurClient->beginAtom();
-    for (i=0; ait!=m_pCurClient->endAtom()&&i<natoms; ++ait,++i) {
-      MolAtom *pAtom = ait->second;
-      // m_data[i].pos = pAtom->getPos();
-      // m_data[i].patm = pAtom;
-      
-      pCache->bsptree.setAt(i, pAtom->getPos(), ait->first);
-    }
-
-    // build BSP tree
-    pCache->bsptree.build();
-    pArNode->m_pCacheData = pCache;
-  }  
-
-  double dist = pArNode->getValue();
-  std::vector<int> vres;
-  int nvres = pCache->bsptree.findAround(pChild->getValue(), dist, vres);
-#endif  
-
-
-  return true;
-}
-#endif
 

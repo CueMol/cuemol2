@@ -318,7 +318,7 @@ public:
   }
 
   int getEndCapType() const {
-    MB_DPRINTLN("Rib2rend end_captype=%d", m_nEnCapType);
+    // MB_DPRINTLN("Rib2rend end_captype=%d", m_nEnCapType);
     return m_nEnCapType;
   }
   void setEndCapType(int nType) {

@@ -9,6 +9,7 @@
 #include "SimpleRenderer.hpp"
 
 #include "MolCoord.hpp"
+#include "AnimMol.hpp"
 #include "MolChain.hpp"
 #include "MolResidue.hpp"
 #include "ResiToppar.hpp"
@@ -20,12 +21,13 @@
 #include <gfx/SolidColor.hpp>
 #include <qsys/Scene.hpp>
 
-using namespace molstr;
-using qlib::Vector4D;
-using gfx::ColorPtr;
-
 // Use OpenGL VBO implementation
 #define USE_OPENGL_VBO
+
+using namespace molstr;
+using qlib::Vector4D;
+using qlib::Vector3F;
+using gfx::ColorPtr;
 
 SimpleRenderer::SimpleRenderer()
 {
@@ -41,6 +43,11 @@ SimpleRenderer::SimpleRenderer()
 
 SimpleRenderer::~SimpleRenderer()
 {
+  // VBO should be cleaned up here
+  //  invalidateDisplayCache() has been called
+  //  in unloading() method of DispCacheRend impl.
+  MB_ASSERT(m_pVBO==NULL);
+
   MB_DPRINTLN("SimpleRenderer destructed %p", this);
 }
 
@@ -200,11 +207,12 @@ bool SimpleRenderer::isRendBond() const
 }
 
 //////////////////////////////////////////////////////////////////////
+// New VBO implementation
 
 void SimpleRenderer::display(DisplayContext *pdc)
 {
 #ifdef USE_OPENGL_VBO
-  if (pdc->isFile() || !pdc->isDrawElemSupported()) {
+  if (!isUseVBO(pdc)) {
     // case of the file (non-ogl) rendering
     // always use the old version.
     super_t::display(pdc);
@@ -214,7 +222,12 @@ void SimpleRenderer::display(DisplayContext *pdc)
   // new rendering routine using VBO (DrawElem)
 
   if (m_pVBO==NULL) {
-    renderVBO();
+    createVBO();
+    if (isUseAnim())
+      updateDynamicVBO();
+    else
+      updateStaticVBO();
+    updateVBOColor();
     if (m_pVBO==NULL)
       return; // Error, Cannot draw anything (ignore)
   }
@@ -231,161 +244,186 @@ void SimpleRenderer::display(DisplayContext *pdc)
 
 //////////
 
-void SimpleRenderer::renderVBO()
+void SimpleRenderer::createVBO()
 {
   quint32 i, j;
   quint32 nbons = 0, natoms = 0, nmbons = 0, nva = 0;
-  MolCoordPtr pMol = getClientMol();
+  MolCoordPtr pCMol = getClientMol();
 
-  std::deque<int> isolated_atoms;
+  AnimMol *pAMol = NULL;
+  if (isUseAnim())
+    pAMol = static_cast<AnimMol *>(pCMol.get());
+
+  // initialize the coloring scheme
+  getColSchm()->start(pCMol, this);
+  pCMol->getColSchm()->start(pCMol, this);
+
+  // estimate bond data structure size
   
-  {
-    // build bond data structure/estimate VBO size
-
-    std::set<int> bonded_atoms;
-    BondIterator biter(pMol, getSelection());
-
-    for (biter.first(); biter.hasMore(); biter.next()) {
-      MolBond *pMB = biter.getBond();
-      int aid1 = pMB->getAtom1();
-      int aid2 = pMB->getAtom2();
-
-      bonded_atoms.insert(aid1);
-      bonded_atoms.insert(aid2);
-
-      MolAtomPtr pA1 = pMol->getAtom(aid1);
-      MolAtomPtr pA2 = pMol->getAtom(aid2);
-
-      if (pA1.isnull() || pA2.isnull())
-        continue; // skip invalid bonds
-
-      int nBondType = pMB->getType();
-      if (m_bValBond &&
-          (nBondType==MolBond::DOUBLE ||
-           nBondType==MolBond::TRIPLE)) {
-        ++nmbons;
-      }
-      else {
-        ++nbons;
-      }
+  std::set<int> bonded_atoms;
+  BondIterator biter(pCMol, getSelection());
+  
+  for (biter.first(); biter.hasMore(); biter.next()) {
+    MolBond *pMB = biter.getBond();
+    int aid1 = pMB->getAtom1();
+    int aid2 = pMB->getAtom2();
+    
+    bonded_atoms.insert(aid1);
+    bonded_atoms.insert(aid2);
+    
+    MolAtomPtr pA1 = pCMol->getAtom(aid1);
+    MolAtomPtr pA2 = pCMol->getAtom(aid2);
+    
+    if (pA1.isnull() || pA2.isnull())
+      continue; // skip invalid bonds
+    
+    int nBondType = pMB->getType();
+    if (m_bValBond &&
+        (nBondType==MolBond::DOUBLE ||
+         nBondType==MolBond::TRIPLE)) {
+      ++nmbons;
     }
-
-    m_sbonds.resize(nbons);
-    m_mbonds.resize(nmbons);
-
-    i=0;
-    j=0;
-    int iva = 0;
-    for (biter.first(); biter.hasMore(); biter.next()) {
-      MolBond *pMB = biter.getBond();
-      int aid1 = pMB->getAtom1();
-      int aid2 = pMB->getAtom2();
-
-      MolAtomPtr pA1 = pMol->getAtom(aid1);
-      MolAtomPtr pA2 = pMol->getAtom(aid2);
-
-      if (pA1.isnull() || pA2.isnull())
-        continue; // skip invalid bonds
-      
-      ColorPtr pcol1 = ColSchmHolder::getColor(pA1);
-      ColorPtr pcol2 = ColSchmHolder::getColor(pA2);
-
-      int nBondType = pMB->getType();
-      bool bSameCol = (pcol1->equals(*pcol2.get()))?true:false;
-
-      if (m_bValBond &&
-          (nBondType==MolBond::DOUBLE ||
-           nBondType==MolBond::TRIPLE)) {
-
-        Vector4D dvd = pMB->getDblBondDir(pMol);
-        
-        m_mbonds[j].aid1 = aid1;
-        m_mbonds[j].aid2 = aid2;
-        m_mbonds[j].ind1 = pMol->getCrdArrayInd(aid1) * 3;
-        m_mbonds[j].ind2 = pMol->getCrdArrayInd(aid2) * 3;
-        m_mbonds[j].vaind = iva;
-        m_mbonds[j].nx = (qfloat32) dvd.x();
-        m_mbonds[j].ny = (qfloat32) dvd.y();
-        m_mbonds[j].nz = (qfloat32) dvd.z();
-
-        if (nBondType==MolBond::DOUBLE) {
-          // double bond
-          if ( bSameCol ) {
-            // same color --> one double bond
-            iva+=2*2;
-            m_mbonds[j].itype = IBON_1C_2V;
-            m_mbonds[j].nelems = 2*2;
-          }
-          else {
-            // different color --> two double bonds
-            iva+=4*2;
-            m_mbonds[j].itype = IBON_2C_2V;
-            m_mbonds[j].nelems = 4*2;
-          }
-        }
-        else {
-          // triple bond
-          if ( bSameCol ) {
-            // same color --> one triple bond
-            iva+=2*3;
-            m_mbonds[j].itype = IBON_1C_3V;
-            m_mbonds[j].nelems = 2*3;
-          }
-          else {
-            // different color --> two triple bonds
-            iva+=4*3;
-            m_mbonds[j].itype = IBON_2C_3V;
-            m_mbonds[j].nelems = 4*3;
-          }
-        }
-        ++j;
-      }
-      else {
-        // single bond / valbond disabled
-        m_sbonds[i].aid1 = aid1;
-        m_sbonds[i].aid2 = aid2;
-        m_sbonds[i].ind1 = pMol->getCrdArrayInd(aid1) * 3;
-        m_sbonds[i].ind2 = pMol->getCrdArrayInd(aid2) * 3;
-        m_sbonds[i].vaind = iva;
-
-        if ( bSameCol ) {
-          // same color --> one bond
-          iva+=2;
-          m_sbonds[i].itype = IBON_1C_1V;
-          m_sbonds[i].nelems = 2;
-        }
-        else {
-          // different color --> two bonds
-          iva+=4;
-          m_sbonds[i].itype = IBON_2C_1V;
-          m_sbonds[i].nelems = 4;
-        }
-        ++i;
-      }
+    else {
+      ++nbons;
     }
-
-    // calculate isolated atoms
-    AtomIterator aiter(pMol, getSelection());
-    for (aiter.first(); aiter.hasMore(); aiter.next()) {
-      int aid = aiter.getID();
-      MolAtomPtr pAtom = pMol->getAtom(aid);
-      if (pAtom.isnull()) continue; // ignore errors
-      if (bonded_atoms.find(aid)!=bonded_atoms.end())
-        continue; // already bonded
-      isolated_atoms.push_back(aid);
-    }
-    natoms = isolated_atoms.size();
-    m_atoms.resize(natoms);
-    for (i=0; i<natoms; ++i) {
-      int aid1 = isolated_atoms[i];
-      m_atoms[i].aid1 = aid1;
-      m_atoms[i].ind1 = pMol->getCrdArrayInd(aid1) * 3;
-      m_atoms[i].vaind = iva;
-      iva += 2*3;
-    }
-
-    nva = iva;
   }
+  
+  // build bond data structure/estimate VBO size
+  m_sbonds.resize(nbons);
+  m_mbonds.resize(nmbons);
+  
+  i=0;
+  j=0;
+  int iva = 0;
+  for (biter.first(); biter.hasMore(); biter.next()) {
+    MolBond *pMB = biter.getBond();
+    int aid1 = pMB->getAtom1();
+    int aid2 = pMB->getAtom2();
+    
+    MolAtomPtr pA1 = pCMol->getAtom(aid1);
+    MolAtomPtr pA2 = pCMol->getAtom(aid2);
+    
+    if (pA1.isnull() || pA2.isnull())
+      continue; // skip invalid bonds
+    
+    ColorPtr pcol1 = ColSchmHolder::getColor(pA1);
+    ColorPtr pcol2 = ColSchmHolder::getColor(pA2);
+    
+    int nBondType = pMB->getType();
+    bool bSameCol = (pcol1->equals(*pcol2.get()))?true:false;
+    
+    if (m_bValBond &&
+        (nBondType==MolBond::DOUBLE ||
+         nBondType==MolBond::TRIPLE)) {
+      
+      Vector4D dvd = pMB->getDblBondDir(pCMol);
+      
+      m_mbonds[j].aid1 = aid1;
+      m_mbonds[j].aid2 = aid2;
+      if (pAMol!=NULL) {
+        m_mbonds[j].ind1 = pAMol->getCrdArrayInd(aid1) * 3;
+        m_mbonds[j].ind2 = pAMol->getCrdArrayInd(aid2) * 3;
+      }
+      else {
+        m_mbonds[j].ind1 = 0;
+        m_mbonds[j].ind2 = 0;
+      }
+      m_mbonds[j].vaind = iva;
+      m_mbonds[j].nx = (qfloat32) dvd.x();
+      m_mbonds[j].ny = (qfloat32) dvd.y();
+      m_mbonds[j].nz = (qfloat32) dvd.z();
+
+      if (nBondType==MolBond::DOUBLE) {
+        // double bond
+        if ( bSameCol ) {
+          // same color --> one double bond
+          iva+=2*2;
+          m_mbonds[j].itype = IBON_1C_2V;
+          m_mbonds[j].nelems = 2*2;
+        }
+        else {
+          // different color --> two double bonds
+          iva+=4*2;
+          m_mbonds[j].itype = IBON_2C_2V;
+          m_mbonds[j].nelems = 4*2;
+        }
+      }
+      else {
+        // triple bond
+        if ( bSameCol ) {
+          // same color --> one triple bond
+          iva+=2*3;
+          m_mbonds[j].itype = IBON_1C_3V;
+          m_mbonds[j].nelems = 2*3;
+        }
+        else {
+          // different color --> two triple bonds
+          iva+=4*3;
+          m_mbonds[j].itype = IBON_2C_3V;
+          m_mbonds[j].nelems = 4*3;
+        }
+      }
+      ++j;
+    }
+    else {
+      // single bond / valbond disabled
+      m_sbonds[i].aid1 = aid1;
+      m_sbonds[i].aid2 = aid2;
+      if (pAMol!=NULL) {
+        m_sbonds[i].ind1 = pAMol->getCrdArrayInd(aid1) * 3;
+        m_sbonds[i].ind2 = pAMol->getCrdArrayInd(aid2) * 3;
+      }
+      else {
+        m_sbonds[i].ind1 = 0;
+        m_sbonds[i].ind2 = 0;
+      }
+      m_sbonds[i].vaind = iva;
+
+      if ( bSameCol ) {
+        // same color --> one bond
+        iva+=2;
+        m_sbonds[i].itype = IBON_1C_1V;
+        m_sbonds[i].nelems = 2;
+      }
+      else {
+        // different color --> two bonds
+        iva+=4;
+        m_sbonds[i].itype = IBON_2C_1V;
+        m_sbonds[i].nelems = 4;
+      }
+      ++i;
+    }
+  }
+
+  // calculate isolated atoms
+  std::deque<int> isolated_atoms;
+  AtomIterator aiter(pCMol, getSelection());
+  for (aiter.first(); aiter.hasMore(); aiter.next()) {
+    int aid = aiter.getID();
+    MolAtomPtr pAtom = pCMol->getAtom(aid);
+    if (pAtom.isnull()) continue; // ignore errors
+    if (bonded_atoms.find(aid)!=bonded_atoms.end())
+      continue; // already bonded
+    isolated_atoms.push_back(aid);
+  }
+  natoms = isolated_atoms.size();
+  m_atoms.resize(natoms);
+  for (i=0; i<natoms; ++i) {
+    int aid1 = isolated_atoms[i];
+    m_atoms[i].aid1 = aid1;
+    if (pAMol!=NULL)
+      m_atoms[i].ind1 = pAMol->getCrdArrayInd(aid1) * 3;
+    else
+      m_atoms[i].ind1 = 0;
+    m_atoms[i].vaind = iva;
+    iva += 2*3;
+  }
+  
+  // finalize the coloring scheme
+  getColSchm()->end();
+  pCMol->getColSchm()->end();
+
+  nva = iva;
     
   if (m_pVBO!=NULL)
     delete m_pVBO;
@@ -393,12 +431,10 @@ void SimpleRenderer::renderVBO()
   m_pVBO = MB_NEW gfx::DrawElemVC();
   m_pVBO->alloc(nva);
   m_pVBO->setDrawMode(gfx::DrawElemVC::DRAW_LINES);
-  MB_DPRINTLN("SimpleRenderer> %d elems VBO created", nva);
-  
-  updateVBO(true);
+  LOG_DPRINTLN("SimpleRenderer> %d elems VBO created", nva);
 }
 
-void SimpleRenderer::updateVBO(bool bUpdateColor)
+void SimpleRenderer::updateDynamicVBO()
 {
   quint32 j = 0;
   quint32 i;
@@ -406,14 +442,16 @@ void SimpleRenderer::updateVBO(bool bUpdateColor)
   quint32 nmbons = m_mbonds.size();
   quint32 natoms = m_atoms.size();
   
-  MolCoordPtr pMol = getClientMol();
-  qfloat32 *crd = pMol->getAtomArray();
+  MolCoordPtr pCMol = getClientMol();
+  AnimMol *pAMol = static_cast<AnimMol *>(pCMol.get());
+  
+  qfloat32 *crd = pAMol->getAtomCrdArray();
 
   MolAtomPtr pA1, pA2;
 
   // ColorPtr pcol1, pcol2;
-  quint32 cc1, cc2;
-  Vector4D midpos, pos1, pos2;
+  // quint32 cc1, cc2;
+  Vector3F midpos, pos1, pos2, dvd;
   quint32 aid1, aid2;
 
   // Single bonds
@@ -422,29 +460,27 @@ void SimpleRenderer::updateVBO(bool bUpdateColor)
     aid2 = m_sbonds[i].ind2;
     j = m_sbonds[i].vaind;
 
-    // pA1 = pMol->getAtom(aid1);
-    // pA2 = pMol->getAtom(aid2);
-    // pos1 = pA1->getPos();
-    // pos2 = pA2->getPos();
-
     switch (m_sbonds[i].itype) {
     case IBON_1C_1V:
-      m_pVBO->vertex(j, &crd[aid1]);
+      m_pVBO->vertexfp(j, &crd[aid1]);
       ++j;
-      m_pVBO->vertex(j, &crd[aid2]);
+      m_pVBO->vertexfp(j, &crd[aid2]);
       ++j;
       break;
 
     case IBON_2C_1V: {
-      midpos = (Vector4D(crd[aid1+0],crd[aid1+1],crd[aid1+2])+
-                Vector4D(crd[aid2+0],crd[aid2+1],crd[aid2+2])).divide(2.0);
-      m_pVBO->vertex(j, &crd[aid1]);
+      // calc mid point
+      midpos.set(&crd[aid1]);
+      midpos.addSelf(&crd[aid2]);
+      midpos.divideSelf(2.0f);
+
+      m_pVBO->vertexfp(j, &crd[aid1]);
       ++j;
-      m_pVBO->vertex(j, midpos);
+      m_pVBO->vertex3f(j, midpos);
       ++j;
-      m_pVBO->vertex(j, &crd[aid2]);
+      m_pVBO->vertexfp(j, &crd[aid2]);
       ++j;
-      m_pVBO->vertex(j, midpos);
+      m_pVBO->vertex3f(j, midpos);
       ++j;
       break;
     }
@@ -460,12 +496,208 @@ void SimpleRenderer::updateVBO(bool bUpdateColor)
     aid2 = m_mbonds[i].ind2;
     j = m_mbonds[i].vaind;
 
-    // pA1 = pMol->getAtom(aid1);
-    // pA2 = pMol->getAtom(aid2);
+    pos1 = Vector3F(&crd[aid1]);
+    pos2 = Vector3F(&crd[aid2]);
+    dvd = Vector3F(m_mbonds[i].nx, m_mbonds[i].ny, m_mbonds[i].nz);
+
+    switch (m_mbonds[i].itype) {
+    case IBON_1C_2V: {
+      m_pVBO->vertex3f(j, pos1 + dvd.scale(m_dCvScl1));
+      ++j;
+      m_pVBO->vertex3f(j, pos2 + dvd.scale(m_dCvScl1));
+      ++j;
+      m_pVBO->vertex3f(j, pos1 + dvd.scale(m_dCvScl2));
+      ++j;
+      m_pVBO->vertex3f(j, pos2 + dvd.scale(m_dCvScl2));
+      ++j;
+      break;
+    }
+    case IBON_2C_2V: {
+      midpos.set(&crd[aid1]);
+      midpos.addSelf(&crd[aid2]);
+      midpos.divideSelf(2.0f);
+
+      m_pVBO->vertex3f(j, pos1 + dvd.scale(m_dCvScl1));
+      ++j;
+      m_pVBO->vertex3f(j, midpos + dvd.scale(m_dCvScl1));
+      ++j;
+      m_pVBO->vertex3f(j, pos1 + dvd.scale(m_dCvScl2));
+      ++j;
+      m_pVBO->vertex3f(j, midpos + dvd.scale(m_dCvScl2));
+      ++j;
+
+      m_pVBO->vertex3f(j, pos2 + dvd.scale(m_dCvScl1));
+      ++j;
+      m_pVBO->vertex3f(j, midpos + dvd.scale(m_dCvScl1));
+      ++j;
+      m_pVBO->vertex3f(j, pos2 + dvd.scale(m_dCvScl2));
+      ++j;
+      m_pVBO->vertex3f(j, midpos + dvd.scale(m_dCvScl2));
+      ++j;
+
+      break;
+    }
+
+    case IBON_1C_3V: {
+      m_pVBO->vertex3f(j, pos1);
+      ++j;
+      m_pVBO->vertex3f(j, pos2);
+      ++j;
+      m_pVBO->vertex3f(j, pos1 + dvd.scale(m_dCvScl1));
+      ++j;
+      m_pVBO->vertex3f(j, pos2 + dvd.scale(m_dCvScl1));
+      ++j;
+      m_pVBO->vertex3f(j, pos1 + dvd.scale(-m_dCvScl1));
+      ++j;
+      m_pVBO->vertex3f(j, pos2 + dvd.scale(-m_dCvScl1));
+      ++j;
+      break;
+    }
+    case IBON_2C_3V: {
+      midpos.set(&crd[aid1]);
+      midpos.addSelf(&crd[aid2]);
+      midpos.divideSelf(2.0f);
+
+      m_pVBO->vertex3f(j, pos1);
+      ++j;
+      m_pVBO->vertex3f(j, midpos);
+      ++j;
+      m_pVBO->vertex3f(j, pos1 + dvd.scale(m_dCvScl1));
+      ++j;
+      m_pVBO->vertex3f(j, midpos + dvd.scale(m_dCvScl1));
+      ++j;
+      m_pVBO->vertex3f(j, pos1 + dvd.scale(-m_dCvScl1));
+      ++j;
+      m_pVBO->vertex3f(j, midpos + dvd.scale(-m_dCvScl1));
+      ++j;
+
+      m_pVBO->vertex3f(j, pos2);
+      ++j;
+      m_pVBO->vertex3f(j, midpos);
+      ++j;
+      m_pVBO->vertex3f(j, pos2 + dvd.scale(m_dCvScl1));
+      ++j;
+      m_pVBO->vertex3f(j, midpos + dvd.scale(m_dCvScl1));
+      ++j;
+      m_pVBO->vertex3f(j, pos2 + dvd.scale(-m_dCvScl1));
+      ++j;
+      m_pVBO->vertex3f(j, midpos + dvd.scale(-m_dCvScl1));
+      ++j;
+
+      break;
+    }
+    default:
+      break;
+    }
+  }
+  
+  // Isolated atoms
+  
+  // size of the star
+  const qfloat32 rad = 0.25;
+  const qfloat32 rad2 = rad*2.0f;
+
+  //const Vector3F xdel(rad,0,0);
+  //const Vector3F ydel(0,rad,0);
+  //const Vector3F zdel(0,0,rad);
+
+  for (i=0; i<natoms; ++i) {
+    quint32 aid1 = m_atoms[i].ind1;
+    quint32 j = m_atoms[i].vaind;
+
+    // MolAtomPtr pA1 = pCMol->getAtom(aid1);
+    pos1.set(&crd[aid1]);
+
+    pos1.x() -= rad;
+    m_pVBO->vertex3f(j, pos1);
+    ++j;
+    pos1.x() += rad2;
+    m_pVBO->vertex3f(j, pos1);
+    pos1.x() -= rad;
+    ++j;
+
+    pos1.y() -= rad;
+    m_pVBO->vertex3f(j, pos1);
+    ++j;
+    pos1.y() += rad2;
+    m_pVBO->vertex3f(j, pos1);
+    ++j;
+    pos1.y() -= rad;
+
+    pos1.z() -= rad;
+    m_pVBO->vertex3f(j, pos1);
+    ++j;
+    pos1.z() += rad2;
+    m_pVBO->vertex3f(j, pos1);
+    ++j;
+  }
+}
+
+void SimpleRenderer::updateStaticVBO()
+{
+  quint32 j = 0;
+  quint32 i;
+  quint32 nbons = m_sbonds.size();
+  quint32 nmbons = m_mbonds.size();
+  quint32 natoms = m_atoms.size();
+  
+  MolCoordPtr pCMol = getClientMol();
+  MolAtomPtr pA1, pA2;
+  Vector4D midpos, pos1, pos2, dvd;
+  quint32 aid1, aid2;
+
+  // Single bonds
+  for (i=0; i<nbons; ++i) {
+    aid1 = m_sbonds[i].aid1;
+    aid2 = m_sbonds[i].aid2;
+    j = m_sbonds[i].vaind;
     
-    pos1 = Vector4D(crd[aid1+0],crd[aid1+1],crd[aid1+2]);
-    pos2 = Vector4D(crd[aid2+0],crd[aid2+1],crd[aid2+2]);
-    Vector4D dvd(m_mbonds[i].nx, m_mbonds[i].ny, m_mbonds[i].nz);
+    pA1 = pCMol->getAtom(aid1);
+    pA2 = pCMol->getAtom(aid2);
+
+    pos1 = pA1->getPos();
+    pos2 = pA2->getPos();
+
+    switch (m_sbonds[i].itype) {
+    case IBON_1C_1V:
+      m_pVBO->vertex(j, pos1);
+      ++j;
+      m_pVBO->vertex(j, pos2);
+      ++j;
+      break;
+
+    case IBON_2C_1V: {
+      // calc mid point
+      midpos = (pos1+pos2).divide(2.0);
+
+      m_pVBO->vertex(j, pos1);
+      ++j;
+      m_pVBO->vertex(j, midpos);
+      ++j;
+      m_pVBO->vertex(j, pos2);
+      ++j;
+      m_pVBO->vertex(j, midpos);
+      ++j;
+      break;
+    }
+      
+    default:
+      break;
+    }
+  }
+
+  // Double/triple bonds
+  for (i=0; i<nmbons; ++i) {
+    aid1 = m_mbonds[i].aid1;
+    aid2 = m_mbonds[i].aid2;
+    j = m_mbonds[i].vaind;
+
+    pA1 = pCMol->getAtom(aid1);
+    pA2 = pCMol->getAtom(aid2);
+
+    pos1 = pA1->getPos();
+    pos2 = pA2->getPos();
+    dvd = Vector4D(m_mbonds[i].nx, m_mbonds[i].ny, m_mbonds[i].nz);
 
     switch (m_mbonds[i].itype) {
     case IBON_1C_2V: {
@@ -557,115 +789,147 @@ void SimpleRenderer::updateVBO(bool bUpdateColor)
   // Isolated atoms
   
   // size of the star
-  const double rad = 0.25;
-  const Vector4D xdel(rad,0,0);
-  const Vector4D ydel(0,rad,0);
-  const Vector4D zdel(0,0,rad);
+  const qfloat32 rad = 0.25;
+  const qfloat32 rad2 = rad*2.0f;
+
+  //const Vector3F xdel(rad,0,0);
+  //const Vector3F ydel(0,rad,0);
+  //const Vector3F zdel(0,0,rad);
 
   for (i=0; i<natoms; ++i) {
-    quint32 aid1 = m_atoms[i].ind1;
+    quint32 aid1 = m_atoms[i].aid1;
     quint32 j = m_atoms[i].vaind;
 
-    // MolAtomPtr pA1 = pMol->getAtom(aid1);
-    Vector4D pos1 = Vector4D(crd[aid1+0],crd[aid1+1],crd[aid1+2]);
+    MolAtomPtr pA1 = pCMol->getAtom(aid1);
+    pos1 = pA1->getPos();
 
-    m_pVBO->vertex(j, pos1-xdel);
+    pos1.x() -= rad;
+    m_pVBO->vertex(j, pos1);
     ++j;
-    m_pVBO->vertex(j, pos1+xdel);
+    pos1.x() += rad2;
+    m_pVBO->vertex(j, pos1);
+    pos1.x() -= rad;
     ++j;
-    m_pVBO->vertex(j, pos1-ydel);
+
+    pos1.y() -= rad;
+    m_pVBO->vertex(j, pos1);
     ++j;
-    m_pVBO->vertex(j, pos1+ydel);
+    pos1.y() += rad2;
+    m_pVBO->vertex(j, pos1);
     ++j;
-    m_pVBO->vertex(j, pos1-zdel);
+    pos1.y() -= rad;
+
+    pos1.z() -= rad;
+    m_pVBO->vertex(j, pos1);
     ++j;
-    m_pVBO->vertex(j, pos1+zdel);
+    pos1.z() += rad2;
+    m_pVBO->vertex(j, pos1);
     ++j;
   }
+}
 
-  if (bUpdateColor) {
-    // single bond colors
-    for (i=0; i<nbons; ++i) {
-      aid1 = m_sbonds[i].aid1;
-      aid2 = m_sbonds[i].aid2;
-      j = m_sbonds[i].vaind;
-      
-      pA1 = pMol->getAtom(aid1);
-      cc1 = ColSchmHolder::getColor(pA1)->getCode();
-      
-      m_pVBO->color(j, cc1);
-      ++j;
-      m_pVBO->color(j, cc1);
-      ++j;
+void SimpleRenderer::updateVBOColor()
+{
+  quint32 i = 0;
+  quint32 j = 0;
+  quint32 nbons = m_sbonds.size();
+  quint32 nmbons = m_mbonds.size();
+  quint32 natoms = m_atoms.size();
+  
+  MolCoordPtr pCMol = getClientMol();
+  MolAtomPtr pA1, pA2;
 
-      if (m_sbonds[i].itype==IBON_2C_1V) {
-        pA2 = pMol->getAtom(aid2);
-        cc2 = ColSchmHolder::getColor(pA2)->getCode();
-        m_pVBO->color(j, cc2);
-        ++j;
-        m_pVBO->color(j, cc2);
-        ++j;
-      }
-    }
+  quint32 cc1, cc2;
+  quint32 aid1, aid2;
 
-    // Double/triple bond colors
-    for (i=0; i<nmbons; ++i) {
-      aid1 = m_mbonds[i].aid1;
-      aid2 = m_mbonds[i].aid2;
-      j = m_mbonds[i].vaind;
-      
-      pA1 = pMol->getAtom(aid1);
-      cc1 = ColSchmHolder::getColor(pA1)->getCode();
-      
-      switch (m_mbonds[i].itype) {
-      case IBON_1C_2V: {
-        for (int k=0; k<4; ++k, ++j)
-          m_pVBO->color(j, cc1);
-        break;
-      }
-      case IBON_2C_2V: {
-        pA2 = pMol->getAtom(aid2);
-        cc2 = ColSchmHolder::getColor(pA2)->getCode();
-        for (int k=0; k<4; ++k, ++j)
-          m_pVBO->color(j, cc1);
-        for (int k=0; k<4; ++k, ++j)
-          m_pVBO->color(j, cc2);
-        break;
-      }
+  // initialize the coloring scheme
+  getColSchm()->start(pCMol, this);
+  pCMol->getColSchm()->start(pCMol, this);
 
-      case IBON_1C_3V: {
-        for (int k=0; k<6; ++k, ++j)
-          m_pVBO->color(j, cc1);
-        break;
-      }
-      case IBON_2C_3V: {
-        pA2 = pMol->getAtom(aid2);
-        cc2 = ColSchmHolder::getColor(pA2)->getCode();
-        
-        for (int k=0; k<6; ++k, ++j)
-          m_pVBO->color(j, cc1);
-        for (int k=0; k<6; ++k, ++j)
-          m_pVBO->color(j, cc2);
-        break;
-      }
-      default:
-        break;
-      }
-    }
+  // single bond colors
+  for (i=0; i<nbons; ++i) {
+    aid1 = m_sbonds[i].aid1;
+    aid2 = m_sbonds[i].aid2;
+    j = m_sbonds[i].vaind;
     
-    // atom colors
-    for (i=0; i<natoms; ++i) {
-      aid1 = m_atoms[i].aid1;
-      j = m_atoms[i].vaind;
-      
-      pA1 = pMol->getAtom(aid1);
-      cc1 = ColSchmHolder::getColor(pA1)->getCode();
-      
-      for (int k=0; k<6; ++k,++j)
+    pA1 = pCMol->getAtom(aid1);
+    cc1 = ColSchmHolder::getColor(pA1)->getCode();
+
+    m_pVBO->color(j, cc1);
+    ++j;
+    m_pVBO->color(j, cc1);
+    ++j;
+
+    if (m_sbonds[i].itype==IBON_2C_1V) {
+      pA2 = pCMol->getAtom(aid2);
+      cc2 = ColSchmHolder::getColor(pA2)->getCode();
+      m_pVBO->color(j, cc2);
+      ++j;
+      m_pVBO->color(j, cc2);
+      ++j;
+    }
+  }
+
+  // Double/triple bond colors
+  for (i=0; i<nmbons; ++i) {
+    aid1 = m_mbonds[i].aid1;
+    aid2 = m_mbonds[i].aid2;
+    j = m_mbonds[i].vaind;
+
+    pA1 = pCMol->getAtom(aid1);
+    cc1 = ColSchmHolder::getColor(pA1)->getCode();
+
+    switch (m_mbonds[i].itype) {
+    case IBON_1C_2V: {
+      for (int k=0; k<4; ++k, ++j)
         m_pVBO->color(j, cc1);
+      break;
+    }
+    case IBON_2C_2V: {
+      pA2 = pCMol->getAtom(aid2);
+      cc2 = ColSchmHolder::getColor(pA2)->getCode();
+      for (int k=0; k<4; ++k, ++j)
+        m_pVBO->color(j, cc1);
+      for (int k=0; k<4; ++k, ++j)
+        m_pVBO->color(j, cc2);
+      break;
     }
 
+    case IBON_1C_3V: {
+      for (int k=0; k<6; ++k, ++j)
+        m_pVBO->color(j, cc1);
+      break;
+    }
+    case IBON_2C_3V: {
+      pA2 = pCMol->getAtom(aid2);
+      cc2 = ColSchmHolder::getColor(pA2)->getCode();
+
+      for (int k=0; k<6; ++k, ++j)
+        m_pVBO->color(j, cc1);
+      for (int k=0; k<6; ++k, ++j)
+        m_pVBO->color(j, cc2);
+      break;
+    }
+    default:
+      break;
+    }
   }
+
+  // atom colors
+  for (i=0; i<natoms; ++i) {
+    aid1 = m_atoms[i].aid1;
+    j = m_atoms[i].vaind;
+
+    pA1 = pCMol->getAtom(aid1);
+    cc1 = ColSchmHolder::getColor(pA1)->getCode();
+
+    for (int k=0; k<6; ++k,++j)
+      m_pVBO->color(j, cc1);
+  }
+
+  // finalize the coloring scheme
+  getColSchm()->end();
+  pCMol->getColSchm()->end();
 
 }
 
@@ -688,30 +952,19 @@ void SimpleRenderer::invalidateDisplayCache()
 void SimpleRenderer::objectChanged(qsys::ObjectEvent &ev)
 {
 #ifdef USE_OPENGL_VBO
-  if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED) {
-    if (!ev.getDescr().equals("atomsMoved")) {
-      invalidateDisplayCache();
+  if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED &&
+      ev.getDescr().equals("atomsMoved")) {
+    // OBE_CHANGED && descr=="atomsMoved"
+    if (isUseAnim() && m_pVBO!=NULL) {
+      // only update positions
+      updateDynamicVBO();
+      m_pVBO->setUpdated(true);
       return;
     }
   }
-  else
-    return;
-
-  // OBE_CHANGED && descr=="atomsMoved"
-  if (m_pVBO!=NULL) {
-    // only update positions
-    updateVBO(false);
-    /*
-    qsys::ScenePtr pScene = getScene();
-    if (!pScene.isnull())
-      pScene->setUpdateFlag();
-     */
-    m_pVBO->setUpdated(true);
-    return;
-  }
-#else
-  super_t::objectChanged(ev);
 #endif
 
+  super_t::objectChanged(ev);
 }
 
+ 

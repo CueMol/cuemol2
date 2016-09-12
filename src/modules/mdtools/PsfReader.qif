@@ -1,0 +1,25 @@
+// -*-Mode: C++;-*-
+//
+// CHARMM/NAMD psf file reader scripting interface
+//
+
+#ifndef PSF_READER_QIF_INCLUDED
+#define PSF_READER_QIF_INCLUDED
+
+#include <qsys/ObjReader.qif>
+#include <modules/molstr/SelCommand.qif>
+
+runtime_class PsfReader extends ObjReader
+{
+  client_hdr "PsfReader.hpp";
+  client_name mdtools::PsfReader;
+
+  scriptable;
+  smartptr;
+
+  property object<MolSelection$> readsel => redirect(getReadSel, setReadSel);
+
+};
+
+#endif
+

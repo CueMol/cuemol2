@@ -8,12 +8,14 @@
 
 #include "gfx.hpp"
 #include <qlib/Vector4D.hpp>
+#include <qlib/Vector3F.hpp>
 #include <qlib/LTypes.hpp>
 #include "SolidColor.hpp"
 
 namespace gfx {
 
   using qlib::Vector4D;
+  using qlib::Vector3F;
   
   class GFX_API VBORep
   {
@@ -134,11 +136,11 @@ namespace gfx {
 
     virtual bool vertex(int ind, const Vector4D &v) =0;
 
-    virtual bool vertex(int ind, qfloat32 *pcrd);
+    // virtual bool vertexfp(int ind, const qfloat32 *pcrd);
+    /*inline bool vertex3f(int ind, const Vector3F &v) {
+      return vertex(ind, Vector4D(v.x(), v.y(), v.z()) );
+    }*/
 
-    //bool color(int ind, const ColorPtr &c) {
-    //return color(ind, c->getCode());
-    //}
     virtual bool color(int ind, quint32 cc);
 
     virtual bool normal(int ind, const Vector4D &v);
@@ -186,7 +188,20 @@ namespace gfx {
     virtual void alloc(int nsize);
 
     virtual bool vertex(int ind, const Vector4D &v);
-    virtual bool vertex(int ind, qfloat32 *pcrd);
+
+    inline void vertexfp(int ind, const qfloat32 *pcrd) {
+      MB_ASSERT(ind>=0 && getSize()>ind);
+      m_pData[ind].x = pcrd[0];
+      m_pData[ind].y = pcrd[1];
+      m_pData[ind].z = pcrd[2];
+    }
+
+    inline void vertex3f(int ind, const Vector3F &v) {
+      MB_ASSERT(ind>=0 && getSize()>ind);
+      m_pData[ind].x = v.x();
+      m_pData[ind].y = v.y();
+      m_pData[ind].z = v.z();
+    }
 
     virtual bool color(int ind, quint32 cc);
 
@@ -219,6 +234,20 @@ namespace gfx {
     virtual void alloc(int nsize);
 
     virtual bool vertex(int ind, const Vector4D &v);
+
+    // virtual bool vertexfp(int ind, const qfloat32 *pcrd);
+    inline void vertexfp(int ind, const qfloat32 *pcrd) {
+      MB_ASSERT(ind>=0 && getSize()>ind);
+      m_pData[ind].x = pcrd[0];
+      m_pData[ind].y = pcrd[1];
+      m_pData[ind].z = pcrd[2];
+    }
+    inline void vertex3f(int ind, const Vector3F &v) {
+      MB_ASSERT(ind>=0 && getSize()>ind);
+      m_pData[ind].x = v.x();
+      m_pData[ind].y = v.y();
+      m_pData[ind].z = v.z();
+    }
 
     bool getVertex(int ind, Vector4D &v) const;
 

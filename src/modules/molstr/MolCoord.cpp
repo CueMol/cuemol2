@@ -13,7 +13,6 @@
 #include "MolAtom.hpp"
 #include <qsys/SceneManager.hpp>
 #include "AtomIterator.hpp"
-#include "MolArrayMap.hpp"
 
 // #define USE_QDFMOL_QSC 1
 
@@ -28,7 +27,7 @@ using namespace molstr;
 
 MolCoord::MolCoord()
 {
-  m_nValidFlag = CRD_ATOM_VALID;
+  // m_nValidFlag = CRD_ATOM_VALID;
 
   resetAllProps();
   // m_pSel = SelectionPtr(MB_NEW SelCommand());
@@ -533,130 +532,12 @@ void MolCoord::propChanged(qlib::LPropEvent &ev)
 }
 */
 
-////////////////////////////////////////
-
-Vector4D MolCoord::getAtomArray(int aid) const
+char MolCoord::getCrdValidFlag() const
 {
-  if (m_nValidFlag==CRD_ATOM_VALID ||
-      m_indmap.size()==0 ||
-      m_crdarray.size()==0)
-    return Vector4D();
-
-  CrdIndexMap::const_iterator iter = m_indmap.find(aid);
-  if (iter==m_indmap.end())
-    return Vector4D();
-
-  quint32 ind = iter->second;
-  return Vector4D(m_crdarray[ind*3+0],
-                  m_crdarray[ind*3+1],
-                  m_crdarray[ind*3+2]);
-                  
-}
-
-void MolCoord::setAtomArray(int aid, const Vector4D &pos)
-{
-  if (m_indmap.size()==0 ||
-      m_crdarray.size()==0)
-    return; // TO DO: throw exception
-
-  CrdIndexMap::const_iterator iter = m_indmap.find(aid);
-  if (iter==m_indmap.end())
-    return; // TO DO: throw exception
-
-  quint32 ind = iter->second;
-  m_crdarray[ind*3+0] = (float) pos.x();
-  m_crdarray[ind*3+1] = (float) pos.y();
-  m_crdarray[ind*3+2] = (float) pos.z();
-}
-
-void MolCoord::updateCrdArray()
-{
-  if (m_nValidFlag==CRD_BOTH_VALID)
-    return;
-  
-  if (m_nValidFlag==CRD_ATOM_VALID) {
-    // copy from atom to array
-    // (Update crdarray)
-    MolArrayMap mam;
-    mam.setup(MolCoordPtr(this));
-    
-    // make index mapping
-    m_indmap.clear();
-    MolArrayMap::const_iterator iter = mam.begin();
-    MolArrayMap::const_iterator eiter = mam.end();
-    for (; iter!=eiter; ++iter) {
-      int aid = iter->first.pA->getID();
-      quint32 ind = iter->second;
-      m_indmap.insert(CrdIndexMap::value_type(aid, ind));
-    }
-    
-    // make float array
-    quint32 natoms = m_indmap.size();
-    m_crdarray.resize( natoms*3 );
-    iter = mam.begin();
-    for (; iter!=eiter; ++iter) {
-      MolAtomPtr pA = iter->first.pA;
-      int aid = pA->getID();
-      quint32 ind = iter->second;
-      Vector4D pos = pA->getPosCache();
-      m_crdarray[ind*3+0] = (float) pos.x();
-      m_crdarray[ind*3+1] = (float) pos.y();
-      m_crdarray[ind*3+2] = (float) pos.z();
-    }
-    
-    LOG_DPRINTLN("CrdArray/IndMap created: natoms=%d", natoms);
-    m_nValidFlag=CRD_BOTH_VALID;
-  }
-  else if (m_nValidFlag==CRD_ARRAY_VALID) {
-    // copy from array to atom
-    AtomIter iter = beginAtom();
-    AtomIter eiter = endAtom();
-    for (; iter!=eiter; ++iter) {
-      int aid = iter->first;
-      MolAtomPtr pAtom = iter->second;
-      CrdIndexMap::const_iterator iter = m_indmap.find(aid);
-      if (iter==m_indmap.end())
-        continue; // TO DO: throw exception
-
-      quint32 ind = iter->second;
-      Vector4D pos(m_crdarray[ind*3+0],
-                   m_crdarray[ind*3+1],
-                   m_crdarray[ind*3+2]);
-      pAtom->setPosCache(pos);
-    }
-  }
-}
-
-float *MolCoord::getAtomArray()
-{
-  if (m_nValidFlag!=CRD_ATOM_VALID)
-    return &m_crdarray[0];
-
-  updateCrdArray();
-  return &m_crdarray[0];
-}
-
-
-quint32 MolCoord::getCrdArrayInd(int aid) const
-{
-  if (m_nValidFlag==CRD_ATOM_VALID) {
-    MolCoord *pthis = const_cast<MolCoord *>(this);
-    pthis->updateCrdArray();
-  }
-
-  CrdIndexMap::const_iterator iter = m_indmap.find(aid);
-  if (iter==m_indmap.end()) {
-    MB_THROW(qlib::RuntimeException, "getCrdArrayInd failed");
-    return (quint32) -1;
-  }
-
-  return iter->second;
+  return CRD_ATOM_VALID;
 }
 
 void MolCoord::invalidateCrdArray()
 {
-  m_nValidFlag = CRD_ATOM_VALID;
-  m_indmap.clear();
-  m_crdarray.clear();
 }
 

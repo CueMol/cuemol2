@@ -1,0 +1,22 @@
+// -*-Mode: C++;-*-
+//
+// MD trajectory block object
+//
+
+#ifndef TRAJ_BLOCK_QIF_INCLUDED
+#define TRAJ_BLOCK_QIF_INCLUDED
+
+#include <qsys/Object.qif>
+
+runtime_class TrajBlock extends Object
+{
+  client_hdr "TrajBlock.hpp";
+  client_name mdtools::TrajBlock;
+
+  scriptable;
+  smartptr;
+
+};
+
+#endif
+

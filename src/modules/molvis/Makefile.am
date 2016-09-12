@@ -22,6 +22,7 @@ CPK2Renderer.cpp \
 CubicSpline.cpp \
 SplineCoeffSet.cpp \
 SplineRenderer.cpp \
+Spline2Renderer.cpp \
 TubeRenderer.cpp \
 TubeSection.cpp \
 RibbonRenderer.cpp \
@@ -54,6 +55,7 @@ CPKRenderer.qif \
 CPK2Renderer.qif \
 BallStickRenderer.qif \
 SplineRenderer.qif \
+Spline2Renderer.qif \
 TubeRenderer.qif \
 TubeSection.qif \
 RibbonRenderer.qif \

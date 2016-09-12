@@ -90,36 +90,9 @@ namespace molstr {
     static const char CRD_ARRAY_VALID = 1;
     static const char CRD_ATOM_VALID = 2;
 
-    char getCrdValidFlag() const {
-      return m_nValidFlag;
-    }
+    virtual char getCrdValidFlag() const;
 
-  private:
-    /// MolAtom/CrdArray validity flag
-    char m_nValidFlag;
-
-    // MolArrayMap m_indmap;
-    typedef std::map<int, quint32> CrdIndexMap;
-    /// Atom ID --> CrdArray index mapping
-    CrdIndexMap m_indmap;
-    
-    std::vector<float> m_crdarray;
-
-  public:
-    Vector4D getAtomArray(int aid) const;
-    void setAtomArray(int aid, const Vector4D &pos);
-
-    qfloat32 *getAtomArray();
-
-    void updateCrdArray();
-
-    void crdArrayChanged() {
-      m_nValidFlag = CRD_ARRAY_VALID;
-    }
-
-    quint32 getCrdArrayInd(int aid) const;
-
-    void invalidateCrdArray();
+    virtual void invalidateCrdArray();
 
   private:
     ////
@@ -178,20 +151,18 @@ namespace molstr {
 
     /////////////////////////////////////////////////////
 
-    ///
     /// Append a new atom.
-    /// pAtom should contain enough information,
-    /// i.e. chain, residue, name, element, etc.
-    /// The atom ID will be set after successfull addition.
-    ///
-    int appendAtom(MolAtomPtr pAtom);
+    ///   pAtom should contain enough information,
+    ///   i.e. chain, residue, name, element, etc.
+    ///   The atom ID will be set after successfull addition.
+    virtual int appendAtom(MolAtomPtr pAtom);
 
     int appendAtomScrHelper(MolAtomPtr pAtom, const LString &ch,
 			    ResidIndex resid, const LString &resn);
     int appendAtomScr1(MolAtomPtr pAtom, const LString &ch, int nresid, const LString &resn);
 
     /// Remove an atom by atom ID
-    bool removeAtom(int atomid);
+    virtual bool removeAtom(int atomid);
   
     /// Bond two atoms.
     /// In the inter-residue bond case,
@@ -294,7 +265,7 @@ namespace molstr {
     /////////////////////////////////////////////////////
     // other operations
 
-    void applyTopology();
+    void applyTopology(bool bAutoGen = true);
 
     ///
     ///  Apply affine transformation to the selected part by pSel

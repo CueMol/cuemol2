@@ -171,7 +171,7 @@ namespace gfx {
         }
         else /*if (i==2)*/ {
 
-          int j = 0, k = 0;
+          quint32 j = 0, k = 0;
           int bJ;
 
           quint32 jmax = ppindx[i][0];

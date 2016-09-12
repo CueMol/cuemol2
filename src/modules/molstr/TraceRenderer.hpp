@@ -26,14 +26,22 @@ namespace molstr {
     friend class ::TraceRenderer_wrap;
     typedef MainChainRenderer super_t;
 
+    /// Line width property
   private:
-    /// Line width
     double m_lw;
     
-    // ColoringSchemePtr m_pcoloring;
+  public:
+    void setLineWidth(double f) {
+      m_lw = f;
+      super_t::invalidateDisplayCache();
+    }
+    double getLineWidth() const { return m_lw; }
+    
+    ////////////
+    // workarea
 
-    bool m_bUseVBO;
-
+  private:
+/*
     struct IntBond {
       quint32 aid1, aid2;
     };
@@ -47,18 +55,18 @@ namespace molstr {
     std::deque<quint32> m_atoms;
 
     gfx::DrawElemVC *m_pVBO;
-
+*/
     ////////////
     
   public:
     TraceRenderer();
     virtual ~TraceRenderer();
     
-    virtual const char *getTypeName() const;
-
     //////////////////////////////////////////////////////
     // Renderer interface
     
+    virtual const char *getTypeName() const;
+
     virtual void display(DisplayContext *pdc);
     
     //////////////////////////////////////////////////////
@@ -66,6 +74,8 @@ namespace molstr {
 
     virtual void preRender(DisplayContext *pdc);
     
+    void invalidateDisplayCache();
+
     //////////////////////////////////////////////////////
     // MainChainRenderer interface
 
@@ -78,18 +88,34 @@ namespace molstr {
     //////////////////////////////////////////////////////
     
     // virtual void propChanged(qlib::LPropEvent &ev);
+    void objectChanged(qsys::ObjectEvent &ev);
 
-    void setLineWidth(double f) {
-      m_lw = f;
-      super_t::invalidateDisplayCache();
-    }
-    double getLineWidth() const { return m_lw; }
-    
   private:
-    void renderSimpleHittest(DisplayContext *phl);
     
-    void renderDLSel(DisplayContext *pdl);
-    
+    typedef std::vector<quint32> IDArray;
+
+    int m_nBonds, m_nAtoms;
+
+    /// Bond AID array
+    IDArray m_bondAids;
+
+    /// Bond CrdArray index array
+    IDArray m_bondInds;
+
+    /// Isolated atom AID array
+    IDArray m_atomAids;
+
+    /// Isolated atom CrdArray index array
+    IDArray m_atomInds;
+
+    /// cached vertex array/VBO
+    gfx::DrawElemVC *m_pVBO;
+
+    void createVBO();
+    void updateDynamicVBO();
+    void updateStaticVBO();
+    void updateVBOColor();
+
   };
 
 }

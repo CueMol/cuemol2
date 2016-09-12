@@ -26,6 +26,7 @@
 #include "RectSelDrawObj.qif"
 #include "SolidColoring.qif"
 #include "ResidRangeSet.qif"
+#include "AnimMol.qif"
 
 module molstr
 {
@@ -49,10 +50,10 @@ module molstr
   ResidRangeSet;
 
   MolSelection;
-  SelCommand uuid 3e6ff992-19dd-4dbe-a746-3b73e150cff4;
+  SelCommand;
 
-  ColoringScheme uuid 0acdf600-b4d2-4a8c-9b0c-535708c22e32;
-  CPKColoring uuid ba8900a6-3fa0-499d-9ef1-72b602fddcd3;
+  ColoringScheme;
+  CPKColoring;
   BfacColoring;
   SolidColoring;
 
@@ -61,5 +62,6 @@ module molstr
   QdfPdbReader;
 
   RectSelDrawObj;
+  AnimMol;
 };
 

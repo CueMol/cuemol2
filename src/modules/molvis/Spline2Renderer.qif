@@ -1,0 +1,39 @@
+// -*-Mode: C++;-*-
+//
+// Interface definition for Spline2Renderer
+//
+
+#ifndef SPLINE2_RENDERER_QIF
+#define SPLINE2_RENDERER_QIF
+
+#include <modules/molstr/MainChainRenderer.qif>
+
+runtime_class Spline2Renderer extends MainChainRenderer
+{
+  client_hdr "Spline2Renderer.hpp";
+  client_name molvis::Spline2Renderer;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  /// Detail level to the axial direction
+  property integer axialdetail => redirect(getAxialDetail, setAxialDetail);
+  default axialdetail = 6;
+
+//  /// spline smoothing value
+//  property real smooth => redirect(getSmooth, setSmooth);
+//  default smooth = 0.0;
+
+//  /// color smoothing flag
+//  property boolean smoothcolor => redirect(isSmoothColor, setSmoothColor);
+//  default smoothcolor = true;
+
+  /// spline line width
+  property real line_width => redirect(getLineWidth, setLineWidth);
+  default line_width = 1.2;
+
+};
+
+#endif // SPLINE2_RENDERER_QIF
+

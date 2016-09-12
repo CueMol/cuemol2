@@ -54,7 +54,7 @@ bool SmoothSpline1D::generate()
   t.setlength(nsize);
   x.setlength(nsize);
 
-  for (int i=0; i<nsize; ++i) {
+  for (i=0; i<nsize; ++i) {
     t[i] = i;
     x[i] = m_veclist[i];
   }
@@ -87,7 +87,7 @@ bool SmoothSpline1D::generate()
   m_coeff2.resize(nnodes-1);
   m_coeff3.resize(nnodes-1);
   
-  for (int i=0; i<nnodes; ++i) {
+  for (i=0; i<nnodes; ++i) {
     m_vecx[i] = psx->x.ptr.p_double[i];
     if (i<nnodes-1) {
       m_coeff0[i] = psx->c.ptr.p_double[4*i+0];
@@ -95,7 +95,23 @@ bool SmoothSpline1D::generate()
       m_coeff2[i] = psx->c.ptr.p_double[4*i+2];
       m_coeff3[i] = psx->c.ptr.p_double[4*i+3];
     }
+
   }
+
+/*
+  double dxave = 0.0;
+  for (i=1; i<nnodes; ++i) {
+    double dx = m_vecx[i] - m_vecx[i-1];
+    dxave += dx;
+  }
+  dxave /= double(nnodes-1);
+  
+  for (i=1; i<nnodes; ++i) {
+    double dx = m_vecx[i] - m_vecx[i-1];
+    if (!qlib::isNear4(dx, dxave)) {
+      MB_DPRINTLN("SmoSpl> t-param is transformed!! (dx=%f != dxave=%f @ i=%d)", dx, dxave, i);
+    }
+  }*/
 
   return true;
 }

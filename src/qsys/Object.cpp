@@ -902,3 +902,7 @@ void Object::updateSrcPath(const LString &srcpath)
   setAltSource("");
 }
 
+void Object::sceneChanged(SceneEvent &ev)
+{
+}
+

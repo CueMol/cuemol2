@@ -232,16 +232,16 @@ void Scene::unloading()
   
   data_t::const_iterator oiter = m_data.begin();
   for (; oiter!=m_data.end(); ++oiter) {
-    ObjectPtr obj = oiter->second;
-    MB_DPRINTLN("Scene.unloading()> robj %d unloading().", oiter->first);
-    obj->unloading();
+    ObjectPtr pobj = oiter->second;
+    MB_DPRINTLN("Scene.unloading()> obj %d unloading().", oiter->first);
+    pobj->unloading();
   }
 
   viewtab_t::const_iterator viter = m_viewtab.begin();
   for (; viter!=m_viewtab.end(); ++viter) {
-    ViewPtr rvi = viter->second;
+    ViewPtr pview = viter->second;
     MB_DPRINTLN("Scene.unloading()> rview %d unloading().", viter->first);
-    rvi->unloading();
+    pview->unloading();
   }
 
 #ifndef NO_SCRIPT
@@ -281,34 +281,10 @@ LString Scene::getBasePath() const
 
 LString Scene::resolveBasePath(const LString &aLocalFile) const
 {
-/*
-  fs::path inpath(aLocalFile);
-  if (inpath.is_complete())
-    return inpath.file_string();
-
-  fs::path base_path(getBasePath());
-
-  // convert to the absolute representation
-  inpath = fs::complete(inpath, base_path);
-  return inpath.file_string();
-*/
-
   return qlib::makeAbsolutePath(aLocalFile, getBasePath());
 }
 
 //////////////////////////////
-
-/*ObjectPtr Scene::createObject(const LString &type_name)
-{
-  ObjectPtr robj(MB_NEW Object());
-
-  if (!registerObjectImpl(robj)) {
-    MB_THROW(qlib::RuntimeException, "Cannot create new object");
-    return ObjectPtr();
-  }
-
-  return robj;
-}*/
 
 bool Scene::addObject(ObjectPtr pobj)
 {
@@ -334,22 +310,25 @@ bool Scene::destroyObject(qlib::uid_t uid)
     return false;
   }
   
-  ObjectPtr robj = i->second;
-  qlib::ensureNotNull(robj);
+  ObjectPtr pObj = i->second;
+  qlib::ensureNotNull(pObj);
 
-  // Detach this scene from the prop event source
-  bool res = robj->removeListener(this);
-  MB_ASSERT(res);
+  bool res;
+
+  // Detach this scene from the object's event listener list
+  res = pObj->removeListener(this);
+  //MB_ASSERT(res);
+
+  // Detach the object from this scene's event listener list
+  res = removeListener(pObj.get());
+  //MB_ASSERT(res);
 
   //
   // purge the rendering cache of this scene
   //
-  while (robj->getRendCount()>0) {
-    Object::RendIter ri = robj->beginRend();
-    robj->destroyRenderer(ri->first);
-    //RendererPtr rrend = ri->second;
-    //robj->destroyRenderer(rrend->getUID());
-    //removeRendCache(rrend);
+  while (pObj->getRendCount()>0) {
+    Object::RendIter ri = pObj->beginRend();
+    pObj->destroyRenderer(ri->first);
   }
 
   //
@@ -360,7 +339,7 @@ bool Scene::destroyObject(qlib::uid_t uid)
     SceneEvent ev;
     ev.setType(SceneEvent::SCE_OBJ_REMOVING);
     ev.setSource(getUID());
-    ev.setTarget(robj->getUID());
+    ev.setTarget(pObj->getUID());
     fireSceneEvent(ev);
   }
 
@@ -372,7 +351,7 @@ bool Scene::destroyObject(qlib::uid_t uid)
     UndoManager *pUM = getUndoMgr();
     if (pUM->isOK()) {
       ObjLoadEditInfo *pPEI = MB_NEW ObjLoadEditInfo;
-      pPEI->setupObjDestroy(getUID(), robj);
+      pPEI->setupObjDestroy(getUID(), pObj);
       pUM->addEditInfo(pPEI);
     }
   }
@@ -483,21 +462,24 @@ void Scene::setActiveObjID(qlib::uid_t uid)
 // private
 
 /// Common implementation for the object registration
-bool Scene::registerObjectImpl(ObjectPtr robj)
+bool Scene::registerObjectImpl(ObjectPtr pObj)
 {
-  robj->setSceneID(m_nUID);
-  bool res = m_data.insert(data_t::value_type(robj->getUID(), robj)).second;
+  pObj->setSceneID(m_nUID);
+  bool res = m_data.insert(data_t::value_type(pObj->getUID(), pObj)).second;
   if (!res)
     return false;
 
   // observe object events from the new object
-  robj->addListener(this);
+  pObj->addListener(this);
+
+  // the new object observe scene events
+  addListener(pObj.get());
 
   //////////////////////////////////////////////
-  // Re-setup renderers already attached to robj
+  // Re-setup renderers already attached to pObj
   {
-    Object::RendIter ri = robj->beginRend();
-    for (; ri!=robj->endRend(); ++ri) {
+    Object::RendIter ri = pObj->beginRend();
+    for (; ri!=pObj->endRend(); ++ri) {
       RendererPtr pRend = ri->second;
       addRendCache(pRend);
       // Update scene ID of the renderer
@@ -516,7 +498,7 @@ bool Scene::registerObjectImpl(ObjectPtr robj)
     SceneEvent ev;
     ev.setType(SceneEvent::SCE_OBJ_ADDED);
     ev.setSource(getUID());
-    ev.setTarget(robj->getUID());
+    ev.setTarget(pObj->getUID());
     fireSceneEvent(ev);
   }
 
@@ -528,7 +510,7 @@ bool Scene::registerObjectImpl(ObjectPtr robj)
       return true; // undo manager is disabled now.
     
     ObjLoadEditInfo *pPEI = MB_NEW ObjLoadEditInfo;
-    pPEI->setupObjCreate(getUID(), robj);
+    pPEI->setupObjCreate(getUID(), pObj);
     pUM->addEditInfo(pPEI);
   }
 
@@ -607,11 +589,11 @@ void Scene::setActiveRendID(qlib::uid_t uid)
 // Rendering of the scene
 
 static
-LString makeSectionName(ObjectPtr robj, RendererPtr rrend)
+LString makeSectionName(ObjectPtr pObj, RendererPtr rrend)
 {
 /*
   LString name = LString::format("_%s_%d_%s_%d",
-                                 robj->getName().c_str(), robj->getUID(),
+                                 pObj->getName().c_str(), pObj->getUID(),
                                  rrend->getName().c_str(), rrend->getUID());
   name.replace('.', '_');
   name.replace('-', '_');
@@ -619,7 +601,7 @@ LString makeSectionName(ObjectPtr robj, RendererPtr rrend)
   name.replace(')', '_');
 */
 
-  LString name = LString::format("_%d_%d", robj->getUID(), rrend->getUID());
+  LString name = LString::format("_%d_%d", pObj->getUID(), rrend->getUID());
 
   return name;
 }
@@ -694,9 +676,9 @@ void Scene::display(DisplayContext *pdc)
     rendtab_t::const_iterator ie = m_rendtab.end();
     for (; i!=ie; ++i) {
       RendererPtr rrend = i->second;
-      ObjectPtr robj = rrend->getClientObj();
-      if (!robj.isnull() &&
-          robj->isVisible() &&
+      ObjectPtr pObj = rrend->getClientObj();
+      if (!pObj.isnull() &&
+          pObj->isVisible() &&
           rrend->isVisible()) {
         pdc->setAlpha(rrend->getDefaultAlpha());
         
@@ -770,8 +752,8 @@ void Scene::processHit(DisplayContext *pdc)
   rendtab_t::const_iterator i = m_rendtab.begin();
   for (; i!=m_rendtab.end(); ++i) {
     RendererPtr rrend = i->second;
-    ObjectPtr robj = rrend->getClientObj();
-    if (robj.isnull() || (robj->isVisible() && !robj->isUILocked())) {
+    ObjectPtr pObj = rrend->getClientObj();
+    if (pObj.isnull() || (pObj->isVisible() && !pObj->isUILocked())) {
       if (rrend->isVisible() && !rrend->isUILocked()) {
         rrend->processHit(pdc);
       }
@@ -786,18 +768,18 @@ void Scene::processHit(DisplayContext *pdc)
 
 ViewPtr Scene::createView()
 {
-  ViewPtr robj(View::createView());
-  if (robj.isnull()) {
+  ViewPtr pView(View::createView());
+  if (pView.isnull()) {
     LOG_DPRINTLN("Fatal error: View::createView() returned NULL!!");
     MB_THROW(qlib::NullPointerException, "");
     return ViewPtr();
   }
 
   // reset to default values
-  robj->resetAllProps();
+  pView->resetAllProps();
 
-  robj->setSceneID(m_nUID);
-  bool res = m_viewtab.insert(viewtab_t::value_type(robj->getUID(), robj)).second;
+  pView->setSceneID(m_nUID);
+  bool res = m_viewtab.insert(viewtab_t::value_type(pView->getUID(), pView)).second;
   if (!res)
     return ViewPtr();
 
@@ -805,11 +787,11 @@ ViewPtr Scene::createView()
     SceneEvent ev;
     ev.setType(SceneEvent::SCE_VIEW_ADDED);
     ev.setSource(getUID());
-    ev.setTarget(robj->getUID());
+    ev.setTarget(pView->getUID());
     fireSceneEvent(ev);
   }
 
-  return robj;
+  return pView;
 }
 
 ViewPtr Scene::getView(qlib::uid_t uid) const
@@ -1435,7 +1417,7 @@ void Scene::commitUndoTxn()
     ev.setType(SceneEvent::SCE_SCENE_UNDOINFO);
     ev.setSource(getUID());
     ev.setTarget(getUID());
-    // ev.setTarget(robj->getUID());
+    // ev.setTarget(pObj->getUID());
     fireSceneEvent(ev);
   }
 }
@@ -1466,7 +1448,7 @@ void Scene::clearUndoDataScr()
     ev.setType(SceneEvent::SCE_SCENE_UNDOINFO);
     ev.setSource(getUID());
     ev.setTarget(getUID());
-    // ev.setTarget(robj->getUID());
+    // ev.setTarget(pObj->getUID());
     fireSceneEvent(ev);
   }
 }
