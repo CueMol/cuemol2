@@ -186,9 +186,8 @@ void MorphMol::setupData()
     FrameData *pFrm = m_frames[i];
 
     if ( pFrm->m_srctype.equals("<this>") ) {
-      //pFrm->m_crds.resize(m_nAtoms*3);
-      //thisset.convertf( pFrm->m_crds );
-      // <this> should have been setup here
+      // <this>  is already setup in readFromStream(),
+      // so we do nothing  here
       continue;
     }
     else {
@@ -197,18 +196,6 @@ void MorphMol::setupData()
 
       MolArrayMap aset;
       aset.setup(pmol);
-
-      /*
-      if (m_nAtoms!=aset.size()) {
-        LOG_DPRINTLN("MorphMol Error: atom size mismatch (%d != %d)",
-                    aset.size(), m_nAtoms);
-
-        // copy default (<this>) coordinates to m_crds array
-        pFrm->m_crds.resize(m_nAtoms*3);
-        thisset.convertf( pFrm->m_crds );
-        continue;
-      }
-       */
 
       // copy coordinates to m_crds array
       pFrm->m_crds.resize(m_nAtoms*3);
