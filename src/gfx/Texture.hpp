@@ -68,9 +68,45 @@ namespace gfx {
     static const int TYPE_FLOAT32 = 11;
     static const int TYPE_FLOAT64 = 12;
 
+    void use(int nUnit)
+    {
+      getRep()->use(nUnit);
+    }
+
+    void unuse()
+    {
+      getRep()->unuse();
+    }
+
   }; 
 
   /////////////////////////////////////
+
+  class Texture1D : public AbstTexture
+  {
+  public:
+    Texture1D() : AbstTexture()
+    {
+    }
+
+    virtual ~Texture1D()
+    {
+    }
+
+  private:
+
+  public:
+    void setup()
+    {
+      getRep()->setup(1, FMT_R, TYPE_UINT8);
+    }
+
+    void setData(int w, const void *pdata)
+    {
+      getRep()->setData(w, 1, 1, pdata);
+    }
+
+  }; 
 
   class Texture3D : public AbstTexture
   {
@@ -94,16 +130,6 @@ namespace gfx {
     void setData(int w, int h, int d, const void *pdata)
     {
       getRep()->setData(w, h, d, pdata);
-    }
-
-    void use(int nUnit)
-    {
-      getRep()->use(nUnit);
-    }
-
-    virtual void unuse()
-    {
-      getRep()->unuse();
     }
 
   }; 

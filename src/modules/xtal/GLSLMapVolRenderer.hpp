@@ -99,11 +99,11 @@ namespace xtal {
 
     /// map 3D texture ID
     GLuint m_nMapTexID;
-
     gfx::Texture3D *m_pMapTex;
 
     // transfer function 1D texture
     GLuint m_nXfunTexID;
+    gfx::Texture1D *m_pXfnTex;
 
     // planes to draw (not used??)
     // GLuint m_nVBOID;
