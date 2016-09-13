@@ -32,6 +32,11 @@ vec4 densityToColor( float d )
 */
 
   color =  texture1D(xferFunTex, d);
+
+  //int ind = int(d*255.0 + 0.5);
+  //ivec4 ic =  texelFetch1D(xferFunTex, ind, 0);
+  //color = vec4(ic.r/255.0, ic.g/255.0, ic.b/255.0, ic.a/255.0);
+
   //color = vec4(d + 0.5, d * 2.0, d, d*0.5);
 
   return color;

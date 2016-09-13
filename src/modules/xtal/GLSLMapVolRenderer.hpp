@@ -98,12 +98,19 @@ namespace xtal {
     double m_dgrid;
 
     /// map 3D texture ID
-    GLuint m_nMapTexID;
+    // GLuint m_nMapTexID;
     gfx::Texture3D *m_pMapTex;
 
+    /// 3D map texture data
+    typedef qlib::Array3D<quint8> MapTmp;
+    MapTmp m_maptmp;
+
     // transfer function 1D texture
-    GLuint m_nXfunTexID;
+    // GLuint m_nXfunTexID;
     gfx::Texture1D *m_pXfnTex;
+
+    /// 1D xfer func texture data
+    std::vector<quint8> m_xfnmap;
 
     // planes to draw (not used??)
     // GLuint m_nVBOID;
@@ -111,9 +118,6 @@ namespace xtal {
     /// isosurface level
     //  (in int unit, calculated from MapRenderer::getSigLevel())
     unsigned int m_isolevel;
-
-    typedef qlib::Array3D<quint8> MapTmp;
-    MapTmp m_maptmp;
 
     void renderGPU(DisplayContext *pdc);
 

@@ -40,12 +40,14 @@ GLSLMapVolRenderer::GLSLMapVolRenderer()
 
   m_pPO = NULL;
 
-  m_nMapTexID = 0;
+  // m_nMapTexID = 0;
   m_pMapTex = NULL;
 
-  m_nXfunTexID = 0;
+  // m_nXfunTexID = 0;
 
   m_bMapTexOK = false;
+
+  m_xfnmap.resize(256*4);
 
 }
 
@@ -434,7 +436,7 @@ void GLSLMapVolRenderer::genXferFunMap()
 {
   CHK_GLERROR("(reset)");
 
-  quint8 *pData = new quint8[4*256];
+  quint8 *pData = &m_xfnmap[0]; //new quint8[4*256];
   if (m_nXferType==GLMV_AUTO1) {
     for (int i=0; i<256; ++i) {
       double d = double(i)/255.0;
@@ -474,7 +476,7 @@ void GLSLMapVolRenderer::genXferFunMap()
 
   MB_DPRINTLN("MapVol> genXferFunMap for siglevel %d done", m_isolevel);
   m_pXfnTex->setData(256, pData);
-  delete [] pData;
+  // delete [] pData;
 
   /*
   glActiveTexture(GL_TEXTURE1);
