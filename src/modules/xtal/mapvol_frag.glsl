@@ -5,6 +5,7 @@
 //
 
 #version 120
+#extension GL_EXT_gpu_shader4 : enable 
 
 uniform sampler1D xferFunTex;
 uniform sampler3D dataFieldTex;
