@@ -44,7 +44,7 @@ namespace molstr {
     int getAtom1() const { return id1; }
     void setAtom1(int id) { id1 = id; }
 
-    int getAtom2() { return id2; }
+    int getAtom2() const { return id2; }
     void setAtom2(int id) { id2 = id; }
 
     bool isPersist() { return bPersist; }
@@ -54,6 +54,8 @@ namespace molstr {
     void setType(int val) { nType = val; }
 
     Vector4D getDblBondDir(MolCoordPtr pMol) const;
+
+    int getDistalAtomID(MolCoordPtr pMol, int &nbonds) const;
   };
 }
 
