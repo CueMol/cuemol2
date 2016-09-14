@@ -43,7 +43,7 @@ SimpleRenderer::SimpleRenderer()
   m_pPO = NULL;
   m_pAttrAry = NULL;
   m_pCoordTex = NULL;
-  m_bUseGLSL = true;
+  m_bUseGLSL = false;
   m_bChkShaderDone = false;
 }
 

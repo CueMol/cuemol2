@@ -222,6 +222,8 @@ namespace molstr {
     std::vector<quint32> m_sels;
     std::vector<float> m_coordbuf;
 
+    int m_nTexW, m_nTexH;
+
     /// GLSL shader objects
     sysdep::OglProgramObject *m_pPO;
 

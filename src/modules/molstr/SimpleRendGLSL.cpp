@@ -92,7 +92,20 @@ void SimpleRenderer::createGLSL()
     aidmap.insert(std::pair<quint32, quint32>(aid, i));
     ++i;
   }
-  m_coordbuf.resize(i*3);
+  int ncrds = i*3;
+  int h=0;
+  if (ncrds%1024==0)
+    h =  ncrds/1024;
+  else
+    h = ncrds/1024 + 1;
+  m_coordbuf.resize(h*1024);
+
+  m_nTexW = 1024;
+  m_nTexH = h;
+  MB_DPRINTLN("SimpleGLSL> Coord Texture size=%d,%d", m_nTexW, m_nTexH);
+
+  // m_coordbuf.resize(ncrds);
+
   m_sels.resize(i);
   
   for (i=0, aiter.first(); aiter.hasMore(); aiter.next()) {
@@ -261,7 +274,7 @@ void SimpleRenderer::updateDynamicGLSL()
   
   qfloat32 *crd = pAMol->getAtomCrdArray();
 
-  quint32 natoms = m_coordbuf.size()/3;
+  quint32 natoms = m_sels.size();
   quint32 ind;
   for (i=0; i<natoms; ++i) {
     ind = m_sels[i];
@@ -281,7 +294,7 @@ void SimpleRenderer::updateDynamicGLSL()
     h = natoms/1024 + 1;
   }
 
-  m_pCoordTex->setData(w, h, &m_coordbuf[0]);
+  m_pCoordTex->setData(m_nTexW, m_nTexH, &m_coordbuf[0]);
 
 }
 
@@ -292,7 +305,7 @@ void SimpleRenderer::updateStaticGLSL()
   
   MolCoordPtr pCMol = getClientMol();
 
-  quint32 natoms = m_coordbuf.size()/3;
+  quint32 natoms = m_sels.size();
   for (i=0; i<natoms; ++i) {
     quint32 aid = m_sels[i];
     MolAtomPtr pAtom = pCMol->getAtom(aid);
@@ -305,17 +318,8 @@ void SimpleRenderer::updateStaticGLSL()
 
   //m_pCoordTex->setData(natoms, &m_coordbuf[0]);
 
-  int w, h;
-  if (natoms<=1024) {
-    w = natoms;
-    h = 1;
-  }
-  else {
-    w = 1024;
-    h = natoms/1024 + 1;
-  }
-  m_pCoordTex->setData(w, h, &m_coordbuf[0]);
-  MB_DPRINTLN("updateStaticGLSL texture(%d,%d)=%p OK", w, h, m_pCoordTex);
+  m_pCoordTex->setData(m_nTexW, m_nTexH, &m_coordbuf[0]);
+  MB_DPRINTLN("updateStaticGLSL texture(%d,%d)=%p OK", m_nTexW, m_nTexH, m_pCoordTex);
 }
 
 void SimpleRenderer::displayGLSL(DisplayContext *pdc)
