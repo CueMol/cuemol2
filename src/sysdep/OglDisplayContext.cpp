@@ -1376,6 +1376,7 @@ void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
   GLuint nvbo = 0;
   GLuint nvbo_ind = 0;
 
+MB_DPRINTLN("** 000");
   if (ada.getVBO()==NULL) {
     // Make VBO for attribute array
     glGenBuffers(1, &nvbo);
@@ -1402,6 +1403,7 @@ void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
                    ada.getIndData(),
                    GL_STATIC_DRAW);
     }
+MB_DPRINTLN("** 001");
   }
   else {
     OglVBORep *pRep = (OglVBORep *) ada.getVBO();
@@ -1413,8 +1415,10 @@ void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
       nvbo_ind = pRep->m_nBufID;
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, nvbo_ind);
     }
+MB_DPRINTLN("** 002");
   }
 
+MB_DPRINTLN("** 003");
   size_t nattr = ada.getAttrSize();
   for (int i=0; i<nattr; ++i) {
     int al = ada.getAttrLoc(i);
@@ -1423,11 +1427,13 @@ void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
     int ap = ada.getAttrPos(i);
     if (at==qlib::type_consts::QTC_INT32 ||
         at==qlib::type_consts::QTC_UINT32) {
+      MB_DPRINTLN("** 005 %d", i);
       glVertexAttribIPointer(al,
                              az,
                              convGLConsts(at),
                              ada.getElemSize(),
                              (void *) ap);
+      MB_DPRINTLN("** 006 %d", i);
     }
     else {
       glVertexAttribPointer(al,
@@ -1438,6 +1444,7 @@ void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
                             (void *) ap);
     }
     glEnableVertexAttribArray(al);
+MB_DPRINTLN("** 004 %d", i);
   }
 
   GLenum mode = convDrawMode(ada.getDrawMode());
@@ -1456,6 +1463,7 @@ void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
     glDrawArrays(mode, 0, ada.getSize());
   }
   
+MB_DPRINTLN("** 005");
   for (int i=0; i<nattr; ++i) {
     int al = ada.getAttrLoc(i);
     glDisableVertexAttribArray(al);
@@ -1464,6 +1472,7 @@ void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); 
   glBindBuffer(GL_ARRAY_BUFFER, 0); 
 
+MB_DPRINTLN("** 006");
 }
 
 

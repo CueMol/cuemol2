@@ -6,17 +6,19 @@
 #version 120
 #extension GL_EXT_gpu_shader4 : enable 
 
-precision mediump float;
+//precision mediump float;
 
 ////////////////////
 // Uniform variables
-uniform sampler1D coordTex;
+//uniform sampler1D coordTex;
+uniform sampler2D coordTex;
 
 ////////////////////
 // Vertex attributes
 
 // atom coord indices
-attribute ivec2 a_ind12;
+//attribute ivec2 a_ind12;
+attribute vec2 a_ind12;
 
 // color
 attribute vec4 a_color;
@@ -30,16 +32,16 @@ float ffog(in float ecDistance)
 
 vec3 getAtomPos(in int ind)
 {
-  /*
+
   ivec2 iv;
-  //iv.x = ind%1024;
-  iv.y = ind;
-  //iv.y = ind/1024;
-  iv.x = 1;
+  iv.x = ind%1024;
+  //iv.y = ind;
+  iv.y = ind/1024;
+  //iv.x = 1;
   return texelFetch2D(coordTex, iv, 0).xyz;
-    */
+
   
-  return texelFetch1D(coordTex, ind, 0).xyz;
+  //return texelFetch1D(coordTex, ind, 0).xyz;
 }
 
 void main (void)

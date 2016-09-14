@@ -216,8 +216,8 @@ namespace molstr {
     bool m_bChkShaderDone;
 
     /// coordinate float texture
-    gfx::Texture1D *m_pCoordTex;
-    //gfx::Texture2D *m_pCoordTex;
+    //gfx::Texture1D *m_pCoordTex;
+    gfx::Texture2D *m_pCoordTex;
 
     std::vector<quint32> m_sels;
     std::vector<float> m_coordbuf;
@@ -227,8 +227,8 @@ namespace molstr {
 
     struct AttrElem {
       /// a_ind12.x, a_ind12.y
-      //qfloat32 ind1, ind2;
-      qint32 ind1, ind2;
+      qfloat32 ind1, ind2;
+      //qint32 ind1, ind2;
       /// a_color
       qbyte r, g, b, a;
     };

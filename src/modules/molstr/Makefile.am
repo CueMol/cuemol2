@@ -22,6 +22,7 @@ ColoringScheme.cpp \
 CPKColoring.cpp \
 BfacColoring.cpp \
 SimpleRenderer.cpp \
+SimpleRendGLSL.cpp \
 MolAtomRenderer.cpp \
 SelCommand.cpp \
 SelNodes.cpp \
@@ -105,6 +106,15 @@ MODLDR_SRC = molstr_loader.cpp
 
 $(MODLDR_SRC): molstr.moddef $(MCWG_SRC)
 
+if COND_USE_OPENGL
+shaderdir = $(prefix)/data/shaders/
+shader_DATA = \
+simple_vertex.glsl \
+simple_frag.glsl \
+$(NULL)
+
+endif
+
 ######################################################
 # molstr libtool library
 
@@ -115,13 +125,13 @@ $(CPP_SRC) \
 $(MC_SRCS) \
 $(MODLDR_SRC)
 
-
 libmolstr_la_CXXFLAGS = \
   @CFLAGS_VIS_HIDDEN@ \
   @CXXFLAGS_VIS_HIDDEN@ \
   -DMOLSTR_EXPORTS=1 \
   -I$(top_srcdir) -I$(srcdir) \
   @BOOST_CPPFLAGS@ \
+  @GLEW_CPPFLAGS@ \
   $(NULL)
 
 libmolstr_la_LIBADD = -lqsys -lgfx -lqlib

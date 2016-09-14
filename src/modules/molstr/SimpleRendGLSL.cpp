@@ -48,8 +48,8 @@ void SimpleRenderer::initShader(DisplayContext *pdc)
     return;
   }
 
-  //m_pCoordTex = pdc->createTexture2D();
-  m_pCoordTex = pdc->createTexture1D();
+  m_pCoordTex = pdc->createTexture2D();
+  //m_pCoordTex = pdc->createTexture1D();
   m_pCoordTex->setup(gfx::AbstTexture::FMT_RGB,
                      gfx::AbstTexture::TYPE_FLOAT32);
 
@@ -149,8 +149,8 @@ void SimpleRenderer::createGLSL()
   m_pAttrAry = MB_NEW AttrArray();
   AttrArray &attra = *m_pAttrAry;
   attra.setAttrSize(2);
-  //attra.setAttrInfo(0, m_nInd12Loc, 2, qlib::type_consts::QTC_FLOAT32,  offsetof(AttrElem, ind1));
-  attra.setAttrInfo(0, m_nInd12Loc, 2, qlib::type_consts::QTC_INT32,  offsetof(AttrElem, ind1));
+  attra.setAttrInfo(0, m_nInd12Loc, 2, qlib::type_consts::QTC_FLOAT32,  offsetof(AttrElem, ind1));
+  // attra.setAttrInfo(0, m_nInd12Loc, 2, qlib::type_consts::QTC_INT32,  offsetof(AttrElem, ind1));
   attra.setAttrInfo(1, m_nColLoc, 4, qlib::type_consts::QTC_UINT8, offsetof(AttrElem, r));
 
   attra.alloc(nva);
@@ -269,9 +269,8 @@ void SimpleRenderer::updateDynamicGLSL()
       m_coordbuf[i*3+j] = crd[ind+j];
   }
 
-  m_pCoordTex->setData(natoms, &m_coordbuf[0]);
+  //  m_pCoordTex->setData(natoms, &m_coordbuf[0]);
 
-/*
   int w, h;
   if (natoms<=1024) {
     w = natoms;
@@ -283,7 +282,7 @@ void SimpleRenderer::updateDynamicGLSL()
   }
 
   m_pCoordTex->setData(w, h, &m_coordbuf[0]);
-*/
+
 }
 
 void SimpleRenderer::updateStaticGLSL()
@@ -304,19 +303,19 @@ void SimpleRenderer::updateStaticGLSL()
     m_coordbuf[i*3+2] = pos.z();
   }
 
-/*
+  //m_pCoordTex->setData(natoms, &m_coordbuf[0]);
+
   int w, h;
   if (natoms<=1024) {
-    h = natoms;
-    w = 1;
+    w = natoms;
+    h = 1;
   }
   else {
     w = 1024;
     h = natoms/1024 + 1;
   }
   m_pCoordTex->setData(w, h, &m_coordbuf[0]);
-*/
-  m_pCoordTex->setData(natoms, &m_coordbuf[0]);
+  MB_DPRINTLN("updateStaticGLSL texture(%d,%d)=%p OK", w, h, m_pCoordTex);
 }
 
 void SimpleRenderer::displayGLSL(DisplayContext *pdc)
