@@ -298,9 +298,9 @@ void SimpleRenderer::updateStaticGLSL()
     MolAtomPtr pAtom = pCMol->getAtom(aid);
     Vector4D pos = pAtom->getPos();
 
-    m_coordbuf[i*3+0] = pos.x();
-    m_coordbuf[i*3+1] = pos.y();
-    m_coordbuf[i*3+2] = pos.z();
+    m_coordbuf[i*3+0] = pos.x()/100.0;
+    m_coordbuf[i*3+1] = pos.y()/100.0;
+    m_coordbuf[i*3+2] = pos.z()/100.0;
   }
 
   //m_pCoordTex->setData(natoms, &m_coordbuf[0]);

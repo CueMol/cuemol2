@@ -38,7 +38,7 @@ vec3 getAtomPos(in int ind)
   //iv.y = ind;
   iv.y = ind/1024;
   //iv.x = 1;
-  return texelFetch2D(coordTex, iv, 0).xyz;
+  return ( texelFetch2D(coordTex, iv, 0).xyz ) * 100.0;
 
   
   //return texelFetch1D(coordTex, ind, 0).xyz;
