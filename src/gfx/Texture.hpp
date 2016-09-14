@@ -108,6 +108,36 @@ namespace gfx {
 
   }; 
 
+  //////////
+
+  class Texture2D : public AbstTexture
+  {
+  public:
+    Texture2D() : AbstTexture()
+    {
+    }
+
+    virtual ~Texture2D()
+    {
+    }
+
+  private:
+
+  public:
+    void setup(int iFmt, int iType)
+    {
+      getRep()->setup(2, iFmt, iType);
+    }
+
+    void setData(int w, int h, const void *pdata)
+    {
+      getRep()->setData(w, h, 1, pdata);
+    }
+
+  }; 
+
+  //////////
+
   class Texture3D : public AbstTexture
   {
   public:

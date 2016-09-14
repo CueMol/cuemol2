@@ -39,6 +39,12 @@ SimpleRenderer::SimpleRenderer()
   m_dCvScl2 = 0.05;
 
   m_pVBO = NULL;
+
+  m_pPO = NULL;
+  m_pAttrAry = NULL;
+  m_pCoordTex = NULL;
+  m_bUseGLSL = true;
+  m_bChkShaderDone = false;
 }
 
 SimpleRenderer::~SimpleRenderer()
@@ -219,30 +225,35 @@ void SimpleRenderer::display(DisplayContext *pdc)
     return;
   }
 
-  // new rendering routine using VBO (DrawElem)
-
-  if (m_pVBO==NULL) {
-    createVBO();
-    if (isUseAnim())
-      updateDynamicVBO();
-    else
-      updateStaticVBO();
-    updateVBOColor();
-    if (m_pVBO==NULL)
-      return; // Error, Cannot draw anything (ignore)
+  if (m_bUseGLSL) {
+    displayGLSL(pdc);
+  }
+  else {
+    // new rendering routine using VBO (DrawElem)
+    if (m_pVBO==NULL) {
+      createVBO();
+      if (isUseAnim())
+        updateDynamicVBO();
+      else
+        updateStaticVBO();
+      updateVBOColor();
+      if (m_pVBO==NULL)
+        return; // Error, Cannot draw anything (ignore)
+    }
+  
+    preRender(pdc);
+    m_pVBO->setLineWidth(m_lw);
+    pdc->drawElem(*m_pVBO);
+    postRender(pdc);
   }
   
-  preRender(pdc);
-  m_pVBO->setLineWidth(m_lw);
-  pdc->drawElem(*m_pVBO);
-  postRender(pdc);
 #else
   super_t::display(pdc);
 #endif
 }
 
 
-//////////
+//////////////////////////////////////////////////
 
 void SimpleRenderer::createVBO()
 {
@@ -955,11 +966,18 @@ void SimpleRenderer::objectChanged(qsys::ObjectEvent &ev)
   if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED &&
       ev.getDescr().equals("atomsMoved")) {
     // OBE_CHANGED && descr=="atomsMoved"
-    if (isUseAnim() && m_pVBO!=NULL) {
-      // only update positions
-      updateDynamicVBO();
-      m_pVBO->setUpdated(true);
-      return;
+    if (isUseAnim()) {
+      if (m_pVBO!=NULL) {
+        // only update positions
+        updateDynamicVBO();
+        m_pVBO->setUpdated(true);
+        return;
+      }
+      else if (m_pAttrAry!=NULL) {
+        // only update positions
+        updateDynamicGLSL();
+        return;
+      }
     }
   }
 #endif
@@ -967,4 +985,3 @@ void SimpleRenderer::objectChanged(qsys::ObjectEvent &ev)
   super_t::objectChanged(ev);
 }
 
- 

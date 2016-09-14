@@ -1421,12 +1421,22 @@ void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
     int az = ada.getAttrElemSize(i);
     int at = ada.getAttrTypeID(i);
     int ap = ada.getAttrPos(i);
-    glVertexAttribPointer(al,
-                          az,
-                          convGLConsts(at),
-                          convGLNorm(at),
-                          ada.getElemSize(),
-                          (void *) ap);
+    if (at==qlib::type_consts::QTC_INT32 ||
+        at==qlib::type_consts::QTC_UINT32) {
+      glVertexAttribIPointer(al,
+                             az,
+                             convGLConsts(at),
+                             ada.getElemSize(),
+                             (void *) ap);
+    }
+    else {
+      glVertexAttribPointer(al,
+                            az,
+                            convGLConsts(at),
+                            convGLNorm(at),
+                            ada.getElemSize(),
+                            (void *) ap);
+    }
     glEnableVertexAttribArray(al);
   }
 
@@ -1503,259 +1513,8 @@ bool OglDisplayContext::destroyProgramObject(const LString &name)
 
 //////////
 
-#include <gfx/Texture.hpp>
+#include "OglTexture.hpp"
 
-#include <qsys/SceneManager.hpp>
-
-#define CHK_GLERROR(MSG)\
-{ \
-  GLenum errc; \
-  errc = glGetError(); \
-  if (errc!=GL_NO_ERROR) \
-    MB_DPRINTLN("%s GLError(%d): %s", MSG, errc, gluErrorString(errc)); \
-}
-
-namespace {
-
-  using namespace gfx;
-
-  class OglTextureRep : public gfx::TextureRep
-  {
-  private:
-    qlib::uid_t m_nSceneID;
-
-    /// OpenGL ID of resource
-    GLuint m_nTexID;
-
-    /// Dimension type
-    GLenum m_iGlDimType;
-
-    GLenum m_iGlPixFmt;
-    GLenum m_iGlPixType;
-
-    /// size of data
-    int m_nWidth;
-    int m_nHeight;
-    int m_nDepth;
-
-    bool m_bInit;
-
-  public:
-    OglTextureRep(qlib::uid_t nSceneID)
-      : m_nSceneID(nSceneID)
-    {
-      m_nWidth = 0;
-      m_nHeight = 0;
-      m_nDepth = 0;
-      m_bInit = false;
-    }
-
-    virtual ~OglTextureRep() {
-      destroy();
-    }
-
-    virtual void setup(int iDim, int iPixFmt, int iPixType)
-    {
-      switch (iDim) {
-      case 1:
-	m_iGlDimType = GL_TEXTURE_1D;
-	break;
-      case 2:
-	m_iGlDimType = GL_TEXTURE_2D;
-	break;
-      case 3:
-	m_iGlDimType = GL_TEXTURE_3D;
-	break;
-      default:
-	MB_THROW(qlib::RuntimeException, "Unsupported dimension");
-	break;
-      }
-
-      switch (iPixFmt) {
-      case AbstTexture::FMT_R:
-	m_iGlPixFmt = GL_RED;
-	break;
-      case AbstTexture::FMT_RG:
-	m_iGlPixFmt = GL_RG;
-	break;
-      case AbstTexture::FMT_RGB:
-	m_iGlPixFmt = GL_RGB;
-	break;
-      case AbstTexture::FMT_RGBA:
-	m_iGlPixFmt = GL_RGBA;
-	break;
-      default:
-	MB_THROW(qlib::RuntimeException, "Unsupported pixel format");
-	break;
-      }
-
-      switch (iPixType) {
-      case AbstTexture::TYPE_UINT8:
-	m_iGlPixType = GL_UNSIGNED_BYTE;
-	break;
-	/*
-      case AbstTexture::FMT_UINT16:
-	m_iGlPixType = GL_UNSIGNED_SHORT;
-	break;
-      case AbstTexture::FMT_RGB:
-	m_iGlPixFmt = GL_RGB;
-	break;
-      case AbstTexture::FMT_RGBA:
-	m_iGlPixFmt = GL_RGBA;
-	break;
-	*/
-      default:
-	MB_THROW(qlib::RuntimeException, "Unsupported pixel format");
-	break;
-      }
-
-      createGL();
-      setupGL();
-    }
-
-    /*void setData1D(void *pdata, int w)
-    {
-      setData(pdata, w, 1, 1);
-      }*/
-
-    virtual void setData(int width, int height, int depth, const void *pdata)
-    {
-      if (m_nWidth!=width ||
-	  m_nHeight!=height ||
-	  m_nDepth!=depth)
-	m_bInit = false;
-      
-      m_nWidth = width;
-      m_nHeight = height;
-      m_nDepth = depth;
-      setDataGL(pdata);
-    }
-
-    virtual void use(int nUnit)
-    {
-      glActiveTexture(GL_TEXTURE0 + nUnit);
-      glBindTexture(m_iGlDimType, m_nTexID);
-    }
-
-    virtual void unuse()
-    {
-      glActiveTexture(GL_TEXTURE0);
-      glBindTexture(m_iGlDimType, 0);
-    }
-
-  private:
-    void createGL()
-    {
-      glGenTextures(1, &m_nTexID);
-    }
-
-    void setupGL()
-    {
-      glEnable(m_iGlDimType);
-      glBindTexture(m_iGlDimType, m_nTexID);
-      // filter setting
-      glTexParameteri(m_iGlDimType, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-      glTexParameteri(m_iGlDimType, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-      // clamp setting
-      glTexParameteri(m_iGlDimType, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-      if (m_iGlDimType==GL_TEXTURE_3D ||
-	  m_iGlDimType==GL_TEXTURE_2D) {
-	glTexParameteri(m_iGlDimType, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	if (m_iGlDimType==GL_TEXTURE_3D) {
-	  glTexParameteri(m_iGlDimType, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-	}
-      }
-      glBindTexture(m_iGlDimType, 0);
-      glDisable(m_iGlDimType);
-    }
-
-    void setDataGL(const void *pdata)
-    {
-      glEnable(m_iGlDimType);
-      glBindTexture(m_iGlDimType, m_nTexID);
-      glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
-      glPixelStorei( GL_UNPACK_ALIGNMENT, 1 );
-
-      if (m_iGlDimType==GL_TEXTURE_1D)
-	setDataGL1D(pdata);
-      else if (m_iGlDimType==GL_TEXTURE_3D)
-	setDataGL3D(pdata);
-    }
-
-    void setDataGL1D(const void *pdata)
-    {
-      if (!m_bInit) {
-	glTexImage1D(GL_TEXTURE_1D, 0,
-		     m_iGlPixFmt,
-		     m_nWidth, 0,
-		     m_iGlPixFmt, m_iGlPixType, pdata);
-	CHK_GLERROR("glTexImage1D");
-	MB_DPRINTLN("OglTex1D glTexImage1D %d OK", m_nWidth);
-	m_bInit = true;
-      }
-      else {
-	glTexSubImage1D(GL_TEXTURE_1D,
-			0, // LOD
-			0, // offset
-			m_nWidth, // size
-			m_iGlPixFmt, // format
-			m_iGlPixType, // type
-			pdata);
-      }
-    }
-      
-    void setDataGL3D(const void *pdata)
-    {
-      if (!m_bInit) {
-	glTexImage3D(GL_TEXTURE_3D, 0,
-		     m_iGlPixFmt,
-		     m_nWidth, m_nHeight, m_nDepth, 0,
-		     m_iGlPixFmt, m_iGlPixType, pdata);
-	m_bInit = true;
-      }
-      else {
-	glTexSubImage3D(GL_TEXTURE_3D,
-			0, // LOD
-			0, 0, 0, // offset
-			m_nWidth, m_nHeight, m_nDepth, // size
-			m_iGlPixFmt, // format
-			m_iGlPixType, // type
-			pdata);
-      }
-    }
-
-    void setCurrentContext()
-    {
-      qsys::ScenePtr rsc = qsys::SceneManager::getSceneS(m_nSceneID);
-      if (rsc.isnull()) {
-        MB_DPRINTLN("OglVBO> unknown scene, VBO %d cannot be deleted", m_nTexID);
-        return;
-      }
-
-      qsys::Scene::ViewIter viter = rsc->beginView();
-      if (viter==rsc->endView()) {
-        MB_DPRINTLN("OglVBO> no view, VBO %d cannot be deleted", m_nTexID);
-        return;
-      }
-
-      qsys::ViewPtr rvw = viter->second;
-      if (rvw.isnull()) {
-        // If any views aren't found, it is no problem,
-        // because the parent context (and also all DLs) may be already destructed.
-        return;
-      }
-      gfx::DisplayContext *pctxt = rvw->getDisplayContext();
-      pctxt->setCurrent();
-    }
-
-    void destroy()
-    {
-      setCurrentContext();
-      glDeleteTextures(1, &m_nTexID);
-    }
-  };
-
-}
 
 Texture1D *OglDisplayContext::createTexture1D()
 {
@@ -1767,7 +1526,10 @@ Texture1D *OglDisplayContext::createTexture1D()
 
 Texture2D *OglDisplayContext::createTexture2D()
 {
-  return NULL;
+  qlib::uid_t nSceneID = getSceneID();
+  Texture2D *pTex = MB_NEW Texture2D();
+  pTex->setRep(MB_NEW OglTextureRep(nSceneID));
+  return pTex;
 }
 
 Texture3D *OglDisplayContext::createTexture3D()

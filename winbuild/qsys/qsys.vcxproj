@@ -107,6 +107,7 @@
     <ClCompile Include="..\..\src\modules\molstr\MolBond.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\QdfPdbReader.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\QdfPdbReader_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\SimpleRendGLSL.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\CPK2Renderer.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\CPK2Renderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\ScriptColoring.cpp" />
@@ -480,6 +481,8 @@
     <mcw_loader Include="..\..\src\gfx\gfx.moddef" />
   </ItemGroup>
   <ItemGroup>
+    <glslshader Include="..\..\src\modules\molstr\simple_frag.glsl" />
+    <glslshader Include="..\..\src\modules\molstr\simple_vertex.glsl" />
     <glslshader Include="..\..\src\modules\molvis\cylinder_frag.glsl" />
     <glslshader Include="..\..\src\modules\molvis\cylinder_vertex.glsl" />
     <glslshader Include="..\..\src\modules\molvis\sphere_frag.glsl" />

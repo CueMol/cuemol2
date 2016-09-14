@@ -40,6 +40,9 @@
     <Filter Include="molvis\Shaders">
       <UniqueIdentifier>{2f6498cd-dedf-4c4a-ac95-a5da71ac77dd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="molstr\Shaders">
+      <UniqueIdentifier>{f12fb3db-87c5-494d-9431-e670d8fb09b1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\qsys\Camera.cpp">
@@ -735,6 +738,9 @@
     <ClCompile Include="..\..\src\modules\molvis\Spline2Renderer_wrap.cpp">
       <Filter>molvis</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\SimpleRendGLSL.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\qsys\AbstractColor.hpp">
@@ -1021,6 +1027,12 @@
     </glslshader>
     <glslshader Include="..\..\src\sysdep\silh_vert.glsl">
       <Filter>sysdep</Filter>
+    </glslshader>
+    <glslshader Include="..\..\src\modules\molstr\simple_frag.glsl">
+      <Filter>molstr\Shaders</Filter>
+    </glslshader>
+    <glslshader Include="..\..\src\modules\molstr\simple_vertex.glsl">
+      <Filter>molstr\Shaders</Filter>
     </glslshader>
   </ItemGroup>
 </Project>
