@@ -318,8 +318,8 @@ void Spline2Seg::setupVBO(Spline2Renderer *pthis)
 
 void Spline2Seg::updateVBO()
 {
-	int i;
-	float par;
+  int i;
+  float par;
   Vector3F pos;
   
   for (i=0; i<m_nVA; ++i) {
