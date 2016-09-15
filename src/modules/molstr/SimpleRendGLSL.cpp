@@ -48,12 +48,6 @@ void SimpleRenderer::initShader(DisplayContext *pdc)
     return;
   }
 
-  m_pCoordTex = pdc->createTexture2D();
-  //m_pCoordTex = pdc->createTexture1D();
-  m_pCoordTex->setup(gfx::AbstTexture::FMT_RGB,
-                     gfx::AbstTexture::TYPE_FLOAT32);
-
-
   m_pPO->enable();
 
   // setup uniforms
@@ -66,7 +60,7 @@ void SimpleRenderer::initShader(DisplayContext *pdc)
   m_pPO->disable();
 }
 
-void SimpleRenderer::createGLSL()
+void SimpleRenderer::createGLSL(DisplayContext *pdc)
 {
   quint32 i, j;
   quint32 nbons = 0, natoms = 0, nva = 0;
@@ -77,8 +71,18 @@ void SimpleRenderer::createGLSL()
     pAMol = static_cast<AnimMol *>(pCMol.get());
 
   //
-  // Create atom selection array for coordtex
+  // Create CoordTex and atom selection array for coordtex
   //
+
+  if (m_pCoordTex!=NULL)
+    delete m_pCoordTex;
+  //m_pCoordTex = pdc->createTexture2D();
+  m_pCoordTex = pdc->createTexture1D();
+  //m_pCoordTex->setup(gfx::AbstTexture::FMT_RGB,
+  //gfx::AbstTexture::TYPE_FLOAT32);
+  m_pCoordTex->setup(gfx::AbstTexture::FMT_R,
+                     gfx::AbstTexture::TYPE_FLOAT32);
+
   std::map<quint32, quint32> aidmap;
   AtomIterator aiter(pCMol, getSelection());
   // AtomIterator aiter(pCMol);
@@ -92,7 +96,12 @@ void SimpleRenderer::createGLSL()
     aidmap.insert(std::pair<quint32, quint32>(aid, i));
     ++i;
   }
+
+  m_sels.resize(i);
+  
   int ncrds = i*3;
+
+/*
   int h=0;
   if (ncrds%1024==0)
     h =  ncrds/1024;
@@ -102,12 +111,13 @@ void SimpleRenderer::createGLSL()
 
   m_nTexW = 1024;
   m_nTexH = h;
-  MB_DPRINTLN("SimpleGLSL> Coord Texture size=%d,%d", m_nTexW, m_nTexH);
+  LOG_DPRINTLN("SimpleGLSL> Coord Texture size=%d,%d", m_nTexW, m_nTexH);
+*/
+  m_coordbuf.resize(ncrds);
+  LOG_DPRINTLN("SimpleGLSL> Coord Texture size=%d", ncrds);
 
-  // m_coordbuf.resize(ncrds);
+  m_bUseSels = false;
 
-  m_sels.resize(i);
-  
   for (i=0, aiter.first(); aiter.hasMore(); aiter.next()) {
     int aid = aiter.getID();
     MolAtomPtr pAtom = pCMol->getAtom(aid);
@@ -116,11 +126,20 @@ void SimpleRenderer::createGLSL()
       continue; // ignore errors
 
     if (pAMol!=NULL)
-      m_sels[i] = pAMol->getCrdArrayInd(aid) * 3;
+      m_sels[i] = pAMol->getCrdArrayInd(aid);
     else
       m_sels[i] = aid;
+
+    if (m_sels[i]!=i)
+      m_bUseSels = true;
+
     ++i;
   }
+
+  if (m_bUseSels)
+    LOG_DPRINTLN("SimpleRend> Use indirect CoordTex");
+  else
+    LOG_DPRINTLN("SimpleRend> Use direct CoordTex");
 
   // initialize the coloring scheme
   getColSchm()->start(pCMol, this);
@@ -151,6 +170,9 @@ void SimpleRenderer::createGLSL()
   }
   
   nva = nbons * 4;
+
+  //if (nva>32768)
+  //nva = 32768;
 
   //
   // Create VBO
@@ -233,31 +255,12 @@ void SimpleRenderer::createGLSL()
 
 
     i++;
+    if (i*4+3>nva) {
+      break;
+    }
   }
 
   LOG_DPRINTLN("SimpleRend> %d Attr VBO created", nva);
-#if 0
-
-    
-
-
-    i++;
-
-    /*
-    m_sbonds[i].aid1 = aid1;
-    m_sbonds[i].aid2 = aid2;
-    if (pAMol!=NULL) {
-      m_sbonds[i].ind1 = pAMol->getCrdArrayInd(aid1) * 3;
-      m_sbonds[i].ind2 = pAMol->getCrdArrayInd(aid2) * 3;
-    }
-    else {
-      m_sbonds[i].ind1 = 0;
-      m_sbonds[i].ind2 = 0;
-    }
-    m_sbonds[i].vaind = iva;
-    */
-  }
-#endif
 
   // finalize the coloring scheme
   getColSchm()->end();
@@ -273,29 +276,30 @@ void SimpleRenderer::updateDynamicGLSL()
   AnimMol *pAMol = static_cast<AnimMol *>(pCMol.get());
   
   qfloat32 *crd = pAMol->getAtomCrdArray();
-
   quint32 natoms = m_sels.size();
+
+  if (!m_bUseSels) {
+    m_pCoordTex->setData(natoms*3, crd);
+    return;
+  }
+
   quint32 ind;
   for (i=0; i<natoms; ++i) {
     ind = m_sels[i];
-    for (j=0; j<3; ++j)
-      m_coordbuf[i*3+j] = crd[ind+j];
+    for (j=0; j<3; ++j) {
+      m_coordbuf[i*3+j] = crd[ind*3+j];
+    }
   }
 
-  //  m_pCoordTex->setData(natoms, &m_coordbuf[0]);
+  //LOG_DPRINTLN("tex size %d x %d = %d", m_nTexW, m_nTexH, m_nTexW*m_nTexH);
+  //LOG_DPRINTLN("buf size %d", m_coordbuf.size());
+  //LOG_DPRINTLN("crd size %d", natoms*3);
+  //m_nTexH = 1;
+  //m_pCoordTex->setData(m_nTexW, m_nTexH, &m_coordbuf[0]);
 
-  int w, h;
-  if (natoms<=1024) {
-    w = natoms;
-    h = 1;
-  }
-  else {
-    w = 1024;
-    h = natoms/1024 + 1;
-  }
+  //m_pCoordTex->setData(natoms, &m_coordbuf[0]);
 
-  m_pCoordTex->setData(m_nTexW, m_nTexH, &m_coordbuf[0]);
-
+  m_pCoordTex->setData(natoms*3, &m_coordbuf[0]);
 }
 
 void SimpleRenderer::updateStaticGLSL()
@@ -309,17 +313,23 @@ void SimpleRenderer::updateStaticGLSL()
   for (i=0; i<natoms; ++i) {
     quint32 aid = m_sels[i];
     MolAtomPtr pAtom = pCMol->getAtom(aid);
+    //if (pAtom.isnull()) {
+    //LOG_DPRINTLN("AID is invalid: %d, i=%d, natoms=%d", aid, i, natoms);
+    //}
+
     Vector4D pos = pAtom->getPos();
 
-    m_coordbuf[i*3+0] = pos.x()/100.0;
-    m_coordbuf[i*3+1] = pos.y()/100.0;
-    m_coordbuf[i*3+2] = pos.z()/100.0;
+    m_coordbuf[i*3+0] = pos.x();
+    m_coordbuf[i*3+1] = pos.y();
+    m_coordbuf[i*3+2] = pos.z();
   }
 
-  //m_pCoordTex->setData(natoms, &m_coordbuf[0]);
+  // m_pCoordTex->setData(natoms, &m_coordbuf[0]);
 
-  m_pCoordTex->setData(m_nTexW, m_nTexH, &m_coordbuf[0]);
-  MB_DPRINTLN("updateStaticGLSL texture(%d,%d)=%p OK", m_nTexW, m_nTexH, m_pCoordTex);
+  m_pCoordTex->setData(natoms*3, &m_coordbuf[0]);
+
+  // m_pCoordTex->setData(m_nTexW, m_nTexH, &m_coordbuf[0]);
+  // MB_DPRINTLN("updateStaticGLSL texture(%d,%d)=%p OK", m_nTexW, m_nTexH, m_pCoordTex);
 }
 
 void SimpleRenderer::displayGLSL(DisplayContext *pdc)
@@ -329,7 +339,7 @@ void SimpleRenderer::displayGLSL(DisplayContext *pdc)
     initShader(pdc);
   
   if (m_pAttrAry==NULL) {
-    createGLSL();
+    createGLSL(pdc);
     if (isUseAnim())
       updateDynamicGLSL();
     else

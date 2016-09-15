@@ -17,6 +17,8 @@
   errc = glGetError(); \
   if (errc!=GL_NO_ERROR) \
     MB_DPRINTLN("%s GLError(%d): %s", MSG, errc, gluErrorString(errc)); \
+  else \
+    MB_DPRINTLN("%s : OK", MSG); \
 }
 #endif
 
@@ -36,6 +38,7 @@ namespace sysdep {
 
     /// OpenGL ID of resource
     GLuint m_nTexID;
+    GLuint m_nBufID;
 
     /// Dimension type
     GLenum m_iGlDimType;
@@ -52,6 +55,8 @@ namespace sysdep {
 
     bool m_bInit;
 
+    bool m_bUseTexBuf;
+
   public:
     OglTextureRep(qlib::uid_t nSceneID)
       : m_nSceneID(nSceneID)
@@ -60,6 +65,7 @@ namespace sysdep {
       m_nHeight = 0;
       m_nDepth = 0;
       m_bInit = false;
+      m_bUseTexBuf = false;
     }
 
     virtual ~OglTextureRep() {
@@ -71,7 +77,7 @@ namespace sysdep {
       switch (iDim) {
       case 1:
 	m_iGlDimType = GL_TEXTURE_1D;
-	break;
+        break;
       case 2:
 	m_iGlDimType = GL_TEXTURE_2D;
 	break;
@@ -134,6 +140,13 @@ namespace sysdep {
 	break;
       }
 
+      m_bUseTexBuf = false;
+
+      if (iDim==1 && iPixFmt==AbstTexture::FMT_R) {
+        m_iGlDimType = GL_TEXTURE_BUFFER;
+        m_bUseTexBuf = true;
+      }
+
       createGL();
       setupGL();
     }
@@ -164,15 +177,31 @@ namespace sysdep {
     }
 
   private:
+    GLint m_nMaxTexSize, m_nMaxTexBufSize, m_nMax3DTexSize;
+
     void createGL()
     {
       glGenTextures(1, &m_nTexID);
+      if (m_bUseTexBuf) {
+        glGenBuffers(1, &m_nBufID);
+      }
+
+      glGetIntegerv(GL_MAX_TEXTURE_SIZE, &m_nMaxTexSize);
+      glGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &m_nMaxTexBufSize);
+      glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &m_nMax3DTexSize);
+
+      LOG_DPRINTLN("OglTex max tex size=%d", m_nMaxTexSize);
+      LOG_DPRINTLN("OglTex max tex buf size=%d", m_nMaxTexBufSize);
+      LOG_DPRINTLN("OglTex max 3D tex size=%d", m_nMax3DTexSize);
     }
 
     void setupGL()
     {
+      CHK_GLERROR("(clearerr)");
       glEnable(m_iGlDimType);
+      CHK_GLERROR("glEnable");
       glBindTexture(m_iGlDimType, m_nTexID);
+      CHK_GLERROR("glBindTexture");
 
       // filter setting
       //glTexParameteri(m_iGlDimType, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -189,23 +218,46 @@ namespace sysdep {
 	  glTexParameteri(m_iGlDimType, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 	}
       }
+
+      // Data alignment
+      if (m_iGlPixType==GL_UNSIGNED_BYTE ||
+          m_iGlPixType==GL_BYTE) {
+        glPixelStorei( GL_UNPACK_ALIGNMENT, 1 );
+      }
+      else if (m_iGlPixType==GL_UNSIGNED_SHORT ||
+               m_iGlPixType==GL_SHORT) {
+        glPixelStorei( GL_UNPACK_ALIGNMENT, 2 );
+      }
+      else if (m_iGlPixType==GL_UNSIGNED_INT ||
+               m_iGlPixType==GL_INT ||
+               m_iGlPixType==GL_FLOAT) {
+        glPixelStorei( GL_UNPACK_ALIGNMENT, 4 );
+      }
+
+      glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
+
       glBindTexture(m_iGlDimType, 0);
+      CHK_GLERROR("glBindTexture");
       glDisable(m_iGlDimType);
+      CHK_GLERROR("glDisable");
     }
 
     void setDataGL(const void *pdata)
     {
+      if (m_iGlDimType==GL_TEXTURE_BUFFER) {
+        setDataGLBuf(pdata);
+        return;
+      }
+
       glEnable(m_iGlDimType);
       glBindTexture(m_iGlDimType, m_nTexID);
-      glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
-      glPixelStorei( GL_UNPACK_ALIGNMENT, 1 );
 
       if (m_iGlDimType==GL_TEXTURE_1D)
-	setDataGL1D(pdata);
+        setDataGL1D(pdata);
       else if (m_iGlDimType==GL_TEXTURE_2D)
         setDataGL2D(pdata);
       else if (m_iGlDimType==GL_TEXTURE_3D)
-	setDataGL3D(pdata);
+        setDataGL3D(pdata);
       else {
         MB_THROW(qlib::RuntimeException, "Unsupported texture type");
       }
@@ -237,9 +289,11 @@ namespace sysdep {
     {
       if (!m_bInit) {
 	glTexImage2D(GL_TEXTURE_2D, 0,
-                     m_iGlPixFmt,
+                     m_iGlIntPixFmt,
                      m_nWidth, m_nHeight, 0,
 		     m_iGlPixFmt, m_iGlPixType, pdata);
+	CHK_GLERROR("glTexImage2D");
+	MB_DPRINTLN("OglTex2D glTexImage2D %dx%d OK", m_nWidth, m_nHeight);
 	m_bInit = true;
       }
       else {
@@ -256,8 +310,8 @@ namespace sysdep {
     void setDataGL3D(const void *pdata)
     {
       if (!m_bInit) {
-	glTexImage3D(GL_TEXTURE_3D, 0,
-		     m_iGlPixFmt,
+        glTexImage3D(GL_TEXTURE_3D, 0,
+		     m_iGlIntPixFmt,
 		     m_nWidth, m_nHeight, m_nDepth, 0,
 		     m_iGlPixFmt, m_iGlPixType, pdata);
 	m_bInit = true;
@@ -271,6 +325,56 @@ namespace sysdep {
 			m_iGlPixType, // type
 			pdata);
       }
+    }
+
+    void setDataGLBuf(const void *pdata)
+    {
+      CHK_GLERROR("(clearerr)");
+
+      glBindBuffer(GL_TEXTURE_BUFFER, m_nBufID);
+      CHK_GLERROR("glBindBuffer");
+
+      int ncomp = 1;
+      if (m_iGlPixFmt==GL_RED)
+        ncomp = 1;
+      else if (m_iGlPixFmt==GL_RG)
+        ncomp = 2;
+      else if (m_iGlPixFmt==GL_RGB)
+        ncomp = 3;
+      else if (m_iGlPixFmt==GL_RGBA)
+        ncomp = 4;
+
+      MB_ASSERT(ncomp==1);
+      
+      int elem_sz = 4;
+
+      int nbytes = m_nWidth*elem_sz*ncomp;
+
+      if (!m_bInit) {
+        glBufferData(GL_TEXTURE_BUFFER, nbytes, pdata, GL_DYNAMIC_DRAW);
+        CHK_GLERROR("glBufferData");
+        MB_DPRINTLN("OglTexBuf glTexImageBuf %d pix/%d bytes OK", m_nWidth, nbytes);
+        m_bInit = true;
+      }
+      else {
+        glBufferSubData(GL_TEXTURE_BUFFER, 0, nbytes, pdata);
+      }
+      glBindBuffer(GL_TEXTURE_BUFFER, 0);
+
+      // glEnable(GL_TEXTURE_BUFFER);
+      // CHK_GLERROR("glEnable(GL_TEXTURE_BUFFER)");
+
+      glActiveTexture(GL_TEXTURE0);
+      CHK_GLERROR("glActiveTexture(GL_TEXTURE0)");
+
+      glBindTexture(GL_TEXTURE_BUFFER, m_nTexID);
+      CHK_GLERROR("glBindTexture(GL_TEXTURE_BUFFER, m_nTexID)");
+
+      //glTexBuffer(GL_TEXTURE_BUFFER, m_iGlIntPixFmt, m_nBufID);
+      glTexBuffer(GL_TEXTURE_BUFFER, GL_R32F, m_nBufID);
+      CHK_GLERROR("glTexBuffer(GL_TEXTURE_BUFFER, m_iGlIntPixFmt, m_nBufID)");
+
+      //glDisable(GL_TEXTURE_BUFFER);
     }
 
     void setCurrentContext()
@@ -301,6 +405,8 @@ namespace sysdep {
     {
       setCurrentContext();
       glDeleteTextures(1, &m_nTexID);
+      if (m_bUseTexBuf)
+        glDeleteBuffers(1, &m_nBufID);
     }
   };
 

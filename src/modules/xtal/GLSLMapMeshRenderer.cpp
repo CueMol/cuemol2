@@ -215,7 +215,11 @@ void GLSLMapMeshRenderer::initShader()
   // setup texture
   glGenTextures(1, &m_nMapTexID);
   glActiveTexture(GL_TEXTURE0);
+
+  //CHK_GLERROR("(clearerror)");
   glEnable(MY_MAPTEX_DIM);
+  //CHK_GLERROR("glEnable(MY_MAPTEX_DIM)");
+
   glBindTexture(MY_MAPTEX_DIM, m_nMapTexID);
 
   //glTexParameteri(MY_MAPTEX_DIM, GL_TEXTURE_MIN_FILTER, GL_NEAREST);

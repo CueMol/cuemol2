@@ -203,7 +203,7 @@ namespace molstr {
     void initShader(DisplayContext *pdc);
 
     /// Rendering using GLSL
-    void createGLSL();
+    void createGLSL(DisplayContext *pdc);
 
     /// update coord texture for GLSL rendering
     void updateDynamicGLSL();
@@ -216,9 +216,10 @@ namespace molstr {
     bool m_bChkShaderDone;
 
     /// coordinate float texture
-    //gfx::Texture1D *m_pCoordTex;
-    gfx::Texture2D *m_pCoordTex;
+    gfx::Texture1D *m_pCoordTex;
+    //gfx::Texture2D *m_pCoordTex;
 
+    bool m_bUseSels;
     std::vector<quint32> m_sels;
     std::vector<float> m_coordbuf;
 

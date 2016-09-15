@@ -35,6 +35,7 @@ SimpleRenderer::SimpleRenderer()
   //resetAllProps();
 
   m_bValBond = true;
+
   m_dCvScl1 = -0.05;
   m_dCvScl2 = 0.05;
 
@@ -43,7 +44,10 @@ SimpleRenderer::SimpleRenderer()
   m_pPO = NULL;
   m_pAttrAry = NULL;
   m_pCoordTex = NULL;
-  m_bUseGLSL = false;
+
+  //m_bUseGLSL = false;
+  m_bUseGLSL = true;
+
   m_bChkShaderDone = false;
 }
 
@@ -954,6 +958,17 @@ void SimpleRenderer::invalidateDisplayCache()
     m_sbonds.clear();
     m_mbonds.clear();
     m_atoms.clear();
+  }
+
+  if (m_pCoordTex!=NULL) {
+    delete m_pCoordTex;
+    m_pCoordTex = NULL;
+  }
+  m_sels.clear();
+  m_coordbuf.clear();
+  if (m_pAttrAry!=NULL) {
+    delete m_pAttrAry;
+    m_pAttrAry = NULL;
   }
 #endif
 

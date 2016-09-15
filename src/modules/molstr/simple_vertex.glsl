@@ -3,15 +3,20 @@
 //  SimpleRenderer vertex shader for OpenGL
 //
 
-#version 120
+//#version 120
+#version 130
+#extension GL_ARB_compatibility : enable
+
 #extension GL_EXT_gpu_shader4 : enable 
+
 
 //precision mediump float;
 
 ////////////////////
 // Uniform variables
 //uniform sampler1D coordTex;
-uniform sampler2D coordTex;
+//uniform sampler2D coordTex;
+uniform samplerBuffer coordTex;
 
 ////////////////////
 // Vertex attributes
@@ -32,16 +37,20 @@ float ffog(in float ecDistance)
 
 vec3 getAtomPos(in int ind)
 {
-
+/*
   ivec2 iv;
   iv.x = ind%1024;
   //iv.y = ind;
   iv.y = ind/1024;
   //iv.x = 1;
-  return ( texelFetch2D(coordTex, iv, 0).xyz ) * 100.0;
-
+  return ( texelFetch2D(coordTex, iv, 0).xyz );
+*/
   
-  //return texelFetch1D(coordTex, ind, 0).xyz;
+  float x = texelFetch(coordTex, ind*3+0).r;
+  float y = texelFetch(coordTex, ind*3+1).r;
+  float z = texelFetch(coordTex, ind*3+2).r;
+  return vec3(x,y,z);
+  // return texelFetch1D(coordTex, ind, 0).xyz;
 }
 
 void main (void)
