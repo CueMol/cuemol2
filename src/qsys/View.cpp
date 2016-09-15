@@ -163,7 +163,7 @@ void View::setZoom(double f)
 
 void View::setSlabDepth(double d)
 {
-  d = qlib::trunc(d, 0.1, getViewDist()*2.0);
+  d = qlib::clamp(d, 0.1, getViewDist()*2.0);
 
   if ( qlib::isNear4<double>(m_curcam.getSlabDepth(), d) ) {
     // not changed from the previous value

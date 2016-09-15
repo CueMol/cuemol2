@@ -46,8 +46,8 @@ void AbstractColor::HSBtoRGB(double hue, double saturation, double brightness,
                    double &r, double &g, double &b)
 {
   hue = ::fmod(hue, 1.0);
-  saturation = qlib::trunc<double>(saturation, 0.0, 1.0);
-  brightness = qlib::trunc<double>(brightness, 0.0, 1.0);
+  saturation = qlib::clamp<double>(saturation, 0.0, 1.0);
+  brightness = qlib::clamp<double>(brightness, 0.0, 1.0);
 
   // int r = 0, g = 0, b = 0;
   if (qlib::isNear4(saturation, 0.0)) {
@@ -99,10 +99,10 @@ void AbstractColor::HSBtoRGB(double hue, double saturation, double brightness,
 
 quint32 AbstractColor::HSBtoRGB(double hue, double saturation, double brightness)
 {
-  // hue = qlib::trunc<double>(hue, 0.0, 1.0);
+  // hue = qlib::clamp<double>(hue, 0.0, 1.0);
   hue = ::fmod(hue, 1.0);
-  saturation = qlib::trunc<double>(saturation, 0.0, 1.0);
-  brightness = qlib::trunc<double>(brightness, 0.0, 1.0);
+  saturation = qlib::clamp<double>(saturation, 0.0, 1.0);
+  brightness = qlib::clamp<double>(brightness, 0.0, 1.0);
 
   int r = 0, g = 0, b = 0;
   if (qlib::isNear4(saturation, 0.0)) {
@@ -152,9 +152,9 @@ quint32 AbstractColor::HSBtoRGB(double hue, double saturation, double brightness
 void AbstractColor::RGBtoHSB(int r, int g, int b,
                     double &hue, double &saturation, double &brightness)
 {
-  r = qlib::trunc<int>(r, 0, 255);
-  g = qlib::trunc<int>(g, 0, 255);
-  b = qlib::trunc<int>(b, 0, 255);
+  r = qlib::clamp<int>(r, 0, 255);
+  g = qlib::clamp<int>(g, 0, 255);
+  b = qlib::clamp<int>(b, 0, 255);
 
   int cmax = (r > g) ? r : g;
   if (b > cmax) cmax = b;

@@ -103,7 +103,7 @@ double Vector4D::torsion(const Vector4D &veci,
 
   // calc phi 
   //  make sure cos(ph)=[-1.0,1.0] and get sign from sin(ph) )
-  cosph = qlib::trunc(cosph, -1.0, 1.0);
+  cosph = qlib::clamp(cosph, -1.0, 1.0);
   double phi = ::acos(cosph);
   phi = qlib::sign(phi, sinph);
 

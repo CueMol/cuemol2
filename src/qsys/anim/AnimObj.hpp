@@ -191,7 +191,7 @@ namespace qsys {
           return 1.0;
       }
       double rho = double(elapsed-getAbsStart())/span;
-      rho = qlib::trunc(rho, 0.0, 1.0);
+      rho = qlib::clamp(rho, 0.0, 1.0);
       return convRho(rho);
     }
 

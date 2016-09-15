@@ -190,18 +190,18 @@ namespace molvis {
 
     //////////
 
-    bool interpAxis(double param,
+    void interpAxis(double param,
                     Vector4D *pv,
                     Vector4D *pvv=NULL,
                     Vector4D *pvvv=NULL) {
-      return m_axisInt.interpolate(param, pv, pvv, pvvv);
+      m_axisInt.interpolate(param, pv, pvv, pvvv);
     }
 
-    bool interpNormal(double param,
+    void interpNormal(double param,
                       Vector4D *pv,
                       Vector4D *pvv=NULL,
                       Vector4D *pvvv=NULL) {
-      return m_normInt.interpolate(param, pv, pvv, pvvv);
+      m_normInt.interpolate(param, pv, pvv, pvvv);
     }
 
     //////////

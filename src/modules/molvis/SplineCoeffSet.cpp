@@ -251,7 +251,7 @@ bool SplineCoeff::generate()
 
     double smooth = m_pParent->getSmoothByRes(getResidue(nres));
     if (!qlib::isNear4(smooth, 0.0)) {
-      smooth = qlib::trunc(smooth, 0.0, 1.0);
+      smooth = qlib::clamp(smooth, 0.0, 1.0);
 
       MolAtomPtr pPrevAtom = getSafeAtom(nres-1);
       MolAtomPtr pNextAtom = getSafeAtom(nres+1);
@@ -321,10 +321,7 @@ bool SplineCoeff::generate()
   for (nres=0; nres<m_nResids; ++nres) {
 
     Vector4D curpos, dv;
-    if (!m_axisInt.interpolate(nres, &curpos, &dv)) {
-      LOG_DPRINTLN("SplineCoeffSet> fatal error: cannot interpolate");
-      return false;
-    }
+	m_axisInt.interpolate(nres, &curpos, &dv);
     
     // Calc (bi)normal vector
 

@@ -54,7 +54,7 @@ void AnimObj::setQuadric(qlib::LReal val)
     m_absc = 0.0;
   }
   else {
-    m_quadric = qlib::trunc(val, 0.0, 0.5);
+    m_quadric = qlib::clamp(val, 0.0, 0.5);
     m_coeff = 1.0/(2.0*m_quadric*(1.0-m_quadric));
     m_grad = 1.0/(1.0-m_quadric);
     m_absc = 0.5 * (1.0 - m_grad);

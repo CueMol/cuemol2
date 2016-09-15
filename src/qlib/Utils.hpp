@@ -69,8 +69,9 @@ namespace qlib {
       return a;
   }
 
+  /// Clamp v between l and h
   template <typename _Type>
-  _Type trunc(_Type v, _Type l, _Type h) {
+  _Type clamp(_Type v, _Type l, _Type h) {
     if (v<l) return l;
     else if (h<v) return h;
     else return v;

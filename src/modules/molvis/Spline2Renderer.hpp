@@ -36,6 +36,7 @@ namespace molvis {
 
   class Spline2Renderer;
 
+  /// Rendering object for the one spline segment
   class Spline2Seg
   {
   private:
@@ -46,6 +47,7 @@ namespace molvis {
     /// Pivot atom AID array
     IDArray m_aids;
 
+    /// Pivot atom crd array index (for dynamic update)
     IDArray m_inds;
 
     /// cached vertex array/VBO
@@ -53,19 +55,12 @@ namespace molvis {
 
     std::deque<quint32> m_aidtmp;
 
-    int m_nPoints;
+    // int m_nPoints;
     
     int m_nDetail;
     int m_nVA;
 
-
-    typedef std::vector<Vector3F> VecArray;
-
-    VecArray m_pos;
-    VecArray m_coeff0;
-    VecArray m_coeff1;
-    VecArray m_coeff2;
-    VecArray m_coeff3;
+    CubicSpline m_scoeff;
 
   public:
     Spline2Seg();
@@ -75,7 +70,7 @@ namespace molvis {
 
     void generate(Spline2Renderer *pthis, DisplayContext *pdc);
 
-    quint32 getSize() const { return m_nPoints; }
+    quint32 getSize() const { return m_scoeff.getSize(); }
 
     MolAtomPtr getAtom(MolCoordPtr pMol, quint32 ind) const {
       quint32 aid = m_aids[ind];
@@ -87,6 +82,11 @@ namespace molvis {
       return pAtom->getParentResidue();
     }
 
+    quint32 calcColor(Spline2Renderer *pthis, MolCoordPtr pMol, int ind) const;
+
+    //////////
+    // drawing methods
+
     void updateDynamic(Spline2Renderer *pthis);
     
     void updateStatic(Spline2Renderer *pthis);
@@ -95,6 +95,10 @@ namespace molvis {
 
     void draw(Spline2Renderer *pthis, DisplayContext *pdc);
     
+
+    //////////
+    // drawing methods VBO implementation
+
   private:
     void setupVBO(Spline2Renderer *pthis);
 
@@ -106,14 +110,18 @@ namespace molvis {
 
     void drawVBO(Spline2Renderer *pthis, DisplayContext *pdc);
 
-    void generateNaturalSpline();
-    void allocWorkArea();
-    void freeWorkArea();
+    // void generateNaturalSpline();
+    // void allocWorkArea();
+    // void freeWorkArea();
 
-    void interpolate(float par, Vector3F *vec,
-                     Vector3F *dvec = NULL,
-                     Vector3F *ddvec = NULL);
+    // void interpolate(float par, Vector3F *vec,
+    // Vector3F *dvec = NULL,
+    // Vector3F *ddvec = NULL);
 
+    void updateVBO();
+
+    void updateScoeffDynamic(Spline2Renderer *pthis);
+    void updateScoeffStatic(Spline2Renderer *pthis);
 
   private:
     /////////////////////
@@ -150,6 +158,8 @@ namespace molvis {
 
     /// display() for GLSL version
     void drawGLSL(Spline2Renderer *pthis, DisplayContext *pdc);
+
+    void updateCoefTex();
 
   };
 
@@ -235,6 +245,10 @@ namespace molvis {
     Spl2SegList m_seglist;
 
     void createSegList(DisplayContext *pdc);
+
+    void startColorCalc();
+    void endColorCalc();
+
 
     /////////////////
     // GLSL implementation

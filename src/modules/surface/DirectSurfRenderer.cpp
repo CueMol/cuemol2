@@ -105,7 +105,7 @@ void DirectSurfRenderer::buildMeshCacheEDTSurf()
   pps.rasrad[6] = m_vdwr_X;
 
   pps.proberadius = m_probeRadius;
-  pps.fixsf = 1.0 + qlib::trunc<int>(m_nDetail-1, 0, 99)*0.2;
+  pps.fixsf = 1.0 + qlib::clamp<int>(m_nDetail-1, 0, 99)*0.2;
 
   edtsurf::atom *proseq = new edtsurf::atom[natoms];
   std::vector<int> aidmap(natoms);

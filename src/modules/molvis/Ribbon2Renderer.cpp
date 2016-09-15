@@ -987,7 +987,7 @@ void Ribbon2Renderer::getCoilResids(double at, SecSplDat *pCyl,
 
   // MB_DPRINTLN("getCoilRes> t=%f, tst=%f, ten-1=%f", t, tstart, tend-1.0);
   // truncate between tstart ~ tend-1.0
-  t = qlib::trunc(t, tstart, tend-1.0);
+  t = qlib::clamp(t, tstart, tend-1.0);
   
   int nprev = int(::floor(t));
   int nnext = nprev+1; //int(::ceil(t));

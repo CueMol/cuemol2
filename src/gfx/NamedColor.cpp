@@ -182,7 +182,7 @@ int NamedColor::a() const
     updateNamedColor();
 
   if (!isAlphaDefault())
-    return int( qlib::trunc<double>(m_dSetAlpha, 0.0, 1.0) * 255.0 + 0.5 );
+    return int( qlib::clamp<double>(m_dSetAlpha, 0.0, 1.0) * 255.0 + 0.5 );
 
   return m_pRef->a();
 }
@@ -199,7 +199,7 @@ quint32 NamedColor::getCode() const
     rval = m_pRef->getCode();
 
   if ( !isAlphaDefault() ) {
-    quint32 a = quint32( qlib::trunc<double>(m_dSetAlpha, 0.0, 1.0) * 255.0 + 0.5 );
+    quint32 a = quint32( qlib::clamp<double>(m_dSetAlpha, 0.0, 1.0) * 255.0 + 0.5 );
     rval &= 0xFFFFFF;
     return rval | (a<<24);
   }

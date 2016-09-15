@@ -449,10 +449,10 @@ void GLSLMapVolRenderer::genXferFunMap()
 	col.w() = d*2.0;
       else
 	col.w() = d*0.1;
-      pData[i*4 + 0] = (quint8) qlib::trunc(int(col.x()*255.0), 0, 255);
-      pData[i*4 + 1] = (quint8) qlib::trunc(int(col.y()*255.0), 0, 255);
-      pData[i*4 + 2] = (quint8) qlib::trunc(int(col.z()*255.0), 0, 255);
-      pData[i*4 + 3] = (quint8) qlib::trunc(int(col.w()*255.0), 0, 255);
+      pData[i*4 + 0] = (quint8) qlib::clamp(int(col.x()*255.0), 0, 255);
+      pData[i*4 + 1] = (quint8) qlib::clamp(int(col.y()*255.0), 0, 255);
+      pData[i*4 + 2] = (quint8) qlib::clamp(int(col.z()*255.0), 0, 255);
+      pData[i*4 + 3] = (quint8) qlib::clamp(int(col.w()*255.0), 0, 255);
     }
   }
   else /*if (m_nXferType==GLMV_AUTO2)*/ {
@@ -467,10 +467,10 @@ void GLSLMapVolRenderer::genXferFunMap()
 	col.w() = d*2.0;
       else
 	col.w() = d*0.1;
-      pData[i*4 + 0] = (quint8) qlib::trunc(int(col.x()*255.0), 0, 255);
-      pData[i*4 + 1] = (quint8) qlib::trunc(int(col.y()*255.0), 0, 255);
-      pData[i*4 + 2] = (quint8) qlib::trunc(int(col.z()*255.0), 0, 255);
-      pData[i*4 + 3] = (quint8) qlib::trunc(int(col.w()*255.0), 0, 255);
+      pData[i*4 + 0] = (quint8) qlib::clamp(int(col.x()*255.0), 0, 255);
+      pData[i*4 + 1] = (quint8) qlib::clamp(int(col.y()*255.0), 0, 255);
+      pData[i*4 + 2] = (quint8) qlib::clamp(int(col.z()*255.0), 0, 255);
+      pData[i*4 + 3] = (quint8) qlib::clamp(int(col.w()*255.0), 0, 255);
     }
   }
 

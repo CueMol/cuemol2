@@ -119,7 +119,7 @@ public:
 
   static inline
   unsigned char convRho(double rho, bool inv=false) {
-    double tr = qlib::trunc(rho, 0.0, 1.0);
+    double tr = qlib::clamp(rho, 0.0, 1.0);
     if (inv)
       tr = 1.0-tr;
     return (unsigned char) (tr*255.0+0.5);

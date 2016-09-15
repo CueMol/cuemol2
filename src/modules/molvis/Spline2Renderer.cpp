@@ -48,6 +48,24 @@ void Spline2Renderer::preRender(DisplayContext *pdc)
   pdc->setLighting(false);
 }
 
+void Spline2Renderer::startColorCalc()
+{
+  MolCoordPtr pCMol = getClientMol();
+
+  // initialize the coloring scheme
+  getColSchm()->start(pCMol, this);
+  pCMol->getColSchm()->start(pCMol, this);
+
+}
+void Spline2Renderer::endColorCalc()
+{
+  MolCoordPtr pCMol = getClientMol();
+
+  // finalize the coloring scheme
+  getColSchm()->end();
+  pCMol->getColSchm()->end();
+}
+
 void Spline2Renderer::display(DisplayContext *pdc)
 {
   if (m_bUseGLSL) {
@@ -60,6 +78,8 @@ void Spline2Renderer::display(DisplayContext *pdc)
   if (m_seglist.empty()) {
     createSegList(pdc);
 
+    startColorCalc();
+
     BOOST_FOREACH (Spline2Seg &elem, m_seglist) {
       if (elem.getSize()>0) {
         elem.updateColor(this);
@@ -69,6 +89,8 @@ void Spline2Renderer::display(DisplayContext *pdc)
           elem.updateStatic(this);
       }
     }
+
+    endColorCalc();
   }
 
   preRender(pdc);
@@ -174,7 +196,7 @@ Spline2Seg::Spline2Seg()
   m_pVBO = NULL;
   m_nDetail = 10;
   m_nVA = 0;
-  m_nPoints = 0;
+//  m_nPoints = 0;
 
   m_pAttrAry = NULL;
   m_pCoefTex = NULL;
@@ -197,26 +219,6 @@ void Spline2Seg::append(MolAtomPtr pAtom)
   m_aidtmp.push_back(pAtom->getID());
 }
 
-void Spline2Seg::allocWorkArea()
-{
-  m_pos.resize(m_nPoints);
-  m_coeff0.resize(m_nPoints);
-  m_coeff1.resize(m_nPoints);
-  m_coeff2.resize(m_nPoints);
-  m_coeff3.resize(m_nPoints);
-}
-
-void Spline2Seg::freeWorkArea()
-{
-/*
-  m_pos.clear();
-  m_coeff0.clear();
-  m_coeff1.clear();
-  m_coeff2.clear();
-  m_coeff3.clear();
-*/
-}
-
 void Spline2Seg::generate(Spline2Renderer *pthis, DisplayContext *pdc)
 {
   quint32 nsz = m_aidtmp.size();
@@ -228,7 +230,8 @@ void Spline2Seg::generate(Spline2Renderer *pthis, DisplayContext *pdc)
   m_aids.resize(nsz);
   m_aids.assign(m_aidtmp.begin(), m_aidtmp.end());
   m_aidtmp.clear();
-  m_nPoints = nsz;
+  //m_nPoints = nsz;
+  m_scoeff.setSize(nsz);
 
   MolCoordPtr pCMol = pthis->getClientMol();
 
@@ -243,12 +246,29 @@ void Spline2Seg::generate(Spline2Renderer *pthis, DisplayContext *pdc)
 
   m_nDetail = pthis->getAxialDetail();
 
-  allocWorkArea();
-
   if (pthis->m_bUseGLSL)
     setupGLSL(pthis, pdc);
   else
     setupVBO(pthis);
+}
+
+quint32 Spline2Seg::calcColor(Spline2Renderer *pthis, MolCoordPtr pMol, int ind) const
+{
+  qlib::uid_t nSceneID = pthis->getSceneID();
+
+  float par = float(ind)/float(m_nDetail);
+  int nprev = int(::floor(par));
+  int nnext = int(::ceil(par));
+  float rho = par - float(nprev);
+
+  nprev = qlib::clamp<int>(nprev, 0, m_aids.size()-1);
+  nnext = qlib::clamp<int>(nnext, 0, m_aids.size() - 1);
+
+  MolResiduePtr pNext = getResid(pMol, nnext);
+  MolResiduePtr pPrev = getResid(pMol, nprev);
+
+  ColorPtr pcol = pthis->calcColor(rho, true, pPrev, pNext, false, false);
+  return pcol->getDevCode(nSceneID);
 }
 
 void Spline2Seg::updateColor(Spline2Renderer *pthis)
@@ -285,7 +305,7 @@ void Spline2Seg::draw(Spline2Renderer *pthis, DisplayContext *pdc) {
 
 void Spline2Seg::setupVBO(Spline2Renderer *pthis)
 {
-  m_nVA = m_nDetail * (m_nPoints - 1) + 1;
+  m_nVA = m_nDetail * (m_scoeff.getSize() - 1) + 1;
 
   if (m_pVBO!=NULL)
     delete m_pVBO;
@@ -296,7 +316,22 @@ void Spline2Seg::setupVBO(Spline2Renderer *pthis)
   LOG_DPRINTLN("Spline2Seg> %d elems VBO created", m_nVA);
 }
 
-void Spline2Seg::updateDynamicVBO(Spline2Renderer *pthis)
+void Spline2Seg::updateVBO()
+{
+	int i;
+	float par;
+  Vector3F pos;
+  
+  for (i=0; i<m_nVA; ++i) {
+    par = float(i)/float(m_nDetail);
+    m_scoeff.interpolate(par, &pos);
+    m_pVBO->vertex3f(i, pos);
+  }
+
+  m_pVBO->setUpdated(true);
+}
+
+void Spline2Seg::updateScoeffDynamic(Spline2Renderer *pthis)
 {
   MolCoordPtr pCMol = pthis->getClientMol();
   AnimMol *pAMol = static_cast<AnimMol *>(pCMol.get());
@@ -306,55 +341,51 @@ void Spline2Seg::updateDynamicVBO(Spline2Renderer *pthis)
   MolAtomPtr pAtom;
   Vector4D pos4d;
   int i;
-  for (i=0; i<m_nPoints; ++i) {
-    m_pos[i] = Vector3F(&crd[m_inds[i]]);
+  const int nsz = m_scoeff.getSize();
+  for (i=0; i<nsz; ++i) {
+    //m_pos[i] = Vector3F(&crd[m_inds[i]]);
+	  m_scoeff.setPoint(i, Vector3F(&crd[m_inds[i]]));
   }
-
-  generateNaturalSpline();
-
-  float par;
-  Vector3F pos;
-  
-  for (i=0; i<m_nVA; ++i) {
-    par = float(i)/float(m_nDetail);
-    interpolate(par, &pos);
-    m_pVBO->vertex3f(i, pos);
-  }
-
-  m_pVBO->setUpdated(true);
+  m_scoeff.generate();
 }
 
-void Spline2Seg::updateStaticVBO(Spline2Renderer *pthis)
+void Spline2Seg::updateScoeffStatic(Spline2Renderer *pthis)
 {
   MolCoordPtr pCMol = pthis->getClientMol();
   MolAtomPtr pAtom;
   Vector4D pos4d;
   int i;
-  for (i=0; i<m_nPoints; ++i) {
+  const int nsz = m_scoeff.getSize();
+  for (i=0; i<nsz; ++i) {
     pAtom = pCMol->getAtom(m_aids[i]);
     pos4d = pAtom->getPos();
-    m_pos[i] = Vector3F(pos4d.x(), pos4d.y(), pos4d.z());
+    //m_pos[i] = Vector3F(pos4d.x(), pos4d.y(), pos4d.z());
+    m_scoeff.setPoint(i, Vector3F(float(pos4d.x()), float(pos4d.y()), float(pos4d.z())));
   }
 
-  generateNaturalSpline();
+  m_scoeff.generate();
+}
 
-  float par;
-  Vector3F pos;
-  
-  for (i=0; i<m_nVA; ++i) {
-    par = float(i)/float(m_nDetail);
-    interpolate(par, &pos);
-    m_pVBO->vertex3f(i, pos);
-  }
+void Spline2Seg::updateDynamicVBO(Spline2Renderer *pthis)
+{
+  updateScoeffDynamic(pthis);
+  updateVBO();
+}
 
+void Spline2Seg::updateStaticVBO(Spline2Renderer *pthis)
+{
+  updateScoeffStatic(pthis);
+  updateVBO();
 }
 
 void Spline2Seg::updateVBOColor(Spline2Renderer *pthis)
 {
-  quint32 i;
-  quint32 cc1 = 0xFFFFFFFF;
+  MolCoordPtr pCMol = pthis->getClientMol();
+
+
+  int i;
   for (i=0; i<m_nVA; ++i) {
-    m_pVBO->color(i, cc1);
+    m_pVBO->color(i, calcColor(pthis, pCMol, i));
   }
 }
 
@@ -413,9 +444,10 @@ void Spline2Seg::setupGLSL(Spline2Renderer *pthis, DisplayContext *pdc)
   m_pCoefTex->setup(gfx::AbstTexture::FMT_R,
                      gfx::AbstTexture::TYPE_FLOAT32);
 
-  m_coefbuf.resize(m_nPoints * 12);
+  const int nsz = m_scoeff.getSize();
+  m_coefbuf.resize(nsz * 12);
 
-  m_nVA = m_nDetail * (m_nPoints - 1) + 1;
+  m_nVA = m_nDetail * (nsz - 1) + 1;
 
   if (m_pAttrAry!=NULL)
     delete m_pAttrAry;
@@ -435,32 +467,19 @@ void Spline2Seg::setupGLSL(Spline2Renderer *pthis, DisplayContext *pdc)
   for (i=0; i<m_nVA; ++i) {
     par = float(i)/float(m_nDetail);
     attra.at(i).rho = par;
+    /*
     attra.at(i).r = 0xFF;
     attra.at(i).g = 0xFF;
     attra.at(i).b = 0xFF;
-    attra.at(i).a = 0xFF;
+    attra.at(i).a = 0xFF;*/
   }
 
   LOG_DPRINTLN("Spline2Seg> %d elems AttrArray created", m_nVA);
 }
 
-/// update coord texture for GLSL rendering
-void Spline2Seg::updateDynamicGLSL(Spline2Renderer *pthis)
+void Spline2Seg::updateCoefTex()
 {
-  MolCoordPtr pCMol = pthis->getClientMol();
-  AnimMol *pAMol = static_cast<AnimMol *>(pCMol.get());
-
-  qfloat32 *crd = pAMol->getAtomCrdArray();
-
-  MolAtomPtr pAtom;
-  Vector4D pos4d;
-  int i;
-  for (i=0; i<m_nPoints; ++i) {
-    m_pos[i] = Vector3F(&crd[m_inds[i]]);
-  }
-
-  generateNaturalSpline();
-
+/*
   for (i=0; i<m_nPoints; ++i) {
     m_coefbuf[i*12+0] = m_coeff0[i].x();
     m_coefbuf[i*12+1] = m_coeff0[i].y();
@@ -478,58 +497,47 @@ void Spline2Seg::updateDynamicGLSL(Spline2Renderer *pthis)
     m_coefbuf[i*12+10] = m_coeff3[i].y();
     m_coefbuf[i*12+11] = m_coeff3[i].z();
   }
+*/
   
-  m_pCoefTex->setData(m_nPoints * 12, &m_coefbuf[0]);
+  m_pCoefTex->setData(m_scoeff.getPoints() * 12, m_scoeff.getCoefArray());
+}
 
+/// update coord texture for GLSL rendering
+void Spline2Seg::updateDynamicGLSL(Spline2Renderer *pthis)
+{
+  updateScoeffDynamic(pthis);
+  updateCoefTex();
 }
 
 void Spline2Seg::updateStaticGLSL(Spline2Renderer *pthis)
 {
-  MolCoordPtr pCMol = pthis->getClientMol();
-  MolAtomPtr pAtom;
-  Vector4D pos4d;
-  int i;
-  for (i=0; i<m_nPoints; ++i) {
-    pAtom = pCMol->getAtom(m_aids[i]);
-    pos4d = pAtom->getPos();
-    m_pos[i] = Vector3F(pos4d.x(), pos4d.y(), pos4d.z());
-  }
-
-  generateNaturalSpline();
-
-  for (i=0; i<m_nPoints; ++i) {
-    m_coefbuf[i*12+0] = m_coeff0[i].x();
-    m_coefbuf[i*12+1] = m_coeff0[i].y();
-    m_coefbuf[i*12+2] = m_coeff0[i].z();
-
-    m_coefbuf[i*12+3] = m_coeff1[i].x();
-    m_coefbuf[i*12+4] = m_coeff1[i].y();
-    m_coefbuf[i*12+5] = m_coeff1[i].z();
-
-    m_coefbuf[i*12+6] = m_coeff2[i].x();
-    m_coefbuf[i*12+7] = m_coeff2[i].y();
-    m_coefbuf[i*12+8] = m_coeff2[i].z();
-
-    m_coefbuf[i*12+9] = m_coeff3[i].x();
-    m_coefbuf[i*12+10] = m_coeff3[i].y();
-    m_coefbuf[i*12+11] = m_coeff3[i].z();
-  }
-  
-  m_pCoefTex->setData(m_nPoints * 12, &m_coefbuf[0]);
-
+  updateScoeffStatic(pthis);
+  updateCoefTex();
 }
 
 /// Initialize shaders/texture
 void Spline2Seg::updateGLSLColor(Spline2Renderer *pthis)
 {
-  /*
   MolCoordPtr pCMol = pthis->getClientMol();
 
-  AnimMol *pAMol = NULL;
-  if (pthis->isUseAnim())
-    pAMol = static_cast<AnimMol *>(pCMol.get());
-*/
+  qlib::uid_t nSceneID = pthis->getSceneID();
 
+  MolAtomPtr pA;
+  ColorPtr pcol;
+  quint32 dcc;
+  int i;
+  float par;
+
+  AttrArray &attra = *m_pAttrAry;
+
+  for (i=0; i<m_nVA; ++i) {
+    dcc = calcColor(pthis, pCMol, i);
+
+    attra.at(i).r = (qbyte) gfx::getRCode(dcc);
+    attra.at(i).g = (qbyte) gfx::getGCode(dcc);
+    attra.at(i).b = (qbyte) gfx::getBCode(dcc);
+    attra.at(i).a = (qbyte) gfx::getACode(dcc);
+  }
 }
 
 /// display() for GLSL version
@@ -548,7 +556,7 @@ void Spline2Seg::drawGLSL(Spline2Renderer *pthis, DisplayContext *pdc)
   // Setup uniforms
   pthis->m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
   pthis->m_pPO->setUniform("coefTex", 0);
-  pthis->m_pPO->setUniform("u_npoints", m_nPoints);
+  pthis->m_pPO->setUniform("u_npoints", m_scoeff.getSize());
 
   pdc->drawElem(*m_pAttrAry);
 
@@ -559,6 +567,7 @@ void Spline2Seg::drawGLSL(Spline2Renderer *pthis, DisplayContext *pdc)
 ///////////////////////////////////////////////
 // Spline routines
 
+#if 0
 void Spline2Seg::generateNaturalSpline()
 {
   int i;
@@ -696,4 +705,5 @@ void Spline2Seg::interpolate(float par, Vector3F *vec,
     *ddvec = tmp;
   }
 }
+#endif
 

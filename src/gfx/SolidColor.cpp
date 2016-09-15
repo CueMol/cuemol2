@@ -55,9 +55,9 @@ SolidColor::SolidColor(int r, int g, int b, int a)
 SolidColor::SolidColor(double r, double g, double b)
 {
   /*
-  r = (double) qlib::trunc<double>(r, 0.0, 1.0);
-  g = (double) qlib::trunc<double>(g, 0.0, 1.0);
-  b = (double) qlib::trunc<double>(b, 0.0, 1.0);
+  r = (double) qlib::clamp<double>(r, 0.0, 1.0);
+  g = (double) qlib::clamp<double>(g, 0.0, 1.0);
+  b = (double) qlib::clamp<double>(b, 0.0, 1.0);
   m_code = makeRGBACode((int)(r*255.0+0.5),
 			(int)(g*255.0+0.5),
 			(int)(b*255.0+0.5),
@@ -70,10 +70,10 @@ SolidColor::SolidColor(double r, double g, double b)
 SolidColor::SolidColor(double r, double g, double b, double a)
 {
   /*
-  r = (double) qlib::trunc<double>(r, 0.0, 1.0);
-  g = (double) qlib::trunc<double>(g, 0.0, 1.0);
-  b = (double) qlib::trunc<double>(b, 0.0, 1.0);
-  a = (double) qlib::trunc<double>(a, 0.0, 1.0);
+  r = (double) qlib::clamp<double>(r, 0.0, 1.0);
+  g = (double) qlib::clamp<double>(g, 0.0, 1.0);
+  b = (double) qlib::clamp<double>(b, 0.0, 1.0);
+  a = (double) qlib::clamp<double>(a, 0.0, 1.0);
   m_code = makeRGBACode((int)(r*255.0+0.5),
 			(int)(g*255.0+0.5),
 			(int)(b*255.0+0.5),
@@ -86,10 +86,10 @@ SolidColor::SolidColor(double r, double g, double b, double a)
 SolidColor::SolidColor(const qlib::Vector4D &v)
 {
   /*
-  double r = (double) qlib::trunc<double>(v.x(), 0.0, 1.0);
-  double g = (double) qlib::trunc<double>(v.y(), 0.0, 1.0);
-  double b = (double) qlib::trunc<double>(v.z(), 0.0, 1.0);
-  double a = (double) qlib::trunc<double>(v.w(), 0.0, 1.0);
+  double r = (double) qlib::clamp<double>(v.x(), 0.0, 1.0);
+  double g = (double) qlib::clamp<double>(v.y(), 0.0, 1.0);
+  double b = (double) qlib::clamp<double>(v.z(), 0.0, 1.0);
+  double a = (double) qlib::clamp<double>(v.w(), 0.0, 1.0);
 
   m_code = makeRGBACode((int)(r*255.0+0.5),
 			(int)(g*255.0+0.5),
@@ -248,10 +248,10 @@ LString SolidColor::toString() const
 
 void SolidColor::setRGBA(double R, double G, double B, double A)
 {
-  const double r = (double) qlib::trunc<double>(R, 0.0, 1.0);
-  const double g = (double) qlib::trunc<double>(G, 0.0, 1.0);
-  const double b = (double) qlib::trunc<double>(B, 0.0, 1.0);
-  const double a = (double) qlib::trunc<double>(A, 0.0, 1.0);
+  const double r = (double) qlib::clamp<double>(R, 0.0, 1.0);
+  const double g = (double) qlib::clamp<double>(G, 0.0, 1.0);
+  const double b = (double) qlib::clamp<double>(B, 0.0, 1.0);
+  const double a = (double) qlib::clamp<double>(A, 0.0, 1.0);
   m_code = makeRGBACode((int)(r*255.0+0.5),
 			(int)(g*255.0+0.5),
 			(int)(b*255.0+0.5),

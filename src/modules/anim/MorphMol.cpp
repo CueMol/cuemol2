@@ -465,11 +465,11 @@ void MorphMol::update(double dframe)
   double xx;
   if (m_bScaleDframe) {
     // dframe changes between 0.0 and nfrm-1
-    xx = qlib::trunc(dframe, 0.0, double(nframes-1));
+    xx = qlib::clamp(dframe, 0.0, double(nframes-1));
   }
   else {
     // dframe changes between 0.0 and 1.0
-    xx = qlib::trunc(dframe, 0.0, 1.0) * double(nframes-1);
+    xx = qlib::clamp(dframe, 0.0, 1.0) * double(nframes-1);
   }
 
   int ifrm = int( ::floor(xx) );

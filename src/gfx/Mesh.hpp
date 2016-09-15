@@ -126,7 +126,7 @@ private:
   int clutNewColor(unsigned int ccode);
 
   unsigned char convRho(double rho) const {
-    double tr = qlib::trunc(rho, 0.0, 1.0);
+    double tr = qlib::clamp(rho, 0.0, 1.0);
     return (unsigned char) (tr*255.0+0.5);
   }*/
 };
