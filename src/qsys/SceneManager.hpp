@@ -19,8 +19,8 @@
 
 namespace qsys {
 
-  class QSYS_API SceneManager : public qlib::LSingletonScrObject,
-		       public qlib::SingletonBase<SceneManager>
+  class QSYS_API SceneManager
+       : public qlib::LSingletonScrObject, public qlib::SingletonBase<SceneManager>
   {
     MC_SCRIPTABLE;
 
@@ -146,7 +146,11 @@ namespace qsys {
 
     int m_nBusyTimeIndex;
 
+    bool m_bPerfMeas;
+
   public:
+    void startPerfMeas(int naver);
+    void endPerfMeas();
     void setBusyTime(quint64 nanosec);
 
   };

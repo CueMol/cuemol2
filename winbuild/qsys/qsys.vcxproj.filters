@@ -1034,5 +1034,11 @@
     <glslshader Include="..\..\src\modules\molstr\simple_vertex.glsl">
       <Filter>molstr\Shaders</Filter>
     </glslshader>
+    <glslshader Include="..\..\src\modules\molvis\spline2_vert.glsl">
+      <Filter>molvis\Shaders</Filter>
+    </glslshader>
+    <glslshader Include="..\..\src\modules\molvis\spline2_frag.glsl">
+      <Filter>molvis\Shaders</Filter>
+    </glslshader>
   </ItemGroup>
 </Project>

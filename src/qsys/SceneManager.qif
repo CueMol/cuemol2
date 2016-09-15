@@ -46,6 +46,11 @@ runtime_class SceneManager
 
   property integer activeSceneID => redirect(getActiveSceneID, XXX) (readonly, nopersist);
 
+  //// Performance measurement
+
+  void startPerfMeas(integer naver);
+  
+  void endPerfMeas();
 };
 
 #endif

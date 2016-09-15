@@ -11,10 +11,21 @@
 #include <qlib/Vector4D.hpp>
 #include <qlib/Vector3F.hpp>
 #include <gfx/DrawElem.hpp>
+#include <gfx/DrawAttrArray.hpp>
 
 #include <modules/molstr/MainChainRenderer.hpp>
 #include "CubicSpline.hpp"
 #include "SplineCoeffSet.hpp"
+
+namespace sysdep {
+  class OglProgramObject;
+}
+
+namespace gfx {
+  class Texture1D;
+  class Texture2D;
+  class Texture3D;
+}
 
 namespace molvis {
 
@@ -28,6 +39,8 @@ namespace molvis {
   class Spline2Seg
   {
   private:
+    /////////////////////
+    // VBO implementation
     typedef std::vector<quint32> IDArray;
     
     /// Pivot atom AID array
@@ -60,7 +73,7 @@ namespace molvis {
 
     void append(MolAtomPtr pAtom);
 
-    void generate(Spline2Renderer *pthis);
+    void generate(Spline2Renderer *pthis, DisplayContext *pdc);
 
     quint32 getSize() const { return m_nPoints; }
 
@@ -74,15 +87,25 @@ namespace molvis {
       return pAtom->getParentResidue();
     }
 
+    void updateDynamic(Spline2Renderer *pthis);
+    
+    void updateStatic(Spline2Renderer *pthis);
+    
+    void updateColor(Spline2Renderer *pthis);
+
+    void draw(Spline2Renderer *pthis, DisplayContext *pdc);
+    
+  private:
+    void setupVBO(Spline2Renderer *pthis);
+
     void updateDynamicVBO(Spline2Renderer *pthis);
 
     void updateStaticVBO(Spline2Renderer *pthis);
 
     void updateVBOColor(Spline2Renderer *pthis);
 
-    void draw(Spline2Renderer *pthis, DisplayContext *pdc);
+    void drawVBO(Spline2Renderer *pthis, DisplayContext *pdc);
 
-  private:
     void generateNaturalSpline();
     void allocWorkArea();
     void freeWorkArea();
@@ -91,9 +114,48 @@ namespace molvis {
                      Vector3F *dvec = NULL,
                      Vector3F *ddvec = NULL);
 
+
+  private:
+    /////////////////////
+    // GLSL implementation
+
+    /// coeff float texture
+    gfx::Texture1D *m_pCoefTex;
+
+    std::vector<float> m_coefbuf;
+
+    struct AttrElem {
+      qfloat32 rho;
+      qbyte r, g, b, a;
+    };
+
+    typedef gfx::DrawAttrArray<AttrElem> AttrArray;
+
+    /// VBO for glsl rendering
+    AttrArray *m_pAttrAry;
+
+    //
+    // GLSL methods
+    //
+
+    /// Initialize shaders/texture
+    void setupGLSL(Spline2Renderer *pthis, DisplayContext *pdc);
+
+    /// update coord texture for GLSL rendering
+    void updateDynamicGLSL(Spline2Renderer *pthis);
+
+    void updateStaticGLSL(Spline2Renderer *pthis);
+
+    void updateGLSLColor(Spline2Renderer *pthis);
+
+    /// display() for GLSL version
+    void drawGLSL(Spline2Renderer *pthis, DisplayContext *pdc);
+
   };
 
   typedef std::deque<Spline2Seg> Spl2SegList;
+
+  ////////////////////////////////////////////////////////
 
   class Spline2Renderer : public MainChainRenderer
   {
@@ -102,7 +164,7 @@ namespace molvis {
 
     typedef MainChainRenderer super_t;
 
-    //////////////////////////////////////////////////////
+    //////////////
     // Properties
 
   private:
@@ -130,7 +192,7 @@ namespace molvis {
       return m_dLineWidth;
     }
 
-    //////////////////////////////////////////////////////
+    /////////////////
     // ctor/dtor
 
   public:
@@ -138,31 +200,22 @@ namespace molvis {
     
     virtual ~Spline2Renderer();
 
-    //////////////////////////////////////////////////////
+    /////////////////
     // Renderer interface
     
     virtual const char *getTypeName() const;
 
     virtual void display(DisplayContext *pdc);
 
-    //////////////////////////////////////////////////////
+    /////////////////
     // DispCacheRenderer interface
 
     virtual void preRender(DisplayContext *pdc);
     
     void invalidateDisplayCache();
 
-    /*
-    //////////////////////////////////////////////////////
-    // MainChainRenderer interface
-    virtual void beginRend(DisplayContext *pdl);
-    virtual void beginSegment(DisplayContext *pdl, MolResiduePtr pRes);
-    virtual void rendResid(DisplayContext *pdl, MolResiduePtr pRes);
-    virtual void endSegment(DisplayContext *pdl, MolResiduePtr pRes);
-    virtual void endRend(DisplayContext *pdl);
-     */
 
-    //////////////////////////////////////////////////////
+    /////////////////
     // event handling
 
     virtual void propChanged(qlib::LPropEvent &ev);
@@ -174,16 +227,38 @@ namespace molvis {
     // ColorPtr calcColor(double par, SplineCoeff *pCoeff);
     // void invalidateSplineCoeffs();
 
-    //////////////////////////////////////////////////////
+    /////////////////
     // work area
 
   private:
 
     Spl2SegList m_seglist;
 
-    void createSegList();
+    void createSegList(DisplayContext *pdc);
+
+    /////////////////
+    // GLSL implementation
+
+  public:
+    bool m_bUseGLSL;
+
+    /// shader check was performed
+    bool m_bChkShaderDone;
+
+    /// GLSL shader objects
+    sysdep::OglProgramObject *m_pPO;
+
+    quint32 m_nRhoLoc;
+
+    quint32 m_nColLoc;
+
+  private:
+    /// Initialize shaders
+    void initShader(DisplayContext *pdc);
+
   };
 
 }
 
 #endif
+

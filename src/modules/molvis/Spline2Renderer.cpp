@@ -9,6 +9,7 @@
 #include "Spline2Renderer.hpp"
 
 #include <qsys/SceneManager.hpp>
+#include <gfx/Texture.hpp>
 
 #include <modules/molstr/MolCoord.hpp>
 #include <modules/molstr/MolChain.hpp>
@@ -16,23 +17,21 @@
 #include <modules/molstr/ResidIterator.hpp>
 #include <modules/molstr/AnimMol.hpp>
 
+#include <sysdep/OglProgramObject.hpp>
+
 using namespace molvis;
 using namespace molstr;
 
 Spline2Renderer::Spline2Renderer()
 {
-  // m_scs.setParent(this);
-  // m_scs.setSmooth(0.0);
-
   m_nAxialDetail = 6;
   m_dLineWidth = 1.2;
 
-  //m_bInterpColor = true;
-  //m_nStCapType = TUBE_CAP_SPHR;
-  //m_nEnCapType = TUBE_CAP_SPHR;
-  //m_bSegEndFade = false;
+  //m_bUseGLSL = true;
+  m_bUseGLSL = false;
 
-  // m_pVBO = NULL;
+  m_bChkShaderDone = false;
+  m_pPO = NULL;
 }
 
 Spline2Renderer::~Spline2Renderer()
@@ -51,20 +50,23 @@ void Spline2Renderer::preRender(DisplayContext *pdc)
 
 void Spline2Renderer::display(DisplayContext *pdc)
 {
+  if (m_bUseGLSL) {
+    // new rendering routine using GLSL/VBO
+    if (!m_bChkShaderDone)
+      initShader(pdc);
+  }
+
   // Always use VBO (DrawElem)
   if (m_seglist.empty()) {
-    createSegList();
-
-    //if (m_seglist.empty())
-    //return; // Error, Cannot draw anything (ignore)
+    createSegList(pdc);
 
     BOOST_FOREACH (Spline2Seg &elem, m_seglist) {
       if (elem.getSize()>0) {
-        elem.updateVBOColor(this);
+        elem.updateColor(this);
         if (isUseAnim())
-          elem.updateDynamicVBO(this);
+          elem.updateDynamic(this);
         else
-          elem.updateStaticVBO(this);
+          elem.updateStatic(this);
       }
     }
   }
@@ -93,6 +95,9 @@ void Spline2Renderer::propChanged(qlib::LPropEvent &ev)
       ev.getParentName().startsWith("coloring.")) {
     invalidateDisplayCache();
   }
+  else if (ev.getParentName().equals("axialdetail")) {
+    invalidateDisplayCache();
+  }
 
   super_t::propChanged(ev);
 }
@@ -108,7 +113,7 @@ void Spline2Renderer::objectChanged(qsys::ObjectEvent &ev)
       BOOST_FOREACH (Spline2Seg &elem, m_seglist) {
         if (elem.getSize()>0) {
           // only update positions
-          elem.updateDynamicVBO(this);
+          elem.updateDynamic(this);
         }
       }
       return;
@@ -119,7 +124,7 @@ void Spline2Renderer::objectChanged(qsys::ObjectEvent &ev)
   super_t::objectChanged(ev);
 }
 
-void Spline2Renderer::createSegList()
+void Spline2Renderer::createSegList(DisplayContext *pdc)
 {
   MolCoordPtr pCMol = getClientMol();
 
@@ -136,7 +141,7 @@ void Spline2Renderer::createSegList()
       // This resid doesn't has pivot, so we cannot draw backbone!!
       if (!pPrevResid.isnull()) {
         // endSegment(pdl, pPrevResid);
-        m_seglist.back().generate(this);
+        m_seglist.back().generate(this, pdc);
       }
       pPrevResid = MolResiduePtr();
       continue;
@@ -145,10 +150,10 @@ void Spline2Renderer::createSegList()
     if (isNewSegment(pRes, pPrevResid)) {
       if (!pPrevResid.isnull()) {
         //endSegment(pdl, pPrevResid);
-        m_seglist.back().generate(this);
+        m_seglist.back().generate(this, pdc);
       }
       //beginSegment(pdl, pRes);
-      m_seglist.push_front(Spline2Seg());
+      m_seglist.push_back(Spline2Seg());
     }
 
     //rendResid(pdl, pRes);
@@ -158,7 +163,7 @@ void Spline2Renderer::createSegList()
 
   if (!pPrevResid.isnull()) {
     //endSegment(pdl, pPrevResid);
-    m_seglist.back().generate(this);
+    m_seglist.back().generate(this, pdc);
   }
 }
 
@@ -170,12 +175,21 @@ Spline2Seg::Spline2Seg()
   m_nDetail = 10;
   m_nVA = 0;
   m_nPoints = 0;
+
+  m_pAttrAry = NULL;
+  m_pCoefTex = NULL;
 }
 
 Spline2Seg::~Spline2Seg()
 {
   if (m_pVBO!=NULL)
     delete m_pVBO;
+
+  if (m_pAttrAry!=NULL)
+    delete m_pAttrAry;
+
+  if (m_pCoefTex!=NULL)
+    delete m_pCoefTex;
 }
 
 void Spline2Seg::append(MolAtomPtr pAtom)
@@ -203,7 +217,7 @@ void Spline2Seg::freeWorkArea()
 */
 }
 
-void Spline2Seg::generate(Spline2Renderer *pthis)
+void Spline2Seg::generate(Spline2Renderer *pthis, DisplayContext *pdc)
 {
   quint32 nsz = m_aidtmp.size();
   if (nsz<2) {
@@ -227,8 +241,50 @@ void Spline2Seg::generate(Spline2Renderer *pthis)
     }
   }
 
+  m_nDetail = pthis->getAxialDetail();
+
   allocWorkArea();
 
+  if (pthis->m_bUseGLSL)
+    setupGLSL(pthis, pdc);
+  else
+    setupVBO(pthis);
+}
+
+void Spline2Seg::updateColor(Spline2Renderer *pthis)
+{
+  if (pthis->m_bUseGLSL)
+    updateGLSLColor(pthis);
+  else
+    updateVBOColor(pthis);
+}
+
+void Spline2Seg::updateDynamic(Spline2Renderer *pthis) {
+  if (pthis->m_bUseGLSL)
+    updateDynamicGLSL(pthis);
+  else
+    updateDynamicVBO(pthis);
+}
+
+void Spline2Seg::updateStatic(Spline2Renderer *pthis) {
+  if (pthis->m_bUseGLSL)
+    updateStaticGLSL(pthis);
+  else
+    updateStaticVBO(pthis);
+}
+
+void Spline2Seg::draw(Spline2Renderer *pthis, DisplayContext *pdc) {
+  if (pthis->m_bUseGLSL)
+    drawGLSL(pthis, pdc);
+  else
+    drawVBO(pthis, pdc);
+}
+
+//////////////////
+// VBO implementation
+
+void Spline2Seg::setupVBO(Spline2Renderer *pthis)
+{
   m_nVA = m_nDetail * (m_nPoints - 1) + 1;
 
   if (m_pVBO!=NULL)
@@ -238,7 +294,6 @@ void Spline2Seg::generate(Spline2Renderer *pthis)
   m_pVBO->alloc(m_nVA);
   m_pVBO->setDrawMode(gfx::DrawElem::DRAW_LINE_STRIP);
   LOG_DPRINTLN("Spline2Seg> %d elems VBO created", m_nVA);
-
 }
 
 void Spline2Seg::updateDynamicVBO(Spline2Renderer *pthis)
@@ -303,11 +358,202 @@ void Spline2Seg::updateVBOColor(Spline2Renderer *pthis)
   }
 }
 
-void Spline2Seg::draw(Spline2Renderer *pthis, DisplayContext *pdc)
+void Spline2Seg::drawVBO(Spline2Renderer *pthis, DisplayContext *pdc)
 {
   const double lw = pthis->getLineWidth();
   m_pVBO->setLineWidth(lw);
   pdc->drawElem(*m_pVBO);
+}
+
+///////////////////////////////////////////////
+// GLSL implementation
+
+void Spline2Renderer::initShader(DisplayContext *pdc)
+{
+  m_bChkShaderDone = true;
+
+  sysdep::ShaderSetupHelper<Spline2Renderer> ssh(this);
+  
+  if (!ssh.checkEnvVS()) {
+    LOG_DPRINTLN("SimpleRendGLSL> ERROR: GLSL not supported.");
+    MB_THROW(qlib::RuntimeException, "OpenGL GPU shading not supported");
+    return;
+  }
+
+  if (m_pPO==NULL)
+    m_pPO = ssh.createProgObj("gpu_spline2",
+                              "%%CONFDIR%%/data/shaders/spline2_vert.glsl",
+                              "%%CONFDIR%%/data/shaders/spline2_frag.glsl");
+  
+  if (m_pPO==NULL) {
+    LOG_DPRINTLN("Spline2RendGLSL> ERROR: cannot create progobj.");
+    return;
+  }
+
+  m_pPO->enable();
+
+  // setup uniforms
+  m_pPO->setUniform("coefTex", 0);
+
+  // setup attributes
+  m_nRhoLoc = m_pPO->getAttribLocation("a_rho");
+  m_nColLoc = m_pPO->getAttribLocation("a_color");
+
+  m_pPO->disable();
+}
+
+void Spline2Seg::setupGLSL(Spline2Renderer *pthis, DisplayContext *pdc)
+{
+  if (m_pCoefTex!=NULL)
+    delete m_pCoefTex;
+  //m_pCoefTex = pdc->createTexture2D();
+  m_pCoefTex = pdc->createTexture1D();
+  //m_pCoefTex->setup(gfx::AbstTexture::FMT_RGB,
+  //gfx::AbstTexture::TYPE_FLOAT32);
+  m_pCoefTex->setup(gfx::AbstTexture::FMT_R,
+                     gfx::AbstTexture::TYPE_FLOAT32);
+
+  m_coefbuf.resize(m_nPoints * 12);
+
+  m_nVA = m_nDetail * (m_nPoints - 1) + 1;
+
+  if (m_pAttrAry!=NULL)
+    delete m_pAttrAry;
+    
+  m_pAttrAry = MB_NEW AttrArray();
+
+  AttrArray &attra = *m_pAttrAry;
+  attra.setAttrSize(2);
+  attra.setAttrInfo(0, pthis->m_nRhoLoc, 1, qlib::type_consts::QTC_FLOAT32,  offsetof(AttrElem, rho));
+  attra.setAttrInfo(1, pthis->m_nColLoc, 4, qlib::type_consts::QTC_UINT8, offsetof(AttrElem, r));
+
+  attra.alloc(m_nVA);
+  attra.setDrawMode(gfx::AbstDrawElem::DRAW_LINE_STRIP);
+
+  float par;
+  int i;
+  for (i=0; i<m_nVA; ++i) {
+    par = float(i)/float(m_nDetail);
+    attra.at(i).rho = par;
+    attra.at(i).r = 0xFF;
+    attra.at(i).g = 0xFF;
+    attra.at(i).b = 0xFF;
+    attra.at(i).a = 0xFF;
+  }
+
+  LOG_DPRINTLN("Spline2Seg> %d elems AttrArray created", m_nVA);
+}
+
+/// update coord texture for GLSL rendering
+void Spline2Seg::updateDynamicGLSL(Spline2Renderer *pthis)
+{
+  MolCoordPtr pCMol = pthis->getClientMol();
+  AnimMol *pAMol = static_cast<AnimMol *>(pCMol.get());
+
+  qfloat32 *crd = pAMol->getAtomCrdArray();
+
+  MolAtomPtr pAtom;
+  Vector4D pos4d;
+  int i;
+  for (i=0; i<m_nPoints; ++i) {
+    m_pos[i] = Vector3F(&crd[m_inds[i]]);
+  }
+
+  generateNaturalSpline();
+
+  for (i=0; i<m_nPoints; ++i) {
+    m_coefbuf[i*12+0] = m_coeff0[i].x();
+    m_coefbuf[i*12+1] = m_coeff0[i].y();
+    m_coefbuf[i*12+2] = m_coeff0[i].z();
+
+    m_coefbuf[i*12+3] = m_coeff1[i].x();
+    m_coefbuf[i*12+4] = m_coeff1[i].y();
+    m_coefbuf[i*12+5] = m_coeff1[i].z();
+
+    m_coefbuf[i*12+6] = m_coeff2[i].x();
+    m_coefbuf[i*12+7] = m_coeff2[i].y();
+    m_coefbuf[i*12+8] = m_coeff2[i].z();
+
+    m_coefbuf[i*12+9] = m_coeff3[i].x();
+    m_coefbuf[i*12+10] = m_coeff3[i].y();
+    m_coefbuf[i*12+11] = m_coeff3[i].z();
+  }
+  
+  m_pCoefTex->setData(m_nPoints * 12, &m_coefbuf[0]);
+
+}
+
+void Spline2Seg::updateStaticGLSL(Spline2Renderer *pthis)
+{
+  MolCoordPtr pCMol = pthis->getClientMol();
+  MolAtomPtr pAtom;
+  Vector4D pos4d;
+  int i;
+  for (i=0; i<m_nPoints; ++i) {
+    pAtom = pCMol->getAtom(m_aids[i]);
+    pos4d = pAtom->getPos();
+    m_pos[i] = Vector3F(pos4d.x(), pos4d.y(), pos4d.z());
+  }
+
+  generateNaturalSpline();
+
+  for (i=0; i<m_nPoints; ++i) {
+    m_coefbuf[i*12+0] = m_coeff0[i].x();
+    m_coefbuf[i*12+1] = m_coeff0[i].y();
+    m_coefbuf[i*12+2] = m_coeff0[i].z();
+
+    m_coefbuf[i*12+3] = m_coeff1[i].x();
+    m_coefbuf[i*12+4] = m_coeff1[i].y();
+    m_coefbuf[i*12+5] = m_coeff1[i].z();
+
+    m_coefbuf[i*12+6] = m_coeff2[i].x();
+    m_coefbuf[i*12+7] = m_coeff2[i].y();
+    m_coefbuf[i*12+8] = m_coeff2[i].z();
+
+    m_coefbuf[i*12+9] = m_coeff3[i].x();
+    m_coefbuf[i*12+10] = m_coeff3[i].y();
+    m_coefbuf[i*12+11] = m_coeff3[i].z();
+  }
+  
+  m_pCoefTex->setData(m_nPoints * 12, &m_coefbuf[0]);
+
+}
+
+/// Initialize shaders/texture
+void Spline2Seg::updateGLSLColor(Spline2Renderer *pthis)
+{
+  /*
+  MolCoordPtr pCMol = pthis->getClientMol();
+
+  AnimMol *pAMol = NULL;
+  if (pthis->isUseAnim())
+    pAMol = static_cast<AnimMol *>(pCMol.get());
+*/
+
+}
+
+/// display() for GLSL version
+void Spline2Seg::drawGLSL(Spline2Renderer *pthis, DisplayContext *pdc)
+{
+  const double lw = pthis->getLineWidth();
+  //m_pVBO->setLineWidth(lw);
+  //pdc->drawElem(*m_pVBO);
+
+  pdc->setLineWidth(lw);
+
+  m_pCoefTex->use(0);
+
+  pthis->m_pPO->enable();
+
+  // Setup uniforms
+  pthis->m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
+  pthis->m_pPO->setUniform("coefTex", 0);
+  pthis->m_pPO->setUniform("u_npoints", m_nPoints);
+
+  pdc->drawElem(*m_pAttrAry);
+
+  pthis->m_pPO->disable();
+  m_pCoefTex->unuse();
 }
 
 ///////////////////////////////////////////////

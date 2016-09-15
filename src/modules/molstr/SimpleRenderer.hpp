@@ -20,6 +20,8 @@ namespace sysdep {
 
 namespace gfx {
   class Texture1D;
+  class Texture2D;
+  class Texture3D;
 }
 
 namespace molstr {

@@ -226,10 +226,22 @@ void SceneManager::setActiveSceneID(qlib::uid_t uid)
   m_nActiveSceneID = uid;
 }
 
+void SceneManager::startPerfMeas(int naver)
+{
+  m_bPerfMeas = true;
+  m_busytimes.resize(naver);
+  m_nBusyTimeIndex = 0;
+}
+
+void SceneManager::endPerfMeas()
+{
+  m_bPerfMeas = false;
+}
+
 void SceneManager::setBusyTime(quint64 nanosec)
 {
-//  if (nanosec<1000)
-//    return;
+  if (!m_bPerfMeas)
+    return;
   
   m_busytimes[m_nBusyTimeIndex] = nanosec;
   m_nBusyTimeIndex ++;
