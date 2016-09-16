@@ -35,14 +35,76 @@ namespace molvis {
   using namespace molstr;
 
   class Spline2Renderer;
+  class Spline2Seg;
 
+  class Spl2DrawSeg
+  {
+  private:
+    int m_nStart;
+    int m_nEnd;
+
+    /// tesselation level detail (copy of rend's prop)
+    int m_nDetail;
+
+    /// size of vertex/attribute array
+    int m_nVA;
+
+  public:
+    Spl2DrawSeg(int st, int en) : m_nStart(st), m_nEnd(en), m_pVBO(NULL), m_pAttrAry(NULL)
+    {
+    }
+
+    virtual ~Spl2DrawSeg();
+
+    //////////
+    // VBO implementation
+
+    /// cached vertex array/VBO
+    gfx::DrawElemVC *m_pVBO;
+
+    void setupVBO(Spline2Renderer *pthis);
+
+    void updateVBO(CubicSpline *pCoeff);
+
+    void updateVBOColor(Spline2Renderer *pthis, Spline2Seg *pseg);
+
+    void drawVBO(Spline2Renderer *pthis, DisplayContext *pdc);
+
+    //////////
+    // GLSL implementation
+
+    struct AttrElem {
+      qfloat32 rho;
+      qbyte r, g, b, a;
+    };
+
+    typedef gfx::DrawAttrArray<AttrElem> AttrArray;
+
+    /// VBO for glsl rendering
+    AttrArray *m_pAttrAry;
+
+    /// Initialize shaders/texture
+    void setupGLSL(Spline2Renderer *pthis);
+
+    void updateGLSLColor(Spline2Renderer *pthis, Spline2Seg *pSeg);
+
+    /// display() for GLSL version
+    void drawGLSL(Spline2Renderer *pthis, DisplayContext *pdc);
+
+  };
+
+
+  //
   /// Rendering object for the one spline segment
+  //
   class Spline2Seg
   {
   private:
-    /////////////////////
-    // VBO implementation
-    typedef std::vector<quint32> IDArray;
+
+    typedef std::deque<Spl2DrawSeg> Spl2DrawList;
+    Spl2DrawList m_draws;
+
+    typedef std::vector<int> IDArray;
     
     /// Pivot atom AID array
     IDArray m_aids;
@@ -50,17 +112,7 @@ namespace molvis {
     /// Pivot atom crd array index (for dynamic update)
     IDArray m_inds;
 
-    /// cached vertex array/VBO
-    gfx::DrawElemVC *m_pVBO;
-
-    std::deque<quint32> m_aidtmp;
-
-    // int m_nPoints;
-    
-    int m_nDetail;
-    int m_nVA;
-
-    CubicSpline m_scoeff;
+    std::deque<int> m_aidtmp;
 
   public:
     Spline2Seg();
@@ -95,11 +147,24 @@ namespace molvis {
 
     void draw(Spline2Renderer *pthis, DisplayContext *pdc);
     
+  private:
 
     //////////
-    // drawing methods VBO implementation
+    // spline methods
 
-  private:
+    int m_nDetail;
+    int m_nVA;
+
+    CubicSpline m_scoeff;
+
+    // int m_nPoints;
+    
+    void updateScoeffDynamic(Spline2Renderer *pthis);
+    void updateScoeffStatic(Spline2Renderer *pthis);
+
+    //////////
+    // VBO implementation
+
     void setupVBO(Spline2Renderer *pthis);
 
     void updateDynamicVBO(Spline2Renderer *pthis);
@@ -110,18 +175,7 @@ namespace molvis {
 
     void drawVBO(Spline2Renderer *pthis, DisplayContext *pdc);
 
-    // void generateNaturalSpline();
-    // void allocWorkArea();
-    // void freeWorkArea();
-
-    // void interpolate(float par, Vector3F *vec,
-    // Vector3F *dvec = NULL,
-    // Vector3F *ddvec = NULL);
-
     void updateVBO();
-
-    void updateScoeffDynamic(Spline2Renderer *pthis);
-    void updateScoeffStatic(Spline2Renderer *pthis);
 
   private:
     /////////////////////
@@ -166,6 +220,9 @@ namespace molvis {
   typedef std::deque<Spline2Seg> Spl2SegList;
 
   ////////////////////////////////////////////////////////
+  //
+  // Spline Renderer version 2 class
+  //
 
   class Spline2Renderer : public MainChainRenderer
   {
