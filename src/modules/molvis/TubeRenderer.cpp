@@ -119,7 +119,8 @@ void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
   // pdl->color(pCol);
 
   // Declare Vector variables used in the loop
-  Vector4D bnorm, vpt, e11, e12, e21, e22, f1, f2;
+  Vector4D bnorm, vpt, vnorm;
+  Vector4D e11, e12, e21, e22, f1, f2;
   Vector4D prev_bnorm, prev_e1, prev_e2, prev_f;
   Vector4D g1, g2, dg1, dg2;
 
@@ -139,8 +140,10 @@ void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
     Vector2D escl = getEScl(par, pCoeff); //Vector2D(1.0, 1.0);
 
     pCoeff->interpNormal(par, &bnorm);
-    pCoeff->interpAxis(par, &f1, &vpt);
+    pCoeff->interpAxis(par, &f1, &vpt, &vnorm);
 
+    //e11 = vnorm.normalize();
+    //e12 = -e11.cross(vpt.normalize());
     e12 = (bnorm - f1);
     e11 = ( e12.cross(vpt) ).normalize();
 

@@ -155,7 +155,11 @@ void SplineRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
   pdl->setLighting(false);
   ColorPtr pPrevCol;
 
-  pdl->startLineStrip();
+  Vector4D f1, vpt, vnorm, bnorm;
+  Vector4D e10, e11, e12;
+  
+  // pdl->startLineStrip();
+  pdl->startLines();
   int i;
   for (i=0; i<=ndelta; i++) {
     double par = fstart + double(i)/double(m_nAxialDetail);
@@ -165,11 +169,16 @@ void SplineRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
     Vector4D f1, vpt;
     Vector4D bnorm;
     pCoeff->interpNormal(par, &bnorm);
-    pCoeff->interpAxis(par, &f1, &vpt);
+    pCoeff->interpAxis(par, &f1, &vpt, &vnorm);
 
-    Vector4D e12 = (bnorm - f1);
-    Vector4D e11 = ( e12.cross(vpt) ).normalize();
+    e10 = vpt.normalize();
+    e11 = vnorm.normalize();
+    e12 = e10.cross(e11);
 
+    //e12 = (bnorm - f1);
+    //e11 = ( e12.cross(vpt) ).normalize();
+
+/*
     if (!isSmoothColor() && i!=0) {
       pdl->color(pPrevCol);
       pdl->vertex(f1);
@@ -183,6 +192,19 @@ void SplineRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
       pdl->vertex(f1);
     }
     pPrevCol = pCol;
+*/
+
+    pdl->color(pCol);
+    pdl->vertex(f1);
+    pdl->vertex(f1+e10.scale(0.25));
+
+    pdl->vertex(f1);
+    pdl->vertex(f1+e11.scale(0.5));
+    pdl->vertex(f1);
+    pdl->vertex(f1+e12);
+
+    pPrevCol = pCol;
+
   }
   pdl->end();
   

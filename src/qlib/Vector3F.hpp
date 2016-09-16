@@ -70,6 +70,13 @@ namespace qlib {
       ai(3) = az;
     }*/
 
+    Vector3F cross(const Vector3F &arg) const
+    {
+      return Vector3F(y()*arg.z() - z()*arg.y(),
+                      z()*arg.x() - x()*arg.z(),
+                      x()*arg.y() - y()*arg.x());
+    }
+    
   };
 
   ///////////////////////////////////////////////

@@ -152,9 +152,6 @@ namespace molvis {
     //////////
     // spline methods
 
-    int m_nDetail;
-    int m_nVA;
-
     CubicSpline m_scoeff;
 
     // int m_nPoints;
@@ -185,16 +182,6 @@ namespace molvis {
     gfx::Texture1D *m_pCoefTex;
 
     std::vector<float> m_coefbuf;
-
-    struct AttrElem {
-      qfloat32 rho;
-      qbyte r, g, b, a;
-    };
-
-    typedef gfx::DrawAttrArray<AttrElem> AttrArray;
-
-    /// VBO for glsl rendering
-    AttrArray *m_pAttrAry;
 
     //
     // GLSL methods

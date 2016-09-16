@@ -13,13 +13,16 @@
 //#include "CPKRenderer.hpp"
 #include "CPK2Renderer.hpp"
 #include "SplineRenderer.hpp"
-#include "Spline2Renderer.hpp"
 #include "TubeRenderer.hpp"
 #include "RibbonRenderer.hpp"
 #include "NARenderer.hpp"
 #include "AtomIntrRenderer.hpp"
 #include "Ribbon2Renderer.hpp"
 #include "DisoRenderer.hpp"
+
+#include "Spline2Renderer.hpp"
+#include "Tube2Renderer.hpp"
+
 
 extern void molvis_regClasses();
 extern void molvis_unregClasses();
@@ -39,13 +42,14 @@ bool init()
   // pRF->regist<CPKRenderer>();
   pRF->regist<CPK2Renderer>();
   pRF->regist<SplineRenderer>();
-  pRF->regist<Spline2Renderer>();
   pRF->regist<TubeRenderer>();
   pRF->regist<RibbonRenderer>();
   pRF->regist<NARenderer>();
   pRF->regist<AtomIntrRenderer>();
   pRF->regist<Ribbon2Renderer>();
   pRF->regist<DisoRenderer>();
+  pRF->regist<Spline2Renderer>();
+  pRF->regist<Tube2Renderer>();
 
   MB_DPRINTLN("molvis init: OK");
   return true;

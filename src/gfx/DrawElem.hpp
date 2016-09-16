@@ -288,6 +288,34 @@ namespace gfx {
     virtual bool normal(int ind, const Vector4D &v);
 
     bool getVertex(int ind, Vector4D &v) const;
+
+    inline void vertexfp(int ind, const qfloat32 *pcrd) {
+      MB_ASSERT(ind>=0 && getSize()>ind);
+      m_pData[ind].x = pcrd[0];
+      m_pData[ind].y = pcrd[1];
+      m_pData[ind].z = pcrd[2];
+    }
+
+    inline void vertex3f(int ind, const Vector3F &v) {
+      MB_ASSERT(ind>=0 && getSize()>ind);
+      m_pData[ind].x = v.x();
+      m_pData[ind].y = v.y();
+      m_pData[ind].z = v.z();
+    }
+
+    inline void normalfp(int ind, const qfloat32 *pcrd) {
+      MB_ASSERT(ind>=0 && getSize()>ind);
+      m_pData[ind].nx = pcrd[0];
+      m_pData[ind].ny = pcrd[1];
+      m_pData[ind].nz = pcrd[2];
+    }
+
+    inline void normal3f(int ind, const Vector3F &v) {
+      MB_ASSERT(ind>=0 && getSize()>ind);
+      m_pData[ind].nx = v.x();
+      m_pData[ind].ny = v.y();
+      m_pData[ind].nz = v.z();
+    }
   };
 
   /// Draw element with vertex, normal, color, and index

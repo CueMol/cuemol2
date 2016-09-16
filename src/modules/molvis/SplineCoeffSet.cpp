@@ -321,7 +321,7 @@ bool SplineCoeff::generate()
   for (nres=0; nres<m_nResids; ++nres) {
 
     Vector4D curpos, dv;
-	m_axisInt.interpolate(nres, &curpos, &dv);
+    m_axisInt.interpolate(nres, &curpos, &dv);
     
     // Calc (bi)normal vector
 

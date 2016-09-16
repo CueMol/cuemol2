@@ -193,10 +193,9 @@ void Spline2Renderer::createSegList(DisplayContext *pdc)
 
 Spline2Seg::Spline2Seg()
 {
-  m_nDetail = 10;
-  m_nVA = 0;
+  // m_nDetail = 10;
+  // m_nVA = 0;
 
-  m_pAttrAry = NULL;
   m_pCoefTex = NULL;
 }
 
@@ -204,9 +203,6 @@ Spline2Seg::~Spline2Seg()
 {
   //if (m_pVBO!=NULL)
   // delete m_pVBO;
-
-  if (m_pAttrAry!=NULL)
-    delete m_pAttrAry;
 
   if (m_pCoefTex!=NULL)
     delete m_pCoefTex;
@@ -242,7 +238,7 @@ void Spline2Seg::generate(Spline2Renderer *pthis, DisplayContext *pdc)
     }
   }
 
-  m_nDetail = pthis->getAxialDetail();
+  // m_nDetail = pthis->getAxialDetail();
 
   SelectionPtr pSel = pthis->getSelection();
   int i;
@@ -510,8 +506,6 @@ void Spline2Seg::updateGLSLColor(Spline2Renderer *pthis)
 void Spline2Seg::drawGLSL(Spline2Renderer *pthis, DisplayContext *pdc)
 {
   const double lw = pthis->getLineWidth();
-  //m_pVBO->setLineWidth(lw);
-  //pdc->drawElem(*m_pVBO);
 
   pdc->setLineWidth(lw);
 
@@ -524,7 +518,6 @@ void Spline2Seg::drawGLSL(Spline2Renderer *pthis, DisplayContext *pdc)
   pthis->m_pPO->setUniform("coefTex", 0);
   pthis->m_pPO->setUniform("u_npoints", m_scoeff.getSize());
 
-  // pdc->drawElem(*m_pAttrAry);
   BOOST_FOREACH (Spl2DrawSeg &elem, m_draws) {
     elem.drawGLSL(pdc);
   }

@@ -7,7 +7,6 @@
 // #include "CPKRenderer.qif"
 #include "CPK2Renderer.qif"
 #include "SplineRenderer.qif"
-#include "Spline2Renderer.qif"
 #include "TubeRenderer.qif"
 #include "TubeSection.qif"
 #include "PaintColoring.qif"
@@ -21,6 +20,9 @@
 #include "DistPickDrawObj.qif"
 #include "DisoRenderer.qif"
 
+#include "Spline2Renderer.qif"
+#include "Tube2Renderer.qif"
+
 module molvis
 {
   init molvis::init();
@@ -31,7 +33,6 @@ module molvis
   // CPKRenderer;
   CPK2Renderer;
   SplineRenderer;
-  Spline2Renderer;
   TubeRenderer;
   TubeSection;
   PaintColoring;
@@ -44,5 +45,8 @@ module molvis
   RainbowColoring;
   ScriptColoring;
   DistPickDrawObj;
+
+  Spline2Renderer;
+  Tube2Renderer;
 };
 

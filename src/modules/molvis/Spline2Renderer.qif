@@ -19,7 +19,7 @@ runtime_class Spline2Renderer extends MainChainRenderer
 
   /// Detail level to the axial direction
   property integer axialdetail => redirect(getAxialDetail, setAxialDetail);
-  default axialdetail = 10;
+  default axialdetail = 6;
 
 //  /// spline smoothing value
 //  property real smooth => redirect(getSmooth, setSmooth);
