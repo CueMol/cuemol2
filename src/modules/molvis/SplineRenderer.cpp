@@ -62,6 +62,11 @@ void SplineRenderer::setPivAtomName(const LString &aname)
   super_t::setPivAtomName(aname);
 }
 
+void SplineRenderer::preRender(DisplayContext *pdc)
+{
+  pdc->setLighting(false);
+}
+
 void SplineRenderer::beginRend(DisplayContext *pdl)
 {
   //
@@ -156,6 +161,7 @@ void SplineRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
   ColorPtr pPrevCol;
 
   pdl->startLineStrip();
+  pdl->startLines();
   int i;
   for (i=0; i<=ndelta; i++) {
     double par = fstart + double(i)/double(m_nAxialDetail);
@@ -163,12 +169,26 @@ void SplineRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
     ColorPtr pCol = calcColor(par, pCoeff);
 
     Vector4D f1, vpt;
-    Vector4D bnorm;
+    Vector4D bnorm, vnorm;
     pCoeff->interpNormal(par, &bnorm);
-    pCoeff->interpAxis(par, &f1, &vpt);
+    pCoeff->interpAxis(par, &f1, &vpt, &vnorm);
 
-    Vector4D e12 = (bnorm - f1);
-    Vector4D e11 = ( e12.cross(vpt) ).normalize();
+    double vlen = vpt.length();
+    Vector4D e10 = vpt.divide(vlen);
+    /*
+    double u = vpt.dot(vnorm);
+    Vector4D e11 = ( vnorm.divide(vlen) - vpt.scale(u/(vlen*vlen*vlen)) ).normalize();
+    Vector4D e12 = e11.cross(e10);
+    MB_DPRINTLN("%d: e10.e11 = %f", i, e10.dot(e11) );
+     */
+    Vector4D bnf = bnorm - f1;
+    Vector4D v12 = bnf-e10.scale(e10.dot(bnf));
+    Vector4D e12 = v12.normalize();
+
+    MB_DPRINTLN("%d: |e12| = %f", i, e12.length() );
+    MB_DPRINTLN("%d: e12.e10 = %f", i, e12.dot(e10) );
+
+    Vector4D e11 = e12.cross(e10);
 
     if (!isSmoothColor() && i!=0) {
       pdl->color(pPrevCol);
@@ -176,12 +196,24 @@ void SplineRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
     }
     pdl->color(pCol);
     pdl->vertex(f1);
+    /*if (i%m_nAxialDetail==0) {
+      pdl->vertex(f1+e11.scale(0.5));
+      pdl->vertex(f1);
+      pdl->vertex(f1+e12);
+      pdl->vertex(f1);
+    }*/
+
+/*
+    pdl->color(pCol);
+    pdl->vertex(f1+e10.scale(0.25));
+    pdl->vertex(f1);
     if (i%m_nAxialDetail==0) {
       pdl->vertex(f1+e11.scale(0.5));
       pdl->vertex(f1);
       pdl->vertex(f1+e12);
       pdl->vertex(f1);
     }
+  */
     pPrevCol = pCol;
   }
   pdl->end();

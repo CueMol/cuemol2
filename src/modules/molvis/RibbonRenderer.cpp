@@ -96,6 +96,11 @@ const char *RibbonRenderer::getTypeName() const
 
 /////////////////////////////////////////////////////
 
+void RibbonRenderer::preRender(DisplayContext *pdc)
+{
+  pdc->setLighting(true);
+}
+
 void RibbonRenderer::beginRend(DisplayContext *pdl)
 {
   if (!m_ptsHelix->isValid()) {
