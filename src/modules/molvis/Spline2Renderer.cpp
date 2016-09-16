@@ -268,11 +268,10 @@ void Spline2Seg::generate(Spline2Renderer *pthis, DisplayContext *pdc)
     setupVBO(pthis);
 }
 
-quint32 Spline2Seg::calcColor(Spline2Renderer *pthis, MolCoordPtr pMol, int ind) const
+quint32 Spline2Seg::calcColor(Spline2Renderer *pthis, MolCoordPtr pMol, float par) const
 {
   qlib::uid_t nSceneID = pthis->getSceneID();
 
-  float par = float(ind)/float(m_nDetail);
   int nprev = int(::floor(par));
   int nnext = int(::ceil(par));
   float rho = par - float(nprev);
@@ -411,14 +410,6 @@ void Spline2Seg::updateVBOColor(Spline2Renderer *pthis)
   BOOST_FOREACH (Spl2DrawSeg &elem, m_draws) {
     elem.updateVBOColor(pthis, this);
   }
-/*
-  MolCoordPtr pCMol = pthis->getClientMol();
-
-  int i;
-  for (i=0; i<m_nVA; ++i) {
-    m_pVBO->color(i, calcColor(pthis, pCMol, i));
-  }
-*/
 }
 
 void Spline2Seg::drawVBO(Spline2Renderer *pthis, DisplayContext *pdc)
@@ -535,7 +526,7 @@ void Spline2Seg::drawGLSL(Spline2Renderer *pthis, DisplayContext *pdc)
 
   // pdc->drawElem(*m_pAttrAry);
   BOOST_FOREACH (Spl2DrawSeg &elem, m_draws) {
-    elem.drawGLSL(pthis, pdc);
+    elem.drawGLSL(pdc);
   }
 
   pthis->m_pPO->disable();
@@ -577,11 +568,14 @@ void Spl2DrawSeg::updateVBO(CubicSpline *pCoeff)
 
 void Spl2DrawSeg::updateVBOColor(Spline2Renderer *pthis, Spline2Seg *pseg)
 {
+  int i;
+  float par;
+
   MolCoordPtr pCMol = pthis->getClientMol();
 
-  int i;
   for (i=0; i<m_nVA; ++i) {
-    m_pVBO->color(i, pseg->calcColor(pthis, pCMol, i+m_nStart));
+    par = float(i)/float(m_nDetail) + float(m_nStart);
+    m_pVBO->color(i, pseg->calcColor(pthis, pCMol, par));
   }
 }
 
@@ -632,15 +626,17 @@ void Spl2DrawSeg::setupGLSL(Spline2Renderer *pthis)
 
 void Spl2DrawSeg::updateGLSLColor(Spline2Renderer *pthis, Spline2Seg *pSeg)
 {
-  MolCoordPtr pCMol = pthis->getClientMol();
-
   quint32 dcc;
   int i;
+  float par;
+
+  MolCoordPtr pCMol = pthis->getClientMol();
 
   AttrArray &attra = *m_pAttrAry;
 
   for (i=0; i<m_nVA; ++i) {
-    dcc = pSeg->calcColor(pthis, pCMol, i);
+    par = float(i)/float(m_nDetail) + float(m_nStart);
+    dcc = pSeg->calcColor(pthis, pCMol, par);
 
     attra.at(i).r = (qbyte) gfx::getRCode(dcc);
     attra.at(i).g = (qbyte) gfx::getGCode(dcc);
@@ -650,7 +646,7 @@ void Spl2DrawSeg::updateGLSLColor(Spline2Renderer *pthis, Spline2Seg *pSeg)
 }
 
 /// display() for GLSL version
-void Spl2DrawSeg::drawGLSL(Spline2Renderer *pthis, DisplayContext *pdc)
+void Spl2DrawSeg::drawGLSL(DisplayContext *pdc)
 {
   pdc->drawElem(*m_pAttrAry);
 }

@@ -89,7 +89,7 @@ namespace molvis {
     void updateGLSLColor(Spline2Renderer *pthis, Spline2Seg *pSeg);
 
     /// display() for GLSL version
-    void drawGLSL(Spline2Renderer *pthis, DisplayContext *pdc);
+    void drawGLSL(DisplayContext *pdc);
 
   };
 
@@ -134,7 +134,7 @@ namespace molvis {
       return pAtom->getParentResidue();
     }
 
-    quint32 calcColor(Spline2Renderer *pthis, MolCoordPtr pMol, int ind) const;
+    quint32 calcColor(Spline2Renderer *pthis, MolCoordPtr pMol, float par) const;
 
     //////////
     // drawing methods
@@ -289,10 +289,6 @@ namespace molvis {
 
     virtual void objectChanged(qsys::ObjectEvent &ev);
 
-    //////////////////////////////////////////////////////
-
-    // ColorPtr calcColor(double par, SplineCoeff *pCoeff);
-    // void invalidateSplineCoeffs();
 
     /////////////////
     // work area
