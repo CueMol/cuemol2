@@ -80,11 +80,11 @@ namespace molvis {
     // GLSL implementation
 
     struct AttrElem {
-      qfloat32 rho;
+      qfloat32 rhoi, rhoj;
       qbyte r, g, b, a;
     };
 
-    typedef gfx::DrawAttrArray<AttrElem> AttrArray;
+    typedef gfx::DrawAttrElems<quint32, AttrElem> AttrArray;
 
     /// VBO for glsl rendering
     AttrArray *m_pAttrAry;
@@ -172,6 +172,8 @@ namespace molvis {
     /// Binorm interpolation coeff
     CubicSpline m_bnormInt;
 
+    std::vector<float> m_secttab;
+
   public:
     CubicSpline *getAxisIntpol() { return &m_scoeff; }
     CubicSpline *getBinormIntpol() { return &m_bnormInt; }
@@ -202,8 +204,10 @@ namespace molvis {
     /// float texture of the main axis coeff (common)
     gfx::Texture1D *m_pCoefTex;
 
-    // /// float texture of the binorm interp coeff
-    // gfx::Texture1D *m_pBnormCoefTex;
+    /// float texture of the binorm interp coeff
+    gfx::Texture1D *m_pBinormTex;
+
+    gfx::Texture1D *m_pSectTex;
 
     //
     // GLSL methods
@@ -222,7 +226,7 @@ namespace molvis {
     /// display() for GLSL version
     void drawGLSL(Tube2Renderer *pthis, DisplayContext *pdc);
 
-    void updateCoefTex();
+    void updateCoefTex(Tube2Renderer *pthis);
 
   };
 
@@ -336,6 +340,10 @@ namespace molvis {
     quint32 m_nRhoLoc;
 
     quint32 m_nColLoc;
+
+    static const int COEF_TEX_UNIT = 0;
+    static const int BINORM_TEX_UNIT = 1;
+    static const int SECT_TEX_UNIT = 2;
 
   private:
     /// Initialize shaders

@@ -14,11 +14,12 @@
 
 ////////////////////
 // Uniform variables
-//uniform sampler1D coordTex;
-//uniform sampler2D coordTex;
+
 uniform samplerBuffer coefTex;
 
 uniform samplerBuffer binormTex;
+
+uniform samplerBuffer sectTex;
 
 uniform int u_npoints;
 
@@ -33,22 +34,8 @@ attribute vec4 a_color;
 
 ////////////////////
 
-float ffog(in float ecDistance)
-{
-  return(abs(ecDistance));
-}
-
 void getCoefs(in samplerBuffer tex, in int ind, out vec3 vc0, out vec3 vc1, out vec3 vc2, out vec3 vc3)
 {
-/*
-  ivec2 iv;
-  iv.x = ind%1024;
-  //iv.y = ind;
-  iv.y = ind/1024;
-  //iv.x = 1;
-  return ( texelFetch2D(coordTex, iv, 0).xyz );
-*/
-  
   vc0.x = texelFetch(tex, ind*12+0).r;
   vc0.y = texelFetch(tex, ind*12+1).r;
   vc0.z = texelFetch(tex, ind*12+2).r;
@@ -164,6 +151,11 @@ vec4 flight(in vec4 acolor, in vec3 normal, in vec4 ecPosition)
   return color;
 }
 
+float ffog(in float ecDistance)
+{
+  return(abs(ecDistance));
+}
+
 void main (void)
 {
   //float xx = float(a_ind12.x)/2.0;
@@ -177,19 +169,19 @@ void main (void)
   vec3 e0 = normalize(v0);
 
   vec3 binorm = bpos - cpos;
-  vec v2 = binorm - e0*(dot(e0,binorm));
-  vec e2 = normalize(v2);
-  vec e1 = cross(e2,e0);
+  vec3 v2 = binorm - e0*(dot(e0,binorm));
+  vec3 e2 = normalize(v2);
+  vec3 e1 = cross(e2,e0);
 
   int j = int(a_rho.y);
 
   vec4 stab = getSectTab(j);
 
-  vec3 pos = e1*stab.x + e2*stab.y;
+  vec3 pos = cpos + e1*stab.x + e2*stab.y;
   vec3 norm = e1*stab.z + e2*stab.w;
 
   // Eye-coordinate position of vertex, needed in various calculations
-  vec4 ecPosition = gl_ModelViewMatrix * vec4(pos1, 1.0);
+  vec4 ecPosition = gl_ModelViewMatrix * vec4(pos, 1.0);
   //gEcPosition = ecPosition;
 
   // Do fixed functionality vertex transform
@@ -198,7 +190,7 @@ void main (void)
   //gl_FrontColor=vec4(xx, xx, xx, 1.0);
   //gl_FrontColor=a_color;
 
-  gl_FrontColor = flight(a_color, norm, ecPosition);
+  gl_FrontColor = flight(a_color, gl_NormalMatrix * norm, ecPosition);
 
 
   gl_FogFragCoord = ffog(ecPosition.z);

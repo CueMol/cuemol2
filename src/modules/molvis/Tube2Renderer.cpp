@@ -28,8 +28,8 @@ Tube2Renderer::Tube2Renderer()
   m_nAxialDetail = 6;
   m_dLineWidth = 1.2;
 
-  // m_bUseGLSL = true;
-  m_bUseGLSL = false;
+  m_bUseGLSL = true;
+  //m_bUseGLSL = false;
 
   m_bChkShaderDone = false;
   m_pPO = NULL;
@@ -193,12 +193,18 @@ void Tube2Renderer::createSegList(DisplayContext *pdc)
 Tube2Seg::Tube2Seg()
 {
   m_pCoefTex = NULL;
+  m_pBinormTex = NULL;
+  m_pSectTex = NULL;
 }
 
 Tube2Seg::~Tube2Seg()
 {
   if (m_pCoefTex!=NULL)
     delete m_pCoefTex;
+  if (m_pBinormTex!=NULL)
+    delete m_pBinormTex;
+  if (m_pSectTex!=NULL)
+    delete m_pSectTex;
 }
 
 void Tube2Seg::generate(Tube2Renderer *pthis, DisplayContext *pdc)
@@ -474,7 +480,9 @@ void Tube2Renderer::initShader(DisplayContext *pdc)
   m_pPO->enable();
 
   // setup uniforms
-  m_pPO->setUniform("coefTex", 0);
+  m_pPO->setUniform("coefTex", COEF_TEX_UNIT);
+  m_pPO->setUniform("binormTex", BINORM_TEX_UNIT);
+  m_pPO->setUniform("sectTex", SECT_TEX_UNIT);
 
   // setup attributes
   m_nRhoLoc = m_pPO->getAttribLocation("a_rho");
@@ -487,34 +495,57 @@ void Tube2Seg::setupGLSL(Tube2Renderer *pthis, DisplayContext *pdc)
 {
   if (m_pCoefTex!=NULL)
     delete m_pCoefTex;
-  //m_pCoefTex = pdc->createTexture2D();
   m_pCoefTex = pdc->createTexture1D();
-  //m_pCoefTex->setup(gfx::AbstTexture::FMT_RGB,
-  //gfx::AbstTexture::TYPE_FLOAT32);
   m_pCoefTex->setup(gfx::AbstTexture::FMT_R,
-                     gfx::AbstTexture::TYPE_FLOAT32);
+                    gfx::AbstTexture::TYPE_FLOAT32);
+
+  if (m_pBinormTex!=NULL)
+    delete m_pBinormTex;
+  m_pBinormTex = pdc->createTexture1D();
+  m_pBinormTex->setup(gfx::AbstTexture::FMT_R,
+                    gfx::AbstTexture::TYPE_FLOAT32);
+
+  if (m_pSectTex!=NULL)
+    delete m_pSectTex;
+  m_pSectTex = pdc->createTexture1D();
+  m_pSectTex->setup(gfx::AbstTexture::FMT_R,
+                    gfx::AbstTexture::TYPE_FLOAT32);
 
   BOOST_FOREACH (Tub2DrawSeg &elem, m_draws) {
     elem.setupGLSL(pthis);
   }
 }
 
-void Tube2Seg::updateCoefTex()
+void Tube2Seg::updateCoefTex(Tube2Renderer *pthis)
 {
-  m_pCoefTex->setData(m_scoeff.getPoints() * 12, m_scoeff.getCoefArray());
+  m_pCoefTex->setData(m_nCtlPts * 12, m_scoeff.getCoefArray());
+  m_pBinormTex->setData(m_nCtlPts * 12, m_bnormInt.getCoefArray());
+  
+  TubeSectionPtr pTS = pthis->getTubeSection();
+  int i, nsec = pTS->getSize();
+  m_secttab.resize(nsec*4);
+  for (i=0; i<nsec; ++i) {
+    Vector4D val = pTS->getSectTab(i);
+    m_secttab[i*4+0] = float( val.x() );
+    m_secttab[i*4+1] = float( val.y() );
+    m_secttab[i*4+2] = float( val.z() );
+    m_secttab[i*4+3] = float( val.w() );
+  }
+
+  m_pSectTex->setData(nsec * 4, &m_secttab[0]);
 }
 
 /// update coord texture for GLSL rendering
 void Tube2Seg::updateDynamicGLSL(Tube2Renderer *pthis)
 {
   updateScoeffDynamic(pthis);
-  updateCoefTex();
+  updateCoefTex(pthis);
 }
 
 void Tube2Seg::updateStaticGLSL(Tube2Renderer *pthis)
 {
   updateScoeffStatic(pthis);
-  updateCoefTex();
+  updateCoefTex(pthis);
 }
 
 /// Initialize shaders/texture
@@ -532,14 +563,18 @@ void Tube2Seg::drawGLSL(Tube2Renderer *pthis, DisplayContext *pdc)
 
   pdc->setLineWidth(lw);
 
-  m_pCoefTex->use(0);
+  m_pCoefTex->use(Tube2Renderer::COEF_TEX_UNIT);
+  m_pBinormTex->use(Tube2Renderer::BINORM_TEX_UNIT);
+  m_pSectTex->use(Tube2Renderer::SECT_TEX_UNIT);
 
   pthis->m_pPO->enable();
 
   // Setup uniforms
   pthis->m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
-  pthis->m_pPO->setUniform("coefTex", 0);
   pthis->m_pPO->setUniform("u_npoints", m_scoeff.getSize());
+  pthis->m_pPO->setUniform("coefTex", Tube2Renderer::COEF_TEX_UNIT);
+  pthis->m_pPO->setUniform("binormTex", Tube2Renderer::BINORM_TEX_UNIT);
+  pthis->m_pPO->setUniform("sectTex", Tube2Renderer::SECT_TEX_UNIT);
 
   BOOST_FOREACH (Tub2DrawSeg &elem, m_draws) {
     elem.drawGLSL(pdc);
@@ -672,7 +707,12 @@ void Tub2DrawSeg::setupGLSL(Tube2Renderer *pthis)
 {
   int nsplseg = m_nEnd - m_nStart;
   m_nDetail = pthis->getAxialDetail();
-  m_nVA = m_nDetail * nsplseg + 1;
+  m_nAxPts = m_nDetail * nsplseg + 1;
+  m_nSecDiv = pthis->getTubeSection()->getSize();
+
+  // TO DO: multiple vertex generation for discontinuous color point
+
+  m_nVA = m_nAxPts * m_nSecDiv;
 
   if (m_pAttrAry!=NULL)
     delete m_pAttrAry;
@@ -681,17 +721,49 @@ void Tub2DrawSeg::setupGLSL(Tube2Renderer *pthis)
 
   AttrArray &attra = *m_pAttrAry;
   attra.setAttrSize(2);
-  attra.setAttrInfo(0, pthis->m_nRhoLoc, 1, qlib::type_consts::QTC_FLOAT32,  offsetof(AttrElem, rho));
+  attra.setAttrInfo(0, pthis->m_nRhoLoc, 2, qlib::type_consts::QTC_FLOAT32,  offsetof(AttrElem, rhoi));
   attra.setAttrInfo(1, pthis->m_nColLoc, 4, qlib::type_consts::QTC_UINT8, offsetof(AttrElem, r));
 
   attra.alloc(m_nVA);
-  attra.setDrawMode(gfx::AbstDrawElem::DRAW_LINE_STRIP);
+
+  // generate indices
+  int nfaces = m_nSecDiv * (m_nAxPts-1) * 2;
+  attra.allocInd(nfaces*3);
+  int i, j, ind=0;
+  int ij, ijp, ipj, ipjp;
+  for (i=0; i<m_nAxPts-1; ++i) {
+    int irow = i*m_nSecDiv;
+    for (j=0; j<m_nSecDiv; ++j) {
+      ij = irow + j;
+      ipj = ij+m_nSecDiv;
+      ijp = irow + (j+1)%m_nSecDiv;
+      ipjp = irow + m_nSecDiv + (j+1)%m_nSecDiv;
+      attra.atind(ind) = ij;
+      ++ind;
+      attra.atind(ind) = ijp;
+      ++ind;
+      attra.atind(ind) = ipjp;
+      ++ind;
+      attra.atind(ind) = ipjp;
+      ++ind;
+      attra.atind(ind) = ipj;
+      ++ind;
+      attra.atind(ind) = ij;
+      ++ind;
+    }
+  }
+
+  attra.setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
 
   float par;
-  int i;
-  for (i=0; i<m_nVA; ++i) {
+  ind = 0;
+  for (i=0; i<m_nAxPts; ++i) {
     par = float(i)/float(m_nDetail) + float(m_nStart);
-    attra.at(i).rho = par;
+    for (j=0; j<m_nSecDiv; ++j) {
+      attra.at(ind).rhoi = par;
+      attra.at(ind).rhoj = j;
+      ++ind;
+    }
   }
 
   LOG_DPRINTLN("Tub2DrawSeg> %d elems AttrArray created", m_nVA);
@@ -699,23 +771,28 @@ void Tub2DrawSeg::setupGLSL(Tube2Renderer *pthis)
 
 void Tub2DrawSeg::updateGLSLColor(Tube2Renderer *pthis, Tube2Seg *pSeg)
 {
-  quint32 dcc;
-  int i;
-  float par;
 
   MolCoordPtr pCMol = pthis->getClientMol();
 
   AttrArray &attra = *m_pAttrAry;
 
-  for (i=0; i<m_nVA; ++i) {
+  int i, j, ind;
+  float par;
+  quint32 dcc;
+
+  ind = 0;
+  for (i=0; i<m_nAxPts; ++i) {
     par = float(i)/float(m_nDetail) + float(m_nStart);
     dcc = pSeg->calcColor(pthis, pCMol, par);
-
-    attra.at(i).r = (qbyte) gfx::getRCode(dcc);
-    attra.at(i).g = (qbyte) gfx::getGCode(dcc);
-    attra.at(i).b = (qbyte) gfx::getBCode(dcc);
-    attra.at(i).a = (qbyte) gfx::getACode(dcc);
+    for (j=0; j<m_nSecDiv; ++j) {
+      attra.at(ind).r = (qbyte) gfx::getRCode(dcc);
+      attra.at(ind).g = (qbyte) gfx::getGCode(dcc);
+      attra.at(ind).b = (qbyte) gfx::getBCode(dcc);
+      attra.at(ind).a = (qbyte) gfx::getACode(dcc);
+      ++ind;
+    }
   }
+
 }
 
 /// display() for GLSL version

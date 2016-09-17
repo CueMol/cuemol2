@@ -492,6 +492,8 @@
     <glslshader Include="..\..\src\modules\molvis\sphere_vertex.glsl" />
     <glslshader Include="..\..\src\modules\molvis\spline2_frag.glsl" />
     <glslshader Include="..\..\src\modules\molvis\spline2_vert.glsl" />
+    <glslshader Include="..\..\src\modules\molvis\tube2_frag.glsl" />
+    <glslshader Include="..\..\src\modules\molvis\tube2_vert.glsl" />
     <glslshader Include="..\..\src\sysdep\default_frag.glsl" />
     <glslshader Include="..\..\src\sysdep\default_vert.glsl" />
     <glslshader Include="..\..\src\sysdep\edge_frag.glsl" />

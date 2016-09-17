@@ -29,7 +29,7 @@ void SceneManager::finiClass(qlib::LClass *pcls)
 ///////////////
 
 SceneManager::SceneManager()
-     :  m_busytimes(NAVERSIZE), m_nBusyTimeIndex(0)
+     :  m_busytimes(NAVERSIZE), m_nBusyTimeIndex(0), m_bPerfMeas(false)
 {
   MB_DPRINTLN("SceneManager(%p) created", this);
 
