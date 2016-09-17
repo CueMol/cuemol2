@@ -1,0 +1,34 @@
+// -*-Mode: C++;-*-
+//
+// Interface definition for Tube2Renderer
+//
+
+#ifndef TUBE2_RENDERER_QIF
+#define TUBE2_RENDERER_QIF
+
+#include <modules/molstr/MainChainRenderer.qif>
+#include "TubeSection.qif"
+
+runtime_class Tube2Renderer extends MainChainRenderer
+{
+  client_hdr "Tube2Renderer.hpp";
+  client_name molvis::Tube2Renderer;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  property object<TubeSection$> section => redirect(getTubeSection, xxx) (readonly);
+
+  /// Detail level to the axial direction
+  property integer axialdetail => redirect(getAxialDetail, setAxialDetail);
+  default axialdetail = 10;
+
+  /// spline line width
+  property real line_width => redirect(getLineWidth, setLineWidth);
+  default line_width = 1.2;
+
+};
+
+#endif // TUBE2_RENDERER_QIF
+
