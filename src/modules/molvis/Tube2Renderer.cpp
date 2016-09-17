@@ -203,6 +203,7 @@ Tube2Seg::~Tube2Seg()
 
 void Tube2Seg::generate(Tube2Renderer *pthis, DisplayContext *pdc)
 {
+  // convert aidtmp (deque) to liner aids (vector)
   quint32 nsz = m_aidtmp.size();
   if (nsz<2) {
     m_aidtmp.clear();
@@ -214,17 +215,18 @@ void Tube2Seg::generate(Tube2Renderer *pthis, DisplayContext *pdc)
   m_aidtmp.clear();
 
   m_scoeff.setSize(nsz);
+  m_nCtlPts = nsz;
   
   // ADDED: initialize binorm vec interpolator
-  m_bnormInt.setSize(nsz);
+  m_bnormInt.setSize(m_nCtlPts);
 
   MolCoordPtr pCMol = pthis->getClientMol();
 
   if (pthis->isUseAnim()) {
     AnimMol *pAMol = static_cast<AnimMol *>(pCMol.get());
-    m_inds.resize(nsz);
+    m_inds.resize(m_nCtlPts);
     quint32 i;
-    for (i=0; i<nsz; ++i) {
+    for (i=0; i<m_nCtlPts; ++i) {
       m_inds[i] = pAMol->getCrdArrayInd(m_aids[i]) * 3;
     }
   }
@@ -233,7 +235,7 @@ void Tube2Seg::generate(Tube2Renderer *pthis, DisplayContext *pdc)
   int i;
   qlib::RangeSet<int> resrng;
   
-  for (i=0; i<nsz; ++i) {
+  for (i=0; i<m_nCtlPts; ++i) {
     MolResiduePtr pRes = getResid(pCMol, i);
     if (pSel->isSelectedResid(pRes)) {
       resrng.append(i, i+1);
@@ -310,11 +312,13 @@ void Tube2Seg::updateScoeffDynamic(Tube2Renderer *pthis)
   MolAtomPtr pAtom;
   Vector4D pos4d;
   int i;
-  const int nsz = m_scoeff.getSize();
-  for (i=0; i<nsz; ++i) {
+
+  for (i=0; i<m_nCtlPts; ++i) {
     m_scoeff.setPoint(i, Vector3F(&crd[m_inds[i]]));
   }
   m_scoeff.generate();
+
+  updateBinormIntpol(pCMol);
 }
 
 void Tube2Seg::updateScoeffStatic(Tube2Renderer *pthis)
@@ -323,8 +327,8 @@ void Tube2Seg::updateScoeffStatic(Tube2Renderer *pthis)
   MolAtomPtr pAtom;
   Vector4D pos4d;
   int i;
-  const int nsz = m_scoeff.getSize();
-  for (i=0; i<nsz; ++i) {
+
+  for (i=0; i<m_nCtlPts; ++i) {
     pAtom = pCMol->getAtom(m_aids[i]);
     pos4d = pAtom->getPos();
     m_scoeff.setPoint(i, Vector3F(float(pos4d.x()), float(pos4d.y()), float(pos4d.z())));
@@ -332,13 +336,20 @@ void Tube2Seg::updateScoeffStatic(Tube2Renderer *pthis)
 
   m_scoeff.generate();
 
-  // calculate binomal vector interpolator
-  for (i=0; i<nsz; ++i) {
+  updateBinormIntpol(pCMol);
+}
 
-    Vector3F curpos, dv;
+void Tube2Seg::updateBinormIntpol(MolCoordPtr pCMol)
+{
+  int i;
+  Vector3F curpos, dv, binorm;
+
+  // calculate binomal vector interpolator
+  for (i=0; i<m_nCtlPts; ++i) {
+
     m_scoeff.interpolate(i, &curpos, &dv);
 
-    Vector3F binorm = calcBinormVec(pCMol, i);
+    binorm = calcBinormVec(pCMol, i);
 
     m_bnormInt.setPoint(i, curpos + binorm);
   }
@@ -451,7 +462,7 @@ void Tube2Renderer::initShader(DisplayContext *pdc)
   }
 
   if (m_pPO==NULL)
-    m_pPO = ssh.createProgObj("gpu_spline2",
+    m_pPO = ssh.createProgObj("gpu_tube2",
                               "%%CONFDIR%%/data/shaders/tube2_vert.glsl",
                               "%%CONFDIR%%/data/shaders/tube2_frag.glsl");
   
@@ -482,9 +493,6 @@ void Tube2Seg::setupGLSL(Tube2Renderer *pthis, DisplayContext *pdc)
   //gfx::AbstTexture::TYPE_FLOAT32);
   m_pCoefTex->setup(gfx::AbstTexture::FMT_R,
                      gfx::AbstTexture::TYPE_FLOAT32);
-
-  // const int nsz = m_scoeff.getSize();
-  // m_coefbuf.resize(nsz * 12);
 
   BOOST_FOREACH (Tub2DrawSeg &elem, m_draws) {
     elem.setupGLSL(pthis);
@@ -558,7 +566,7 @@ void Tub2DrawSeg::setupVBO(Tube2Renderer *pthis)
   if (m_pVBO!=NULL)
     delete m_pVBO;
     
-  m_pVBO = MB_NEW gfx::DrawElemVNCI();
+  m_pVBO = MB_NEW gfx::DrawElemVNCI32();
   m_pVBO->alloc(m_nVA);
 
   // generate indices
@@ -652,6 +660,9 @@ Tub2DrawSeg::~Tub2DrawSeg()
 {
   if (m_pVBO!=NULL)
     delete m_pVBO;
+
+  if (m_pAttrAry!=NULL)
+    delete m_pAttrAry;
 }
 
 //////////

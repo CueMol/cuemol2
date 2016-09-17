@@ -1157,23 +1157,12 @@ void OglDisplayContext::drawElem(const AbstDrawElem &ade)
   else {
     // Reuse buffer
 
+    // bind array buffer
     OglVBORep *pRep = (OglVBORep *) de.getVBO();
     nvbo = pRep->m_nBufID;
     glBindBuffer(GL_ARRAY_BUFFER, nvbo);
 
-    if (de.isUpdated()) {
-      // VBO updated --> call glBufferSubData
-      if (ntype==DrawElem::VA_VC) {
-        const qbyte *pdata = (const qbyte *) static_cast<const DrawElemVC&>(de).getData();
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(DrawElemVC::Elem)*nelems, pdata);
-      }
-      else if (ntype==DrawElem::VA_V) {
-        const qbyte *pdata = (const qbyte *) static_cast<const DrawElemV&>(de).getData();
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(DrawElemV::Elem)*nelems, pdata);
-      }
-      de.setUpdated(false);
-    }
-    
+    // bind element array buffer (if required)
     if (ntype==DrawElem::VA_VNCI) {
       const DrawElemVNCI &devnci = static_cast<const DrawElemVNCI&>(de);
       OglVBORep *pRep = (OglVBORep *) devnci.getIndexVBO();
@@ -1188,6 +1177,34 @@ void OglDisplayContext::drawElem(const AbstDrawElem &ade)
       ninds = devnci.getIndexSize();
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, nvbo_ind);
     }
+
+    if (de.isUpdated()) {
+      // VBO updated --> call glBufferSubData
+      if (ntype==DrawElem::VA_VC) {
+        const qbyte *pdata = (const qbyte *) static_cast<const DrawElemVC&>(de).getData();
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(DrawElemVC::Elem)*nelems, pdata);
+      }
+      else if (ntype==DrawElem::VA_V) {
+        const qbyte *pdata = (const qbyte *) static_cast<const DrawElemV&>(de).getData();
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(DrawElemV::Elem)*nelems, pdata);
+      }
+      else if (ntype==DrawElem::VA_VNCI) {
+        const DrawElemVNCI &devnci = static_cast<const DrawElemVNCI&>(de);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(DrawElemVNCI::Elem)*nelems, devnci.getData());
+        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0,
+                        sizeof(DrawElemVNCI::index_t) * devnci.getIndexSize(),
+                        devnci.getIndexData());
+      }
+      else if (ntype==DrawElem::VA_VNCI32) {
+        const DrawElemVNCI32 &devnci = static_cast<const DrawElemVNCI32&>(de);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(DrawElemVNCI32::Elem)*nelems, devnci.getData());
+        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0,
+                        sizeof(DrawElemVNCI32::index_t) * devnci.getIndexSize(),
+                        devnci.getIndexData());
+      }
+      de.setUpdated(false);
+    }
+    
   }
   //MB_ASSERT(nvbo!=0);
 

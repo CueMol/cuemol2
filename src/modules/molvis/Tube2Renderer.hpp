@@ -66,7 +66,7 @@ namespace molvis {
     // VBO implementation
 
     /// cached vertex array/VBO
-    gfx::DrawElemVNCI *m_pVBO;
+    gfx::DrawElemVNCI32 *m_pVBO;
 
     void setupVBO(Tube2Renderer *pthis);
 
@@ -131,7 +131,7 @@ namespace molvis {
 
     void generate(Tube2Renderer *pthis, DisplayContext *pdc);
 
-    quint32 getSize() const { return m_scoeff.getSize(); }
+    quint32 getSize() const { return m_nCtlPts; }
 
     MolAtomPtr getAtom(MolCoordPtr pMol, quint32 ind) const {
       quint32 aid = m_aids[ind];
@@ -163,6 +163,9 @@ namespace molvis {
     //////////
     // spline methods
 
+    /// Number of the Interpolation control points
+    int m_nCtlPts;
+
     /// Main axis interpolation coeff (common)
     CubicSpline m_scoeff;
 
@@ -175,6 +178,7 @@ namespace molvis {
 
     void updateScoeffDynamic(Tube2Renderer *pthis);
     void updateScoeffStatic(Tube2Renderer *pthis);
+    void updateBinormIntpol(MolCoordPtr pCMol);
 
     //////////
     // VBO implementation

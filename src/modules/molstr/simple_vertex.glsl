@@ -4,7 +4,7 @@
 //
 
 //#version 120
-#version 130
+#version 140
 #extension GL_ARB_compatibility : enable
 
 #extension GL_EXT_gpu_shader4 : enable 
