@@ -146,6 +146,8 @@ namespace molvis {
     quint32 calcColor(Tube2Renderer *pthis, MolCoordPtr pMol, float par) const;
 
     Vector3F calcBinormVec(MolCoordPtr pMol, int nres);
+    bool checkBinormFlip(const Vector3F &dv, const Vector3F &binorm,
+                         const Vector3F &prev_dv, const Vector3F &prev_bn);
 
     //////////
     // drawing methods
@@ -172,6 +174,8 @@ namespace molvis {
     /// Binorm interpolation coeff
     CubicSpline m_bnormInt;
 
+    std::vector<Vector3F> m_linBnInt;
+
     std::vector<float> m_secttab;
 
   public:
@@ -196,6 +200,8 @@ namespace molvis {
     void drawVBO(Tube2Renderer *pthis, DisplayContext *pdc);
 
     void updateVBO(Tube2Renderer *pthis);
+
+    Vector3F intpolLinBn(float par);
 
   private:
     /////////////////////

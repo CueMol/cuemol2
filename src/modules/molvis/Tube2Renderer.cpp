@@ -21,6 +21,7 @@
 
 using namespace molvis;
 using namespace molstr;
+using qlib::Matrix3D;
 
 Tube2Renderer::Tube2Renderer()
      : super_t(), m_pts(MB_NEW TubeSection())
@@ -224,7 +225,8 @@ void Tube2Seg::generate(Tube2Renderer *pthis, DisplayContext *pdc)
   m_nCtlPts = nsz;
   
   // ADDED: initialize binorm vec interpolator
-  m_bnormInt.setSize(m_nCtlPts);
+  // m_bnormInt.setSize(m_nCtlPts);
+  m_linBnInt.resize(m_nCtlPts);
 
   MolCoordPtr pCMol = pthis->getClientMol();
 
@@ -349,18 +351,29 @@ void Tube2Seg::updateBinormIntpol(MolCoordPtr pCMol)
 {
   int i;
   Vector3F curpos, dv, binorm;
+  Vector3F prev_dv, prev_bn;
 
   // calculate binomal vector interpolator
   for (i=0; i<m_nCtlPts; ++i) {
 
     m_scoeff.interpolate(i, &curpos, &dv);
+    dv = dv.normalize();
 
     binorm = calcBinormVec(pCMol, i);
 
-    m_bnormInt.setPoint(i, curpos + binorm);
+    bool bflip = checkBinormFlip(dv, binorm, prev_dv, prev_bn);
+
+    if (bflip) {
+      binorm = -binorm;
+    }
+      
+    // m_bnormInt.setPoint(i, curpos + binorm);
+    m_linBnInt[i] = binorm;
+    prev_dv = dv;
+    prev_bn = binorm;
   }
 
-  m_bnormInt.generate();
+  // m_bnormInt.generate();
 }
 
 Vector3F Tube2Seg::calcBinormVec(MolCoordPtr pMol, int nres)
@@ -408,6 +421,53 @@ Vector3F Tube2Seg::calcBinormVec(MolCoordPtr pMol, int nres)
   return rval;
 }
 
+bool Tube2Seg::checkBinormFlip(const Vector3F &ndv, const Vector3F &binorm, const Vector3F &npdv, const Vector3F &prev_bn)
+{
+  // preserve consistency of binormal vector directions in beta strands
+  if (prev_bn.isZero() || npdv.isZero())
+    return false;
+
+  // Vector3F ndv = dv.normalize();
+  // Vector3F npdv = prev_dv.normalize();
+  Vector3F rot_prev_bn = prev_bn;
+
+  Vector3F ax = ndv.cross(npdv);
+  const float axlen = ax.length();
+  if (axlen>F_EPS4) {
+    // align the previous binorm vectors based on the dv (tangential vector)
+    ax = ax.divide(axlen);
+    //MB_DPRINTLN("ax=(%f,%f,%f)", ax.x(), ax.y(), ax.z());
+    //double ph = prev_dv.angle(dv);
+    //double cosph = cos(ph);
+    //double sinph = sin(ph);
+    const float cosph = npdv.dot(ndv);
+    const float sinph = sqrt(1.0f-cosph*cosph);
+    //MB_DPRINTLN("ph=%f", qlib::toDegree(ph));
+    //MB_DPRINTLN("cosph = %f, %f", cosph, cosph2);
+    //MB_DPRINTLN("sinph = %f, %f", sinph, sinph2);
+    Vector4D dax(ax.x(), ax.y(), ax.z());
+    Matrix3D rotmat = Matrix3D::makeRotMat(dax, double(cosph), double(sinph));
+    //MB_DPRINTLN("dv=(%f,%f,%f)", dv.x(), dv.y(), dv.z());
+    //MB_DPRINTLN("prev_dv=(%f,%f,%f)", prev_dv.x(), prev_dv.y(), prev_dv.z());
+    //Vector4D dum = rotmat.mulvec(prev_dv);
+    //Vector4D dum2 = rotmat.mulvec(dv);
+    //MB_DPRINTLN("mat.prev_dv=(%f,%f,%f)", dum.x(), dum.y(), dum.z());
+    //MB_DPRINTLN("mat.dv=(%f,%f,%f)", dum2.x(), dum2.y(), dum2.z());
+
+    // XXX
+    Vector4D x(prev_bn.x(), prev_bn.y(), prev_bn.z());
+    Vector4D y = rotmat.mulvec(x);
+    rot_prev_bn = Vector3F(float(y.x()), float(y.y()), float(y.z()));
+  }
+
+  const float costh = binorm.dot(prev_bn);
+  if (costh<0) {
+    return true;
+  }
+
+  return false;
+}
+
 //////////////////
 // VBO implementation
 
@@ -424,6 +484,20 @@ void Tube2Seg::updateVBO(Tube2Renderer *pthis)
   BOOST_FOREACH (Tub2DrawSeg &elem, m_draws) {
     elem.updateVBO(pthis, this);
   }
+}
+
+Vector3F Tube2Seg::intpolLinBn(float par)
+{
+  // check parameter value f
+  int ncoeff = (int)::floor(par);
+  ncoeff = qlib::clamp<int>(ncoeff, 0, m_nCtlPts-2);
+  
+  float f = par - float(ncoeff);
+  
+  const Vector3F &cp0 = m_linBnInt[ncoeff];
+  const Vector3F &cp1 = m_linBnInt[ncoeff+1];
+
+  return cp0.scale(1.0f - f) + cp1.scale(f);
 }
 
 void Tube2Seg::updateDynamicVBO(Tube2Renderer *pthis)
@@ -519,7 +593,8 @@ void Tube2Seg::setupGLSL(Tube2Renderer *pthis, DisplayContext *pdc)
 void Tube2Seg::updateCoefTex(Tube2Renderer *pthis)
 {
   m_pCoefTex->setData(m_nCtlPts * 12, m_scoeff.getCoefArray());
-  m_pBinormTex->setData(m_nCtlPts * 12, m_bnormInt.getCoefArray());
+  // m_pBinormTex->setData(m_nCtlPts * 12, m_bnormInt.getCoefArray());
+  m_pBinormTex->setData(m_nCtlPts * 3, &m_linBnInt[0]);
   
   TubeSectionPtr pTS = pthis->getTubeSection();
   int i, nsec = pTS->getSize();
@@ -632,7 +707,7 @@ void Tub2DrawSeg::updateVBO(Tube2Renderer *pthis, Tube2Seg *pseg)
   TubeSectionPtr pTS = pthis->getTubeSection();
 
   CubicSpline *pAxInt = pseg->getAxisIntpol();
-  CubicSpline *pBnInt = pseg->getBinormIntpol();
+  // CubicSpline *pBnInt = pseg->getBinormIntpol();
 
   int i, j;
   float par;
@@ -643,12 +718,13 @@ void Tub2DrawSeg::updateVBO(Tube2Renderer *pthis, Tube2Seg *pseg)
   for (i=0; i<m_nAxPts; ++i) {
     par = float(i)/float(m_nDetail) + float(m_nStart);
     pAxInt->interpolate(par, &pos, &v0);
-    pBnInt->interpolate(par, &bpos);
+    // pBnInt->interpolate(par, &bpos);
+    // binorm = bpos - pos;
+    binorm = pseg->intpolLinBn(par);
     
     float v0len = v0.length();
     e0 = v0.divide(v0len);
 
-    binorm = bpos - pos;
     v2 = binorm - e0.scale(e0.dot(binorm));
     e2 = v2.normalize();
     e1 = e2.cross(e0);

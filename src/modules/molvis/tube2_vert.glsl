@@ -55,6 +55,15 @@ void getCoefs(in samplerBuffer tex, in int ind, out vec3 vc0, out vec3 vc1, out 
   // return texelFetch1D(coordTex, ind, 0).xyz;
 }
 
+vec3 getCoef(in samplerBuffer tex, in int ind)
+{
+  vec3 rval;
+  rval.x = texelFetch(tex, ind*3+0).r;
+  rval.y = texelFetch(tex, ind*3+1).r;
+  rval.z = texelFetch(tex, ind*3+2).r;
+  return rval;
+}
+
 vec3 interpolate(in samplerBuffer tex, in float rho)
 {
   vec3 coef0, coef1, coef2, coef3;
@@ -92,6 +101,23 @@ void interpolate2(in samplerBuffer tex, in float rho,
 
   drval = coef3*(3.0*f) + coef2*2.0;
   drval = drval*f + coef1;
+}
+
+vec3 calcBinorm(in float rho)
+{
+  vec3 coef0, coef1, coef2, coef3;
+
+  int ncoeff = int(floor(rho));
+  ncoeff = clamp(ncoeff, 0, u_npoints-2);
+
+  float f = rho - float(ncoeff);
+
+  vec3 cp0 = getCoef(binormTex, ncoeff);
+  vec3 cp1 = getCoef(binormTex, ncoeff+1);
+
+  vec3 rval = cp0*(1.0-f) + cp1*f;
+
+  return rval;
 }
 
 vec4 getSectTab(in int ind)
@@ -161,14 +187,16 @@ void main (void)
   //float xx = float(a_ind12.x)/2.0;
 
   float par = a_rho.x;
+  vec3 cpos, bpos, binorm, v0;
 
-  vec3 cpos, bpos, v0;
   interpolate2(coefTex, par, cpos, v0);
-  bpos = interpolate(binormTex, par);
+
+  //bpos = interpolate(binormTex, par);
+  //vec3 binorm = bpos - cpos;
+  binorm = calcBinorm(par);
   
   vec3 e0 = normalize(v0);
 
-  vec3 binorm = bpos - cpos;
   vec3 v2 = binorm - e0*(dot(e0,binorm));
   vec3 e2 = normalize(v2);
   vec3 e1 = cross(e2,e0);

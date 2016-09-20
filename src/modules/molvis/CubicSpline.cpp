@@ -233,7 +233,7 @@ void CubicSpline::interpolate(double par, Vector3F *vec,
   const Vector3F coeff2 = getCoeff(2, ncoeff);
   const Vector3F coeff3 = getCoeff(3, ncoeff);
 
-  double f = par - (double)ncoeff;
+  float f = par - float(ncoeff);
 
   Vector3F tmp;
   tmp = coeff3.scale(f) + coeff2;
