@@ -22,7 +22,8 @@ Qm2Main.prototype.makeFilter = function(fp, nCatID)
     
     // skip QDF format in the obj-reader mode (cat==0)
     if (nCatID==0 && elem.name.indexOf("qdf")==0
-	&& elem.name!="qdfmol") {
+	) {
+	//&& elem.name!="qdfmol") {
       dd("Skip the individual QDF format ("+elem.name+")");
       continue;
     }
@@ -265,6 +266,22 @@ Qm2Main.prototype.onSaveAsObj = function(targetID)
     }
   }
   
+  /////////////////////
+  // setup default file name/extension
+
+  const histry_name = "cuemol2.ui.histories.save_writer_name";
+  const pref = require("preferences-service");
+
+  let prev_writer_name = "pdb";
+  if (pref.has(histry_name)) {
+    prev_writer_name = pref.get(histry_name);
+  }
+  
+  names.forEach( function (elem, index) {
+    if (elem.name==prev_writer_name)
+      fp.filterIndex = index;
+  } );
+
   let res=fp.show();
   if (res==nsIFilePicker.returnCancel)
     return;
@@ -277,15 +294,10 @@ Qm2Main.prototype.onSaveAsObj = function(targetID)
   writer.setPath(path);
   dd("Created writer: "+writer._wrapped.getClassName());
 
-  // let scene = this.mMainWnd.currentSceneW;
-  // if (!scene) {
-  // util.alert(window, "FileSaveAs fatal error: get current scene Failed.");
-  // return;
-  // }
-
   // // EDIT TXN START //
   // scene.startUndoTxn("Save As (conv to link)");
 
+  let bOK = false;
   try {
     // writer.base64 = true;
     // writer.compress = "gzip";
@@ -293,16 +305,23 @@ Qm2Main.prototype.onSaveAsObj = function(targetID)
     writer.attach(targetObj);
     writer.write();
     writer.detach();
+    bOK = true;
   }
   catch (e) {
     dd("File Save Error: "+e);
     debug.exception(e);
-    
-    util.alert(window, "Failed to save file: "+path);
   }
 
+  if (!bOK) {
+    util.alert(window, "Failed to save file: "+path);
+    return;
+  }
+    
   // scene.commitUndoTxn();
   // // EDIT TXN END //
+
+  // save filter index
+  pref.set(histry_name, writer_name);
 
   writer = null;
   targetObj = null;
@@ -311,6 +330,7 @@ Qm2Main.prototype.onSaveAsObj = function(targetID)
   let msg = "File: ["+path+"] is saved.";
   gQm2Main.mStatusLabel.label = msg;
   cuemol.putLogMsg(msg);
+
 };
 
 Qm2Main.prototype.onFileSaveAs = function()
