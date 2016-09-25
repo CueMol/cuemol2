@@ -71,6 +71,14 @@ namespace gfx {
     bool isUpdated() const { return m_bUpdate; }
     void setUpdated(bool b) const { m_bUpdate = b; }
     
+  private:
+    // VBO instantiation support
+    int m_nInst;
+
+  public:
+    int getInstCount() const { return m_nInst; }
+    void setInstCount(int n) { m_nInst = n; }
+    
     //////////////////////////////////////////////////
     // Type ID definitions
 

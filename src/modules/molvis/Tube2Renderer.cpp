@@ -19,6 +19,8 @@
 
 #include <sysdep/OglProgramObject.hpp>
 
+#define USE_GL_VBO_INST 1
+
 using namespace molvis;
 using namespace molstr;
 using qlib::Matrix3D;
@@ -783,7 +785,11 @@ void Tub2DrawSeg::setupGLSL(Tube2Renderer *pthis)
 {
   int nsplseg = m_nEnd - m_nStart;
   m_nDetail = pthis->getAxialDetail();
+#ifdef USE_GL_VBO_INST
+  m_nAxPts = m_nDetail + 1;
+#else
   m_nAxPts = m_nDetail * nsplseg + 1;
+#endif
   m_nSecDiv = pthis->getTubeSection()->getSize();
 
   // TO DO: multiple vertex generation for discontinuous color point
@@ -842,6 +848,10 @@ void Tub2DrawSeg::setupGLSL(Tube2Renderer *pthis)
     }
   }
 
+#ifdef USE_GL_VBO_INST
+  attra.setInstCount(nsplseg);
+#endif
+  
   LOG_DPRINTLN("Tub2DrawSeg> %d elems AttrArray created", m_nVA);
 }
 

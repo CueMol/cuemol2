@@ -186,7 +186,9 @@ void main (void)
 {
   //float xx = float(a_ind12.x)/2.0;
 
-  float par = a_rho.x;
+  //float par = a_rho.x;
+  float par = a_rho.x + gl_InstanceID;
+
   vec3 cpos, bpos, binorm, v0;
 
   interpolate2(coefTex, par, cpos, v0);

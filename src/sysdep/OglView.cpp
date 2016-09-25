@@ -179,12 +179,12 @@ void OglView::setUpProjMat(int cx, int cy)
   double vw = zoom/2.0f;
   double fasp = (double)cx/(double)cy;
   
-  MB_DPRINTLN("OglView.setUpProjMat> CX=%d, CY=%d, Vw=%f, Fasp=%f", cx, cy, vw, fasp);
+  // MB_DPRINTLN("OglView.setUpProjMat> CX=%d, CY=%d, Vw=%f, Fasp=%f", cx, cy, vw, fasp);
 
   int bcx = convToBackingX(cx);
   int bcy = convToBackingY(cy);
   
-  MB_DPRINTLN("OglView.setUpProjMat> BCX=%d, BCY=%d", bcx, bcy);
+  // MB_DPRINTLN("OglView.setUpProjMat> BCX=%d, BCY=%d", bcx, bcy);
 
   if (getStereoMode()==Camera::CSM_PARA ||
       getStereoMode()==Camera::CSM_CROSS) {
@@ -654,7 +654,7 @@ LString OglView::hitTest(int ax, int ay)
   if (nrend==0) // no hit
     return LString();
     
-  MB_DPRINTLN("OglView.hitTest> hit nrend=%d", nrend);
+  // MB_DPRINTLN("OglView.hitTest> hit nrend=%d", nrend);
   qlib::uid_t rend_id;
   // qlib::Array<qlib::uid_t> rend_ids(nrend);
   m_hitdata.getRendArray(&rend_id, 1);
@@ -675,7 +675,7 @@ LString OglView::hitTest(int ax, int ay)
     return LString();
   }
 
-  MB_DPRINTLN("Hittest OK: sc=%d, rend=%d, obj=%d", sceneid, rend_id, objid);
+  // MB_DPRINTLN("Hittest OK: sc=%d, rend=%d, obj=%d", sceneid, rend_id, objid);
 
   {
     LString rval;

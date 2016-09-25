@@ -26,6 +26,8 @@
 #  error no glu.h
 #endif
 
+#define USE_GL_VBO_INST 1
+
 #include "OglDisplayContext.hpp"
 #include "OglDisplayList.hpp"
 #include "OglProgramObject.hpp"
@@ -1066,7 +1068,7 @@ void OglDisplayContext::drawElem(const AbstDrawElem &ade)
     if (ntype==AbstDrawElem::VA_ATTRS||
         ntype==AbstDrawElem::VA_ATTR_INDS) {
       // ERROR: not supported
-      MB_DPRINTLN("Ogl.drawElem> Fatal Error: no VBO --> drawing attr array not supported!!");
+      MB_DPRINTLN("Ogl.drawElem> Fatal Error: no VBO support --> cannot draw attr array!!");
     }
     else {
       // fall back to the vertex array impl
@@ -1464,20 +1466,41 @@ void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
 
   }
 
+#ifdef USE_GL_VBO_INST
+  int ninst = ada.getInstCount();
+#endif
+  
   GLenum mode = convDrawMode(ada.getDrawMode());
   size_t indsz = ada.getIndElemSize();
   if (itype==AbstDrawElem::VA_ATTR_INDS) {
-    if (indsz==2)
-      glDrawElements(mode, ada.getIndSize(), GL_UNSIGNED_SHORT, 0);
-    else if (indsz==4)
+    if (indsz==2) {
+#ifdef USE_GL_VBO_INST
+      if (ninst>0)
+        glDrawElementsInstanced(mode, ada.getIndSize(), GL_UNSIGNED_SHORT, 0, ninst);
+      else
+#endif
+        glDrawElements(mode, ada.getIndSize(), GL_UNSIGNED_SHORT, 0);
+    }
+    else if (indsz==4) {
+#ifdef USE_GL_VBO_INST
+      if (ninst>0)
+        glDrawElementsInstanced(mode, ada.getIndSize(), GL_UNSIGNED_INT, 0, ninst);
+      else
+#endif
       glDrawElements(mode, ada.getIndSize(), GL_UNSIGNED_INT, 0);
+    }
     else {
       LOG_DPRINTLN("unsupported index element size %d", indsz);
       MB_ASSERT(false);
     }
   }
   else {
-    glDrawArrays(mode, 0, ada.getSize());
+#ifdef USE_GL_VBO_INST
+    if (ninst>0)
+      glDrawArraysInstanced(mode, 0, ada.getSize(), ninst);
+    else
+#endif
+      glDrawArrays(mode, 0, ada.getSize());
   }
   
 
