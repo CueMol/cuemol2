@@ -28,9 +28,7 @@ namespace gfx {
   class DrawElem;
   class AbstractColor;
   class PixelBuffer;
-  class Texture1D;
-  class Texture2D;
-  class Texture3D;
+  class Texture;
 
   class GFX_API DisplayContext : public qlib::LObject
   {
@@ -234,9 +232,8 @@ namespace gfx {
     virtual int getDetail() const;
 
     // texture (default: not supported)
-    virtual Texture1D *createTexture1D() { return NULL; }
-    virtual Texture2D *createTexture2D() { return NULL; }
-    virtual Texture3D *createTexture3D() { return NULL; }
+    virtual Texture *createTexture() { return NULL; }
+
     //virtual void useTexture(Texture *) {}
     //virtual void unuseTexture() {}
     //virtual void texCoord(double u, double v) {}

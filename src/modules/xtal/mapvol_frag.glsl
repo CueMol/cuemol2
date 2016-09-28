@@ -4,7 +4,7 @@
 //    fragment shader for volume rendering
 //
 
-#version 120
+//#version 120
 #extension GL_EXT_gpu_shader4 : enable 
 
 uniform sampler1D xferFunTex;

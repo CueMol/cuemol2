@@ -26,16 +26,16 @@ namespace gfx {
 
   /////////////////////////////////////
 
-  /// Texture abstract class
-  class AbstTexture
+  /// Texture class
+  class Texture
   {
   public:
-    AbstTexture()
+    Texture()
       : m_pTexRep(NULL)
     {
     }
 
-    virtual ~AbstTexture()
+    virtual ~Texture()
     {
       if (m_pTexRep!=NULL)
 	delete m_pTexRep;
@@ -91,88 +91,6 @@ namespace gfx {
   }; 
 
   /////////////////////////////////////
-
-  class Texture1D : public AbstTexture
-  {
-  public:
-    Texture1D() : AbstTexture()
-    {
-    }
-
-    virtual ~Texture1D()
-    {
-    }
-
-  private:
-
-  public:
-    void setup(int iFmt, int iType)
-    {
-      getRep()->setup(1, iFmt, iType);
-    }
-
-    void setData(int w, const void *pdata)
-    {
-      getRep()->setData(w, 1, 1, pdata);
-    }
-
-  }; 
-
-  //////////
-
-  class Texture2D : public AbstTexture
-  {
-  public:
-    Texture2D() : AbstTexture()
-    {
-    }
-
-    virtual ~Texture2D()
-    {
-    }
-
-  private:
-
-  public:
-    void setup(int iFmt, int iType)
-    {
-      getRep()->setup(2, iFmt, iType);
-    }
-
-    void setData(int w, int h, const void *pdata)
-    {
-      getRep()->setData(w, h, 1, pdata);
-    }
-
-  }; 
-
-  //////////
-
-  class Texture3D : public AbstTexture
-  {
-  public:
-    Texture3D() : AbstTexture()
-    {
-    }
-
-    virtual ~Texture3D()
-    {
-    }
-
-  private:
-
-  public:
-    void setup()
-    {
-      getRep()->setup(3, FMT_R, TYPE_UINT8);
-    }
-
-    void setData(int w, int h, int d, const void *pdata)
-    {
-      getRep()->setData(w, h, d, pdata);
-    }
-
-  }; 
 
 } // namespace gfx
 

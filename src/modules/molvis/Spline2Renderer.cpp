@@ -461,13 +461,16 @@ void Spline2Seg::setupGLSL(Spline2Renderer *pthis, DisplayContext *pdc)
 {
   if (m_pCoefTex!=NULL)
     delete m_pCoefTex;
-  //m_pCoefTex = pdc->createTexture2D();
-  m_pCoefTex = pdc->createTexture1D();
-  //m_pCoefTex->setup(gfx::AbstTexture::FMT_RGB,
-  //gfx::AbstTexture::TYPE_FLOAT32);
-  m_pCoefTex->setup(gfx::AbstTexture::FMT_R,
-                     gfx::AbstTexture::TYPE_FLOAT32);
 
+  m_pCoefTex = pdc->createTexture();
+#ifdef USE_TBO
+  m_pCoefTex->setup(1, gfx::Texture::FMT_R,
+                    gfx::Texture::TYPE_FLOAT32);
+#else
+  m_pCoefTex->setup(1, gfx::Texture::FMT_RGB,
+                    gfx::Texture::TYPE_FLOAT32);
+#endif
+  
   // const int nsz = m_scoeff.getSize();
   // m_coefbuf.resize(nsz * 12);
 
@@ -478,7 +481,11 @@ void Spline2Seg::setupGLSL(Spline2Renderer *pthis, DisplayContext *pdc)
 
 void Spline2Seg::updateCoefTex()
 {
-  m_pCoefTex->setData(m_scoeff.getPoints() * 12, m_scoeff.getCoefArray());
+#ifdef USE_TBO
+  m_pCoefTex->setData(m_scoeff.getPoints() * 12, 1, 1, m_scoeff.getCoefArray());
+#else
+  m_pCoefTex->setData(m_scoeff.getPoints() * 4, 1, 1, m_scoeff.getCoefArray());
+#endif
 }
 
 /// update coord texture for GLSL rendering

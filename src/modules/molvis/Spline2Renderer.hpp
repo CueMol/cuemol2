@@ -17,14 +17,17 @@
 #include "CubicSpline.hpp"
 #include "SplineCoeffSet.hpp"
 
+#if (GUI_ARCH==OSX)
+#else
+#define USE_TBO 1
+#endif
+
 namespace sysdep {
   class OglProgramObject;
 }
 
 namespace gfx {
-  class Texture1D;
-  class Texture2D;
-  class Texture3D;
+  class Texture;
 }
 
 namespace molvis {
@@ -179,7 +182,7 @@ namespace molvis {
     // GLSL implementation
 
     /// coeff float texture
-    gfx::Texture1D *m_pCoefTex;
+    gfx::Texture *m_pCoefTex;
 
     std::vector<float> m_coefbuf;
 

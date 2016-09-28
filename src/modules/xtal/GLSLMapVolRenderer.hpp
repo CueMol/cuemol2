@@ -99,7 +99,7 @@ namespace xtal {
 
     /// map 3D texture ID
     // GLuint m_nMapTexID;
-    gfx::Texture3D *m_pMapTex;
+    gfx::Texture *m_pMapTex;
 
     /// 3D map texture data
     typedef qlib::Array3D<quint8> MapTmp;
@@ -107,7 +107,7 @@ namespace xtal {
 
     // transfer function 1D texture
     // GLuint m_nXfunTexID;
-    gfx::Texture1D *m_pXfnTex;
+    gfx::Texture *m_pXfnTex;
 
     /// 1D xfer func texture data
     std::vector<quint8> m_xfnmap;

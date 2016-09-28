@@ -77,14 +77,14 @@ void SimpleRenderer::createGLSL(DisplayContext *pdc)
   if (m_pCoordTex!=NULL)
     delete m_pCoordTex;
 
+  m_pCoordTex = pdc->createTexture();
+
 #ifdef USE_TBO
-  m_pCoordTex = pdc->createTexture1D();
-  m_pCoordTex->setup(1, gfx::AbstTexture::FMT_R,
-                     gfx::AbstTexture::TYPE_FLOAT32);
+  m_pCoordTex->setup(1, gfx::Texture::FMT_R,
+                     gfx::Texture::TYPE_FLOAT32);
 #else
-  m_pCoordTex = pdc->createTexture2D();
-  m_pCoordTex->setup(2, gfx::AbstTexture::FMT_RGB,
-		     gfx::AbstTexture::TYPE_FLOAT32);
+  m_pCoordTex->setup(2, gfx::Texture::FMT_RGB,
+                     gfx::Texture::TYPE_FLOAT32);
 #endif
 
   std::map<quint32, quint32> aidmap;

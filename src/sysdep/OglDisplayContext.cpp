@@ -1565,26 +1565,11 @@ bool OglDisplayContext::destroyProgramObject(const LString &name)
 #include "OglTexture.hpp"
 
 
-Texture1D *OglDisplayContext::createTexture1D()
+Texture *OglDisplayContext::createTexture()
 {
   qlib::uid_t nSceneID = getSceneID();
-  Texture1D *pTex = MB_NEW Texture1D();
+  Texture *pTex = MB_NEW Texture();
   pTex->setRep(MB_NEW OglTextureRep(nSceneID));
   return pTex;
 }
 
-Texture2D *OglDisplayContext::createTexture2D()
-{
-  qlib::uid_t nSceneID = getSceneID();
-  Texture2D *pTex = MB_NEW Texture2D();
-  pTex->setRep(MB_NEW OglTextureRep(nSceneID));
-  return pTex;
-}
-
-Texture3D *OglDisplayContext::createTexture3D()
-{
-  qlib::uid_t nSceneID = getSceneID();
-  Texture3D *pTex = MB_NEW gfx::Texture3D();
-  pTex->setRep(MB_NEW OglTextureRep(nSceneID));
-  return pTex;
-}

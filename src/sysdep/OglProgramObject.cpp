@@ -63,7 +63,7 @@ void OglShaderObject::loadFile(const LString& filename, SOMacroDefs *penv)
   if (pstr!=NULL) {
     LString sv(pstr);
     int dot = sv.indexOf('.');
-    verstr = "#version "+sv.substr(0,dot) + sv.substr(dot+1);
+    verstr = "#version "+sv.substr(0,dot) + sv.substr(dot+1, 2) + " compatibility";
   }
 
   MB_DPRINTLN("PO> Add version macro: %s", verstr.c_str());

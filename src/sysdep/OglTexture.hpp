@@ -90,16 +90,16 @@ namespace sysdep {
       }
 
       switch (iPixFmt) {
-      case AbstTexture::FMT_R:
+      case Texture::FMT_R:
 	m_iGlPixFmt = GL_RED;
 	break;
-      case AbstTexture::FMT_RG:
+      case Texture::FMT_RG:
 	m_iGlPixFmt = GL_RG;
 	break;
-      case AbstTexture::FMT_RGB:
+      case Texture::FMT_RGB:
 	m_iGlPixFmt = GL_RGB;
 	break;
-      case AbstTexture::FMT_RGBA:
+      case Texture::FMT_RGBA:
 	m_iGlPixFmt = GL_RGBA;
 	break;
       default:
@@ -108,32 +108,49 @@ namespace sysdep {
       }
 
       switch (iPixType) {
-      case AbstTexture::TYPE_UINT8:
+      case Texture::TYPE_UINT8:
 	m_iGlPixType = GL_UNSIGNED_BYTE;
-	break;
-      case AbstTexture::TYPE_FLOAT32:
-        m_iGlPixType = GL_FLOAT;
+        // set internal pixel format (XXX: convert byte 0-255 --> float mediump, 0-1)
+        switch (iPixFmt) {
+        case Texture::FMT_R:
+          m_iGlIntPixFmt = GL_R32F;
+          break;
+        case Texture::FMT_RG:
+          m_iGlIntPixFmt = GL_RG32F;
+          break;
+        case Texture::FMT_RGB:
+          m_iGlIntPixFmt = GL_RGB32F;
+          break;
+        case Texture::FMT_RGBA:
+          m_iGlIntPixFmt = GL_RGBA32F;
+          break;
+        default:
+          MB_THROW(qlib::RuntimeException, "Unsupported pixel format");
+          break;
+        }
+        break;
 
+      case Texture::TYPE_FLOAT32:
+        m_iGlPixType = GL_FLOAT;
         // set internal pixel format (mediump)
         switch (iPixFmt) {
-        case AbstTexture::FMT_R:
+        case Texture::FMT_R:
           m_iGlIntPixFmt = GL_R16F;
           break;
-        case AbstTexture::FMT_RG:
+        case Texture::FMT_RG:
           m_iGlIntPixFmt = GL_RG16F;
           break;
-        case AbstTexture::FMT_RGB:
+        case Texture::FMT_RGB:
           m_iGlIntPixFmt = GL_RGB16F;
           break;
-        case AbstTexture::FMT_RGBA:
+        case Texture::FMT_RGBA:
           m_iGlIntPixFmt = GL_RGBA16F;
           break;
         default:
           MB_THROW(qlib::RuntimeException, "Unsupported pixel format");
           break;
         }
-
-	break;
+        break;
 
       default:
 	MB_THROW(qlib::RuntimeException, "Unsupported pixel format");
@@ -142,7 +159,7 @@ namespace sysdep {
 
       m_bUseTexBuf = false;
 
-      if (iDim==1 && iPixFmt==AbstTexture::FMT_R) {
+      if (iDim==1 && iPixFmt==Texture::FMT_R && isTBOAvailable() ) {
         m_iGlDimType = GL_TEXTURE_BUFFER;
         m_bUseTexBuf = true;
       }
@@ -179,6 +196,14 @@ namespace sysdep {
   private:
     GLint m_nMaxTexSize, m_nMaxTexBufSize, m_nMax3DTexSize;
 
+    bool isTBOAvailable()
+    {
+      if (GLEW_ARB_texture_buffer_object)
+        return true;
+      else
+        return false;
+    }
+    
     void createGL()
     {
       glGenTextures(1, &m_nTexID);
@@ -190,9 +215,9 @@ namespace sysdep {
       glGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &m_nMaxTexBufSize);
       glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &m_nMax3DTexSize);
 
-      LOG_DPRINTLN("OglTex max tex size=%d", m_nMaxTexSize);
-      LOG_DPRINTLN("OglTex max tex buf size=%d", m_nMaxTexBufSize);
-      LOG_DPRINTLN("OglTex max 3D tex size=%d", m_nMax3DTexSize);
+      MB_DPRINTLN("OglTex max tex size=%d", m_nMaxTexSize);
+      MB_DPRINTLN("OglTex max tex buf size=%d", m_nMaxTexBufSize);
+      MB_DPRINTLN("OglTex max 3D tex size=%d", m_nMax3DTexSize);
     }
 
     void setupGL()
@@ -335,6 +360,7 @@ namespace sysdep {
       CHK_GLERROR("glBindBuffer");
 
       int ncomp = 1;
+      /*
       if (m_iGlPixFmt==GL_RED)
         ncomp = 1;
       else if (m_iGlPixFmt==GL_RG)
@@ -344,8 +370,9 @@ namespace sysdep {
       else if (m_iGlPixFmt==GL_RGBA)
         ncomp = 4;
 
-      MB_ASSERT(ncomp==1);
+      MB_ASSERT(ncomp==1);*/
       
+      // always float32 (or int32)
       int elem_sz = 4;
 
       int nbytes = m_nWidth*elem_sz*ncomp;

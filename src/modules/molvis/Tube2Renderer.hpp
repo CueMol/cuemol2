@@ -22,9 +22,7 @@ namespace sysdep {
 }
 
 namespace gfx {
-  class Texture1D;
-  class Texture2D;
-  class Texture3D;
+  class Texture;
 }
 
 namespace molvis {
@@ -202,12 +200,12 @@ namespace molvis {
     // GLSL implementation
 
     /// float texture of the main axis coeff (common)
-    gfx::Texture1D *m_pCoefTex;
+    gfx::Texture *m_pCoefTex;
 
     /// float texture of the binorm interp coeff
-    gfx::Texture1D *m_pBinormTex;
+    gfx::Texture *m_pBinormTex;
 
-    gfx::Texture1D *m_pSectTex;
+    gfx::Texture *m_pSectTex;
 
     //
     // GLSL methods

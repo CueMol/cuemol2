@@ -181,18 +181,14 @@ void GLSLMapVolRenderer::initShader(DisplayContext *pdc)
   glDisable(GL_TEXTURE_3D);
   */
 
-  //qlib::uid_t nSceneID = getSceneID();
-  //m_pMapTex = MB_NEW gfx::Texture3D();
-  //m_pMapTex->setRep(MB_NEW OglTextureRep(nSceneID));
-  m_pMapTex = pdc->createTexture3D();
-  m_pMapTex->setup();
+  m_pMapTex = pdc->createTexture();
+  m_pMapTex->setup(3, gfx::Texture::FMT_R,
+                   gfx::Texture::TYPE_UINT8);
 
   // setup texture (xfer function 1D tex; unit 1)
-  //m_pXfnTex = MB_NEW gfx::Texture1D();
-  //m_pXfnTex->setRep(MB_NEW OglTextureRep(nSceneID));
-  m_pXfnTex = pdc->createTexture1D();
-  m_pXfnTex->setup(gfx::AbstTexture::FMT_RGBA,
-		   gfx::AbstTexture::TYPE_UINT8);
+  m_pXfnTex = pdc->createTexture();
+  m_pXfnTex->setup(1, gfx::Texture::FMT_RGBA,
+		   gfx::Texture::TYPE_UINT8);
   /*
   glGenTextures(1, &m_nXfunTexID);
   glActiveTexture(GL_TEXTURE1);
@@ -475,7 +471,7 @@ void GLSLMapVolRenderer::genXferFunMap()
   }
 
   MB_DPRINTLN("MapVol> genXferFunMap for siglevel %d done", m_isolevel);
-  m_pXfnTex->setData(256, pData);
+  m_pXfnTex->setData(256, 1, 1, pData);
   // delete [] pData;
 
   /*

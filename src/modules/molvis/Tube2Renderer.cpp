@@ -691,21 +691,21 @@ void Tube2Seg::setupGLSL(Tube2Renderer *pthis, DisplayContext *pdc)
 {
   if (m_pCoefTex!=NULL)
     delete m_pCoefTex;
-  m_pCoefTex = pdc->createTexture1D();
-  m_pCoefTex->setup(gfx::AbstTexture::FMT_R,
-                    gfx::AbstTexture::TYPE_FLOAT32);
+  m_pCoefTex = pdc->createTexture();
+  m_pCoefTex->setup(1, gfx::Texture::FMT_R,
+                    gfx::Texture::TYPE_FLOAT32);
 
   if (m_pBinormTex!=NULL)
     delete m_pBinormTex;
-  m_pBinormTex = pdc->createTexture1D();
-  m_pBinormTex->setup(gfx::AbstTexture::FMT_R,
-                    gfx::AbstTexture::TYPE_FLOAT32);
+  m_pBinormTex = pdc->createTexture();
+  m_pBinormTex->setup(1, gfx::Texture::FMT_R,
+                      gfx::Texture::TYPE_FLOAT32);
 
   if (m_pSectTex!=NULL)
     delete m_pSectTex;
-  m_pSectTex = pdc->createTexture1D();
-  m_pSectTex->setup(gfx::AbstTexture::FMT_R,
-                    gfx::AbstTexture::TYPE_FLOAT32);
+  m_pSectTex = pdc->createTexture();
+  m_pSectTex->setup(1, gfx::Texture::FMT_R,
+                    gfx::Texture::TYPE_FLOAT32);
 
   BOOST_FOREACH (Tub2DrawSeg &elem, m_draws) {
     elem.setupGLSL(pthis);
@@ -714,9 +714,9 @@ void Tube2Seg::setupGLSL(Tube2Renderer *pthis, DisplayContext *pdc)
 
 void Tube2Seg::updateCoefTex(Tube2Renderer *pthis)
 {
-  m_pCoefTex->setData(m_nCtlPts * 12, m_scoeff.getCoefArray());
+  m_pCoefTex->setData(m_nCtlPts * 12, 1, 1, m_scoeff.getCoefArray());
   // m_pBinormTex->setData(m_nCtlPts * 12, m_bnormInt.getCoefArray());
-  m_pBinormTex->setData(m_nCtlPts * 3, &m_linBnInt[0]);
+  m_pBinormTex->setData(m_nCtlPts * 3, 1, 1, &m_linBnInt[0]);
   
   TubeSectionPtr pTS = pthis->getTubeSection();
   int i, nsec = pTS->getSize();
@@ -729,7 +729,7 @@ void Tube2Seg::updateCoefTex(Tube2Renderer *pthis)
     m_secttab[i*4+3] = float( val.w() );
   }
 
-  m_pSectTex->setData(nsec * 4, &m_secttab[0]);
+  m_pSectTex->setData(nsec * 4, 1, 1, &m_secttab[0]);
 }
 
 /// update coord texture for GLSL rendering
