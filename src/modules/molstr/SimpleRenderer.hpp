@@ -24,9 +24,7 @@ namespace sysdep {
 }
 
 namespace gfx {
-  class Texture1D;
-  class Texture2D;
-  class Texture3D;
+  class AbstTexture;
 }
 
 namespace molstr {
@@ -223,11 +221,7 @@ namespace molstr {
     bool m_bChkShaderDone;
 
     /// coordinate float texture
-#ifdef USE_TBO
-    gfx::Texture1D *m_pCoordTex;
-#else
-    gfx::Texture2D *m_pCoordTex;
-#endif
+    gfx::AbstTexture *m_pCoordTex;
 
     bool m_bUseSels;
     std::vector<quint32> m_sels;

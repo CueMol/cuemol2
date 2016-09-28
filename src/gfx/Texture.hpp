@@ -68,6 +68,16 @@ namespace gfx {
     static const int TYPE_FLOAT32 = 11;
     static const int TYPE_FLOAT64 = 12;
 
+    void setup(int ndim, int iFmt, int iType)
+    {
+      getRep()->setup(ndim, iFmt, iType);
+    }
+
+    void setData(int w, int h, int d, const void *pdata)
+    {
+      getRep()->setData(w, h, d, pdata);
+    }
+
     void use(int nUnit)
     {
       getRep()->use(nUnit);

@@ -79,11 +79,11 @@ void SimpleRenderer::createGLSL(DisplayContext *pdc)
 
 #ifdef USE_TBO
   m_pCoordTex = pdc->createTexture1D();
-  m_pCoordTex->setup(gfx::AbstTexture::FMT_R,
+  m_pCoordTex->setup(1, gfx::AbstTexture::FMT_R,
                      gfx::AbstTexture::TYPE_FLOAT32);
 #else
   m_pCoordTex = pdc->createTexture2D();
-  m_pCoordTex->setup(gfx::AbstTexture::FMT_RGB,
+  m_pCoordTex->setup(2, gfx::AbstTexture::FMT_RGB,
 		     gfx::AbstTexture::TYPE_FLOAT32);
 #endif
 
@@ -287,11 +287,11 @@ void SimpleRenderer::updateDynamicGLSL()
   if (!m_bUseSels) {
 
 #ifdef USE_TBO
-    m_pCoordTex->setData(natoms*3, crd);
+    m_pCoordTex->setData(natoms*3, 1, 1, crd);
 #else
     MB_DPRINTLN("tex size %d x %d = %d", m_nTexW, m_nTexH, m_nTexW*m_nTexH);
     MB_DPRINTLN("crd size %d", natoms*3);
-    m_pCoordTex->setData(m_nTexW, m_nTexH, crd);
+    m_pCoordTex->setData(m_nTexW, m_nTexH, 1, crd);
 #endif
     return;
   }
@@ -305,12 +305,12 @@ void SimpleRenderer::updateDynamicGLSL()
   }
 
 #ifdef USE_TBO
-  m_pCoordTex->setData(natoms*3, &m_coordbuf[0]);
+  m_pCoordTex->setData(natoms*3, 1, 1, &m_coordbuf[0]);
 #else
   MB_DPRINTLN("tex size %d x %d = %d", m_nTexW, m_nTexH, m_nTexW*m_nTexH);
   MB_DPRINTLN("buf size %d", m_coordbuf.size());
   MB_DPRINTLN("crd size %d", natoms*3);
-  m_pCoordTex->setData(m_nTexW, m_nTexH, &m_coordbuf[0]);
+  m_pCoordTex->setData(m_nTexW, m_nTexH, 1, &m_coordbuf[0]);
 #endif
   //m_pCoordTex->setData(natoms, &m_coordbuf[0]);
 }
@@ -338,12 +338,12 @@ void SimpleRenderer::updateStaticGLSL()
   }
 
 #ifdef USE_TBO
-  m_pCoordTex->setData(natoms*3, &m_coordbuf[0]);
+  m_pCoordTex->setData(natoms*3, 1, 1, &m_coordbuf[0]);
 #else
   MB_DPRINTLN("tex size %d x %d = %d", m_nTexW, m_nTexH, m_nTexW*m_nTexH);
   MB_DPRINTLN("buf size %d", m_coordbuf.size());
   MB_DPRINTLN("crd size %d", natoms*3);
-  m_pCoordTex->setData(m_nTexW, m_nTexH, &m_coordbuf[0]);
+  m_pCoordTex->setData(m_nTexW, m_nTexH, 1, &m_coordbuf[0]);
 #endif
   //m_pCoordTex->setData(natoms, &m_coordbuf[0]);
 }
