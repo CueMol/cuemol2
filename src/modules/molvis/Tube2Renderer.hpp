@@ -39,7 +39,7 @@ namespace molvis {
 
   class Tub2DrawSeg
   {
-  private:
+  public:
     int m_nStart;
     int m_nEnd;
 
@@ -55,7 +55,7 @@ namespace molvis {
     /// size of vertex/attribute array
     int m_nVA;
 
-  public:
+
     Tub2DrawSeg(int st, int en) : m_nStart(st), m_nEnd(en), m_pVBO(NULL), m_pAttrAry(NULL)
     {
     }
@@ -105,7 +105,7 @@ namespace molvis {
   //
   class Tube2Seg
   {
-  private:
+  public:
 
     typedef std::deque<Tub2DrawSeg> Tub2DrawList;
     Tub2DrawList m_draws;
@@ -118,16 +118,14 @@ namespace molvis {
     /// Pivot atom crd array index (for dynamic update)
     IDArray m_inds;
 
-    std::deque<int> m_aidtmp;
-
-  public:
     Tube2Seg();
     ~Tube2Seg();
+
+    std::deque<int> m_aidtmp;
 
     inline void append(MolAtomPtr pAtom) {
       m_aidtmp.push_back(pAtom->getID());
     }
-
 
     void generate(Tube2Renderer *pthis, DisplayContext *pdc);
 
@@ -160,8 +158,6 @@ namespace molvis {
 
     void draw(Tube2Renderer *pthis, DisplayContext *pdc);
     
-  private:
-
     //////////
     // spline methods
 
@@ -178,7 +174,6 @@ namespace molvis {
 
     std::vector<float> m_secttab;
 
-  public:
     CubicSpline *getAxisIntpol() { return &m_scoeff; }
     CubicSpline *getBinormIntpol() { return &m_bnormInt; }
 
@@ -203,7 +198,6 @@ namespace molvis {
 
     Vector3F intpolLinBn(float par);
 
-  private:
     /////////////////////
     // GLSL implementation
 
@@ -287,6 +281,7 @@ namespace molvis {
       return m_pts;
     }
 
+
     /////////////////
     // ctor/dtor
 
@@ -332,9 +327,18 @@ namespace molvis {
 
 
     /////////////////
-    // GLSL implementation
+    // VBO implementation
 
   public:
+    void updateColorVBO(Tube2Seg *pSeg, DisplayContext *pdc);
+    void drawVBO(Tube2Seg *pSeg, DisplayContext *pdc);
+
+    /////////////////
+    // GLSL implementation
+  public:
+    void updateColorGLSL(Tube2Seg *pSeg, DisplayContext *pdc);
+    void drawGLSL(Tube2Seg *pSeg, DisplayContext *pdc);
+
     bool m_bUseGLSL;
 
     /// shader check was performed

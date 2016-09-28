@@ -86,7 +86,15 @@ void Tube2Renderer::display(DisplayContext *pdc)
 
     BOOST_FOREACH (Tube2Seg &elem, m_seglist) {
       if (elem.getSize()>0) {
-        elem.updateColor(this);
+        // elem.updateColor(this);
+
+        if (m_bUseGLSL) {
+          updateColorGLSL(&elem, pdc);
+        }
+        else {
+          updateColorVBO(&elem, pdc);
+        }
+
         if (isUseAnim())
           elem.updateDynamic(this);
         else
@@ -99,8 +107,15 @@ void Tube2Renderer::display(DisplayContext *pdc)
 
   preRender(pdc);
   BOOST_FOREACH (Tube2Seg &elem, m_seglist) {
-    if (elem.getSize()>0)
-      elem.draw(this, pdc);
+    if (elem.getSize()>0) {
+      //elem.draw(this, pdc);
+      if (m_bUseGLSL) {
+        drawGLSL(&elem, pdc);
+      }
+      else {
+        drawVBO(&elem, pdc);
+      }
+    }
   }
   postRender(pdc);
 
@@ -170,6 +185,7 @@ void Tube2Renderer::createSegList(DisplayContext *pdc)
       // This resid doesn't has pivot, so we cannot draw backbone!!
       if (!pPrevResid.isnull()) {
         m_seglist.back().generate(this, pdc);
+        //generate(m_seglist.back(), pdc);
       }
       pPrevResid = MolResiduePtr();
       continue;
@@ -178,16 +194,134 @@ void Tube2Renderer::createSegList(DisplayContext *pdc)
     if (isNewSegment(pRes, pPrevResid)) {
       if (!pPrevResid.isnull()) {
         m_seglist.back().generate(this, pdc);
+        //generate(m_seglist.back(), pdc);
       }
       m_seglist.push_back(Tube2Seg());
     }
-
+    
     m_seglist.back().append(pPiv);
+    //append(pPiv);
     pPrevResid = pRes;
   }
 
   if (!pPrevResid.isnull()) {
     m_seglist.back().generate(this, pdc);
+    //generate(m_seglist.back(), pdc);
+  }
+}
+
+//////////
+
+void Tube2Renderer::updateColorGLSL(Tube2Seg *pSeg, DisplayContext *pdc)
+{
+  int i, j, ind;
+  int nSecDiv = getTubeSection()->getSize();
+
+  float par;
+  float fdetail = float(getAxialDetail());
+
+  quint32 dcc;
+
+  MolCoordPtr pCMol = getClientMol();
+
+  BOOST_FOREACH (Tub2DrawSeg &elem, pSeg->m_draws) {
+    //elem.updateGLSLColor(pthis, this);
+
+    Tub2DrawSeg::AttrArray &attra = *elem.m_pAttrAry;
+    float fstart = float(elem.m_nStart);
+    int nAxPts = elem.m_nAxPts;
+    ind = 0;
+    for (i=0; i<nAxPts; ++i) {
+      par = float(i)/fdetail + fstart;
+      dcc = pSeg->calcColor(this, pCMol, par);
+      for (j=0; j<nSecDiv; ++j) {
+        attra.at(ind).r = (qbyte) gfx::getRCode(dcc);
+        attra.at(ind).g = (qbyte) gfx::getGCode(dcc);
+        attra.at(ind).b = (qbyte) gfx::getBCode(dcc);
+        attra.at(ind).a = (qbyte) gfx::getACode(dcc);
+        ++ind;
+      }
+    }
+
+  }
+}
+
+void Tube2Renderer::updateColorVBO(Tube2Seg *pSeg, DisplayContext *pdc)
+{
+  MolCoordPtr pCMol = getClientMol();
+
+  int i, j;
+  int nSecDiv = getTubeSection()->getSize();
+
+  float par;
+  float fdetail = float(getAxialDetail());
+
+  quint32 dcc;
+
+  gfx::DrawElemVNCI32 *pVBO;
+
+  BOOST_FOREACH (Tub2DrawSeg &elem, pSeg->m_draws) {
+    //elem.updateVBOColor(pthis, this);
+    
+    pVBO = elem.m_pVBO;
+    float fstart = float(elem.m_nStart);
+    int nAxPts = elem.m_nAxPts;
+    
+    for (i=0; i<nAxPts; ++i) {
+      par = float(i)/fdetail + fstart;
+      dcc = pSeg->calcColor(this, pCMol, par);
+      for (j=0; j<nSecDiv; ++j) {
+        int ind = i*nSecDiv + j;
+        pVBO->color(ind, dcc);
+      }
+    }
+    
+  }
+}
+
+
+void Tube2Renderer::drawGLSL(Tube2Seg *pSeg, DisplayContext *pdc)
+{
+  // const double lw = getLineWidth();
+  const int nCtlPts = pSeg->m_scoeff.getSize();
+
+  // pdc->setLineWidth(lw);
+
+  pSeg->m_pCoefTex->use(Tube2Renderer::COEF_TEX_UNIT);
+  pSeg->m_pBinormTex->use(Tube2Renderer::BINORM_TEX_UNIT);
+  pSeg->m_pSectTex->use(Tube2Renderer::SECT_TEX_UNIT);
+
+  m_pPO->enable();
+
+  // Setup uniforms
+  m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
+  m_pPO->setUniform("u_npoints", nCtlPts);
+  m_pPO->setUniform("coefTex", Tube2Renderer::COEF_TEX_UNIT);
+  m_pPO->setUniform("binormTex", Tube2Renderer::BINORM_TEX_UNIT);
+  m_pPO->setUniform("sectTex", Tube2Renderer::SECT_TEX_UNIT);
+
+  BOOST_FOREACH (Tub2DrawSeg &elem, pSeg->m_draws) {
+    //elem.drawGLSL(pdc);
+    pdc->drawElem(*elem.m_pAttrAry);
+  }
+
+  m_pPO->disable();
+
+  pSeg->m_pCoefTex->unuse();
+  pSeg->m_pBinormTex->unuse();
+  pSeg->m_pSectTex->unuse();
+}
+
+//////////
+
+void Tube2Renderer::drawVBO(Tube2Seg *pSeg, DisplayContext *pdc)
+{
+  // const double lw = getLineWidth();
+
+  BOOST_FOREACH (Tub2DrawSeg &elem, pSeg->m_draws) {
+    //elem.drawVBO(pthis, pdc);
+    //m_pVBO->setLineWidth(lw);
+    pdc->drawElem(*elem.m_pVBO);
   }
 }
 
@@ -303,13 +437,6 @@ void Tube2Seg::updateStatic(Tube2Renderer *pthis) {
     updateStaticGLSL(pthis);
   else
     updateStaticVBO(pthis);
-}
-
-void Tube2Seg::draw(Tube2Renderer *pthis, DisplayContext *pdc) {
-  if (pthis->m_bUseGLSL)
-    drawGLSL(pthis, pdc);
-  else
-    drawVBO(pthis, pdc);
 }
 
 void Tube2Seg::updateScoeffDynamic(Tube2Renderer *pthis)
@@ -521,13 +648,6 @@ void Tube2Seg::updateVBOColor(Tube2Renderer *pthis)
   }
 }
 
-void Tube2Seg::drawVBO(Tube2Renderer *pthis, DisplayContext *pdc)
-{
-  BOOST_FOREACH (Tub2DrawSeg &elem, m_draws) {
-    elem.drawVBO(pthis, pdc);
-  }
-}
-
 ///////////////////////////////////////////////
 // GLSL implementation
 
@@ -632,35 +752,6 @@ void Tube2Seg::updateGLSLColor(Tube2Renderer *pthis)
     elem.updateGLSLColor(pthis, this);
   }
 }
-
-/// display() for GLSL version
-void Tube2Seg::drawGLSL(Tube2Renderer *pthis, DisplayContext *pdc)
-{
-  const double lw = pthis->getLineWidth();
-
-  pdc->setLineWidth(lw);
-
-  m_pCoefTex->use(Tube2Renderer::COEF_TEX_UNIT);
-  m_pBinormTex->use(Tube2Renderer::BINORM_TEX_UNIT);
-  m_pSectTex->use(Tube2Renderer::SECT_TEX_UNIT);
-
-  pthis->m_pPO->enable();
-
-  // Setup uniforms
-  pthis->m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
-  pthis->m_pPO->setUniform("u_npoints", m_scoeff.getSize());
-  pthis->m_pPO->setUniform("coefTex", Tube2Renderer::COEF_TEX_UNIT);
-  pthis->m_pPO->setUniform("binormTex", Tube2Renderer::BINORM_TEX_UNIT);
-  pthis->m_pPO->setUniform("sectTex", Tube2Renderer::SECT_TEX_UNIT);
-
-  BOOST_FOREACH (Tub2DrawSeg &elem, m_draws) {
-    elem.drawGLSL(pdc);
-  }
-
-  pthis->m_pPO->disable();
-  m_pCoefTex->unuse();
-}
-
 
 //////////////////////////////////////////////////
 
@@ -879,11 +970,5 @@ void Tub2DrawSeg::updateGLSLColor(Tube2Renderer *pthis, Tube2Seg *pSeg)
     }
   }
 
-}
-
-/// display() for GLSL version
-void Tub2DrawSeg::drawGLSL(DisplayContext *pdc)
-{
-  pdc->drawElem(*m_pAttrAry);
 }
 
