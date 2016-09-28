@@ -3,9 +3,8 @@
 //  Tube2Renderer vertex shader for OpenGL
 //
 
-#extension GL_ARB_compatibility : enable
-
 #if (__VERSION__>=140)
+#extension GL_ARB_compatibility : enable
 #define USE_TBO 1
 #else
 #extension GL_EXT_gpu_shader4 : enable 
@@ -58,10 +57,10 @@ void getCoefs(in samplerBuffer tex, in int ind, out vec3 vc0, out vec3 vc1, out 
   vc3.y = texelFetch(tex, ind*12+10).r;
   vc3.z = texelFetch(tex, ind*12+11).r;
 #else
-  vc0 = texelFetch1D(coefTex, ind*4+0, 0).xyz;
-  vc1 = texelFetch1D(coefTex, ind*4+1, 0).xyz;
-  vc2 = texelFetch1D(coefTex, ind*4+2, 0).xyz;
-  vc3 = texelFetch1D(coefTex, ind*4+3, 0).xyz;
+  vc0 = texelFetch1D(tex, ind*4+0, 0).xyz;
+  vc1 = texelFetch1D(tex, ind*4+1, 0).xyz;
+  vc2 = texelFetch1D(tex, ind*4+2, 0).xyz;
+  vc3 = texelFetch1D(tex, ind*4+3, 0).xyz;
 #endif
 }
 
