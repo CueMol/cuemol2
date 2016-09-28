@@ -7,15 +7,24 @@
 //#version 140
 
 #extension GL_ARB_compatibility : enable
+
+#if (__VERSION__>=140)
+#define USE_TBO 1
+#else
 #extension GL_EXT_gpu_shader4 : enable 
+#endif
 
 //precision mediump float;
 
 ////////////////////
 // Uniform variables
 //uniform sampler1D coordTex;
-//uniform sampler2D coordTex;
+#ifdef USE_TBO
 uniform samplerBuffer coordTex;
+#else
+uniform sampler2D coordTex;
+#define COORDTEX_WIDTH 1024
+#endif
 
 ////////////////////
 // Vertex attributes
@@ -29,27 +38,29 @@ attribute vec4 a_color;
 
 ////////////////////
 
-float ffog(in float ecDistance)
-{
-  return(abs(ecDistance));
-}
-
 vec3 getAtomPos(in int ind)
 {
 /*
-  ivec2 iv;
-  iv.x = ind%1024;
-  //iv.y = ind;
-  iv.y = ind/1024;
-  //iv.x = 1;
-  return ( texelFetch2D(coordTex, iv, 0).xyz );
 */
   
+#ifdef USE_TBO
   float x = texelFetch(coordTex, ind*3+0).r;
   float y = texelFetch(coordTex, ind*3+1).r;
   float z = texelFetch(coordTex, ind*3+2).r;
   return vec3(x,y,z);
+#else
+  ivec2 iv;
+  iv.x = int( mod(ind, COORDTEX_WIDTH) );
+  iv.y = ind/COORDTEX_WIDTH;
+  //iv.x = 1;
+  return ( texelFetch2D(coordTex, iv, 0).xyz );
+#endif
   // return texelFetch1D(coordTex, ind, 0).xyz;
+}
+
+float ffog(in float ecDistance)
+{
+  return(abs(ecDistance));
 }
 
 void main (void)

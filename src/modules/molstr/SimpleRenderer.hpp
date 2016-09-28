@@ -12,6 +12,11 @@
 #include <gfx/DrawElem.hpp>
 #include <gfx/DrawAttrArray.hpp>
 
+#if (GUI_ARCH==OSX)
+#else
+#define USE_TBO 1
+#endif
+
 class SimpleRenderer_wrap;
 
 namespace sysdep {
@@ -218,8 +223,11 @@ namespace molstr {
     bool m_bChkShaderDone;
 
     /// coordinate float texture
+#ifdef USE_TBO
     gfx::Texture1D *m_pCoordTex;
-    //gfx::Texture2D *m_pCoordTex;
+#else
+    gfx::Texture2D *m_pCoordTex;
+#endif
 
     bool m_bUseSels;
     std::vector<quint32> m_sels;

@@ -76,12 +76,16 @@ void SimpleRenderer::createGLSL(DisplayContext *pdc)
 
   if (m_pCoordTex!=NULL)
     delete m_pCoordTex;
-  //m_pCoordTex = pdc->createTexture2D();
+
+#ifdef USE_TBO
   m_pCoordTex = pdc->createTexture1D();
-  //m_pCoordTex->setup(gfx::AbstTexture::FMT_RGB,
-  //gfx::AbstTexture::TYPE_FLOAT32);
   m_pCoordTex->setup(gfx::AbstTexture::FMT_R,
                      gfx::AbstTexture::TYPE_FLOAT32);
+#else
+  m_pCoordTex = pdc->createTexture2D();
+  m_pCoordTex->setup(gfx::AbstTexture::FMT_RGB,
+		     gfx::AbstTexture::TYPE_FLOAT32);
+#endif
 
   std::map<quint32, quint32> aidmap;
   AtomIterator aiter(pCMol, getSelection());
@@ -101,7 +105,10 @@ void SimpleRenderer::createGLSL(DisplayContext *pdc)
   
   int ncrds = i*3;
 
-/*
+#ifdef USE_TBO
+  m_coordbuf.resize(ncrds);
+  LOG_DPRINTLN("SimpleGLSL> Coord Texture size=%d", ncrds);
+#else
   int h=0;
   if (ncrds%1024==0)
     h =  ncrds/1024;
@@ -112,9 +119,7 @@ void SimpleRenderer::createGLSL(DisplayContext *pdc)
   m_nTexW = 1024;
   m_nTexH = h;
   LOG_DPRINTLN("SimpleGLSL> Coord Texture size=%d,%d", m_nTexW, m_nTexH);
-*/
-  m_coordbuf.resize(ncrds);
-  LOG_DPRINTLN("SimpleGLSL> Coord Texture size=%d", ncrds);
+#endif
 
   m_bUseSels = false;
 
@@ -184,8 +189,10 @@ void SimpleRenderer::createGLSL(DisplayContext *pdc)
   m_pAttrAry = MB_NEW AttrArray();
   AttrArray &attra = *m_pAttrAry;
   attra.setAttrSize(2);
-  attra.setAttrInfo(0, m_nInd12Loc, 2, qlib::type_consts::QTC_FLOAT32,  offsetof(AttrElem, ind1));
-  // attra.setAttrInfo(0, m_nInd12Loc, 2, qlib::type_consts::QTC_INT32,  offsetof(AttrElem, ind1));
+  attra.setAttrInfo(0, m_nInd12Loc, 2, qlib::type_consts::QTC_FLOAT32,
+		    offsetof(AttrElem, ind1));
+  // attra.setAttrInfo(0, m_nInd12Loc, 2, qlib::type_consts::QTC_INT32,
+  // offsetof(AttrElem, ind1));
   attra.setAttrInfo(1, m_nColLoc, 4, qlib::type_consts::QTC_UINT8, offsetof(AttrElem, r));
 
   attra.alloc(nva);
@@ -253,7 +260,6 @@ void SimpleRenderer::createGLSL(DisplayContext *pdc)
     attra.at(i*4+3).b = (qbyte) gfx::getBCode(dcc2);
     attra.at(i*4+3).a = (qbyte) gfx::getACode(dcc2);
 
-
     i++;
     if (i*4+3>nva) {
       break;
@@ -279,7 +285,14 @@ void SimpleRenderer::updateDynamicGLSL()
   quint32 natoms = m_sels.size();
 
   if (!m_bUseSels) {
+
+#ifdef USE_TBO
     m_pCoordTex->setData(natoms*3, crd);
+#else
+    MB_DPRINTLN("tex size %d x %d = %d", m_nTexW, m_nTexH, m_nTexW*m_nTexH);
+    MB_DPRINTLN("crd size %d", natoms*3);
+    m_pCoordTex->setData(m_nTexW, m_nTexH, crd);
+#endif
     return;
   }
 
@@ -291,15 +304,15 @@ void SimpleRenderer::updateDynamicGLSL()
     }
   }
 
-  //LOG_DPRINTLN("tex size %d x %d = %d", m_nTexW, m_nTexH, m_nTexW*m_nTexH);
-  //LOG_DPRINTLN("buf size %d", m_coordbuf.size());
-  //LOG_DPRINTLN("crd size %d", natoms*3);
-  //m_nTexH = 1;
-  //m_pCoordTex->setData(m_nTexW, m_nTexH, &m_coordbuf[0]);
-
-  //m_pCoordTex->setData(natoms, &m_coordbuf[0]);
-
+#ifdef USE_TBO
   m_pCoordTex->setData(natoms*3, &m_coordbuf[0]);
+#else
+  MB_DPRINTLN("tex size %d x %d = %d", m_nTexW, m_nTexH, m_nTexW*m_nTexH);
+  MB_DPRINTLN("buf size %d", m_coordbuf.size());
+  MB_DPRINTLN("crd size %d", natoms*3);
+  m_pCoordTex->setData(m_nTexW, m_nTexH, &m_coordbuf[0]);
+#endif
+  //m_pCoordTex->setData(natoms, &m_coordbuf[0]);
 }
 
 void SimpleRenderer::updateStaticGLSL()
@@ -324,12 +337,15 @@ void SimpleRenderer::updateStaticGLSL()
     m_coordbuf[i*3+2] = pos.z();
   }
 
-  // m_pCoordTex->setData(natoms, &m_coordbuf[0]);
-
+#ifdef USE_TBO
   m_pCoordTex->setData(natoms*3, &m_coordbuf[0]);
-
-  // m_pCoordTex->setData(m_nTexW, m_nTexH, &m_coordbuf[0]);
-  // MB_DPRINTLN("updateStaticGLSL texture(%d,%d)=%p OK", m_nTexW, m_nTexH, m_pCoordTex);
+#else
+  MB_DPRINTLN("tex size %d x %d = %d", m_nTexW, m_nTexH, m_nTexW*m_nTexH);
+  MB_DPRINTLN("buf size %d", m_coordbuf.size());
+  MB_DPRINTLN("crd size %d", natoms*3);
+  m_pCoordTex->setData(m_nTexW, m_nTexH, &m_coordbuf[0]);
+#endif
+  //m_pCoordTex->setData(natoms, &m_coordbuf[0]);
 }
 
 void SimpleRenderer::displayGLSL(DisplayContext *pdc)
