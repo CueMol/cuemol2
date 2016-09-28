@@ -90,6 +90,10 @@ namespace molvis {
     CubicSpline m_axisInt;
     CubicSpline m_normInt;
 
+  public:
+    CubicSpline &getAxisInt() { return m_axisInt; }
+
+  private:
     LString m_chainname;
     int m_nStartResid;
     int m_nEndResid;

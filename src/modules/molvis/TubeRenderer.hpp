@@ -133,6 +133,11 @@ namespace molvis {
   private:
     qlib::Vector2D getEScl(double par, SplineCoeff *pCoeff);
 
+
+    void test1(DisplayContext *pdl, SplineCoeff *pCoeff,
+               MolResiduePtr pStartRes, double fstart,
+               MolResiduePtr pEndRes, double fend);
+
   };
 
 } // namespace molvis

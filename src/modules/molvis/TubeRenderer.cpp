@@ -111,7 +111,7 @@ void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
   }
   const double fdelta = (fend-fstart)/double(ndelta);
 
-  pdl->setLighting(true);
+  // pdl->setLighting(true);
   pdl->setPolygonMode(DisplayContext::POLY_FILL_NORGLN);
   //pdl->setPolygonMode(DisplayContext::POLY_LINE);
 
@@ -227,8 +227,94 @@ void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
     pPrevCol = pCol;
   }
   
-  pdl->setLighting(false);
+  // pdl->setLighting(false);
+  // test1(pdl, pCoeff, pStartRes, fstart, pEndRes, fend);
+}
 
+void TubeRenderer::test1(DisplayContext *pdl, SplineCoeff *pCoeff,
+                         MolResiduePtr pStartRes, double fstart,
+                         MolResiduePtr pEndRes, double fend)
+{
+  int nstart = int( ::floor(fstart) );
+  int nend = int( ::floor(fend) );
+  CubicSpline &cs = pCoeff->getAxisInt();
+  int npoints = cs.getSize();
+
+  for (int i=nstart; i<=nend; ++i) {
+    int ncoeff = qlib::clamp(i, 0, npoints-2);
+    
+    const Vector3F coeff0 = cs.getCoeff(0, ncoeff);
+    const Vector3F coeff1 = cs.getCoeff(1, ncoeff);
+    const Vector3F coeff2 = cs.getCoeff(2, ncoeff);
+    const Vector3F coeff3 = cs.getCoeff(3, ncoeff);
+    
+    const Vector3F &b0 = coeff0;
+    Vector3F b1 = coeff1.divide(3.0) + b0;
+    Vector3F b2 = coeff2.divide(3.0) + b1.scale(2.0) - b0;
+    Vector3F b3 = coeff3 + b2.scale(3.0) - b1.scale(3.0) + b0;
+    
+    pdl->setLineWidth(2.0);
+    pdl->startLineStrip();
+    pdl->color(1.0,1.0,1.0);
+    pdl->vertex(b0.x(), b0.y(), b0.z());
+    pdl->vertex(b1.x(), b1.y(), b1.z());
+    pdl->vertex(b2.x(), b2.y(), b2.z());
+    pdl->vertex(b3.x(), b3.y(), b3.z());
+    pdl->end();
+
+    /////
+    
+    Vector4D bn0, bn1;
+    pCoeff->interpNormal(ncoeff, &bn0);
+    pCoeff->interpNormal(ncoeff+1, &bn1);
+
+    Vector4D p0, p1, t0, t1;
+    pCoeff->interpAxis(ncoeff, &p0, &t0);
+    pCoeff->interpAxis(ncoeff+1, &p1, &t1);
+
+    Vector4D e12_0 = (bn0 - p0);
+    Vector4D e11_0 = ( e12_0.cross(t0) ).normalize();
+
+    Vector4D e12_3 = (bn1 - p1);
+    Vector4D e11_3 = ( e12_3.cross(t1) ).normalize();
+
+    const double par1 = 1.0/3.0;
+    Vector4D e11_1 = e11_0.scale(1-par1) + e11_3.scale(par1);
+    Vector4D e12_1 = e12_0.scale(1-par1) + e12_3.scale(par1);
+
+    Vector4D e11_2 = e11_0.scale(par1) + e11_3.scale(1-par1);
+    Vector4D e12_2 = e12_0.scale(par1) + e12_3.scale(1-par1);
+
+    Vector4D db0(b0.x(), b0.y(), b0.z());
+    Vector4D db1(b1.x(), b1.y(), b1.z());
+    Vector4D db2(b2.x(), b2.y(), b2.z());
+    Vector4D db3(b3.x(), b3.y(), b3.z());
+
+    const double c = 0.55;
+    pdl->setPointSize(10.0);
+    pdl->startPoints();
+
+    pdl->vertex(db0 + e11_0);
+    pdl->vertex(db0 + e11_0 + e12_0.scale(c));
+    pdl->vertex(db0 + e12_0);
+    pdl->vertex(db0 + e12_0 + e11_0.scale(c));
+
+    pdl->vertex(db1 + e11_0);
+    pdl->vertex(db1 + e11_0 + e12_0.scale(c));
+    pdl->vertex(db1 + e12_0);
+    pdl->vertex(db1 + e12_0 + e11_0.scale(c));
+
+    pdl->vertex(db2 + e11_3);
+    pdl->vertex(db2 + e11_3 + e12_3.scale(c));
+    pdl->vertex(db2 + e12_3);
+    pdl->vertex(db2 + e12_3 + e11_3.scale(c));
+
+    pdl->vertex(db3 + e11_3);
+    pdl->vertex(db3 + e11_3 + e12_3.scale(c));
+    pdl->vertex(db3 + e12_3);
+    pdl->vertex(db3 + e12_3 + e11_3.scale(c));
+    pdl->end();
+  }
 }
 
 qlib::Vector2D TubeRenderer::getEScl(double par, SplineCoeff *pCoeff)
