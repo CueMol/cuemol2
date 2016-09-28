@@ -3,23 +3,28 @@
 //  Tube2Renderer vertex shader for OpenGL
 //
 
-//#version 120
-#version 140
 #extension GL_ARB_compatibility : enable
 
+#if (__VERSION__>=140)
+#define USE_TBO 1
+#else
 #extension GL_EXT_gpu_shader4 : enable 
-
+#endif
 
 //precision mediump float;
 
 ////////////////////
 // Uniform variables
 
+#ifdef USE_TBO
 uniform samplerBuffer coefTex;
-
 uniform samplerBuffer binormTex;
-
 uniform samplerBuffer sectTex;
+#else
+uniform sampler1D coefTex;
+uniform sampler1D binormTex;
+uniform sampler1D sectTex;
+#endif
 
 uniform int u_npoints;
 
@@ -36,6 +41,7 @@ attribute vec4 a_color;
 
 void getCoefs(in samplerBuffer tex, in int ind, out vec3 vc0, out vec3 vc1, out vec3 vc2, out vec3 vc3)
 {
+#ifdef USE_TBO
   vc0.x = texelFetch(tex, ind*12+0).r;
   vc0.y = texelFetch(tex, ind*12+1).r;
   vc0.z = texelFetch(tex, ind*12+2).r;
@@ -51,16 +57,24 @@ void getCoefs(in samplerBuffer tex, in int ind, out vec3 vc0, out vec3 vc1, out 
   vc3.x = texelFetch(tex, ind*12+9).r;
   vc3.y = texelFetch(tex, ind*12+10).r;
   vc3.z = texelFetch(tex, ind*12+11).r;
-
-  // return texelFetch1D(coordTex, ind, 0).xyz;
+#else
+  vc0 = texelFetch1D(coefTex, ind*4+0, 0).xyz;
+  vc1 = texelFetch1D(coefTex, ind*4+1, 0).xyz;
+  vc2 = texelFetch1D(coefTex, ind*4+2, 0).xyz;
+  vc3 = texelFetch1D(coefTex, ind*4+3, 0).xyz;
+#endif
 }
 
 vec3 getCoef(in samplerBuffer tex, in int ind)
 {
   vec3 rval;
+#ifdef USE_TBO
   rval.x = texelFetch(tex, ind*3+0).r;
   rval.y = texelFetch(tex, ind*3+1).r;
   rval.z = texelFetch(tex, ind*3+2).r;
+#else
+  rval = texelFetch1D(tex, ind, 0).xyz;
+#endif
   return rval;
 }
 
@@ -122,10 +136,14 @@ vec3 calcBinorm(in float rho)
 
 vec4 getSectTab(in int ind)
 {
+#ifdef USE_TBO
   return vec4( texelFetch(sectTex, ind*4+0).r,
                texelFetch(sectTex, ind*4+1).r,
                texelFetch(sectTex, ind*4+2).r,
                texelFetch(sectTex, ind*4+3).r );
+#else
+  return texelFetch1D(sectTex, ind, 0);
+#endif
 }
 
 // local variables for lighting calc

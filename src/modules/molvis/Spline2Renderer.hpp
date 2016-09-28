@@ -17,9 +17,9 @@
 #include "CubicSpline.hpp"
 #include "SplineCoeffSet.hpp"
 
-#if (GUI_ARCH==OSX)
-#else
+#ifdef WIN32
 #define USE_TBO 1
+#else
 #endif
 
 namespace sysdep {

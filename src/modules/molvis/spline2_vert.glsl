@@ -42,15 +42,6 @@ float ffog(in float ecDistance)
 
 void getCoefs(in int ind, out vec3 vc0, out vec3 vc1, out vec3 vc2, out vec3 vc3)
 {
-/*
-  ivec2 iv;
-  iv.x = ind%1024;
-  //iv.y = ind;
-  iv.y = ind/1024;
-  //iv.x = 1;
-  return ( texelFetch2D(coordTex, iv, 0).xyz );
-*/
-  
 #ifdef USE_TBO
   vc0.x = texelFetch(coefTex, ind*12+0).r;
   vc0.y = texelFetch(coefTex, ind*12+1).r;

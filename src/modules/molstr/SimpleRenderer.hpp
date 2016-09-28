@@ -12,9 +12,9 @@
 #include <gfx/DrawElem.hpp>
 #include <gfx/DrawAttrArray.hpp>
 
-#if (GUI_ARCH==OSX)
-#else
+#ifdef WIN32
 #define USE_TBO 1
+#else
 #endif
 
 class SimpleRenderer_wrap;
