@@ -25,7 +25,7 @@ OglShaderObject::~OglShaderObject()
   }
 }
 
-void OglShaderObject::loadFile(const LString& filename)
+void OglShaderObject::loadFile(const LString& filename, SOMacroDefs *penv)
 {
   CLR_GLERROR();
   // CHK_GLERROR("SO.loadFile createShader BEFORE");
@@ -55,21 +55,35 @@ void OglShaderObject::loadFile(const LString& filename)
     sbuf[n] = '\0';
     m_source += sbuf;
   }
-/*
-  std::ifstream f_in( fnam.c_str(), std::ios::binary );
-  if ( f_in.fail()) {
-    LOG_DPRINTLN("ShaderObject::ShaderObject(): cannot open file: %s",
-                 fnam.c_str());
-    MB_ASSERT(false);
-    return;
+
+  // check supported shaderlang version
+
+  LString verstr;
+  const char *pstr = (const char *) glGetString(GL_SHADING_LANGUAGE_VERSION);
+  if (pstr!=NULL) {
+    LString sv(pstr);
+    int dot = sv.indexOf('.');
+    verstr = "#version "+sv.substr(0,dot) + sv.substr(dot+1);
   }
 
-  std::ostringstream str_out;
-  str_out << f_in.rdbuf();
-  m_source = str_out.str();
-  f_in.close();
-*/
+  MB_DPRINTLN("PO> Add version macro: %s", verstr.c_str());
+
+  // define macro variables
+  LString macstr;
+  if (penv!=NULL) {
+    SOMacroDefs &som = *penv;
+    BOOST_FOREACH (SOMacroDefs::value_type &elem, som) {
+      macstr += "#define "+(elem.first)+" "+(elem.second) +"\n";
+    }
+  }
+
+  MB_DPRINTLN("PO> Add macro defs: %s", macstr.c_str());
+
   // set shader source
+
+  m_source = verstr + "\n"
+    + macstr + "\n"
+    + m_source;
 
   const char *s = m_source.c_str();
   int l = m_source.length();
@@ -178,13 +192,13 @@ bool OglProgramObject::loadShader(const LString &name, const LString &srcpath, G
   if (pVS==NULL)
     return false;
 
-  LOG_DPRINTLN("PO> Loading shader: %s", srcpath.c_str());
+  MB_DPRINTLN("PO> Loading shader: %s", srcpath.c_str());
   pVS->loadFile(srcpath);
   pVS->compile();
   attach(pVS);
   m_shaders.insert(ShaderTab::value_type(name, pVS));
 
-  LOG_DPRINTLN("PO> Loading shader OK");
+  LOG_DPRINTLN("PO> Loading shader: %s OK", srcpath.c_str());
   return true;
 }
 

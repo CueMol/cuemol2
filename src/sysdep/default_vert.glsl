@@ -90,8 +90,8 @@ void main (void)
   //gEcPosition = ecPosition;
 
   // Do fixed functionality vertex transform
-  // ???: gl_Position = gl_ProjectionMatrix * ecPosition;
-  gl_Position = ftransform();
+  gl_Position = gl_ProjectionMatrix * ecPosition;
+  // gl_Position = ftransform();
 
   if (enable_lighting) {
     vec3 normal = fnormal();

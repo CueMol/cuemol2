@@ -28,6 +28,8 @@ namespace qsys {
     /// geoetry shader
     virtual bool hasGeomShader() const { return false; }
 
+    /// shader language version
+    virtual LString getSLVersion() const { return LString(); }
   };
 }
 

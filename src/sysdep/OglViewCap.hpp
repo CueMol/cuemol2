@@ -21,6 +21,8 @@ namespace sysdep {
     bool m_bHasGS;
     bool m_bHasFS;
     
+    LString m_sGLSLVer;
+
   public:
     OglViewCap()
     {
@@ -71,10 +73,13 @@ namespace sysdep {
 #ifdef HAVE_GLEW
       LOG_DPRINTLN("  GLEW %s", glewGetString(GLEW_VERSION));
       const char *pstr = (const char *) glGetString(GL_SHADING_LANGUAGE_VERSION);
-      if (pstr)
+      if (pstr) {
         LOG_DPRINTLN("  GLSL %s", pstr);
+	m_sGLSLVer = pstr;
+      }
 #endif
       LOG_DPRINTLN("-------------------");
+
       /*
     MB_DPRINTLN("--- Extensions ---",);
     std::list<LString> ls;
@@ -106,6 +111,8 @@ namespace sysdep {
     /// geoetry shader
     virtual bool hasGeomShader() const { return m_bHasGS; }
     
+    virtual LString getSLVersion() const { return m_sGLSLVer; }
+
   };
 
 }

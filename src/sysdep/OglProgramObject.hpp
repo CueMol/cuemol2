@@ -26,6 +26,8 @@ namespace sysdep {
 
   using qlib::LString;
   
+  typedef std::map<LString, LString> SOMacroDefs;
+
   class SYSDEP_API OglShaderObject
   {
 
@@ -35,6 +37,8 @@ namespace sysdep {
     GLenum m_nType;
     LString m_source;
  
+    //std::map<LString, LString> m_macrodefs;
+
   public:
     OglShaderObject(const GLenum shader_type )
          : m_nType(shader_type), m_hGL(NULL)
@@ -43,7 +47,7 @@ namespace sysdep {
     
     virtual ~OglShaderObject();
     
-    void loadFile(const LString& filename);
+    void loadFile(const LString& filename, SOMacroDefs *penv = NULL);
 
     bool compile();
     
