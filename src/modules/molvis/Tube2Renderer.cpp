@@ -325,6 +325,7 @@ void Tube2Renderer::updateColorVBO(Tube2Seg *pSeg, DisplayContext *pdc)
 
 void Tube2Renderer::updateStatic(Tube2Seg *pSeg)
 {
+/*
   // update axial intpol coef
   MolCoordPtr pCMol = getClientMol();
   MolAtomPtr pAtom;
@@ -342,7 +343,10 @@ void Tube2Renderer::updateStatic(Tube2Seg *pSeg)
 
   // update binorm coeff
   pSeg->updateBinormIntpol(pCMol);
+*/
 
+  pSeg->updateStatic(this);
+  
   if (m_bUseGLSL) {
     updateGLSL(pSeg);
   }
@@ -353,6 +357,7 @@ void Tube2Renderer::updateStatic(Tube2Seg *pSeg)
 
 void Tube2Renderer::updateDynamic(Tube2Seg *pSeg)
 {
+  /*
   // update axial intpol coef
   MolCoordPtr pCMol = getClientMol();
   AnimMol *pAMol = static_cast<AnimMol *>(pCMol.get());
@@ -371,7 +376,10 @@ void Tube2Renderer::updateDynamic(Tube2Seg *pSeg)
 
   // update binorm coeff
   pSeg->updateBinormIntpol(pCMol);
+*/
 
+  pSeg->updateDynamic(this);
+  
   if (m_bUseGLSL) {
     updateGLSL(pSeg);
   }

@@ -859,3 +859,46 @@ Vector3F SplineSegment::intpolLinBn(float par)
   return cp0.scale(1.0f - f) + cp1.scale(f);
 }
 
+void SplineSegment::updateStatic(MainChainRenderer *pthis)
+{
+  // update axial intpol coef
+  MolCoordPtr pCMol = pthis->getClientMol();
+  MolAtomPtr pAtom;
+  Vector4D pos4d;
+  int i;
+  const int nCtlPts = m_nCtlPts;
+
+  for (i=0; i<nCtlPts; ++i) {
+    pAtom = getAtom(pCMol, i);
+    pos4d = pAtom->getPos();
+    m_scoeff.setPoint(i, Vector3F(float(pos4d.x()), float(pos4d.y()), float(pos4d.z())));
+  }
+
+  m_scoeff.generate();
+
+  // update binorm coeff
+  updateBinormIntpol(pCMol);
+}
+
+void SplineSegment::updateDynamic(MainChainRenderer *pthis)
+{
+  // update axial intpol coef
+  MolCoordPtr pCMol = pthis->getClientMol();
+  AnimMol *pAMol = static_cast<AnimMol *>(pCMol.get());
+
+  qfloat32 *crd = pAMol->getAtomCrdArray();
+
+  MolAtomPtr pAtom;
+  Vector4D pos4d;
+  int i;
+  const int nCtlPts = m_nCtlPts;
+
+  for (i=0; i<nCtlPts; ++i) {
+    m_scoeff.setPoint(i, Vector3F(&crd[m_inds[i]]));
+  }
+  m_scoeff.generate();
+
+  // update binorm coeff
+  updateBinormIntpol(pCMol);
+}
+

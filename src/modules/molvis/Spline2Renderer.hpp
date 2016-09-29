@@ -134,6 +134,9 @@ namespace molvis {
       
       Vector3F intpolLinBn(float par);
 
+      void updateStatic(MainChainRenderer *pthis);
+      void updateDynamic(MainChainRenderer *pthis);
+
     };
 
   }
