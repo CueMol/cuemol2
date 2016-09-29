@@ -86,6 +86,7 @@ void OglDisplayContext::init()
     return;
 
 #if HAVE_GLEW
+  // create default shaders
   m_pDefPO = createProgramObject("default");
   if (m_pDefPO==NULL) {
     m_bUseShaderAlpha = false;
@@ -1475,7 +1476,7 @@ void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
   if (itype==AbstDrawElem::VA_ATTR_INDS) {
     if (indsz==2) {
 #ifdef USE_GL_VBO_INST
-      if (ninst>0)
+      if (ninst>0 && GLEW_ARB_instanced_arrays)
         glDrawElementsInstanced(mode, ada.getIndSize(), GL_UNSIGNED_SHORT, 0, ninst);
       else
 #endif
@@ -1483,7 +1484,7 @@ void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
     }
     else if (indsz==4) {
 #ifdef USE_GL_VBO_INST
-      if (ninst>0)
+      if (ninst>0 && GLEW_ARB_instanced_arrays)
         glDrawElementsInstanced(mode, ada.getIndSize(), GL_UNSIGNED_INT, 0, ninst);
       else
 #endif
@@ -1496,7 +1497,7 @@ void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
   }
   else {
 #ifdef USE_GL_VBO_INST
-    if (ninst>0)
+    if (ninst>0 && GLEW_ARB_instanced_arrays)
       glDrawArraysInstanced(mode, 0, ada.getSize(), ninst);
     else
 #endif

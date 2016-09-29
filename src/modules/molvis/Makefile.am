@@ -79,6 +79,8 @@ sphere_vertex.glsl \
 sphere_frag.glsl \
 cylinder_vertex.glsl \
 cylinder_frag.glsl \
+spline2_vert.glsl \
+spline2_frag.glsl \
 tube2_vert.glsl \
 tube2_frag.glsl \
 $(NULL)

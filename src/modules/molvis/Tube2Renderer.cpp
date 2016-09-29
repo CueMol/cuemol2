@@ -19,7 +19,10 @@
 
 #include <sysdep/OglProgramObject.hpp>
 
+#ifdef WIN32
 #define USE_GL_VBO_INST 1
+#else
+#endif
 
 using namespace molvis;
 using namespace molstr;

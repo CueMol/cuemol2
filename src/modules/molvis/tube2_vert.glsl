@@ -16,14 +16,14 @@
 // Uniform variables
 
 #ifdef USE_TBO
-uniform samplerBuffer coefTex;
-uniform samplerBuffer binormTex;
-uniform samplerBuffer sectTex;
+#define TextureType samplerBuffer
 #else
-uniform sampler1D coefTex;
-uniform sampler1D binormTex;
-uniform sampler1D sectTex;
+#define TextureType sampler1D
 #endif
+
+uniform TextureType coefTex;
+uniform TextureType binormTex;
+uniform TextureType sectTex;
 
 uniform int u_npoints;
 
@@ -38,7 +38,7 @@ attribute vec4 a_color;
 
 ////////////////////
 
-void getCoefs(in samplerBuffer tex, in int ind, out vec3 vc0, out vec3 vc1, out vec3 vc2, out vec3 vc3)
+void getCoefs(in TextureType tex, in int ind, out vec3 vc0, out vec3 vc1, out vec3 vc2, out vec3 vc3)
 {
 #ifdef USE_TBO
   vc0.x = texelFetch(tex, ind*12+0).r;
@@ -64,7 +64,7 @@ void getCoefs(in samplerBuffer tex, in int ind, out vec3 vc0, out vec3 vc1, out 
 #endif
 }
 
-vec3 getCoef(in samplerBuffer tex, in int ind)
+vec3 getCoef(in TextureType tex, in int ind)
 {
   vec3 rval;
 #ifdef USE_TBO
@@ -77,7 +77,7 @@ vec3 getCoef(in samplerBuffer tex, in int ind)
   return rval;
 }
 
-vec3 interpolate(in samplerBuffer tex, in float rho)
+vec3 interpolate(in TextureType tex, in float rho)
 {
   vec3 coef0, coef1, coef2, coef3;
 
@@ -96,7 +96,7 @@ vec3 interpolate(in samplerBuffer tex, in float rho)
   return rval;
 }
 
-void interpolate2(in samplerBuffer tex, in float rho,
+void interpolate2(in TextureType tex, in float rho,
                   out vec3 rval, out vec3 drval)
 {
   vec3 coef0, coef1, coef2, coef3;
