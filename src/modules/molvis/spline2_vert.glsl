@@ -4,7 +4,7 @@
 //
 
 
-#extension GL_ARB_compatibility : enable
+//#extension GL_ARB_compatibility : enable
 
 #if (__VERSION__>=140)
 #define USE_TBO 1

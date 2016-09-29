@@ -66,6 +66,7 @@ namespace sysdep {
       m_nDepth = 0;
       m_bInit = false;
       m_bUseTexBuf = false;
+      m_bUseIntpol = false;
     }
 
     virtual ~OglTextureRep() {
@@ -193,8 +194,14 @@ namespace sysdep {
       glBindTexture(m_iGlDimType, 0);
     }
 
+    virtual void setLinIntpol(bool b)
+    {
+      m_bUseIntpol = b;
+    }
+
   private:
     GLint m_nMaxTexSize, m_nMaxTexBufSize, m_nMax3DTexSize;
+    bool m_bUseIntpol;
 
     bool isTBOAvailable()
     {
@@ -229,10 +236,15 @@ namespace sysdep {
       CHK_GLERROR("glBindTexture");
 
       // filter setting
-      //glTexParameteri(m_iGlDimType, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-      //glTexParameteri(m_iGlDimType, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-      glTexParameteri(m_iGlDimType, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-      glTexParameteri(m_iGlDimType, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+      if (m_bUseIntpol) {
+        glTexParameteri(m_iGlDimType, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(m_iGlDimType, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+      }
+      else {
+        glTexParameteri(m_iGlDimType, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(m_iGlDimType, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      }
 
       // clamp setting
       glTexParameteri(m_iGlDimType, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);

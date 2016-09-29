@@ -107,7 +107,7 @@ void SimpleRenderer::createGLSL(DisplayContext *pdc)
 
 #ifdef USE_TBO
   m_coordbuf.resize(ncrds);
-  LOG_DPRINTLN("SimpleGLSL> Coord Texture size=%d", ncrds);
+  LOG_DPRINTLN("SimpleGLSL> Coord Texture (TBO) size=%d", ncrds);
 #else
   int h=0;
   if (ncrds%1024==0)
@@ -118,7 +118,7 @@ void SimpleRenderer::createGLSL(DisplayContext *pdc)
 
   m_nTexW = 1024;
   m_nTexH = h;
-  LOG_DPRINTLN("SimpleGLSL> Coord Texture size=%d,%d", m_nTexW, m_nTexH);
+  LOG_DPRINTLN("SimpleGLSL> Coord Texture2D size=%d,%d", m_nTexW, m_nTexH);
 #endif
 
   m_bUseSels = false;

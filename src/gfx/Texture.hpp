@@ -22,6 +22,8 @@ namespace gfx {
 
     virtual void use(int nUnit) =0;
     virtual void unuse() =0;
+
+    virtual void setLinIntpol(bool b) {}
   };
 
   /////////////////////////////////////
@@ -88,6 +90,10 @@ namespace gfx {
       getRep()->unuse();
     }
 
+    void setLinIntpol(bool b)
+    {
+      getRep()->setLinIntpol(b);
+    }
   }; 
 
   /////////////////////////////////////

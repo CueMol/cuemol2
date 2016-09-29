@@ -4,7 +4,6 @@
 //
 
 #if (__VERSION__>=140)
-#extension GL_ARB_compatibility : enable
 #define USE_TBO 1
 #else
 #extension GL_EXT_gpu_shader4 : enable 
@@ -24,6 +23,7 @@
 uniform TextureType coefTex;
 uniform TextureType binormTex;
 uniform TextureType sectTex;
+uniform sampler1D colorTex;
 
 uniform int u_npoints;
 
@@ -33,8 +33,8 @@ uniform int u_npoints;
 // spline rho param
 attribute vec2 a_rho;
 
-// color
-attribute vec4 a_color;
+// // color
+// attribute vec4 a_color;
 
 ////////////////////
 
@@ -145,6 +145,22 @@ vec4 getSectTab(in int ind)
 #endif
 }
 
+vec4 calcColor(in float rho)
+{
+  int ncoeff = int(floor(rho));
+  ncoeff = clamp(ncoeff, 0, u_npoints-2);
+  float f = rho - float(ncoeff);
+
+#if (__VERSION__>=140)
+  vec4 col0 = texelFetch(colorTex, ncoeff, 0);
+  vec4 col1 = texelFetch(colorTex, ncoeff+1, 0);
+#else
+  vec4 col0 = texelFetch1D(colorTex, ncoeff, 0);
+  vec4 col1 = texelFetch1D(colorTex, ncoeff+1, 0);
+#endif
+  return mix(col0, col1, f);
+}
+
 // local variables for lighting calc
 vec4 Ambient;
 vec4 Diffuse;
@@ -234,10 +250,11 @@ void main (void)
   // Do fixed functionality vertex transform
   gl_Position = gl_ProjectionMatrix * ecPosition;
 
+  vec4 col = calcColor(par);
   //gl_FrontColor=vec4(xx, xx, xx, 1.0);
   //gl_FrontColor=a_color;
 
-  gl_FrontColor = flight(a_color, gl_NormalMatrix * norm, ecPosition);
+  gl_FrontColor = flight(col, gl_NormalMatrix * norm, ecPosition);
 
 
   gl_FogFragCoord = ffog(ecPosition.z);

@@ -3,14 +3,10 @@
 //  SimpleRenderer vertex shader for OpenGL
 //
 
-//#version 120
-//#version 140
-
-#extension GL_ARB_compatibility : enable
-
 #if (__VERSION__>=140)
 #define USE_TBO 1
 #else
+#extension GL_ARB_compatibility : enable
 #extension GL_EXT_gpu_shader4 : enable 
 #endif
 
