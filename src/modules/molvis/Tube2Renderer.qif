@@ -22,11 +22,7 @@ runtime_class Tube2Renderer extends MainChainRenderer
 
   /// Detail level to the axial direction
   property integer axialdetail => redirect(getAxialDetail, setAxialDetail);
-  default axialdetail = 10;
-
-  /// spline line width
-  property real line_width => redirect(getLineWidth, setLineWidth);
-  default line_width = 1.2;
+  default axialdetail = 20;
 
 };
 

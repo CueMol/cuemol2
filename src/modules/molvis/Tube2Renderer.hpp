@@ -16,6 +16,7 @@
 #include <modules/molstr/MainChainRenderer.hpp>
 #include "CubicSpline.hpp"
 #include "TubeSection.hpp"
+#include "Spline2Renderer.hpp"
 
 #ifdef WIN32
 #define USE_TBO 1
@@ -40,26 +41,17 @@ namespace molvis {
   class Tube2Renderer;
   class Tube2Seg;
 
-  class Tub2DrawSeg
+  ////////////////////////////////////////////////
+  //
+  /// Rendering object for the one drawing segment
+  //
+  class Tub2DrawSeg : public detail::DrawSegment
   {
   public:
-    int m_nStart;
-    int m_nEnd;
 
-    /// tesselation level detail (copy of rend's prop)
-    int m_nDetail;
+    typedef detail::DrawSegment super_t;
 
-    /// Number of axial points in this DrawSeg
-    int m_nAxPts;
-
-    /// Number of section division
-    int m_nSecDiv;
-
-    /// size of vertex/attribute array
-    int m_nVA;
-
-
-    Tub2DrawSeg(int st, int en) : m_nStart(st), m_nEnd(en), m_pVBO(NULL), m_pAttrAry(NULL)
+    Tub2DrawSeg(int st, int en) : super_t(st, en), m_pVBO(NULL), m_pAttrAry(NULL)
     {
     }
 
@@ -68,23 +60,16 @@ namespace molvis {
     //////////
     // VBO implementation
 
+    typedef gfx::DrawElemVNCI32 VertArray;
+
     /// cached vertex array/VBO
-    gfx::DrawElemVNCI32 *m_pVBO;
-
-    void setupVBO(Tube2Renderer *pthis);
-
-    void updateVBO(Tube2Renderer *pthis, Tube2Seg *pseg);
-
-    void updateVBOColor(Tube2Renderer *pthis, Tube2Seg *pseg);
-
-    void drawVBO(Tube2Renderer *pthis, DisplayContext *pdc);
+    VertArray *m_pVBO;
 
     //////////
     // GLSL implementation
 
     struct AttrElem {
       qfloat32 rhoi, rhoj;
-      // qbyte r, g, b, a;
     };
 
     typedef gfx::DrawAttrElems<quint32, AttrElem> AttrArray;
@@ -92,111 +77,35 @@ namespace molvis {
     /// VBO for glsl rendering
     AttrArray *m_pAttrAry;
 
-    /// Initialize shaders/texture
-    void setupGLSL(Tube2Renderer *pthis);
-
-    void updateGLSLColor(Tube2Renderer *pthis, Tube2Seg *pSeg);
-
-    /// display() for GLSL version
-    void drawGLSL(DisplayContext *pdc);
-
   };
 
 
+  ////////////////////////////////////////////////
   //
   /// Rendering object for the one spline segment
   //
-  class Tube2Seg
+  class Tube2Seg : public detail::SplineSegment
   {
   public:
 
-    typedef std::deque<Tub2DrawSeg> Tub2DrawList;
-    Tub2DrawList m_draws;
-
-    typedef std::vector<int> IDArray;
+    typedef detail::SplineSegment super_t;
     
-    /// Pivot atom AID array
-    IDArray m_aids;
+    typedef std::deque<Tub2DrawSeg> DrawSegList;
 
-    /// Pivot atom crd array index (for dynamic update)
-    IDArray m_inds;
+    DrawSegList m_draws;
 
-    Tube2Seg();
-    ~Tube2Seg();
-
-    std::deque<int> m_aidtmp;
-
-    inline void append(MolAtomPtr pAtom) {
-      m_aidtmp.push_back(pAtom->getID());
+    /// ctor
+    Tube2Seg() : super_t()
+    {
+      m_pCoefTex = NULL;
+      m_pBinormTex = NULL;
+      m_pColorTex = NULL;
     }
 
-    void generate(Tube2Renderer *pthis, DisplayContext *pdc);
+    /// dtor
+    virtual ~Tube2Seg();
 
-    quint32 getSize() const { return m_nCtlPts; }
-
-    MolAtomPtr getAtom(MolCoordPtr pMol, quint32 ind) const {
-      quint32 aid = m_aids[ind];
-      return pMol->getAtom(aid);
-    }
-
-    MolResiduePtr getResid(MolCoordPtr pMol, quint32 ind) const {
-      MolAtomPtr pAtom = getAtom(pMol, ind);
-      return pAtom->getParentResidue();
-    }
-
-    quint32 calcColor(Tube2Renderer *pthis, MolCoordPtr pMol, float par) const;
-
-    Vector3F calcBinormVec(MolCoordPtr pMol, int nres);
-    bool checkBinormFlip(const Vector3F &dv, const Vector3F &binorm,
-                         const Vector3F &prev_dv, const Vector3F &prev_bn);
-
-    //////////
-    // drawing methods
-
-    void updateDynamic(Tube2Renderer *pthis);
-    
-    void updateStatic(Tube2Renderer *pthis);
-    
-    void updateColor(Tube2Renderer *pthis);
-
-    void draw(Tube2Renderer *pthis, DisplayContext *pdc);
-    
-    //////////
-    // spline methods
-
-    /// Number of the Interpolation control points
-    int m_nCtlPts;
-
-    /// Main axis interpolation coeff (common, cubic spline)
-    CubicSpline m_scoeff;
-
-    /// Binorm interpolation coeff (linear)
-    // CubicSpline m_bnormInt;
-    std::vector<Vector3F> m_linBnInt;
-
-    CubicSpline *getAxisIntpol() { return &m_scoeff; }
-//    CubicSpline *getBinormIntpol() { return &m_bnormInt; }
-
-    void updateScoeffDynamic(Tube2Renderer *pthis);
-    void updateScoeffStatic(Tube2Renderer *pthis);
-    void updateBinormIntpol(MolCoordPtr pCMol);
-
-    //////////
-    // VBO implementation
-
-    void setupVBO(Tube2Renderer *pthis);
-
-    void updateDynamicVBO(Tube2Renderer *pthis);
-
-    void updateStaticVBO(Tube2Renderer *pthis);
-
-    void updateVBOColor(Tube2Renderer *pthis);
-
-    void drawVBO(Tube2Renderer *pthis, DisplayContext *pdc);
-
-    void updateVBO(Tube2Renderer *pthis);
-
-    Vector3F intpolLinBn(float par);
+    virtual void generateImpl(int nstart, int nend);
 
     /////////////////////
     // GLSL implementation
@@ -207,32 +116,9 @@ namespace molvis {
     /// float texture of the binorm interp coeff
     gfx::Texture *m_pBinormTex;
 
-    gfx::Texture *m_pSectTex;
-
-    std::vector<float> m_secttab;
-
     /// color texture
     gfx::Texture *m_pColorTex;
     std::vector<qbyte> m_colorTexData;
-
-    //
-    // GLSL methods
-    //
-
-    /// Initialize shaders/texture
-    void setupGLSL(Tube2Renderer *pthis, DisplayContext *pdc);
-
-    /// update coord texture for GLSL rendering
-    void updateDynamicGLSL(Tube2Renderer *pthis);
-
-    void updateStaticGLSL(Tube2Renderer *pthis);
-
-    void updateGLSLColor(Tube2Renderer *pthis);
-
-    /// display() for GLSL version
-    void drawGLSL(Tube2Renderer *pthis, DisplayContext *pdc);
-
-    void updateCoefTex(Tube2Renderer *pthis);
 
   };
 
@@ -240,7 +126,7 @@ namespace molvis {
 
   ////////////////////////////////////////////////////////
   //
-  // Spline Renderer version 2 class
+  // Tube Renderer version 2 class
   //
 
   class Tube2Renderer : public MainChainRenderer
@@ -324,25 +210,49 @@ namespace molvis {
 
   private:
 
+    /////////////////
+    // Common implementation
+
     Tub2SegList m_seglist;
 
     void createSegList(DisplayContext *pdc);
 
+    void setup(Tube2Seg *pSeg, DisplayContext *pdc);
+
     void startColorCalc();
     void endColorCalc();
 
+    void updateStatic(Tube2Seg *pSeg);
+    void updateDynamic(Tube2Seg *pSeg);
 
+
+  private:
     /////////////////
     // VBO implementation
 
-  public:
+
+    void setupVBO(Tube2Seg *pSeg, DisplayContext *pdc);
+
     void updateColorVBO(Tube2Seg *pSeg, DisplayContext *pdc);
+
+    void updateVBO(Tube2Seg *pSeg);
+
     void drawVBO(Tube2Seg *pSeg, DisplayContext *pdc);
 
+
+  private:
     /////////////////
     // GLSL implementation
-  public:
+
+    /// Initialize shaders
+    void initShader(DisplayContext *pdc);
+
+    void setupGLSL(Tube2Seg *pSeg, DisplayContext *pdc);
+
     void updateColorGLSL(Tube2Seg *pSeg, DisplayContext *pdc);
+
+    void updateGLSL(Tube2Seg *pSeg);
+
     void drawGLSL(Tube2Seg *pSeg, DisplayContext *pdc);
 
     bool m_bUseGLSL;
@@ -355,16 +265,19 @@ namespace molvis {
 
     quint32 m_nRhoLoc;
 
-    quint32 m_nColLoc;
+    // quint32 m_nColLoc;
 
     static const int COEF_TEX_UNIT = 0;
     static const int BINORM_TEX_UNIT = 1;
     static const int SECT_TEX_UNIT = 2;
     static const int COLOR_TEX_UNIT = 3;
 
-  private:
-    /// Initialize shaders
-    void initShader(DisplayContext *pdc);
+    gfx::Texture *m_pSectTex;
+    std::vector<float> m_secttab;
+
+    void setupSectGLSL(DisplayContext *pdc);
+    
+    void updateSectGLSL();
 
   };
 

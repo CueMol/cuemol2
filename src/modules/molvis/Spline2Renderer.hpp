@@ -37,6 +37,110 @@ namespace molvis {
   using gfx::ColorPtr;
   using namespace molstr;
 
+  namespace detail {
+
+    class DrawSegment
+    {
+    public:
+      /// start value of this drawing segment
+      int m_nStart;
+      
+      /// end value of this drawing segment
+      int m_nEnd;
+      
+      /// Number of axial points in this DrawSeg
+      int m_nAxPts;
+      
+    public:
+      DrawSegment(int st, int en)
+           : m_nStart(st), m_nEnd(en), m_nAxPts(-1)
+      {
+      }
+      
+      virtual ~DrawSegment()
+      {
+      }
+      
+	};
+
+    ///////////////
+
+    class SplineSegment
+    {
+    public:
+
+      typedef std::vector<int> IDArray;
+      
+      /// Pivot atom AID array
+      IDArray m_aids;
+      
+      /// Pivot atom crd array index (for dynamic update)
+      IDArray m_inds;
+
+      /// temporary area for aid array construction
+      std::deque<int> m_aidtmp;
+      
+      inline void append(MolAtomPtr pAtom) {
+        m_aidtmp.push_back(pAtom->getID());
+      }
+
+      //////////////////
+
+      /// ctor
+      SplineSegment() : m_nCtlPts(-1) {
+      }
+      
+      /// dtor
+      virtual ~SplineSegment() {
+      }
+      
+      MolAtomPtr getAtom(MolCoordPtr pMol, quint32 ind) const {
+        quint32 aid = m_aids[ind];
+        return pMol->getAtom(aid);
+      }
+      
+      MolResiduePtr getResid(MolCoordPtr pMol, quint32 ind) const {
+        MolAtomPtr pAtom = getAtom(pMol, ind);
+        return pAtom->getParentResidue();
+      }
+      
+
+      /// Main axis interpolation coeff (common, cubic spline)
+      CubicSpline m_scoeff;
+      
+      /// Binorm interpolation coeff (linear)
+      std::vector<Vector3F> m_linBnInt;
+      
+      /// Number of the Interpolation control points
+      int m_nCtlPts;
+      
+      quint32 getSize() const { return m_nCtlPts; }
+
+      CubicSpline *getAxisIntpol() { return &m_scoeff; }
+
+
+      virtual void generateImpl(int nstart, int nend) =0;
+
+      void generate(MainChainRenderer *pthis);
+
+      quint32 calcColor(MainChainRenderer *pthis, MolCoordPtr pMol, float par) const;
+      
+      Vector3F calcBinormVec(MolCoordPtr pMol, int nres);
+
+      bool checkBinormFlip(const Vector3F &dv, const Vector3F &binorm,
+                           const Vector3F &prev_dv, const Vector3F &prev_bn);
+      
+      void updateBinormIntpol(MolCoordPtr pCMol);
+      
+      Vector3F intpolLinBn(float par);
+
+    };
+
+  }
+
+  
+  ///////////////////////////////
+
   class Spline2Renderer;
   class Spline2Seg;
 
