@@ -33,15 +33,7 @@ Tube2Renderer::Tube2Renderer()
 {
   super_t::setupParentData("section");
 
-  m_nAxialDetail = 20;
-  // m_dLineWidth = 1.2;
-
-  m_bUseGLSL = true;
-  //m_bUseGLSL = false;
-
-  m_bChkShaderDone = false;
   m_pPO = NULL;
-
   m_pSectTex = NULL;
 }
 
@@ -59,66 +51,6 @@ const char *Tube2Renderer::getTypeName() const
 void Tube2Renderer::preRender(DisplayContext *pdc)
 {
   pdc->setLighting(true);
-}
-
-void Tube2Renderer::display(DisplayContext *pdc)
-{
-  if (isUseGLSL()) {
-    // new rendering routine using GLSL/VBO
-    if (!isShaderChkDone())
-      initShader(pdc);
-  }
-
-  // Always use VBO (DrawElem)
-  if (m_seglist.empty()) {
-    createSegList(pdc);
-
-    startColorCalc();
-
-    BOOST_FOREACH (Tube2Seg &elem, m_seglist) {
-      if (elem.getSize()>0) {
-        // elem.updateColor(this);
-
-        if (isUseGLSL()) {
-          updateColorGLSL(&elem, pdc);
-        }
-        else {
-          updateColorVBO(&elem, pdc);
-        }
-
-        if (isUseAnim())
-          updateCrdDynamic(&elem);
-        else
-          updateCrdStatic(&elem);
-      }
-    }
-
-    endColorCalc();
-  }
-
-  preRender(pdc);
-  BOOST_FOREACH (Tube2Seg &elem, m_seglist) {
-    if (elem.getSize()>0) {
-      //elem.draw(this, pdc);
-      if (isUseGLSL()) {
-        drawGLSL(&elem, pdc);
-      }
-      else {
-        drawVBO(&elem, pdc);
-      }
-    }
-  }
-  postRender(pdc);
-
-}
-
-void Tube2Renderer::invalidateDisplayCache()
-{
-  if (!m_seglist.empty()) {
-    m_seglist.clear();
-  }
-
-  super_t::invalidateDisplayCache();
 }
 
 void Tube2Renderer::propChanged(qlib::LPropEvent &ev)
@@ -145,7 +77,11 @@ void Tube2Renderer::createSegList(DisplayContext *pdc)
   if (isUseGLSL()) {
     setupSectGLSL(pdc);
   }
+}
 
+SplineSegment *Tube2Renderer::createSegment()
+{
+  return MB_NEW Tube2Seg();
 }
 
 //////////
@@ -246,8 +182,9 @@ void Tube2Renderer::updateCrdVBO(detail::SplineSegment *pASeg)
   }
 }
 
-void Tube2Renderer::updateColorVBO(Tube2Seg *pSeg, DisplayContext *pdc)
+void Tube2Renderer::updateColorVBO(detail::SplineSegment *pASeg, DisplayContext *pdc)
 {
+  Tube2Seg *pSeg = static_cast<Tube2Seg *>(pASeg);
   MolCoordPtr pCMol = getClientMol();
 
   int i, j;
@@ -273,18 +210,15 @@ void Tube2Renderer::updateColorVBO(Tube2Seg *pSeg, DisplayContext *pdc)
         pVBO->color(ind, dcc);
       }
     }
-    
   }
 }
 
 
-void Tube2Renderer::drawVBO(Tube2Seg *pSeg, DisplayContext *pdc)
+void Tube2Renderer::drawVBO(detail::SplineSegment *pASeg, DisplayContext *pdc)
 {
-  // const double lw = getLineWidth();
+  Tube2Seg *pSeg = static_cast<Tube2Seg *>(pASeg);
 
   BOOST_FOREACH (Tub2DrawSeg &elem, pSeg->m_draws) {
-    //elem.drawVBO(pthis, pdc);
-    //m_pVBO->setLineWidth(lw);
     pdc->drawElem(*elem.m_pVBO);
   }
 }

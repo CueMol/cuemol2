@@ -141,11 +141,13 @@ namespace molvis {
 
   }
 
+  using detail::SplineSegment;
+
   ///
   class SplineRendBase : public MainChainRenderer
   {
     MC_SCRIPTABLE;
-    MC_CLONEABLE;
+    // MC_CLONEABLE;
     
     typedef MainChainRenderer super_t;
     
@@ -174,19 +176,22 @@ namespace molvis {
 
     /////////////////
     // Renderer interface
-    
+    virtual void display(DisplayContext *pdc);
 
     /////////////////
     // DispCacheRenderer interface
 
+    virtual void invalidateDisplayCache();
 
     /////////////////
     // SplineRendBase interface
+    virtual bool isCacheAvail() const;
+    virtual void createCacheData(DisplayContext *pdc);
 
-    virtual void updateCrdDynamic() =0;
+    virtual void render2(DisplayContext *pdc);
 
     /////////////////
-    // event handling
+    // Event handling
 
     virtual void propChanged(qlib::LPropEvent &ev);
 
@@ -216,19 +221,26 @@ namespace molvis {
     /////////////////
     // Common implementation
 
-    typedef std::deque<detail::SplineSegment *> SegPtrList;
+    typedef std::deque<SplineSegment *> SegPtrList;
 
     SegPtrList m_seglist;
 
+    void clearSegList() {
+      std::for_each(m_seglist.begin(),
+		    m_seglist.end(),
+		    qlib::delete_ptr<SplineSegment*>());
+      m_seglist.clear();
+    }
+
   public:
-    virtual detail::SplineSegment *createSegment() =0;
+    virtual SplineSegment *createSegment() =0;
 
     void createSegList(DisplayContext *pdc);
 
-    void setup(detail::SplineSegment *pSeg, DisplayContext *pdc);
+    void setup(SplineSegment *pSeg, DisplayContext *pdc);
 
-    virtual void setupVBO(detail::SplineSegment *pSeg, DisplayContext *pdc) =0;
-    virtual void setupGLSL(detail::SplineSegment *pSeg, DisplayContext *pdc) =0;
+    virtual void setupVBO(SplineSegment *pSeg, DisplayContext *pdc) =0;
+    virtual void setupGLSL(SplineSegment *pSeg, DisplayContext *pdc) =0;
 
     void startColorCalc();
     void endColorCalc();
@@ -242,33 +254,30 @@ namespace molvis {
     virtual void updateCrdVBO(detail::SplineSegment *pSeg) =0;
     virtual void updateCrdGLSL(detail::SplineSegment *pSeg) =0;
 
+    // update color data
+
+    virtual void updateColorVBO(SplineSegment *pSeg, DisplayContext *pdc) =0;
+    virtual void updateColorGLSL(SplineSegment *pSeg, DisplayContext *pdc) =0;
+
   public:
     /////////////////
     // VBO implementation
 
 
-    void updateColorVBO(detail::SplineSegment *pSeg, DisplayContext *pdc);
-
-
-    void drawVBO(detail::SplineSegment *pSeg, DisplayContext *pdc);
+    virtual void drawVBO(detail::SplineSegment *pSeg, DisplayContext *pdc) =0;
 
 
   private:
     /////////////////
     // GLSL implementation
 
-    /// Initialize shaders
-    void initShader(DisplayContext *pdc);
+    /// Initialize GLSL
+    virtual bool initShader(DisplayContext *pdc) =0;
 
 
-    void updateColorGLSL(detail::SplineSegment *pSeg, DisplayContext *pdc);
 
 
-    void drawGLSL(detail::SplineSegment *pSeg, DisplayContext *pdc);
-
-    void setupSectGLSL(DisplayContext *pdc);
-    
-    void updateSectGLSL();
+    virtual void drawGLSL(detail::SplineSegment *pSeg, DisplayContext *pdc) =0;
 
   };
 
@@ -548,7 +557,6 @@ namespace molvis {
 
     quint32 m_nColLoc;
 
-  private:
     /// Initialize shaders
     void initShader(DisplayContext *pdc);
 

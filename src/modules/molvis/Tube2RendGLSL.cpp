@@ -29,17 +29,17 @@ using namespace molstr;
 using qlib::Matrix3D;
 
 
-void Tube2Renderer::initShader(DisplayContext *pdc)
+bool Tube2Renderer::initShader(DisplayContext *pdc)
 {
   //m_bChkShaderDone = true;
-  setShaderChkDone(true);
+  setShaderCheckDone(true);
 
   sysdep::ShaderSetupHelper<Tube2Renderer> ssh(this);
   
   if (!ssh.checkEnvVS()) {
     LOG_DPRINTLN("SimpleRendGLSL> ERROR: GLSL not supported.");
-    MB_THROW(qlib::RuntimeException, "OpenGL GPU shading not supported");
-    return;
+    // MB_THROW(qlib::RuntimeException, "OpenGL GPU shading not supported");
+    return false;
   }
 
   if (m_pPO==NULL)
@@ -49,7 +49,7 @@ void Tube2Renderer::initShader(DisplayContext *pdc)
   
   if (m_pPO==NULL) {
     LOG_DPRINTLN("Tube2RendGLSL> ERROR: cannot create progobj.");
-    return;
+    return false;
   }
 
 
@@ -66,6 +66,8 @@ void Tube2Renderer::initShader(DisplayContext *pdc)
   // m_nColLoc = m_pPO->getAttribLocation("a_color");
 
   m_pPO->disable();
+
+  return true;
 }
 
 void Tube2Renderer::setupSectGLSL(DisplayContext *pdc)
@@ -213,8 +215,10 @@ void Tube2Renderer::updateCrdGLSL(detail::SplineSegment *pASeg)
   
 }
 
-void Tube2Renderer::updateColorGLSL(Tube2Seg *pSeg, DisplayContext *pdc)
+void Tube2Renderer::updateColorGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc)
 {
+  Tube2Seg *pSeg = static_cast<Tube2Seg *>(pASeg);
+
   int i, j, ind;
   const int nCtlPts = pSeg->m_nCtlPts;
   const int nSecDiv = getTubeSection()->getSize();
@@ -259,12 +263,11 @@ void Tube2Renderer::updateSectGLSL()
 #endif
 }
 
-void Tube2Renderer::drawGLSL(Tube2Seg *pSeg, DisplayContext *pdc)
+void Tube2Renderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc)
 {
-  // const double lw = getLineWidth();
-  const int nCtlPts = pSeg->m_scoeff.getSize();
+  Tube2Seg *pSeg = static_cast<Tube2Seg *>(pASeg);
 
-  // pdc->setLineWidth(lw);
+  const int nCtlPts = pSeg->m_scoeff.getSize();
 
   pSeg->m_pCoefTex->use(Tube2Renderer::COEF_TEX_UNIT);
   pSeg->m_pBinormTex->use(Tube2Renderer::BINORM_TEX_UNIT);
@@ -282,7 +285,6 @@ void Tube2Renderer::drawGLSL(Tube2Seg *pSeg, DisplayContext *pdc)
   m_pPO->setUniform("colorTex", Tube2Renderer::COLOR_TEX_UNIT);
 
   BOOST_FOREACH (Tub2DrawSeg &elem, pSeg->m_draws) {
-    //elem.drawGLSL(pdc);
     pdc->drawElem(*elem.m_pAttrAry);
   }
 

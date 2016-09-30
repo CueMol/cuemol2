@@ -25,6 +25,7 @@ SplineRenderer.cpp \
 Spline2Renderer.cpp \
 TubeRenderer.cpp \
 Tube2Renderer.cpp \
+Tube2RendGLSL.cpp \
 TubeSection.cpp \
 RibbonRenderer.cpp \
 Ribbon2Renderer.cpp \

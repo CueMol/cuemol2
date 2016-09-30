@@ -189,15 +189,8 @@ namespace molvis {
     // Common implementation
 
     void createSegList(DisplayContext *pdc);
-
-    // void setup(detail::SplineSegment *pSeg, DisplayContext *pdc);
-
-    // void startColorCalc();
-    // void endColorCalc();
-
-    // void updateStatic(Tube2Seg *pSeg);
-    // void updateDynamic(Tube2Seg *pSeg);
-
+    
+    virtual SplineSegment *createSegment();
 
   private:
     /////////////////
@@ -208,9 +201,9 @@ namespace molvis {
 
     virtual void updateCrdVBO(detail::SplineSegment *pSeg);
 
-    void updateColorVBO(detail::SplineSegment *pSeg, DisplayContext *pdc);
+    virtual void updateColorVBO(detail::SplineSegment *pSeg, DisplayContext *pdc);
 
-    void drawVBO(detail::SplineSegment *pSeg, DisplayContext *pdc);
+    virtual void drawVBO(detail::SplineSegment *pSeg, DisplayContext *pdc);
 
 
   private:
@@ -218,15 +211,15 @@ namespace molvis {
     // GLSL implementation
 
     /// Initialize shaders
-    void initShader(DisplayContext *pdc);
+    virtual bool initShader(DisplayContext *pdc);
 
     virtual void setupGLSL(detail::SplineSegment *pSeg, DisplayContext *pdc);
 
     virtual void updateCrdGLSL(detail::SplineSegment *pSeg);
 
-    void updateColorGLSL(Tube2Seg *pSeg, DisplayContext *pdc);
+    virtual void updateColorGLSL(detail::SplineSegment *pSeg, DisplayContext *pdc);
 
-    void drawGLSL(Tube2Seg *pSeg, DisplayContext *pdc);
+    virtual void drawGLSL(detail::SplineSegment *pSeg, DisplayContext *pdc);
 
     // bool m_bUseGLSL;
 
