@@ -20,7 +20,7 @@
 #include <sysdep/OglProgramObject.hpp>
 
 #ifdef WIN32
-#define USE_GL_VBO_INST 1
+#define USE_INSTANCED 1
 #else
 #endif
 
@@ -131,7 +131,7 @@ void Tube2Renderer::setupGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc)
     const int nsplseg = elem.m_nEnd - elem.m_nStart;
     const float fStart = float(elem.m_nStart);
 
-#ifdef USE_GL_VBO_INST
+#ifdef USE_INSTANCED
     const int nAxPts = nDetail + 1;
 #else
     const int nAxPts = nDetail * nsplseg + 1;
@@ -193,7 +193,7 @@ void Tube2Renderer::setupGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc)
       }
     }
     
-#ifdef USE_GL_VBO_INST
+#ifdef USE_INSTANCED
     attra.setInstCount(nsplseg);
 #endif
     

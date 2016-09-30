@@ -4,13 +4,12 @@
 //
 
 
-//#extension GL_ARB_compatibility : enable
-
 #if (__VERSION__>=140)
 #define USE_TBO 1
 #define USE_INSTANCED 1
 #else
 #extension GL_EXT_gpu_shader4 : enable 
+#extension GL_ARB_compatibility : enable
 #endif
 
 //precision mediump float;
@@ -30,7 +29,7 @@ uniform sampler1D colorTex;
 uniform int u_npoints;
 
 #ifndef USE_INSTANCED
-uniform int u_instanceID
+uniform int u_InstanceID;
 #endif
 
 ////////////////////

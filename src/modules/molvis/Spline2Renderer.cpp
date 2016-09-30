@@ -661,6 +661,9 @@ SplineSegment *Spline2Renderer::createSegment()
   return MB_NEW Spline2Seg();
 }
 
+//////////////////////////////////////////////////////////////
+// VBO implementation
+
 void Spline2Renderer::setupVBO(detail::SplineSegment *pASeg, DisplayContext *pdc)
 {
   Spline2Seg *pSeg = static_cast<Spline2Seg *>(pASeg);
@@ -825,7 +828,7 @@ void Spline2Renderer::setupGLSL(detail::SplineSegment *pASeg, DisplayContext *pd
     
     elem.m_pAttrAry = MB_NEW Spl2DrawSeg::AttrArray();
 
-	Spl2DrawSeg::AttrArray &attra = *elem.m_pAttrAry;
+    Spl2DrawSeg::AttrArray &attra = *elem.m_pAttrAry;
     attra.setAttrSize(2);
     attra.setAttrInfo(0, m_nRhoLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(Spl2DrawSeg::AttrElem, rho));
     //attra.setAttrInfo(1, m_nColLoc, 4, qlib::type_consts::QTC_UINT8, offsetof(Spl2DrawSeg::AttrElem, r));
@@ -838,7 +841,7 @@ void Spline2Renderer::setupGLSL(detail::SplineSegment *pASeg, DisplayContext *pd
       attra.at(i).rho = par;
     }
     
-#ifdef USE_GL_VBO_INST
+#ifdef USE_INSTANCED
     attra.setInstCount(nsplseg);
 #endif
 
@@ -923,8 +926,17 @@ void Spline2Renderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc
   m_pPO->setUniform("u_npoints", pSeg->m_scoeff.getSize());
 
   BOOST_FOREACH (Spl2DrawSeg &elem, pSeg->m_draws) {
+#ifdef USE_INSTANCED
     pdc->drawElem(*elem.m_pAttrAry);
+#else
+    const int nspl = elem.m_nEnd - elem.m_nStart;
+    for (int i=0; i<nspl; ++i) {
+      m_pPO->setUniform("u_InstanceID", i);
+      pdc->drawElem(*elem.m_pAttrAry);
+    }
+#endif
   }
+
 
   m_pPO->disable();
   pSeg->m_pCoefTex->unuse();
