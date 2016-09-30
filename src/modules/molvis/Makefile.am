@@ -22,6 +22,7 @@ CPK2Renderer.cpp \
 CubicSpline.cpp \
 SplineCoeffSet.cpp \
 SplineRenderer.cpp \
+SplineRendBase.cpp \
 Spline2Renderer.cpp \
 TubeRenderer.cpp \
 Tube2Renderer.cpp \
