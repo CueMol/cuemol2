@@ -129,40 +129,15 @@ namespace molvis {
   // Tube Renderer version 2 class
   //
 
-  class Tube2Renderer : public MainChainRenderer
+  class Tube2Renderer : public SplineRendBase
   {
     MC_SCRIPTABLE;
     MC_CLONEABLE;
 
-    typedef MainChainRenderer super_t;
+    typedef SplineRendBase super_t;
 
     //////////////
     // Properties
-
-  private:
-    /// Num of interporation point to the axial direction (axialdetail)
-    int m_nAxialDetail;
-
-  public:
-    void setAxialDetail(int nlev) {
-      m_nAxialDetail = nlev;
-      // invalidateSplineCoeffs();
-    }
-
-    int getAxialDetail() const { return m_nAxialDetail; }
-
-  private:
-    /// width of line drawing (in pixel unit)
-    double m_dLineWidth;
-
-  public:
-    void setLineWidth(double d) {
-      super_t::invalidateDisplayCache();
-      m_dLineWidth = d;
-    }
-    double getLineWidth() const {
-      return m_dLineWidth;
-    }
 
   private:
     /// Tube section data
@@ -194,7 +169,7 @@ namespace molvis {
 
     virtual void preRender(DisplayContext *pdc);
     
-    void invalidateDisplayCache();
+    virtual void invalidateDisplayCache();
 
 
     /////////////////
@@ -213,17 +188,15 @@ namespace molvis {
     /////////////////
     // Common implementation
 
-    Tub2SegList m_seglist;
-
     void createSegList(DisplayContext *pdc);
 
-    void setup(Tube2Seg *pSeg, DisplayContext *pdc);
+    // void setup(detail::SplineSegment *pSeg, DisplayContext *pdc);
 
-    void startColorCalc();
-    void endColorCalc();
+    // void startColorCalc();
+    // void endColorCalc();
 
-    void updateStatic(Tube2Seg *pSeg);
-    void updateDynamic(Tube2Seg *pSeg);
+    // void updateStatic(Tube2Seg *pSeg);
+    // void updateDynamic(Tube2Seg *pSeg);
 
 
   private:
@@ -231,13 +204,13 @@ namespace molvis {
     // VBO implementation
 
 
-    void setupVBO(Tube2Seg *pSeg, DisplayContext *pdc);
+    virtual void setupVBO(detail::SplineSegment *pSeg, DisplayContext *pdc);
 
-    void updateColorVBO(Tube2Seg *pSeg, DisplayContext *pdc);
+    virtual void updateCrdVBO(detail::SplineSegment *pSeg);
 
-    void updateVBO(Tube2Seg *pSeg);
+    void updateColorVBO(detail::SplineSegment *pSeg, DisplayContext *pdc);
 
-    void drawVBO(Tube2Seg *pSeg, DisplayContext *pdc);
+    void drawVBO(detail::SplineSegment *pSeg, DisplayContext *pdc);
 
 
   private:
@@ -247,18 +220,18 @@ namespace molvis {
     /// Initialize shaders
     void initShader(DisplayContext *pdc);
 
-    void setupGLSL(Tube2Seg *pSeg, DisplayContext *pdc);
+    virtual void setupGLSL(detail::SplineSegment *pSeg, DisplayContext *pdc);
+
+    virtual void updateCrdGLSL(detail::SplineSegment *pSeg);
 
     void updateColorGLSL(Tube2Seg *pSeg, DisplayContext *pdc);
 
-    void updateGLSL(Tube2Seg *pSeg);
-
     void drawGLSL(Tube2Seg *pSeg, DisplayContext *pdc);
 
-    bool m_bUseGLSL;
+    // bool m_bUseGLSL;
 
-    /// shader check was performed
-    bool m_bChkShaderDone;
+    // /// shader check was performed
+    // bool m_bChkShaderDone;
 
     /// GLSL shader objects
     sysdep::OglProgramObject *m_pPO;

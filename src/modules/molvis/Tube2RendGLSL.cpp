@@ -31,7 +31,8 @@ using qlib::Matrix3D;
 
 void Tube2Renderer::initShader(DisplayContext *pdc)
 {
-  m_bChkShaderDone = true;
+  //m_bChkShaderDone = true;
+  setShaderChkDone(true);
 
   sysdep::ShaderSetupHelper<Tube2Renderer> ssh(this);
   
@@ -85,8 +86,10 @@ void Tube2Renderer::setupSectGLSL(DisplayContext *pdc)
   updateSectGLSL();
 }
 
-void Tube2Renderer::setupGLSL(Tube2Seg *pSeg, DisplayContext *pdc)
+void Tube2Renderer::setupGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc)
 {
+  Tube2Seg *pSeg = static_cast<Tube2Seg *>(pASeg);
+
   if (pSeg->m_pCoefTex!=NULL)
     delete pSeg->m_pCoefTex;
   pSeg->m_pCoefTex = pdc->createTexture();
@@ -193,6 +196,23 @@ void Tube2Renderer::setupGLSL(Tube2Seg *pSeg, DisplayContext *pdc)
   }
 }
 
+void Tube2Renderer::updateCrdGLSL(detail::SplineSegment *pASeg)
+{
+  Tube2Seg *pSeg = static_cast<Tube2Seg *>(pASeg);
+
+  const int nCtlPts = pSeg->m_nCtlPts;
+  
+#ifdef USE_TBO
+  pSeg->m_pCoefTex->setData(nCtlPts * 12, 1, 1, pSeg->m_scoeff.getCoefArray());
+  // m_pBinormTex->setData(nCtlPts * 12, m_bnormInt.getCoefArray());
+  pSeg->m_pBinormTex->setData(nCtlPts * 3, 1, 1, &pSeg->m_linBnInt[0]);
+#else
+  pSeg->m_pCoefTex->setData(nCtlPts * 4, 1, 1, pSeg->m_scoeff.getCoefArray());
+  pSeg->m_pBinormTex->setData(nCtlPts, 1, 1, &pSeg->m_linBnInt[0]);
+#endif
+  
+}
+
 void Tube2Renderer::updateColorGLSL(Tube2Seg *pSeg, DisplayContext *pdc)
 {
   int i, j, ind;
@@ -213,21 +233,6 @@ void Tube2Renderer::updateColorGLSL(Tube2Seg *pSeg, DisplayContext *pdc)
   }
 
   pSeg->m_pColorTex->setData(nCtlPts, 1, 1, &pSeg->m_colorTexData[0]);
-}
-
-void Tube2Renderer::updateGLSL(Tube2Seg *pSeg)
-{
-  const int nCtlPts = pSeg->m_nCtlPts;
-  
-#ifdef USE_TBO
-  pSeg->m_pCoefTex->setData(nCtlPts * 12, 1, 1, pSeg->m_scoeff.getCoefArray());
-  // m_pBinormTex->setData(nCtlPts * 12, m_bnormInt.getCoefArray());
-  pSeg->m_pBinormTex->setData(nCtlPts * 3, 1, 1, &pSeg->m_linBnInt[0]);
-#else
-  pSeg->m_pCoefTex->setData(nCtlPts * 4, 1, 1, pSeg->m_scoeff.getCoefArray());
-  pSeg->m_pBinormTex->setData(nCtlPts, 1, 1, &pSeg->m_linBnInt[0]);
-#endif
-  
 }
 
 //////////

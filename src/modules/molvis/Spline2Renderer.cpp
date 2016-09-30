@@ -902,3 +902,149 @@ void SplineSegment::updateDynamic(MainChainRenderer *pthis)
   updateBinormIntpol(pCMol);
 }
 
+//////////
+
+SplineRendBase::SplineRendBase()
+{
+}
+    
+SplineRendBase::~SplineRendBase()
+{
+}
+
+void SplineRendBase::propChanged(qlib::LPropEvent &ev)
+{
+  if (ev.getParentName().equals("coloring")||
+      ev.getParentName().startsWith("coloring.")) {
+    invalidateDisplayCache();
+  }
+  else if (ev.getName().equals("axialdetail")) {
+    invalidateDisplayCache();
+  }
+  
+  super_t::propChanged(ev);
+}
+
+void SplineRendBase::objectChanged(qsys::ObjectEvent &ev)
+{
+  if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED &&
+      ev.getDescr().equals("atomsMoved")) {
+
+    // OBE_CHANGED && descr=="atomsMoved"
+
+    if (isUseAnim()) {
+      updateCrdDynamic();
+      return;
+    }
+
+  }
+
+  super_t::objectChanged(ev);
+}
+
+//////////
+
+void SplineRendBase::createSegList(DisplayContext *pdc)
+{
+  MolCoordPtr pCMol = getClientMol();
+
+  // visit all residues
+  ResidIterator iter(pCMol);
+  
+  MolResiduePtr pPrevResid;
+  for (iter.first(); iter.hasMore(); iter.next()) {
+    MolResiduePtr pRes = iter.get();
+    MB_ASSERT(!pRes.isnull());
+    
+    MolAtomPtr pPiv = getPivotAtom(pRes);
+    if (pPiv.isnull()) {
+      // This resid doesn't has pivot, so we cannot draw backbone!!
+      if (!pPrevResid.isnull()) {
+        setup(m_seglist.back(), pdc);
+      }
+      pPrevResid = MolResiduePtr();
+      continue;
+    }
+    
+    if (isNewSegment(pRes, pPrevResid)) {
+      if (!pPrevResid.isnull()) {
+        setup(m_seglist.back(), pdc);
+      }
+      m_seglist.push_back(createSegment());
+    }
+    
+    m_seglist.back()->append(pPiv);
+
+    pPrevResid = pRes;
+  }
+
+  if (!pPrevResid.isnull()) {
+    setup(m_seglist.back(), pdc);
+  }
+
+}
+
+void SplineRendBase::setup(SplineSegment *pSeg, DisplayContext *pdc)
+{
+  pSeg->generate(this);
+
+  if (isUseGLSL())
+    setupGLSL(pSeg, pdc);
+  else
+    setupVBO(pSeg, pdc);
+}
+
+void SplineRendBase::startColorCalc()
+{
+  MolCoordPtr pCMol = getClientMol();
+
+  // initialize the coloring scheme
+  getColSchm()->start(pCMol, this);
+  pCMol->getColSchm()->start(pCMol, this);
+
+}
+void SplineRendBase::endColorCalc()
+{
+  MolCoordPtr pCMol = getClientMol();
+
+  // finalize the coloring scheme
+  getColSchm()->end();
+  pCMol->getColSchm()->end();
+}
+
+void SplineRendBase::updateCrdStatic(SplineSegment *pSeg)
+{
+  pSeg->updateStatic(this);
+  
+  if (isUseGLSL()) {
+    updateGLSL(pSeg);
+  }
+  else {
+    updateVBO(pSeg);
+  }
+}
+
+void SplineRendBase::updateCrdDynamic()
+{
+  BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
+    if (pelem->getSize()>0) {
+      // only update positions
+      updateCrdDynamic(pelem);
+    }
+  }
+}
+
+void SplineRendBase::updateCrdDynamic(SplineSegment *pSeg)
+{
+  // update spline coefficients
+  pSeg->updateDynamic(this);
+  
+  // update VBO/Texture, etc
+  if (isUseGLSL()) {
+    updateCrdGLSL(pSeg);
+  }
+  else {
+    updateCrdVBO(pSeg);
+  }
+}
+

@@ -61,29 +61,11 @@ void Tube2Renderer::preRender(DisplayContext *pdc)
   pdc->setLighting(true);
 }
 
-void Tube2Renderer::startColorCalc()
-{
-  MolCoordPtr pCMol = getClientMol();
-
-  // initialize the coloring scheme
-  getColSchm()->start(pCMol, this);
-  pCMol->getColSchm()->start(pCMol, this);
-
-}
-void Tube2Renderer::endColorCalc()
-{
-  MolCoordPtr pCMol = getClientMol();
-
-  // finalize the coloring scheme
-  getColSchm()->end();
-  pCMol->getColSchm()->end();
-}
-
 void Tube2Renderer::display(DisplayContext *pdc)
 {
-  if (m_bUseGLSL) {
+  if (isUseGLSL()) {
     // new rendering routine using GLSL/VBO
-    if (!m_bChkShaderDone)
+    if (!isShaderChkDone())
       initShader(pdc);
   }
 
@@ -97,7 +79,7 @@ void Tube2Renderer::display(DisplayContext *pdc)
       if (elem.getSize()>0) {
         // elem.updateColor(this);
 
-        if (m_bUseGLSL) {
+        if (isUseGLSL()) {
           updateColorGLSL(&elem, pdc);
         }
         else {
@@ -105,9 +87,9 @@ void Tube2Renderer::display(DisplayContext *pdc)
         }
 
         if (isUseAnim())
-          updateDynamic(&elem);
+          updateCrdDynamic(&elem);
         else
-          updateStatic(&elem);
+          updateCrdStatic(&elem);
       }
     }
 
@@ -118,7 +100,7 @@ void Tube2Renderer::display(DisplayContext *pdc)
   BOOST_FOREACH (Tube2Seg &elem, m_seglist) {
     if (elem.getSize()>0) {
       //elem.draw(this, pdc);
-      if (m_bUseGLSL) {
+      if (isUseGLSL()) {
         drawGLSL(&elem, pdc);
       }
       else {
@@ -143,88 +125,24 @@ void Tube2Renderer::propChanged(qlib::LPropEvent &ev)
 {
   if (ev.getParentName().equals("section")||
       ev.getParentName().startsWith("section.")) {
-    //if (m_bUseGLSL)
+    //if (isUseGLSL())
     //updateSectGLSL();
     //    else
-    invalidateDisplayCache();
-  }
-  else if (ev.getParentName().equals("coloring")||
-      ev.getParentName().startsWith("coloring.")) {
-    invalidateDisplayCache();
-  }
-  else if (ev.getName().equals("axialdetail")) {
     invalidateDisplayCache();
   }
 
   super_t::propChanged(ev);
 }
 
-void Tube2Renderer::objectChanged(qsys::ObjectEvent &ev)
-{
-  if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED &&
-      ev.getDescr().equals("atomsMoved")) {
-
-    // OBE_CHANGED && descr=="atomsMoved"
-
-    if (isUseAnim()) {
-      BOOST_FOREACH (Tube2Seg &elem, m_seglist) {
-        if (elem.getSize()>0) {
-          // only update positions
-          updateDynamic(&elem);
-        }
-      }
-      return;
-    }
-
-  }
-
-  super_t::objectChanged(ev);
-}
-
-
 void Tube2Renderer::createSegList(DisplayContext *pdc)
 {
   if (!m_pts->isValid())
     m_pts->setupSectionTable();
 
-  MolCoordPtr pCMol = getClientMol();
-
-  // visit all residues
-  ResidIterator iter(pCMol);
-  
-  MolResiduePtr pPrevResid;
-  for (iter.first(); iter.hasMore(); iter.next()) {
-    MolResiduePtr pRes = iter.get();
-    MB_ASSERT(!pRes.isnull());
-    
-    MolAtomPtr pPiv = getPivotAtom(pRes);
-    if (pPiv.isnull()) {
-      // This resid doesn't has pivot, so we cannot draw backbone!!
-      if (!pPrevResid.isnull()) {
-        setup(&m_seglist.back(), pdc);
-      }
-      pPrevResid = MolResiduePtr();
-      continue;
-    }
-    
-    if (isNewSegment(pRes, pPrevResid)) {
-      if (!pPrevResid.isnull()) {
-        setup(&m_seglist.back(), pdc);
-      }
-      m_seglist.push_back(Tube2Seg());
-    }
-    
-    m_seglist.back().append(pPiv);
-    //append(pPiv);
-    pPrevResid = pRes;
-  }
-
-  if (!pPrevResid.isnull()) {
-    setup(&m_seglist.back(), pdc);
-  }
+  super_t::createSegList(pdc);
 
   // create tube section texture
-  if (m_bUseGLSL) {
+  if (isUseGLSL()) {
     setupSectGLSL(pdc);
   }
 
@@ -232,18 +150,9 @@ void Tube2Renderer::createSegList(DisplayContext *pdc)
 
 //////////
 
-void Tube2Renderer::setup(Tube2Seg *pSeg, DisplayContext *pdc)
+void Tube2Renderer::setupVBO(detail::SplineSegment *pASeg, DisplayContext *pdc)
 {
-  pSeg->generate(this);
-
-  if (m_bUseGLSL)
-    setupGLSL(pSeg, pdc);
-  else
-    setupVBO(pSeg, pdc);
-}
-
-void Tube2Renderer::setupVBO(Tube2Seg *pSeg, DisplayContext *pdc)
-{
+  Tube2Seg *pSeg = static_cast<Tube2Seg *>(pASeg);
   const int nDetail = getAxialDetail();
   const int nSecDiv = getTubeSection()->getSize();
 
@@ -262,7 +171,7 @@ void Tube2Renderer::setupVBO(Tube2Seg *pSeg, DisplayContext *pdc)
     if (pVBO!=NULL)
       delete pVBO;
     
-	elem.m_pVBO = pVBO = MB_NEW Tub2DrawSeg::VertArray();
+    elem.m_pVBO = pVBO = MB_NEW Tub2DrawSeg::VertArray();
     pVBO->alloc(nVA);
 
     // generate indices
@@ -289,107 +198,9 @@ void Tube2Renderer::setupVBO(Tube2Seg *pSeg, DisplayContext *pdc)
   }
 }
 
-
-void Tube2Renderer::updateColorVBO(Tube2Seg *pSeg, DisplayContext *pdc)
+void Tube2Renderer::updateCrdVBO(detail::SplineSegment *pASeg)
 {
-  MolCoordPtr pCMol = getClientMol();
-
-  int i, j;
-  int nSecDiv = getTubeSection()->getSize();
-
-  float par;
-  float fdetail = float(getAxialDetail());
-
-  quint32 dcc;
-
-  Tub2DrawSeg::VertArray *pVBO;
-
-  BOOST_FOREACH (Tub2DrawSeg &elem, pSeg->m_draws) {
-    //elem.updateVBOColor(pthis, this);
-    
-    pVBO = elem.m_pVBO;
-    float fstart = float(elem.m_nStart);
-    int nAxPts = elem.m_nAxPts;
-    
-    for (i=0; i<nAxPts; ++i) {
-      par = float(i)/fdetail + fstart;
-      dcc = pSeg->calcColor(this, pCMol, par);
-      for (j=0; j<nSecDiv; ++j) {
-        int ind = i*nSecDiv + j;
-        pVBO->color(ind, dcc);
-      }
-    }
-    
-  }
-}
-
-void Tube2Renderer::updateStatic(Tube2Seg *pSeg)
-{
-/*
-  // update axial intpol coef
-  MolCoordPtr pCMol = getClientMol();
-  MolAtomPtr pAtom;
-  Vector4D pos4d;
-  int i;
-  const int nCtlPts = pSeg->m_nCtlPts;
-
-  for (i=0; i<nCtlPts; ++i) {
-    pAtom = pSeg->getAtom(pCMol, i);
-    pos4d = pAtom->getPos();
-    pSeg->m_scoeff.setPoint(i, Vector3F(float(pos4d.x()), float(pos4d.y()), float(pos4d.z())));
-  }
-
-  pSeg->m_scoeff.generate();
-
-  // update binorm coeff
-  pSeg->updateBinormIntpol(pCMol);
-*/
-
-  pSeg->updateStatic(this);
-  
-  if (m_bUseGLSL) {
-    updateGLSL(pSeg);
-  }
-  else {
-    updateVBO(pSeg);
-  }
-}
-
-void Tube2Renderer::updateDynamic(Tube2Seg *pSeg)
-{
-  /*
-  // update axial intpol coef
-  MolCoordPtr pCMol = getClientMol();
-  AnimMol *pAMol = static_cast<AnimMol *>(pCMol.get());
-
-  qfloat32 *crd = pAMol->getAtomCrdArray();
-
-  MolAtomPtr pAtom;
-  Vector4D pos4d;
-  int i;
-  const int nCtlPts = pSeg->m_nCtlPts;
-
-  for (i=0; i<nCtlPts; ++i) {
-    pSeg->m_scoeff.setPoint(i, Vector3F(&crd[pSeg->m_inds[i]]));
-  }
-  pSeg->m_scoeff.generate();
-
-  // update binorm coeff
-  pSeg->updateBinormIntpol(pCMol);
-*/
-
-  pSeg->updateDynamic(this);
-  
-  if (m_bUseGLSL) {
-    updateGLSL(pSeg);
-  }
-  else {
-    updateVBO(pSeg);
-  }
-}
-
-void Tube2Renderer::updateVBO(Tube2Seg *pSeg)
-{
+  Tube2Seg *pSeg = static_cast<Tube2Seg *>(pASeg);
   TubeSectionPtr pTS = getTubeSection();
   const int nSecDiv = pTS->getSize();
   CubicSpline *pAxInt = pSeg->getAxisIntpol();
@@ -405,7 +216,6 @@ void Tube2Renderer::updateVBO(Tube2Seg *pSeg)
   Tub2DrawSeg::VertArray *pVBO;
 
   BOOST_FOREACH (Tub2DrawSeg &elem, pSeg->m_draws) {
-    //elem.updateVBO(pthis, this);
     pVBO = elem.m_pVBO;
     fStart = float(elem.m_nStart);
     const int nAxPts = elem.m_nAxPts;
@@ -433,6 +243,37 @@ void Tube2Renderer::updateVBO(Tube2Seg *pSeg)
     }
     
     pVBO->setUpdated(true);
+  }
+}
+
+void Tube2Renderer::updateColorVBO(Tube2Seg *pSeg, DisplayContext *pdc)
+{
+  MolCoordPtr pCMol = getClientMol();
+
+  int i, j;
+  int nSecDiv = getTubeSection()->getSize();
+
+  float par;
+  float fdetail = float(getAxialDetail());
+
+  quint32 dcc;
+
+  Tub2DrawSeg::VertArray *pVBO;
+
+  BOOST_FOREACH (Tub2DrawSeg &elem, pSeg->m_draws) {
+    pVBO = elem.m_pVBO;
+    float fstart = float(elem.m_nStart);
+    int nAxPts = elem.m_nAxPts;
+    
+    for (i=0; i<nAxPts; ++i) {
+      par = float(i)/fdetail + fstart;
+      dcc = pSeg->calcColor(this, pCMol, par);
+      for (j=0; j<nSecDiv; ++j) {
+        int ind = i*nSecDiv + j;
+        pVBO->color(ind, dcc);
+      }
+    }
+    
   }
 }
 

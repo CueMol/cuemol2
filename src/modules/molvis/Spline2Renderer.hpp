@@ -141,6 +141,138 @@ namespace molvis {
 
   }
 
+  ///
+  class SplineRendBase : public MainChainRenderer
+  {
+    MC_SCRIPTABLE;
+    MC_CLONEABLE;
+    
+    typedef MainChainRenderer super_t;
+    
+    //////////////
+    // Properties
+    
+  private:
+    /// Num of interporation point to the axial direction (axialdetail)
+    int m_nAxialDetail;
+
+  public:
+    void setAxialDetail(int nlev) {
+      m_nAxialDetail = nlev;
+      // invalidateSplineCoeffs();
+    }
+
+    int getAxialDetail() const { return m_nAxialDetail; }
+
+    /////////////////
+    // ctor/dtor
+
+  public:
+    SplineRendBase();
+    
+    virtual ~SplineRendBase();
+
+    /////////////////
+    // Renderer interface
+    
+
+    /////////////////
+    // DispCacheRenderer interface
+
+
+    /////////////////
+    // SplineRendBase interface
+
+    virtual void updateCrdDynamic() =0;
+
+    /////////////////
+    // event handling
+
+    virtual void propChanged(qlib::LPropEvent &ev);
+
+    virtual void objectChanged(qsys::ObjectEvent &ev);
+
+
+    /////////////////
+    // work area
+
+  private:
+    bool m_bUseGLSL;
+
+  public:
+    inline bool isUseGLSL() const { return m_bUseGLSL; }
+    inline void setUseGLSL(bool b) { m_bUseGLSL = b; }
+
+  private:
+    /// shader check was performed
+    bool m_bChkShaderDone;
+
+  public:
+    inline bool isShaderCheckDone() const { return m_bChkShaderDone; }
+    inline void setShaderCheckDone(bool b) { m_bChkShaderDone = b; }
+
+  private:
+
+    /////////////////
+    // Common implementation
+
+    typedef std::deque<detail::SplineSegment *> SegPtrList;
+
+    SegPtrList m_seglist;
+
+  public:
+    virtual detail::SplineSegment *createSegment() =0;
+
+    void createSegList(DisplayContext *pdc);
+
+    void setup(detail::SplineSegment *pSeg, DisplayContext *pdc);
+
+    virtual void setupVBO(detail::SplineSegment *pSeg, DisplayContext *pdc) =0;
+    virtual void setupGLSL(detail::SplineSegment *pSeg, DisplayContext *pdc) =0;
+
+    void startColorCalc();
+    void endColorCalc();
+
+    // update coordinate data
+
+    void updateCrdStatic(detail::SplineSegment *pSeg);
+    void updateCrdDynamic();
+    void updateCrdDynamic(detail::SplineSegment *pSeg);
+
+    virtual void updateCrdVBO(detail::SplineSegment *pSeg) =0;
+    virtual void updateCrdGLSL(detail::SplineSegment *pSeg) =0;
+
+  public:
+    /////////////////
+    // VBO implementation
+
+
+    void updateColorVBO(detail::SplineSegment *pSeg, DisplayContext *pdc);
+
+
+    void drawVBO(detail::SplineSegment *pSeg, DisplayContext *pdc);
+
+
+  private:
+    /////////////////
+    // GLSL implementation
+
+    /// Initialize shaders
+    void initShader(DisplayContext *pdc);
+
+
+    void updateColorGLSL(detail::SplineSegment *pSeg, DisplayContext *pdc);
+
+
+    void drawGLSL(detail::SplineSegment *pSeg, DisplayContext *pdc);
+
+    void setupSectGLSL(DisplayContext *pdc);
+    
+    void updateSectGLSL();
+
+  };
+
+
   
   ///////////////////////////////
 
