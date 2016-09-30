@@ -8,6 +8,7 @@
 
 #if (__VERSION__>=140)
 #define USE_TBO 1
+#define USE_INSTANCED 1
 #else
 #extension GL_EXT_gpu_shader4 : enable 
 #endif
@@ -22,7 +23,15 @@ uniform samplerBuffer coefTex;
 uniform sampler1D coefTex;
 #endif
 
+// color texture
+uniform sampler1D colorTex;
+
+// number of control points of interpolator
 uniform int u_npoints;
+
+#ifndef USE_INSTANCED
+uniform int u_instanceID
+#endif
 
 ////////////////////
 // Vertex attributes
@@ -30,8 +39,8 @@ uniform int u_npoints;
 // spline rho param
 attribute float a_rho;
 
-// color
-attribute vec4 a_color;
+// // color
+// attribute vec4 a_color;
 
 ////////////////////
 
@@ -85,10 +94,32 @@ vec3 interpolate(in float rho)
   return rval;
 }
 
+vec4 calcColor(in float rho)
+{
+  int ncoeff = int(floor(rho));
+  ncoeff = clamp(ncoeff, 0, u_npoints-2);
+  float f = rho - float(ncoeff);
+
+#if (__VERSION__>=140)
+  vec4 col0 = texelFetch(colorTex, ncoeff, 0);
+  vec4 col1 = texelFetch(colorTex, ncoeff+1, 0);
+#else
+  vec4 col0 = texelFetch1D(colorTex, ncoeff, 0);
+  vec4 col1 = texelFetch1D(colorTex, ncoeff+1, 0);
+#endif
+  return mix(col0, col1, f);
+}
+
 void main (void)
 {
+#ifdef USE_INSTANCED
+  float par = a_rho + gl_InstanceID;
+#else
+  float par = a_rho + u_InstanceID;
+#endif
+
   //float xx = float(a_ind12.x)/2.0;
-  vec3 pos1 = interpolate(a_rho);
+  vec3 pos1 = interpolate(par);
 
   // Eye-coordinate position of vertex, needed in various calculations
   vec4 ecPosition = gl_ModelViewMatrix * vec4(pos1, 1.0);
@@ -97,8 +128,10 @@ void main (void)
   // Do fixed functionality vertex transform
   gl_Position = gl_ProjectionMatrix * ecPosition;
 
+  //gl_FrontColor=vec4(1, 1, 1, 1.0);
   //gl_FrontColor=vec4(xx, xx, xx, 1.0);
-  gl_FrontColor=a_color;
+  //gl_FrontColor=a_color;
+  gl_FrontColor = calcColor(par);
 
   gl_FogFragCoord = ffog(ecPosition.z);
 }

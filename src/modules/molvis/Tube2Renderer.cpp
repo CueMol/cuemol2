@@ -98,7 +98,6 @@ void Tube2Renderer::setupVBO(detail::SplineSegment *pASeg, DisplayContext *pdc)
   const int nSecDiv = getTubeSection()->getSize();
 
   BOOST_FOREACH (Tub2DrawSeg &elem, pSeg->m_draws) {
-    //elem.setupVBO(pthis);
 
     const int nsplseg = elem.m_nEnd - elem.m_nStart;
     const int nAxPts = nDetail * nsplseg + 1;

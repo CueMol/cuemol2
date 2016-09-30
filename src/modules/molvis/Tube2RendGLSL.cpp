@@ -124,7 +124,7 @@ void Tube2Renderer::setupGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc)
   const float fDetail = float(nDetail);
   const int nSecDiv = getTubeSection()->getSize();
 
-MB_DPRINTLN("*****1 nDet=%d, nSecDev=%d", nDetail, nSecDiv);
+//MB_DPRINTLN("*****1 nDet=%d, nSecDev=%d", nDetail, nSecDiv);
 
   BOOST_FOREACH (Tub2DrawSeg &elem, pSeg->m_draws) {
     
@@ -140,7 +140,7 @@ MB_DPRINTLN("*****1 nDet=%d, nSecDev=%d", nDetail, nSecDiv);
   // TO DO: multiple vertex generation for discontinuous color point
 
     const int nVA = nAxPts * nSecDiv;
-MB_DPRINTLN("*****2 nVA=%d", nVA);
+//MB_DPRINTLN("*****2 nVA=%d", nVA);
 
     if (elem.m_pAttrAry!=NULL)
       delete elem.m_pAttrAry;
@@ -272,20 +272,20 @@ void Tube2Renderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc)
 
   const int nCtlPts = pSeg->m_scoeff.getSize();
 
-  pSeg->m_pCoefTex->use(Tube2Renderer::COEF_TEX_UNIT);
-  pSeg->m_pBinormTex->use(Tube2Renderer::BINORM_TEX_UNIT);
-  m_pSectTex->use(Tube2Renderer::SECT_TEX_UNIT);
-  pSeg->m_pColorTex->use(Tube2Renderer::COLOR_TEX_UNIT);
+  pSeg->m_pCoefTex->use(COEF_TEX_UNIT);
+  pSeg->m_pBinormTex->use(BINORM_TEX_UNIT);
+  m_pSectTex->use(SECT_TEX_UNIT);
+  pSeg->m_pColorTex->use(COLOR_TEX_UNIT);
 
   m_pPO->enable();
 
   // Setup uniforms
   m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
   m_pPO->setUniform("u_npoints", nCtlPts);
-  m_pPO->setUniform("coefTex", Tube2Renderer::COEF_TEX_UNIT);
-  m_pPO->setUniform("binormTex", Tube2Renderer::BINORM_TEX_UNIT);
-  m_pPO->setUniform("sectTex", Tube2Renderer::SECT_TEX_UNIT);
-  m_pPO->setUniform("colorTex", Tube2Renderer::COLOR_TEX_UNIT);
+  m_pPO->setUniform("coefTex", COEF_TEX_UNIT);
+  m_pPO->setUniform("binormTex", BINORM_TEX_UNIT);
+  m_pPO->setUniform("sectTex", SECT_TEX_UNIT);
+  m_pPO->setUniform("colorTex", COLOR_TEX_UNIT);
 
   BOOST_FOREACH (Tub2DrawSeg &elem, pSeg->m_draws) {
     pdc->drawElem(*elem.m_pAttrAry);

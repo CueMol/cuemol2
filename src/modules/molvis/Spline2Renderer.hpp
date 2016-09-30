@@ -291,15 +291,17 @@ namespace molvis {
     //////////
     // VBO implementation
 
+    typedef gfx::DrawElemVC VertArray;
+
     /// cached vertex array/VBO
-    gfx::DrawElemVC *m_pVBO;
+    VertArray *m_pVBO;
 
     //////////
     // GLSL implementation
 
     struct AttrElem {
       qfloat32 rho;
-      qbyte r, g, b, a;
+      // qbyte r, g, b, a;
     };
 
     typedef gfx::DrawAttrArray<AttrElem> AttrArray;
@@ -324,7 +326,9 @@ namespace molvis {
     Spline2Seg() : super_t()
     {
       m_pCoefTex = NULL;
+      m_pColorTex = NULL;
     }
+
     virtual ~Spline2Seg();
 
     virtual void generateImpl(int nstart, int nend);
@@ -334,9 +338,14 @@ namespace molvis {
 
     /// float texture of the main axis coeff (common)
     gfx::Texture *m_pCoefTex;
+
+    /// color texture
+    gfx::Texture *m_pColorTex;
+    std::vector<qbyte> m_colorTexData;
+
   };
 
-  typedef std::deque<Spline2Seg> Spl2SegList;
+  // typedef std::deque<Spline2Seg> Spl2SegList;
 
   ////////////////////////////////////////////////////////
   //
@@ -392,7 +401,7 @@ namespace molvis {
     /////////////////
     // event handling
 
-    virtual void propChanged(qlib::LPropEvent &ev);
+    // virtual void propChanged(qlib::LPropEvent &ev);
 
     // virtual void objectChanged(qsys::ObjectEvent &ev);
 
@@ -401,7 +410,7 @@ namespace molvis {
     /////////////////
     // Common implementation
 
-    virtual void createSegList(DisplayContext *pdc);
+    // virtual void createSegList(DisplayContext *pdc);
 
     virtual SplineSegment *createSegment();
 
@@ -434,12 +443,15 @@ namespace molvis {
     /////////////////
     // work area
 
+    static const int COEF_TEX_UNIT = 0;
+    static const int COLOR_TEX_UNIT = 1;
+
     /// GLSL shader objects
     sysdep::OglProgramObject *m_pPO;
 
     quint32 m_nRhoLoc;
 
-    quint32 m_nColLoc;
+    // quint32 m_nColLoc;
 
   };
 
