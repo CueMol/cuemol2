@@ -146,7 +146,7 @@ namespace molvis {
   ///
   class SplineRendBase : public MainChainRenderer
   {
-    MC_SCRIPTABLE;
+    // MC_SCRIPTABLE;
     // MC_CLONEABLE;
     
     typedef MainChainRenderer super_t;

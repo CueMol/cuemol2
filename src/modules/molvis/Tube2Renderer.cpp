@@ -53,6 +53,11 @@ void Tube2Renderer::preRender(DisplayContext *pdc)
   pdc->setLighting(true);
 }
 
+/*void Tube2Renderer::invalidateDisplayCache()
+{
+  super_t::invalidateDisplayCache();
+}*/
+
 void Tube2Renderer::propChanged(qlib::LPropEvent &ev)
 {
   if (ev.getParentName().equals("section")||
