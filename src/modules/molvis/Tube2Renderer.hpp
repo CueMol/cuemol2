@@ -162,22 +162,22 @@ namespace molvis {
     
     virtual const char *getTypeName() const;
 
-    virtual void display(DisplayContext *pdc);
+    // virtual void display(DisplayContext *pdc);
 
     /////////////////
     // DispCacheRenderer interface
 
     virtual void preRender(DisplayContext *pdc);
     
-    virtual void invalidateDisplayCache();
-
+    // virtual void invalidateDisplayCache();
+    
 
     /////////////////
     // event handling
 
     virtual void propChanged(qlib::LPropEvent &ev);
 
-    virtual void objectChanged(qsys::ObjectEvent &ev);
+    // virtual void objectChanged(qsys::ObjectEvent &ev);
 
 
   public:
