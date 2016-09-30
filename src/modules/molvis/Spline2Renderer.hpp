@@ -233,6 +233,9 @@ namespace molvis {
     }
 
   public:
+    /// Initialize GLSL
+    virtual bool initShader(DisplayContext *pdc) =0;
+
     virtual SplineSegment *createSegment() =0;
 
     void createSegList(DisplayContext *pdc);
@@ -259,24 +262,9 @@ namespace molvis {
     virtual void updateColorVBO(SplineSegment *pSeg, DisplayContext *pdc) =0;
     virtual void updateColorGLSL(SplineSegment *pSeg, DisplayContext *pdc) =0;
 
-  public:
-    /////////////////
-    // VBO implementation
-
+    // draw
 
     virtual void drawVBO(detail::SplineSegment *pSeg, DisplayContext *pdc) =0;
-
-
-  private:
-    /////////////////
-    // GLSL implementation
-
-    /// Initialize GLSL
-    virtual bool initShader(DisplayContext *pdc) =0;
-
-
-
-
     virtual void drawGLSL(detail::SplineSegment *pSeg, DisplayContext *pdc) =0;
 
   };

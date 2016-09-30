@@ -180,11 +180,7 @@ namespace molvis {
     virtual void objectChanged(qsys::ObjectEvent &ev);
 
 
-    /////////////////
-    // work area
-
-  private:
-
+  public:
     /////////////////
     // Common implementation
 
@@ -192,10 +188,8 @@ namespace molvis {
     
     virtual SplineSegment *createSegment();
 
-  private:
     /////////////////
     // VBO implementation
-
 
     virtual void setupVBO(detail::SplineSegment *pSeg, DisplayContext *pdc);
 
@@ -205,8 +199,6 @@ namespace molvis {
 
     virtual void drawVBO(detail::SplineSegment *pSeg, DisplayContext *pdc);
 
-
-  private:
     /////////////////
     // GLSL implementation
 
@@ -221,10 +213,9 @@ namespace molvis {
 
     virtual void drawGLSL(detail::SplineSegment *pSeg, DisplayContext *pdc);
 
-    // bool m_bUseGLSL;
-
-    // /// shader check was performed
-    // bool m_bChkShaderDone;
+  private:
+    /////////////////
+    // work area
 
     /// GLSL shader objects
     sysdep::OglProgramObject *m_pPO;
