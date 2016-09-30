@@ -124,6 +124,8 @@ void Tube2Renderer::setupGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc)
   const float fDetail = float(nDetail);
   const int nSecDiv = getTubeSection()->getSize();
 
+MB_DPRINTLN("*****1 nDet=%d, nSecDev=%d", nDetail, nSecDiv);
+
   BOOST_FOREACH (Tub2DrawSeg &elem, pSeg->m_draws) {
     
     const int nsplseg = elem.m_nEnd - elem.m_nStart;
@@ -138,6 +140,7 @@ void Tube2Renderer::setupGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc)
   // TO DO: multiple vertex generation for discontinuous color point
 
     const int nVA = nAxPts * nSecDiv;
+MB_DPRINTLN("*****2 nVA=%d", nVA);
 
     if (elem.m_pAttrAry!=NULL)
       delete elem.m_pAttrAry;

@@ -184,7 +184,7 @@ namespace molvis {
     /////////////////
     // Common implementation
 
-    void createSegList(DisplayContext *pdc);
+    virtual void createSegList(DisplayContext *pdc);
     
     virtual SplineSegment *createSegment();
 

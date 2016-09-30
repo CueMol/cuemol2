@@ -866,9 +866,8 @@ void SplineSegment::updateStatic(MainChainRenderer *pthis)
   MolAtomPtr pAtom;
   Vector4D pos4d;
   int i;
-  const int nCtlPts = m_nCtlPts;
 
-  for (i=0; i<nCtlPts; ++i) {
+  for (i=0; i<m_nCtlPts; ++i) {
     pAtom = getAtom(pCMol, i);
     pos4d = pAtom->getPos();
     m_scoeff.setPoint(i, Vector3F(float(pos4d.x()), float(pos4d.y()), float(pos4d.z())));
@@ -891,9 +890,8 @@ void SplineSegment::updateDynamic(MainChainRenderer *pthis)
   MolAtomPtr pAtom;
   Vector4D pos4d;
   int i;
-  const int nCtlPts = m_nCtlPts;
 
-  for (i=0; i<nCtlPts; ++i) {
+  for (i=0; i<m_nCtlPts; ++i) {
     m_scoeff.setPoint(i, Vector3F(&crd[m_inds[i]]));
   }
   m_scoeff.generate();

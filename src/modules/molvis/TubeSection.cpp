@@ -17,7 +17,10 @@ using namespace molvis;
 
 TubeSection::TubeSection()
 {
+  m_nSectTabSz = 0;
   m_pSectTab = NULL;
+  m_Nx = 0;
+  m_Ny = 0;
 
   //m_nSectType = TS_ELLIPTICAL;
   //m_lw = 0.35;

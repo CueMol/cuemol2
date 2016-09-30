@@ -238,7 +238,7 @@ namespace molvis {
 
     virtual SplineSegment *createSegment() =0;
 
-    void createSegList(DisplayContext *pdc);
+    virtual void createSegList(DisplayContext *pdc);
 
     void setup(SplineSegment *pSeg, DisplayContext *pdc);
 
