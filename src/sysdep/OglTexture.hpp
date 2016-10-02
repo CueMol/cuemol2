@@ -75,6 +75,33 @@ namespace sysdep {
 
     virtual void setup(int iDim, int iPixFmt, int iPixType)
     {
+      m_bUseTexBuf = false;
+
+      if (iDim==1 && iPixFmt==Texture::FMT_R && isTBOAvailable() ) {
+        m_iGlDimType = GL_TEXTURE_BUFFER;
+        m_bUseTexBuf = true;
+
+        // no data type conversion is performed in the TBO mode
+        switch (iPixType) {
+        case Texture::TYPE_UINT8:
+          m_iGlPixType = GL_UNSIGNED_BYTE;
+          m_iGlIntPixFmt = GL_R8UI;
+          break;
+          
+        case Texture::TYPE_FLOAT32:
+          m_iGlPixType = GL_FLOAT;
+          m_iGlIntPixFmt = GL_R32F;
+          break;
+        default:
+          MB_THROW(qlib::RuntimeException, "Unsupported pixel format");
+          break;
+        }
+
+        createGL();
+        setupGL();
+        return;
+      }
+
       switch (iDim) {
       case 1:
 	m_iGlDimType = GL_TEXTURE_1D;
@@ -156,13 +183,6 @@ namespace sysdep {
       default:
 	MB_THROW(qlib::RuntimeException, "Unsupported pixel format");
 	break;
-      }
-
-      m_bUseTexBuf = false;
-
-      if (iDim==1 && iPixFmt==Texture::FMT_R && isTBOAvailable() ) {
-        m_iGlDimType = GL_TEXTURE_BUFFER;
-        m_bUseTexBuf = true;
       }
 
       createGL();

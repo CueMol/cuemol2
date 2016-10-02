@@ -1,0 +1,41 @@
+// -*-Mode: C++;-*-
+//
+//
+
+#ifndef GLSL_MAPMESH2_RENDERER_QIF_INCLUDED
+#define GLSL_MAPMESH2_RENDERER_QIF_INCLUDED
+
+#include "MapRenderer.qif"
+
+runtime_class GLSLMapMesh2Renderer extends MapRenderer
+{
+  client_hdr "GLSLMapMesh2Renderer.hpp";
+  client_name xtal::GLSLMapMesh2Renderer;
+  using Color;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  property real maxExtent => redirect(getMaxExtent, XXX) (readonly);
+
+  property real width => redirect(getLineWidth, setLineWidth);
+  default width = 1.0;
+
+  property integer bufsize => redirect(getBufSize, setBufSize);
+  default bufsize = 100;
+
+  /// Automatically update the map center as view center (only in mouseUp event)
+  property boolean autoupdate => m_bAutoUpdate;
+  default autoupdate = true;
+
+  /// Automatically update (including mouse drag event)
+  property boolean dragupdate => m_bDragUpdate;
+  default dragupdate = true;
+
+  property object<AbstractColor$> color => redirect(getColor, setColor);
+  default color = gfx::SolidColor::createRGB(0.0, 1.0, 0.0);
+};
+
+#endif
+

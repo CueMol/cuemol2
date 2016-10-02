@@ -750,6 +750,9 @@
     <ClCompile Include="..\..\src\modules\molvis\Tube2RendGLSL.cpp">
       <Filter>molvis</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\SplineRendBase.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\qsys\AbstractColor.hpp">
