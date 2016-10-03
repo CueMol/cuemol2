@@ -9,10 +9,13 @@
 
 // for fog calc
 varying float v_fFogCoord; 
-varying int v_bDiscard;
+flat in int v_bDiscard;
 
 void main (void) 
 {
+  if (v_bDiscard<0)
+    discard;
+
   vec4 color;
   color = gl_Color;
   

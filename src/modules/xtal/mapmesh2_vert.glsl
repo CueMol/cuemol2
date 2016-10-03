@@ -31,12 +31,14 @@ uniform usamplerBuffer dataFieldTex;
 uniform usampler3D dataFieldTex; 
 #endif
 
+uniform int u_plane;
+
 ////////////////////
 // Vertex attributes
 
 // 
 attribute vec3 a_pos;
-attribute float a_plane;
+// attribute float a_plane;
 attribute float a_ord;
 
 ////////////////////
@@ -100,13 +102,11 @@ void vdiscard()
 
 void main(void)
 {
+  v_bDiscard = 1;
 
-  v_bDiscard = 0;
-
-  //gl_FrontColor = gl_FrontColorIn[0];
-  
   ivec3 ipos = ivec3(a_pos.xyz);
-  int iplane = int( a_plane );
+  //int iplane = int( a_plane );
+  int iplane = u_plane;
 
   uint val[4];
   uint uisolev = uint(isolevel);
@@ -149,8 +149,13 @@ void main(void)
     gl_Position = wvertex(v);
   }
 
+/*  
+  vec4 v = vec4(a_pos, 1.0);
+  gl_Position = wvertex(v);
+*/
+  
   //gl_Position=gl_Vertex;
-  //gl_FrontColor=gl_Color;
-  gl_FrontColor=vec4(1.0, 1.0, 1.0, 1.0);
+  gl_FrontColor=gl_Color;
+  //gl_FrontColor=vec4(1.0, 1.0, 1.0, 1.0);
 }
 

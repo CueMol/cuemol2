@@ -92,7 +92,6 @@ void GLSLMapMesh2Renderer::setSceneID(qlib::uid_t nid)
   ScrEventManager *pSEM = ScrEventManager::getInstance();
   pSEM->addViewListener(nid, this);
 
-  // initShader();
 }
 
 qlib::uid_t GLSLMapMesh2Renderer::detachObj()
@@ -198,7 +197,9 @@ void GLSLMapMesh2Renderer::initShader(DisplayContext *pdc)
   m_pPO->setUniform("edgetab[14]",  0, 3); // 1110
   m_pPO->setUniform("edgetab[15]", -1,-1); // 1111
   
-  //m_nVertexLoc = glGetAttribLocation(m_pPO->getHandle(), "InVertex");
+  m_nPosLoc = m_pPO->getAttribLocation("a_pos");
+  m_nPlaneLoc = m_pPO->getAttribLocation("a_plane");
+  m_nOrdLoc = m_pPO->getAttribLocation("a_ord");
   
   m_pPO->disable();
 
@@ -248,9 +249,11 @@ void GLSLMapMesh2Renderer::unloading()
 
   if (m_pMapTex != NULL)
     delete m_pMapTex;
+  m_pMapTex = NULL;
 
   if (m_pAttrAry != NULL)
     delete m_pAttrAry;
+  m_pAttrAry = NULL;
 
   // ProgramObject is owned by DisplayContext
   // and will be reused other renderes,
@@ -382,7 +385,8 @@ void GLSLMapMesh2Renderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
     const int vcol = ncol-1;
     const int vrow = nrow-1;
     const int vsec = nsec-1;
-    const int nVA = vcol * vrow * vsec * 3 * 2;
+    //const int nVA = vcol * vrow * vsec * 3 * 2;
+    const int nVA = vcol * vrow * vsec * 2;
 
     if (m_pAttrAry!=NULL)
       delete m_pAttrAry;
@@ -403,6 +407,16 @@ void GLSLMapMesh2Renderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
       for (j=0; j<vrow; j++)
         for (i=0; i<vcol; i++) {
           ibase = (i + vcol*(j + vrow*k));
+          for (iord=0; iord<2; iord++) {
+            int ind = iord + 2*ibase;
+            ata.at(ind).pos_x = float(i);
+            ata.at(ind).pos_y = float(j);
+            ata.at(ind).pos_z = float(k);
+            ata.at(ind).ord = float(iord);
+          }
+        }
+    
+/*
           for (iplane=0; iplane<3; iplane++)
             for (iord=0; iord<2; iord++)
             {
@@ -414,25 +428,8 @@ void GLSLMapMesh2Renderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
               ata.at(ind).plane = float(iplane);
               ata.at(ind).ord = float(iord);
             }
-        }
-    
-    /*
-    qlib::Array3D<qint16> grid;
-    grid.resize(vcol*3, vrow, vsec);
-    qint16 *pdata = const_cast<qint16 *>(grid.data());
-    for (k=0; k<vsec; k++)
-      for (j=0; j<vrow; j++)
-        for (i=0; i<vcol; i++){
-          ibase = 3*(i + vcol*(j + vrow*k));
-          pdata[ibase + 0] = i;
-          pdata[ibase + 1] = j;
-          pdata[ibase + 2] = k;
-        }
+        }*/
 
-    glBindBuffer(GL_ARRAY_BUFFER_ARB, m_nVBOID);
-    glBufferDataARB(GL_ARRAY_BUFFER_ARB, vcol*vrow*vsec*3*(sizeof (qint16)), grid.data(), GL_STATIC_DRAW_ARB);
-    glBindBuffer(GL_ARRAY_BUFFER_ARB, 0);
-     */
   }
 
   //
@@ -591,7 +588,13 @@ void GLSLMapMesh2Renderer::renderGPU(DisplayContext *pdc)
   m_pPO->setUniform("nrow", nrow);
   CHK_GLERROR("setUniform nrow");
 
-  pdc->drawElem(*m_pAttrAry);
+  int iplane;
+  for (iplane = 0; iplane<3; ++iplane) {
+    m_pPO->setUniform("u_plane", iplane);
+    pdc->drawElem(*m_pAttrAry);
+  }
+
+  //pdc->drawElem(*m_pAttrAry);
 
   /*
   glBindBuffer(GL_ARRAY_BUFFER_ARB, m_nVBOID);
