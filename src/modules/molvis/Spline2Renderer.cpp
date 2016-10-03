@@ -220,7 +220,7 @@ void Spline2Renderer::setupGLSL(detail::SplineSegment *pASeg, DisplayContext *pd
     delete pSeg->m_pColorTex;
   pSeg->m_pColorTex = pdc->createTexture();
   pSeg->m_pColorTex->setup(1, gfx::Texture::FMT_RGBA,
-                           gfx::Texture::TYPE_UINT8);
+                           gfx::Texture::TYPE_UINT8_COLOR);
   
   const int nDetail = getAxialDetail();
   const float fDetail = float(nDetail);

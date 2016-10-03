@@ -184,13 +184,13 @@ void GLSLMapVolRenderer::initShader(DisplayContext *pdc)
   m_pMapTex = pdc->createTexture();
   m_pMapTex->setLinIntpol(true);
   m_pMapTex->setup(3, gfx::Texture::FMT_R,
-                   gfx::Texture::TYPE_UINT8);
+                   gfx::Texture::TYPE_UINT8_COLOR);
 
   // setup texture (xfer function 1D tex; unit 1)
   m_pXfnTex = pdc->createTexture();
   m_pXfnTex->setLinIntpol(true);
   m_pXfnTex->setup(1, gfx::Texture::FMT_RGBA,
-		   gfx::Texture::TYPE_UINT8);
+		   gfx::Texture::TYPE_UINT8_COLOR);
   /*
   glGenTextures(1, &m_nXfunTexID);
   glActiveTexture(GL_TEXTURE1);

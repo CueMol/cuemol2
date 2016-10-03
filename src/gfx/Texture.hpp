@@ -70,6 +70,9 @@ namespace gfx {
     static const int TYPE_FLOAT32 = 11;
     static const int TYPE_FLOAT64 = 12;
 
+    /// host: unsigned int (0-MAX) --> gpu: float (0-1)
+    static const int TYPE_UINT8_COLOR = 20;
+
     void setup(int ndim, int iFmt, int iType)
     {
       getRep()->setup(ndim, iFmt, iType);

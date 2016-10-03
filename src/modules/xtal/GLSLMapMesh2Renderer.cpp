@@ -233,8 +233,8 @@ void GLSLMapMesh2Renderer::initShader(DisplayContext *pdc)
   m_pMapTex->setup(1, gfx::Texture::FMT_R,
                    gfx::Texture::TYPE_UINT8);
 #else
-  m_pMapTex->setup(1, gfx::Texture::FMT_R,
-                   gfx::Texture::TYPE_UINT8);
+  m_pMapTex->setup(3, gfx::Texture::FMT_R,
+                   gfx::Texture::TYPE_UINT8_COLOR);
 #endif
 
 
@@ -447,7 +447,7 @@ void GLSLMapMesh2Renderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
 #ifdef USE_TBO
   m_pMapTex->setData(ncol*nrow*nsec, 1, 1, m_maptmp.data());
 #else
-  m_pMapTex->setData(ncol*nrow*nsec, 1, 1, m_maptmp.data());
+  m_pMapTex->setData(ncol, nrow, nsec, m_maptmp.data());
 #endif
 
 

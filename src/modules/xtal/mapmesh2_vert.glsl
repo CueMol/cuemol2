@@ -4,12 +4,14 @@
 //    vertex shader
 //
 
-#if (__VERSION__>=140)
+/*#if (__VERSION__>=140)
 #define USE_TBO 1
 #else
 #extension GL_EXT_gpu_shader4 : enable 
 #extension GL_ARB_compatibility : enable
-#endif
+#endif*/
+
+#extension GL_EXT_gpu_shader4 : enable 
 
 ////////////////////
 // Uniform variables

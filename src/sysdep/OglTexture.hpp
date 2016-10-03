@@ -136,7 +136,30 @@ namespace sysdep {
       }
 
       switch (iPixType) {
+
       case Texture::TYPE_UINT8:
+        m_iGlPixType = GL_UNSIGNED_BYTE;
+        // set internal pixel format (no conversion)
+        switch (iPixFmt) {
+        case Texture::FMT_R:
+          m_iGlIntPixFmt = GL_R8UI;
+          break;
+        case Texture::FMT_RG:
+          m_iGlIntPixFmt = GL_RG8UI;
+          break;
+        case Texture::FMT_RGB:
+          m_iGlIntPixFmt = GL_RGB8UI;
+          break;
+        case Texture::FMT_RGBA:
+          m_iGlIntPixFmt = GL_RGBA8UI;
+          break;
+        default:
+          MB_THROW(qlib::RuntimeException, "Unsupported pixel format");
+          break;
+        }
+        break;
+
+      case Texture::TYPE_UINT8_COLOR:
 	m_iGlPixType = GL_UNSIGNED_BYTE;
         // set internal pixel format (XXX: convert byte 0-255 --> float mediump, 0-1)
         switch (iPixFmt) {
@@ -371,6 +394,8 @@ namespace sysdep {
 		     m_iGlIntPixFmt,
 		     m_nWidth, m_nHeight, m_nDepth, 0,
 		     m_iGlPixFmt, m_iGlPixType, pdata);
+        CHK_GLERROR("glTexImage3D");
+        MB_DPRINTLN("OglTex3D glTexImage3D %dx%dx%d OK", m_nWidth, m_nHeight, m_nDepth);
 	m_bInit = true;
       }
       else {
@@ -381,6 +406,7 @@ namespace sysdep {
 			m_iGlPixFmt, // format
 			m_iGlPixType, // type
 			pdata);
+        CHK_GLERROR("glTexSubImage3D");
       }
     }
 
