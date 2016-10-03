@@ -97,12 +97,15 @@ namespace xtal {
     //GLuint m_nMapBufID;
     gfx::Texture *m_pMapTex;
 
+    int m_nTexStCol, m_nTexStRow, m_nTexStSec;
+
     static const int MAP_TEX_UNIT = 0;
 
     // GLuint m_nVBOID;
 
     struct AttrElem {
-      qfloat32 pos_x, pos_y, pos_z;
+      qfloat32 dummy;
+      // qfloat32 pos_x, pos_y, pos_z;
       // qfloat32 plane;
       // qfloat32 ord;
     };

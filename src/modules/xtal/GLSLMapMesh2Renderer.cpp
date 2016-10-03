@@ -57,6 +57,10 @@ GLSLMapMesh2Renderer::GLSLMapMesh2Renderer()
 
   m_bMapTexOK = false;
 
+  m_nTexStCol = -1;
+  m_nTexStRow = -1;
+  m_nTexStSec = -1;
+
 }
 
 // destructor
@@ -200,7 +204,8 @@ void GLSLMapMesh2Renderer::initShader(DisplayContext *pdc)
   m_pPO->setUniform("edgetab[14]",  0, 3); // 1110
   m_pPO->setUniform("edgetab[15]", -1,-1); // 1111
   
-  m_nPosLoc = m_pPO->getAttribLocation("a_pos");
+  m_nPosLoc = m_pPO->getAttribLocation("a_dummy");
+  // m_nPosLoc = m_pPO->getAttribLocation("a_pos");
   // m_nPlaneLoc = m_pPO->getAttribLocation("a_plane");
   // m_nOrdLoc = m_pPO->getAttribLocation("a_ord");
   
@@ -359,20 +364,37 @@ void GLSLMapMesh2Renderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
   int nrow = int(vmax.y() - vmin.y());
   int nsec = int(vmax.z() - vmin.z());
 
-  bool bReuse;
-  if (qlib::abs(m_maptmp.cols()-ncol)<1 &&
+  bool bOrgChg = false;
+  if (stcol!=m_nTexStCol ||
+      strow!=m_nTexStRow ||
+      stsec!=m_nTexStSec) {
+    // texture origin changed --> regenerate texture
+    bOrgChg = true;
+  }
+
+  bool bSizeChg = false;
+
+    /*if (qlib::abs(m_maptmp.cols()-ncol)<1 &&
       qlib::abs(m_maptmp.rows()-nrow)<1 &&
-      qlib::abs(m_maptmp.secs()-nsec)<1) {
+      qlib::abs(m_maptmp.secs()-nsec)<1)*/
+  if (m_maptmp.cols()!=ncol ||
+      m_maptmp.rows()!=nrow ||
+      m_maptmp.secs()!=nsec) {
+    // texture size changed --> regenerate texture/VBO
+    m_maptmp.resize(ncol, nrow, nsec);
+    bSizeChg = true;
+  }
+
+  /*{
     MB_DPRINTLN("reuse texture");
-    ncol = m_maptmp.cols();
+      ncol = m_maptmp.cols();
     nrow = m_maptmp.rows();
     nsec = m_maptmp.secs();
-    bReuse = true;
+    //bSizeChg = true;
   }
   else {
-    m_maptmp.resize(ncol, nrow, nsec);
-    bReuse = false;
-  }
+    //bReuse = false;
+  }*/
 
   m_nActCol = ncol;// = 8;
   m_nActRow = nrow;// = 8;
@@ -383,7 +405,7 @@ void GLSLMapMesh2Renderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
   MB_DPRINT("nsec: %d\n", nsec);
 
   // Generate Grid Data VBO
-  if (!bReuse) {
+  if (bSizeChg) {
     // size is changed --> generate grid data
     const int vcol = ncol-1;
     const int vrow = nrow-1;
@@ -398,13 +420,15 @@ void GLSLMapMesh2Renderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
 
     AttrArray &ata = *m_pAttrAry;
     ata.setAttrSize(1);
-    ata.setAttrInfo(0, m_nPosLoc, 3, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, pos_x));
+    ata.setAttrInfo(0, m_nPosLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, dummy));
+    // ata.setAttrInfo(0, m_nPosLoc, 3, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, pos_x));
     // ata.setAttrInfo(1, m_nPlaneLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, plane));
     //ata.setAttrInfo(1, m_nOrdLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, ord));
 
     ata.alloc(nVA);
     ata.setDrawMode(gfx::AbstDrawElem::DRAW_LINES);
 
+#if 0
     int i,j,k,l, ibase, iplane, iord;
     for (k=0; k<vsec; k++)
       for (j=0; j<vrow; j++)
@@ -438,20 +462,24 @@ void GLSLMapMesh2Renderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
               ata.at(ind).ord = float(iord);
             }
         }*/
-
+#endif
   }
 
-  //
-  // generate texture map
-  //
+  if (bSizeChg || bOrgChg) {
+    //
+    // generate texture map
+    //
+    
+    int i,j,k;
+    for (k=0; k<nsec; k++)
+      for (j=0; j<nrow; j++)
+        for (i=0; i<ncol; i++){
+          m_maptmp.at(i,j,k) = getMap(pMap, stcol+i,  strow+j, stsec+k);
+        }
 
-  int i,j,k;
-  // unsigned int s0,s1;
-  for (k=0; k<nsec; k++)
-    for (j=0; j<nrow; j++)
-      for (i=0; i<ncol; i++){
-        m_maptmp.at(i,j,k) = getMap(pMap, stcol+i,  strow+j, stsec+k);
-      }
+    m_nTexStCol = stcol;
+    m_nTexStRow = strow;
+    m_nTexStSec = stsec;
 
 #ifdef USE_TBO
   m_pMapTex->setData(ncol*nrow*nsec, 1, 1, m_maptmp.data());
@@ -459,6 +487,7 @@ void GLSLMapMesh2Renderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
   m_pMapTex->setData(ncol, nrow, nsec, m_maptmp.data());
 #endif
 
+  }
 
   /*
   glBindBufferARB(GL_TEXTURE_BUFFER, m_nMapBufID);
@@ -596,6 +625,9 @@ void GLSLMapMesh2Renderer::renderGPU(DisplayContext *pdc)
 
   m_pPO->setUniform("nrow", nrow);
   CHK_GLERROR("setUniform nrow");
+
+  m_pPO->setUniform("nsec", nsec);
+  CHK_GLERROR("setUniform nsec");
 
   int iplane;
   for (iplane = 0; iplane<3; ++iplane) {

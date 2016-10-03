@@ -39,7 +39,8 @@ uniform int u_plane;
 // Vertex attributes
 
 // 
-attribute vec3 a_pos;
+attribute float a_dummy;
+// attribute vec3 a_pos;
 // attribute float a_plane;
 // attribute float a_ord;
 
@@ -107,7 +108,20 @@ void main(void)
 {
   //v_bDiscard = 1;
 
-  ivec3 ipos = ivec3(a_pos.xyz);
+  ivec3 ipos; // = ivec3(a_pos.xyz);
+
+  int il = gl_VertexID/2;
+  
+  ivec3 vsz = ivec3(ncol-1, nrow-1, nsec-1);
+
+  ipos.x = il%vsz.x;
+  int ixx = il/vsz.x;
+
+  ipos.y = ixx%vsz.y;
+  int iyy = ixx/vsz.y;
+
+  ipos.z = iyy%vsz.z;
+
   //int iplane = int( a_plane );
   int iplane = u_plane;
 
