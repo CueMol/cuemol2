@@ -48,10 +48,12 @@ if COND_USE_OPENGL
 
 CPP_SRC += \
 GLSLMapMeshRenderer.cpp \
+GLSLMapMesh2Renderer.cpp \
 GLSLMapVolRenderer.cpp
 
 MCWG_SRC += \
 GLSLMapMeshRenderer.qif \
+GLSLMapMesh2Renderer.qif \
 GLSLMapVolRenderer.qif
 
 shaderdir = $(prefix)/data/shaders/
@@ -62,6 +64,7 @@ mapmesh_frag.glsl \
 mapmesh_geom.glsl \
 mapvol_vertex.glsl \
 mapvol_frag.glsl \
+mapmesh2_vert.glsl \
 $(NULL)
 
 endif

@@ -30,7 +30,7 @@ uniform int nsec;
 #ifdef USE_TBO
 uniform usamplerBuffer dataFieldTex; 
 #else
-uniform usampler3D dataFieldTex; 
+uniform sampler3D dataFieldTex; 
 #endif
 
 uniform int u_plane;
@@ -46,21 +46,22 @@ attribute float a_ord;
 ////////////////////
 // Varying variables
 
-varying int v_bDiscard;
+//varying int v_bDiscard;
 varying float v_fFogCoord; 
 
-uint getDensity(ivec3 iv)
+int getDensity(ivec3 iv)
 {
 #ifdef USE_TBO
   int index = iv.x + ncol*(iv.y + nrow*iv.z);
   return texelFetch(dataFieldTex, index).r;
 #else
-  return texelFetch3D(dataFieldTex, iv, 0).x;
+  float val = texelFetch3D(dataFieldTex, iv, 0).x;
+  return int(val * 255.0 + 0.5);
 #endif
 }
 
 /// get the crossing value between d0 and d1 (uses isolevel)
-float getCrossVal(uint d0, uint d1)
+float getCrossVal(int d0, int d1)
 {
   if (d0==d1) return -1.0;
 
@@ -99,25 +100,25 @@ void vdiscard()
 {
   gl_Position = vec4(0,0,0,1);
   gl_FrontColor = vec4(0,0,0,0);
-  v_bDiscard = -1;
+  //v_bDiscard = -1;
 }
 
 void main(void)
 {
-  v_bDiscard = 1;
+  //v_bDiscard = 1;
 
   ivec3 ipos = ivec3(a_pos.xyz);
   //int iplane = int( a_plane );
   int iplane = u_plane;
 
-  uint val[4];
-  uint uisolev = uint(isolevel);
+  int val[4];
+  int uisolev = int(isolevel);
   int i;
   int ii;
 
   {
-    uint flag = 0U;
-    uint mask = 1U;
+    int flag = 0;
+    int mask = 1;
     int ibase = iplane*4;
     
     for (ii=0; ii<4; ++ii) {
@@ -128,7 +129,7 @@ void main(void)
       mask = mask << 1U;
     }
     
-    if (flag==0U || flag>=15U) {
+    if (flag==0 || flag>=15) {
       vdiscard();
       return;
     }
