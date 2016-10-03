@@ -205,6 +205,9 @@ void GLSLMapMesh2Renderer::initShader(DisplayContext *pdc)
   m_pPO->setUniform("edgetab[15]", -1,-1); // 1111
   
   m_nPosLoc = m_pPO->getAttribLocation("a_dummy");
+  if (m_nPosLoc<0)
+    m_nPosLoc = 0;
+  MB_DPRINTLN("a_dummy location: %d", m_nPosLoc);
   // m_nPosLoc = m_pPO->getAttribLocation("a_pos");
   // m_nPlaneLoc = m_pPO->getAttribLocation("a_plane");
   // m_nOrdLoc = m_pPO->getAttribLocation("a_ord");
@@ -609,8 +612,7 @@ void GLSLMapMesh2Renderer::renderGPU(DisplayContext *pdc)
 
   m_pMapTex->use(MAP_TEX_UNIT);
 
-  if (m_pPO)
-    m_pPO->enable();
+  m_pPO->enable();
   
   int i,j,k;
   int ncol = m_nActCol;
@@ -636,7 +638,6 @@ void GLSLMapMesh2Renderer::renderGPU(DisplayContext *pdc)
   }
 
   //pdc->drawElem(*m_pAttrAry);
-
   /*
   glBindBuffer(GL_ARRAY_BUFFER_ARB, m_nVBOID);
   glEnableClientState(GL_VERTEX_ARRAY);
@@ -646,8 +647,8 @@ void GLSLMapMesh2Renderer::renderGPU(DisplayContext *pdc)
   glDisableClientState(GL_VERTEX_ARRAY);
   glBindBuffer(GL_ARRAY_BUFFER_ARB, 0);
    */
-  if (m_pPO)
-    m_pPO->disable();
+
+  m_pPO->disable();
 
   m_pMapTex->unuse();
   

@@ -110,16 +110,13 @@ void main(void)
 
   ivec3 ipos; // = ivec3(a_pos.xyz);
 
-  int il = gl_VertexID/2;
-  
   ivec3 vsz = ivec3(ncol-1, nrow-1, nsec-1);
 
+  int il = gl_VertexID/2;
   ipos.x = il%vsz.x;
   int ixx = il/vsz.x;
-
   ipos.y = ixx%vsz.y;
   int iyy = ixx/vsz.y;
-
   ipos.z = iyy%vsz.z;
 
   //int iplane = int( a_plane );
