@@ -4,14 +4,14 @@
 //    vertex shader
 //
 
-/*#if (__VERSION__>=140)
+#if (__VERSION__>=140)
 #define USE_TBO 1
 #else
 #extension GL_EXT_gpu_shader4 : enable 
 #extension GL_ARB_compatibility : enable
-#endif*/
+#endif
 
-#extension GL_EXT_gpu_shader4 : enable 
+//#extension GL_EXT_gpu_shader4 : enable 
 
 ////////////////////
 // Uniform variables
@@ -41,7 +41,7 @@ uniform int u_plane;
 // 
 attribute vec3 a_pos;
 // attribute float a_plane;
-attribute float a_ord;
+// attribute float a_ord;
 
 ////////////////////
 // Varying variables
@@ -53,7 +53,7 @@ int getDensity(ivec3 iv)
 {
 #ifdef USE_TBO
   int index = iv.x + ncol*(iv.y + nrow*iv.z);
-  return texelFetch(dataFieldTex, index).r;
+  return int( texelFetch(dataFieldTex, index).r );
 #else
   float val = texelFetch3D(dataFieldTex, iv, 0).x;
   return int(val * 255.0 + 0.5);
@@ -65,8 +65,8 @@ float getCrossVal(int d0, int d1)
 {
   if (d0==d1) return -1.0;
 
-  int deld = int(d1)-int(d0);
-  return float(isolevel-int(d0))/float(deld);
+  int deld = d1-d0;
+  return float(isolevel-d0)/float(deld);
 }
 
 vec4 calcVecCrs(ivec3 tpos, int i0, float crs, int ibase)
@@ -86,7 +86,7 @@ vec4 calcVecCrs(ivec3 tpos, int i0, float crs, int ibase)
 
 float ffog(in float ecDistance)
 {
-    return(abs(ecDistance));
+  return(abs(ecDistance));
 }
 
 vec4 wvertex(vec4 v)
@@ -144,7 +144,8 @@ void main(void)
     }
 
     vec4 v;
-    if (a_ord>0)
+    if (gl_VertexID%2==0)
+    //if (a_ord>0)
       v = calcVecCrs(ipos, i01.x, crs0, ibase);
     else
       v = calcVecCrs(ipos, i01.y, crs1, ibase);

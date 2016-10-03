@@ -103,8 +103,8 @@ namespace xtal {
 
     struct AttrElem {
       qfloat32 pos_x, pos_y, pos_z;
-      qfloat32 plane;
-      qfloat32 ord;
+      // qfloat32 plane;
+      // qfloat32 ord;
     };
 
     typedef gfx::DrawAttrArray<AttrElem> AttrArray;
@@ -113,8 +113,8 @@ namespace xtal {
     AttrArray *m_pAttrAry;
 
     int m_nPosLoc;
-    int m_nPlaneLoc;
-    int m_nOrdLoc;
+    // int m_nPlaneLoc;
+    // int m_nOrdLoc;
 
     unsigned int m_isolevel;
 

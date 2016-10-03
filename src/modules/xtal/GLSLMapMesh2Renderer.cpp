@@ -13,10 +13,13 @@
 #include <qsys/View.hpp>
 #include <qsys/Scene.hpp>
 
-#define SCALE 0x1000
+//#define SCALE 0x1000
 //#define DBG_DRAW_AXIS 0
-
 // #define MY_MAPTEX_DIM GL_TEXTURE_BUFFER
+
+#ifdef WIN32
+#define USE_TBO
+#endif
 
 #define CHK_GLERROR(MSG)\
 { \
@@ -198,8 +201,8 @@ void GLSLMapMesh2Renderer::initShader(DisplayContext *pdc)
   m_pPO->setUniform("edgetab[15]", -1,-1); // 1111
   
   m_nPosLoc = m_pPO->getAttribLocation("a_pos");
-  m_nPlaneLoc = m_pPO->getAttribLocation("a_plane");
-  m_nOrdLoc = m_pPO->getAttribLocation("a_ord");
+  // m_nPlaneLoc = m_pPO->getAttribLocation("a_plane");
+  // m_nOrdLoc = m_pPO->getAttribLocation("a_ord");
   
   m_pPO->disable();
 
@@ -394,10 +397,10 @@ void GLSLMapMesh2Renderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
     m_pAttrAry = MB_NEW AttrArray();
 
     AttrArray &ata = *m_pAttrAry;
-    ata.setAttrSize(3);
+    ata.setAttrSize(1);
     ata.setAttrInfo(0, m_nPosLoc, 3, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, pos_x));
-    ata.setAttrInfo(1, m_nPlaneLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, plane));
-    ata.setAttrInfo(2, m_nOrdLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, ord));
+    // ata.setAttrInfo(1, m_nPlaneLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, plane));
+    //ata.setAttrInfo(1, m_nOrdLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, ord));
 
     ata.alloc(nVA);
     ata.setDrawMode(gfx::AbstDrawElem::DRAW_LINES);
@@ -407,12 +410,18 @@ void GLSLMapMesh2Renderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
       for (j=0; j<vrow; j++)
         for (i=0; i<vcol; i++) {
           ibase = (i + vcol*(j + vrow*k));
+          /*ata.at(ibase).pos_x = float(i);
+          ata.at(ibase).pos_y = float(j);
+          ata.at(ibase).pos_z = float(k);
+        }*/
+
+
           for (iord=0; iord<2; iord++) {
             int ind = iord + 2*ibase;
             ata.at(ind).pos_x = float(i);
             ata.at(ind).pos_y = float(j);
             ata.at(ind).pos_z = float(k);
-            ata.at(ind).ord = float(iord);
+            //ata.at(ind).ord = float(iord);
           }
         }
     
