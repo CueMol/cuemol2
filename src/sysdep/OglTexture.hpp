@@ -404,8 +404,11 @@ namespace sysdep {
 
       MB_ASSERT(ncomp==1);*/
       
-      // always float32 (or int32)
       int elem_sz = 4;
+      if (m_iGlIntPixFmt==GL_R32F)
+        elem_sz = 4;
+      else if (m_iGlIntPixFmt==GL_R8UI)
+        elem_sz = 1;
 
       int nbytes = m_nWidth*elem_sz*ncomp;
 
@@ -429,8 +432,8 @@ namespace sysdep {
       glBindTexture(GL_TEXTURE_BUFFER, m_nTexID);
       CHK_GLERROR("glBindTexture(GL_TEXTURE_BUFFER, m_nTexID)");
 
-      //glTexBuffer(GL_TEXTURE_BUFFER, m_iGlIntPixFmt, m_nBufID);
-      glTexBuffer(GL_TEXTURE_BUFFER, GL_R32F, m_nBufID);
+      glTexBuffer(GL_TEXTURE_BUFFER, m_iGlIntPixFmt, m_nBufID);
+      //glTexBuffer(GL_TEXTURE_BUFFER, GL_R32F, m_nBufID);
       CHK_GLERROR("glTexBuffer(GL_TEXTURE_BUFFER, m_iGlIntPixFmt, m_nBufID)");
 
       //glDisable(GL_TEXTURE_BUFFER);

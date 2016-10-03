@@ -151,7 +151,7 @@ void GLSLMapMesh2Renderer::initShader(DisplayContext *pdc)
 
   if (m_pPO==NULL)
     m_pPO = ssh.createProgObj("mapmesh2",
-                              "%%CONFDIR%%/data/shaders/mapmesh2_vertex.glsl",
+                              "%%CONFDIR%%/data/shaders/mapmesh2_vert.glsl",
                               "%%CONFDIR%%/data/shaders/mapmesh_frag.glsl");
   
   if (m_pPO==NULL) {
@@ -398,7 +398,7 @@ void GLSLMapMesh2Renderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
     ata.alloc(nVA);
     ata.setDrawMode(gfx::AbstDrawElem::DRAW_LINES);
 
-    int i,j,k,l, ibase;
+    int i,j,k,l, ibase, iplane, iord;
     for (k=0; k<vsec; k++)
       for (j=0; j<vrow; j++)
         for (i=0; i<vcol; i++) {
@@ -611,13 +611,14 @@ void GLSLMapMesh2Renderer::renderGPU(DisplayContext *pdc)
 
 }
 
-
-float getCrossVal(quint8 d0, quint8 d1, quint8 isolev)
-{
-  if (d0==d1) return -1.0;
-
-  float crs = float(isolev-d0)/float(d1-d0);
-  return crs;
+namespace {
+  float getCrossVal(quint8 d0, quint8 d1, quint8 isolev)
+  {
+    if (d0==d1) return -1.0;
+    
+    float crs = float(isolev-d0)/float(d1-d0);
+    return crs;
+  }
 }
 
 Vector4D GLSLMapMesh2Renderer::calcVecCrs(const IntVec3D &tpos, int iv0, float crs0, int ivbase)

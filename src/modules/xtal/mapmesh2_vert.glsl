@@ -39,6 +39,12 @@ attribute vec3 a_pos;
 attribute float a_plane;
 attribute float a_ord;
 
+////////////////////
+// Varying variables
+
+varying int v_bDiscard;
+varying float v_fFogCoord; 
+
 uint getDensity(ivec3 iv)
 {
 #ifdef USE_TBO
@@ -73,20 +79,29 @@ vec4 calcVecCrs(ivec3 tpos, int i0, float crs, int ibase)
   return v0 + (v1-v0)*crs;
 }
 
-vec4 wvertex(vec4 v)
-{
-  vec4 ecPosition = gl_ModelViewMatrix * v;
-  FogFragCoord = ffog(ecPosition.z);
-  return gl_ProjectionMatrix * ecPosition;
-}
-
 float ffog(in float ecDistance)
 {
     return(abs(ecDistance));
 }
 
+vec4 wvertex(vec4 v)
+{
+  vec4 ecPosition = gl_ModelViewMatrix * v;
+  v_fFogCoord = ffog(ecPosition.z);
+  return gl_ProjectionMatrix * ecPosition;
+}
+
+void vdiscard()
+{
+  gl_Position = vec4(0,0,0,1);
+  gl_FrontColor = vec4(0,0,0,0);
+  v_bDiscard = -1;
+}
+
 void main(void)
 {
+
+  v_bDiscard = 0;
 
   //gl_FrontColor = gl_FrontColorIn[0];
   
@@ -112,7 +127,7 @@ void main(void)
     }
     
     if (flag==0U || flag>=15U) {
-      discard();
+      vdiscard();
       return;
     }
 
@@ -121,7 +136,7 @@ void main(void)
     float crs1 = getCrossVal(val[i01.y], val[(i01.y+1)%4]);
     
     if (crs0<-0.0 || crs1<-0.0) {
-      discard();
+      vdiscard();
       return;
     }
 

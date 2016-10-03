@@ -14,8 +14,11 @@
 #include <qsys/ScalarObject.hpp>
 #include <qsys/ViewEvent.hpp>
 
-#include <sysdep/OglDisplayContext.hpp>
+//#include <sysdep/OglDisplayContext.hpp>
 #include <sysdep/OglProgramObject.hpp>
+#include <gfx/Texture.hpp>
+#include <gfx/DrawAttrArray.hpp>
+
 
 class GLSLMapMesh2Renderer_wrap;
 
@@ -148,7 +151,7 @@ namespace xtal {
 
     virtual qlib::uid_t detachObj();
 
-    void initShader();
+    void initShader(DisplayContext *pdc);
 
     /// Called just before this object is unloaded
     virtual void unloading();

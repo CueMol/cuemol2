@@ -85,9 +85,11 @@ void OglShaderObject::loadFile(const LString& filename, SOMacroDefs *penv)
 
   // set shader source
 
+  LString linenostr("#line 1");
   m_source = verstr + "\n"
     + macstr + "\n"
-    + m_source;
+      + linenostr + "\n"
+        + m_source;
 
   const char *s = m_source.c_str();
   int l = m_source.length();
