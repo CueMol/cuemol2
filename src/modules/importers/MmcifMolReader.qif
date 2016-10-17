@@ -1,0 +1,21 @@
+// -*-Mode: C++;-*-
+//
+// MMCIF mol reader scripting interface
+//
+
+#ifndef MMCIF_MOL_READER_QIF_INCLUDED
+#define MMCIF_MOL_READER_QIF_INCLUDED
+
+#include <qsys/ObjReader.qif>
+
+runtime_class MmcifMolReader extends ObjReader
+{
+  client_hdr "MmcifMolReader.hpp";
+  client_name importers::MmcifMolReader;
+
+  scriptable;
+  smartptr;
+};
+
+#endif
+

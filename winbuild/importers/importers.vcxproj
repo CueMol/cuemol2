@@ -94,6 +94,8 @@
   <ItemGroup>
     <ClCompile Include="..\..\src\modules\importers\AtomPropColoring.cpp" />
     <ClCompile Include="..\..\src\modules\importers\AtomPropColoring_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\importers\MmcifMolReader.cpp" />
+    <ClCompile Include="..\..\src\modules\importers\MmcifMolReader_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\importers\PickleInStream.cpp" />
     <ClCompile Include="..\..\src\modules\importers\PSEFileReader.cpp" />
     <ClCompile Include="..\..\src\modules\importers\PSEFileReader_wrap.cpp" />
@@ -105,6 +107,7 @@
   </ItemGroup>
   <ItemGroup>
     <mcwrapgen3 Include="..\..\src\modules\importers\AtomPropColoring.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\importers\MmcifMolReader.qif" />
     <mcwrapgen3 Include="..\..\src\modules\importers\PSEFileReader.qif" />
   </ItemGroup>
   <ItemGroup>
