@@ -100,8 +100,53 @@ namespace importers {
 
     std::deque<LString> m_loopDefs;
 
+    bool m_bLoopDefsOK;
+
     void readAtomLine();
 
+    // atom_site data items
+    int m_nTypeSymbol;
+    int m_nLabelAtomID;
+    int m_nLabelAltID;
+    int m_nLabelCompID;
+    int m_nLabelSeqID;
+    int m_nLabelAsymID;
+    int m_nInsCode;
+    int m_nCartX;
+    int m_nCartY;
+    int m_nCartZ;
+    int m_nOcc;
+    int m_nBfac;
+
+    int m_nAuthAtomID;
+    int m_nAuthCompID;
+    int m_nAuthSeqID;
+    int m_nAuthAsymID;
+
+    std::vector<int> m_recStPos;
+    std::vector<int> m_recEnPos;
+
+    int findDataItem(const char *key) const {
+      std::deque<LString>::const_iterator i = m_loopDefs.begin();
+      std::deque<LString>::const_iterator iend = m_loopDefs.end();
+      for (int j=0; i!=iend; ++i, ++j) {
+        if (i->equals(key))
+          return j;
+      }
+      return -1;
+    }
+
+    void tokenizeLine();
+
+    LString getToken(int n) const {
+      if (n<0||n>=m_recStPos.size()) {
+        MB_THROW(qlib::RuntimeException, "mmCIF data item not found");
+        return LString();
+      }
+      int ist = m_recStPos[n];
+      int ien = m_recEnPos[n];
+      return m_recbuf.substr(ist, ien-ist);
+    }
   };
 
   /// File format exception

@@ -62,29 +62,6 @@ bool LString::toInt(int *retval) const
   return true;
 }
 
-bool LString::toDouble(double *retval) const
-{
-  MB_ASSERT(retval!=NULL);
-
-  if (m_data.empty())
-    return false;
-
-  std::istringstream iss(m_data);
-  iss.imbue(std::locale::classic());
-
-  iss >> *retval;
-  if (iss.eof())
-    return true;
-  else
-    return false;
-
-  // char *sptr;
-  // const char *cstr = m_data.c_str();
-  // *retval = ::strtod(cstr, &sptr);
-  // if(sptr==cstr) return false;
-  // return true;
-}
-
 LString LString::trim(const char *ws /*= " \t"*/) const
 {
   // remove leading WS
@@ -420,5 +397,32 @@ void LString::vformat(const char *msg, va_list marker)
 
   sbuf[MAX_SBUF_SIZE-1] = '\0';
   m_data = sbuf;
+}
+
+bool LString::toDouble(double *retval) const
+{
+  MB_ASSERT(retval!=NULL);
+
+  if (m_data.empty())
+    return false;
+
+#ifdef WIN32
+  qlib::detail::WinLocale *pLoc = static_cast<qlib::detail::WinLocale *>(m_pLocale);
+  char *sptr;
+  const char *cstr = m_data.c_str();
+  *retval = ::_strtod_l(cstr, &sptr, pLoc->m_cloc);
+  if(sptr==cstr) return false;
+  return true;
+#else
+  std::istringstream iss(m_data);
+  iss.imbue(std::locale::classic());
+
+  iss >> *retval;
+  if (iss.eof())
+    return true;
+  else
+    return false;
+#endif
+
 }
 
