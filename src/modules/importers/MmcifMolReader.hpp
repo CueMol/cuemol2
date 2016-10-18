@@ -22,6 +22,7 @@ namespace importers {
   using qlib::LString;
   using molstr::MolCoord;
   using molstr::MolCoordPtr;
+  using molstr::MolResiduePtr;
 
   //
   ///   mmCIF mol structure reader class
@@ -42,6 +43,14 @@ namespace importers {
 
     /// Read atom count
     int m_nReadAtoms;
+
+    /// load alternate conformations
+    bool m_bLoadAltConf;
+
+    ///  load anisotropic B factors
+    bool m_bLoadAnisoU;
+
+    bool m_bLoadSecstr;
 
     //////////////////////////////////////////////
   public:
@@ -103,8 +112,10 @@ namespace importers {
     bool m_bLoopDefsOK;
 
     void readAtomLine();
+    void readAnisoULine();
 
     // atom_site data items
+    int m_nID;
     int m_nTypeSymbol;
     int m_nLabelAtomID;
     int m_nLabelAltID;
@@ -147,7 +158,37 @@ namespace importers {
       int ien = m_recEnPos[n];
       return m_recbuf.substr(ist, ien-ist);
     }
+
+    std::map<int, int> m_atommap;
+    
+    // atom_site_aniso
+    int m_nU11;
+    int m_nU22;
+    int m_nU33;
+    int m_nU12;
+    int m_nU13;
+    int m_nU23;
+    
+    typedef std::map<quint32, MolResiduePtr> ResidTab;
+    ResidTab m_residTab;
+
+    void readHelixLine();
+    void readSheetLine();
+    int m_nStSeqID;
+    int m_nEnSeqID;
+    int m_nHlxClass;
+
+    typedef std::deque<std::pair<int,int> > SecStrList;
+    SecStrList m_rngHelix;
+    SecStrList m_rng310Helix;
+    SecStrList m_rngPiHelix;
+    SecStrList m_rngSheet;
+
+    //void applySecstr();
+    void applySecstr(const LString &sec, const LString &sec2, const SecStrList &rng);
+
   };
+
 
   /// File format exception
   MB_DECL_EXCPT_CLASS(IMPORTERS_API, MmcifFormatException, qlib::FileFormatException);
