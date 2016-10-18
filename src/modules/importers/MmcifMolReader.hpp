@@ -147,6 +147,10 @@ namespace importers {
       return -1;
     }
 
+    static const int TOK_FIND_START = 0;
+    static const int TOK_FIND_END = 1;
+    static const int TOK_FIND_QUOTEND = 2;
+
     void tokenizeLine();
 
     LString getToken(int n) const {
@@ -172,6 +176,8 @@ namespace importers {
     typedef std::map<quint32, MolResiduePtr> ResidTab;
     ResidTab m_residTab;
 
+    MolResiduePtr findResid(int nSeqID) const;
+
     void readHelixLine();
     void readSheetLine();
     int m_nStSeqID;
@@ -187,6 +193,31 @@ namespace importers {
     //void applySecstr();
     void applySecstr(const LString &sec, const LString &sec2, const SecStrList &rng);
 
+    void readConnLine();
+
+    int m_nConnTypeID;
+    int m_nSeqID1;
+    int m_nAtomID1;
+    int m_nAltID1;
+    int m_nSymmID1;
+    int m_nSeqID2;
+    int m_nAtomID2;
+    int m_nAltID2;
+    int m_nSymmID2;
+
+    struct Linkage
+    {
+      int resi1;
+      LString aname1;
+      LString alt1;
+      int resi2;
+      LString aname2;
+      LString alt2;
+    };
+
+    std::deque<Linkage> m_linkdat;
+
+    void applyLink();
   };
 
 

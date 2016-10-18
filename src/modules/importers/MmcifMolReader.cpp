@@ -138,6 +138,8 @@ bool MmcifMolReader::read(qlib::InStream &ins)
   else
     m_pMol->calcProt2ndry(-500.0);
 
+  applyLink();
+
   return true;
 }
 
@@ -190,22 +192,35 @@ void MmcifMolReader::appendDataItem()
 
 void MmcifMolReader::tokenizeLine()
 {
-  bool bStart = true;
+  int nState = TOK_FIND_START;
   const int nsize = m_recbuf.length();
   int i, j;
 
   for (i=0, j=0; i<nsize; ++i) {
     char c = m_recbuf.getAt(i);
-    if (bStart) {
+    if (nState==TOK_FIND_START) {
       if (c!=' ') {
-        m_recStPos[j] = i;
-        bStart = false;
+        if (c=='\'') {
+          m_recStPos[j] = i+1;
+          nState = TOK_FIND_QUOTEND;
+        }
+        else {
+          m_recStPos[j] = i;
+          nState = TOK_FIND_END;
+        }
       }
     }
-    else {
+    else if (nState==TOK_FIND_END) {
       if (c==' ') {
         m_recEnPos[j] = i;
-        bStart = true;
+        nState = TOK_FIND_START;
+        ++j;
+      }
+    }
+    else if (nState==TOK_FIND_QUOTEND) {
+      if (c=='\'') {
+        m_recEnPos[j] = i;
+        nState = TOK_FIND_START;
         ++j;
       }
     }
@@ -224,6 +239,8 @@ void MmcifMolReader::readLoopDataItem()
     readHelixLine();
   else if (m_bLoadSecstr && m_strCatName.equals("_struct_sheet_range"))
     readSheetLine();
+  else if (m_strCatName.equals("_struct_conn"))
+    readConnLine();
   
 }
 
@@ -562,5 +579,107 @@ void MmcifMolReader::applySecstr(const LString &sec1, const LString &sec2, const
     }
 
   }
+}
+
+void MmcifMolReader::readConnLine()
+{
+  if (!m_bLoopDefsOK) {
+    m_recStPos.resize( m_loopDefs.size() );
+    m_recEnPos.resize( m_loopDefs.size() );
+
+    m_nConnTypeID = findDataItem("conn_type_id");
+    
+    m_nSeqID1 = findDataItem("ptnr1_label_seq_id");
+    m_nAtomID1 = findDataItem("ptnr1_label_atom_id");
+    m_nAltID1 = findDataItem("pdbx_ptnr1_label_alt_id");
+    m_nSymmID1 = findDataItem("ptnr1_symmetry");
+
+    m_nSeqID2 = findDataItem("ptnr2_label_seq_id");
+    m_nAtomID2 = findDataItem("ptnr2_label_atom_id");
+    m_nAltID2 = findDataItem("pdbx_ptnr2_label_alt_id");
+    m_nSymmID2 = findDataItem("ptnr2_symmetry");
+
+    m_bLoopDefsOK = true;
+  }
+
+  tokenizeLine();
+
+  LString conn_typeid = getToken(m_nConnTypeID);
+  if (conn_typeid.equals("covale")||conn_typeid.equals("disulf")) {
+    Linkage lnk;
+    if (!getToken(m_nSeqID1).toInt(&lnk.resi1)) {
+      MB_THROW (MmcifFormatException, "invalid mmCIF format");
+      return;
+    }
+    if (!getToken(m_nSeqID2).toInt(&lnk.resi2)) {
+      MB_THROW (MmcifFormatException, "invalid mmCIF format");
+      return;
+    }
+    
+    
+    lnk.aname1 = getToken(m_nAtomID1);
+    lnk.aname2 = getToken(m_nAtomID2);
+
+    LString alt1 = getToken(m_nAltID1);
+    LString alt2 = getToken(m_nAltID2);
+    if (alt1.equals("?") || alt1.equals(".")){
+      alt1 = "";
+    }
+    else {
+      alt1 = alt1.substr(0,1);
+    }
+    if (alt2.equals("?") || alt2.equals(".")){
+      alt2 = "";
+    }
+    else {
+      alt2 = alt2.substr(0,1);
+    }
+    lnk.alt1 = alt1;
+    lnk.alt2 = alt2;
+    //LString symm1 = getToken(m_nSymmID1);
+    //LString symm2 = getToken(m_nSymmID2);
+
+    m_linkdat.push_back(lnk);
+  }
+}
+
+void MmcifMolReader::applyLink()
+{
+  BOOST_FOREACH (const Linkage &elem, m_linkdat) {
+    MolResiduePtr pRes1 = findResid(elem.resi1);
+    MolResiduePtr pRes2 = findResid(elem.resi2);
+
+    if (pRes1.isnull()||pRes2.isnull()) {
+      MB_THROW (MmcifFormatException, "invalid mmCIF format");
+      return;
+    }
+
+    MolAtomPtr pAtom1, pAtom2;
+    if (elem.alt1.isEmpty())
+      pAtom1 = pRes1->getAtom(elem.aname1);
+    else
+      pAtom1 = pRes1->getAtom(elem.aname1, elem.alt1.getAt(0));
+
+    if (elem.alt2.isEmpty())
+      pAtom2 = pRes2->getAtom(elem.aname2);
+    else
+      pAtom2 = pRes2->getAtom(elem.aname2, elem.alt2.getAt(0));
+
+    if (pAtom1.isnull()||pAtom2.isnull()) {
+      MB_THROW (MmcifFormatException, "invalid mmCIF format");
+      return;
+    }
+
+    m_pMol->makeBond(pAtom1->getID(), pAtom2->getID(), true);
+  }  
+}
+
+MolResiduePtr MmcifMolReader::findResid(int nSeqID) const
+{
+  ResidTab::const_iterator iter = m_residTab.find(nSeqID);
+  if (iter==m_residTab.end()) {
+    return MolResiduePtr();
+  }
+  return iter->second;
 }
 
