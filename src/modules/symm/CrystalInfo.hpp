@@ -195,6 +195,8 @@ public:
   /// get sg name (e.g. P43212)
   LString getSpaceGroupName() const;
 
+  void setSGByName(const LString &name);
+
 public:
   static int sysNameToID(const LString &nm);
   static LString idToSysName(int id);

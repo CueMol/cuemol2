@@ -126,6 +126,10 @@
       <Project>{b59ec231-1731-4fbe-9e2a-dbad581be05d}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
+    <ProjectReference Include="..\symm\symm.vcxproj">
+      <Project>{7CAD1179-B1CF-4E17-BBFA-DBD5AEA51E7B}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

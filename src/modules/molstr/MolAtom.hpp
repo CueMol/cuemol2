@@ -11,7 +11,7 @@
 #include <qlib/LScrObjects.hpp>
 #include <qlib/LScrSmartPtr.hpp>
 #include <qlib/mcutils.hpp>
-#include <qlib/LVariant.hpp>
+#include <qlib/LPropContainer.hpp>
 
 #include <qlib/LScrVector4D.hpp>
 
@@ -30,7 +30,9 @@ namespace molstr {
   class MolResidue;
   class MolBond;
 
-  class MOLSTR_API MolAtom : public qlib::LSimpleCopyScrObject
+  class MOLSTR_API MolAtom :
+    public qlib::LSimpleCopyScrObject,
+    public qlib::LDynPropContainer
   {
     MC_SCRIPTABLE;
     MC_CLONEABLE;
@@ -251,27 +253,50 @@ namespace molstr {
 
     //////////////////////////////////////////////////////////////////////
     // dynamic properties
+/*
   private:
     typedef qlib::MapTable<qlib::LVariant> PropTab;
     
     PropTab m_props;
-
+*/
   public:
     
-    bool getAtomProp(const LString &propnm, qlib::LVariant &presult) const;
-    bool setAtomProp(const LString &propnm, const qlib::LVariant &pvalue);
-    bool removeAtomProp(const LString &propnm);
-    int getAtomPropNames(std::set<LString> &names) const;
-    LString getPropTypeName(const LString &propnm) const;
+    bool getAtomProp(const LString &propnm, qlib::LVariant &presult) const {
+      return getDynProp(propnm, presult);
+    }
+    bool setAtomProp(const LString &propnm, const qlib::LVariant &pvalue) {
+      return setDynProp(propnm, pvalue);
+    }
+    bool removeAtomProp(const LString &propnm) {
+      return removeDynProp(propnm);
+    }
+    int getAtomPropNames(std::set<LString> &names) const {
+      return getDynPropNames(names);
+    }
+    LString getPropTypeName(const LString &propnm) const {
+      return getDynPropTypeName(propnm);
+    }
 
-    int getAtomPropInt(const LString &propnm) const;
-    void setAtomPropInt(const LString &propnm, int pvalue);
+    int getAtomPropInt(const LString &propnm) const {
+      return getDynPropInt(propnm);
+    }
+    void setAtomPropInt(const LString &propnm, int pvalue) {
+      setDynPropInt(propnm, pvalue);
+    }
     
-    double getAtomPropReal(const LString &propnm) const;
-    void setAtomPropReal(const LString &propnm, double pvalue);
+    double getAtomPropReal(const LString &propnm) const {
+      return getDynPropReal(propnm);
+    }
+    void setAtomPropReal(const LString &propnm, double pvalue) {
+      setDynPropReal(propnm, pvalue);
+    }
 
-    LString getAtomPropStr(const LString &propnm) const;
-    void setAtomPropStr(const LString &propnm, const LString &pvalue);
+    LString getAtomPropStr(const LString &propnm) const {
+      return getDynPropStr(propnm);
+    }
+    void setAtomPropStr(const LString &propnm, const LString &pvalue) {
+      setDynPropStr(propnm, pvalue);
+    }
 
   };
 

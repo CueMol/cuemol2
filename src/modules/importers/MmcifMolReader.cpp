@@ -15,6 +15,9 @@
 #include <modules/molstr/ResidIterator.hpp>
 #include <modules/molstr/TopparManager.hpp>
 
+#include <modules/symm/CrystalInfo.hpp>
+#include <modules/symm/SymOpDB.hpp>
+
 using namespace molstr;
 using namespace importers;
 
@@ -88,6 +91,8 @@ bool MmcifMolReader::read(qlib::InStream &ins)
         readDataLine();
       }
       else if (m_recbuf.startsWith("loop_")) {
+        // new data table begins (end of data line)
+        emulateSingleDataLoop();
         m_nState = MMCIFMOL_LOOPDEF;
         resetLoopDef();
       }
@@ -105,10 +110,13 @@ bool MmcifMolReader::read(qlib::InStream &ins)
 
     case MMCIFMOL_LOOPDATA:
       if (m_recbuf.startsWith("_")) {
+        // new data line begins (end of loop)
         m_nState = MMCIFMOL_DATA;
+        resetLoopDef();
         readDataLine();
       }
       else if (m_recbuf.startsWith("loop_")) {
+        // new data table begins (end of loop)
         m_nState = MMCIFMOL_LOOPDEF;
         resetLoopDef();
       }
@@ -159,6 +167,44 @@ bool MmcifMolReader::readRecord(qlib::LineStream &ins)
 void MmcifMolReader::readDataLine()
 {
   MB_DPRINTLN("mmCIF> data line : %s", m_recbuf.c_str());
+
+  // data line contains 2 elements (name and value)
+  m_recStPos.resize( 2 );
+  m_recEnPos.resize( 2 );
+
+  tokenizeLine();
+
+  LString name = getToken(0);
+  LString value = getRawToken(1);
+
+  int dotpos = name.indexOf('.');
+  LString catname = name.substr(0, dotpos);
+  LString item = name.substr(dotpos+1);
+
+  m_loopDefs.push_back( item.trim() );
+  m_values.push_back( value );
+
+  if (m_strCatName.equals(catname)) {
+    // the same category name as the previous line
+  }
+  else if (m_strCatName.isEmpty()) {
+    // new category name in the file
+    m_strCatName = catname;
+  }
+  else {
+    // new category line begins
+    emulateSingleDataLoop();
+    m_strCatName = catname;
+  }
+
+}
+
+void MmcifMolReader::emulateSingleDataLoop()
+{
+  m_recbuf = LString::join(" ", m_values);
+  m_values.clear();
+  readLoopDataItem();
+  resetLoopDef();
 }
 
 void MmcifMolReader::resetLoopDef()
@@ -201,7 +247,7 @@ void MmcifMolReader::tokenizeLine()
     if (nState==TOK_FIND_START) {
       if (c!=' ') {
         if (c=='\'') {
-          m_recStPos[j] = i+1;
+          m_recStPos[j] = i;
           nState = TOK_FIND_QUOTEND;
         }
         else {
@@ -219,7 +265,7 @@ void MmcifMolReader::tokenizeLine()
     }
     else if (nState==TOK_FIND_QUOTEND) {
       if (c=='\'') {
-        m_recEnPos[j] = i;
+        m_recEnPos[j] = i+1;
         nState = TOK_FIND_START;
         ++j;
       }
@@ -241,8 +287,14 @@ void MmcifMolReader::readLoopDataItem()
     readSheetLine();
   else if (m_strCatName.equals("_struct_conn"))
     readConnLine();
-  
+  else if (m_strCatName.equals("_cell"))
+    readCellLine();
+  else if (m_strCatName.equals("_symmetry"))
+    readSymmLine();
+
 }
+
+////////////////////////////////////
 
 void MmcifMolReader::readAtomLine()
 {
@@ -681,5 +733,84 @@ MolResiduePtr MmcifMolReader::findResid(int nSeqID) const
     return MolResiduePtr();
   }
   return iter->second;
+}
+
+void MmcifMolReader::readCellLine()
+{
+  m_recStPos.resize( m_loopDefs.size() );
+  m_recEnPos.resize( m_loopDefs.size() );
+
+  int nLenAID = findDataItem("length_a");
+  int nLenBID = findDataItem("length_b");
+  int nLenCID = findDataItem("length_c");
+    
+  int nAngAID = findDataItem("angle_alpha");
+  int nAngBID = findDataItem("angle_beta");
+  int nAngGID = findDataItem("angle_gamma");
+
+  m_bLoopDefsOK = true;
+
+  tokenizeLine();
+
+
+  double len_a, len_b, len_c;
+  double ang_a, ang_b, ang_g;
+
+  if (!getToken(nLenAID).toDouble(&len_a)) {
+    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    return;
+  }
+  if (!getToken(nLenBID).toDouble(&len_b)) {
+    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    return;
+  }
+  if (!getToken(nLenCID).toDouble(&len_c)) {
+    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    return;
+  }
+
+  if (!getToken(nAngAID).toDouble(&ang_a)) {
+    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    return;
+  }
+  if (!getToken(nAngBID).toDouble(&ang_b)) {
+    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    return;
+  }
+  if (!getToken(nAngGID).toDouble(&ang_g)) {
+    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    return;
+  }
+
+  symm::CrystalInfoPtr pci = m_pMol->getExtData("symminfo");
+  if (pci.isnull()) {
+    pci = symm::CrystalInfoPtr(MB_NEW symm::CrystalInfo());
+    m_pMol->setExtData("symminfo", pci);
+  }
+
+  pci->setCellDimension(len_a, len_b, len_c,
+                        ang_a, ang_b, ang_g);
+}
+
+void MmcifMolReader::readSymmLine()
+{
+  m_recStPos.resize( m_loopDefs.size() );
+  m_recEnPos.resize( m_loopDefs.size() );
+  
+  int nSgNameID = findDataItem("space_group_name_H-M");
+  
+  m_bLoopDefsOK = true;
+
+  tokenizeLine();
+
+  LString sgname = getToken(nSgNameID);
+
+  symm::CrystalInfoPtr pci = m_pMol->getExtData("symminfo");
+  if (pci.isnull()) {
+    pci = symm::CrystalInfoPtr(MB_NEW symm::CrystalInfo());
+    m_pMol->setExtData("symminfo", pci);
+  }
+
+  pci->setSGByName(sgname);
 }
 

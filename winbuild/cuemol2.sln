@@ -44,6 +44,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "anim", "anim\anim.vcxproj", "{B894856F-F978-4874-92A5-6898372A2D66}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "importers", "importers\importers.vcxproj", "{02E9D2E5-F0AA-4F6B-8390-2B7ECB4CC2EA}"
+	ProjectSection(ProjectDependencies) = postProject
+		{7CAD1179-B1CF-4E17-BBFA-DBD5AEA51E7B} = {7CAD1179-B1CF-4E17-BBFA-DBD5AEA51E7B}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

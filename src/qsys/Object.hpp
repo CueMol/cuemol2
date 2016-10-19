@@ -268,6 +268,8 @@ namespace qsys {
 
     void setExtData(const LString &name, ObjExtDataPtr p);
 
+    
+
     ////////////////////////////////////////////////////////////
     // Event related operations
 

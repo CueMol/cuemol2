@@ -175,3 +175,19 @@ LString CrystalInfo::getSpaceGroupName() const
   return sgname;
 }
 
+void CrystalInfo::setSGByName(const LString &name)
+{
+  SymOpDB *pdb = SymOpDB::getInstance();
+  int sgid = pdb->getSgIDByCName(name);
+  if (sgid<1) {
+    sgid = pdb->getSgIDByName(name);
+    if (sgid<1) {
+      LString msg = LString::format("Invalid s.g. name <%s>", name.c_str());
+      MB_THROW (qlib::RuntimeException, msg);
+      return;
+    }
+  }
+
+  setSG(sgid);
+}
+

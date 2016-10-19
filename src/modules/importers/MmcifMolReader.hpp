@@ -108,6 +108,9 @@ namespace importers {
     void resetLoopDef();
 
     std::deque<LString> m_loopDefs;
+    std::list<LString> m_values;
+
+    void emulateSingleDataLoop();
 
     bool m_bLoopDefsOK;
 
@@ -154,6 +157,14 @@ namespace importers {
     void tokenizeLine();
 
     LString getToken(int n) const {
+      LString tok = getRawToken(n);
+      if (tok.getAt(0)=='\'')
+        return tok.substr(1, tok.length()-2);
+      else
+        return tok;
+    }
+    
+    LString getRawToken(int n) const {
       if (n<0||n>=m_recStPos.size()) {
         MB_THROW(qlib::RuntimeException, "mmCIF data item not found");
         return LString();
@@ -218,6 +229,11 @@ namespace importers {
     std::deque<Linkage> m_linkdat;
 
     void applyLink();
+
+
+    void readCellLine();
+    void readSymmLine();
+
   };
 
 
