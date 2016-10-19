@@ -32,6 +32,7 @@ PDBFileReader::PDBFileReader()
   m_bLoadAltConf = true;
   m_bLoadAnisoU = true;
   m_bBuild2ndry = true;
+  m_bAutoTopoGen = true;
 
   m_nErrCount = 0;
   m_nErrMax = 50;
@@ -378,28 +379,6 @@ int PDBFileReader::convFromAname(const LString &atomname)
   return ElemSym::XX;
 }
 
-//static
-LString PDBFileReader::encodeModelInChain(const LString &chainname, int nModel)
-{
-  LString ret = LString::format("%02d_%s", nModel, chainname.c_str());
-  return ret;
-}
-
-//static
-bool PDBFileReader::decodeModelFromChain(const LString &orig,
-                                         LString &chain, int &nModel)
-{
-  int nlen = orig.length();
-  int seppos = orig.indexOf('_');
-
-  if (seppos<=0 || seppos>=nlen-1)
-    return false;
-  //cChain = (orig.c_str())[nlen-1];
-  chain = orig.substr(seppos+1);
-  LString num = orig.substr(0, seppos);
-  return num.toInt(&nModel);
-}
-
 bool PDBFileReader::readAtom()
 {
   // If LoadMultiModel==false,
@@ -459,7 +438,10 @@ bool PDBFileReader::readAtom()
     if (TopparManager::isAminoAcid(resname) ||
         TopparManager::isNuclAcid(resname)) {
       // amino acids and nucleic acids don't have inorganic atoms!!
-      if (eleid==ElemSym::Hg || eleid==ElemSym::He)
+      if (eleid==ElemSym::Hg ||
+          eleid==ElemSym::Ho ||
+          eleid==ElemSym::Hf ||
+          eleid==ElemSym::He)
         eleid = ElemSym::H;
       else if (eleid==ElemSym::Ca)
         eleid = ElemSym::C;
@@ -506,7 +488,7 @@ bool PDBFileReader::readAtom()
   // process model ID (encode model ID in the chain name)
   LString schain(chain);
   if (m_nDefaultModel!=m_nCurrModel)
-    schain = encodeModelInChain(chain, m_nCurrModel);
+    schain = MolCoord::encodeModelInChain(chain, m_nCurrModel);
 
   MolAtomPtr pAtom = MolAtomPtr(MB_NEW MolAtom());
   pAtom->setParentUID(m_pMol->getUID());
@@ -888,7 +870,7 @@ bool PDBFileReader::readRecord(qlib::LineStream &ins)
 void PDBFileReader::postProcess()
 {
   // Apply automatic topology/linkage information
-  m_pMol->applyTopology();
+  m_pMol->applyTopology(m_bAutoTopoGen);
   
   // Apply manually defined linkage info (SSBOND, LINK)
   BOOST_FOREACH (const Linkage &elem, m_linkdat) {

@@ -16,11 +16,11 @@ namespace molstr {
   class TopoDB;
   class ResiToppar;
 
-  /**
-     Topology builder class.
-     We only handles the bond topology here,
-     because other information isn't required for the presentation purpose.
-  */
+  /// 
+  /// Topology builder class.
+  /// We only handles the bond topology here,
+  /// because other information isn't required for the presentation purpose.
+  ///
   class TopoBuilder
   {
   private:
@@ -34,6 +34,7 @@ namespace molstr {
     static const int AUTOGEN_GLOBAL = 0;
     static const int AUTOGEN_SCENE = 1;
     static const int AUTOGEN_OBJECT = 2;
+    static const int AUTOGEN_NONE = 3;
 
     void setAutogenMode(int nmode) { m_nAutogenMode = nmode; }
 

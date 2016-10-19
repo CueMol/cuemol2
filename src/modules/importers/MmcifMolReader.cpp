@@ -135,7 +135,7 @@ bool MmcifMolReader::read(qlib::InStream &ins)
 
   LOG_DPRINTLN("mmCIF> read %d atoms", m_nReadAtoms);
 
-  m_pMol->applyTopology();
+  m_pMol->applyTopology(m_bAutoTopoGen);
   m_pMol->calcBasePair(3.7, 30);
   if (m_bLoadSecstr) {
     applySecstr("helix", "H", m_rngHelix);
@@ -250,6 +250,10 @@ void MmcifMolReader::tokenizeLine()
           m_recStPos[j] = i;
           nState = TOK_FIND_QUOTEND;
         }
+        else if (c=='\"') {
+          m_recStPos[j] = i;
+          nState = TOK_FIND_DQUOTEND;
+        }
         else {
           m_recStPos[j] = i;
           nState = TOK_FIND_END;
@@ -265,6 +269,13 @@ void MmcifMolReader::tokenizeLine()
     }
     else if (nState==TOK_FIND_QUOTEND) {
       if (c=='\'') {
+        m_recEnPos[j] = i+1;
+        nState = TOK_FIND_START;
+        ++j;
+      }
+    }
+    else if (nState==TOK_FIND_DQUOTEND) {
+      if (c=='\"') {
         m_recEnPos[j] = i+1;
         nState = TOK_FIND_START;
         ++j;
@@ -319,6 +330,8 @@ void MmcifMolReader::readAtomLine()
     m_nAuthCompID = findDataItem("auth_comp_id");
     m_nAuthSeqID = findDataItem("auth_seq_id");
     m_nAuthAsymID = findDataItem("auth_asym_id");
+
+    m_nModelID = findDataItem("pdbx_PDB_model_num");
 
     m_bLoopDefsOK = true;
   }    
@@ -417,6 +430,14 @@ void MmcifMolReader::readAtomLine()
     return;
   }
   
+  int nModel;
+  if (!getToken(m_nModelID).toInt(&nModel))
+    nModel = 1;
+  if (nModel>1) {
+    if (!m_bLoadMultiModel)
+      return;
+    chain1 = MolCoord::encodeModelInChain(chain1, nModel);
+  }
   
   MolAtomPtr pAtom = MolAtomPtr(MB_NEW MolAtom());
   pAtom->setParentUID(m_pMol->getUID());
@@ -510,7 +531,7 @@ void MmcifMolReader::readAnisoULine()
     return;
   }
 
-  std::map<int,int>::const_iterator iter = m_atommap.find(nID);
+  AtomIDMap::const_iterator iter = m_atommap.find(nID);
   if (iter==m_atommap.end()) {
     MB_THROW (MmcifFormatException, "invalid mmCIF format");
     return;
@@ -782,11 +803,7 @@ void MmcifMolReader::readCellLine()
     return;
   }
 
-  symm::CrystalInfoPtr pci = m_pMol->getExtData("symminfo");
-  if (pci.isnull()) {
-    pci = symm::CrystalInfoPtr(MB_NEW symm::CrystalInfo());
-    m_pMol->setExtData("symminfo", pci);
-  }
+  symm::CrystalInfoPtr pci = m_pMol->getCreateExtData("CrystalInfo");
 
   pci->setCellDimension(len_a, len_b, len_c,
                         ang_a, ang_b, ang_g);
@@ -805,11 +822,7 @@ void MmcifMolReader::readSymmLine()
 
   LString sgname = getToken(nSgNameID);
 
-  symm::CrystalInfoPtr pci = m_pMol->getExtData("symminfo");
-  if (pci.isnull()) {
-    pci = symm::CrystalInfoPtr(MB_NEW symm::CrystalInfo());
-    m_pMol->setExtData("symminfo", pci);
-  }
+  symm::CrystalInfoPtr pci = m_pMol->getCreateExtData("CrystalInfo");
 
   pci->setSGByName(sgname);
 }

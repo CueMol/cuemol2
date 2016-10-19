@@ -4,6 +4,8 @@
 
 Qm2Main.prototype.makeFilter = function(fp, nCatID)
 {
+  const pref = require("preferences-service");
+
   let candidates = null;
   if (arguments.length==3)
     candidates = arguments[2];
@@ -19,13 +21,15 @@ Qm2Main.prototype.makeFilter = function(fp, nCatID)
     if (candidates &&
         !candidates.some(function (e) {return e==elem.name;}))
       continue;
-    
-    // skip QDF format in the obj-reader mode (cat==0)
-    if (nCatID==0 && elem.name.indexOf("qdf")==0
-	) {
+
+    if (!pref.has("cuemol2.ui.filedlg.show_qdf_readers")) {
+      // skip QDF format in the obj-reader mode (cat==0)
+      if (nCatID==0 && elem.name.indexOf("qdf")==0
+	  ) {
 	//&& elem.name!="qdfmol") {
-      dd("Skip the individual QDF format ("+elem.name+")");
-      continue;
+	dd("Skip the individual QDF format ("+elem.name+")");
+	continue;
+      }
     }
     
     if (fp)

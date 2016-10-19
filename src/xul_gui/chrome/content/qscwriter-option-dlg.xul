@@ -65,7 +65,7 @@
   </script>
 
   <vbox>
-    <checkbox id="chk_force_embed" label="Embed all objects (if possible)"/>
+    <checkbox id="chk_force_embed" label="Embed all"/>
 
     <groupbox flex="0">
       <caption>

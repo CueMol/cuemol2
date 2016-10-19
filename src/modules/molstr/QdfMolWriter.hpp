@@ -64,11 +64,12 @@ private:
   }
 
   /// resid obj ptr --> resid UID table
-  std::map<qlib::qvoidp, quint32> m_resmap;
+  typedef std::unordered_map<qlib::qvoidp, quint32> ResidMap;
+  ResidMap m_resmap;
 
   quint32 getResidUID(MolResiduePtr pRes) const {
     qlib::qvoidp p = (qlib::qvoidp) pRes.get();
-    std::map<qlib::qvoidp, quint32>::const_iterator i = m_resmap.find(p);
+    ResidMap::const_iterator i = m_resmap.find(p);
     if (i==m_resmap.end()) {
       MB_THROW(qlib::RuntimeException, "inconsistent mol data in QdfMolWriter");
     }
@@ -77,10 +78,11 @@ private:
 
 
   /// atom obj ptr --> atom UID table
-  std::map<int, quint32> m_atommap;
+  typedef std::unordered_map<int, quint32> AtomMap;
+  AtomMap m_atommap;
 
   quint32 getAtomUID(int aid) const {
-    std::map<int, quint32>::const_iterator i = m_atommap.find(aid);
+    AtomMap::const_iterator i = m_atommap.find(aid);
     if (i==m_atommap.end()) {
       MB_THROW(qlib::RuntimeException, "inconsistent mol data in QdfMolWriter");
     }
@@ -90,6 +92,7 @@ private:
   ///// aid-->rid table
   //std::map<int, int> m_ridmap;
 
+  void writeMolData();
   void writeChainData();
   void writeResidData();
   void writeAtomData();

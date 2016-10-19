@@ -171,7 +171,7 @@ void DensityMap::setXtalParams(double a, double b, double c,
   m_xtalInfo.setSG(nsg);
 
   CrystalInfo *pci = new CrystalInfo(a,b,c,alpha,beta,gamma,nsg);
-  this->setExtData("symminfo", qsys::ObjExtDataPtr(pci));
+  this->setExtData(qsys::ObjExtDataPtr(pci));
 }
 
 Vector4D DensityMap::getCenter() const

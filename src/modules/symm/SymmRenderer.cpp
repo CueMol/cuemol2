@@ -58,7 +58,7 @@ LString SymmRenderer::toString() const
 
 bool SymmRenderer::isCompatibleObj(qsys::ObjectPtr pobj) const
 {
-  // CrystalInfoPtr pcx = pobj->getExtData("symminfo");
+  // CrystalInfoPtr pcx = pobj->getExtData("CrystalInfo");
   // return ! pcx.isnull();
 
   MolCoordPtr ptest(pobj, qlib::no_throw_tag());
@@ -142,7 +142,7 @@ int SymmRenderer::genByCell()
   if (pMol.isnull())
     return -1;
       
-  CrystalInfoPtr pci = pMol->getExtData("symminfo");
+  CrystalInfoPtr pci = pMol->getExtData("CrystalInfo");
   if (pci.isnull()) {
     // No symmetry info available
     // TO DO: throw exception
@@ -204,7 +204,7 @@ int SymmRenderer::genByExtent()
   if (pMol.isnull())
     return -1;
       
-  CrystalInfoPtr pci = pMol->getExtData("symminfo");
+  CrystalInfoPtr pci = pMol->getExtData("CrystalInfo");
   if (pci.isnull())
     return -1;
 

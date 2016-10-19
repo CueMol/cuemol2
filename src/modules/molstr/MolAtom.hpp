@@ -277,6 +277,13 @@ namespace molstr {
       return getDynPropTypeName(propnm);
     }
 
+    bool getAtomPropBool(const LString &propnm) const {
+      return getDynPropBool(propnm);
+    }
+    void setAtomPropBool(const LString &propnm, bool pvalue) {
+      setDynPropBool(propnm, pvalue);
+    }
+
     int getAtomPropInt(const LString &propnm) const {
       return getDynPropInt(propnm);
     }

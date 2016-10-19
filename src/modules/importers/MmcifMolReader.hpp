@@ -12,6 +12,7 @@
 #include <qlib/LExceptions.hpp>
 #include <qsys/ObjReader.hpp>
 #include <modules/molstr/molstr.hpp>
+#include <unordered_map>
 
 namespace qlib {
   class LineStream;
@@ -44,13 +45,24 @@ namespace importers {
     /// Read atom count
     int m_nReadAtoms;
 
+  public:
+    //////////////////////////////////////////////
+    // properties
+
+    /// load multiple models
+    bool m_bLoadMultiModel;
+
     /// load alternate conformations
     bool m_bLoadAltConf;
 
     ///  load anisotropic B factors
     bool m_bLoadAnisoU;
 
+    /// Load protein secondary structure from the file
     bool m_bLoadSecstr;
+    
+    /// Auto generate unknown compound's topology
+    bool m_bAutoTopoGen;
 
     //////////////////////////////////////////////
   public:
@@ -136,6 +148,7 @@ namespace importers {
     int m_nAuthCompID;
     int m_nAuthSeqID;
     int m_nAuthAsymID;
+    int m_nModelID;
 
     std::vector<int> m_recStPos;
     std::vector<int> m_recEnPos;
@@ -153,12 +166,15 @@ namespace importers {
     static const int TOK_FIND_START = 0;
     static const int TOK_FIND_END = 1;
     static const int TOK_FIND_QUOTEND = 2;
+    static const int TOK_FIND_DQUOTEND = 3;
 
     void tokenizeLine();
 
     LString getToken(int n) const {
       LString tok = getRawToken(n);
       if (tok.getAt(0)=='\'')
+        return tok.substr(1, tok.length()-2);
+      else if (tok.getAt(0)=='\"')
         return tok.substr(1, tok.length()-2);
       else
         return tok;
@@ -174,7 +190,8 @@ namespace importers {
       return m_recbuf.substr(ist, ien-ist);
     }
 
-    std::map<int, int> m_atommap;
+    typedef std::unordered_map<int, int> AtomIDMap;
+    AtomIDMap m_atommap;
     
     // atom_site_aniso
     int m_nU11;
@@ -184,7 +201,7 @@ namespace importers {
     int m_nU13;
     int m_nU23;
     
-    typedef std::map<quint32, MolResiduePtr> ResidTab;
+    typedef std::unordered_map<quint32, MolResiduePtr> ResidTab;
     ResidTab m_residTab;
 
     MolResiduePtr findResid(int nSeqID) const;

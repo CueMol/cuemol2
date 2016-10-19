@@ -6,6 +6,7 @@
 <?xul-overlay href="chrome://cuemol2/content/fopen-mtzopt-page.xul"?>
 <?xul-overlay href="chrome://cuemol2/content/fopen-namdcooropt-page.xul"?>
 <?xul-overlay href="chrome://cuemol2/content/fopen-ccp4map-page.xul"?>
+<?xul-overlay href="chrome://cuemol2/content/fopen-mmcifopt-page.xul"?>
 
 <!-- -*- xml -*- -->
 

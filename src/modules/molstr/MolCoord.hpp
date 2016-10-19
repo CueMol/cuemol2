@@ -18,6 +18,7 @@
 #include "MolChain.hpp"
 #include "Selection.hpp"
 #include "ColoringScheme.hpp"
+//#include "TopoBuilder.hpp"
 
 namespace qlib { class Matrix4D; }
 
@@ -246,7 +247,7 @@ namespace molstr {
     /////////////////////////////////////////////////////
     // other operations
 
-    void applyTopology();
+    void applyTopology(bool bAutoBuild = true);
 
     ///
     ///  Apply affine transformation to the selected part by pSel
@@ -357,6 +358,10 @@ namespace molstr {
 
     static MolCoordPtr getMolByID(qlib::uid_t uid, qlib::no_throw_tag xx);
     static MolCoordPtr getMolByID(qlib::uid_t uid);
+
+    static LString encodeModelInChain(const LString &chainname, int nModel);
+    static bool decodeModelFromChain(const LString &orig, LString &chain, int &nModel);
+
   };
 
 }

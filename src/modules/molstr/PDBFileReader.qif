@@ -31,6 +31,9 @@ runtime_class PDBFileReader extends ObjReader
   // load segID
   property boolean loadsegid => m_bLoadSegID;
   default loadsegid = false;
+
+  property boolean autoTopoGen => m_bAutoTopoGen;
+  default autoTopoGen = true;
 };
 
 #endif

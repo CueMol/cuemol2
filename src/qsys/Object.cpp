@@ -11,6 +11,7 @@
 #include <qlib/LDOM2Stream.hpp>
 #include <qlib/StringStream.hpp>
 #include <qlib/FileStream.hpp>
+#include <qlib/ClassRegistry.hpp>
 
 #include "SceneManager.hpp"
 #include "SceneEvent.hpp"
@@ -801,12 +802,27 @@ ObjExtData::~ObjExtData()
 {
 }
 
+void ObjExtData::writeQdfData(DataTab &out)
+{
+}
+
+void ObjExtData::readQdfData(const DataTab &in)
+{
+}
+
 //////////
 
-int Object::getExtDataSize() const
+LString Object::getExtDataNames() const
 {
-  int n = m_extdat.size();
-  return n;
+  LString rval;
+  bool bstart = true;
+  BOOST_FOREACH (const ExtDataTab::value_type &elem,m_extdat) {
+    if (!bstart)
+      rval += ",";
+    rval += elem.first;
+    bstart = false;
+  }
+  return rval;
 }
 
 ObjExtDataPtr Object::getExtData(const LString &name) const
@@ -815,15 +831,36 @@ ObjExtDataPtr Object::getExtData(const LString &name) const
   return p;
 }
 
+ObjExtDataPtr Object::getCreateExtData(const LString &name)
+{
+  if (m_extdat.containsKey(name))
+    return getExtData(name);
+  
+  qlib::ClassRegistry *pMgr = qlib::ClassRegistry::getInstance();
+  qlib::LClass *pcls = pMgr->getClassObj(name);
+  if (pcls==NULL)
+    return ObjExtDataPtr();
+  ObjExtData *pObj = dynamic_cast<ObjExtData *>(pcls->createObj());
+  if (pObj==NULL)
+    return ObjExtDataPtr();
+  ObjExtDataPtr pExt(pObj);
+
+  setExtData(pExt);
+  return pExt;
+}
+
 void Object::removeExtData(const LString &name)
 {
   m_extdat.remove(name);
 }
 
-void Object::setExtData(const LString &name, ObjExtDataPtr p)
+void Object::setExtData(ObjExtDataPtr p)
 {
+  LString name = p->getClassName();
   m_extdat.forceSet(name, p);
 }
+
+//////////
 
 void Object::forceEmbed()
 {

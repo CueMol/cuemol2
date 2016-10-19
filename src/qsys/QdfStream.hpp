@@ -158,6 +158,7 @@ namespace qsys {
     qint8 readInt8(const LString &name);
     quint8 readUInt8(const LString &name);
     LString readStr(const LString &name);
+    bool readBool(const LString &name);
 
     void readVec3D(const LString &name, qfloat32 *pvec);
     Vector4D readVec3D(const LString &name);
@@ -338,6 +339,7 @@ namespace qsys {
 
     void writeStr(const LString &name, const LString &value);
     void writeFixedStr(const LString &name, const LString &value);
+    void writeBool(const LString &name, bool value);
     void writeInt8(const LString &name, qint8 value);
     void writeUInt8(const LString &name, quint8 value);
     void writeInt16(const LString &name, qint16 value);

@@ -22,7 +22,7 @@ dlg.ctor = function ()
       try {return that.onDialogAccept();} catch (e) {debug.exception(e);} }, false);
 
   this.mTgtObj = args.target;
-  this.mXi = this.mTgtObj.getExtData("symminfo");
+  this.mXi = this.mTgtObj.getExtData("CrystalInfo");
   this._bCreate = false;
 
   if (!this.mXi) {
