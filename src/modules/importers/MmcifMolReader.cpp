@@ -317,6 +317,47 @@ void MmcifMolReader::readLoopDataItem()
 
 ////////////////////////////////////
 
+ResidIndex MmcifMolReader::getResidIndex(int nSeqID, int nInsID)
+{
+  LString inscode;
+  if (nInsID>=0)
+    inscode = getToken(nInsID);
+  if (inscode.equals("?") ||inscode.equals("."))
+    inscode = "";
+  
+  char iCode = ' ';
+  if (inscode.length()>0)
+    iCode = inscode.getAt(0);
+
+  LString resseq1;
+  if (nSeqID>=0)
+	  resseq1 = getToken(nSeqID);
+
+  int itmp;
+  if (!resseq1.toInt(&itmp)) {
+    // invalid res index --> default index (0)
+    itmp = 0;
+  }
+  ResidIndex residx(itmp);
+  if (iCode!=' ')
+    residx.second = iCode;
+
+  return residx;
+}
+
+char MmcifMolReader::getConfID(int nConfID)
+{
+  if (nConfID<0)
+    return '\0';
+  LString alt1 = getToken(nConfID);
+  if (alt1.equals("?") || alt1.equals("."))
+    return '\0';
+  if (alt1.isEmpty())
+    return '\0';
+
+  return alt1.getAt(0);
+}
+
 void MmcifMolReader::readAtomLine()
 {
   if (!m_bLoopDefsOK) {
@@ -378,34 +419,13 @@ void MmcifMolReader::readAtomLine()
     resname1 = getToken(m_nAuthCompID);
   }
   
-  LString sconfid = getToken(m_nLabelAltID);
-
+  char confid = getConfID(m_nLabelAltID); //getToken(m_nLabelAltID);
   
   LString chain1;
   if (m_nAuthAsymID>=0)
     chain1 = getToken(m_nAuthAsymID);
 
-  LString resseq1;
-  if (m_nAuthSeqID>=0)
-    resseq1 = getToken(m_nAuthSeqID);
-  
-  LString inscode;
-  if (m_nInsCode>=0)
-    inscode = getToken(m_nInsCode);
-  if (inscode.equals("?") ||inscode.equals("."))
-    inscode = "";
-  
-  char iCode = ' ';
-  if (inscode.length()>0)
-    iCode = inscode.getAt(0);
-  int itmp;
-  if (!resseq1.toInt(&itmp)) {
-    // invalid res index --> default index (0)
-    itmp = 0;
-  }
-  ResidIndex residx(itmp);
-  if (iCode!=' ')
-    residx.second = iCode;
+  ResidIndex residx = getResidIndex(m_nAuthSeqID, m_nInsCode);
 
   Vector4D pos;
   double dbuf;
@@ -461,13 +481,14 @@ void MmcifMolReader::readAtomLine()
   pAtom->setBfac(bfac);
   pAtom->setOcc(occ);
 
-  if (!sconfid.equals("?") && !sconfid.equals(".")){
+  //if (!sconfid.equals("?") && !sconfid.equals(".")){
+  if (confid!='\0'){
     if (m_bLoadAltConf) {
-      pAtom->setConfID(sconfid.getAt(0));
+      pAtom->setConfID(confid);
     }
     else {
       // ignore atoms with conf id other than "A"
-      if (!sconfid.equals("A")) {
+      if (confid=='A') {
         return;
       }
     }
@@ -673,12 +694,16 @@ void MmcifMolReader::readConnLine()
 
     m_nConnTypeID = findDataItem("conn_type_id");
     
-    m_nSeqID1 = findDataItem("ptnr1_label_seq_id");
+    m_nChainID1 = findDataItem("ptnr1_auth_asym_id");
+    m_nSeqID1 = findDataItem("ptnr1_auth_seq_id");
+    m_nInsID1 = findDataItem("pdbx_ptnr1_PDB_ins_code");
     m_nAtomID1 = findDataItem("ptnr1_label_atom_id");
     m_nAltID1 = findDataItem("pdbx_ptnr1_label_alt_id");
     m_nSymmID1 = findDataItem("ptnr1_symmetry");
 
-    m_nSeqID2 = findDataItem("ptnr2_label_seq_id");
+    m_nChainID2 = findDataItem("ptnr2_auth_asym_id");
+    m_nSeqID2 = findDataItem("ptnr2_auth_seq_id");
+    m_nInsID2 = findDataItem("pdbx_ptnr2_PDB_ins_code");
     m_nAtomID2 = findDataItem("ptnr2_label_atom_id");
     m_nAltID2 = findDataItem("pdbx_ptnr2_label_alt_id");
     m_nSymmID2 = findDataItem("ptnr2_symmetry");
@@ -689,56 +714,32 @@ void MmcifMolReader::readConnLine()
   tokenizeLine();
 
   LString conn_typeid = getToken(m_nConnTypeID);
-  if (conn_typeid.equals("covale")||conn_typeid.equals("disulf")) {
-    Linkage lnk;
+  if (!conn_typeid.equals("covale")&&!conn_typeid.equals("disulf"))
+    return;
 
-    LString sSeqID1 = getToken(m_nSeqID1);
-    if (sSeqID1.equals(".") || sSeqID1.equals("?"))
-      return;
+  Linkage lnk;
 
-    LString sSeqID2 = getToken(m_nSeqID2);
-    if (sSeqID2.equals(".") || sSeqID2.equals("?"))
-      return;
+  lnk.ch1 = getToken(m_nChainID1);
+  lnk.ch2 = getToken(m_nChainID2);
 
-    if (!sSeqID1.toInt(&lnk.resi1)) {
-      error("invalid mmCIF format, cannot get ptnr1_label_seq_id");
-      return;
-    }
-    if (!sSeqID2.toInt(&lnk.resi2)) {
-      error("invalid mmCIF format, cannot get ptnr2_label_seq_id");
-      return;
-    }
+  lnk.resi1 = getResidIndex(m_nSeqID1, m_nInsID1);
+  lnk.resi2 = getResidIndex(m_nSeqID2, m_nInsID2);
     
-    
-    lnk.aname1 = getToken(m_nAtomID1);
-    lnk.aname2 = getToken(m_nAtomID2);
+  lnk.aname1 = getToken(m_nAtomID1);
+  lnk.aname2 = getToken(m_nAtomID2);
 
-    LString alt1 = getToken(m_nAltID1);
-    LString alt2 = getToken(m_nAltID2);
-    if (alt1.equals("?") || alt1.equals(".")){
-      alt1 = "";
-    }
-    else {
-      alt1 = alt1.substr(0,1);
-    }
-    if (alt2.equals("?") || alt2.equals(".")){
-      alt2 = "";
-    }
-    else {
-      alt2 = alt2.substr(0,1);
-    }
-    lnk.alt1 = alt1;
-    lnk.alt2 = alt2;
-    //LString symm1 = getToken(m_nSymmID1);
-    //LString symm2 = getToken(m_nSymmID2);
+  lnk.alt1 = getConfID(m_nAltID1);
+  lnk.alt2 = getConfID(m_nAltID2);
+  //LString symm1 = getToken(m_nSymmID1);
+  //LString symm2 = getToken(m_nSymmID2);
 
     m_linkdat.push_back(lnk);
-  }
 }
 
 void MmcifMolReader::applyLink()
 {
   BOOST_FOREACH (const Linkage &elem, m_linkdat) {
+    /*
     MolResiduePtr pRes1 = findResid(elem.resi1);
     MolResiduePtr pRes2 = findResid(elem.resi2);
 
@@ -747,7 +748,6 @@ void MmcifMolReader::applyLink()
       return;
     }
 
-    MolAtomPtr pAtom1, pAtom2;
     if (elem.alt1.isEmpty())
       pAtom1 = pRes1->getAtom(elem.aname1);
     else
@@ -757,11 +757,15 @@ void MmcifMolReader::applyLink()
       pAtom2 = pRes2->getAtom(elem.aname2);
     else
       pAtom2 = pRes2->getAtom(elem.aname2, elem.alt2.getAt(0));
+     */
+    MolAtomPtr pAtom1, pAtom2;
+    pAtom1 = m_pMol->getAtom(elem.ch1, elem.resi1, elem.aname1, elem.alt1);
+    pAtom2 = m_pMol->getAtom(elem.ch2, elem.resi2, elem.aname2, elem.alt2);
 
     if (pAtom1.isnull()||pAtom2.isnull()) {
-      error(LString::format("Apply link failed for %d %s <--> %d %s",
-			    elem.resi1, elem.aname1.c_str(),
-			    elem.resi2, elem.aname2.c_str()));
+      error(LString::format("Apply link failed for %s%s %s <--> %s%s %s",
+                            elem.ch1.c_str(), elem.resi1.toString().c_str(), elem.aname1.c_str(),
+                            elem.ch2.c_str(), elem.resi2.toString().c_str(), elem.aname2.c_str()));
       return;
     }
 

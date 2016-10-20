@@ -24,6 +24,7 @@ namespace importers {
   using molstr::MolCoord;
   using molstr::MolCoordPtr;
   using molstr::MolResiduePtr;
+  using molstr::ResidIndex;
 
   //
   ///   mmCIF mol structure reader class
@@ -224,23 +225,30 @@ namespace importers {
     void readConnLine();
 
     int m_nConnTypeID;
+    int m_nChainID1;
     int m_nSeqID1;
+    int m_nInsID1;
     int m_nAtomID1;
     int m_nAltID1;
     int m_nSymmID1;
+    int m_nChainID2;
     int m_nSeqID2;
+    int m_nInsID2;
     int m_nAtomID2;
     int m_nAltID2;
     int m_nSymmID2;
 
     struct Linkage
     {
-      int resi1;
+      LString ch1;
+      ResidIndex resi1;
       LString aname1;
-      LString alt1;
-      int resi2;
+      char alt1;
+
+      LString ch2;
+      ResidIndex resi2;
       LString aname2;
-      LString alt2;
+      char alt2;
     };
 
     std::deque<Linkage> m_linkdat;
@@ -252,6 +260,9 @@ namespace importers {
     void readSymmLine();
 
     void error(const LString &msg) const;
+
+    ResidIndex getResidIndex(int nSeqID, int nInsID);
+    char getConfID(int nConfID);
   };
 
 

@@ -21,6 +21,7 @@ namespace molstr {
     int toInt() const { return std::pair<int, char>::first; }
     qlib::LString toString() const;
     static ResidIndex fromString(const qlib::LString &stridx);
+    //const char *c_str() const { return toString().c_str(); }
   };
 
   inline bool operator<(const ResidIndex &ix, const ResidIndex &iy)
