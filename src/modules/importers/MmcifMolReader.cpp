@@ -262,9 +262,10 @@ bool MmcifMolReader::tokenizeLine(bool bChk)
 {
   int nState = TOK_FIND_START;
   const int nsize = m_recbuf.length();
+  const int nmaxtok = m_recStPos.size();
   int i, j;
 
-  for (i=0, j=0; i<nsize; ++i) {
+  for (i=0, j=0; i<nsize && j<nmaxtok; ++i) {
     char c = m_recbuf.getAt(i);
     if (nState==TOK_FIND_START) {
       if (c!=' ') {
@@ -621,6 +622,7 @@ void MmcifMolReader::readHelixLine()
     //m_nStSeqID = findDataItem("beg_label_seq_id");
     //m_nEnSeqID = findDataItem("end_label_seq_id");
     
+    m_nID = findDataItem("conf_type_id");
     m_nChainID1 = findDataItem("beg_auth_asym_id");
     m_nSeqID1 = findDataItem("beg_auth_seq_id");
     m_nInsID1 = findDataItem("pdbx_beg_PDB_ins_code");
@@ -636,6 +638,10 @@ void MmcifMolReader::readHelixLine()
   if (!tokenizeLine())
     return;
 
+  LString idstr = getToken(m_nID);
+  if (!idstr.equals("HELX_P"))
+    return;
+
   LString ch = getToken(m_nChainID1);
   // lnk.ch2 = getToken(m_nChainID2);
 
@@ -647,6 +653,11 @@ void MmcifMolReader::readHelixLine()
     ntype = 1;
   }
   
+  if (!(begseq<endseq)) {
+    LOG_DPRINTLN("mmCIF> Warning: invalid helix line ignored at %d: %s", m_lineno, m_recbuf.c_str());
+    return;
+  }
+
   if (ntype==5)
     m_helix310.append(ch, begseq, endseq);
   else if (ntype==3)

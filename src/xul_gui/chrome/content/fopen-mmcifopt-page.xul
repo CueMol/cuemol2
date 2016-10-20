@@ -26,23 +26,29 @@
 let dlgdata = window.arguments[0];
 
 function onInit() {
+  try {
+    if (window.gDlgObj.selectShowTab(dlgdata.target[0].reader_name, "mmcif")) {
+      let rdr = dlgdata.target[0].reader;
 
-  if (window.gDlgObj.selectShowTab(dlgdata.target[0].reader_name, "mmcif")) {
-  let rdr = dlgdata.target[0].reader;
+      document.getElementById('calc_2ndry').checked = (rdr.loadsecstr == false);
+      document.getElementById('topo_autogen').checked = (rdr.autoTopoGen == true);
 
-  document.getElementById('calc_2ndry').checked = (rdr.loadsecstr == false);
-  document.getElementById('topo_autogen').checked = (rdr.autoTopoGen == true);
+      // MODEL record
+      document.getElementById('no_load_multimodel').checked = (rdr.loadmodel == false);
 
-  // MODEL record
-  document.getElementById('no_load_multimodel').checked = (rdr.loadmodel == false);
+      // ANISOU record
+      document.getElementById('no_load_anisou').checked = (rdr.loadanisou == false);
 
-  // ANISOU record
-  document.getElementById('no_load_anisou').checked = (rdr.loadanisou == false);
-
-  // Alternate conf.
-  document.getElementById('no_load_altconf').checked = (rdr.loadaltconf == false);
+      // Alternate conf.
+      document.getElementById('no_load_altconf').checked = (rdr.loadaltconf == false);
+    }
+  }
+  catch (e) {
+    dd("Fopen mmCIFOptPage onInit error: "+e);
+    debug.exception(e);
+  }
 }
-}
+
 
 addEventListener("load", onInit, false);
 
