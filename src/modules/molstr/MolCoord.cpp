@@ -221,7 +221,7 @@ int MolCoord::appendAtom(MolAtomPtr pAtom)
                   pre_rname.c_str());
       // TO DO: throw exception (???)
       // This is often the case, so is not an exception.
-      return -1;
+      // return -1;
     }
   }
   

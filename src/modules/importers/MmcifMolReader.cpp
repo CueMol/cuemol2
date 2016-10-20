@@ -136,10 +136,14 @@ bool MmcifMolReader::read(qlib::InStream &ins)
   m_pMol->applyTopology(m_bAutoTopoGen);
   m_pMol->calcBasePair(3.7, 30);
   if (m_bLoadSecstr) {
-    applySecstr("helix", "H", m_rngHelix);
-    applySecstr("helix", "G", m_rng310Helix);
-    applySecstr("helix", "I", m_rngPiHelix);
-    applySecstr("sheet", "E", m_rngSheet);
+    //applySecstr("helix", "H", m_rngHelix);
+    //applySecstr("helix", "G", m_rng310Helix);
+    //applySecstr("helix", "I", m_rngPiHelix);
+    //applySecstr("sheet", "E", m_rngSheet);
+    apply2ndry("H", "helix", m_helix);
+    apply2ndry("G", "helix", m_helix310);
+    apply2ndry("I", "helix", m_helixpi);
+    apply2ndry("E", "sheet", m_sheet);
   }
   else
     m_pMol->calcProt2ndry(-500.0);
@@ -165,6 +169,11 @@ bool MmcifMolReader::readRecord(qlib::LineStream &ins)
 
   m_recbuf = str.chomp();
 
+  if (!m_prevline.isEmpty()) {
+    m_recbuf = m_prevline + " " + m_recbuf;
+    m_prevline = "";
+  }
+
   // m_recbuf = m_recbuf.toUpperCase();
   m_lineno = ins.getLineNo();
   return true;
@@ -178,7 +187,7 @@ void MmcifMolReader::readDataLine()
   m_recStPos.resize( 2 );
   m_recEnPos.resize( 2 );
 
-  tokenizeLine();
+  tokenizeLine(false);
 
   LString name = getToken(0);
   LString value = "\'\'";
@@ -213,6 +222,7 @@ void MmcifMolReader::readDataLine()
 void MmcifMolReader::emulateSingleDataLoop()
 {
   m_recbuf = LString::join(" ", m_values);
+  m_recbuf = m_recbuf.trim();
   m_values.clear();
   readLoopDataItem();
   resetLoopDef();
@@ -248,7 +258,7 @@ void MmcifMolReader::appendDataItem()
   m_loopDefs.push_back( item.trim() );
 }
 
-void MmcifMolReader::tokenizeLine()
+bool MmcifMolReader::tokenizeLine(bool bChk)
 {
   int nState = TOK_FIND_START;
   const int nsize = m_recbuf.length();
@@ -294,6 +304,25 @@ void MmcifMolReader::tokenizeLine()
       }
     }
   }
+
+  if (nState==TOK_FIND_END) {
+    m_recEnPos[j] = i;
+    ++j;
+  }
+
+  if (!bChk)
+    return true;
+
+  int ndefs = m_loopDefs.size();
+  if (j<ndefs) {
+    // try concat with next line...
+    //LOG_DPRINTLN("Cat: %s, num of token(%d) is smaller than defs(%d): <%s>",
+    //m_strCatName.c_str(), j, ndefs, m_recbuf.c_str());
+    m_prevline = m_recbuf;
+    return false;
+  }
+
+  return true;
 }
 
 void MmcifMolReader::readLoopDataItem()
@@ -389,7 +418,8 @@ void MmcifMolReader::readAtomLine()
     m_bLoopDefsOK = true;
   }    
 
-  tokenizeLine();
+  if (!tokenizeLine())
+    return;
 
   int nID;
 
@@ -504,10 +534,10 @@ void MmcifMolReader::readAtomLine()
 
   m_atommap.insert(std::pair<int,int>(nID, naid));
 
-  if (nSeqID>=0) {
-    MolResiduePtr pRes = pAtom->getParentResidue();
-    m_residTab.insert(ResidTab::value_type(nSeqID, pRes));
-  }
+  //if (nSeqID>=0) {
+  //MolResiduePtr pRes = pAtom->getParentResidue();
+  //m_residTab.insert(ResidTab::value_type(nSeqID, pRes));
+  //}
   
   m_nReadAtoms++;
 }
@@ -529,7 +559,8 @@ void MmcifMolReader::readAnisoULine()
     m_bLoopDefsOK = true;
   }    
 
-  tokenizeLine();
+  if (!tokenizeLine())
+    return;
 
   int nID;
 
@@ -566,8 +597,9 @@ void MmcifMolReader::readAnisoULine()
 
   AtomIDMap::const_iterator iter = m_atommap.find(nID);
   if (iter==m_atommap.end()) {
-    LString msg = LString::format("invalid mmCIF format, cannot find atom with ID=%d", nID);
-    error(msg);
+    // ignore error...
+    // LString msg = LString::format("invalid mmCIF format, cannot find atom with ID=%d", nID);
+    // error(msg);
     return;
   }
   MolAtomPtr pAtom = m_pMol->getAtom(iter->second);
@@ -586,24 +618,29 @@ void MmcifMolReader::readHelixLine()
     m_recStPos.resize( m_loopDefs.size() );
     m_recEnPos.resize( m_loopDefs.size() );
 
-    m_nStSeqID = findDataItem("beg_label_seq_id");
-    m_nEnSeqID = findDataItem("end_label_seq_id");
+    //m_nStSeqID = findDataItem("beg_label_seq_id");
+    //m_nEnSeqID = findDataItem("end_label_seq_id");
+    
+    m_nChainID1 = findDataItem("beg_auth_asym_id");
+    m_nSeqID1 = findDataItem("beg_auth_seq_id");
+    m_nInsID1 = findDataItem("pdbx_beg_PDB_ins_code");
+
+    m_nChainID2 = findDataItem("end_auth_asym_id");
+    m_nSeqID2 = findDataItem("end_auth_seq_id");
+    m_nInsID2 = findDataItem("pdbx_end_PDB_ins_code");
+
     m_nHlxClass = findDataItem("pdbx_PDB_helix_class");
     m_bLoopDefsOK = true;
   }
 
-  tokenizeLine();
+  if (!tokenizeLine())
+    return;
 
-  int nStSeqID;
-  if (!getToken(m_nStSeqID).toInt(&nStSeqID)) {
-    error("invalid mmCIF format, cannot get helix start resid ID");
-    return;
-  }
-  int nEnSeqID;
-  if (!getToken(m_nEnSeqID).toInt(&nEnSeqID)) {
-    error("invalid mmCIF format, cannot get helix end resid ID");
-    return;
-  }
+  LString ch = getToken(m_nChainID1);
+  // lnk.ch2 = getToken(m_nChainID2);
+
+  ResidIndex begseq = getResidIndex(m_nSeqID1, m_nInsID1);
+  ResidIndex endseq = getResidIndex(m_nSeqID2, m_nInsID2);
 
   int ntype;
   if (!getToken(m_nHlxClass).toInt(&ntype)) {
@@ -611,12 +648,20 @@ void MmcifMolReader::readHelixLine()
   }
   
   if (ntype==5)
+    m_helix310.append(ch, begseq, endseq);
+  else if (ntype==3)
+    m_helixpi.append(ch, begseq, endseq);
+  else
+    m_helix.append(ch, begseq, endseq);
+
+  /*
+  if (ntype==5)
     m_rng310Helix.push_back(SecStrList::value_type(nStSeqID, nEnSeqID));
   else if (ntype==3)
     m_rngPiHelix.push_back(SecStrList::value_type(nStSeqID, nEnSeqID));
   else
     m_rngHelix.push_back(SecStrList::value_type(nStSeqID, nEnSeqID));
-
+  */
 }
 
 void MmcifMolReader::readSheetLine()
@@ -625,14 +670,32 @@ void MmcifMolReader::readSheetLine()
     m_recStPos.resize( m_loopDefs.size() );
     m_recEnPos.resize( m_loopDefs.size() );
 
-    m_nStSeqID = findDataItem("beg_label_seq_id");
-    m_nEnSeqID = findDataItem("end_label_seq_id");
+    //m_nStSeqID = findDataItem("beg_label_seq_id");
+    //m_nEnSeqID = findDataItem("end_label_seq_id");
     
+    m_nChainID1 = findDataItem("beg_auth_asym_id");
+    m_nSeqID1 = findDataItem("beg_auth_seq_id");
+    m_nInsID1 = findDataItem("pdbx_beg_PDB_ins_code");
+
+    m_nChainID2 = findDataItem("end_auth_asym_id");
+    m_nSeqID2 = findDataItem("end_auth_seq_id");
+    m_nInsID2 = findDataItem("pdbx_end_PDB_ins_code");
+
     m_bLoopDefsOK = true;
   }
 
-  tokenizeLine();
+  if (!tokenizeLine())
+    return;
 
+  LString ch = getToken(m_nChainID1);
+  // lnk.ch2 = getToken(m_nChainID2);
+
+  ResidIndex begseq = getResidIndex(m_nSeqID1, m_nInsID1);
+  ResidIndex endseq = getResidIndex(m_nSeqID2, m_nInsID2);
+
+  m_sheet.append(ch, begseq, endseq);
+
+  /*
   int nStSeqID;
   if (!getToken(m_nStSeqID).toInt(&nStSeqID)) {
     error("invalid mmCIF format");
@@ -644,9 +707,48 @@ void MmcifMolReader::readSheetLine()
     return;
   }
 
-  m_rngSheet.push_back(SecStrList::value_type(nStSeqID, nEnSeqID));
+  m_rngSheet.push_back(SecStrList::value_type(nStSeqID, nEnSeqID));*/
 }
 
+void MmcifMolReader::apply2ndry(const char *ss1, const char *ss2, const ResidSet &data)
+{
+  ResidSet::const_iterator ich = data.begin();
+  ResidSet::const_iterator ichen = data.end();
+  for (; ich!=ichen; ++ich) {
+    const LString &chain = ich->first;
+    const ResidSet::mapped_type &rng = ich->second;
+    
+    ResidSet::mapped_type::const_iterator irn = rng.begin();
+    ResidSet::mapped_type::const_iterator irnen = rng.end();
+
+    MolChainPtr pCh = m_pMol->getChain(chain);
+    if (pCh.isnull())
+      continue;
+
+    for (; irn!=irnen; ++irn) {
+      int nst = irn->nstart;
+      int nen = irn->nend;
+      MB_DPRINTLN("%s %d:%d", chain.c_str(), nst, nen);
+      for (int i=nst; i<=nen; ++i) {
+        LString val = ss1;
+
+        if (i==nst)
+          val += "s";
+        else if (i==nen)
+          val += "e";
+        
+        MolResiduePtr pRes = pCh->getResidue(i);
+        if (pRes.isnull())
+          continue;
+        pRes->setPropStr("secondary2", val);
+        pRes->setPropStr("secondary", ss2);
+        // MB_DPRINTLN("%s %d => %s", chain.c_str(), i, val.c_str());
+      }
+    }
+  }
+}
+
+#if 0
 void MmcifMolReader::applySecstr(const LString &sec1, const LString &sec2, const SecStrList &rng)
 {
   SecStrList::const_iterator iter = rng.begin();
@@ -687,6 +789,7 @@ void MmcifMolReader::applySecstr(const LString &sec1, const LString &sec2, const
 
   }
 }
+#endif
 
 void MmcifMolReader::readConnLine()
 {
@@ -713,7 +816,8 @@ void MmcifMolReader::readConnLine()
     m_bLoopDefsOK = true;
   }
 
-  tokenizeLine();
+  if (!tokenizeLine())
+    return;
 
   LString conn_typeid = getToken(m_nConnTypeID);
   if (!conn_typeid.equals("covale")&&!conn_typeid.equals("disulf"))
@@ -775,6 +879,7 @@ void MmcifMolReader::applyLink()
   }  
 }
 
+/*
 MolResiduePtr MmcifMolReader::findResid(int nSeqID) const
 {
   ResidTab::const_iterator iter = m_residTab.find(nSeqID);
@@ -783,6 +888,7 @@ MolResiduePtr MmcifMolReader::findResid(int nSeqID) const
   }
   return iter->second;
 }
+*/
 
 void MmcifMolReader::readCellLine()
 {
@@ -825,7 +931,8 @@ void MmcifMolReader::readCellLine()
 
   m_bLoopDefsOK = true;
 
-  tokenizeLine();
+  if (!tokenizeLine())
+    return;
 
 
   double len_a, len_b, len_c;
@@ -872,7 +979,8 @@ void MmcifMolReader::readSymmLine()
   
   m_bLoopDefsOK = true;
 
-  tokenizeLine();
+  if (!tokenizeLine())
+    return;
 
   LString sgname = getToken(nSgNameID);
 

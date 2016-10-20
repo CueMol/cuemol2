@@ -12,6 +12,7 @@
 #include <qlib/LExceptions.hpp>
 #include <qsys/ObjReader.hpp>
 #include <modules/molstr/molstr.hpp>
+#include <modules/molstr/ResidIndex.hpp>
 #include <unordered_map>
 
 namespace qlib {
@@ -25,6 +26,7 @@ namespace importers {
   using molstr::MolCoordPtr;
   using molstr::MolResiduePtr;
   using molstr::ResidIndex;
+  using molstr::ResidSet;
 
   //
   ///   mmCIF mol structure reader class
@@ -169,7 +171,9 @@ namespace importers {
     static const int TOK_FIND_QUOTEND = 2;
     static const int TOK_FIND_DQUOTEND = 3;
 
-    void tokenizeLine();
+    LString m_prevline;
+
+    bool tokenizeLine(bool bChk=true);
 
     LString getToken(int n) const {
       LString tok = getRawToken(n);
@@ -215,10 +219,10 @@ namespace importers {
     int m_nU13;
     int m_nU23;
     
-    typedef std::unordered_map<quint32, MolResiduePtr> ResidTab;
-    ResidTab m_residTab;
+    // typedef std::unordered_map<quint32, MolResiduePtr> ResidTab;
+    // ResidTab m_residTab;
 
-    MolResiduePtr findResid(int nSeqID) const;
+    // MolResiduePtr findResid(int nSeqID) const;
 
     void readHelixLine();
     void readSheetLine();
@@ -226,14 +230,19 @@ namespace importers {
     int m_nEnSeqID;
     int m_nHlxClass;
 
-    typedef std::deque<std::pair<int,int> > SecStrList;
-    SecStrList m_rngHelix;
-    SecStrList m_rng310Helix;
-    SecStrList m_rngPiHelix;
-    SecStrList m_rngSheet;
+    //typedef std::deque<std::pair<int,int> > SecStrList;
+    //SecStrList m_rngHelix;
+    //SecStrList m_rng310Helix;
+    //SecStrList m_rngPiHelix;
+    //SecStrList m_rngSheet;
 
-    //void applySecstr();
-    void applySecstr(const LString &sec, const LString &sec2, const SecStrList &rng);
+    ResidSet m_helix;
+    ResidSet m_helix310;
+    ResidSet m_helixpi;
+    ResidSet m_sheet;
+
+    //void applySecstr(const LString &sec, const LString &sec2, const SecStrList &rng);
+    void apply2ndry(const char *ss1, const char *ss2, const ResidSet &data);
 
     void readConnLine();
 
