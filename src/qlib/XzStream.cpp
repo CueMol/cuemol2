@@ -9,6 +9,8 @@
 #include "LString.hpp"
 #include "LExceptions.hpp"
 
+#ifdef HAVE_LZMA_H
+
 #include <lzma.h>
 
 using namespace qlib;
@@ -311,3 +313,4 @@ void XzOutFilterImpl::o_close()
   m_pdata = NULL;
 }
 
+#endif
