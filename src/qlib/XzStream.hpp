@@ -5,9 +5,11 @@
 
 #ifndef XZ_FILTER_STREAM_HPP__
 #define XZ_FILTER_STREAM_HPP__
+#ifdef HAVE_LZMA_H
 
 #include "FilterStream.hpp"
 #include "LTypes.hpp"
+
 
 namespace qlib {
 
@@ -152,6 +154,7 @@ namespace qlib {
       // FILE *m_fp;
     };
 
+
   } // namespace detail
 
   typedef FilterInStream<detail::XzInFilterImpl> XzInStream;
@@ -160,5 +163,6 @@ namespace qlib {
 
 }
 
+#endif
 
 #endif
