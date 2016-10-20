@@ -28,6 +28,16 @@
 
 #if !defined(QM_BUILD_LW)
 
+namespace importers {
+  extern bool init();
+  extern void fini();
+}
+
+namespace mdtools {
+  extern bool init();
+  extern void fini();
+}
+
 namespace render {
   extern bool init();
   extern void fini();
@@ -143,6 +153,8 @@ int main(int argc, const char *argv[])
   symm::init();
   surface::init();
   molanl::init();
+  mdtools::init();
+  importers::init();
 #endif
 
 #ifdef HAVE_JAVASCRIPT

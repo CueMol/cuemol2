@@ -133,8 +133,6 @@ bool MmcifMolReader::read(qlib::InStream &ins)
     return false;
   }
 
-  LOG_DPRINTLN("mmCIF> read %d atoms", m_nReadAtoms);
-
   m_pMol->applyTopology(m_bAutoTopoGen);
   m_pMol->calcBasePair(3.7, 30);
   if (m_bLoadSecstr) {
@@ -148,7 +146,15 @@ bool MmcifMolReader::read(qlib::InStream &ins)
 
   applyLink();
 
+  LOG_DPRINTLN("mmCIF> read %d atoms", m_nReadAtoms);
+
   return true;
+}
+
+void MmcifMolReader::error(const LString &msg) const
+{
+  LString msg2 = msg + LString::format(", at line %d (%s)", m_lineno, m_recbuf.c_str());
+  MB_THROW (MmcifFormatException, msg2);
 }
 
 bool MmcifMolReader::readRecord(qlib::LineStream &ins)
@@ -227,7 +233,8 @@ void MmcifMolReader::appendDataItem()
   }
   else if (!m_strCatName.equals(catname)) {
     // ERROR!!
-    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    LString msg = LString::format("invalid mmCIF format, catname mismatch (%s!=%s) in loopdef", m_strCatName.c_str(), catname.c_str());
+    error(msg);
     return;
   }
   
@@ -341,13 +348,13 @@ void MmcifMolReader::readAtomLine()
   int nID;
 
   if (!getToken(m_nID).toInt(&nID)) {
-    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    error("invalid mmCIF format, cannot get atom site id");
     return;
   }
 
   int nSeqID;
   if (!getToken(m_nLabelSeqID).toInt(&nSeqID)) {
-    //MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    //error("invalid mmCIF format");
     //return;
     nSeqID = -1;
   }
@@ -401,32 +408,32 @@ void MmcifMolReader::readAtomLine()
   double dbuf;
 
   if (!getToken(m_nCartX).toDouble(&dbuf)) {
-    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    error("invalid mmCIF format, cannot get atom site cart_x");
     return;
   }
   pos.x() = dbuf;
 
   if (!getToken(m_nCartY).toDouble(&dbuf)) {
-    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    error("invalid mmCIF format, cannot get atom site cart_y");
     return;
   }
   pos.y() = dbuf;
 
   if (!getToken(m_nCartZ).toDouble(&dbuf)) {
-    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    error("invalid mmCIF format, cannot get atom site cart_z");
     return;
   }
   pos.z() = dbuf;
 
   double occ;
   if (!getToken(m_nOcc).toDouble(&occ)) {
-    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    error("invalid mmCIF format, cannot get atom site occpancy");
     return;
   }
 
   double bfac;
   if (!getToken(m_nBfac).toDouble(&bfac)) {
-    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    error("invalid mmCIF format, cannot get atom site bfac");
     return;
   }
   
@@ -465,7 +472,7 @@ void MmcifMolReader::readAtomLine()
 
   int naid = m_pMol->appendAtom(pAtom);
   if (naid<0) {
-    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    error("invalid mmCIF format, appendAtom() failed!!");
     return;
   }
 
@@ -501,39 +508,40 @@ void MmcifMolReader::readAnisoULine()
   int nID;
 
   if (!getToken(m_nID).toInt(&nID)) {
-    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    error("invalid mmCIF format, cannot get anisou ID");
     return;
   }
 
   double u11, u12, u13, u22, u23, u33;
   if (!getToken(m_nU11).toDouble(&u11)) {
-    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    error("invalid mmCIF format, cannot get anisou U11");
     return;
   }
   if (!getToken(m_nU22).toDouble(&u22)) {
-    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    error("invalid mmCIF format, cannot get anisou U22");
     return;
   }
   if (!getToken(m_nU33).toDouble(&u33)) {
-    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    error("invalid mmCIF format, cannot get anisou U33");
     return;
   }
   if (!getToken(m_nU12).toDouble(&u12)) {
-    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    error("invalid mmCIF format, cannot get anisou U12");
     return;
   }
   if (!getToken(m_nU13).toDouble(&u13)) {
-    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    error("invalid mmCIF format, cannot get anisou U13");
     return;
   }
   if (!getToken(m_nU23).toDouble(&u23)) {
-    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    error("invalid mmCIF format, cannot get anisou U23");
     return;
   }
 
   AtomIDMap::const_iterator iter = m_atommap.find(nID);
   if (iter==m_atommap.end()) {
-    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    LString msg = LString::format("invalid mmCIF format, cannot find atom with ID=%d", nID);
+    error(msg);
     return;
   }
   MolAtomPtr pAtom = m_pMol->getAtom(iter->second);
@@ -562,12 +570,12 @@ void MmcifMolReader::readHelixLine()
 
   int nStSeqID;
   if (!getToken(m_nStSeqID).toInt(&nStSeqID)) {
-    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    error("invalid mmCIF format, cannot get helix start resid ID");
     return;
   }
   int nEnSeqID;
   if (!getToken(m_nEnSeqID).toInt(&nEnSeqID)) {
-    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    error("invalid mmCIF format, cannot get helix end resid ID");
     return;
   }
 
@@ -601,12 +609,12 @@ void MmcifMolReader::readSheetLine()
 
   int nStSeqID;
   if (!getToken(m_nStSeqID).toInt(&nStSeqID)) {
-    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    error("invalid mmCIF format");
     return;
   }
   int nEnSeqID;
   if (!getToken(m_nEnSeqID).toInt(&nEnSeqID)) {
-    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    error("invalid mmCIF format");
     return;
   }
 
@@ -624,14 +632,14 @@ void MmcifMolReader::applySecstr(const LString &sec1, const LString &sec2, const
 
     ResidTab::const_iterator iter = m_residTab.find(nst);
     if (iter==m_residTab.end()) {
-      MB_THROW (MmcifFormatException, "invalid mmCIF format");
+      error("invalid mmCIF format");
       return;
     }
 
     /*
     ResidTab::const_iterator en_iter = m_residTab.find(nen);
     if (en_iter==m_residTab.end()) {
-      MB_THROW (MmcifFormatException, "invalid mmCIF format");
+      error("invalid mmCIF format");
       return;
     }*/
 
@@ -680,12 +688,21 @@ void MmcifMolReader::readConnLine()
   LString conn_typeid = getToken(m_nConnTypeID);
   if (conn_typeid.equals("covale")||conn_typeid.equals("disulf")) {
     Linkage lnk;
-    if (!getToken(m_nSeqID1).toInt(&lnk.resi1)) {
-      MB_THROW (MmcifFormatException, "invalid mmCIF format");
+
+    LString sSeqID1 = getToken(m_nSeqID1);
+    if (sSeqID1.equals(".") || sSeqID1.equals("?"))
+      return;
+
+    LString sSeqID2 = getToken(m_nSeqID2);
+    if (sSeqID2.equals(".") || sSeqID2.equals("?"))
+      return;
+
+    if (!sSeqID1.toInt(&lnk.resi1)) {
+      error("invalid mmCIF format, cannot get ptnr1_label_seq_id");
       return;
     }
-    if (!getToken(m_nSeqID2).toInt(&lnk.resi2)) {
-      MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    if (!sSeqID2.toInt(&lnk.resi2)) {
+      error("invalid mmCIF format, cannot get ptnr2_label_seq_id");
       return;
     }
     
@@ -723,7 +740,7 @@ void MmcifMolReader::applyLink()
     MolResiduePtr pRes2 = findResid(elem.resi2);
 
     if (pRes1.isnull()||pRes2.isnull()) {
-      MB_THROW (MmcifFormatException, "invalid mmCIF format");
+      error("invalid mmCIF format");
       return;
     }
 
@@ -739,7 +756,9 @@ void MmcifMolReader::applyLink()
       pAtom2 = pRes2->getAtom(elem.aname2, elem.alt2.getAt(0));
 
     if (pAtom1.isnull()||pAtom2.isnull()) {
-      MB_THROW (MmcifFormatException, "invalid mmCIF format");
+      error(LString::format("Apply link failed for %d %s <--> %d %s",
+			    elem.resi1, elem.aname1.c_str(),
+			    elem.resi2, elem.aname2.c_str()));
       return;
     }
 
@@ -762,12 +781,38 @@ void MmcifMolReader::readCellLine()
   m_recEnPos.resize( m_loopDefs.size() );
 
   int nLenAID = findDataItem("length_a");
+  if (nLenAID<0) {
+    error("_cell.length_a not found in _cell");
+    return;
+  }
+    
   int nLenBID = findDataItem("length_b");
+  if (nLenBID<0) {
+    error("_cell.length_b not found in _cell");
+    return;
+  }
+
   int nLenCID = findDataItem("length_c");
+  if (nLenCID<0) {
+    error("_cell.length_c not found in _cell");
+    return;
+  }
     
   int nAngAID = findDataItem("angle_alpha");
+  if (nAngAID<0) {
+    error("_cell.angle_alpha not found in _cell");
+    return;
+  }
   int nAngBID = findDataItem("angle_beta");
+  if (nAngBID<0) {
+    error("_cell.angle_beta not found in _cell");
+    return;
+  }
   int nAngGID = findDataItem("angle_gamma");
+  if (nAngGID<0) {
+    error("_cell.angle_gamma not found in _cell");
+    return;
+  }
 
   m_bLoopDefsOK = true;
 
@@ -778,28 +823,28 @@ void MmcifMolReader::readCellLine()
   double ang_a, ang_b, ang_g;
 
   if (!getToken(nLenAID).toDouble(&len_a)) {
-    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    error("invalid mmCIF format");
     return;
   }
   if (!getToken(nLenBID).toDouble(&len_b)) {
-    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    error("invalid mmCIF format");
     return;
   }
   if (!getToken(nLenCID).toDouble(&len_c)) {
-    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    error("invalid mmCIF format");
     return;
   }
 
   if (!getToken(nAngAID).toDouble(&ang_a)) {
-    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    error("invalid mmCIF format");
     return;
   }
   if (!getToken(nAngBID).toDouble(&ang_b)) {
-    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    error("invalid mmCIF format");
     return;
   }
   if (!getToken(nAngGID).toDouble(&ang_g)) {
-    MB_THROW (MmcifFormatException, "invalid mmCIF format");
+    error("invalid mmCIF format");
     return;
   }
 

@@ -93,7 +93,7 @@ PyObject *Wrapper::createWrapper(qlib::LScriptable *pObj)
 static void wr_dealloc(QpyWrapObj *pSelf)
 {
   if (pSelf->m_pObj!=NULL) {
-    LOG_DPRINTLN("QpyWrapObj destruct: %p", pSelf->m_pObj);
+    MB_DPRINTLN("QpyWrapObj destruct: %p", pSelf->m_pObj);
     pSelf->m_pObj->destruct();
     pSelf->m_pObj = NULL;
   }

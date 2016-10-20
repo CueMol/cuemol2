@@ -182,7 +182,7 @@ namespace importers {
     
     LString getRawToken(int n) const {
       if (n<0||n>=m_recStPos.size()) {
-        MB_THROW(qlib::RuntimeException, "mmCIF data item not found");
+        error(LString::format("mmCIF data item (%d) not found", n));
         return LString();
       }
       int ist = m_recStPos[n];
@@ -251,6 +251,7 @@ namespace importers {
     void readCellLine();
     void readSymmLine();
 
+    void error(const LString &msg) const;
   };
 
 
