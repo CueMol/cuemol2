@@ -109,6 +109,7 @@ void QdfInStream::setupStream()
   if (qlib::LChar::equals(sgn, "QDF0")) {
     // version 0 --> No encoding specification (direct storage)
     m_pBinIn = MB_NEW qlib::BinInStream(*this);
+    m_nVer = 0;
     return;
   }
   else if (qlib::LChar::equals(sgn, "QDF1")) {
@@ -141,6 +142,7 @@ void QdfInStream::setupStream()
     }
 
     m_pBinIn = MB_NEW qlib::BinInStream(*pTIn);
+    m_nVer = 1;
     return;
   }
   
@@ -191,12 +193,7 @@ void QdfInStream::start()
     return;
   }
 
-  // QDF version no
-  m_nVer = m_pBinIn->readInt32();
-  if (m_nVer!=QDF_VERSION) {
-    MB_THROW(qlib::FileFormatException, "unsupported qdf version");
-    return;
-  }
+  int ndummy = m_pBinIn->readInt32();
 
   // write file type string (any length)
   m_strFileType = m_pBinIn->readStr();
@@ -666,8 +663,8 @@ void QdfOutStream::start()
   // write FBOM
   m_pOut->writeFloat32(1.2345678f);
 
-  // write QDF version no
-  m_pOut->writeInt32(QDF_VERSION);
+  // write dummy data ??
+  m_pOut->writeInt32(2);
 
   // write file type string (any length)
   m_pOut->writeStr(m_strFileType);

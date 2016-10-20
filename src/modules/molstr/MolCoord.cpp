@@ -459,6 +459,7 @@ void MolCoord::writeDataChunkTo(qlib::LDom2OutStream &oos) const
 {
 #ifdef USE_QDFMOL_QSC
   QdfMolWriter writer;
+  writer.setEncType(oos.getQdfEncType());
 #else
   PDBFileWriter writer;
 #endif

@@ -16,6 +16,7 @@
 
 namespace qlib {
   class BinOutStream;
+  // class LDom2OutStream;
 }
 
 namespace qsys {
@@ -43,6 +44,8 @@ namespace qsys {
     {
       m_encStr = encstr;
     }
+
+    // void setEncFlagsByStream(qlib::LDom2OutStream &oos);
 
     /// get QDF output stream
     QdfOutStream &getStream() {
