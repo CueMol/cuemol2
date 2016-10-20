@@ -181,7 +181,9 @@ void MmcifMolReader::readDataLine()
   tokenizeLine();
 
   LString name = getToken(0);
-  LString value = getRawToken(1);
+  LString value = "\'\'";
+  if (isTokAvail(1))
+    value = getRawToken(1);
 
   int dotpos = name.indexOf('.');
   LString catname = name.substr(0, dotpos);

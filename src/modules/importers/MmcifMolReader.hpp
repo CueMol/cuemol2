@@ -173,6 +173,8 @@ namespace importers {
 
     LString getToken(int n) const {
       LString tok = getRawToken(n);
+      if (tok.length()<=2)
+	return tok;
       if (tok.getAt(0)=='\'')
         return tok.substr(1, tok.length()-2);
       else if (tok.getAt(0)=='\"')
@@ -181,8 +183,19 @@ namespace importers {
         return tok;
     }
     
+    bool isTokAvail(int n) const {
+      if (n<0||n>=m_recStPos.size())
+	return false;
+      int ist = m_recStPos[n];
+      int ien = m_recEnPos[n];
+      if (0<=ist && ist<m_recbuf.length() &&
+	  0<=ien && ien<m_recbuf.length())
+	return true;
+      return false;
+    }
+
     LString getRawToken(int n) const {
-      if (n<0||n>=m_recStPos.size()) {
+      if (!isTokAvail(n)) {
         error(LString::format("mmCIF data item (%d) not found", n));
         return LString();
       }
