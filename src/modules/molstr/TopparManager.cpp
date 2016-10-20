@@ -189,7 +189,7 @@ bool TopparManager::isAminoAcid(const LString &rname)
 //static
 bool TopparManager::isNuclAcid(const LString &rname)
 {
-  return checkImpl(rname, "type", "nuc");
+  return checkImpl(rname, "type", "nucl");
 }
 
 namespace {
