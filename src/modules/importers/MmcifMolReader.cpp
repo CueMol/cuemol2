@@ -181,19 +181,22 @@ void MmcifMolReader::readDataLine()
   LString catname = name.substr(0, dotpos);
   LString item = name.substr(dotpos+1);
 
-  m_loopDefs.push_back( item.trim() );
-  m_values.push_back( value );
-
   if (m_strCatName.equals(catname)) {
     // the same category name as the previous line
+    m_loopDefs.push_back( item.trim() );
+    m_values.push_back( value );
   }
   else if (m_strCatName.isEmpty()) {
     // new category name in the file
+    m_loopDefs.push_back( item.trim() );
+    m_values.push_back( value );
     m_strCatName = catname;
   }
   else {
     // new category line begins
     emulateSingleDataLoop();
+    m_loopDefs.push_back( item.trim() );
+    m_values.push_back( value );
     m_strCatName = catname;
   }
 
