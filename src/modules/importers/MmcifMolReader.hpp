@@ -282,6 +282,7 @@ namespace importers {
     void readSymmLine();
 
     void error(const LString &msg) const;
+    void warning(const LString &msg) const;
 
     ResidIndex getResidIndex(int nSeqID, int nInsID);
     char getConfID(int nConfID);

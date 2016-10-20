@@ -157,8 +157,18 @@ bool MmcifMolReader::read(qlib::InStream &ins)
 
 void MmcifMolReader::error(const LString &msg) const
 {
-  LString msg2 = msg + LString::format(", at line %d (%s)", m_lineno, m_recbuf.c_str());
+  LString msg2 = msg + LString::format(", cat <%s>, at line %d (%s)",
+                                       m_strCatName.c_str(),
+                                       m_lineno, m_recbuf.c_str());
   MB_THROW (MmcifFormatException, msg2);
+}
+
+void MmcifMolReader::warning(const LString &msg) const
+{
+  LString msg2 = msg + LString::format(", cat <%s>, at line %d (%s)",
+                                       m_strCatName.c_str(),
+                                       m_lineno, m_recbuf.c_str());
+  LOG_DPRINTLN("mmCIF> Warning: %s", msg2.c_str());
 }
 
 bool MmcifMolReader::readRecord(qlib::LineStream &ins)
@@ -950,28 +960,28 @@ void MmcifMolReader::readCellLine()
   double ang_a, ang_b, ang_g;
 
   if (!getToken(nLenAID).toDouble(&len_a)) {
-    error("invalid mmCIF format");
+    warning("invalid mmCIF format");
     return;
   }
   if (!getToken(nLenBID).toDouble(&len_b)) {
-    error("invalid mmCIF format");
+    warning("invalid mmCIF format");
     return;
   }
   if (!getToken(nLenCID).toDouble(&len_c)) {
-    error("invalid mmCIF format");
+    warning("invalid mmCIF format");
     return;
   }
 
   if (!getToken(nAngAID).toDouble(&ang_a)) {
-    error("invalid mmCIF format");
+    warning("invalid mmCIF format");
     return;
   }
   if (!getToken(nAngBID).toDouble(&ang_b)) {
-    error("invalid mmCIF format");
+    warning("invalid mmCIF format");
     return;
   }
   if (!getToken(nAngGID).toDouble(&ang_g)) {
-    error("invalid mmCIF format");
+    warning("invalid mmCIF format");
     return;
   }
 
