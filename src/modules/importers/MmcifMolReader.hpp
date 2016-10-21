@@ -192,8 +192,8 @@ namespace importers {
 	return false;
       int ist = m_recStPos[n];
       int ien = m_recEnPos[n];
-      if (0<=ist && ist<m_recbuf.length() &&
-	  0<=ien && ien<m_recbuf.length())
+      if (0<=ist && ist<=m_recbuf.length() &&
+	  0<=ien && ien<=m_recbuf.length())
 	return true;
       return false;
     }
