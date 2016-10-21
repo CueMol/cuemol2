@@ -180,7 +180,10 @@ bool MmcifMolReader::readRecord(qlib::LineStream &ins)
   m_recbuf = str.chomp();
 
   if (!m_prevline.isEmpty()) {
-    m_recbuf = m_prevline + " " + m_recbuf;
+    if (m_recbuf.startsWith("loop_"))
+      warning("Unexpected loop_ directive, data lost: \""+m_prevline+"\"");
+    else
+      m_recbuf = m_prevline + " " + m_recbuf;
     m_prevline = "";
   }
 
