@@ -4,6 +4,7 @@ interfaces components/qICueMol.xpt
 interfaces components/qIObjWrapper.xpt
 interfaces components/qINativeWidget.xpt
 binary-component components/xpcqm2.dll ABI=WINNT_x86-msvc
+binary-component components/xpcqm2.dll ABI=WINNT_x86_64-msvc
 binary-component components/libxpcqm.0.dylib ABI=Darwin_x86-gcc3
 binary-component components/libxpcqm.0.dylib ABI=Darwin_x86_64-gcc3
 binary-component components/libxpcqm.so.0.0.0 ABI=Linux_x86-gcc3

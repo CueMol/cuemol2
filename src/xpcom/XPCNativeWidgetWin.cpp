@@ -531,9 +531,9 @@ NS_IMETHODIMP XPCNativeWidgetWin::Reload(bool *_retval )
     return NS_ERROR_FAILURE;
   }
 #ifdef _WIN64
-  SetWindowLong(m_hWnd, GWL_USERDATA, (LONG)this);
-#else
   SetWindowLongPtr(m_hWnd, GWLP_USERDATA, (LONG_PTR)this);
+#else
+  SetWindowLong(m_hWnd, GWL_USERDATA, (LONG)this);
 #endif
 
   m_hDC = ::GetDC(m_hWnd);

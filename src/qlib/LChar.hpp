@@ -73,8 +73,8 @@ namespace qlib {
       const char *p = ::strchr(psz, c);
       if(p==NULL)
 	return -1;
-      int ret = p-psz;
-      return ret;
+      size_t ret = p-psz;
+      return int( ret );
     }
 
     static bool startsWith(const char *psz, const char *part) {
