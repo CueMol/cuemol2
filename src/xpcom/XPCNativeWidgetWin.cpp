@@ -42,9 +42,13 @@ static
 LRESULT CALLBACK sHandleWin32Event(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
   // get our plugin instance object and ask it for the version string
+#ifdef _WIN64
+  LONG_PTR ldata = GetWindowLongPtr(hWnd, GWLP_USERDATA);
+#else
   LONG ldata = GetWindowLong(hWnd, GWL_USERDATA);
+#endif
   XPCNativeWidgetWin *ppn = reinterpret_cast<XPCNativeWidgetWin *>(ldata);
-
+  
   if (ppn)
     return ppn->handleEvent(hWnd, msg, wParam, lParam);
 
@@ -117,7 +121,11 @@ nsresult XPCNativeWidgetWin::setupImpl(nativeWindow widget)
 
   // associate window with our nsPluginInstance object so we can access
   // it in the window procedure
+#ifdef _WIN64
+  SetWindowLongPtr(m_hWnd, GWLP_USERDATA, (LONG_PTR)this);
+#else
   SetWindowLong(m_hWnd, GWL_USERDATA, (LONG)this);
+#endif
 
   // ::ShowWindow( m_hWnd, SW_SHOW );
   // ::UpdateWindow( m_hWnd );
@@ -522,7 +530,11 @@ NS_IMETHODIMP XPCNativeWidgetWin::Reload(bool *_retval )
     *_retval = PR_FALSE;
     return NS_ERROR_FAILURE;
   }
+#ifdef _WIN64
   SetWindowLong(m_hWnd, GWL_USERDATA, (LONG)this);
+#else
+  SetWindowLongPtr(m_hWnd, GWLP_USERDATA, (LONG_PTR)this);
+#endif
 
   m_hDC = ::GetDC(m_hWnd);
 

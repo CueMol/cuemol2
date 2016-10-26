@@ -16,7 +16,13 @@
 #define SIZEOF_LONG_LONG 8
 #define SIZEOF_FLOAT 4
 #define SIZEOF_DOUBLE 8
-#define SIZEOF_VOIDP 4
+
+#ifdef _WIN64
+#  define SIZEOF_VOIDP 8
+#  pragma warning(disable:4267)
+#else
+#  define SIZEOF_VOIDP 4
+#endif
 
 #define HAVE_STDARG_H
 #define MB_PATH_SEPARATOR '\\'
