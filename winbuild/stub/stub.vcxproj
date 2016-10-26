@@ -91,6 +91,30 @@
     <GenerateManifest>true</GenerateManifest>
     <TargetName>cuemol2</TargetName>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LocalDebuggerCommand>$(XULDeployDir)\cuemol2.exe</LocalDebuggerCommand>
+    <LocalDebuggerCommandArguments>-greapp $(XULRunnerDir)\bin $(XULDeployDir)</LocalDebuggerCommandArguments>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LocalDebuggerCommand>$(XULDeployDir)\cuemol2.exe</LocalDebuggerCommand>
+    <LocalDebuggerCommandArguments>-greapp $(XULRunnerDir)\bin $(XULDeployDir)</LocalDebuggerCommandArguments>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LocalDebuggerCommand>$(XULDeployDir)\cuemol2.exe</LocalDebuggerCommand>
+    <LocalDebuggerCommandArguments>-greapp $(XULRunnerDir)\bin $(XULDeployDir)</LocalDebuggerCommandArguments>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerEnvironment>PATH=$(PROJ64_DIR)\bin;%PATH%</LocalDebuggerEnvironment>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LocalDebuggerCommand>$(XULDeployDir)\cuemol2.exe</LocalDebuggerCommand>
+    <LocalDebuggerCommandArguments>-greapp $(XULRunnerDir)\bin $(XULDeployDir)</LocalDebuggerCommandArguments>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerEnvironment>PATH=$(PROJ64_DIR)\bin;%PATH%</LocalDebuggerEnvironment>
+  </PropertyGroup>
+
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
