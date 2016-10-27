@@ -128,7 +128,6 @@ void QdfInStream::setupStream()
       m_pZIn = new qlib::GzipInStream(*pTIn);
       pTIn = m_pZIn;
     }
-    //#ifdef HAVE_XZ
 #ifdef HAVE_LZMA_H
     else if (comp=='3') {
       m_pZIn = new qlib::XzInStream(*pTIn);

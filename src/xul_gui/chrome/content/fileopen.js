@@ -1055,25 +1055,12 @@ Qm2Main.prototype.execIntJS = function (path)
   cuemol.putLogMsg("Exec internal JS: "+path+" done.");
 }
 
-Qm2Main.prototype.onOpenURL = function ()
+Qm2Main.prototype.onOpenURL = function (aURL)
 {
-/*
-  var input = {value: ""};
-  var dummy = {};
-
-  ok = this.mPrompts.prompt(window, document.title,
-			    "URL:", input,
-			    "", dummy);
-  if (!ok) return;
-
-  dd("URL: "+input.value);
-  window.open(input.value, "", 'chrome,width=600,height=300,resizable');
-*/
-  //window.open("chrome://cuemol2/content/tools/mybrowser.xul", "_blank",
-  //"chrome,extrachrome,menubar,resizable,scrollbars,status,toolbar");
-
   var stylestr = "chrome,extrachrome,menubar,resizable,scrollbars,status,toolbar,dependent,centerscreen";
   var url = "chrome://cuemol2/content/tools/mybrowser.xul";
+  if (aURL)
+    url = aURL;
   var win = this.mWinMed.getMostRecentWindow("CueMol2:WebBrowser");
   if (win)
     win.focus();

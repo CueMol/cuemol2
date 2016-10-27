@@ -10,8 +10,10 @@
 #include <qlib/FileStream.hpp>
 #include <qlib/GzipStream.hpp>
 #include <qlib/Base64Stream.hpp>
-// #include <qlib/ClassRegistry.hpp>
-// #include <qlib/LClassUtils.hpp>
+
+#ifdef HAVE_LZMA_H
+#include <qlib/XzStream.hpp>
+#endif
 
 #include <qlib/LDOM2Tree.hpp>
 
@@ -54,17 +56,7 @@ ObjectPtr ObjReader::load(qlib::InStream &ins)
   ObjectPtr robj = createDefaultObj();
   attach(robj);
 
-  bool res;
-  if (getCompressMode()==COMP_GZIP) {
-    qlib::GzipInStream gzins(ins);
-    res = read(gzins);
-  }
-  else {
-    res = read(ins);
-  }
-
-  if (!res)
-    return ObjectPtr();
+  read2(ins);
 
   return detach();
 }
@@ -90,6 +82,12 @@ void ObjReader::read2(qlib::InStream &ins)
     pZIn = new qlib::GzipInStream(*pTIn);
     pTIn = pZIn;
   }
+#ifdef HAVE_LZMA_H
+  else if (ncomp==COMP_XZIP) {
+    pZIn = new qlib::XzInStream(*pTIn);
+    pTIn = pZIn;
+  }
+#endif
   else {
     MB_THROW(qlib::FileFormatException, "unsupported compression method");
     return;

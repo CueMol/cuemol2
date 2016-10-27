@@ -101,8 +101,10 @@
 <!ENTITY aboutDialog.title           "&brandShortName;のバージョン情報">
 <!ENTITY aboutDialog.version         "バージョン">
 <!ENTITY aboutDialog.build           "ビルド識別子">
-<!ENTITY aboutDialog.copyrightInfo   "&#169;1998-2015 Contributors. All Rights Reserved.
-Refer to http://www.cuemol.org/en/index.php?Licence for conditions of distribution and use.">
+<!ENTITY aboutDialog.copyrightInfo1   "&#169;1998-2016 Contributors. All Rights Reserved. Refer to">
+<!ENTITY aboutDialog.copyrightInfoLink   "ライセンス">
+<!ENTITY aboutDialog.copyrightInfoLinkURL "http://www.cuemol.org/ja/index.php?Licence">
+<!ENTITY aboutDialog.copyrightInfo2   "for conditions of distribution and use.">
 
 <!-- ********** Panels ********** -->
 

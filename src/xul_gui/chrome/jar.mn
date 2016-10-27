@@ -152,6 +152,7 @@ cuemol2.jar:
   content/fopen-mtzopt-page.xul
   content/fopen-mtzopt-page.js
   content/qscwriter-option-dlg.xul
+  content/qscwriter-option-dlg.js
   content/fopen-namdcooropt-page.xul
   content/fopen-ccp4map-page.xul
   content/fopen-mmcifopt-page.xul
