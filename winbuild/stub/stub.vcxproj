@@ -55,7 +55,7 @@
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\common64.props" />
+    <Import Project="..\common.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -63,7 +63,7 @@
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\common64.props" />
+    <Import Project="..\common.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
@@ -71,7 +71,6 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <OutDir>$(XULDeployDir)\</OutDir>
-    <IntDir>$(Configuration)\</IntDir>
     <LinkIncremental>true</LinkIncremental>
     <TargetName>cuemol2</TargetName>
   </PropertyGroup>
@@ -81,7 +80,6 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <OutDir>$(XULDeployDir)\</OutDir>
-    <IntDir>$(Configuration)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>true</GenerateManifest>
     <TargetName>cuemol2</TargetName>
@@ -91,7 +89,6 @@
     <GenerateManifest>true</GenerateManifest>
     <TargetName>cuemol2</TargetName>
   </PropertyGroup>
-
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LocalDebuggerCommand>$(XULDeployDir)\cuemol2.exe</LocalDebuggerCommand>
     <LocalDebuggerCommandArguments>-greapp $(XULRunnerDir)\bin $(XULDeployDir)</LocalDebuggerCommandArguments>
@@ -107,14 +104,15 @@
     <LocalDebuggerCommandArguments>-greapp $(XULRunnerDir)\bin $(XULDeployDir)</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerEnvironment>PATH=$(PROJ64_DIR)\bin;%PATH%</LocalDebuggerEnvironment>
+    <OutDir>$(XULDeployDir)\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LocalDebuggerCommand>$(XULDeployDir)\cuemol2.exe</LocalDebuggerCommand>
     <LocalDebuggerCommandArguments>-greapp $(XULRunnerDir)\bin $(XULDeployDir)</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerEnvironment>PATH=$(PROJ64_DIR)\bin;%PATH%</LocalDebuggerEnvironment>
+    <OutDir>$(XULDeployDir)\</OutDir>
   </PropertyGroup>
-
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
@@ -129,7 +127,6 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>xpcomglue_x.lib;mozalloc.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(XULDeployDir)\cuemol2.exe</OutputFile>
       <AdditionalLibraryDirectories>$(XULRunnerDir)lib\;$(XULRunnerDir)sdk\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -153,7 +150,6 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>xpcomglue_x.lib;mozalloc.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(XULDeployDir)\cuemol2.exe</OutputFile>
       <AdditionalLibraryDirectories>$(XULRunnerDir)lib\;$(XULRunnerDir)sdk\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
@@ -176,7 +172,6 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>xpcomglue.lib;mozalloc.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(XULDeployDir)\cuemol2.exe</OutputFile>
       <AdditionalLibraryDirectories>$(XULRunnerDir)lib\;$(XULRunnerDir)sdk\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -204,7 +199,6 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>xpcomglue.lib;mozalloc.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(XULDeployDir)\cuemol2.exe</OutputFile>
       <AdditionalLibraryDirectories>$(XULRunnerDir)lib\;$(XULRunnerDir)sdk\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
