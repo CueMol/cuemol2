@@ -39,6 +39,7 @@
 	    <menuitem value="paint-type-bfac" label="Bfac/Occ coloring"/>
 	    <menuitem value="paint-type-rainbow" label="Rainbow coloring"/>
 	    <menuitem id="paint-type-elepot" value="paint-type-elepot" label="Electrostatic potential"/>
+	    <menuitem value="paint-type-resetdef" label="Reset to default style"/>
 	  </menupopup>
 	</toolbarbutton>
       </hbox>

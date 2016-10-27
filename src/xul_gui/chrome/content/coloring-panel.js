@@ -552,10 +552,30 @@ panel.onChgColoring = function (aEvent)
     }
 
     dd("onChgCol> tgtrend id "+this.mTgtRendID);
-    var rend = cuemol.getUIDObj(this.mTgtRendID);
-    var id = aEvent.originalTarget.value;
+    let rend = cuemol.getUIDObj(this.mTgtRendID);
+    let id = aEvent.originalTarget.value;
 
-    var rend_type = "";
+    if (id=="paint-type-resetdef") {
+      // EDIT TXN START //
+      let scene = rend.getScene();
+      scene.startUndoTxn("Reset coloring style");
+      try {
+        cuemol.resetProp(rend, "coloring");
+        //let s = rend.style;
+        //rend.applyStyles("");
+        //rend.applyStyles(s);
+      }
+      catch (e) {
+        debug.exception(e);
+        scene.rollbackUndoTxn();
+        return;
+      }
+      scene.commitUndoTxn();
+      // EDIT TXN END //
+      return;
+    }
+
+    let rend_type = "";
     if ('type_name' in rend)
       rend_type = rend.type_name;
 

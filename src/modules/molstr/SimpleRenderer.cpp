@@ -237,6 +237,10 @@ void SimpleRenderer::renderVBO()
   quint32 nbons = 0, natoms = 0, nmbons = 0, nva = 0;
   MolCoordPtr pMol = getClientMol();
 
+  // initialize the coloring scheme
+  getColSchm()->start(pMol, this);
+  pMol->getColSchm()->start(pMol, this);
+
   std::deque<int> isolated_atoms;
   
   // IntBondArray sbonds;
@@ -385,6 +389,9 @@ void SimpleRenderer::renderVBO()
     nva = iva;
   }
     
+  getColSchm()->end();
+  pMol->getColSchm()->end();
+
   if (m_pVBO!=NULL)
     delete m_pVBO;
     

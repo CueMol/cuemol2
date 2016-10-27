@@ -1024,12 +1024,12 @@ Qm2Main.prototype.setRendColoring = function (aType, aRend)
     switch (aType) {
 
     case "paint-type-cpk":
-    if (clsname=="CPKColoring")
-      return;
-    coloring = cuemol.createObj("CPKColoring");
-    coloring.col_C = cuemol.makeColor("$molcol", scene.uid);
-    break;
-
+      //if (clsname=="CPKColoring")
+      //return;
+      coloring = cuemol.createObj("CPKColoring");
+      coloring.col_C = cuemol.makeColor("$molcol", scene.uid);
+      break;
+      
     case "paint-type-cpk-darkgray":
       coloring = cuemol.createObj("CPKColoring");
       coloring.col_C = cuemol.makeColor("#404040", scene.uid);

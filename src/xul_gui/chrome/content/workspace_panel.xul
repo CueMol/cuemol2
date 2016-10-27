@@ -224,9 +224,12 @@
 	      onpopupshowing="cuemolui.onPaintColShowing(event)">
 	      <menupopup/>
 	    </menu>
-	    <menuitem label="CPK molcol" value="paint-type-cpk"/>
+	    <menuitem label="CPK molcol" value="style-DefaultCPKColoring"/>
+	    <menuitem label="CPK dark gray" value="style-DarkCPKColoring"/>
+	    <menuitem label="CPK light gray" value="style-LightCPKColoring"/>
+	    <!--<menuitem label="CPK molcol" value="paint-type-cpk"/>
 	    <menuitem label="CPK dark gray" value="paint-type-cpk-darkgray"/>
-	    <menuitem label="CPK light gray" value="paint-type-cpk-lightgray"/>
+	    <menuitem label="CPK light gray" value="paint-type-cpk-lightgray"/>-->
 	    <menuitem label="B-factor" value="paint-type-bfac"/>
 	    <menuitem label="Rainbow" value="paint-type-rainbow"/>
 	  </menupopup>
