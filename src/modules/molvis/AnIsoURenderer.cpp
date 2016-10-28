@@ -38,6 +38,13 @@ const char *AnIsoURenderer::getTypeName() const
   return "anisou";
 }
 
+void AnIsoURenderer::display(DisplayContext *pdc)
+{
+  // avoid to use BallStick implementation of display() (using VBO/shader)
+  MolAtomRenderer::display(pdc);
+  return;
+}
+
 void AnIsoURenderer::propChanged(qlib::LPropEvent &ev)
 {
   if (ev.getName().equals("detail")) {

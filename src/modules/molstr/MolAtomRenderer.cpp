@@ -26,6 +26,7 @@ using qlib::Vector4D;
 MolAtomRenderer::MolAtomRenderer()
   : MolRenderer()
 {
+  m_nGluVertMax = 1000000;
 }
 
 MolAtomRenderer::~MolAtomRenderer()
@@ -250,12 +251,12 @@ void MolAtomRenderer::setupDetail(DisplayContext *pdl, int nDetail)
     return;
   }
 
-  const int npmax = 100000;
+  //const int npmax = 100000;
   int natms, nbnds;
   if (countAtomBond(natms, nbnds)) {
     int ne = (ndet+1)*2*(  natms*( (ndet+1) ) + nbnds );
-    if (ne>npmax) {
-      LOG_DPRINTLN("MolAtomRend polygon size: %d exceeds %d", ne, npmax);
+    if (ne>m_nGluVertMax) {
+      LOG_DPRINTLN("MolAtomRend polygon size: %d exceeds %d", ne, m_nGluVertMax);
       //natms*( (ndet+1)*2*(ndet+1) ) + nbnds*(ndet+1)*2;
       //(ndet+1)*2*(  natms*( (ndet+1) ) + nbnds )
       ndet = 1;

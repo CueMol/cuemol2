@@ -14,6 +14,16 @@ namespace molstr {
 
   class MOLSTR_API MolAtomRenderer : public MolRenderer
   {
+  private:
+    /// max number of verteces in the GLU rendering mode
+    int m_nGluVertMax;
+
+  public:
+    void setGluVertMax(int n) {
+      invalidateDisplayCache();
+      m_nGluVertMax = n;
+    }
+    int getGluVertMax() const { return m_nGluVertMax; }
 
   public:
     MolAtomRenderer();
