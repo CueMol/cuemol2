@@ -32,7 +32,7 @@ namespace qsys {
     bool m_bBase64;
 
     LString m_strVer;
-
+    
     //////////
 
   public:

@@ -59,7 +59,10 @@ namespace molstr {
     //////////////////////////////////////////////////////
     // Renderer interface
     
+    // new rendering interface (using GL VBO)
     virtual void display(DisplayContext *pdc);
+    
+    // virtual void invalidateDisplayCache();
     
     //////////////////////////////////////////////////////
     // DispCacheRenderer interface

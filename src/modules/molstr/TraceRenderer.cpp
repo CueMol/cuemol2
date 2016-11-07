@@ -19,9 +19,10 @@
 using namespace molstr;
 
 TraceRenderer::TraceRenderer()
-     : m_bUseVBO(true), m_pVBO(NULL)
 {
-  //resetAllProps();
+  //m_bUseVBO = true;
+  m_bUseVBO = false;
+  m_pVBO = NULL;
 }
 
 TraceRenderer::~TraceRenderer()
@@ -220,6 +221,13 @@ void TraceRenderer::endRend(DisplayContext *pdl)
 
   }
 }
+
+/*
+void TraceRenderer::invalidateDisplayCache()
+{
+  super_t::invalidateDisplayCache();
+}
+  */
 
 /*void TraceRenderer::propChanged(qlib::LPropEvent &ev)
 {

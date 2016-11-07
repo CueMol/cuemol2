@@ -134,6 +134,10 @@ void SceneXMLWriter::write()
 
   qlib::LDom2OutStream oos(fos);
 
+  // setup version string (QDF0/QDF1, etc)
+  MB_DPRINTLN("QDF Version = %s", m_strVer.c_str());
+  oos.setQdfVer(m_strVer);
+
   // setup encoding flags
   LString encflag;
   if (m_bBase64) {
