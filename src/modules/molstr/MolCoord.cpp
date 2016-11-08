@@ -14,15 +14,8 @@
 #include <qsys/SceneManager.hpp>
 #include "AtomIterator.hpp"
 
-// Use qdfmol format for qsc chunk stream
-#define USE_QDFMOL_QSC 1
-
-// For QSC file data chunk processing
-#ifdef USE_QDFMOL_QSC
-#  include "QdfMolWriter.hpp"
-#else
-#  include "PDBFileWriter.hpp"
-#endif
+#include "QdfMolWriter.hpp"
+#include "PDBFileWriter.hpp"
 
 using namespace molstr;
 
@@ -457,17 +450,26 @@ LString MolCoord::getDataChunkReaderName() const
 
 void MolCoord::writeDataChunkTo(qlib::LDom2OutStream &oos) const
 {
-#ifdef USE_QDFMOL_QSC
-  QdfMolWriter writer;
-  writer.setEncType(oos.getQdfEncType());
-#else
-  PDBFileWriter writer;
-#endif
-
+  int nver = oos.getQdfVer();
   MolCoord *pthis = const_cast<MolCoord *>(this);
-  writer.attach(qsys::ObjectPtr(pthis));
-  writer.write2(oos);
-  writer.detach();
+
+  if (nver==0) {
+    // version == 0: QDF-PDB compatibility mode
+    PDBFileWriter writer;
+    writer.attach(qsys::ObjectPtr(pthis));
+    writer.write2(oos);
+    writer.detach();
+  }
+  else {
+    // version >=1: use QDF format
+    QdfMolWriter writer;
+    writer.setVersion(nver);
+    writer.setEncType(oos.getQdfEncType());
+
+    writer.attach(qsys::ObjectPtr(pthis));
+    writer.write2(oos);
+    writer.detach();
+  }
 }
 
 ////////////////////////////////////////

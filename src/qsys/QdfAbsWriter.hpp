@@ -26,6 +26,19 @@ namespace qsys {
   class QSYS_API QdfAbsWriter : public qsys::ObjWriter, public QdfDataType
   {
 
+  private:
+
+    QdfOutStream *m_pOut;
+
+    /// QDF version number (in integer)
+    int m_nVersion;
+
+    /// Encoding type string (2-char, "00", "11", etc)
+    LString m_encStr;
+
+    // /// File type string (4-char)
+    // LString m_strFileType;
+
   public:
     QdfAbsWriter();
     virtual ~QdfAbsWriter();
@@ -33,19 +46,25 @@ namespace qsys {
     /////////
     // QDF common interface
 
-    /// Set 2-char file ID string
-    void setFileType(const LString &type)
-    {
-      m_strFileType = type;
-    }
+    void setVersion(int n) { m_nVersion = n; }
 
     /// set 2-char encoding ID string
     void setEncType(const LString &encstr)
     {
       m_encStr = encstr;
+      // m_pOut->setEncType(encstr);
     }
 
-    // void setEncFlagsByStream(qlib::LDom2OutStream &oos);
+    /*
+    /// Set file type string (any length; MOL1 for MolCoord, etc)
+    /// (Stream must be create before setting the file type)
+    void setFileType(const LString &type)
+    {
+      // m_strFileType = type;
+      MB_ASSERT(m_pOut!=NULL);
+      m_pOut->setFileType(type);
+    }
+     */
 
     /// get QDF output stream
     QdfOutStream &getStream() {
@@ -95,16 +114,6 @@ namespace qsys {
     void setRecValFloat32(const LString &name, qfloat32 value) {
       m_pOut->writeFloat32(name, value);
     }
-
-  private:
-
-    QdfOutStream *m_pOut;
-
-    /// Encoding type string (2-char)
-    LString m_encStr;
-
-    /// File type string (4-char)
-    LString m_strFileType;
 
   };
 

@@ -12,8 +12,9 @@
 using namespace qsys;
 
 QdfAbsWriter::QdfAbsWriter()
-     : m_pOut(NULL)
 {
+  m_pOut = NULL;
+  m_nVersion = 0;
 }
 
 QdfAbsWriter::~QdfAbsWriter()
@@ -26,9 +27,13 @@ void QdfAbsWriter::start(qlib::OutStream &outs)
 {
   MB_ASSERT(m_pOut==NULL);
   m_pOut = MB_NEW QdfOutStream(outs);
+
+  m_pOut->setVersion(m_nVersion);
   m_pOut->setEncType(m_encStr);
-  MB_ASSERT(!m_strFileType.isEmpty());
-  m_pOut->setFileType(m_strFileType);
+
+  // MB_ASSERT(!m_strFileType.isEmpty());
+  // m_pOut->setFileType(m_strFileType);
+
   m_pOut->start();
 }
 

@@ -26,9 +26,9 @@ namespace qlib {
     typedef std::map<LString, LDataSrcContainer *> ChunkTable;
     ChunkTable m_datachunk;
 
-    /// Version of QDF/QSC format (QDF0, QDF1, etc)
-    LString m_strVer;
-
+    /// Version of QDF/QSC format (in integer, 0, 1, etc)
+    int m_nVersion;
+    
     /// Encoding type identifier of QDF file format (2-digit string, 00, 11, etc)
     LString m_qdfEncType;
 
@@ -52,9 +52,9 @@ namespace qlib {
     LString getQdfEncType() const { return m_qdfEncType; }
     void setQdfEncType(const LString &str) { m_qdfEncType = str; }
 
-    LString getQdfVer() const { return m_strVer; }
-    void setQdfVer(const LString &str) { m_strVer = str; }
-
+    int getQdfVer() const { return m_nVersion; }
+    void setQdfVer(int n) { m_nVersion = n; }
+    
   private:
 
     // determine if the node is written as attr or child elem

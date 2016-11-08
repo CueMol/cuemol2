@@ -3,8 +3,8 @@ var dlgdata = window.arguments[0];
 
 function onLoad(aEvent)
 {
-  // default: qdf1
-  document.getElementById('qdf-version').selectedIndex = 1;
+  // default: qdf0 (compat)
+  document.getElementById('qdf-version').selectedIndex = 0;
 
   document.getElementById('chk_force_embed').checked = false;
 

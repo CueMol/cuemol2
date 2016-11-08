@@ -454,6 +454,7 @@ LString ElePotMap::getDataChunkReaderName() const
 void ElePotMap::writeDataChunkTo(qlib::LDom2OutStream &oos) const
 {
   QdfPotWriter writer;
+  writer.setVersion(oos.getQdfVer());
   writer.setEncType(oos.getQdfEncType());
 
   ElePotMap *pthis = const_cast<ElePotMap *>(this);

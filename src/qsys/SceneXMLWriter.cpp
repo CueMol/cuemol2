@@ -11,6 +11,7 @@
 #include "ObjWriter.hpp"
 #include "style/AutoStyleCtxt.hpp"
 #include "style/StyleSet.hpp"
+#include "QdfStream.hpp"
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -98,6 +99,16 @@ void SceneXMLWriter::setBase64Flag(bool b)
   m_bBase64 = b;
 }
 
+LString SceneXMLWriter::getStrVersion() const
+{
+  return QdfDataType::createVerString(m_nVersion);
+}
+
+void SceneXMLWriter::setStrVersion(const LString &s)
+{
+  m_nVersion = QdfDataType::parseVerString(s);
+}
+
 void SceneXMLWriter::setDefaultOpts(ScenePtr pScene)
 {
   qlib::LDom2Node *pNode = pScene->getQscOpts();
@@ -135,8 +146,8 @@ void SceneXMLWriter::write()
   qlib::LDom2OutStream oos(fos);
 
   // setup version string (QDF0/QDF1, etc)
-  MB_DPRINTLN("QDF Version = %s", m_strVer.c_str());
-  oos.setQdfVer(m_strVer);
+  MB_DPRINTLN("QDF Version = %x", m_nVersion);
+  oos.setQdfVer(m_nVersion);
 
   // setup encoding flags
   LString encflag;

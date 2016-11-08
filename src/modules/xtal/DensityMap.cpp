@@ -394,6 +394,7 @@ LString DensityMap::getDataChunkReaderName() const
 void DensityMap::writeDataChunkTo(qlib::LDom2OutStream &oos) const
 {
   QdfDenMapWriter writer;
+  writer.setVersion(oos.getQdfVer());
   writer.setEncType(oos.getQdfEncType());
 
   DensityMap *pthis = const_cast<DensityMap *>(this);

@@ -19,11 +19,11 @@
     <groupbox flex="0">
       <caption>
 	<hbox align="center">
-	  <label value="File version: "/>
+	  <label value="Compatibility: "/>
 	  <menulist id="qdf-version" flex="0" onselect="onSelect(event)">
 	    <menupopup>
-	      <menuitem label="QDF0" value="QDF0"/>
-	      <menuitem label="QDF1" value="QDF1"/>
+	      <menuitem label="Ver 2.2 or later" value="QDF0"/>
+	      <menuitem label="Ver 2.3 or later" value="QDF1"/>
 	    </menupopup>
 	  </menulist>
 	</hbox>
@@ -31,7 +31,7 @@
 
       <!--<checkbox id="chk_comp_gzip" label="Enable compression"/>-->
       <hbox align="center">
-	<label value="Compress: "/>
+	<label value="Compression: "/>
 	<menulist id="comp_type" flex="0">
 	  <menupopup>
 	    <menuitem label="xz" value="xzip"/>
