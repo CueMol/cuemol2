@@ -63,8 +63,9 @@ bool QdfDenMapReader::read(qlib::InStream &ins)
 
   start(ins);
 
-  if (!getFileType().equals("MAP1")) {
-    MB_THROW(qlib::FileFormatException, "invalid file format signature");
+  LString sft = getFileType();
+  if (!sft.equals("MAP1")) {
+    MB_THROW(qlib::FileFormatException, "QdfDen invalid file format signature: "+sft);
     return false;
   }
 

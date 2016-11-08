@@ -35,10 +35,10 @@ namespace anim {
   public:
     // Data source container interface implementation
     virtual bool isDataSrcWritable() const;
-    virtual LString getDataChunkReaderName() const;
+    virtual LString getDataChunkReaderName(int nQdfVer) const;
     virtual void writeDataChunkTo(qlib::LDom2OutStream &oos) const;
     virtual void readFromStream(qlib::InStream &ins);
-    virtual void setDataChunkName(const LString &name, qlib::LDom2Node *pNode);
+    virtual void setDataChunkName(const LString &name, qlib::LDom2Node *pNode, int nQdfVer);
 
     virtual void updateSrcPath(const LString &srcpath);
   };

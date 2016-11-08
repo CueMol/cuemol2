@@ -55,17 +55,6 @@ namespace qsys {
       // m_pOut->setEncType(encstr);
     }
 
-    /*
-    /// Set file type string (any length; MOL1 for MolCoord, etc)
-    /// (Stream must be create before setting the file type)
-    void setFileType(const LString &type)
-    {
-      // m_strFileType = type;
-      MB_ASSERT(m_pOut!=NULL);
-      m_pOut->setFileType(type);
-    }
-     */
-
     /// get QDF output stream
     QdfOutStream &getStream() {
       return *m_pOut;

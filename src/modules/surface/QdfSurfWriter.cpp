@@ -71,7 +71,7 @@ bool QdfSurfWriter::write(qlib::OutStream &outs)
 
   start(outs);
 
-  getStream().setFileType("SRF1");
+  getStream().writeFileType("SRF1");
 
   writeVertData();
 

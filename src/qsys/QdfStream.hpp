@@ -217,7 +217,7 @@ namespace qsys {
 
   private:
     /// Byte order
-    int m_bIntByteSwap;
+    bool m_bIntByteSwap;
 
     RecElemList m_recdefs;
 
@@ -241,9 +241,6 @@ namespace qsys {
 
     /// 2-digit encoding ID string ("00", "10", etc)
     LString m_encStr;
-
-    // File type string (any length; MOL1 for MolCoord, etc)
-    LString m_strFileType;
 
   private:
     /// copy ctor
@@ -286,11 +283,8 @@ namespace qsys {
     void start();
     void end();
 
-    // Set file type string (any length; MOL1 for MolCoord, etc)
-    void setFileType(const LString &type)
-    {
-      m_strFileType = type;
-    }
+    // Write file type string (any length; MOL1 for MolCoord, etc)
+    void writeFileType(const LString &type);
 
     ////////////////////////
     // record definition methods

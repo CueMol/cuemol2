@@ -302,7 +302,7 @@ namespace qsys {
 
     virtual void forceEmbed();
 
-    virtual void setDataChunkName(const LString &name, LDom2Node *pNode);
+    virtual void setDataChunkName(const LString &name, LDom2Node *pNode, int nQdfVer);
 
   private:
     void registerRendererImpl(RendererPtr);

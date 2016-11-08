@@ -709,8 +709,13 @@ void QdfOutStream::start()
   // write dummy data ??
   m_pOut->writeInt32(2);
 
-  // write file type string (any length)
-  m_pOut->writeStr(m_strFileType);
+  // // write file type string (any length)
+  // m_pOut->writeStr(m_strFileType);
+}
+
+void QdfOutStream::writeFileType(const LString &type)
+{
+  m_pOut->writeStr(type);
 }
 
 void QdfOutStream::end()

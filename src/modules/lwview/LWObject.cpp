@@ -59,7 +59,7 @@ void LWObject::buildHitData()
 
 //////////
 
-LString LWObject::getDataChunkReaderName() const
+LString LWObject::getDataChunkReaderName(int nQdfVer) const
 {
   return LString("qdflwobj");
 }

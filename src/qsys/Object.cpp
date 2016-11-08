@@ -864,20 +864,24 @@ void Object::setExtData(ObjExtDataPtr p)
 
 void Object::forceEmbed()
 {
-  if (!getSourceType().startsWith("datachunk:")) {
+  if (!getSource().startsWith("datachunk:")) {
+    // Non-datachunk source (i.e. external source)
+    // --> change to the internal datachunk source
     setSource("datachunk:");
     setAltSource("");
   }
   
-  setSourceType(getDataChunkReaderName());
+  // setSourceType(getDataChunkReaderName());
+  // source type cannot be determined here!!
+  setSourceType("");
 
   if (m_pReaderOpts!=NULL) delete m_pReaderOpts;
   m_pReaderOpts = NULL;
 }
 
-void Object::setDataChunkName(const LString &name, LDom2Node *pNode)
+void Object::setDataChunkName(const LString &name, LDom2Node *pNode, int nQdfVer)
 {
-  LString src_type = getDataChunkReaderName();
+  LString src_type = getDataChunkReaderName(nQdfVer);
 
   // set props
   setSource(name);

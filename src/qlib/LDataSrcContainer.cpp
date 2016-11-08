@@ -22,12 +22,12 @@ bool LDataSrcContainer::isDataSrcWritable() const
   return false;
 }
 
-LString LDataSrcContainer::getDataChunkReaderName() const
+LString LDataSrcContainer::getDataChunkReaderName(int nQdfVer) const
 {
   return LString();
 }
 
-void LDataSrcContainer::setDataChunkName(const LString &name, LDom2Node *pNode)
+void LDataSrcContainer::setDataChunkName(const LString &name, LDom2Node *pNode, int nQdfVer)
 {
 }
 

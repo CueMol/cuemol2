@@ -66,8 +66,10 @@ bool QdfMolReader::read(qlib::InStream &ins)
 
   start(ins);
 
-  if (!getFileType().equals("MOL2")) {
-    MB_THROW(qlib::FileFormatException, "invalid file format signature");
+  LString sft = getFileType();
+  if (!sft.equals("MOL2")) {
+    LString msg = LString::format("QdfMol invalid file format signature %s", sft.c_str());
+    MB_THROW(qlib::FileFormatException, msg);
     return false;
   }
 

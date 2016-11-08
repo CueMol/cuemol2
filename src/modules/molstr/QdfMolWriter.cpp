@@ -78,7 +78,7 @@ bool QdfMolWriter::write(qlib::OutStream &outs)
 
   start(outs);
 
-  getStream().setFileType("MOL2");
+  getStream().writeFileType("MOL2");
 
   writeMolData();
   

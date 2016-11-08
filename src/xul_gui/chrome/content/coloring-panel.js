@@ -424,14 +424,12 @@ panel.attachRenderer = function (aRend)
     return;
   }
 
+  this.mTgtRendID = aRend.uid;
+  this.mTgtSceID = aRend.getScene().uid;
+
   // This is initial update, so we have to do complete update.
   if (this._setupData(aRend))
     this._initWidgets(aRend);
-
-  this.mTgtRendID = aRend.uid;
-
-  var nSceID = this.mTgtSceID = aRend.getScene().uid;
-
 }
 
 panel.detachRenderer = function ()
@@ -1599,13 +1597,20 @@ panel.onPotSelChanged = function (aEvent)
   if (rend.elepot==obj.name)
     return;
 
+  // alert("onPotSelChanged called: rend="+rend.name+", elepot="+obj.name);
+
   this.commitElepotPropChange("elepot", obj.name);
 }
 
 /// Data --> widgets
 panel.updateElepotWidgets = function (aRend, aPropName)
 {
-  //alert("Update elepot widgets: "+aPropName);
+  // alert("Update elepot widgets: "+aPropName);
+  if (aPropName==undefined ||
+      aPropName=="elepot") {
+    this.mPotSel.selectObjectByName(aRend.elepot);
+  }
+
   if (aPropName==undefined ||
       aPropName=="ramp_above") {
     if (aRend.ramp_above)

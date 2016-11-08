@@ -446,7 +446,7 @@ double ElePotMap::getSecGridSize() const
 
 //////////
 
-LString ElePotMap::getDataChunkReaderName() const
+LString ElePotMap::getDataChunkReaderName(int nQdfVer) const
 {
   return LString("qdfpot");
 }

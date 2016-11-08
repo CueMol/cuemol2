@@ -71,7 +71,7 @@ bool QdfPotWriter::write(qlib::OutStream &outs)
 
   start(outs);
 
-  getStream().setFileType("POT1");
+  getStream().writeFileType("POT1");
 
   writeData();
 

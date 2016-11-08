@@ -81,7 +81,7 @@ bool QdfLWObjWriter::write(qlib::OutStream &outs)
 
   QdfOutStream &o = getStream();
 
-  o.setFileType("LWO3");
+  o.writeFileType("LWO3");
 
   prepareData();
 

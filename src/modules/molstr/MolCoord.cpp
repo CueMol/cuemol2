@@ -439,13 +439,12 @@ bool MolCoord::isDataSrcWritable() const
   return true;
 }
 
-LString MolCoord::getDataChunkReaderName() const
+LString MolCoord::getDataChunkReaderName(int nQdfVer) const
 {
-#ifdef USE_QDFMOL_QSC
-  return LString("qdfmol");
-#else
-  return LString("qdfpdb");
-#endif
+  if (nQdfVer==0)
+    return LString("qdfpdb");
+  else
+    return LString("qdfmol");
 }
 
 void MolCoord::writeDataChunkTo(qlib::LDom2OutStream &oos) const

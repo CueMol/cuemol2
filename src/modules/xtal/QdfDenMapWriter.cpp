@@ -70,7 +70,7 @@ bool QdfDenMapWriter::write(qlib::OutStream &outs)
 
   start(outs);
 
-  getStream().setFileType("MAP1");
+  getStream().writeFileType("MAP1");
 
   writeData();
 

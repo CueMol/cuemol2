@@ -63,8 +63,9 @@ bool QdfSurfReader::read(qlib::InStream &ins)
 
   start(ins);
 
-  if (!getFileType().equals("SRF1")) {
-    MB_THROW(qlib::FileFormatException, "invalid file format signature");
+  LString sft = getFileType();
+  if (!sft.equals("SRF1")) {
+    MB_THROW(qlib::FileFormatException, "QdfSurf invalid file format signature: "+sft);
     return false;
   }
 

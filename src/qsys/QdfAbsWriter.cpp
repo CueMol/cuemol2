@@ -31,9 +31,6 @@ void QdfAbsWriter::start(qlib::OutStream &outs)
   m_pOut->setVersion(m_nVersion);
   m_pOut->setEncType(m_encStr);
 
-  // MB_ASSERT(!m_strFileType.isEmpty());
-  // m_pOut->setFileType(m_strFileType);
-
   m_pOut->start();
 }
 

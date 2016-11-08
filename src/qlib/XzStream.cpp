@@ -217,6 +217,9 @@ void XzOutFilterImpl::init()
 
 int XzOutFilterImpl::write(const char *inbuf, int off, int len)
 {
+  if (len == 0)
+    return 0;
+
   int nwr = 0;
   
   lzma_stream *pstream = (lzma_stream *) m_pdata;
@@ -233,7 +236,7 @@ int XzOutFilterImpl::write(const char *inbuf, int off, int len)
     ret = lzma_code(pstream, action);
 
     if ((ret != LZMA_OK) && (ret != LZMA_STREAM_END)) {
-      MB_THROW(IOException, "cannto lzma encoder");
+      MB_THROW(IOException, "LZMA encode error in write(buf, off, len)");
       return -1;
     }
     
@@ -243,7 +246,7 @@ int XzOutFilterImpl::write(const char *inbuf, int off, int len)
       //fwrite((const char *)&m_buffer[0], BUFSZ - pstream->avail_out, sizeof(char), m_fp);
 
       if (nres<0) {
-        MB_THROW(IOException, "cannot write");
+        MB_THROW(IOException, "XzStream cannot write to stream");
         return -1;
       }
 
@@ -256,7 +259,7 @@ int XzOutFilterImpl::write(const char *inbuf, int off, int len)
   nwr += len;
 
   if (pstream->avail_in != 0) {
-    MB_THROW(IOException, "cannto lzma encoder");
+    MB_THROW(IOException, "LZMA encoder error, avail_in!=0");
     return -1;
   }
   

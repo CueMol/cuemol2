@@ -386,7 +386,7 @@ double DensityMap::getSecGridSize() const
 
 //////////
 
-LString DensityMap::getDataChunkReaderName() const
+LString DensityMap::getDataChunkReaderName(int nQdfVer) const
 {
   return LString("qdfmap");
 }

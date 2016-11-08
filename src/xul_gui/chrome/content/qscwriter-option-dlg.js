@@ -1,6 +1,19 @@
 
 var dlgdata = window.arguments[0];
 
+function updateWidget()
+{
+  var selitem = document.getElementById('qdf-version').selectedItem;
+  if (selitem.value=="QDF0") {
+    document.getElementById('chk_base64').disabled = true;
+    document.getElementById('comp_type').disabled = true;
+  }
+  else {
+    document.getElementById('chk_base64').disabled = false;
+    document.getElementById('comp_type').disabled = false;
+  }
+}
+
 function onLoad(aEvent)
 {
   // default: qdf0 (compat)
@@ -9,11 +22,13 @@ function onLoad(aEvent)
   document.getElementById('chk_force_embed').checked = false;
 
   document.getElementById('chk_base64').checked = false;
-  document.getElementById('chk_base64').disabled = false;
+  //document.getElementById('chk_base64').disabled = false;
 
   // default: xz
   document.getElementById('comp_opt').selectedIndex = 0;
-  document.getElementById('comp_opt').disabled = false;
+  //document.getElementById('comp_opt').disabled = false;
+
+  updateWidget();
 }
 
 function onDialogAccept(aEvent)
@@ -39,14 +54,6 @@ function onDialogAccept(aEvent)
 
 function onSelect(aEvent)
 {
-  var selitem = document.getElementById('qdf-version').selectedItem;
-  if (selitem.value=="QDF0") {
-    document.getElementById('chk_base64').disabled = true;
-    document.getElementById('comp_type').disabled = true;
-  }
-  else {
-    document.getElementById('chk_base64').disabled = false;
-    document.getElementById('comp_type').disabled = false;
-  }
+  updateWidget();
 }
 

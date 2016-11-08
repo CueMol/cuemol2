@@ -62,7 +62,7 @@ void MolSurfObj::deleteSelected()
 
 //////////
 
-LString MolSurfObj::getDataChunkReaderName() const
+LString MolSurfObj::getDataChunkReaderName(int nQdfVer) const
 {
   return LString("qdfsurf");
 }
