@@ -148,6 +148,15 @@ namespace qlib {
       return ret;
     }
 
+    /// Scaling by constant arg (vector)
+    VectorND scale(const VectorND &arg) const
+    {
+      VectorND ret(0, detail::no_init_tag());
+      for (int i=0; i<_N_ELEM; ++i)
+	ret.m_value[i] = m_value[i]*arg.m_value[i];
+      return ret;
+    }
+
     /// Division by constant arg
     VectorND divide(value_type arg) const
     {
@@ -165,10 +174,20 @@ namespace qlib {
       return divide(arg);
     }
     
+    /// Add vector
     VectorND add(const VectorND &arg) const {
       VectorND retval(0, detail::no_init_tag());
       for (int i=0; i<_N_ELEM; ++i) {
 	retval.m_value[i] = this->m_value[i] + arg.m_value[i];
+      }
+      return retval;
+    }
+
+    /// Add scalar
+    VectorND add(value_type arg) const {
+      VectorND retval(0, detail::no_init_tag());
+      for (int i=0; i<_N_ELEM; ++i) {
+	retval.m_value[i] = this->m_value[i] + arg;
       }
       return retval;
     }
