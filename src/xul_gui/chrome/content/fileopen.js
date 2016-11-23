@@ -882,7 +882,7 @@ Qm2Main.prototype.exportScene = function()
     dlgdata.width = view.width;
     dlgdata.height = view.height;
 
-    window.openDialog("chrome://cuemol2/content/exportpng-opt-dlg.xul",
+    window.openDialog("chrome://cuemol2/content/exportlxs-opt-dlg.xul",
 		      "LuxRender options",
                       "chrome,modal,resizable=yes,dependent,centerscreen",
                       dlgdata);

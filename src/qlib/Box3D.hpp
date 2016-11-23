@@ -93,6 +93,19 @@ namespace qlib {
     Vector4D center() const {
       return (vstart+vend).divide(2.0);
     }
+
+    double sizex() const {
+      return vend.x()-vstart.x();
+    }
+    double sizey() const {
+      return vend.y()-vstart.y();
+    }
+    double sizez() const {
+      return vend.z()-vstart.z();
+    }
+    Vector4D size() const {
+      return Vector4D(sizex(), sizey(), sizez());
+    }
   };
 }
 

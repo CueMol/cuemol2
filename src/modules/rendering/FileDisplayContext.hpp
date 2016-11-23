@@ -10,6 +10,7 @@
 
 #include <gfx/DisplayContext.hpp>
 #include <qlib/LString.hpp>
+#include <qlib/Box3D.hpp>
 
 namespace qlib {
   class OutStream;
@@ -293,6 +294,19 @@ namespace render {
 				int alpha);
 
 
+    // bonding box calculation
+  private:
+    qlib::Box3D m_boundingBox;
+
+  public:
+    void updateBboxPoint(const Vector4D &pos) {
+      m_boundingBox.merge(pos);
+    }
+    void updateBboxSphere(const Vector4D &pos, double r) {
+      m_boundingBox.merge(pos+Vector4D( r,  r,  r));
+      m_boundingBox.merge(pos+Vector4D(-r, -r, -r));
+    }
+    const qlib::Box3D getBoundingBox() const { return m_boundingBox; }
   };
 
 }

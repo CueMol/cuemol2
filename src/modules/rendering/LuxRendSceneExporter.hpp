@@ -50,7 +50,12 @@ namespace render {
     /// output base name
     LString m_sOutputBase;
 
-    bool m_bBgTransp;
+    // bool m_bBgTransp;
+
+    int m_nBgMode;
+    static const int BG_TRANSP = 0;
+    static const int BG_WALL = 1;
+    static const int BG_BOX = 2;
 
   };
 

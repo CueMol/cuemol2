@@ -12,6 +12,7 @@
 #include <qlib/PrintStream.hpp>
 #include <qlib/Utils.hpp>
 #include <gfx/SolidColor.hpp>
+#include <gfx/Mesh.hpp>
 
 using namespace render;
 
@@ -61,6 +62,8 @@ void FileDisplayContext::init()
   if (m_pIntData!=NULL)
     delete m_pIntData;
   m_pIntData = NULL;
+
+  m_boundingBox.setEmpty();
 }
 
 bool FileDisplayContext::isFile() const
@@ -86,6 +89,8 @@ void FileDisplayContext::vertex(const Vector4D &aV)
   }
 #endif
   
+  updateBboxPoint(v);
+
   switch (m_nDrawMode) {
   default:
   case POV_NONE:
@@ -430,6 +435,7 @@ void FileDisplayContext::sphere(double r, const Vector4D &vec)
   xform_vec(v);
   m_pIntData->sphere(v, r, m_nDetail);
 
+  updateBboxSphere(v, r);
 }
 
 void FileDisplayContext::sphere()
@@ -443,8 +449,10 @@ void FileDisplayContext::sphere()
   xform_vec(v);
   
   const Matrix4D &mtop = m_matstack.front();
-  if (mtop.isIdentAffine(F_EPS4))
+  if (mtop.isIdentAffine(F_EPS4)) {
     m_pIntData->sphere(v, 1.0, m_nDetail);
+    updateBboxSphere(v, 1.0);
+  }
   else {
     LOG_DPRINTLN("ERROR, sphere(): unsupported operation!!");
     m_pIntData->sphere(v, 1.0, m_nDetail);
@@ -478,16 +486,32 @@ void FileDisplayContext::cone(double r1, double r2,
     xform_vec(p1);
     xform_vec(p2);
     m_pIntData->cylinder(p1, p2, r1, r2, bCap, m_nDetail, NULL);
+    updateBboxSphere(p1, r1);
+    updateBboxSphere(p2, r2);
   }
   else {
     m_pIntData->cylinder(pos1, pos2, r1, r2, bCap, m_nDetail, &xm);
+    updateBboxSphere(pos1, r1);
+    updateBboxSphere(pos2, r2);
   }
 
 }
 
 void FileDisplayContext::drawMesh(const gfx::Mesh &mesh)
 {
-  m_pIntData->mesh(m_matstack.front(), mesh);
+  const Matrix4D &mat = m_matstack.front();
+  m_pIntData->mesh(mat, mesh);
+
+  // update bbox
+  const int nverts = mesh.getVertSize();
+  int i;
+  Vector4D v;
+  for (i=0; i<nverts; ++i) {
+    v = mesh.getVertex(i);
+    mat.xform3D(v);
+    updateBboxPoint(v);
+  }
+  
 }
 
 //////////////////////

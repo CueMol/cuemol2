@@ -220,6 +220,8 @@ cuemol2.jar:
 # Image export UI
   content/exportpng-opt-dlg.xul
   content/exportpng-opt-dlg.js
+  content/exportlxs-opt-dlg.xul
+  content/exportlxs-opt-dlg.js
 # About dialog
   content/aboutDialog.xul
   content/about.png
