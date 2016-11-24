@@ -22,6 +22,7 @@ dnl sinclude(conftools/ax_boost_timer.m4)
 dnl sinclude(conftools/ax_boost_iostreams.m4)
 sinclude(conftools/ax_cxx_compile_stdcxx_0x.m4)
 sinclude(conftools/ax_cxx_compile_stdcxx_11.m4)
+sinclude(conftools/ax_cxx_header_unordered_map.m4)
 
 #######################################################
 # LIBTOOL
@@ -103,6 +104,8 @@ AC_CHECK_HEADERS(stdarg.h)
 AC_CHECK_HEADERS(dirent.h)
 AC_CHECK_HEADERS(fcntl.h unistd.h sys/wait.h spawn.h)
 AC_CHECK_HEADERS(locale.h xlocale.h)
+
+AX_CXX_HEADER_UNORDERED_MAP
 
 #######################################################
 #

@@ -13,7 +13,6 @@
 #include <qsys/ObjReader.hpp>
 #include <modules/molstr/molstr.hpp>
 #include <modules/molstr/ResidIndex.hpp>
-#include <unordered_map>
 
 namespace qlib {
   class LineStream;
@@ -208,7 +207,11 @@ namespace importers {
       return m_recbuf.substr(ist, ien-ist);
     }
 
+#ifdef HAVE_UNORDERED_MAP
     typedef std::unordered_map<int, int> AtomIDMap;
+#else
+    typedef boost::unordered_map<int, int> AtomIDMap;
+#endif
     AtomIDMap m_atommap;
     
     // atom_site_aniso

@@ -64,7 +64,11 @@ private:
   }
 
   /// resid obj ptr --> resid UID table
+#ifdef HAVE_UNORDERED_MAP
   typedef std::unordered_map<qlib::qvoidp, quint32> ResidMap;
+#else
+  typedef boost::unordered_map<qlib::qvoidp, quint32> ResidMap;
+#endif
   ResidMap m_resmap;
 
   quint32 getResidUID(MolResiduePtr pRes) const {
@@ -78,7 +82,11 @@ private:
 
 
   /// atom obj ptr --> atom UID table
+#ifdef HAVE_UNORDERED_MAP
   typedef std::unordered_map<int, quint32> AtomMap;
+#else
+  typedef boost::unordered_map<int, quint32> AtomMap;
+#endif
   AtomMap m_atommap;
 
   quint32 getAtomUID(int aid) const {

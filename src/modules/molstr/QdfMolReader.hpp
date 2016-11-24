@@ -63,7 +63,11 @@ namespace molstr {
     typedef std::map<quint32, MolResiduePtr> ResidTab;
     ResidTab m_residTab;
 
+#ifdef HAVE_UNORDERED_MAP
     typedef std::unordered_map<quint32, MolAtomPtr> AtomTab;
+#else
+    typedef boost::unordered_map<quint32, MolAtomPtr> AtomTab;
+#endif
     AtomTab m_atomTab;
 
     void readMolData();

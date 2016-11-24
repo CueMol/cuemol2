@@ -68,7 +68,6 @@
 #include <valarray>
 #include <set>
 #include <map>
-#include <unordered_map>
 #include <functional>
 #include <algorithm>
 #include <string>
@@ -77,6 +76,12 @@
 // c++11 functionality
 #if (__cplusplus>=201103L)
 #include <cmath>
+#endif
+
+#ifdef HAVE_UNORDERED_MAP
+#include <unordered_map>
+#else
+#include <boost/unordered_map.hpp>
 #endif
 
 #endif
