@@ -39,13 +39,16 @@ runtime_class SceneManager
 
   /// object<Scene$> loadSceneFrom(string path, string ftype);
 
-  //// version info
-
-  property string version => redirect(getVersion, XXX) (readonly);
-  property string build => redirect(getBuildID, XXX) (readonly);
-
   property integer activeSceneID => redirect(getActiveSceneID, XXX) (readonly, nopersist);
 
+  //// version info
+
+  /// version number (x.x.x.x)
+  property string version => redirect(getVersion, XXX) (readonly);
+  /// build ID number
+  property string build => redirect(getBuildID, XXX) (readonly);
+  /// version architecture (32/64bit, etc)
+  property string ver_arch => redirect(getVerArchName, XXX) (readonly);
 };
 
 #endif

@@ -108,7 +108,7 @@ function Qm2Main()
   //this.mFilePick = Cc["@mozilla.org/filepicker;1"].createInstance(Ci.nsIFilePicker);
 
   // change the window title
-  this.mWndTitleBase = "CueMol2 "+ cuemol.sceMgr.version;
+  this.mWndTitleBase = "CueMol2 "+ cuemol.sceMgr.version + " " + cuemol.sceMgr.ver_arch;
   this.setWindowTitle();
 
   var xthis = this;

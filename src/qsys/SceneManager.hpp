@@ -136,6 +136,8 @@ namespace qsys {
     /// Get ID of this release
     const LString &getBuildID() const { return m_verInfo.build_id; }
     
+    LString getVerArchName() const;
+
   private:
     ///////////////////////
     // performance measure
