@@ -180,7 +180,6 @@ AC_ARG_ENABLE(iphoneos,
     [if test $enableval = yes ; then
 	GUI_ARCH=IPHONEOS
         BUILD_OSDEP=sysdep
-	AC_DEFINE([GUI_ARCH], [IPHONEOS], [name of the GUI archtecture])
      fi],
 [])
 
@@ -193,7 +192,6 @@ if test $enableval = yes ; then
     GUI_ARCH=CLI
     BUILD_OSDEP=
     BUILD_CLI=cli
-    AC_DEFINE([GUI_ARCH], [CLI], [name of the GUI archtecture])
 fi],
     [
 dnl no option --> use GUI (X11/OSX)
@@ -202,7 +200,6 @@ case $host_os in
      darwin*)
 	GUI_ARCH=OSX
 	BUILD_OSDEP="sysdep osxbuild stub"
-	AC_DEFINE([GUI_ARCH], [OSX], [name of the GUI archtecture])
 
         # make_distr.pl substitutions
         OSXDISTR_ARCH=MacOSX-Intel$BUILD_BIT
@@ -227,7 +224,6 @@ case $host_os in
      *)
 	GUI_ARCH=X11
 	BUILD_OSDEP="sysdep uxdist"
-	AC_DEFINE([GUI_ARCH], [X11], [name of the GUI archtecture])
         dnl Linux/Gecko23 build requires std=c++0x feature (char16_t)
         AX_CXX_COMPILE_STDCXX_0X
 	if test $ax_cv_cxx_compile_cxx0x_cxx = yes ; then
@@ -247,6 +243,8 @@ AC_SUBST(BUILD_OSDEP)
 AC_SUBST(BUILD_CLI)
 
 echo GUI_ARCH: $GUI_ARCH
+AC_DEFINE_UNQUOTED([GUI_ARCH], [${GUI_ARCH}], [Name of the GUI archtecture])
+AC_DEFINE_UNQUOTED([STR_GUI_ARCH], ["${GUI_ARCH}"], [Name of the GUI archtecture])
 
 
 #######################################################
