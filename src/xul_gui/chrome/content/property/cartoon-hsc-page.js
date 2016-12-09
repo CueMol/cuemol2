@@ -29,6 +29,11 @@ cuemolui.CtnHscPropEdit = ( function () {
       this.mHelixDeck = document.getElementById("helixpage-deck");
       this.mHelixType.addEventListener("command", function (event) { that.validateWidgets(event) }, false);
 
+      this.mHelixWmode = document.getElementById("helixpage-wmode");
+      this.mHelixWmode.addEventListener("command", function (event) { that.validateWidgets(event) }, false);
+      this.mHelixExtn = document.getElementById("helixpage-extend");
+      this.mHelixExtn.addEventListener("change", function (event) { that.validateWidgets(event) }, false);
+
       let pfx = "ribhlxpage";
       this.mRhSectType = document.getElementById(pfx+"-secttype");
       this.mRhLineWidth = document.getElementById(pfx+"-width");
@@ -39,6 +44,11 @@ cuemolui.CtnHscPropEdit = ( function () {
       this.mRhLineWidth.addEventListener("change", function (event) { that.validateWidgets(event) }, false);
       this.mRhSharp.addEventListener("change", function (event) { that.validateWidgets(event) }, false);
       this.mRhTuber.addEventListener("change", function (event) { that.validateWidgets(event) }, false);
+    }
+
+    if (this.mIdPfx=="helixpage" || this.mIdPfx=="sheetpage") {
+      this.mWsmo = document.getElementById(this.mIdPfx+"-wsmooth");
+      this.mWsmo.addEventListener("change", function (event) { that.validateWidgets(event) }, false);
     }
 
     this.mSectType = document.getElementById(this.mIdPfx+"-secttype");
@@ -53,6 +63,7 @@ cuemolui.CtnHscPropEdit = ( function () {
     this.mSharp.addEventListener("change", function (event) { that.validateWidgets(event) }, false);
     this.mTuber.addEventListener("change", function (event) { that.validateWidgets(event) }, false);
     this.mSmooth.addEventListener("change", function (event) { that.validateWidgets(event) }, false);
+
 
     if (this.mUseJct) {
       let pfx = this.mIdPfx;
@@ -95,6 +106,12 @@ cuemolui.CtnHscPropEdit = ( function () {
       else
 	util.selectMenuListByValue(this.mHelixType, "cylinder");
 
+      elem = gMain.findPropData("helix_width_mode");
+      util.selectMenuListByValue(this.mHelixWmode, elem.value);
+
+      elem = gMain.findPropData("helix_extend");
+      this.mHelixExtn.value = elem.value;
+
       let pfx = "ribhelix";
       elem = gMain.findPropData(pfx+".type");
       util.selectMenuListByValue(this.mRhSectType, elem.value);
@@ -130,6 +147,11 @@ cuemolui.CtnHscPropEdit = ( function () {
     elem = gMain.findPropData(this.mPropPfx+"_smooth");
     this.mSmooth.value = elem.value;
 
+    if (this.mPropPfx=="helix" || this.mPropPfx=="sheet") {
+      elem = gMain.findPropData(this.mPropPfx+"_wsmooth");
+      this.mWsmo.value = elem.value;
+    }
+
     //
 
     if (this.mUseJct) {
@@ -164,10 +186,15 @@ cuemolui.CtnHscPropEdit = ( function () {
     }
 
     if (this.mIdPfx=="helixpage") {
-      if (this.mHelixType.selectedItem.value=="ribbon")
+      if (this.mHelixType.value=="ribbon")
 	this.mHelixDeck.selectedIndex = 0;
       else
 	this.mHelixDeck.selectedIndex = 1;
+
+      if (this.mHelixWmode.value=="wavy")
+	this.mWsmo.disabled = false;
+      else
+	this.mWsmo.disabled = true;
     }
   }
 
@@ -195,6 +222,14 @@ cuemolui.CtnHscPropEdit = ( function () {
       gMain.updateData(this.mPropPfx+"_smooth", new_val);
     }
 
+    if (tgt_id==this.mIdPfx+"-wsmooth") {
+      new_val = parseFloat(this.mWsmo.value);
+      if (isNaN(new_val)) return;
+      if (new_val<-5.0) new_val = -5.0;
+      if (new_val>5.0) new_val = 5.0;
+      gMain.updateData(this.mPropPfx+"_wsmooth", new_val);
+    }
+
     //////////
 
     if (tgt_id==this.mIdPfx+"-secttype") {
@@ -207,7 +242,7 @@ cuemolui.CtnHscPropEdit = ( function () {
       new_val = parseFloat(this.mLineWidth.value);
       if (isNaN(new_val)) return;
       if (this.mPropPfx=="helix") {
-	if (new_val<0.0) new_val = 0.0;
+	if (new_val<-2.0) new_val = -2.0;
 	if (new_val>3.0) new_val = 3.0;
 	gMain.updateData("helix_wplus", new_val);
       }
@@ -271,13 +306,29 @@ cuemolui.CtnHscPropEdit = ( function () {
     
     if (this.mIdPfx=="helixpage") {
       if (tgt_id=="helixpage-type") {
-	new_val = aEvent.target.value;
+	new_val = this.mHelixType.value; //aEvent.target.value;
+	// alert("helixpage-type="+new_val);
 	this.updateDisabledState();
 	if (new_val=="ribbon")
 	  gMain.updateData("helix_ribbon", true);
 	else
 	  gMain.updateData("helix_ribbon", false);
 	
+      }
+
+      if (tgt_id=="helixpage-wmode") {
+	new_val = this.mHelixWmode.value;
+	// alert("helixpage-wmode="+new_val);
+	this.updateDisabledState();
+	gMain.updateData("helix_width_mode", new_val);
+      }
+
+      if (tgt_id=="helixpage-extend") {
+	new_val = parseFloat(this.mHelixExtn.value);
+	if (isNaN(new_val)) return;
+	if (new_val<0.0) new_val = 0.0;
+	if (new_val>5.0) new_val = 5.0;
+	gMain.updateData("helix_extend", new_val);
       }
 
       let idpfx = "ribhlxpage";
