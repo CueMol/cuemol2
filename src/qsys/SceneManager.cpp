@@ -252,6 +252,6 @@ LString SceneManager::getVerArchName() const
   LString plf;
   plf = STR_GUI_ARCH;
 
-  return LString::format("%s %d", plf.c_str(), nbit);
+  return LString::format("%s%d", plf.toLowerCase().c_str(), nbit);
 }
 

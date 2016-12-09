@@ -108,7 +108,7 @@ function Qm2Main()
   //this.mFilePick = Cc["@mozilla.org/filepicker;1"].createInstance(Ci.nsIFilePicker);
 
   // change the window title
-  this.mWndTitleBase = "CueMol2 "+ cuemol.sceMgr.version + " " + cuemol.sceMgr.ver_arch;
+  this.mWndTitleBase = "CueMol2 "+ cuemol.sceMgr.version + " (" + cuemol.sceMgr.ver_arch+")";
   this.setWindowTitle();
 
   var xthis = this;
@@ -255,8 +255,8 @@ Qm2Main.prototype.onLoad = function ()
 
   this.setupUpdateMenu();
 
-  // Check app updates when the system is idle enough
-  this.idleAutoUpdateCheck();
+  // // Check app updates when the system is idle enough
+  // this.idleAutoUpdateCheck();
 
   try {
     this.setupShortcutKeys();

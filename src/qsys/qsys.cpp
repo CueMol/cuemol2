@@ -144,10 +144,10 @@ bool init(const char *config)
 
   SceneManager *pSceMgr = SceneManager::getInstance();
 
-  LOG_DPRINTLN("CueMol2 version %s build %s\n(C) Copyright 2003-%s BKR-LAB.\n",
+  LOG_DPRINTLN("CueMol2 version %s (%s) build %s\n",
                pSceMgr->getVersion().c_str(),
-               pSceMgr->getBuildID().c_str(),
-               pSceMgr->getBuildID().substr(0,4).c_str());
+               pSceMgr->getVerArchName().c_str(),
+               pSceMgr->getBuildID().c_str());
 
   //pVIC->applyStyle("DefaultViewInConf,UserViewConf");
 
