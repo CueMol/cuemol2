@@ -371,6 +371,93 @@ bool SecSplDat::generateCoil()
 
 //////////////////////////////////////////
 
+void SecStrTab::setSecStr(int ind, const MolResiduePtr &pRes)
+{
+  LString sec, pfx;
+  pRes->getPropStr("secondary2", sec);
+  if (sec.length()>=2)
+    pfx= sec.substr(1,1);
+  
+  if (sec.startsWith("H") || sec.startsWith("G") || sec.startsWith("I"))
+    m_data[ind*2+0] = 'H';
+  else if (sec.startsWith("E"))
+    m_data[ind*2+0] = 'E';
+  else
+    m_data[ind*2+0] = 'C';
+
+  if (pfx.equals("s"))
+    m_data[ind*2+1] = 's';
+  else if (pfx.equals("e"))
+    m_data[ind*2+1] = 'e';
+  else
+    m_data[ind*2+1] = ' ';
+}
+
+LString SecStrTab::getSecStr(int ind)
+{
+  int char1 = m_data[ind*2+0];
+  int char2 = m_data[ind*2+1];
+
+  LString ret(char1);
+  if (char2!=' ')
+    ret += char2;
+
+  return ret;
+}
+
+void SecStrTab::fillHelixGap(int ngap)
+{
+  char chprev = 0;
+  int ncoil=0;
+  int nCoilStart = -1;
+  bool bHCoil = false;
+  const int nsz = m_data.size()/2;
+  for (int i=0; i<nsz; ++i) {
+    char ch = m_data[i*2+0];
+
+    if (ch=='C')
+      ++ncoil;
+
+    if (chprev=='H' && ch=='C') {
+      // start of coil
+      ncoil = 0;
+      bHCoil = true;
+      nCoilStart = i;
+    }
+    else if (chprev=='C' && ch=='E') {
+      // end of coil (next is sheet)
+      // reset/do nothing;
+      ncoil = 0;
+      bHCoil = false;
+      nCoilStart = -1;
+    }
+    else if (bHCoil && chprev=='C' && ch=='H') {
+      // end of coil
+      MB_DPRINTLN("coil length: %d", ncoil);
+      if (ncoil+1<=ngap) {
+        MB_DPRINTLN("  -->fillgap (%d-%d) !!", nCoilStart, i-1);
+        for (int j=nCoilStart-1; j<=i; ++j) {
+          setHelix(j);
+        }
+      }
+      ncoil = 0;
+      bHCoil = false;
+      nCoilStart = -1;
+    }
+    chprev = ch;
+  }
+}
+
+void SecStrTab::setHelix(int ind)
+{
+  m_data[ind*2+0] = 'C';
+  m_data[ind*2+1] = ' ';
+}
+
+
+
+//////////////////////////////////////////
+
 Ribbon2Renderer::Ribbon2Renderer()
      : super_t(),
        m_ptsCoil(MB_NEW TubeSection()),
@@ -448,6 +535,13 @@ void Ribbon2Renderer::rendResid(DisplayContext *pdl, MolResiduePtr pRes)
 void Ribbon2Renderer::endSegment(DisplayContext *pdl, MolResiduePtr pEndRes)
 {
   m_indvec.resize( m_resvec.size() );
+  m_sstab.setSize( m_resvec.size() );
+  int i=0;
+  BOOST_FOREACH (const MolResiduePtr &elem, m_resvec) {
+    m_sstab.setSecStr(i, elem);
+    ++i;
+  }
+  //m_sstab.fillHelixGap(2);
 
   if (!m_bRibbonHelix) {
     // Cylinder-shaped helix mode
@@ -549,7 +643,8 @@ void Ribbon2Renderer::buildHelixData()
     if (i>=1) pPrevRes = m_resvec[i-1];
     if (i<=nresvec-2) pNextRes = m_resvec[i+1];
     LString sec, pfx;
-    pRes->getPropStr("secondary2", sec);
+    //pRes->getPropStr("secondary2", sec);
+    sec = m_sstab.getSecStr(i);
     if (sec.length()>=2)
       pfx= sec.substr(1,1);
 
@@ -776,7 +871,8 @@ void Ribbon2Renderer::buildSheetData()
     MolResiduePtr pRes = m_resvec[i];
 
     LString sec;
-    pRes->getPropStr("secondary2", sec);
+    //pRes->getPropStr("secondary2", sec);
+    sec = m_sstab.getSecStr(i);
     //MB_DPRINTLN("Cart.buildSh> %s %s", pRes->getStrIndex().c_str(), sec.c_str());
 
     if (!isSheet(sec)) {
@@ -974,7 +1070,7 @@ double Ribbon2Renderer::getAnchorWgt2(MolResiduePtr pRes, const LString &sstr) c
 void Ribbon2Renderer::getCoilResids(double at, SecSplDat *pCyl,
                                     MolResiduePtr &pResPrev,
                                     MolResiduePtr &pResNext,
-                                    double &resrho)
+                                    double &resrho, int *piPrev/*=NULL*/)
 {
   double t = at;
   double tstart = 0.0;
@@ -998,6 +1094,9 @@ void Ribbon2Renderer::getCoilResids(double at, SecSplDat *pCyl,
 
   pResPrev = getResByIndex(nprev);
   pResNext = getResByIndex(nnext);
+
+  if (piPrev!=NULL)
+    *piPrev = nprev;
 }
 
 gfx::ColorPtr Ribbon2Renderer::calcCoilColor(double at, SecSplDat *pCyl)
@@ -1073,7 +1172,8 @@ void Ribbon2Renderer::buildCoilData()
     MolResiduePtr pRes = m_resvec[i];
 
     LString sec;
-    pRes->getPropStr("secondary2", sec);
+    //pRes->getPropStr("secondary2", sec);
+    sec = m_sstab.getSecStr(i);
     sec = sec.substr(0,1);
     MB_DPRINTLN("%d sec=%s, prev=%s", i, sec.c_str(), prev_ss.c_str());
 
@@ -1273,10 +1373,12 @@ void Ribbon2Renderer::renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pC
     MolResiduePtr pResPrev;
     MolResiduePtr pResNext;
     double rho;
-    getCoilResids(t, pC, pResPrev, pResNext, rho);
+    int iprev;
+    getCoilResids(t, pC, pResPrev, pResNext, rho, &iprev);
 
     LString sec;
-    pResPrev->getPropStr("secondary2", sec);
+    //pResPrev->getPropStr("secondary2", sec);
+    sec = m_sstab.getSecStr(iprev);
     //MB_DPRINTLN("%d [%s] sec=<%s> t=%f", j, pResPrev->toString().c_str(), sec.c_str(), t);
 
     if (j==0 || !sec.equals(sec_prev)) {

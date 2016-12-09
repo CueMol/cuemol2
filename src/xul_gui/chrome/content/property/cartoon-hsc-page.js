@@ -36,11 +36,13 @@ cuemolui.CtnHscPropEdit = ( function () {
 
       let pfx = "ribhlxpage";
       this.mRhSectType = document.getElementById(pfx+"-secttype");
+      this.mRhSectDet = document.getElementById(pfx+"-sectdet");
       this.mRhLineWidth = document.getElementById(pfx+"-width");
       this.mRhSharp = document.getElementById(pfx+"-sharp");
       this.mRhTuber = document.getElementById(pfx+"-tuber");
 
       this.mRhSectType.addEventListener("command", function (event) { that.validateWidgets(event) }, false);
+      this.mRhSectDet.addEventListener("change", function (event) { that.validateWidgets(event) }, false);
       this.mRhLineWidth.addEventListener("change", function (event) { that.validateWidgets(event) }, false);
       this.mRhSharp.addEventListener("change", function (event) { that.validateWidgets(event) }, false);
       this.mRhTuber.addEventListener("change", function (event) { that.validateWidgets(event) }, false);
@@ -52,6 +54,7 @@ cuemolui.CtnHscPropEdit = ( function () {
     }
 
     this.mSectType = document.getElementById(this.mIdPfx+"-secttype");
+    this.mSectDet = document.getElementById(this.mIdPfx+"-sectdet");
     this.mLineWidth = document.getElementById(this.mIdPfx+"-width");
     this.mSharp = document.getElementById(this.mIdPfx+"-sharp");
     this.mTuber = document.getElementById(this.mIdPfx+"-tuber");
@@ -59,6 +62,7 @@ cuemolui.CtnHscPropEdit = ( function () {
     
     // Add event listeners
     this.mSectType.addEventListener("command", function (event) { that.validateWidgets(event) }, false);
+    this.mSectDet.addEventListener("change", function (event) { that.validateWidgets(event) }, false);
     this.mLineWidth.addEventListener("change", function (event) { that.validateWidgets(event) }, false);
     this.mSharp.addEventListener("change", function (event) { that.validateWidgets(event) }, false);
     this.mTuber.addEventListener("change", function (event) { that.validateWidgets(event) }, false);
@@ -116,6 +120,9 @@ cuemolui.CtnHscPropEdit = ( function () {
       elem = gMain.findPropData(pfx+".type");
       util.selectMenuListByValue(this.mRhSectType, elem.value);
 
+      elem = gMain.findPropData(pfx+".detail");
+      this.mRhSectDet.value = elem.value;
+
       elem = gMain.findPropData(pfx+".width");
       this.mRhLineWidth.value = elem.value;
       
@@ -138,6 +145,9 @@ cuemolui.CtnHscPropEdit = ( function () {
       this.mLineWidth.value = elem.value;
     }
     
+    elem = gMain.findPropData(this.mPropPfx+".detail");
+    this.mSectDet.value = elem.value;
+
     elem = gMain.findPropData(this.mPropPfx+".sharp");
     this.mSharp.value = elem.value;
 
@@ -236,6 +246,13 @@ cuemolui.CtnHscPropEdit = ( function () {
       new_val = aEvent.target.value;
       this.updateDisabledState();
       gMain.updateData(this.mPropPfx+".type", new_val);
+    }
+
+    if (tgt_id==this.mIdPfx+"-sectdet") {
+      new_val = parseFloat(this.mSectDet.value);
+      if (isNaN(new_val) || new_val<2 || new_val>50)
+	return;
+      gMain.updateData(this.mPropPfx+".detail", new_val);
     }
 
     if (tgt_id==this.mIdPfx+"-width") {
@@ -339,6 +356,13 @@ cuemolui.CtnHscPropEdit = ( function () {
 	gMain.updateData(pfx+".type", new_val);
       }
       
+      if (tgt_id==idpfx+"-sectdet") {
+	new_val = parseFloat(this.mRhSectDet.value);
+	if (isNaN(new_val) || new_val<2 || new_val>20)
+	  return;
+	gMain.updateData(pfx+".detail", new_val);
+      }
+
       if (tgt_id==idpfx+"-width") {
 	new_val = parseFloat(mRhLineWidth.value);
 	if (isNaN(new_val)) return;

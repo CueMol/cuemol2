@@ -32,7 +32,7 @@ window.gCartoon = ( function () { try {
   
   CartoonPropEdit.prototype.onLoad = function ()
   {
-    this.mSectDet = document.getElementById("compage-sectdet");
+    // this.mSectDet = document.getElementById("compage-sectdet");
     this.mAxDet = document.getElementById("compage-axdet");
     this.mSmoCol = document.getElementById("compage-smocol");
     this.mPivotChk = document.getElementById("compage-pivotcheck");
@@ -78,9 +78,8 @@ window.gCartoon = ( function () { try {
   {
     var elem;
     
-    //elem = gMain.findPropData("section.detail");
-    elem = gMain.findPropData("coil.detail");
-    this.mSectDet.value = elem.value;
+    //elem = gMain.findPropData("coil.detail");
+    //this.mSectDet.value = elem.value;
 
     elem = gMain.findPropData("axialdetail");
     this.mAxDet.value = elem.value;
@@ -99,7 +98,7 @@ window.gCartoon = ( function () { try {
     this.mPivotAtom.disabled = !this.mPivotChk.checked;
 
     elem = gMain.findPropData("anchor_sel");
-//dd("updateW anchor_sel="+elem.value);
+    //dd("updateW anchor_sel="+elem.value);
     if (elem.value=="" || elem.value=="none") {
       this.enableAnchorWidgets(false);
       elem.value="none";
@@ -169,7 +168,7 @@ window.gCartoon = ( function () { try {
       }
 
       switch (tgt_id) {
-      case "compage-sectdet":
+      /*case "compage-sectdet":
 	new_val = parseInt(this.mSectDet.value);
 	if (isNaN(new_val) || new_val<2 || new_val>20)
 	  return;
@@ -177,7 +176,8 @@ window.gCartoon = ( function () { try {
 	gMain.updateData("helix.detail", new_val);
 	gMain.updateData("sheet.detail", new_val);
 	break;
-
+       */
+	
       case "compage-axdet":
 	new_val = parseInt(this.mAxDet.value);
 	if (isNaN(new_val) || new_val<2 || new_val>20)

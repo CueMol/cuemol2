@@ -100,295 +100,318 @@ using namespace molstr;
       SecSplDat(Ribbon2Renderer *pP);
     };
 
-  }
+    class SecStrTab
+    {
+    public:
+      SecStrTab() {}
+      ~SecStrTab() {}
 
-class Ribbon2Renderer : public MainChainRenderer
-{
-  MC_SCRIPTABLE;
-  MC_CLONEABLE;
+      typedef std::vector<char> data_t;
+      data_t m_data;
 
-  friend class ::Ribbon2Renderer_wrap;
+      void setSize(int nsize) { m_data.resize(nsize*2); }
+      void setSecStr(int ind, const MolResiduePtr &pRes);
+      LString getSecStr(int ind);
 
-private:
+      void fillHelixGap(int ngap);
 
-  typedef MainChainRenderer super_t;
+      void setHelix(int ind);
+    };
 
-  //////////////////////////////////////////////////////
-  // Properties
+  } // namespace detail
 
-  /// Section data for coil
-  TubeSectionPtr m_ptsCoil;
-
-  /// Section data for cylinder helix
-  TubeSectionPtr m_ptsHelix;
-
-  /// Section data for sheet
-  TubeSectionPtr m_ptsSheet;
-
-  /// Sheet junction (arrow head)
-  JctTablePtr m_pSheetHead;
-
-  /// Section data for ribbon helix
-  TubeSectionPtr m_ptsRibHelix;
-
-  /// Coil-Helix junction (used in ribbonhelix mode)
-  JctTablePtr m_pRibHelixTail;
-
-  /// Helix-Coil junction (used in ribbonhelix mode)
-  JctTablePtr m_pRibHelixHead;
-
-  /// Num of interporation point to the axial direction (axialdetail)
-  int m_nAxialDetail;
-
-  /// interpolate color or not
-  bool m_bInterpColor;
-
-  // anchor params (coil/sheet)
-  SelectionPtr m_pAnchorSel;  
-  double m_dAnchorWgt;
-
-  // helix props
-  double m_dHelixSmo;
-
-  double m_dAxExt;
-  double m_dWidthPlus;
-  double m_dWidthRho;
-
-private:
-  enum {
-    HWIDTH_CONST = 0,
-    HWIDTH_AVER = 1,
-    HWIDTH_WAVY = 2
-  };
-  int m_nHelixWidthMode;
-
-public:
-  int getHelixWidthMode() const {return m_nHelixWidthMode;}
-  void setHelixWidthMode(int n) {m_nHelixWidthMode = n;}
-
-public:
-  // compatibility for helix_waver prop
-  bool isWidthAver() const {
-    if (m_nHelixWidthMode==HWIDTH_AVER) return true;
-    else return false;
-  }
-  void setWidthAver(bool b) {
-    m_nHelixWidthMode = HWIDTH_AVER;
-  }
-
-private:
-  /// Helix width (const width mode)
-  double m_dHelixWidth;
-
-  // sheet props
-  double m_dSheetSmo;
-  double m_dSheetWsmo;
-
-  // coil props
-  double m_dCoilSmo;
-
-private:
-
-  ////////////////////////////////////////////////
-  // workarea
-
-  std::deque<MolResiduePtr> m_resvec;
-  std::vector<int> m_indvec;
-
-  std::deque<detail::SecSplDat*> m_cylinders;
-  std::deque<detail::SecSplDat*> m_sheets;
-  std::deque<detail::SecSplDat*> m_coils;
-
-  /// Dump curvature info of axial spline func
-  bool m_bDumpCurv;
-
-  typedef std::map<MolResidue *, std::pair<Vector4D,Vector4D> > DiffVecMap;
-
-  /// differential vectors for getDiffVec impl
-  DiffVecMap m_diffvecs;
-
-  ////////////////////////////////////////////////
-
-public:
-  Ribbon2Renderer();
-  virtual ~Ribbon2Renderer();
-
-  virtual const char *getTypeName() const;
-
-  virtual void beginRend(DisplayContext *pdl);
-  virtual void endRend(DisplayContext *pdl);
-
-  virtual void beginSegment(DisplayContext *pdl, MolResiduePtr pRes);
-  virtual void rendResid(DisplayContext *pdl, MolResiduePtr pRes);
-  virtual void endSegment(DisplayContext *pdl, MolResiduePtr pRes);
-
-private:
-  //////////////////////////////////////////////////////
-
-  void buildHelixData();
-  void clearHelixData();
-  void renderHelix(DisplayContext *pdl);
-
-  void buildSheetData();
-  void clearSheetData();
-  void renderSheet(DisplayContext *pdl, detail::SecSplDat *pSh);
-
-  void buildCoilData();
-  void clearCoilData();
-  void renderCoil(DisplayContext *pdl, detail::SecSplDat *pSh);
-  void renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pSh);
-
-  void getCoilResids(double at, detail::SecSplDat *pCyl,
-                     MolResiduePtr &pResPrev,
-                     MolResiduePtr &pResNext,
-                     double &resrho);
-
-  gfx::ColorPtr calcCoilColor(double at, detail::SecSplDat *pCyl);
-
-
-  /// Sheet to Coil junction
-  void extendSheetCoil(detail::SecSplDat *pSh, int nPrevInd);
-
-  /// Coil to Sheet junction
-  void extendCoilSheet(detail::SecSplDat *pSh, int nNextInd);
-
-public:
-  //////////////////////////////////////////////////////
-  // event handling
-
-  virtual void propChanged(qlib::LPropEvent &ev);
-
-  virtual void objectChanged(qsys::ObjectEvent &ev);
-
-  //////////////////////////////////////////////////////
-
-  virtual void setAxialDetail(int nlev);
-
-  int getAxialDetail() const { return m_nAxialDetail; }
-
-  void setSmoothColor(bool b) {
-    m_bInterpColor = b;
-    invalidateDisplayCache();
-  }
-  bool isSmoothColor() const { return m_bInterpColor; }
-
-
-public:
-  
-  SelectionPtr getAnchorSel() const
+  class Ribbon2Renderer : public MainChainRenderer
   {
-    return m_pAnchorSel;
-  }
+    MC_SCRIPTABLE;
+    MC_CLONEABLE;
 
-  void setAnchorSel(SelectionPtr pNewSel)
-  {
-    m_pAnchorSel = pNewSel;
-    invalidateDisplayCache();
-  }
+    friend class ::Ribbon2Renderer_wrap;
 
-  double getAnchorWgt() const {
-    return m_dAnchorWgt;
-  }
+  private:
 
-  void setAnchorWgt(double d) {
-    m_dAnchorWgt = d;
-    invalidateDisplayCache();
-  }
+    typedef MainChainRenderer super_t;
 
-  double getAnchorWgt(MolResiduePtr pRes) const;
-  double getAnchorWgt2(MolResiduePtr pRes, const LString &sstr) const;
+    //////////////////////////////////////////////////////
+    // Properties
 
-  void invalidateSplineCoeffs();
+    /// Section data for coil
+    TubeSectionPtr m_ptsCoil;
 
-  //////////////////////////////////////////////////////
-  // Tube capping routine
+    /// Section data for cylinder helix
+    TubeSectionPtr m_ptsHelix;
 
-public:
-  /// cap type ID
-  enum {
-    TUBE_CAP_SPHR = 0,
-    TUBE_CAP_FLAT = 1,
-    TUBE_CAP_NONE = 2
+    /// Section data for sheet
+    TubeSectionPtr m_ptsSheet;
+
+    /// Sheet junction (arrow head)
+    JctTablePtr m_pSheetHead;
+
+    /// Section data for ribbon helix
+    TubeSectionPtr m_ptsRibHelix;
+
+    /// Coil-Helix junction (used in ribbonhelix mode)
+    JctTablePtr m_pRibHelixTail;
+
+    /// Helix-Coil junction (used in ribbonhelix mode)
+    JctTablePtr m_pRibHelixHead;
+
+    /// Num of interporation point to the axial direction (axialdetail)
+    int m_nAxialDetail;
+
+    /// interpolate color or not
+    bool m_bInterpColor;
+
+    // anchor params (coil/sheet)
+    SelectionPtr m_pAnchorSel;
+    double m_dAnchorWgt;
+
+    // helix props
+    double m_dHelixSmo;
+
+    double m_dAxExt;
+    double m_dWidthPlus;
+    double m_dWidthRho;
+
+  private:
+    enum {
+      HWIDTH_CONST = 0,
+      HWIDTH_AVER = 1,
+      HWIDTH_WAVY = 2
+    };
+    int m_nHelixWidthMode;
+
+  public:
+    int getHelixWidthMode() const {return m_nHelixWidthMode;}
+    void setHelixWidthMode(int n) {m_nHelixWidthMode = n;}
+
+  public:
+    // compatibility for helix_waver prop
+    bool isWidthAver() const {
+      if (m_nHelixWidthMode==HWIDTH_AVER) return true;
+      else return false;
+    }
+    void setWidthAver(bool b) {
+      m_nHelixWidthMode = HWIDTH_AVER;
+    }
+
+  private:
+    /// Helix width (const width mode)
+    double m_dHelixWidth;
+
+    // sheet props
+    double m_dSheetSmo;
+    double m_dSheetWsmo;
+
+    // coil props
+    double m_dCoilSmo;
+
+  private:
+
+    ////////////////////////////////////////////////
+    // workarea
+
+    /// Residue table
+    std::deque<MolResiduePtr> m_resvec;
+    /// Sheet index vector
+    std::vector<int> m_indvec;
+
+    /// secstr table
+    detail::SecStrTab m_sstab;
+
+    std::deque<detail::SecSplDat*> m_cylinders;
+    std::deque<detail::SecSplDat*> m_sheets;
+    std::deque<detail::SecSplDat*> m_coils;
+
+    /// Dump curvature info of axial spline func
+    bool m_bDumpCurv;
+
+    typedef std::map<MolResidue *, std::pair<Vector4D,Vector4D> > DiffVecMap;
+
+    /// differential vectors for getDiffVec impl
+    DiffVecMap m_diffvecs;
+
+    ////////////////////////////////////////////////
+
+  public:
+    Ribbon2Renderer();
+    virtual ~Ribbon2Renderer();
+
+    virtual const char *getTypeName() const;
+
+    virtual void beginRend(DisplayContext *pdl);
+    virtual void endRend(DisplayContext *pdl);
+
+    virtual void beginSegment(DisplayContext *pdl, MolResiduePtr pRes);
+    virtual void rendResid(DisplayContext *pdl, MolResiduePtr pRes);
+    virtual void endSegment(DisplayContext *pdl, MolResiduePtr pRes);
+
+  private:
+    //////////////////////////////////////////////////////
+
+    void buildHelixData();
+    void clearHelixData();
+    void renderHelix(DisplayContext *pdl);
+
+    void buildSheetData();
+    void clearSheetData();
+    void renderSheet(DisplayContext *pdl, detail::SecSplDat *pSh);
+
+    void buildCoilData();
+    void clearCoilData();
+    void renderCoil(DisplayContext *pdl, detail::SecSplDat *pSh);
+    void renderHelixCoil(DisplayContext *pdl, detail::SecSplDat *pSh);
+
+    void getCoilResids(double at, detail::SecSplDat *pCyl,
+                       MolResiduePtr &pResPrev,
+                       MolResiduePtr &pResNext,
+                       double &resrho, int *piPrev=NULL);
+
+    gfx::ColorPtr calcCoilColor(double at, detail::SecSplDat *pCyl);
+
+
+    /// Sheet to Coil junction
+    void extendSheetCoil(detail::SecSplDat *pSh, int nPrevInd);
+
+    /// Coil to Sheet junction
+    void extendCoilSheet(detail::SecSplDat *pSh, int nNextInd);
+
+  public:
+    //////////////////////////////////////////////////////
+    // event handling
+
+    virtual void propChanged(qlib::LPropEvent &ev);
+
+    virtual void objectChanged(qsys::ObjectEvent &ev);
+
+    //////////////////////////////////////////////////////
+
+    virtual void setAxialDetail(int nlev);
+
+    int getAxialDetail() const { return m_nAxialDetail; }
+
+    void setSmoothColor(bool b) {
+      m_bInterpColor = b;
+      invalidateDisplayCache();
+    }
+    bool isSmoothColor() const { return m_bInterpColor; }
+
+
+  public:
+
+    SelectionPtr getAnchorSel() const
+    {
+      return m_pAnchorSel;
+    }
+
+    void setAnchorSel(SelectionPtr pNewSel)
+    {
+      m_pAnchorSel = pNewSel;
+      invalidateDisplayCache();
+    }
+
+    double getAnchorWgt() const {
+      return m_dAnchorWgt;
+    }
+
+    void setAnchorWgt(double d) {
+      m_dAnchorWgt = d;
+      invalidateDisplayCache();
+    }
+
+    double getAnchorWgt(MolResiduePtr pRes) const;
+    double getAnchorWgt2(MolResiduePtr pRes, const LString &sstr) const;
+
+    void invalidateSplineCoeffs();
+
+    //////////////////////////////////////////////////////
+    // Tube capping routine
+
+  public:
+    /// cap type ID
+    enum {
+      TUBE_CAP_SPHR = 0,
+      TUBE_CAP_FLAT = 1,
+      TUBE_CAP_NONE = 2
+    };
+
+    int getStartCapType() const { return m_nStCapType; }
+    void setStartCapType(int nType) {
+      super_t::invalidateDisplayCache();
+      m_nStCapType = nType;
+    }
+
+    int getEndCapType() const {
+      MB_DPRINTLN("Rib2rend end_captype=%d", m_nEnCapType);
+      return m_nEnCapType;
+    }
+    void setEndCapType(int nType) {
+      super_t::invalidateDisplayCache();
+      m_nEnCapType = nType;
+    }
+
+  private:
+
+    /// start cap type
+    int m_nStCapType;
+    int m_nEnCapType;
+
+  public:
+
+    gfx::ColorPtr calcColor(double t, detail::SecSplDat *pCyl);
+
+    TubeSectionPtr getHelixSection() const { return m_ptsHelix; }
+    TubeSectionPtr getSheetSection() const { return m_ptsSheet; }
+    TubeSectionPtr getCoilSection() const { return m_ptsCoil; }
+
+    JctTablePtr getSheetHead() const { return m_pSheetHead; }
+
+    TubeSectionPtr getRibHelixSection() const { return m_ptsRibHelix; }
+    JctTablePtr getRibHelixHead() const { return m_pRibHelixHead; }
+    JctTablePtr getRibHelixTail() const { return m_pRibHelixTail; }
+
+    //////////
+
+    void curvature();
+    void dumpCyls(detail::SecSplDat *pC);
+
+  private:
+    void updateDiffVecs();
+    void updateDiffVecsImpl(detail::SecSplDat *pC);
+
+  public:
+    /// Returns 1-st differential vector as to the axial (t) parameter.
+    ///  (used for the tangential vector calculation for the disorder renderer)
+    virtual bool getDiffVec(MolResiduePtr pRes, Vector4D &rpos, Vector4D &rvec);
+
+    /// Ribbon shaped helix flag
+    bool m_bRibbonHelix;
+
+    ////////////////////////////////
+
+  private:
+    /// Fade out flag of the end of the segment
+    bool m_bSegEndFade;
+
+  public:
+    void setSegEndFade(bool b) {
+      super_t::invalidateDisplayCache();
+      m_bSegEndFade = b;
+    }
+    bool isSegEndFade() const { return m_bSegEndFade; }
+
+    /// Returns true, if par is at the internal end of the segment
+    ///  (returns false, if par is at the external end.)
+    //bool isSegEnd(double par, detail::SecSplDat *pCyl);
+
+  private:
+
+    MolResiduePtr getResByIndex(int n) const {
+      if (0<=n && n<m_resvec.size())
+        return m_resvec[n];
+      else
+        return MolResiduePtr();
+    }
   };
-
-  int getStartCapType() const { return m_nStCapType; }
-  void setStartCapType(int nType) {
-    super_t::invalidateDisplayCache();
-    m_nStCapType = nType;
-  }
-
-  int getEndCapType() const {
-    MB_DPRINTLN("Rib2rend end_captype=%d", m_nEnCapType);
-    return m_nEnCapType;
-  }
-  void setEndCapType(int nType) {
-    super_t::invalidateDisplayCache();
-    m_nEnCapType = nType;
-  }
-
-private:
-
-  /// start cap type
-  int m_nStCapType;
-  int m_nEnCapType;
-
-public:
-  
-  gfx::ColorPtr calcColor(double t, detail::SecSplDat *pCyl);
-
-  TubeSectionPtr getHelixSection() const { return m_ptsHelix; }
-  TubeSectionPtr getSheetSection() const { return m_ptsSheet; }
-  TubeSectionPtr getCoilSection() const { return m_ptsCoil; }
-
-  JctTablePtr getSheetHead() const { return m_pSheetHead; }
-
-  TubeSectionPtr getRibHelixSection() const { return m_ptsRibHelix; }
-  JctTablePtr getRibHelixHead() const { return m_pRibHelixHead; }
-  JctTablePtr getRibHelixTail() const { return m_pRibHelixTail; }
-
-  //////////
-
-  void curvature();
-  void dumpCyls(detail::SecSplDat *pC);
-
-private:
-  void updateDiffVecs();
-  void updateDiffVecsImpl(detail::SecSplDat *pC);
-
-public:
-  /// Returns 1-st differential vector as to the axial (t) parameter.
-  ///  (used for the tangential vector calculation for the disorder renderer)
-  virtual bool getDiffVec(MolResiduePtr pRes, Vector4D &rpos, Vector4D &rvec);
-
-  /// Ribbon shaped helix flag
-  bool m_bRibbonHelix;
-
-  ////////////////////////////////
-  
-private:
-  /// Fade out flag of the end of the segment
-  bool m_bSegEndFade;
-
-public:
-  void setSegEndFade(bool b) {
-    super_t::invalidateDisplayCache();
-    m_bSegEndFade = b;
-  }
-  bool isSegEndFade() const { return m_bSegEndFade; }
-
-  /// Returns true, if par is at the internal end of the segment
-  ///  (returns false, if par is at the external end.)
-  //bool isSegEnd(double par, detail::SecSplDat *pCyl);
-
-private:
-
-  MolResiduePtr getResByIndex(int n) const {
-    if (0<=n && n<m_resvec.size())
-      return m_resvec[n];
-    else
-      return MolResiduePtr();
-  }
-};
 
 }
 
