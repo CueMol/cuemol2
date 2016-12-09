@@ -162,6 +162,7 @@ void QdfMolReader::readChainData()
 
     in.endRecord();
   }
+  LOG_DPRINTLN("QdfMol> read %d chains.", m_chainTab.size());
 }
 
 void QdfMolReader::readResidData()
@@ -223,6 +224,8 @@ void QdfMolReader::readResidData()
 
     in.endRecord();
   }
+
+  LOG_DPRINTLN("QdfMol> read %d residues.", m_residTab.size());
 }
 
 void QdfMolReader::readAtomData()
@@ -350,6 +353,7 @@ void QdfMolReader::readAtomData()
     in.endRecord();
   }
   
+  LOG_DPRINTLN("QdfMol> read %d atoms.", m_atomTab.size());
 }
 
 void QdfMolReader::readBondData()
@@ -364,7 +368,7 @@ void QdfMolReader::readBondData()
   AtomTab::const_iterator aiter;
   MolAtomPtr pAtom1;
   MolAtomPtr pAtom2;
-
+  int nread_bonds = 0;
   for (int i=0; i<nelems; ++i) {
     in.startRecord();
     quint32 id = in.readUInt32("id");
@@ -395,9 +399,12 @@ void QdfMolReader::readBondData()
       // (other bonds will be created by applyTopology())
       MolBond *pBond = m_pMol->makeBond(pAtom1->getID(), pAtom2->getID(), true);
       pBond->setType(ntype);
+      ++nread_bonds;
     }
 
     in.endRecord();
   }
+
+  LOG_DPRINTLN("QdfMol> read %d user defined bonds.", nread_bonds);
 }
 

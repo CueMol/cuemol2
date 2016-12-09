@@ -36,6 +36,8 @@ PDBFileReader::PDBFileReader()
 
   m_nErrCount = 0;
   m_nErrMax = 50;
+  m_nDupAtoms = 0;
+  m_nLostAtoms = 0;
 }
 
 PDBFileReader::~PDBFileReader()
@@ -82,8 +84,13 @@ bool PDBFileReader::read(qlib::InStream &ins)
   m_nPrevResIdx = -1;
   m_pPrevAtom = MolAtomPtr();
 
+  m_nReadAtoms = 0;
+  m_nErrCount = 0;
+  m_nErrMax = 50;
+  m_nDupAtoms = 0;
+  m_nLostAtoms = 0;
+
   try {
-    m_nReadAtoms = 0;
     readContents(ins);
   }
   catch (const qlib::LException &e) {
@@ -112,7 +119,14 @@ bool PDBFileReader::read(qlib::InStream &ins)
 
   if (m_nErrCount>m_nErrMax)
     LOG_DPRINTLN("PDBFileReader> Too many errors (%d) were supressed", m_nErrCount-m_nErrMax);
-  LOG_DPRINTLN("PDBFileReader> read %d atom(s)", m_nReadAtoms);
+
+  if (m_nLostAtoms>0)
+    LOG_DPRINTLN("PDBFileReader> Warning!! %d atom(s) lost", m_nLostAtoms);
+
+  if (m_nDupAtoms>0)
+    LOG_DPRINTLN("PDBFileReader> Warning!! names of %d duplicated atom(s) changed", m_nDupAtoms);
+
+  LOG_DPRINTLN("PDBFileReader> read %d atoms", m_nReadAtoms);
 
   // Clean-up the workspace
   m_pMol = MolCoordPtr();
@@ -589,8 +603,11 @@ bool PDBFileReader::readAtom()
     // duplicated atom --> try to change the atom name
     LString newanam;
 
-    if (inum<100)
+    if (inum<100) {
+      if (aname.length()>2)
+        break; // ERR
       newanam = LString::format("%s%02d", aname.c_str(), inum%100);
+    }
     else {
       if (aname.length()>1)
         break; // ERR
@@ -603,6 +620,12 @@ bool PDBFileReader::readAtom()
 
     // retry
   }
+
+  if (inum>0)
+    ++m_nDupAtoms;
+
+  if (naid<0)
+    ++m_nLostAtoms;
 
   m_pPrevAtom = pAtom;
   return true;

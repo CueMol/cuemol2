@@ -88,7 +88,8 @@ LString QdfDataType::createVerString(int nver)
   else if (nver<0x1000)
     return LString::format("Q%x", nver);
   
-  MB_THROW(qlib::FileFormatException, "Version number is too large");
+  MB_THROW(qlib::FileFormatException,
+           LString::format("Version number (%d) is too large", nver));
 }
 
 //static
@@ -103,12 +104,14 @@ int QdfDataType::parseVerString(const LString &strver)
   else if (strver.startsWith("Q"))
     snum = strver.substr(1, 3);
   else {
-    MB_THROW(qlib::FileFormatException, "Invalid version string");
+    MB_THROW(qlib::FileFormatException,
+             LString::format("Invalid version string (%s)", strver.c_str()));
   }
 
   snum = "0x"+snum;
   if (!snum.toInt(&rval)) {
-    MB_THROW(qlib::FileFormatException, "Invalid version string");
+    MB_THROW(qlib::FileFormatException,
+             LString::format("Invalid version string (%s)", strver.c_str()));
   }
 
   return rval;

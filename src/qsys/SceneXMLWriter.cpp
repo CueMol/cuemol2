@@ -33,6 +33,7 @@ SceneXMLWriter::SceneXMLWriter()
   m_bForceEmbedAll = false;
   m_bBase64 = false;
   m_nCompMode = COMP_NONE;
+  m_nVersion = 0;
 }
 
 SceneXMLWriter::~SceneXMLWriter()

@@ -83,6 +83,9 @@ namespace molstr {
     int m_nErrCount;
     int m_nErrMax;
 
+    int m_nDupAtoms;
+    int m_nLostAtoms;
+
     //////////////////////////////////////////////
   public:
 
