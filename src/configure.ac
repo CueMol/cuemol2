@@ -219,7 +219,7 @@ case $host_os in
 	    CXX11_CXXFLAGS=${CXXFLAGS}
 	fi
 	CXXFLAGS=${_cxxflags}
-	echo "XXX $CXXFLAGS, $HAVE_CXX11, $CXX11_CXXFLAGS"
+	#echo "$CXXFLAGS, $HAVE_CXX11, $CXX11_CXXFLAGS"
      ;;
      *)
 	GUI_ARCH=X11
