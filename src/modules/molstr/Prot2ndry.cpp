@@ -1228,7 +1228,7 @@ namespace {
       calcBridge();
       calcHelices();
 
-      conHelices();
+      conHelices(5, 5.0);
     }
 
     struct Helix {
@@ -1248,7 +1248,7 @@ namespace {
         return 3;
     }
 
-    void conHelices()
+    void conHelices(int ngap, double dangl)
     {
       std::deque<Helix> helices;
       int nhlx = 0;
@@ -1303,12 +1303,13 @@ namespace {
         const int nen = helices[i].nen;
 
         Vector4D rc = Vector4D(0,0,0,0);
-        Vector4D r1, ev1;
+        Vector4D r1, ev1, ev2;
         for (j=nst; j<=nen; ++j) {
           const Vector4D &pos = m_chains[j]->ca;
           rc += pos;
         }
         rc = rc.scale(1.0/(nen-nst+1));
+        ev2 = (m_chains[nen]->ca-m_chains[nst]->ca).normalize();
 
         Matrix3D resid_tens;
         Matrix3D evecs;
@@ -1345,8 +1346,36 @@ namespace {
         ev1.z() = evecs.aij(3,emin);
         ev1.w() = 0.0;
 
+        if (ev1.dot(ev2)<0)
+          ev1 = -ev1;
+
         helices[i].dir = ev1;
-        MB_DPRINTLN("HELIX %d - %d dir=(%f,%f,%f)", helices[i].nst, helices[i].nen, helices[i].dir.x(), helices[i].dir.y(), helices[i].dir.z());
+
+        Vector4D p1 = rc+ev1;
+        MB_DPRINTLN("<!--HELIX %d - %d--><line pos1=\"(%f,%f,%f)\" pos2=\"(%f,%f,%f)\"/>",
+                    helices[i].nst, helices[i].nen,
+                    rc.x(), rc.y(), rc.z(), 
+                    p1.x(), p1.y(), p1.z());
+      }
+
+      for (i=0; i<nhlx-1; ++i) {
+        const int npen = helices[i].nen;
+        const int nnst = helices[i+1].nst;
+        if (nnst-npen<=ngap) {
+          const double costh = helices[i].dir.dot(helices[i+1].dir);
+          const double d = qlib::toDegree(acos(costh));
+          if (d<dangl) {
+            MB_DPRINTLN("** HELIX %d - %d =(%f<%f)", i, i+1, d, dangl);
+            const int nnen = helices[i+1].nen;
+            for (j=npen+1; j<=nnen; ++j) {
+              m_chains[j]->ss = m_chains[npen]->ss;
+              m_chains[j]->ssid = m_chains[npen]->ssid;
+            }
+          }
+          else {
+            MB_DPRINTLN("** HELIX %d - %d =(%f>=%f)", i, i+1, d, dangl);
+          }
+        }
       }
 
     }
