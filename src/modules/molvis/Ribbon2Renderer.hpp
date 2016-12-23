@@ -113,9 +113,8 @@ using namespace molstr;
       void setSecStr(int ind, const MolResiduePtr &pRes);
       LString getSecStr(int ind);
 
-      void fillHelixGap(int ngap);
-
-      void setHelix(int ind);
+      //void fillHelixGap(int ngap);
+      //void setHelix(int ind);
     };
 
   } // namespace detail

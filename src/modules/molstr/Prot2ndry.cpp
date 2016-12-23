@@ -10,6 +10,7 @@
 #include <qlib/LExceptions.hpp>
 #include <qlib/LQuat.hpp>
 #include <qlib/Vector4D.hpp>
+#include <qlib/Matrix3D.hpp>
 
 #include <qsys/UndoManager.hpp>
 
@@ -263,6 +264,7 @@ bool Prot2ndryEditInfo::isRedoable() const
 namespace {
 
   using qlib::Vector4D;
+  using qlib::Matrix3D;
   using namespace molstr;
 
   struct HydrogenBond
@@ -1225,6 +1227,128 @@ namespace {
       calcHbon();
       calcBridge();
       calcHelices();
+
+      conHelices();
+    }
+
+    struct Helix {
+      int nst, nen;
+      Vector4D dir;
+    };
+    
+    static inline int find_emax(const Vector4D &evals)
+    {
+      if (evals.x()>=evals.y() &&
+          evals.x()>=evals.z())
+        return 1;
+      else if (evals.y()>=evals.x() &&
+               evals.y()>=evals.z())
+        return 2;
+      else
+        return 3;
+    }
+
+    void conHelices()
+    {
+      std::deque<Helix> helices;
+      int nhlx = 0;
+      
+      int i, j, nCurHelixSt = -1;
+      const int nchains = m_chains.size();
+
+      for (i=0; i<nchains; ++i) {
+        Backbone &with = *(m_chains[i]);
+        bool bHelix = false;
+        
+        if (with.ss.equals("H") || with.ss.equals("G") || with.ss.equals("I")) {
+          bHelix = true;
+        }
+
+        if (bHelix) {
+          int previd=-1, nextid=-1;
+          if (i>0 && noChainBrk(i-1, i))
+            previd = m_chains[i-1]->ssid;
+          if (i<nchains-1 && noChainBrk(i, i+1))
+            nextid = m_chains[i+1]->ssid;
+
+          if (previd!=with.ssid) {
+            // i is start of helix
+            nCurHelixSt = i;
+          }
+          if (nextid!=with.ssid) {
+            // i is end of helix
+            MB_ASSERT(nCurHelixSt>=0);
+            Helix hlx;
+            hlx.nst = nCurHelixSt;
+            hlx.nen = i;
+            helices.push_back(hlx);
+            MB_DPRINTLN("HELIX %d - %d", hlx.nst, hlx.nen);
+            nCurHelixSt = -1;
+          }
+        }
+      } // for
+
+      if (nCurHelixSt>=0) {
+        Helix hlx;
+        hlx.nst = nCurHelixSt;
+        hlx.nen = i;
+        helices.push_back(hlx);
+        MB_DPRINTLN("HELIX %d - %d", hlx.nst, hlx.nen);
+      }
+
+      // calc dir for each helix
+      nhlx = helices.size();
+      for (i=0; i<nhlx; ++i) {
+        const int nst = helices[i].nst;
+        const int nen = helices[i].nen;
+
+        Vector4D rc = Vector4D(0,0,0,0);
+        Vector4D r1, ev1;
+        for (j=nst; j<=nen; ++j) {
+          const Vector4D &pos = m_chains[j]->ca;
+          rc += pos;
+        }
+        rc = rc.scale(1.0/(nen-nst+1));
+
+        Matrix3D resid_tens;
+        Matrix3D evecs;
+        Vector4D evals;
+        
+        for (j=1; j<=3; ++j)
+          for (int k=1; k<=3; ++k)
+            resid_tens.aij(j,k) = 0.0;
+        
+        for (j=nst; j<=nen; ++j) {
+          const Vector4D &pos = m_chains[j]->ca;
+          r1 = pos-rc;
+          
+          resid_tens.aij(1,1) += r1.x() * r1.x();
+          resid_tens.aij(2,2) += r1.y() * r1.y();
+          resid_tens.aij(3,3) += r1.z() * r1.z();
+          resid_tens.aij(1,2) += r1.x() * r1.y();
+          resid_tens.aij(1,3) += r1.x() * r1.z();
+          resid_tens.aij(2,3) += r1.y() * r1.z();
+        }
+        resid_tens.aij(2,1) = resid_tens.aij(1,2);
+        resid_tens.aij(3,1) = resid_tens.aij(1,3);
+        resid_tens.aij(3,2) = resid_tens.aij(2,3);
+
+        if (!resid_tens.diag(evecs, evals)) {
+          MB_DPRINTLN("Diag failed for helix:");
+          helices[i].dir = Vector4D();
+          continue;
+        }
+
+        int emin = find_emax(evals);
+        ev1.x() = evecs.aij(1,emin);
+        ev1.y() = evecs.aij(2,emin);
+        ev1.z() = evecs.aij(3,emin);
+        ev1.w() = 0.0;
+
+        helices[i].dir = ev1;
+        MB_DPRINTLN("HELIX %d - %d dir=(%f,%f,%f)", helices[i].nst, helices[i].nen, helices[i].dir.x(), helices[i].dir.y(), helices[i].dir.z());
+      }
+
     }
 
   }; // class Prot2ndry

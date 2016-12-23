@@ -405,56 +405,6 @@ LString SecStrTab::getSecStr(int ind)
   return ret;
 }
 
-void SecStrTab::fillHelixGap(int ngap)
-{
-  char chprev = 0;
-  int ncoil=0;
-  int nCoilStart = -1;
-  bool bHCoil = false;
-  const int nsz = m_data.size()/2;
-  for (int i=0; i<nsz; ++i) {
-    char ch = m_data[i*2+0];
-
-    if (ch=='C')
-      ++ncoil;
-
-    if (chprev=='H' && ch=='C') {
-      // start of coil
-      ncoil = 0;
-      bHCoil = true;
-      nCoilStart = i;
-    }
-    else if (chprev=='C' && ch=='E') {
-      // end of coil (next is sheet)
-      // reset/do nothing;
-      ncoil = 0;
-      bHCoil = false;
-      nCoilStart = -1;
-    }
-    else if (bHCoil && chprev=='C' && ch=='H') {
-      // end of coil
-      MB_DPRINTLN("coil length: %d", ncoil);
-      if (ncoil+1<=ngap) {
-        MB_DPRINTLN("  -->fillgap (%d-%d) !!", nCoilStart, i-1);
-        for (int j=nCoilStart-1; j<=i; ++j) {
-          setHelix(j);
-        }
-      }
-      ncoil = 0;
-      bHCoil = false;
-      nCoilStart = -1;
-    }
-    chprev = ch;
-  }
-}
-
-void SecStrTab::setHelix(int ind)
-{
-  m_data[ind*2+0] = 'C';
-  m_data[ind*2+1] = ' ';
-}
-
-
 
 //////////////////////////////////////////
 
@@ -541,7 +491,6 @@ void Ribbon2Renderer::endSegment(DisplayContext *pdl, MolResiduePtr pEndRes)
     m_sstab.setSecStr(i, elem);
     ++i;
   }
-  //m_sstab.fillHelixGap(2);
 
   if (!m_bRibbonHelix) {
     // Cylinder-shaped helix mode
