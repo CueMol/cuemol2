@@ -58,7 +58,7 @@ if (!("Prot2ndryTool" in cuemolui)) {
     {
       let that = this;
 
-      this.mHbMax = document.getElementById('hbmax');
+      //this.mHbMax = document.getElementById('hbmax');
       this.mIgnBlg = document.getElementById('ign_bulge');
 
       this.mTargMol.addSelChanged(function(aEvent) {
@@ -139,13 +139,13 @@ if (!("Prot2ndryTool" in cuemolui)) {
       //let tgtid = aEvent.target.id;
       dd("onRadioSelChanged: "+tgtid);
       if (tgtid=="radio_recalc") {
-	this.mHbMax.disabled = false;
+	//this.mHbMax.disabled = false;
 	this.mIgnBlg.disabled = false;
 	this.mTargSel.disabled = true;
 	this.mSecTypeSel.disabled = true;
       }
       else if (tgtid=="radio_assign") {
-	this.mHbMax.disabled = true;
+	//this.mHbMax.disabled = true;
 	this.mIgnBlg.disabled = true;
 	this.mTargSel.disabled = false;
 	this.mSecTypeSel.disabled = false;
@@ -205,9 +205,9 @@ if (!("Prot2ndryTool" in cuemolui)) {
       let scene = tgtmol.getScene();
 
       // dd("DlgAcc> min="+this.mMinDist.value);
-      let hbmax = parseFloat(this.mHbMax.value);
-      if (isNaN(hbmax))
-	return false;
+      //let hbmax = parseFloat(this.mHbMax.value);
+      //if (isNaN(hbmax))
+      //return false;
 
       let bIgnBlg = this.mIgnBlg.checked;
 

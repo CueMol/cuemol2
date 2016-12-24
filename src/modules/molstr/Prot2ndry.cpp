@@ -1228,7 +1228,6 @@ namespace {
       calcBridge();
       calcHelices();
 
-      conHelices(5, 5.0);
     }
 
     struct Helix {
@@ -1303,43 +1302,58 @@ namespace {
       return ev1;
     }
   
+    bool calcBinorm(int ind, Vector4D &res) const
+    {
+      if (ind-1<0)
+        return false;
+      if (ind+1>=m_chains.size())
+        return false;
+
+      const Vector4D &p1 = m_chains[ind-1]->ca;
+      const Vector4D &p2 = m_chains[ind]->ca;
+      const Vector4D &p3 = m_chains[ind+1]->ca;
+
+      Vector4D v1 = p2 - p1;
+      Vector4D v2 = p3 - p2;
+      Vector4D bn = v1.cross(v2);
+
+      // normalization
+      double len = bn.length();
+      if (len<F_EPS4)
+        return false;
+
+      res = bn.scale(1.0/len);
+      return true;
+    }
+
     Vector4D calcHelixDir_binorm(const Helix &hlx)
     {
-		int j;
+      int j;
       const int nst = hlx.nst;
       const int nen = hlx.nen;
       
       Vector4D rc = Vector4D(0,0,0,0);
       Vector4D r1, ev1, ev2;
       int nsum = 0;
+      Vector4D bn;
       for (j=nst; j<=nen-2; ++j) {
-        const Vector4D &p1 = m_chains[j]->ca;
-        const Vector4D &p2 = m_chains[j+1]->ca;
-        const Vector4D &p3 = m_chains[j+2]->ca;
-
-        Vector4D v1 = p2 - p1;
-        Vector4D v2 = p3 - p2;
-
-        Vector4D bn = v1.cross(v2);
-        // normalization
-        double len = bn.length();
-        if (len>=F_EPS4) {
-          bn = bn.scale(1.0/len);
-          rc += bn;
-          nsum++;
-        }
+        if (!calcBinorm(j+1, bn))
+          continue;
+        rc += bn;
+        nsum++;
       }
+
+      // ev1 is average of binorm vecs
       ev1 = rc.scale(1.0/double(nsum));
-      ev2 = (m_chains[nen]->ca-m_chains[nst]->ca).normalize();
-      
-      
-      if (ev1.dot(ev2)<0)
-        ev1 = -ev1;
+
+      //ev2 = (m_chains[nen]->ca-m_chains[nst]->ca).normalize();
+      //if (ev1.dot(ev2)<0)
+      //ev1 = -ev1;
 
       return ev1;
     }
 
-    void conHelices(int ngap, double dangl)
+    void conHelices(int ngap, double dangl, double dangl2)
     {
       std::deque<Helix> helices;
       int nhlx = 0;
@@ -1395,33 +1409,50 @@ namespace {
         helices[i].dir = ev1;
 
         Vector4D rc = m_chains[helices[i].nen]->ca;
-        Vector4D p1 = rc+ev1;
+        Vector4D p1 = rc+ev1.scale(5.0);
         MB_DPRINTLN("<!--HELIX %d - %d--><line pos1=\"(%f,%f,%f)\" pos2=\"(%f,%f,%f)\"/>",
                     helices[i].nst, helices[i].nen,
                     rc.x(), rc.y(), rc.z(), 
                     p1.x(), p1.y(), p1.z());
       }
 
+      Vector4D bn;
       for (i=0; i<nhlx-1; ++i) {
         const int npen = helices[i].nen;
         const int nnst = helices[i+1].nst;
-        if (nnst-npen<=ngap) {
-          const double costh = helices[i].dir.dot(helices[i+1].dir);
-          const double d = qlib::toDegree(acos(costh));
-          if (d<dangl) {
-            MB_DPRINTLN("** HELIX %d - %d =(%f<%f)", i, i+1, d, dangl);
-            const int nnen = helices[i+1].nen;
-            for (j=npen+1; j<=nnen; ++j) {
-              m_chains[j]->ss = m_chains[npen]->ss;
-              m_chains[j]->ssid = m_chains[npen]->ssid;
-            }
+
+        if (nnst-npen>ngap)
+          continue;
+
+        const double d = qlib::toDegree(helices[i].dir.angle(helices[i+1].dir));
+        if (d>=dangl)
+          continue;
+
+        bool bOK = true;
+        for (j=npen; j<=nnst; ++j) {
+          if (!calcBinorm(j, bn)) {
+            bOK = false;
+            break;
           }
-          else {
-            MB_DPRINTLN("** HELIX %d - %d =(%f>=%f)", i, i+1, d, dangl);
+          
+          const double d1 = qlib::toDegree(bn.angle(helices[i].dir));
+          const double d2 = qlib::toDegree(bn.angle(helices[i+1].dir));
+          if (d1>=dangl2 || d2>=dangl2) {
+            bOK = false;
+            break;
           }
         }
-      }
 
+        if (!bOK)
+          continue;
+        
+        MB_DPRINTLN("** HELIX %d - %d =(%f<%f)", i, i+1, d, dangl);
+        const int nnen = helices[i+1].nen;
+        for (j=npen+1; j<=nnen; ++j) {
+          m_chains[j]->ss = m_chains[npen]->ss;
+          m_chains[j]->ssid = m_chains[npen]->ssid;
+        }
+      }
     }
 
   }; // class Prot2ndry
@@ -1444,6 +1475,7 @@ void MolCoord::calcProt2ndry(double hb_high /*= -500.0*/, bool bIgnoreBulge /*=f
     return;
   }
   ps.doit();
+
   ps.applyToMol();
 
 #if 0
@@ -1462,10 +1494,25 @@ void MolCoord::calcProt2ndry(double hb_high /*= -500.0*/, bool bIgnoreBulge /*=f
   LOG_DPRINTLN("Prot2ndry calculation done with Hb(high)=%f", hb_high);
 }
 
-#if 0
-void MolModule::calcProtDisulf(MolCoordPtr pMol)
+void MolCoord::calcProt2ndry2(bool bIgnoreBulge /*=false*/,
+                              int nhgap/*=0*/, double dhangl1/*=60.0*/, double dhangl2/*=85.0*/)
 {
+  MolCoordPtr pMol(this);
+
+  Prot2ndry ps;
+  ps.init(pMol);
+  ps.m_hbhigh = -500.0;
+  ps.m_bIgnoreBulge = bIgnoreBulge;
+  if (ps.m_chains.size()<=0) {
+    MB_DPRINTLN("calcProt2ndry> no amino acid residues in %d/%s",
+                getUID(), getName().c_str());
+    return;
+  }
+  ps.doit();
+
+  if (nhgap>0)
+    ps.conHelices(nhgap, dhangl1, dhangl2);
+
+  ps.applyToMol();
 }
-#endif
-    
-  
+
