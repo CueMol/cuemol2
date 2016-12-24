@@ -1248,6 +1248,97 @@ namespace {
         return 3;
     }
 
+    Vector4D calcHelixDir_eigval(const Helix &hlx)
+    {
+		int j;
+      const int nst = hlx.nst;
+      const int nen = hlx.nen;
+      
+      Vector4D rc = Vector4D(0,0,0,0);
+      Vector4D r1, ev1, ev2;
+      for (j=nst; j<=nen; ++j) {
+        const Vector4D &pos = m_chains[j]->ca;
+        rc += pos;
+      }
+      rc = rc.scale(1.0/(nen-nst+1));
+      ev2 = (m_chains[nen]->ca-m_chains[nst]->ca).normalize();
+      
+      Matrix3D resid_tens;
+      Matrix3D evecs;
+      Vector4D evals;
+      
+      for (j=1; j<=3; ++j)
+        for (int k=1; k<=3; ++k)
+          resid_tens.aij(j,k) = 0.0;
+      
+      for (j=nst; j<=nen; ++j) {
+        const Vector4D &pos = m_chains[j]->ca;
+        r1 = pos-rc;
+        
+        resid_tens.aij(1,1) += r1.x() * r1.x();
+        resid_tens.aij(2,2) += r1.y() * r1.y();
+        resid_tens.aij(3,3) += r1.z() * r1.z();
+        resid_tens.aij(1,2) += r1.x() * r1.y();
+        resid_tens.aij(1,3) += r1.x() * r1.z();
+        resid_tens.aij(2,3) += r1.y() * r1.z();
+      }
+      resid_tens.aij(2,1) = resid_tens.aij(1,2);
+      resid_tens.aij(3,1) = resid_tens.aij(1,3);
+      resid_tens.aij(3,2) = resid_tens.aij(2,3);
+      
+      if (!resid_tens.diag(evecs, evals)) {
+        MB_DPRINTLN("Diag failed for helix:");
+        return Vector4D();
+      }
+      
+      int emin = find_emax(evals);
+      ev1.x() = evecs.aij(1,emin);
+      ev1.y() = evecs.aij(2,emin);
+      ev1.z() = evecs.aij(3,emin);
+      ev1.w() = 0.0;
+      
+      if (ev1.dot(ev2)<0)
+        ev1 = -ev1;
+
+      return ev1;
+    }
+  
+    Vector4D calcHelixDir_binorm(const Helix &hlx)
+    {
+		int j;
+      const int nst = hlx.nst;
+      const int nen = hlx.nen;
+      
+      Vector4D rc = Vector4D(0,0,0,0);
+      Vector4D r1, ev1, ev2;
+      int nsum = 0;
+      for (j=nst; j<=nen-2; ++j) {
+        const Vector4D &p1 = m_chains[j]->ca;
+        const Vector4D &p2 = m_chains[j+1]->ca;
+        const Vector4D &p3 = m_chains[j+2]->ca;
+
+        Vector4D v1 = p2 - p1;
+        Vector4D v2 = p3 - p2;
+
+        Vector4D bn = v1.cross(v2);
+        // normalization
+        double len = bn.length();
+        if (len>=F_EPS4) {
+          bn = bn.scale(1.0/len);
+          rc += bn;
+          nsum++;
+        }
+      }
+      ev1 = rc.scale(1.0/double(nsum));
+      ev2 = (m_chains[nen]->ca-m_chains[nst]->ca).normalize();
+      
+      
+      if (ev1.dot(ev2)<0)
+        ev1 = -ev1;
+
+      return ev1;
+    }
+
     void conHelices(int ngap, double dangl)
     {
       std::deque<Helix> helices;
@@ -1299,58 +1390,11 @@ namespace {
       // calc dir for each helix
       nhlx = helices.size();
       for (i=0; i<nhlx; ++i) {
-        const int nst = helices[i].nst;
-        const int nen = helices[i].nen;
-
-        Vector4D rc = Vector4D(0,0,0,0);
-        Vector4D r1, ev1, ev2;
-        for (j=nst; j<=nen; ++j) {
-          const Vector4D &pos = m_chains[j]->ca;
-          rc += pos;
-        }
-        rc = rc.scale(1.0/(nen-nst+1));
-        ev2 = (m_chains[nen]->ca-m_chains[nst]->ca).normalize();
-
-        Matrix3D resid_tens;
-        Matrix3D evecs;
-        Vector4D evals;
-        
-        for (j=1; j<=3; ++j)
-          for (int k=1; k<=3; ++k)
-            resid_tens.aij(j,k) = 0.0;
-        
-        for (j=nst; j<=nen; ++j) {
-          const Vector4D &pos = m_chains[j]->ca;
-          r1 = pos-rc;
-          
-          resid_tens.aij(1,1) += r1.x() * r1.x();
-          resid_tens.aij(2,2) += r1.y() * r1.y();
-          resid_tens.aij(3,3) += r1.z() * r1.z();
-          resid_tens.aij(1,2) += r1.x() * r1.y();
-          resid_tens.aij(1,3) += r1.x() * r1.z();
-          resid_tens.aij(2,3) += r1.y() * r1.z();
-        }
-        resid_tens.aij(2,1) = resid_tens.aij(1,2);
-        resid_tens.aij(3,1) = resid_tens.aij(1,3);
-        resid_tens.aij(3,2) = resid_tens.aij(2,3);
-
-        if (!resid_tens.diag(evecs, evals)) {
-          MB_DPRINTLN("Diag failed for helix:");
-          helices[i].dir = Vector4D();
-          continue;
-        }
-
-        int emin = find_emax(evals);
-        ev1.x() = evecs.aij(1,emin);
-        ev1.y() = evecs.aij(2,emin);
-        ev1.z() = evecs.aij(3,emin);
-        ev1.w() = 0.0;
-
-        if (ev1.dot(ev2)<0)
-          ev1 = -ev1;
-
+        //Vector4D ev1 = calcHelixDir_eigval(helices[i]);
+        Vector4D ev1 = calcHelixDir_binorm(helices[i]);
         helices[i].dir = ev1;
 
+        Vector4D rc = m_chains[helices[i].nen]->ca;
         Vector4D p1 = rc+ev1;
         MB_DPRINTLN("<!--HELIX %d - %d--><line pos1=\"(%f,%f,%f)\" pos2=\"(%f,%f,%f)\"/>",
                     helices[i].nst, helices[i].nen,
