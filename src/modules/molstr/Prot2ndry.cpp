@@ -1164,9 +1164,9 @@ namespace {
             secstr2 = secstr2 + "e";
         }
 
-        MB_DPRINTLN("%d Resid %s, turn4=%c, ss = %s %d",
-                    i, pres->getStrIndex().c_str(),
-                    with.turn[1], secstr2.c_str(), with.ssid);
+        //MB_DPRINTLN("%d Resid %s, turn4=%c, ss = %s %d",
+	//i, pres->getStrIndex().c_str(),
+	//with.turn[1], secstr2.c_str(), with.ssid);
         
         if (!secstr.isEmpty())
           pres->setPropStr("secondary", secstr);
@@ -1212,9 +1212,9 @@ namespace {
 	Backbone &with = *(m_chains[i]);
 	MolResiduePtr pres = with.pRes;
 
-        MB_DPRINTLN("%d Resid %s, ss = %s",
-                    i, pres->getStrIndex().c_str(),
-                    secstr2.c_str());
+        //MB_DPRINTLN("%d Resid %s, ss = %s",
+	//i, pres->getStrIndex().c_str(),
+	//secstr2.c_str());
 
         if (!secstr.isEmpty())
           pres->setPropStr("secondary", secstr);
@@ -1228,6 +1228,7 @@ namespace {
       calcBridge();
       calcHelices();
 
+      conHelices(10, 60.0, 90.0);
     }
 
     struct Helix {
@@ -1235,73 +1236,6 @@ namespace {
       Vector4D dir;
     };
     
-    static inline int find_emax(const Vector4D &evals)
-    {
-      if (evals.x()>=evals.y() &&
-          evals.x()>=evals.z())
-        return 1;
-      else if (evals.y()>=evals.x() &&
-               evals.y()>=evals.z())
-        return 2;
-      else
-        return 3;
-    }
-
-    Vector4D calcHelixDir_eigval(const Helix &hlx)
-    {
-		int j;
-      const int nst = hlx.nst;
-      const int nen = hlx.nen;
-      
-      Vector4D rc = Vector4D(0,0,0,0);
-      Vector4D r1, ev1, ev2;
-      for (j=nst; j<=nen; ++j) {
-        const Vector4D &pos = m_chains[j]->ca;
-        rc += pos;
-      }
-      rc = rc.scale(1.0/(nen-nst+1));
-      ev2 = (m_chains[nen]->ca-m_chains[nst]->ca).normalize();
-      
-      Matrix3D resid_tens;
-      Matrix3D evecs;
-      Vector4D evals;
-      
-      for (j=1; j<=3; ++j)
-        for (int k=1; k<=3; ++k)
-          resid_tens.aij(j,k) = 0.0;
-      
-      for (j=nst; j<=nen; ++j) {
-        const Vector4D &pos = m_chains[j]->ca;
-        r1 = pos-rc;
-        
-        resid_tens.aij(1,1) += r1.x() * r1.x();
-        resid_tens.aij(2,2) += r1.y() * r1.y();
-        resid_tens.aij(3,3) += r1.z() * r1.z();
-        resid_tens.aij(1,2) += r1.x() * r1.y();
-        resid_tens.aij(1,3) += r1.x() * r1.z();
-        resid_tens.aij(2,3) += r1.y() * r1.z();
-      }
-      resid_tens.aij(2,1) = resid_tens.aij(1,2);
-      resid_tens.aij(3,1) = resid_tens.aij(1,3);
-      resid_tens.aij(3,2) = resid_tens.aij(2,3);
-      
-      if (!resid_tens.diag(evecs, evals)) {
-        MB_DPRINTLN("Diag failed for helix:");
-        return Vector4D();
-      }
-      
-      int emin = find_emax(evals);
-      ev1.x() = evecs.aij(1,emin);
-      ev1.y() = evecs.aij(2,emin);
-      ev1.z() = evecs.aij(3,emin);
-      ev1.w() = 0.0;
-      
-      if (ev1.dot(ev2)<0)
-        ev1 = -ev1;
-
-      return ev1;
-    }
-  
     bool calcBinorm(int ind, Vector4D &res) const
     {
       if (ind-1<0)
@@ -1326,7 +1260,8 @@ namespace {
       return true;
     }
 
-    Vector4D calcHelixDir_binorm(const Helix &hlx)
+    Vector4D calcHelixDir_binorm(const Helix &hlx,
+				 double &dang_sum, double &dang_sqsum, int &ndang)
     {
       int j;
       const int nst = hlx.nst;
@@ -1336,25 +1271,37 @@ namespace {
       Vector4D r1, ev1, ev2;
       int nsum = 0;
       Vector4D bn;
+      bool bPrevBn = false;
+      Vector4D prev_bn;
       for (j=nst; j<=nen-2; ++j) {
         if (!calcBinorm(j+1, bn))
           continue;
         rc += bn;
         nsum++;
+
+	if (bPrevBn) {
+	  double dang = qlib::toDegree( prev_bn.angle(bn) );
+	  // dang_max = qlib::max(dang_max, dang);
+	  dang -= 50.0;
+	  dang_sum += dang;
+	  dang_sqsum += dang*dang;
+	  ++ndang;
+	}
+	
+	bPrevBn = true;
+	prev_bn = bn;
       }
 
       // ev1 is average of binorm vecs
       ev1 = rc.scale(1.0/double(nsum));
-
-      //ev2 = (m_chains[nen]->ca-m_chains[nst]->ca).normalize();
-      //if (ev1.dot(ev2)<0)
-      //ev1 = -ev1;
 
       return ev1;
     }
 
     void conHelices(int ngap, double dangl, double dangl2)
     {
+      double dang_tol = 0.0;
+
       std::deque<Helix> helices;
       int nhlx = 0;
       
@@ -1362,6 +1309,21 @@ namespace {
       const int nchains = m_chains.size();
 
       for (i=0; i<nchains; ++i) {
+	if (i>=1&&i+2<nchains) {
+	    Vector4D p1 = m_chains[i-1]->ca;
+	    Vector4D p2 = m_chains[i]->ca;
+	    Vector4D p3 = m_chains[i+1]->ca;
+	    Vector4D p4 = m_chains[i+2]->ca;
+	    double tor = qlib::toDegree( Vector4D::torsion(p1, p2, p3, p4) );
+	    MolResiduePtr pres = m_chains[i]->pRes;
+	    MB_DPRINTLN("PDihe>,%s,%s,%s,%f",
+			pres->getChainName().c_str(),
+			pres->getIndex().toString().c_str(),
+			m_chains[i]->ss.c_str(),
+			tor);
+	}
+
+
         Backbone &with = *(m_chains[i]);
         bool bHelix = false;
         
@@ -1403,9 +1365,12 @@ namespace {
 
       // calc dir for each helix
       nhlx = helices.size();
+      double dang_sqsum = 0.0;
+      double dang_sum = 0.0;
+      int ndang = 0;
       for (i=0; i<nhlx; ++i) {
-        //Vector4D ev1 = calcHelixDir_eigval(helices[i]);
-        Vector4D ev1 = calcHelixDir_binorm(helices[i]);
+        Vector4D ev1 = calcHelixDir_binorm(helices[i],
+					   dang_sum, dang_sqsum, ndang);
         helices[i].dir = ev1;
 
         Vector4D rc = m_chains[helices[i].nen]->ca;
@@ -1416,37 +1381,51 @@ namespace {
                     p1.x(), p1.y(), p1.z());
       }
 
-      Vector4D bn;
+      double dang_aver = dang_sum/double(ndang);
+      double dang_sd = sqrt( dang_sqsum/double(ndang) - dang_aver*dang_aver );
+      dang_aver += 50.0;
+      MB_DPRINTLN("P2ndr> Total Dang(ave) %f Dang(sd) %f", dang_aver, dang_sd);
+
       for (i=0; i<nhlx-1; ++i) {
         const int npen = helices[i].nen;
         const int nnst = helices[i+1].nst;
 
-        if (nnst-npen>ngap)
-          continue;
-
-        const double d = qlib::toDegree(helices[i].dir.angle(helices[i+1].dir));
-        if (d>=dangl)
-          continue;
+        //if (nnst-npen>ngap)
+	//continue;
+        //const double d = qlib::toDegree(helices[i].dir.angle(helices[i+1].dir));
+        //if (d>=dangl)
+	//continue;
 
         bool bOK = true;
+	bool bPrevBnOK = false;
+	Vector4D bn, prev_bn;
         for (j=npen; j<=nnst; ++j) {
+	  if (m_chains[j]->ss.equals("E")) {
+            bOK = false;
+            break;
+	  }
           if (!calcBinorm(j, bn)) {
             bOK = false;
             break;
           }
           
-          const double d1 = qlib::toDegree(bn.angle(helices[i].dir));
-          const double d2 = qlib::toDegree(bn.angle(helices[i+1].dir));
-          if (d1>=dangl2 || d2>=dangl2) {
-            bOK = false;
-            break;
-          }
+	  if (bPrevBnOK) {
+	    const double d1 = qlib::toDegree(bn.angle(prev_bn));
+	    //if (d1 >= dang_aver + dang_sd*dang_tol) {
+	    if (d1 >= dang_tol) {
+	      bOK = false;
+	      break;
+	    }
+	  }
+
+	  prev_bn = bn;
+	  bPrevBnOK = true;
         }
 
         if (!bOK)
           continue;
-        
-        MB_DPRINTLN("** HELIX %d - %d =(%f<%f)", i, i+1, d, dangl);
+	
+        MB_DPRINTLN("** HELIX %d - %d", i, i+1);
         const int nnen = helices[i+1].nen;
         for (j=npen+1; j<=nnen; ++j) {
           m_chains[j]->ss = m_chains[npen]->ss;

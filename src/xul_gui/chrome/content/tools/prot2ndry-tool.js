@@ -61,6 +61,10 @@ if (!("Prot2ndryTool" in cuemolui)) {
       //this.mHbMax = document.getElementById('hbmax');
       this.mIgnBlg = document.getElementById('ign_bulge');
 
+      this.mHlxGap = document.getElementById('helix_gap');
+      this.mHlxAngl1 = document.getElementById('helix_angl1');
+      this.mHlxAngl2 = document.getElementById('helix_angl2');
+      
       this.mTargMol.addSelChanged(function(aEvent) {
 	try { that.onTargMolChanged(aEvent);}
 	catch (e) { debug.exception(e); }
@@ -141,12 +145,18 @@ if (!("Prot2ndryTool" in cuemolui)) {
       if (tgtid=="radio_recalc") {
 	//this.mHbMax.disabled = false;
 	this.mIgnBlg.disabled = false;
+	this.mHlxGap.disabled = false;
+	this.mHlxAngl1.disabled = false;
+	this.mHlxAngl2.disabled = false;
 	this.mTargSel.disabled = true;
 	this.mSecTypeSel.disabled = true;
       }
       else if (tgtid=="radio_assign") {
 	//this.mHbMax.disabled = true;
 	this.mIgnBlg.disabled = true;
+	this.mHlxGap.disabled = true;
+	this.mHlxAngl1.disabled = true;
+	this.mHlxAngl2.disabled = true;
 	this.mTargSel.disabled = false;
 	this.mSecTypeSel.disabled = false;
       }
@@ -210,6 +220,9 @@ if (!("Prot2ndryTool" in cuemolui)) {
       //return false;
 
       let bIgnBlg = this.mIgnBlg.checked;
+      let ngap = 10;
+      let dh1 = 60.0;
+      let dh2 = 85.0;
 
       /////////////////////////////////////
 
@@ -219,7 +232,7 @@ if (!("Prot2ndryTool" in cuemolui)) {
       scene.startUndoTxn("Recalc protein secondary str");
 
       try {
-	mgr.calcProt2ndry(tgtmol, hbmax, bIgnBlg);
+	  mgr.calcProt2ndry2(tgtmol, bIgnBlg, ngap, dh1, dh2);
       }
       catch (e) {
 	dd("calcProt2ndry Error!!");

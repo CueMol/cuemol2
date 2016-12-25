@@ -43,7 +43,7 @@ runtime_class MolAnlManager
   //////////////////////////
   // protein secondary structure
 
-  void calcProt2ndry(object<MolCoord$> pmol, real hbmax, boolean ignb);
+  void calcProt2ndry2(object<MolCoord$> pmol, boolean ignb, integer nhgap, real dhangl1, real dhangl2);
 
   void setProt2ndry(object<MolCoord$> pmol, object<MolSelection$> pSel, integer nSecType);
 

@@ -83,7 +83,8 @@ namespace molanl {
                                  double r_min, double r_max, bool hbond,
                                  int nMax);
 
-    void calcProt2ndry(MolCoordPtr pMol, double hbmax, bool bignb);
+    void calcProt2ndry2(MolCoordPtr pMol, bool bignb, int nhgap,
+			double dhangl1, double dhangl2);
     
     void setProt2ndry(MolCoordPtr pMol, SelectionPtr pSel, int nSecType);
 
