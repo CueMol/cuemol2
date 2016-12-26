@@ -35,31 +35,12 @@
 
 	<checkbox id="ign_bulge" label="Ignore &#0946; bulge" checked="false"/>
 
-	<grid flex="1">
-	  <columns>
-	    <column flex="0"/>
-	    <column flex="1"/>
-	  </columns>
-	  <rows>
-	    <row align="center">
-	      <label value="Helix gap:" />
-	      <textbox id="helix_gap" type="number"
-		min="0" value="10" size="3" decimalplaces="0" increment="1"/>
-	    </row>
+	<hbox align="center">
+	  <checkbox id="helix_gapfill" label="Helix gap-fill angle (&#0176;):" checked="false"/>
+	  <textbox id="helix_angl1" type="number"
+	    min="0" max="180" value="120" size="3" decimalplaces="0" increment="5"/>
+	</hbox>
 
-	    <row align="center">
-	      <label value="Helix angle1:" />
-	      <textbox id="helix_angl1" type="number"
-		min="0" max="90" value="60" size="3" decimalplaces="0" increment="5"/>
-	    </row>
-
-	    <row align="center">
-	      <label value="Helix angle2:" />
-	      <textbox id="helix_angl2" type="number"
-		min="0" max="90" value="85" size="3" decimalplaces="0" increment="5"/>
-	    </row>
-	  </rows>
-	</grid>
 	<!--
 	<hbox align="center">
 	  <label value="Max hbond energy (cal/mol):"/>
