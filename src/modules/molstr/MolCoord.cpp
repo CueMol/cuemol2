@@ -541,3 +541,25 @@ void MolCoord::invalidateCrdArray()
 {
 }
 
+//static
+LString MolCoord::encodeModelInChain(const LString &chainname, int nModel)
+{
+  LString ret = LString::format("%02d_%s", nModel, chainname.c_str());
+  return ret;
+}
+
+//static
+bool MolCoord::decodeModelFromChain(const LString &orig,
+                                    LString &chain, int &nModel)
+{
+  int nlen = orig.length();
+  int seppos = orig.indexOf('_');
+
+  if (seppos<=0 || seppos>=nlen-1)
+    return false;
+  //cChain = (orig.c_str())[nlen-1];
+  chain = orig.substr(seppos+1);
+  LString num = orig.substr(0, seppos);
+  return num.toInt(&nModel);
+}
+

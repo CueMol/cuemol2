@@ -376,6 +376,10 @@ namespace molstr {
 
     static MolCoordPtr getMolByID(qlib::uid_t uid, qlib::no_throw_tag xx);
     static MolCoordPtr getMolByID(qlib::uid_t uid);
+
+    static LString encodeModelInChain(const LString &chainname, int nModel);
+    static bool decodeModelFromChain(const LString &orig, LString &chain, int &nModel);
+
   };
 
 }
