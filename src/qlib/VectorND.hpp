@@ -26,25 +26,31 @@ namespace qlib {
     /////////////////
     // constructors
 
-    /** default constructor */
+    /// default constructor
     VectorND()
     {
       zero();
     }
 
-    /** constructor without initialization */
+    /// constructor without initialization
     explicit
     VectorND(int, detail::no_init_tag)
     {
     }
-
-    /** copy constructor */
+    
+    /// copy constructor
     VectorND(const VectorND &arg)
     {
       for (int i=0; i<_N_ELEM; ++i)
 	m_value[i] = arg.m_value[i];
     }
 
+    /// construction from ptr
+    VectorND(const _ValueType *parg)
+    {
+      for (int i=0; i<_N_ELEM; ++i)
+        m_value[i] = parg[i];
+    }
 
   public:
 
