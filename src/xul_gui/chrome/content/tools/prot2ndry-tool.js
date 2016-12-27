@@ -61,10 +61,13 @@ if (!("Prot2ndryTool" in cuemolui)) {
       //this.mHbMax = document.getElementById('hbmax');
       this.mIgnBlg = document.getElementById('ign_bulge');
 
-      this.mHlxGap = document.getElementById('helix_gap');
+      this.mHlxGap = document.getElementById('helix_gapfill');
       this.mHlxAngl1 = document.getElementById('helix_angl1');
-      this.mHlxAngl2 = document.getElementById('helix_angl2');
       
+      this.mHlxGap.addEventListener("command",
+				    function (e) { that.onHlxGapChg(); },
+				    false);
+
       this.mTargMol.addSelChanged(function(aEvent) {
 	try { that.onTargMolChanged(aEvent);}
 	catch (e) { debug.exception(e); }
@@ -129,6 +132,7 @@ if (!("Prot2ndryTool" in cuemolui)) {
 	relem.selectedItem = this.mRadRecalc;
       else
 	relem.selectedItem = this.mRadAsgn;
+
       this.onRadSelChg(mode);
 
       // checkbox (ignore-bulge)
@@ -146,8 +150,8 @@ if (!("Prot2ndryTool" in cuemolui)) {
 	//this.mHbMax.disabled = false;
 	this.mIgnBlg.disabled = false;
 	this.mHlxGap.disabled = false;
-	this.mHlxAngl1.disabled = false;
-	this.mHlxAngl2.disabled = false;
+	//this.mHlxAngl1.disabled = false;
+	this.onHlxGapChg();
 	this.mTargSel.disabled = true;
 	this.mSecTypeSel.disabled = true;
       }
@@ -156,12 +160,22 @@ if (!("Prot2ndryTool" in cuemolui)) {
 	this.mIgnBlg.disabled = true;
 	this.mHlxGap.disabled = true;
 	this.mHlxAngl1.disabled = true;
-	this.mHlxAngl2.disabled = true;
 	this.mTargSel.disabled = false;
 	this.mSecTypeSel.disabled = false;
       }
+      
     };
 
+    klass.onHlxGapChg = function ()
+    {
+      if (this.mHlxGap.checked) {
+	this.mHlxAngl1.disabled = false;
+      }
+      else {
+	this.mHlxAngl1.disabled = true;
+      }
+    };
+    
     klass.onTargMolChanged = function ()
     {
       var mol = this.mTargMol.getSelectedObj();
@@ -220,9 +234,13 @@ if (!("Prot2ndryTool" in cuemolui)) {
       //return false;
 
       let bIgnBlg = this.mIgnBlg.checked;
-      let ngap = 10;
-      let dh1 = 60.0;
-      let dh2 = 85.0;
+
+      let dh1 = 0.0;
+      if (this.mHlxGap.checked)
+	dh1 = parseFloat(this.mHlxAngl1.value);
+
+      if (isNaN(dh1))
+	return false;
 
       /////////////////////////////////////
 
@@ -232,7 +250,7 @@ if (!("Prot2ndryTool" in cuemolui)) {
       scene.startUndoTxn("Recalc protein secondary str");
 
       try {
-	  mgr.calcProt2ndry2(tgtmol, bIgnBlg, ngap, dh1, dh2);
+	mgr.calcProt2ndry2(tgtmol, bIgnBlg, dh1);
       }
       catch (e) {
 	dd("calcProt2ndry Error!!");

@@ -284,8 +284,7 @@ namespace molstr {
     ///
     void calcProt2ndry(double hb_high = -500.0, bool bIgnoreBulge=false);
 
-    void calcProt2ndry2(bool bIgnoreBulge=false, int nhgap=0,
-                        double dhangl1=60.0, double dhangl2=85.0);
+    void calcProt2ndry2(bool bIgnoreBulge=false, double dhangl1=60.0);
     
     void calcBasePair(double cutoff, double tilt);
 

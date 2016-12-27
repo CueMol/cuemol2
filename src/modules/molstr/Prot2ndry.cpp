@@ -1227,8 +1227,7 @@ namespace {
       calcHbon();
       calcBridge();
       calcHelices();
-
-      conHelices(10, 60.0, 90.0);
+      //conHelices(10, 60.0, 90.0);
     }
 
     struct Helix {
@@ -1298,7 +1297,8 @@ namespace {
       return ev1;
     }
 
-    void conHelices(int ngap, double dangl, double dangl2)
+    //void conHelices(int ngap, double dangl, double dangl2)
+    void conHelices(double dangl)
     {
       double dang_tol = 0.0;
 
@@ -1309,6 +1309,7 @@ namespace {
       const int nchains = m_chains.size();
 
       for (i=0; i<nchains; ++i) {
+        /*
 	if (i>=1&&i+2<nchains) {
 	    Vector4D p1 = m_chains[i-1]->ca;
 	    Vector4D p2 = m_chains[i]->ca;
@@ -1322,7 +1323,7 @@ namespace {
 			m_chains[i]->ss.c_str(),
 			tor);
 	}
-
+         */
 
         Backbone &with = *(m_chains[i]);
         bool bHelix = false;
@@ -1397,29 +1398,27 @@ namespace {
 	//continue;
 
         bool bOK = true;
-	bool bPrevBnOK = false;
 	Vector4D bn, prev_bn;
-        for (j=npen; j<=nnst; ++j) {
-	  if (m_chains[j]->ss.equals("E")) {
+        for (j=npen-1; j<=nnst+1; ++j) {
+	  if (j>=0 && j<nchains &&
+              m_chains[j]->ss.equals("E")) {
             bOK = false;
             break;
-	  }
-          if (!calcBinorm(j, bn)) {
-            bOK = false;
-            break;
-          }
-          
-	  if (bPrevBnOK) {
-	    const double d1 = qlib::toDegree(bn.angle(prev_bn));
-	    //if (d1 >= dang_aver + dang_sd*dang_tol) {
-	    if (d1 >= dang_tol) {
-	      bOK = false;
-	      break;
-	    }
 	  }
 
-	  prev_bn = bn;
-	  bPrevBnOK = true;
+          if (j-1>=0&&j+2<nchains) {
+            Vector4D p1 = m_chains[j-1]->ca;
+	    Vector4D p2 = m_chains[j]->ca;
+	    Vector4D p3 = m_chains[j+1]->ca;
+            Vector4D p4 = m_chains[j+2]->ca;
+            double tor = qlib::toDegree( Vector4D::torsion(p1, p2, p3, p4) );
+            if (tor<0)
+              tor += 360.0;
+            if (tor>dangl) {
+              bOK = false;
+              break;
+            }
+          }
         }
 
         if (!bOK)
@@ -1470,11 +1469,10 @@ void MolCoord::calcProt2ndry(double hb_high /*= -500.0*/, bool bIgnoreBulge /*=f
   }
 #endif
 
-  LOG_DPRINTLN("Prot2ndry calculation done with Hb(high)=%f", hb_high);
+  LOG_DPRINTLN("Prot2ndry> calculation done with Hb(high)=%f", hb_high);
 }
 
-void MolCoord::calcProt2ndry2(bool bIgnoreBulge /*=false*/,
-                              int nhgap/*=0*/, double dhangl1/*=60.0*/, double dhangl2/*=85.0*/)
+void MolCoord::calcProt2ndry2(bool bIgnoreBulge /*=false*/, double dhangl1/*=60.0*/)
 {
   MolCoordPtr pMol(this);
 
@@ -1483,14 +1481,16 @@ void MolCoord::calcProt2ndry2(bool bIgnoreBulge /*=false*/,
   ps.m_hbhigh = -500.0;
   ps.m_bIgnoreBulge = bIgnoreBulge;
   if (ps.m_chains.size()<=0) {
-    MB_DPRINTLN("calcProt2ndry> no amino acid residues in %d/%s",
+    LOG_DPRINTLN("Prot2ndry> no amino acid residues in %d/%s",
                 getUID(), getName().c_str());
     return;
   }
   ps.doit();
 
-  if (nhgap>0)
-    ps.conHelices(nhgap, dhangl1, dhangl2);
+  if (dhangl1>0.01) {
+    LOG_DPRINTLN("Prot2ndry> Helix gap-filling by criterion: Ca-Ca torsion angle <= %f degree", dhangl1);
+    ps.conHelices(dhangl1);
+  }
 
   ps.applyToMol();
 }
