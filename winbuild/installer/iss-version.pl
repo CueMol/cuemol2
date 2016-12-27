@@ -24,7 +24,7 @@ print "xuldeploy_dir=$xuldeploy_dir\n";
 die unless (-d $xuldeploy_dir);
 
 my $platform="win32";
-if ($xuldeploy_dir=~/64/) {
+if ($xuldeploy_dir=~/Release64/) {
   $platform="x64";
 }
 
