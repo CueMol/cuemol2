@@ -259,7 +259,7 @@ void MolCoord::fireTopologyChanged()
 
 ////////////////////////////////////////////////
 
-void MolCoord::applyTopology(bool bAutoGen /*= true*/)
+void MolCoord::applyTopology(bool bAutoBuild/*=true*/)
 {
   MolCoordPtr pmol(this);
   TopparManager *pTM = TopparManager::getInstance();

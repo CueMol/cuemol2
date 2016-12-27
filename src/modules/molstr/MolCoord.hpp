@@ -265,7 +265,7 @@ namespace molstr {
     /////////////////////////////////////////////////////
     // other operations
 
-    void applyTopology(bool bAutoGen = true);
+    void applyTopology(bool bAutoBuild = true);
 
     ///
     ///  Apply affine transformation to the selected part by pSel
