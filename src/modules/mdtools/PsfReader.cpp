@@ -23,9 +23,9 @@ PsfReader::PsfReader()
 {
 }
 
-/** destructor */
 PsfReader::~PsfReader()
 {
+  MB_DPRINTLN("PsfReader destructed.");
 }
 
 ///////////////////////////////////////////
@@ -34,6 +34,8 @@ void PsfReader::attach(MolCoordPtr pMol)
 {
   m_pMol = pMol;
 }
+
+///////////////////////////////////////////
 
 inline bool isNearMass(double x, double y)
 {

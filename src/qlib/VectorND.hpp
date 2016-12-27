@@ -37,7 +37,7 @@ namespace qlib {
     VectorND(int, detail::no_init_tag)
     {
     }
-    
+
     /// copy constructor
     VectorND(const VectorND &arg)
     {
