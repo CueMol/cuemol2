@@ -39,7 +39,6 @@ void PsfReader::attach(MolCoordPtr pMol)
 }
 */
 
-
 const char *PsfReader::getName() const
 {
   return "psf";
