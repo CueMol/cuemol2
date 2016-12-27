@@ -266,7 +266,7 @@ void MolCoord::applyTopology(bool bAutoBuild/*=true*/)
   TopoDB *pTopoDB = pTM->getTopoDB();
   if (pTopoDB!=NULL) {
     TopoBuilder tb(pTopoDB);
-    tb.m_bAutoGen = bAutoGen;
+	tb.m_bAutoGen = bAutoBuild;
     tb.attachMol(pmol);
     tb.applyTopology();
   }
