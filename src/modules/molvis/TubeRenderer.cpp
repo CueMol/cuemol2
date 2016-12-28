@@ -48,6 +48,11 @@ const char *TubeRenderer::getTypeName() const
 
 /////////////////////////////////////////////////////
 
+void TubeRenderer::preRender(DisplayContext *pdc)
+{
+  pdc->setLighting(true);
+}
+
 void TubeRenderer::beginRend(DisplayContext *pdl)
 {
   if (!m_pts->isValid())
@@ -142,10 +147,12 @@ void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
     pCoeff->interpNormal(par, &bnorm);
     pCoeff->interpAxis(par, &f1, &vpt, &vnorm);
 
-    //e11 = vnorm.normalize();
-    //e12 = -e11.cross(vpt.normalize());
-    e12 = (bnorm - f1);
-    e11 = ( e12.cross(vpt) ).normalize();
+    double vlen = vpt.length();
+    Vector4D e10 = vpt.divide(vlen);
+    Vector4D bnf = bnorm - f1;
+    Vector4D v12 = bnf-e10.scale(e10.dot(bnf));
+    e12 = v12.normalize();
+    e11 = e12.cross(e10);
 
     // e11/e12 scaling
     e11 = e11.scale(escl.x());

@@ -9,23 +9,26 @@
 #include "qsys.hpp"
 
 #include <qlib/LScrObjects.hpp>
+#include <qlib/MapTable.hpp>
 
 namespace qsys {
 
-using qlib::LString;
+  using qlib::LString;
 
-class QSYS_API ObjExtData :
-  public qlib::LSimpleCopyScrObject
-{
-  // MC_SCRIPTABLE;
-  // MC_CLONEABLE;
+  class QSYS_API ObjExtData :
+    public qlib::LSimpleCopyScrObject
+  {
+  public:
+    ObjExtData();
+    ObjExtData(const ObjExtData &arg);
+    virtual ~ObjExtData();
 
-public:
-  ObjExtData();
-  ObjExtData(const ObjExtData &arg);
-  virtual ~ObjExtData();
+    typedef qlib::MapTable<LString> DataTab;
 
-};
+    virtual void writeQdfData(DataTab &out);
+
+    virtual void readQdfData(const DataTab &in);
+  };
 
 }
 

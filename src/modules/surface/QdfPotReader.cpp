@@ -63,8 +63,9 @@ bool QdfPotReader::read(qlib::InStream &ins)
 
   start(ins);
 
-  if (!getFileType().equals("POT1")) {
-    MB_THROW(qlib::FileFormatException, "invalid file format signature");
+  LString sft = getFileType();
+  if (!sft.equals("POT1")) {
+    MB_THROW(qlib::FileFormatException, "QdfPot invalid file format signature: "+sft);
     return false;
   }
 

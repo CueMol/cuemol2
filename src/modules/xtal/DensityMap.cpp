@@ -171,7 +171,7 @@ void DensityMap::setXtalParams(double a, double b, double c,
   m_xtalInfo.setSG(nsg);
 
   CrystalInfo *pci = new CrystalInfo(a,b,c,alpha,beta,gamma,nsg);
-  this->setExtData("symminfo", qsys::ObjExtDataPtr(pci));
+  this->setExtData(qsys::ObjExtDataPtr(pci));
 }
 
 Vector4D DensityMap::getCenter() const
@@ -386,7 +386,7 @@ double DensityMap::getSecGridSize() const
 
 //////////
 
-LString DensityMap::getDataChunkReaderName() const
+LString DensityMap::getDataChunkReaderName(int nQdfVer) const
 {
   return LString("qdfmap");
 }
@@ -394,6 +394,7 @@ LString DensityMap::getDataChunkReaderName() const
 void DensityMap::writeDataChunkTo(qlib::LDom2OutStream &oos) const
 {
   QdfDenMapWriter writer;
+  writer.setVersion(oos.getQdfVer());
   writer.setEncType(oos.getQdfEncType());
 
   DensityMap *pthis = const_cast<DensityMap *>(this);

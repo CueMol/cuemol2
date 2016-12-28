@@ -93,8 +93,9 @@ bool PDBCryst1Handler::read(const LString &record, MolCoord *pMol)
   MB_DPRINTLN("PDBFileReader> sg=%s", cname.c_str());
 
 
-  CrystalInfo *pci = MB_NEW CrystalInfo(a,b,c,alpha,beta,gamma,sgid);
-  pMol->setExtData("symminfo", qsys::ObjExtDataPtr(pci));
+  CrystalInfoPtr pci = pMol->getCreateExtData("CrystalInfo");
+  pci->setCellDimension(a,b,c,alpha,beta,gamma);
+  pci->setSG(sgid);
 
   // fire the changed event
   // CrystalInfo::fireChangedEvent(pMol->getName());
@@ -103,7 +104,7 @@ bool PDBCryst1Handler::read(const LString &record, MolCoord *pMol)
 
 bool PDBCryst1Handler::write(LString &record, MolCoord *pMol)
 {
-  qlib::LScrSp<CrystalInfo> pci = qlib::LScrSp<CrystalInfo>(pMol->getExtData("symminfo"));
+  qlib::LScrSp<CrystalInfo> pci = qlib::LScrSp<CrystalInfo>(pMol->getExtData("CrystalInfo"));
   //if (pci==NULL)
 
   if (pci.isnull())

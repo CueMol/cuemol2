@@ -1,0 +1,36 @@
+// -*-Mode: C++;-*-
+//
+// MMCIF mol reader scripting interface
+//
+
+#ifndef MMCIF_MOL_READER_QIF_INCLUDED
+#define MMCIF_MOL_READER_QIF_INCLUDED
+
+#include <qsys/ObjReader.qif>
+
+runtime_class MmcifMolReader extends ObjReader
+{
+  client_hdr "MmcifMolReader.hpp";
+  client_name importers::MmcifMolReader;
+
+  scriptable;
+  smartptr;
+
+  property boolean loadmodel => m_bLoadMultiModel;
+  default loadmodel = false;
+
+  property boolean loadanisou => m_bLoadAnisoU;
+  default loadanisou = true;
+
+  property boolean loadaltconf => m_bLoadAltConf;
+  default loadaltconf = true;
+
+  property boolean loadsecstr => m_bLoadSecstr;
+  default loadsecstr = false;
+
+  property boolean autoTopoGen => m_bAutoTopoGen;
+  default autoTopoGen = true;
+};
+
+#endif
+

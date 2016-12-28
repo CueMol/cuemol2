@@ -262,13 +262,20 @@ namespace qsys {
     ////////////////////////////////////////////////////////////
     // Extension data management
 
-    int getExtDataSize() const;
+    //int getExtDataSize() const;
+    LString getExtDataNames() const;
 
+    /// Get or create extdata. Create new extdata if not present
+    ObjExtDataPtr getCreateExtData(const LString &name);
+
+    /// Get extdata. returns null obj if not present.
     ObjExtDataPtr getExtData(const LString &name) const;
 
     void removeExtData(const LString &name);
 
-    void setExtData(const LString &name, ObjExtDataPtr p);
+    void setExtData(ObjExtDataPtr p);
+
+    
 
     ////////////////////////////////////////////////////////////
     // Event related operations
@@ -301,7 +308,7 @@ namespace qsys {
 
     virtual void forceEmbed();
 
-    virtual void setDataChunkName(const LString &name, LDom2Node *pNode);
+    virtual void setDataChunkName(const LString &name, LDom2Node *pNode, int nQdfVer);
 
   private:
     void registerRendererImpl(RendererPtr);

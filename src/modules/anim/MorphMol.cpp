@@ -84,14 +84,20 @@ bool FrameData::isDataSrcWritable() const
   return true;
 }
 
-LString FrameData::getDataChunkReaderName() const
+LString FrameData::getDataChunkReaderName(int nQdfVer) const
 {
-  return LString("qdfpdb");
+  // return LString("qdfpdb");
+  
+  if (m_pMol.isnull())
+    // ERROR??
+    return LString("qdfpdb");
+
+  return m_pMol->getDataChunkReaderName(nQdfVer);
 }
 
-void FrameData::setDataChunkName(const LString &name, qlib::LDom2Node *pNode)
+void FrameData::setDataChunkName(const LString &name, qlib::LDom2Node *pNode, int nQdfVer)
 {
-  LString src_type = getDataChunkReaderName();
+  LString src_type = getDataChunkReaderName(nQdfVer);
 
   // set props
   m_src = name;
@@ -160,8 +166,8 @@ void MorphMol::readFromStream(qlib::InStream &ins)
   MolArrayMap thisset;
   thisset.setup(pthis);
   m_nAtoms = thisset.size();
-  // m_id2aid.resize(m_nAtoms);
-  // thisset.convertID(m_id2aid);
+  //m_id2aid.resize(m_nAtoms);
+  //thisset.convertID(m_id2aid);
 
   int nfrms = m_frames.size();
   for (int i=0; i<nfrms; ++i) {
@@ -176,7 +182,6 @@ void MorphMol::readFromStream(qlib::InStream &ins)
   }
 
 }
-
 
 /// setup frames data
 void MorphMol::setupData()

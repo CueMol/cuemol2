@@ -70,6 +70,8 @@ namespace molvis {
 
     virtual const char *getTypeName() const;
 
+    void preRender(DisplayContext *pdc);
+
     //////////////////////////////////////////////////////
     // MainChainRenderer interface
 

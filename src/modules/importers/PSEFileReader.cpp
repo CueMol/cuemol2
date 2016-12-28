@@ -270,6 +270,7 @@ void PSEFileReader::procNames(LVarList *pNames)
       if (extra_int == ObjectMolecule) {
         MolCoordPtr pMol(new MolCoord);
         pMol->setName(name);
+        pMol->setDefaultPropFlag("name", false);
         parseObjectMolecule(pData, pMol);
         m_pClient->addObject(pMol);
         pPrevMol = pMol;
@@ -289,6 +290,7 @@ void PSEFileReader::procNames(LVarList *pNames)
         if (pMol.isnull()) {
           pMol = MolCoordPtr(new MolCoord);
           pMol->setName("dummy");
+          pMol->setDefaultPropFlag("name", false);
           m_pClient->addObject(pMol);
         }
         
@@ -367,6 +369,7 @@ namespace {
     pmso->createSESFromMol(pMol, sel, 1, 1.4);
     LString sfname = pMol->getName() + "_surf";
     pmso->setName(sfname);
+    pmso->setDefaultPropFlag("name", false);
 
     qsys::RendererPtr pRend = pmso->createRenderer("molsurf");
     surface::MolSurfRenderer *pMSRend = static_cast<surface::MolSurfRenderer *>(pRend.get());
@@ -460,7 +463,10 @@ void PSEFileReader::parseObjectMolecule(LVarList *pData, MolCoordPtr pMol)
     LString sresi = pAtmDat->getString(AT_RESI);
     ResidIndex resi = ResidIndex::fromString(sresi);
     pAtom->setResIndex(resi);
-    pAtom->setChainName(pAtmDat->getString(AT_CHAIN));
+    LString chain = pAtmDat->getString(AT_CHAIN);
+    if (chain.isEmpty())
+      chain = "_";
+    pAtom->setChainName(chain);
     pAtom->setResName(pAtmDat->getString(AT_RESN));
 
     pAtom->setName(pAtmDat->getString(AT_NAME));

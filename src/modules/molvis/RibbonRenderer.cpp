@@ -19,37 +19,37 @@ using gfx::ColorPtr;
 /////////////////////////////////////////////////////
 
 namespace molvis {
-// Specialized evaluator for ribbon smoothness values
-class RibbonSmoothEval : public RealNumEvaluator
-{
-public:
-  double m_helix;
-  double m_sheet;
-  double m_coil;
+  // Specialized evaluator for ribbon smoothness values
+  class RibbonSmoothEval : public RealNumEvaluator
+  {
+  public:
+    double m_helix;
+    double m_sheet;
+    double m_coil;
 
-  RibbonSmoothEval() : m_helix(0.0), m_sheet(0.5), m_coil(0.0) {}
-  virtual ~RibbonSmoothEval() {}
+    RibbonSmoothEval() : m_helix(0.0), m_sheet(0.5), m_coil(0.0) {}
+    virtual ~RibbonSmoothEval() {}
 
-  virtual bool getAtomValue(MolAtom *pAtom, double &value) {
-    // not used
-    return false;
-  }
+    virtual bool getAtomValue(MolAtom *pAtom, double &value) {
+      // not used
+      return false;
+    }
 
-  virtual bool getResidValue(MolResidue *pRes, double &value) {
-    if (pRes==NULL) return false;
-    LString sec("coil");
-    pRes->getPropStr("secondary", sec);
-    if (sec.equals("helix"))
-      value = m_helix;
-    else if (sec.equals("sheet"))
-      value = m_sheet;
-    else
-      value = m_coil;
+    virtual bool getResidValue(MolResidue *pRes, double &value) {
+      if (pRes==NULL) return false;
+      LString sec("coil");
+      pRes->getPropStr("secondary", sec);
+      if (sec.equals("helix"))
+        value = m_helix;
+      else if (sec.equals("sheet"))
+        value = m_sheet;
+      else
+        value = m_coil;
 
-    return true;
-  }
-  
-};
+      return true;
+    }
+
+  };
 }
 
 /////////////////////////////////////////////////////
@@ -95,6 +95,11 @@ const char *RibbonRenderer::getTypeName() const
 }
 
 /////////////////////////////////////////////////////
+
+void RibbonRenderer::preRender(DisplayContext *pdc)
+{
+  pdc->setLighting(true);
+}
 
 void RibbonRenderer::beginRend(DisplayContext *pdl)
 {

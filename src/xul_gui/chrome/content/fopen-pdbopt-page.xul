@@ -17,6 +17,7 @@
 	<checkbox id="no_load_altconf" label="Ignore alternate conformation"/>
 	<checkbox id="load_segid" label="Load SEGID as chain name"/>
 	<checkbox id="calc_2ndry" label="Calculate protein secondary structure"/>
+	<checkbox id="topo_autogen" label="Auto-generate non-standard topology"/>
       </vbox>
     </tabpanel>
   </overlaytarget>
@@ -31,6 +32,7 @@ function onInit() {
   let rdr = dlgdata.target[0].reader;
 
   document.getElementById('calc_2ndry').checked = (rdr.build2ndry == true);
+  document.getElementById('topo_autogen').checked = (rdr.autoTopoGen == true);
 
   // MODEL record
   document.getElementById('no_load_multimodel').checked = (rdr.loadmodel == false);
@@ -62,6 +64,7 @@ if (document.getElementById("pdb_options_tabpanel")) {
   try {
     // secondary structure
     setProp(rdr, "build2ndry", document.getElementById('calc_2ndry').checked);
+    setProp(rdr, "autoTopoGen", document.getElementById('topo_autogen').checked);
 
     // MODEL record
     setProp(rdr, "loadmodel", !document.getElementById('no_load_multimodel').checked);

@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+
+<dialog
+  id     = "LXSOptDlg"
+  windowtype="CueMol2:LXSOptDlg"
+  title  = "LuxRender options"
+  xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  onload="window.gDlg.onLoad()"
+  ondialogaccept="window.gDlg.onAccept()"
+  buttons="accept,cancel">
+
+  <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/exportlxs-opt-dlg.js"/>
+
+  <groupbox>
+    <caption label="Image size"/>
+    <grid flex="1">
+      <columns>
+	<column/>
+	<column flex="1"/>
+	<column flex="1"/>
+      </columns>
+
+      <rows>
+	<row align="center">
+	  <label value="Width:" />
+	  <textbox size="3" type="number" decimalplaces="0" id="text_width" onchange="gDlg.validateSizeText(event)"/>
+	  <label id="text_wunit" value="px" />
+	</row>
+
+	<row align="center">
+	  <label value="Height:" />
+	  <textbox size="3" type="number" decimalplaces="0" id="text_height" onchange="gDlg.validateSizeText(event)"/>
+	  <label id="text_hunit" value="px" />
+	</row>
+
+      </rows>
+    </grid>
+    <checkbox id="chk_retainasp" label="Retain aspect ratio" flex="1" onchange="gDlg.validateReasp()"/>
+  </groupbox>
+
+  <grid flex="1">
+    <columns>
+      <column/>
+      <column flex="1"/>
+    </columns>
+
+    <rows>
+      <row align="center">
+	<label value="Background:" />
+	<menulist id="bg_mode">
+	  <menupopup>
+	    <menuitem label="transparent" value="transp"/>
+	    <menuitem label="wall" value="wall" />
+	    <menuitem label="box" value="box"/>
+	  </menupopup>
+	</menulist>
+      </row>
+
+      <row align="center">
+	<label value="HaltSPP:" />
+	<textbox size="3" type="number" decimalplaces="0" id="halt_spp"/>
+      </row>
+    </rows>
+  </grid>
+  
+</dialog>
+

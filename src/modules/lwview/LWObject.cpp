@@ -59,7 +59,7 @@ void LWObject::buildHitData()
 
 //////////
 
-LString LWObject::getDataChunkReaderName() const
+LString LWObject::getDataChunkReaderName(int nQdfVer) const
 {
   return LString("qdflwobj");
 }
@@ -68,6 +68,7 @@ void LWObject::writeDataChunkTo(qlib::LDom2OutStream &oos) const
 {
 #ifndef QM_BUILD_LW
   QdfLWObjWriter writer;
+  writer.setVersion(oos.getQdfVer());
   writer.setEncType(oos.getQdfEncType());
 
   LWObject *pthis = const_cast<LWObject *>(this);

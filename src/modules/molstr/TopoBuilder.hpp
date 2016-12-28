@@ -16,11 +16,11 @@ namespace molstr {
   class TopoDB;
   class ResiToppar;
 
-  /**
-     Topology builder class.
-     We only handles the bond topology here,
-     because other information isn't required for the presentation purpose.
-  */
+  /// 
+  /// Topology builder class.
+  /// We only handles the bond topology here,
+  /// because other information isn't required for the presentation purpose.
+  ///
   class TopoBuilder
   {
   private:
@@ -29,6 +29,17 @@ namespace molstr {
     MolCoordPtr m_pMol;
 
     double m_distmat[4][4];
+
+  public:
+    static const int AUTOGEN_GLOBAL = 0;
+    static const int AUTOGEN_SCENE = 1;
+    static const int AUTOGEN_OBJECT = 2;
+    static const int AUTOGEN_NONE = 3;
+
+    void setAutogenMode(int nmode) { m_nAutogenMode = nmode; }
+
+  private:
+    int m_nAutogenMode;
 
   public:
     TopoBuilder(TopoDB *pdic);
@@ -73,7 +84,7 @@ namespace molstr {
        Auto-generate topology data for unknown residue
     */
     // void autogen(MolResidue *pRes);
-    void autogen(MolResiduePtr pRes, ResiToppar *pTop);
+    void autogen(MolResiduePtr pRes, ResiToppar *pTop, qlib::uid_t uid = qlib::invalid_uid);
 
     bool chkBondDist(MolAtomPtr pAtom, MolAtomPtr pAtom2);
 

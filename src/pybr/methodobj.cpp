@@ -218,6 +218,11 @@ static PyObject *meth_call(PyObject *func, PyObject *arg, PyObject *kw)
       LString::format("Exception occured in native method %s: %s",
 		      name, e.getMsg().c_str());
   }
+  catch (std::exception &e) {
+    errmsg = 
+      LString::format("Std::exception occured in native method %s: %s",
+		      name, e.what());
+  }
   catch (...) {
     errmsg = 
       LString::format("Unknown Exception occured in native method %s",

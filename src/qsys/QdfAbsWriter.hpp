@@ -16,6 +16,7 @@
 
 namespace qlib {
   class BinOutStream;
+  // class LDom2OutStream;
 }
 
 namespace qsys {
@@ -25,6 +26,19 @@ namespace qsys {
   class QSYS_API QdfAbsWriter : public qsys::ObjWriter, public QdfDataType
   {
 
+  private:
+
+    QdfOutStream *m_pOut;
+
+    /// QDF version number (in integer)
+    int m_nVersion;
+
+    /// Encoding type string (2-char, "00", "11", etc)
+    LString m_encStr;
+
+    // /// File type string (4-char)
+    // LString m_strFileType;
+
   public:
     QdfAbsWriter();
     virtual ~QdfAbsWriter();
@@ -32,16 +46,13 @@ namespace qsys {
     /////////
     // QDF common interface
 
-    /// Set 2-char file ID string
-    void setFileType(const LString &type)
-    {
-      m_strFileType = type;
-    }
+    void setVersion(int n) { m_nVersion = n; }
 
     /// set 2-char encoding ID string
     void setEncType(const LString &encstr)
     {
       m_encStr = encstr;
+      // m_pOut->setEncType(encstr);
     }
 
     /// get QDF output stream
@@ -92,16 +103,6 @@ namespace qsys {
     void setRecValFloat32(const LString &name, qfloat32 value) {
       m_pOut->writeFloat32(name, value);
     }
-
-  private:
-
-    QdfOutStream *m_pOut;
-
-    /// Encoding type string (2-char)
-    LString m_encStr;
-
-    /// File type string (4-char)
-    LString m_strFileType;
 
   };
 

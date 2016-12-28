@@ -85,7 +85,7 @@ symm.updateWidget = function ()
     return;
   }
   
-  let xi = obj.getExtData("symminfo");
+  let xi = obj.getExtData("CrystalInfo");
   //dd("symmPanel symminfo: "+xi);
   if (!xi) {
     this.setDisabled(true);
@@ -315,7 +315,7 @@ symm.changeSymm = function ()
     return;
   }
 
-  var xi = obj.getExtData("symminfo");
+  var xi = obj.getExtData("CrystalInfo");
   if (!xi) {
     var res = util.confirm(window, "Create symminfo?");
     if (!res)

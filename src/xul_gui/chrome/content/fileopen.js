@@ -4,6 +4,8 @@
 
 Qm2Main.prototype.makeFilter = function(fp, nCatID)
 {
+  const pref = require("preferences-service");
+
   let candidates = null;
   if (arguments.length==3)
     candidates = arguments[2];
@@ -19,12 +21,15 @@ Qm2Main.prototype.makeFilter = function(fp, nCatID)
     if (candidates &&
         !candidates.some(function (e) {return e==elem.name;}))
       continue;
-    
-    // skip QDF format in the obj-reader mode (cat==0)
-    if (nCatID==0 && elem.name.indexOf("qdf")==0
-	&& elem.name!="qdfmol") {
-      dd("Skip the individual QDF format ("+elem.name+")");
-      continue;
+
+    if (!pref.has("cuemol2.ui.filedlg.show_qdf_readers")) {
+      // skip QDF format in the obj-reader mode (cat==0)
+      if (nCatID==0 && elem.name.indexOf("qdf")==0
+	  ) {
+	//&& elem.name!="qdfmol") {
+	dd("Skip the individual QDF format ("+elem.name+")");
+	continue;
+      }
     }
     
     if (fp)
@@ -265,6 +270,22 @@ Qm2Main.prototype.onSaveAsObj = function(targetID)
     }
   }
   
+  /////////////////////
+  // setup default file name/extension
+
+  const histry_name = "cuemol2.ui.histories.save_writer_name";
+  const pref = require("preferences-service");
+
+  let prev_writer_name = "pdb";
+  if (pref.has(histry_name)) {
+    prev_writer_name = pref.get(histry_name);
+  }
+  
+  names.forEach( function (elem, index) {
+    if (elem.name==prev_writer_name)
+      fp.filterIndex = index;
+  } );
+
   let res=fp.show();
   if (res==nsIFilePicker.returnCancel)
     return;
@@ -277,15 +298,10 @@ Qm2Main.prototype.onSaveAsObj = function(targetID)
   writer.setPath(path);
   dd("Created writer: "+writer._wrapped.getClassName());
 
-  // let scene = this.mMainWnd.currentSceneW;
-  // if (!scene) {
-  // util.alert(window, "FileSaveAs fatal error: get current scene Failed.");
-  // return;
-  // }
-
   // // EDIT TXN START //
   // scene.startUndoTxn("Save As (conv to link)");
 
+  let bOK = false;
   try {
     // writer.base64 = true;
     // writer.compress = "gzip";
@@ -293,16 +309,23 @@ Qm2Main.prototype.onSaveAsObj = function(targetID)
     writer.attach(targetObj);
     writer.write();
     writer.detach();
+    bOK = true;
   }
   catch (e) {
     dd("File Save Error: "+e);
     debug.exception(e);
-    
-    util.alert(window, "Failed to save file: "+path);
   }
 
+  if (!bOK) {
+    util.alert(window, "Failed to save file: "+path);
+    return;
+  }
+    
   // scene.commitUndoTxn();
   // // EDIT TXN END //
+
+  // save filter index
+  pref.set(histry_name, writer_name);
 
   writer = null;
   targetObj = null;
@@ -311,6 +334,7 @@ Qm2Main.prototype.onSaveAsObj = function(targetID)
   let msg = "File: ["+path+"] is saved.";
   gQm2Main.mStatusLabel.label = msg;
   cuemol.putLogMsg(msg);
+
 };
 
 Qm2Main.prototype.onFileSaveAs = function()
@@ -858,7 +882,7 @@ Qm2Main.prototype.exportScene = function()
     dlgdata.width = view.width;
     dlgdata.height = view.height;
 
-    window.openDialog("chrome://cuemol2/content/exportpng-opt-dlg.xul",
+    window.openDialog("chrome://cuemol2/content/exportlxs-opt-dlg.xul",
 		      "LuxRender options",
                       "chrome,modal,resizable=yes,dependent,centerscreen",
                       dlgdata);
@@ -1031,25 +1055,12 @@ Qm2Main.prototype.execIntJS = function (path)
   cuemol.putLogMsg("Exec internal JS: "+path+" done.");
 }
 
-Qm2Main.prototype.onOpenURL = function ()
+Qm2Main.prototype.onOpenURL = function (aURL)
 {
-/*
-  var input = {value: ""};
-  var dummy = {};
-
-  ok = this.mPrompts.prompt(window, document.title,
-			    "URL:", input,
-			    "", dummy);
-  if (!ok) return;
-
-  dd("URL: "+input.value);
-  window.open(input.value, "", 'chrome,width=600,height=300,resizable');
-*/
-  //window.open("chrome://cuemol2/content/tools/mybrowser.xul", "_blank",
-  //"chrome,extrachrome,menubar,resizable,scrollbars,status,toolbar");
-
   var stylestr = "chrome,extrachrome,menubar,resizable,scrollbars,status,toolbar,dependent,centerscreen";
   var url = "chrome://cuemol2/content/tools/mybrowser.xul";
+  if (aURL)
+    url = aURL;
   var win = this.mWinMed.getMostRecentWindow("CueMol2:WebBrowser");
   if (win)
     win.focus();

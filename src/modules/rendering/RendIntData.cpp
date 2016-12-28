@@ -42,9 +42,14 @@ RendIntData::~RendIntData()
   if (m_pVAttrAry!=NULL)
     delete m_pVAttrAry;
 
-  std::for_each(m_lines.begin(), m_lines.end(), qlib::delete_ptr<Line *>());
-  std::for_each(m_cylinders.begin(), m_cylinders.end(), qlib::delete_ptr<Cyl *>());
-  std::for_each(m_spheres.begin(), m_spheres.end(), qlib::delete_ptr<Sph *>());
+  //std::for_each(m_lines.begin(), m_lines.end(), qlib::delete_ptr<Line *>());
+  //std::for_each(m_cylinders.begin(), m_cylinders.end(), qlib::delete_ptr<Cyl *>());
+  //std::for_each(m_spheres.begin(), m_spheres.end(), qlib::delete_ptr<Sph *>());
+  eraseLines();
+  eraseCyls();
+  eraseSpheres();
+  eraseDots();
+  
   MB_ASSERT(m_pTree==NULL);
 }
 
@@ -224,7 +229,6 @@ void RendIntData::mesh(const Matrix4D &mat, const gfx::Mesh &rmesh)
         col = m_pdc->getCurrentColor();
       line(v2, v0, lw, col);
     }
-
   }
   else if (nPolyMode == DisplayContext::POLY_POINT) {
 
@@ -245,9 +249,50 @@ void RendIntData::mesh(const Matrix4D &mat, const gfx::Mesh &rmesh)
   }
 }
 
+/// converte meshe to line segments (for debug)
+void RendIntData::convMeshToLines(double lw)
+{
+  const int nfaces = m_mesh.getFaceSize();
+  
+  for (int i=0; i<nfaces; ++i) {
+    const MeshFace &f = m_mesh.getFace(i);
+    const int i0 = f.iv1;
+    const int i1 = f.iv2;
+    const int i2 = f.iv3;
+
+    Vector4D v0 = m_mesh.getVertex(i0)->v;
+    Vector4D v1 = m_mesh.getVertex(i1)->v;
+    Vector4D v2 = m_mesh.getVertex(i2)->v;
+
+    ColIndex c0 = m_mesh.getVertex(i0)->c;
+    ColIndex c1 = m_mesh.getVertex(i1)->c;
+    ColIndex c2 = m_mesh.getVertex(i2)->c;
+
+    line(v0, v1, lw, c0);
+    line(v1, v2, lw, c1);
+    line(v2, v0, lw, c2);
+  }
+}
+
+void RendIntData::line(const Vector4D &v1, const Vector4D &v2, double width, ColIndex ci)
+{
+  Line *p = MB_NEW Line;
+  p->v1 = v1;
+  p->v2 = v2;
+  p->col = ci;
+  p->w = width;
+  m_lines.push_back(p);
+}
+
 /// Append line segment
 void RendIntData::line(const Vector4D &v1, const Vector4D &v2, double width, const ColorPtr &col)
 {
+  if (col.isnull())
+    line(v1, v2, width, convCol());
+  else
+    line(v1, v2, width, convCol(col));
+  
+  /*
   Line *p = MB_NEW Line;
   p->v1 = v1;
   p->v2 = v2;
@@ -256,7 +301,7 @@ void RendIntData::line(const Vector4D &v1, const Vector4D &v2, double width, con
   else
     p->col = convCol(col);
   p->w = width;
-  m_lines.push_back(p);
+  m_lines.push_back(p);*/
 }
 
 /// Append point
@@ -473,7 +518,7 @@ MeshVert *RendIntData::cutEdge(MeshVert *pv1, MeshVert *pv2)
 }
 
 /// convert dot to sphere
-void RendIntData::convDots()
+void RendIntData::convDots(bool bErase)
 {
   if (m_dots.size()<=0)
     return;
@@ -486,11 +531,13 @@ void RendIntData::convDots()
     m_spheres.push_back(p);
   }
 
-  m_dots.erase(m_dots.begin(), m_dots.end());
+  if (bErase)
+    eraseDots();
+    //m_dots.erase(m_dots.begin(), m_dots.end());
 }
 
 /// convert line to cylinder
-void RendIntData::convLines()
+void RendIntData::convLines(bool bErase)
 {
   if (m_lines.size()<=0)
     return;
@@ -508,24 +555,29 @@ void RendIntData::convLines()
     pc->pTransf = NULL;
     m_cylinders.push_back(pc);
 
-    delete p;
+    //delete p;
   }
 
-  m_lines.erase(m_lines.begin(), m_lines.end());
+  //m_lines.erase(m_lines.begin(), m_lines.end());
+  if (bErase)
+    eraseLines();
 }
 
 /// convert sphere to mesh
-void RendIntData::convSpheres()
+void RendIntData::convSpheres(bool bErase /*= true*/)
 {
   if (m_spheres.size()<=0)
     return;
 
   BOOST_FOREACH (Sph *p, m_spheres) {
     convSphere(p);
-    delete p;
+    //delete p;
   }
 
-  m_spheres.erase(m_spheres.begin(), m_spheres.end());
+  //m_spheres.erase(m_spheres.begin(), m_spheres.end());
+  if (bErase)
+    eraseSpheres();
+
   return;
 }
 
@@ -540,12 +592,12 @@ void RendIntData::convSphere(Sph *pSph)
     vcam.y() = v1.y();
   }
   Vector4D e3 = (vcam - v1).normalize();
-  Vector4D e1 = e3.cross(v1);
+  Vector4D e1 = e3.cross(Vector4D(1,0,0));
   e1 = e1.normalize();
   Vector4D e2 = e1.cross(e3);
 
   Matrix4D xform = Matrix4D::makeTransMat(v1);
-  xform.matprod( Matrix4D::makeRotMat(e1, e2) );
+  xform.matprod( Matrix4D::makeRotMat(e3, e1).transpose() );
   xform.matprod( Matrix4D::makeTransMat(-v1) );
 
   const double rad = pSph->r;
@@ -555,7 +607,8 @@ void RendIntData::convSphere(Sph *pSph)
   const int ivstart = m_mesh.getVertexSize();
 
   int i, j;
-  int nLat = pSph->ndetail+1;
+  //int nLat = pSph->ndetail+1;
+  int nLat = ceil(pSph->ndetail/2.0) * 2;
 
   // detail in longitude direction is automatically determined by stack radius
   int nLng;
@@ -716,17 +769,19 @@ int RendIntData::selectTrig(int j, int k, int j1, int k1)
 /////////////////////////////
 
 /// convert cylinders to mesh
-void RendIntData::convCylinders()
+void RendIntData::convCylinders(bool bErase)
 {
   if (m_cylinders.size()<=0)
     return;
 
   BOOST_FOREACH (Cyl *p, m_cylinders) {
     convCyl(p);
-    delete p;
   }
 
-  m_cylinders.erase(m_cylinders.begin(), m_cylinders.end());
+  //m_cylinders.erase(m_cylinders.begin(), m_cylinders.end());
+  if (bErase)
+    eraseCyls();
+
   return;
 }
 
@@ -1702,6 +1757,7 @@ void RendIntData::writeEdgeLine(PrintStream &ips,
   */
 
   Vector4D x1, x2;
+  Vector4D m1, m2;
   int xa1, xa2;
 
   // always keep x1.z < x2.z (for Z-plane clipping)
@@ -1711,12 +1767,16 @@ void RendIntData::writeEdgeLine(PrintStream &ips,
     x2 = v1;
     xa1 = alpha2;
     xa2 = alpha1;
+    m1 = n2;
+    m2 = n1;
   }
   else {
     x1 = v1;
     x2 = v2;
     xa1 = alpha1;
     xa2 = alpha2;
+    m1 = n1;
+    m2 = n2;
   }
 
   Vector4D nn = x2 - x1;
@@ -1736,7 +1796,7 @@ void RendIntData::writeEdgeLine(PrintStream &ips,
       x2 = nn.scale((clipz-x1.z())/(nn.z())) + x1;
   }
   
-  m_pdc->writeEdgeLineImpl(ips, xa1, xa2, x1, n1, x2, n2);
+  m_pdc->writeEdgeLineImpl(ips, xa1, xa2, x1, m1, x2, m2);
 }
 
 void RendIntData::writeEdgeLine(PrintStream &ips, const SEEdge &elem, double fsec1, double fsec2)

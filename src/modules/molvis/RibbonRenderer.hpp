@@ -137,6 +137,8 @@ public:
 
   virtual const char *getTypeName() const;
 
+  virtual void preRender(DisplayContext *pdc);
+
   //////////////////////////////////////////////////////
 
   virtual void beginRend(DisplayContext *pdl);

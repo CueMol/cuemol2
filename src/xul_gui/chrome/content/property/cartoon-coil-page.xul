@@ -50,6 +50,13 @@
 	      </menulist>
 	    </hbox>
 	    
+	    <!-- property: coil.detail -->
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Detail: " flex="0"/>
+	      <numslider id="coilpage-sectdet" flex="1" size="2"
+		decimalplaces="0" min="4" max="20" increment="1" unit="none"/>
+	    </row>
+
 	    <row align="center" class="propdlg-rowbox">
 	      <label value="Tuber: " flex="0"/>
 	      <numslider id="coilpage-tuber" flex="1" size="3"

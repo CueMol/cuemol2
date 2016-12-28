@@ -66,26 +66,26 @@ function PovRender()
 
   // default povray path
   if (this.mPlfName=="Windows_NT") {
-    default_path = util.createDefaultPath("CurProcD", "povray", "bin", "povray.exe");
+    this.mDefaultPovPath = util.createDefaultPath("CurProcD", "povray", "bin", "povray.exe");
   }
   else {
-    default_path = util.createDefaultPath("CurProcD", "povray", "bin", "povray");
+    this.mDefaultPovPath = util.createDefaultPath("CurProcD", "povray", "bin", "povray");
   }
   
+  this.mPovExePath = this.mDefaultPovPath;
   if (pref.has(pov_exe_key)) {
-    this.mPovExePath = pref.get(pov_exe_key);
-  }
-  else {
-    this.mPovExePath = default_path;
+    let strpath = pref.get(pov_exe_key);
+    if (util.chkCreateMozFile(strpath))
+      this.mPovExePath = strpath;
   }
   
   // default inc path
-  default_path = util.createDefaultPath("CurProcD", "povray", "include");
+  this.mDefaultIncPath = util.createDefaultPath("CurProcD", "povray", "include");
+  this.mPovIncPath = this.mDefaultIncPath;
   if (pref.has(pov_inc_key)) {
-    this.mPovIncPath = pref.get(pov_inc_key);
-  }
-  else {
-    this.mPovIncPath = default_path;
+    let strpath = pref.get(pov_inc_key);
+    if (util.chkCreateMozDir(strpath))
+      this.mPovIncPath = strpath;
   }
 
   dd("PovRender> pov exe path="+this.mPovExePath);
@@ -94,14 +94,26 @@ function PovRender()
 
 PovRender.prototype.setPovExePath = function (path)
 {
+  if (path=="")
+    path = this.mDefaultPovPath;
+
+  if (!util.chkCreateMozFile(path))
+    return false;
   this.mPovExePath = path;
   pref.set(pov_exe_key, path);
+  return true;
 };
 
 PovRender.prototype.setPovIncPath = function (path)
 {
+  if (path=="")
+    path = this.mDefaultIncPath;
+
+  if (!util.chkCreateMozDir(path))
+    return false;
   this.mPovIncPath = path;
   pref.set(pov_inc_key, path);
+  return true;
 };
 
 PovRender.prototype.clearTmpFiles = function ()

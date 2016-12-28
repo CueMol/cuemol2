@@ -9,6 +9,8 @@
 #include "LString.hpp"
 #include "LExceptions.hpp"
 
+#ifdef HAVE_LZMA_H
+
 #include <lzma.h>
 
 using namespace qlib;
@@ -63,7 +65,7 @@ bool XzInFilterImpl::ready()
 /// read into mem block
 int XzInFilterImpl::read(char *abuf, int off, int alen)
 {
-  MB_DPRINTLN("XZIn.read> called");
+  //MB_DPRINTLN("XZIn.read> called");
 
   lzma_stream *pstream = (lzma_stream *) m_pdata;
   lzma_ret ret;
@@ -179,13 +181,13 @@ int XzInFilterImpl::skip(int n)
 //////////////////////////////////////////////////////////////////////
 
 XzOutFilterImpl::XzOutFilterImpl()
-  : super_t(), m_pdata(NULL)
+     : super_t(), m_pdata(NULL), m_buffer(BUFSZ)
 {
   init();
 }
 
 XzOutFilterImpl::XzOutFilterImpl(const impl_type &out)
-  : super_t(out)
+     : super_t(out), m_pdata(NULL), m_buffer(BUFSZ)
 {
   init();
 }
@@ -213,10 +215,11 @@ void XzOutFilterImpl::init()
   // m_fp = fopen("d:\\xztest.xz","wb");
 }
 
-int XzOutFilterImpl::write(const char *buf, int off, int len)
+int XzOutFilterImpl::write(const char *inbuf, int off, int len)
 {
-  //std::vector buffer<uint8_t>(len);
-  uint8_t buffer[BUFSZ];
+  if (len == 0)
+    return 0;
+
   int nwr = 0;
   
   lzma_stream *pstream = (lzma_stream *) m_pdata;
@@ -224,26 +227,26 @@ int XzOutFilterImpl::write(const char *buf, int off, int len)
   lzma_action action = LZMA_RUN;
   lzma_ret ret = LZMA_OK;
 
-  pstream->next_in = (const uint8_t *) &buf[off];
+  pstream->next_in = (const uint8_t *) &inbuf[off];
   pstream->avail_in = len;
 
   for (;;) {
-    pstream->next_out = &buffer[0];
+    pstream->next_out = &m_buffer[0];
     pstream->avail_out = BUFSZ;
     ret = lzma_code(pstream, action);
 
     if ((ret != LZMA_OK) && (ret != LZMA_STREAM_END)) {
-      MB_THROW(IOException, "cannto lzma encoder");
+      MB_THROW(IOException, "LZMA encode error in write(buf, off, len)");
       return -1;
     }
     
     const int nenc = BUFSZ - pstream->avail_out;
     if (nenc>0) {
-      int nres = getImpl()->write((const char *)&buffer[0], 0, nenc);
-      //fwrite((const char *)&buffer[0], BUFSZ - pstream->avail_out, sizeof(char), m_fp);
+      int nres = getImpl()->write((const char *)&m_buffer[0], 0, nenc);
+      //fwrite((const char *)&m_buffer[0], BUFSZ - pstream->avail_out, sizeof(char), m_fp);
 
       if (nres<0) {
-        MB_THROW(IOException, "cannot write");
+        MB_THROW(IOException, "XzStream cannot write to stream");
         return -1;
       }
 
@@ -256,7 +259,7 @@ int XzOutFilterImpl::write(const char *buf, int off, int len)
   nwr += len;
 
   if (pstream->avail_in != 0) {
-    MB_THROW(IOException, "cannto lzma encoder");
+    MB_THROW(IOException, "LZMA encoder error, avail_in!=0");
     return -1;
   }
   
@@ -286,16 +289,16 @@ void XzOutFilterImpl::o_close()
     lzma_stream *pstream = (lzma_stream *) m_pdata;
 
     uint8_t inbuffer[1];
-    uint8_t buffer[BUFSZ];
+
     for (;;) {
       pstream->next_in = inbuffer;
       pstream->avail_in = 0;
-      pstream->next_out = &buffer[0];
+      pstream->next_out = &m_buffer[0];
       pstream->avail_out = BUFSZ;
       lzma_ret ret = lzma_code(pstream, LZMA_FINISH);
       int nenc = BUFSZ - pstream->avail_out;
       if (nenc>0) {
-        int nres = getImpl()->write((const char *)&buffer[0], 0, nenc);
+        int nres = getImpl()->write((const char *)&m_buffer[0], 0, nenc);
         // fwrite((const char *)&buffer[0], nenc, sizeof(char), m_fp);
       }
       if (nenc<BUFSZ) {
@@ -311,3 +314,4 @@ void XzOutFilterImpl::o_close()
   m_pdata = NULL;
 }
 
+#endif

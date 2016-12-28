@@ -1,6 +1,6 @@
 // -*-Mode: C++;-*-
 //
-// QdfMol Reader (PDB format version)
+// QdfMol Reader
 //
 
 #include <common.h>
@@ -9,6 +9,7 @@
 #include <qlib/ClassRegistry.hpp>
 #include <qlib/LClassUtils.hpp>
 #include <qlib/Utils.hpp>
+#include <qsys/ObjExtData.hpp>
 #include "MolCoord.hpp"
 
 #define PROP_PFX "$"
@@ -31,7 +32,7 @@ QdfMolReader::~QdfMolReader()
 
 const char *QdfMolReader::getTypeDescr() const
 {
-  return "CueMol data file (*.qdf)";
+  return "CueMol coordinates file (*.qdf)";
 }
 
 const char *QdfMolReader::getFileExt() const
@@ -65,12 +66,14 @@ bool QdfMolReader::read(qlib::InStream &ins)
 
   start(ins);
 
-  if (!getFileType().equals("MOL2")) {
-    MB_THROW(qlib::FileFormatException, "invalid file format signature");
+  LString sft = getFileType();
+  if (!sft.equals("MOL2")) {
+    LString msg = LString::format("QdfMol invalid file format signature %s", sft.c_str());
+    MB_THROW(qlib::FileFormatException, msg);
     return false;
   }
 
-  // TO DO: read mol-level properties (cell params, etc)
+  readMolData();
   
   readChainData();
 
@@ -94,6 +97,50 @@ bool QdfMolReader::read(qlib::InStream &ins)
   return true;
 }
 
+void QdfMolReader::readMolData()
+{
+  qsys::QdfInStream &in = getStream();
+  int nelems = in.readDataDef("mol");
+  if (nelems==0)
+    return;
+
+  if (nelems>1) {
+    MB_THROW(qlib::FileFormatException, "invalid moldata size");
+    return;
+  }
+
+  qsys::ObjExtData::DataTab values;
+  std::set<LString> clsnames;
+
+  in.readRecordDef();
+  in.startRecord();
+  while (!in.isRecEnd()) {
+    const RecElem &re = in.getNextElem();
+	    
+    if (re.second!=QDF_TYPE_FIXSTR8 &&
+        re.second!=QDF_TYPE_FIXSTR16 &&
+        re.second!=QDF_TYPE_FIXSTR32) {
+      MB_THROW(qlib::FileFormatException, "invalid moldata valuetype");
+      return;
+    }
+    // 1==strlen(PROP_PFX)
+    LString propname = re.first;
+    LString value = in.readStr(re.first);
+    values.forceSet(propname, value);
+
+    int dotpos = propname.indexOf('.');
+    LString clsname = propname.substr(0, dotpos);
+    clsnames.insert(clsname);
+  }
+
+  BOOST_FOREACH (const LString &elem, clsnames) {
+    qsys::ObjExtDataPtr pExt = m_pMol->getCreateExtData(elem);
+    if (!pExt.isnull())
+      pExt->readQdfData(values);
+  }
+
+}
+
 void QdfMolReader::readChainData()
 {
   qsys::QdfInStream &in = getStream();
@@ -115,6 +162,7 @@ void QdfMolReader::readChainData()
 
     in.endRecord();
   }
+  LOG_DPRINTLN("QdfMol> read %d chains.", m_chainTab.size());
 }
 
 void QdfMolReader::readResidData()
@@ -176,6 +224,8 @@ void QdfMolReader::readResidData()
 
     in.endRecord();
   }
+
+  LOG_DPRINTLN("QdfMol> read %d residues.", m_residTab.size());
 }
 
 void QdfMolReader::readAtomData()
@@ -266,10 +316,37 @@ void QdfMolReader::readAtomData()
       pAtom->setU(2,2,u22);
     }
 
+    // Set Atom Props
+    while (!in.isRecEnd()) {
+      const RecElem &re = in.getNextElem();
+      if (!re.first.startsWith(PROP_PFX))
+        break;
+      LString nm = re.first.substr(1);
+      switch (re.second) {
+      case QDF_TYPE_BOOL:
+        pAtom->setAtomPropBool(nm, in.readBool(re.first));
+        break;
+      case QDF_TYPE_INT32:
+        pAtom->setAtomPropInt(nm, in.readInt32(re.first));
+        break;
+      case QDF_TYPE_FLOAT32:
+        pAtom->setAtomPropReal(nm, in.readFloat32(re.first));
+        break;
+      case QDF_TYPE_FIXSTR8:
+      case QDF_TYPE_FIXSTR16:
+      case QDF_TYPE_FIXSTR32:
+        pAtom->setAtomPropStr(nm, in.readStr(re.first));
+        break;
+      default:
+        break;
+      }
+    }
+
+    // Append atom to the molecule
     int naid = m_pMol->appendAtom(pAtom);
     if (naid<0) {
       // ERROR, inconsistent data
-      LOG_DPRINTLN("QdfMol> ERROR!!!");
+      LOG_DPRINTLN("QdfMol> ERROR: appendAtom failed!!!");
       continue;
     }
 
@@ -277,18 +354,22 @@ void QdfMolReader::readAtomData()
     in.endRecord();
   }
   
+  LOG_DPRINTLN("QdfMol> read %d atoms.", m_atomTab.size());
 }
 
 void QdfMolReader::readBondData()
 {
   qsys::QdfInStream &in = getStream();
   int nelems = in.readDataDef("bond");
+  if (nelems==0)
+    return;
+  
   in.readRecordDef();
   
   AtomTab::const_iterator aiter;
   MolAtomPtr pAtom1;
   MolAtomPtr pAtom2;
-
+  int nread_bonds = 0;
   for (int i=0; i<nelems; ++i) {
     in.startRecord();
     quint32 id = in.readUInt32("id");
@@ -319,9 +400,12 @@ void QdfMolReader::readBondData()
       // (other bonds will be created by applyTopology())
       MolBond *pBond = m_pMol->makeBond(pAtom1->getID(), pAtom2->getID(), true);
       pBond->setType(ntype);
+      ++nread_bonds;
     }
 
     in.endRecord();
   }
+
+  LOG_DPRINTLN("QdfMol> read %d user defined bonds.", nread_bonds);
 }
 

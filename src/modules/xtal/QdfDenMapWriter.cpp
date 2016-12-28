@@ -67,9 +67,10 @@ bool QdfDenMapWriter::write(qlib::OutStream &outs)
   }
 
   m_pObj = pObj;
-  setFileType("MAP1");
 
   start(outs);
+
+  getStream().writeFileType("MAP1");
 
   writeData();
 

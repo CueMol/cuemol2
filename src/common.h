@@ -78,6 +78,12 @@
 #include <cmath>
 #endif
 
+#ifdef HAVE_UNORDERED_MAP
+#include <unordered_map>
+#else
+#include <boost/unordered_map.hpp>
+#endif
+
 #endif
 
 

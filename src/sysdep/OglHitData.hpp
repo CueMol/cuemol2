@@ -257,7 +257,7 @@ public:
     }
 
     if (ii>=pEnt->index.size()) {
-      MB_DPRINTLN("OglHit> rend ID %d; main index (%d) is out of bound", ii);
+		MB_DPRINTLN("OglHit> rend ID %d; main index (%d) is out of bound", rend_id, ii);
       return -1;
     }
 
@@ -269,7 +269,7 @@ public:
       intn_end = pEnt->data.size();
 
     if (subii>=intn_end-intn_start) {
-      MB_DPRINTLN("OglHit> rend ID %d; mainindex (%d), subindex(%d) is out of bound", ii, subii);
+		MB_DPRINTLN("OglHit> rend ID %d; mainindex (%d), subindex(%d) is out of bound", rend_id, ii, subii);
       return -1;
     }
 

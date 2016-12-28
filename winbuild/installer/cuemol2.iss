@@ -2,35 +2,40 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 ; $Id: cuemol2.iss,v 1.15 2011/04/03 12:50:02 rishitani Exp $
 
-#define WinBuildDir "..\xul_Release"
-; #define WinBuildDir "..\xul_Debug"
+; #define WinBuildDir "..\xul_Release"
+; ; #define WinBuildDir "..\xul_Debug"
+; #define BoostVer "vc120-mt-1_57"
+; ; #define BoostVer "vc90-mt-1_44"
+; #define XulRTDir BUILDSET_DIR+"\xulrunner\xulrunner2-sdk\bin"
+
 #define XulGUIDir "..\..\src\xul_gui"
-
-#define SysDLLDir PROJ_DIR+"\bin"
-; #define XulRTDir PROJ_DIR+"\xulrunner\xulrunner2-sdk\bin"
-
-#define BoostVer "vc120-mt-1_57"
-; #define BoostVer "vc90-mt-1_44"
-
+#define SysDLLDir BUILDSET_DIR+"bin"
 #define CueMolVer CueMolReleaseID+"."+CueMolBuildID
 
 [Setup]
+#if Platform=="x64"
+ArchitecturesAllowed=x64
+ArchitecturesInstallIn64BitMode=x64
+AppName=CueMol2_64
+DefaultDirName={pf}\CueMol 2.0
+DefaultGroupName=CueMol 2.0 (64 bit)
+#else
 AppName=CueMol2
-AppVerName=CueMol2 {#CueMolReleaseID} build {#CueMolBuildID}
+DefaultDirName={pf}\CueMol 2.0
+DefaultGroupName=CueMol 2.0
+#endif
+
+; AppVerName={AppName} {#CueMolReleaseID} build {#CueMolBuildID}
+AppVersion={#CueMolReleaseID}.{#CueMolBuildID}
 AppPublisher=BKR Laboratory
 AppPublisherURL=http://www.cuemol.org/
 AppSupportURL=http://www.cuemol.org/
 AppUpdatesURL=http://www.cuemol.org/
-DefaultDirName={pf}\CueMol 2.0
-DefaultGroupName=CueMol 2.0
 
 AllowNoIcons=yes
 OutputDir=..\build
-#ifdef PovBundleDir
-OutputBaseFilename=cuemol2-{#CueMolVer}-win32-povray-setup
-#else
-OutputBaseFilename=cuemol2-{#CueMolVer}-win32-setup
-#endif
+OutputBaseFilename=cuemol2-{#CueMolVer}-{#Platform}-setup
+
 ; SetupIconFile=
 ; Compression=lzma
 SolidCompression=yes
@@ -39,6 +44,8 @@ ChangesAssociations=yes
 
 WizardImageFile=compiler:WIZMODERNIMAGE-IS.BMP
 WizardSmallImageFile=compiler:WIZMODERNSMALLIMAGE-IS.BMP
+
+UninstallDisplayIcon={app}\cuemol2.exe
 
 [Tasks]
 Name: desktopicon; Description: Create a &desktop icon; GroupDescription: Additional icons:;

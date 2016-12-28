@@ -424,14 +424,12 @@ panel.attachRenderer = function (aRend)
     return;
   }
 
+  this.mTgtRendID = aRend.uid;
+  this.mTgtSceID = aRend.getScene().uid;
+
   // This is initial update, so we have to do complete update.
   if (this._setupData(aRend))
     this._initWidgets(aRend);
-
-  this.mTgtRendID = aRend.uid;
-
-  var nSceID = this.mTgtSceID = aRend.getScene().uid;
-
 }
 
 panel.detachRenderer = function ()
@@ -552,10 +550,30 @@ panel.onChgColoring = function (aEvent)
     }
 
     dd("onChgCol> tgtrend id "+this.mTgtRendID);
-    var rend = cuemol.getUIDObj(this.mTgtRendID);
-    var id = aEvent.originalTarget.value;
+    let rend = cuemol.getUIDObj(this.mTgtRendID);
+    let id = aEvent.originalTarget.value;
 
-    var rend_type = "";
+    if (id=="paint-type-resetdef") {
+      // EDIT TXN START //
+      let scene = rend.getScene();
+      scene.startUndoTxn("Reset coloring style");
+      try {
+        cuemol.resetProp(rend, "coloring");
+        //let s = rend.style;
+        //rend.applyStyles("");
+        //rend.applyStyles(s);
+      }
+      catch (e) {
+        debug.exception(e);
+        scene.rollbackUndoTxn();
+        return;
+      }
+      scene.commitUndoTxn();
+      // EDIT TXN END //
+      return;
+    }
+
+    let rend_type = "";
     if ('type_name' in rend)
       rend_type = rend.type_name;
 
@@ -1579,13 +1597,20 @@ panel.onPotSelChanged = function (aEvent)
   if (rend.elepot==obj.name)
     return;
 
+  // alert("onPotSelChanged called: rend="+rend.name+", elepot="+obj.name);
+
   this.commitElepotPropChange("elepot", obj.name);
 }
 
 /// Data --> widgets
 panel.updateElepotWidgets = function (aRend, aPropName)
 {
-  //alert("Update elepot widgets: "+aPropName);
+  // alert("Update elepot widgets: "+aPropName);
+  if (aPropName==undefined ||
+      aPropName=="elepot") {
+    this.mPotSel.selectObjectByName(aRend.elepot);
+  }
+
   if (aPropName==undefined ||
       aPropName=="ramp_above") {
     if (aRend.ramp_above)

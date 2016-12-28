@@ -62,7 +62,7 @@ void MolSurfObj::deleteSelected()
 
 //////////
 
-LString MolSurfObj::getDataChunkReaderName() const
+LString MolSurfObj::getDataChunkReaderName(int nQdfVer) const
 {
   return LString("qdfsurf");
 }
@@ -70,6 +70,7 @@ LString MolSurfObj::getDataChunkReaderName() const
 void MolSurfObj::writeDataChunkTo(qlib::LDom2OutStream &oos) const
 {
   QdfSurfWriter writer;
+  writer.setVersion(oos.getQdfVer());
   writer.setEncType(oos.getQdfEncType());
 
   MolSurfObj *pthis = const_cast<MolSurfObj *>(this);

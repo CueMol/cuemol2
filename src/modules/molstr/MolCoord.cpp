@@ -14,14 +14,8 @@
 #include <qsys/SceneManager.hpp>
 #include "AtomIterator.hpp"
 
-// #define USE_QDFMOL_QSC 1
-
-// For QSC file data chunk processing
-#ifdef USE_QDFMOL_QSC
-#  include "QdfMolWriter.hpp"
-#else
-#  include "PDBFileWriter.hpp"
-#endif
+#include "QdfMolWriter.hpp"
+#include "PDBFileWriter.hpp"
 
 using namespace molstr;
 
@@ -223,7 +217,7 @@ int MolCoord::appendAtom(MolAtomPtr pAtom)
                   pre_rname.c_str());
       // TO DO: throw exception (???)
       // This is often the case, so is not an exception.
-      return -1;
+      // return -1;
     }
   }
   
@@ -455,27 +449,36 @@ bool MolCoord::isDataSrcWritable() const
   return true;
 }
 
-LString MolCoord::getDataChunkReaderName() const
+LString MolCoord::getDataChunkReaderName(int nQdfVer) const
 {
-#ifdef USE_QDFMOL_QSC
-  return LString("qdfmol");
-#else
-  return LString("qdfpdb");
-#endif
+  if (nQdfVer==0)
+    return LString("qdfpdb");
+  else
+    return LString("qdfmol");
 }
 
 void MolCoord::writeDataChunkTo(qlib::LDom2OutStream &oos) const
 {
-#ifdef USE_QDFMOL_QSC
-  QdfMolWriter writer;
-#else
-  PDBFileWriter writer;
-#endif
-
+  int nver = oos.getQdfVer();
   MolCoord *pthis = const_cast<MolCoord *>(this);
-  writer.attach(qsys::ObjectPtr(pthis));
-  writer.write2(oos);
-  writer.detach();
+
+  if (nver==0) {
+    // version == 0: QDF-PDB compatibility mode
+    PDBFileWriter writer;
+    writer.attach(qsys::ObjectPtr(pthis));
+    writer.write2(oos);
+    writer.detach();
+  }
+  else {
+    // version >=1: use QDF format
+    QdfMolWriter writer;
+    writer.setVersion(nver);
+    writer.setEncType(oos.getQdfEncType());
+
+    writer.attach(qsys::ObjectPtr(pthis));
+    writer.write2(oos);
+    writer.detach();
+  }
 }
 
 ////////////////////////////////////////

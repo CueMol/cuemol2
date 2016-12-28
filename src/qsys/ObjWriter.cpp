@@ -14,6 +14,10 @@
 #include <qlib/GzipStream.hpp>
 #include <qlib/LDOM2Tree.hpp>
 
+#ifdef HAVE_LZMA_H
+#include <qlib/XzStream.hpp>
+#endif
+
 using namespace qsys;
 
 // MC_SCRIPTABLE_EMPTY_IMPL(ObjWriter);
@@ -57,12 +61,19 @@ void ObjWriter::write2(qlib::OutStream &outs)
     pTOut = pB64O;
   }
   
-  if (getCompressMode()==COMP_NONE) {
+  int ncomp = getCompressMode();
+  if (ncomp==COMP_NONE) {
   }
-  else if (getCompressMode()==COMP_GZIP) {
+  else if (ncomp==COMP_GZIP) {
     pZOut = new qlib::GzipOutStream(*pTOut);
     pTOut = pZOut;
   }
+#ifdef HAVE_LZMA_H
+  else if (ncomp==COMP_XZIP) {
+    pZOut = new qlib::XzOutStream(*pTOut);
+    pTOut = pZOut;
+  }
+#endif
   else {
     MB_THROW(qlib::FileFormatException, "unsupported compression method");
     return;

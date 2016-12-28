@@ -88,6 +88,8 @@ namespace qlib {
 
   MB_DECL_EXCPT_CLASS(QLIB_API, InterruptedException, RuntimeException);
 
+  MB_DECL_EXCPT_CLASS(QLIB_API, PropNotFoundException, RuntimeException);
+
   template <typename _Type>
   _Type *ensureNotNull(_Type *pArg) {
     if (pArg==NULL) {

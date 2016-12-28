@@ -83,6 +83,8 @@ namespace qsys {
 
     static int getSize(int nrecid, bool fixed=true);
 
+    static LString createVerString(int nver);
+    static int parseVerString(const LString &strver);
   };
 
   ////////////////////////////////////////
@@ -158,6 +160,7 @@ namespace qsys {
     qint8 readInt8(const LString &name);
     quint8 readUInt8(const LString &name);
     LString readStr(const LString &name);
+    bool readBool(const LString &name);
 
     void readVec3D(const LString &name, qfloat32 *pvec);
     Vector4D readVec3D(const LString &name);
@@ -202,14 +205,19 @@ namespace qsys {
     qlib::InStream *m_pB64In;
     qlib::InStream *m_pZIn;
 
-    /// File type string
+    /// File type string (MOL1 for MolCoord, etc)
     LString m_strFileType;
 
-    /// QDF version no
-    int m_nVer;
+    /// QDF version (in integer)
+    int m_nVersion;
 
+  public:
+    /// Get QDF version (in integer)
+    int getVersion() const { return m_nVersion; }
+
+  private:
     /// Byte order
-    int m_bIntByteSwap;
+    bool m_bIntByteSwap;
 
     RecElemList m_recdefs;
 
@@ -228,6 +236,12 @@ namespace qsys {
   public:
     typedef FormatOutStream super_t;
 
+    /// QDF version number (in integher)
+    int m_nVersion;
+
+    /// 2-digit encoding ID string ("00", "10", etc)
+    LString m_encStr;
+
   private:
     /// copy ctor
     QdfOutStream(QdfOutStream &r)
@@ -240,14 +254,15 @@ namespace qsys {
       return *this;
     }
 
-
   public:
 
     /// default ctor (bswap mode: NOOP)
-    QdfOutStream() : super_t(), m_pOut(NULL), m_pB64Out(NULL), m_pZOut(NULL) {}
+    QdfOutStream() : super_t(), m_nVersion(0), m_pOut(NULL), m_pB64Out(NULL), m_pZOut(NULL) {}
     
+    
+    /// ctor from generic stream
     QdfOutStream(OutStream &r)
-         : super_t(r), m_pOut(NULL), m_pB64Out(NULL), m_pZOut(NULL) {}
+         : super_t(r), m_nVersion(0), m_pOut(NULL), m_pB64Out(NULL), m_pZOut(NULL) {}
 
     virtual ~QdfOutStream();
 
@@ -255,20 +270,21 @@ namespace qsys {
 
     // QDF common interface
 
-    void start();
-    void end();
+    /// Set version number
+    void setVersion(int n) { m_nVersion = n; }
+    int getVersion() const { return m_nVersion; }
 
-    // Set 2-char file ID string
-    void setFileType(const LString &type)
-    {
-      m_strFileType = type;
-    }
-
-    // set 4-char encoding ID string
+    /// set 2-digit encoding ID string ("00", "10", etc)
     void setEncType(const LString &encstr)
     {
       m_encStr = encstr;
     }
+
+    void start();
+    void end();
+
+    // Write file type string (any length; MOL1 for MolCoord, etc)
+    void writeFileType(const LString &type);
 
     ////////////////////////
     // record definition methods
@@ -338,6 +354,7 @@ namespace qsys {
 
     void writeStr(const LString &name, const LString &value);
     void writeFixedStr(const LString &name, const LString &value);
+    void writeBool(const LString &name, bool value);
     void writeInt8(const LString &name, qint8 value);
     void writeUInt8(const LString &name, quint8 value);
     void writeInt16(const LString &name, qint16 value);
@@ -355,18 +372,12 @@ namespace qsys {
 
     // QDF implementation data
 
-    /// Encoding type string
-    LString m_encStr;
-
     /// Binary output stream (this is possibly this ptr)
     qlib::BinOutStream *m_pOut;
 
     /// Base64 encoding (for QDF1 format)
     qlib::OutStream *m_pB64Out;
     qlib::OutStream *m_pZOut;
-
-    /// File type string
-    LString m_strFileType;
 
     RecElemList m_recdefs;
 

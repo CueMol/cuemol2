@@ -449,8 +449,31 @@
 
   dlg.onStartStopRender = function ()
   {
-    this.mPovRender.setPovExePath(this.mPovExePathBox.value);
-    this.mPovRender.setPovIncPath(this.mPovIncPathBox.value);
+    if (!this.mPovRender.setPovExePath(this.mPovExePathBox.value)) {
+      util.alert(window, "Pov exe file not found:\n"+this.mPovExePathBox.value+"\nTry default path.");
+      if (this.mPovRender.setPovExePath("")) {
+	// default OK: also reset GUI to the default path
+	this.mPovExePathBox.value = this.mPovRender.mPovExePath;
+      }
+      else {
+	// error failure cannot recovered
+	util.alert(window, "FATAL ERROR!! Pov default exe file not found");
+	return;
+      }
+    }
+
+    if (!this.mPovRender.setPovIncPath(this.mPovIncPathBox.value)) {
+      util.alert(window, "Pov inc dir not found:\n"+this.mPovIncPathBox.value+"\nTry default path.");
+      if (this.mPovRender.setPovIncPath("")) {
+	// default OK: also reset GUI to the default path
+	this.mPovIncPathBox.value = this.mPovRender.mPovIncPath;
+      }
+      else {
+	// error failure cannot recovered
+	util.alert(window, "FATAL ERROR!! Pov default inc dir not found");
+	return;
+      }
+    }
 
     if (this.mPovRender._bRender) {
       this.mPovRender.stopRender();

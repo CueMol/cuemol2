@@ -19,6 +19,7 @@ LClass.cpp \
 LRcObject.cpp \
 LVariant.cpp \
 LPropSupport.cpp \
+LPropContainer.cpp \
 LScrObjects.cpp \
 LScrSmartPtr.cpp \
 LChar.cpp \

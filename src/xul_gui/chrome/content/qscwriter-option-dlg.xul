@@ -11,78 +11,37 @@
   onload="onLoad(event)"
   ondialogaccept="return onDialogAccept(event);">
   
-  <script type="application/javascript">
-    var dlgdata = window.arguments[0];
-
-    function onLoad(aEvent)
-    {
-    // default: qdf0
-    document.getElementById('qdf-version').selectedIndex = 0;
-
-    document.getElementById('chk_force_embed').checked = false;
-
-    document.getElementById('chk_base64').checked = false;
-    document.getElementById('chk_base64').disabled = true;
-    document.getElementById('chk_comp_gzip').checked = false;
-    document.getElementById('chk_comp_gzip').disabled = true;
-    }
-
-    function onDialogAccept(aEvent)
-    {
-    dlgdata.embedAll = document.getElementById('chk_force_embed').checked;
-
-    var selitem = document.getElementById('qdf-version').selectedItem;
-    if (selitem.value=="QDF0") {
-    dlgdata.base64 = false;
-    dlgdata.compress = "none";
-    }
-    else {
-    dlgdata.base64 = document.getElementById('chk_base64').checked;
-    if (document.getElementById('chk_comp_gzip').checked)
-//      dlgdata.compress = "gzip";
-      dlgdata.compress = "xzip";
-    else
-      dlgdata.compress = "none";
-    }
-
-    dlgdata.version = selitem.value;
-    dlgdata.ok = true;
-    return true;
-    }
-
-    function onSelect(aEvent)
-    {
-    var selitem = document.getElementById('qdf-version').selectedItem;
-    if (selitem.value=="QDF0") {
-    document.getElementById('chk_base64').disabled = true;
-    document.getElementById('chk_comp_gzip').disabled = true;
-    }
-    else {
-    document.getElementById('chk_base64').disabled = false;
-    document.getElementById('chk_comp_gzip').disabled = false;
-    }
-    }
-  </script>
+  <script type="application/x-javascript;version=1.8" src="qscwriter-option-dlg.js"/>
 
   <vbox>
-    <checkbox id="chk_force_embed" label="Embed all objects (if possible)"/>
+    <checkbox id="chk_force_embed" label="Embed possible"/>
 
     <groupbox flex="0">
       <caption>
 	<hbox align="center">
-	  <label value="File version: "/>
+	  <label value="Compatibility: "/>
 	  <menulist id="qdf-version" flex="0" onselect="onSelect(event)">
 	    <menupopup>
-	      <menuitem label="QDF0" value="QDF0"/>
-	      <menuitem label="QDF1" value="QDF1"/>
+	      <menuitem label="Ver 2.2 or later" value="QDF0"/>
+	      <menuitem label="Ver 2.3 or later" value="QDF1"/>
 	    </menupopup>
 	  </menulist>
 	</hbox>
       </caption>
 
+      <!--<checkbox id="chk_comp_gzip" label="Enable compression"/>-->
+      <hbox align="center">
+	<label value="Compression: "/>
+	<menulist id="comp_type" flex="0">
+	  <menupopup>
+	    <menuitem label="xz" value="xzip"/>
+	    <menuitem label="gzip" value="gzip"/>
+	    <menuitem label="none" value="none"/>
+	  </menupopup>
+	</menulist>
+      </hbox>
       <checkbox id="chk_base64" label="Enable text encoding"/>
-      <checkbox id="chk_comp_gzip" label="Enable compression"/>
-    </groupbox>
+      </groupbox>
   </vbox>
   
 </dialog>

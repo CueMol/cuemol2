@@ -225,7 +225,7 @@ namespace surface {
     // Data chunk serialization
 
     virtual bool isDataSrcWritable() const { return true; }
-    virtual LString getDataChunkReaderName() const;
+    virtual LString getDataChunkReaderName(int nQdfVer) const;
     virtual void writeDataChunkTo(qlib::LDom2OutStream &oos) const;
 
   };

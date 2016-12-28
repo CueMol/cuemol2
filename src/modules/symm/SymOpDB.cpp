@@ -457,7 +457,7 @@ void SymOpDB::changeXtalInfo(qlib::uid_t nObjID,
 
   CrystalInfo old_xi;
   bool bHasOld = false;
-  CrystalInfoPtr pXI = pObj->getExtData("symminfo");
+  CrystalInfoPtr pXI = pObj->getExtData("CrystalInfo");
   if (!pXI.isnull()) {
     bHasOld = true;
     old_xi = *( pXI.get() );
@@ -489,11 +489,11 @@ bool SymOpDB::changeXIImpl(qlib::uid_t nObjID, CrystalInfo *pXI)
 
   if (pXI!=NULL) {
     qsys::ObjExtDataPtr pci( MB_NEW CrystalInfo(*pXI) );
-    pObj->setExtData("symminfo", pci);
+    pObj->setExtData(pci);
   }
   else {
     // remove XI
-    pObj->removeExtData("symminfo");
+    pObj->removeExtData("CrystalInfo");
   }
 
   // fire event!!

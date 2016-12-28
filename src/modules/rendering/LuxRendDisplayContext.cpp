@@ -215,22 +215,28 @@ void LuxRendDisplayContext::writeHeader()
   ps.format("\n");
   */
 
-  ps.print("AttributeBegin # Light\n");
-  ps.print("LightSource \"distant\"\n");
-  ps.print("  \"color L\" [1 1 1]\n");
-  ps.print("  \"float gain\" [1000]\n");
-  ps.print("  \"point from\" [-1 1 1]\n");
-  ps.print("  \"point to\" [0 0 0]\n");
-  ps.print("  \"float theta\" [20]\n");
-  ps.print("AttributeEnd\n");
-
+  if (m_pParent->m_nBgMode!=LuxRendSceneExporter::BG_BOX) {
+    ps.print("AttributeBegin # Light\n");
+    ps.print("LightSource \"distant\"\n");
+    ps.print("  \"color L\" [1 1 1]\n");
+    ps.print("  \"float gain\" [1000]\n");
+    ps.print("  \"point from\" [-1 1 1]\n");
+    ps.print("  \"point to\" [0 0 0]\n");
+    ps.print("  \"float theta\" [20]\n");
+    ps.print("AttributeEnd\n");
+  }
+  
   ps.format("AttributeBegin # Infinit light\n");
   ps.format("LightSource \"infinite\" \"color L\" [1.0 1.0 1.0] \"float gain\" [0.1]\n");
   ps.format("AttributeEnd\n");
   ps.format("\n");
 
-  if (!m_pParent->m_bBgTransp) {
-    ps.format("AttributeBegin # Background\n");
+  LOG_DPRINTLN("BG mode=%d", m_pParent->m_nBgMode);
+  //if (!m_pParent->m_bBgTransp) {
+  if (m_pParent->m_nBgMode==LuxRendSceneExporter::BG_BOX) {
+  }
+  else if (m_pParent->m_nBgMode==LuxRendSceneExporter::BG_WALL) {
+    ps.format("AttributeBegin # Background Wall\n");
     ps.format("Material \"matte\"\n");
     ps.format("    \"color Kd\" [%.4f %.4f %.4f]\n", m_bgcolor->fr(), m_bgcolor->fg(), m_bgcolor->fb());
     if (bPerspec) {
@@ -257,32 +263,34 @@ void LuxRendDisplayContext::writeHeader()
     ps.format("\n");
   }
   
-  // floor
-  ps.format("AttributeBegin # Floor\n");
-  ps.format("Material \"matte\"\n");
-  ps.format("    \"color Kd\" [0.5 0.5 0.5]\n");
-  if (bPerspec) {
-  }
-  else {
-    double scl = 10.0;
-    ps.format("Shape \"mesh\"\n");
-    ps.format("  \"point P\" [\n");
-    ps.format("  %f %f %f\n", -zoomx/2.0*scl, -zoomy/2.0*scl, zback*scl);
-    ps.format("  %f %f %f\n", -zoomx/2.0*scl, -zoomy/2.0*scl, -zback*scl);
-    ps.format("  %f %f %f\n", zoomx/2.0*scl, -zoomy/2.0*scl, -zback*scl);
-    ps.format("  %f %f %f\n", zoomx/2.0*scl, -zoomy/2.0*scl, zback*scl);
-/*
+  if (m_pParent->m_nBgMode==LuxRendSceneExporter::BG_WALL ||
+      m_pParent->m_nBgMode==LuxRendSceneExporter::BG_TRANSP) {
+    // floor
+    ps.format("AttributeBegin # Floor\n");
+    ps.format("Material \"matte\"\n");
+    ps.format("    \"color Kd\" [0.5 0.5 0.5]\n");
+    if (bPerspec) {
+    }
+    else {
+      double scl = 10.0;
+      ps.format("Shape \"mesh\"\n");
+      ps.format("  \"point P\" [\n");
+      ps.format("  %f %f %f\n", -zoomx/2.0*scl, -zoomy/2.0*scl, zback*scl);
+      ps.format("  %f %f %f\n", -zoomx/2.0*scl, -zoomy/2.0*scl, -zback*scl);
+      ps.format("  %f %f %f\n", zoomx/2.0*scl, -zoomy/2.0*scl, -zback*scl);
+      ps.format("  %f %f %f\n", zoomx/2.0*scl, -zoomy/2.0*scl, zback*scl);
+      /*
     ps.format("  %f %f %f\n", zoomx/2.0, zoomy/2.0, zback);
     ps.format("  %f %f %f\n", zoomx/2.0, zoomy/2.0, -zback);
     ps.format("  %f %f %f\n", zoomx/2.0, -zoomy/2.0, -zback);
     ps.format("  %f %f %f\n", zoomx/2.0, -zoomy/2.0, zback);
-*/
-    ps.format("]\n");
-    ps.format("  \"integer quadindices\" [0 1 2 3]\n");
+       */
+      ps.format("]\n");
+      ps.format("  \"integer quadindices\" [0 1 2 3]\n");
+    }
+    ps.format("AttributeEnd\n");
+    ps.format("\n");
   }
-  ps.format("AttributeEnd\n");
-  ps.format("\n");
-  
 
   // overwrite perspec flag
   setPerspective(bPerspec);
@@ -291,6 +299,89 @@ void LuxRendDisplayContext::writeHeader()
 void LuxRendDisplayContext::writeTailer()
 {
   PrintStream ps(*m_pOut);
+
+  const qlib::Box3D &bbox = getBoundingBox();
+  LOG_DPRINTLN("LuxRend bonding box: (%f,%f,%f) - (%f,%f,%f)",
+               bbox.vstart.x(), bbox.vstart.y(), bbox.vstart.z(),
+               bbox.vend.x(), bbox.vend.y(), bbox.vend.z());
+
+  if (m_pParent->m_nBgMode==LuxRendSceneExporter::BG_BOX) {
+    bool bPerspec = isPerspective();
+    double m = qlib::max(bbox.sizex()*0.1, qlib::max(bbox.sizey()*0.1, bbox.sizez()*0.1));
+    double zback = bbox.vstart.z() - m;
+    double zfront = 0; //bbox.vend.z() + m;
+    double stx = bbox.vstart.x()-m;
+    double sty = bbox.vstart.y()-m;
+    double enx = bbox.vend.x()+m;
+    double eny = bbox.vend.y()+m;
+
+    int width = m_pParent->getWidth();
+    int height = m_pParent->getHeight();
+    double zoomy = m_dZoom;
+    double zoomx = zoomy * double(width) / double(height);
+    double xx = zoomx/2.0;
+    double yy = zoomy/2.0;
+
+    ps.print("AttributeBegin # Light\n");
+    ps.print("LightSource \"distant\"\n");
+    ps.print("  \"color L\" [1 1 1]\n");
+    ps.print("  \"float gain\" [1]\n");
+    ps.print("  \"point from\" [-1 1 1]\n");
+    ps.print("  \"point to\" [0 0 0]\n");
+    ps.print("  \"float theta\" [20]\n");
+    ps.print("AttributeEnd\n");
+
+    ps.format("AttributeBegin # SpotLight\n");
+    ps.format("Translate 0 %f %f\n", yy+m, m_dSlabDepth/2.0);
+    ps.format("AreaLightSource \"area\" \"float gain\" [10000] \"color L\" [1.0 1.0 1.0]\n");
+    ps.format("Shape \"sphere\" \"float radius\" [%f]\n", m);
+    ps.format("AttributeEnd\n");
+
+    ps.format("AttributeBegin # Box\n");
+    ps.format("Material \"matte\"\n");
+    ps.format("    \"color Kd\" [%.4f %.4f %.4f]\n", m_bgcolor->fr(), m_bgcolor->fg(), m_bgcolor->fb());
+    if (bPerspec) {
+    }
+    else {
+      ps.format("Shape \"mesh\"\n");
+      ps.format("  \"point P\" [%f %f %f\n", stx, eny, zback);
+      ps.format("  %f %f %f\n", stx, sty, zback);
+      ps.format("  %f %f %f\n", enx, sty, zback);
+      ps.format("  %f %f %f]\n", enx, eny, zback);
+      ps.format("  \"integer quadindices\" [0 1 2 3]\n");
+
+      ps.format("Shape \"mesh\"\n");
+      ps.format("  \"point P\" [%f %f %f\n", stx, eny, zback);
+      ps.format("  %f %f %f\n", enx, eny, zback);
+      ps.format("  %f %f %f\n", xx, yy, zfront);
+      ps.format("  %f %f %f]\n", -xx, yy, zfront);
+      ps.format("  \"integer quadindices\" [0 1 2 3]\n");
+
+      ps.format("Shape \"mesh\"\n");
+      ps.format("  \"point P\" [%f %f %f\n", stx, sty, zback);
+      ps.format("  %f %f %f\n", enx, sty, zback);
+      ps.format("  %f %f %f\n", xx, -yy, zfront);
+      ps.format("  %f %f %f]\n", -xx, -yy, zfront);
+      ps.format("  \"integer quadindices\" [0 1 2 3]\n");
+
+      ps.format("Shape \"mesh\"\n");
+      ps.format("  \"point P\" [%f %f %f\n", stx, eny, zback);
+      ps.format("  %f %f %f\n", stx, sty, zback);
+      ps.format("  %f %f %f\n", -xx, -yy, zfront);
+      ps.format("  %f %f %f]\n", -xx, yy, zfront);
+      ps.format("  \"integer quadindices\" [0 1 2 3]\n");
+
+      ps.format("Shape \"mesh\"\n");
+      ps.format("  \"point P\" [%f %f %f\n", enx, sty, zback);
+      ps.format("  %f %f %f\n", enx, eny, zback);
+      ps.format("  %f %f %f\n", xx, yy, zfront);
+      ps.format("  %f %f %f]\n", xx, -yy, zfront);
+      ps.format("  \"integer quadindices\" [0 1 2 3]\n");
+    }
+    ps.format("AttributeEnd\n");
+    ps.format("\n");
+  }
+
   ps.format("WorldEnd\n");
   ps.format("\n");
 }

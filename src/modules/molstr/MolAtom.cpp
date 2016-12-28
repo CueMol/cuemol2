@@ -212,6 +212,9 @@ bool MolAtom::removeBond(MolBond *pBond)
   return true;
 }
 
+////////////
+#if 0
+
 bool MolAtom::getAtomProp(const LString &propnm, qlib::LVariant &presult) const
 {
   PropTab::const_iterator i = m_props.find(propnm);
@@ -319,4 +322,6 @@ void MolAtom::setAtomPropStr(const LString &propnm, const LString &value)
   var.setStringValue(value);
   setAtomProp(propnm, var);
 }
+
+#endif
 

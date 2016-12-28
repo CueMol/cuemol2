@@ -12,7 +12,7 @@
 #include <qlib/ClassRegistry.hpp>
 #include <qlib/LClassUtils.hpp>
 
-//#include <qlib/BinStream.hpp>
+#include <qsys/ObjExtData.hpp>
 
 #include "MolResidue.hpp"
 #include "MolCoord.hpp"
@@ -45,7 +45,7 @@ void QdfMolWriter::attach(qsys::ObjectPtr pMol)
 
 const char * QdfMolWriter::getTypeDescr() const
 {
-  return "CueMol data file (*.qdf)";
+  return "CueMol coordinates file (*.qdf)";
 }
 
 const char * QdfMolWriter::getFileExt() const
@@ -75,11 +75,12 @@ bool QdfMolWriter::write(qlib::OutStream &outs)
   }
 
   m_pMol = pMol;
-  setFileType("MOL2");
 
   start(outs);
 
-  // TO DO: write mol-level properties (cell params, etc)
+  getStream().writeFileType("MOL2");
+
+  writeMolData();
   
   writeChainData();
 
@@ -93,6 +94,45 @@ bool QdfMolWriter::write(qlib::OutStream &outs)
 
   m_pMol = NULL;
   return true;
+}
+
+void QdfMolWriter::writeMolData()
+{
+  LString strnames = m_pMol->getExtDataNames();
+  std::list<LString> names;
+  if (!strnames.isEmpty())
+  strnames.split(',', names);
+
+  qsys::ObjExtData::DataTab values;
+  BOOST_FOREACH (const LString &elem, names) {
+    qsys::ObjExtDataPtr pExt = m_pMol->getExtData(elem);
+    if (!pExt.isnull())
+      pExt->writeQdfData(values);
+  }
+
+  qsys::QdfOutStream &os = getStream();
+  
+  if (values.empty()) {
+    os.defData("mol", 0);
+    return;
+  }
+
+  os.defData("mol", 1);
+
+  BOOST_FOREACH (qsys::ObjExtData::DataTab::value_type &elem, values) {
+    int len = elem.second.length();
+    os.defFixedStr(elem.first, len);
+  }
+
+  os.startData();
+
+  os.startRecord();
+  BOOST_FOREACH (qsys::ObjExtData::DataTab::value_type &elem, values) {
+    os.writeFixedStr(elem.first, elem.second);
+  }
+  os.endRecord();
+
+  os.endData();
 }
 
 void QdfMolWriter::writeChainData()
@@ -246,15 +286,6 @@ void QdfMolWriter::writeResidData()
         
         endRecord();
         m_resmap.insert(std::pair<qlib::qvoidp, quint32>((qlib::qvoidp)pRes.get(), iResID));
-
-        /*
-        // make rid map
-        MolResidue::AtomCursor aiter = pRes->atomBegin();
-        MolResidue::AtomCursor aiend = pRes->atomEnd();
-        for (; aiter!=aiend; ++aiter) {
-          m_ridmap.insert(std::pair<int,int>(aiter->second, iResID));
-        }
-         */
       }
     }
   }
@@ -357,7 +388,7 @@ void QdfMolWriter::writeAtomData()
     os.defFloat32("u22");
   }    
 
-  // props
+  // Atom props
   BOOST_FOREACH (const TypeMap::value_type &elem, prop_typemap) {
     const LString &nm = elem.first;
     const RecElem &re = elem.second;
@@ -416,11 +447,31 @@ void QdfMolWriter::writeAtomData()
       }
     }
 
-    // XXX TO DO: save PROPS!!
-
+    // Write Atom Props
+    BOOST_FOREACH (const TypeMap::value_type &elem, prop_typemap) {
+      const LString &nm = elem.first;
+      const RecElem &re = elem.second;
+      LString recname = PROP_PFX+nm;
+      switch (re.second) {
+      case QDF_TYPE_BOOL:
+        os.writeBool(recname, pAtom->getAtomPropBool(nm));
+        break;
+      case QDF_TYPE_INT32:
+        os.writeInt32(recname, pAtom->getAtomPropInt(nm));
+        break;
+      case QDF_TYPE_FLOAT32:
+        os.writeFloat32(recname, (qfloat32) pAtom->getAtomPropReal(nm));
+        break;
+      case QDF_TYPE_FIXSTR8:
+        os.writeFixedStr(recname, pAtom->getAtomPropStr(nm));
+        break;
+      }
+      //MB_DPRINTLN("QdfMolWriter> atom prop <%s> defined", nm.c_str());
+    }
+    
     endRecord();
 
-    m_atommap.insert(std::pair<int, quint32>(aiter->first, iAtomID));
+    m_atommap.insert(AtomMap::value_type(aiter->first, iAtomID));
   }
 
   endData();
@@ -428,15 +479,26 @@ void QdfMolWriter::writeAtomData()
 
 void QdfMolWriter::writeBondData()
 {
-  int nbons = m_pMol->getBondSize();
-  qsys::QdfOutStream &os = getStream();
+  MolCoord::BondIter iter, iend;
 
+  int nbons = 0;
+  iend = m_pMol->endBond();
+  iter = m_pMol->beginBond();
+  for (; iter!=iend; ++iter) {
+    MolBond *pBond = iter->second;
+    if(pBond->isPersist())
+      ++nbons;
+  }
+
+  qsys::QdfOutStream &os = getStream();
   os.defData("bond", nbons);
+  if (nbons==0)
+    return;
 
   // Bond UID
   os.defUID("id");
 
-  // Atom UID 1,1
+  // Atom UID 1,2
   os.defUID("aid1");
   os.defUID("aid2");
 
@@ -448,11 +510,13 @@ void QdfMolWriter::writeBondData()
 
   startData();
 
-  MolCoord::BondIter iter = m_pMol->beginBond();
-  MolCoord::BondIter iend = m_pMol->endBond();
+  iter = m_pMol->beginBond();
   quint32 iBondID = 0;
   for (; iter!=iend; ++iter, ++iBondID) {
     MolBond *pBond = iter->second;
+
+    if(!pBond->isPersist())
+      continue;
 
     quint32 aid1 = getAtomUID(pBond->getAtom1());
     quint32 aid2 = getAtomUID(pBond->getAtom2());

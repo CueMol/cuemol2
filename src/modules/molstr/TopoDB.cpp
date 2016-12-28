@@ -288,7 +288,7 @@ ResiPatch *TopoDB::findLinkImpl2(MolResiduePtr pPrev, MolResiduePtr pNext,
 
 ////
 
-ResiToppar *TopoDB::get(const LString &key) const
+ResiToppar *TopoDB::get(const LString &key, qlib::uid_t uid /*= qlib::invalid_uid*/) const
 {
   ResiToppar *pTop = m_residTab.get(key);
   if (pTop!=NULL)
@@ -296,14 +296,27 @@ ResiToppar *TopoDB::get(const LString &key) const
 
   // try to resolve alias name
   AliasTab::const_iterator iter = m_aliasTab.find(key);
-  if (iter==m_aliasTab.end()) return NULL;
-  LString cname = iter->second;
+  if (iter!=m_aliasTab.end()) {
+    LString cname = iter->second;
+    //MB_DPRINTLN("TopoDB::get() resolved alias %s for %s",
+    //key.c_str(), cname.c_str());
+    pTop = m_residTab.get(cname);
+    if (pTop!=NULL)
+      return pTop;
+  }
+  
+  // try UID-decorated name
+  LString dkey = getUIDDecName(key, uid);
+  pTop = m_residTab.get(dkey);
+  if (pTop!=NULL)
+    return pTop;
 
-  //MB_DPRINTLN("TopoDB::get() resolved alias %s for %s",
-  //key.c_str(), cname.c_str());
+  // ATTN: UID-decorated alias name cannot occur current implementation
 
-  return m_residTab.get(cname);
+  // Not found!!
+  return NULL;
 }
+
 
 void TopoDB::dump() const
 {

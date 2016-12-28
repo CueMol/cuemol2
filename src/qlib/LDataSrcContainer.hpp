@@ -27,15 +27,23 @@ namespace qlib {
 
     //////////
 
+    /// Return true if this container supports writing to QSC/QDF
     virtual bool isDataSrcWritable() const;
-    virtual LString getDataChunkReaderName() const;
 
-    virtual void setDataChunkName(const LString &name, LDom2Node *pNode);
+    /// Return the Reader object nickname for this data-source container
+    ///  (Data source container can determine the reader name based on the compatibility version number)
+    virtual LString getDataChunkReaderName(int nQdfVer) const;
 
+    /// Set-up the source and source type names to the data node pNode and update this object's props
+    ///  (Typical impl calls getDataChunkReaderName() to determine the source type)
+    virtual void setDataChunkName(const LString &name, LDom2Node *pNode, int nQdfVer);
+
+    /// Write the contents of this data source container to the object stream
     virtual void writeDataChunkTo(LDom2OutStream &oos) const;
 
     //////////
 
+    /// Read the contents of this data source container from the stream
     virtual void readFromStream(qlib::InStream &ins);
 
     /// Update src path prop (after reading from src or alt_src)

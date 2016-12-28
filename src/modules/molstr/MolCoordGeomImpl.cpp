@@ -268,6 +268,8 @@ void MolCoord::applyTopology(bool bAutoBuild/*=true*/)
     TopoBuilder tb(pTopoDB);
 	tb.m_bAutoGen = bAutoBuild;
     tb.attachMol(pmol);
+    if (!bAutoBuild)
+      tb.setAutogenMode(TopoBuilder::AUTOGEN_NONE);
     tb.applyTopology();
   }
 }

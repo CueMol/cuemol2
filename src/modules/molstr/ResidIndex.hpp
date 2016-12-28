@@ -22,6 +22,7 @@ namespace molstr {
     qlib::LString toString() const;
     // const char *c_str() const;
     static ResidIndex fromString(const qlib::LString &stridx);
+    //const char *c_str() const { return toString().c_str(); }
   };
 
   inline bool operator<(const ResidIndex &ix, const ResidIndex &iy)

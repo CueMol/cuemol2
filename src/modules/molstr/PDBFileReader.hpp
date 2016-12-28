@@ -46,6 +46,9 @@ namespace molstr {
     /// use segid field as chain name
     bool m_bLoadSegID;
 
+    /// auto generate unknown compound's topology
+    bool m_bAutoTopoGen;
+    
   private:
     /// Line input buffer
     LString m_recbuf;
@@ -79,6 +82,9 @@ namespace molstr {
 
     int m_nErrCount;
     int m_nErrMax;
+
+    int m_nDupAtoms;
+    int m_nLostAtoms;
 
     //////////////////////////////////////////////
   public:
@@ -235,11 +241,6 @@ namespace molstr {
     };
 
     std::deque<Linkage> m_linkdat;
-
-  public:
-    static LString encodeModelInChain(const LString &chainname, int nModel);
-    static bool decodeModelFromChain(const LString &orig,
-                                     LString &cChain, int &nModel);
 
     //////////////////////////////////////////////////
     // PDB Record handler (common impl with PDBWriter)

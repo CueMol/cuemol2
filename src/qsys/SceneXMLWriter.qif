@@ -23,7 +23,7 @@ runtime_class SceneXMLWriter extends InOutHandler
 
   /// version ID (Version value should be persistent,
   /// since the file should be saved with the same version format in the next time)
-  property string version => redirect(getVersion, setVersion);
+  property string version => redirect(getStrVersion, setStrVersion);
 
   ////////////////////
   // Method definition

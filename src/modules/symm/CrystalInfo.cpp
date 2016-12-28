@@ -175,3 +175,83 @@ LString CrystalInfo::getSpaceGroupName() const
   return sgname;
 }
 
+void CrystalInfo::setSGByName(const LString &name)
+{
+  SymOpDB *pdb = SymOpDB::getInstance();
+  int sgid = pdb->getSgIDByCName(name);
+  if (sgid<1) {
+    sgid = pdb->getSgIDByName(name);
+    if (sgid<1) {
+      LString msg = LString::format("Invalid s.g. name <%s>", name.c_str());
+      MB_THROW (qlib::RuntimeException, msg);
+      return;
+    }
+  }
+
+  setSG(sgid);
+}
+
+void CrystalInfo::writeQdfData(DataTab &out)
+{
+  LString str;
+
+  str = LString::fromReal(m_cella);
+  out.forceSet("CrystalInfo.lena", str);
+
+  str = LString::fromReal(m_cellb);
+  out.forceSet("CrystalInfo.lenb", str);
+
+  str = LString::fromReal(m_cellc);
+  out.forceSet("CrystalInfo.lenc", str);
+
+  str = LString::fromReal(m_alpha);
+  out.forceSet("CrystalInfo.anga", str);
+
+  str = LString::fromReal(m_beta);
+  out.forceSet("CrystalInfo.angb", str);
+
+  str = LString::fromReal(m_gamma);
+  out.forceSet("CrystalInfo.angg", str);
+
+  str = LString::fromInt(m_nSG);
+  out.forceSet("CrystalInfo.sgid", str);
+}
+
+void CrystalInfo::readQdfData(const DataTab &in)
+{
+  LString val;
+
+  if (in.containsKey("CrystalInfo.lena")) {
+    val = in.get("CrystalInfo.lena");
+    val.toDouble(&m_cella);
+  }
+
+  if (in.containsKey("CrystalInfo.lenb")) {
+    val = in.get("CrystalInfo.lenb");
+    val.toDouble(&m_cellb);
+  }
+
+  if (in.containsKey("CrystalInfo.lenc")) {
+    val = in.get("CrystalInfo.lenc");
+    val.toDouble(&m_cellc);
+  }
+
+  if (in.containsKey("CrystalInfo.anga")) {
+    val = in.get("CrystalInfo.anga");
+    val.toDouble(&m_alpha);
+  }
+  if (in.containsKey("CrystalInfo.angb")) {
+    val = in.get("CrystalInfo.angb");
+    val.toDouble(&m_beta);
+  }
+  if (in.containsKey("CrystalInfo.angg")) {
+    val = in.get("CrystalInfo.angg");
+    val.toDouble(&m_gamma);
+  }
+
+  if (in.containsKey("CrystalInfo.sgid")) {
+    val = in.get("CrystalInfo.sgid");
+    val.toInt(&m_nSG);
+  }
+}
+

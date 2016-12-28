@@ -279,10 +279,10 @@ void LScrObjBase::writeTo2(LDom2Node *pNode) const
       continue;
     }
 
-    MB_DPRINTLN("> write(%s) prop=%s, isDef=%d",
-                typeid(*this).name(),
-                nm.c_str(),
-                isPropDefault(nm));
+    //MB_DPRINTLN("> write(%s) prop=%s, isDef=%d",
+    //typeid(*this).name(),
+    //nm.c_str(),
+    //isPropDefault(nm));
 
     // check default flag
     bool bDefault = false;

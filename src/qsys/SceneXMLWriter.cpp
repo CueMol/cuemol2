@@ -11,6 +11,7 @@
 #include "ObjWriter.hpp"
 #include "style/AutoStyleCtxt.hpp"
 #include "style/StyleSet.hpp"
+#include "QdfStream.hpp"
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -32,6 +33,7 @@ SceneXMLWriter::SceneXMLWriter()
   m_bForceEmbedAll = false;
   m_bBase64 = false;
   m_nCompMode = COMP_NONE;
+  m_nVersion = 0;
 }
 
 SceneXMLWriter::~SceneXMLWriter()
@@ -98,6 +100,16 @@ void SceneXMLWriter::setBase64Flag(bool b)
   m_bBase64 = b;
 }
 
+LString SceneXMLWriter::getStrVersion() const
+{
+  return QdfDataType::createVerString(m_nVersion);
+}
+
+void SceneXMLWriter::setStrVersion(const LString &s)
+{
+  m_nVersion = QdfDataType::parseVerString(s);
+}
+
 void SceneXMLWriter::setDefaultOpts(ScenePtr pScene)
 {
   qlib::LDom2Node *pNode = pScene->getQscOpts();
@@ -133,6 +145,10 @@ void SceneXMLWriter::write()
   fos.open(getPath());
 
   qlib::LDom2OutStream oos(fos);
+
+  // setup version string (QDF0/QDF1, etc)
+  LOG_DPRINTLN("SceneXML> QDF Version = %x", m_nVersion);
+  oos.setQdfVer(m_nVersion);
 
   // setup encoding flags
   LString encflag;
@@ -250,13 +266,8 @@ void SceneXMLWriter::procDataChunks(qlib::LDom2OutStream &oos, qlib::LDom2Node *
     return;
 
   LString src = oos.prepareDataChunk(pCnt);
-  // LString srctype = pCnt->getDataChunkReaderName();
-  pCnt->setDataChunkName(src, pNode);
 
-  // obj->setSource(src);
-  // obj->setSourceType(srctype);
-  //MB_DPRINTLN("SceneXMLWr> embeding src=%s, srctype=%s",
-  //src.c_str(), srctype.c_str());
+  pCnt->setDataChunkName(src, pNode, oos.getQdfVer());
 }
 
 qlib::LScrSp<qlib::LByteArray> SceneXMLWriter::toByteArray(const qlib::LScrSp<qlib::LScrObjBase> &pSObj,
@@ -266,9 +277,10 @@ qlib::LScrSp<qlib::LByteArray> SceneXMLWriter::toByteArray(const qlib::LScrSp<ql
   qlib::StrOutStream fos;
   qlib::LDom2OutStream oos(fos);
 
-  // gzip-compressed base64 stream
+  // xz-compressed base64 stream
   // (the output should be text format)
-  oos.setQdfEncType("11");
+  oos.setQdfVer(1);
+  oos.setQdfEncType("13");
   
   qlib::uid_t nSceneID = qlib::invalid_uid;
   LString top_type;

@@ -31,7 +31,9 @@ namespace qsys {
 
     bool m_bBase64;
 
-    LString m_strVer;
+    // LString m_strVer;
+    
+    int m_nVersion;
 
     //////////
 
@@ -87,13 +89,18 @@ namespace qsys {
       m_bForceEmbedAll = b;
     }
 
-    // version
-    LString getVersion() const {
-      return m_strVer;
+    /// Get version (in string, QDF0, QDF1, etc)
+    LString getStrVersion() const;
+
+    /// Set version (in string)
+    void setStrVersion(const LString &s);
+
+    /// Get version (in integer, 0, 1, etc)
+    int getNumVersion() const {
+      return m_nVersion;
     }
-    void setVersion(const LString &s) {
-      m_strVer = s;
-    }
+    /// Set version (in integer)
+    void setNumVersion(int n) { m_nVersion = n; }
 
     void setDefaultOpts(ScenePtr pScene);
 

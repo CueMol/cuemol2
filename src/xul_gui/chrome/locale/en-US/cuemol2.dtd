@@ -101,8 +101,10 @@
 <!ENTITY aboutDialog.title           "About &brandShortName;">
 <!ENTITY aboutDialog.version         "Version">
 <!ENTITY aboutDialog.build           "Build ID">
-<!ENTITY aboutDialog.copyrightInfo   "&#169;1998-2015 Contributors. All Rights Reserved.
-Refer to http://www.cuemol.org/en/index.php?Licence for conditions of distribution and use.">
+<!ENTITY aboutDialog.copyrightInfo1   "&#169;1998-2016 Contributors. All Rights Reserved. Refer to">
+<!ENTITY aboutDialog.copyrightInfoLink   "Licence">
+<!ENTITY aboutDialog.copyrightInfoLinkURL "http://www.cuemol.org/en/index.php?Licence">
+<!ENTITY aboutDialog.copyrightInfo2   "for conditions of distribution and use.">
 
 <!-- ********** Panels ********** -->
 

@@ -33,11 +33,21 @@
 	  <radio label="Recalc secondry str" id="radio_recalc" selected="true"/>
 	</caption>
 
+	<checkbox id="ign_bulge" label="Ignore &#0946; bulge" checked="false"/>
+
+	<hbox align="center">
+	  <checkbox id="helix_gapfill" label="Helix gap-fill angle (&#0176;):" checked="false"/>
+	  <textbox id="helix_angl1" type="number"
+	    min="0" max="180" value="120" size="3" decimalplaces="0" increment="5"/>
+	</hbox>
+
+	<!--
 	<hbox align="center">
 	  <label value="Max hbond energy (cal/mol):"/>
 	  <textbox id="hbmax" type="number"
 	    min="-Infinity" value="-500" size="3" decimalplaces="0" increment="10"/>
-	</hbox>
+	  </hbox>-->
+	
       </groupbox>
 
       <groupbox flex="0">

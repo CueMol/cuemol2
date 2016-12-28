@@ -5,9 +5,17 @@
       <Configuration>Debug</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Release|Win32">
       <Configuration>Release</Configuration>
       <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -21,7 +29,18 @@
     <CharacterSet>MultiByte</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <PlatformToolset>v120_xp</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Utility</ConfigurationType>
+    <PlatformToolset>v120_xp</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Utility</ConfigurationType>
     <PlatformToolset>v120_xp</PlatformToolset>
     <CharacterSet>MultiByte</CharacterSet>
@@ -33,7 +52,15 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\common.props" />
   </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\common.props" />
+  </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="..\common.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\common.props" />
   </ImportGroup>
@@ -42,12 +69,16 @@
     <_ProjectFileVersion>12.0.21005.1</_ProjectFileVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>$(XULDeployDir)\</OutDir>
-    <IntDir>$(Configuration)\</IntDir>
+    <OutDir>$(XULDeployDir)</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(XULDeployDir)</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>$(XULDeployDir)\</OutDir>
-    <IntDir>$(Configuration)\</IntDir>
+    <OutDir>$(XULDeployDir)</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(XULDeployDir)</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup>
   </ItemDefinitionGroup>
@@ -69,7 +100,24 @@ xcopy $(SourceDir)xul_gui\defaults $(XULDeployDir)\defaults /E /Y /I
 xcopy $(SourceDir)xul_gui\resources $(XULDeployDir)\resources /E /Y /I
 xcopy $(SourceDir)xul_gui\scripts $(XULDeployDir)\scripts /E /Y /I
 </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">cd $(SourceDir)xul_gui\jarmaker
+del /Q /F $(XULDeployDir)chrome\*.*
+perl preprocessor.pl  &lt; $(SourceDir)xul_gui\chrome\jar.mn &gt; jar.mn_processed
+perl make-jars.pl -d $(XULDeployDir)chrome -s $(SourceDir)xul_gui\chrome -p preprocessor.pl -z zip.exe &lt; jar.mn_processed
+copy $(SourceDir)xul_gui\application.ini $(XULDeployDir) /Y
+copy $(SourceDir)xul_gui\chrome.manifest $(XULDeployDir) /Y
+copy $(SourceDir)xul_gui\harness-options.json $(XULDeployDir) /Y
+copy $(SourceDir)xul_gui\sysconfig.xml $(XULDeployDir) /Y
+mkdir $(XULDeployDir)\components
+xcopy $(SourceDir)xul_gui\components\*.js $(XULDeployDir)\components /E /Y /I
+xcopy $(SourceDir)xul_gui\chrome\icons $(XULDeployDir)\chrome\icons /E /Y /I
+xcopy $(SourceDir)xul_gui\data $(XULDeployDir)\data /E /Y /I
+xcopy $(SourceDir)xul_gui\defaults $(XULDeployDir)\defaults /E /Y /I
+xcopy $(SourceDir)xul_gui\resources $(XULDeployDir)\resources /E /Y /I
+xcopy $(SourceDir)xul_gui\scripts $(XULDeployDir)\scripts /E /Y /I
+</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(XULDeployDir)\application.ini;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(XULDeployDir)\application.ini;%(Outputs)</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd $(SourceDir)xul_gui\jarmaker
 del /Q /F $(XULDeployDir)chrome\*.*
 perl preprocessor.pl  &lt; $(SourceDir)xul_gui\chrome\jar.mn &gt; jar.mn_processed
@@ -86,7 +134,24 @@ xcopy $(SourceDir)xul_gui\defaults $(XULDeployDir)\defaults /E /Y /I
 xcopy $(SourceDir)xul_gui\resources $(XULDeployDir)\resources /E /Y /I
 xcopy $(SourceDir)xul_gui\scripts $(XULDeployDir)\scripts /E /Y /I
 </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">cd $(SourceDir)xul_gui\jarmaker
+del /Q /F $(XULDeployDir)chrome\*.*
+perl preprocessor.pl  &lt; $(SourceDir)xul_gui\chrome\jar.mn &gt; jar.mn_processed
+perl make-jars.pl -d $(XULDeployDir)chrome -s $(SourceDir)xul_gui\chrome -p preprocessor.pl -z zip.exe &lt; jar.mn_processed
+copy $(SourceDir)xul_gui\application.ini $(XULDeployDir) /Y
+copy $(SourceDir)xul_gui\chrome.manifest $(XULDeployDir) /Y
+copy $(SourceDir)xul_gui\harness-options.json $(XULDeployDir) /Y
+copy $(SourceDir)xul_gui\sysconfig.xml $(XULDeployDir) /Y
+mkdir $(XULDeployDir)\components
+xcopy $(SourceDir)xul_gui\components\*.js $(XULDeployDir)\components /E /Y /I
+xcopy $(SourceDir)xul_gui\chrome\icons $(XULDeployDir)\chrome\icons /E /Y /I
+xcopy $(SourceDir)xul_gui\data $(XULDeployDir)\data /E /Y /I
+xcopy $(SourceDir)xul_gui\defaults $(XULDeployDir)\defaults /E /Y /I
+xcopy $(SourceDir)xul_gui\resources $(XULDeployDir)\resources /E /Y /I
+xcopy $(SourceDir)xul_gui\scripts $(XULDeployDir)\scripts /E /Y /I
+</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(XULDeployDir)\application.ini;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(XULDeployDir)\application.ini;%(Outputs)</Outputs>
     </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

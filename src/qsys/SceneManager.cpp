@@ -257,3 +257,13 @@ void SceneManager::setBusyTime(quint64 nanosec)
     
 }
 
+LString SceneManager::getVerArchName() const
+{
+  int nbit = (SIZEOF_VOIDP) * 8;
+  
+  LString plf;
+  plf = STR_GUI_ARCH;
+
+  return LString::format("%s%d", plf.toLowerCase().c_str(), nbit);
+}
+

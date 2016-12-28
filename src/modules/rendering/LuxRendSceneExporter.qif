@@ -21,6 +21,7 @@ runtime_class LuxRendSceneExporter extends SceneExporter
 
   /// halt condition (sample per pixel)
   property integer haltspp => m_nHaltSPP;
+  default haltspp = 10000;
 
   /// Base name for image output (empty-->use default/same as lxs file)
   property string outputbase => m_sOutputBase;
@@ -28,8 +29,17 @@ runtime_class LuxRendSceneExporter extends SceneExporter
   /// Film output options (tonemapping param, etc)
   property string filmopts => m_sFilmOpts;
 
-  /// transparent background
-  property boolean bg_transp => m_bBgTransp;
+  // /// transparent background
+  // property boolean bg_transp => m_bBgTransp;
+
+  // Background type
+  enumdef bgmode {
+    transp = render::LuxRendSceneExporter::BG_TRANSP;
+    wall = render::LuxRendSceneExporter::BG_WALL;
+    box = render::LuxRendSceneExporter::BG_BOX;
+  }
+  property enum bgmode => m_nBgMode;
+  default bgmode = "transp";
 
 };
 

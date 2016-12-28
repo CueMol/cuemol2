@@ -5,8 +5,6 @@
 
 #include <common.h>
 
-#define HAVE_XZ
-
 #include "QdfStream.hpp"
 
 #include <qlib/BinStream.hpp>
@@ -14,7 +12,7 @@
 #include <qlib/GzipStream.hpp>
 #include <gfx/AbstractColor.hpp>
 
-#ifdef HAVE_XZ
+#ifdef HAVE_LZMA_H
 #include <qlib/XzStream.hpp>
 #endif
 
@@ -80,7 +78,46 @@ int QdfDataType::getSize(int nrecid, bool fixed/*=true*/)
   return 0;
 }
 
-///////////////////////////
+//static
+LString QdfDataType::createVerString(int nver)
+{
+  if (nver<0x10)
+    return LString::format("QDF%x", nver);
+  else if (nver<0x100)
+    return LString::format("QD%x", nver);
+  else if (nver<0x1000)
+    return LString::format("Q%x", nver);
+  
+  MB_THROW(qlib::FileFormatException,
+           LString::format("Version number (%d) is too large", nver));
+}
+
+//static
+int QdfDataType::parseVerString(const LString &strver)
+{
+  int rval;
+  LString snum;
+  if (strver.startsWith("QDF"))
+    snum = strver.substr(3, 1);
+  else if (strver.startsWith("QD"))
+    snum = strver.substr(2, 2);
+  else if (strver.startsWith("Q"))
+    snum = strver.substr(1, 3);
+  else {
+    MB_THROW(qlib::FileFormatException,
+             LString::format("Invalid version string (%s)", strver.c_str()));
+  }
+
+  snum = "0x"+snum;
+  if (!snum.toInt(&rval)) {
+    MB_THROW(qlib::FileFormatException,
+             LString::format("Invalid version string (%s)", strver.c_str()));
+  }
+
+  return rval;
+}
+
+/////////////////////////////////////////////////////////////////////////////////
 
 
 QdfInStream::~QdfInStream()
@@ -103,16 +140,22 @@ void QdfInStream::setupStream()
     delete m_pZIn;
 
   // check QDF signature & version
-  char sgn[5];
-  read(sgn, 0, 4);
-  sgn[4] = '\0';
-  if (qlib::LChar::equals(sgn, "QDF0")) {
+  char csgn[5];
+  read(csgn, 0, 4);
+  csgn[4] = '\0';
+  LString sign(csgn);
+
+  m_nVersion = QdfDataType::parseVerString(sign);
+
+  if (m_nVersion==0) {
     // version 0 --> No encoding specification (direct storage)
     m_pBinIn = MB_NEW qlib::BinInStream(*this);
+//    m_nVer = 0;
     return;
   }
-  else if (qlib::LChar::equals(sgn, "QDF1")) {
-    // version 1
+
+  if (m_nVersion>=1) {
+    // version later than 1
     char b64 = read();
     char comp = read();
 
@@ -129,7 +172,7 @@ void QdfInStream::setupStream()
       m_pZIn = new qlib::GzipInStream(*pTIn);
       pTIn = m_pZIn;
     }
-#ifdef HAVE_XZ
+#ifdef HAVE_LZMA_H
     else if (comp=='3') {
       m_pZIn = new qlib::XzInStream(*pTIn);
       pTIn = m_pZIn;
@@ -141,10 +184,11 @@ void QdfInStream::setupStream()
     }
 
     m_pBinIn = MB_NEW qlib::BinInStream(*pTIn);
+    // m_nVer = 1;
     return;
   }
   
-  MB_THROW(qlib::FileFormatException, "invalid qdf signature");
+  MB_THROW(qlib::FileFormatException, "invalid qdf signature "+sign);
   return;
 }
 
@@ -191,12 +235,7 @@ void QdfInStream::start()
     return;
   }
 
-  // QDF version no
-  m_nVer = m_pBinIn->readInt32();
-  if (m_nVer!=QDF_VERSION) {
-    MB_THROW(qlib::FileFormatException, "unsupported qdf version");
-    return;
-  }
+  int ndummy = m_pBinIn->readInt32();
 
   // write file type string (any length)
   m_strFileType = m_pBinIn->readStr();
@@ -450,6 +489,21 @@ quint8 QdfInStream::readUInt8(const LString &name)
   return m_pBinIn->tread<quint8>();
 }
 
+bool QdfInStream::readBool(const LString &name)
+{
+  const RecElem &elem = m_recdefs[m_nRecInd];
+  if (!elem.first.equals(name) || elem.second!=QDF_TYPE_BOOL) {
+    MB_THROW(qlib::FileFormatException, "readBool inconsistent record order");
+    return 0;
+  }
+
+  m_nRecInd++;
+
+  quint8 ival = m_pBinIn->tread<quint8>();
+
+  return (ival)?true:false;
+}
+
 LString QdfInStream::readStr(const LString &name)
 {
   const RecElem &elem = m_recdefs[m_nRecInd];
@@ -582,7 +636,7 @@ void QdfOutStream::setupStream()
   if (m_pZOut!=NULL)
     delete m_pZOut;
 
-  if (m_encStr.isEmpty() || m_encStr.equals("00")) {
+  if (m_nVersion==0) {
     // QDF version 0 format
     // no encoding --> the same as QDF0 format
     // write QDF signature
@@ -593,15 +647,18 @@ void QdfOutStream::setupStream()
   }
   
   //
-  // QDF version 1 format
+  // QDF version >1 format
   //
+
+  LString verstr = QdfDataType::createVerString(m_nVersion);
+  
+  // write QDF signature
+  write(verstr.c_str(), 0, 4);
+
   // the first digit: base64 encoding flag
   char b64 = m_encStr[0];
   // the second digit: compression method ID
   char comp = m_encStr[1];
-
-  // write QDF signature
-  write("QDF1", 0, 4);
 
   // write encoding info
   write(m_encStr.c_str(), 0, 2);
@@ -619,7 +676,8 @@ void QdfOutStream::setupStream()
     m_pZOut = new qlib::GzipOutStream(*pTOut);
     pTOut = m_pZOut;
   }
-#ifdef HAVE_XZ
+#ifdef HAVE_LZMA_H
+  //#ifdef HAVE_XZ
   else if (comp=='3') {
     m_pZOut = new qlib::XzOutStream(*pTOut);
     pTOut = m_pZOut;
@@ -651,11 +709,16 @@ void QdfOutStream::start()
   // write FBOM
   m_pOut->writeFloat32(1.2345678f);
 
-  // write QDF version no
-  m_pOut->writeInt32(QDF_VERSION);
+  // write dummy data ??
+  m_pOut->writeInt32(2);
 
-  // write file type string (any length)
-  m_pOut->writeStr(m_strFileType);
+  // // write file type string (any length)
+  // m_pOut->writeStr(m_strFileType);
+}
+
+void QdfOutStream::writeFileType(const LString &type)
+{
+  m_pOut->writeStr(type);
 }
 
 void QdfOutStream::end()
@@ -851,6 +914,19 @@ void QdfOutStream::writeUInt8(const LString &name, quint8 value)
   ++m_nRecInd;
 }
 
+void QdfOutStream::writeBool(const LString &name, bool value)
+{
+  const RecElem &elem = m_recdefs[m_nRecInd];
+  if (!elem.first.equals(name) || elem.second!=QDF_TYPE_BOOL) {
+    MB_THROW(qlib::FileFormatException, "writeBool inconsistent record order");
+    return;
+  }
+
+  quint8 ivalue = value?1U:0U;
+  m_pOut->twrite(ivalue);
+  ++m_nRecInd;
+}
+
 void QdfOutStream::writeFloat32(const LString &name, qfloat32 value)
 {
   const RecElem &elem = m_recdefs[m_nRecInd];
@@ -859,7 +935,7 @@ void QdfOutStream::writeFloat32(const LString &name, qfloat32 value)
     return;
   }
 
-  m_pOut->writeFloat32(value);
+  m_pOut->twrite(value);
   ++m_nRecInd;
 }
 
@@ -871,9 +947,10 @@ void QdfOutStream::writeVec3D(const LString &name, const qlib::Vector4D &vec)
     return;
   }
 
-  m_pOut->writeFloat32(qfloat32(vec.x()));
-  m_pOut->writeFloat32(qfloat32(vec.y()));
-  m_pOut->writeFloat32(qfloat32(vec.z()));
+  m_pOut->twrite(qfloat32(vec.x()));
+  m_pOut->twrite(qfloat32(vec.y()));
+  m_pOut->twrite(qfloat32(vec.z()));
+
   ++m_nRecInd;
 }
 

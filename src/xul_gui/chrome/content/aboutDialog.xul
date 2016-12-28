@@ -20,10 +20,10 @@
   style="padding-top: 0; -moz-padding-end: 0; padding-bottom: 10px; -moz-padding-start: 0; width: 299px;">
   
   <!--<script type="application/x-javascript" src="chrome://cuemol2/content/aboutDialog.js"/>-->
+  <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
+
 <script>
 <![CDATA[
-var Cc = Components.classes;
-var Ci = Components.interfaces;
 
 function init(aEvent) 
 {
@@ -33,16 +33,18 @@ function init(aEvent)
   try {
     var info = Cc["@mozilla.org/network/protocol;1?name=http"].getService(Components.interfaces.nsIHttpProtocolHandler);
     var greInfoField = document.getElementById("GREInfo");
-    greInfoField.value = "Based on Mozilla "+info.misc; //+" version "+info.oscpu;
+    greInfoField.value = "Based on Mozilla "+info.misc;
+    //+" version "+info.oscpu;
   }
   catch (e) {
+    debug.exception(e);
   }
 
   try {
-    var qm = Cc["@cuemol.org/XPCCueMol"].getService(Ci.qICueMol);
-    var scm = qm.getService("SceneManager");
-    var qm_version = scm.getProp("version");
-    var qm_build = scm.getProp("build");
+    // var qm = Cc["@cuemol.org/XPCCueMol"].getService(Ci.qICueMol);
+    var scm = cuemol.getService("SceneManager");
+    var qm_version = scm.version;
+    var qm_build = scm.build;
 
     var versionField = document.getElementById("version");
     versionField.value += qm_version;
@@ -53,17 +55,11 @@ function init(aEvent)
   }
   catch (e) {
     // Pref is unset
+    debug.exception(e);
   }
 
   var userAgentField = document.getElementById("userAgent");
   userAgentField.value = navigator.userAgent;
-
-/*
-  var button = document.documentElement.getButton("extra2");
-  button.setAttribute("label", document.documentElement.getAttribute("creditslabel"));
-  button.setAttribute("accesskey", document.documentElement.getAttribute("creditsaccesskey"));
-  button.addEventListener("command", switchPage, false);
-*/
 
   var acceptButton = document.documentElement.getButton("accept");
   acceptButton.focus();
@@ -73,6 +69,18 @@ function uninit(aEvent)
 {
   if (aEvent.target != document)
     return;
+}
+
+function goLicPage(aEvent)
+{
+var url = aEvent.target.getAttribute("href");
+//alert("href="+url);
+aEvent.preventDefault();
+//gQm2Main.onOpenURL(url);
+var ioservice = Cc["@mozilla.org/network/io-service;1"].getService(Ci.nsIIOService);
+var uriToOpen = ioservice.newURI(url, null, null);
+var extps = Cc["@mozilla.org/uriloader/external-protocol-service;1"].getService(Ci.nsIExternalProtocolService);
+extps.loadURI(uriToOpen, null);
 }
 
 ]]>  
@@ -91,8 +99,9 @@ style="font-weight: normal; color: #808080; margin-top: 0; -moz-margin-end: 0; m
 	  />
 
       <description id="copyright"
-style="margin-top: 0; -moz-margin-end: 16px; margin-bottom: 3px; -moz-margin-start: 16px;"
->&aboutDialog.copyrightInfo;</description>
+style="margin-top: 0; -moz-margin-end: 16px; margin-bottom: 3px; -moz-margin-start: 16px;">
+	&aboutDialog.copyrightInfo1;<label class="text-link" href="&aboutDialog.copyrightInfoLinkURL;" onclick="goLicPage(event)">&aboutDialog.copyrightInfoLink;</label>&aboutDialog.copyrightInfo2;
+      </description>
 
       <textbox id="userAgent" multiline="true" readonly="true" flex="1"
 style="  margin-top: 10px;

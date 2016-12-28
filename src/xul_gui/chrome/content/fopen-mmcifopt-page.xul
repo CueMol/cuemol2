@@ -1,0 +1,96 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+<!DOCTYPE window SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+
+<overlay id="fopen-mmcifopt-overlay"
+  xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <overlaytarget id="tabs-overlay-target">
+    <tab label="mmCIF options" hidden="true" id="mmcif_options_tab"/>
+  </overlaytarget>
+  
+  <overlaytarget id="tabpanels-overlay-target">
+    <tabpanel hidden="true" id="mmcif_options_tabpanel">
+      <vbox>
+	<checkbox id="no_load_multimodel" label="Ignore multilpe models"/>
+	<checkbox id="no_load_anisou" label="Ignore anisotropic U"/>
+	<checkbox id="no_load_altconf" label="Ignore alternate conformation"/>
+	<checkbox id="calc_2ndry" label="Calculate protein secondary structure"/>
+	<checkbox id="topo_autogen" label="Auto-generate non-standard topology"/>
+      </vbox>
+    </tabpanel>
+  </overlaytarget>
+
+<script type="application/javascript;version=1.8">
+( function () {
+let dlgdata = window.arguments[0];
+
+function onInit() {
+  try {
+    if (window.gDlgObj.selectShowTab(dlgdata.target[0].reader_name, "mmcif")) {
+      let rdr = dlgdata.target[0].reader;
+
+      document.getElementById('calc_2ndry').checked = (rdr.loadsecstr == false);
+      document.getElementById('topo_autogen').checked = (rdr.autoTopoGen == true);
+
+      // MODEL record
+      document.getElementById('no_load_multimodel').checked = (rdr.loadmodel == false);
+
+      // ANISOU record
+      document.getElementById('no_load_anisou').checked = (rdr.loadanisou == false);
+
+      // Alternate conf.
+      document.getElementById('no_load_altconf').checked = (rdr.loadaltconf == false);
+    }
+  }
+  catch (e) {
+    dd("Fopen mmCIFOptPage onInit error: "+e);
+    debug.exception(e);
+  }
+}
+
+
+addEventListener("load", onInit, false);
+
+function setProp(rdr, propname, newval)
+{
+  let orig = rdr[propname];
+  if (newval!=orig)
+    rdr[propname] = newval;
+}
+
+dlgdata.ondlgok.push( function (aEvent) {
+if (document.getElementById("mmcif_options_tabpanel")) {
+  
+  let rdr = dlgdata.target[0].reader;
+  try {
+    // secondary structure
+    setProp(rdr, "loadsecstr", !document.getElementById('calc_2ndry').checked);
+    setProp(rdr, "autoTopoGen", document.getElementById('topo_autogen').checked);
+
+    // MODEL record
+    setProp(rdr, "loadmodel", !document.getElementById('no_load_multimodel').checked);
+
+    // ANISOU record
+    setProp(rdr, "loadanisou", !document.getElementById('no_load_anisou').checked);
+
+    // Alternate conf.
+    setProp(rdr, "loadaltconf", !document.getElementById('no_load_altconf').checked);
+
+    // SEGID record
+    setProp(rdr, "loadsegid", document.getElementById('load_segid').checked);
+  }
+  catch (e) {
+    dd("Fopen mmCIFOptPage SetProp error: "+e);
+    debug.exception(e);
+  }
+
+}
+
+});
+
+} )();
+  
+</script>
+</overlay>
+

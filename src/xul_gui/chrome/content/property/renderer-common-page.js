@@ -112,6 +112,7 @@ if (!("RendCommPropEdit" in cuemolui)) {
         defs[aElem] = aElem;
       });
 
+      var aElem;
       for (aElem in defs) {
         util.appendMenu(document, menu, aElem, aElem);
       }

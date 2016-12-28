@@ -156,6 +156,19 @@ namespace render {
       m_verts.clear();
       m_faces.clear();
     }
+
+    ///////////////////
+    // access methods
+    
+
+    MeshVert *getVertex(int index) const {
+      return m_verts[index];
+    }
+
+    const MeshFace &getFace(int find) const {
+      return m_faces[find];
+    }
+
   };
 
 }

@@ -29,6 +29,10 @@ runtime_class AnIsoURenderer extends BallStickRenderer
   property real discthick => m_dDiscThick;
   default discthick = 0.1;
 
+  
+  property integer maxverts => redirect(getGluVertMax, setGluVertMax);
+  default maxverts = 1000000;
+
   // overloaded properties (from ballstick)
 
 //  property real bondw => redirect(getBondw, setBondw);

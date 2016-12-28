@@ -212,7 +212,7 @@ bool PsfReader::read(qlib::InStream &ins)
     stmp = m_line.substr(50, 8);
     double mass;
     if (!stmp.toDouble(&mass)) {
-      LString msg = LString::format("cannot convert mass %s", stmp.c_str());
+      LString msg = LString::format("cannot convert mass <%s>", stmp.c_str());
       MB_THROW(qlib::FileFormatException, msg);
       return false;
     }

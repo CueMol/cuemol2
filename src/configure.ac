@@ -18,9 +18,11 @@ sinclude(conftools/ax_boost_base.m4)
 sinclude(conftools/ax_boost_thread.m4)
 sinclude(conftools/ax_boost_system.m4)
 sinclude(conftools/ax_boost_filesystem.m4)
+dnl sinclude(conftools/ax_boost_timer.m4)
 dnl sinclude(conftools/ax_boost_iostreams.m4)
 sinclude(conftools/ax_cxx_compile_stdcxx_0x.m4)
 sinclude(conftools/ax_cxx_compile_stdcxx_11.m4)
+sinclude(conftools/ax_cxx_header_unordered_map.m4)
 
 #######################################################
 # LIBTOOL
@@ -103,6 +105,8 @@ AC_CHECK_HEADERS(dirent.h)
 AC_CHECK_HEADERS(fcntl.h unistd.h sys/wait.h spawn.h)
 AC_CHECK_HEADERS(locale.h xlocale.h)
 
+AX_CXX_HEADER_UNORDERED_MAP
+
 #######################################################
 #
 # check for build type (full editor/lw viewer)
@@ -176,7 +180,6 @@ AC_ARG_ENABLE(iphoneos,
     [if test $enableval = yes ; then
 	GUI_ARCH=IPHONEOS
         BUILD_OSDEP=sysdep
-	AC_DEFINE([GUI_ARCH], [IPHONEOS], [name of the GUI archtecture])
      fi],
 [])
 
@@ -189,7 +192,6 @@ if test $enableval = yes ; then
     GUI_ARCH=CLI
     BUILD_OSDEP=
     BUILD_CLI=cli
-    AC_DEFINE([GUI_ARCH], [CLI], [name of the GUI archtecture])
 fi],
     [
 dnl no option --> use GUI (X11/OSX)
@@ -198,7 +200,6 @@ case $host_os in
      darwin*)
 	GUI_ARCH=OSX
 	BUILD_OSDEP="sysdep osxbuild stub"
-	AC_DEFINE([GUI_ARCH], [OSX], [name of the GUI archtecture])
 
         # make_distr.pl substitutions
         OSXDISTR_ARCH=MacOSX-Intel$BUILD_BIT
@@ -218,12 +219,11 @@ case $host_os in
 	    CXX11_CXXFLAGS=${CXXFLAGS}
 	fi
 	CXXFLAGS=${_cxxflags}
-	echo "XXX $CXXFLAGS, $HAVE_CXX11, $CXX11_CXXFLAGS"
+	#echo "$CXXFLAGS, $HAVE_CXX11, $CXX11_CXXFLAGS"
      ;;
      *)
 	GUI_ARCH=X11
 	BUILD_OSDEP="sysdep uxdist"
-	AC_DEFINE([GUI_ARCH], [X11], [name of the GUI archtecture])
         dnl Linux/Gecko23 build requires std=c++0x feature (char16_t)
         AX_CXX_COMPILE_STDCXX_0X
 	if test $ax_cv_cxx_compile_cxx0x_cxx = yes ; then
@@ -243,6 +243,8 @@ AC_SUBST(BUILD_OSDEP)
 AC_SUBST(BUILD_CLI)
 
 echo GUI_ARCH: $GUI_ARCH
+AC_DEFINE_UNQUOTED([GUI_ARCH], [${GUI_ARCH}], [Name of the GUI archtecture])
+AC_DEFINE_UNQUOTED([STR_GUI_ARCH], ["${GUI_ARCH}"], [Name of the GUI archtecture])
 
 
 #######################################################
@@ -424,12 +426,14 @@ LIBS=${_tmp_libs}
 
 AX_BOOST_FILESYSTEM
 dnl AX_BOOST_IOSTREAMS
+dnl AX_BOOST_TIMER
 
 echo ==== BOOST library config ====
 echo BOOST_CPPFLAGS: $BOOST_CPPFLAGS
 echo BOOST_SYSTEM_LIB: $BOOST_SYSTEM_LIB
 echo BOOST_FILESYSTEM_LIB: $BOOST_FILESYSTEM_LIB
 echo BOOST_THREAD_LIB: $BOOST_THREAD_LIB
+echo BOOST_TIMER_LIB: $BOOST_TIMER_LIB
 echo BOOST_LDFLAGS: $BOOST_LDFLAGS
 echo ax_cv_boost_thread: $ax_cv_boost_thread
 echo ax_cv_boost_filesystem: $ax_cv_boost_filesystem

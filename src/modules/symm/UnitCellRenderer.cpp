@@ -41,7 +41,7 @@ LString UnitCellRenderer::toString() const
 
 bool UnitCellRenderer::isCompatibleObj(qsys::ObjectPtr pobj) const
 {
-  CrystalInfoPtr pcx = pobj->getExtData("symminfo");
+  CrystalInfoPtr pcx = pobj->getExtData("CrystalInfo");
   if (! pcx.isnull())
     return true;
 
@@ -66,7 +66,7 @@ void UnitCellRenderer::postRender(DisplayContext *pdc)
 Vector4D UnitCellRenderer::getCenter() const
 {
   qsys::ObjectPtr pobj = getClientObj();
-  CrystalInfoPtr pci = pobj->getExtData("symminfo");
+  CrystalInfoPtr pci = pobj->getExtData("CrystalInfo");
   if (!pci.isnull()) {
     Vector4D pt(0.5,0.5,0.5);
     pci->fracToOrth(pt);
@@ -88,7 +88,7 @@ Vector4D UnitCellRenderer::getCenter() const
 void UnitCellRenderer::render(DisplayContext *pdl)
 {
   qsys::ObjectPtr pobj = getClientObj();
-  CrystalInfoPtr pci = pobj->getExtData("symminfo");
+  CrystalInfoPtr pci = pobj->getExtData("CrystalInfo");
   if (pci.isnull()) {
     qsys::ScalarObject *psca = dynamic_cast<qsys::ScalarObject *>(pobj.get());
     if (psca==NULL)

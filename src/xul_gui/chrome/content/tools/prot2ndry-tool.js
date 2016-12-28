@@ -58,7 +58,15 @@ if (!("Prot2ndryTool" in cuemolui)) {
     {
       let that = this;
 
-      this.mHbMax = document.getElementById('hbmax');
+      //this.mHbMax = document.getElementById('hbmax');
+      this.mIgnBlg = document.getElementById('ign_bulge');
+
+      this.mHlxGap = document.getElementById('helix_gapfill');
+      this.mHlxAngl1 = document.getElementById('helix_angl1');
+      
+      this.mHlxGap.addEventListener("command",
+				    function (e) { that.onHlxGapChg(); },
+				    false);
 
       this.mTargMol.addSelChanged(function(aEvent) {
 	try { that.onTargMolChanged(aEvent);}
@@ -124,7 +132,14 @@ if (!("Prot2ndryTool" in cuemolui)) {
 	relem.selectedItem = this.mRadRecalc;
       else
 	relem.selectedItem = this.mRadAsgn;
+
       this.onRadSelChg(mode);
+
+      // checkbox (ignore-bulge)
+      his_name = history_name_prefix + ".ignblg";
+      if (pref.has(his_name)) {
+	this.mIgnBlg.checked = pref.get(his_name);
+      }
     };
     
     klass.onRadSelChg = function (tgtid)
@@ -132,17 +147,35 @@ if (!("Prot2ndryTool" in cuemolui)) {
       //let tgtid = aEvent.target.id;
       dd("onRadioSelChanged: "+tgtid);
       if (tgtid=="radio_recalc") {
-	this.mHbMax.disabled = false;
+	//this.mHbMax.disabled = false;
+	this.mIgnBlg.disabled = false;
+	this.mHlxGap.disabled = false;
+	//this.mHlxAngl1.disabled = false;
+	this.onHlxGapChg();
 	this.mTargSel.disabled = true;
 	this.mSecTypeSel.disabled = true;
       }
       else if (tgtid=="radio_assign") {
-	this.mHbMax.disabled = true;
+	//this.mHbMax.disabled = true;
+	this.mIgnBlg.disabled = true;
+	this.mHlxGap.disabled = true;
+	this.mHlxAngl1.disabled = true;
 	this.mTargSel.disabled = false;
 	this.mSecTypeSel.disabled = false;
       }
+      
     };
 
+    klass.onHlxGapChg = function ()
+    {
+      if (this.mHlxGap.checked) {
+	this.mHlxAngl1.disabled = false;
+      }
+      else {
+	this.mHlxAngl1.disabled = true;
+      }
+    };
+    
     klass.onTargMolChanged = function ()
     {
       var mol = this.mTargMol.getSelectedObj();
@@ -179,6 +212,11 @@ if (!("Prot2ndryTool" in cuemolui)) {
       pref.set(his_name, nsectype);
       dd("Save his: "+his_name+" = "+pref.get(his_name));
 
+      // checkbox (ignore-bulge)
+      his_name = history_name_prefix + ".ignblg";
+      pref.set(his_name, this.mIgnBlg.checked);
+      //alert("Save his: "+his_name+" = "+pref.get(his_name));
+
       if (this.mRadRecalc.selected)
 	return this.doRecalc(tgtmol);
       else
@@ -191,8 +229,17 @@ if (!("Prot2ndryTool" in cuemolui)) {
       let scene = tgtmol.getScene();
 
       // dd("DlgAcc> min="+this.mMinDist.value);
-      let hbmax = parseFloat(this.mHbMax.value);
-      if (isNaN(hbmax))
+      //let hbmax = parseFloat(this.mHbMax.value);
+      //if (isNaN(hbmax))
+      //return false;
+
+      let bIgnBlg = this.mIgnBlg.checked;
+
+      let dh1 = 0.0;
+      if (this.mHlxGap.checked)
+	dh1 = parseFloat(this.mHlxAngl1.value);
+
+      if (isNaN(dh1))
 	return false;
 
       /////////////////////////////////////
@@ -203,7 +250,7 @@ if (!("Prot2ndryTool" in cuemolui)) {
       scene.startUndoTxn("Recalc protein secondary str");
 
       try {
-	mgr.calcProt2ndry(tgtmol, hbmax);
+	mgr.calcProt2ndry2(tgtmol, bIgnBlg, dh1);
       }
       catch (e) {
 	dd("calcProt2ndry Error!!");

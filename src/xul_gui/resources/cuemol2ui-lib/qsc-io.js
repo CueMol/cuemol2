@@ -82,11 +82,11 @@ exports.writeSceneFile = function(sc, path, view_id, options)
 
   writer.setDefaultOpts(sc);
 
-  dd("QSC writer default version="+writer.version);
-  dd("QSC writer default embedAll="+writer.embedAll);
-  dd("QSC writer default base64="+writer.base64);
-  dd("QSC writer default compress="+writer.compress);
-  dd("");
+  // dd("QSC writer default version="+writer.version);
+  // dd("QSC writer default embedAll="+writer.embedAll);
+  // dd("QSC writer default base64="+writer.base64);
+  // dd("QSC writer default compress="+writer.compress);
+  // dd("");
 
   if (options && typeof options=='object') {
     if ('embedAll' in options)

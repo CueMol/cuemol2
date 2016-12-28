@@ -436,9 +436,9 @@ void MqoDisplayContext::buildMeshes(RendIntData *pDat)
     int ui2 = puid[palias[i2]];
     int ui3 = puid[palias[i3]];
 
-    if (ui1<0) MB_DPRINTLN("ERROR!! face %d i1<0");
-    if (ui2<0) MB_DPRINTLN("ERROR!! face %d i2<0");
-    if (ui3<0) MB_DPRINTLN("ERROR!! face %d i3<0");
+    if (ui1<0) MB_DPRINTLN("ERROR!! face %d i1<0", ui1);
+    if (ui2<0) MB_DPRINTLN("ERROR!! face %d i2<0", ui2);
+    if (ui3<0) MB_DPRINTLN("ERROR!! face %d i3<0", ui3);
 
     if (ui1==ui2 || ui2==ui3 || ui1==ui3)
       continue;

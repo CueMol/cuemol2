@@ -18,9 +18,9 @@ usexrbr="--without-xmlrpc"
 #boost_dir=/usr/local
 
 #boost_dir=/net3/ishitani/app64/boost_static
-boost_dir=/net3/ishitani/app64/boost_1_57_0
+boost_dir=/home/ishitani/app/boost_1_60_0
 fftw_dir=/net3/ishitani/app64/fftw
-cgal_dir=/net3/ishitani/app64/CGAL-4.6.1/
+cgal_dir=/home/ishitani/app/CGAL-4.6.1/
 
 #######################
 
@@ -40,6 +40,7 @@ fi
 
 env CC=gcc CXX=g++ \
 $config_scr \
+CXXFLAGS="-std=c++0x -O" \
 --disable-static \
 --enable-shared \
 --prefix=$install_dir \

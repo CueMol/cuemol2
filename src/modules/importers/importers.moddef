@@ -3,6 +3,7 @@
 
 #include "PSEFileReader.qif"
 #include "AtomPropColoring.qif"
+#include "MmcifMolReader.qif"
 
 module importers
 {
@@ -11,5 +12,6 @@ module importers
 
   PSEFileReader;
   AtomPropColoring;
+  MmcifMolReader;
 };
 

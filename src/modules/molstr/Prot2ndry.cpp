@@ -10,6 +10,7 @@
 #include <qlib/LExceptions.hpp>
 #include <qlib/LQuat.hpp>
 #include <qlib/Vector4D.hpp>
+#include <qlib/Matrix3D.hpp>
 
 #include <qsys/UndoManager.hpp>
 
@@ -263,6 +264,7 @@ bool Prot2ndryEditInfo::isRedoable() const
 namespace {
 
   using qlib::Vector4D;
+  using qlib::Matrix3D;
   using namespace molstr;
 
   struct HydrogenBond
@@ -346,6 +348,10 @@ namespace {
 
     /// HBHIGH - HIGHEST ALLOWED ENERGY OF A HYDROGEN BOND IN CAL/MOL
     double m_hbhigh;
+
+    /// Ignore-bulge flag
+    /// Do not link beta strand connected by a bulge
+    bool m_bIgnoreBulge;
 
     //////////////////////////////////
 
@@ -680,12 +686,12 @@ namespace {
 	MB_DPRINTLN("%s sheet", (with.btyp==parallel)?"parallel":"antiparallel");
 
 	MB_DPRINTLN("  %s%d (%d) <--> %s%d (%d)",
-		    pr_ib->getChainName().c_str(), pr_ib->getIndex(), with.ib,
-		    pr_jb->getChainName().c_str(), pr_jb->getIndex(), with.jb);
+		    pr_ib->getChainName().c_str(), pr_ib->getIndex().toInt(), with.ib,
+		    pr_jb->getChainName().c_str(), pr_jb->getIndex().toInt(), with.jb);
 
 	MB_DPRINTLN("  %s%d (%d) <--> %s%d (%d)",
-		    pr_ie->getChainName().c_str(), pr_ie->getIndex(), with.ie,
-		    pr_je->getChainName().c_str(), pr_je->getIndex(), with.je);
+		    pr_ie->getChainName().c_str(), pr_ie->getIndex().toInt(), with.ie,
+		    pr_je->getChainName().c_str(), pr_je->getIndex().toInt(), with.je);
       }
 #endif
     }
@@ -783,9 +789,9 @@ namespace {
     }
 
     /*
-      link the two bridges connected by a buldge
+      link the two bridges connected by a bulge
      */
-    void linkBuldge(Bridge &Abr, Bridge &Bbr)
+    void linkBulge(Bridge &Abr, Bridge &Bbr)
     {
       if (Abr.btyp==parallel) {
 	MB_DPRINTLN("linking par: (%d:%d) --> (%d:%d)",
@@ -809,7 +815,7 @@ namespace {
        If two the same b-type bridges are separated 1 and 4 residues,
        they are defined to be connected by a buldge region.
     */
-    bool checkBuldge(Bridge &Abr, Bridge &Bbr)
+    bool checkBulge(Bridge &Abr, Bridge &Bbr)
     {
       int idiff, jdiff;
 
@@ -820,7 +826,7 @@ namespace {
 	if (1<=idiff && 1<=jdiff) {
 	  if ((idiff<=2 && jdiff<=5) ||
 	      (idiff<=5 && jdiff<=2)) {
-	    linkBuldge(Abr, Bbr);
+	    linkBulge(Abr, Bbr);
 	    return true;
 	  }
 	}
@@ -831,7 +837,7 @@ namespace {
 	if (1<=idiff && 1<=jdiff) {
 	  if ((idiff<=2 && jdiff<=5) ||
 	      (idiff<=5 && jdiff<=2)) {
-	    linkBuldge(Bbr, Abr);
+	    linkBulge(Bbr, Abr);
 	    return true;
 	  }
 	}
@@ -843,7 +849,7 @@ namespace {
 	if (1<=idiff && 1<=jdiff) {
 	  if ((idiff<=2 && jdiff<=5) ||
 	      (idiff<=5 && jdiff<=2)) {
-	    linkBuldge(Abr, Bbr);
+	    linkBulge(Abr, Bbr);
 	    return true;
 	  }
 	}
@@ -854,7 +860,7 @@ namespace {
 	if (1<=idiff && 1<=jdiff) {
 	  if ((idiff<=2 && jdiff<=5) ||
 	      (idiff<=5 && jdiff<=2)) {
-	    linkBuldge(Bbr, Abr);
+	    linkBulge(Bbr, Abr);
 	    return true;
 	  }
 	}
@@ -879,13 +885,18 @@ namespace {
 	if (iwith.ib!=iwith.ie)
 	  iwith.bIsolated = false;
 	  
-        BridgeList::iterator jter = iter; //m_bridges.begin();
-	++jter;
-        for (; jter!=eiter; ++jter) {
-          Bridge &jwith = *jter;
-	  if (!checkBuldge(iwith, jwith)) continue;
-	  iwith.bIsolated = false;
-	  jwith.bIsolated = false;
+        if (!m_bIgnoreBulge) {
+          BridgeList::iterator jter = iter;
+          ++jter;
+          for (; jter!=eiter; ++jter) {
+            Bridge &jwith = *jter;
+            if (!checkBulge(iwith, jwith)) continue;
+            MB_DPRINTLN("Buldge detected for %d:%d/%d:%d - %d:%d/%d:%d",
+                        iwith.ib, iwith.ie, iwith.jb, iwith.je,
+                        jwith.ib, jwith.ie, jwith.jb, jwith.je);
+            iwith.bIsolated = false;
+            jwith.bIsolated = false;
+          }
 	}	
       }
 
@@ -1153,9 +1164,9 @@ namespace {
             secstr2 = secstr2 + "e";
         }
 
-        MB_DPRINTLN("%d Resid %s, turn4=%c, ss = %s %d",
-                    i, pres->getStrIndex().c_str(),
-                    with.turn[1], secstr2.c_str(), with.ssid);
+        //MB_DPRINTLN("%d Resid %s, turn4=%c, ss = %s %d",
+	//i, pres->getStrIndex().c_str(),
+	//with.turn[1], secstr2.c_str(), with.ssid);
         
         if (!secstr.isEmpty())
           pres->setPropStr("secondary", secstr);
@@ -1201,9 +1212,9 @@ namespace {
 	Backbone &with = *(m_chains[i]);
 	MolResiduePtr pres = with.pRes;
 
-        MB_DPRINTLN("%d Resid %s, ss = %s",
-                    i, pres->getStrIndex().c_str(),
-                    secstr2.c_str());
+        //MB_DPRINTLN("%d Resid %s, ss = %s",
+	//i, pres->getStrIndex().c_str(),
+	//secstr2.c_str());
 
         if (!secstr.isEmpty())
           pres->setPropStr("secondary", secstr);
@@ -1216,6 +1227,210 @@ namespace {
       calcHbon();
       calcBridge();
       calcHelices();
+      //conHelices(10, 60.0, 90.0);
+    }
+
+    struct Helix {
+      int nst, nen;
+      Vector4D dir;
+    };
+    
+    bool calcBinorm(int ind, Vector4D &res) const
+    {
+      if (ind-1<0)
+        return false;
+      if (ind+1>=m_chains.size())
+        return false;
+
+      const Vector4D &p1 = m_chains[ind-1]->ca;
+      const Vector4D &p2 = m_chains[ind]->ca;
+      const Vector4D &p3 = m_chains[ind+1]->ca;
+
+      Vector4D v1 = p2 - p1;
+      Vector4D v2 = p3 - p2;
+      Vector4D bn = v1.cross(v2);
+
+      // normalization
+      double len = bn.length();
+      if (len<F_EPS4)
+        return false;
+
+      res = bn.scale(1.0/len);
+      return true;
+    }
+
+    Vector4D calcHelixDir_binorm(const Helix &hlx,
+				 double &dang_sum, double &dang_sqsum, int &ndang)
+    {
+      int j;
+      const int nst = hlx.nst;
+      const int nen = hlx.nen;
+      
+      Vector4D rc = Vector4D(0,0,0,0);
+      Vector4D r1, ev1, ev2;
+      int nsum = 0;
+      Vector4D bn;
+      bool bPrevBn = false;
+      Vector4D prev_bn;
+      for (j=nst; j<=nen-2; ++j) {
+        if (!calcBinorm(j+1, bn))
+          continue;
+        rc += bn;
+        nsum++;
+
+	if (bPrevBn) {
+	  double dang = qlib::toDegree( prev_bn.angle(bn) );
+	  // dang_max = qlib::max(dang_max, dang);
+	  dang -= 50.0;
+	  dang_sum += dang;
+	  dang_sqsum += dang*dang;
+	  ++ndang;
+	}
+	
+	bPrevBn = true;
+	prev_bn = bn;
+      }
+
+      // ev1 is average of binorm vecs
+      ev1 = rc.scale(1.0/double(nsum));
+
+      return ev1;
+    }
+
+    //void conHelices(int ngap, double dangl, double dangl2)
+    void conHelices(double dangl)
+    {
+      double dang_tol = 0.0;
+
+      std::deque<Helix> helices;
+      int nhlx = 0;
+      
+      int i, j, nCurHelixSt = -1;
+      const int nchains = m_chains.size();
+
+      for (i=0; i<nchains; ++i) {
+        /*
+	if (i>=1&&i+2<nchains) {
+	    Vector4D p1 = m_chains[i-1]->ca;
+	    Vector4D p2 = m_chains[i]->ca;
+	    Vector4D p3 = m_chains[i+1]->ca;
+	    Vector4D p4 = m_chains[i+2]->ca;
+	    double tor = qlib::toDegree( Vector4D::torsion(p1, p2, p3, p4) );
+	    MolResiduePtr pres = m_chains[i]->pRes;
+	    MB_DPRINTLN("PDihe>,%s,%s,%s,%f",
+			pres->getChainName().c_str(),
+			pres->getIndex().toString().c_str(),
+			m_chains[i]->ss.c_str(),
+			tor);
+	}
+         */
+
+        Backbone &with = *(m_chains[i]);
+        bool bHelix = false;
+        
+        if (with.ss.equals("H") || with.ss.equals("G") || with.ss.equals("I")) {
+          bHelix = true;
+        }
+
+        if (bHelix) {
+          int previd=-1, nextid=-1;
+          if (i>0 && noChainBrk(i-1, i))
+            previd = m_chains[i-1]->ssid;
+          if (i<nchains-1 && noChainBrk(i, i+1))
+            nextid = m_chains[i+1]->ssid;
+
+          if (previd!=with.ssid) {
+            // i is start of helix
+            nCurHelixSt = i;
+          }
+          if (nextid!=with.ssid) {
+            // i is end of helix
+            MB_ASSERT(nCurHelixSt>=0);
+            Helix hlx;
+            hlx.nst = nCurHelixSt;
+            hlx.nen = i;
+            helices.push_back(hlx);
+            MB_DPRINTLN("HELIX %d - %d", hlx.nst, hlx.nen);
+            nCurHelixSt = -1;
+          }
+        }
+      } // for
+
+      if (nCurHelixSt>=0) {
+        Helix hlx;
+        hlx.nst = nCurHelixSt;
+        hlx.nen = i;
+        helices.push_back(hlx);
+        MB_DPRINTLN("HELIX %d - %d", hlx.nst, hlx.nen);
+      }
+
+      // calc dir for each helix
+      nhlx = helices.size();
+      double dang_sqsum = 0.0;
+      double dang_sum = 0.0;
+      int ndang = 0;
+      for (i=0; i<nhlx; ++i) {
+        Vector4D ev1 = calcHelixDir_binorm(helices[i],
+					   dang_sum, dang_sqsum, ndang);
+        helices[i].dir = ev1;
+
+        Vector4D rc = m_chains[helices[i].nen]->ca;
+        Vector4D p1 = rc+ev1.scale(5.0);
+        MB_DPRINTLN("<!--HELIX %d - %d--><line pos1=\"(%f,%f,%f)\" pos2=\"(%f,%f,%f)\"/>",
+                    helices[i].nst, helices[i].nen,
+                    rc.x(), rc.y(), rc.z(), 
+                    p1.x(), p1.y(), p1.z());
+      }
+
+      double dang_aver = dang_sum/double(ndang);
+      double dang_sd = sqrt( dang_sqsum/double(ndang) - dang_aver*dang_aver );
+      dang_aver += 50.0;
+      MB_DPRINTLN("P2ndr> Total Dang(ave) %f Dang(sd) %f", dang_aver, dang_sd);
+
+      for (i=0; i<nhlx-1; ++i) {
+        const int npen = helices[i].nen;
+        const int nnst = helices[i+1].nst;
+
+        //if (nnst-npen>ngap)
+	//continue;
+        //const double d = qlib::toDegree(helices[i].dir.angle(helices[i+1].dir));
+        //if (d>=dangl)
+	//continue;
+
+        bool bOK = true;
+	Vector4D bn, prev_bn;
+        for (j=npen-1; j<=nnst+1; ++j) {
+	  if (j>=0 && j<nchains &&
+              m_chains[j]->ss.equals("E")) {
+            bOK = false;
+            break;
+	  }
+
+          if (j-1>=0&&j+2<nchains) {
+            Vector4D p1 = m_chains[j-1]->ca;
+	    Vector4D p2 = m_chains[j]->ca;
+	    Vector4D p3 = m_chains[j+1]->ca;
+            Vector4D p4 = m_chains[j+2]->ca;
+            double tor = qlib::toDegree( Vector4D::torsion(p1, p2, p3, p4) );
+            if (tor<0)
+              tor += 360.0;
+            if (tor>dangl) {
+              bOK = false;
+              break;
+            }
+          }
+        }
+
+        if (!bOK)
+          continue;
+	
+        MB_DPRINTLN("** HELIX %d - %d", i, i+1);
+        const int nnen = helices[i+1].nen;
+        for (j=npen+1; j<=nnen; ++j) {
+          m_chains[j]->ss = m_chains[npen]->ss;
+          m_chains[j]->ssid = m_chains[npen]->ssid;
+        }
+      }
     }
 
   }; // class Prot2ndry
@@ -1224,19 +1439,21 @@ namespace {
 
 //////////////////////////////////////
 
-void MolCoord::calcProt2ndry(double hb_high)
+void MolCoord::calcProt2ndry(double hb_high /*= -500.0*/, bool bIgnoreBulge /*=false*/)
 {
   MolCoordPtr pMol(this);
 
   Prot2ndry ps;
   ps.init(pMol);
   ps.m_hbhigh = hb_high;
+  ps.m_bIgnoreBulge = bIgnoreBulge;
   if (ps.m_chains.size()<=0) {
     MB_DPRINTLN("calcProt2ndry> no amino acid residues in %d/%s",
                 getUID(), getName().c_str());
     return;
   }
   ps.doit();
+
   ps.applyToMol();
 
 #if 0
@@ -1252,13 +1469,29 @@ void MolCoord::calcProt2ndry(double hb_high)
   }
 #endif
 
-  LOG_DPRINTLN("Prot2ndry calculation done with Hb(high)=%f", hb_high);
+  LOG_DPRINTLN("Prot2ndry> calculation done with Hb(high)=%f", hb_high);
 }
 
-#if 0
-void MolModule::calcProtDisulf(MolCoordPtr pMol)
+void MolCoord::calcProt2ndry2(bool bIgnoreBulge /*=false*/, double dhangl1/*=60.0*/)
 {
+  MolCoordPtr pMol(this);
+
+  Prot2ndry ps;
+  ps.init(pMol);
+  ps.m_hbhigh = -500.0;
+  ps.m_bIgnoreBulge = bIgnoreBulge;
+  if (ps.m_chains.size()<=0) {
+    LOG_DPRINTLN("Prot2ndry> no amino acid residues in %d/%s",
+                getUID(), getName().c_str());
+    return;
+  }
+  ps.doit();
+
+  if (dhangl1>0.01) {
+    LOG_DPRINTLN("Prot2ndry> Helix gap-filling by criterion: Ca-Ca torsion angle <= %f degree", dhangl1);
+    ps.conHelices(dhangl1);
+  }
+
+  ps.applyToMol();
 }
-#endif
-    
-  
+

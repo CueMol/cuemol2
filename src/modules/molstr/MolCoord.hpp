@@ -18,6 +18,7 @@
 #include "MolChain.hpp"
 #include "Selection.hpp"
 #include "ColoringScheme.hpp"
+//#include "TopoBuilder.hpp"
 
 namespace qlib { class Matrix4D; }
 
@@ -300,8 +301,10 @@ namespace molstr {
     ///
     /// Calculate secondary structure (impl: Prot2ndry.cpp)
     ///
-    void calcProt2ndry(double hb_high = -500.0);
+    void calcProt2ndry(double hb_high = -500.0, bool bIgnoreBulge=false);
 
+    void calcProt2ndry2(bool bIgnoreBulge=false, double dhangl1=60.0);
+    
     void calcBasePair(double cutoff, double tilt);
 
     //
@@ -369,7 +372,7 @@ namespace molstr {
     // Data chunk serialization
 
     virtual bool isDataSrcWritable() const;
-    virtual LString getDataChunkReaderName() const;
+    virtual LString getDataChunkReaderName(int nQdfVer) const;
     virtual void writeDataChunkTo(qlib::LDom2OutStream &oos) const;
 
     ////////////////////////////////////////////

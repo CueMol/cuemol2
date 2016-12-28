@@ -75,14 +75,15 @@ bool QdfLWObjWriter::write(qlib::OutStream &outs)
     return false;
   }
 
-  setFileType("LWO3");
-
   m_pObj = pObj;
 
   start(outs);
-  prepareData();
 
   QdfOutStream &o = getStream();
+
+  o.writeFileType("LWO3");
+
+  prepareData();
 
   // write type ID array
   const int nsize = m_tmpdat.size();

@@ -1,17 +1,35 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <ImportGroup Label="PropertySheets">
-  </ImportGroup>
+  <ImportGroup Label="PropertySheets" />
+
   <PropertyGroup Label="UserMacros">
     <SourceDir>$(SolutionDir)..\src\</SourceDir>
+  </PropertyGroup>
+
+  <PropertyGroup Label="UserMacros" Condition="'$(Platform)'=='Win32'">
     <XULRunnerDir>$(PROJ_DIR)\xulrunner\xulrunner-39.0-sdk\</XULRunnerDir>
     <XULDeployDir>$(SolutionDir)xul_$(Configuration)\</XULDeployDir>
-
+    <BuildSetDir>$(PROJ_DIR)</BuildSetDir>
     <ExecutablePath>$(PROJ_DIR)\bin;$(XULRunnerDir)\bin;$(ExecutablePath)</ExecutablePath>
     <IncludePath>$(PROJ_DIR)\include;$(PROJ_DIR)\CGAL-4.6.1\include;$(PROJ_DIR)\boost\boost_1_57_0;$(IncludePath)</IncludePath>
     <LibraryPath>$(PROJ_DIR)\lib;$(PROJ_DIR)\CGAL-4.6.1\lib;$(PROJ_DIR)\boost\boost_1_57_0\lib32-msvc-12.0;$(LibraryPath)</LibraryPath>
-
   </PropertyGroup>
+  <PropertyGroup Label="UserMacros" Condition="'$(Platform)'=='x64'">
+    <XULRunnerDir>$(PROJ64_DIR)\xulrunner\xulrunner-39.0b7-sdk\</XULRunnerDir>
+    <XULDeployDir>$(SolutionDir)xul_$(Configuration)64\</XULDeployDir>
+    <BuildSetDir>$(PROJ64_DIR)</BuildSetDir>
+    <ExecutablePath>$(PROJ64_DIR)\bin;$(XULRunnerDir)\bin;$(ExecutablePath)</ExecutablePath>
+    <IncludePath>$(PROJ64_DIR)\include;$(PROJ64_DIR)\CGAL-4.6.1\include;$(PROJ64_DIR)\boost\boost_1_57_0;$(IncludePath)</IncludePath>
+    <LibraryPath>$(PROJ64_DIR)\lib;$(PROJ64_DIR)\CGAL-4.6.1\lib;$(PROJ64_DIR)\boost\boost_1_57_0\lib64-msvc-12.0;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+
+  <PropertyGroup Label="UserMacros" Condition="'$(Configuration)'=='Release'">
+    <BoostVer>vc120-mt-1_57</BoostVer>
+  </PropertyGroup>
+  <PropertyGroup Label="UserMacros" Condition="'$(Configuration)'=='Debug'">
+    <BoostVer>vc120-mt-gd-1_57</BoostVer>
+  </PropertyGroup>
+
   <PropertyGroup>
     <_ProjectFileVersion>12.0.21005.1</_ProjectFileVersion>
   </PropertyGroup>

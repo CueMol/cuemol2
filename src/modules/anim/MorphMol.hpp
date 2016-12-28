@@ -35,10 +35,10 @@ namespace anim {
   public:
     // Data source container interface implementation
     virtual bool isDataSrcWritable() const;
-    virtual LString getDataChunkReaderName() const;
+    virtual LString getDataChunkReaderName(int nQdfVer) const;
     virtual void writeDataChunkTo(qlib::LDom2OutStream &oos) const;
     virtual void readFromStream(qlib::InStream &ins);
-    virtual void setDataChunkName(const LString &name, qlib::LDom2Node *pNode);
+    virtual void setDataChunkName(const LString &name, qlib::LDom2Node *pNode, int nQdfVer);
 
     virtual void updateSrcPath(const LString &srcpath);
   };
@@ -68,8 +68,6 @@ namespace anim {
     typedef std::deque<FrameData *> FrameArray;
 
     FrameArray m_frames;
-
-    bool m_bScaleDframe;
 
     std::vector<float> m_crdarray;
 
@@ -119,6 +117,22 @@ namespace anim {
     double getFrame() const {
       return m_dframe;
     }
+
+  private: 
+    /// Scale frame value
+    ///  (i.e. scale 0~nframe-1 vs noscale 0~1)
+    bool m_bScaleDframe;
+    
+  public:
+    void setScaleFrame(bool b) {
+      m_bScaleDframe = b;
+      update(m_dframe);
+    }
+
+    bool isScaleFrame() const {
+      return m_bScaleDframe;
+    }
+
 
     ////////////////////////////////////////////////////
     // Serialization/Deserialization

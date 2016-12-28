@@ -68,9 +68,10 @@ bool QdfPotWriter::write(qlib::OutStream &outs)
   }
 
   m_pObj = pObj;
-  setFileType("POT1");
 
   start(outs);
+
+  getStream().writeFileType("POT1");
 
   writeData();
 
