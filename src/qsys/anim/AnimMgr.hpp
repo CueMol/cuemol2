@@ -138,7 +138,8 @@ namespace qsys {
     /// Timer event handling (TimerListener impl)
     virtual bool onTimer(double t, qlib::time_value curr, bool bLast);
 
-    /// scene event handler (to remove the view reference on view destruction)
+    /// Scene event handler to detect the view destruction
+    ///  (for removing the view reference of the destroyed view)
     virtual void sceneChanged(SceneEvent &);
 
     /////////////////
@@ -150,6 +151,9 @@ namespace qsys {
     void onTimerImpl(qlib::time_value elapsed);
     
     void fireEvent(AnimObjEvent &ev);
+
+    /// XXX
+    void fixObjChanges();
 
   public:
 

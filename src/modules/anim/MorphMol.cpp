@@ -452,7 +452,7 @@ void MorphMol::appendThisFrame()
   return;
 }
 
-void MorphMol::update(double dframe)
+void MorphMol::updateImpl(double dframe, bool bDyn)
 {
   int i;
   const int nframes = m_frames.size();
@@ -504,7 +504,10 @@ void MorphMol::update(double dframe)
   
   
   // broadcast modification event
-  fireAtomsMoved();
+  if (bDyn)
+    fireAtomsMovedDynamic();
+  else
+    fireAtomsMoved();
 }
 
 void MorphMol::writeTo2(LDom2Node *pNode) const

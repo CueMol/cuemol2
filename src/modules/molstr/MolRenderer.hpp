@@ -80,7 +80,8 @@ namespace molstr {
     // Final methods
 
   private:
-    /// VBO enable flag
+    /// Animation mode enable flag
+    /// set true when the attached mol is AnimMol (and derived classes)
     bool m_bUseAnim;
 
   public:

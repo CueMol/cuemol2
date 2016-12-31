@@ -38,18 +38,21 @@ namespace molstr {
 
     typedef MolAtomRenderer super_t;
 
-    //////////////
+    //////////////////////////////////////////////////////
     // Properties
 
   private:
-    /// drawing line width
+    /// drawing line width (in pixel unit)
     double m_lw;
 
   public:
+    /// Set drawing line width (in pixel unit)
     void setLineWidth(double f) {
       m_lw = f;
       // super_t::invalidateDisplayCache();
     }
+
+    /// Get drawing line width
     double getLineWidth() const { return m_lw; }
 
   private:
@@ -64,7 +67,10 @@ namespace molstr {
     bool getValBond() const { return m_bValBond; }
 
   private:
+    /// Valence bond scaling factor 1
     double m_dCvScl1;
+
+    /// Valence bond scaling factor 2
     double m_dCvScl2;
 
   public:
@@ -95,7 +101,7 @@ namespace molstr {
 
     //////////////////////////////////////////////////////
 
-    // old rendering interface (using GL compatible prof)
+    // Old rendering interface (FileDC/GL compatible prof)
 
     virtual bool isRendBond() const;
 
@@ -115,13 +121,15 @@ namespace molstr {
 
   public:
 
-    //////////////////////////////////////////////////////
-    // new rendering interface (using GL VBO)
-
     virtual void display(DisplayContext *pdc);
 
     /// cleanup VBO
     virtual void invalidateDisplayCache();
+
+    //////////////////////////////////////////////////////
+    // new rendering interface (using GL VBO)
+
+    void displayVBO(DisplayContext *pdc);
 
   private:
     /// Rendering using VBO (builds sbonds, mbonds, and atoms data structure)

@@ -1059,6 +1059,9 @@ void Scene::propChanged(qlib::LPropEvent &ev)
 
 void Scene::objectChanged(ObjectEvent &ev)
 {
+  // all types of ObjectEvents possibly require display updates
+  setUpdateFlag();
+/*
   if (ev.getType()==ObjectEvent::OBE_CHANGED) {
     // objchg may require redrawing
     setUpdateFlag();
@@ -1067,6 +1070,7 @@ void Scene::objectChanged(ObjectEvent &ev)
     // propchg may require redrawing
     setUpdateFlag();
   }
+ */
 }
 
 void Scene::rendererChanged(RendererEvent &ev)

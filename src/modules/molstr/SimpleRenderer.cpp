@@ -216,9 +216,6 @@ bool SimpleRenderer::isRendBond() const
   return true;
 }
 
-//////////////////////////////////////////////////////////////////////
-// New VBO implementation
-
 void SimpleRenderer::display(DisplayContext *pdc)
 {
 #ifdef USE_OPENGL_VBO
@@ -233,22 +230,7 @@ void SimpleRenderer::display(DisplayContext *pdc)
     displayGLSL(pdc);
   }
   else {
-    // new rendering routine using VBO (DrawElem)
-    if (m_pVBO==NULL) {
-      createVBO();
-      if (isUseAnim())
-        updateDynamicVBO();
-      else
-        updateStaticVBO();
-      updateVBOColor();
-      if (m_pVBO==NULL)
-        return; // Error, Cannot draw anything (ignore)
-    }
-  
-    preRender(pdc);
-    m_pVBO->setLineWidth(m_lw);
-    pdc->drawElem(*m_pVBO);
-    postRender(pdc);
+    displayVBO(pdc);
   }
   
 #else
@@ -256,8 +238,28 @@ void SimpleRenderer::display(DisplayContext *pdc)
 #endif
 }
 
+//////////////////////////////////////////////////////////////////////
+// New VBO implementation
 
-//////////////////////////////////////////////////
+void SimpleRenderer::displayVBO(DisplayContext *pdc)
+{
+  // new rendering routine using VBO (DrawElem)
+  if (m_pVBO==NULL) {
+    createVBO();
+    if (isUseAnim())
+      updateDynamicVBO();
+    else
+      updateStaticVBO();
+    updateVBOColor();
+    if (m_pVBO==NULL)
+      return; // Error, Cannot draw anything (ignore)
+  }
+  
+  preRender(pdc);
+  m_pVBO->setLineWidth(m_lw);
+  pdc->drawElem(*m_pVBO);
+  postRender(pdc);
+}
 
 void SimpleRenderer::createVBO()
 {
@@ -983,12 +985,14 @@ void SimpleRenderer::objectChanged(qsys::ObjectEvent &ev)
     // OBE_CHANGED && descr=="atomsMoved"
     if (isUseAnim()) {
       if (m_pVBO!=NULL) {
+        // VBO mode
         // only update positions
         updateDynamicVBO();
         m_pVBO->setUpdated(true);
         return;
       }
       else if (m_pAttrAry!=NULL) {
+        // GLSL mode
         // only update positions
         updateDynamicGLSL();
         return;

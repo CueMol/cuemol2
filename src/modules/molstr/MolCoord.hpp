@@ -91,8 +91,12 @@ namespace molstr {
     static const char CRD_ARRAY_VALID = 1;
     static const char CRD_ATOM_VALID = 2;
 
+    /// Get the crdarray/atompos validity flag
+    /// MolCoord does not support animation, so this always returns CRD_ARRAY_VALID
     virtual char getCrdValidFlag() const;
 
+    /// Mark as the crdarray is invalid (and cleanup the index mapping)
+    /// MolCoord does not support animation, so this method do nothing
     virtual void invalidateCrdArray();
 
   private:
@@ -260,7 +264,15 @@ namespace molstr {
 
 #endif
 
+    /// Fire "atmosMoved" event
+    /// (without dynamic update/only atom pos changes)
     void fireAtomsMoved();
+
+    /// Fire "atmosMovedDynamic" event
+    /// (with dynamic update/only atom pos changes)
+    void fireAtomsMovedDynamic();
+
+    /// Fire "topologyChanged" event
     void fireTopologyChanged();
 
     /////////////////////////////////////////////////////

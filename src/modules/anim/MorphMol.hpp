@@ -103,19 +103,33 @@ namespace anim {
 
     /////
 
-    void update(double dframe);
+    /// Frame update implementation
+    void updateImpl(double dframe, bool bDyn);
     
     int getFrameSize() const {
       return m_frames.size();
     }
     
+    /// Set frame (slow update)
     void setFrame(double dframe) {
       m_dframe = dframe;
-      update(dframe);
+      updateImpl(dframe, false);
     }
 
+    /// Get current frame
     double getFrame() const {
       return m_dframe;
+    }
+
+    /// Set frame (with dynamic update)
+    void setDynFrame(double dframe) {
+      m_dframe = dframe;
+      updateImpl(dframe, true);
+    }
+
+    /// Get current frame (same as getFrame())
+    double getDynFrame() const {
+      return getFrame();
     }
 
   private: 
@@ -126,7 +140,7 @@ namespace anim {
   public:
     void setScaleFrame(bool b) {
       m_bScaleDframe = b;
-      update(m_dframe);
+      updateImpl(m_dframe, false);
     }
 
     bool isScaleFrame() const {

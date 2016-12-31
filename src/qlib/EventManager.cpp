@@ -135,11 +135,13 @@ void EventManager::checkTimerQueue()
     TimerListener *pobj = rtt.pobj;
     time_value dur_end = rtt.end-curr;
     if (dur_end<=0) {
+      // process ended timer (last event)
       iter = m_timerq.erase(iter);
       pobj->onTimer(1.0, curr, true);
       continue;
     }
     else {
+      // process active timer
       double rho = double(curr-rtt.start)/double(rtt.end-rtt.start);
       if (!pobj->onTimer(rho, curr, false)) {
         // timer iteration is canceled

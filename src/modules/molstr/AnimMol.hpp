@@ -19,7 +19,8 @@ namespace molstr {
     MC_SCRIPTABLE;
 
   public:
-    typedef std::map<int, quint32> CrdIndexMap;
+    //typedef std::map<int, quint32> CrdIndexMap;
+    typedef boost::unordered_map<int, quint32> CrdIndexMap;
     typedef std::vector<quint32> AidIndexMap;
 
   private:
@@ -46,7 +47,7 @@ namespace molstr {
     /// Mark as the crdarray is invalid (and cleanup the index mapping)
     virtual void invalidateCrdArray();
 
-    /// Get the implementation of the crdarray
+    /// Get coordinate array (xyz x natom format)
     /// (Implementation is different in the derived classes)
     virtual qfloat32 *getCrdArrayImpl() =0;
 

@@ -247,6 +247,17 @@ void MolCoord::fireAtomsMoved()
   fireObjectEvent(obe);
 }
 
+void MolCoord::fireAtomsMovedDynamic()
+{
+  // notify update of structure
+  qsys::ObjectEvent obe;
+  obe.setType(qsys::ObjectEvent::OBE_CHANGED);
+  obe.setTarget(getUID());
+  //obe.setDescr("atomsMovedDynamic");
+  obe.setDescr("atomsMoved");
+  fireObjectEvent(obe);
+}
+
 void MolCoord::fireTopologyChanged()
 {
   // notify update of structure

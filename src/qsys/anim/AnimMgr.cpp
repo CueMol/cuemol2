@@ -172,6 +172,8 @@ void AnimMgr::stop()
   m_timeElapsed = 0;
   m_nState = AM_STOP;
   m_pTgtView = ViewPtr();
+
+  fixObjChanges();
 }
 
 void AnimMgr::pause()
@@ -189,6 +191,7 @@ void AnimMgr::pause()
       m_pTgtView = ViewPtr();
     }
     MB_DPRINTLN("AnimMgr pause remain=%ld", m_timeRemain);
+    fixObjChanges();
   }
 }
 
@@ -295,10 +298,15 @@ bool AnimMgr::onTimer(double t, qlib::time_value curr, bool bLast)
     m_timeEnd = 0;
     m_nState = AM_STOP;
     m_timeElapsed = 0;
-    if (m_loop)
+    if (m_loop) {
+      // loop mode --> restart
       start(m_pTgtView);
-    else
+    }
+    else {
+      // once play mode --> stop
       m_pTgtView = ViewPtr();
+      fixObjChanges();
+    }
     return false;
   }
   return true;
@@ -703,5 +711,39 @@ void AnimMgr::resolveTimeImpl(AnimObjPtr pObj)
   pObj->setAbsStart(tv_en + pObj->getRelStart());
   pObj->setAbsEnd(tv_en + pObj->getRelEnd());
   pObj->setTimeResolved(true);
+}
+
+void AnimMgr::fixObjChanges()
+{
+  LOG_DPRINTLN("Fix obj changes...");
+
+  BOOST_FOREACH (AnimObjPtr pObj, m_data) {
+    // skip the disabled animobj
+    if (pObj->isDisabled())
+      continue;
+    
+    qlib::LScrSp<PropAnim> pPropAnim(pObj, qlib::no_throw_tag());
+    if (pPropAnim.isnull())
+      continue; // skip non-propanim objects
+
+    // propanim object --> get target UIDs
+    std::vector<qlib::uid_t> uids;
+    pPropAnim->getTgtUIDs(this, uids);
+
+    BOOST_FOREACH (qlib::uid_t elem, uids) {
+      ObjectPtr pObj = SceneManager::getObjectS(elem);
+      if (pObj.isnull())
+        continue;
+      // send Fix object change event (to fix changes after the dynamic changes)
+      {
+        qsys::ObjectEvent obe;
+        obe.setType(qsys::ObjectEvent::OBE_CHANGED_FIXDYN);
+        obe.setTarget(getUID());
+        obe.setDescr("atomsMoved");
+        pObj->fireObjectEvent(obe);
+      }
+    }
+  }
+
 }
 
