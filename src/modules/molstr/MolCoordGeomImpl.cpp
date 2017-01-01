@@ -251,10 +251,14 @@ void MolCoord::fireAtomsMovedDynamic()
 {
   // notify update of structure
   qsys::ObjectEvent obe;
-  obe.setType(qsys::ObjectEvent::OBE_CHANGED);
   obe.setTarget(getUID());
-  //obe.setDescr("atomsMovedDynamic");
+
+  obe.setType(qsys::ObjectEvent::OBE_CHANGED_DYNAMIC);
   obe.setDescr("atomsMoved");
+
+  //obe.setType(qsys::ObjectEvent::OBE_CHANGED);
+  //obe.setDescr("atomsMovedDynamic");
+
   fireObjectEvent(obe);
 }
 
