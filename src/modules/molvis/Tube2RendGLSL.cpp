@@ -75,7 +75,7 @@ void Tube2Renderer::setupSectGLSL(DisplayContext *pdc)
   if (m_pSectTex!=NULL)
     delete m_pSectTex;
 
-  m_pSectTex = pdc->createTexture();
+  m_pSectTex = MB_NEW gfx::Texture(); //pdc->createTexture();
 
 #ifdef USE_TBO
   m_pSectTex->setup(1, gfx::Texture::FMT_R,
@@ -94,7 +94,7 @@ void Tube2Renderer::setupGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc)
 
   if (pSeg->m_pCoefTex!=NULL)
     delete pSeg->m_pCoefTex;
-  pSeg->m_pCoefTex = pdc->createTexture();
+  pSeg->m_pCoefTex = MB_NEW gfx::Texture(); //pdc->createTexture();
 #ifdef USE_TBO
   pSeg->m_pCoefTex->setup(1, gfx::Texture::FMT_R,
                           gfx::Texture::TYPE_FLOAT32);
@@ -105,7 +105,7 @@ void Tube2Renderer::setupGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc)
 
   if (pSeg->m_pBinormTex!=NULL)
     delete pSeg->m_pBinormTex;
-  pSeg->m_pBinormTex = pdc->createTexture();
+  pSeg->m_pBinormTex = MB_NEW gfx::Texture(); //pdc->createTexture();
 #ifdef USE_TBO
   pSeg->m_pBinormTex->setup(1, gfx::Texture::FMT_R,
                             gfx::Texture::TYPE_FLOAT32);
@@ -116,7 +116,7 @@ void Tube2Renderer::setupGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc)
 
   if (pSeg->m_pColorTex!=NULL)
     delete pSeg->m_pColorTex;
-  pSeg->m_pColorTex = pdc->createTexture();
+  pSeg->m_pColorTex = MB_NEW gfx::Texture(); //pdc->createTexture();
   pSeg->m_pColorTex->setup(1, gfx::Texture::FMT_RGBA,
                            gfx::Texture::TYPE_UINT8_COLOR);
   
@@ -272,10 +272,14 @@ void Tube2Renderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc)
 
   const int nCtlPts = pSeg->m_scoeff.getSize();
 
-  pSeg->m_pCoefTex->use(COEF_TEX_UNIT);
-  pSeg->m_pBinormTex->use(BINORM_TEX_UNIT);
-  m_pSectTex->use(SECT_TEX_UNIT);
-  pSeg->m_pColorTex->use(COLOR_TEX_UNIT);
+  //pSeg->m_pCoefTex->use(COEF_TEX_UNIT);
+  //pSeg->m_pBinormTex->use(BINORM_TEX_UNIT);
+  //m_pSectTex->use(SECT_TEX_UNIT);
+  //pSeg->m_pColorTex->use(COLOR_TEX_UNIT);
+  pdc->useTexture(pSeg->m_pCoefTex, COEF_TEX_UNIT);
+  pdc->useTexture(pSeg->m_pBinormTex, BINORM_TEX_UNIT);
+  pdc->useTexture(m_pSectTex, SECT_TEX_UNIT);
+  pdc->useTexture(pSeg->m_pColorTex, COLOR_TEX_UNIT);
 
   m_pPO->enable();
 
@@ -293,9 +297,13 @@ void Tube2Renderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc)
 
   m_pPO->disable();
 
-  pSeg->m_pCoefTex->unuse();
-  pSeg->m_pBinormTex->unuse();
-  m_pSectTex->unuse();
-  pSeg->m_pColorTex->unuse();
+  //pSeg->m_pCoefTex->unuse();
+  //pSeg->m_pBinormTex->unuse();
+  //m_pSectTex->unuse();
+  //pSeg->m_pColorTex->unuse();
+  pdc->unuseTexture(pSeg->m_pCoefTex);
+  pdc->unuseTexture(pSeg->m_pBinormTex);
+  pdc->unuseTexture(m_pSectTex);
+  pdc->unuseTexture(pSeg->m_pColorTex);
 }
 

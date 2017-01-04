@@ -70,7 +70,10 @@ void DispCacheRenderer::renderHit(DisplayContext *phl)
 
 void DispCacheRenderer::objectChanged(ObjectEvent &ev)
 {
-  if (ev.getType()==ObjectEvent::OBE_CHANGED) {
+  // Default implementation:
+  //   Treat changed and changed_dynamic events as the same
+  if (ev.getType()==ObjectEvent::OBE_CHANGED ||
+      ev.getType()==ObjectEvent::OBE_CHANGED_DYNAMIC) {
     invalidateDisplayCache();
   }
 }

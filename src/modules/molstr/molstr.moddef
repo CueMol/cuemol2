@@ -2,6 +2,12 @@
 //
 // $Id: molstr.moddef,v 1.14 2010/12/05 17:42:00 rishitani Exp $
 
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#else
+#define USE_OPENGL 1
+#endif
+
 #include "MolAtom.qif"
 #include "MolResidue.qif"
 #include "MolChain.qif"
@@ -28,6 +34,10 @@
 #include "ResidRangeSet.qif"
 #include "AnimMol.qif"
 
+#ifdef USE_OPENGL
+# include "SimpleRendGLSL.qif"
+#endif
+
 module molstr
 {
   init molstr::init();
@@ -38,7 +48,10 @@ module molstr
   MolChain uuid 6d65ac77-7357-41e1-a8a3-a71feb8d687b;
   MolCoord uuid 4f3ae91e-e8ff-4e0a-92e2-684da29f3ed6;
   MolRenderer uuid f7d735b3-56fa-48b7-a053-0dd7c1c89dcb;
-  SimpleRenderer uuid 4f7d8a28-fced-4057-9f70-1654c7a88521;
+  SimpleRenderer;
+#ifdef USE_OPENGL
+  SimpleRendGLSL;
+#endif
   MainChainRenderer uuid 71f2c289-f184-4a0c-9cca-04e7ccc4f1b1;
   TraceRenderer uuid e964c858-f906-4e55-a189-928e0bca65c1;
   NameLabelRenderer uuid e964c858-f906-4e55-a189-928e0bca65c1;

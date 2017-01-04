@@ -5,7 +5,7 @@
 
 #include <common.h>
 
-#include "SimpleRenderer.hpp"
+#include "SimpleRendGLSL.hpp"
 
 #include "MolCoord.hpp"
 #include "AnimMol.hpp"
@@ -26,11 +26,92 @@ using qlib::Vector4D;
 using qlib::Vector3F;
 using gfx::ColorPtr;
 
-void SimpleRenderer::initShader(DisplayContext *pdc)
+SimpleRendGLSL::SimpleRendGLSL()
+{
+  // will be called by RendererFactory
+  //resetAllProps();
+
+  m_pPO = NULL;
+  m_pAttrAry = NULL;
+  m_pCoordTex = NULL;
+
+  m_bUseGLSL = false;
+  // m_bUseGLSL = true;
+
+  m_bChkShaderDone = false;
+}
+
+SimpleRendGLSL::~SimpleRendGLSL()
+{
+  // VBO/Texture have been cleaned up in invalidateDisplayCache()
+  //  in unloading() method of DispCacheRend impl,
+  // and so they must be NULL when the destructor is called.
+  MB_ASSERT(m_pAttrAry==NULL);
+  MB_ASSERT(m_pCoordTex==NULL);
+
+  MB_DPRINTLN("SimpleRendGLSL destructed %p", this);
+}
+
+void SimpleRendGLSL::display(DisplayContext *pdc)
+{
+  if (!isUseVBO(pdc)) {
+    // case of the file (non-ogl) rendering
+    // always use the old version.
+    super_t::display(pdc);
+    return;
+  }
+
+  if (!m_bChkShaderDone)
+    initShader(pdc);
+
+  if (m_bUseGLSL) {
+    displayGLSL(pdc);
+  }
+  else {
+    // displayVBO(pdc);
+    super_t::display(pdc);
+  }
+}
+
+void SimpleRendGLSL::displayGLSL(DisplayContext *pdc)
+{
+  // new rendering routine using GLSL/VBO
+  // if (!m_bChkShaderDone)
+  // initShader(pdc);
+  
+  if (m_pAttrAry==NULL) {
+    createGLSL();
+    if (isUseAnim())
+      updateDynamicGLSL();
+    else
+      updateStaticGLSL();
+    
+    if (m_pAttrAry==NULL)
+      return; // Error, Cannot draw anything (ignore)
+  }
+
+
+  preRender(pdc);
+  pdc->setLineWidth(getLineWidth());
+
+  //m_pCoordTex->use(0);
+  pdc->useTexture(m_pCoordTex, 0);
+  m_pPO->enable();
+  m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
+  pdc->drawElem(*m_pAttrAry);
+
+  m_pPO->disable();
+  //m_pCoordTex->unuse();
+  pdc->unuseTexture(m_pCoordTex);
+
+  postRender(pdc);
+}
+
+void SimpleRendGLSL::initShader(DisplayContext *pdc)
 {
   m_bChkShaderDone = true;
 
-  sysdep::ShaderSetupHelper<SimpleRenderer> ssh(this);
+  sysdep::ShaderSetupHelper<SimpleRendGLSL> ssh(this);
 
   if (!ssh.checkEnvVS()) {
     LOG_DPRINTLN("SimpleRendGLSL> ERROR: GLSL not supported.");
@@ -60,7 +141,7 @@ void SimpleRenderer::initShader(DisplayContext *pdc)
   m_pPO->disable();
 }
 
-void SimpleRenderer::createGLSL(DisplayContext *pdc)
+void SimpleRendGLSL::createGLSL()
 {
   quint32 i, j;
   quint32 nbons = 0, natoms = 0, nva = 0;
@@ -77,7 +158,7 @@ void SimpleRenderer::createGLSL(DisplayContext *pdc)
   if (m_pCoordTex!=NULL)
     delete m_pCoordTex;
 
-  m_pCoordTex = pdc->createTexture();
+  m_pCoordTex = MB_NEW gfx::Texture(); //pdc->createTexture();
 
 #ifdef USE_TBO
   m_pCoordTex->setup(1, gfx::Texture::FMT_R,
@@ -273,7 +354,7 @@ void SimpleRenderer::createGLSL(DisplayContext *pdc)
   pCMol->getColSchm()->end();
 }
 
-void SimpleRenderer::updateDynamicGLSL()
+void SimpleRendGLSL::updateDynamicGLSL()
 {
   quint32 j = 0;
   quint32 i;
@@ -315,7 +396,7 @@ void SimpleRenderer::updateDynamicGLSL()
   //m_pCoordTex->setData(natoms, &m_coordbuf[0]);
 }
 
-void SimpleRenderer::updateStaticGLSL()
+void SimpleRendGLSL::updateStaticGLSL()
 {
   quint32 j = 0;
   quint32 i;
@@ -348,34 +429,51 @@ void SimpleRenderer::updateStaticGLSL()
   //m_pCoordTex->setData(natoms, &m_coordbuf[0]);
 }
 
-void SimpleRenderer::displayGLSL(DisplayContext *pdc)
+void SimpleRendGLSL::invalidateDisplayCache()
 {
-  // new rendering routine using GLSL/VBO
-  if (!m_bChkShaderDone)
-    initShader(pdc);
-  
-  if (m_pAttrAry==NULL) {
-    createGLSL(pdc);
-    if (isUseAnim())
-      updateDynamicGLSL();
-    else
-      updateStaticGLSL();
-    
-    if (m_pAttrAry==NULL)
-      return; // Error, Cannot draw anything (ignore)
+  if (m_pCoordTex!=NULL) {
+    // MB_DPRINTLN("%%%%%%%%%%%%% SimpleRend delete CoordTex");
+    delete m_pCoordTex;
+    m_pCoordTex = NULL;
+  }
+  m_sels.clear();
+  m_coordbuf.clear();
+  if (m_pAttrAry!=NULL) {
+    delete m_pAttrAry;
+    m_pAttrAry = NULL;
   }
 
-
-  preRender(pdc);
-  pdc->setLineWidth(m_lw);
-
-  m_pCoordTex->use(0);
-  m_pPO->enable();
-  m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
-  pdc->drawElem(*m_pAttrAry);
-
-  m_pPO->disable();
-  m_pCoordTex->unuse();
-
-  postRender(pdc);
+  super_t::invalidateDisplayCache();
 }
+
+void SimpleRendGLSL::objectChanged(qsys::ObjectEvent &ev)
+{
+  if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED_DYNAMIC &&
+	   ev.getDescr().equals("atomsMoved")) {
+    // OBE_CHANGED_DYNAMIC && descr=="atomsMoved"
+    if (isUseAnim()) {
+      // GLSL mode
+      if (!m_bUseGLSL) {
+	invalidateDisplayCache();
+	m_bUseGLSL = true;
+      }
+      if (m_pAttrAry==NULL) {
+	createGLSL();
+	//updateGLSLColor();
+      }
+      // only update positions
+      updateDynamicGLSL();
+      return;
+    }
+  }
+  else if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED_FIXDYN) {
+    MB_DPRINTLN("SimpleRend (%p) > OBE_CHANGED_FIXDYN called!!", this);
+
+    m_bUseGLSL = false;
+    //invalidateDisplayCache();
+    return;
+  }
+
+  super_t::objectChanged(ev);
+}
+

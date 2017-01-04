@@ -181,13 +181,13 @@ void GLSLMapVolRenderer::initShader(DisplayContext *pdc)
   glDisable(GL_TEXTURE_3D);
   */
 
-  m_pMapTex = pdc->createTexture();
+  m_pMapTex = MB_NEW gfx::Texture(); //pdc->createTexture();
   m_pMapTex->setLinIntpol(true);
   m_pMapTex->setup(3, gfx::Texture::FMT_R,
                    gfx::Texture::TYPE_UINT8_COLOR);
 
   // setup texture (xfer function 1D tex; unit 1)
-  m_pXfnTex = pdc->createTexture();
+  m_pXfnTex = MB_NEW gfx::Texture(); //pdc->createTexture();
   m_pXfnTex->setLinIntpol(true);
   m_pXfnTex->setup(1, gfx::Texture::FMT_RGBA,
 		   gfx::Texture::TYPE_UINT8_COLOR);
@@ -728,13 +728,15 @@ void GLSLMapVolRenderer::renderGPU(DisplayContext *pdc)
   //glEnable(GL_TEXTURE_3D);
   glBindTexture(GL_TEXTURE_3D, m_nMapTexID);
   */
-  m_pMapTex->use(0);
+  //m_pMapTex->use(0);
+  pdc->useTexture(m_pMapTex, 0);
 
   /*
   glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_1D, m_nXfunTexID);
   */
-  m_pXfnTex->use(1);
+  //m_pXfnTex->use(1);
+  pdc->useTexture(m_pXfnTex, 1);
 
   if (m_pPO)
     m_pPO->enable();
@@ -766,8 +768,10 @@ void GLSLMapVolRenderer::renderGPU(DisplayContext *pdc)
   glBindTexture(GL_TEXTURE_3D, 0);
   */
 
-  m_pMapTex->unuse();
-  m_pXfnTex->unuse();
+  //m_pMapTex->unuse();
+  //m_pXfnTex->unuse();
+  pdc->unuseTexture(m_pMapTex);
+  pdc->unuseTexture(m_pXfnTex);
 
   if (m_pPO)
     m_pPO->disable();

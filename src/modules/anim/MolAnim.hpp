@@ -39,6 +39,9 @@ namespace anim {
     /// target molobj name
     LString m_molName;
     
+    /// Notify prop changed event
+    bool m_bNotifyPropEvt;
+
     // workarea
     qsys::ObjectPtr m_pObj;
 
@@ -73,6 +76,13 @@ namespace anim {
     }
     void setMolName(LString val) {
       m_molName = val;
+    }
+
+    bool isNotifyPropEvt() const {
+      return m_bNotifyPropEvt;
+    }
+    void setNotifyPropEvt(bool b) {
+      m_bNotifyPropEvt = b;
     }
 
   private:

@@ -78,8 +78,12 @@ void MolAnim::onTimer(qlib::time_value elapsed, AnimMgr *pMgr)
   LString propnm = getPropName();
 
   fillCache(pMgr->getTgtScene());
-  if (!m_pObj.isnull())
-    m_pObj->setProperty(propnm, var);
+  if (!m_pObj.isnull()) {
+    if (m_bNotifyPropEvt)
+      m_pObj->setProperty(propnm, var);
+    else
+      m_pObj->setPropertyImpl(propnm, var);
+  }
 }
 
 void MolAnim::onEnd(qlib::time_value elapsed, AnimMgr *pMgr)

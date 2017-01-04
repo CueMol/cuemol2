@@ -10,22 +10,23 @@
 #include "molstr.hpp"
 #include "MolAtomRenderer.hpp"
 #include <gfx/DrawElem.hpp>
-#include <gfx/DrawAttrArray.hpp>
 
-#ifdef WIN32
-#define USE_TBO 1
-#else
-#endif
+//#include <gfx/DrawAttrArray.hpp>
+
+// #ifdef WIN32
+// #define USE_TBO 1
+// #else
+// #endif
 
 class SimpleRenderer_wrap;
 
-namespace sysdep {
-  class OglProgramObject;
-}
+//namespace sysdep {
+//  class OglProgramObject;
+//}
 
-namespace gfx {
-  class Texture;
-}
+//namespace gfx {
+//  class Texture;
+//}
 
 namespace molstr {
 
@@ -204,61 +205,10 @@ namespace molstr {
     /// cached vertex array/VBO
     gfx::DrawElemVC *m_pVBO;
 
-
-    //////////////////////////////////////////////////////
-    // new rendering routine (using GLSL & VBO)
-
-  private:
-    /// display() for GLSL version
-    void displayGLSL(DisplayContext *pdc);
-
-    /// Initialize shaders/texture
-    void initShader(DisplayContext *pdc);
-
-    /// Rendering using GLSL
-    void createGLSL(DisplayContext *pdc);
-
-    /// update coord texture for GLSL rendering
-    void updateDynamicGLSL();
-
-    void updateStaticGLSL();
-
-    bool m_bUseGLSL;
-
-    /// shader check was performed
-    bool m_bChkShaderDone;
-
-    /// coordinate float texture
-    gfx::Texture *m_pCoordTex;
-
-    bool m_bUseSels;
-    std::vector<quint32> m_sels;
-    std::vector<float> m_coordbuf;
-
-    int m_nTexW, m_nTexH;
-
-    /// GLSL shader objects
-    sysdep::OglProgramObject *m_pPO;
-
-    struct AttrElem {
-      /// a_ind12.x, a_ind12.y
-      qfloat32 ind1, ind2;
-      //qint32 ind1, ind2;
-      /// a_color
-      qbyte r, g, b, a;
-    };
-
-    typedef gfx::DrawAttrArray<AttrElem> AttrArray;
-
-    /// VBO for glsl rendering
-    AttrArray *m_pAttrAry;
-
-    quint32 m_nInd12Loc;
-    quint32 m_nColLoc;
+  public:
 
     //////////////////////////////////////////////////////
     // Event handling
-  public:
 
     /// object changed event (--> update vertex positions if required)
     virtual void objectChanged(qsys::ObjectEvent &ev);

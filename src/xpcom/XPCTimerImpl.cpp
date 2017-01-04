@@ -55,35 +55,51 @@ XPCTimerImpl::~XPCTimerImpl()
 void XPCTimerImpl::timerCallbackFunc(nsITimer *aTimer, void *aClosure)
 {
   //MB_DPRINTLN("Timer: notified");
-
+  try {
 #ifdef USE_PERFTIMER
-  XPCTimerImpl *pthis = static_cast<XPCTimerImpl *>(aClosure);
-  boost::timer::cpu_timer *p = static_cast<boost::timer::cpu_timer *>(pthis->m_pMesTimer);
-  p->start();
+    XPCTimerImpl *pthis = static_cast<XPCTimerImpl *>(aClosure);
+    boost::timer::cpu_timer *p = static_cast<boost::timer::cpu_timer *>(pthis->m_pMesTimer);
+    p->start();
 #endif
 
-  qlib::LProcMgr *pPM = qlib::LProcMgr::getInstance();
-  pPM->checkQueue();
+    qlib::LProcMgr *pPM = qlib::LProcMgr::getInstance();
+    pPM->checkQueue();
 
-  qlib::EventManager *pEM = qlib::EventManager::getInstance();
-  pEM->messageLoop();
-  pEM->checkTimerQueue();
+    qlib::EventManager *pEM = qlib::EventManager::getInstance();
+    pEM->messageLoop();
+    pEM->checkTimerQueue();
 
 #ifdef USE_XMLRPC
-  xrbr::XmlRpcMgr *pXRM = xrbr::XmlRpcMgr::getInstance();
-  pXRM->processReq(1000);
+    xrbr::XmlRpcMgr *pXRM = xrbr::XmlRpcMgr::getInstance();
+    pXRM->processReq(1000);
 #endif
 
-  qsys::SceneManager *pSM = qsys::SceneManager::getInstance();
-  pSM->checkAndUpdateScenes();
+    qsys::SceneManager *pSM = qsys::SceneManager::getInstance();
+    pSM->checkAndUpdateScenes();
 
 #ifdef USE_PERFTIMER
-  p->stop();
-  boost::timer::cpu_times t = p->elapsed();
-  //LString msg = boost::timer::format(t);
-  //MB_DPRINTLN("Block time=%s", msg.c_str());
-  pSM->setBusyTime(t.wall);
+    p->stop();
+    boost::timer::cpu_times t = p->elapsed();
+    //LString msg = boost::timer::format(t);
+    //MB_DPRINTLN("Block time=%s", msg.c_str());
+    pSM->setBusyTime(t.wall);
 #endif
+
+  }
+  catch (qlib::LException &e) {
+    LOG_DPRINTLN("Exception occured in timerCallback: %s",
+		 e.getFmtMsg().c_str());
+    throw;
+  }
+  catch (std::exception &e) {
+    LOG_DPRINTLN("Exception occured in timerCallback: %s",
+		 e.what());
+    throw;
+  }
+  catch (...) {
+    LOG_DPRINTLN("Unknown exception occured in timerCallback");
+    throw;
+  }
 
   return;
 }

@@ -19,6 +19,7 @@
 
 #include <gfx/DisplayContext.hpp>
 #include <gfx/SolidColor.hpp>
+#include <gfx/Texture.hpp>
 #include <qsys/Scene.hpp>
 
 // Use OpenGL VBO implementation
@@ -40,22 +41,13 @@ SimpleRenderer::SimpleRenderer()
   m_dCvScl2 = 0.05;
 
   m_pVBO = NULL;
-
-  m_pPO = NULL;
-  m_pAttrAry = NULL;
-  m_pCoordTex = NULL;
-
-  //m_bUseGLSL = false;
-  m_bUseGLSL = true;
-
-  m_bChkShaderDone = false;
 }
 
 SimpleRenderer::~SimpleRenderer()
 {
-  // VBO should be cleaned up here
-  //  invalidateDisplayCache() has been called
-  //  in unloading() method of DispCacheRend impl.
+  // VBO/Texture have been cleaned up in invalidateDisplayCache()
+  //  in unloading() method of DispCacheRend impl,
+  // and so they must be NULL when the destructor is called.
   MB_ASSERT(m_pVBO==NULL);
 
   MB_DPRINTLN("SimpleRenderer destructed %p", this);
@@ -225,14 +217,7 @@ void SimpleRenderer::display(DisplayContext *pdc)
     super_t::display(pdc);
     return;
   }
-
-  if (m_bUseGLSL) {
-    displayGLSL(pdc);
-  }
-  else {
-    displayVBO(pdc);
-  }
-  
+  displayVBO(pdc);
 #else
   super_t::display(pdc);
 #endif
@@ -961,17 +946,6 @@ void SimpleRenderer::invalidateDisplayCache()
     m_mbonds.clear();
     m_atoms.clear();
   }
-
-  if (m_pCoordTex!=NULL) {
-    delete m_pCoordTex;
-    m_pCoordTex = NULL;
-  }
-  m_sels.clear();
-  m_coordbuf.clear();
-  if (m_pAttrAry!=NULL) {
-    delete m_pAttrAry;
-    m_pAttrAry = NULL;
-  }
 #endif
 
   super_t::invalidateDisplayCache();
@@ -980,22 +954,20 @@ void SimpleRenderer::invalidateDisplayCache()
 void SimpleRenderer::objectChanged(qsys::ObjectEvent &ev)
 {
 #ifdef USE_OPENGL_VBO
-  if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED &&
+  if ((ev.getType()==qsys::ObjectEvent::OBE_CHANGED ||
+       ev.getType()==qsys::ObjectEvent::OBE_CHANGED_DYNAMIC) &&
       ev.getDescr().equals("atomsMoved")) {
-    // OBE_CHANGED && descr=="atomsMoved"
+
+    // OBE_CHANGED/CHANGED_DYN && descr=="atomsMoved"
+
     if (isUseAnim()) {
       if (m_pVBO!=NULL) {
-        // VBO mode
-        // only update positions
-        updateDynamicVBO();
-        m_pVBO->setUpdated(true);
-        return;
-      }
-      else if (m_pAttrAry!=NULL) {
-        // GLSL mode
-        // only update positions
-        updateDynamicGLSL();
-        return;
+	// VBO mode
+	// only update positions
+	updateDynamicVBO();
+	m_pVBO->setUpdated(true);
+	// Prevent default behavior (invalidate cache)
+	return;
       }
     }
   }

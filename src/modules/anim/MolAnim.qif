@@ -1,6 +1,6 @@
 // -*-Mode: C++;-*-
 //
-// Animation object scripting interface
+// Animation class for the real number properties
 //
 
 #ifndef MOL_ANIM_QIF_INCLUDED
@@ -13,16 +13,27 @@ runtime_class MolAnim extends AnimObj
   client_hdr "MolAnim.hpp";
   client_name anim::MolAnim;
 
-  // interface attributes
+  // Interface attributes
   scriptable;
   cloneable;
   smartptr;
 
-  // properties
+  // Properties
+
+  /// Start value of the property
   property real startValue => redirect(getStartValue, setStartValue);
+
+  /// End value of the property
   property real endValue => redirect(getEndValue, setEndValue);
+
+  /// Name of the target prop
   property string prop => redirect(getPropName, setPropName);
+
+  /// Object of the animation target
   property string mol => redirect(getMolName, setMolName);
+
+  /// Fire propChanged event upon the animation change
+  property boolean notifyPropEvt => redirect(isNotifyPropEvt, setNotifyPropEvt);
 };
 
 #endif

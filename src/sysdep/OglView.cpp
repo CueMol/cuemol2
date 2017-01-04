@@ -10,22 +10,6 @@
 #  include <GL/glew.h>
 #endif
 
-#ifdef HAVE_GL_GL_H
-#  include <GL/gl.h>
-#elif defined(HAVE_OPENGL_GL_H)
-#  include <OpenGL/gl.h>
-#else
-#  error no gl.h
-#endif
-
-#ifdef HAVE_GL_GLU_H
-#  include <GL/glu.h>
-#elif defined(HAVE_OPENGL_GLU_H)
-#  include <OpenGL/glu.h>
-#else
-#  error no glu.h
-#endif
-
 #include "OglView.hpp"
 
 #include <qlib/Utils.hpp>
@@ -98,24 +82,26 @@ void OglView::setup()
   // clear();
   MB_DPRINTLN("OglView::setup() OK.");
 
+  if (getViewCap()==NULL) {
+    // Set view capability flag object
 #ifdef HAVE_GLEW
-  GLenum err = glewInit();
-  if (GLEW_OK != err) {
-    LOG_DPRINTLN("OglView> glewInit failed!!");
-  }
-  else {
-    MB_DPRINTLN("OglView> glewInit OK.");
-  }
+    GLenum err = glewInit();
+    if (GLEW_OK != err) {
+      LOG_DPRINTLN("OglView> glewInit failed!!");
+    }
+    else {
+      MB_DPRINTLN("OglView> glewInit OK.");
+    }
 #endif
-
-  // set view capability flag object
+    setViewCap(MB_NEW OglViewCap());
+  }
   {
-    OglViewCap *pVC = new OglViewCap();
+    OglViewCap *pVC = dynamic_cast<OglViewCap *>(getViewCap());
+    MB_ASSERT(pVC!=NULL);
     if (!m_bUseGlShader) {
       pVC->disableShader();
       LOG_DPRINTLN("OglView> shaders disabled");
     }
-    setViewCap(pVC);
   }
 
   OglDisplayContext *pdc = static_cast<OglDisplayContext *>( getDisplayContext() );
@@ -828,12 +814,4 @@ void OglView::clear()
 
   // pdc->unsetCurrent();
 }
-
-/*
-void OglView::readObj(qlib::ObjInStream &dis)
-{
-  View::readObj(dis);
-  setUpProjMat(getDisplayContext(), -1, -1);
-}
-*/
 

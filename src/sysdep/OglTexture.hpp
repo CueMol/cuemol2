@@ -67,38 +67,27 @@ namespace sysdep {
       m_bInit = false;
       m_bUseTexBuf = false;
       m_bUseIntpol = false;
+
+      m_iGlDimType = -1;
+      m_iGlPixFmt = -1;
+      m_iGlPixType = -1;
+      m_iGlIntPixFmt = -1;
+      MB_DPRINTLN("********** OglTexRep (scene %d) created.", nSceneID);
     }
 
     virtual ~OglTextureRep() {
       destroy();
+      MB_DPRINTLN("********** OglTexRep (scene %d) destructed.", m_nSceneID);
     }
 
     virtual void setup(int iDim, int iPixFmt, int iPixType)
     {
       m_bUseTexBuf = false;
 
+      MB_DPRINTLN("OglTex setup(%d, %d, %d) called.", iDim, iPixFmt, iPixType);
+
       if (iDim==1 && iPixFmt==Texture::FMT_R && isTBOAvailable() ) {
-        m_iGlDimType = GL_TEXTURE_BUFFER;
-        m_bUseTexBuf = true;
-
-        // no data type conversion is performed in the TBO mode
-        switch (iPixType) {
-        case Texture::TYPE_UINT8:
-          m_iGlPixType = GL_UNSIGNED_BYTE;
-          m_iGlIntPixFmt = GL_R8UI;
-          break;
-          
-        case Texture::TYPE_FLOAT32:
-          m_iGlPixType = GL_FLOAT;
-          m_iGlIntPixFmt = GL_R32F;
-          break;
-        default:
-          MB_THROW(qlib::RuntimeException, "Unsupported pixel format");
-          break;
-        }
-
-        createGL();
-        setupGL();
+	setupTBO(iPixType);
         return;
       }
 
@@ -113,7 +102,9 @@ namespace sysdep {
 	m_iGlDimType = GL_TEXTURE_3D;
 	break;
       default:
-	MB_THROW(qlib::RuntimeException, "Unsupported dimension");
+	LString msg = LString::format("Unsupported dimension %d", iDim);
+	LOG_DPRINTLN("OglTexRep> %s", msg.c_str());
+	MB_THROW(qlib::RuntimeException, msg);
 	break;
       }
 
@@ -131,7 +122,9 @@ namespace sysdep {
 	m_iGlPixFmt = GL_RGBA;
 	break;
       default:
-	MB_THROW(qlib::RuntimeException, "Unsupported pixel format");
+	LString msg = LString::format("Unsupported pixel format %d", iPixFmt);
+	LOG_DPRINTLN("OglTexRep> %s", msg.c_str());
+	MB_THROW(qlib::RuntimeException, msg);
 	break;
       }
 
@@ -154,7 +147,10 @@ namespace sysdep {
           m_iGlIntPixFmt = GL_RGBA8UI;
           break;
         default:
-          MB_THROW(qlib::RuntimeException, "Unsupported pixel format");
+	  LString msg = LString::format("Unsupported pixel type=%d format=%d",
+					iPixType, iPixFmt);
+	  LOG_DPRINTLN("OglTexRep> %s", msg.c_str());
+          MB_THROW(qlib::RuntimeException, msg);
           break;
         }
         break;
@@ -176,7 +172,10 @@ namespace sysdep {
           m_iGlIntPixFmt = GL_RGBA32F;
           break;
         default:
-          MB_THROW(qlib::RuntimeException, "Unsupported pixel format");
+	  LString msg = LString::format("Unsupported pixel type=%d format=%d",
+					iPixType, iPixFmt);
+	  LOG_DPRINTLN("OglTexRep> %s", msg.c_str());
+          MB_THROW(qlib::RuntimeException, msg);
           break;
         }
         break;
@@ -198,19 +197,56 @@ namespace sysdep {
           m_iGlIntPixFmt = GL_RGBA16F;
           break;
         default:
-          MB_THROW(qlib::RuntimeException, "Unsupported pixel format");
+	  LString msg = LString::format("Unsupported pixel type=%d format=%d",
+					iPixType, iPixFmt);
+	  LOG_DPRINTLN("OglTexRep> %s", msg.c_str());
+          MB_THROW(qlib::RuntimeException, msg);
           break;
         }
         break;
 
       default:
-	MB_THROW(qlib::RuntimeException, "Unsupported pixel format");
+	LString msg = LString::format("Unsupported pixel type=%d format=%d",
+				      iPixType, iPixFmt);
+	LOG_DPRINTLN("OglTexRep> %s", msg.c_str());
+	MB_THROW(qlib::RuntimeException, msg);
 	break;
       }
 
       createGL();
       setupGL();
     }
+
+    /// Setup TextureBufferObject
+    void setupTBO(int iPixType)
+    {
+      m_iGlDimType = GL_TEXTURE_BUFFER;
+      m_bUseTexBuf = true;
+      
+      // no data type conversion is performed in the TBO mode
+      switch (iPixType) {
+      case Texture::TYPE_UINT8:
+	m_iGlPixType = GL_UNSIGNED_BYTE;
+	m_iGlIntPixFmt = GL_R8UI;
+	break;
+        
+      case Texture::TYPE_FLOAT32:
+	m_iGlPixType = GL_FLOAT;
+	m_iGlIntPixFmt = GL_R32F;
+	break;
+
+      default:
+	LString msg = LString::format("Unsupported pixel type %d for TBO", iPixType);
+	LOG_DPRINTLN("OglTexRep> %s", msg.c_str());
+	MB_THROW(qlib::RuntimeException, msg);
+	break;
+      }
+      
+      createGL();
+      setupGL();
+    }
+
+    //////////
 
     virtual void setData(int width, int height, int depth, const void *pdata)
     {
@@ -324,6 +360,8 @@ namespace sysdep {
 
     void setDataGL(const void *pdata)
     {
+      MB_DPRINTLN("OglTex::setDataGL %dx%dx%d (%p) ", m_nWidth, m_nHeight, m_nDepth, pdata);
+
       if (m_iGlDimType==GL_TEXTURE_BUFFER) {
         setDataGLBuf(pdata);
         return;
@@ -339,7 +377,9 @@ namespace sysdep {
       else if (m_iGlDimType==GL_TEXTURE_3D)
         setDataGL3D(pdata);
       else {
-        MB_THROW(qlib::RuntimeException, "Unsupported texture type");
+	LString msg = LString::format("Unsupported tex dim type %d", m_iGlDimType);
+	MB_DPRINTLN("OglTEx::setDataGL ERROR!! %s", msg.c_str());
+        MB_THROW(qlib::RuntimeException, msg);
       }
     }
 

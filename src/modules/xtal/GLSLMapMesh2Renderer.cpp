@@ -239,7 +239,7 @@ void GLSLMapMesh2Renderer::initShader(DisplayContext *pdc)
 
   if (m_pMapTex != NULL)
     delete m_pMapTex;
-  m_pMapTex = pdc->createTexture();
+  m_pMapTex = MB_NEW gfx::Texture(); //pdc->createTexture();
 #ifdef USE_TBO
   m_pMapTex->setup(1, gfx::Texture::FMT_R,
                    gfx::Texture::TYPE_UINT8);
@@ -610,7 +610,8 @@ void GLSLMapMesh2Renderer::renderGPU(DisplayContext *pdc)
   glTexBufferARB(GL_TEXTURE_BUFFER, GL_R8UI, m_nMapBufID);
    */
 
-  m_pMapTex->use(MAP_TEX_UNIT);
+  //m_pMapTex->use(MAP_TEX_UNIT);
+  pdc->useTexture(m_pMapTex, MAP_TEX_UNIT);
 
   m_pPO->enable();
   
@@ -650,10 +651,8 @@ void GLSLMapMesh2Renderer::renderGPU(DisplayContext *pdc)
 
   m_pPO->disable();
 
-  m_pMapTex->unuse();
-  
-  // glBindTexture(MY_MAPTEX_DIM, 0);
-
+  //m_pMapTex->unuse();
+  pdc->unuseTexture(m_pMapTex);
 }
 
 namespace {

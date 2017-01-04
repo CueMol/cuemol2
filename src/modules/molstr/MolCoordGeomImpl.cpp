@@ -257,7 +257,7 @@ void MolCoord::fireAtomsMovedDynamic()
   obe.setDescr("atomsMoved");
 
   //obe.setType(qsys::ObjectEvent::OBE_CHANGED);
-  //obe.setDescr("atomsMovedDynamic");
+  //obe.setDescr("atomsMoved");
 
   fireObjectEvent(obe);
 }

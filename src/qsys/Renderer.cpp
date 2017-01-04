@@ -275,8 +275,6 @@ void Renderer::propChanged(qlib::LPropEvent &ev)
 
 void Renderer::objectChanged(ObjectEvent &ev)
 {
-  //if (ev.getType()==ObjectEvent::OBE_CHANGED) {
-  //}
 }
 
 void Renderer::sceneChanged(SceneEvent &ev)

@@ -13,7 +13,6 @@
 #include <qlib/Matrix4D.hpp>
 #include <qlib/LQuat.hpp>
 #include "AbstractColor.hpp"
-// #include "LTexture.hpp"
 
 using qlib::Vector4D;
 using qlib::Matrix4D;
@@ -232,10 +231,12 @@ namespace gfx {
     virtual int getDetail() const;
 
     // texture (default: not supported)
-    virtual Texture *createTexture() { return NULL; }
+    // virtual Texture *createTexture() { return NULL; }
 
-    //virtual void useTexture(Texture *) {}
-    //virtual void unuseTexture() {}
+    /// Use texture (default: not supported)
+    virtual void useTexture(Texture *pTex, int nunit) {}
+    /// UnUse texture (default: not supported)
+    virtual void unuseTexture(Texture *pTex) {}
     //virtual void texCoord(double u, double v) {}
 
     /// Mesh drawing

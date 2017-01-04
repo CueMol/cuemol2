@@ -42,6 +42,8 @@ bool ObjectEvent::getCategory(LString &category, int &nSrcType, int &nEvtType) c
   const int nev = getType();
   switch (nev) {
   case ObjectEvent::OBE_CHANGED:
+  case ObjectEvent::OBE_CHANGED_DYNAMIC:
+  case ObjectEvent::OBE_CHANGED_FIXDYN:
     nEvtType = ScrEventManager::SEM_CHANGED;
     nSrcType = ScrEventManager::SEM_OBJECT;
     category = getDescr();

@@ -717,6 +717,8 @@ void AnimMgr::fixObjChanges()
 {
   LOG_DPRINTLN("Fix obj changes...");
 
+  std::set<qlib::uid_t> targs;
+
   BOOST_FOREACH (AnimObjPtr pObj, m_data) {
     // skip the disabled animobj
     if (pObj->isDisabled())
@@ -731,19 +733,22 @@ void AnimMgr::fixObjChanges()
     pPropAnim->getTgtUIDs(this, uids);
 
     BOOST_FOREACH (qlib::uid_t elem, uids) {
-      ObjectPtr pObj = SceneManager::getObjectS(elem);
-      if (pObj.isnull())
-        continue;
-      // send Fix object change event (to fix changes after the dynamic changes)
-      {
-        qsys::ObjectEvent obe;
-        obe.setType(qsys::ObjectEvent::OBE_CHANGED_FIXDYN);
-        obe.setTarget(getUID());
-        obe.setDescr("atomsMoved");
-        pObj->fireObjectEvent(obe);
-      }
+      targs.insert(elem);
     }
   }
 
+  BOOST_FOREACH (qlib::uid_t elem, targs) {
+    ObjectPtr pObj = SceneManager::getObjectS(elem);
+    if (pObj.isnull())
+      continue;
+    // send Fix object change event (to fix changes after the dynamic changes)
+    {
+      qsys::ObjectEvent obe;
+      obe.setType(qsys::ObjectEvent::OBE_CHANGED_FIXDYN);
+      obe.setTarget(getUID());
+      obe.setDescr("atomsMoved");
+      pObj->fireObjectEvent(obe);
+    }
+  }
 }
 

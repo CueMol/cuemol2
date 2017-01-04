@@ -207,7 +207,7 @@ void Spline2Renderer::setupGLSL(detail::SplineSegment *pASeg, DisplayContext *pd
   if (pSeg->m_pCoefTex != NULL)
     delete pSeg->m_pCoefTex;
 
-  pSeg->m_pCoefTex = pdc->createTexture();
+  pSeg->m_pCoefTex = MB_NEW gfx::Texture(); //pdc->createTexture();
 #ifdef USE_TBO
   pSeg->m_pCoefTex->setup(1, gfx::Texture::FMT_R,
                     gfx::Texture::TYPE_FLOAT32);
@@ -218,7 +218,7 @@ void Spline2Renderer::setupGLSL(detail::SplineSegment *pASeg, DisplayContext *pd
   
   if (pSeg->m_pColorTex!=NULL)
     delete pSeg->m_pColorTex;
-  pSeg->m_pColorTex = pdc->createTexture();
+  pSeg->m_pColorTex = MB_NEW gfx::Texture(); //pdc->createTexture();
   pSeg->m_pColorTex->setup(1, gfx::Texture::FMT_RGBA,
                            gfx::Texture::TYPE_UINT8_COLOR);
   
@@ -326,8 +326,10 @@ void Spline2Renderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc
 
   pdc->setLineWidth(lw);
 
-  pSeg->m_pCoefTex->use(COEF_TEX_UNIT);
-  pSeg->m_pColorTex->use(COLOR_TEX_UNIT);
+  //pSeg->m_pCoefTex->use(COEF_TEX_UNIT);
+  //pSeg->m_pColorTex->use(COLOR_TEX_UNIT);
+  pdc->useTexture(pSeg->m_pCoefTex, COEF_TEX_UNIT);
+  pdc->useTexture(pSeg->m_pColorTex, COLOR_TEX_UNIT);
 
   m_pPO->enable();
 
@@ -349,9 +351,10 @@ void Spline2Renderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc
 #endif
   }
 
-
   m_pPO->disable();
-  pSeg->m_pCoefTex->unuse();
-  pSeg->m_pColorTex->unuse();
+  //pSeg->m_pCoefTex->unuse();
+  //pSeg->m_pColorTex->unuse();
+  pdc->unuseTexture(pSeg->m_pCoefTex);
+  pdc->unuseTexture(pSeg->m_pColorTex);
 }
 

@@ -1,0 +1,22 @@
+// -*-Mode: C++;-*-
+//
+// Simple renderer implementation using GLSL
+//
+
+#ifndef SIMPLE_REND_GLSL_QIF_INCLUDED
+#define SIMPLE_REND_GLSL_QIF_INCLUDED
+
+#include "SimpleRenderer.qif"
+
+runtime_class SimpleRendGLSL extends SimpleRenderer
+{
+  client_hdr "SimpleRendGLSL.hpp";
+  client_name molstr::SimpleRendGLSL;
+
+  scriptable;
+  smartptr;
+  cloneable;
+};
+
+#endif
+

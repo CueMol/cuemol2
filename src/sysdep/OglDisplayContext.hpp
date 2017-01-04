@@ -159,8 +159,11 @@ namespace sysdep {
 
     ///////////////////////////////
     // texture
-    virtual gfx::Texture *createTexture();
+    // virtual gfx::Texture *createTexture();
     
+    virtual void useTexture(gfx::Texture *pTex, int nunit);
+    virtual void unuseTexture(gfx::Texture *pTex);
+
     //
 
     virtual void drawMesh(const gfx::Mesh &l);    

@@ -178,18 +178,18 @@ void SelectionRenderer::objectChanged(qsys::ObjectEvent &ev)
 {
 
 #ifdef USE_OPENGL_VBO
-  if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED) {
-    if (ev.getDescr().equals("atomsMoved")) {
-      // OBE_CHANGED && descr=="atomsMoved"
-      if (m_pVBO!=NULL) {
-        // only update positions
-        updateVBO();
-        m_pVBO->setUpdated(true);
-        return;
-      }
+  if ((ev.getType()==qsys::ObjectEvent::OBE_CHANGED_DYNAMIC ||
+      ev.getType()==qsys::ObjectEvent::OBE_CHANGED)
+      &&
+      ev.getDescr().equals("atomsMoved")) {
+    // OBE_CHANGED/OBE_CHANGED_DYNAMIC && descr=="atomsMoved"
+    if (isUseAnim() && m_pVBO!=NULL) {
+      // only update positions
+      updateVBO();
+      m_pVBO->setUpdated(true);
+      // prevent default behavior
+      return;
     }
-    super_t::objectChanged(ev);
-    return;
   }
 #endif
 

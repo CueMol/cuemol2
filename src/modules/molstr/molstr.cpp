@@ -15,7 +15,6 @@
 #include "PDBFileReader.hpp"
 #include "PDBFileWriter.hpp"
 #include "QdfPdbReader.hpp"
-#include "SimpleRenderer.hpp"
 #include "TopparManager.hpp"
 #include "SelCompiler.hpp"
 #include "TraceRenderer.hpp"
@@ -24,6 +23,12 @@
 #include "SelCacheMgr.hpp"
 #include "QdfMolWriter.hpp"
 #include "QdfMolReader.hpp"
+
+#ifdef USE_OPENGL
+#  include "SimpleRendGLSL.hpp"
+#else
+#  include "SimpleRenderer.hpp"
+#endif
 
 extern void molstr_regClasses();
 extern void molstr_unregClasses();
@@ -83,7 +88,13 @@ bool init()
   pSM->registReader<QdfMolReader>();
   
   RendererFactory *pRF = RendererFactory::getInstance();
+
+#ifdef USE_OPENGL
+  pRF->regist<SimpleRendGLSL>();
+#else
   pRF->regist<SimpleRenderer>();
+#endif
+
   pRF->regist<TraceRenderer>();
   pRF->regist<NameLabelRenderer>();
   pRF->regist<SelectionRenderer>();
