@@ -22,6 +22,7 @@ Trajectory::Trajectory()
   m_nTotalFrms = 0;
   m_nCurFrm = 0;
 
+  m_bLoop = true;
   // m_pAllMol = MolCoordPtr(MB_NEW MolCoord());
 }
 
@@ -162,7 +163,7 @@ void Trajectory::append(TrajBlockPtr pBlk)
   LOG_DPRINTLN("Traj> append blk start=%d, size=%d", nnext, pBlk->getSize());
 }
 
-void Trajectory::update(int iframe)
+void Trajectory::update(int iframe, bool bDyn)
 {
   int ind1 = 0;
   int ind2 = -1;
@@ -192,8 +193,14 @@ void Trajectory::update(int iframe)
 
   crdArrayChanged();
   
-  // broadcast modification event
-  fireAtomsMoved();
+  if (bDyn) {
+    // broadcast modification event (dynamic update)
+    fireAtomsMovedDynamic();
+  }
+  else {
+    // broadcast modification event
+    fireAtomsMoved();
+  }
 }
 
 int Trajectory::getFrame() const
@@ -204,6 +211,11 @@ int Trajectory::getFrame() const
 void Trajectory::setFrame(int ifrm)
 {
   update(ifrm);
+}
+
+void Trajectory::setDynFrame(int ifrm)
+{
+  update(ifrm, true);
 }
 
 int Trajectory::getFrameSize() const
@@ -300,3 +312,45 @@ void Trajectory::updateTrajBlockDataImpl()
   m_bInit = true;
 }
 
+bool Trajectory::onTimer(double t, qlib::time_value curr, bool bLast)
+{
+  int ifrm = m_nCurFrm + 1;
+  bool bend = false;
+
+  MB_DPRINTLN("Traj> onTimer ifrm=%d, nTotal=%d", ifrm, m_nTotalFrms);
+
+  if (ifrm<m_nTotalFrms/2) {
+  //if (ifrm<10) {
+    // update current frame
+    update(ifrm, true);
+  }
+  else {
+    update(0, true);
+    bend = true;
+  }
+
+  if (bend) {
+    if (m_bLoop) {
+      if (bLast)
+	startSelfAnim();
+    }
+    else {
+      //stopSelfAnim();
+      
+      // send Fix object change event (to fix changes after the dynamic changes)
+      {
+	qsys::ObjectEvent obe;
+	obe.setType(qsys::ObjectEvent::OBE_CHANGED_FIXDYN);
+	obe.setTarget(getUID());
+	obe.setDescr("atomsMoved");
+	fireObjectEvent(obe);
+      }
+      m_bSelfAnim = false;
+      
+      // prevent the next event invocation
+      return false;
+    }
+  }
+
+  return true;
+}

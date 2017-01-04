@@ -75,6 +75,7 @@ namespace mdtools {
     // Event handling
     
   public:
+    /// Handle ON_LOADED scene event (for QSC file loading)
     virtual void sceneChanged(qsys::SceneEvent &ev);
 
   private:
@@ -86,7 +87,7 @@ namespace mdtools {
   public:
     void append(TrajBlockPtr pBlk);
 
-    void update(int n);
+    void update(int n, bool bDyn=false);
 
   private:
     MolCoordPtr m_pAllMol;
@@ -94,6 +95,7 @@ namespace mdtools {
     std::vector<quint32> m_selIndArray;
     
     int m_nAllAtomSize;
+
   public:
 
     /// create molecule from the appended atoms and selection
@@ -110,13 +112,17 @@ namespace mdtools {
     /////////////////////////////////////////////////////
     // properties
 
-    ////
-
   private:
     int m_nCurFrm;
   public:
+    /// Get current frame no (with static update)
     int getFrame() const;
+
+    /// Set frame no (with static update)
     void setFrame(int ifrm);
+
+    /// Set frame (with dynamic update)
+    void setDynFrame(int iframe);
 
   private:
     int m_nTotalFrms;
@@ -133,8 +139,17 @@ namespace mdtools {
 
     // virtual void readFromStream(qlib::InStream &ins);
 
-  private:
 
+    ////////////////////////////////////////////////////
+    // Self simple animation implementation
+
+  private: 
+    /// Loop flag of the simple self animation mode
+    bool m_bLoop;
+
+  public:
+    /// Timer event handling (for self anim impl)
+    virtual bool onTimer(double t, qlib::time_value curr, bool bLast);
   };
 
 }

@@ -145,8 +145,8 @@ void EventManager::checkTimerQueue()
       double rho = double(curr-rtt.start)/double(rtt.end-rtt.start);
       if (!pobj->onTimer(rho, curr, false)) {
         // timer iteration is canceled
-        MB_DPRINTLN("timer canceled");
         iter = m_timerq.erase(iter);
+        MB_DPRINTLN("EvtMgr> timer canceled");
         continue;
       }
     }

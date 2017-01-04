@@ -20,6 +20,9 @@ runtime_class Trajectory extends AnimMol
   property integer frame => redirect(getFrame, setFrame) (nopersist);
   default frame = 0;
 
+  property integer dynframe => redirect(getFrame, setDynFrame) (nopersist);
+  default dynframe = 0;
+
   property integer nframe => redirect(getFrameSize, XX) (readonly);
 
   /////

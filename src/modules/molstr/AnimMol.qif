@@ -18,6 +18,9 @@ runtime_class AnimMol extends MolCoord
   abstract;
   smartptr;
 
+  property boolean self_anim => redirect(isSelfAnim, setSelfAnim);
+  default self_anim = false;
+
 };
 
 #endif

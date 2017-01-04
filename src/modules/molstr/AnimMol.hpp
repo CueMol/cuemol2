@@ -84,7 +84,8 @@ namespace molstr {
     /// Unloading from scene (detach from timer)
     virtual void unloading();
 
-  private:
+    //private:
+  protected:
     /// Simple self animation mode
     bool m_bSelfAnim;
 
