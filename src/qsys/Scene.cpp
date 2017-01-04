@@ -225,9 +225,9 @@ void Scene::unloading()
   MB_DPRINTLN("Scene.unloading> *** Broadcast unloading ***");
   rendtab_t::const_iterator riter = m_rendtab.begin();
   for (; riter!=m_rendtab.end(); ++riter) {
-    RendererPtr rrend = riter->second;
-    MB_DPRINTLN("Scene.unloading()> rrend %d unloading().", riter->first);
-    rrend->unloading();
+    RendererPtr prend = riter->second;
+    MB_DPRINTLN("Scene.unloading()> prend %d unloading().", riter->first);
+    prend->unloading();
   }
   
   data_t::const_iterator oiter = m_data.begin();
@@ -312,6 +312,10 @@ bool Scene::destroyObject(qlib::uid_t uid)
   
   ObjectPtr pObj = i->second;
   qlib::ensureNotNull(pObj);
+
+  // ADDED: 2017/1/4
+  // detach object from resources (timer, etc)
+  pObj->unloading();
 
   bool res;
 
@@ -520,9 +524,9 @@ bool Scene::registerObjectImpl(ObjectPtr pObj)
 ///////////////////////////////////////
 // renderer cachelist management
 
-bool Scene::addRendCache(RendererPtr rrend)
+bool Scene::addRendCache(RendererPtr prend)
 {
-  bool res = m_rendtab.insert(rendtab_t::value_type(rrend->getUID(), rrend)).second;
+  bool res = m_rendtab.insert(rendtab_t::value_type(prend->getUID(), prend)).second;
   if (res) {
     // scene redrawing is required
     setUpdateFlag();
@@ -530,9 +534,9 @@ bool Scene::addRendCache(RendererPtr rrend)
   return res;
 }
 
-bool Scene::removeRendCache(RendererPtr rrend)
+bool Scene::removeRendCache(RendererPtr prend)
 {
-  qlib::uid_t uid = rrend->getUID();
+  qlib::uid_t uid = prend->getUID();
   rendtab_t::iterator i = m_rendtab.find(uid);
   if (i==m_rendtab.end())
     return false;
@@ -559,9 +563,9 @@ RendererPtr Scene::getRendByName(const LString &nm) const
   rendtab_t::const_iterator riter = m_rendtab.begin();
   rendtab_t::const_iterator reiter = m_rendtab.end();
   for (; riter!=reiter; ++riter) {
-    RendererPtr rrend = riter->second;
-    if (nm.equals(rrend->getName()))
-      return rrend;
+    RendererPtr prend = riter->second;
+    if (nm.equals(prend->getName()))
+      return prend;
   }
 
   return RendererPtr();
@@ -589,19 +593,19 @@ void Scene::setActiveRendID(qlib::uid_t uid)
 // Rendering of the scene
 
 static
-LString makeSectionName(ObjectPtr pObj, RendererPtr rrend)
+LString makeSectionName(ObjectPtr pObj, RendererPtr prend)
 {
 /*
   LString name = LString::format("_%s_%d_%s_%d",
                                  pObj->getName().c_str(), pObj->getUID(),
-                                 rrend->getName().c_str(), rrend->getUID());
+                                 prend->getName().c_str(), prend->getUID());
   name.replace('.', '_');
   name.replace('-', '_');
   name.replace('(', '_');
   name.replace(')', '_');
 */
 
-  LString name = LString::format("_%d_%d", pObj->getUID(), rrend->getUID());
+  LString name = LString::format("_%d_%d", pObj->getUID(), prend->getUID());
 
   return name;
 }
@@ -675,22 +679,22 @@ void Scene::display(DisplayContext *pdc)
     rendtab_t::const_iterator i = m_rendtab.begin();
     rendtab_t::const_iterator ie = m_rendtab.end();
     for (; i!=ie; ++i) {
-      RendererPtr rrend = i->second;
-      ObjectPtr pObj = rrend->getClientObj();
+      RendererPtr prend = i->second;
+      ObjectPtr pObj = prend->getClientObj();
       if (!pObj.isnull() &&
           pObj->isVisible() &&
-          rrend->isVisible()) {
-        pdc->setAlpha(rrend->getDefaultAlpha());
+          prend->isVisible()) {
+        pdc->setAlpha(prend->getDefaultAlpha());
         
         bmat = false;
-        xform = rrend->getXformMatrix();
+        xform = prend->getXformMatrix();
         if (!xform.isIdent()) {
           pdc->pushMatrix();
           pdc->multMatrix(xform);
             bmat = true;
         }
         
-        rrend->displayLabels(pdc);
+        prend->displayLabels(pdc);
         if (bmat)
           pdc->popMatrix();
         
@@ -751,11 +755,11 @@ void Scene::processHit(DisplayContext *pdc)
 
   rendtab_t::const_iterator i = m_rendtab.begin();
   for (; i!=m_rendtab.end(); ++i) {
-    RendererPtr rrend = i->second;
-    ObjectPtr pObj = rrend->getClientObj();
+    RendererPtr prend = i->second;
+    ObjectPtr pObj = prend->getClientObj();
     if (pObj.isnull() || (pObj->isVisible() && !pObj->isUILocked())) {
-      if (rrend->isVisible() && !rrend->isUILocked()) {
-        rrend->processHit(pdc);
+      if (prend->isVisible() && !prend->isUILocked()) {
+        prend->processHit(pdc);
       }
     }
   }

@@ -14,12 +14,12 @@ using namespace anim;
 using qsys::ObjectPtr;
 
 MolAnim::MolAnim()
-     : super_t(), m_startValue(0.0), m_endValue(1.0)
+  : super_t(), m_startValue(0.0), m_endValue(1.0), m_bNotifyPropEvt(false)
 {
 }
 
 MolAnim::MolAnim(const MolAnim &arg)
-     : super_t(arg), m_startValue(arg.m_startValue), m_endValue(arg.m_endValue)
+  : super_t(arg), m_startValue(arg.m_startValue), m_endValue(arg.m_endValue), m_bNotifyPropEvt(arg.m_bNotifyPropEvt)
 {
 }
 

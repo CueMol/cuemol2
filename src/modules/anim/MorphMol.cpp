@@ -28,10 +28,14 @@ MorphMol::MorphMol()
   m_nAtoms = -1;
   m_dframe = 0.0;
   m_bScaleDframe = false;
+  m_bSelfAnim = false;
+  m_length = 1000;
+  m_bLoop = true;
 }
 
 MorphMol::~MorphMol()
 {
+  stopSelfAnim();
   std::for_each(m_frames.begin(), m_frames.end(), qlib::delete_ptr<FrameData*>());
 }
 
@@ -599,5 +603,81 @@ void MorphMol::readFrom2(LDom2Node *pNode)
     if (pFrm!=NULL)
       m_frames.push_back(pFrm);
   }
+}
+
+void MorphMol::setSelfAnim(bool b)
+{
+  if (b==m_bSelfAnim)
+    return;
+
+  if (b) {
+    // start self anim
+    startSelfAnim();
+  }
+  else {
+    // stop self anim
+    stopSelfAnim();
+  }
+}
+
+void MorphMol::startSelfAnim()
+{
+  qlib::EventManager *pEvMgr = qlib::EventManager::getInstance();
+  pEvMgr->setTimer(this, m_length);
+  m_bSelfAnim = true;
+}
+
+void MorphMol::stopSelfAnim()
+{
+  qlib::EventManager *pEvMgr = qlib::EventManager::getInstance();
+  pEvMgr->removeTimer(this);
+
+  if (m_bSelfAnim) {
+    
+    // send Fix object change event (to fix changes after the dynamic changes)
+    {
+      qsys::ObjectEvent obe;
+      obe.setType(qsys::ObjectEvent::OBE_CHANGED_FIXDYN);
+      obe.setTarget(getUID());
+      obe.setDescr("atomsMoved");
+      fireObjectEvent(obe);
+    }
+
+    m_bSelfAnim = false;
+  }
+}
+
+bool MorphMol::onTimer(double t, qlib::time_value curr, bool bLast)
+{
+  MB_DPRINTLN("MorphMol::onTimer %f", t);
+
+  double dframe;
+  if (m_bScaleDframe) {
+    // dframe changes between 0.0 and nfrm-1
+    const int nframes = m_frames.size();
+    dframe = t * double(nframes-1);
+  }
+  else {
+    // dframe changes between 0.0 and 1.0
+    dframe = t;
+  }
+
+  // update current frame
+  updateImpl(dframe, true);
+
+  if (bLast) {
+    if (m_bLoop) {
+      startSelfAnim();
+    }
+    else {
+      stopSelfAnim();
+    }
+  }
+  return true;
+}
+
+void MorphMol::unloading()
+{
+  stopSelfAnim();
 }
 

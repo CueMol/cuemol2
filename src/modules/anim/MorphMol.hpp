@@ -8,6 +8,7 @@
 
 #include "anim.hpp"
 #include <qlib/Array.hpp>
+#include <qlib/TimerEvent.hpp>
 
 #include <modules/molstr/AnimMol.hpp>
 
@@ -17,7 +18,8 @@ namespace anim {
 
   typedef qlib::Array<float> PosArray;
 
-  class FrameData : public qlib::LDataSrcContainer
+  class FrameData :
+    public qlib::LDataSrcContainer 
   {
   public:
     FrameData() {}
@@ -48,7 +50,9 @@ namespace anim {
   ///
   /// Molecular morphing animation object class
   ///
-  class ANIM_API MorphMol : public molstr::AnimMol
+  class ANIM_API MorphMol :
+    public molstr::AnimMol,
+    public qlib::TimerListener
   {
     MC_SCRIPTABLE;
 
@@ -80,6 +84,9 @@ namespace anim {
     
     virtual ~MorphMol();
     
+    /// Unloading from scene (detach from timer)
+    virtual void unloading();
+
     /// Detached from ObjReader (i.e. end of loading)
     // virtual void readerDetached();
 
@@ -131,6 +138,28 @@ namespace anim {
     double getDynFrame() const {
       return getFrame();
     }
+
+  private: 
+    /// Simple animation mode
+    bool m_bSelfAnim;
+
+    /// duration (length) of this animation
+    qlib::time_value m_length;
+
+    bool m_bLoop;
+
+  public:
+    void setSelfAnim(bool b);
+    bool isSelfAnim() const {
+      return m_bSelfAnim;
+    }
+    
+    void startSelfAnim();
+
+    void stopSelfAnim();
+
+    /// Timer event handling (for self anim impl)
+    virtual bool onTimer(double t, qlib::time_value curr, bool bLast);
 
   private: 
     /// Scale frame value

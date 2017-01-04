@@ -27,6 +27,9 @@ runtime_class MorphMol extends AnimMol
 
   property integer nframe => redirect(getFrameSize, XX) (readonly);
 
+  property boolean self_anim => redirect(isSelfAnim, setSelfAnim);
+  default self_anim = false;
+
   //////////////////////
   // Access methods
 
