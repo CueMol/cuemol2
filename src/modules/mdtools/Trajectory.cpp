@@ -319,7 +319,7 @@ bool Trajectory::onTimer(double t, qlib::time_value curr, bool bLast)
 
   MB_DPRINTLN("Traj> onTimer ifrm=%d, nTotal=%d", ifrm, m_nTotalFrms);
 
-  if (ifrm<m_nTotalFrms/2) {
+  if (ifrm<m_nTotalFrms) {
   //if (ifrm<10) {
     // update current frame
     update(ifrm, true);

@@ -753,6 +753,9 @@
     <ClCompile Include="..\..\src\modules\molvis\SplineRendBase.cpp">
       <Filter>molvis</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\SimpleRendGLSL_wrap.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\qsys\AbstractColor.hpp">
@@ -996,6 +999,9 @@
     </mcwrapgen3>
     <mcwrapgen3 Include="..\..\src\modules\molvis\Tube2Renderer.qif">
       <Filter>molvis</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molstr\SimpleRendGLSL.qif">
+      <Filter>molstr</Filter>
     </mcwrapgen3>
   </ItemGroup>
   <ItemGroup>
