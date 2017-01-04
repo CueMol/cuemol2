@@ -50,9 +50,7 @@ namespace anim {
   ///
   /// Molecular morphing animation object class
   ///
-  class ANIM_API MorphMol :
-    public molstr::AnimMol,
-    public qlib::TimerListener
+  class ANIM_API MorphMol : public molstr::AnimMol
   {
     MC_SCRIPTABLE;
 
@@ -84,9 +82,6 @@ namespace anim {
     
     virtual ~MorphMol();
     
-    /// Unloading from scene (detach from timer)
-    virtual void unloading();
-
     /// Detached from ObjReader (i.e. end of loading)
     // virtual void readerDetached();
 
@@ -140,24 +135,22 @@ namespace anim {
     }
 
   private: 
-    /// Simple animation mode
-    bool m_bSelfAnim;
-
     /// duration (length) of this animation
     qlib::time_value m_length;
 
+  public:
+    virtual qlib::time_value getSelfAnimLen() const {
+      return m_length;
+    }
+    void setSelfAnimLen(qlib::time_value val) {
+      m_length = val;
+    }
+
+  private: 
+    /// Loop flag of the simple self animation mode
     bool m_bLoop;
 
   public:
-    void setSelfAnim(bool b);
-    bool isSelfAnim() const {
-      return m_bSelfAnim;
-    }
-    
-    void startSelfAnim();
-
-    void stopSelfAnim();
-
     /// Timer event handling (for self anim impl)
     virtual bool onTimer(double t, qlib::time_value curr, bool bLast);
 

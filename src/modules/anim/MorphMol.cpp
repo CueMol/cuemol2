@@ -28,7 +28,6 @@ MorphMol::MorphMol()
   m_nAtoms = -1;
   m_dframe = 0.0;
   m_bScaleDframe = false;
-  m_bSelfAnim = false;
   m_length = 1000;
   m_bLoop = true;
 }
@@ -605,47 +604,8 @@ void MorphMol::readFrom2(LDom2Node *pNode)
   }
 }
 
-void MorphMol::setSelfAnim(bool b)
-{
-  if (b==m_bSelfAnim)
-    return;
-
-  if (b) {
-    // start self anim
-    startSelfAnim();
-  }
-  else {
-    // stop self anim
-    stopSelfAnim();
-  }
-}
-
-void MorphMol::startSelfAnim()
-{
-  qlib::EventManager *pEvMgr = qlib::EventManager::getInstance();
-  pEvMgr->setTimer(this, m_length);
-  m_bSelfAnim = true;
-}
-
-void MorphMol::stopSelfAnim()
-{
-  qlib::EventManager *pEvMgr = qlib::EventManager::getInstance();
-  pEvMgr->removeTimer(this);
-
-  if (m_bSelfAnim) {
-    
-    // send Fix object change event (to fix changes after the dynamic changes)
-    {
-      qsys::ObjectEvent obe;
-      obe.setType(qsys::ObjectEvent::OBE_CHANGED_FIXDYN);
-      obe.setTarget(getUID());
-      obe.setDescr("atomsMoved");
-      fireObjectEvent(obe);
-    }
-
-    m_bSelfAnim = false;
-  }
-}
+////////////////////////////
+// Self simple animation
 
 bool MorphMol::onTimer(double t, qlib::time_value curr, bool bLast)
 {
@@ -674,10 +634,5 @@ bool MorphMol::onTimer(double t, qlib::time_value curr, bool bLast)
     }
   }
   return true;
-}
-
-void MorphMol::unloading()
-{
-  stopSelfAnim();
 }
 

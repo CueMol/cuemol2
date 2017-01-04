@@ -14,7 +14,9 @@ namespace molstr {
   ///
   /// Molecular coordinates with animation support
   ///
-  class MOLSTR_API AnimMol : public MolCoord
+  class MOLSTR_API AnimMol :
+    public MolCoord,
+    public qlib::TimerListener
   {
     MC_SCRIPTABLE;
 
@@ -37,9 +39,7 @@ namespace molstr {
     // std::vector<float> m_crdarray;
 
   public:
-    AnimMol() : m_nValidFlag(CRD_ATOM_VALID), MolCoord()
-    {
-    }
+    AnimMol();
 
     /// Get the crdarray/atompos validity flag
     virtual char getCrdValidFlag() const;
@@ -79,7 +79,30 @@ namespace molstr {
       m_nValidFlag = CRD_ARRAY_VALID;
     }
 
+    //////////
 
+    /// Unloading from scene (detach from timer)
+    virtual void unloading();
+
+  private:
+    /// Simple self animation mode
+    bool m_bSelfAnim;
+
+  public:
+    void setSelfAnim(bool b);
+    bool isSelfAnim() const {
+      return m_bSelfAnim;
+    }
+    
+    void startSelfAnim();
+
+    void stopSelfAnim();
+
+    virtual qlib::time_value getSelfAnimLen() const;
+
+    virtual bool onTimer(double t, qlib::time_value curr, bool bLast) {
+      return true;
+    }
 
   };
 

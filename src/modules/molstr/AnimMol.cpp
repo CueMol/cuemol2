@@ -11,6 +11,11 @@
 
 using namespace molstr;
 
+AnimMol::AnimMol() : m_nValidFlag(CRD_ATOM_VALID), MolCoord()
+{
+  m_bSelfAnim = false;
+}
+
 char AnimMol::getCrdValidFlag() const
 {
   return m_nValidFlag;
@@ -130,7 +135,6 @@ void AnimMol::updateCrdArray()
   }
 }
 
-
 quint32 AnimMol::getCrdArrayInd(int aid) const
 {
   if (m_nValidFlag==CRD_ATOM_VALID) {
@@ -145,5 +149,61 @@ quint32 AnimMol::getCrdArrayInd(int aid) const
   }
 
   return iter->second;
+}
+
+////////////////////////////
+// Self simple animation
+
+void AnimMol::setSelfAnim(bool b)
+{
+  if (b==m_bSelfAnim)
+    return;
+
+  if (b) {
+    // start self anim
+    startSelfAnim();
+  }
+  else {
+    // stop self anim
+    stopSelfAnim();
+  }
+}
+
+void AnimMol::startSelfAnim()
+{
+  qlib::EventManager *pEvMgr = qlib::EventManager::getInstance();
+  pEvMgr->setTimer(this, getSelfAnimLen());
+  m_bSelfAnim = true;
+}
+
+void AnimMol::stopSelfAnim()
+{
+  qlib::EventManager *pEvMgr = qlib::EventManager::getInstance();
+  pEvMgr->removeTimer(this);
+
+  if (m_bSelfAnim) {
+    
+    // send Fix object change event (to fix changes after the dynamic changes)
+    {
+      qsys::ObjectEvent obe;
+      obe.setType(qsys::ObjectEvent::OBE_CHANGED_FIXDYN);
+      obe.setTarget(getUID());
+      obe.setDescr("atomsMoved");
+      fireObjectEvent(obe);
+    }
+
+    m_bSelfAnim = false;
+  }
+}
+
+void AnimMol::unloading()
+{
+  stopSelfAnim();
+}
+
+qlib::time_value AnimMol::getSelfAnimLen() const
+{
+  // very long time
+  return 1000*3600*24;
 }
 
