@@ -21,6 +21,13 @@
 #include <sysdep/OglProgramObject.hpp>
 #include <qsys/Scene.hpp>
 
+#ifdef WIN32
+//#define USE_TBO 1
+#else
+#endif
+
+#define TEX2D_WIDTH 1024
+
 using namespace molstr;
 using qlib::Vector4D;
 using qlib::Vector3F;
@@ -90,6 +97,8 @@ void SimpleRendGLSL::displayGLSL(DisplayContext *pdc)
       return; // Error, Cannot draw anything (ignore)
   }
 
+  if (m_pPO==NULL)
+    return; // Error, Cannot draw anything (ignore)
 
   preRender(pdc);
   pdc->setLineWidth(getLineWidth());
@@ -182,22 +191,23 @@ void SimpleRendGLSL::createGLSL()
     ++i;
   }
 
-  m_sels.resize(i);
-  
+  natoms = i;
   int ncrds = i*3;
 
+  m_sels.resize(natoms);
+  
 #ifdef USE_TBO
   m_coordbuf.resize(ncrds);
   LOG_DPRINTLN("SimpleGLSL> Coord Texture (TBO) size=%d", ncrds);
 #else
   int h=0;
-  if (ncrds%1024==0)
-    h =  ncrds/1024;
+  if (natoms%TEX2D_WIDTH==0)
+    h =  natoms/TEX2D_WIDTH;
   else
-    h = ncrds/1024 + 1;
-  m_coordbuf.resize(h*1024);
+    h = natoms/TEX2D_WIDTH + 1;
+  m_coordbuf.resize(h*TEX2D_WIDTH*3);
 
-  m_nTexW = 1024;
+  m_nTexW = TEX2D_WIDTH;
   m_nTexH = h;
   LOG_DPRINTLN("SimpleGLSL> Coord Texture2D size=%d,%d", m_nTexW, m_nTexH);
 #endif
@@ -365,35 +375,38 @@ void SimpleRendGLSL::updateDynamicGLSL()
   qfloat32 *crd = pAMol->getAtomCrdArray();
   quint32 natoms = m_sels.size();
 
-  if (!m_bUseSels) {
-
 #ifdef USE_TBO
+  if (!m_bUseSels) {
     m_pCoordTex->setData(natoms*3, 1, 1, crd);
-#else
-    MB_DPRINTLN("tex size %d x %d = %d", m_nTexW, m_nTexH, m_nTexW*m_nTexH);
-    MB_DPRINTLN("crd size %d", natoms*3);
-    m_pCoordTex->setData(m_nTexW, m_nTexH, 1, crd);
-#endif
     return;
   }
+#endif
 
   quint32 ind;
-  for (i=0; i<natoms; ++i) {
-    ind = m_sels[i];
-    for (j=0; j<3; ++j) {
-      m_coordbuf[i*3+j] = crd[ind*3+j];
+  if (m_bUseSels) {
+    for (i=0; i<natoms; ++i) {
+      ind = m_sels[i];
+      for (j=0; j<3; ++j) {
+        m_coordbuf[i*3+j] = crd[ind*3+j];
+      }
     }
   }
-
+  else {
+    /*for (i=0; i<natoms*3; ++i) {
+      m_coordbuf[i] = crd[i];
+    }*/
+    memcpy(&m_coordbuf[0], &crd[0], natoms*3*sizeof(qfloat32));
+  }
+  
 #ifdef USE_TBO
   m_pCoordTex->setData(natoms*3, 1, 1, &m_coordbuf[0]);
 #else
-  MB_DPRINTLN("tex size %d x %d = %d", m_nTexW, m_nTexH, m_nTexW*m_nTexH);
+  MB_DPRINTLN("tex size %d x %d x 3 = %d x 3", m_nTexW, m_nTexH, m_nTexW*m_nTexH);
   MB_DPRINTLN("buf size %d", m_coordbuf.size());
   MB_DPRINTLN("crd size %d", natoms*3);
   m_pCoordTex->setData(m_nTexW, m_nTexH, 1, &m_coordbuf[0]);
 #endif
-  //m_pCoordTex->setData(natoms, &m_coordbuf[0]);
+
 }
 
 void SimpleRendGLSL::updateStaticGLSL()
@@ -448,8 +461,9 @@ void SimpleRendGLSL::invalidateDisplayCache()
 
 void SimpleRendGLSL::objectChanged(qsys::ObjectEvent &ev)
 {
-  if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED_DYNAMIC &&
-	   ev.getDescr().equals("atomsMoved")) {
+  if (isVisible() &&
+      ev.getType()==qsys::ObjectEvent::OBE_CHANGED_DYNAMIC &&
+      ev.getDescr().equals("atomsMoved")) {
     // OBE_CHANGED_DYNAMIC && descr=="atomsMoved"
     if (isUseAnim()) {
       // GLSL mode

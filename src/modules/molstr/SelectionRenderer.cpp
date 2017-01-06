@@ -178,8 +178,9 @@ void SelectionRenderer::objectChanged(qsys::ObjectEvent &ev)
 {
 
 #ifdef USE_OPENGL_VBO
-  if ((ev.getType()==qsys::ObjectEvent::OBE_CHANGED_DYNAMIC ||
-      ev.getType()==qsys::ObjectEvent::OBE_CHANGED)
+  if (isVisible() &&
+      (ev.getType()==qsys::ObjectEvent::OBE_CHANGED_DYNAMIC ||
+       ev.getType()==qsys::ObjectEvent::OBE_CHANGED)
       &&
       ev.getDescr().equals("atomsMoved")) {
     // OBE_CHANGED/OBE_CHANGED_DYNAMIC && descr=="atomsMoved"

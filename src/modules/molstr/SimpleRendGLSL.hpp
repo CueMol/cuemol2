@@ -10,11 +10,6 @@
 #include "SimpleRenderer.hpp"
 #include <gfx/DrawAttrArray.hpp>
 
-#ifdef WIN32
-#define USE_TBO 1
-#else
-#endif
-
 namespace sysdep {
   class OglProgramObject;
 }

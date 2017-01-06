@@ -4,7 +4,7 @@
 //
 
 #if (__VERSION__>=140)
-#define USE_TBO 1
+//#define USE_TBO 1
 #else
 #extension GL_ARB_compatibility : enable
 #extension GL_EXT_gpu_shader4 : enable 
@@ -18,6 +18,7 @@
 #ifdef USE_TBO
 uniform samplerBuffer coordTex;
 #else
+#extension GL_EXT_gpu_shader4 : enable
 uniform sampler2D coordTex;
 #define COORDTEX_WIDTH 1024
 #endif
