@@ -11,6 +11,8 @@
 #include "xpcom.hpp"
 
 #include <qsys/InDevEvent.hpp>
+//#include <qsys/SceneManager.hpp>
+//#include <qlib/EventManager.hpp>
 #include <sysdep/WglView.hpp>
 #include <sysdep/WglDisplayContext.hpp>
 
@@ -271,6 +273,14 @@ HWND XPCNativeWidgetWin::selectParentWindow(HWND hWnd)
 LRESULT
 XPCNativeWidgetWin::handleEvent(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+  /*{
+    qlib::EventManager *pEM = qlib::EventManager::getInstance();
+    pEM->messageLoop();
+    pEM->checkTimerQueue();
+    qsys::SceneManager *pSM = qsys::SceneManager::getInstance();
+    pSM->checkAndUpdateScenes();
+  }*/
+  
   switch (msg) {
   case WM_PAINT: {
     // redraw the OpenGL window
