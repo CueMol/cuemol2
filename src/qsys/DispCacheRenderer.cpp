@@ -202,7 +202,7 @@ void DispListCacheImpl::displayHit(DisplayContext *pdc, DispCacheRenderer *pOute
     }
   }
   else {
-    if (pdc->isCompatibleDL(m_pdl)) {
+    if (pdc->isCompatibleDL(m_phl)) {
       // render by existing (&compatible) display list
       pdc->callDisplayList(m_phl);
       return;

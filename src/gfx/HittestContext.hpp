@@ -8,9 +8,13 @@
 
 #include "gfx.hpp"
 
+//#include <qlib/Vector3F.hpp>
+
 #include "DisplayContext.hpp"
 
 namespace gfx {
+
+  //using qlib::Vector3F;
 
   class GFX_API AbstHitContext : public DisplayContext
   {
@@ -19,11 +23,11 @@ namespace gfx {
     std::deque<Matrix4D> m_matstack;
 
   public:
-    AbstHitContext();
+    AbstHitContext() { pushMatrix(); }
     virtual ~AbstHitContext() {}
 
     virtual bool setCurrent() { return true; }
-    virtual bool isCurrent() { return true; }
+    virtual bool isCurrent() const { return true; }
     virtual qsys::View *getTargetView() const { return NULL; }
 
     /// Returns whether the rendering target of this context is a file or not.
@@ -50,6 +54,7 @@ namespace gfx {
 
     virtual void pushMatrix()
     {
+      MB_DPRINTLN("Hit(%p) pushMat %d", this, m_matstack.size());
       if (m_matstack.size()<=0)
         m_matstack.push_front(Matrix4D());
       else
@@ -58,6 +63,7 @@ namespace gfx {
 
     virtual void popMatrix()
     {
+      MB_DPRINTLN("Hit(%p) popMat %d", this, m_matstack.size());
       if (m_matstack.size()<=1) {
         LString msg("Hittest> FATAL ERROR: cannot popMatrix()!!");
         LOG_DPRINTLN(msg);
@@ -78,16 +84,23 @@ namespace gfx {
       m_matstack.front() = mat;
     }
 
+    const Matrix4D &topMatrix() const {
+      if (m_matstack.size()<1) {
+        LString msg("Hittest> FATAL ERROR: cannot topMatrix()!!");
+        LOG_DPRINTLN(msg);
+        MB_THROW(qlib::RuntimeException, msg);
+      }
+      return m_matstack.front();
+    }
+
     ////////////////
     // metadata operations
-    
-    virtual void startHit(qlib::uid_t rend_uid);
-    virtual void endHit();
-
+    /*    
     virtual void startRender();
     virtual void endRender();
     virtual void startSection(const LString &section_name);
     virtual void endSection();
+    */
 
     ////////////////
     // line and triangle primitives
@@ -113,11 +126,12 @@ namespace gfx {
   {
   private:
 
+    typedef std::vector<int> NameList;
+
     struct HitElem {
-      Vector3F pos;
-      int m_nRendID;
-      int m_nAtomID;
-    }
+      Vector4D pos;
+      NameList names;
+    };
 
     std::deque<HitElem> m_data;
 
@@ -125,7 +139,7 @@ namespace gfx {
     std::deque<int> m_names;
 
   public:
-    HittestList();
+    HittestList() {}
     virtual ~HittestList() {}
 
     //
@@ -151,6 +165,15 @@ namespace gfx {
     }
 
     virtual void drawPointHit(int nid, const Vector4D &pos) {
+      Vector4D v = pos;
+      v.w() = 1.0;
+      topMatrix().xform4D(v);
+      m_data.push_back(HitElem());
+      HitElem &he = m_data.back();
+      he.pos = v;
+      int nnm = m_names.size();
+      he.names.resize(nnm);
+      std::copy(m_names.begin(), m_names.end(), he.names.begin());
     }
 
     //
@@ -178,6 +201,10 @@ namespace gfx {
     // virtual bool recordStart();
     // virtual void recordEnd();
 
+    void dump() const {
+      MB_DPRINTLN("HittestList %p size=%d", this, m_data.size());
+    }
+
   };
   ///////////////////////////////////////
 
@@ -185,10 +212,21 @@ namespace gfx {
   class GFX_API HittestContext : public AbstHitContext
   {
   private:
+    std::deque<HittestList *> m_data;
+
+    qlib::uid_t m_nCurUID;
 
   public:
-    HittestContext();
+    HittestContext() : m_nCurUID(qlib::invalid_uid) {}
     virtual ~HittestContext() {}
+
+    virtual void startHit(qlib::uid_t rend_uid) {
+      m_nCurUID = rend_uid;
+    }
+
+    virtual void endHit() {
+      m_nCurUID = qlib::invalid_uid;
+    }
 
     ///////////////////////
     // Display List support
@@ -200,6 +238,9 @@ namespace gfx {
     virtual bool canCreateDL() const { return true; }
 
     virtual void callDisplayList(DisplayContext *pdl) {
+      HittestList *phl = dynamic_cast<HittestList *>(pdl);
+      if (phl!=NULL)
+	m_data.push_back(phl);
     }
     
     virtual bool isCompatibleDL(DisplayContext *pdl) const {
@@ -214,6 +255,12 @@ namespace gfx {
     // virtual bool recordStart();
     // virtual void recordEnd();
 
+    void dump() const {
+      MB_DPRINTLN("HitContext %p size=%d", this, m_data.size());
+      BOOST_FOREACH (HittestList *phl, m_data) {
+	phl->dump();
+      }
+    }
   };
 
   

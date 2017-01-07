@@ -40,6 +40,8 @@
 #include "OglDisplayContext.hpp"
 #include "OglViewCap.hpp"
 
+#include <gfx/HittestContext.hpp>
+
 using gfx::DisplayContext;
 using namespace sysdep;
 using qsys::Renderer;
@@ -483,7 +485,105 @@ void OglView::drawScene()
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// Hittest OpenGL Impl
+// Hittest Impl
+
+#ifndef USE_GL_SELECTION
+using gfx::HittestContext;
+
+LString OglView::hitTest(int ax, int ay)
+{
+  int x = convToBackingX(ax);
+  int y = convToBackingY(ay);
+
+  HittestContext *pdc = MB_NEW HittestContext();
+
+  double dHitPrec = convToBackingX( qsys::ViewInputConfig::getInstance()->getHitPrec() );
+
+  // Perform hittest (single hit)
+  if ( !hitTestImpl(pdc, Vector4D(x, y, dHitPrec, dHitPrec), false, 1.0) )
+    return LString();
+
+  /*
+  int nrend = m_hitdata.getRendSize();
+  if (nrend==0) // no hit
+    return LString();
+    
+  MB_DPRINTLN("OglView.hitTest> hit nrend=%d", nrend);
+  qlib::uid_t rend_id;
+  // qlib::Array<qlib::uid_t> rend_ids(nrend);
+  m_hitdata.getRendArray(&rend_id, 1);
+  // m_hitdata.getRendArray(rend_ids.data(), nrend);
+
+  qsys::RendererPtr pRend = SceneManager::getRendererS(rend_id);
+  if (pRend.isnull()) {
+    LOG_DPRINTLN("FATAL ERROR: Unknown renderer id %d", rend_id);
+    return LString();
+  }
+
+  qlib::uid_t sceneid = pRend->getSceneID();
+  qlib::uid_t objid = pRend->getClientObjID();
+
+  qsys::ObjectPtr pObj = SceneManager::getObjectS(objid);
+  if (pObj.isnull()) {
+    LOG_DPRINTLN("FATAL ERROR: Unknown object id %d", objid);
+    return LString();
+  }
+
+  MB_DPRINTLN("Hittest OK: sc=%d, rend=%d, obj=%d", sceneid, rend_id, objid);
+  */
+
+  LString rval;
+  /*{
+    rval += "{";
+    rval += pRend->interpHit(m_hitdata);
+    rval += LString::format("\"scene_id\": %d,\n", sceneid);
+    rval += LString::format("\"rend_id\": %d,\n", rend_id);
+    rval += LString::format("\"rendtype\": \"%s\",\n", pRend->getTypeName());
+    rval += LString::format("\"rend_name\": \"%s\",\n", pRend->getName().c_str());
+    rval += LString::format("\"obj_id\": %d,\n", objid);
+    rval += LString::format("\"obj_name\": \"%s\"\n", pObj->getName().c_str());
+    rval += "}";
+    }*/
+  return rval;
+}
+
+LString OglView::hitTestRect(int ax, int ay, int aw, int ah, bool bNearest)
+{
+  return LString();
+}
+
+bool OglView::hitTestImpl(gfx::DisplayContext *pdc, const Vector4D &parm,
+			  bool fGetAll, double far_factor)
+{
+  qsys::ScenePtr pScene = getScene();
+  if (pScene.isnull()) {
+    MB_DPRINTLN("hitTest: invalid scene %d !!", getSceneID());
+    return false;
+  }
+
+  // setUpHitProjMat(pdc, parm, far_factor);
+
+  // 0 == no stereo
+  // setUpModelMat(MM_NORMAL);
+  pdc->loadIdent();
+  pdc->translate(Vector4D(0,0,-getViewDist()));
+  pdc->rotate(getRotQuat());
+  const qlib::Vector4D c = getViewCenter();
+  pdc->translate(-c);
+
+  pScene->processHit(pdc);
+
+  HittestContext *phc = static_cast<HittestContext *>(pdc);
+
+  phc->dump();
+
+  return true;
+}
+#endif
+
+#ifdef USE_GL_SELECTION
+//////////////////////////////////////////////////////////////////////////////
+// Hittest Using OpenGL Selection buffer
 
 // Setup the projection matrix for hit-testing
 void OglView::setUpHitProjMat(gfx::DisplayContext *pdc, const Vector4D &parm, double far_factor)
@@ -693,8 +793,6 @@ LString OglView::hitTest(int ax, int ay)
 
     return rval;
   }
-
-
 }
 
 LString OglView::hitTestRect(int ax, int ay, int aw, int ah, bool bNearest)
@@ -766,6 +864,7 @@ LString OglView::hitTestRect(int ax, int ay, int aw, int ah, bool bNearest)
 
   return rval;
 }
+#endif
 
 //////////
 // Framebuffer operations

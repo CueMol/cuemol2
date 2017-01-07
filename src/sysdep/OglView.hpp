@@ -12,7 +12,12 @@
 
 #include <qsys/qsys.hpp>
 #include <qsys/View.hpp>
-#include "OglHitData.hpp"
+
+//#define USE_GL_SELECTION 1
+
+#ifdef USE_GL_SELECTION
+# include "OglHitData.hpp"
+#endif
 
 namespace sysdep {
 
@@ -79,16 +84,20 @@ namespace sysdep {
     // Hit test operations
 
   private:
+#ifdef USE_GL_SELECTION
     GlHitData m_hitdata;
 
     /// Setup the projection matrix for hit-testing
     /// @param far_factor factor of far slab limitation (1.0 for the same as display)
     void setUpHitProjMat(gfx::DisplayContext *pdc, const Vector4D &, double far_factor);
     
+#endif
+
     /// Hit-test implementation
     /// @param pdc display context attached to the hittest buffer
     /// @parm 4D vector containing: (screen X, screen Y, X-hit precision, Y-hit precision)
-    /// @fGetAll If true, all of the hit elements are returned. Otherwise, only the nearest hit is returned.
+    /// @fGetAll If true, all of the hit elements are returned.
+    ///   Otherwise, only the nearest hit is returned.
     /// @far_factor factor of far slab limitation (1.0 for the same as display)
     bool hitTestImpl(gfx::DisplayContext *pdc, const Vector4D &parm, bool fGetAll, double far_factor);
 

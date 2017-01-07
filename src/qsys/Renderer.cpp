@@ -311,7 +311,7 @@ void Renderer::displayLabels(DisplayContext *pdc)
 
 void Renderer::processHit(DisplayContext *pdc)
 {
-  // MB_DPRINTLN("Renderer.processHit: %d,%d,%d", m_nSceneID, m_uid, m_nClientObj);
+  MB_DPRINTLN("Renderer.processHit: scene=%d, rend=%d, obj=%d", m_nSceneID, m_uid, m_nClientObj);
 
   pdc->startHit(m_uid);
   displayHit(pdc);
