@@ -18,12 +18,8 @@ namespace gfx {
 
   class GFX_API AbstHitContext : public DisplayContext
   {
-  private:
-    /// matrix stack impl
-    std::deque<Matrix4D> m_matstack;
-
   public:
-    AbstHitContext() { pushMatrix(); }
+    AbstHitContext() {}
     virtual ~AbstHitContext() {}
 
     virtual bool setCurrent() { return true; }
@@ -52,47 +48,6 @@ namespace gfx {
 
     ////////////////
 
-    virtual void pushMatrix()
-    {
-      MB_DPRINTLN("Hit(%p) pushMat %d", this, m_matstack.size());
-      if (m_matstack.size()<=0)
-        m_matstack.push_front(Matrix4D());
-      else
-        m_matstack.push_front(m_matstack.front());
-    }
-
-    virtual void popMatrix()
-    {
-      MB_DPRINTLN("Hit(%p) popMat %d", this, m_matstack.size());
-      if (m_matstack.size()<=1) {
-        LString msg("Hittest> FATAL ERROR: cannot popMatrix()!!");
-        LOG_DPRINTLN(msg);
-        MB_THROW(qlib::RuntimeException, msg);
-        return;
-      }
-      m_matstack.pop_front();
-    }
-
-    virtual void multMatrix(const Matrix4D &mat)
-    {
-      Matrix4D top = m_matstack.front();
-      top.matprod(mat);
-      m_matstack.front() = top;
-    }
-
-    virtual void loadMatrix(const Matrix4D &mat) {
-      m_matstack.front() = mat;
-    }
-
-    const Matrix4D &topMatrix() const {
-      if (m_matstack.size()<1) {
-        LString msg("Hittest> FATAL ERROR: cannot topMatrix()!!");
-        LOG_DPRINTLN(msg);
-        MB_THROW(qlib::RuntimeException, msg);
-      }
-      return m_matstack.front();
-    }
-
     ////////////////
     // metadata operations
     /*    
@@ -101,6 +56,14 @@ namespace gfx {
     virtual void startSection(const LString &section_name);
     virtual void endSection();
     */
+
+    ///////////////////////
+    // Matrix stack support
+
+    virtual void pushMatrix() {}
+    virtual void popMatrix() {}
+    virtual void multMatrix(const Matrix4D &mat) {}
+    virtual void loadMatrix(const Matrix4D &mat) {}
 
     ////////////////
     // line and triangle primitives
@@ -124,8 +87,7 @@ namespace gfx {
   
   class GFX_API HittestList : public AbstHitContext
   {
-  private:
-
+  public:
     typedef std::vector<int> NameList;
 
     struct HitElem {
@@ -165,15 +127,22 @@ namespace gfx {
     }
 
     virtual void drawPointHit(int nid, const Vector4D &pos) {
+      m_data.push_back(HitElem());
+      HitElem &he = m_data.back();
+      /*
       Vector4D v = pos;
       v.w() = 1.0;
       topMatrix().xform4D(v);
-      m_data.push_back(HitElem());
-      HitElem &he = m_data.back();
       he.pos = v;
-      int nnm = m_names.size();
+      */
+      he.pos = pos;
+      he.pos.w() = 1.0;
+      int nnm = m_names.size()+1;
       he.names.resize(nnm);
-      std::copy(m_names.begin(), m_names.end(), he.names.begin());
+      if (!m_names.empty())
+	std::copy(m_names.begin(), m_names.end(), he.names.begin());
+      he.names[nnm-1] = nid;
+      //MB_DPRINTLN("names size=%d, nid=%d %d", he.names.size(), nid, he.names[nnm-1]);
     }
 
     //
@@ -216,9 +185,74 @@ namespace gfx {
 
     qlib::uid_t m_nCurUID;
 
+    /// matrix stack impl
+    std::deque<Matrix4D> m_matstack;
+
   public:
-    HittestContext() : m_nCurUID(qlib::invalid_uid) {}
+    HittestContext() : m_nCurUID(qlib::invalid_uid) { pushMatrix(); }
     virtual ~HittestContext() {}
+
+    ///////////////////////
+    // Matrix stack support
+
+    virtual void pushMatrix()
+    {
+      MB_DPRINTLN("Hit(%p) pushMat %d", this, m_matstack.size());
+      if (m_matstack.size()<=0)
+        m_matstack.push_front(Matrix4D());
+      else
+        m_matstack.push_front(m_matstack.front());
+    }
+
+    virtual void popMatrix()
+    {
+      MB_DPRINTLN("Hit(%p) popMat %d", this, m_matstack.size());
+      if (m_matstack.size()<=1) {
+        LString msg("Hittest> FATAL ERROR: cannot popMatrix()!!");
+        LOG_DPRINTLN(msg);
+        MB_THROW(qlib::RuntimeException, msg);
+        return;
+      }
+      m_matstack.pop_front();
+    }
+
+    virtual void multMatrix(const Matrix4D &mat)
+    {
+      Matrix4D top = m_matstack.front();
+      top.matprod(mat);
+      m_matstack.front() = top;
+    }
+
+    virtual void loadMatrix(const Matrix4D &mat) {
+      m_matstack.front() = mat;
+    }
+
+    const Matrix4D &topMatrix() const {
+      if (m_matstack.size()<1) {
+        LString msg("Hittest> FATAL ERROR: cannot topMatrix()!!");
+        LOG_DPRINTLN(msg);
+        MB_THROW(qlib::RuntimeException, msg);
+      }
+      return m_matstack.front();
+    }
+
+    /*
+    double m_slabdepth;
+    double m_zoom;
+    double m_dist;
+    int m_width;
+    int m_height;
+
+    double m_pickx;
+    double m_picky;
+    double m_deltax;
+    double m_deltay;
+    */
+
+    Matrix4D m_projMat;
+
+    ///////////////////////
+    // Hittest start/end
 
     virtual void startHit(qlib::uid_t rend_uid) {
       m_nCurUID = rend_uid;
@@ -237,10 +271,35 @@ namespace gfx {
 
     virtual bool canCreateDL() const { return true; }
 
-    virtual void callDisplayList(DisplayContext *pdl) {
+    virtual void callDisplayList(DisplayContext *pdl)
+    {
       HittestList *phl = dynamic_cast<HittestList *>(pdl);
-      if (phl!=NULL)
-	m_data.push_back(phl);
+      if (phl==NULL)
+	return;
+
+      // m_data.push_back(phl);
+
+      topMatrix().dump();
+
+      BOOST_FOREACH (const HittestList::HitElem &elem, phl->m_data) {
+	Vector4D vv = topMatrix().mulvec(elem.pos);
+	vv = m_projMat.mulvec(vv);
+	if (vv.x()>-1.0 && vv.x()<1.0 &&
+	    vv.y()>-1.0 && vv.y()<1.0 &&
+	    vv.z()>-1.0 && vv.z()<1.0) {
+	  //MB_DPRINTLN("(%f,%f,%f)->(%f,%f,%f)",
+	  //elem.pos.x(), elem.pos.y(), elem.pos.z(),
+	  //vv.x(), vv.y(), vv.z());
+
+	  MB_DPRINT("[%d ", m_nCurUID);
+	  BOOST_FOREACH (int i, elem.names) {
+	    MB_DPRINT("%d ", i);
+	  }
+	  MB_DPRINTLN("] (%f,%f,%f)",
+		      elem.pos.x(), elem.pos.y(), elem.pos.z());
+		      
+	}
+      }
     }
     
     virtual bool isCompatibleDL(DisplayContext *pdl) const {

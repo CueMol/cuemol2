@@ -561,19 +561,67 @@ bool OglView::hitTestImpl(gfx::DisplayContext *pdc, const Vector4D &parm,
     return false;
   }
 
+  HittestContext *phc = static_cast<HittestContext *>(pdc);
+
   // setUpHitProjMat(pdc, parm, far_factor);
+  double slabdepth = getSlabDepth();
+  if (slabdepth<=0.1)
+    slabdepth = 0.1;
+      
+  const double zoom = getZoom();
+  const double dist = getViewDist();
+      
+  const double slabnear = dist-slabdepth/2.0f;
+  const double slabfar  = dist+slabdepth*far_factor;
+  const double vw = zoom/2.0;
+  const double cx = convToBackingX( getWidth() );
+  const double cy = convToBackingY( getHeight() );
+  const double fasp = cx/cy;
+  
+  const double left = -vw*fasp;
+  const double right = vw*fasp;
+  const double bottom = -vw;
+  const double top = vw;
+  const double nearVal = slabnear;
+  const double farVal = slabfar;
+  
+  // GLint viewport[4] = {0, 0, GLint(cx), GLint(cy)};
+  // gluPickMatrix((GLfloat)parm.x(), (GLfloat)(cy - parm.y()),parm.z(), parm.w(), viewport);
+  const double pickx = parm.x();
+  const double picky = cy - parm.y();
+  const double deltax = parm.z();
+  const double deltay = parm.w();
+  Matrix4D pickmat;
+  pickmat.aij(1,1) = cx / deltax;
+  pickmat.aij(2,2) = cy / deltay;
+  pickmat.aij(3,3) = 1.0;;
+  pickmat.aij(1,4) = (cx - 2.0*pickx) / deltax;
+  pickmat.aij(2,4) = (cy - 2.0*picky) / deltay;
+  pickmat.aij(3,4) = 1.0;
+      
+  //glOrtho(-vw*fasp, vw*fasp,
+  //-vw, vw, slabnear, slabfar);
+  Matrix4D orthmat;
+  orthmat.aij(1,1) = 2.0/(right-left);
+  orthmat.aij(2,2) = 2.0/(top-bottom);
+  orthmat.aij(3,3) = -2.0/(farVal-nearVal);
+  orthmat.aij(1,4) = - (right+left)/(right-left);
+  orthmat.aij(2,4) = - (top+bottom)/(top-bottom);
+  orthmat.aij(3,4) = - (farVal+nearVal)/(farVal-nearVal);
+  orthmat.aij(4,4) = 1.0;
+  
+  //phc->m_projMat = orthmat.mul(pickmat);
+  phc->m_projMat = pickmat.mul(orthmat);
 
   // 0 == no stereo
   // setUpModelMat(MM_NORMAL);
-  pdc->loadIdent();
-  pdc->translate(Vector4D(0,0,-getViewDist()));
-  pdc->rotate(getRotQuat());
+  phc->loadIdent();
+  phc->translate(Vector4D(0,0,-getViewDist()));
+  phc->rotate(getRotQuat());
   const qlib::Vector4D c = getViewCenter();
-  pdc->translate(-c);
+  phc->translate(-c);
 
-  pScene->processHit(pdc);
-
-  HittestContext *phc = static_cast<HittestContext *>(pdc);
+  pScene->processHit(phc);
 
   phc->dump();
 
