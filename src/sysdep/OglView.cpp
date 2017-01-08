@@ -492,6 +492,8 @@ using gfx::HittestContext;
 
 LString OglView::hitTest(int ax, int ay)
 {
+  m_hitdata.clear();
+
   int x = convToBackingX(ax);
   int y = convToBackingY(ay);
 
@@ -503,16 +505,38 @@ LString OglView::hitTest(int ax, int ay)
   if ( !hitTestImpl(phc, Vector4D(x, y, dHitPrec, dHitPrec), false, 1.0) )
     return LString();
 
-  /*
-  int nrend = m_hitdata.getRendSize();
+  int nrend = phc->m_data.size();
   if (nrend==0) // no hit
     return LString();
     
   MB_DPRINTLN("OglView.hitTest> hit nrend=%d", nrend);
+
+  float maxz = -1.0e10;
+  int i=0, maxi;
   qlib::uid_t rend_id;
-  // qlib::Array<qlib::uid_t> rend_ids(nrend);
-  m_hitdata.getRendArray(&rend_id, 1);
-  // m_hitdata.getRendArray(rend_ids.data(), nrend);
+  BOOST_FOREACH (const HittestContext::DataElem &de, phc->m_data) {
+    if (de.z > maxz) {
+      maxz = de.z;
+      maxi = i;
+      rend_id = de.rendid;
+    }
+    i++;
+  }
+
+  {
+    const HittestContext::DataElem &de = phc->m_data[maxi];
+    gfx::HitData::HitEntry *pEnt = m_hitdata.getOrCreateEntry(rend_id);
+    
+    // make index
+    unsigned int ind = pEnt->data.size();
+    pEnt->index.push_back(ind);
+    
+    // copy to data array
+    BOOST_FOREACH (int j, de.names) {
+      pEnt->data.push_back(j);
+      MB_DPRINTLN("id = %d", j);
+    }
+  }
 
   qsys::RendererPtr pRend = SceneManager::getRendererS(rend_id);
   if (pRend.isnull()) {
@@ -530,10 +554,9 @@ LString OglView::hitTest(int ax, int ay)
   }
 
   MB_DPRINTLN("Hittest OK: sc=%d, rend=%d, obj=%d", sceneid, rend_id, objid);
-  */
 
   LString rval;
-  /*{
+  {
     rval += "{";
     rval += pRend->interpHit(m_hitdata);
     rval += LString::format("\"scene_id\": %d,\n", sceneid);
@@ -543,7 +566,8 @@ LString OglView::hitTest(int ax, int ay)
     rval += LString::format("\"obj_id\": %d,\n", objid);
     rval += LString::format("\"obj_name\": \"%s\"\n", pObj->getName().c_str());
     rval += "}";
-    }*/
+  }
+
   return rval;
 }
 

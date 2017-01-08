@@ -88,17 +88,12 @@ namespace gfx {
   class GFX_API HittestList : public AbstHitContext
   {
   public:
-    typedef std::vector<int> NameList;
-
     struct HitElem {
       Vector4D pos;
-      NameList names;
+      int id;
     };
 
     std::deque<HitElem> m_data;
-
-    /// name stack impl
-    std::deque<int> m_names;
 
   public:
     HittestList() {}
@@ -108,40 +103,12 @@ namespace gfx {
     // Hittest methods
     //
 
-    virtual void loadName(int nameid) {
-      m_names.front() = nameid;
-    }
-
-    virtual void pushName(int nameid) {
-      m_names.push_front(nameid);
-    }
-
-    virtual void popName() {
-      if (m_names.size()<=1) {
-        LString msg("HittestList> FATAL ERROR: cannot popName()!!");
-        LOG_DPRINTLN(msg);
-        MB_THROW(qlib::RuntimeException, msg);
-        return;
-      }
-      m_names.pop_front();
-    }
-
     virtual void drawPointHit(int nid, const Vector4D &pos) {
       m_data.push_back(HitElem());
       HitElem &he = m_data.back();
-      /*
-      Vector4D v = pos;
-      v.w() = 1.0;
-      topMatrix().xform4D(v);
-      he.pos = v;
-      */
       he.pos = pos;
       he.pos.w() = 1.0;
-      int nnm = m_names.size()+1;
-      he.names.resize(nnm);
-      if (!m_names.empty())
-	std::copy(m_names.begin(), m_names.end(), he.names.begin());
-      he.names[nnm-1] = nid;
+      he.id = nid;
       //MB_DPRINTLN("names size=%d, nid=%d %d", he.names.size(), nid, he.names[nnm-1]);
     }
 
@@ -181,10 +148,15 @@ namespace gfx {
   class GFX_API HittestContext : public AbstHitContext
   {
   public:
+    typedef std::vector<int> NameList;
+
+    /// name stack impl
+    std::deque<int> m_names;
+
     struct DataElem {
       float z;
       qlib::uid_t rendid;
-      HittestList::NameList names;
+      NameList names;
     };
     std::deque<DataElem> m_data;
 
@@ -194,7 +166,7 @@ namespace gfx {
     std::deque<Matrix4D> m_matstack;
 
   public:
-    HittestContext() : m_nCurUID(qlib::invalid_uid) { pushMatrix(); }
+    HittestContext() : m_nCurUID(qlib::invalid_uid) { pushMatrix(); pushName(-1);}
     virtual ~HittestContext() {}
 
     ///////////////////////
@@ -254,6 +226,27 @@ namespace gfx {
       m_nCurUID = qlib::invalid_uid;
     }
 
+    virtual void loadName(int nameid) {
+      MB_DPRINTLN("HitCtxt> load name %d", nameid);
+      m_names.front() = nameid;
+    }
+
+    virtual void pushName(int nameid) {
+      MB_DPRINTLN("HitCtxt> push name %d", nameid);
+      m_names.push_front(nameid);
+    }
+
+    virtual void popName() {
+      MB_DPRINTLN("HitCtxt> pop name");
+      if (m_names.size()<=1) {
+        LString msg("HittestList> FATAL ERROR: cannot popName()!!");
+        LOG_DPRINTLN(msg);
+        MB_THROW(qlib::RuntimeException, msg);
+        return;
+      }
+      m_names.pop_front();
+    }
+
     ///////////////////////
     // Display List support
   
@@ -283,19 +276,20 @@ namespace gfx {
 	  //elem.pos.x(), elem.pos.y(), elem.pos.z(),
 	  //vv.x(), vv.y(), vv.z());
 
-	  MB_DPRINT("[%d ", m_nCurUID);
-	  BOOST_FOREACH (int i, elem.names) {
-	    MB_DPRINT("%d ", i);
-	  }
-	  MB_DPRINTLN("] (%f,%f,%f)",
-		      elem.pos.x(), elem.pos.y(), elem.pos.z());
+          MB_DPRINT("[%d %d]", m_nCurUID, elem.id);
+          MB_DPRINTLN(" (%f,%f,%f)",
+                      elem.pos.x(), elem.pos.y(), elem.pos.z());
 		      
 	  m_data.push_back(DataElem());
 	  DataElem &he = m_data.back();
 	  he.z = vv.z();
 	  he.rendid = m_nCurUID;
-	  he.names = elem.names;
-	}
+          he.names.resize(m_names.size()+1-1);
+          int j;
+          for (j=1; j<m_names.size(); ++j)
+            he.names[j-1] = m_names[j];
+          he.names[j-1] = elem.id;
+        }
       }
     }
     

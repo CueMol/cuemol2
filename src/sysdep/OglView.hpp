@@ -17,6 +17,8 @@
 
 #ifdef USE_GL_SELECTION
 # include "OglHitData.hpp"
+#else
+# include <gfx/Hittest.hpp>
 #endif
 
 namespace sysdep {
@@ -85,12 +87,14 @@ namespace sysdep {
 
   private:
 #ifdef USE_GL_SELECTION
-    GlHitData m_hitdata;
+    OglHitData m_hitdata;
 
     /// Setup the projection matrix for hit-testing
     /// @param far_factor factor of far slab limitation (1.0 for the same as display)
     void setUpHitProjMat(gfx::DisplayContext *pdc, const Vector4D &, double far_factor);
     
+#else
+    gfx::HitData m_hitdata;
 #endif
 
     /// Hit-test implementation
