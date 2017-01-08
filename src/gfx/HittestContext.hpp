@@ -180,8 +180,13 @@ namespace gfx {
   
   class GFX_API HittestContext : public AbstHitContext
   {
-  private:
-    std::deque<HittestList *> m_data;
+  public:
+    struct DataElem {
+      float z;
+      qlib::uid_t rendid;
+      HittestList::NameList names;
+    };
+    std::deque<DataElem> m_data;
 
     qlib::uid_t m_nCurUID;
 
@@ -236,19 +241,6 @@ namespace gfx {
       return m_matstack.front();
     }
 
-    /*
-    double m_slabdepth;
-    double m_zoom;
-    double m_dist;
-    int m_width;
-    int m_height;
-
-    double m_pickx;
-    double m_picky;
-    double m_deltax;
-    double m_deltay;
-    */
-
     Matrix4D m_projMat;
 
     ///////////////////////
@@ -298,6 +290,11 @@ namespace gfx {
 	  MB_DPRINTLN("] (%f,%f,%f)",
 		      elem.pos.x(), elem.pos.y(), elem.pos.z());
 		      
+	  m_data.push_back(DataElem());
+	  DataElem &he = m_data.back();
+	  he.z = vv.z();
+	  he.rendid = m_nCurUID;
+	  he.names = elem.names;
 	}
       }
     }
@@ -316,9 +313,9 @@ namespace gfx {
 
     void dump() const {
       MB_DPRINTLN("HitContext %p size=%d", this, m_data.size());
-      BOOST_FOREACH (HittestList *phl, m_data) {
+      /*BOOST_FOREACH (HittestList *phl, m_data) {
 	phl->dump();
-      }
+	}*/
     }
   };
 

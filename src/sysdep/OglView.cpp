@@ -495,12 +495,12 @@ LString OglView::hitTest(int ax, int ay)
   int x = convToBackingX(ax);
   int y = convToBackingY(ay);
 
-  HittestContext *pdc = MB_NEW HittestContext();
+  HittestContext *phc = MB_NEW HittestContext();
 
   double dHitPrec = convToBackingX( qsys::ViewInputConfig::getInstance()->getHitPrec() );
 
   // Perform hittest (single hit)
-  if ( !hitTestImpl(pdc, Vector4D(x, y, dHitPrec, dHitPrec), false, 1.0) )
+  if ( !hitTestImpl(phc, Vector4D(x, y, dHitPrec, dHitPrec), false, 1.0) )
     return LString();
 
   /*
@@ -623,7 +623,7 @@ bool OglView::hitTestImpl(gfx::DisplayContext *pdc, const Vector4D &parm,
 
   pScene->processHit(phc);
 
-  phc->dump();
+  //phc->dump();
 
   return true;
 }
