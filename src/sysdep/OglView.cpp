@@ -24,6 +24,8 @@
 #include "OglDisplayContext.hpp"
 #include "OglViewCap.hpp"
 
+#include <gfx/HittestContext.hpp>
+
 using gfx::DisplayContext;
 using namespace sysdep;
 using qsys::Renderer;
@@ -469,7 +471,148 @@ void OglView::drawScene()
 }
 
 //////////////////////////////////////////////////////////////////////////////
-// Hittest OpenGL Impl
+// Hittest Impl
+
+#ifndef USE_GL_SELECTION
+using gfx::HittestContext;
+
+LString OglView::hitTest(int ax, int ay)
+{
+  m_hitdata.clear();
+
+  int x = convToBackingX(ax);
+  int y = convToBackingY(ay);
+
+  HittestContext *phc = MB_NEW HittestContext();
+
+  double dHitPrec = convToBackingX( qsys::ViewInputConfig::getInstance()->getHitPrec() );
+
+  // Perform hittest (single hit)
+  if ( !hitTestImpl(phc, Vector4D(x, y, dHitPrec, dHitPrec), false, 1.0) )
+    return LString();
+
+  m_hitdata.createNearest(phc);
+
+  qlib::uid_t rend_id = m_hitdata.getNearestRendID();
+
+  qsys::RendererPtr pRend = SceneManager::getRendererS(rend_id);
+  if (pRend.isnull()) {
+    LOG_DPRINTLN("FATAL ERROR: Unknown renderer id %d", rend_id);
+    return LString();
+  }
+
+  qlib::uid_t sceneid = pRend->getSceneID();
+  qlib::uid_t objid = pRend->getClientObjID();
+
+  qsys::ObjectPtr pObj = SceneManager::getObjectS(objid);
+  if (pObj.isnull()) {
+    LOG_DPRINTLN("FATAL ERROR: Unknown object id %d", objid);
+    return LString();
+  }
+
+  MB_DPRINTLN("Hittest OK: sc=%d, rend=%d, obj=%d", sceneid, rend_id, objid);
+
+  LString rval;
+  {
+    rval += "{";
+    rval += pRend->interpHit(m_hitdata);
+    rval += LString::format("\"scene_id\": %d,\n", sceneid);
+    rval += LString::format("\"rend_id\": %d,\n", rend_id);
+    rval += LString::format("\"rendtype\": \"%s\",\n", pRend->getTypeName());
+    rval += LString::format("\"rend_name\": \"%s\",\n", pRend->getName().c_str());
+    rval += LString::format("\"obj_id\": %d,\n", objid);
+    rval += LString::format("\"obj_name\": \"%s\"\n", pObj->getName().c_str());
+    rval += "}";
+  }
+
+  return rval;
+}
+
+LString OglView::hitTestRect(int ax, int ay, int aw, int ah, bool bNearest)
+{
+  return LString();
+}
+
+bool OglView::hitTestImpl(gfx::DisplayContext *pdc, const Vector4D &parm,
+			  bool fGetAll, double far_factor)
+{
+  qsys::ScenePtr pScene = getScene();
+  if (pScene.isnull()) {
+    MB_DPRINTLN("hitTest: invalid scene %d !!", getSceneID());
+    return false;
+  }
+
+  HittestContext *phc = static_cast<HittestContext *>(pdc);
+
+  // setUpHitProjMat(pdc, parm, far_factor);
+  double slabdepth = getSlabDepth();
+  if (slabdepth<=0.1)
+    slabdepth = 0.1;
+      
+  const double zoom = getZoom();
+  const double dist = getViewDist();
+      
+  const double slabnear = dist-slabdepth/2.0f;
+  const double slabfar  = dist+slabdepth*far_factor;
+  const double vw = zoom/2.0;
+  const double cx = convToBackingX( getWidth() );
+  const double cy = convToBackingY( getHeight() );
+  const double fasp = cx/cy;
+  
+  const double left = -vw*fasp;
+  const double right = vw*fasp;
+  const double bottom = -vw;
+  const double top = vw;
+  const double nearVal = slabnear;
+  const double farVal = slabfar;
+  
+  // GLint viewport[4] = {0, 0, GLint(cx), GLint(cy)};
+  // gluPickMatrix((GLfloat)parm.x(), (GLfloat)(cy - parm.y()),parm.z(), parm.w(), viewport);
+  const double pickx = parm.x();
+  const double picky = cy - parm.y();
+  const double deltax = parm.z();
+  const double deltay = parm.w();
+  Matrix4D pickmat;
+  pickmat.aij(1,1) = cx / deltax;
+  pickmat.aij(2,2) = cy / deltay;
+  pickmat.aij(3,3) = 1.0;;
+  pickmat.aij(1,4) = (cx - 2.0*pickx) / deltax;
+  pickmat.aij(2,4) = (cy - 2.0*picky) / deltay;
+  pickmat.aij(3,4) = 1.0;
+      
+  //glOrtho(-vw*fasp, vw*fasp,
+  //-vw, vw, slabnear, slabfar);
+  Matrix4D orthmat;
+  orthmat.aij(1,1) = 2.0/(right-left);
+  orthmat.aij(2,2) = 2.0/(top-bottom);
+  orthmat.aij(3,3) = -2.0/(farVal-nearVal);
+  orthmat.aij(1,4) = - (right+left)/(right-left);
+  orthmat.aij(2,4) = - (top+bottom)/(top-bottom);
+  orthmat.aij(3,4) = - (farVal+nearVal)/(farVal-nearVal);
+  orthmat.aij(4,4) = 1.0;
+  
+  //phc->m_projMat = orthmat.mul(pickmat);
+  phc->m_projMat = pickmat.mul(orthmat);
+
+  // 0 == no stereo
+  // setUpModelMat(MM_NORMAL);
+  phc->loadIdent();
+  phc->translate(Vector4D(0,0,-getViewDist()));
+  phc->rotate(getRotQuat());
+  const qlib::Vector4D c = getViewCenter();
+  phc->translate(-c);
+
+  pScene->processHit(phc);
+
+  //phc->dump();
+
+  return true;
+}
+#endif
+
+#ifdef USE_GL_SELECTION
+//////////////////////////////////////////////////////////////////////////////
+// Hittest Using OpenGL Selection buffer
 
 // Setup the projection matrix for hit-testing
 void OglView::setUpHitProjMat(gfx::DisplayContext *pdc, const Vector4D &parm, double far_factor)
@@ -679,8 +822,6 @@ LString OglView::hitTest(int ax, int ay)
 
     return rval;
   }
-
-
 }
 
 LString OglView::hitTestRect(int ax, int ay, int aw, int ah, bool bNearest)
@@ -752,6 +893,7 @@ LString OglView::hitTestRect(int ax, int ay, int aw, int ah, bool bNearest)
 
   return rval;
 }
+#endif
 
 //////////
 // Framebuffer operations
