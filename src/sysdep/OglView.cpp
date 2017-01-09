@@ -505,38 +505,9 @@ LString OglView::hitTest(int ax, int ay)
   if ( !hitTestImpl(phc, Vector4D(x, y, dHitPrec, dHitPrec), false, 1.0) )
     return LString();
 
-  int nrend = phc->m_data.size();
-  if (nrend==0) // no hit
-    return LString();
-    
-  MB_DPRINTLN("OglView.hitTest> hit nrend=%d", nrend);
+  m_hitdata.createNearest(phc);
 
-  float maxz = -1.0e10;
-  int i=0, maxi;
-  qlib::uid_t rend_id;
-  BOOST_FOREACH (const HittestContext::DataElem &de, phc->m_data) {
-    if (de.z > maxz) {
-      maxz = de.z;
-      maxi = i;
-      rend_id = de.rendid;
-    }
-    i++;
-  }
-
-  {
-    const HittestContext::DataElem &de = phc->m_data[maxi];
-    gfx::HitData::HitEntry *pEnt = m_hitdata.getOrCreateEntry(rend_id);
-    
-    // make index
-    unsigned int ind = pEnt->data.size();
-    pEnt->index.push_back(ind);
-    
-    // copy to data array
-    BOOST_FOREACH (int j, de.names) {
-      pEnt->data.push_back(j);
-      MB_DPRINTLN("id = %d", j);
-    }
-  }
+  qlib::uid_t rend_id = m_hitdata.getNearestRendID();
 
   qsys::RendererPtr pRend = SceneManager::getRendererS(rend_id);
   if (pRend.isnull()) {

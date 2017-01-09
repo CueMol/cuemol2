@@ -8,13 +8,9 @@
 
 #include "gfx.hpp"
 
-//#include <qlib/Vector3F.hpp>
-
 #include "DisplayContext.hpp"
 
 namespace gfx {
-
-  //using qlib::Vector3F;
 
   class GFX_API AbstHitContext : public DisplayContext
   {
@@ -48,15 +44,6 @@ namespace gfx {
 
     ////////////////
 
-    ////////////////
-    // metadata operations
-    /*    
-    virtual void startRender();
-    virtual void endRender();
-    virtual void startSection(const LString &section_name);
-    virtual void endSection();
-    */
-
     ///////////////////////
     // Matrix stack support
 
@@ -82,9 +69,12 @@ namespace gfx {
 
   };
 
+
   ///////////////////////////////////////
 
-  
+  ///
+  /// Drawing container for the hittest data
+  ///
   class GFX_API HittestList : public AbstHitContext
   {
   public:
@@ -97,20 +87,13 @@ namespace gfx {
 
   public:
     HittestList() {}
-    virtual ~HittestList() {}
+    virtual ~HittestList();
 
     //
     // Hittest methods
     //
 
-    virtual void drawPointHit(int nid, const Vector4D &pos) {
-      m_data.push_back(HitElem());
-      HitElem &he = m_data.back();
-      he.pos = pos;
-      he.pos.w() = 1.0;
-      he.id = nid;
-      //MB_DPRINTLN("names size=%d, nid=%d %d", he.names.size(), nid, he.names[nnm-1]);
-    }
+    virtual void drawPointHit(int nid, const Vector4D &pos);
 
     //
     // Display List support
@@ -133,9 +116,6 @@ namespace gfx {
     }
     
     virtual bool isDisplayList() const { return false; }
-
-    // virtual bool recordStart();
-    // virtual void recordEnd();
 
     void dump() const {
       MB_DPRINTLN("HittestList %p size=%d", this, m_data.size());
@@ -172,46 +152,15 @@ namespace gfx {
     ///////////////////////
     // Matrix stack support
 
-    virtual void pushMatrix()
-    {
-      MB_DPRINTLN("Hit(%p) pushMat %d", this, m_matstack.size());
-      if (m_matstack.size()<=0)
-        m_matstack.push_front(Matrix4D());
-      else
-        m_matstack.push_front(m_matstack.front());
-    }
+    virtual void pushMatrix();
 
-    virtual void popMatrix()
-    {
-      MB_DPRINTLN("Hit(%p) popMat %d", this, m_matstack.size());
-      if (m_matstack.size()<=1) {
-        LString msg("Hittest> FATAL ERROR: cannot popMatrix()!!");
-        LOG_DPRINTLN(msg);
-        MB_THROW(qlib::RuntimeException, msg);
-        return;
-      }
-      m_matstack.pop_front();
-    }
+    virtual void popMatrix();
 
-    virtual void multMatrix(const Matrix4D &mat)
-    {
-      Matrix4D top = m_matstack.front();
-      top.matprod(mat);
-      m_matstack.front() = top;
-    }
+    virtual void multMatrix(const Matrix4D &mat);
 
-    virtual void loadMatrix(const Matrix4D &mat) {
-      m_matstack.front() = mat;
-    }
+    virtual void loadMatrix(const Matrix4D &mat);
 
-    const Matrix4D &topMatrix() const {
-      if (m_matstack.size()<1) {
-        LString msg("Hittest> FATAL ERROR: cannot topMatrix()!!");
-        LOG_DPRINTLN(msg);
-        MB_THROW(qlib::RuntimeException, msg);
-      }
-      return m_matstack.front();
-    }
+    const Matrix4D &topMatrix() const;
 
     Matrix4D m_projMat;
 
@@ -226,26 +175,11 @@ namespace gfx {
       m_nCurUID = qlib::invalid_uid;
     }
 
-    virtual void loadName(int nameid) {
-      MB_DPRINTLN("HitCtxt> load name %d", nameid);
-      m_names.front() = nameid;
-    }
+    virtual void loadName(int nameid);
 
-    virtual void pushName(int nameid) {
-      MB_DPRINTLN("HitCtxt> push name %d", nameid);
-      m_names.push_front(nameid);
-    }
+    virtual void pushName(int nameid);
 
-    virtual void popName() {
-      MB_DPRINTLN("HitCtxt> pop name");
-      if (m_names.size()<=1) {
-        LString msg("HittestList> FATAL ERROR: cannot popName()!!");
-        LOG_DPRINTLN(msg);
-        MB_THROW(qlib::RuntimeException, msg);
-        return;
-      }
-      m_names.pop_front();
-    }
+    virtual void popName();
 
     ///////////////////////
     // Display List support
@@ -256,42 +190,7 @@ namespace gfx {
 
     virtual bool canCreateDL() const { return true; }
 
-    virtual void callDisplayList(DisplayContext *pdl)
-    {
-      HittestList *phl = dynamic_cast<HittestList *>(pdl);
-      if (phl==NULL)
-	return;
-
-      // m_data.push_back(phl);
-
-      topMatrix().dump();
-
-      BOOST_FOREACH (const HittestList::HitElem &elem, phl->m_data) {
-	Vector4D vv = topMatrix().mulvec(elem.pos);
-	vv = m_projMat.mulvec(vv);
-	if (vv.x()>-1.0 && vv.x()<1.0 &&
-	    vv.y()>-1.0 && vv.y()<1.0 &&
-	    vv.z()>-1.0 && vv.z()<1.0) {
-	  //MB_DPRINTLN("(%f,%f,%f)->(%f,%f,%f)",
-	  //elem.pos.x(), elem.pos.y(), elem.pos.z(),
-	  //vv.x(), vv.y(), vv.z());
-
-          MB_DPRINT("[%d %d]", m_nCurUID, elem.id);
-          MB_DPRINTLN(" (%f,%f,%f)",
-                      elem.pos.x(), elem.pos.y(), elem.pos.z());
-		      
-	  m_data.push_back(DataElem());
-	  DataElem &he = m_data.back();
-	  he.z = vv.z();
-	  he.rendid = m_nCurUID;
-          he.names.resize(m_names.size()+1-1);
-          int j;
-          for (j=1; j<m_names.size(); ++j)
-            he.names[j-1] = m_names[j];
-          he.names[j-1] = elem.id;
-        }
-      }
-    }
+    virtual void callDisplayList(DisplayContext *pdl);
     
     virtual bool isCompatibleDL(DisplayContext *pdl) const {
       if (dynamic_cast<HittestList *>(pdl)!=NULL)

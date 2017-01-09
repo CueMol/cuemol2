@@ -12,19 +12,27 @@
 namespace gfx {
 
   ///
-  ///  Raw hittest data class.
-  ///  Interpretation of the raw hittest data 
+  ///  Hittest data interface.
+  ///  Interpretation of the hittest data 
   ///  depends on the renderer class, by which hittest was performed.
   ///  Implementation of RawHitData depends on the underlying Gfx implementation.
   ///
   class GFX_API RawHitData {
   public:
-    virtual ~RawHitData() {}
+    virtual ~RawHitData();
 
     virtual int getDataSize(qlib::uid_t rend_id) const =0;
     virtual int getDataAt(qlib::uid_t rend_id, int ii, int subii) const =0;
   };
 
+
+  ////////////////////////////////////////////
+
+  class HittestContext;
+
+  ///
+  /// Common hittest data implementation
+  ///
   class GFX_API HitData : public RawHitData
   {
   public:
@@ -43,43 +51,22 @@ namespace gfx {
     
     qlib::uid_t m_nNrRendID;
     
-    mutable HitEntry *m_pCachedEntry;
-    
   public:
 
     HitData()
          : m_nNrRendID(qlib::invalid_uid)
     {
-      m_pCachedEntry = NULL;
     }
     
-    virtual ~HitData()
-    {
-      clear();
-    }
+    virtual ~HitData();
     
-    void clear() {
-      BOOST_FOREACH(const data_t::value_type &ee, m_data) {
-        delete ee.second;
-      }
-      m_data.clear();
-      m_nNrRendID = qlib::invalid_uid;
-      m_pCachedEntry = NULL;
-    }
-    
+    void clear();
 
-    HitEntry *getOrCreateEntry(qlib::uid_t rend_id)
-    {
-      data_t::const_iterator iter = m_data.find(rend_id);
-      if (iter==m_data.end()) {
-        HitEntry *pRet = MB_NEW HitEntry();
-        pRet->rend_id = rend_id;
-        m_data.insert(data_t::value_type(rend_id, pRet));
-        return pRet;
-      }
-      return iter->second;
-    }
+    HitEntry *getOrCreateEntry(qlib::uid_t rend_id);
     
+    void createNearest(HittestContext *phc);
+    void createAll(HittestContext *phc);
+
     //////////////////////////////////
     
     qlib::uid_t getNearestRendID() const {
@@ -90,61 +77,13 @@ namespace gfx {
       return m_data.size();
     }
     
-    int getRendArray(qlib::uid_t *pBuf, int nBufSize) const {
-      data_t::const_iterator biter = m_data.begin();
-      data_t::const_iterator eiter = m_data.end();
-      int i;
-      for (i=0; i<nBufSize && biter!=eiter; ++i, ++biter)
-        pBuf[i] = biter->first;
-      
-      return i;
-    }
+    int getRendArray(qlib::uid_t *pBuf, int nBufSize) const;
+
     ///
     
-    virtual int getDataSize(qlib::uid_t rend_id) const {
-      m_pCachedEntry = NULL;
-      data_t::const_iterator iter = m_data.find(rend_id);
-      if (iter==m_data.end())
-        return 0;
-      HitEntry *pEnt = iter->second;
-      //return pEnt->intdata.size();
-      return pEnt->index.size();
-    }
+    virtual int getDataSize(qlib::uid_t rend_id) const;
+    virtual int getDataAt(qlib::uid_t rend_id, int ii, int subii) const;
 
-    virtual int getDataAt(qlib::uid_t rend_id, int ii, int subii) const
-    {
-      HitEntry *pEnt;
-
-      if (m_pCachedEntry!=NULL &&
-          m_pCachedEntry->rend_id==rend_id) {
-        pEnt = m_pCachedEntry;
-      }
-      else {
-        data_t::const_iterator iter = m_data.find(rend_id);
-        if (iter==m_data.end())
-          return -1;
-        m_pCachedEntry = pEnt = iter->second;
-      }
-
-      if (ii>=pEnt->index.size()) {
-        MB_DPRINTLN("OglHit> rend ID %d; main index (%d) is out of bound", rend_id, ii);
-        return -1;
-      }
-
-      int intn_start = pEnt->index.at(ii);
-      int intn_end;
-      if (ii<pEnt->index.size()-1)
-        intn_end = pEnt->index.at(ii+1);
-      else
-        intn_end = pEnt->data.size();
-
-      if (subii>=intn_end-intn_start) {
-        MB_DPRINTLN("OglHit> rend ID %d; mainindex (%d), subindex(%d) is out of bound", rend_id, ii, subii);
-        return -1;
-      }
-
-      return pEnt->data.at(intn_start+subii);
-    }
   };
 
 }

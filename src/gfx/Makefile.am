@@ -38,6 +38,7 @@ MultiGradient.cpp \
 SphereSet.cpp \
 CmsXform.cpp \
 ColProfMgr.cpp \
+Hittest.cpp \
 $(NULL)
 
 # CueMol interface definitions for MCWRAPGEN
