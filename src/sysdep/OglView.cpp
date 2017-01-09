@@ -544,7 +544,73 @@ LString OglView::hitTest(int ax, int ay)
 
 LString OglView::hitTestRect(int ax, int ay, int aw, int ah, bool bNearest)
 {
-  return LString();
+  int x = convToBackingX(ax);
+  int y = convToBackingY(ay);
+  int w = convToBackingX(aw);
+  int h = convToBackingY(ah);
+
+  double cnx = double(x) + double(w)/2.0;
+  double cny = double(y) + double(h)/2.0;
+
+  HittestContext *phc = MB_NEW HittestContext();
+
+  // Perform hittest (multiple hit)
+  if ( !hitTestImpl(phc, Vector4D(cnx, cny, w, h), true, 1.0) )
+    return LString();
+
+  m_hitdata.createAll(phc);
+
+  int nrend = m_hitdata.getRendSize();
+  if (nrend==0) // no hit
+    return LString();
+    
+  std::vector<qlib::uid_t> rend_ids;
+  if (bNearest) {
+    nrend = 1;
+    rend_ids.resize(1);
+    rend_ids[0] = m_hitdata.getNearestRendID();
+  }
+  else {
+    rend_ids.resize(nrend);
+    m_hitdata.getRendArray(rend_ids.data(), nrend);
+  }
+
+  ////////////////////////
+
+  LString rval;
+  rval += "[";
+
+  for (int ii=0; ii<nrend; ++ii) {
+    qlib::uid_t rend_id = rend_ids[ii];
+
+    if (ii>0)
+      rval += ",";
+    rval += "{";
+    rval += LString::format("\"rend_id\": %d,\n", rend_id);
+
+    qsys::RendererPtr pRend = SceneManager::getRendererS(rend_id);
+    if (pRend.isnull()) {
+      LOG_DPRINTLN("OglView.hitTestRect> FATAL ERROR: Unknown renderer id %d", rend_id);
+      return LString();
+    }
+
+    qlib::uid_t sceneid = pRend->getSceneID();
+    qlib::uid_t objid = pRend->getClientObjID();
+
+    qsys::ObjectPtr pObj = SceneManager::getObjectS(objid);
+    if (pObj.isnull()) {
+      LOG_DPRINTLN("FATAL ERROR: Unknown object id %d", objid);
+      return LString();
+    }
+    
+    rval += pRend->interpHit(m_hitdata);
+    rval += LString::format("\"obj_id\": %d", objid);
+    rval += "}";
+    //MB_DPRINTLN("Hittest OK: sc=%d, rend=%d, obj=%d", sceneid, rend_id, objid);
+  }
+  rval += "]";
+
+  return rval;
 }
 
 bool OglView::hitTestImpl(gfx::DisplayContext *pdc, const Vector4D &parm,
