@@ -756,6 +756,9 @@
     <ClCompile Include="..\..\src\modules\molstr\SimpleRendGLSL_wrap.cpp">
       <Filter>molstr</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\gfx\Hittest.cpp">
+      <Filter>gfx</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\qsys\AbstractColor.hpp">

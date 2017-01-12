@@ -80,6 +80,36 @@ void HitData::createNearest(HittestContext *phc)
 
 void HitData::createAll(HittestContext *phc)
 {
+  m_nNrRendID = qlib::invalid_uid;
+
+  int nrend = phc->m_data.size();
+  if (nrend==0) // no hit
+    return;
+    
+  MB_DPRINTLN("HitTest> hit nrend=%d", nrend);
+
+  float minz = 1.0e10;
+  qlib::uid_t rend_id;
+  BOOST_FOREACH (const HittestContext::DataElem &de, phc->m_data) {
+    if (de.z < minz) {
+      minz = de.z;
+      rend_id = de.rendid;
+    }
+
+    gfx::HitData::HitEntry *pEnt = getOrCreateEntry(de.rendid);
+    
+    // make index
+    unsigned int ind = pEnt->data.size();
+    pEnt->index.push_back(ind);
+    
+    // copy to data array
+    BOOST_FOREACH (int j, de.names) {
+      pEnt->data.push_back(j);
+      MB_DPRINTLN("id = %d", j);
+    }
+  }
+
+  m_nNrRendID = rend_id;
 }
 
 int HitData::getRendArray(qlib::uid_t *pBuf, int nBufSize) const

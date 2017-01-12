@@ -164,6 +164,7 @@
     <ClCompile Include="..\..\src\gfx\CmsXform.cpp" />
     <ClCompile Include="..\..\src\gfx\ColProfMgr.cpp" />
     <ClCompile Include="..\..\src\gfx\GradientColor_wrap.cpp" />
+    <ClCompile Include="..\..\src\gfx\Hittest.cpp" />
     <ClCompile Include="..\..\src\gfx\MultiGradient.cpp" />
     <ClCompile Include="..\..\src\gfx\MultiGradient_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\AnimMol.cpp" />

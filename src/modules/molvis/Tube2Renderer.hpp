@@ -184,18 +184,18 @@ namespace molvis {
     /////////////////
     // Common implementation
 
-    virtual void createSegList(DisplayContext *pdc);
+    virtual void createSegList();
     
     virtual SplineSegment *createSegment();
 
     /////////////////
     // VBO implementation
 
-    virtual void setupVBO(detail::SplineSegment *pSeg, DisplayContext *pdc);
+    virtual void setupVBO(detail::SplineSegment *pSeg);
 
     virtual void updateCrdVBO(detail::SplineSegment *pSeg);
 
-    virtual void updateColorVBO(detail::SplineSegment *pSeg, DisplayContext *pdc);
+    virtual void updateColorVBO(detail::SplineSegment *pSeg);
 
     virtual void drawVBO(detail::SplineSegment *pSeg, DisplayContext *pdc);
 
@@ -205,11 +205,11 @@ namespace molvis {
     /// Initialize shaders
     virtual bool initShader(DisplayContext *pdc);
 
-    virtual void setupGLSL(detail::SplineSegment *pSeg, DisplayContext *pdc);
+    virtual void setupGLSL(detail::SplineSegment *pSeg);
 
     virtual void updateCrdGLSL(detail::SplineSegment *pSeg);
 
-    virtual void updateColorGLSL(detail::SplineSegment *pSeg, DisplayContext *pdc);
+    virtual void updateColorGLSL(detail::SplineSegment *pSeg);
 
     virtual void drawGLSL(detail::SplineSegment *pSeg, DisplayContext *pdc);
 
@@ -232,7 +232,7 @@ namespace molvis {
     gfx::Texture *m_pSectTex;
     std::vector<float> m_secttab;
 
-    void setupSectGLSL(DisplayContext *pdc);
+    void setupSectGLSL();
     
     void updateSectGLSL();
 

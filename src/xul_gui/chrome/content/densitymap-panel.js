@@ -126,6 +126,7 @@ denmap.updateWidget = function (aRend, aPropName)
 
   if (aPropName==undefined ||
       aPropName=="color") {
+    this.mColor.setTargetSceneID(aRend.getScene().uid);
     this.mColor.setColorObj(aRend.color);
   }
 

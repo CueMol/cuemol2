@@ -1169,6 +1169,7 @@ panel.loadSolidWidgets = function ()
 
 panel.updateSolidWidgets = function (aRend)
 {
+  this.mSolidCol.setTargetSceneID(this.mTgtSceID);
   this.mSolidCol.setColorObj(aRend.defaultcolor);
 };
 
@@ -1440,6 +1441,7 @@ panel.updateBfacWidgets = function (aRend, aPropName)
 {
   var coloring = aRend.coloring;
 
+
   if (aPropName==undefined ||
       aPropName=="mode") {
     util.selectMenuListByValue(this.mBfacMode, coloring.mode);
@@ -1447,10 +1449,12 @@ panel.updateBfacWidgets = function (aRend, aPropName)
   
   if (aPropName==undefined ||
       aPropName=="lowcol") {
+    this.mBfacColLo.setTargetSceneID(this.mTgtSceID);
     this.mBfacColLo.setColorObj(coloring.lowcol);
   }
   if (aPropName==undefined ||
       aPropName=="highcol") {
+    this.mBfacColHi.setTargetSceneID(this.mTgtSceID);
     this.mBfacColHi.setColorObj(coloring.highcol);
   }
   
@@ -1621,16 +1625,19 @@ panel.updateElepotWidgets = function (aRend, aPropName)
 
   if (aPropName==undefined ||
       aPropName=="lowcol") {
+    this.mPotColL.setTargetSceneID();
     this.mPotColL.setColorObj(aRend.lowcol);
   }
 
   if (aPropName==undefined ||
       aPropName=="midcol") {
+    this.mPotColM.setTargetSceneID();
     this.mPotColM.setColorObj(aRend.midcol);
   }
 
   if (aPropName==undefined ||
       aPropName=="highcol") {
+    this.mPotColH.setTargetSceneID();
     this.mPotColH.setColorObj(aRend.highcol);
   }
 

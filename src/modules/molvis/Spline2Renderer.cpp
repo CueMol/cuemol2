@@ -73,10 +73,40 @@ SplineSegment *Spline2Renderer::createSegment()
   return MB_NEW Spline2Seg();
 }
 
+void Spline2Renderer::objectChanged(qsys::ObjectEvent &ev)
+{
+  if (isVisible() &&
+      ev.getType()==qsys::ObjectEvent::OBE_CHANGED_DYNAMIC &&
+      ev.getDescr().equals("atomsMoved")) {
+    // OBE_CHANGED_DYNAMIC && descr=="atomsMoved"
+    if (isUseAnim()) {
+      // GLSL mode
+      if (!isUseGLSL()) {
+        // invalidateDisplayCache();
+        setUseGLSL(true);
+      }
+      if (!isCacheAvail()) {
+        createCacheData();
+      }
+      // only update positions
+      updateCrdDynamic();
+      return;
+    }
+  }
+  else if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED_FIXDYN) {
+    MB_DPRINTLN("Spline2Rend (%p) > OBE_CHANGED_FIXDYN called!!", this);
+
+    setUseGLSL(false);
+    return;
+  }
+
+  super_t::objectChanged(ev);
+}
+
 //////////////////////////////////////////////////////////////
 // VBO implementation
 
-void Spline2Renderer::setupVBO(detail::SplineSegment *pASeg, DisplayContext *pdc)
+void Spline2Renderer::setupVBO(detail::SplineSegment *pASeg)
 {
   Spline2Seg *pSeg = static_cast<Spline2Seg *>(pASeg);
   const int nDetail = getAxialDetail();
@@ -125,7 +155,7 @@ void Spline2Renderer::updateCrdVBO(detail::SplineSegment *pASeg)
   }
 }
 
-void Spline2Renderer::updateColorVBO(detail::SplineSegment *pASeg, DisplayContext *pdc)
+void Spline2Renderer::updateColorVBO(detail::SplineSegment *pASeg)
 {
   Spline2Seg *pSeg = static_cast<Spline2Seg *>(pASeg);
   MolCoordPtr pCMol = getClientMol();
@@ -200,7 +230,7 @@ bool Spline2Renderer::initShader(DisplayContext *pdc)
   return true;
 }
 
-void Spline2Renderer::setupGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc)
+void Spline2Renderer::setupGLSL(detail::SplineSegment *pASeg)
 {
   Spline2Seg *pSeg = static_cast<Spline2Seg *>(pASeg);
 
@@ -222,7 +252,7 @@ void Spline2Renderer::setupGLSL(detail::SplineSegment *pASeg, DisplayContext *pd
   pSeg->m_pColorTex->setup(1, gfx::Texture::FMT_RGBA,
                            gfx::Texture::TYPE_UINT8_COLOR);
   
-  const int nDetail = getAxialDetail();
+  const int nDetail = getAxialDetail() * 10;
   const float fDetail = float(nDetail);
   float par;
   int i;
@@ -275,7 +305,7 @@ void Spline2Renderer::updateCrdGLSL(detail::SplineSegment *pASeg)
 
 }
 
-void Spline2Renderer::updateColorGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc)
+void Spline2Renderer::updateColorGLSL(detail::SplineSegment *pASeg)
 {
   Spline2Seg *pSeg = static_cast<Spline2Seg *>(pASeg);
   MolCoordPtr pCMol = getClientMol();

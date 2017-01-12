@@ -70,7 +70,7 @@ bool Tube2Renderer::initShader(DisplayContext *pdc)
   return true;
 }
 
-void Tube2Renderer::setupSectGLSL(DisplayContext *pdc)
+void Tube2Renderer::setupSectGLSL()
 {
   if (m_pSectTex!=NULL)
     delete m_pSectTex;
@@ -88,7 +88,7 @@ void Tube2Renderer::setupSectGLSL(DisplayContext *pdc)
   updateSectGLSL();
 }
 
-void Tube2Renderer::setupGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc)
+void Tube2Renderer::setupGLSL(detail::SplineSegment *pASeg)
 {
   Tube2Seg *pSeg = static_cast<Tube2Seg *>(pASeg);
 
@@ -218,7 +218,7 @@ void Tube2Renderer::updateCrdGLSL(detail::SplineSegment *pASeg)
   
 }
 
-void Tube2Renderer::updateColorGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc)
+void Tube2Renderer::updateColorGLSL(detail::SplineSegment *pASeg)
 {
   Tube2Seg *pSeg = static_cast<Tube2Seg *>(pASeg);
 

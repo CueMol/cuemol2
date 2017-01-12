@@ -276,8 +276,8 @@ SplineRendBase::SplineRendBase()
   m_nAxialDetail = 20;
   // m_dLineWidth = 1.2;
 
-  m_bUseGLSL = true;
-  //m_bUseGLSL = false;
+  //m_bUseGLSL = true;
+  m_bUseGLSL = false;
 
   m_bChkShaderDone = false;
 }
@@ -322,22 +322,26 @@ void SplineRendBase::objectChanged(qsys::ObjectEvent &ev)
 
 void SplineRendBase::display(DisplayContext *pdc)
 {
-  if (isUseGLSL() && !isShaderCheckDone()) {
+  if (!isShaderCheckDone()) {
     bool bOK = false;
     try {
       bOK = initShader(pdc);
     }
     catch (...) {
     }
-    if (!bOK) {
+    m_bChkShaderDone = true;
+    if (bOK) {
+      m_bShaderAvail = true;
+    }
+    else {
       // cannot initialize GLSL
       // --> fall through VBO impl
-      setUseGLSL(false);
+      m_bShaderAvail = false;
     }
   }
 
   if (!isCacheAvail()) {
-    createCacheData(pdc);
+    createCacheData();
   }
 
   preRender(pdc);
@@ -366,30 +370,33 @@ bool SplineRendBase::isCacheAvail() const
     return true;
 }
 
-void SplineRendBase::createCacheData(DisplayContext *pdc)
+void SplineRendBase::createCacheData()
 {
-  createSegList(pdc);
+  createSegList();
   
   startColorCalc();
   
-  BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
-    if (pelem->getSize()>0) {
-      // elem.updateColor(this);
-      
-      if (isUseGLSL()) {
-	updateColorGLSL(pelem, pdc);
+  //if (isUseGLSL()) {
+  if (isShaderAvail()) {
+    BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
+      if (pelem->getSize()>0) {
+        updateColorGLSL(pelem);
       }
-      else {
-	updateColorVBO(pelem, pdc);
-      }
-      
-      if (isUseAnim())
-	updateCrdDynamic(pelem);
-      else
-	updateCrdStatic(pelem);
     }
   }
+  //else {
+    BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
+      if (pelem->getSize()>0) {
+        updateColorVBO(pelem);
+      }
+    }
+  //}
   
+  if (isUseAnim())
+    updateCrdDynamic();
+  else
+    updateCrdStatic();
+
   endColorCalc();
 }
 
@@ -399,7 +406,7 @@ void SplineRendBase::invalidateDisplayCache()
   super_t::invalidateDisplayCache();
 }
 
-void SplineRendBase::createSegList(DisplayContext *pdc)
+void SplineRendBase::createSegList()
 {
   MolCoordPtr pCMol = getClientMol();
 
@@ -415,7 +422,7 @@ void SplineRendBase::createSegList(DisplayContext *pdc)
     if (pPiv.isnull()) {
       // This resid doesn't has pivot, so we cannot draw backbone!!
       if (!pPrevResid.isnull()) {
-        setup(m_seglist.back(), pdc);
+        setup(m_seglist.back());
       }
       pPrevResid = MolResiduePtr();
       continue;
@@ -423,7 +430,7 @@ void SplineRendBase::createSegList(DisplayContext *pdc)
     
     if (isNewSegment(pRes, pPrevResid)) {
       if (!pPrevResid.isnull()) {
-        setup(m_seglist.back(), pdc);
+        setup(m_seglist.back());
       }
       m_seglist.push_back(createSegment());
     }
@@ -434,19 +441,26 @@ void SplineRendBase::createSegList(DisplayContext *pdc)
   }
 
   if (!pPrevResid.isnull()) {
-    setup(m_seglist.back(), pdc);
+    setup(m_seglist.back());
   }
 
 }
 
-void SplineRendBase::setup(SplineSegment *pSeg, DisplayContext *pdc)
+void SplineRendBase::setup(SplineSegment *pSeg)
 {
   pSeg->generate(this);
 
+  if (isShaderAvail())
+    setupGLSL(pSeg);
+  
+  setupVBO(pSeg);
+
+  /*
   if (isUseGLSL())
-    setupGLSL(pSeg, pdc);
+    setupGLSL(pSeg);
   else
-    setupVBO(pSeg, pdc);
+    setupVBO(pSeg);
+   */
 }
 
 void SplineRendBase::startColorCalc()
@@ -469,14 +483,58 @@ void SplineRendBase::endColorCalc()
 
 void SplineRendBase::updateCrdDynamic()
 {
-  BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
-    if (pelem->getSize()>0) {
-      // only update positions
-      updateCrdDynamic(pelem);
+  if (isUseGLSL()) {
+    BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
+      if (pelem->getSize()>0) {
+        // update spline coefficients (from CrdArray)
+        pelem->updateDynamic(this);
+        
+        // update VBO/Texture, etc
+        updateCrdGLSL(pelem);
+      }
+    }
+  }
+  else {
+    BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
+      if (pelem->getSize()>0) {
+        // update spline coefficients (from CrdArray)
+        pelem->updateDynamic(this);
+        
+        // update VBO
+        updateCrdVBO(pelem);
+      }
     }
   }
 }
 
+void SplineRendBase::updateCrdStatic()
+{
+
+  if (isUseGLSL()) {
+    BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
+      if (pelem->getSize()>0) {
+        // update spline coefficients (from MolAtom)
+        pelem->updateStatic(this);
+        
+        // update VBO/Texture, etc
+        updateCrdGLSL(pelem);
+      }
+    }
+  }
+  else {
+    BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
+      if (pelem->getSize()>0) {
+        // update spline coefficients (from MolAtom)
+        pelem->updateStatic(this);
+        
+        // update VBO
+        updateCrdVBO(pelem);
+      }
+    }
+  }
+}
+
+/*
 void SplineRendBase::updateCrdStatic(SplineSegment *pSeg)
 {
   // update spline coefficients (from MolAtom)
@@ -490,18 +548,9 @@ void SplineRendBase::updateCrdStatic(SplineSegment *pSeg)
     updateCrdVBO(pSeg);
   }
 }
-
+*/
+/*
 void SplineRendBase::updateCrdDynamic(SplineSegment *pSeg)
 {
-  // update spline coefficients (from CrdArray)
-  pSeg->updateDynamic(this);
-  
-  // update VBO/Texture, etc
-  if (isUseGLSL()) {
-    updateCrdGLSL(pSeg);
-  }
-  else {
-    updateCrdVBO(pSeg);
-  }
 }
-
+*/

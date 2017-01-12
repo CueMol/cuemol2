@@ -66,16 +66,16 @@ void Tube2Renderer::propChanged(qlib::LPropEvent &ev)
   super_t::propChanged(ev);
 }
 
-void Tube2Renderer::createSegList(DisplayContext *pdc)
+void Tube2Renderer::createSegList()
 {
   if (!m_pts->isValid())
     m_pts->setupSectionTable();
 
-  super_t::createSegList(pdc);
+  super_t::createSegList();
 
   // create tube section texture
   if (isUseGLSL()) {
-    setupSectGLSL(pdc);
+    setupSectGLSL();
   }
 }
 
@@ -86,7 +86,7 @@ SplineSegment *Tube2Renderer::createSegment()
 
 //////////
 
-void Tube2Renderer::setupVBO(detail::SplineSegment *pASeg, DisplayContext *pdc)
+void Tube2Renderer::setupVBO(detail::SplineSegment *pASeg)
 {
   Tube2Seg *pSeg = static_cast<Tube2Seg *>(pASeg);
   const int nDetail = getAxialDetail();
@@ -181,7 +181,7 @@ void Tube2Renderer::updateCrdVBO(detail::SplineSegment *pASeg)
   }
 }
 
-void Tube2Renderer::updateColorVBO(detail::SplineSegment *pASeg, DisplayContext *pdc)
+void Tube2Renderer::updateColorVBO(detail::SplineSegment *pASeg)
 {
   Tube2Seg *pSeg = static_cast<Tube2Seg *>(pASeg);
   MolCoordPtr pCMol = getClientMol();
