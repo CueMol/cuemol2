@@ -239,8 +239,8 @@ namespace molvis {
     }
 
   public:
-    /// Initialize GLSL
-    virtual bool initShader(DisplayContext *pdc) =0;
+    /// Initialize shader (default: shader not supported)
+    virtual bool initShader(DisplayContext *pdc);
 
     virtual SplineSegment *createSegment() =0;
 
@@ -249,7 +249,7 @@ namespace molvis {
     void setup(SplineSegment *pSeg);
 
     virtual void setupVBO(SplineSegment *pSeg) =0;
-    virtual void setupGLSL(SplineSegment *pSeg) =0;
+    virtual void setupGLSL(SplineSegment *pSeg) {}
 
     void startColorCalc();
     void endColorCalc();
@@ -257,22 +257,20 @@ namespace molvis {
     // update coordinate data
 
     void updateCrdStatic();
-    //void updateCrdStatic(detail::SplineSegment *pSeg);
     void updateCrdDynamic();
-    //void updateCrdDynamic(detail::SplineSegment *pSeg);
 
     virtual void updateCrdVBO(detail::SplineSegment *pSeg) =0;
-    virtual void updateCrdGLSL(detail::SplineSegment *pSeg) =0;
+    virtual void updateCrdGLSL(detail::SplineSegment *pSeg) {}
 
     // update color data
 
     virtual void updateColorVBO(SplineSegment *pSeg) =0;
-    virtual void updateColorGLSL(SplineSegment *pSeg) =0;
+    virtual void updateColorGLSL(SplineSegment *pSeg) {}
 
     // draw
 
     virtual void drawVBO(detail::SplineSegment *pSeg, DisplayContext *pdc) =0;
-    virtual void drawGLSL(detail::SplineSegment *pSeg, DisplayContext *pdc) =0;
+    virtual void drawGLSL(detail::SplineSegment *pSeg, DisplayContext *pdc) {}
 
   };
   

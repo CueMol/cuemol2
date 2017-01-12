@@ -16,6 +16,7 @@
 #include <modules/molstr/MainChainRenderer.hpp>
 #include "SplineRendBase.hpp"
 
+/*
 #ifdef WIN32
 #define USE_TBO 1
 #define USE_INSTANCED 1
@@ -25,6 +26,7 @@
 namespace sysdep {
   class OglProgramObject;
 }
+*/
 
 namespace gfx {
   class Texture;
@@ -113,7 +115,7 @@ namespace molvis {
 
   ////////////////////////////////////////////////////////
   //
-  // Spline Renderer version 2 class
+  // Spline Renderer version 2 class (platform independent)
   //
 
   class Spline2Renderer : public SplineRendBase
@@ -188,34 +190,6 @@ namespace molvis {
     virtual void updateColorVBO(detail::SplineSegment *pSeg);
 
     virtual void drawVBO(detail::SplineSegment *pSeg, DisplayContext *pdc);
-
-    /////////////////
-    // GLSL implementation
-
-    /// Initialize shaders
-    virtual bool initShader(DisplayContext *pdc);
-
-    virtual void setupGLSL(detail::SplineSegment *pSeg);
-
-    virtual void updateCrdGLSL(detail::SplineSegment *pSeg);
-
-    virtual void updateColorGLSL(detail::SplineSegment *pSeg);
-
-    virtual void drawGLSL(detail::SplineSegment *pSeg, DisplayContext *pdc);
-
-  private:
-    /////////////////
-    // work area
-
-    static const int COEF_TEX_UNIT = 0;
-    static const int COLOR_TEX_UNIT = 1;
-
-    /// GLSL shader objects
-    sysdep::OglProgramObject *m_pPO;
-
-    quint32 m_nRhoLoc;
-
-    // quint32 m_nColLoc;
 
   };
 

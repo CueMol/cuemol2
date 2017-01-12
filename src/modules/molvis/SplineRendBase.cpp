@@ -350,6 +350,11 @@ void SplineRendBase::display(DisplayContext *pdc)
 
 }
 
+bool SplineRendBase::initShader(DisplayContext *pdc)
+{
+  return false;
+}
+
 void SplineRendBase::render2(DisplayContext *pdc)
 {
   BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
