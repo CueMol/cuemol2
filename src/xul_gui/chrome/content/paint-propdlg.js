@@ -50,12 +50,6 @@ dlg.onLoad = function ()
   this.mColPicker.setColorObj(this.mOrigCol);
 };
 
-/*dlg.buildBox = function ()
-{
-  this.mMolSel.buildBox();
-  this.mColPicker.setColorObj(this.mOrigCol);
-};*/
-
 dlg.onColBoxChange = function()
 {
   this.mSelectedCol = this.mColPicker.getColorObj();
