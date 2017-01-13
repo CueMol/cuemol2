@@ -38,9 +38,70 @@ namespace molvis {
   using namespace molstr;
 
 
+  class Spl2GLSLDrawSeg : public Spl2DrawSeg
+  {
+  public:
+
+    typedef Spl2DrawSeg super_t;
+
+    Spl2GLSLDrawSeg(int st, int en) : super_t(st,en), m_pAttrAry(NULL)
+    {
+    }
+
+    virtual ~Spl2GLSLDrawSeg();
+
+    //////////
+    // GLSL implementation
+
+    struct AttrElem {
+      qfloat32 rho;
+      // qbyte r, g, b, a;
+    };
+
+    typedef gfx::DrawAttrArray<AttrElem> AttrArray;
+
+    /// VBO for glsl rendering
+    AttrArray *m_pAttrAry;
+
+  };
+
+  //
+  /// Rendering object for the one spline segment
+  //
+  class Spl2GLSLSeg : public Spline2Seg
+  {
+  public:
+
+    typedef Spline2Seg super_t;
+
+    // typedef std::deque<Spl2GLSLDrawSeg> DrawList;
+    // DrawList m_draws;
+
+    Spl2GLSLSeg() : super_t()
+    {
+      m_pCoefTex = NULL;
+      m_pColorTex = NULL;
+    }
+
+    virtual ~Spl2GLSLSeg();
+
+    virtual void generateImpl(int nstart, int nend);
+
+    /////////////////////
+    // GLSL implementation
+
+    /// float texture of the main axis coeff (common)
+    gfx::Texture *m_pCoefTex;
+
+    /// color texture
+    gfx::Texture *m_pColorTex;
+    std::vector<qbyte> m_colorTexData;
+
+  };
+
   ////////////////////////////////////////////////////////
   //
-  // Spline Renderer version 2 class (GLSL impl)
+  /// Spline Renderer version 2 class (GLSL impl)
   //
 
   class Spline2RendGLSL : public Spline2Renderer
@@ -73,6 +134,8 @@ namespace molvis {
     /////////////////
     // GLSL implementation
 
+    virtual SplineSegment *createSegment();
+
     /// Initialize shaders
     virtual bool initShader(DisplayContext *pdc);
 
@@ -102,3 +165,4 @@ namespace molvis {
 
 }
 
+#endif

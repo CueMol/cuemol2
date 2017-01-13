@@ -20,7 +20,12 @@
 #include "Ribbon2Renderer.hpp"
 #include "DisoRenderer.hpp"
 
-#include "Spline2Renderer.hpp"
+#ifdef USE_OPENGL
+#  include "Spline2RendGLSL.hpp"
+#else
+#  include "Spline2Renderer.hpp"
+#endif
+
 #include "Tube2Renderer.hpp"
 
 
@@ -48,7 +53,13 @@ bool init()
   pRF->regist<AtomIntrRenderer>();
   pRF->regist<Ribbon2Renderer>();
   pRF->regist<DisoRenderer>();
+
+#ifdef USE_OPENGL
+  pRF->regist<Spline2RendGLSL>();
+#else
   pRF->regist<Spline2Renderer>();
+#endif
+
   pRF->regist<Tube2Renderer>();
 
   MB_DPRINTLN("molvis init: OK");

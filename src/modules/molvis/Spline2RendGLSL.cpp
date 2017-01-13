@@ -24,6 +24,21 @@ using namespace molstr;
 using namespace molvis::detail;
 using qlib::Matrix3D;
 
+Spl2GLSLSeg::~Spl2GLSLSeg()
+{
+}
+
+void Spl2GLSLSeg::generateImpl(int nstart, int nend)
+{
+  m_draws.push_back(MB_NEW Spl2GLSLDrawSeg(nstart, nend));
+}
+
+Spl2GLSLDrawSeg::~Spl2GLSLDrawSeg()
+{
+}
+
+//////////////////////////////////////////////////////////////
+
 Spline2RendGLSL::Spline2RendGLSL()
      : super_t()
 {
@@ -34,8 +49,12 @@ Spline2RendGLSL::~Spline2RendGLSL()
 {
 }
 
-//////////////////////////////////////////////////////////////
 // GLSL implementation
+
+SplineSegment *Spline2RendGLSL::createSegment()
+{
+  return MB_NEW Spl2GLSLSeg();
+}
 
 bool Spline2RendGLSL::initShader(DisplayContext *pdc)
 {
@@ -76,7 +95,7 @@ bool Spline2RendGLSL::initShader(DisplayContext *pdc)
 
 void Spline2RendGLSL::setupGLSL(detail::SplineSegment *pASeg)
 {
-  Spline2Seg *pSeg = static_cast<Spline2Seg *>(pASeg);
+  Spl2GLSLSeg *pSeg = static_cast<Spl2GLSLSeg *>(pASeg);
 
   if (pSeg->m_pCoefTex != NULL)
     delete pSeg->m_pCoefTex;
@@ -101,8 +120,8 @@ void Spline2RendGLSL::setupGLSL(detail::SplineSegment *pASeg)
   float par;
   int i;
 
-  BOOST_FOREACH(Spl2DrawSeg &elem, pSeg->m_draws) {
-
+  BOOST_FOREACH(Spl2DrawSeg *pelem, pSeg->m_draws) {
+    Spl2GLSLDrawSeg &elem = *static_cast<Spl2GLSLDrawSeg*>(pelem);
     const int nsplseg = elem.m_nEnd - elem.m_nStart;
     const float fStart = float(elem.m_nStart);
 
@@ -112,12 +131,12 @@ void Spline2RendGLSL::setupGLSL(detail::SplineSegment *pASeg)
     if (elem.m_pAttrAry!=NULL)
       delete elem.m_pAttrAry;
     
-    elem.m_pAttrAry = MB_NEW Spl2DrawSeg::AttrArray();
+    elem.m_pAttrAry = MB_NEW Spl2GLSLDrawSeg::AttrArray();
 
-    Spl2DrawSeg::AttrArray &attra = *elem.m_pAttrAry;
+    Spl2GLSLDrawSeg::AttrArray &attra = *elem.m_pAttrAry;
     attra.setAttrSize(2);
-    attra.setAttrInfo(0, m_nRhoLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(Spl2DrawSeg::AttrElem, rho));
-    //attra.setAttrInfo(1, m_nColLoc, 4, qlib::type_consts::QTC_UINT8, offsetof(Spl2DrawSeg::AttrElem, r));
+    attra.setAttrInfo(0, m_nRhoLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(Spl2GLSLDrawSeg::AttrElem, rho));
+    //attra.setAttrInfo(1, m_nColLoc, 4, qlib::type_consts::QTC_UINT8, offsetof(Spl2GLSLDrawSeg::AttrElem, r));
 
     attra.alloc(nVA);
     attra.setDrawMode(gfx::AbstDrawElem::DRAW_LINE_STRIP);
@@ -131,13 +150,13 @@ void Spline2RendGLSL::setupGLSL(detail::SplineSegment *pASeg)
     attra.setInstCount(nsplseg);
 #endif
 
-    LOG_DPRINTLN("Spl2DrawSeg> %d elems AttrArray created", nVA);
+    LOG_DPRINTLN("Spl2GLSLDrawSeg> %d elems AttrArray created", nVA);
   }
 }
 
 void Spline2RendGLSL::updateCrdGLSL(detail::SplineSegment *pASeg)
 {
-  Spline2Seg *pSeg = static_cast<Spline2Seg *>(pASeg);
+  Spl2GLSLSeg *pSeg = static_cast<Spl2GLSLSeg *>(pASeg);
 
   const int nCtlPts = pSeg->m_nCtlPts;
   
@@ -151,7 +170,7 @@ void Spline2RendGLSL::updateCrdGLSL(detail::SplineSegment *pASeg)
 
 void Spline2RendGLSL::updateColorGLSL(detail::SplineSegment *pASeg)
 {
-  Spline2Seg *pSeg = static_cast<Spline2Seg *>(pASeg);
+  Spl2GLSLSeg *pSeg = static_cast<Spl2GLSLSeg *>(pASeg);
   MolCoordPtr pCMol = getClientMol();
 
   int i;
@@ -174,10 +193,10 @@ void Spline2RendGLSL::updateColorGLSL(detail::SplineSegment *pASeg)
   const float fDetail = float(getAxialDetail());
   float par;
 
-  BOOST_FOREACH (Spl2DrawSeg &elem, pSeg->m_draws) {
+  BOOST_FOREACH (Spl2GLSLDrawSeg &elem, pSeg->m_draws) {
 
     const float fStart = float(elem.m_nStart);
-    Spl2DrawSeg::AttrArray &attra = *elem.m_pAttrAry;
+    Spl2GLSLDrawSeg::AttrArray &attra = *elem.m_pAttrAry;
 	const int nVA = attra.getSize();
 
     for (i=0; i<nVA; ++i) {
@@ -194,7 +213,7 @@ void Spline2RendGLSL::updateColorGLSL(detail::SplineSegment *pASeg)
 
 void Spline2RendGLSL::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc)
 {
-  Spline2Seg *pSeg = static_cast<Spline2Seg *>(pASeg);
+  Spl2GLSLSeg *pSeg = static_cast<Spl2GLSLSeg *>(pASeg);
 
   const double lw = getLineWidth();
 
@@ -213,7 +232,8 @@ void Spline2RendGLSL::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc
   m_pPO->setUniform("colorTex", COLOR_TEX_UNIT);
   m_pPO->setUniform("u_npoints", pSeg->m_scoeff.getSize());
 
-  BOOST_FOREACH (Spl2DrawSeg &elem, pSeg->m_draws) {
+  BOOST_FOREACH (Spl2DrawSeg *pelem, pSeg->m_draws) {
+    Spl2GLSLDrawSeg &elem = *static_cast<Spl2GLSLDrawSeg*>(pelem);
 #ifdef USE_INSTANCED
     pdc->drawElem(*elem.m_pAttrAry);
 #else

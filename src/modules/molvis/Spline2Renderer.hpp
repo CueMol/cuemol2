@@ -26,11 +26,11 @@
 namespace sysdep {
   class OglProgramObject;
 }
-*/
 
 namespace gfx {
   class Texture;
 }
+*/
 
 namespace molvis {
 
@@ -48,7 +48,7 @@ namespace molvis {
 
     typedef detail::DrawSegment super_t;
 
-    Spl2DrawSeg(int st, int en) : super_t(st,en), m_pVBO(NULL), m_pAttrAry(NULL)
+    Spl2DrawSeg(int st, int en) : super_t(st,en), m_pVBO(NULL)
     {
     }
 
@@ -62,19 +62,6 @@ namespace molvis {
     /// cached vertex array/VBO
     VertArray *m_pVBO;
 
-    //////////
-    // GLSL implementation
-
-    struct AttrElem {
-      qfloat32 rho;
-      // qbyte r, g, b, a;
-    };
-
-    typedef gfx::DrawAttrArray<AttrElem> AttrArray;
-
-    /// VBO for glsl rendering
-    AttrArray *m_pAttrAry;
-
   };
 
   //
@@ -86,32 +73,19 @@ namespace molvis {
 
     typedef detail::SplineSegment super_t;
 
-    typedef std::deque<Spl2DrawSeg> Spl2DrawList;
-    Spl2DrawList m_draws;
+    typedef std::deque<Spl2DrawSeg *> DrawList;
+    DrawList m_draws;
 
     Spline2Seg() : super_t()
     {
-      m_pCoefTex = NULL;
-      m_pColorTex = NULL;
     }
 
     virtual ~Spline2Seg();
 
     virtual void generateImpl(int nstart, int nend);
 
-    /////////////////////
-    // GLSL implementation
-
-    /// float texture of the main axis coeff (common)
-    gfx::Texture *m_pCoefTex;
-
-    /// color texture
-    gfx::Texture *m_pColorTex;
-    std::vector<qbyte> m_colorTexData;
-
   };
 
-  // typedef std::deque<Spline2Seg> Spl2SegList;
 
   ////////////////////////////////////////////////////////
   //

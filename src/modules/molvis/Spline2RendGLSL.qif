@@ -1,0 +1,22 @@
+// -*-Mode: C++;-*-
+//
+// Spline2 renderer implementation using GLSL
+//
+
+#ifndef SPLINE2_REND_GLSL_QIF_INCLUDED
+#define SPLINE2_REND_GLSL_QIF_INCLUDED
+
+#include "Spline2Renderer.qif"
+
+runtime_class Spline2RendGLSL extends Spline2Renderer
+{
+  client_hdr "Spline2RendGLSL.hpp";
+  client_name molvis::Spline2RendGLSL;
+
+  scriptable;
+  smartptr;
+  cloneable;
+};
+
+#endif
+

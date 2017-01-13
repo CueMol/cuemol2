@@ -9,7 +9,7 @@
 #include "Spline2Renderer.hpp"
 
 #include <qsys/SceneManager.hpp>
-#include <gfx/Texture.hpp>
+//#include <gfx/Texture.hpp>
 
 #include <modules/molstr/MolCoord.hpp>
 #include <modules/molstr/MolChain.hpp>
@@ -24,23 +24,28 @@ using qlib::Matrix3D;
 
 Spline2Seg::~Spline2Seg()
 {
+/*
   if (m_pCoefTex!=NULL)
     delete m_pCoefTex;
   if (m_pColorTex!=NULL)
     delete m_pColorTex;
+ */
+  std::for_each(m_draws.begin(), m_draws.end(), qlib::delete_ptr<Spl2DrawSeg*>());
 }
 
 void Spline2Seg::generateImpl(int nstart, int nend)
 {
-  m_draws.push_back(Spl2DrawSeg(nstart, nend));
+  m_draws.push_back(MB_NEW Spl2DrawSeg(nstart, nend));
 }
 
 Spl2DrawSeg::~Spl2DrawSeg()
 {
   if (m_pVBO!=NULL)
     delete m_pVBO;
+/*
   if (m_pAttrAry!=NULL)
     delete m_pAttrAry;
+ */
 }
 
 //////////////////////////////////////////////////////////////
@@ -95,7 +100,8 @@ void Spline2Renderer::setupVBO(detail::SplineSegment *pASeg)
   Spline2Seg *pSeg = static_cast<Spline2Seg *>(pASeg);
   const int nDetail = getAxialDetail();
 
-  BOOST_FOREACH (Spl2DrawSeg &elem, pSeg->m_draws) {
+  BOOST_FOREACH (Spl2DrawSeg *pelem, pSeg->m_draws) {
+    Spl2DrawSeg &elem = *pelem;
     const int nsplseg = elem.m_nEnd - elem.m_nStart;
     const int nVA = nDetail * nsplseg + 1;
 
@@ -123,7 +129,8 @@ void Spline2Renderer::updateCrdVBO(detail::SplineSegment *pASeg)
 
   Spl2DrawSeg::VertArray *pVBO;
 
-  BOOST_FOREACH (Spl2DrawSeg &elem, pSeg->m_draws) {
+  BOOST_FOREACH (Spl2DrawSeg *pelem, pSeg->m_draws) {
+    Spl2DrawSeg &elem = *pelem;
   
     pVBO = elem.m_pVBO;
     fStart = float(elem.m_nStart);
@@ -150,7 +157,8 @@ void Spline2Renderer::updateColorVBO(detail::SplineSegment *pASeg)
 
   Spl2DrawSeg::VertArray *pVBO;
 
-  BOOST_FOREACH (Spl2DrawSeg &elem, pSeg->m_draws) {
+  BOOST_FOREACH (Spl2DrawSeg *pelem, pSeg->m_draws) {
+    Spl2DrawSeg &elem = *pelem;
 
     pVBO = elem.m_pVBO;
     float fStart = float(elem.m_nStart);
@@ -168,7 +176,8 @@ void Spline2Renderer::drawVBO(detail::SplineSegment *pASeg, DisplayContext *pdc)
   const float lw = float( getLineWidth() );
   Spline2Seg *pSeg = static_cast<Spline2Seg *>(pASeg);
 
-  BOOST_FOREACH (Spl2DrawSeg &elem, pSeg->m_draws) {
+  BOOST_FOREACH (Spl2DrawSeg *pelem, pSeg->m_draws) {
+    Spl2DrawSeg &elem = *pelem;
     elem.m_pVBO->setLineWidth(lw);
     pdc->drawElem(*elem.m_pVBO);
   }
