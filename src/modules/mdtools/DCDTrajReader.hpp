@@ -12,6 +12,8 @@
 #include <qsys/ObjReader.hpp>
 #include <modules/molstr/molstr.hpp>
 
+#include "TrajBlock.hpp"
+
 namespace mdtools {
 
   class MolSelection;
@@ -19,9 +21,11 @@ namespace mdtools {
 
   using molstr::SelectionPtr;
 
-  class MDTOOLS_API DCDTrajReader : public qsys::ObjReader
+  class MDTOOLS_API DCDTrajReader : public TrajBlockReader
   {
     MC_SCRIPTABLE;
+
+    typedef TrajBlockReader super_t;
 
     ///////////////////////////////////////////
 
@@ -85,6 +89,12 @@ namespace mdtools {
     void readBody(qlib::InStream &ins);
 
     TrajectoryPtr getTargTraj() const;
+
+    //////////
+
+    virtual void loadFrm(int ifrm, TrajBlock *pTB);
+    
+
   };
 
 }

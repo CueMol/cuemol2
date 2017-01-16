@@ -37,6 +37,20 @@ void InStream::readFully(char *b, int off, int len)
   }
 }
 
+bool InStream::isSeekable() const
+{
+  return false;
+}
+
+void InStream::seek(quint64 pos)
+{
+}
+
+quint64 InStream::getCurPos() const
+{
+  return 0;
+}
+
 /////////////////////////////////////////////////////////////
 
 BinOutStream::~BinOutStream()

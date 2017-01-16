@@ -10,6 +10,7 @@
 #include "qlib.hpp"
 #include "SmartPtr.hpp"
 #include "LStreamImpl.hpp"
+#include "LTypes.hpp"
 
 namespace qlib {
 
@@ -66,6 +67,10 @@ namespace qlib {
 
     /// get source URI of this stream
     virtual LString getURI() const =0;
+
+    virtual bool isSeekable() const;
+    virtual void seek(quint64 pos);
+    virtual quint64 getCurPos() const;
 
     ///////////////////////
 

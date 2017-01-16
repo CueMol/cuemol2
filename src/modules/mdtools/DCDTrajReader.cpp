@@ -19,6 +19,7 @@ using qlib::Array;
 using namespace mdtools;
 
 DCDTrajReader::DCDTrajReader()
+     : super_t()
 {
   // : m_pSel(NULL), m_pSelAtoms(NULL)
   m_nSkip = 1;
@@ -172,7 +173,7 @@ void DCDTrajReader::readHeader(qlib::InStream &ins)
   }
   int natom;
   fbis.readRecord(&natom, 4);
-  LOG_DPRINTLN("DCDTraj> NATOM: %d ", natom);
+  LOG_DPRINTLN("DCDTraj> NATOM: %d", natom);
 
   m_natom = natom;
   m_nfile = nfile;
@@ -210,6 +211,9 @@ void DCDTrajReader::readBody(qlib::InStream &ins)
     throw e;
   }
   LOG_DPRINTLN("DCDTraj> Alloc %f Mbytes", dmem);
+
+  if (isLazyLoad())
+    return;
 
   int jj, istep, nrlen;
   std::vector<float> tmpv(m_natom * 3);
@@ -316,10 +320,15 @@ void DCDTrajReader::readBody(qlib::InStream &ins)
         pcoord[jj*3+2] = tmpv[k+m_natom*2];
       }
       nInd ++;
+      pTB->setLoaded(nInd, true);
     }
 
   }
 
   //pTraj->append(pTB);
+}
+
+void DCDTrajReader::loadFrm(int ifrm, TrajBlock *pTB)
+{
 }
 

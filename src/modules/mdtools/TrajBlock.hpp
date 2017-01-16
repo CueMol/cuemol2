@@ -13,7 +13,31 @@
 
 namespace mdtools {
 
-  class TrajBlock : public qsys::Object
+  class TrajBlock;
+
+  class MDTOOLS_API TrajBlockReader : public qsys::ObjReader
+  {
+    typedef qsys::ObjReader super_t;
+
+  public:
+    TrajBlockReader() : super_t(), m_bLazyLoad(false) {}
+
+    virtual void loadFrm(int ifrm, TrajBlock *pTB) =0;
+
+  private:
+    bool m_bLazyLoad;
+
+  public:
+    void setLazyLoad(bool b) { m_bLazyLoad = b; }
+    bool isLazyLoad() const { return m_bLazyLoad; }
+
+  };
+
+  MC_DECL_SCRSP(TrajBlockReader);
+  
+  ///////////////////////
+
+  class MDTOOLS_API TrajBlock : public qsys::Object
   {
     MC_SCRIPTABLE;
 
@@ -31,9 +55,6 @@ namespace mdtools {
     /// coordinates array (m_nCrds*m_nSize)
     data_t m_data;
     
-    /// coordinates availability flag
-    std::vector<bool> m_flags;
-
     /// start frame index of this block
     int m_nIndex;
 
@@ -61,16 +82,8 @@ namespace mdtools {
       MB_ASSERT(0<=ifrm);
       MB_ASSERT(ifrm<m_nSize);
 
-      if (!m_flags[ifrm]) {
-        load(ifrm);
-      }
-      
       PosArray *p = m_data[ifrm];
       return &(*p)[0];
-
-      //const int ind = m_nCrds * ifrm;
-      //MB_ASSERT(ind<m_data.size());
-      //return &m_data[ind];
     }
     
     void setStartIndex(int n) {
@@ -101,7 +114,39 @@ namespace mdtools {
       return m_nTrajUID;
     }
 
-    void load(int ifrm) {}
+  private:
+
+    /// coordinates availability flag
+    std::vector<bool> m_flags;
+
+    TrajBlockReaderPtr m_pReader;
+
+  public:
+
+    void setLoaded(int ifrm, bool b)
+    {
+      m_flags[ifrm] = b;
+    }
+
+    bool isLoaded(int ifrm) const
+    {
+      return m_flags[ifrm];
+    }
+
+    void load(int ifrm)
+    {
+      if (m_flags[ifrm])
+        return;
+
+      if (m_pReader.isnull()) {
+        // MB_THROW
+        return;
+      }
+      
+      m_pReader->loadFrm(ifrm, this);
+
+      m_flags[ifrm] = true;
+    }
 
   };
 
