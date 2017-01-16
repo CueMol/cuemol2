@@ -31,6 +31,9 @@ namespace mdtools {
     /// coordinates array (m_nCrds*m_nSize)
     data_t m_data;
     
+    /// coordinates availability flag
+    std::vector<bool> m_flags;
+
     /// start frame index of this block
     int m_nIndex;
 
@@ -53,10 +56,15 @@ namespace mdtools {
     void clear();
 
     /// get coordinate array pointer of the specified frame
-    qfloat32 *getCrdArray(int ifrm) {
+    qfloat32 *getCrdArray(int ifrm)
+    {
       MB_ASSERT(0<=ifrm);
       MB_ASSERT(ifrm<m_nSize);
 
+      if (!m_flags[ifrm]) {
+        load(ifrm);
+      }
+      
       PosArray *p = m_data[ifrm];
       return &(*p)[0];
 
@@ -92,6 +100,8 @@ namespace mdtools {
     qlib::uid_t getTrajUID() const {
       return m_nTrajUID;
     }
+
+    void load(int ifrm) {}
 
   };
 
