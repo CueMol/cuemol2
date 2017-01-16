@@ -24,6 +24,7 @@ SplineCoeffSet.cpp \
 SplineRenderer.cpp \
 SplineRendBase.cpp \
 Spline2Renderer.cpp \
+Spline2RendGLSL.cpp \
 TubeRenderer.cpp \
 Tube2Renderer.cpp \
 Tube2RendGLSL.cpp \
@@ -59,6 +60,7 @@ CPK2Renderer.qif \
 BallStickRenderer.qif \
 SplineRenderer.qif \
 Spline2Renderer.qif \
+Spline2RendGLSL.qif \
 TubeRenderer.qif \
 Tube2Renderer.qif \
 TubeSection.qif \
