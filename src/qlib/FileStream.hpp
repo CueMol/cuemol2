@@ -18,9 +18,9 @@ namespace qlib {
 
   // implementation
   namespace detail {
-    /**
-       Interface for implementation class of file I/O
-    */
+    ///
+    ///  Interface for implementation class of file I/O
+    ///
     class QLIB_API AbstFIOImpl : public IOImpl {
     public:
 
@@ -38,19 +38,19 @@ namespace qlib {
 	       1 = set file pos (absolute)
 	       2 = set file pos (relative)
       */
-      virtual int seek(int pos, int mode) =0;
+      virtual quint64 seek(qint64 pos, int mode) =0;
 
       /// Get information about the accessing file
       virtual LString getPathName() const =0;
 
-      //virtual LString getAbsPath() const =0;
-      //virtual LString getDirName() const =0;
     };
   }
   
-  /** superclass of file input stream */
-  class QLIB_API FileInStream : public InStream {
+  ///////////////////////////////////////////////////////
 
+  /// File input stream 
+  class QLIB_API FileInStream : public InStream
+  {
   private:
     sp<detail::AbstFIOImpl> m_pimpl;
 
@@ -109,9 +109,11 @@ namespace qlib {
 
     //////////////////////////////////////////////////////
 
-    int getFilePos() { return m_pimpl->seek(0,0); }
+    virtual bool isSeekable() const;
 
-    void setFilePos(int pos) { m_pimpl->seek(pos,1); }
+    virtual quint64 getFilePos() { return m_pimpl->seek(0,0); }
+
+    virtual void setFilePos(quint64 pos) { m_pimpl->seek(pos,1); }
 
     // get standard input stream
     static FileInStream &getStdIn();
@@ -120,7 +122,9 @@ namespace qlib {
 
   ///////////////////////////////////////////////////////////
 
-  /** superclass of file output stream */
+  ///
+  /// File output stream
+  ///
   class QLIB_API FileOutStream : public qlib::OutStream
   {
 

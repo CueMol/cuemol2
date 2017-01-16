@@ -168,7 +168,7 @@ public:
     m_fp = NULL;
   }
 
-  virtual int seek(int pos, int mode) {
+  virtual quint64 seek(quint64 pos, int mode) {
     switch (mode) {
     default:
     case 0: {
