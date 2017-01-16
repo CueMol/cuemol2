@@ -69,8 +69,8 @@ namespace qlib {
     virtual LString getURI() const =0;
 
     virtual bool isSeekable() const;
-    virtual void setFilePos(quint64 pos);
-    virtual quint64 getFilePos() const;
+    virtual void setFilePos(qint64 pos);
+    virtual qint64 getFilePos() const;
 
     ///////////////////////
 

@@ -39,11 +39,11 @@ bool InStream::isSeekable() const
   return false;
 }
 
-void InStream::setFilePos(quint64 pos)
+void InStream::setFilePos(qint64 pos)
 {
 }
 
-quint64 InStream::getFilePos() const
+qint64 InStream::getFilePos() const
 {
   return 0;
 }

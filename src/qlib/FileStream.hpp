@@ -38,7 +38,7 @@ namespace qlib {
 	       1 = set file pos (absolute)
 	       2 = set file pos (relative)
       */
-      virtual quint64 seek(qint64 pos, int mode) =0;
+      virtual qint64 seek(qint64 pos, int mode) =0;
 
       /// Get information about the accessing file
       virtual LString getPathName() const =0;
@@ -57,63 +57,48 @@ namespace qlib {
   public:
     FileInStream();
 
-    /** copy ctor */
+    /// copy ctor
     FileInStream(const FileInStream &r);
 
-    /** copy operator */
-    const FileInStream &operator=(const FileInStream &arg) {
+    /// copy operator
+    const FileInStream &operator=(const FileInStream &arg)
+    {
       if(&arg!=this){
 	m_pimpl = arg.m_pimpl;
       }
       return *this;
     }
 
-    /** dtor */
+    /// dtor
     virtual ~FileInStream();
     
     //////////////////////////////////////////////////////
 
     /** open the file */
-    void open(const LString &fname) {
-      m_pimpl->i_open(fname);
-    }
+    void open(const LString &fname);
 
-    virtual bool ready() {
-      return m_pimpl->ready();
-    }
-
-    virtual int read() {
-      return m_pimpl->read();
-    }
+    virtual bool ready();
+    
+    virtual int read();
   
-    virtual int read(char *buf, int off, int len) {
-      return m_pimpl->read(buf, off, len);
-    }
+    virtual int read(char *buf, int off, int len);
 
-    virtual int skip(int len) {
-      return m_pimpl->skip(len);
-    }
+    virtual int skip(int len);
 
-    virtual void close() {
-      m_pimpl->i_close();
-    }
+    virtual void close();
 
-    virtual LString getURI() const {
-      return m_pimpl->getSrcURI();
-    }
+    virtual LString getURI() const;
 
-    /** get implementation */
-    virtual impl_type getImpl() const {
-      return m_pimpl;
-    }
+    /// get implementation
+    virtual impl_type getImpl() const;
 
     //////////////////////////////////////////////////////
 
     virtual bool isSeekable() const;
 
-    virtual quint64 getFilePos() { return m_pimpl->seek(0,0); }
+    virtual qint64 getFilePos();
 
-    virtual void setFilePos(quint64 pos) { m_pimpl->seek(pos,1); }
+    virtual void setFilePos(qint64 pos);
 
     // get standard input stream
     static FileInStream &getStdIn();
@@ -145,52 +130,40 @@ namespace qlib {
       return *this;
     }
 
-    /** dtor */
+    /// dtor
     virtual ~FileOutStream();
     
     //////////////////////////////////////////////////////
 
-    /** open the file */
+    /// open the file
     void open(const LString &fname, bool bAppend = false) {
       m_pimpl->o_open(fname, bAppend);
     }
 
-    virtual int write(const char *buf, int off, int len) {
-      return m_pimpl->write(buf, off, len);
-    }
+    virtual int write(const char *buf, int off, int len);
     
-    virtual void write(int b) {
-      return m_pimpl->write(b);
-    }
+    virtual void write(int b);
 
-    virtual void flush() {
-      m_pimpl->flush();
-    }
+    virtual void flush();
 
-    virtual void close() {
-      m_pimpl->o_close();
-    }
+    virtual void close();
 
-    virtual LString getURI() const {
-      return m_pimpl->getDestURI();
-    }
+    virtual LString getURI() const;
     
 
-    /** get implementation */
-    virtual impl_type getImpl() const {
-      return m_pimpl;
-    }
+    /// get implementation
+    virtual impl_type getImpl() const;
 
     //////////////////////////////////////////////////////
 
-    int getFilePos() { return m_pimpl->seek(0,0); }
+    qint64 getFilePos();
+    
+    void setFilePos(qint64 pos);
 
-    void setFilePos(int pos) { m_pimpl->seek(pos,1); }
-
-    /** get standard output stream */
+    /// get standard output stream
     static FileOutStream &getStdOut();
 
-    /** get standard error stream */
+    /// get standard error stream
     static FileOutStream &getStdErr();
 
   };
