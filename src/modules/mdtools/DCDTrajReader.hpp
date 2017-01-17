@@ -9,7 +9,6 @@
 #include "mdtools.hpp"
 
 #include <qlib/mcutils.hpp>
-#include <qsys/ObjReader.hpp>
 #include <modules/molstr/molstr.hpp>
 
 #include "TrajBlock.hpp"
@@ -92,6 +91,11 @@ namespace mdtools {
 
     //////////
 
+  private:
+    qint64 m_nHeadPos;
+    qlib::InStream *m_pIn;
+
+  public:
     virtual void loadFrm(int ifrm, TrajBlock *pTB);
     
 

@@ -292,7 +292,7 @@ bool FileInStream::isSeekable() const
   return true;
 }
 
-qint64 FileInStream::getFilePos()
+qint64 FileInStream::getFilePos() const
 {
   return m_pimpl->seek(qint64(0),0);
 }

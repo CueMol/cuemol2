@@ -10,6 +10,7 @@
 #include <qlib/Array.hpp>
 
 #include <qsys/Object.hpp>
+#include <qsys/ObjReader.hpp>
 
 namespace mdtools {
 
@@ -123,6 +124,10 @@ namespace mdtools {
 
   public:
 
+    void setTrajLoader(const TrajBlockReaderPtr &preader) {
+      m_pReader = preader;
+    }
+
     void setLoaded(int ifrm, bool b)
     {
       m_flags[ifrm] = b;
@@ -133,20 +138,9 @@ namespace mdtools {
       return m_flags[ifrm];
     }
 
-    void load(int ifrm)
-    {
-      if (m_flags[ifrm])
-        return;
+    bool isAllLoaded() const;
 
-      if (m_pReader.isnull()) {
-        // MB_THROW
-        return;
-      }
-      
-      m_pReader->loadFrm(ifrm, this);
-
-      m_flags[ifrm] = true;
-    }
+    void load(int ifrm);
 
   };
 

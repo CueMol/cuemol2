@@ -96,7 +96,7 @@ namespace qlib {
 
     virtual bool isSeekable() const;
 
-    virtual qint64 getFilePos();
+    virtual qint64 getFilePos() const;
 
     virtual void setFilePos(qint64 pos);
 
