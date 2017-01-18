@@ -101,7 +101,6 @@ bool GLSLTube2Renderer::initShader(DisplayContext *pdc)
     return false;
   }
 
-
   m_pPO->enable();
 
   // setup uniforms

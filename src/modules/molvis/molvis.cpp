@@ -58,6 +58,7 @@ bool init()
 
 #ifdef USE_OPENGL
   pRF->regist<Spline2RendGLSL>();
+  //pRF->regist<Tube2Renderer>();
   pRF->regist<GLSLTube2Renderer>();
 #else
   pRF->regist<Spline2Renderer>();
