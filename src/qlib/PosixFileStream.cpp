@@ -177,6 +177,8 @@ public:
       MB_ASSERT(m_fp!=NULL);
 #ifdef WIN32
       qint64 res = _ftelli64(m_fp);
+#elif defined(HAVE_FTELLO)
+      qint64 res = ftello(m_fp);
 #else
       qint64 res = ftell(m_fp);
 #endif
@@ -190,6 +192,8 @@ public:
       MB_ASSERT(m_fp!=NULL);
 #ifdef WIN32
       int res = _fseeki64(m_fp, pos, SEEK_SET);
+#elif defined(HAVE_FSEEKO)
+      int res = fseeko(m_fp, pos, SEEK_SET);
 #else
       int res = fseek(m_fp, pos, SEEK_SET);
 #endif
@@ -203,6 +207,8 @@ public:
       MB_ASSERT(m_fp!=NULL);
 #ifdef WIN32
       int res = _fseeki64(m_fp, pos, SEEK_CUR);
+#elif defined(HAVE_FSEEKO)
+      int res = fseeko(m_fp, pos, SEEK_CUR);
 #else
       int res = fseek(m_fp, pos, SEEK_CUR);
 #endif

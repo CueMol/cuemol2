@@ -24,6 +24,34 @@ using namespace molstr;
 using qlib::Matrix3D;
 using detail::DrawSegment;
 
+detail::DrawSegment *Tube2SS::createDrawSeg(int nstart, int nend)
+{
+  return (MB_NEW Tube2DS(nstart, nend));
+}
+
+Tube2SS::~Tube2SS()
+{
+  if (m_pCoefTex!=NULL)
+    delete m_pCoefTex;
+  if (m_pBinormTex!=NULL)
+    delete m_pBinormTex;
+  if (m_pColorTex!=NULL)
+    delete m_pColorTex;
+}
+
+//////////
+
+Tube2DS::~Tube2DS()
+{
+  if (m_pVBO!=NULL)
+    delete m_pVBO;
+
+  if (m_pAttrAry!=NULL)
+    delete m_pAttrAry;
+}
+
+//////////////////////////////////////////////////////////////
+
 Tube2Renderer::Tube2Renderer()
      : super_t(), m_pts(MB_NEW TubeSection())
 {
@@ -229,33 +257,20 @@ void Tube2Renderer::drawVBO(detail::SplineSegment *pASeg, DisplayContext *pdc)
   }
 }
 
-
-//////////////////////////////////////////////////////////////
-
-detail::DrawSegment *Tube2SS::createDrawSeg(int nstart, int nend)
+void Tube2Renderer::objectChanged(qsys::ObjectEvent &ev)
 {
-  return (MB_NEW Tube2DS(nstart, nend));
+  if (isVisible() &&
+      (ev.getType()==qsys::ObjectEvent::OBE_CHANGED_DYNAMIC||
+       ev.getType()==qsys::ObjectEvent::OBE_CHANGED) &&
+      ev.getDescr().equals("atomsMoved")) {
+    // OBE_CHANGED_DYNAMIC && descr=="atomsMoved"
+    if (isUseAnim()) {
+      // only update positions
+      updateCrdDynamic();
+      return;
+    }
+  }
+
+  super_t::objectChanged(ev);
 }
-
-Tube2SS::~Tube2SS()
-{
-  if (m_pCoefTex!=NULL)
-    delete m_pCoefTex;
-  if (m_pBinormTex!=NULL)
-    delete m_pBinormTex;
-  if (m_pColorTex!=NULL)
-    delete m_pColorTex;
-}
-
-//////////
-
-Tube2DS::~Tube2DS()
-{
-  if (m_pVBO!=NULL)
-    delete m_pVBO;
-
-  if (m_pAttrAry!=NULL)
-    delete m_pAttrAry;
-}
-
 
