@@ -16,22 +16,6 @@
 #include <modules/molstr/MainChainRenderer.hpp>
 #include "SplineRendBase.hpp"
 
-/*
-#ifdef WIN32
-#define USE_TBO 1
-#define USE_INSTANCED 1
-#else
-#endif
-
-namespace sysdep {
-  class OglProgramObject;
-}
-
-namespace gfx {
-  class Texture;
-}
-*/
-
 namespace molvis {
 
   using qlib::Vector4D;
@@ -40,19 +24,19 @@ namespace molvis {
   using namespace molstr;
 
   class Spline2Renderer;
-  class Spline2Seg;
+  class Spline2SS;
 
-  class Spl2DrawSeg : public detail::DrawSegment
+  class Spline2DS : public detail::DrawSegment
   {
   public:
 
     typedef detail::DrawSegment super_t;
 
-    Spl2DrawSeg(int st, int en) : super_t(st,en), m_pVBO(NULL)
+    Spline2DS(int st, int en) : super_t(st,en), m_pVBO(NULL)
     {
     }
 
-    virtual ~Spl2DrawSeg();
+    virtual ~Spline2DS();
 
     //////////
     // VBO implementation
@@ -67,22 +51,20 @@ namespace molvis {
   //
   /// Rendering object for the one spline segment
   //
-  class Spline2Seg : public detail::SplineSegment
+  class Spline2SS : public detail::SplineSegment
   {
   public:
 
     typedef detail::SplineSegment super_t;
 
-    typedef std::deque<Spl2DrawSeg *> DrawList;
-    DrawList m_draws;
 
-    Spline2Seg() : super_t()
+    Spline2SS() : super_t()
     {
     }
 
-    virtual ~Spline2Seg();
+    virtual ~Spline2SS();
 
-    virtual void generateImpl(int nstart, int nend);
+    virtual detail::DrawSegment *createDrawSeg(int nstart, int nend);
 
   };
 

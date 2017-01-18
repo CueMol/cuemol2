@@ -38,11 +38,11 @@ namespace molvis {
   using namespace molstr;
 
 
-  class Spl2GLSLDrawSeg : public Spl2DrawSeg
+  class Spl2GLSLDrawSeg : public Spline2DS
   {
   public:
 
-    typedef Spl2DrawSeg super_t;
+    typedef Spline2DS super_t;
 
     Spl2GLSLDrawSeg(int st, int en) : super_t(st,en), m_pAttrAry(NULL)
     {
@@ -68,11 +68,11 @@ namespace molvis {
   //
   /// Rendering object for the one spline segment
   //
-  class Spl2GLSLSeg : public Spline2Seg
+  class Spl2GLSLSeg : public Spline2SS
   {
   public:
 
-    typedef Spline2Seg super_t;
+    typedef Spline2SS super_t;
 
     // typedef std::deque<Spl2GLSLDrawSeg> DrawList;
     // DrawList m_draws;
@@ -85,7 +85,7 @@ namespace molvis {
 
     virtual ~Spl2GLSLSeg();
 
-    virtual void generateImpl(int nstart, int nend);
+    virtual detail::DrawSegment *createDrawSeg(int nstart, int nend);
 
     /////////////////////
     // GLSL implementation

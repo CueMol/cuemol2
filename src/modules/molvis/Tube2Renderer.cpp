@@ -22,6 +22,7 @@
 using namespace molvis;
 using namespace molstr;
 using qlib::Matrix3D;
+using detail::DrawSegment;
 
 Tube2Renderer::Tube2Renderer()
      : super_t(), m_pts(MB_NEW TubeSection())
@@ -81,18 +82,19 @@ void Tube2Renderer::createSegList()
 
 SplineSegment *Tube2Renderer::createSegment()
 {
-  return MB_NEW Tube2Seg();
+  return MB_NEW Tube2SS();
 }
 
 //////////
 
 void Tube2Renderer::setupVBO(detail::SplineSegment *pASeg)
 {
-  Tube2Seg *pSeg = static_cast<Tube2Seg *>(pASeg);
+  Tube2SS *pSeg = static_cast<Tube2SS *>(pASeg);
   const int nDetail = getAxialDetail();
   const int nSecDiv = getTubeSection()->getSize();
 
-  BOOST_FOREACH (Tub2DrawSeg &elem, pSeg->m_draws) {
+  BOOST_FOREACH (DrawSegment *pelem, pSeg->m_draws) {
+    Tube2DS &elem = *static_cast<Tube2DS*>(pelem);
 
     const int nsplseg = elem.m_nEnd - elem.m_nStart;
     const int nAxPts = nDetail * nsplseg + 1;
@@ -102,11 +104,11 @@ void Tube2Renderer::setupVBO(detail::SplineSegment *pASeg)
     
     // TO DO: multiple vertex generation for discontinuous color point
 
-    Tub2DrawSeg::VertArray *pVBO = elem.m_pVBO;
+    Tube2DS::VertArray *pVBO = elem.m_pVBO;
     if (pVBO!=NULL)
       delete pVBO;
     
-    elem.m_pVBO = pVBO = MB_NEW Tub2DrawSeg::VertArray();
+    elem.m_pVBO = pVBO = MB_NEW Tube2DS::VertArray();
     pVBO->alloc(nVA);
 
     // generate indices
@@ -135,7 +137,7 @@ void Tube2Renderer::setupVBO(detail::SplineSegment *pASeg)
 
 void Tube2Renderer::updateCrdVBO(detail::SplineSegment *pASeg)
 {
-  Tube2Seg *pSeg = static_cast<Tube2Seg *>(pASeg);
+  Tube2SS *pSeg = static_cast<Tube2SS *>(pASeg);
   TubeSectionPtr pTS = getTubeSection();
   const int nSecDiv = pTS->getSize();
   CubicSpline *pAxInt = pSeg->getAxisIntpol();
@@ -148,9 +150,11 @@ void Tube2Renderer::updateCrdVBO(detail::SplineSegment *pASeg)
   Vector3F pos, binorm, bpos;
   Vector3F v0, e0, v1, e1, v2, e2;
   Vector3F g, dg;
-  Tub2DrawSeg::VertArray *pVBO;
+  Tube2DS::VertArray *pVBO;
 
-  BOOST_FOREACH (Tub2DrawSeg &elem, pSeg->m_draws) {
+  BOOST_FOREACH (DrawSegment *pelem, pSeg->m_draws) {
+    Tube2DS &elem = *static_cast<Tube2DS*>(pelem);
+
     pVBO = elem.m_pVBO;
     fStart = float(elem.m_nStart);
     const int nAxPts = elem.m_nAxPts;
@@ -183,7 +187,7 @@ void Tube2Renderer::updateCrdVBO(detail::SplineSegment *pASeg)
 
 void Tube2Renderer::updateColorVBO(detail::SplineSegment *pASeg)
 {
-  Tube2Seg *pSeg = static_cast<Tube2Seg *>(pASeg);
+  Tube2SS *pSeg = static_cast<Tube2SS *>(pASeg);
   MolCoordPtr pCMol = getClientMol();
 
   int i, j;
@@ -194,9 +198,11 @@ void Tube2Renderer::updateColorVBO(detail::SplineSegment *pASeg)
 
   quint32 dcc;
 
-  Tub2DrawSeg::VertArray *pVBO;
+  Tube2DS::VertArray *pVBO;
 
-  BOOST_FOREACH (Tub2DrawSeg &elem, pSeg->m_draws) {
+  BOOST_FOREACH (DrawSegment *pelem, pSeg->m_draws) {
+    Tube2DS &elem = *static_cast<Tube2DS*>(pelem);
+
     pVBO = elem.m_pVBO;
     float fstart = float(elem.m_nStart);
     int nAxPts = elem.m_nAxPts;
@@ -215,9 +221,10 @@ void Tube2Renderer::updateColorVBO(detail::SplineSegment *pASeg)
 
 void Tube2Renderer::drawVBO(detail::SplineSegment *pASeg, DisplayContext *pdc)
 {
-  Tube2Seg *pSeg = static_cast<Tube2Seg *>(pASeg);
+  Tube2SS *pSeg = static_cast<Tube2SS *>(pASeg);
 
-  BOOST_FOREACH (Tub2DrawSeg &elem, pSeg->m_draws) {
+  BOOST_FOREACH (DrawSegment *pelem, pSeg->m_draws) {
+    Tube2DS &elem = *static_cast<Tube2DS*>(pelem);
     pdc->drawElem(*elem.m_pVBO);
   }
 }
@@ -225,12 +232,12 @@ void Tube2Renderer::drawVBO(detail::SplineSegment *pASeg, DisplayContext *pdc)
 
 //////////////////////////////////////////////////////////////
 
-void Tube2Seg::generateImpl(int nstart, int nend)
+detail::DrawSegment *Tube2SS::createDrawSeg(int nstart, int nend)
 {
-  m_draws.push_back(Tub2DrawSeg(nstart, nend));
+  return (MB_NEW Tube2DS(nstart, nend));
 }
 
-Tube2Seg::~Tube2Seg()
+Tube2SS::~Tube2SS()
 {
   if (m_pCoefTex!=NULL)
     delete m_pCoefTex;
@@ -242,7 +249,7 @@ Tube2Seg::~Tube2Seg()
 
 //////////
 
-Tub2DrawSeg::~Tub2DrawSeg()
+Tube2DS::~Tube2DS()
 {
   if (m_pVBO!=NULL)
     delete m_pVBO;

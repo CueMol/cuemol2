@@ -39,23 +39,23 @@ namespace molvis {
   using namespace molstr;
 
   class Tube2Renderer;
-  class Tube2Seg;
+  class Tube2SS;
 
   ////////////////////////////////////////////////
   //
   /// Rendering object for the one drawing segment
   //
-  class Tub2DrawSeg : public detail::DrawSegment
+  class Tube2DS : public detail::DrawSegment
   {
   public:
 
     typedef detail::DrawSegment super_t;
 
-    Tub2DrawSeg(int st, int en) : super_t(st, en), m_pVBO(NULL), m_pAttrAry(NULL)
+    Tube2DS(int st, int en) : super_t(st, en), m_pVBO(NULL), m_pAttrAry(NULL)
     {
     }
 
-    virtual ~Tub2DrawSeg();
+    virtual ~Tube2DS();
 
     //////////
     // VBO implementation
@@ -84,18 +84,17 @@ namespace molvis {
   //
   /// Rendering object for the one spline segment
   //
-  class Tube2Seg : public detail::SplineSegment
+  class Tube2SS : public detail::SplineSegment
   {
   public:
 
     typedef detail::SplineSegment super_t;
     
-    typedef std::deque<Tub2DrawSeg> DrawSegList;
-
-    DrawSegList m_draws;
+    // typedef std::deque<Tube2DS> DrawSegList;
+    // DrawSegList m_draws;
 
     /// ctor
-    Tube2Seg() : super_t()
+    Tube2SS() : super_t()
     {
       m_pCoefTex = NULL;
       m_pBinormTex = NULL;
@@ -103,9 +102,10 @@ namespace molvis {
     }
 
     /// dtor
-    virtual ~Tube2Seg();
+    virtual ~Tube2SS();
 
-    virtual void generateImpl(int nstart, int nend);
+    // virtual void generateImpl(int nstart, int nend);
+    virtual detail::DrawSegment *createDrawSeg(int nstart, int nend);
 
     /////////////////////
     // GLSL implementation
@@ -122,7 +122,6 @@ namespace molvis {
 
   };
 
-  typedef std::deque<Tube2Seg> Tub2SegList;
 
   ////////////////////////////////////////////////////////
   //
@@ -177,7 +176,7 @@ namespace molvis {
 
     virtual void propChanged(qlib::LPropEvent &ev);
 
-    // virtual void objectChanged(qsys::ObjectEvent &ev);
+    virtual void objectChanged(qsys::ObjectEvent &ev);
 
 
   public:

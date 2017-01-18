@@ -27,7 +27,7 @@
 using namespace molvis;
 using namespace molstr;
 using qlib::Matrix3D;
-
+using detail::DrawSegment;
 
 bool Tube2Renderer::initShader(DisplayContext *pdc)
 {
@@ -90,7 +90,7 @@ void Tube2Renderer::setupSectGLSL()
 
 void Tube2Renderer::setupGLSL(detail::SplineSegment *pASeg)
 {
-  Tube2Seg *pSeg = static_cast<Tube2Seg *>(pASeg);
+  Tube2SS *pSeg = static_cast<Tube2SS *>(pASeg);
 
   if (pSeg->m_pCoefTex!=NULL)
     delete pSeg->m_pCoefTex;
@@ -126,7 +126,8 @@ void Tube2Renderer::setupGLSL(detail::SplineSegment *pASeg)
 
 //MB_DPRINTLN("*****1 nDet=%d, nSecDev=%d", nDetail, nSecDiv);
 
-  BOOST_FOREACH (Tub2DrawSeg &elem, pSeg->m_draws) {
+  BOOST_FOREACH (DrawSegment *pelem, pSeg->m_draws) {
+    Tube2DS &elem = *static_cast<Tube2DS*>(pelem);
     
     const int nsplseg = elem.m_nEnd - elem.m_nStart;
     const float fStart = float(elem.m_nStart);
@@ -145,12 +146,12 @@ void Tube2Renderer::setupGLSL(detail::SplineSegment *pASeg)
     if (elem.m_pAttrAry!=NULL)
       delete elem.m_pAttrAry;
     
-    elem.m_pAttrAry = MB_NEW Tub2DrawSeg::AttrArray();
+    elem.m_pAttrAry = MB_NEW Tube2DS::AttrArray();
 
-    Tub2DrawSeg::AttrArray &attra = *elem.m_pAttrAry;
+    Tube2DS::AttrArray &attra = *elem.m_pAttrAry;
     attra.setAttrSize(2);
     attra.setAttrInfo(0, m_nRhoLoc, 2, qlib::type_consts::QTC_FLOAT32,
-                      offsetof(Tub2DrawSeg::AttrElem, rhoi));
+                      offsetof(Tube2DS::AttrElem, rhoi));
     attra.alloc(nVA);
 
     // generate indices
@@ -197,13 +198,13 @@ void Tube2Renderer::setupGLSL(detail::SplineSegment *pASeg)
     attra.setInstCount(nsplseg);
 #endif
     
-    LOG_DPRINTLN("Tub2DrawSeg> %d elems AttrArray created", nVA);
+    LOG_DPRINTLN("Tube2> %d elems AttrArray created", nVA);
   }
 }
 
 void Tube2Renderer::updateCrdGLSL(detail::SplineSegment *pASeg)
 {
-  Tube2Seg *pSeg = static_cast<Tube2Seg *>(pASeg);
+  Tube2SS *pSeg = static_cast<Tube2SS *>(pASeg);
 
   const int nCtlPts = pSeg->m_nCtlPts;
   
@@ -220,7 +221,7 @@ void Tube2Renderer::updateCrdGLSL(detail::SplineSegment *pASeg)
 
 void Tube2Renderer::updateColorGLSL(detail::SplineSegment *pASeg)
 {
-  Tube2Seg *pSeg = static_cast<Tube2Seg *>(pASeg);
+  Tube2SS *pSeg = static_cast<Tube2SS *>(pASeg);
 
   int i, j, ind;
   const int nCtlPts = pSeg->m_nCtlPts;
@@ -268,7 +269,7 @@ void Tube2Renderer::updateSectGLSL()
 
 void Tube2Renderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc)
 {
-  Tube2Seg *pSeg = static_cast<Tube2Seg *>(pASeg);
+  Tube2SS *pSeg = static_cast<Tube2SS *>(pASeg);
 
   const int nCtlPts = pSeg->m_scoeff.getSize();
 
@@ -291,7 +292,8 @@ void Tube2Renderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc)
   m_pPO->setUniform("sectTex", SECT_TEX_UNIT);
   m_pPO->setUniform("colorTex", COLOR_TEX_UNIT);
 
-  BOOST_FOREACH (Tub2DrawSeg &elem, pSeg->m_draws) {
+  BOOST_FOREACH (DrawSegment *pelem, pSeg->m_draws) {
+    Tube2DS &elem = *static_cast<Tube2DS*>(pelem);
     pdc->drawElem(*elem.m_pAttrAry);
   }
 

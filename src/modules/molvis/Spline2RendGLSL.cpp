@@ -28,9 +28,9 @@ Spl2GLSLSeg::~Spl2GLSLSeg()
 {
 }
 
-void Spl2GLSLSeg::generateImpl(int nstart, int nend)
+detail::DrawSegment *Spl2GLSLSeg::createDrawSeg(int nstart, int nend)
 {
-  m_draws.push_back(MB_NEW Spl2GLSLDrawSeg(nstart, nend));
+  return (MB_NEW Spl2GLSLDrawSeg(nstart, nend));
 }
 
 Spl2GLSLDrawSeg::~Spl2GLSLDrawSeg()
@@ -120,7 +120,7 @@ void Spline2RendGLSL::setupGLSL(detail::SplineSegment *pASeg)
   float par;
   int i;
 
-  BOOST_FOREACH(Spl2DrawSeg *pelem, pSeg->m_draws) {
+  BOOST_FOREACH(DrawSegment *pelem, pSeg->m_draws) {
     Spl2GLSLDrawSeg &elem = *static_cast<Spl2GLSLDrawSeg*>(pelem);
     const int nsplseg = elem.m_nEnd - elem.m_nStart;
     const float fStart = float(elem.m_nStart);
@@ -232,7 +232,7 @@ void Spline2RendGLSL::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc
   m_pPO->setUniform("colorTex", COLOR_TEX_UNIT);
   m_pPO->setUniform("u_npoints", pSeg->m_scoeff.getSize());
 
-  BOOST_FOREACH (Spl2DrawSeg *pelem, pSeg->m_draws) {
+  BOOST_FOREACH (DrawSegment *pelem, pSeg->m_draws) {
     Spl2GLSLDrawSeg &elem = *static_cast<Spl2GLSLDrawSeg*>(pelem);
 #ifdef USE_INSTANCED
     pdc->drawElem(*elem.m_pAttrAry);

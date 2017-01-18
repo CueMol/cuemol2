@@ -22,30 +22,19 @@ using namespace molstr;
 using namespace molvis::detail;
 using qlib::Matrix3D;
 
-Spline2Seg::~Spline2Seg()
+Spline2SS::~Spline2SS()
 {
-/*
-  if (m_pCoefTex!=NULL)
-    delete m_pCoefTex;
-  if (m_pColorTex!=NULL)
-    delete m_pColorTex;
- */
-  std::for_each(m_draws.begin(), m_draws.end(), qlib::delete_ptr<Spl2DrawSeg*>());
 }
 
-void Spline2Seg::generateImpl(int nstart, int nend)
+detail::DrawSegment *Spline2SS::createDrawSeg(int nstart, int nend)
 {
-  m_draws.push_back(MB_NEW Spl2DrawSeg(nstart, nend));
+  return MB_NEW Spline2DS(nstart, nend);
 }
 
-Spl2DrawSeg::~Spl2DrawSeg()
+Spline2DS::~Spline2DS()
 {
   if (m_pVBO!=NULL)
     delete m_pVBO;
-/*
-  if (m_pAttrAry!=NULL)
-    delete m_pAttrAry;
- */
 }
 
 //////////////////////////////////////////////////////////////
@@ -72,7 +61,7 @@ void Spline2Renderer::preRender(DisplayContext *pdc)
 
 SplineSegment *Spline2Renderer::createSegment()
 {
-  return MB_NEW Spline2Seg();
+  return MB_NEW Spline2SS();
 }
 
 void Spline2Renderer::objectChanged(qsys::ObjectEvent &ev)
@@ -97,19 +86,19 @@ void Spline2Renderer::objectChanged(qsys::ObjectEvent &ev)
 
 void Spline2Renderer::setupVBO(detail::SplineSegment *pASeg)
 {
-  Spline2Seg *pSeg = static_cast<Spline2Seg *>(pASeg);
+  Spline2SS *pSeg = static_cast<Spline2SS *>(pASeg);
   const int nDetail = getAxialDetail();
 
-  BOOST_FOREACH (Spl2DrawSeg *pelem, pSeg->m_draws) {
-    Spl2DrawSeg &elem = *pelem;
+  BOOST_FOREACH (detail::DrawSegment *pelem, pSeg->m_draws) {
+    Spline2DS &elem = *static_cast<Spline2DS*>(pelem);
     const int nsplseg = elem.m_nEnd - elem.m_nStart;
     const int nVA = nDetail * nsplseg + 1;
 
-    Spl2DrawSeg::VertArray *pVBO = elem.m_pVBO;
+    Spline2DS::VertArray *pVBO = elem.m_pVBO;
     if (pVBO!=NULL)
       delete pVBO;
     
-    elem.m_pVBO = pVBO = MB_NEW Spl2DrawSeg::VertArray();
+    elem.m_pVBO = pVBO = MB_NEW Spline2DS::VertArray();
     pVBO->alloc(nVA);
 
     pVBO->setDrawMode(gfx::DrawElem::DRAW_LINE_STRIP);
@@ -119,7 +108,7 @@ void Spline2Renderer::setupVBO(detail::SplineSegment *pASeg)
 
 void Spline2Renderer::updateCrdVBO(detail::SplineSegment *pASeg)
 {
-  Spline2Seg *pSeg = static_cast<Spline2Seg *>(pASeg);
+  Spline2SS *pSeg = static_cast<Spline2SS *>(pASeg);
   CubicSpline *pAxInt = pSeg->getAxisIntpol();
 
   int i, j;
@@ -127,10 +116,10 @@ void Spline2Renderer::updateCrdVBO(detail::SplineSegment *pASeg)
   Vector3F pos;
   const float fDetail = float(getAxialDetail());
 
-  Spl2DrawSeg::VertArray *pVBO;
+  Spline2DS::VertArray *pVBO;
 
-  BOOST_FOREACH (Spl2DrawSeg *pelem, pSeg->m_draws) {
-    Spl2DrawSeg &elem = *pelem;
+  BOOST_FOREACH (detail::DrawSegment *pelem, pSeg->m_draws) {
+    Spline2DS &elem = *static_cast<Spline2DS*>(pelem);
   
     pVBO = elem.m_pVBO;
     fStart = float(elem.m_nStart);
@@ -148,17 +137,17 @@ void Spline2Renderer::updateCrdVBO(detail::SplineSegment *pASeg)
 
 void Spline2Renderer::updateColorVBO(detail::SplineSegment *pASeg)
 {
-  Spline2Seg *pSeg = static_cast<Spline2Seg *>(pASeg);
+  Spline2SS *pSeg = static_cast<Spline2SS *>(pASeg);
   MolCoordPtr pCMol = getClientMol();
 
   int i;
   float par;
   float fDetail = float(getAxialDetail());
 
-  Spl2DrawSeg::VertArray *pVBO;
+  Spline2DS::VertArray *pVBO;
 
-  BOOST_FOREACH (Spl2DrawSeg *pelem, pSeg->m_draws) {
-    Spl2DrawSeg &elem = *pelem;
+  BOOST_FOREACH (detail::DrawSegment *pelem, pSeg->m_draws) {
+    Spline2DS &elem = *static_cast<Spline2DS*>(pelem);
 
     pVBO = elem.m_pVBO;
     float fStart = float(elem.m_nStart);
@@ -174,10 +163,10 @@ void Spline2Renderer::updateColorVBO(detail::SplineSegment *pASeg)
 void Spline2Renderer::drawVBO(detail::SplineSegment *pASeg, DisplayContext *pdc)
 {
   const float lw = float( getLineWidth() );
-  Spline2Seg *pSeg = static_cast<Spline2Seg *>(pASeg);
+  Spline2SS *pSeg = static_cast<Spline2SS *>(pASeg);
 
-  BOOST_FOREACH (Spl2DrawSeg *pelem, pSeg->m_draws) {
-    Spl2DrawSeg &elem = *pelem;
+  BOOST_FOREACH (detail::DrawSegment *pelem, pSeg->m_draws) {
+    Spline2DS &elem = *static_cast<Spline2DS*>(pelem);
     elem.m_pVBO->setLineWidth(lw);
     pdc->drawElem(*elem.m_pVBO);
   }

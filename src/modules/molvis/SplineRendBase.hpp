@@ -86,12 +86,12 @@ namespace molvis {
       //////////////////
 
       /// ctor
-      SplineSegment() : m_nCtlPts(-1) {
+      SplineSegment() : m_nCtlPts(-1)
+      {
       }
       
       /// dtor
-      virtual ~SplineSegment() {
-      }
+      virtual ~SplineSegment();
       
       MolAtomPtr getAtom(MolCoordPtr pMol, quint32 ind) const {
         quint32 aid = m_aids[ind];
@@ -118,8 +118,6 @@ namespace molvis {
       CubicSpline *getAxisIntpol() { return &m_scoeff; }
 
 
-      virtual void generateImpl(int nstart, int nend) =0;
-
       void generate(MainChainRenderer *pthis);
 
       quint32 calcColor(MainChainRenderer *pthis, MolCoordPtr pMol, float par) const;
@@ -135,6 +133,13 @@ namespace molvis {
 
       void updateStatic(MainChainRenderer *pthis);
       void updateDynamic(MainChainRenderer *pthis);
+
+      //////////
+
+      typedef std::deque<DrawSegment *> DrawList;
+      DrawList m_draws;
+
+      virtual DrawSegment *createDrawSeg(int nstart, int nend) =0;
 
     };
 

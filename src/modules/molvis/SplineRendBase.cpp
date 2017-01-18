@@ -24,6 +24,11 @@ using namespace molstr;
 using namespace molvis::detail;
 using qlib::Matrix3D;
 
+SplineSegment::~SplineSegment()
+{
+  std::for_each(m_draws.begin(), m_draws.end(), qlib::delete_ptr<DrawSegment*>());
+}
+
 void SplineSegment::generate(MainChainRenderer *pthis)
 {
   // convert aidtmp (deque) to liner aids (vector)
@@ -70,7 +75,8 @@ void SplineSegment::generate(MainChainRenderer *pthis)
   qlib::RangeSet<int>::const_iterator eiter = resrng.end();
   for (; iter!=eiter; ++iter) {
     MB_DPRINTLN("resid range %d:%d", iter->nstart, iter->nend);
-    generateImpl(iter->nstart, iter->nend-1);
+    DrawSegment *pDS = createDrawSeg(iter->nstart, iter->nend-1);
+    m_draws.push_back(pDS);
   }
 }
 
