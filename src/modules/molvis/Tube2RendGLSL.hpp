@@ -37,25 +37,17 @@ namespace molvis {
   //
   /// Rendering object for the one drawing segment
   //
-  class Tube2DS : public detail::DrawSegment
+  class GLSLTube2DS : public Tube2DS
   {
   public:
 
-    typedef detail::DrawSegment super_t;
+    typedef Tube2DS super_t;
 
-    Tube2DS(int st, int en) : super_t(st, en), m_pVBO(NULL), m_pAttrAry(NULL)
+    GLSLTube2DS(int st, int en) : super_t(st, en), m_pAttrAry(NULL)
     {
     }
 
-    virtual ~Tube2DS();
-
-    //////////
-    // VBO implementation
-
-    typedef gfx::DrawElemVNCI32 VertArray;
-
-    /// cached vertex array/VBO
-    VertArray *m_pVBO;
+    virtual ~GLSLTube2DS();
 
     //////////
     // GLSL implementation
@@ -76,25 +68,19 @@ namespace molvis {
   //
   /// Rendering object for the one spline segment
   //
-  class Tube2SS : public detail::SplineSegment
+  class GLSLTube2SS : public Tube2SS
   {
   public:
 
-    typedef detail::SplineSegment super_t;
-    
-    // typedef std::deque<Tube2DS> DrawSegList;
-    // DrawSegList m_draws;
+    typedef Tube2SS super_t;
 
     /// ctor
-    Tube2SS() : super_t()
+    GLSLTube2SS() : super_t(), m_pCoefTex(NULL), m_pBinormTex(NULL), m_pColorTex(NULL)
     {
-      m_pCoefTex = NULL;
-      m_pBinormTex = NULL;
-      m_pColorTex = NULL;
     }
 
     /// dtor
-    virtual ~Tube2SS();
+    virtual ~GLSLTube2SS();
 
     // virtual void generateImpl(int nstart, int nend);
     virtual detail::DrawSegment *createDrawSeg(int nstart, int nend);
@@ -117,56 +103,31 @@ namespace molvis {
 
   ////////////////////////////////////////////////////////
   //
-  // Tube Renderer version 2 class
+  // Tube Renderer version 2 class using GLSL
   //
 
-  class Tube2Renderer : public SplineRendBase
+  class GLSLTube2Renderer : public Tube2Renderer
   {
     MC_SCRIPTABLE;
     MC_CLONEABLE;
 
-    typedef SplineRendBase super_t;
+    typedef Tube2Renderer super_t;
 
     //////////////
     // Properties
-
-  private:
-    /// Tube section data
-    TubeSectionPtr m_pts;
-
-  public:
-    TubeSectionPtr getTubeSection() const {
-      return m_pts;
-    }
-
 
     /////////////////
     // ctor/dtor
 
   public:
-    Tube2Renderer();
+    GLSLTube2Renderer();
     
-    virtual ~Tube2Renderer();
-
-    /////////////////
-    // Renderer interface
-    
-    virtual const char *getTypeName() const;
-
-    // virtual void display(DisplayContext *pdc);
-
-    /////////////////
-    // DispCacheRenderer interface
-
-    virtual void preRender(DisplayContext *pdc);
-    
-    // virtual void invalidateDisplayCache();
-    
+    virtual ~GLSLTube2Renderer();
 
     /////////////////
     // event handling
 
-    virtual void propChanged(qlib::LPropEvent &ev);
+    // virtual void propChanged(qlib::LPropEvent &ev);
 
     virtual void objectChanged(qsys::ObjectEvent &ev);
 
@@ -178,17 +139,6 @@ namespace molvis {
     virtual void createSegList();
     
     virtual SplineSegment *createSegment();
-
-    /////////////////
-    // VBO implementation
-
-    virtual void setupVBO(detail::SplineSegment *pSeg);
-
-    virtual void updateCrdVBO(detail::SplineSegment *pSeg);
-
-    virtual void updateColorVBO(detail::SplineSegment *pSeg);
-
-    virtual void drawVBO(detail::SplineSegment *pSeg, DisplayContext *pdc);
 
     /////////////////
     // GLSL implementation

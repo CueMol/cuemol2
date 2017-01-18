@@ -188,6 +188,7 @@
     <ClCompile Include="..\..\src\modules\molvis\Tube2Renderer.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\Tube2Renderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\Tube2RendGLSL.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\Tube2RendGLSL_wrap.cpp" />
     <ClCompile Include="..\..\src\qsys\Camera.cpp" />
     <ClCompile Include="..\..\src\qsys\DispCacheRenderer.cpp" />
     <ClCompile Include="..\..\src\qsys\InDevEvent.cpp" />
@@ -537,6 +538,7 @@
     <mcwrapgen3 Include="..\..\src\modules\molvis\Spline2Renderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\Spline2RendGLSL.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\Tube2Renderer.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molvis\Tube2RendGLSL.qif" />
     <mcwrapgen3 Include="..\..\src\qsys\Camera.qif" />
     <mcwrapgen3 Include="..\..\src\qsys\DrawObj.qif" />
     <mcwrapgen3 Include="..\..\src\qsys\InOutHandler.qif" />

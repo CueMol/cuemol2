@@ -22,8 +22,10 @@
 
 #ifdef USE_OPENGL
 #  include "Spline2RendGLSL.hpp"
+#  include "Tube2RendGLSL.hpp"
 #else
 #  include "Spline2Renderer.hpp"
+#  include "Tube2Renderer.hpp"
 #endif
 
 #include "Tube2Renderer.hpp"
@@ -56,11 +58,11 @@ bool init()
 
 #ifdef USE_OPENGL
   pRF->regist<Spline2RendGLSL>();
+  pRF->regist<GLSLTube2Renderer>();
 #else
   pRF->regist<Spline2Renderer>();
-#endif
-
   pRF->regist<Tube2Renderer>();
+#endif
 
   MB_DPRINTLN("molvis init: OK");
   return true;

@@ -6,7 +6,7 @@
 #include <common.h>
 #include "molvis.hpp"
 
-#include "Tube2Renderer.hpp"
+#include "Tube2RendGLSL.hpp"
 
 #include <qsys/SceneManager.hpp>
 #include <gfx/Texture.hpp>
@@ -20,7 +20,7 @@
 #include <sysdep/OglProgramObject.hpp>
 
 #ifdef WIN32
-#define USE_INSTANCED 1
+//#define USE_INSTANCED 1
 #else
 #endif
 
@@ -29,12 +29,61 @@ using namespace molstr;
 using qlib::Matrix3D;
 using detail::DrawSegment;
 
-bool Tube2Renderer::initShader(DisplayContext *pdc)
+detail::DrawSegment *GLSLTube2SS::createDrawSeg(int nstart, int nend)
+{
+  return (MB_NEW GLSLTube2DS(nstart, nend));
+}
+
+GLSLTube2SS::~GLSLTube2SS()
+{
+  if (m_pCoefTex!=NULL)
+    delete m_pCoefTex;
+  if (m_pBinormTex!=NULL)
+    delete m_pBinormTex;
+  if (m_pColorTex!=NULL)
+    delete m_pColorTex;
+}
+
+//////////
+
+GLSLTube2DS::~GLSLTube2DS()
+{
+  if (m_pAttrAry!=NULL)
+    delete m_pAttrAry;
+}
+
+//////////////////////////////////////////////////////////////
+
+GLSLTube2Renderer::GLSLTube2Renderer()
+     : super_t(), m_pPO(NULL), m_nRhoLoc(0), m_pSectTex(NULL)
+{
+}
+
+GLSLTube2Renderer::~GLSLTube2Renderer()
+{
+}
+
+void GLSLTube2Renderer::createSegList()
+{
+  super_t::createSegList();
+
+  // create tube section texture
+  if (isUseGLSL()) {
+    setupSectGLSL();
+  }
+}
+
+SplineSegment *GLSLTube2Renderer::createSegment()
+{
+  return MB_NEW GLSLTube2SS();
+}
+
+bool GLSLTube2Renderer::initShader(DisplayContext *pdc)
 {
   //m_bChkShaderDone = true;
   setShaderCheckDone(true);
 
-  sysdep::ShaderSetupHelper<Tube2Renderer> ssh(this);
+  sysdep::ShaderSetupHelper<GLSLTube2Renderer> ssh(this);
   
   if (!ssh.checkEnvVS()) {
     LOG_DPRINTLN("SimpleRendGLSL> ERROR: GLSL not supported.");
@@ -70,7 +119,7 @@ bool Tube2Renderer::initShader(DisplayContext *pdc)
   return true;
 }
 
-void Tube2Renderer::setupSectGLSL()
+void GLSLTube2Renderer::setupSectGLSL()
 {
   if (m_pSectTex!=NULL)
     delete m_pSectTex;
@@ -88,9 +137,9 @@ void Tube2Renderer::setupSectGLSL()
   updateSectGLSL();
 }
 
-void Tube2Renderer::setupGLSL(detail::SplineSegment *pASeg)
+void GLSLTube2Renderer::setupGLSL(detail::SplineSegment *pASeg)
 {
-  Tube2SS *pSeg = static_cast<Tube2SS *>(pASeg);
+  GLSLTube2SS *pSeg = static_cast<GLSLTube2SS *>(pASeg);
 
   if (pSeg->m_pCoefTex!=NULL)
     delete pSeg->m_pCoefTex;
@@ -127,7 +176,7 @@ void Tube2Renderer::setupGLSL(detail::SplineSegment *pASeg)
 //MB_DPRINTLN("*****1 nDet=%d, nSecDev=%d", nDetail, nSecDiv);
 
   BOOST_FOREACH (DrawSegment *pelem, pSeg->m_draws) {
-    Tube2DS &elem = *static_cast<Tube2DS*>(pelem);
+    GLSLTube2DS &elem = *static_cast<GLSLTube2DS*>(pelem);
     
     const int nsplseg = elem.m_nEnd - elem.m_nStart;
     const float fStart = float(elem.m_nStart);
@@ -146,12 +195,12 @@ void Tube2Renderer::setupGLSL(detail::SplineSegment *pASeg)
     if (elem.m_pAttrAry!=NULL)
       delete elem.m_pAttrAry;
     
-    elem.m_pAttrAry = MB_NEW Tube2DS::AttrArray();
+    elem.m_pAttrAry = MB_NEW GLSLTube2DS::AttrArray();
 
-    Tube2DS::AttrArray &attra = *elem.m_pAttrAry;
+    GLSLTube2DS::AttrArray &attra = *elem.m_pAttrAry;
     attra.setAttrSize(2);
     attra.setAttrInfo(0, m_nRhoLoc, 2, qlib::type_consts::QTC_FLOAT32,
-                      offsetof(Tube2DS::AttrElem, rhoi));
+                      offsetof(GLSLTube2DS::AttrElem, rhoi));
     attra.alloc(nVA);
 
     // generate indices
@@ -202,9 +251,9 @@ void Tube2Renderer::setupGLSL(detail::SplineSegment *pASeg)
   }
 }
 
-void Tube2Renderer::updateCrdGLSL(detail::SplineSegment *pASeg)
+void GLSLTube2Renderer::updateCrdGLSL(detail::SplineSegment *pASeg)
 {
-  Tube2SS *pSeg = static_cast<Tube2SS *>(pASeg);
+  GLSLTube2SS *pSeg = static_cast<GLSLTube2SS *>(pASeg);
 
   const int nCtlPts = pSeg->m_nCtlPts;
   
@@ -219,9 +268,9 @@ void Tube2Renderer::updateCrdGLSL(detail::SplineSegment *pASeg)
   
 }
 
-void Tube2Renderer::updateColorGLSL(detail::SplineSegment *pASeg)
+void GLSLTube2Renderer::updateColorGLSL(detail::SplineSegment *pASeg)
 {
-  Tube2SS *pSeg = static_cast<Tube2SS *>(pASeg);
+  GLSLTube2SS *pSeg = static_cast<GLSLTube2SS *>(pASeg);
 
   int i, j, ind;
   const int nCtlPts = pSeg->m_nCtlPts;
@@ -245,7 +294,7 @@ void Tube2Renderer::updateColorGLSL(detail::SplineSegment *pASeg)
 
 //////////
 /// Update section table texture
-void Tube2Renderer::updateSectGLSL()
+void GLSLTube2Renderer::updateSectGLSL()
 {
 
   std::vector<float> &stab = m_secttab;
@@ -267,9 +316,9 @@ void Tube2Renderer::updateSectGLSL()
 #endif
 }
 
-void Tube2Renderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc)
+void GLSLTube2Renderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc)
 {
-  Tube2SS *pSeg = static_cast<Tube2SS *>(pASeg);
+  GLSLTube2SS *pSeg = static_cast<GLSLTube2SS *>(pASeg);
 
   const int nCtlPts = pSeg->m_scoeff.getSize();
 
@@ -293,7 +342,7 @@ void Tube2Renderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc)
   m_pPO->setUniform("colorTex", COLOR_TEX_UNIT);
 
   BOOST_FOREACH (DrawSegment *pelem, pSeg->m_draws) {
-    Tube2DS &elem = *static_cast<Tube2DS*>(pelem);
+    GLSLTube2DS &elem = *static_cast<GLSLTube2DS*>(pelem);
     pdc->drawElem(*elem.m_pAttrAry);
   }
 
@@ -307,5 +356,38 @@ void Tube2Renderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc)
   pdc->unuseTexture(pSeg->m_pBinormTex);
   pdc->unuseTexture(m_pSectTex);
   pdc->unuseTexture(pSeg->m_pColorTex);
+}
+
+//////////
+
+void GLSLTube2Renderer::objectChanged(qsys::ObjectEvent &ev)
+{
+  if (isVisible() &&
+      ev.getType()==qsys::ObjectEvent::OBE_CHANGED_DYNAMIC &&
+      ev.getDescr().equals("atomsMoved")) {
+    // OBE_CHANGED_DYNAMIC && descr=="atomsMoved"
+    if (isUseAnim()) {
+      // GLSL mode
+      if (!isUseGLSL()) {
+        //invalidateDisplayCache();
+        setUseGLSL(true);
+        createCacheData();
+      }
+      if (!isCacheAvail()) {
+        createCacheData();
+      }
+      // only update positions
+      updateCrdDynamic();
+      return;
+    }
+  }
+  else if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED_FIXDYN) {
+    MB_DPRINTLN("Spline2Rend (%p) > OBE_CHANGED_FIXDYN called!!", this);
+
+    setUseGLSL(false);
+    return;
+  }
+
+  super_t::objectChanged(ev);
 }
 

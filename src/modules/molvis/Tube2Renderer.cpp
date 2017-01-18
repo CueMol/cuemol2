@@ -9,15 +9,12 @@
 #include "Tube2Renderer.hpp"
 
 #include <qsys/SceneManager.hpp>
-#include <gfx/Texture.hpp>
 
 #include <modules/molstr/MolCoord.hpp>
 #include <modules/molstr/MolChain.hpp>
 #include <modules/molstr/MolResidue.hpp>
 #include <modules/molstr/ResidIterator.hpp>
 #include <modules/molstr/AnimMol.hpp>
-
-#include <sysdep/OglProgramObject.hpp>
 
 using namespace molvis;
 using namespace molstr;
@@ -31,12 +28,6 @@ detail::DrawSegment *Tube2SS::createDrawSeg(int nstart, int nend)
 
 Tube2SS::~Tube2SS()
 {
-  if (m_pCoefTex!=NULL)
-    delete m_pCoefTex;
-  if (m_pBinormTex!=NULL)
-    delete m_pBinormTex;
-  if (m_pColorTex!=NULL)
-    delete m_pColorTex;
 }
 
 //////////
@@ -45,9 +36,6 @@ Tube2DS::~Tube2DS()
 {
   if (m_pVBO!=NULL)
     delete m_pVBO;
-
-  if (m_pAttrAry!=NULL)
-    delete m_pAttrAry;
 }
 
 //////////////////////////////////////////////////////////////
@@ -56,15 +44,10 @@ Tube2Renderer::Tube2Renderer()
      : super_t(), m_pts(MB_NEW TubeSection())
 {
   super_t::setupParentData("section");
-
-  m_pPO = NULL;
-  m_pSectTex = NULL;
 }
 
 Tube2Renderer::~Tube2Renderer()
 {
-  if (m_pSectTex!=NULL)
-    delete m_pSectTex;
 }
 
 const char *Tube2Renderer::getTypeName() const
@@ -77,43 +60,18 @@ void Tube2Renderer::preRender(DisplayContext *pdc)
   pdc->setLighting(true);
 }
 
-/*void Tube2Renderer::invalidateDisplayCache()
-{
-  super_t::invalidateDisplayCache();
-}*/
-
-void Tube2Renderer::propChanged(qlib::LPropEvent &ev)
-{
-  if (ev.getParentName().equals("section")||
-      ev.getParentName().startsWith("section.")) {
-    //if (isUseGLSL())
-    //updateSectGLSL();
-    //    else
-    invalidateDisplayCache();
-  }
-
-  super_t::propChanged(ev);
-}
-
 void Tube2Renderer::createSegList()
 {
   if (!m_pts->isValid())
     m_pts->setupSectionTable();
 
   super_t::createSegList();
-
-  // create tube section texture
-  if (isUseGLSL()) {
-    setupSectGLSL();
-  }
 }
 
 SplineSegment *Tube2Renderer::createSegment()
 {
   return MB_NEW Tube2SS();
 }
-
-//////////
 
 void Tube2Renderer::setupVBO(detail::SplineSegment *pASeg)
 {
@@ -246,7 +204,6 @@ void Tube2Renderer::updateColorVBO(detail::SplineSegment *pASeg)
   }
 }
 
-
 void Tube2Renderer::drawVBO(detail::SplineSegment *pASeg, DisplayContext *pdc)
 {
   Tube2SS *pSeg = static_cast<Tube2SS *>(pASeg);
@@ -255,6 +212,18 @@ void Tube2Renderer::drawVBO(detail::SplineSegment *pASeg, DisplayContext *pdc)
     Tube2DS &elem = *static_cast<Tube2DS*>(pelem);
     pdc->drawElem(*elem.m_pVBO);
   }
+}
+
+//////////
+
+void Tube2Renderer::propChanged(qlib::LPropEvent &ev)
+{
+  if (ev.getParentName().equals("section")||
+      ev.getParentName().startsWith("section.")) {
+    invalidateDisplayCache();
+  }
+
+  super_t::propChanged(ev);
 }
 
 void Tube2Renderer::objectChanged(qsys::ObjectEvent &ev)
