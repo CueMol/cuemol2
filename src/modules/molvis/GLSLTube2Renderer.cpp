@@ -6,7 +6,7 @@
 #include <common.h>
 #include "molvis.hpp"
 
-#include "Tube2RendGLSL.hpp"
+#include "GLSLTube2Renderer.hpp"
 
 #include <qsys/SceneManager.hpp>
 #include <gfx/Texture.hpp>
@@ -322,10 +322,6 @@ void GLSLTube2Renderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *p
 
   const int nCtlPts = pSeg->m_scoeff.getSize();
 
-  //pSeg->m_pCoefTex->use(COEF_TEX_UNIT);
-  //pSeg->m_pBinormTex->use(BINORM_TEX_UNIT);
-  //m_pSectTex->use(SECT_TEX_UNIT);
-  //pSeg->m_pColorTex->use(COLOR_TEX_UNIT);
   pdc->useTexture(pSeg->m_pCoefTex, COEF_TEX_UNIT);
   pdc->useTexture(pSeg->m_pBinormTex, BINORM_TEX_UNIT);
   pdc->useTexture(m_pSectTex, SECT_TEX_UNIT);
@@ -348,10 +344,6 @@ void GLSLTube2Renderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *p
 
   m_pPO->disable();
 
-  //pSeg->m_pCoefTex->unuse();
-  //pSeg->m_pBinormTex->unuse();
-  //m_pSectTex->unuse();
-  //pSeg->m_pColorTex->unuse();
   pdc->unuseTexture(pSeg->m_pCoefTex);
   pdc->unuseTexture(pSeg->m_pBinormTex);
   pdc->unuseTexture(m_pSectTex);

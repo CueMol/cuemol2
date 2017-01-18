@@ -762,10 +762,10 @@
     <ClCompile Include="..\..\src\modules\molvis\Spline2RendGLSL_wrap.cpp">
       <Filter>molvis</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\modules\molvis\Tube2RendGLSL.cpp">
+    <ClCompile Include="..\..\src\modules\molvis\GLSLTube2Renderer.cpp">
       <Filter>molvis</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\modules\molvis\Tube2RendGLSL_wrap.cpp">
+    <ClCompile Include="..\..\src\modules\molvis\GLSLTube2Renderer_wrap.cpp">
       <Filter>molvis</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1018,7 +1018,7 @@
     <mcwrapgen3 Include="..\..\src\modules\molvis\Spline2RendGLSL.qif">
       <Filter>molvis</Filter>
     </mcwrapgen3>
-    <mcwrapgen3 Include="..\..\src\modules\molvis\Tube2RendGLSL.qif">
+    <mcwrapgen3 Include="..\..\src\modules\molvis\GLSLTube2Renderer.qif">
       <Filter>molvis</Filter>
     </mcwrapgen3>
   </ItemGroup>

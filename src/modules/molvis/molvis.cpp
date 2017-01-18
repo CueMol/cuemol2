@@ -22,7 +22,7 @@
 
 #ifdef USE_OPENGL
 #  include "Spline2RendGLSL.hpp"
-#  include "Tube2RendGLSL.hpp"
+#  include "GLSLTube2Renderer.hpp"
 #else
 #  include "Spline2Renderer.hpp"
 #  include "Tube2Renderer.hpp"

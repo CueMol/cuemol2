@@ -31,7 +31,7 @@
 
 #ifdef USE_OPENGL
 # include "Spline2RendGLSL.qif"
-# include "Tube2RendGLSL.qif"
+# include "GLSLTube2Renderer.qif"
 #endif
 
 module molvis
