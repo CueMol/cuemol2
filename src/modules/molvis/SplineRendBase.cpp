@@ -421,6 +421,9 @@ void SplineRendBase::createSegList()
 {
   MolCoordPtr pCMol = getClientMol();
 
+  if (!m_seglist.empty())
+    return;
+
   // visit all residues
   ResidIterator iter(pCMol);
   

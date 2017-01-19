@@ -16,12 +16,6 @@
 #include <modules/molstr/MainChainRenderer.hpp>
 #include "Spline2Renderer.hpp"
 
-#ifdef WIN32
-#define USE_TBO 1
-#define USE_INSTANCED 1
-#else
-#endif
-
 namespace sysdep {
   class OglProgramObject;
 }

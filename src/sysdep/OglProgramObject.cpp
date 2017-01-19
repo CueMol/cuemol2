@@ -315,6 +315,16 @@ void OglProgramObject::validate()
   return;
 }
 
+void OglProgramObject::dumpSrc() const
+{
+#ifdef MB_DEBUG
+  BOOST_FOREACH (const ShaderTab::value_type &elem, m_shaders) {
+    MB_DPRINTLN("Shader %s:", elem.first.c_str());
+    elem.second->dumpSrc();
+  }
+#endif
+}
+
 void OglProgramObject::setProgParam(GLenum pname, GLint param)
 {
 #ifndef USE_GLES2

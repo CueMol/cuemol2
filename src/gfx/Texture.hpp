@@ -20,7 +20,7 @@ namespace gfx {
 
     virtual void setData(int width, int height, int depth, const void *pdata) =0;
 
-    virtual void use(int nUnit) =0;
+    virtual void use() =0;
     virtual void unuse() =0;
 
     virtual void setLinIntpol(bool b) {}
@@ -117,21 +117,21 @@ namespace gfx {
 
     //
 
-    void use(int nUnit)
+    void use()
     {
-      MB_DPRINTLN("Texture unit=%d use called.", nUnit);
+      //MB_DPRINTLN("Texture unit=%d use called.", nUnit);
       if (!m_bInitOK) {
 	getRep()->setLinIntpol(m_bLinIntpol);
 	getRep()->setup(m_nDim, m_iFmt, m_iType);
 	m_bInitOK = true;
-	MB_DPRINTLN("Texture unit=%d Setup OK.", nUnit);
+        //MB_DPRINTLN("Texture unit=%d Setup OK.", nUnit);
       }
       if (m_bDataChanged) {
 	getRep()->setData(m_nWidth, m_nHeight, m_nDepth, m_pData);
 	m_bDataChanged = false;
-	MB_DPRINTLN("Texture unit=%d setData OK.", nUnit);
+        //MB_DPRINTLN("Texture unit=%d setData OK.", nUnit);
       }
-      getRep()->use(nUnit);
+      getRep()->use();
     }
 
     void unuse()

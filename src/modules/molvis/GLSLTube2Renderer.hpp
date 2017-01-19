@@ -10,11 +10,6 @@
 
 #include "Tube2Renderer.hpp"
 
-#ifdef WIN32
-#define USE_TBO 1
-#else
-#endif
-
 namespace sysdep {
   class OglProgramObject;
 }
@@ -136,7 +131,7 @@ namespace molvis {
     /////////////////
     // Common implementation
 
-    virtual void createSegList();
+    // virtual void createSegList();
     
     virtual SplineSegment *createSegment();
 

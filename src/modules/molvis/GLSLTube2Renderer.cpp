@@ -20,7 +20,8 @@
 #include <sysdep/OglProgramObject.hpp>
 
 #ifdef WIN32
-//#define USE_INSTANCED 1
+#define USE_TBO 1
+#define USE_INSTANCED 1
 #else
 #endif
 
@@ -63,15 +64,13 @@ GLSLTube2Renderer::~GLSLTube2Renderer()
 {
 }
 
+/*
 void GLSLTube2Renderer::createSegList()
 {
   super_t::createSegList();
 
-  // create tube section texture
-  if (isUseGLSL()) {
-    setupSectGLSL();
-  }
 }
+*/
 
 SplineSegment *GLSLTube2Renderer::createSegment()
 {
@@ -101,6 +100,7 @@ bool GLSLTube2Renderer::initShader(DisplayContext *pdc)
     return false;
   }
 
+  //m_pPO->dumpSrc();
   m_pPO->enable();
 
   // setup uniforms
@@ -180,11 +180,7 @@ void GLSLTube2Renderer::setupGLSL(detail::SplineSegment *pASeg)
     const int nsplseg = elem.m_nEnd - elem.m_nStart;
     const float fStart = float(elem.m_nStart);
 
-#ifdef USE_INSTANCED
     const int nAxPts = nDetail + 1;
-#else
-    const int nAxPts = nDetail * nsplseg + 1;
-#endif
 
   // TO DO: multiple vertex generation for discontinuous color point
 
@@ -201,6 +197,9 @@ void GLSLTube2Renderer::setupGLSL(detail::SplineSegment *pASeg)
     attra.setAttrInfo(0, m_nRhoLoc, 2, qlib::type_consts::QTC_FLOAT32,
                       offsetof(GLSLTube2DS::AttrElem, rhoi));
     attra.alloc(nVA);
+
+    attra.setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
+    //attra.setDrawMode(gfx::AbstDrawElem::DRAW_POINTS);
 
     // generate indices
     int nfaces = nSecDiv * (nAxPts-1) * 2;
@@ -229,8 +228,6 @@ void GLSLTube2Renderer::setupGLSL(detail::SplineSegment *pASeg)
       }
     }
     
-    attra.setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
-
     float par;
     ind = 0;
     for (i=0; i<nAxPts; ++i) {
@@ -248,6 +245,9 @@ void GLSLTube2Renderer::setupGLSL(detail::SplineSegment *pASeg)
     
     LOG_DPRINTLN("Tube2> %d elems AttrArray created", nVA);
   }
+
+  // create tube section texture
+  setupSectGLSL();
 }
 
 void GLSLTube2Renderer::updateCrdGLSL(detail::SplineSegment *pASeg)
@@ -321,6 +321,8 @@ void GLSLTube2Renderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *p
 
   const int nCtlPts = pSeg->m_scoeff.getSize();
 
+  pdc->setLineWidth(3.0);
+
   pdc->useTexture(pSeg->m_pCoefTex, COEF_TEX_UNIT);
   pdc->useTexture(pSeg->m_pBinormTex, BINORM_TEX_UNIT);
   pdc->useTexture(m_pSectTex, SECT_TEX_UNIT);
@@ -338,7 +340,17 @@ void GLSLTube2Renderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *p
 
   BOOST_FOREACH (DrawSegment *pelem, pSeg->m_draws) {
     GLSLTube2DS &elem = *static_cast<GLSLTube2DS*>(pelem);
+
+#ifdef USE_INSTANCED
     pdc->drawElem(*elem.m_pAttrAry);
+#else
+    const int nspl = elem.m_nEnd - elem.m_nStart;
+    for (int i=0; i<nspl; ++i) {
+      m_pPO->setUniform("u_InstanceID", i);
+      pdc->drawElem(*elem.m_pAttrAry);
+    }
+#endif
+
   }
 
   m_pPO->disable();
@@ -353,6 +365,7 @@ void GLSLTube2Renderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *p
 
 void GLSLTube2Renderer::objectChanged(qsys::ObjectEvent &ev)
 {
+
   if (isVisible() &&
       ev.getType()==qsys::ObjectEvent::OBE_CHANGED_DYNAMIC &&
       ev.getDescr().equals("atomsMoved")) {
@@ -362,7 +375,6 @@ void GLSLTube2Renderer::objectChanged(qsys::ObjectEvent &ev)
       if (!isUseGLSL()) {
         //invalidateDisplayCache();
         setUseGLSL(true);
-        createCacheData();
       }
       if (!isCacheAvail()) {
         createCacheData();

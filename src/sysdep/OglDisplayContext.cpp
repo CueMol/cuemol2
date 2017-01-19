@@ -1578,10 +1578,10 @@ Texture *OglDisplayContext::createTexture()
 void OglDisplayContext::useTexture(gfx::Texture *pTex, int nunit)
 {
   if (pTex->getRep()==NULL) {
-    OglTextureRep *pRep = MB_NEW OglTextureRep(m_nSceneID);
+    OglTextureRep *pRep = MB_NEW OglTextureRep(m_nSceneID, nunit);
     pTex->setRep(pRep);
   }
-  pTex->use(nunit);
+  pTex->use();
 }
 
 void OglDisplayContext::unuseTexture(gfx::Texture *pTex)

@@ -56,6 +56,10 @@ namespace sysdep {
       return m_hGL;
     }
     
+    void dumpSrc() const {
+      MB_DPRINTLN("%s", m_source.c_str());
+    }
+
   };
 
   ////////////////////////////////////////
@@ -302,6 +306,8 @@ namespace sysdep {
       }
 
     void setProgParam(GLenum pname, GLint param);
+
+    void dumpSrc() const;
 
   };
 }

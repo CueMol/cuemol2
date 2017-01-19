@@ -19,6 +19,12 @@
 
 #include <sysdep/OglProgramObject.hpp>
 
+#ifdef WIN32
+#define USE_TBO 1
+#define USE_INSTANCED 1
+#else
+#endif
+
 using namespace molvis;
 using namespace molstr;
 using namespace molvis::detail;
