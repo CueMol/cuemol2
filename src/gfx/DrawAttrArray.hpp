@@ -57,40 +57,24 @@ namespace gfx {
 
   public:
     /// returns attribute buffer ptr
-    virtual const void *getData() const
+    /*virtual const void *getData() const
     {
       return NULL;
-    }
+    }*/
 
-    virtual size_t getElemSize() const {
+    /// Returns the size of the emelent
+    // virtual size_t getElemSize() const =0
+    /*{
       return 0;
-    }
-
-    /// returns attribute buffer size (in byte unit)
-    size_t getDataSize() const {
-      return getElemSize() * getSize();
-    }
+    }*/
 
     ///
 
     /// returns index buffer ptr
-    virtual const void *getIndData() const
+    /*virtual const void *getIndData() const
     {
       return NULL;
-    }
-
-    virtual size_t getIndElemSize() const {
-      return 0;
-    }
-
-    virtual size_t getIndSize() const {
-      return 0;
-    }
-
-    /// returns index buffer size (in byte unit)
-    size_t getIndDataSize() const {
-      return getIndElemSize() * getIndSize();
-    }
+    }*/
 
   };
 

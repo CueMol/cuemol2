@@ -28,10 +28,6 @@
 
 #define USE_GL_VBO_INST 1
 
-#include "OglDisplayContext.hpp"
-#include "OglDisplayList.hpp"
-#include "OglProgramObject.hpp"
-
 #include <gfx/TextRenderManager.hpp>
 #include <gfx/PixelBuffer.hpp>
 #include <gfx/SolidColor.hpp>
@@ -42,6 +38,11 @@
 #include <qsys/Scene.hpp>
 #include <qsys/SceneManager.hpp>
 #include <qsys/style/StyleMgr.hpp>
+
+#include "OglDisplayContext.hpp"
+#include "OglDisplayList.hpp"
+#include "OglProgramObject.hpp"
+#include "OglDrawElems.hpp"
 
 using namespace sysdep;
 using gfx::DisplayContext;
@@ -124,9 +125,9 @@ void OglDisplayContext::init()
   m_pEdgePO->link();
   
   m_pEdgePO->enable();
-  m_pEdgePO->setUniformF("frag_alpha", 1.0);
+  m_pEdgePO->setUniformF("frag_alpha", 1.0f);
   // m_pEdgePO->setUniformF("frag_zdisp", 0.001);
-  m_pEdgePO->setUniformF("edge_width", 0.001);
+  m_pEdgePO->setUniformF("edge_width", 0.001f);
   m_pEdgePO->setUniformF("edge_color", 0,0,0,1);
   m_pEdgePO->disable();
 
@@ -146,9 +147,9 @@ void OglDisplayContext::init()
   m_pSilhPO->link();
   
   m_pSilhPO->enable();
-  m_pSilhPO->setUniformF("frag_alpha", 1.0);
+  m_pSilhPO->setUniformF("frag_alpha", 1.0f);
   // m_pSilhPO->setUniformF("backz", 0.001);
-  m_pSilhPO->setUniformF("edge_width", 0.001);
+  m_pSilhPO->setUniformF("edge_width", 0.001f);
   m_pSilhPO->setUniformF("edge_color", 0,0,0,1);
   m_pSilhPO->disable();
 
@@ -971,90 +972,7 @@ void OglDisplayContext::drawMesh(const gfx::Mesh &mesh)
   glDisableClientState(GL_COLOR_ARRAY);
 }
 
-namespace {
-  GLenum convDrawMode(int nMode) {
-	  GLenum mode;
-    switch (nMode) {
-    case DrawElem::DRAW_POINTS:
-      mode = GL_POINTS;
-      break;
-    case DrawElem::DRAW_LINE_STRIP:
-      mode = GL_LINE_STRIP;
-      break;
-    case DrawElem::DRAW_LINE_LOOP:
-      mode = GL_LINE_LOOP;
-      break;
-    case DrawElem::DRAW_LINES:
-      mode = GL_LINES;
-      break;
-    case DrawElem::DRAW_TRIANGLE_STRIP:
-      mode = GL_TRIANGLE_STRIP;
-      break;
-    case DrawElem::DRAW_TRIANGLE_FAN:
-      mode = GL_TRIANGLE_FAN;
-      break;
-    case DrawElem::DRAW_TRIANGLES:
-      mode = GL_TRIANGLES;
-      break;
-    case DrawElem::DRAW_QUAD_STRIP:
-      mode = GL_QUAD_STRIP;
-      break;
-    case DrawElem::DRAW_QUADS:
-      mode = GL_QUADS;
-      break;
-    case DrawElem::DRAW_POLYGON:
-      mode = GL_POLYGON;
-      break;
-    default: {
-      LString msg = "Ogl DrawElem: invalid draw mode";
-      LOG_DPRINTLN(msg);
-      MB_THROW(qlib::RuntimeException, msg);
-    }
-    }
-    return mode;
-  }
-}
-
 /////////////////////////////////////////////////
-
-#ifdef HAVE_GLEW
-namespace {
-  class OglVBORep : public gfx::VBORep
-  {
-  public:
-    qlib::uid_t m_nSceneID;
-    GLuint m_nBufID;
-    
-    virtual ~OglVBORep()
-    {
-      qsys::ScenePtr rsc = qsys::SceneManager::getSceneS(m_nSceneID);
-      if (rsc.isnull()) {
-        MB_DPRINTLN("OglVBO> unknown scene, VBO %d cannot be deleted", m_nBufID);
-        return;
-      }
-
-      qsys::Scene::ViewIter viter = rsc->beginView();
-      if (viter==rsc->endView()) {
-        MB_DPRINTLN("OglVBO> no view, VBO %d cannot be deleted", m_nBufID);
-        return;
-      }
-
-      qsys::ViewPtr rvw = viter->second;
-      if (rvw.isnull()) {
-        // If any views aren't found, it is no problem,
-        // because the parent context (and also all DLs) may be already destructed.
-        return;
-      }
-      gfx::DisplayContext *pctxt = rvw->getDisplayContext();
-      pctxt->setCurrent();
-      
-      GLuint buffers[1];
-      buffers[0] = m_nBufID;
-      glDeleteBuffers(1, buffers);
-    }
-  };
-}
-#endif
 
 void OglDisplayContext::drawElem(const AbstDrawElem &ade)
 {
@@ -1085,11 +1003,48 @@ void OglDisplayContext::drawElem(const AbstDrawElem &ade)
     return;
   }
 
-#ifdef HAVE_GLEW
   //
   // implementation using OpenGL fixed pipeline
   //
+  
+  //const int nelems = ade.getSize();
+  //int ninds = 0;
 
+  gfx::DrawElemImpl *pRep = ade.getImpl();
+  if (pRep==NULL) {
+    if (ntype==DrawElem::VA_VNCI ||
+        ntype==DrawElem::VA_VNCI32)
+      pRep = MB_NEW OglDrawElemImpl(m_nSceneID);
+    else
+      pRep = MB_NEW OglDrawArrayImpl(m_nSceneID);
+
+    ade.setImpl(pRep);
+
+    //de.create();
+    pRep->create(ade);
+  }
+  else if (ade.isUpdated()) {
+    pRep->update(ade);
+    ade.setUpdated(false);
+  }
+
+  const DrawElem &de = static_cast<const DrawElem &>(ade);
+  glLineWidth( de.getLineWidth() * float(getPixSclFac()) );
+  glPointSize( de.getLineWidth() * float(getPixSclFac()) );
+  quint32 cc = de.getDefColor();
+  glColor4ub(gfx::getRCode(cc),
+             gfx::getGCode(cc),
+             gfx::getBCode(cc),
+             gfx::getACode(cc));
+
+  pRep->preDraw(ade);
+  pRep->draw(ade);
+  pRep->postDraw(ade);
+
+  return;
+
+
+#if 0
   const DrawElem &de = static_cast<const DrawElem &>(ade);
   const int nelems = de.getSize();
   int ninds = 0;
@@ -1268,46 +1223,10 @@ void OglDisplayContext::drawElem(const AbstDrawElem &ade)
 
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
 #endif
+  
 }
 
-/*
-namespace {
-  class OglTexRep : public gfx::VBORep
-  {
-  public:
-    qlib::uid_t m_nSceneID;
-    GLuint m_nBufID;
-    
-    virtual ~OglTexRep()
-    {
-      qsys::ScenePtr rsc = qsys::SceneManager::getSceneS(m_nSceneID);
-      if (rsc.isnull()) {
-        MB_DPRINTLN("OglTexture> unknown scene, Texture %d cannot be deleted", m_nBufID);
-        return;
-      }
-
-      qsys::Scene::ViewIter viter = rsc->beginView();
-      if (viter==rsc->endView()) {
-        MB_DPRINTLN("OglTexture> no view, Texture %d cannot be deleted", m_nBufID);
-        return;
-      }
-
-      qsys::ViewPtr rvw = viter->second;
-      if (rvw.isnull()) {
-        // If any views aren't found, it is no problem,
-        // because the parent context (and also all DLs) may be already destructed.
-        return;
-      }
-      gfx::DisplayContext *pctxt = rvw->getDisplayContext();
-      pctxt->setCurrent();
-      
-      glDeleteTextures(1, &m_nBufID);
-    }
-  };
-}
-*/
 
 void OglDisplayContext::drawElemPix(const gfx::DrawElemPix &de)
 {
@@ -1333,7 +1252,7 @@ void OglDisplayContext::drawElemVA(const DrawElem &de)
   if (ntype==DrawElem::VA_VC) {
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_COLOR_ARRAY);
-    const qbyte *pdata = (const qbyte *) static_cast<const DrawElemVC&>(de).getData();
+    const qbyte *pdata = static_cast<const qbyte *>(de.getData());
     glVertexPointer(3, GL_FLOAT, sizeof(DrawElemVC::Elem), pdata);
     glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(DrawElemVC::Elem), pdata+3*sizeof(qfloat32));
   }
@@ -1341,7 +1260,7 @@ void OglDisplayContext::drawElemVA(const DrawElem &de)
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_NORMAL_ARRAY);
     glEnableClientState(GL_COLOR_ARRAY);
-    const DrawElemVNC::Elem *pdata = static_cast<const DrawElemVNC&>(de).getData();
+    const qbyte *pdata = static_cast<const qbyte *>(de.getData());
     glVertexPointer(3, GL_FLOAT, sizeof(DrawElemVNC::Elem), pdata);
     glNormalPointer(GL_FLOAT, sizeof(DrawElemVNC::Elem), pdata+3*sizeof(qfloat32));
     glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(DrawElemVNC::Elem), pdata+6*sizeof(qfloat32));
@@ -1354,48 +1273,56 @@ void OglDisplayContext::drawElemVA(const DrawElem &de)
   glDisableClientState(GL_COLOR_ARRAY);
 }
 
-namespace {
-int convGLConsts(int id) {
-  switch (id) {
-  case qlib::type_consts::QTC_BOOL:
-    return GL_BOOL;
-  case qlib::type_consts::QTC_UINT8:
-    return GL_UNSIGNED_BYTE;
-  case qlib::type_consts::QTC_UINT16:
-    return GL_UNSIGNED_SHORT;
-  case qlib::type_consts::QTC_UINT32:
-    return GL_UNSIGNED_INT;
-  case qlib::type_consts::QTC_INT8:
-    return GL_BYTE;
-  case qlib::type_consts::QTC_INT16:
-    return GL_SHORT;
-  case qlib::type_consts::QTC_INT32:
-    return GL_INT;
-  case qlib::type_consts::QTC_FLOAT32:
-    return GL_FLOAT;
-  case qlib::type_consts::QTC_FLOAT64:
-    return GL_DOUBLE;
-  default:
-    return -1;
-  }
-}
-
-int convGLNorm(int id) {
-  if (id==qlib::type_consts::QTC_FLOAT32 ||
-      id==qlib::type_consts::QTC_FLOAT64)
-    return GL_FALSE;
-  else
-    return GL_TRUE;
-}
-}
 
 void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
 {
-  int itype = ada.getType();
+  const int itype = ada.getType();
   
+  //OglDrawArrayImpl *pRep = static_cast<OglDrawArrayImpl *>(ada.getImpl());
+  gfx::DrawElemImpl *pRep = ada.getImpl();
+  if (pRep==NULL) {
+    if (itype==AbstDrawElem::VA_ATTR_INDS) {
+      if(GLEW_ARB_vertex_array_object)
+        pRep = MB_NEW OglVAOElemImpl(m_nSceneID);
+      else
+        pRep = MB_NEW OglDrawElemAttrsImpl(m_nSceneID);
+    }
+    else {
+      if(GLEW_ARB_vertex_array_object)
+        pRep = MB_NEW OglVAOArrayImpl(m_nSceneID);
+      else
+        pRep = MB_NEW OglDrawArrayAttrsImpl(m_nSceneID);
+    }
+
+    ada.setImpl(pRep);
+
+    //de.create();
+    pRep->create(ada);
+  }
+  else if (ada.isUpdated()) {
+    pRep->update(ada);
+    ada.setUpdated(false);
+  }
+
+  /*
+  glLineWidth( de.getLineWidth() * float(getPixSclFac()) );
+  glPointSize( de.getLineWidth() * float(getPixSclFac()) );
+  quint32 cc = de.getDefColor();
+  glColor4ub(gfx::getRCode(cc),
+             gfx::getGCode(cc),
+             gfx::getBCode(cc),
+             gfx::getACode(cc));
+   */
+  
+  pRep->preDraw(ada);
+  pRep->draw(ada);
+  pRep->postDraw(ada);
+
+  return;
+
+#if 0
   GLuint nvbo = 0;
   GLuint nvbo_ind = 0;
-
 
   if (ada.getVBO()==NULL) {
     // Make VBO for attribute array
@@ -1464,7 +1391,6 @@ void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
                             (void *) ap);
     }
     glEnableVertexAttribArray(al);
-
   }
 
 #ifdef USE_GL_VBO_INST
@@ -1513,7 +1439,7 @@ void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); 
   glBindBuffer(GL_ARRAY_BUFFER, 0); 
 
-
+#endif
 }
 
 
@@ -1565,23 +1491,13 @@ bool OglDisplayContext::destroyProgramObject(const LString &name)
 
 #include "OglTexture.hpp"
 
-/*
-Texture *OglDisplayContext::createTexture()
-{
-  qlib::uid_t nSceneID = getSceneID();
-  Texture *pTex = MB_NEW Texture();
-  pTex->setRep(MB_NEW OglTextureRep(nSceneID));
-  return pTex;
-}
-*/
-
 void OglDisplayContext::useTexture(gfx::Texture *pTex, int nunit)
 {
   if (pTex->getRep()==NULL) {
-    OglTextureRep *pRep = MB_NEW OglTextureRep(m_nSceneID);
+    OglTextureRep *pRep = MB_NEW OglTextureRep(m_nSceneID, nunit);
     pTex->setRep(pRep);
   }
-  pTex->use(nunit);
+  pTex->use();
 }
 
 void OglDisplayContext::unuseTexture(gfx::Texture *pTex)

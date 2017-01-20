@@ -5,6 +5,7 @@
 
 #if (__VERSION__>=140)
 #define USE_TBO 1
+#define USE_INSTANCED 1
 #else
 #extension GL_EXT_gpu_shader4 : enable 
 #endif
@@ -26,6 +27,10 @@ uniform TextureType sectTex;
 uniform sampler1D colorTex;
 
 uniform int u_npoints;
+
+#ifndef USE_INSTANCED
+uniform int u_InstanceID;
+#endif
 
 ////////////////////
 // Vertex attributes
@@ -220,7 +225,11 @@ void main (void)
   //float xx = float(a_ind12.x)/2.0;
 
   //float par = a_rho.x;
+#ifdef USE_INSTANCED
   float par = a_rho.x + gl_InstanceID;
+#else
+  float par = a_rho.x + u_InstanceID;
+#endif
 
   vec3 cpos, bpos, binorm, v0;
 
@@ -245,7 +254,6 @@ void main (void)
 
   // Eye-coordinate position of vertex, needed in various calculations
   vec4 ecPosition = gl_ModelViewMatrix * vec4(pos, 1.0);
-  //gEcPosition = ecPosition;
 
   // Do fixed functionality vertex transform
   gl_Position = gl_ProjectionMatrix * ecPosition;
@@ -255,7 +263,6 @@ void main (void)
   //gl_FrontColor=a_color;
 
   gl_FrontColor = flight(col, gl_NormalMatrix * norm, ecPosition);
-
 
   gl_FogFragCoord = ffog(ecPosition.z);
 }

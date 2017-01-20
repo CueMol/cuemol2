@@ -2,6 +2,12 @@
 //
 // $Id: molvis.moddef,v 1.12 2010/12/03 16:40:41 rishitani Exp $
 
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#else
+#define USE_OPENGL 1
+#endif
+
 #include "BallStickRenderer.qif"
 #include "AnIsoURenderer.qif"
 // #include "CPKRenderer.qif"
@@ -22,6 +28,11 @@
 
 #include "Spline2Renderer.qif"
 #include "Tube2Renderer.qif"
+
+#ifdef USE_OPENGL
+# include "Spline2RendGLSL.qif"
+# include "GLSLTube2Renderer.qif"
+#endif
 
 module molvis
 {
@@ -47,6 +58,9 @@ module molvis
   DistPickDrawObj;
 
   Spline2Renderer;
+  Spline2RendGLSL;
+
   Tube2Renderer;
+  GLSLTube2Renderer;
 };
 

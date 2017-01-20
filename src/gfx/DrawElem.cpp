@@ -10,28 +10,26 @@
 
 using namespace gfx;
 
+DrawElemImpl::~DrawElemImpl()
+{
+}
+
 AbstDrawElem::AbstDrawElem()
-     : m_nSize(0), m_pVBORep(NULL), m_pIndVBO(NULL), m_nDrawMode(DRAW_POINTS), m_bUpdate(false), m_nInst(0)
+     : m_nSize(0), m_pImpl(NULL), m_nDrawMode(DRAW_POINTS), m_bUpdate(false), m_nInst(0)
 {
 }
 
 AbstDrawElem::~AbstDrawElem()
 {
-  if (m_pVBORep!=NULL)
-    delete m_pVBORep;
-  if (m_pIndVBO!=NULL)
-    delete m_pIndVBO;
+  if (m_pImpl!=NULL)
+    delete m_pImpl;
 }
 
 void AbstDrawElem::invalidateCache() const
 {
-  if (m_pVBORep!=NULL)
-    delete m_pVBORep;
-  m_pVBORep = NULL;
-
-  if (m_pIndVBO!=NULL)
-    delete m_pIndVBO;
-  m_pIndVBO = NULL;
+  if (m_pImpl!=NULL)
+    delete m_pImpl;
+  m_pImpl = NULL;
 }
 
 //////////
@@ -61,13 +59,6 @@ bool DrawElem::color(int ind, quint32 c)
 {
   return false;
 }
-
-/*bool DrawElem::vertexfp(int ind, const qfloat32 *pcrd)
-{
-  return vertex(ind, Vector4D(pcrd[0],
-                              pcrd[1],
-                              pcrd[2]));
-}*/
 
 
 //////////////////////////

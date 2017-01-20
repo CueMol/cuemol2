@@ -334,8 +334,10 @@ Qm2Main.prototype.openEDSsiteImpl = function (pdbid, b2fofc, afuncs)
 
   var listener;
 
-  eds_url = "http://eds.bmc.uu.se/eds/sfd/"+pdbid+"/"+pdbid+"_sigmaa.mtz";
-  dd("open EDS site: URL=\""+eds_url+"\"");
+  //eds_url = "http://eds.bmc.uu.se/eds/sfd/"+pdbid+"/"+pdbid+"_sigmaa.mtz";
+  // http://www.ebi.ac.uk/pdbe/coordinates/files/1cbs_map.mtz
+  eds_url = "http://www.ebi.ac.uk/pdbe/coordinates/files/"+pdbid+"_map.mtz";
+  dd("open PDBe site (density): URL=\""+eds_url+"\"");
 
   var new_obj_name;
   if (b2fofc)
@@ -354,12 +356,14 @@ Qm2Main.prototype.openEDSsiteImpl = function (pdbid, b2fofc, afuncs)
   var reader = smg.createHandler("mtzmap", 0);
   // reader.compress = "gzip";
   if (b2fofc) {
-    reader.clmn_F = "2FOFCWT";
-    reader.clmn_PHI = "PH2FOFCWT";
+    //reader.clmn_F = "2FOFCWT";
+    //reader.clmn_PHI = "PH2FOFCWT";
+    reader.clmn_F = "FWT";
+    reader.clmn_PHI = "PHWT";
   }
   else {
-    reader.clmn_F = "FOFCWT";
-    reader.clmn_PHI = "PHFOFCWT";
+    reader.clmn_F = "DELFWT";
+    reader.clmn_PHI = "PHDELWT";
   }
   reader.gridsize = 0.25;
   ( function () {

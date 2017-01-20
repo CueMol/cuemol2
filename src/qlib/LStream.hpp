@@ -10,6 +10,7 @@
 #include "qlib.hpp"
 #include "SmartPtr.hpp"
 #include "LStreamImpl.hpp"
+#include "LTypes.hpp"
 
 namespace qlib {
 
@@ -67,6 +68,10 @@ namespace qlib {
     /// get source URI of this stream
     virtual LString getURI() const =0;
 
+    virtual bool isSeekable() const;
+    virtual void setFilePos(qint64 pos);
+    virtual qint64 getFilePos() const;
+
     ///////////////////////
 
     void readFully(char *b, int off, int len);
@@ -84,29 +89,17 @@ namespace qlib {
     // /// dtor: do nothing
     // virtual ~InStreamAdaptor() {}
 
-    virtual bool ready() {
-      return getImpl()->ready();
-    }
+    virtual bool ready();
   
-    virtual int read() {
-      return getImpl()->read();
-    }
+    virtual int read();
   
-    virtual int read(char *buf, int off, int len) {
-      return getImpl()->read(buf, off, len);
-    }
+    virtual int read(char *buf, int off, int len);
 
-    virtual int skip(int len) {
-      return getImpl()->skip(len);
-    }
+    virtual int skip(int len);
 
-    virtual void close() {
-      return getImpl()->i_close();
-    }
+    virtual void close();
 
-    virtual LString getURI() const {
-      return getImpl()->getSrcURI();
-    }
+    virtual LString getURI() const;
   };
   
   /////////////////////////////////////////////////
@@ -131,7 +124,6 @@ namespace qlib {
     /// Flush the stream.
     virtual void flush() =0;
 
-
     /// Close the stream.
     virtual void close() =0;
 
@@ -152,25 +144,15 @@ namespace qlib {
     //  dtor
     // virtual ~OutStreamAdaptor() {}
 
-    virtual int write(const char *buf, int off, int len) {
-      return getImpl()->write(buf, off, len);
-    }
+    virtual int write(const char *buf, int off, int len);
     
-    virtual void write(int b) {
-      return getImpl()->write(b);
-    }
+    virtual void write(int b);
 
-    virtual void flush() {
-      getImpl()->flush();
-    }
+    virtual void flush();
 
-    virtual void close() {
-      getImpl()->o_close();
-    }
+    virtual void close();
 
-    virtual LString getURI() const {
-      return getImpl()->getDestURI();
-    }
+    virtual LString getURI() const;
   };
 
 

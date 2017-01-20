@@ -10,10 +10,35 @@
 #include <qlib/Array.hpp>
 
 #include <qsys/Object.hpp>
+#include <qsys/ObjReader.hpp>
 
 namespace mdtools {
 
-  class TrajBlock : public qsys::Object
+  class TrajBlock;
+
+  class MDTOOLS_API TrajBlockReader : public qsys::ObjReader
+  {
+    typedef qsys::ObjReader super_t;
+
+  public:
+    TrajBlockReader() : super_t(), m_bLazyLoad(false) {}
+
+    virtual void loadFrm(int ifrm, TrajBlock *pTB) =0;
+
+  private:
+    bool m_bLazyLoad;
+
+  public:
+    void setLazyLoad(bool b) { m_bLazyLoad = b; }
+    bool isLazyLoad() const { return m_bLazyLoad; }
+
+  };
+
+  MC_DECL_SCRSP(TrajBlockReader);
+  
+  ///////////////////////
+
+  class MDTOOLS_API TrajBlock : public qsys::Object
   {
     MC_SCRIPTABLE;
 
@@ -53,16 +78,13 @@ namespace mdtools {
     void clear();
 
     /// get coordinate array pointer of the specified frame
-    qfloat32 *getCrdArray(int ifrm) {
+    qfloat32 *getCrdArray(int ifrm)
+    {
       MB_ASSERT(0<=ifrm);
       MB_ASSERT(ifrm<m_nSize);
 
       PosArray *p = m_data[ifrm];
       return &(*p)[0];
-
-      //const int ind = m_nCrds * ifrm;
-      //MB_ASSERT(ind<m_data.size());
-      //return &m_data[ind];
     }
     
     void setStartIndex(int n) {
@@ -92,6 +114,33 @@ namespace mdtools {
     qlib::uid_t getTrajUID() const {
       return m_nTrajUID;
     }
+
+  private:
+
+    /// coordinates availability flag
+    std::vector<bool> m_flags;
+
+    TrajBlockReaderPtr m_pReader;
+
+  public:
+
+    void setTrajLoader(const TrajBlockReaderPtr &preader) {
+      m_pReader = preader;
+    }
+
+    void setLoaded(int ifrm, bool b)
+    {
+      m_flags[ifrm] = b;
+    }
+
+    bool isLoaded(int ifrm) const
+    {
+      return m_flags[ifrm];
+    }
+
+    bool isAllLoaded() const;
+
+    void load(int ifrm);
 
   };
 

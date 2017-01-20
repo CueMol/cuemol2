@@ -16,20 +16,6 @@
 #include <modules/molstr/MainChainRenderer.hpp>
 #include "SplineRendBase.hpp"
 
-#ifdef WIN32
-#define USE_TBO 1
-#define USE_INSTANCED 1
-#else
-#endif
-
-namespace sysdep {
-  class OglProgramObject;
-}
-
-namespace gfx {
-  class Texture;
-}
-
 namespace molvis {
 
   using qlib::Vector4D;
@@ -38,19 +24,19 @@ namespace molvis {
   using namespace molstr;
 
   class Spline2Renderer;
-  class Spline2Seg;
+  class Spline2SS;
 
-  class Spl2DrawSeg : public detail::DrawSegment
+  class Spline2DS : public detail::DrawSegment
   {
   public:
 
     typedef detail::DrawSegment super_t;
 
-    Spl2DrawSeg(int st, int en) : super_t(st,en), m_pVBO(NULL), m_pAttrAry(NULL)
+    Spline2DS(int st, int en) : super_t(st,en), m_pVBO(NULL)
     {
     }
 
-    virtual ~Spl2DrawSeg();
+    virtual ~Spline2DS();
 
     //////////
     // VBO implementation
@@ -60,60 +46,32 @@ namespace molvis {
     /// cached vertex array/VBO
     VertArray *m_pVBO;
 
-    //////////
-    // GLSL implementation
-
-    struct AttrElem {
-      qfloat32 rho;
-      // qbyte r, g, b, a;
-    };
-
-    typedef gfx::DrawAttrArray<AttrElem> AttrArray;
-
-    /// VBO for glsl rendering
-    AttrArray *m_pAttrAry;
-
   };
 
   //
   /// Rendering object for the one spline segment
   //
-  class Spline2Seg : public detail::SplineSegment
+  class Spline2SS : public detail::SplineSegment
   {
   public:
 
     typedef detail::SplineSegment super_t;
 
-    typedef std::deque<Spl2DrawSeg> Spl2DrawList;
-    Spl2DrawList m_draws;
 
-    Spline2Seg() : super_t()
+    Spline2SS() : super_t()
     {
-      m_pCoefTex = NULL;
-      m_pColorTex = NULL;
     }
 
-    virtual ~Spline2Seg();
+    virtual ~Spline2SS();
 
-    virtual void generateImpl(int nstart, int nend);
-
-    /////////////////////
-    // GLSL implementation
-
-    /// float texture of the main axis coeff (common)
-    gfx::Texture *m_pCoefTex;
-
-    /// color texture
-    gfx::Texture *m_pColorTex;
-    std::vector<qbyte> m_colorTexData;
+    virtual detail::DrawSegment *createDrawSeg(int nstart, int nend);
 
   };
 
-  // typedef std::deque<Spline2Seg> Spl2SegList;
 
   ////////////////////////////////////////////////////////
   //
-  // Spline Renderer version 2 class
+  // Spline Renderer version 2 class (platform independent)
   //
 
   class Spline2Renderer : public SplineRendBase
@@ -167,7 +125,7 @@ namespace molvis {
 
     // virtual void propChanged(qlib::LPropEvent &ev);
 
-    // virtual void objectChanged(qsys::ObjectEvent &ev);
+    virtual void objectChanged(qsys::ObjectEvent &ev);
 
 
   public:
@@ -181,41 +139,13 @@ namespace molvis {
     /////////////////
     // VBO implementation
 
-    virtual void setupVBO(detail::SplineSegment *pSeg, DisplayContext *pdc);
+    virtual void setupVBO(detail::SplineSegment *pSeg);
 
     virtual void updateCrdVBO(detail::SplineSegment *pSeg);
 
-    virtual void updateColorVBO(detail::SplineSegment *pSeg, DisplayContext *pdc);
+    virtual void updateColorVBO(detail::SplineSegment *pSeg);
 
     virtual void drawVBO(detail::SplineSegment *pSeg, DisplayContext *pdc);
-
-    /////////////////
-    // GLSL implementation
-
-    /// Initialize shaders
-    virtual bool initShader(DisplayContext *pdc);
-
-    virtual void setupGLSL(detail::SplineSegment *pSeg, DisplayContext *pdc);
-
-    virtual void updateCrdGLSL(detail::SplineSegment *pSeg);
-
-    virtual void updateColorGLSL(detail::SplineSegment *pSeg, DisplayContext *pdc);
-
-    virtual void drawGLSL(detail::SplineSegment *pSeg, DisplayContext *pdc);
-
-  private:
-    /////////////////
-    // work area
-
-    static const int COEF_TEX_UNIT = 0;
-    static const int COLOR_TEX_UNIT = 1;
-
-    /// GLSL shader objects
-    sysdep::OglProgramObject *m_pPO;
-
-    quint32 m_nRhoLoc;
-
-    // quint32 m_nColLoc;
 
   };
 

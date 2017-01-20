@@ -30,6 +30,7 @@ ObjectManager.cpp \
 Utils.cpp \
  \
 ArrayIOImpl.cpp \
+LStream.cpp \
 PosixFileStream.cpp \
 PrintStream.cpp \
 LineStream.cpp \

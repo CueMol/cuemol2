@@ -1,0 +1,22 @@
+// -*-Mode: C++;-*-
+//
+// Tube2 renderer implementation using GLSL
+//
+
+#ifndef TUBE2_REND_GLSL_QIF_INCLUDED
+#define TUBE2_REND_GLSL_QIF_INCLUDED
+
+#include "Tube2Renderer.qif"
+
+runtime_class GLSLTube2Renderer extends Tube2Renderer
+{
+  client_hdr "GLSLTube2Renderer.hpp";
+  client_name molvis::GLSLTube2Renderer;
+
+  scriptable;
+  smartptr;
+  cloneable;
+};
+
+#endif
+

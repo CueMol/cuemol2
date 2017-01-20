@@ -23,18 +23,15 @@
 #endif
 
 
-namespace gfx {
-  class DrawElemPix;
-  class AbstDrawAttrs;
-}
-
 namespace sysdep {
-	using namespace gfx;
+  using namespace gfx;
 
   class OglTextureRep : public gfx::TextureRep
   {
   private:
     qlib::uid_t m_nSceneID;
+
+    int m_nUnit;
 
     /// OpenGL ID of resource
     GLuint m_nTexID;
@@ -58,9 +55,11 @@ namespace sysdep {
     bool m_bUseTexBuf;
 
   public:
-    OglTextureRep(qlib::uid_t nSceneID)
+    OglTextureRep(qlib::uid_t nSceneID, int nUnit)
       : m_nSceneID(nSceneID)
     {
+      m_nUnit = nUnit;
+
       m_nWidth = 0;
       m_nHeight = 0;
       m_nDepth = 0;
@@ -261,16 +260,16 @@ namespace sysdep {
       setDataGL(pdata);
     }
 
-    virtual void use(int nUnit)
+    virtual void use()
     {
-      glActiveTexture(GL_TEXTURE0 + nUnit);
+      glActiveTexture(GL_TEXTURE0 + m_nUnit);
       glBindTexture(m_iGlDimType, m_nTexID);
     }
 
     virtual void unuse()
     {
-      glActiveTexture(GL_TEXTURE0);
       glBindTexture(m_iGlDimType, 0);
+      glActiveTexture(GL_TEXTURE0);
     }
 
     virtual void setLinIntpol(bool b)
@@ -296,7 +295,7 @@ namespace sysdep {
       if (m_bUseTexBuf) {
         glGenBuffers(1, &m_nBufID);
       }
-
+      /*
       glGetIntegerv(GL_MAX_TEXTURE_SIZE, &m_nMaxTexSize);
       glGetIntegerv(GL_MAX_TEXTURE_BUFFER_SIZE, &m_nMaxTexBufSize);
       glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &m_nMax3DTexSize);
@@ -304,13 +303,20 @@ namespace sysdep {
       MB_DPRINTLN("OglTex max tex size=%d", m_nMaxTexSize);
       MB_DPRINTLN("OglTex max tex buf size=%d", m_nMaxTexBufSize);
       MB_DPRINTLN("OglTex max 3D tex size=%d", m_nMax3DTexSize);
+       */
     }
 
     void setupGL()
     {
+      
       CHK_GLERROR("(clearerr)");
+
+      glActiveTexture(GL_TEXTURE0+m_nUnit);
+      CHK_GLERROR("glActiveTexture");
+
       glEnable(m_iGlDimType);
       CHK_GLERROR("glEnable");
+
       glBindTexture(m_iGlDimType, m_nTexID);
       CHK_GLERROR("glBindTexture");
 
@@ -354,8 +360,12 @@ namespace sysdep {
 
       glBindTexture(m_iGlDimType, 0);
       CHK_GLERROR("glBindTexture");
+
       glDisable(m_iGlDimType);
       CHK_GLERROR("glDisable");
+
+      glActiveTexture(GL_TEXTURE0);
+      CHK_GLERROR("glActiveTexture(GL_TEXTURE0)");
     }
 
     void setDataGL(const void *pdata)
@@ -367,6 +377,7 @@ namespace sysdep {
         return;
       }
 
+      glActiveTexture(GL_TEXTURE0+m_nUnit);
       glEnable(m_iGlDimType);
       glBindTexture(m_iGlDimType, m_nTexID);
 
@@ -454,6 +465,9 @@ namespace sysdep {
     {
       CHK_GLERROR("(clearerr)");
 
+      glActiveTexture(GL_TEXTURE0+m_nUnit);
+      CHK_GLERROR("glActiveTexture(GL_TEXTURE0+m_nUnit)");
+
       glBindBuffer(GL_TEXTURE_BUFFER, m_nBufID);
       CHK_GLERROR("glBindBuffer");
 
@@ -489,11 +503,8 @@ namespace sysdep {
       }
       glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
-      // glEnable(GL_TEXTURE_BUFFER);
-      // CHK_GLERROR("glEnable(GL_TEXTURE_BUFFER)");
-
-      glActiveTexture(GL_TEXTURE0);
-      CHK_GLERROR("glActiveTexture(GL_TEXTURE0)");
+      // glActiveTexture(GL_TEXTURE0+m_nUnit);
+      // CHK_GLERROR("glActiveTexture(GL_TEXTURE0)");
 
       glBindTexture(GL_TEXTURE_BUFFER, m_nTexID);
       CHK_GLERROR("glBindTexture(GL_TEXTURE_BUFFER, m_nTexID)");

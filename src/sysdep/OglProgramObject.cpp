@@ -228,22 +228,18 @@ bool OglProgramObject::link()
   CLR_GLERROR();
 
   // link
-  //glLinkProgramARB(m_hPO);
   glLinkProgram(m_hPO);
 
   // get errors
   GLint result;
-  //glGetObjectParameterivARB(m_hPO, GL_OBJECT_LINK_STATUS_ARB, &result);
   glGetProgramiv(m_hPO, GL_LINK_STATUS, &result);
 
   if ( glGetError() != GL_NO_ERROR || result == GL_FALSE ) {
     LOG_DPRINTLN("ProgramObject.link(): cannot link program object");
 
-    //glGetObjectParameterivARB(m_hPO, GL_OBJECT_INFO_LOG_LENGTH_ARB, &length);
     glGetProgramiv(m_hPO, GL_INFO_LOG_LENGTH, &length);
     if (length>0) {
       GLchar *info_log = new GLchar[ length ];
-      //glGetInfoLogARB(m_hPO, length, &l, info_log );
       glGetProgramInfoLog(m_hPO, length, &l, info_log );
       LOG_DPRINTLN("%s", info_log);
       delete [] info_log;
@@ -270,9 +266,30 @@ void OglProgramObject::use()
 {
   CLR_GLERROR();
 
-  //glUseProgramObjectARB(m_hPO);
+  GLuint curr;
+  glGetIntegerv(GL_CURRENT_PROGRAM, (GLint*) &curr);
+  
+  if (curr!=0) {
+    if (m_hOldPO!=0) {
+      LOG_DPRINTLN("OglProg>WARNING: old program lost: %d", m_hOldPO);
+    }
+
+    m_hOldPO = curr;
+  }
+  
   glUseProgram(m_hPO);
   //CHK_GLERROR("PO.use");
+}
+
+void OglProgramObject::disable()
+{
+  if (m_hOldPO!=0) {
+    glUseProgram(m_hOldPO);
+    m_hOldPO = 0;
+  }
+  else {
+    glUseProgram(0);
+  }
 }
 
 void OglProgramObject::validate()
@@ -296,6 +313,16 @@ void OglProgramObject::validate()
   }
 
   return;
+}
+
+void OglProgramObject::dumpSrc() const
+{
+#ifdef MB_DEBUG
+  BOOST_FOREACH (const ShaderTab::value_type &elem, m_shaders) {
+    MB_DPRINTLN("Shader %s:", elem.first.c_str());
+    elem.second->dumpSrc();
+  }
+#endif
 }
 
 void OglProgramObject::setProgParam(GLenum pname, GLint param)

@@ -94,7 +94,7 @@ window.gPdbDlg = {
         httpChannel.open();
         dd("Response "+httpChannel.responseStatus+httpChannel.responseStatusText+" for URL: "+eds_url);
         if (httpChannel.responseStatus!=200) {
-          this.mResBox.value = "EDS Entry "+pdbid+" not found.";
+          this.mResBox.value = "PDBe map Entry "+pdbid+" not found.";
           this.mPdbIdBox.select();
           this.mPdbIdBox.focus();
           return false;

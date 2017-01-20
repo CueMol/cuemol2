@@ -190,6 +190,7 @@
     <ClCompile Include="..\..\src\qlib\LScrSmartPtr.cpp" />
     <ClCompile Include="..\..\src\qlib\LScrTime.cpp" />
     <ClCompile Include="..\..\src\qlib\LScrVector4D.cpp" />
+    <ClCompile Include="..\..\src\qlib\LStream.cpp" />
     <ClCompile Include="..\..\src\qlib\LString.cpp" />
     <ClCompile Include="..\..\src\qlib\LThread.cpp" />
     <ClCompile Include="..\..\src\qlib\LUnicode.cpp" />

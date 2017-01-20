@@ -168,22 +168,35 @@ public:
     m_fp = NULL;
   }
 
-  virtual int seek(int pos, int mode) {
+  virtual qint64 seek(qint64 pos, int mode)
+  {
     switch (mode) {
     default:
     case 0: {
       // get fpos
       MB_ASSERT(m_fp!=NULL);
-      int res = ::ftell(m_fp);
+#ifdef WIN32
+      qint64 res = _ftelli64(m_fp);
+#elif defined(HAVE_FTELLO)
+      qint64 res = ftello(m_fp);
+#else
+      qint64 res = ftell(m_fp);
+#endif
       if (res<0)
-	MB_THROW(IOException, "Cannot seek file ptr");
+        MB_THROW(IOException, "Cannot seek file ptr");
       return res;
     }
 
     case 1: {
       // set fpos (abs)
       MB_ASSERT(m_fp!=NULL);
-      int res = ::fseek(m_fp, pos, SEEK_SET);
+#ifdef WIN32
+      int res = _fseeki64(m_fp, pos, SEEK_SET);
+#elif defined(HAVE_FSEEKO)
+      int res = fseeko(m_fp, pos, SEEK_SET);
+#else
+      int res = fseek(m_fp, pos, SEEK_SET);
+#endif
       if (res<0)
 	MB_THROW(IOException, "Cannot seek file ptr");
       return pos;
@@ -191,7 +204,17 @@ public:
 
     case 2: {
       // set fpos (rel)
-      return skip(pos);
+      MB_ASSERT(m_fp!=NULL);
+#ifdef WIN32
+      int res = _fseeki64(m_fp, pos, SEEK_CUR);
+#elif defined(HAVE_FSEEKO)
+      int res = fseeko(m_fp, pos, SEEK_CUR);
+#else
+      int res = fseek(m_fp, pos, SEEK_CUR);
+#endif
+      if (res<0)
+	MB_THROW(IOException, "Cannot seek file ptr");
+      return pos;
     }
     }
   }
@@ -219,18 +242,16 @@ public:
   }
 };
 
+/////////////////////////////////////////////////////////
 
 FileInStream::FileInStream()
   : m_pimpl(MB_NEW PosixFIOImpl())
 {
-  //setImpl(m_pimpl);
   //  MB_DPRINTLN("FileInStream(%p) ctor called", this);
 }
 
-/** copy ctor */
 FileInStream::FileInStream(const FileInStream &r) : m_pimpl(r.m_pimpl)
 {
-//  setImpl(m_pimpl);
 }
 
 FileInStream::~FileInStream()
@@ -238,27 +259,56 @@ FileInStream::~FileInStream()
   //  MB_DPRINTLN("FileInStream(%p) dtor called", this);
 }
 
-FileOutStream::FileOutStream()
-  : m_pimpl(MB_NEW PosixFIOImpl())
+void FileInStream::open(const LString &fname)
 {
-//  setImpl(m_pimpl);
+  m_pimpl->i_open(fname);
 }
 
-/** copy ctor */
-FileOutStream::FileOutStream(const FileOutStream &r)
-  : m_pimpl(r.m_pimpl)
-{
-//  setImpl(m_pimpl);
+bool FileInStream::ready() {
+  return m_pimpl->ready();
 }
 
-FileOutStream::~FileOutStream()
+int FileInStream::read() {
+  return m_pimpl->read();
+}
+
+int FileInStream::read(char *buf, int off, int len) {
+  return m_pimpl->read(buf, off, len);
+}
+
+int FileInStream::skip(int len) {
+  return m_pimpl->skip(len);
+}
+
+void FileInStream::close() {
+  m_pimpl->i_close();
+}
+
+LString FileInStream::getURI() const {
+  return m_pimpl->getSrcURI();
+}
+
+InStream::impl_type FileInStream::getImpl() const
 {
-  //  MB_DPRINTLN("FileOutStream(%p) dtor called", this);
+  return m_pimpl;
+}
+
+bool FileInStream::isSeekable() const
+{
+  return true;
+}
+
+qint64 FileInStream::getFilePos() const
+{
+  return m_pimpl->seek(qint64(0),0);
+}
+
+void FileInStream::setFilePos(qint64 pos)
+{
+  m_pimpl->seek(pos,1);
 }
 
 static FileInStream *m_pStdIn = NULL;
-static FileOutStream *m_pStdOut = NULL;
-static FileOutStream *m_pStdErr = NULL;
 
 //static
 FileInStream &FileInStream::getStdIn()
@@ -273,6 +323,67 @@ FileInStream &FileInStream::getStdIn()
 
   return *m_pStdIn;
 }
+
+/////////////////////////////////////////////////////////
+
+FileOutStream::FileOutStream()
+  : m_pimpl(MB_NEW PosixFIOImpl())
+{
+}
+
+/** copy ctor */
+FileOutStream::FileOutStream(const FileOutStream &r)
+  : m_pimpl(r.m_pimpl)
+{
+}
+
+FileOutStream::~FileOutStream()
+{
+  //  MB_DPRINTLN("FileOutStream(%p) dtor called", this);
+}
+
+int FileOutStream::write(const char *buf, int off, int len)
+{
+  return m_pimpl->write(buf, off, len);
+}
+
+void FileOutStream::write(int b)
+{
+  return m_pimpl->write(b);
+}
+
+void FileOutStream::flush()
+{
+  m_pimpl->flush();
+}
+
+void FileOutStream::close()
+{
+  m_pimpl->o_close();
+}
+
+LString FileOutStream::getURI() const
+{
+  return m_pimpl->getDestURI();
+}
+    
+OutStream::impl_type FileOutStream::getImpl() const
+{
+  return m_pimpl;
+}
+
+qint64 FileOutStream::getFilePos()
+{
+  return m_pimpl->seek(0,0);
+}
+    
+void FileOutStream::setFilePos(qint64 pos)
+{
+  m_pimpl->seek(pos,1);
+}
+
+static FileOutStream *m_pStdOut = NULL;
+static FileOutStream *m_pStdErr = NULL;
 
 //static
 FileOutStream &FileOutStream::getStdOut()

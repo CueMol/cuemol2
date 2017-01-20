@@ -86,12 +86,12 @@ namespace molvis {
       //////////////////
 
       /// ctor
-      SplineSegment() : m_nCtlPts(-1) {
+      SplineSegment() : m_nCtlPts(-1)
+      {
       }
       
       /// dtor
-      virtual ~SplineSegment() {
-      }
+      virtual ~SplineSegment();
       
       MolAtomPtr getAtom(MolCoordPtr pMol, quint32 ind) const {
         quint32 aid = m_aids[ind];
@@ -118,8 +118,6 @@ namespace molvis {
       CubicSpline *getAxisIntpol() { return &m_scoeff; }
 
 
-      virtual void generateImpl(int nstart, int nend) =0;
-
       void generate(MainChainRenderer *pthis);
 
       quint32 calcColor(MainChainRenderer *pthis, MolCoordPtr pMol, float par) const;
@@ -135,6 +133,13 @@ namespace molvis {
 
       void updateStatic(MainChainRenderer *pthis);
       void updateDynamic(MainChainRenderer *pthis);
+
+      //////////
+
+      typedef std::deque<DrawSegment *> DrawList;
+      DrawList m_draws;
+
+      virtual DrawSegment *createDrawSeg(int nstart, int nend) =0;
 
     };
 
@@ -185,7 +190,7 @@ namespace molvis {
     /////////////////
     // SplineRendBase interface
     virtual bool isCacheAvail() const;
-    virtual void createCacheData(DisplayContext *pdc);
+    virtual void createCacheData();
 
     virtual void render2(DisplayContext *pdc);
 
@@ -216,6 +221,13 @@ namespace molvis {
     inline void setShaderCheckDone(bool b) { m_bChkShaderDone = b; }
 
   private:
+    /// shader is available
+    bool m_bShaderAvail;
+
+  public:
+    inline bool isShaderAvail() const { return m_bShaderAvail; }
+
+  private:
 
     /////////////////
     // Common implementation
@@ -232,39 +244,38 @@ namespace molvis {
     }
 
   public:
-    /// Initialize GLSL
-    virtual bool initShader(DisplayContext *pdc) =0;
+    /// Initialize shader (default: shader not supported)
+    virtual bool initShader(DisplayContext *pdc);
 
     virtual SplineSegment *createSegment() =0;
 
-    virtual void createSegList(DisplayContext *pdc);
+    virtual void createSegList();
 
-    void setup(SplineSegment *pSeg, DisplayContext *pdc);
+    void setup(SplineSegment *pSeg);
 
-    virtual void setupVBO(SplineSegment *pSeg, DisplayContext *pdc) =0;
-    virtual void setupGLSL(SplineSegment *pSeg, DisplayContext *pdc) =0;
+    virtual void setupVBO(SplineSegment *pSeg) =0;
+    virtual void setupGLSL(SplineSegment *pSeg) {}
 
     void startColorCalc();
     void endColorCalc();
 
     // update coordinate data
 
-    void updateCrdStatic(detail::SplineSegment *pSeg);
+    void updateCrdStatic();
     void updateCrdDynamic();
-    void updateCrdDynamic(detail::SplineSegment *pSeg);
 
     virtual void updateCrdVBO(detail::SplineSegment *pSeg) =0;
-    virtual void updateCrdGLSL(detail::SplineSegment *pSeg) =0;
+    virtual void updateCrdGLSL(detail::SplineSegment *pSeg) {}
 
     // update color data
 
-    virtual void updateColorVBO(SplineSegment *pSeg, DisplayContext *pdc) =0;
-    virtual void updateColorGLSL(SplineSegment *pSeg, DisplayContext *pdc) =0;
+    virtual void updateColorVBO(SplineSegment *pSeg) =0;
+    virtual void updateColorGLSL(SplineSegment *pSeg) {}
 
     // draw
 
     virtual void drawVBO(detail::SplineSegment *pSeg, DisplayContext *pdc) =0;
-    virtual void drawGLSL(detail::SplineSegment *pSeg, DisplayContext *pdc) =0;
+    virtual void drawGLSL(detail::SplineSegment *pSeg, DisplayContext *pdc) {}
 
   };
   

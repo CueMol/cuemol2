@@ -9,7 +9,6 @@
 #include "Tube2Renderer.hpp"
 
 #include <qsys/SceneManager.hpp>
-#include <gfx/Texture.hpp>
 
 #include <modules/molstr/MolCoord.hpp>
 #include <modules/molstr/MolChain.hpp>
@@ -17,25 +16,38 @@
 #include <modules/molstr/ResidIterator.hpp>
 #include <modules/molstr/AnimMol.hpp>
 
-#include <sysdep/OglProgramObject.hpp>
-
 using namespace molvis;
 using namespace molstr;
 using qlib::Matrix3D;
+using detail::DrawSegment;
+
+detail::DrawSegment *Tube2SS::createDrawSeg(int nstart, int nend)
+{
+  return (MB_NEW Tube2DS(nstart, nend));
+}
+
+Tube2SS::~Tube2SS()
+{
+}
+
+//////////
+
+Tube2DS::~Tube2DS()
+{
+  if (m_pVBO!=NULL)
+    delete m_pVBO;
+}
+
+//////////////////////////////////////////////////////////////
 
 Tube2Renderer::Tube2Renderer()
      : super_t(), m_pts(MB_NEW TubeSection())
 {
   super_t::setupParentData("section");
-
-  m_pPO = NULL;
-  m_pSectTex = NULL;
 }
 
 Tube2Renderer::~Tube2Renderer()
 {
-  if (m_pSectTex!=NULL)
-    delete m_pSectTex;
 }
 
 const char *Tube2Renderer::getTypeName() const
@@ -48,51 +60,27 @@ void Tube2Renderer::preRender(DisplayContext *pdc)
   pdc->setLighting(true);
 }
 
-/*void Tube2Renderer::invalidateDisplayCache()
-{
-  super_t::invalidateDisplayCache();
-}*/
-
-void Tube2Renderer::propChanged(qlib::LPropEvent &ev)
-{
-  if (ev.getParentName().equals("section")||
-      ev.getParentName().startsWith("section.")) {
-    //if (isUseGLSL())
-    //updateSectGLSL();
-    //    else
-    invalidateDisplayCache();
-  }
-
-  super_t::propChanged(ev);
-}
-
-void Tube2Renderer::createSegList(DisplayContext *pdc)
+void Tube2Renderer::createSegList()
 {
   if (!m_pts->isValid())
     m_pts->setupSectionTable();
 
-  super_t::createSegList(pdc);
-
-  // create tube section texture
-  if (isUseGLSL()) {
-    setupSectGLSL(pdc);
-  }
+  super_t::createSegList();
 }
 
 SplineSegment *Tube2Renderer::createSegment()
 {
-  return MB_NEW Tube2Seg();
+  return MB_NEW Tube2SS();
 }
 
-//////////
-
-void Tube2Renderer::setupVBO(detail::SplineSegment *pASeg, DisplayContext *pdc)
+void Tube2Renderer::setupVBO(detail::SplineSegment *pASeg)
 {
-  Tube2Seg *pSeg = static_cast<Tube2Seg *>(pASeg);
+  Tube2SS *pSeg = static_cast<Tube2SS *>(pASeg);
   const int nDetail = getAxialDetail();
   const int nSecDiv = getTubeSection()->getSize();
 
-  BOOST_FOREACH (Tub2DrawSeg &elem, pSeg->m_draws) {
+  BOOST_FOREACH (DrawSegment *pelem, pSeg->m_draws) {
+    Tube2DS &elem = *static_cast<Tube2DS*>(pelem);
 
     const int nsplseg = elem.m_nEnd - elem.m_nStart;
     const int nAxPts = nDetail * nsplseg + 1;
@@ -102,11 +90,11 @@ void Tube2Renderer::setupVBO(detail::SplineSegment *pASeg, DisplayContext *pdc)
     
     // TO DO: multiple vertex generation for discontinuous color point
 
-    Tub2DrawSeg::VertArray *pVBO = elem.m_pVBO;
+    Tube2DS::VertArray *pVBO = elem.m_pVBO;
     if (pVBO!=NULL)
       delete pVBO;
     
-    elem.m_pVBO = pVBO = MB_NEW Tub2DrawSeg::VertArray();
+    elem.m_pVBO = pVBO = MB_NEW Tube2DS::VertArray();
     pVBO->alloc(nVA);
 
     // generate indices
@@ -129,13 +117,13 @@ void Tube2Renderer::setupVBO(detail::SplineSegment *pASeg, DisplayContext *pdc)
     }
 
     pVBO->setDrawMode(gfx::DrawElem::DRAW_TRIANGLES);
-    LOG_DPRINTLN("Tub2DrawSeg> %d elems VBO created", nVA);
+    LOG_DPRINTLN("Tube2DS> %d elems VBO created", nVA);
   }
 }
 
 void Tube2Renderer::updateCrdVBO(detail::SplineSegment *pASeg)
 {
-  Tube2Seg *pSeg = static_cast<Tube2Seg *>(pASeg);
+  Tube2SS *pSeg = static_cast<Tube2SS *>(pASeg);
   TubeSectionPtr pTS = getTubeSection();
   const int nSecDiv = pTS->getSize();
   CubicSpline *pAxInt = pSeg->getAxisIntpol();
@@ -148,9 +136,11 @@ void Tube2Renderer::updateCrdVBO(detail::SplineSegment *pASeg)
   Vector3F pos, binorm, bpos;
   Vector3F v0, e0, v1, e1, v2, e2;
   Vector3F g, dg;
-  Tub2DrawSeg::VertArray *pVBO;
+  Tube2DS::VertArray *pVBO;
 
-  BOOST_FOREACH (Tub2DrawSeg &elem, pSeg->m_draws) {
+  BOOST_FOREACH (DrawSegment *pelem, pSeg->m_draws) {
+    Tube2DS &elem = *static_cast<Tube2DS*>(pelem);
+
     pVBO = elem.m_pVBO;
     fStart = float(elem.m_nStart);
     const int nAxPts = elem.m_nAxPts;
@@ -181,9 +171,9 @@ void Tube2Renderer::updateCrdVBO(detail::SplineSegment *pASeg)
   }
 }
 
-void Tube2Renderer::updateColorVBO(detail::SplineSegment *pASeg, DisplayContext *pdc)
+void Tube2Renderer::updateColorVBO(detail::SplineSegment *pASeg)
 {
-  Tube2Seg *pSeg = static_cast<Tube2Seg *>(pASeg);
+  Tube2SS *pSeg = static_cast<Tube2SS *>(pASeg);
   MolCoordPtr pCMol = getClientMol();
 
   int i, j;
@@ -194,9 +184,11 @@ void Tube2Renderer::updateColorVBO(detail::SplineSegment *pASeg, DisplayContext 
 
   quint32 dcc;
 
-  Tub2DrawSeg::VertArray *pVBO;
+  Tube2DS::VertArray *pVBO;
 
-  BOOST_FOREACH (Tub2DrawSeg &elem, pSeg->m_draws) {
+  BOOST_FOREACH (DrawSegment *pelem, pSeg->m_draws) {
+    Tube2DS &elem = *static_cast<Tube2DS*>(pelem);
+
     pVBO = elem.m_pVBO;
     float fstart = float(elem.m_nStart);
     int nAxPts = elem.m_nAxPts;
@@ -212,43 +204,42 @@ void Tube2Renderer::updateColorVBO(detail::SplineSegment *pASeg, DisplayContext 
   }
 }
 
-
 void Tube2Renderer::drawVBO(detail::SplineSegment *pASeg, DisplayContext *pdc)
 {
-  Tube2Seg *pSeg = static_cast<Tube2Seg *>(pASeg);
+  Tube2SS *pSeg = static_cast<Tube2SS *>(pASeg);
 
-  BOOST_FOREACH (Tub2DrawSeg &elem, pSeg->m_draws) {
+  BOOST_FOREACH (DrawSegment *pelem, pSeg->m_draws) {
+    Tube2DS &elem = *static_cast<Tube2DS*>(pelem);
     pdc->drawElem(*elem.m_pVBO);
   }
 }
 
-
-//////////////////////////////////////////////////////////////
-
-void Tube2Seg::generateImpl(int nstart, int nend)
-{
-  m_draws.push_back(Tub2DrawSeg(nstart, nend));
-}
-
-Tube2Seg::~Tube2Seg()
-{
-  if (m_pCoefTex!=NULL)
-    delete m_pCoefTex;
-  if (m_pBinormTex!=NULL)
-    delete m_pBinormTex;
-  if (m_pColorTex!=NULL)
-    delete m_pColorTex;
-}
-
 //////////
 
-Tub2DrawSeg::~Tub2DrawSeg()
+void Tube2Renderer::propChanged(qlib::LPropEvent &ev)
 {
-  if (m_pVBO!=NULL)
-    delete m_pVBO;
+  if (ev.getParentName().equals("section")||
+      ev.getParentName().startsWith("section.")) {
+    invalidateDisplayCache();
+  }
 
-  if (m_pAttrAry!=NULL)
-    delete m_pAttrAry;
+  super_t::propChanged(ev);
 }
 
+void Tube2Renderer::objectChanged(qsys::ObjectEvent &ev)
+{
+  if (isVisible() &&
+      (ev.getType()==qsys::ObjectEvent::OBE_CHANGED_DYNAMIC||
+       ev.getType()==qsys::ObjectEvent::OBE_CHANGED) &&
+      ev.getDescr().equals("atomsMoved")) {
+    // OBE_CHANGED_DYNAMIC && descr=="atomsMoved"
+    if (isUseAnim()) {
+      // only update positions
+      updateCrdDynamic();
+      return;
+    }
+  }
+
+  super_t::objectChanged(ev);
+}
 

@@ -103,6 +103,9 @@ qfloat32 *Trajectory::getCrdArrayImpl()
     return NULL;
   }
   TrajBlockPtr pBlk = m_blocks[m_nBlkInd];
+  if (!pBlk->isLoaded(m_nFrmInd)) {
+    pBlk->load(m_nFrmInd);
+  }
   return pBlk->getCrdArray(m_nFrmInd);
 }
 

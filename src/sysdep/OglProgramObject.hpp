@@ -56,6 +56,10 @@ namespace sysdep {
       return m_hGL;
     }
     
+    void dumpSrc() const {
+      MB_DPRINTLN("%s", m_source.c_str());
+    }
+
   };
 
   ////////////////////////////////////////
@@ -66,11 +70,13 @@ namespace sysdep {
   private:
     GLuint m_hPO;
 
+    GLuint m_hOldPO;
+
     typedef std::map<LString, OglShaderObject *> ShaderTab;
     ShaderTab m_shaders;
 
   public:
-    OglProgramObject() : m_hPO(NULL) {}
+    OglProgramObject() : m_hPO(0), m_hOldPO(0) {}
     virtual ~OglProgramObject();
 
     bool init();
@@ -93,10 +99,7 @@ namespace sysdep {
       use();
     }
 
-    inline void disable() {
-      //glUseProgramObjectARB(0);
-      glUseProgram(0);
-    }
+    inline void disable();
 
     inline GLint getUniformLocation( const char *name )
     {
@@ -303,6 +306,8 @@ namespace sysdep {
       }
 
     void setProgParam(GLenum pname, GLint param);
+
+    void dumpSrc() const;
 
   };
 }

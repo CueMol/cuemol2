@@ -19,15 +19,20 @@ using qlib::Array;
 using namespace mdtools;
 
 DCDTrajReader::DCDTrajReader()
+     : super_t()
 {
   // : m_pSel(NULL), m_pSelAtoms(NULL)
   m_nSkip = 1;
   m_nTrajUID = qlib::invalid_uid;
+  m_nHeadPos = 0;
+  m_pIn = NULL;
 }
 
 DCDTrajReader::~DCDTrajReader()
 {
   MB_DPRINTLN("DCDTrajReader destructed.");
+  if (m_pIn!=NULL)
+    delete m_pIn;
 }
 
 ///////////////////////////////////////////
@@ -172,7 +177,7 @@ void DCDTrajReader::readHeader(qlib::InStream &ins)
   }
   int natom;
   fbis.readRecord(&natom, 4);
-  LOG_DPRINTLN("DCDTraj> NATOM: %d ", natom);
+  LOG_DPRINTLN("DCDTraj> NATOM: %d", natom);
 
   m_natom = natom;
   m_nfile = nfile;
@@ -210,6 +215,17 @@ void DCDTrajReader::readBody(qlib::InStream &ins)
     throw e;
   }
   LOG_DPRINTLN("DCDTraj> Alloc %f Mbytes", dmem);
+
+  if (isLazyLoad()) {
+    if (ins.isSeekable()) {
+      pTB->setTrajLoader(TrajBlockReaderPtr(this));
+      m_nHeadPos = ins.getFilePos();
+      return;
+    }
+    else {
+      LOG_DPRINTLN("DCDTraj> WARNING: Lazy loading is requested, but the input stream is not seekable.");
+    }
+  }
 
   int jj, istep, nrlen;
   std::vector<float> tmpv(m_natom * 3);
@@ -315,11 +331,117 @@ void DCDTrajReader::readBody(qlib::InStream &ins)
         pcoord[jj*3+1] = tmpv[k+m_natom*1];
         pcoord[jj*3+2] = tmpv[k+m_natom*2];
       }
-      nInd ++;
+	  pTB->setLoaded(nInd, true);
+	  nInd++;
     }
 
   }
 
   //pTraj->append(pTB);
+}
+
+void DCDTrajReader::loadFrm(int ifrm, TrajBlock *pTB)
+{
+  int istep = ifrm * m_nSkip;
+
+  if (istep<0 || m_nfile<=istep) {
+    // MB_THROW
+    return;
+  }
+
+  if (m_pIn==NULL)
+    m_pIn = createInStream();
+
+  int jj, nrlen;
+  std::vector<float> tmpv(m_natom * 3);
+  
+  qfloat32 *pcoord = NULL;
+  
+  int nfrmsz = (4 + m_natom*4 + 4)*3;
+  if (m_fcell)
+    nfrmsz += (4 + 6*8 + 4);
+
+  qint64 npos = m_nHeadPos + nfrmsz * istep;
+  m_pIn->setFilePos(npos);
+
+  pcoord = pTB->getCrdArray(ifrm);
+  FortBinInStream fbis(*m_pIn);
+
+  //
+  // Read cell geometry
+  //
+  
+  double dcell[6];
+  if (m_fcell) {
+    nrlen = fbis.getRecordSize_throw();
+    if (nrlen!=48) {
+      LString msg = LString::format("DCD: Invalid CELL record length (%d!=4)", nrlen);
+      LOG_DPRINTLN("%s ",msg.c_str());
+      MB_THROW(qlib::FileFormatException, msg);
+      return;
+    }
+    
+    fbis.readRecord(dcell, 48);
+    //LOG_DPRINTLN("CELL: (%f), (%f,%f) (%f,%f,%f)",
+    //dcell[0], dcell[1], dcell[2],
+    //dcell[3], dcell[4], dcell[5]);
+    // for (i=0; i<6; ++i)
+    // pEng[i]->at(nTotalInd) = dcell[i];
+  }
+    
+  // Read X coordinates record
+  nrlen = fbis.getRecordSize_throw();
+  // MB_DPRINTLN("X record size: %d ", nrlen);
+  if (nrlen != sizeof(float)*m_natom) {
+    LString msg = LString::format("DCD: Invalid X record length (%d!=%d)",
+                                  nrlen, sizeof(float)*m_natom);
+    LOG_DPRINTLN("%s ",msg.c_str());
+    MB_THROW(qlib::FileFormatException, msg);
+    return;
+  }
+  fbis.readRecord(&tmpv[0], sizeof(float)*m_natom);
+  
+  // Read Y coordinates record
+  nrlen = fbis.getRecordSize_throw();
+  // MB_DPRINTLN("Y record size: %d ", nrlen);
+  if (nrlen != sizeof(float)*m_natom) {
+    LString msg = LString::format("DCD: Invalid Y record length (%d!=%d)",
+                                  nrlen, sizeof(float)*m_natom);
+    LOG_DPRINTLN("%s ",msg.c_str());
+    MB_THROW(qlib::FileFormatException, msg);
+    return;
+  }
+  fbis.readRecord(&tmpv[m_natom], sizeof(float)*m_natom);
+  
+  // Read Z coordinates record
+  nrlen = fbis.getRecordSize_throw();
+  // MB_DPRINTLN("Z record size: %d ", nrlen);
+  if (nrlen != sizeof(float)*m_natom) {
+    LString msg = LString::format("DCD: Invalid Z record length (%d!=%d)",
+                                  nrlen, sizeof(float)*m_natom);
+    LOG_DPRINTLN("%s ",msg.c_str());
+    MB_THROW(qlib::FileFormatException, msg);
+    return;
+  }
+  fbis.readRecord(&tmpv[m_natom*2], sizeof(float)*m_natom);
+  
+  // Copy to coord buffer
+  TrajectoryPtr pTraj = getTargTraj();
+  quint32 nReadAtoms = pTraj->getAtomSize();
+  const quint32 *psia = pTraj->getSelIndexArray();
+  for (jj=0; jj<nReadAtoms; ++jj) {
+    const int k = psia[jj];
+    pcoord[jj*3+0] = tmpv[k+m_natom*0];
+    pcoord[jj*3+1] = tmpv[k+m_natom*1];
+    pcoord[jj*3+2] = tmpv[k+m_natom*2];
+  }
+  pTB->setLoaded(ifrm, true);
+
+  if (pTB->isAllLoaded()) {
+    m_pIn->close();
+    delete m_pIn;
+    m_pIn = NULL;
+  }
+
 }
 

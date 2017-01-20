@@ -17,6 +17,9 @@ runtime_class DCDTrajReader extends ObjReader
   scriptable;
   smartptr;
 
+  property boolean lazy_load => redirect(isLazyLoad, setLazyLoad);
+  default lazy_load = false;
+
   property integer nevery => redirect(getSkipNo, setSkipNo);
   default nevery = 1;
 
