@@ -16,12 +16,27 @@ namespace gfx {
 
   using qlib::Vector4D;
   using qlib::Vector3F;
+
+  class AbstDrawElem;
   
-  class GFX_API VBORep
+  /// Draw Element implementation
+  class GFX_API DrawElemImpl
   {
   public:
-    virtual ~VBORep() {}
+	  virtual ~DrawElemImpl();
+
+    virtual void create(const AbstDrawElem &ade) =0;
+
+    virtual void update(const AbstDrawElem &ade) =0;
+
+    virtual void preDraw(const AbstDrawElem &ade) =0;
+
+    virtual void draw(const AbstDrawElem &ade) =0;
+
+    virtual void postDraw(const AbstDrawElem &ade) =0;
   };
+
+  /////////////////////////////////////////////////////////
 
   /// Common abstract class for both
   ///   fixed pipeline verteces and glsl attributes
@@ -36,32 +51,51 @@ namespace gfx {
     AbstDrawElem();
     virtual ~AbstDrawElem();
 
-    // virtual void alloc(int nsize) =0;
+    //////////
 
+    /// Draw element/array type
     virtual int getType() const =0;
 
     /// clear cached data (--> delete VBO)
     virtual void invalidateCache() const;
 
+    virtual const void *getData() const =0; //{ return NULL; }
+    virtual size_t getElemSize() const =0;
+
+    /// returns attribute buffer size (in byte unit)
+    size_t getDataSize() const {
+      return getElemSize() * getSize();
+    }
+
+    // index support
+    virtual const void *getIndData() const { return NULL; }
+
+    virtual size_t getIndElemSize() const {
+      return 0;
+    }
+
+    virtual size_t getIndSize() const {
+      return 0;
+    }
+
+    /// returns index buffer size (in byte unit)
+    size_t getIndDataSize() const {
+      return getIndElemSize() * getIndSize();
+    }
+
+    // Main element count
     int getSize() const { return m_nSize; }
     void setSize(int n) { m_nSize = n; }
 
-  private:
-    /// buffer ID (for GL VBO impl)
-    mutable VBORep *m_pVBORep;
-
-  public:
-    VBORep *getVBO() const { return m_pVBORep; }
-    void setVBO(VBORep *p) const { m_pVBORep = p; }
+    //////////
 
   private:
-    /// buffer ID (for GL VBO impl)
-    mutable VBORep *m_pIndVBO;
+    /// Implementation
+    mutable DrawElemImpl *m_pImpl;
 
   public:
-    /// index VBO object access
-    VBORep *getIndexVBO() const { return m_pIndVBO; }
-    void setIndexVBO(VBORep *p) const { m_pIndVBO = p; }
+    DrawElemImpl *getImpl() const { return m_pImpl; }
+    void setImpl(DrawElemImpl *p) const { m_pImpl = p; }
 
   private:
     /// update flag
@@ -108,8 +142,6 @@ namespace gfx {
     /// arbitary attribute array with indices (for shader impl)
     static const int VA_ATTR_INDS = 10;
 
-    //////////////////////////////////////////////////
-
   private:
     /// drawing mode
     int m_nDrawMode;
@@ -131,7 +163,9 @@ namespace gfx {
     void setDrawMode(int n) { m_nDrawMode = n; }
   };
 
-  /// Draw element class
+  //////////////////////////////////////////////////
+
+  /// Draw element class for fixed pipeline (or default shader)
   /// abstraction of VA/VBO implementation of OpenGL
   class GFX_API DrawElem : public AbstDrawElem
   {
@@ -143,11 +177,6 @@ namespace gfx {
     virtual ~DrawElem();
 
     virtual bool vertex(int ind, const Vector4D &v) =0;
-
-    // virtual bool vertexfp(int ind, const qfloat32 *pcrd);
-    /*inline bool vertex3f(int ind, const Vector3F &v) {
-      return vertex(ind, Vector4D(v.x(), v.y(), v.z()) );
-    }*/
 
     virtual bool color(int ind, quint32 cc);
 
@@ -189,7 +218,10 @@ namespace gfx {
       qbyte r, g, b, a;
     };
 
-    const Elem *getData() const { return m_pData; }
+    const Elem *getElems() const { return m_pData; }
+
+    virtual const void *getData() const { return m_pData; }
+    virtual size_t getElemSize() const { return sizeof(Elem); }
 
     virtual int getType() const { return VA_VC; }
 
@@ -235,7 +267,9 @@ namespace gfx {
       qfloat32 x, y, z;
     };
 
-    const Elem *getData() const { return m_pData; }
+    const Elem *getElems() const { return m_pData; }
+    virtual const void *getData() const { return m_pData; }
+    virtual size_t getElemSize() const { return sizeof(Elem); }
 
     virtual int getType() const { return VA_V; }
 
@@ -283,7 +317,9 @@ namespace gfx {
 
     Elem *m_pData;
 
-    const Elem *getData() const { return m_pData; }
+    const Elem *getElems() const { return m_pData; }
+    virtual const void *getData() const { return m_pData; }
+    virtual size_t getElemSize() const { return sizeof(Elem); }
 
     virtual int getType() const { return VA_VNC; }
 
@@ -338,7 +374,16 @@ namespace gfx {
 
     virtual ~DrawElemVNCI();
 
-    index_t *getIndexData() const { return m_pIndData; }
+    //index_t *getIndexData() const { return m_pIndData; }
+    virtual const void *getIndData() const { return m_pIndData; }
+
+    virtual size_t getIndElemSize() const {
+      return sizeof(index_t);
+    }
+
+    virtual size_t getIndSize() const {
+      return m_nIndSize;
+    }
 
     virtual int getType() const { return VA_VNCI; }
 
@@ -366,8 +411,6 @@ namespace gfx {
       m_pIndData[ind*3 + 2] = n3;
     }
 
-    int getIndexSize() const { return m_nIndSize; }
-
   private:
     int m_nIndSize;
     index_t *m_pIndData;
@@ -387,7 +430,16 @@ namespace gfx {
 
     virtual ~DrawElemVNCI32();
 
-    index_t *getIndexData() const { return m_pIndData; }
+    // index_t *getIndexData() const { return m_pIndData; }
+    virtual const void *getIndData() const { return m_pIndData; }
+
+    virtual size_t getIndElemSize() const {
+      return sizeof(index_t);
+    }
+
+    virtual size_t getIndSize() const {
+      return m_nIndSize;
+    }
 
     virtual int getType() const { return VA_VNCI32; }
 
@@ -443,6 +495,10 @@ namespace gfx {
     /// implemented but should not be used
     virtual void alloc(int nsize);
     virtual bool vertex(int ind, const Vector4D &v);
+
+    // dummy??
+    virtual const void *getData() const { return NULL; }
+    virtual size_t getElemSize() const { return 0; }
 
     //////////
 

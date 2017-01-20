@@ -190,7 +190,7 @@ void QdfLWObjWriter::writeDrawElemV(gfx::DrawElemV * pData)
   o.defVec3D("v");
   o.startData();
 
-  const gfx::DrawElemV::Elem *pElem = pData->getData();
+  const gfx::DrawElemV::Elem *pElem = (const gfx::DrawElemV::Elem *) pData->getData();
   for (int i=0; i<nverts; ++i) {
     o.startRecord();
     o.writeVec3D("v", (const qfloat32 *) &pElem[i]);
@@ -209,7 +209,7 @@ void QdfLWObjWriter::writeDrawElemVC(gfx::DrawElemVC * pData)
   o.defColorRGBA("c");
   o.startData();
 
-  const gfx::DrawElemVC::Elem *pElem = pData->getData();
+  const gfx::DrawElemVC::Elem *pElem = (const gfx::DrawElemVC::Elem *) pData->getData();
   for (int i=0; i<nverts; ++i) {
     o.startRecord();
     o.writeVec3D("v", (const qfloat32 *) &pElem[i]);
@@ -230,7 +230,7 @@ void QdfLWObjWriter::writeDrawElemVNCI(gfx::DrawElemVNCI * pData)
   o.defColorRGBA("c");
   o.startData();
 
-  const gfx::DrawElemVNCI::Elem *pElem = pData->getData();
+  const gfx::DrawElemVNCI::Elem *pElem = (const gfx::DrawElemVNCI::Elem *) pData->getData();
   for (int i=0; i<nverts; ++i) {
     o.startRecord();
     o.writeVec3D("v", (const qfloat32 *) &pElem[i]);
@@ -242,12 +242,14 @@ void QdfLWObjWriter::writeDrawElemVNCI(gfx::DrawElemVNCI * pData)
 
   /////
 
-  const int ninds = pData->getIndexSize();
+  //const int ninds = pData->getIndexSize();
+  const int ninds = pData->getIndSize();
   o.defData("vnci", ninds);
   o.defInt32("i");
   o.startData();
 
-  const gfx::DrawElemVNCI::index_t *pinds = pData->getIndexData();
+  //const gfx::DrawElemVNCI::index_t *pinds = pData->getIndexData();
+  const gfx::DrawElemVNCI::index_t *pinds = (const gfx::DrawElemVNCI::index_t *) pData->getIndData();
   for (int i=0; i<ninds; ++i) {
     o.startRecord();
     o.writeInt32("i", pinds[i]);

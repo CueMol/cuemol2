@@ -23,13 +23,8 @@
 #endif
 
 
-namespace gfx {
-  class DrawElemPix;
-  class AbstDrawAttrs;
-}
-
 namespace sysdep {
-	using namespace gfx;
+  using namespace gfx;
 
   class OglTextureRep : public gfx::TextureRep
   {

@@ -286,7 +286,7 @@ void QdfLWObjReader::readDrawElemV(gfx::DrawElemV * pData)
 
   o.readRecordDef();
 
-  const gfx::DrawElemV::Elem *pElem = pData->getData();
+  const gfx::DrawElemV::Elem *pElem = (const gfx::DrawElemV::Elem *) pData->getData();
   for (int i=0; i<nverts; ++i) {
     o.startRecord();
     o.readVec3D("v", (qfloat32 *) &pElem[i]);
@@ -303,7 +303,7 @@ void QdfLWObjReader::readDrawElemVC(gfx::DrawElemVC * pData)
 
   o.readRecordDef();
 
-  const gfx::DrawElemVC::Elem *pElem = pData->getData();
+  const gfx::DrawElemVC::Elem *pElem = (const gfx::DrawElemVC::Elem *) pData->getData();
   for (int i=0; i<nverts; ++i) {
     o.startRecord();
     o.readVec3D("v", (qfloat32 *) &pElem[i]);
@@ -321,7 +321,7 @@ void QdfLWObjReader::readDrawElemVNCI(gfx::DrawElemVNCI * pData)
 
   o.readRecordDef();
 
-  const gfx::DrawElemVNCI::Elem *pElem = pData->getData();
+  const gfx::DrawElemVNCI::Elem *pElem = (const gfx::DrawElemVNCI::Elem *) pData->getData();
   for (int i=0; i<nverts; ++i) {
     o.startRecord();
     o.readVec3D("v", (qfloat32 *) &pElem[i] );
