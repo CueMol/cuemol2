@@ -105,21 +105,14 @@ namespace sysdep {
   
   /////////////////////////////////////////////////
 
-  class OglBufRep
+  class OglBufRepBase
   {
-  private:
+  protected:
     qlib::uid_t m_nSceneID;
     GLuint m_nBufID;
 
   public:
-    OglBufRep(qlib::uid_t nSceneID) : m_nSceneID(nSceneID), m_nBufID(0) {}
-
-    virtual ~OglBufRep()
-    {
-      if (!setContext())
-        return;
-      destroy();
-    }
+    OglBufRepBase(qlib::uid_t nSceneID) : m_nSceneID(nSceneID), m_nBufID(0) {}
 
     bool setContext()
     {
@@ -153,14 +146,28 @@ namespace sysdep {
       else return true;
     }
 
+  };
+
+  class OglBufRep : public OglBufRepBase
+  {
+  public:
+    OglBufRep(qlib::uid_t nSceneID) : OglBufRepBase(nSceneID) {}
+    
+    virtual ~OglBufRep()
+    {
+      if (!setContext())
+        return;
+      destroy();
+    }
+
     inline void create() {
       glGenBuffers(1, &m_nBufID);
     }
 
     inline void destroy() {
       glDeleteBuffers(1, &m_nBufID);
+      m_nBufID = 0;
     }
-
   };
 
   ///////////////////
@@ -172,10 +179,6 @@ namespace sysdep {
     OglBufRep m_buf;
     
     OglDrawArrayImpl(qlib::uid_t nSceneID) : m_buf(nSceneID) {}
-
-    virtual ~OglDrawArrayImpl()
-    {
-    }
 
     //////////
 
@@ -304,7 +307,7 @@ namespace sysdep {
       glBindBuffer(GL_ARRAY_BUFFER, m_buf.getID());
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indBuf.getID());
 
-      const size_t ninds = ade.getIndElemSize();
+      const size_t ninds = ade.getIndSize();
       
       GLenum mode = convDrawMode(ade.getDrawMode());
 
@@ -455,19 +458,20 @@ namespace sysdep {
 
       int ninst = ade.getInstCount();
       GLenum mode = convDrawMode(ade.getDrawMode());
+      size_t ninds = ade.getIndSize();
       size_t indsz = ade.getIndElemSize();
 
       if (indsz==2) {
         if (ninst>0 && GLEW_ARB_instanced_arrays)
-          glDrawElementsInstanced(mode, ade.getIndSize(), GL_UNSIGNED_SHORT, 0, ninst);
+          glDrawElementsInstanced(mode, ninds, GL_UNSIGNED_SHORT, 0, ninst);
         else
-          glDrawElements(mode, ade.getIndSize(), GL_UNSIGNED_SHORT, 0);
+          glDrawElements(mode, ninds, GL_UNSIGNED_SHORT, 0);
       }
       else if (indsz==4) {
         if (ninst>0 && GLEW_ARB_instanced_arrays)
-          glDrawElementsInstanced(mode, ade.getIndSize(), GL_UNSIGNED_INT, 0, ninst);
+          glDrawElementsInstanced(mode, ninds, GL_UNSIGNED_INT, 0, ninst);
         else
-          glDrawElements(mode, ade.getIndSize(), GL_UNSIGNED_INT, 0);
+          glDrawElements(mode, ninds, GL_UNSIGNED_INT, 0);
       }
       else {
         LOG_DPRINTLN("unsupported index element size %d", indsz);
@@ -482,6 +486,206 @@ namespace sysdep {
     }
     
   };
+
+  /////////////////////////////////////////////////////////
+
+  class OglVAORep : public OglBufRepBase
+  {
+  public:
+    OglVAORep(qlib::uid_t nSceneID) : OglBufRepBase(nSceneID) {}
+    
+    virtual ~OglVAORep()
+    {
+      if (!setContext())
+        return;
+      destroy();
+    }
+
+    inline void create() {
+      glGenVertexArrays(1, &m_nBufID);
+    }
+
+    inline void destroy() {
+      glDeleteVertexArrays(1, &m_nBufID);
+      m_nBufID = 0;
+    }
+
+    inline void bind() {
+      glBindVertexArray(m_nBufID);
+    }
+  };
+
+  /// OpenGL DrawArray impl (for GL3 VAO/without index buffer)
+  class OglVAOArrayImpl : public gfx::DrawElemImpl
+  {
+  public:
+    OglBufRep m_buf;
+    OglVAORep m_vao;
+    
+    OglVAOArrayImpl(qlib::uid_t nSceneID) : m_buf(nSceneID), m_vao(nSceneID) {}
+
+    //////////
+
+    virtual void create(const AbstDrawElem &ade)
+    {
+      if (!m_vao.isCreated())
+        m_vao.create();
+
+      m_vao.bind();
+
+      if (!m_buf.isCreated())
+        m_buf.create();
+      
+      // Init VBO & transfer data
+      glBindBuffer(GL_ARRAY_BUFFER, m_buf.getID());
+      glBufferData(GL_ARRAY_BUFFER, ade.getDataSize(), ade.getData(), GL_STATIC_DRAW);
+
+      const gfx::AbstDrawAttrs &ada = static_cast<const gfx::AbstDrawAttrs &>(ade);
+
+      size_t nattr = ada.getAttrSize();
+      for (int i=0; i<nattr; ++i) {
+        int al = ada.getAttrLoc(i);
+        int az = ada.getAttrElemSize(i);
+        int at = ada.getAttrTypeID(i);
+        int ap = ada.getAttrPos(i);
+        if (at==qlib::type_consts::QTC_INT32 ||
+            at==qlib::type_consts::QTC_UINT32) {
+          glVertexAttribIPointer(al,
+                                 az,
+                                 convGLConsts(at),
+                                 ada.getElemSize(),
+                                 (void *) ap);
+        }
+        else {
+          glVertexAttribPointer(al,
+                                az,
+                                convGLConsts(at),
+                                convGLNorm(at),
+                                ada.getElemSize(),
+                                (void *) ap);
+        }
+        glEnableVertexAttribArray(al);
+      }
+
+      //glBindVertexArray(0);
+    }
+
+    virtual void update(const AbstDrawElem &ade)
+    {
+      // VBO updated --> call glBufferSubData
+      glBindBuffer(GL_ARRAY_BUFFER, m_buf.getID());
+      glBufferSubData(GL_ARRAY_BUFFER, 0, ade.getDataSize(), ade.getData());
+    }
+    
+    virtual void preDraw(const AbstDrawElem &ade)
+    {
+    }
+
+    virtual void draw(const AbstDrawElem &ade)
+    {
+      const gfx::AbstDrawAttrs &ada = static_cast<const gfx::AbstDrawAttrs &>(ade);
+
+      int ninst = ada.getInstCount();
+      GLenum mode = convDrawMode(ada.getDrawMode());
+
+      m_vao.bind();
+
+      if (ninst>0 && GLEW_ARB_instanced_arrays)
+        glDrawArraysInstanced(mode, 0, ada.getSize(), ninst);
+      else
+        glDrawArrays(mode, 0, ada.getSize());
+
+      glBindVertexArray(0);
+    }
+
+    virtual void postDraw(const AbstDrawElem &ade)
+    {
+    }
+  };
+
+  /// Draw elements (shader attributes with indices)
+  class OglVAOElemImpl : public OglVAOArrayImpl
+  {
+
+    typedef OglVAOArrayImpl super_t;
+
+    /// Index buffer ID
+    OglBufRep m_indBuf;
+
+  public:
+    
+    OglVAOElemImpl(qlib::uid_t nSceneID) : super_t(nSceneID), m_indBuf(nSceneID) {}
+
+    //////////
+
+    virtual void create(const AbstDrawElem &ade)
+    {
+      // create VAO/VBO
+      super_t::create(ade);
+      
+      // create IndexVBO
+      if (!m_indBuf.isCreated())
+        m_indBuf.create();
+
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indBuf.getID());
+      glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+                   ade.getIndDataSize(), ade.getIndData(), GL_STATIC_DRAW);
+    }
+
+    virtual void update(const AbstDrawElem &ade)
+    {
+      // update main VBO
+      super_t::update(ade);
+
+      // IndexVBO updated --> call glBufferSubData
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indBuf.getID());
+      glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, ade.getIndDataSize(), ade.getIndData());
+    }
+
+    /*virtual void preDraw(const AbstDrawElem &ade)
+    {
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_indBuf.getID());
+      super_t::preDraw(ade);
+    }*/
+
+    virtual void draw(const AbstDrawElem &ade)
+    {
+      //const gfx::AbstDrawAttrs &ada = static_cast<const gfx::AbstDrawAttrs &>(ade);
+      m_vao.bind();
+      
+      int ninst = ade.getInstCount();
+      GLenum mode = convDrawMode(ade.getDrawMode());
+      size_t ninds = ade.getIndSize();
+      size_t indsz = ade.getIndElemSize();
+
+      if (indsz==2) {
+        if (ninst>0 && GLEW_ARB_instanced_arrays)
+          glDrawElementsInstanced(mode, ninds, GL_UNSIGNED_SHORT, 0, ninst);
+        else
+          glDrawElements(mode, ninds, GL_UNSIGNED_SHORT, 0);
+      }
+      else if (indsz==4) {
+        if (ninst>0 && GLEW_ARB_instanced_arrays)
+          glDrawElementsInstanced(mode, ninds, GL_UNSIGNED_INT, 0, ninst);
+        else
+          glDrawElements(mode, ninds, GL_UNSIGNED_INT, 0);
+      }
+      else {
+        LOG_DPRINTLN("unsupported index element size %d", indsz);
+        MB_ASSERT(false);
+      }
+
+      glBindVertexArray(0);
+    }
+    
+    /*virtual void postDraw(const AbstDrawElem &ade)
+    {
+      super_t::postDraw(ade);
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    }*/
+    
+  };
+
 }
 
 #endif

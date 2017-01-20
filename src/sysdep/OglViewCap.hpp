@@ -32,7 +32,7 @@ namespace sysdep {
       }
       else {
         m_bHasFBO = false;
-        LOG_DPRINTLN("OglView> Warning: Framebuffer Object not supported!!");
+        LOG_DPRINTLN("OglCap> Warning: Framebuffer Object not supported!!");
       }
 
       // Check VBO
@@ -41,7 +41,7 @@ namespace sysdep {
       }
       else {
         m_bHasVBO = false;
-        LOG_DPRINTLN("OglView> Warning: Vertex Buffer Object not supported!!");
+        LOG_DPRINTLN("OglCap> Warning: Vertex Buffer Object not supported!!");
       }
       
       // Check VS/FS
@@ -52,7 +52,7 @@ namespace sysdep {
       else {
         m_bHasVS = false;
         m_bHasFS = false;
-        LOG_DPRINTLN("OglView> Warning: Vertex/Fragment Shader not supported!!");
+        LOG_DPRINTLN("OglCap> Warning: Vertex/Fragment Shader not supported!!");
       }
       
       // Check GS
@@ -61,9 +61,13 @@ namespace sysdep {
       }
       else {
         m_bHasGS = false;
-        LOG_DPRINTLN("OglView> Warning: Geometry Shader not supported!!");
+        LOG_DPRINTLN("OglCap> Warning: Geometry Shader not supported!!");
       }
 
+      if (GLEW_ARB_vertex_array_object) {
+        LOG_DPRINTLN("OglCap> VAO support OK.");
+      }
+      
       // show device info
       LOG_DPRINTLN("--- OpenGL Info ---");
       LOG_DPRINTLN("Vendor:   %s", glGetString(GL_VENDOR));

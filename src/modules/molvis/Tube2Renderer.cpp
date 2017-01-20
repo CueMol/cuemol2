@@ -117,7 +117,7 @@ void Tube2Renderer::setupVBO(detail::SplineSegment *pASeg)
     }
 
     pVBO->setDrawMode(gfx::DrawElem::DRAW_TRIANGLES);
-    LOG_DPRINTLN("Tub2DrawSeg> %d elems VBO created", nVA);
+    LOG_DPRINTLN("Tube2DS> %d elems VBO created", nVA);
   }
 }
 

@@ -1007,8 +1007,8 @@ void OglDisplayContext::drawElem(const AbstDrawElem &ade)
   // implementation using OpenGL fixed pipeline
   //
   
-  const int nelems = ade.getSize();
-  int ninds = 0;
+  //const int nelems = ade.getSize();
+  //int ninds = 0;
 
   gfx::DrawElemImpl *pRep = ade.getImpl();
   if (pRep==NULL) {
@@ -1281,10 +1281,18 @@ void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
   //OglDrawArrayImpl *pRep = static_cast<OglDrawArrayImpl *>(ada.getImpl());
   gfx::DrawElemImpl *pRep = ada.getImpl();
   if (pRep==NULL) {
-    if (itype==AbstDrawElem::VA_ATTR_INDS)
-      pRep = MB_NEW OglDrawElemAttrsImpl(m_nSceneID);
-    else
-      pRep = MB_NEW OglDrawArrayAttrsImpl(m_nSceneID);
+    if (itype==AbstDrawElem::VA_ATTR_INDS) {
+      if(GLEW_ARB_vertex_array_object)
+        pRep = MB_NEW OglVAOElemImpl(m_nSceneID);
+      else
+        pRep = MB_NEW OglDrawElemAttrsImpl(m_nSceneID);
+    }
+    else {
+      if(GLEW_ARB_vertex_array_object)
+        pRep = MB_NEW OglVAOArrayImpl(m_nSceneID);
+      else
+        pRep = MB_NEW OglDrawArrayAttrsImpl(m_nSceneID);
+    }
 
     ada.setImpl(pRep);
 
