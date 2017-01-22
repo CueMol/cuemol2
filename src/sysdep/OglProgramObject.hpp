@@ -99,7 +99,7 @@ namespace sysdep {
       use();
     }
 
-    inline void disable();
+    void disable();
 
     inline GLint getUniformLocation( const char *name )
     {

@@ -408,17 +408,18 @@ void TraceRenderer::updateVBOColor()
 
 void TraceRenderer::objectChanged(qsys::ObjectEvent &ev)
 {
-  if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED &&
+  if (isVisible() &&
+      (ev.getType()==qsys::ObjectEvent::OBE_CHANGED ||
+       ev.getType()==qsys::ObjectEvent::OBE_CHANGED_DYNAMIC) &&
       ev.getDescr().equals("atomsMoved")) {
 
-    // OBE_CHANGED && descr=="atomsMoved"
+    // OBE_CHANGED/CHANGED_DYN && descr=="atomsMoved"
     if (m_pVBO!=NULL && isUseAnim() ) {
       // only update positions
       updateDynamicVBO();
       m_pVBO->setUpdated(true);
       return;
     }
-
   }
 
   super_t::objectChanged(ev);

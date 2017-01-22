@@ -40,24 +40,6 @@ namespace molstr {
     ////////////
     // workarea
 
-  private:
-/*
-    struct IntBond {
-      quint32 aid1, aid2;
-    };
-
-    bool m_bPrevAidValid;
-    quint32 m_nPrevAid;
-    quint32 m_nBonds;
-    quint32 m_nVA;
-
-    std::deque<IntBond> m_bonds;
-    std::deque<quint32> m_atoms;
-
-    gfx::DrawElemVC *m_pVBO;
-*/
-    ////////////
-    
   public:
     TraceRenderer();
     virtual ~TraceRenderer();

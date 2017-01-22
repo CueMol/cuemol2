@@ -11,22 +11,7 @@
 #include "MolAtomRenderer.hpp"
 #include <gfx/DrawElem.hpp>
 
-//#include <gfx/DrawAttrArray.hpp>
-
-// #ifdef WIN32
-// #define USE_TBO 1
-// #else
-// #endif
-
 class SimpleRenderer_wrap;
-
-//namespace sysdep {
-//  class OglProgramObject;
-//}
-
-//namespace gfx {
-//  class Texture;
-//}
 
 namespace molstr {
 
