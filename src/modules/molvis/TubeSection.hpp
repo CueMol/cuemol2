@@ -7,6 +7,7 @@
 #define TUBE_SECTION_HPP_INCLUDED
 
 #include <qlib/Vector4D.hpp>
+#include <qlib/Vector3F.hpp>
 #include <qlib/LScrObjects.hpp>
 #include <qlib/LScrSmartPtr.hpp>
 #include <qlib/mcutils.hpp>
@@ -22,6 +23,7 @@ namespace molvis {
 
 using gfx::DisplayContext;
 using qlib::Vector4D;
+using qlib::Vector3F;
 
 class TubeSection :
   //public qsys::StyleScrObject
@@ -150,6 +152,13 @@ public:
   Vector4D getVec(int j, const Vector4D &e1, const Vector4D &e2) const {
     j = j%m_nSectTabSz;
     Vector4D g = e1.scale(m_pSectTab[j].x()) + e2.scale(m_pSectTab[j].y());
+    return g;
+  }
+
+  Vector3F getVec(int j, const Vector3F &e1, const Vector3F &e2) const
+  {
+    j = j%m_nSectTabSz;
+    Vector3F g = e1.scale(m_pSectTab[j].x()) + e2.scale(m_pSectTab[j].y());
     return g;
   }
 

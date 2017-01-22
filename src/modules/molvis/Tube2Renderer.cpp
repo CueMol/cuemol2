@@ -88,7 +88,10 @@ void Tube2Renderer::setupVBO(detail::SplineSegment *pASeg)
     const int nVA = nAxPts * nSecDiv;
     const int nfaces = nSecDiv * (nAxPts-1) * 2;
     
-    const int nCapVerts = nSecDiv + 1;
+    //const int nCapVerts = nSecDiv + 1;
+    //const int nCapFaces = nSecDiv;
+
+    const int nCapVerts = nSecDiv;
     const int nCapFaces = nSecDiv;
 
     // TO DO: multiple vertex generation for discontinuous color point
@@ -107,17 +110,6 @@ void Tube2Renderer::setupVBO(detail::SplineSegment *pASeg)
     int ij, ijp, ipj, ipjp;
     int ibase = 0, irow;
 
-    // flat cap (start)
-    int icen = ibase;
-    irow = icen + 1;
-    for (j=0; j<nSecDiv; ++j) {
-      ij = irow + j;
-      ijp = irow + (j+1)%nSecDiv;
-      pVBO->setIndex3(ind, icen, ijp, ij);
-      ++ind;
-    }
-
-    ibase = nCapVerts;
     for (i=0; i<nAxPts-1; ++i) {
       irow = i*nSecDiv + ibase;
       for (j=0; j<nSecDiv; ++j) {
@@ -132,19 +124,45 @@ void Tube2Renderer::setupVBO(detail::SplineSegment *pASeg)
       }
     }
 
-    // flat cap (end)
-    ibase = nCapVerts + nVA;
-    icen = ibase+nSecDiv;
-    irow = ibase;
+    // flat cap (start)
+    ibase = nVA;
+    irow = ibase + 1;
     for (j=0; j<nSecDiv; ++j) {
       ij = irow + j;
       ijp = irow + (j+1)%nSecDiv;
-      pVBO->setIndex3(ind, icen, ij, ijp);
+      pVBO->setIndex3(ind, ibase, ijp, ij);
+      ++ind;
+    }
+
+    // flat cap (end)
+    ibase = nCapVerts + nVA;
+    irow = ibase + 1;
+    for (j=0; j<nSecDiv; ++j) {
+      ij = irow + j;
+      ijp = irow + (j+1)%nSecDiv;
+      pVBO->setIndex3(ind, ibase, ij, ijp);
       ++ind;
     }
 
     LOG_DPRINTLN("Tube2DS> %d elems VBO created", nVA);
   }
+}
+
+void getBasisVecs(Tube2SS *pSeg, float par, Vector3F &pos,
+		  Vector3F &e0, Vector3F &e1, Vector3F &e2)
+{
+  float v0len;
+  Vector3F binorm, bpos;
+  Vector3F v0, v1, v2;
+
+  CubicSpline *pAxInt = pSeg->getAxisIntpol();
+  pAxInt->interpolate(par, &pos, &v0);
+  binorm = pSeg->intpolLinBn(par);
+  v0len = v0.length();
+  e0 = v0.divide(v0len);
+  v2 = binorm - e0.scale(e0.dot(binorm));
+  e2 = v2.normalize();
+  e1 = e2.cross(e0);
 }
 
 void Tube2Renderer::updateCrdVBO(detail::SplineSegment *pASeg)
@@ -173,41 +191,9 @@ void Tube2Renderer::updateCrdVBO(detail::SplineSegment *pASeg)
     const int nAxPts = elem.m_nAxPts;
     int ind = 0;
   
-    // flat cap (start)
-    par = fStart;
-    pAxInt->interpolate(par, &pos, &v0);
-    binorm = pSeg->intpolLinBn(par);
-    v0len = v0.length();
-    e0 = v0.divide(v0len);
-    v2 = binorm - e0.scale(e0.dot(binorm));
-    e2 = v2.normalize();
-    e1 = e2.cross(e0);
-
-    pVBO->vertex3f(ind, pos);
-    pVBO->normal3f(ind, -e0);
-    ++ind;
-
     // body
-    for (j=0; j<nSecDiv; ++j) {
-      const Vector4D &stab = pTS->getSectTab(j);
-      g = e1.scale( stab.x() ) + e2.scale( stab.y() );
-      pVBO->vertex3f(ind, pos + g);
-      pVBO->normal3f(ind, -e0);
-      ++ind;
-    }
-
     for (i=0; i<nAxPts; ++i) {
-      par = float(i)/fDetail + fStart;
-      pAxInt->interpolate(par, &pos, &v0);
-      binorm = pSeg->intpolLinBn(par);
-      
-      v0len = v0.length();
-      e0 = v0.divide(v0len);
-      
-      v2 = binorm - e0.scale(e0.dot(binorm));
-      e2 = v2.normalize();
-      e1 = e2.cross(e0);
-      
+      getBasisVecs(pSeg, float(i)/fDetail + fStart, pos, e0, e1, e2);
       for (j=0; j<nSecDiv; ++j) {
         const Vector4D &stab = pTS->getSectTab(j);
         g = e1.scale( stab.x() ) + e2.scale( stab.y() );
@@ -218,16 +204,54 @@ void Tube2Renderer::updateCrdVBO(detail::SplineSegment *pASeg)
       }
     }
     
-    // flat cap (end)
-    par = float(nAxPts-1)/fDetail + fStart;
-    pAxInt->interpolate(par, &pos, &v0);
-    binorm = pSeg->intpolLinBn(par);
-    v0len = v0.length();
-    e0 = v0.divide(v0len);
-    v2 = binorm - e0.scale(e0.dot(binorm));
-    e2 = v2.normalize();
-    e1 = e2.cross(e0);
+    // flat cap (start)
+    if (false) {
+      getBasisVecs(pSeg, fStart, pos, e0, e1, e2);
+      const float sign = -1.0;
+      const int nsphr = getAxialDetail();
+      const float v0len = pTS->getVec(0, e1, e2).length();
+      Vector3F v0 = e0.scale(sign*v0len);
 
+      for (i=0; i<nsphr; i++) {
+	const float t = float(i)/float(nsphr);
+	float gpar = ::sqrt(1.0-t*t);
+	
+	Vector3F e10 = pos + v0.scale(t);
+	Vector3F e11 = e1.scale(gpar);
+	Vector3F e12 = e2.scale(gpar);
+
+	for (j=0; j<nSecDiv; ++j) {
+	  const Vector4D &stab = pTS->getSectTab(j);
+
+	  Vector3F g1 = e11.scale(stab.x()) + e12.scale(stab.y());
+	  Vector3F dg1 = e11.scale(stab.z()) + e12.scale(stab.w());
+	  Vector3F dgp1 = e11.scale(-stab.w()) + e12.scale(stab.z());
+	  dg1 = dg1.scale(v0len*gpar) - (dgp1.cross(g1)).scale(-t*sign);
+
+	  pVBO->vertex3f(ind, e10 + g1);
+	  pVBO->normal3f(ind, dg1);
+	  ++ind;
+	}
+      }      
+    }
+    else {
+      getBasisVecs(pSeg, fStart, pos, e0, e1, e2);
+      pVBO->vertex3f(ind, pos);
+      pVBO->normal3f(ind, -e0);
+      ++ind;
+      for (j=0; j<nSecDiv; ++j) {
+	const Vector4D &stab = pTS->getSectTab(j);
+	g = e1.scale( stab.x() ) + e2.scale( stab.y() );
+	pVBO->vertex3f(ind, pos + g);
+	pVBO->normal3f(ind, -e0);
+	++ind;
+      }
+    }
+
+    getBasisVecs(pSeg, float(nAxPts-1)/fDetail + fStart, pos, e0, e1, e2);
+    pVBO->vertex3f(ind, pos);
+    pVBO->normal3f(ind, e0);
+    ++ind;
     for (j=0; j<nSecDiv; ++j) {
       const Vector4D &stab = pTS->getSectTab(j);
       g = e1.scale( stab.x() ) + e2.scale( stab.y() );
@@ -235,10 +259,6 @@ void Tube2Renderer::updateCrdVBO(detail::SplineSegment *pASeg)
       pVBO->normal3f(ind, e0);
       ++ind;
     }
-
-    pVBO->vertex3f(ind, pos);
-    pVBO->normal3f(ind, e0);
-    ++ind;
 
     pVBO->setUpdated(true);
   }
@@ -267,16 +287,6 @@ void Tube2Renderer::updateColorVBO(detail::SplineSegment *pASeg)
     int nAxPts = elem.m_nAxPts;
     int ind = 0;
     
-    // flat cap (start)
-    par = fstart;
-    dcc = pSeg->calcColor(this, pCMol, par);
-    pVBO->color(ind, dcc);
-    ++ind;
-    for (j=0; j<nSecDiv; ++j) {
-      pVBO->color(ind, dcc);
-      ++ind;
-    }
-
     // body
     for (i=0; i<nAxPts; ++i) {
       par = float(i)/fdetail + fstart;
@@ -288,15 +298,36 @@ void Tube2Renderer::updateColorVBO(detail::SplineSegment *pASeg)
       }
     }
 
+    // flat cap (start)
+    par = fstart;
+    dcc = pSeg->calcColor(this, pCMol, par);
+    if (false) {
+      const int nsphr = getAxialDetail();
+      for (i=0; i<nsphr; i++) {
+	for (j=0; j<nSecDiv; ++j) {
+	  pVBO->color(ind, dcc);
+	  ++ind;
+	}
+      }
+    }
+    else {
+      pVBO->color(ind, dcc);
+      ++ind;
+      for (j=0; j<nSecDiv; ++j) {
+	pVBO->color(ind, dcc);
+	++ind;
+      }
+    }
+
     // flat cap (end)
     par = float(nAxPts-1)/fdetail + fstart;
     dcc = pSeg->calcColor(this, pCMol, par);
+    pVBO->color(ind, dcc);
+    ++ind;
     for (j=0; j<nSecDiv; ++j) {
       pVBO->color(ind, dcc);
       ++ind;
     }
-    pVBO->color(ind, dcc);
-    ++ind;
 
   }
 }

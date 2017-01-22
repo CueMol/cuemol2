@@ -552,7 +552,6 @@ void TubeSection::makeSpherCap(DisplayContext *pdl,
   double gpar2, t2;
   Vector4D f2, e21, e22;
   
-  //  int stab_sz =
   for (i=0; i<=detail; i++) {
     double t = double(i)/double(detail);
     double gpar = ::sqrt(1.0-t*t);
@@ -600,13 +599,13 @@ void TubeSection::makeSpherCap(DisplayContext *pdl,
         pdl->vertex(f1+g1);
         pdl->normal(dg2);
         pdl->vertex(f2+g2);
-        }
+      }
     }
     
     pdl->end();
     t2 = t;
     gpar2 = gpar;
-      f2 = f1;
+    f2 = f1;
     e21 = e11;
     e22 = e12;
     
