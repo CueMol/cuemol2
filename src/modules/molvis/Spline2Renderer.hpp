@@ -81,19 +81,19 @@ namespace molvis {
 
     typedef SplineRendBase super_t;
 
-    //////////////
+    ////////////////////////////
     // Properties
 
   private:
     /// width of line drawing (in pixel unit)
-    double m_dLineWidth;
+    float m_dLineWidth;
 
   public:
-    void setLineWidth(double d) {
+    void setLineWidth(float d) {
       super_t::invalidateDisplayCache();
       m_dLineWidth = d;
     }
-    double getLineWidth() const {
+    float getLineWidth() const {
       return m_dLineWidth;
     }
 

@@ -79,6 +79,9 @@ void Tube2Renderer::setupVBO(detail::SplineSegment *pASeg)
   const int nDetail = getAxialDetail();
   const int nSecDiv = getTubeSection()->getSize();
 
+  // for spherical capping
+  const int nSphr = getAxialDetail();
+
   BOOST_FOREACH (DrawSegment *pelem, pSeg->m_draws) {
     Tube2DS &elem = *static_cast<Tube2DS*>(pelem);
 
@@ -88,11 +91,35 @@ void Tube2Renderer::setupVBO(detail::SplineSegment *pASeg)
     const int nVA = nAxPts * nSecDiv;
     const int nfaces = nSecDiv * (nAxPts-1) * 2;
     
-    //const int nCapVerts = nSecDiv + 1;
-    //const int nCapFaces = nSecDiv;
+    int nStCapVerts;
+    int nStCapFaces;
 
-    const int nCapVerts = nSecDiv;
-    const int nCapFaces = nSecDiv;
+    // Start capping
+    if (getStartCapType()==CAP_SPHR) {
+      // spherical cap
+      nStCapVerts = nSphr*nSecDiv +1;
+      nStCapFaces = (nSphr-1)*nSecDiv*2 + nSecDiv;
+    }
+    else {
+      // flat cap
+      nStCapVerts = nSecDiv + 1;
+      nStCapFaces = nSecDiv;
+    }
+
+    int nEnCapVerts;
+    int nEnCapFaces;
+
+    // End capping
+    if (getEndCapType()==CAP_SPHR) {
+      // spherical cap
+      nEnCapVerts = nSphr*nSecDiv +1;
+      nEnCapFaces = (nSphr-1)*nSecDiv*2 + nSecDiv;
+    }
+    else {
+      // flat cap
+      nEnCapVerts = nSecDiv + 1;
+      nEnCapFaces = nSecDiv;
+    }
 
     // TO DO: multiple vertex generation for discontinuous color point
 
@@ -102,14 +129,15 @@ void Tube2Renderer::setupVBO(detail::SplineSegment *pASeg)
     
     elem.m_pVBO = pVBO = MB_NEW Tube2DS::VertArray();
     pVBO->setDrawMode(gfx::DrawElem::DRAW_TRIANGLES);
-    pVBO->alloc(nVA + nCapVerts*2);
-    pVBO->allocIndex((nfaces + nCapFaces*2)*3);
+    pVBO->alloc(nVA + nStCapVerts + nEnCapVerts);
+    pVBO->allocIndex((nfaces + nStCapFaces + nEnCapFaces)*3);
 
     // generate indices
     int i, j, ind=0;
     int ij, ijp, ipj, ipjp;
     int ibase = 0, irow;
 
+    // body
     for (i=0; i<nAxPts-1; ++i) {
       irow = i*nSecDiv + ibase;
       for (j=0; j<nSecDiv; ++j) {
@@ -124,18 +152,36 @@ void Tube2Renderer::setupVBO(detail::SplineSegment *pASeg)
       }
     }
 
-    // flat cap (start)
     ibase = nVA;
-    irow = ibase + 1;
-    for (j=0; j<nSecDiv; ++j) {
-      ij = irow + j;
-      ijp = irow + (j+1)%nSecDiv;
-      pVBO->setIndex3(ind, ibase, ijp, ij);
-      ++ind;
+    if (getStartCapType()==CAP_SPHR) {
+      // spherical cap (start)
+      for (i=0; i<nSphr-1; ++i) {
+        irow = i*nSecDiv + ibase;
+        for (j=0; j<nSecDiv; ++j) {
+          ij = irow + j;
+          ipj = ij + nSecDiv;
+          ijp = irow + (j+1)%nSecDiv;
+          ipjp = irow + nSecDiv + (j+1)%nSecDiv;
+          pVBO->setIndex3(ind, ij, ipjp, ijp);
+          ++ind;
+          pVBO->setIndex3(ind, ipjp, ij, ipj);
+          ++ind;
+        }
+      }
     }
-
+    else {
+      // flat cap (start)
+      irow = ibase + 1;
+      for (j=0; j<nSecDiv; ++j) {
+        ij = irow + j;
+        ijp = irow + (j+1)%nSecDiv;
+        pVBO->setIndex3(ind, ibase, ijp, ij);
+        ++ind;
+      }
+    }
+    
     // flat cap (end)
-    ibase = nCapVerts + nVA;
+    ibase = nStCapVerts + nVA;
     irow = ibase + 1;
     for (j=0; j<nSecDiv; ++j) {
       ij = irow + j;
@@ -204,8 +250,8 @@ void Tube2Renderer::updateCrdVBO(detail::SplineSegment *pASeg)
       }
     }
     
-    // flat cap (start)
-    if (false) {
+    if (getStartCapType()==CAP_SPHR) {
+      // sphere cap (start)
       getBasisVecs(pSeg, fStart, pos, e0, e1, e2);
       const float sign = -1.0;
       const int nsphr = getAxialDetail();
@@ -226,7 +272,7 @@ void Tube2Renderer::updateCrdVBO(detail::SplineSegment *pASeg)
 	  Vector3F g1 = e11.scale(stab.x()) + e12.scale(stab.y());
 	  Vector3F dg1 = e11.scale(stab.z()) + e12.scale(stab.w());
 	  Vector3F dgp1 = e11.scale(-stab.w()) + e12.scale(stab.z());
-	  dg1 = dg1.scale(v0len*gpar) - (dgp1.cross(g1)).scale(-t*sign);
+	  dg1 = dg1.scale(v0len*gpar) - (dgp1.cross(g1)).scale(t*sign);
 
 	  pVBO->vertex3f(ind, e10 + g1);
 	  pVBO->normal3f(ind, dg1);
@@ -235,6 +281,7 @@ void Tube2Renderer::updateCrdVBO(detail::SplineSegment *pASeg)
       }      
     }
     else {
+      // flat cap (start)
       getBasisVecs(pSeg, fStart, pos, e0, e1, e2);
       pVBO->vertex3f(ind, pos);
       pVBO->normal3f(ind, -e0);
@@ -298,10 +345,10 @@ void Tube2Renderer::updateColorVBO(detail::SplineSegment *pASeg)
       }
     }
 
-    // flat cap (start)
     par = fstart;
     dcc = pSeg->calcColor(this, pCMol, par);
-    if (false) {
+    if (getStartCapType()==CAP_SPHR) {
+      // sphere cap (start)
       const int nsphr = getAxialDetail();
       for (i=0; i<nsphr; i++) {
 	for (j=0; j<nSecDiv; ++j) {
@@ -311,6 +358,7 @@ void Tube2Renderer::updateColorVBO(detail::SplineSegment *pASeg)
       }
     }
     else {
+      // flat cap (start)
       pVBO->color(ind, dcc);
       ++ind;
       for (j=0; j<nSecDiv; ++j) {

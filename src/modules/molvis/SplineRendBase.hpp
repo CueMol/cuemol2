@@ -170,6 +170,33 @@ namespace molvis {
 
     int getAxialDetail() const { return m_nAxialDetail; }
 
+    ////////////////////////////
+
+  private:
+
+    /// start cap type
+    int m_nStCapType;
+    int m_nEnCapType;
+
+  public:
+    /// cap type ID
+    static const int CAP_SPHR = 0;
+    static const int CAP_FLAT = 1;
+    static const int CAP_NONE = 2;
+
+    int getStartCapType() const { return m_nStCapType; }
+    void setStartCapType(int nType) {
+      super_t::invalidateDisplayCache();
+      m_nStCapType = nType;
+    }
+
+    int getEndCapType() const { return m_nEnCapType; }
+    void setEndCapType(int nType) {
+      super_t::invalidateDisplayCache();
+      m_nEnCapType = nType;
+    }
+
+
     /////////////////
     // ctor/dtor
 

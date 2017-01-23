@@ -282,6 +282,9 @@ SplineRendBase::SplineRendBase()
   m_nAxialDetail = 20;
   // m_dLineWidth = 1.2;
 
+  m_nStCapType = CAP_SPHR;
+  m_nEnCapType = CAP_SPHR;
+
   //m_bUseGLSL = true;
   m_bUseGLSL = false;
 

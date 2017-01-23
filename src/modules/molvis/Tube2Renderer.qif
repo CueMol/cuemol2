@@ -24,6 +24,28 @@ runtime_class Tube2Renderer extends MainChainRenderer
   property integer axialdetail => redirect(getAxialDetail, setAxialDetail);
   default axialdetail = 20;
 
+  // /// spline smoothing value
+  // property real smooth => redirect(getSmooth, setSmooth);
+  // default smooth = 0.0;
+
+  // /// color smoothing flag
+  // property boolean smoothcolor => redirect(isSmoothColor, setSmoothColor);
+  // default smoothcolor = true;
+
+  /// Tube cap type
+  enumdef start_captype {
+    sphere = molvis::SplineRendBase::CAP_SPHR;
+    flat = molvis::SplineRendBase::CAP_FLAT;
+    none = molvis::SplineRendBase::CAP_NONE;
+  }
+  property enum start_captype => redirect(getStartCapType, setStartCapType);
+  default start_captype = "sphere";
+
+  enumdef end_captype = start_captype;
+
+  property enum end_captype => redirect(getEndCapType, setEndCapType);
+  default end_captype = "flat";
+
 };
 
 #endif // TUBE2_RENDERER_QIF
