@@ -1041,190 +1041,26 @@ void OglDisplayContext::drawElem(const AbstDrawElem &ade)
   pRep->draw(ade);
   pRep->postDraw(ade);
 
+  if (ntype==AbstDrawElem::VA_VNC||
+      ntype==AbstDrawElem::VA_VNCI||
+      ntype==AbstDrawElem::VA_VNCI32){
+    const DrawElemVNC &de = static_cast<const DrawElemVNC &>(ade);
+    const int nverts = de.getSize();
+    DrawElemV dbg;
+    dbg.setDrawMode(DrawElemV::DRAW_LINES);
+    dbg.alloc(nverts * 2);
+    for (int i=0; i<nverts; ++i) {
+      Vector4D v, n;
+      de.getVertex(i, v);
+      de.getNormal(i, n);
+      dbg.vertex(i*2, v);
+      dbg.vertex(i*2+1, v+n.scale(0.1));
+    }
+    dbg.setLineWidth(1.0);
+    drawElem(dbg);
+  }
+
   return;
-
-
-#if 0
-  const DrawElem &de = static_cast<const DrawElem &>(ade);
-  const int nelems = de.getSize();
-  int ninds = 0;
-  GLuint nvbo = 0;
-  GLuint nvbo_ind = 0;
-  if (de.getVBO()==NULL) {
-    // Make VBO
-    glGenBuffers(1, &nvbo);
-    OglVBORep *pRep = MB_NEW OglVBORep();
-    pRep->m_nBufID = nvbo;
-    pRep->m_nSceneID = m_nSceneID;
-    de.setVBO(pRep);
-
-    // Init VBO & copy data
-    glBindBuffer(GL_ARRAY_BUFFER, nvbo);
-
-    if (ntype==DrawElem::VA_VC) {
-      const qbyte *pdata = (const qbyte *) static_cast<const DrawElemVC&>(de).getData();
-      glBufferData(GL_ARRAY_BUFFER, sizeof(DrawElemVC::Elem)*nelems, pdata, GL_STATIC_DRAW);
-    }
-    else if (ntype==DrawElem::VA_V) {
-      const qbyte *pdata = (const qbyte *) static_cast<const DrawElemV&>(de).getData();
-      glBufferData(GL_ARRAY_BUFFER, sizeof(DrawElemV::Elem)*nelems, pdata, GL_STATIC_DRAW);
-    }
-    else if (ntype==DrawElem::VA_VNC) {
-      const qbyte *pdata = (const qbyte *) static_cast<const DrawElemVNC&>(de).getData();
-      glBufferData(GL_ARRAY_BUFFER, sizeof(DrawElemVNC::Elem)*nelems, pdata, GL_STATIC_DRAW);
-    }
-    else if (ntype==DrawElem::VA_VNCI) {
-      const DrawElemVNCI &devnci = static_cast<const DrawElemVNCI&>(de);
-      const qbyte *pdata = (const qbyte *) devnci.getData();
-      glBufferData(GL_ARRAY_BUFFER, sizeof(DrawElemVNCI::Elem)*nelems, pdata, GL_STATIC_DRAW);
-
-      glGenBuffers(1, &nvbo_ind);
-      OglVBORep *pRep = MB_NEW OglVBORep();
-      pRep->m_nBufID = nvbo_ind;
-      pRep->m_nSceneID = m_nSceneID;
-      devnci.setIndexVBO(pRep);
-      ninds = devnci.getIndexSize();
-
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, nvbo_ind);
-      glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-                   sizeof(DrawElemVNCI::index_t)*ninds,
-                   devnci.getIndexData(),
-                   GL_STATIC_DRAW);
-    }
-    else if (ntype==DrawElem::VA_VNCI32) {
-      const DrawElemVNCI32 &devnci = static_cast<const DrawElemVNCI32&>(de);
-      const qbyte *pdata = (const qbyte *) devnci.getData();
-      glBufferData(GL_ARRAY_BUFFER, sizeof(DrawElemVNCI32::Elem)*nelems, pdata, GL_STATIC_DRAW);
-
-      glGenBuffers(1, &nvbo_ind);
-      OglVBORep *pRep = MB_NEW OglVBORep();
-      pRep->m_nBufID = nvbo_ind;
-      pRep->m_nSceneID = m_nSceneID;
-      devnci.setIndexVBO(pRep);
-      ninds = devnci.getIndexSize();
-
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, nvbo_ind);
-      glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-                   sizeof(DrawElemVNCI32::index_t)*ninds,
-                   devnci.getIndexData(),
-                   GL_STATIC_DRAW);
-    }
-
-    //glBindBuffer(GL_ARRAY_BUFFER, 0);
-  }
-  else {
-    // Reuse buffer
-
-    // bind array buffer
-    OglVBORep *pRep = (OglVBORep *) de.getVBO();
-    nvbo = pRep->m_nBufID;
-    glBindBuffer(GL_ARRAY_BUFFER, nvbo);
-
-    // bind element array buffer (if required)
-    if (ntype==DrawElem::VA_VNCI) {
-      const DrawElemVNCI &devnci = static_cast<const DrawElemVNCI&>(de);
-      OglVBORep *pRep = (OglVBORep *) devnci.getIndexVBO();
-      nvbo_ind = pRep->m_nBufID;
-      ninds = devnci.getIndexSize();
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, nvbo_ind);
-    }
-    else if (ntype==DrawElem::VA_VNCI32) {
-      const DrawElemVNCI32 &devnci = static_cast<const DrawElemVNCI32&>(de);
-      OglVBORep *pRep = (OglVBORep *) devnci.getIndexVBO();
-      nvbo_ind = pRep->m_nBufID;
-      ninds = devnci.getIndexSize();
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, nvbo_ind);
-    }
-
-    if (de.isUpdated()) {
-      // VBO updated --> call glBufferSubData
-      if (ntype==DrawElem::VA_VC) {
-        const qbyte *pdata = (const qbyte *) static_cast<const DrawElemVC&>(de).getData();
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(DrawElemVC::Elem)*nelems, pdata);
-      }
-      else if (ntype==DrawElem::VA_V) {
-        const qbyte *pdata = (const qbyte *) static_cast<const DrawElemV&>(de).getData();
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(DrawElemV::Elem)*nelems, pdata);
-      }
-      else if (ntype==DrawElem::VA_VNCI) {
-        const DrawElemVNCI &devnci = static_cast<const DrawElemVNCI&>(de);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(DrawElemVNCI::Elem)*nelems, devnci.getData());
-        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0,
-                        sizeof(DrawElemVNCI::index_t) * devnci.getIndexSize(),
-                        devnci.getIndexData());
-      }
-      else if (ntype==DrawElem::VA_VNCI32) {
-        const DrawElemVNCI32 &devnci = static_cast<const DrawElemVNCI32&>(de);
-        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(DrawElemVNCI32::Elem)*nelems, devnci.getData());
-        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0,
-                        sizeof(DrawElemVNCI32::index_t) * devnci.getIndexSize(),
-                        devnci.getIndexData());
-      }
-      de.setUpdated(false);
-    }
-    
-  }
-  //MB_ASSERT(nvbo!=0);
-
-  GLenum mode = convDrawMode(de.getDrawMode());
-
-  glLineWidth( de.getLineWidth() * float(getPixSclFac()) );
-  glPointSize( de.getLineWidth() * float(getPixSclFac()) );
-  quint32 cc = de.getDefColor();
-  glColor4ub(gfx::getRCode(cc),
-             gfx::getGCode(cc),
-             gfx::getBCode(cc),
-             gfx::getACode(cc));
-
-  if (ntype==DrawElem::VA_VC) {
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_COLOR_ARRAY);
-    glVertexPointer(3, GL_FLOAT, sizeof(DrawElemVC::Elem), 0);
-    glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(DrawElemVC::Elem),
-                   (const GLvoid *) (3*sizeof(qfloat32)) );
-  }
-  else if (ntype==DrawElem::VA_V) {
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glVertexPointer(3, GL_FLOAT, sizeof(DrawElemV::Elem), 0);
-  }
-  else if (ntype==DrawElem::VA_VNC ||
-	   ntype==DrawElem::VA_VNCI ||
-	   ntype==DrawElem::VA_VNCI32) {
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_NORMAL_ARRAY);
-    glEnableClientState(GL_COLOR_ARRAY);
-    glVertexPointer(3, GL_FLOAT, sizeof(DrawElemVNC::Elem), 0);
-    glNormalPointer(GL_FLOAT, sizeof(DrawElemVNC::Elem),
-                    (const GLvoid *) (3*sizeof(qfloat32)));
-    glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(DrawElemVNC::Elem),
-                   (const GLvoid *) (6*sizeof(qfloat32)));
-  }
-
-  
-  if (ntype==DrawElem::VA_VNCI) {
-    // element index array
-    setLighting(true);
-    glDrawElements(mode, ninds, GL_UNSIGNED_SHORT, 0);
-    setLighting(false);
-  }
-  else if (ntype==DrawElem::VA_VNCI32) {
-    // element 32-bit index array
-    setLighting(true);
-    glDrawElements(mode, ninds, GL_UNSIGNED_INT, 0);
-    setLighting(false);
-  }
-  else {
-    glDrawArrays(mode, 0, nelems);
-  }
-
-  glDisableClientState(GL_VERTEX_ARRAY);
-  glDisableClientState(GL_NORMAL_ARRAY);
-  glDisableClientState(GL_COLOR_ARRAY);
-
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-#endif
-  
 }
 
 
@@ -1278,20 +1114,19 @@ void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
 {
   const int itype = ada.getType();
   
-  //OglDrawArrayImpl *pRep = static_cast<OglDrawArrayImpl *>(ada.getImpl());
   gfx::DrawElemImpl *pRep = ada.getImpl();
   if (pRep==NULL) {
     if (itype==AbstDrawElem::VA_ATTR_INDS) {
-      if(GLEW_ARB_vertex_array_object)
-        pRep = MB_NEW OglVAOElemImpl(m_nSceneID);
-      else
-        pRep = MB_NEW OglDrawElemAttrsImpl(m_nSceneID);
+      //if(GLEW_ARB_vertex_array_object)
+      //pRep = MB_NEW OglVAOElemImpl(m_nSceneID);
+      //else
+      pRep = MB_NEW OglDrawElemAttrsImpl(m_nSceneID);
     }
     else {
-      if(GLEW_ARB_vertex_array_object)
-        pRep = MB_NEW OglVAOArrayImpl(m_nSceneID);
-      else
-        pRep = MB_NEW OglDrawArrayAttrsImpl(m_nSceneID);
+      //if(GLEW_ARB_vertex_array_object)
+      //  pRep = MB_NEW OglVAOArrayImpl(m_nSceneID);
+      //else
+      pRep = MB_NEW OglDrawArrayAttrsImpl(m_nSceneID);
     }
 
     ada.setImpl(pRep);
@@ -1320,126 +1155,6 @@ void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
 
   return;
 
-#if 0
-  GLuint nvbo = 0;
-  GLuint nvbo_ind = 0;
-
-  if (ada.getVBO()==NULL) {
-    // Make VBO for attribute array
-    glGenBuffers(1, &nvbo);
-    OglVBORep *pRep = MB_NEW OglVBORep();
-    pRep->m_nBufID = nvbo;
-    pRep->m_nSceneID = m_nSceneID;
-    ada.setVBO(pRep);
-
-    // Init VBO & copy data
-    glBindBuffer(GL_ARRAY_BUFFER, nvbo);
-    glBufferData(GL_ARRAY_BUFFER, ada.getDataSize(), ada.getData(), GL_STATIC_DRAW);
-
-    if (itype==AbstDrawElem::VA_ATTR_INDS) {
-      // Make VBO for indices
-      glGenBuffers(1, &nvbo_ind);
-      OglVBORep *pRep = MB_NEW OglVBORep();
-      pRep->m_nBufID = nvbo_ind;
-      pRep->m_nSceneID = m_nSceneID;
-      ada.setIndexVBO(pRep);
-
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, nvbo_ind);
-      glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-                   ada.getIndDataSize(),
-                   ada.getIndData(),
-                   GL_STATIC_DRAW);
-    }
-
-  }
-  else {
-    OglVBORep *pRep = (OglVBORep *) ada.getVBO();
-    nvbo = pRep->m_nBufID;
-    glBindBuffer(GL_ARRAY_BUFFER, nvbo);
-
-    if (itype==AbstDrawElem::VA_ATTR_INDS) {
-      OglVBORep *pRep = (OglVBORep *) ada.getIndexVBO();
-      nvbo_ind = pRep->m_nBufID;
-      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, nvbo_ind);
-    }
-
-  }
-
-
-  size_t nattr = ada.getAttrSize();
-  for (int i=0; i<nattr; ++i) {
-    int al = ada.getAttrLoc(i);
-    int az = ada.getAttrElemSize(i);
-    int at = ada.getAttrTypeID(i);
-    int ap = ada.getAttrPos(i);
-    if (at==qlib::type_consts::QTC_INT32 ||
-        at==qlib::type_consts::QTC_UINT32) {
-
-      glVertexAttribIPointer(al,
-                             az,
-                             convGLConsts(at),
-                             ada.getElemSize(),
-                             (void *) ap);
-
-    }
-    else {
-      glVertexAttribPointer(al,
-                            az,
-                            convGLConsts(at),
-                            convGLNorm(at),
-                            ada.getElemSize(),
-                            (void *) ap);
-    }
-    glEnableVertexAttribArray(al);
-  }
-
-#ifdef USE_GL_VBO_INST
-  int ninst = ada.getInstCount();
-#endif
-  
-  GLenum mode = convDrawMode(ada.getDrawMode());
-  size_t indsz = ada.getIndElemSize();
-  if (itype==AbstDrawElem::VA_ATTR_INDS) {
-    if (indsz==2) {
-#ifdef USE_GL_VBO_INST
-      if (ninst>0 && GLEW_ARB_instanced_arrays)
-        glDrawElementsInstanced(mode, ada.getIndSize(), GL_UNSIGNED_SHORT, 0, ninst);
-      else
-#endif
-        glDrawElements(mode, ada.getIndSize(), GL_UNSIGNED_SHORT, 0);
-    }
-    else if (indsz==4) {
-#ifdef USE_GL_VBO_INST
-      if (ninst>0 && GLEW_ARB_instanced_arrays)
-        glDrawElementsInstanced(mode, ada.getIndSize(), GL_UNSIGNED_INT, 0, ninst);
-      else
-#endif
-      glDrawElements(mode, ada.getIndSize(), GL_UNSIGNED_INT, 0);
-    }
-    else {
-      LOG_DPRINTLN("unsupported index element size %d", indsz);
-      MB_ASSERT(false);
-    }
-  }
-  else {
-#ifdef USE_GL_VBO_INST
-    if (ninst>0 && GLEW_ARB_instanced_arrays)
-      glDrawArraysInstanced(mode, 0, ada.getSize(), ninst);
-    else
-#endif
-      glDrawArrays(mode, 0, ada.getSize());
-  }
-  
-
-  for (int i=0; i<nattr; ++i) {
-    int al = ada.getAttrLoc(i);
-    glDisableVertexAttribArray(al);
-  }
-
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); 
-  glBindBuffer(GL_ARRAY_BUFFER, 0); 
-
-#endif
 }
 
 

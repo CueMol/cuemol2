@@ -18,8 +18,10 @@
 #include "TubeSection.hpp"
 #include "Spline2Renderer.hpp"
 
-namespace molvis {
+#include "TubeTess.hpp"
 
+namespace molvis {
+  
   using qlib::Vector4D;
   using qlib::Vector3F;
   using gfx::ColorPtr;
@@ -38,7 +40,7 @@ namespace molvis {
 
     typedef detail::DrawSegment super_t;
 
-    Tube2DS(int st, int en) : super_t(st, en), m_pVBO(NULL)
+    Tube2DS(int st, int en) : super_t(st, en), m_pVBO(NULL), m_ptess(NULL)
     {
     }
 
@@ -51,6 +53,11 @@ namespace molvis {
 
     /// cached vertex array/VBO
     VertArray *m_pVBO;
+
+    //////////////
+    // Workarea
+    
+    void* m_ptess;
 
   };
 
@@ -89,7 +96,11 @@ namespace molvis {
     MC_SCRIPTABLE;
     MC_CLONEABLE;
 
+  public:
     typedef SplineRendBase super_t;
+
+    typedef Tube2SS SplSeg;
+    typedef Tube2DS DrawSeg;
 
     //////////////
     // Properties
@@ -102,7 +113,6 @@ namespace molvis {
     TubeSectionPtr getTubeSection() const {
       return m_pts;
     }
-
 
     /////////////////
     // ctor/dtor
@@ -154,6 +164,7 @@ namespace molvis {
 
     virtual void drawVBO(detail::SplineSegment *pSeg, DisplayContext *pdc);
 
+	typedef TubeTess<Tube2Renderer> Tess;
   };
 
 }

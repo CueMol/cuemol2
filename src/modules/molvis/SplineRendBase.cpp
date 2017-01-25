@@ -82,8 +82,6 @@ void SplineSegment::generate(MainChainRenderer *pthis)
 
 quint32 SplineSegment::calcColor(MainChainRenderer *pthis, MolCoordPtr pMol, float par) const
 {
-  qlib::uid_t nSceneID = pthis->getSceneID();
-  
   int nprev = int(::floor(par));
   int nnext = int(::ceil(par));
   float rho = par - float(nprev);
@@ -95,7 +93,7 @@ quint32 SplineSegment::calcColor(MainChainRenderer *pthis, MolCoordPtr pMol, flo
   MolResiduePtr pPrev = getResid(pMol, nprev);
   
   ColorPtr pcol = pthis->calcColor(rho, true, pPrev, pNext, false, false);
-  return pcol->getDevCode(nSceneID);
+  return pcol->getDevCode(pthis->getSceneID());
 }
 
 void SplineSegment::updateBinormIntpol(MolCoordPtr pCMol)
@@ -274,6 +272,23 @@ void SplineSegment::updateDynamic(MainChainRenderer *pthis)
   updateBinormIntpol(pCMol);
 }
 
+void SplineSegment::getBasisVecs(float par, Vector3F &pos, Vector3F &e0,
+                                 Vector3F &e1, Vector3F &e2)
+{
+  float v0len;
+  Vector3F binorm, bpos;
+  Vector3F v0, v1, v2;
+
+  CubicSpline *pAxInt = getAxisIntpol();
+  pAxInt->interpolate(par, &pos, &v0);
+  binorm = intpolLinBn(par);
+  v0len = v0.length();
+  e0 = v0.divide(v0len);
+  v2 = binorm - e0.scale(e0.dot(binorm));
+  e2 = v2.normalize();
+  e1 = e2.cross(e0);
+}
+
 //////////
 
 SplineRendBase::SplineRendBase()
@@ -331,6 +346,13 @@ void SplineRendBase::objectChanged(qsys::ObjectEvent &ev)
 
 void SplineRendBase::display(DisplayContext *pdc)
 {
+  if (pdc->isFile()) {
+    preRender(pdc);
+    renderFile(pdc);
+    postRender(pdc);
+    return;
+  }
+    
   if (!isShaderCheckDone()) {
     bool bOK = false;
     try {
@@ -344,7 +366,7 @@ void SplineRendBase::display(DisplayContext *pdc)
     }
     else {
       // cannot initialize GLSL
-      // --> fall through VBO impl
+      // --> always use VBO impl
       m_bShaderAvail = false;
     }
   }
@@ -551,23 +573,7 @@ void SplineRendBase::updateCrdStatic()
   }
 }
 
-/*
-void SplineRendBase::updateCrdStatic(SplineSegment *pSeg)
+void SplineRendBase::renderFile(DisplayContext *pdc)
 {
-  // update spline coefficients (from MolAtom)
-  pSeg->updateStatic(this);
+}
 
-  // update VBO/Texture, etc
-  if (isUseGLSL()) {
-    updateCrdGLSL(pSeg);
-  }
-  else {
-    updateCrdVBO(pSeg);
-  }
-}
-*/
-/*
-void SplineRendBase::updateCrdDynamic(SplineSegment *pSeg)
-{
-}
-*/

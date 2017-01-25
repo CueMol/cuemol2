@@ -134,6 +134,9 @@ namespace molvis {
       void updateStatic(MainChainRenderer *pthis);
       void updateDynamic(MainChainRenderer *pthis);
 
+      void getBasisVecs(float par, Vector3F &pos, Vector3F &e0,
+                        Vector3F &e1, Vector3F &e2);
+
       //////////
 
       typedef std::deque<DrawSegment *> DrawList;
@@ -219,7 +222,11 @@ namespace molvis {
     virtual bool isCacheAvail() const;
     virtual void createCacheData();
 
+    /// Render to display
     virtual void render2(DisplayContext *pdc);
+
+    /// Render to file (without using cache data)
+    virtual void renderFile(DisplayContext *pdc);
 
     /////////////////
     // Event handling

@@ -44,7 +44,7 @@ runtime_class Tube2Renderer extends MainChainRenderer
   enumdef end_captype = start_captype;
 
   property enum end_captype => redirect(getEndCapType, setEndCapType);
-  default end_captype = "flat";
+  default end_captype = "sphere";
 
 };
 

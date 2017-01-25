@@ -213,6 +213,16 @@ bool DrawElemVNC::getVertex(int ind, Vector4D &v) const
   return true;
 }
 
+bool DrawElemVNC::getNormal(int ind, Vector4D &v) const
+{
+  if (ind<0 || getSize()<=ind) return false;
+
+  v.x() = m_pData[ind].nx;
+  v.y() = m_pData[ind].ny;
+  v.z() = m_pData[ind].nz;
+  return true;
+}
+
 bool DrawElemVNC::color(int ind, quint32 c)
 {
   if (ind<0 || getSize()<=ind) return false;

@@ -331,8 +331,6 @@ namespace gfx {
 
     virtual bool normal(int ind, const Vector4D &v);
 
-    bool getVertex(int ind, Vector4D &v) const;
-
     inline void vertexfp(int ind, const qfloat32 *pcrd) {
       MB_ASSERT(ind>=0 && getSize()>ind);
       m_pData[ind].x = pcrd[0];
@@ -360,6 +358,12 @@ namespace gfx {
       m_pData[ind].ny = v.y();
       m_pData[ind].nz = v.z();
     }
+
+    ////////
+    // access methods
+    bool getVertex(int ind, Vector4D &v) const;
+    bool getNormal(int ind, Vector4D &v) const;
+
   };
 
   /// Draw element with vertex, normal, color, and index
