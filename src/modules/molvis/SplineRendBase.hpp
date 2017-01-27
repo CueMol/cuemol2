@@ -35,6 +35,7 @@ namespace molvis {
   using qlib::Vector3F;
   using gfx::ColorPtr;
   using namespace molstr;
+  class SplineRendBase;
 
   namespace detail {
 
@@ -118,10 +119,10 @@ namespace molvis {
       CubicSpline *getAxisIntpol() { return &m_scoeff; }
 
 
-      void generate(MainChainRenderer *pthis);
+      void generate(SplineRendBase *pthis);
 
-      ColorPtr calcColorPtr(MainChainRenderer *pthis, MolCoordPtr pMol, float par) const;
-      quint32 calcColor(MainChainRenderer *pthis, MolCoordPtr pMol, float par) const;
+      ColorPtr calcColorPtr(SplineRendBase *pthis, MolCoordPtr pMol, float par) const;
+      quint32 calcColor(SplineRendBase *pthis, MolCoordPtr pMol, float par) const;
       
       Vector3F calcBinormVec(MolCoordPtr pMol, int nres);
 
@@ -132,8 +133,8 @@ namespace molvis {
       
       Vector3F intpolLinBn(float par);
 
-      void updateStatic(MainChainRenderer *pthis);
-      void updateDynamic(MainChainRenderer *pthis);
+      void updateStatic(SplineRendBase *pthis);
+      void updateDynamic(SplineRendBase *pthis);
 
       void getBasisVecs(float par, Vector3F &pos, Vector3F &e0,
                         Vector3F &e1, Vector3F &e2);
@@ -174,12 +175,12 @@ namespace molvis {
 
     int getAxialDetail() const { return m_nAxialDetail; }
 
-    ////////////////////////////
 
   private:
-
-    /// start cap type
+    /// Start cap type
     int m_nStCapType;
+
+    /// End cap type
     int m_nEnCapType;
 
   public:
@@ -188,17 +189,34 @@ namespace molvis {
     static const int CAP_FLAT = 1;
     static const int CAP_NONE = 2;
 
+    /// Start cap type
     int getStartCapType() const { return m_nStCapType; }
     void setStartCapType(int nType) {
       super_t::invalidateDisplayCache();
       m_nStCapType = nType;
     }
 
+    /// End cap type
     int getEndCapType() const { return m_nEnCapType; }
     void setEndCapType(int nType) {
       super_t::invalidateDisplayCache();
       m_nEnCapType = nType;
     }
+
+  private:
+    
+    /// Color interpolation flag
+    bool m_bInterpColor;
+
+  public:
+    /// Set color interpolation flag
+    void setSmoothColor(bool b)
+    {
+      super_t::invalidateDisplayCache();
+      m_bInterpColor = b;
+    }
+
+    bool isSmoothColor() const { return m_bInterpColor; }
 
 
     /////////////////

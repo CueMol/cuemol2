@@ -80,25 +80,27 @@ SplineSegment *Tube2Renderer::createSegment()
 void Tube2Renderer::setupVBO(detail::SplineSegment *pASeg)
 {
   Tube2SS *pSeg = static_cast<Tube2SS *>(pASeg);
-  const int nDetail = getAxialDetail();
-  const int nSecDiv = getTubeSection()->getSize();
+  //const int nDetail = getAxialDetail();
+  //const int nSecDiv = getTubeSection()->getSize();
 
   // for spherical capping
-  const int nSphr = nSecDiv/2;//getAxialDetail();
+  //const int nSphr = nSecDiv/2;//getAxialDetail();
 
   BOOST_FOREACH (DrawSegment *pelem, pSeg->m_draws) {
     Tube2DS &elem = *static_cast<Tube2DS*>(pelem);
 
-    const int nsplseg = elem.m_nEnd - elem.m_nStart;
-    const int nAxPts = nDetail * nsplseg + 1;
-    elem.m_nAxPts = nAxPts;
+    //const int nsplseg = elem.m_nEnd - elem.m_nStart;
+    //const int nAxPts = nDetail * nsplseg + 1;
+    //elem.m_nAxPts = nAxPts;
     
     int nVerts=0, nFaces=0;
     if (elem.m_ptess==NULL)
       elem.m_ptess = MB_NEW Tess();
     Tess *ptess = static_cast<Tess *>(elem.m_ptess);
-    ptess->calcSize(nAxPts, nSecDiv, getStartCapType(), getEndCapType(),
-                    nVerts, nFaces);
+
+    ptess->calcSize(this, pSeg, &elem, nVerts, nFaces);
+    //ptess->calcSize(nAxPts, nSecDiv, getStartCapType(), getEndCapType(), isSmoothColor(),
+    //nVerts, nFaces);
 
     Tube2DS::VertArray *pVBO = elem.m_pVBO;
     if (pVBO!=NULL)
@@ -218,13 +220,10 @@ void Tube2Renderer::renderFile(DisplayContext *pdc)
 
         TubeTess<Tube2Renderer,Tube2Renderer::SplSeg,Tube2Renderer::DrawSeg,gfx::DrawFileVNCI> tess;
         
-        const int nsplseg = elem.m_nEnd - elem.m_nStart;
-        const int nAxPts = nDetail * nsplseg + 1;
-        elem.m_nAxPts = nAxPts;
-
         int nVerts, nFaces;
-        tess.calcSize(nAxPts, nSecDiv, getStartCapType(), getEndCapType(),
-                      nVerts, nFaces);
+        //tess.calcSize(nAxPts, nSecDiv, getStartCapType(), getEndCapType(),isSmoothColor(),
+        //nVerts, nFaces);
+        tess.calcSize(this, pSeg, &elem, nVerts, nFaces);
 
         gfx::DrawFileVNCI vbo;
         vbo.setDrawMode(gfx::DrawElem::DRAW_TRIANGLES);

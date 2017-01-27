@@ -36,16 +36,50 @@ namespace molvis {
       m_pTarg = pTarg;
     }
 
-    void calcSize(int nAxPts, int nSecDiv, int nStartCapType, int nEndCapType,
+    //void calcSize(int nAxPts, int nSecDiv, int nStartCapType, int nEndCapType, bool bSmoCol,
+    //int &rnvert, int &rnface)
+    void calcSize( _Rend *pRend, _Seg *pSeg, _DrawSeg *pDS,
                   int &rnvert, int &rnface)
     {
+      const int nDetail = pRend->getAxialDetail();
+      const int nSecDiv = pRend->getTubeSection()->getSize();
+
+      const int nsplseg = pDS->m_nEnd - pDS->m_nStart;
+      const int nAxPts = nDetail * nsplseg + 1;
+      pDS->m_nAxPts = nAxPts;
+
+      const int nStartCapType = pRend->getStartCapType();
+      const int nEndCapType = pRend->getEndCapType();
+      const bool bSmoCol = pRend->isSmoothColor();
+
       m_nSecDiv = nSecDiv;
       m_nAxPts = nAxPts;
 
       const int nSphr = nSecDiv/2;
 
-      m_nbody_verts = nAxPts * nSecDiv;
-      m_nbody_faces = nSecDiv * (nAxPts-1) * 2;
+
+      const float fDetail = float(nDetail);
+      const float fStart = float(pDS->m_nStart);
+
+      // check vertex duplication for non-contiguous coloring
+      int vdup = 0;
+      if (!bSmoCol) {
+        /*
+        MolCoordPtr pCMol = pRend->getClientMol();
+        quint32 cc_prev = 0;
+        for (int i=pDS->m_nStart; i<=pDS->m_nEnd; ++i) {
+          quint32 cc = pSeg->calcColor(pRend, pCMol, float(i));
+          if (i!=pDS->m_nStart) {
+            if (cc!=cc_prev)
+              vdup ++;
+          }
+          cc_prev = cc;
+        }*/
+        //vdup = nsplseg-1;
+      }
+      
+      m_nbody_verts = (nAxPts+vdup) * nSecDiv;
+      m_nbody_faces = nSecDiv * (nAxPts+vdup-1) * 2;
 
       // Start capping
       if (nStartCapType==SplineRendBase::CAP_SPHR) {
@@ -137,7 +171,7 @@ namespace molvis {
 
       const float fDetail = float(pRend->getAxialDetail());
       const float fStart = float(pDS->m_nStart);
-      //_DrawSeg::VertArray *pVBO = pDS->m_pVBO;
+      const bool bSmoCol = pRend->isSmoothColor();
 
       // body
       for (i=0; i<m_nAxPts; ++i) {
@@ -338,7 +372,7 @@ namespace molvis {
 
     void setFlatCapColors(int &ind, const MolCoordPtr &pCMol, _Rend *pRend, _Seg *pSeg, _DrawSeg *pDS, bool bStart)
     {
-      int i, j;
+      int j;
 
       const int nSecDiv = m_nSecDiv;
       //_DrawSeg::VertArray *pVBO = pDS->m_pVBO;

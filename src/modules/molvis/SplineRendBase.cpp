@@ -29,7 +29,7 @@ SplineSegment::~SplineSegment()
   std::for_each(m_draws.begin(), m_draws.end(), qlib::delete_ptr<DrawSegment*>());
 }
 
-void SplineSegment::generate(MainChainRenderer *pthis)
+void SplineSegment::generate(SplineRendBase *pthis)
 {
   // convert aidtmp (deque) to liner aids (vector)
   quint32 nsz = m_aidtmp.size();
@@ -80,7 +80,7 @@ void SplineSegment::generate(MainChainRenderer *pthis)
   }
 }
 
-ColorPtr SplineSegment::calcColorPtr(MainChainRenderer *pthis, MolCoordPtr pMol, float par) const
+ColorPtr SplineSegment::calcColorPtr(SplineRendBase *pthis, MolCoordPtr pMol, float par) const
 {
   int nprev = int(::floor(par));
   int nnext = int(::ceil(par));
@@ -92,11 +92,11 @@ ColorPtr SplineSegment::calcColorPtr(MainChainRenderer *pthis, MolCoordPtr pMol,
   MolResiduePtr pNext = getResid(pMol, nnext);
   MolResiduePtr pPrev = getResid(pMol, nprev);
   
-  return pthis->calcColor(rho, true, pPrev, pNext, false, false);
+  return pthis->calcColor(rho, pthis->isSmoothColor(), pPrev, pNext, false, false);
   
 }
 
-quint32 SplineSegment::calcColor(MainChainRenderer *pthis, MolCoordPtr pMol, float par) const
+quint32 SplineSegment::calcColor(SplineRendBase *pthis, MolCoordPtr pMol, float par) const
 {
   ColorPtr pcol = calcColorPtr(pthis, pMol, par);
   return pcol->getDevCode(pthis->getSceneID());
@@ -237,7 +237,7 @@ Vector3F SplineSegment::intpolLinBn(float par)
   return cp0.scale(1.0f - f) + cp1.scale(f);
 }
 
-void SplineSegment::updateStatic(MainChainRenderer *pthis)
+void SplineSegment::updateStatic(SplineRendBase *pthis)
 {
   // update axial intpol coef
   MolCoordPtr pCMol = pthis->getClientMol();
@@ -257,7 +257,7 @@ void SplineSegment::updateStatic(MainChainRenderer *pthis)
   updateBinormIntpol(pCMol);
 }
 
-void SplineSegment::updateDynamic(MainChainRenderer *pthis)
+void SplineSegment::updateDynamic(SplineRendBase *pthis)
 {
   // update axial intpol coef
   MolCoordPtr pCMol = pthis->getClientMol();
