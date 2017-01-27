@@ -175,7 +175,11 @@ namespace molvis {
 
       // body
       for (i=0; i<m_nAxPts; ++i) {
-        par = float(i)/fDetail + fStart;
+        if (bSmoCol)
+          par = float(i)/fDetail + fStart;
+        else
+          par = float(i)/fDetail + fStart;
+
         m_pTarg->color2(pSeg->calcColorPtr(pRend, pCMol, par), pRend->getSceneID());
         for (j=0; j<m_nSecDiv; ++j) {
           m_pTarg->color2(ind);
