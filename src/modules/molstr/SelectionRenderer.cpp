@@ -236,7 +236,7 @@ void SelectionRenderer::display(DisplayContext *pdc)
   
   preRender(pdc);
   m_pVBO->setLineWidth(m_linew);
-  m_pVBO->setDefColor(m_color);
+  m_pVBO->setDefColor(m_color, getSceneID());
   pdc->drawElem(*m_pVBO);
   postRender(pdc);
 #else

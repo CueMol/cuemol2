@@ -27,7 +27,7 @@ namespace sysdep {
   using namespace gfx;
 
   GLenum convDrawMode(int nMode) {
-	  GLenum mode;
+    GLenum mode;
     switch (nMode) {
     case DrawElem::DRAW_POINTS:
       mode = GL_POINTS;

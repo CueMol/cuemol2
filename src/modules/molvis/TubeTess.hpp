@@ -8,7 +8,7 @@
 
 namespace molvis {
 
-  template <class _Rend, class _Seg=_Rend::SplSeg, class _DrawSeg=_Rend::DrawSeg>
+  template <class _Rend, class _Seg=_Rend::SplSeg, class _DrawSeg=_Rend::DrawSeg, class _VertArray=_DrawSeg::VertArray>
   class TubeTess
   {
   public:
@@ -21,8 +21,20 @@ namespace molvis {
     int m_nEnCapVerts;
     int m_nEnCapFaces;
 
+    int m_nVerts;
+    int m_nFaces;
+
     int m_nAxPts;
     int m_nSecDiv;
+
+    _VertArray *m_pTarg;
+
+    _VertArray *getTarget() const {
+      return m_pTarg;
+    }
+    void setTarget(_VertArray *pTarg) {
+      m_pTarg = pTarg;
+    }
 
     void calcSize(int nAxPts, int nSecDiv, int nStartCapType, int nEndCapType,
                   int &rnvert, int &rnface)
@@ -59,16 +71,17 @@ namespace molvis {
         m_nEnCapFaces = nSecDiv;
       }
 
-      rnvert = m_nbody_verts + m_nStCapVerts + m_nEnCapVerts;
-      rnface = m_nbody_faces + m_nStCapFaces + m_nEnCapFaces;
+      rnvert = m_nVerts = m_nbody_verts + m_nStCapVerts + m_nEnCapVerts;
+      rnface = m_nFaces = m_nbody_faces + m_nStCapFaces + m_nEnCapFaces;
     }
 
     ////////////////////////////
     // Tube Body
     
     /// Generate body indices
-    void makeBodyInd(int &ind, typename _DrawSeg::VertArray *pVBO)
+    void makeBodyInd(int &ind)
     {
+      //_VertArray *pVBO = m_pTarg;
       int i, j;
       int ij, ijp, ipj, ipjp;
       int ibase = 0, irow;
@@ -81,9 +94,9 @@ namespace molvis {
           ipj = ij + m_nSecDiv;
           ijp = irow + (j+1)%m_nSecDiv;
           ipjp = irow + m_nSecDiv + (j+1)%m_nSecDiv;
-          pVBO->setIndex3(ind, ij, ijp, ipjp);
+          m_pTarg->setIndex3(ind, ij, ijp, ipjp);
           ++ind;
-          pVBO->setIndex3(ind, ipjp, ipj, ij);
+          m_pTarg->setIndex3(ind, ipjp, ipj, ij);
           ++ind;
         }
       }
@@ -98,7 +111,7 @@ namespace molvis {
       const float fStart = float(pDS->m_nStart);
       const int nAxPts = pDS->m_nAxPts;
       const int nSecDiv = m_nSecDiv; //pTS->getSize();
-      _DrawSeg::VertArray *pVBO = pDS->m_pVBO;
+      //_DrawSeg::VertArray *pVBO = pDS->m_pVBO;
 
       Vector3F pos, e0, e1, e2;
       Vector3F g, dg;
@@ -109,8 +122,8 @@ namespace molvis {
           const Vector4D &stab = pTS->getSectTab(j);
           g = e1.scale( float(stab.x()) ) + e2.scale( float(stab.y()) );
           dg = e1.scale( float(stab.z()) ) + e2.scale( float(stab.w()) );
-          pVBO->vertex3f(ind, pos + g);
-          pVBO->normal3f(ind, dg);
+          m_pTarg->vertex3f(ind, pos + g);
+          m_pTarg->normal3f(ind, dg);
           ++ind;
         }
       }
@@ -121,18 +134,17 @@ namespace molvis {
     {
       int i, j;
       float par;
-      quint32 dcc;
 
       const float fDetail = float(pRend->getAxialDetail());
       const float fStart = float(pDS->m_nStart);
-      _DrawSeg::VertArray *pVBO = pDS->m_pVBO;
+      //_DrawSeg::VertArray *pVBO = pDS->m_pVBO;
 
       // body
       for (i=0; i<m_nAxPts; ++i) {
         par = float(i)/fDetail + fStart;
-        dcc = pSeg->calcColor(pRend, pCMol, par);
+        m_pTarg->color2(pSeg->calcColorPtr(pRend, pCMol, par), pRend->getSceneID());
         for (j=0; j<m_nSecDiv; ++j) {
-          pVBO->color(ind, dcc);
+          m_pTarg->color2(ind);
           ++ind;
         }
       }
@@ -141,7 +153,7 @@ namespace molvis {
     ////////////////////////////
 
     /// spherical cap index
-    void makeSphrCapInd(int &ind, typename _DrawSeg::VertArray *pVBO, bool bStart)
+    void makeSphrCapInd(int &ind, bool bStart)
     {
       const int nSecDiv = m_nSecDiv;
       const int nSphr = m_nSecDiv/2;
@@ -163,12 +175,12 @@ namespace molvis {
           ijp = irow + (j+1)%nSecDiv;
           ipjp = irow + nSecDiv + (j+1)%nSecDiv;
           if (bStart) {
-            pVBO->setIndex3(ind  , ij, ipjp, ijp);
-            pVBO->setIndex3(ind+1, ipjp, ij, ipj);
+            m_pTarg->setIndex3(ind  , ij, ipjp, ijp);
+            m_pTarg->setIndex3(ind+1, ipjp, ij, ipj);
           }
           else {
-            pVBO->setIndex3(ind  , ij, ijp, ipjp);
-            pVBO->setIndex3(ind+1, ipjp, ipj, ij);
+            m_pTarg->setIndex3(ind  , ij, ijp, ipjp);
+            m_pTarg->setIndex3(ind+1, ipjp, ipj, ij);
           }
           ind+=2;
         }
@@ -180,9 +192,9 @@ namespace molvis {
         ij = irow + j;
         ijp = irow + (j+1)%nSecDiv;
         if (bStart)
-          pVBO->setIndex3(ind, itop, ijp, ij);
+          m_pTarg->setIndex3(ind, itop, ijp, ij);
         else
-          pVBO->setIndex3(ind, itop, ij, ijp);
+          m_pTarg->setIndex3(ind, itop, ij, ijp);
         ++ind;
       }
     }
@@ -193,7 +205,7 @@ namespace molvis {
       const int nSecDiv = m_nSecDiv; //pTS->getSize();
       const int nsphr = nSecDiv/2; //getAxialDetail();
       Vector3F pos, e0, e1, e2;
-      _DrawSeg::VertArray *pVBO = pDS->m_pVBO;
+      //_DrawSeg::VertArray *pVBO = pDS->m_pVBO;
       
       float sign;
       float fStart;
@@ -228,13 +240,13 @@ namespace molvis {
           float ldg1 = dg1.length();
           dg1 = dg1.scale(gpar) + e0.scale(sign*t*ldg1);
 
-          pVBO->vertex3f(ind, pos1 + g1);
-	  pVBO->normal3f(ind, dg1);
+          m_pTarg->vertex3f(ind, pos1 + g1);
+	  m_pTarg->normal3f(ind, dg1);
 	  ++ind;
 	}
       }      
-      pVBO->vertex3f(ind, pos + v0);
-      pVBO->normal3f(ind, e0.scale(sign));
+      m_pTarg->vertex3f(ind, pos + v0);
+      m_pTarg->normal3f(ind, e0.scale(sign));
       ++ind;
     }
 
@@ -246,7 +258,7 @@ namespace molvis {
       const int nsphr = m_nSecDiv/2;
 
       // const float fDetail = float(pRend->getAxialDetail());
-      _DrawSeg::VertArray *pVBO = pDS->m_pVBO;
+      //_DrawSeg::VertArray *pVBO = pDS->m_pVBO;
 
       float par;
       if (bStart)
@@ -254,15 +266,15 @@ namespace molvis {
       else
         par = float(pDS->m_nEnd);
 
-      quint32 dcc = pSeg->calcColor(pRend, pCMol, par);
+      m_pTarg->color2(pSeg->calcColorPtr(pRend, pCMol, par), pRend->getSceneID());
 
       for (i=0; i<nsphr; i++) {
 	for (j=0; j<nSecDiv; ++j) {
-          pVBO->color(ind, dcc);
+          m_pTarg->color2(ind);
 	  ++ind;
 	}
       }
-      pVBO->color(ind, dcc);
+      m_pTarg->color2(ind);
       ++ind;
 
     }
@@ -270,7 +282,7 @@ namespace molvis {
     ////////////////////////////
 
     /// flat cap index
-    void makeFlatCapInd(int &ind, typename _DrawSeg::VertArray *pVBO, bool bStart)
+    void makeFlatCapInd(int &ind, bool bStart)
     {
       const int nSecDiv = m_nSecDiv;
 
@@ -289,9 +301,9 @@ namespace molvis {
         ij = irow + j;
         ijp = irow + (j+1)%nSecDiv;
         if (bStart)
-          pVBO->setIndex3(ind, ibase, ijp, ij);
+          m_pTarg->setIndex3(ind, ibase, ijp, ij);
         else
-          pVBO->setIndex3(ind, ibase, ij, ijp);
+          m_pTarg->setIndex3(ind, ibase, ij, ijp);
         ++ind;
       }
     }
@@ -303,7 +315,7 @@ namespace molvis {
       const int nSecDiv = m_nSecDiv; //pTS->getSize();
       const int nsphr = nSecDiv/2; //getAxialDetail();
       Vector3F pos, e0, e1, e2, g;
-      _DrawSeg::VertArray *pVBO = pDS->m_pVBO;
+      //_DrawSeg::VertArray *pVBO = pDS->m_pVBO;
 
       float par;
       if (bStart)
@@ -312,14 +324,14 @@ namespace molvis {
         par = float(pDS->m_nEnd);
 
       pSeg->getBasisVecs(par, pos, e0, e1, e2);
-      pVBO->vertex3f(ind, pos);
-      pVBO->normal3f(ind, e0.scale(sign));
+      m_pTarg->vertex3f(ind, pos);
+      m_pTarg->normal3f(ind, e0.scale(sign));
       ++ind;
       for (j=0; j<nSecDiv; ++j) {
 	const Vector4D &stab = pTS->getSectTab(j);
         g = e1.scale( float(stab.x()) ) + e2.scale( float(stab.y()) );
-	pVBO->vertex3f(ind, pos + g);
-        pVBO->normal3f(ind, e0.scale(sign));
+	m_pTarg->vertex3f(ind, pos + g);
+        m_pTarg->normal3f(ind, e0.scale(sign));
         ++ind;
       }
     }
@@ -329,7 +341,7 @@ namespace molvis {
       int i, j;
 
       const int nSecDiv = m_nSecDiv;
-      _DrawSeg::VertArray *pVBO = pDS->m_pVBO;
+      //_DrawSeg::VertArray *pVBO = pDS->m_pVBO;
 
       float par;
       if (bStart)
@@ -337,12 +349,12 @@ namespace molvis {
       else
         par = float(pDS->m_nEnd);
 
-      quint32 dcc = pSeg->calcColor(pRend, pCMol, par);
+      m_pTarg->color2(pSeg->calcColorPtr(pRend, pCMol, par), pRend->getSceneID());
 
-      pVBO->color(ind, dcc);
+      m_pTarg->color2(ind);
       ++ind;
       for (j=0; j<nSecDiv; ++j) {
-        pVBO->color(ind, dcc);
+        m_pTarg->color2(ind);
         ++ind;
       }
     }
@@ -353,22 +365,22 @@ namespace molvis {
     void makeIndex(_Rend *pRend, _Seg *pSeg, _DrawSeg *pDS)
     {
       int ind = 0;
-      typename _DrawSeg::VertArray *pVBO = pDS->m_pVBO;
+      //typename _DrawSeg::VertArray *pVBO = pDS->m_pVBO;
 
-      makeBodyInd(ind, pVBO);
+      makeBodyInd(ind);
 
       if (pRend->getStartCapType()==_Rend::CAP_SPHR) {
-        makeSphrCapInd(ind, pVBO, true);
+        makeSphrCapInd(ind, true);
       }
       else {
-        makeFlatCapInd(ind, pVBO, true);
+        makeFlatCapInd(ind, true);
       }
 
       if (pRend->getEndCapType()==_Rend::CAP_SPHR) {
-        makeSphrCapInd(ind, pVBO, false);
+        makeSphrCapInd(ind, false);
       }
       else {
-        makeFlatCapInd(ind, pVBO, false);
+        makeFlatCapInd(ind, false);
       }
     }
 

@@ -1041,6 +1041,7 @@ void OglDisplayContext::drawElem(const AbstDrawElem &ade)
   pRep->draw(ade);
   pRep->postDraw(ade);
 
+  /*
   if (ntype==AbstDrawElem::VA_VNC||
       ntype==AbstDrawElem::VA_VNCI||
       ntype==AbstDrawElem::VA_VNCI32){
@@ -1058,7 +1059,7 @@ void OglDisplayContext::drawElem(const AbstDrawElem &ade)
     }
     dbg.setLineWidth(1.0);
     drawElem(dbg);
-  }
+  }*/
 
   return;
 }

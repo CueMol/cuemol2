@@ -80,7 +80,7 @@ void SplineSegment::generate(MainChainRenderer *pthis)
   }
 }
 
-quint32 SplineSegment::calcColor(MainChainRenderer *pthis, MolCoordPtr pMol, float par) const
+ColorPtr SplineSegment::calcColorPtr(MainChainRenderer *pthis, MolCoordPtr pMol, float par) const
 {
   int nprev = int(::floor(par));
   int nnext = int(::ceil(par));
@@ -92,7 +92,13 @@ quint32 SplineSegment::calcColor(MainChainRenderer *pthis, MolCoordPtr pMol, flo
   MolResiduePtr pNext = getResid(pMol, nnext);
   MolResiduePtr pPrev = getResid(pMol, nprev);
   
-  ColorPtr pcol = pthis->calcColor(rho, true, pPrev, pNext, false, false);
+  return pthis->calcColor(rho, true, pPrev, pNext, false, false);
+  
+}
+
+quint32 SplineSegment::calcColor(MainChainRenderer *pthis, MolCoordPtr pMol, float par) const
+{
+  ColorPtr pcol = calcColorPtr(pthis, pMol, par);
   return pcol->getDevCode(pthis->getSceneID());
 }
 

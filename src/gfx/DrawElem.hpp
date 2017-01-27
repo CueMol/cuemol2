@@ -11,6 +11,7 @@
 #include <qlib/Vector3F.hpp>
 #include <qlib/LTypes.hpp>
 #include "SolidColor.hpp"
+#include "Mesh.hpp"
 
 namespace gfx {
 
@@ -191,8 +192,15 @@ namespace gfx {
 
     quint32 getDefColor() const { return m_nDefColor; }
     void setDefColor(quint32 cc) { m_nDefColor = cc; }
-    void setDefColor(const ColorPtr &col);
+    void setDefColor(const ColorPtr &col, qlib::uid_t nSceneID);
 
+  protected:
+    quint32 m_curcol;
+    
+  public:
+    virtual void color2(const ColorPtr &col, qlib::uid_t nSceneID);
+    virtual bool color2(int ind);
+    
   private:
     /// line width/point size
     float m_fLineWidth;
@@ -476,8 +484,6 @@ namespace gfx {
   private:
     int m_nIndSize;
     index_t *m_pIndData;
-
-
   };
 
   //////////////////////////////////////////////////////
@@ -513,6 +519,114 @@ namespace gfx {
     quint32 m_color;
 
     void setup(const PixelBuffer &src, const Vector4D &pos, quint32 color);
+
+  };
+
+  //////////////////////////////////////////////////////
+
+  /// Draw to file (wrapper for Mesh; compatible with DrawElemVNCI32) 
+  class GFX_API DrawFileVNCI : public DrawElem
+  {
+    typedef DrawElem super_t;
+
+  private:
+    ColorPtr m_pCurCol;
+    Mesh m_mesh;
+
+  public:
+    typedef quint32 index_t;
+
+    DrawFileVNCI() {}
+
+    virtual ~DrawFileVNCI() {}
+
+
+    virtual bool vertex(int ind, const Vector4D &v) {
+      m_mesh.setVertex2(ind, v);
+      return true;
+    }
+
+    inline void vertex3f(int ind, const Vector3F &v) {
+      vertex(ind, Vector4D(v.x(), v.y(), v.z()));
+    }
+
+    virtual bool normal(int ind, const Vector4D &v) {
+      m_mesh.setNormal2(ind, v);
+      return true;
+    }
+
+    inline void normal3f(int ind, const Vector3F &v) {
+      normal(ind, Vector4D(v.x(), v.y(), v.z()));
+    }
+
+    virtual bool color(int ind, quint32 cc) {
+      m_mesh.setColor2(ind, ColorPtr(MB_NEW SolidColor(cc)));
+      return true;
+    }
+    virtual void color2(const ColorPtr &col, qlib::uid_t nSceneID) {
+      m_pCurCol = col;
+    }
+    virtual bool color2(int ind) {
+      m_mesh.setColor2(ind, m_pCurCol);
+      return true;
+    }
+
+
+    virtual int getType() const { return VA_VNCI32; }
+
+    virtual void invalidateCache() const {}
+
+    virtual const void *getData() const {
+      return NULL;
+    }
+
+    virtual size_t getElemSize() const {
+      return 0;
+    }
+
+    virtual const void *getIndData() const { return NULL; }
+
+    virtual size_t getIndElemSize() const {
+      return sizeof(index_t);
+    }
+
+    virtual size_t getIndSize() const {
+      return m_mesh.getFaceSize()*3;
+    }
+
+
+    /// allocate index buffer (for general use)
+    virtual void alloc(int nsize) {
+      m_mesh.initVerts(nsize);
+    }
+
+    void allocIndex(int ninds) {
+      m_mesh.initFaces(ninds/3);
+    }
+
+    void setIndex(int ind, index_t n1) {
+      m_mesh.setFace2(ind, n1);
+    }
+
+    /// start indexed triangles mode (shortcut method)
+    void startIndexTriangles(int nverts, int nfaces) {
+      setDrawMode(DRAW_TRIANGLES);
+      alloc(nverts);
+      allocIndex(nfaces*3);
+    }
+
+    /// set face index for triangles mode (shortcut method)
+    void setIndex3(int ind, index_t n1, index_t n2, index_t n3) {
+      //MB_ASSERT( (ind*3+2) <m_nIndSize);
+      m_mesh.setFace(ind, n1, n2, n3);
+    }
+
+    int getSize() const { return m_mesh.getVertSize(); }
+    //int getIndexSize() const {  }
+
+    Mesh *getMesh() {
+      return &m_mesh;
+    }
 
   };
 

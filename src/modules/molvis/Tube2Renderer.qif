@@ -22,7 +22,7 @@ runtime_class Tube2Renderer extends MainChainRenderer
 
   /// Detail level to the axial direction
   property integer axialdetail => redirect(getAxialDetail, setAxialDetail);
-  default axialdetail = 20;
+  default axialdetail = 6;
 
   // /// spline smoothing value
   // property real smooth => redirect(getSmooth, setSmooth);

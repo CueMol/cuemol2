@@ -120,6 +120,7 @@ namespace molvis {
 
       void generate(MainChainRenderer *pthis);
 
+      ColorPtr calcColorPtr(MainChainRenderer *pthis, MolCoordPtr pMol, float par) const;
       quint32 calcColor(MainChainRenderer *pthis, MolCoordPtr pMol, float par) const;
       
       Vector3F calcBinormVec(MolCoordPtr pMol, int nres);
@@ -261,7 +262,7 @@ namespace molvis {
   public:
     inline bool isShaderAvail() const { return m_bShaderAvail; }
 
-  private:
+  protected:
 
     /////////////////
     // Common implementation

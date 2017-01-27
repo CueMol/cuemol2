@@ -13,18 +13,22 @@ using qlib::Vector4D;
 
 void Mesh::init(int nverts, int nfaces)
 {
+  initVerts(nverts);
+  initFaces(nfaces);
+}
+
+void Mesh::initVerts(int nverts)
+{
   m_nVerts = nverts;
-  m_nFaces = nfaces;
   m_verts = std::vector<float>(nverts*3);
   m_norms = std::vector<float>(nverts*3);
   m_colptrs = std::vector<ColorPtr>(nverts*3);
+}
+
+void Mesh::initFaces(int nfaces)
+{
+  m_nFaces = nfaces;
   m_faces = std::vector<int>(nfaces*3);
-  /*
-  m_pVerts = new float[nverts*3];
-  m_pNorms = new float[nverts*3];
-  m_pCols = new IntColor[nverts];
-  m_pFaces = new int[nfaces*3];
-   */
 }
 
 bool Mesh::reduce(int nverts, int nfaces)
@@ -38,7 +42,6 @@ bool Mesh::reduce(int nverts, int nfaces)
 
 void Mesh::setVertex(int i, const Vector4D &v)
 {
-  //MB_ASSERT(m_pVerts!=NULL);
   MB_ASSERT(i*3+3<=m_verts.size());
   MB_ASSERT(i<m_nVerts);
   m_verts[i*3+0] = (float) v.x();
@@ -50,21 +53,12 @@ void Mesh::setVertex(int i, const Vector4D &v)
   m_norms[i*3+2] = (float) m_curNorm.z();
   
   m_colptrs[i] = m_pCurCol;
-  
-  //m_pCols[i].cid2 = m_curCol.cid2;
-  //m_pCols[i].rho = m_curCol.rho;
 }
 
 void Mesh::color(const ColorPtr &c)
 {
   m_pCurCol = c;
-  //m_curCol = m_clut.newColor(c, c->getMaterial());
 }
-
-/*void Mesh::color(const ColorPtr &c, const LString &mtr)
-{
-  m_curCol = m_clut.newColor(c, mtr);
-}*/
 
 bool Mesh::getCol(ColorPtr &rc, int iv) const
 {
@@ -73,8 +67,6 @@ bool Mesh::getCol(ColorPtr &rc, int iv) const
 
   rc = m_colptrs[iv];
   return true;
-  //const IntColor &id = m_pCols[iv];
-  //return m_clut.getColor(id, rc);
 }
 
 bool Mesh::convRGBAByteCols(quint8 *pcols, int nsize, int defalpha/*=255*/, qlib::uid_t nSceneID) const

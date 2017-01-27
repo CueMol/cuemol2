@@ -45,9 +45,9 @@ DrawElem::~DrawElem()
 {
 }
 
-void DrawElem::setDefColor(const ColorPtr &col)
+void DrawElem::setDefColor(const ColorPtr &col, qlib::uid_t nSceneID)
 {
-  m_nDefColor = col->getCode();
+  m_nDefColor = col->getDevCode(nSceneID);
 }
 
 bool DrawElem::normal(int ind, const Vector4D &v)
@@ -60,6 +60,15 @@ bool DrawElem::color(int ind, quint32 c)
   return false;
 }
 
+void DrawElem::color2(const ColorPtr &col, qlib::uid_t nSceneID)
+{
+  m_curcol = col->getDevCode(nSceneID);
+}
+
+bool DrawElem::color2(int ind)
+{
+  return color(ind, m_curcol);
+}
 
 //////////////////////////
 

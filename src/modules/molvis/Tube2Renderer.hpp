@@ -164,7 +164,14 @@ namespace molvis {
 
     virtual void drawVBO(detail::SplineSegment *pSeg, DisplayContext *pdc);
 
-	typedef TubeTess<Tube2Renderer> Tess;
+    typedef TubeTess<Tube2Renderer> Tess;
+
+    /////////////////
+    // File rendering
+
+    /// Render to file (without using cache data)
+    virtual void renderFile(DisplayContext *pdc);
+    
   };
 
 }
