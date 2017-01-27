@@ -75,7 +75,7 @@ namespace molvis {
           }
           cc_prev = cc;
         }*/
-        //vdup = nsplseg-1;
+        vdup = nsplseg;
       }
       
       m_nbody_verts = (nAxPts+vdup) * nSecDiv;
@@ -113,8 +113,10 @@ namespace molvis {
     // Tube Body
     
     /// Generate body indices
-    void makeBodyInd(int &ind)
+    void makeBodyInd(int &ind, _Rend *pRend, _Seg *pSeg, _DrawSeg *pDS)
     {
+      const int nDetail = pRend->getAxialDetail();
+
       //_VertArray *pVBO = m_pTarg;
       int i, j;
       int ij, ijp, ipj, ipjp;
@@ -175,10 +177,7 @@ namespace molvis {
 
       // body
       for (i=0; i<m_nAxPts; ++i) {
-        if (bSmoCol)
-          par = float(i)/fDetail + fStart;
-        else
-          par = float(i)/fDetail + fStart;
+        par = float(i)/fDetail + fStart;
 
         m_pTarg->color2(pSeg->calcColorPtr(pRend, pCMol, par), pRend->getSceneID());
         for (j=0; j<m_nSecDiv; ++j) {
@@ -405,7 +404,7 @@ namespace molvis {
       int ind = 0;
       //typename _DrawSeg::VertArray *pVBO = pDS->m_pVBO;
 
-      makeBodyInd(ind);
+      makeBodyInd(ind, pRend, pSeg, pDS);
 
       if (pRend->getStartCapType()==_Rend::CAP_SPHR) {
         makeSphrCapInd(ind, true);

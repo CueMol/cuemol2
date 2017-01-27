@@ -30,7 +30,7 @@ runtime_class Tube2Renderer extends MainChainRenderer
 
   /// color smoothing flag
   property boolean smoothcolor => redirect(isSmoothColor, setSmoothColor);
-  default smoothcolor = true;
+  default smoothcolor = false;
 
   /// Tube cap type
   enumdef start_captype {
