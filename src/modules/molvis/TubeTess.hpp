@@ -80,7 +80,7 @@ namespace molvis {
       }
       
       m_nbody_verts = (nAxPts+m_nvdup) * nSecDiv;
-      m_nbody_faces = nSecDiv * (nAxPts+m_nvdup-1) * 2;
+      m_nbody_faces = nSecDiv * (nAxPts-1) * 2;
 
       // Start capping
       if (nStartCapType==SplineRendBase::CAP_SPHR) {
@@ -117,7 +117,7 @@ namespace molvis {
     void makeBodyInd(int &ind, _Rend *pRend, _Seg *pSeg, _DrawSeg *pDS)
     {
       const int nDetail = pRend->getAxialDetail();
-      const int iGap = nDetail/2;
+      const int iGap = floorf( float(nDetail)/2.0f );
       const bool bSmoCol = pRend->isSmoothColor();
 
       //_VertArray *pVBO = m_pTarg;
@@ -127,18 +127,21 @@ namespace molvis {
       int k;
       bool bPrevGap =false;
 
+      // k: spline parameter
+      // i: mesh coordinate
       for (i=0,k=0; i<m_nAxPts+m_nvdup-1; ++i) {
 
 	if (!bSmoCol) {
 	  const int ii = k%nDetail;
 	  if (ii==iGap && !bPrevGap) {
 	    // skip
-	    //MB_DPRINTLN("skip iGap=%d, i=%d, k=%d", iGap, i, k);
+	    MB_DPRINTLN("skip iGap=%d, i=%d, k=%d", iGap, i, k);
 	    bPrevGap = true;
 	    continue;
 	  }
 	}
 
+	MB_DPRINTLN("makeface i=%d - %d", i, i+1);
         irow = i*m_nSecDiv;
         for (j=0; j<m_nSecDiv; ++j) {
           ij = irow + j;
@@ -152,26 +155,33 @@ namespace molvis {
         }
 	++k;
 	bPrevGap=false;
-	MB_DPRINTLN("Face i=%d, (k=%d)", i, k);
       }
     }
 
     /// Set body verteces
     void setBodyVerts(int &ind, _Rend *pRend, _Seg *pSeg, _DrawSeg *pDS, TubeSection *pTS)
     {
-      int i, j;
+      int i, j, k;
 
-      const float fDetail = float(pRend->getAxialDetail());
+      const int nDetail = pRend->getAxialDetail();
+      const float fDetail = float(nDetail);
       const float fStart = float(pDS->m_nStart);
       const int nAxPts = pDS->m_nAxPts;
       const int nSecDiv = m_nSecDiv; //pTS->getSize();
-      //_DrawSeg::VertArray *pVBO = pDS->m_pVBO;
 
       Vector3F pos, e0, e1, e2;
       Vector3F g, dg;
 
-      for (i=0; i<nAxPts; ++i) {
-        pSeg->getBasisVecs(float(i)/fDetail + fStart, pos, e0, e1, e2);
+      const bool bSmoCol = pRend->isSmoothColor();
+      const int iDup = floorf( fDetail/2.0f );
+      bool bPrevDup =false;
+
+      // k: spline parameter
+      // i: mesh coordinate
+      for (i=0,k=0; i<m_nAxPts+m_nvdup; ++i) {
+
+	MB_DPRINTLN("set vert i=%d, k=%d", i, k);
+        pSeg->getBasisVecs(float(k)/fDetail + fStart, pos, e0, e1, e2);
         for (j=0; j<nSecDiv; ++j) {
           const Vector4D &stab = pTS->getSectTab(j);
           g = e1.scale( float(stab.x()) ) + e2.scale( float(stab.y()) );
@@ -180,28 +190,60 @@ namespace molvis {
           m_pTarg->normal3f(ind, dg);
           ++ind;
         }
+
+	if (!bSmoCol) {
+	  const int ii = k%nDetail;
+	  if (ii==iDup && !bPrevDup) {
+	    // duplicate mesh
+	    //MB_DPRINTLN("skip iDup=%d, i=%d, k=%d", iDup, i, k);
+	    bPrevDup = true;
+	    continue;
+	  }
+	}
+
+	++k;
+	bPrevDup=false;
       }
     }
 
     /// Set body colors
     void setBodyColors(int &ind, const MolCoordPtr &pCMol, _Rend *pRend, _Seg *pSeg, _DrawSeg *pDS)
     {
-      int i, j;
+      int i, j, k;
       float par;
 
-      const float fDetail = float(pRend->getAxialDetail());
+      const int nDetail = pRend->getAxialDetail();
+      const float fDetail = float(nDetail);
       const float fStart = float(pDS->m_nStart);
       const bool bSmoCol = pRend->isSmoothColor();
 
-      // body
-      for (i=0; i<m_nAxPts; ++i) {
-        par = float(i)/fDetail + fStart;
+      const int iDup = floorf( fDetail/2.0f );
+      bool bPrevDup =false;
 
+      // k: spline parameter
+      // i: mesh coordinate
+      for (i=0,k=0; i<m_nAxPts+m_nvdup; ++i) {
+        par = float(k)/fDetail + fStart;
+	
+	MB_DPRINTLN("set vertcol i=%d, k=%d", i, k);
         m_pTarg->color2(pSeg->calcColorPtr(pRend, pCMol, par), pRend->getSceneID());
         for (j=0; j<m_nSecDiv; ++j) {
           m_pTarg->color2(ind);
           ++ind;
         }
+
+	if (!bSmoCol) {
+	  const int ii = k%nDetail;
+	  if (ii==iDup && !bPrevDup) {
+	    // duplicate mesh
+	    MB_DPRINTLN("duplicate iDup=%d, i=%d, k=%d", iDup, i, k);
+	    bPrevDup = true;
+	    continue;
+	  }
+	}
+
+	++k;
+	bPrevDup=false;
       }
     }
 
