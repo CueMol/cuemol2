@@ -8,7 +8,7 @@
 
 namespace molvis {
 
-  template <class _Rend, class _Seg=_Rend::SplSeg, class _DrawSeg=_Rend::DrawSeg, class _VertArray=_DrawSeg::VertArray>
+  template <class _Rend, class _Seg=typename _Rend::SplSeg, class _DrawSeg=typename _Rend::DrawSeg, class _VertArray=typename _DrawSeg::VertArray>
   class TubeTess
   {
   public:
@@ -25,6 +25,7 @@ namespace molvis {
     int m_nFaces;
 
     int m_nAxPts;
+    int m_nvdup;
     int m_nSecDiv;
 
     _VertArray *m_pTarg;
@@ -62,7 +63,7 @@ namespace molvis {
       const float fStart = float(pDS->m_nStart);
 
       // check vertex duplication for non-contiguous coloring
-      int vdup = 0;
+      m_nvdup = 0;
       if (!bSmoCol) {
         /*
         MolCoordPtr pCMol = pRend->getClientMol();
@@ -74,12 +75,12 @@ namespace molvis {
               vdup ++;
           }
           cc_prev = cc;
-        }*/
-        vdup = nsplseg;
+	  }*/
+        m_nvdup = nsplseg;
       }
       
-      m_nbody_verts = (nAxPts+vdup) * nSecDiv;
-      m_nbody_faces = nSecDiv * (nAxPts+vdup-1) * 2;
+      m_nbody_verts = (nAxPts+m_nvdup) * nSecDiv;
+      m_nbody_faces = nSecDiv * (nAxPts+m_nvdup-1) * 2;
 
       // Start capping
       if (nStartCapType==SplineRendBase::CAP_SPHR) {
@@ -116,15 +117,29 @@ namespace molvis {
     void makeBodyInd(int &ind, _Rend *pRend, _Seg *pSeg, _DrawSeg *pDS)
     {
       const int nDetail = pRend->getAxialDetail();
+      const int iGap = nDetail/2;
+      const bool bSmoCol = pRend->isSmoothColor();
 
       //_VertArray *pVBO = m_pTarg;
       int i, j;
       int ij, ijp, ipj, ipjp;
-      int ibase = 0, irow;
+      int irow;
+      int k;
+      bool bPrevGap =false;
 
-      // body
-      for (i=0; i<m_nAxPts-1; ++i) {
-        irow = i*m_nSecDiv + ibase;
+      for (i=0,k=0; i<m_nAxPts+m_nvdup-1; ++i) {
+
+	if (!bSmoCol) {
+	  const int ii = k%nDetail;
+	  if (ii==iGap && !bPrevGap) {
+	    // skip
+	    //MB_DPRINTLN("skip iGap=%d, i=%d, k=%d", iGap, i, k);
+	    bPrevGap = true;
+	    continue;
+	  }
+	}
+
+        irow = i*m_nSecDiv;
         for (j=0; j<m_nSecDiv; ++j) {
           ij = irow + j;
           ipj = ij + m_nSecDiv;
@@ -135,6 +150,9 @@ namespace molvis {
           m_pTarg->setIndex3(ind, ipjp, ipj, ij);
           ++ind;
         }
+	++k;
+	bPrevGap=false;
+	MB_DPRINTLN("Face i=%d, (k=%d)", i, k);
       }
     }
 
