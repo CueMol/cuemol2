@@ -88,10 +88,14 @@ namespace molvis {
         m_nStCapVerts = nSphr*nSecDiv +1;
         m_nStCapFaces = (nSphr-1)*nSecDiv*2 + nSecDiv;
       }
-      else {
+      else if (nStartCapType==SplineRendBase::CAP_FLAT) {
         // flat cap
         m_nStCapVerts = nSecDiv + 1;
         m_nStCapFaces = nSecDiv;
+      }
+      else {
+        m_nStCapVerts = 0;
+        m_nStCapFaces = 0;
       }
 
       // End capping
@@ -100,10 +104,14 @@ namespace molvis {
         m_nEnCapVerts = nSphr*nSecDiv +1;
         m_nEnCapFaces = (nSphr-1)*nSecDiv*2 + nSecDiv;
       }
-      else {
+      else if (nEndCapType==SplineRendBase::CAP_FLAT) {
         // flat cap
         m_nEnCapVerts = nSecDiv + 1;
         m_nEnCapFaces = nSecDiv;
+      }
+      else {
+        m_nEnCapVerts = 0;
+        m_nEnCapFaces = 0;
       }
 
       rnvert = m_nVerts = m_nbody_verts + m_nStCapVerts + m_nEnCapVerts;
@@ -225,6 +233,14 @@ namespace molvis {
       for (i=0,k=0; i<m_nAxPts+m_nvdup; ++i) {
         par = float(k)/fDetail + fStart;
 	
+	if (!bSmoCol) {
+	  const int ii = i%(nDetail+1);
+	  if (ii<=iDup)
+	    par = floorf(par);
+	  else
+	    par = ceilf(par);
+	}
+
 	MB_DPRINTLN("set vertcol i=%d, k=%d", i, k);
         m_pTarg->color2(pSeg->calcColorPtr(pRend, pCMol, par), pRend->getSceneID());
         for (j=0; j<m_nSecDiv; ++j) {
@@ -469,14 +485,14 @@ namespace molvis {
       if (pRend->getStartCapType()==_Rend::CAP_SPHR) {
         makeSphrCapInd(ind, true);
       }
-      else {
+      else if (pRend->getStartCapType()==_Rend::CAP_FLAT) {
         makeFlatCapInd(ind, true);
       }
 
       if (pRend->getEndCapType()==_Rend::CAP_SPHR) {
         makeSphrCapInd(ind, false);
       }
-      else {
+      else if (pRend->getEndCapType()==_Rend::CAP_FLAT) {
         makeFlatCapInd(ind, false);
       }
     }
@@ -490,14 +506,14 @@ namespace molvis {
       if (pRend->getStartCapType()==_Rend::CAP_SPHR) {
         setSphrCapVerts(ind, pRend, pSeg, pDS, pTS, true);
       }
-      else {
+      else if (pRend->getStartCapType()==_Rend::CAP_FLAT) {
         setFlatCapVerts(ind, pRend, pSeg, pDS, pTS, true);
       }
 
       if (pRend->getEndCapType()==_Rend::CAP_SPHR) {
         setSphrCapVerts(ind, pRend, pSeg, pDS, pTS, false);
       }
-      else {
+      else if (pRend->getEndCapType()==_Rend::CAP_FLAT) {
         setFlatCapVerts(ind, pRend, pSeg, pDS, pTS, false);
       }
 
@@ -512,14 +528,14 @@ namespace molvis {
       if (pRend->getStartCapType()==_Rend::CAP_SPHR) {
         setSphrCapColors(ind, pCMol, pRend, pSeg, pDS, true);
       }
-      else {
+      else if (pRend->getStartCapType()==_Rend::CAP_FLAT) {
         setFlatCapColors(ind, pCMol, pRend, pSeg, pDS, true);
       }
 
       if (pRend->getEndCapType()==_Rend::CAP_SPHR) {
         setSphrCapColors(ind, pCMol, pRend, pSeg, pDS, false);
       }
-      else {
+      else if (pRend->getEndCapType()==_Rend::CAP_FLAT) {
         setFlatCapColors(ind, pCMol, pRend, pSeg, pDS, false);
       }
 

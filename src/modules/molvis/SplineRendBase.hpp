@@ -192,14 +192,14 @@ namespace molvis {
     /// Start cap type
     int getStartCapType() const { return m_nStCapType; }
     void setStartCapType(int nType) {
-      super_t::invalidateDisplayCache();
+      invalidateDisplayCache();
       m_nStCapType = nType;
     }
 
     /// End cap type
     int getEndCapType() const { return m_nEnCapType; }
     void setEndCapType(int nType) {
-      super_t::invalidateDisplayCache();
+      invalidateDisplayCache();
       m_nEnCapType = nType;
     }
 
@@ -212,7 +212,7 @@ namespace molvis {
     /// Set color interpolation flag
     void setSmoothColor(bool b)
     {
-      super_t::invalidateDisplayCache();
+      invalidateDisplayCache();
       m_bInterpColor = b;
     }
 
