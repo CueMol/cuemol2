@@ -218,6 +218,18 @@ namespace molvis {
 
     bool isSmoothColor() const { return m_bInterpColor; }
 
+  private:
+    float m_fSmooth;
+
+  public:
+	  void setSmooth(double f) {
+      invalidateDisplayCache();
+      m_fSmooth = float (f);
+    }
+    double getSmooth() const {
+      return m_fSmooth;
+    }
+
 
     /////////////////
     // ctor/dtor

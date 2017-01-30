@@ -101,7 +101,7 @@ bool SceneManager::destroyScene(qlib::uid_t uid)
 
   ScenePtr scene = iter->second;
 
-  // notify unloading (and deactivate views)
+  // notify unloading (and release view resources)
   scene->unloading();
 
   // destroy all objects (and renderers)

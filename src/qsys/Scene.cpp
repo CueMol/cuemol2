@@ -203,6 +203,10 @@ void Scene::clearAllData()
 
 void Scene::clearAllDataScr()
 {
+  // ADDED: 2017/01/30
+  // This call is required to destroy all graphics resouces of Renderers.
+  destroyAllObjects();
+
   clearAllData();
 
   {

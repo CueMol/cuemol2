@@ -32,6 +32,8 @@ runtime_class Tube2Renderer extends MainChainRenderer
   property boolean smoothcolor => redirect(isSmoothColor, setSmoothColor);
   default smoothcolor = false;
 
+  //
+
   /// Tube cap type
   enumdef start_captype {
     sphere = molvis::SplineRendBase::CAP_SPHR;
@@ -45,6 +47,12 @@ runtime_class Tube2Renderer extends MainChainRenderer
 
   property enum end_captype => redirect(getEndCapType, setEndCapType);
   default end_captype = "sphere";
+
+  //
+
+  /// spline smoothing value
+  property real smooth => redirect(getSmooth, setSmooth);
+  default smooth = 0.0;
 
 };
 

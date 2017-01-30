@@ -241,13 +241,36 @@ void SplineSegment::updateStatic(SplineRendBase *pthis)
 {
   // update axial intpol coef
   MolCoordPtr pCMol = pthis->getClientMol();
-  MolAtomPtr pAtom;
-  Vector4D pos4d;
+  MolAtomPtr pAtom, pPrevAtom, pNextAtom;
+  Vector4D pos4d, ppos, npos;
   int i;
 
+  const float fSmooth = float( pthis->getSmooth() );
+  
   for (i=0; i<m_nCtlPts; ++i) {
     pAtom = getAtom(pCMol, i);
     pos4d = pAtom->getPos();
+
+    if (!qlib::isNear4(fSmooth, 0.0f)) {
+      // apply mainchain smoothing
+      const int ip = i-1;
+      const int in = i+1;
+      if (ip>=0 && in<m_nCtlPts) {
+        pPrevAtom = getAtom(pCMol, ip);
+        pNextAtom = getAtom(pCMol, in);
+        if (!pPrevAtom.isnull() && !pNextAtom.isnull()) {
+          ppos = pPrevAtom->getPos();
+          npos = pNextAtom->getPos();
+          ppos += npos;
+          ppos = ppos.scale(0.5);
+          
+          ppos = ppos.scale(fSmooth);
+          pos4d = pos4d.scale(1.0-fSmooth);
+          pos4d += ppos;
+        }
+      }
+    }
+
     m_scoeff.setPoint(i, Vector3F(float(pos4d.x()), float(pos4d.y()), float(pos4d.z())));
   }
 
@@ -265,12 +288,32 @@ void SplineSegment::updateDynamic(SplineRendBase *pthis)
 
   qfloat32 *crd = pAMol->getAtomCrdArray();
 
-  MolAtomPtr pAtom;
-  Vector4D pos4d;
   int i;
+  Vector3F curpos, ppos, npos;
+
+  const float fSmooth = float( pthis->getSmooth() );
 
   for (i=0; i<m_nCtlPts; ++i) {
-    m_scoeff.setPoint(i, Vector3F(&crd[m_inds[i]]));
+    curpos = Vector3F(&crd[m_inds[i]]);
+
+    if (!qlib::isNear4(fSmooth, 0.0f)) {
+      // apply mainchain smoothing
+      const int ip = i-1;
+      const int in = i+1;
+      if (ip>=0 && in<m_nCtlPts) {
+        ppos = Vector3F(&crd[m_inds[ip]]);
+        npos = Vector3F(&crd[m_inds[in]]);
+
+        ppos += npos;
+        ppos = ppos.scale(0.5);
+        
+        ppos = ppos.scale(fSmooth);
+        curpos = curpos.scale(1.0f-fSmooth);
+        curpos += ppos;
+      }
+    }
+
+    m_scoeff.setPoint(i, curpos);
   }
   m_scoeff.generate();
 
