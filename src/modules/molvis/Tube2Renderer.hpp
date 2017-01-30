@@ -9,6 +9,7 @@
 #include "molvis.hpp"
 
 #include <qlib/Vector4D.hpp>
+#include <qlib/Vector2D.hpp>
 #include <qlib/Vector3F.hpp>
 #include <gfx/DrawElem.hpp>
 #include <gfx/DrawAttrArray.hpp>
@@ -24,6 +25,7 @@ namespace molvis {
   
   using qlib::Vector4D;
   using qlib::Vector3F;
+  using qlib::Vector2D;
   using gfx::ColorPtr;
   using namespace molstr;
 
@@ -114,6 +116,64 @@ namespace molvis {
       return m_pts;
     }
 
+    ///////////////////////////////
+
+  private:
+    int m_nPuttyMode;
+
+  public:
+    static const int TBR_PUTTY_OFF = 0;
+    static const int TBR_PUTTY_SCALE1 = 1;
+    static const int TBR_PUTTY_LINEAR1 = 2;
+
+    void setPuttyMode(int nmode) {
+      m_nPuttyMode = nmode;
+      invalidateDisplayCache();
+    }
+    int getPuttyMode() const { return m_nPuttyMode; }
+
+    ///////////////////////////////
+
+  private:
+    int m_nPuttyTgt;
+
+  public:
+    static const int TBR_PUTTY_BFAC = 1;
+    static const int TBR_PUTTY_OCC = 2;
+
+    void setPuttyTgt(int ntgt) {
+      m_nPuttyTgt = ntgt;
+      invalidateDisplayCache();
+    }
+    int getPuttyTgt() const { return m_nPuttyTgt; }
+
+    ///////////////////////////////
+
+  public:
+    float m_dPuttyScl;
+    float m_dPuttyLoScl;
+
+  public:
+    void setPuttyHiScl(double d) {
+      m_dPuttyScl = float(d);
+      invalidateDisplayCache();
+    }
+    float getPuttyHiScl() const { return m_dPuttyScl; }
+
+    void setPuttyLoScl(double d) {
+      m_dPuttyLoScl = float(d);
+      invalidateDisplayCache();
+    }
+    float getPuttyLoScl() const { return m_dPuttyLoScl; }
+    
+
+    // putty work area
+
+    float m_dParHi;
+    float m_dParLo;
+    float m_dParAver;
+
+
     /////////////////
     // ctor/dtor
 
@@ -149,6 +209,8 @@ namespace molvis {
     /////////////////
     // Common implementation
 
+    virtual void createCacheData();
+
     virtual void createSegList();
     
     virtual SplineSegment *createSegment();
@@ -172,6 +234,14 @@ namespace molvis {
     /// Render to file (without using cache data)
     virtual void renderFile(DisplayContext *pdc);
     
+
+    /////////////////
+    // Putty impl
+
+    void initPuttyData();
+
+    Vector2D getEScl(const MolCoordPtr &pMol, Tube2SS *pSeg, float par) const;
+
   };
 
 }

@@ -24,9 +24,7 @@ runtime_class Tube2Renderer extends MainChainRenderer
   property integer axialdetail => redirect(getAxialDetail, setAxialDetail);
   default axialdetail = 6;
 
-  // /// spline smoothing value
-  // property real smooth => redirect(getSmooth, setSmooth);
-  // default smooth = 0.0;
+  //
 
   /// color smoothing flag
   property boolean smoothcolor => redirect(isSmoothColor, setSmoothColor);
@@ -54,6 +52,33 @@ runtime_class Tube2Renderer extends MainChainRenderer
   property real smooth => redirect(getSmooth, setSmooth);
   default smooth = 0.0;
 
+  //
+
+  /// putty type
+  enumdef putty_mode {
+    none = molvis::Tube2Renderer::TBR_PUTTY_OFF;
+    linear1 = molvis::Tube2Renderer::TBR_PUTTY_LINEAR1;
+    scale1 = molvis::Tube2Renderer::TBR_PUTTY_SCALE1;
+  }
+  property enum putty_mode => redirect(getPuttyMode, setPuttyMode);
+  default putty_mode = "none";
+  
+  /// putty target
+  enumdef putty_tgt {
+    bfac = molvis::Tube2Renderer::TBR_PUTTY_BFAC;
+    occ = molvis::Tube2Renderer::TBR_PUTTY_OCC;
+  }
+  property enum putty_tgt => redirect(getPuttyTgt, setPuttyTgt);
+  default putty_tgt = "bfac";
+
+  /// putty mode scale factor (high)
+  property real putty_hiscl => redirect(getPuttyHiScl, setPuttyHiScl);
+  default putty_hiscl = 3.0;
+
+  /// putty mode scale factor (low)
+  property real putty_loscl => redirect(getPuttyLoScl, setPuttyLoScl);
+  default putty_loscl = 3.0;
+  
 };
 
 #endif // TUBE2_RENDERER_QIF

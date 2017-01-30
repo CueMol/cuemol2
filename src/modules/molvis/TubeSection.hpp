@@ -158,7 +158,7 @@ public:
   Vector3F getVec(int j, const Vector3F &e1, const Vector3F &e2) const
   {
     j = j%m_nSectTabSz;
-    Vector3F g = e1.scale(m_pSectTab[j].x()) + e2.scale(m_pSectTab[j].y());
+    Vector3F g = e1.scale(float(m_pSectTab[j].x())) + e2.scale(float(m_pSectTab[j].y()));
     return g;
   }
 

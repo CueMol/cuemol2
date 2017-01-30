@@ -190,7 +190,10 @@ void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
     // Render tube body
     //
 
-    //std::deque<Vector4D> tmpv;
+#ifdef SHOW_NORM
+    std::deque<Vector4D> tmpv;
+#endif
+
     pdl->startTriangleStrip();
 
     for (j=0; j<=m_pts->getSize(); j++) {
@@ -207,17 +210,21 @@ void TubeRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
         pdl->color(pPrevCol);
       pdl->vertex(f2+g2);
 
-      //tmpv.push_back(f1+g1);
-      //tmpv.push_back(f1+g1+dg1.scale(0.2));
+#ifdef SHOW_NORM
+      tmpv.push_back(f1+g1);
+      tmpv.push_back(f1+g1+dg1.scale(0.2));
+#endif
     }
 
     pdl->end();
 
-    //pdl->startLines();
-    //BOOST_FOREACH (const Vector4D &elem, tmpv) {
-    //pdl->vertex(elem);
-    //}
-    //pdl->end();
+#ifdef SHOW_NORM
+    pdl->startLines();
+    BOOST_FOREACH (const Vector4D &elem, tmpv) {
+      pdl->vertex(elem);
+    }
+    pdl->end();
+#endif
 
     // Post processing
     if (i==ndelta) {

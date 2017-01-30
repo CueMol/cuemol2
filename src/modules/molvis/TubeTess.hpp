@@ -125,7 +125,7 @@ namespace molvis {
     void makeBodyInd(int &ind, _Rend *pRend, _Seg *pSeg, _DrawSeg *pDS)
     {
       const int nDetail = pRend->getAxialDetail();
-      const int iGap = floorf( float(nDetail)/2.0f );
+      const int iGap = int( floorf(float(nDetail)/2.0f) );
       const bool bSmoCol = pRend->isSmoothColor();
 
       //_VertArray *pVBO = m_pTarg;
@@ -181,18 +181,32 @@ namespace molvis {
       Vector3F g, dg;
 
       const bool bSmoCol = pRend->isSmoothColor();
-      const int iDup = floorf( fDetail/2.0f );
+      const int iDup = int( floorf(fDetail/2.0f) );
       bool bPrevDup =false;
+
+      // putty
+      MolCoordPtr pCMol;
+      Vector2D escl(1,1);
+      bool bPutty = false;
+      if (pRend->getPuttyMode()!=_Rend::TBR_PUTTY_OFF) {
+        bPutty = true;
+        pCMol = pRend->getClientMol();
+      }
 
       // k: spline parameter
       // i: mesh coordinate
       for (i=0,k=0; i<m_nAxPts+m_nvdup; ++i) {
+        //MB_DPRINTLN("set vert i=%d, k=%d", i, k);
 
-	MB_DPRINTLN("set vert i=%d, k=%d", i, k);
-        pSeg->getBasisVecs(float(k)/fDetail + fStart, pos, e0, e1, e2);
+        const float par = float(k)/fDetail + fStart;
+
+        if (bPutty)
+          escl = pRend->getEScl(pCMol, pSeg, par);
+        pSeg->getBasisVecs(par, pos, e0, e1, e2);
+
         for (j=0; j<nSecDiv; ++j) {
           const Vector4D &stab = pTS->getSectTab(j);
-          g = e1.scale( float(stab.x()) ) + e2.scale( float(stab.y()) );
+          g = e1.scale( float(stab.x() * escl.x()) ) + e2.scale( float(stab.y() * escl.x()) );
           dg = e1.scale( float(stab.z()) ) + e2.scale( float(stab.w()) );
           m_pTarg->vertex3f(ind, pos + g);
           m_pTarg->normal3f(ind, dg);
@@ -225,7 +239,7 @@ namespace molvis {
       const float fStart = float(pDS->m_nStart);
       const bool bSmoCol = pRend->isSmoothColor();
 
-      const int iDup = floorf( fDetail/2.0f );
+      const int iDup = int( floorf(fDetail/2.0f) );
       bool bPrevDup =false;
 
       // k: spline parameter
@@ -348,8 +362,8 @@ namespace molvis {
 	for (j=0; j<nSecDiv; ++j) {
 	  const Vector4D &stab = pTS->getSectTab(j);
 
-          Vector3F g1 = e11.scale(stab.x()) + e12.scale(stab.y());
-          Vector3F dg1 = e1.scale(stab.z()) + e2.scale(stab.w());
+          Vector3F g1 = e11.scale(float(stab.x())) + e12.scale(float(stab.y()));
+          Vector3F dg1 = e1.scale(float(stab.z())) + e2.scale(float(stab.w()));
           float ldg1 = dg1.length();
           dg1 = dg1.scale(gpar) + e0.scale(sign*t*ldg1);
 
@@ -423,7 +437,7 @@ namespace molvis {
 
     void setFlatCapVerts(int &ind, _Rend *pRend, _Seg *pSeg, _DrawSeg *pDS, TubeSection *pTS, bool bStart)
     {
-      int i, j;
+      int j;
       const float sign = bStart?-1.0f:1.0f;
       const int nSecDiv = m_nSecDiv; //pTS->getSize();
       const int nsphr = nSecDiv/2; //getAxialDetail();

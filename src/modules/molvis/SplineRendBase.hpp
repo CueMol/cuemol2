@@ -222,11 +222,11 @@ namespace molvis {
     float m_fSmooth;
 
   public:
-	  void setSmooth(double f) {
+    void setSmooth(double f) {
       invalidateDisplayCache();
       m_fSmooth = float (f);
     }
-    double getSmooth() const {
+    float getSmooth() const {
       return m_fSmooth;
     }
 

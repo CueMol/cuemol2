@@ -570,7 +570,6 @@ void TubeSection::makeSpherCap(DisplayContext *pdl,
     }
     
     // render tube body
-    pdl->setPolygonMode(DisplayContext::POLY_LINE);
     pdl->startTriangleStrip();
     for (j=0; j<=getSize(); j++) {
       Vector4D stab = getSectTab(j);
