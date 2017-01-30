@@ -206,7 +206,7 @@ namespace molvis {
 
         for (j=0; j<nSecDiv; ++j) {
           const Vector4D &stab = pTS->getSectTab(j);
-          g = e1.scale( float(stab.x() * escl.x()) ) + e2.scale( float(stab.y() * escl.x()) );
+          g = e1.scale( float(stab.x() * escl.x()) ) + e2.scale( float(stab.y() * escl.y()) );
           dg = e1.scale( float(stab.z()) ) + e2.scale( float(stab.w()) );
           m_pTarg->vertex3f(ind, pos + g);
           m_pTarg->normal3f(ind, dg);
@@ -335,17 +335,26 @@ namespace molvis {
       //_DrawSeg::VertArray *pVBO = pDS->m_pVBO;
       
       float sign;
-      float fStart;
+      float fPar;
       if (bStart) {
         sign = -1.0f;
-        fStart = float(pDS->m_nStart);
+        fPar = float(pDS->m_nStart);
       }
       else {
         sign = 1.0f;
-        fStart = float(pDS->m_nEnd);
+        fPar = float(pDS->m_nEnd);
       }
 
-      pSeg->getBasisVecs(fStart, pos, e0, e1, e2);
+      pSeg->getBasisVecs(fPar, pos, e0, e1, e2);
+
+      // putty
+      if (pRend->getPuttyMode()!=_Rend::TBR_PUTTY_OFF) {
+        MolCoordPtr pCMol = pRend->getClientMol();
+        Vector2D escl = pRend->getEScl(pCMol, pSeg, fPar);
+        e1 = e1.scale(escl.x());
+        e2 = e2.scale(escl.y());
+      }
+      
       const float v0len = pTS->getVec(0, e1, e2).length();
       Vector3F v0 = e0.scale(sign*v0len);
 
@@ -451,6 +460,15 @@ namespace molvis {
         par = float(pDS->m_nEnd);
 
       pSeg->getBasisVecs(par, pos, e0, e1, e2);
+
+      // putty
+      if (pRend->getPuttyMode()!=_Rend::TBR_PUTTY_OFF) {
+        MolCoordPtr pCMol = pRend->getClientMol();
+        Vector2D escl = pRend->getEScl(pCMol, pSeg, par);
+        e1 = e1.scale(escl.x());
+        e2 = e2.scale(escl.y());
+      }
+
       m_pTarg->vertex3f(ind, pos);
       m_pTarg->normal3f(ind, e0.scale(sign));
       ++ind;

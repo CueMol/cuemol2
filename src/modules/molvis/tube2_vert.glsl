@@ -25,8 +25,16 @@ uniform TextureType coefTex;
 uniform TextureType binormTex;
 uniform TextureType sectTex;
 uniform sampler1D colorTex;
+uniform TextureType puttyTex;
 
+/// axial interpolation points
 uniform int u_npoints;
+
+/// smooth coloring
+uniform int u_bsmocol;
+
+/// putty mode flag
+uniform int u_bputty;
 
 #ifndef USE_INSTANCED
 uniform int u_InstanceID;
@@ -133,9 +141,9 @@ vec3 calcBinorm(in float rho)
   vec3 cp0 = getCoef(binormTex, ncoeff);
   vec3 cp1 = getCoef(binormTex, ncoeff+1);
 
-  vec3 rval = cp0*(1.0-f) + cp1*f;
-
-  return rval;
+  //vec3 rval = cp0*(1.0-f) + cp1*f;
+  //return rval;
+  return mix(cp0, cp1, f);
 }
 
 vec4 getSectTab(in int ind)
@@ -163,7 +171,31 @@ vec4 calcColor(in float rho)
   vec4 col0 = texelFetch1D(colorTex, ncoeff, 0);
   vec4 col1 = texelFetch1D(colorTex, ncoeff+1, 0);
 #endif
-  return mix(col0, col1, f);
+
+  if (u_bsmocol) {
+    return mix(col0, col1, f);
+  }
+  else {
+    return (f<0.5f)?col0:col1;
+  }
+}
+
+float getEScl(in float rho)
+{
+  int ncoeff = int(floor(rho));
+  ncoeff = clamp(ncoeff, 0, u_npoints-2);
+  float f = rho - float(ncoeff);
+
+  float val0, val1;
+#ifdef USE_TBO
+  val0 = texelFetch(puttyTex, ncoeff).r;
+  val1 = texelFetch(puttyTex, ncoeff+1).r;
+#else
+  val0 = texelFetch1D(puttyTex, ncoeff, 0).r;
+  val1 = texelFetch1D(puttyTex, ncoeff+1, 0).r;
+#endif
+
+  return mix(val0, val1, f);
 }
 
 // local variables for lighting calc
@@ -249,8 +281,15 @@ void main (void)
 
   vec4 stab = getSectTab(j);
 
-  vec3 pos = cpos + e1*stab.x + e2*stab.y;
   vec3 norm = e1*stab.z + e2*stab.w;
+
+  if (u_bputty) {
+    float escl = getEScl(par);
+    e1 *= escl;
+    e2 *= escl;
+  }
+
+  vec3 pos = cpos + e1*stab.x + e2*stab.y;
 
   // Eye-coordinate position of vertex, needed in various calculations
   vec4 ecPosition = gl_ModelViewMatrix * vec4(pos, 1.0);

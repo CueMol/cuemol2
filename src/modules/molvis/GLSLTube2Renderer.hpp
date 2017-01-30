@@ -70,7 +70,7 @@ namespace molvis {
     typedef Tube2SS super_t;
 
     /// ctor
-    GLSLTube2SS() : super_t(), m_pCoefTex(NULL), m_pBinormTex(NULL), m_pColorTex(NULL)
+    GLSLTube2SS() : super_t(), m_pCoefTex(NULL), m_pBinormTex(NULL), m_pColorTex(NULL), m_pPuttyTex(NULL)
     {
     }
 
@@ -92,6 +92,10 @@ namespace molvis {
     /// color texture
     gfx::Texture *m_pColorTex;
     std::vector<qbyte> m_colorTexData;
+
+    /// putty texture
+    gfx::Texture *m_pPuttyTex;
+    std::vector<float> m_puttyTexData;
 
   };
 
@@ -164,6 +168,7 @@ namespace molvis {
     static const int BINORM_TEX_UNIT = 1;
     static const int SECT_TEX_UNIT = 2;
     static const int COLOR_TEX_UNIT = 3;
+    static const int PUTTY_TEX_UNIT = 4;
 
     gfx::Texture *m_pSectTex;
     std::vector<float> m_secttab;

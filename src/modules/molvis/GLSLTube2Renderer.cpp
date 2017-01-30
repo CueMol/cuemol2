@@ -108,6 +108,7 @@ bool GLSLTube2Renderer::initShader(DisplayContext *pdc)
   m_pPO->setUniform("binormTex", BINORM_TEX_UNIT);
   m_pPO->setUniform("sectTex", SECT_TEX_UNIT);
   m_pPO->setUniform("colorTex", COLOR_TEX_UNIT);
+  m_pPO->setUniform("puttyTex", PUTTY_TEX_UNIT);
 
   // setup attributes
   m_nRhoLoc = m_pPO->getAttribLocation("a_rho");
@@ -168,6 +169,19 @@ void GLSLTube2Renderer::setupGLSL(detail::SplineSegment *pASeg)
   pSeg->m_pColorTex->setup(1, gfx::Texture::FMT_RGBA,
                            gfx::Texture::TYPE_UINT8_COLOR);
   
+  if (pSeg->m_pPuttyTex!=NULL)
+    delete pSeg->m_pPuttyTex;
+  if (getPuttyMode()!=TBR_PUTTY_OFF) {
+    pSeg->m_pPuttyTex = MB_NEW gfx::Texture();
+#ifdef USE_TBO
+    pSeg->m_pPuttyTex->setup(1, gfx::Texture::FMT_R,
+                             gfx::Texture::TYPE_FLOAT32);
+#else
+    pSeg->m_pPuttyTex->setup(1, gfx::Texture::FMT_R,
+                             gfx::Texture::TYPE_FLOAT32);
+#endif
+  }
+
   const int nDetail = getAxialDetail();
   const float fDetail = float(nDetail);
   const int nSecDiv = getTubeSection()->getSize();
@@ -289,6 +303,17 @@ void GLSLTube2Renderer::updateColorGLSL(detail::SplineSegment *pASeg)
   }
 
   pSeg->m_pColorTex->setData(nCtlPts, 1, 1, &pSeg->m_colorTexData[0]);
+
+  if (getPuttyMode()!=TBR_PUTTY_OFF) {
+    MolCoordPtr pCMol = getClientMol();
+    Vector2D escl;
+	pSeg->m_puttyTexData.resize(nCtlPts);
+    for (i=0; i<nCtlPts; ++i) {
+      escl = getEScl(pCMol, pSeg, float(i));
+      pSeg->m_puttyTexData[i] = escl.x();
+    }
+    pSeg->m_pPuttyTex->setData(nCtlPts, 1, 1, &pSeg->m_puttyTexData[0]);
+  }
 }
 
 //////////
@@ -320,6 +345,7 @@ void GLSLTube2Renderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *p
   GLSLTube2SS *pSeg = static_cast<GLSLTube2SS *>(pASeg);
 
   const int nCtlPts = pSeg->m_scoeff.getSize();
+  const bool bPutty = getPuttyMode()!=TBR_PUTTY_OFF;
 
   pdc->setLineWidth(3.0);
 
@@ -327,16 +353,21 @@ void GLSLTube2Renderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *p
   pdc->useTexture(pSeg->m_pBinormTex, BINORM_TEX_UNIT);
   pdc->useTexture(m_pSectTex, SECT_TEX_UNIT);
   pdc->useTexture(pSeg->m_pColorTex, COLOR_TEX_UNIT);
+  if (bPutty)
+    pdc->useTexture(pSeg->m_pPuttyTex, PUTTY_TEX_UNIT);
 
   m_pPO->enable();
 
   // Setup uniforms
   m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
   m_pPO->setUniform("u_npoints", nCtlPts);
+  m_pPO->setUniform("u_bsmocol", isSmoothColor());
+  m_pPO->setUniform("u_bputty", bPutty);
   m_pPO->setUniform("coefTex", COEF_TEX_UNIT);
   m_pPO->setUniform("binormTex", BINORM_TEX_UNIT);
   m_pPO->setUniform("sectTex", SECT_TEX_UNIT);
   m_pPO->setUniform("colorTex", COLOR_TEX_UNIT);
+  m_pPO->setUniform("puttyTex", PUTTY_TEX_UNIT);
 
   BOOST_FOREACH (DrawSegment *pelem, pSeg->m_draws) {
     GLSLTube2DS &elem = *static_cast<GLSLTube2DS*>(pelem);
@@ -359,6 +390,8 @@ void GLSLTube2Renderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *p
   pdc->unuseTexture(pSeg->m_pBinormTex);
   pdc->unuseTexture(m_pSectTex);
   pdc->unuseTexture(pSeg->m_pColorTex);
+  if (bPutty)
+    pdc->unuseTexture(pSeg->m_pPuttyTex);
 }
 
 //////////
