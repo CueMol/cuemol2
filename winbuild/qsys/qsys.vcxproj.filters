@@ -1085,5 +1085,11 @@
     <glslshader Include="..\..\src\modules\molvis\tube2_vert.glsl">
       <Filter>molvis\Shaders</Filter>
     </glslshader>
+    <glslshader Include="..\..\src\modules\molvis\tube21_frag.glsl">
+      <Filter>molvis\Shaders</Filter>
+    </glslshader>
+    <glslshader Include="..\..\src\modules\molvis\tube21_vert.glsl">
+      <Filter>molvis\Shaders</Filter>
+    </glslshader>
   </ItemGroup>
 </Project>

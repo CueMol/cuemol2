@@ -90,10 +90,14 @@ bool GLSLTube2Renderer::initShader(DisplayContext *pdc)
     return false;
   }
 
-  if (m_pPO==NULL)
-    m_pPO = ssh.createProgObj("gpu_tube2",
+  if (m_pPO==NULL) {
+    /*m_pPO = ssh.createProgObj("gpu_tube2",
                               "%%CONFDIR%%/data/shaders/tube2_vert.glsl",
-                              "%%CONFDIR%%/data/shaders/tube2_frag.glsl");
+                              "%%CONFDIR%%/data/shaders/tube2_frag.glsl");*/
+    m_pPO = ssh.createProgObj("gpu_tube2",
+                              "%%CONFDIR%%/data/shaders/tube21_vert.glsl",
+                              "%%CONFDIR%%/data/shaders/tube21_frag.glsl");
+  }
   
   if (m_pPO==NULL) {
     LOG_DPRINTLN("Tube2RendGLSL> ERROR: cannot create progobj.");
