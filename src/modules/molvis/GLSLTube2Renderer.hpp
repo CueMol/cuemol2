@@ -115,6 +115,31 @@ namespace molvis {
     //////////////
     // Properties
 
+  private:
+    int m_nAxDetScl;
+
+  public:
+    void setAxDetScl(int n) {
+      m_nAxDetScl = n;
+      invalidateDisplayCache();
+    }
+    int getAxDetScl() const {
+      return m_nAxDetScl;
+    }
+
+  private:
+    bool m_bForceGLSL;
+
+  public:
+    void setForceGLSL(bool n) {
+      m_bForceGLSL = n;
+      setUseGLSL(n);
+      invalidateDisplayCache();
+    }
+    bool isForceGLSL() const {
+      return m_bForceGLSL;
+    }
+
     /////////////////
     // ctor/dtor
 

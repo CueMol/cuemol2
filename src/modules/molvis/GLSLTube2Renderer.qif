@@ -16,6 +16,15 @@ runtime_class GLSLTube2Renderer extends Tube2Renderer
   scriptable;
   smartptr;
   cloneable;
+
+  /// Scaling factor to the axialdetail
+  property integer axdet_scl => redirect(getAxDetScl, setAxDetScl);
+  default axdet_scl = 1;
+
+  /// force to use GLSL
+  property boolean force_glsl => redirect(isForceGLSL, setForceGLSL);
+  default force_glsl = false;
+
 };
 
 #endif

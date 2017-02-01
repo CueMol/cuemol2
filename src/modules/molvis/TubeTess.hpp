@@ -262,12 +262,16 @@ namespace molvis {
 	
         if (!bSmoCol) {
           const int ii = i%(nDetail+1);
-          if (ii==iDup) {
+          if (ii<=iDup)
+            par = floorf(par);
+          else 
+            par = ceilf(par);
+          /*
+          if (ii==iDup)
             par -= 0.001f;
-          }
-          else if (ii==iDup+1) {
+          else if (ii==iDup+1)
             par += 0.001f;
-          }
+          */
 	}
 
         //MB_DPRINTLN("set vertcol i=%d, k=%d", i, k);

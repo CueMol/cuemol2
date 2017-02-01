@@ -182,7 +182,7 @@ void GLSLTube2Renderer::setupGLSL(detail::SplineSegment *pASeg)
 #endif
   }
 
-  const int nDetail = getAxialDetail();
+  const int nDetail = getAxialDetail() * m_nAxDetScl;
   const float fDetail = float(nDetail);
   const int nSecDiv = getTubeSection()->getSize();
 
@@ -420,7 +420,8 @@ void GLSLTube2Renderer::objectChanged(qsys::ObjectEvent &ev)
   else if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED_FIXDYN) {
     MB_DPRINTLN("Spline2Rend (%p) > OBE_CHANGED_FIXDYN called!!", this);
 
-    setUseGLSL(false);
+    if (!isForceGLSL())
+      setUseGLSL(false); // reset to VBO mode
     return;
   }
 
