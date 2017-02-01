@@ -8,6 +8,8 @@
 
 namespace molvis {
 
+  using qlib::Vector2D;
+
   template <class _Rend, class _Seg=typename _Rend::SplSeg, class _DrawSeg=typename _Rend::DrawSeg, class _VertArray=typename _DrawSeg::VertArray>
   class TubeTess
   {
@@ -292,6 +294,15 @@ namespace molvis {
 
     ////////////////////////////
 
+    void setIndex(bool bStart, int &ind, int i1, int i2, int i3)
+    {
+      if (bStart)
+	m_pTarg->setIndex3(ind, i1, i3, i2);
+      else
+	m_pTarg->setIndex3(ind, i1, i2, i3);
+      ++ind;
+    } 
+
     /// spherical cap index
     void makeSphrCapInd(int &ind, bool bStart)
     {
@@ -331,11 +342,12 @@ namespace molvis {
       for (j=0; j<nSecDiv; ++j) {
         ij = irow + j;
         ijp = irow + (j+1)%nSecDiv;
-        if (bStart)
+	setIndex(bStart, ind, itop, ij, ijp);
+        /*if (bStart)
           m_pTarg->setIndex3(ind, itop, ijp, ij);
         else
           m_pTarg->setIndex3(ind, itop, ij, ijp);
-        ++ind;
+	  ++ind;*/
       }
     }
     
@@ -543,11 +555,7 @@ namespace molvis {
       for (j=0; j<Nx; ++j) {
         ij = j+3+ibase;
         ijp = ij+1;
-        if (bStart)
-          m_pTarg->setIndex3(ind, icen, ijp, ij);
-        else
-          m_pTarg->setIndex3(ind, icen, ij, ijp);
-        ++ind;
+	setIndex(bStart, ind, icen, ij, ijp);
       }
 
       // right circle (Nx+4 ~ 2Nx+4)
@@ -555,11 +563,7 @@ namespace molvis {
       for (j=0; j<Nx; j++) {
         ij = j+Nx+4+ibase;
         ijp = ij+1;
-        if (bStart)
-          m_pTarg->setIndex3(ind, icen, ijp, ij);
-        else
-          m_pTarg->setIndex3(ind, icen, ij, ijp);
-        ++ind;
+	setIndex(bStart, ind, icen, ij, ijp);
       }
 
       // front edge (2Nx+5 ~ 2Nx+Ny+3)
@@ -567,56 +571,48 @@ namespace molvis {
 
       ij = 1+ibase;
       ijp = Nx+3+ibase;
-      if (bStart)
-        m_pTarg->setIndex3(ind, icen, ijp, ij);
-      else
-        m_pTarg->setIndex3(ind, icen, ij, ijp);
-      ++ind;
+      setIndex(bStart, ind, icen, ij, ijp);
 
       ij = Nx+3+ibase;
       ijp = 2*Nx+5+ibase;
-      if (bStart)
-        m_pTarg->setIndex3(ind, icen, ijp, ij);
-      else
-        m_pTarg->setIndex3(ind, icen, ij, ijp);
-      ++ind;
+      setIndex(bStart, ind, icen, ij, ijp);
 
       for (j=0; j<Ny-2; j++) {
         ij = j+2*Nx+5+ibase;
         ijp = ij+1;
-        if (bStart)
-          m_pTarg->setIndex3(ind, icen, ijp, ij);
-        else
-          m_pTarg->setIndex3(ind, icen, ij, ijp);
-        ++ind;
+	setIndex(bStart, ind, icen, ij, ijp);
       }
 
       ij = 2*Nx+Ny+3+ibase;
       ijp = Nx+4+ibase;
-      if (bStart)
-        m_pTarg->setIndex3(ind, icen, ijp, ij);
-      else
-        m_pTarg->setIndex3(ind, icen, ij, ijp);
-      ++ind;
+      setIndex(bStart, ind, icen, ij, ijp);
 
       ij = Nx+4+ibase;
       ijp = 2+ibase;
-      if (bStart)
-        m_pTarg->setIndex3(ind, icen, ijp, ij);
-      else
-        m_pTarg->setIndex3(ind, icen, ij, ijp);
-      ++ind;
+      setIndex(bStart, ind, icen, ij, ijp);
 
       // back edge (2Nx+Ny+4 ~ 2Nx+2Ny+2)
+      ij = 2+ibase;
+      ijp = 2*Nx+4+ibase;
+      setIndex(bStart, ind, icen, ij, ijp);
+
+      ij = 2*Nx+4+ibase;
+      ijp = 2*Nx+Ny+4+ibase;
+      setIndex(bStart, ind, icen, ij, ijp);
+
       for (j=0; j<Ny-2; j++) {
         ij = j+2*Nx+Ny+4+ibase;
         ijp = ij+1;
-        if (bStart)
-          m_pTarg->setIndex3(ind, icen, ijp, ij);
-        else
-          m_pTarg->setIndex3(ind, icen, ij, ijp);
-        ++ind;
+	setIndex(bStart, ind, icen, ij, ijp);
       }
+
+      ij = 2*Nx+2*Ny+2+ibase;
+      ijp = 3+ibase;
+      setIndex(bStart, ind, icen, ij, ijp);
+
+      ij = 3+ibase;
+      ijp = 1+ibase;
+      setIndex(bStart, ind, icen, ij, ijp);
 
     }
 
