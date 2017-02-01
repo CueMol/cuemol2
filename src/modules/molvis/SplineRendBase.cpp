@@ -80,29 +80,72 @@ void SplineSegment::generate(SplineRendBase *pthis)
   }
 }
 
-ColorPtr SplineSegment::calcColorPtr(SplineRendBase *pthis, MolCoordPtr pMol, float par) const
+ColorPtr SplineSegment::calcColorPtr(SplineRendBase *pthis, const MolCoordPtr &pMol, float par) const
 {
   int nprev = int(::floor(par));
   int nnext = int(::ceil(par));
   float rho = par - float(nprev);
   
   nprev = qlib::clamp<int>(nprev, 0, m_aids.size()-1);
-  nnext = qlib::clamp<int>(nnext, 0, m_aids.size() - 1);
+  nnext = qlib::clamp<int>(nnext, 0, m_aids.size()-1);
   
+  bool bRes1Tp = false;
+  bool bRes2Tp = false;
+
+  if (pthis->isSegEndFade()) {
+    getSegEndImpl(pthis, nprev, nnext, rho, bRes1Tp, bRes2Tp);
+  }
+
   MolResiduePtr pNext = getResid(pMol, nnext);
   MolResiduePtr pPrev = getResid(pMol, nprev);
   
-  return pthis->calcColor(rho, pthis->isSmoothColor(), pPrev, pNext, false, false);
+  return pthis->calcColor(rho, pthis->isSmoothColor(), pPrev, pNext, bRes1Tp, bRes2Tp);
   
 }
 
-quint32 SplineSegment::calcColor(SplineRendBase *pthis, MolCoordPtr pMol, float par) const
+quint32 SplineSegment::calcColor(SplineRendBase *pthis, const MolCoordPtr &pMol, float par) const
 {
   ColorPtr pcol = calcColorPtr(pthis, pMol, par);
   return pcol->getDevCode(pthis->getSceneID());
 }
 
-void SplineSegment::updateBinormIntpol(MolCoordPtr pCMol)
+void SplineSegment::getSegEndImpl(SplineRendBase *pthis,
+                                  int nprev1, int nnext1,
+                                  float &rho, bool &bRes1Tp, bool &bRes2Tp) const
+{
+  MolCoordPtr pCMol = pthis->getClientMol();
+  SelectionPtr pSel = pthis->getSelection();
+
+  MolAtomPtr pPrev1 = getAtom(pCMol, nprev1);
+  MolAtomPtr pPrev2 = getAtom(pCMol, nprev1-1);
+  if (!pPrev1.isnull() && !pPrev2.isnull()) {
+    bool bSel0 = pSel->isSelected(pPrev2);
+    bool bSel1 = pSel->isSelected(pPrev1);
+
+    if (!bSel0) {
+      bRes1Tp = true;
+      if (!bSel1)
+        bRes2Tp = true;
+    }
+  }
+
+  MolAtomPtr pNext1 = getAtom(pCMol, nnext1);
+  MolAtomPtr pNext2 = getAtom(pCMol, nnext1+1);
+  if (!pNext1.isnull() && !pNext2.isnull()) {
+    bool bSel2 = pSel->isSelected(pNext1);
+    bool bSel3 = pSel->isSelected(pNext2);
+
+    if (!bSel3) {
+      bRes2Tp = true;
+      if (qlib::isNear(rho, 0.0f))
+        rho = 1.0f;
+      if (!bSel2)
+        bRes1Tp = true;
+    }
+  }
+}
+
+void SplineSegment::updateBinormIntpol(const MolCoordPtr &pCMol)
 {
   int i;
   Vector3F curpos, dv, binorm;
@@ -131,7 +174,7 @@ void SplineSegment::updateBinormIntpol(MolCoordPtr pCMol)
   // m_bnormInt.generate();
 }
 
-Vector3F SplineSegment::calcBinormVec(MolCoordPtr pMol, int nres)
+Vector3F SplineSegment::calcBinormVec(const MolCoordPtr &pMol, int nres)
 {
   MolAtomPtr pAtom, pPrevAtom, pNextAtom;
 
@@ -348,6 +391,10 @@ SplineRendBase::SplineRendBase()
 
   m_nStCapType = CAP_SPHR;
   m_nEnCapType = CAP_SPHR;
+
+  m_bInterpColor = true;
+  m_fSmooth = 0.0f;
+  m_bSegEndFade = true;
 
   //m_bUseGLSL = true;
   m_bUseGLSL = false;
@@ -625,4 +672,39 @@ void SplineRendBase::updateCrdStatic()
 void SplineRendBase::renderFile(DisplayContext *pdc)
 {
 }
+
+int SplineRendBase::getCapTypeImpl(SplineSegment *pSeg, DrawSegment *pDS, bool bStart)
+{
+  int nCap;
+
+  if (bStart)
+    nCap = getStartCapType();
+  else
+    nCap = getEndCapType();
+
+  if (isSegEndFade()) {
+    int iprev, inext;
+    float rhodum = 0.0;
+    bool bRes1Tp=false, bRes2Tp=false;
+    
+  if (bStart) {
+    iprev = pDS->m_nStart;
+    inext = iprev+1;
+  }
+  else {
+    inext = pDS->m_nEnd;
+    iprev = inext-1;
+  }
+    
+    pSeg->getSegEndImpl(this, iprev, inext, rhodum, bRes1Tp, bRes2Tp);
+    
+    if (bRes1Tp || bRes2Tp) {
+      return CAP_NONE;
+    }
+  }
+  
+  return nCap;
+}
+
+
 

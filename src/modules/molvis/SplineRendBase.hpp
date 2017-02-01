@@ -94,13 +94,18 @@ namespace molvis {
       /// dtor
       virtual ~SplineSegment();
       
-      MolAtomPtr getAtom(MolCoordPtr pMol, quint32 ind) const {
+      MolAtomPtr getAtom(const MolCoordPtr &pMol, quint32 ind) const
+      {
+        if (ind<0 || ind>=m_aids.size())
+          return MolAtomPtr();
         quint32 aid = m_aids[ind];
         return pMol->getAtom(aid);
       }
       
-      MolResiduePtr getResid(MolCoordPtr pMol, quint32 ind) const {
+      MolResiduePtr getResid(const MolCoordPtr &pMol, quint32 ind) const
+      {
         MolAtomPtr pAtom = getAtom(pMol, ind);
+        if (pAtom.isnull()) return MolResiduePtr();
         return pAtom->getParentResidue();
       }
       
@@ -121,15 +126,15 @@ namespace molvis {
 
       void generate(SplineRendBase *pthis);
 
-      ColorPtr calcColorPtr(SplineRendBase *pthis, MolCoordPtr pMol, float par) const;
-      quint32 calcColor(SplineRendBase *pthis, MolCoordPtr pMol, float par) const;
+      ColorPtr calcColorPtr(SplineRendBase *pthis, const MolCoordPtr &pMol, float par) const;
+      quint32 calcColor(SplineRendBase *pthis, const MolCoordPtr &pMol, float par) const;
       
-      Vector3F calcBinormVec(MolCoordPtr pMol, int nres);
+      Vector3F calcBinormVec(const MolCoordPtr &pMol, int nres);
 
       bool checkBinormFlip(const Vector3F &dv, const Vector3F &binorm,
                            const Vector3F &prev_dv, const Vector3F &prev_bn);
       
-      void updateBinormIntpol(MolCoordPtr pCMol);
+      void updateBinormIntpol(const MolCoordPtr &pCMol);
       
       Vector3F intpolLinBn(float par);
 
@@ -145,6 +150,15 @@ namespace molvis {
       DrawList m_draws;
 
       virtual DrawSegment *createDrawSeg(int nstart, int nend) =0;
+      
+      /// Returns true, if par is at the internal end of the segment
+      ///  (returns false, if par is at the external end.)
+      //bool isSegEnd(double par);
+      
+      /// Implementation of the segment end detection
+      void getSegEndImpl(SplineRendBase *pthis,
+                         int nprev1, int nnext1,
+                         float &rho, bool &bRes1Tp, bool &bRes2Tp) const;
 
     };
 
@@ -189,6 +203,8 @@ namespace molvis {
     static const int CAP_FLAT = 1;
     static const int CAP_NONE = 2;
 
+    static const int XCAP_MSFLAT = 3;
+
     /// Start cap type
     int getStartCapType() const { return m_nStCapType; }
     void setStartCapType(int nType) {
@@ -219,6 +235,7 @@ namespace molvis {
     bool isSmoothColor() const { return m_bInterpColor; }
 
   private:
+    /// Main-chain smoothness flag
     float m_fSmooth;
 
   public:
@@ -230,6 +247,17 @@ namespace molvis {
       return m_fSmooth;
     }
 
+  private:
+    /// Fade out flag of the end of the segment
+    bool m_bSegEndFade;
+
+  public:
+    void setSegEndFade(bool b) {
+      invalidateDisplayCache();
+      m_bSegEndFade = b;
+    }
+    bool isSegEndFade() const { return m_bSegEndFade; }
+    
 
     /////////////////
     // ctor/dtor
@@ -342,6 +370,9 @@ namespace molvis {
     virtual void drawVBO(detail::SplineSegment *pSeg, DisplayContext *pdc) =0;
     virtual void drawGLSL(detail::SplineSegment *pSeg, DisplayContext *pdc) {}
 
+    //////////
+
+    virtual int getCapTypeImpl(detail::SplineSegment *pSeg, detail::DrawSegment *pDS, bool bStart);
   };
   
 }

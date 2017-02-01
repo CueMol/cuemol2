@@ -172,7 +172,7 @@ vec4 calcColor(in float rho)
   vec4 col1 = texelFetch1D(colorTex, ncoeff+1, 0);
 #endif
 
-  if (u_bsmocol) {
+  if (u_bsmocol!=0) {
     return mix(col0, col1, f);
   }
   else {
@@ -283,7 +283,7 @@ void main (void)
 
   vec3 norm = e1*stab.z + e2*stab.w;
 
-  if (u_bputty) {
+  if (u_bputty!=0) {
     float escl = getEScl(par);
     e1 *= escl;
     e2 *= escl;

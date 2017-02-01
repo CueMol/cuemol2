@@ -280,7 +280,8 @@ void Tube2Renderer::initPuttyData()
 
 Vector2D Tube2Renderer::getEScl(const MolCoordPtr &pMol, Tube2SS *pSeg, float par) const
 {
-  if (getPuttyMode()==TBR_PUTTY_OFF)
+  const int npm = getPuttyMode();
+  if (npm==TBR_PUTTY_OFF)
     return Vector2D(1,1);
 
   const float prod = 1.0f;
@@ -319,13 +320,12 @@ Vector2D Tube2Renderer::getEScl(const MolCoordPtr &pMol, Tube2SS *pSeg, float pa
     val = par1 * (1.0-rho) + par2 * rho;
 
   // convert val to scaling factor
-  //if (m_nPuttyMode==TBR_PUTTY_LINEAR1) {
+  if (npm==TBR_PUTTY_LINEAR1) {
     // linear conversion
-  val = (val-m_dParLo)/(m_dParHi-m_dParLo);
-  val = (m_dPuttyScl-1.0/m_dPuttyLoScl)*val + 1.0/m_dPuttyLoScl;
-
-  /*}
-  else if (m_nPuttyMode==TBR_PUTTY_SCALE1) {
+    val = (val-m_dParLo)/(m_dParHi-m_dParLo);
+    val = (m_dPuttyScl-1.0/m_dPuttyLoScl)*val + 1.0/m_dPuttyLoScl;
+  }
+  else if (npm==TBR_PUTTY_SCALE1) {
     // multiplication conversion 1
     // scale val to (1/Nlo -- 1.0 -- Nhi) for (min -- aver -- max)
     if (val<m_dParAver) {
@@ -343,9 +343,19 @@ Vector2D Tube2Renderer::getEScl(const MolCoordPtr &pMol, Tube2SS *pSeg, float pa
     // ERROR
     MB_ASSERT(false);
   }
-*/
   
   return Vector2D(val, val);
 }
 
+
+int Tube2Renderer::getCapTypeImpl(detail::SplineSegment *pSeg, detail::DrawSegment *pDS, bool bStart)
+{
+  int nCap = super_t::getCapTypeImpl(pSeg, pDS, bStart);
+  if (nCap==CAP_FLAT) {
+    if (m_pts->getType()==TubeSection::TS_MOLSCR)
+      return XCAP_MSFLAT;
+  }
+
+  return nCap;
+}
 

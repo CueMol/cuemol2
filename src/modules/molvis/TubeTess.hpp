@@ -42,15 +42,16 @@ namespace molvis {
     void calcSize( _Rend *pRend, _Seg *pSeg, _DrawSeg *pDS,
                   int &rnvert, int &rnface)
     {
+      TubeSectionPtr pTS = pRend->getTubeSection();
       const int nDetail = pRend->getAxialDetail();
-      const int nSecDiv = pRend->getTubeSection()->getSize();
+      const int nSecDiv = pTS->getSize();
 
       const int nsplseg = pDS->m_nEnd - pDS->m_nStart;
       const int nAxPts = nDetail * nsplseg + 1;
       pDS->m_nAxPts = nAxPts;
 
-      const int nStartCapType = pRend->getStartCapType();
-      const int nEndCapType = pRend->getEndCapType();
+      const int nStartCapType = pRend->getCapTypeImpl(pSeg, pDS, true);
+      const int nEndCapType = pRend->getCapTypeImpl(pSeg, pDS, false);
       const bool bSmoCol = pRend->isSmoothColor();
 
       m_nSecDiv = nSecDiv;
@@ -93,6 +94,11 @@ namespace molvis {
         m_nStCapVerts = nSecDiv + 1;
         m_nStCapFaces = nSecDiv;
       }
+      else if (nStartCapType==SplineRendBase::XCAP_MSFLAT) {
+        // flat cap/fancy section
+        m_nStCapVerts = nSecDiv-1;
+        m_nStCapFaces = nSecDiv;
+      }
       else {
         m_nStCapVerts = 0;
         m_nStCapFaces = 0;
@@ -107,6 +113,11 @@ namespace molvis {
       else if (nEndCapType==SplineRendBase::CAP_FLAT) {
         // flat cap
         m_nEnCapVerts = nSecDiv + 1;
+        m_nEnCapFaces = nSecDiv;
+      }
+      else if (nEndCapType==SplineRendBase::XCAP_MSFLAT) {
+        // flat cap/fancy section
+        m_nEnCapVerts = nSecDiv-1;
         m_nEnCapFaces = nSecDiv;
       }
       else {
@@ -143,13 +154,13 @@ namespace molvis {
 	  const int ii = k%nDetail;
 	  if (ii==iGap && !bPrevGap) {
 	    // skip
-	    MB_DPRINTLN("skip iGap=%d, i=%d, k=%d", iGap, i, k);
+            MB_DPRINTLN("skip iGap=%d, i=%d, k=%d", iGap, i, k);
 	    bPrevGap = true;
 	    continue;
 	  }
 	}
 
-	MB_DPRINTLN("makeface i=%d - %d", i, i+1);
+        //MB_DPRINTLN("makeface i=%d - %d", i, i+1);
         irow = i*m_nSecDiv;
         for (j=0; j<m_nSecDiv; ++j) {
           ij = irow + j;
@@ -247,15 +258,17 @@ namespace molvis {
       for (i=0,k=0; i<m_nAxPts+m_nvdup; ++i) {
         par = float(k)/fDetail + fStart;
 	
-	if (!bSmoCol) {
-	  const int ii = i%(nDetail+1);
-	  if (ii<=iDup)
-	    par = floorf(par);
-	  else
-	    par = ceilf(par);
+        if (!bSmoCol) {
+          const int ii = i%(nDetail+1);
+          if (ii==iDup) {
+            par -= 0.001f;
+          }
+          else if (ii==iDup+1) {
+            par += 0.001f;
+          }
 	}
 
-	MB_DPRINTLN("set vertcol i=%d, k=%d", i, k);
+        //MB_DPRINTLN("set vertcol i=%d, k=%d", i, k);
         m_pTarg->color2(pSeg->calcColorPtr(pRend, pCMol, par), pRend->getSceneID());
         for (j=0; j<m_nSecDiv; ++j) {
           m_pTarg->color2(ind);
@@ -351,8 +364,8 @@ namespace molvis {
       if (pRend->getPuttyMode()!=_Rend::TBR_PUTTY_OFF) {
         MolCoordPtr pCMol = pRend->getClientMol();
         Vector2D escl = pRend->getEScl(pCMol, pSeg, fPar);
-        e1 = e1.scale(escl.x());
-        e2 = e2.scale(escl.y());
+        e1 = e1.scale(float(escl.x()));
+        e2 = e2.scale(float(escl.y()));
       }
       
       const float v0len = pTS->getVec(0, e1, e2).length();
@@ -465,8 +478,8 @@ namespace molvis {
       if (pRend->getPuttyMode()!=_Rend::TBR_PUTTY_OFF) {
         MolCoordPtr pCMol = pRend->getClientMol();
         Vector2D escl = pRend->getEScl(pCMol, pSeg, par);
-        e1 = e1.scale(escl.x());
-        e2 = e2.scale(escl.y());
+        e1 = e1.scale(float(escl.x()));
+        e2 = e2.scale(float(escl.y()));
       }
 
       m_pTarg->vertex3f(ind, pos);
@@ -504,6 +517,214 @@ namespace molvis {
       }
     }
 
+    ////////////////////////////
+    // Flat cap/MolScr section
+
+    /// flat cap index
+    void makeMsFlatCapInd(int &ind, bool bStart, const TubeSectionPtr &pTS)
+    {
+      const int nSecDiv = m_nSecDiv;
+
+      int j;
+      int ij, ijp;
+      int ibase, icen;
+      
+      const int Nx = pTS->getMolScrNx();
+      const int Ny = pTS->getMolScrNy();
+
+      if (bStart)
+        ibase = m_nbody_verts;
+      else
+        ibase = m_nbody_verts + m_nStCapVerts;
+      
+      
+      // left circle (3 ~ Nx+3)
+      icen = ibase+1;
+      for (j=0; j<Nx; ++j) {
+        ij = j+3+ibase;
+        ijp = ij+1;
+        if (bStart)
+          m_pTarg->setIndex3(ind, icen, ijp, ij);
+        else
+          m_pTarg->setIndex3(ind, icen, ij, ijp);
+        ++ind;
+      }
+
+      // right circle (Nx+4 ~ 2Nx+4)
+      icen = ibase+2;
+      for (j=0; j<Nx; j++) {
+        ij = j+Nx+4+ibase;
+        ijp = ij+1;
+        if (bStart)
+          m_pTarg->setIndex3(ind, icen, ijp, ij);
+        else
+          m_pTarg->setIndex3(ind, icen, ij, ijp);
+        ++ind;
+      }
+
+      // front edge (2Nx+5 ~ 2Nx+Ny+3)
+      icen = ibase;
+
+      ij = 1+ibase;
+      ijp = Nx+3+ibase;
+      if (bStart)
+        m_pTarg->setIndex3(ind, icen, ijp, ij);
+      else
+        m_pTarg->setIndex3(ind, icen, ij, ijp);
+      ++ind;
+
+      ij = Nx+3+ibase;
+      ijp = 2*Nx+5+ibase;
+      if (bStart)
+        m_pTarg->setIndex3(ind, icen, ijp, ij);
+      else
+        m_pTarg->setIndex3(ind, icen, ij, ijp);
+      ++ind;
+
+      for (j=0; j<Ny-2; j++) {
+        ij = j+2*Nx+5+ibase;
+        ijp = ij+1;
+        if (bStart)
+          m_pTarg->setIndex3(ind, icen, ijp, ij);
+        else
+          m_pTarg->setIndex3(ind, icen, ij, ijp);
+        ++ind;
+      }
+
+      ij = 2*Nx+Ny+3+ibase;
+      ijp = Nx+4+ibase;
+      if (bStart)
+        m_pTarg->setIndex3(ind, icen, ijp, ij);
+      else
+        m_pTarg->setIndex3(ind, icen, ij, ijp);
+      ++ind;
+
+      ij = Nx+4+ibase;
+      ijp = 2+ibase;
+      if (bStart)
+        m_pTarg->setIndex3(ind, icen, ijp, ij);
+      else
+        m_pTarg->setIndex3(ind, icen, ij, ijp);
+      ++ind;
+
+      // back edge (2Nx+Ny+4 ~ 2Nx+2Ny+2)
+      for (j=0; j<Ny-2; j++) {
+        ij = j+2*Nx+Ny+4+ibase;
+        ijp = ij+1;
+        if (bStart)
+          m_pTarg->setIndex3(ind, icen, ijp, ij);
+        else
+          m_pTarg->setIndex3(ind, icen, ij, ijp);
+        ++ind;
+      }
+
+    }
+
+    void setMsFlatCapVerts(int &ind, _Rend *pRend, _Seg *pSeg, _DrawSeg *pDS, TubeSection *pTS, bool bStart)
+    {
+      int j;
+      const float sign = bStart?-1.0f:1.0f;
+      const int nSecDiv = m_nSecDiv; //pTS->getSize();
+      const int nsphr = nSecDiv/2; //getAxialDetail();
+      Vector3F pos, e0, e1, e2, g;
+      //_DrawSeg::VertArray *pVBO = pDS->m_pVBO;
+
+      float par;
+      if (bStart)
+        par = float(pDS->m_nStart);
+      else
+        par = float(pDS->m_nEnd);
+
+      pSeg->getBasisVecs(par, pos, e0, e1, e2);
+
+      // putty
+      if (pRend->getPuttyMode()!=_Rend::TBR_PUTTY_OFF) {
+        MolCoordPtr pCMol = pRend->getClientMol();
+        Vector2D escl = pRend->getEScl(pCMol, pSeg, par);
+        e1 = e1.scale(float(escl.x()));
+        e2 = e2.scale(float(escl.y()));
+      }
+
+      e0 = e0.scale(sign);
+
+      const int Nx = pTS->getMolScrNx();
+      const int Ny = pTS->getMolScrNy();
+
+      Vector3F f2 = (pTS->getVec(0, e1, e2) + pTS->getVec(Nx, e1, e2)).divide(2.0) + pos;
+      Vector3F f3 = (pTS->getVec(Nx+Ny+2, e1, e2) + pTS->getVec(2*Nx+Ny+2, e1, e2)).divide(2.0) + pos;
+      Vector3F gj;
+
+      // center (0)
+      m_pTarg->vertex3f(ind, pos);
+      m_pTarg->normal3f(ind, e0);
+      ++ind;
+
+      // left center (1)
+      m_pTarg->vertex3f(ind, f2);
+      m_pTarg->normal3f(ind, e0);
+      ++ind;
+
+      // right center (2)
+      m_pTarg->vertex3f(ind, f3);
+      m_pTarg->normal3f(ind, e0);
+      ++ind;
+
+      // left circle (3 ~ Nx+3)
+      for (j=0; j<=Nx; j++) {
+        gj = pTS->getVec(j, e1, e2);
+        m_pTarg->vertex3f(ind, gj+pos);
+        m_pTarg->normal3f(ind, e0);
+        ++ind;
+      }
+      
+      // right circle (Nx+4 ~ 2Nx+4)
+      for (j=0; j<=Nx; j++) {
+        gj = pTS->getVec(j+Nx+Ny+2, e1, e2);
+        m_pTarg->vertex3f(ind, gj+pos);
+        m_pTarg->normal3f(ind, e0);
+        ++ind;
+      }
+
+      // front edge (2Nx+5 ~ 2Nx+Ny+3)
+      for (j=0; j<Ny-1; j++) {
+        gj = pTS->getVec(j+Nx+2, e1, e2);
+        m_pTarg->vertex3f(ind, gj+pos);
+        m_pTarg->normal3f(ind, e0);
+        ++ind;
+      }
+
+      // back edge (2Nx+Ny+4 ~ 2Nx+2Ny+2)
+      for (j=0; j<Ny-1; j++) {
+        gj = pTS->getVec(j+2*Nx+Ny+4, e1, e2);
+        m_pTarg->vertex3f(ind, gj+pos);
+        m_pTarg->normal3f(ind, e0);
+        ++ind;
+      }
+
+      // total: 2(Nx+Ny)+3 = nSecDiv-1
+    }
+
+    void setMsFlatCapColors(int &ind, const MolCoordPtr &pCMol, _Rend *pRend, _Seg *pSeg, _DrawSeg *pDS, bool bStart)
+    {
+      const int nSecDiv = m_nSecDiv;
+      int j;
+      float par;
+
+      if (bStart)
+        par = float(pDS->m_nStart);
+      else
+        par = float(pDS->m_nEnd);
+
+      m_pTarg->color2(pSeg->calcColorPtr(pRend, pCMol, par), pRend->getSceneID());
+
+      m_pTarg->color2(ind);
+      ++ind;
+      for (j=0; j<nSecDiv-1; ++j) {
+        m_pTarg->color2(ind);
+        ++ind;
+      }
+    }
+
 
     ////////////////////////////
 
@@ -514,18 +735,27 @@ namespace molvis {
 
       makeBodyInd(ind, pRend, pSeg, pDS);
 
-      if (pRend->getStartCapType()==_Rend::CAP_SPHR) {
+      int nStCap = pRend->getCapTypeImpl(pSeg, pDS, true);
+      int nEnCap = pRend->getCapTypeImpl(pSeg, pDS, false);
+
+      if (nStCap==_Rend::CAP_SPHR) {
         makeSphrCapInd(ind, true);
       }
-      else if (pRend->getStartCapType()==_Rend::CAP_FLAT) {
+      else if (nStCap==_Rend::CAP_FLAT) {
         makeFlatCapInd(ind, true);
       }
+      else if (nStCap==_Rend::XCAP_MSFLAT) {
+        makeMsFlatCapInd(ind, true, pRend->getTubeSection());
+      }
 
-      if (pRend->getEndCapType()==_Rend::CAP_SPHR) {
+      if (nEnCap==_Rend::CAP_SPHR) {
         makeSphrCapInd(ind, false);
       }
-      else if (pRend->getEndCapType()==_Rend::CAP_FLAT) {
+      else if (nEnCap==_Rend::CAP_FLAT) {
         makeFlatCapInd(ind, false);
+      }
+      else if (nEnCap==_Rend::XCAP_MSFLAT) {
+        makeMsFlatCapInd(ind, false, pRend->getTubeSection());
       }
     }
 
@@ -535,18 +765,27 @@ namespace molvis {
 
       setBodyVerts(ind, pRend, pSeg, pDS, pTS);
       
-      if (pRend->getStartCapType()==_Rend::CAP_SPHR) {
+      int nStCap = pRend->getCapTypeImpl(pSeg, pDS, true);
+      int nEnCap = pRend->getCapTypeImpl(pSeg, pDS, false);
+
+      if (nStCap==_Rend::CAP_SPHR) {
         setSphrCapVerts(ind, pRend, pSeg, pDS, pTS, true);
       }
-      else if (pRend->getStartCapType()==_Rend::CAP_FLAT) {
+      else if (nStCap==_Rend::CAP_FLAT) {
         setFlatCapVerts(ind, pRend, pSeg, pDS, pTS, true);
       }
+      else if (nStCap==_Rend::XCAP_MSFLAT) {
+        setMsFlatCapVerts(ind, pRend, pSeg, pDS, pTS, true);
+      }
 
-      if (pRend->getEndCapType()==_Rend::CAP_SPHR) {
+      if (nEnCap==_Rend::CAP_SPHR) {
         setSphrCapVerts(ind, pRend, pSeg, pDS, pTS, false);
       }
-      else if (pRend->getEndCapType()==_Rend::CAP_FLAT) {
+      else if (nEnCap==_Rend::CAP_FLAT) {
         setFlatCapVerts(ind, pRend, pSeg, pDS, pTS, false);
+      }
+      else if (nEnCap==_Rend::XCAP_MSFLAT) {
+        setMsFlatCapVerts(ind, pRend, pSeg, pDS, pTS, false);
       }
 
     }
@@ -557,18 +796,27 @@ namespace molvis {
 
       setBodyColors(ind, pCMol, pRend, pSeg, pDS);
       
-      if (pRend->getStartCapType()==_Rend::CAP_SPHR) {
+      int nStCap = pRend->getCapTypeImpl(pSeg, pDS, true);
+      int nEnCap = pRend->getCapTypeImpl(pSeg, pDS, false);
+
+      if (nStCap==_Rend::CAP_SPHR) {
         setSphrCapColors(ind, pCMol, pRend, pSeg, pDS, true);
       }
-      else if (pRend->getStartCapType()==_Rend::CAP_FLAT) {
+      else if (nStCap==_Rend::CAP_FLAT) {
         setFlatCapColors(ind, pCMol, pRend, pSeg, pDS, true);
       }
+      else if (nStCap==_Rend::XCAP_MSFLAT) {
+        setMsFlatCapColors(ind, pCMol, pRend, pSeg, pDS, true);
+      }
 
-      if (pRend->getEndCapType()==_Rend::CAP_SPHR) {
+      if (nEnCap==_Rend::CAP_SPHR) {
         setSphrCapColors(ind, pCMol, pRend, pSeg, pDS, false);
       }
-      else if (pRend->getEndCapType()==_Rend::CAP_FLAT) {
+      else if (nEnCap==_Rend::CAP_FLAT) {
         setFlatCapColors(ind, pCMol, pRend, pSeg, pDS, false);
+      }
+      else if (nEnCap==_Rend::XCAP_MSFLAT) {
+        setMsFlatCapColors(ind, pCMol, pRend, pSeg, pDS, false);
       }
 
     }

@@ -242,6 +242,9 @@ namespace molvis {
 
     Vector2D getEScl(const MolCoordPtr &pMol, Tube2SS *pSeg, float par) const;
 
+    //
+
+    virtual int getCapTypeImpl(detail::SplineSegment *pSeg, detail::DrawSegment *pDS, bool bStart);
   };
 
 }
