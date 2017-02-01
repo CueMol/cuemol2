@@ -294,7 +294,7 @@ namespace molvis {
 
     ////////////////////////////
 
-    void setIndex(bool bStart, int &ind, int i1, int i2, int i3)
+    inline void setIndex(bool bStart, int &ind, int i1, int i2, int i3)
     {
       if (bStart)
 	m_pTarg->setIndex3(ind, i1, i3, i2);
@@ -325,7 +325,10 @@ namespace molvis {
           ipj = ij + nSecDiv;
           ijp = irow + (j+1)%nSecDiv;
           ipjp = irow + nSecDiv + (j+1)%nSecDiv;
-          if (bStart) {
+
+	  setIndex(bStart, ind, ij, ijp, ipjp);
+	  setIndex(bStart, ind, ipjp, ipj, ij);
+          /*if (bStart) {
             m_pTarg->setIndex3(ind  , ij, ipjp, ijp);
             m_pTarg->setIndex3(ind+1, ipjp, ij, ipj);
           }
@@ -333,7 +336,7 @@ namespace molvis {
             m_pTarg->setIndex3(ind  , ij, ijp, ipjp);
             m_pTarg->setIndex3(ind+1, ipjp, ipj, ij);
           }
-          ind+=2;
+          ind+=2;*/
         }
       }
       
