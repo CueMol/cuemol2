@@ -499,13 +499,14 @@ void BallStickRenderer::renderShaderImpl()
 {
   MolCoordPtr pMol = getClientMol();
   if (pMol.isnull()) {
-    MB_DPRINTLN("BallStickRenderer::render> Client mol is null");
+    MB_DPRINTLN("BallStickRenderer.render> Client mol is null");
     return;
   }
 
   // initialize the coloring scheme
-  getColSchm()->start(pMol, this);
-  pMol->getColSchm()->start(pMol, this);
+  //getColSchm()->start(pMol, this);
+  //pMol->getColSchm()->start(pMol, this);
+  startColorCalc(pMol);
 
   // estimate the size of drawing elements for spheres
   int nsphs = 0;
@@ -608,8 +609,9 @@ void BallStickRenderer::renderShaderImpl()
 
 
   // initialize the coloring scheme
-  getColSchm()->end();
-  pMol->getColSchm()->end();
+  //getColSchm()->end();
+  //pMol->getColSchm()->end();
+  endColorCalc(pMol);
 }
 
 #endif

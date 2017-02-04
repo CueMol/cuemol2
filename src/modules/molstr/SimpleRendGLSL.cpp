@@ -238,8 +238,9 @@ void SimpleRendGLSL::createGLSL()
     LOG_DPRINTLN("SimpleRend> Use direct CoordTex");
 
   // initialize the coloring scheme
-  getColSchm()->start(pCMol, this);
-  pCMol->getColSchm()->start(pCMol, this);
+  startColorCalc(pCMol);
+  //getColSchm()->start(pCMol, this);
+  //pCMol->getColSchm()->start(pCMol, this);
 
   //
   // estimate bond data structure size
@@ -360,8 +361,9 @@ void SimpleRendGLSL::createGLSL()
   LOG_DPRINTLN("SimpleRend> %d Attr VBO created", nva);
 
   // finalize the coloring scheme
-  getColSchm()->end();
-  pCMol->getColSchm()->end();
+  //getColSchm()->end();
+  //pCMol->getColSchm()->end();
+  endColorCalc(pCMol);
 }
 
 void SimpleRendGLSL::updateDynamicGLSL()

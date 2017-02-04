@@ -101,6 +101,21 @@ namespace molstr {
 
     static ColorPtr evalMolColor(ColorPtr pCol, ColorPtr pCol2);
 
+
+    inline void startColorCalc(const MolCoordPtr &pCMol)
+    {
+      // initialize the coloring scheme
+      getColSchm()->start(pCMol, this);
+      pCMol->getColSchm()->start(pCMol, this);
+    }
+    
+    inline void endColorCalc(const MolCoordPtr &pCMol)
+    {
+      // finalize the coloring scheme
+      getColSchm()->end();
+      pCMol->getColSchm()->end();
+    }
+
   };
 
 }

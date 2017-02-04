@@ -487,7 +487,7 @@ void SplineRendBase::render2(DisplayContext *pdc)
 {
   BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
     if (pelem->getSize()>0) {
-      if (isShaderEnabled())
+      if (isShaderAvail() && isShaderEnabled())
         drawGLSL(pelem, pdc);
       else
         drawVBO(pelem, pdc);
@@ -507,7 +507,8 @@ void SplineRendBase::createCacheData()
 {
   createSegList();
   
-  startColorCalc();
+  MolCoordPtr pCMol = getClientMol();
+  startColorCalc(pCMol);
   
   //if (isUseGLSL()) {
   if (isShaderAvail()) {
@@ -530,7 +531,7 @@ void SplineRendBase::createCacheData()
   else
     updateCrdStatic();
 
-  endColorCalc();
+  endColorCalc(pCMol);
 }
 
 void SplineRendBase::invalidateDisplayCache()
@@ -599,15 +600,15 @@ void SplineRendBase::setup(SplineSegment *pSeg)
    */
 }
 
-void SplineRendBase::startColorCalc()
+/*void SplineRendBase::startColorCalc()
 {
   MolCoordPtr pCMol = getClientMol();
 
   // initialize the coloring scheme
   getColSchm()->start(pCMol, this);
   pCMol->getColSchm()->start(pCMol, this);
-
 }
+
 void SplineRendBase::endColorCalc()
 {
   MolCoordPtr pCMol = getClientMol();
@@ -615,11 +616,11 @@ void SplineRendBase::endColorCalc()
   // finalize the coloring scheme
   getColSchm()->end();
   pCMol->getColSchm()->end();
-}
+  }*/
 
 void SplineRendBase::updateCrdDynamic()
 {
-  if (isShaderEnabled()) {
+  if (isShaderAvail() && isShaderEnabled()) {
     BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
       if (pelem->getSize()>0) {
         // update spline coefficients (from CrdArray)
@@ -645,8 +646,8 @@ void SplineRendBase::updateCrdDynamic()
 
 void SplineRendBase::updateCrdStatic()
 {
-
-  if (isShaderEnabled()) {
+  //MB_DPRINTLN("isShaderAvail()=%d, isShaderEnabled()=%d",isShaderAvail(), isShaderEnabled());
+  if (isShaderAvail() && isShaderEnabled()) {
     BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
       if (pelem->getSize()>0) {
         // update spline coefficients (from MolAtom)

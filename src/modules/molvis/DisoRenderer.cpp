@@ -192,8 +192,9 @@ void DisoRenderer::render(DisplayContext *pdl)
   }
 
   // initialize the coloring scheme
-  getColSchm()->start(pCliMol, this);
-  pCliMol->getColSchm()->start(pCliMol, this);
+  //getColSchm()->start(pCliMol, this);
+  //pCliMol->getColSchm()->start(pCliMol, this);
+  startColorCalc(pCliMol);
 
   pdl->setDetail(m_nDetail);
 
@@ -220,8 +221,9 @@ void DisoRenderer::render(DisplayContext *pdl)
   
   m_pTgtRend = NULL;
 
-  getColSchm()->end();
-  pCliMol->getColSchm()->end();
+  //getColSchm()->end();
+  //pCliMol->getColSchm()->end();
+  endColorCalc(pCliMol);
 }
 
 void DisoRenderer::rendDiso(DisplayContext *pdl, MolResiduePtr pRes, MolResiduePtr pPrevRes)

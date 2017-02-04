@@ -371,8 +371,9 @@ void TraceRenderer::updateVBOColor()
   quint32 aid1, aid2;
 
   // initialize the coloring scheme
-  getColSchm()->start(pCMol, this);
-  pCMol->getColSchm()->start(pCMol, this);
+  //getColSchm()->start(pCMol, this);
+  //pCMol->getColSchm()->start(pCMol, this);
+  startColorCalc(pCMol);
 
   // Bond colors
   for (i=0; i<m_nBonds; ++i) {
@@ -402,8 +403,9 @@ void TraceRenderer::updateVBOColor()
   }
 
   // finalize the coloring scheme
-  getColSchm()->end();
-  pCMol->getColSchm()->end();
+  //getColSchm()->end();
+  //pCMol->getColSchm()->end();
+  endColorCalc(pCMol);
 }
 
 void TraceRenderer::objectChanged(qsys::ObjectEvent &ev)

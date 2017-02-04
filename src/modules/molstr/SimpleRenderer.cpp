@@ -252,13 +252,14 @@ void SimpleRenderer::createVBO()
   quint32 nbons = 0, natoms = 0, nmbons = 0, nva = 0;
   MolCoordPtr pCMol = getClientMol();
 
+  // initialize the coloring scheme
+  //getColSchm()->start(pCMol, this);
+  //pCMol->getColSchm()->start(pCMol, this);
+  startColorCalc(pCMol);
+
   AnimMol *pAMol = NULL;
   if (isUseAnim())
     pAMol = static_cast<AnimMol *>(pCMol.get());
-
-  // initialize the coloring scheme
-  getColSchm()->start(pCMol, this);
-  pCMol->getColSchm()->start(pCMol, this);
 
   // estimate bond data structure size
   
@@ -422,8 +423,9 @@ void SimpleRenderer::createVBO()
   }
   
   // finalize the coloring scheme
-  getColSchm()->end();
-  pCMol->getColSchm()->end();
+  //getColSchm()->end();
+  //pCMol->getColSchm()->end();
+  endColorCalc(pCMol);
 
   nva = iva;
     
@@ -845,8 +847,9 @@ void SimpleRenderer::updateVBOColor()
   quint32 aid1, aid2;
 
   // initialize the coloring scheme
-  getColSchm()->start(pCMol, this);
-  pCMol->getColSchm()->start(pCMol, this);
+  //getColSchm()->start(pCMol, this);
+  //pCMol->getColSchm()->start(pCMol, this);
+  startColorCalc(pCMol);
 
   // single bond colors
   for (i=0; i<nbons; ++i) {
@@ -930,9 +933,9 @@ void SimpleRenderer::updateVBOColor()
   }
 
   // finalize the coloring scheme
-  getColSchm()->end();
-  pCMol->getColSchm()->end();
-
+  //getColSchm()->end();
+  //pCMol->getColSchm()->end();
+  endColorCalc(pCMol);
 }
 
 void SimpleRenderer::invalidateDisplayCache()

@@ -352,8 +352,8 @@ namespace molvis {
     virtual void setupVBO(SplineSegment *pSeg) =0;
     virtual void setupGLSL(SplineSegment *pSeg) {}
 
-    void startColorCalc();
-    void endColorCalc();
+    //void startColorCalc();
+    //void endColorCalc();
 
     // update coordinate data
 

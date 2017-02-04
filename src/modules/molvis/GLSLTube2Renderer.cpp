@@ -85,8 +85,8 @@ bool GLSLTube2Renderer::initShader(DisplayContext *pdc)
   sysdep::ShaderSetupHelper<GLSLTube2Renderer> ssh(this);
   
   if (!ssh.checkEnvVS()) {
-    LOG_DPRINTLN("SimpleRendGLSL> ERROR: GLSL not supported.");
-    // MB_THROW(qlib::RuntimeException, "OpenGL GPU shading not supported");
+    LOG_DPRINTLN("GLSLTube2> ERROR: GLSL not supported.");
+    m_pPO=NULL;
     return false;
   }
 
@@ -100,7 +100,7 @@ bool GLSLTube2Renderer::initShader(DisplayContext *pdc)
   }
   
   if (m_pPO==NULL) {
-    LOG_DPRINTLN("Tube2RendGLSL> ERROR: cannot create progobj.");
+    LOG_DPRINTLN("GLSLTube2> ERROR: cannot create progobj.");
     return false;
   }
 
@@ -408,8 +408,9 @@ void GLSLTube2Renderer::objectChanged(qsys::ObjectEvent &ev)
       ev.getDescr().equals("atomsMoved")) {
     // OBE_CHANGED_DYNAMIC && descr=="atomsMoved"
     if (isUseAnim()) {
-      // GLSL mode
-      if (!isShaderEnabled()) {
+      // If shader is available
+      // --> Enter the GLSL mode
+      if (isShaderAvail() && !isShaderEnabled()) {
         //invalidateDisplayCache();
         setShaderEnable(true);
       }
