@@ -142,15 +142,16 @@ void GLSLMapMeshRenderer::viewChanged(qsys::ViewEvent &ev)
   return;
 }
 
-void GLSLMapMeshRenderer::initShader()
+bool GLSLMapMeshRenderer::initShader()
 {
+  m_pPO = NULL;
+
   sysdep::ShaderSetupHelper<GLSLMapMeshRenderer> ssh(this);
 
   if (!ssh.checkEnvGS()) {
     LOG_DPRINTLN("GPUMapMesh> ERROR: OpenGL GPU geom program not supported.");
-    MB_THROW(qlib::RuntimeException, "OpenGL GPU geom program not supported");
     m_bChkShaderDone = true;
-    return;
+    return false;
   }
 
   if (m_pPO==NULL)
@@ -163,7 +164,7 @@ void GLSLMapMeshRenderer::initShader()
   if (m_pPO==NULL) {
     LOG_DPRINTLN("GPUMapMesh> ERROR: cannot create progobj.");
     m_bChkShaderDone = true;
-    return;
+    return false;
   }
 
   m_pPO->enable();
@@ -535,7 +536,7 @@ void GLSLMapMeshRenderer::display(DisplayContext *pdc)
   }
 
   pdc->color(getColor());
-  pdc->setLineWidth(1.0);
+  pdc->setLineWidth(m_lw);
   pdc->setLighting(false);
 
   pdc->pushMatrix();
@@ -572,6 +573,9 @@ void GLSLMapMeshRenderer::display(DisplayContext *pdc)
 
 void GLSLMapMeshRenderer::renderGPU(DisplayContext *pdc)
 {
+  if (m_pPO==NULL)
+    return;
+  
   ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
   DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
 
@@ -580,8 +584,7 @@ void GLSLMapMeshRenderer::renderGPU(DisplayContext *pdc)
   glBindTexture(MY_MAPTEX_DIM, m_nMapTexID);
   glTexBufferARB(GL_TEXTURE_BUFFER, GL_R8UI, m_nMapBufID);
 
-  if (m_pPO)
-    m_pPO->enable();
+  m_pPO->enable();
   
   int i,j,k;
   int ncol = m_nActCol;
@@ -596,6 +599,8 @@ void GLSLMapMeshRenderer::renderGPU(DisplayContext *pdc)
 
   m_pPO->setUniform("nrow", nrow);
   CHK_GLERROR("setUniform nrow");
+
+  m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
 
   /*
   pdc->startPoints();
@@ -617,8 +622,7 @@ void GLSLMapMeshRenderer::renderGPU(DisplayContext *pdc)
   glDisableClientState(GL_VERTEX_ARRAY);
   glBindBuffer(GL_ARRAY_BUFFER_ARB, 0);
 
-  if (m_pPO)
-    m_pPO->disable();
+  m_pPO->disable();
 
   glBindTexture(MY_MAPTEX_DIM, 0);
 

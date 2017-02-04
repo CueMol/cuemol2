@@ -494,6 +494,10 @@ LString OglView::hitTest(int ax, int ay)
   m_hitdata.createNearest(phc);
 
   qlib::uid_t rend_id = m_hitdata.getNearestRendID();
+  if (rend_id==qlib::invalid_uid) {
+    // hit nothing
+    return LString();
+  }
 
   qsys::RendererPtr pRend = SceneManager::getRendererS(rend_id);
   if (pRend.isnull()) {
