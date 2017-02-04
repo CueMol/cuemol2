@@ -99,6 +99,8 @@ spline2_vert.glsl \
 spline2_frag.glsl \
 tube2_vert.glsl \
 tube2_frag.glsl \
+tube21_vert.glsl \
+tube21_frag.glsl \
 $(NULL)
 
 endif
