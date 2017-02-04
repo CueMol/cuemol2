@@ -409,9 +409,9 @@ void GLSLTube2Renderer::objectChanged(qsys::ObjectEvent &ev)
     // OBE_CHANGED_DYNAMIC && descr=="atomsMoved"
     if (isUseAnim()) {
       // GLSL mode
-      if (!isUseGLSL()) {
+      if (!isShaderEnabled()) {
         //invalidateDisplayCache();
-        setUseGLSL(true);
+        setShaderEnable(true);
       }
       if (!isCacheAvail()) {
         createCacheData();
@@ -425,7 +425,7 @@ void GLSLTube2Renderer::objectChanged(qsys::ObjectEvent &ev)
     MB_DPRINTLN("Spline2Rend (%p) > OBE_CHANGED_FIXDYN called!!", this);
 
     if (!isForceGLSL())
-      setUseGLSL(false); // reset to VBO mode
+      setShaderEnable(false); // reset to VBO mode
     return;
   }
 

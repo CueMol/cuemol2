@@ -299,11 +299,11 @@ namespace molvis {
     // work area
 
   private:
-    bool m_bUseGLSL;
+    bool m_bShaderEnabled;
 
   public:
-    inline bool isUseGLSL() const { return m_bUseGLSL; }
-    inline void setUseGLSL(bool b) { m_bUseGLSL = b; }
+    inline bool isShaderEnabled() const { return m_bShaderEnabled; }
+    inline void setShaderEnable(bool b) { m_bShaderEnabled = b; }
 
   private:
     /// shader check was performed
@@ -319,6 +319,9 @@ namespace molvis {
 
   public:
     inline bool isShaderAvail() const { return m_bShaderAvail; }
+
+    /// Use shader when shader is available and enabled
+    inline bool isUseShader() const { return isShaderAvail() && isShaderEnabled(); }
 
   protected:
 

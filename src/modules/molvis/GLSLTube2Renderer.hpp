@@ -133,7 +133,7 @@ namespace molvis {
   public:
     void setForceGLSL(bool n) {
       m_bForceGLSL = n;
-      setUseGLSL(n);
+      setShaderEnable(n);
       invalidateDisplayCache();
     }
     bool isForceGLSL() const {

@@ -397,8 +397,9 @@ SplineRendBase::SplineRendBase()
   m_bSegEndFade = true;
 
   //m_bUseGLSL = true;
-  m_bUseGLSL = false;
-
+  m_bShaderEnabled = false;
+  m_bShaderAvail = false;
+  
   m_bChkShaderDone = false;
 }
     
@@ -486,7 +487,7 @@ void SplineRendBase::render2(DisplayContext *pdc)
 {
   BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
     if (pelem->getSize()>0) {
-      if (isUseGLSL())
+      if (isShaderEnabled())
         drawGLSL(pelem, pdc);
       else
         drawVBO(pelem, pdc);
@@ -618,7 +619,7 @@ void SplineRendBase::endColorCalc()
 
 void SplineRendBase::updateCrdDynamic()
 {
-  if (isUseGLSL()) {
+  if (isShaderEnabled()) {
     BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
       if (pelem->getSize()>0) {
         // update spline coefficients (from CrdArray)
@@ -645,7 +646,7 @@ void SplineRendBase::updateCrdDynamic()
 void SplineRendBase::updateCrdStatic()
 {
 
-  if (isUseGLSL()) {
+  if (isShaderEnabled()) {
     BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
       if (pelem->getSize()>0) {
         // update spline coefficients (from MolAtom)

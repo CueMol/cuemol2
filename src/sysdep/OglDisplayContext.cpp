@@ -1042,6 +1042,7 @@ void OglDisplayContext::drawElem(const AbstDrawElem &ade)
   pRep->postDraw(ade);
 
   /*
+    // Debug code to display normals
   if (ntype==AbstDrawElem::VA_VNC||
       ntype==AbstDrawElem::VA_VNCI||
       ntype==AbstDrawElem::VA_VNCI32){
@@ -1092,6 +1093,7 @@ void OglDisplayContext::drawElemVA(const DrawElem &de)
     const qbyte *pdata = static_cast<const qbyte *>(de.getData());
     glVertexPointer(3, GL_FLOAT, sizeof(DrawElemVC::Elem), pdata);
     glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(DrawElemVC::Elem), pdata+3*sizeof(qfloat32));
+    glDrawArrays(mode, 0, nelems);
   }
   else if (ntype==DrawElem::VA_VNC) {
     glEnableClientState(GL_VERTEX_ARRAY);
@@ -1101,9 +1103,26 @@ void OglDisplayContext::drawElemVA(const DrawElem &de)
     glVertexPointer(3, GL_FLOAT, sizeof(DrawElemVNC::Elem), pdata);
     glNormalPointer(GL_FLOAT, sizeof(DrawElemVNC::Elem), pdata+3*sizeof(qfloat32));
     glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(DrawElemVNC::Elem), pdata+6*sizeof(qfloat32));
+    glDrawArrays(mode, 0, nelems);
+  }
+  else if (ntype==AbstDrawElem::VA_VNCI||
+           ntype==AbstDrawElem::VA_VNCI32){
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_NORMAL_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    const qbyte *pdata = static_cast<const qbyte *>(de.getData());
+    glVertexPointer(3, GL_FLOAT, sizeof(DrawElemVNC::Elem), pdata);
+    glNormalPointer(GL_FLOAT, sizeof(DrawElemVNC::Elem), pdata+3*sizeof(qfloat32));
+    glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(DrawElemVNC::Elem), pdata+6*sizeof(qfloat32));
+    
+    const void *pinds = de.getIndData();
+    const int ninds = de.getIndSize();
+    if (ntype==AbstDrawElem::VA_VNCI)
+      glDrawElements(GL_TRIANGLES, ninds, GL_UNSIGNED_SHORT, pinds);
+    else
+      glDrawElements(GL_TRIANGLES, ninds, GL_UNSIGNED_INT, pinds);
   }
 
-  glDrawArrays(mode, 0, nelems);
 
   glDisableClientState(GL_VERTEX_ARRAY);
   glDisableClientState(GL_NORMAL_ARRAY);

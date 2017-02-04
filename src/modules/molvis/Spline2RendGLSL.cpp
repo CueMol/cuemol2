@@ -266,9 +266,9 @@ void Spline2RendGLSL::objectChanged(qsys::ObjectEvent &ev)
     // OBE_CHANGED_DYNAMIC && descr=="atomsMoved"
     if (isUseAnim()) {
       // GLSL mode
-      if (!isUseGLSL()) {
+      if (!isShaderEnabled()) {
         // invalidateDisplayCache();
-        setUseGLSL(true);
+        setShaderEnable(true);
       }
       if (!isCacheAvail()) {
         createCacheData();
@@ -281,7 +281,7 @@ void Spline2RendGLSL::objectChanged(qsys::ObjectEvent &ev)
   else if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED_FIXDYN) {
     MB_DPRINTLN("Spline2Rend (%p) > OBE_CHANGED_FIXDYN called!!", this);
 
-    setUseGLSL(false);
+    setShaderEnable(false);
     return;
   }
 
