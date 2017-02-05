@@ -131,7 +131,7 @@ namespace molvis {
     virtual SplineSegment *createSegment();
 
     /// Initialize shaders
-    virtual bool initShader(DisplayContext *pdc);
+    virtual bool initCap(DisplayContext *pdc);
 
     virtual void setupGLSL(detail::SplineSegment *pSeg);
 

@@ -37,8 +37,6 @@ namespace molstr {
     SimpleRendGLSL();
     virtual ~SimpleRendGLSL();
 
-    // virtual const char *getTypeName() const;
-
   public:
 
     virtual void display(DisplayContext *pdc);
@@ -47,14 +45,21 @@ namespace molstr {
     virtual void invalidateDisplayCache();
 
     //////////////////////////////////////////////////////
-    // new rendering routine (using GLSL & VBO)
+    // new rendering routine (using GLSL)
+
+    /// Initialize &setup capabilities (shaders/texture)
+    bool initCap(DisplayContext *pdc);
+    
+    /// Render to display
+    virtual void render2(DisplayContext *pdc);
+
+    virtual bool isCacheAvail() const;
+
+    virtual void createCacheData();
 
   private:
     /// display() for GLSL version
     void displayGLSL(DisplayContext *pdc);
-
-    /// Initialize shaders/texture
-    void initShader(DisplayContext *pdc);
 
     /// Rendering using GLSL
     //void createGLSL(DisplayContext *pdc);
@@ -65,12 +70,6 @@ namespace molstr {
 
     /// update coord texture for GLSL rendering (using atompos)
     void updateStaticGLSL();
-
-    /// Use GLSL rendering mode (for dynamic update)
-    bool m_bUseGLSL;
-
-    /// shader check was performed
-    bool m_bChkShaderDone;
 
     /// coordinate float texture
     gfx::Texture *m_pCoordTex;

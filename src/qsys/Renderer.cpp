@@ -34,6 +34,11 @@ Renderer::Renderer()
 
   m_dEdgeLineWidth = -1.0;
 
+  m_bChkCapDone = false;
+  m_bShaderAvail = false;
+  m_bShaderEnabled = false;
+
+
   //MB_DPRINTLN("Renderer (%p/%d) created\n", this, m_uid);
   addPropListener(this);
 

@@ -127,19 +127,6 @@ namespace molvis {
       return m_nAxDetScl;
     }
 
-  private:
-    bool m_bForceGLSL;
-
-  public:
-    void setForceGLSL(bool n) {
-      m_bForceGLSL = n;
-      setShaderEnable(n);
-      invalidateDisplayCache();
-    }
-    bool isForceGLSL() const {
-      return m_bForceGLSL;
-    }
-
     /////////////////
     // ctor/dtor
 
@@ -167,8 +154,8 @@ namespace molvis {
     /////////////////
     // GLSL implementation
 
-    /// Initialize shaders
-    virtual bool initShader(DisplayContext *pdc);
+    /// Initialize shaders&set cap flags
+    virtual bool initCap(DisplayContext *pdc);
 
     virtual void setupGLSL(detail::SplineSegment *pSeg);
 

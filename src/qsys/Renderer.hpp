@@ -296,6 +296,51 @@ namespace qsys {
       m_nEdgeLineType = n;
     }
 
+    ////////////////////////////////////////////////////////////
+    // Hardware Rendering capability/enable flags
+
+  private:
+    /// capability check was performed
+    bool m_bChkCapDone;
+
+  public:
+    /// returns true if capability check of DC was done
+    inline bool isCapCheckDone() const { return m_bChkCapDone; }
+
+    /// set check-done flag of DC capability
+    inline void setCapCheckDone(bool b) { m_bChkCapDone = b; }
+    
+    /// perform capability check and initialization
+    virtual bool initCap(DisplayContext *pdc) { return true; }
+
+  private:
+    /// shader is available
+    bool m_bShaderAvail;
+
+  public:
+    inline bool isShaderAvail() const { return m_bShaderAvail; }
+    inline void setShaderAvail(bool b) { m_bShaderAvail = b; }
+
+  private:
+    /// Shader enable flag
+    bool m_bShaderEnabled;
+
+  public:
+    inline bool isShaderEnabled() const { return m_bShaderEnabled; }
+    inline void setShaderEnable(bool b) { m_bShaderEnabled = b; }
+
+  private:
+    bool m_bForceGLSL;
+
+  public:
+    void setForceGLSL(bool n) {
+      m_bForceGLSL = n;
+      setShaderEnable(n);
+      // invalidateDisplayCache();
+    }
+    bool isForceGLSL() const {
+      return m_bForceGLSL;
+    }
 
     ////////////////////////////////////////////////////////////
     // Event related operations

@@ -294,31 +294,7 @@ namespace molvis {
 
     virtual void objectChanged(qsys::ObjectEvent &ev);
 
-
-    /////////////////
-    // work area
-
-  private:
-    bool m_bShaderEnabled;
-
-  public:
-    inline bool isShaderEnabled() const { return m_bShaderEnabled; }
-    inline void setShaderEnable(bool b) { m_bShaderEnabled = b; }
-
-  private:
-    /// shader check was performed
-    bool m_bChkShaderDone;
-
-  public:
-    inline bool isShaderCheckDone() const { return m_bChkShaderDone; }
-    inline void setShaderCheckDone(bool b) { m_bChkShaderDone = b; }
-
-  private:
-    /// shader is available
-    bool m_bShaderAvail;
-
-  public:
-    inline bool isShaderAvail() const { return m_bShaderAvail; }
+    //
 
     /// Use shader when shader is available and enabled
     inline bool isUseShader() const { return isShaderAvail() && isShaderEnabled(); }
@@ -339,23 +315,22 @@ namespace molvis {
       m_seglist.clear();
     }
 
+    bool m_bVBOCacheOK;
+    bool m_bGLSLCacheOK;
+
   public:
     /// Initialize shader (default: shader not supported)
-    virtual bool initShader(DisplayContext *pdc);
+    virtual bool initCap(DisplayContext *pdc);
 
     virtual SplineSegment *createSegment() =0;
 
     virtual void createSegList();
 
-    void setup(SplineSegment *pSeg);
+    void setupSeg(SplineSegment *pSeg);
 
     virtual void setupVBO(SplineSegment *pSeg) =0;
     virtual void setupGLSL(SplineSegment *pSeg) {}
 
-    //void startColorCalc();
-    //void endColorCalc();
-
-    // update coordinate data
 
     void updateCrdStatic();
     void updateCrdDynamic();

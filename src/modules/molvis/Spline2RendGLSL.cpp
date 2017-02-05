@@ -62,15 +62,14 @@ SplineSegment *Spline2RendGLSL::createSegment()
   return MB_NEW Spl2GLSLSeg();
 }
 
-bool Spline2RendGLSL::initShader(DisplayContext *pdc)
+bool Spline2RendGLSL::initCap(DisplayContext *pdc)
 {
-  setShaderCheckDone(true);
-
   sysdep::ShaderSetupHelper<Spline2RendGLSL> ssh(this);
 
   if (!ssh.checkEnvVS()) {
     LOG_DPRINTLN("SimpleRendGLSL> ERROR: GLSL not supported.");
     // MB_THROW(qlib::RuntimeException, "OpenGL GPU shading not supported");
+    setShaderAvail(false);
     return false;
   }
 
@@ -81,6 +80,7 @@ bool Spline2RendGLSL::initShader(DisplayContext *pdc)
   
   if (m_pPO==NULL) {
     LOG_DPRINTLN("Spline2RendGLSL> ERROR: cannot create progobj.");
+    setShaderAvail(false);
     return false;
   }
 
@@ -96,6 +96,7 @@ bool Spline2RendGLSL::initShader(DisplayContext *pdc)
 
   m_pPO->disable();
 
+  setShaderAvail(true);
   return true;
 }
 

@@ -89,11 +89,6 @@ namespace molstr {
       return m_bUseAnim;
     }
 
-    inline bool isUseVBO(DisplayContext *pdc) {
-      return !pdc->isFile() && pdc->isDrawElemSupported();
-      //return isUseAnim() && !pdc->isFile() && pdc->isDrawElemSupported();
-    }
-
     MolCoordPtr getClientMol() const;
 
     /// make hittestresult JSON string for atom aid

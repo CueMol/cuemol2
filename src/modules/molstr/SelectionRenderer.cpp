@@ -214,7 +214,7 @@ bool SelectionRenderer::isTransp() const
 void SelectionRenderer::display(DisplayContext *pdc)
 {
 #ifdef USE_OPENGL_VBO
-  if (!isUseVBO(pdc)) {
+  if (pdc->isFile()) {
     // case of the file (non-ogl) rendering
     // always use the old version.
     super_t::display(pdc);

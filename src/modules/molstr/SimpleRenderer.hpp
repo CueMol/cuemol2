@@ -112,6 +112,13 @@ namespace molstr {
     /// cleanup VBO
     virtual void invalidateDisplayCache();
 
+    virtual bool isCacheAvail() const {
+      return m_pVBO!=NULL;
+    }
+    
+
+    virtual void createCacheData();
+
     //////////////////////////////////////////////////////
     // new rendering interface (using GL VBO)
 

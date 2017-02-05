@@ -211,13 +211,23 @@ bool SimpleRenderer::isRendBond() const
 void SimpleRenderer::display(DisplayContext *pdc)
 {
 #ifdef USE_OPENGL_VBO
-  if (!isUseVBO(pdc)) {
+  if (pdc->isFile()) {
     // case of the file (non-ogl) rendering
     // always use the old version.
     super_t::display(pdc);
     return;
   }
+
+  if (!isCacheAvail()) {
+    createCacheData();
+    if (!isCacheAvail())
+      return; // Error, Cannot draw anything (ignore)
+  }
+
+  preRender(pdc);
+  // TO DO: move to render2()
   displayVBO(pdc);
+  postRender(pdc);
 #else
   super_t::display(pdc);
 #endif
@@ -226,24 +236,21 @@ void SimpleRenderer::display(DisplayContext *pdc)
 //////////////////////////////////////////////////////////////////////
 // New VBO implementation
 
+void SimpleRenderer::createCacheData()
+{
+  createVBO();
+  if (isUseAnim())
+    updateDynamicVBO();
+  else
+    updateStaticVBO();
+  updateVBOColor();
+}
+
 void SimpleRenderer::displayVBO(DisplayContext *pdc)
 {
   // new rendering routine using VBO (DrawElem)
-  if (m_pVBO==NULL) {
-    createVBO();
-    if (isUseAnim())
-      updateDynamicVBO();
-    else
-      updateStaticVBO();
-    updateVBOColor();
-    if (m_pVBO==NULL)
-      return; // Error, Cannot draw anything (ignore)
-  }
-  
-  preRender(pdc);
   m_pVBO->setLineWidth(m_lw);
   pdc->drawElem(*m_pVBO);
-  postRender(pdc);
 }
 
 void SimpleRenderer::createVBO()

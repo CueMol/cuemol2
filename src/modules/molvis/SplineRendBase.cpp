@@ -396,11 +396,8 @@ SplineRendBase::SplineRendBase()
   m_fSmooth = 0.0f;
   m_bSegEndFade = true;
 
-  //m_bUseGLSL = true;
-  m_bShaderEnabled = false;
-  m_bShaderAvail = false;
-  
-  m_bChkShaderDone = false;
+  m_bVBOCacheOK = false;
+  m_bGLSLCacheOK = false;
 }
     
 SplineRendBase::~SplineRendBase()
@@ -450,22 +447,13 @@ void SplineRendBase::display(DisplayContext *pdc)
     return;
   }
     
-  if (!isShaderCheckDone()) {
-    bool bOK = false;
+  if (!isCapCheckDone()) {
     try {
-      bOK = initShader(pdc);
+      initCap(pdc);
     }
     catch (...) {
     }
-    m_bChkShaderDone = true;
-    if (bOK) {
-      m_bShaderAvail = true;
-    }
-    else {
-      // cannot initialize GLSL
-      // --> always use VBO impl
-      m_bShaderAvail = false;
-    }
+    setCapCheckDone(true);
   }
 
   if (!isCacheAvail()) {
@@ -478,8 +466,10 @@ void SplineRendBase::display(DisplayContext *pdc)
 
 }
 
-bool SplineRendBase::initShader(DisplayContext *pdc)
+bool SplineRendBase::initCap(DisplayContext *pdc)
 {
+  // default: shader is not available
+  setShaderAvail(false);
   return false;
 }
 
@@ -499,53 +489,79 @@ bool SplineRendBase::isCacheAvail() const
 {
   if (m_seglist.empty())
     return false;
+
+  if (isUseShader())
+    return m_bGLSLCacheOK;
   else
-    return true;
+    return m_bVBOCacheOK;
 }
 
 void SplineRendBase::createCacheData()
 {
-  createSegList();
+  if (m_seglist.empty())
+    createSegList();
   
-  MolCoordPtr pCMol = getClientMol();
-  startColorCalc(pCMol);
-  
-  //if (isUseGLSL()) {
-  if (isShaderAvail()) {
+  if (isUseShader()) {
     BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
       if (pelem->getSize()>0) {
-        updateColorGLSL(pelem);
+        setupGLSL(pelem);
       }
     }
   }
-  //else {
+  else {
     BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
       if (pelem->getSize()>0) {
-        updateColorVBO(pelem);
+        setupVBO(pelem);
       }
     }
-  //}
-  
+  }
+
   if (isUseAnim())
     updateCrdDynamic();
   else
     updateCrdStatic();
 
+
+  MolCoordPtr pCMol = getClientMol();
+  startColorCalc(pCMol);
+  
+  if (isUseShader()) {
+    BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
+      if (pelem->getSize()>0) {
+        updateColorGLSL(pelem);
+      }
+    }
+    m_bGLSLCacheOK = true;
+  }
+  else {
+    BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
+      if (pelem->getSize()>0) {
+        updateColorVBO(pelem);
+      }
+    }
+    m_bVBOCacheOK = true;
+  }
+  
   endColorCalc(pCMol);
+
 }
 
 void SplineRendBase::invalidateDisplayCache()
 {
   clearSegList();
+  m_bVBOCacheOK = false;
+  m_bGLSLCacheOK = false;
   super_t::invalidateDisplayCache();
 }
 
 void SplineRendBase::createSegList()
 {
-  MolCoordPtr pCMol = getClientMol();
-
-  if (!m_seglist.empty())
+  if (!m_seglist.empty()) {
+    LOG_DPRINTLN("SplineRendBase.createSegList> ERROR: Seglist is not empty!!");
     return;
+  }
+
+  MolCoordPtr pCMol = getClientMol();
 
   // visit all residues
   ResidIterator iter(pCMol);
@@ -559,7 +575,7 @@ void SplineRendBase::createSegList()
     if (pPiv.isnull()) {
       // This resid doesn't has pivot, so we cannot draw backbone!!
       if (!pPrevResid.isnull()) {
-        setup(m_seglist.back());
+        setupSeg(m_seglist.back());
       }
       pPrevResid = MolResiduePtr();
       continue;
@@ -567,7 +583,7 @@ void SplineRendBase::createSegList()
     
     if (isNewSegment(pRes, pPrevResid)) {
       if (!pPrevResid.isnull()) {
-        setup(m_seglist.back());
+        setupSeg(m_seglist.back());
       }
       m_seglist.push_back(createSegment());
     }
@@ -578,20 +594,20 @@ void SplineRendBase::createSegList()
   }
 
   if (!pPrevResid.isnull()) {
-    setup(m_seglist.back());
+    setupSeg(m_seglist.back());
   }
 
 }
 
-void SplineRendBase::setup(SplineSegment *pSeg)
+void SplineRendBase::setupSeg(SplineSegment *pSeg)
 {
   pSeg->generate(this);
-
+/*
   if (isShaderAvail())
     setupGLSL(pSeg);
   
   setupVBO(pSeg);
-
+*/
   /*
   if (isUseGLSL())
     setupGLSL(pSeg);
@@ -599,24 +615,6 @@ void SplineRendBase::setup(SplineSegment *pSeg)
     setupVBO(pSeg);
    */
 }
-
-/*void SplineRendBase::startColorCalc()
-{
-  MolCoordPtr pCMol = getClientMol();
-
-  // initialize the coloring scheme
-  getColSchm()->start(pCMol, this);
-  pCMol->getColSchm()->start(pCMol, this);
-}
-
-void SplineRendBase::endColorCalc()
-{
-  MolCoordPtr pCMol = getClientMol();
-
-  // finalize the coloring scheme
-  getColSchm()->end();
-  pCMol->getColSchm()->end();
-  }*/
 
 void SplineRendBase::updateCrdDynamic()
 {

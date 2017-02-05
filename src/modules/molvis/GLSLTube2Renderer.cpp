@@ -77,16 +77,14 @@ SplineSegment *GLSLTube2Renderer::createSegment()
   return MB_NEW GLSLTube2SS();
 }
 
-bool GLSLTube2Renderer::initShader(DisplayContext *pdc)
+bool GLSLTube2Renderer::initCap(DisplayContext *pdc)
 {
-  //m_bChkShaderDone = true;
-  setShaderCheckDone(true);
-
   sysdep::ShaderSetupHelper<GLSLTube2Renderer> ssh(this);
   
   if (!ssh.checkEnvVS()) {
     LOG_DPRINTLN("GLSLTube2> ERROR: GLSL not supported.");
     m_pPO=NULL;
+    setShaderAvail(false);
     return false;
   }
 
@@ -101,6 +99,7 @@ bool GLSLTube2Renderer::initShader(DisplayContext *pdc)
   
   if (m_pPO==NULL) {
     LOG_DPRINTLN("GLSLTube2> ERROR: cannot create progobj.");
+    setShaderAvail(false);
     return false;
   }
 
@@ -120,6 +119,7 @@ bool GLSLTube2Renderer::initShader(DisplayContext *pdc)
 
   m_pPO->disable();
 
+  setShaderAvail(true);
   return true;
 }
 
@@ -402,7 +402,6 @@ void GLSLTube2Renderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *p
 
 void GLSLTube2Renderer::objectChanged(qsys::ObjectEvent &ev)
 {
-
   if (isVisible() &&
       ev.getType()==qsys::ObjectEvent::OBE_CHANGED_DYNAMIC &&
       ev.getDescr().equals("atomsMoved")) {

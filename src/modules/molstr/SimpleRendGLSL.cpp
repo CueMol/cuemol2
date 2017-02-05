@@ -42,10 +42,10 @@ SimpleRendGLSL::SimpleRendGLSL()
   m_pAttrAry = NULL;
   m_pCoordTex = NULL;
 
-  m_bUseGLSL = false;
+  // m_bUseGLSL = false;
   // m_bUseGLSL = true;
 
-  m_bChkShaderDone = false;
+  // m_bChkShaderDone = false;
 }
 
 SimpleRendGLSL::~SimpleRendGLSL()
@@ -61,46 +61,82 @@ SimpleRendGLSL::~SimpleRendGLSL()
 
 void SimpleRendGLSL::display(DisplayContext *pdc)
 {
-  if (!isUseVBO(pdc)) {
+  if (pdc->isFile()) {
     // case of the file (non-ogl) rendering
     // always use the old version.
+    // TO DO: move to renderFile()??
     super_t::display(pdc);
     return;
   }
 
-  if (!m_bChkShaderDone)
-    initShader(pdc);
+  //if (!m_bChkShaderDone)
+  //initShader(pdc);
+  if (!isCapCheckDone()) {
+    try {
+      initCap(pdc);
+    }
+    catch (...) {
+    }
+    setCapCheckDone(true);
+  }
 
-  if (m_bUseGLSL) {
+  if (!isCacheAvail()) {
+    createCacheData();
+    if (!isCacheAvail())
+      return; // Error, Cannot draw anything (ignore)
+  }
+
+  preRender(pdc);
+  render2(pdc);
+  postRender(pdc);
+}
+
+void SimpleRendGLSL::render2(DisplayContext *pdc)
+{
+  if (isShaderAvail() && isShaderEnabled()) {
     displayGLSL(pdc);
   }
   else {
-    // displayVBO(pdc);
-    super_t::display(pdc);
+    displayVBO(pdc);
+  }
+}
+
+bool SimpleRendGLSL::isCacheAvail() const
+{
+  if (isShaderAvail() && isShaderEnabled()) {
+    // GLSL mode
+    return m_pAttrAry!=NULL;
+  }
+  else {
+    // VBO mode
+    return super_t::isCacheAvail();
+  }
+}
+
+void SimpleRendGLSL::createCacheData()
+{
+  if (isShaderAvail() && isShaderEnabled()) {
+    createGLSL();
+    if (isUseAnim())
+      updateDynamicGLSL();
+    else
+      updateStaticGLSL();
+    // ???
+    // updateGLSLColor();
+  }
+  else {
+    super_t::createCacheData();
   }
 }
 
 void SimpleRendGLSL::displayGLSL(DisplayContext *pdc)
 {
   // new rendering routine using GLSL/VBO
-  // if (!m_bChkShaderDone)
-  // initShader(pdc);
   
-  if (m_pAttrAry==NULL) {
-    createGLSL();
-    if (isUseAnim())
-      updateDynamicGLSL();
-    else
-      updateStaticGLSL();
-    
-    if (m_pAttrAry==NULL)
-      return; // Error, Cannot draw anything (ignore)
-  }
-
   if (m_pPO==NULL)
     return; // Error, Cannot draw anything (ignore)
 
-  preRender(pdc);
+  // preRender(pdc);
   pdc->setLineWidth(getLineWidth());
 
   //m_pCoordTex->use(0);
@@ -113,19 +149,20 @@ void SimpleRendGLSL::displayGLSL(DisplayContext *pdc)
   //m_pCoordTex->unuse();
   pdc->unuseTexture(m_pCoordTex);
 
-  postRender(pdc);
+  //postRender(pdc);
 }
 
-void SimpleRendGLSL::initShader(DisplayContext *pdc)
+bool SimpleRendGLSL::initCap(DisplayContext *pdc)
 {
-  m_bChkShaderDone = true;
+  // m_bChkShaderDone = true;
 
   sysdep::ShaderSetupHelper<SimpleRendGLSL> ssh(this);
 
   if (!ssh.checkEnvVS()) {
     LOG_DPRINTLN("SimpleRendGLSL> ERROR: GLSL not supported.");
-    MB_THROW(qlib::RuntimeException, "OpenGL GPU shading not supported");
-    return;
+    //MB_THROW(qlib::RuntimeException, "OpenGL GPU shading not supported");
+    setShaderAvail(false);
+    return false;
   }
 
   if (m_pPO==NULL)
@@ -135,7 +172,8 @@ void SimpleRendGLSL::initShader(DisplayContext *pdc)
   
   if (m_pPO==NULL) {
     LOG_DPRINTLN("SimpleRendGLSL> ERROR: cannot create progobj.");
-    return;
+    setShaderAvail(false);
+    return false;
   }
 
   m_pPO->enable();
@@ -148,6 +186,8 @@ void SimpleRendGLSL::initShader(DisplayContext *pdc)
   m_nColLoc = m_pPO->getAttribLocation("a_color");
 
   m_pPO->disable();
+  setShaderAvail(true);
+  return true;
 }
 
 void SimpleRendGLSL::createGLSL()
@@ -239,8 +279,6 @@ void SimpleRendGLSL::createGLSL()
 
   // initialize the coloring scheme
   startColorCalc(pCMol);
-  //getColSchm()->start(pCMol, this);
-  //pCMol->getColSchm()->start(pCMol, this);
 
   //
   // estimate bond data structure size
@@ -361,8 +399,6 @@ void SimpleRendGLSL::createGLSL()
   LOG_DPRINTLN("SimpleRend> %d Attr VBO created", nva);
 
   // finalize the coloring scheme
-  //getColSchm()->end();
-  //pCMol->getColSchm()->end();
   endColorCalc(pCMol);
 }
 
@@ -468,16 +504,22 @@ void SimpleRendGLSL::objectChanged(qsys::ObjectEvent &ev)
       ev.getDescr().equals("atomsMoved")) {
     // OBE_CHANGED_DYNAMIC && descr=="atomsMoved"
     if (isUseAnim()) {
-      // GLSL mode
-      if (!m_bUseGLSL) {
-	invalidateDisplayCache();
-	m_bUseGLSL = true;
+      // If shader is available
+      // --> Enter the GLSL mode
+      if (isShaderAvail() && !isShaderEnabled()) {
+        //invalidateDisplayCache();
+        setShaderEnable(true);
       }
+      //if (!isCacheAvail()) {
+      //createCacheData();
+      //}
       if (m_pAttrAry==NULL) {
 	createGLSL();
 	//updateGLSLColor();
       }
+
       // only update positions
+      // updateCrdDynamic();
       updateDynamicGLSL();
       return;
     }
@@ -485,8 +527,9 @@ void SimpleRendGLSL::objectChanged(qsys::ObjectEvent &ev)
   else if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED_FIXDYN) {
     MB_DPRINTLN("SimpleRend (%p) > OBE_CHANGED_FIXDYN called!!", this);
 
-    m_bUseGLSL = false;
-    //invalidateDisplayCache();
+    if (!isForceGLSL())
+      setShaderEnable(false); // reset to VBO mode
+
     return;
   }
 

@@ -87,7 +87,7 @@ void TraceRenderer::endRend(DisplayContext *pdl)
 
 void TraceRenderer::display(DisplayContext *pdc)
 {
-  if (!isUseVBO(pdc)) {
+  if (pdc->isFile()) {
     // case of the file (non-ogl) rendering
     // always use the old version.
     super_t::display(pdc);
