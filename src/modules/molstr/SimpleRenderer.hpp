@@ -112,6 +112,12 @@ namespace molstr {
     /// cleanup VBO
     virtual void invalidateDisplayCache();
 
+    /// Initialize & setup capabilities (default: do nothing)
+    virtual bool initCap(DisplayContext *pdc) { return false; }
+    
+    /// Render to display
+    virtual void render2(DisplayContext *pdc);
+
     virtual bool isCacheAvail() const {
       return m_pVBO!=NULL;
     }
@@ -120,22 +126,33 @@ namespace molstr {
     virtual void createCacheData();
 
     //////////////////////////////////////////////////////
+    // new rendering interface (shader version/dummy)
+    
+    /// rendering for file display contexts
+    virtual void renderFile(DisplayContext *pdc);
+
+    //////////////////////////////////////////////////////
     // new rendering interface (using GL VBO)
 
-    void displayVBO(DisplayContext *pdc);
+    virtual void renderVBO(DisplayContext *pdc);
+    virtual void renderGLSL(DisplayContext *pdc) {}
 
   private:
     /// Rendering using VBO (builds sbonds, mbonds, and atoms data structure)
-    void createVBO();
+    virtual void createVBO();
+    virtual void createGLSL() {}
 
     /// update VBO positions using m_sbonds, m_mbonds, m_atoms and CrdArray data
-    void updateDynamicVBO();
+    virtual void updateDynamicVBO();
+    virtual void updateDynamicGLSL() {}
 
     /// update VBO positions without CrdArray
-    void updateStaticVBO();
+    virtual void updateStaticVBO();
+    virtual void updateStaticGLSL() {}
 
     /// update VBO colors
-    void updateVBOColor();
+    virtual void updateVBOColor();
+    virtual void updateGLSLColor() {}
 
   private:
     // workarea

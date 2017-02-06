@@ -17,6 +17,22 @@ namespace qsys {
 
   using gfx::DisplayContext;
 
+  class DispCacheRenderer;
+
+  class QSYS_API AbstDispCacheImpl
+  {
+  public:
+    virtual ~AbstDispCacheImpl() {}
+
+    virtual void display(DisplayContext *pdc, DispCacheRenderer *pOuter) =0;
+    virtual void invalidate() =0;
+
+    virtual void displayHit(DisplayContext *pdc, DispCacheRenderer *pOuter) =0;
+
+    /// Invalidate only the hittest display list
+    virtual void invalidateHit() =0;
+  };
+
   ///
   ///  Adaptor class for renderers with display cache support
   ///
@@ -27,16 +43,26 @@ namespace qsys {
   private:
     typedef Renderer super_t;
 
+    AbstDispCacheImpl *m_pCacheImpl;
+
+  public:
+    AbstDispCacheImpl *getDispCacheImpl() const { return m_pCacheImpl; }
+    // void setDispCacheImpl(AbstDispCacheImpl *pImpl) { m_pCacheImpl = pImpl; }
+
   public:
 
-    DispCacheRenderer();
-    DispCacheRenderer(const DispCacheRenderer &r);
+    DispCacheRenderer(AbstDispCacheImpl *pImpl);
+    DispCacheRenderer(const DispCacheRenderer &r, AbstDispCacheImpl *pImpl);
     virtual ~DispCacheRenderer();
 
     //////////////////////////////////////////////////////
     // Renderer implementation
 
     virtual void unloading();
+
+    virtual void display(DisplayContext *pdc);
+
+    virtual void displayHit(DisplayContext *pdc);
 
     ///////////////////////////////////////
     // DispCacheRenderer rendering interface
@@ -82,39 +108,6 @@ namespace qsys {
     }
   };
 
-  //
-  //  Implementation of cache using display list
-  //
-
-  class QSYS_API DispListCacheImpl
-  {
-  private:
-
-    /// Display list for drawing
-    DisplayContext *m_pdl;
-
-    /// Display list for hittest
-    DisplayContext *m_phl;
-
-  public:
-
-    DispListCacheImpl();
-    virtual ~DispListCacheImpl();
-
-    /// 
-    void display(DisplayContext *pdc, DispCacheRenderer *pOuter);
-
-    /// Invalidate both display list and hittest display list
-    void invalidate();
-
-    void displayHit(DisplayContext *pdc, DispCacheRenderer *pOuter);
-
-    /// Invalidate only the hittest display list
-    void invalidateHit();
-
-  };
-
-  
 }
 
 #endif

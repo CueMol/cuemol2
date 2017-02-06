@@ -208,14 +208,24 @@ bool SimpleRenderer::isRendBond() const
   return true;
 }
 
+//////////////////////////////////////////////////////////////////////
+// New interface implementation (VBO)
+
 void SimpleRenderer::display(DisplayContext *pdc)
 {
-#ifdef USE_OPENGL_VBO
   if (pdc->isFile()) {
     // case of the file (non-ogl) rendering
-    // always use the old version.
-    super_t::display(pdc);
+    renderFile(pdc);
     return;
+  }
+
+  if (!isCapCheckDone()) {
+    try {
+      initCap(pdc);
+    }
+    catch (...) {
+    }
+    setCapCheckDone(true);
   }
 
   if (!isCacheAvail()) {
@@ -225,32 +235,36 @@ void SimpleRenderer::display(DisplayContext *pdc)
   }
 
   preRender(pdc);
-  // TO DO: move to render2()
-  displayVBO(pdc);
+  render2(pdc);
   postRender(pdc);
-#else
-  super_t::display(pdc);
-#endif
 }
 
-//////////////////////////////////////////////////////////////////////
-// New VBO implementation
+void SimpleRenderer::render2(DisplayContext *pdc)
+{
+  if (isShaderAvail() && isShaderEnabled())
+    renderGLSL(pdc);
+  else
+    renderVBO(pdc);
+}
 
 void SimpleRenderer::createCacheData()
 {
-  createVBO();
-  if (isUseAnim())
-    updateDynamicVBO();
-  else
-    updateStaticVBO();
-  updateVBOColor();
-}
-
-void SimpleRenderer::displayVBO(DisplayContext *pdc)
-{
-  // new rendering routine using VBO (DrawElem)
-  m_pVBO->setLineWidth(m_lw);
-  pdc->drawElem(*m_pVBO);
+  if (isShaderAvail() && isShaderEnabled()) {
+    createGLSL();
+    if (isUseAnim())
+      updateDynamicGLSL();
+    else
+      updateStaticGLSL();
+    updateGLSLColor();
+  }
+  else {
+    createVBO();
+    if (isUseAnim())
+      updateDynamicVBO();
+    else
+      updateStaticVBO();
+    updateVBOColor();
+  }
 }
 
 void SimpleRenderer::createVBO()
@@ -961,6 +975,13 @@ void SimpleRenderer::invalidateDisplayCache()
   super_t::invalidateDisplayCache();
 }
 
+void SimpleRenderer::renderVBO(DisplayContext *pdc)
+{
+  // new rendering routine using VBO (DrawElem)
+  m_pVBO->setLineWidth(m_lw);
+  pdc->drawElem(*m_pVBO);
+}
+
 void SimpleRenderer::objectChanged(qsys::ObjectEvent &ev)
 {
 #ifdef USE_OPENGL_VBO
@@ -985,5 +1006,12 @@ void SimpleRenderer::objectChanged(qsys::ObjectEvent &ev)
 #endif
 
   super_t::objectChanged(ev);
+}
+
+void SimpleRenderer::renderFile(DisplayContext *pdc)
+{
+  // Render to file display contexts
+  // --> always use the old version.
+  super_t::display(pdc);
 }
 

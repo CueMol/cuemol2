@@ -39,7 +39,7 @@ namespace molstr {
 
   public:
 
-    virtual void display(DisplayContext *pdc);
+    // virtual void display(DisplayContext *pdc);
 
     /// cleanup Texture/VBO
     virtual void invalidateDisplayCache();
@@ -48,29 +48,26 @@ namespace molstr {
     // new rendering routine (using GLSL)
 
     /// Initialize &setup capabilities (shaders/texture)
-    bool initCap(DisplayContext *pdc);
+    virtual bool initCap(DisplayContext *pdc);
     
     /// Render to display
-    virtual void render2(DisplayContext *pdc);
+    // virtual void render2(DisplayContext *pdc);
+
+    /// rendering for GLSL version
+    virtual void renderGLSL(DisplayContext *pdc);
 
     virtual bool isCacheAvail() const;
 
-    virtual void createCacheData();
-
-  private:
-    /// display() for GLSL version
-    void displayGLSL(DisplayContext *pdc);
-
     /// Rendering using GLSL
-    //void createGLSL(DisplayContext *pdc);
-    void createGLSL();
+    virtual void createGLSL();
 
     /// update coord texture for GLSL rendering (using crdarray)
-    void updateDynamicGLSL();
+    virtual void updateDynamicGLSL();
 
     /// update coord texture for GLSL rendering (using atompos)
-    void updateStaticGLSL();
+    virtual void updateStaticGLSL();
 
+  private:
     /// coordinate float texture
     gfx::Texture *m_pCoordTex;
 

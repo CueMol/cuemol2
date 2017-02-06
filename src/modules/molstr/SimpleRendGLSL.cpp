@@ -59,6 +59,7 @@ SimpleRendGLSL::~SimpleRendGLSL()
   MB_DPRINTLN("SimpleRendGLSL destructed %p", this);
 }
 
+/*
 void SimpleRendGLSL::display(DisplayContext *pdc)
 {
   if (pdc->isFile()) {
@@ -69,8 +70,6 @@ void SimpleRendGLSL::display(DisplayContext *pdc)
     return;
   }
 
-  //if (!m_bChkShaderDone)
-  //initShader(pdc);
   if (!isCapCheckDone()) {
     try {
       initCap(pdc);
@@ -90,8 +89,9 @@ void SimpleRendGLSL::display(DisplayContext *pdc)
   render2(pdc);
   postRender(pdc);
 }
+*/
 
-void SimpleRendGLSL::render2(DisplayContext *pdc)
+/*void SimpleRendGLSL::render2(DisplayContext *pdc)
 {
   if (isShaderAvail() && isShaderEnabled()) {
     displayGLSL(pdc);
@@ -99,7 +99,7 @@ void SimpleRendGLSL::render2(DisplayContext *pdc)
   else {
     displayVBO(pdc);
   }
-}
+}*/
 
 bool SimpleRendGLSL::isCacheAvail() const
 {
@@ -113,6 +113,7 @@ bool SimpleRendGLSL::isCacheAvail() const
   }
 }
 
+/*
 void SimpleRendGLSL::createCacheData()
 {
   if (isShaderAvail() && isShaderEnabled()) {
@@ -128,29 +129,7 @@ void SimpleRendGLSL::createCacheData()
     super_t::createCacheData();
   }
 }
-
-void SimpleRendGLSL::displayGLSL(DisplayContext *pdc)
-{
-  // new rendering routine using GLSL/VBO
-  
-  if (m_pPO==NULL)
-    return; // Error, Cannot draw anything (ignore)
-
-  // preRender(pdc);
-  pdc->setLineWidth(getLineWidth());
-
-  //m_pCoordTex->use(0);
-  pdc->useTexture(m_pCoordTex, 0);
-  m_pPO->enable();
-  m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
-  pdc->drawElem(*m_pAttrAry);
-
-  m_pPO->disable();
-  //m_pCoordTex->unuse();
-  pdc->unuseTexture(m_pCoordTex);
-
-  //postRender(pdc);
-}
+*/
 
 bool SimpleRendGLSL::initCap(DisplayContext *pdc)
 {
@@ -495,6 +474,24 @@ void SimpleRendGLSL::invalidateDisplayCache()
   }
 
   super_t::invalidateDisplayCache();
+}
+
+void SimpleRendGLSL::renderGLSL(DisplayContext *pdc)
+{
+  // new rendering routine using GLSL
+  
+  if (m_pPO==NULL)
+    return; // Error, Cannot draw anything (ignore)
+
+  pdc->setLineWidth(getLineWidth());
+
+  pdc->useTexture(m_pCoordTex, 0);
+  m_pPO->enable();
+  m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
+  pdc->drawElem(*m_pAttrAry);
+
+  m_pPO->disable();
+  pdc->unuseTexture(m_pCoordTex);
 }
 
 void SimpleRendGLSL::objectChanged(qsys::ObjectEvent &ev)

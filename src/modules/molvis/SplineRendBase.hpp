@@ -283,6 +283,8 @@ namespace molvis {
 
     /// Render to display
     virtual void render2(DisplayContext *pdc);
+    virtual void renderGLSL(DisplayContext *pdc);
+    virtual void renderVBO(DisplayContext *pdc);
 
     /// Render to file (without using cache data)
     virtual void renderFile(DisplayContext *pdc);

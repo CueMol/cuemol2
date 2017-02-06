@@ -20,6 +20,38 @@ namespace qsys {
 
   using gfx::DisplayContext;
 
+  //
+  //  Implementation of cache using display list
+  //
+  class QSYS_API DispListCacheImpl : public AbstDispCacheImpl
+  {
+  private:
+
+    /// Display list for drawing
+    DisplayContext *m_pdl;
+
+    /// Display list for hittest
+    DisplayContext *m_phl;
+
+  public:
+
+    DispListCacheImpl();
+    virtual ~DispListCacheImpl();
+
+    /// 
+    void display(DisplayContext *pdc, DispCacheRenderer *pOuter);
+
+    /// Invalidate both display list and hittest display list
+    void invalidate();
+
+    void displayHit(DisplayContext *pdc, DispCacheRenderer *pOuter);
+
+    /// Invalidate only the hittest display list
+    void invalidateHit();
+
+  };
+
+  
   ///
   ///  Adoptor class for renderers with display list cache support
   ///
@@ -30,7 +62,7 @@ namespace qsys {
   private:
     typedef DispCacheRenderer super_t;
 
-    DispListCacheImpl m_dlcache;
+    // DispListCacheImpl m_dlcache;
 
   public:
 
@@ -41,18 +73,18 @@ namespace qsys {
     //////////////////////////////////////////////////////
     // Renderer implementation
 
-    virtual void display(DisplayContext *pdc);
+    // virtual void display(DisplayContext *pdc);
 
-    virtual void invalidateDisplayCache();
+    // virtual void invalidateDisplayCache();
 
     //
     // Hittest implementation
     //
 
     /// render Hittest object
-    virtual void displayHit(DisplayContext *pdc);
+    // virtual void displayHit(DisplayContext *pdc);
 
-    virtual void invalidateHittestCache();
+    // virtual void invalidateHittestCache();
 
   };
 }

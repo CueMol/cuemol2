@@ -475,13 +475,25 @@ bool SplineRendBase::initCap(DisplayContext *pdc)
 
 void SplineRendBase::render2(DisplayContext *pdc)
 {
+  if (isShaderAvail() && isShaderEnabled())
+    renderGLSL(pdc);
+  else
+    renderVBO(pdc);
+}
+
+void SplineRendBase::renderGLSL(DisplayContext *pdc)
+{
   BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
-    if (pelem->getSize()>0) {
-      if (isShaderAvail() && isShaderEnabled())
-        drawGLSL(pelem, pdc);
-      else
-        drawVBO(pelem, pdc);
-    }
+    if (pelem->getSize()>0)
+      drawGLSL(pelem, pdc);
+  }
+}
+
+void SplineRendBase::renderVBO(DisplayContext *pdc)
+{
+  BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
+    if (pelem->getSize()>0)
+      drawVBO(pelem, pdc);
   }
 }
 
