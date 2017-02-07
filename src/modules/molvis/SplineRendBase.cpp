@@ -419,6 +419,7 @@ void SplineRendBase::propChanged(qlib::LPropEvent &ev)
   super_t::propChanged(ev);
 }
 
+/*
 void SplineRendBase::objectChanged(qsys::ObjectEvent &ev)
 {
   if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED &&
@@ -435,66 +436,12 @@ void SplineRendBase::objectChanged(qsys::ObjectEvent &ev)
 
   super_t::objectChanged(ev);
 }
-
+*/
 //////////
 
-void SplineRendBase::display(DisplayContext *pdc)
+bool SplineRendBase::isUseVer2Iface() const
 {
-  if (pdc->isFile()) {
-    preRender(pdc);
-    renderFile(pdc);
-    postRender(pdc);
-    return;
-  }
-    
-  if (!isCapCheckDone()) {
-    try {
-      initCap(pdc);
-    }
-    catch (...) {
-    }
-    setCapCheckDone(true);
-  }
-
-  if (!isCacheAvail()) {
-    createCacheData();
-  }
-
-  preRender(pdc);
-  render2(pdc);
-  postRender(pdc);
-
-}
-
-bool SplineRendBase::initCap(DisplayContext *pdc)
-{
-  // default: shader is not available
-  setShaderAvail(false);
-  return false;
-}
-
-void SplineRendBase::render2(DisplayContext *pdc)
-{
-  if (isShaderAvail() && isShaderEnabled())
-    renderGLSL(pdc);
-  else
-    renderVBO(pdc);
-}
-
-void SplineRendBase::renderGLSL(DisplayContext *pdc)
-{
-  BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
-    if (pelem->getSize()>0)
-      drawGLSL(pelem, pdc);
-  }
-}
-
-void SplineRendBase::renderVBO(DisplayContext *pdc)
-{
-  BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
-    if (pelem->getSize()>0)
-      drawVBO(pelem, pdc);
-  }
+  return true;
 }
 
 bool SplineRendBase::isCacheAvail() const
@@ -508,62 +455,117 @@ bool SplineRendBase::isCacheAvail() const
     return m_bVBOCacheOK;
 }
 
-void SplineRendBase::createCacheData()
+void SplineRendBase::createDisplayCache()
 {
   if (m_seglist.empty())
     createSegList();
   
+  super_t::createDisplayCache();
+
   if (isUseShader()) {
-    BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
-      if (pelem->getSize()>0) {
-        setupGLSL(pelem);
-      }
-    }
-  }
-  else {
-    BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
-      if (pelem->getSize()>0) {
-        setupVBO(pelem);
-      }
-    }
-  }
-
-  if (isUseAnim())
-    updateCrdDynamic();
-  else
-    updateCrdStatic();
-
-
-  MolCoordPtr pCMol = getClientMol();
-  startColorCalc(pCMol);
-  
-  if (isUseShader()) {
-    BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
-      if (pelem->getSize()>0) {
-        updateColorGLSL(pelem);
-      }
-    }
     m_bGLSLCacheOK = true;
   }
   else {
-    BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
-      if (pelem->getSize()>0) {
-        updateColorVBO(pelem);
-      }
-    }
     m_bVBOCacheOK = true;
   }
-  
-  endColorCalc(pCMol);
 
 }
 
-void SplineRendBase::invalidateDisplayCache()
+void SplineRendBase::createGLSL()
 {
-  clearSegList();
-  m_bVBOCacheOK = false;
-  m_bGLSLCacheOK = false;
-  super_t::invalidateDisplayCache();
+  BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
+    if (pelem->getSize()>0) {
+      setupGLSL(pelem);
+    }
+  }
+}
+
+void SplineRendBase::createVBO()
+{
+  BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
+    if (pelem->getSize()>0) {
+      setupVBO(pelem);
+    }
+  }
+}
+
+void SplineRendBase::updateStaticVBO()
+{
+  //updateCrdStatic();
+  BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
+    if (pelem->getSize()>0) {
+      // update spline coefficients (from MolAtom)
+      pelem->updateStatic(this);
+      
+      // update VBO
+      updateCrdVBO(pelem);
+    }
+  }
+}
+
+void SplineRendBase::updateStaticGLSL()
+{
+  //updateCrdStatic();
+  BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
+    if (pelem->getSize()>0) {
+      // update spline coefficients (from MolAtom)
+      pelem->updateStatic(this);
+      
+      // update VBO/Texture, etc
+      updateCrdGLSL(pelem);
+    }
+  }
+}
+
+void SplineRendBase::updateDynamicVBO()
+{
+  //updateCrdDynamic();
+  BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
+    if (pelem->getSize()>0) {
+      // update spline coefficients (from CrdArray)
+      pelem->updateDynamic(this);
+      
+      // update VBO
+      updateCrdVBO(pelem);
+    }
+  }
+}
+void SplineRendBase::updateDynamicGLSL()
+{
+  //updateCrdDynamic();
+  BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
+    if (pelem->getSize()>0) {
+      // update spline coefficients (from CrdArray)
+      pelem->updateDynamic(this);
+      
+      // update VBO/Texture, etc
+      updateCrdGLSL(pelem);
+    }
+  }
+}
+
+void SplineRendBase::updateGLSLColor()
+{
+  MolCoordPtr pCMol = getClientMol();
+  startColorCalc(pCMol);
+  BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
+    if (pelem->getSize()>0) {
+      updateColorGLSL(pelem);
+    }
+  }
+  endColorCalc(pCMol);
+}
+
+void SplineRendBase::updateVBOColor()
+{
+  MolCoordPtr pCMol = getClientMol();
+  startColorCalc(pCMol);
+  BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
+    if (pelem->getSize()>0) {
+      updateColorVBO(pelem);
+    }
+  }
+  endColorCalc(pCMol);
 }
 
 void SplineRendBase::createSegList()
@@ -614,75 +616,30 @@ void SplineRendBase::createSegList()
 void SplineRendBase::setupSeg(SplineSegment *pSeg)
 {
   pSeg->generate(this);
-/*
-  if (isShaderAvail())
-    setupGLSL(pSeg);
-  
-  setupVBO(pSeg);
-*/
-  /*
-  if (isUseGLSL())
-    setupGLSL(pSeg);
-  else
-    setupVBO(pSeg);
-   */
 }
 
-void SplineRendBase::updateCrdDynamic()
+void SplineRendBase::invalidateDisplayCache()
 {
-  if (isShaderAvail() && isShaderEnabled()) {
-    BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
-      if (pelem->getSize()>0) {
-        // update spline coefficients (from CrdArray)
-        pelem->updateDynamic(this);
-        
-        // update VBO/Texture, etc
-        updateCrdGLSL(pelem);
-      }
-    }
-  }
-  else {
-    BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
-      if (pelem->getSize()>0) {
-        // update spline coefficients (from CrdArray)
-        pelem->updateDynamic(this);
-        
-        // update VBO
-        updateCrdVBO(pelem);
-      }
-    }
+  clearSegList();
+  m_bVBOCacheOK = false;
+  m_bGLSLCacheOK = false;
+  super_t::invalidateDisplayCache();
+}
+
+void SplineRendBase::renderGLSL(DisplayContext *pdc)
+{
+  BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
+    if (pelem->getSize()>0)
+      drawGLSL(pelem, pdc);
   }
 }
 
-void SplineRendBase::updateCrdStatic()
+void SplineRendBase::renderVBO(DisplayContext *pdc)
 {
-  //MB_DPRINTLN("isShaderAvail()=%d, isShaderEnabled()=%d",isShaderAvail(), isShaderEnabled());
-  if (isShaderAvail() && isShaderEnabled()) {
-    BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
-      if (pelem->getSize()>0) {
-        // update spline coefficients (from MolAtom)
-        pelem->updateStatic(this);
-        
-        // update VBO/Texture, etc
-        updateCrdGLSL(pelem);
-      }
-    }
+  BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
+    if (pelem->getSize()>0)
+      drawVBO(pelem, pdc);
   }
-  else {
-    BOOST_FOREACH (SplineSegment *pelem, m_seglist) {
-      if (pelem->getSize()>0) {
-        // update spline coefficients (from MolAtom)
-        pelem->updateStatic(this);
-        
-        // update VBO
-        updateCrdVBO(pelem);
-      }
-    }
-  }
-}
-
-void SplineRendBase::renderFile(DisplayContext *pdc)
-{
 }
 
 int SplineRendBase::getCapTypeImpl(SplineSegment *pSeg, DrawSegment *pDS, bool bStart)

@@ -48,7 +48,7 @@ namespace molstr {
     // new rendering routine (using GLSL)
 
     /// Initialize &setup capabilities (shaders/texture)
-    virtual bool initCap(DisplayContext *pdc);
+    virtual bool init(DisplayContext *pdc);
     
     /// Render to display
     // virtual void render2(DisplayContext *pdc);
@@ -105,7 +105,7 @@ namespace molstr {
     // Event handling
 
     /// object changed event (--> update vertex positions if required)
-    virtual void objectChanged(qsys::ObjectEvent &ev);
+    // virtual void objectChanged(qsys::ObjectEvent &ev);
 
   };
 }

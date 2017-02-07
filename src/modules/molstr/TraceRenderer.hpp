@@ -49,14 +49,14 @@ namespace molstr {
     
     virtual const char *getTypeName() const;
 
-    virtual void display(DisplayContext *pdc);
+    // virtual void display(DisplayContext *pdc);
     
     //////////////////////////////////////////////////////
     // DispCacheRenderer interface
 
     virtual void preRender(DisplayContext *pdc);
     
-    void invalidateDisplayCache();
+    virtual void invalidateDisplayCache();
 
     //////////////////////////////////////////////////////
     // MainChainRenderer interface
@@ -70,7 +70,28 @@ namespace molstr {
     //////////////////////////////////////////////////////
     
     // virtual void propChanged(qlib::LPropEvent &ev);
-    void objectChanged(qsys::ObjectEvent &ev);
+    // void objectChanged(qsys::ObjectEvent &ev);
+
+    //////////////////////////////////////////////////////
+    // Ver2 interface
+
+    virtual bool isUseVer2Iface() const;
+
+    virtual bool isCacheAvail() const;
+
+    /// Rendering using VBO (builds sbonds, mbonds, and atoms data structure)
+    virtual void createVBO();
+
+    /// update VBO positions using m_sbonds, m_mbonds, m_atoms and CrdArray data
+    virtual void updateDynamicVBO();
+
+    /// update VBO positions without CrdArray
+    virtual void updateStaticVBO();
+
+    /// update VBO colors
+    virtual void updateVBOColor();
+
+    virtual void renderVBO(DisplayContext *pdc);
 
   private:
     
@@ -92,11 +113,6 @@ namespace molstr {
 
     /// cached vertex array/VBO
     gfx::DrawElemVC *m_pVBO;
-
-    void createVBO();
-    void updateDynamicVBO();
-    void updateStaticVBO();
-    void updateVBOColor();
 
   };
 

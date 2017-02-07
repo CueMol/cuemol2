@@ -64,6 +64,7 @@ SplineSegment *Spline2Renderer::createSegment()
   return MB_NEW Spline2SS();
 }
 
+/*
 void Spline2Renderer::objectChanged(qsys::ObjectEvent &ev)
 {
   if (isVisible() &&
@@ -80,6 +81,7 @@ void Spline2Renderer::objectChanged(qsys::ObjectEvent &ev)
 
   super_t::objectChanged(ev);
 }
+*/
 
 //////////////////////////////////////////////////////////////
 // VBO implementation

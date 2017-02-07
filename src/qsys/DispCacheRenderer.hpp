@@ -86,6 +86,31 @@ namespace qsys {
     virtual void invalidateHittestCache();
 
     ///////////////////////////////////////
+    // ver2 interface
+
+    /// Use ver2 interface (default: false)
+    virtual bool isUseVer2Iface() const;
+
+    /// Initialize & setup capabilities (default: do nothing)
+    virtual bool init(DisplayContext *pdc);
+    
+    /// Render to display (version 2)
+    virtual void display2(DisplayContext *pdc);
+
+    virtual void createDisplayCache();
+
+    virtual bool isCacheAvail() const;
+
+    /// Render to display
+    virtual void render2(DisplayContext *pdc);
+
+    virtual void renderVBO(DisplayContext *pdc);
+    virtual void renderGLSL(DisplayContext *pdc);
+
+    /// Render to file
+    virtual void renderFile(DisplayContext *pdc);
+
+    ///////////////////////////////////////
     // Event handling
 
     /// object changed event (--> call invalidate if required)

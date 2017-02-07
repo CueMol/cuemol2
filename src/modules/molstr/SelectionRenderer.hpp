@@ -99,6 +99,28 @@ namespace molstr {
     //////////////////////////////////////////////////////
     // new rendering interface (using GL VBO)
 
+  public:
+
+    // virtual void display(DisplayContext *pdc);
+
+    /// Use Ver2 interface (returns true)
+    virtual bool isUseVer2Iface() const;
+
+    virtual bool isCacheAvail() const;
+
+    virtual void renderVBO(DisplayContext *pdc);
+
+    virtual void invalidateDisplayCache();
+
+    /// Create VBO (and associated data structures)
+    virtual void createVBO();
+    
+    /// update VBO using m_bondInds, m_atomInds and CrdArray
+    virtual void updateDynamicVBO();
+
+    /// update VBO without CrdArray
+    virtual void updateStaticVBO();
+
   private:
     // Line mode impl
 
@@ -120,22 +142,6 @@ namespace molstr {
 
     /// cached vertex array/VBO
     gfx::DrawElemV *m_pVBO;
-
-  public:
-
-    virtual void display(DisplayContext *pdc);
-
-    virtual void invalidateDisplayCache();
-
-  private:
-    /// Create VBO (and associated data structures)
-    void createVBO();
-    
-    /// update VBO using m_bondInds, m_atomInds and CrdArray
-    void updateVBO();
-
-    /// update VBO without CrdArray
-    void updateStaticVBO();
 
   };
 

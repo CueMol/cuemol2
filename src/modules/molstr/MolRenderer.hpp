@@ -77,6 +77,27 @@ namespace molstr {
     virtual SelectionPtr getSelection() const;
 
     //////////////////////////////////////////////////////
+    // Ver2 interface (VBO/GLSL)
+
+    virtual void createDisplayCache();
+    
+    /// Rendering using VBO (builds sbonds, mbonds, and atoms data structure)
+    virtual void createVBO() {}
+    virtual void createGLSL() {}
+
+    /// update VBO positions using m_sbonds, m_mbonds, m_atoms and CrdArray data
+    virtual void updateDynamicVBO() {}
+    virtual void updateDynamicGLSL() {}
+
+    /// update VBO positions without CrdArray
+    virtual void updateStaticVBO() {}
+    virtual void updateStaticGLSL() {}
+
+    /// update VBO colors
+    virtual void updateVBOColor() {}
+    virtual void updateGLSLColor() {}
+
+    //////////////////////////////////////////////////////
     // Final methods
 
   private:

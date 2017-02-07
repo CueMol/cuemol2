@@ -85,6 +85,7 @@ void TraceRenderer::endRend(DisplayContext *pdl)
 ///////////////////////////////////////////////////////////
 // New VBO implementation
 
+/*
 void TraceRenderer::display(DisplayContext *pdc)
 {
   if (pdc->isFile()) {
@@ -115,6 +116,7 @@ void TraceRenderer::display(DisplayContext *pdc)
   postRender(pdc);
 
 }
+*/
 
 void TraceRenderer::invalidateDisplayCache()
 {
@@ -129,6 +131,16 @@ void TraceRenderer::invalidateDisplayCache()
   }
 
   super_t::invalidateDisplayCache();
+}
+
+bool TraceRenderer::isUseVer2Iface() const
+{
+  return true;
+}
+
+bool TraceRenderer::isCacheAvail() const
+{
+  return m_pVBO!=NULL;
 }
 
 void TraceRenderer::createVBO()
@@ -305,6 +317,8 @@ void TraceRenderer::updateDynamicVBO()
     m_pVBO->vertex3f(j, pos1);
     ++j;
   }
+
+  m_pVBO->setUpdated(true);
 }
 
 void TraceRenderer::updateStaticVBO()
@@ -357,6 +371,8 @@ void TraceRenderer::updateStaticVBO()
     m_pVBO->vertex(j, pos1);
     ++j;
   }
+
+  m_pVBO->setUpdated(true);
 }
 
 void TraceRenderer::updateVBOColor()
@@ -406,23 +422,14 @@ void TraceRenderer::updateVBOColor()
   //getColSchm()->end();
   //pCMol->getColSchm()->end();
   endColorCalc(pCMol);
+
+  m_pVBO->setUpdated(true);
 }
 
-void TraceRenderer::objectChanged(qsys::ObjectEvent &ev)
+void TraceRenderer::renderVBO(DisplayContext *pdc)
 {
-  if (isVisible() &&
-      (ev.getType()==qsys::ObjectEvent::OBE_CHANGED ||
-       ev.getType()==qsys::ObjectEvent::OBE_CHANGED_DYNAMIC) &&
-      ev.getDescr().equals("atomsMoved")) {
-
-    // OBE_CHANGED/CHANGED_DYN && descr=="atomsMoved"
-    if (m_pVBO!=NULL && isUseAnim() ) {
-      // only update positions
-      updateDynamicVBO();
-      m_pVBO->setUpdated(true);
-      return;
-    }
-  }
-
-  super_t::objectChanged(ev);
+  m_pVBO->setLineWidth(m_lw);
+  // m_pVBO->setDefColor(m_color);
+  pdc->drawElem(*m_pVBO);
 }
+

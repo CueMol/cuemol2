@@ -311,7 +311,7 @@ namespace qsys {
     inline void setCapCheckDone(bool b) { m_bChkCapDone = b; }
     
     /// perform capability check and initialization
-    virtual bool initCap(DisplayContext *pdc) { return true; }
+    // virtual bool init(DisplayContext *pdc) { return true; }
 
   private:
     /// shader is available
@@ -341,6 +341,9 @@ namespace qsys {
     bool isForceGLSL() const {
       return m_bForceGLSL;
     }
+
+    /// Use shader when shader is available and enabled
+    inline bool isUseShader() const { return isShaderAvail() && isShaderEnabled(); }
 
     ////////////////////////////////////////////////////////////
     // Event related operations

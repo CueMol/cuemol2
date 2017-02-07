@@ -59,48 +59,6 @@ SimpleRendGLSL::~SimpleRendGLSL()
   MB_DPRINTLN("SimpleRendGLSL destructed %p", this);
 }
 
-/*
-void SimpleRendGLSL::display(DisplayContext *pdc)
-{
-  if (pdc->isFile()) {
-    // case of the file (non-ogl) rendering
-    // always use the old version.
-    // TO DO: move to renderFile()??
-    super_t::display(pdc);
-    return;
-  }
-
-  if (!isCapCheckDone()) {
-    try {
-      initCap(pdc);
-    }
-    catch (...) {
-    }
-    setCapCheckDone(true);
-  }
-
-  if (!isCacheAvail()) {
-    createCacheData();
-    if (!isCacheAvail())
-      return; // Error, Cannot draw anything (ignore)
-  }
-
-  preRender(pdc);
-  render2(pdc);
-  postRender(pdc);
-}
-*/
-
-/*void SimpleRendGLSL::render2(DisplayContext *pdc)
-{
-  if (isShaderAvail() && isShaderEnabled()) {
-    displayGLSL(pdc);
-  }
-  else {
-    displayVBO(pdc);
-  }
-}*/
-
 bool SimpleRendGLSL::isCacheAvail() const
 {
   if (isShaderAvail() && isShaderEnabled()) {
@@ -113,25 +71,7 @@ bool SimpleRendGLSL::isCacheAvail() const
   }
 }
 
-/*
-void SimpleRendGLSL::createCacheData()
-{
-  if (isShaderAvail() && isShaderEnabled()) {
-    createGLSL();
-    if (isUseAnim())
-      updateDynamicGLSL();
-    else
-      updateStaticGLSL();
-    // ???
-    // updateGLSLColor();
-  }
-  else {
-    super_t::createCacheData();
-  }
-}
-*/
-
-bool SimpleRendGLSL::initCap(DisplayContext *pdc)
+bool SimpleRendGLSL::init(DisplayContext *pdc)
 {
   // m_bChkShaderDone = true;
 
@@ -494,6 +434,7 @@ void SimpleRendGLSL::renderGLSL(DisplayContext *pdc)
   pdc->unuseTexture(m_pCoordTex);
 }
 
+/*
 void SimpleRendGLSL::objectChanged(qsys::ObjectEvent &ev)
 {
   if (isVisible() &&
@@ -532,4 +473,5 @@ void SimpleRendGLSL::objectChanged(qsys::ObjectEvent &ev)
 
   super_t::objectChanged(ev);
 }
+*/
 

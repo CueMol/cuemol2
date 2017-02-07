@@ -211,60 +211,9 @@ bool SimpleRenderer::isRendBond() const
 //////////////////////////////////////////////////////////////////////
 // New interface implementation (VBO)
 
-void SimpleRenderer::display(DisplayContext *pdc)
+bool SimpleRenderer::isUseVer2Iface() const
 {
-  if (pdc->isFile()) {
-    // case of the file (non-ogl) rendering
-    renderFile(pdc);
-    return;
-  }
-
-  if (!isCapCheckDone()) {
-    try {
-      initCap(pdc);
-    }
-    catch (...) {
-    }
-    setCapCheckDone(true);
-  }
-
-  if (!isCacheAvail()) {
-    createCacheData();
-    if (!isCacheAvail())
-      return; // Error, Cannot draw anything (ignore)
-  }
-
-  preRender(pdc);
-  render2(pdc);
-  postRender(pdc);
-}
-
-void SimpleRenderer::render2(DisplayContext *pdc)
-{
-  if (isShaderAvail() && isShaderEnabled())
-    renderGLSL(pdc);
-  else
-    renderVBO(pdc);
-}
-
-void SimpleRenderer::createCacheData()
-{
-  if (isShaderAvail() && isShaderEnabled()) {
-    createGLSL();
-    if (isUseAnim())
-      updateDynamicGLSL();
-    else
-      updateStaticGLSL();
-    updateGLSLColor();
-  }
-  else {
-    createVBO();
-    if (isUseAnim())
-      updateDynamicVBO();
-    else
-      updateStaticVBO();
-    updateVBOColor();
-  }
+  return true;
 }
 
 void SimpleRenderer::createVBO()
@@ -274,8 +223,6 @@ void SimpleRenderer::createVBO()
   MolCoordPtr pCMol = getClientMol();
 
   // initialize the coloring scheme
-  //getColSchm()->start(pCMol, this);
-  //pCMol->getColSchm()->start(pCMol, this);
   startColorCalc(pCMol);
 
   AnimMol *pAMol = NULL;
@@ -444,8 +391,6 @@ void SimpleRenderer::createVBO()
   }
   
   // finalize the coloring scheme
-  //getColSchm()->end();
-  //pCMol->getColSchm()->end();
   endColorCalc(pCMol);
 
   nva = iva;
@@ -656,6 +601,8 @@ void SimpleRenderer::updateDynamicVBO()
     m_pVBO->vertex3f(j, pos1);
     ++j;
   }
+
+  m_pVBO->setUpdated(true);
 }
 
 void SimpleRenderer::updateStaticVBO()
@@ -851,6 +798,8 @@ void SimpleRenderer::updateStaticVBO()
     m_pVBO->vertex(j, pos1);
     ++j;
   }
+
+  m_pVBO->setUpdated(true);
 }
 
 void SimpleRenderer::updateVBOColor()
@@ -868,8 +817,6 @@ void SimpleRenderer::updateVBOColor()
   quint32 aid1, aid2;
 
   // initialize the coloring scheme
-  //getColSchm()->start(pCMol, this);
-  //pCMol->getColSchm()->start(pCMol, this);
   startColorCalc(pCMol);
 
   // single bond colors
@@ -954,9 +901,9 @@ void SimpleRenderer::updateVBOColor()
   }
 
   // finalize the coloring scheme
-  //getColSchm()->end();
-  //pCMol->getColSchm()->end();
   endColorCalc(pCMol);
+
+  m_pVBO->setUpdated(true);
 }
 
 void SimpleRenderer::invalidateDisplayCache()
@@ -980,38 +927,5 @@ void SimpleRenderer::renderVBO(DisplayContext *pdc)
   // new rendering routine using VBO (DrawElem)
   m_pVBO->setLineWidth(m_lw);
   pdc->drawElem(*m_pVBO);
-}
-
-void SimpleRenderer::objectChanged(qsys::ObjectEvent &ev)
-{
-#ifdef USE_OPENGL_VBO
-  if (isVisible() &&
-      (ev.getType()==qsys::ObjectEvent::OBE_CHANGED ||
-       ev.getType()==qsys::ObjectEvent::OBE_CHANGED_DYNAMIC) &&
-      ev.getDescr().equals("atomsMoved")) {
-
-    // OBE_CHANGED/CHANGED_DYN && descr=="atomsMoved"
-
-    if (isUseAnim()) {
-      if (m_pVBO!=NULL) {
-	// VBO mode
-	// only update positions
-	updateDynamicVBO();
-	m_pVBO->setUpdated(true);
-	// Prevent default behavior (invalidate cache)
-	return;
-      }
-    }
-  }
-#endif
-
-  super_t::objectChanged(ev);
-}
-
-void SimpleRenderer::renderFile(DisplayContext *pdc)
-{
-  // Render to file display contexts
-  // --> always use the old version.
-  super_t::display(pdc);
 }
 

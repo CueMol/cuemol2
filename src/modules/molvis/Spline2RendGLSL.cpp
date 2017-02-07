@@ -62,7 +62,7 @@ SplineSegment *Spline2RendGLSL::createSegment()
   return MB_NEW Spl2GLSLSeg();
 }
 
-bool Spline2RendGLSL::initCap(DisplayContext *pdc)
+bool Spline2RendGLSL::init(DisplayContext *pdc)
 {
   sysdep::ShaderSetupHelper<Spline2RendGLSL> ssh(this);
 
@@ -259,6 +259,7 @@ void Spline2RendGLSL::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc
   pdc->unuseTexture(pSeg->m_pColorTex);
 }
 
+/*
 void Spline2RendGLSL::objectChanged(qsys::ObjectEvent &ev)
 {
   if (isVisible() &&
@@ -288,3 +289,5 @@ void Spline2RendGLSL::objectChanged(qsys::ObjectEvent &ev)
 
   super_t::objectChanged(ev);
 }
+  */
+

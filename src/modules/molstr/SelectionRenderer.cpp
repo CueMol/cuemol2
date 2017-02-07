@@ -176,8 +176,7 @@ void SelectionRenderer::postRender(DisplayContext *pdc)
 
 void SelectionRenderer::objectChanged(qsys::ObjectEvent &ev)
 {
-
-#ifdef USE_OPENGL_VBO
+  /*
   if (isVisible() &&
       (ev.getType()==qsys::ObjectEvent::OBE_CHANGED_DYNAMIC ||
        ev.getType()==qsys::ObjectEvent::OBE_CHANGED)
@@ -192,8 +191,8 @@ void SelectionRenderer::objectChanged(qsys::ObjectEvent &ev)
       return;
     }
   }
-#endif
-
+*/
+  
   if (ev.getType()==qsys::ObjectEvent::OBE_PROPCHG) {
     if (ev.getDescr().equals("sel")) {
       invalidateDisplayCache();
@@ -209,17 +208,12 @@ bool SelectionRenderer::isTransp() const
 }
 
 ///////////////////////////////////////////////////////////////////
-// VBO implementation
+// Ver2 interface (VBO) implementation
 
+/*
 void SelectionRenderer::display(DisplayContext *pdc)
 {
 #ifdef USE_OPENGL_VBO
-  if (pdc->isFile()) {
-    // case of the file (non-ogl) rendering
-    // always use the old version.
-    super_t::display(pdc);
-    return;
-  }
 
   // new rendering routine using VBO (DrawElem)
   if (m_pVBO==NULL) {
@@ -234,14 +228,27 @@ void SelectionRenderer::display(DisplayContext *pdc)
       return; // Error, Cannot draw anything (ignore)
   }
   
-  preRender(pdc);
-  m_pVBO->setLineWidth(m_linew);
-  m_pVBO->setDefColor(m_color, getSceneID());
-  pdc->drawElem(*m_pVBO);
-  postRender(pdc);
 #else
   super_t::display(pdc);
 #endif
+}
+*/
+
+bool SelectionRenderer::isUseVer2Iface() const
+{
+  return true;
+}
+
+bool SelectionRenderer::isCacheAvail() const
+{
+  return m_pVBO!=NULL;
+}
+
+void SelectionRenderer::renderVBO(DisplayContext *pdc)
+{
+  m_pVBO->setLineWidth(m_linew);
+  m_pVBO->setDefColor(m_color, getSceneID());
+  pdc->drawElem(*m_pVBO);
 }
 
 void SelectionRenderer::createVBO()
@@ -344,7 +351,7 @@ void SelectionRenderer::createVBO()
   LOG_DPRINTLN("SelectionRenderer> %d elems VBO created", nva);
 }
 
-void SelectionRenderer::updateVBO()
+void SelectionRenderer::updateDynamicVBO()
 {
   quint32 i = 0, j = 0;
   quint32 ind1, ind2;
@@ -405,6 +412,8 @@ void SelectionRenderer::updateVBO()
     m_pVBO->vertex3f(j, pos1);
     ++j;
   }
+
+  m_pVBO->setUpdated(true);
 }
 
 void SelectionRenderer::updateStaticVBO()
@@ -460,11 +469,14 @@ void SelectionRenderer::updateStaticVBO()
     ++j;
   }
 
+  m_pVBO->setUpdated(true);
+
+  //m_bondAids.clear();
+  //m_atomAids.clear();
 }
 
 void SelectionRenderer::invalidateDisplayCache()
 {
-#ifdef USE_OPENGL_VBO
   if (m_pVBO!=NULL) {
     delete m_pVBO;
     m_pVBO = NULL;
@@ -474,7 +486,6 @@ void SelectionRenderer::invalidateDisplayCache()
     m_atomAids.clear();
     m_atomInds.clear();
   }
-#endif
 
   super_t::invalidateDisplayCache();
 }

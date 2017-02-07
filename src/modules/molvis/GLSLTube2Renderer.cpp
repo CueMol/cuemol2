@@ -77,7 +77,7 @@ SplineSegment *GLSLTube2Renderer::createSegment()
   return MB_NEW GLSLTube2SS();
 }
 
-bool GLSLTube2Renderer::initCap(DisplayContext *pdc)
+bool GLSLTube2Renderer::init(DisplayContext *pdc)
 {
   sysdep::ShaderSetupHelper<GLSLTube2Renderer> ssh(this);
   
@@ -400,6 +400,7 @@ void GLSLTube2Renderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *p
 
 //////////
 
+/*
 void GLSLTube2Renderer::objectChanged(qsys::ObjectEvent &ev)
 {
   if (isVisible() &&
@@ -431,4 +432,5 @@ void GLSLTube2Renderer::objectChanged(qsys::ObjectEvent &ev)
 
   super_t::objectChanged(ev);
 }
+*/
 

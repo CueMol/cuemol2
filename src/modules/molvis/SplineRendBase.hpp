@@ -269,37 +269,46 @@ namespace molvis {
 
     /////////////////
     // Renderer interface
-    virtual void display(DisplayContext *pdc);
+    // virtual void display(DisplayContext *pdc);
+
+    /// Use ver2 interface (returns true)
+    virtual bool isUseVer2Iface() const;
 
     /////////////////
     // DispCacheRenderer interface
 
+    virtual bool isCacheAvail() const;
+
+    virtual void createDisplayCache();
+    // virtual void createCacheData();
+
+    virtual void createGLSL();
+    virtual void createVBO();
+    virtual void updateStaticVBO();
+    virtual void updateStaticGLSL();
+    virtual void updateDynamicVBO();
+    virtual void updateDynamicGLSL();
+    virtual void updateGLSLColor();
+    virtual void updateVBOColor();
+
     virtual void invalidateDisplayCache();
 
-    /////////////////
-    // SplineRendBase interface
-    virtual bool isCacheAvail() const;
-    virtual void createCacheData();
-
     /// Render to display
-    virtual void render2(DisplayContext *pdc);
+    // virtual void render2(DisplayContext *pdc);
     virtual void renderGLSL(DisplayContext *pdc);
     virtual void renderVBO(DisplayContext *pdc);
 
     /// Render to file (without using cache data)
-    virtual void renderFile(DisplayContext *pdc);
+    // virtual void renderFile(DisplayContext *pdc);
 
     /////////////////
     // Event handling
 
     virtual void propChanged(qlib::LPropEvent &ev);
 
-    virtual void objectChanged(qsys::ObjectEvent &ev);
+    // virtual void objectChanged(qsys::ObjectEvent &ev);
 
     //
-
-    /// Use shader when shader is available and enabled
-    inline bool isUseShader() const { return isShaderAvail() && isShaderEnabled(); }
 
   protected:
 
@@ -320,10 +329,10 @@ namespace molvis {
     bool m_bVBOCacheOK;
     bool m_bGLSLCacheOK;
 
-  public:
-    /// Initialize shader (default: shader not supported)
-    virtual bool initCap(DisplayContext *pdc);
+    /////////////////
+    // SplineRendBase interface
 
+  public:
     virtual SplineSegment *createSegment() =0;
 
     virtual void createSegList();
@@ -334,8 +343,8 @@ namespace molvis {
     virtual void setupGLSL(SplineSegment *pSeg) {}
 
 
-    void updateCrdStatic();
-    void updateCrdDynamic();
+    // void updateCrdStatic();
+    // void updateCrdDynamic();
 
     virtual void updateCrdVBO(detail::SplineSegment *pSeg) =0;
     virtual void updateCrdGLSL(detail::SplineSegment *pSeg) {}

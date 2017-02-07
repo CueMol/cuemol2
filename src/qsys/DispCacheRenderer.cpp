@@ -42,7 +42,10 @@ void DispCacheRenderer::unloading()
 
 void DispCacheRenderer::display(DisplayContext *pdc)
 {
-  m_pCacheImpl->display(pdc, this);
+  if (isUseVer2Iface())
+    display2(pdc);
+  else
+    m_pCacheImpl->display(pdc, this);
 }
 
 
@@ -126,4 +129,76 @@ void DispCacheRenderer::sceneChanged(SceneEvent &ev)
   }
 }
 
+bool DispCacheRenderer::isUseVer2Iface() const
+{
+  return false;
+}
+
+bool DispCacheRenderer::init(DisplayContext *pdc)
+{
+  // Disable all optional capabilities
+  setShaderAvail(false);
+  return false;
+}
+
+void DispCacheRenderer::display2(DisplayContext *pdc)
+{
+  if (pdc->isFile()) {
+    // case of the file (non-ogl) rendering
+    renderFile(pdc);
+    return;
+  }
+
+  if (!isCapCheckDone()) {
+    try {
+      init(pdc);
+    }
+    catch (...) {
+    }
+    setCapCheckDone(true);
+  }
+
+  if (!isCacheAvail()) {
+    createDisplayCache();
+    if (!isCacheAvail())
+      return; // Error, Cannot draw anything (ignore)
+  }
+
+  preRender(pdc);
+  render2(pdc);
+  postRender(pdc);
+}
+
+void DispCacheRenderer::render2(DisplayContext *pdc)
+{
+  if (isShaderAvail() && isShaderEnabled())
+    renderGLSL(pdc);
+  else
+    renderVBO(pdc);
+}
+
+void DispCacheRenderer::renderVBO(DisplayContext *pdc)
+{
+}
+
+void DispCacheRenderer::renderGLSL(DisplayContext *pdc)
+{
+}
+
+void DispCacheRenderer::renderFile(DisplayContext *pdc)
+{
+  // default implementation: use old render() interface
+  preRender(pdc);
+  render(pdc);
+  postRender(pdc);
+}
+
+void DispCacheRenderer::createDisplayCache()
+{
+}
+
+bool DispCacheRenderer::isCacheAvail() const
+{
+  return true;
+}
 

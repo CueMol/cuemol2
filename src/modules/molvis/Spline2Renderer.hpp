@@ -125,7 +125,7 @@ namespace molvis {
 
     // virtual void propChanged(qlib::LPropEvent &ev);
 
-    virtual void objectChanged(qsys::ObjectEvent &ev);
+    // virtual void objectChanged(qsys::ObjectEvent &ev);
 
 
   public:

@@ -121,7 +121,7 @@ namespace molvis {
 
     // virtual void propChanged(qlib::LPropEvent &ev);
 
-    virtual void objectChanged(qsys::ObjectEvent &ev);
+    // virtual void objectChanged(qsys::ObjectEvent &ev);
 
 
   public:
@@ -131,7 +131,7 @@ namespace molvis {
     virtual SplineSegment *createSegment();
 
     /// Initialize shaders
-    virtual bool initCap(DisplayContext *pdc);
+    virtual bool init(DisplayContext *pdc);
 
     virtual void setupGLSL(detail::SplineSegment *pSeg);
 

@@ -107,52 +107,41 @@ namespace molstr {
 
   public:
 
-    virtual void display(DisplayContext *pdc);
+    // virtual void display(DisplayContext *pdc);
 
     /// cleanup VBO
     virtual void invalidateDisplayCache();
 
-    /// Initialize & setup capabilities (default: do nothing)
-    virtual bool initCap(DisplayContext *pdc) { return false; }
+    //////////////////////////////////////////////////////
+    // new rendering interface (shader version/dummy)
     
-    /// Render to display
-    virtual void render2(DisplayContext *pdc);
+    /// Use Ver2 interface (returns true)
+    virtual bool isUseVer2Iface() const;
 
     virtual bool isCacheAvail() const {
       return m_pVBO!=NULL;
     }
     
-
-    virtual void createCacheData();
-
-    //////////////////////////////////////////////////////
-    // new rendering interface (shader version/dummy)
-    
     /// rendering for file display contexts
-    virtual void renderFile(DisplayContext *pdc);
-
-    //////////////////////////////////////////////////////
-    // new rendering interface (using GL VBO)
+    // virtual void renderFile(DisplayContext *pdc);
 
     virtual void renderVBO(DisplayContext *pdc);
-    virtual void renderGLSL(DisplayContext *pdc) {}
 
-  private:
     /// Rendering using VBO (builds sbonds, mbonds, and atoms data structure)
     virtual void createVBO();
-    virtual void createGLSL() {}
+    // virtual void createGLSL() {}
 
     /// update VBO positions using m_sbonds, m_mbonds, m_atoms and CrdArray data
     virtual void updateDynamicVBO();
-    virtual void updateDynamicGLSL() {}
+    // virtual void updateDynamicGLSL() {}
 
     /// update VBO positions without CrdArray
     virtual void updateStaticVBO();
-    virtual void updateStaticGLSL() {}
+    // virtual void updateStaticGLSL() {}
 
     /// update VBO colors
     virtual void updateVBOColor();
-    virtual void updateGLSLColor() {}
+    // virtual void updateGLSLColor() {}
 
   private:
     // workarea
@@ -220,7 +209,7 @@ namespace molstr {
     // Event handling
 
     /// object changed event (--> update vertex positions if required)
-    virtual void objectChanged(qsys::ObjectEvent &ev);
+    // virtual void objectChanged(qsys::ObjectEvent &ev);
 
   };
 }

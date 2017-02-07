@@ -114,6 +114,49 @@ void MolRenderer::objectChanged(qsys::ObjectEvent &ev)
       }
     }
   }
+
+  if (isUseVer2Iface()) {
+    // Default update behavior for renderer ver2 interface
+    if (isVisible() &&
+        ev.getType()==qsys::ObjectEvent::OBE_CHANGED_DYNAMIC &&
+        ev.getDescr().equals("atomsMoved")) {
+      // OBE_CHANGED_DYNAMIC && descr=="atomsMoved"
+      if (isUseAnim()) {
+        // If shader is available
+        // --> Enter the GLSL mode
+        if (isShaderAvail() && !isShaderEnabled()) {
+          setShaderEnable(true);
+        }
+        if (!isCacheAvail()) {
+          createDisplayCache();
+        }
+
+        // only update coordinates
+        if (isUseShader()) {
+          if (isUseAnim())
+            updateDynamicGLSL();
+          else
+            updateStaticGLSL();
+        }
+        else {
+          if (isUseAnim())
+            updateDynamicVBO();
+          else
+            updateStaticVBO();
+        }
+        return;
+      }
+    }
+    else if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED_FIXDYN) {
+      MB_DPRINTLN("MolRend (%d/%p) > OBE_CHANGED_FIXDYN called!!", getUID(), this);
+      
+      if (!isForceGLSL())
+        setShaderEnable(false); // reset to VBO mode
+      
+      return;
+    }
+  }
+
   super_t::objectChanged(ev);
 }
 
@@ -257,5 +300,26 @@ ColorPtr MolRenderer::evalMolColor(ColorPtr pCol, ColorPtr pCol2)
 
   // apply modifications of pCol(molcol) to pCol2 (refcol)
   return pNmcol->modifyColor(pCol2);
+}
+
+
+void MolRenderer::createDisplayCache()
+{
+  if (isUseShader()) {
+    createGLSL();
+    if (isUseAnim())
+      updateDynamicGLSL();
+    else
+      updateStaticGLSL();
+    updateGLSLColor();
+  }
+  else {
+    createVBO();
+    if (isUseAnim())
+      updateDynamicVBO();
+    else
+      updateStaticVBO();
+    updateVBOColor();
+  }
 }
 

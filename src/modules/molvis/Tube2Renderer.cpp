@@ -77,12 +77,12 @@ SplineSegment *Tube2Renderer::createSegment()
   return MB_NEW Tube2SS();
 }
 
-void Tube2Renderer::createCacheData()
+void Tube2Renderer::createDisplayCache()
 {
   if (!getPuttyMode()==TBR_PUTTY_OFF)
     initPuttyData();
 
-  super_t::createCacheData();
+  super_t::createDisplayCache();
 }
 
 void Tube2Renderer::setupVBO(detail::SplineSegment *pASeg)
@@ -186,6 +186,7 @@ void Tube2Renderer::propChanged(qlib::LPropEvent &ev)
   super_t::propChanged(ev);
 }
 
+/*
 void Tube2Renderer::objectChanged(qsys::ObjectEvent &ev)
 {
   if (isVisible() &&
@@ -202,6 +203,7 @@ void Tube2Renderer::objectChanged(qsys::ObjectEvent &ev)
 
   super_t::objectChanged(ev);
 }
+*/
 
 void Tube2Renderer::renderFile(DisplayContext *pdc)
 {
