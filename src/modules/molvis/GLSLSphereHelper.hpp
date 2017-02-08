@@ -14,7 +14,7 @@ namespace molvis {
     
     struct SphElem {
       qfloat32 cenx, ceny, cenz;
-      qfloat32 dspx, dspy;
+      //qfloat32 dspx, dspy;
       qfloat32 rad;
       qbyte r, g, b, a;
     };
@@ -23,7 +23,7 @@ namespace molvis {
     typedef gfx::DrawAttrElems<quint32, SphElem> SphElemAry32;
 
     GLuint m_nVertexLoc;
-    GLuint m_nImposLoc;
+    //GLuint m_nImposLoc;
     GLuint m_nRadLoc;
     GLuint m_nColLoc;
 
@@ -31,17 +31,16 @@ namespace molvis {
 
     SphElemAry32 *m_pDrawElem;
 
-    qfloat32 dsps[4][2];
+    //qfloat32 dsps[4][2];
 
   public:
     GLSLSphereHelper()
          : m_pPO(NULL), m_pDrawElem(NULL)
     {
-      
-      dsps[0][0] = -1.0f; dsps[0][1] = -1.0f;
+      /*dsps[0][0] = -1.0f; dsps[0][1] = -1.0f;
       dsps[1][0] =  1.0f, dsps[1][1] = -1.0f;
       dsps[2][0] = -1.0f, dsps[2][1] =  1.0f;
-      dsps[3][0] =  1.0f, dsps[3][1] =  1.0f;
+      dsps[3][0] =  1.0f, dsps[3][1] =  1.0f;*/
     }
 
     ~GLSLSphereHelper()
@@ -71,7 +70,7 @@ namespace molvis {
       
       // setup attributes
       m_nVertexLoc = m_pPO->getAttribLocation("a_vertex");
-      m_nImposLoc = m_pPO->getAttribLocation("a_impos");
+      //m_nImposLoc = m_pPO->getAttribLocation("a_impos");
       m_nRadLoc = m_pPO->getAttribLocation("a_radius");
       m_nColLoc = m_pPO->getAttribLocation("a_color");
 
@@ -83,11 +82,11 @@ namespace molvis {
       SphElemAry32 *pdata = MB_NEW SphElemAry32();
       m_pDrawElem = pdata;
       SphElemAry32 &sphdata = *pdata;
-      sphdata.setAttrSize(4);
+      sphdata.setAttrSize(3);
       sphdata.setAttrInfo(0, m_nVertexLoc, 3, qlib::type_consts::QTC_FLOAT32,  offsetof(SphElem, cenx));
-      sphdata.setAttrInfo(1, m_nImposLoc, 2, qlib::type_consts::QTC_FLOAT32, offsetof(SphElem, dspx));
-      sphdata.setAttrInfo(2, m_nRadLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(SphElem, rad));
-      sphdata.setAttrInfo(3, m_nColLoc, 4, qlib::type_consts::QTC_UINT8, offsetof(SphElem, r));
+      sphdata.setAttrInfo(1, m_nRadLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(SphElem, rad));
+      sphdata.setAttrInfo(2, m_nColLoc, 4, qlib::type_consts::QTC_UINT8, offsetof(SphElem, r));
+      //sphdata.setAttrInfo(1, m_nImposLoc, 2, qlib::type_consts::QTC_FLOAT32, offsetof(SphElem, dspx));
       
       sphdata.alloc(nsphs*4);
       sphdata.allocInd(nsphs*6);
@@ -124,8 +123,8 @@ namespace molvis {
 
       for (int j=0; j<4; ++j) {
         sphdata.at(i) = data;
-        sphdata.at(i).dspx = dsps[j][0];
-        sphdata.at(i).dspy = dsps[j][1];
+        //sphdata.at(i).dspx = dsps[j][0];
+        //sphdata.at(i).dspy = dsps[j][1];
 	++i;
       }
     }
