@@ -131,7 +131,7 @@ if (!("AnimUIToolRibbon" in cuemolui)) {
 
     klass.onTimer = function ()
     {
-      dd("*** Timer called");
+      dd("*** AnimUIToolRibbon.onTimer() called");
 
       this.updateUI();
     };

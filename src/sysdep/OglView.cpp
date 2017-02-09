@@ -474,7 +474,7 @@ void OglView::drawScene()
   }  
 
   /// Complete the rendering operations
-  glFinish();
+  //glFinish();
 
   swapBuffers();
 

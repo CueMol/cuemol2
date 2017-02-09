@@ -59,3 +59,9 @@ void CCP4InStream::fetch_floatArray(float *fbuf, int size)
     buf[2] =a;
   }    
 }
+
+void CCP4InStream::fetch_byteArray(quint8 *fbuf, int size)
+{
+  readFully((char *)fbuf, 0, size*sizeof(quint8));
+}
+
