@@ -129,7 +129,7 @@ namespace xtal {
 
     virtual qlib::uid_t detachObj();
 
-    void initShader();
+    bool initShader();
 
     /// Called just before this object is unloaded
     virtual void unloading();
