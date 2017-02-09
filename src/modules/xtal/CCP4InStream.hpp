@@ -13,18 +13,16 @@
 
 namespace xtal {
 
-///
-///   CCP4-type binary input filter stream 
-///
-class XTAL_API CCP4InStream : public qlib::BinInStream
-{
-public:
-  // byte order marker
-  enum {
-    BO_BE = 1,
-    BO_LE = 4
-  };
-
+  ///
+  ///   CCP4-type binary input filter stream
+  ///
+  class XTAL_API CCP4InStream : public qlib::BinInStream
+  {
+  public:
+    // byte order marker
+    static const int BO_BE = 1;
+    static const int BO_LE = 4;
+ 
 #if (BYTEORDER==1234)
   static const int m_intNativeType = BO_LE;
 #elif (BYTEORDER==4321)
@@ -51,26 +49,26 @@ private:
 
   /** float num byte order of this stream */
   int m_fltType;
-    
+
   //////////////////////////////////////
 
 public:
   CCP4InStream() : BinInStream(),
-		   m_intType(m_intNativeType),
-		   m_fltType(m_fltNativeType)
+  m_intType(m_intNativeType),
+  m_fltType(m_fltNativeType)
   {
   }
 
   CCP4InStream(InStream &r) : BinInStream(r),
-			      m_intType(m_intNativeType),
-			      m_fltType(m_fltNativeType)
+  m_intType(m_intNativeType),
+  m_fltType(m_fltNativeType)
   {
   }
 
   /** copy ctor */
   CCP4InStream(CCP4InStream &r) : BinInStream(r),
-				  m_intType(m_intNativeType),
-				  m_fltType(m_fltNativeType)
+  m_intType(m_intNativeType),
+  m_fltType(m_fltNativeType)
   {
   }
 
@@ -82,7 +80,7 @@ public:
 
   /** dtor */
   virtual ~CCP4InStream() {}
-    
+
   //////////////////////////////////////
   // CCP4 input specific methods
 
@@ -105,17 +103,17 @@ public:
   /**
     fetch four bytes from the stream fp
     @param fp I/O stream to read
-    @param buf Read data are returned in this buf. 
+    @param buf Read data are returned in this buf.
     buf must be longer than four bytes.
     @return returns true if succeeded
-    */
+   */
   void fetch_word(void *buf) {
     readFully((char *)buf, 0, 4*1);
   }
 
   /**
     Fetch an integer value (4-bytes length) from the stream fp.
-    After the success of operation, 
+    After the success of operation,
     the stream fp proceeds four bytes.
     @param fp I/O stream to read
     @param ri integer value is returned, if succeeded.
@@ -132,17 +130,17 @@ public:
 
   /**
     Fetch an float value (4-bytes length) from the stream fp.
-    After the success of operation, 
+    After the success of operation,
     the stream fp proceeds four bytes.
     @param fp I/O stream to read
     @param rf float value is returned, if succeeded.
     @return returns true if succeeded.
-    */
+   */
   void fetch_float(float &rf) {
     char buf[16];
     fetch_word(buf);
     rf = ((float *)buf)[0];
-    
+
     if (m_fltType!=m_fltNativeType)
       qlib::LByteSwapper<float>::swap(rf);
   }
@@ -150,21 +148,23 @@ public:
   /**
     Fetch array of float values (4-bytes length)
     from the stream fp.
-    After the success of operation, 
+    After the success of operation,
     the stream fp proceeds 4*size bytes.
     @param fp I/O stream to read
     @param fbuf array of float type.
     the length must be longer than size
     @param size size to read.
     @return returns true if succeeded.
-    */
+   */
   void fetch_floatArray(float *fbuf, int size);
+
+  void fetch_byteArray(quint8 *buf, int size);
 
 private:
 
   /**
     determine the system's byte order
-    */
+   */
   static void checkByteOrder();
 
   int getIntSysByteOrder() const {
@@ -183,8 +183,8 @@ private:
     a = buf[1];
     buf[1] = buf[2];
     buf[2] =a;
-  }    
-  
+  }
+
 }; // class CCP4InStream
 
 }

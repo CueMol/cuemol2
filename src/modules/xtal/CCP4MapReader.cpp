@@ -95,10 +95,36 @@ bool CCP4MapReader::read(qlib::InStream &arg)
     return false;
   }
 
-  // check byte order
   in.readFully(sbuf, 0, 4);
-  int iType = (sbuf[1]>>4) & 0x0F;
-  int fType = (sbuf[0]>>4) & 0x0F;
+
+  qint32 *pi = (qint32*)(header);
+  qfloat32 *pf = (qfloat32*)(header);
+
+  // check byte order
+  int iType, fType;
+  fType = iType = CCP4InStream::m_intNativeType;
+  {
+    int nc = pi[0];
+    int nr = pi[1];
+    int ns = pi[2];
+    if (nc>0x10000||nr>0x10000||ns>0x10000) {
+      qlib::LByteSwapper<int>::swap(nc);
+      qlib::LByteSwapper<int>::swap(nr);
+      qlib::LByteSwapper<int>::swap(ns);
+      if (nc>0x10000||nr>0x10000||ns>0x10000) {
+        fType = iType = CCP4InStream::m_intNativeType;
+      }
+      else {
+        if (CCP4InStream::m_intNativeType==CCP4InStream::BO_LE)
+          fType = iType = CCP4InStream::BO_BE;
+        else
+          fType = iType = CCP4InStream::BO_LE;
+      }
+    }
+  }
+
+  //int iType = (sbuf[1]>>4) & 0x0F;
+  //int fType = (sbuf[0]>>4) & 0x0F;
   in.setFileByteOrder(iType, fType);
 
   ////////////////////////////////////////////
@@ -127,12 +153,12 @@ bool CCP4MapReader::read(qlib::InStream &arg)
     hdrin.fetch_int(nsect);
 
     hdrin.fetch_int(nmode);
-    if (nmode!=2) {
+    /*if (nmode!=2) {
       LString msg = LString::format("CCP4MapReader read: unsupported mode %d\n",nmode);
       LOG_DPRINTLN(msg);
       MB_THROW(qlib::FileFormatException, msg);
       return false;
-    }
+    }*/
 
     // read starting number of (col,row,sec)
     hdrin.fetch_int(stacol);
@@ -165,6 +191,23 @@ bool CCP4MapReader::read(qlib::InStream &arg)
     // sg info
     hdrin.fetch_int(nspgrp);
     hdrin.fetch_int(nsymbt);
+
+    hdrin.skip(56);
+  }
+
+  bool bSigned = false;
+  {
+    // read additional MRC specific data
+    int imodStamp, imodFlags;
+    hdrin.fetch_int(imodStamp);
+    hdrin.fetch_int(imodFlags);
+    if (imodStamp==1146047817) {
+      LOG_DPRINTLN("CCP4Map> imodStamp==1146047817 (use imodFlags)");
+      bSigned = imodFlags&0x01;
+    }
+    //o2kx = pf[49];
+    //o2ky = pf[50];
+    //o2kz = pf[51];
   }
 
   LOG_DPRINT("CCP4MapReader read...\n");
@@ -186,40 +229,101 @@ bool CCP4MapReader::read(qlib::InStream &arg)
   in.skip((256*4+nsymbt)-(HDR_SIZE+3*4));
   // fseek(fp, 256*4+nsymbt, SEEK_SET);
   int ntotal = ncol*nrow*nsect;
-  float *fbuf = new float[ntotal];
-  LOG_DPRINT("memory allocation %d bytes\n", ntotal*sizeof (float));
-  if (fbuf==NULL) {
-    MB_THROW(qlib::OutOfMemoryException, "CCP4MapReader read: cannot allocate memory");
-    return false;
-  }
 
-  in.fetch_floatArray(fbuf, ntotal);
-
-  if (m_bTruncMin) {
-    LOG_DPRINTLN("Truncate map lower than: %f sigma", m_dMin);
-    for (int i=0; i<ntotal; ++i)
-      fbuf[i] = qlib::max(fbuf[i], float(m_dMin * rhosig));
-  }
-
-  if (m_bTruncMax) {
-    LOG_DPRINTLN("Truncate map higher than: %f sigma", m_dMax);
-    for (int i=0; i<ntotal; ++i)
-      fbuf[i] = qlib::min(fbuf[i], float(m_dMax * rhosig));
-  }
-
-  if (m_bNormalize) {
-    LOG_DPRINTLN("Normalize map");
-    for (int i=0; i<ntotal; ++i) {
-      double v = fbuf[i];
-      v = (v - rhomean)/rhosig;
-      fbuf[i] = float(v);
+  if (nmode==MRC_TYPE_FLOAT) {
+    float *fbuf = new float[ntotal];
+    LOG_DPRINT("memory allocation %d bytes\n", ntotal*sizeof (float));
+    if (fbuf==NULL) {
+      MB_THROW(qlib::OutOfMemoryException, "CCP4MapReader read: cannot allocate memory");
+      return false;
     }
-  }
 
-  // copy fbuf array to the IfDenMap object.
-  //  This method also performs axis rotation.
-  pMap->setMapFloatArray(fbuf, ncol, nrow, nsect,
-                         axcol-1, axrow-1, axsect-1);
+    in.fetch_floatArray(fbuf, ntotal);
+
+    if (m_bTruncMin) {
+      LOG_DPRINTLN("Truncate map lower than: %f sigma", m_dMin);
+      for (int i=0; i<ntotal; ++i)
+        fbuf[i] = qlib::max(fbuf[i], float(m_dMin * rhosig));
+    }
+
+    if (m_bTruncMax) {
+      LOG_DPRINTLN("Truncate map higher than: %f sigma", m_dMax);
+      for (int i=0; i<ntotal; ++i)
+        fbuf[i] = qlib::min(fbuf[i], float(m_dMax * rhosig));
+    }
+
+    if (m_bNormalize) {
+      LOG_DPRINTLN("Normalize map");
+      for (int i=0; i<ntotal; ++i) {
+        double v = fbuf[i];
+        v = (v - rhomean)/rhosig;
+        fbuf[i] = float(v);
+      }
+    }
+
+    // copy fbuf array to the IfDenMap object.
+    //  This method also performs axis rotation.
+    pMap->setMapFloatArray(fbuf, ncol, nrow, nsect,
+                           axcol-1, axrow-1, axsect-1);
+
+    delete [] fbuf;
+  }
+  else if (nmode==MRC_TYPE_BYTE) {
+    quint8 *buf = new quint8[ntotal];
+    LOG_DPRINT("memory allocation %d bytes\n", ntotal*sizeof(quint8));
+    if (buf==NULL) {
+      MB_THROW(qlib::OutOfMemoryException, "CCP4MapReader read: cannot allocate memory");
+      return false;
+    }
+
+    in.fetch_byteArray(buf, ntotal);
+
+    double sum = 0.0;
+    double fmin = 1.0e10;
+    double fmax = -1.0e10;
+    for (int i=0; i<ntotal; ++i){
+      double val = double(buf[i]);
+      sum += val;
+      fmin = qlib::min(fmin, val);
+      fmax = qlib::max(fmax, val);
+    }
+    double aver = sum/double(ntotal);
+    sum = 0.0;
+    for (int i=0; i<ntotal; ++i){
+      double val = double(buf[i]);
+      sum += (val-aver)*(val-aver);
+    }
+    double rmsd = sqrt(sum/double(ntotal));
+
+    /*
+    if (m_bTruncMin) {
+      LOG_DPRINTLN("Truncate map lower than: %f sigma", m_dMin);
+      for (int i=0; i<ntotal; ++i)
+        fbuf[i] = qlib::max(fbuf[i], float(m_dMin * rhosig));
+    }
+
+    if (m_bTruncMax) {
+      LOG_DPRINTLN("Truncate map higher than: %f sigma", m_dMax);
+      for (int i=0; i<ntotal; ++i)
+        fbuf[i] = qlib::min(fbuf[i], float(m_dMax * rhosig));
+    }
+
+    if (m_bNormalize) {
+      LOG_DPRINTLN("Normalize map");
+      for (int i=0; i<ntotal; ++i) {
+        double v = fbuf[i];
+        v = (v - rhomean)/rhosig;
+        fbuf[i] = float(v);
+      }
+    }
+     */
+
+    pMap->setMapByteArray(buf, ncol, nrow, nsect,
+                          fmin, fmax, aver, 0.5*(fmax-fmin)/256.0);
+                          //0, 255.0, aver, 1.0/256.0);
+
+    delete [] buf;
+  }
 
   // rotate start index numbers
   rotate(stacol, starow, stasect, axcol-1, axrow-1, axsect-1);
@@ -228,8 +332,6 @@ bool CCP4MapReader::read(qlib::InStream &arg)
 
   // setup crystal parameters
   pMap->setXtalParams(alen, blen, clen, alpha, beta, gamma, nspgrp);
-
-  delete [] fbuf;
 
   // pMap->setOrigFileType("ccp4map");
 

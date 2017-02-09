@@ -28,6 +28,12 @@ class XTAL_API CCP4MapReader : public qsys::ObjReader
 
 private:
 
+  static const int MRC_TYPE_BYTE  =0;
+  static const int MRC_TYPE_SHORT =1;
+  static const int MRC_TYPE_FLOAT =2;
+  static const int MRC_TYPE_SHORT2=3;
+  static const int MRC_TYPE_FLOAT2=4;
+
   bool m_bNormalize;
   bool m_bTruncMin;
   double m_dMin;
