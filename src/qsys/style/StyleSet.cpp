@@ -304,6 +304,15 @@ bool StyleSet::removeData(const LString &key)
   return true;
 }
 
+bool StyleSet::hasData(const LString &key) const
+{
+  data_t::const_iterator iter = m_data.find(key);
+  if (iter==m_data.end())
+    return false;
+  else
+    return true;
+}
+
 LString StyleSet::getStyleNamesJSON(bool bParen) const
 {
   LString postfix = LString(DELIM) + "style";
