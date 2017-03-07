@@ -70,4 +70,6 @@
 #define HAVE_LCMS2_H 1
 #define HAVE_LZMA_H 1
 
+#define USE_BOOST_TIMER 1
+
 #endif

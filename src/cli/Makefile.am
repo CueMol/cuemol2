@@ -53,9 +53,11 @@ cuetty_LDADD = \
   @BOOST_FILESYSTEM_LIB@ \
   @BOOST_SYSTEM_LIB@ \
   @BOOST_THREAD_LIB@ \
-  -lboost_chrono -lboost_timer \
+  @BOOST_TIMER_LIB@ \
   @CGAL_LIBADD@ \
 $(NULL)
+
+#  -lboost_chrono <-- ???
 
 #  -static
 cuetty_LDFLAGS= \

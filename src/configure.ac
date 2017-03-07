@@ -450,6 +450,20 @@ fi
 AC_SUBST(BOOST_LDFLAGS)
 AC_SUBST(BOOST_CPPFLAGS)
 
+AC_ARG_ENABLE(boosttimer,
+    [--enable-boosttimer     Enable performance measurement using boost_timer (boost_timer required)],
+    [
+if test $enableval = yes ; then
+BOOST_TIMER_LIB=-lboost_timer
+AC_SUBST([BOOST_TIMER_LIB])
+AC_DEFINE([USE_BOOST_TIMER], [1], [Use boost_timer])
+fi
+    ],
+    [])
+
+
+#####
+
 if test x$GUI_ARCH != xCLI ; then
 
 #######################################################
