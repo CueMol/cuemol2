@@ -44,15 +44,29 @@ qlib::LString ResidIndex::toString() const
 ResidIndex ResidIndex::fromString(const LString &str_ind)
 {
   int i, nlen = str_ind.length();
-  const char *sbuf = str_ind.c_str();
-  for (i=0; i<nlen; ++i)
-    if (!::isdigit(sbuf[i]))
-      break;
   int num;
-  if (!str_ind.substr(0, i+1).toInt(&num)) {
-    MB_THROW(qlib::IllegalArgumentException, str_ind);
+  const char *sbuf = str_ind.c_str();
+
+  for (i=nlen-1; i>=0; i--) {
+    if (::isdigit(sbuf[i]))
+      break;
+  }
+  ++i;
+
+  if (!str_ind.substr(0, i).toInt(&num)) {
+    LString msg = LString::format("ResidIndex.fromString: cannot convert str(%s) to resid index.", str_ind.c_str());
+    MB_THROW(qlib::IllegalArgumentException, msg);
     return ResidIndex();
   }
+  
+  //for (i=0; i<nlen; ++i)
+  //if (!::isdigit(sbuf[i]))
+  //break;
+  //if (!str_ind.substr(0, i+1).toInt(&num)) {
+  //MB_THROW(qlib::IllegalArgumentException, str_ind);
+  //return ResidIndex();
+  //}
+
   if (i>=nlen)
     return ResidIndex(num);
   
