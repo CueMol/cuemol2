@@ -32,6 +32,7 @@
 #ifdef USE_OPENGL
 # include "Spline2RendGLSL.qif"
 # include "GLSLTube2Renderer.qif"
+# include "GLSLRcTubeRenderer.qif"
 #endif
 
 module molvis
@@ -58,9 +59,13 @@ module molvis
   DistPickDrawObj;
 
   Spline2Renderer;
-  Spline2RendGLSL;
-
   Tube2Renderer;
+
+#ifdef USE_OPENGL
+  Spline2RendGLSL;
   GLSLTube2Renderer;
+  GLSLRcTubeRenderer;
+#endif
+
 };
 

@@ -252,9 +252,9 @@ void SceneManager::setBusyTime(quint64 nanosec)
       aver += double(m_busytimes[i]);
     }
     aver /= double(NAVERSIZE);
-    LOG_DPRINTLN("Average busy time: %f msec", aver/1000.0);
+    LOG_DPRINTLN("Average busy time: %f microsec (FPS=%f)", aver/1000.0, 1000.0*1000.0*1000.0/aver);
   }
-    
+  
 }
 
 LString SceneManager::getVerArchName() const

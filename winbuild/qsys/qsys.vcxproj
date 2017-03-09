@@ -178,6 +178,8 @@
     <ClCompile Include="..\..\src\modules\molstr\SimpleRendGLSL_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\CPK2Renderer.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\CPK2Renderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\GLSLRcTubeRenderer.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\GLSLRcTubeRenderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\GLSLTube2Renderer.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\GLSLTube2Renderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\ScriptColoring.cpp" />
@@ -534,6 +536,7 @@
     <mcwrapgen3 Include="..\..\src\modules\molstr\QdfPdbReader.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molstr\SimpleRendGLSL.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\CPK2Renderer.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molvis\GLSLRcTubeRenderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\GLSLTube2Renderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\ScriptColoring.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\Spline2Renderer.qif" />
@@ -614,6 +617,8 @@
     <glslshader Include="..\..\src\modules\molstr\simple_vertex.glsl" />
     <glslshader Include="..\..\src\modules\molvis\cylinder_frag.glsl" />
     <glslshader Include="..\..\src\modules\molvis\cylinder_vertex.glsl" />
+    <glslshader Include="..\..\src\modules\molvis\rctube_frag.glsl" />
+    <glslshader Include="..\..\src\modules\molvis\rctube_vert.glsl" />
     <glslshader Include="..\..\src\modules\molvis\sphere_frag.glsl" />
     <glslshader Include="..\..\src\modules\molvis\sphere_vertex.glsl" />
     <glslshader Include="..\..\src\modules\molvis\spline2_frag.glsl" />

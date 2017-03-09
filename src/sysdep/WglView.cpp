@@ -119,6 +119,7 @@ bool WglView::attach(HWND hWnd, HDC hDC)
 
   m_pCtxt->setCurrent();
 
+//  wglSwapIntervalEXT(0);
   // perform OpenGL-common initialization tasks
   OglView::setup();
 

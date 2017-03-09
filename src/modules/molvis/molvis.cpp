@@ -23,6 +23,7 @@
 #ifdef USE_OPENGL
 #  include "Spline2RendGLSL.hpp"
 #  include "GLSLTube2Renderer.hpp"
+#  include "GLSLRcTubeRenderer.hpp"
 #else
 #  include "Spline2Renderer.hpp"
 #  include "Tube2Renderer.hpp"
@@ -60,6 +61,7 @@ bool init()
   pRF->regist<Spline2RendGLSL>();
   //pRF->regist<Tube2Renderer>();
   pRF->regist<GLSLTube2Renderer>();
+  pRF->regist<GLSLRcTubeRenderer>();
 #else
   pRF->regist<Spline2Renderer>();
   pRF->regist<Tube2Renderer>();
