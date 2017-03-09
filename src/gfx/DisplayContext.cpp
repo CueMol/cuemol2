@@ -267,3 +267,22 @@ void DisplayContext::attribute(int n)
 {
 }
 
+Matrix4D DisplayContext::getMatrix() const
+{
+  return Matrix4D();
+}
+
+double DisplayContext::getZoom() const
+{
+  return 0.0;
+}
+
+double DisplayContext::getSlabDepth() const
+{
+  return 0.0;
+}
+
+double DisplayContext::getViewDist() const
+{
+  return 0.0;
+}

@@ -135,6 +135,13 @@ namespace molvis {
   private:
     qlib::Vector2D getEScl(double par, SplineCoeff *pCoeff);
 
+    void test(DisplayContext *pdl, SplineCoeff *pCoeff, double fstart, double fend);
+    void st2pos(SplineCoeff *pCoeff, double s, double t, Vector4D &pos);
+    void st2pos_dt(SplineCoeff *pCoeff, double s, double t, Vector4D &pos);
+    void st2pos_ds(SplineCoeff *pCoeff, double s, double t, Vector4D &pos);
+
+    void st2posx(SplineCoeff *pCoeff, double s, double t, Vector4D &pos);
+    bool solve_st(SplineCoeff *pCoeff, const Matrix4D &xfm, double x0, double y0, double &s, double &t, Vector4D &rpos);
   };
 
 } // namespace molvis

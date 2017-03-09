@@ -307,6 +307,23 @@ namespace render {
       m_boundingBox.merge(pos+Vector4D(-r, -r, -r));
     }
     const qlib::Box3D getBoundingBox() const { return m_boundingBox; }
+
+
+    virtual Matrix4D getMatrix() const {
+      return m_matstack.front();
+    }
+    virtual double getZoom() const {
+      return m_dZoom;
+    }
+    virtual double getSlabDepth() const
+    {
+      return m_dSlabDepth;
+    }
+    virtual double getViewDist() const
+    {
+      return m_dViewDist;
+    }
+
   };
 
 }

@@ -133,6 +133,11 @@ namespace gfx {
     virtual void multMatrix(const Matrix4D &mat) =0;
     virtual void loadMatrix(const Matrix4D &mat) =0;
 
+    virtual Matrix4D getMatrix() const;
+    virtual double getZoom() const;
+    virtual double getSlabDepth() const;
+    virtual double getViewDist() const;
+
     virtual void enableDepthTest(bool) {}
 
     ////////////////
