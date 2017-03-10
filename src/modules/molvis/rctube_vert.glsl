@@ -154,9 +154,9 @@ float ffog(in float ecDistance)
   return(abs(ecDistance));
 }
 
-const float u_efac = 1.5;
+const float u_efac = 1.0;
 
-void st2pos(in vec2 st, out vec4 pos)
+void st2pos(in vec2 st, in float efac, out vec4 pos)
 {
   vec3 f, v0;
   interpolate2(coefTex, st.s, f, v0);
@@ -172,7 +172,7 @@ void st2pos(in vec2 st, out vec4 pos)
 
   const float si = sin(th);
   const float co = cos(th);
-  vec3 pos3 = f + e1*(co*u_width*u_efac) + e2*(si*u_width*u_tuber*u_efac);
+  vec3 pos3 = f + e1*(co*u_width*efac) + e2*(si*u_width*u_tuber*efac);
 
   pos = vec4(pos3, 1.0);
 }
@@ -187,18 +187,21 @@ void main (void)
 #endif
   st.t = a_rho.y;
 
-  vec4 pos;
-  st2pos(st, pos);
+  vec4 pos1, pos2;
+  st2pos(st, 1.0, pos1);
+  st2pos(st, 1.5, pos2);
 
-  // Eye-coordinate position of vertex, needed in various calculations
-  vec4 ecPosition = gl_ModelViewMatrix * pos;
+  vec4 ecpos1 = gl_ModelViewMatrix * pos1;
+  vec4 ecpos2 = gl_ModelViewMatrix * pos2;
+
+  //ecpos2.z = ecpos1.z;
 
   // Do fixed functionality vertex transform
-  gl_Position = gl_ProjectionMatrix * ecPosition;
+  gl_Position = gl_ProjectionMatrix * ecpos2;
 
-  gl_FogFragCoord = ffog(ecPosition.z);
+  gl_FogFragCoord = ffog(ecpos2.z);
 
-  v_ecpos = ecPosition;
+  v_ecpos = ecpos2;
   v_st = st;
 }
 

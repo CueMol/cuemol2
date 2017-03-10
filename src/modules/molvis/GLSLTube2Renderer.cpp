@@ -351,7 +351,7 @@ void GLSLTube2Renderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *p
   const int nCtlPts = pSeg->m_scoeff.getSize();
   const bool bPutty = getPuttyMode()!=TBR_PUTTY_OFF;
 
-  pdc->setLineWidth(3.0);
+  //pdc->setLineWidth(3.0);
 
   pdc->useTexture(pSeg->m_pCoefTex, COEF_TEX_UNIT);
   pdc->useTexture(pSeg->m_pBinormTex, BINORM_TEX_UNIT);
@@ -396,6 +396,7 @@ void GLSLTube2Renderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *p
   pdc->unuseTexture(pSeg->m_pColorTex);
   if (bPutty)
     pdc->unuseTexture(pSeg->m_pPuttyTex);
+
 }
 
 //////////

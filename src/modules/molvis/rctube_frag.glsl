@@ -252,6 +252,69 @@ vec4 flight(in vec4 acolor, in vec3 normal, in vec4 ecPosition)
   return color;
 }
 
+vec4 HSBtoRGB(in vec4 hsb)
+{
+  vec4 rgb;
+
+  float hue = hsb.x;
+  float saturation = hsb.y;
+  float brightness = hsb.z;
+  rgb.w = hsb.w;
+
+  hue = mod(hue, 1.0);
+  saturation = clamp(saturation, 0.0, 1.0);
+  brightness = clamp(brightness, 0.0, 1.0);
+
+  // int r = 0, g = 0, b = 0;
+  if (saturation<0.001) {
+    rgb.r = rgb.g = rgb.b = brightness;
+  }
+  else {
+    float h = hue * 6.0;
+
+    float hi = floor(h);
+    float f = h - hi;
+    float p = brightness * (1.0 - saturation);
+    float q = brightness * (1.0 - saturation * f);
+    float t = brightness * (1.0 - (saturation * (1.0 - f)));
+    switch (int(hi)) {
+    case 0:
+      rgb.r = brightness;
+      rgb.g = t;
+      rgb.b = p;
+      break;
+    case 1:
+      rgb.r = q;
+      rgb.g = brightness;
+      rgb.b = p;
+      break;
+    case 2:
+      rgb.r = p;
+      rgb.g = brightness;
+      rgb.b = t;
+      break;
+    case 3:
+      rgb.r = p;
+      rgb.g = q;
+      rgb.b = brightness;
+      break;
+    case 4:
+      rgb.r = t;
+      rgb.g = p;
+      rgb.b = brightness;
+      break;
+    default:
+    //case 5:
+      rgb.r = brightness;
+      rgb.g = p;
+      rgb.b = q;
+      break;
+    }
+  }
+
+  return rgb;
+}
+
 //const float M_PI = 3.141592653589793238462643383;
 const float M_2PI = 3.141592653589793238462643383 * 2.0;
 
@@ -308,13 +371,14 @@ void st2pos_dsdt(in vec2 st, out vec4 pos, out vec4 pos_ds, out vec4 pos_dt)
   vec3 de0 = ( cross(v0, cross(dv0, v0) ) )/(v0len*v0len*v0len);
   // s derivative of e2 (=v2/|v2|)
   vec3 de2 = ( cross(v2, cross(dv2, v2) ) )/(v2len*v2len*v2len);
-  vec3 de1 = cross(de2, e1) + cross(e1, de0);
+  // s derivative of e1 (cross(e2, e0))
+  vec3 de1 = cross(de2, e0) + cross(e2, de0);
 
   vec3 pos_ds3 = v0 + de1*(co*u_width) + de2*(si*u_width*u_tuber);
   pos_ds = vec4(pos_ds3, 0.0);
 }
 
-const float ftol = 1e-4;
+const float ftol = 1e-8;
 float solve_st(in vec4 vwpos, in vec2 st0, out vec2 st, out vec4 rpos)
 {
   vec2 del;
@@ -378,15 +442,28 @@ void main (void)
   if (del>ftol) {
     //discard;
     gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-    //gl_FragDepth = 0.0;
+    gl_FragDepth = gl_DepthRange.far-0.01;
   }
   else {
     vec3 norm;
     st2pos(st, pos, norm);
     pos = gl_ModelViewProjectionMatrix * pos;
     norm = gl_NormalMatrix * norm;
-    
+
+    float ndc_depth = pos.z / pos.w;
+    const float far=gl_DepthRange.far;
+    const float near=gl_DepthRange.near;
+    float fd = (((far-near) * ndc_depth) + near + far) / 2.0;
+
+    if (fd>far || fd<near) {
+      discard;
+    }
+    else {
+      gl_FragDepth = fd;
+    }
+
     color = flight(calcColor(st.s), norm, v_ecpos);
+    //color = HSBtoRGB(vec4(st.t, mod(st.s, 1.0), 1.0, 1.0));
     
     //gl_FragColor = vec4(mod(s, 1.0), t, 0.0, 1.0);
     //gl_FragColor = vec4(0.0, 0.0, del*1e5, 1.0);
@@ -394,7 +471,7 @@ void main (void)
     //gl_FragColor = vec4(gl_FragCoord.x/1024.0, gl_FragCoord.y/1024.0, 0.0, 1.0);
     
     gl_FragColor = color;
-    //gl_FragDepth = (pos.z+1.0)*0.5;
+
   }
   
 }
