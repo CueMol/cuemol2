@@ -430,8 +430,6 @@ float solve_st(in vec4 vwpos, in vec2 st0, out vec2 st, out vec4 rpos)
 
 void main (void)
 {
-  vec4 color;
-
   vec2 st;
   vec4 pos;
   vec4 v_vwpos = gl_ProjectionMatrix * v_ecpos;
@@ -439,17 +437,18 @@ void main (void)
   float del = solve_st(v_vwpos, v_st, st, pos);
 
   if (del>ftol) {
-    //discard;
-    gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
-    gl_FragDepth = gl_DepthRange.far-0.01;
+    discard;
+    //gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+    //gl_FragDepth = gl_DepthRange.far-0.01;
   }
   else {
     vec3 norm;
     st2pos(st, pos, norm);
-    pos = gl_ModelViewProjectionMatrix * pos;
+    vec4 ecpos = gl_ModelViewMatrix * pos;
+    vec4 cspos = gl_ProjectionMatrix * ecpos;
     norm = gl_NormalMatrix * norm;
 
-    float ndc_depth = pos.z / pos.w;
+    float ndc_depth = cspos.z / cspos.w;
     float far=gl_DepthRange.far;
     float near=gl_DepthRange.near;
     float fd = (((far-near) * ndc_depth) + near + far) / 2.0;
@@ -461,15 +460,23 @@ void main (void)
       gl_FragDepth = fd;
     }
 
-    color = flight(calcColor(st.s), norm, v_ecpos);
+    // color calculation
+    vec4 color;
+    color = flight(calcColor(st.s), norm, ecpos);
     //color = HSBtoRGB(vec4(st.t, mod(st.s, 1.0), 1.0, 1.0));
     
+    // fog calculation
+    float fogz = abs(ecpos.z);
+    float fog;
+    fog = (gl_Fog.end - fogz) * gl_Fog.scale;
+    fog = clamp(fog, 0.0, 1.0);
+    vec4 fc = vec4(mix( vec3(gl_Fog.color), vec3(color), fog), color.a*frag_alpha);
+
     //gl_FragColor = vec4(mod(s, 1.0), t, 0.0, 1.0);
     //gl_FragColor = vec4(0.0, 0.0, del*1e5, 1.0);
-    //gl_FragColor = vec4(0.0, 0.0, abs((pos.z+1.0)*0.5 - gl_FragCoord.z), 1.0);
     //gl_FragColor = vec4(gl_FragCoord.x/1024.0, gl_FragCoord.y/1024.0, 0.0, 1.0);
     
-    gl_FragColor = color;
+    gl_FragColor = fc;
 
   }
   

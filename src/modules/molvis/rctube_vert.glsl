@@ -196,7 +196,7 @@ void main (void)
   // Do fixed functionality vertex transform
   gl_Position = gl_ProjectionMatrix * ecpos1;
 
-  gl_FogFragCoord = ffog(ecpos1.z);
+  // gl_FogFragCoord = ffog(ecpos1.z);
 
   v_ecpos = ecpos1;
   v_st = st;
