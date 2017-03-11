@@ -256,6 +256,25 @@ void GLSLRcTubeRenderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *
   m_pPO->setUniformF("u_width", (float) pTS->getWidth());
   m_pPO->setUniformF("u_tuber", (float) pTS->getTuber());
 
+  m_pPO->setUniformF("u_efac", 1.0f);
+
+  BOOST_FOREACH (DrawSegment *pelem, pSeg->m_draws) {
+    GLSLTube2DS &elem = *static_cast<GLSLTube2DS*>(pelem);
+
+#ifdef USE_INSTANCED
+    pdc->drawElem(*elem.m_pAttrAry);
+#else
+    const int nspl = elem.m_nEnd - elem.m_nStart;
+    for (int i=0; i<nspl; ++i) {
+      m_pPO->setUniform("u_InstanceID", i);
+      pdc->drawElem(*elem.m_pAttrAry);
+    }
+#endif
+
+  }
+
+  m_pPO->setUniformF("u_efac", 1.5f);
+
   BOOST_FOREACH (DrawSegment *pelem, pSeg->m_draws) {
     GLSLTube2DS &elem = *static_cast<GLSLTube2DS*>(pelem);
 

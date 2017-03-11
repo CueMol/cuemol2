@@ -18,7 +18,7 @@
 #define TextureType sampler1D
 #endif
 
-const float M_PI = 3.141592653589793238462643383;
+const float M_2PI = 3.141592653589793238462643383 * 2.0;
 
 ////////////////////
 // Uniform variables
@@ -38,6 +38,7 @@ uniform int u_InstanceID;
 
 uniform float u_width;
 uniform float u_tuber;
+uniform float u_efac;
 
 ////////////////////
 // Vertex attributes
@@ -154,24 +155,22 @@ float ffog(in float ecDistance)
   return(abs(ecDistance));
 }
 
-const float u_efac = 1.0;
-
 void st2pos(in vec2 st, in float efac, out vec4 pos)
 {
   vec3 f, v0;
   interpolate2(coefTex, st.s, f, v0);
 
-  const float v0len = length(v0);
+  float v0len = length(v0);
   vec3 e0 = v0/v0len;
   
   vec3 v2 = calcBinorm(st.s);
   vec3 e2 = normalize(v2);
 
   vec3 e1 = cross(e2, e0);
-  const float th = st.t * M_PI * 2.0;
+  float th = st.t * M_2PI;
 
-  const float si = sin(th);
-  const float co = cos(th);
+  float si = sin(th);
+  float co = cos(th);
   vec3 pos3 = f + e1*(co*u_width*efac) + e2*(si*u_width*u_tuber*efac);
 
   pos = vec4(pos3, 1.0);
@@ -187,21 +186,19 @@ void main (void)
 #endif
   st.t = a_rho.y;
 
-  vec4 pos1, pos2;
-  st2pos(st, 1.0, pos1);
-  st2pos(st, 1.5, pos2);
+  vec4 pos1;
+  st2pos(st, u_efac, pos1);
 
   vec4 ecpos1 = gl_ModelViewMatrix * pos1;
-  vec4 ecpos2 = gl_ModelViewMatrix * pos2;
 
   //ecpos2.z = ecpos1.z;
 
   // Do fixed functionality vertex transform
-  gl_Position = gl_ProjectionMatrix * ecpos2;
+  gl_Position = gl_ProjectionMatrix * ecpos1;
 
-  gl_FogFragCoord = ffog(ecpos2.z);
+  gl_FogFragCoord = ffog(ecpos1.z);
 
-  v_ecpos = ecpos2;
+  v_ecpos = ecpos1;
   v_st = st;
 }
 

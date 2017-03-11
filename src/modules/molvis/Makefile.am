@@ -81,11 +81,13 @@ if COND_USE_OPENGL
 CPP_SRC += \
 Spline2RendGLSL.cpp \
 GLSLTube2Renderer.cpp \
+GLSLRcTubeRenderer.cpp \
 $(NULL)
 
 MCWG_SRC += \
 Spline2RendGLSL.qif \
 GLSLTube2Renderer.qif \
+GLSLRcTubeRenderer.qif \
 $(NULL)
 
 # OpenGL shader files
@@ -101,6 +103,8 @@ tube2_vert.glsl \
 tube2_frag.glsl \
 tube21_vert.glsl \
 tube21_frag.glsl \
+rctube_vert.glsl \
+rctube_frag.glsl \
 $(NULL)
 
 endif

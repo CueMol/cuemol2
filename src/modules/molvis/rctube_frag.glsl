@@ -277,38 +277,37 @@ vec4 HSBtoRGB(in vec4 hsb)
     float p = brightness * (1.0 - saturation);
     float q = brightness * (1.0 - saturation * f);
     float t = brightness * (1.0 - (saturation * (1.0 - f)));
-    switch (int(hi)) {
-    case 0:
+    int ihi = int(hi);
+    if (ihi == 0) {
       rgb.r = brightness;
       rgb.g = t;
       rgb.b = p;
-      break;
-    case 1:
+    }
+    else if (ihi == 1) {
       rgb.r = q;
       rgb.g = brightness;
       rgb.b = p;
-      break;
-    case 2:
+    }
+    else if (ihi == 2) {
       rgb.r = p;
       rgb.g = brightness;
       rgb.b = t;
-      break;
-    case 3:
+    }
+    else if (ihi == 3) {
       rgb.r = p;
       rgb.g = q;
       rgb.b = brightness;
-      break;
-    case 4:
+    }
+    else if (ihi == 4) {
       rgb.r = t;
       rgb.g = p;
       rgb.b = brightness;
-      break;
-    default:
-    //case 5:
+    }
+    else {
+      //case 5:
       rgb.r = brightness;
       rgb.g = p;
       rgb.b = q;
-      break;
     }
   }
 
@@ -323,20 +322,20 @@ void st2pos(in vec2 st, out vec4 pos, out vec3 norm)
   vec3 f, df;
   interpolate2(coefTex, st.s, f, df);
 
-  const float dflen = length(df);
+  float dflen = length(df);
   vec3 e0 = df/dflen;
   
   vec3 v2 = calcBinorm(st.s);
   vec3 e2 = normalize(v2);
 
   vec3 e1 = cross(e2, e0);
-  const float th = st.t * M_2PI;
+  float th = st.t * M_2PI;
 
-  const float si = sin(th);
-  const float co = cos(th);
+  float si = sin(th);
+  float co = cos(th);
   vec3 pos3 = f + e1*(co*u_width) + e2*(si*u_width*u_tuber);
 
-  const float dlen = sqrt(co*co*u_tuber*u_tuber + si*si);
+  float dlen = sqrt(co*co*u_tuber*u_tuber + si*si);
   norm = e1*(co*u_tuber/dlen) + e2*(si/dlen);
 
   pos = vec4(pos3, 1.0);
@@ -347,19 +346,19 @@ void st2pos_dsdt(in vec2 st, out vec4 pos, out vec4 pos_ds, out vec4 pos_dt)
   vec3 f, v0, dv0;
   interpolate3(coefTex, st.s, f, v0, dv0);
 
-  const float v0len = length(v0);
+  float v0len = length(v0);
   vec3 e0 = v0/v0len;
   
   vec3 v2, dv2;
   calcBinorm2(st.s, v2, dv2);
-  const float v2len = length(v2);
+  float v2len = length(v2);
   vec3 e2 = v2/v2len;
 
   vec3 e1 = cross(e2, e0);
-  const float th = st.t * M_2PI;
+  float th = st.t * M_2PI;
   
-  const float si = sin(th);
-  const float co = cos(th);
+  float si = sin(th);
+  float co = cos(th);
 
   vec3 pos3 = f + e1*(co*u_width) + e2*(si*u_width*u_tuber);
   pos = vec4(pos3, 1.0);
@@ -404,16 +403,16 @@ float solve_st(in vec4 vwpos, in vec2 st0, out vec2 st, out vec4 rpos)
     pos_ds = gl_ModelViewProjectionMatrix * pos_ds;
     pos_dt = gl_ModelViewProjectionMatrix * pos_dt;
 
-    const float j11 = pos_ds.x;
-    const float j12 = pos_dt.x;
-    const float j21 = pos_ds.y;
-    const float j22 = pos_dt.y;
+    float j11 = pos_ds.x;
+    float j12 = pos_dt.x;
+    float j21 = pos_ds.y;
+    float j22 = pos_dt.y;
 
-    const float det = 1.0/(j11*j22-j12*j21);
-    const float rj11 = j22 * det;
-    const float rj22 = j11 * det;
-    const float rj12 = -j12 * det;
-    const float rj21 = -j21 * det;
+    float det = 1.0/(j11*j22-j12*j21);
+    float rj11 = j22 * det;
+    float rj22 = j11 * det;
+    float rj12 = -j12 * det;
+    float rj21 = -j21 * det;
 
     st.s = st.s - ( rj11 * del.x + rj12 * del.y );
     st.t = st.t - ( rj21 * del.x + rj22 * del.y );
@@ -451,8 +450,8 @@ void main (void)
     norm = gl_NormalMatrix * norm;
 
     float ndc_depth = pos.z / pos.w;
-    const float far=gl_DepthRange.far;
-    const float near=gl_DepthRange.near;
+    float far=gl_DepthRange.far;
+    float near=gl_DepthRange.near;
     float fd = (((far-near) * ndc_depth) + near + far) / 2.0;
 
     if (fd>far || fd<near) {
