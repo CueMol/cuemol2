@@ -242,7 +242,7 @@ namespace qlib {
     inline void setUnit() {
       for (int i=1; i<=_N_DIM; ++i)
 	for (int j=1; j<=_N_DIM; ++j)
-	  aij(i,j) = delta(i,j);
+	  aij(i,j) = value_type( delta(i,j) );
     }
 
     /////////////////////////////////////////////

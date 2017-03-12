@@ -13,6 +13,7 @@
 #include "OglView.hpp"
 
 #include <qlib/Utils.hpp>
+#include <qlib/LPerfMeas.hpp>
 #include <gfx/DisplayContext.hpp>
 #include <qsys/SceneManager.hpp>
 #include <qsys/ViewInputConfig.hpp>
@@ -315,6 +316,8 @@ void OglView::drawScene()
 {
   if (!m_bInitOK) return;
   if (!safeSetCurrent()) return;
+
+  qlib::AutoPerfMeas apm(PM_DRAW_SCENE);
 
   qsys::ScenePtr pScene = getScene();
   if (pScene.isnull()) {

@@ -7,8 +7,11 @@
 #include <common.h>
 
 #include <version.hpp>
+#include <qlib/LPerfMeas.hpp>
 
 #include "SceneManager.hpp"
+
+#include <boost/timer/timer.hpp>
 
 using namespace qsys;
 
@@ -29,7 +32,6 @@ void SceneManager::finiClass(qlib::LClass *pcls)
 ///////////////
 
 SceneManager::SceneManager()
-     :  m_busytimes(NAVERSIZE), m_nBusyTimeIndex(0), m_bPerfMeas(false)
 {
   MB_DPRINTLN("SceneManager(%p) created", this);
 
@@ -226,18 +228,31 @@ void SceneManager::setActiveSceneID(qlib::uid_t uid)
   m_nActiveSceneID = uid;
 }
 
-void SceneManager::startPerfMeas(int naver)
+void SceneManager::enablePerfMeas(int nID)
 {
-  m_bPerfMeas = true;
-  m_busytimes.resize(naver);
-  m_nBusyTimeIndex = 0;
+  qlib::PerfMeasManager *pPM = qlib::PerfMeasManager::getInstance();
+  if (pPM==NULL)
+    return;
+  
+  pPM->enable(nID);
+  
+  //m_bPerfMeas = true;
+  //m_busytimes.resize(naver);
+  //m_nBusyTimeIndex = 0;
 }
 
-void SceneManager::endPerfMeas()
+void SceneManager::disablePerfMeas()
 {
-  m_bPerfMeas = false;
+  qlib::PerfMeasManager *pPM = qlib::PerfMeasManager::getInstance();
+  if (pPM==NULL)
+    return;
+
+  pPM->disable();
+
+  //m_bPerfMeas = false;
 }
 
+/*
 void SceneManager::setBusyTime(quint64 nanosec)
 {
   if (!m_bPerfMeas)
@@ -256,6 +271,28 @@ void SceneManager::setBusyTime(quint64 nanosec)
   }
   
 }
+
+void SceneManager::startPerfMeas()
+{
+  if (m_pTimer==NULL)
+    m_pTimer = new boost::timer::cpu_timer();
+
+  boost::timer::cpu_timer *p = static_cast<boost::timer::cpu_timer *>(m_pTimer);
+  p->start();
+}
+
+void SceneManager::endPerfMeas()
+{
+  if (m_pTimer==NULL)
+    return;
+  
+  boost::timer::cpu_timer *p = static_cast<boost::timer::cpu_timer *>(m_pTimer);
+  p->stop();
+  boost::timer::cpu_times t = p->elapsed();
+  setBusyTime(t.wall);
+}
+*/
+
 
 LString SceneManager::getVerArchName() const
 {

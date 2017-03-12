@@ -1118,11 +1118,11 @@ Qm2Main.prototype.togglePerfMeas = function (ev)
   if (!bchk) {
     // start measure
     this.clearLogContents();
-    sm.startPerfMeas(100);
+    sm.enablePerfMeas(1);
     ev.target.checked = true;
   }
   else {
-    sm.endPerfMeas();
+    sm.disablePerfMeas();
     ev.target.checked = false;
   }
 }

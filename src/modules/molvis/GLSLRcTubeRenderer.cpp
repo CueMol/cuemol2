@@ -56,7 +56,7 @@ bool GLSLRcTubeRenderer::init(DisplayContext *pdc)
   }
 
   if (m_pPO==NULL) {
-    m_pPO = ssh.createProgObj("gpu_tube2",
+    m_pPO = ssh.createProgObj("gpu_rctube1",
                               "%%CONFDIR%%/data/shaders/rctube_vert.glsl",
                               "%%CONFDIR%%/data/shaders/rctube_frag.glsl");
   }

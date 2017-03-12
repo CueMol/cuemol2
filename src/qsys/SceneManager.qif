@@ -54,9 +54,9 @@ runtime_class SceneManager
   property string ver_arch => redirect(getVerArchName, XXX) (readonly);
 
   //// Performance measurement
-  void startPerfMeas(integer naver);
+  void enablePerfMeas(integer naver);
   
-  void endPerfMeas();
+  void disablePerfMeas();
 
 };
 

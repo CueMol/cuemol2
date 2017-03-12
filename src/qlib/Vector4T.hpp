@@ -111,7 +111,7 @@ namespace qlib {
     }
 
     inline Vector3T<_ValueType> xyz() const {
-      return Vector2T<_ValueType>(super_t::ai(1),
+      return Vector3T<_ValueType>(super_t::ai(1),
 				  super_t::ai(2),
 				  super_t::ai(3));
     }

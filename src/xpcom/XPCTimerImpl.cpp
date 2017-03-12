@@ -19,14 +19,11 @@
 #include <unistd.h>
 #endif
 
+//#define USE_PERFTIMER 1
+#include <qlib/LPerfMeas.hpp>
+
 #ifdef USE_XMLRPC
 #  include <xmlrpc_bridge/XmlRpcMgr.hpp>
-#endif
-
-#define USE_PERFTIMER 1
-
-#ifdef USE_PERFTIMER
-#  include <boost/timer/timer.hpp>
 #endif
 
 using namespace xpcom;
@@ -35,20 +32,11 @@ XPCTimerImpl::XPCTimerImpl()
 {
   m_timer = do_CreateInstance("@mozilla.org/timer;1");
   start(1);
-
-#ifdef USE_PERFTIMER
-  m_pMesTimer = new boost::timer::cpu_timer();
-#endif
 }
 
 XPCTimerImpl::~XPCTimerImpl()
 {
   stop();
-  
-#ifdef USE_PERFTIMER
-  boost::timer::cpu_timer *p = static_cast<boost::timer::cpu_timer *>(m_pMesTimer);
-  delete p;
-#endif
 }
 
 //static
@@ -56,11 +44,7 @@ void XPCTimerImpl::timerCallbackFunc(nsITimer *aTimer, void *aClosure)
 {
   //MB_DPRINTLN("Timer: notified");
   try {
-#ifdef USE_PERFTIMER
-    XPCTimerImpl *pthis = static_cast<XPCTimerImpl *>(aClosure);
-    boost::timer::cpu_timer *p = static_cast<boost::timer::cpu_timer *>(pthis->m_pMesTimer);
-    p->start();
-#endif
+    qlib::AutoPerfMeas apm(PM_IDLE_TIMER);
 
     qlib::LProcMgr *pPM = qlib::LProcMgr::getInstance();
     pPM->checkQueue();
@@ -76,14 +60,6 @@ void XPCTimerImpl::timerCallbackFunc(nsITimer *aTimer, void *aClosure)
 
     qsys::SceneManager *pSM = qsys::SceneManager::getInstance();
     pSM->checkAndUpdateScenes();
-
-#ifdef USE_PERFTIMER
-    p->stop();
-    boost::timer::cpu_times t = p->elapsed();
-    //LString msg = boost::timer::format(t);
-    //MB_DPRINTLN("Block time=%s", msg.c_str());
-    pSM->setBusyTime(t.wall);
-#endif
 
   }
   catch (qlib::LException &e) {

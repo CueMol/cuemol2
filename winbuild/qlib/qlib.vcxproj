@@ -178,6 +178,7 @@
     <ClCompile Include="..\..\src\qlib\LLogEvent.cpp" />
     <ClCompile Include="..\..\src\qlib\LMsgLog.cpp" />
     <ClCompile Include="..\..\src\qlib\LObjStream3.cpp" />
+    <ClCompile Include="..\..\src\qlib\LPerfMeas.cpp" />
     <ClCompile Include="..\..\src\qlib\LProcMgr.cpp" />
     <ClCompile Include="..\..\src\qlib\LPropContainer.cpp" />
     <ClCompile Include="..\..\src\qlib\LPropSupport.cpp" />

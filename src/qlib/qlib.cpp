@@ -11,6 +11,7 @@
 #include "LMsgLog.hpp"
 #include "ObjectManager.hpp"
 #include "EventManager.hpp"
+#include "LPerfMeas.hpp"
 // #include "TestClass.hpp"
 
 #include <boost/filesystem/path.hpp>
@@ -45,6 +46,7 @@ bool qlib::init()
     EventManager::init();
     ObjectManager::init();
     ClassRegistry::init();
+    PerfMeasManager::init();
     qlib_regClasses();
     res = true;
 
@@ -74,6 +76,7 @@ void qlib::fini()
 
   if (s_nInitCount==0) {
     MB_DPRINTLN("qlib::fini() finalized.");
+    PerfMeasManager::fini();
     ClassRegistry::fini();
     ObjectManager::fini();
     EventManager::fini();
