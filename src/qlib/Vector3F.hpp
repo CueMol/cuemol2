@@ -6,77 +6,82 @@
 #define __QLIB_VECTOR_3F_HPP__
 
 #include "qlib.hpp"
-#include "VectorND.hpp"
+//#include "VectorND.hpp"
+#include "Vector3T.hpp"
 #include "LTypes.hpp"
 
 namespace qlib {
 
-  class Vector3F : public VectorND<3, qfloat32>
+  //typedef Vector3T<qfloat32> Vector3F;
+
+  class Vector3F : public Vector3T<qfloat32>
   {
   public:
-    typedef VectorND<3, qfloat32> super_t;
+    typedef Vector3T<qfloat32> super_t;
     
   public:
-    /////////////////
+    typedef qfloat32 value_type;
+
+    ///////////////////////////////////////////////////
     // constructors
+
+  public:
 
     /// Default constructor
     Vector3F()
+      : super_t()
     {
-      super_t::zero();
     }
 
     /// Constructor without initialization
-    explicit
-    Vector3F(int, detail::no_init_tag)
+    Vector3F(int a, detail::no_init_tag b)
+      : super_t(a, b)
     {
     }
 
     /// copy constructor
     Vector3F(const Vector3F &arg)
-         : super_t(arg)
+      : super_t(arg)
+    {
+    }
+
+    /// construction from ptr
+    explicit
+    Vector3F(const value_type *parg)
+      : super_t(parg)
     {
     }
 
     /// Implicit conversion
     Vector3F(const super_t &arg)
-         : super_t(arg)
+      : super_t(arg)
     {
     }
 
-    Vector3F(qfloat32 ax,qfloat32 ay, qfloat32 az)
+    /// Implicit conversion
+    Vector3F(const super_t::super_t &arg)
+      : super_t(arg)
     {
-      super_t::ai(1) = ax;
-      super_t::ai(2) = ay;
-      super_t::ai(3) = az;
     }
 
-  public:
-
-    inline qfloat32 x() const { return super_t::ai(1); }
-    inline qfloat32 y() const { return super_t::ai(2); }
-    inline qfloat32 z() const { return super_t::ai(3); }
-
-    inline qfloat32 &x() { return super_t::ai(1); }
-    inline qfloat32 &y() { return super_t::ai(2); }
-    inline qfloat32 &z() { return super_t::ai(3); }
-
-    //////////////////////////////////////////
-    // methods
-
-    /*void set(qfloat32 ax, qfloat32 ay, qfloat32 az) {
-      ai(1) = ax;
-      ai(2) = ay;
-      ai(3) = az;
-    }*/
-
-    Vector3F cross(const Vector3F &arg) const
+    /// Cconversion
+    template <typename _ArgType>
+    explicit
+    Vector3F(const Vector3T<_ArgType> &arg)
+      : super_t(arg)
     {
-      return Vector3F(y()*arg.z() - z()*arg.y(),
-                      z()*arg.x() - x()*arg.z(),
-                      x()*arg.y() - y()*arg.x());
     }
-    
+
+    Vector3F(value_type ax,value_type ay, value_type az)
+      : super_t(ax, ay, az)
+    {
+    }
+
+    /// construction from 2D vector
+    Vector3F(const Vector2T<value_type> &arg, value_type az)
+      : super_t(arg, az)
+    {
+    }
   };
 
   ///////////////////////////////////////////////

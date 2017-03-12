@@ -377,7 +377,7 @@ void st2pos_dsdt(in vec2 st, out vec4 pos, out vec4 pos_ds, out vec4 pos_dt)
   pos_ds = vec4(pos_ds3, 0.0);
 }
 
-const float ftol = 1e-8;
+const float ftol = 1e-7;
 float solve_st(in vec4 vwpos, in vec2 st0, out vec2 st, out vec4 rpos)
 {
   vec2 del;
@@ -387,7 +387,7 @@ float solve_st(in vec4 vwpos, in vec2 st0, out vec2 st, out vec4 rpos)
 
   st = st0;
 
-  for (int k=0; k<6; ++k) {
+  for (int k=0; k<5; ++k) {
     st2pos_dsdt(st, pos, pos_ds, pos_dt);
     //pos = gl_ProjectionMatrix * gl_ModelViewMatrix * pos;
     pos = gl_ModelViewProjectionMatrix * pos;

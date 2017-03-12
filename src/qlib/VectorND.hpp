@@ -120,7 +120,7 @@ namespace qlib {
     bool equals(const VectorND &arg, value_type dtol = value_type(F_EPS8)) const
     {
       for (int i=0; i<_N_ELEM; ++i) {
-        if (! (qlib::abs<value_type>(m_value[i] - arg.m_value[i])<dtol) )
+        if (! (qlib::abs<value_type>(m_value[i] - arg.m_value[i])<=dtol) )
 	  return false;
       }
       return true;
@@ -129,7 +129,7 @@ namespace qlib {
     bool isZero(value_type dtol = value_type(F_EPS8)) const
     {
       for (int i=0; i<_N_ELEM; ++i) {
-        if (! (qlib::abs<value_type>(m_value[i])<dtol) )
+        if (! (qlib::abs<value_type>(m_value[i])<=dtol) )
 	  return false;
       }
       return true;
