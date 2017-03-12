@@ -31,12 +31,6 @@ using qlib::Vector4D;
 using qlib::Vector3F;
 using gfx::ColorPtr;
 
-#include <qlib/Vector3D.hpp>
-using qlib::Vector3D;
-
-#include <qlib/Vector3I.hpp>
-using qlib::Vector3I;
-
 SimpleRenderer::SimpleRenderer()
 {
   // will be called by RendererFactory
@@ -48,12 +42,6 @@ SimpleRenderer::SimpleRenderer()
   m_dCvScl2 = 0.05;
 
   m_pVBO = NULL;
-
-  // XXXX
-  Vector3I ivec(1,2,3);
-  Vector3F fvec;
-  fvec = Vector3F(ivec);
-  LOG_DPRINTLN("xy=%f, %f", fvec.xy().x(), fvec.xy().y());
 }
 
 SimpleRenderer::~SimpleRenderer()

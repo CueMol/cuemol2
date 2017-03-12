@@ -6,10 +6,119 @@
 #define __QLIB_VECTOR_4D_HPP__
 
 #include "qlib.hpp"
-#include "VectorND.hpp"
+//#include "VectorND.hpp"
+#include "Vector4T.hpp"
 
 namespace qlib {
 
+  class QLIB_API Vector4D : public Vector4T<LReal>
+  {
+  public:
+    typedef Vector4T<LReal> super_t;
+
+  public:
+    typedef super_t::value_type value_type;
+
+    ///////////////////////////////////////////////////
+    // constructors
+
+  public:
+
+    /// Default constructor
+    Vector4D()
+      : super_t()
+    {
+    }
+
+    /// Constructor without initialization
+    Vector4D(int a, detail::no_init_tag b)
+      : super_t(a, b)
+    {
+    }
+
+    /// copy constructor
+    Vector4D(const Vector4D &arg)
+      : super_t(arg)
+    {
+    }
+
+    /// construction from ptr
+    explicit
+    Vector4D(const value_type *parg)
+      : super_t(parg)
+    {
+    }
+
+    /// Implicit conversion
+    Vector4D(const super_t &arg)
+      : super_t(arg)
+    {
+    }
+
+    /// Implicit conversion (from VectorND)
+    Vector4D(const super_t::super_t &arg)
+      : super_t(arg)
+    {
+    }
+
+    /// Conversion
+    template <typename _ArgType>
+    explicit
+    Vector4D(const Vector3T<_ArgType> &arg)
+      : super_t(arg)
+    {
+    }
+
+    Vector4D(value_type ax,value_type ay, value_type az, value_type aw)
+      : super_t(ax, ay, az, aw)
+    {
+    }
+
+    Vector4D(value_type ax,value_type ay, value_type az)
+      : super_t(ax, ay, az, 0.0)
+    {
+    }
+
+    Vector4D(const Vector3T<value_type> &arg, value_type az)
+      : super_t(arg, az)
+    {
+    }
+
+    //////////////////////////////////////////
+    // methods
+
+    /// Calc Angle between two vectors, this and v2
+    value_type angle(const Vector4D &v2) const
+    {
+      const double u = double( dot(v2) );
+      const double l = double( length() ) * double( v2.length()  );
+      const double res = ::acos( u/l );
+      return value_type( res );
+    }
+
+    /// Calc Angle between two vectors, v1, and v2
+    inline static value_type angle(const Vector4D &v1, const Vector4D &v2)
+    {
+      const double u = double( v1.dot(v2) );
+      const double l = double( v1.length() ) * double( v2.length()  );
+      const double res = ::acos( u/l );
+      return value_type( res );
+    }
+
+    /// calc torsion angle (throw exception in singlarity case)
+    static double torsion(const Vector4D &veci,
+                          const Vector4D &vecj,
+                          const Vector4D &veck,
+                          const Vector4D &vecl);
+
+    LString toString() const;
+
+    typedef boost::true_type has_fromString;
+    static bool fromStringS(const LString &src, Vector4D &result);
+
+  };
+
+#if 0
   class QLIB_API Vector4D : public VectorND<4, LReal>
   {
   public:
@@ -137,6 +246,7 @@ namespace qlib {
 
 
   };
+#endif
 
   ///////////////////////////////////////////////
   // Definitions of non-member binary operators

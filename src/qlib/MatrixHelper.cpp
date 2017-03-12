@@ -10,9 +10,33 @@
 #include "LQuat.hpp"
 #include "MatrixND.hpp"
 
+#include "Vector3I.hpp"
+#include "Vector3F.hpp"
+#include "Vector3D.hpp"
+
 using namespace qlib;
 
 namespace {
+  void xxxtestmat()
+  {
+    Vector3I ivec(1,2,3);
+    Vector3F fvec;
+    fvec = Vector3F(ivec);
+    LOG_DPRINTLN("xy=%f, %f", fvec.xy().x(), fvec.xy().y());
+
+    Matrix3T<float> fmat;
+    Matrix3T<int> imat;
+    Matrix3D mat;
+    Matrix3D mat2;
+    mat2 = mat.transpose();
+
+    fmat = Matrix3T<float>(mat2);
+
+    imat = Matrix3T<int>(mat2);
+
+    ivec = imat.mulvec(ivec);
+  }
+
   inline void diag_helper(double a_pp, double a_qq, double a_pq,
                           double &t, double &s, double &c)
   {
@@ -412,6 +436,7 @@ Matrix4D Matrix4D::invert() const
 //////////
 // 3D matrix routine
 
+/*
 // determinant
 Matrix3D::value_type Matrix3D::deter() const
 {
@@ -419,6 +444,7 @@ Matrix3D::value_type Matrix3D::deter() const
     (aij(2,1)*aij(3,2)-aij(2,2)*aij(3,1))*aij(1,3) +
       (aij(3,1)*aij(1,2)-aij(3,2)*aij(1,1))*aij(2,3);
 }
+*/
 
 Matrix3D Matrix3D::invert() const
 {

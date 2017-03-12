@@ -58,7 +58,7 @@ namespace qlib {
     {
     }
 
-    /// Cconversion
+    /// Type Conversion
     template <typename _ArgType>
     explicit
     Vector3T(const Vector3T<_ArgType> &arg)

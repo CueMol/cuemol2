@@ -209,7 +209,7 @@ Vector4D SecSplDat::getBnormVec(double t)
   Vector4D rval;
 
   if (!m_bBnormSpl) {
-    if (m_bnorm_ave.isZero3D(F_EPS4)) {
+    if (m_bnorm_ave.isZero3(F_EPS4)) {
       // singularity case: bnorm vec wasn't determined correctly
       return Vector4D(1,0,0);
     }
@@ -230,7 +230,7 @@ Vector4D SecSplDat::getCoilBnormVec(double t)
   Vector4D rval;
 
   if (!m_bBnormSpl) {
-    if (m_bnorm_ave.isZero3D(F_EPS4)) {
+    if (m_bnorm_ave.isZero3(F_EPS4)) {
       // singularity case: bnorm vec wasn't determined correctly
       return Vector4D(1,0,0);
     }

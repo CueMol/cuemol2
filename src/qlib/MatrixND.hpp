@@ -7,6 +7,7 @@
 
 #include "qlib.hpp"
 #include "Utils.hpp"
+#include "VectorND.hpp"
 
 namespace qlib {
 
@@ -31,7 +32,6 @@ namespace qlib {
     }
 
     /// Constructor without initialization
-    explicit
     MatrixND(int, detail::no_init_tag)
     {
     }
@@ -51,6 +51,14 @@ namespace qlib {
       for (int i=1; i<=ncopy; ++i)
         for (int j=1; j<=ncopy; ++j)
           aij(i,j) = arg.aij(i,j);
+    }
+
+    /// Type Conversion
+    template <typename _ArgType>
+    explicit
+    MatrixND(const MatrixND<dimension, _ArgType> &arg)
+    {
+      copyElems(arg);
     }
 
     ////////////////////////////////////////////////////////////
@@ -145,11 +153,12 @@ namespace qlib {
       return retval;
     }
 
+    /// Returns a matrix this*mat with the same dim
     MatrixND mul(const MatrixND &arg) const {
       MatrixND retval(0, detail::no_init_tag());
       for (int i=1; i<=_N_DIM; ++i) {
 	for (int j=1; j<=_N_DIM; ++j) {
-	  value_type sum=0.0;
+	  value_type sum = value_type(0);
 	  for (int k=1; k<=_N_DIM; ++k) {
 	    sum += this->aij(i,k) * arg.aij(k,j);
 	  }
@@ -159,6 +168,21 @@ namespace qlib {
       return retval;
     }
     
+    /// Returns a vector this*vec
+    VectorND<dimension, value_type> mulvec(const VectorND<dimension, value_type> &arg) const
+    {
+      VectorND<dimension, value_type> retval(0, detail::no_init_tag());
+      for (int i=1; i<=dimension; ++i) {
+	value_type sum = value_type(0);
+	for (int j=1; j<=dimension; ++j) {
+	  sum += this->aij(i,j) * arg.ai(j);
+	}
+	retval.ai(i) = sum;
+      }
+      return retval;
+    }
+
+
     MatrixND transpose() const {
       MatrixND retval(0, detail::no_init_tag());
       for (int i=1; i<=_N_DIM; ++i) {
@@ -172,20 +196,31 @@ namespace qlib {
 
     ////////////////////////////////////////////////////////////
 
-    /// Copy (impl for copy ctor and = op)
-    void copyElems(const MatrixND &arg) {
-      for (int i=0; i<_N_ELEM; ++i)
-        m_value[i] = arg.m_value[i];
-    }
-
     /// Element access (mutating)
-    value_type &aij(int i, int j) {
+    inline value_type &aij(int i, int j) {
       return m_value[(i-1) + (j-1)*_N_DIM];
     }
 
     /// Element access (const)
-    value_type aij(int i, int j) const {
+    inline value_type aij(int i, int j) const {
       return m_value[(i-1) + (j-1)*_N_DIM];
+    }
+
+    /// Element access (linear/mutating)
+    inline value_type &ai(int i) {
+      return m_value[(i-1)];
+    }
+
+    /// Element access (linear/const)
+    inline value_type ai(int i) const {
+      return m_value[(i-1)];
+    }
+
+    /// Copy (impl for copy ctor and = op)
+    template <typename _ArgType>
+    inline void copyElems(const MatrixND<dimension, _ArgType> &arg) {
+      for (int i=1; i<=_N_ELEM; ++i)
+        ai(i) = value_type( arg.ai(i) );
     }
 
     // /** get inverse matrix */
@@ -193,11 +228,10 @@ namespace qlib {
 
     /// Calculate matrix product ( this = this * arg )
     void matprod(const MatrixND & arg) {
+      // Copy of this mat is required not to disrupt this mat.
       MatrixND retval(0, detail::no_init_tag());
       retval = this->mul(arg);
       copyElems(retval);
-      //for (int i=0; i<_N_ELEM; ++i)
-      //m_value[i] = retval.m_value[i];
     }
 
     /// Returns Kronecker's delta
@@ -205,7 +239,7 @@ namespace qlib {
       return (i==j)?1:0;
     }
 
-    void setUnit() {
+    inline void setUnit() {
       for (int i=1; i<=_N_DIM; ++i)
 	for (int j=1; j<=_N_DIM; ++j)
 	  aij(i,j) = delta(i,j);
@@ -217,7 +251,7 @@ namespace qlib {
     bool equals(const MatrixND &arg, value_type dtol = F_EPS8) const
     {
       for (int i=0; i<_N_ELEM; ++i) {
-	if (! (qlib::abs<value_type>(m_value[i] - arg.m_value[i])<dtol) )
+	if (! (qlib::abs<value_type>(m_value[i] - arg.m_value[i])<=dtol) )
 	  return false;
       }
       return true;
@@ -226,17 +260,17 @@ namespace qlib {
     bool isZero(value_type dtol = F_EPS8) const
     {
       for (int i=0; i<_N_ELEM; ++i) {
-	if (! (qlib::abs<value_type>(m_value[i])<dtol) )
+	if (! (qlib::abs<value_type>(m_value[i])<=dtol) )
 	  return false;
       }
       return true;
     }
 
-    /** Is identity matrix or not? */
+    /// Is identity matrix or not?
     bool isIdent(value_type dtol = F_EPS8) const {
       for (int i=1; i<=_N_DIM; ++i) {
 	for (int j=1; j<=_N_DIM; ++j) {
-	  if (! (qlib::abs<value_type>(aij(i,j) - delta(i,j))<dtol) )
+	  if (! (qlib::abs<value_type>(aij(i,j) - delta(i,j))<=dtol) )
 	    return false;
 	}
       }

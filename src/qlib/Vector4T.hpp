@@ -81,7 +81,7 @@ namespace qlib {
     }
 
     /// construction from 3D vector
-    Vector4T(const Vector2T<_ValueType> &arg, value_type aw)
+    Vector4T(const Vector3T<_ValueType> &arg, value_type aw)
       : super_t(0, detail::no_init_tag())
     {
       super_t::ai(1) = arg.ai(1);
@@ -105,14 +105,28 @@ namespace qlib {
     inline value_type &z() { return super_t::ai(3); }
     inline value_type &w() { return super_t::ai(4); }
 
-    Vector2T<_ValueType> xy() const {
+    inline Vector2T<_ValueType> xy() const {
       return Vector2T<_ValueType>(super_t::ai(1),
 				  super_t::ai(2));
     }
-    Vector3T<_ValueType> xyz() const {
+
+    inline Vector3T<_ValueType> xyz() const {
       return Vector2T<_ValueType>(super_t::ai(1),
 				  super_t::ai(2),
 				  super_t::ai(3));
+    }
+
+    inline void set(value_type ax, value_type ay, value_type az)
+    {
+      super_t::ai(1) = ax;
+      super_t::ai(2) = ay;
+      super_t::ai(3) = az;
+    }
+
+    inline void set(value_type ax, value_type ay, value_type az, value_type aw)
+    {
+      set(ax, ay, az);
+      super_t::ai(4) = aw;
     }
 
     Vector4T cross(const Vector4T &arg) const
@@ -124,7 +138,7 @@ namespace qlib {
     }
     
     /// check zero vector (ignoring w elem)
-    bool isZero3D(value_type dtol = value_type(F_EPS8)) const
+    bool isZero3(value_type dtol = value_type(F_EPS8)) const
     {
       for (int i=1; i<=3; ++i) {
         if (! (qlib::abs<value_type>(super_t::ai(i))<=dtol) )

@@ -20,7 +20,7 @@ namespace qlib {
     typedef Vector3T<qfloat32> super_t;
     
   public:
-    typedef qfloat32 value_type;
+    typedef super_t::value_type value_type;
 
     ///////////////////////////////////////////////////
     // constructors
