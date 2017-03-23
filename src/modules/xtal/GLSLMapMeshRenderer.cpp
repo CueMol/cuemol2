@@ -232,6 +232,7 @@ bool GLSLMapMeshRenderer::initShader()
   glBindTexture(MY_MAPTEX_DIM, 0);
 
   m_bChkShaderDone = true;
+  return true;
 }
 
 void GLSLMapMeshRenderer::unloading()

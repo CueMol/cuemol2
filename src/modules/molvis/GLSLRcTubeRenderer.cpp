@@ -185,7 +185,8 @@ void GLSLRcTubeRenderer::setupGLSL(detail::SplineSegment *pASeg)
       par = float(i)/fDetail + fStart;
       for (j=0; j<nSecDiv; ++j) {
         attra.at(ind).rhoi = par;
-        attra.at(ind).rhoj = float(j)/float(nSecDiv-1);
+        //attra.at(ind).rhoj = float(j)/float(nSecDiv-1);
+        attra.at(ind).rhoj = float(j)/float(nSecDiv-1) * float(M_PI * 2.0);
         ++ind;
       }
     }
@@ -253,8 +254,10 @@ void GLSLRcTubeRenderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *
   //m_pPO->setUniform("puttyTex", PUTTY_TEX_UNIT);
 
   TubeSectionPtr pTS = getTubeSection();
-  m_pPO->setUniformF("u_width", (float) pTS->getWidth());
-  m_pPO->setUniformF("u_tuber", (float) pTS->getTuber());
+  m_pPO->setUniformF("u_tuber", float( pTS->getTuber() ));
+  m_pPO->setUniformF("u_tubersq", float( pTS->getTuber()*pTS->getTuber() ));
+  m_pPO->setUniformF("u_width1", float( pTS->getWidth() ));
+  m_pPO->setUniformF("u_width2", float( pTS->getWidth() * pTS->getTuber() ));
 
   m_pPO->setUniformF("u_efac", 1.0f);
 
@@ -272,6 +275,7 @@ void GLSLRcTubeRenderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *
 #endif
 
   }
+
 
   m_pPO->setUniformF("u_efac", 1.5f);
 

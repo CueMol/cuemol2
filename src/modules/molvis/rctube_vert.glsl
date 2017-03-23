@@ -36,8 +36,9 @@ uniform int u_bsmocol;
 uniform int u_InstanceID;
 #endif
 
-uniform float u_width;
-uniform float u_tuber;
+uniform float u_width1;
+uniform float u_width2;
+//uniform float u_tuber;
 uniform float u_efac;
 
 ////////////////////
@@ -150,10 +151,12 @@ vec3 calcBinorm(in float rho)
   return mix(cp0, cp1, f);
 }
 
+/*
 float ffog(in float ecDistance)
 {
   return(abs(ecDistance));
 }
+*/
 
 void st2pos(in vec2 st, in float efac, out vec4 pos)
 {
@@ -167,11 +170,12 @@ void st2pos(in vec2 st, in float efac, out vec4 pos)
   vec3 e2 = normalize(v2);
 
   vec3 e1 = cross(e2, e0);
-  float th = st.t * M_2PI;
+  //float th = st.t * M_2PI;
+  float th = st.t;
 
   float si = sin(th);
   float co = cos(th);
-  vec3 pos3 = f + e1*(co*u_width*efac) + e2*(si*u_width*u_tuber*efac);
+  vec3 pos3 = f + e1*(co*u_width1*efac) + e2*(si*u_width2*efac);
 
   pos = vec4(pos3, 1.0);
 }

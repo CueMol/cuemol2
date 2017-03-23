@@ -31,7 +31,9 @@ uniform int u_npoints;
 uniform int u_bsmocol;
 
 uniform float u_tuber;
-uniform float u_width;
+uniform float u_tubersq;
+uniform float u_width1;
+uniform float u_width2;
 
 ////////////////////
 // Varying variables
@@ -329,13 +331,14 @@ void st2pos(in vec2 st, out vec4 pos, out vec3 norm)
   vec3 e2 = normalize(v2);
 
   vec3 e1 = cross(e2, e0);
-  float th = st.t * M_2PI;
+  //float th = st.t * M_2PI;
+  float th = st.t;
 
   float si = sin(th);
   float co = cos(th);
-  vec3 pos3 = f + e1*(co*u_width) + e2*(si*u_width*u_tuber);
+  vec3 pos3 = f + e1*(co*u_width1) + e2*(si*u_width2);
 
-  float dlen = sqrt(co*co*u_tuber*u_tuber + si*si);
+  float dlen = sqrt(co*co*u_tubersq + si*si);
   norm = e1*(co*u_tuber/dlen) + e2*(si/dlen);
 
   pos = vec4(pos3, 1.0);
@@ -355,15 +358,17 @@ void st2pos_dsdt(in vec2 st, out vec4 pos, out vec4 pos_ds, out vec4 pos_dt)
   vec3 e2 = v2/v2len;
 
   vec3 e1 = cross(e2, e0);
-  float th = st.t * M_2PI;
+  //float th = st.t * M_2PI;
+  float th = st.t;
   
   float si = sin(th);
   float co = cos(th);
 
-  vec3 pos3 = f + e1*(co*u_width) + e2*(si*u_width*u_tuber);
+  vec3 pos3 = f + e1*(co*u_width1) + e2*(si*u_width2);
   pos = vec4(pos3, 1.0);
 
-  vec3 pos_dt3 = e1*(-si*u_width * M_2PI) + e2*(co*u_width*u_tuber * M_2PI);
+  //vec3 pos_dt3 = e1*(-si*u_width1 * M_2PI) + e2*(co*u_width2 * M_2PI);
+  vec3 pos_dt3 = e1*(-si*u_width1) + e2*(co*u_width2);
   pos_dt = vec4(pos_dt3, 0.0);
 
   // s derivative of e0 (=v0/|v0|)
@@ -373,7 +378,7 @@ void st2pos_dsdt(in vec2 st, out vec4 pos, out vec4 pos_ds, out vec4 pos_dt)
   // s derivative of e1 (cross(e2, e0))
   vec3 de1 = cross(de2, e0) + cross(e2, de0);
 
-  vec3 pos_ds3 = v0 + de1*(co*u_width) + de2*(si*u_width*u_tuber);
+  vec3 pos_ds3 = v0 + de1*(co*u_width1) + de2*(si*u_width2);
   pos_ds = vec4(pos_ds3, 0.0);
 }
 
@@ -388,6 +393,7 @@ float solve_st(in vec4 vwpos, in vec2 st0, out vec2 st, out vec4 rpos)
   st = st0;
 
   for (int k=0; k<5; ++k) {
+  //for (int k=0; k<1; ++k) {
     st2pos_dsdt(st, pos, pos_ds, pos_dt);
     //pos = gl_ProjectionMatrix * gl_ModelViewMatrix * pos;
     pos = gl_ModelViewProjectionMatrix * pos;
@@ -435,13 +441,20 @@ void main (void)
   vec4 v_vwpos = gl_ProjectionMatrix * v_ecpos;
 
   float del = solve_st(v_vwpos, v_st, st, pos);
+  //float del = 0.0;
+  //st = v_st;
+
+  //gl_FragColor = vec4(1.0, st.s, st.t, 1.0);
+  //return;
+
 
   if (del>ftol) {
     discard;
     //gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
     //gl_FragDepth = gl_DepthRange.far-0.01;
   }
-  else {
+  else
+  {
     vec3 norm;
     st2pos(st, pos, norm);
     vec4 ecpos = gl_ModelViewMatrix * pos;
@@ -459,7 +472,8 @@ void main (void)
     else {
       gl_FragDepth = fd;
     }
-
+    gl_FragDepth = fd;
+    
     // color calculation
     vec4 color;
     color = flight(calcColor(st.s), norm, ecpos);
@@ -479,6 +493,6 @@ void main (void)
     gl_FragColor = fc;
 
   }
-  
+
 }
 
