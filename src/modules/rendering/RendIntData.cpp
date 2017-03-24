@@ -24,6 +24,8 @@ RendIntData::RendIntData(FileDisplayContext *pdc)
   m_pdc = pdc;
   m_dClipZ = -1.0;
   m_bPerspec = true;
+  m_dViewDist = 0.0;
+
 //  m_mesh.m_pPar = this;
 
   // mesh vertex attributes
@@ -587,10 +589,16 @@ void RendIntData::convSphere(Sph *pSph)
   const Vector4D v1 = pSph->v1;
 
   Vector4D vcam(0,0,m_dViewDist);
+  //LOG_DPRINTLN("vcam=%s", vcam.toString().c_str());
+
   if (!m_bPerspec) {
     vcam.x() = v1.x();
     vcam.y() = v1.y();
   }
+
+  //LOG_DPRINTLN("vcam=%s", vcam.toString().c_str());
+  //LOG_DPRINTLN("v1=%s", v1.toString().c_str());
+  
   Vector4D e3 = (vcam - v1).normalize();
   Vector4D e1 = e3.cross(Vector4D(1,0,0));
   e1 = e1.normalize();

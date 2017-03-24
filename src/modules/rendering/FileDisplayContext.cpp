@@ -529,6 +529,9 @@ void FileDisplayContext::startSection(const LString &name)
   else
     m_pIntData->m_dClipZ = -1.0;
 
+  m_pIntData->m_bPerspec = isPerspective();
+  m_pIntData->m_dViewDist = m_dViewDist;
+
   m_secName = name;
 }
 
