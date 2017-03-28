@@ -587,6 +587,11 @@ LString OglView::hitTestRect(int ax, int ay, int aw, int ah, bool bNearest)
   for (int ii=0; ii<nrend; ++ii) {
     qlib::uid_t rend_id = rend_ids[ii];
 
+    if (rend_id==qlib::invalid_uid) {
+      // empty entry
+      continue;
+    }
+
     if (ii>0)
       rval += ",";
     rval += "{";
@@ -947,6 +952,9 @@ LString OglView::hitTestRect(int ax, int ay, int aw, int ah, bool bNearest)
 
   for (int ii=0; ii<nrend; ++ii) {
     qlib::uid_t rend_id = rend_ids[ii];
+
+    if (rend_id==qlib::invalid_uid)
+      continue; // ignore null entry
 
     if (ii>0)
       rval += ",";

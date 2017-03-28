@@ -520,7 +520,7 @@ MeshVert *RendIntData::cutEdge(MeshVert *pv1, MeshVert *pv2)
 }
 
 /// convert dot to sphere
-void RendIntData::convDots(bool bErase)
+void RendIntData::convDots()
 {
   if (m_dots.size()<=0)
     return;
@@ -532,10 +532,10 @@ void RendIntData::convDots(bool bErase)
     p->ndetail = 4;
     m_spheres.push_back(p);
   }
-
-  if (bErase)
-    eraseDots();
-    //m_dots.erase(m_dots.begin(), m_dots.end());
+  
+  // The contents of m_dots are transfered to m_spheres,
+  // so we should not delete the ptrs (and only cleanup the container)
+  m_dots.erase(m_dots.begin(), m_dots.end());
 }
 
 /// convert line to cylinder
