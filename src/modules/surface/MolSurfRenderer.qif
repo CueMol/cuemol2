@@ -85,6 +85,9 @@ runtime_class MolSurfRenderer extends Renderer
   property boolean ramp_above => redirect(isRampAbove, setRampAbove);
   default ramp_above = false;
 
+  property real ramp_value => redirect(getRampValue, setRampValue);
+  default ramp_value = 1.4;
+
   //////////
   // for "molecule" mode
 

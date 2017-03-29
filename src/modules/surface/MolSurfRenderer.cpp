@@ -36,6 +36,7 @@ MolSurfRenderer::MolSurfRenderer()
   m_nDrawMode = SFDRAW_FILL;
   m_nMode = SFREND_SIMPLE;
   m_lw = 1.2;
+  m_dRampVal = 1.4;
 
   m_nTgtMolID = qlib::invalid_uid;
 }
@@ -285,7 +286,7 @@ void MolSurfRenderer::render(DisplayContext *pdl)
     if (m_nMode==SFREND_SCAPOT) {
       bool res;
       if (m_bRampAbove) {
-        res = getColorSca(pos + norm.scale(1.4), col);
+        res = getColorSca(pos + norm.scale(m_dRampVal), col);
       }
       else {
         res = getColorSca(pos, col);

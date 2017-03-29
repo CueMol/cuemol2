@@ -13,6 +13,8 @@
 
 class DirectSurfRenderer_wrap;
 
+namespace qsys { class ScalarObject; }
+
 namespace surface {
 
   using qlib::Vector4D;
@@ -353,6 +355,20 @@ namespace surface {
       if (m_nMode==DS_SCAPOT)
         invalidateDisplayCache();
     }
+
+  private:
+    double m_dRampVal;
+
+  public:
+    double getRampValue() const { return m_dRampVal; }
+    void setRampValue(double d) {
+      m_dRampVal = d;
+      if (m_nMode==DS_SCAPOT)
+        invalidateDisplayCache();
+    }
+    
+  private:
+    bool getColorSca(qsys::ScalarObject *pScaObj, const Vector4D &v, ColorPtr &rcol);
 
   };
 

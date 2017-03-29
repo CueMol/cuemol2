@@ -8,8 +8,10 @@
 #include "DirectSurfRenderer.hpp"
 #include <gfx/DisplayContext.hpp>
 #include <gfx/Mesh.hpp>
+#include <gfx/GradientColor.hpp>
 
 #include <qsys/SceneManager.hpp>
+#include <qsys/ScalarObject.hpp>
 
 #include <modules/molstr/MolCoord.hpp>
 #include <modules/molstr/MolAtom.hpp>
@@ -38,6 +40,7 @@ DirectSurfRenderer::DirectSurfRenderer()
   m_vdwr_X = 1.7;
 
   m_nMode = DS_MOLFANC;
+  m_dRampVal = 1.4;
 }
 
 DirectSurfRenderer::~DirectSurfRenderer()
@@ -327,26 +330,62 @@ void DirectSurfRenderer::render(DisplayContext *pdl)
 
   mesh.color(getDefaultColor());
 
+  // setup
+  qsys::ScalarObject *pScaObj = NULL;
+  if (m_nMode==DS_MOLFANC) {
+  }
+  else if (m_nMode==DS_SCAPOT) {
+    // ELEPOT mode --> resolve target name
+    qsys::ObjectPtr pobj;
+    if (!m_sTgtElePot.isEmpty()) {
+      pobj = ensureNotNull(getScene())->getObjectByName(m_sTgtElePot);
+      pScaObj = dynamic_cast<qsys::ScalarObject*>(pobj.get());
+    }
+    
+    if (pScaObj==NULL) {
+      LOG_DPRINTLN("MolSurfRend> \"%s\" is not a scalar object.", m_sTgtElePot.c_str());
+    }
+  }
+  
+  // setup vertex/normal/color
+  gfx::ColorPtr pcol;
   for (i=0, j=0; i<nverts; ++i) {
     vidmap[i] = j;
-    int ind = m_verts[i].info;
-    if (ind>=0) {
-      MolAtomPtr pAtom = pmol->getAtom(ind);
 
-      if (!m_pShowSel->isEmpty() &&
-          !m_pShowSel->isSelected(pAtom)) {
-        vidmap[i] = -1;
-        continue;
-      }
-      
-      if (!pAtom.isnull()) {
-        gfx::ColorPtr pcol = ColSchmHolder::getColor(pAtom);
-        mesh.color(pcol);
-      }
+    Vector4D pos = m_verts[i].v3d();
+    Vector4D norm = m_verts[i].n3d();
 
+    if (m_nMode==DS_MOLFANC) {
+      int ind = m_verts[i].info;
+      if (ind>=0) {
+        MolAtomPtr pAtom = pmol->getAtom(ind);
+        
+        if (!m_pShowSel->isEmpty() &&
+            !m_pShowSel->isSelected(pAtom)) {
+          vidmap[i] = -1;
+          continue;
+        }
+        
+        if (!pAtom.isnull()) {
+          pcol = ColSchmHolder::getColor(pAtom);
+          mesh.color(pcol);
+        }
+      }
     }
-    mesh.normal(m_verts[i].n3d());
-    mesh.setVertex(j, m_verts[i].v3d());
+    else if (m_nMode==DS_SCAPOT) {
+      bool res=false;
+      if (pScaObj!=NULL) {
+        if (m_bRampAbove)
+          res = getColorSca(pScaObj, pos + norm.scale(m_dRampVal), pcol);
+        else
+          res = getColorSca(pScaObj, pos, pcol);
+      }
+      if (res)
+        mesh.color(pcol);
+    }
+
+    mesh.normal(norm);
+    mesh.setVertex(j, pos);
     ++j;
   }
 
@@ -497,5 +536,41 @@ void DirectSurfRenderer::sceneChanged(qsys::SceneEvent &ev)
   }
 
   super_t::sceneChanged(ev);
+}
+
+bool DirectSurfRenderer::getColorSca(qsys::ScalarObject *pScaObj, const Vector4D &v, ColorPtr &rcol)
+{
+  double par = pScaObj->getValueAt(v);
+
+  if (par<m_dParLow) {
+    rcol = m_colLow;
+  }
+  else if (par>m_dParHigh) {
+    rcol = m_colHigh;
+  }
+  else if (par>m_dParMid) {
+    // high<-->mid
+    double ratio;
+    if (qlib::Util::isNear(m_dParHigh, m_dParMid))
+      ratio = 1.0;
+    else
+      ratio = (par-m_dParMid)/(m_dParHigh-m_dParMid);
+
+    rcol = ColorPtr(new gfx::GradientColor(m_colHigh, m_colMid, ratio));
+    // rcol = LColor(m_colHigh, m_colMid, ratio);
+  }
+  else {
+    // mid<-->low
+    double ratio;
+    if (qlib::Util::isNear(m_dParMid, m_dParLow))
+      ratio = 1.0;
+    else
+      ratio = (par-m_dParLow)/(m_dParMid-m_dParLow);
+
+    rcol = ColorPtr(new gfx::GradientColor(m_colMid, m_colLow, ratio));
+    // rcol = LColor(m_colMid, m_colLow, ratio);
+  }
+
+  return true;
 }
 
