@@ -9,6 +9,8 @@
 #include <gfx/DisplayContext.hpp>
 #include <gfx/Mesh.hpp>
 
+#include <qsys/SceneManager.hpp>
+
 #include <modules/molstr/MolCoord.hpp>
 #include <modules/molstr/MolAtom.hpp>
 #include <modules/molstr/AtomIterator.hpp>
@@ -22,6 +24,9 @@ using molstr::MolCoordPtr;
 using molstr::MolAtomPtr;
 using molstr::AtomIterator;
 
+using qsys::ObjectPtr;
+using qsys::SceneManager;
+
 DirectSurfRenderer::DirectSurfRenderer()
 {
   m_vdwr_H = 1.2;
@@ -31,10 +36,19 @@ DirectSurfRenderer::DirectSurfRenderer()
   m_vdwr_S = 1.8;
   m_vdwr_P = 1.8;
   m_vdwr_X = 1.7;
+
+  m_nMode = DS_MOLFANC;
 }
 
 DirectSurfRenderer::~DirectSurfRenderer()
 {
+  if (m_nTgtMolID!=qlib::invalid_uid) {
+    ObjectPtr pObj = SceneManager::getObjectS(m_nTgtMolID);
+    if (!pObj.isnull()) {
+      pObj->removeListener(this);
+    }
+    m_nTgtMolID=qlib::invalid_uid;
+  }
 }
 
 const char *DirectSurfRenderer::getTypeName() const
@@ -256,6 +270,37 @@ void DirectSurfRenderer::buildMeshCacheEDTSurf()
   delete [] proseq;
 }
 
+void DirectSurfRenderer::preRender(DisplayContext *pdc)
+{
+  pdc->setCullFace(m_bCullFace);
+
+  if (m_nDrawMode==SFDRAW_POINT) {
+    pdc->setLighting(false);
+    pdc->setPolygonMode(gfx::DisplayContext::POLY_POINT);
+    pdc->setPointSize(m_lw);
+  }
+  else if (m_nDrawMode==SFDRAW_LINE) {
+    pdc->setLighting(false);
+    pdc->setPolygonMode(gfx::DisplayContext::POLY_LINE);
+    pdc->setLineWidth(m_lw);
+  }
+  else {
+    pdc->setLighting(true);
+    pdc->setPolygonMode(gfx::DisplayContext::POLY_FILL);
+  }
+}
+
+void DirectSurfRenderer::postRender(DisplayContext *pdc)
+{
+  // reset to default drawing options
+  pdc->setPolygonMode(gfx::DisplayContext::POLY_FILL);
+  pdc->setPointSize(1.0);
+  pdc->setLineWidth(1.0);
+  pdc->setCullFace(true);
+  pdc->setLighting(false);
+
+}
+
 void DirectSurfRenderer::render(DisplayContext *pdl)
 {
   MolCoordPtr pmol = getClientMol();
@@ -275,25 +320,10 @@ void DirectSurfRenderer::render(DisplayContext *pdl)
   }
 
   gfx::Mesh mesh;
-//  mesh.setDefaultAlpha(getDefaultAlpha());
+
   mesh.init(nverts, nfaces);
 
   std::vector<int> vidmap(nverts);
-
-  if (m_nDrawMode==SFDRAW_POINT) {
-    pdl->setLighting(false);
-    pdl->setPolygonMode(gfx::DisplayContext::POLY_POINT);
-    pdl->setPointSize(m_lw);
-  }
-  else if (m_nDrawMode==SFDRAW_LINE) {
-    pdl->setLighting(false);
-    pdl->setPolygonMode(gfx::DisplayContext::POLY_LINE);
-    pdl->setLineWidth(m_lw);
-  }
-  else {
-    pdl->setLighting(true);
-    pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL);
-  }
 
   mesh.color(getDefaultColor());
 
@@ -345,13 +375,6 @@ void DirectSurfRenderer::render(DisplayContext *pdl)
   // draw it!!
   pdl->drawMesh(mesh);
 
-  // reset to default drawing options
-  pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL);
-  pdl->setPointSize(1.0);
-  pdl->setLineWidth(1.0);
-  pdl->setCullFace(true);
-  pdl->setLighting(false);
-
   // finalize the coloring scheme
   getColSchm()->end();
   pmol->getColSchm()->end();
@@ -369,5 +392,110 @@ void DirectSurfRenderer::propChanged(qlib::LPropEvent &ev)
   }
     
   super_t::propChanged(ev);
+}
+
+/// Resolve mol name, set m_nTgtMolID, listen the MolCoord events, and returns MolCoord object
+MolCoordPtr DirectSurfRenderer::resolveMolIDImpl(const LString &name)
+{
+  qsys::ScenePtr pScene = getScene();
+  if (pScene.isnull())
+    return MolCoordPtr();
+
+  qsys::ObjectPtr pobj = pScene->getObjectByName(name);
+  MolCoordPtr pMol= MolCoordPtr(pobj, qlib::no_throw_tag());
+  if (pMol.isnull()) {
+    return pMol;
+  }
+
+  m_nTgtMolID = pMol->getUID();
+
+  // event handling: attach to the new object
+  pMol->addListener(this);
+
+  MB_DPRINTLN("DirectSurfRend.resolveMolID> resolved (%s), OK.", name.c_str());
+  return pMol;
+}
+
+void DirectSurfRenderer::setTgtObjName(const LString &name)
+{
+  // detach from oldobj
+  if (m_nTgtMolID!=qlib::invalid_uid) {
+    ObjectPtr pObj = SceneManager::getObjectS(m_nTgtMolID);
+    if (!pObj.isnull()) {
+      pObj->removeListener(this);
+    }
+    m_nTgtMolID = qlib::invalid_uid;
+  }
+  
+  // get object by name
+  if (name.isEmpty())
+    return;
+  
+  m_sTgtMolName = name;
+
+  if (getScene().isnull())
+    return; // Scene is not loaded (when called in the scene-file loading)
+
+  MolCoordPtr pMol = resolveMolIDImpl(name);
+  if (pMol.isnull()) {
+    // TO DO: throw exception??
+    LOG_DPRINTLN("MolSurfRend> \"%s\" is not a MolCoord object.", name.c_str());
+    return;
+  }
+
+  invalidateDisplayCache();
+}
+
+LString DirectSurfRenderer::getTgtObjName() const
+{
+  if (m_nTgtMolID==qlib::invalid_uid)
+    return LString();
+  ObjectPtr pObj = SceneManager::getObjectS(m_nTgtMolID);
+  if (pObj.isnull())
+    return LString();
+  return pObj->getName();
+}
+
+void DirectSurfRenderer::objectChanged(qsys::ObjectEvent &ev)
+{
+  if (m_nMode==DS_MOLFANC &&
+      ev.getType()==qsys::ObjectEvent::OBE_PROPCHG) {
+    qlib::LPropEvent *pPE = ev.getPropEvent();
+    if (pPE) {
+      if (pPE->getName().equals("defaultcolor")||
+          pPE->getName().equals("coloring")||
+          pPE->getParentName().equals("coloring")||
+          pPE->getParentName().startsWith("coloring.")) {
+        invalidateDisplayCache();
+      }
+    }
+  }
+
+  super_t::objectChanged(ev);
+}
+
+void DirectSurfRenderer::sceneChanged(qsys::SceneEvent &ev)
+{
+  if (ev.getType()==qsys::SceneEvent::SCE_SCENE_ONLOADED) {
+    // resolve target mol name, if required
+    if (!m_sTgtMolName.isEmpty())
+      resolveMolIDImpl(m_sTgtMolName);
+  }
+  else if (ev.getType()==qsys::SceneEvent::SCE_OBJ_ADDED &&
+	   ev.getTarget()==getClientObjID()) {
+    MB_DPRINTLN("MolSurfRend.sceneChanged> This rend(obj) is loaded to the scene!!");
+    // resolve target mol name, if required
+    if (!m_sTgtMolName.isEmpty())
+      resolveMolIDImpl(m_sTgtMolName);
+  }
+  else if (ev.getType()==qsys::SceneEvent::SCE_REND_ADDED &&
+	   ev.getTarget()==getUID()) {
+    MB_DPRINTLN("MolSurfRend.sceneChanged> This rend is loaded to the scene!!");
+    // resolve target mol name, if required
+    if (!m_sTgtMolName.isEmpty())
+      resolveMolIDImpl(m_sTgtMolName);
+  }
+
+  super_t::sceneChanged(ev);
 }
 
