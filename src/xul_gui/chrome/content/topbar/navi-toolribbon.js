@@ -147,7 +147,7 @@ klass.rectSel = function (left, top, width, height)
 {
   if (!this.mView)
     return;
-  var sres = this.mView.hitTestRect(left, top, width, height, true);
+  var sres = this.mView.hitTestRect(left, top, width, height, false);
   if (sres.length==0)
     return;
 

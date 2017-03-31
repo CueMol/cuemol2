@@ -581,6 +581,8 @@ LString OglView::hitTestRect(int ax, int ay, int aw, int ah, bool bNearest)
 
   ////////////////////////
 
+  std::set<int> objids;
+
   LString rval;
   rval += "[";
 
@@ -592,19 +594,21 @@ LString OglView::hitTestRect(int ax, int ay, int aw, int ah, bool bNearest)
       continue;
     }
 
-    if (ii>0)
-      rval += ",";
-    rval += "{";
-    rval += LString::format("\"rend_id\": %d,\n", rend_id);
-
     qsys::RendererPtr pRend = SceneManager::getRendererS(rend_id);
     if (pRend.isnull()) {
       LOG_DPRINTLN("OglView.hitTestRect> FATAL ERROR: Unknown renderer id %d", rend_id);
       return LString();
     }
 
-    qlib::uid_t sceneid = pRend->getSceneID();
     qlib::uid_t objid = pRend->getClientObjID();
+
+    if (objids.find(objid)!=objids.end()) {
+      MB_DPRINTLN("OglView.hitTestRect> duplicated objid %d for rendid %d ignored", objid, rend_id);
+      continue;
+    }
+    objids.insert(objid);
+
+    qlib::uid_t sceneid = pRend->getSceneID();
 
     qsys::ObjectPtr pObj = SceneManager::getObjectS(objid);
     if (pObj.isnull()) {
@@ -612,6 +616,12 @@ LString OglView::hitTestRect(int ax, int ay, int aw, int ah, bool bNearest)
       return LString();
     }
     
+
+    if (ii>0)
+      rval += ",";
+    rval += "{";
+    rval += LString::format("\"rend_id\": %d,\n", rend_id);
+
     rval += pRend->interpHit(m_hitdata);
     rval += LString::format("\"obj_id\": %d", objid);
     rval += "}";
