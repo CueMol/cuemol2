@@ -456,6 +456,9 @@ if (!("selection" in cuemolui.panels)) {
         return;
       }
 
+      cuemolui.chgMolSelObj(mol, sel, "Change mol selection", true);
+
+      /*
       // EDIT TXN START //
       scene.startUndoTxn("Change mol selection");
       try {
@@ -472,6 +475,7 @@ if (!("selection" in cuemolui.panels)) {
 
       // Save to selHistory
       util.selHistory.append(cmd);
+        */
     }
 
   } )();
