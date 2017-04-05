@@ -235,6 +235,9 @@ klass.onLoad = function ()
   }
 
   // Fire initial tab-select events
+  //   onActivate should be called after onLoad events,
+  //   so that onActivate are called after all onLoad (and initialization) completed.
+  //   setTimeout() (probably?) enables delayed invocation of onActivate methods
   var that = this;
   setTimeout(function () {
     that.mTabContainer = document.getElementById("tabs-overlay-target");
