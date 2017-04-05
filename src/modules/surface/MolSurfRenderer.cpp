@@ -160,6 +160,14 @@ bool MolSurfRenderer::getColorSca(const Vector4D &v, ColorPtr &rcol)
 
 void MolSurfRenderer::preRender(DisplayContext *pdc)
 {
+  if (getEdgeLineType()==gfx::DisplayContext::ELT_NONE) {
+    pdc->setCullFace(m_bCullFace);
+  }
+  else {
+    // edge/silhouette line is ON --> always don't draw backface (cull backface=true)
+    pdc->setCullFace(true);
+  }
+
   if (m_nDrawMode==SFDRAW_POINT) {
     pdc->setLighting(false);
     pdc->setPolygonMode(gfx::DisplayContext::POLY_POINT);
@@ -175,9 +183,6 @@ void MolSurfRenderer::preRender(DisplayContext *pdc)
     pdc->setPolygonMode(gfx::DisplayContext::POLY_FILL);
   }
   
-  if (!m_bCullFace)
-    pdc->setCullFace(false);
-
 }
 
 void MolSurfRenderer::postRender(DisplayContext *pdc)

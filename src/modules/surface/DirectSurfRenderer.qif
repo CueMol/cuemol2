@@ -57,7 +57,7 @@ runtime_class DirectSurfRenderer extends MolRenderer
   default surfalgor = "edtsurf";
 
   property boolean cullface => redirect(isCullFace, setCullFace);
-  default cullface = true;
+  default cullface = false;
 
   /// Mesh drawing mode
   enumdef drawmode {

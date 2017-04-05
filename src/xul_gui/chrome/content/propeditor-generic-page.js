@@ -236,12 +236,14 @@ klass.onLoad = function ()
 
   // Fire initial tab-select events
   var that = this;
-  this.mTabContainer = document.getElementById("tabs-overlay-target");
-  this.mCurTabId = this.mTabContainer.selectedItem.id;
-  this.notifyTab("onActivate", this.mCurTabId);
-  this.mTabContainer.addEventListener("select", function (aEvent) { 
-    that.onTabSelect();
-  }, false);
+  setTimeout(function () {
+    that.mTabContainer = document.getElementById("tabs-overlay-target");
+    that.mCurTabId = that.mTabContainer.selectedItem.id;
+    that.notifyTab("onActivate", that.mCurTabId);
+    that.mTabContainer.addEventListener("select", function (aEvent) { 
+      that.onTabSelect();
+    }, false);
+  }, 0);
 };
 
 klass.populateData = function (obj)

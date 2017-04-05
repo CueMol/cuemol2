@@ -24,7 +24,7 @@ runtime_class MolSurfRenderer extends Renderer
   default defaultcolor = gfx::SolidColor::createRGB(192.0/255.0, 192.0/255.0, 1.0, 1.0);
 
   property boolean cullface => redirect(isCullFace, setCullFace);
-  default cullface = true;
+  default cullface = false;
 
   // property boolean wireframe => redirect(isWireFrame, setWireFrame);
   // default wireframe = false;

@@ -275,7 +275,13 @@ void DirectSurfRenderer::buildMeshCacheEDTSurf()
 
 void DirectSurfRenderer::preRender(DisplayContext *pdc)
 {
-  pdc->setCullFace(m_bCullFace);
+  if (getEdgeLineType()==gfx::DisplayContext::ELT_NONE) {
+    pdc->setCullFace(m_bCullFace);
+  }
+  else {
+    // edge/silhouette line is ON --> always don't draw backface (cull backface=true)
+    pdc->setCullFace(true);
+  }
 
   if (m_nDrawMode==SFDRAW_POINT) {
     pdc->setLighting(false);
@@ -355,21 +361,21 @@ void DirectSurfRenderer::render(DisplayContext *pdl)
     Vector4D pos = m_verts[i].v3d();
     Vector4D norm = m_verts[i].n3d();
 
+    MolAtomPtr pAtom;
+    int ind = m_verts[i].info;
+    if (ind>=0) {
+      pAtom = pmol->getAtom(ind);
+      if (!m_pShowSel->isEmpty() &&
+          !m_pShowSel->isSelected(pAtom)) {
+        vidmap[i] = -1;
+        continue; // not shown --> skip coloring
+      }
+    }      
+
     if (m_nMode==DS_MOLFANC) {
-      int ind = m_verts[i].info;
-      if (ind>=0) {
-        MolAtomPtr pAtom = pmol->getAtom(ind);
-        
-        if (!m_pShowSel->isEmpty() &&
-            !m_pShowSel->isSelected(pAtom)) {
-          vidmap[i] = -1;
-          continue;
-        }
-        
-        if (!pAtom.isnull()) {
-          pcol = ColSchmHolder::getColor(pAtom);
-          mesh.color(pcol);
-        }
+      if (!pAtom.isnull()) {
+        pcol = ColSchmHolder::getColor(pAtom);
+        mesh.color(pcol);
       }
     }
     else if (m_nMode==DS_SCAPOT) {

@@ -60,7 +60,7 @@
     </groupbox>
 
     <groupbox flex="0">
-      <caption label="Target"/>
+      <caption label="Show selected:"/>
       <grid>
 	<columns>
 	  <column flex="0"/>
@@ -69,30 +69,31 @@
 
 	<rows>
 	  <row align="center" class="propdlg-rowbox">
-	    <label value="Paint Mode:"/>
-	    <menulist id="msurf-paintmode" flex="0" class="propdlg-menulist"
-	      oncommand="gMolSurf.validateWidgets(event)">
-	      <menupopup>
-		<menuitem label="Solid" value="solid"/>
-		<menuitem label="By molecule" value="molecule"/>
-		<menuitem label="By potential" value="potential"/>
-	      </menupopup>
-	    </menulist>
-	  </row>
-	  <row align="center" class="propdlg-rowbox">
-	    <label value="Target:"/>
-	    <menulist id="msurf-targobj" flex="1" sizetopopup="none"/>
+	    <label value="Selection mol:"/>
+	    <menulist id="msurf-targobj" sizetopopup="none"/>
 	  </row>
 
 	  <row align="center" class="propdlg-rowbox">
-	    <label value="Show selected:"/>
-	    <molsellist id="msurf-showsel" editable="true" flex="1"/>
+	    <label value="Selection:"/>
+	    <molsellist id="msurf-showsel" editable="true"/>
 	  </row>
 
 	</rows>
       </grid>
     </groupbox>
 
+    <hbox align="center">
+      <label value="Coloring mode:"/>
+      <menulist id="msurf-paintmode" class="propdlg-menulist"
+	oncommand="gMolSurf.validateWidgets(event)">
+	<menupopup>
+	  <menuitem id="menuitem_solid_color" label="Solid color" value="solid"/>
+	  <menuitem label="By molecule" value="molecule"/>
+	  <menuitem label="By potential" value="potential"/>
+	</menupopup>
+      </menulist>
+    </hbox>
+    
   </overlaytarget>
 </overlay>
 
