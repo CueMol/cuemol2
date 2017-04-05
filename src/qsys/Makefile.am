@@ -113,6 +113,12 @@ $(MODLDR_SRC): qsys.moddef $(MCWG_SRC)
 ######################################################
 # qsys libtool library
 
+if COND_BUILD_OSX
+HEADERPAD="-Wl,-headerpad,64"
+else
+HEADERPAD=
+endif
+
 lib_LTLIBRARIES = libqsys.la
 
 libqsys_la_SOURCES = \
@@ -148,6 +154,7 @@ libqsys_la_LIBADD = \
 
 libqsys_la_LDFLAGS = \
   @BOOST_LDFLAGS@ \
+  $(HEADERPAD) \
  $(NULL)
 
 #####################################
