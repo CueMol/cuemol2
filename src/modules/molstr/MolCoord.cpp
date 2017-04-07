@@ -73,11 +73,7 @@ MolResiduePtr MolCoord::getResidue(const LString &chain, ResidIndex resid) const
 
 MolResiduePtr MolCoord::getResidScr(const LString &chain, const LString &sresid) const
 {
-  MolChainPtr pChain = getChain(chain);
-  if (pChain.isnull())
-    return MolResiduePtr();
-
-  return pChain->getResidue(sresid);
+  return getResidue(chain, ResidIndex::fromString(sresid));
 }
 
 MolAtomPtr MolCoord::getAtom(int atomid) const
@@ -106,6 +102,12 @@ MolAtomPtr MolCoord::getAtom(const LString &chain, ResidIndex resid,
     if (id<0) return MolAtomPtr();
     return getAtom(id);
   }
+}
+
+MolAtomPtr MolCoord::getAtomScr(const LString &chain, const LString &sresid,
+                                const LString &aname) const
+{
+  return getAtom(chain, ResidIndex::fromString(sresid), aname);
 }
 
 /// Convert aid to (persistent) string representation
