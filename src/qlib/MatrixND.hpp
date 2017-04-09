@@ -223,6 +223,40 @@ namespace qlib {
         ai(i) = value_type( arg.ai(i) );
     }
 
+    /// Get row
+    VectorND<dimension, value_type> getRow(int i) const {
+      VectorND<dimension, value_type> retval(0, detail::no_init_tag());
+      for (int j=1; j<=dimension; ++j)
+	retval.ai(i) = aij(i, j);
+      return retval;
+    }
+
+    /// Get column
+    VectorND<dimension, value_type> getColumn(int i) const {
+      VectorND<dimension, value_type> retval(0, detail::no_init_tag());
+      for (int j=1; j<=dimension; ++j)
+	retval.ai(i) = aij(j, i);
+      return retval;
+    }
+
+    /// Swap two rows
+    void swapRows(int i, int j) {
+      for (int k=1; k<=dimension; ++k) {
+	value_type tmp = aij(i, k);
+	aij(i, k) = aij(j, k);
+	aij(j, k) = tmp;
+      }
+    }
+
+    /// Swap two columns
+    void swapColumns(int i, int j) {
+      for (int k=1; k<=dimension; ++k) {
+	value_type tmp = aij(k, i);
+	aij(k, i) = aij(k, j);
+	aij(k, j) = tmp;
+      }
+    }
+
     // /** get inverse matrix */
     // MatrixND invert() const;
 
