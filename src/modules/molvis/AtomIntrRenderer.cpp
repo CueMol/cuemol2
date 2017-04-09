@@ -358,13 +358,36 @@ int AtomIntrRenderer::appendTorsionById(int nAid1,
   return rval;
 }
 
-int AtomIntrRenderer::appendByVecs(const std::vector<Vector4D> &vecs)
+int AtomIntrRenderer::appendBy2Vecs(const Vector4D &v1, const Vector4D &v2)
 {
   qlib::uid_t nMolID1 = getClientObjID();
 
   AtomIntrData aidat;
-  int nvecs = vecs.size();
+
+  aidat.nmode = 1;
+  aidat.elem0.nMode= AtomIntrElem::AI_POS;
+  aidat.elem0.nMolID = nMolID1;
+  aidat.elem0.pos = v1;
+  aidat.elem1.nMode= AtomIntrElem::AI_POS;
+  aidat.elem1.nMolID = nMolID1;
+  aidat.elem1.pos = v2;
+
+  int rval = appendImpl(aidat);
+
+  return rval;
+}
+
+int AtomIntrRenderer::appendByVecs(const std::vector<Vector4D> &vecs)
+{
+  const int nvecs = vecs.size();
   if (nvecs==2) {
+    return appendBy2Vecs(vecs[0], vecs[1]);
+  }
+
+  qlib::uid_t nMolID1 = getClientObjID();
+  AtomIntrData aidat;
+
+  /*if (nvecs==2) {
     aidat.nmode = 1;
     aidat.elem0.nMode= AtomIntrElem::AI_POS;
     aidat.elem0.nMolID = nMolID1;
@@ -372,7 +395,8 @@ int AtomIntrRenderer::appendByVecs(const std::vector<Vector4D> &vecs)
     aidat.elem1.nMode= AtomIntrElem::AI_POS;
     aidat.elem1.nMolID = nMolID1;
     aidat.elem1.pos = vecs[1];
-  }
+    }*/
+
   if (nvecs==3) {
     aidat.nmode = 2;
     aidat.elem0.nMode= AtomIntrElem::AI_POS;
@@ -401,9 +425,8 @@ int AtomIntrRenderer::appendByVecs(const std::vector<Vector4D> &vecs)
     aidat.elem3.pos = vecs[3];
   }
 
-  int rval = appendImpl(aidat);
-
-  return rval;
+  return appendImpl(aidat);
+  // return rval;
 }
 
 void AtomIntrRenderer::invalidateAllLabels()

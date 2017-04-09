@@ -31,6 +31,8 @@ runtime_class Matrix
   void setAt(integer, integer, real);
   real getAt(integer, integer);
 
+  real addAt(integer, integer, real);
+
   object<Matrix> scale(real);
   object<Matrix> divide(real);
   object<Matrix> add(object<Matrix>);
@@ -39,6 +41,16 @@ runtime_class Matrix
   object<Vector> mulvec(object<Vector>);
 
   void setUnit();
+  void setZero();
+
+  /// diagonalization as 3x3 matrix
+  object<Matrix> diag3();
+  
+  /// get row vector
+  object<Vector> row(integer i);
+
+  /// get column vector
+  object<Vector> col(integer i);
 };
 
 #endif
