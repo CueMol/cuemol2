@@ -178,6 +178,8 @@ public:
 
   int appendByVecs(const std::vector<Vector4D> &vecs);
 
+  int appendBy2Vecs(const Vector4D &v1, const Vector4D &v2);
+
   //////////
 
   /// Create intr data with ID (for REDO operation)

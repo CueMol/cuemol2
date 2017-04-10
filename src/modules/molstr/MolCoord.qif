@@ -42,6 +42,7 @@ runtime_class MolCoord extends Object
   // Access methods
 
   object<MolAtom$> getAtomByID(integer aid) => getAtom;
+  object<MolAtom$> getAtom(string name, string sindex, string atomname) => getAtomScr;
   object<MolResidue$> getResidue(string name, string sindex) =>getResidScr;
   object<MolChain$> getChain(string name);
 

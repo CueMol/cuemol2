@@ -54,6 +54,13 @@ $(MODLDR_SRC): anim.moddef $(MCWG_SRC)
 ######################################################
 # anim libtool library
 
+if COND_BUILD_OSX
+HEADERPAD="-Wl,-headerpad,64"
+else
+HEADERPAD=
+endif
+
+
 lib_LTLIBRARIES = libanim.la
 
 libanim_la_SOURCES = \
@@ -73,7 +80,7 @@ libanim_la_CXXFLAGS = \
 
 libanim_la_LIBADD = -lqsys -lgfx -lqlib
 libanim_la_LDFLAGS = \
-  -Wl,-headerpad,64 \
+  $(HEADERPAD) \
   -L../../qsys \
   -L../../gfx \
   -L../../qlib \

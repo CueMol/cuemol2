@@ -196,6 +196,8 @@ namespace molstr {
     MolAtomPtr getAtom(const LString &chain, ResidIndex resid, const LString &atom, char cConfID='\0') const;
     // int getAtomID(const MolAtomPtr pAtom) const;
 
+    MolAtomPtr getAtomScr(const LString &chain, const LString &sresid, const LString &atom) const;
+
     /// Get the number of atoms in this molecule
     int getAtomSize() const {
       return m_atomPool.size();

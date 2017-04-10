@@ -496,6 +496,8 @@ if (!("seqpanel" in cuemolui)) {
   
       let sel = rrs.toSel(mol);
       
+      cuemolui.chgMolSelObj(mol, sel, "Toggle select atom(s)", true);
+      /*
       // EDIT TXN START //
       scene.startUndoTxn("Toggle select atom(s)");
       
@@ -512,7 +514,7 @@ if (!("seqpanel" in cuemolui)) {
       
       scene.commitUndoTxn();
       // EDIT TXN END //
-
+       */
     };
 
     panel.centerAt = function (aRes)
@@ -733,6 +735,8 @@ if (!("seqpanel" in cuemolui)) {
   
       let sel = rrs.toSel(mol);
 
+      cuemolui.chgMolSelObj(mol, sel, "Toggle select atom(s)", true);
+      /*
       // EDIT TXN START //
       scene.startUndoTxn("Toggle select atom(s)");
       
@@ -749,6 +753,7 @@ if (!("seqpanel" in cuemolui)) {
       
       scene.commitUndoTxn();
       // EDIT TXN END //
+       */
     };
 
   } )();

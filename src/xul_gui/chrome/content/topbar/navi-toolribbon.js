@@ -147,7 +147,7 @@ klass.rectSel = function (left, top, width, height)
 {
   if (!this.mView)
     return;
-  var sres = this.mView.hitTestRect(left, top, width, height, true);
+  var sres = this.mView.hitTestRect(left, top, width, height, false);
   if (sres.length==0)
     return;
 
@@ -176,6 +176,18 @@ klass.rectSel = function (left, top, width, height)
 
   var scene = this.mView.getScene();
 
+  for (var i in selset) {
+    let obj = cuemol.getObject(i);
+    if (!('sel' in obj))
+      continue;
+    
+    selstr = selset[i].join("|");
+    dd("selection for Mol["+i+"] : "+selstr);
+    //obj.sel = cuemol.makeSel(selstr);
+    cuemolui.chgMolSel(obj, selstr, "Select atom(s)", true);
+  }
+
+  /*
   // EDIT TXN START //
   scene.startUndoTxn("Select atom(s)");
 
@@ -189,7 +201,6 @@ klass.rectSel = function (left, top, width, height)
       selstr = selset[i].join("|");
       dd("selection for Mol["+i+"] : "+selstr);
       obj.sel = cuemol.makeSel(selstr);
-
     }
   }
   catch(e) {
@@ -207,6 +218,7 @@ klass.rectSel = function (left, top, width, height)
   util.selHistory.append(selstr);
   
   scene = null;
+   */
 }
 
 klass.enableRectTool = function ()
@@ -504,6 +516,9 @@ klass.toggleResidSel = function (obj, atom)
 
   //////////
 
+  cuemolui.chgMolSelObj(obj, sel, "Toggle select atom(s)", true);
+
+/*
   // EDIT TXN START //
   let scene = this.mParent.mMainWnd.currentSceneW;
   scene.startUndoTxn("Toggle select atom(s)");
@@ -521,6 +536,7 @@ klass.toggleResidSel = function (obj, atom)
   
   scene.commitUndoTxn();
   // EDIT TXN END //
+*/
 };
 
 /// Range residue selection
@@ -554,6 +570,9 @@ klass.extendResidSel = function (obj, atom)
 
   //////////
 
+  cuemolui.chgMolSelObj(obj, sel, "Toggle select atom(s)", true);
+
+  /*
   // EDIT TXN START //
   let scene = this.mParent.mMainWnd.currentSceneW;
   scene.startUndoTxn("Toggle select atom(s)");
@@ -571,6 +590,7 @@ klass.extendResidSel = function (obj, atom)
   
   scene.commitUndoTxn();
   // EDIT TXN END //
+    */
 };
 
 /// Hide/show symm context menu
@@ -734,6 +754,9 @@ klass.vcmSelectMol = function(mode)
     return;
   }
 
+  cuemolui.chgMolSel(obj, selstr, "Select atom(s)", true);
+
+  /*
   // EDIT TXN START //
   scene.startUndoTxn("Select atom(s)");
 
@@ -755,6 +778,7 @@ klass.vcmSelectMol = function(mode)
   // EDIT TXN END //
 
   util.selHistory.append(selstr);
+   */
 }
 
 klass.vcmAddSelectMol = function(mode)
@@ -780,6 +804,9 @@ klass.vcmAddSelectMol = function(mode)
   }
   // dd("AddSel str="+selstr);
 
+  cuemolui.chgMolSel(obj, selstr, "Add select atom(s)", true);
+
+  /*
   // EDIT TXN START //
   scene.startUndoTxn("Add select atom(s)");
 
@@ -797,6 +824,7 @@ klass.vcmAddSelectMol = function(mode)
 
   scene.commitUndoTxn();
   // EDIT TXN END //
+   */
 };
 
 klass.vcmUnSelectMol = function()

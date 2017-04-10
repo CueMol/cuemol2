@@ -92,6 +92,10 @@ namespace molstr {
 
     MolAtomPtr getAtom(const LString &atomname, char confid = '\0') const;
 
+    MolAtomPtr getAtomAltConfScr(const LString &atomname, const LString &confid) const {
+      return getAtom(atomname, confid.getAt(0));
+    }
+    
     /// Get the number of atoms in this residue.
     int getAtomSize() const {
       return m_atomData.size();

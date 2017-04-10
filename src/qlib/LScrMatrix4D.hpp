@@ -25,27 +25,27 @@ class QLIB_API LScrMatrix4D : public LSimpleCopyScrObject, public Matrix4D
   public:
   // constructors
   
-  /** default constructor */
+  /// default constructor
   LScrMatrix4D()
   {
   }
   
-  /** copy constructor */
+  /// copy constructor
   LScrMatrix4D(const LScrMatrix4D &arg)
        : Matrix4D(arg)
   {
   }
 
-  /** Implicit conversion */
+  /// Implicit conversion
   LScrMatrix4D(const Matrix4D &arg)
        : Matrix4D(arg)
   {
   }
 
-  /** destructor */
+  /// destructor
   virtual ~LScrMatrix4D();
 
-  // Assignment operator
+  /// Assignment operator
   const LScrMatrix4D &operator=(const LScrMatrix4D &arg) {
     if(&arg!=this) {
       Matrix4D::operator=(arg);
@@ -76,6 +76,23 @@ class QLIB_API LScrMatrix4D : public LSimpleCopyScrObject, public Matrix4D
   }
   LScrVector4D mulvec(const LScrVector4D &aVal) const {
     return LScrVector4D(Matrix4D::mulvec(aVal));
+  }
+
+  /// Diagonalization as a 3x3 matrix
+  LScrMatrix4D diag3() const;
+
+  LScrVector4D row(int i) const {
+    return LScrVector4D(aij(i,1),
+			aij(i,2),
+			aij(i,3),
+			aij(i,4));
+  }
+
+  LScrVector4D col(int i) const {
+    return LScrVector4D(aij(1,i),
+			aij(2,i),
+			aij(3,i),
+			aij(4,i));
   }
 
 };

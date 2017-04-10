@@ -110,6 +110,11 @@ namespace qlib {
       return aij(i,j);
     }
 
+    value_type addAt(int i, int j, value_type val) {
+      aij(i,j) += val;
+      return aij(i,j);
+    }
+
     ////////////////////////
     // Vector transformation
 

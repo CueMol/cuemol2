@@ -250,6 +250,17 @@ public:
       invalidateDisplayCache();
   }
 
+  private:
+    double m_dRampVal;
+
+  public:
+    double getRampValue() const { return m_dRampVal; }
+    void setRampValue(double d) {
+      m_dRampVal = d;
+      if (m_nMode==SFREND_SCAPOT)
+        invalidateDisplayCache();
+    }
+
   ////
 
   SelectionPtr getMolSel() const {

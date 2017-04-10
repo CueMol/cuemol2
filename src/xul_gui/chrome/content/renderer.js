@@ -32,27 +32,25 @@ Qm2Main.prototype.molPostProc = function(sc, mol, rend, result)
   var sel_rend;
   var colscm;
 
-  // auto-create selection renderer
   try {
-    sel_rend = mol.getRendererByType("*selection");
-    if (!sel_rend) {
-      // create new renderer
-      sel_rend = mol.createRenderer("*selection");
-    }
+    // auto-create selection renderer
+    cuemolui.autoCreateSelRend(mol);
 
+    // set default painting for mol
     if (result.new_obj)
       mol.coloring = this.createDefPaintColoring();
 
+    // setup disorder renderer
     if (result.rendtype== "disorder" ) {
-      // setup disorder renderer
       // set default target renderer name (tube, ribbon, catoon, or nucl)
       var rend_names = cuemol.getRendNameList(mol, "tube", "ribbon", "cartoon", "nucl");
       if (rend_names[0])
         rend.target = rend_names[0];
     }
+
   }
   catch (e) {
-    dd("*** Cannot create selection renderer Reason : "+e);
+    dd("*** Perform mol renderer post proc failed: "+e);
     debug.exception(e);
   }
   

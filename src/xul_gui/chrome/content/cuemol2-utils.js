@@ -115,6 +115,76 @@ cuemolui.populateStyleMenus = function (scene_id, menu, regexp, bClear)
   }
 };
 
+//////////////////////////
+// selection utilities
+
+/// Auto-create selection renderer
+cuemolui.autoCreateSelRend = function (aMol)
+{
+  var sel_rend = aMol.getRendererByType("*selection");
+  if (!sel_rend)
+    sel_rend = aMol.createRenderer("*selection");
+}
+
+cuemolui.chgMolSel = function (aMol, aSelStr, aTxnMsg, aSaveHis)
+{
+  var scene = aMol.getScene();
+
+  // EDIT TXN START //
+  scene.startUndoTxn(aTxnMsg);
+
+  try {
+    cuemolui.autoCreateSelRend(aMol);
+    aMol.sel = cuemol.makeSel(aSelStr, scene.uid);
+  }
+  catch(e) {
+    dd("cuemolui.chgMolSel ("+aSelStr+") error");
+    debug.exception(e);
+    scene.rollbackUndoTxn();
+    return;
+  }
+
+  scene.commitUndoTxn();
+  // EDIT TXN END //
+
+  if (aSaveHis) {
+    // Save to history
+    util.selHistory.append(aSelStr);
+  }
+}
+
+cuemolui.chgMolSelObj = function (aMol, aSelObj, aTxnMsg, aSaveHis)
+{
+  var scene = aMol.getScene();
+
+  // EDIT TXN START //
+  scene.startUndoTxn(aTxnMsg);
+
+  try {
+    cuemolui.autoCreateSelRend(aMol);
+    aMol.sel = aSelObj;
+  }
+  catch(e) {
+    dd("cuemolui.chgMolSelObj error");
+    debug.exception(e);
+    scene.rollbackUndoTxn();
+    return;
+  }
+
+  scene.commitUndoTxn();
+  // EDIT TXN END //
+
+  if (aSaveHis) {
+    try {
+      // Save to history
+      util.selHistory.append(aSelObj.toString());
+    }
+    catch (e) {
+    }
+      
+  }
+}
+
 /// select around the current selected atoms
 cuemolui.molSelAround = function (aMol, aDist, aByres)
 {
@@ -168,6 +238,9 @@ cuemolui.molSelAround = function (aMol, aDist, aByres)
 
   dd("Around newsel="+newsel);
 
+  cuemolui.chgMolSel(aMol, newsel, "Around mol selection", true);
+
+  /*
   // EDIT TXN START //
   scene.startUndoTxn("Around mol selection");
 
@@ -186,6 +259,7 @@ cuemolui.molSelAround = function (aMol, aDist, aByres)
 
   // Save to history
   util.selHistory.append(newsel);
+   */
 };
 
 /// Toggle bysidech
@@ -214,7 +288,9 @@ cuemolui.molSelToggleSideCh = function (aMol)
     newsel = "bysidech "+selstr;
   }
 
+  cuemolui.chgMolSel(aMol, newsel, "Toggle bysidech", true);
 
+  /*
   // EDIT TXN START //
   scene.startUndoTxn("Toggle bysidech");
 
@@ -230,6 +306,7 @@ cuemolui.molSelToggleSideCh = function (aMol)
 
   scene.commitUndoTxn();
   // EDIT TXN END //
+   */
 };
 
 /// Invert selection
@@ -239,10 +316,24 @@ cuemolui.molSelInvert = function (aMol)
   var scene = aMol.getScene();
   if (!('sel' in aMol))
     return;
-  var sel = aMol.sel;
 
-  sel = cuemol.makeInvSel(sel);
+  var selstr = aMol.sel.toString();
+  var invsel;
+  if (selstr=="") {
+    invsel = "*";
+  }
+  else {
+    var res = selstr.match(/!\s*\((.+)\)/);
+    if (res==null)
+      invsel = "!("+selstr+")";
+    else 
+      invsel = res[1];
+  }
+  dd("MakeInvSel invsel="+invsel);
 
+  cuemolui.chgMolSel(aMol, invsel, "Invert mol selection", false);
+
+  /*
   // EDIT TXN START //
   scene.startUndoTxn("Invert mol selection");
 
@@ -258,6 +349,7 @@ cuemolui.molSelInvert = function (aMol)
 
   scene.commitUndoTxn();
   // EDIT TXN END //
+*/
 };
 
 /// Clear selection
@@ -269,12 +361,15 @@ cuemolui.molSelClear = function (aMol)
   if (!('sel' in aMol))
     return;
 
+  cuemolui.chgMolSel(aMol, null, "Unselect molecule", false);
+
+/*
   // EDIT TXN START //
   scene.startUndoTxn("Unselect molecule");
 
   try {
-    var sel = cuemol.createObj("SelCommand");
-    aMol.sel = sel;
+    //var sel = cuemol.createObj("SelCommand");
+    aMol.sel = cuemol.makeSel();
   }
   catch(e) {
     dd("> SetProp error");
@@ -285,5 +380,6 @@ cuemolui.molSelClear = function (aMol)
 
   scene.commitUndoTxn();
   // EDIT TXN END //
+*/
 };
 

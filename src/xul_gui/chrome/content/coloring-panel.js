@@ -233,7 +233,7 @@ panel._setupData = function (aRend)
   // make the coloring pull-down menulist
   this.setupColoringSelector(aRend, clsname);
 
-  if (rend_type == "molsurf" &&
+  if ((rend_type == "molsurf" || rend_type == "dsurface")&&
       aRend.colormode == "potential") {
     this._selectDeckById("coloring-deck-elepot");
     this.mTgtColType = COL_ELEPOT;
@@ -311,7 +311,7 @@ panel.setupColoringSelector = function (aRend, clsname)
   if ('type_name' in aRend)
     rend_type = aRend.type_name;
 
-  if (rend_type == "molsurf") {
+  if (rend_type == "molsurf" || rend_type == "dsurface") {
     elepot_elem.hidden = false;
     /*if (aRend.colormode == "potential") {
       return;
@@ -577,7 +577,7 @@ panel.onChgColoring = function (aEvent)
     if ('type_name' in rend)
       rend_type = rend.type_name;
 
-    if (rend_type=="molsurf") {
+    if (rend_type=="molsurf" || rend_type == "dsurface") {
       if (id=="paint-type-elepot") {
         this.setDefaultElepot(rend);
         return;
@@ -1596,7 +1596,7 @@ panel.onPotSelChanged = function (aEvent)
   if ('type_name' in rend)
     rend_type = rend.type_name;
 
-  if (rend_type!="molsurf")
+  if (!(rend_type=="molsurf" || rend_type=="dsurface"))
     return;
   if (rend.elepot==obj.name)
     return;
@@ -1625,19 +1625,19 @@ panel.updateElepotWidgets = function (aRend, aPropName)
 
   if (aPropName==undefined ||
       aPropName=="lowcol") {
-    this.mPotColL.setTargetSceneID();
+    this.mPotColL.setTargetSceneID(this.mTgtSceID);
     this.mPotColL.setColorObj(aRend.lowcol);
   }
 
   if (aPropName==undefined ||
       aPropName=="midcol") {
-    this.mPotColM.setTargetSceneID();
+    this.mPotColM.setTargetSceneID(this.mTgtSceID);
     this.mPotColM.setColorObj(aRend.midcol);
   }
 
   if (aPropName==undefined ||
       aPropName=="highcol") {
-    this.mPotColH.setTargetSceneID();
+    this.mPotColH.setTargetSceneID(this.mTgtSceID);
     this.mPotColH.setColorObj(aRend.highcol);
   }
 

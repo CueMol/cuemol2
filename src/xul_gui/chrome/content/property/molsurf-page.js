@@ -11,7 +11,7 @@ if (!("MolSurfCommPage" in cuemolui)) {
     {
       dd("MolSurfPropEdit> Constructor called");
       this.mMain = aMain;
-      this._rendtype = this.mMain.getRendType();
+      this.mRendTypeName = this.mMain.getRendType();
 
       this.mTargObj =
 	new cuemolui.ObjMenuList("msurf-targobj", window,
@@ -35,7 +35,7 @@ if (!("MolSurfCommPage" in cuemolui)) {
 				      false);
 
       this.mSurfType = document.getElementById("msurf-surftype");
-      if (this._rendtype=="dsurface") {
+      if (this.mRendTypeName=="dsurface") {
 	this.mSurfType.addEventListener("command",
 					function (event) {that.validateWidgets(event)},
 					false);
@@ -49,7 +49,7 @@ if (!("MolSurfCommPage" in cuemolui)) {
 				   false);
 
       this.mDetail = document.getElementById("msurf-detail");
-      if (this._rendtype=="dsurface") {
+      if (this.mRendTypeName=="dsurface") {
 	this.mDetail.addEventListener("change",
 				      function (event) {that.validateWidgets(event)},
 				      false);
@@ -58,6 +58,9 @@ if (!("MolSurfCommPage" in cuemolui)) {
 	this.mDetail.disabled = true;
 
       this.mPaintMode = document.getElementById("msurf-paintmode");
+      if (this.mRendTypeName=="dsurface") {
+	document.getElementById("menuitem_solid_color").hidden = true;
+      }
 
       this.mShowSel = document.getElementById("msurf-showsel");
       this.mShowSel.sceneID = scid;
@@ -138,7 +141,7 @@ if (!("MolSurfCommPage" in cuemolui)) {
       if (aEvent)
 	tgt_id = aEvent.currentTarget.id;
 
-      if (this._rendtype=="dsurface") {
+      if (this.mRendTypeName=="dsurface") {
 	// dsurface-only props
 	if (tgt_id=="msurf-detail" || tgt_id==null) {
 	  new_val = parseInt(this.mDetail.value);
@@ -154,20 +157,22 @@ if (!("MolSurfCommPage" in cuemolui)) {
       }
       else {
 	// molsurf-only props
+	// (targobj is not implemented for dsurface yet)
 	if (tgt_id=="msurf-targobj" || tgt_id==null) {
 	  new_val = this.mTargObj.getSelectedObj();
 	  if (new_val && typeof new_val=='object' && "name" in new_val)
 	    this.mMain.updateData("target", new_val.name);
 	}
 	
-	if (tgt_id=="msurf-paintmode" || tgt_id==null) {
-	  new_val = this.mPaintMode.value;
-	  this.updateDisabledState();
-	  this.mMain.updateData("colormode", new_val);
-	}
       }
 
       // common props
+      
+      if (tgt_id=="msurf-paintmode" || tgt_id==null) {
+	new_val = this.mPaintMode.value;
+	this.updateDisabledState();
+	this.mMain.updateData("colormode", new_val);
+      }
 
       if (tgt_id=="msurf-drawmode" || tgt_id==null) {
 	new_val = this.mDrawMode.value;
@@ -207,27 +212,19 @@ if (!("MolSurfCommPage" in cuemolui)) {
 	break;
       }
 
-      if (this._rendtype=="dsurface") {
+      if (this.mRendTypeName=="dsurface") {
+	this.mSurfType.disabled = false;
+	this.mDetail.disabled = false;
+
 	this.mTargObj._widget.disabled = true;
 	this.mShowSel.disabled = false;
-	this.mSurfType.disabled = false;
-	return;
       }
-
-      this.mSurfType.disabled = true;
-      this.mDetail.disabled = true;
-
-      id = this.mPaintMode.value;
-      switch (id) {
-      case "solid":
-      case "potential":
-	this.mTargObj._widget.disabled = true;
-	this.mShowSel.disabled = true;
-	break;
-      case "molecule":
+      else {
+	this.mSurfType.disabled = true;
+	this.mDetail.disabled = true;
+	
 	this.mTargObj._widget.disabled = false;
 	this.mShowSel.disabled = false;
-	break;
       }
     };
 

@@ -128,8 +128,14 @@ if (!("StyleEditor" in cuemolui)) {
       ////////////
       // style panel setup
       this.mStyleList = document.getElementById("style-listbox");
+      this.mStyleDelBtn = document.getElementById("style-delbtn");
+
       this.loadStyleDefs();
 
+      if (this.mReadOnly)
+	this.mStyleDelBtn.disabled = true;
+      else
+	this.mStyleDelBtn.disabled = false;
     };
     
     ////////////////////////
@@ -539,12 +545,28 @@ if (!("StyleEditor" in cuemolui)) {
 
       var defs = JSON.parse(json);
 
+      this.mOrigStyles = new Array();
+      //this.mStyleDefs = new Array();
+
       var nitems = defs.length;
       for (var i=0; i<nitems; ++i) {
 	let id = defs[i].name;
 	this.mStyleList.appendItem(id,id);
+	this.mOrigStyles.push(id);
+	//this.mStylesDefs.push(id);
       }
       
+    };
+
+    klass.onDelStyle = function (aEvent)
+    {
+      var irow = this.mStyleList.selectedIndex;
+      if (irow<0)
+	return;
+
+      this.mStyleList.removeItemAt(irow);
+      
+      //this.updateSelNameValBoxes();
     };
 
     //////////////////////////////////////////////////
@@ -651,6 +673,41 @@ if (!("StyleEditor" in cuemolui)) {
       }
       catch (e) {
 	dd("exception: "+e);
+	debug.exception(e);
+      }
+
+      //
+      // update molsel defs
+      //
+      try {
+	let node, name, nsize;
+
+	let sset = stylem.getStyleSet(this.mTgtID);
+
+	// copy the current list box contents to the js array, styleDefs
+	nsize = this.mStyleList.itemCount;
+	let styleDefs = new Array();
+	for (let i=0; i<nsize; ++i)
+	  styleDefs.push(this.mStyleList.getItemAtIndex(i).value);
+	
+	// detect removed entries
+	nsize = this.mOrigStyles.length;
+	for (let i=0; i<nsize; ++i) {
+	  name = this.mOrigStyles[i];
+	  if (!styleDefs.some( function (e) {
+	    //alert("e= "+e+" name= "+name);
+	    return (e===name);
+	  } )) {
+	    // name is not found in mStyleDefs --> removed
+	    alert("entry "+name+" removed");
+	    //stylem.removeStrData("sel", name, nScopeID, nStyleSetID);
+	    sset.removeStyle(name);
+	  }
+	}
+	
+      }
+      catch (e) {
+	alert("exception: "+e);
 	debug.exception(e);
       }
 

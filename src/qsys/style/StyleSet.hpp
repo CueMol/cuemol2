@@ -171,14 +171,18 @@ namespace qsys {
     /// (string is separated by comma and %%CONFDIR%% is replaced with conf dir path)
     LString getPath(const LString &key) const;
 
-    //////////////////////////
-    // Structured data methods
+    ////////////////////////////////////////////////////
+    // Style (Structured data) methods
 
     /// get structured data (LDom2Node) by key
     LDom2Node *getData(const LString &key) const;
+    
+    bool hasData(const LString &key) const;
+
     /// Put structured data (LDom2Node) with key name
     ///  this method returns false if key name is already used
     bool putData(const LString &key, LDom2Node *pNode);
+
     /// Remove structured data by key name
     bool removeData(const LString &key);
 
@@ -209,12 +213,19 @@ namespace qsys {
       return removeData(key);
     }
 
+    bool removeStyle(const LString &name) { return removeStyleNode(name); }
+    bool hasStyle(const LString &name) const {
+      LString key = StyleSet::makeStyleKey(name);
+      return hasData(key);
+    }
+    
     /// Get style info in JSON format
     /// bParen: with/without array parens
     LString getStyleNamesJSON(bool bParen=true) const;
 
-    //////////
+    ////////////////////////////////////////////////////
     // Material data methods
+
     bool putMaterial(const LString &id, const LString &type, const LString &value);
     bool putMaterial(const LString &id, int type, double value);
     Material *getMaterial(const LString &id) const;

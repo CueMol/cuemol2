@@ -44,6 +44,9 @@ runtime_class StyleSet
   string getStrDataNamesJSON(string cat);
 
   // style data
+  boolean hasStyle(string name);
+  //boolean setStyle(string name, object<$> pStyle);
+  boolean removeStyle(string name);
   string getStyleNamesJSON();
   
 };

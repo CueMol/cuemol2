@@ -28,7 +28,7 @@
 #define FLEX_SCANNER
 #define YY_FLEX_MAJOR_VERSION 2
 #define YY_FLEX_MINOR_VERSION 5
-#define YY_FLEX_SUBMINOR_VERSION 35
+#define YY_FLEX_SUBMINOR_VERSION 37
 #if YY_FLEX_SUBMINOR_VERSION > 0
 #define FLEX_BETA
 #endif
@@ -73,7 +73,6 @@ typedef int flex_int32_t;
 typedef unsigned char flex_uint8_t; 
 typedef unsigned short int flex_uint16_t;
 typedef unsigned int flex_uint32_t;
-#endif /* ! C99 */
 
 /* Limits of integral types. */
 #ifndef INT8_MIN
@@ -103,6 +102,8 @@ typedef unsigned int flex_uint32_t;
 #ifndef UINT32_MAX
 #define UINT32_MAX             (4294967295U)
 #endif
+
+#endif /* ! C99 */
 
 #endif /* ! FLEXINT_H */
 
@@ -172,7 +173,12 @@ typedef unsigned int flex_uint32_t;
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
 #endif
 
-extern int colleng;
+#ifndef YY_TYPEDEF_YY_SIZE_T
+#define YY_TYPEDEF_YY_SIZE_T
+typedef size_t yy_size_t;
+#endif
+
+extern yy_size_t colleng;
 
 extern FILE *colin, *colout;
 
@@ -198,11 +204,6 @@ extern FILE *colin, *colout;
 
 #define unput(c) yyunput( c, (yytext_ptr)  )
 
-#ifndef YY_TYPEDEF_YY_SIZE_T
-#define YY_TYPEDEF_YY_SIZE_T
-typedef size_t yy_size_t;
-#endif
-
 #ifndef YY_STRUCT_YY_BUFFER_STATE
 #define YY_STRUCT_YY_BUFFER_STATE
 struct yy_buffer_state
@@ -220,7 +221,7 @@ struct yy_buffer_state
 	/* Number of characters read into yy_ch_buf, not including EOB
 	 * characters.
 	 */
-	int yy_n_chars;
+	yy_size_t yy_n_chars;
 
 	/* Whether we "own" the buffer - i.e., we know we created it,
 	 * and can realloc() it to grow it, and should free() it to
@@ -290,8 +291,8 @@ static YY_BUFFER_STATE * yy_buffer_stack = 0; /**< Stack as an array. */
 
 /* yy_hold_char holds the character lost when coltext is formed. */
 static char yy_hold_char;
-static int yy_n_chars;		/* number of characters read into yy_ch_buf */
-int colleng;
+static yy_size_t yy_n_chars;		/* number of characters read into yy_ch_buf */
+yy_size_t colleng;
 
 /* Points to current character in buffer. */
 static char *yy_c_buf_p = (char *) 0;
@@ -319,7 +320,7 @@ static void col_init_buffer (YY_BUFFER_STATE b,FILE *file  );
 
 YY_BUFFER_STATE col_scan_buffer (char *base,yy_size_t size  );
 YY_BUFFER_STATE col_scan_string (yyconst char *yy_str  );
-YY_BUFFER_STATE col_scan_bytes (yyconst char *bytes,int len  );
+YY_BUFFER_STATE col_scan_bytes (yyconst char *bytes,yy_size_t len  );
 
 void *colalloc (yy_size_t  );
 void *colrealloc (void *,yy_size_t  );
@@ -351,7 +352,7 @@ void colfree (void *  );
 
 /* Begin user sect3 */
 
-#define colwrap(n) 1
+#define colwrap() 1
 #define YY_SKIP_YYWRAP
 
 typedef unsigned char YY_CHAR;
@@ -575,12 +576,12 @@ int col_flex_debug = 0;
 #define YY_MORE_ADJ 0
 #define YY_RESTORE_YY_MORE_OFFSET
 char *coltext;
-#line 1 "color_scanner.lxx"
+#line 1 "../../src/gfx/color_scanner.lxx"
 /*
  *  Color description scanner
  */
 
-#line 11 "color_scanner.lxx"
+#line 11 "../../src/gfx/color_scanner.lxx"
 #include <common.h>
 #include <qlib/LChar.hpp>
 #include <qlib/LString.hpp>
@@ -600,7 +601,7 @@ using qlib::LString;
 
 extern int colerror(char* error);
 
-#line 604 "../../src/gfx/color_scanner.cxx"
+#line 605 "../../src/gfx/color_scanner.cxx"
 
 #define INITIAL 0
 #define MODIFVAL_STATE 1
@@ -641,7 +642,7 @@ FILE *colget_out (void );
 
 void colset_out  (FILE * out_str  );
 
-int colget_leng (void );
+yy_size_t colget_leng (void );
 
 char *colget_text (void );
 
@@ -702,7 +703,7 @@ static int input (void );
 	if ( YY_CURRENT_BUFFER_LVALUE->yy_is_interactive ) \
 		{ \
 		int c = '*'; \
-		unsigned n; \
+		size_t n; \
 		for ( n = 0; n < max_size && \
 			     (c = getc( colin )) != EOF && c != '\n'; ++n ) \
 			buf[n] = (char) c; \
@@ -784,7 +785,7 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 43 "color_scanner.lxx"
+#line 43 "../../src/gfx/color_scanner.lxx"
 
 
 
@@ -796,7 +797,7 @@ YY_DECL
   */
 
  /* Ignore white spaces */
-#line 800 "../../src/gfx/color_scanner.cxx"
+#line 801 "../../src/gfx/color_scanner.cxx"
 
 	if ( !(yy_init) )
 		{
@@ -876,57 +877,57 @@ do_action:	/* This label is used only to access EOF actions. */
 			goto yy_find_action;
 
 case 1:
-#line 55 "color_scanner.lxx"
+#line 55 "../../src/gfx/color_scanner.lxx"
 case 2:
-#line 56 "color_scanner.lxx"
+#line 56 "../../src/gfx/color_scanner.lxx"
 case 3:
 /* rule 3 can match eol */
-#line 57 "color_scanner.lxx"
+#line 57 "../../src/gfx/color_scanner.lxx"
 case 4:
 /* rule 4 can match eol */
 YY_RULE_SETUP
-#line 57 "color_scanner.lxx"
+#line 57 "../../src/gfx/color_scanner.lxx"
 { ; }
 	YY_BREAK
 /* Operators */
 case 5:
 YY_RULE_SETUP
-#line 61 "color_scanner.lxx"
+#line 61 "../../src/gfx/color_scanner.lxx"
 { return COL_LPAREN; }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 62 "color_scanner.lxx"
+#line 62 "../../src/gfx/color_scanner.lxx"
 { return COL_RPAREN; }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 64 "color_scanner.lxx"
+#line 64 "../../src/gfx/color_scanner.lxx"
 { return COL_LBRACE; }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 65 "color_scanner.lxx"
+#line 65 "../../src/gfx/color_scanner.lxx"
 { return COL_RBRACE; }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 67 "color_scanner.lxx"
+#line 67 "../../src/gfx/color_scanner.lxx"
 { return COL_COLON; }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 68 "color_scanner.lxx"
+#line 68 "../../src/gfx/color_scanner.lxx"
 { return COL_SEMICOLON; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 69 "color_scanner.lxx"
+#line 69 "../../src/gfx/color_scanner.lxx"
 { return COL_COMMA; }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 71 "color_scanner.lxx"
+#line 71 "../../src/gfx/color_scanner.lxx"
 {
   qstring_buf = LString();
   BEGIN SQ_STRING;
@@ -934,7 +935,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 75 "color_scanner.lxx"
+#line 75 "../../src/gfx/color_scanner.lxx"
 { 
   BEGIN MODIFVAL_STATE;
   // MB_DPRINTLN("ColModifVal %s", qstring_buf.c_str());
@@ -944,27 +945,27 @@ YY_RULE_SETUP
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 81 "color_scanner.lxx"
+#line 81 "../../src/gfx/color_scanner.lxx"
 {
   qstring_buf += coltext;
 }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 85 "color_scanner.lxx"
+#line 85 "../../src/gfx/color_scanner.lxx"
 { return COL_SEMICOLON; }
 	YY_BREAK
 case 16:
-#line 87 "color_scanner.lxx"
+#line 87 "../../src/gfx/color_scanner.lxx"
 case 17:
-#line 88 "color_scanner.lxx"
+#line 88 "../../src/gfx/color_scanner.lxx"
 case 18:
-#line 89 "color_scanner.lxx"
+#line 89 "../../src/gfx/color_scanner.lxx"
 case 19:
-#line 90 "color_scanner.lxx"
+#line 90 "../../src/gfx/color_scanner.lxx"
 case 20:
 YY_RULE_SETUP
-#line 90 "color_scanner.lxx"
+#line 90 "../../src/gfx/color_scanner.lxx"
 {
   // MB_DPRINTLN("ColModifVal %s", coltext);
   collval.str = LChar::dup(coltext);
@@ -974,53 +975,53 @@ YY_RULE_SETUP
 /* Reserved keywords */
 case 21:
 YY_RULE_SETUP
-#line 98 "color_scanner.lxx"
+#line 98 "../../src/gfx/color_scanner.lxx"
 { return COL_RGB; }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 99 "color_scanner.lxx"
+#line 99 "../../src/gfx/color_scanner.lxx"
 { return COL_RGB; }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 101 "color_scanner.lxx"
+#line 101 "../../src/gfx/color_scanner.lxx"
 { return COL_RGBA; }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 102 "color_scanner.lxx"
+#line 102 "../../src/gfx/color_scanner.lxx"
 { return COL_RGBA; }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 104 "color_scanner.lxx"
+#line 104 "../../src/gfx/color_scanner.lxx"
 { return COL_HSB; }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 105 "color_scanner.lxx"
+#line 105 "../../src/gfx/color_scanner.lxx"
 { return COL_HSB; }
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 107 "color_scanner.lxx"
+#line 107 "../../src/gfx/color_scanner.lxx"
 { return COL_HSBA; }
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 108 "color_scanner.lxx"
+#line 108 "../../src/gfx/color_scanner.lxx"
 { return COL_HSBA; }
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 110 "color_scanner.lxx"
+#line 110 "../../src/gfx/color_scanner.lxx"
 { return COL_MOLCOL; }
 	YY_BREAK
 /* Values */
 case 30:
 YY_RULE_SETUP
-#line 113 "color_scanner.lxx"
+#line 113 "../../src/gfx/color_scanner.lxx"
 {
   // MB_DPRINTLN("ColFloatNum %s", coltext);
   LChar::toDouble(coltext, collval.floatnum);
@@ -1029,7 +1030,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 118 "color_scanner.lxx"
+#line 118 "../../src/gfx/color_scanner.lxx"
 {
   // MB_DPRINTLN("ColPercNum %s", coltext);
   int nlen = LChar::length(coltext);
@@ -1040,7 +1041,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 125 "color_scanner.lxx"
+#line 125 "../../src/gfx/color_scanner.lxx"
 {
   // MB_DPRINTLN("ColIntNum %s", coltext);
   LChar::toDouble(coltext, collval.floatnum);
@@ -1049,7 +1050,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 130 "color_scanner.lxx"
+#line 130 "../../src/gfx/color_scanner.lxx"
 {
   // MB_DPRINTLN("ColHexNum %s", coltext);
   LChar::toInt(coltext, collval.intnum);
@@ -1058,7 +1059,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 136 "color_scanner.lxx"
+#line 136 "../../src/gfx/color_scanner.lxx"
 {
   // MB_DPRINTLN("ColHTML_3 %s", coltext);
   char sbuf[3];  
@@ -1080,7 +1081,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 155 "color_scanner.lxx"
+#line 155 "../../src/gfx/color_scanner.lxx"
 {
   // MB_DPRINTLN("ColHTML_6 %s", coltext);
   char sbuf[3];  
@@ -1105,7 +1106,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 177 "color_scanner.lxx"
+#line 177 "../../src/gfx/color_scanner.lxx"
 {
   // MB_DPRINTLN("ColName %s", coltext);
   collval.str = LChar::dup(coltext);
@@ -1114,17 +1115,17 @@ YY_RULE_SETUP
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 183 "color_scanner.lxx"
+#line 183 "../../src/gfx/color_scanner.lxx"
 {
   colerror("unknown character(s) in color definition");
   return LEX_ERROR;
 }
 	YY_BREAK
 case 38:
-#line 189 "color_scanner.lxx"
+#line 189 "../../src/gfx/color_scanner.lxx"
 case 39:
 YY_RULE_SETUP
-#line 189 "color_scanner.lxx"
+#line 189 "../../src/gfx/color_scanner.lxx"
 {
   colerror("unknown character(s) in color definition");
   return LEX_ERROR;
@@ -1132,10 +1133,10 @@ YY_RULE_SETUP
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 194 "color_scanner.lxx"
+#line 194 "../../src/gfx/color_scanner.lxx"
 ECHO;
 	YY_BREAK
-#line 1139 "../../src/gfx/color_scanner.cxx"
+#line 1140 "../../src/gfx/color_scanner.cxx"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(MODIFVAL_STATE):
 case YY_STATE_EOF(SQ_STRING):
@@ -1324,21 +1325,21 @@ static int yy_get_next_buffer (void)
 
 	else
 		{
-			int num_to_read =
+			yy_size_t num_to_read =
 			YY_CURRENT_BUFFER_LVALUE->yy_buf_size - number_to_move - 1;
 
 		while ( num_to_read <= 0 )
 			{ /* Not enough room in the buffer - grow it. */
 
 			/* just a shorter name for the current buffer */
-			YY_BUFFER_STATE b = YY_CURRENT_BUFFER;
+			YY_BUFFER_STATE b = YY_CURRENT_BUFFER_LVALUE;
 
 			int yy_c_buf_p_offset =
 				(int) ((yy_c_buf_p) - b->yy_ch_buf);
 
 			if ( b->yy_is_our_buffer )
 				{
-				int new_size = b->yy_buf_size * 2;
+				yy_size_t new_size = b->yy_buf_size * 2;
 
 				if ( new_size <= 0 )
 					b->yy_buf_size += b->yy_buf_size / 8;
@@ -1369,7 +1370,7 @@ static int yy_get_next_buffer (void)
 
 		/* Read in more data. */
 		YY_INPUT( (&YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[number_to_move]),
-			(yy_n_chars), (size_t) num_to_read );
+			(yy_n_chars), num_to_read );
 
 		YY_CURRENT_BUFFER_LVALUE->yy_n_chars = (yy_n_chars);
 		}
@@ -1464,7 +1465,7 @@ static int yy_get_next_buffer (void)
 	yy_current_state = yy_nxt[yy_base[yy_current_state] + (unsigned int) yy_c];
 	yy_is_jam = (yy_current_state == 104);
 
-	return yy_is_jam ? 0 : yy_current_state;
+		return yy_is_jam ? 0 : yy_current_state;
 }
 
     static void yyunput (int c, register char * yy_bp )
@@ -1479,7 +1480,7 @@ static int yy_get_next_buffer (void)
 	if ( yy_cp < YY_CURRENT_BUFFER_LVALUE->yy_ch_buf + 2 )
 		{ /* need to shift things up to make room */
 		/* +2 for EOB chars. */
-		register int number_to_move = (yy_n_chars) + 2;
+		register yy_size_t number_to_move = (yy_n_chars) + 2;
 		register char *dest = &YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[
 					YY_CURRENT_BUFFER_LVALUE->yy_buf_size + 2];
 		register char *source =
@@ -1528,7 +1529,7 @@ static int yy_get_next_buffer (void)
 
 		else
 			{ /* need more input */
-			int offset = (yy_c_buf_p) - (yytext_ptr);
+			yy_size_t offset = (yy_c_buf_p) - (yytext_ptr);
 			++(yy_c_buf_p);
 
 			switch ( yy_get_next_buffer(  ) )
@@ -1800,7 +1801,7 @@ void colpop_buffer_state (void)
  */
 static void colensure_buffer_stack (void)
 {
-	int num_to_alloc;
+	yy_size_t num_to_alloc;
     
 	if (!(yy_buffer_stack)) {
 
@@ -1892,12 +1893,12 @@ YY_BUFFER_STATE col_scan_string (yyconst char * yystr )
 
 /** Setup the input buffer state to scan the given bytes. The next call to collex() will
  * scan from a @e copy of @a bytes.
- * @param bytes the byte buffer to scan
- * @param len the number of bytes in the buffer pointed to by @a bytes.
+ * @param yybytes the byte buffer to scan
+ * @param _yybytes_len the number of bytes in the buffer pointed to by @a bytes.
  * 
  * @return the newly allocated buffer state object.
  */
-YY_BUFFER_STATE col_scan_bytes  (yyconst char * yybytes, int  _yybytes_len )
+YY_BUFFER_STATE col_scan_bytes  (yyconst char * yybytes, yy_size_t  _yybytes_len )
 {
 	YY_BUFFER_STATE b;
 	char *buf;
@@ -1984,7 +1985,7 @@ FILE *colget_out  (void)
 /** Get the length of the current token.
  * 
  */
-int colget_leng  (void)
+yy_size_t colget_leng  (void)
 {
         return colleng;
 }
@@ -2132,7 +2133,7 @@ void colfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 194 "color_scanner.lxx"
+#line 194 "../../src/gfx/color_scanner.lxx"
 
 
 

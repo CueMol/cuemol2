@@ -11,13 +11,13 @@ debug="--enable-debug --enable-m64"
 #usepybr="--enable-python"
 usepybr="--disable-python"
 
-usexrbr="--with-xmlrpc=/net3/ishitani/app64"
-#usexrbr="--without-xmlrpc"
+#usexrbr="--with-xmlrpc=/net3/ishitani/app64"
+usexrbr="--without-xmlrpc"
 
 ##
 
 # Release version
-gecko_sdk_dir=/net3/ishitani/src/xulrunner/xulrunner-23.0.1-sdk/
+gecko_sdk_dir=/net3/ishitani/src/xulrunner/xulrunner-39.0-sdk/
 #gecko_sdk_dir=/net3/ishitani/src/xulrunner/xulrunner-9.0.1-rel/dist/
 gecko_rt_dir=/net3/ishitani/src/xulrunner/xulrunner-23.0.1-rt/
 
@@ -25,10 +25,9 @@ gecko_rt_dir=/net3/ishitani/src/xulrunner/xulrunner-23.0.1-rt/
 # gecko_sdk_dir=/net3/ishitani/src/xulrunner/xulrunner-2.0-obj/dist/
 
 #boost_dir=/usr/local
-boost_dir=/net3/ishitani/app64/boost
-# boost_dir=/net3/ishitani/app64/boost_1_56_0
+boost_dir=/net3/ishitani/app64/boost_1_57_0
 fftw_dir=/net3/ishitani/app64/fftw
-cgal_dir=/net3/ishitani/app64/CGAL-3.8
+cgal_dir=/net3/ishitani/app64/CGAL-4.6.1
 glew_dir=/net3/ishitani/app64/glew
 
 #######################
@@ -53,7 +52,6 @@ $config_scr \
 $usepybr \
 $usexrbr \
 --with-xulrunner-sdk=$gecko_sdk_dir \
---with-xulrunner-runtime=$gecko_rt_dir \
 --with-boost=$boost_dir \
 --with-fftw=$fftw_dir \
 --with-cgal=$cgal_dir \
@@ -65,4 +63,4 @@ $debug
 # --with-boost=$boost_dir \
 # --disable-xpcom \
 # --disable-npruntime
-
+# --with-xulrunner-runtime=$gecko_rt_dir \

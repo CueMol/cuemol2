@@ -100,6 +100,8 @@ runtime_class AtomIntrRenderer extends Renderer
   integer append(string selection1, string selection2) => appendBySelStr;
   integer appendById(integer aid1, integer mol_id2, integer mol_id2, boolean showmsg) => appendById;
 
+  integer appendBy2Vecs(object<Vector> v1, object<Vector> v2);
+
   /// add new angle def
   integer appendAngleById(integer aid1, integer mol_id2, integer mol_id2, integer mol_id3, integer mol_id3) => appendAngleById;
 

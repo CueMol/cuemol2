@@ -204,7 +204,7 @@ namespace render {
     void convLines(bool bErase = true);
 
     /// convert dot to sphere
-    void convDots(bool bErase = true);
+    void convDots();
 
     /// convert spheres to mesh
     void convSpheres(bool bErase = true);
@@ -226,7 +226,7 @@ namespace render {
       //m_spheres.erase(m_spheres.begin(), m_spheres.end());
       qlib::delete_and_clear<SphList, Sph>(m_spheres);
     }
-
+    
     void eraseDots() {
       //m_spheres.erase(m_spheres.begin(), m_spheres.end());
       qlib::delete_and_clear<SphList, Sph>(m_dots);

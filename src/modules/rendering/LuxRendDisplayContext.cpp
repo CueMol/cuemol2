@@ -70,7 +70,6 @@ void LuxRendDisplayContext::startSection(const LString &name)
 
   // create RendIntData (m_pIntData), etc.
   super_t::startSection(name);
-  m_pIntData->m_bPerspec = isPerspective();
 }
 
 void LuxRendDisplayContext::endSection()
@@ -771,6 +770,12 @@ void LuxRendDisplayContext::writeMeshes(PrintStream &ps)
       ++ngrad;
     pmary[i] = pelem;
     ++i;
+
+    /*if (i<10)
+      LOG_DPRINTLN("v=(%f %f %f) n=(%f %f %f)",
+                   pelem->v.x(), pelem->v.y(), pelem->v.z(),
+                   pelem->n.x(), pelem->n.y(), pelem->n.z());*/
+
   }
   LOG_DPRINTLN("Mesh verts=%d (solid color=%d, grad color=%d)", nverts, nsolid, ngrad);
 
@@ -895,7 +900,7 @@ void LuxRendDisplayContext::writeMeshes(PrintStream &ps)
       if (!qlib::isFinite(p->v.x()) ||
           !qlib::isFinite(p->v.y()) ||
           !qlib::isFinite(p->v.z())) {
-        LOG_DPRINTLN("PovWriter> ERROR: invalid mesh vertex");
+        LOG_DPRINTLN("LuxRendDisplayContext> ERROR: invalid mesh vertex");
         ps.print("0 0 0 ");
       }
       else {
@@ -921,7 +926,7 @@ void LuxRendDisplayContext::writeMeshes(PrintStream &ps)
       if (!qlib::isFinite(p->n.x()) ||
           !qlib::isFinite(p->n.y()) ||
           !qlib::isFinite(p->n.z())) {
-        LOG_DPRINTLN("PovWriter> ERROR: invalid mesh vertex");
+        LOG_DPRINTLN("LuxRendDisplayContext> ERROR: invalid mesh vertex");
         ps.print("0 0 0 ");
       }
       else {

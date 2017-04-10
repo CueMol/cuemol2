@@ -264,11 +264,26 @@ panel.onTreeItemClick = function (aEvent, node, col)
     // double clicked
     
     if (this.mTgtMolID<0) return;
-    var mol = cuemol.getObject(this.mTgtMolID);
+    let mol = cuemol.getObject(this.mTgtMolID);
     if (!mol) return;
     
-    var selstr = this.makeSelstrByNode(node);
+    let selstr = this.makeSelstrByNode(node);
 
+    cuemolui.chgMolSel(mol, selstr, "Change mol selection", true);
+
+    try {
+      var pos = mol.getCenterPos(true);
+      view = gQm2Main.mMainWnd.currentViewW;
+      if (view)
+        view.setViewCenter(pos);
+    }
+    catch (e) {
+      dd("Chg view center error");
+      debug.exception(e);
+      return;
+    }
+
+    /*
     try {
       var sel = cuemol.makeSel(selstr);
       if (sel===null) {
@@ -289,8 +304,8 @@ panel.onTreeItemClick = function (aEvent, node, col)
     
     // Save to selHistory
     util.selHistory.append(selstr);
-
     mol = null;
+     */
   }
 }
 
@@ -362,8 +377,9 @@ panel.onBtnSelCmd = function (nMode)
   var selstr = this.makeSelstrByTreeSel();
   //dd("sel: "+selstr);
 
-  var sel = null;
+  cuemolui.chgMolSel(mol, selstr, "Change mol selection", true);
 
+  /*
   // EDIT TXN START //
   scene.startUndoTxn("Change mol selection");
   try {
@@ -384,7 +400,8 @@ panel.onBtnSelCmd = function (nMode)
   
   // Save to selHistory
   util.selHistory.append(selstr);
-
+*/
+  
   if (nMode>=1) {
     try {
       var view = document.getElementById("main_view").currentViewW;
@@ -401,7 +418,6 @@ panel.onBtnSelCmd = function (nMode)
     }
   }
 
-  sel = null;
   mol = null;
 }
 

@@ -14,7 +14,10 @@
 #define BOOST_LIB_DIAGNOSTIC 1
 //#define BOOST_DYN_LINK 1
 #define BOOST_ALL_DYN_LINK 1
+
+#ifdef USE_BOOST_TIMER
 #include <boost/timer/timer.hpp>
+#endif
 
 using namespace qsys;
 
@@ -113,13 +116,16 @@ void InOutHandler::readFrom2(qlib::LDom2Node *pNode)
 
 void InOutHandler::startTimerMes()
 {
+#ifdef USE_BOOST_TIMER
   boost::timer::cpu_timer *p = new boost::timer::cpu_timer();
   p->start();
   m_pTimerObj = p;
+#endif
 }
 
 void InOutHandler::endTimerMes()
 {
+#ifdef USE_BOOST_TIMER
   boost::timer::cpu_timer *p = static_cast<boost::timer::cpu_timer *>(m_pTimerObj);
   boost::timer::cpu_times t = p->elapsed();
   delete p;
@@ -131,5 +137,6 @@ void InOutHandler::endTimerMes()
   LOG_DPRINTLN( "%s> %s",
                 pCls->getClassName().c_str(),
                 msg.c_str() );
+#endif
 }
 

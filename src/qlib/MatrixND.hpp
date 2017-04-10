@@ -279,6 +279,11 @@ namespace qlib {
 	  aij(i,j) = value_type( delta(i,j) );
     }
 
+    void setZero() {
+      for (int i=0; i<_N_ELEM; ++i)
+	m_value[i] = value_type(0);
+    }
+
     /////////////////////////////////////////////
     // comparison
 

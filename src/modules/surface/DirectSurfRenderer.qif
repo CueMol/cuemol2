@@ -18,6 +18,21 @@ runtime_class DirectSurfRenderer extends MolRenderer
   smartptr;
   cloneable;
 
+
+  /// coloring mode
+  enumdef colormode {
+    potential = surface::DirectSurfRenderer::DS_SCAPOT;
+    molecule = surface::DirectSurfRenderer::DS_MOLFANC;
+  }
+  property enum colormode => redirect(getColorMode, setColorMode);
+  default colormode = "molecule";
+
+  /// reference molecule target (used in molecule mode)
+  property string target => redirect(getTgtObjName, setTgtObjName);
+  default target = "";
+
+  //////////
+
   property integer detail => redirect(getDetail, setDetail);
   default detail = 6;
 
@@ -40,6 +55,9 @@ runtime_class DirectSurfRenderer extends MolRenderer
   }
   property enum surfalgor => redirect(getSurfAlgor, setSurfAlgor);
   default surfalgor = "edtsurf";
+
+  property boolean cullface => redirect(isCullFace, setCullFace);
+  default cullface = false;
 
   /// Mesh drawing mode
   enumdef drawmode {
@@ -80,6 +98,37 @@ runtime_class DirectSurfRenderer extends MolRenderer
 
   property real vdwr_X => m_vdwr_X;
   default vdwr_X = 1.7;
+
+  //////////
+  // for "potential" mode
+
+  /// reference elepot target (used in potential mode)
+  property string elepot => redirect(getTgtElePotName, setTgtElePotName);
+  default elepot = "";
+
+  property real lowpar => redirect(getLowPar, setLowPar);
+  default lowpar = -10.0;
+
+  property real midpar => redirect(getMidPar, setMidPar);
+  default midpar = 0.0;
+
+  property real highpar => redirect(getHighPar, setHighPar);
+  default highpar = 10.0;
+
+  property object<AbstractColor$> highcol => redirect(getHighCol, setHighCol);
+  default highcol = gfx::SolidColor::createRGB(0.0, 0.0, 1.0);
+
+  property object<AbstractColor$> midcol => redirect(getMidCol, setMidCol);
+  default midcol = gfx::SolidColor::createRGB(1.0, 1.0, 1.0);
+
+  property object<AbstractColor$> lowcol => redirect(getLowCol, setLowCol);
+  default lowcol = gfx::SolidColor::createRGB(1.0, 0.0, 0.0);
+
+  property boolean ramp_above => redirect(isRampAbove, setRampAbove);
+  default ramp_above = false;
+
+  property real ramp_value => redirect(getRampValue, setRampValue);
+  default ramp_value = 1.4;
 
 };
 

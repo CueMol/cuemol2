@@ -187,35 +187,20 @@ exports.getRendNameList = function (aObj)
 exports.makeSel = function(selstr, uid)
 {
   var sel = exports.createObj("SelCommand");
-  if (uid) {
-    if (!sel.compile(selstr, uid))
-      return null;
+
+  if (selstr) {
+    if (uid) {
+      if (!sel.compile(selstr, uid))
+	return null;
+    }
+    else {
+      if (!sel.compile(selstr, 0))
+	return null;
+    }
   }
-  else {
-    if (!sel.compile(selstr, 0))
-      return null;
-  }
+
   return sel;
 };
-
-exports.makeInvSel = function(sel)
-{
-  var selstr = sel.toString();
-  var invsel;
-  if (selstr=="") {
-    invsel = "*";
-  }
-  else {
-    var res = selstr.match(/!\s*\((.+)\)/);
-    if (res==null)
-      invsel = "!("+selstr+")";
-    else 
-      invsel = res[1];
-  }
-  dd("MakeInvSel invsel="+invsel);
-  return exports.makeSel(invsel);
-};
-
 
 exports.makeColor = function(str, uid)
 {

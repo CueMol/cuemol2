@@ -36,6 +36,7 @@ MolSurfRenderer::MolSurfRenderer()
   m_nDrawMode = SFDRAW_FILL;
   m_nMode = SFREND_SIMPLE;
   m_lw = 1.2;
+  m_dRampVal = 1.4;
 
   m_nTgtMolID = qlib::invalid_uid;
 }
@@ -159,6 +160,14 @@ bool MolSurfRenderer::getColorSca(const Vector4D &v, ColorPtr &rcol)
 
 void MolSurfRenderer::preRender(DisplayContext *pdc)
 {
+  if (getEdgeLineType()==gfx::DisplayContext::ELT_NONE) {
+    pdc->setCullFace(m_bCullFace);
+  }
+  else {
+    // edge/silhouette line is ON --> always don't draw backface (cull backface=true)
+    pdc->setCullFace(true);
+  }
+
   if (m_nDrawMode==SFDRAW_POINT) {
     pdc->setLighting(false);
     pdc->setPolygonMode(gfx::DisplayContext::POLY_POINT);
@@ -174,9 +183,6 @@ void MolSurfRenderer::preRender(DisplayContext *pdc)
     pdc->setPolygonMode(gfx::DisplayContext::POLY_FILL);
   }
   
-  if (!m_bCullFace)
-    pdc->setCullFace(false);
-
 }
 
 void MolSurfRenderer::postRender(DisplayContext *pdc)
@@ -285,7 +291,7 @@ void MolSurfRenderer::render(DisplayContext *pdl)
     if (m_nMode==SFREND_SCAPOT) {
       bool res;
       if (m_bRampAbove) {
-        res = getColorSca(pos + norm.scale(1.4), col);
+        res = getColorSca(pos + norm.scale(m_dRampVal), col);
       }
       else {
         res = getColorSca(pos, col);
