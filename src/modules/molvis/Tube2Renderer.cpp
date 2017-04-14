@@ -280,14 +280,36 @@ void Tube2Renderer::initPuttyData()
   MB_DPRINTLN("Tube> init high=%f, low=%f, aver=%f OK.", dmax, dmin, m_dParAver);
 }
 
+namespace {
+  template <typename _Type, typename _Type2>
+  _Type mix(const _Type &v1, const _Type &v2, _Type2 rho)
+  {
+    return v1.scale(_Type2(1)-rho) + v2.scale(rho);
+  }
+}
+
+Vector2D Tube2Renderer::getProtSSEScl(const MolAtomPtr &pAtom) const
+{
+  MolResiduePtr pRes = pAtom->getParentResidue();
+  
+  LString sec("coil");
+  pRes->getPropStr("secondary", sec);
+  if (sec.equals("helix"))
+    return Vector2D(1.0, 5.0);
+  else if (sec.equals("sheet"))
+    return Vector2D(1.0, 5.0);
+
+  return Vector2D(1.0, 1.0);
+}
+
 Vector2D Tube2Renderer::getEScl(const MolCoordPtr &pMol, Tube2SS *pSeg, float par) const
 {
   const int npm = getPuttyMode();
   if (npm==TBR_PUTTY_OFF)
     return Vector2D(1,1);
 
-  const float prod = 1.0f;
-  const float plus = 0.0f;
+  //const float prod = 1.0f;
+  //const float plus = 0.0f;
   
   int nprev = int(floorf(par));
   int nnext = int(ceilf(par));
@@ -295,6 +317,13 @@ Vector2D Tube2Renderer::getEScl(const MolCoordPtr &pMol, Tube2SS *pSeg, float pa
   
   MolAtomPtr pAtom1(pSeg->getAtom(pMol, nprev));
   MolAtomPtr pAtom2(pSeg->getAtom(pMol, nnext));
+
+  if (npm==TBR_PUTTY_PROTSS) {
+    //MolResiduePtr pRes2 = pAtom2->getParentResidue();
+    Vector2D sv1 = getProtSSEScl(pAtom1);
+    Vector2D sv2 = getProtSSEScl(pAtom2);
+    return mix(sv1, sv2, rho);
+  }
 
   float par1 = 1.0, par2 = 1.0;
 

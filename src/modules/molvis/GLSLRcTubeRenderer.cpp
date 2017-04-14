@@ -75,7 +75,7 @@ bool GLSLRcTubeRenderer::init(DisplayContext *pdc)
   m_pPO->setUniform("binormTex", BINORM_TEX_UNIT);
   // m_pPO->setUniform("sectTex", SECT_TEX_UNIT);
   m_pPO->setUniform("colorTex", COLOR_TEX_UNIT);
-  // m_pPO->setUniform("puttyTex", PUTTY_TEX_UNIT);
+  m_pPO->setUniform("puttyTex", PUTTY_TEX_UNIT);
 
   // setup attributes
   m_nRhoLoc = m_pPO->getAttribLocation("a_rho");
@@ -93,24 +93,14 @@ void GLSLRcTubeRenderer::setupGLSL(detail::SplineSegment *pASeg)
   if (pSeg->m_pCoefTex!=NULL)
     delete pSeg->m_pCoefTex;
   pSeg->m_pCoefTex = MB_NEW gfx::Texture(); //pdc->createTexture();
-#ifdef USE_TBO
-  pSeg->m_pCoefTex->setup(1, gfx::Texture::FMT_R,
-                          gfx::Texture::TYPE_FLOAT32);
-#else
   pSeg->m_pCoefTex->setup(1, gfx::Texture::FMT_RGB,
                           gfx::Texture::TYPE_FLOAT32);
-#endif
 
   if (pSeg->m_pBinormTex!=NULL)
     delete pSeg->m_pBinormTex;
   pSeg->m_pBinormTex = MB_NEW gfx::Texture(); //pdc->createTexture();
-#ifdef USE_TBO
-  pSeg->m_pBinormTex->setup(1, gfx::Texture::FMT_R,
-                            gfx::Texture::TYPE_FLOAT32);
-#else
   pSeg->m_pBinormTex->setup(1, gfx::Texture::FMT_RGB,
                             gfx::Texture::TYPE_FLOAT32);
-#endif
 
   if (pSeg->m_pColorTex!=NULL)
     delete pSeg->m_pColorTex;
@@ -118,6 +108,12 @@ void GLSLRcTubeRenderer::setupGLSL(detail::SplineSegment *pASeg)
   pSeg->m_pColorTex->setup(1, gfx::Texture::FMT_RGBA,
                            gfx::Texture::TYPE_UINT8_COLOR);
   
+  if (pSeg->m_pPuttyTex!=NULL)
+    delete pSeg->m_pPuttyTex;
+  pSeg->m_pPuttyTex = MB_NEW gfx::Texture();
+  pSeg->m_pPuttyTex->setup(1, gfx::Texture::FMT_RG,
+                           gfx::Texture::TYPE_FLOAT32);
+
   const int nDetail = getAxialDetail();
   const float fDetail = float(nDetail);
   const int nSecDiv = getTubeSection()->getSize();
@@ -222,6 +218,16 @@ void GLSLRcTubeRenderer::updateColorGLSL(detail::SplineSegment *pASeg)
 
   pSeg->m_pColorTex->setData(nCtlPts, 1, 1, &pSeg->m_colorTexData[0]);
 
+  ////
+
+  Vector2D escl;
+  pSeg->m_puttyTexData.resize(nCtlPts*2);
+  for (i=0; i<nCtlPts; ++i) {
+    escl = getEScl(pCMol, pSeg, float(i));
+    pSeg->m_puttyTexData[i*2+0] = escl.x();
+    pSeg->m_puttyTexData[i*2+1] = escl.y();
+  }
+  pSeg->m_pPuttyTex->setData(nCtlPts, 1, 1, &pSeg->m_puttyTexData[0]);
 }
 
 void GLSLRcTubeRenderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc)
@@ -229,7 +235,6 @@ void GLSLRcTubeRenderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *
   GLSLTube2SS *pSeg = static_cast<GLSLTube2SS *>(pASeg);
 
   const int nCtlPts = pSeg->m_scoeff.getSize();
-  //const bool bPutty = getPuttyMode()!=TBR_PUTTY_OFF;
 
   pdc->setLineWidth(3.0);
 
@@ -237,8 +242,7 @@ void GLSLRcTubeRenderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *
   pdc->useTexture(pSeg->m_pBinormTex, BINORM_TEX_UNIT);
   //pdc->useTexture(m_pSectTex, SECT_TEX_UNIT);
   pdc->useTexture(pSeg->m_pColorTex, COLOR_TEX_UNIT);
-  //if (bPutty)
-  //pdc->useTexture(pSeg->m_pPuttyTex, PUTTY_TEX_UNIT);
+  pdc->useTexture(pSeg->m_pPuttyTex, PUTTY_TEX_UNIT);
 
   m_pPO->enable();
 
@@ -246,12 +250,11 @@ void GLSLRcTubeRenderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *
   m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
   m_pPO->setUniform("u_npoints", nCtlPts);
   m_pPO->setUniform("u_bsmocol", isSmoothColor());
-  //m_pPO->setUniform("u_bputty", bPutty);
   m_pPO->setUniform("coefTex", COEF_TEX_UNIT);
   m_pPO->setUniform("binormTex", BINORM_TEX_UNIT);
   //m_pPO->setUniform("sectTex", SECT_TEX_UNIT);
   m_pPO->setUniform("colorTex", COLOR_TEX_UNIT);
-  //m_pPO->setUniform("puttyTex", PUTTY_TEX_UNIT);
+  m_pPO->setUniform("puttyTex", PUTTY_TEX_UNIT);
 
   TubeSectionPtr pTS = getTubeSection();
   m_pPO->setUniformF("u_tuber", float( pTS->getTuber() ));
@@ -259,6 +262,7 @@ void GLSLRcTubeRenderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *
   m_pPO->setUniformF("u_width1", float( pTS->getWidth() ));
   m_pPO->setUniformF("u_width2", float( pTS->getWidth() * pTS->getTuber() ));
 
+  // Draw inner skin
   m_pPO->setUniformF("u_efac", 1.0f);
 
   BOOST_FOREACH (DrawSegment *pelem, pSeg->m_draws) {
@@ -273,10 +277,9 @@ void GLSLRcTubeRenderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *
       pdc->drawElem(*elem.m_pAttrAry);
     }
 #endif
-
   }
 
-
+  // Draw outer skin
   m_pPO->setUniformF("u_efac", 1.5f);
 
   BOOST_FOREACH (DrawSegment *pelem, pSeg->m_draws) {
@@ -291,7 +294,6 @@ void GLSLRcTubeRenderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *
       pdc->drawElem(*elem.m_pAttrAry);
     }
 #endif
-
   }
 
   m_pPO->disable();
@@ -300,7 +302,6 @@ void GLSLRcTubeRenderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *
   pdc->unuseTexture(pSeg->m_pBinormTex);
   //pdc->unuseTexture(m_pSectTex);
   pdc->unuseTexture(pSeg->m_pColorTex);
-  //if (bPutty)
-  //pdc->unuseTexture(pSeg->m_pPuttyTex);
+  pdc->unuseTexture(pSeg->m_pPuttyTex);
 }
 

@@ -59,6 +59,7 @@ runtime_class Tube2Renderer extends MainChainRenderer
     none = molvis::Tube2Renderer::TBR_PUTTY_OFF;
     linear1 = molvis::Tube2Renderer::TBR_PUTTY_LINEAR1;
     scale1 = molvis::Tube2Renderer::TBR_PUTTY_SCALE1;
+    protss = molvis::Tube2Renderer::TBR_PUTTY_PROTSS;
   }
   property enum putty_mode => redirect(getPuttyMode, setPuttyMode);
   default putty_mode = "none";

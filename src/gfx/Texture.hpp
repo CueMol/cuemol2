@@ -33,7 +33,9 @@ namespace gfx {
   {
   public:
     Texture()
-      : m_pTexRep(NULL), m_bInitOK(false), m_bDataChanged(false)
+      : m_pTexRep(NULL), m_bInitOK(false),
+        m_nDim(0), m_iFmt(0), m_iType(0), m_bLinIntpol(false),
+        m_bDataChanged(false), m_nWidth(0), m_nHeight(0), m_nDepth(0),m_pData(NULL)
     {
     }
 

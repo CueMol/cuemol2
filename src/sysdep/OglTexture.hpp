@@ -54,6 +54,10 @@ namespace sysdep {
 
     bool m_bUseTexBuf;
 
+    int m_iDim;
+    int m_iPixFmt;
+    int m_iPixType;
+
   public:
     OglTextureRep(qlib::uid_t nSceneID, int nUnit)
       : m_nSceneID(nSceneID)
@@ -71,6 +75,11 @@ namespace sysdep {
       m_iGlPixFmt = -1;
       m_iGlPixType = -1;
       m_iGlIntPixFmt = -1;
+
+      m_iDim = 0;
+      m_iPixFmt = 0;
+      m_iPixType = 0;
+
       MB_DPRINTLN("********** OglTexRep (scene %d) created.", nSceneID);
     }
 
@@ -82,11 +91,17 @@ namespace sysdep {
     virtual void setup(int iDim, int iPixFmt, int iPixType)
     {
       m_bUseTexBuf = false;
+      m_iDim = iDim;
+      m_iPixFmt = iPixFmt;
+      m_iPixType = iPixType;
 
       MB_DPRINTLN("OglTex setup(%d, %d, %d) called.", iDim, iPixFmt, iPixType);
 
-      if (iDim==1 && iPixFmt==Texture::FMT_R && isTBOAvailable() ) {
-	setupTBO(iPixType);
+      if (iDim==1 &&
+          /*(iPixType!=Texture::TYPE_UINT8_COLOR) &&*/
+          /*iPixFmt==Texture::FMT_R &&*/
+          isTBOAvailable() ) {
+        setupTBO(iPixFmt, iPixType);
         return;
       }
 
@@ -217,7 +232,7 @@ namespace sysdep {
     }
 
     /// Setup TextureBufferObject
-    void setupTBO(int iPixType)
+    void setupTBO(int iPixFmt, int iPixType)
     {
       m_iGlDimType = GL_TEXTURE_BUFFER;
       m_bUseTexBuf = true;
@@ -226,12 +241,75 @@ namespace sysdep {
       switch (iPixType) {
       case Texture::TYPE_UINT8:
 	m_iGlPixType = GL_UNSIGNED_BYTE;
-	m_iGlIntPixFmt = GL_R8UI;
-	break;
+        switch (iPixFmt) {
+        case Texture::FMT_R:
+          m_iGlIntPixFmt = GL_R8UI;
+          break;
+        case Texture::FMT_RG:
+          m_iGlIntPixFmt = GL_RG8UI;
+          break;
+        case Texture::FMT_RGB:
+          m_iGlIntPixFmt = GL_RGB8UI;
+          break;
+        case Texture::FMT_RGBA:
+          m_iGlIntPixFmt = GL_RGBA8UI;
+          break;
+        default:
+          LString msg = LString::format("Unsupported pixel type=%d format=%d",
+					iPixType, iPixFmt);
+          LOG_DPRINTLN("OglTexRep> %s", msg.c_str());
+          MB_THROW(qlib::RuntimeException, msg);
+          break;
+        }
+        break;
         
+      case Texture::TYPE_UINT8_COLOR:
+        m_iGlPixType = GL_UNSIGNED_BYTE;
+        switch (iPixFmt) {
+        case Texture::FMT_R:
+          m_iGlIntPixFmt = GL_R8;
+          break;
+        case Texture::FMT_RG:
+          m_iGlIntPixFmt = GL_RG8;
+          break;
+        case Texture::FMT_RGB:
+          m_iGlIntPixFmt = GL_RGB8;
+          break;
+        case Texture::FMT_RGBA:
+          m_iGlIntPixFmt = GL_RGBA8;
+          break;
+        default:
+          LString msg = LString::format("Unsupported pixel type=%d format=%d",
+					iPixType, iPixFmt);
+          LOG_DPRINTLN("OglTexRep> %s", msg.c_str());
+          MB_THROW(qlib::RuntimeException, msg);
+          break;
+        }
+        break;
+
       case Texture::TYPE_FLOAT32:
 	m_iGlPixType = GL_FLOAT;
-	m_iGlIntPixFmt = GL_R32F;
+        switch (iPixFmt) {
+        case Texture::FMT_R:
+          m_iGlIntPixFmt = GL_R32F;
+          break;
+        case Texture::FMT_RG:
+          m_iGlIntPixFmt = GL_RG32F;
+          break;
+        case Texture::FMT_RGB:
+          m_iGlIntPixFmt = GL_RGB32F;
+          break;
+        case Texture::FMT_RGBA:
+          m_iGlIntPixFmt = GL_RGBA32F;
+          break;
+        default:
+          LString msg = LString::format("Unsupported pixel type=%d format=%d",
+					iPixType, iPixFmt);
+          LOG_DPRINTLN("OglTexRep> %s", msg.c_str());
+          MB_THROW(qlib::RuntimeException, msg);
+          break;
+        }
+	//m_iGlIntPixFmt = GL_R32F;
 	break;
 
       default:
@@ -312,13 +390,13 @@ namespace sysdep {
       CHK_GLERROR("(clearerr)");
 
       glActiveTexture(GL_TEXTURE0+m_nUnit);
-      CHK_GLERROR("glActiveTexture");
+      CHK_GLERROR(LString::format("glActiveTexture(GL_TEXTURE0+%d)",m_nUnit).c_str());
 
       glEnable(m_iGlDimType);
-      CHK_GLERROR("glEnable");
+      CHK_GLERROR(LString::format("glEnable(%X)",m_iGlDimType).c_str());
 
       glBindTexture(m_iGlDimType, m_nTexID);
-      CHK_GLERROR("glBindTexture");
+      CHK_GLERROR(LString::format("glBindTexture(type=%X,id=%d)",m_iGlDimType, m_nTexID).c_str());
 
       // filter setting
 
@@ -466,29 +544,39 @@ namespace sysdep {
       CHK_GLERROR("(clearerr)");
 
       glActiveTexture(GL_TEXTURE0+m_nUnit);
-      CHK_GLERROR("glActiveTexture(GL_TEXTURE0+m_nUnit)");
+      CHK_GLERROR(LString::format("glActiveTexture(GL_TEXTURE0+%d)",m_nUnit).c_str());
 
       glBindBuffer(GL_TEXTURE_BUFFER, m_nBufID);
       CHK_GLERROR("glBindBuffer");
 
       int ncomp = 1;
-      /*
-      if (m_iGlPixFmt==GL_RED)
-        ncomp = 1;
-      else if (m_iGlPixFmt==GL_RG)
-        ncomp = 2;
-      else if (m_iGlPixFmt==GL_RGB)
-        ncomp = 3;
-      else if (m_iGlPixFmt==GL_RGBA)
-        ncomp = 4;
 
-      MB_ASSERT(ncomp==1);*/
+      switch (m_iPixFmt) {
+      case Texture::FMT_R:
+        ncomp = 1;
+        break;
+      case Texture::FMT_RG:
+        ncomp = 2;
+        break;
+      case Texture::FMT_RGB:
+        ncomp = 3;
+        break;
+      case Texture::FMT_RGBA:
+        ncomp = 4;
+        break;
+      }
       
       int elem_sz = 4;
-      if (m_iGlIntPixFmt==GL_R32F)
-        elem_sz = 4;
-      else if (m_iGlIntPixFmt==GL_R8UI)
+      switch (m_iPixType) {
+      case Texture::TYPE_UINT8:
+      case Texture::TYPE_UINT8_COLOR:
         elem_sz = 1;
+        break;
+      case Texture::TYPE_FLOAT32:
+        elem_sz = 4;
+        break;
+
+      }        
 
       int nbytes = m_nWidth*elem_sz*ncomp;
 
@@ -507,11 +595,12 @@ namespace sysdep {
       // CHK_GLERROR("glActiveTexture(GL_TEXTURE0)");
 
       glBindTexture(GL_TEXTURE_BUFFER, m_nTexID);
-      CHK_GLERROR("glBindTexture(GL_TEXTURE_BUFFER, m_nTexID)");
+      CHK_GLERROR(LString::format("glBindTexture(GL_TEXTURE_BUFFER, TexID=%d)",m_nTexID).c_str());
 
       glTexBuffer(GL_TEXTURE_BUFFER, m_iGlIntPixFmt, m_nBufID);
       //glTexBuffer(GL_TEXTURE_BUFFER, GL_R32F, m_nBufID);
-      CHK_GLERROR("glTexBuffer(GL_TEXTURE_BUFFER, m_iGlIntPixFmt, m_nBufID)");
+      CHK_GLERROR(LString::format("glTexBuffer(GL_TEXTURE_BUFFER, PixFmt=%X, BufID=%d)",
+                                  m_iGlIntPixFmt, m_nBufID).c_str());
 
       //glDisable(GL_TEXTURE_BUFFER);
     }

@@ -49,9 +49,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "importers", "importers\impo
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E0DED1EB-7E6D-478E-B7F6-D0D007A980F8}"
-	ProjectSection(SolutionItems) = preProject
-		パフォーマンス1.psess = パフォーマンス1.psess
-	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

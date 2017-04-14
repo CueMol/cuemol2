@@ -58,6 +58,7 @@ GLSLTube2DS::~GLSLTube2DS()
 GLSLTube2Renderer::GLSLTube2Renderer()
      : super_t(), m_pPO(NULL), m_nRhoLoc(0), m_pSectTex(NULL)
 {
+  m_bUseFragLtg = true;
 }
 
 GLSLTube2Renderer::~GLSLTube2Renderer()
@@ -89,12 +90,14 @@ bool GLSLTube2Renderer::init(DisplayContext *pdc)
   }
 
   if (m_pPO==NULL) {
-    /*m_pPO = ssh.createProgObj("gpu_tube2",
-                              "%%CONFDIR%%/data/shaders/tube2_vert.glsl",
-                              "%%CONFDIR%%/data/shaders/tube2_frag.glsl");*/
-    m_pPO = ssh.createProgObj("gpu_tube2",
-                              "%%CONFDIR%%/data/shaders/tube21_vert.glsl",
-                              "%%CONFDIR%%/data/shaders/tube21_frag.glsl");
+    if (m_bUseFragLtg)
+      m_pPO = ssh.createProgObj("gpu_tube21",
+                                "%%CONFDIR%%/data/shaders/tube21_vert.glsl",
+                                "%%CONFDIR%%/data/shaders/tube21_frag.glsl");
+    else
+      m_pPO = ssh.createProgObj("gpu_tube2",
+                                "%%CONFDIR%%/data/shaders/tube2_vert.glsl",
+                                "%%CONFDIR%%/data/shaders/tube2_frag.glsl");
   }
   
   if (m_pPO==NULL) {
@@ -129,15 +132,8 @@ void GLSLTube2Renderer::setupSectGLSL()
     delete m_pSectTex;
 
   m_pSectTex = MB_NEW gfx::Texture(); //pdc->createTexture();
-
-#ifdef USE_TBO
-  m_pSectTex->setup(1, gfx::Texture::FMT_R,
-                    gfx::Texture::TYPE_FLOAT32);
-#else
   m_pSectTex->setup(1, gfx::Texture::FMT_RGBA,
                     gfx::Texture::TYPE_FLOAT32);
-#endif
-
   updateSectGLSL();
 }
 
@@ -147,29 +143,19 @@ void GLSLTube2Renderer::setupGLSL(detail::SplineSegment *pASeg)
 
   if (pSeg->m_pCoefTex!=NULL)
     delete pSeg->m_pCoefTex;
-  pSeg->m_pCoefTex = MB_NEW gfx::Texture(); //pdc->createTexture();
-#ifdef USE_TBO
-  pSeg->m_pCoefTex->setup(1, gfx::Texture::FMT_R,
-                          gfx::Texture::TYPE_FLOAT32);
-#else
+  pSeg->m_pCoefTex = MB_NEW gfx::Texture();
   pSeg->m_pCoefTex->setup(1, gfx::Texture::FMT_RGB,
                           gfx::Texture::TYPE_FLOAT32);
-#endif
 
   if (pSeg->m_pBinormTex!=NULL)
     delete pSeg->m_pBinormTex;
-  pSeg->m_pBinormTex = MB_NEW gfx::Texture(); //pdc->createTexture();
-#ifdef USE_TBO
-  pSeg->m_pBinormTex->setup(1, gfx::Texture::FMT_R,
-                            gfx::Texture::TYPE_FLOAT32);
-#else
+  pSeg->m_pBinormTex = MB_NEW gfx::Texture();
   pSeg->m_pBinormTex->setup(1, gfx::Texture::FMT_RGB,
                             gfx::Texture::TYPE_FLOAT32);
-#endif
 
   if (pSeg->m_pColorTex!=NULL)
     delete pSeg->m_pColorTex;
-  pSeg->m_pColorTex = MB_NEW gfx::Texture(); //pdc->createTexture();
+  pSeg->m_pColorTex = MB_NEW gfx::Texture();
   pSeg->m_pColorTex->setup(1, gfx::Texture::FMT_RGBA,
                            gfx::Texture::TYPE_UINT8_COLOR);
   
@@ -177,13 +163,8 @@ void GLSLTube2Renderer::setupGLSL(detail::SplineSegment *pASeg)
     delete pSeg->m_pPuttyTex;
   if (getPuttyMode()!=TBR_PUTTY_OFF) {
     pSeg->m_pPuttyTex = MB_NEW gfx::Texture();
-#ifdef USE_TBO
     pSeg->m_pPuttyTex->setup(1, gfx::Texture::FMT_R,
                              gfx::Texture::TYPE_FLOAT32);
-#else
-    pSeg->m_pPuttyTex->setup(1, gfx::Texture::FMT_R,
-                             gfx::Texture::TYPE_FLOAT32);
-#endif
   }
 
   const int nDetail = getAxialDetail() * m_nAxDetScl;
@@ -274,15 +255,8 @@ void GLSLTube2Renderer::updateCrdGLSL(detail::SplineSegment *pASeg)
 
   const int nCtlPts = pSeg->m_nCtlPts;
   
-#ifdef USE_TBO
-  pSeg->m_pCoefTex->setData(nCtlPts * 12, 1, 1, pSeg->m_scoeff.getCoefArray());
-  // m_pBinormTex->setData(nCtlPts * 12, m_bnormInt.getCoefArray());
-  pSeg->m_pBinormTex->setData(nCtlPts * 3, 1, 1, &pSeg->m_linBnInt[0]);
-#else
   pSeg->m_pCoefTex->setData(nCtlPts * 4, 1, 1, pSeg->m_scoeff.getCoefArray());
   pSeg->m_pBinormTex->setData(nCtlPts, 1, 1, &pSeg->m_linBnInt[0]);
-#endif
-  
 }
 
 void GLSLTube2Renderer::updateColorGLSL(detail::SplineSegment *pASeg)
@@ -311,7 +285,7 @@ void GLSLTube2Renderer::updateColorGLSL(detail::SplineSegment *pASeg)
   if (getPuttyMode()!=TBR_PUTTY_OFF) {
     MolCoordPtr pCMol = getClientMol();
     Vector2D escl;
-	pSeg->m_puttyTexData.resize(nCtlPts);
+    pSeg->m_puttyTexData.resize(nCtlPts);
     for (i=0; i<nCtlPts; ++i) {
       escl = getEScl(pCMol, pSeg, float(i));
       pSeg->m_puttyTexData[i] = escl.x();
@@ -324,7 +298,6 @@ void GLSLTube2Renderer::updateColorGLSL(detail::SplineSegment *pASeg)
 /// Update section table texture
 void GLSLTube2Renderer::updateSectGLSL()
 {
-
   std::vector<float> &stab = m_secttab;
   TubeSectionPtr pTS = getTubeSection();
   int i, nsec = pTS->getSize();
@@ -337,11 +310,7 @@ void GLSLTube2Renderer::updateSectGLSL()
     stab[i*4+3] = float( val.w() );
   }
 
-#ifdef USE_TBO
-  m_pSectTex->setData(nsec * 4, 1, 1, &stab[0]);
-#else
   m_pSectTex->setData(nsec, 1, 1, &stab[0]);
-#endif
 }
 
 void GLSLTube2Renderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc)
@@ -352,6 +321,7 @@ void GLSLTube2Renderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *p
   const bool bPutty = getPuttyMode()!=TBR_PUTTY_OFF;
 
   //pdc->setLineWidth(3.0);
+
 
   pdc->useTexture(pSeg->m_pCoefTex, COEF_TEX_UNIT);
   pdc->useTexture(pSeg->m_pBinormTex, BINORM_TEX_UNIT);
@@ -370,7 +340,7 @@ void GLSLTube2Renderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *p
   m_pPO->setUniform("coefTex", COEF_TEX_UNIT);
   m_pPO->setUniform("binormTex", BINORM_TEX_UNIT);
   m_pPO->setUniform("sectTex", SECT_TEX_UNIT);
-  m_pPO->setUniform("colorTex", COLOR_TEX_UNIT);
+  //m_pPO->setUniform("colorTex", COLOR_TEX_UNIT);
   m_pPO->setUniform("puttyTex", PUTTY_TEX_UNIT);
 
   BOOST_FOREACH (DrawSegment *pelem, pSeg->m_draws) {

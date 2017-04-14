@@ -125,6 +125,7 @@ namespace molvis {
     static const int TBR_PUTTY_OFF = 0;
     static const int TBR_PUTTY_SCALE1 = 1;
     static const int TBR_PUTTY_LINEAR1 = 2;
+    static const int TBR_PUTTY_PROTSS = 3;
 
     void setPuttyMode(int nmode) {
       m_nPuttyMode = nmode;
@@ -234,17 +235,19 @@ namespace molvis {
     /// Render to file (without using cache data)
     virtual void renderFile(DisplayContext *pdc);
     
+    virtual int getCapTypeImpl(detail::SplineSegment *pSeg, detail::DrawSegment *pDS, bool bStart);
 
     /////////////////
     // Putty impl
 
-    void initPuttyData();
-
     Vector2D getEScl(const MolCoordPtr &pMol, Tube2SS *pSeg, float par) const;
 
-    //
+  private:
+    void initPuttyData();
 
-    virtual int getCapTypeImpl(detail::SplineSegment *pSeg, detail::DrawSegment *pDS, bool bStart);
+    /// Ribbon-like tube representation using putty (EScl)
+    Vector2D getProtSSEScl(const MolAtomPtr &pAtom) const;
+
   };
 
 }

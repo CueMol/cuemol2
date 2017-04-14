@@ -16,6 +16,10 @@ runtime_class Spline2RendGLSL extends Spline2Renderer
   scriptable;
   smartptr;
   cloneable;
+
+  /// force to use GLSL
+  property boolean force_glsl => redirect(isForceGLSL, setForceGLSL);
+  default force_glsl = false;
 };
 
 #endif

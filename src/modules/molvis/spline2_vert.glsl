@@ -18,12 +18,11 @@
 // Uniform variables
 #ifdef USE_TBO
 uniform samplerBuffer coefTex;
+uniform samplerBuffer colorTex;
 #else
 uniform sampler1D coefTex;
-#endif
-
-// color texture
 uniform sampler1D colorTex;
+#endif
 
 // number of control points of interpolator
 uniform int u_npoints;
@@ -43,29 +42,13 @@ attribute float a_rho;
 
 ////////////////////
 
-float ffog(in float ecDistance)
-{
-  return(abs(ecDistance));
-}
-
 void getCoefs(in int ind, out vec3 vc0, out vec3 vc1, out vec3 vc2, out vec3 vc3)
 {
 #ifdef USE_TBO
-  vc0.x = texelFetch(coefTex, ind*12+0).r;
-  vc0.y = texelFetch(coefTex, ind*12+1).r;
-  vc0.z = texelFetch(coefTex, ind*12+2).r;
-
-  vc1.x = texelFetch(coefTex, ind*12+3).r;
-  vc1.y = texelFetch(coefTex, ind*12+4).r;
-  vc1.z = texelFetch(coefTex, ind*12+5).r;
-
-  vc2.x = texelFetch(coefTex, ind*12+6).r;
-  vc2.y = texelFetch(coefTex, ind*12+7).r;
-  vc2.z = texelFetch(coefTex, ind*12+8).r;
-
-  vc3.x = texelFetch(coefTex, ind*12+9).r;
-  vc3.y = texelFetch(coefTex, ind*12+10).r;
-  vc3.z = texelFetch(coefTex, ind*12+11).r;
+  vc0 = texelFetch(coefTex, ind*4+0).xyz;
+  vc1 = texelFetch(coefTex, ind*4+1).xyz;
+  vc2 = texelFetch(coefTex, ind*4+2).xyz;
+  vc3 = texelFetch(coefTex, ind*4+3).xyz;
 #else
   vc0 = texelFetch1D(coefTex, ind*4+0, 0).xyz;
   vc1 = texelFetch1D(coefTex, ind*4+1, 0).xyz;
@@ -99,14 +82,20 @@ vec4 calcColor(in float rho)
   ncoeff = clamp(ncoeff, 0, u_npoints-2);
   float f = rho - float(ncoeff);
 
-#if (__VERSION__>=140)
-  vec4 col0 = texelFetch(colorTex, ncoeff, 0);
-  vec4 col1 = texelFetch(colorTex, ncoeff+1, 0);
+#ifdef USE_TBO
+  vec4 col0 = texelFetch(colorTex, ncoeff);
+  vec4 col1 = texelFetch(colorTex, ncoeff+1);
 #else
   vec4 col0 = texelFetch1D(colorTex, ncoeff, 0);
   vec4 col1 = texelFetch1D(colorTex, ncoeff+1, 0);
 #endif
+
   return mix(col0, col1, f);
+}
+
+float ffog(in float ecDistance)
+{
+  return(abs(ecDistance));
 }
 
 void main (void)

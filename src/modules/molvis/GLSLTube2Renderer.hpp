@@ -127,6 +127,19 @@ namespace molvis {
       return m_nAxDetScl;
     }
 
+  private:
+    /// Use per-fragment lighting
+    bool m_bUseFragLtg;
+
+  public:
+    void setUseFragLtg(bool b) {
+      m_bUseFragLtg = b;
+      invalidateDisplayCache();
+    }
+    bool getUseFragLtg() const {
+      return m_bUseFragLtg;
+    }
+
     /////////////////
     // ctor/dtor
 

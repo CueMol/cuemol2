@@ -108,17 +108,12 @@ void Spline2RendGLSL::setupGLSL(detail::SplineSegment *pASeg)
     delete pSeg->m_pCoefTex;
 
   pSeg->m_pCoefTex = MB_NEW gfx::Texture(); //pdc->createTexture();
-#ifdef USE_TBO
-  pSeg->m_pCoefTex->setup(1, gfx::Texture::FMT_R,
-                    gfx::Texture::TYPE_FLOAT32);
-#else
   pSeg->m_pCoefTex->setup(1, gfx::Texture::FMT_RGB,
                     gfx::Texture::TYPE_FLOAT32);
-#endif
   
   if (pSeg->m_pColorTex!=NULL)
     delete pSeg->m_pColorTex;
-  pSeg->m_pColorTex = MB_NEW gfx::Texture(); //pdc->createTexture();
+  pSeg->m_pColorTex = MB_NEW gfx::Texture();
   pSeg->m_pColorTex->setup(1, gfx::Texture::FMT_RGBA,
                            gfx::Texture::TYPE_UINT8_COLOR);
   
@@ -167,11 +162,7 @@ void Spline2RendGLSL::updateCrdGLSL(detail::SplineSegment *pASeg)
 
   const int nCtlPts = pSeg->m_nCtlPts;
   
-#ifdef USE_TBO
-  pSeg->m_pCoefTex->setData(nCtlPts * 12, 1, 1, pSeg->m_scoeff.getCoefArray());
-#else
   pSeg->m_pCoefTex->setData(nCtlPts * 4, 1, 1, pSeg->m_scoeff.getCoefArray());
-#endif
 
 }
 
@@ -183,6 +174,13 @@ void Spline2RendGLSL::updateColorGLSL(detail::SplineSegment *pASeg)
   int i;
   const int nCtlPts = pSeg->m_nCtlPts;
   quint32 dcc;
+  /*
+  std::vector<float> dum(nCtlPts);
+  for (i=0; i<nCtlPts; ++i) {
+    dum[i] = float(i)/float(nCtlPts);
+  }
+  pSeg->m_pColorTex->setData(nCtlPts, 1, 1, &dum[0]);
+   */
 
   pSeg->m_colorTexData.resize(nCtlPts*4);
   for (i=0; i<nCtlPts; ++i) {
@@ -194,28 +192,6 @@ void Spline2RendGLSL::updateColorGLSL(detail::SplineSegment *pASeg)
   }
 
   pSeg->m_pColorTex->setData(nCtlPts, 1, 1, &pSeg->m_colorTexData[0]);
-
-
-/*
-  const float fDetail = float(getAxialDetail());
-  float par;
-
-  BOOST_FOREACH (Spl2GLSLDrawSeg &elem, pSeg->m_draws) {
-
-    const float fStart = float(elem.m_nStart);
-    Spl2GLSLDrawSeg::AttrArray &attra = *elem.m_pAttrAry;
-	const int nVA = attra.getSize();
-
-    for (i=0; i<nVA; ++i) {
-      par = float(i)/fDetail + fStart;
-      dcc = pSeg->calcColor(this, pCMol, par);
-      
-      attra.at(i).r = (qbyte) gfx::getRCode(dcc);
-      attra.at(i).g = (qbyte) gfx::getGCode(dcc);
-      attra.at(i).b = (qbyte) gfx::getBCode(dcc);
-      attra.at(i).a = (qbyte) gfx::getACode(dcc);
-    }
-  }*/
 }
 
 void Spline2RendGLSL::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc)
@@ -226,8 +202,6 @@ void Spline2RendGLSL::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc
 
   pdc->setLineWidth(lw);
 
-  //pSeg->m_pCoefTex->use(COEF_TEX_UNIT);
-  //pSeg->m_pColorTex->use(COLOR_TEX_UNIT);
   pdc->useTexture(pSeg->m_pCoefTex, COEF_TEX_UNIT);
   pdc->useTexture(pSeg->m_pColorTex, COLOR_TEX_UNIT);
 
@@ -253,8 +227,6 @@ void Spline2RendGLSL::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *pdc
   }
 
   m_pPO->disable();
-  //pSeg->m_pCoefTex->unuse();
-  //pSeg->m_pColorTex->unuse();
   pdc->unuseTexture(pSeg->m_pCoefTex);
   pdc->unuseTexture(pSeg->m_pColorTex);
 }

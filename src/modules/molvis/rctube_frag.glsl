@@ -20,7 +20,8 @@
 
 uniform TextureType coefTex;
 uniform TextureType binormTex;
-uniform sampler1D colorTex;
+uniform TextureType colorTex;
+uniform TextureType puttyTex;
 
 uniform float frag_alpha;
 
@@ -44,78 +45,40 @@ varying vec4 v_ecpos;
 /// Texture coord
 varying vec2 v_st;
 
-/// Normal
-//varying vec2 v_norm;
-
 ////////////////////
 
-void getCoefs(in TextureType tex, in int ind, out vec3 vc0, out vec3 vc1, out vec3 vc2, out vec3 vc3)
+void getCoefs(in int ind, out vec3 vc0, out vec3 vc1, out vec3 vc2, out vec3 vc3)
 {
 #ifdef USE_TBO
-  vc0.x = texelFetch(tex, ind*12+0).r;
-  vc0.y = texelFetch(tex, ind*12+1).r;
-  vc0.z = texelFetch(tex, ind*12+2).r;
-
-  vc1.x = texelFetch(tex, ind*12+3).r;
-  vc1.y = texelFetch(tex, ind*12+4).r;
-  vc1.z = texelFetch(tex, ind*12+5).r;
-
-  vc2.x = texelFetch(tex, ind*12+6).r;
-  vc2.y = texelFetch(tex, ind*12+7).r;
-  vc2.z = texelFetch(tex, ind*12+8).r;
-
-  vc3.x = texelFetch(tex, ind*12+9).r;
-  vc3.y = texelFetch(tex, ind*12+10).r;
-  vc3.z = texelFetch(tex, ind*12+11).r;
+  vc0 = texelFetch(coefTex, ind*4+0).xyz;
+  vc1 = texelFetch(coefTex, ind*4+1).xyz;
+  vc2 = texelFetch(coefTex, ind*4+2).xyz;
+  vc3 = texelFetch(coefTex, ind*4+3).xyz;
 #else
-  vc0 = texelFetch1D(tex, ind*4+0, 0).xyz;
-  vc1 = texelFetch1D(tex, ind*4+1, 0).xyz;
-  vc2 = texelFetch1D(tex, ind*4+2, 0).xyz;
-  vc3 = texelFetch1D(tex, ind*4+3, 0).xyz;
+  vc0 = texelFetch1D(coefTex, ind*4+0, 0).xyz;
+  vc1 = texelFetch1D(coefTex, ind*4+1, 0).xyz;
+  vc2 = texelFetch1D(coefTex, ind*4+2, 0).xyz;
+  vc3 = texelFetch1D(coefTex, ind*4+3, 0).xyz;
 #endif
 }
 
-vec3 getCoef(in TextureType tex, in int ind)
+vec3 getBinorm(in int ind)
 {
-  vec3 rval;
 #ifdef USE_TBO
-  rval.x = texelFetch(tex, ind*3+0).r;
-  rval.y = texelFetch(tex, ind*3+1).r;
-  rval.z = texelFetch(tex, ind*3+2).r;
+  return texelFetch(binormTex, ind).xyz;
 #else
-  rval = texelFetch1D(tex, ind, 0).xyz;
+  return texelFetch1D(binormTex, ind, 0).xyz;
 #endif
-  return rval;
 }
 
-vec3 interpolate(in TextureType tex, in float rho)
+void interpolate2(in float rho, out vec3 rval, out vec3 drval)
 {
   vec3 coef0, coef1, coef2, coef3;
 
   int ncoeff = int(floor(rho));
   ncoeff = clamp(ncoeff, 0, u_npoints-2);
 
-  getCoefs(tex, ncoeff, coef0, coef1, coef2, coef3);
-
-  float f = rho - float(ncoeff);
-
-  vec3 rval;
-  rval = coef3*f + coef2;
-  rval = rval*f + coef1;
-  rval = rval*f + coef0;
-
-  return rval;
-}
-
-void interpolate2(in TextureType tex, in float rho,
-                  out vec3 rval, out vec3 drval)
-{
-  vec3 coef0, coef1, coef2, coef3;
-
-  int ncoeff = int(floor(rho));
-  ncoeff = clamp(ncoeff, 0, u_npoints-2);
-
-  getCoefs(tex, ncoeff, coef0, coef1, coef2, coef3);
+  getCoefs(ncoeff, coef0, coef1, coef2, coef3);
 
   float f = rho - float(ncoeff);
 
@@ -127,15 +90,14 @@ void interpolate2(in TextureType tex, in float rho,
   drval = drval*f + coef1;
 }
 
-void interpolate3(in TextureType tex, in float rho,
-                  out vec3 rval, out vec3 drval, out vec3 ddrval)
+void interpolate3(in float rho, out vec3 rval, out vec3 drval, out vec3 ddrval)
 {
   vec3 coef0, coef1, coef2, coef3;
 
   int ncoeff = int(floor(rho));
   ncoeff = clamp(ncoeff, 0, u_npoints-2);
 
-  getCoefs(tex, ncoeff, coef0, coef1, coef2, coef3);
+  getCoefs(ncoeff, coef0, coef1, coef2, coef3);
 
   float f = rho - float(ncoeff);
 
@@ -158,11 +120,9 @@ vec3 calcBinorm(in float rho)
 
   float f = rho - float(ncoeff);
 
-  vec3 cp0 = getCoef(binormTex, ncoeff);
-  vec3 cp1 = getCoef(binormTex, ncoeff+1);
+  vec3 cp0 = getBinorm(ncoeff);
+  vec3 cp1 = getBinorm(ncoeff+1);
 
-  //vec3 rval = cp0*(1.0-f) + cp1*f;
-  //return rval;
   return mix(cp0, cp1, f);
 }
 
@@ -175,12 +135,48 @@ void calcBinorm2(in float rho, out vec3 rval, out vec3 drval)
 
   float f = rho - float(ncoeff);
 
-  vec3 cp0 = getCoef(binormTex, ncoeff);
-  vec3 cp1 = getCoef(binormTex, ncoeff+1);
+  vec3 cp0 = getBinorm(ncoeff);
+  vec3 cp1 = getBinorm(ncoeff+1);
 
-  //vec3 rval = cp0*(1.0-f) + cp1*f;
   rval = mix(cp0, cp1, f);
   drval = cp1 - cp0;
+}
+
+vec2 getEScl(in float rho)
+{
+  int ncoeff = int(floor(rho));
+  ncoeff = clamp(ncoeff, 0, u_npoints-2);
+  float f = rho - float(ncoeff);
+
+  vec2 val0, val1;
+#ifdef USE_TBO
+  val0 = texelFetch(puttyTex, ncoeff).xy;
+  val1 = texelFetch(puttyTex, ncoeff+1).xy;
+#else
+  val0 = texelFetch1D(puttyTex, ncoeff, 0).xy;
+  val1 = texelFetch1D(puttyTex, ncoeff+1, 0).xy;
+#endif
+
+  return mix(val0, val1, f);
+}
+
+void getEScl2(in float rho, out vec2 rval, out vec2 drval)
+{
+  int ncoeff = int(floor(rho));
+  ncoeff = clamp(ncoeff, 0, u_npoints-2);
+  float f = rho - float(ncoeff);
+
+  vec2 val0, val1;
+#ifdef USE_TBO
+  val0 = texelFetch(puttyTex, ncoeff).xy;
+  val1 = texelFetch(puttyTex, ncoeff+1).xy;
+#else
+  val0 = texelFetch1D(puttyTex, ncoeff, 0).xy;
+  val1 = texelFetch1D(puttyTex, ncoeff+1, 0).xy;
+#endif
+
+  rval = mix(val0, val1, f);
+  drval = val1-val0;
 }
 
 vec4 calcColor(in float rho)
@@ -189,23 +185,23 @@ vec4 calcColor(in float rho)
   ncoeff = clamp(ncoeff, 0, u_npoints-2);
   float f = rho - float(ncoeff);
 
-#if (__VERSION__>=140)
-  vec4 col0 = texelFetch(colorTex, ncoeff, 0);
-  vec4 col1 = texelFetch(colorTex, ncoeff+1, 0);
+#ifdef USE_TBO
+  vec4 col0 = texelFetch(colorTex, ncoeff);
+  vec4 col1 = texelFetch(colorTex, ncoeff+1);
 #else
   vec4 col0 = texelFetch1D(colorTex, ncoeff, 0);
   vec4 col1 = texelFetch1D(colorTex, ncoeff+1, 0);
 #endif
 
-  if (u_bsmocol!=0) {
+  if (u_bsmocol!=0)
     return mix(col0, col1, f);
-  }
-  else {
+  else
     return (f<0.5f)?col0:col1;
-  }
 }
 
+///////////////////////////////////
 // local variables for lighting calc
+
 vec4 Ambient;
 vec4 Diffuse;
 vec4 Specular;
@@ -319,35 +315,10 @@ vec4 HSBtoRGB(in vec4 hsb)
 //const float M_PI = 3.141592653589793238462643383;
 const float M_2PI = 3.141592653589793238462643383 * 2.0;
 
-void st2pos(in vec2 st, out vec4 pos, out vec3 norm)
-{
-  vec3 f, df;
-  interpolate2(coefTex, st.s, f, df);
-
-  float dflen = length(df);
-  vec3 e0 = df/dflen;
-  
-  vec3 v2 = calcBinorm(st.s);
-  vec3 e2 = normalize(v2);
-
-  vec3 e1 = cross(e2, e0);
-  //float th = st.t * M_2PI;
-  float th = st.t;
-
-  float si = sin(th);
-  float co = cos(th);
-  vec3 pos3 = f + e1*(co*u_width1) + e2*(si*u_width2);
-
-  float dlen = sqrt(co*co*u_tubersq + si*si);
-  norm = e1*(co*u_tuber/dlen) + e2*(si/dlen);
-
-  pos = vec4(pos3, 1.0);
-}
-
 void st2pos_dsdt(in vec2 st, out vec4 pos, out vec4 pos_ds, out vec4 pos_dt)
 {
   vec3 f, v0, dv0;
-  interpolate3(coefTex, st.s, f, v0, dv0);
+  interpolate3(st.s, f, v0, dv0);
 
   float v0len = length(v0);
   vec3 e0 = v0/v0len;
@@ -358,18 +329,29 @@ void st2pos_dsdt(in vec2 st, out vec4 pos, out vec4 pos_ds, out vec4 pos_dt)
   vec3 e2 = v2/v2len;
 
   vec3 e1 = cross(e2, e0);
+
+  vec2 escl, descl;
+  getEScl2(st.s, escl, descl);
+
   //float th = st.t * M_2PI;
   float th = st.t;
-  
   float si = sin(th);
   float co = cos(th);
 
-  vec3 pos3 = f + e1*(co*u_width1) + e2*(si*u_width2);
+  float cow = co*u_width1;
+  float siw = si*u_width2;
+
+  // Calc x
+
+  vec3 pos3 = f + e1*(cow*escl.x) + e2*(siw*escl.y);
   pos = vec4(pos3, 1.0);
 
-  //vec3 pos_dt3 = e1*(-si*u_width1 * M_2PI) + e2*(co*u_width2 * M_2PI);
-  vec3 pos_dt3 = e1*(-si*u_width1) + e2*(co*u_width2);
+  // Calc dx/dt
+
+  vec3 pos_dt3 = e1*(-si*u_width1*escl.x) + e2*(co*u_width2*escl.y);
   pos_dt = vec4(pos_dt3, 0.0);
+
+  // Calc dx/ds
 
   // s derivative of e0 (=v0/|v0|)
   vec3 de0 = ( cross(v0, cross(dv0, v0) ) )/(v0len*v0len*v0len);
@@ -378,8 +360,44 @@ void st2pos_dsdt(in vec2 st, out vec4 pos, out vec4 pos_ds, out vec4 pos_dt)
   // s derivative of e1 (cross(e2, e0))
   vec3 de1 = cross(de2, e0) + cross(e2, de0);
 
-  vec3 pos_ds3 = v0 + de1*(co*u_width1) + de2*(si*u_width2);
+  vec3 pos_ds3 = v0 +
+    //cow*( de1*escl.x) + siw*( de2*escl.y );
+    cow*( e1*descl.x + de1*escl.x) + siw*( e2*descl.y + de2*escl.y );
   pos_ds = vec4(pos_ds3, 0.0);
+}
+
+void st2pos(in vec2 st, out vec4 pos, out vec3 norm)
+{
+/*
+  vec3 f, df;
+  interpolate2(st.s, f, df);
+
+  float dflen = length(df);
+  vec3 e0 = df/dflen;
+  
+  vec3 v2 = calcBinorm(st.s);
+  vec3 e2 = normalize(v2);
+
+  vec3 e1 = cross(e2, e0);
+
+  vec2 escl = getEScl(st.s);
+
+  //float th = st.t * M_2PI;
+  float th = st.t;
+  float si = sin(th);
+  float co = cos(th);
+
+  vec3 pos3 = f + e1*(co*u_width1*escl.x) + e2*(si*u_width2*escl.y);
+
+  float dlen = sqrt(co*co*u_tubersq + si*si);
+  norm = e1*(co*u_tuber/dlen) + e2*(si/dlen);
+
+  pos = vec4(pos3, 1.0);
+*/
+  vec4 pos_ds, pos_dt;
+  st2pos_dsdt(st, pos, pos_ds, pos_dt);
+  
+  norm = normalize( cross(pos_dt.xyz, pos_ds.xyz) );
 }
 
 const float ftol = 1e-7;
