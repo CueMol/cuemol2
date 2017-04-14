@@ -184,15 +184,22 @@ void getEScl2(in float rho, out vec2 rval, out vec2 drval)
   val1 = texelFetch1D(puttyTex, ncoeff+1, 0).xy;
 #endif
 
+  float df = 1.0;
   if (u_gamma>1.0) {
-    if (f<=0.5)
-      f = pow(2.0*f, u_gamma)/2.0;
-    else
-      f = 1.0 - pow(2.0*(1.0-f), u_gamma)/2.0;
+    if (f<=0.5) {
+      float xx = 2.0*f;
+      f = pow(xx, u_gamma)/2.0;
+      df = pow(xx, u_gamma-1.0);
+    }
+    else {
+      float xx = 2.0*(1.0-f);
+      f = 1.0 - pow(xx, u_gamma)/2.0;
+      df = pow(xx, u_gamma-1.0);
+    }
   }
 
   rval = mix(val0, val1, f);
-  drval = val1-val0;
+  drval = (val1-val0)*df;
 }
 
 vec4 calcColor(in float rho)
