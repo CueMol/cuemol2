@@ -36,6 +36,8 @@ uniform float u_tubersq;
 uniform float u_width1;
 uniform float u_width2;
 
+const float gamma = 2.5;
+
 ////////////////////
 // Varying variables
 
@@ -157,6 +159,13 @@ vec2 getEScl(in float rho)
   val1 = texelFetch1D(puttyTex, ncoeff+1, 0).xy;
 #endif
 
+  if (f<=0.5) {
+    f = pow(2.0*f, gamma)/2.0;
+  }
+  else {
+    f = 1.0 - pow(2.0*(1.0-f), gamma)/2.0;
+  }
+
   return mix(val0, val1, f);
 }
 
@@ -174,6 +183,13 @@ void getEScl2(in float rho, out vec2 rval, out vec2 drval)
   val0 = texelFetch1D(puttyTex, ncoeff, 0).xy;
   val1 = texelFetch1D(puttyTex, ncoeff+1, 0).xy;
 #endif
+
+  if (f<=0.5) {
+    f = pow(2.0*f, gamma)/2.0;
+  }
+  else {
+    f = 1.0 - pow(2.0*(1.0-f), gamma)/2.0;
+  }
 
   rval = mix(val0, val1, f);
   drval = val1-val0;
