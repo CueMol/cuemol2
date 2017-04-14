@@ -21,6 +21,10 @@ runtime_class GLSLRcTubeRenderer extends Tube2Renderer
   property boolean force_glsl => redirect(isForceGLSL, setForceGLSL);
   default force_glsl = true;
 
+  /// junction gamma for protss mode
+  property real gamma => redirect(getGamma, setGamma);
+  default gamma = 1.0;
+
 };
 
 #endif

@@ -33,6 +33,7 @@ using detail::DrawSegment;
 GLSLRcTubeRenderer::GLSLRcTubeRenderer()
      : super_t(), m_pPO(NULL), m_nRhoLoc(0)
 {
+  m_gamma = 1.0;
 }
 
 GLSLRcTubeRenderer::~GLSLRcTubeRenderer()
@@ -261,6 +262,7 @@ void GLSLRcTubeRenderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *
   m_pPO->setUniformF("u_tubersq", float( pTS->getTuber()*pTS->getTuber() ));
   m_pPO->setUniformF("u_width1", float( pTS->getWidth() ));
   m_pPO->setUniformF("u_width2", float( pTS->getWidth() * pTS->getTuber() ));
+  m_pPO->setUniformF("u_gamma", m_gamma);
 
   // Draw inner skin
   m_pPO->setUniformF("u_efac", 1.0f);

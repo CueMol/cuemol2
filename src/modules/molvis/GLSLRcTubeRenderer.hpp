@@ -62,6 +62,17 @@ namespace molvis {
 
     virtual void drawGLSL(detail::SplineSegment *pSeg, DisplayContext *pdc);
 
+  public:
+    float m_gamma;
+
+  public:
+    void setGamma(float d) {
+      m_gamma = d;
+      invalidateDisplayCache();
+    }
+    float getGamma() const { return m_gamma; }
+    
+
   private:
     /////////////////
     // work area

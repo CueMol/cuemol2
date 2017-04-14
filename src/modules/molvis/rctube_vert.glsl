@@ -42,7 +42,7 @@ uniform float u_width2;
 //uniform float u_tuber;
 uniform float u_efac;
 
-const float gamma = 2.5;
+uniform float u_gamma;
 
 ////////////////////
 // Vertex attributes
@@ -132,11 +132,11 @@ vec2 getEScl(in float rho)
   val1 = texelFetch1D(puttyTex, ncoeff+1, 0).xy;
 #endif
 
-  if (f<=0.5) {
-    f = pow(2.0*f, gamma)/2.0;
-  }
-  else {
-    f = 1.0 - pow(2.0*(1.0-f), gamma)/2.0;
+  if (u_gamma>1.0) {
+    if (f<=0.5)
+      f = pow(2.0*f, u_gamma)/2.0;
+    else
+      f = 1.0 - pow(2.0*(1.0-f), u_gamma)/2.0;
   }
 
   return mix(val0, val1, f);
