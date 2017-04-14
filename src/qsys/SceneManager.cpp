@@ -11,8 +11,6 @@
 
 #include "SceneManager.hpp"
 
-#include <boost/timer/timer.hpp>
-
 using namespace qsys;
 
 SINGLETON_BASE_IMPL(SceneManager);

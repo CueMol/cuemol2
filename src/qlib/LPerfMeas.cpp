@@ -7,9 +7,7 @@
 
 #include "LPerfMeas.hpp"
 
-#define HAVE_BOOST_TIMER 1
-
-#ifdef HAVE_BOOST_TIMER
+#ifdef USE_BOOST_TIMER
 #include <boost/timer/timer.hpp>
 #endif  
 
@@ -22,14 +20,14 @@ using namespace qlib;
 PerfMeasManager::PerfMeasManager()
      : m_busytimes(NAVER_SIZE), m_nBusyTimeIndex(0), m_nActiveTimerID(-1)
 {
-#ifdef HAVE_BOOST_TIMER
+#ifdef USE_BOOST_TIMER
   m_pTimer = MB_NEW boost::timer::cpu_timer();
 #endif
 }
 
 PerfMeasManager::~PerfMeasManager()
 {
-#ifdef HAVE_BOOST_TIMER
+#ifdef USE_BOOST_TIMER
   boost::timer::cpu_timer *pTimer = static_cast<boost::timer::cpu_timer *>(m_pTimer);
   delete pTimer;
 #endif
@@ -65,7 +63,7 @@ void PerfMeasManager::start(int nID)
   if (nID!=m_nActiveTimerID)
     return;
   
-#ifdef HAVE_BOOST_TIMER
+#ifdef USE_BOOST_TIMER
   boost::timer::cpu_timer *pTimer = static_cast<boost::timer::cpu_timer *>(m_pTimer);
   pTimer->start();
 #endif
@@ -76,12 +74,10 @@ void PerfMeasManager::end(int nID)
   if (nID!=m_nActiveTimerID)
     return;
 
-#ifdef HAVE_BOOST_TIMER
+#ifdef USE_BOOST_TIMER
   boost::timer::cpu_timer *pTimer = static_cast<boost::timer::cpu_timer *>(m_pTimer);
   pTimer->stop();
   boost::timer::cpu_times t = pTimer->elapsed();
   setBusyTime(t.wall);
 #endif
 }
-
-
