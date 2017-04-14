@@ -308,9 +308,6 @@ Vector2D Tube2Renderer::getEScl(const MolCoordPtr &pMol, Tube2SS *pSeg, float pa
   if (npm==TBR_PUTTY_OFF)
     return Vector2D(1,1);
 
-  //const float prod = 1.0f;
-  //const float plus = 0.0f;
-  
   int nprev = int(floorf(par));
   int nnext = int(ceilf(par));
   float rho = par - float(nprev);
