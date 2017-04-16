@@ -123,18 +123,16 @@ namespace molvis {
         {
           Vector4D d1, d2, d3;
           pAxInt->interpolate(s, &d1, &d2, &d3);
-          f = Vector3F(d1.x(), d1.y(), d1.z());
-          v0 = Vector3F(d2.x(), d2.y(), d2.z());
-          dv0 = Vector3F(d3.x(), d3.y(), d3.z());
+          f = Vector3F(d1.xyz());
+          v0 = Vector3F(d2.xyz());
+          dv0 = Vector3F(d3.xyz());
         }
 
         float v0len = v0.length();
         Vector3F e0 = v0.divide(v0len);
 
         Vector3F v2, dv2;
-        {
-          pSeg->intpolLinBn(s, &v2, &dv2);
-        }
+        pSeg->intpolLinBn(s, &v2, &dv2);
 
         float v2len = v2.length();
         Vector3F e2 = v2.divide(v2len);
