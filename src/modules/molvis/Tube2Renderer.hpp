@@ -19,7 +19,13 @@
 #include "TubeSection.hpp"
 #include "Spline2Renderer.hpp"
 
+#define TUBE2_DEBUG1 1
+
 #include "TubeTess.hpp"
+
+#ifdef TUBE2_DEBUG1
+#  include "TubeTessDebug1.hpp"
+#endif
 
 namespace molvis {
   
@@ -227,8 +233,12 @@ namespace molvis {
 
     virtual void drawVBO(detail::SplineSegment *pSeg, DisplayContext *pdc);
 
+#ifdef TUBE2_DEBUG1
+    typedef TubeTestTess<Tube2Renderer> Tess;
+#else
     typedef TubeTess<Tube2Renderer> Tess;
-
+#endif
+    
     /////////////////
     // File rendering
 

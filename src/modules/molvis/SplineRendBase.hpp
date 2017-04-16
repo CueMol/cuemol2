@@ -136,7 +136,7 @@ namespace molvis {
       
       void updateBinormIntpol(const MolCoordPtr &pCMol);
       
-      Vector3F intpolLinBn(float par);
+      bool intpolLinBn(float par, Vector3F *pb0, Vector3F *pdb0=NULL);
 
       void updateStatic(SplineRendBase *pthis);
       void updateDynamic(SplineRendBase *pthis);

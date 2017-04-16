@@ -266,7 +266,8 @@ bool SplineSegment::checkBinormFlip(const Vector3F &ndv, const Vector3F &binorm,
   return false;
 }
 
-Vector3F SplineSegment::intpolLinBn(float par)
+//Vector3F SplineSegment::intpolLinBn(float par)
+bool SplineSegment::intpolLinBn(float par, Vector3F *pb0, Vector3F *pdb0)
 {
   // check parameter value f
   int ncoeff = (int)::floor(par);
@@ -277,7 +278,11 @@ Vector3F SplineSegment::intpolLinBn(float par)
   const Vector3F &cp0 = m_linBnInt[ncoeff];
   const Vector3F &cp1 = m_linBnInt[ncoeff+1];
 
-  return cp0.scale(1.0f - f) + cp1.scale(f);
+  *pb0 = cp0.scale(1.0f - f) + cp1.scale(f);
+  if (pdb0!=NULL)
+    *pdb0 = cp1-cp0;
+
+  return true;
 }
 
 void SplineSegment::updateStatic(SplineRendBase *pthis)
@@ -373,7 +378,7 @@ void SplineSegment::getBasisVecs(float par, Vector3F &pos, Vector3F &e0,
 
   CubicSpline *pAxInt = getAxisIntpol();
   pAxInt->interpolate(par, &pos, &v0);
-  binorm = intpolLinBn(par);
+  intpolLinBn(par, &binorm);
   v0len = v0.length();
   e0 = v0.divide(v0len);
   v2 = binorm - e0.scale(e0.dot(binorm));

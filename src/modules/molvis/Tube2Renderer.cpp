@@ -88,18 +88,10 @@ void Tube2Renderer::createDisplayCache()
 void Tube2Renderer::setupVBO(detail::SplineSegment *pASeg)
 {
   Tube2SS *pSeg = static_cast<Tube2SS *>(pASeg);
-  //const int nDetail = getAxialDetail();
-  //const int nSecDiv = getTubeSection()->getSize();
-
-  // for spherical capping
-  //const int nSphr = nSecDiv/2;//getAxialDetail();
 
   BOOST_FOREACH (DrawSegment *pelem, pSeg->m_draws) {
     Tube2DS &elem = *static_cast<Tube2DS*>(pelem);
 
-    //const int nsplseg = elem.m_nEnd - elem.m_nStart;
-    //const int nAxPts = nDetail * nsplseg + 1;
-    //elem.m_nAxPts = nAxPts;
     
     int nVerts=0, nFaces=0;
     if (elem.m_ptess==NULL)
@@ -107,15 +99,17 @@ void Tube2Renderer::setupVBO(detail::SplineSegment *pASeg)
     Tess *ptess = static_cast<Tess *>(elem.m_ptess);
 
     ptess->calcSize(this, pSeg, &elem, nVerts, nFaces);
-    //ptess->calcSize(nAxPts, nSecDiv, getStartCapType(), getEndCapType(), isSmoothColor(),
-    //nVerts, nFaces);
 
     Tube2DS::VertArray *pVBO = elem.m_pVBO;
     if (pVBO!=NULL)
       delete pVBO;
     
     elem.m_pVBO = pVBO = MB_NEW Tube2DS::VertArray();
+#ifdef TUBE2_DEBUG1
+    pVBO->setDrawMode(gfx::DrawElem::DRAW_LINES);
+#else
     pVBO->setDrawMode(gfx::DrawElem::DRAW_TRIANGLES);
+#endif
     pVBO->alloc(nVerts);
     pVBO->allocIndex((nFaces)*3);
     LOG_DPRINTLN("Tube2Rend> %d/%d elems VBO created", nVerts, nFaces);
