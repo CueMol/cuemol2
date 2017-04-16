@@ -3,6 +3,8 @@
 //  Tube2Renderer fragment shader for OpenGL
 //
 
+//#define USE_LINBN 1
+
 #if (__VERSION__>=140)
 #define USE_TBO 1
 #else
@@ -61,6 +63,7 @@ void getCoefs(in int ind, out vec3 vc0, out vec3 vc1, out vec3 vc2, out vec3 vc3
 #endif
 }
 
+/// Get binorm vec (linear version)
 vec3 getBinorm(in int ind)
 {
 #ifdef USE_TBO
@@ -68,6 +71,36 @@ vec3 getBinorm(in int ind)
 #else
   return texelFetch1D(binormTex, ind, 0).xyz;
 #endif
+}
+
+/// Calculate binorm+pos (cubic spline version)
+vec3 calcBpos(in float rho)
+{
+  vec3 coef0, coef1, coef2, coef3;
+
+  int ind = int(floor(rho));
+  ind = clamp(ind, 0, u_npoints-2);
+
+#ifdef USE_TBO
+  coef0 = texelFetch(binormTex, ind*4+0).xyz;
+  coef1 = texelFetch(binormTex, ind*4+1).xyz;
+  coef2 = texelFetch(binormTex, ind*4+2).xyz;
+  coef3 = texelFetch(binormTex, ind*4+3).xyz;
+#else
+  coef0 = texelFetch1D(binormTex, ind*4+0, 0).xyz;
+  coef1 = texelFetch1D(binormTex, ind*4+1, 0).xyz;
+  coef2 = texelFetch1D(binormTex, ind*4+2, 0).xyz;
+  coef3 = texelFetch1D(binormTex, ind*4+3, 0).xyz;
+#endif
+
+  float f = rho - float(ind);
+
+  vec3 rval;
+  rval = coef3*f + coef2;
+  rval = rval*f + coef1;
+  rval = rval*f + coef0;
+
+  return rval;
 }
 
 void interpolate2(in float rho, out vec3 rval, out vec3 drval)
@@ -203,13 +236,18 @@ void main (void)
 {
   vec4 color;
 
-
   float par = v_rho.x;
   vec3 cpos, v0;
-
   interpolate2(par, cpos, v0);
-  vec3 e0 = normalize(v0);
+
+#ifdef USE_LINBN
   vec3 binorm = calcBinorm(par);
+#else
+  vec3 bpos = calcBpos(par);
+  vec3 binorm = bpos - cpos;
+#endif
+
+  vec3 e0 = normalize(v0);
   vec3 v2 = binorm - e0*(dot(e0,binorm));
   vec3 e2 = normalize(v2);
   vec3 e1 = cross(e2,e0);

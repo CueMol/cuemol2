@@ -67,6 +67,7 @@ void getCoefs(in int ind, out vec3 vc0, out vec3 vc1, out vec3 vc2, out vec3 vc3
 #endif
 }
 
+/// Get binorm vec (linear version)
 vec3 getBinorm(in int ind)
 {
 #ifdef USE_TBO
@@ -76,17 +77,27 @@ vec3 getBinorm(in int ind)
 #endif
 }
 
-/*
-vec3 interpolate(in TextureType tex, in float rho)
+/// Calculate binorm+pos (cubic spline version)
+vec3 calcBpos(in float rho)
 {
   vec3 coef0, coef1, coef2, coef3;
 
-  int ncoeff = int(floor(rho));
-  ncoeff = clamp(ncoeff, 0, u_npoints-2);
+  int ind = int(floor(rho));
+  ind = clamp(ind, 0, u_npoints-2);
 
-  getCoefs(tex, ncoeff, coef0, coef1, coef2, coef3);
+#ifdef USE_TBO
+  coef0 = texelFetch(binormTex, ind*4+0).xyz;
+  coef1 = texelFetch(binormTex, ind*4+1).xyz;
+  coef2 = texelFetch(binormTex, ind*4+2).xyz;
+  coef3 = texelFetch(binormTex, ind*4+3).xyz;
+#else
+  coef0 = texelFetch1D(binormTex, ind*4+0, 0).xyz;
+  coef1 = texelFetch1D(binormTex, ind*4+1, 0).xyz;
+  coef2 = texelFetch1D(binormTex, ind*4+2, 0).xyz;
+  coef3 = texelFetch1D(binormTex, ind*4+3, 0).xyz;
+#endif
 
-  float f = rho - float(ncoeff);
+  float f = rho - float(ind);
 
   vec3 rval;
   rval = coef3*f + coef2;
@@ -95,7 +106,6 @@ vec3 interpolate(in TextureType tex, in float rho)
 
   return rval;
 }
-*/
 
 void interpolate2(in float rho, out vec3 rval, out vec3 drval)
 {
@@ -118,8 +128,6 @@ void interpolate2(in float rho, out vec3 rval, out vec3 drval)
 
 vec3 calcBinorm(in float rho)
 {
-  vec3 coef0, coef1, coef2, coef3;
-
   int ncoeff = int(floor(rho));
   ncoeff = clamp(ncoeff, 0, u_npoints-2);
 
@@ -236,22 +244,22 @@ float ffog(in float ecDistance)
 
 void main (void)
 {
-  //float xx = float(a_ind12.x)/2.0;
-
-  //float par = a_rho.x;
 #ifdef USE_INSTANCED
   float par = a_rho.x + gl_InstanceID;
 #else
   float par = a_rho.x + u_InstanceID;
 #endif
 
-  vec3 cpos, bpos, binorm, v0;
+  vec3 cpos, binorm, v0;
 
   interpolate2(par, cpos, v0);
 
-  //bpos = interpolate(binormTex, par);
-  //vec3 binorm = bpos - cpos;
+#ifdef USE_LINBN
   binorm = calcBinorm(par);
+#else
+  vec3 bpos = calcBpos(par);
+  binorm = bpos - cpos;
+#endif
   
   vec3 e0 = normalize(v0);
 

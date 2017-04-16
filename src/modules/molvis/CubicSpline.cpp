@@ -12,6 +12,7 @@
 using namespace molvis;
 
 CubicSpline::CubicSpline()
+     : m_nPoints(0)
 {
 }
 

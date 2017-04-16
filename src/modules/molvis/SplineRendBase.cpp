@@ -45,9 +45,12 @@ void SplineSegment::generate(SplineRendBase *pthis)
   m_scoeff.setSize(nsz);
   m_nCtlPts = nsz;
 
-  // ADDED: initialize binorm vec interpolator
-  // m_bnormInt.setSize(m_nCtlPts);
+#ifdef USE_LINBN
   m_linBnInt.resize(m_nCtlPts);
+#else
+  // initialize binorm vec interpolator
+   m_bnormInt.setSize(m_nCtlPts);
+#endif
 
   MolCoordPtr pCMol = pthis->getClientMol();
 
@@ -165,13 +168,20 @@ void SplineSegment::updateBinormIntpol(const MolCoordPtr &pCMol)
       binorm = -binorm;
     }
       
-    // m_bnormInt.setPoint(i, curpos + binorm);
+#ifdef USE_LINBN
     m_linBnInt[i] = binorm;
+#else
+    m_bnormInt.setPoint(i, curpos + binorm);
+#endif
+
     prev_dv = dv;
     prev_bn = binorm;
   }
 
-  // m_bnormInt.generate();
+#ifndef USE_LINBN
+   m_bnormInt.generate();
+#endif
+  
 }
 
 Vector3F SplineSegment::calcBinormVec(const MolCoordPtr &pMol, int nres)
@@ -266,22 +276,32 @@ bool SplineSegment::checkBinormFlip(const Vector3F &ndv, const Vector3F &binorm,
   return false;
 }
 
-//Vector3F SplineSegment::intpolLinBn(float par)
-bool SplineSegment::intpolLinBn(float par, Vector3F *pb0, Vector3F *pdb0)
+bool SplineSegment::intpolBinorm(float par, Vector3F *pb0, Vector3F *pdb0)
 {
+#ifdef USE_LINBN
   // check parameter value f
   int ncoeff = (int)::floor(par);
   ncoeff = qlib::clamp<int>(ncoeff, 0, m_nCtlPts-2);
-  
-  float f = par - float(ncoeff);
-  
+  float s = par - float(ncoeff);
   const Vector3F &cp0 = m_linBnInt[ncoeff];
   const Vector3F &cp1 = m_linBnInt[ncoeff+1];
 
-  *pb0 = cp0.scale(1.0f - f) + cp1.scale(f);
+  *pb0 = cp0.scale(1.0f - s) + cp1.scale(s);
   if (pdb0!=NULL)
     *pdb0 = cp1-cp0;
 
+#else
+
+  Vector3F bnf, dbnf;
+  m_bnormInt.interpolate(par, &bnf, &dbnf);
+
+  Vector3F f, df;
+  m_scoeff.interpolate(par, &f, &df);
+  *pb0 = bnf-f;
+  if (pdb0!=NULL)
+    *pdb0 = dbnf-df;
+#endif
+  
   return true;
 }
 
@@ -378,7 +398,7 @@ void SplineSegment::getBasisVecs(float par, Vector3F &pos, Vector3F &e0,
 
   CubicSpline *pAxInt = getAxisIntpol();
   pAxInt->interpolate(par, &pos, &v0);
-  intpolLinBn(par, &binorm);
+  intpolBinorm(par, &binorm);
   v0len = v0.length();
   e0 = v0.divide(v0len);
   v2 = binorm - e0.scale(e0.dot(binorm));

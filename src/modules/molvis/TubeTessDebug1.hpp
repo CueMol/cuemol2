@@ -70,7 +70,6 @@ namespace molvis {
 
       //_VertArray *pVBO = m_pTarg;
       int i, j;
-      int ij, ijp, ipj, ipjp;
       int irow;
 
       for (i=0; i<m_nAxPts; ++i) {
@@ -110,8 +109,8 @@ namespace molvis {
         pCMol = pRend->getClientMol();
       }
 
-      const float width1 = pTS->getWidth();
-      const float width2 = pTS->getWidth()*pTS->getTuber();
+      const float width1 = float(pTS->getWidth());
+      const float width2 = float(pTS->getWidth()*pTS->getTuber());
 
       for (i=0; i<m_nAxPts; ++i) {
         const float s = float(i)/fDetail + fStart;
@@ -132,7 +131,7 @@ namespace molvis {
         Vector3F e0 = v0.divide(v0len);
 
         Vector3F v2, dv2;
-        pSeg->intpolLinBn(s, &v2, &dv2);
+        pSeg->intpolBinorm(s, &v2, &dv2);
 
         float v2len = v2.length();
         Vector3F e2 = v2.divide(v2len);
@@ -145,7 +144,7 @@ namespace molvis {
 
         for (j=0; j<nSecDiv; ++j) {
           const float t = float(j)/float(nSecDiv);
-          float th = t * M_PI * 2.0f;
+          float th = t * float(M_PI) * 2.0f;
           //float th = st.t;
           float si = sin(th);
           float co = cos(th);

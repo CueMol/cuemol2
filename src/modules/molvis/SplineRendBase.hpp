@@ -21,6 +21,8 @@
 #else
 #endif
 
+//#define USE_LINBN 1
+
 namespace sysdep {
   class OglProgramObject;
 }
@@ -110,25 +112,28 @@ namespace molvis {
       }
       
 
-      /// Main axis interpolation coeff (common, cubic spline)
-      CubicSpline m_scoeff;
-      
-      /// Binorm interpolation coeff (linear)
-      std::vector<Vector3F> m_linBnInt;
-      
       /// Number of the Interpolation control points
       int m_nCtlPts;
       
       quint32 getSize() const { return m_nCtlPts; }
 
+      void generate(SplineRendBase *pthis);
+
+      /// Main axis interpolation coeff (common, cubic spline)
+      CubicSpline m_scoeff;
+      
       CubicSpline *getAxisIntpol() { return &m_scoeff; }
 
 
-      void generate(SplineRendBase *pthis);
+#ifdef USE_LINBN
+      /// Binorm interpolation coeff (linear)
+      std::vector<Vector3F> m_linBnInt;
+#else
+      /// Binorm interpolation coeff
+      CubicSpline m_bnormInt;
+      CubicSpline *getBinormIntpol() { return &m_bnormInt; }
+#endif
 
-      ColorPtr calcColorPtr(SplineRendBase *pthis, const MolCoordPtr &pMol, float par) const;
-      quint32 calcColor(SplineRendBase *pthis, const MolCoordPtr &pMol, float par) const;
-      
       Vector3F calcBinormVec(const MolCoordPtr &pMol, int nres);
 
       bool checkBinormFlip(const Vector3F &dv, const Vector3F &binorm,
@@ -136,7 +141,8 @@ namespace molvis {
       
       void updateBinormIntpol(const MolCoordPtr &pCMol);
       
-      bool intpolLinBn(float par, Vector3F *pb0, Vector3F *pdb0=NULL);
+      bool intpolBinorm(float par, Vector3F *pb0, Vector3F *pdb0=NULL);
+      
 
       void updateStatic(SplineRendBase *pthis);
       void updateDynamic(SplineRendBase *pthis);
@@ -144,6 +150,11 @@ namespace molvis {
       void getBasisVecs(float par, Vector3F &pos, Vector3F &e0,
                         Vector3F &e1, Vector3F &e2);
 
+      //////////
+
+      ColorPtr calcColorPtr(SplineRendBase *pthis, const MolCoordPtr &pMol, float par) const;
+      quint32 calcColor(SplineRendBase *pthis, const MolCoordPtr &pMol, float par) const;
+      
       //////////
 
       typedef std::deque<DrawSegment *> DrawList;

@@ -247,7 +247,7 @@ void Tube2Renderer::initPuttyData()
 
   pSel = getSelection();
 
-  double dmin = 1.0e100, dmax = -1.0e100, val, dsum = 0.0;
+  float dmin = 1.0e10, dmax = -1.0e10, val, dsum = 0.0;
   int nadd=0;
   ResidIterator iter(pMol, pSel);
   for (iter.first(); iter.hasMore(); iter.next()) {
@@ -257,9 +257,9 @@ void Tube2Renderer::initPuttyData()
     if (pAtom.isnull()) continue;
     
     if (m_nPuttyTgt==TBR_PUTTY_OCC)
-      val = pAtom->getOcc();
+      val = float(pAtom->getOcc());
     else
-      val = pAtom->getBfac();
+      val = float(pAtom->getBfac());
     
     dsum += val;
     dmin = qlib::min(dmin, val);
@@ -269,7 +269,7 @@ void Tube2Renderer::initPuttyData()
   
   m_dParHi = dmax;
   m_dParLo = dmin;
-  m_dParAver = dsum/double(nadd);
+  m_dParAver = dsum/float(nadd);
 
   MB_DPRINTLN("Tube> init high=%f, low=%f, aver=%f OK.", dmax, dmin, m_dParAver);
 }
@@ -320,16 +320,16 @@ Vector2D Tube2Renderer::getEScl(const MolCoordPtr &pMol, Tube2SS *pSeg, float pa
 
   if (!pAtom1.isnull()) {
     if (m_nPuttyTgt==TBR_PUTTY_OCC)
-      par1 = pAtom1->getOcc();
+      par1 = float(pAtom1->getOcc());
     else
-      par1 = pAtom1->getBfac();
+      par1 = float(pAtom1->getBfac());
 
   }
   if (!pAtom2.isnull()) {
     if (m_nPuttyTgt==TBR_PUTTY_OCC)
-      par2 = pAtom2->getOcc();
+      par2 = float(pAtom2->getOcc());
     else
-      par2 = pAtom2->getBfac();
+      par2 = float(pAtom2->getBfac());
   }
       
   // linear interpolation between two residues (if exists)
@@ -339,13 +339,13 @@ Vector2D Tube2Renderer::getEScl(const MolCoordPtr &pMol, Tube2SS *pSeg, float pa
   else if (1.0-F_EPS4<rho)
     val = par2;
   else
-    val = par1 * (1.0-rho) + par2 * rho;
+    val = par1 * (1.0f-rho) + par2 * rho;
 
   // convert val to scaling factor
   if (npm==TBR_PUTTY_LINEAR1) {
     // linear conversion
     val = (val-m_dParLo)/(m_dParHi-m_dParLo);
-    val = (m_dPuttyScl-1.0/m_dPuttyLoScl)*val + 1.0/m_dPuttyLoScl;
+    val = (m_dPuttyScl-1.0f/m_dPuttyLoScl)*val + 1.0f/m_dPuttyLoScl;
   }
   else if (npm==TBR_PUTTY_SCALE1) {
     // multiplication conversion 1
@@ -353,12 +353,12 @@ Vector2D Tube2Renderer::getEScl(const MolCoordPtr &pMol, Tube2SS *pSeg, float pa
     if (val<m_dParAver) {
       val = (val-m_dParLo)/(m_dParAver-m_dParLo);
       // val = ::pow(m_dPuttyLoScl, val-1.0);
-      val = ((m_dPuttyLoScl-1)*val+1.0)/m_dPuttyLoScl;
+      val = ((m_dPuttyLoScl-1)*val+1.0f)/m_dPuttyLoScl;
     }
     else {
       val = (val-m_dParAver)/(m_dParHi-m_dParAver);
       // val = ::pow(m_dPuttyScl, val);
-      val = (m_dPuttyScl-1.0)*val + 1.0;
+      val = (m_dPuttyScl-1.0f)*val + 1.0f;
     }
   }
   else {

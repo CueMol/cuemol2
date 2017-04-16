@@ -59,6 +59,7 @@ GLSLTube2Renderer::GLSLTube2Renderer()
      : super_t(), m_pPO(NULL), m_nRhoLoc(0), m_pSectTex(NULL)
 {
   m_bUseFragLtg = true;
+  //m_bUseFragLtg = false;
 }
 
 GLSLTube2Renderer::~GLSLTube2Renderer()
@@ -256,7 +257,13 @@ void GLSLTube2Renderer::updateCrdGLSL(detail::SplineSegment *pASeg)
   const int nCtlPts = pSeg->m_nCtlPts;
   
   pSeg->m_pCoefTex->setData(nCtlPts * 4, 1, 1, pSeg->m_scoeff.getCoefArray());
+#ifdef USE_LINBN
   pSeg->m_pBinormTex->setData(nCtlPts, 1, 1, &pSeg->m_linBnInt[0]);
+#else
+  // TO DO: impl
+  pSeg->m_pBinormTex->setData(nCtlPts * 4, 1, 1, pSeg->m_bnormInt.getCoefArray());
+#endif
+  
 }
 
 void GLSLTube2Renderer::updateColorGLSL(detail::SplineSegment *pASeg)
