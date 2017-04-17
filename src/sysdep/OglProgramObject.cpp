@@ -25,7 +25,7 @@ OglShaderObject::~OglShaderObject()
   }
 }
 
-void OglShaderObject::loadFile(const LString& filename, SOMacroDefs *penv)
+void OglShaderObject::loadFile(const LString& filename, SOMacroDefs *penv /*= NULL*/)
 {
   CLR_GLERROR();
   // CHK_GLERROR("SO.loadFile createShader BEFORE");
@@ -188,7 +188,7 @@ void OglProgramObject::clear()
   m_shaders.clear();
 }
 
-bool OglProgramObject::loadShader(const LString &name, const LString &srcpath, GLenum shader_type)
+bool OglProgramObject::loadShader(const LString &name, const LString &srcpath, GLenum shader_type, SOMacroDefs *pENV /*= NULL*/)
 {
   ShaderTab::const_iterator i = m_shaders.find(name);
   if (i!=m_shaders.end())
@@ -199,7 +199,7 @@ bool OglProgramObject::loadShader(const LString &name, const LString &srcpath, G
     return false;
 
   MB_DPRINTLN("PO> Loading shader: %s", srcpath.c_str());
-  pVS->loadFile(srcpath);
+  pVS->loadFile(srcpath, pENV);
   pVS->compile();
   attach(pVS);
   m_shaders.insert(ShaderTab::value_type(name, pVS));

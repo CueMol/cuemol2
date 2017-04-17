@@ -3,6 +3,8 @@
 //  GLSLRcTubeRenderer vertex shader for OpenGL
 //
 
+//#define USE_LINBN 1
+
 #if (__VERSION__>=140)
 #define USE_TBO 1
 #define USE_INSTANCED 1
@@ -83,6 +85,36 @@ vec3 getBinorm(in int ind)
 #endif
 }
 
+/// Calculate binorm+pos
+vec3 calcBpos(in float rho)
+{
+  vec3 coef0, coef1, coef2, coef3;
+
+  int ind = int(floor(rho));
+  ind = clamp(ind, 0, u_npoints-2);
+
+#ifdef USE_TBO
+  coef0 = texelFetch(binormTex, ind*4+0).xyz;
+  coef1 = texelFetch(binormTex, ind*4+1).xyz;
+  coef2 = texelFetch(binormTex, ind*4+2).xyz;
+  coef3 = texelFetch(binormTex, ind*4+3).xyz;
+#else
+  coef0 = texelFetch1D(binormTex, ind*4+0, 0).xyz;
+  coef1 = texelFetch1D(binormTex, ind*4+1, 0).xyz;
+  coef2 = texelFetch1D(binormTex, ind*4+2, 0).xyz;
+  coef3 = texelFetch1D(binormTex, ind*4+3, 0).xyz;
+#endif
+
+  float f = rho - float(ind);
+
+  vec3 rval;
+  rval = coef3*f + coef2;
+  rval = rval*f + coef1;
+  rval = rval*f + coef0;
+
+  return rval;
+}
+
 void interpolate2(in float rho, out vec3 rval, out vec3 drval)
 {
   vec3 coef0, coef1, coef2, coef3;
@@ -104,8 +136,6 @@ void interpolate2(in float rho, out vec3 rval, out vec3 drval)
 
 vec3 calcBinorm(in float rho)
 {
-  vec3 coef0, coef1, coef2, coef3;
-
   int ncoeff = int(floor(rho));
   ncoeff = clamp(ncoeff, 0, u_npoints-2);
 
@@ -150,7 +180,13 @@ void st2pos(in vec2 st, in float efac, out vec4 pos)
   float v0len = length(v0);
   vec3 e0 = v0/v0len;
   
+#ifdef USE_LINBN
   vec3 v2 = calcBinorm(st.s);
+#else
+  vec3 bpos = calcBpos(st.s);
+  vec3 v2 = bpos - f;
+#endif
+
   vec3 e2 = normalize(v2);
 
   vec3 e1 = cross(e2, e0);

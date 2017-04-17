@@ -3,6 +3,8 @@
 //  GLSLRcTubeRenderer fragment shader for OpenGL
 //
 
+//#define USE_LINBN 1
+
 #if (__VERSION__>=140)
 #define USE_TBO 1
 #else
@@ -73,6 +75,36 @@ vec3 getBinorm(in int ind)
 #endif
 }
 
+/// Calculate binorm+pos (cubic spline version)
+void calcBpos2(in float rho, out vec3 rval, out vec3 drval)
+{
+  vec3 coef0, coef1, coef2, coef3;
+
+  int ind = int(floor(rho));
+  ind = clamp(ind, 0, u_npoints-2);
+
+#ifdef USE_TBO
+  coef0 = texelFetch(binormTex, ind*4+0).xyz;
+  coef1 = texelFetch(binormTex, ind*4+1).xyz;
+  coef2 = texelFetch(binormTex, ind*4+2).xyz;
+  coef3 = texelFetch(binormTex, ind*4+3).xyz;
+#else
+  coef0 = texelFetch1D(binormTex, ind*4+0, 0).xyz;
+  coef1 = texelFetch1D(binormTex, ind*4+1, 0).xyz;
+  coef2 = texelFetch1D(binormTex, ind*4+2, 0).xyz;
+  coef3 = texelFetch1D(binormTex, ind*4+3, 0).xyz;
+#endif
+
+  float f = rho - float(ind);
+
+  rval = coef3*f + coef2;
+  rval = rval*f + coef1;
+  rval = rval*f + coef0;
+
+  drval = coef3*(3.0*f) + coef2*2.0;
+  drval = drval*f + coef1;
+}
+
 void interpolate2(in float rho, out vec3 rval, out vec3 drval)
 {
   vec3 coef0, coef1, coef2, coef3;
@@ -115,8 +147,6 @@ void interpolate3(in float rho, out vec3 rval, out vec3 drval, out vec3 ddrval)
 
 vec3 calcBinorm(in float rho)
 {
-  vec3 coef0, coef1, coef2, coef3;
-
   int ncoeff = int(floor(rho));
   ncoeff = clamp(ncoeff, 0, u_npoints-2);
 
@@ -130,8 +160,6 @@ vec3 calcBinorm(in float rho)
 
 void calcBinorm2(in float rho, out vec3 rval, out vec3 drval)
 {
-  vec3 coef0, coef1, coef2, coef3;
-
   int ncoeff = int(floor(rho));
   ncoeff = clamp(ncoeff, 0, u_npoints-2);
 
@@ -189,12 +217,12 @@ void getEScl2(in float rho, out vec2 rval, out vec2 drval)
     if (f<=0.5) {
       float xx = 2.0*f;
       f = pow(xx, u_gamma)/2.0;
-      df = pow(xx, u_gamma-1.0);
+      df = u_gamma * pow(xx, u_gamma-1.0);
     }
     else {
       float xx = 2.0*(1.0-f);
       f = 1.0 - pow(xx, u_gamma)/2.0;
-      df = pow(xx, u_gamma-1.0);
+      df = u_gamma * pow(xx, u_gamma-1.0);
     }
   }
 
@@ -347,7 +375,16 @@ void st2pos_dsdt(in vec2 st, out vec4 pos, out vec4 pos_ds, out vec4 pos_dt)
   vec3 e0 = v0/v0len;
   
   vec3 v2, dv2;
+
+#ifdef USE_LINBN
   calcBinorm2(st.s, v2, dv2);
+#else
+  vec3 bpos, dbpos;
+  calcBpos2(st.s, bpos, dbpos);
+  v2 = bpos - f;
+  dv2 = dbpos - v0;
+#endif
+
   float v2len = length(v2);
   vec3 e2 = v2/v2len;
 

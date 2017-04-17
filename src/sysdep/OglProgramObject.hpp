@@ -81,7 +81,7 @@ namespace sysdep {
 
     bool init();
 
-    bool loadShader(const LString &name, const LString &srcpath, GLenum shader_type);
+    bool loadShader(const LString &name, const LString &srcpath, GLenum shader_type, SOMacroDefs *pENV = NULL);
 
     void clear();
 
@@ -328,6 +328,8 @@ namespace sysdep {
   private:
     _ClientType *m_pCli;
     
+    SOMacroDefs m_defs;
+
   public:
     ShaderSetupHelper(_ClientType *pCli)
          : m_pCli(pCli)
@@ -350,6 +352,14 @@ namespace sysdep {
         return false;
       }
       return true;
+    }
+
+    void setMacroDefs(const SOMacroDefs &defs) {
+      m_defs = defs;
+    }
+
+    void defineMacro(const LString &nm, const LString &val) {
+      m_defs.insert(SOMacroDefs::value_type(nm, val));
     }
 
     OglDisplayContext *getContext()
@@ -390,8 +400,14 @@ namespace sysdep {
         }
         
         try {
-          pPO->loadShader("vert", vert_path, GL_VERTEX_SHADER);
-          pPO->loadShader("frag", frag_path, GL_FRAGMENT_SHADER);
+          if (m_defs.empty()) {
+            pPO->loadShader("vert", vert_path, GL_VERTEX_SHADER);
+            pPO->loadShader("frag", frag_path, GL_FRAGMENT_SHADER);
+          }
+          else {
+            pPO->loadShader("vert", vert_path, GL_VERTEX_SHADER, &m_defs);
+            pPO->loadShader("frag", frag_path, GL_FRAGMENT_SHADER, &m_defs);
+          }
           pPO->link();
         }
         catch (...) {
@@ -426,9 +442,16 @@ namespace sysdep {
         }
         
         try {
-          pPO->loadShader("vert", vert_path, GL_VERTEX_SHADER);
-          pPO->loadShader("frag", frag_path, GL_FRAGMENT_SHADER);
-          pPO->loadShader("geom", geom_path, GL_GEOMETRY_SHADER);
+          if (m_defs.empty()) {
+            pPO->loadShader("vert", vert_path, GL_VERTEX_SHADER);
+            pPO->loadShader("frag", frag_path, GL_FRAGMENT_SHADER);
+            pPO->loadShader("geom", geom_path, GL_GEOMETRY_SHADER);
+          }
+          else {
+            pPO->loadShader("vert", vert_path, GL_VERTEX_SHADER, &m_defs);
+            pPO->loadShader("frag", frag_path, GL_FRAGMENT_SHADER, &m_defs);
+            pPO->loadShader("geom", geom_path, GL_GEOMETRY_SHADER, &m_defs);
+          }
           pPO->setProgParam(GL_GEOMETRY_INPUT_TYPE_EXT, in_type);
           pPO->setProgParam(GL_GEOMETRY_OUTPUT_TYPE_EXT, out_type);
           pPO->setProgParam(GL_GEOMETRY_VERTICES_OUT_EXT, out_count);

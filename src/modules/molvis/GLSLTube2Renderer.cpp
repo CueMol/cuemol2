@@ -91,6 +91,9 @@ bool GLSLTube2Renderer::init(DisplayContext *pdc)
   }
 
   if (m_pPO==NULL) {
+#ifdef USE_LINBN
+    ssh.defineMacro("USE_LINBN","1");
+#endif
     if (m_bUseFragLtg)
       m_pPO = ssh.createProgObj("gpu_tube21",
                                 "%%CONFDIR%%/data/shaders/tube21_vert.glsl",

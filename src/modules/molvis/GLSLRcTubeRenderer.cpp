@@ -57,6 +57,9 @@ bool GLSLRcTubeRenderer::init(DisplayContext *pdc)
   }
 
   if (m_pPO==NULL) {
+#ifdef USE_LINBN
+    ssh.defineMacro("USE_LINBN","1");
+#endif
     m_pPO = ssh.createProgObj("gpu_rctube1",
                               "%%CONFDIR%%/data/shaders/rctube_vert.glsl",
                               "%%CONFDIR%%/data/shaders/rctube_frag.glsl");
