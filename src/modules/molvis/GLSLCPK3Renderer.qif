@@ -1,0 +1,27 @@
+// -*-Mode: C++;-*-
+//
+// CPK3 renderer implementation using GLSL
+//
+
+#ifndef CPK3_REND_GLSL_QIF_INCLUDED
+#define CPK3_REND_GLSL_QIF_INCLUDED
+
+#include "CPK3Renderer.qif"
+
+runtime_class GLSLCPK3Renderer extends CPK3Renderer
+{
+  client_hdr "GLSLCPK3Renderer.hpp";
+  client_name molvis::GLSLCPK3Renderer;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  /// force to use GLSL
+  property boolean force_glsl => redirect(isForceGLSL, setForceGLSL);
+  default force_glsl = true;
+
+};
+
+#endif
+
