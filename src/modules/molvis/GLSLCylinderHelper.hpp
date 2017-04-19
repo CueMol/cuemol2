@@ -6,6 +6,8 @@
 #ifndef GLSL_CYLINDER_HELPER_HPP_INCLUDED
 #define GLSL_CYLINDER_HELPER_HPP_INCLUDED
 
+#include <sysdep/OglShaderSetupHelper.hpp>
+
 namespace molvis {
 
   class GLSLCylinderHelper
@@ -54,7 +56,7 @@ namespace molvis {
     bool initShader(qsys::Renderer *pRend)
     {
       MB_ASSERT(m_pPO == NULL);
-      sysdep::ShaderSetupHelper<qsys::Renderer> ssh(pRend);
+      sysdep::OglShaderSetupHelper<qsys::Renderer> ssh(pRend);
       
       if (!ssh.checkEnvVS()) {
         MB_DPRINTLN("GLShader not supported");

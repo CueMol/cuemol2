@@ -56,9 +56,13 @@ namespace molstr {
 
     ////////
 
-    /// get crdarray index from AID
+    /// Get crdarray index from AID
     quint32 getCrdArrayInd(int aid) const;
 
+    /// Get AID from crdarray index
+    int getAtomIDByArrayInd(quint32 idx) const {
+      return m_aidmap[idx];
+    }
 
     /// Get atom's coordinates from CrdArray
     Vector4D getAtomCrd(int aid) const;

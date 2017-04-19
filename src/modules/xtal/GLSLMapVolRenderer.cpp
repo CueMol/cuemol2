@@ -15,6 +15,8 @@
 
 #include <gfx/Texture.hpp>
 
+#include <sysdep/OglShaderSetupHelper.hpp>
+
 #define CHK_GLERROR(MSG)\
 { \
   GLenum errc; \
@@ -142,7 +144,7 @@ void GLSLMapVolRenderer::viewChanged(qsys::ViewEvent &ev)
 
 void GLSLMapVolRenderer::initShader(DisplayContext *pdc)
 {
-  sysdep::ShaderSetupHelper<GLSLMapVolRenderer> ssh(this);
+  sysdep::OglShaderSetupHelper<GLSLMapVolRenderer> ssh(this);
 
   if (!ssh.checkEnvVS()) {
     LOG_DPRINTLN("GPUMapMesh> ERROR: OpenGL GPU shading not supported.");

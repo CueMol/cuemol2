@@ -19,7 +19,7 @@
 #include "TubeSection.hpp"
 #include "Spline2Renderer.hpp"
 
-#define TUBE2_DEBUG1 1
+// #define TUBE2_DEBUG1 1
 
 #include "TubeTess.hpp"
 

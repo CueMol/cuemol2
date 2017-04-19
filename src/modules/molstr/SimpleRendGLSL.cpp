@@ -17,8 +17,8 @@
 #include "AtomIterator.hpp"
 
 #include <gfx/Texture.hpp>
-#include <sysdep/OglDisplayContext.hpp>
-#include <sysdep/OglProgramObject.hpp>
+//#include <sysdep/OglDisplayContext.hpp>
+#include <sysdep/OglShaderSetupHelper.hpp>
 #include <qsys/Scene.hpp>
 
 #ifdef WIN32
@@ -75,7 +75,7 @@ bool SimpleRendGLSL::init(DisplayContext *pdc)
 {
   // m_bChkShaderDone = true;
 
-  sysdep::ShaderSetupHelper<SimpleRendGLSL> ssh(this);
+  sysdep::OglShaderSetupHelper<SimpleRendGLSL> ssh(this);
 
   if (!ssh.checkEnvVS()) {
     LOG_DPRINTLN("SimpleRendGLSL> ERROR: GLSL not supported.");

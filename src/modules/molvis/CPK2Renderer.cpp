@@ -235,18 +235,15 @@ void CPK2Renderer::renderVBOImpl()
     return; // nothing to draw
   
   // initialize the coloring scheme
-  //getColSchm()->start(pMol, this);
-  //pMol->getColSchm()->start(pMol, this);
   startColorCalc(pMol);
 
-  gfx::SphereSetTmpl<gfx::VBOSphereSet_traits> sphs2;
+  gfx::SphereTess<gfx::VBOSphereTessTraits> sphs2;
 
-  //gfx::SphereSet sphs;
-  //sphs.create(nsphs, m_nDetail);
-  sphs2.getdata().create(nsphs, m_nDetail);
+  //sphs2.getdata().create(nsphs, m_nDetail);
+  sphs2.create(nsphs, m_nDetail);
+  
   if (!useShaderAlpha()) {
-    //sphs.setAlpha(getDefaultAlpha());
-    sphs2.getdata().setAlpha(getDefaultAlpha());
+    sphs2.getTrait().setAlpha(getDefaultAlpha());
   }
 
   // build meshes / DrawElemVNCI
@@ -258,24 +255,17 @@ void CPK2Renderer::renderVBOImpl()
       MolAtomPtr pAtom = pMol->getAtom(aid);
       if (pAtom.isnull()) continue; // ignore errors
 
-      //sphs.sphere(i, pAtom->getPos(),
-      //getVdWRadius(pAtom),
-      //ColSchmHolder::getColor(pAtom));
-
-      sphs2.getdata().sphere(i, pAtom->getPos(),
-                             getVdWRadius(pAtom),
-                             ColSchmHolder::getColor(pAtom));
+      sphs2.getSphrs().sphere(i, pAtom->getPos(),
+                              getVdWRadius(pAtom),
+                              ColSchmHolder::getColor(pAtom));
 
       ++i;
     }
   }
 
-  //m_pDrawElem = sphs.buildDrawElem();
-  m_pDrawElem = sphs2.getdata().buildDrawElem(&sphs2);
+  m_pDrawElem = sphs2.getTrait().buildDrawElem(&sphs2);
 
   // finalize the coloring scheme
-  //getColSchm()->end();
-  //pMol->getColSchm()->end();
   endColorCalc(pMol);
 }
 

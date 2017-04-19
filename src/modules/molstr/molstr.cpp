@@ -104,8 +104,8 @@ bool init()
   RendererFactory *pRF = RendererFactory::getInstance();
 
 #ifdef USE_OPENGL
-  //pRF->regist<SimpleRendGLSL>();
-  pRF->regist<SimpleRenderer>();
+  pRF->regist<SimpleRendGLSL>();
+  //pRF->regist<SimpleRenderer>();
 #else
   pRF->regist<SimpleRenderer>();
 #endif

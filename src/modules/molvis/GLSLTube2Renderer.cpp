@@ -17,7 +17,7 @@
 #include <modules/molstr/ResidIterator.hpp>
 #include <modules/molstr/AnimMol.hpp>
 
-#include <sysdep/OglProgramObject.hpp>
+#include <sysdep/OglShaderSetupHelper.hpp>
 
 #ifdef WIN32
 #define USE_TBO 1
@@ -81,7 +81,7 @@ SplineSegment *GLSLTube2Renderer::createSegment()
 
 bool GLSLTube2Renderer::init(DisplayContext *pdc)
 {
-  sysdep::ShaderSetupHelper<GLSLTube2Renderer> ssh(this);
+  sysdep::OglShaderSetupHelper<GLSLTube2Renderer> ssh(this);
   
   if (!ssh.checkEnvVS()) {
     LOG_DPRINTLN("GLSLTube2> ERROR: GLSL not supported.");
@@ -260,10 +260,10 @@ void GLSLTube2Renderer::updateCrdGLSL(detail::SplineSegment *pASeg)
   const int nCtlPts = pSeg->m_nCtlPts;
   
   pSeg->m_pCoefTex->setData(nCtlPts * 4, 1, 1, pSeg->m_scoeff.getCoefArray());
+
 #ifdef USE_LINBN
   pSeg->m_pBinormTex->setData(nCtlPts, 1, 1, &pSeg->m_linBnInt[0]);
 #else
-  // TO DO: impl
   pSeg->m_pBinormTex->setData(nCtlPts * 4, 1, 1, pSeg->m_bnormInt.getCoefArray());
 #endif
   

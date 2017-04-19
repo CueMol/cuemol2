@@ -80,6 +80,15 @@ namespace qlib {
     {
     }
 
+    inline value_type col() const { return ai(1); }
+    inline value_type &col() { return ai(1); }
+      
+    inline value_type row() const { return ai(2); }
+    inline value_type &row() { return ai(2); }
+
+    inline value_type sec() const { return ai(3); }
+    inline value_type &sec() { return ai(3); }
+
   };
 
   ///////////////////////////////////////////////

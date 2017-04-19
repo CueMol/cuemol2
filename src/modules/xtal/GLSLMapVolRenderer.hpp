@@ -15,7 +15,7 @@
 #include <qsys/ViewEvent.hpp>
 
 #include <sysdep/OglDisplayContext.hpp>
-#include <sysdep/OglProgramObject.hpp>
+//#include <sysdep/OglProgramObject.hpp>
 
 #include <gfx/MultiGradient.hpp>
 #include <gfx/Texture.hpp>
@@ -24,7 +24,7 @@ class GLSLMapVolRenderer_wrap;
 
 namespace sysdep {
   class OglProgramObject;
-  class OglShaderObject;
+  //class OglShaderObject;
 }
 
 namespace xtal {
@@ -33,7 +33,7 @@ namespace xtal {
   using qsys::ScalarObject;
   class DensityMap;
   using sysdep::OglProgramObject;
-  using sysdep::OglShaderObject;
+  //using sysdep::OglShaderObject;
   using qlib::IntVec3D;
 
   class GLSLMapVolRenderer : public MapRenderer,

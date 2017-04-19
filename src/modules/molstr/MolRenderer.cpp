@@ -111,6 +111,7 @@ void MolRenderer::objectChanged(qsys::ObjectEvent &ev)
           pPE->getParentName().equals("coloring")||
           pPE->getParentName().startsWith("coloring.")) {
         invalidateDisplayCache();
+        return;
       }
     }
   }
@@ -127,11 +128,16 @@ void MolRenderer::objectChanged(qsys::ObjectEvent &ev)
         if (isShaderAvail() && !isShaderEnabled()) {
           setShaderEnable(true);
         }
+
         if (!isCacheAvail()) {
+          // Cache is NOT available
+          // --> create/update coord and color
           createDisplayCache();
+          return;
         }
 
-        // only update coordinates
+        // Cache is available
+        // --> only update coordinates
         if (isUseShader()) {
           if (isUseAnim())
             updateDynamicGLSL();

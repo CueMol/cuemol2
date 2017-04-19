@@ -86,8 +86,7 @@ namespace molstr {
     virtual const char *getTypeName() const;
 
     //////////////////////////////////////////////////////
-
-    // Old rendering interface (FileDC/GL compatible prof)
+    // Old rendering interface (for renderFile()/GL compatible prof)
 
     virtual bool isRendBond() const;
 
@@ -107,13 +106,11 @@ namespace molstr {
 
   public:
 
-    // virtual void display(DisplayContext *pdc);
-
     /// cleanup VBO
     virtual void invalidateDisplayCache();
 
     //////////////////////////////////////////////////////
-    // new rendering interface (shader version/dummy)
+    // new rendering interface (VBO version)
     
     /// Use Ver2 interface (returns true)
     virtual bool isUseVer2Iface() const;
@@ -122,26 +119,23 @@ namespace molstr {
       return m_pVBO!=NULL;
     }
     
-    /// rendering for file display contexts
+    /// Rendering for file display contexts
+    // --> default implementation in DispCacheRenderer: use old render() interface
     // virtual void renderFile(DisplayContext *pdc);
 
     virtual void renderVBO(DisplayContext *pdc);
 
     /// Rendering using VBO (builds sbonds, mbonds, and atoms data structure)
     virtual void createVBO();
-    // virtual void createGLSL() {}
 
     /// update VBO positions using m_sbonds, m_mbonds, m_atoms and CrdArray data
     virtual void updateDynamicVBO();
-    // virtual void updateDynamicGLSL() {}
 
     /// update VBO positions without CrdArray
     virtual void updateStaticVBO();
-    // virtual void updateStaticGLSL() {}
 
     /// update VBO colors
     virtual void updateVBOColor();
-    // virtual void updateGLSLColor() {}
 
   private:
     // workarea

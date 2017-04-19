@@ -13,6 +13,8 @@
 #include <qsys/View.hpp>
 #include <qsys/Scene.hpp>
 
+#include <sysdep/OglShaderSetupHelper.hpp>
+
 //#define SCALE 0x1000
 //#define DBG_DRAW_AXIS 0
 // #define MY_MAPTEX_DIM GL_TEXTURE_BUFFER
@@ -153,7 +155,7 @@ void GLSLMapMesh2Renderer::initShader(DisplayContext *pdc)
 {
   m_bChkShaderDone = true;
 
-  sysdep::ShaderSetupHelper<GLSLMapMesh2Renderer> ssh(this);
+  sysdep::OglShaderSetupHelper<GLSLMapMesh2Renderer> ssh(this);
 
   if (m_pPO==NULL)
     m_pPO = ssh.createProgObj("mapmesh2",
@@ -665,13 +667,13 @@ namespace {
   }
 }
 
-Vector4D GLSLMapMesh2Renderer::calcVecCrs(const IntVec3D &tpos, int iv0, float crs0, int ivbase)
+Vector3F GLSLMapMesh2Renderer::calcVecCrs(const Vector3I &tpos, int iv0, float crs0, int ivbase)
 {
-  Vector4D vbase = tpos.vec4();
-  Vector4D v0, v1, vr;
+  Vector3F vbase = Vector3F(tpos);
+  Vector3F v0, v1, vr;
 
-  v0 = vbase + m_ivdel[ivbase+iv0].vec4();
-  v1 = vbase + m_ivdel[ivbase+(iv0+1)%4].vec4();
+  v0 = vbase + Vector3F(m_ivdel[ivbase+iv0]);
+  v1 = vbase + Vector3F(m_ivdel[ivbase+(iv0+1)%4]);
 
   vr = v0 + (v1-v0).scale(crs0);
   return vr;
@@ -687,24 +689,24 @@ void GLSLMapMesh2Renderer::renderCPU(DisplayContext *pdc)
       return;
     make3DTexMap(pMap, pXtal);
 
-    // IntVec3D ivdel[4];
+    // Vector3I ivdel[4];
     // X-Y plane
-    m_ivdel[0] = IntVec3D(0,0,0);
-    m_ivdel[1] = IntVec3D(1,0,0);
-    m_ivdel[2] = IntVec3D(1,1,0);
-    m_ivdel[3] = IntVec3D(0,1,0);
+    m_ivdel[0] = Vector3I(0,0,0);
+    m_ivdel[1] = Vector3I(1,0,0);
+    m_ivdel[2] = Vector3I(1,1,0);
+    m_ivdel[3] = Vector3I(0,1,0);
 
     // Y-Z plane
-    m_ivdel[4] = IntVec3D(0,0,0);
-    m_ivdel[5] = IntVec3D(0,1,0);
-    m_ivdel[6] = IntVec3D(0,1,1);
-    m_ivdel[7] = IntVec3D(0,0,1);
+    m_ivdel[4] = Vector3I(0,0,0);
+    m_ivdel[5] = Vector3I(0,1,0);
+    m_ivdel[6] = Vector3I(0,1,1);
+    m_ivdel[7] = Vector3I(0,0,1);
 
     // Z-X plane
-    m_ivdel[4] = IntVec3D(0,0,0);
-    m_ivdel[5] = IntVec3D(0,0,1);
-    m_ivdel[6] = IntVec3D(1,0,1);
-    m_ivdel[7] = IntVec3D(1,0,0);
+    m_ivdel[4] = Vector3I(0,0,0);
+    m_ivdel[5] = Vector3I(0,0,1);
+    m_ivdel[6] = Vector3I(1,0,1);
+    m_ivdel[7] = Vector3I(1,0,0);
   }
 
   quint8 isolev;
@@ -758,10 +760,10 @@ void GLSLMapMesh2Renderer::renderCPU(DisplayContext *pdc)
           quint8 flag = 0U;
           quint8 mask = 1U;
 
-          IntVec3D tpos(i, j, k);
+          Vector3I tpos(i, j, k);
 
           for (int ii=0; ii<4; ++ii) {
-            IntVec3D iv = tpos + m_ivdel[ii + iplane*4];
+            Vector3I iv = tpos + m_ivdel[ii + iplane*4];
             val[ii] = m_maptmp.at(iv.ai(1), iv.ai(2), iv.ai(3));
             if (val[ii]>isolev)
               flag += mask;
@@ -775,10 +777,10 @@ void GLSLMapMesh2Renderer::renderCPU(DisplayContext *pdc)
           float crs0 = getCrossVal(val[iv0], val[(iv0+1)%4], isolev);
           float crs1 = getCrossVal(val[iv1], val[(iv1+1)%4], isolev);
           if (crs0>=-0.0 && crs1>=-0.0) {
-            Vector4D v0 = calcVecCrs(tpos, iv0, crs0, iplane*4);
-            Vector4D v1 = calcVecCrs(tpos, iv1, crs1, iplane*4);
-            pdc->vertex(v0);
-            pdc->vertex(v1);
+            Vector3F v0 = calcVecCrs(tpos, iv0, crs0, iplane*4);
+            Vector3F v1 = calcVecCrs(tpos, iv1, crs1, iplane*4);
+            pdc->vertex(v0.x(), v0.y(), v0.z());
+            pdc->vertex(v1.x(), v1.y(), v1.z());
           }
         }
       }

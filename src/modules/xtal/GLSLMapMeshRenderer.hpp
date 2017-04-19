@@ -15,13 +15,12 @@
 #include <qsys/ViewEvent.hpp>
 
 #include <sysdep/OglDisplayContext.hpp>
-#include <sysdep/OglProgramObject.hpp>
 
 class GLSLMapMeshRenderer_wrap;
 
 namespace sysdep {
   class OglProgramObject;
-  class OglShaderObject;
+  //class OglShaderObject;
 }
 
 namespace xtal {
@@ -30,7 +29,7 @@ namespace xtal {
   using qsys::ScalarObject;
   class DensityMap;
   using sysdep::OglProgramObject;
-  using sysdep::OglShaderObject;
+  //using sysdep::OglShaderObject;
 
   using qlib::IntVec3D;
 
@@ -90,13 +89,13 @@ namespace xtal {
     double m_delta;
 
     /// map 3D texture ID
-    GLuint m_nMapTexID;
-    GLuint m_nMapBufID;
-    GLuint m_nVBOID;
+    quint32 m_nMapTexID;
+    quint32 m_nMapBufID;
+    quint32 m_nVBOID;
     
     unsigned int m_isolevel;
 
-    GLuint m_nVertexLoc;
+    quint32 m_nVertexLoc;
 
     //typedef qlib::Array3D<int> MapTmp;
     typedef qlib::Array3D<quint8> MapTmp;

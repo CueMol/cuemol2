@@ -17,7 +17,7 @@
 #include <modules/molstr/ResidIterator.hpp>
 #include <modules/molstr/AnimMol.hpp>
 
-#include <sysdep/OglProgramObject.hpp>
+#include <sysdep/OglShaderSetupHelper.hpp>
 
 #ifdef WIN32
 #define USE_TBO 1
@@ -47,7 +47,7 @@ const char *GLSLRcTubeRenderer::getTypeName() const
 
 bool GLSLRcTubeRenderer::init(DisplayContext *pdc)
 {
-  sysdep::ShaderSetupHelper<GLSLRcTubeRenderer> ssh(this);
+  sysdep::OglShaderSetupHelper<GLSLRcTubeRenderer> ssh(this);
   
   if (!ssh.checkEnvVS()) {
     LOG_DPRINTLN("GLSLTube2> ERROR: GLSL not supported.");

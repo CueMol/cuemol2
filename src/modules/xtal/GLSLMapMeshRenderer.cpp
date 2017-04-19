@@ -13,6 +13,8 @@
 #include <qsys/View.hpp>
 #include <qsys/Scene.hpp>
 
+#include <sysdep/OglShaderSetupHelper.hpp>
+
 #define SCALE 0x1000
 //#define DBG_DRAW_AXIS 0
 
@@ -146,7 +148,7 @@ bool GLSLMapMeshRenderer::initShader()
 {
   m_pPO = NULL;
 
-  sysdep::ShaderSetupHelper<GLSLMapMeshRenderer> ssh(this);
+  sysdep::OglShaderSetupHelper<GLSLMapMeshRenderer> ssh(this);
 
   if (!ssh.checkEnvGS()) {
     LOG_DPRINTLN("GPUMapMesh> ERROR: OpenGL GPU geom program not supported.");

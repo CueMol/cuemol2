@@ -17,7 +17,7 @@
 #include <modules/molstr/ResidIterator.hpp>
 #include <modules/molstr/AnimMol.hpp>
 
-#include <sysdep/OglProgramObject.hpp>
+#include <sysdep/OglShaderSetupHelper.hpp>
 
 #ifdef WIN32
 #define USE_TBO 1
@@ -64,7 +64,7 @@ SplineSegment *Spline2RendGLSL::createSegment()
 
 bool Spline2RendGLSL::init(DisplayContext *pdc)
 {
-  sysdep::ShaderSetupHelper<Spline2RendGLSL> ssh(this);
+  sysdep::OglShaderSetupHelper<Spline2RendGLSL> ssh(this);
 
   if (!ssh.checkEnvVS()) {
     LOG_DPRINTLN("SimpleRendGLSL> ERROR: GLSL not supported.");

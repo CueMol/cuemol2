@@ -178,6 +178,10 @@
     <ClCompile Include="..\..\src\modules\molstr\SimpleRendGLSL_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\CPK2Renderer.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\CPK2Renderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\CPK3Renderer.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\CPK3Renderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\GLSLCPK3Renderer.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\GLSLCPK3Renderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\GLSLRcTubeRenderer.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\GLSLRcTubeRenderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\GLSLTube2Renderer.cpp" />
@@ -352,8 +356,6 @@
     <ClCompile Include="..\..\src\modules\molvis\AtomIntrRenderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\BallStickRenderer.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\BallStickRenderer_wrap.cpp" />
-    <ClCompile Include="..\..\src\modules\molvis\CPKRenderer.cpp" />
-    <ClCompile Include="..\..\src\modules\molvis\CPKRenderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\CubicSpline.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\DisoRenderer.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\DisoRenderer_wrap.cpp" />
@@ -536,6 +538,8 @@
     <mcwrapgen3 Include="..\..\src\modules\molstr\QdfPdbReader.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molstr\SimpleRendGLSL.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\CPK2Renderer.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molvis\CPK3Renderer.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molvis\GLSLCPK3Renderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\GLSLRcTubeRenderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\GLSLTube2Renderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\ScriptColoring.qif" />
@@ -586,7 +590,6 @@
     <mcwrapgen3 Include="..\..\src\modules\molvis\AnIsoURenderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\AtomIntrRenderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\BallStickRenderer.qif" />
-    <mcwrapgen3 Include="..\..\src\modules\molvis\CPKRenderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\DisoRenderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\DistPickDrawObj.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\JctTable.qif" />
@@ -619,6 +622,8 @@
     <glslshader Include="..\..\src\modules\molvis\cylinder_vertex.glsl" />
     <glslshader Include="..\..\src\modules\molvis\rctube_frag.glsl" />
     <glslshader Include="..\..\src\modules\molvis\rctube_vert.glsl" />
+    <glslshader Include="..\..\src\modules\molvis\sphere2_frag.glsl" />
+    <glslshader Include="..\..\src\modules\molvis\sphere2_vertex.glsl" />
     <glslshader Include="..\..\src\modules\molvis\sphere_frag.glsl" />
     <glslshader Include="..\..\src\modules\molvis\sphere_vertex.glsl" />
     <glslshader Include="..\..\src\modules\molvis\spline2_frag.glsl" />

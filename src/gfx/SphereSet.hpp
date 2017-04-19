@@ -16,27 +16,98 @@ namespace gfx {
 
   using qlib::Vector4D;
 
-  template <class _Trait>
-  class SphereSetTmpl
+  template <typename _Vector>
+  class SphereSet
   {
   private:
-    _Trait m_data;
-    
+    typedef _Vector pos_type;
+    typedef typename _Vector::value_type rad_type;
+
+    struct Sphere {
+      pos_type pos;
+      rad_type rad;
+      ColorPtr col;
+    };
+
+    typedef std::vector<Sphere> datatype;
+
+    datatype m_data;
+
   public:
-    SphereSetTmpl()
+
+    void create(int nsize)
+    {
+      m_data.resize(nsize);
+    }
+
+    void sphere(int index, const pos_type &pos, rad_type r, const ColorPtr &col)
+    {
+      m_data[index].pos = pos;
+      m_data[index].rad = r;
+      m_data[index].col = col;
+    }
+
+    const pos_type &getPos(int isph) const
+    {
+      return m_data[isph].pos;
+    }
+
+    rad_type getRadius(int isph) const
+    {
+      return m_data[isph].rad;
+    }
+
+    const ColorPtr &getColor(int isph) const {
+      return m_data[isph].col;
+    }
+
+    int getSize() const { return m_data.size(); }
+
+  };
+
+  ///////////////
+
+  template <class _Trait, typename _Vector=qlib::Vector4D>
+  class SphereTess
+  {
+  private:
+    /// tesselation detail level (common to all spheres)
+    int m_nDetail;
+
+    /// Tesselation output data
+    _Trait m_trait;
+    
+    /// Sphere dataset
+    SphereSet<_Vector> m_sphrs;
+
+  public:
+    SphereTess()
     {
     }
     
-    ~SphereSetTmpl()
+    ~SphereTess()
     {
     }
 
-    _Trait &getdata() { return m_data; }
+    _Trait &getTrait() { return m_trait; }
+
+	void create(int natoms, int ndetail)
+    {
+      m_sphrs.create(natoms);
+      m_nDetail = ndetail;
+    }
+
+    SphereSet<_Vector> &getSphrs()
+    {
+      return m_sphrs;
+    }
 
     /// render a sphere
 
-    void estimateMeshSize(int ndetail, int &nverts, int &nfaces)
+    void estimateMeshSize(int &nverts, int &nfaces)
     {
+      const int ndetail = m_nDetail;
+
       nverts = 0;
       nfaces = 0;
       
@@ -74,9 +145,9 @@ namespace gfx {
 
     void buildSphere(int isph, int &ivt, int &ifc)
     {
-      const Vector4D v1 = m_data.getPos(isph);
-      const double rad = m_data.getRadius(isph);
-      const int ndetail = m_data.getDetail(isph);
+      const _Vector v1 = m_sphrs.getPos(isph);
+      const double rad = m_sphrs.getRadius(isph);
+      const int ndetail = m_nDetail;
 
       // int col = pSph->ccode;
       const double dmax = (M_PI*rad)/double(ndetail+1);
@@ -96,29 +167,30 @@ namespace gfx {
       quint32 **ppindx = MB_NEW quint32 *[nLat+1];
 
       // generate verteces
+
+      m_trait.setColor(m_sphrs.getColor(isph));
+
       for (i=0; i<=nLat; ++i) {
         quint32 ind;
 
         if (i==0) {
           ind = ivt;
-          m_data.color(isph, ivt);
-          m_data.normal(ivt, Vector4D(0, 0, 1));
-          m_data.vertex(ivt, Vector4D(0, 0, rad) + v1);
+          m_trait.normal(ivt, _Vector(0, 0, 1));
+          m_trait.vertex(ivt, _Vector(0, 0, rad) + v1);
           ++ivt;
           ppindx[i] = MB_NEW quint32[1];
           ppindx[i][0] = ind;
         }
         else if (i==nLat) {
           ind = ivt;
-          m_data.color(isph, ivt);
-          m_data.normal(ivt, Vector4D(0, 0, -1));
-          m_data.vertex(ivt, Vector4D(0, 0, -rad) + v1);
+          m_trait.normal(ivt, _Vector(0, 0, -1));
+          m_trait.vertex(ivt, _Vector(0, 0, -rad) + v1);
           ++ivt;
           ppindx[i] = MB_NEW quint32[1];
           ppindx[i][0] = ind;
         }
         else {
-          Vector4D vec, norm;
+          _Vector vec, norm;
           const double th = double(i)*M_PI/double(nLat);
           const double ri = rad*::sin(th);
           vec.z()  = rad*::cos(th);
@@ -134,9 +206,8 @@ namespace gfx {
             norm = vec.normalize();
 
             ind = ivt;
-            m_data.color(isph, ivt);
-            m_data.normal(ivt, norm);
-            m_data.vertex(ivt, vec + v1);
+            m_trait.normal(ivt, norm);
+            m_trait.vertex(ivt, vec + v1);
             ++ivt;
 
             ppindx[i][j+1] = ind;
@@ -154,7 +225,7 @@ namespace gfx {
             quint32 n1 = ipiv;
             quint32 n2 = ppindx[1][j+1];
             quint32 n3 = ppindx[1][j+2];
-            m_data.face(ifc, n1, n2, n3);
+            m_trait.face(ifc, n1, n2, n3);
             ++ifc;
           }
         }
@@ -165,7 +236,7 @@ namespace gfx {
             quint32 n1 = ppindx[nLat-1][j+2];
             quint32 n2 = ppindx[nLat-1][j+1];
             quint32 n3 = ipiv;
-            m_data.face(ifc, n1, n2, n3);
+            m_trait.face(ifc, n1, n2, n3);
             ++ifc;
           }
         }
@@ -190,7 +261,7 @@ namespace gfx {
               quint32 n1 = piJ[j];
               quint32 n2 = piK[k];
               quint32 n3 = piJ[j+1];
-              m_data.face(ifc, n1, n2, n3);
+              m_trait.face(ifc, n1, n2, n3);
               ++ifc;
               ++j;
             }
@@ -198,7 +269,7 @@ namespace gfx {
               quint32 n1 = piJ[j];
               quint32 n2 = piK[k];
               quint32 n3 = piK[k+1];
-              m_data.face(ifc, n1, n2, n3);
+              m_trait.face(ifc, n1, n2, n3);
               ++ifc;
               ++k;
             }
@@ -216,13 +287,13 @@ namespace gfx {
     }
 
     static
-      inline Vector4D makenorm(const Vector4D &pos1,
-                               const Vector4D &pos2,
-                               const Vector4D &pos3)
+      inline _Vector makenorm(const _Vector &pos1,
+                               const _Vector &pos2,
+                               const _Vector &pos3)
       {
-        const Vector4D v12 = pos2 - pos1;
-        const Vector4D v23 = pos3 - pos2;
-        Vector4D vn = v12.cross(v23);
+        const _Vector v12 = pos2 - pos1;
+        const _Vector v23 = pos3 - pos2;
+        _Vector vn = v12.cross(v23);
         const double dnorm = vn.length();
         // if (dnorm<dtol) {
         //   TODO: throw error!!
@@ -233,13 +304,13 @@ namespace gfx {
     
     int selectTrig(quint32 j, quint32 k, quint32 j1, quint32 k1)
     {
-      Vector4D vj = m_data.getVertex(j);
-      Vector4D vk = m_data.getVertex(k);
-      Vector4D vj1 = m_data.getVertex(j1);
-      Vector4D vk1 = m_data.getVertex(k1);
+      _Vector vj = m_trait.getVertex(j);
+      _Vector vk = m_trait.getVertex(k);
+      _Vector vj1 = m_trait.getVertex(j1);
+      _Vector vk1 = m_trait.getVertex(k1);
       
-      Vector4D nj1 = makenorm(vj, vk, vj1);
-      Vector4D nk1 = makenorm(vj, vk, vk1);
+      _Vector nj1 = makenorm(vj, vk, vj1);
+      _Vector nk1 = makenorm(vj, vk, vk1);
       
       double detj = nj1.dot(vk1-vk);
       double detk = nk1.dot(vj1-vj);
@@ -258,76 +329,43 @@ namespace gfx {
 
   //////////////////////////////////////////////////////////////////////////////
 
-  class VBOSphereSet_traits
+  class VBOSphereTessTraits
   {
   private:
-    struct Sphere {
-      Vector4D posr;
-      quint32 ccode;
-    };
-
-    typedef std::vector<Sphere> datatype;
     
-    typedef SphereSetTmpl<VBOSphereSet_traits> outer_t;
-
-    datatype m_data;
+    typedef SphereTess<VBOSphereTessTraits> outer_t;
 
     /// default alpha (multiplied to all alpha comp)
     double m_defAlpha;
 
-    /// tesselation detail (common to all spheres)
-    int m_nDetail;
+    /// Current color
+    quint32 m_ccode;
+
+    /// output vertex array
+    DrawElemVNCI32 *m_pVary;
 
   public:
-    VBOSphereSet_traits() : m_defAlpha(1.0), m_nDetail(10)
+    VBOSphereTessTraits() : m_defAlpha(1.0), m_ccode(0), m_pVary(NULL)
     {
     }
     
-    ~VBOSphereSet_traits()
+    ~VBOSphereTessTraits()
     {
-    }
-
-    void setAlpha(double d) { m_defAlpha = d; }
-
-    void create(int nsize, int ndetail)
-    {
-      m_nDetail = ndetail;
-      m_data.resize(nsize);
-    }
-
-    void sphere(int index, const Vector4D &pos, double r, const ColorPtr &col)
-    {
-      m_data[index].posr = pos;
-      m_data[index].posr.w() = r;
-      if (qlib::isNear4(m_defAlpha, 1.0)) {
-        m_data[index].ccode = col->getCode();
-      }
-      else {
-        m_data[index].ccode = gfx::mixAlpha(col->getCode(), m_defAlpha);
-      }
-    }
-
-    const Vector4D &getPos(int isph) const
-    {
-      return m_data[isph].posr;
-    }
-    double getRadius(int isph) const
-    {
-      return m_data[isph].posr.w();
-    }
-    int getDetail(int isph) const
-    {
-      return m_nDetail;
     }
 
     /////////////////////////////
 
-    DrawElemVNCI32 *m_pVary;
+    void setAlpha(double d) { m_defAlpha = d; }
 
-    void color(quint32 isph, quint32 ivert)
+    void setColor(const ColorPtr &col)
     {
-      quint32 col = m_data[isph].ccode;
-      m_pVary->color(ivert, col);
+      // XXX: device color/CMYK??
+      if (qlib::isNear4(m_defAlpha, 1.0)) {
+        m_ccode = col->getCode();
+      }
+      else {
+        m_ccode = gfx::mixAlpha(col->getCode(), m_defAlpha);
+      }
     }
 
     void normal(quint32 ind, const Vector4D &v)
@@ -338,6 +376,7 @@ namespace gfx {
     void vertex(quint32 ind, const Vector4D &v)
     {
       m_pVary->vertex(ind, v);
+      m_pVary->color(ind, m_ccode);
     }
 
     void face(quint32 ifc, quint32 n1, quint32 n2, quint32 n3)
@@ -355,8 +394,8 @@ namespace gfx {
     DrawElem *buildDrawElem(outer_t *pOuter)
     {
       int nverts,  nfaces; 
-      pOuter->estimateMeshSize(m_nDetail, nverts, nfaces);
-      int nsphs = m_data.size();
+      pOuter->estimateMeshSize(nverts, nfaces);
+      int nsphs = pOuter->getSphrs().getSize();
       
       int nvtot = nverts*nsphs;
       int nftot = nfaces*nsphs;
@@ -376,53 +415,6 @@ namespace gfx {
 
   };
 
-  ////////////////////////////////////////////////////////////////////////////////
-
-/*
-
-  class GFX_API SphereSet
-  {
-  private:
-    struct ElemType
-    {
-      Vector4D posr;
-      quint32 ccode;
-    };
-
-    std::deque<ElemType> m_data;
-    
-    /// tesselation detail
-    int m_nDetail;
-
-    /// default alpha (multiplied to all alpha comp)
-    double m_defAlpha;
-
-    /// built draw elem object
-    DrawElemVNCI32 *m_pDrawElem;
-
-  public:
-    SphereSet();
-    virtual ~SphereSet();
-
-    void setAlpha(double d) { m_defAlpha = d; }
-
-    /// estimate size / allocate draw elem object
-    void create(int nsize, int ndetail);
-
-    /// render a sphere
-    void sphere(int index, const Vector4D &pos, double r, const ColorPtr &col);
-
-    /// build draw elem objects
-    DrawElem *buildDrawElem();
-
-  private:
-    void estimateMeshSize(int &, int &);
-    void buildSphere(int i, int &ivt, int &ifc);
-    int selectTrig(int j, int k, int j1, int k1);
-    
-  };
-
-*/
 
 }
 

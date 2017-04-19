@@ -10,8 +10,8 @@
 
 #include "BallStickRenderer.qif"
 #include "AnIsoURenderer.qif"
-// #include "CPKRenderer.qif"
 #include "CPK2Renderer.qif"
+#include "CPK3Renderer.qif"
 #include "SplineRenderer.qif"
 #include "TubeRenderer.qif"
 #include "TubeSection.qif"
@@ -33,6 +33,7 @@
 # include "Spline2RendGLSL.qif"
 # include "GLSLTube2Renderer.qif"
 # include "GLSLRcTubeRenderer.qif"
+# include "GLSLCPK3Renderer.qif"
 #endif
 
 module molvis
@@ -42,8 +43,8 @@ module molvis
 
   BallStickRenderer;
   AnIsoURenderer;
-  // CPKRenderer;
   CPK2Renderer;
+  CPK3Renderer;
   SplineRenderer;
   TubeRenderer;
   TubeSection;
@@ -65,6 +66,7 @@ module molvis
   Spline2RendGLSL;
   GLSLTube2Renderer;
   GLSLRcTubeRenderer;
+  GLSLCPK3Renderer;
 #endif
 
 };

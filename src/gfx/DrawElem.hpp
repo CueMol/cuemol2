@@ -372,6 +372,13 @@ namespace gfx {
     bool getVertex(int ind, Vector4D &v) const;
     bool getNormal(int ind, Vector4D &v) const;
 
+    Vector3F getVertex(int ind) const{
+      return Vector3F(m_pData[ind].x, m_pData[ind].y, m_pData[ind].z);
+    }
+    Vector3F getNormal(int ind) const{
+      return Vector3F(m_pData[ind].nx, m_pData[ind].ny, m_pData[ind].nz);
+    }
+
   };
 
   /// Draw element with vertex, normal, color, and index
@@ -405,6 +412,11 @@ namespace gfx {
     void setIndex(int ind, index_t n1) {
       MB_ASSERT( ind <m_nIndSize);
       m_pIndData[ind] = n1;
+    }
+
+    index_t getIndex(int ind) const {
+      MB_ASSERT( ind <m_nIndSize);
+      return m_pIndData[ind];
     }
 
     /// start indexed triangles mode (shortcut method)
@@ -461,6 +473,11 @@ namespace gfx {
     void setIndex(int ind, index_t n1) {
       MB_ASSERT( ind <m_nIndSize);
       m_pIndData[ind] = n1;
+    }
+
+    index_t getIndex(int ind) const {
+      MB_ASSERT( ind <m_nIndSize);
+      return m_pIndData[ind];
     }
 
     /// start indexed triangles mode (shortcut method)

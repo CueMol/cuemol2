@@ -10,12 +10,14 @@
 #include "MapRenderer.hpp"
 
 #include <qlib/ByteMap.hpp>
-#include <qlib/IntVec3D.hpp>
+//#include <qlib/IntVec3D.hpp>
+#include <qlib/Vector3I.hpp>
+#include <qlib/Vector3F.hpp>
 #include <qsys/ScalarObject.hpp>
 #include <qsys/ViewEvent.hpp>
 
 //#include <sysdep/OglDisplayContext.hpp>
-#include <sysdep/OglProgramObject.hpp>
+//#include <sysdep/OglProgramObject.hpp>
 #include <gfx/Texture.hpp>
 #include <gfx/DrawAttrArray.hpp>
 
@@ -24,7 +26,6 @@ class GLSLMapMesh2Renderer_wrap;
 
 namespace sysdep {
   class OglProgramObject;
-  class OglShaderObject;
 }
 
 namespace xtal {
@@ -33,9 +34,9 @@ namespace xtal {
   using qsys::ScalarObject;
   class DensityMap;
   using sysdep::OglProgramObject;
-  using sysdep::OglShaderObject;
 
-  using qlib::IntVec3D;
+  using qlib::Vector3I;
+  using qlib::Vector3F;
 
   class GLSLMapMesh2Renderer : public MapRenderer,
                           public qsys::ViewEventListener
@@ -121,7 +122,7 @@ namespace xtal {
 
     unsigned int m_isolevel;
 
-    GLuint m_nVertexLoc;
+    quint32 m_nVertexLoc;
 
     //typedef qlib::Array3D<int> MapTmp;
     typedef qlib::Array3D<quint8> MapTmp;
@@ -132,9 +133,9 @@ namespace xtal {
     void renderGPU(DisplayContext *pdc);
     void renderCPU(DisplayContext *pdc);
 
-    IntVec3D m_ivdel[12];
+    Vector3I m_ivdel[12];
     
-    Vector4D calcVecCrs(const IntVec3D &tpos, int iv0, float crs0, int ivbase);
+    Vector3F calcVecCrs(const Vector3I &tpos, int iv0, float crs0, int ivbase);
   public:
 
     ///////////////////////////////////////////
