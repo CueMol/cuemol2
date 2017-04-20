@@ -114,6 +114,10 @@
 	
 	<menuitem label="Unselect all" id="seq-ctm-unselectall"/>
 	<menuitem label="Invert sel" id="seq-ctm-invsel"/>
+
+	<menuseparator/>
+	
+	<menuitem label="Copy sequence" id="seq-ctm-copyseq"/>
       </menupopup>
     </popupset>
   </overlaytarget>

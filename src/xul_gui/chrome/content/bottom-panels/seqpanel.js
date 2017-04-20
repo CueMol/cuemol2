@@ -531,6 +531,35 @@ if (!("seqpanel" in cuemolui)) {
       cuemolui.molSelAround(mol, aDist, aByres);
     };
 
+    panel.copySeq = function (aIy)
+    {
+      let y=aIy;
+
+      key = this.mRow[y].mol;
+      chn = this.mRow[y].chain;
+      dd("copySeq> mol: "+key+", chain: "+chn);
+	
+      moldata = this.mData[key];
+      chdata = moldata[chn];
+
+      let str = "";
+      nres = chdata.length;
+      for (var i=0; i<nres; ++i) {
+        var sg = chdata[i].single;
+        if (sg=="") sg = "*";
+        str += sg;
+      }
+
+      try {
+        let clipboard = require("clipboard");
+        clipboard.set(str, "text");
+      }
+      catch (e) {
+        debug.exception(e);
+        return;
+      }
+    };
+
     panel.showCtxtMenu = function (aEvent)
     {
       var scene = cuemol.getScene(this.mTgtSceneID);
@@ -605,6 +634,10 @@ if (!("seqpanel" in cuemolui)) {
       case "seq-ctm-arnd-10":
 	this.selAround(r, false, 10);
 	break;
+
+      case "seq-ctm-copyseq":
+        this.copySeq(r.iy);
+        break;
       }      
 
       // move the marker

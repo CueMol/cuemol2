@@ -59,6 +59,59 @@ exports.helixVecCO = function (aMol, aSelStr)
     return aver.normalize();
 };
 
+exports.helixVecPC = function (aMol, aSelStr)
+{
+    const scr = require("scr_util");
+    const molu = require("mol_util");
+
+    let sum = scr.vec();
+    let nsum = 0;
+
+    molu.forEachResid(aMol, scr.sel(aSelStr), function (aResid) {
+	let atom_CA = aResid.getAtom("CA");
+
+	let vec = atom_CA.pos;
+
+	sum = sum.add(vec);
+	nsum++;
+    });
+
+    let aver = sum.divide(nsum);
+
+    let covmat = cuemol.createObj("Matrix");
+
+    molu.forEachResid(aMol, scr.sel(aSelStr), function (aResid) {
+	let atom_CA = aResid.getAtom("CA");
+
+	let vec = atom_CA.pos;
+
+	let dx = (vec.x - aver.x); 
+	let dy = (vec.y - aver.y); 
+	let dz = (vec.z - aver.z); 
+
+	covmat.addAt(1, 1, dx*dx);
+	covmat.addAt(1, 2, dx*dy);
+	covmat.addAt(1, 3, dx*dz);
+
+	covmat.addAt(2, 1, dy*dx);
+	covmat.addAt(2, 2, dy*dy);
+	covmat.addAt(2, 3, dy*dz);
+
+	covmat.addAt(3, 1, dz*dx);
+	covmat.addAt(3, 2, dz*dy);
+	covmat.addAt(3, 3, dz*dz);
+	});
+
+    let rmat = covmat.diag3();
+
+    let rvec = rmat.col(3);
+    rvec.w = 0;
+
+    return rvec;
+};
+
+
+
 exports.showArrow = function (aMol, aRendName, aPos, aVec)
 {
     var rend = aMol.getRendererByName(aRendName);
