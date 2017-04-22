@@ -131,8 +131,6 @@ void BallStick2Renderer::rendAtom(DisplayContext *pdl, MolAtomPtr pAtom, bool)
     Sphr s;
     s.aid = pAtom->getID();
     s.rad = m_sphr;
-    //ColorPtr pCol = ColSchmHolder::getColor(pAtom);
-    s.col = 0; //pCol->getDevCode(getSceneID());
     m_sphrdat.push_back(s);
   }
 }
@@ -145,17 +143,14 @@ void BallStick2Renderer::rendBond(DisplayContext *pdl, MolAtomPtr pAtom1, MolAto
   //if (m_nVBMode==VBMODE_TYPE1)
   //drawVBondType1(pAtom1, pAtom2, pMB, pdl);
   //else
-  drawInterAtomLine(pAtom1, pAtom2);
-}
+  //drawInterAtomLine(pAtom1, pAtom2);
 
-void BallStick2Renderer::drawInterAtomLine(MolAtomPtr pAtom1, MolAtomPtr pAtom2)
-{
   if (m_bondw>0.0) {
     Cyl c;
     c.aid1 = pAtom1->getID();
     c.aid2 = pAtom2->getID();
     c.rad = m_bondw;
-    c.col = 0;
+    c.btype = pMB->getType();
     m_cyldat.push_back(c);
   }
 }

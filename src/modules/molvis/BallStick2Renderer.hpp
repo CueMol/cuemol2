@@ -100,7 +100,6 @@ namespace molvis {
     struct Sphr {
       quint32 aid;
       float rad;
-      quint32 col;
     };
 
     typedef std::deque<Sphr> SphrData;
@@ -109,14 +108,9 @@ namespace molvis {
 
     struct Cyl {
       quint32 aid1, aid2;
-      quint32 flag;
+      quint32 btype;
       float rad;
-      quint32 col;
     };
-
-    static const quint32 BS2_LINE = 0;
-    static const quint32 BS2_HALF1 = 1;
-    static const quint32 BS2_HALF2 = 2;
 
     typedef std::deque<Cyl> CylData;
 

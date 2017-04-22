@@ -11,27 +11,29 @@
 
 using namespace molstr;
 
-int MolBond::getDistalAtomID(MolCoordPtr pMol, int &nbonds) const
+int MolBond::getDistalAtomID(MolCoordPtr pMol, bool bDir, int &nbonds) const
 {
-  int aid1 = id1;
-  int aid2 = id2;
-  
-  Vector4D nv1;
-  
   std::deque<int> atoms1;
-  // atoms1.push_back(aid1);
-  // atoms1.push_back(aid2);
-  
-  MolAtomPtr pAtom1 = pMol->getAtom( id1 );
-  //MolAtomPtr pAtom2 = pMol->getAtom( id2 );
+  MolAtomPtr pAtom;
+  int idc;
 
-  int nbon1 = pAtom1->getBondCount();
+  if (bDir) {
+    pAtom = pMol->getAtom( id1 );
+    idc = id1;
+  }
+  else {
+    pAtom = pMol->getAtom( id2 );
+    idc = id2;
+  }
+
+  int nbon1 = pAtom->getBondCount();
   if (nbon1<2) {
+    nbonds = 0;
     return -1;
   }
   
-  MolAtom::BondIter biter = pAtom1->bondBegin();
-  MolAtom::BondIter bend = pAtom1->bondEnd();
+  MolAtom::BondIter biter = pAtom->bondBegin();
+  MolAtom::BondIter bend = pAtom->bondEnd();
   for (; biter!=bend; ++biter) {
     const MolBond *pb = *biter;
     if (pb==this)
@@ -50,9 +52,9 @@ int MolBond::getDistalAtomID(MolCoordPtr pMol, int &nbonds) const
     // pBonAtm1->toString().c_str(),
     // pBonAtm2->toString().c_str());
     
-    if (iBonAtm1==aid1)
+    if (iBonAtm1==idc)
       atoms1.push_back(iBonAtm2);
-    else if (iBonAtm2==aid1)
+    else if (iBonAtm2==idc)
       atoms1.push_back(iBonAtm1);
   }
   
@@ -69,16 +71,15 @@ int MolBond::getDistalAtomID(MolCoordPtr pMol, int &nbonds) const
 }
 
 namespace {
-  Vector4D getNormalVec(MolAtomPtr pAtom1, MolAtomPtr pAtom2,
-			const MolBond *pBond, MolCoordPtr pMol, int &nbonds, bool &bOK)
+  Vector4D getNormalVec(MolAtomPtr pAtom1, MolAtomPtr pAtom2, MolAtomPtr pDistAtm)
   {
-    int aid_dist = pBond->getDistalAtomID(pMol, nbonds);
-    if (aid_dist<0) {
-      bOK = false;
-      return Vector4D();
-    }
+    //int aid_dist = pBond->getDistalAtomID(pMol, nbonds);
+    //if (aid_dist<0) {
+    //bOK = false;
+    //return Vector4D();
+    //}
+    //MolAtomPtr pDistAtm = pMol->getAtom(aid_dist);
 
-    MolAtomPtr pDistAtm = pMol->getAtom(aid_dist);
     Vector4D vdist = pDistAtm->getPos();
 
     Vector4D v1 = pAtom2->getPos() - pAtom1->getPos();
@@ -87,8 +88,6 @@ namespace {
     Vector4D ev1 = v1.normalize();
     Vector4D nv1 = v2 - ev1.scale( ev1.dot(v2) );
     nv1 = nv1.normalize();
-
-    bOK = true;
 
     //MB_DPRINTLN("DblBon nbon=%d, nv=%s", nbon1, nv1.toString().c_str());
     return nv1;
@@ -100,31 +99,41 @@ Vector4D MolBond::getDblBondDir(MolCoordPtr pMol) const
   MolAtomPtr pAtom1 = pMol->getAtom( id1 );
   MolAtomPtr pAtom2 = pMol->getAtom( id2 );
 
-  bool bOK1, bOK2;
   int nb1, nb2;
   Vector4D nv1, nv2;
 
-  nv1 = getNormalVec(pAtom1, pAtom2, this, pMol, nb1, bOK1);
-  nv2 = getNormalVec(pAtom2, pAtom1, this, pMol, nb2, bOK2);
+  int aid1_dist = getDistalAtomID(pMol, true, nb1);
+  int aid2_dist = getDistalAtomID(pMol, false, nb2);
 
-  if (bOK1 && !bOK2)
-    return nv1;
-
-  if (!bOK1 && bOK2)
-    return nv2;
-  
-  // isolated double bond --> cannot determine the dblbon direction
-  if (!bOK1 && !bOK2)
+  // isolated bond --> cannot determine the dblbon direction
+  if (aid1_dist<0 && aid2_dist<0) {
     return Vector4D(1,0,0);
+  }
+  
+  if (aid1_dist>=0) {
+    MolAtomPtr pDistAtm = pMol->getAtom(aid1_dist);
+    nv1 = getNormalVec(pAtom1, pAtom2, pDistAtm);
+
+    if (aid2_dist<0)
+      return nv1; // Atom2 is dead end
+  }
+
+  if (aid2_dist>=0) {
+    MolAtomPtr pDistAtm = pMol->getAtom(aid2_dist);
+    nv2 = getNormalVec(pAtom2, pAtom1, pDistAtm);
+
+    if (aid1_dist<0)
+      return nv2; // Atom1 is dead end
+  }
 
   if (nb1==1 && nb2>1)
-    return nv1;
+    return nv1; // Atom1 is no branch & Atom2 is multi branch
 
   if (nb1>1 && nb2==1)
-    return nv2;
+    return nv2; // Atom2 is no branch & Atom1 is multi branch
 
   // Topology is branched at the both sides of the bond
   // --> cannot determine whether nv1 or nv2 is the best choice...
-  return nv1;
+  return nv2;
 }
 

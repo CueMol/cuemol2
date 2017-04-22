@@ -439,18 +439,16 @@ void TopoBuilder::autogen(MolResiduePtr pRes, ResiToppar *pTop, qlib::uid_t uid)
 
   MolCoordPtr pmol = m_pMol; //pRes->getParent();
   ResiToppar *pNewTop;
-  LString newname = pRes->getName();
-
-  if (uid!=qlib::invalid_uid)
-    newname = TopoDB::getUIDDecName(pRes->getName(), uid); //LString::format("%s_UID%d", pRes->getName().c_str(), uid);
 
   if (pTop==NULL) {
+    LString newname = pRes->getName();
+    if (uid!=qlib::invalid_uid)
+      newname = TopoDB::getUIDDecName(pRes->getName(), uid); //LString::format("%s_UID%d", pRes->getName().c_str(), uid);
     pNewTop = MB_NEW ResiToppar();
     pNewTop->setName(newname);
     m_pTopDic->put(pNewTop);
   }
   else {
-    MB_ASSERT(newname.equals(pRes->getName()));
     pNewTop = pTop;
   }
   
