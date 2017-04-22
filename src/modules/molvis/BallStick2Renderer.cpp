@@ -69,11 +69,9 @@ void BallStick2Renderer::beginRend(DisplayContext *pdl)
 
 void BallStick2Renderer::endRend(DisplayContext *pdl)
 {
-  /*if ( m_fRing && !qlib::isNear4(m_tickness, 0.0) ) {
-    drawRings(pdl);
-    if (m_atoms.size()>0)
-      m_atoms.clear();
-  }*/
+  if ( m_fRing && !qlib::isNear4(m_tickness, 0.0) ) {
+    buildRingData();
+  }
 
   MolCoordPtr pCMol = getClientMol();
   MolAtomPtr pAtom;
@@ -153,6 +151,10 @@ void BallStick2Renderer::rendBond(DisplayContext *pdl, MolAtomPtr pAtom1, MolAto
     c.btype = pMB->getType();
     m_cyldat.push_back(c);
   }
+}
+
+void BallStick2Renderer::buildRingData()
+{
 }
 
 void BallStick2Renderer::propChanged(qlib::LPropEvent &ev)

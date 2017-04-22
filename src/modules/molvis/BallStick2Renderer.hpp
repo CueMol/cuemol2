@@ -141,7 +141,9 @@ namespace molvis {
     virtual void rendBond(DisplayContext *pdl, MolAtomPtr pAtom1, MolAtomPtr pAtom2, MolBond *pMB);
 
   private:
-    void drawInterAtomLine(MolAtomPtr pAtom1, MolAtomPtr pAtom2);
+    //void drawInterAtomLine(MolAtomPtr pAtom1, MolAtomPtr pAtom2);
+
+    void buildRingData();
 
   };
 

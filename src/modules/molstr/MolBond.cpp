@@ -73,13 +73,6 @@ int MolBond::getDistalAtomID(MolCoordPtr pMol, bool bDir, int &nbonds) const
 namespace {
   Vector4D getNormalVec(MolAtomPtr pAtom1, MolAtomPtr pAtom2, MolAtomPtr pDistAtm)
   {
-    //int aid_dist = pBond->getDistalAtomID(pMol, nbonds);
-    //if (aid_dist<0) {
-    //bOK = false;
-    //return Vector4D();
-    //}
-    //MolAtomPtr pDistAtm = pMol->getAtom(aid_dist);
-
     Vector4D vdist = pDistAtm->getPos();
 
     Vector4D v1 = pAtom2->getPos() - pAtom1->getPos();
