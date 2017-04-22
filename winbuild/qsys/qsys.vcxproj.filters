@@ -780,6 +780,12 @@
     <ClCompile Include="..\..\src\modules\molvis\GLSLCPK3Renderer_wrap.cpp">
       <Filter>molvis</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\BallStick2Renderer.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\molvis\BallStick2Renderer_wrap.cpp">
+      <Filter>molvis</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\qsys\AbstractColor.hpp">
@@ -1037,6 +1043,9 @@
       <Filter>molvis</Filter>
     </mcwrapgen3>
     <mcwrapgen3 Include="..\..\src\modules\molvis\GLSLCPK3Renderer.qif">
+      <Filter>molvis</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\molvis\BallStick2Renderer.qif">
       <Filter>molvis</Filter>
     </mcwrapgen3>
   </ItemGroup>

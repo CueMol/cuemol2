@@ -20,6 +20,8 @@
 #include <gfx/DisplayContext.hpp>
 #include <gfx/Hittest.hpp>
 
+#include <boost/unordered_set.hpp>
+
 using namespace molstr;
 using qlib::Vector4D;
 
@@ -59,6 +61,8 @@ void MolAtomRenderer::render(DisplayContext *pdl)
 
 void MolAtomRenderer::performRend(DisplayContext *pdl)
 {
+  MolCoordPtr pCliMol = getClientMol();
+
   //std::set<int> bonded_atoms;
   boost::unordered_set<int> bonded_atoms;
 

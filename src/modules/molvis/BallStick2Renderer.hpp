@@ -80,7 +80,7 @@ namespace molvis {
     gfx::ColorPtr m_ringcol;
 
   public:
-    gfx::ColorPtr &getRingColor() const { return m_ringcol; }
+    const gfx::ColorPtr &getRingColor() const { return m_ringcol; }
     void setRingColor(const gfx::ColorPtr &col) { m_ringcol = col; }
 
   private:
@@ -132,8 +132,6 @@ namespace molvis {
 
     virtual void propChanged(qlib::LPropEvent &ev);
 
-    virtual void display(DisplayContext *pdc);
-
     virtual void invalidateDisplayCache();
 
     virtual void preRender(DisplayContext *pdc);
@@ -147,6 +145,9 @@ namespace molvis {
     virtual void endRend(DisplayContext *pdl);
     virtual void rendAtom(DisplayContext *pdl, MolAtomPtr pAtom, bool fbonded);
     virtual void rendBond(DisplayContext *pdl, MolAtomPtr pAtom1, MolAtomPtr pAtom2, MolBond *pMB);
+
+  private:
+    void drawInterAtomLine(MolAtomPtr pAtom1, MolAtomPtr pAtom2);
 
   };
 

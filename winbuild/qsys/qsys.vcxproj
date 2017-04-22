@@ -176,6 +176,8 @@
     <ClCompile Include="..\..\src\modules\molstr\QdfPdbReader_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\SimpleRendGLSL.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\SimpleRendGLSL_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\BallStick2Renderer.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\BallStick2Renderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\CPK2Renderer.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\CPK2Renderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\CPK3Renderer.cpp" />
@@ -537,6 +539,7 @@
     <mcwrapgen3 Include="..\..\src\modules\molstr\ChainIterator.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molstr\QdfPdbReader.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molstr\SimpleRendGLSL.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molvis\BallStick2Renderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\CPK2Renderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\CPK3Renderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\GLSLCPK3Renderer.qif" />

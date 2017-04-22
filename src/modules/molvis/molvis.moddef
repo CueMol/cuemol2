@@ -9,6 +9,7 @@
 #endif
 
 #include "BallStickRenderer.qif"
+#include "BallStick2Renderer.qif"
 #include "AnIsoURenderer.qif"
 #include "CPK2Renderer.qif"
 #include "CPK3Renderer.qif"
@@ -42,6 +43,7 @@ module molvis
   fini molvis::fini();
 
   BallStickRenderer;
+  BallStick2Renderer;
   AnIsoURenderer;
   CPK2Renderer;
   CPK3Renderer;

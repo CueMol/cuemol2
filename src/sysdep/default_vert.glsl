@@ -15,10 +15,9 @@ void main (void)
 
   // Do fixed functionality vertex transform
   gl_Position = gl_ProjectionMatrix * ecPosition;
-  // gl_Position = ftransform();
 
   if (enable_lighting) {
-    vec3 normal = fnormal();
+    vec3 normal = normalize(gl_NormalMatrix * gl_Normal);
     gl_FrontColor = flight(normal, ecPosition, gl_Color);
   }
   else {

@@ -9,6 +9,7 @@
 
 #include "molvis.hpp"
 #include "BallStickRenderer.hpp"
+#include "BallStick2Renderer.hpp"
 #include "AnIsoURenderer.hpp"
 //#include "CPK2Renderer.hpp"
 #include "SplineRenderer.hpp"
@@ -47,6 +48,7 @@ bool init()
   
   RendererFactory *pRF = RendererFactory::getInstance();
   pRF->regist<BallStickRenderer>();
+  pRF->regist<BallStick2Renderer>();
   pRF->regist<AnIsoURenderer>();
   //pRF->regist<CPK2Renderer>();
   pRF->regist<SplineRenderer>();

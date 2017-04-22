@@ -57,11 +57,6 @@ vec4 flight(in vec3 normal, in vec4 ecPosition, in vec4 incolor)
   return vec4(color.rgb, incolor.a);
 }
 
-vec3 fnormal(void)
-{
-  return normalize(gl_NormalMatrix * gl_Normal);
-}
-
 float ffog(in float ecDistance)
 {
   return(abs(ecDistance));
