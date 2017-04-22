@@ -36,18 +36,16 @@ namespace sysdep {
     LString m_name;
     GLenum m_nType;
     LString m_source;
- 
-    //std::map<LString, LString> m_macrodefs;
 
   public:
     OglShaderObject(const GLenum shader_type )
-         : m_nType(shader_type), m_hGL(NULL)
+         : m_nType(shader_type), m_hGL(NULL), m_bUseInclude(true)
     {
     }
     
     virtual ~OglShaderObject();
     
-    void loadFile(const LString& filename, SOMacroDefs *penv = NULL);
+    void loadFile(const LString& filename, bool bUseInclude, SOMacroDefs *penv);
 
     bool compile();
     
@@ -60,6 +58,13 @@ namespace sysdep {
       MB_DPRINTLN("%s", m_source.c_str());
     }
 
+  private:
+    
+    void loadFileWithInclude(const LString &fname);
+    LString loadFileWithInclImpl(const LString &fname, int);
+
+    bool m_bUseInclude;
+    LString m_basedir;
   };
 
   ////////////////////////////////////////
@@ -75,11 +80,15 @@ namespace sysdep {
     typedef std::map<LString, OglShaderObject *> ShaderTab;
     ShaderTab m_shaders;
 
+    bool m_bUseInclude;
+
   public:
-    OglProgramObject() : m_hPO(0), m_hOldPO(0) {}
+    OglProgramObject() : m_hPO(0), m_hOldPO(0), m_bUseInclude(true) {}
     virtual ~OglProgramObject();
 
     bool init();
+
+    void setUseInclude(bool b) { m_bUseInclude = b; }
 
     bool loadShader(const LString &name, const LString &srcpath, GLenum shader_type, SOMacroDefs *pENV = NULL);
 

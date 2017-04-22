@@ -9,9 +9,17 @@
 #include "OglError.hpp"
 
 #include <qlib/FileStream.hpp>
+#include <qlib/LineStream.hpp>
+#include <qlib/LRegExpr.hpp>
+
 #include <qsys/SysConfig.hpp>
 
 #if defined(HAVE_GLEW) || defined(USE_GLES2)
+
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+
+namespace fs = boost::filesystem;
 
 using namespace sysdep;
 using qsys::SysConfig;
@@ -25,7 +33,7 @@ OglShaderObject::~OglShaderObject()
   }
 }
 
-void OglShaderObject::loadFile(const LString& filename, SOMacroDefs *penv /*= NULL*/)
+void OglShaderObject::loadFile(const LString& filename, bool bUseInclude, SOMacroDefs *penv)
 {
   CLR_GLERROR();
   // CHK_GLERROR("SO.loadFile createShader BEFORE");
@@ -46,15 +54,8 @@ void OglShaderObject::loadFile(const LString& filename, SOMacroDefs *penv /*= NU
   LString fnam = pconf->convPathName(filename);
 
   // read source file
-  qlib::FileInStream fis;
-  fis.open(fnam);
-  char sbuf[1024];
-  m_source = "";
-  while (fis.ready()) {
-    int n = fis.read(sbuf, 0, sizeof sbuf-1);
-    sbuf[n] = '\0';
-    m_source += sbuf;
-  }
+  m_bUseInclude = bUseInclude;
+  loadFileWithInclude(fnam);
 
   // check supported shaderlang version
 
@@ -86,16 +87,16 @@ void OglShaderObject::loadFile(const LString& filename, SOMacroDefs *penv /*= NU
   // set shader source
 
   LString linenostr("#line 1");
+
   m_source = verstr + "\n"
     + macstr + "\n"
       + linenostr + "\n"
         + m_source;
 
-  const char *s = m_source.c_str();
-  int l = m_source.length();
+  const char *csrc = m_source.c_str();
+  int srclen = m_source.length();
 
-  //glShaderSourceARB( m_hGL, 1, &s, &l );
-  glShaderSource( m_hGL, 1, &s, &l );
+  glShaderSource( m_hGL, 1, &csrc, &srclen );
   if ( glGetError() != GL_NO_ERROR ) {
     CHK_GLERROR("SO.loadFile");
     LOG_DPRINTLN("ShaderObject::ShaderObject(): cannot set shader source: %s",
@@ -104,6 +105,56 @@ void OglShaderObject::loadFile(const LString& filename, SOMacroDefs *penv /*= NU
   }
 
   m_name = fnam;
+}
+
+void OglShaderObject::loadFileWithInclude(const LString &fname)
+{
+  fs::path srcpath(fname.c_str());
+  fs::path ppath = srcpath.parent_path();
+  m_basedir = ppath.string();
+  LString ffn = srcpath.filename().string();
+
+  m_source = loadFileWithInclImpl(ffn, 0);
+}
+
+LString OglShaderObject::loadFileWithInclImpl(const LString &fname, int nestlv)
+{
+  fs::path fs_dir(m_basedir.c_str());
+  fs::path fs_fname(fname.c_str());
+  LString fullpath( (fs_dir/fs_fname).string() );
+  
+  LString source;
+
+  qlib::FileInStream fis;
+  fis.open(fullpath);
+  qlib::LineStream lin(fis);
+  qlib::LRegExpr re_inc("^@include\\s*\"(.+)\"\\s*$");
+  
+  while (lin.ready()) {
+    LString line = lin.readLine();
+    int nline = lin.getLineNo();
+    if (line.isEmpty())
+      break;
+    if (m_bUseInclude && nestlv<10 && re_inc.match(line)) {
+      LString path = re_inc.getSubstr(1);
+      MB_DPRINTLN("OglSO> process include directive %s", path.c_str());
+
+      fs::path srcpath(path.c_str());
+      LString ffn = srcpath.filename().string();
+
+      LString sub = loadFileWithInclImpl(ffn, nestlv+1);
+
+      source += "\n";
+      source += LString::format("#line 1\n");
+      source += sub;
+      source += LString::format("#line %d\n", nline+1);
+    }
+    else {
+      source += line;
+    }
+  }
+  
+  return source;
 }
 
 bool OglShaderObject::compile()
@@ -199,7 +250,7 @@ bool OglProgramObject::loadShader(const LString &name, const LString &srcpath, G
     return false;
 
   MB_DPRINTLN("PO> Loading shader: %s", srcpath.c_str());
-  pVS->loadFile(srcpath, pENV);
+  pVS->loadFile(srcpath, m_bUseInclude, pENV);
   pVS->compile();
   attach(pVS);
   m_shaders.insert(ShaderTab::value_type(name, pVS));

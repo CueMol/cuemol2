@@ -73,10 +73,17 @@ bool GLSLCPK3Renderer::init(DisplayContext *pdc)
     return false;
   }
 
-  if (m_pPO==NULL)
+  if (m_pPO==NULL) {
+    ssh.setUseInclude(true);
+#ifdef USE_TBO
+    ssh.defineMacro("USE_TBO", "1");
+#else
+    ssh.defineMacro("TEX2D_WIDTH", LString::format("%d",TEX2D_WIDTH).c_str());
+#endif
     m_pPO = ssh.createProgObj("gpu_sphere2",
                               "%%CONFDIR%%/data/shaders/sphere2_vertex.glsl",
                               "%%CONFDIR%%/data/shaders/sphere2_frag.glsl");
+  }
   
   if (m_pPO==NULL) {
     LOG_DPRINTLN("GLSLCPK3Renderer> ERROR: cannot create progobj.");
@@ -368,7 +375,7 @@ void GLSLCPK3Renderer::updateGLSLColor()
 #else
   MB_DPRINTLN("tex size %d x %d = %d", m_nTexW, m_nTexH, m_nTexW*m_nTexH);
   MB_DPRINTLN("buf size %d", m_colorTexData.size());
-  MB_DPRINTLN("crd size %d", natoms*3);
+  MB_DPRINTLN("crd size %d", natoms*4);
   m_pColorTex->setData(m_nTexW, m_nTexH, 1, &m_colorTexData[0]);
 #endif
 
@@ -378,7 +385,6 @@ void GLSLCPK3Renderer::updateGLSLColor()
   endColorCalc(pCMol);
 
 }
-
 
 void GLSLCPK3Renderer::invalidateDisplayCache()
 {
@@ -405,6 +411,8 @@ void GLSLCPK3Renderer::renderGLSL(DisplayContext *pdc)
   if (m_pPO==NULL)
     return; // Error, Cannot draw anything (ignore)
 
+  qlib::uid_t nSceneID = getSceneID();
+
   pdc->useTexture(m_pCoordTex, COORD_TEX_UNIT);
   pdc->useTexture(m_pColorTex, COLOR_TEX_UNIT);
   m_pPO->enable();
@@ -412,23 +420,29 @@ void GLSLCPK3Renderer::renderGLSL(DisplayContext *pdc)
   m_pPO->setUniform("coordTex", COORD_TEX_UNIT);
   m_pPO->setUniform("colorTex", COLOR_TEX_UNIT);
 
+  // Setup edge/silhouette
   if (pdc->getEdgeLineType()!=DisplayContext::ELT_NONE) {
     m_pPO->setUniformF("u_edge", pdc->getEdgeLineWidth());
 
-    // TO DO: use device dependent color!!
     double r=.0,g=.0,b=.0;
     ColorPtr pcol = pdc->getEdgeLineColor();
     if (!pcol.isnull()) {
-      r = pcol->fr();
-      g = pcol->fg();
-      b = pcol->fb();
+      quint32 dcc = pcol->getDevCode(nSceneID);
+      r = gfx::convI2F(gfx::getRCode(dcc));
+      g = gfx::convI2F(gfx::getGCode(dcc));
+      b = gfx::convI2F(gfx::getBCode(dcc));
     }
     
     m_pPO->setUniformF("u_edgecolor", r,g,b,1);
+    if (pdc->getEdgeLineType()==DisplayContext::ELT_SILHOUETTE)
+      m_pPO->setUniform("u_bsilh", 1);
+    else
+      m_pPO->setUniform("u_bsilh", 0);
   }
   else {
     m_pPO->setUniformF("u_edge", 0.0);
     m_pPO->setUniformF("u_edgecolor", 0,0,0,1);
+    m_pPO->setUniform("u_bsilh", 0);
   }
   
   pdc->drawElem(*m_pAttrAry);

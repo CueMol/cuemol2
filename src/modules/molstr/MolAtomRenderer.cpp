@@ -47,7 +47,20 @@ void MolAtomRenderer::render(DisplayContext *pdl)
 
   beginRend(pdl);
   
-  std::set<int> bonded_atoms;
+  performRend(pdl);
+  
+  endRend(pdl);
+  
+  getColSchm()->end();
+  pCliMol->getColSchm()->end();
+
+  // MB_DPRINTLN("MolAtomRenderer::display() end OK.");
+}
+
+void MolAtomRenderer::performRend(DisplayContext *pdl)
+{
+  //std::set<int> bonded_atoms;
+  boost::unordered_set<int> bonded_atoms;
 
   if (isRendBond()) {
     // Render bonds & nonb-atoms case (e.g. ball & stick model)
@@ -95,13 +108,29 @@ void MolAtomRenderer::render(DisplayContext *pdl)
 
     rendAtom(pdl, pAtom, bbonded);
   }
-  
-  endRend(pdl);
-  
-  getColSchm()->end();
-  pCliMol->getColSchm()->end();
+}
 
-  // MB_DPRINTLN("MolAtomRenderer::display() end OK.");
+// default empty implementations
+
+void MolAtomRenderer::beginRend(DisplayContext *pdl)
+{
+}
+
+void MolAtomRenderer::endRend(DisplayContext *pdl)
+{
+}
+
+void MolAtomRenderer::rendAtom(DisplayContext *pdl, MolAtomPtr pAtom, bool fbonded)
+{
+}
+
+void MolAtomRenderer::rendBond(DisplayContext *pdl, MolAtomPtr pAtom1, MolAtomPtr pAtom2, MolBond *pMB)
+{
+}
+
+bool MolAtomRenderer::isRendBond() const
+{
+  return false;
 }
 
 //////////////////////////////////////////////////////////////////////////

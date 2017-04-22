@@ -636,6 +636,7 @@
     <glslshader Include="..\..\src\sysdep\default_vert.glsl" />
     <glslshader Include="..\..\src\sysdep\edge_frag.glsl" />
     <glslshader Include="..\..\src\sysdep\edge_vert.glsl" />
+    <glslshader Include="..\..\src\sysdep\lib_common.glsl" />
     <glslshader Include="..\..\src\sysdep\silh_frag.glsl" />
     <glslshader Include="..\..\src\sysdep\silh_vert.glsl" />
   </ItemGroup>

@@ -30,7 +30,7 @@ CPK3Renderer::~CPK3Renderer()
 
 const char *CPK3Renderer::getTypeName() const
 {
-  return "cpk3";
+  return "cpk";
 }
 
 bool CPK3Renderer::isUseVer2Iface() const
@@ -45,18 +45,18 @@ bool CPK3Renderer::isRendBond() const
   return false;
 }
 
-void CPK3Renderer::rendBond(DisplayContext *pdl, MolAtomPtr pAtom1, MolAtomPtr pAtom2, MolBond *pMB)
-{
-}
+// void CPK3Renderer::rendBond(DisplayContext *pdl, MolAtomPtr pAtom1, MolAtomPtr pAtom2, MolBond *pMB)
+// {
+// }
 
 void CPK3Renderer::beginRend(DisplayContext *pdl)
 {
   pdl->setDetail(m_nDetail);
 }
 
-void CPK3Renderer::endRend(DisplayContext *pdl)
-{
-}
+// void CPK3Renderer::endRend(DisplayContext *pdl)
+// {
+// }
 
 void CPK3Renderer::rendAtom(DisplayContext *pdl, MolAtomPtr pAtom, bool)
 {

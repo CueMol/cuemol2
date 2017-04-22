@@ -30,7 +30,7 @@ namespace molstr {
     virtual ~MolAtomRenderer();
 
     //////////////////////////////////////////////////////
-    // interface implementations
+    // Renderer interface implementations
 
     virtual void render(DisplayContext *pdl);
 
@@ -43,13 +43,14 @@ namespace molstr {
     // virtual LString interpHit(const gfx::RawHitData &hdat);
 
     //////////////////////////////////////////////////////
-    // pure virtual methods
+    // MolAtomRenderer interface
 
-    virtual void beginRend(DisplayContext *pdl) =0;
-    virtual void endRend(DisplayContext *pdl) =0;
-    virtual void rendAtom(DisplayContext *pdl, MolAtomPtr pAtom, bool fbonded) =0;
-    virtual void rendBond(DisplayContext *pdl, MolAtomPtr pAtom1, MolAtomPtr pAtom2, MolBond *pMB) =0;
-    virtual bool isRendBond() const =0;
+    virtual void beginRend(DisplayContext *pdl);
+    virtual void performRend(DisplayContext *pdl);
+    virtual void endRend(DisplayContext *pdl);
+    virtual void rendAtom(DisplayContext *pdl, MolAtomPtr pAtom, bool fbonded);
+    virtual void rendBond(DisplayContext *pdl, MolAtomPtr pAtom1, MolAtomPtr pAtom2, MolBond *pMB);
+    virtual bool isRendBond() const;
 
     // hittest pattern rendering
     virtual void beginHitRend(DisplayContext *pdl);

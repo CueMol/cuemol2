@@ -1121,5 +1121,8 @@
     <glslshader Include="..\..\src\modules\molvis\sphere2_vertex.glsl">
       <Filter>molvis\Shaders</Filter>
     </glslshader>
+    <glslshader Include="..\..\src\sysdep\lib_common.glsl">
+      <Filter>sysdep</Filter>
+    </glslshader>
   </ItemGroup>
 </Project>

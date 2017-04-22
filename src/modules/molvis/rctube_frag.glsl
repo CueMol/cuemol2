@@ -3,17 +3,17 @@
 //  GLSLRcTubeRenderer fragment shader for OpenGL
 //
 
-//#define USE_LINBN 1
+@include "lib_common.glsl"
 
 #if (__VERSION__>=140)
 #define USE_TBO 1
 #else
-#extension GL_EXT_gpu_shader4 : enable 
 #endif
 
 #ifdef USE_TBO
 #define TextureType samplerBuffer
 #else
+#extension GL_EXT_gpu_shader4 : enable 
 #define TextureType sampler1D
 #endif
 
@@ -250,119 +250,6 @@ vec4 calcColor(in float rho)
     return (f<0.5f)?col0:col1;
 }
 
-///////////////////////////////////
-// local variables for lighting calc
-
-vec4 Ambient;
-vec4 Diffuse;
-vec4 Specular;
-
-void DirectionalLight(in int i, in vec3 normal)
-{
-  float nDotVP;         // normal . light direction
-  float nDotHV;         // normal . light half vector
-  float pf;             // power factor
-  
-  nDotVP = max(0.0, dot(normal,
-                        normalize(vec3(gl_LightSource[i].position))));
-  nDotHV = max(0.0, dot(normal, vec3(gl_LightSource[i].halfVector)));
-  
-  if (nDotVP == 0.0)
-    pf = 0.0;
-  else
-    pf = pow(nDotHV, gl_FrontMaterial.shininess);
-  
-  Ambient  += gl_LightSource[i].ambient;
-  Diffuse  += gl_LightSource[i].diffuse * nDotVP;
-  Specular += gl_LightSource[i].specular * pf;
-}
-
-vec4 flight(in vec4 acolor, in vec3 normal, in vec4 ecPosition)
-{
-  vec4 color;
-  vec3 ecPosition3;
-  vec3 eye;
-
-  ecPosition3 = (vec3 (ecPosition)) / ecPosition.w;
-  eye = vec3 (0.0, 0.0, 1.0);
-
-  // Clear the light intensity accumulators
-  Ambient  = vec4 (0.0);
-  Diffuse  = vec4 (0.0);
-  Specular = vec4 (0.0);
-
-  DirectionalLight(0, normal);
-
-  color = gl_LightModel.ambient * acolor;
-  color += Ambient  * acolor;
-  color += Diffuse  * acolor;
-  color += Specular * gl_FrontMaterial.specular;
-  color = clamp( color, 0.0, 1.0 );
-  return color;
-}
-
-vec4 HSBtoRGB(in vec4 hsb)
-{
-  vec4 rgb;
-
-  float hue = hsb.x;
-  float saturation = hsb.y;
-  float brightness = hsb.z;
-  rgb.w = hsb.w;
-
-  hue = mod(hue, 1.0);
-  saturation = clamp(saturation, 0.0, 1.0);
-  brightness = clamp(brightness, 0.0, 1.0);
-
-  // int r = 0, g = 0, b = 0;
-  if (saturation<0.001) {
-    rgb.r = rgb.g = rgb.b = brightness;
-  }
-  else {
-    float h = hue * 6.0;
-
-    float hi = floor(h);
-    float f = h - hi;
-    float p = brightness * (1.0 - saturation);
-    float q = brightness * (1.0 - saturation * f);
-    float t = brightness * (1.0 - (saturation * (1.0 - f)));
-    int ihi = int(hi);
-    if (ihi == 0) {
-      rgb.r = brightness;
-      rgb.g = t;
-      rgb.b = p;
-    }
-    else if (ihi == 1) {
-      rgb.r = q;
-      rgb.g = brightness;
-      rgb.b = p;
-    }
-    else if (ihi == 2) {
-      rgb.r = p;
-      rgb.g = brightness;
-      rgb.b = t;
-    }
-    else if (ihi == 3) {
-      rgb.r = p;
-      rgb.g = q;
-      rgb.b = brightness;
-    }
-    else if (ihi == 4) {
-      rgb.r = t;
-      rgb.g = p;
-      rgb.b = brightness;
-    }
-    else {
-      //case 5:
-      rgb.r = brightness;
-      rgb.g = p;
-      rgb.b = q;
-    }
-  }
-
-  return rgb;
-}
-
 //const float M_PI = 3.141592653589793238462643383;
 const float M_2PI = 3.141592653589793238462643383 * 2.0;
 
@@ -554,22 +441,14 @@ void main (void)
     
     // color calculation
     vec4 color;
-    color = flight(calcColor(st.s), norm, ecpos);
+    color = flight(norm, ecpos, calcColor(st.s));
     //color = HSBtoRGB(vec4(st.t, mod(st.s, 1.0), 1.0, 1.0));
     
-    // fog calculation
-    float fogz = abs(ecpos.z);
-    float fog;
-    fog = (gl_Fog.end - fogz) * gl_Fog.scale;
-    fog = clamp(fog, 0.0, 1.0);
-    vec4 fc = vec4(mix( vec3(gl_Fog.color), vec3(color), fog), color.a*frag_alpha);
-
     //gl_FragColor = vec4(mod(s, 1.0), t, 0.0, 1.0);
     //gl_FragColor = vec4(0.0, 0.0, del*1e5, 1.0);
     //gl_FragColor = vec4(gl_FragCoord.x/1024.0, gl_FragCoord.y/1024.0, 0.0, 1.0);
     
-    gl_FragColor = fc;
-
+    gl_FragColor = calcFogAlpha(color, ffog(ecpos.z), frag_alpha);
   }
 
 }

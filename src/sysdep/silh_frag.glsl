@@ -5,9 +5,6 @@
 
 uniform float frag_alpha;
 
-// varying vec3 gNormal;
-// varying vec4 gEcPosition;
-
 void main (void)
 {
   vec4 color;

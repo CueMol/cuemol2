@@ -3,14 +3,11 @@
 //  vertex shader for spheres
 //
 
-#if (__VERSION__>=140)
-#define USE_TBO 1
-#else
-#extension GL_ARB_compatibility : enable
-#extension GL_EXT_gpu_shader4 : enable 
+#ifndef TEX2D_WIDTH
+#  define TEX2D_WIDTH 1024
 #endif
 
-#define COORDTEX_WIDTH 1024
+//#extension GL_ARB_compatibility : enable
 
 ////////////////////
 // Uniform variables
@@ -19,6 +16,7 @@
 uniform samplerBuffer coordTex;
 uniform samplerBuffer colorTex;
 #else
+#extension GL_EXT_gpu_shader4 : enable 
 uniform sampler2D coordTex;
 uniform sampler2D colorTex;
 #endif
@@ -50,8 +48,8 @@ vec4 getAtomPos(in int ind)
   return vec4( texelFetch(coordTex, ind).xyz, 1.0);
 #else
   ivec2 iv;
-  iv.x = int( mod(ind, COORDTEX_WIDTH) );
-  iv.y = ind/COORDTEX_WIDTH;
+  iv.x = int( mod(ind, TEX2D_WIDTH) );
+  iv.y = ind/TEX2D_WIDTH;
   return vec4( texelFetch2D(coordTex, iv, 0).xyz , 1.0);
 #endif
 }
@@ -62,8 +60,8 @@ vec4 calcColor(in int ind)
   return texelFetch(colorTex, ind);
 #else
   ivec2 iv;
-  iv.x = int( mod(ind, COORDTEX_WIDTH) );
-  iv.y = ind/COORDTEX_WIDTH;
+  iv.x = int( mod(ind, TEX2D_WIDTH) );
+  iv.y = ind/TEX2D_WIDTH;
   return texelFetch2D(colorTex, iv, 0);
 #endif
 }

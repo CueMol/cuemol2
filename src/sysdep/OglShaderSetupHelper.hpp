@@ -36,7 +36,7 @@ namespace sysdep {
 
   public:
     OglShaderSetupHelper(_ClientType *pCli)
-         : m_pCli(pCli)
+         : m_pCli(pCli), m_bUseInclude(true)
     {
     }
 
@@ -79,18 +79,9 @@ namespace sysdep {
     //////////////////////////////
     // Include paths
 
-    std::vector<LString> m_incPaths;
+    bool m_bUseInclude;
 
-    int addIncludePath(const LString& path)
-    {
-      m_includePaths.push_back(path);
-      return (int)m_includePaths.size();
-    }
-
-    void clearIncludePaths()
-    {
-      m_includePaths.clear();
-    }
+    void setUseInclude(bool b) { m_bUseInclude = b; }
 
     //////////////////////////////
     //
@@ -113,6 +104,8 @@ namespace sysdep {
           return NULL;
         }
         
+        pPO->setUseInclude(m_bUseInclude);
+
         try {
           if (m_defs.empty()) {
             pPO->loadShader("vert", vert_path, GL_VERTEX_SHADER);

@@ -56,10 +56,10 @@ namespace molvis {
     virtual bool isRendBond() const;
     
     virtual void beginRend(DisplayContext *pdl);
-    virtual void endRend(DisplayContext *pdl);
+    // virtual void endRend(DisplayContext *pdl);
     
     virtual void rendAtom(DisplayContext *pdl, MolAtomPtr pAtom, bool fbonded);
-    virtual void rendBond(DisplayContext *pdl, MolAtomPtr pAtom1, MolAtomPtr pAtom2, MolBond *pMB);
+    //virtual void rendBond(DisplayContext *pdl, MolAtomPtr pAtom1, MolAtomPtr pAtom2, MolBond *pMB);
 
     //////////////////////////////////////////////////////
     // new rendering interface (VBO version/dummy)
