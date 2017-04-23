@@ -17,8 +17,9 @@ CPP_SRC = \
 molvis.cpp \
 AnIsoURenderer.cpp \
 BallStickRenderer.cpp \
-CPKRenderer.cpp \
+BallStick2Renderer.cpp \
 CPK2Renderer.cpp \
+CPK3Renderer.cpp \
 CubicSpline.cpp \
 SplineCoeffSet.cpp \
 SplineRenderer.cpp \
@@ -53,9 +54,10 @@ $(NULL)
 #
 MCWG_SRC= \
 AnIsoURenderer.qif \
-CPKRenderer.qif \
 CPK2Renderer.qif \
+CPK3Renderer.qif \
 BallStickRenderer.qif \
+BallStick2Renderer.qif \
 SplineRenderer.qif \
 Spline2Renderer.qif \
 TubeRenderer.qif \
@@ -73,6 +75,7 @@ ScriptColoring.qif \
 DistPickDrawObj.qif \
 $(NULL)
 
+
 ######################################################
 # OpenGL-dependent files (for OpenGL build)
 
@@ -82,12 +85,14 @@ CPP_SRC += \
 Spline2RendGLSL.cpp \
 GLSLTube2Renderer.cpp \
 GLSLRcTubeRenderer.cpp \
+GLSLCPK3Renderer.cpp \
 $(NULL)
 
 MCWG_SRC += \
 Spline2RendGLSL.qif \
 GLSLTube2Renderer.qif \
 GLSLRcTubeRenderer.qif \
+GLSLCPK3Renderer.qif \
 $(NULL)
 
 # OpenGL shader files
@@ -97,6 +102,8 @@ sphere_vertex.glsl \
 sphere_frag.glsl \
 cylinder_vertex.glsl \
 cylinder_frag.glsl \
+sphere2_vertex.glsl \
+sphere2_frag.glsl \
 spline2_vert.glsl \
 spline2_frag.glsl \
 tube2_vert.glsl \

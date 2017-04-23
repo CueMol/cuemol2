@@ -69,7 +69,7 @@ void BallStick2Renderer::beginRend(DisplayContext *pdl)
 
 void BallStick2Renderer::endRend(DisplayContext *pdl)
 {
-  if ( m_fRing && !qlib::isNear4(m_tickness, 0.0) ) {
+  if ( m_fRing && !qlib::isNear4(m_thickness, 0.0) ) {
     buildRingData();
   }
 

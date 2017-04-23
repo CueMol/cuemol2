@@ -64,6 +64,7 @@ endif
 shaderdir = $(prefix)/data/shaders/
 
 shader_DATA = \
+lib_common.glsl \
 default_vert.glsl \
 default_frag.glsl \
 edge_vert.glsl \
