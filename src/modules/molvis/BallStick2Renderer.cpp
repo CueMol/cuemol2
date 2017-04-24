@@ -12,8 +12,10 @@
 #include <modules/molstr/MolChain.hpp>
 #include <modules/molstr/MolResidue.hpp>
 #include <modules/molstr/ResiToppar.hpp>
-#include <modules/molstr/AtomIterator.hpp>
-#include <modules/molstr/BondIterator.hpp>
+//#include <modules/molstr/AtomIterator.hpp>
+//#include <modules/molstr/BondIterator.hpp>
+
+#include <modules/molstr/ResidIterator.hpp>
 
 #include <gfx/DrawAttrArray.hpp>
 
@@ -108,6 +110,10 @@ void BallStick2Renderer::endRend(DisplayContext *pdl)
     }
   }
 
+  BOOST_FOREACH (const Ring &r, m_ringdat) {
+    
+  }
+
 }
 
 bool BallStick2Renderer::isRendBond() const
@@ -155,6 +161,58 @@ void BallStick2Renderer::rendBond(DisplayContext *pdl, MolAtomPtr pAtom1, MolAto
 
 void BallStick2Renderer::buildRingData()
 {
+  int i, j;
+  MolCoordPtr pMol = getClientMol();
+  SelectionPtr pSel = getSelection();
+  ResidIterator iter(pMol, pSel);
+  MolResiduePtr pRes;
+  MolAtomPtr pAtom;
+  for (iter.first(); iter.hasMore(); iter.next()) {
+    pRes = iter.get();
+
+    ResiToppar *pTop = pRes->getTopologyObj();
+    if (pTop==NULL)
+      continue;
+
+    int nrings = pTop->getRingCount();
+    for (i=0; i<nrings; i++) {
+      const ResiToppar::RingAtomArray *pmembs = pTop->getRing(i);
+      std::deque<int> ring_atoms;
+
+      // Completeness flag of the ring
+      bool fcompl = true;
+
+      MB_DPRINTLN("Ring in %s", pRes->toString().c_str());
+      // Check completeness of the ring
+      for (j=0; j<pmembs->size(); j++) {
+        LString nm = pmembs->at(j);
+	pAtom = pRes->getAtom(nm);
+
+	if (pAtom.isnull() ||
+	    !pSel->isSelected(pAtom)) {
+          fcompl = false;
+          break;
+        }
+
+        ring_atoms.push_back(pAtom->getID());
+	MB_DPRINTLN("  Atom: %s", pAtom->toString().c_str());
+      }
+
+      // Ignore incomplete rings
+      if (!fcompl)
+	continue;
+
+      Ring r;
+      r.atoms.resize(ring_atoms.size());
+      std::deque<int>::const_iterator iter = ring_atoms.begin();
+      for (j=0; j<ring_atoms.size(); ++j, ++iter) {
+	r.atoms[j] = *iter;
+      }
+      m_ringdat.push_back(r);
+    }
+
+  }
+
 }
 
 void BallStick2Renderer::propChanged(qlib::LPropEvent &ev)

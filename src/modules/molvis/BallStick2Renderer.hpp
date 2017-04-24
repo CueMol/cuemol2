@@ -106,6 +106,8 @@ namespace molvis {
 
     SphrData m_sphrdat;
 
+    ////
+
     struct Cyl {
       quint32 aid1, aid2;
       quint32 btype;
@@ -115,6 +117,17 @@ namespace molvis {
     typedef std::deque<Cyl> CylData;
 
     CylData m_cyldat;
+
+    ////
+
+    typedef std::vector<int> RingAtoms;
+    struct Ring {
+      RingAtoms atoms;
+    };
+
+    typedef std::deque<Ring> RingData;
+
+    RingData m_ringdat;
 
   public:
     BallStick2Renderer();

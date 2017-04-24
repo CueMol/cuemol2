@@ -27,14 +27,14 @@ runtime_class BallStick2Renderer extends MolRenderer
   property integer detail => m_nDetail;
   default detail = 10;
 
-//  property boolean ring => m_fRing;
-//  default ring = false;
+  property boolean ring => m_fRing;
+  default ring = false;
 
-//  property real thickness => m_tickness;
-//  default thickness = 0.2;
+  property real thickness => m_thickness;
+  default thickness = 0.2;
 
-//  property object<AbstractColor$> ringcolor => m_ringcol;
-//  default ringcolor = gfx::SolidColor::createRGB(1.0, 1.0, 0.75);
+  property object<AbstractColor$> ringcolor => m_ringcol;
+  default ringcolor = gfx::SolidColor::createRGB(1.0, 1.0, 0.75);
 
 
 };
