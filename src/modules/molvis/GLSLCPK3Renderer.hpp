@@ -78,7 +78,7 @@ namespace molvis {
     std::vector<float> m_coordbuf;
     
     bool m_bUseSels;
-    std::vector<quint32> m_sels;
+    //std::vector<quint32> m_sels;
 
     /// color texture
     gfx::Texture *m_pColorTex;

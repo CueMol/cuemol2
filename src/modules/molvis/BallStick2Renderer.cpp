@@ -12,9 +12,7 @@
 #include <modules/molstr/MolChain.hpp>
 #include <modules/molstr/MolResidue.hpp>
 #include <modules/molstr/ResiToppar.hpp>
-//#include <modules/molstr/AtomIterator.hpp>
-//#include <modules/molstr/BondIterator.hpp>
-
+#include <modules/molstr/AnimMol.hpp>
 #include <modules/molstr/ResidIterator.hpp>
 
 #include <gfx/SphereSet.hpp>
@@ -27,6 +25,7 @@ using namespace molstr;
 using gfx::DisplayContext;
 using gfx::ColorPtr;
 using qlib::Vector3F;
+using qlib::Matrix3F;
 
 BallStick2Renderer::BallStick2Renderer()
 {
@@ -313,7 +312,21 @@ bool BallStick2Renderer::isCacheAvail() const
 /// Create VBO
 void BallStick2Renderer::createVBO()
 {
+  m_atomdat.clear();
+  m_bonddat.clear();
+  m_ringdat.clear();
+  if (m_pSphrTmpl!=NULL) {
+    delete m_pSphrTmpl;
+    m_pSphrTmpl = NULL;
+  }
+  if (m_pCylTmpl!=NULL) {
+    delete m_pCylTmpl;
+    m_pCylTmpl = NULL;
+  }
   performRend(NULL);
+  if ( m_fRing && !qlib::isNear4(m_thickness, 0.0) ) {
+    buildRingData();
+  }
 
   MolCoordPtr pMol = getClientMol();
   if (pMol.isnull()) {
@@ -321,61 +334,93 @@ void BallStick2Renderer::createVBO()
     return;
   }
 
+  AnimMol *pAMol = NULL;
+  if (isUseAnim()) {
+    // convert from AID to array index
+    pAMol = static_cast<AnimMol *>(pMol.get());
+    for (int i=0; i<m_atomdat.size(); ++i) {
+      m_atomdat[i].aid = pAMol->getCrdArrayInd(m_atomdat[i].aid);
+    }
+    for (int i=0; i<m_bonddat.size(); ++i) {
+      m_bonddat[i].aid1 = pAMol->getCrdArrayInd(m_bonddat[i].aid1);
+      m_bonddat[i].aid2 = pAMol->getCrdArrayInd(m_bonddat[i].aid2);
+    }
+    BOOST_FOREACH (Ring &rng, m_ringdat) {
+      int natoms = rng.atoms.size();
+      for (int j=0; j<natoms; ++j)
+        rng.atoms[j] = pAMol->getCrdArrayInd(rng.atoms[j]);
+    }
+  }
+
   //
   // Build sphere VBO
   //
 
   const int nsphs = m_atomdat.size();
+  if (nsphs>0) {
+    gfx::SphereTess<gfx::SingleTessTrait> sphs;
 
-  gfx::SphereTess<gfx::SingleTessTrait> sphs;
+    sphs.create(1, m_nDetail);
+    sphs.getData().set(0, Vector4D(0,0,0), 1.0, ColorPtr());
 
-  sphs.create(1, m_nDetail);
-  sphs.getData().set(0, Vector4D(0,0,0), 1.0, ColorPtr());
+    m_pSphrTmpl = MB_NEW gfx::DrawElemVNCI32();
+    sphs.getTrait().setTarget(m_pSphrTmpl);
 
-  m_pSphrTmpl = MB_NEW gfx::DrawElemVNCI32();
-  sphs.getTrait().setTarget(m_pSphrTmpl);
-  {
     int nv, nf;
     sphs.estimateMeshSize(nv, nf);
     m_pSphrTmpl->startIndexTriangles(nv, nf);
-    int ivt, ifc;
+    int ivt=0, ifc=0;
     sphs.build(0, ivt, ifc);
   }
-  //m_pSphrTmpl = sphs.getTrait().buildDrawElem(&sphs);
-
-  int sphr_nverts = m_pSphrTmpl->getSize();
-  int sphr_nfaces = m_pSphrTmpl->getIndSize();
+  const int sphr_nverts = (m_pSphrTmpl==NULL) ? 0 : m_pSphrTmpl->getSize();
+  const int sphr_nfaces = (m_pSphrTmpl==NULL) ? 0 : m_pSphrTmpl->getIndSize();
 
   //
   // Build cylinder VBO
   //
-  const int ncyls = m_bonddat.size();
+  const int ncyls = m_bonddat.size() * 2;
+  if (ncyls>0) {
+    gfx::CylinderTess<gfx::SingleTessTrait> cyls;
 
-  gfx::CylinderTess<gfx::SingleTessTrait> cyls;
+    cyls.create(1, m_nDetail);
+    cyls.getData().set(0, Vector4D(0, 0, 0), Vector4D(0, 0, 1), 1.0, ColorPtr());
 
-  cyls.create(1, m_nDetail);
-  cyls.getData().set(0, Vector4D(0, 0, 0), Vector4D(0, 0, 1), 1.0, ColorPtr());
+    m_pCylTmpl = MB_NEW gfx::DrawElemVNCI32();
+    cyls.getTrait().setTarget(m_pCylTmpl);
 
-  m_pCylTmpl = MB_NEW gfx::DrawElemVNCI32();
-  cyls.getTrait().setTarget(m_pCylTmpl);
-  {
     int nv, nf;
     cyls.estimateMeshSize(nv, nf);
     m_pCylTmpl->startIndexTriangles(nv, nf);
-    int ivt, ifc;
+    int ivt=0, ifc=0;
     cyls.build(0, ivt, ifc);
   }
+  const int cyl_nverts = (m_pCylTmpl==NULL) ? 0 : m_pCylTmpl->getSize();
+  const int cyl_nfaces = (m_pCylTmpl==NULL) ? 0 : m_pCylTmpl->getIndSize();
 
-  int cyl_nverts = m_pCylTmpl->getSize();
-  int cyl_nfaces = m_pCylTmpl->getIndSize();
+  //
+  // Build ring VBO
+  //
+  const int nring = m_ringdat.size();
+  int rng_nverts = 0;
+  int rng_nfaces = 0;
+  if (nring>0) {
+    BOOST_FOREACH (const Ring &rng, m_ringdat) {
+      int natoms = rng.atoms.size();
+      rng_nverts += (natoms + 1)*2;
+      rng_nfaces += natoms*3*2;
+    }
+  }
 
-  int nvtot = sphr_nverts * nsphs + cyl_nverts * ncyls;
-  int nftot = sphr_nfaces * nsphs + cyl_nfaces * ncyls;
+  const int nvtot = sphr_nverts * nsphs + cyl_nverts * ncyls + rng_nverts;
+  const int nftot = sphr_nfaces * nsphs + cyl_nfaces * ncyls + rng_nfaces;
 
   m_pVBO = MB_NEW gfx::DrawElemVNCI32();
   m_pVBO->setDrawMode(gfx::DrawElem::DRAW_TRIANGLES);
   m_pVBO->alloc(nvtot);
   m_pVBO->allocIndex(nftot);
+
+  m_nCylVertBase = sphr_nverts * nsphs;
+  m_nRingVertBase = sphr_nverts * nsphs + cyl_nverts * ncyls;
 
   //
   // Setup sphere VBO
@@ -400,67 +445,215 @@ void BallStick2Renderer::createVBO()
   for (int i=0; i<ncyls; ++i) {
     int ivbase = i*cyl_nverts + sphr_nverts*nsphs;
     int ifbase = i*cyl_nfaces + sphr_nfaces*nsphs;
-    for (int j=0; j<cyl_nverts; ++j) {
-      m_pVBO->normal3f(j+ivbase, m_pCylTmpl->getNormal(j));
-    }
     for (int j=0; j<cyl_nfaces; ++j) {
       m_pVBO->setIndex(j+ifbase, ivbase + m_pCylTmpl->getIndex(j));
+      //MB_DPRINTLN("%d: %d", (j+ifbase)/3, ivbase + m_pCylTmpl->getIndex(j));
     }
   }
 
+  //
+  // Setup ring VBO
+  //
+  int ivbase = sphr_nverts * nsphs + cyl_nverts * ncyls;
+  int ifbase = (sphr_nfaces * nsphs + cyl_nfaces * ncyls)/3;
+  BOOST_FOREACH (const Ring &rng, m_ringdat) {
+    int natoms = rng.atoms.size();
+    for (int j=0; j<natoms; ++j)
+      m_pVBO->setIndex3(ifbase+j, ivbase, ivbase+j, ivbase+(j+1)%natoms);
+    ivbase += (natoms+1);
+    ifbase += natoms;
+    for (int j=0; j<natoms; ++j)
+      m_pVBO->setIndex3(ifbase+j, ivbase, ivbase+(j+1)%natoms, ivbase+j);
+    ivbase += (natoms+1);
+    ifbase += natoms;
+  }
 }
 
 /// update VBO positions (using CrdArray)
 void BallStick2Renderer::updateDynamicVBO()
+{
+  updateDynamicSphereVBO();
+  updateDynamicCylinderVBO();
+  updateDynamicRingVBO();
+}
+
+/// Setup spheres VBO
+void BallStick2Renderer::updateDynamicSphereVBO()
+{
+  MolCoordPtr pCMol = getClientMol();
+  AnimMol *pAMol = static_cast<AnimMol *>(pCMol.get());
+  
+  qfloat32 *crd = pAMol->getAtomCrdArray();
+
+  const int nsphs = m_atomdat.size();
+  const int sphr_nverts = (m_pSphrTmpl==NULL) ? 0 : m_pSphrTmpl->getSize();
+  const int sphr_nfaces = (m_pSphrTmpl==NULL) ? 0 : m_pSphrTmpl->getIndSize();
+
+  Vector3F pos;
+  int icrd;
+  for (int i=0; i<nsphs; ++i) {
+    int ivbase = i * sphr_nverts;
+    icrd = m_atomdat[i].aid;
+    pos.set(&crd[icrd]);
+    float rad = m_atomdat[i].rad;
+    for (int j=0; j<sphr_nverts; ++j) {
+      m_pVBO->vertex3f(j+ivbase, pos + m_pSphrTmpl->getVertex(j).scale(rad));
+    }
+  }
+}
+
+/// Setup spheres VBO
+void BallStick2Renderer::updateDynamicCylinderVBO()
+{
+}
+
+void BallStick2Renderer::updateDynamicRingVBO()
 {
 }
 
 /// update VBO positions (using MolAtom)
 void BallStick2Renderer::updateStaticVBO()
 {
+  updateStaticSphereVBO();
+  updateStaticCylinderVBO();
+  updateStaticRingVBO();
+}
+
+
+/// Setup spheres VBO
+void BallStick2Renderer::updateStaticSphereVBO()
+{
   MolCoordPtr pCMol = getClientMol();
+  int aid1, aid2;
+  MolAtomPtr pA1, pA2;
 
   const int nsphs = m_atomdat.size();
-  const int sphr_nverts = m_pSphrTmpl->getSize();
-  const int sphr_nfaces = m_pSphrTmpl->getIndSize();
+  const int sphr_nverts = (m_pSphrTmpl==NULL) ? 0 : m_pSphrTmpl->getSize();
+  const int sphr_nfaces = (m_pSphrTmpl==NULL) ? 0 : m_pSphrTmpl->getIndSize();
 
-  MolAtomPtr pA1;
   Vector3F pos, del;
   for (int i=0; i<nsphs; ++i) {
     int ivbase = i * sphr_nverts;
-    int aid = m_atomdat[i].aid;
-    pA1 = pCMol->getAtom(aid);
+    aid1 = m_atomdat[i].aid;
+    pA1 = pCMol->getAtom(aid1);
     pos = Vector3F( pA1->getPos().xyz() );
     float rad = m_atomdat[i].rad;
     for (int j=0; j<sphr_nverts; ++j) {
       m_pVBO->vertex3f(j+ivbase, pos + m_pSphrTmpl->getVertex(j).scale(rad));
     }
   }
+}
 
-  /////
+/////////////////////////
+// Setup cylinders VBO
+void BallStick2Renderer::updateStaticCylinderVBO()
+{
+  MolCoordPtr pCMol = getClientMol();
+  int aid1, aid2;
+  MolAtomPtr pA1, pA2;
 
-  const int ncyls = m_bonddat.size();
-  const int cyl_nverts = m_pCylTmpl->getSize();
-  const int cyl_nfaces = m_pCylTmpl->getIndSize();
+  const int nbond = m_bonddat.size();
+  const int cyl_nverts = (m_pCylTmpl==NULL) ? 0 : m_pCylTmpl->getSize();
+  const int cyl_nfaces = (m_pCylTmpl==NULL) ? 0 : m_pCylTmpl->getIndSize();
   
-  MolAtomPtr pA2;
-  Vector3F pos1, pos2;
-  for (int i=0; i<ncyls; ++i) {
-    int ivb = i*sphr_nverts + sphr_nverts*nsphs;
-    int ifb = i*sphr_nfaces + sphr_nfaces*nsphs;
+  const int cyl_ivb = m_nCylVertBase;
+  //const int cyl_ifb = m_nCylFaceBase;
 
-    int aid1 = m_bonddat[i].aid1;
-    int aid2 = m_bonddat[i].aid2;
+  Vector3F pos1, pos2, mpos, vv, nn;
+  Matrix3F xfm;
+  int ivb;
+  for (int i=0; i<nbond; ++i) {
+    aid1 = m_bonddat[i].aid1;
+    aid2 = m_bonddat[i].aid2;
     pA1 = pCMol->getAtom(aid1);
     pA2 = pCMol->getAtom(aid2);
     pos1 = Vector3F( pA1->getPos().xyz() );
     pos2 = Vector3F( pA2->getPos().xyz() );
+    mpos = (pos1+pos2).divide(2);
     float rad = m_bonddat[i].rad;
-    for (int j=0; j<sphr_nverts; ++j) {
-      m_pVBO->vertex3f(j+ivb, pos + m_pSphrTmpl->getVertex(j).scale(rad));
-    }
-  }
 
+    ivb = i*2*cyl_nverts + cyl_ivb;
+    //ifb = i*2*cyl_nfaces + cyl_ifb;
+    xfm = gfx::CylinderTess<gfx::SingleTessTrait,Vector3F>::calcRotMat(pos1, mpos, rad);
+    xfm = xfm.mul( gfx::CylinderTess<gfx::SingleTessTrait,Vector3F>::calcSclMat(pos1, mpos, rad) );
+    for (int j=0; j<cyl_nverts; ++j) {
+      vv = m_pCylTmpl->getVertex(j);
+      nn = m_pCylTmpl->getNormal(j);
+      nn = xfm.mulvec(nn);
+      vv = xfm.mulvec(vv);
+      vv += pos1;
+      m_pVBO->normal3f(j+ivb, nn);
+      m_pVBO->vertex3f(j+ivb, vv);
+    }
+
+    ivb = (i*2+1)*cyl_nverts + cyl_ivb;
+    //ifb = (i*2+1)*cyl_nfaces + cyl_ifb;
+    xfm = gfx::CylinderTess<gfx::SingleTessTrait,Vector3F>::calcRotMat(mpos, pos2, rad);
+    xfm = xfm.mul( gfx::CylinderTess<gfx::SingleTessTrait,Vector3F>::calcSclMat(mpos, pos2, rad) );
+    for (int j=0; j<cyl_nverts; ++j) {
+      vv = m_pCylTmpl->getVertex(j);
+      nn = m_pCylTmpl->getNormal(j);
+      nn = xfm.mulvec(nn);
+      vv = xfm.mulvec(vv);
+      vv += mpos;
+      m_pVBO->normal3f(j+ivb, nn);
+      m_pVBO->vertex3f(j+ivb, vv);
+    }
+
+  }
+}
+
+
+// Setup rings VBO
+void BallStick2Renderer::updateStaticRingVBO()
+{
+  MolCoordPtr pCMol = getClientMol();
+  int aid1, aid2;
+  MolAtomPtr pA1, pA2;
+
+  const int nring = m_ringdat.size();
+  int rng_ivb = m_nRingVertBase;
+  Vector3F cen, norm, v1, v2, dv;
+  std::vector<Vector3F> posv;
+  BOOST_FOREACH (const Ring &rng, m_ringdat) {
+    int natoms = rng.atoms.size();
+    posv.resize(natoms);
+    cen = Vector3F();
+    for (int j=0; j<natoms; ++j) {
+      aid1 = rng.atoms[j];
+      pA1 = pCMol->getAtom(aid1);
+      posv[j] = Vector3F( pA1->getPos().xyz() );
+      cen += posv[j];
+    }
+    cen.divideSelf(natoms);
+
+    norm = Vector3F();
+    for (int j=0; j<natoms; ++j) {
+      v1 = posv[(j+1)%natoms] - posv[j];
+      v2 = cen - posv[j];
+      norm += v1.cross(v2).normalize();
+    }
+    norm.normalizeSelf();
+    dv = norm.scale(m_thickness);
+
+    // plus plate
+    m_pVBO->vertex3f(rng_ivb, cen+dv);
+    m_pVBO->normal3f(rng_ivb, norm);
+    for (int j=0; j<natoms; ++j) {
+      m_pVBO->vertex3f(rng_ivb + j, posv[j]+dv);
+      m_pVBO->normal3f(rng_ivb + j, norm);
+    }
+    rng_ivb += (natoms+1);
+
+    // minus plate
+    m_pVBO->vertex3f(rng_ivb, cen-dv);
+    m_pVBO->normal3f(rng_ivb, -norm);
+    for (int j=0; j<natoms; ++j) {
+      m_pVBO->vertex3f(rng_ivb + j, posv[j]-dv);
+      m_pVBO->normal3f(rng_ivb + j, -norm);
+    }
+    rng_ivb += (natoms+1);
+  }
 }
 
 /// update VBO colors
@@ -470,8 +663,8 @@ void BallStick2Renderer::updateVBOColor()
   qlib::uid_t nSceneID = pMol->getSceneID();
 
   const int nsphs = m_atomdat.size();
-  const int sphr_nverts = m_pSphrTmpl->getSize();
-  const int sphr_nfaces = m_pSphrTmpl->getIndSize();
+  const int sphr_nverts = (m_pSphrTmpl==NULL) ? 0 : m_pSphrTmpl->getSize();
+  const int sphr_nfaces = (m_pSphrTmpl==NULL) ? 0 : m_pSphrTmpl->getIndSize();
 
   MolAtomPtr pA1;
   quint32 cc1;
@@ -487,9 +680,55 @@ void BallStick2Renderer::updateVBOColor()
     //cc1 = ColSchmHolder::getColor(pA1)->getCode();
     cc1 = ColSchmHolder::getColor(pA1)->getDevCode(nSceneID);
 
-    for (int j=0; j<sphr_nverts; ++j) {
+    for (int j=0; j<sphr_nverts; ++j)
       m_pVBO->color(j+ivbase, cc1);
-    }
+  }
+
+  const int nbond = m_bonddat.size();
+  const int cyl_nverts = (m_pCylTmpl==NULL) ? 0 : m_pCylTmpl->getSize();
+  const int cyl_nfaces = (m_pCylTmpl==NULL) ? 0 : m_pCylTmpl->getIndSize();
+
+  const int cyl_ivb = sphr_nverts*nsphs;
+  const int cyl_ifb = sphr_nfaces*nsphs;
+
+  int ivb;
+  quint32 aid1, aid2;
+  MolAtomPtr pA2;
+  quint32 cc2;
+  for (int i=0; i<nbond; ++i) {
+    aid1 = m_bonddat[i].aid1;
+    pA1 = pMol->getAtom(aid1);
+    cc1 = ColSchmHolder::getColor(pA1)->getDevCode(nSceneID);
+
+    int ivb = (i*2)*cyl_nverts + cyl_ivb;
+    for (int j=0; j<cyl_nverts; ++j)
+      m_pVBO->color(j+ivb, cc1);
+
+    aid2 = m_bonddat[i].aid2;
+    pA2 = pMol->getAtom(aid2);
+    cc2 = ColSchmHolder::getColor(pA2)->getDevCode(nSceneID);
+
+    ivb = (i*2+1)*cyl_nverts + cyl_ivb;
+    for (int j=0; j<cyl_nverts; ++j)
+      m_pVBO->color(j+ivb, cc2);
+
+  }
+
+  const int nring = m_ringdat.size();
+  int rng_ivb = sphr_nverts*nsphs + cyl_nverts*nbond*2;
+  BOOST_FOREACH (const Ring &rng, m_ringdat) {
+    int natoms = rng.atoms.size();
+
+    aid1 = rng.piv_atom_id;
+    pA1 = pMol->getAtom(aid1);
+    cc1 = ColSchmHolder::getColor(pA1)->getDevCode(nSceneID);
+
+    for (int j=0; j<natoms; ++j)
+      m_pVBO->color(j+rng_ivb, cc1);
+    rng_ivb += (natoms+1);
+    for (int j=0; j<natoms; ++j)
+      m_pVBO->color(j+rng_ivb, cc1);
+    rng_ivb += (natoms+1);
   }
 
   // finalize the coloring scheme

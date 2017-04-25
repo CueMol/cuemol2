@@ -159,14 +159,15 @@ namespace gfx {
       quint32 i, j;
       int ivtbase = ivt;
       int ifcbase = ifc;
-      quint32 nLat = ndetail+1;
+      //quint32 nLat = ndetail+1;
+      quint32 nLat = quint32(ndetail/2) * 2;
 
       // detail in longitude direction is automatically determined by stack radius
       quint32 nLng;
 
       //MB_DPRINTLN("build v1=(%f,%f,%f) r=%f",
       //v1.x(), v1.y(), v1.z(), rad);
-      // MB_DPRINTLN("sphere R=%f, nLat=%d (%f)", rad, nLat, rad*M_PI/dmax);
+      MB_DPRINTLN("sphere nDet=%d, nLat=%d", ndetail, nLat);
 
       quint32 **ppindx = MB_NEW quint32 *[nLat+1];
 
@@ -195,16 +196,19 @@ namespace gfx {
         }
         else {
           _Vector vec, norm;
-          const scalar_type th = scalar_type(i*M_PI)/scalar_type(nLat);
+          const scalar_type th = scalar_type(i)*M_PI/scalar_type(nLat);
           const scalar_type ri = rad * scalar_type(sin(th));
           vec.z()  = rad * scalar_type(cos(th));
           nLng = int( ceil(ri*M_PI*2.0/dmax) );
+
+          MB_DPRINTLN("   iLat=%d nLng=%d", i, nLng);
+
           ppindx[i] = MB_NEW quint32[nLng+2];
           ppindx[i][0] = nLng;
           const scalar_type start_phi = scalar_type(i%2) * scalar_type(3) / scalar_type(nLng);
           //MB_DPRINTLN("Lat: %d start phi=%f", i, start_phi);
           for (j=0; j<nLng; ++j) {
-            const scalar_type ph = scalar_type(j*2*M_PI)/scalar_type(nLng) + start_phi;
+            const scalar_type ph = scalar_type(j*2)*M_PI/scalar_type(nLng) + start_phi;
             vec.x() = ri * scalar_type( cos(ph) );
             vec.y() = ri * scalar_type( sin(ph) );
             norm = vec.normalize();

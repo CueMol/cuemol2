@@ -247,6 +247,11 @@ namespace qlib {
       return divideThrows(length());
     }
 
+    /// normalization (without zero check)
+    void normalizeSelf() {
+      divideSelf(length());
+    }
+
     /// inner (dot) product
     value_type dot(const VectorND &arg) const
     {

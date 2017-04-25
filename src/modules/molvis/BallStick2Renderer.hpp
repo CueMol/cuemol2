@@ -200,8 +200,18 @@ namespace molvis {
     /// Template of cylinders
     gfx::DrawElemVNCI32 *m_pCylTmpl;
 
-    int m_nSphs;
+    //int m_nSphs;
 
+    int m_nCylVertBase;
+    int m_nRingVertBase;
+    
+    void updateStaticSphereVBO();
+    void updateStaticCylinderVBO();
+    void updateStaticRingVBO();
+
+    void updateDynamicSphereVBO();
+    void updateDynamicCylinderVBO();
+    void updateDynamicRingVBO();
   };
 
 }

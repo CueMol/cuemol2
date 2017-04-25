@@ -115,12 +115,14 @@ namespace {
 /// Create VBO
 void CPK3Renderer::createVBO()
 {
-
   MolCoordPtr pMol = getClientMol();
   if (pMol.isnull()) {
     MB_DPRINTLN("CPK3Renderer::createVBO> Client mol is null");
     return;
   }
+  AnimMol *pAMol = NULL;
+  if (isUseAnim())
+    pAMol = static_cast<AnimMol *>(pMol.get());
 
   // estimate the size of drawing elements
   int nsphs=0;
@@ -137,7 +139,7 @@ void CPK3Renderer::createVBO()
   if (nsphs==0)
     return; // nothing to draw
   
-  m_aidvec.resize(nsphs);
+  m_sels.resize(nsphs);
   m_radvec.resize(nsphs);
   {
     int i=0;
@@ -148,7 +150,10 @@ void CPK3Renderer::createVBO()
       if (pAtom.isnull()) continue; // ignore errors
       
       m_radvec[i] = (float) getVdWRadius(pAtom);
-      m_aidvec[i] = aid;
+      if (pAMol==NULL)
+        m_sels[i] = aid;
+      else
+        m_sels[i] = pAMol->getCrdArrayInd(aid);
     }
   }
 
@@ -209,9 +214,9 @@ void CPK3Renderer::updateDynamicVBO()
   Vector3F pos, del;
   for (int i=0; i<nsphs; ++i) {
     int ivbase = i * nverts;
-    int aid = m_aidvec[i];
+    int icrd = m_sels[i] * 3;
     float rad = m_radvec[i];
-    pos.set(&crd[aid]);
+    pos.set(&crd[icrd]);
     for (int j=0; j<nverts; ++j) {
       m_pVBO->vertex3f(j+ivbase, pos + m_pTmpl->getVertex(j).scale(rad));
     }
@@ -231,7 +236,7 @@ void CPK3Renderer::updateStaticVBO()
   Vector3F pos, del;
   for (int i=0; i<nsphs; ++i) {
     int ivbase = i * nverts;
-    int aid = m_aidvec[i];
+    int aid = m_sels[i];
     pA1 = pCMol->getAtom(aid);
     pos = Vector3F( pA1->getPos().xyz() );
     float rad = m_radvec[i];
@@ -247,22 +252,34 @@ void CPK3Renderer::updateVBOColor()
   MolCoordPtr pMol = getClientMol();
   qlib::uid_t nSceneID = pMol->getSceneID();
 
+  AnimMol *pAMol = NULL;
+  if (isUseAnim())
+    pAMol = static_cast<AnimMol *>(pMol.get());
+
   const int nsphs = m_nSphs;
   const int nverts = m_pTmpl->getSize();
   const int nfaces = m_pTmpl->getIndSize();
 
   MolAtomPtr pA1;
   quint32 cc1;
+  int aid;
 
   // initialize the coloring scheme
   startColorCalc(pMol);
 
   for (int i=0; i<nsphs; ++i) {
     int ivbase = i * nverts;
-    int aid = m_aidvec[i];
-    pA1 = pMol->getAtom(aid);
 
-    //cc1 = ColSchmHolder::getColor(pA1)->getCode();
+    if (pAMol==NULL) {
+      // static update mode
+      aid = m_sels[i];
+    }
+    else {
+      // dynamic update mode
+      aid = pAMol->getAtomIDByArrayInd( m_sels[i] );
+    }
+
+    pA1 = pMol->getAtom(aid);
     cc1 = ColSchmHolder::getColor(pA1)->getDevCode(nSceneID);
 
     for (int j=0; j<nverts; ++j) {
@@ -289,7 +306,7 @@ void CPK3Renderer::invalidateDisplayCache()
     m_pVBO = NULL;
   }
 
-  //m_aidvec.clear();
+  //m_sels.clear();
 }
 
 /// Draw VBO

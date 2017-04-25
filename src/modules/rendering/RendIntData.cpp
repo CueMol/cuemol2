@@ -634,24 +634,19 @@ namespace {
         res = m_pOut->m_mesh.addVertex(v, m_norm, m_col);
       else
         res = m_pOut->m_mesh.addVertex(v, m_norm, m_col, *m_pXfm);
-      if (ind!=res) {
-	LOG_DPRINTLN("ind %d!=res %d", ind, res);
-      }
     }
 
     void face(quint32 ifc, quint32 n1, quint32 n2, quint32 n3)
     {
-      int res = m_pOut->m_mesh.getFaceSize();
       m_pOut->m_mesh.addFace(n1, n2, n3, m_nfmode);
-      if (ifc!=res) {
-	LOG_DPRINTLN("ifc %d!=res %d", ifc, res);
-      }
     }
+
+    int m_ivbase;
 
     Vector4D getVertex(quint32 ind) const
     {
-      Vector4D rv;
-      return rv;
+      MeshVert *pv = m_pOut->m_mesh.getVertex(m_ivbase + ind);
+      return pv->v;
     }
 
     void setTarget(RendIntData *pVBO) {
@@ -665,6 +660,7 @@ namespace {
 void RendIntData::convSphere(Sph *pSph)
 {
   const Vector4D v1 = pSph->v1;
+
 
   Vector4D vcam(0,0,m_dViewDist);
   //LOG_DPRINTLN("vcam=%s", vcam.toString().c_str());
@@ -686,23 +682,23 @@ void RendIntData::convSphere(Sph *pSph)
   xform.matprod( Matrix4D::makeRotMat(e3, e1).transpose() );
   xform.matprod( Matrix4D::makeTransMat(-v1) );
 
+  
   gfx::SphereTess<RendTessTraits, Vector4D, RendIntData::ColIndex> tess;
   RendTessTraits &tr = tess.getTrait();
   tr.setTarget(this);
   tr.m_nfmode = MFMOD_SPHERE;
-  //tr.m_pXfm = &xform;
+  tr.m_pXfm = &xform;
 
-  //tess.setCap(pCyl->bcap);
   tess.create(1, pSph->ndetail);
   tess.getData().set(0, v1, pSph->r, pSph->col);
   
   int ivt = m_mesh.getVertexSize();
   int ifc = m_mesh.getFaceSize();
+  tr.m_ivbase = 0;
   tess.build(0, ivt, ifc);
-
-
+  return;
+  
 #if 0
-
   const double rad = pSph->r;
   ColIndex col = pSph->col;
 
@@ -719,7 +715,7 @@ void RendIntData::convSphere(Sph *pSph)
 
   MB_DPRINTLN("RendIntData::convSphere v1=(%f,%f,%f) r=%f",
               pSph->v1.x(), pSph->v1.y(), pSph->v1.z(), pSph->r);
-  MB_DPRINTLN("sphere R=%f, nLat=%d (%f)", rad, nLat, rad*M_PI/dmax);
+  MB_DPRINTLN("sphere nDet=%d, nLat=%d", pSph->ndetail, nLat);
 
   int **ppindx = new int *[nLat+1];
 
@@ -753,6 +749,9 @@ void RendIntData::convSphere(Sph *pSph)
       const double ri = rad*::sin(th);
       vec.z()  = rad*::cos(th);
       nLng = (int) ::ceil(ri*M_PI*2.0/dmax);
+
+      MB_DPRINTLN("   iLat=%d nLng=%d", i, nLng);
+
       ppindx[i] = new int[nLng+2];
       ppindx[i][0] = nLng;
       const double start_phi = double(i%2) * 3.0 / nLng;
@@ -825,6 +824,7 @@ void RendIntData::convSphere(Sph *pSph)
     delete [] ppindx[i];
   delete [] ppindx;
 #endif
+  
 }
 
 static

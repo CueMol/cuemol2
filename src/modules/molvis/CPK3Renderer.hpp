@@ -93,9 +93,10 @@ namespace molvis {
     /// cleanup VBO
     virtual void invalidateDisplayCache();
 
+
     //////////////////////////////////////////////////////
     // implementation
-
+  protected:
     double getVdWRadius(MolAtomPtr pAtom) const;
 
     /// cached vertex array/VBO
@@ -105,8 +106,11 @@ namespace molvis {
     gfx::DrawElemVNCI32 *m_pTmpl;
 
     int m_nSphs;
-    std::vector<int> m_aidvec;
+    //std::vector<int> m_aidvec;
     std::vector<float> m_radvec;
+
+    std::vector<int> m_sels;
+
   };
 
 }

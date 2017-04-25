@@ -10,6 +10,7 @@
 #include "MatrixND.hpp"
 #include "Utils.hpp"
 #include "Vector4T.hpp"
+#include "Vector3F.hpp"
 
 namespace qlib {
 
@@ -125,8 +126,69 @@ namespace qlib {
 
     // Matrix3T invert() const;
 
+  };
+
+  //////////////////////////////////////////////////
+
+
+  class QLIB_API Matrix3F : public Matrix3T<qfloat32>
+  {
+  public:
+    typedef Matrix3T<qfloat32> super_t;
+
+  public:
+    typedef super_t::value_type value_type;
+
+  public:
+    // constructors
+
+    /// Default constructor with creating unit matrix
+    Matrix3F()
+      : super_t()
+      {
+      }
+
+    /// Constructor without initialization
+    Matrix3F(int a, detail::no_init_tag b)
+      : super_t(a,b)
+      {
+      }
+
+    /// copy constructor
+    Matrix3F(const Matrix3F &arg)
+      : super_t(arg)
+      {
+      }
+
+    /// Implicit conversion
+    Matrix3F(const super_t &arg)
+      : super_t(arg)
+      {
+      }
+
+    /// Implicit conversion (from MatrixND)
+    Matrix3F(const super_t::super_t &arg)
+      : super_t(arg)
+      {
+      }
+
+    /// Create basis conversion matrix
+    Matrix3F(const Vector3F &e1,
+             const Vector3F &e2,
+             const Vector3F &e3)
+         : super_t(e1, e2, e3)
+    {
+    }
+
+
+    ////////////////////////////////////////////////////////////
+    // Methods
+
+  public:
+
 
   };
+
 
 }
 
