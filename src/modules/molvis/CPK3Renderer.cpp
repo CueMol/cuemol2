@@ -10,7 +10,7 @@
 #include "CPK3Renderer.hpp"
 
 #include <gfx/SphereSet.hpp>
-#include <gfx/DrawAttrArray.hpp>
+//#include <gfx/DrawAttrArray.hpp>
 
 #include <modules/molstr/AtomIterator.hpp>
 #include <modules/molstr/AnimMol.hpp>
@@ -110,68 +110,6 @@ void CPK3Renderer::propChanged(qlib::LPropEvent &ev)
 
 namespace {
 
-  class SingleTrait
-  {
-  private:
-    
-    typedef gfx::SphereTess<SingleTrait> outer_t;
-
-    /// output vertex array
-    gfx::DrawElemVNCI32 *m_pVary;
-
-  public:
-    SingleTrait() : m_pVary(NULL)
-    {
-    }
-    
-    ~SingleTrait()
-    {
-    }
-
-    /////////////////////////////
-
-    void setColor(const ColorPtr &col)
-    {
-    }
-
-    void normal(quint32 ind, const Vector4D &v)
-    {
-      m_pVary->normal(ind, v);
-    }
-
-    void vertex(quint32 ind, const Vector4D &v)
-    {
-      m_pVary->vertex(ind, v);
-    }
-
-    void face(quint32 ifc, quint32 n1, quint32 n2, quint32 n3)
-    {
-      m_pVary->setIndex3(ifc, n1, n2, n3);
-    }
-
-    Vector4D getVertex(quint32 ind) const {
-      Vector4D rv;
-      m_pVary->getVertex(ind, rv);
-      return rv;
-    }
-
-    /// build draw elem objects
-    gfx::DrawElemVNCI32 *buildDrawElem(outer_t *pOuter)
-    {
-      int nverts, nfaces;
-      pOuter->estimateMeshSize(nverts, nfaces);
-      
-      // Create DrawElemVNCI (or VNI?) object
-      m_pVary = MB_NEW gfx::DrawElemVNCI32();
-	  m_pVary->startIndexTriangles(nverts, nfaces);
-      
-      int ivt = 0, ifc = 0;
-      pOuter->buildSphere(0, ivt, ifc);
-
-      return m_pVary;
-    }
-
-  };
 }
 
 /// Create VBO
@@ -214,14 +152,22 @@ void CPK3Renderer::createVBO()
     }
   }
 
-  gfx::SphereTess<SingleTrait> sphs;
+  gfx::SphereTess<gfx::SingleTessTrait> sphs;
 
   sphs.create(1, m_nDetail);
 
-  sphs.getSphrs().sphere(0, Vector4D(0,0,0),
-                        1.0, ColorPtr());
+  sphs.getData().set(0, Vector4D(0,0,0), 1.0, ColorPtr());
 
-  m_pTmpl = sphs.getTrait().buildDrawElem(&sphs);
+  m_pTmpl = MB_NEW gfx::DrawElemVNCI32();
+  sphs.getTrait().setTarget(m_pTmpl);
+  {
+    int nv, nf;
+    sphs.estimateMeshSize(nv, nf);
+    m_pTmpl->startIndexTriangles(nv, nf);
+    int ivt, ifc;
+    sphs.build(0, ivt, ifc);
+  }
+  //sphs.getTrait().buildDrawElem(&sphs);
 
   int nverts = m_pTmpl->getSize();
   int nfaces = m_pTmpl->getIndSize();
@@ -300,10 +246,6 @@ void CPK3Renderer::updateVBOColor()
 {
   MolCoordPtr pMol = getClientMol();
   qlib::uid_t nSceneID = pMol->getSceneID();
-  if (pMol.isnull()) {
-    MB_DPRINTLN("CPK3Renderer::createVBO> Client mol is null");
-    return;
-  }
 
   const int nsphs = m_nSphs;
   const int nverts = m_pTmpl->getSize();

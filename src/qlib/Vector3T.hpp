@@ -104,6 +104,12 @@ namespace qlib {
 				  super_t::ai(2));
     }
 
+    inline Vector3T<_ValueType> xyz() const {
+      return Vector3T<_ValueType>(super_t::ai(1),
+                                  super_t::ai(2),
+                                  super_t::ai(3));
+    }
+
     Vector3T cross(const Vector3T &arg) const
     {
       return Vector3T(y()*arg.z() - z()*arg.y(),

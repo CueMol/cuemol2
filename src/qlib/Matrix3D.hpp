@@ -7,9 +7,10 @@
 #define QLIB_MATRIX_3D_HPP
 
 #include "qlib.hpp"
-//#include "MatrixND.hpp"
+
 #include "Matrix3T.hpp"
-//#include "Utils.hpp"
+
+#include "Vector3D.hpp"
 #include "Vector4D.hpp"
 
 namespace qlib {
@@ -56,6 +57,14 @@ namespace qlib {
       : super_t(arg)
       {
       }
+
+    /// Create basis conversion matrix
+    Matrix3D(const Vector3D &e1,
+             const Vector3D &e2,
+             const Vector3D &e3)
+         : super_t(e1, e2, e3)
+    {
+    }
 
     /// diagonalization by Jacobi method
     bool diag(Matrix3D &evecs, Vector4D &evals) const;

@@ -11,6 +11,8 @@
 #include <qlib/BSPTree.hpp>
 #include <gfx/SolidColor.hpp>
 #include <gfx/Mesh.hpp>
+#include <gfx/SphereSet.hpp>
+#include <gfx/CylinderSet.hpp>
 #include <qsys/style/StyleMgr.hpp>
 #include "FileDisplayContext.hpp"
 
@@ -776,6 +778,72 @@ int RendIntData::selectTrig(int j, int k, int j1, int k1)
 
 /////////////////////////////
 
+namespace {
+
+  class RendTessTraits
+  {
+  private:
+    
+    /// default alpha (multiplied to all alpha comp)
+    double m_defAlpha;
+
+    /// Current color
+    RendIntData::ColIndex m_col;
+
+    /// output vertex array
+    RendIntData *m_pOut;
+
+    Vector4D m_norm;
+
+  public:
+
+    int m_nfmode;
+
+    RendTessTraits() : m_defAlpha(1.0), m_pOut(NULL)
+    {
+    }
+    
+    ~RendTessTraits()
+    {
+    }
+
+    /////////////////////////////
+
+    void setAlpha(double d) { m_defAlpha = d; }
+
+    void setColor(const RendIntData::ColIndex &col)
+    {
+      m_col = col;
+    }
+
+    void normal(quint32 ind, const Vector4D &v)
+    {
+      m_norm = v;
+    }
+
+    void vertex(quint32 ind, const Vector4D &v)
+    {
+      m_pOut->m_mesh.addVertex(v, m_norm, m_col);
+    }
+
+    void face(quint32 ifc, quint32 n1, quint32 n2, quint32 n3)
+    {
+      m_pOut->m_mesh.addFace(n1, n2, n3, m_nfmode);
+    }
+
+    Vector4D getVertex(quint32 ind) const
+    {
+      Vector4D rv;
+      return rv;
+    }
+
+    void setTarget(RendIntData *pVBO) {
+      m_pOut = pVBO;
+    }
+
+  };
+}
+
 /// convert cylinders to mesh
 void RendIntData::convCylinders(bool bErase)
 {
@@ -801,6 +869,22 @@ void RendIntData::convCyl(Cyl *pCyl)
 
   MB_DPRINTLN("=== RendIntData::convCyl ===");
 
+  gfx::CylinderTess<RendTessTraits, Vector4D, RendIntData::ColIndex> cytess;
+  RendTessTraits &tr = cytess.getTrait();
+  tr.setTarget(this);
+  tr.m_nfmode = pCyl->bcap ? MFMOD_CYL : MFMOD_NORGLN;
+
+  cytess.setCap(pCyl->bcap);
+  cytess.create(1, pCyl->ndetail);
+  cytess.getData().set(0, cylv1, cylv2, pCyl->w1, col);
+  
+  int ivt = m_mesh.getVertexSize();
+  int ifc = m_mesh.getFaceSize();
+  cytess.build(0, ivt, ifc);
+
+
+#if 0
+
   Vector4D nn = cylv1 - cylv2;
   double len = nn.length();
   if (len<=F_EPS4) {
@@ -808,8 +892,8 @@ void RendIntData::convCyl(Cyl *pCyl)
     return;
   }
   
-  nn = cylv1 - cylv2;
-  len = nn.length();
+  //nn = cylv1 - cylv2;
+  //len = nn.length();
   nn = nn.scale(1.0/len);
   
   MB_DPRINTLN("nn: (%f,%f,%f)", nn.x(), nn.y(), nn.z());
@@ -941,6 +1025,7 @@ void RendIntData::convCyl(Cyl *pCyl)
     }
   }
 
+#endif
 }
 
 void RendIntData::end()

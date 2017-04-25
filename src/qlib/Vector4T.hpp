@@ -116,6 +116,13 @@ namespace qlib {
 				  super_t::ai(3));
     }
 
+    inline Vector4T<_ValueType> xyzw() const {
+      return Vector4T<_ValueType>(super_t::ai(1),
+                                  super_t::ai(2),
+				  super_t::ai(3),
+                                  super_t::ai(4));
+    }
+
     inline void set(value_type ax, value_type ay, value_type az)
     {
       super_t::ai(1) = ax;

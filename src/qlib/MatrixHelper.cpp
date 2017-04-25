@@ -187,8 +187,9 @@ Matrix3D Matrix3D::makeRotMat(const Vector4D &e1,
                               const Vector4D &e2)
 {
   const Vector4D e3 = e1.cross(e2);
-  Matrix3D xfmat( 0, detail::no_init_tag() );
-  
+  //Matrix3D xfmat( 0, detail::no_init_tag() );
+  Matrix3D xfmat(e2.xyz(), e3.xyz(), e1.xyz());
+  /*
   xfmat.aij(1, 1) = e2.x();
   xfmat.aij(2, 1) = e2.y();
   xfmat.aij(3, 1) = e2.z();
@@ -200,7 +201,7 @@ Matrix3D Matrix3D::makeRotMat(const Vector4D &e1,
   xfmat.aij(1, 3) = e1.x();
   xfmat.aij(2, 3) = e1.y();
   xfmat.aij(3, 3) = e1.z();
-  
+   */
   return xfmat;
 }
 

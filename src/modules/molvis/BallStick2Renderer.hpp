@@ -7,6 +7,7 @@
 #define BALL_STICK2_RENDERER_HPP_INCLUDED
 
 #include "molvis.hpp"
+#include <gfx/DrawElem.hpp>
 #include <modules/molstr/MolAtomRenderer.hpp>
 
 namespace molstr { class MolCoord; }
@@ -97,32 +98,33 @@ namespace molvis {
     //////////////////////////////
     // workarea
 
-    struct Sphr {
+    struct Atom {
       quint32 aid;
       float rad;
     };
 
-    typedef std::deque<Sphr> SphrData;
+    typedef std::deque<Atom> AtomData;
 
-    SphrData m_sphrdat;
+    AtomData m_atomdat;
 
     ////
 
-    struct Cyl {
+    struct Bond {
       quint32 aid1, aid2;
       quint32 btype;
       float rad;
     };
 
-    typedef std::deque<Cyl> CylData;
+    typedef std::deque<Bond> BondData;
 
-    CylData m_cyldat;
+    BondData m_bonddat;
 
     ////
 
     typedef std::vector<int> RingAtoms;
     struct Ring {
       RingAtoms atoms;
+      int piv_atom_id;
     };
 
     typedef std::deque<Ring> RingData;
@@ -138,8 +140,6 @@ namespace molvis {
     //////////////////////////////
 
     virtual void propChanged(qlib::LPropEvent &ev);
-
-    virtual void invalidateDisplayCache();
 
     virtual void preRender(DisplayContext *pdc);
     virtual void postRender(DisplayContext *pdc);
@@ -157,6 +157,50 @@ namespace molvis {
     //void drawInterAtomLine(MolAtomPtr pAtom1, MolAtomPtr pAtom2);
 
     void buildRingData();
+
+  public:
+    //////////////////////////////////////////////////////
+    // new rendering interface (VBO version)
+
+    /// Use Ver2 interface (returns true)
+    virtual bool isUseVer2Iface() const;
+
+    virtual bool isCacheAvail() const;
+
+    /// Rendering for file display contexts
+    // --> default implementation in DispCacheRenderer: use old render() interface
+    // virtual void renderFile(DisplayContext *pdc);
+
+    /// Rendering using VBO
+    virtual void renderVBO(DisplayContext *pdc);
+
+    /// Create VBO
+    virtual void createVBO();
+
+    /// update VBO positions (using CrdArray)
+    virtual void updateDynamicVBO();
+
+    /// update VBO positions (using MolAtom)
+    virtual void updateStaticVBO();
+
+    /// update VBO colors
+    virtual void updateVBOColor();
+
+    /// cleanup VBO
+    virtual void invalidateDisplayCache();
+
+  private:
+    
+    /// cached vertex array/VBO
+    gfx::DrawElemVNCI32 *m_pVBO;
+    
+    /// Template of sphere
+    gfx::DrawElemVNCI32 *m_pSphrTmpl;
+
+    /// Template of cylinders
+    gfx::DrawElemVNCI32 *m_pCylTmpl;
+
+    int m_nSphs;
 
   };
 

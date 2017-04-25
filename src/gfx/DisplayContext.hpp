@@ -10,6 +10,7 @@
 #include "gfx.hpp"
 
 #include <qlib/Vector4D.hpp>
+#include <qlib/Vector3F.hpp>
 #include <qlib/Matrix4D.hpp>
 #include <qlib/LQuat.hpp>
 #include "AbstractColor.hpp"
@@ -141,8 +142,16 @@ namespace gfx {
     /// Set current vertex vector by x,y,z (calls vector version)
     virtual void vertex(double x, double y, double z);
 
+    void vertex(const qlib::Vector3F &v3f) {
+      vertex(v3f.x(), v3f.y(), v3f.z());
+    }
+
     /// Set current normal vector by x,y,z (calls vector version)
     virtual void normal(double x, double y, double z);
+
+    void normal(const qlib::Vector3F &v3f) {
+      normal(v3f.x(), v3f.y(), v3f.z());
+    }
 
     /// Set solid color
     virtual void color(double r, double g, double b);

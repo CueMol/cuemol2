@@ -255,7 +255,7 @@ void CPK2Renderer::renderVBOImpl()
       MolAtomPtr pAtom = pMol->getAtom(aid);
       if (pAtom.isnull()) continue; // ignore errors
 
-      sphs2.getSphrs().sphere(i, pAtom->getPos(),
+      sphs2.getData().set(i, pAtom->getPos(),
                               getVdWRadius(pAtom),
                               ColSchmHolder::getColor(pAtom));
 
@@ -263,7 +263,7 @@ void CPK2Renderer::renderVBOImpl()
     }
   }
 
-  m_pDrawElem = sphs2.getTrait().buildDrawElem(&sphs2);
+  //m_pDrawElem = sphs2.getTrait().buildDrawElem(&sphs2);
 
   // finalize the coloring scheme
   endColorCalc(pMol);

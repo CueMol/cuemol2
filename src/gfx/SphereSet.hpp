@@ -40,7 +40,7 @@ namespace gfx {
       m_data.resize(nsize);
     }
 
-    void sphere(int index, const pos_type &pos, rad_type r, const ColorPtr &col)
+    void set(int index, const pos_type &pos, rad_type r, const ColorPtr &col)
     {
       m_data[index].pos = pos;
       m_data[index].rad = r;
@@ -78,7 +78,7 @@ namespace gfx {
     _Trait m_trait;
     
     /// Sphere dataset
-    SphereSet<_Vector> m_sphrs;
+    SphereSet<_Vector> m_data;
 
   public:
     SphereTess()
@@ -93,13 +93,13 @@ namespace gfx {
 
 	void create(int natoms, int ndetail)
     {
-      m_sphrs.create(natoms);
+      m_data.create(natoms);
       m_nDetail = ndetail;
     }
 
-    SphereSet<_Vector> &getSphrs()
+    SphereSet<_Vector> &getData()
     {
-      return m_sphrs;
+      return m_data;
     }
 
     /// render a sphere
@@ -143,10 +143,10 @@ namespace gfx {
     }
 
 
-    void buildSphere(int isph, int &ivt, int &ifc)
+    void build(int isph, int &ivt, int &ifc)
     {
-      const _Vector v1 = m_sphrs.getPos(isph);
-      const double rad = m_sphrs.getRadius(isph);
+      const _Vector v1 = m_data.getPos(isph);
+      const double rad = m_data.getRadius(isph);
       const int ndetail = m_nDetail;
 
       // int col = pSph->ccode;
@@ -160,7 +160,7 @@ namespace gfx {
       // detail in longitude direction is automatically determined by stack radius
       quint32 nLng;
 
-      //MB_DPRINTLN("buildSphere v1=(%f,%f,%f) r=%f",
+      //MB_DPRINTLN("build v1=(%f,%f,%f) r=%f",
       //v1.x(), v1.y(), v1.z(), rad);
       // MB_DPRINTLN("sphere R=%f, nLat=%d (%f)", rad, nLat, rad*M_PI/dmax);
 
@@ -168,7 +168,7 @@ namespace gfx {
 
       // generate verteces
 
-      m_trait.setColor(m_sphrs.getColor(isph));
+      m_trait.setColor(m_data.getColor(isph));
 
       for (i=0; i<=nLat; ++i) {
         quint32 ind;
@@ -390,12 +390,17 @@ namespace gfx {
       return rv;
     }
 
+    void setTarget(gfx::DrawElemVNCI32 *pVBO) {
+      m_pVary = pVBO;
+    }
+
+    /*
     /// build draw elem objects
     DrawElem *buildDrawElem(outer_t *pOuter)
     {
       int nverts,  nfaces; 
       pOuter->estimateMeshSize(nverts, nfaces);
-      int nsphs = pOuter->getSphrs().getSize();
+      int nsphs = pOuter->getData().getSize();
       
       int nvtot = nverts*nsphs;
       int nftot = nfaces*nsphs;
@@ -407,14 +412,84 @@ namespace gfx {
       
       int ivt = 0, ifc = 0;
       for (int i=0; i<nsphs; ++i) {
-        pOuter->buildSphere(i, ivt, ifc);
+        pOuter->build(i, ivt, ifc);
       }
 
       return m_pVary;
     }
-
+     */
   };
 
+  //////////////////////////////////////////////////////////////////////////////
+
+  
+  class SingleTessTrait
+  {
+  private:
+    
+    //typedef _Tess<SingleTessTrait> outer_t;
+
+    /// output vertex array
+    gfx::DrawElemVNCI32 *m_pVary;
+
+  public:
+    SingleTessTrait() : m_pVary(NULL)
+    {
+    }
+    
+    ~SingleTessTrait()
+    {
+    }
+
+    /////////////////////////////
+
+    void setColor(const ColorPtr &col)
+    {
+    }
+
+    void normal(quint32 ind, const Vector4D &v)
+    {
+      m_pVary->normal(ind, v);
+    }
+
+    void vertex(quint32 ind, const Vector4D &v)
+    {
+      m_pVary->vertex(ind, v);
+    }
+
+    void face(quint32 ifc, quint32 n1, quint32 n2, quint32 n3)
+    {
+      m_pVary->setIndex3(ifc, n1, n2, n3);
+    }
+
+    Vector4D getVertex(quint32 ind) const {
+      Vector4D rv;
+      m_pVary->getVertex(ind, rv);
+      return rv;
+    }
+
+    void setTarget(gfx::DrawElemVNCI32 *pVBO) {
+      m_pVary = pVBO;
+    }
+
+    /*
+    /// build draw elem objects
+    gfx::DrawElemVNCI32 *buildDrawElem(outer_t *pOuter)
+    {
+      int nverts, nfaces;
+      pOuter->estimateMeshSize(nverts, nfaces);
+      
+      // Create DrawElemVNCI (or VNI?) object
+      m_pVary = MB_NEW gfx::DrawElemVNCI32();
+	  m_pVary->startIndexTriangles(nverts, nfaces);
+      
+      int ivt = 0, ifc = 0;
+      pOuter->build(0, ivt, ifc);
+
+      return m_pVary;
+    }
+     */
+  };
 
 }
 

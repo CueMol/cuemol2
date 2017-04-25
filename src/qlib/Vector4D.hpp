@@ -75,12 +75,17 @@ namespace qlib {
     }
 
     Vector4D(value_type ax,value_type ay, value_type az)
-      : super_t(ax, ay, az, 0.0)
+         : super_t(ax, ay, az, value_type(0))
     {
     }
 
-    Vector4D(const Vector3T<value_type> &arg, value_type az)
-      : super_t(arg, az)
+    Vector4D(const Vector3T<value_type> &arg)
+         : super_t(arg, value_type(0))
+    {
+    }
+    
+    Vector4D(const Vector3T<value_type> &arg, value_type aw)
+         : super_t(arg, aw)
     {
     }
 

@@ -59,6 +59,25 @@ namespace qlib {
     {
     }
 
+    /// Create basis conversion matrix
+    Matrix3T(const Vector3T<value_type> &e1,
+             const Vector3T<value_type> &e2,
+             const Vector3T<value_type> &e3)
+         : super_t(0, detail::no_init_tag())
+    {
+      aij(1, 1) = e1.x();
+      aij(2, 1) = e1.y();
+      aij(3, 1) = e1.z();
+  
+      aij(1, 2) = e2.x();
+      aij(2, 2) = e2.y();
+      aij(3, 2) = e2.z();
+  
+      aij(1, 3) = e3.x();
+      aij(2, 3) = e3.y();
+      aij(3, 3) = e3.z();
+    }
+
     ////////////////////////////////////////////////////////////
     // methods
 
