@@ -81,7 +81,7 @@ namespace gfx {
     /// Sphere dataset
     SphereSet<_Vector, _Color> m_data;
 
-    typedef typename _Vector pos_type;
+    typedef _Vector pos_type;
     typedef typename _Vector::value_type scalar_type;
 
   public:

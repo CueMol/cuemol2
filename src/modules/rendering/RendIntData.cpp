@@ -591,9 +591,6 @@ namespace {
   {
   private:
     
-    /// default alpha (multiplied to all alpha comp)
-    double m_defAlpha;
-
     /// Current color
     RendIntData::ColIndex m_col;
 
@@ -608,7 +605,7 @@ namespace {
     
     int m_nfmode;
 
-    RendTessTraits() : m_defAlpha(1.0), m_pOut(NULL), m_pXfm(NULL)
+    RendTessTraits() : m_pOut(NULL), m_pXfm(NULL)
     {
     }
     
@@ -618,7 +615,7 @@ namespace {
 
     /////////////////////////////
 
-    void setAlpha(double d) { m_defAlpha = d; }
+    void setAlpha(double d) {}
 
     void setColor(const RendIntData::ColIndex &col)
     {
@@ -632,15 +629,23 @@ namespace {
 
     void vertex(quint32 ind, const Vector4D &v)
     {
+      int res;
       if (m_pXfm==NULL)
-        m_pOut->m_mesh.addVertex(v, m_norm, m_col);
+        res = m_pOut->m_mesh.addVertex(v, m_norm, m_col);
       else
-        m_pOut->m_mesh.addVertex(v, m_norm, m_col, *m_pXfm);
+        res = m_pOut->m_mesh.addVertex(v, m_norm, m_col, *m_pXfm);
+      if (ind!=res) {
+	LOG_DPRINTLN("ind %d!=res %d", ind, res);
+      }
     }
 
     void face(quint32 ifc, quint32 n1, quint32 n2, quint32 n3)
     {
+      int res = m_pOut->m_mesh.getFaceSize();
       m_pOut->m_mesh.addFace(n1, n2, n3, m_nfmode);
+      if (ifc!=res) {
+	LOG_DPRINTLN("ifc %d!=res %d", ifc, res);
+      }
     }
 
     Vector4D getVertex(quint32 ind) const
@@ -675,7 +680,7 @@ void RendIntData::convSphere(Sph *pSph)
   Vector4D e3 = (vcam - v1).normalize();
   Vector4D e1 = e3.cross(Vector4D(1,0,0));
   e1 = e1.normalize();
-  Vector4D e2 = e1.cross(e3);
+  // Vector4D e2 = e1.cross(e3);
 
   Matrix4D xform = Matrix4D::makeTransMat(v1);
   xform.matprod( Matrix4D::makeRotMat(e3, e1).transpose() );
@@ -685,7 +690,7 @@ void RendIntData::convSphere(Sph *pSph)
   RendTessTraits &tr = tess.getTrait();
   tr.setTarget(this);
   tr.m_nfmode = MFMOD_SPHERE;
-  tr.m_pXfm = &xform;
+  //tr.m_pXfm = &xform;
 
   //tess.setCap(pCyl->bcap);
   tess.create(1, pSph->ndetail);
