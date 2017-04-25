@@ -16,17 +16,18 @@ namespace gfx {
 
   using qlib::Vector4D;
 
-  template <typename _Vector>
+  template <typename _Vector, typename _Color>
   class SphereSet
   {
   private:
     typedef _Vector pos_type;
+    typedef _Color color_type;
     typedef typename _Vector::value_type rad_type;
 
     struct Sphere {
       pos_type pos;
       rad_type rad;
-      ColorPtr col;
+      color_type col;
     };
 
     typedef std::vector<Sphere> datatype;
@@ -40,7 +41,7 @@ namespace gfx {
       m_data.resize(nsize);
     }
 
-    void set(int index, const pos_type &pos, rad_type r, const ColorPtr &col)
+    void set(int index, const pos_type &pos, rad_type r, const color_type &col)
     {
       m_data[index].pos = pos;
       m_data[index].rad = r;
@@ -57,7 +58,7 @@ namespace gfx {
       return m_data[isph].rad;
     }
 
-    const ColorPtr &getColor(int isph) const {
+    const color_type &getColor(int isph) const {
       return m_data[isph].col;
     }
 
@@ -67,7 +68,7 @@ namespace gfx {
 
   ///////////////
 
-  template <class _Trait, typename _Vector=qlib::Vector4D>
+  template <class _Trait, typename _Vector=qlib::Vector4D, typename _Color=ColorPtr>
   class SphereTess
   {
   private:
@@ -78,7 +79,10 @@ namespace gfx {
     _Trait m_trait;
     
     /// Sphere dataset
-    SphereSet<_Vector> m_data;
+    SphereSet<_Vector, _Color> m_data;
+
+    typedef typename _Vector pos_type;
+    typedef typename _Vector::value_type scalar_type;
 
   public:
     SphereTess()
@@ -91,13 +95,13 @@ namespace gfx {
 
     _Trait &getTrait() { return m_trait; }
 
-	void create(int natoms, int ndetail)
+    void create(int natoms, int ndetail)
     {
       m_data.create(natoms);
       m_nDetail = ndetail;
     }
 
-    SphereSet<_Vector> &getData()
+    SphereSet<_Vector,_Color> &getData()
     {
       return m_data;
     }
@@ -115,8 +119,8 @@ namespace gfx {
       int nLat = ndetail+1;
       int nLng, nLngPrev=0;
       
-      const double rad = 10000.0;
-      const double dmax = (M_PI*rad)/double(ndetail+1);
+      const scalar_type rad = scalar_type(10000);
+      const scalar_type dmax = scalar_type(M_PI*rad)/scalar_type(ndetail+1);
       
       for (i=0; i<=nLat; ++i) {
         if (i==0) {
@@ -128,9 +132,9 @@ namespace gfx {
           nfaces += nLngPrev;
         }
         else {
-          const double th = double(i)*M_PI/double(nLat);
-          const double ri = rad*::sin(th);
-          nLng = (int) ::ceil(ri*M_PI*2.0/dmax);
+          const scalar_type th = scalar_type(i*M_PI)/scalar_type(nLat);
+          const scalar_type ri = rad*scalar_type( sin(th) );
+          nLng = int( ceil(ri*M_PI*2.0/dmax) );
           
           nverts += nLng;
           nfaces += nLng + nLngPrev;
@@ -145,12 +149,12 @@ namespace gfx {
 
     void build(int isph, int &ivt, int &ifc)
     {
-      const _Vector v1 = m_data.getPos(isph);
-      const double rad = m_data.getRadius(isph);
+      const pos_type v1 = m_data.getPos(isph);
+      const scalar_type rad = m_data.getRadius(isph);
       const int ndetail = m_nDetail;
 
       // int col = pSph->ccode;
-      const double dmax = (M_PI*rad)/double(ndetail+1);
+      const scalar_type dmax = scalar_type(M_PI*rad)/scalar_type(ndetail+1);
 
       quint32 i, j;
       int ivtbase = ivt;
@@ -191,18 +195,18 @@ namespace gfx {
         }
         else {
           _Vector vec, norm;
-          const double th = double(i)*M_PI/double(nLat);
-          const double ri = rad*::sin(th);
-          vec.z()  = rad*::cos(th);
-          nLng = (int) ::ceil(ri*M_PI*2.0/dmax);
+          const scalar_type th = scalar_type(i*M_PI)/scalar_type(nLat);
+          const scalar_type ri = rad * scalar_type(sin(th));
+          vec.z()  = rad * scalar_type(cos(th));
+          nLng = int( ceil(ri*M_PI*2.0/dmax) );
           ppindx[i] = MB_NEW quint32[nLng+2];
           ppindx[i][0] = nLng;
-          const double start_phi = double(i%2) * 3.0 / nLng;
+          const scalar_type start_phi = scalar_type(i%2) * scalar_type(3) / scalar_type(nLng);
           //MB_DPRINTLN("Lat: %d start phi=%f", i, start_phi);
           for (j=0; j<nLng; ++j) {
-            double ph = double(j)*M_PI*2.0/double(nLng) + start_phi;
-            vec.x() = ri*::cos(ph);
-            vec.y() = ri*::sin(ph);
+            const scalar_type ph = scalar_type(j*2*M_PI)/scalar_type(nLng) + start_phi;
+            vec.x() = ri * scalar_type( cos(ph) );
+            vec.y() = ri * scalar_type( sin(ph) );
             norm = vec.normalize();
 
             ind = ivt;
@@ -294,11 +298,12 @@ namespace gfx {
         const _Vector v12 = pos2 - pos1;
         const _Vector v23 = pos3 - pos2;
         _Vector vn = v12.cross(v23);
-        const double dnorm = vn.length();
+        return vn.normalize();
+        // const scalar_type dnorm = vn.length();
         // if (dnorm<dtol) {
         //   TODO: throw error!!
         // }
-        vn /= dnorm;
+        // vn /= dnorm;
         return vn;
       }
     
@@ -312,8 +317,8 @@ namespace gfx {
       _Vector nj1 = makenorm(vj, vk, vj1);
       _Vector nk1 = makenorm(vj, vk, vk1);
       
-      double detj = nj1.dot(vk1-vk);
-      double detk = nk1.dot(vj1-vj);
+      scalar_type detj = nj1.dot(vk1-vk);
+      scalar_type detk = nk1.dot(vj1-vj);
       
       if (detj<0 && detk>=0)
         return 1; // select j1
@@ -321,7 +326,7 @@ namespace gfx {
       if (detj>=0 && detk<0)
         return 0; // select k1
       
-      MB_DPRINTLN("SelectTrig warning; (%d,%d,%d,%d) detj=%f, detk=%f", j, k, j1, k1, detj, detk);
+      //MB_DPRINTLN("SelectTrig warning; (%d,%d,%d,%d) detj=%f, detk=%f", j, k, j1, k1, detj, detk);
       return 2;
     }
     

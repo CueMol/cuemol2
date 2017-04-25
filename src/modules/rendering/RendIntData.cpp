@@ -585,6 +585,77 @@ void RendIntData::convSpheres(bool bErase /*= true*/)
   return;
 }
 
+namespace {
+
+  class RendTessTraits
+  {
+  private:
+    
+    /// default alpha (multiplied to all alpha comp)
+    double m_defAlpha;
+
+    /// Current color
+    RendIntData::ColIndex m_col;
+
+    /// output vertex array
+    RendIntData *m_pOut;
+
+    Vector4D m_norm;
+
+  public:
+
+    Matrix4D *m_pXfm;
+    
+    int m_nfmode;
+
+    RendTessTraits() : m_defAlpha(1.0), m_pOut(NULL), m_pXfm(NULL)
+    {
+    }
+    
+    ~RendTessTraits()
+    {
+    }
+
+    /////////////////////////////
+
+    void setAlpha(double d) { m_defAlpha = d; }
+
+    void setColor(const RendIntData::ColIndex &col)
+    {
+      m_col = col;
+    }
+
+    void normal(quint32 ind, const Vector4D &v)
+    {
+      m_norm = v;
+    }
+
+    void vertex(quint32 ind, const Vector4D &v)
+    {
+      if (m_pXfm==NULL)
+        m_pOut->m_mesh.addVertex(v, m_norm, m_col);
+      else
+        m_pOut->m_mesh.addVertex(v, m_norm, m_col, *m_pXfm);
+    }
+
+    void face(quint32 ifc, quint32 n1, quint32 n2, quint32 n3)
+    {
+      m_pOut->m_mesh.addFace(n1, n2, n3, m_nfmode);
+    }
+
+    Vector4D getVertex(quint32 ind) const
+    {
+      Vector4D rv;
+      return rv;
+    }
+
+    void setTarget(RendIntData *pVBO) {
+      m_pOut = pVBO;
+    }
+
+  };
+}
+
 // convert single sphere to mesh
 void RendIntData::convSphere(Sph *pSph)
 {
@@ -610,8 +681,26 @@ void RendIntData::convSphere(Sph *pSph)
   xform.matprod( Matrix4D::makeRotMat(e3, e1).transpose() );
   xform.matprod( Matrix4D::makeTransMat(-v1) );
 
+  gfx::SphereTess<RendTessTraits, Vector4D, RendIntData::ColIndex> tess;
+  RendTessTraits &tr = tess.getTrait();
+  tr.setTarget(this);
+  tr.m_nfmode = MFMOD_SPHERE;
+  tr.m_pXfm = &xform;
+
+  //tess.setCap(pCyl->bcap);
+  tess.create(1, pSph->ndetail);
+  tess.getData().set(0, v1, pSph->r, pSph->col);
+  
+  int ivt = m_mesh.getVertexSize();
+  int ifc = m_mesh.getFaceSize();
+  tess.build(0, ivt, ifc);
+
+
+#if 0
+
   const double rad = pSph->r;
   ColIndex col = pSph->col;
+
   const double dmax = (M_PI*rad)/double(pSph->ndetail+1);
 
   const int ivstart = m_mesh.getVertexSize();
@@ -730,6 +819,7 @@ void RendIntData::convSphere(Sph *pSph)
   for (i=0; i<=nLat; ++i)
     delete [] ppindx[i];
   delete [] ppindx;
+#endif
 }
 
 static
@@ -777,72 +867,6 @@ int RendIntData::selectTrig(int j, int k, int j1, int k1)
 }
 
 /////////////////////////////
-
-namespace {
-
-  class RendTessTraits
-  {
-  private:
-    
-    /// default alpha (multiplied to all alpha comp)
-    double m_defAlpha;
-
-    /// Current color
-    RendIntData::ColIndex m_col;
-
-    /// output vertex array
-    RendIntData *m_pOut;
-
-    Vector4D m_norm;
-
-  public:
-
-    int m_nfmode;
-
-    RendTessTraits() : m_defAlpha(1.0), m_pOut(NULL)
-    {
-    }
-    
-    ~RendTessTraits()
-    {
-    }
-
-    /////////////////////////////
-
-    void setAlpha(double d) { m_defAlpha = d; }
-
-    void setColor(const RendIntData::ColIndex &col)
-    {
-      m_col = col;
-    }
-
-    void normal(quint32 ind, const Vector4D &v)
-    {
-      m_norm = v;
-    }
-
-    void vertex(quint32 ind, const Vector4D &v)
-    {
-      m_pOut->m_mesh.addVertex(v, m_norm, m_col);
-    }
-
-    void face(quint32 ifc, quint32 n1, quint32 n2, quint32 n3)
-    {
-      m_pOut->m_mesh.addFace(n1, n2, n3, m_nfmode);
-    }
-
-    Vector4D getVertex(quint32 ind) const
-    {
-      Vector4D rv;
-      return rv;
-    }
-
-    void setTarget(RendIntData *pVBO) {
-      m_pOut = pVBO;
-    }
-
-  };
-}
 
 /// convert cylinders to mesh
 void RendIntData::convCylinders(bool bErase)
