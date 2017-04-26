@@ -169,7 +169,7 @@ void CPK3Renderer::createVBO()
     int nv, nf;
     sphs.estimateMeshSize(nv, nf);
     m_pTmpl->startIndexTriangles(nv, nf);
-    int ivt, ifc;
+    int ivt=0, ifc=0;
     sphs.build(0, ivt, ifc);
   }
   //sphs.getTrait().buildDrawElem(&sphs);
@@ -221,6 +221,7 @@ void CPK3Renderer::updateDynamicVBO()
       m_pVBO->vertex3f(j+ivbase, pos + m_pTmpl->getVertex(j).scale(rad));
     }
   }
+  m_pVBO->setUpdated(true);
 }
 
 /// update VBO positions (using MolAtom)
