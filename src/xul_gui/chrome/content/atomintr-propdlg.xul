@@ -132,8 +132,18 @@
 
 	    <spacer width="10px"/>
 
-	    <label value="Cap type:" />
-	    <menulist id="aintrpage-capend" flex="0" class="propdlg-menulist"
+	    <label value="Start cap:" />
+	    <menulist id="aintrpage-startcap" flex="0" class="propdlg-menulist"
+	      oncommand="gAintr.validateWidgets(event)">
+	      <menupopup>
+		<menuitem label="Flat" value="flat"/>
+		<menuitem label="Round" value="sphere"/>
+		<menuitem label="Arrow" value="arrow"/>
+	      </menupopup>
+	    </menulist>
+
+	    <label value="End cap:" />
+	    <menulist id="aintrpage-endcap" flex="0" class="propdlg-menulist"
 	      oncommand="gAintr.validateWidgets(event)">
 	      <menupopup>
 		<menuitem label="Flat" value="flat"/>

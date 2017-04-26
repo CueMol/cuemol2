@@ -62,14 +62,21 @@ runtime_class AtomIntrRenderer extends Renderer
   property object<AbstractColor$> color => m_pcolor;
   default color = gfx::SolidColor::createRGB(1.0, 1.0, 0.0);
 
-  /// end cap type
-  enumdef endtype {
+  enumdef captype_start {
     flat = molvis::AtomIntrRenderer::END_FLAT;
     sphere = molvis::AtomIntrRenderer::END_SPHERE;
     arrow = molvis::AtomIntrRenderer::END_ARROW;
   }
-  property enum endtype => redirect(getEndType, setEndType);
-  default endtype = "sphere";
+  property enum captype_start => redirect(getStartCapType, setStartCapType);
+  default captype_start = "sphere";
+
+  enumdef captype_end {
+    flat = molvis::AtomIntrRenderer::END_FLAT;
+    sphere = molvis::AtomIntrRenderer::END_SPHERE;
+    arrow = molvis::AtomIntrRenderer::END_ARROW;
+  }
+  property enum captype_end => redirect(getEndCapType, setEndCapType);
+  default captype_end = "sphere";
 
   /// arrow head size (height, angstrom)
   property real arrowheight => redirect(getArrowHeight, setArrowHeight);
