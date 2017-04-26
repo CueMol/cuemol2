@@ -105,7 +105,7 @@ void MolAtom::setPos(const Vector4D &vec)
   // array is valid --> pMol is AnimMol
   // update mol's crd array
   AnimMol *pAM = dynamic_cast<AnimMol *>(m_pMol);
-  if (pAM!=NULL)
+  if (pAM!=NULL && m_nID>=0)
     pAM->setAtomCrd(m_nID, vec);
 }
 
