@@ -18,6 +18,7 @@ namespace molvis {
 
   using namespace molstr;
   using gfx::DisplayContext;
+  using qlib::Vector3F;
 
 #ifdef USE_OPENGL
   class GLSLSphereHelper;
@@ -212,6 +213,10 @@ namespace molvis {
     void updateDynamicSphereVBO();
     void updateDynamicCylinderVBO();
     void updateDynamicRingVBO();
+
+    void setCylVerts(int ivb, const Vector3F &pos1, const Vector3F &pos2, float rad);
+
+    void setRingVerts(int natoms, int &rng_ivb, const std::vector<Vector3F> &posv, const Vector3F &cen);
   };
 
 }
