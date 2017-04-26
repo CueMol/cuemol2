@@ -236,8 +236,6 @@ void GLSLCPK3Renderer::createGLSL()
   qlib::uid_t nSceneID = getSceneID();
   quint32 dcc1, dcc2;
 
-  startColorCalc(pCMol);
-
   i = 0;
   quint32 aid;
   MolAtomPtr pAtom;

@@ -9,7 +9,6 @@
 
 #include "molvis.hpp"
 #include "BallStickRenderer.hpp"
-#include "BallStick2Renderer.hpp"
 #include "AnIsoURenderer.hpp"
 //#include "CPK2Renderer.hpp"
 #include "SplineRenderer.hpp"
@@ -22,10 +21,12 @@
 
 #ifdef USE_OPENGL
 #  include "GLSLCPK3Renderer.hpp"
+#  include "GLSLBallStick2Renderer.hpp"
 #  include "Spline2RendGLSL.hpp"
 #  include "GLSLTube2Renderer.hpp"
 #  include "GLSLRcTubeRenderer.hpp"
 #else
+#  include "BallStick2Renderer.hpp"
 #  include "CPK3Renderer.hpp"
 #  include "Spline2Renderer.hpp"
 #  include "Tube2Renderer.hpp"
@@ -48,7 +49,6 @@ bool init()
   
   RendererFactory *pRF = RendererFactory::getInstance();
   pRF->regist<BallStickRenderer>();
-  pRF->regist<BallStick2Renderer>();
   pRF->regist<AnIsoURenderer>();
   //pRF->regist<CPK2Renderer>();
   pRF->regist<SplineRenderer>();
@@ -60,11 +60,13 @@ bool init()
   pRF->regist<DisoRenderer>();
 
 #ifdef USE_OPENGL
+  pRF->regist<GLSLBallStick2Renderer>();
   pRF->regist<GLSLCPK3Renderer>();
   pRF->regist<Spline2RendGLSL>();
   pRF->regist<GLSLTube2Renderer>();
   pRF->regist<GLSLRcTubeRenderer>();
 #else
+  pRF->regist<BallStick2Renderer>();
   pRF->regist<CPK3Renderer>();
   pRF->regist<Spline2Renderer>();
   pRF->regist<Tube2Renderer>();

@@ -96,6 +96,8 @@ namespace molvis {
     int getVBMode() const { return m_nVBMode; }
     void setVBMode(int n) { m_nVBMode = n; }
 
+  protected:
+
     //////////////////////////////
     // workarea
 
@@ -190,7 +192,10 @@ namespace molvis {
     /// cleanup VBO
     virtual void invalidateDisplayCache();
 
-  private:
+    
+    void createData();
+
+  protected:
     
     /// cached vertex array/VBO
     gfx::DrawElemVNCI32 *m_pVBO;
@@ -205,18 +210,28 @@ namespace molvis {
 
     int m_nCylVertBase;
     int m_nRingVertBase;
+    int m_nCylFaceBase;
+    int m_nRingFaceBase;
     
     void updateStaticSphereVBO();
     void updateStaticCylinderVBO();
-    void updateStaticRingVBO();
+    void updateStaticRingVBO(gfx::DrawElemVNCI32 *pVBO, int ivbase);
 
     void updateDynamicSphereVBO();
     void updateDynamicCylinderVBO();
-    void updateDynamicRingVBO();
+    void updateDynamicRingVBO(gfx::DrawElemVNCI32 *pVBO, int ivbase);
 
     void setCylVerts(int ivb, const Vector3F &pos1, const Vector3F &pos2, float rad);
 
-    void setRingVerts(int natoms, int &rng_ivb, const std::vector<Vector3F> &posv, const Vector3F &cen);
+    void setRingVerts(gfx::DrawElemVNCI32 *pVBO, int natoms, int &rng_ivb, const std::vector<Vector3F> &posv, const Vector3F &cen);
+    
+    void setRingCols(gfx::DrawElemVNCI32 *pVBO, int rng_ivb);
+
+  protected:
+
+    void estimateRingVBOSize(int &rng_nverts, int &rng_nfaces);
+    void setupRingVBO(gfx::DrawElemVNCI32 *pVBO, int ivbase, int ifbase3);
+
   };
 
 }

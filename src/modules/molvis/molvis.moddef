@@ -35,6 +35,7 @@
 # include "GLSLTube2Renderer.qif"
 # include "GLSLRcTubeRenderer.qif"
 # include "GLSLCPK3Renderer.qif"
+# include "GLSLBallStick2Renderer.qif"
 #endif
 
 module molvis
@@ -69,6 +70,7 @@ module molvis
   GLSLTube2Renderer;
   GLSLRcTubeRenderer;
   GLSLCPK3Renderer;
+  GLSLBallStick2Renderer;
 #endif
 
 };
