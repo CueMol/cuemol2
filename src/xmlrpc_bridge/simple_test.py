@@ -18,7 +18,7 @@ if __name__ == "__main__":
         
         return
 
-    test1()
+#    test1()
         
 ##############
 
@@ -34,5 +34,5 @@ if __name__ == "__main__":
         color.setCode(0xFFFFFF);
         sc.bgcolor = color;
         
-#    test2()
+    test2()
 

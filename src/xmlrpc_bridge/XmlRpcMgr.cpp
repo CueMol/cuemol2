@@ -10,6 +10,7 @@
 // #include <qlib/LExceptions.hpp>
 
 #include "XmlRpcMgr.hpp"
+#include "ReqEvtQueue.hpp"
 
 #include <xmlrpc-c/base.hpp>
 #include <xmlrpc-c/registry.hpp>
@@ -22,10 +23,12 @@ SINGLETON_BASE_IMPL(XmlRpcMgr);
 XmlRpcMgr::XmlRpcMgr() : m_uidgen(0)
 {
   m_pMgrThr = NULL;
+  m_pQue = MB_NEW ReqEvtQueue;
 }
 
 XmlRpcMgr::~XmlRpcMgr()
 {
+  delete m_pQue;
 }
 
 qlib::uid_t XmlRpcMgr::registerObj(LScriptable *pObj)
@@ -83,7 +86,7 @@ qlib::uid_t XmlRpcMgr::createObj(const LString &clsname)
   ReoCreateObj evt;
   evt.m_clsname = clsname;
   evt.m_pRval = NULL;
-  m_que.putWait(&evt);
+  m_pQue->putWait(&evt);
 
   if (!evt.m_bOK || evt.m_pRval==NULL) {
     throw ( xmlrpc_c::fault(evt.m_errmsg.c_str(), xmlrpc_c::fault::CODE_UNSPECIFIED) );
@@ -327,7 +330,7 @@ bool XmlRpcMgr::callMethod(qlib::uid_t uid, const LString &mthnm,
     }
   }
 
-  m_que.putWait(&evt);
+  m_pQue->putWait(&evt);
   if (!evt.m_bOK) {
     throw ( xmlrpc_c::fault(evt.m_errmsg.c_str(), xmlrpc_c::fault::CODE_UNSPECIFIED) );
     return qlib::invalid_uid;
@@ -843,7 +846,11 @@ void XmlRpcMgr::start()
   // start the server thread
   m_pMgrThr->kick();
   
-  MB_DPRINTLN("XML-RPC thread start: thread running %d", m_pMgrThr->isRunning());
+  LOG_DPRINTLN("XML-RPC thread start: thread running %d", m_pMgrThr->isRunning());
 }
 
+void XmlRpcMgr::processReq(int n)
+{
+  m_pQue->processReq(n);
+}
 
