@@ -49,44 +49,19 @@ qlib::uid_t XmlRpcMgr::registerObj(LScriptable *pObj)
     return qlib::invalid_uid;
   }
   
-  MB_DPRINTLN("Object %p was registered as UID=%d", pObj, uid);
+  MB_DPRINTLN("XMLRPC> Object %p was registered as UID=%d", pObj, uid);
   return uid;
 }
 
 qlib::uid_t XmlRpcMgr::createObj(const LString &clsname)
 {
-  /*
-  qlib::ClassRegistry *pMgr = qlib::ClassRegistry::getInstance();
-  MB_ASSERT(pMgr!=NULL);
-
-  qlib::LClass *pCls = NULL;
-  try {
-    pCls = pMgr->getClassObj(clsname);
-    MB_DPRINTLN("LClass: %p", pCls);
-  }
-  catch (...) {
-    LString msg = LString::format("createObj class %s not found", clsname.c_str());
-    LOG_DPRINTLN(msg);
-    // ERROR!!
-    throw ( xmlrpc_c::fault(msg.c_str(), xmlrpc_c::fault::CODE_UNSPECIFIED) );
-    return qlib::invalid_uid;
-  }
-
-  LScriptable *pNewObj = dynamic_cast<LScriptable *>(pCls->createScrObj());
-  if (pNewObj==NULL) {
-    LString msg = LString::format("createObj %s failed", clsname.c_str());
-    LOG_DPRINTLN(msg);
-    // ERROR!!
-    throw ( xmlrpc_c::fault(msg.c_str(), xmlrpc_c::fault::CODE_UNSPECIFIED) );
-    return qlib::invalid_uid;
-  }
-  
-  MB_DPRINTLN("createObj(%s) OK, result=%p!!", clsname.c_str(), pNewObj);
-  */
   ReoCreateObj evt;
   evt.m_clsname = clsname;
   evt.m_pRval = NULL;
   m_pQue->putWait(&evt);
+
+  MB_DPRINTLN("XMLRPC> createObj: svrthr clsname=%s, result=%b!!",
+	      clsname.c_str(), evt.m_bOK);
 
   if (!evt.m_bOK || evt.m_pRval==NULL) {
     throw ( xmlrpc_c::fault(evt.m_errmsg.c_str(), xmlrpc_c::fault::CODE_UNSPECIFIED) );
@@ -98,22 +73,20 @@ qlib::uid_t XmlRpcMgr::createObj(const LString &clsname)
 
 qlib::uid_t XmlRpcMgr::getService(const LString &clsname)
 {
-  qlib::ClassRegistry *pMgr = qlib::ClassRegistry::getInstance();
-  MB_ASSERT(pMgr!=NULL);
+  ReoGetService evt;
+  evt.m_clsname = clsname;
+  evt.m_pRval = NULL;
+  m_pQue->putWait(&evt);
 
-  qlib::LDynamic *pObj = NULL;
-  try {
-    pObj = pMgr->getSingletonObj(clsname);
-  }
-  catch (...) {
-    LString msg = LString::format("getService(%s) failed", clsname.c_str());
-    LOG_DPRINTLN(msg);
+  MB_DPRINTLN("XMLRPC> getService: svrthr clsname=%s, result=%d!!",
+	      clsname.c_str(), evt.m_bOK);
+
+  if (!evt.m_bOK || evt.m_pRval==NULL) {
+    throw ( xmlrpc_c::fault(evt.m_errmsg.c_str(), xmlrpc_c::fault::CODE_UNSPECIFIED) );
     return qlib::invalid_uid;
   }
 
-  MB_DPRINTLN("getService(%s) OK, result=%p!!", clsname.c_str(), pObj);
-
-  return registerObj((qlib::LScriptable *)pObj);
+  return registerObj(static_cast<qlib::LScriptable*>(evt.m_pRval));
 }
 
 bool XmlRpcMgr::destroyObj(qlib::uid_t uid)
@@ -127,14 +100,21 @@ bool XmlRpcMgr::destroyObj(qlib::uid_t uid)
   i->second.icnt--;
   MB_DPRINTLN("destroyObj icnt %d", i->second.icnt);
   if (i->second.icnt<=0) {
-    uintptr_t iptr = (uintptr_t) i->second.p;
-    i->second.p->destruct();
-    m_objtab.erase(i);
-
     // remove from ptr-to-uid table
+    uintptr_t iptr = (uintptr_t) i->second.p;
     RevTable::iterator i2 = m_revtab.find(iptr);
     if (i2!=m_revtab.end())
       m_revtab.erase(i2);
+
+    //i->second.p->destruct();
+    ReoDestroyObj evt;
+    evt.m_pObj = i->second.p;
+    m_pQue->putWait(&evt);
+
+    MB_DPRINTLN("XMLRPC> svrthr destroyObj OK=%d", evt.m_bOK);
+    
+    // remove from obj table
+    m_objtab.erase(i);
   }
 
   return true;
@@ -178,22 +158,25 @@ int XmlRpcMgr::hasProp(qlib::uid_t uid, const LString &propnm)
 bool XmlRpcMgr::getProp(qlib::uid_t uid, const LString &propnm, xmlrpc_c::value *pRval)
 {
   qlib::LScriptable *pObj = getObj(uid);
-  
-  if (!pObj->hasProperty(propnm)) {
-    // TO DO: report error
-    return false;
-  }
 
-  qlib::LVariant lvar;
-  if (!pObj->getProperty(propnm, lvar)) {
-    LString msg =
-      LString::format("GetProp: getProperty(\"%s\") call failed.", propnm.c_str());
-    throw( xmlrpc_c::fault(msg.c_str(), xmlrpc_c::fault::CODE_UNSPECIFIED) );
-    return false;
+  ReoGetProp evt;
+  evt.m_pObj = pObj;
+  evt.m_propname = propnm;
+
+  m_pQue->putWait(&evt);
+  if (!evt.m_bOK) {
+    throw ( xmlrpc_c::fault(evt.m_errmsg.c_str(), xmlrpc_c::fault::CODE_UNSPECIFIED) );
+    return qlib::invalid_uid;
   }
-  
+  MB_DPRINTLN("XMLRPC> getProp() svrthr putWait OK");
+
+  qlib::LVariant &lvar = evt.m_value;
+
+  // Convert result
+
   if (!convLvar2Xrval(lvar, pRval)) {
-    throw( xmlrpc_c::fault("Conv from LVar to XMLRPC val failed", xmlrpc_c::fault::CODE_UNSPECIFIED) );
+    throw( xmlrpc_c::fault("Conv from LVar to XMLRPC val failed",
+			   xmlrpc_c::fault::CODE_UNSPECIFIED) );
     return false;
   }
 
@@ -209,19 +192,15 @@ bool XmlRpcMgr::setProp(qlib::uid_t uid, const LString &propnm, const xmlrpc_c::
     return false;
   }
   
-  if (!pObj->hasWritableProperty(propnm)) {
-    // TO DO: report error
-    MB_DPRINTLN("SetProp error, object %d not writable", uid);
-    return false;
-  }
-
-  MB_DPRINTLN("SetProp object %d ", uid);
+  ReoSetProp evt;
+  evt.m_pObj = pObj;
+  evt.m_propname = propnm;
 
   //////////
   // convert to LVariant
 
   // variant (lvar) doesn't have ownership of its content
-  qlib::LVariant lvar;
+  qlib::LVariant &lvar = evt.m_value;
   bool ok = false;
   LString errmsg;
   try {
@@ -245,34 +224,18 @@ bool XmlRpcMgr::setProp(qlib::uid_t uid, const LString &propnm, const xmlrpc_c::
     return false;
   }
 
-  MB_DPRINTLN("SetProp conv OK ");
+  MB_DPRINTLN("XMLRPC> svrthr SetProp conv OK ");
 
   //////////
   // perform setProperty
 
-  // pobj possibly owns the copy of lvar's content
-  ok = false;
-  errmsg = LString();
-  try {
-    ok = pObj->setProperty(propnm, lvar);
+  m_pQue->putWait(&evt);
+  if (!evt.m_bOK) {
+    throw ( xmlrpc_c::fault(evt.m_errmsg.c_str(), xmlrpc_c::fault::CODE_UNSPECIFIED) );
+    return qlib::invalid_uid;
   }
-  catch (const qlib::LException &e) {
-    errmsg = 
-      LString::format("SetProp(%s) failed: %s", propnm.c_str(), e.getMsg().c_str());
-    MB_DPRINTLN("Err: %s", errmsg.c_str());
-  }
-  catch (...) {
-    errmsg = 
-      LString::format("SetProp(%s) failed.", propnm.c_str());
-    MB_DPRINTLN("Err: %s", errmsg.c_str());
-  }
-
-  if (!ok) {
-    // TO DO: report error
-    return false;
-  }
-
-  MB_DPRINTLN("SetProp OK ");
+  
+  MB_DPRINTLN("XMLRPC> svrthr setProp() putWait OK");
 
   // OK
   return true;
@@ -290,12 +253,6 @@ bool XmlRpcMgr::callMethod(qlib::uid_t uid, const LString &mthnm,
     return false;
   }
   
-  if (!pObj->hasMethod(mthnm)) {
-    // TO DO: report error
-    MB_DPRINTLN("CallMethod error, object %d not has method %s", uid, mthnm.c_str());
-    return false;
-  }
-
   ReoCallMethod evt(nargs);
   evt.m_pObj = pObj;
   evt.m_mthname = mthnm;
@@ -335,37 +292,7 @@ bool XmlRpcMgr::callMethod(qlib::uid_t uid, const LString &mthnm,
     throw ( xmlrpc_c::fault(evt.m_errmsg.c_str(), xmlrpc_c::fault::CODE_UNSPECIFIED) );
     return qlib::invalid_uid;
   }
-
-  /*
-  MB_DPRINTLN("invoke method %s nargs=%d", mthnm.c_str(), nargs);
-
-  // Invoke method
-
-  ok = false;
-  errmsg = LString();
-
-  try {
-    ok = pObj->invokeMethod(mthnm, largs);
-    if (!ok)
-      errmsg = LString::format("call method %s: failed", mthnm.c_str());
-  }
-  catch (qlib::LException &e) {
-    errmsg = 
-      LString::format("Exception occured in native method %s: %s",
-		      mthnm.c_str(), e.getMsg().c_str());
-  }
-  catch (...) {
-    errmsg = 
-      LString::format("Unknown Exception occured in native method %s",
-		      mthnm.c_str());
-  }
-
-  if (!ok) {
-    MB_DPRINTLN("ERROR: %s", errmsg.c_str());
-    // TO DO: report error
-    return false;
-  }
-  */
+  MB_DPRINTLN("XMLRPC> CallMethod(%d,%s) svrthr putWait OK", uid, mthnm.c_str());
 
   // Convert returned value
 
@@ -392,6 +319,7 @@ bool XmlRpcMgr::callMethod(qlib::uid_t uid, const LString &mthnm,
     return false;
   }
 
+  MB_DPRINTLN("XMLRPC> CallMethod svrthr OK");
   return true;
 }
 
@@ -520,8 +448,6 @@ void XmlRpcMgr::chkCred(const LString &c)
     throw( xmlrpc_c::fault("Invalid credential", xmlrpc_c::fault::CODE_UNSPECIFIED) );
 }
 
-
-
 ////////////////////
 
 namespace {
@@ -536,9 +462,7 @@ namespace {
     execute(xmlrpc_c::paramList const& paramList,
             xmlrpc_c::value *   const  retvalP)
     {
-      MB_DPRINTLN("*********** CreateObj called\n");
       paramList.verifyEnd(2);
-      MB_DPRINTLN("*********** CreateObj NArgs OK");
         
       // Credential for authentication
       std::string cred = paramList.getString(0);
@@ -749,11 +673,13 @@ namespace {
       // check credential
       pMgr->chkCred(cred);
 
-      MB_DPRINTLN("SetProp for %d, %s called", uid, propnm.c_str());
+      MB_DPRINTLN("SetProp for obj(%d), propnm=(%s) called", uid, propnm.c_str());
 
       pMgr->setProp(uid, propnm, &val);
 
       *retvalP = xmlrpc_c::value_nil();
+
+      MB_DPRINTLN("SetProp for obj(%d), propnm=(%s) DONE", uid, propnm.c_str());
       return;
     }
   };

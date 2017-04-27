@@ -20,11 +20,6 @@ ReqEvtObj::~ReqEvtObj()
 {
 }
 
-/*int ReoCreateObj::getType() const
-{
-  return REO_CREATEOBJ;
-  }*/
-
 void ReoCreateObj::doit()
 {
   qlib::ClassRegistry *pMgr = qlib::ClassRegistry::getInstance();
@@ -33,7 +28,6 @@ void ReoCreateObj::doit()
   qlib::LClass *pCls = NULL;
   try {
     pCls = pMgr->getClassObj(m_clsname);
-    MB_DPRINTLN("LClass: %p", pCls);
   }
   catch (...) {
     LString msg = LString::format("createObj class %s not found", m_clsname.c_str());
@@ -59,7 +53,37 @@ void ReoCreateObj::doit()
     //return qlib::invalid_uid;
   }
 
+  MB_DPRINTLN("XMLRPC> mainthr createObj OK, newobj=%p", pNewObj);
   m_pRval = pNewObj;
+  m_bOK = true;
+}
+
+void ReoDestroyObj::doit()
+{
+  m_pObj->destruct();
+  m_bOK = true;
+  MB_DPRINTLN("XMLRPC> mainthr destroyObj done");
+}
+
+void ReoGetService::doit()
+{
+  qlib::ClassRegistry *pMgr = qlib::ClassRegistry::getInstance();
+  MB_ASSERT(pMgr!=NULL);
+
+  qlib::LDynamic *pObj = NULL;
+  try {
+    pObj = pMgr->getSingletonObj(m_clsname);
+  }
+  catch (...) {
+    LString msg = LString::format("getService(%s) failed", m_clsname.c_str());
+    LOG_DPRINTLN(msg);
+    m_errmsg = msg;
+    m_bOK = false;
+    return;
+  }
+
+  MB_DPRINTLN("XMLRPC> mainthr getServ(%s) OK, obj=%p", m_clsname.c_str(), pObj);
+  m_pRval = pObj;
   m_bOK = true;
 }
 
@@ -93,6 +117,80 @@ void ReoCallMethod::doit()
 		      m_mthname.c_str());
   }
 
+  MB_DPRINTLN("XMLRPC> mainthr invokeMethod(%s) OK", m_mthname.c_str());
+  return;
+}
+
+void ReoGetProp::doit()
+{
+  if (!m_pObj->hasProperty(m_propname)) {
+    m_bOK = false;
+    m_errmsg = LString::format("SetProp error, object %p not has property %s",
+			       m_pObj, m_propname.c_str());
+    return;
+  }                                                                                             
+  // Call getProp()
+
+  m_bOK = false;
+  m_errmsg = LString();
+
+  try {
+    m_bOK = m_pObj->getProperty(m_propname, m_value);
+    if (!m_bOK)
+      m_errmsg = LString::format("GetProp: getProperty(\"%s\") call failed.",
+				 m_propname.c_str());
+  }
+  catch (qlib::LException &e) {
+    m_errmsg = 
+      LString::format("Exception occured in getprop %s: %s",
+		      m_propname.c_str(), e.getMsg().c_str());
+  }
+  catch (...) {
+    m_errmsg = 
+      LString::format("Unknown Exception occured in getprop %s",
+		      m_propname.c_str());
+  }
+
+  MB_DPRINTLN("XMLRPC> mainthr getProp() DONE");
+  return;
+}
+
+void ReoSetProp::doit()
+{
+  if (!m_pObj->hasWritableProperty(m_propname)) {
+    m_bOK = false;
+    m_errmsg = LString::format("SetProp error, object %p not has property %s",
+			       m_pObj, m_propname.c_str());
+    return;
+  }                                                                                             
+  MB_DPRINTLN("XMLRPC> mainthr setProp() prop=%s", m_propname.c_str());
+  MB_DPRINT("  value=");
+  m_value.dump();
+  MB_DPRINTLN("");
+
+  // Call setProp()
+
+  m_bOK = false;
+  m_errmsg = LString();
+
+  try {
+    m_bOK = m_pObj->setProperty(m_propname, m_value);
+    if (!m_bOK)
+      m_errmsg = LString::format("SetProp: setProperty(\"%s\") call failed.",
+				 m_propname.c_str());
+  }
+  catch (qlib::LException &e) {
+    m_errmsg = 
+      LString::format("Exception occured in SetProp %s: %s",
+		      m_propname.c_str(), e.getMsg().c_str());
+  }
+  catch (...) {
+    m_errmsg = 
+      LString::format("Unknown Exception occured in SetProp %s",
+		      m_propname.c_str());
+  }
+
+  MB_DPRINTLN("XMLRPC> mainthr setProp() DONE, OK=%d", m_bOK);
   return;
 }
 
@@ -194,7 +292,7 @@ void ReqEvtQueue::processReq(int nWait)
       m_cond2.notify_all();
     }
 
-    MB_DPRINTLN("ReqQue> Request %d(%p) processed", i, pDat);
+    MB_DPRINTLN("XMLRPC> MainThr Request %d(%p) processed", i, pDat);
   }
 
 }

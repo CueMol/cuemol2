@@ -50,6 +50,24 @@ namespace xrbr {
     virtual void doit();
   };
 
+  class ReoDestroyObj : public ReqEvtObj
+  {
+  public:
+    qlib::LScriptable *m_pObj;
+
+    virtual void doit();
+  };
+
+  class ReoGetService : public ReqEvtObj
+  {
+  public:
+    LString m_clsname;
+    
+    qlib::LDynamic *m_pRval;
+
+    virtual void doit();
+  };
+
   class ReoCallMethod : public ReqEvtObj
   {
   public:
@@ -62,7 +80,33 @@ namespace xrbr {
     virtual void doit();
   };
 
+  class ReoGetProp : public ReqEvtObj
+  {
+  public:
+    //ReoGetProp() : {}
 
+    qlib::LScriptable *m_pObj;
+    LString m_propname;
+    qlib::LVariant m_value;
+
+    virtual void doit();
+  };
+
+  class ReoSetProp : public ReqEvtObj
+  {
+  public:
+
+    qlib::LScriptable *m_pObj;
+    LString m_propname;
+    qlib::LVariant m_value;
+
+    virtual void doit();
+  };
+
+  // ReoGetService --> ReoCreateObj
+  // ReoDestroyObj
+
+  /////////////////////////////////////////////
 
   class ReqEvtQueue
   {
