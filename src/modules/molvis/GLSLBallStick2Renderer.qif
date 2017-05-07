@@ -1,0 +1,27 @@
+// -*-Mode: C++;-*-
+//
+// BallStick2 renderer implementation using GLSL
+//
+
+#ifndef GLSL_BALLSTICK2_REND_GLSL_QIF_INCLUDED
+#define GLSL_BALLSTICK2_REND_GLSL_QIF_INCLUDED
+
+#include "BallStick2Renderer.qif"
+
+runtime_class GLSLBallStick2Renderer extends BallStick2Renderer
+{
+  client_hdr "GLSLBallStick2Renderer.hpp";
+  client_name molvis::GLSLBallStick2Renderer;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  /// force to use GLSL
+  property boolean force_glsl => redirect(isForceGLSL, setForceGLSL);
+  default force_glsl = true;
+
+};
+
+#endif
+
