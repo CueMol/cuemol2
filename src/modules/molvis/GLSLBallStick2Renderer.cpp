@@ -31,8 +31,8 @@ using gfx::ColorPtr;
 
 GLSLBallStick2Renderer::GLSLBallStick2Renderer()
 {
-  m_pPO = NULL;
-  m_pAttrAry = NULL;
+  m_pSphPO = NULL;
+  m_pSphAttrAry = NULL;
   m_pCoordTex = NULL;
   m_pColorTex = NULL;
 
@@ -44,7 +44,7 @@ GLSLBallStick2Renderer::~GLSLBallStick2Renderer()
   // VBO/Texture have been cleaned up in invalidateDisplayCache()
   //  in unloading() method of DispCacheRend impl,
   // and so they must be NULL when the destructor is called.
-  MB_ASSERT(m_pAttrAry==NULL);
+  MB_ASSERT(m_pSphAttrAry==NULL);
   MB_ASSERT(m_pCoordTex==NULL);
   MB_ASSERT(m_pColorTex==NULL);
 
@@ -55,8 +55,8 @@ bool GLSLBallStick2Renderer::isCacheAvail() const
 {
   if (isShaderAvail() && isShaderEnabled()) {
     // GLSL mode
-    //return m_pAttrAry!=NULL && m_pCoordTex!=NULL && m_pColorTex!=NULL;
-    return m_pAttrAry!=NULL;
+    //return m_pSphAttrAry!=NULL && m_pCoordTex!=NULL && m_pColorTex!=NULL;
+    return m_pSphAttrAry!=NULL;
   }
   else {
     // VBO mode
@@ -74,30 +74,30 @@ bool GLSLBallStick2Renderer::init(DisplayContext *pdc)
     return false;
   }
 
-  if (m_pPO==NULL) {
+  if (m_pSphPO==NULL) {
     ssh.setUseInclude(true);
 #ifdef USE_TBO
     ssh.defineMacro("USE_TBO", "1");
 #else
     ssh.defineMacro("TEX2D_WIDTH", LString::format("%d",TEX2D_WIDTH).c_str());
 #endif
-    m_pPO = ssh.createProgObj("gpu_sphere2",
+    m_pSphPO = ssh.createProgObj("gpu_sphere2",
                               "%%CONFDIR%%/data/shaders/sphere2_vertex.glsl",
                               "%%CONFDIR%%/data/shaders/sphere2_frag.glsl");
   }
   
-  if (m_pPO==NULL) {
+  if (m_pSphPO==NULL) {
     LOG_DPRINTLN("GLSLBallStick2Renderer> ERROR: cannot create progobj.");
     setShaderAvail(false);
     return false;
   }
 
-  m_pPO->enable();
+  m_pSphPO->enable();
 
   // setup attribute locations
-  m_nRadLoc = m_pPO->getAttribLocation("a_radius");
+  m_nRadLoc = m_pSphPO->getAttribLocation("a_radius");
 
-  m_pPO->disable();
+  m_pSphPO->disable();
 
   setShaderAvail(true);
 
@@ -181,13 +181,13 @@ void GLSLBallStick2Renderer::createGLSL()
   // Create VBO
   //
   
-  if (m_pAttrAry!=NULL)
-    delete m_pAttrAry;
+  if (m_pSphAttrAry!=NULL)
+    delete m_pSphAttrAry;
 
-  m_pAttrAry = MB_NEW AttrArray();
-  AttrArray &attra = *m_pAttrAry;
+  m_pSphAttrAry = MB_NEW SphAttrArray();
+  SphAttrArray &attra = *m_pSphAttrAry;
   attra.setAttrSize(1);
-  attra.setAttrInfo(0, m_nRadLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, rad));
+  attra.setAttrInfo(0, m_nRadLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(SphAttrElem, rad));
 
   attra.alloc(natoms*4);
   attra.allocInd(natoms*6);
@@ -375,9 +375,9 @@ void GLSLBallStick2Renderer::invalidateDisplayCache()
   }
   //m_ls.clear();
   m_coordbuf.clear();
-  if (m_pAttrAry!=NULL) {
-    delete m_pAttrAry;
-    m_pAttrAry = NULL;
+  if (m_pSphAttrAry!=NULL) {
+    delete m_pSphAttrAry;
+    m_pSphAttrAry = NULL;
   }
   if (m_pColorTex!=NULL) {
     delete m_pColorTex;
@@ -394,21 +394,21 @@ void GLSLBallStick2Renderer::invalidateDisplayCache()
 
 void GLSLBallStick2Renderer::renderGLSL(DisplayContext *pdc)
 {
-  if (m_pPO==NULL)
+  if (m_pSphPO==NULL)
     return; // Error, Cannot draw anything (ignore)
 
   qlib::uid_t nSceneID = getSceneID();
 
   pdc->useTexture(m_pCoordTex, COORD_TEX_UNIT);
   pdc->useTexture(m_pColorTex, COLOR_TEX_UNIT);
-  m_pPO->enable();
-  m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
-  m_pPO->setUniform("coordTex", COORD_TEX_UNIT);
-  m_pPO->setUniform("colorTex", COLOR_TEX_UNIT);
+  m_pSphPO->enable();
+  m_pSphPO->setUniformF("frag_alpha", pdc->getAlpha());
+  m_pSphPO->setUniform("coordTex", COORD_TEX_UNIT);
+  m_pSphPO->setUniform("colorTex", COLOR_TEX_UNIT);
 
   // Setup edge/silhouette
   if (pdc->getEdgeLineType()!=DisplayContext::ELT_NONE) {
-    m_pPO->setUniformF("u_edge", pdc->getEdgeLineWidth());
+    m_pSphPO->setUniformF("u_edge", pdc->getEdgeLineWidth());
 
     double r=.0,g=.0,b=.0;
     ColorPtr pcol = pdc->getEdgeLineColor();
@@ -419,20 +419,20 @@ void GLSLBallStick2Renderer::renderGLSL(DisplayContext *pdc)
       b = gfx::convI2F(gfx::getBCode(dcc));
     }
     
-    m_pPO->setUniformF("u_edgecolor", r,g,b,1);
+    m_pSphPO->setUniformF("u_edgecolor", r,g,b,1);
     if (pdc->getEdgeLineType()==DisplayContext::ELT_SILHOUETTE)
-      m_pPO->setUniform("u_bsilh", 1);
+      m_pSphPO->setUniform("u_bsilh", 1);
     else
-      m_pPO->setUniform("u_bsilh", 0);
+      m_pSphPO->setUniform("u_bsilh", 0);
   }
   else {
-    m_pPO->setUniformF("u_edge", 0.0);
-    m_pPO->setUniformF("u_edgecolor", 0,0,0,1);
-    m_pPO->setUniform("u_bsilh", 0);
+    m_pSphPO->setUniformF("u_edge", 0.0);
+    m_pSphPO->setUniformF("u_edgecolor", 0,0,0,1);
+    m_pSphPO->setUniform("u_bsilh", 0);
   }
   
-  pdc->drawElem(*m_pAttrAry);
-  m_pPO->disable();
+  pdc->drawElem(*m_pSphAttrAry);
+  m_pSphPO->disable();
 
   pdc->unuseTexture(m_pCoordTex);
   pdc->unuseTexture(m_pColorTex);

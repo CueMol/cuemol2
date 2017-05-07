@@ -87,21 +87,32 @@ namespace molvis {
     /// Height and Width of CoordTex (for 2D texture mode)
     int m_nTexW, m_nTexH;
 
-    /// GLSL shader objects
-    sysdep::OglProgramObject *m_pPO;
+    ////////////////////
+    // Sphere rendering
 
-    /// Elem of VBO
-    struct AttrElem {
+    /// GLSL shader objects for spheres
+    sysdep::OglProgramObject *m_pSphPO;
+
+    /// Elem of VBO for spheres
+    struct SphAttrElem {
       qfloat32 rad;
     };
 
     /// location of radius (float32)
     quint32 m_nRadLoc;
 
-    typedef gfx::DrawAttrElems<quint32, AttrElem> AttrArray;
+    typedef gfx::DrawAttrElems<quint32, SphAttrElem> SphAttrArray;
 
-    /// VBO for GLSL rendering
-    AttrArray *m_pAttrAry;
+    /// VBO for GLSL sphere rendering
+    SphAttrArray *m_pSphAttrAry;
+
+    /////////////////////
+    // Cylinder rendering
+
+    /// GLSL shader objects for cylinders
+    sysdep::OglProgramObject *m_pCylPO;
+
+    /////////////////////
 
     /// VBO for ring plates
     gfx::DrawElemVNCI32 *m_pRingVBO;
