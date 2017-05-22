@@ -622,6 +622,7 @@
     <mcw_loader Include="..\..\src\gfx\gfx.moddef" />
   </ItemGroup>
   <ItemGroup>
+    <glslshader Include="..\..\src\modules\molstr\lib_atoms.glsl" />
     <glslshader Include="..\..\src\modules\molstr\simple_frag.glsl" />
     <glslshader Include="..\..\src\modules\molstr\simple_vertex.glsl" />
     <glslshader Include="..\..\src\modules\molvis\cylinder_frag.glsl" />

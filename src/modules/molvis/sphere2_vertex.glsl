@@ -3,9 +3,12 @@
 //  vertex shader for spheres
 //
 
-@include "lib_common.glsl"
+#ifndef USE_TBO
+#  extension GL_EXT_gpu_shader4 : enable 
+#endif
 
-//#extension GL_ARB_compatibility : enable
+@include "lib_common.glsl"
+@include "lib_atoms.glsl"
 
 ////////////////////
 // Uniform variables

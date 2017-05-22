@@ -36,6 +36,8 @@ GLSLBallStick2Renderer::GLSLBallStick2Renderer()
   m_pCoordTex = NULL;
   m_pColorTex = NULL;
 
+  m_pCylPO = NULL;
+
   m_pRingVBO = NULL;
 }
 
@@ -74,6 +76,7 @@ bool GLSLBallStick2Renderer::init(DisplayContext *pdc)
     return false;
   }
 
+  // Load sphere shader
   if (m_pSphPO==NULL) {
     ssh.setUseInclude(true);
 #ifdef USE_TBO
@@ -98,6 +101,31 @@ bool GLSLBallStick2Renderer::init(DisplayContext *pdc)
   m_nRadLoc = m_pSphPO->getAttribLocation("a_radius");
 
   m_pSphPO->disable();
+
+  // Load cylinder shader
+  if (m_pCylPO==NULL) {
+    ssh.setUseInclude(true);
+#ifdef USE_TBO
+    ssh.defineMacro("USE_TBO", "1");
+#else
+    ssh.defineMacro("TEX2D_WIDTH", LString::format("%d",TEX2D_WIDTH).c_str());
+#endif
+    m_pCylPO = ssh.createProgObj("gpu_cylinder2",
+                              "%%CONFDIR%%/data/shaders/cylinder2_vertex.glsl",
+                              "%%CONFDIR%%/data/shaders/cylinder2_frag.glsl");
+  }
+  
+  if (m_pCylPO==NULL) {
+    LOG_DPRINTLN("GLSLBallStick2Renderer> ERROR: cannot create progobj.");
+    setShaderAvail(false);
+    return false;
+  }
+
+  m_pCylPO->enable();
+
+  // setup attribute locations
+
+  m_pCylPO->disable();
 
   setShaderAvail(true);
 

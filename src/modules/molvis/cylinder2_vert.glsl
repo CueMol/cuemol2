@@ -3,6 +3,13 @@
 //  vertex shader for cylinders (ver. 2)
 //
 
+#ifndef USE_TBO
+#  extension GL_EXT_gpu_shader4 : enable 
+#endif
+
+@include "lib_common.glsl"
+@include "lib_atoms.glsl"
+
 ////////////////////
 // Vertex attributes
 
@@ -24,8 +31,8 @@ attribute vec2 a_impos;
 ////////////////////
 // Uniform variables
 
-// Model-View projection matrix
-// uniform mat4 mvp_matrix;
+uniform AtomCrdTex coordTex;
+uniform AtomColTex colorTex;
 
 ////////////////////
 // Varying variables
