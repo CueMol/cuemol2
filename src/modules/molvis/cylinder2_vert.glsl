@@ -28,6 +28,8 @@ uniform float u_rad;
 // Varying variables
 
 varying vec4 v_color;
+varying vec2 v_impos;
+varying vec4 v_ecpos;
 
 ////////////////////
 // Program
@@ -85,9 +87,11 @@ void main()
 
   vw_pos.xy += hdir*dsps[vid].x;
 
+  v_impos = dsps[vid];
   if (vid==0||vid==1) {
-    if (sinph>0)
+    if (sinph>0) {
       vw_pos.xyz -= kdir;
+    }
   }
   else {
     if (sinph<0)
@@ -97,6 +101,6 @@ void main()
   
   gl_Position = gl_ProjectionMatrix * vw_pos;
 
-  //v_color = getAtomColor(colorTex, aind1);
+  v_color = getAtomColor(colorTex, aind1);
 }
 
