@@ -86,6 +86,7 @@ void BallStick2Renderer::endRend(DisplayContext *pdl)
     pdl->sphere(s.rad, pAtom->getPos());
   }
   
+  const float crad = getBondw();
   BOOST_FOREACH (const Bond &c, m_bonddat) {
     pAtom1 = pCMol->getAtom(c.aid1);
     pAtom2 = pCMol->getAtom(c.aid2);
@@ -98,14 +99,14 @@ void BallStick2Renderer::endRend(DisplayContext *pdl)
     
     if ( pcol1->equals(*pcol2.get()) ) {
       pdl->color(pcol1);
-      pdl->cylinder(c.rad, pos1, pos2);
+      pdl->cylinder(crad, pos1, pos2);
     }
     else {
       const Vector4D mpos = (pos1 + pos2).divide(2.0);
       pdl->color(pcol1);
-      pdl->cylinder(c.rad, pos1, mpos);
+      pdl->cylinder(crad, pos1, mpos);
       pdl->color(pcol2);
-      pdl->cylinder(c.rad, pos2, mpos);
+      pdl->cylinder(crad, pos2, mpos);
     }
   }
 
@@ -191,7 +192,7 @@ void BallStick2Renderer::rendBond(DisplayContext *pdl, MolAtomPtr pAtom1, MolAto
     Bond c;
     c.aid1 = pAtom1->getID();
     c.aid2 = pAtom2->getID();
-    c.rad = m_bondw;
+    //c.rad = m_bondw;
     c.btype = pMB->getType();
     m_bonddat.push_back(c);
   }
@@ -567,7 +568,7 @@ void BallStick2Renderer::updateDynamicCylinderVBO()
     pos1.set(&crd[icrd1]);
     pos2.set(&crd[icrd2]);
     mpos = (pos1+pos2).divide(2);
-    rad = m_bonddat[i].rad;
+    rad = getBondw(); //m_bonddat[i].rad;
 
     setCylVerts(i*2*cyl_nverts + cyl_ivb, pos1, mpos, rad);
     setCylVerts((i*2+1)*cyl_nverts + cyl_ivb, mpos, pos2, rad);
@@ -695,7 +696,7 @@ void BallStick2Renderer::updateStaticCylinderVBO()
     pos1 = Vector3F( pA1->getPos().xyz() );
     pos2 = Vector3F( pA2->getPos().xyz() );
     mpos = (pos1+pos2).divide(2);
-    float rad = m_bonddat[i].rad;
+    float rad = getBondw(); //m_bonddat[i].rad;
 
     setCylVerts(i*2*cyl_nverts + cyl_ivb, pos1, mpos, rad);
     setCylVerts((i*2+1)*cyl_nverts + cyl_ivb, mpos, pos2, rad);

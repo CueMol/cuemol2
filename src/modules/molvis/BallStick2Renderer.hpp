@@ -115,7 +115,7 @@ namespace molvis {
     struct Bond {
       quint32 aid1, aid2;
       quint32 btype;
-      float rad;
+      // float rad;
     };
 
     typedef std::deque<Bond> BondData;

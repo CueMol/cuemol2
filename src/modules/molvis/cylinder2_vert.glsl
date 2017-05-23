@@ -22,6 +22,8 @@ attribute vec2 a_ind12;
 uniform AtomCrdTex coordTex;
 uniform AtomColTex colorTex;
 
+uniform float u_rad;
+
 ////////////////////
 // Varying variables
 
@@ -32,8 +34,6 @@ varying vec4 v_color;
 
 void main()
 {
-  const float u_rad = 0.3;
-
   int aind1 = int( a_ind12.x );
   int aind2 = int( a_ind12.y );
   int vid = gl_VertexID%4;
@@ -84,7 +84,16 @@ void main()
   }
 
   vw_pos.xy += hdir*dsps[vid].x;
-  vw_pos.xyz += kdir*dsps[vid].y;
+
+  if (vid==0||vid==1) {
+    if (sinph>0)
+      vw_pos.xyz -= kdir;
+  }
+  else {
+    if (sinph<0)
+      vw_pos.xyz -= kdir;
+  }
+
   
   gl_Position = gl_ProjectionMatrix * vw_pos;
 

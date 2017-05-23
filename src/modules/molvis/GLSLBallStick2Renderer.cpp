@@ -528,6 +528,7 @@ void GLSLBallStick2Renderer::renderGLSL(DisplayContext *pdc)
     // m_pCylPO->setUniformF("frag_alpha", pdc->getAlpha());
     m_pCylPO->setUniform("coordTex", COORD_TEX_UNIT);
     m_pCylPO->setUniform("colorTex", COLOR_TEX_UNIT);
+    m_pCylPO->setUniformF("u_rad", getBondw());
 
     pdc->drawElem(*m_pCylAttrAry);
     m_pCylPO->disable();
