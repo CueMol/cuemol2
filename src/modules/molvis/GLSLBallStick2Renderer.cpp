@@ -127,6 +127,7 @@ bool GLSLBallStick2Renderer::init(DisplayContext *pdc)
   m_pCylPO->enable();
 
   // setup attribute locations
+  m_nInd12Loc = m_pCylPO->getAttribLocation("a_ind12");
 
   m_pCylPO->disable();
 
@@ -216,7 +217,7 @@ void GLSLBallStick2Renderer::createGLSL()
     delete m_pSphAttrAry;
 
   qlib::uid_t nSceneID = getSceneID();
-  boost::unordered_map<int,int> aidmap;
+  boost::unordered_map<quint32,quint32> aidmap;
   m_pSphAttrAry = MB_NEW SphAttrArray();
   {
     SphAttrArray &attra = *m_pSphAttrAry;
@@ -239,7 +240,7 @@ void GLSLBallStick2Renderer::createGLSL()
 
       //rad = rads[i];
       rad = m_atomdat[i].rad;
-      aidmap.insert(std::pair<int,int>(m_atomdat[i].aid, i));
+      aidmap.insert(std::pair<quint32,quint32>( m_atomdat[i].aid, quint32(i) ));
 
       // vertex data
       for (int j=0; j<4; ++j)
@@ -518,13 +519,13 @@ void GLSLBallStick2Renderer::renderGLSL(DisplayContext *pdc)
       m_pSphPO->setUniform("u_bsilh", 0);
     }
 
-    pdc->drawElem(*m_pSphAttrAry);
+    //pdc->drawElem(*m_pSphAttrAry);
     m_pSphPO->disable();
   }
   
   if (m_pCylPO!=NULL && m_pCylAttrAry!=NULL) {
     m_pCylPO->enable();
-    m_pCylPO->setUniformF("frag_alpha", pdc->getAlpha());
+    // m_pCylPO->setUniformF("frag_alpha", pdc->getAlpha());
     m_pCylPO->setUniform("coordTex", COORD_TEX_UNIT);
     m_pCylPO->setUniform("colorTex", COLOR_TEX_UNIT);
 

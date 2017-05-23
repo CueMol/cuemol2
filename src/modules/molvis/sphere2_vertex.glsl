@@ -41,6 +41,7 @@ void main()
 {
   vec2 dsps[4]=vec2[]( vec2(-1,-1), vec2(1,-1), vec2(-1,1), vec2(1,1) );
   //int vid = gl_VertexID%4;
+
   vec2 impos = dsps[gl_VertexID%4];
   int aind = gl_VertexID/4;
 
