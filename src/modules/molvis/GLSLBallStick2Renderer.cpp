@@ -37,6 +37,7 @@ GLSLBallStick2Renderer::GLSLBallStick2Renderer()
   m_pColorTex = NULL;
 
   m_pCylPO = NULL;
+  m_pCylAttrAry = NULL;
 
   m_pRingVBO = NULL;
 }
@@ -47,6 +48,7 @@ GLSLBallStick2Renderer::~GLSLBallStick2Renderer()
   //  in unloading() method of DispCacheRend impl,
   // and so they must be NULL when the destructor is called.
   MB_ASSERT(m_pSphAttrAry==NULL);
+  MB_ASSERT(m_pCylAttrAry==NULL);
   MB_ASSERT(m_pCoordTex==NULL);
   MB_ASSERT(m_pColorTex==NULL);
 
@@ -58,7 +60,8 @@ bool GLSLBallStick2Renderer::isCacheAvail() const
   if (isShaderAvail() && isShaderEnabled()) {
     // GLSL mode
     //return m_pSphAttrAry!=NULL && m_pCoordTex!=NULL && m_pColorTex!=NULL;
-    return m_pSphAttrAry!=NULL;
+
+    return m_pSphAttrAry!=NULL && m_pCylAttrAry!=NULL;
   }
   else {
     // VBO mode
@@ -111,7 +114,7 @@ bool GLSLBallStick2Renderer::init(DisplayContext *pdc)
     ssh.defineMacro("TEX2D_WIDTH", LString::format("%d",TEX2D_WIDTH).c_str());
 #endif
     m_pCylPO = ssh.createProgObj("gpu_cylinder2",
-                              "%%CONFDIR%%/data/shaders/cylinder2_vertex.glsl",
+                              "%%CONFDIR%%/data/shaders/cylinder2_vert.glsl",
                               "%%CONFDIR%%/data/shaders/cylinder2_frag.glsl");
   }
   
@@ -206,49 +209,101 @@ void GLSLBallStick2Renderer::createGLSL()
 #endif
 
   //
-  // Create VBO
+  // Create Sphere VBO
   //
   
   if (m_pSphAttrAry!=NULL)
     delete m_pSphAttrAry;
 
-  m_pSphAttrAry = MB_NEW SphAttrArray();
-  SphAttrArray &attra = *m_pSphAttrAry;
-  attra.setAttrSize(1);
-  attra.setAttrInfo(0, m_nRadLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(SphAttrElem, rad));
-
-  attra.alloc(natoms*4);
-  attra.allocInd(natoms*6);
-  attra.setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
-
   qlib::uid_t nSceneID = getSceneID();
-  quint32 dcc1, dcc2;
+  boost::unordered_map<int,int> aidmap;
+  m_pSphAttrAry = MB_NEW SphAttrArray();
+  {
+    SphAttrArray &attra = *m_pSphAttrAry;
+    attra.setAttrSize(1);
+    attra.setAttrInfo(0, m_nRadLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(SphAttrElem, rad));
 
-  i = 0;
-  quint32 aid;
-  MolAtomPtr pAtom;
-  float rad;
-  for (i=0; i<natoms; ++i) {
-    const int ive = i*4;
-    const int ifc = i*6;
-    
-    //rad = rads[i];
-    rad = m_atomdat[i].rad;
+    attra.alloc(natoms*4);
+    attra.allocInd(natoms*6);
+    attra.setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
 
-    // vertex data
-    for (int j=0; j<4; ++j)
-      attra.at(ive+j).rad = rad;
+    quint32 dcc1, dcc2;
 
-    // face indices
-    attra.atind(ifc+0) = ive + 0;
-    attra.atind(ifc+1) = ive + 1;
-    attra.atind(ifc+2) = ive + 2;
-    attra.atind(ifc+3) = ive + 2;
-    attra.atind(ifc+4) = ive + 1;
-    attra.atind(ifc+5) = ive + 3;
+    i = 0;
+    quint32 aid;
+    MolAtomPtr pAtom;
+    float rad;
+    for (i=0; i<natoms; ++i) {
+      const int ive = i*4;
+      const int ifc = i*6;
+
+      //rad = rads[i];
+      rad = m_atomdat[i].rad;
+      aidmap.insert(std::pair<int,int>(m_atomdat[i].aid, i));
+
+      // vertex data
+      for (int j=0; j<4; ++j)
+        attra.at(ive+j).rad = rad;
+
+      // face indices
+      attra.atind(ifc+0) = ive + 0;
+      attra.atind(ifc+1) = ive + 1;
+      attra.atind(ifc+2) = ive + 2;
+      attra.atind(ifc+3) = ive + 2;
+      attra.atind(ifc+4) = ive + 1;
+      attra.atind(ifc+5) = ive + 3;
+    }
+
   }
-
+  
   //LOG_DPRINTLN("GLSLBallStick2Rend> %d Attr VBO created", natoms*4);
+  
+  if (m_pCylAttrAry!=NULL)
+    delete m_pCylAttrAry;
+  int nbonds = m_bonddat.size()*2;
+
+  m_pCylAttrAry = MB_NEW CylAttrArray();
+  {
+    CylAttrArray &attra = *m_pCylAttrAry;
+    attra.setAttrSize(1);
+    attra.setAttrInfo(0, m_nInd12Loc, 2, qlib::type_consts::QTC_FLOAT32, offsetof(CylAttrElem, ind1));
+
+    attra.alloc(nbonds*4);
+    attra.allocInd(nbonds*6);
+    attra.setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
+
+    quint32 ind1, ind2;
+    MolAtomPtr pAtom;
+    for (i=0; i<nbonds; ++i) {
+      const int ive = i*4;
+      const int ifc = i*6;
+      
+      ind1 = aidmap[ m_bonddat[i/2].aid1 ];
+      ind2 = aidmap[ m_bonddat[i/2].aid2 ];
+      
+      if (i%2==1) {
+        std::swap(ind1,ind2);
+      }
+
+      // vertex data
+      for (int j=0; j<4; ++j) {
+        attra.at(ive+j).ind1 = ind1;
+        attra.at(ive+j).ind2 = ind2;
+      }
+      
+      // face indices
+      attra.atind(ifc+0) = ive + 0;
+      attra.atind(ifc+1) = ive + 1;
+      attra.atind(ifc+2) = ive + 2;
+      attra.atind(ifc+3) = ive + 2;
+      attra.atind(ifc+4) = ive + 1;
+      attra.atind(ifc+5) = ive + 3;
+    }
+  }
+  
+  //
+  // Create Ring VBO
+  //
 
   int rng_nverts=0;
   int rng_nfaces=0;
@@ -412,6 +467,11 @@ void GLSLBallStick2Renderer::invalidateDisplayCache()
     m_pColorTex = NULL;
   }
 
+  if (m_pCylAttrAry!=NULL) {
+    delete m_pCylAttrAry;
+    m_pCylAttrAry = NULL;
+  }
+
   if (m_pRingVBO!=NULL) {
     delete m_pRingVBO;
     m_pRingVBO = NULL;
@@ -422,45 +482,56 @@ void GLSLBallStick2Renderer::invalidateDisplayCache()
 
 void GLSLBallStick2Renderer::renderGLSL(DisplayContext *pdc)
 {
-  if (m_pSphPO==NULL)
-    return; // Error, Cannot draw anything (ignore)
-
   qlib::uid_t nSceneID = getSceneID();
 
   pdc->useTexture(m_pCoordTex, COORD_TEX_UNIT);
   pdc->useTexture(m_pColorTex, COLOR_TEX_UNIT);
-  m_pSphPO->enable();
-  m_pSphPO->setUniformF("frag_alpha", pdc->getAlpha());
-  m_pSphPO->setUniform("coordTex", COORD_TEX_UNIT);
-  m_pSphPO->setUniform("colorTex", COLOR_TEX_UNIT);
 
-  // Setup edge/silhouette
-  if (pdc->getEdgeLineType()!=DisplayContext::ELT_NONE) {
-    m_pSphPO->setUniformF("u_edge", pdc->getEdgeLineWidth());
+  if (m_pSphPO!=NULL && m_pSphAttrAry!=NULL) {
+    m_pSphPO->enable();
+    m_pSphPO->setUniformF("frag_alpha", pdc->getAlpha());
+    m_pSphPO->setUniform("coordTex", COORD_TEX_UNIT);
+    m_pSphPO->setUniform("colorTex", COLOR_TEX_UNIT);
 
-    double r=.0,g=.0,b=.0;
-    ColorPtr pcol = pdc->getEdgeLineColor();
-    if (!pcol.isnull()) {
-      quint32 dcc = pcol->getDevCode(nSceneID);
-      r = gfx::convI2F(gfx::getRCode(dcc));
-      g = gfx::convI2F(gfx::getGCode(dcc));
-      b = gfx::convI2F(gfx::getBCode(dcc));
+    // Setup edge/silhouette
+    if (pdc->getEdgeLineType()!=DisplayContext::ELT_NONE) {
+      m_pSphPO->setUniformF("u_edge", pdc->getEdgeLineWidth());
+
+      double r=.0,g=.0,b=.0;
+      ColorPtr pcol = pdc->getEdgeLineColor();
+      if (!pcol.isnull()) {
+        quint32 dcc = pcol->getDevCode(nSceneID);
+        r = gfx::convI2F(gfx::getRCode(dcc));
+        g = gfx::convI2F(gfx::getGCode(dcc));
+        b = gfx::convI2F(gfx::getBCode(dcc));
+      }
+
+      m_pSphPO->setUniformF("u_edgecolor", r,g,b,1);
+      if (pdc->getEdgeLineType()==DisplayContext::ELT_SILHOUETTE)
+        m_pSphPO->setUniform("u_bsilh", 1);
+      else
+        m_pSphPO->setUniform("u_bsilh", 0);
     }
-    
-    m_pSphPO->setUniformF("u_edgecolor", r,g,b,1);
-    if (pdc->getEdgeLineType()==DisplayContext::ELT_SILHOUETTE)
-      m_pSphPO->setUniform("u_bsilh", 1);
-    else
+    else {
+      m_pSphPO->setUniformF("u_edge", 0.0);
+      m_pSphPO->setUniformF("u_edgecolor", 0,0,0,1);
       m_pSphPO->setUniform("u_bsilh", 0);
-  }
-  else {
-    m_pSphPO->setUniformF("u_edge", 0.0);
-    m_pSphPO->setUniformF("u_edgecolor", 0,0,0,1);
-    m_pSphPO->setUniform("u_bsilh", 0);
+    }
+
+    pdc->drawElem(*m_pSphAttrAry);
+    m_pSphPO->disable();
   }
   
-  pdc->drawElem(*m_pSphAttrAry);
-  m_pSphPO->disable();
+  if (m_pCylPO!=NULL && m_pCylAttrAry!=NULL) {
+    m_pCylPO->enable();
+    m_pCylPO->setUniformF("frag_alpha", pdc->getAlpha());
+    m_pCylPO->setUniform("coordTex", COORD_TEX_UNIT);
+    m_pCylPO->setUniform("colorTex", COLOR_TEX_UNIT);
+
+    pdc->drawElem(*m_pCylAttrAry);
+    m_pCylPO->disable();
+  }
+
 
   pdc->unuseTexture(m_pCoordTex);
   pdc->unuseTexture(m_pColorTex);

@@ -352,9 +352,12 @@ void BallStick2Renderer::createVBO()
     return;
   }
 
+  //
+  // Convert from AID to array index (for AnimMol)
+  // TO DO: move to createData() ??
+  //
   AnimMol *pAMol = NULL;
   if (isUseAnim()) {
-    // convert from AID to array index
     pAMol = static_cast<AnimMol *>(pMol.get());
     for (int i=0; i<m_atomdat.size(); ++i) {
       m_atomdat[i].aid = pAMol->getCrdArrayInd(m_atomdat[i].aid);

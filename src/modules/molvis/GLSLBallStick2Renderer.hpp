@@ -112,6 +112,20 @@ namespace molvis {
     /// GLSL shader objects for cylinders
     sysdep::OglProgramObject *m_pCylPO;
 
+    /// Elem of VBO for spheres
+    struct CylAttrElem {
+      qfloat32 ind1;
+      qfloat32 ind2;
+    };
+
+    /// location of coord index
+    quint32 m_nInd12Loc;
+
+    typedef gfx::DrawAttrElems<quint32, CylAttrElem> CylAttrArray;
+    
+    /// VBO for GLSL cylinder rendering
+    CylAttrArray *m_pCylAttrAry;
+
     /////////////////////
 
     /// VBO for ring plates

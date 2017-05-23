@@ -625,6 +625,8 @@
     <glslshader Include="..\..\src\modules\molstr\lib_atoms.glsl" />
     <glslshader Include="..\..\src\modules\molstr\simple_frag.glsl" />
     <glslshader Include="..\..\src\modules\molstr\simple_vertex.glsl" />
+    <glslshader Include="..\..\src\modules\molvis\cylinder2_frag.glsl" />
+    <glslshader Include="..\..\src\modules\molvis\cylinder2_vert.glsl" />
     <glslshader Include="..\..\src\modules\molvis\cylinder_frag.glsl" />
     <glslshader Include="..\..\src\modules\molvis\cylinder_vertex.glsl" />
     <glslshader Include="..\..\src\modules\molvis\rctube_frag.glsl" />

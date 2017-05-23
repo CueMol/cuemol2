@@ -1145,5 +1145,11 @@
     <glslshader Include="..\..\src\modules\molstr\lib_atoms.glsl">
       <Filter>molstr\Shaders</Filter>
     </glslshader>
+    <glslshader Include="..\..\src\modules\molvis\cylinder2_frag.glsl">
+      <Filter>molvis\Shaders</Filter>
+    </glslshader>
+    <glslshader Include="..\..\src\modules\molvis\cylinder2_vert.glsl">
+      <Filter>molvis\Shaders</Filter>
+    </glslshader>
   </ItemGroup>
 </Project>
