@@ -38,7 +38,8 @@ varying float v_ndec;
 
 void main()
 {
-  const float u_edge = 0.05;
+  //const float u_edge = 0.05;
+  const float u_edge = 0.0;
   vec2 dsps[4]=vec2[]( vec2(-1,-1), vec2(1,-1), vec2(-1,1), vec2(1,1) );
 
   int aind1 = int( a_ind12.x );

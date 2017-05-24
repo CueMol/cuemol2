@@ -15,14 +15,38 @@ varying float v_ndec;
 
 void main()
 {
-if (v_impos.y<-1.0 ||
+  float adj_cen = sqrt(1.0 - v_impos.x*v_impos.x);
+  float disp_cir = adj_cen * v_ndec;
+
+  float imy = v_impos.y;
+  imy += disp_cir; // * v_flag;
+  
+  // discard the impostor pixels out of the cylinder
+  if (imy <= -1.0 ||
+      1.0 <= imy) {
+    discard;
+    return;
+  }
+
+  if (v_impos.x<-1.0 ||
+      v_impos.x> 1.0) {
+
+    if (v_impos.y<-1.0 ||
+	v_impos.y> 1.0) {
+      discard;
+      return;
+    }  
+    else {
+      // edge line
+      gl_FragColor = vec4(0,0,0,1);
+      return;
+    }
+  }
+
+  if (v_impos.y<-1.0 ||
       v_impos.y> 1.0) {
     gl_FragColor = vec4(0,0,1,1);
   }  
-  else if (v_impos.x<-1.0 ||
-      v_impos.x> 1.0) {
-    gl_FragColor = vec4(0,0,0,1);
-  }
   else {
     gl_FragColor = vec4((v_impos.x+1)*0.5,
                         (v_impos.y+1)*0.5, 0, 1);

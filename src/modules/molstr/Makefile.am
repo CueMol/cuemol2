@@ -111,6 +111,7 @@ $(NULL)
 shaderdir = $(prefix)/data/shaders/
 
 shader_DATA = \
+lib_atoms.glsl \
 simple_vertex.glsl \
 simple_frag.glsl \
 $(NULL)

@@ -86,6 +86,7 @@ Spline2RendGLSL.cpp \
 GLSLTube2Renderer.cpp \
 GLSLRcTubeRenderer.cpp \
 GLSLCPK3Renderer.cpp \
+GLSLBallStick2Renderer.cpp \
 $(NULL)
 
 MCWG_SRC += \
@@ -93,6 +94,7 @@ Spline2RendGLSL.qif \
 GLSLTube2Renderer.qif \
 GLSLRcTubeRenderer.qif \
 GLSLCPK3Renderer.qif \
+GLSLBallStick2Renderer.qif \
 $(NULL)
 
 # OpenGL shader files
@@ -104,6 +106,8 @@ cylinder_vertex.glsl \
 cylinder_frag.glsl \
 sphere2_vertex.glsl \
 sphere2_frag.glsl \
+cylinder2_vert.glsl \
+cylinder2_frag.glsl \
 spline2_vert.glsl \
 spline2_frag.glsl \
 tube2_vert.glsl \
