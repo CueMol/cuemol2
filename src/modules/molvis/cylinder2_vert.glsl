@@ -39,6 +39,7 @@ varying float v_ndec;
 void main()
 {
   const float u_edge = 0.05;
+  vec2 dsps[4]=vec2[]( vec2(-1,-1), vec2(1,-1), vec2(-1,1), vec2(1,1) );
 
   int aind1 = int( a_ind12.x );
   int aind2 = int( a_ind12.y );
@@ -52,27 +53,29 @@ void main()
   vec4 ec_pos1 = gl_ModelViewMatrix * pos1;
   vec4 ec_mpos = gl_ModelViewMatrix * mpos;
 
-  vec4 ec_dir = ec_mpos - ec_pos1;
+  vec4 ec_dir = (ec_mpos - ec_pos1);
+  float len = length(ec_dir.xyz);
+  //float vw_len = length(ec_dir.xy);
 
+  // Calc h vector
   vec2 n_vw = normalize(ec_dir.xy);
   vec2 n_hdir = vec2(n_vw.y, -n_vw.x);
   vec2 hdir = n_hdir * (u_rad + u_edge);
 
-  float len = length(ec_dir.xyz);
-  float vw_len = length(ec_dir.xy);
-
-  float sinph = ec_dir.z / len;
+  // Calc trig of phi
+  // Invert the direction for vid=2,3
+  //   (ec_dir = ec_pos1-ec_mpos for vid=2,3)
+  float sinph = ec_dir.z / len * (-dsps[vid].y);
   float rcosph = inversesqrt(1.0-sinph*sinph);
   float tanph = sinph * rcosph;
+  float abs_tanph = abs(tanph);
 
   vec3 n_kdir = normalize(ec_dir.xyz);
-  vec3 kdir = n_kdir * u_rad * tanph;
+  vec3 kdir = n_kdir * u_rad * abs_tanph * (-dsps[vid].y);
 
   vec4 vw_pos;
   float sig, ksig;
   
-  vec2 dsps[4]=vec2[]( vec2(-1,-1), vec2(1,-1), vec2(-1,1), vec2(1,1) );
-
   if (vid==0) {
     vw_pos = ec_pos1;
     //v_color = vec4(1,0,0,1);
@@ -99,8 +102,14 @@ void main()
   // if edge is enabled.
   v_impos.x *= (1.0 + u_edge/u_rad);
   
-  v_ndec = 2.0 * u_rad * abs(tanph) / len;
+  v_ndec = 2.0 * u_rad * abs_tanph / len;
 
+  if (sinph>0) {
+    vw_pos.xyz -= kdir;
+    v_impos.y *= (1.0 + v_ndec);
+  }
+
+/*
   if (vid==0||vid==1) {
     if (sinph>0) {
       vw_pos.xyz -= kdir;
@@ -113,7 +122,8 @@ void main()
       v_impos.y *= (1.0 + v_ndec);
     }
   }
-
+*/
+  
   
   gl_Position = gl_ProjectionMatrix * vw_pos;
 
