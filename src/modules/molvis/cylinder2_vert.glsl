@@ -31,18 +31,23 @@ varying vec4 v_color;
 varying vec2 v_impos;
 varying vec4 v_ecpos;
 
+varying float v_ndec;
+
 ////////////////////
 // Program
 
 void main()
 {
+  const float u_edge = 0.05;
+
   int aind1 = int( a_ind12.x );
   int aind2 = int( a_ind12.y );
   int vid = gl_VertexID%4;
 
   vec4 pos1 = getAtomPos(coordTex, aind1);
   vec4 pos2 = getAtomPos(coordTex, aind2);
-  vec4 mpos = (pos1 + pos2)*0.5;
+  //vec4 mpos = (pos1 + pos2)*0.5;
+  vec4 mpos = pos2;
 
   vec4 ec_pos1 = gl_ModelViewMatrix * pos1;
   vec4 ec_mpos = gl_ModelViewMatrix * mpos;
@@ -51,7 +56,7 @@ void main()
 
   vec2 n_vw = normalize(ec_dir.xy);
   vec2 n_hdir = vec2(n_vw.y, -n_vw.x);
-  vec2 hdir = n_hdir * u_rad;
+  vec2 hdir = n_hdir * (u_rad + u_edge);
 
   float len = length(ec_dir.xyz);
   float vw_len = length(ec_dir.xy);
@@ -70,32 +75,43 @@ void main()
 
   if (vid==0) {
     vw_pos = ec_pos1;
-    v_color = vec4(1,0,0,1);
+    //v_color = vec4(1,0,0,1);
   }
   else if (vid==1) {
     vw_pos = ec_pos1;
-    v_color = vec4(0,1,0,1);
+    //v_color = vec4(0,1,0,1);
   }
   else if (vid==2) {
     vw_pos = ec_mpos;
-    v_color = vec4(0,0,1,1);
+    //v_color = vec4(0,0,1,1);
   }
   else {
     vw_pos = ec_mpos;
-    v_color = vec4(1,1,1,1);
+    //v_color = vec4(1,1,1,1);
   }
 
+  // Displace vertex position to the X direction
   vw_pos.xy += hdir*dsps[vid].x;
 
   v_impos = dsps[vid];
+
+  // Displace imposter position to the X direction,
+  // if edge is enabled.
+  v_impos.x *= (1.0 + u_edge/u_rad);
+  
+  v_ndec = 2.0 * u_rad * abs(tanph) / len;
+
   if (vid==0||vid==1) {
     if (sinph>0) {
       vw_pos.xyz -= kdir;
+      v_impos.y *= (1.0 + v_ndec);
     }
   }
   else {
-    if (sinph<0)
+    if (sinph<0) {
       vw_pos.xyz -= kdir;
+      v_impos.y *= (1.0 + v_ndec);
+    }
   }
 
   

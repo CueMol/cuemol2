@@ -261,7 +261,8 @@ void GLSLBallStick2Renderer::createGLSL()
   
   if (m_pCylAttrAry!=NULL)
     delete m_pCylAttrAry;
-  int nbonds = m_bonddat.size()*2;
+  int nbonds = m_bonddat.size();
+  //int nbonds = m_bonddat.size()*2;
 
   m_pCylAttrAry = MB_NEW CylAttrArray();
   {
@@ -279,12 +280,15 @@ void GLSLBallStick2Renderer::createGLSL()
       const int ive = i*4;
       const int ifc = i*6;
       
+      /*
       ind1 = aidmap[ m_bonddat[i/2].aid1 ];
       ind2 = aidmap[ m_bonddat[i/2].aid2 ];
-      
       if (i%2==1) {
         std::swap(ind1,ind2);
-      }
+      }*/
+
+      ind1 = aidmap[ m_bonddat[i].aid1 ];
+      ind2 = aidmap[ m_bonddat[i].aid2 ];
 
       // vertex data
       for (int j=0; j<4; ++j) {
