@@ -33,13 +33,23 @@ varying vec4 v_ecpos;
 
 varying float v_ndec;
 
+// Direction flag of P21
+// (sign of P21.x)
+varying float v_dirflag;
+
+varying float v_depmx;
+
+// For normal calculation
+varying vec2 v_normadj;
+varying vec2 v_vwdir;
+
 ////////////////////
 // Program
 
 void main()
 {
-  //const float u_edge = 0.05;
-  const float u_edge = 0.0;
+  const float u_edge = 0.05;
+
   vec2 dsps[4]=vec2[]( vec2(-1,-1), vec2(1,-1), vec2(-1,1), vec2(1,1) );
 
   int aind1 = int( a_ind12.x );
@@ -107,6 +117,8 @@ void main()
 
   if (sinph>0) {
     vw_pos.xyz -= kdir;
+
+    // Displace imposter position to the Y direction
     v_impos.y *= (1.0 + v_ndec);
   }
 
@@ -125,9 +137,17 @@ void main()
   }
 */
   
+  v_ecpos = vw_pos;
   
   gl_Position = gl_ProjectionMatrix * vw_pos;
 
   v_color = getAtomColor(colorTex, aind1);
+
+  v_depmx = u_rad * rcosph;
+  v_dirflag = sign(-ec_dir.z);
+
+  v_normadj = vec2(0,1); //vec2(-sinph, 1.0/rcosph);
+  v_vwdir = -normalize(ec_dir.xy);
+
 }
 
