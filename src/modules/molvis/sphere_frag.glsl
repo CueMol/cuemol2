@@ -15,6 +15,8 @@ uniform vec4 u_edgecolor;
 // total transparency
 uniform float frag_alpha;
 
+uniform bool u_bsilh;
+
 ////////////////////
 // Varying variables
 
@@ -106,8 +108,6 @@ void main()
       //fd = near;
     }
     else {
-      gl_FragDepth = fd;
-      
       vec4 color = u_edgecolor;
       
       // fog calculation
@@ -117,6 +117,7 @@ void main()
       fog = clamp(fog, 0.0, 1.0);
       color = vec4(mix( vec3(gl_Fog.color), vec3(color), fog), v_color.a*frag_alpha);
       
+      gl_FragDepth = u_bsilh ? 0.99 : fd;
       gl_FragColor = color;
     }
 

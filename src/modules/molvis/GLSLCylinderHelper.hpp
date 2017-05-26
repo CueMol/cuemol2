@@ -158,11 +158,35 @@ namespace molvis {
       return m_pDrawElem;
     }
 
-    void draw(DisplayContext *pdc)
+    void draw(DisplayContext *pdc, qlib::uid_t nSceneID = qlib::invalid_uid)
     {
       if (m_pDrawElem!=NULL) {
         m_pPO->enable();
         m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
+
+        // Setup edge/silhouette
+        if (pdc->getEdgeLineType()!=DisplayContext::ELT_NONE) {
+          m_pPO->setUniformF("u_edge", pdc->getEdgeLineWidth());
+
+          float r=.0f,g=.0f,b=.0f;
+          ColorPtr pcol = pdc->getEdgeLineColor();
+          if (!pcol.isnull()) {
+            quint32 dcc = pcol->getDevCode(nSceneID);
+            r = gfx::convI2F(gfx::getRCode(dcc));
+            g = gfx::convI2F(gfx::getGCode(dcc));
+            b = gfx::convI2F(gfx::getBCode(dcc));
+          }
+          m_pPO->setUniformF("u_edgecolor", r,g,b,1);
+          if (pdc->getEdgeLineType()==DisplayContext::ELT_SILHOUETTE)
+            m_pPO->setUniform("u_bsilh", 1);
+          else
+            m_pPO->setUniform("u_bsilh", 0);
+        }
+        else {
+          m_pPO->setUniformF("u_edge", 0.0);
+          m_pPO->setUniformF("u_edgecolor", 0,0,0,1);
+          m_pPO->setUniform("u_bsilh", 0);
+        }
         pdc->drawElem(*m_pDrawElem);
         m_pPO->disable();
       }

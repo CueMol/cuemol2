@@ -4,6 +4,12 @@
 //
 
 ////////////////////
+// Uniform variables
+
+// edge rendering
+uniform float u_edge;
+
+////////////////////
 // Vertex attributes
 
 // position
@@ -22,12 +28,6 @@ attribute vec4 a_color;
 attribute vec2 a_impos;
 
 ////////////////////
-// Uniform variables
-
-// Model-View projection matrix
-// uniform mat4 mvp_matrix;
-
-////////////////////
 // Varying variables
 
 varying vec4 v_color;
@@ -41,13 +41,16 @@ varying float v_ndec;
 varying float v_flag;
 varying float v_depmx;
 varying vec2 v_normadj;
-varying vec2 v_vwdir;
+//varying vec2 v_vwdir;
+varying mat2 v_normmat;
 
 ////////////////////
 // Program
 
 void main()
 {
+  //const float u_edge = 0.05;
+
   vec4 ec_tpos = gl_ModelViewMatrix * vec4(a_vertex, 1.0);
   vec4 ec_opos = gl_ModelViewMatrix * vec4((a_vertex+a_dir), 1.0);
   
@@ -69,33 +72,36 @@ void main()
   float dec = a_radius * sinph;
   vec3 dec_dir = a_radius * tanph * n_ecdir;
 
-  v_vwdir = n_ivwdir;
   v_ndec = 2.0 * abs(dec) / vw_len;
 
   v_flag = sign( iec_dir.z );
-  //v_sinph = sinph;
   
   v_depmx = a_radius * rcosph;
 
   v_normadj = vec2(-sinph * a_impos.y, 1.0/rcosph);
+  //v_vwdir = n_ivwdir;
+  v_normmat = mat2(n_ivwdir.x, n_ivwdir.y,
+                   -n_ivwdir.y, n_ivwdir.x);
 
   /////
   
   //v_ecpos = ec_tpos + vec4(vert_dsp, 0.0);
   //gl_Position = gl_ProjectionMatrix * v_ecpos;
 
-  vec3 vert_dsp = vec3(a_impos.x * -n_ivwdir.y*a_radius,
-                       a_impos.x *  n_ivwdir.x*a_radius,
-                       0);
+  vec3 vert_dsp = vec3(-n_ivwdir.y,n_ivwdir.x,0);
+  vert_dsp *= a_impos.x * (a_radius + u_edge);
+
+  v_impos = a_impos;
+
   if ( dec > 0.0 ) {
     // extend the end of the cap
     vert_dsp -= dec_dir;
-    v_impos = a_impos + vec2(0, v_ndec * a_impos.y);
+    //v_impos = a_impos + vec2(0, v_ndec * a_impos.y);
+    
+    v_impos.y *= 1.0 + v_ndec;
     //v_impos = a_impos;
   }
-  else {
-    v_impos = a_impos;
-  }
+  v_impos.x *= 1.0 + u_edge/a_radius;
 
   vec4 ec_pos_dsp = ec_tpos + vec4(vert_dsp, 0.0);
   gl_Position = gl_ProjectionMatrix * ec_pos_dsp;
