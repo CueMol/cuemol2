@@ -24,6 +24,8 @@ uniform AtomColTex colorTex;
 
 uniform float u_rad;
 
+uniform float u_edge;
+
 ////////////////////
 // Varying variables
 
@@ -42,14 +44,13 @@ varying float v_depmx;
 // For normal calculation
 varying vec2 v_normadj;
 varying vec2 v_vwdir;
+varying mat2 v_normrot;
 
 ////////////////////
 // Program
 
 void main()
 {
-  const float u_edge = 0.05;
-
   vec2 dsps[4]=vec2[]( vec2(-1,-1), vec2(1,-1), vec2(-1,1), vec2(1,1) );
 
   int aind1 = int( a_ind12.x );
@@ -58,8 +59,8 @@ void main()
 
   vec4 pos1 = getAtomPos(coordTex, aind1);
   vec4 pos2 = getAtomPos(coordTex, aind2);
-  //vec4 mpos = (pos1 + pos2)*0.5;
-  vec4 mpos = pos2;
+  vec4 mpos = (pos1 + pos2)*0.5;
+  //vec4 mpos = pos2;
 
   vec4 ec_pos1 = gl_ModelViewMatrix * pos1;
   vec4 ec_mpos = gl_ModelViewMatrix * mpos;
@@ -146,8 +147,12 @@ void main()
   v_depmx = u_rad * rcosph;
   v_dirflag = sign(-ec_dir.z);
 
-  v_normadj = vec2(0,1); //vec2(-sinph, 1.0/rcosph);
-  v_vwdir = -normalize(ec_dir.xy);
+  // v_normadj=[sin(ph), cos(ph)]
+  v_normadj = vec2(ec_dir.z/len, 1.0/rcosph);
+  //v_vwdir = -normalize(ec_dir.xy);
+  vec2 vwdir = -normalize(ec_dir.xy);
+  v_normrot = mat2(vwdir.x, vwdir.y,
+                   -vwdir.y, vwdir.x);
 
 }
 

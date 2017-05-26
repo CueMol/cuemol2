@@ -261,8 +261,8 @@ void GLSLBallStick2Renderer::createGLSL()
   
   if (m_pCylAttrAry!=NULL)
     delete m_pCylAttrAry;
-  int nbonds = m_bonddat.size();
-  //int nbonds = m_bonddat.size()*2;
+  //int nbonds = m_bonddat.size();
+  int nbonds = m_bonddat.size()*2;
 
   m_pCylAttrAry = MB_NEW CylAttrArray();
   {
@@ -280,15 +280,14 @@ void GLSLBallStick2Renderer::createGLSL()
       const int ive = i*4;
       const int ifc = i*6;
       
-      /*
       ind1 = aidmap[ m_bonddat[i/2].aid1 ];
       ind2 = aidmap[ m_bonddat[i/2].aid2 ];
       if (i%2==1) {
         std::swap(ind1,ind2);
-      }*/
+      }
 
-      ind1 = aidmap[ m_bonddat[i].aid1 ];
-      ind2 = aidmap[ m_bonddat[i].aid2 ];
+      //ind1 = aidmap[ m_bonddat[i].aid1 ];
+      //ind2 = aidmap[ m_bonddat[i].aid2 ];
 
       // vertex data
       for (int j=0; j<4; ++j) {
@@ -523,7 +522,7 @@ void GLSLBallStick2Renderer::renderGLSL(DisplayContext *pdc)
       m_pSphPO->setUniform("u_bsilh", 0);
     }
 
-    //pdc->drawElem(*m_pSphAttrAry);
+    pdc->drawElem(*m_pSphAttrAry);
     m_pSphPO->disable();
   }
   
@@ -533,6 +532,31 @@ void GLSLBallStick2Renderer::renderGLSL(DisplayContext *pdc)
     m_pCylPO->setUniform("coordTex", COORD_TEX_UNIT);
     m_pCylPO->setUniform("colorTex", COLOR_TEX_UNIT);
     m_pCylPO->setUniformF("u_rad", getBondw());
+
+    // Setup edge/silhouette
+    if (pdc->getEdgeLineType()!=DisplayContext::ELT_NONE) {
+      m_pCylPO->setUniformF("u_edge", pdc->getEdgeLineWidth());
+
+      double r=.0,g=.0,b=.0;
+      ColorPtr pcol = pdc->getEdgeLineColor();
+      if (!pcol.isnull()) {
+        quint32 dcc = pcol->getDevCode(nSceneID);
+        r = gfx::convI2F(gfx::getRCode(dcc));
+        g = gfx::convI2F(gfx::getGCode(dcc));
+        b = gfx::convI2F(gfx::getBCode(dcc));
+      }
+
+      m_pCylPO->setUniformF("u_edgecolor", r,g,b,1);
+      if (pdc->getEdgeLineType()==DisplayContext::ELT_SILHOUETTE)
+        m_pCylPO->setUniform("u_bsilh", 1);
+      else
+        m_pCylPO->setUniform("u_bsilh", 0);
+    }
+    else {
+      m_pCylPO->setUniformF("u_edge", 0.0);
+      m_pCylPO->setUniformF("u_edgecolor", 0,0,0,1);
+      m_pCylPO->setUniform("u_bsilh", 0);
+    }
 
     pdc->drawElem(*m_pCylAttrAry);
     m_pCylPO->disable();

@@ -8,8 +8,8 @@
 ////////////////////
 // Uniform variables
 
-// edge rendering
-uniform float u_edge;
+// // edge rendering
+// uniform float u_edge;
 
 // edge color
 uniform vec4 u_edgecolor;

@@ -5,7 +5,20 @@
 
 @include "lib_common.glsl"
 
+////////////////////
+// Uniform variables
+
 uniform float frag_alpha;
+
+uniform float u_edge;
+
+// edge color
+uniform vec4 u_edgecolor;
+
+uniform bool u_bsilh;
+
+////////////////////
+// Varying variables
 
 varying vec4 v_color;
 varying vec2 v_impos;
@@ -21,10 +34,12 @@ varying float v_depmx;
 
 // For normal calculation
 varying vec2 v_normadj;
+varying mat2 v_normrot;
 varying vec2 v_vwdir;
 
 void main()
 {
+
   float adj_cen = sqrt(1.0 - v_impos.x*v_impos.x);
   float disp_cir = adj_cen * v_ndec;
   float depth = adj_cen * v_depmx;
@@ -39,6 +54,7 @@ void main()
     return;
   }
 
+  bool bEdge = false;
   if (v_impos.x<-1.0 ||
       v_impos.x> 1.0) {
 
@@ -49,8 +65,7 @@ void main()
     }  
     else {
       // edge line
-      gl_FragColor = vec4(0,0,0,1);
-      return;
+      bEdge = true;
     }
   }
 
@@ -58,8 +73,8 @@ void main()
   // Calculate normal
 
   vec3 normal = vec3(v_impos.x, v_normadj.x * adj_cen, v_normadj.y * adj_cen);
-  mat2 rmat = mat2(v_vwdir.x, v_vwdir.y,-v_vwdir.y, v_vwdir.x);
-  normal.xy *= rmat;
+  //mat2 normrot = mat2(v_vwdir.x, v_vwdir.y,-v_vwdir.y, v_vwdir.x);
+  normal.xy *= v_normrot;
 
   /////
   // Change depth & output fragment color
@@ -68,7 +83,8 @@ void main()
   float near = gl_DepthRange.near;
   
   vec4 ecpos = v_ecpos;
-  ecpos.z += depth;
+  if (!bEdge)
+    ecpos.z += depth;
   vec4 clip_space_pos = gl_ProjectionMatrix * ecpos;
   
   float ndc_depth = clip_space_pos.z / clip_space_pos.w;
@@ -85,12 +101,23 @@ void main()
     //fd = near;
   }
   else {
-    gl_FragDepth = fd;
+    // edge or body
+
+    // set depth
+    if (bEdge&&u_bsilh)
+      gl_FragDepth = 0.99;
+    else
+      gl_FragDepth = fd;
     
     // color calculation
-    //vec4 color = v_color;
-    vec4 color = flight(normal, ecpos, v_color);
-    
+    vec4 color;
+    if (bEdge) {
+      color = vec4(u_edgecolor.rgb, v_color.a);
+    }
+    else {
+      //vec4 color = v_color;
+      color = flight(normal, ecpos, v_color);
+    }
     
     // Fog calculation
     //gl_FragColor = calcFogAlpha(color, ffog(ecpos.z), frag_alpha);
