@@ -128,7 +128,9 @@ AtomIntrRenderer::AtomIntrRenderer()
   m_bShowLabel = false;
   m_nMode = AIR_FANCY;
   m_linew=0.3;
-  m_nEndType = END_SPHERE;
+  //m_nEndType = END_SPHERE;
+  m_nStartCapType = END_SPHERE;
+  m_nEndCapType = END_SPHERE;
 
   m_stipple[0] = -1.0;
   m_stipple[1] = -1.0;
@@ -816,17 +818,31 @@ void AtomIntrRenderer::cylImpl(DisplayContext *pdl,
   Vector4D spos = startPos;
   Vector4D epos = endPos;
 
+  /*
   if (m_nEndType==END_ARROW) {
     spos += norm.scale(m_dArrowHeight);
     epos -= norm.scale(m_dArrowHeight);
     drawArrow(pdl, startPos, -norm);
     drawArrow(pdl, endPos, norm);
   }
+   */
+
+  if (m_nStartCapType==END_ARROW) {
+    spos += norm.scale(m_dArrowHeight);
+    drawArrow(pdl, startPos, -norm);
+  }
+  if (m_nEndCapType==END_ARROW) {
+    epos -= norm.scale(m_dArrowHeight);
+    drawArrow(pdl, endPos, norm);
+  }
+
 
   if (m_nTopStipple==0) {
     pdl->cylinder(m_linew, spos, epos);
-    if (m_nEndType==END_SPHERE) {
+    if (m_nStartCapType==END_SPHERE) {
       pdl->sphere(m_linew, spos);
+    }
+    if (m_nEndCapType==END_SPHERE) {
       pdl->sphere(m_linew, epos);
     }
     return;
@@ -835,9 +851,13 @@ void AtomIntrRenderer::cylImpl(DisplayContext *pdl,
   double cur = 0.0;
   bool flag = false;
 
-  if (m_nEndType==END_ARROW) {
-    //cur  = m_dArrowHeight;
-    len -= m_dArrowHeight*2.0;
+  if (m_nStartCapType==END_ARROW) {
+    len -= m_dArrowHeight;
+    if (len<0.001)
+      return;
+  }
+  if (m_nEndCapType==END_ARROW) {
+    len -= m_dArrowHeight;
     if (len<0.001)
       return;
   }
@@ -850,7 +870,7 @@ void AtomIntrRenderer::cylImpl(DisplayContext *pdl,
       //MB_DPRINTLN("Cyl (%f,%f,%f)-(%f,%f,%f)", pos.x, pos.y, pos.z, ppos.x, ppos.y, ppos.z);
       pdl->cylinder(m_linew, pos, ppos);
     }
-    if (m_nEndType==END_SPHERE)
+    if (m_nEndCapType==END_SPHERE||m_nStartCapType==END_SPHERE)
       pdl->sphere(m_linew, pos);
     cur += m_stipple[i%m_nTopStipple];
     flag = !flag;
@@ -860,7 +880,7 @@ void AtomIntrRenderer::cylImpl(DisplayContext *pdl,
   if (flag) {
     // draw the last segment
     pdl->cylinder(m_linew, ppos, epos);
-    if (m_nEndType==END_SPHERE)
+    if (m_nEndCapType==END_SPHERE||m_nStartCapType==END_SPHERE)
       pdl->sphere(m_linew, epos);
   }
 }
@@ -1016,9 +1036,10 @@ void AtomIntrRenderer::readFrom2(qlib::LDom2Node *pNode)
     qlib::LDom2Node *pChNode = pNode->getCurChild();
     LString tag = pChNode->getTagName();
     //LString type_name = pChNode->getTypeName();
+    MB_DPRINTLN("atomintr.readFrom2 tag=%s", tag.c_str());
 
-    AtomIntrData data;
     if (tag.equals("line")) {
+      AtomIntrData data;
       data.nmode = 1;
       if (!readFrom2Helper(pChNode, 1, data.elem0)) {
         LOG_DPRINTLN("AtomIntrRenderer::readFrom2> ERROR, Invalid file format 1!!");
@@ -1028,8 +1049,10 @@ void AtomIntrRenderer::readFrom2(qlib::LDom2Node *pNode)
         LOG_DPRINTLN("AtomIntrRenderer::readFrom2> ERROR, Invalid file format 2!!");
         continue;
       }
+      m_data.push_back(data);
     }
     else if (tag.equals("angle")) {
+      AtomIntrData data;
       data.nmode = 2;
       if (!readFrom2Helper(pChNode, 1, data.elem0)) {
         LOG_DPRINTLN("AtomIntrRenderer::readFrom2> ERROR, Invalid file format 1!!");
@@ -1043,8 +1066,10 @@ void AtomIntrRenderer::readFrom2(qlib::LDom2Node *pNode)
         LOG_DPRINTLN("AtomIntrRenderer::readFrom2> ERROR, Invalid file format 3!!");
         continue;
       }
+      m_data.push_back(data);
     }
     else if (tag.equals("torsion")) {
+      AtomIntrData data;
       data.nmode = 3;
       if (!readFrom2Helper(pChNode, 1, data.elem0)) {
         LOG_DPRINTLN("AtomIntrRenderer::readFrom2> ERROR, Invalid file format 1!!");
@@ -1062,9 +1087,12 @@ void AtomIntrRenderer::readFrom2(qlib::LDom2Node *pNode)
         LOG_DPRINTLN("AtomIntrRenderer::readFrom2> ERROR, Invalid file format 4!!");
         continue;
       }
+      m_data.push_back(data);
     }
-
-    m_data.push_back(data);
+    else if (tag.equals("endtype")) {
+      setPropStr("captype_start", pChNode->getValue());
+      setPropStr("captype_end", pChNode->getValue());
+    }
   }
 
 }

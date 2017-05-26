@@ -10,8 +10,8 @@ debug="--enable-debug --enable-m64"
 usepybr="--enable-python"
 #usepybr="--disable-python"
 
-#usexrbr="--with-xmlrpc=$HOME/proj64/xmlrpc-c"
-usexrbr="--without-xmlrpc"
+usexrbr="--with-xmlrpc=$HOME/proj64/xmlrpc-c"
+#usexrbr="--without-xmlrpc"
 
 lcms="--with-lcms=$HOME/proj64/lcms2"
 

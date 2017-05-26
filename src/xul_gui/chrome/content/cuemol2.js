@@ -281,6 +281,8 @@ Qm2Main.prototype.onLoad = function ()
   
   //////////
 
+*/
+
   if (cuemol.hasClass("XmlRpcManager")) {
     try {
       var xrmgr = cuemol.getService("XmlRpcManager");
@@ -288,9 +290,9 @@ Qm2Main.prototype.onLoad = function ()
         xrmgr.start();
     }
     catch (e) {
+      debug.exception(e);
     }
   }
-*/
 }
   
 

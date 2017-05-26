@@ -16,14 +16,14 @@
 
 //#include <xmlrpc-c/base.hpp>
 
-#include "ReqEvtQueue.hpp"
-
 namespace xmlrpc_c {
   class value;
   typedef std::vector<xmlrpc_c::value> carray;
 }
 
 namespace xrbr {
+
+  class ReqEvtQueue;
 
   using std::map;
   using qlib::LString;
@@ -64,7 +64,7 @@ namespace xrbr {
     qlib::uid_t m_uidgen;
 
     /// Request-object queue
-    ReqEvtQueue m_que;
+    ReqEvtQueue *m_pQue;
 
   public:
     
@@ -109,7 +109,7 @@ namespace xrbr {
 
     void start();
 
-    void processReq(int n) { m_que.processReq(n); }
+    void processReq(int n); // { m_que.processReq(n); }
   };
 
 }
