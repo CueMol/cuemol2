@@ -104,6 +104,8 @@ namespace mdtools {
     
     int m_nAllAtomSize;
 
+    qfloat32 *getCrdArrayImplImpl(int ifrm);
+
   public:
 
     /// setup molecule (m_selIndArray, m_nAllAtomSize, etc)
@@ -122,7 +124,9 @@ namespace mdtools {
     // properties
 
   private:
+    /// Current frame No.
     int m_nCurFrm;
+
   public:
     /// Get current frame no (with static update)
     int getFrame() const;
@@ -134,14 +138,17 @@ namespace mdtools {
     void setDynFrame(int iframe);
 
   private:
+    /// Total frame size
     int m_nTotalFrms;
   public:
     int getFrameSize() const;
 
 
   private:
-    /// Frame averaging size
+    /// Frame averaging size (0: averaging off)
     int m_nAver;
+
+    std::vector<float> m_averbuf;
 
   public:
     int getFrmAverSize() const { return m_nAver; }

@@ -23,6 +23,7 @@ Trajectory::Trajectory()
   m_nCurFrm = 0;
 
   m_bLoop = true;
+  m_nAver = 0;
   // m_pAllMol = MolCoordPtr(MB_NEW MolCoord());
 }
 
@@ -96,17 +97,55 @@ void Trajectory::createMol(SelectionPtr pSel)
 
 //////////
 
-qfloat32 *Trajectory::getCrdArrayImpl()
+qfloat32 *Trajectory::getCrdArrayImplImpl(int ifrm)
 {
-  if (m_nBlkInd==-1 || m_nFrmInd==-1) {
+  int nBlkInd, nFrmInd;
+  
+  if (ifrm<0) {
+    nBlkInd = m_nBlkInd;
+    nFrmInd = m_nFrmInd;
+  }
+  else {
+    findBlk(ifrm, nBlkInd, nFrmInd);
+  }
+
+  if (nBlkInd==-1 || nFrmInd==-1) {
     MB_THROW(qlib::RuntimeException, "getCrdArrayImpl: no data in the trajectory");
     return NULL;
   }
-  TrajBlockPtr pBlk = m_blocks[m_nBlkInd];
-  if (!pBlk->isLoaded(m_nFrmInd)) {
-    pBlk->load(m_nFrmInd);
+  TrajBlockPtr pBlk = m_blocks[nBlkInd];
+  if (!pBlk->isLoaded(nFrmInd)) {
+    pBlk->load(nFrmInd);
   }
-  return pBlk->getCrdArray(m_nFrmInd);
+  return pBlk->getCrdArray(nFrmInd);
+}
+
+qfloat32 *Trajectory::getCrdArrayImpl()
+{
+  if (m_nAver>0) {
+    int ncrds = getAtomSize()*3;
+    if (m_averbuf.size()<ncrds)
+      m_averbuf.resize(ncrds);
+    for (int i=0; i<ncrds; ++i)
+      m_averbuf[i] = 0.0f;
+    int nStart = qlib::max(0, m_nCurFrm-m_nAver);
+    int nEnd = qlib::min(m_nCurFrm+m_nAver, m_nTotalFrms-1);
+    int nsum=0;
+    for (int j=nStart; j<=nEnd; ++j) {
+      qfloat32 *pcrd = getCrdArrayImplImpl(j);
+      for (int i=0; i<ncrds; ++i)
+	m_averbuf[i] += pcrd[i];
+      nsum ++;
+    }
+    //MB_DPRINTLN("Traj> averaged %d-%d (%d) frms", nStart, nEnd, nsum);
+    for (int i=0; i<ncrds; ++i)
+      m_averbuf[i] /= nsum;
+    return &m_averbuf[0];
+  }
+  else {
+    // no aver mode --> get current frame
+    return getCrdArrayImplImpl(-1);
+  }
 }
 
 void Trajectory::invalidateCrdArray()
