@@ -90,15 +90,24 @@ namespace mdtools {
     void update(int n, bool bDyn=false);
 
   private:
+
+    void findBlk(int nfrm, int &nBlkInd, int &nFrmInd);
+
+    /// For partial read selection impl
     MolCoordPtr m_pAllMol;
-    // SelectionPtr m_pReadSel;
+
+    /// Selection index array:
+    /// Array of atom indeces to be read from the traj data file.
+    /// Other atoms that are not contained in this array will be ignored,
+    /// when traj data files are read.
     std::vector<quint32> m_selIndArray;
     
     int m_nAllAtomSize;
 
   public:
 
-    /// create molecule from the appended atoms and selection
+    /// setup molecule (m_selIndArray, m_nAllAtomSize, etc)
+    /// from the appended atoms and the selection (arg)
     void createMol(SelectionPtr pSel);
 
     quint32 getAllAtomSize() const {
@@ -129,6 +138,14 @@ namespace mdtools {
   public:
     int getFrameSize() const;
 
+
+  private:
+    /// Frame averaging size
+    int m_nAver;
+
+  public:
+    int getFrmAverSize() const { return m_nAver; }
+    void setFrmAverSize(int naver) { m_nAver = naver; }
 
     ////////////////////////////////////////////////////
     // Serialization/Deserialization

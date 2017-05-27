@@ -166,8 +166,36 @@ void Trajectory::append(TrajBlockPtr pBlk)
   LOG_DPRINTLN("Traj> append blk start=%d, size=%d", nnext, pBlk->getSize());
 }
 
+void Trajectory::findBlk(int iframe, int &nBlkInd, int &nFrmInd)
+{
+  int ind1 = 0;
+  int ind2 = -1;
+
+  TrajBlockPtr pBlk;
+  BOOST_FOREACH (TrajBlockPtr pelem, m_blocks) {
+    int istart = pelem->getStartIndex();
+    int iend = istart + pelem->getSize() -1;
+    if (istart<=iframe && iframe<=iend) {
+      ind2 = iframe - istart;
+      pBlk = pelem;
+      break;
+    }
+    ++ind1;
+  }
+
+  if (ind2<0) {
+    // ERROR: iframe out of range
+    MB_THROW(qlib::RuntimeException, "findBlk(): iframe out of range");
+    return;
+  }
+
+  nBlkInd = ind1;
+  nFrmInd = ind2;
+}
+
 void Trajectory::update(int iframe, bool bDyn)
 {
+  /*
   int ind1 = 0;
   int ind2 = -1;
 
@@ -193,7 +221,11 @@ void Trajectory::update(int iframe, bool bDyn)
   m_nCurFrm = iframe;
   m_nBlkInd = ind1;
   m_nFrmInd = ind2;
+*/
 
+  findBlk(iframe, m_nBlkInd, m_nFrmInd);
+  m_nCurFrm = iframe;
+  
   crdArrayChanged();
   
   if (bDyn) {
