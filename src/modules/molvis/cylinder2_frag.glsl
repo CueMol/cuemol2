@@ -43,7 +43,7 @@ varying mat2 v_normrot;
 void main()
 {
   // calc circular displacements
-  float adj_cen = sqrt(1.0 - v_impos.x*v_impos.x);
+  float adj_cen = sqrt( max(0.0, 1.0 - v_impos.x*v_impos.x) );
   float disp_cir = adj_cen * v_ndec;
 
   // calc imysh: impos.y shifted by circular displacement (disp_cir)

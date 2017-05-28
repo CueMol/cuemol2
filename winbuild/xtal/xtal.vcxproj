@@ -209,6 +209,7 @@
     <mcw_loader Include="..\..\src\modules\xtal\xtal.moddef" />
   </ItemGroup>
   <ItemGroup>
+    <glslshader Include="..\..\src\modules\xtal\mapmesh2_frag.glsl" />
     <glslshader Include="..\..\src\modules\xtal\mapmesh2_vert.glsl" />
     <glslshader Include="..\..\src\modules\xtal\mapmesh_frag.glsl" />
     <glslshader Include="..\..\src\modules\xtal\mapmesh_geom.glsl" />

@@ -43,8 +43,7 @@ uniform ivec3 ivdel[12];
 uniform ivec2 edgetab[16];
 
 // for fog calc
-varying float v_fFogCoord; 
-varying int v_bDiscard;
+varying float FogFragCoord; 
 
 /// get the crossing value between d0 and d1 (uses isolevel)
 float getCrossVal(uint d0, uint d1)
@@ -78,15 +77,13 @@ float ffog(in float ecDistance)
 vec4 wvertex(vec4 v)
 {
   vec4 ecPosition = gl_ModelViewMatrix * v;
-  v_fFogCoord = ffog(ecPosition.z);
+  FogFragCoord = ffog(ecPosition.z);
   return gl_ProjectionMatrix * ecPosition;
 }
 
 
 void main(void)
 {
-  v_bDiscard = 1;
-
   int i;
   vec4 pos = gl_PositionIn[0];
   gl_FrontColor = gl_FrontColorIn[0];

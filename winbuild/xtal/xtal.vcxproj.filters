@@ -153,5 +153,8 @@
     <glslshader Include="..\..\src\modules\xtal\mapmesh2_vert.glsl">
       <Filter>Shaders</Filter>
     </glslshader>
+    <glslshader Include="..\..\src\modules\xtal\mapmesh2_frag.glsl">
+      <Filter>Shaders</Filter>
+    </glslshader>
   </ItemGroup>
 </Project>

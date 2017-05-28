@@ -24,6 +24,7 @@ Trajectory::Trajectory()
 
   m_bLoop = true;
   m_nAver = 0;
+  m_bAverBufValid = false;
   // m_pAllMol = MolCoordPtr(MB_NEW MolCoord());
 }
 
@@ -123,6 +124,10 @@ qfloat32 *Trajectory::getCrdArrayImplImpl(int ifrm)
 qfloat32 *Trajectory::getCrdArrayImpl()
 {
   if (m_nAver>0) {
+    if (m_bAverBufValid) {
+      return &m_averbuf[0];
+    }
+
     int ncrds = getAtomSize()*3;
     if (m_averbuf.size()<ncrds)
       m_averbuf.resize(ncrds);
@@ -140,6 +145,7 @@ qfloat32 *Trajectory::getCrdArrayImpl()
     //MB_DPRINTLN("Traj> averaged %d-%d (%d) frms", nStart, nEnd, nsum);
     for (int i=0; i<ncrds; ++i)
       m_averbuf[i] /= nsum;
+    m_bAverBufValid = true;
     return &m_averbuf[0];
   }
   else {
@@ -264,6 +270,8 @@ void Trajectory::update(int iframe, bool bDyn)
 
   findBlk(iframe, m_nBlkInd, m_nFrmInd);
   m_nCurFrm = iframe;
+  // invalidate the averbuf
+  m_bAverBufValid = false;
   
   crdArrayChanged();
   

@@ -4,14 +4,10 @@
 //    vertex shader
 //
 
-#if (__VERSION__>=140)
-#define USE_TBO 1
-#else
+#ifndef USE_TBO
 #extension GL_EXT_gpu_shader4 : enable 
 #extension GL_ARB_compatibility : enable
 #endif
-
-//#extension GL_EXT_gpu_shader4 : enable 
 
 ////////////////////
 // Uniform variables
@@ -40,9 +36,6 @@ uniform int u_plane;
 
 // 
 attribute float a_dummy;
-// attribute vec3 a_pos;
-// attribute float a_plane;
-// attribute float a_ord;
 
 ////////////////////
 // Varying variables
@@ -50,14 +43,15 @@ attribute float a_dummy;
 //varying int v_bDiscard;
 varying float v_fFogCoord; 
 
-int getDensity(ivec3 iv)
+uint getDensity(ivec3 iv)
 {
 #ifdef USE_TBO
   int index = iv.x + ncol*(iv.y + nrow*iv.z);
-  return int( texelFetch(dataFieldTex, index).r );
+  return texelFetch(dataFieldTex, index).r ;
 #else
   float val = texelFetch3D(dataFieldTex, iv, 0).x;
-  return int(val * 255.0 + 0.5);
+  return uint(val * 255.0 + 0.5);
+  //return int( texelFetch3D(dataFieldTex, iv, 0).x );
 #endif
 }
 
@@ -134,7 +128,7 @@ void main(void)
     
     for (ii=0; ii<4; ++ii) {
       ivec3 iv = ipos + ivdel[ii + ibase];
-      val[ii] = getDensity(iv);
+      val[ii] = int( getDensity(iv) );
       if (val[ii]>uisolev)
         flag += mask;
       mask = mask << 1U;
@@ -170,7 +164,6 @@ void main(void)
 */
   
   //gl_Position=gl_Vertex;
-  gl_FrontColor=gl_Color;
-  //gl_FrontColor=vec4(1.0, 1.0, 1.0, 1.0);
+  //gl_FrontColor=u_color;
 }
 

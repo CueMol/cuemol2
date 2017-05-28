@@ -148,7 +148,10 @@ namespace mdtools {
     /// Frame averaging size (0: averaging off)
     int m_nAver;
 
+    /// averaged coordinates of the current frame
     std::vector<float> m_averbuf;
+
+    bool m_bAverBufValid;
 
   public:
     int getFrmAverSize() const { return m_nAver; }

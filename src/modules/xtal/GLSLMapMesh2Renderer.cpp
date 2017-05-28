@@ -158,9 +158,15 @@ void GLSLMapMesh2Renderer::initShader(DisplayContext *pdc)
   sysdep::OglShaderSetupHelper<GLSLMapMesh2Renderer> ssh(this);
 
   if (m_pPO==NULL)
+    ssh.setUseInclude(true);
+#ifdef USE_TBO
+    ssh.defineMacro("USE_TBO", "1");
+#else
+  //ssh.defineMacro("TEX2D_WIDTH", LString::format("%d",TEX2D_WIDTH).c_str());
+#endif
     m_pPO = ssh.createProgObj("mapmesh2",
                               "%%CONFDIR%%/data/shaders/mapmesh2_vert.glsl",
-                              "%%CONFDIR%%/data/shaders/mapmesh_frag.glsl");
+                              "%%CONFDIR%%/data/shaders/mapmesh2_frag.glsl");
   
   if (m_pPO==NULL) {
     LOG_DPRINTLN("GPUMapMesh> ERROR: cannot create progobj.");
@@ -241,12 +247,13 @@ void GLSLMapMesh2Renderer::initShader(DisplayContext *pdc)
 
   if (m_pMapTex != NULL)
     delete m_pMapTex;
-  m_pMapTex = MB_NEW gfx::Texture(); //pdc->createTexture();
+  m_pMapTex = MB_NEW gfx::Texture();
 #ifdef USE_TBO
   m_pMapTex->setup(1, gfx::Texture::FMT_R,
                    gfx::Texture::TYPE_UINT8);
 #else
   m_pMapTex->setup(3, gfx::Texture::FMT_R,
+                   //gfx::Texture::TYPE_UINT8);
                    gfx::Texture::TYPE_UINT8_COLOR);
 #endif
 
@@ -426,48 +433,9 @@ void GLSLMapMesh2Renderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
     AttrArray &ata = *m_pAttrAry;
     ata.setAttrSize(1);
     ata.setAttrInfo(0, m_nPosLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, dummy));
-    // ata.setAttrInfo(0, m_nPosLoc, 3, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, pos_x));
-    // ata.setAttrInfo(1, m_nPlaneLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, plane));
-    //ata.setAttrInfo(1, m_nOrdLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, ord));
 
     ata.alloc(nVA);
     ata.setDrawMode(gfx::AbstDrawElem::DRAW_LINES);
-
-#if 0
-    int i,j,k,l, ibase, iplane, iord;
-    for (k=0; k<vsec; k++)
-      for (j=0; j<vrow; j++)
-        for (i=0; i<vcol; i++) {
-          ibase = (i + vcol*(j + vrow*k));
-          /*ata.at(ibase).pos_x = float(i);
-          ata.at(ibase).pos_y = float(j);
-          ata.at(ibase).pos_z = float(k);
-        }*/
-
-
-          for (iord=0; iord<2; iord++) {
-            int ind = iord + 2*ibase;
-            ata.at(ind).pos_x = float(i);
-            ata.at(ind).pos_y = float(j);
-            ata.at(ind).pos_z = float(k);
-            //ata.at(ind).ord = float(iord);
-          }
-        }
-    
-/*
-          for (iplane=0; iplane<3; iplane++)
-            for (iord=0; iord<2; iord++)
-            {
-              int ind = iord + 2*(iplane + 3*ibase);
-              ata.at(ind).pos_x = float(i);
-              ata.at(ind).pos_y = float(j);
-              ata.at(ind).pos_z = float(k);
-
-              ata.at(ind).plane = float(iplane);
-              ata.at(ind).ord = float(iord);
-            }
-        }*/
-#endif
   }
 
   if (bSizeChg || bOrgChg) {
@@ -494,28 +462,6 @@ void GLSLMapMesh2Renderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
 
   }
 
-  /*
-  glBindBufferARB(GL_TEXTURE_BUFFER, m_nMapBufID);
-  CHK_GLERROR("glBindBuffer");
-
-  if (!bReuse) {
-    glBufferDataARB(GL_TEXTURE_BUFFER, ncol*nrow*nsec*sizeof(MapTmp::value_type), m_maptmp.data(), GL_DYNAMIC_DRAW_ARB);
-    CHK_GLERROR("glBufferDataARB");
-  }
-  else {
-    glBufferSubDataARB(GL_TEXTURE_BUFFER, 0, ncol*nrow*nsec*sizeof(MapTmp::value_type), m_maptmp.data());
-    CHK_GLERROR("glBufferDataARB");
-  }
-
-  glBindBuffer(GL_TEXTURE_BUFFER, 0);
-
-  glActiveTexture(GL_TEXTURE0);
-  // glEnable(MY_MAPTEX_DIM);
-  glBindTexture(MY_MAPTEX_DIM, m_nMapTexID);
-
-  glTexBufferARB(GL_TEXTURE_BUFFER, GL_R8UI, m_nMapBufID);
-  CHK_GLERROR("glTexBufferARB");
-   */
   {
     //
     // calculate the contour level
@@ -564,8 +510,7 @@ void GLSLMapMesh2Renderer::display(DisplayContext *pdc)
     make3DTexMap(pMap, pXtal);
   }
 
-  pdc->color(getColor());
-  pdc->setLineWidth(1.0);
+  pdc->setLineWidth(getLineWidth());
   pdc->setLighting(false);
 
   pdc->pushMatrix();
@@ -622,17 +567,22 @@ void GLSLMapMesh2Renderer::renderGPU(DisplayContext *pdc)
   int nrow = m_nActRow;
   int nsec = m_nActSec;
 
+  m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
   m_pPO->setUniform("isolevel", m_isolevel);
-  CHK_GLERROR("setUniform isolevel");
-
   m_pPO->setUniform("ncol", ncol);
-  CHK_GLERROR("setUniform ncol");
-
   m_pPO->setUniform("nrow", nrow);
-  CHK_GLERROR("setUniform nrow");
-
   m_pPO->setUniform("nsec", nsec);
-  CHK_GLERROR("setUniform nsec");
+
+  qlib::uid_t nSceneID = getSceneID();
+  {
+    float r,g,b;
+    ColorPtr pcol = getColor();
+    quint32 dcc = pcol->getDevCode(nSceneID);
+    r = gfx::convI2F(gfx::getRCode(dcc));
+    g = gfx::convI2F(gfx::getGCode(dcc));
+    b = gfx::convI2F(gfx::getBCode(dcc));
+    m_pPO->setUniformF("u_color", r, g, b, 1.0f);
+  }
 
   int iplane;
   for (iplane = 0; iplane<3; ++iplane) {
@@ -751,6 +701,7 @@ void GLSLMapMesh2Renderer::renderCPU(DisplayContext *pdc)
   quint8 val[4];
   //, crs[4];
 
+  pdc->color(getColor());
   pdc->startLines();
 
   for (k=0; k<nsec-1; k++)
