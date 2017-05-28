@@ -6,7 +6,7 @@
 
 #ifndef USE_TBO
 #extension GL_EXT_gpu_shader4 : enable 
-#extension GL_ARB_compatibility : enable
+// #extension GL_ARB_compatibility : enable
 #endif
 
 ////////////////////
@@ -43,14 +43,14 @@ attribute float a_dummy;
 //varying int v_bDiscard;
 varying float v_fFogCoord; 
 
-uint getDensity(ivec3 iv)
+int getDensity(ivec3 iv)
 {
 #ifdef USE_TBO
   int index = iv.x + ncol*(iv.y + nrow*iv.z);
-  return texelFetch(dataFieldTex, index).r ;
+  return int( texelFetch(dataFieldTex, index).r );
 #else
   float val = texelFetch3D(dataFieldTex, iv, 0).x;
-  return uint(val * 255.0 + 0.5);
+  return int(val * 255.0 + 0.5);
   //return int( texelFetch3D(dataFieldTex, iv, 0).x );
 #endif
 }
@@ -128,7 +128,7 @@ void main(void)
     
     for (ii=0; ii<4; ++ii) {
       ivec3 iv = ipos + ivdel[ii + ibase];
-      val[ii] = int( getDensity(iv) );
+      val[ii] = getDensity(iv);
       if (val[ii]>uisolev)
         flag += mask;
       mask = mask << 1U;
