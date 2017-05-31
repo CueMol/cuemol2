@@ -83,7 +83,7 @@ varying mat2 v_normmat;
 
 void main()
 {
-  float adj_cen = sqrt( clamp(0.0, 1.0, 1.0 - v_impos.x*v_impos.x) );
+  float adj_cen = sqrt( max(0.0, 1.0 - v_impos.x*v_impos.x) );
   float disp_cir = adj_cen * v_ndec;
 
   float imy = v_impos.y;

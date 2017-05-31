@@ -14,6 +14,39 @@ exports.getObj = function (aName) {
     return mol;
 };
 
+exports.getRend = function (aRendName) {
+  let sceMgr = cuemol.getService("SceneManager");
+  let scene = sceMgr.getScene(sceMgr.activeSceneID);
+  let rend = scene.getRendByName(aRendName);
+  return rend;
+};
+
+exports.removeRend = function (aRendName, aUseTxn) {
+  let sceMgr = cuemol.getService("SceneManager");
+  let scene = sceMgr.getScene(sceMgr.activeSceneID);
+  let rend = exports.getRend(aRendName);
+
+  if (rend!=null) {
+    let obj = rend.getClientObj();
+    if (aUseTxn) {
+      scene.startUndoTxn("Delete renderer:"+ aRendName);
+      var ok;
+      try {
+	ok = obj.destroyRenderer(rend.uid);
+      }
+      catch (e) {
+	debug.exception(e);
+	scene.rollbackUndoTxn();
+	return;
+      }
+      scene.commitUndoTxn();
+    }
+    else {
+      ok = obj.destroyRenderer(rend.uid);
+    }
+  }
+};
+
 exports.vec = function (aX, aY, aZ) {
     let v = cuemol.createObj("Vector");
     if (aX!==undefined)

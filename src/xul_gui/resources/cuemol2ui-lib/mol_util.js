@@ -111,7 +111,6 @@ exports.helixVecPC = function (aMol, aSelStr)
 };
 
 
-
 exports.showArrow = function (aMol, aRendName, aPos, aVec)
 {
     var rend = aMol.getRendererByName(aRendName);
@@ -133,7 +132,14 @@ exports.showArrow = function (aMol, aRendName, aPos, aVec)
     rend.width = 0.2;
     rend.stipple0 = 0;
     rend.stipple1 = 0;
+
+  if (typeof aPos=='string' &&
+      typeof aVec=='string') {
+    rend.append(aPos, aVec);
+  }
+  else {
     rend.appendBy2Vecs(aPos, aPos.add(aVec));
+  }
 };
 
 exports.cen = function (aMol, aSelStr) {

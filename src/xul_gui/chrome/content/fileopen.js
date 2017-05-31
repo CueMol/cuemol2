@@ -1045,8 +1045,8 @@ Qm2Main.prototype.execIntJS = function (path)
   var scene = this.mMainWnd.currentSceneW;
   var view = this.mMainWnd.currentViewW;
   try {
-    let fun = new Function("scene", "view", data);
-    fun(scene, view);
+    let fun = new Function("scene", "view", "println", data);
+    fun(scene, view, function(aStr) {cuemol.putLogMsg(aStr);} );
   }
   catch (e) {
     cuemol.putLogMsg("Exec internal JS error:\n"+e.message);

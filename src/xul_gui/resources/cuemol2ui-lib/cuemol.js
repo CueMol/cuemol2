@@ -237,6 +237,7 @@ exports.instanceOf = function (obj, ifname)
 };
 
 
+exports.println = 
 exports.putLogMsg = function (msg)
 {
   var logMgr = exports.getService("MsgLog");
