@@ -88,6 +88,10 @@ exports.implIface = function (aClassName, aIfName)
 
 exports.implIface2 = function (aObj, aIfName)
 {
+  if (typeof(aObj)!=='object') return false;
+  if (typeof(aObj._wrapped)!=='object') return false;
+  if (typeof(aObj._wrapped.getClassName)!=='function') return false;
+
   var clsnm = aObj._wrapped.getClassName();
   return exports.implIface(clsnm, aIfName);
 };

@@ -76,3 +76,20 @@ exports.toRadian = function (aDeg) {
     return aDeg*Math.PI/180;
 };
 
+exports.txn = function (aScene, aMsg, aFunc) {
+  // // EDIT TXN START //
+  aScene.startUndoTxn(aMsg);
+  try {
+    aFunc();
+  }
+  catch (e) {
+    debug.exception(e);
+    aScene.rollbackUndoTxn();
+    return false;
+  }
+  aScene.commitUndoTxn();
+  // EDIT TXN END //
+
+  return true;
+};
+

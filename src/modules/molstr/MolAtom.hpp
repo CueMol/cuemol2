@@ -128,6 +128,13 @@ namespace molstr {
       m_confid = id;
     }
 
+    LString getConfIDScr() const {
+      return LString(getConfID());
+    }
+    void setConfIDScr(const LString &id) {
+      setConfID(id.getAt(0));
+    }
+
     /// Atom position
     const Vector4D &getPos() const {
       return m_pos;

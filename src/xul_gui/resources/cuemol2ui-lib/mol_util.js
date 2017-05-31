@@ -111,7 +111,7 @@ exports.helixVecPC = function (aMol, aSelStr)
 };
 
 
-exports.showArrow = function (aMol, aRendName, aPos, aVec)
+exports.showArrow = function (aMol, aRendName, aPos1, aPos2, aMol2)
 {
     var rend = aMol.getRendererByName(aRendName);
 
@@ -133,12 +133,21 @@ exports.showArrow = function (aMol, aRendName, aPos, aVec)
     rend.stipple0 = 0;
     rend.stipple1 = 0;
 
-  if (typeof aPos=='string' &&
-      typeof aVec=='string') {
-    rend.append(aPos, aVec);
+  if (cuemol.implIface2(aPos1, 'Vector') &&
+      cuemol.implIface2(aPos2, 'Vector')) {
+    rend.appendBy2Vecs(aPos1, aPos2);
+  }
+  else if (cuemol.implIface2(aPos1, 'MolAtom') &&
+	   cuemol.implIface2(aPos2, 'MolAtom')) {
+    let mol2;
+    if (typeof(aMol2)==='undefined')
+      mol2 = aMol;
+    else
+      mol2 = aMol2;
+    rend.appendById(aPos1.id, mol2.uid, aPos2.id, false);
   }
   else {
-    rend.appendBy2Vecs(aPos, aPos.add(aVec));
+    throw "showArrow() unknown aPos1/aPos2 type";
   }
 };
 
@@ -152,4 +161,20 @@ exports.cen = function (aMol, aSelStr) {
     aMol.sel = origsel;
     return com1;
 };
+
+exports.sameAtom = function (aMol, aAtom) {
+  let chname = aAtom.chainName;
+  let resid = aAtom.residIndex;
+  let aname = aAtom.name;
+  return aMol.getAtom(chname, resid, aname);
+}
+
+exports.atomSelStr = function (aAtom) {
+  let chname = aAtom.chainName;
+  let resid = aAtom.residIndex;
+  let aname = aAtom.name;
+  return chname+"."+String(resid)+"."+aname;
+}
+
+
 
