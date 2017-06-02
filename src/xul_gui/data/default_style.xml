@@ -414,6 +414,8 @@ texture {
   <sel id="nucleic" value="rprop type=nucl"/>
   <sel id="water" value="rprop type=water"/>
   <sel id="sugar" value="rprop type=pyranose"/>
+  <sel id="ligand" value="!rprop type=prot and !rprop type=nucl and !rprop type=water"/>
+  <sel id="hydrogen" value="elem H"/>
 
   <!-- Default color names from HTML/CSS2 color table -->
   <color id="AliceBlue" value="#F0F8FF"/>

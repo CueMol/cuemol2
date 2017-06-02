@@ -153,11 +153,11 @@
 	    <menuitem label="Water"
 		      oncommand="cuemolui.panels.workspace.selectMol('water')"/>
 	    <menuitem label="Ligand"
-		      oncommand="cuemolui.panels.workspace.selectMol('!protein &amp; !nucleic &amp; !water')"/>
+		      oncommand="cuemolui.panels.workspace.selectMol('ligand)"/>
 	    <menuitem label="Sugar"
 		      oncommand="cuemolui.panels.workspace.selectMol('sugar')"/>
 	    <menuitem label="Hydrogen"
-		      oncommand="cuemolui.panels.workspace.selectMol('elem H')"/>
+		      oncommand="cuemolui.panels.workspace.selectMol('hydrogen')"/>
 	  </menupopup>
 	</menu>
 
