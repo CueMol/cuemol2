@@ -7,20 +7,25 @@
   </PropertyGroup>
 
   <PropertyGroup Label="UserMacros" Condition="'$(Platform)'=='Win32'">
-    <XULRunnerDir>$(PROJ_DIR)\xulrunner\xulrunner-39.0-sdk\</XULRunnerDir>
-    <XULDeployDir>$(SolutionDir)xul_$(Configuration)\</XULDeployDir>
     <BuildSetDir>$(PROJ_DIR)</BuildSetDir>
-    <ExecutablePath>$(PROJ_DIR)\bin;$(XULRunnerDir)\bin;$(ExecutablePath)</ExecutablePath>
-    <IncludePath>$(PROJ_DIR)\include;$(PROJ_DIR)\CGAL-4.6.1\include;$(PROJ_DIR)\boost\boost_1_57_0;$(IncludePath)</IncludePath>
+    <XULDeployDir>$(SolutionDir)xul_$(Configuration)\</XULDeployDir>
     <LibraryPath>$(PROJ_DIR)\lib;$(PROJ_DIR)\CGAL-4.6.1\lib;$(PROJ_DIR)\boost\boost_1_57_0\lib32-msvc-12.0;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
+
   <PropertyGroup Label="UserMacros" Condition="'$(Platform)'=='x64'">
-    <XULRunnerDir>$(PROJ64_DIR)\xulrunner\xulrunner-39.0b7-sdk\</XULRunnerDir>
-    <XULDeployDir>$(SolutionDir)xul_$(Configuration)64\</XULDeployDir>
     <BuildSetDir>$(PROJ64_DIR)</BuildSetDir>
-    <ExecutablePath>$(PROJ64_DIR)\bin;$(XULRunnerDir)\bin;$(ExecutablePath)</ExecutablePath>
-    <IncludePath>$(PROJ64_DIR)\include;$(PROJ64_DIR)\CGAL-4.6.1\include;$(PROJ64_DIR)\boost\boost_1_57_0;$(IncludePath)</IncludePath>
+    <XULDeployDir>$(SolutionDir)xul_$(Configuration)64\</XULDeployDir>
     <LibraryPath>$(PROJ64_DIR)\lib;$(PROJ64_DIR)\CGAL-4.6.1\lib;$(PROJ64_DIR)\boost\boost_1_57_0\lib64-msvc-12.0;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+
+  <PropertyGroup Label="UserMacros">
+    <XULRunnerDir>$(BuildSetDir)\xulrunner\xulrunner-39.0b7-sdk\</XULRunnerDir>
+    <BoostIncludePath>$(BuildSetDir)\boost\boost_1_57_0</BoostIncludePath>
+    <CGALIncludePath>$(BuildSetDir)\CGAL-4.6.1\include</CGALIncludePath>
+    <CGALLibraryPath>$(BuildSetDir)\CGAL-4.6.1\lib</CGALLibraryPath>
+
+    <IncludePath>$(BuildSetDir)\include;$(CGALIncludePath);$(BoostIncludePath);$(IncludePath)</IncludePath>
+    <ExecutablePath>$(BuildSetDir)\bin;$(XULRunnerDir)\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
 
   <PropertyGroup Label="UserMacros" Condition="'$(Configuration)'=='Release'">
@@ -53,7 +58,6 @@
       <Optimization>Disabled</Optimization>
       <MinimalRebuild>true</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
-      <BrowseInformation>true</BrowseInformation>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
@@ -83,6 +87,11 @@
   <ItemDefinitionGroup Condition="'$(Platform)'=='Win32'">
     <Link>
       <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Platform)'=='x64'">
+    <Link>
+      <TargetMachine>MachineX64</TargetMachine>
     </Link>
   </ItemDefinitionGroup>
 
