@@ -19,13 +19,48 @@ namespace pybr {
   {
   public:
     /// initialize wrapper
-    static bool setup();
+    static PyObject *init();
+
+    //////////////////////////////////////////
+    // cuemol.* service methods implementation
 
     /// get cuemol service object
     static PyObject *getService(PyObject *self, PyObject *args);
 
     /// create new cuemol object
     static PyObject *createObj(PyObject *self, PyObject *args);
+
+    /// get class names
+    static PyObject *getAllClassNamesJSON(PyObject *self, PyObject *args);
+
+    static PyObject *getAbiClassName(PyObject *self, PyObject *args);
+    static PyObject *getClassName(PyObject *self, PyObject *args);
+
+    //////////
+    // Property operations
+
+    /// Get property's default flag
+    ///  args: object, propname
+    ///  retval: bool
+    static PyObject *isPropDefault(PyObject *self, PyObject *args);
+    
+    /// Get property's default flag
+    ///  args: object, propname
+    ///  retval: bool
+    static PyObject *hasPropDefault(PyObject *self, PyObject *args);
+
+    /// Reset property value to default
+    ///  args: object, propname
+    static PyObject *resetProp(PyObject *self, PyObject *args);
+
+    /// Get properties' structure in JSON format(for UI)
+    static PyObject *getPropsJSON(PyObject *self, PyObject *args);
+
+    /// Get enum type definition in JSON format
+    static PyObject *getEnumDefsJSON(PyObject *self, PyObject *args);
+
+    /// print log
+    static PyObject *print(PyObject *self, PyObject *args);
 
     //////////
 

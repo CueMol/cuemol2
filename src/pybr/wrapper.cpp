@@ -9,6 +9,7 @@
 #include <qlib/LVarArgs.hpp>
 #include <qlib/LVarArray.hpp>
 #include <qlib/ClassRegistry.hpp>
+#include <qlib/PropSpec.hpp>
 
 #include "wrapper.hpp"
 
@@ -35,8 +36,9 @@ static PyObject *wr_str(QpyWrapObj *pSelf);
 
 /// wrapper class type definition
 static PyTypeObject gWrapperType = {
-  PyObject_HEAD_INIT(NULL)
-  0,                         /*ob_size*/
+  PyVarObject_HEAD_INIT(NULL, 0)
+//  PyObject_HEAD_INIT(NULL)
+//  0,                         /*ob_size*/
   "cuemol.Wrapper",             /*tp_name*/
   sizeof(QpyWrapObj), /*tp_basicsize*/
   0,                         /*tp_itemsize*/
@@ -57,20 +59,21 @@ static PyTypeObject gWrapperType = {
   0,                         /*tp_as_buffer*/
   Py_TPFLAGS_DEFAULT,        /*tp_flags*/
   "CueMol wrapper objects",  /* tp_doc */
-  0,                         /* tp_traverse */
-  0,                         /* tp_clear */
-  0,                         /* tp_richcompare */
-  0,                         /* tp_weaklistoffset */
-  0,                         /* tp_iter */
-  0,                         /* tp_iternext */
-  0,                         /* tp_methods */
-  0,                         /* tp_members */
-  0,                         /* tp_getset */
-  0,                         /* tp_base */
-  0,                         /* tp_dict */
+//  0,                         /* tp_traverse */
+//  0,                         /* tp_clear */
+//  0,                         /* tp_richcompare */
+//  0,                         /* tp_weaklistoffset */
+//  0,                         /* tp_iter */
+//  0,                         /* tp_iternext */
+//  0,                         /* tp_methods */
+//  0,                         /* tp_members */
+//  0,                         /* tp_getset */
+//  0,                         /* tp_base */
+//  0,                         /* tp_dict */
 };
 
 /// get the wrapped object ptr
+// static
 qlib::LScriptable *Wrapper::getWrapped(PyObject *pPyObj)
 {
   if (Py_TYPE(pPyObj) != &gWrapperType)
@@ -223,7 +226,12 @@ static PyObject *wr_str(QpyWrapObj *pSelf)
   }
 
   LString str = pObj->toString();
+
+#if PY_MAJOR_VERSION >= 3
+  return PyBytes_FromString(str);
+#else
   return PyString_FromString(str);
+#endif
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -272,7 +280,7 @@ PyObject *Wrapper::createObj(PyObject *self, PyObject *args)
   qlib::LClass *pCls = NULL;
   try {
     pCls = pMgr->getClassObj(clsname);
-    MB_DPRINTLN("LClass: %p", pCls);
+    MB_DPRINTLN("!!! CreateObj, LClass for %s: %p", clsname, pCls);
   }
   catch (...) {
     LString msg = LString::format("createObj class %s not found", clsname);
@@ -280,9 +288,17 @@ PyObject *Wrapper::createObj(PyObject *self, PyObject *args)
     return NULL;
   }
 
-  LScriptable *pNewObj = dynamic_cast<LScriptable *>(pCls->createScrObj());
+  qlib::LDynamic *pDyn = pCls->createScrObj();
+  // MB_DPRINTLN("createScrObj returned: %p (%s)", pDyn, typeid(*pDyn).name());
+
+  // XXX: dynamic_cast<> returns NULL for LScriptable derived class's objects,
+  //   in some situations (Apple LLVM version 5.0??).
+  //   Old-type type cast is used to avoid this problem.
+  //LScriptable *pNewObj = dynamic_cast<LScriptable *>(pDyn);
+  LScriptable *pNewObj = (LScriptable *)(pDyn);
+
   if (pNewObj==NULL) {
-    LString msg = LString::format("createObj %s failed", clsname);
+    LString msg = LString::format("createObj %s failed (class.createScrObj returned NULL)", clsname);
     PyErr_SetString(PyExc_RuntimeError, msg);
     return NULL;
   }
@@ -290,33 +306,417 @@ PyObject *Wrapper::createObj(PyObject *self, PyObject *args)
   MB_DPRINTLN("createObj(%s) OK, result=%p!!", clsname, pNewObj);
 
   return createWrapper(pNewObj);
-  //QpyWrapObj *pPyObj = PyObject_New(QpyWrapObj, &gWrapperType);
-  //pPyObj->m_pObj = pNewObj;
-  //return (PyObject *) pPyObj;
+}
+
+//static
+PyObject *Wrapper::getAllClassNamesJSON(PyObject *self, PyObject *args)
+{
+  qlib::ClassRegistry *pMgr = qlib::ClassRegistry::getInstance();
+  MB_ASSERT(pMgr!=NULL);
+
+  std::list<qlib::LString> ls;
+  pMgr->getAllClassNames(ls);
+
+  LString rstr = "[";
+  bool ffirst = true;
+  BOOST_FOREACH (const LString &str, ls) {
+    MB_DPRINTLN("GACNJSON> class %s", str.c_str());
+    if (!ffirst)
+      rstr += ",";
+    rstr += "\"" + str + "\"";
+    ffirst = false;
+  }
+  rstr += "]";
+
+  return Py_BuildValue("s", rstr.c_str());
+}
+
+//static
+PyObject *Wrapper::getAbiClassName(PyObject *self, PyObject *args)
+{
+  PyObject *pPyObj;
+
+  if (!PyArg_ParseTuple(args, "O", &pPyObj))
+    return NULL;
+
+  qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
+  if (pScObj==NULL)
+    return NULL;
+  
+  LString str;
+  if (pScObj!=NULL) {
+    qlib::LClass *pCls = pScObj->getClassObj();
+    if (pCls!=NULL) {
+      str = pCls->getAbiClassName();
+    }
+  }
+  else {
+    str = "(null)";
+  }
+
+  return Py_BuildValue("s", str.c_str());
+}
+
+//static
+PyObject *Wrapper::getClassName(PyObject *self, PyObject *args)
+{
+  PyObject *pPyObj;
+
+  if (!PyArg_ParseTuple(args, "O", &pPyObj))
+    return NULL;
+
+  qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
+  if (pScObj==NULL)
+    return NULL;
+  
+  LString str;
+  if (pScObj!=NULL) {
+    qlib::LClass *pCls = pScObj->getClassObj();
+    if (pCls!=NULL) {
+      str = pCls->getClassName();
+    }
+  }
+  else {
+    str = "(null)";
+  }
+
+  return Py_BuildValue("s", str.c_str());
+}
+
+//static
+PyObject *Wrapper::isPropDefault(PyObject *self, PyObject *args)
+{
+  const char *propname;
+  PyObject *pPyObj;
+
+  if (!PyArg_ParseTuple(args, "Os", &pPyObj, &propname))
+    return NULL;
+
+  qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
+  if (pScObj==NULL)
+    return NULL;
+
+  bool ok = true;
+  int result;
+  LString errmsg;
+
+  try {
+    if (! pScObj->hasNestedPropDefault(propname) )
+      result = 0; // no default value
+    else if (! pScObj->isNestedPropDefault(propname) )
+      result = 1; // has default but not default now
+    else
+      result = 2; // has default and now is default
+  }
+  catch (qlib::LException &e) {
+    ok = false;
+    errmsg = 
+      LString::format("Exception occured in isPropDef for %s: %s",
+                      propname, e.getFmtMsg().c_str());
+  }
+  catch (...) {
+    ok = false;
+    errmsg = 
+      LString::format("Unknown Exception occured in isPropDef for %s",
+                      propname);
+  }
+  
+  if (!ok) {
+    LOG_DPRINTLN("Error: isPropDef for property \"%s\" failed.", propname);
+    if (!errmsg.isEmpty()) {
+      LOG_DPRINTLN("Reason: %s", errmsg.c_str());
+    }
+    PyErr_SetString(PyExc_RuntimeError, errmsg.c_str());
+    return NULL;
+  }
+
+  return Py_BuildValue("i", result);
+}
+
+//static
+PyObject *Wrapper::hasPropDefault(PyObject *self, PyObject *args)
+{
+  const char *propname;
+  PyObject *pPyObj;
+
+  if (!PyArg_ParseTuple(args, "Os", &pPyObj, &propname))
+    return NULL;
+
+  qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
+  if (pScObj==NULL)
+    return NULL;
+
+  bool ok = true;
+  bool result;
+  LString errmsg;
+
+  try {
+    result = pScObj->hasNestedPropDefault(propname);
+  }
+  catch (qlib::LException &e) {
+    ok = false;
+    errmsg = 
+      LString::format("Exception occured in hasPropDef for %s: %s",
+                      propname, e.getFmtMsg().c_str());
+  }
+  catch (...) {
+    ok = false;
+    errmsg = 
+      LString::format("Unknown Exception occured in hasPropDef for %s",
+                      propname);
+  }
+  
+  if (!ok) {
+    LOG_DPRINTLN("Error: hasPropDef for property \"%s\" failed.", propname);
+    if (!errmsg.isEmpty()) {
+      LOG_DPRINTLN("Reason: %s", errmsg.c_str());
+    }
+    PyErr_SetString(PyExc_RuntimeError, errmsg.c_str());
+    return NULL;
+  }
+
+  if (result)
+    Py_RETURN_TRUE;
+  else
+    Py_RETURN_FALSE;
+}
+
+//static
+PyObject *Wrapper::resetProp(PyObject *self, PyObject *args)
+{
+  const char *propname;
+  PyObject *pPyObj;
+
+  if (!PyArg_ParseTuple(args, "Os", &pPyObj, &propname))
+    return NULL;
+
+  qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
+  if (pScObj==NULL)
+    return NULL;
+
+  bool ok;
+  LString errmsg;
+
+  try {
+    if (pScObj->hasNestedProperty(propname)) {
+      ok = pScObj->resetNestedProperty(propname);
+    }
+    else {
+      ok = false;
+      errmsg = 
+        LString::format("Prop <%s> not found in resetProp", propname);
+    }
+  }
+  catch (qlib::LException &e) {
+    ok = false;
+    errmsg = 
+      LString::format("Exception occured in resetProp for %s: %s",
+                      propname, e.getFmtMsg().c_str());
+  }
+  catch (...) {
+    ok = false;
+    errmsg = 
+      LString::format("Unknown Exception occured in resetProp for %s",
+                      propname);
+  }
+  
+  if (!ok) {
+    LOG_DPRINTLN("Error: ReSetProp for property \"%s\" failed.", propname);
+    if (!errmsg.isEmpty()) {
+      LOG_DPRINTLN("Reason: %s", errmsg.c_str());
+    }
+    PyErr_SetString(PyExc_RuntimeError, errmsg.c_str());
+    return NULL;
+  }
+
+  Py_RETURN_NONE;
+}
+
+//static
+PyObject *Wrapper::getPropsJSON(PyObject *self, PyObject *args)
+{
+  PyObject *pPyObj;
+
+  if (!PyArg_ParseTuple(args, "O", &pPyObj))
+    return NULL;
+
+  qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
+  if (pScObj==NULL)
+    return NULL;
+
+  LString str;
+
+  try {
+    str = qlib::getPropsJSONImpl(pScObj);
+  }
+  catch (qlib::LException &e) {
+    LString errmsg = 
+      LString::format("Exception occured in getPropsJSON: %s",
+                      e.getFmtMsg().c_str());
+    LOG_DPRINTLN(errmsg);
+    PyErr_SetString(PyExc_RuntimeError, errmsg.c_str());
+    return NULL;
+  }
+  catch (...) {
+    LString errmsg = 
+      LString::format("Unknown Exception occured in getPropsJSON");
+    LOG_DPRINTLN(errmsg);
+    PyErr_SetString(PyExc_RuntimeError, errmsg.c_str());
+    return NULL;
+  }
+
+#if PY_MAJOR_VERSION >= 3
+  return PyBytes_FromString(str.c_str());
+#else
+  return PyString_FromString(str.c_str());
+#endif
+}
+
+//static
+PyObject *Wrapper::getEnumDefsJSON(PyObject *self, PyObject *args)
+{
+  const char *propname;
+  PyObject *pPyObj;
+
+  if (!PyArg_ParseTuple(args, "Os", &pPyObj, &propname))
+    return NULL;
+
+  qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
+  if (pScObj==NULL)
+    return NULL;
+
+  qlib::PropSpec spec;
+  if ( !pScObj->getPropSpecImpl(propname, &spec) ) {
+    LString errmsg = 
+      LString::format("getEnumDefsJSON: prop %s is not found", propname);
+    LOG_DPRINTLN(errmsg);
+    PyErr_SetString(PyExc_RuntimeError, errmsg.c_str());
+    return NULL;
+  }
+
+  LString rval;
+  
+  rval += "{";
+  if (spec.pEnumDef) {
+    int i=0;
+    BOOST_FOREACH(qlib::EnumDef::value_type ii, *(spec.pEnumDef)) {
+      if (i!=0) rval += ",";
+      rval += LString::format("\"%s\": %d", ii.first.c_str(), ii.second);
+      ++i;
+    }
+  }
+  rval += "}";
+
+#if PY_MAJOR_VERSION >= 3
+  return PyBytes_FromString(rval.c_str());
+#else
+  return PyString_FromString(rval.c_str());
+#endif
+}
+
+//static
+PyObject *Wrapper::print(PyObject *self, PyObject *args)
+{
+  const char *msg;
+
+  if (!PyArg_ParseTuple(args, "s", &msg))
+    return NULL;
+
+  LOG_DPRINTLN("%s", msg);
+
+  return Py_BuildValue("");
+}
+
+//////////////////////////////////////////////////////
+
+namespace pybr {
+#ifndef PYMODULE_EXPORTS
+  PyObject *initCueMol(PyObject *self, PyObject *args)
+  {
+    return Py_BuildValue("");
+  }
+#else
+  PyObject *initCueMol(PyObject *self, PyObject *args);
+#endif
 }
 
 static PyMethodDef cuemol_methods[] = {
   {"getService", (PyCFunction)Wrapper::getService, METH_VARARGS, "get CueMol service object.\n"},
   {"createObj", (PyCFunction)Wrapper::createObj, METH_VARARGS, "create CueMol object.\n"},
+  {"getAllClassNamesJSON", (PyCFunction)Wrapper::getAllClassNamesJSON, METH_VARARGS, "get all class names in JSON format.\n"},
+
+  {"getAbiClassName", (PyCFunction)Wrapper::getAbiClassName, METH_VARARGS, "get C++ABI class name.\n"},
+  {"getClassName", (PyCFunction)Wrapper::getClassName, METH_VARARGS, "get class name.\n"},
+
+  {"isPropDefault", (PyCFunction)Wrapper::isPropDefault, METH_VARARGS, "\n"},
+  {"hasPropDefault", (PyCFunction)Wrapper::hasPropDefault, METH_VARARGS, "\n"},
+  {"resetProp", (PyCFunction)Wrapper::resetProp, METH_VARARGS, "\n"},
+  {"getPropsJSON", (PyCFunction)Wrapper::getPropsJSON, METH_VARARGS, "\n"},
+  {"getEnumDefsJSON", (PyCFunction)Wrapper::getEnumDefsJSON, METH_VARARGS, "\n"},
+
+  {"printlog", (PyCFunction)Wrapper::print, METH_VARARGS, "print log message.\n"},
+  {"initCueMol", (PyCFunction)initCueMol, METH_VARARGS, "initialize CueMol system.\n"},
   {NULL}  /* Sentinel */
 };
 
 //////////////////////////////////////////////////////////////////////
 // initialization
 
+struct module_state {
+  PyObject *error;
+};
+
+#if PY_MAJOR_VERSION >= 3
+#define GETSTATE(m) ((struct module_state*)PyModule_GetState(m))
+#endif
+
+#if PY_MAJOR_VERSION >= 3
+
+static int cuemol_traverse(PyObject *m, visitproc visit, void *arg) {
+    Py_VISIT(GETSTATE(m)->error);
+    return 0;
+}
+
+static int cuemol_clear(PyObject *m) {
+    Py_CLEAR(GETSTATE(m)->error);
+    return 0;
+}
+
+
+static struct PyModuleDef moduledef = {
+        PyModuleDef_HEAD_INIT,
+        "cuemol",
+        NULL,
+        sizeof(struct module_state),
+        cuemol_methods,
+        NULL,
+        cuemol_traverse,
+        cuemol_clear,
+        NULL
+};
+#endif
+
 //static
-bool Wrapper::setup()
+PyObject *Wrapper::init()
 {
   PyObject* m;
 
   gWrapperType.tp_new = PyType_GenericNew;
   if (PyType_Ready(&gWrapperType) < 0)
-    return false;
+    return NULL;
 
+
+#if PY_MAJOR_VERSION >= 3
+  m = PyModule_Create(&moduledef);
+#else
   m = Py_InitModule3("cuemol", cuemol_methods, "CueMol module.");
+#endif
+
 
   Py_INCREF(&gWrapperType);
   PyModule_AddObject(m, "Wrapper", (PyObject *)&gWrapperType);
 
-  return setupMethObj();
+  setupMethObj();
+
+  return m;
 }

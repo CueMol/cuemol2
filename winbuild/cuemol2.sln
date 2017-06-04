@@ -48,6 +48,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "importers", "importers\impo
 		{7CAD1179-B1CF-4E17-BBFA-DBD5AEA51E7B} = {7CAD1179-B1CF-4E17-BBFA-DBD5AEA51E7B}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pybr", "pybr\pybr.vcxproj", "{2E28B002-7D9C-4513-8E16-2124681E2A51}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -212,6 +214,14 @@ Global
 		{02E9D2E5-F0AA-4F6B-8390-2B7ECB4CC2EA}.Release|Win32.Build.0 = Release|Win32
 		{02E9D2E5-F0AA-4F6B-8390-2B7ECB4CC2EA}.Release|x64.ActiveCfg = Release|x64
 		{02E9D2E5-F0AA-4F6B-8390-2B7ECB4CC2EA}.Release|x64.Build.0 = Release|x64
+		{2E28B002-7D9C-4513-8E16-2124681E2A51}.Debug|Win32.ActiveCfg = Debug|Win32
+		{2E28B002-7D9C-4513-8E16-2124681E2A51}.Debug|Win32.Build.0 = Debug|Win32
+		{2E28B002-7D9C-4513-8E16-2124681E2A51}.Debug|x64.ActiveCfg = Debug|x64
+		{2E28B002-7D9C-4513-8E16-2124681E2A51}.Debug|x64.Build.0 = Debug|x64
+		{2E28B002-7D9C-4513-8E16-2124681E2A51}.Release|Win32.ActiveCfg = Release|Win32
+		{2E28B002-7D9C-4513-8E16-2124681E2A51}.Release|Win32.Build.0 = Release|Win32
+		{2E28B002-7D9C-4513-8E16-2124681E2A51}.Release|x64.ActiveCfg = Release|x64
+		{2E28B002-7D9C-4513-8E16-2124681E2A51}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
