@@ -54,6 +54,19 @@ if (!("logpanel" in cuemolui)) {
       this.mCmdBox.addEventListener("keypress", function (e) {panel.onKeyPress(e);}, false);
       
       this.mTabMolView = document.getElementById("main_view");
+
+      // check scripting interfaces
+      this.mPyBr = null;
+      if (cuemol.hasClass("PythonBridge")) {
+        try {
+          pybr = cuemol.getService("PythonBridge");
+          if (pybr) {
+            this.mPyBr = pybr;
+          }
+        }
+        catch (e) {}
+      }
+
     };
     
     panel.onUnLoad = function ()
@@ -79,14 +92,26 @@ if (!("logpanel" in cuemolui)) {
 
     panel.execCmd = function (aCmd)
     {
-      try {
-        let scene = this.mTabMolView.currentSceneW
-        let fun = new Function("scene", aCmd);
-        fun(scene);
-        //eval(aCmd);
+      if (this.mPyBr) {
+        // use python
+        try {
+          this.mPyBr.runString(aCmd);
+        }
+        catch (e) {
+          debug.exception(e);
+        }
       }
-      catch (e) {
-	cuemol.putLogMsg(e.message);
+      else {
+        // use js
+        try {
+          let scene = this.mTabMolView.currentSceneW;
+          let fun = new Function("scene", aCmd);
+          fun(scene);
+          //eval(aCmd);
+        }
+        catch (e) {
+          cuemol.putLogMsg(e.message);
+        }
       }
     };
 

@@ -41,8 +41,8 @@ namespace pybr {
       
       LString src = LString::format(
         "import sys\n"
-        "sys.path.append('%s')\n"
-        "print(sys.path)\n",
+        "sys.path.append('%s')\n",
+        //"print(sys.path)\n",
         strpath.c_str());
 
       PyRun_SimpleString(src.c_str());
