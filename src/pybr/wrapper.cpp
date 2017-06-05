@@ -622,7 +622,7 @@ PyObject *Wrapper::print(PyObject *self, PyObject *args)
   if (!PyArg_ParseTuple(args, "s", &msg))
     return NULL;
 
-  LOG_DPRINTLN("%s", msg);
+  LOG_DPRINT("%s", msg);
 
   return Py_BuildValue("");
 }
@@ -654,7 +654,7 @@ static PyMethodDef cuemol_methods[] = {
   {"getPropsJSON", (PyCFunction)Wrapper::getPropsJSON, METH_VARARGS, "\n"},
   {"getEnumDefsJSON", (PyCFunction)Wrapper::getEnumDefsJSON, METH_VARARGS, "\n"},
 
-  {"printlog", (PyCFunction)Wrapper::print, METH_VARARGS, "print log message.\n"},
+  {"print", (PyCFunction)Wrapper::print, METH_VARARGS, "print log message.\n"},
   {"initCueMol", (PyCFunction)initCueMol, METH_VARARGS, "initialize CueMol system.\n"},
   {NULL}  /* Sentinel */
 };
@@ -685,7 +685,7 @@ static int cuemol_clear(PyObject *m) {
 
 static struct PyModuleDef moduledef = {
         PyModuleDef_HEAD_INIT,
-        "cuemol",
+        "cuemol_internal",
         NULL,
         sizeof(struct module_state),
         cuemol_methods,
@@ -709,7 +709,7 @@ PyObject *Wrapper::init()
 #if PY_MAJOR_VERSION >= 3
   m = PyModule_Create(&moduledef);
 #else
-  m = Py_InitModule3("cuemol", cuemol_methods, "CueMol module.");
+  m = Py_InitModule3("cuemol_internal", cuemol_methods, "CueMol internal module.");
 #endif
 
 

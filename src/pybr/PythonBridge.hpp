@@ -37,6 +37,8 @@ namespace pybr {
     void runFile2(const LString &filename, qlib::uid_t scene_id, qlib::uid_t view_id);
     void runFile3(const LString &filename, qlib::uid_t scene_id, qlib::uid_t view_id, const LString &argv);
 
+    void runString(const LString &src);
+
     const std::deque<LString> &getCmdArgs() const
     {
       return m_cmdargs;

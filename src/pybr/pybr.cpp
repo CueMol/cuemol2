@@ -14,24 +14,59 @@
 #include "wrapper.hpp"
 #include "PythonBridge.hpp"
 
+#include <boost/filesystem/path.hpp>
+namespace fs = boost::filesystem;
+
 extern void pybr_regClasses();
 
 namespace pybr {
 
-  bool init()
+  bool init(const char *szConfPath)
   {
     pybr_regClasses();
-    //Py_SetProgramName("cuemol2");
-    Py_SetPythonHome(Py_DecodeLocale("D:\\proj64\\Python-3.6.1\\",NULL));
+    Py_SetProgramName(Py_DecodeLocale("cuemol2", NULL));
+    //Py_SetPythonHome(Py_DecodeLocale("D:\\proj64\\Python-3.6.1\\", NULL));
 
-    PyImport_AppendInittab("cuemol", &Wrapper::init);
+    PyImport_AppendInittab("cuemol_internal", &Wrapper::init);
 
     Py_Initialize();
+
+    if (szConfPath!=NULL) {
+      fs::path confpath(szConfPath);
+      confpath = confpath.parent_path();
+      confpath /= "scripts";
+      confpath /= "python";
+      LString strpath = confpath.string();
+      strpath = strpath.escapeQuots();
+      
+      LString src = LString::format(
+        "import sys\n"
+        "sys.path.append('%s')\n"
+        "print(sys.path)\n",
+        strpath.c_str());
+
+      PyRun_SimpleString(src.c_str());
+    }
 
     //bool res = Wrapper::setup();
     //Wrapper::init();
 
-	return true;
+    const char *src = 
+"import sys\n\
+import cuemol_internal\n\
+class CatchOutErr:\n\
+    def __init__(self):\n\
+        self.value = ''\n\
+    def write(self, txt):\n\
+        cuemol_internal.print(txt)\n\
+catchOutErr = CatchOutErr()\n\
+sys.stdout = catchOutErr\n\
+sys.stderr = catchOutErr\n\
+";
+
+    PyRun_SimpleString(src);
+
+    return true;
   }
 
   void fini()
@@ -39,6 +74,7 @@ namespace pybr {
     Py_Finalize();
   }
 
+/*
   bool runFile(const qlib::LString &path)
   {
     FILE *fp = fopen(path.c_str(), "r");
@@ -61,6 +97,8 @@ namespace pybr {
     
     return res;
   }
+*/
+  
 }
 
 #else
@@ -76,11 +114,13 @@ namespace pybr {
   {
   }
 
+/*
   bool runFile(const qlib::LString &path)
   {
     return true;
   }
-
+*/
+  
 }
 
 #endif

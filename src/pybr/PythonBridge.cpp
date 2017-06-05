@@ -92,3 +92,9 @@ void PythonBridge::runFile2(const LString &filename, qlib::uid_t scene_id, qlib:
   runFile3(filename, scene_id, view_id, argv);
 }
 
+void PythonBridge::runString(const LString &src)
+{
+  PyRun_SimpleString(src.c_str());
+}
+
+
