@@ -83,22 +83,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <CustomBuild Include="cuemol2.iss">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">echo "" &gt; $(SolutionDir)\build\setup.ok
-perl iss-version.pl %(FullPath) $(SolutionDir)..\src\version.hpp $(XULRunnerDir) $(BuildSetDir) $(XULDeployDir) $(BoostVer)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">echo "" &gt; $(SolutionDir)\build\setup.ok
-perl iss-version.pl %(FullPath) $(SolutionDir)..\src\version.hpp $(XULRunnerDir) $(BuildSetDir) $(XULDeployDir) $(BoostVer)</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)..\src\version.hpp;%(AdditionalInputs)</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)..\src\version.hpp;%(AdditionalInputs)</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)\build\setup.ok;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)\build\setup.ok;%(Outputs)</Outputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">echo "" &gt; $(SolutionDir)\build\setup.ok
-perl iss-version.pl %(FullPath) $(SolutionDir)..\src\version.hpp $(XULRunnerDir) $(BuildSetDir) $(XULDeployDir) $(BoostVer)</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">echo "" &gt; $(SolutionDir)\build\setup.ok
-perl iss-version.pl %(FullPath) $(SolutionDir)..\src\version.hpp $(XULRunnerDir) $(BuildSetDir) $(XULDeployDir) $(BoostVer)</Command>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)..\src\version.hpp;%(AdditionalInputs)</AdditionalInputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)..\src\version.hpp;%(AdditionalInputs)</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)\build\setup.ok;%(Outputs)</Outputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)\build\setup.ok;%(Outputs)</Outputs>
+
+      <Command>echo "" &gt; $(SolutionDir)\build\setup.ok
+perl iss-version.pl %(FullPath) VERSION_HPP=$(SolutionDir)..\src\version.hpp XULRUNNDER=$(XULRunnerDir) BUILDSET=$(BuildSetDir) XULDEPLOY=$(XULDeployDir) BOOST_VERSION=$(BoostVer) HAVE_PYTHON=$(HAVE_PYTHON) PYTHON=$(PythonDir)</Command>
+
+      <AdditionalInputs>$(SolutionDir)..\src\version.hpp;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs>$(SolutionDir)\build\setup.ok;%(Outputs)</Outputs>
+
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>

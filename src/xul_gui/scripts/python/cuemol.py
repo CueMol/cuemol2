@@ -12,14 +12,17 @@ def print(str):
 def println(str):
     return cuemol_internal.print(str+"\n")
 
+def scene():
+    sceMgr = cuemol_internal.getService("SceneManager")
+    return sceMgr.getScene(sceMgr.activeSceneID);
 
-def getObj(aName):
+def obj(aName):
     sceMgr = cuemol_internal.getService("SceneManager")
     scene = sceMgr.getScene(sceMgr.activeSceneID);
     mol = scene.getObjectByName(aName)
     return mol
 
-def getRend (aRendName):
+def rend (aRendName):
     sceMgr = cuemol_internal.getService("SceneManager")
     scene = sceMgr.getScene(sceMgr.activeSceneID)
     rend = scene.getRendByName(aRendName)
@@ -37,16 +40,20 @@ def sel(aSelStr, aCtxtID=0):
     selobj.compile(aSelStr, aCtxtID)
     return selobj
 
+def color(aColStr, aCtxtID=0):
+    stylem = cuemol_internal.getService("StyleManager")
+    color = stylem.compileColor(aColStr, aCtxtID)
+    return color
 
 def txn(aScene, aMsg, aFunc):
     ## EDIT TXN START
     aScene.startUndoTxn(aMsg)
     try:
         aFunc()
-    except Exception, e:
-        print e, 'error occurred'
-        aScene.rollbackUndoTxn()
-        return False
+#    except Exception, e:
+#        print e, 'error occurred'
+#        aScene.rollbackUndoTxn()
+#        return False
     except:
         aScene.rollbackUndoTxn()
         return False

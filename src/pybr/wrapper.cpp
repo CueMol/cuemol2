@@ -228,7 +228,8 @@ static PyObject *wr_str(QpyWrapObj *pSelf)
   LString str = pObj->toString();
 
 #if PY_MAJOR_VERSION >= 3
-  return PyBytes_FromString(str);
+  //return PyBytes_FromString(str);
+  return PyUnicode_FromString(str);
 #else
   return PyString_FromString(str);
 #endif

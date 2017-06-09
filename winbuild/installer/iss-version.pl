@@ -8,11 +8,39 @@
 use strict;
 
 my $input_iss = $ARGV[0];
-my $version_file = $ARGV[1];
-my $xulbin_dir = $ARGV[2]."\\bin";
-my $buildset_dir = $ARGV[3];
-my $xuldeploy_dir = $ARGV[4];
-my $boost_ver = $ARGV[5];
+unshift(@ARGV);
+
+my $version_file;
+my $xulbin_dir;
+my $buildset_dir;
+my $xuldeploy_dir;
+my $boost_ver;
+my $have_python;
+my $python_dir;
+
+foreach my $arg (@ARGV) {
+  if ($arg =~ /^VERSION_HPP=(.+)$/) {
+    $version_file = $1;
+  }
+  elsif ($arg =~ /^XULRUNNDER=(.+)$/) {
+    $xulbin_dir = $1;
+  }
+  elsif ($arg =~ /^BUILDSET=(.+)$/) {
+    $buildset_dir = $1;
+  }
+  elsif ($arg =~ /^XULDEPLOY=(.+)$/) {
+    $xuldeploy_dir = $1;
+  }
+  elsif ($arg =~ /^BOOST_VERSION=(.+)$/) {
+    $boost_ver = $1;
+  }
+  elsif ($arg =~ /^HAVE_PYTHON=(.+)$/) {
+    $have_python= $1;
+  }
+  elsif ($arg =~ /^PYTHON=(.+)$/) {
+    $python_dir= $1;
+  }
+}
 
 print "xulbin_dir=$xulbin_dir\n";
 die unless (-d $xulbin_dir);
@@ -61,6 +89,11 @@ if (-f "$buildset_dir/ffmpeg-bundle/bin/ffmpeg.exe") {
 my $apbs_cmd = " ";
 if (-d "$buildset_dir/apbs-bundle") {
   $apbs_cmd = "\"/dAPBSBundleDir=$buildset_dir/apbs-bundle\" ";
+}
+
+my $python_cmd = " ";
+if ($have_python eq "Yes" && -d $python_dir) {
+  $python_cmd = "\"/dPythonDir=$python_dir\" ";
 }
 
 my $cmd = "iscc ".

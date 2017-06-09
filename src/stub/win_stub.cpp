@@ -342,8 +342,10 @@ int WINAPI WinMain( HINSTANCE, HINSTANCE, LPSTR args, int )
     argv[i] = strdup(__argv[i]);
   }
 
+  pFileLog = stderr;
+
   // Do the real work.
-  return main(__argc, argv);
+  return internal_main(__argc, argv);
 }
 #endif
 

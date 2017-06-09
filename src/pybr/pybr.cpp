@@ -14,6 +14,8 @@
 #include "wrapper.hpp"
 #include "PythonBridge.hpp"
 
+#include <windows.h>
+
 #include <boost/filesystem/path.hpp>
 namespace fs = boost::filesystem;
 
@@ -28,6 +30,10 @@ namespace pybr {
     //Py_SetPythonHome(Py_DecodeLocale("D:\\proj64\\Python-3.6.1\\", NULL));
 
     PyImport_AppendInittab("cuemol_internal", &Wrapper::init);
+
+    freopen("F:/tmp/001.xml", "r", stdin);
+    freopen("moge.txt", "w", stdout);
+    freopen("moge2.txt", "w", stderr);
 
     Py_Initialize();
 

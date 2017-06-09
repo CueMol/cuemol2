@@ -160,6 +160,12 @@ Source: "{#FFmpegBundleDir}\bin\ffmpeg.exe"; DestDir: "{app}\ffmpeg\bin"; Flags:
 Source: "{#APBSBundleDir}\*"; DestDir: "{app}\apbs"; Flags: ignoreversion recursesubdirs createallsubdirs
 #endif
 
+; Python runtime bundle option
+#ifdef PythonDir
+Source: {#SysDLLDir}\python36.dll; DestDir: {app}; Flags: ignoreversion
+Source: "{#PythonDir}\Lib\*"; DestDir: "{app}\Python\Lib"; Flags: ignoreversion recursesubdirs createallsubdirs
+#endif
+
 [Icons]
 Name: {group}\CueMol; Filename: {app}\cuemol2.exe
 Name: {userdesktop}\CueMol 2.0; Filename: {app}\cuemol2.exe; Tasks: desktopicon\user
