@@ -1105,20 +1105,20 @@ void OglDisplayContext::drawElem(const AbstDrawElem &ade)
     glBindBuffer(GL_ARRAY_BUFFER, nvbo);
 
     if (ntype==DrawElem::VA_VC) {
-      const qbyte *pdata = (const qbyte *) static_cast<const DrawElemVC&>(de).getData();
+      const qbyte *pdata = static_cast<const DrawElemVC&>(de).getData();
       glBufferData(GL_ARRAY_BUFFER, sizeof(DrawElemVC::Elem)*nelems, pdata, GL_STATIC_DRAW);
     }
     else if (ntype==DrawElem::VA_V) {
-      const qbyte *pdata = (const qbyte *) static_cast<const DrawElemV&>(de).getData();
+      const qbyte *pdata = static_cast<const DrawElemV&>(de).getData();
       glBufferData(GL_ARRAY_BUFFER, sizeof(DrawElemV::Elem)*nelems, pdata, GL_STATIC_DRAW);
     }
     else if (ntype==DrawElem::VA_VNC) {
-      const qbyte *pdata = (const qbyte *) static_cast<const DrawElemVNC&>(de).getData();
+      const qbyte *pdata = static_cast<const DrawElemVNC&>(de).getData();
       glBufferData(GL_ARRAY_BUFFER, sizeof(DrawElemVNC::Elem)*nelems, pdata, GL_STATIC_DRAW);
     }
     else if (ntype==DrawElem::VA_VNCI) {
       const DrawElemVNCI &devnci = static_cast<const DrawElemVNCI&>(de);
-      const qbyte *pdata = (const qbyte *) devnci.getData();
+      const qbyte *pdata = devnci.getData();
       glBufferData(GL_ARRAY_BUFFER, sizeof(DrawElemVNCI::Elem)*nelems, pdata, GL_STATIC_DRAW);
 
       glGenBuffers(1, &nvbo_ind);
@@ -1136,7 +1136,7 @@ void OglDisplayContext::drawElem(const AbstDrawElem &ade)
     }
     else if (ntype==DrawElem::VA_VNCI32) {
       const DrawElemVNCI32 &devnci = static_cast<const DrawElemVNCI32&>(de);
-      const qbyte *pdata = (const qbyte *) devnci.getData();
+      const qbyte *pdata = devnci.getData();
       glBufferData(GL_ARRAY_BUFFER, sizeof(DrawElemVNCI32::Elem)*nelems, pdata, GL_STATIC_DRAW);
 
       glGenBuffers(1, &nvbo_ind);
@@ -1165,7 +1165,7 @@ void OglDisplayContext::drawElem(const AbstDrawElem &ade)
     if (de.isUpdated()) {
       // VBO updated --> call glBufferSubData
       if (ntype==DrawElem::VA_VC) {
-        const qbyte *pdata = (const qbyte *) static_cast<const DrawElemVC&>(de).getData();
+        const qbyte *pdata = static_cast<const DrawElemVC&>(de).getData();
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(DrawElemVC::Elem)*nelems, pdata);
       }
       de.setUpdated(false);
@@ -1316,7 +1316,7 @@ void OglDisplayContext::drawElemVA(const DrawElem &de)
 
     const DrawElemVNCI32 &devnci = static_cast<const DrawElemVNCI32&>(de);
 
-    const qbyte *pdata = (const qbyte *) devnci.getData();
+    const qbyte *pdata = devnci.getData();
     glVertexPointer(3, GL_FLOAT, sizeof(DrawElemVNC::Elem), pdata);
     glNormalPointer(GL_FLOAT, sizeof(DrawElemVNC::Elem), pdata+3*sizeof(qfloat32));
     glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(DrawElemVNC::Elem), pdata+6*sizeof(qfloat32));
@@ -1333,7 +1333,7 @@ void OglDisplayContext::drawElemVA(const DrawElem &de)
     if (ntype==DrawElem::VA_VC) {
       glEnableClientState(GL_VERTEX_ARRAY);
       glEnableClientState(GL_COLOR_ARRAY);
-      const qbyte *pdata = (const qbyte *) static_cast<const DrawElemVC&>(de).getData();
+      const qbyte *pdata = static_cast<const DrawElemVC&>(de).getData();
       glVertexPointer(3, GL_FLOAT, sizeof(DrawElemVC::Elem), pdata);
       glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(DrawElemVC::Elem), pdata+3*sizeof(qfloat32));
     }
@@ -1342,7 +1342,7 @@ void OglDisplayContext::drawElemVA(const DrawElem &de)
       glEnableClientState(GL_NORMAL_ARRAY);
       glEnableClientState(GL_COLOR_ARRAY);
       //const DrawElemVNC::Elem *pdata = static_cast<const DrawElemVNC&>(de).getData();
-      const qbyte *pdata = (const qbyte *) static_cast<const DrawElemVNC&>(de).getData();
+      const qbyte *pdata = static_cast<const DrawElemVNC&>(de).getData();
       glVertexPointer(3, GL_FLOAT, sizeof(DrawElemVNC::Elem), pdata);
       glNormalPointer(GL_FLOAT, sizeof(DrawElemVNC::Elem), pdata+3*sizeof(qfloat32));
       glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(DrawElemVNC::Elem), pdata+6*sizeof(qfloat32));

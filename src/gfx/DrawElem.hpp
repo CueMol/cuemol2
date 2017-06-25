@@ -177,7 +177,8 @@ namespace gfx {
       qbyte r, g, b, a;
     };
 
-    const Elem *getData() const { return m_pData; }
+    //const Elem *getData() const { return m_pData; }
+    const qbyte *getData() const { return (const qbyte *) m_pData; }
 
     virtual int getType() const { return VA_VC; }
 
@@ -209,7 +210,8 @@ namespace gfx {
       qfloat32 x, y, z;
     };
 
-    const Elem *getData() const { return m_pData; }
+    //const Elem *getData() const { return m_pData; }
+    const qbyte *getData() const { return (const qbyte *) m_pData; }
 
     virtual int getType() const { return VA_V; }
 
@@ -243,7 +245,8 @@ namespace gfx {
 
     Elem *m_pData;
 
-    const Elem *getData() const { return m_pData; }
+    //const Elem *getData() const { return m_pData; }
+    const qbyte *getData() const { return (const qbyte *) m_pData; }
 
     virtual int getType() const { return VA_VNC; }
 
