@@ -1062,7 +1062,8 @@ void OglDisplayContext::drawElem(const AbstDrawElem &ade)
     return;
   }
 
-  if (!qsys::View::hasVBO()) {
+  //if (!qsys::View::hasVBO()) {
+  if (true) {
     if (ntype==AbstDrawElem::VA_ATTRS||
         ntype==AbstDrawElem::VA_ATTR_INDS) {
       // ERROR: not supported
@@ -1306,6 +1307,19 @@ void OglDisplayContext::drawElemVA(const DrawElem &de)
 
   const int ntype = de.getType();
   const int nelems = de.getSize();
+
+  if (ntype==DrawElem::VA_VNCI32) {
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_NORMAL_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glEnableClientState(GL_INDEX_ARRAY);
+    const DrawElemVNC::Elem *pdata = static_cast<const DrawElemVNC&>(de).getData();
+    glVertexPointer(3, GL_FLOAT, sizeof(DrawElemVNC::Elem), pdata);
+    glNormalPointer(GL_FLOAT, sizeof(DrawElemVNC::Elem), pdata+3*sizeof(qfloat32));
+    glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(DrawElemVNC::Elem), pdata+6*sizeof(qfloat32));
+    
+  }
+  else {
   if (ntype==DrawElem::VA_VC) {
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_COLOR_ARRAY);
@@ -1323,11 +1337,12 @@ void OglDisplayContext::drawElemVA(const DrawElem &de)
     glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(DrawElemVNC::Elem), pdata+6*sizeof(qfloat32));
   }
 
-  glDrawArrays(mode, 0, nelems);
+    glDrawArrays(mode, 0, nelems);
 
-  glDisableClientState(GL_VERTEX_ARRAY);
-  glDisableClientState(GL_NORMAL_ARRAY);
-  glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_NORMAL_ARRAY);
+    glDisableClientState(GL_COLOR_ARRAY);
+  }
 }
 
 namespace {
