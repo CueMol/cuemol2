@@ -256,13 +256,15 @@ void HittestContext::callDisplayList(DisplayContext *pdl)
   BOOST_FOREACH (const HittestList::HitElem &elem, phl->m_data) {
     Vector4D vv = topMatrix().mulvec(elem.pos);
     vv = m_projMat.mulvec(vv);
+
+    MB_DPRINTLN("***** (%f,%f,%f)->(%f,%f,%f)",
+                elem.pos.x(), elem.pos.y(), elem.pos.z(),
+                vv.x(), vv.y(), vv.z());
+      
     if (vv.x()>-1.0 && vv.x()<1.0 &&
         vv.y()>-1.0 && vv.y()<1.0 &&
-        vv.z()>-1.0 && vv.z()<1.0) {
-      //MB_DPRINTLN("(%f,%f,%f)->(%f,%f,%f)",
-      //elem.pos.x(), elem.pos.y(), elem.pos.z(),
-      //vv.x(), vv.y(), vv.z());
-
+        //vv.z()>-1.0 && vv.z()<1.0) {
+        vv.z()>0.0 && vv.z()<1.2) {
       MB_DPRINT("[%d %d]", m_nCurUID, elem.id);
       MB_DPRINTLN(" (%f,%f,%f)",
                   elem.pos.x(), elem.pos.y(), elem.pos.z());

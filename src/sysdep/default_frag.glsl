@@ -22,6 +22,7 @@ void main (void)
 
   float alpha = color.a * frag_alpha;
   vec3 fogmixed = mix( vec3(gl_Fog.color), vec3(color), fog );
+  //vec3 fogmixed = vec3(color);
 
   //color = vec4(mix( vec3(gl_Fog.color), vec3(color), fog), color.a * frag_alpha);
   //color = vec4(mix( vec3(gl_Fog.color), vec3(color), fog), clamp(color.a, 0.0, 1.0) * frag_alpha);
