@@ -260,7 +260,8 @@ void HittestContext::callDisplayList(DisplayContext *pdl)
     MB_DPRINTLN("***** (%f,%f,%f)->(%f,%f,%f)",
                 elem.pos.x(), elem.pos.y(), elem.pos.z(),
                 vv.x(), vv.y(), vv.z());
-      
+
+    // XXX: z<1.2 is empilical value limit that can be seen in the fog
     if (vv.x()>-1.0 && vv.x()<1.0 &&
         vv.y()>-1.0 && vv.y()<1.0 &&
         //vv.z()>-1.0 && vv.z()<1.0) {
