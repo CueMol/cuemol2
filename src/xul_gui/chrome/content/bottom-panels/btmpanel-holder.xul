@@ -50,7 +50,7 @@
 	      id="seq_name_list_container"
 	      persist="width"
 	      style="background-color: white; min-width: 50px; margin: 0px; border: 0px; padding-top: 16px; overflow-x:hidden; overflow-y:hidden;">
-	      <vbox id="seq_name_list" flex="0" style="background-color: white; "/>
+	      <vbox id="seq_name_list" flex="1" style="background-color: white; "/>
 	    </box>
 	    
 	    <splitter hidden="false" class="seqpanel-splitter"/>

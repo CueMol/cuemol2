@@ -10,16 +10,17 @@
     <BuildSetDir>$(PROJ_DIR)</BuildSetDir>
     <XULDeployDir>$(SolutionDir)xul_$(Configuration)\</XULDeployDir>
     <LibraryPath>$(PROJ_DIR)\lib;$(PROJ_DIR)\CGAL-4.6.1\lib;$(PROJ_DIR)\boost\boost_1_57_0\lib32-msvc-12.0;$(LibraryPath)</LibraryPath>
+    <XULRunnerDir>$(BuildSetDir)\xulrunner\xulrunner-39.0-sdk\</XULRunnerDir>
   </PropertyGroup>
 
   <PropertyGroup Label="UserMacros" Condition="'$(Platform)'=='x64'">
     <BuildSetDir>$(PROJ64_DIR)</BuildSetDir>
     <XULDeployDir>$(SolutionDir)xul_$(Configuration)64\</XULDeployDir>
     <LibraryPath>$(PROJ64_DIR)\lib;$(PROJ64_DIR)\CGAL-4.6.1\lib;$(PROJ64_DIR)\boost\boost_1_57_0\lib64-msvc-12.0;$(LibraryPath)</LibraryPath>
+    <XULRunnerDir>$(BuildSetDir)\xulrunner\xulrunner-39.0b7-sdk\</XULRunnerDir>
   </PropertyGroup>
 
   <PropertyGroup Label="UserMacros">
-    <XULRunnerDir>$(BuildSetDir)\xulrunner\xulrunner-39.0b7-sdk\</XULRunnerDir>
     <BoostIncludePath>$(BuildSetDir)\boost\boost_1_57_0</BoostIncludePath>
     <CGALIncludePath>$(BuildSetDir)\CGAL-4.6.1\include</CGALIncludePath>
     <CGALLibraryPath>$(BuildSetDir)\CGAL-4.6.1\lib</CGALLibraryPath>

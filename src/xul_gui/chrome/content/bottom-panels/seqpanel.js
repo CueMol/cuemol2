@@ -20,6 +20,9 @@ if (!("seqpanel" in cuemolui)) {
     panel.mMarkRow = null;
     panel.mMarkPos = null;
 
+    // margin between seq rows (px)
+    panel.mMargin = 5;
+
     panel.onLoad = function ()
     {
       var that = this;
@@ -250,16 +253,22 @@ if (!("seqpanel" in cuemolui)) {
       ctx.textBaseline = "bottom";
       var mtx = ctx.measureText("M");
       this.mTextW = mtx.width+this.mSeqHSep;
-      this.mTextH = this.mFontSize;
+      this.mTextH = this.mFontSize + this.mMargin;
     };
 
-    panel.appendNameItem = function (aName)
+    panel.appendNameItem = function (aName, aOdd)
     {
       var elem = document.createElementNS(
         "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul",
         "label");
       elem.setAttribute("value", aName);
-      elem.setAttribute("style", "margin: 0px; border: 0px; padding: 0px;");
+      let stylestr = "flex: 1; margin: 0px; border: 0px; padding: 0px; height: "+this.mTextH+"px; ";
+
+      if (aOdd) {
+        stylestr += "background-color: buttonface; ";
+      }
+
+      elem.setAttribute("style", stylestr);
       this.mNamesList.appendChild(elem);
       return elem;
     };
@@ -289,21 +298,29 @@ if (!("seqpanel" in cuemolui)) {
 	}
       }
 
-      //while (this.mNamesList.getRowCount()>0)
-      //this.mNamesList.removeItemAt(0);
+      // Remove all NamesList items
       while (this.mNamesList.hasChildNodes())
         this.mNamesList.removeChild(this.mNamesList.firstChild);
-      var name_height;
+
+      // let name_height=0;
+      // let posy = -1;
       for (var y=0; y<nsize; ++y) {
         key = this.mRow[y].mol;
 	chn = this.mRow[y].chain;
         var nm = chn+":"+this.mNames[key];
-        var elem = this.appendNameItem(nm);
+        var elem = this.appendNameItem(nm, y%2);
         //dd("** Added item: "+ nm);
         //dd("elem: "+debug.dumpObjectTree(elem));
+
+        /*
         var bo = elem.boxObject;
         //dd("**Item "+nm+", y="+debug.dumpObjectTree(bo));
         name_height = bo.height;
+        if (posy>0)
+          name_height = bo.screenY-posy;
+        alert("name_height "+y+": "+name_height);
+        posy = bo.screenY;
+         */
       }
 
       if (nmax*this.mTextW>30000) {
@@ -311,11 +328,12 @@ if (!("seqpanel" in cuemolui)) {
       }
       this.renderRuler((nmax>0)?nmax:300);
 
-      var nx = nmax+10;
-      var ny = nsize;
-      var tw = this.mTextW;
-      var th = name_height;
-      this.mTextH = th;
+      let nx = nmax+10;
+      let ny = nsize;
+      let tw = this.mTextW;
+      let th = this.mTextH;
+      //var th = name_height;
+      //this.mTextH = th;
       
       this.mCanvas.width = tw * nx;
       this.mCanvas.height = th * ny;
@@ -326,6 +344,17 @@ if (!("seqpanel" in cuemolui)) {
 
       //dd("********* canvas nx="+nx);
       //dd("********* canvas ny="+ny);
+
+      for (var y=0; y<ny; ++y) {
+        let ww = nmax*tw;
+        let yy = y*th;
+        if (y%2) {
+          let old = ctx.fillStyle;
+          ctx.fillStyle = "buttonface";
+          ctx.fillRect(0, yy, ww, th);
+          ctx.fillStyle = old;
+        }
+      }
 
       for (var y=0; y<ny; ++y) {
 	key = this.mRow[y].mol;

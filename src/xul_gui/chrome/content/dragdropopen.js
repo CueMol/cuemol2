@@ -93,6 +93,7 @@ Qm2Main.prototype.onDrop = function (aEvent)
   for (let i = 0; i < dt.mozItemCount; i++) {
     let moz_data = dt.mozGetDataAt("application/x-moz-file", i);
     dd("mozGetData: "+ i + ", data="+moz_data);
+    alert("mozGetData: "+ i + ", data="+moz_data);
     if (moz_data instanceof Ci.nsIFile) {
       dd("  nsIFile: "+ moz_data.path);
       if (!this.openNsFileImpl(moz_data, names, sc_names)) {
