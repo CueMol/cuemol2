@@ -247,6 +247,8 @@ Qm2Main.prototype.onOpenPDBsite = function ()
 
 Qm2Main.prototype.openPDBsiteImpl = function (pdbid, afuncs)
 {
+  var bUseMmcif = true;
+
   var pdb_url = "";
   var scene = this.mMainWnd.currentSceneW;
   var listener;
@@ -255,11 +257,18 @@ Qm2Main.prototype.openPDBsiteImpl = function (pdbid, afuncs)
 
   //pdb_url = "http://www.rcsb.org/pdb/files/"+pdbid+".pdb.gz";
   //pdb_url = "http://www.rcsb.org/pdb/files/"+pdbid+".pdb"
-  pdb_url = "http://files.rcsb.org/download/"+pdbid+".pdb.gz"
+
+  if (bUseMmcif) {
+    pdb_url = "http://files.rcsb.org/download/"+pdbid+".cif.gz"
+  }
+  else {
+    pdb_url = "http://files.rcsb.org/download/"+pdbid+".pdb.gz"
+  }
 
   //var mid = pdbid.substr(1,2);
   //pdb_url = "ftp://ftp.wwpdb.org/pub/pdb/data/structures/divided/pdb/"+mid+"/pdb"+pdbid+".ent.gz"
 
+  cuemol.putLogMsg("open PDB site: URL=\""+pdb_url+"\"");
   dd("open PDB site: URL=\""+pdb_url+"\"");
   // alert("OK PDBID="+pdb_url);
 
@@ -272,7 +281,13 @@ Qm2Main.prototype.openPDBsiteImpl = function (pdbid, afuncs)
 
   var obj_type;
   var rend_types;
-  var reader = smg.createHandler("pdb", 0);
+  var reader;
+  if (bUseMmcif) {
+    reader = smg.createHandler("mmcif", 0);
+  }
+  else {
+    reader = smg.createHandler("pdb", 0);
+  }
   reader.compress = "gzip";
   ( function () {
     var tmpobj = reader.createDefaultObj();
