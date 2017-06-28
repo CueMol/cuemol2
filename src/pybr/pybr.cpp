@@ -31,12 +31,13 @@ namespace pybr {
 
     PyImport_AppendInittab("cuemol_internal", &Wrapper::init);
 
-    freopen("F:/tmp/001.xml", "r", stdin);
-    freopen("moge.txt", "w", stdout);
-    freopen("moge2.txt", "w", stderr);
+    //freopen("F:/tmp/001.xml", "r", stdin);
+    //freopen("moge.txt", "w", stdout);
+    //freopen("moge2.txt", "w", stderr);
 
     Py_Initialize();
 
+    // Append local python script path to sys.path
     if (szConfPath!=NULL) {
       fs::path confpath(szConfPath);
       confpath = confpath.parent_path();
@@ -57,6 +58,7 @@ namespace pybr {
     //bool res = Wrapper::setup();
     //Wrapper::init();
 
+    // Redirect stdout/err to the logwindow
     const char *src = 
 "import sys\n\
 import cuemol_internal\n\
@@ -69,8 +71,10 @@ catchOutErr = CatchOutErr()\n\
 sys.stdout = catchOutErr\n\
 sys.stderr = catchOutErr\n\
 ";
-
     PyRun_SimpleString(src);
+
+    LOG_DPRINTLN("Python> initialize OK.");
+    LOG_DPRINTLN("Python> %s.", Py_GetVersion());
 
     return true;
   }
