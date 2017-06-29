@@ -1006,17 +1006,31 @@ Qm2Main.prototype.onExecScr = function ()
     return;
 
   if (ftype[fp.filterIndex]=="py") {
-      //pybr.runFile(fp.file.path);
-      let vwid = this.mMainWnd.getCurrentViewID();
-      pybr.runFile2(fp.file.path, scene.uid, vwid);
+    this.execPython(fp.file.path);
   }
   else if (ftype[fp.filterIndex]=="js") {
-      scene.execJSFile(fp.file.path);
+    scene.execJSFile(fp.file.path);
   }
   else if (ftype[fp.filterIndex]=="intjs") {
     this.execIntJS(fp.file.path);
   }
 
+};
+
+Qm2Main.prototype.execPython = function (path)
+{
+  pybr = cuemol.getService("PythonBridge");
+
+  try {
+    pybr.runFile(path);
+  }
+  catch (e) {
+    cuemol.putLogMsg("Python script error:\n"+e.message);
+  }
+  
+  // Add to MRU
+  const mru = require("mru-files");
+  mru.addMRU(path, "scr-python");
 };
 
 Qm2Main.prototype.execIntJS = function (path)
@@ -1052,7 +1066,7 @@ Qm2Main.prototype.execIntJS = function (path)
   }
   catch (e) {
     cuemol.putLogMsg("Exec internal JS error:\n"+e.message);
-    return;
+    // return;
   }
   
   cuemol.putLogMsg("Exec internal JS: "+path+" done.");

@@ -1281,6 +1281,8 @@ Qm2Main.prototype.onFileOpenMRU = function (aEvent)
     this.openSceneImpl(fname, ftype);
   else if (ftype=="scr-intjs")
     this.execIntJS(fname);
+  else if (ftype=="scr-python")
+    this.execPython(fname);
   else
     this.fileOpenHelper1(fname, label, ftype);
 };

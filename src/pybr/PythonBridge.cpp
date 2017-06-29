@@ -46,14 +46,16 @@ void PythonBridge::runFile(const LString &path)
     return;
   }
   
+  /*
   int i;
   int argc = m_cmdargs.size();
   char **argv = new char *[argc];
   for (i=0; i<argc; ++i) {
     argv[i] = LChar::dup(m_cmdargs[i]);
   }
-
   PySys_SetArgvEx(argc, argv, 0);
+   */
+
   int res = PyRun_SimpleFile(fp, path.c_str());
   
   fclose(fp);
@@ -89,4 +91,10 @@ void PythonBridge::runFile2(const LString &filename, qlib::uid_t scene_id, qlib:
 
   runFile3(filename, scene_id, view_id, argv);
 }
+
+void PythonBridge::runString(const LString &src)
+{
+  PyRun_SimpleString(src.c_str());
+}
+
 
