@@ -23,7 +23,7 @@ foreach my $arg (@ARGV) {
     $version_file = $1;
   }
   elsif ($arg =~ /^XULRUNNDER=(.+)$/) {
-    $xulbin_dir = $1;
+    $xulbin_dir = $1."\\bin";
   }
   elsif ($arg =~ /^BUILDSET=(.+)$/) {
     $buildset_dir = $1;
@@ -92,6 +92,8 @@ if (-d "$buildset_dir/apbs-bundle") {
 }
 
 my $python_cmd = " ";
+print("have_python $have_python\n");
+print("python_dir $python_dir\n");
 if ($have_python eq "Yes" && -d $python_dir) {
   $python_cmd = "\"/dPythonDir=$python_dir\" ";
 }
@@ -104,7 +106,7 @@ my $cmd = "iscc ".
 "\"/dCueMolBuildID=$build_ID\" ".
 "\"/dBoostVer=$boost_ver\" ".
 "\"/dWinBuildDir=$xuldeploy_dir\" ".
-$povray_cmd . $ffmpeg_cmd . $apbs_cmd . $input_iss;
+$povray_cmd . $ffmpeg_cmd . $apbs_cmd . $python_cmd . $input_iss;
 
 print("RUN: $cmd\n");
 system($cmd);

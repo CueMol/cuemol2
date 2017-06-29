@@ -17,6 +17,7 @@
 #include <windows.h>
 
 #include <boost/filesystem/path.hpp>
+#include <boost/filesystem.hpp>
 namespace fs = boost::filesystem;
 
 extern void pybr_regClasses();
@@ -27,15 +28,30 @@ namespace pybr {
   {
     pybr_regClasses();
     Py_SetProgramName(Py_DecodeLocale("cuemol2", NULL));
-    //Py_SetPythonHome(Py_DecodeLocale("D:\\proj64\\Python-3.6.1\\", NULL));
 
     PyImport_AppendInittab("cuemol_internal", &Wrapper::init);
+
+#ifdef WIN32
+    // Append local python script path to sys.path
+    if (szConfPath!=NULL) {
+      fs::path confpath(szConfPath);
+      confpath = confpath.parent_path();
+      confpath /= "Python";
+      if (fs::exists(confpath) && fs::is_directory(confpath)) {
+        LString strpath = confpath.string();
+        strpath = strpath.escapeQuots();
+        Py_SetPythonHome(Py_DecodeLocale(strpath.c_str(), NULL));
+      }
+    }
+#endif
 
     //freopen("F:/tmp/001.xml", "r", stdin);
     //freopen("moge.txt", "w", stdout);
     //freopen("moge2.txt", "w", stderr);
 
     Py_Initialize();
+
+    LOG_DPRINTLN("Python> PythonHome=%s", Py_EncodeLocale(Py_GetPythonHome(), NULL));
 
     // Append local python script path to sys.path
     if (szConfPath!=NULL) {

@@ -85,7 +85,7 @@
     <CustomBuild Include="cuemol2.iss">
 
       <Command>echo "" &gt; $(SolutionDir)\build\setup.ok
-perl iss-version.pl %(FullPath) VERSION_HPP=$(SolutionDir)..\src\version.hpp XULRUNNDER=$(XULRunnerDir) BUILDSET=$(BuildSetDir) XULDEPLOY=$(XULDeployDir) BOOST_VERSION=$(BoostVer) HAVE_PYTHON=$(HAVE_PYTHON) PYTHON=$(PythonDir)</Command>
+perl iss-version.pl %(FullPath) VERSION_HPP=$(SolutionDir)..\src\version.hpp XULRUNNDER=$(XULRunnerDir) BUILDSET=$(BuildSetDir) XULDEPLOY=$(XULDeployDir) BOOST_VERSION=$(BoostVer) HAVE_PYTHON=$(HavePython) PYTHON=$(PythonDir)</Command>
 
       <AdditionalInputs>$(SolutionDir)..\src\version.hpp;%(AdditionalInputs)</AdditionalInputs>
       <Outputs>$(SolutionDir)\build\setup.ok;%(Outputs)</Outputs>
