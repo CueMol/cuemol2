@@ -7,11 +7,11 @@ install_dir=$top_srcdir/xul_gui/
 #debug="--disable-debug --enable-m64"
 debug="--enable-debug --enable-m64"
 
-usepybr="--enable-python"
-#usepybr="--disable-python"
+usepybr="--with-python=$HOME/proj64/Python-3.6.1/"
+#usepybr="--without-python"
 
-usexrbr="--with-xmlrpc=$HOME/proj64/xmlrpc-c"
-#usexrbr="--without-xmlrpc"
+#usexrbr="--with-xmlrpc=$HOME/proj64/xmlrpc-c"
+usexrbr="--without-xmlrpc"
 
 lcms="--with-lcms=$HOME/proj64/lcms2"
 
@@ -23,9 +23,9 @@ xz="--with-xz=$HOME/proj64/xz"
 gecko_sdk_dir=$HOME/proj64/xulrunner/xulrunner-39.0-sdk
 #gecko_sdk_dir=$HOME/proj64/xulrunner/xulrunner-39.0-obj/dist
 
-boost_dir=$HOME/proj64/boost_1_57/
+boost_dir=$HOME/proj64/boost_1_64/
 fftw_dir=$HOME/proj64/fftw
-cgal_dir=$HOME/proj64/CGAL-4.6.1/
+cgal_dir=$HOME/proj64/CGAL-4.10/
 glew_dir=$HOME/proj64/glew
 
 #######################
@@ -44,7 +44,7 @@ fi
 env CC="clang" \
 CFLAGS="-O" \
 CXX="clang++" \
-CXXFLAGS=" -O -Wno-parentheses-equality -Wno-c++11-narrowing -Wno-extra-tokens -Wno-invalid-pp-token" \
+CXXFLAGS="-stdlib=libstdc++ -O -Wno-parentheses-equality -Wno-c++11-narrowing -Wno-extra-tokens -Wno-invalid-pp-token" \
 $config_scr \
 --disable-static \
 --enable-shared \

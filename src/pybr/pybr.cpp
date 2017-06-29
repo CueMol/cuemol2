@@ -14,7 +14,7 @@
 #include "wrapper.hpp"
 #include "PythonBridge.hpp"
 
-#include <windows.h>
+//#include <windows.h>
 
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem.hpp>
@@ -51,7 +51,7 @@ namespace pybr {
 
     Py_Initialize();
 
-    LOG_DPRINTLN("Python> PythonHome=%s", Py_EncodeLocale(Py_GetPythonHome(), NULL));
+    //LOG_DPRINTLN("Python> PythonHome=%s", Py_EncodeLocale(Py_GetPythonHome(), NULL));
 
     // Append local python script path to sys.path
     if (szConfPath!=NULL) {

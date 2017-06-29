@@ -570,15 +570,21 @@ AC_SUBST(JS_LDFLAGS)
 #######################################################
 # Python supports
 
-AC_ARG_ENABLE(python,
-    [--enable-python         Enable python support],
-    [
-if test $enableval = yes ; then
+echo "***** PYTHON check"
+AC_ARG_WITH(python,
+[  --with-python[=DIR]      Look for python in DIR (default=no) ],
+[ case "$with_python" in
+  no)
+    AC_MSG_RESULT($with_python)
+    ;;
+
+  yes)
+    AC_MSG_RESULT($with_python)
    dnl check python inc/lib
-   AM_PATH_PYTHON(2.6.0)
-   PY_PREFIX=`$PYTHON -c 'import sys ; print sys.prefix'`
+   AM_PATH_PYTHON(3.6.0)
+   PY_PREFIX=`$PYTHON -c 'import sys ; print(sys.prefix)'`
    PYTHON_LDADD="-lpython$PYTHON_VERSION"
-   PYTHON_CPPFLAGS="-I$PY_PREFIX/include/python$PYTHON_VERSION"
+   PYTHON_CPPFLAGS="-DHAVE_PYTHON -I$PY_PREFIX/include/python$PYTHON_VERSION"
    echo "Python prefix: " $PY_PREFIX ", version: " $PYTHON_VERSION
    AC_SUBST([PYTHON_LDADD])
    AC_SUBST([PYTHON_CPPFLAGS])
@@ -586,9 +592,30 @@ if test $enableval = yes ; then
    SCR_CPPFLAGS="$SCR_CPPFLAGS -DHAVE_PYTHON"
    SCR_LDADD="$SCR_LDADD -lpybr $PYTHON_LDADD"
    SCR_LDFLAGS="$SCR_LDFLAGS -L../pybr/"
-fi
-    ],
-    [])
+    ;;
+
+  *)
+    AC_MSG_RESULT($with_python)
+    PYTHON=$with_python/bin/python3
+   dnl check python inc/lib
+   AM_PATH_PYTHON(3.6.0)
+   PY_PREFIX=`$PYTHON -c 'import sys ; print(sys.prefix)'`
+   PYTHON_LDADD="-lpython${PYTHON_VERSION}m"
+   PYTHON_LDFLAGS="-L$PY_PREFIX/lib"
+   PYTHON_CPPFLAGS="-DHAVE_PYTHON -I$PY_PREFIX/include/python${PYTHON_VERSION}m"
+   echo "Python prefix: " $PY_PREFIX ", version: " $PYTHON_VERSION
+   AC_SUBST([PYTHON_LDADD])
+   AC_SUBST([PYTHON_LDFLAGS])
+   AC_SUBST([PYTHON_CPPFLAGS])
+   BUILD_SCR="$BUILD_SCR pybr"
+   SCR_CPPFLAGS="$SCR_CPPFLAGS -DHAVE_PYTHON"
+   SCR_LDADD="$SCR_LDADD -lpybr $PYTHON_LDADD"
+   SCR_LDFLAGS="$SCR_LDFLAGS -L../pybr/ $PYTHON_LDFLAGS"
+    ;;
+  esac ],
+[
+    AC_MSG_RESULT(no)
+])
 
 #######################################################
 # XML-RPC supports
