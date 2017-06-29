@@ -2,10 +2,6 @@
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ImportGroup Label="PropertySheets" />
 
-  <PropertyGroup Label="UserMacros">
-    <SourceDir>$(SolutionDir)..\src\</SourceDir>
-  </PropertyGroup>
-
   <PropertyGroup Label="UserMacros" Condition="'$(Platform)'=='Win32'">
     <BuildSetDir>$(PROJ_DIR)</BuildSetDir>
     <XULDeployDir>$(SolutionDir)xul_$(Configuration)\</XULDeployDir>
@@ -14,6 +10,7 @@
   </PropertyGroup>
 
   <PropertyGroup Label="UserMacros" Condition="'$(Platform)'=='x64'">
+    <SourceDir>$(SolutionDir)..\src\</SourceDir>
     <BuildSetDir>$(PROJ64_DIR)</BuildSetDir>
     <XULDeployDir>$(SolutionDir)xul_$(Configuration)64\</XULDeployDir>
     <LibraryPath>$(PROJ64_DIR)\lib;$(PROJ64_DIR)\CGAL-4.6.1\lib;$(PROJ64_DIR)\boost\boost_1_57_0\lib64-msvc-12.0;$(LibraryPath)</LibraryPath>
@@ -30,7 +27,6 @@
 
     <IncludePath>$(BuildSetDir)\include;$(CGALIncludePath);$(BoostIncludePath);$(IncludePath)</IncludePath>
     <ExecutablePath>$(BuildSetDir)\bin;$(XULRunnerDir)\bin;$(ExecutablePath)</ExecutablePath>
-
   </PropertyGroup>
 
   <PropertyGroup Label="UserMacros" Condition="'$(Configuration)'=='Release'">
