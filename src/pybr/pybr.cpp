@@ -2,19 +2,14 @@
 // pybr: python bridge module
 //
 
+#include <common.h>
+
 #ifdef HAVE_PYTHON
 #include <Python.h>
-#endif
-
-#include <common.h>
 #include <qlib/LString.hpp>
-
-#ifdef HAVE_PYTHON
 #include "pybr.hpp"
 #include "wrapper.hpp"
 #include "PythonBridge.hpp"
-
-//#include <windows.h>
 
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem.hpp>
@@ -31,7 +26,6 @@ namespace pybr {
 
     PyImport_AppendInittab("cuemol_internal", &Wrapper::init);
 
-#ifdef WIN32
     // Append local python script path to sys.path
     if (szConfPath!=NULL) {
       fs::path confpath(szConfPath);
@@ -41,13 +35,9 @@ namespace pybr {
         LString strpath = confpath.string();
         strpath = strpath.escapeQuots();
         Py_SetPythonHome(Py_DecodeLocale(strpath.c_str(), NULL));
+	MB_DPRINTLN("***** SetPythonHome=%s", strpath.c_str());
       }
     }
-#endif
-
-    //freopen("F:/tmp/001.xml", "r", stdin);
-    //freopen("moge.txt", "w", stdout);
-    //freopen("moge2.txt", "w", stderr);
 
     Py_Initialize();
 
@@ -83,6 +73,8 @@ class CatchOutErr:\n\
         self.value = ''\n\
     def write(self, txt):\n\
         cuemol_internal.print(txt)\n\
+    def flush(self):\n\
+        pass\n\
 catchOutErr = CatchOutErr()\n\
 sys.stdout = catchOutErr\n\
 sys.stderr = catchOutErr\n\

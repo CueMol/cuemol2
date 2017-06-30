@@ -12,6 +12,8 @@ TARGET_RESDIR=$TARGET_CONTENTSDIR/Resources
 DEPLOY_DIR=$top_srcdir/xul_gui
 REL_DEPLOY_DIR=../../../$DEPLOY_DIR
 
+HAVE_PYTHON=@HAVE_PYTHON@
+
 # Remove first, if it exists
 if [ -d "CueMol2.app" ]; then
   rm -rf "CueMol2.app"
@@ -51,6 +53,15 @@ ln -s $XUL_BINDIR/dependentlibs.list $TARGET_RESDIR/dependentlibs.list
 mkdir -p "CueMol2.app/Contents/Frameworks"
 ln -s $XUL_FRAMEWORK_DIR CueMol2.app/Contents/Frameworks/XUL.framework
 
+# Make python link (if exists)
+if test x$HAVE_PYTHON = xyes ; then
+    PY_PREFIX=@PY_PREFIX@
+    if [ -L $TARGET_RESDIR/Python ]; then
+	#echo "rm $TARGET_RESDIR/Python"
+	rm $TARGET_RESDIR/Python
+    fi
+    ln -s $PY_PREFIX $TARGET_RESDIR/Python
+fi
 
 # 	$(LN_S) $(XUL_BINDIR)/omni.ja $(TARGET_RESDIR)/omni.ja
 #	$(LN_S) $(XUL_BINDIR)/platform.ini $(TARGET_RESDIR)/platform.ini

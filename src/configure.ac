@@ -450,17 +450,20 @@ fi
 AC_SUBST(BOOST_LDFLAGS)
 AC_SUBST(BOOST_CPPFLAGS)
 
+# Check for boost_timer library
+USE_BOOST_TIMER=
 AC_ARG_ENABLE(boosttimer,
     [--enable-boosttimer     Enable performance measurement using boost_timer (boost_timer required)],
     [
 if test $enableval = yes ; then
 BOOST_TIMER_LIB=-lboost_timer
+USE_BOOST_TIMER=yes
 AC_SUBST([BOOST_TIMER_LIB])
 AC_DEFINE([USE_BOOST_TIMER], [1], [Use boost_timer])
 fi
     ],
     [])
-
+AC_SUBST([USE_BOOST_TIMER])
 
 #####
 
@@ -579,20 +582,25 @@ AC_ARG_WITH(python,
     ;;
 
   yes)
-    AC_MSG_RESULT($with_python)
+   AC_MSG_RESULT($with_python)
    dnl check python inc/lib
    AM_PATH_PYTHON(3.6.0)
    PY_PREFIX=`$PYTHON -c 'import sys ; print(sys.prefix)'`
-   PYTHON_LDADD="-lpython$PYTHON_VERSION"
-   PYTHON_CPPFLAGS="-DHAVE_PYTHON -I$PY_PREFIX/include/python$PYTHON_VERSION"
+   PYTHON_LDADD="-lpython${PYTHON_VERSION}m"
+   PYTHON_CPPFLAGS="-I$PY_PREFIX/include/python${PYTHON_VERSION}m"
    echo "Python prefix: " $PY_PREFIX ", version: " $PYTHON_VERSION
    AC_SUBST([PYTHON_LDADD])
    AC_SUBST([PYTHON_CPPFLAGS])
+   AC_SUBST([PY_PREFIX])
    BUILD_SCR="$BUILD_SCR pybr"
-   SCR_CPPFLAGS="$SCR_CPPFLAGS -DHAVE_PYTHON"
+   SCR_CPPFLAGS="$SCR_CPPFLAGS"
    SCR_LDADD="$SCR_LDADD -lpybr $PYTHON_LDADD"
    SCR_LDFLAGS="$SCR_LDFLAGS -L../pybr/"
-    ;;
+
+   HAVE_PYTHON=yes
+   AC_SUBST([HAVE_PYTHON])
+   AC_DEFINE([HAVE_PYTHON], [1], [Define to 1 if you have python3])
+   ;;
 
   *)
     AC_MSG_RESULT($with_python)
@@ -602,15 +610,20 @@ AC_ARG_WITH(python,
    PY_PREFIX=`$PYTHON -c 'import sys ; print(sys.prefix)'`
    PYTHON_LDADD="-lpython${PYTHON_VERSION}m"
    PYTHON_LDFLAGS="-L$PY_PREFIX/lib"
-   PYTHON_CPPFLAGS="-DHAVE_PYTHON -I$PY_PREFIX/include/python${PYTHON_VERSION}m"
+   PYTHON_CPPFLAGS="-I$PY_PREFIX/include/python${PYTHON_VERSION}m"
    echo "Python prefix: " $PY_PREFIX ", version: " $PYTHON_VERSION
    AC_SUBST([PYTHON_LDADD])
    AC_SUBST([PYTHON_LDFLAGS])
    AC_SUBST([PYTHON_CPPFLAGS])
+   AC_SUBST([PY_PREFIX])
    BUILD_SCR="$BUILD_SCR pybr"
-   SCR_CPPFLAGS="$SCR_CPPFLAGS -DHAVE_PYTHON"
+   SCR_CPPFLAGS="$SCR_CPPFLAGS"
    SCR_LDADD="$SCR_LDADD -lpybr $PYTHON_LDADD"
    SCR_LDFLAGS="$SCR_LDFLAGS -L../pybr/ $PYTHON_LDFLAGS"
+
+   HAVE_PYTHON=yes
+   AC_SUBST([HAVE_PYTHON])
+   AC_DEFINE([HAVE_PYTHON], [1], [Define to 1 if you have python3])
     ;;
   esac ],
 [
