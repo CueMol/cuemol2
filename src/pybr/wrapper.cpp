@@ -2,9 +2,10 @@
 // Object wrapper for PyObject
 //
 
+#include <common.h>
+
 #include <Python.h>
 
-#include <common.h>
 #include <qlib/LString.hpp>
 #include <qlib/LVarArgs.hpp>
 #include <qlib/LVarArray.hpp>
@@ -111,19 +112,12 @@ static PyObject *wr_getattr(QpyWrapObj *pSelf, const char *name)
     return NULL;
   }
 
-  if (pObj->hasProperty(name)) {
-    // name is prop
-    qlib::LVariant lvar;
-    if (!pObj->getProperty(name, lvar)) {
-      LString msg =
-	LString::format("GetProp: getProperty(\"%s\") call failed.", name);
-      PyErr_SetString(PyExc_RuntimeError, msg);
-      return NULL;
-    }
+  PyObject *pRes = Wrapper::getPropImpl(pObj, name);
 
-    return Wrapper::lvarToPyObj(lvar);
-  }
-  else if (pObj->hasMethod(name)) {
+  if (pRes!=NULL)
+    return pRes;
+
+  if (pObj->hasMethod(name)) {
     // name is method
     //  --> create and return method object
     return Wrapper::createMethodObj((PyObject *)pSelf, name);
@@ -136,16 +130,32 @@ static PyObject *wr_getattr(QpyWrapObj *pSelf, const char *name)
   return NULL;
 }
 
-/// setter (writable property)
-static int wr_setattr(QpyWrapObj *pSelf, const char *name, PyObject *pValue)
+//static
+PyObject *Wrapper::getPropImpl(qlib::LScriptable *pObj, const LString &name)
 {
-  qlib::LScriptable *pObj = pSelf->m_pObj;
-  if (pObj==NULL) {
-    PyErr_SetString(PyExc_RuntimeError, "wrapped obj is null");
-    return -1;
+  if (pObj->hasNestedProperty(name)) {
+    // name is prop
+    qlib::LVariant lvar;
+    if (!pObj->getNestedProperty(name, lvar)) {
+      LString msg =
+	LString::format("GetProp: getProperty(\"%s\") call failed.", name);
+      PyErr_SetString(PyExc_RuntimeError, msg);
+      return NULL;
+    }
+
+    return Wrapper::lvarToPyObj(lvar);
   }
 
-  if (!pObj->hasWritableProperty(name)) {
+  return NULL;
+}
+
+//static
+int Wrapper::setPropImpl(qlib::LScriptable *pObj, const LString &name, PyObject *pValue)
+{
+  // qlib::NestedPropHandler nph(name, pRootObj);
+  // qlib::LPropSupport *pObj = nph.apply();
+
+  if (!pObj->hasNestedWritableProperty(name)) {
     // writable prop not found
     LString msg =
       LString::format("SetProp: property \"%s\" not found or readonly.", name);
@@ -194,7 +204,7 @@ static int wr_setattr(QpyWrapObj *pSelf, const char *name, PyObject *pValue)
   ok = false;
   errmsg = LString();
   try {
-    ok = pObj->setProperty(name, lvar);
+    ok = pObj->setNestedProperty(name, lvar);
   }
   catch (const qlib::LException &e) {
     errmsg = 
@@ -214,6 +224,18 @@ static int wr_setattr(QpyWrapObj *pSelf, const char *name, PyObject *pValue)
 
   // OK
   return 0;
+}
+
+/// setter (writable property)
+static int wr_setattr(QpyWrapObj *pSelf, const char *name, PyObject *pValue)
+{
+  qlib::LScriptable *pObj = pSelf->m_pObj;
+  if (pObj==NULL) {
+    PyErr_SetString(PyExc_RuntimeError, "wrapped obj is null");
+    return -1;
+  }
+
+  return Wrapper::setPropImpl(pObj, name, pValue);
 }
 
 /// stringify object
@@ -385,18 +407,47 @@ PyObject *Wrapper::getClassName(PyObject *self, PyObject *args)
 }
 
 //static
+PyObject *Wrapper::setProp(PyObject *self, PyObject *args)
+{
+  const char *propname;
+  PyObject *pPyObj, *pPyVal;
+
+  if (!PyArg_ParseTuple(args, "OsO", &pPyObj, &propname, &pPyVal)) {
+    PyErr_SetString(PyExc_RuntimeError, "invalid arguments");
+    return NULL;
+  }
+
+  qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
+  if (pScObj==NULL) {
+    PyErr_SetString(PyExc_RuntimeError, "wrapper obj not found");
+    return NULL;
+  }
+  
+  int res = setPropImpl(pScObj, propname, pPyVal);
+  if (res<0)
+    return NULL;
+
+  Py_RETURN_NONE;
+}
+
+
+//static
 PyObject *Wrapper::isPropDefault(PyObject *self, PyObject *args)
 {
   const char *propname;
   PyObject *pPyObj;
 
-  if (!PyArg_ParseTuple(args, "Os", &pPyObj, &propname))
+  if (!PyArg_ParseTuple(args, "Os", &pPyObj, &propname)) {
+    PyErr_SetString(PyExc_RuntimeError, "invalid arguments");
     return NULL;
-
+  }
+  
   qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
-  if (pScObj==NULL)
+  if (pScObj==NULL) {
+    PyErr_SetString(PyExc_RuntimeError, "wrapper obj not found");
     return NULL;
-
+  }
+  
   bool ok = true;
   int result;
   LString errmsg;
@@ -483,18 +534,50 @@ PyObject *Wrapper::hasPropDefault(PyObject *self, PyObject *args)
 }
 
 //static
+PyObject *Wrapper::getProp(PyObject *self, PyObject *args)
+{
+  const char *propname;
+  PyObject *pPyObj;
+
+  if (!PyArg_ParseTuple(args, "Os", &pPyObj, &propname)) {
+    PyErr_SetString(PyExc_RuntimeError, "Invalid arguments");
+    return NULL;
+  }
+
+  qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
+  if (pScObj==NULL) {
+    PyErr_SetString(PyExc_RuntimeError, "Wrapper not found");
+    return NULL;
+  }
+
+  PyObject *pRes = Wrapper::getPropImpl(pScObj, propname);
+  if (pRes==NULL) {
+    LString errmsg = 
+      LString::format("GetProp <%s> failed", propname);
+    PyErr_SetString(PyExc_RuntimeError, errmsg.c_str());
+    return NULL;
+  }
+
+  return pRes;
+}
+
+//static
 PyObject *Wrapper::resetProp(PyObject *self, PyObject *args)
 {
   const char *propname;
   PyObject *pPyObj;
 
-  if (!PyArg_ParseTuple(args, "Os", &pPyObj, &propname))
+  if (!PyArg_ParseTuple(args, "Os", &pPyObj, &propname)) {
+    PyErr_SetString(PyExc_RuntimeError, "Invalid arguments");
     return NULL;
+  }
 
   qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
-  if (pScObj==NULL)
+  if (pScObj==NULL) {
+    PyErr_SetString(PyExc_RuntimeError, "Wrapper not found");
     return NULL;
-
+  }
+  
   bool ok;
   LString errmsg;
 
@@ -649,6 +732,8 @@ static PyMethodDef cuemol_methods[] = {
   {"getAbiClassName", (PyCFunction)Wrapper::getAbiClassName, METH_VARARGS, "get C++ABI class name.\n"},
   {"getClassName", (PyCFunction)Wrapper::getClassName, METH_VARARGS, "get class name.\n"},
 
+  {"setProp", (PyCFunction)Wrapper::setProp, METH_VARARGS, "\n"},
+  {"getProp", (PyCFunction)Wrapper::getProp, METH_VARARGS, "\n"},
   {"isPropDefault", (PyCFunction)Wrapper::isPropDefault, METH_VARARGS, "\n"},
   {"hasPropDefault", (PyCFunction)Wrapper::hasPropDefault, METH_VARARGS, "\n"},
   {"resetProp", (PyCFunction)Wrapper::resetProp, METH_VARARGS, "\n"},

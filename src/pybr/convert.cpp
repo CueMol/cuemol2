@@ -2,14 +2,14 @@
 // Object conversion routines (qlib::LVariant and PyObject)
 //
 
-#include <Python.h>
-
 #include <common.h>
 #include <qlib/LString.hpp>
 #include <qlib/LVarArgs.hpp>
 #include <qlib/LVarArray.hpp>
 #include <qlib/ClassRegistry.hpp>
 #include <qlib/LScrCallBack.hpp>
+
+#include <Python.h>
 
 #include "wrapper.hpp"
 

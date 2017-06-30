@@ -22,7 +22,7 @@ namespace pybr {
     static PyObject *init();
 
     //////////////////////////////////////////
-    // cuemol.* service methods implementation
+    // cuemol_internal.* service methods implementation
 
     /// get cuemol service object
     static PyObject *getService(PyObject *self, PyObject *args);
@@ -38,6 +38,10 @@ namespace pybr {
 
     //////////
     // Property operations
+
+    static PyObject *setProp(PyObject *self, PyObject *args);
+    
+    static PyObject *getProp(PyObject *self, PyObject *args);
 
     /// Get property's default flag
     ///  args: object, propname
@@ -82,6 +86,10 @@ namespace pybr {
     /// convert PyObject to LVariant
     static void pyObjToLVar(PyObject *pPyObj, qlib::LVariant &rval);
 
+
+    static int setPropImpl(qlib::LScriptable *pObj, const LString &name, PyObject *pValue);
+
+    static PyObject *getPropImpl(qlib::LScriptable *pObj, const LString &name);
 
   private:
     static bool setupMethObj();

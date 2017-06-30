@@ -65,6 +65,7 @@ namespace qlib {
     // convenience methods for nested prop handling
 
     bool hasNestedProperty(const LString &propnm) const;
+    bool hasNestedWritableProperty(const LString &propnm) const;
     bool getNestedProperty(const LString &propnm, LVariant &presult) const;
     bool setNestedProperty(const LString &propnm, const LVariant &pvalue);
     bool resetNestedProperty(const LString &propnm);

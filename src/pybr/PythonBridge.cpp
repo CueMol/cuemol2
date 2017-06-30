@@ -3,11 +3,11 @@
 //  Python Interpreter Bridge
 //
 
-#include <Python.h>
-
 #include <common.h>
 #include <qlib/LDebug.hpp>
 #include <qlib/LChar.hpp>
+
+#include <Python.h>
 
 #include "pybr.hpp"
 #include "PythonBridge.hpp"

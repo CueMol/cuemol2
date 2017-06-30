@@ -6,26 +6,48 @@ def createObj(name):
 def getService(name):
     return cuemol_internal.getService(name)
 
-def print(str):
-    return cuemol_internal.print(str)
+def print(astr):
+    return cuemol_internal.print(astr)
 
-def println(str):
-    return cuemol_internal.print(str+"\n")
+def println(astr):
+    return cuemol_internal.print(astr+"\n")
 
 def scene():
     sceMgr = cuemol_internal.getService("SceneManager")
     return sceMgr.getScene(sceMgr.activeSceneID);
 
-def obj(aName):
+def obj(aName, aScene=None):
     sceMgr = cuemol_internal.getService("SceneManager")
-    scene = sceMgr.getScene(sceMgr.activeSceneID);
-    mol = scene.getObjectByName(aName)
-    return mol
 
-def rend (aRendName):
+    scene = None
+    if aScene==None:
+        scene = sceMgr.getScene(sceMgr.activeSceneID);
+    else:
+        scene = aScene
+
+    obj = None
+    if isinstance(aName, str):
+        obj = scene.getObjectByName(aName)
+    elif isinstance(aName, int):
+        obj = scene.getObject(aName)
+
+    return obj
+
+def rend(aName, aScene=None):
     sceMgr = cuemol_internal.getService("SceneManager")
-    scene = sceMgr.getScene(sceMgr.activeSceneID)
-    rend = scene.getRendByName(aRendName)
+
+    scene = None
+    if aScene==None:
+        scene = sceMgr.getScene(sceMgr.activeSceneID);
+    else:
+        scene = aScene
+
+    rend = None
+    if isinstance(aName, str):
+        rend = scene.getRendByName(aName)
+    elif isinstance(aName, int):
+        rend = scene.getRenderer(aName)
+    
     return rend
 
 def vec(aX, aY, aZ):

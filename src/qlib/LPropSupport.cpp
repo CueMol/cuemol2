@@ -134,6 +134,12 @@ bool LPropSupport::hasNestedProperty(const LString &propname) const
   return nph.apply()->hasProperty(nph.last_name());
 }
 
+bool LPropSupport::hasNestedWritableProperty(const LString &propname) const
+{
+  NestedPropHandler nph(propname, const_cast<LPropSupport*>(this));
+  return nph.apply()->hasWritableProperty(nph.last_name());
+}
+
 bool LPropSupport::getNestedProperty(const LString &propname, LVariant &presult) const
 {
   NestedPropHandler nph(propname, const_cast<LPropSupport*>(this));
