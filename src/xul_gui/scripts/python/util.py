@@ -1,3 +1,6 @@
+#
+#  Generic utility functions
+#
 
 import cuemol
 
@@ -21,13 +24,13 @@ class UndoTxn:
 #        print('__del__')
 
     def __enter__(self):
-        print('__enter__')
+#        print('__enter__')
         self.scene.startUndoTxn(self.msg)
         #raise ValueError # [LABEL C]
         return self
 
     def __exit__(self, exception_type, exception_value, traceback):
-        print('__exit__')
+#        print('__exit__')
         if exception_value==None:
             self.scene.commitUndoTxn()
         else:

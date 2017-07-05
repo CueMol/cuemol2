@@ -385,12 +385,16 @@ PyObject *Wrapper::getClassName(PyObject *self, PyObject *args)
 {
   PyObject *pPyObj;
 
-  if (!PyArg_ParseTuple(args, "O", &pPyObj))
+  if (!PyArg_ParseTuple(args, "O", &pPyObj)) {
+    PyErr_SetString(PyExc_RuntimeError, "invalid arguments");
     return NULL;
+  }
 
   qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
-  if (pScObj==NULL)
+  if (pScObj==NULL) {
+    PyErr_SetString(PyExc_RuntimeError, "wrapper obj not found");
     return NULL;
+  }
   
   LString str;
   if (pScObj!=NULL) {
@@ -404,6 +408,34 @@ PyObject *Wrapper::getClassName(PyObject *self, PyObject *args)
   }
 
   return Py_BuildValue("s", str.c_str());
+}
+
+//static
+PyObject *Wrapper::isInstanceOf(PyObject *self, PyObject *args)
+{
+  PyObject *pPyObj;
+  const char *chkclsnm;
+
+  if (!PyArg_ParseTuple(args, "Os", &pPyObj, &chkclsnm)) {
+    PyErr_SetString(PyExc_RuntimeError, "invalid arguments");
+    return NULL;
+  }
+
+  qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
+  if (pScObj==NULL) {
+    PyErr_SetString(PyExc_RuntimeError, "wrapper obj not found");
+    return NULL;
+  }
+  
+  if (pScObj->implements(chkclsnm)) {
+    return Py_True;
+  }
+  else {
+    return Py_False;
+  }
+
+  return NULL;
+
 }
 
 //static
@@ -731,6 +763,7 @@ static PyMethodDef cuemol_methods[] = {
 
   {"getAbiClassName", (PyCFunction)Wrapper::getAbiClassName, METH_VARARGS, "get C++ABI class name.\n"},
   {"getClassName", (PyCFunction)Wrapper::getClassName, METH_VARARGS, "get class name.\n"},
+  {"isInstanceOf", (PyCFunction)Wrapper::isInstanceOf, METH_VARARGS, "check object type\n"},
 
   {"setProp", (PyCFunction)Wrapper::setProp, METH_VARARGS, "\n"},
   {"getProp", (PyCFunction)Wrapper::getProp, METH_VARARGS, "\n"},

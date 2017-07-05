@@ -35,6 +35,7 @@ namespace pybr {
 
     static PyObject *getAbiClassName(PyObject *self, PyObject *args);
     static PyObject *getClassName(PyObject *self, PyObject *args);
+    static PyObject *isInstanceOf(PyObject *self, PyObject *args);
 
     //////////
     // Property operations

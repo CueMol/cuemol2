@@ -14,6 +14,38 @@ def println(astr):
 
 ##########
 
+def iswrapper(aObj):
+    tp = type(aObj)
+    if str(tp) == "<class 'cuemol.Wrapper'>":
+        return True
+    else:
+        return False
+
+def isimpl(aObj, aIfName):
+    if not iswrapper(aObj):
+        return False
+    return cuemol_internal.isInstanceOf(aObj, aIfName)
+
+def isobj(aObj):
+    if not iswrapper(aObj):
+        return False
+    return cuemol_internal.isInstanceOf(aObj, "Object")
+
+def isrend(aObj):
+    if not iswrapper(aObj):
+        return False
+    return cuemol_internal.isInstanceOf(aObj, "Renderer")
+    
+def issel(aObj):
+    if not iswrapper(aObj):
+        return False
+    return cuemol_internal.isInstanceOf(aObj, "Selection")
+
+def iscol(aObj):
+    if not iswrapper(aObj):
+        return False
+    return cuemol_internal.isInstanceOf(aObj, "AbstractColor")
+
 def scene():
     sceMgr = cuemol_internal.getService("SceneManager")
     return sceMgr.getScene(sceMgr.activeSceneID);
@@ -22,6 +54,9 @@ def svc(name):
     return cuemol_internal.getService(name)
 
 def obj(aName, aScene=None):
+    if isobj(aName):
+        return aName
+    
     sceMgr = cuemol_internal.getService("SceneManager")
 
     scene = None
@@ -36,9 +71,15 @@ def obj(aName, aScene=None):
     elif isinstance(aName, int):
         obj = scene.getObject(aName)
 
+    if obj==None:
+        raise RuntimeError("object "+str(aName)+" not found")
+
     return obj
 
 def rend(aName, aScene=None):
+    if isrend(aName):
+        return aName
+
     sceMgr = cuemol_internal.getService("SceneManager")
 
     scene = None
@@ -53,6 +94,9 @@ def rend(aName, aScene=None):
     elif isinstance(aName, int):
         rend = scene.getRenderer(aName)
     
+    if rend==None:
+        raise RuntimeError("renderer "+str(aName)+" not found")
+
     return rend
 
 def vec(aX, aY, aZ):
@@ -63,12 +107,17 @@ def vec(aX, aY, aZ):
     return v;
 
 def sel(aSelStr, aCtxtID=0):
+    if issel(aSelStr):
+        return aSelStr
     selobj = cuemol_internal.createObj("SelCommand")
     selobj.compile(aSelStr, aCtxtID)
     return selobj
 
 def col(aColStr, aCtxtID=0):
+    if iscol(aColStr):
+        return aColStr
     stylem = cuemol_internal.getService("StyleManager")
     color = stylem.compileColor(aColStr, aCtxtID)
     return color
+
 
