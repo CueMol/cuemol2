@@ -36,3 +36,22 @@ class UndoTxn:
             print('  exception_value:', exception_value)
             print('  traceback:', traceback)
 
+
+def txn(aScene, aMsg, aFunc):
+    ## EDIT TXN START
+    aScene.startUndoTxn(aMsg)
+    try:
+        aFunc()
+#    except Exception, e:
+#        print e, 'error occurred'
+#        aScene.rollbackUndoTxn()
+#        return False
+    except:
+        aScene.rollbackUndoTxn()
+        return False
+    aScene.commitUndoTxn()
+    ## EDIT TXN END
+    return True
+
+
+

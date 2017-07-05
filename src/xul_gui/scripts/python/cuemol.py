@@ -12,9 +12,14 @@ def print(astr):
 def println(astr):
     return cuemol_internal.print(astr+"\n")
 
+##########
+
 def scene():
     sceMgr = cuemol_internal.getService("SceneManager")
     return sceMgr.getScene(sceMgr.activeSceneID);
+
+def svc(name):
+    return cuemol_internal.getService(name)
 
 def obj(aName, aScene=None):
     sceMgr = cuemol_internal.getService("SceneManager")
@@ -62,24 +67,8 @@ def sel(aSelStr, aCtxtID=0):
     selobj.compile(aSelStr, aCtxtID)
     return selobj
 
-def color(aColStr, aCtxtID=0):
+def col(aColStr, aCtxtID=0):
     stylem = cuemol_internal.getService("StyleManager")
     color = stylem.compileColor(aColStr, aCtxtID)
     return color
-
-def txn(aScene, aMsg, aFunc):
-    ## EDIT TXN START
-    aScene.startUndoTxn(aMsg)
-    try:
-        aFunc()
-#    except Exception, e:
-#        print e, 'error occurred'
-#        aScene.rollbackUndoTxn()
-#        return False
-    except:
-        aScene.rollbackUndoTxn()
-        return False
-    aScene.commitUndoTxn()
-    ## EDIT TXN END
-    return True
 

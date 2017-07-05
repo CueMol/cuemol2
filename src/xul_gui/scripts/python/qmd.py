@@ -7,7 +7,7 @@ def bgcolor(aCol):
     sc = cuemol.scene()
     col = aCol
     if isinstance(aCol, str):
-        col = cuemol.color(aCol, sc.uid)
+        col = cuemol.col(aCol, sc.uid)
     sc.bgcolor = col
 
 
