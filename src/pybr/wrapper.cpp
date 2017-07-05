@@ -138,7 +138,7 @@ PyObject *Wrapper::getPropImpl(qlib::LScriptable *pObj, const LString &name)
     qlib::LVariant lvar;
     if (!pObj->getNestedProperty(name, lvar)) {
       LString msg =
-	LString::format("GetProp: getProperty(\"%s\") call failed.", name);
+	LString::format("GetProp: getProperty(\"%s\") call failed.", name.c_str());
       PyErr_SetString(PyExc_RuntimeError, msg);
       return NULL;
     }
@@ -158,7 +158,7 @@ int Wrapper::setPropImpl(qlib::LScriptable *pObj, const LString &name, PyObject 
   if (!pObj->hasNestedWritableProperty(name)) {
     // writable prop not found
     LString msg =
-      LString::format("SetProp: property \"%s\" not found or readonly.", name);
+      LString::format("SetProp: property \"%s\" not found or readonly.", name.c_str());
     PyErr_SetString(PyExc_RuntimeError, msg);
     return -1;
   }
@@ -182,12 +182,12 @@ int Wrapper::setPropImpl(qlib::LScriptable *pObj, const LString &name, PyObject 
   catch (const qlib::LException &e) {
     errmsg = 
       LString::format("SetProp(%s) cannot converting PyObj to LVariant: %s",
-		      name, e.getMsg().c_str());
+		      name.c_str(), e.getMsg().c_str());
     MB_DPRINTLN("Err: %s", errmsg.c_str());
   }
   catch (...) {
     errmsg = 
-      LString::format("SetProp(%s): Cannot converting PyObj to LVariant.", name);
+      LString::format("SetProp(%s): Cannot converting PyObj to LVariant.", name.c_str());
     MB_DPRINTLN("Err: %s", errmsg.c_str());
   }
 
@@ -208,12 +208,12 @@ int Wrapper::setPropImpl(qlib::LScriptable *pObj, const LString &name, PyObject 
   }
   catch (const qlib::LException &e) {
     errmsg = 
-      LString::format("SetProp(%s) failed: %s", name, e.getMsg().c_str());
+      LString::format("SetProp(%s) failed: %s", name.c_str(), e.getMsg().c_str());
     MB_DPRINTLN("Err: %s", errmsg.c_str());
   }
   catch (...) {
     errmsg = 
-      LString::format("SetProp(%s) failed.", name);
+      LString::format("SetProp(%s) failed.", name.c_str());
     MB_DPRINTLN("Err: %s", errmsg.c_str());
   }
 
@@ -428,10 +428,10 @@ PyObject *Wrapper::isInstanceOf(PyObject *self, PyObject *args)
   }
   
   if (pScObj->implements(chkclsnm)) {
-    return Py_True;
+    Py_RETURN_TRUE;
   }
   else {
-    return Py_False;
+    Py_RETURN_FALSE;
   }
 
   return NULL;

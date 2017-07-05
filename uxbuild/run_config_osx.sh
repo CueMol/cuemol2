@@ -23,10 +23,12 @@ xz="--with-xz=$HOME/proj64/xz"
 gecko_sdk_dir=$HOME/proj64/xulrunner/xulrunner-39.0-sdk
 #gecko_sdk_dir=$HOME/proj64/xulrunner/xulrunner-39.0-obj/dist
 
-boost_dir=$HOME/proj64/boost_1_64/
+#boost_dir=$HOME/proj64/boost_1_64/
+boost_dir=$HOME/proj64/boost_1_57/
 fftw_dir=$HOME/proj64/fftw
-cgal_dir=$HOME/proj64/CGAL-4.10/
-glew_dir=$HOME/proj64/glew
+#cgal_dir=$HOME/proj64/CGAL-4.10/
+cgal_dir=$HOME/proj64/CGAL-4.6.1
+glew_dir=$HOME/proj64/glew-2.0.0
 
 #######################
 

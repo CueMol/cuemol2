@@ -89,19 +89,17 @@ def showArrow(aMol, aRendName, aPos1, aPos2, aMol2=None):
     rend.stipple0 = 0
     rend.stipple1 = 0
 
-#    return
-
     if cuemol.isimpl(aPos1, 'Vector') and cuemol.isimpl(aPos2, 'Vector'):
-        pass
-#        rend.appendBy2Vecs(aPos1, aPos2)
+#        pass
+        rend.appendBy2Vecs(aPos1, aPos2)
     elif cuemol.isimpl(aPos1, 'MolAtom') and cuemol.isimpl(aPos2, 'MolAtom'):
         mol2=None
         if aMol2==None:
             mol2 = aMol
         else:
             mol2 = aMol2
-        pass
-        #rend.appendById(aPos1.id, mol2.uid, aPos2.id, False)
+#        pass
+        rend.appendById(aPos1.id, mol2.uid, aPos2.id, False)
     else:
         raise RuntimeError("showArrow() unknown aPos1/aPos2 type")
 
