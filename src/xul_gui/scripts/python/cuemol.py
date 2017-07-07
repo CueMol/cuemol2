@@ -26,29 +26,37 @@ def isimpl(aObj, aIfName):
         return False
     return cuemol_internal.isInstanceOf(aObj, aIfName)
 
+def isscene(aObj):
+    return isimpl(aObj, "Scene")
+
 def isobj(aObj):
-    if not iswrapper(aObj):
-        return False
-    return cuemol_internal.isInstanceOf(aObj, "Object")
+    return isimpl(aObj, "Object")
 
 def isrend(aObj):
-    if not iswrapper(aObj):
-        return False
-    return cuemol_internal.isInstanceOf(aObj, "Renderer")
+    return isimpl(aObj, "Renderer")
     
 def issel(aObj):
-    if not iswrapper(aObj):
-        return False
-    return cuemol_internal.isInstanceOf(aObj, "Selection")
+    return isimpl(aObj, "Selection")
 
 def iscol(aObj):
-    if not iswrapper(aObj):
-        return False
-    return cuemol_internal.isInstanceOf(aObj, "AbstractColor")
+    return isimpl(aObj, "AbstractColor")
 
-def scene():
-    sceMgr = cuemol_internal.getService("SceneManager")
-    return sceMgr.getScene(sceMgr.activeSceneID);
+##########
+
+def scene(aScene=None):
+    if isscene(aScene):
+        return aScene
+
+    scid=None
+    if aScene==None:
+        sceMgr = cuemol_internal.getService("SceneManager")
+        scid = sceMgr.activeSceneID
+    elif isinstance(aScene, int):
+        scid = aScene
+    else:
+        return None
+
+    return sceMgr.getScene(scid)
 
 def svc(name):
     return cuemol_internal.getService(name)

@@ -20,6 +20,28 @@ import cuemol
 #     }
 # } 
 
+class AtomIter:
+    def __init__(self, aMol, aSel):
+        molObj = cuemol.obj(aMol)
+        uid = molObj.uid
+        selObj = cuemol.sel(aSel, uid)
+
+        self.mIter = cuemol.createObj("AtomIterator");
+        self.mIter.target = molObj;
+        self.mIter.sel = selObj;
+
+        self.mIter.first()
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if not self.mIter.hasMore():
+            raise StopIteration()
+        rval = self.mIter.get()
+        self.mIter.next()
+        return rval
+
 def forEachResid(aMol, aSel, aFn):
     aMolObj = cuemol.obj(aMol)
 
@@ -85,6 +107,7 @@ def showArrow(aMol, aRendName, aPos1, aPos2, aMol2=None):
 
     rend.mode = "fancy"
     rend.captype_end = "arrow"
+    rend.captype_start = "arrow"
     rend.width = 0.2
     rend.stipple0 = 0
     rend.stipple1 = 0

@@ -29,8 +29,8 @@ def reset(aObj, aName):
     
     cuemol_internal.resetProp(obj, aName)
 
-# remove object/renderer
-def rm(aObj):
+# delete object/renderer
+def delete(aObj, aType=None):
     tgt = None
     if cuemol.iswrapper(aObj):
         tgt = aObj
@@ -46,17 +46,43 @@ def rm(aObj):
             try:
                 tgt = cuemol.obj(aObj)
             except:
-                return
+                return False
 
     if cuemol.isobj(tgt):
         sc = tgt.getScene()
         sc.destroyObject(tgt.uid)
-        return
+        return True
     elif cuemol.isrend(tgt):
         obj = tgt.getClientObj()
         obj.destroyRenderer(tgt.uid)
-        return
+        return True
 
-    return
+    return False
 #    raise RuntimeError("rm: object not found, "+str(aObj))
+
+import fileio
+
+def load(aFileName, aName=None, aFmt=None, aScene=None, aOpts=None):
+
+    gelem, gname, comp = fileio.guessFormatFromFname(aFileName, aFmt)
+    
+    print("guessed format: ", gelem)
+    print("guessed objname: "+gname)
+    print("guessed comp mode: "+comp)
+
+    name = aName
+    if name is None:
+        name = gname
+
+    ncat = gelem["category"]
+
+    if ncat == 0:
+        obj = fileio.loadObject(aFileName, name, aScene, gelem["name"], aOpts)
+        # _setupDefaultRenderer(obj)
+        
+    elif ncat == 3:
+        return fileio.loadScene(aFileName, name, aScene, gelem["name"], aOpts)
+    else:
+        # Unknown category ID, throw exception here
+        raise RuntimeError("Unknown category ID "+str(ncat))
 
