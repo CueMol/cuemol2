@@ -8,6 +8,7 @@
 
 #include <qlib/Vector.qif>
 #include <qlib/Matrix.qif>
+#include <qlib/ByteArray.qif>
 
 #include <qsys/Object.qif>
 #include <qsys/View.qif>
@@ -73,6 +74,12 @@ runtime_class MolCoord extends Object
   // void calcProt2ndry(real hb_high, boolean bIgnoreBulge);
   // void calcProt2ndry2(boolean bIgnoreBulge, integer nhgap, real dhangl1, real dhangl2);
   void calcBasePair(real cutoff, real tilt);
+
+
+  // array access method
+  object<ByteArray$> getCrdArray();
+
+
 };
 
 #endif

@@ -469,6 +469,40 @@ LString MolCoord::getElemNameCandsJSON() const
   return makeNameSet(nameset);
 }
 
+//////////
+
+#include <qlib/LByteArray.hpp>
+
+qlib::LByteArrayPtr MolCoord::getCrdArray() const
+{
+  qlib::LScrSp<qlib::LByteArray> pRet(MB_NEW qlib::LByteArray());
+
+  int natom = getAtomSize();
+  int ncrds = natom*3;
+  pRet->init(qlib::type_consts::QTC_FLOAT32, ncrds);
+
+  qfloat32 *pcrd = reinterpret_cast<qfloat32 *>(pRet->data());
+
+  int i = 0;
+  AtomIter iter = beginAtom();
+  AtomIter eiter = endAtom();
+  for (; iter!=eiter; ++iter) {
+    MolAtomPtr pAtom = iter->second;
+    const Vector4D &pos = pAtom->getPos();
+    pcrd[i] = qfloat32(pos.x());
+    ++i;
+    pcrd[i] = qfloat32(pos.y());
+    ++i;
+    pcrd[i] = qfloat32(pos.z());
+    ++i;
+  }
+
+  return pRet;
+}
+
+
+//////////
+
 #if 0
 
 double MolCoord::getDistMin(const Vector3D &pos)

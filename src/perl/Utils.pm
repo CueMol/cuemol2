@@ -211,6 +211,8 @@ sub getVarTypeName($) {
     return "String";
   } elsif ($typenm eq "array") {
     return "Array";
+  } elsif ($typenm eq "list") {
+    return "List";
   } elsif ($typenm eq "void") {
     return "Void";
   }
@@ -231,6 +233,8 @@ sub isIntrinsic($) {
     } elsif ($typenm eq "enum") {
 	return 1;
     } elsif ($typenm eq "array") {
+	return 1;
+    } elsif ($typenm eq "list") {
 	return 1;
     }
     return 0;
