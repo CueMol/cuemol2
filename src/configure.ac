@@ -639,11 +639,15 @@ if test $enableval = yes ; then
 if test x$HAVE_PYTHON != xyes ; then
 AC_MSG_ERROR(python3 not found)
 fi
-NUMPY_INC=`$PYTHON -c 'from numpy.distutils.misc_util import get_numpy_include_dirs ; print(get_numpy_include_dirs())'`
-echo $NUMPY_INC
+NUMPY_INC=`$PYTHON -c 'from numpy.distutils.misc_util import get_numpy_include_dirs ; print(" ".join(get_numpy_include_dirs()))'`
+#echo $NUMPY_INC
+  for i in $NUMPY_INC; do
+      echo "numpy incdir = $i"
+      PYTHON_CPPFLAGS="$PYTHON_CPPFLAGS -I$i" 
+  done
 #/usr/local/lib/python3.6/site-packages/numpy/core/include
-   PYTHON_CPPFLAGS="$PYTHON_CPPFLAGS -I/usr/local/lib/python3.6/site-packages/numpy/core/include -DHAVE_NUMPY=1"
-   AC_SUBST([PYTHON_CPPFLAGS])
+  PYTHON_CPPFLAGS="$PYTHON_CPPFLAGS -DHAVE_NUMPY=1" 
+  AC_SUBST([PYTHON_CPPFLAGS])
 #   AC_DEFINE([HAVE_NUMPY], [1], [Define to 1 if you have numpy])
 fi
     ],
