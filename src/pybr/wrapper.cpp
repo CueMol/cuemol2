@@ -899,7 +899,7 @@ PyObject *Wrapper::tondarray(PyObject *self, PyObject *args)
     return NULL;
   }
 
-  LOG_DPRINTLN("type of arg: %s", typeid(*pScObj).name());
+  // LOG_DPRINTLN("type of arg: %s", typeid(*pScObj).name());
   qlib::LScrSp<qlib::LByteArray> *pba = dynamic_cast<qlib::LScrSp<qlib::LByteArray> *>(pScObj);
   if (pba==NULL) {
     PyErr_SetString(PyExc_RuntimeError, "wrapper obj not found");
