@@ -79,6 +79,9 @@ runtime_class MolCoord extends Object
   // array access method
   object<ByteArray$> getCrdArray();
 
+  object<ByteArray$> getPropArray(string propname);
+
+  object<ByteArray$> getSelArray(object<MolSelection$> psel);
 
 };
 

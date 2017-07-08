@@ -910,11 +910,21 @@ PyObject *Wrapper::tondarray(PyObject *self, PyObject *args)
 
   int ntypeid = (*pba)->getElemType();
   int nelems = (*pba)->getElemCount();
-  if (ntypeid==qlib::type_consts::QTC_FLOAT32) {
-    dim[0]=nelems;
 
-    PyObject *array;
+  PyObject *array;
+  dim[0]=nelems;
 
+  if (ntypeid==qlib::type_consts::QTC_INT32) {
+    array = PyArray_SimpleNew(1, dim, NPY_INT32);
+    if(array == NULL) return NULL;
+    qint32 *pdat = (qint32 *)((*pba)->data());
+    for (int i=0; i<nelems; ++i) {
+      dim[0] = i;
+      qint32 *p=(qint32 *) PyArray_GetPtr((PyArrayObject *) array, dim);
+      *p = pdat[i];
+    }
+  }
+  else if (ntypeid==qlib::type_consts::QTC_FLOAT32) {
     array = PyArray_SimpleNew(1, dim, NPY_FLOAT);
     if(array == NULL) return NULL;
     float *pdat = (float *)((*pba)->data());
@@ -923,12 +933,23 @@ PyObject *Wrapper::tondarray(PyObject *self, PyObject *args)
       float *p=(float *) PyArray_GetPtr((PyArrayObject *) array, dim);
       *p = pdat[i];
     }
-
-    return array;
+  }
+  else if (ntypeid==qlib::type_consts::QTC_FLOAT64) {
+    array = PyArray_SimpleNew(1, dim, NPY_DOUBLE);
+    if(array == NULL) return NULL;
+    double *pdat = (double *)((*pba)->data());
+    for (int i=0; i<nelems; ++i) {
+      dim[0] = i;
+      double *p=(double *) PyArray_GetPtr((PyArrayObject *) array, dim);
+      *p = pdat[i];
+    }
+  }
+  else {
+    PyErr_SetString(PyExc_RuntimeError, "unknown bytearray type");
+    return NULL;
   }
 
-
-  return Py_BuildValue("");
+  return array;
 }
 
 #endif

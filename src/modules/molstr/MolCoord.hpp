@@ -314,6 +314,10 @@ namespace molstr {
     bool isEmpty() const { return m_atomPool.empty(); }
 
     qlib::LByteArrayPtr getCrdArray() const;
+    
+    qlib::LByteArrayPtr getPropArray(const LString &propname) const;
+
+    qlib::LByteArrayPtr getSelArray(SelectionPtr psel) const;
 
 #if 0
 

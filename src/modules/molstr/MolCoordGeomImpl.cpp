@@ -475,7 +475,7 @@ LString MolCoord::getElemNameCandsJSON() const
 
 qlib::LByteArrayPtr MolCoord::getCrdArray() const
 {
-  qlib::LScrSp<qlib::LByteArray> pRet(MB_NEW qlib::LByteArray());
+  qlib::LByteArrayPtr pRet(MB_NEW qlib::LByteArray());
 
   int natom = getAtomSize();
   int ncrds = natom*3;
@@ -500,6 +500,53 @@ qlib::LByteArrayPtr MolCoord::getCrdArray() const
   return pRet;
 }
 
+qlib::LByteArrayPtr MolCoord::getPropArray(const LString &propname) const
+{
+  qlib::LByteArrayPtr pRet(MB_NEW qlib::LByteArray());
+
+  int natom = getAtomSize();
+  pRet->init(qlib::type_consts::QTC_FLOAT32, natom);
+
+  qfloat32 *pdat = reinterpret_cast<qfloat32 *>(pRet->data());
+
+  int i = 0;
+  AtomIter iter = beginAtom();
+  AtomIter eiter = endAtom();
+  for (; iter!=eiter; ++iter) {
+    MolAtomPtr pAtom = iter->second;
+    if (propname.equals("bfac")) {
+      pdat[i] = qfloat32(pAtom->getBfac());
+    }
+    else if (propname.equals("occ")) {
+      pdat[i] = qfloat32(pAtom->getOcc());
+    }
+    ++i;
+  }
+
+  return pRet;
+}
+
+qlib::LByteArrayPtr MolCoord::getSelArray(SelectionPtr psel) const
+{
+  qlib::LByteArrayPtr pRet(MB_NEW qlib::LByteArray());
+
+  MolCoordPtr pthis(const_cast<MolCoord*>(this));
+  AtomIterator iter(pthis, psel);
+  std::deque<int> aids;
+  for (iter.first(); iter.hasMore(); iter.next()) {
+    aids.push_back( iter.getID() );
+  }
+
+  pRet->init(qlib::type_consts::QTC_INT32, aids.size());
+  qint32 *pid = reinterpret_cast<qint32 *>(pRet->data());
+  int i=0;
+  BOOST_FOREACH (int id, aids) {
+    pid[i] = id;
+    ++i;
+  }
+
+  return pRet;
+}
 
 //////////
 
