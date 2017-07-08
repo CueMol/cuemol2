@@ -67,6 +67,11 @@ namespace pybr {
     /// print log
     static PyObject *print(PyObject *self, PyObject *args);
 
+#ifdef HAVE_NUMPY
+    static PyObject *numpychk(PyObject *self, PyObject *args);
+    static PyObject *tondarray(PyObject *self, PyObject *args);
+#endif
+
     //////////
 
     /// create wrapper object

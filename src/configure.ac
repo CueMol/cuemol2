@@ -587,15 +587,17 @@ AC_ARG_WITH(python,
    AM_PATH_PYTHON(3.6.0)
    PY_PREFIX=`$PYTHON -c 'import sys ; print(sys.prefix)'`
    PYTHON_LDADD="-lpython${PYTHON_VERSION}m"
+   PYTHON_LDFLAGS="-L$PY_PREFIX/lib"
    PYTHON_CPPFLAGS="-I$PY_PREFIX/include/python${PYTHON_VERSION}m"
    echo "Python prefix: " $PY_PREFIX ", version: " $PYTHON_VERSION
    AC_SUBST([PYTHON_LDADD])
+   AC_SUBST([PYTHON_LDFLAGS])
    AC_SUBST([PYTHON_CPPFLAGS])
    AC_SUBST([PY_PREFIX])
    BUILD_SCR="$BUILD_SCR pybr"
    SCR_CPPFLAGS="$SCR_CPPFLAGS"
    SCR_LDADD="$SCR_LDADD -lpybr $PYTHON_LDADD"
-   SCR_LDFLAGS="$SCR_LDFLAGS -L../pybr/"
+   SCR_LDFLAGS="$SCR_LDFLAGS -L../pybr/ $PYTHON_LDFLAGS"
 
    HAVE_PYTHON=yes
    AC_SUBST([HAVE_PYTHON])
@@ -629,6 +631,23 @@ AC_ARG_WITH(python,
 [
     AC_MSG_RESULT(no)
 ])
+
+AC_ARG_ENABLE(numpy,
+    [--enable-numpy     Enable numpy support (python3 required)],
+    [
+if test $enableval = yes ; then
+if test x$HAVE_PYTHON != xyes ; then
+AC_MSG_ERROR(python3 not found)
+fi
+NUMPY_INC=`$PYTHON -c 'from numpy.distutils.misc_util import get_numpy_include_dirs ; print(get_numpy_include_dirs())'`
+echo $NUMPY_INC
+#/usr/local/lib/python3.6/site-packages/numpy/core/include
+   PYTHON_CPPFLAGS="$PYTHON_CPPFLAGS -I/usr/local/lib/python3.6/site-packages/numpy/core/include"
+   AC_SUBST([PYTHON_CPPFLAGS])
+   AC_DEFINE([HAVE_NUMPY], [1], [Define to 1 if you have numpy])
+fi
+    ],
+    [])
 
 #######################################################
 # XML-RPC supports
