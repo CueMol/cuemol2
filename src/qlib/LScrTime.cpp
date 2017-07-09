@@ -25,8 +25,14 @@ bool LScrTime::isStrConv() const
 
 LString LScrTime::toString() const
 {
-  time_value t_msec = m_value % 1000;
-  time_value sec = m_value/1000;
+  time_value t_nsec = m_value % 1000;
+  time_value musec = m_value/1000;
+
+  time_value t_musec = musec % 1000;
+  time_value msec = musec/1000;
+
+  time_value t_msec = msec % 1000;
+  time_value sec = msec/1000;
 
   time_value t_sec = sec % 60;
   time_value minute = sec/60;
@@ -124,7 +130,13 @@ void LScrTime::setStrValue(const LString &src)
     break;
   }
   
-  m_value = msec + 1000*( sec + 60*( minute + 60*hour ) );
+  time_value ms = msec +
+    time_value(1000)*( sec +
+		       time_value(60)*( minute +
+					time_value(60)*hour ) );
+
+  // conv to nano-sec representation
+  m_value = ms * time_value(1000) * time_value(1000);
 }
 
 //static
@@ -137,8 +149,9 @@ LScrTime *LScrTime::fromStringS(const LString &src)
 
 LInt LScrTime::getHour() const
 {
-  time_value t_msec = m_value % 1000;
-  time_value sec = m_value/1000;
+  // time_value t_msec = m_value % 1000;
+  // conv nanosec to sec
+  time_value sec = m_value/time_value(1000000000);
 
   time_value t_sec = sec % 60;
   time_value minute = sec/60;
@@ -151,8 +164,8 @@ LInt LScrTime::getHour() const
 
 LInt LScrTime::getMinute(LBool lim) const
 {
-  time_value t_msec = m_value % 1000;
-  time_value sec = m_value/1000;
+  // conv nanosec to sec
+  time_value sec = m_value/time_value(1000000000);
 
   time_value t_sec = sec % 60;
   time_value minute = sec/60;
@@ -166,8 +179,8 @@ LInt LScrTime::getMinute(LBool lim) const
 
 LInt LScrTime::getSecond(LBool lim) const
 {
-  time_value t_msec = m_value % 1000;
-  time_value sec = m_value/1000;
+  // conv nanosec to sec
+  time_value sec = m_value/time_value(1000000000);
 
   time_value t_sec = sec % 60;
   if (lim)
@@ -178,10 +191,13 @@ LInt LScrTime::getSecond(LBool lim) const
 
 LInt LScrTime::getMilliSec(LBool lim) const
 {
-  time_value t_msec = m_value % 1000;
+  // conv nanosec to millisec
+  time_value msec = m_value/time_value(1000000);
+
+  time_value t_msec = msec % 1000;
   if (lim)
     return LInt(t_msec);
   else
-    return LInt(m_value);
+    return LInt(msec);
 }
 

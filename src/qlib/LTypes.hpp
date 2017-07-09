@@ -27,8 +27,7 @@ namespace qlib {
 
   typedef QUE_VOIDP qvoidp;
 
-  // TO DO: XXX higher precision (nanosec) time base is required for 30fps, 60fps, etc
-  /// Internal time/time-span representation (milli seconds)
+  /// Internal time/time-span representation (nano seconds)
   typedef qint64 time_value;
 
   /// Data type constants

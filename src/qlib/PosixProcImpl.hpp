@@ -65,36 +65,44 @@ public:
     const int kBufferSize = 1024;
     char sbuf[kBufferSize];
 
-    for (;;) {
-      ssize_t bytes_read =
-	HANDLE_EINTR( ::read(m_infd, sbuf, sizeof(sbuf)-1) );
-      if (bytes_read <= 0)
-	break;
-      sbuf[bytes_read] = '\0';
-      printf("child(%d): %s", m_childpid, sbuf);
+    try {
+      for (;;) {
+	ssize_t bytes_read =
+	  HANDLE_EINTR( ::read(m_infd, sbuf, sizeof(sbuf)-1) );
+	if (bytes_read <= 0)
+	  break;
+	sbuf[bytes_read] = '\0';
+	printf("child(%d): %s", m_childpid, sbuf);
 
-      {
-	boost::mutex::scoped_lock lck(m_lock);
-	m_sbuf.append(sbuf);
+	{
+	  boost::mutex::scoped_lock lck(m_lock);
+	  m_sbuf.append(sbuf);
+	}
       }
-    }
 
-    // Let's wait for the process to finish.
+      // Let's wait for the process to finish.
 
-    int status;
-    if (HANDLE_EINTR( ::waitpid(m_childpid, &status, 0) )== -1) {
-      LOG_DPRINTLN("PosixInThr: waitpid failed");
+      int status;
+      if (HANDLE_EINTR( ::waitpid(m_childpid, &status, 0) )== -1) {
+	LOG_DPRINTLN("PosixInThr: waitpid failed");
+	::close(m_infd);
+	return;
+      }
+
+      if (WIFEXITED(status)) {
+	m_nExitCode = WEXITSTATUS(status);
+	MB_DPRINTLN("child(%d) exited with code %d", m_childpid, m_nExitCode);
+      }
+
       ::close(m_infd);
-      return;
+      MB_DPRINTLN("WD thread done");
     }
-
-    if (WIFEXITED(status)) {
-      m_nExitCode = WEXITSTATUS(status);
-      MB_DPRINTLN("child(%d) exited with code %d", m_childpid, m_nExitCode);
+    catch (const qlib::LException &e) {
+      LOG_DPRINTLN("ProcThr> Exception occurred in proc thr: %s", e.getMsg().c_str());
     }
-
-    ::close(m_infd);
-    MB_DPRINTLN("WD thread done");
+    catch (...) {
+      LOG_DPRINTLN("ProcMgr> Unknown exception occurred in proc thr (ignored)");
+    }
   }
 };
 
@@ -239,8 +247,8 @@ public:
 	return NULL;
       }
 
-      printf("posix_spawn: %d\n", res);
-      printf("child pid: %d\n", int(child));
+      MB_DPRINTLN("posix_spawn: %d", res);
+      MB_DPRINTLN("child pid: %d", int(child));
     }
     catch (...) {
       // Error --> perform cleaning up

@@ -543,10 +543,11 @@ int AnimMgr::setupRender(const qlib::LScrTime &t_start,
   qlib::time_value tv_st = t_start.getValue();
   qlib::time_value tv_en = t_end.getValue();
 
-  double dt = 1000.0/frame_rate;
+  //double dt = 1000.0/frame_rate;
+  double dt = 1000000000.0/frame_rate;
 
-  int if_st = int( ::ceil(double(tv_st)*frame_rate/1000.0) );
-  int if_en = int( ::floor(double(tv_en)*frame_rate/1000.0) );
+  int if_st = int( ::ceil(double(tv_st)*frame_rate/1000000000.0) );
+  int if_en = int( ::floor(double(tv_en)*frame_rate/1000000000.0) );
   int nframes = if_en-if_st+1;
 
   m_delt = dt;

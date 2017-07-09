@@ -28,9 +28,10 @@ qlib::time_value WinTimerImpl::getCurrentTime()
 {
   qlib::time_value tval;
 
-  tval = (qlib::time_value) ::GetTickCount();
+  tval = qlib::time_value( ::GetTickCount() );
 
-  return tval;
+  // conv from milli-sec to nano-sec repr
+  return tval*qlib::time_value(1000000);
 }
 
 //////////
