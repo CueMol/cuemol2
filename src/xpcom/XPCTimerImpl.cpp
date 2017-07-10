@@ -88,6 +88,7 @@ void XPCTimerImpl::timerCallbackFunc(nsITimer *aTimer, void *aClosure)
   return;
 }
 
+#if 0
 qlib::time_value XPCTimerImpl::getCurrentTime()
 {
   qlib::time_value tval;
@@ -112,6 +113,7 @@ qlib::time_value XPCTimerImpl::getCurrentTime()
 
   return tval;
 }
+#endif
 
 void XPCTimerImpl::start(qlib::time_value nperiod)
 {

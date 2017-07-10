@@ -73,7 +73,7 @@ namespace qlib {
   public:
     TimerImpl() {}
     virtual ~TimerImpl();
-    virtual time_value getCurrentTime() =0;
+    virtual time_value getCurrentTime();
     virtual void start(qlib::time_value period) =0;
     virtual void stop() =0;
   };

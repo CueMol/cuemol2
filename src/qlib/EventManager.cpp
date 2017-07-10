@@ -152,7 +152,23 @@ void EventManager::checkTimerQueue()
   }
 }
 
+//////////
+
+#include <boost/chrono/chrono.hpp>
+
 TimerImpl::~TimerImpl()
 {
+}
+
+time_value TimerImpl::getCurrentTime()
+{
+  using namespace boost::chrono;
+
+  high_resolution_clock::time_point tp = high_resolution_clock::now();
+
+  // time_value is in nano-sec rep with int64 precision
+  time_value t1 = duration_cast<nanoseconds>(tp.time_since_epoch()).count();
+
+  return t1;
 }
 

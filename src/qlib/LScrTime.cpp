@@ -25,11 +25,13 @@ bool LScrTime::isStrConv() const
 
 LString LScrTime::toString() const
 {
-  time_value t_nsec = m_value % 1000;
-  time_value musec = m_value/1000;
+  //time_value t_nsec = m_value % 1000;
+  //time_value t_musec = musec % 1000;
 
-  time_value t_musec = musec % 1000;
-  time_value msec = musec/1000;
+  //time_value musec = m_value/1000;
+  //time_value msec = musec/1000;
+
+  time_value msec = m_value/1000000;
 
   time_value t_msec = msec % 1000;
   time_value sec = msec/1000;
@@ -132,11 +134,11 @@ void LScrTime::setStrValue(const LString &src)
   
   time_value ms = msec +
     time_value(1000)*( sec +
-		       time_value(60)*( minute +
-					time_value(60)*hour ) );
+                       time_value(60)*( minute +
+                                        time_value(60)*hour ) );
 
   // conv to nano-sec representation
-  m_value = ms * time_value(1000) * time_value(1000);
+  m_value = ms * time_value(1000000);
 }
 
 //static
