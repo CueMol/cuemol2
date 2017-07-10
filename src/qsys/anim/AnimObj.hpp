@@ -181,19 +181,7 @@ namespace qsys {
         return 1.0 - convRhoImpl(1.0 - rho);
     }
 
-    double getRho(qlib::time_value elapsed) const {
-      double span = double(getAbsEnd() - getAbsStart());
-      if (qlib::isNear4(span, 0.0)) {
-        // degenerated case (end==start)
-        if (elapsed-getAbsStart()<0)
-          return 0.0;
-        else
-          return 1.0;
-      }
-      double rho = double(elapsed-getAbsStart())/span;
-      rho = qlib::trunc(rho, 0.0, 1.0);
-      return convRho(rho);
-    }
+    double getRho(qlib::time_value elapsed) const;
 
   private:
     double convRhoImpl(double rho) const {

@@ -567,7 +567,7 @@ void AnimMgr::writeFrame(qlib::LScrSp<SceneExporter> pWriter)
     return; // error (eof reached)
 
   qlib::time_value curt = qlib::time_value(::floor(double(m_nCurrFrame)*m_delt));
-  MB_DPRINTLN("Write frame %d (%d ms)", m_nCurrFrame, int(curt));
+  MB_DPRINTLN("Write frame %d (%f ms)", m_nCurrFrame, double(curt)/1000000.0);
 
   ScenePtr pScene = getTgtScene();
   pWriter->attach(pScene);
