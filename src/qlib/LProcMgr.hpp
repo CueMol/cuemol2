@@ -65,32 +65,45 @@ namespace qlib {
   private:
     LProcMgrImpl *m_pImpl;
 
-    // running task slot
+    /// running task slot
     std::vector<ProcEnt *> m_tab;
 
-    // waiting task queue
+    /// waiting task queue
     int m_nNextIndex;
     typedef std::map<int, ProcEnt *> queue_t;
     queue_t m_queue;
 
-    // ended task list
+    /// ended task list
     typedef std::deque<ProcEnt *> endq_t;
     endq_t m_endq;
 
-    // Log file path
+    /// Log file path
     LString m_logpath;
     
   public:
-    LProcMgr();
-    virtual ~LProcMgr();
+    void setLogPath(const LString &logpath) {
+      m_logpath = logpath;
+    }
+
+  private:
+    /// Error message (empty if no error occured)
+    LString m_errormsg;
+
+  public:
+    LString getErrorMsg() const { return m_errormsg; }
 
     /////////////////////////////
+
+  public:
+    LProcMgr();
+    virtual ~LProcMgr();
 
     void setSlotSize(int n);
     int getSlotSize() const { return m_tab.size(); }
 
     int getQueueLen() const { return m_queue.size(); }
 
+    /// Kill all tasks, clean-up all queues, and clear error
     void killAll();
 
     bool isEmpty() const;
@@ -124,10 +137,6 @@ namespace qlib {
 
     LString peekResultOutput(int id);
     LString getResultOutput(int id);
-
-    void setLogPath(const LString &logpath) {
-      m_logpath = logpath;
-    }
 
     LString doneTaskListJSON() {
       LString rval = "[";

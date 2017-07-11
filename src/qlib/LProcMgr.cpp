@@ -141,6 +141,7 @@ int LProcMgr::getState(int id)
     return PM_ENDED;
   }
   
+  // check in the ended proc list
   {
     endq_t::iterator iter = findInEndq(id);
     if (iter!=m_endq.end())
@@ -339,19 +340,23 @@ void LProcMgr::checkQueue()
       // (This possibly fails if cmd not found...)
       ProcInThread *pThr = NULL;
       try {
-	pThr = m_pImpl->createProcess(pEnt->m_path, pEnt->m_cmdline);
+        pThr = m_pImpl->createProcess(pEnt->m_path, pEnt->m_cmdline);
       }
       catch (const qlib::LException &e) {
-	LOG_DPRINTLN("ProcMgr> Exception occurred in createProcess: %s", e.getMsg().c_str());
+        LString msg = LString::format("Exception occurred in createProcess: %s", e.getMsg().c_str());
+        LOG_DPRINTLN("ProcMgr> %s", msg.c_str());
+        m_errormsg = msg;
       }
       catch (...) {
-	LOG_DPRINTLN("ProcMgr> Unknown exception occurred in createProcess (ignored)");
+        LString msg = "Unknown exception occurred in createProcess";
+        LOG_DPRINTLN("ProcMgr> %s", msg.c_str());
+        m_errormsg = msg;
       }
 
       if (pThr==NULL) {
-	m_queue.erase(iter);
-	delete pEnt;
-	return;
+        m_queue.erase(iter);
+        delete pEnt;
+        return;
       }
 
       m_queue.erase(iter);
@@ -365,10 +370,14 @@ void LProcMgr::checkQueue()
     }
   }
   catch (const qlib::LException &e) {
-    LOG_DPRINTLN("ProcMgr> Exception occurred in checkQueue: %s", e.getMsg().c_str());
+    LString msg = LString::format("Exception occurred in checkQueue: %s", e.getMsg().c_str());
+    LOG_DPRINTLN("ProcMgr> %s", msg.c_str());
+    m_errormsg = msg;
   }
   catch (...) {
-    LOG_DPRINTLN("ProcMgr> Unknown exception occurred in checkQueue (ignored)");
+    LString msg = "Unknown exception occurred in checkQueue";
+    LOG_DPRINTLN("ProcMgr> %s", msg.c_str());
+    m_errormsg = msg;
   }
   
 }
@@ -419,6 +428,9 @@ void LProcMgr::killAll()
   //std::for_each(m_endq.begin(), m_endq.end(), delete_ptr<ProcEnt *>());
   //m_endq.clear();
   delete_and_clear<endq_t,ProcEnt>(m_endq);
+
+  // clear error messgae
+  m_errormsg = "";
 }
 
 bool LProcMgr::isEmpty() const

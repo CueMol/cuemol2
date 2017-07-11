@@ -226,6 +226,7 @@
     }
   };
   
+  /// Cancel all tasks
   dlg.onStop = function ()
   {
     dd("!!! onStop called !!!");
@@ -234,10 +235,15 @@
 
     try {
       dd("!!! onStop cancel timer !!!");
+      // stop timer
       timer.clearInterval(this.mTimer);
       this.mTimer = null;
+
+      // finalize process manager
       procMgr.killAll();
       procMgr.setLogPath("");
+
+      // update UI
       this._bRender = false;
       this.mbRenderOK = false;
       this.disableButtons(false);
@@ -307,21 +313,36 @@
   dlg.finRenderTasks = function ()
   {
     dd("AnimRender.timer> all tasks done.");
-    this.appendLog("All tasks done\n");
-    
+
     // stop the timer
     timer.clearInterval(this.mTimer);
     this.mTimer = null;
     dd("AnimRender.timer> timer canceled.");
     
-    this.mbRenderOK = true;
+    // check normal termination
+    let berr=false
+    if (procMgr.errormsg) {
+      //alert("Some task(s) failed: "+procMgr.errormsg);
+      this.appendLog("Some task(s) failed: "+procMgr.errormsg+"\n");
+      berr=true;
+    }
+    else {
+      this.appendLog("All tasks done\n");
+    }
+    
+    // finalize process manager
+    procMgr.killAll();
     procMgr.setLogPath("");
+
+    this.mbRenderOK = true;
     this._bRender = false;
     this.mAnimMgr = null;
     this.mExp = null;
     
     this.disableButtons(false);
     // this.startMovPreview();
+    if (berr)
+      util.alert(window, "Some task(s) failed: see message window");
   };
 
   dlg.onTimer = function()
