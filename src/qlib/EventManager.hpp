@@ -4,14 +4,14 @@
 //
 //  $Id: EventManager.hpp,v 1.3 2010/10/24 14:06:18 rishitani Exp $
 
+#ifndef QLIB_EVENT_MANAGER_HPP_
+#define QLIB_EVENT_MANAGER_HPP_
+
 #include "qlib.hpp"
 
 #include "SingletonBase.hpp"
-#include "LTypes.hpp"
+#include "LTimeValue.hpp"
 #include "TimerEvent.hpp"
-
-#ifndef QLIB_EVENT_MANAGER_HPP_
-#define QLIB_EVENT_MANAGER_HPP_
 
 namespace qlib {
 
@@ -74,7 +74,7 @@ namespace qlib {
     TimerImpl() {}
     virtual ~TimerImpl();
     virtual time_value getCurrentTime();
-    virtual void start(qlib::time_value period) =0;
+    virtual void start(time_value period) =0;
     virtual void stop() =0;
   };
 

@@ -1,13 +1,14 @@
 //
-// Scriptable representation of time/time span
+// Scriptable interface for time_value
 //
+
 
 #ifndef L_SCR_TIME_HPP_INCLUDED
 #define L_SCR_TIME_HPP_INCLUDED
 
 #include "qlib.hpp"
+#include "LTimeValue.hpp"
 #include "LScrObjects.hpp"
-#include "LTypes.hpp"
 #include "LExceptions.hpp"
 #include "mcutils.hpp"
 

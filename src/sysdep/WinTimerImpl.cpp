@@ -24,6 +24,7 @@ WinTimerImpl::~WinTimerImpl()
   stop();
 }
 
+/*
 qlib::time_value WinTimerImpl::getCurrentTime()
 {
   qlib::time_value tval;
@@ -33,6 +34,7 @@ qlib::time_value WinTimerImpl::getCurrentTime()
   // conv from milli-sec to nano-sec repr
   return tval*qlib::time_value(1000000);
 }
+*/
 
 //////////
 

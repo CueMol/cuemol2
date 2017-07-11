@@ -27,9 +27,6 @@ namespace qlib {
 
   typedef QUE_VOIDP qvoidp;
 
-  /// Internal time/time-span representation (nano seconds)
-  typedef qint64 time_value;
-
   /// Data type constants
   ///  (These defs are common with QDF data type definition,
   ///   and should be persistent and part of API)

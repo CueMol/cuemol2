@@ -7,7 +7,7 @@
 #define QLIB_TIMER_EVENT_HPP_
 
 #include "qlib.hpp"
-#include "LTypes.hpp"
+#include "LTimeValue.hpp"
 
 namespace qlib {
 
