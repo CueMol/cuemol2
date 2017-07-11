@@ -65,13 +65,7 @@ def obj(aName, aScene=None):
     if isobj(aName):
         return aName
     
-    sceMgr = cuemol_internal.getService("SceneManager")
-
-    scene = None
-    if aScene==None:
-        scene = sceMgr.getScene(sceMgr.activeSceneID);
-    else:
-        scene = aScene
+    scene = scene(aScene)
 
     obj = None
     if isinstance(aName, str):
@@ -88,13 +82,7 @@ def rend(aName, aScene=None):
     if isrend(aName):
         return aName
 
-    sceMgr = cuemol_internal.getService("SceneManager")
-
-    scene = None
-    if aScene==None:
-        scene = sceMgr.getScene(sceMgr.activeSceneID);
-    else:
-        scene = aScene
+    scene = scene(aScene)
 
     rend = None
     if isinstance(aName, str):

@@ -86,7 +86,6 @@
     <OutDir>$(XULDeployDir)components\</OutDir>
     <TargetName>xpcqm2</TargetName>
   </PropertyGroup>
-
   <ItemDefinitionGroup>
     <ClCompile>
       <AdditionalIncludeDirectories>$(XULRunnerDir)include\;$(XULRunnerDir)include\nspr;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -96,13 +95,11 @@
       <AdditionalLibraryDirectories>$(XULRunnerDir)lib\;$(XULRunnerDir)sdk\lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
-
   <ItemDefinitionGroup Condition="'$(HavePython)'=='Yes'">
     <ClCompile>
       <PreprocessorDefinitions>HAVE_PYTHON=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
-
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
     <ClCompile>
       <PreprocessorDefinitions>WIN32;MOZ_NO_MOZALLOC;_DEBUG;_WINDOWS;_USRDLL;XP_WIN;USE_GECKO2_SDK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -151,10 +148,6 @@
       <Project>{02e9d2e5-f0aa-4f6b-8390-2b7ecb4cc2ea}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="..\jsbr\jsbr.vcxproj">
-      <Project>{99dbf289-b4b8-43d0-8d74-8c0a26ffb5d1}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
     <ProjectReference Include="..\lwview\lwview.vcxproj">
       <Project>{2f145560-b55c-430d-80a0-111153651540}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
@@ -192,13 +185,11 @@
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>
-
   <ItemGroup Condition="'$(HavePython)'=='Yes'">
     <ProjectReference Include="..\pybr\pybr.vcxproj">
       <Project>{2e28b002-7d9c-4513-8e16-2124681e2a51}</Project>
     </ProjectReference>
   </ItemGroup>
-
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
     <Import Project="..\xpidl.targets" />
