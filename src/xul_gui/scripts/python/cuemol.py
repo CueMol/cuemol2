@@ -1,16 +1,16 @@
-import cuemol_internal
+import cuemol_internal as ci
 
 def createObj(name):
-    return cuemol_internal.createObj(name)
+    return ci.createObj(name)
 
 def getService(name):
-    return cuemol_internal.getService(name)
+    return ci.getService(name)
 
 def print(astr):
-    return cuemol_internal.print(astr)
+    return ci.print(astr)
 
 def println(astr):
-    return cuemol_internal.print(astr+"\n")
+    return ci.print(astr+"\n")
 
 ##########
 
@@ -24,7 +24,7 @@ def iswrapper(aObj):
 def isimpl(aObj, aIfName):
     if not iswrapper(aObj):
         return False
-    return cuemol_internal.isInstanceOf(aObj, aIfName)
+    return ci.isInstanceOf(aObj, aIfName)
 
 def isscene(aObj):
     return isimpl(aObj, "Scene")
@@ -49,7 +49,7 @@ def scene(aScene=None):
 
     scid=None
     if aScene==None:
-        sceMgr = cuemol_internal.getService("SceneManager")
+        sceMgr = ci.getService("SceneManager")
         scid = sceMgr.activeSceneID
     elif isinstance(aScene, int):
         scid = aScene
@@ -59,7 +59,7 @@ def scene(aScene=None):
     return sceMgr.getScene(scid)
 
 def svc(name):
-    return cuemol_internal.getService(name)
+    return ci.getService(name)
 
 def obj(aName, aScene=None):
     if isobj(aName):
@@ -78,17 +78,25 @@ def obj(aName, aScene=None):
 
     return obj
 
-def rend(aName, aScene=None):
-    if isrend(aName):
-        return aName
-
-    scene = scene(aScene)
+def rend(aRend, aObj=None):
+    if isrend(aRend):
+        return aRend
 
     rend = None
-    if isinstance(aName, str):
-        rend = scene.getRendByName(aName)
-    elif isinstance(aName, int):
-        rend = scene.getRenderer(aName)
+
+    if aObj==None:
+        s = scene()
+        if isinstance(aName, str):
+            rend = s.getRendByName(aName)
+        elif isinstance(aName, int):
+            rend = o.getRenderer(aName)
+
+    else:
+        o = obj(aObj)
+        if isinstance(aName, str):
+            rend = o.getRendererByName(aName)
+        elif isinstance(aName, int):
+            rend = o.getRenderer(aName)
     
     if rend==None:
         raise RuntimeError("renderer "+str(aName)+" not found")
@@ -96,24 +104,26 @@ def rend(aName, aScene=None):
     return rend
 
 def vec(aX, aY, aZ):
-    v = cuemol_internal.createObj("Vector");
+    v = ci.createObj("Vector");
     v.x = aX;
     v.y = aY;
     v.z = aZ;
     return v;
 
-def sel(aSelStr, aCtxtID=0):
+def sel(aSelStr, aScene=None):
     if issel(aSelStr):
         return aSelStr
-    selobj = cuemol_internal.createObj("SelCommand")
-    selobj.compile(aSelStr, aCtxtID)
+    s = scene(aScene)
+    selobj = ci.createObj("SelCommand")
+    selobj.compile(aSelStr, s.uid)
     return selobj
 
-def col(aColStr, aCtxtID=0):
+def col(aColStr, aScene=None):
     if iscol(aColStr):
         return aColStr
-    stylem = cuemol_internal.getService("StyleManager")
-    color = stylem.compileColor(aColStr, aCtxtID)
+    s = scene(aScene)
+    stylem = ci.getService("StyleManager")
+    color = stylem.compileColor(aColStr, s.uid)
     return color
 
 
