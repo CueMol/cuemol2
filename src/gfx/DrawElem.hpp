@@ -60,7 +60,7 @@ namespace gfx {
     /// clear cached data (--> delete VBO)
     virtual void invalidateCache() const;
 
-    virtual const void *getData() const =0; //{ return NULL; }
+    virtual const qbyte *getData() const =0; //{ return NULL; }
     virtual size_t getElemSize() const =0;
 
     /// returns attribute buffer size (in byte unit)
@@ -276,7 +276,7 @@ namespace gfx {
     };
 
     const Elem *getElems() const { return m_pData; }
-    virtual const qbyte *getData() const { return m_pData; }
+    virtual const qbyte *getData() const { return (const qbyte *) m_pData; }
     virtual size_t getElemSize() const { return sizeof(Elem); }
 
     virtual int getType() const { return VA_V; }
@@ -326,7 +326,7 @@ namespace gfx {
     Elem *m_pData;
 
     const Elem *getElems() const { return m_pData; }
-    virtual const qbyte *getData() const { return m_pData; }
+    virtual const qbyte *getData() const { return (const qbyte *) m_pData; }
     virtual size_t getElemSize() const { return sizeof(Elem); }
 
     virtual int getType() const { return VA_VNC; }
@@ -496,7 +496,7 @@ namespace gfx {
       m_pIndData[ind*3 + 2] = n3;
     }
 
-    int getIndexSize() const { return m_nIndSize; }
+    // int getIndexSize() const { return m_nIndSize; }
 
   private:
     int m_nIndSize;
@@ -524,7 +524,7 @@ namespace gfx {
     virtual bool vertex(int ind, const Vector4D &v);
 
     // dummy??
-    virtual const void *getData() const { return NULL; }
+    virtual const qbyte *getData() const { return NULL; }
     virtual size_t getElemSize() const { return 0; }
 
     //////////
@@ -593,7 +593,7 @@ namespace gfx {
 
     virtual void invalidateCache() const {}
 
-    virtual const void *getData() const {
+    virtual const qbyte *getData() const {
       return NULL;
     }
 

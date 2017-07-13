@@ -104,9 +104,9 @@ namespace gfx {
       super_t::setSize(nsize);
     }
 
-    virtual const void *getData() const
+    virtual const qbyte *getData() const
     {
-      return m_data.data();
+      return (const qbyte *) m_data.data();
     }
 
     virtual size_t getElemSize() const {

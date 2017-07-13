@@ -100,7 +100,7 @@ double AnimObj::getRho(qlib::time_value elapsed) const
   }
 
   double rho = double(elapsed-getAbsStart())/double(span);
-  rho = qlib::trunc(rho, 0.0, 1.0);
+  rho = qlib::clamp(rho, 0.0, 1.0);
   return convRho(rho);
 }
 
