@@ -132,7 +132,8 @@
         <parameter name="aValue"/>
         <body>
           <![CDATA[
-	    this._tmptval.intval = aValue;
+	    //this._tmptval.intval = aValue;
+	    this._tmptval.millisec = aValue;
 	    return this._tmptval.strval;
           ]]>
         </body>
@@ -143,7 +144,8 @@
         <body>
           <![CDATA[
 	    this._tmptval.strval = aValue;
-	    return this._tmptval.intval;
+	    //return this._tmptval.intval;
+	    return this._tmptval.millisec;
           ]]>
         </body>
       </method>
