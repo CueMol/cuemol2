@@ -204,7 +204,7 @@ void AnimMol::unloading()
 
 qlib::time_value AnimMol::getSelfAnimLen() const
 {
-  // very long time
+  // very long time (one day)
   return qlib::timeval::fromMilliSec(1000*3600*24);
 }
 
