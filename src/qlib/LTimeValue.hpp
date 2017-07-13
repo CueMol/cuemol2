@@ -15,22 +15,32 @@ namespace qlib {
 
   namespace timeval {
     /// internal repr to second
-    inline time_value toSec(time_value arg) {
-      return arg/time_value(1000000000);
+    template <typename _Type=time_value>
+    inline _Type toSec(time_value arg) {
+      return _Type(arg)/_Type(1000000000);
     }
 
     /// internal repr to milli-second
-    inline time_value toMilliSec(time_value arg) {
-      return arg/time_value(1000000);
+    template <typename _Type=time_value>
+    inline _Type toMilliSec(time_value arg) {
+      return _Type(arg)/_Type(1000000);
     }
     
     /// from milli-second to internal repr
-    inline time_value fromMilliSec(time_value arg) {
-      return arg*time_value(1000000);
+    template <typename _Type=time_value>
+    inline time_value fromMilliSec(_Type arg) {
+      return time_value( arg*time_value(1000000) );
     }
 
-    inline time_value fromNanoSec(time_value arg) {
-      return arg;
+    /// from second to internal repr
+    template <typename _Type=time_value>
+    inline time_value fromSec(_Type arg) {
+      return time_value( arg*time_value(1000000000) );
+    }
+
+    template <typename _Type=time_value>
+    inline time_value fromNanoSec(_Type arg) {
+      return time_value(arg);
     }
 
   }

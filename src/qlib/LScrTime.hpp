@@ -89,6 +89,27 @@ namespace qlib {
       return LInt(m_value);
     }
 
+    /// set time by real value
+    void setMilliSecReal(LReal value) {
+      m_value = timeval::fromMilliSec<LReal>(value);
+    }
+
+    /// get time in real value
+    LReal getMilliSecReal() const {
+      return timeval::toMilliSec<LReal>(m_value);
+    }
+
+    /// set time by real value
+    void setSecReal(LReal value) {
+      m_value = timeval::fromSec<LReal>(value);
+    }
+
+    /// get time in real value
+    LReal getSecReal() const {
+      return timeval::toSec<LReal>(m_value);
+    }
+
+
     //////////
 
     virtual bool equals(const LScrTime &arg);
