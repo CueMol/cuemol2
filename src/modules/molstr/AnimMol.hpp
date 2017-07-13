@@ -22,7 +22,11 @@ namespace molstr {
 
   public:
     //typedef std::map<int, quint32> CrdIndexMap;
+#ifdef HAVE_UNORDERED_MAP
+    typedef std::unordered_map<int, quint32> CrdIndexMap;
+#else
     typedef boost::unordered_map<int, quint32> CrdIndexMap;
+#endif
     typedef std::vector<quint32> AidIndexMap;
 
   private:

@@ -8,7 +8,7 @@
 #define QSYS_VIEW_INPUT_CONFIG_HPP
 
 #include "qsys.hpp"
-#include <boost/unordered_map.hpp>
+//#include <boost/unordered_map.hpp>
 
 #include <qlib/LScrObjects.hpp>
 #include <qlib/LScrSmartPtr.hpp>
@@ -33,7 +33,13 @@ namespace qsys {
 
   private:
     typedef qlib::LSingletonScrObject super_t;
+
+#ifdef HAVE_UNORDERED_MAP
+    typedef std::unordered_map<int, int> ModifMap;
+#else
     typedef boost::unordered_map<int, int> ModifMap;
+#endif
+
     //typedef std::map<int, int> ModifMap;
     ModifMap m_modifTab;
 

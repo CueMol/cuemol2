@@ -217,7 +217,13 @@ void GLSLBallStick2Renderer::createGLSL()
     delete m_pSphAttrAry;
 
   qlib::uid_t nSceneID = getSceneID();
+
+#ifdef HAVE_UNORDERED_MAP
+  std::unordered_map<quint32,quint32> aidmap;
+#else
   boost::unordered_map<quint32,quint32> aidmap;
+#endif
+
   m_pSphAttrAry = MB_NEW SphAttrArray();
   {
     SphAttrArray &attra = *m_pSphAttrAry;

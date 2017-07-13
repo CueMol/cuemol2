@@ -117,6 +117,7 @@ libqlib_la_LIBADD = \
   @BOOST_THREAD_LIB@ \
   @BOOST_SYSTEM_LIB@ \
   @BOOST_FILESYSTEM_LIB@ \
+  @BOOST_CHRONO_LIB@ \
   @XZ_LIBADD@ \
  ../zlib/libqmzlib.la \
  $(NULL)

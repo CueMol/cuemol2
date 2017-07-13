@@ -156,14 +156,17 @@ void EventManager::checkTimerQueue()
 
 //////////
 
-#include <boost/chrono/chrono.hpp>
-
 TimerImpl::~TimerImpl()
 {
 }
 
+#ifdef HAVE_BOOST_CHRONO
+#include <boost/chrono/chrono.hpp>
+#endif
+
 time_value TimerImpl::getCurrentTime()
 {
+#ifdef HAVE_BOOST_CHRONO
   using namespace boost::chrono;
 
   high_resolution_clock::time_point tp = high_resolution_clock::now();
@@ -172,5 +175,8 @@ time_value TimerImpl::getCurrentTime()
   time_value t1 = duration_cast<nanoseconds>(tp.time_since_epoch()).count();
 
   return t1;
+#else
+  return time_value(0);
+#endif
 }
 

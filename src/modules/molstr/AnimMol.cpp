@@ -8,6 +8,7 @@
 #include "AnimMol.hpp"
 #include "MolArrayMap.hpp"
 #include "MolAtom.hpp"
+#include <qlib/LTimeValue.hpp>
 
 using namespace molstr;
 
@@ -204,6 +205,6 @@ void AnimMol::unloading()
 qlib::time_value AnimMol::getSelfAnimLen() const
 {
   // very long time
-  return 1000*3600*24;
+  return qlib::timeval::fromMilliSec(1000*3600*24);
 }
 
