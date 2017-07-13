@@ -65,20 +65,24 @@ void AnimObj::setRelStart(qlib::time_value value)
 {
   m_relStart = value;
   if (m_relStart>m_relEnd) {
-    MB_DPRINTLN("warning: inconsistent end time (s=%d > e=%d) modified",
+    LOG_DPRINTLN("warning: inconsistent end time (s=%d > e=%d) modified",
                  int(m_relStart), int(m_relEnd));
     m_relEnd = value;
   }
+
+  LOG_DPRINTLN("AnimObj> rel_start changed to %d", m_relStart);
 }
 
 void AnimObj::setRelEnd(qlib::time_value value)
 {
   m_relEnd = value;
   if (m_relStart>m_relEnd) {
-    MB_DPRINTLN("warning: inconsistent start time (s=%d > e=%d) modified",
+    LOG_DPRINTLN("warning: inconsistent start time (s=%d > e=%d) modified",
                  int(m_relStart), int(m_relEnd));
     m_relStart = value;
   }
+
+  LOG_DPRINTLN("AnimObj> rel_end changed to %d", m_relEnd);
 }
 
 void AnimObj::setTimeRefName(const LString &nm)
