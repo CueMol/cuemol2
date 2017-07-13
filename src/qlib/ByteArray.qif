@@ -37,7 +37,11 @@ runtime_class ByteArray
 
   void setValue(integer, integer);
 
-  // string toString();
+  real getValueF(integer);
+
+  void setValueF(integer, real);
+
+  string toString();
 
 };
 

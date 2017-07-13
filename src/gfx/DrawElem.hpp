@@ -228,7 +228,7 @@ namespace gfx {
 
     const Elem *getElems() const { return m_pData; }
 
-    virtual const void *getData() const { return m_pData; }
+    virtual const qbyte *getData() const { return (const qbyte *) m_pData; }
     virtual size_t getElemSize() const { return sizeof(Elem); }
 
     virtual int getType() const { return VA_VC; }
@@ -276,7 +276,7 @@ namespace gfx {
     };
 
     const Elem *getElems() const { return m_pData; }
-    virtual const void *getData() const { return m_pData; }
+    virtual const qbyte *getData() const { return m_pData; }
     virtual size_t getElemSize() const { return sizeof(Elem); }
 
     virtual int getType() const { return VA_V; }
@@ -326,7 +326,7 @@ namespace gfx {
     Elem *m_pData;
 
     const Elem *getElems() const { return m_pData; }
-    virtual const void *getData() const { return m_pData; }
+    virtual const qbyte *getData() const { return m_pData; }
     virtual size_t getElemSize() const { return sizeof(Elem); }
 
     virtual int getType() const { return VA_VNC; }

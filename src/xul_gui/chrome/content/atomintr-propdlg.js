@@ -38,8 +38,8 @@ window.gAintr = ( function () {//
 
     this.mDashed = document.getElementById("aintrpage-dashed"); 
     this.mDetail =document.getElementById("aintrpage-detail"); 
-    this.mCapSt =document.getElementById("aintrpage-capstart"); 
-    this.mCapEn =document.getElementById("aintrpage-capend"); 
+    this.mCapSt =document.getElementById("aintrpage-startcap"); 
+    this.mCapEn =document.getElementById("aintrpage-endcap"); 
   };
 
   AintrEdit.prototype.onActivate = function ()
@@ -86,7 +86,9 @@ window.gAintr = ( function () {//
     if (!util.selectMenuListByValue(this.mDetail, elem.value))
       this.mDetail.value = elem.value;
 
-    elem = gMain.findPropData("endtype");
+    elem = gMain.findPropData("captype_start");
+    util.selectMenuListByValue(this.mCapSt, elem.value);
+    elem = gMain.findPropData("captype_end");
     util.selectMenuListByValue(this.mCapEn, elem.value);
   }
 
@@ -167,9 +169,14 @@ window.gAintr = ( function () {//
 	return;
       }
 
-      if (curid=="aintrpage-capend") {
+      if (curid=="aintrpage-startcap") {
+	new_val = this.mCapSt.selectedItem.value;
+	gMain.updateData("captype_start", new_val);
+	return;
+      }
+      if (curid=="aintrpage-endcap") {
 	new_val = this.mCapEn.selectedItem.value;
-	gMain.updateData("endtype", new_val);
+	gMain.updateData("captype_end", new_val);
 	return;
       }
 
@@ -180,11 +187,13 @@ window.gAintr = ( function () {//
   {
     if (new_val=="simple") {
       this.mWidthSli.setAttribute("unit", "px");
+      this.mCapSt.disabled = true;
       this.mCapEn.disabled = true;
       this.mDetail.disabled = true;
     }
     else {
       this.mWidthSli.setAttribute("unit", "\xC5");
+      this.mCapSt.disabled = false;
       this.mCapEn.disabled = false;
       this.mDetail.disabled = false;
     }

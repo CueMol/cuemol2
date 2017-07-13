@@ -81,6 +81,8 @@ runtime_class Scene
   ////////////////////
   // Renderer related methods
 
+  object<Renderer$> getRenderer(integer);
+
   /// Get the first matching renderer object by name
   object<Renderer$> getRendByName(string);
 

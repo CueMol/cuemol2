@@ -76,6 +76,7 @@ void OglView::setup()
   GLfloat fogColor[4] = {0, 0, 0, 1.0};
 
   glEnable(GL_FOG);
+  //glDisable(GL_FOG);
   glFogi(GL_FOG_MODE, GL_LINEAR);
   glFogfv(GL_FOG_COLOR, fogColor);
 

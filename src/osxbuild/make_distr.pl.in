@@ -10,6 +10,8 @@ my $cgal_dir = "@CGAL_LDFLAGS@";
 my $glew_dir = "@GLEW_LDFLAGS@";
 my $lcms_dir = "@LCMS_LDFLAGS@";
 my $xz_dir = "@XZ_LDFLAGS@";
+my $xmlrpc_dir = "@XMLRPC_LDFLAGS@";
+my $use_boost_timer = "@USE_BOOST_TIMER@";
 
 my $ICON = "$top_srcdir/osxbuild/cuemol-disk1.icns";
 
@@ -63,28 +65,75 @@ else {
     print "xz_dir $xz_dir OK\n";
 }
 
+my $has_xmlrpc=0;
+if ($xmlrpc_dir) {
+    $xmlrpc_dir =~ s/^-L//;
+    if (!-d $xmlrpc_dir) {
+	die "XMLRPC $xmlrpc_dir not found.\n";
+    }
+    else {
+	print "xmlprc_dir $xmlrpc_dir OK\n";
+	$has_xmlrpc=1;	
+    }
+}
+
+
 ##########
 
-## my @lib_list = ("libqlib", "libqsys", "libgfx", "libmolstr", "libmolvis");
-
-my @lib_list = ("libqmpng", "libqmzlib",
-		"libqlib", "libqsys", "libgfx", "libjsbr", "libsysdep", 
-		"libmolstr", "libmolvis", "libsymm", "libsurface", "libxtal", "libmdtools",
-		"libmolanl", "liblwview", "libanim", "librender", "libimporters",
-		"libboost_thread", "libboost_system", "libboost_filesystem", "libboost_iostreams", "libboost_timer", "libboost_chrono",
-		"libCGAL", "libGLEW", "liblcms2", "liblzma");
-
+# Dylib list to be copyed to lib directory
 my @copylib = ("$boost_dir/libboost_thread*.dylib",
 	       "$boost_dir/libboost_system*.dylib",
 	       "$boost_dir/libboost_filesystem*.dylib",
 	       "$boost_dir/libboost_iostreams*.dylib",
-	       "$boost_dir/libboost_timer*.dylib",
-	       "$boost_dir/libboost_chrono*.dylib",
-	       "$cgal_dir/libCGAL.11.dylib",
-	       "$glew_dir/libGLEW.1.12.0.dylib",
+	       "$boost_dir/libboost_date_time*.dylib",
+	       "$cgal_dir/libCGAL.*.dylib",
+	       "$glew_dir/libGLEW.2.0.0.dylib",
 	       "$lcms_dir/liblcms2.2.dylib",
 	       "$xz_dir/liblzma.5.dylib"
 );
+
+# Dylib name list to be rewritten in the install names in dylib
+my @lib_list = ("libqmpng", "libqmzlib",
+		"libqlib", "libqsys", "libgfx", "libjsbr", "libsysdep", 
+		"libmolstr", "libmolvis", "libsymm", "libsurface", "libxtal", "libmdtools",
+		"libmolanl", "liblwview", "libanim", "librender", "libimporters",
+		"libboost_thread", "libboost_system", "libboost_filesystem", "libboost_iostreams", "libboost_date_time",
+		"libCGAL", "libGLEW", "liblcms2", "liblzma");
+
+if ($use_boost_timer eq "yes") {
+    push(@copylib, ("$boost_dir/libboost_timer*.dylib",
+		    "$boost_dir/libboost_chrono*.dylib"));
+    push(@lib_list, ("libboost_timer",
+		     "libboost_chrono"));
+}
+
+if ($has_xmlrpc) {
+    push(@lib_list, ("libxmlrpc_server_abyss++",
+		     "libxmlrpc_server++",
+		     "libxmlrpc_server_abyss",
+		     "libxmlrpc_server",
+		     "libxmlrpc_abyss",
+		     "libxmlrpc++",
+		     "libxmlrpc",
+		     "libxmlrpc_util",
+		     "libxmlrpc_util++",
+		     "libxmlrpc_xmlparse",
+		     "libxmlrpc_xmltok"));
+    push(@copylib, ("$xmlrpc_dir/libxmlrpc_server_abyss++.8.39.dylib",
+		    "$xmlrpc_dir/libxmlrpc_server++.8.39.dylib",
+		    "$xmlrpc_dir/libxmlrpc_server_abyss.3.39.dylib",
+		    "$xmlrpc_dir/libxmlrpc_server.3.39.dylib",
+		    "$xmlrpc_dir/libxmlrpc_abyss.3.39.dylib",
+		    "$xmlrpc_dir/libxmlrpc++.8.39.dylib",
+		    "$xmlrpc_dir/libxmlrpc.3.39.dylib",
+		    "$xmlrpc_dir/libxmlrpc_util.3.39.dylib",
+		    "$xmlrpc_dir/libxmlrpc_util++.8.39.dylib",
+		    "$xmlrpc_dir/libxmlrpc_xmlparse.3.39.dylib",
+		    "$xmlrpc_dir/libxmlrpc_xmltok.3.39.dylib"));
+
+}
+
+
 my $RSYNC = "rsync";
 
 ##########
@@ -123,6 +172,7 @@ system("$RSYNC -v -a --copy-unsafe-links ".
        "--exclude jarmaker/ ".
        "--exclude \"Makefile*\" ".
        "--exclude \"*.la\" ".
+       "--exclude __pycache__ ".
        "$inst_top $dist_top");
 
 system("$RSYNC -v -a --copy-unsafe-links ".

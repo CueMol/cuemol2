@@ -135,6 +135,12 @@ bool MmcifMolReader::read(qlib::InStream &ins)
 
   m_pMol->applyTopology(m_bAutoTopoGen);
   m_pMol->calcBasePair(3.7, 30);
+
+  if (m_nReadAtoms>100000 && !m_bLoadSecstr) {
+    LOG_DPRINTLN("mmCIF> Too many atoms are loaded: secstr reassgnment is disabled (--> loaded from the file)!!");
+    m_bLoadSecstr = true;
+  }
+
   if (m_bLoadSecstr) {
     //applySecstr("helix", "H", m_rngHelix);
     //applySecstr("helix", "G", m_rng310Helix);

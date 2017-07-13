@@ -139,8 +139,8 @@ Source: {#XulGUIDir}\data\mono_top.xml; DestDir: {app}\data; Flags: ignoreversio
 Source: {#XulGUIDir}\data\default_params.xml; DestDir: {app}\data; Flags: ignoreversion
 
 Source: {#WinBuildDir}\data\shaders\*; Excludes: "*~,CVS,.svn"; DestDir: {app}\data\shaders; Flags: ignoreversion
-Source: {#WinBuildDir}\scripts\*; Excludes: "*~,CVS,.svn"; DestDir: {app}\scripts; Flags: ignoreversion
 Source: {#WinBuildDir}\data\icc_profiles\*; Excludes: "*~,CVS,.svn"; DestDir: {app}\data\icc_profiles; Flags: ignoreversion
+Source: {#WinBuildDir}\scripts\*; Excludes: "*~,CVS,.svn"; DestDir: {app}\scripts; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; Source: {#XulGUIDir}\data\amb_all03chg_prot.xml; DestDir: {app}\data; Flags: ignoreversion
 
@@ -158,6 +158,18 @@ Source: "{#FFmpegBundleDir}\bin\ffmpeg.exe"; DestDir: "{app}\ffmpeg\bin"; Flags:
 ; APBS/pdb2pqr bundle option
 #ifdef APBSBundleDir
 Source: "{#APBSBundleDir}\*"; DestDir: "{app}\apbs"; Flags: ignoreversion recursesubdirs createallsubdirs
+#endif
+
+; Python runtime bundle option
+#ifdef PythonDir
+Source: {#WinBuildDir}\pybr.dll; DestDir: {app}; Flags: ignoreversion
+Source: {#SysDLLDir}\python36.dll; DestDir: {app}; Flags: ignoreversion
+Source: "{#PythonDir}\Lib\*"; DestDir: "{app}\Python\Lib"; Excludes: "__pycache__"; Flags: ignoreversion recursesubdirs createallsubdirs
+#if Platform=="x64"
+Source: "{#PythonDir}\PCbuild\amd64\*.pyd"; DestDir: "{app}\Python\DLLs"; Flags: ignoreversion recursesubdirs createallsubdirs
+#else
+Source: "{#PythonDir}\PCbuild\win32\*.pyd"; DestDir: "{app}\Python\DLLs"; Flags: ignoreversion recursesubdirs createallsubdirs
+#endif
 #endif
 
 [Icons]

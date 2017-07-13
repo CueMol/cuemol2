@@ -3,6 +3,22 @@
 //  fragment shader for cylinders
 //
 
+////////////////////
+// Uniform variables
+
+uniform float frag_alpha;
+
+uniform float u_edge;
+
+// edge color
+uniform vec4 u_edgecolor;
+
+// silhouette mode flag
+uniform bool u_bsilh;
+
+////////////////////
+// Varying variables
+
 varying vec4 v_color;
 varying vec2 v_impos;
 varying vec4 v_ecpos;
@@ -11,8 +27,6 @@ varying float v_ndec;
 //varying float vw_len;
 //varying float v_sinph;
 varying float v_flag;
-
-uniform float frag_alpha;
 
 vec4 Ambient;
 vec4 Diffuse;
@@ -64,21 +78,15 @@ vec4 flight(in vec3 normal, in vec4 ecPosition, in vec4 matcol)
 
 varying float v_depmx;
 varying vec2 v_normadj;
-varying vec2 v_vwdir;
+varying mat2 v_normmat;
+//varying vec2 v_vwdir;
 
 void main()
 {
-  float adj_cen = sqrt(1.0 - v_impos.x*v_impos.x);
+  float adj_cen = sqrt( max(0.0, 1.0 - v_impos.x*v_impos.x) );
   float disp_cir = adj_cen * v_ndec;
 
   float imy = v_impos.y;
-
-  /*
-  if (v_flag>0)
-    imy -= disp_cir;
-  else
-    imy += disp_cir;
-*/
 
   imy -= disp_cir * v_flag;
   
@@ -89,26 +97,21 @@ void main()
     return;
   }
 
+  bool bEdge = false;
+  if (v_impos.x<-1.0 ||
+      v_impos.x> 1.0) {
+    // edge line
+    bEdge = true;
+  }
+
   float depth = v_depmx * adj_cen;
 
-  vec3 normal = vec3(v_impos.x, v_normadj.x * adj_cen, v_normadj.y * adj_cen);
-
-  mat2 rmat = mat2(v_vwdir.x, v_vwdir.y,
-                   -v_vwdir.y, v_vwdir.x);
-
-  normal.xy *= rmat;
-
-  //normal.xy = rmat * normal.xy;
-  //float tx =  v_vwdir.x*normal.x + v_vwdir.y*normal.y;
-  //float ty = -v_vwdir.y*normal.x + v_vwdir.x*normal.y;
-  //normal.x = tx;
-  //normal.y = ty;
-  
   float far=gl_DepthRange.far;
   float near=gl_DepthRange.near;
   
   vec4 ecpos = v_ecpos;
-  ecpos.z += depth;
+  if (!bEdge)
+    ecpos.z += depth;
   vec4 clip_space_pos = gl_ProjectionMatrix * ecpos;
   
   float ndc_depth = clip_space_pos.z / clip_space_pos.w;
@@ -118,31 +121,45 @@ void main()
   // re-apply clipping by the view volume
   if (fd>far) {
     discard;
+    return;
   }
   else if (fd<near) {
     discard;
+    return;
     //normal = vec3(0.0, 0.0, 1.0);
     //fd = near;
   }
-  else {
-    gl_FragDepth = fd;
-    
-    // color calculation
-    vec4 color = v_color;
-    //float vis = (normal.y + 1.0)/2.0;
-    //vec4 color = vec4(vis, 0.0, 1.0-vis, 1.0);
 
-    color = flight(normal, ecpos, color);
-    
-    // fog calculation
-    float fogz = abs(ecpos.z);
-    float fog;
-    fog = (gl_Fog.end - fogz) * gl_Fog.scale;
-    fog = clamp(fog, 0.0, 1.0);
-    color = vec4(mix( vec3(gl_Fog.color), vec3(color), fog), v_color.a*frag_alpha);
-    
-    gl_FragColor = color;
+  // set depth
+  if (bEdge&&u_bsilh)
+    gl_FragDepth = 0.99;
+  else
+    gl_FragDepth = fd;
+  
+  // color calculation
+  vec4 color;
+  if (bEdge) {
+    color = vec4(u_edgecolor.rgb, v_color.a);
   }
+  else {
+    color = v_color;
+    vec3 normal = vec3(v_impos.x, v_normadj.x * adj_cen, v_normadj.y * adj_cen);
+    //mat2 rmat = mat2(v_vwdir.x, v_vwdir.y,
+    //-v_vwdir.y, v_vwdir.x);
+    //normal.xy *= rmat;
+    normal.xy *= v_normmat;
+    
+    color = flight(normal, ecpos, color);
+  }
+  
+  // fog calculation
+  float fogz = abs(ecpos.z);
+  float fog;
+  fog = (gl_Fog.end - fogz) * gl_Fog.scale;
+  fog = clamp(fog, 0.0, 1.0);
+  color = vec4(mix( vec3(gl_Fog.color), vec3(color), fog), v_color.a*frag_alpha);
+  
+  gl_FragColor = color;
 
   //gl_FragColor = v_color;
 

@@ -59,7 +59,8 @@ window.gPdbDlg = {
     if (pdbchk) {
       //let pdb_url = "http://www.rcsb.org/pdb/download/downloadFile.do?"+
       //"fileFormat=pdb&compression=NO&structureId="+pdbid;
-      let pdb_url = "http://files.rcsb.org/download/"+pdbid+".pdb.gz";
+      //let pdb_url = "http://files.rcsb.org/download/"+pdbid+".pdb.gz";
+      let pdb_url = "http://files.rcsb.org/download/"+pdbid+".cif.gz";
       let uri = this.mIoService.newURI(pdb_url, null, null);
   
       try {

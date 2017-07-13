@@ -62,7 +62,7 @@
 #define USE_OPENGL 1
 #define HAVE_MDTOOLS_MODULE 1
 
-#define HAVE_JAVASCRIPT
+//#define HAVE_JAVASCRIPT
 //#define NO_SCRIPT
 
 #define __STDC_LIMIT_MACROS

@@ -259,7 +259,7 @@ NS_IMETHODIMP XPCCueMol::Init(const char *confpath, bool *_retval)
 
 #ifdef HAVE_PYTHON
   // load python module
-  pybr::init();
+  pybr::init(confpath);
   MB_DPRINTLN("---------- setup PYBR OK");
 #endif
 

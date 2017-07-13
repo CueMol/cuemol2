@@ -170,7 +170,7 @@ namespace molvis {
         if (pdc->getEdgeLineType()!=DisplayContext::ELT_NONE) {
           m_pPO->setUniformF("u_edge", pdc->getEdgeLineWidth());
 
-          double r=.0,g=.0,b=.0;
+          float r=.0f,g=.0f,b=.0f;
           ColorPtr pcol = pdc->getEdgeLineColor();
           if (!pcol.isnull()) {
             quint32 dcc = pcol->getDevCode(nSceneID);
@@ -178,7 +178,6 @@ namespace molvis {
             g = gfx::convI2F(gfx::getGCode(dcc));
             b = gfx::convI2F(gfx::getBCode(dcc));
           }
-          
           m_pPO->setUniformF("u_edgecolor", r,g,b,1);
           if (pdc->getEdgeLineType()==DisplayContext::ELT_SILHOUETTE)
             m_pPO->setUniform("u_bsilh", 1);

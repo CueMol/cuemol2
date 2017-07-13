@@ -18,11 +18,16 @@ runtime_class MolAtom
   cloneable;
   smartptr;
 
+  property integer id => redirect(getID, xxx) (readonly);
+
   //property string name => m_name;
   property string name => redirect(getName, setName);
   property string element => redirect(getElementName, setElementName);
   property real bfac => redirect(getBfac, setBfac);
   property real occ => redirect(getOcc, setOcc);
+
+  property string confid => redirect(getConfIDScr, setConfIDScr);
+
   // property real charge => redirect(getCharge, setCharge);
   // property real radius => redirect(getRadius, setRadius);
 

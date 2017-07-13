@@ -30,7 +30,7 @@ namespace xpcom {
     XPCTimerImpl();
     virtual ~XPCTimerImpl();
 
-    virtual qlib::time_value getCurrentTime();
+    //virtual qlib::time_value getCurrentTime();
 
     virtual void start(qlib::time_value nperiod);
 

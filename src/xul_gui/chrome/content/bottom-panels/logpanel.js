@@ -54,6 +54,22 @@ if (!("logpanel" in cuemolui)) {
       this.mCmdBox.addEventListener("keypress", function (e) {panel.onKeyPress(e);}, false);
       
       this.mTabMolView = document.getElementById("main_view");
+
+      // check scripting interfaces
+      this.mPyBr = null;
+      if (cuemol.hasClass("PythonBridge")) {
+        try {
+          pybr = cuemol.getService("PythonBridge");
+          if (pybr) {
+            this.mPyBr = pybr;
+          }
+        }
+        catch (e) {}
+      }
+
+      // Setup history array
+      this.mCmdHis = [];
+      this.mHisPos = 0;
     };
     
     panel.onUnLoad = function ()
@@ -75,19 +91,46 @@ if (!("logpanel" in cuemolui)) {
 	this.execCmd(this.mCmdBox.value);
 	this.mCmdBox.value = "";
       }
+      else if (aEvent.keyCode==Ci.nsIDOMKeyEvent.DOM_VK_UP) {
+        if (this.mHisPos>0) {
+          this.mHisPos--;
+          this.mCmdBox.value = this.mCmdHis[this.mHisPos];
+        }
+      }
+      else if (aEvent.keyCode==Ci.nsIDOMKeyEvent.DOM_VK_DOWN) {
+        if (this.mHisPos<this.mCmdHis.length) {
+          this.mHisPos++;
+          this.mCmdBox.value = this.mCmdHis[this.mHisPos];
+        }
+      }
     };
 
     panel.execCmd = function (aCmd)
     {
-      try {
-        let scene = this.mTabMolView.currentSceneW
-        let fun = new Function("scene", aCmd);
-        fun(scene);
-        //eval(aCmd);
+      if (this.mPyBr) {
+        // use python
+        try {
+          this.mPyBr.runString(aCmd);
+        }
+        catch (e) {
+          debug.exception(e);
+        }
       }
-      catch (e) {
-	cuemol.putLogMsg(e.message);
+      else {
+        // use js
+        try {
+          let scene = this.mTabMolView.currentSceneW;
+          let fun = new Function("scene", aCmd);
+          fun(scene);
+          //eval(aCmd);
+        }
+        catch (e) {
+          cuemol.putLogMsg(e.message);
+        }
       }
+
+      this.mCmdHis.push(aCmd);
+      this.mHisPos = this.mCmdHis.length;
     };
 
     panel.clearLogContents = function ()

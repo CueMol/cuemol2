@@ -21,7 +21,7 @@ Qm2Main.prototype.findMatchIOHandler = function(filename, names)
   }
 
   return -1;
-}
+};
 
 Qm2Main.prototype.onDragOver = function (aEvent)
 {
@@ -36,33 +36,34 @@ Qm2Main.prototype.onDragOver = function (aEvent)
     aEvent.preventDefault();
     aEvent.stopPropagation();
   }
-}
+};
 
 Qm2Main.prototype.onDragLeave = function (aEvent)
 {
   //dd("DragLeaveCalled: "+aEvent.dataTransfer.types);
-}
+};
 
 Qm2Main.prototype.onDrop = function (aEvent)
 {
-  dd("Drop Called: "+aEvent.dataTransfer.types);
+  let dt = aEvent.dataTransfer;
 
-  //for (let i=0; i<event.dataTransfer.types.length; ++i) {
-  //dd("  type "+event.dataTransfer.types[i]);
-  //}
-  let isDrag = aEvent.dataTransfer.types.contains("application/x-moz-file");
+  dd("Drop Called: "+dt.types);
+
+  for (let i=0; i<dt.types.length; ++i) {
+    dd("  type "+dt.types[i]);
+  }
+  let isDrag = dt.types.contains("application/x-moz-file");
   if (!isDrag)
     return;
 
-  //dd("JSON: "+JSON.stringify(aEvent.dataTransfer));
-  let data = aEvent.dataTransfer.getData("application/x-moz-file");
-  dd("drag data application/x-moz-file: "+data);
-  data = aEvent.dataTransfer.getData("Files");
-  dd("drag data Files: "+data);
-  data = aEvent.dataTransfer.getData("text/x-moz-url");
+  // dd("JSON: "+JSON.stringify(dt));
+  // let data = dt.getData("application/x-moz-file");
+  // dd("drag data application/x-moz-file: "+data);
+  // data = dt.getData("Files");
+  // dd("drag data Files: "+data);
+  data = dt.getData("text/x-moz-url");
   dd("drag data url: "+data);
   
-  let dt = aEvent.dataTransfer;
   dd("mozItemCount: "+ dt.mozItemCount);
 
   let names;
@@ -90,16 +91,43 @@ Qm2Main.prototype.onDrop = function (aEvent)
 
   let findex;
 
+  /*
   for (let i = 0; i < dt.mozItemCount; i++) {
-    let moz_data = dt.mozGetDataAt("application/x-moz-file", i);
-    dd("mozGetData: "+ i + ", data="+moz_data);
-    if (moz_data instanceof Ci.nsIFile) {
-      dd("  nsIFile: "+ moz_data.path);
-      if (!this.openNsFileImpl(moz_data, names, sc_names)) {
-	dd("  cannot open file!!");
+    var types = dt.mozTypesAt(i);
+    for (var t = 0; t < types.length; t++) {
+      dd("item "+i+ ":  "+types[t]); 
+
+      try {
+	var data = dt.mozGetDataAt(types[t], i); 
+	dd("(" + (typeof data) + ") : <" + data + " >");
+      } catch (ex) {
+	dd("<>");
+	debug.exception(ex);
       }
     }
   }
+*/
+  
+  let mozfiles = new Array();
+
+  for (let i = 0; i < dt.mozItemCount; i++) {
+    let moz_data = dt.mozGetDataAt("application/x-moz-file", i);
+    //dd("mozGetData: "+ i + ", data="+moz_data);
+    dd("mozGetData: ("+ i + "," + (typeof moz_data) + ") : <" + moz_data + " >");
+    // alert("mozGetData: "+ i + ", data="+moz_data);
+    if (moz_data instanceof Ci.nsIFile) {
+      dd("  nsIFile: "+ moz_data.path);
+      mozfiles.push(moz_data);
+    }
+  }
+
+  for (let i = 0; i < mozfiles.length; i++) {
+    let moz_data = mozfiles[i];
+    if (!this.openNsFileImpl(moz_data, names, sc_names)) {
+      dd("  cannot open file!!");
+    }
+  }
+
 }
 
 Qm2Main.prototype.openNsFileImpl = function (aNsFile, names, sc_names)
@@ -124,6 +152,29 @@ Qm2Main.prototype.openNsFileImpl = function (aNsFile, names, sc_names)
     this.openSceneImpl(aNsFile.path, reader_name);
     return true;
   }
+
+  // check script handlers
+  let c = util.splitFileName3(newobj_name, ".js");
+  if (c>=0) {
+    this.execIntJS(aNsFile.path);
+    return true;
+  }
+
+  c = util.splitFileName3(newobj_name, ".py");
+  if (c>=0) {
+    try {
+      pybr = cuemol.getService("PythonBridge");
+      if (pybr) {
+	let scene = this.mMainWnd.currentSceneW;
+	let vwid = this.mMainWnd.getCurrentViewID();
+	pybr.runFile2(aNsFile.path, scene.uid, vwid);
+      }
+    }
+    catch (e) {}
+
+    return true;
+  }
+
 
   return false;
 }

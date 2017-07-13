@@ -536,8 +536,13 @@ namespace qlib {
     }
 
     ///////////////
-    // Array
+    // List
+    // TO DO: implementation ??
 
+    ///////////////
+    // Array
+    //   substantial class of "List" type is LVarArray
+    
     static inline
     void convToArrayValue(LVarArray &aDest, const LVariant &aSrc, const LString &propname)
     {

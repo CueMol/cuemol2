@@ -551,10 +551,11 @@ int AnimMgr::setupRender(const qlib::LScrTime &t_start,
   qlib::time_value tv_st = t_start.getValue();
   qlib::time_value tv_en = t_end.getValue();
 
-  double dt = 1000.0/frame_rate;
+  //double dt = 1000.0/frame_rate;
+  double dt = 1000000000.0/frame_rate;
 
-  int if_st = int( ::ceil(double(tv_st)*frame_rate/1000.0) );
-  int if_en = int( ::floor(double(tv_en)*frame_rate/1000.0) );
+  int if_st = int( ::ceil(double(tv_st)*frame_rate/1000000000.0) );
+  int if_en = int( ::floor(double(tv_en)*frame_rate/1000000000.0) );
   int nframes = if_en-if_st+1;
 
   m_delt = dt;
@@ -574,7 +575,7 @@ void AnimMgr::writeFrame(qlib::LScrSp<SceneExporter> pWriter)
     return; // error (eof reached)
 
   qlib::time_value curt = qlib::time_value(::floor(double(m_nCurrFrame)*m_delt));
-  MB_DPRINTLN("Write frame %d (%d ms)", m_nCurrFrame, int(curt));
+  MB_DPRINTLN("Write frame %d (%f ms)", m_nCurrFrame, double(curt)/1000000.0);
 
   ScenePtr pScene = getTgtScene();
   pWriter->attach(pScene);

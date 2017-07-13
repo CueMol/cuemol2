@@ -451,17 +451,20 @@ fi
 AC_SUBST(BOOST_LDFLAGS)
 AC_SUBST(BOOST_CPPFLAGS)
 
+# Check for boost_timer library
+USE_BOOST_TIMER=
 AC_ARG_ENABLE(boosttimer,
     [--enable-boosttimer     Enable performance measurement using boost_timer (boost_timer required)],
     [
 if test $enableval = yes ; then
-  BOOST_TIMER_LIB=-lboost_timer
-  AC_SUBST([BOOST_TIMER_LIB])
-  AC_DEFINE([USE_BOOST_TIMER], [1], [Use boost_timer])
+BOOST_TIMER_LIB=-lboost_timer
+USE_BOOST_TIMER=yes
+AC_SUBST([BOOST_TIMER_LIB])
+AC_DEFINE([USE_BOOST_TIMER], [1], [Use boost_timer])
 fi
     ],
     [])
-
+AC_SUBST([USE_BOOST_TIMER])
 
 #####
 
@@ -571,22 +574,82 @@ AC_SUBST(JS_LDFLAGS)
 #######################################################
 # Python supports
 
-AC_ARG_ENABLE(python,
-    [--enable-python         Enable python support],
-    [
-if test $enableval = yes ; then
+echo "***** PYTHON check"
+AC_ARG_WITH(python,
+[  --with-python[=DIR]      Look for python in DIR (default=no) ],
+[ case "$with_python" in
+  no)
+    AC_MSG_RESULT($with_python)
+    ;;
+
+  yes)
+   AC_MSG_RESULT($with_python)
    dnl check python inc/lib
-   AM_PATH_PYTHON(2.6.0)
-   PY_PREFIX=`$PYTHON -c 'import sys ; print sys.prefix'`
-   PYTHON_LDADD="-lpython$PYTHON_VERSION"
-   PYTHON_CPPFLAGS="-I$PY_PREFIX/include/python$PYTHON_VERSION"
+   AM_PATH_PYTHON(3.6.0)
+   PY_PREFIX=`$PYTHON -c 'import sys ; print(sys.prefix)'`
+   PYTHON_LDADD="-lpython${PYTHON_VERSION}m"
+   PYTHON_LDFLAGS="-L$PY_PREFIX/lib"
+   PYTHON_CPPFLAGS="-I$PY_PREFIX/include/python${PYTHON_VERSION}m"
    echo "Python prefix: " $PY_PREFIX ", version: " $PYTHON_VERSION
    AC_SUBST([PYTHON_LDADD])
+   AC_SUBST([PYTHON_LDFLAGS])
    AC_SUBST([PYTHON_CPPFLAGS])
+   AC_SUBST([PY_PREFIX])
    BUILD_SCR="$BUILD_SCR pybr"
-   SCR_CPPFLAGS="$SCR_CPPFLAGS -DHAVE_PYTHON"
+   SCR_CPPFLAGS="$SCR_CPPFLAGS"
    SCR_LDADD="$SCR_LDADD -lpybr $PYTHON_LDADD"
-   SCR_LDFLAGS="$SCR_LDFLAGS -L../pybr/"
+   SCR_LDFLAGS="$SCR_LDFLAGS -L../pybr/ $PYTHON_LDFLAGS"
+
+   HAVE_PYTHON=yes
+   AC_SUBST([HAVE_PYTHON])
+   AC_DEFINE([HAVE_PYTHON], [1], [Define to 1 if you have python3])
+   ;;
+
+  *)
+    AC_MSG_RESULT($with_python)
+    PYTHON=$with_python/bin/python3
+   dnl check python inc/lib
+   AM_PATH_PYTHON(3.6.0)
+   PY_PREFIX=`$PYTHON -c 'import sys ; print(sys.prefix)'`
+   PYTHON_LDADD="-lpython${PYTHON_VERSION}m"
+   PYTHON_LDFLAGS="-L$PY_PREFIX/lib"
+   PYTHON_CPPFLAGS="-I$PY_PREFIX/include/python${PYTHON_VERSION}m"
+   echo "Python prefix: " $PY_PREFIX ", version: " $PYTHON_VERSION
+   AC_SUBST([PYTHON_LDADD])
+   AC_SUBST([PYTHON_LDFLAGS])
+   AC_SUBST([PYTHON_CPPFLAGS])
+   AC_SUBST([PY_PREFIX])
+   BUILD_SCR="$BUILD_SCR pybr"
+   SCR_CPPFLAGS="$SCR_CPPFLAGS"
+   SCR_LDADD="$SCR_LDADD -lpybr $PYTHON_LDADD"
+   SCR_LDFLAGS="$SCR_LDFLAGS -L../pybr/ $PYTHON_LDFLAGS"
+
+   HAVE_PYTHON=yes
+   AC_SUBST([HAVE_PYTHON])
+   AC_DEFINE([HAVE_PYTHON], [1], [Define to 1 if you have python3])
+    ;;
+  esac ],
+[
+    AC_MSG_RESULT(no)
+])
+
+AC_ARG_ENABLE(numpy,
+    [--enable-numpy     Enable numpy support (python3 required)],
+    [
+if test $enableval = yes ; then
+if test x$HAVE_PYTHON != xyes ; then
+AC_MSG_ERROR(python3 not found)
+fi
+NUMPY_INC=`$PYTHON -c 'from numpy.distutils.misc_util import get_numpy_include_dirs ; print(" ".join(get_numpy_include_dirs()))'`
+#echo $NUMPY_INC
+  for i in $NUMPY_INC; do
+      echo "numpy incdir = $i"
+      PYTHON_CPPFLAGS="$PYTHON_CPPFLAGS -I$i" 
+  done
+#/usr/local/lib/python3.6/site-packages/numpy/core/include
+  PYTHON_CPPFLAGS="$PYTHON_CPPFLAGS -DHAVE_NUMPY=1" 
+  AC_SUBST([PYTHON_CPPFLAGS])
+#   AC_DEFINE([HAVE_NUMPY], [1], [Define to 1 if you have numpy])
 fi
     ],
     [])

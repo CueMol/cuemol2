@@ -141,6 +141,7 @@ int LProcMgr::getState(int id)
     return PM_ENDED;
   }
   
+  // check in the ended proc list
   {
     endq_t::iterator iter = findInEndq(id);
     if (iter!=m_endq.end())
@@ -314,41 +315,71 @@ void LProcMgr::updateWaitIDs(ProcEnt *pEnt)
 
 void LProcMgr::checkQueue()
 {
-  for (;;) {
+  try {
+    for (;;) {
 
-    int isl = getEmptySlot();
-    if (isl<0)
-      return; // slot is full
+      int isl = getEmptySlot();
+      if (isl<0)
+	return; // slot is full
     
-    // run the task with highest priority
-    queue_t::iterator iter = m_queue.begin();
-    ProcEnt *pEnt = NULL;
-    for (; iter!=m_queue.end(); ++iter) {
-      ProcEnt *pe = iter->second;
-      updateWaitIDs(pe);
-      if (pe->m_waitIDs.empty()) {
-        pEnt = pe;
-        break;
+      // run the task with highest priority
+      queue_t::iterator iter = m_queue.begin();
+      ProcEnt *pEnt = NULL;
+      for (; iter!=m_queue.end(); ++iter) {
+	ProcEnt *pe = iter->second;
+	updateWaitIDs(pe);
+	if (pe->m_waitIDs.empty()) {
+	  pEnt = pe;
+	  break;
+	}
       }
-    }
-    if (pEnt==NULL || iter==m_queue.end())
-      return; // no available tasks
+      if (pEnt==NULL || iter==m_queue.end())
+	return; // no available tasks
     
-    // create a real process
-    ProcInThread *pThr = m_pImpl->createProcess(pEnt->m_path, pEnt->m_cmdline);
-    if (pThr==NULL)
-      return;
-    
-    m_queue.erase(iter);
-    
-    // start the stdout watcher thread
-    pThr->kick();
-    
-    // setup the process table
-    pEnt->m_pThr = pThr;
-    m_tab[isl] = pEnt;
-  }
+      // create a real process
+      // (This possibly fails if cmd not found...)
+      ProcInThread *pThr = NULL;
+      try {
+        pThr = m_pImpl->createProcess(pEnt->m_path, pEnt->m_cmdline);
+      }
+      catch (const qlib::LException &e) {
+        LString msg = LString::format("Exception occurred in createProcess: %s", e.getMsg().c_str());
+        LOG_DPRINTLN("ProcMgr> %s", msg.c_str());
+        m_errormsg = msg;
+      }
+      catch (...) {
+        LString msg = "Unknown exception occurred in createProcess";
+        LOG_DPRINTLN("ProcMgr> %s", msg.c_str());
+        m_errormsg = msg;
+      }
 
+      if (pThr==NULL) {
+        m_queue.erase(iter);
+        delete pEnt;
+        return;
+      }
+
+      m_queue.erase(iter);
+    
+      // start the stdout watcher thread
+      pThr->kick();
+    
+      // setup the process table
+      pEnt->m_pThr = pThr;
+      m_tab[isl] = pEnt;
+    }
+  }
+  catch (const qlib::LException &e) {
+    LString msg = LString::format("Exception occurred in checkQueue: %s", e.getMsg().c_str());
+    LOG_DPRINTLN("ProcMgr> %s", msg.c_str());
+    m_errormsg = msg;
+  }
+  catch (...) {
+    LString msg = "Unknown exception occurred in checkQueue";
+    LOG_DPRINTLN("ProcMgr> %s", msg.c_str());
+    m_errormsg = msg;
+  }
+  
 }
 
 void LProcMgr::killSlot(int isl)
@@ -397,6 +428,9 @@ void LProcMgr::killAll()
   //std::for_each(m_endq.begin(), m_endq.end(), delete_ptr<ProcEnt *>());
   //m_endq.clear();
   delete_and_clear<endq_t,ProcEnt>(m_endq);
+
+  // clear error messgae
+  m_errormsg = "";
 }
 
 bool LProcMgr::isEmpty() const

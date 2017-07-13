@@ -86,6 +86,24 @@ void AnimObj::setTimeRefName(const LString &nm)
   m_refName = nm;
 }
 
+double AnimObj::getRho(qlib::time_value elapsed) const
+{
+  qlib::time_value span = getAbsEnd() - getAbsStart();
+
+  //if (qlib::isNear4(span, 0.0)) {
+  if (span==0) {
+    // degenerated case (end==start)
+    if (elapsed-getAbsStart()<0)
+      return 0.0;
+    else
+      return 1.0;
+  }
+
+  double rho = double(elapsed-getAbsStart())/double(span);
+  rho = qlib::trunc(rho, 0.0, 1.0);
+  return convRho(rho);
+}
+
 //////////////
 
 void AnimObj::onTimerPre(qlib::time_value elapsed, AnimMgr *pMgr)

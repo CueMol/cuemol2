@@ -103,14 +103,28 @@ LString MolChain::getResidsJSON() const
   MolCoordPtr pMol = getParent();
   SelectionPtr pSel = pMol->getSelection();
 
-  LString rval = "[";
-
+  // sort residues by res index
+  typedef std::map<ResidIndex, MolResiduePtr> ResMap;
+  ResMap resmap;
   ResidCursor iter = begin();
   ResidCursor eiter = end();
-  bool bcomma = false;
   for (; iter!=eiter; ++iter) {
-    if (bcomma) rval += ",";
     MolResiduePtr pRes = *iter;
+    ResidIndex ind = pRes->getIndex();
+    resmap.insert(ResMap::value_type(ind, pRes));
+  }
+  
+  // conv to JSON str
+  LString rval = "[";
+
+  //ResidCursor iter = begin();
+  //ResidCursor eiter = end();
+  bool bcomma = false;
+  BOOST_FOREACH (ResMap::value_type &elem, resmap) {
+    MolResiduePtr pRes = elem.second;
+    //for (; iter!=eiter; ++iter) {
+    if (bcomma) rval += ",";
+    //MolResiduePtr pRes = *iter;
     ResidIndex ind = pRes->getIndex();
     LString single;
     pRes->getPropStr("single", single);

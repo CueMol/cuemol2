@@ -64,6 +64,7 @@ public:
 
     // Create the pipe for the child process's STDOUT.
     if (!::CreatePipe(&out_read, &out_write, &sa_attr, 0)) {
+      MB_THROW(RuntimeException, "CreatePipe failed");
       return NULL;
     }
 
@@ -71,20 +72,14 @@ public:
     if (!::SetHandleInformation(out_read, HANDLE_FLAG_INHERIT, 0)) {
       ::CloseHandle(out_read);
       ::CloseHandle(out_write);
+      MB_THROW(RuntimeException, "SetHandleInformation failed");
       return NULL;
     }
 
     LString nargs = "\"" + path + "\" " + args;
     wchar_t *pwcsCmdLine;
-    try {
-      pwcsCmdLine = (wchar_t *)qlib::UTF8toUCS16(nargs);
-    }
-    catch (const LException &ex) {
-      // conversion error: rethrow exception
-      LString msg = LString::format("WinProcMgr: cannot convert UTF8 argments <%s>", nargs.c_str());
-      LOG_DPRINTLN(msg);
-      return NULL;
-    }
+    // This possibly throws exception ...
+    pwcsCmdLine = (wchar_t *)qlib::UTF8toUCS16(nargs);
 
     // Now create the child process
     PROCESS_INFORMATION proc_info = { 0 };
@@ -106,6 +101,15 @@ public:
 
     delete [] pwcsCmdLine;
 
+    if (!res) {
+      // cannot create process (error)
+      ::CloseHandle(out_read);
+      ::CloseHandle(out_write);
+      LString msg = LString::format("FATAL ERROR, cannot create process: %s", nargs.c_str());
+      MB_THROW(RuntimeException, msg);
+      return NULL;
+    }
+    
     // We don't need the thread handle, close it now.
     ::CloseHandle(proc_info.hThread);
     ::CloseHandle(out_write);

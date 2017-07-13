@@ -49,7 +49,9 @@ private:
   double m_linew;
 
   /// Shape of line termini (valid for FANCY mode)
-  int m_nEndType;
+  //int m_nEndType;
+  int m_nStartCapType;
+  int m_nEndCapType;
 
   /// Color of lines
   ColorPtr m_pcolor;
@@ -152,12 +154,29 @@ public:
     m_bShowLabel = f;
   }
 
-  int getEndType() const { return m_nEndType; }
+  int getEndType() const { return m_nEndCapType; }
   void setEndType(int nID) {
+    m_nStartCapType = nID;
+    m_nEndCapType = nID;
     invalidateDisplayCache();
-    m_nEndType = nID;
   }
 
+  int getStartCapType() const {
+    return m_nStartCapType;
+  }
+  void setStartCapType(int n) {
+    m_nStartCapType = n;
+    invalidateDisplayCache();
+  }
+
+  int getEndCapType() const {
+    return m_nEndCapType;
+  }
+  void setEndCapType(int n) {
+    m_nEndCapType = n;
+    invalidateDisplayCache();
+  }
+  
   int getDetail() const { return m_nDetail; }
   void setDetail(int nID);
 

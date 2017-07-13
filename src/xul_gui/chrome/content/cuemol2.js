@@ -281,6 +281,8 @@ Qm2Main.prototype.onLoad = function ()
   
   //////////
 
+*/
+
   if (cuemol.hasClass("XmlRpcManager")) {
     try {
       var xrmgr = cuemol.getService("XmlRpcManager");
@@ -288,9 +290,9 @@ Qm2Main.prototype.onLoad = function ()
         xrmgr.start();
     }
     catch (e) {
+      debug.exception(e);
     }
   }
-*/
 }
   
 
@@ -1293,6 +1295,10 @@ Qm2Main.prototype.onFileOpenMRU = function (aEvent)
 
   if (ftype=="qsc_xml" || ftype=="psefile")
     this.openSceneImpl(fname, ftype);
+  else if (ftype=="scr-intjs")
+    this.execIntJS(fname);
+  else if (ftype=="scr-python")
+    this.execPython(fname);
   else
     this.fileOpenHelper1(fname, label, ftype);
 };

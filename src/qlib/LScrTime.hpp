@@ -1,13 +1,14 @@
 //
-// Scriptable representation of time/time span
+// Scriptable interface for time_value
 //
+
 
 #ifndef L_SCR_TIME_HPP_INCLUDED
 #define L_SCR_TIME_HPP_INCLUDED
 
 #include "qlib.hpp"
+#include "LTimeValue.hpp"
 #include "LScrObjects.hpp"
-#include "LTypes.hpp"
 #include "LExceptions.hpp"
 #include "mcutils.hpp"
 
@@ -21,7 +22,7 @@ namespace qlib {
     MC_CLONEABLE;
       
   private:
-    /// time value (64bit int) in millisecond
+    /// time value (64bit int) in nano-second
     time_value m_value;
     
   public:
@@ -59,10 +60,10 @@ namespace qlib {
 
   public:
 
-    /// get time in 64-bit millisecond unit (intrinsic representation)
+    /// get time in 64-bit nano-sec unit (intrinsic representation)
     time_value getValue() const { return m_value; }
 
-    /// set time in 64-bit millisecond unit (intrinsic representation)
+    /// set time in 64-bit nano-sec unit (intrinsic representation)
     void setValue(time_value aVal) { m_value = aVal; }
 
     //////////
@@ -78,10 +79,12 @@ namespace qlib {
     LInt getSecond(LBool lim) const;
     LInt getMilliSec(LBool lim) const;
 
+    /// set time by integer value
     void setIntValue(LInt value) {
       m_value = time_value(value);
     }
 
+    /// get time in integer value (probably 32-bit)
     LInt getIntValue() const {
       return LInt(m_value);
     }

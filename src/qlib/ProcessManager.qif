@@ -15,6 +15,8 @@ runtime_class ProcessManager
 
   property integer queue_len => redirect(getQueueLen, XXX) (readonly);
 
+  property string errormsg => redirect(getErrorMsg, XXX) (readonly);
+
   void setSlotSize(integer n);
   integer getSlotSize();
 

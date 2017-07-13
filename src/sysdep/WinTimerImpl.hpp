@@ -23,7 +23,7 @@ namespace sysdep {
     WinTimerImpl();
     virtual ~WinTimerImpl();
 
-    virtual qlib::time_value getCurrentTime();
+    //virtual qlib::time_value getCurrentTime();
 
     virtual void start(qlib::time_value after);
 

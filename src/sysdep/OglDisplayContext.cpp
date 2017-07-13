@@ -984,6 +984,7 @@ void OglDisplayContext::drawElem(const AbstDrawElem &ade)
   }
 
   if (!qsys::View::hasVBO()) {
+  //if (true) {
     if (ntype==AbstDrawElem::VA_ATTRS||
         ntype==AbstDrawElem::VA_ATTR_INDS) {
       // ERROR: not supported
@@ -1087,6 +1088,7 @@ void OglDisplayContext::drawElemVA(const DrawElem &de)
 
   const int ntype = de.getType();
   const int nelems = de.getSize();
+<<<<<<< HEAD
   if (ntype==DrawElem::VA_VC) {
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_COLOR_ARRAY);
@@ -1111,10 +1113,23 @@ void OglDisplayContext::drawElemVA(const DrawElem &de)
     glEnableClientState(GL_NORMAL_ARRAY);
     glEnableClientState(GL_COLOR_ARRAY);
     const qbyte *pdata = static_cast<const qbyte *>(de.getData());
+=======
+
+  if (ntype==DrawElem::VA_VNCI32) {
+    MB_DPRINTLN("***** OglDisp.drawElemVA VNCI32");
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_NORMAL_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+
+    const DrawElemVNCI32 &devnci = static_cast<const DrawElemVNCI32&>(de);
+
+    const qbyte *pdata = devnci.getData();
+>>>>>>> origin
     glVertexPointer(3, GL_FLOAT, sizeof(DrawElemVNC::Elem), pdata);
     glNormalPointer(GL_FLOAT, sizeof(DrawElemVNC::Elem), pdata+3*sizeof(qfloat32));
     glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(DrawElemVNC::Elem), pdata+6*sizeof(qfloat32));
     
+<<<<<<< HEAD
     const void *pinds = de.getIndData();
     const int ninds = de.getIndSize();
     if (ntype==AbstDrawElem::VA_VNCI)
@@ -1123,10 +1138,41 @@ void OglDisplayContext::drawElemVA(const DrawElem &de)
       glDrawElements(GL_TRIANGLES, ninds, GL_UNSIGNED_INT, pinds);
   }
 
+=======
+    int ninds = devnci.getIndexSize();
+    glDrawElements(mode, ninds, GL_UNSIGNED_INT, devnci.getIndexData());
 
-  glDisableClientState(GL_VERTEX_ARRAY);
-  glDisableClientState(GL_NORMAL_ARRAY);
-  glDisableClientState(GL_COLOR_ARRAY);
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_NORMAL_ARRAY);
+    glDisableClientState(GL_COLOR_ARRAY);
+>>>>>>> origin
+
+  }
+  else {
+    if (ntype==DrawElem::VA_VC) {
+      glEnableClientState(GL_VERTEX_ARRAY);
+      glEnableClientState(GL_COLOR_ARRAY);
+      const qbyte *pdata = static_cast<const DrawElemVC&>(de).getData();
+      glVertexPointer(3, GL_FLOAT, sizeof(DrawElemVC::Elem), pdata);
+      glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(DrawElemVC::Elem), pdata+3*sizeof(qfloat32));
+    }
+    else if (ntype==DrawElem::VA_VNC) {
+      glEnableClientState(GL_VERTEX_ARRAY);
+      glEnableClientState(GL_NORMAL_ARRAY);
+      glEnableClientState(GL_COLOR_ARRAY);
+      //const DrawElemVNC::Elem *pdata = static_cast<const DrawElemVNC&>(de).getData();
+      const qbyte *pdata = static_cast<const DrawElemVNC&>(de).getData();
+      glVertexPointer(3, GL_FLOAT, sizeof(DrawElemVNC::Elem), pdata);
+      glNormalPointer(GL_FLOAT, sizeof(DrawElemVNC::Elem), pdata+3*sizeof(qfloat32));
+      glColorPointer(4, GL_UNSIGNED_BYTE, sizeof(DrawElemVNC::Elem), pdata+6*sizeof(qfloat32));
+    }
+    
+    glDrawArrays(mode, 0, nelems);
+
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_NORMAL_ARRAY);
+    glDisableClientState(GL_COLOR_ARRAY);
+  }
 }
 
 

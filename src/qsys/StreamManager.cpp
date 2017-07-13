@@ -413,8 +413,8 @@ qlib::LScrObjBasePtr StreamManager::fromXML(const qlib::LByteArrayPtr &pbuf,
   return rval;
 }
 
-qlib::LVarArray StreamManager::arrayFromXML(const qlib::LByteArrayPtr &pbuf,
-                                            qlib::uid_t nSceneID)
+qlib::LVarArray StreamManager::objListFromXML(const qlib::LByteArrayPtr &pbuf,
+                                              qlib::uid_t nSceneID)
 {
   SceneXMLReader reader;
   ScenePtr pScene = SceneManager::getSceneS(nSceneID);

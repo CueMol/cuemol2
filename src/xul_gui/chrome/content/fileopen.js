@@ -208,7 +208,7 @@ Qm2Main.prototype.fileOpenHelper1 = function(path, newobj_name, reader_name)
   try {
     const mru = require("mru-files");
     mru.addMRU(path, reader_name);
-    mru.dumpMRU();
+    //mru.dumpMRU();
   }
   catch (e) {
     dd("MRU Error: "+e);
@@ -413,7 +413,7 @@ Qm2Main.prototype.openSceneImpl = function(path, reader_name)
   //mru.addMRU(path, "qsc_xml");
   dd("@@@ reader_name="+reader_name);
   mru.addMRU(path, reader_name);
-  mru.dumpMRU();
+  //mru.dumpMRU();
 
   // show the completion message
   let msg = "Scene file: ["+path+"] is loaded.";
@@ -587,7 +587,7 @@ Qm2Main.prototype.onSaveSceneAs = function ()
   // save to MRU list
   const mru = require("mru-files");
   mru.addMRU(path, "qsc_xml");
-  mru.dumpMRU();
+  //mru.dumpMRU();
 
   // show the completion message
   let msg = "Scene file: ["+path+"] is saved.";
@@ -989,10 +989,12 @@ Qm2Main.prototype.onExecScr = function ()
     catch (e) {}
   }
   
+  /*
   if (typeof scene.execJSFile === 'function') {
     fp.appendFilter("Javascript (*.js)", "*.js");
     ftype.push("js");
   }
+  */
   
   fp.appendFilter("Internal Javascript (*.js)", "*.js");
   ftype.push("intjs");
@@ -1004,17 +1006,31 @@ Qm2Main.prototype.onExecScr = function ()
     return;
 
   if (ftype[fp.filterIndex]=="py") {
-      //pybr.runFile(fp.file.path);
-      let vwid = this.mMainWnd.getCurrentViewID();
-      pybr.runFile2(fp.file.path, scene.uid, vwid);
+    this.execPython(fp.file.path);
   }
   else if (ftype[fp.filterIndex]=="js") {
-      scene.execJSFile(fp.file.path);
+    scene.execJSFile(fp.file.path);
   }
   else if (ftype[fp.filterIndex]=="intjs") {
     this.execIntJS(fp.file.path);
   }
 
+};
+
+Qm2Main.prototype.execPython = function (path)
+{
+  pybr = cuemol.getService("PythonBridge");
+
+  try {
+    pybr.runFile(path);
+  }
+  catch (e) {
+    cuemol.putLogMsg("Python script error:\n"+e.message);
+  }
+  
+  // Add to MRU
+  const mru = require("mru-files");
+  mru.addMRU(path, "scr-python");
 };
 
 Qm2Main.prototype.execIntJS = function (path)
@@ -1045,14 +1061,19 @@ Qm2Main.prototype.execIntJS = function (path)
   var scene = this.mMainWnd.currentSceneW;
   var view = this.mMainWnd.currentViewW;
   try {
-    let fun = new Function("scene", "view", data);
-    fun(scene, view);
+    let fun = new Function("scene", "view", "println", data);
+    fun(scene, view, function(aStr) {cuemol.putLogMsg(aStr);} );
   }
   catch (e) {
     cuemol.putLogMsg("Exec internal JS error:\n"+e.message);
+    // return;
   }
   
   cuemol.putLogMsg("Exec internal JS: "+path+" done.");
+
+  // Add to MRU
+  const mru = require("mru-files");
+  mru.addMRU(path, "scr-intjs");
 }
 
 Qm2Main.prototype.onOpenURL = function (aURL)
