@@ -19,7 +19,10 @@ runtime_class TimeValue
   //
 
   property string strval => redirect(getStrValue, setStrValue);
-  property integer intval => redirect(getIntValue, setIntValue);
+  // property integer intval => redirect(getIntValue, setIntValue);
+
+  property real millisec => redirect(getMilliSecReal, setMilliSecReal);
+  property real second => redirect(getSecReal, setSecReal);
 
   //
   // methods
