@@ -15,6 +15,8 @@
 #include "LTypes.hpp"
 #include "mcutils.hpp"
 
+#include "IntVec3D.hpp"
+
 namespace qlib {
 
   ///
@@ -34,7 +36,6 @@ namespace qlib {
 
     void setElemType(int n) { m_nElemType = n; }
 
-/*
   private:
     /// number of elements (max: 3D array)
     IntVec3D m_shape;
@@ -42,8 +43,17 @@ namespace qlib {
   public:
     const IntVec3D &getShape() const { return m_shape; }
 
-    void setShape(const IntVec3D &s) { m_shape = s; }
-*/
+    void setShape(const IntVec3D &s) {
+      // check shape consistency
+      const int total = getSize();
+      if (total<s.x()*s.y()*s.z()) {
+	LString msg = LString::format("LByteArray.setShape: total size(%d) is smaller than (%d,%d,%d)", total, s.x(), s.y(), s.z());
+	MB_THROW(RuntimeException, msg);
+	return;
+      }
+      m_shape = s;
+    }
+
   public:
     int getElemCount() const { return getSize()/getElemSize(m_nElemType); }
     
@@ -123,6 +133,8 @@ namespace qlib {
 
       m_nElemType = nElemType;
       Array<qbyte>::allocate(nElemSize*nElemCount);
+
+      m_shape = IntVec3D(nElemCount, 1, 1);
     }
     
 

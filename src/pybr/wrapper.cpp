@@ -900,21 +900,21 @@ PyObject *Wrapper::tondarray(PyObject *self, PyObject *args)
   }
 
   // LOG_DPRINTLN("type of arg: %s", typeid(*pScObj).name());
-  qlib::LScrSp<qlib::LByteArray> *pba = dynamic_cast<qlib::LScrSp<qlib::LByteArray> *>(pScObj);
+  qlib::LByteArrayPtr *pba = dynamic_cast<qlib::LByteArrayPtr *>(pScObj);
   if (pba==NULL) {
     PyErr_SetString(PyExc_RuntimeError, "wrapper obj not found");
     return NULL;
   }
 
-  npy_intp dim[1]={10};
 
   int ntypeid = (*pba)->getElemType();
   int nelems = (*pba)->getElemCount();
 
   PyObject *array;
-  dim[0]=nelems;
 
   if (ntypeid==qlib::type_consts::QTC_INT32) {
+    npy_intp dim[1];
+    dim[0]=nelems;
     array = PyArray_SimpleNew(1, dim, NPY_INT32);
     if(array == NULL) return NULL;
     qint32 *pdat = (qint32 *)((*pba)->data());
@@ -925,16 +925,54 @@ PyObject *Wrapper::tondarray(PyObject *self, PyObject *args)
     }
   }
   else if (ntypeid==qlib::type_consts::QTC_FLOAT32) {
-    array = PyArray_SimpleNew(1, dim, NPY_FLOAT);
-    if(array == NULL) return NULL;
     float *pdat = (float *)((*pba)->data());
+    bool bref = false;
+
+    npy_intp dim[3];
+    int ndim = 3;
+    qlib::IntVec3D s = (*pba)->getShape();
+    if (s.z()==1) {
+      ndim = 2;
+      if (s.y()==1) {
+	ndim = 1;
+      }
+    }
+    int nx = dim[0] = s.x();
+    int ny = dim[1] = s.y();
+    int nz = dim[2] = s.z();
+
+    if (bref) {
+      array = PyArray_SimpleNewFromData(ndim, dim, NPY_FLOAT, pdat);
+      if(array == NULL) return NULL;
+    }
+    else {
+      array = PyArray_SimpleNew(ndim, dim, NPY_FLOAT);
+      if(array == NULL) return NULL;
+      
+      for (int iz=0; iz<nz; ++iz) {
+	for (int iy=0; iy<ny; ++iy) {
+	  for (int ix=0; ix<nx; ++ix) {
+	    dim[0] = ix;
+	    dim[1] = iy;
+	    dim[2] = iz;
+	    float *p=(float *) PyArray_GetPtr((PyArrayObject *) array, dim);
+	    //*p = pdat[ix + (iy + iz*ny)*nx];
+	    *p = pdat[iz + (iy + ix*ny)*nz];
+	  }
+	}
+      }
+    }
+    /*
     for (int i=0; i<nelems; ++i) {
       dim[0] = i;
       float *p=(float *) PyArray_GetPtr((PyArrayObject *) array, dim);
       *p = pdat[i];
     }
+    */
   }
   else if (ntypeid==qlib::type_consts::QTC_FLOAT64) {
+    npy_intp dim[1];
+    dim[0]=nelems;
     array = PyArray_SimpleNew(1, dim, NPY_DOUBLE);
     if(array == NULL) return NULL;
     double *pdat = (double *)((*pba)->data());
@@ -950,6 +988,7 @@ PyObject *Wrapper::tondarray(PyObject *self, PyObject *args)
   }
 
   return array;
+  //return PyArray_Return(array);
 }
 
 #endif
