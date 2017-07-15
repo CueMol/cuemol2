@@ -111,7 +111,8 @@ qfloat32 *Trajectory::getCrdArrayImplImpl(int ifrm)
   }
 
   if (nBlkInd==-1 || nFrmInd==-1) {
-    MB_THROW(qlib::RuntimeException, "getCrdArrayImpl: no data in the trajectory");
+    LString msg = LString::format("getCrdArrayImpl: frame %d not found in the trajectory", ifrm);
+    MB_THROW(qlib::RuntimeException, msg);
     return NULL;
   }
   TrajBlockPtr pBlk = m_blocks[nBlkInd];
@@ -435,4 +436,27 @@ bool Trajectory::onTimer(double t, qlib::time_value curr, bool bLast)
   }
 
   return true;
+}
+
+#include <qlib/LByteArray.hpp>
+
+qlib::LByteArrayPtr Trajectory::getFrmArray(int nfrm, bool bref) const
+{
+  Trajectory *pthis = const_cast<Trajectory *>(this);
+
+  qfloat32 *pcrd = pthis->getCrdArrayImplImpl(nfrm);
+
+  qlib::LByteArrayPtr pRet(MB_NEW qlib::LByteArray());
+
+  int natom = getAtomSize();
+  int ncrds = natom*3;
+  pRet->init(qlib::type_consts::QTC_FLOAT32, ncrds);
+
+  int i;
+  qfloat32 *pr = reinterpret_cast<qfloat32 *>(pRet->data());
+  for (i=0; i<ncrds; ++i) {
+    pr[i] = pcrd[i];
+  }
+
+  return pRet;
 }

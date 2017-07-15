@@ -177,6 +177,12 @@ namespace mdtools {
   public:
     /// Timer event handling (for self anim impl)
     virtual bool onTimer(double t, qlib::time_value curr, bool bLast);
+
+    // Array access method
+
+    /// Get array (ref) of specific frame
+    qlib::LByteArrayPtr getFrmArray(int nfrm, bool bref) const;
+
   };
 
 }
