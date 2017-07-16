@@ -59,6 +59,7 @@ LDataSrcContainer.cpp \
 LObjStream3.cpp \
 LProcMgr.cpp \
 LPerfMeas.cpp \
+LByteArray.cpp \
  \
 qlib.cpp
 

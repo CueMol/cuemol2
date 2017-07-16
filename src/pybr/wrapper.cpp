@@ -909,6 +909,7 @@ PyObject *Wrapper::tondarray(PyObject *self, PyObject *args)
 
   int ntypeid = (*pba)->getElemType();
   int nelems = (*pba)->getElemCount();
+  bool bref = !(*pba)->isOwn();
 
   PyObject *array;
 
@@ -926,17 +927,10 @@ PyObject *Wrapper::tondarray(PyObject *self, PyObject *args)
   }
   else if (ntypeid==qlib::type_consts::QTC_FLOAT32) {
     float *pdat = (float *)((*pba)->data());
-    bool bref = false;
 
     npy_intp dim[3];
-    int ndim = 3;
+    int ndim = (*pba)->getDim();
     qlib::IntVec3D s = (*pba)->getShape();
-    if (s.z()==1) {
-      ndim = 2;
-      if (s.y()==1) {
-	ndim = 1;
-      }
-    }
     int nx = dim[0] = s.x();
     int ny = dim[1] = s.y();
     int nz = dim[2] = s.z();
@@ -944,6 +938,7 @@ PyObject *Wrapper::tondarray(PyObject *self, PyObject *args)
     if (bref) {
       array = PyArray_SimpleNewFromData(ndim, dim, NPY_FLOAT, pdat);
       if(array == NULL) return NULL;
+      LOG_DPRINTLN("tondarray: ref array created!!");
     }
     else {
       array = PyArray_SimpleNew(ndim, dim, NPY_FLOAT);

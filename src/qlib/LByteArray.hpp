@@ -36,6 +36,7 @@ namespace qlib {
 
     void setElemType(int n) { m_nElemType = n; }
 
+    //////////
   private:
     /// number of elements (max: 3D array)
     IntVec3D m_shape;
@@ -43,16 +44,20 @@ namespace qlib {
   public:
     const IntVec3D &getShape() const { return m_shape; }
 
-    void setShape(const IntVec3D &s) {
-      // check shape consistency
-      const int total = getSize();
-      if (total<s.x()*s.y()*s.z()) {
-	LString msg = LString::format("LByteArray.setShape: total size(%d) is smaller than (%d,%d,%d)", total, s.x(), s.y(), s.z());
-	MB_THROW(RuntimeException, msg);
-	return;
-      }
-      m_shape = s;
-    }
+    void setShape(const IntVec3D &s);
+
+    //////////
+
+  private:
+    /// Dimension (max: 3)
+    int m_nDim;
+
+  public:
+    int getDim() const { return m_nDim; }
+
+    void setDim(int n) { m_nDim = n; }
+
+    //////////
 
   public:
     int getElemCount() const { return getSize()/getElemSize(m_nElemType); }
@@ -123,117 +128,33 @@ namespace qlib {
       return nElemSize;
     }
 
-    void init(int nElemType, int nElemCount)
-    {
-      int nElemSize=getElemSize(nElemType);
-      if (nElemSize<0) {
-        MB_THROW(RuntimeException,
-                 LString::format("Unsupported element type %d", nElemType));
-      }
-
-      m_nElemType = nElemType;
-      Array<qbyte>::allocate(nElemSize*nElemCount);
-
-      m_shape = IntVec3D(nElemCount, 1, 1);
-    }
-    
+    void init(int nElemType, int nElemCount);
 
     //
 
-    int getValue(int ind) const
-    {
-      if (!isIntElem())
-        MB_THROW(RuntimeException,
-                 LString::format("Element type %d mismatch", m_nElemType));
-      
-      const int nsize = getSize();
-      MB_ASSERT(0<=ind && ind<nsize);
-      if (ind<0 || nsize<=ind)
-        MB_THROW(IndexOutOfBoundsException,
-                 LString::format("LByteArray get() out of index %d", ind));
-      return at(ind);
-    }
+    int getValue(int ind) const;
 
-    void setValue(int ind, int value)
-    {
-      if (!isIntElem())
-        MB_THROW(RuntimeException,
-                 LString::format("Element type %d mismatch", m_nElemType));
-
-      const int nsize = getSize();
-      MB_ASSERT(0<=ind && ind<nsize);
-      if (ind<0 || nsize<=ind)
-        MB_THROW(IndexOutOfBoundsException,
-                 LString::format("LByteArray get() out of index %d", ind));
-      at(ind) = qbyte(value);
-    }
+    void setValue(int ind, int value);
 
     //
 
-    double getValueF(int ind) const
-    {
-      if (!isFloatElem())
-        MB_THROW(RuntimeException,
-                 LString::format("Element type %d mismatch", m_nElemType));
-      
-      int nElemSize = getElemSize(m_nElemType);
-      int addr = ind*nElemSize;
-      const int nsize = getSize();
-      //MB_ASSERT(0<=ind && ind*nElemSize<nsize);
-      if (ind<0 || nsize<=addr)
-        MB_THROW(IndexOutOfBoundsException,
-                 LString::format("LByteArray get() out of index %d", ind));
+    double getValueF(int ind) const;
 
-      const qbyte *pdata = Array<qbyte>::data();
-      if (m_nElemType==type_consts::QTC_FLOAT32) {
-        const qfloat32 *pp = reinterpret_cast<const qfloat32 *>(pdata);
-        return double(pp[ind]);
-      }
-      else if (m_nElemType==type_consts::QTC_FLOAT64) {
-        const qfloat64 *pp = reinterpret_cast<const qfloat64 *>(pdata);
-        return double(pp[ind]);
-      }
+    void setValueF(int ind, double value);
 
-      MB_THROW(RuntimeException,
-               LString::format("Unsupported element type %d", m_nElemType));
-      return 0.0;
+    //////////
+
+    inline int ind(int ix, int iy, int iz) const {
+      return iz + (iy + ix*m_shape.y())*m_shape.z();
     }
 
-    void setValueF(int ind, double value)
-    {
-      if (!isFloatElem())
-        MB_THROW(RuntimeException,
-                 LString::format("Element type %d mismatch", m_nElemType));
-
-      int nElemSize = getElemSize(m_nElemType);
-      int addr = ind*nElemSize;
-      const int nsize = getSize();
-      //MB_ASSERT(0<=ind && ind*nElemSize<nsize);
-      if (ind<0 || nsize<=addr)
-        MB_THROW(IndexOutOfBoundsException,
-                 LString::format("LByteArray get() out of index %d", ind));
-
-      qbyte *pdata = Array<qbyte>::data();
-      if (m_nElemType==type_consts::QTC_FLOAT32) {
-        qfloat32 *pp = reinterpret_cast<qfloat32 *>(pdata);
-        pp[ind] = qfloat32(value);
-        return;
-      }
-      else if (m_nElemType==type_consts::QTC_FLOAT64) {
-        qfloat64 *pp = reinterpret_cast<qfloat64 *>(pdata);
-        pp[ind] = qfloat64(value);
-        return;
-      }
-
-      MB_THROW(RuntimeException,
-               LString::format("Unsupported element type %d", m_nElemType));
+    inline int ind(int ix, int iy) const {
+      return iy + ix*m_shape.y();
     }
 
     //////////
 
-    LString toString() const {
-      return LString::format("ByteArray(type=%d, nelem=%d)", m_nElemType, getElemCount());
-    }
+    LString toString() const;
 
   };
 
