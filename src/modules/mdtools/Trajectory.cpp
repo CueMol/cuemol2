@@ -448,14 +448,23 @@ qlib::LByteArrayPtr Trajectory::getFrmArray(int nfrm, bool bref) const
 
   qlib::LByteArrayPtr pRet(MB_NEW qlib::LByteArray());
 
+  int i;
   int natom = getAtomSize();
   int ncrds = natom*3;
-  pRet->init(qlib::type_consts::QTC_FLOAT32, ncrds);
 
-  int i;
-  qfloat32 *pr = reinterpret_cast<qfloat32 *>(pRet->data());
-  for (i=0; i<ncrds; ++i) {
-    pr[i] = pcrd[i];
+  if (!bref) {
+    pRet->init(qlib::type_consts::QTC_FLOAT32, ncrds);
+    pRet->setDim(2);
+    pRet->setShape(qlib::IntVec3D(natom, 3, 1));
+    qfloat32 *pr = reinterpret_cast<qfloat32 *>(pRet->data());
+    for (i=0; i<ncrds; ++i) {
+      pr[i] = pcrd[i];
+    }
+  }
+  else {
+    pRet->initRefer(qlib::type_consts::QTC_FLOAT32, ncrds, (qbyte *)pcrd);
+    pRet->setDim(2);
+    pRet->setShape(qlib::IntVec3D(natom, 3, 1));
   }
 
   return pRet;

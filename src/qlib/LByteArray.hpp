@@ -130,6 +130,8 @@ namespace qlib {
 
     void init(int nElemType, int nElemCount);
 
+    void initRefer(int nElemType, int nElemCount, qbyte *pdata);
+
     //
 
     int getValue(int ind) const;
