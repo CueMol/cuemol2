@@ -18,6 +18,7 @@ sinclude(conftools/ax_boost_base.m4)
 sinclude(conftools/ax_boost_thread.m4)
 sinclude(conftools/ax_boost_system.m4)
 sinclude(conftools/ax_boost_filesystem.m4)
+sinclude(conftools/ax_boost_chrono.m4)
 dnl sinclude(conftools/ax_boost_timer.m4)
 dnl sinclude(conftools/ax_boost_iostreams.m4)
 sinclude(conftools/ax_cxx_compile_stdcxx_0x.m4)
@@ -95,6 +96,7 @@ AC_CHECK_FUNCS(strdup strstr strcasecmp strncasecmp)
 AC_CHECK_FUNCS(strerror select signal)
 AC_CHECK_FUNCS(vsnprintf newlocale freelocale vsnprintf_l strtod_l)
 AC_CHECK_FUNCS(memmove bcopy)
+AC_CHECK_FUNCS(fseeko ftello)
 
 AC_CHECK_LIB([m],[cos])
 AC_CHECK_FUNCS(isfinite)
@@ -427,6 +429,7 @@ LIBS=${_tmp_libs}
 AX_BOOST_FILESYSTEM
 dnl AX_BOOST_IOSTREAMS
 dnl AX_BOOST_TIMER
+AX_BOOST_CHRONO
 
 echo ==== BOOST library config ====
 echo BOOST_CPPFLAGS: $BOOST_CPPFLAGS
@@ -434,6 +437,7 @@ echo BOOST_SYSTEM_LIB: $BOOST_SYSTEM_LIB
 echo BOOST_FILESYSTEM_LIB: $BOOST_FILESYSTEM_LIB
 echo BOOST_THREAD_LIB: $BOOST_THREAD_LIB
 echo BOOST_TIMER_LIB: $BOOST_TIMER_LIB
+echo BOOST_CHRONO_LIB: $BOOST_CHRONO_LIB
 echo BOOST_LDFLAGS: $BOOST_LDFLAGS
 echo ax_cv_boost_thread: $ax_cv_boost_thread
 echo ax_cv_boost_filesystem: $ax_cv_boost_filesystem
