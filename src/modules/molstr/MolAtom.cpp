@@ -31,6 +31,8 @@ MolAtom::MolAtom()
 
   m_confid = '\0';
 
+  m_pXformMat = NULL;
+
   // m_charge = 0.0;
   // m_radius = 0.0;
 }
@@ -66,6 +68,9 @@ MolAtom::MolAtom(const MolAtom &src)
       m_paib[i] = src.m_paib[i];
   }
   
+  if (src.m_pXformMat!=NULL) {
+    m_pXformMat = new qlib::Matrix4D(*src.m_pXformMat);
+  }
 }
 
 /** dtor */
@@ -73,6 +78,8 @@ MolAtom::~MolAtom()
 {
   // m_props.clearAndDelete();
   if (m_paib!=NULL) delete [] m_paib;
+
+  if (m_pXformMat!=NULL) delete m_pXformMat;
 }
 
 ////////////////////////////////////////
@@ -171,6 +178,35 @@ bool MolAtom::removeBond(MolBond *pBond)
   m_bonded.erase(i);
   return true;
 }
+
+Vector4D MolAtom::getPos() const
+{
+  if (m_pXformMat==NULL)
+    return m_pos;
+  else {
+    Vector4D res = m_pos;
+    res.w() = 1.0;
+    m_pXformMat->xform4D(res);
+    return res;
+  }
+}
+
+void MolAtom::setXformMatrix(const qlib::Matrix4D &m)
+{
+  resetXformMatrix();
+  if (m.isIdent())
+    return;
+  m_pXformMat = MB_NEW qlib::Matrix4D(m);
+}
+
+void MolAtom::resetXformMatrix()
+{
+  if (m_pXformMat!=NULL) {
+    delete m_pXformMat;
+    m_pXformMat = NULL;
+  }
+}
+
 
 ////////////
 #if 0

@@ -275,7 +275,8 @@ void MolSurfRenderer::render(DisplayContext *pdl)
   // setup verteces
   for (i=0, j=0; i<nvsiz; i++) {
     idmap[i] = j;
-    MSVert v = pSurf->getVertAt(i);
+    //MSVert v = pSurf->getVertAt(i);
+    MSVert v = pSurf->getXformVertAt(i);
     Vector4D pos = v.v3d();
     Vector4D norm = v.n3d();
 
@@ -401,7 +402,8 @@ Vector4D MolSurfRenderer::getCenter() const
   }
 
   for (i=0; i<nvert; i+=nskip) {
-    v = pSurf->getVertAt(i);
+    //v = pSurf->getVertAt(i);
+    v = pSurf->getXformVertAt(i);
     p = v.v3d();
     if (m_pAmap!=NULL) {
       if (!isShowVert(pos)) {

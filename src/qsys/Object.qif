@@ -53,6 +53,10 @@ runtime_class Object
   /// src type
   property string srctype => redirect(getSourceType, XXX) (readonly);
 
+  /// Transform matrix
+  property object<Matrix> xformMat => redirect(getXformMatrix, setXformMatrix);
+  default xformMat = qlib::Matrix4D();
+
   ////////////////////
   // Method definition
 

@@ -26,7 +26,7 @@ public:
   /// Default constructor with creating unit matrix
   Matrix3D()
     {
-      super_t::setUnit();
+      super_t::setIdent();
     }
 
   /// Constructor without initialization

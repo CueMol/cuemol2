@@ -158,7 +158,7 @@ bool LScrRangeSet::fromString(const LString &src)
 //static
 LScrRangeSet *LScrRangeSet::fromStringS(const LString &src)
 {
-  LScrRangeSet *pRes = new LScrRangeSet();
+  LScrRangeSet *pRes = MB_NEW LScrRangeSet();
   if (!pRes->fromString(src))
     return NULL;
   return pRes;

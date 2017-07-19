@@ -14,6 +14,7 @@
 #include <qlib/LPropContainer.hpp>
 
 #include <qlib/LScrVector4D.hpp>
+#include <qlib/Matrix4D.hpp>
 
 #include "ElemSym.hpp"
 
@@ -79,6 +80,9 @@ namespace molstr {
     /// canonical name in the topology definition
     LString m_canonName;
 
+    /// Cached transformation matrix
+    qlib::Matrix4D *m_pXformMat;
+
   public:
 
     ////////////////////////////
@@ -136,9 +140,8 @@ namespace molstr {
     }
 
     /// Atom position
-    const Vector4D &getPos() const {
-      return m_pos;
-    }
+    Vector4D getPos() const;
+
     void setPos(const Vector4D &vec)
     {
       m_pos = vec;
@@ -230,7 +233,7 @@ namespace molstr {
 
     virtual LString toString() const;
 
-    //////////////////////////////////////////////////////////////////////
+    ////////////////////////
     // unisotropic B factor
   private:
     static inline int getuind(int i, int j) {
@@ -257,6 +260,13 @@ namespace molstr {
 	m_paib = MB_NEW double[6];
       m_paib[getuind(i, j)] = uij;
     }
+
+    ////////////////////////
+    // Cached xform matrix
+  public:
+    void setXformMatrix(const qlib::Matrix4D &m);
+    
+    void resetXformMatrix();
 
     //////////////////////////////////////////////////////////////////////
     // dynamic properties

@@ -29,10 +29,13 @@ void MolSurfEditInfo::setup(MolSurfObj *psurf)
   m_nTgtUID = psurf->getUID();
   clear();
   
+  // copy original vertex and face data
   m_nVerts = psurf->getVertSize();
   m_pVerts = MB_NEW MSVert[m_nVerts];
-  for (i=0; i<m_nVerts; ++i)
+  for (i=0; i<m_nVerts; ++i) {
+    // copy non-xformed data
     m_pVerts[i] = psurf->getVertAt(i);
+  }
   
   m_nFaces = psurf->getFaceSize();
   m_pFaces = MB_NEW MSFace[m_nFaces];

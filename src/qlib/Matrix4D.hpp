@@ -34,7 +34,7 @@ namespace qlib {
     /// Default constructor with creating unit matrix
     Matrix4D()
     {
-      super_t::setUnit();
+      super_t::setIdent();
     }
 
     /// Constructor without initialization
@@ -58,7 +58,7 @@ namespace qlib {
     /// Construct from 4D vector (using w comp)
     explicit Matrix4D(const Vector4D &v, detail::use_w_tag)
     {
-      super_t::setUnit();
+      super_t::setIdent();
       aij(1,4) = v.x();
       aij(2,4) = v.y();
       aij(3,4) = v.z();

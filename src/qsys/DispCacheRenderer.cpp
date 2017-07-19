@@ -73,6 +73,12 @@ void DispCacheRenderer::objectChanged(ObjectEvent &ev)
   if (ev.getType()==ObjectEvent::OBE_CHANGED) {
     invalidateDisplayCache();
   }
+  else if (ev.getType()==qsys::ObjectEvent::OBE_PROPCHG) {
+    qlib::LPropEvent *pPE = ev.getPropEvent();
+    if (pPE && pPE->getName().equals("xformMat")) {
+      invalidateDisplayCache();
+    }
+  }
 }
 
 void DispCacheRenderer::propChanged(qlib::LPropEvent &ev)

@@ -943,3 +943,8 @@ void Object::updateSrcPath(const LString &srcpath)
   setAltSource("");
 }
 
+void Object::setXformMatrix(const qlib::Matrix4D &m)
+{
+  m_xformMat = m;
+}
+
