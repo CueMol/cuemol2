@@ -187,13 +187,16 @@ void AbstractColor::RGBtoHSB(int r, int g, int b,
 /// Convert object's property to color modifiers for object serialization
 /// R/W Props with default value (and is not in default value)
 /// will be written out to the result string as modifiers (e.g. material, mod_s, etc).
-LString AbstractColor::makeModifFromProps() const
+LString AbstractColor::makeModifFromProps(bool bIgnoreAlpha) const
 {
   std::set<LString> names;
   std::list<LString> modif;
   getPropNames(names);
 
   BOOST_FOREACH(const LString &nm, names) {
+    if (bIgnoreAlpha && nm.equals("alpha"))
+      continue;
+    
     qlib::PropSpec spec;
     if (!getPropSpecImpl(nm, &spec))
       continue;

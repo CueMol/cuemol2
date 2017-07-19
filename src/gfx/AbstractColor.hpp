@@ -116,7 +116,7 @@ namespace gfx {
     static AbstractColor *fromStringS(const LString &aStr);
     static AbstractColor *fromNode(qlib::LDom2Node *);
     
-    LString makeModifFromProps() const;
+    LString makeModifFromProps(bool bIgnoreAlpha=false) const;
 
   };
 
