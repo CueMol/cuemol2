@@ -11,6 +11,7 @@
 #define CGAL_HAS_NO_THREADS
 #define CGAL_DISABLE_ROUNDING_MATH_CHECK
 #include <CGAL/basic.h>
+#include <CGAL/exceptions.h>
 
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Constrained_Delaunay_triangulation_2.h>
@@ -79,7 +80,14 @@ void setupCDTRecur(CDT &cdt, const Boundary &outer, CutByPlane2 *pthat, bool bOu
   int nn = bOuter?0:1;
   for (i=0; i<noutsz-nn; ++i) {
     int ni = (i+1)%noutsz;
+    //try {
     cdt.insert_constraint(vvh[i], vvh[ni]);
+  /*}
+    catch (const CGAL::Precondition_exception &e) {
+      LString msg = LString::format("insert_constraint failed: %s", e.what());
+      LOG_DPRINTLN(msg);
+      return
+    }*/
   }
 
   if (outer.getInsetSize()>0) {
@@ -99,18 +107,44 @@ void CutByPlane2::makeSectionMesh(Boundary &outer)
   Vector4D v, prev;
   Vector2D v2d;
 
+  //CGAL::set_error_behaviour(CGAL::THROW_EXCEPTION);
   CDT cdt;
 
   // duplicate the outer boundary verteces
   // setup delaunay triangulation obj
-  setupCDTRecur(cdt, outer, this, true);
+  try {
+    setupCDTRecur(cdt, outer, this, true);
+  }
+  catch (const CGAL::Assertion_exception &e) {
+    LString msg = LString::format("CutByPlane2 insert_constraint failed: %s", e.what());
+    MB_THROW(qlib::RuntimeException, msg);
+    return;
+  }
+  catch (...) {
+    MB_THROW(qlib::RuntimeException, "Setup CDT failed by unknown exception");
+    return;
+  }
+    
 
   MB_DPRINTLN("Nr of verts: %d", cdt.number_of_vertices());
   MB_DPRINTLN("Mesh longest: %f", m_cdiv);
 
-  Mesher mesher(cdt);
-  mesher.set_criteria(Criteria(0.0, m_cdiv));
-  mesher.refine_mesh();
+  try {
+    Mesher mesher(cdt);
+    mesher.set_criteria(Criteria(0.0, m_cdiv));
+    mesher.refine_mesh();
+  }
+  catch (const CGAL::Assertion_exception &e) {
+    LString msg = LString::format("mesh generation failed: %s", e.what());
+    //LOG_DPRINTLN(msg);
+    MB_THROW(qlib::RuntimeException, msg);
+    return;
+  }
+  catch (...) {
+    //LOG_DPRINTLN("Mesh CDT failed");
+    MB_THROW(qlib::RuntimeException, "Mesh CDT failed");
+    return;
+  }
 
   MB_DPRINTLN("Mesh refined, Nr of verts: %d", cdt.number_of_vertices());
 
