@@ -437,7 +437,13 @@ void TopoBuilder::autogen(MolResiduePtr pRes, ResiToppar *pTop, qlib::uid_t uid)
     m_pTopDic->put(pNewTop);
   }
   else {
-    MB_ASSERT(newname.equals(pRes->getName()));
+    /*
+    if (!newname.startsWith(pRes->getName())) {
+      LOG_DPRINTLN("inconsistent newname %s != pRes name %s",
+		   newname.c_str(), pRes->getName().c_str());
+      // ERROR??
+    }
+    */
     pNewTop = pTop;
   }
   
