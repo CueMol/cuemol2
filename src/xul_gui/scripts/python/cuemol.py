@@ -47,9 +47,9 @@ def scene(aScene=None):
     if isscene(aScene):
         return aScene
 
+    sceMgr = ci.getService("SceneManager")
     scid=None
     if aScene==None:
-        sceMgr = ci.getService("SceneManager")
         scid = sceMgr.activeSceneID
     elif isinstance(aScene, int):
         scid = aScene

@@ -26,20 +26,24 @@ namespace surface {
     Vector4D m_norm, m_pos;
     double m_cdiv;
 
-    Matrix3D m_xfm, m_ixfm;
+    /// transformation to plane coordinate system
+    Matrix3D m_xfm;
 
-    /** new vertex list */
+    /// transformation from plane to original coord system
+    Matrix3D m_ixfm;
+
+    /// new vertex list
     std::vector<MSVert> m_verts;
 
-    /** new face list */
+    /// new face list
     std::vector<MSFace> m_faces;
 
     std::vector<char> m_vinflg;
 
-    /** mapping from old to new vertex ID */
+    /// mapping from old to new vertex ID
     std::vector<int> m_vidmap;
 
-    /** vertex ID map on the section */
+    /// vertex ID map on the section
     std::map<int,int> m_sidmap;
 
     struct Bndry

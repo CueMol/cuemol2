@@ -947,3 +947,7 @@ void Object::sceneChanged(SceneEvent &ev)
 {
 }
 
+void Object::setXformMatrix(const qlib::Matrix4D &m)
+{
+  m_xformMat = m;
+}

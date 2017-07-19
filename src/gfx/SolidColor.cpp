@@ -239,7 +239,8 @@ LString SolidColor::toString() const
     }
   }
 
-  LString modif = makeModifFromProps();
+  // conv props to modifiers (but ignoring alpha)
+  LString modif = makeModifFromProps(true);
   if (!modif.isEmpty())
     rval += "{" + modif + "}";
 

@@ -14,11 +14,18 @@ runtime_class MolResidue
   cloneable;
   smartptr;
 
+  /// Residue name
   property string name => redirect(getName, setName);
+  /// Residue type
   property string type => redirect(getType, setType);
-  // property integer index => redirect(getIndex, setIndex);
+
+  /// Residue index (including inscode)
   property string sindex => redirect(getStrIndex, setStrIndex);
 
+  /// Residue index (integer; ignoring inscode)
+  property integer index => redirect(getScrIndex, setScrIndex);
+
+  /// Chain name (read-only)
   property string chainName => redirect(getChainName, xxx) (readonly);
 
   //////////

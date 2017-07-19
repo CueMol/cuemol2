@@ -33,7 +33,7 @@ MolSurfObj::~MolSurfObj()
   clean();
 }
 
-/** cleanup all data */
+/// cleanup all data
 void MolSurfObj::clean()
 {
   if (m_pVerts!=NULL) {
@@ -77,5 +77,22 @@ void MolSurfObj::writeDataChunkTo(qlib::LDom2OutStream &oos) const
   writer.attach(qsys::ObjectPtr(pthis));
   writer.write(oos);
   writer.detach();
+}
+
+MSVert MolSurfObj::getXformVertAt(int i) const
+{
+	MSVert rval = getVertAt(i);
+  if (getXformMatrix().isIdent())
+    return rval;
+
+  Vector4D v = rval.v3d();
+  v.w() = 1.0;
+  getXformMatrix().xform4D(v);
+  
+  Vector4D n = rval.n3d();
+  n.w() = 0.0;
+  getXformMatrix().xform4D(n);
+
+  return MSVert(v,n);
 }
 

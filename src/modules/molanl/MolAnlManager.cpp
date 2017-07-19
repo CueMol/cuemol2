@@ -327,7 +327,15 @@ void MolAnlManager::superposeSSM1(MolCoordPtr pmol_ref, SelectionPtr psel_ref,
   delete pMol1;
   delete pMol2;
 
-  pmol_mov->xformByMat(xfmat);
+  //pmol_mov->xformByMat(xfmat);
+
+  {
+    qlib::LScrMatrix4D *pscr = MB_NEW qlib::LScrMatrix4D(xfmat);
+    qlib::LVariant var(pscr);
+    pmol_mov->setProperty("xformMat", var);
+    //pmol_mov->setXformMatrix(xfmat);
+  }
+  
   pmol_mov->fireAtomsMoved();
 }
 

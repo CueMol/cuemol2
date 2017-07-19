@@ -26,7 +26,6 @@ runtime_class Matrix
   string toString();
 
   boolean equals(object<Matrix>);
-  boolean isZero();
 
   void setAt(integer, integer, real);
   real getAt(integer, integer);
@@ -40,8 +39,20 @@ runtime_class Matrix
   object<Matrix> mul(object<Matrix>);
   object<Vector> mulvec(object<Vector>);
 
+  /// for compatibility
   void setUnit();
+
+  /// set Identity matrix
+  void setIdent();
+
+  /// check identity matrix
+  boolean isIdent();
+
+  /// set zero matrix
   void setZero();
+
+  /// check zero matrix
+  boolean isZero();
 
   /// diagonalization as 3x3 matrix
   object<Matrix> diag3();

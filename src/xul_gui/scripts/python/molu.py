@@ -67,8 +67,7 @@ def forEachResid(aMol, aSel, aFn):
 class ResidIter:
     def __init__(self, aMol, aSel):
         molObj = cuemol.obj(aMol)
-        uid = molObj.uid
-        selObj = cuemol.sel(aSel, uid)
+        selObj = cuemol.sel(aSel, molObj.scene_uid)
 
         self.mIter = cuemol.createObj("ResidIterator");
         self.mIter.target = molObj;

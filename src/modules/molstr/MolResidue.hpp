@@ -148,6 +148,9 @@ namespace molstr {
     void setIndex(const ResidIndex &idx) { m_index = idx; }
     const ResidIndex &getIndex() const { return m_index; }
 
+    void setScrIndex(int idx) { m_index = idx; }
+    int getScrIndex() const { return m_index.first; }
+
     void setStrIndex(const LString &stridx) { m_index = ResidIndex::fromString(stridx); }
     LString getStrIndex() const { return m_index.toString(); }
 

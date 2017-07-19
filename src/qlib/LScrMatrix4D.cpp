@@ -8,6 +8,7 @@
 #include "LScrMatrix4D.hpp"
 #include "Matrix3D.hpp"
 #include "Utils.hpp"
+#include "LRegExpr.hpp"
 
 using namespace qlib;
 
@@ -22,14 +23,59 @@ bool LScrMatrix4D::equals(const LScrMatrix4D &arg)
 
 bool LScrMatrix4D::isStrConv() const
 {
-  // TO DO: impl
-  return false;
+  return true;
 }
 
 LString LScrMatrix4D::toString() const
 {
-  return Matrix4D::toString();
+  //return Matrix4D::toString();
+  LString ret;
+  ret += "(";
+  for (int i=1; i<=Matrix4D::_N_ELEM; ++i) {
+    ret += LString::format("%.15f", Matrix4D::ai(i));
+    if (i<Matrix4D::_N_ELEM)
+      ret += ",";
+  }
+  ret += ")";
+  return ret;
 }
+
+//static
+LScrMatrix4D *LScrMatrix4D::fromStringS(const LString &src)
+{
+  LString renum("\\s*(\\S+)\\s*");
+
+  // remove parentheses
+  LRegExpr re1("\\((.+)\\)");
+  if (!re1.match(src) || re1.getSubstrCount()<1+1) {
+    // ERROR!!
+    return NULL;
+  }
+
+  LString val = re1.getSubstr(1);
+  std::list<LString> ls;
+  val.split(',', ls);
+  if (ls.size()!=16) {
+    // ERROR!!
+    return NULL;
+  }
+
+  double d;
+  int i=1;
+  LScrMatrix4D *pRes = MB_NEW LScrMatrix4D();
+  BOOST_FOREACH (LString e, ls) {
+    if (!e.toDouble(&d)) {
+    // ERROR!!
+      delete pRes;
+      return NULL;
+    }
+    pRes->Matrix4D::ai(i) = d;
+    ++i;
+  }
+
+  return pRes;
+}
+
 
 namespace {
   void swaprows(LScrMatrix4D &mat, int i, int j) {

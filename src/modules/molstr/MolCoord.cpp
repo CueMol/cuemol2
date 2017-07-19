@@ -176,6 +176,7 @@ int MolCoord::appendAtom(MolAtomPtr pAtom)
 {
   //pAtom->setParentUID(getUID());
   pAtom->setParent(MolCoordPtr(this));
+
   const LString &cname = pAtom->getChainName();
   const LString &rname = pAtom->getResName();
   const LString &aname = pAtom->getName();
@@ -250,6 +251,11 @@ int MolCoord::appendAtom(MolAtomPtr pAtom)
   
   // invalidate crdarray
   invalidateCrdArray();
+
+  // Update the cached xform matrix if required
+  pAtom->resetXformMatrix();
+  if (!getXformMatrix().isIdent())
+    pAtom->setXformMatrix(getXformMatrix());
 
   return atomid;
 }
@@ -568,3 +574,28 @@ bool MolCoord::decodeModelFromChain(const LString &orig,
   return num.toInt(&nModel);
 }
 
+void MolCoord::setXformMatrix(const qlib::Matrix4D &m)
+{
+  super_t::setXformMatrix( m );
+
+  //if (m.isIdent())
+  //return;
+  
+  AtomIter iter = beginAtom();
+  AtomIter eiter = endAtom();
+  for (; iter!=eiter; ++iter) {
+    MolAtomPtr pAtom = iter->second;
+    MB_ASSERT(!pAtom.isnull());
+    pAtom->setXformMatrix(m);
+  }
+
+  /*
+    // XXX: cast this to MolCoordPtr possibly destruct this ptr and dangerous...
+  AtomIterator iter(MolCoordPtr(const_cast<MolCoord *>(this)));
+  for (iter.first(); iter.hasMore(); iter.next()) {
+    MolAtomPtr pAtom = iter.get();
+    MB_ASSERT(!pAtom.isnull());
+    pAtom->setXformMatrix(m);
+  }
+   */
+}

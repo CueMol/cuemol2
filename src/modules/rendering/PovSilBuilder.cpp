@@ -153,7 +153,7 @@ void PovDisplayContext::writeEdgeLineImpl(PrintStream &ips, int xa1, int xa2,
   const double rise = w/2.0;
   LString secname = getSecName();
 
-  if (xa1==255 && xa2==255) {
+  //if (xa1==255 && xa2==255) {
     // solid lines
     ips.format("edge_line(");
     ips.format("<%f, %f, %f>, ", x1.x(), x1.y(), x1.z());
@@ -164,6 +164,7 @@ void PovDisplayContext::writeEdgeLineImpl(PrintStream &ips, int xa1, int xa2,
     ips.format("%f*%s_sl_scl, ", w, secname.c_str());
     ips.format("%s_sl_tex, <%f,%f,%f>)\n",secname.c_str(), r, g, b);
 
+/*
   }
   else {
     // semi-transparent lines
@@ -177,8 +178,7 @@ void PovDisplayContext::writeEdgeLineImpl(PrintStream &ips, int xa1, int xa2,
                secname.c_str(), rise);
     ips.format("%f*%s_sl_scl, ", w, secname.c_str());
     ips.format("%s_sl_tex, <%f,%f,%f>)\n",secname.c_str(), r, g, b);
-
-  }
+  }*/
 }
 
 void PovDisplayContext::writePointImpl(PrintStream &ips,
@@ -202,10 +202,15 @@ void PovDisplayContext::writePointImpl(PrintStream &ips,
              secname.c_str(), rise,
              n1.x(), n1.y(), n1.z());
   ips.format("%f*%s_sl_scl ", w, secname.c_str());
-  if (alpha==255) {
+
+  //if (alpha==255) {
     ips.format("texture { %s_sl_tex pigment { color rgb <%f,%f,%f> }}\n",
                secname.c_str(), r, g, b);
-  }
+/*}
+  else {
+    ips.format("texture { %s_sl_tex pigment { color rgbt <%f,%f,%f,%f> }}\n",
+               secname.c_str(), r, g, b, (1.0-alpha/255.0));
+  }*/
   
   ips.format("}\n");
 }

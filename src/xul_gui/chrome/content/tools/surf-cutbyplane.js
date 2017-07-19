@@ -124,7 +124,6 @@
 	function (a) {return scene.getObjectByName(a);} );
     }
 
-
     // EDIT TXN START //
     scene.startUndoTxn("Cut surface by plane");
     try {
@@ -140,6 +139,7 @@
     catch (e) {
       debug.exception(e);
       scene.rollbackUndoTxn();
+      util.alert(window, "Cut surface failed: see log window!!");
       return;
     }
     scene.commitUndoTxn();

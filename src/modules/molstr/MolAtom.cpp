@@ -30,6 +30,8 @@ MolAtom::MolAtom()
 
   m_confid = '\0';
 
+  m_pXformMat = NULL;
+
   // m_charge = 0.0;
   // m_radius = 0.0;
 
@@ -68,6 +70,11 @@ MolAtom::MolAtom(const MolAtom &src)
       m_paib[i] = src.m_paib[i];
   }
   
+  m_pXformMat=NULL;
+  /*
+  if (src.m_pXformMat!=NULL) {
+    m_pXformMat = MB_NEW qlib::Matrix4D(*src.m_pXformMat);
+    }*/
 }
 
 /// dtor
@@ -75,12 +82,14 @@ MolAtom::~MolAtom()
 {
   // m_props.clearAndDelete();
   if (m_paib!=NULL) delete [] m_paib;
+
+  if (m_pXformMat!=NULL) delete m_pXformMat;
 }
 
 ////////////////////////////////////////
 
-/// Get Atom position
-Vector4D MolAtom::getPos() const
+/// Get Atom position implementation
+Vector4D MolAtom::getPosImpl() const
 {
   if (m_pMol==NULL)
     return m_pos;
@@ -92,6 +101,18 @@ Vector4D MolAtom::getPos() const
   // array is valid --> pMol is AnimMol
   AnimMol *pAM = static_cast<AnimMol *>(m_pMol);
   return pAM->getAtomCrd(m_nID);
+}
+
+Vector4D MolAtom::getPos() const
+{
+  Vector4D p = getPosImpl();
+  if (m_pXformMat==NULL)
+    return p;
+  else {
+    p.w() = 1.0;
+    m_pXformMat->xform4D(p);
+    return p;
+  }
 }
 
 /// Set Atom position
@@ -211,6 +232,24 @@ bool MolAtom::removeBond(MolBond *pBond)
   m_bonded.erase(i);
   return true;
 }
+
+
+void MolAtom::setXformMatrix(const qlib::Matrix4D &m)
+{
+  resetXformMatrix();
+  if (m.isIdent())
+    return;
+  m_pXformMat = MB_NEW qlib::Matrix4D(m);
+}
+
+void MolAtom::resetXformMatrix()
+{
+  if (m_pXformMat!=NULL) {
+    delete m_pXformMat;
+    m_pXformMat = NULL;
+  }
+}
+
 
 ////////////
 #if 0

@@ -14,6 +14,7 @@
 #include <qlib/mcutils.hpp>
 #include <qlib/MapTable.hpp>
 #include <qlib/LDataSrcContainer.hpp>
+//#include <qlib/Matrix4D.hpp>
 
 #include "ObjectEvent.hpp"
 #include "SceneEvent.hpp"
@@ -87,6 +88,9 @@ namespace qsys {
     /// display order (for GUI impl)
     int m_nUIOrder;
 
+    /// default transformation matrix
+    qlib::Matrix4D m_xformMat;
+
     /////
 
     /// object event implementation
@@ -152,6 +156,15 @@ namespace qsys {
     void setUIOrder(int n) { m_nUIOrder = n; }
     int getUIOrder() const { return m_nUIOrder; }
 
+    // transformation
+    /// Get transformation matrix
+    qlib::Matrix4D getXformMatrix() const {
+      return m_xformMat;
+    }
+
+    /// Set transformation matrix
+    virtual void setXformMatrix(const qlib::Matrix4D &m);
+
     //
 
     const LString &getSource() const {
@@ -185,12 +198,6 @@ namespace qsys {
 
     /// Update src path prop (after reading from src or alt_src)
     virtual void updateSrcPath(const LString &srcpath);
-
-    //////////
-    // Utility methods for read-obj
-
-    // /// Load from src or alt src (updating source/altSource properties)
-    // void readFromSrcOrAltSrc2(const LString &src, const LString &altsrc, ScenePtr pScene);
 
     ////////////////////////////////////////////////////////////
   

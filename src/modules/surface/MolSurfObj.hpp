@@ -152,11 +152,16 @@ namespace surface {
 
     int getVertSize() const { return m_nVerts; }
 
+    /// Get original vertex/normal data
     const MSVert &getVertAt(int i) const {
       MB_ASSERT(m_pVerts!=NULL);
       MB_ASSERT(i>=0 && i<m_nVerts);
       return m_pVerts[i];
     }
+
+    /// Get transformed vertex/normal data
+    /// (this returns the same result as getVertAt, if xformMat==identity)
+    MSVert getXformVertAt(int i) const;
 
     //
 
