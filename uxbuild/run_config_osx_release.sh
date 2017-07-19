@@ -8,7 +8,8 @@ debug="--disable-debug --enable-m64"
 #debug="--enable-debug --enable-m64"
 
 #usepybr="--enable-python"
-usepybr="--disable-python"
+#usepybr="--disable-python"
+usepybr="--with-python=$HOME/proj64/Python-3.6.1/ --enable-numpy"
 
 usexrbr="--with-xmlrpc=$HOME/proj64/xmlrpc-c"
 #usexrbr="--without-xmlrpc"
