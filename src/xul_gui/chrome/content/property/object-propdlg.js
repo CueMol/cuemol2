@@ -72,6 +72,7 @@ if (!("ObjectCommPropPage" in cuemolui)) {
       var elem = this.mGenEdit.findPropData("sel");
       if (elem) {
 	var selstr = elem.value;
+	//alert("objprop selstr="+selstr);
 	this.mSelList.origSel = selstr;
 	this.mSelList.buildBox();
       }

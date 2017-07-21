@@ -436,6 +436,13 @@ NS_IMETHODIMP XPCCueMol::GetService(const char *svcname,
 NS_IMETHODIMP XPCCueMol::CreateObj(const char *clsname,
                                    qIObjWrapper **_retval)
 {
+  return CreateFromString(clsname, NULL, _retval);
+}
+
+NS_IMETHODIMP XPCCueMol::CreateFromString(const char *clsname,
+                                          const char *strval,
+                                          qIObjWrapper **_retval)
+{
   ClassRegistry *pMgr = ClassRegistry::getInstance();
   if (pMgr==NULL) {
     LOG_DPRINTLN("XPCCueMol> ERROR: CueMol not initialized.");
@@ -447,7 +454,10 @@ NS_IMETHODIMP XPCCueMol::CreateObj(const char *clsname,
     qlib::LClass *pcls = pMgr->getClassObj(clsname);
     if (pcls==NULL)
       MB_THROW(qlib::NullPointerException, "null");
-    pobj = pcls->createScrObj();
+    if (strval==NULL)
+      pobj = pcls->createScrObj();
+    else
+      pobj = pcls->createScrObjFromStr(strval);
   }
   catch (const qlib::LException &e) {
     LOG_DPRINTLN("CreateObj> Caught exception <%s>", typeid(e).name());

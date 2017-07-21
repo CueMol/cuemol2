@@ -45,14 +45,14 @@ namespace molanl {
 
     /// SSM superpose (1)
     void superposeSSM1(MolCoordPtr pmol_ref, SelectionPtr psel_ref,
-                       MolCoordPtr pmol_mov, SelectionPtr psel_mov);
+                       MolCoordPtr pmol_mov, SelectionPtr psel_mov, bool bUseProp=false);
 
     void superposeSSM2(qlib::uid_t mol_ref, const LString &sel_ref,
                        qlib::uid_t mol_mov, const LString &sel_mov);
 
     /// LSQ superpose
     void superposeLSQ1(MolCoordPtr pmol_ref, SelectionPtr psel_ref,
-                       MolCoordPtr pmol_mov, SelectionPtr psel_mov);
+                       MolCoordPtr pmol_mov, SelectionPtr psel_mov, bool bUseProp=false);
 
 
     double calcRMSDScr(MolCoordPtr pmol_ref, SelectionPtr psel_ref,
@@ -61,8 +61,7 @@ namespace molanl {
 
     bool lsqFit(MolCoordPtr pRefMol, SelectionPtr pRefSel,
                 MolCoordPtr pMovMol, SelectionPtr pMovSel,
-                double *pdRMSD, int *pnFit,
-                int nMatType, qlib::Matrix4D *presmat);
+                double *pdRMSD, int *pnFit, qlib::Matrix4D *presmat);
 
     double calcRMSD(MolCoordPtr pRefMol, SelectionPtr pRefSel,
                     MolCoordPtr pMovMol, SelectionPtr pMovSel,

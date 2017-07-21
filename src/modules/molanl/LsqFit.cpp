@@ -103,25 +103,46 @@ namespace {
 }
 
 void MolAnlManager::superposeLSQ1(MolCoordPtr pmol_ref, SelectionPtr psel_ref,
-                                  MolCoordPtr pmol_mov, SelectionPtr psel_mov)
+                                  MolCoordPtr pmol_mov, SelectionPtr psel_mov, bool bUseProp/*=false*/)
 {
   qsys::AutoStyleCtxt asc(pmol_ref->getSceneID());
 
   double rmsd;
   int nfit;
-  bool res = lsqFit(pmol_ref, psel_ref, pmol_mov, psel_mov, &rmsd, &nfit, 0, NULL);
-  if (res) {
-    LOG_DPRINTLN("=== LSQ superpose result ===");
-    LOG_DPRINTLN(" RMSD: %f angstrom", rmsd);
-    LOG_DPRINTLN(" Nfit: %d atoms", nfit);
-    LOG_DPRINTLN("======");
+  Matrix4D xfmat;
+  bool res = lsqFit(pmol_ref, psel_ref, pmol_mov, psel_mov, &rmsd, &nfit, &xfmat);
+  if (!res) {
+    LOG_DPRINTLN("LSQ superpose failed.");
+    return;
   }
+
+  Matrix4D origmat = pmol_mov->getXformMatrix();
+  if (!origmat.isIdent()) {
+    // apply xform matrix prop and reset to it identity
+    pmol_mov->resetProperty("xformMat");
+    pmol_mov->xformByMat(origmat);
+  }
+
+  if (bUseProp) {
+    qlib::LScrMatrix4D *pscr = MB_NEW qlib::LScrMatrix4D(xfmat);
+    qlib::LVariant var(pscr);
+    pmol_mov->setProperty("xformMat", var);
+    //pmol_mov->setXformMatrix(xfmat);
+  }
+  else {
+    pmol_mov->xformByMat(xfmat);
+    pmol_mov->fireAtomsMoved();
+  }
+
+  LOG_DPRINTLN("=== LSQ superpose result ===");
+  LOG_DPRINTLN(" RMSD: %f angstrom", rmsd);
+  LOG_DPRINTLN(" Nfit: %d atoms", nfit);
+  LOG_DPRINTLN("======");
 }
 
 bool MolAnlManager::lsqFit(MolCoordPtr pRefMol, SelectionPtr pRefSel,
                            MolCoordPtr pMovMol, SelectionPtr pMovSel,
-                           double *pdRMSD, int *pnFit,
-                           int nMatType, Matrix4D *presmat)
+                           double *pdRMSD, int *pnFit, Matrix4D *presmat)
 {
   molstr::MolArrayMap aref, amov;
   int i;
@@ -229,14 +250,15 @@ bool MolAnlManager::lsqFit(MolCoordPtr pRefMol, SelectionPtr pRefSel,
   }
    */
   
+  Matrix4D xfmat;
+  xfmat = Matrix4D::makeTransMat(comref);
+  xfmat = xfmat.mul(Matrix4D::makeTransMat(prmsh));
+  xfmat = xfmat.mul(rotmat);
+  xfmat = xfmat.mul(Matrix4D::makeTransMat(-commov));
+
   if (presmat==NULL) {
     // Matrix result is not requested
     // --> Directly reflect results to moveing mol
-    Matrix4D xfmat;
-    xfmat = Matrix4D::makeTransMat(comref);
-    xfmat = xfmat.mul(Matrix4D::makeTransMat(prmsh));
-    xfmat = xfmat.mul(rotmat);
-    xfmat = xfmat.mul(Matrix4D::makeTransMat(-commov));
     pMovMol->xformByMat(xfmat);
 
     // broadcast modification event
@@ -244,51 +266,13 @@ bool MolAnlManager::lsqFit(MolCoordPtr pRefMol, SelectionPtr pRefSel,
 
   }
   else {
+    /*
     Vector4D axis;
     double phi;
     //qua.toRotVec(axis, phi);
     Vector4D va = comref - commov;
-/*
-    switch (nMatType) {
-    case 2: {
-      Vector4D va_ax = axis.scale(axis.dot(va));
-      Vector4D va_pl = va - va_ax;
-      double aplen = va_pl.length();
-      Vector4D vw = va_pl.cross(axis).normalize();
-      Vector4D rcen =
-	vw.scale(0.5*aplen/::tan(0.5*phi)) +
-	va_pl.scale(0.5) +
-	commov;
-      *presmat = Matrix4D(rotmat, rcen);
-      break;
-    }
-    case 1: {
-      double aplen = va.length();
-      Vector4D vw = va.cross(axis).normalize();
-      Vector4D rcen =
-	vw.scale(0.5*aplen/::tan(0.5*phi)) +
-	va.scale(0.5) +
-	commov;
-      *presmat = Matrix4D(rotmat, rcen);
-      break;
-    }
-    case 0: {
-      //Matrix4D shift1 = Matrix4D(-commov);
-      //shift1.rotate(qua);
-      //shift1.translate(prmsh);
-      //shift1.translate(comref);
-
-      Matrix4D shift1 = Matrix4D(comref);
-      shift1.translate(prmsh);
-      shift1.rotate(qua);
-      shift1.translate(-commov);
-
-      *presmat = shift1;
-      break;
-    }
-    } // switch
-*/
-    
+     */
+    *presmat = xfmat;
   }
 
   if (pdRMSD!=NULL) {

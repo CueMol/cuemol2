@@ -168,7 +168,7 @@ namespace {
 }
 
 void MolAnlManager::superposeSSM1(MolCoordPtr pmol_ref, SelectionPtr psel_ref,
-                                 MolCoordPtr pmol_mov, SelectionPtr psel_mov)
+                                  MolCoordPtr pmol_mov, SelectionPtr psel_mov, bool bUseProp/*=false*/)
 {
   qsys::AutoStyleCtxt asc(pmol_ref->getSceneID());
 
@@ -327,16 +327,24 @@ void MolAnlManager::superposeSSM1(MolCoordPtr pmol_ref, SelectionPtr psel_ref,
   delete pMol1;
   delete pMol2;
 
-  //pmol_mov->xformByMat(xfmat);
+  Matrix4D origmat = pmol_mov->getXformMatrix();
+  if (!origmat.isIdent()) {
+    // apply xform matrix prop and reset to it identity
+    pmol_mov->resetProperty("xformMat");
+    pmol_mov->xformByMat(origmat);
+  }
 
-  {
+  if (bUseProp) {
     qlib::LScrMatrix4D *pscr = MB_NEW qlib::LScrMatrix4D(xfmat);
     qlib::LVariant var(pscr);
     pmol_mov->setProperty("xformMat", var);
     //pmol_mov->setXformMatrix(xfmat);
   }
+  else {
+    pmol_mov->xformByMat(xfmat);
+    pmol_mov->fireAtomsMoved();
+  }
   
-  pmol_mov->fireAtomsMoved();
 }
 
 void MolAnlManager::superposeSSM2(qlib::uid_t mol_ref, const LString &sel_ref,

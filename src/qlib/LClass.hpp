@@ -47,52 +47,55 @@ namespace qlib {
 
     virtual ~LClass();
 
-    /**
-       returns full-qualified system-independent name
-    */
+    ///
+    /// returns full-qualified system-independent name
+    ///
     virtual const LString &getClassName() const =0;
 
-    /**
-       returns system-dependent name of this class
-       (same as the RTTI's type_info name)
-    */
+    ///
+    /// returns system-dependent name of this class
+    /// (same as the RTTI's type_info name)
+    ///
     virtual const LString &getAbiClassName() const =0;
 
     virtual bool isSingleton() const;
 
-    /**
-       Create new object by calling default ctor.
-    */
+    ///
+    /// Create new object by calling default ctor.
+    ///
     virtual LDynamic *createObj() const =0;
 
-    /**
-       Create new object suitable for scripting interface.
-       Default impl calls createObj()
-    */
-    virtual LDynamic *createScrObj() const {
-      return createObj();
-    }
+    ///
+    /// Create new object suitable for scripting interface.
+    /// Default impl calls createObj()
+    ///
+    virtual LDynamic *createScrObj() const;
 
     // virtual LDynamic *cloneObj(const LDynamic &src) const =0;
     virtual LDynamic *dynamicCast(LDynamic *pobj) const =0;
     
-    /**
-       Call the initialization code for the class (corresponding to the class-ctor)
-       This will be called at the class registration.
-    */
-    virtual bool callInit() { return true; }
+    ///
+    /// Call the initialization code for the class (corresponding to the class-ctor)
+    /// This will be called at the class registration.
+    ///
+    virtual bool callInit();
 
-    /**
-       Call the initialization code for the class (corresponding to the class-ctor)
-       This will be called at the finalization of the class registry.
-    */
-    virtual void callFini() {}
+    ///
+    /// Call the initialization code for the class (corresponding to the class-ctor)
+    /// This will be called at the finalization of the class registry.
+    ///
+    virtual void callFini();
 
     //
     /// Create instance from string representation (variation of createObj)
     //
-    virtual LDynamic *createFromString(const LString &aStr) const { return NULL; }
+    virtual LDynamic *createFromString(const LString &aStr) const;
 
+    ///
+    /// Create new object suitable for scripting interface.
+    /// Default impl calls createFromString()
+    ///
+    virtual LDynamic *createScrObjFromStr(const LString &aStr) const;
   };
 
 } // qlib

@@ -692,29 +692,18 @@ void SimpleRenderer::objectChanged(qsys::ObjectEvent &ev)
 {
 #ifdef USE_OPENGL_VBO
   if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED) {
-    if (!ev.getDescr().equals("atomsMoved")) {
-      invalidateDisplayCache();
-      return;
+    if (ev.getDescr().equals("atomsMoved")) {
+      // OBE_CHANGED && descr=="atomsMoved"
+      if (m_pVBO!=NULL) {
+        // only update positions
+        updateVBO(false);
+        m_pVBO->setUpdated(true);
+        return;
+      }
     }
   }
-  else
-    return;
-
-  // OBE_CHANGED && descr=="atomsMoved"
-  if (m_pVBO!=NULL) {
-    // only update positions
-    updateVBO(false);
-    /*
-    qsys::ScenePtr pScene = getScene();
-    if (!pScene.isnull())
-      pScene->setUpdateFlag();
-     */
-    m_pVBO->setUpdated(true);
-    return;
-  }
-#else
-  super_t::objectChanged(ev);
 #endif
 
+  super_t::objectChanged(ev);
 }
 

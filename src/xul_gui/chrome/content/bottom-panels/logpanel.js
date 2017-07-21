@@ -67,6 +67,14 @@ if (!("logpanel" in cuemolui)) {
         catch (e) {}
       }
 
+      let prom = document.getElementById("cmd_prompt_label");
+      if (this.mPyBr) {
+        prom.value="Py>";
+      }
+      else {
+        prom.value="Js>";
+      }
+
       // Setup history array
       this.mCmdHis = [];
       this.mHisPos = 0;
