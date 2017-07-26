@@ -43,19 +43,19 @@ COMMON_CXXFLAGS = \
 if COND_BUILD_PYMODULE
 
 # Build Python module
-lib_LTLIBRARIES = cuemol.la
+lib_LTLIBRARIES = cuemol_internal.la
 
-cuemol_la_SOURCES = \
+cuemol_internal_la_SOURCES = \
 $(COMMON_SRC) \
 init_pymodule.cpp \
 $(NULL)
 
-cuemol_la_CXXFLAGS = \
+cuemol_internal_la_CXXFLAGS = \
  $(COMMON_CXXFLAGS) \
  -DDEFAULT_CONFIG=\"$(pkgdatadir)/sysconfig.xml\" \
  $(NULL)
 
-cuemol_la_LDFLAGS = \
+cuemol_internal_la_LDFLAGS = \
  -module -avoid-version \
   @PYTHON_LDFLAGS@ \
   -L$(top_builddir)/qlib \
@@ -64,7 +64,7 @@ cuemol_la_LDFLAGS = \
   @MODULES_LDFLAGS@ \
   $(NULL)
 
-cuemol_la_LIBADD = \
+cuemol_internal_la_LIBADD = \
   @PYTHON_LDADD@ \
   -lqlib \
   @SCR_LDADD@ \

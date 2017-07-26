@@ -44,6 +44,8 @@ SceneManager::SceneManager()
   // register to idle task list
   qlib::EventManager *pEM = qlib::EventManager::getInstance();
   pEM->addIdleTask(this);
+
+  m_nActiveSceneID = qlib::invalid_uid;
 }
 
 SceneManager::~SceneManager()

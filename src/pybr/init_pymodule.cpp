@@ -18,7 +18,7 @@ using namespace pybr;
 
 /// DLL entrance routine for pymodule
 
-PyMODINIT_FUNC PyInit_cuemol()
+PyMODINIT_FUNC PyInit_cuemol_internal()
 {
   qlib::init();
   MB_DPRINTLN("CueMol2 pymodule : INITIALIZED");
