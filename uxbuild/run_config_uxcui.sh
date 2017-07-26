@@ -7,7 +7,7 @@ install_dir=$HOME/app/cuemol2
 #debug="--enable-debug --enable-m64"
 debug="--disable-debug --enable-m64"
 
-usepybr="--with-python"
+usepybr="--with-python --enable-numpy -enable-pymodule"
 #usepybr="--disable-python"
 
 #usexrbr="--with-xmlrpc=$HOME/proj64/xmlrpc-c"

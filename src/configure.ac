@@ -538,38 +538,6 @@ SCR_CPPFLAGS=
 SCR_LDADD=
 SCR_LDFLAGS=
 
-dnl if test x$GUI_ARCH = xCLI ; then
-    # Use internal js impl in the standalone CLI build
-    BUILD_SCR="$BUILD_SCR js jsbr"
-    # overall settings
-    SCR_CPPFLAGS="-DHAVE_JAVASCRIPT"
-    SCR_LDADD="-ljsbr"
-    SCR_LDFLAGS="-L../jsbr"
-    # jsbr module settings
-    JS_CPPFLAGS="-I../js/src/ -DUSE_INTERNAL_JS"
-    JS_LDADD="-ljs"
-    JS_LDFLAGS="-L../js/"
-    AC_CONFIG_SUBDIRS([js])
-dnl else
-dnl     # no script supports
-dnl     SCR_CPPFLAGS=-DNO_SCRIPT
-dnl fi
-
-dnl    XXX TO DO: impl of external JS for GUI build
-dnl    # Xulrunner SDK has its own js implementation
-dnl    BUILD_SCR=jsbr
-dnl    _cppflags=${CPPFLAGS}
-dnl    CPPFLAGS="-I$with_xulrunner_sdk/include $CPPFLAGS"
-dnl    AC_CHECK_HEADER(jsapi.h)
-dnl    AC_CHECK_DECL(JS_NewRuntime,
-dnl                  [],
-dnl                  [AC_MSG_ERROR(JSAPI not found)],
-dnl                  [#include<jsapi.h>])
-dnl    CPPFLAGS=$_cppflags
-dnl    JS_CPPFLAGS="-I$with_xulrunner_sdk/include"
-dnl    SCR_LDADD="-ljsbr"
-dnl    SCR_LDFLAGS="-L../jsbr/"
-
 AC_SUBST(JS_CPPFLAGS)
 AC_SUBST(JS_LDADD)
 AC_SUBST(JS_LDFLAGS)
@@ -577,7 +545,6 @@ AC_SUBST(JS_LDFLAGS)
 #######################################################
 # Python supports
 
-echo "***** PYTHON check"
 AC_ARG_WITH(python,
 [  --with-python[=DIR]      Look for python in DIR (default=no) ],
 [ case "$with_python" in
@@ -641,7 +608,7 @@ AC_ARG_ENABLE(numpy,
     [
 if test $enableval = yes ; then
 if test x$HAVE_PYTHON != xyes ; then
-AC_MSG_ERROR(python3 not found)
+AC_MSG_ERROR(python3 required)
 fi
 NUMPY_INC=`$PYTHON -c 'from numpy.distutils.misc_util import get_numpy_include_dirs ; print(" ".join(get_numpy_include_dirs()))'`
 #echo $NUMPY_INC
@@ -656,6 +623,23 @@ NUMPY_INC=`$PYTHON -c 'from numpy.distutils.misc_util import get_numpy_include_d
 fi
     ],
     [])
+
+ENABLE_PYMODULE=
+AC_ARG_ENABLE(pymodule,
+    [--enable-pymodule     Build as python module (python3 required)],
+    [
+if test $enableval = yes ; then
+if test x$HAVE_PYTHON != xyes ; then
+AC_MSG_ERROR(python3 required)
+fi
+    AC_MSG_RESULT($enableval)
+    AC_DEFINE([ENABLE_PYMODULE], [1], [Define to 1 if you enable python module build])
+ENABLE_PYMODULE=yes
+fi
+    ],
+    [])
+
+AM_CONDITIONAL(COND_BUILD_PYMODULE, test x$ENABLE_PYMODULE = xyes)
 
 #######################################################
 # XML-RPC supports

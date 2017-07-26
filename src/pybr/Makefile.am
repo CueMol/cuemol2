@@ -23,28 +23,73 @@ MC_HDRS = $(MCWG_SRC:.qif=_wrap.hpp)
 MODLDR_SRC = pybr_loader.cpp 
 $(MODLDR_SRC): pybr.moddef $(MCWG_SRC)
 
+COMMON_SRC = \
+wrapper.cpp \
+convert.cpp \
+methodobj.cpp \
+$(NULL)
+
+COMMON_CXXFLAGS = \
+  @CFLAGS_VIS_HIDDEN@ \
+  @CXXFLAGS_VIS_HIDDEN@ \
+ -DPYBR_EXPORTS=1 \
+  -I$(top_srcdir) -I$(srcdir) \
+  @PYTHON_CPPFLAGS@ \
+  @BOOST_CPPFLAGS@ \
+  $(NULL)
+
+######################################################
+
+if COND_BUILD_PYMODULE
+
+# Build Python module
+lib_LTLIBRARIES = cuemol.la
+
+cuemol_la_SOURCES = \
+$(COMMON_SRC) \
+init_pymodule.cpp \
+$(NULL)
+
+cuemol_la_CXXFLAGS = \
+ $(COMMON_CXXFLAGS) \
+ -DDEFAULT_CONFIG=\"$(pkgdatadir)/sysconfig.xml\" \
+ $(NULL)
+
+cuemol_la_LDFLAGS = \
+ -module -avoid-version \
+  @PYTHON_LDFLAGS@ \
+  -L$(top_builddir)/qlib \
+  @SCR_LDFLAGS@ \
+  -L$(top_builddir)/qsys \
+  @MODULES_LDFLAGS@ \
+  $(NULL)
+
+cuemol_la_LIBADD = \
+  @PYTHON_LDADD@ \
+  -lqlib \
+  @SCR_LDADD@ \
+  -lqsys \
+  @MODULES_LDADD@ \
+  $(NULL)
+
+# sysdep dependency is required to build GUI-enabled python module
+#  -L$(top_builddir)/sysdep
+#  -lsysdep
+
+else
+
 ######################################################
 
 lib_LTLIBRARIES = libpybr.la
 
 libpybr_la_SOURCES = \
-pybr.cpp \
-wrapper.cpp \
-convert.cpp \
-methodobj.cpp \
-PythonBridge.cpp \
+$(COMMON_SRC) \
 $(MODLDR_SRC) \
 $(MC_SRCS) \
 $(NULL)
 
 libpybr_la_CXXFLAGS = \
-  @CFLAGS_VIS_HIDDEN@ \
-  @CXXFLAGS_VIS_HIDDEN@ \
-  -DPYBR_EXPORTS=1 \
- -DXP_UNIX \
- -I$(top_srcdir) -I$(srcdir) \
- @PYTHON_CPPFLAGS@ \
- @BOOST_CPPFLAGS@ \
+ $(COMMON_CXXFLAGS) \
  $(NULL)
 
 libpybr_la_LDFLAGS = \
@@ -54,6 +99,8 @@ libpybr_la_LDFLAGS = \
 libpybr_la_LIBADD = \
  @PYTHON_LDADD@ \
  $(NULL)
+
+endif
 
 #####################################
 

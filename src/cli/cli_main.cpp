@@ -255,6 +255,7 @@ void process_input(const LString &loadscr, const std::deque<LString> &args)
     //rscene->writeTo(fos, true);
   }
   else if (full_path.extension()==".js") {
+#ifdef HAVE_JAVASCRIPT
     //qsys::ScenePtr rscene = pSM->createScene();
     //qlib::uid_t scene_id = rscene->getUID();
     //rscene->execJSFile(loadscr);
@@ -277,6 +278,9 @@ void process_input(const LString &loadscr, const std::deque<LString> &args)
     pInt->execFile(loadscr);
 
     delete pInt;
+#else
+    LOG_DPRINTLN("Javascript not supported!!");
+#endif
   }
   else if (full_path.extension()==".py") {
 #ifdef HAVE_PYTHON
@@ -290,5 +294,19 @@ void process_input(const LString &loadscr, const std::deque<LString> &args)
   MB_DPRINTLN("main> cleanup ...");
   pSM->destroyAllScenes();
   MB_DPRINTLN("main> cleanup done.");
+}
+
+//////////
+
+#include <qsys/TTYView.hpp>
+
+namespace qsys {
+  //static
+  qsys::View *View::createView()
+  {
+    qsys::View *pret = MB_NEW TTYView();
+    MB_DPRINTLN("TTYView created (%p, ID=%d)", pret, pret->getUID());
+    return pret;
+  }
 }
 

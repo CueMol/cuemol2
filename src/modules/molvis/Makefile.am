@@ -36,7 +36,6 @@ NARenderer.cpp \
 AtomIntrRenderer.cpp \
 DisoRenderer.cpp \
 RainbowColoring.cpp \
-ScriptColoring.cpp \
 DistPickDrawObj.cpp \
 smospl/SmoothSpline.cpp	\
 smospl/linalg.cpp \
@@ -48,6 +47,7 @@ smospl/ap.cpp \
 smospl/spline_impl2.cpp \
 $(NULL)
 
+#ScriptColoring.cpp
 
 #
 # CueMol interface definition files for MCWRAPGEN
@@ -71,10 +71,10 @@ NARenderer.qif \
 AtomIntrRenderer.qif \
 DisoRenderer.qif \
 RainbowColoring.qif \
-ScriptColoring.qif \
 DistPickDrawObj.qif \
 $(NULL)
 
+#ScriptColoring.qif
 
 ######################################################
 # OpenGL-dependent files (for OpenGL build)

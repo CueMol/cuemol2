@@ -19,9 +19,6 @@ extern void pybr_regClasses();
 
 namespace pybr {
 
-
-
-
   bool init(const char *szConfPath)
   {
     pybr_regClasses();

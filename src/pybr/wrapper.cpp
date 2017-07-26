@@ -746,12 +746,7 @@ PyObject *Wrapper::print(PyObject *self, PyObject *args)
 //////////////////////////////////////////////////////
 
 namespace pybr {
-#ifndef PYMODULE_EXPORTS
-  PyObject *initCueMol(PyObject *self, PyObject *args)
-  {
-    return Py_BuildValue("");
-  }
-#else
+#ifdef ENABLE_PYMODULE
   PyObject *initCueMol(PyObject *self, PyObject *args);
 #endif
 }
@@ -774,7 +769,9 @@ static PyMethodDef cuemol_methods[] = {
   {"getEnumDefsJSON", (PyCFunction)Wrapper::getEnumDefsJSON, METH_VARARGS, "\n"},
 
   {"print", (PyCFunction)Wrapper::print, METH_VARARGS, "print log message.\n"},
+#ifdef ENABLE_PYMODULE
   {"initCueMol", (PyCFunction)initCueMol, METH_VARARGS, "initialize CueMol system.\n"},
+#endif
 #ifdef HAVE_NUMPY
   {"numpychk", (PyCFunction)Wrapper::numpychk, METH_VARARGS, "numpychk.\n"},
   {"tondarray", (PyCFunction)Wrapper::tondarray, METH_VARARGS, "conv to numpy ndarray.\n"},
