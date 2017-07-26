@@ -366,13 +366,13 @@ AC_ARG_WITH(lcms,
     dnl default LCMS2 location (/usr, etc)
     AC_MSG_RESULT(yes)
     AC_CHECK_HEADERS([lcms2.h],,[AC_MSG_ERROR(lcms2.h not found)],[])
-    AC_CHECK_DECLS(cmsGetEncodedCMMversion,
+    AC_CHECK_DECLS(cmsOpenProfileFromFile,
                    [],
-		   [AC_MSG_ERROR(cmsGetEncodedCMMversion() not found)],
+		   [AC_MSG_ERROR(cmsOpenProfileFromFile() not found)],
 		   [#include <lcms2.h>])
-    AC_CHECK_LIB(lcms, cmsGetEncodedCMMversion,
+    AC_CHECK_LIB(lcms2, cmsOpenProfileFromFile,
                  [LCMS_LIBADD=" -llcms2"],
-		 [AC_MSG_ERROR(cmsGetEncodedCMMversion() not found)],
+		 [AC_MSG_ERROR(cmsOpenProfileFromFile() not found)],
 		 [])
 
     ;;
@@ -384,9 +384,9 @@ AC_ARG_WITH(lcms,
     CPPFLAGS="-I$with_lcms/include $CPPFLAGS"
     AC_CHECK_HEADERS([lcms2.h],,[AC_MSG_ERROR(lcms2.h not found)],[])
 
-    AC_CHECK_DECLS(cmsGetEncodedCMMversion,
+    AC_CHECK_DECLS(cmsOpenProfileFromFile,
                    [LCMS_CPPFLAGS="-I$with_lcms/include"],
-		   [AC_MSG_ERROR(cmsGetEncodedCMMversion() not found)],
+		   [AC_MSG_ERROR(cmsOpenProfileFromFile() not found)],
 		   [#include <lcms2.h>])
     CPPFLAGS=$_cppflags
 
@@ -394,10 +394,10 @@ AC_ARG_WITH(lcms,
     _libs=${LIBS}
     LDFLAGS="-L$with_lcms/lib $LDFLAGS"
     LIBS="-llcms2 $LIBS"
-    AC_CHECK_LIB(lcms2, cmsGetEncodedCMMversion,
+    AC_CHECK_LIB(lcms2, cmsOpenProfileFromFile,
                  [LCMS_LDFLAGS="-L$with_lcms/lib"
 		  LCMS_LIBADD=" -llcms2"],
-		 [AC_MSG_ERROR(cmsGetEncodedCMMversion() not found)],
+		 [AC_MSG_ERROR(cmsOpenProfileFromFile() not found)],
 		 [])
     LDFLAGS=$_ldflags
     LIBS=$_libs
@@ -588,7 +588,7 @@ AC_ARG_WITH(python,
   yes)
    AC_MSG_RESULT($with_python)
    dnl check python inc/lib
-   AM_PATH_PYTHON(3.6.0)
+   AM_PATH_PYTHON(3.4.0)
    PY_PREFIX=`$PYTHON -c 'import sys ; print(sys.prefix)'`
    PYTHON_LDADD="-lpython${PYTHON_VERSION}m"
    PYTHON_LDFLAGS="-L$PY_PREFIX/lib"
@@ -612,7 +612,7 @@ AC_ARG_WITH(python,
     AC_MSG_RESULT($with_python)
     PYTHON=$with_python/bin/python3
    dnl check python inc/lib
-   AM_PATH_PYTHON(3.6.0)
+   AM_PATH_PYTHON(3.4.0)
    PY_PREFIX=`$PYTHON -c 'import sys ; print(sys.prefix)'`
    PYTHON_LDADD="-lpython${PYTHON_VERSION}m"
    PYTHON_LDFLAGS="-L$PY_PREFIX/lib"
@@ -910,7 +910,7 @@ AC_SUBST(MODULES_LDFLAGS)
 AC_SUBST(MODULES_CXXFLAGS)
 
 #
-# check for FFTW location  (for denmap module)
+# check for FFTW location  (for xtal module)
 #
 
 AC_MSG_CHECKING(FFTW library location)
@@ -918,7 +918,20 @@ AC_ARG_WITH(fftw,
 [  --with-fftw[=DIR]      Look for FFTW library in DIR (default=no) ],
 [ case "$with_fftw" in
   no)
-    
+    ;;
+  yes)
+# Find in default location
+    AC_MSG_RESULT($with_fftw)
+    AC_CHECK_HEADERS(fftw3.h)
+    AC_CHECK_DECLS(fftwf_execute,
+                   [],
+		   ,
+		   [#include <fftw3.h>])
+
+    AC_CHECK_LIB(fftw3f, fftwf_execute,
+                 [FFTW_LIBADD="-lfftw3f"],
+		 ,
+		 [])
     ;;
   *)
     AC_MSG_RESULT($with_fftw)
@@ -941,18 +954,7 @@ AC_ARG_WITH(fftw,
     LDFLAGS=$_ldflags
     ;;
   esac ],
-[   AC_CHECK_HEADERS(fftw3.h)
-    AC_CHECK_DECLS(fftwf_execute,
-                   [],
-		   ,
-		   [#include <fftw3.h>])
-    AC_CHECK_LIB(fftw3f, fftwf_execute,
-                 [],
-		 ,
-		 [])
-])
-
-dnl [AC_MSG_ERROR(Cannot find fftw library file)]
+[AC_MSG_ERROR(Require fftw library)])
 
 AC_SUBST(FFTW_CPPFLAGS)
 AC_SUBST(FFTW_LDFLAGS)

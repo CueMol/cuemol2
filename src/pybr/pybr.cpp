@@ -19,10 +19,21 @@ extern void pybr_regClasses();
 
 namespace pybr {
 
+
+
+
   bool init(const char *szConfPath)
   {
     pybr_regClasses();
-    Py_SetProgramName(Py_DecodeLocale("cuemol2", NULL));
+
+  // Compatibility with Python 3.4
+#if PY_VERSION_HEX < 0x03050000
+    wchar_t* wbuf = _Py_char2wchar("cuemol2", NULL);
+#else
+    wchar_t* wbuf = Py_DecodeLocale("cuemol2", NULL);
+#endif
+
+    Py_SetProgramName(wbuf);
 
     PyImport_AppendInittab("cuemol_internal", &Wrapper::init);
 
@@ -34,7 +45,14 @@ namespace pybr {
       if (fs::exists(confpath) && fs::is_directory(confpath)) {
         LString strpath = confpath.string();
         strpath = strpath.escapeQuots();
-        Py_SetPythonHome(Py_DecodeLocale(strpath.c_str(), NULL));
+
+#if PY_VERSION_HEX < 0x03050000
+	wchar_t *wbuf = _Py_char2wchar(strpath.c_str(), NULL);
+#else
+	wchar_t *wbuf = Py_DecodeLocale(strpath.c_str(), NULL);
+#endif
+
+        Py_SetPythonHome(wbuf);
 	MB_DPRINTLN("***** SetPythonHome=%s", strpath.c_str());
       }
     }
