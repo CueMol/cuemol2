@@ -112,13 +112,16 @@ ElemID convMassElem(double mass)
 // read from stream
 bool PsfReader::read(qlib::InStream &ins)
 {
-  int i, ires;
-  qlib::LineStream ls(ins);
-  m_pls = &ls;
+  if (m_pReadSel.isnull())
+    readAll(ins);
+  else
+    readSel(ins);
 
-  MolCoordPtr pMol(getTarget<MolCoord>());
-  TrajectoryPtr pTraj(pMol, qlib::no_throw_tag());
+  return true;
+}
 
+void PsfReader::readRemarkHeader()
+{
   // skip header line
   readLine();
   readLine();
@@ -131,29 +134,46 @@ bool PsfReader::read(qlib::InStream &ins)
   int ncomment;
   if (!m_line.toInt(&ncomment)) {
     MB_THROW(qlib::FileFormatException, "Cannot read ncomment line");
-    return false;
+    return;
   }
   MB_DPRINTLN("ncomment=%d", ncomment);
   
-  for (i=0; i<ncomment; ++i) {
+  for (int i=0; i<ncomment; ++i) {
     readLine();
     m_line = m_line.trim("\r\n ");
-    LOG_DPRINTLN("%s", m_line.c_str());
+    LOG_DPRINTLN("PSF> %s", m_line.c_str());
   }
   readLine();
+}
 
-  ///////////////////
-
+void PsfReader::readNATOM()
+{
   // Read NATOM
   readLine();
   removeComment();
 
   if (!m_line.toInt(&m_natom)) {
     MB_THROW(qlib::FileFormatException, "Cannot read natom line");
-    return false;
+    return;
   }
-  MB_DPRINTLN("natoms=%d", m_natom);
+  LOG_DPRINTLN("PSF> natoms=%d", m_natom);
+}
+
+void PsfReader::readAll(qlib::InStream &ins)
+{
+  int i, ires;
+  qlib::LineStream ls(ins);
+  m_pls = &ls;
+
+  MolCoordPtr pMol(getTarget<MolCoord>());
+  TrajectoryPtr pTraj(pMol, qlib::no_throw_tag());
+
+  readRemarkHeader();
+
+  readNATOM();
   
+  ///////////////////
+
   LString stmp;
   quint32 iatom;
 
@@ -167,7 +187,7 @@ bool PsfReader::read(qlib::InStream &ins)
     if (!stmp.toNum<quint32>(&iatom)) {
       LString msg = LString::format("cannot convert atom number: %s", stmp.c_str());
       MB_THROW(qlib::FileFormatException, msg);
-      return false;
+      return;
     }
 
     // chain name
@@ -182,7 +202,7 @@ bool PsfReader::read(qlib::InStream &ins)
     if (!stmp.toInt(&nresi)) {
       LString msg = LString::format("cannot convert resid number: %s", stmp.c_str());
       MB_THROW(qlib::FileFormatException, msg);
-      return false;
+      return;
     }
     ResidIndex residx(nresi);
 
@@ -204,7 +224,7 @@ bool PsfReader::read(qlib::InStream &ins)
     if (!stmp.toDouble(&charge)) {
       LString msg = LString::format("cannot convert charge %s", stmp.c_str());
       MB_THROW(qlib::FileFormatException, msg);
-      return false;
+      return;
     }
 
     // mass
@@ -213,7 +233,7 @@ bool PsfReader::read(qlib::InStream &ins)
     if (!stmp.toDouble(&mass)) {
       LString msg = LString::format("cannot convert mass <%s>", stmp.c_str());
       MB_THROW(qlib::FileFormatException, msg);
-      return false;
+      return;
     }
 
     ElemID eleid = convMassElem(mass);
@@ -250,8 +270,10 @@ bool PsfReader::read(qlib::InStream &ins)
 
   pTraj->applyTopology(false);
   pTraj->setup();
+}
 
-  return true;
+void PsfReader::readSel(qlib::InStream &ins)
+{
 }
 
 void PsfReader::readLine()

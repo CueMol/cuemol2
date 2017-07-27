@@ -91,6 +91,14 @@ namespace mdtools {
     ///
     virtual bool read(qlib::InStream &ins);
 
+  private:
+    void readAll(qlib::InStream &ins);
+
+    void readSel(qlib::InStream &ins);
+
+    void readRemarkHeader();
+    void readNATOM();
+
     ///////////////////////////////////////////
 
   private:
