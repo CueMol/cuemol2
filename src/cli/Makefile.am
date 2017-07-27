@@ -30,7 +30,6 @@ $(NULL)
 bin_PROGRAMS = cuetty
 
 cuetty_SOURCES = \
-TTYView.cpp \
 cli_main.cpp
 
 cuetty_CXXFLAGS = \
@@ -48,12 +47,12 @@ cuetty_LDADD = \
   -lqlib \
   -lpcre \
   -lexpat \
-  @JS_LDADD@ \
   @XMLRPC_LIBADD@ \
   @BOOST_FILESYSTEM_LIB@ \
   @BOOST_SYSTEM_LIB@ \
   @BOOST_THREAD_LIB@ \
   @BOOST_TIMER_LIB@ \
+  @BOOST_CHRONO_LIB@ \
   @CGAL_LIBADD@ \
 $(NULL)
 
@@ -68,7 +67,6 @@ cuetty_LDFLAGS= \
   -L../qlib \
   -L../pcre \
   -L../expat \
-  @JS_LDFLAGS@ \
   @XMLRPC_LDFLAGS@ \
   @BOOST_LDFLAGS@ \
   @CGAL_LDFLAGS@ \

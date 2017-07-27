@@ -84,7 +84,6 @@ libanim_la_LDFLAGS = \
   -L../../qsys \
   -L../../gfx \
   -L../../qlib \
-  @FFTW_LDFLAGS@ \
 $(NULL)
 
 #####################################

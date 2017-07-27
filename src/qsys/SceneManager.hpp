@@ -13,6 +13,7 @@
 #include <qlib/LScrSmartPtr.hpp>
 #include <qlib/SingletonBase.hpp>
 #include <qlib/mcutils.hpp>
+#include <qlib/EventManager.hpp>
 
 #include "Scene.hpp"
 #include "Object.hpp"
@@ -20,7 +21,9 @@
 namespace qsys {
 
   class QSYS_API SceneManager
-       : public qlib::LSingletonScrObject, public qlib::SingletonBase<SceneManager>
+       : public qlib::LSingletonScrObject,
+	 public qlib::SingletonBase<SceneManager>,
+         public qlib::IdleTask
   {
     MC_SCRIPTABLE;
 
@@ -152,6 +155,11 @@ namespace qsys {
     void enablePerfMeas(int nID);
     void disablePerfMeas();
     //void setBusyTime(quint64 nanosec);
+
+    /// Idle task support:
+    /// Check scene update periodically
+    virtual void doIdleTask();
+    
 
   };
 

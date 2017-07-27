@@ -9,6 +9,7 @@
 #include "SingletonBase.hpp"
 #include "mcutils.hpp"
 #include "LThread.hpp"
+#include "EventManager.hpp"
 
 #ifndef QLIB_PROCESS_MANAGER_HPP
 #define QLIB_PROCESS_MANAGER_HPP
@@ -58,7 +59,8 @@ namespace qlib {
   /// 
   class QLIB_API LProcMgr
        : public LSingletonScrObject,
-         public qlib::SingletonBase<LProcMgr>
+         public qlib::SingletonBase<LProcMgr>,
+         public qlib::IdleTask
   {
     MC_SCRIPTABLE;
     
@@ -154,18 +156,6 @@ namespace qlib {
 
     void checkQueue();
 
-    /*
-    ///////////////////////
-    // script support query
-
-  private:
-    std::set<LString> m_supscrs;
-
-  public:
-    LString getSupportedScr() const;
-    void addSupportedScr(const LString &name);
-    */
-
   private:
     void waitForRunningExit(int id);
 
@@ -203,6 +193,10 @@ namespace qlib {
 
   public:
 
+    /// Idle task support:
+    /// Check process queue periodically
+    virtual void doIdleTask();
+    
     // these methods are called by ClassReg (ignore)
     static bool initClass(qlib::LClass *);
     static void finiClass(qlib::LClass *);

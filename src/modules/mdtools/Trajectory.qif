@@ -33,6 +33,8 @@ runtime_class Trajectory extends AnimMol
   void append(object<TrajBlock$> pblk);
 
 
+  /// array access method
+  object<ByteArray$> getFrmArray(integer nframe, boolean bref);
 };
 
 #endif

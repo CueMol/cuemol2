@@ -41,6 +41,11 @@ SceneManager::SceneManager()
                                  m_verInfo.revision,
                                  m_verInfo.build_no);
 
+  // register to idle task list
+  qlib::EventManager *pEM = qlib::EventManager::getInstance();
+  pEM->addIdleTask(this);
+
+  m_nActiveSceneID = qlib::invalid_uid;
 }
 
 SceneManager::~SceneManager()
@@ -250,48 +255,6 @@ void SceneManager::disablePerfMeas()
   //m_bPerfMeas = false;
 }
 
-/*
-void SceneManager::setBusyTime(quint64 nanosec)
-{
-  if (!m_bPerfMeas)
-    return;
-  
-  m_busytimes[m_nBusyTimeIndex] = nanosec;
-  m_nBusyTimeIndex ++;
-  if (m_nBusyTimeIndex>=NAVERSIZE) {
-    m_nBusyTimeIndex = 0;
-    double aver = 0.0;
-    for (int i=0; i<NAVERSIZE; ++i) {
-      aver += double(m_busytimes[i]);
-    }
-    aver /= double(NAVERSIZE);
-    LOG_DPRINTLN("Average busy time: %f microsec (FPS=%f)", aver/1000.0, 1000.0*1000.0*1000.0/aver);
-  }
-  
-}
-
-void SceneManager::startPerfMeas()
-{
-  if (m_pTimer==NULL)
-    m_pTimer = new boost::timer::cpu_timer();
-
-  boost::timer::cpu_timer *p = static_cast<boost::timer::cpu_timer *>(m_pTimer);
-  p->start();
-}
-
-void SceneManager::endPerfMeas()
-{
-  if (m_pTimer==NULL)
-    return;
-  
-  boost::timer::cpu_timer *p = static_cast<boost::timer::cpu_timer *>(m_pTimer);
-  p->stop();
-  boost::timer::cpu_times t = p->elapsed();
-  setBusyTime(t.wall);
-}
-*/
-
-
 LString SceneManager::getVerArchName() const
 {
   int nbit = (SIZEOF_VOIDP) * 8;
@@ -302,3 +265,7 @@ LString SceneManager::getVerArchName() const
   return LString::format("%s%d", plf.toLowerCase().c_str(), nbit);
 }
 
+void SceneManager::doIdleTask()
+{
+  checkAndUpdateScenes();
+}

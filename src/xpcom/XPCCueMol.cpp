@@ -239,7 +239,7 @@ NS_IMETHODIMP XPCCueMol::Init(const char *confpath, bool *_retval)
   MB_DPRINTLN("---------- initTextRender() OK");
 
   // setup timer
-  qlib::EventManager::getInstance()->initTimer(new XPCTimerImpl);
+  qlib::EventManager::getInstance()->initTimer(MB_NEW XPCTimerImpl);
 
   // setup quit-app observer
   nsCOMPtr<nsIObserverService> obs = do_GetService("@mozilla.org/observer-service;1", &rv);

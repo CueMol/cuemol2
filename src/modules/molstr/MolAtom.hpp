@@ -14,6 +14,7 @@
 #include <qlib/LPropContainer.hpp>
 
 #include <qlib/LScrVector4D.hpp>
+#include <qlib/Matrix4D.hpp>
 
 #include "ElemSym.hpp"
 
@@ -83,6 +84,9 @@ namespace molstr {
     /// NULL if this obj is not attached to mol.
     MolCoord *m_pMol;
 
+    /// Cached transformation matrix
+    qlib::Matrix4D *m_pXformMat;
+
   public:
 
     ////////////////////////////
@@ -139,8 +143,11 @@ namespace molstr {
       setConfID(id.getAt(0));
     }
 
-    /// Atom position
+  private:
+    /// Get Atom position implementation
+    Vector4D getPosImpl() const;
 
+  public:
     /// Get Atom position
     Vector4D getPos() const;
 
@@ -240,7 +247,7 @@ namespace molstr {
 
     virtual LString toString() const;
 
-    //////////////////////////////////////////////////////////////////////
+    ////////////////////////
     // unisotropic B factor
   private:
     static inline int getuind(int i, int j) {
@@ -267,6 +274,13 @@ namespace molstr {
 	m_paib = MB_NEW double[6];
       m_paib[getuind(i, j)] = uij;
     }
+
+    ////////////////////////
+    // Cached xform matrix
+  public:
+    void setXformMatrix(const qlib::Matrix4D &m);
+    
+    void resetXformMatrix();
 
     //////////////////////////////////////////////////////////////////////
     // dynamic properties

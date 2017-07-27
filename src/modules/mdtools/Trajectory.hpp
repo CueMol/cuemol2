@@ -54,10 +54,10 @@ namespace mdtools {
     
     virtual ~Trajectory();
     
-    /// Append a new atom.
-    virtual int appendAtom(MolAtomPtr pAtom);
+    // /// Append a new atom.
+    // virtual int appendAtom(MolAtomPtr pAtom);
 
-    /// Remove an atom by atom ID
+    /// Remove an atom by atom ID (not supported)
     virtual bool removeAtom(int atomid);
     
     /////////////////////
@@ -93,8 +93,8 @@ namespace mdtools {
 
     void findBlk(int nfrm, int &nBlkInd, int &nFrmInd);
 
-    /// For partial read selection impl
-    MolCoordPtr m_pAllMol;
+    // /// For partial read selection impl
+    // MolCoordPtr m_pAllMol;
 
     /// Selection index array:
     /// Array of atom indeces to be read from the traj data file.
@@ -108,9 +108,11 @@ namespace mdtools {
 
   public:
 
-    /// setup molecule (m_selIndArray, m_nAllAtomSize, etc)
-    /// from the appended atoms and the selection (arg)
-    void createMol(SelectionPtr pSel);
+    // /// setup molecule (m_selIndArray, m_nAllAtomSize, etc)
+    // /// from the appended atoms and the selection (arg)
+    // void createMol(SelectionPtr pSel);
+
+    void setup();
 
     quint32 getAllAtomSize() const {
       return m_nAllAtomSize;
@@ -177,6 +179,12 @@ namespace mdtools {
   public:
     /// Timer event handling (for self anim impl)
     virtual bool onTimer(double t, qlib::time_value curr, bool bLast);
+
+    // Array access method
+
+    /// Get array (ref) of specific frame
+    qlib::LByteArrayPtr getFrmArray(int nfrm, bool bref) const;
+
   };
 
 }

@@ -47,9 +47,9 @@ def scene(aScene=None):
     if isscene(aScene):
         return aScene
 
+    sceMgr = ci.getService("SceneManager")
     scid=None
     if aScene==None:
-        sceMgr = ci.getService("SceneManager")
         scid = sceMgr.activeSceneID
     elif isinstance(aScene, int):
         scid = aScene
@@ -65,13 +65,13 @@ def obj(aName, aScene=None):
     if isobj(aName):
         return aName
     
-    scene = scene(aScene)
+    sc = scene(aScene)
 
     obj = None
     if isinstance(aName, str):
-        obj = scene.getObjectByName(aName)
+        obj = sc.getObjectByName(aName)
     elif isinstance(aName, int):
-        obj = scene.getObject(aName)
+        obj = sc.getObject(aName)
 
     if obj==None:
         raise RuntimeError("object "+str(aName)+" not found")

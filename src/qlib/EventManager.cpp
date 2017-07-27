@@ -7,6 +7,7 @@
 
 #include "EventManager.hpp"
 #include "LEvent.hpp"
+#include "LExceptions.hpp"
 
 #ifdef HAVE_BOOST_THREAD
 #  include <boost/thread.hpp>
@@ -112,10 +113,14 @@ void EventManager::initTimer(TimerImpl *pimpl)
 {
   MB_ASSERT(m_pImpl==NULL);
   m_pImpl = pimpl;
+
+  // m_pImpl->start();
 }
 
 void EventManager::finiTimer()
 {
+  m_pImpl->stop();
+
   if (m_pImpl!=NULL)
     delete m_pImpl;
   m_pImpl = NULL;
@@ -180,3 +185,41 @@ time_value TimerImpl::getCurrentTime()
 #endif
 }
 
+//////////
+
+#include "LPerfMeas.hpp"
+
+IdleTask::~IdleTask()
+{
+}
+
+void EventManager::performIdleTasks()
+{
+  try {
+    qlib::AutoPerfMeas apm(PM_IDLE_TIMER);
+    
+    // process events
+    messageLoop();
+    
+    // process timer events
+    checkTimerQueue();
+    
+    BOOST_FOREACH (IdleTask *pTask, m_idleTasks) {
+      pTask->doIdleTask();
+    }
+  }
+  catch (qlib::LException &e) {
+    LOG_DPRINTLN("Exception occured in performIdleTask: %s",
+		 e.getFmtMsg().c_str());
+    throw;
+  }
+  catch (std::exception &e) {
+    LOG_DPRINTLN("Exception occured in performIdleTask: %s",
+		 e.what());
+    throw;
+  }
+  catch (...) {
+    LOG_DPRINTLN("Unknown exception occured in performIdleTask");
+    throw;
+  }
+}

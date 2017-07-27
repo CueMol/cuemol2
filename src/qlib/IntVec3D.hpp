@@ -46,6 +46,17 @@ namespace qlib {
       return qlib::Vector4D(ai(1),ai(2),ai(3),0);
     }
 
+    inline value_type x() const { return ai(1); }
+    inline value_type &x() { return ai(1); }
+      
+    inline value_type y() const { return ai(2); }
+    inline value_type &y() { return ai(2); }
+
+    inline value_type z() const { return ai(3); }
+    inline value_type &z() { return ai(3); }
+
+    // col-row-sec type access
+
     inline value_type col() const { return ai(1); }
     inline value_type &col() { return ai(1); }
       

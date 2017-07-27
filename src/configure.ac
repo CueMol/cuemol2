@@ -366,13 +366,13 @@ AC_ARG_WITH(lcms,
     dnl default LCMS2 location (/usr, etc)
     AC_MSG_RESULT(yes)
     AC_CHECK_HEADERS([lcms2.h],,[AC_MSG_ERROR(lcms2.h not found)],[])
-    AC_CHECK_DECLS(cmsGetEncodedCMMversion,
+    AC_CHECK_DECLS(cmsOpenProfileFromFile,
                    [],
-		   [AC_MSG_ERROR(cmsGetEncodedCMMversion() not found)],
+		   [AC_MSG_ERROR(cmsOpenProfileFromFile() not found)],
 		   [#include <lcms2.h>])
-    AC_CHECK_LIB(lcms, cmsGetEncodedCMMversion,
+    AC_CHECK_LIB(lcms2, cmsOpenProfileFromFile,
                  [LCMS_LIBADD=" -llcms2"],
-		 [AC_MSG_ERROR(cmsGetEncodedCMMversion() not found)],
+		 [AC_MSG_ERROR(cmsOpenProfileFromFile() not found)],
 		 [])
 
     ;;
@@ -384,9 +384,9 @@ AC_ARG_WITH(lcms,
     CPPFLAGS="-I$with_lcms/include $CPPFLAGS"
     AC_CHECK_HEADERS([lcms2.h],,[AC_MSG_ERROR(lcms2.h not found)],[])
 
-    AC_CHECK_DECLS(cmsGetEncodedCMMversion,
+    AC_CHECK_DECLS(cmsOpenProfileFromFile,
                    [LCMS_CPPFLAGS="-I$with_lcms/include"],
-		   [AC_MSG_ERROR(cmsGetEncodedCMMversion() not found)],
+		   [AC_MSG_ERROR(cmsOpenProfileFromFile() not found)],
 		   [#include <lcms2.h>])
     CPPFLAGS=$_cppflags
 
@@ -394,10 +394,10 @@ AC_ARG_WITH(lcms,
     _libs=${LIBS}
     LDFLAGS="-L$with_lcms/lib $LDFLAGS"
     LIBS="-llcms2 $LIBS"
-    AC_CHECK_LIB(lcms2, cmsGetEncodedCMMversion,
+    AC_CHECK_LIB(lcms2, cmsOpenProfileFromFile,
                  [LCMS_LDFLAGS="-L$with_lcms/lib"
 		  LCMS_LIBADD=" -llcms2"],
-		 [AC_MSG_ERROR(cmsGetEncodedCMMversion() not found)],
+		 [AC_MSG_ERROR(cmsOpenProfileFromFile() not found)],
 		 [])
     LDFLAGS=$_ldflags
     LIBS=$_libs
@@ -538,38 +538,6 @@ SCR_CPPFLAGS=
 SCR_LDADD=
 SCR_LDFLAGS=
 
-dnl if test x$GUI_ARCH = xCLI ; then
-    # Use internal js impl in the standalone CLI build
-    BUILD_SCR="$BUILD_SCR js jsbr"
-    # overall settings
-    SCR_CPPFLAGS="-DHAVE_JAVASCRIPT"
-    SCR_LDADD="-ljsbr"
-    SCR_LDFLAGS="-L../jsbr"
-    # jsbr module settings
-    JS_CPPFLAGS="-I../js/src/ -DUSE_INTERNAL_JS"
-    JS_LDADD="-ljs"
-    JS_LDFLAGS="-L../js/"
-    AC_CONFIG_SUBDIRS([js])
-dnl else
-dnl     # no script supports
-dnl     SCR_CPPFLAGS=-DNO_SCRIPT
-dnl fi
-
-dnl    XXX TO DO: impl of external JS for GUI build
-dnl    # Xulrunner SDK has its own js implementation
-dnl    BUILD_SCR=jsbr
-dnl    _cppflags=${CPPFLAGS}
-dnl    CPPFLAGS="-I$with_xulrunner_sdk/include $CPPFLAGS"
-dnl    AC_CHECK_HEADER(jsapi.h)
-dnl    AC_CHECK_DECL(JS_NewRuntime,
-dnl                  [],
-dnl                  [AC_MSG_ERROR(JSAPI not found)],
-dnl                  [#include<jsapi.h>])
-dnl    CPPFLAGS=$_cppflags
-dnl    JS_CPPFLAGS="-I$with_xulrunner_sdk/include"
-dnl    SCR_LDADD="-ljsbr"
-dnl    SCR_LDFLAGS="-L../jsbr/"
-
 AC_SUBST(JS_CPPFLAGS)
 AC_SUBST(JS_LDADD)
 AC_SUBST(JS_LDFLAGS)
@@ -577,7 +545,6 @@ AC_SUBST(JS_LDFLAGS)
 #######################################################
 # Python supports
 
-echo "***** PYTHON check"
 AC_ARG_WITH(python,
 [  --with-python[=DIR]      Look for python in DIR (default=no) ],
 [ case "$with_python" in
@@ -588,7 +555,7 @@ AC_ARG_WITH(python,
   yes)
    AC_MSG_RESULT($with_python)
    dnl check python inc/lib
-   AM_PATH_PYTHON(3.6.0)
+   AM_PATH_PYTHON(3.4.0)
    PY_PREFIX=`$PYTHON -c 'import sys ; print(sys.prefix)'`
    PYTHON_LDADD="-lpython${PYTHON_VERSION}m"
    PYTHON_LDFLAGS="-L$PY_PREFIX/lib"
@@ -612,7 +579,7 @@ AC_ARG_WITH(python,
     AC_MSG_RESULT($with_python)
     PYTHON=$with_python/bin/python3
    dnl check python inc/lib
-   AM_PATH_PYTHON(3.6.0)
+   AM_PATH_PYTHON(3.4.0)
    PY_PREFIX=`$PYTHON -c 'import sys ; print(sys.prefix)'`
    PYTHON_LDADD="-lpython${PYTHON_VERSION}m"
    PYTHON_LDFLAGS="-L$PY_PREFIX/lib"
@@ -641,7 +608,7 @@ AC_ARG_ENABLE(numpy,
     [
 if test $enableval = yes ; then
 if test x$HAVE_PYTHON != xyes ; then
-AC_MSG_ERROR(python3 not found)
+AC_MSG_ERROR(python3 required)
 fi
 NUMPY_INC=`$PYTHON -c 'from numpy.distutils.misc_util import get_numpy_include_dirs ; print(" ".join(get_numpy_include_dirs()))'`
 #echo $NUMPY_INC
@@ -656,6 +623,23 @@ NUMPY_INC=`$PYTHON -c 'from numpy.distutils.misc_util import get_numpy_include_d
 fi
     ],
     [])
+
+ENABLE_PYMODULE=
+AC_ARG_ENABLE(pymodule,
+    [--enable-pymodule     Build as python module (python3 required)],
+    [
+if test $enableval = yes ; then
+if test x$HAVE_PYTHON != xyes ; then
+AC_MSG_ERROR(python3 required)
+fi
+    AC_MSG_RESULT($enableval)
+    AC_DEFINE([ENABLE_PYMODULE], [1], [Define to 1 if you enable python module build])
+ENABLE_PYMODULE=yes
+fi
+    ],
+    [])
+
+AM_CONDITIONAL(COND_BUILD_PYMODULE, test x$ENABLE_PYMODULE = xyes)
 
 #######################################################
 # XML-RPC supports
@@ -910,7 +894,7 @@ AC_SUBST(MODULES_LDFLAGS)
 AC_SUBST(MODULES_CXXFLAGS)
 
 #
-# check for FFTW location  (for denmap module)
+# check for FFTW location  (for xtal module)
 #
 
 AC_MSG_CHECKING(FFTW library location)
@@ -918,7 +902,20 @@ AC_ARG_WITH(fftw,
 [  --with-fftw[=DIR]      Look for FFTW library in DIR (default=no) ],
 [ case "$with_fftw" in
   no)
-    
+    ;;
+  yes)
+# Find in default location
+    AC_MSG_RESULT($with_fftw)
+    AC_CHECK_HEADERS(fftw3.h)
+    AC_CHECK_DECLS(fftwf_execute,
+                   [],
+		   ,
+		   [#include <fftw3.h>])
+
+    AC_CHECK_LIB(fftw3f, fftwf_execute,
+                 [FFTW_LIBADD="-lfftw3f"],
+		 ,
+		 [])
     ;;
   *)
     AC_MSG_RESULT($with_fftw)
@@ -941,18 +938,7 @@ AC_ARG_WITH(fftw,
     LDFLAGS=$_ldflags
     ;;
   esac ],
-[   AC_CHECK_HEADERS(fftw3.h)
-    AC_CHECK_DECLS(fftwf_execute,
-                   [],
-		   ,
-		   [#include <fftw3.h>])
-    AC_CHECK_LIB(fftw3f, fftwf_execute,
-                 [],
-		 ,
-		 [])
-])
-
-dnl [AC_MSG_ERROR(Cannot find fftw library file)]
+[AC_MSG_ERROR(Require fftw library)])
 
 AC_SUBST(FFTW_CPPFLAGS)
 AC_SUBST(FFTW_LDFLAGS)

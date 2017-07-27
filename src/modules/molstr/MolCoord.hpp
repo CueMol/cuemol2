@@ -37,6 +37,8 @@ namespace molstr {
 
     friend class ::molstr::QdfMolWriter;
 
+    typedef qsys::Object super_t;
+
   private:
     /////////////////////////////////////////////////////
     // Definition of types for internal use
@@ -48,7 +50,7 @@ namespace molstr {
     struct chain_comp : std::binary_function <const LString &,const LString &, bool> {
       bool operator() (const LString &x, const LString &y) const
       {
-	return x<y;
+        return x<y;
       }
     };
 
@@ -181,9 +183,6 @@ namespace molstr {
     /// clear non-persistent bond information
     void removeNonpersBonds();
     
-    /// clear all bond information
-    // void removeAllBonds();
-    
     /////////////////////////////////////////////////////
     // atom/bond access
 
@@ -282,9 +281,14 @@ namespace molstr {
 
     void applyTopology(bool bAutoBuild = true);
 
+    /// Set overall transformation matrix
+    ///  non-identity matrix is cached in MolAtom object to facile calculation
+    virtual void setXformMatrix(const qlib::Matrix4D &m);
+
     ///
     ///  Apply affine transformation to the selected part by pSel
     ///    (impl: MolCoordGeomImpl.cpp)
+    /// TO DO: correct impl when m_xformMat is applied
     void xformByMat(const qlib::Matrix4D &mat, SelectionPtr pSel);
     void xformByMat(const qlib::Matrix4D &mat) {
       xformByMat(mat, SelectionPtr());

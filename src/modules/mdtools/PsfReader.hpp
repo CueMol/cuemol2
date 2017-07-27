@@ -16,6 +16,7 @@
 #include <qlib/LChar.hpp>
 #include <qlib/Array.hpp>
 #include <qlib/LineStream.hpp>
+#include <modules/molstr/Selection.hpp>
 
 namespace mdtools {
 
@@ -41,6 +42,18 @@ namespace mdtools {
     void setReadSel(SelectionPtr pNewSel)
     {
       m_pReadSel = pNewSel;
+    }
+
+    bool isUseReadSel() const {
+      return !m_pReadSel.isnull();
+    }
+
+    void setUseReadSel(bool b) {
+      // set NULL ptr if readsel is to be disabled
+      // otherwise do noting
+      if (!b) {
+	m_pReadSel = SelectionPtr();
+      }
     }
 
     ///////////////////////////////////////////

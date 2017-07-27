@@ -56,6 +56,7 @@ anim/AnimObjEvent.cpp \
 qsys.cpp \
 SceneExporter.cpp \
 RendGroup.cpp \
+TTYView.cpp \
 $(NULL)
 
 # CueMol interface definitions for MCWRAPGEN
@@ -137,10 +138,6 @@ libqsys_la_CXXFLAGS = \
   @GL_CPPFLAGS@ \
   @BOOST_CPPFLAGS@ \
   $(NULL)
-
-#  ../modules/molstr/libmolstr.la
-#  ../jsbr/libjsbr.la
-# -Wall
 
 libqsys_la_LIBADD = \
   @BOOST_THREAD_LIB@ \

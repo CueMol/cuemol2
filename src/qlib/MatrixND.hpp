@@ -28,7 +28,7 @@ namespace qlib {
     /// Default constructor with creating unit matrix
     MatrixND()
     {
-      setUnit();
+      setIdent();
     }
 
     /// Constructor without initialization
@@ -46,7 +46,7 @@ namespace qlib {
     template <int _M_DIM> explicit
     MatrixND(const MatrixND<_M_DIM, value_type> &arg)
     {
-      setUnit();
+      setIdent();
       const int ncopy = (_M_DIM<_N_DIM)?_M_DIM:_N_DIM;
       for (int i=1; i<=ncopy; ++i)
         for (int j=1; j<=ncopy; ++j)
@@ -273,13 +273,16 @@ namespace qlib {
       return (i==j)?1:0;
     }
 
-    inline void setUnit() {
+    /// for compatibility
+    inline void setUnit() { setIdent(); }
+
+    inline void setIdent() {
       for (int i=1; i<=_N_DIM; ++i)
 	for (int j=1; j<=_N_DIM; ++j)
 	  aij(i,j) = value_type( delta(i,j) );
     }
 
-    void setZero() {
+    inline void setZero() {
       for (int i=0; i<_N_ELEM; ++i)
 	m_value[i] = value_type(0);
     }

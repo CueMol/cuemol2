@@ -43,6 +43,11 @@ XPCTimerImpl::~XPCTimerImpl()
 void XPCTimerImpl::timerCallbackFunc(nsITimer *aTimer, void *aClosure)
 {
   //MB_DPRINTLN("Timer: notified");
+
+  qlib::EventManager *pEM = qlib::EventManager::getInstance();
+  pEM->performIdleTasks();
+
+#if 0
   try {
     qlib::AutoPerfMeas apm(PM_IDLE_TIMER);
 
@@ -76,6 +81,7 @@ void XPCTimerImpl::timerCallbackFunc(nsITimer *aTimer, void *aClosure)
     LOG_DPRINTLN("Unknown exception occured in timerCallback");
     throw;
   }
+#endif
 
   return;
 }

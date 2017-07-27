@@ -30,9 +30,10 @@ Trajectory::Trajectory()
 
 Trajectory::~Trajectory()
 {
-  m_pAllMol = MolCoordPtr();
+  //m_pAllMol = MolCoordPtr();
 }
 
+/*
 /// Append a new atom.
 int Trajectory::appendAtom(MolAtomPtr pAtom)
 {
@@ -48,6 +49,7 @@ int Trajectory::appendAtom(MolAtomPtr pAtom)
   }
   return m_pAllMol->appendAtom(pAtom);
 }
+*/
 
 /// Remove an atom by atom ID
 bool Trajectory::removeAtom(int atomid)
@@ -56,6 +58,7 @@ bool Trajectory::removeAtom(int atomid)
   return false;
 }
 
+/*
 void Trajectory::createMol(SelectionPtr pSel)
 {
   if (super_t::getAtomSize()!=0) {
@@ -94,6 +97,21 @@ void Trajectory::createMol(SelectionPtr pSel)
   m_nAllAtomSize = m_pAllMol->getAtomSize();
   m_pAllMol = MolCoordPtr();
 }
+*/
+
+void Trajectory::setup()
+{
+  m_nAllAtomSize = getAtomSize();
+  m_selIndArray.resize( m_nAllAtomSize );
+
+  int i = 0;
+  AtomIter aiter = super_t::beginAtom();
+  AtomIter eiter = super_t::endAtom();
+  for (; aiter!=eiter; ++aiter, ++i) {
+    int aid = aiter->first;
+    m_selIndArray[i] = aid;
+  }
+}
 
 
 //////////
@@ -111,7 +129,8 @@ qfloat32 *Trajectory::getCrdArrayImplImpl(int ifrm)
   }
 
   if (nBlkInd==-1 || nFrmInd==-1) {
-    MB_THROW(qlib::RuntimeException, "getCrdArrayImpl: no data in the trajectory");
+    LString msg = LString::format("getCrdArrayImpl: frame %d not found in the trajectory", ifrm);
+    MB_THROW(qlib::RuntimeException, msg);
     return NULL;
   }
   TrajBlockPtr pBlk = m_blocks[nBlkInd];
@@ -435,4 +454,36 @@ bool Trajectory::onTimer(double t, qlib::time_value curr, bool bLast)
   }
 
   return true;
+}
+
+#include <qlib/LByteArray.hpp>
+
+qlib::LByteArrayPtr Trajectory::getFrmArray(int nfrm, bool bref) const
+{
+  Trajectory *pthis = const_cast<Trajectory *>(this);
+
+  qfloat32 *pcrd = pthis->getCrdArrayImplImpl(nfrm);
+
+  qlib::LByteArrayPtr pRet(MB_NEW qlib::LByteArray());
+
+  int i;
+  int natom = getAtomSize();
+  int ncrds = natom*3;
+
+  if (!bref) {
+    pRet->init(qlib::type_consts::QTC_FLOAT32, ncrds);
+    pRet->setDim(2);
+    pRet->setShape(qlib::IntVec3D(natom, 3, 1));
+    qfloat32 *pr = reinterpret_cast<qfloat32 *>(pRet->data());
+    for (i=0; i<ncrds; ++i) {
+      pr[i] = pcrd[i];
+    }
+  }
+  else {
+    pRet->initRefer(qlib::type_consts::QTC_FLOAT32, ncrds, (qbyte *)pcrd);
+    pRet->setDim(2);
+    pRet->setShape(qlib::IntVec3D(natom, 3, 1));
+  }
+
+  return pRet;
 }

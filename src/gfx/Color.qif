@@ -18,10 +18,18 @@ runtime_class Color extends AbstractColor
   cloneable;
   smartptr;
 
+  /////
+
   property string material => redirect(getMaterial, setMaterial);
   default material = "";
 
+  property real alpha => redirect(getAlpha, setAlpha);
+  default alpha = 1.0;
+
   property integer code => redirect(getCode, setCode);
+
+  /////
+
   void setCode(integer);
   integer getCode();
 

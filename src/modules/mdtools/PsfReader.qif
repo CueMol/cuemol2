@@ -17,6 +17,8 @@ runtime_class PsfReader extends ObjReader
   scriptable;
   smartptr;
 
+  property boolean use_readsel => redirect(isUseReadSel, setUseReadSel);
+
   property object<MolSelection$> readsel => redirect(getReadSel, setReadSel);
 
 };

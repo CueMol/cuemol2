@@ -61,11 +61,15 @@ LProcMgr::LProcMgr()
   m_pImpl = MB_NEW PosixProcMgrImpl();
 #endif
   setSlotSize(-1);
+
+  // register to idle task list
+  EventManager *pEM = EventManager::getInstance();
+  pEM->addIdleTask(this);
 }
 
 LProcMgr::~LProcMgr()
 {
-	delete m_pImpl;
+  delete m_pImpl;
 }
 
 void LProcMgr::setSlotSize(int n)
@@ -470,3 +474,7 @@ void LProcMgr::writeLogFile(const LString &res)
   }
 }
 
+void LProcMgr::doIdleTask()
+{
+  checkQueue();
+}

@@ -7,14 +7,15 @@ install_dir=$HOME/app/cuemol2
 #debug="--enable-debug --enable-m64"
 debug="--disable-debug --enable-m64"
 
-usepybr="--enable-python"
+usepybr="--with-python --enable-numpy -enable-pymodule"
 #usepybr="--disable-python"
 
 #usexrbr="--with-xmlrpc=$HOME/proj64/xmlrpc-c"
 usexrbr="--without-xmlrpc"
 
-lcms="--without-lcms"
-xz="--without-xz"
+lcms="--with-lcms"
+xz="--with-xz"
+fftw="--with-fftw"
 
 #use_boost_timer="--enable-boosttimer"
 
@@ -25,7 +26,6 @@ xz="--without-xz"
 #boost_dir=/net3/ishitani/app64/boost_static
 boost_dir=/net3/ishitani/app64/boost_1_57_0
 
-fftw_dir=/net3/ishitani/app64/fftw
 
 #cgal_dir=/home/ishitani/app/CGAL-4.6.1/
 cgal_dir=/net3/ishitani/app64/CGAL-4.6.1
@@ -46,7 +46,7 @@ fi
 
 # CFLAGS="-O3" CXXFLAGS="-O3" \
 
-env CC=gcc CXX=g++ CXXFLAGS="-std=c++0x -O" \
+env PYTHON=python3 CC=gcc CXX=g++ CXXFLAGS="-std=c++0x -O" \
 $config_scr \
 --disable-static \
 --enable-shared \
@@ -58,7 +58,7 @@ $usexrbr \
 $use_boost_timer \
 --enable-cli \
 --with-boost=$boost_dir \
---with-fftw=$fftw_dir \
+$fftw \
 --with-cgal=$cgal_dir \
 $debug
 
