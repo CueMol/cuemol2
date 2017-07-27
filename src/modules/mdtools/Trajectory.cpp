@@ -26,6 +26,7 @@ Trajectory::Trajectory()
   m_nAver = 0;
   m_bAverBufValid = false;
   // m_pAllMol = MolCoordPtr(MB_NEW MolCoord());
+  m_nAllAtomSize = 0;
 }
 
 Trajectory::~Trajectory()
@@ -113,6 +114,12 @@ void Trajectory::setup()
   }
 }
 
+void Trajectory::setupSel(int nAll, const std::deque<int> &aidmap)
+{
+  m_selIndArray.resize( aidmap.size() );
+  m_selIndArray.assign( aidmap.begin(), aidmap.end() );
+  m_nAllAtomSize = nAll;
+}
 
 //////////
 

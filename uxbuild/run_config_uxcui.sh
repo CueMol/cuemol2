@@ -17,7 +17,7 @@ lcms="--with-lcms"
 xz="--with-xz"
 fftw="--with-fftw"
 
-#use_boost_timer="--enable-boosttimer"
+use_boost_timer="--enable-boosttimer"
 
 ##
 

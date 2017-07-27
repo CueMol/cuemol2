@@ -22,6 +22,7 @@ using namespace molstr;
 
 PsfReader::PsfReader()
 {
+
 }
 
 PsfReader::~PsfReader()
@@ -159,14 +160,95 @@ void PsfReader::readNATOM()
   LOG_DPRINTLN("PSF> natoms=%d", m_natom);
 }
 
+MolAtomPtr PsfReader::readAtom()
+{
+  LString stmp;
+  quint32 iatom;
+
+  readLine();
+  // LOG_DPRINTLN("%s", m_line.c_str());
+
+  stmp = m_line.substr(0, 8);
+  stmp = stmp.trim(" ");
+  if (!stmp.toNum<quint32>(&iatom)) {
+    LString msg = LString::format("cannot convert atom number: %s", stmp.c_str());
+    MB_THROW(qlib::FileFormatException, msg);
+    return MolAtomPtr();
+  }
+
+  // chain name
+  stmp = m_line.substr(9, 4);
+  stmp = stmp.trim(" ");
+  // stmp = stmp.toLowerCase();
+  LString chain(stmp.c_str());
+
+  // residue number
+  stmp = m_line.substr(14, 4);
+  int nresi;
+  if (!stmp.toInt(&nresi)) {
+    LString msg = LString::format("cannot convert resid number: %s", stmp.c_str());
+    MB_THROW(qlib::FileFormatException, msg);
+    return MolAtomPtr();
+  }
+  ResidIndex residx(nresi);
+
+  //  residue name
+  stmp = m_line.substr(19, 4);
+  stmp = stmp.trim(" ");
+  // stmp = stmp.toLowerCase();
+  LString resn(stmp.c_str());
+
+  // atom name
+  stmp = m_line.substr(24, 4);
+  stmp = stmp.trim(" ");
+  // stmp = stmp.toLowerCase();
+  LString name(stmp.c_str());
+    
+  // charge
+  stmp = m_line.substr(34, 10);
+  double charge;
+  if (!stmp.toDouble(&charge)) {
+    LString msg = LString::format("cannot convert charge %s", stmp.c_str());
+    MB_THROW(qlib::FileFormatException, msg);
+    return MolAtomPtr();
+  }
+
+  // mass
+  stmp = m_line.substr(50, 8);
+  double mass;
+  if (!stmp.toDouble(&mass)) {
+    LString msg = LString::format("cannot convert mass <%s>", stmp.c_str());
+    MB_THROW(qlib::FileFormatException, msg);
+    return MolAtomPtr();
+  }
+
+  ElemID eleid = convMassElem(mass);
+
+  //LOG_DPRINTLN("ATOM %s %s %d %s",
+  //(*pAtoms)[i].name.c_str(),
+  //(*pAtoms)[i].resn.c_str(),
+  //(*pAtoms)[i].resid,
+  //(*pAtoms)[i].chain.c_str());
+
+  MolAtomPtr pAtom(MB_NEW MolAtom());
+
+  pAtom->setName(name);
+  pAtom->setElement(eleid);
+  pAtom->setChainName(chain);
+  pAtom->setResIndex(residx);
+  pAtom->setResName(resn);
+
+  return pAtom;
+}
+
 void PsfReader::readAll(qlib::InStream &ins)
 {
+  LOG_DPRINTLN("PSF> Read all coord");
   int i, ires;
   qlib::LineStream ls(ins);
   m_pls = &ls;
 
-  MolCoordPtr pMol(getTarget<MolCoord>());
-  TrajectoryPtr pTraj(pMol, qlib::no_throw_tag());
+  TrajectoryPtr pTraj(getTarget<Trajectory>());
 
   readRemarkHeader();
 
@@ -174,85 +256,11 @@ void PsfReader::readAll(qlib::InStream &ins)
   
   ///////////////////
 
-  LString stmp;
-  quint32 iatom;
-
   // Read atoms
   for (i=0; i<m_natom; ++i) {
-    readLine();
-    // LOG_DPRINTLN("%s", m_line.c_str());
-
-    stmp = m_line.substr(0, 8);
-    stmp = stmp.trim(" ");
-    if (!stmp.toNum<quint32>(&iatom)) {
-      LString msg = LString::format("cannot convert atom number: %s", stmp.c_str());
-      MB_THROW(qlib::FileFormatException, msg);
-      return;
-    }
-
-    // chain name
-    stmp = m_line.substr(9, 4);
-    stmp = stmp.trim(" ");
-    // stmp = stmp.toLowerCase();
-    LString chain(stmp.c_str());
-
-    // residue number
-    stmp = m_line.substr(14, 4);
-    int nresi;
-    if (!stmp.toInt(&nresi)) {
-      LString msg = LString::format("cannot convert resid number: %s", stmp.c_str());
-      MB_THROW(qlib::FileFormatException, msg);
-      return;
-    }
-    ResidIndex residx(nresi);
-
-    //  residue name
-    stmp = m_line.substr(19, 4);
-    stmp = stmp.trim(" ");
-    // stmp = stmp.toLowerCase();
-    LString resn(stmp.c_str());
-
-    // atom name
-    stmp = m_line.substr(24, 4);
-    stmp = stmp.trim(" ");
-    // stmp = stmp.toLowerCase();
-    LString name(stmp.c_str());
+    MolAtomPtr pAtom = readAtom();
     
-    // charge
-    stmp = m_line.substr(34, 10);
-    double charge;
-    if (!stmp.toDouble(&charge)) {
-      LString msg = LString::format("cannot convert charge %s", stmp.c_str());
-      MB_THROW(qlib::FileFormatException, msg);
-      return;
-    }
-
-    // mass
-    stmp = m_line.substr(50, 8);
-    double mass;
-    if (!stmp.toDouble(&mass)) {
-      LString msg = LString::format("cannot convert mass <%s>", stmp.c_str());
-      MB_THROW(qlib::FileFormatException, msg);
-      return;
-    }
-
-    ElemID eleid = convMassElem(mass);
-
-    //LOG_DPRINTLN("ATOM %s %s %d %s",
-    //(*pAtoms)[i].name.c_str(),
-    //(*pAtoms)[i].resn.c_str(),
-    //(*pAtoms)[i].resid,
-    //(*pAtoms)[i].chain.c_str());
-
-    MolAtomPtr pAtom(MB_NEW MolAtom());
-
-    pAtom->setName(name);
-    pAtom->setElement(eleid);
-    pAtom->setChainName(chain);
-    pAtom->setResIndex(residx);
-    pAtom->setResName(resn);
-    
-    int aid = pMol->appendAtom(pAtom);
+    int aid = pTraj->appendAtom(pAtom);
     if (aid<0) {
       LString stmp = m_line;
       stmp = stmp.chomp();
@@ -262,6 +270,7 @@ void PsfReader::readAll(qlib::InStream &ins)
       LOG_DPRINTLN("PsfReader> read ATOM line failed: %s", stmp.c_str());
     }
   }
+
   readLine();
 
   //  if (!pTraj.isnull()) {
@@ -274,6 +283,68 @@ void PsfReader::readAll(qlib::InStream &ins)
 
 void PsfReader::readSel(qlib::InStream &ins)
 {
+  LOG_DPRINTLN("PSF> Read selected (%s) coord", m_pReadSel->toString().c_str());
+
+  int i, j, ires;
+  qlib::LineStream ls(ins);
+  m_pls = &ls;
+
+  TrajectoryPtr pTraj(getTarget<Trajectory>());
+
+  readRemarkHeader();
+
+  readNATOM();
+  
+  ///////////////////
+
+  MolCoordPtr pAllMol = MolCoordPtr(MB_NEW MolCoord());
+  pAllMol->setSceneID(pTraj->getSceneID());
+
+  // Read atoms
+  for (i=0; i<m_natom; ++i) {
+    MolAtomPtr pAtom = readAtom();
+    
+    int aid = pAllMol->appendAtom(pAtom);
+    if (aid<0) {
+      LString stmp = m_line;
+      stmp = stmp.chomp();
+      // stmp = stmp.toUpperCase();
+      // m_nErrCount ++;
+      // if (m_nErrCount<m_nErrMax)
+      LOG_DPRINTLN("PsfReader> read ATOM line failed: %s", stmp.c_str());
+    }
+  }
+
+  readLine();
+
+  //////////
+
+  pAllMol->applyTopology(false);
+  
+  std::deque<int> aidmap;
+  MolCoord::AtomIter aiter = pAllMol->beginAtom();
+  MolCoord::AtomIter eiter = pAllMol->endAtom();
+
+  i=0;
+  j=0;
+  for (; aiter!=eiter; ++aiter, ++i) {
+    MolAtomPtr pAtom = aiter->second;
+    int aid = aiter->first;
+    MB_ASSERT(aid==i);
+    
+    if (m_pReadSel->isSelected(pAtom)) {
+      // add the copy of the original atom
+      MolAtomPtr pNewAtom(static_cast<MolAtom *>(pAtom->clone()));
+      int aid2 = pTraj->appendAtom(pNewAtom);
+      MB_ASSERT(aid2==j);
+      aidmap.push_back(aid);
+      ++j;
+    }
+  }
+  
+  // m_pReadSel = pSel;
+
+  pTraj->setupSel(pAllMol->getAtomSize(), aidmap);
 }
 
 void PsfReader::readLine()

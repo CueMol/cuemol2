@@ -23,6 +23,7 @@ namespace mdtools {
   using qlib::LString;
   using molstr::MolCoordPtr;
   using molstr::SelectionPtr;
+  using molstr::MolAtomPtr;
 
   ///
   ///   CHARMM/NAMD topology file reader class
@@ -98,6 +99,8 @@ namespace mdtools {
 
     void readRemarkHeader();
     void readNATOM();
+
+    molstr::MolAtomPtr readAtom();
 
     ///////////////////////////////////////////
 

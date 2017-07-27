@@ -114,6 +114,9 @@ namespace mdtools {
 
     void setup();
 
+    /// Setup with readsel
+    void setupSel(int nAll, const std::deque<int> &aidmap);
+
     quint32 getAllAtomSize() const {
       return m_nAllAtomSize;
     }
