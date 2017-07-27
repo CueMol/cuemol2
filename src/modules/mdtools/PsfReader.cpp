@@ -16,7 +16,6 @@
 #include <modules/molstr/ResidIterator.hpp>
 #include <modules/molstr/TopparManager.hpp>
 #include <modules/molstr/ElemSym.hpp>
-#include <modules/molstr/Selection.hpp>
 
 using namespace mdtools;
 using namespace molstr;
@@ -172,7 +171,7 @@ bool PsfReader::read(qlib::InStream &ins)
     }
 
     // chain name
-    stmp = m_line.substr(9, 3);
+    stmp = m_line.substr(9, 4);
     stmp = stmp.trim(" ");
     // stmp = stmp.toLowerCase();
     LString chain(stmp.c_str());
@@ -245,10 +244,12 @@ bool PsfReader::read(qlib::InStream &ins)
   }
   readLine();
 
-  if (!pTraj.isnull()) {
-    pTraj->createMol(m_pReadSel);
-  }
+  //  if (!pTraj.isnull()) {
+  //pTraj->createMol(m_pReadSel);
+  //}
 
+  pTraj->applyTopology(false);
+  pTraj->setup();
 
   return true;
 }

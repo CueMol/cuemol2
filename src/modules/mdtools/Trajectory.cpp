@@ -30,9 +30,10 @@ Trajectory::Trajectory()
 
 Trajectory::~Trajectory()
 {
-  m_pAllMol = MolCoordPtr();
+  //m_pAllMol = MolCoordPtr();
 }
 
+/*
 /// Append a new atom.
 int Trajectory::appendAtom(MolAtomPtr pAtom)
 {
@@ -48,6 +49,7 @@ int Trajectory::appendAtom(MolAtomPtr pAtom)
   }
   return m_pAllMol->appendAtom(pAtom);
 }
+*/
 
 /// Remove an atom by atom ID
 bool Trajectory::removeAtom(int atomid)
@@ -56,6 +58,7 @@ bool Trajectory::removeAtom(int atomid)
   return false;
 }
 
+/*
 void Trajectory::createMol(SelectionPtr pSel)
 {
   if (super_t::getAtomSize()!=0) {
@@ -93,6 +96,21 @@ void Trajectory::createMol(SelectionPtr pSel)
 
   m_nAllAtomSize = m_pAllMol->getAtomSize();
   m_pAllMol = MolCoordPtr();
+}
+*/
+
+void Trajectory::setup()
+{
+  m_nAllAtomSize = getAtomSize();
+  m_selIndArray.resize( m_nAllAtomSize );
+
+  int i = 0;
+  AtomIter aiter = super_t::beginAtom();
+  AtomIter eiter = super_t::endAtom();
+  for (; aiter!=eiter; ++aiter, ++i) {
+    int aid = aiter->first;
+    m_selIndArray[i] = aid;
+  }
 }
 
 

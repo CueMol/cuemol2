@@ -241,9 +241,9 @@ int MolCoord::appendAtom(MolAtomPtr pAtom)
   // because MolResidue makes map from name to AID, which requires "AID".
   if (!pRes->appendAtom(pAtom)) {
     // This is often the case with malformed PDB files, so is not an exception.
-    MB_DPRINTLN("MolCoord> ERROR: appending duplicated atom (%s %s%s %s)",
-                cname.c_str(), rname.c_str(), nresid.toString().c_str(),
-                aname.c_str());
+    LOG_DPRINTLN("MolCoord> ERROR: appending duplicated atom (%s %s%s %s)",
+		 cname.c_str(), rname.c_str(), nresid.toString().c_str(),
+		 aname.c_str());
     // Remove the mis-appended atom from the pool.
     m_atomPool.remove(atomid);
     return -1;
