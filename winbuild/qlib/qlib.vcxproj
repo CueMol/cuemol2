@@ -74,7 +74,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" />
-
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
     <ClCompile>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;QLIB_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -94,6 +93,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\src\qlib\LByteArray.cpp" />
     <ClCompile Include="..\..\src\qlib\qlib.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
@@ -156,31 +156,38 @@
     <ClCompile Include="..\..\src\qlib\XzStream.cpp" />
     <ClCompile Include="..\..\src\pcre\get.c">
       <PreprocessorDefinitions>POSIX_MALLOC_THRESHOLD=10;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PrecompiledHeader></PrecompiledHeader>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\..\src\pcre\maketables.c">
       <PreprocessorDefinitions>POSIX_MALLOC_THRESHOLD=10;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PrecompiledHeader></PrecompiledHeader>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\..\src\pcre\pcre.c">
       <PreprocessorDefinitions>POSIX_MALLOC_THRESHOLD=10;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PrecompiledHeader></PrecompiledHeader>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\..\src\pcre\study.c">
       <PreprocessorDefinitions>POSIX_MALLOC_THRESHOLD=10;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PrecompiledHeader></PrecompiledHeader>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\..\src\expat\xmlparse.c">
       <PreprocessorDefinitions>COMPILED_FROM_DSP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PrecompiledHeader></PrecompiledHeader>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\..\src\expat\xmlrole.c">
       <PreprocessorDefinitions>COMPILED_FROM_DSP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PrecompiledHeader></PrecompiledHeader>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\..\src\expat\xmltok.c">
       <PreprocessorDefinitions>COMPILED_FROM_DSP;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PrecompiledHeader></PrecompiledHeader>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
