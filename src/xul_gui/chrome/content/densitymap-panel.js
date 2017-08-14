@@ -50,6 +50,7 @@ denmap.onLoad = function ()
 denmap.setupWidget = function ()
 {
   this.mRedraw = document.getElementById("denmap-panel-redraw");
+  this.mShowCell = document.getElementById("denmap-panel-showcell");
   this.mColor = document.getElementById("denmap-panel-color");
   this.mTransp = document.getElementById("denmap-panel-transp");
   this.mLevel = document.getElementById("denmap-panel-level");
@@ -108,10 +109,11 @@ denmap.setDisabled = function (aValue)
     this.setupWidget();
 
   this.mRedraw.disabled = 
-    this.mColor.disabled = 
-      this.mTransp.disabled = 
-	this.mLevel.disabled = 
-	  this.mExtent.disabled = aValue;
+    this.mShowCell.disabled = 
+      this.mColor.disabled = 
+	this.mTransp.disabled = 
+	  this.mLevel.disabled = 
+	    this.mExtent.disabled = aValue;
 }
   
 // data (renderer) --> widget
@@ -226,6 +228,37 @@ denmap.onRedraw = function (aEvent)
   }
   catch (e) {
     dd("DenmapPanel.onRedraw> FATAL ERROR: "+e);
+    debug.exception(e);
+    scene.rollbackUndoTxn();
+    return;
+  }
+
+  scene.commitUndoTxn();
+  // EDIT TXN END //
+};
+
+// Show unit-cell renderer
+denmap.onShowCell = function (aEvent)
+{
+  var vcenter = document.getElementById("main_view").viewCenter;
+  var scene = this.mTgtRend.getScene();
+  
+  let obj = this.mTgtRend.getClientObj();
+  if (!obj) return;
+
+  let rend = obj.getRendererByType("*unitcell");
+  if (rend) return; // unitcell renderer already exists
+
+  // EDIT TXN START //
+  scene.startUndoTxn("Show unitcell");
+
+  try {
+    // create new renderer
+    rend = obj.createRenderer("*unitcell");
+    rend.name = "unitcell";
+  }
+  catch (e) {
+    dd("*** Cannot create unitcell renderer Reason : "+e);
     debug.exception(e);
     scene.rollbackUndoTxn();
     return;
