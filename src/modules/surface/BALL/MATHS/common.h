@@ -166,7 +166,7 @@ namespace BALL
 			#ifdef BALL_COMPILER_MSVC
 				return (_isnan(t) != 0);
 			#else
-				return (isnan(t) != 0);
+				return (std::isnan(t) != 0);
 			#endif
 		}
 
