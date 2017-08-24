@@ -67,7 +67,7 @@ namespace qsys {
     // ObjectPtr loadObject(const LString &url, const LString &ftype);
 
     //int loadObjectAsync(const LString &ftype);
-    int loadObjectAsync(qlib::LScrSp<ObjReader> pReader);
+    int loadObjectAsync(const ObjReaderPtr &pReader);
     void supplyDataAsync(int id, qlib::LScrSp<qlib::LByteArray> pbuf, int nlen);
     ObjectPtr waitLoadAsync(int id);
 
@@ -109,11 +109,11 @@ namespace qsys {
 
     InOutHandler *createHandlerPtr(const LString &nickname, int nCatID) const;
 
+    InOutHandlerPtr createHandler(const LString &nickname, int nCatID) const;
+
     ObjReader *createReaderPtr(const LString &nickname) const;
 
-    InOutHandlerPtr createHandler(const LString &nickname, int nCatID) const {
-      return InOutHandlerPtr(createHandlerPtr(nickname, nCatID));
-    }
+    ObjReaderPtr createReader(const LString &nickname) const;
 
     /// Returns comma separated list of compatible ObjWriter names for the object
     LString findCompatibleWriterNamesForObj(qlib::uid_t objid);

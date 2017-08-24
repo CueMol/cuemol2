@@ -53,7 +53,7 @@ StreamManager::~StreamManager()
 }
 
 //int StreamManager::loadObjectAsync(const LString &ftype)
-int StreamManager::loadObjectAsync(qlib::LScrSp<ObjReader> pReader)
+int StreamManager::loadObjectAsync(const ObjReaderPtr &pReader)
 {
 #ifdef HAVE_BOOST_THREAD
   MB_DPRINTLN("StreamManager.loadAsyncObject(%s) called", pReader->getName());
@@ -173,11 +173,20 @@ InOutHandler *StreamManager::createHandlerPtr(const LString &nickname, int nCatI
   return NULL;
 }
 
+InOutHandlerPtr StreamManager::createHandler(const LString &nickname, int nCatID) const
+{
+  return InOutHandlerPtr(createHandlerPtr(nickname, nCatID));
+}
+
 ObjReader *StreamManager::createReaderPtr(const LString &nickname) const
 {
   return dynamic_cast<ObjReader *>(createHandlerPtr(nickname, InOutHandler::IOH_CAT_OBJREADER));
 }
 
+ObjReaderPtr StreamManager::createReader(const LString &nickname) const
+{
+  return ObjReaderPtr(createReaderPtr(nickname));
+}
 
 LString StreamManager::getReaderInfoJSON() const
 {

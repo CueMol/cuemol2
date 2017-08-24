@@ -65,6 +65,11 @@ void TrajBlock::load(int ifrm)
     return;
   }
   
+  if (m_pReader->getPath().isEmpty()) {
+    // TO DO: check readability of source path of reader
+    m_pReader->setPath(getSource());
+  }
+
   m_pReader->loadFrm(ifrm, this);
   
   m_flags[ifrm] = true;

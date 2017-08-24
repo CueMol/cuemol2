@@ -908,8 +908,8 @@ void Object::readFromStream(qlib::InStream &ins)
   StreamManager *pSM = StreamManager::getInstance();
   
   // Create the requested reader obj
-  ObjReader *pRdr = pSM->createReaderPtr(ftype);
-  if (pRdr==NULL) {
+  ObjReaderPtr pRdr = pSM->createReader(ftype);
+  if (pRdr.isnull()) {
     LString msg = LString::format("ObjReader for type \"%s\" is not found", ftype.c_str());
     LOG_DPRINTLN("SceneXMLRead> %s", msg.c_str());
     MB_THROW(qlib::IOException, msg);
@@ -922,19 +922,11 @@ void Object::readFromStream(qlib::InStream &ins)
   }
 
   bool res;
-  try {
-    ObjectPtr pthis(this);
-    pRdr->attach(pthis);
-    pRdr->read2(ins);
-    pRdr->detach();
-  }
-  catch (...) {
-    delete pRdr;
-    throw;
-  }
 
-  // END
-  delete pRdr;
+  ObjectPtr pthis(this);
+  pRdr->attach(pthis);
+  pRdr->read2(ins);
+  pRdr->detach();
 }
 
 void Object::updateSrcPath(const LString &srcpath)

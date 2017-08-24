@@ -73,13 +73,6 @@ namespace mdtools {
     }
 
   private:
-    qlib::uid_t m_nTrajUID;
-    
-  public:
-    qlib::uid_t getTargTrajUID() const { return m_nTrajUID; }
-    void setTargTrajUID(qlib::uid_t uid) { m_nTrajUID = uid; }
-    
-  private:
     int m_natom;
     int m_nfile;
     bool m_fcell;

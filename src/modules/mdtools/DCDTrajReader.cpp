@@ -23,7 +23,6 @@ DCDTrajReader::DCDTrajReader()
 {
   // : m_pSel(NULL), m_pSelAtoms(NULL)
   m_nSkip = 1;
-  m_nTrajUID = qlib::invalid_uid;
   m_nHeadPos = 0;
   m_pIn = NULL;
 }
@@ -65,21 +64,31 @@ qsys::ObjectPtr DCDTrajReader::createDefaultObj() const
 /// read from stream
 bool DCDTrajReader::read(qlib::InStream &ins)
 {
+  if (getTargTrajUID()==qlib::invalid_uid) {
+    // Set target trajectory (not trajblock) UID to prop
+    TrajectoryPtr pTraj = getTargTraj();
+    setTargTrajUID(pTraj->getUID());
+  }
+
   readHeader(ins);
   readBody(ins);
 
   return true;
-
 }
 
 TrajectoryPtr DCDTrajReader::getTargTraj() const
 {
   TrajectoryPtr pTraj;
-  if (m_nTrajUID!=qlib::invalid_uid) {
-    pTraj = qsys::SceneManager::getObjectS(m_nTrajUID);
+  qlib::uid_t ttuid = getTargTrajUID();
+  if (ttuid!=qlib::invalid_uid) {
+    pTraj = qsys::SceneManager::getObjectS(ttuid);
   }
   else {
     TrajBlockPtr pTrajBlk( getTarget<TrajBlock>() );
+    if (pTrajBlk.isnull()) {
+      MB_THROW(qlib::NullPointerException, "DCDTrajReader not attached to TrajBlk");
+      return pTraj;
+    }
     qlib::uid_t nTrajUID = pTrajBlk->getTrajUID();
     pTraj = qsys::SceneManager::getObjectS(nTrajUID);
   }

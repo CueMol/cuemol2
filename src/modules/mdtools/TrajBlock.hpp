@@ -21,7 +21,7 @@ namespace mdtools {
     typedef qsys::ObjReader super_t;
 
   public:
-    TrajBlockReader() : super_t(), m_bLazyLoad(false) {}
+    TrajBlockReader() : super_t(), m_bLazyLoad(false), m_nTrajUID(qlib::invalid_uid) {}
 
     virtual void loadFrm(int ifrm, TrajBlock *pTB) =0;
 
@@ -32,6 +32,13 @@ namespace mdtools {
     void setLazyLoad(bool b) { m_bLazyLoad = b; }
     bool isLazyLoad() const { return m_bLazyLoad; }
 
+  private:
+    qlib::uid_t m_nTrajUID;
+    
+  public:
+    qlib::uid_t getTargTrajUID() const { return m_nTrajUID; }
+    void setTargTrajUID(qlib::uid_t uid) { m_nTrajUID = uid; }
+    
   };
 
   MC_DECL_SCRSP(TrajBlockReader);
@@ -104,6 +111,8 @@ namespace mdtools {
     }
 
   private:
+    /// Parent trajectory object UID
+    /// This prop is 0 (invalid) if this block is not belong to any trajectory
     qlib::uid_t m_nTrajUID;
     
   public:
