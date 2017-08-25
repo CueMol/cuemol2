@@ -123,7 +123,8 @@ if (!("AnimUIToolRibbon" in cuemolui)) {
       let value = this.mSlider.value * slider_base;
       dd("Slider chg value="+value);
       let tv = cuemol.createObj("TimeValue");
-      tv.intval = value;
+      // tv.intval = value;
+      tv.millisec = value;
       dd("Slider chg TV="+tv);
       am.goTime(tv, this.mParent.getTgtView());
       this.updateUI();

@@ -389,6 +389,19 @@ if (!("anim" in cuemolui.panels)) {
 	return; // canceled
       }
 
+      // add "__current" camera if not exist
+      if (!scene.hasCamera("__current")) {
+	// create "__current" camera
+	let view = this._mainWnd.currentViewW;
+	scene.saveViewToCam(view.uid, "__current");
+      }
+
+      if (animMgr.startcam=="") {
+	// set default start camera
+	animMgr.startcam = "__current";
+	this.mStartCam.value = "__current";
+      }
+
       // EDIT TXN START //
       scene.startUndoTxn("Add animation");
       
@@ -423,14 +436,20 @@ if (!("anim" in cuemolui.panels)) {
       if (refobj) {
 	obj.timeRefName = refobj.name;
       }
-      obj.start.intval = 0;
-      let xx = obj.start; //animMgr.length;
-      xx.intval += 1000;
-      obj.end = xx;
 
-      // let time = cuemol.createObj("TimeValue");
-      // time.strval = "5";
+      //obj.start.intval = 0;
+      //let xx = obj.start;
+      //xx.intval += 1000;
+      //obj.end = xx;
 
+      let timetmp = cuemol.createObj("TimeValue");
+
+      timetmp.millisec = 0.0;
+      obj.start = timetmp;
+      
+      timetmp.millisec = 1000.0;
+      obj.end = timetmp;
+      
       if (type=="SimpleSpin") {
 	obj.angle = 360.0;
       }
