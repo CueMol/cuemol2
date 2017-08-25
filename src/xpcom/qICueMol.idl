@@ -36,6 +36,9 @@ interface qICueMol : nsISupports
   /// Create new object by class name
   qIObjWrapper createObj(in string clsname);
 
+  /// Create new object from string and class name
+  qIObjWrapper createFromString(in string clsname, in string strval);
+
   /// Create native MolView widget
   qINativeWidget createNativeWidget();
 

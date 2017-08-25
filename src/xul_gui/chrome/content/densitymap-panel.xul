@@ -28,6 +28,8 @@
 	  <hbox align="center" flex="1">
 	    <button class="panel-button" id="denmap-panel-redraw" label="Redraw"
 	      oncommand="cuemolui.panels.denmap.onRedraw(event)" flex="0"/>
+	    <button class="panel-button" id="denmap-panel-showcell" label="Cell"
+	      oncommand="cuemolui.panels.denmap.onShowCell(event)" flex="0"/>
 	    <mycolpicker id="denmap-panel-color" flex="1"
 	      onchange="cuemolui.panels.denmap.validateWidget(event)"/>
 	  </hbox>

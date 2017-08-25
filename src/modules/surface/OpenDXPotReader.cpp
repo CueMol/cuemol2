@@ -55,7 +55,7 @@ const char *OpenDXPotReader::getName() const
 void OpenDXPotReader::readRecord(qlib::LineStream &ins)
 {
   if (!ins.ready()) {
-    MB_THROW(qlib::FileFormatException, "Invalid map format");
+    MB_THROW(qlib::FileFormatException, "Invalid map format (stream reached EOF)");
   }
   else {
     m_recbuf = ins.readLine();
@@ -240,11 +240,13 @@ bool OpenDXPotReader::read(qlib::InStream &arg)
     }
   }
   
+  /*
   readRecord(ins);
   if (!m_recbuf.startsWith("attribute")) {
     LOG_DPRINTLN("invalid: %s", m_recbuf.c_str());
   }
-
+   */
+  
   qlib::Vector4D orig(m_xmin, m_ymin, m_zmin);
   LOG_DPRINTLN("OpenDXPotReader> Map origin: (%f, %f, %f)", orig.x(), orig.y(), orig.z());
   const double scale = 1.0/m_hx;

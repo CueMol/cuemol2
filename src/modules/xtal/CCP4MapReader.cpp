@@ -54,14 +54,14 @@ const char *CCP4MapReader::getName() const
 /// get file-type description
 const char *CCP4MapReader::getTypeDescr() const
 {
-  return "CCP4 Density Map(*.map;*.ccp4;*.ccp4.gz)";
+  return "CCP4 Density Map(*.map;*.ccp4;*.mrc;*.ccp4.gz)";
 }
 
 /// get file extension
 const char *CCP4MapReader::getFileExt() const
 {
   // return "*.map; *.ccp4";
-  return "*.map; *.ccp4; *.ccp4.gz";
+  return "*.map; *.ccp4; *.mrc; *.ccp4.gz";
 }
 
 ///////////////////////////////////////////

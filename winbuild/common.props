@@ -10,7 +10,6 @@
   </PropertyGroup>
 
   <PropertyGroup Label="UserMacros" Condition="'$(Platform)'=='x64'">
-    <SourceDir>$(SolutionDir)..\src\</SourceDir>
     <BuildSetDir>$(PROJ64_DIR)</BuildSetDir>
     <XULDeployDir>$(SolutionDir)xul_$(Configuration)64\</XULDeployDir>
     <LibraryPath>$(PROJ64_DIR)\lib;$(PROJ64_DIR)\CGAL-4.6.1\lib;$(PROJ64_DIR)\boost\boost_1_57_0\lib64-msvc-12.0;$(LibraryPath)</LibraryPath>
@@ -18,11 +17,12 @@
   </PropertyGroup>
 
   <PropertyGroup Label="UserMacros">
+    <SourceDir>$(SolutionDir)..\src\</SourceDir>
     <BoostIncludePath>$(BuildSetDir)\boost\boost_1_57_0</BoostIncludePath>
     <CGALIncludePath>$(BuildSetDir)\CGAL-4.6.1\include</CGALIncludePath>
     <CGALLibraryPath>$(BuildSetDir)\CGAL-4.6.1\lib</CGALLibraryPath>
 
-    <HavePython>Yes</HavePython>
+    <HavePython>No</HavePython>
     <PythonDir>$(BuildSetDir)\Python-3.6.1</PythonDir>
 
     <IncludePath>$(BuildSetDir)\include;$(CGALIncludePath);$(BoostIncludePath);$(IncludePath)</IncludePath>

@@ -1,8 +1,8 @@
-/* A Bison parser, made by GNU Bison 3.0.2.  */
+/* A Bison parser, made by GNU Bison 3.0.4.  */
 
 /* Bison implementation for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2013 Free Software Foundation, Inc.
+   Copyright (C) 1984, 1989-1990, 2000-2015 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -44,7 +44,7 @@
 #define YYBISON 1
 
 /* Bison version.  */
-#define YYBISON_VERSION "3.0.2"
+#define YYBISON_VERSION "3.0.4"
 
 /* Skeleton name.  */
 #define YYSKELETON_NAME "yacc.c"
@@ -209,7 +209,7 @@ extern int yydebug;
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-typedef union YYSTYPE YYSTYPE;
+
 union YYSTYPE
 {
 #line 23 "../../../src/modules/molstr/parser_sel.yxx" /* yacc.c:355  */
@@ -229,6 +229,8 @@ union YYSTYPE
 
 #line 231 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:355  */
 };
+
+typedef union YYSTYPE YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1
 #endif
@@ -242,7 +244,7 @@ int yyparse (void);
 
 /* Copy the second part of user declarations.  */
 
-#line 246 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:358  */
+#line 248 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:358  */
 
 #ifdef short
 # undef short
@@ -1401,7 +1403,7 @@ yyreduce:
     {
 		  SelCompiler::getInstance()->evalNode((yyvsp[0].seltok));
 		}
-#line 1405 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1407 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 3:
@@ -1410,7 +1412,7 @@ yyreduce:
 		  //MB_DPRINT("sel_and\n");
 		  (yyval.seltok) = new SelBinNode((yyvsp[-2].seltok),(yyvsp[0].seltok),SelBinNode::OP_AND);
 		}
-#line 1414 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1416 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 4:
@@ -1419,7 +1421,7 @@ yyreduce:
 		  //MB_DPRINT("sel_or\n");
 		  (yyval.seltok) = new SelBinNode((yyvsp[-2].seltok),(yyvsp[0].seltok),SelBinNode::OP_OR);
 		}
-#line 1423 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1425 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 5:
@@ -1428,7 +1430,7 @@ yyreduce:
 		  //MB_DPRINT("sel_not\n");
 		  (yyval.seltok) = new SelOpNode((yyvsp[0].seltok),SelOpNode::OP_NOT);
 		}
-#line 1432 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1434 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 6:
@@ -1440,7 +1442,7 @@ yyreduce:
 		  pp->setValue((yyvsp[0].floatnum));
 		  (yyval.seltok) = pp;
 		}
-#line 1444 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1446 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 7:
@@ -1452,7 +1454,7 @@ yyreduce:
 		  (yyval.seltok) = pp;
 		  delete [] (yyvsp[-1].str);
 		}
-#line 1456 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1458 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 8:
@@ -1463,7 +1465,7 @@ yyreduce:
 		  pp->setValue((yyvsp[0].floatnum));
 		  (yyval.seltok) = pp;
 		}
-#line 1467 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1469 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 9:
@@ -1474,7 +1476,7 @@ yyreduce:
 		  pp->setValue((yyvsp[0].floatnum));
 		  (yyval.seltok) = pp;
 		}
-#line 1478 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1480 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 10:
@@ -1485,7 +1487,7 @@ yyreduce:
 		  pp->setValue((yyvsp[0].floatnum));
 		  (yyval.seltok) = pp;
 		}
-#line 1489 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1491 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 11:
@@ -1493,7 +1495,7 @@ yyreduce:
     {
 		  (yyval.seltok) = new SelOpNode((yyvsp[0].seltok),SelOpNode::OP_BYRES);
 		}
-#line 1497 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1499 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 12:
@@ -1501,7 +1503,7 @@ yyreduce:
     {
 		  (yyval.seltok) = new SelOpNode((yyvsp[0].seltok),SelOpNode::OP_BYMAINCH);
 		}
-#line 1505 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1507 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 13:
@@ -1509,13 +1511,13 @@ yyreduce:
     {
 		  (yyval.seltok) = new SelOpNode((yyvsp[0].seltok),SelOpNode::OP_BYSIDECH);
 		}
-#line 1513 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1515 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 14:
 #line 187 "../../../src/modules/molstr/parser_sel.yxx" /* yacc.c:1646  */
     { (yyval.seltok) = (yyvsp[-1].seltok); }
-#line 1519 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1521 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 19:
@@ -1529,19 +1531,19 @@ yyreduce:
 
 		  delete [] (yyvsp[0].str);
 		}
-#line 1533 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1535 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 20:
 #line 208 "../../../src/modules/molstr/parser_sel.yxx" /* yacc.c:1646  */
     { (yyval.seltok) = new SelAllNode(true); }
-#line 1539 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1541 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 21:
 #line 210 "../../../src/modules/molstr/parser_sel.yxx" /* yacc.c:1646  */
     { (yyval.seltok) = new SelAllNode(false); }
-#line 1545 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1547 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 22:
@@ -1550,7 +1552,7 @@ yyreduce:
 		  (yyval.seltok) = new SelTermNode((SelNamesNode *)(yyvsp[0].seltok),
 		                       SelTermNode::ELEMENT);
 		}
-#line 1554 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1556 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 23:
@@ -1559,7 +1561,7 @@ yyreduce:
 		  (yyval.seltok) = new SelTermNode((SelNamesNode *)(yyvsp[0].seltok),
 		                       SelTermNode::ATOMNAME);
 		}
-#line 1563 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1565 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 24:
@@ -1568,7 +1570,7 @@ yyreduce:
 		  (yyval.seltok) = new SelTermNode((SelNamesNode *)(yyvsp[0].seltok),
 		                       SelTermNode::ALTCONF_NAME);
 		}
-#line 1572 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1574 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 25:
@@ -1577,7 +1579,7 @@ yyreduce:
 		  (yyval.seltok) = new SelTermNode((SelNamesNode *)(yyvsp[0].seltok),
 		                       SelTermNode::RESIDNAME);
 		}
-#line 1581 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1583 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 26:
@@ -1586,7 +1588,7 @@ yyreduce:
 		  (yyval.seltok) = new SelTermNode((SelResidNode *)(yyvsp[0].seltok),
 		                       SelTermNode::RESIDRANGE);
 		}
-#line 1590 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1592 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 27:
@@ -1595,7 +1597,7 @@ yyreduce:
 		  (yyval.seltok) = new SelTermNode((SelNamesNode *)(yyvsp[0].seltok),
 		                       SelTermNode::CHAINNAME);
 		}
-#line 1599 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1601 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 28:
@@ -1604,7 +1606,7 @@ yyreduce:
 		  (yyval.seltok) = new SelTermNode((SelRangesNode *)(yyvsp[0].seltok),
 		                       SelTermNode::AIDRANGE);
 		}
-#line 1608 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1610 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 29:
@@ -1613,7 +1615,7 @@ yyreduce:
 		  SelCompiler::setSelState();
 		  (yyval.seltok) = new SelCompNode(SelCompNode::COMP_BFAC, (yyvsp[-1].intnum), (yyvsp[0].floatnum));
 		}
-#line 1617 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1619 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 30:
@@ -1622,7 +1624,7 @@ yyreduce:
 		  SelCompiler::setSelState();
 		  (yyval.seltok) = new SelCompNode(SelCompNode::COMP_OCC, (yyvsp[-1].intnum), (yyvsp[0].floatnum));
 		}
-#line 1626 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1628 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 31:
@@ -1631,7 +1633,7 @@ yyreduce:
 		  (yyval.seltok) = new SelPropNode(SelPropNode::RPROP, (yyvsp[-2].str), (yyvsp[0].str));
 		  delete [] (yyvsp[-2].str); delete [] (yyvsp[0].str);
 		}
-#line 1635 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1637 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 34:
@@ -1642,7 +1644,7 @@ yyreduce:
 		  buf += ":";
 		  (yyval.str) = LChar::dup(buf);
 		}
-#line 1646 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1648 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 35:
@@ -1655,7 +1657,7 @@ yyreduce:
 		  delete [] (yyvsp[0].str);
 		  (yyval.str) = LChar::dup(buf);
 		}
-#line 1659 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1661 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 36:
@@ -1664,7 +1666,7 @@ yyreduce:
 		  // empty name for chain or altconf
 		  (yyval.str) = LChar::dup("");
 		}
-#line 1668 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1670 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 37:
@@ -1674,7 +1676,7 @@ yyreduce:
 		  LString sbuf = LString::format("%d", (yyvsp[0].intnum));
 		  (yyval.str) = LChar::dup(sbuf);
 		}
-#line 1678 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1680 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 38:
@@ -1684,7 +1686,7 @@ yyreduce:
 		  pp->append((yyvsp[0].str)); delete [] (yyvsp[0].str);
 		  (yyval.seltok) = pp;
 		}
-#line 1688 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1690 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 39:
@@ -1694,7 +1696,7 @@ yyreduce:
 		  pp->append((yyvsp[0].str)); delete [] (yyvsp[0].str);
 		  (yyval.seltok) = pp;
 		}
-#line 1698 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1700 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 40:
@@ -1706,7 +1708,7 @@ yyreduce:
 		  delete [] (yyvsp[0].str);
 		  (yyval.seltok) = pp;
 		}
-#line 1710 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1712 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 41:
@@ -1717,7 +1719,7 @@ yyreduce:
 		  delete [] (yyvsp[0].str);
 		  (yyval.seltok) = pp;
 		}
-#line 1721 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1723 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 42:
@@ -1729,7 +1731,7 @@ yyreduce:
 		  delete [] (yyvsp[0].str);
 		  (yyval.seltok) = pp;
 		}
-#line 1733 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1735 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 43:
@@ -1740,7 +1742,7 @@ yyreduce:
 		  delete [] (yyvsp[0].str);
 		  (yyval.seltok) = pp;
 		}
-#line 1744 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1746 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 44:
@@ -1752,7 +1754,7 @@ yyreduce:
 		  delete [] (yyvsp[0].str);
 		  (yyval.seltok) = pp;
 		}
-#line 1756 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1758 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 45:
@@ -1763,7 +1765,7 @@ yyreduce:
 		  delete [] (yyvsp[0].str);
 		  (yyval.seltok) = pp;
 		}
-#line 1767 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1769 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 46:
@@ -1775,61 +1777,61 @@ yyreduce:
 		  //$$ = new SelBinNode(new SelBinNode($1, $3, SelBinNode::OP_AND),
 		  //   $5, SelBinNode::OP_AND);
 		}
-#line 1779 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1781 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 47:
 #line 372 "../../../src/modules/molstr/parser_sel.yxx" /* yacc.c:1646  */
     { (yyval.seltok) = NULL; }
-#line 1785 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1787 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 48:
 #line 373 "../../../src/modules/molstr/parser_sel.yxx" /* yacc.c:1646  */
     { (yyval.seltok) = (yyvsp[0].seltok); }
-#line 1791 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1793 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 49:
 #line 376 "../../../src/modules/molstr/parser_sel.yxx" /* yacc.c:1646  */
     { (yyval.seltok) = NULL; }
-#line 1797 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1799 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 50:
 #line 377 "../../../src/modules/molstr/parser_sel.yxx" /* yacc.c:1646  */
     { (yyval.seltok) = (yyvsp[0].seltok); }
-#line 1803 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1805 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 51:
 #line 380 "../../../src/modules/molstr/parser_sel.yxx" /* yacc.c:1646  */
     { (yyval.seltok) = NULL; }
-#line 1809 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1811 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 52:
 #line 381 "../../../src/modules/molstr/parser_sel.yxx" /* yacc.c:1646  */
     { (yyval.seltok) = (yyvsp[0].seltok); }
-#line 1815 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1817 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 53:
 #line 386 "../../../src/modules/molstr/parser_sel.yxx" /* yacc.c:1646  */
     {(yyval.intnum) = SelCompNode::COMP_EQ;}
-#line 1821 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1823 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 54:
 #line 387 "../../../src/modules/molstr/parser_sel.yxx" /* yacc.c:1646  */
     {(yyval.intnum) = SelCompNode::COMP_LT;}
-#line 1827 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1829 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 55:
 #line 388 "../../../src/modules/molstr/parser_sel.yxx" /* yacc.c:1646  */
     {(yyval.intnum) = SelCompNode::COMP_GT;}
-#line 1833 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1835 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 56:
@@ -1837,7 +1839,7 @@ yyreduce:
     {
 		  (yyval.floatnum)=(yyvsp[0].intnum);
 		}
-#line 1841 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1843 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 57:
@@ -1845,7 +1847,7 @@ yyreduce:
     {
 		  (yyval.floatnum)=(yyvsp[0].floatnum);
 		}
-#line 1849 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1851 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 58:
@@ -1854,7 +1856,7 @@ yyreduce:
 		  SelRangesNode *p1 = new SelRangesNode((yyvsp[0].intrng).start, (yyvsp[0].intrng).end);
 		  (yyval.seltok) = p1;
 		}
-#line 1858 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1860 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 59:
@@ -1864,7 +1866,7 @@ yyreduce:
 		  p1->append((yyvsp[0].intrng).start, (yyvsp[0].intrng).end);
 		  (yyval.seltok) = p1;
 		}
-#line 1868 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1870 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 60:
@@ -1873,7 +1875,7 @@ yyreduce:
 		  SelResidNode *p1 = new SelResidNode((yyvsp[0].intrng).start, (yyvsp[0].intrng).cstart, (yyvsp[0].intrng).end, (yyvsp[0].intrng).cend);
 		  (yyval.seltok) = p1;
 		}
-#line 1877 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1879 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 61:
@@ -1883,7 +1885,7 @@ yyreduce:
 		  p1->append((yyvsp[0].intrng).start, (yyvsp[0].intrng).cstart, (yyvsp[0].intrng).end, (yyvsp[0].intrng).cend);
 		  (yyval.seltok) = p1;
 		}
-#line 1887 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1889 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 62:
@@ -1892,7 +1894,7 @@ yyreduce:
 		  (yyval.intrng).start = (yyval.intrng).end = (yyvsp[0].intnum);
 		  (yyval.intrng).cstart = (yyval.intrng).cend = 0;
 		}
-#line 1896 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1898 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 63:
@@ -1901,7 +1903,7 @@ yyreduce:
 		  (yyval.intrng).start = (yyval.intrng).end = (yyvsp[0].insres).intnum;
 		  (yyval.intrng).cstart = (yyval.intrng).cend = (yyvsp[0].insres).inscode;
 		}
-#line 1905 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1907 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 64:
@@ -1911,7 +1913,7 @@ yyreduce:
 		  (yyval.intrng).end = (yyvsp[0].intnum);
 		  (yyval.intrng).cstart = (yyval.intrng).cend = 0;
 		}
-#line 1915 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1917 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 65:
@@ -1922,7 +1924,7 @@ yyreduce:
 		  (yyval.intrng).end = (yyvsp[0].intnum);
 		  (yyval.intrng).cend = 0;
 		}
-#line 1926 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1928 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 66:
@@ -1933,7 +1935,7 @@ yyreduce:
 		  (yyval.intrng).end = (yyvsp[0].insres).intnum;
 		  (yyval.intrng).cend = (yyvsp[0].insres).inscode;
 		}
-#line 1937 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1939 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
   case 67:
@@ -1944,11 +1946,11 @@ yyreduce:
 		  (yyval.intrng).end = (yyvsp[0].insres).intnum;
 		  (yyval.intrng).cend = (yyvsp[0].insres).inscode;
 		}
-#line 1948 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1950 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
     break;
 
 
-#line 1952 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
+#line 1954 "../../../src/modules/molstr/parser_sel.cxx" /* yacc.c:1646  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires

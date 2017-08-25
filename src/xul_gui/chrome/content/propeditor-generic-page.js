@@ -386,7 +386,8 @@ klass.onTreeSelect = function(aEvent)
   if (elem.type=="string"||
       elem.type=="real"||
       elem.type=="integer"||
-      elem.type=="object<MolSelection>") {
+      elem.type=="object<MolSelection>"||
+      elem.type=="object<Matrix>") {
     this.mValueDeck.selectedIndex = 0;
     this.mValueText.value = value;
     this.mValueText.disabled = (elem.hasdefault && elem.isdefault);
@@ -612,8 +613,8 @@ klass.validateChanges = function()
   if (!this.mValueText.value)
     return;
 
-  // Integer property
   if (this.mPropTypeText.value=="integer") {
+    // Integer property
     var value = parseInt(this.mValueText.value, 10);
     if (isNaN(value)) {
       this.mValueText.value = elem.value;
@@ -621,21 +622,23 @@ klass.validateChanges = function()
     else {
       elem.value = value;
       elem.changed = true;
-      this.mTreeView.treebox.invalidateRow(row);
     }
+    this.mTreeView.treebox.invalidateRow(row);
   }
   else if (this.mPropTypeText.value=="real") {
-    var value = parseFloat(this.mValueText.value);
+    // Real num property
+    let value = parseFloat(this.mValueText.value);
     if (isNaN(value)) {
       this.mValueText.value = elem.value;
     }
     else {
       elem.value = value;
       elem.changed = true;
-      this.mTreeView.treebox.invalidateRow(row);
     }
+    this.mTreeView.treebox.invalidateRow(row);
   }
   else if (this.mPropTypeText.value=="object<MolSelection>") {
+    // MolSelection property
     var ctxtid = this.mTgtSceID;
     var selobj = cuemol.makeSel(this.mValueText.value, ctxtid);
     if (selobj===null) {
@@ -646,6 +649,25 @@ klass.validateChanges = function()
       elem.value = this.mValueText.value;
       elem.changed = true;
       elem.new_object = selobj;
+    }
+    this.mTreeView.treebox.invalidateRow(row);
+  }
+  else if (this.mPropTypeText.value=="object<Matrix>") {
+    // Matrix4D property
+    let value = null;
+    try {
+      value = cuemol.createObj("Matrix", this.mValueText.value);
+    }
+    catch (e) {
+      dd("GenPropEditor> cannot convert value "+this.mValueText.value+" to matrix");
+    }
+    if (value==null) {
+      // conversion failed --> restore orig value
+      this.mValueText.value = elem.value;
+    }
+    else {
+      elem.value = value;
+      elem.changed = true;
     }
     this.mTreeView.treebox.invalidateRow(row);
   }
@@ -696,7 +718,8 @@ klass.applyChangesImpl = function ()
         var test_name = aPfx+elem.name;
 
         //dd("GenPropEdit.onDlgAc> prop name="+test_name+", type="+typeof elem.value);
-        if (typeof elem.value == 'object') {
+        if (typeof elem.value == 'object' &&
+            elem.type!="object<Matrix>") {
           dd("GenPropEditor> recursive chgRecur called for "+test_name);
           chgRecur.call(this, elem.value, test_name+".");
           continue;
@@ -754,16 +777,19 @@ klass.commitPropChange = function(aName, elem)
     if (elem.type=="object<MolSelection>") {
       if (elem.new_object) {
         //dd("MolSelection, newobj="+elem.new_object._wrapped.getClassName());
-        this.mTgtObj._wrapped.setProp(aName, elem.new_object._wrapped);
+        //this.mTgtObj._wrapped.setProp(aName, elem.new_object._wrapped);
+        cuemol.setProp(this.mTgtObj, aName, elem.new_object);
       }
       else {
         // evalueta selstr here to resolve reference by using scene context ID (mTgtSceID)
         let selobj = cuemol.makeSel(elem.value, this.mTgtSceID);
-        this.mTgtObj._wrapped.setProp(aName, selobj._wrapped);
+        //this.mTgtObj._wrapped.setProp(aName, selobj._wrapped);
+        cuemol.setProp(this.mTgtObj, aName, selobj);
       }
     }
-    else
-      this.mTgtObj._wrapped.setProp(aName, elem.value);
+    else {
+      cuemol.setProp(this.mTgtObj, aName, elem.value);
+    }
   }
   catch (err) {
     dd("Change prop ["+aName+"] to ["+elem.value+"] failed ("+err.description+")");

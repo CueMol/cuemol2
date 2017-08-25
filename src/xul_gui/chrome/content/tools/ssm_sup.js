@@ -173,6 +173,7 @@ dlg.onDialogAccept = function (event)
   dd("algo: "+algo);
 
   var recenter = document.getElementById("auto_recenter").checked;
+  var useprop = document.getElementById("xform_by_prop").checked;
 
   var refSel = this.mRefSelBox.selectedSel;
   var movSel = this.mMovSelBox.selectedSel;
@@ -200,9 +201,9 @@ dlg.onDialogAccept = function (event)
   scene.startUndoTxn("Mol superpose");
   try {
     if (algo=="SSM")
-      mgr.superposeSSM1(refMol, refSel, movMol, movSel);
+      mgr.superposeSSM1(refMol, refSel, movMol, movSel, useprop);
     else
-      mgr.superposeLSQ1(refMol, refSel, movMol, movSel);
+      mgr.superposeLSQ1(refMol, refSel, movMol, movSel, useprop);
   }
   catch (e) {
     debug.exception(e);

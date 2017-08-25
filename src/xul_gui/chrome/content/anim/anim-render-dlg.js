@@ -197,7 +197,8 @@
       this.disableButtons(true);
 
       let tv_st = cuemol.createObj("TimeValue");
-      tv_st.intval = 0;
+      //tv_st.intval = 0;
+      tv_st.millisec = 0.0;
       let tv_en = am.length;
       
       let nfrms = am.setupRender(tv_st, tv_en, this.mFPSVal);

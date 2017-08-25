@@ -28,8 +28,11 @@ LString LScrVector4D::toString() const
 LScrVector4D *LScrVector4D::fromStringS(const LString &src)
 {
   Vector4D vec;
-  if (!Vector4D::fromStringS(src, vec))
+  if (!Vector4D::fromStringS(src, vec)) {
+    LString msg = LString::format("cannot convert \"%s\" to vector", src.c_str());
+    MB_THROW(qlib::RuntimeException, msg);
     return NULL;
+  }
   return MB_NEW LScrVector4D(vec);
 }
 
@@ -37,10 +40,11 @@ void LScrVector4D::setStrValue(const LString &val)
 {
   Vector4D vec;
   if (!Vector4D::fromStringS(val, vec)) {
-    LString msg = LString::format("Vector.setStrValue(): invalid argument %s", val.c_str());
+    LString msg = LString::format("cannot convert \"%s\" to vector", val.c_str());
     MB_THROW(qlib::RuntimeException, msg);
+    return;
   }
-  
+
   for (int i=1; i<=4; ++i)
     ai(i) = vec.ai(i);
 }

@@ -116,12 +116,17 @@ exports.getService = function (name)
   return convPolymObj(obj);
 };
 
-exports.createObj = function (name)
+exports.createObj = function (name, strrep)
 {
   if (!xpc.isInitialized())
     return null;
 
-  var obj = xpc.createObj(name);
+  var obj;
+  if (strrep)
+    obj = xpc.createFromString(name, strrep);
+  else
+    obj = xpc.createObj(name);
+
   return convPolymObj(obj);
 };
 
@@ -223,6 +228,18 @@ exports.makeColor = function(str, uid)
 exports.resetProp = function (obj, propname)
 {
   obj._wrapped.resetProp(propname);
+};
+
+exports.setProp = function (obj, propname, value)
+{
+  if (typeof(value)==='object' &&
+      typeof(value._wrapped)==='object' &&
+      typeof(value._wrapped.getClassName)==='function') {
+    obj._wrapped.setProp(propname, value._wrapped);
+  }
+  else {
+    obj._wrapped.setProp(propname, value);
+  }
 };
 
 exports.hasProp = function (obj, propname)

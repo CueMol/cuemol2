@@ -141,10 +141,10 @@ namespace qlib {
 
   //////////
 
-  /**
-     Metaclass for normal classes (with smart pointer support for scriptable obj)
-     _Type must be LScriptable derivative
-  */
+  ///
+  ///  Metaclass for normal classes (with smart pointer support for scriptable obj)
+  ///  _Type must be LScriptable derivative class
+  ///
   template <class _Type>
   class LSmartPtrSupportClass : public LSpecificClass<_Type>
   {
@@ -154,19 +154,23 @@ namespace qlib {
     }
     
   public:
+
+    /// Create new object suitable for scripting interface.
+    /// (i.e., SmartPtr (LScrSp) wrapped object)
     virtual LDynamic *createScrObj() const
     {
       //return LSpecificClass<_Type>::createObj();
       return MB_NEW qlib::LScrSp<_Type>(static_cast<_Type *>( LSpecificClass<_Type>::createObj() ));
     }
 
-    /*
-    virtual LDynamic *createFromString(const LString &aStr) const
+    /// Create new object suitable for scripting interface from string representation.
+    /// (i.e., SmartPtr (LScrSp) wrapped object)
+    virtual LDynamic *createScrObjFromStr(const LString &aStr) const
     {
       _Type *pNewObj = static_cast<_Type *>( LSpecificClass<_Type>::createFromString(aStr) );
       return MB_NEW qlib::LScrSp<_Type>(pNewObj);
     }
-     */
+
   };
 
 }

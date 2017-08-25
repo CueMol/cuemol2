@@ -28,7 +28,7 @@
 	  <vbox flex="1">
 	    <iframe id="output_log_wnd" flex="1"/>
 	    <hbox flex="0" align="center">
-	      <label class="plain" value="CMD&gt;" flex="0"/>
+	      <label id="cmd_prompt_label" class="plain" value="&gt;" flex="0"/>
 	      <textbox flex="1" id="output_cmdbox"/>
 	    </hbox>
 	  </vbox>

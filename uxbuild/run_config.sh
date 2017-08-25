@@ -19,15 +19,14 @@ usexrbr="--without-xmlrpc"
 # Release version
 gecko_sdk_dir=/net3/ishitani/src/xulrunner/xulrunner-39.0-sdk/
 #gecko_sdk_dir=/net3/ishitani/src/xulrunner/xulrunner-9.0.1-rel/dist/
-gecko_rt_dir=/net3/ishitani/src/xulrunner/xulrunner-23.0.1-rt/
 
 # Debug version
 # gecko_sdk_dir=/net3/ishitani/src/xulrunner/xulrunner-2.0-obj/dist/
 
 #boost_dir=/usr/local
-boost_dir=/net3/ishitani/app64/boost_1_57_0
+boost_dir=$HOME/proj64/boost_1_64
 fftw_dir=/net3/ishitani/app64/fftw
-cgal_dir=/net3/ishitani/app64/CGAL-4.6.1
+cgal_dir=$HOME/proj64/CGAL-4.10
 glew_dir=/net3/ishitani/app64/glew
 
 #######################
@@ -58,9 +57,3 @@ $usexrbr \
 --with-glew=$glew_dir \
 $debug
 
-# $config_scr \
-# --prefix=$install_dir \
-# --with-boost=$boost_dir \
-# --disable-xpcom \
-# --disable-npruntime
-# --with-xulrunner-runtime=$gecko_rt_dir \

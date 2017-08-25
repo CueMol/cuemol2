@@ -46,7 +46,7 @@ void SimpleSpin::onTimer(qlib::time_value elapsed, AnimMgr *pMgr)
 {
   const double rho = getRho(elapsed);
   
-  //MB_DPRINTLN("spin(%s) rho=%f", getName().c_str(), rho);
+  MB_DPRINTLN("spin(%s) rho=%f", getName().c_str(), rho);
 
   qlib::LQuat quat(m_axis, m_anglRad2 * rho);
 

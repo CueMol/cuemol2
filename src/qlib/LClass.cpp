@@ -34,3 +34,28 @@ bool LClass::isSingleton() const
   return false;
 }
 
+LDynamic *LClass::createScrObj() const
+{
+  return createObj();
+}
+
+bool LClass::callInit()
+{
+  return true;
+}
+
+void LClass::callFini()
+{
+}
+
+LDynamic *LClass::createFromString(const LString &aStr) const
+{
+  MB_THROW(RuntimeException, "conversion from string not supported");
+  return NULL;
+}
+
+LDynamic *LClass::createScrObjFromStr(const LString &aStr) const
+{
+  return createFromString(aStr);
+}
+

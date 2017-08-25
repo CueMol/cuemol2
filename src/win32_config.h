@@ -37,6 +37,7 @@
 // #define USE_MULTITHREAD
 // #define USE_BERKELEY_DB
 #define HAVE_BOOST_THREAD 1
+#define HAVE_BOOST_CHRONO 1
 #define HAVE_GL_GL_H 1
 #define HAVE_GL_GLU_H 1
 #ifdef _DEBUG

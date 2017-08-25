@@ -86,6 +86,7 @@ my @copylib = ("$boost_dir/libboost_thread*.dylib",
 	       "$boost_dir/libboost_filesystem*.dylib",
 	       "$boost_dir/libboost_iostreams*.dylib",
 	       "$boost_dir/libboost_date_time*.dylib",
+	       "$boost_dir/libboost_chrono*.dylib",
 	       "$cgal_dir/libCGAL.*.dylib",
 	       "$glew_dir/libGLEW.2.0.0.dylib",
 	       "$lcms_dir/liblcms2.2.dylib",
@@ -98,13 +99,12 @@ my @lib_list = ("libqmpng", "libqmzlib",
 		"libmolstr", "libmolvis", "libsymm", "libsurface", "libxtal", "libmdtools",
 		"libmolanl", "liblwview", "libanim", "librender", "libimporters",
 		"libboost_thread", "libboost_system", "libboost_filesystem", "libboost_iostreams", "libboost_date_time",
+		"libboost_chrono",
 		"libCGAL", "libGLEW", "liblcms2", "liblzma");
 
 if ($use_boost_timer eq "yes") {
-    push(@copylib, ("$boost_dir/libboost_timer*.dylib",
-		    "$boost_dir/libboost_chrono*.dylib"));
-    push(@lib_list, ("libboost_timer",
-		     "libboost_chrono"));
+    push(@copylib, ("$boost_dir/libboost_timer*.dylib"));
+    push(@lib_list, ("libboost_timer"));
 }
 
 if ($has_xmlrpc) {

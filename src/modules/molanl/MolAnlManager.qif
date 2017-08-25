@@ -19,10 +19,14 @@ runtime_class MolAnlManager
   //////////////////////////
   // molecular superposition
 
-  void superposeSSM1(object<MolCoord$> pmol_ref, object<MolSelection$> psel_ref, object<MolCoord$> pmol_mov, object<MolSelection$> psel_mov);
+  /// Superpose SSM (object version)
+  void superposeSSM1(object<MolCoord$> pmol_ref, object<MolSelection$> psel_ref, object<MolCoord$> pmol_mov, object<MolSelection$> psel_mov, boolean useprop);
+
+  /// Superpose SSM (object ID/selection string version)
   void superposeSSM2(integer, string, integer, string);
   
-  void superposeLSQ1(object<MolCoord$> pmol_ref, object<MolSelection$> psel_ref, object<MolCoord$> pmol_mov, object<MolSelection$> psel_mov);
+  /// Superpose LSQ
+  void superposeLSQ1(object<MolCoord$> pmol_ref, object<MolSelection$> psel_ref, object<MolCoord$> pmol_mov, object<MolSelection$> psel_mov, boolean useprop);
 
   void calcRMSD(object<MolCoord$> pmol_ref, object<MolSelection$> psel_ref, object<MolCoord$> pmol_mov, object<MolSelection$> psel_mov, string path) => calcRMSDScr;
 

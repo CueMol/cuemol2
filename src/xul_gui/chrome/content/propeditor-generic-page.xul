@@ -54,7 +54,7 @@
             </row>
             <row align="center">
 	      <label value="Value: "/>
-	      <hbox align="top">
+	      <hbox align="center">
 		<checkbox id="default-check" checked="false" label="default"/>
 
 		<!-- Value deck -->

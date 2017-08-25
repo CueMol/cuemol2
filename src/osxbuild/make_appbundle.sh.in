@@ -61,6 +61,11 @@ if test x$HAVE_PYTHON = xyes ; then
 	rm $TARGET_RESDIR/Python
     fi
     ln -s $PY_PREFIX $TARGET_RESDIR/Python
+else
+    if [ -L $TARGET_RESDIR/Python ]; then
+	#echo "rm $TARGET_RESDIR/Python"
+	rm $TARGET_RESDIR/Python
+    fi
 fi
 
 # 	$(LN_S) $(XUL_BINDIR)/omni.ja $(TARGET_RESDIR)/omni.ja

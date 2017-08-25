@@ -242,7 +242,7 @@ void AnimMgr::goTime(qlib::time_value to_tv, ViewPtr pView)
 void AnimMgr::onTimerImpl(qlib::time_value elapsed)
 {
   m_timeElapsed = elapsed;
-  //MB_DPRINTLN("time elapsed %ld", elapsed);
+  MB_DPRINTLN("time elapsed %ld", elapsed);
 
   setWorkCam(m_pStartCam);
 

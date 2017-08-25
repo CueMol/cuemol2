@@ -80,7 +80,7 @@ cls.buildBox = function (aResvSel)
   element.removeAllItems();
   
   // Append the original selection
-  dd("MolSel.buildBox> orig sel: "+this.mOrigSel);
+  dd("MolSel.buildBox> orig sel: <"+this.mOrigSel+">");
   if (this.mOrigSel) {
     //element.appendItem(this.mOrigSel.toString(), this.mOrigSel.toString());
     //element.menupopup.insertBefore(document.createElement("menuseparator"), null);
@@ -111,6 +111,7 @@ cls.buildBox = function (aResvSel)
   }
   
   //element.appendItem("all (*)", "*");
+  this.appendMenuItem(element, "none", "");
   this.appendMenuItem(element, "all (*)", "*");
   var prev_sep = this.appendSeparator(element);
   
@@ -120,6 +121,8 @@ cls.buildBox = function (aResvSel)
   if (nitems>0) {
     for (var i=0; i<nitems; ++i) {
       //element.appendItem(his.getEntry(i), his.getEntry(i));
+      if (his.getEntry(i)=="*"||his.getEntry(i)=="none"||his.getEntry(i)=="")
+	continue;
       this.appendMenuItem(element, his.getEntry(i), his.getEntry(i));
     }
     prev_sep.setAttribute("label", "History");
@@ -212,18 +215,21 @@ cls.updateCurrentSel = function ()
 /// Menu list selected event
 cls.onMListSelected = function (aEvent)
 {
-  // dd("onMListSelected: "+debug.dumpObjectTree(aEvent));
+  //dd("onMListSelected: "+debug.dumpObjectTree(aEvent));
 
   var sbox = this._outer.mSelBox;
-  if (sbox.selectedItem==null)
+  if (sbox.selectedItem==null) {
+    dd("onMListSelected: error, selectedItem is NULL!!"+debug.dumpObjectTree(aEvent));
     return;
-
+  }
+  
   var val = sbox.selectedItem.value;
   var lab = sbox.selectedItem.label;
   var ind = sbox.selectedIndex;
   dd("onMListSelected> index="+ind+", val="+val+", lab="+lab);
 
-  if (typeof val == 'undefined' || val===null || val.length==0) {
+  //if (typeof val == 'undefined' || val===null || val.length==0) {
+  if (typeof val == 'undefined' || val===null) {
     dd("MolSel ERROR> mSelBox.selectedItem.value is invalid: "+ val);
     return;
   }

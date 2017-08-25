@@ -28,11 +28,15 @@ bool LScrMatrix4D::isStrConv() const
 
 LString LScrMatrix4D::toString() const
 {
-  //return Matrix4D::toString();
+  if (isIdent()) {
+    return LString("(identity)");
+  }
+
   LString ret;
+
   ret += "(";
   for (int i=1; i<=Matrix4D::_N_ELEM; ++i) {
-    ret += LString::format("%.15f", Matrix4D::ai(i));
+    ret += LString::format("%.7f", Matrix4D::ai(i));
     if (i<Matrix4D::_N_ELEM)
       ret += ",";
   }
@@ -43,12 +47,17 @@ LString LScrMatrix4D::toString() const
 //static
 LScrMatrix4D *LScrMatrix4D::fromStringS(const LString &src)
 {
+  if (src.equalsIgnoreCase("(identity)"))
+    return MB_NEW LScrMatrix4D();
+
   LString renum("\\s*(\\S+)\\s*");
 
   // remove parentheses
   LRegExpr re1("\\((.+)\\)");
   if (!re1.match(src) || re1.getSubstrCount()<1+1) {
     // ERROR!!
+    LString msg = LString::format("cannot convert \"%s\" to matrix", src.c_str());
+    MB_THROW(RuntimeException, msg);
     return NULL;
   }
 
@@ -57,6 +66,8 @@ LScrMatrix4D *LScrMatrix4D::fromStringS(const LString &src)
   val.split(',', ls);
   if (ls.size()!=16) {
     // ERROR!!
+    LString msg = LString::format("cannot convert \"%s\" to matrix", src.c_str());
+    MB_THROW(RuntimeException, msg);
     return NULL;
   }
 
@@ -65,8 +76,10 @@ LScrMatrix4D *LScrMatrix4D::fromStringS(const LString &src)
   LScrMatrix4D *pRes = MB_NEW LScrMatrix4D();
   BOOST_FOREACH (LString e, ls) {
     if (!e.toDouble(&d)) {
-    // ERROR!!
+      // ERROR!!
       delete pRes;
+      LString msg = LString::format("cannot convert \"%s\" to matrix", src.c_str());
+      MB_THROW(RuntimeException, msg);
       return NULL;
     }
     pRes->Matrix4D::ai(i) = d;

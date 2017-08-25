@@ -275,6 +275,7 @@ wheelbtn {
 .panel-button {
   margin: 0;
   border: none;
+  min-width: 0px;
 }
 
 .delete-button {

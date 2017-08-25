@@ -1,8 +1,8 @@
-/* A Bison parser, made by GNU Bison 3.0.2.  */
+/* A Bison parser, made by GNU Bison 3.0.4.  */
 
 /* Bison implementation for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2013 Free Software Foundation, Inc.
+   Copyright (C) 1984, 1989-1990, 2000-2015 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -44,7 +44,7 @@
 #define YYBISON 1
 
 /* Bison version.  */
-#define YYBISON_VERSION "3.0.2"
+#define YYBISON_VERSION "3.0.4"
 
 /* Skeleton name.  */
 #define YYSKELETON_NAME "yacc.c"
@@ -171,7 +171,7 @@ extern int coldebug;
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-typedef union YYSTYPE YYSTYPE;
+
 union YYSTYPE
 {
 #line 23 "../../src/gfx/color_parser.yxx" /* yacc.c:355  */
@@ -182,6 +182,8 @@ union YYSTYPE
 
 #line 184 "../../src/gfx/color_parser.cxx" /* yacc.c:355  */
 };
+
+typedef union YYSTYPE YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1
 #endif
@@ -195,7 +197,7 @@ int colparse (void);
 
 /* Copy the second part of user declarations.  */
 
-#line 199 "../../src/gfx/color_parser.cxx" /* yacc.c:358  */
+#line 201 "../../src/gfx/color_parser.cxx" /* yacc.c:358  */
 
 #ifdef short
 # undef short
@@ -1305,7 +1307,7 @@ yyreduce:
     {
 		  // ColCompiler::getInstance()->evalNode($1);
 		}
-#line 1309 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
+#line 1311 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
     break;
 
   case 3:
@@ -1313,7 +1315,7 @@ yyreduce:
     {
 		  //MB_DPRINT("sel_and\n");
 		}
-#line 1317 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
+#line 1319 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
     break;
 
   case 4:
@@ -1321,7 +1323,7 @@ yyreduce:
     {
 		  //MB_DPRINT("sel_or\n");
 		}
-#line 1325 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
+#line 1327 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
     break;
 
   case 5:
@@ -1331,7 +1333,7 @@ yyreduce:
 		  ColCompiler::getInstance()->setNamedColor((yyvsp[0].str));
 		  delete [] (yyvsp[0].str);
 		}
-#line 1335 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
+#line 1337 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
     break;
 
   case 6:
@@ -1340,7 +1342,7 @@ yyreduce:
 		  // $molcol reference
 		  ColCompiler::getInstance()->setMolColor();
 		}
-#line 1344 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
+#line 1346 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
     break;
 
   case 7:
@@ -1349,7 +1351,7 @@ yyreduce:
 		  // HTML3 color
 		  ColCompiler::getInstance()->setRGBHexColor((yyvsp[0].intnum));
 		}
-#line 1353 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
+#line 1355 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
     break;
 
   case 8:
@@ -1358,7 +1360,7 @@ yyreduce:
 		  // HTML6 color
 		  ColCompiler::getInstance()->setRGBHexColor((yyvsp[0].intnum));
 		}
-#line 1362 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
+#line 1364 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
     break;
 
   case 9:
@@ -1367,7 +1369,7 @@ yyreduce:
 		  // RGB color
 		  ColCompiler::getInstance()->setRGBColor((yyvsp[-5].floatnum), (yyvsp[-3].floatnum), (yyvsp[-1].floatnum));
 		}
-#line 1371 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
+#line 1373 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
     break;
 
   case 10:
@@ -1377,7 +1379,7 @@ yyreduce:
 		  ColCompiler::getInstance()->setRGBColor((yyvsp[-7].floatnum), (yyvsp[-5].floatnum), (yyvsp[-3].floatnum));
 		  ColCompiler::getInstance()->setAlpha((yyvsp[-1].floatnum));
 		}
-#line 1381 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
+#line 1383 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
     break;
 
   case 11:
@@ -1386,7 +1388,7 @@ yyreduce:
 		  // HSB color
 		  ColCompiler::getInstance()->setHSBColor((yyvsp[-5].floatnum), (yyvsp[-3].floatnum), (yyvsp[-1].floatnum));
 		}
-#line 1390 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
+#line 1392 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
     break;
 
   case 12:
@@ -1396,7 +1398,7 @@ yyreduce:
 		  ColCompiler::getInstance()->setHSBColor((yyvsp[-7].floatnum), (yyvsp[-5].floatnum), (yyvsp[-3].floatnum));
 		  ColCompiler::getInstance()->setAlpha((yyvsp[-1].floatnum));
 		}
-#line 1400 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
+#line 1402 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
     break;
 
   case 13:
@@ -1404,7 +1406,7 @@ yyreduce:
     {
 		  (yyval.floatnum) = (yyvsp[0].floatnum);
 		}
-#line 1408 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
+#line 1410 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
     break;
 
   case 14:
@@ -1413,7 +1415,7 @@ yyreduce:
 		  (yyval.floatnum) = ((yyvsp[0].floatnum) * 360.0) / 100.0;
 		  // MB_DPRINTLN("CC>Percentnum %f is converted to %f", $1, $$);
 		}
-#line 1417 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
+#line 1419 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
     break;
 
   case 15:
@@ -1421,7 +1423,7 @@ yyreduce:
     {
 		  (yyval.floatnum) = (yyvsp[0].floatnum);
 		}
-#line 1425 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
+#line 1427 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
     break;
 
   case 16:
@@ -1430,7 +1432,7 @@ yyreduce:
 		  (yyval.floatnum) = (yyvsp[0].floatnum)/100.0;
 		  // MB_DPRINTLN("CC>Percentnum %f is converted to %f", $1, $$);
 		}
-#line 1434 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
+#line 1436 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
     break;
 
   case 18:
@@ -1439,27 +1441,27 @@ yyreduce:
 		  (yyval.floatnum) = (yyvsp[0].intnum)/255.0;
 		  // MB_DPRINTLN("CC>Intnum %d is converted to %f", $1, $$);
 		}
-#line 1443 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
+#line 1445 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
     break;
 
   case 19:
 #line 160 "../../src/gfx/color_parser.yxx" /* yacc.c:1646  */
     {
 		}
-#line 1450 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
+#line 1452 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
     break;
 
   case 20:
 #line 163 "../../src/gfx/color_parser.yxx" /* yacc.c:1646  */
     {
 		}
-#line 1457 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
+#line 1459 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
     break;
 
   case 21:
 #line 168 "../../src/gfx/color_parser.yxx" /* yacc.c:1646  */
     {ColCompiler::setModifState();}
-#line 1463 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
+#line 1465 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
     break;
 
   case 22:
@@ -1470,11 +1472,11 @@ yyreduce:
 		  delete [] (yyvsp[-3].str);
 		  delete [] (yyvsp[0].str);
 		}
-#line 1474 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
+#line 1476 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
     break;
 
 
-#line 1478 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
+#line 1480 "../../src/gfx/color_parser.cxx" /* yacc.c:1646  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
