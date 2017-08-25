@@ -70,7 +70,10 @@ void ExpatInStream::parse()
 {
   // check base URI
 
-  fs::path srcpath(getURI().c_str());
+  LString s = getURI();
+  MB_DPRINTLN("ExpatInStream getURI: <%s>", s.c_str());
+
+  fs::path srcpath(s.c_str());
 #if (BOOST_FILESYSTEM_VERSION==2)
   LString base_dir = srcpath.parent_path().directory_string();
 #else

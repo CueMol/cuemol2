@@ -765,7 +765,7 @@ static const int PSESC_wizard_prompt_mode                    = 366;
 static const int PSESC_wrap_output                           = 191;
 
 
-static const int PSE_colors[] = {
+static const unsigned int PSE_colors[] = {
     /* 0     */ 0xFFFFFFFF, 
     /* 1     */ 0xFF000000, 
     /* 2     */ 0xFF0000FF, 

@@ -93,9 +93,9 @@ libsysdep_la_CXXFLAGS = \
   @GLEW_CPPFLAGS@ \
   $(NULL)
 
-libsysdep_la_LIBADD = -lqlib @GLEW_LIBADD@
+libsysdep_la_LIBADD = -lqlib @GLEW_LIBADD@ @GL_LIBADD@
 
-libsysdep_la_LDFLAGS = -L../qlib @GLEW_LDFLAGS@
+libsysdep_la_LDFLAGS = -L../qlib @GLEW_LDFLAGS@ @GL_LDFLAGS@
 
 #####################################
 
