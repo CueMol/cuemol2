@@ -21,6 +21,8 @@ namespace pybr {
 
   bool init(const char *szConfPath)
   {
+    LOG_DPRINTLN("Python> conf=%s", szConfPath);
+
     pybr_regClasses();
 
   // Compatibility with Python 3.4
@@ -63,7 +65,7 @@ namespace pybr {
       fs::path confpath(szConfPath);
       confpath = confpath.parent_path();
       confpath /= "scripts";
-      confpath /= "python";
+      // confpath /= "python";
       LString strpath = confpath.string();
       strpath = strpath.escapeQuots();
       

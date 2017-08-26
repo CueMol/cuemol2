@@ -105,6 +105,18 @@ libpybr_la_LIBADD = \
 endif
 
 #####################################
+# Python scripts
+
+scriptdir = $(pkgdatadir)/scripts/
+script_DATA = \
+$(top_srcdir)/xul_gui/scripts/python/cuemol.py \
+$(top_srcdir)/xul_gui/scripts/python/fileio.py \
+$(top_srcdir)/xul_gui/scripts/python/molu.py \
+$(top_srcdir)/xul_gui/scripts/python/qmd.py \
+$(top_srcdir)/xul_gui/scripts/python/util.py \
+$(NULL)
+
+#####################################
 
 include $(top_srcdir)/mcwgen_footer.am
 

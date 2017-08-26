@@ -164,7 +164,7 @@ int main(int argc, const char *argv[])
 
 #ifdef HAVE_PYTHON
   // load python module
-  pybr::init();
+  pybr::init(confpath.c_str());
 #endif
 
 #ifdef USE_XMLRPC
