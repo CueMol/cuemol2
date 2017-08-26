@@ -78,12 +78,14 @@ cuemol_internal_la_LIBADD = \
 
 else
 
-######################################################
+####
 
 lib_LTLIBRARIES = libpybr.la
 
 libpybr_la_SOURCES = \
 $(COMMON_SRC) \
+pybr.cpp \
+PythonBridge.cpp \
 $(MODLDR_SRC) \
 $(MC_SRCS) \
 $(NULL)
