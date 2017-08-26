@@ -3,32 +3,27 @@
 cwd=`pwd`
 top_srcdir=$cwd/../src/
 
-install_dir=$HOME/app/cuemol2
+install_dir=$HOME/app/cuemol2-dev201608
+
 #debug="--enable-debug --enable-m64"
 debug="--disable-debug --enable-m64"
 
-usepybr="--enable-python"
+usepybr="--with-python=$HOME/app/Python3/"
 #usepybr="--disable-python"
 
 #usexrbr="--with-xmlrpc=$HOME/proj64/xmlrpc-c"
 usexrbr="--without-xmlrpc"
 
 lcms="--without-lcms"
-xz="--without-xz"
+xz="--with-xz=$HOME/proj/xz"
 
 #use_boost_timer="--enable-boosttimer"
 
 ##
 
-#boost_dir=/usr/local
-#boost_dir=/home/ishitani/app/boost_1_60_0
-#boost_dir=/net3/ishitani/app64/boost_static
-boost_dir=/net3/ishitani/app64/boost_1_57_0
-
-fftw_dir=/net3/ishitani/app64/fftw
-
-#cgal_dir=/home/ishitani/app/CGAL-4.6.1/
-cgal_dir=/net3/ishitani/app64/CGAL-4.6.1
+boost_dir=/home/ishitani/app/boost_1_60_0/
+fftw_dir=/home/ishitani/app/fftw/
+cgal_dir=/home/ishitani/app/CGAL-4.6.1/
 
 #######################
 
