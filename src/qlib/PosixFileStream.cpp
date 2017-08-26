@@ -142,6 +142,7 @@ public:
     }
 
     //setvbuf(m_fp, NULL, _IOFBF, 256*1024*1024);
+    //LOG_DPRINTLN("PosixFileStream> o_open(%s)=%p", fname.c_str(), m_fp);
 
     setFileInfo(fname);
   }

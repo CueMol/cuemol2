@@ -48,6 +48,9 @@ void PovSceneExporter::write()
   LString str_povpath = getPath();
   LString str_incpath = getPath("inc");
 
+  //LOG_DPRINTLN("PovSceneExporter> write pov=%s", str_povpath.c_str());
+  //LOG_DPRINTLN("PovSceneExporter> write inc=%s", str_incpath.c_str());
+
   // Check and mangle the path names
   if (m_bMakeRelIncPath) {
     if (!str_povpath.isEmpty() && !str_incpath.isEmpty()) {

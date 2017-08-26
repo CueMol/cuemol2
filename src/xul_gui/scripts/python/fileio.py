@@ -87,7 +87,8 @@ def loadScene(aFileName, aName, aScene, aFmtName, aOpts):
     reader.read()
     reader.detach()
     if not aName==None:
-        aScene.name = aName
+        #aScene.name = aName
+        aScene.setName(aName)
 
     return aScene
         
