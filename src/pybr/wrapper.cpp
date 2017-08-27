@@ -935,9 +935,15 @@ PyObject *Wrapper::tondarray(PyObject *self, PyObject *args)
     if (bref) {
       array = PyArray_SimpleNewFromData(ndim, dim, NPY_FLOAT, pdat);
       if(array == NULL) return NULL;
-      LOG_DPRINTLN("tondarray: ref array created!!");
+      MB_DPRINTLN("tondarray: ref array created!!");
     }
     else {
+      array = PyArray_SimpleNewFromData(ndim, dim, NPY_FLOAT, pdat);
+      if(array == NULL) return NULL;
+      (*pba)->yield();
+      PyArray_ENABLEFLAGS((PyArrayObject*) array, NPY_ARRAY_OWNDATA);
+
+      /*
       array = PyArray_SimpleNew(ndim, dim, NPY_FLOAT);
       if(array == NULL) return NULL;
       
@@ -952,7 +958,7 @@ PyObject *Wrapper::tondarray(PyObject *self, PyObject *args)
 	    *p = pdat[iz + (iy + ix*ny)*nz];
 	  }
 	}
-      }
+	}*/
     }
     /*
     for (int i=0; i<nelems; ++i) {

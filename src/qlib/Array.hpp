@@ -97,6 +97,14 @@ namespace qlib {
       m_bOwn = false;
     }
 
+    /// Yield the ownership of m_array
+    void yield() {
+      m_array = NULL;
+      m_nSize = 0;
+      m_bOwn = false;
+    }
+
+    /// Allocate new memory (clear old m_array if nescessary)
     void resize(int newsz) {
       clear();
 
@@ -107,6 +115,7 @@ namespace qlib {
       }
     }
 
+    /// Setup reference (un-owned) array
     void refer(int sz, _Type *p) {
       clear();
       if (sz>0) {

@@ -18,6 +18,7 @@
 #define SIZEOF_FLOAT 4
 #define SIZEOF_DOUBLE 8
 #define STR_GUI_ARCH "WIN"
+#define GUI_ARCH_WIN 1
 
 #ifdef _WIN64
 #  define SIZEOF_VOIDP 8

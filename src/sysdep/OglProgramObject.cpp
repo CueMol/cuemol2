@@ -64,10 +64,12 @@ void OglShaderObject::loadFile(const LString& filename, bool bUseInclude, SOMacr
   if (pstr!=NULL) {
     LString sv(pstr);
     int dot = sv.indexOf('.');
-#ifdef WIN32
-    verstr = "#version "+sv.substr(0,dot) + sv.substr(dot+1, 2) + " compatibility";
-#else
+#ifdef GUI_ARCH_OSX
+    // MacOS X
     verstr = "#version "+sv.substr(0,dot) + sv.substr(dot+1, 2);
+#else
+    // Win/X11
+    verstr = "#version "+sv.substr(0,dot) + sv.substr(dot+1, 2) + " compatibility";
 #endif
   }
 
