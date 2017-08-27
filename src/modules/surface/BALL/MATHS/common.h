@@ -163,11 +163,15 @@ namespace BALL
 		inline 
 		bool isNan(const T& t)
 		{
-			#ifdef BALL_COMPILER_MSVC
+#ifdef BALL_COMPILER_MSVC
 				return (_isnan(t) != 0);
-			#else
+#elif defined(isnan)
 				return (isnan(t) != 0);
-			#endif
+#elif __cplusplus >= 201103L
+				return (std::isnan(t) != 0);
+#else
+#error "isnan() is not defined!!"
+#endif
 		}
 
 		/**	Test whether a number is infinite.
