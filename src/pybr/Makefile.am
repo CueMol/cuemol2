@@ -78,12 +78,14 @@ cuemol_internal_la_LIBADD = \
 
 else
 
-######################################################
+####
 
 lib_LTLIBRARIES = libpybr.la
 
 libpybr_la_SOURCES = \
 $(COMMON_SRC) \
+pybr.cpp \
+PythonBridge.cpp \
 $(MODLDR_SRC) \
 $(MC_SRCS) \
 $(NULL)
@@ -101,6 +103,18 @@ libpybr_la_LIBADD = \
  $(NULL)
 
 endif
+
+#####################################
+# Python scripts
+
+scriptdir = $(pkgdatadir)/scripts/
+script_DATA = \
+$(top_srcdir)/xul_gui/scripts/python/cuemol.py \
+$(top_srcdir)/xul_gui/scripts/python/fileio.py \
+$(top_srcdir)/xul_gui/scripts/python/molu.py \
+$(top_srcdir)/xul_gui/scripts/python/qmd.py \
+$(top_srcdir)/xul_gui/scripts/python/util.py \
+$(NULL)
 
 #####################################
 

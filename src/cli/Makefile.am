@@ -19,11 +19,11 @@ $(top_srcdir)/xul_gui/data/symop.dat \
 $(top_srcdir)/xul_gui/data/default_style.xml \
 $(NULL)
 
-scriptdir = $(pkgdatadir)/scripts/
-script_DATA = \
-$(top_srcdir)/xul_gui/scripts/startup.js \
-$(top_srcdir)/xul_gui/scripts/utils.js \
-$(NULL)
+# scriptdir = $(pkgdatadir)/scripts/
+# script_DATA = \
+# $(top_srcdir)/xul_gui/scripts/startup.js \
+# $(top_srcdir)/xul_gui/scripts/utils.js \
+# $(NULL)
 
 ##########
 
