@@ -242,7 +242,9 @@ void SplineRenderer::propChanged(qlib::LPropEvent &ev)
 
 void SplineRenderer::objectChanged(qsys::ObjectEvent &ev)
 {
-  if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED) {
+  if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED ||
+      ev.getType()==qsys::ObjectEvent::OBE_CHANGED_DYNAMIC ||
+      ev.getType()==qsys::ObjectEvent::OBE_CHANGED_FIXDYN) {
     invalidateSplineCoeffs();
     invalidateDisplayCache();
     return;
