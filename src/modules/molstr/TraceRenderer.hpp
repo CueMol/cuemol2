@@ -75,6 +75,7 @@ namespace molstr {
     //////////////////////////////////////////////////////
     // Ver2 interface
 
+    /// Request ver2 renderer interface (returns true)
     virtual bool isUseVer2Iface() const;
 
     virtual bool isCacheAvail() const;

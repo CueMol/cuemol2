@@ -1,15 +1,11 @@
 // -*-Mode: C++;-*-
 //
-//  Interaction line renderer class
+//  Interaction line renderer class (ver. 2)
 //
-// $Id: AtomIntrRenderer.cpp,v 1.20 2011/05/02 14:51:29 rishitani Exp $
 
 #include <common.h>
-#include "AtomIntrRenderer.hpp"
+#include "AtomIntr2Renderer.hpp"
 
-//#include <molstr/MolCoord.hpp>
-//#include <molstr/MolChain.hpp>
-//#include <molstr/MolResidue.hpp>
 #include <modules/molstr/MolAtom.hpp>
 #include <modules/molstr/AtomIterator.hpp>
 #include <modules/molstr/SelCommand.hpp>
@@ -23,7 +19,7 @@
 using namespace molvis;
 using namespace molstr;
 
-AtomIntrRenderer::AtomIntrRenderer()
+AtomIntr2Renderer::AtomIntr2Renderer()
      : super_t()
 {
   // m_pdata = MB_NEW AtomIntrData;
@@ -47,7 +43,7 @@ AtomIntrRenderer::AtomIntrRenderer()
   m_dArrowHeight = 1.2;
 }
 
-AtomIntrRenderer::~AtomIntrRenderer()
+AtomIntr2Renderer::~AtomIntr2Renderer()
 {
   // delete m_pdata;
   m_pixCache.invalidateAll();
@@ -55,42 +51,42 @@ AtomIntrRenderer::~AtomIntrRenderer()
 
 //////////////////////////////////////////////////////////////////////////
 
-MolCoordPtr AtomIntrRenderer::getClientMol() const
+MolCoordPtr AtomIntr2Renderer::getClientMol() const
 {
   qsys::ObjectPtr robj = qsys::SceneManager::getObjectS(getClientObjID());
   if (robj.isnull()) return MolCoordPtr();
   return MolCoordPtr(robj);
 }
 
-bool AtomIntrRenderer::isCompatibleObj(qsys::ObjectPtr pobj) const
+bool AtomIntr2Renderer::isCompatibleObj(qsys::ObjectPtr pobj) const
 {
   MolCoord *ptest = dynamic_cast<MolCoord *>(pobj.get());
   return ptest!=NULL;
 }
 
-LString AtomIntrRenderer::toString() const
+LString AtomIntr2Renderer::toString() const
 {
-  return LString::format("AtomIntrRenderer %p", this);
+  return LString::format("AtomIntr2Renderer %p", this);
 }
 
-Vector4D AtomIntrRenderer::getCenter() const
+Vector4D AtomIntr2Renderer::getCenter() const
 {
   return Vector4D();
 }
 
-bool AtomIntrRenderer::isHitTestSupported() const
+bool AtomIntr2Renderer::isHitTestSupported() const
 {
   return false;
 }
 
-const char *AtomIntrRenderer::getTypeName() const
+const char *AtomIntr2Renderer::getTypeName() const
 {
-  return "atomintr";
+  return "atomintr2";
 }
 
 //////////////////////////////////////////////////////////////////////////
 
-int AtomIntrRenderer::appendBySelStr(const LString &sstr1, const LString &sstr2)
+int AtomIntr2Renderer::appendBySelStr(const LString &sstr1, const LString &sstr2)
 {
   SelCommand *pSel1 = MB_NEW SelCommand();
   SelectionPtr rSel1(pSel1);
@@ -108,7 +104,7 @@ int AtomIntrRenderer::appendBySelStr(const LString &sstr1, const LString &sstr2)
   return appendImpl(AtomIntrData(nMolID, rSel1, nMolID, rSel2));
 }
 
-int AtomIntrRenderer::appendById(int nAid1, qlib::uid_t nMolID2, int nAid2, bool bShowMsg)
+int AtomIntr2Renderer::appendById(int nAid1, qlib::uid_t nMolID2, int nAid2, bool bShowMsg)
 {
   qlib::uid_t nMolID1 = getClientObjID();
 
@@ -155,7 +151,7 @@ int AtomIntrRenderer::appendById(int nAid1, qlib::uid_t nMolID2, int nAid2, bool
   return nlast;
 }
 
-int AtomIntrRenderer::appendAngleById(int nAid1,
+int AtomIntr2Renderer::appendAngleById(int nAid1,
                                       qlib::uid_t nMolID2, int nAid2,
                                       qlib::uid_t nMolID3, int nAid3)
 {
@@ -202,7 +198,7 @@ int AtomIntrRenderer::appendAngleById(int nAid1,
   return rval;
 }
 
-int AtomIntrRenderer::appendTorsionById(int nAid1,
+int AtomIntr2Renderer::appendTorsionById(int nAid1,
                                         qlib::uid_t nMolID2, int nAid2,
                                         qlib::uid_t nMolID3, int nAid3,
                                         qlib::uid_t nMolID4, int nAid4)
@@ -263,7 +259,7 @@ int AtomIntrRenderer::appendTorsionById(int nAid1,
   return rval;
 }
 
-int AtomIntrRenderer::appendBy2Vecs(const Vector4D &v1, const Vector4D &v2)
+int AtomIntr2Renderer::appendBy2Vecs(const Vector4D &v1, const Vector4D &v2)
 {
   qlib::uid_t nMolID1 = getClientObjID();
 
@@ -282,7 +278,7 @@ int AtomIntrRenderer::appendBy2Vecs(const Vector4D &v1, const Vector4D &v2)
   return rval;
 }
 
-int AtomIntrRenderer::appendByVecs(const std::vector<Vector4D> &vecs)
+int AtomIntr2Renderer::appendByVecs(const std::vector<Vector4D> &vecs)
 {
   const int nvecs = vecs.size();
   if (nvecs==2) {
@@ -334,7 +330,7 @@ int AtomIntrRenderer::appendByVecs(const std::vector<Vector4D> &vecs)
   // return rval;
 }
 
-void AtomIntrRenderer::invalidateAllLabels()
+void AtomIntr2Renderer::invalidateAllLabels()
 {
   m_pixCache.invalidateAll();
   BOOST_FOREACH(AtomIntrData &value, m_data) {
@@ -342,7 +338,7 @@ void AtomIntrRenderer::invalidateAllLabels()
   }
 }
 
-int AtomIntrRenderer::appendImpl(const AtomIntrData &dat)
+int AtomIntr2Renderer::appendImpl(const AtomIntrData &dat)
 {
   int nlast = m_data.size();
   m_data.push_back(dat);
@@ -357,21 +353,21 @@ int AtomIntrRenderer::appendImpl(const AtomIntrData &dat)
   if (!pUM->isOK())
     return nlast;
   
-  auto pEI = MB_NEW AtomIntrEditInfo<AtomIntrRenderer>();
+  auto pEI = MB_NEW AtomIntrEditInfo<AtomIntr2Renderer>();
   pEI->setup(getUID(), nlast, dat);
   pUM->addEditInfo(pEI);
   
   return nlast;
 }
 
-void AtomIntrRenderer::setAt(int index, const AtomIntrData &dat)
+void AtomIntr2Renderer::setAt(int index, const AtomIntrData &dat)
 {
   m_data.at(index) = dat;
   invalidateDisplayCache();
   // m_pixCache.invalidateAll();
 }
 
-bool AtomIntrRenderer::remove(int nid)
+bool AtomIntr2Renderer::remove(int nid)
 {
   if (m_data.size()<=nid)
     return false;
@@ -396,55 +392,55 @@ bool AtomIntrRenderer::remove(int nid)
   if (!pUM->isOK())
     return true;
   
-  auto pEI = MB_NEW AtomIntrEditInfo<AtomIntrRenderer>();
+  auto pEI = MB_NEW AtomIntrEditInfo<AtomIntr2Renderer>();
   pEI->setupRemove(getUID(), nid, dat);
   pUM->addEditInfo(pEI);
 
   return true;
 }
 
-void AtomIntrRenderer::setDetail(int nID)
+void AtomIntr2Renderer::setDetail(int nID)
 {
   m_nDetail = nID;
   invalidateDisplayCache();
 }
 
-void AtomIntrRenderer::setStipple0(double d)
+void AtomIntr2Renderer::setStipple0(double d)
 {
   m_stipple[0] = d;
   checkStipple();
   invalidateDisplayCache();
 }
 
-void AtomIntrRenderer::setStipple1(double d)
+void AtomIntr2Renderer::setStipple1(double d)
 {
   m_stipple[1] = d;
   checkStipple();
   invalidateDisplayCache();
 }
 
-void AtomIntrRenderer::setStipple2(double d)
+void AtomIntr2Renderer::setStipple2(double d)
 {
   m_stipple[2] = d;
   checkStipple();
   invalidateDisplayCache();
 }
 
-void AtomIntrRenderer::setStipple3(double d)
+void AtomIntr2Renderer::setStipple3(double d)
 {
   m_stipple[3] = d;
   checkStipple();
   invalidateDisplayCache();
 }
 
-void AtomIntrRenderer::setStipple4(double d)
+void AtomIntr2Renderer::setStipple4(double d)
 {
   m_stipple[4] = d;
   checkStipple();
   invalidateDisplayCache();
 }
 
-void AtomIntrRenderer::setStipple5(double d)
+void AtomIntr2Renderer::setStipple5(double d)
 {
   m_stipple[5] = d;
   checkStipple();
@@ -454,7 +450,7 @@ void AtomIntrRenderer::setStipple5(double d)
 
 //////////
 
-void AtomIntrRenderer::preRender(DisplayContext *pdc)
+void AtomIntr2Renderer::preRender(DisplayContext *pdc)
 {
   if (m_nMode==AIR_FANCY)
     pdc->setLighting(true);
@@ -462,16 +458,16 @@ void AtomIntrRenderer::preRender(DisplayContext *pdc)
     pdc->setLighting(false);
 }
 
-void AtomIntrRenderer::postRender(DisplayContext *pdc)
+void AtomIntr2Renderer::postRender(DisplayContext *pdc)
 {
 }
 
-void AtomIntrRenderer::render(DisplayContext *pdl)
+void AtomIntr2Renderer::render(DisplayContext *pdl)
 {
   //qlib::uid_t nMolID = getClientObjID();
   m_pMol = getClientMol();
   if (m_pMol.isnull()) {
-    LOG_DPRINTLN("AtomIntrRenderer> Cannot display, client mol is null");
+    LOG_DPRINTLN("AtomIntr2Renderer> Cannot display, client mol is null");
     return;
   }
 
@@ -529,7 +525,7 @@ void AtomIntrRenderer::render(DisplayContext *pdl)
   }
 }
 
-void AtomIntrRenderer::renderDistLabel(AtomIntrData &value, DisplayContext *pdl)
+void AtomIntr2Renderer::renderDistLabel(AtomIntrData &value, DisplayContext *pdl)
 {
   Vector4D pos0, pos1;
   if (!evalPos(value.elem0, pos0))
@@ -555,7 +551,7 @@ void AtomIntrRenderer::renderDistLabel(AtomIntrData &value, DisplayContext *pdl)
 
 }
 
-void AtomIntrRenderer::renderAngleLabel(AtomIntrData &value, DisplayContext *pdl)
+void AtomIntr2Renderer::renderAngleLabel(AtomIntrData &value, DisplayContext *pdl)
 {
   Vector4D pos0, pos1, pos2;
   if (!evalPos(value.elem0, pos0))
@@ -591,7 +587,7 @@ void AtomIntrRenderer::renderAngleLabel(AtomIntrData &value, DisplayContext *pdl
   }
 }
 
-void AtomIntrRenderer::renderTorsionLabel(AtomIntrData &value, DisplayContext *pdl)
+void AtomIntr2Renderer::renderTorsionLabel(AtomIntrData &value, DisplayContext *pdl)
 {
   Vector4D pos0, pos1, pos2, pos3;
   if (!evalPos(value.elem0, pos0))
@@ -631,7 +627,7 @@ void AtomIntrRenderer::renderTorsionLabel(AtomIntrData &value, DisplayContext *p
 
 /// Evaluate and returns mol ptr of interaction element, elem
 /// (Returns null if the interaction element contains invalid/unknown mol name)
-MolCoordPtr AtomIntrRenderer::evalMol(const AtomIntrElem &elem) const
+MolCoordPtr AtomIntr2Renderer::evalMol(const AtomIntrElem &elem) const
 {
   if (elem.nMolID==qlib::invalid_uid) {
     if (!elem.molName.isEmpty()) {
@@ -654,7 +650,7 @@ MolCoordPtr AtomIntrRenderer::evalMol(const AtomIntrElem &elem) const
   return pmol;
 }
 
-bool AtomIntrRenderer::evalPos(AtomIntrElem &elem,
+bool AtomIntr2Renderer::evalPos(AtomIntrElem &elem,
                                Vector4D &rval)
 {
   if (elem.nMode==AtomIntrElem::AI_POS) {
@@ -708,7 +704,7 @@ bool AtomIntrRenderer::evalPos(AtomIntrElem &elem,
   return true;
 }
 
-void AtomIntrRenderer::cylImpl(DisplayContext *pdl,
+void AtomIntr2Renderer::cylImpl(DisplayContext *pdl,
                                const Vector4D &startPos,
                                const Vector4D &endPos)
 {
@@ -788,7 +784,7 @@ void AtomIntrRenderer::cylImpl(DisplayContext *pdl,
   }
 }
 
-void AtomIntrRenderer::drawArrow(DisplayContext *pdl,
+void AtomIntr2Renderer::drawArrow(DisplayContext *pdl,
                                  const Vector4D &endPos,
                                  const Vector4D &dir)
 {
@@ -797,13 +793,13 @@ void AtomIntrRenderer::drawArrow(DisplayContext *pdl,
   pdl->cone(w, 0.0, endPos2, endPos, true);
 }
 
-void AtomIntrRenderer::styleChanged(qsys::StyleEvent &ev)
+void AtomIntr2Renderer::styleChanged(qsys::StyleEvent &ev)
 {
   super_t::styleChanged(ev);
   invalidateAllLabels();
 }
 
-void AtomIntrRenderer::propChanged(qlib::LPropEvent &ev)
+void AtomIntr2Renderer::propChanged(qlib::LPropEvent &ev)
 {
   const LString propnm = ev.getName();
   if (propnm.equals("color")) {
@@ -820,7 +816,7 @@ void AtomIntrRenderer::propChanged(qlib::LPropEvent &ev)
   super_t::propChanged(ev);
 }
 
-void AtomIntrRenderer::writeTo2ElemHelper(qlib::LDom2Node *pNode, int nOrder,
+void AtomIntr2Renderer::writeTo2ElemHelper(qlib::LDom2Node *pNode, int nOrder,
                                           const AtomIntrElem &elem) const
 {
   if (elem.nMode==AtomIntrElem::AI_POS) {
@@ -841,7 +837,7 @@ void AtomIntrRenderer::writeTo2ElemHelper(qlib::LDom2Node *pNode, int nOrder,
     else
       value = pMol->toStrAID(elem.nAtomID);
     if (value.isEmpty()) {
-      LOG_DPRINTLN("AtomIntrRenderer.writeTo> FATAL ERROR, cannot serialize AID %d for mol %s !!",
+      LOG_DPRINTLN("AtomIntr2Renderer.writeTo> FATAL ERROR, cannot serialize AID %d for mol %s !!",
                    elem.nAtomID, pMol->getName().c_str());
     }
     pNode->appendStrAttr(key, value);
@@ -857,7 +853,7 @@ void AtomIntrRenderer::writeTo2ElemHelper(qlib::LDom2Node *pNode, int nOrder,
   }
 }
 
-void AtomIntrRenderer::writeTo2(qlib::LDom2Node *pNode) const
+void AtomIntr2Renderer::writeTo2(qlib::LDom2Node *pNode) const
 {
   // write properties
   super_t::writeTo2(pNode);
@@ -931,7 +927,7 @@ void AtomIntrRenderer::writeTo2(qlib::LDom2Node *pNode) const
 
 }
 
-void AtomIntrRenderer::readFrom2(qlib::LDom2Node *pNode)
+void AtomIntr2Renderer::readFrom2(qlib::LDom2Node *pNode)
 {
   super_t::readFrom2(pNode);
 
@@ -945,11 +941,11 @@ void AtomIntrRenderer::readFrom2(qlib::LDom2Node *pNode)
       AtomIntrData data;
       data.nmode = 1;
       if (!readFrom2Helper(pChNode, 1, data.elem0)) {
-        LOG_DPRINTLN("AtomIntrRenderer::readFrom2> ERROR, Invalid file format 1!!");
+        LOG_DPRINTLN("AtomIntr2Renderer::readFrom2> ERROR, Invalid file format 1!!");
         continue;
       }
       if (!readFrom2Helper(pChNode, 2, data.elem1)) {
-        LOG_DPRINTLN("AtomIntrRenderer::readFrom2> ERROR, Invalid file format 2!!");
+        LOG_DPRINTLN("AtomIntr2Renderer::readFrom2> ERROR, Invalid file format 2!!");
         continue;
       }
       m_data.push_back(data);
@@ -958,15 +954,15 @@ void AtomIntrRenderer::readFrom2(qlib::LDom2Node *pNode)
       AtomIntrData data;
       data.nmode = 2;
       if (!readFrom2Helper(pChNode, 1, data.elem0)) {
-        LOG_DPRINTLN("AtomIntrRenderer::readFrom2> ERROR, Invalid file format 1!!");
+        LOG_DPRINTLN("AtomIntr2Renderer::readFrom2> ERROR, Invalid file format 1!!");
         continue;
       }
       if (!readFrom2Helper(pChNode, 2, data.elem1)) {
-        LOG_DPRINTLN("AtomIntrRenderer::readFrom2> ERROR, Invalid file format 2!!");
+        LOG_DPRINTLN("AtomIntr2Renderer::readFrom2> ERROR, Invalid file format 2!!");
         continue;
       }
       if (!readFrom2Helper(pChNode, 3, data.elem2)) {
-        LOG_DPRINTLN("AtomIntrRenderer::readFrom2> ERROR, Invalid file format 3!!");
+        LOG_DPRINTLN("AtomIntr2Renderer::readFrom2> ERROR, Invalid file format 3!!");
         continue;
       }
       m_data.push_back(data);
@@ -975,19 +971,19 @@ void AtomIntrRenderer::readFrom2(qlib::LDom2Node *pNode)
       AtomIntrData data;
       data.nmode = 3;
       if (!readFrom2Helper(pChNode, 1, data.elem0)) {
-        LOG_DPRINTLN("AtomIntrRenderer::readFrom2> ERROR, Invalid file format 1!!");
+        LOG_DPRINTLN("AtomIntr2Renderer::readFrom2> ERROR, Invalid file format 1!!");
         continue;
       }
       if (!readFrom2Helper(pChNode, 2, data.elem1)) {
-        LOG_DPRINTLN("AtomIntrRenderer::readFrom2> ERROR, Invalid file format 2!!");
+        LOG_DPRINTLN("AtomIntr2Renderer::readFrom2> ERROR, Invalid file format 2!!");
         continue;
       }
       if (!readFrom2Helper(pChNode, 3, data.elem2)) {
-        LOG_DPRINTLN("AtomIntrRenderer::readFrom2> ERROR, Invalid file format 3!!");
+        LOG_DPRINTLN("AtomIntr2Renderer::readFrom2> ERROR, Invalid file format 3!!");
         continue;
       }
       if (!readFrom2Helper(pChNode, 4, data.elem3)) {
-        LOG_DPRINTLN("AtomIntrRenderer::readFrom2> ERROR, Invalid file format 4!!");
+        LOG_DPRINTLN("AtomIntr2Renderer::readFrom2> ERROR, Invalid file format 4!!");
         continue;
       }
       m_data.push_back(data);
@@ -1000,7 +996,7 @@ void AtomIntrRenderer::readFrom2(qlib::LDom2Node *pNode)
 
 }
 
-bool AtomIntrRenderer::readFrom2Helper(qlib::LDom2Node *pNode, int nOrder,
+bool AtomIntr2Renderer::readFrom2Helper(qlib::LDom2Node *pNode, int nOrder,
                                        AtomIntrElem &elem)
 {
   LString key, value;
@@ -1059,7 +1055,7 @@ bool AtomIntrRenderer::readFrom2Helper(qlib::LDom2Node *pNode, int nOrder,
   return false;
 }
 
-bool AtomIntrRenderer::isTransp() const
+bool AtomIntr2Renderer::isTransp() const
 {
   if (isShowLabel())
     return true;
@@ -1068,7 +1064,7 @@ bool AtomIntrRenderer::isTransp() const
     //return false;
 }
 
-LString AtomIntrRenderer::formatAidatJSON(const AtomIntrElem &aie) const
+LString AtomIntr2Renderer::formatAidatJSON(const AtomIntrElem &aie) const
 {
   LString rval;
   
@@ -1110,7 +1106,7 @@ LString AtomIntrRenderer::formatAidatJSON(const AtomIntrElem &aie) const
   return rval;
 }
 
-LString AtomIntrRenderer::getDefsJSON() const
+LString AtomIntr2Renderer::getDefsJSON() const
 {
   LString rval;
 
@@ -1162,7 +1158,7 @@ LString AtomIntrRenderer::getDefsJSON() const
 }
 
 
-void AtomIntrRenderer::displayLabels(DisplayContext *pdc)
+void AtomIntr2Renderer::displayLabels(DisplayContext *pdc)
 {
   if (m_bShowLabel) {
     m_pixCache.setFont(m_dFontSize, m_strFontName, m_strFontStyle, m_strFontWgt);
