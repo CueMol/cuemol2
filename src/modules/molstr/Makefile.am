@@ -53,6 +53,7 @@ PDBFileWriter.cpp \
 NuclBasePair.cpp \
 MolRenderer.cpp \
 NameLabelRenderer.cpp \
+NameLabel2Renderer.cpp \
 SelectionRenderer.cpp \
 Prot2ndry.cpp \
 AtomPosMap.cpp \
@@ -86,6 +87,7 @@ MolChain.qif \
 MolCoord.qif \
 MolRenderer.qif \
 NameLabelRenderer.qif \
+NameLabel2Renderer.qif \
 SelectionRenderer.qif \
 PDBFileReader.qif \
 PDBFileWriter.qif \

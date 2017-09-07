@@ -24,7 +24,6 @@
 uniform TextureType coefTex;
 uniform TextureType binormTex;
 uniform TextureType sectTex;
-//uniform sampler1D colorTex;
 uniform TextureType colorTex;
 uniform TextureType puttyTex;
 
@@ -147,6 +146,12 @@ vec4 getSectTab(in int ind)
   return texelFetch(sectTex, ind);
 #else
   return texelFetch1D(sectTex, ind, 0);
+  /*float w = 0.35f;
+  float ndiv = 16.0f;
+  float th = radians( float(ind)*360.0f /ndiv );
+  float co = cos(th);
+  float si = sin(th);
+  return vec4(co*w, si*w, co, si);*/
 #endif
 }
 
@@ -162,6 +167,8 @@ vec4 calcColor(in float rho)
 #else
   vec4 col0 = texelFetch1D(colorTex, ncoeff, 0);
   vec4 col1 = texelFetch1D(colorTex, ncoeff+1, 0);
+  //vec4 col0 = vec4(1,0,0,1);
+  //vec4 col1 = vec4(0,0,1,1);
 #endif
 
   if (u_bsmocol!=0)

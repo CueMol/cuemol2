@@ -19,6 +19,7 @@
 #include "SelCompiler.hpp"
 #include "TraceRenderer.hpp"
 #include "NameLabelRenderer.hpp"
+#include "NameLabel2Renderer.hpp"
 #include "SelectionRenderer.hpp"
 #include "SelCacheMgr.hpp"
 #include "QdfMolWriter.hpp"
@@ -112,6 +113,7 @@ bool init()
 
   pRF->regist<TraceRenderer>();
   pRF->regist<NameLabelRenderer>();
+  pRF->regist<NameLabel2Renderer>();
   pRF->regist<SelectionRenderer>();
   
   SelCacheMgr::init();
