@@ -156,9 +156,13 @@ void MolRenderer::objectChanged(qsys::ObjectEvent &ev)
     else if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED_FIXDYN) {
       MB_DPRINTLN("MolRend (%d/%p) > OBE_CHANGED_FIXDYN called!!", getUID(), this);
       
-      if (!isForceGLSL())
-        setShaderEnable(false); // reset to VBO mode
-      
+      if (!isForceGLSL()) {
+	// reset to VBO mode
+	setShaderEnable(false);
+	// Clean-up the VBO data/cache to update the rendering
+        invalidateDisplayCache();
+      }
+
       return;
     }
   }

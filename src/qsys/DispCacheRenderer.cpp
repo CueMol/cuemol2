@@ -95,7 +95,8 @@ void DispCacheRenderer::objectChanged(ObjectEvent &ev)
   // Default implementation:
   //   Treat changed and changed_dynamic events as the same
   if (ev.getType()==ObjectEvent::OBE_CHANGED ||
-      ev.getType()==ObjectEvent::OBE_CHANGED_DYNAMIC) {
+      ev.getType()==ObjectEvent::OBE_CHANGED_DYNAMIC ||
+      ev.getType()==ObjectEvent::OBE_CHANGED_FIXDYN) {
     invalidateDisplayCache();
   }
   else if (ev.getType()==qsys::ObjectEvent::OBE_PROPCHG) {

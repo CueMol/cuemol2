@@ -909,6 +909,8 @@ void SimpleRenderer::updateVBOColor()
 
 void SimpleRenderer::invalidateDisplayCache()
 {
+  MB_DPRINTLN("SimpleRend> invalidateDisplayCache() called");
+
 #ifdef USE_OPENGL_VBO
   if (m_pVBO!=NULL) {
     delete m_pVBO;

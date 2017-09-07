@@ -392,6 +392,25 @@ void NameLabelRenderer::styleChanged(qsys::StyleEvent &ev)
   //m_pixCache.render();
 }
 
+void NameLabelRenderer::objectChanged(qsys::ObjectEvent &ev)
+{
+  // Treat changed and changed_dynamic events as the same
+  if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED ||
+      ev.getType()==qsys::ObjectEvent::OBE_CHANGED_DYNAMIC) {
+    //invalidateDisplayCache();
+    invalidateAll();
+  }
+  else if (ev.getType()==qsys::ObjectEvent::OBE_PROPCHG) {
+    qlib::LPropEvent *pPE = ev.getPropEvent();
+    if (pPE && pPE->getName().equals("xformMat")) {
+      //invalidateDisplayCache();
+      invalidateAll();
+    }
+  }
+}
+
+///////////////////////
+
 void NameLabelRenderer::writeTo2(qlib::LDom2Node *pNode) const
 {
   // write properties
