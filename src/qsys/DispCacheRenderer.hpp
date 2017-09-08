@@ -91,7 +91,8 @@ namespace qsys {
     /// Use ver2 interface (default: false)
     virtual bool isUseVer2Iface() const;
 
-    /// Initialize & setup capabilities (default: do nothing)
+    /// Initialize & setup capabilities
+    ///  (mainly for GLSL init; default=do nothing)
     virtual bool init(DisplayContext *pdc);
     
     /// Render to display (version 2)

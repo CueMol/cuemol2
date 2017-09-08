@@ -22,7 +22,7 @@ namespace molstr {
   struct NameLabel;
   struct NameLabelList;
 
-  class MOLSTR_API NameLabel2Renderer : public qsys::Renderer
+  class MOLSTR_API NameLabel2Renderer : public qsys::DispListRenderer
   {
     MC_SCRIPTABLE;
     MC_CLONEABLE;
@@ -30,7 +30,7 @@ namespace molstr {
     friend class ::NameLabel2Renderer_wrap;
 
   private:
-    typedef qsys::Renderer super_t;
+    typedef qsys::DispListRenderer super_t;
 
     /// implementation
     NameLabelList *m_pdata;
@@ -66,16 +66,11 @@ namespace molstr {
     virtual ~NameLabel2Renderer();
 
     //////////////////////////////////////////////////////
+    // Renderer interface implementation
 
     virtual bool isCompatibleObj(qsys::ObjectPtr pobj) const;
     virtual LString toString() const;
 
-    virtual void display(DisplayContext *pdc);
-    virtual void displayLabels(DisplayContext *pdc);
-
-    virtual void preRender(DisplayContext *pdc);
-    virtual void render(DisplayContext *pdc);
-    virtual void postRender(DisplayContext *pdc);
     virtual bool isHitTestSupported() const;
 
     virtual Vector4D getCenter() const;
@@ -84,7 +79,37 @@ namespace molstr {
 
     virtual bool isTransp() const { return true; }
 
-    //////
+    /// Invalidate the display cache
+    virtual void invalidateDisplayCache();
+
+    //////////////////////////////////////////////////////
+    // Old rendering interface
+    //   (for renderFile()/GL compatible prof)
+
+    virtual void preRender(DisplayContext *pdc);
+    virtual void render(DisplayContext *pdc);
+    virtual void postRender(DisplayContext *pdc);
+
+    //////////////////////////////////////////////////////
+    // Ver. 2 interface
+
+    /// Use ver2 interface (--> return true)
+    virtual bool isUseVer2Iface() const;
+
+    /// Initialize & setup capabilities (for glsl setup)
+    virtual bool init(DisplayContext *pdc);
+    
+    virtual void createDisplayCache();
+
+    virtual bool isCacheAvail() const;
+
+    /// Render to display (using VBO)
+    virtual void renderVBO(DisplayContext *pdc);
+
+    /// Render to display (using GLSL)
+    virtual void renderGLSL(DisplayContext *pdc);
+
+    //////////////////////////////////////////////////////
     // Event handlers
 
     virtual void propChanged(qlib::LPropEvent &ev);
@@ -93,7 +118,7 @@ namespace molstr {
 
     virtual void objectChanged(qsys::ObjectEvent &ev);
 
-    //////
+    //////////////////////////////////////////////////////
     // Serialization / deserialization impl for non-prop data
 
     virtual void writeTo2(qlib::LDom2Node *pNode) const;

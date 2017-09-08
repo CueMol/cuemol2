@@ -97,27 +97,34 @@ LString NameLabel2Renderer::toString() const
   return LString::format("NameLabel2Renderer %p", this);
 }
 
+bool NameLabel2Renderer::isHitTestSupported() const
+{
+  return false;
+}
+
+const char *NameLabel2Renderer::getTypeName() const
+{
+  return "*namelabel2";
+}
+
+Vector4D NameLabel2Renderer::getCenter() const
+{
+  // TO DO: throw NoCenterException
+  return Vector4D();
+}
+
+/// Invalidate the display cache
+void NameLabel2Renderer::invalidateDisplayCache()
+{
+  // clean-up internal data
+  invalidateAll();
+
+  // clean-up display list (if exists; in compatible mode)
+  super_t::invalidateDisplayCache();
+}
+
 //////////////////////////////////////////////////////////////////////////
-
-void NameLabel2Renderer::display(DisplayContext *pdc)
-{
-  // if pdc target is file, label should be rendered here
-  //  (displayLabels() won't be called...)
-  if (pdc->isFile()) {
-    preRender(pdc);
-    render(pdc);
-    postRender(pdc);
-  }
-}
-
-void NameLabel2Renderer::displayLabels(DisplayContext *pdc)
-{
-  if (!pdc->isFile()) {
-    preRender(pdc);
-    render(pdc);
-    postRender(pdc);
-  }
-}
+// old renderer interface implementations
 
 void NameLabel2Renderer::preRender(DisplayContext *pdc)
 {
@@ -139,41 +146,6 @@ void NameLabel2Renderer::postRender(DisplayContext *pdc)
 {
   pdc->popMatrix();
   pdc->enableDepthTest(true);
-}
-
-bool NameLabel2Renderer::makeLabelStr(NameLabel &nlab, LString &rstrlab, Vector4D &rpos)
-{
-  MolCoordPtr pobj = getClientMol();
-  MB_ASSERT(!pobj.isnull());
-  
-  if (nlab.aid<0) {
-    nlab.aid = pobj->fromStrAID(nlab.strAid);
-    if (nlab.aid<0)
-      return false;
-  }
-
-  MolAtomPtr pAtom = pobj->getAtom(nlab.aid);
-  if (pAtom.isnull())
-    return false;
-
-  rpos = pAtom->getPos();
-
-  if (!nlab.str.isEmpty()) {
-    rstrlab = nlab.str;
-  }
-  else {
-    LString sbuf = pAtom->getChainName() + " " +
-      pAtom->getResName() +
-        pAtom->getResIndex().toString() + " " +
-          pAtom->getName();
-    char confid = pAtom->getConfID();
-    if (confid)
-      sbuf += LString(":") + LString(confid);
-    
-    rstrlab = sbuf; //.toUpperCase();
-  }
-  
-  return true;
 }
 
 void NameLabel2Renderer::render(DisplayContext *pdc)
@@ -211,24 +183,77 @@ void NameLabel2Renderer::render(DisplayContext *pdc)
   // m_pixCache.draw(pdc, true); // reuse cached label images
 }
 
-Vector4D NameLabel2Renderer::getCenter() const
-{
-  // TO DO: throw NoCenterException
-  return Vector4D();
-}
+//////////////////////////////////////////////////////
+// Ver. 2 interface implementations
 
-bool NameLabel2Renderer::isHitTestSupported() const
+/// Use ver2 interface (--> return true)
+bool NameLabel2Renderer::isUseVer2Iface() const
 {
   return false;
 }
 
-const char *NameLabel2Renderer::getTypeName() const
+/// Initialize & setup capabilities (for glsl setup)
+bool NameLabel2Renderer::init(DisplayContext *pdc)
 {
-  return "*namelabel2";
+  return true;
+}
+    
+void NameLabel2Renderer::createDisplayCache()
+{
+}
+
+bool NameLabel2Renderer::isCacheAvail() const
+{
+  return true;
+}
+
+/// Render to display (using VBO)
+void NameLabel2Renderer::renderVBO(DisplayContext *pdc)
+{
+}
+
+/// Render to display (using GLSL)
+void NameLabel2Renderer::renderGLSL(DisplayContext *pdc)
+{
 }
 
 //////////////////////////////////////////////////////////////////////////
-// Label operations
+// Label specific implementations
+
+bool NameLabel2Renderer::makeLabelStr(NameLabel &nlab, LString &rstrlab, Vector4D &rpos)
+{
+  MolCoordPtr pobj = getClientMol();
+  MB_ASSERT(!pobj.isnull());
+  
+  if (nlab.aid<0) {
+    nlab.aid = pobj->fromStrAID(nlab.strAid);
+    if (nlab.aid<0)
+      return false;
+  }
+
+  MolAtomPtr pAtom = pobj->getAtom(nlab.aid);
+  if (pAtom.isnull())
+    return false;
+
+  rpos = pAtom->getPos();
+
+  if (!nlab.str.isEmpty()) {
+    rstrlab = nlab.str;
+  }
+  else {
+    LString sbuf = pAtom->getChainName() + " " +
+      pAtom->getResName() +
+        pAtom->getResIndex().toString() + " " +
+          pAtom->getName();
+    char confid = pAtom->getConfID();
+    if (confid)
+      sbuf += LString(":") + LString(confid);
+    
+    rstrlab = sbuf; //.toUpperCase();
+  }
+  
+  return true;
+}
 
 bool NameLabel2Renderer::addLabel(MolAtomPtr patom, const LString &label /*= LString()*/)
 {
@@ -255,9 +280,7 @@ bool NameLabel2Renderer::addLabel(MolAtomPtr patom, const LString &label /*= LSt
   // makeLabelImg();
 
   // to be redrawn
-  qsys::ScenePtr pScene = getScene();
-  if (!pScene.isnull())
-    pScene->setUpdateFlag();
+  invalidateDisplayCache();
 
   return true;
 }
@@ -365,11 +388,7 @@ void NameLabel2Renderer::propChanged(qlib::LPropEvent &ev)
 {
   const LString propnm = ev.getName();
   if (propnm.equals("color")) {
-    //invalidateDisplayCache();
-    // to be redrawn
-    qsys::ScenePtr pScene = getScene();
-    if (!pScene.isnull())
-      pScene->setUpdateFlag();
+    invalidateDisplayCache();
   }
   /*else if (propnm.startsWith("font_")) {
     makeLabelImg();
@@ -385,10 +404,7 @@ void NameLabel2Renderer::styleChanged(qsys::StyleEvent &ev)
   super_t::styleChanged(ev);
 
   // TO DO: ignore non-relevant styleChanged message
-  invalidateAll();
-
-  //makeLabelImg();
-  //m_pixCache.render();
+  invalidateDisplayCache();
 }
 
 void NameLabel2Renderer::objectChanged(qsys::ObjectEvent &ev)
@@ -396,14 +412,12 @@ void NameLabel2Renderer::objectChanged(qsys::ObjectEvent &ev)
   // Treat changed and changed_dynamic events as the same
   if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED ||
       ev.getType()==qsys::ObjectEvent::OBE_CHANGED_DYNAMIC) {
-    //invalidateDisplayCache();
-    invalidateAll();
+    invalidateDisplayCache();
   }
   else if (ev.getType()==qsys::ObjectEvent::OBE_PROPCHG) {
     qlib::LPropEvent *pPE = ev.getPropEvent();
     if (pPE && pPE->getName().equals("xformMat")) {
-      //invalidateDisplayCache();
-      invalidateAll();
+      invalidateDisplayCache();
     }
   }
 }
