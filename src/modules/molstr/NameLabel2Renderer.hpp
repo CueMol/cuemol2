@@ -12,7 +12,13 @@
 #include <gfx/SolidColor.hpp>
 #include <gfx/LabelCacheImpl.hpp>
 
+#include <gfx/DrawAttrArray.hpp>
+
 class NameLabel2Renderer_wrap;
+
+namespace sysdep {
+  class OglProgramObject;
+}
 
 namespace molstr {
 
@@ -154,6 +160,24 @@ namespace molstr {
 
     /// clear all cached data
     void invalidateAll();
+
+    //////////////////////////////
+
+    /// GLSL shader objects
+    sysdep::OglProgramObject *m_pPO;
+
+    struct AttrElem {
+      qfloat32 x, y, z;
+      qfloat32 w, h;
+    };
+
+    quint32 m_nXyzLoc;
+    quint32 m_nWhLoc;
+
+    typedef gfx::DrawAttrArray<AttrElem> AttrArray;
+
+    /// VBO for GLSL rendering
+    AttrArray *m_pAttrAry;
 
   };
 

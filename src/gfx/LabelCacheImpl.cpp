@@ -57,30 +57,8 @@ void LabelCacheImpl::draw(DisplayContext *pdc)
           return;
         iter->pPixBuf = pixbuf;
 
-	// Pixbuf is created --> update texture obj
-	if (iter->pTex!=NULL) {
-	  delete iter->pTex;
-	  iter->pTex = NULL;
-	}
       }
 
-      if (iter->pTex==NULL) {
-	// create texture
-	iter->pTex = MB_NEW Texture();
-	iter->pTex->setup(2, Texture::FMT_R,
-			  Texture::TYPE_UINT8_COLOR);
-	iter->pTex->setData(pixbuf->getWidth(),
-			    pixbuf->getHeight(),
-			    1,
-			    pixbuf->data());
-	//m_nTexW, m_nTexH, 1, &m_colorTexData[0]);
-      }
-
-      pdc->useTexture(iter->pTex, 0);
-      
-      pdc->unuseTexture(iter->pTex);
-
-      
       pdc->drawPixels(pos, *pixbuf, ColorPtr());
     }
   }

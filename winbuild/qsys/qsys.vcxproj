@@ -79,7 +79,6 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
   </PropertyGroup>
-
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
     <ClCompile>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;QSYS_EXPORTS;SYSDEP_EXPORTS;JSBR_EXPORTS;GFX_EXPORTS;MOLSTR_EXPORTS;MOLVIS_EXPORTS;XTAL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -89,7 +88,6 @@
       <AdditionalDependencies>opengl32.lib;glu32.lib;glew32.lib;lcms2.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
-
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
     <ClCompile>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;QSYS_EXPORTS;SYSDEP_EXPORTS;JSBR_EXPORTS;GFX_EXPORTS;MOLSTR_EXPORTS;MOLVIS_EXPORTS;XTAL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -99,7 +97,6 @@
       <AdditionalDependencies>opengl32.lib;glu32.lib;glew32.lib;lcms2.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
-
   <ItemGroup>
     <ClCompile Include="..\..\src\gfx\CmsXform.cpp" />
     <ClCompile Include="..\..\src\gfx\ColProfMgr.cpp" />
@@ -112,10 +109,14 @@
     <ClCompile Include="..\..\src\modules\molstr\ChainIterator.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\ChainIterator_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\MolBond.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\NameLabel2Renderer.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\NameLabel2Renderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\QdfPdbReader.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\QdfPdbReader_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\SimpleRendGLSL.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\SimpleRendGLSL_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\AtomIntr2Renderer.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\AtomIntr2Renderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\BallStick2Renderer.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\BallStick2Renderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\CPK2Renderer.cpp" />
@@ -404,8 +405,10 @@
     <mcwrapgen3 Include="..\..\src\gfx\MultiGradient.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molstr\AnimMol.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molstr\ChainIterator.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molstr\NameLabel2Renderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molstr\QdfPdbReader.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molstr\SimpleRendGLSL.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molvis\AtomIntr2Renderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\BallStick2Renderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\CPK2Renderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\CPK3Renderer.qif" />
@@ -488,6 +491,8 @@
   </ItemGroup>
   <ItemGroup>
     <glslshader Include="..\..\src\modules\molstr\lib_atoms.glsl" />
+    <glslshader Include="..\..\src\modules\molstr\namelabel2_frag.glsl" />
+    <glslshader Include="..\..\src\modules\molstr\namelabel2_vert.glsl" />
     <glslshader Include="..\..\src\modules\molstr\simple_frag.glsl" />
     <glslshader Include="..\..\src\modules\molstr\simple_vertex.glsl" />
     <glslshader Include="..\..\src\modules\molvis\cylinder2_frag.glsl" />

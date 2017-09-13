@@ -17,7 +17,6 @@ namespace gfx {
   using qlib::LString;
   using qlib::Vector4D;
   class DisplayContext;
-  class Texture;
 
   class GFX_API LabelCacheImpl
   {
@@ -36,11 +35,8 @@ namespace gfx {
       /// Label string
       LString str;
 
-      /// Texture data of label (in GPU)
-      Texture *pTex;
-
       PixCacheElem(int id, const Vector4D &apos, const LString &astr)
-	: m_nID(id), pos(apos), pPixBuf(NULL), str(astr), pTex(NULL)
+           : m_nID(id), pos(apos), pPixBuf(NULL), str(astr)
       {
       }
     
@@ -83,6 +79,11 @@ namespace gfx {
     int addString(const Vector4D &pos, const LString &str);
 
     bool remove(int id);
+
+    int getSize() const { return m_data.size(); }
+
+    PixelBuffer *getData(int id) const { return m_data[id].pPixBuf; }
+    Vector4D getPos(int id) const { return m_data[id].pos; }
 
     bool isEmpty() const { return m_data.empty(); }
 

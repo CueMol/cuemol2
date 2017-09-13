@@ -15,6 +15,8 @@
 #include <gfx/DisplayContext.hpp>
 #include <qsys/SceneManager.hpp>
 
+#include <sysdep/OglShaderSetupHelper.hpp>
+
 namespace molstr {
 
   struct NameLabel
@@ -70,6 +72,10 @@ NameLabel2Renderer::NameLabel2Renderer()
 
   // will be called by RendererFactory
   //resetAllProps();
+
+  m_pPO = NULL;
+  m_pAttrAry = NULL;
+  setForceGLSL(true);
 }
 
 NameLabel2Renderer::~NameLabel2Renderer()
@@ -189,22 +195,128 @@ void NameLabel2Renderer::render(DisplayContext *pdc)
 /// Use ver2 interface (--> return true)
 bool NameLabel2Renderer::isUseVer2Iface() const
 {
-  return false;
+  //return false;
+  return true;
 }
 
 /// Initialize & setup capabilities (for glsl setup)
 bool NameLabel2Renderer::init(DisplayContext *pdc)
 {
+  sysdep::OglShaderSetupHelper<NameLabel2Renderer> ssh(this);
+
+  if (!ssh.checkEnvVS()) {
+    LOG_DPRINTLN("NameLabel2> ERROR: GLSL not supported.");
+    //MB_THROW(qlib::RuntimeException, "OpenGL GPU shading not supported");
+    setShaderAvail(false);
+    return false;
+  }
+
+  if (m_pPO==NULL)
+    m_pPO = ssh.createProgObj("gpu_namelabel2",
+                              "%%CONFDIR%%/data/shaders/namelabel2_vert.glsl",
+                              "%%CONFDIR%%/data/shaders/namelabel2_frag.glsl");
+  
+  if (m_pPO==NULL) {
+    LOG_DPRINTLN("NameLabel2> ERROR: cannot create progobj.");
+    setShaderAvail(false);
+    return false;
+  }
+
+  m_pPO->enable();
+
+  // setup uniforms
+  // m_pPO->setUniform("coordTex", 0);
+
+  // setup attributes
+  m_nXyzLoc = m_pPO->getAttribLocation("a_xyz");
+  m_nWhLoc = m_pPO->getAttribLocation("a_wh");
+
+  m_pPO->disable();
+  setShaderAvail(true);
   return true;
 }
     
 void NameLabel2Renderer::createDisplayCache()
 {
+  
+  {
+    LString strlab;
+    Vector4D pos;
+    NameLabelList::iterator iter = m_pdata->begin();
+    NameLabelList::iterator eiter = m_pdata->end();
+    for (; iter!=eiter; iter++) {
+      NameLabel &nlab = *iter;
+      if (nlab.m_nCacheID<0) {
+        makeLabelStr(nlab, strlab, pos);
+        nlab.m_nCacheID = m_pixCache.addString(pos, strlab);
+      }
+    }
+  }
+
+  int nva = m_pdata->size()*4;
+
+  //
+  // Create VBO
+  //
+  
+  if (m_pAttrAry!=NULL)
+    delete m_pAttrAry;
+
+  m_pAttrAry = MB_NEW AttrArray();
+  AttrArray &attra = *m_pAttrAry;
+  attra.setAttrSize(2);
+  attra.setAttrInfo(0, m_nXyzLoc, 3, qlib::type_consts::QTC_FLOAT32,
+                    offsetof(AttrElem, x));
+  attra.setAttrInfo(1, m_nWhLoc, 2, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, w));
+
+  attra.alloc(nva);
+  attra.setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLE_STRIP);
+  //attra.setDrawMode(gfx::AbstDrawElem::DRAW_POINTS);
+
+  {
+    int i=0;
+    LString strlab;
+    Vector4D pos;
+    NameLabelList::iterator iter = m_pdata->begin();
+    NameLabelList::iterator eiter = m_pdata->end();
+    for (; iter!=eiter; iter++, ++i) {
+      NameLabel &nlab = *iter;
+      gfx::PixelBuffer *ppb = m_pixCache.getData( nlab.m_nCacheID );
+      Vector4D pos = m_pixCache.getPos( nlab.m_nCacheID );
+      attra.at(i*4+0).x = qfloat32( pos.x() );
+      attra.at(i*4+0).y = qfloat32( pos.y() );
+      attra.at(i*4+0).z = qfloat32( pos.z() );
+
+      attra.at(i*4+0).w = 0.0f;
+      attra.at(i*4+0).h = 0.0f;
+
+      attra.at(i*4+1).x = qfloat32( pos.x() );
+      attra.at(i*4+1).y = qfloat32( pos.y() );
+      attra.at(i*4+1).z = qfloat32( pos.z() );
+
+      attra.at(i*4+1).w = 1.0f;
+      attra.at(i*4+1).h = 0.0f;
+
+      attra.at(i*4+2).x = qfloat32( pos.x() );
+      attra.at(i*4+2).y = qfloat32( pos.y() );
+      attra.at(i*4+2).z = qfloat32( pos.z() );
+
+      attra.at(i*4+2).w = 0.0f;
+      attra.at(i*4+2).h = 1.0f;
+
+      attra.at(i*4+3).x = qfloat32( pos.x() );
+      attra.at(i*4+3).y = qfloat32( pos.y() );
+      attra.at(i*4+3).z = qfloat32( pos.z() );
+
+      attra.at(i*4+3).w = 1.0f;
+      attra.at(i*4+3).h = 1.0f;
+}
+  }
 }
 
 bool NameLabel2Renderer::isCacheAvail() const
 {
-  return true;
+  return m_pAttrAry!=NULL;
 }
 
 /// Render to display (using VBO)
@@ -215,6 +327,16 @@ void NameLabel2Renderer::renderVBO(DisplayContext *pdc)
 /// Render to display (using GLSL)
 void NameLabel2Renderer::renderGLSL(DisplayContext *pdc)
 {
+  if (m_pPO==NULL)
+    return; // Error, Cannot draw anything (ignore)
+
+  //pdc->setLineWidth(getLineWidth());
+
+  m_pPO->enable();
+  //m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
+  pdc->drawElem(*m_pAttrAry);
+
+  m_pPO->disable();
 }
 
 //////////////////////////////////////////////////////////////////////////
