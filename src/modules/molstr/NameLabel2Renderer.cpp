@@ -277,8 +277,6 @@ bool NameLabel2Renderer::addLabel(MolAtomPtr patom, const LString &label /*= LSt
     m_pdata->pop_front();
   }
   
-  // makeLabelImg();
-
   // to be redrawn
   invalidateDisplayCache();
 
@@ -312,14 +310,8 @@ bool NameLabel2Renderer::removeLabelByID(int aid)
         m_pixCache.remove(nlab.m_nCacheID);
       m_pdata->erase(iter);
 
-      //makeLabelImg();
-      //m_pixCache.invalidate();
-      //m_pixCache.render();
-      
       // to be redrawn
-      qsys::ScenePtr pScene = getScene();
-      if (!pScene.isnull())
-        pScene->setUpdateFlag();
+      invalidateDisplayCache();
       
       return true;
     }
@@ -390,11 +382,6 @@ void NameLabel2Renderer::propChanged(qlib::LPropEvent &ev)
   if (propnm.equals("color")) {
     invalidateDisplayCache();
   }
-  /*else if (propnm.startsWith("font_")) {
-    makeLabelImg();
-    //m_pixCache.invalidate();
-    //m_pixCache.render();
-  }*/
 
   super_t::propChanged(ev);
 }
