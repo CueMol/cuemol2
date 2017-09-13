@@ -167,10 +167,11 @@ namespace BALL
 				return (_isnan(t) != 0);
 #elif defined(isnan)
 				return (isnan(t) != 0);
-#elif __cplusplus >= 201103L
-				return (std::isnan(t) != 0);
+//#elif __cplusplus >= 201103L
 #else
-#error "isnan() is not defined!!"
+				return (std::isnan(t) != 0);
+//#else
+//#error "isnan() is not defined!!"
 #endif
 		}
 

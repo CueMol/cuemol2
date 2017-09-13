@@ -106,7 +106,7 @@ void TubeSection::setupEllipticalSection()
 
   i=0;
   BOOST_FOREACH (double th, thset) {
-    //MB_DPRINTLN("TS.ses> i= %d , th= %f", i, qlib::toDegree(th));
+    MB_DPRINTLN("TS.ses> i= %d , th= %f", i, qlib::toDegree(th));
     const double si = ::sin(th);
     const double co = ::cos(th);
     const double dlen = ::sqrt(co*co*m_tuber*m_tuber + si*si);

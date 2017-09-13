@@ -21,6 +21,7 @@
 #include "JctTable.qif"
 #include "NARenderer.qif"
 #include "AtomIntrRenderer.qif"
+#include "AtomIntr2Renderer.qif"
 #include "Ribbon2Renderer.qif"
 #include "RainbowColoring.qif"
 //#include "ScriptColoring.qif"
@@ -56,6 +57,7 @@ module molvis
   JctTable;
   NARenderer;
   AtomIntrRenderer;
+  AtomIntr2Renderer;
   DisoRenderer;
   Ribbon2Renderer;
   RainbowColoring;

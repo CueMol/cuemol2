@@ -123,7 +123,9 @@ namespace qsys {
     /// Display renderers in the scene to the frame buffer (3D/structure).
     virtual void display(DisplayContext *pdc) =0;
 
-    /// Display 2D labels (UI elements /w depth)
+    /// Display 2D labels
+    ///  (This is called without default shaders enaled,
+    ///   to avoid glDrawPixels problems in compatible profile.)
     virtual void displayLabels(DisplayContext *pdc);
 
     //////////

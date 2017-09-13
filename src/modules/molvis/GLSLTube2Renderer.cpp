@@ -58,8 +58,8 @@ GLSLTube2DS::~GLSLTube2DS()
 GLSLTube2Renderer::GLSLTube2Renderer()
      : super_t(), m_pPO(NULL), m_nRhoLoc(0), m_pSectTex(NULL)
 {
-  m_bUseFragLtg = true;
-  //m_bUseFragLtg = false;
+  //m_bUseFragLtg = true;
+  m_bUseFragLtg = false;
 }
 
 GLSLTube2Renderer::~GLSLTube2Renderer()
@@ -350,7 +350,7 @@ void GLSLTube2Renderer::drawGLSL(detail::SplineSegment *pASeg, DisplayContext *p
   m_pPO->setUniform("coefTex", COEF_TEX_UNIT);
   m_pPO->setUniform("binormTex", BINORM_TEX_UNIT);
   m_pPO->setUniform("sectTex", SECT_TEX_UNIT);
-  //m_pPO->setUniform("colorTex", COLOR_TEX_UNIT);
+  m_pPO->setUniform("colorTex", COLOR_TEX_UNIT);
   m_pPO->setUniform("puttyTex", PUTTY_TEX_UNIT);
 
   BOOST_FOREACH (DrawSegment *pelem, pSeg->m_draws) {

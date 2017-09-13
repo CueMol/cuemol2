@@ -34,6 +34,7 @@ JctTable.cpp \
 PaintColoring.cpp \
 NARenderer.cpp \
 AtomIntrRenderer.cpp \
+AtomIntr2Renderer.cpp \
 DisoRenderer.cpp \
 RainbowColoring.cpp \
 DistPickDrawObj.cpp \
@@ -69,6 +70,7 @@ JctTable.qif \
 PaintColoring.qif \
 NARenderer.qif \
 AtomIntrRenderer.qif \
+AtomIntr2Renderer.qif \
 DisoRenderer.qif \
 RainbowColoring.qif \
 DistPickDrawObj.qif \

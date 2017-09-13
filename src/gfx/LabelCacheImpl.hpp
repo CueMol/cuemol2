@@ -11,26 +11,36 @@
 #include <qlib/LString.hpp>
 #include <qlib/Vector4D.hpp>
 #include "PixelBuffer.hpp"
-#include "TextRenderManager.hpp"
 
 namespace gfx {
 
   using qlib::LString;
   using qlib::Vector4D;
   class DisplayContext;
+  class Texture;
 
   class GFX_API LabelCacheImpl
   {
   private:
     struct PixCacheElem
     {
+      /// Sequential ID of this element
       int m_nID;
+
+      /// Display Position 
       Vector4D pos;
-      gfx::PixelBuffer *pPixBuf;
+
+      /// Image data of label (in CPU)
+      PixelBuffer *pPixBuf;
+
+      /// Label string
       LString str;
 
+      /// Texture data of label (in GPU)
+      Texture *pTex;
+
       PixCacheElem(int id, const Vector4D &apos, const LString &astr)
-           : m_nID(id), pos(apos), pPixBuf(NULL), str(astr)
+	: m_nID(id), pos(apos), pPixBuf(NULL), str(astr), pTex(NULL)
       {
       }
     

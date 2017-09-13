@@ -21,6 +21,10 @@ runtime_class GLSLTube2Renderer extends Tube2Renderer
   property integer axdet_scl => redirect(getAxDetScl, setAxDetScl);
   default axdet_scl = 1;
 
+  // /// Use fragment-based lighting
+  // property boolean use_fraglit => redirect(getUseFragLtg, setUseFragLtg);
+  // default use_ fraglit = true;
+
   /// force to use GLSL
   property boolean force_glsl => redirect(isForceGLSL, setForceGLSL);
   default force_glsl = false;

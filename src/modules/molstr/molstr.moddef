@@ -24,6 +24,7 @@
 #include "MainChainRenderer.qif"
 #include "TraceRenderer.qif"
 #include "NameLabelRenderer.qif"
+#include "NameLabel2Renderer.qif"
 #include "SelectionRenderer.qif"
 #include "PDBFileReader.qif"
 #include "PDBFileWriter.qif"
@@ -55,6 +56,7 @@ module molstr
   MainChainRenderer uuid 71f2c289-f184-4a0c-9cca-04e7ccc4f1b1;
   TraceRenderer uuid e964c858-f906-4e55-a189-928e0bca65c1;
   NameLabelRenderer uuid e964c858-f906-4e55-a189-928e0bca65c1;
+  NameLabel2Renderer;
   SelectionRenderer;
 
   AtomIterator uuid 92570525-62d7-46e1-b3d7-8d4602071477;
