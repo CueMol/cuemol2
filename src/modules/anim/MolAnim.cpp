@@ -71,8 +71,8 @@ void MolAnim::onTimer(qlib::time_value elapsed, AnimMgr *pMgr)
 {
   const double rho = getRho(elapsed);
   
-  // MB_DPRINTLN("spin(%s) rho=%f", getName().c_str(), rho);
   double value = m_startValue*(1.0-rho) + m_endValue*rho;
+  MB_DPRINTLN("MolAnim(%s)> rho=%f, val=%f", getName().c_str(), rho, value);
 
   qlib::LVariant var(value);
   LString propnm = getPropName();
