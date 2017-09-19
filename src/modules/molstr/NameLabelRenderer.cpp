@@ -197,6 +197,7 @@ void NameLabelRenderer::render(DisplayContext *pdc)
       NameLabel &nlab = *iter;
       if (nlab.m_nCacheID<0) {
         makeLabelStr(nlab, strlab, pos);
+        //strlab = "A";
         nlab.m_nCacheID = m_pixCache.addString(pos, strlab);
       }
     }

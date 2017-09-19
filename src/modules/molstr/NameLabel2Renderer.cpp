@@ -13,6 +13,7 @@
 #include <gfx/PixelBuffer.hpp>
 //#include <gfx/TextRenderManager.hpp>
 #include <gfx/DisplayContext.hpp>
+#include <gfx/Texture.hpp>
 #include <qsys/SceneManager.hpp>
 
 #include <sysdep/OglShaderSetupHelper.hpp>
@@ -75,6 +76,7 @@ NameLabel2Renderer::NameLabel2Renderer()
 
   m_pPO = NULL;
   m_pAttrAry = NULL;
+  m_pLabelTex = NULL;
   setForceGLSL(true);
 }
 
@@ -124,6 +126,16 @@ void NameLabel2Renderer::invalidateDisplayCache()
 {
   // clean-up internal data
   invalidateAll();
+
+  m_pixall.clear();
+  if (m_pLabelTex!=NULL) {
+    delete m_pLabelTex;
+    m_pLabelTex = NULL;
+  }
+  if (m_pAttrAry!=NULL) {
+    delete m_pAttrAry;
+    m_pAttrAry = NULL;
+  }
 
   // clean-up display list (if exists; in compatible mode)
   super_t::invalidateDisplayCache();
@@ -225,11 +237,13 @@ bool NameLabel2Renderer::init(DisplayContext *pdc)
   m_pPO->enable();
 
   // setup uniforms
-  // m_pPO->setUniform("coordTex", 0);
+  m_pPO->setUniform("labelTex", 0);
 
   // setup attributes
   m_nXyzLoc = m_pPO->getAttribLocation("a_xyz");
   m_nWhLoc = m_pPO->getAttribLocation("a_wh");
+  m_nWidthLoc = m_pPO->getAttribLocation("a_width");
+  m_nAddrLoc = m_pPO->getAttribLocation("a_addr");
 
   m_pPO->disable();
   setShaderAvail(true);
@@ -238,22 +252,23 @@ bool NameLabel2Renderer::init(DisplayContext *pdc)
     
 void NameLabel2Renderer::createDisplayCache()
 {
-  
-  {
-    LString strlab;
-    Vector4D pos;
-    NameLabelList::iterator iter = m_pdata->begin();
-    NameLabelList::iterator eiter = m_pdata->end();
-    for (; iter!=eiter; iter++) {
-      NameLabel &nlab = *iter;
-      if (nlab.m_nCacheID<0) {
-        makeLabelStr(nlab, strlab, pos);
-        nlab.m_nCacheID = m_pixCache.addString(pos, strlab);
-      }
-    }
-  }
+  int nlab = m_pdata->size();
 
-  int nva = m_pdata->size()*4;
+  // create label texture
+  if (m_pLabelTex!=NULL)
+    delete m_pLabelTex;
+  
+  m_pLabelTex = MB_NEW gfx::Texture();
+
+  //m_pLabelTex->setup(1, gfx::Texture::FMT_R,
+  //gfx::Texture::TYPE_FLOAT32);
+
+  m_pLabelTex->setup(1, gfx::Texture::FMT_R,
+                     gfx::Texture::TYPE_UINT8_COLOR);
+
+  //m_pLabelTex->setup(2, gfx::Texture::FMT_RGB,
+  //gfx::Texture::TYPE_FLOAT32);
+
 
   //
   // Create VBO
@@ -264,54 +279,19 @@ void NameLabel2Renderer::createDisplayCache()
 
   m_pAttrAry = MB_NEW AttrArray();
   AttrArray &attra = *m_pAttrAry;
-  attra.setAttrSize(2);
+  attra.setAttrSize(4);
   attra.setAttrInfo(0, m_nXyzLoc, 3, qlib::type_consts::QTC_FLOAT32,
                     offsetof(AttrElem, x));
   attra.setAttrInfo(1, m_nWhLoc, 2, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, w));
+  attra.setAttrInfo(2, m_nWidthLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, width));
+  attra.setAttrInfo(3, m_nAddrLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, addr));
 
-  attra.alloc(nva);
-  attra.setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLE_STRIP);
+  attra.alloc(nlab*4);
+  attra.allocInd(nlab*6);
+
+  attra.setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
   //attra.setDrawMode(gfx::AbstDrawElem::DRAW_POINTS);
 
-  {
-    int i=0;
-    LString strlab;
-    Vector4D pos;
-    NameLabelList::iterator iter = m_pdata->begin();
-    NameLabelList::iterator eiter = m_pdata->end();
-    for (; iter!=eiter; iter++, ++i) {
-      NameLabel &nlab = *iter;
-      gfx::PixelBuffer *ppb = m_pixCache.getData( nlab.m_nCacheID );
-      Vector4D pos = m_pixCache.getPos( nlab.m_nCacheID );
-      attra.at(i*4+0).x = qfloat32( pos.x() );
-      attra.at(i*4+0).y = qfloat32( pos.y() );
-      attra.at(i*4+0).z = qfloat32( pos.z() );
-
-      attra.at(i*4+0).w = 0.0f;
-      attra.at(i*4+0).h = 0.0f;
-
-      attra.at(i*4+1).x = qfloat32( pos.x() );
-      attra.at(i*4+1).y = qfloat32( pos.y() );
-      attra.at(i*4+1).z = qfloat32( pos.z() );
-
-      attra.at(i*4+1).w = 1.0f;
-      attra.at(i*4+1).h = 0.0f;
-
-      attra.at(i*4+2).x = qfloat32( pos.x() );
-      attra.at(i*4+2).y = qfloat32( pos.y() );
-      attra.at(i*4+2).z = qfloat32( pos.z() );
-
-      attra.at(i*4+2).w = 0.0f;
-      attra.at(i*4+2).h = 1.0f;
-
-      attra.at(i*4+3).x = qfloat32( pos.x() );
-      attra.at(i*4+3).y = qfloat32( pos.y() );
-      attra.at(i*4+3).z = qfloat32( pos.z() );
-
-      attra.at(i*4+3).w = 1.0f;
-      attra.at(i*4+3).h = 1.0f;
-}
-  }
 }
 
 bool NameLabel2Renderer::isCacheAvail() const
@@ -331,12 +311,193 @@ void NameLabel2Renderer::renderGLSL(DisplayContext *pdc)
     return; // Error, Cannot draw anything (ignore)
 
   //pdc->setLineWidth(getLineWidth());
+  float width = 1.0f, height = 1.0f;
+  float sclx = 1.0f, scly = 1.0f;
+  qsys::View *pView = pdc->getTargetView();
+  if (pView!=NULL) {
+    if (pView->useSclFac()) {
+      sclx = (float) pView->getSclFacX();
+      scly = (float) pView->getSclFacY();
+    }
+    width = (float) pView->getWidth()*0.5f*sclx;// * 3.0f/4.0f;
+    height = (float) pView->getHeight()*0.5f*scly;// * 3.0f/4.0f;
+  }
+
+  if (m_pixall.empty())
+    createTextureData(pdc, sclx, scly);
+  updateVBO();
+  
+  pdc->useTexture(m_pLabelTex, 0);
 
   m_pPO->enable();
-  //m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
+  m_pPO->setUniformF("u_winsz", width, height);
   pdc->drawElem(*m_pAttrAry);
 
   m_pPO->disable();
+
+  pdc->unuseTexture(m_pLabelTex);
+}
+
+void NameLabel2Renderer::createTextureData(DisplayContext *pdc, float sclx, float scly)
+{
+  int nlab = m_pdata->size();
+
+  // setup label pixbuf
+  {
+    m_pixCache.setFont(m_dFontSize, m_strFontName, m_strFontStyle, m_strFontWgt);
+
+    LString strlab;
+    Vector4D pos;
+    NameLabelList::iterator iter = m_pdata->begin();
+    NameLabelList::iterator eiter = m_pdata->end();
+    for (; iter!=eiter; iter++) {
+      NameLabel &nlab = *iter;
+      if (nlab.m_nCacheID<0) {
+        makeLabelStr(nlab, strlab, pos);
+        //strlab = "A";
+        nlab.m_nCacheID = m_pixCache.addString(pos, strlab);
+      }
+      MB_ASSERT(nlab.m_nCacheID>=0);
+    }
+
+    //m_pixCache.render(1.5);
+    m_pixCache.render(sclx);
+  }
+
+  int npix = 0;
+  std::vector<int> pixaddr(nlab);
+  {
+    int i=0, j;
+    NameLabelList::iterator iter = m_pdata->begin();
+    NameLabelList::iterator eiter = m_pdata->end();
+    for (; iter!=eiter; iter++, ++i) {
+      NameLabel &lab = *iter;
+      gfx::PixelBuffer *ppb = m_pixCache.getData( lab.m_nCacheID );
+      if (ppb==NULL) {
+        MB_ASSERT(false);
+        continue;
+      }
+      
+      pixaddr[i] = npix;
+      const int width = ppb->getWidth();
+      const int height = ppb->getHeight();
+      npix += width * height;
+    }
+  }
+  
+  m_pixall.resize(npix);
+  {
+    npix = 0;
+    int i=0, j;
+    NameLabelList::iterator iter = m_pdata->begin();
+    NameLabelList::iterator eiter = m_pdata->end();
+    for (; iter!=eiter; iter++, ++i) {
+      NameLabel &lab = *iter;
+      gfx::PixelBuffer *ppb = m_pixCache.getData( lab.m_nCacheID );
+      if (ppb==NULL) {
+        MB_ASSERT(false);
+        continue;
+      }
+      
+      const int width = ppb->getWidth();
+      const int height = ppb->getHeight();
+
+      for (j=0; j<width*height; ++j) {
+        //m_pixall[j+npix] = gfx::convB2F(ppb->at(j));
+        m_pixall[j+npix] = ppb->at(j);
+      }
+
+      npix += width * height;
+    }
+  }
+
+  m_pLabelTex->setData(npix, 1, 1, &m_pixall[0]);
+
+  AttrArray &attra = *m_pAttrAry;
+  {
+    int i=0, j;
+    LString strlab;
+    Vector4D pos;
+    NameLabelList::iterator iter = m_pdata->begin();
+    NameLabelList::iterator eiter = m_pdata->end();
+    for (; iter!=eiter; iter++, ++i) {
+      NameLabel &nlab = *iter;
+      gfx::PixelBuffer *ppb = m_pixCache.getData( nlab.m_nCacheID );
+      if (ppb==NULL) {
+        MB_ASSERT(false);
+        continue;
+      }
+      
+      Vector4D pos = m_pixCache.getPos( nlab.m_nCacheID );
+
+      const int ive = i*4;
+      const int ifc = i*6;
+
+      const float width = (float) ppb->getWidth();
+      const float height = (float) ppb->getHeight();
+
+MB_DPRINTLN("Label2> %d width,height = %f,%f", i, width, height);
+      // vertex data
+      for (j=0; j<4; ++j) {
+        attra.at(ive+j).x = qfloat32( pos.x() );
+        attra.at(ive+j).y = qfloat32( pos.y() );
+        attra.at(ive+j).z = qfloat32( pos.z() );
+        attra.at(ive+j).width = width;
+        attra.at(ive+j).addr = float( pixaddr[i] );
+      }
+      
+      attra.at(ive+0).w = 0.0f;
+      attra.at(ive+0).h = 0.0f;
+
+      attra.at(ive+1).w = width;
+      attra.at(ive+1).h = 0.0f;
+
+      attra.at(ive+2).w = 0.0f;
+      attra.at(ive+2).h = height;
+
+      attra.at(ive+3).w = width;
+      attra.at(ive+3).h = height;
+      
+      // face indices
+      attra.atind(ifc+0) = ive + 0;
+      attra.atind(ifc+1) = ive + 1;
+      attra.atind(ifc+2) = ive + 2;
+      attra.atind(ifc+3) = ive + 2;
+      attra.atind(ifc+4) = ive + 1;
+      attra.atind(ifc+5) = ive + 3;
+    }
+  }
+}
+
+void NameLabel2Renderer::updateVBO()
+{
+  AttrArray &attra = *m_pAttrAry;
+
+  int i=0, j;
+  LString strlab;
+  Vector4D pos;
+  NameLabelList::iterator iter = m_pdata->begin();
+  NameLabelList::iterator eiter = m_pdata->end();
+  for (; iter!=eiter; iter++, ++i) {
+    NameLabel &nlab = *iter;
+    gfx::PixelBuffer *ppb = m_pixCache.getData( nlab.m_nCacheID );
+    if (ppb==NULL) {
+      MB_ASSERT(false);
+      continue;
+    }
+
+    Vector4D pos = m_pixCache.getPos( nlab.m_nCacheID );
+
+    const int ive = i*4;
+    const int ifc = i*6;
+
+    // vertex data
+    for (j=0; j<4; ++j) {
+      attra.at(ive+j).x = qfloat32( pos.x() );
+      attra.at(ive+j).y = qfloat32( pos.y() );
+      attra.at(ive+j).z = qfloat32( pos.z() );
+    }
+  }
 }
 
 //////////////////////////////////////////////////////////////////////////

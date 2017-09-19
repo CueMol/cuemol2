@@ -115,6 +115,10 @@ namespace molstr {
     /// Render to display (using GLSL)
     virtual void renderGLSL(DisplayContext *pdc);
 
+    void createTextureData(DisplayContext *pdc, float sclx, float scly);
+
+    void updateVBO();
+
     //////////////////////////////////////////////////////
     // Event handlers
 
@@ -169,16 +173,28 @@ namespace molstr {
     struct AttrElem {
       qfloat32 x, y, z;
       qfloat32 w, h;
+      qfloat32 width;
+      qfloat32 addr;
     };
 
     quint32 m_nXyzLoc;
     quint32 m_nWhLoc;
+    quint32 m_nWidthLoc;
+    quint32 m_nAddrLoc;
 
-    typedef gfx::DrawAttrArray<AttrElem> AttrArray;
+    typedef gfx::DrawAttrElems<quint32, AttrElem> AttrArray;
 
     /// VBO for GLSL rendering
     AttrArray *m_pAttrAry;
 
+    /// label image texture
+    gfx::Texture *m_pLabelTex;
+
+    /// Height and Width of CoordTex (2D texture mode)
+    int m_nTexW, m_nTexH;
+
+    //std::vector<float> m_pixall;
+    std::vector<qbyte> m_pixall;
   };
 
 } // namespace

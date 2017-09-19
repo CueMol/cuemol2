@@ -82,8 +82,29 @@ namespace gfx {
 
     int getSize() const { return m_data.size(); }
 
-    PixelBuffer *getData(int id) const { return m_data[id].pPixBuf; }
-    Vector4D getPos(int id) const { return m_data[id].pos; }
+    PixelBuffer *getData(int id) const {
+      auto iter = m_data.begin();
+      auto eiter = m_data.end();
+      for (; iter!=eiter; ++iter) {
+        if (iter->m_nID==id) {
+          return iter->pPixBuf;
+        }
+      }
+      MB_THROW(qlib::RuntimeException, "id not found");
+      return NULL;
+    }
+
+    Vector4D getPos(int id) const {
+      auto iter = m_data.begin();
+      auto eiter = m_data.end();
+      for (; iter!=eiter; ++iter) {
+        if (iter->m_nID==id) {
+          return iter->pos;
+        }
+      }
+      MB_THROW(qlib::RuntimeException, "id not found");
+      return Vector4D();
+    }
 
     bool isEmpty() const { return m_data.empty(); }
 

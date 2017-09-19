@@ -120,8 +120,10 @@ bool Canvas2DTextRender2::renderText(const qlib::LString &str, gfx::PixelBuffer 
     ArrayRef dest(buf.data(), boost::extents[h][w][1]);
     for (j=0; j<h; j++) {
       for (i=0; i<w; i++) {
-        //MB_DPRINTLN("(x=%d,y=%d,c=%d) = %d", i,j,0,xxx);
         dest[h-j-1][i][0] = source[j][i][0];
+        //dest[h-j-1][i][0] = qbyte(j%255); //source[j][i][0];
+
+        //MB_DPRINTLN("(x=%d,y=%d) = %d", i,j,dest[h-j-1][i][0]);
       }
     }
 
