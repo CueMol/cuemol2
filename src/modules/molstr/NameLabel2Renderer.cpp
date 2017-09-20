@@ -11,26 +11,31 @@
 #include "MolResidue.hpp"
 
 #include <gfx/PixelBuffer.hpp>
-//#include <gfx/TextRenderManager.hpp>
 #include <gfx/DisplayContext.hpp>
 #include <gfx/Texture.hpp>
+#include <gfx/TextRenderManager.hpp>
 #include <qsys/SceneManager.hpp>
 
 #include <sysdep/OglShaderSetupHelper.hpp>
 
 namespace molstr {
 
-  struct NameLabel
+  struct NameLabel2
   {
   public:
 
-    NameLabel(): m_nCacheID(-1)
+    NameLabel2(): m_pPixBuf(NULL)
     {
     }
 
-    NameLabel(const NameLabel &arg)
-         : aid(arg.aid), strAid(arg.strAid), str(arg.str), m_nCacheID(arg.m_nCacheID)
+    NameLabel2(const NameLabel2 &arg)
+         : aid(arg.aid), strAid(arg.strAid), str(arg.str), m_pPixBuf(NULL)
     {
+    }
+
+    virtual ~NameLabel2() {
+      if (m_pPixBuf!=NULL)
+        delete m_pPixBuf;
     }
 
     /// Target atom ID
@@ -42,16 +47,15 @@ namespace molstr {
     /// Custom label string
     LString str;
 
-    /// cache entry ID
-    int m_nCacheID;
+    /// Image data of the label (in CPU)
+    gfx::PixelBuffer *m_pPixBuf;
 
-    inline bool equals(const NameLabel &a) const {
+    inline bool equals(const NameLabel2 &a) const {
       return aid==a.aid;
     }
   };
 
-  //typedef std::list<NameLabel> NameLabelList;
-  struct NameLabelList : public std::deque<NameLabel> {};
+  struct NameLabel2List : public std::deque<NameLabel2> {};
 
 }
 
@@ -62,7 +66,7 @@ using namespace molstr;
 NameLabel2Renderer::NameLabel2Renderer()
      : super_t()
 {
-  m_pdata = MB_NEW NameLabelList;
+  m_pdata = MB_NEW NameLabel2List;
 
   //m_nMax = 5;
   //m_xdispl = 0.0;
@@ -82,17 +86,20 @@ NameLabel2Renderer::NameLabel2Renderer()
 
 NameLabel2Renderer::~NameLabel2Renderer()
 {
+  m_pdata->clear();
   delete m_pdata;
 }
 
 //////////////////////////////////////////////////////////////////////////
 
+/*
 MolCoordPtr NameLabel2Renderer::getClientMol() const
 {
   qsys::ObjectPtr robj = qsys::SceneManager::getObjectS(getClientObjID());
   if (robj.isnull()) return MolCoordPtr();
   return MolCoordPtr(robj);
 }
+*/
 
 bool NameLabel2Renderer::isCompatibleObj(qsys::ObjectPtr pobj) const
 {
@@ -125,7 +132,7 @@ Vector4D NameLabel2Renderer::getCenter() const
 void NameLabel2Renderer::invalidateDisplayCache()
 {
   // clean-up internal data
-  invalidateAll();
+  clearAllLabelPix();
 
   m_pixall.clear();
   if (m_pLabelTex!=NULL) {
@@ -168,6 +175,7 @@ void NameLabel2Renderer::postRender(DisplayContext *pdc)
 
 void NameLabel2Renderer::render(DisplayContext *pdc)
 {
+/*
   if (!pdc->isRenderPixmap())
     return;
   
@@ -177,16 +185,16 @@ void NameLabel2Renderer::render(DisplayContext *pdc)
     return;
   }
   
-  /*if (m_pixCache.isEmpty())*/ {
+  {
     LString strlab;
     Vector4D pos;
-    NameLabelList::iterator iter = m_pdata->begin();
-    NameLabelList::iterator eiter = m_pdata->end();
+    NameLabel2List::iterator iter = m_pdata->begin();
+    NameLabel2List::iterator eiter = m_pdata->end();
     for (; iter!=eiter; iter++) {
-      NameLabel &nlab = *iter;
-      if (nlab.m_nCacheID<0) {
-        makeLabelStr(nlab, strlab, pos);
-        nlab.m_nCacheID = m_pixCache.addString(pos, strlab);
+      NameLabel2 &lab = *iter;
+      if (lab.m_nCacheID<0) {
+        makeLabelStr(lab, strlab, pos);
+        lab.m_nCacheID = m_pixCache.addString(pos, strlab);
       }
     }
   }
@@ -194,7 +202,7 @@ void NameLabel2Renderer::render(DisplayContext *pdc)
   m_pixCache.setFont(m_dFontSize, m_strFontName, m_strFontStyle, m_strFontWgt);
   pdc->color(m_color);
   m_pixCache.draw(pdc);
-
+*/
   // if (pdc->isFile())
   // m_pixCache.draw(pdc, false); // force to ignore cached data
   //   else
@@ -250,7 +258,7 @@ bool NameLabel2Renderer::init(DisplayContext *pdc)
   return true;
 }
     
-void NameLabel2Renderer::createDisplayCache()
+void NameLabel2Renderer::createGLSL()
 {
   int nlab = m_pdata->size();
 
@@ -296,12 +304,7 @@ void NameLabel2Renderer::createDisplayCache()
 
 bool NameLabel2Renderer::isCacheAvail() const
 {
-  return m_pAttrAry!=NULL;
-}
-
-/// Render to display (using VBO)
-void NameLabel2Renderer::renderVBO(DisplayContext *pdc)
-{
+  return m_pAttrAry!=NULL && m_pLabelTex!=NULL;
 }
 
 /// Render to display (using GLSL)
@@ -325,7 +328,7 @@ void NameLabel2Renderer::renderGLSL(DisplayContext *pdc)
 
   if (m_pixall.empty())
     createTextureData(pdc, sclx, scly);
-  updateVBO();
+  // updateVBO();
   
   pdc->useTexture(m_pLabelTex, 0);
 
@@ -342,37 +345,35 @@ void NameLabel2Renderer::createTextureData(DisplayContext *pdc, float sclx, floa
 {
   int nlab = m_pdata->size();
 
-  // setup label pixbuf
+  // Render label pixbuf
   {
-    m_pixCache.setFont(m_dFontSize, m_strFontName, m_strFontStyle, m_strFontWgt);
-
     LString strlab;
-    Vector4D pos;
-    NameLabelList::iterator iter = m_pdata->begin();
-    NameLabelList::iterator eiter = m_pdata->end();
+    // Vector4D pos;
+    NameLabel2List::iterator iter = m_pdata->begin();
+    NameLabel2List::iterator eiter = m_pdata->end();
     for (; iter!=eiter; iter++) {
-      NameLabel &nlab = *iter;
-      if (nlab.m_nCacheID<0) {
-        makeLabelStr(nlab, strlab, pos);
+      NameLabel2 &lab = *iter;
+      if (lab.m_pPixBuf==NULL) {
+        strlab = makeLabelStr(lab);
         //strlab = "A";
-        nlab.m_nCacheID = m_pixCache.addString(pos, strlab);
+        lab.m_pPixBuf = createPixBuf(sclx, strlab);
       }
-      MB_ASSERT(nlab.m_nCacheID>=0);
+//      MB_ASSERT(nlab.m_nCacheID>=0);
     }
 
-    //m_pixCache.render(1.5);
-    m_pixCache.render(sclx);
+    // m_pixCache.render(sclx);
   }
 
+  // Calculate pixdata index
   int npix = 0;
   std::vector<int> pixaddr(nlab);
   {
     int i=0, j;
-    NameLabelList::iterator iter = m_pdata->begin();
-    NameLabelList::iterator eiter = m_pdata->end();
+    NameLabel2List::iterator iter = m_pdata->begin();
+    NameLabel2List::iterator eiter = m_pdata->end();
     for (; iter!=eiter; iter++, ++i) {
-      NameLabel &lab = *iter;
-      gfx::PixelBuffer *ppb = m_pixCache.getData( lab.m_nCacheID );
+      NameLabel2 &lab = *iter;
+      gfx::PixelBuffer *ppb = lab.m_pPixBuf;
       if (ppb==NULL) {
         MB_ASSERT(false);
         continue;
@@ -385,15 +386,16 @@ void NameLabel2Renderer::createTextureData(DisplayContext *pdc, float sclx, floa
     }
   }
   
+  // Create texture atlas
   m_pixall.resize(npix);
   {
     npix = 0;
     int i=0, j;
-    NameLabelList::iterator iter = m_pdata->begin();
-    NameLabelList::iterator eiter = m_pdata->end();
+    NameLabel2List::iterator iter = m_pdata->begin();
+    NameLabel2List::iterator eiter = m_pdata->end();
     for (; iter!=eiter; iter++, ++i) {
-      NameLabel &lab = *iter;
-      gfx::PixelBuffer *ppb = m_pixCache.getData( lab.m_nCacheID );
+      NameLabel2 &lab = *iter;
+      gfx::PixelBuffer *ppb = lab.m_pPixBuf;
       if (ppb==NULL) {
         MB_ASSERT(false);
         continue;
@@ -418,17 +420,17 @@ void NameLabel2Renderer::createTextureData(DisplayContext *pdc, float sclx, floa
     int i=0, j;
     LString strlab;
     Vector4D pos;
-    NameLabelList::iterator iter = m_pdata->begin();
-    NameLabelList::iterator eiter = m_pdata->end();
+    NameLabel2List::iterator iter = m_pdata->begin();
+    NameLabel2List::iterator eiter = m_pdata->end();
     for (; iter!=eiter; iter++, ++i) {
-      NameLabel &nlab = *iter;
-      gfx::PixelBuffer *ppb = m_pixCache.getData( nlab.m_nCacheID );
+      NameLabel2 &lab = *iter;
+      gfx::PixelBuffer *ppb = lab.m_pPixBuf;
       if (ppb==NULL) {
         MB_ASSERT(false);
         continue;
       }
       
-      Vector4D pos = m_pixCache.getPos( nlab.m_nCacheID );
+      // Vector4D pos = m_pixCache.getPos( nlab.m_nCacheID );
 
       const int ive = i*4;
       const int ifc = i*6;
@@ -439,9 +441,9 @@ void NameLabel2Renderer::createTextureData(DisplayContext *pdc, float sclx, floa
 MB_DPRINTLN("Label2> %d width,height = %f,%f", i, width, height);
       // vertex data
       for (j=0; j<4; ++j) {
-        attra.at(ive+j).x = qfloat32( pos.x() );
-        attra.at(ive+j).y = qfloat32( pos.y() );
-        attra.at(ive+j).z = qfloat32( pos.z() );
+        //attra.at(ive+j).x = qfloat32( pos.x() );
+        //attra.at(ive+j).y = qfloat32( pos.y() );
+        //attra.at(ive+j).z = qfloat32( pos.z() );
         attra.at(ive+j).width = width;
         attra.at(ive+j).addr = float( pixaddr[i] );
       }
@@ -469,24 +471,30 @@ MB_DPRINTLN("Label2> %d width,height = %f,%f", i, width, height);
   }
 }
 
-void NameLabel2Renderer::updateVBO()
+void NameLabel2Renderer::updateStaticGLSL()
 {
   AttrArray &attra = *m_pAttrAry;
 
   int i=0, j;
   LString strlab;
   Vector4D pos;
-  NameLabelList::iterator iter = m_pdata->begin();
-  NameLabelList::iterator eiter = m_pdata->end();
+  MolAtomPtr pA;
+  MolCoordPtr pMol = getClientMol();
+
+  NameLabel2List::iterator iter = m_pdata->begin();
+  NameLabel2List::iterator eiter = m_pdata->end();
   for (; iter!=eiter; iter++, ++i) {
-    NameLabel &nlab = *iter;
-    gfx::PixelBuffer *ppb = m_pixCache.getData( nlab.m_nCacheID );
-    if (ppb==NULL) {
-      MB_ASSERT(false);
-      continue;
+    NameLabel2 &lab = *iter;
+
+    if (lab.aid<0) {
+      makeLabelStr(lab);
     }
 
-    Vector4D pos = m_pixCache.getPos( nlab.m_nCacheID );
+    pA = pMol->getAtom(lab.aid);
+    if (pA.isnull())
+      continue;
+
+    Vector4D pos = pA->getPos();
 
     const int ive = i*4;
     const int ifc = i*6;
@@ -498,30 +506,37 @@ void NameLabel2Renderer::updateVBO()
       attra.at(ive+j).z = qfloat32( pos.z() );
     }
   }
+
+  attra.setUpdated(true);
+}
+
+void NameLabel2Renderer::updateDynamicGLSL()
+{
+  updateStaticGLSL();
 }
 
 //////////////////////////////////////////////////////////////////////////
 // Label specific implementations
 
-bool NameLabel2Renderer::makeLabelStr(NameLabel &nlab, LString &rstrlab, Vector4D &rpos)
+LString NameLabel2Renderer::makeLabelStr( NameLabel2 &lab)
 {
+  LString rstrlab;
+  
   MolCoordPtr pobj = getClientMol();
   MB_ASSERT(!pobj.isnull());
   
-  if (nlab.aid<0) {
-    nlab.aid = pobj->fromStrAID(nlab.strAid);
-    if (nlab.aid<0)
-      return false;
+  if (lab.aid<0) {
+    lab.aid = pobj->fromStrAID(lab.strAid);
+    if (lab.aid<0)
+      return LString("(null)");
   }
 
-  MolAtomPtr pAtom = pobj->getAtom(nlab.aid);
+  MolAtomPtr pAtom = pobj->getAtom(lab.aid);
   if (pAtom.isnull())
-    return false;
-
-  rpos = pAtom->getPos();
-
-  if (!nlab.str.isEmpty()) {
-    rstrlab = nlab.str;
+    return LString("(null)");
+  
+  if (!lab.str.isEmpty()) {
+    rstrlab = lab.str;
   }
   else {
     LString sbuf = pAtom->getChainName() + " " +
@@ -535,18 +550,32 @@ bool NameLabel2Renderer::makeLabelStr(NameLabel &nlab, LString &rstrlab, Vector4
     rstrlab = sbuf; //.toUpperCase();
   }
   
-  return true;
+  return rstrlab;
+}
+
+gfx::PixelBuffer *NameLabel2Renderer::createPixBuf(double scl, const LString &lab)
+{
+  gfx::TextRenderManager *pTRM = gfx::TextRenderManager::getInstance();
+  if (pTRM==NULL)
+    return NULL;
+
+  pTRM->setupFont(m_dFontSize * scl, m_strFontName, m_strFontStyle, m_strFontWgt);
+
+  auto pixbuf = MB_NEW gfx::PixelBuffer();
+  if (!pTRM->renderText(lab, *pixbuf))
+    return NULL;
+  return pixbuf;
 }
 
 bool NameLabel2Renderer::addLabel(MolAtomPtr patom, const LString &label /*= LString()*/)
 {
-  NameLabel newlab;
+  NameLabel2 newlab;
   newlab.aid = patom->getID();
   if (!label.isEmpty())
     newlab.str = label;
 
-  BOOST_FOREACH(NameLabel &nlab, *m_pdata) {
-    if (newlab.equals(nlab))
+  BOOST_FOREACH(NameLabel2 &lab, *m_pdata) {
+    if (newlab.equals(lab))
       return false; // already labeled
   }
 
@@ -554,9 +583,7 @@ bool NameLabel2Renderer::addLabel(MolAtomPtr patom, const LString &label /*= LSt
   int nover = m_pdata->size() - m_nMax;
 
   for (; nover>0; nover--) {
-    NameLabel &nlab = m_pdata->front();
-    if (nlab.m_nCacheID>=0)
-      m_pixCache.remove(nlab.m_nCacheID);
+    //NameLabel2 &lab = m_pdata->front();
     m_pdata->pop_front();
   }
   
@@ -583,14 +610,14 @@ bool NameLabel2Renderer::removeLabelByID(int aid)
   MolAtomPtr pAtom = pobj->getAtom(aid);
   // return removeLabel(pAtom);
 
-  NameLabelList::iterator iter = m_pdata->begin();
-  NameLabelList::iterator eiter = m_pdata->end();
+  NameLabel2List::iterator iter = m_pdata->begin();
+  NameLabel2List::iterator eiter = m_pdata->end();
   for (; iter!=eiter; ++iter) {
-    NameLabel &nlab = *iter;
-    if (aid==nlab.aid) {
+    NameLabel2 &lab = *iter;
+    if (aid==lab.aid) {
       // already labeled --> remove it
-      if (nlab.m_nCacheID>=0)
-        m_pixCache.remove(nlab.m_nCacheID);
+      //if (lab.m_nCacheID>=0)
+      //m_pixCache.remove(lab.m_nCacheID);
       m_pdata->erase(iter);
 
       // to be redrawn
@@ -612,7 +639,7 @@ void NameLabel2Renderer::setFontSize(double val)
   m_dFontSize = val;
 
   // font info was changed --> invalidate all cached data
-  invalidateAll();
+  invalidateDisplayCache();
 }
 
 void NameLabel2Renderer::setFontName(const LString &val)
@@ -623,7 +650,7 @@ void NameLabel2Renderer::setFontName(const LString &val)
   m_strFontName = val;
 
   // font info was changed --> invalidate all cached data
-  invalidateAll();
+  invalidateDisplayCache();
 }
 
 void NameLabel2Renderer::setFontStyle(const LString &val)
@@ -634,7 +661,7 @@ void NameLabel2Renderer::setFontStyle(const LString &val)
   m_strFontStyle = val;
 
   // font info was changed --> invalidate all cached data
-  invalidateAll();
+  invalidateDisplayCache();
 }
 
 void NameLabel2Renderer::setFontWgt(const LString &val)
@@ -645,15 +672,17 @@ void NameLabel2Renderer::setFontWgt(const LString &val)
   m_strFontWgt = val;
 
   // font info was changed --> invalidate all cached data
-  invalidateAll();
+  invalidateDisplayCache();
 }
 
 /// clear all cached data
-void NameLabel2Renderer::invalidateAll()
+void NameLabel2Renderer::clearAllLabelPix()
 {
-  m_pixCache.invalidateAll();
-  BOOST_FOREACH(NameLabel &value, *m_pdata) {
-    value.m_nCacheID = -1;
+  // m_pixCache.invalidateAll();
+  BOOST_FOREACH(NameLabel2 &value, *m_pdata) {
+    if (value.m_pPixBuf!=NULL)
+      delete value.m_pPixBuf;
+    value.m_pPixBuf = NULL;
   }  
 }
 
@@ -677,6 +706,7 @@ void NameLabel2Renderer::styleChanged(qsys::StyleEvent &ev)
   invalidateDisplayCache();
 }
 
+/*
 void NameLabel2Renderer::objectChanged(qsys::ObjectEvent &ev)
 {
   // Treat changed and changed_dynamic events as the same
@@ -691,6 +721,7 @@ void NameLabel2Renderer::objectChanged(qsys::ObjectEvent &ev)
     }
   }
 }
+*/
 
 ///////////////////////
 
@@ -702,7 +733,7 @@ void NameLabel2Renderer::writeTo2(qlib::LDom2Node *pNode) const
   MolCoordPtr pobj = getClientMol();
   MB_ASSERT(!pobj.isnull());
   
-  BOOST_FOREACH(NameLabel &value, *m_pdata) {
+  BOOST_FOREACH(NameLabel2 &value, *m_pdata) {
 
     LString said = pobj->toStrAID(value.aid);
     if (said.isEmpty())
@@ -741,7 +772,7 @@ void NameLabel2Renderer::readFrom2(qlib::LDom2Node *pNode)
       continue;
     }
       
-    NameLabel elem;
+    NameLabel2 elem;
     elem.aid = -1;
     elem.strAid = value;
 

@@ -8,7 +8,8 @@
 
 #include "molstr.hpp"
 
-#include <qsys/DispListRenderer.hpp>
+//#include <qsys/DispListRenderer.hpp>
+#include "MolRenderer.hpp"
 #include <gfx/SolidColor.hpp>
 #include <gfx/LabelCacheImpl.hpp>
 
@@ -25,10 +26,10 @@ namespace molstr {
   using qlib::Vector4D;
   using gfx::DisplayContext;
 
-  struct NameLabel;
-  struct NameLabelList;
+  struct NameLabel2;
+  struct NameLabel2List;
 
-  class MOLSTR_API NameLabel2Renderer : public qsys::DispListRenderer
+  class MOLSTR_API NameLabel2Renderer : public MolRenderer
   {
     MC_SCRIPTABLE;
     MC_CLONEABLE;
@@ -36,10 +37,10 @@ namespace molstr {
     friend class ::NameLabel2Renderer_wrap;
 
   private:
-    typedef qsys::DispListRenderer super_t;
+    typedef MolRenderer super_t;
 
-    /// implementation
-    NameLabelList *m_pdata;
+    //////////////////////////////////////////////////////
+    // Properties
 
     /// max labels
     int m_nMax;
@@ -62,8 +63,13 @@ namespace molstr {
     /// label's font weight (corresponds to the font-weight prop of CSS)
     LString m_strFontWgt;
 
-    /// label pixbuf cache
-    gfx::LabelCacheImpl m_pixCache;
+    //////////////////////////////////////////////////////
+
+    // /// label pixbuf cache
+    // gfx::LabelCacheImpl m_pixCache;
+
+    /// implementation
+    NameLabel2List *m_pdata;
 
     //////////////////////////////////////////////////////
 
@@ -105,19 +111,25 @@ namespace molstr {
     /// Initialize & setup capabilities (for glsl setup)
     virtual bool init(DisplayContext *pdc);
     
-    virtual void createDisplayCache();
-
     virtual bool isCacheAvail() const;
 
-    /// Render to display (using VBO)
-    virtual void renderVBO(DisplayContext *pdc);
+    /// Create GLSL data (VBO, texture, etc)
+    virtual void createGLSL();
+
+    /// update VBO positions using CrdArray
+    virtual void updateDynamicGLSL();
+
+    /// update VBO positions using getPos
+    virtual void updateStaticGLSL();
+
+
+    // /// Render to display (using VBO)
+    // virtual void renderVBO(DisplayContext *pdc);
 
     /// Render to display (using GLSL)
     virtual void renderGLSL(DisplayContext *pdc);
 
     void createTextureData(DisplayContext *pdc, float sclx, float scly);
-
-    void updateVBO();
 
     //////////////////////////////////////////////////////
     // Event handlers
@@ -126,7 +138,7 @@ namespace molstr {
 
     virtual void styleChanged(qsys::StyleEvent &);
 
-    virtual void objectChanged(qsys::ObjectEvent &ev);
+    //virtual void objectChanged(qsys::ObjectEvent &ev);
 
     //////////////////////////////////////////////////////
     // Serialization / deserialization impl for non-prop data
@@ -136,7 +148,7 @@ namespace molstr {
 
     //////////////////////////////////////////////////////
 
-    MolCoordPtr getClientMol() const;
+    // MolCoordPtr getClientMol() const;
 
     bool addLabelByID(int aid, const LString &label = LString());
     bool addLabel(MolAtomPtr patom, const LString &label = LString());
@@ -160,10 +172,13 @@ namespace molstr {
     LString getFontWgt() const { return m_strFontWgt; }
 
   private:
-    bool makeLabelStr(NameLabel &n, LString &lab,Vector4D &pos);
+    //bool makeLabelStr(NameLabel &n, LString &lab,Vector4D &pos);
+    LString makeLabelStr(NameLabel2 &nlab);
+
+    gfx::PixelBuffer *createPixBuf(double scl, const LString &lab);
 
     /// clear all cached data
-    void invalidateAll();
+    void clearAllLabelPix();
 
     //////////////////////////////
 
@@ -187,11 +202,11 @@ namespace molstr {
     /// VBO for GLSL rendering
     AttrArray *m_pAttrAry;
 
+    /// Height and Width of CoordTex (2D texture mode for GL1.3)
+    int m_nTexW, m_nTexH;
+
     /// label image texture
     gfx::Texture *m_pLabelTex;
-
-    /// Height and Width of CoordTex (2D texture mode)
-    int m_nTexW, m_nTexH;
 
     //std::vector<float> m_pixall;
     std::vector<qbyte> m_pixall;
