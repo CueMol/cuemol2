@@ -81,3 +81,34 @@ void PerfMeasManager::end(int nID)
   setBusyTime(t.wall);
 #endif
 }
+
+//////////
+
+AutoTimeMeas::AutoTimeMeas(const char *msg)
+{
+  if (msg!=NULL)
+    m_msg = msg;
+#ifdef USE_BOOST_TIMER
+  boost::timer::cpu_timer *p = new boost::timer::cpu_timer();
+  p->start();
+  m_pTimerObj = p;
+#endif
+}
+
+AutoTimeMeas::~AutoTimeMeas()
+{
+#ifdef USE_BOOST_TIMER
+  boost::timer::cpu_timer *p = static_cast<boost::timer::cpu_timer *>(m_pTimerObj);
+  boost::timer::cpu_times t = p->elapsed();
+  delete p;
+  m_pTimerObj = NULL;
+  
+  LString msg = boost::timer::format(t);
+  msg = msg.chomp();
+  
+  LOG_DPRINTLN( "%s> %s",
+                m_msg.c_str(),
+                msg.c_str() );
+#endif
+}
+

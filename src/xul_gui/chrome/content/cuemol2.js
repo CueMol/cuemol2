@@ -159,10 +159,47 @@ Qm2Main.prototype.textRenderInit = function ()
     dd("data: "+data);
     var i, size = width * h;
     tr.resize(size);
+
+    //////////
+/*
+    var binstr = String.fromCharCode.apply(null, data);
+    var bary = cuemol.convPolymObj( cuemol.xpc.createBAryFromStr(binstr) );
+    tr.setByteArray(bary, 4);
+*/
+    //////////
+/*
+    var data2 = Uint8Array(size);
+    for (i=0; i<size; ++i) {
+      data2[i] = data[i*4 + 3];
+    }
+    var binstr = String.fromCharCode.apply(null, data2);
+    var bary = cuemol.convPolymObj( cuemol.xpc.createBAryFromStr(binstr) );
+    tr.setByteArray(bary, 0);
+*/
+    //////////
+/*
+    var b64encoded = btoa(String.fromCharCode.apply(null, data));
+    tr.setB64Str(b64encoded, 4);
+*/
+    //////////
+
+    var data2 = Uint8Array(size);
+    for (i=0; i<size; ++i) {
+      data2[i] = data[i*4 + 3];
+    }
+
+    var b64encoded = btoa(String.fromCharCode.apply(null, data2));
+    //dd("b64: "+b64encoded);
+
+    tr.setB64Str(b64encoded, 0);
+
+    //////////
+/*
     for (i=0; i<size; ++i) {
       //tr.setAt(i, data[i*4 + 0]+data[i*4 + 1]+data[i*4 + 2]+data[i*4 + 3]);
       tr.setAt(i, data[i*4 + 3]);
     }
+  */
   };
 
   var cbid2 =

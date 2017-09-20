@@ -10,6 +10,8 @@
 #include "TextRenderManager.hpp"
 #include "Texture.hpp"
 
+#include <qlib/LPerfMeas.hpp>
+
 using namespace gfx;
 
 void LabelCacheImpl::draw(DisplayContext *pdc)
@@ -69,6 +71,8 @@ void LabelCacheImpl::render(double scl)
   gfx::TextRenderManager *pTRM = gfx::TextRenderManager::getInstance();
   if (pTRM==NULL)
     return;
+
+  qlib::AutoTimeMeas apm("TextRender");
 
   // double scl = 1.0; //pdc->getPixSclFac();
   pTRM->setupFont(m_dFontSize * scl, m_strFontName, m_strFontStyle, m_strFontWgt);

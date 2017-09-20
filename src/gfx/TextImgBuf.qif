@@ -4,6 +4,8 @@
 #ifndef TEXT_IMAGE_BUFFER_QIF_INCLUDED
 #define TEXT_IMAGE_BUFFER_QIF_INCLUDED
 
+#include <qlib/ByteArray.qif>
+
 runtime_class TextImgBuf
 {
   client_hdr "TextImgBuf.hpp";
@@ -28,6 +30,10 @@ runtime_class TextImgBuf
 
   void setAt2D(integer x, integer y, integer value);
   integer getAt2D(integer x, integer y);
+
+  void setB64Str(string str, integer skip);
+
+  void setByteArray(object<ByteArray$>, integer skip);
 
   // string toString();
 

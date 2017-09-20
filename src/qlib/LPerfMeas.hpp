@@ -8,10 +8,12 @@
 
 #include "qlib.hpp"
 #include "LTypes.hpp"
+#include "LString.hpp"
 #include "SingletonBase.hpp"
 
 #define PM_IDLE_TIMER 0
 #define PM_DRAW_SCENE 1
+#define PM_LABEL_RENDER 2
 
 namespace qlib {
 
@@ -42,7 +44,7 @@ namespace qlib {
 
   };
   
-
+  /// Auto performance measurement class for iterative execution
   class QLIB_API AutoPerfMeas
   {
   private:
@@ -75,8 +77,23 @@ namespace qlib {
         m_pPM = PerfMeasManager::getInstance();
       m_pPM->start(m_nID);
     }
-};
+  };
   
+  /// Auto performance measurement class for single execution
+  class QLIB_API AutoTimeMeas
+  {
+  private:
+    void *m_pTimerObj;
+
+    LString m_msg;
+
+  public:
+    AutoTimeMeas(const char *msg=NULL);
+
+    ~AutoTimeMeas();
+
+  };
+
 }
 
 #endif

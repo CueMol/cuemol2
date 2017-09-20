@@ -804,6 +804,9 @@
     <ClCompile Include="..\..\src\modules\molvis\AtomIntr2Renderer_wrap.cpp">
       <Filter>molvis</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\gfx\TextImgBuf.cpp">
+      <Filter>gfx</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\qsys\AbstractColor.hpp">

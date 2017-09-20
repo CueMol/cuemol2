@@ -104,6 +104,7 @@
     <ClCompile Include="..\..\src\gfx\Hittest.cpp" />
     <ClCompile Include="..\..\src\gfx\MultiGradient.cpp" />
     <ClCompile Include="..\..\src\gfx\MultiGradient_wrap.cpp" />
+    <ClCompile Include="..\..\src\gfx\TextImgBuf.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\AnimMol.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\AnimMol_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\ChainIterator.cpp" />
