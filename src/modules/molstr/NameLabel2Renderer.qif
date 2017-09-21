@@ -42,6 +42,9 @@ runtime_class NameLabel2Renderer extends Renderer
   property string font_weight => redirect(getFontWgt, setFontWgt);
   default font_weight = "normal";
 
+  property boolean scaling => redirect(isScaling, setScaling);
+  default scaling = false;
+
   //////////
 
   // add new label for the atom

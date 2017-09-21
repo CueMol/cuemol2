@@ -72,6 +72,11 @@ namespace molstr {
     /// Scaling mode flag (false: fixed pixel draw mode)
     bool m_bScaling;
 
+  public:
+    bool isScaling() const { return m_bScaling; }
+    void setScaling(bool b) { m_bScaling = b; } 
+
+  private:
     double m_dPixPerAng;
 
     //////////////////////////////////////////////////////

@@ -75,6 +75,7 @@ NameLabel2Renderer::NameLabel2Renderer()
   m_strFontStyle = "normal";
   m_strFontWgt = "normal";
   m_bScaling = false;
+  m_dPixPerAng = 10.0;
 
   // will be called by RendererFactory
   //resetAllProps();
@@ -343,7 +344,7 @@ void NameLabel2Renderer::renderGLSL(DisplayContext *pdc)
   // Determine ppa
   float ppa = -1.0f;
   if (m_bScaling)
-    ppa = 100.0f; // TO DO: better impl.
+    ppa = float(m_dPixPerAng);
 
   pdc->useTexture(m_pLabelTex, 0);
 
@@ -358,9 +359,21 @@ void NameLabel2Renderer::renderGLSL(DisplayContext *pdc)
   pdc->unuseTexture(m_pLabelTex);
 }
 
-void NameLabel2Renderer::createTextureData(DisplayContext *pdc, float sclx, float scly)
+void NameLabel2Renderer::createTextureData(DisplayContext *pdc, float asclx, float scly)
 {
   int nlab = m_pdata->size();
+  float sclx = asclx;
+  
+  if (m_bScaling) {
+    qsys::View *pView = pdc->getTargetView();
+    if (pView!=NULL) {
+      const double h = pView->getHeight();
+      const double zoom = pView->getZoom();
+      // const double dx = zoom/h;
+      m_dPixPerAng = h/zoom;
+      sclx *= m_dPixPerAng;
+    }
+  }
 
   // Render label pixbuf
   {
@@ -581,7 +594,8 @@ gfx::PixelBuffer *NameLabel2Renderer::createPixBuf(double scl, const LString &la
   if (pTRM==NULL)
     return NULL;
 
-  pTRM->setupFont(m_dFontSize * scl, m_strFontName, m_strFontStyle, m_strFontWgt);
+  double fsz = m_dFontSize * scl;
+  pTRM->setupFont(fsz, m_strFontName, m_strFontStyle, m_strFontWgt);
 
   auto pixbuf = MB_NEW gfx::PixelBuffer();
   if (!pTRM->renderText(lab, *pixbuf))
