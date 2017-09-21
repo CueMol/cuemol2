@@ -19,8 +19,8 @@ runtime_class NameLabel2Renderer extends Renderer
   smartptr;
   cloneable;
 
-  property integer maxlabel => redirect(getMaxLabel, setMaxLabel);
-  default maxlabel = 50;
+//  property integer maxlabel => redirect(getMaxLabel, setMaxLabel);
+//  default maxlabel = 50;
   
   property real dispx => m_xdispl;
   default dispx = 0.0;

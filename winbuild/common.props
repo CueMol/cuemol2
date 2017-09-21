@@ -22,7 +22,7 @@
     <CGALIncludePath>$(BuildSetDir)\CGAL-4.6.1\include</CGALIncludePath>
     <CGALLibraryPath>$(BuildSetDir)\CGAL-4.6.1\lib</CGALLibraryPath>
 
-    <HavePython>No</HavePython>
+    <HavePython>Yes</HavePython>
     <PythonDir>$(BuildSetDir)\Python-3.6.1</PythonDir>
 
     <IncludePath>$(BuildSetDir)\include;$(CGALIncludePath);$(BoostIncludePath);$(IncludePath)</IncludePath>

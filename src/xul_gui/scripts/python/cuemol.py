@@ -44,9 +44,11 @@ def iscol(aObj):
 ##########
 
 def scene(aScene=None):
+    print("***\n")
     if isscene(aScene):
         return aScene
 
+    print("*** aScene="+str(aScene)+"\n")
     sceMgr = ci.getService("SceneManager")
     scid=None
     if aScene==None:
@@ -54,8 +56,9 @@ def scene(aScene=None):
     elif isinstance(aScene, int):
         scid = aScene
     else:
-        return None
+        raise RuntimeError("scene "+str(aScene)+" not found")
 
+    print("*** scid="+str(scid)+"\n")
     return sceMgr.getScene(scid)
 
 def svc(name):
@@ -114,6 +117,7 @@ def sel(aSelStr, aScene=None):
     if issel(aSelStr):
         return aSelStr
     s = scene(aScene)
+    print("sel> scene="+str(s)+"\n")
     selobj = ci.createObj("SelCommand")
     selobj.compile(aSelStr, s.uid)
     return selobj

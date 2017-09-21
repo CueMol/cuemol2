@@ -24,7 +24,7 @@ class AtomIter:
     def __init__(self, aMol, aSel):
         molObj = cuemol.obj(aMol)
         uid = molObj.uid
-        selObj = cuemol.sel(aSel, uid)
+        selObj = cuemol.sel(aSel, molObj.scene_uid)
 
         self.mIter = cuemol.createObj("AtomIterator");
         self.mIter.target = molObj;
@@ -46,7 +46,7 @@ def forEachResid(aMol, aSel, aFn):
     aMolObj = cuemol.obj(aMol)
 
     uid = aMolObj.uid
-    aSelObj = cuemol.sel(aSel, uid)
+    aSelObj = cuemol.sel(aSel, molObj.scene_uid)
 
     iter = cuemol.createObj("ResidIterator");
     #let sel = cuemol.createObj("SelCommand");

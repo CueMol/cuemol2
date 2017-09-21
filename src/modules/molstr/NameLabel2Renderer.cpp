@@ -469,6 +469,8 @@ MB_DPRINTLN("Label2> %d width,height = %f,%f", i, width, height);
       attra.atind(ifc+5) = ive + 3;
     }
   }
+
+  LOG_DPRINTLN("NameLabel2> %d labels (%d pix tex) created", nlab, npix);
 }
 
 void NameLabel2Renderer::updateStaticGLSL()
@@ -580,12 +582,14 @@ bool NameLabel2Renderer::addLabel(MolAtomPtr patom, const LString &label /*= LSt
   }
 
   m_pdata->push_back(newlab);
-  int nover = m_pdata->size() - m_nMax;
 
+  /*
+  int nover = m_pdata->size() - m_nMax;
   for (; nover>0; nover--) {
     //NameLabel2 &lab = m_pdata->front();
     m_pdata->pop_front();
   }
+  */
   
   // to be redrawn
   invalidateDisplayCache();

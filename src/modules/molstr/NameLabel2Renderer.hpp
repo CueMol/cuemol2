@@ -43,7 +43,10 @@ namespace molstr {
     // Properties
 
     /// max labels
-    int m_nMax;
+    //int m_nMax;
+
+    //void setMaxLabel(int nmax) { m_nMax = nmax; }
+    //int getMaxLabel() const { return m_nMax; }
 
     /// label's color
     gfx::ColorPtr m_color;
@@ -155,8 +158,6 @@ namespace molstr {
 
     bool removeLabelByID(int aid);
 
-    void setMaxLabel(int nmax) { m_nMax = nmax; }
-    int getMaxLabel() const { return m_nMax; }
 
 
     void setFontSize(double val);
