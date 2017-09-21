@@ -20,6 +20,8 @@ attribute float a_addr;
 
 uniform vec2 u_winsz;
 
+uniform float u_ppa;
+
 ////////////////////
 // Varying
 
@@ -36,14 +38,18 @@ void main (void)
   vec4 ecPosition = gl_ModelViewMatrix * vec4(a_xyz, 1.0);
   //gEcPosition = ecPosition;
 
-  //ecPosition.x += a_wh.x;
-  //ecPosition.y += a_wh.y;
+  if (u_ppa>0.0f) {
+    ecPosition.x += a_wh.x/u_ppa;
+    ecPosition.y += a_wh.y/u_ppa;
+  }
 
   // Do fixed functionality vertex transform
   gl_Position = gl_ProjectionMatrix * ecPosition;
 
-  gl_Position.x += a_wh.x/u_winsz.x;
-  gl_Position.y += a_wh.y/u_winsz.y;
+  if (u_ppa<0.0f) {
+    gl_Position.x += a_wh.x/u_winsz.x;
+    gl_Position.y += a_wh.y/u_winsz.y;
+  }
 
   gl_FrontColor=gl_Color;
 

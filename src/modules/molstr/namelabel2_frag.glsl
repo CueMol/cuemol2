@@ -8,7 +8,8 @@
 ////////////////////
 // Uniform variables
 
-uniform float frag_alpha;
+// label color (incl. transparency)
+uniform vec4 u_color;
 
 uniform vec2 u_winsz;
 
@@ -68,6 +69,7 @@ void main (void)
 {
   float c = getLabelPix(v_labpos);
   //gl_FragColor = calcFogAlpha(gl_Color, gl_FogFragCoord, frag_alpha);
-  gl_FragColor = vec4(1,0,0,c);
+
+  gl_FragColor = vec4(u_color.xyz, u_color.w*c);
 }
 

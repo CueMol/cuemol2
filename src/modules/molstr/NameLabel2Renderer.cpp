@@ -74,6 +74,7 @@ NameLabel2Renderer::NameLabel2Renderer()
 
   m_strFontStyle = "normal";
   m_strFontWgt = "normal";
+  m_bScaling = false;
 
   // will be called by RendererFactory
   //resetAllProps();
@@ -311,9 +312,8 @@ bool NameLabel2Renderer::isCacheAvail() const
 void NameLabel2Renderer::renderGLSL(DisplayContext *pdc)
 {
   if (m_pPO==NULL)
-    return; // Error, Cannot draw anything (ignore)
+    return; // Error, shader program is not available (ignore)
 
-  //pdc->setLineWidth(getLineWidth());
   float width = 1.0f, height = 1.0f;
   float sclx = 1.0f, scly = 1.0f;
   qsys::View *pView = pdc->getTargetView();
@@ -328,12 +328,29 @@ void NameLabel2Renderer::renderGLSL(DisplayContext *pdc)
 
   if (m_pixall.empty())
     createTextureData(pdc, sclx, scly);
-  // updateVBO();
   
+  // Get label color
+  qlib::uid_t nSceneID = getSceneID();
+  float fr=0.0f, fg=0.0f, fb=0.0f, fa = pdc->getAlpha();
+  if (!m_color.isnull()) {
+    quint32 dcc = m_color->getDevCode(nSceneID);
+    fr = gfx::convI2F(gfx::getRCode(dcc));
+    fg = gfx::convI2F(gfx::getGCode(dcc));
+    fb = gfx::convI2F(gfx::getBCode(dcc));
+    fa *= gfx::convI2F(gfx::getACode(dcc));
+  }
+
+  // Determine ppa
+  float ppa = -1.0f;
+  if (m_bScaling)
+    ppa = 100.0f; // TO DO: better impl.
+
   pdc->useTexture(m_pLabelTex, 0);
 
   m_pPO->enable();
   m_pPO->setUniformF("u_winsz", width, height);
+  m_pPO->setUniformF("u_ppa", ppa);
+  m_pPO->setUniformF("u_color", fr, fg, fb, fa);
   pdc->drawElem(*m_pAttrAry);
 
   m_pPO->disable();
@@ -415,6 +432,9 @@ void NameLabel2Renderer::createTextureData(DisplayContext *pdc, float sclx, floa
 
   m_pLabelTex->setData(npix, 1, 1, &m_pixall[0]);
 
+  const float dispx = float(m_xdispl);
+  const float dispy = float(m_ydispl);
+  
   AttrArray &attra = *m_pAttrAry;
   {
     int i=0, j;
@@ -438,7 +458,7 @@ void NameLabel2Renderer::createTextureData(DisplayContext *pdc, float sclx, floa
       const float width = (float) ppb->getWidth();
       const float height = (float) ppb->getHeight();
 
-MB_DPRINTLN("Label2> %d width,height = %f,%f", i, width, height);
+      //MB_DPRINTLN("Label2> %d width,height = %f,%f", i, width, height);
       // vertex data
       for (j=0; j<4; ++j) {
         //attra.at(ive+j).x = qfloat32( pos.x() );
@@ -448,17 +468,17 @@ MB_DPRINTLN("Label2> %d width,height = %f,%f", i, width, height);
         attra.at(ive+j).addr = float( pixaddr[i] );
       }
       
-      attra.at(ive+0).w = 0.0f;
-      attra.at(ive+0).h = 0.0f;
+      attra.at(ive+0).w = dispx;
+      attra.at(ive+0).h = dispy;
 
-      attra.at(ive+1).w = width;
-      attra.at(ive+1).h = 0.0f;
+      attra.at(ive+1).w = dispx + width;
+      attra.at(ive+1).h = dispy;
 
-      attra.at(ive+2).w = 0.0f;
-      attra.at(ive+2).h = height;
+      attra.at(ive+2).w = dispx;
+      attra.at(ive+2).h = dispy + height;
 
-      attra.at(ive+3).w = width;
-      attra.at(ive+3).h = height;
+      attra.at(ive+3).w = dispx + width;
+      attra.at(ive+3).h = dispy + height;
       
       // face indices
       attra.atind(ifc+0) = ive + 0;

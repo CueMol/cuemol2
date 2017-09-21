@@ -59,12 +59,20 @@ namespace molstr {
   
     /// label's font name
     LString m_strFontName;
-    /// label's font size
+
+    /// label's font size (pixel/angstrom)
     double m_dFontSize;
+
     /// label's font style (corresponds to the font-style prop of CSS)
     LString m_strFontStyle;
+
     /// label's font weight (corresponds to the font-weight prop of CSS)
     LString m_strFontWgt;
+
+    /// Scaling mode flag (false: fixed pixel draw mode)
+    bool m_bScaling;
+
+    double m_dPixPerAng;
 
     //////////////////////////////////////////////////////
 
