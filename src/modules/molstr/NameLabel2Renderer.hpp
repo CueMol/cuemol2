@@ -74,7 +74,7 @@ namespace molstr {
 
   public:
     bool isScaling() const { return m_bScaling; }
-    void setScaling(bool b) { m_bScaling = b; } 
+    void setScaling(bool b);
 
   private:
     double m_dPixPerAng;

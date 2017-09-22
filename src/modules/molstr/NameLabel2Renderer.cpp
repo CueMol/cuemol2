@@ -413,6 +413,10 @@ void NameLabel2Renderer::createTextureData(DisplayContext *pdc, float asclx, flo
       const int width = ppb->getWidth();
       const int height = ppb->getHeight();
       npix += width * height;
+
+      if (m_bScaling) {
+        m_dPixPerAng = height/m_dFontSize;
+      }
     }
   }
   
@@ -712,6 +716,14 @@ void NameLabel2Renderer::setFontWgt(const LString &val)
   // font info was changed --> invalidate all cached data
   invalidateDisplayCache();
 }
+
+void NameLabel2Renderer::setScaling(bool b)
+{
+  if (m_bScaling==b)
+    return;
+  m_bScaling = b;
+  invalidateDisplayCache();
+} 
 
 /// clear all cached data
 void NameLabel2Renderer::clearAllLabelPix()
