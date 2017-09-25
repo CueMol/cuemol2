@@ -45,6 +45,9 @@ runtime_class NameLabel2Renderer extends Renderer
   property boolean scaling => redirect(isScaling, setScaling);
   default scaling = false;
 
+  property real rotation => redirect(getRotTh, setRotTh);
+  default rotation = 0.0;
+
   //////////
 
   // add new label for the atom

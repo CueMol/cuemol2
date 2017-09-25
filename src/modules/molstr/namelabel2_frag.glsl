@@ -1,7 +1,14 @@
 // -*-Mode: C++;-*-
 //
-//  Default fragment shader for OpenGL
+//  NameLabel2 fragment shader for OpenGL
 //
+
+#ifdef USE_TBO
+#  define LabelTex samplerBuffer
+#else
+#extension GL_EXT_gpu_shader4 : enable 
+#  define LabelTex sampler2D
+#endif
 
 @include "lib_common.glsl"
 
@@ -13,7 +20,7 @@ uniform vec4 u_color;
 
 uniform vec2 u_winsz;
 
-uniform samplerBuffer labelTex;
+uniform LabelTex labelTex;
 
 varying vec2 v_labpos;
 varying float v_width;
@@ -23,6 +30,15 @@ float getLabelPix(vec2 pos)
 {
   int ind = int(v_addr) + int(pos.x) + int(pos.y) * int(v_width);
 
+#ifdef USE_TBO
+  float x = texelFetch(labelTex, ind).r;
+#else
+  ivec2 iv;
+  iv.x = int( mod(ind, TEX2D_WIDTH) );
+  iv.y = ind/TEX2D_WIDTH;
+  float x = texelFetch2D(labelTex, iv, 0).r;
+#endif
+  
   /*
   int ind = int(v_labpos.x);
   int indy = int(v_labpos.y);
@@ -57,7 +73,6 @@ float getLabelPix(vec2 pos)
   else return 0.0f;
 */
   
-  float x = texelFetch(labelTex, ind).r;
   //float x = pos.x/v_width;
   //float x = v_width/100.0f;
 

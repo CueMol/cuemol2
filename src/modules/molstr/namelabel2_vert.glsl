@@ -9,9 +9,8 @@
 // Vertex attributes
 
 attribute vec3 a_xyz;
-
 attribute vec2 a_wh;
-
+attribute vec2 a_nxy;
 attribute float a_width;
 attribute float a_addr;
 
@@ -38,17 +37,20 @@ void main (void)
   vec4 ecPosition = gl_ModelViewMatrix * vec4(a_xyz, 1.0);
   //gEcPosition = ecPosition;
 
+  vec2 dxy = a_wh;
+  mat2 m2 = mat2(a_nxy.x, a_nxy.y, -a_nxy.y, a_nxy.x);
+  dxy = m2 * dxy;
   if (u_ppa>0.0f) {
-    ecPosition.x += a_wh.x/u_ppa;
-    ecPosition.y += a_wh.y/u_ppa;
+    ecPosition.xy += dxy/u_ppa;
+    //ecPosition.y += a_wh.y/u_ppa;
   }
 
   // Do fixed functionality vertex transform
   gl_Position = gl_ProjectionMatrix * ecPosition;
 
   if (u_ppa<0.0f) {
-    gl_Position.x += a_wh.x/u_winsz.x;
-    gl_Position.y += a_wh.y/u_winsz.y;
+    gl_Position.xy += dxy/u_winsz;
+    //gl_Position.y += a_wh.y/u_winsz.y;
   }
 
   gl_FrontColor=gl_Color;

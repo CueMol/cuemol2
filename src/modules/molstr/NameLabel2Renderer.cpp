@@ -18,6 +18,13 @@
 
 #include <sysdep/OglShaderSetupHelper.hpp>
 
+#ifdef WIN32
+// #define USE_TBO 1
+#else
+#endif
+
+#define TEX2D_WIDTH 1024
+
 namespace molstr {
 
   struct NameLabel2
@@ -233,10 +240,17 @@ bool NameLabel2Renderer::init(DisplayContext *pdc)
     return false;
   }
 
-  if (m_pPO==NULL)
+  if (m_pPO==NULL) {
+#ifdef USE_TBO
+    ssh.defineMacro("USE_TBO", "1");
+#else
+    ssh.defineMacro("TEX2D_WIDTH", LString::format("%d",TEX2D_WIDTH).c_str());
+#endif
+
     m_pPO = ssh.createProgObj("gpu_namelabel2",
                               "%%CONFDIR%%/data/shaders/namelabel2_vert.glsl",
                               "%%CONFDIR%%/data/shaders/namelabel2_frag.glsl");
+  }
   
   if (m_pPO==NULL) {
     LOG_DPRINTLN("NameLabel2> ERROR: cannot create progobj.");
@@ -252,6 +266,7 @@ bool NameLabel2Renderer::init(DisplayContext *pdc)
   // setup attributes
   m_nXyzLoc = m_pPO->getAttribLocation("a_xyz");
   m_nWhLoc = m_pPO->getAttribLocation("a_wh");
+  m_nNxyLoc = m_pPO->getAttribLocation("a_nxy");
   m_nWidthLoc = m_pPO->getAttribLocation("a_width");
   m_nAddrLoc = m_pPO->getAttribLocation("a_addr");
 
@@ -270,15 +285,13 @@ void NameLabel2Renderer::createGLSL()
   
   m_pLabelTex = MB_NEW gfx::Texture();
 
-  //m_pLabelTex->setup(1, gfx::Texture::FMT_R,
-  //gfx::Texture::TYPE_FLOAT32);
-
+#ifdef USE_TBO
   m_pLabelTex->setup(1, gfx::Texture::FMT_R,
                      gfx::Texture::TYPE_UINT8_COLOR);
-
-  //m_pLabelTex->setup(2, gfx::Texture::FMT_RGB,
-  //gfx::Texture::TYPE_FLOAT32);
-
+#else
+  m_pLabelTex->setup(2, gfx::Texture::FMT_R,
+                     gfx::Texture::TYPE_UINT8_COLOR);
+#endif
 
   //
   // Create VBO
@@ -289,12 +302,12 @@ void NameLabel2Renderer::createGLSL()
 
   m_pAttrAry = MB_NEW AttrArray();
   AttrArray &attra = *m_pAttrAry;
-  attra.setAttrSize(4);
-  attra.setAttrInfo(0, m_nXyzLoc, 3, qlib::type_consts::QTC_FLOAT32,
-                    offsetof(AttrElem, x));
+  attra.setAttrSize(5);
+  attra.setAttrInfo(0, m_nXyzLoc, 3, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, x));
   attra.setAttrInfo(1, m_nWhLoc, 2, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, w));
-  attra.setAttrInfo(2, m_nWidthLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, width));
-  attra.setAttrInfo(3, m_nAddrLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, addr));
+  attra.setAttrInfo(2, m_nNxyLoc, 2, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, nx));
+  attra.setAttrInfo(3, m_nWidthLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, width));
+  attra.setAttrInfo(4, m_nAddrLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, addr));
 
   attra.alloc(nlab*4);
   attra.allocInd(nlab*6);
@@ -421,7 +434,21 @@ void NameLabel2Renderer::createTextureData(DisplayContext *pdc, float asclx, flo
   }
   
   // Create texture atlas
+#ifdef USE_TBO
   m_pixall.resize(npix);
+#else
+  int h=0;
+  if (npix%TEX2D_WIDTH==0)
+    h = npix/TEX2D_WIDTH;
+  else
+    h = npix/TEX2D_WIDTH + 1;
+  m_pixall.resize(h*TEX2D_WIDTH);
+  
+  m_nTexW = TEX2D_WIDTH;
+  m_nTexH = h;
+  LOG_DPRINTLN("NameLabel2> Label Texture2D size=%d,%d", m_nTexW, m_nTexH);
+#endif
+  
   {
     npix = 0;
     int i=0, j;
@@ -447,11 +474,19 @@ void NameLabel2Renderer::createTextureData(DisplayContext *pdc, float asclx, flo
     }
   }
 
+#ifdef USE_TBO
   m_pLabelTex->setData(npix, 1, 1, &m_pixall[0]);
+#else
+  m_pLabelTex->setData(m_nTexW, m_nTexH, 1, &m_pixall[0]);
+#endif
 
   const float dispx = float(m_xdispl);
   const float dispy = float(m_ydispl);
   
+  const double th = qlib::toRadian(m_dRotTh);
+  const double costh = cos(th);
+  const double sinth = sin(th);
+
   AttrArray &attra = *m_pAttrAry;
   {
     int i=0, j;
@@ -483,6 +518,12 @@ void NameLabel2Renderer::createTextureData(DisplayContext *pdc, float asclx, flo
         //attra.at(ive+j).z = qfloat32( pos.z() );
         attra.at(ive+j).width = width;
         attra.at(ive+j).addr = float( pixaddr[i] );
+
+        //attra.at(ive+j).nx = 1.0f;
+        //attra.at(ive+j).ny = 0.0f;
+        
+        attra.at(ive+j).nx = costh;
+        attra.at(ive+j).ny = sinth;
       }
       
       attra.at(ive+0).w = dispx;
@@ -735,6 +776,39 @@ void NameLabel2Renderer::clearAllLabelPix()
     value.m_pPixBuf = NULL;
   }  
 }
+
+void NameLabel2Renderer::setRotTh(double th)
+{
+  m_dRotTh = th;
+
+  // texture, attr not ready --> not update data
+  if (m_pixall.empty())
+    return;
+
+  // texture, attr are ready --> update existing attr
+  AttrArray &attra = *m_pAttrAry;
+
+  int i=0, j;
+
+  const double rth = qlib::toRadian(m_dRotTh);
+  const double costh = cos(rth);
+  const double sinth = sin(rth);
+
+  NameLabel2List::iterator iter = m_pdata->begin();
+  NameLabel2List::iterator eiter = m_pdata->end();
+  for (; iter!=eiter; iter++, ++i) {
+    const int ive = i*4;
+
+    // vertex data
+    for (j=0; j<4; ++j) {
+      attra.at(ive+j).nx = costh;
+      attra.at(ive+j).ny = sinth;
+    }
+  }
+
+  attra.setUpdated(true);
+}
+
 
 ///////////////////////
 

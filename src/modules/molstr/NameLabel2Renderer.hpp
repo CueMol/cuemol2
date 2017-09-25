@@ -11,7 +11,7 @@
 //#include <qsys/DispListRenderer.hpp>
 #include "MolRenderer.hpp"
 #include <gfx/SolidColor.hpp>
-#include <gfx/LabelCacheImpl.hpp>
+// #include <gfx/LabelCacheImpl.hpp>
 
 #include <gfx/DrawAttrArray.hpp>
 
@@ -72,12 +72,19 @@ namespace molstr {
     /// Scaling mode flag (false: fixed pixel draw mode)
     bool m_bScaling;
 
+  private:
+    double m_dPixPerAng;
+
   public:
     bool isScaling() const { return m_bScaling; }
     void setScaling(bool b);
 
   private:
-    double m_dPixPerAng;
+    double m_dRotTh;
+
+  public:
+    double getRotTh() const { return m_dRotTh; }
+    void setRotTh(double th);
 
     //////////////////////////////////////////////////////
 
@@ -202,12 +209,14 @@ namespace molstr {
     struct AttrElem {
       qfloat32 x, y, z;
       qfloat32 w, h;
+      qfloat32 nx, ny;
       qfloat32 width;
       qfloat32 addr;
     };
 
     quint32 m_nXyzLoc;
     quint32 m_nWhLoc;
+    quint32 m_nNxyLoc;
     quint32 m_nWidthLoc;
     quint32 m_nAddrLoc;
 
