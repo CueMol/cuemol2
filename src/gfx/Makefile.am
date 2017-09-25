@@ -34,6 +34,7 @@ color_parser.yxx color_scanner.lxx \
 ColCompiler.cpp \
 DrawElem.cpp \
 LabelCacheImpl.cpp \
+TextImgBuf.cpp \
 MultiGradient.cpp \
 SphereSet.cpp \
 CmsXform.cpp \
