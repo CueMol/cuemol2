@@ -16,6 +16,8 @@
 
 #include <qsys/SceneManager.hpp>
 
+#include <sysdep/OglShaderSetupHelper.hpp>
+
 using namespace molvis;
 using namespace molstr;
 
@@ -41,6 +43,10 @@ AtomIntr2Renderer::AtomIntr2Renderer()
 
   m_dArrowWidth = 2.0;
   m_dArrowHeight = 1.2;
+
+  m_pPO = NULL;
+  m_pAttrAry = NULL;
+  setForceGLSL(true);
 }
 
 AtomIntr2Renderer::~AtomIntr2Renderer()
@@ -50,14 +56,14 @@ AtomIntr2Renderer::~AtomIntr2Renderer()
 }
 
 //////////////////////////////////////////////////////////////////////////
-
+/*
 MolCoordPtr AtomIntr2Renderer::getClientMol() const
 {
   qsys::ObjectPtr robj = qsys::SceneManager::getObjectS(getClientObjID());
   if (robj.isnull()) return MolCoordPtr();
   return MolCoordPtr(robj);
 }
-
+*/
 bool AtomIntr2Renderer::isCompatibleObj(qsys::ObjectPtr pobj) const
 {
   MolCoord *ptest = dynamic_cast<MolCoord *>(pobj.get());
@@ -1158,6 +1164,7 @@ LString AtomIntr2Renderer::getDefsJSON() const
 }
 
 
+/*
 void AtomIntr2Renderer::displayLabels(DisplayContext *pdc)
 {
   if (m_bShowLabel) {
@@ -1165,5 +1172,226 @@ void AtomIntr2Renderer::displayLabels(DisplayContext *pdc)
     pdc->color(m_pcolor);
     m_pixCache.draw(pdc);
   }
+}
+*/
+
+/// Use ver2 interface (--> return true)
+bool AtomIntr2Renderer::isUseVer2Iface() const
+{
+  return true;
+}
+
+/// Initialize & setup capabilities (for glsl setup)
+bool AtomIntr2Renderer::init(DisplayContext *pdc)
+{
+  sysdep::OglShaderSetupHelper<AtomIntr2Renderer> ssh(this);
+  
+  if (!ssh.checkEnvVS()) {
+    LOG_DPRINTLN("AtomIntr2> ERROR: GLSL not supported.");
+    //MB_THROW(qlib::RuntimeException, "OpenGL GPU shading not supported");
+    setShaderAvail(false);
+    return false;
+  }
+
+  if (m_pPO==NULL) {
+    m_pPO = ssh.createProgObj("gpu_stpline1",
+                              "%%CONFDIR%%/data/shaders/stpline1_vert.glsl",
+                              "%%CONFDIR%%/data/shaders/stpline1_frag.glsl");
+  }
+  
+  if (m_pPO==NULL) {
+    LOG_DPRINTLN("AtomIntr2> ERROR: cannot create progobj.");
+    setShaderAvail(false);
+    return false;
+  }
+
+  m_pPO->enable();
+
+  // setup attributes
+  m_nPos1Loc = m_pPO->getAttribLocation("a_pos1");
+  m_nPos2Loc = m_pPO->getAttribLocation("a_pos2");
+  m_nHwidthLoc = m_pPO->getAttribLocation("a_hwidth");
+  m_nDirLoc = m_pPO->getAttribLocation("a_dir");
+
+  m_pPO->disable();
+  setShaderAvail(true);
+  return true;
+}
+
+bool AtomIntr2Renderer::isCacheAvail() const
+{
+  return m_pAttrAry!=NULL;
+}
+
+/// Create GLSL data (VBO, texture, etc)
+void AtomIntr2Renderer::createGLSL()
+{
+  // XXX: fix this
+  int nlines = m_data.size();
+
+  //
+  // Create VBO
+  //
+  
+  if (m_pAttrAry!=NULL)
+    delete m_pAttrAry;
+
+  m_pAttrAry = MB_NEW AttrArray();
+  AttrArray &attra = *m_pAttrAry;
+  attra.setAttrSize(4);
+  attra.setAttrInfo(0, m_nPos1Loc, 3, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, pos1x));
+  attra.setAttrInfo(1, m_nPos2Loc, 3, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, pos2x));
+  attra.setAttrInfo(2, m_nHwidthLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, hwidth));
+  attra.setAttrInfo(3, m_nDirLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, dir));
+
+  attra.alloc(nlines*4);
+  attra.allocInd(nlines*6);
+
+  attra.setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
+
+  int i=0;
+  BOOST_FOREACH(AtomIntrData &value, m_data) {
+    
+    const int ive = i*4;
+    const int ifc = i*6;
+    
+    // vertex data
+    attra.at(ive+0).hwidth = float(m_linew) * 0.5f;
+    attra.at(ive+1).hwidth = float(m_linew) * -0.5f;
+    attra.at(ive+2).hwidth = float(m_linew) * -0.5f;
+    attra.at(ive+3).hwidth = float(m_linew) * 0.5f;
+    
+    attra.at(ive+0).dir = 0.0f;
+    attra.at(ive+1).dir = 0.0f;
+    attra.at(ive+2).dir = 1.0f;
+    attra.at(ive+3).dir = 1.0f;
+
+    // face indices
+    attra.atind(ifc+0) = ive + 0;
+    attra.atind(ifc+1) = ive + 1;
+    attra.atind(ifc+2) = ive + 2;
+    attra.atind(ifc+3) = ive + 2;
+    attra.atind(ifc+4) = ive + 1;
+    attra.atind(ifc+5) = ive + 3;
+
+    ++i;
+  }
+}
+
+/// update VBO positions using CrdArray
+void AtomIntr2Renderer::updateDynamicGLSL()
+{
+  // TO DO: impl
+  updateStaticGLSL();
+}
+
+/// update VBO positions using getPos
+void AtomIntr2Renderer::updateStaticGLSL()
+{
+  // XXX: fix this
+  int nlines = m_data.size();
+
+  Vector4D pos1, pos2;
+  int i=0;
+  AttrArray &attra = *m_pAttrAry;
+  BOOST_FOREACH(AtomIntrData &value, m_data) {
+    if (evalPos(value.elem0, pos1) &&
+        evalPos(value.elem1, pos2)) {
+
+      const int ive = i*4;
+      //const int ifc = i*6;
+
+      // vertex data
+      attra.at(ive+0).pos1x = float( pos1.x() );
+      attra.at(ive+0).pos1y = float( pos1.y() );
+      attra.at(ive+0).pos1z = float( pos1.z() );
+
+      attra.at(ive+0).pos2x = float( pos2.x() );
+      attra.at(ive+0).pos2y = float( pos2.y() );
+      attra.at(ive+0).pos2z = float( pos2.z() );
+
+      attra.at(ive+1).pos1x = float( pos1.x() );
+      attra.at(ive+1).pos1y = float( pos1.y() );
+      attra.at(ive+1).pos1z = float( pos1.z() );
+
+      attra.at(ive+1).pos2x = float( pos2.x() );
+      attra.at(ive+1).pos2y = float( pos2.y() );
+      attra.at(ive+1).pos2z = float( pos2.z() );
+
+      attra.at(ive+2).pos1x = float( pos2.x() );
+      attra.at(ive+2).pos1y = float( pos2.y() );
+      attra.at(ive+2).pos1z = float( pos2.z() );
+
+      attra.at(ive+2).pos2x = float( pos1.x() );
+      attra.at(ive+2).pos2y = float( pos1.y() );
+      attra.at(ive+2).pos2z = float( pos1.z() );
+
+      attra.at(ive+3).pos1x = float( pos2.x() );
+      attra.at(ive+3).pos1y = float( pos2.y() );
+      attra.at(ive+3).pos1z = float( pos2.z() );
+
+      attra.at(ive+3).pos2x = float( pos1.x() );
+      attra.at(ive+3).pos2y = float( pos1.y() );
+      attra.at(ive+3).pos2z = float( pos1.z() );
+    }
+    ++i;
+  }  
+
+  attra.setUpdated(true);
+}
+
+/// Render to display (using GLSL)
+void AtomIntr2Renderer::renderGLSL(DisplayContext *pdc)
+{
+  if (m_pPO==NULL)
+    return; // Error, shader program is not available (ignore)
+
+  // setup stipple
+  float s0, s1;
+  if (m_nTopStipple==0) {
+    s0 = 1.0f;
+    s1 = 0.0f;
+  }
+  else if (m_nTopStipple==1) {
+    s0 = s1 = m_stipple[0];
+  }
+  else {
+    s0 = m_stipple[0];
+    s1 = m_stipple[1];
+  }
+
+  // Get label color
+  qlib::uid_t nSceneID = getSceneID();
+  float fr=0.0f, fg=0.0f, fb=0.0f, fa = pdc->getAlpha();
+  if (!m_pcolor.isnull()) {
+    quint32 dcc = m_pcolor->getDevCode(nSceneID);
+    fr = gfx::convI2F(gfx::getRCode(dcc));
+    fg = gfx::convI2F(gfx::getGCode(dcc));
+    fb = gfx::convI2F(gfx::getBCode(dcc));
+    fa *= gfx::convI2F(gfx::getACode(dcc));
+  }
+
+  m_pPO->enable();
+  
+  m_pPO->setUniformF("u_stipple", s0, s1);
+
+  m_pPO->setUniformF("u_color", fr, fg, fb, fa);
+
+  pdc->drawElem(*m_pAttrAry);
+  m_pPO->disable();
+}
+
+void AtomIntr2Renderer::invalidateDisplayCache()
+{
+  // clean-up internal data
+  // clearAllLabelPix();
+
+  if (m_pAttrAry!=NULL) {
+    delete m_pAttrAry;
+    m_pAttrAry = NULL;
+  }
+
+  // clean-up display list (if exists; in compatible mode)
+  super_t::invalidateDisplayCache();
 }
 

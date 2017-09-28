@@ -16,6 +16,7 @@
 #include "RibbonRenderer.hpp"
 #include "NARenderer.hpp"
 #include "AtomIntrRenderer.hpp"
+#include "AtomIntr2Renderer.hpp"
 #include "Ribbon2Renderer.hpp"
 #include "DisoRenderer.hpp"
 
@@ -56,6 +57,7 @@ bool init()
   pRF->regist<RibbonRenderer>();
   pRF->regist<NARenderer>();
   pRF->regist<AtomIntrRenderer>();
+  pRF->regist<AtomIntr2Renderer>();
   pRF->regist<Ribbon2Renderer>();
   pRF->regist<DisoRenderer>();
 

@@ -508,6 +508,8 @@
     <glslshader Include="..\..\src\modules\molvis\sphere_vertex.glsl" />
     <glslshader Include="..\..\src\modules\molvis\spline2_frag.glsl" />
     <glslshader Include="..\..\src\modules\molvis\spline2_vert.glsl" />
+    <glslshader Include="..\..\src\modules\molvis\stpline1_frag.glsl" />
+    <glslshader Include="..\..\src\modules\molvis\stpline1_vert.glsl" />
     <glslshader Include="..\..\src\modules\molvis\tube21_frag.glsl" />
     <glslshader Include="..\..\src\modules\molvis\tube21_vert.glsl" />
     <glslshader Include="..\..\src\modules\molvis\tube2_frag.glsl" />

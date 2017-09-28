@@ -9,15 +9,22 @@
 #include "molvis.hpp"
 
 #include <modules/molstr/molstr.hpp>
-#include <qsys/DispListRenderer.hpp>
+//#include <qsys/DispListRenderer.hpp>
+#include <modules/molstr/MolRenderer.hpp>
 #include <gfx/SolidColor.hpp>
 #include <gfx/LabelCacheImpl.hpp>
+#include <gfx/DrawAttrArray.hpp>
+
 #include "AtomIntrData.hpp"
 
 class AtomIntr2Renderer_wrap;
 
 namespace gfx {
   class PixelBuffer;
+}
+
+namespace sysdep {
+  class OglProgramObject;
 }
 
 namespace molvis {
@@ -28,31 +35,83 @@ namespace molvis {
   using molstr::MolCoordPtr;
   using molstr::SelectionPtr;
 
-  class MOLVIS_API AtomIntr2Renderer : public qsys::DispListRenderer
+  class MOLVIS_API AtomIntr2Renderer : public molstr::MolRenderer
   {
     MC_SCRIPTABLE;
     MC_CLONEABLE;
     
     friend class ::AtomIntr2Renderer_wrap;
 
-    typedef qsys::DispListRenderer super_t;
+    typedef molstr::MolRenderer super_t;
 
+    /////////////
+    // Properties
   private:
     
     /// Drawing mode
     int m_nMode;
     
+  public:
+    int getMode() const { return m_nMode; }
+    void setMode(int nID) {
+      invalidateDisplayCache();
+      m_nMode = nID;
+    }
+
+  private:
     /// Label flag
     bool m_bShowLabel;
     
+  public:
+    bool isShowLabel() const { return m_bShowLabel; }
+    void setShowLabel(bool f) {
+      invalidateDisplayCache();
+      m_bShowLabel = f;
+    }
+
+  private:
     /// line width
     double m_linew;
     
+  public:
+    double getWidth() const { return m_linew; }
+    void setWidth(double d) {
+      m_linew = d;
+      invalidateDisplayCache();
+    }
+
+
+  private:
     /// Shape of line termini (valid for FANCY mode)
     //int m_nEndType;
     int m_nStartCapType;
     int m_nEndCapType;
     
+  public:
+    int getEndType() const { return m_nEndCapType; }
+    void setEndType(int nID) {
+      m_nStartCapType = nID;
+      m_nEndCapType = nID;
+      invalidateDisplayCache();
+    }
+
+    int getStartCapType() const {
+      return m_nStartCapType;
+    }
+    void setStartCapType(int n) {
+      m_nStartCapType = n;
+      invalidateDisplayCache();
+    }
+
+    int getEndCapType() const {
+      return m_nEndCapType;
+    }
+    void setEndCapType(int n) {
+      m_nEndCapType = n;
+      invalidateDisplayCache();
+    }
+  
+  private:
     /// Color of lines
     ColorPtr m_pcolor;
     
@@ -62,12 +121,29 @@ namespace molvis {
     /// Width of arrow (valid for FANCY mode with arrow terminus)
     double m_dArrowWidth;
     
-    /// Tesselation level (valid for FANCY mode)
+  public:
+    double getArrowWidth() const { return m_dArrowWidth; }
+    void setArrowWidth(double d) {
+      m_dArrowWidth = d;
+      invalidateDisplayCache();
+    }
+
+    double getArrowHeight() const { return m_dArrowHeight; }
+    void setArrowHeight(double d) {
+      m_dArrowHeight = d;
+      invalidateDisplayCache();
+    }
+  
+  private:
+    /// Tesselation level (Used in for FANCY mode)
     int m_nDetail;
     
-    enum {
-      MAX_STIPPLE_INDEX = 6
-    };
+  public:
+    int getDetail() const { return m_nDetail; }
+    void setDetail(int ndetail);
+
+  private:
+    static const int MAX_STIPPLE_INDEX = 6;
     
     /// stipple-in/out length
     double m_stipple[MAX_STIPPLE_INDEX];
@@ -85,6 +161,21 @@ namespace molvis {
     /// label's font weight (corresponds to the font-weight prop of CSS)
     LString m_strFontWgt;
     
+  public:
+    double getStipple0() const { return m_stipple[0]; }
+    double getStipple1() const { return m_stipple[1]; }
+    double getStipple2() const { return m_stipple[2]; }
+    double getStipple3() const { return m_stipple[3]; }
+    double getStipple4() const { return m_stipple[4]; }
+    double getStipple5() const { return m_stipple[5]; }
+
+    void setStipple0(double d);
+    void setStipple1(double d);
+    void setStipple2(double d);
+    void setStipple3(double d);
+    void setStipple4(double d);
+    void setStipple5(double d);
+
   private:
     
     /// Implementation data
@@ -119,67 +210,85 @@ namespace molvis {
     virtual bool isCompatibleObj(qsys::ObjectPtr pobj) const;
     virtual LString toString() const;
 
-    virtual void preRender(DisplayContext *pdc);
-    virtual void postRender(DisplayContext *pdc);
-    virtual void render(DisplayContext *pdl);
     virtual bool isHitTestSupported() const;
 
-    Vector4D getCenter() const;
+    virtual Vector4D getCenter() const;
 
     virtual const char *getTypeName() const;
 
     virtual bool isTransp() const;
 
-    virtual void displayLabels(DisplayContext *pdc);
-
-    ////
-
-    virtual void propChanged(qlib::LPropEvent &ev);
-
-    virtual void styleChanged(qsys::StyleEvent &ev);
+    virtual void invalidateDisplayCache();
 
     //////////////////////////////////////////////////////
+    // Old rendering interface
+    //   (for renderFile()/GL compatible prof)
 
-    MolCoordPtr getClientMol() const;
+    virtual void preRender(DisplayContext *pdc);
+    virtual void postRender(DisplayContext *pdc);
+    virtual void render(DisplayContext *pdl);
 
-    int getMode() const { return m_nMode; }
-    void setMode(int nID) {
-      invalidateDisplayCache();
-      m_nMode = nID;
-    }
+    // virtual void displayLabels(DisplayContext *pdc);
 
-    bool isShowLabel() const { return m_bShowLabel; }
-    void setShowLabel(bool f) {
-      invalidateDisplayCache();
-      m_bShowLabel = f;
-    }
+    //////////////////////////////////////////////////////
+    // Ver. 2 interface
 
-    int getEndType() const { return m_nEndCapType; }
-    void setEndType(int nID) {
-      m_nStartCapType = nID;
-      m_nEndCapType = nID;
-      invalidateDisplayCache();
-    }
+    /// Use ver2 interface (--> return true)
+    virtual bool isUseVer2Iface() const;
 
-    int getStartCapType() const {
-      return m_nStartCapType;
-    }
-    void setStartCapType(int n) {
-      m_nStartCapType = n;
-      invalidateDisplayCache();
-    }
+    /// Initialize & setup capabilities (for glsl setup)
+    virtual bool init(DisplayContext *pdc);
+    
+    virtual bool isCacheAvail() const;
 
-    int getEndCapType() const {
-      return m_nEndCapType;
-    }
-    void setEndCapType(int n) {
-      m_nEndCapType = n;
-      invalidateDisplayCache();
-    }
-  
-    int getDetail() const { return m_nDetail; }
-    void setDetail(int nID);
+    /// Create GLSL data (VBO, texture, etc)
+    virtual void createGLSL();
 
+    /// update VBO positions using CrdArray
+    virtual void updateDynamicGLSL();
+
+    /// update VBO positions using getPos
+    virtual void updateStaticGLSL();
+
+
+    // /// Render to display (using VBO)
+    // virtual void renderVBO(DisplayContext *pdc);
+
+    /// Render to display (using GLSL)
+    virtual void renderGLSL(DisplayContext *pdc);
+
+  private:
+    
+    /// GLSL shader objects
+    sysdep::OglProgramObject *m_pPO;
+
+    struct AttrElem {
+      qfloat32 pos1x, pos1y, pos1z;
+      qfloat32 pos2x, pos2y, pos2z;
+      qfloat32 hwidth;
+      qfloat32 dir;
+    };
+
+    quint32 m_nPos1Loc;
+    quint32 m_nPos2Loc;
+    quint32 m_nHwidthLoc;
+    quint32 m_nDirLoc;
+
+    typedef gfx::DrawAttrElems<quint32, AttrElem> AttrArray;
+
+    /// VBO for GLSL rendering
+    AttrArray *m_pAttrAry;
+    
+    //////////
+
+
+  public:
+
+    //////////////////////////////////////////////////////
+    // Specific implementation
+
+    // MolCoordPtr getClientMol() const;
+    
     int appendBySelStr(const LString &sstr1, const LString &sstr2);
 
     int appendById(int nAid1, qlib::uid_t nMolID2, int nAid2, bool bShowMsg);
@@ -210,43 +319,18 @@ namespace molvis {
     /// Get intr data defs by JSON rep.
     LString getDefsJSON() const;
 
-    double getWidth() const { return m_linew; }
-    void setWidth(double d) {
-      m_linew = d;
-      invalidateDisplayCache();
-    }
-
-    double getStipple0() const { return m_stipple[0]; }
-    double getStipple1() const { return m_stipple[1]; }
-    double getStipple2() const { return m_stipple[2]; }
-    double getStipple3() const { return m_stipple[3]; }
-    double getStipple4() const { return m_stipple[4]; }
-    double getStipple5() const { return m_stipple[5]; }
-
-    void setStipple0(double d);
-    void setStipple1(double d);
-    void setStipple2(double d);
-    void setStipple3(double d);
-    void setStipple4(double d);
-    void setStipple5(double d);
-
-    double getArrowWidth() const { return m_dArrowWidth; }
-    void setArrowWidth(double d) {
-      m_dArrowWidth = d;
-      invalidateDisplayCache();
-    }
-
-    double getArrowHeight() const { return m_dArrowHeight; }
-    void setArrowHeight(double d) {
-      m_dArrowHeight = d;
-      invalidateDisplayCache();
-    }
-  
     //////////////////////////////////////////////////////
     // Serialization / deserialization impl for non-prop data
 
     virtual void writeTo2(qlib::LDom2Node *pNode) const;
     virtual void readFrom2(qlib::LDom2Node *pNode);
+
+    //////////////////////////////////////////////////////
+    // Event handling
+
+    virtual void propChanged(qlib::LPropEvent &ev);
+
+    virtual void styleChanged(qsys::StyleEvent &ev);
 
   private:
 
