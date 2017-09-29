@@ -807,6 +807,9 @@
     <ClCompile Include="..\..\src\gfx\TextImgBuf.cpp">
       <Filter>gfx</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\GLSLLabelHelper.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\qsys\AbstractColor.hpp">

@@ -16,14 +16,7 @@
 #include <gfx/TextRenderManager.hpp>
 #include <qsys/SceneManager.hpp>
 
-#include <sysdep/OglShaderSetupHelper.hpp>
-
-#ifdef WIN32
-// #define USE_TBO 1
-#else
-#endif
-
-#define TEX2D_WIDTH 1024
+//#include <sysdep/OglShaderSetupHelper.hpp>
 
 namespace molstr {
 
@@ -87,9 +80,9 @@ NameLabel2Renderer::NameLabel2Renderer()
   // will be called by RendererFactory
   //resetAllProps();
 
-  m_pPO = NULL;
-  m_pAttrAry = NULL;
-  m_pLabelTex = NULL;
+  // m_pPO = NULL;
+  // m_pAttrAry = NULL;
+  // m_pLabelTex = NULL;
   setForceGLSL(true);
 }
 
@@ -100,15 +93,6 @@ NameLabel2Renderer::~NameLabel2Renderer()
 }
 
 //////////////////////////////////////////////////////////////////////////
-
-/*
-MolCoordPtr NameLabel2Renderer::getClientMol() const
-{
-  qsys::ObjectPtr robj = qsys::SceneManager::getObjectS(getClientObjID());
-  if (robj.isnull()) return MolCoordPtr();
-  return MolCoordPtr(robj);
-}
-*/
 
 bool NameLabel2Renderer::isCompatibleObj(qsys::ObjectPtr pobj) const
 {
@@ -143,15 +127,8 @@ void NameLabel2Renderer::invalidateDisplayCache()
   // clean-up internal data
   clearAllLabelPix();
 
-  m_pixall.clear();
-  if (m_pLabelTex!=NULL) {
-    delete m_pLabelTex;
-    m_pLabelTex = NULL;
-  }
-  if (m_pAttrAry!=NULL) {
-    delete m_pAttrAry;
-    m_pAttrAry = NULL;
-  }
+  // Clean-up GLSL related data
+  m_glsllabel.invalidate();
 
   // clean-up display list (if exists; in compatible mode)
   super_t::invalidateDisplayCache();
@@ -231,46 +208,12 @@ bool NameLabel2Renderer::isUseVer2Iface() const
 /// Initialize & setup capabilities (for glsl setup)
 bool NameLabel2Renderer::init(DisplayContext *pdc)
 {
-  sysdep::OglShaderSetupHelper<NameLabel2Renderer> ssh(this);
-
-  if (!ssh.checkEnvVS()) {
-    LOG_DPRINTLN("NameLabel2> ERROR: GLSL not supported.");
-    //MB_THROW(qlib::RuntimeException, "OpenGL GPU shading not supported");
+  bool bres = m_glsllabel.initShader(this);
+  if (!bres) {
     setShaderAvail(false);
     return false;
   }
 
-  if (m_pPO==NULL) {
-#ifdef USE_TBO
-    ssh.defineMacro("USE_TBO", "1");
-#else
-    ssh.defineMacro("TEX2D_WIDTH", LString::format("%d",TEX2D_WIDTH).c_str());
-#endif
-
-    m_pPO = ssh.createProgObj("gpu_namelabel2",
-                              "%%CONFDIR%%/data/shaders/namelabel2_vert.glsl",
-                              "%%CONFDIR%%/data/shaders/namelabel2_frag.glsl");
-  }
-  
-  if (m_pPO==NULL) {
-    LOG_DPRINTLN("NameLabel2> ERROR: cannot create progobj.");
-    setShaderAvail(false);
-    return false;
-  }
-
-  m_pPO->enable();
-
-  // setup uniforms
-  m_pPO->setUniform("labelTex", 0);
-
-  // setup attributes
-  m_nXyzLoc = m_pPO->getAttribLocation("a_xyz");
-  m_nWhLoc = m_pPO->getAttribLocation("a_wh");
-  m_nNxyLoc = m_pPO->getAttribLocation("a_nxy");
-  m_nWidthLoc = m_pPO->getAttribLocation("a_width");
-  m_nAddrLoc = m_pPO->getAttribLocation("a_addr");
-
-  m_pPO->disable();
   setShaderAvail(true);
   return true;
 }
@@ -279,55 +222,17 @@ void NameLabel2Renderer::createGLSL()
 {
   int nlab = m_pdata->size();
 
-  // create label texture
-  if (m_pLabelTex!=NULL)
-    delete m_pLabelTex;
-  
-  m_pLabelTex = MB_NEW gfx::Texture();
-
-#ifdef USE_TBO
-  m_pLabelTex->setup(1, gfx::Texture::FMT_R,
-                     gfx::Texture::TYPE_UINT8_COLOR);
-#else
-  m_pLabelTex->setup(2, gfx::Texture::FMT_R,
-                     gfx::Texture::TYPE_UINT8_COLOR);
-#endif
-
-  //
-  // Create VBO
-  //
-  
-  if (m_pAttrAry!=NULL)
-    delete m_pAttrAry;
-
-  m_pAttrAry = MB_NEW AttrArray();
-  AttrArray &attra = *m_pAttrAry;
-  attra.setAttrSize(5);
-  attra.setAttrInfo(0, m_nXyzLoc, 3, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, x));
-  attra.setAttrInfo(1, m_nWhLoc, 2, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, w));
-  attra.setAttrInfo(2, m_nNxyLoc, 2, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, nx));
-  attra.setAttrInfo(3, m_nWidthLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, width));
-  attra.setAttrInfo(4, m_nAddrLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, addr));
-
-  attra.alloc(nlab*4);
-  attra.allocInd(nlab*6);
-
-  attra.setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
-  //attra.setDrawMode(gfx::AbstDrawElem::DRAW_POINTS);
-
+  m_glsllabel.alloc(nlab);
 }
 
 bool NameLabel2Renderer::isCacheAvail() const
 {
-  return m_pAttrAry!=NULL && m_pLabelTex!=NULL;
+  return m_glsllabel.isAvailable();
 }
 
 /// Render to display (using GLSL)
 void NameLabel2Renderer::renderGLSL(DisplayContext *pdc)
 {
-  if (m_pPO==NULL)
-    return; // Error, shader program is not available (ignore)
-
   float width = 1.0f, height = 1.0f;
   float sclx = 1.0f, scly = 1.0f;
   qsys::View *pView = pdc->getTargetView();
@@ -340,36 +245,15 @@ void NameLabel2Renderer::renderGLSL(DisplayContext *pdc)
     height = (float) pView->getHeight()*0.5f*scly;// * 3.0f/4.0f;
   }
 
-  if (m_pixall.empty())
+  if (!m_glsllabel.isPixDataAvail())
     createTextureData(pdc, sclx, scly);
   
-  // Get label color
-  qlib::uid_t nSceneID = getSceneID();
-  float fr=0.0f, fg=0.0f, fb=0.0f, fa = pdc->getAlpha();
-  if (!m_color.isnull()) {
-    quint32 dcc = m_color->getDevCode(nSceneID);
-    fr = gfx::convI2F(gfx::getRCode(dcc));
-    fg = gfx::convI2F(gfx::getGCode(dcc));
-    fb = gfx::convI2F(gfx::getBCode(dcc));
-    fa *= gfx::convI2F(gfx::getACode(dcc));
-  }
-
   // Determine ppa
   float ppa = -1.0f;
   if (m_bScaling)
     ppa = float(m_dPixPerAng);
 
-  pdc->useTexture(m_pLabelTex, 0);
-
-  m_pPO->enable();
-  m_pPO->setUniformF("u_winsz", width, height);
-  m_pPO->setUniformF("u_ppa", ppa);
-  m_pPO->setUniformF("u_color", fr, fg, fb, fa);
-  pdc->drawElem(*m_pAttrAry);
-
-  m_pPO->disable();
-
-  pdc->unuseTexture(m_pLabelTex);
+  m_glsllabel.draw(pdc, width, height, ppa, getSceneID());
 }
 
 void NameLabel2Renderer::createTextureData(DisplayContext *pdc, float asclx, float scly)
@@ -433,23 +317,10 @@ void NameLabel2Renderer::createTextureData(DisplayContext *pdc, float asclx, flo
     }
   }
   
-  // Create texture atlas
-#ifdef USE_TBO
-  m_pixall.resize(npix);
-#else
-  int h=0;
-  if (npix%TEX2D_WIDTH==0)
-    h = npix/TEX2D_WIDTH;
-  else
-    h = npix/TEX2D_WIDTH + 1;
-  m_pixall.resize(h*TEX2D_WIDTH);
-  
-  m_nTexW = TEX2D_WIDTH;
-  m_nTexH = h;
-  LOG_DPRINTLN("NameLabel2> Label Texture2D size=%d,%d", m_nTexW, m_nTexH);
-#endif
+  m_glsllabel.createPixBuf(npix);
   
   {
+    GLSLLabelHelper::PixBuf &pixall = m_glsllabel.getPixBuf();
     npix = 0;
     int i=0, j;
     NameLabel2List::iterator iter = m_pdata->begin();
@@ -466,19 +337,14 @@ void NameLabel2Renderer::createTextureData(DisplayContext *pdc, float asclx, flo
       const int height = ppb->getHeight();
 
       for (j=0; j<width*height; ++j) {
-        //m_pixall[j+npix] = gfx::convB2F(ppb->at(j));
-        m_pixall[j+npix] = ppb->at(j);
+        pixall[j+npix] = ppb->at(j);
       }
 
       npix += width * height;
     }
   }
 
-#ifdef USE_TBO
-  m_pLabelTex->setData(npix, 1, 1, &m_pixall[0]);
-#else
-  m_pLabelTex->setData(m_nTexW, m_nTexH, 1, &m_pixall[0]);
-#endif
+  m_glsllabel.setTexData();
 
   const float dispx = float(m_xdispl);
   const float dispy = float(m_ydispl);
@@ -487,7 +353,7 @@ void NameLabel2Renderer::createTextureData(DisplayContext *pdc, float asclx, flo
   const double costh = cos(th);
   const double sinth = sin(th);
 
-  AttrArray &attra = *m_pAttrAry;
+  auto pa = m_glsllabel.getDrawElem();
   {
     int i=0, j;
     LString strlab;
@@ -513,38 +379,30 @@ void NameLabel2Renderer::createTextureData(DisplayContext *pdc, float asclx, flo
       //MB_DPRINTLN("Label2> %d width,height = %f,%f", i, width, height);
       // vertex data
       for (j=0; j<4; ++j) {
-        //attra.at(ive+j).x = qfloat32( pos.x() );
-        //attra.at(ive+j).y = qfloat32( pos.y() );
-        //attra.at(ive+j).z = qfloat32( pos.z() );
-        attra.at(ive+j).width = width;
-        attra.at(ive+j).addr = float( pixaddr[i] );
+        //pa->at(ive+j).x = qfloat32( pos.x() );
+        //pa->at(ive+j).y = qfloat32( pos.y() );
+        //pa->at(ive+j).z = qfloat32( pos.z() );
+        pa->at(ive+j).width = width;
+        pa->at(ive+j).addr = float( pixaddr[i] );
 
-        //attra.at(ive+j).nx = 1.0f;
-        //attra.at(ive+j).ny = 0.0f;
+        //pa->at(ive+j).nx = 1.0f;
+        //pa->at(ive+j).ny = 0.0f;
         
-        attra.at(ive+j).nx = costh;
-        attra.at(ive+j).ny = sinth;
+        pa->at(ive+j).nx = costh;
+        pa->at(ive+j).ny = sinth;
       }
       
-      attra.at(ive+0).w = dispx;
-      attra.at(ive+0).h = dispy;
+      pa->at(ive+0).w = dispx;
+      pa->at(ive+0).h = dispy;
 
-      attra.at(ive+1).w = dispx + width;
-      attra.at(ive+1).h = dispy;
+      pa->at(ive+1).w = dispx + width;
+      pa->at(ive+1).h = dispy;
 
-      attra.at(ive+2).w = dispx;
-      attra.at(ive+2).h = dispy + height;
+      pa->at(ive+2).w = dispx;
+      pa->at(ive+2).h = dispy + height;
 
-      attra.at(ive+3).w = dispx + width;
-      attra.at(ive+3).h = dispy + height;
-      
-      // face indices
-      attra.atind(ifc+0) = ive + 0;
-      attra.atind(ifc+1) = ive + 1;
-      attra.atind(ifc+2) = ive + 2;
-      attra.atind(ifc+3) = ive + 2;
-      attra.atind(ifc+4) = ive + 1;
-      attra.atind(ifc+5) = ive + 3;
+      pa->at(ive+3).w = dispx + width;
+      pa->at(ive+3).h = dispy + height;
     }
   }
 
@@ -553,13 +411,13 @@ void NameLabel2Renderer::createTextureData(DisplayContext *pdc, float asclx, flo
 
 void NameLabel2Renderer::updateStaticGLSL()
 {
-  AttrArray &attra = *m_pAttrAry;
-
   int i=0, j;
   LString strlab;
   Vector4D pos;
   MolAtomPtr pA;
   MolCoordPtr pMol = getClientMol();
+
+  auto pa = m_glsllabel.getDrawElem();
 
   NameLabel2List::iterator iter = m_pdata->begin();
   NameLabel2List::iterator eiter = m_pdata->end();
@@ -581,13 +439,13 @@ void NameLabel2Renderer::updateStaticGLSL()
 
     // vertex data
     for (j=0; j<4; ++j) {
-      attra.at(ive+j).x = qfloat32( pos.x() );
-      attra.at(ive+j).y = qfloat32( pos.y() );
-      attra.at(ive+j).z = qfloat32( pos.z() );
+      pa->at(ive+j).x = qfloat32( pos.x() );
+      pa->at(ive+j).y = qfloat32( pos.y() );
+      pa->at(ive+j).z = qfloat32( pos.z() );
     }
   }
 
-  attra.setUpdated(true);
+  pa->setUpdated(true);
 }
 
 void NameLabel2Renderer::updateDynamicGLSL()
@@ -782,11 +640,12 @@ void NameLabel2Renderer::setRotTh(double th)
   m_dRotTh = th;
 
   // texture, attr not ready --> not update data
-  if (m_pixall.empty())
+  //  if (!m_glsllabel.isPixDataAvail())
+  if (!m_glsllabel.isAvailable())
     return;
 
   // texture, attr are ready --> update existing attr
-  AttrArray &attra = *m_pAttrAry;
+  auto pa = m_glsllabel.getDrawElem();
 
   int i=0, j;
 
@@ -801,12 +660,12 @@ void NameLabel2Renderer::setRotTh(double th)
 
     // vertex data
     for (j=0; j<4; ++j) {
-      attra.at(ive+j).nx = costh;
-      attra.at(ive+j).ny = sinth;
+      pa->at(ive+j).nx = costh;
+      pa->at(ive+j).ny = sinth;
     }
   }
 
-  attra.setUpdated(true);
+  pa->setUpdated(true);
 }
 
 

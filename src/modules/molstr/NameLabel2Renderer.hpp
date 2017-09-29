@@ -13,13 +13,9 @@
 #include <gfx/SolidColor.hpp>
 // #include <gfx/LabelCacheImpl.hpp>
 
-#include <gfx/DrawAttrArray.hpp>
+#include "GLSLLabelHelper.hpp"
 
 class NameLabel2Renderer_wrap;
-
-namespace sysdep {
-  class OglProgramObject;
-}
 
 namespace molstr {
 
@@ -42,15 +38,21 @@ namespace molstr {
     //////////////////////////////////////////////////////
     // Properties
 
-    /// max labels
-    //int m_nMax;
-
-    //void setMaxLabel(int nmax) { m_nMax = nmax; }
-    //int getMaxLabel() const { return m_nMax; }
-
+  private:
     /// label's color
-    gfx::ColorPtr m_color;
+    gfx::ColorPtr m_pcolor;
 
+  public:
+    void setColor(const gfx::ColorPtr &pcol) {
+      m_pcolor = pcol;
+      m_glsllabel.m_pcolor = pcol;
+    }
+
+    gfx::ColorPtr getColor() const {
+      return m_pcolor;
+    }
+
+  private:
     /// displacement along the X axes
     double m_xdispl;
 
@@ -69,10 +71,23 @@ namespace molstr {
     /// label's font weight (corresponds to the font-weight prop of CSS)
     LString m_strFontWgt;
 
+  public:
+    void setFontSize(double val);
+    double getFontSize() const { return m_dFontSize; }
+  
+    void setFontName(const LString &val);
+    LString getFontName() const { return m_strFontName; }
+  
+    void setFontStyle(const LString &val);
+    LString getFontStyle() const { return m_strFontStyle; }
+  
+    void setFontWgt(const LString &val);
+    LString getFontWgt() const { return m_strFontWgt; }
+
+  private:
     /// Scaling mode flag (false: fixed pixel draw mode)
     bool m_bScaling;
 
-  private:
     double m_dPixPerAng;
 
   public:
@@ -88,11 +103,11 @@ namespace molstr {
 
     //////////////////////////////////////////////////////
 
-    // /// label pixbuf cache
-    // gfx::LabelCacheImpl m_pixCache;
-
-    /// implementation
+    /// Label data structure
     NameLabel2List *m_pdata;
+
+    /// OpenGL label image rendering helper
+    GLSLLabelHelper m_glsllabel;
 
     //////////////////////////////////////////////////////
 
@@ -178,20 +193,6 @@ namespace molstr {
 
     bool removeLabelByID(int aid);
 
-
-
-    void setFontSize(double val);
-    double getFontSize() const { return m_dFontSize; }
-  
-    void setFontName(const LString &val);
-    LString getFontName() const { return m_strFontName; }
-  
-    void setFontStyle(const LString &val);
-    LString getFontStyle() const { return m_strFontStyle; }
-  
-    void setFontWgt(const LString &val);
-    LString getFontWgt() const { return m_strFontWgt; }
-
   private:
     //bool makeLabelStr(NameLabel &n, LString &lab,Vector4D &pos);
     LString makeLabelStr(NameLabel2 &nlab);
@@ -201,38 +202,7 @@ namespace molstr {
     /// clear all cached data
     void clearAllLabelPix();
 
-    //////////////////////////////
 
-    /// GLSL shader objects
-    sysdep::OglProgramObject *m_pPO;
-
-    struct AttrElem {
-      qfloat32 x, y, z;
-      qfloat32 w, h;
-      qfloat32 nx, ny;
-      qfloat32 width;
-      qfloat32 addr;
-    };
-
-    quint32 m_nXyzLoc;
-    quint32 m_nWhLoc;
-    quint32 m_nNxyLoc;
-    quint32 m_nWidthLoc;
-    quint32 m_nAddrLoc;
-
-    typedef gfx::DrawAttrElems<quint32, AttrElem> AttrArray;
-
-    /// VBO for GLSL rendering
-    AttrArray *m_pAttrAry;
-
-    /// Height and Width of CoordTex (2D texture mode for GL1.3)
-    int m_nTexW, m_nTexH;
-
-    /// label image texture
-    gfx::Texture *m_pLabelTex;
-
-    //std::vector<float> m_pixall;
-    std::vector<qbyte> m_pixall;
   };
 
 } // namespace

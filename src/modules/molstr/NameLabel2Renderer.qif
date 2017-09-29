@@ -27,7 +27,7 @@ runtime_class NameLabel2Renderer extends Renderer
   property real dispy => m_ydispl;
   default dispy = 0.0;
 
-  property object<AbstractColor$> color => m_color;
+  property object<AbstractColor$> color => redirect(getColor, setColor);
   default color = gfx::SolidColor::createRGB(1.0, 1.0, 0.0);
 
   property real font_size => redirect(getFontSize, setFontSize);

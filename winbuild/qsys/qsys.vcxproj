@@ -109,6 +109,7 @@
     <ClCompile Include="..\..\src\modules\molstr\AnimMol_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\ChainIterator.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\ChainIterator_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\GLSLLabelHelper.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\MolBond.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\NameLabel2Renderer.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\NameLabel2Renderer_wrap.cpp" />
