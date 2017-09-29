@@ -8,12 +8,13 @@
 
 #include "molvis.hpp"
 
-#include <modules/molstr/molstr.hpp>
-//#include <qsys/DispListRenderer.hpp>
-#include <modules/molstr/MolRenderer.hpp>
 #include <gfx/SolidColor.hpp>
 #include <gfx/LabelCacheImpl.hpp>
 #include <gfx/DrawAttrArray.hpp>
+
+#include <modules/molstr/molstr.hpp>
+#include <modules/molstr/MolRenderer.hpp>
+#include <modules/molstr/GLSLLabelHelper.hpp>
 
 #include "AtomIntrData.hpp"
 
@@ -281,6 +282,49 @@ namespace molvis {
     
     //////////
 
+    /// GLSL shader objects
+    sysdep::OglProgramObject *m_pLabPO;
+
+    /// Attribute for label rendering VBO
+    struct LabAttrElem {
+      qfloat32 x, y, z;
+      qfloat32 w, h;
+      qfloat32 nx, ny;
+      qfloat32 width;
+      qfloat32 addr;
+    };
+
+    typedef gfx::DrawAttrElems<quint32, LabAttrElem> LabAttrArray;
+
+    /// VBO for GLSL rendering
+    LabAttrArray *m_pLabAttrAry;
+
+    typedef std::vector<qbyte> LabPixBuf;
+
+    static const int LABEL_TEX_UNIT = 0;
+
+    /// label image texture (in GPU)
+    gfx::Texture *m_pLabelTex;
+
+    /// Label image data (in CPU)
+    LabPixBuf m_pixall;
+
+    void createTextureData(DisplayContext *pdc, float asclx, float scly);
+
+    // TO DO: move to gfx::PixelBuffer??
+    gfx::PixelBuffer *createPixBuf(double scl, const LString &lab);
+
+    static const int TEX2D_WIDTH = 2048;
+
+    /// Height and Width of CoordTex (2D texture mode for GL1.3)
+    int m_nTexW, m_nTexH;
+
+    int m_nDigitW, m_nDigitH;
+
+    int m_nDigits;
+    static const int NUM_TEX_UNIT = 1;
+    gfx::Texture *m_pNumTex;
+    LabPixBuf m_numpix;
 
   public:
 

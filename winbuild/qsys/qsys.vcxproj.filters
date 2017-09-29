@@ -1187,5 +1187,11 @@
     <glslshader Include="..\..\src\modules\molvis\stpline1_vert.glsl">
       <Filter>molvis\Shaders</Filter>
     </glslshader>
+    <glslshader Include="..\..\src\modules\molvis\numlabel1_frag.glsl">
+      <Filter>molvis\Shaders</Filter>
+    </glslshader>
+    <glslshader Include="..\..\src\modules\molvis\numlabel1_vert.glsl">
+      <Filter>molvis\Shaders</Filter>
+    </glslshader>
   </ItemGroup>
 </Project>

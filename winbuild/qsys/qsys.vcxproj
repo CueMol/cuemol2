@@ -501,6 +501,8 @@
     <glslshader Include="..\..\src\modules\molvis\cylinder2_vert.glsl" />
     <glslshader Include="..\..\src\modules\molvis\cylinder_frag.glsl" />
     <glslshader Include="..\..\src\modules\molvis\cylinder_vertex.glsl" />
+    <glslshader Include="..\..\src\modules\molvis\numlabel1_frag.glsl" />
+    <glslshader Include="..\..\src\modules\molvis\numlabel1_vert.glsl" />
     <glslshader Include="..\..\src\modules\molvis\rctube_frag.glsl" />
     <glslshader Include="..\..\src\modules\molvis\rctube_vert.glsl" />
     <glslshader Include="..\..\src\modules\molvis\sphere2_frag.glsl" />
