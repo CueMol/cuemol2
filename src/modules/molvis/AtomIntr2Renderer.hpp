@@ -289,9 +289,9 @@ namespace molvis {
     struct LabAttrElem {
       qfloat32 x, y, z;
       qfloat32 w, h;
-      qfloat32 nx, ny;
-      qfloat32 width;
-      qfloat32 addr;
+      qfloat32 nx, ny, nz;
+      //qfloat32 width;
+      //qfloat32 addr;
     };
 
     typedef gfx::DrawAttrElems<quint32, LabAttrElem> LabAttrArray;

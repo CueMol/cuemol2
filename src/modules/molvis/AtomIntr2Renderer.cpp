@@ -1349,12 +1349,12 @@ void AtomIntr2Renderer::createGLSL()
 
     m_pLabAttrAry = MB_NEW LabAttrArray();
     auto pa = m_pLabAttrAry;
-    pa->setAttrSize(5);
+    pa->setAttrSize(3);
     pa->setAttrInfo(0, m_pLabPO->getAttribLocation("a_xyz"), 3, qlib::type_consts::QTC_FLOAT32, offsetof(LabAttrElem, x));
     pa->setAttrInfo(1, m_pLabPO->getAttribLocation("a_wh"), 2, qlib::type_consts::QTC_FLOAT32, offsetof(LabAttrElem, w));
-    pa->setAttrInfo(2, m_pLabPO->getAttribLocation("a_nxy"), 2, qlib::type_consts::QTC_FLOAT32, offsetof(LabAttrElem, nx));
-    pa->setAttrInfo(3, m_pLabPO->getAttribLocation("a_width"), 1, qlib::type_consts::QTC_FLOAT32, offsetof(LabAttrElem, width));
-    pa->setAttrInfo(4, m_pLabPO->getAttribLocation("a_addr"), 1, qlib::type_consts::QTC_FLOAT32, offsetof(LabAttrElem, addr));
+    pa->setAttrInfo(2, m_pLabPO->getAttribLocation("a_nxyz"), 3, qlib::type_consts::QTC_FLOAT32, offsetof(LabAttrElem, nx));
+    //pa->setAttrInfo(3, m_pLabPO->getAttribLocation("a_width"), 1, qlib::type_consts::QTC_FLOAT32, offsetof(LabAttrElem, width));
+    //pa->setAttrInfo(4, m_pLabPO->getAttribLocation("a_addr"), 1, qlib::type_consts::QTC_FLOAT32, offsetof(LabAttrElem, addr));
 
     pa->alloc(nlines*4);
     pa->allocInd(nlines*6);
@@ -1437,10 +1437,15 @@ void AtomIntr2Renderer::updateStaticGLSL()
 
       // label vertex data
       Vector4D pos = (pos1+pos2).scale(0.5);
+      Vector4D dir = pos2-pos1;
       for (j=0; j<4; ++j) {
         pa->at(ive+j).x = qfloat32( pos.x() );
         pa->at(ive+j).y = qfloat32( pos.y() );
         pa->at(ive+j).z = qfloat32( pos.z() );
+
+        pa->at(ive+j).nx = qfloat32( dir.x() );
+        pa->at(ive+j).ny = qfloat32( dir.y() );
+        pa->at(ive+j).nz = qfloat32( dir.z() );
       }
       
       // label digits
@@ -1686,11 +1691,12 @@ void AtomIntr2Renderer::createTextureData(DisplayContext *pdc, float asclx, floa
       const int ifc = i*6;
 
       for (j=0; j<4; ++j) {
-        pa->at(ive+j).width = width;
-        pa->at(ive+j).addr = 0.0f;
+        //pa->at(ive+j).width = width;
+        //pa->at(ive+j).addr = 0.0f;
         
         pa->at(ive+j).nx = 1.0f;
         pa->at(ive+j).ny = 0.0f;
+        pa->at(ive+j).nz = 0.0f;
       }
       
       pa->at(ive+0).w = 0.0f;
