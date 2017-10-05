@@ -19,7 +19,10 @@
 
 #include <sysdep/OglShaderSetupHelper.hpp>
 
-#define USE_TBO 1
+#ifdef WIN32
+#  define USE_TBO 1
+#else
+#endif
 
 using namespace molvis;
 using namespace molstr;

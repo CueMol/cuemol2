@@ -118,6 +118,10 @@ tube21_vert.glsl \
 tube21_frag.glsl \
 rctube_vert.glsl \
 rctube_frag.glsl \
+stpline1_vert.glsl \
+stpline1_frag.glsl \
+numlabel1_vert.glsl \
+numlabel1_frag.glsl \
 $(NULL)
 
 endif

@@ -104,6 +104,7 @@ if COND_USE_OPENGL
 
 CPP_SRC += \
 SimpleRendGLSL.cpp \
+GLSLLabelHelper.cpp \
 $(NULL)
 
 MCWG_SRC += \

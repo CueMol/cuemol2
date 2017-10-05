@@ -3,6 +3,8 @@
 //  Number label vertex shader for OpenGL
 //
 
+#extension GL_EXT_gpu_shader4 : require
+
 @include "lib_common.glsl"
 
 ////////////////////

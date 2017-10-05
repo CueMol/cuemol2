@@ -5,6 +5,13 @@
 
 #define LabelTex sampler2DRect
 
+#ifdef USE_TBO
+#  define NumTex samplerBuffer
+#else
+#extension GL_EXT_gpu_shader4 : enable 
+#  define NumTex sampler1D
+#endif
+
 @include "lib_common.glsl"
 
 ////////////////////
@@ -26,7 +33,7 @@ uniform float u_digitb;
 uniform LabelTex labelTex;
 
 // digit data (index in labelTex)
-uniform samplerBuffer numTex;
+uniform NumTex numTex;
 
 ////////////////////
 // Uniform variables
@@ -44,7 +51,14 @@ float getLabelPix2(vec2 pos)
   float xx = x - fdig*u_digitw;
   //int idig = int(fdig);
   
-  float fd = texelFetch(numTex, int(fdig)+int(v_ilab)*int(u_ndigit)).r;
+  int ind_num = int(fdig)+int(v_ilab)*int(u_ndigit);
+#ifdef USE_TBO
+  float fd = texelFetch(numTex, ind_num).r;
+#else
+  float fd = texelFetch1D(numTex, ind_num, 0).r;
+#endif
+
+
   int idig = int(fd*255.0 + 0.5);
 
   float tx_x = float( idig*int(u_digitw) ) + xx;
