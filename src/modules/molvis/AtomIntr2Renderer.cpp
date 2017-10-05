@@ -1293,10 +1293,10 @@ void AtomIntr2Renderer::createGLSL()
     const int ifc = i*6;
     
     // vertex data
-    attra.at(ive+0).hwidth = float(m_linew) * 0.5f;
-    attra.at(ive+1).hwidth = float(m_linew) * -0.5f;
-    attra.at(ive+2).hwidth = float(m_linew) * -0.5f;
-    attra.at(ive+3).hwidth = float(m_linew) * 0.5f;
+    attra.at(ive+0).hwidth = 0.5f;
+    attra.at(ive+1).hwidth = -0.5f;
+    attra.at(ive+2).hwidth = -0.5f;
+    attra.at(ive+3).hwidth = 0.5f;
     
     attra.at(ive+0).dir = 0.0f;
     attra.at(ive+1).dir = 0.0f;
@@ -1317,27 +1317,24 @@ void AtomIntr2Renderer::createGLSL()
   ////////////////////////////////
   // create label rendering data
   
-  // Create label texture
+  // Create digit label texture atlas
 
   if (m_pLabelTex!=NULL)
     delete m_pLabelTex;
 
   m_pLabelTex = MB_NEW gfx::Texture();
+  m_pLabelTex->setLinIntpol(true);
+  m_pLabelTex->setup(12, gfx::Texture::FMT_R,
+                     gfx::Texture::TYPE_UINT8_COLOR);
 
-#ifdef USE_TBO
-  m_pLabelTex->setup(1, gfx::Texture::FMT_R,
-                     gfx::Texture::TYPE_UINT8_COLOR);
-#else
-  m_pLabelTex->setup(2, gfx::Texture::FMT_R,
-                     gfx::Texture::TYPE_UINT8_COLOR);
-#endif
+  // Create number data texture
   
   if (m_pNumTex!=NULL)
     delete m_pNumTex;
   m_pNumTex = MB_NEW gfx::Texture();
+
   m_pNumTex->setup(1, gfx::Texture::FMT_R,
                    gfx::Texture::TYPE_UINT8_COLOR);
-                   //gfx::Texture::TYPE_UINT8);
 
   m_numpix.resize(nlines * m_nDigits);
 
@@ -1453,20 +1450,21 @@ void AtomIntr2Renderer::updateStaticGLSL()
       double dist = (pos1-pos2).length();
       LString strlab = LString::format("%.2f", dist);
       if (strlab.length()>m_nDigits) {
+        // overflow --> show "******"
         for (j=0; j<m_nDigits; ++j)
-          m_numpix[i*m_nDigits + j] = 11;
+          m_numpix[i*m_nDigits + j] = 11; // '*'
       }
       else {
         if (strlab.length()<m_nDigits)
           strlab = ("     " + strlab).right(m_nDigits);
         for (j=0; j<m_nDigits; ++j) {
-          qbyte c = 12;
+          qbyte c = 12; // ' ' (ws)
           if (j<strlab.length()) {
             char cc = strlab.getAt(j);
             if (cc=='.')
-              c = 10;
+              c = 10; // '.'
             else if ('0'<=cc && cc<='9')
-              c = cc-'0';
+              c = cc-'0'; // '0'-'9'
           }
           m_numpix[i*m_nDigits + j] = c;
         }
@@ -1485,6 +1483,9 @@ void AtomIntr2Renderer::updateStaticGLSL()
 /// Render to display (using GLSL)
 void AtomIntr2Renderer::renderGLSL(DisplayContext *pdc)
 {
+  //////////
+  // Draw lines
+
   if (m_pPO==NULL )
     return; // Error, shader program is not available (ignore)
 
@@ -1515,14 +1516,15 @@ void AtomIntr2Renderer::renderGLSL(DisplayContext *pdc)
 
   m_pPO->enable();
   
+  m_pPO->setUniformF("u_width", m_linew);
   m_pPO->setUniformF("u_stipple", s0, s1);
-
   m_pPO->setUniformF("u_color", fr, fg, fb, fa);
   
   pdc->drawElem(*m_pAttrAry);
   m_pPO->disable();
 
   //////////
+  // Draw labels
   
   if (m_pLabPO!=NULL) {
     float width = 1.0f, height = 1.0f;
@@ -1637,47 +1639,32 @@ void AtomIntr2Renderer::createTextureData(DisplayContext *pdc, float asclx, floa
   
   // Calculate pixdata index
   int npix = nMaxH * nMaxW * NCHARS;
+  m_nTexW = nMaxW * NCHARS;
+  m_nTexH = nMaxH;
+  m_nDigitW = nMaxW;
+  m_nDigitH = nMaxH;
   
-#ifdef USE_TBO
   m_pixall.resize(npix);
-#else
-  int h=0;
-  if (npix%TEX2D_WIDTH==0)
-    h = npix/TEX2D_WIDTH;
-  else
-    h = npix/TEX2D_WIDTH + 1;
-  m_pixall.resize(h*TEX2D_WIDTH);
-  m_nTexW = TEX2D_WIDTH;
-  m_nTexH = h;
-  LOG_DPRINTLN("AtomIntr2> Label Texture2D size=%d,%d", m_nTexW, m_nTexH);
-#endif
   
   {
     for (i=0; i<m_pixall.size(); ++i)
       m_pixall[i] = 0;
 
-    int ibase = 0;
     for (i=0; i<NCHARS; ++i) {
       const int width = pbuf[i]->getWidth();
       const int height = pbuf[i]->getHeight();
       for (j=0; j<height; ++j) {
         for (k=0; k<width; ++k) {
-          m_pixall[ibase + j*nMaxW + k] = pbuf[i]->at(j*width + k);
+          const int xx = k + i*nMaxW;
+          const int yy = j;
+          const int idx = xx + yy*m_nTexW;
+          m_pixall[idx] = pbuf[i]->at(j*width + k);
         }
       }
-      ibase += nMaxW*nMaxH;
     }
-    
   }
 
-  m_nDigitW = nMaxW;
-  m_nDigitH = nMaxH;
-
-#ifdef USE_TBO
-  m_pLabelTex->setData(m_pixall.size(), 1, 1, &m_pixall[0]);
-#else
   m_pLabelTex->setData(m_nTexW, m_nTexH, 1, &m_pixall[0]);
-#endif
 
   auto pa = m_pLabAttrAry;
   {

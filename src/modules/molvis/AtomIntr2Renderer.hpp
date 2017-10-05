@@ -78,7 +78,7 @@ namespace molvis {
     double getWidth() const { return m_linew; }
     void setWidth(double d) {
       m_linew = d;
-      invalidateDisplayCache();
+      //invalidateDisplayCache();
     }
 
 

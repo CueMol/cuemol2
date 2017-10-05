@@ -16,6 +16,8 @@ attribute float a_dir;
 ////////////////////
 // Uniform variables
 
+uniform float u_width;
+
 //uniform vec2 u_winsz;
 //uniform float u_ppa;
 
@@ -35,7 +37,7 @@ void main (void)
   
   vec4 ecPosition = gl_ModelViewMatrix * vec4(a_pos1, 1.0);
 
-  ecPosition.xy += e2 * a_hwidth;
+  ecPosition.xy += e2 * a_hwidth * u_width;
 
   // Do fixed functionality vertex transform
   gl_Position = gl_ProjectionMatrix * ecPosition;

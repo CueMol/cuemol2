@@ -110,11 +110,14 @@ namespace sysdep {
 	m_iGlDimType = GL_TEXTURE_1D;
         break;
       case 2:
-	m_iGlDimType = GL_TEXTURE_2D;
-	break;
+        m_iGlDimType = GL_TEXTURE_2D;
+        break;
       case 3:
-	m_iGlDimType = GL_TEXTURE_3D;
-	break;
+        m_iGlDimType = GL_TEXTURE_3D;
+        break;
+      case 12:
+        m_iGlDimType = GL_TEXTURE_RECTANGLE;
+        break;
       default:
 	LString msg = LString::format("Unsupported dimension %d", iDim);
 	LOG_DPRINTLN("OglTexRep> %s", msg.c_str());
@@ -412,7 +415,8 @@ namespace sysdep {
       // clamp setting
       glTexParameteri(m_iGlDimType, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
       if (m_iGlDimType==GL_TEXTURE_3D ||
-	  m_iGlDimType==GL_TEXTURE_2D) {
+          m_iGlDimType==GL_TEXTURE_2D ||
+          m_iGlDimType==GL_TEXTURE_RECTANGLE) {
 	glTexParameteri(m_iGlDimType, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	if (m_iGlDimType==GL_TEXTURE_3D) {
 	  glTexParameteri(m_iGlDimType, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
@@ -461,7 +465,7 @@ namespace sysdep {
 
       if (m_iGlDimType==GL_TEXTURE_1D)
         setDataGL1D(pdata);
-      else if (m_iGlDimType==GL_TEXTURE_2D)
+      else if (m_iGlDimType==GL_TEXTURE_2D||m_iGlDimType==GL_TEXTURE_RECTANGLE)
         setDataGL2D(pdata);
       else if (m_iGlDimType==GL_TEXTURE_3D)
         setDataGL3D(pdata);
@@ -497,7 +501,7 @@ namespace sysdep {
     void setDataGL2D(const void *pdata)
     {
       if (!m_bInit) {
-	glTexImage2D(GL_TEXTURE_2D, 0,
+        glTexImage2D(m_iGlDimType, 0,
                      m_iGlIntPixFmt,
                      m_nWidth, m_nHeight, 0,
 		     m_iGlPixFmt, m_iGlPixType, pdata);
@@ -506,7 +510,7 @@ namespace sysdep {
 	m_bInit = true;
       }
       else {
-        glTexSubImage2D(GL_TEXTURE_2D,
+        glTexSubImage2D(m_iGlDimType,
 			0, // LOD
 			0, 0, // offset
 			m_nWidth, m_nHeight, // size

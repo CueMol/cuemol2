@@ -3,12 +3,7 @@
 //  Number label fragment shader for OpenGL
 //
 
-#ifdef USE_TBO
-#  define LabelTex samplerBuffer
-#else
-#extension GL_EXT_gpu_shader4 : enable 
-#  define LabelTex sampler2D
-#endif
+#define LabelTex sampler2DRect
 
 @include "lib_common.glsl"
 
@@ -42,6 +37,25 @@ varying vec2 v_labpos;
 // label ID (from 0)
 varying float v_ilab;
 
+float getLabelPix2(vec2 pos)
+{
+  float x = pos.x;
+  float fdig = floor( x/u_digitw );
+  float xx = x - fdig*u_digitw;
+  //int idig = int(fdig);
+  
+  float fd = texelFetch(numTex, int(fdig)+int(v_ilab)*int(u_ndigit)).r;
+  int idig = int(fd*255.0 + 0.5);
+
+  float tx_x = float( idig*int(u_digitw) ) + xx;
+  float tx_y = pos.y;
+
+  float c = texture2DRect(labelTex, vec2(tx_x, tx_y)).r;
+
+  return c;
+}
+
+#if 0
 float getLabelPix(vec2 pos)
 {
   float x = pos.x;
@@ -105,10 +119,11 @@ float getLabelPix(vec2 pos)
   return c;
   //return 1.0f;
 }
-
+#endif
+  
 void main (void)
 {
-  float c = getLabelPix(v_labpos);
+  float c = getLabelPix2(v_labpos);
   //gl_FragColor = calcFogAlpha(gl_Color, gl_FogFragCoord, frag_alpha);
 
   if (c<0.1)
