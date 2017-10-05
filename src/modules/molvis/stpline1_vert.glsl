@@ -37,10 +37,12 @@ void main (void)
   
   vec4 ecPosition = gl_ModelViewMatrix * vec4(a_pos1, 1.0);
 
-  ecPosition.xy += e2 * a_hwidth * u_width;
+  //ecPosition.xy += e2 * a_hwidth * u_width;
 
   // Do fixed functionality vertex transform
   gl_Position = gl_ProjectionMatrix * ecPosition;
+
+  gl_Position.xy += a_hwidth * u_width * (e2 / u_winsz);
 
   gl_FrontColor=gl_Color;
 

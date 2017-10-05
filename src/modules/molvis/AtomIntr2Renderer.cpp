@@ -1266,8 +1266,24 @@ bool AtomIntr2Renderer::isCacheAvail() const
 /// Create GLSL data (VBO, texture, etc)
 void AtomIntr2Renderer::createGLSL()
 {
+  int i;
+  
   // XXX: fix this
-  int nlines = m_data.size();
+  //int nlines = m_data.size();
+  int nlines = 0;
+  for (const AtomIntrData &value: m_data) {
+    switch (value.nmode) {
+    case 1:
+      nlines +=1;
+      break;
+    case 2:
+      nlines +=2;
+      break;
+    case 3:
+      nlines +=3;
+      break;
+    }
+  }
 
   //
   // Create VBO
@@ -1289,9 +1305,8 @@ void AtomIntr2Renderer::createGLSL()
 
   attra.setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
 
-  int i=0;
-  BOOST_FOREACH(AtomIntrData &value, m_data) {
-    
+  // Fill the fixed data in Line VBO
+  for (i=0; i<nlines; ++i) {
     const int ive = i*4;
     const int ifc = i*6;
     
@@ -1313,12 +1328,11 @@ void AtomIntr2Renderer::createGLSL()
     attra.atind(ifc+3) = ive + 2;
     attra.atind(ifc+4) = ive + 1;
     attra.atind(ifc+5) = ive + 3;
-
-    ++i;
   }
 
   ////////////////////////////////
   // create label rendering data
+  int nlabels = m_data.size();
   
   // Create digit label texture atlas
 
@@ -1339,7 +1353,7 @@ void AtomIntr2Renderer::createGLSL()
   m_pNumTex->setup(1, gfx::Texture::FMT_R,
                    gfx::Texture::TYPE_UINT8_COLOR);
 
-  m_numpix.resize(nlines * m_nDigits);
+  m_numpix.resize(nlabels * m_nDigits);
 
   // Create VBO
   //
@@ -1357,14 +1371,14 @@ void AtomIntr2Renderer::createGLSL()
     //pa->setAttrInfo(3, m_pLabPO->getAttribLocation("a_width"), 1, qlib::type_consts::QTC_FLOAT32, offsetof(LabAttrElem, width));
     //pa->setAttrInfo(4, m_pLabPO->getAttribLocation("a_addr"), 1, qlib::type_consts::QTC_FLOAT32, offsetof(LabAttrElem, addr));
 
-    pa->alloc(nlines*4);
-    pa->allocInd(nlines*6);
+    pa->alloc(nlabels*4);
+    pa->allocInd(nlabels*6);
 
     pa->setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
     //pa->setDrawMode(gfx::AbstDrawElem::DRAW_POINTS);
 
     // setup face indices
-    for (int i=0; i<nlines; ++i) {
+    for (int i=0; i<nlabels; ++i) {
       const int ive = i*4;
       const int ifc = i*6;
       pa->atind(ifc+0) = ive + 0;
@@ -1384,96 +1398,163 @@ void AtomIntr2Renderer::updateDynamicGLSL()
   updateStaticGLSL();
 }
 
+void AtomIntr2Renderer::setLineAttr(int ive, const Vector4D &pos1, const Vector4D &pos2)
+{
+  AttrArray &attra = *m_pAttrAry;
+
+  attra.at(ive+0).pos1x = float( pos1.x() );
+  attra.at(ive+0).pos1y = float( pos1.y() );
+  attra.at(ive+0).pos1z = float( pos1.z() );
+
+  attra.at(ive+0).pos2x = float( pos2.x() );
+  attra.at(ive+0).pos2y = float( pos2.y() );
+  attra.at(ive+0).pos2z = float( pos2.z() );
+
+  attra.at(ive+1).pos1x = float( pos1.x() );
+  attra.at(ive+1).pos1y = float( pos1.y() );
+  attra.at(ive+1).pos1z = float( pos1.z() );
+
+  attra.at(ive+1).pos2x = float( pos2.x() );
+  attra.at(ive+1).pos2y = float( pos2.y() );
+  attra.at(ive+1).pos2z = float( pos2.z() );
+
+  attra.at(ive+2).pos1x = float( pos2.x() );
+  attra.at(ive+2).pos1y = float( pos2.y() );
+  attra.at(ive+2).pos1z = float( pos2.z() );
+
+  attra.at(ive+2).pos2x = float( pos1.x() );
+  attra.at(ive+2).pos2y = float( pos1.y() );
+  attra.at(ive+2).pos2z = float( pos1.z() );
+
+  attra.at(ive+3).pos1x = float( pos2.x() );
+  attra.at(ive+3).pos1y = float( pos2.y() );
+  attra.at(ive+3).pos1z = float( pos2.z() );
+
+  attra.at(ive+3).pos2x = float( pos1.x() );
+  attra.at(ive+3).pos2y = float( pos1.y() );
+  attra.at(ive+3).pos2z = float( pos1.z() );
+}
+
+void AtomIntr2Renderer::setLabelAttr(int ive, const Vector4D &pos1, const Vector4D &pos2)
+{
+  auto pa = m_pLabAttrAry;
+
+  Vector4D pos = (pos1+pos2).scale(0.5);
+  Vector4D dir = pos2-pos1;
+  for (int j=0; j<4; ++j) {
+    pa->at(ive+j).x = qfloat32( pos.x() );
+    pa->at(ive+j).y = qfloat32( pos.y() );
+    pa->at(ive+j).z = qfloat32( pos.z() );
+    
+    pa->at(ive+j).nx = qfloat32( dir.x() );
+    pa->at(ive+j).ny = qfloat32( dir.y() );
+    pa->at(ive+j).nz = qfloat32( dir.z() );
+  }
+}
+
+void AtomIntr2Renderer::setLabelDigits(int ilab, double dist)
+{
+  int j;
+
+  LString strlab = LString::format("%.2f", dist);
+  if (strlab.length()>m_nDigits) {
+    // overflow --> show "******"
+    for (j=0; j<m_nDigits; ++j)
+      m_numpix[ilab*m_nDigits + j] = 11; // '*'
+  }
+  else {
+    if (strlab.length()<m_nDigits)
+      strlab = ("     " + strlab).right(m_nDigits);
+    for (j=0; j<m_nDigits; ++j) {
+      qbyte c = 12; // ' ' (ws)
+      if (j<strlab.length()) {
+        char cc = strlab.getAt(j);
+        if (cc=='.')
+          c = 10; // '.'
+        else if ('0'<=cc && cc<='9')
+          c = cc-'0'; // '0'-'9'
+      }
+      m_numpix[ilab*m_nDigits + j] = c;
+    }
+  }
+}
+
 /// update VBO positions using getPos
 void AtomIntr2Renderer::updateStaticGLSL()
 {
-  // XXX: fix this
-  int nlines = m_data.size();
-
-  Vector4D pos1, pos2;
-  int i=0, j;
+  Vector4D pos1, pos2, pos3, pos4;
+  int ilin=0, ilab=0, j;
 
   AttrArray &attra = *m_pAttrAry;
   auto pa = m_pLabAttrAry;
 
   BOOST_FOREACH(AtomIntrData &value, m_data) {
-    if (evalPos(value.elem0, pos1) &&
-        evalPos(value.elem1, pos2)) {
 
-      const int ive = i*4;
-      //const int ifc = i*6;
-
-      // vertex data
-      attra.at(ive+0).pos1x = float( pos1.x() );
-      attra.at(ive+0).pos1y = float( pos1.y() );
-      attra.at(ive+0).pos1z = float( pos1.z() );
-
-      attra.at(ive+0).pos2x = float( pos2.x() );
-      attra.at(ive+0).pos2y = float( pos2.y() );
-      attra.at(ive+0).pos2z = float( pos2.z() );
-
-      attra.at(ive+1).pos1x = float( pos1.x() );
-      attra.at(ive+1).pos1y = float( pos1.y() );
-      attra.at(ive+1).pos1z = float( pos1.z() );
-
-      attra.at(ive+1).pos2x = float( pos2.x() );
-      attra.at(ive+1).pos2y = float( pos2.y() );
-      attra.at(ive+1).pos2z = float( pos2.z() );
-
-      attra.at(ive+2).pos1x = float( pos2.x() );
-      attra.at(ive+2).pos1y = float( pos2.y() );
-      attra.at(ive+2).pos1z = float( pos2.z() );
-
-      attra.at(ive+2).pos2x = float( pos1.x() );
-      attra.at(ive+2).pos2y = float( pos1.y() );
-      attra.at(ive+2).pos2z = float( pos1.z() );
-
-      attra.at(ive+3).pos1x = float( pos2.x() );
-      attra.at(ive+3).pos1y = float( pos2.y() );
-      attra.at(ive+3).pos1z = float( pos2.z() );
-
-      attra.at(ive+3).pos2x = float( pos1.x() );
-      attra.at(ive+3).pos2y = float( pos1.y() );
-      attra.at(ive+3).pos2z = float( pos1.z() );
-
-      // label vertex data
-      Vector4D pos = (pos1+pos2).scale(0.5);
-      Vector4D dir = pos2-pos1;
-      for (j=0; j<4; ++j) {
-        pa->at(ive+j).x = qfloat32( pos.x() );
-        pa->at(ive+j).y = qfloat32( pos.y() );
-        pa->at(ive+j).z = qfloat32( pos.z() );
-
-        pa->at(ive+j).nx = qfloat32( dir.x() );
-        pa->at(ive+j).ny = qfloat32( dir.y() );
-        pa->at(ive+j).nz = qfloat32( dir.z() );
-      }
+    switch (value.nmode) {
+    case 1:
+      // Distance
+      if (evalPos(value.elem0, pos1) &&
+          evalPos(value.elem1, pos2)) {
+        // vertex data
+        setLineAttr(ilin*4, pos1, pos2);
+        
+        // label vertex data
+        setLabelAttr(ilab*4, pos1, pos2);
       
-      // label digits
-      double dist = (pos1-pos2).length();
-      LString strlab = LString::format("%.2f", dist);
-      if (strlab.length()>m_nDigits) {
-        // overflow --> show "******"
-        for (j=0; j<m_nDigits; ++j)
-          m_numpix[i*m_nDigits + j] = 11; // '*'
+        // label digits
+        double dist = (pos1-pos2).length();
+        setLabelDigits(ilab, dist);
       }
-      else {
-        if (strlab.length()<m_nDigits)
-          strlab = ("     " + strlab).right(m_nDigits);
-        for (j=0; j<m_nDigits; ++j) {
-          qbyte c = 12; // ' ' (ws)
-          if (j<strlab.length()) {
-            char cc = strlab.getAt(j);
-            if (cc=='.')
-              c = 10; // '.'
-            else if ('0'<=cc && cc<='9')
-              c = cc-'0'; // '0'-'9'
-          }
-          m_numpix[i*m_nDigits + j] = c;
-        }
+      ++ilin;
+      ++ilab;
+      break;
+
+    case 2:
+      // Angle
+      if (evalPos(value.elem0, pos1) &&
+          evalPos(value.elem1, pos2) &&
+          evalPos(value.elem2, pos3)) {
+        // vertex data
+        setLineAttr(ilin*4, pos1, pos2);
+        setLineAttr((ilin+1)*4, pos2, pos3);
+        
+        // label vertex data
+        Vector4D p13 = pos3-pos1;
+        setLabelAttr(ilab*4, pos2+p13, pos2-p13);
+      
+        // label digits
+        double angl = qlib::toDegree(Vector4D::angle((pos1-pos2), (pos3-pos2)));
+        //double angl = 0.456;
+        setLabelDigits(ilab, angl);
       }
+      ilin += 2;
+      ++ilab;
+      break;
+
+    case 3:
+      // Angle
+      if (evalPos(value.elem0, pos1) &&
+          evalPos(value.elem1, pos2) &&
+          evalPos(value.elem2, pos3) &&
+          evalPos(value.elem3, pos4)) {
+        // vertex data
+        setLineAttr(ilin*4, pos1, pos2);
+        setLineAttr((ilin+1)*4, pos2, pos3);
+        setLineAttr((ilin+2)*4, pos3, pos4);
+        
+        // label vertex data
+        setLabelAttr(ilab*4, pos2, pos3);
+      
+        // label digits
+        double dihe = qlib::toDegree(Vector4D::torsion(pos1, pos2, pos3, pos4));
+        //double dihe = 0.123;
+        setLabelDigits(ilab, dihe);
+      }
+      ilin += 3;
+      ++ilab;
+      break;
     }
-    ++i;
+
   }  
 
   attra.setUpdated(true);
@@ -1571,7 +1652,7 @@ void AtomIntr2Renderer::renderGLSL(DisplayContext *pdc)
     m_pLabPO->setUniformF("u_ppa", ppa);
     m_pLabPO->setUniformF("u_color", fr, fg, fb, fa);
     m_pLabPO->setUniformF("u_digitw", float(m_nDigitW));
-    m_pLabPO->setUniformF("u_digitb", float(m_nDigitW*m_nDigitH));
+    //m_pLabPO->setUniformF("u_digitb", float(m_nDigitW*m_nDigitH));
     m_pLabPO->setUniformF("u_ndigit", m_nDigits);
     pdc->drawElem(*m_pLabAttrAry);
     

@@ -421,6 +421,10 @@ namespace molvis {
     bool readFrom2Helper(qlib::LDom2Node *pNode, int nOrder,
 			 AtomIntrElem &elem);
 
+    void setLineAttr(int ive, const Vector4D &pos1, const Vector4D &pos2);
+    void setLabelAttr(int ive, const Vector4D &pos1, const Vector4D &pos2);
+    void setLabelDigits(int ilab, double dist);
+
   };
 
 }
