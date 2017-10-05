@@ -103,6 +103,7 @@ float getLabelPix(vec2 pos)
 
 
   return c;
+  //return 1.0f;
 }
 
 void main (void)

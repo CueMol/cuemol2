@@ -1349,10 +1349,11 @@ void AtomIntr2Renderer::createGLSL()
 
     m_pLabAttrAry = MB_NEW LabAttrArray();
     auto pa = m_pLabAttrAry;
-    pa->setAttrSize(3);
+    pa->setAttrSize(4);
     pa->setAttrInfo(0, m_pLabPO->getAttribLocation("a_xyz"), 3, qlib::type_consts::QTC_FLOAT32, offsetof(LabAttrElem, x));
-    pa->setAttrInfo(1, m_pLabPO->getAttribLocation("a_wh"), 2, qlib::type_consts::QTC_FLOAT32, offsetof(LabAttrElem, w));
-    pa->setAttrInfo(2, m_pLabPO->getAttribLocation("a_nxyz"), 3, qlib::type_consts::QTC_FLOAT32, offsetof(LabAttrElem, nx));
+    pa->setAttrInfo(1, m_pLabPO->getAttribLocation("a_nxyz"), 3, qlib::type_consts::QTC_FLOAT32, offsetof(LabAttrElem, nx));
+    pa->setAttrInfo(2, m_pLabPO->getAttribLocation("a_wh"), 2, qlib::type_consts::QTC_FLOAT32, offsetof(LabAttrElem, w));
+    pa->setAttrInfo(3, m_pLabPO->getAttribLocation("a_disp"), 2, qlib::type_consts::QTC_FLOAT32, offsetof(LabAttrElem, dx));
     //pa->setAttrInfo(3, m_pLabPO->getAttribLocation("a_width"), 1, qlib::type_consts::QTC_FLOAT32, offsetof(LabAttrElem, width));
     //pa->setAttrInfo(4, m_pLabPO->getAttribLocation("a_addr"), 1, qlib::type_consts::QTC_FLOAT32, offsetof(LabAttrElem, addr));
 
@@ -1689,16 +1690,8 @@ void AtomIntr2Renderer::createTextureData(DisplayContext *pdc, float asclx, floa
 
       const int ive = i*4;
       const int ifc = i*6;
-
-      for (j=0; j<4; ++j) {
-        //pa->at(ive+j).width = width;
-        //pa->at(ive+j).addr = 0.0f;
-        
-        pa->at(ive+j).nx = 1.0f;
-        pa->at(ive+j).ny = 0.0f;
-        pa->at(ive+j).nz = 0.0f;
-      }
       
+      // texture coord
       pa->at(ive+0).w = 0.0f;
       pa->at(ive+0).h = 0.0f;
 
@@ -1710,6 +1703,19 @@ void AtomIntr2Renderer::createTextureData(DisplayContext *pdc, float asclx, floa
 
       pa->at(ive+3).w = width;
       pa->at(ive+3).h = height;
+
+      // Vertex displacement
+      pa->at(ive+0).dx = -0.5f * width;
+      pa->at(ive+0).dy = 0.0f;
+
+      pa->at(ive+1).dx = 0.5f *width;
+      pa->at(ive+1).dy = 0.0f;
+
+      pa->at(ive+2).dx = -0.5f * width;
+      pa->at(ive+2).dy = height;
+
+      pa->at(ive+3).dx = 0.5f *width;
+      pa->at(ive+3).dy = height;
 
       ++i;
     }

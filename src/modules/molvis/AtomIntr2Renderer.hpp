@@ -287,11 +287,14 @@ namespace molvis {
 
     /// Attribute for label rendering VBO
     struct LabAttrElem {
+      // label origin position
       qfloat32 x, y, z;
-      qfloat32 w, h;
+      // label w-direction
       qfloat32 nx, ny, nz;
-      //qfloat32 width;
-      //qfloat32 addr;
+      // label texture coord
+      qfloat32 w, h;
+      // vertex displacement
+      qfloat32 dx, dy;
     };
 
     typedef gfx::DrawAttrElems<quint32, LabAttrElem> LabAttrArray;
