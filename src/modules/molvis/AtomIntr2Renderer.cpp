@@ -1517,12 +1517,27 @@ void AtomIntr2Renderer::renderGLSL(DisplayContext *pdc)
     fa *= gfx::convI2F(gfx::getACode(dcc));
   }
 
+  // view width/height
+  float width = 1.0f, height = 1.0f;
+  float sclx = 1.0f, scly = 1.0f;
+  qsys::View *pView = pdc->getTargetView();
+  if (pView!=NULL) {
+    if (pView->useSclFac()) {
+      sclx = (float) pView->getSclFacX();
+      scly = (float) pView->getSclFacY();
+    }
+    width = (float) pView->getWidth()*0.5f*sclx;// * 3.0f/4.0f;
+    height = (float) pView->getHeight()*0.5f*scly;// * 3.0f/4.0f;
+  }
+
   m_pPO->enable();
   
   m_pPO->setUniformF("u_width", m_linew);
   m_pPO->setUniformF("u_stipple", s0, s1);
   m_pPO->setUniformF("u_color", fr, fg, fb, fa);
   
+  m_pPO->setUniformF("u_winsz", width, height);
+
   pdc->drawElem(*m_pAttrAry);
   m_pPO->disable();
 
@@ -1530,18 +1545,6 @@ void AtomIntr2Renderer::renderGLSL(DisplayContext *pdc)
   // Draw labels
   
   if (m_pLabPO!=NULL) {
-    float width = 1.0f, height = 1.0f;
-    float sclx = 1.0f, scly = 1.0f;
-    qsys::View *pView = pdc->getTargetView();
-    if (pView!=NULL) {
-      if (pView->useSclFac()) {
-        sclx = (float) pView->getSclFacX();
-        scly = (float) pView->getSclFacY();
-      }
-      width = (float) pView->getWidth()*0.5f*sclx;// * 3.0f/4.0f;
-      height = (float) pView->getHeight()*0.5f*scly;// * 3.0f/4.0f;
-    }
-    
     if (m_pixall.empty())
       createTextureData(pdc, sclx, scly);
     

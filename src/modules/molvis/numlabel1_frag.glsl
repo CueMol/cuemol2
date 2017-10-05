@@ -58,13 +58,10 @@ float getLabelPix2(vec2 pos)
   float fd = texelFetch1D(numTex, ind_num, 0).r;
 #endif
 
-
   int idig = int(fd*255.0 + 0.5);
-
-  float tx_x = float( idig*int(u_digitw) ) + xx;
-  float tx_y = pos.y;
-
-  float c = texture2DRect(labelTex, vec2(tx_x, tx_y)).r;
+  vec2 tx = vec2( float( idig*int(u_digitw) ) + xx,
+		  pos.y );
+  float c = texture2DRect(labelTex, tx).r;
 
   return c;
 }

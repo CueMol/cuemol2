@@ -30,7 +30,8 @@ void main (void)
     gl_FragColor = u_color;
   }
   else {
-    gl_FragColor = vec4(u_color.xyz, 0.0f);
+    discard;
+    //gl_FragColor = vec4(u_color.xyz, 0.0f);
   }
 }
 

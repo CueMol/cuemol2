@@ -18,7 +18,7 @@ attribute float a_dir;
 
 uniform float u_width;
 
-//uniform vec2 u_winsz;
+uniform vec2 u_winsz;
 //uniform float u_ppa;
 
 ////////////////////
@@ -46,6 +46,13 @@ void main (void)
 
   gl_FogFragCoord = ffog(ecPosition.z);
 
-  v_linepos = a_dir * length(v12);
+  ////////////////////
+
+  //v_linepos = a_dir * length(v12);
+
+  vec4 vw12 = gl_ProjectionMatrix * gl_ModelViewMatrix * vec4(v12, 0.0);
+  vec2 vwdir = vw12.xy;
+  vwdir *= u_winsz;
+  v_linepos = a_dir * length(vwdir);
 }
 
