@@ -12,7 +12,6 @@
 
 #include <gfx/DisplayContext.hpp>
 #include <gfx/PixelBuffer.hpp>
-#include <gfx/TextRenderManager.hpp>
 #include <gfx/Texture.hpp>
 
 #include <qsys/SceneManager.hpp>
@@ -1488,7 +1487,7 @@ void AtomIntr2Renderer::updateStaticGLSL()
   AttrArray &attra = *m_pAttrAry;
   auto pa = m_pLabAttrAry;
 
-  BOOST_FOREACH(AtomIntrData &value, m_data) {
+  for (AtomIntrData &value: m_data) {
 
     switch (value.nmode) {
     case 1:
@@ -1691,16 +1690,8 @@ void AtomIntr2Renderer::invalidateDisplayCache()
 
 gfx::PixelBuffer *AtomIntr2Renderer::createPixBuf(double scl, const LString &lab)
 {
-  gfx::TextRenderManager *pTRM = gfx::TextRenderManager::getInstance();
-  if (pTRM==NULL)
-    return NULL;
-
-  double fsz = m_dFontSize * scl;
-  pTRM->setupFont(fsz, m_strFontName, m_strFontStyle, m_strFontWgt);
-
   auto pixbuf = MB_NEW gfx::PixelBuffer();
-  if (!pTRM->renderText(lab, *pixbuf))
-    return NULL;
+  pixbuf->renderText(scl, lab, m_dFontSize, m_strFontName, m_strFontStyle, m_strFontWgt);
   return pixbuf;
 }
 
@@ -1724,11 +1715,14 @@ void AtomIntr2Renderer::createTextureData(DisplayContext *pdc, float asclx, floa
     nMaxH = qlib::max(height, nMaxH);
   }
   
+  // add padding between digits (2px)
+  nMaxW += 2;
+
   // Calculate pixdata index
   int npix = nMaxH * nMaxW * NCHARS;
   m_nTexW = nMaxW * NCHARS;
   m_nTexH = nMaxH;
-  m_nDigitW = nMaxW;
+  m_nDigitW = nMaxW-2;
   m_nDigitH = nMaxH;
   
   m_pixall.resize(npix);

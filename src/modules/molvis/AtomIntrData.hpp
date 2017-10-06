@@ -22,34 +22,35 @@ namespace molvis {
   using molstr::SelectionPtr;
   using molstr::ResidIndex;
 
+  /// Element (point) of atom interaction (dist/angl/dihe) defs
   struct AtomIntrElem
   {
-    /// target molecule ID
+    /// Target molecule ID
     mutable qlib::uid_t nMolID;
 
-    /// Target molecule's name
+    /// Target molecule name
     LString molName;
 
-    /// value mode
+    /// Mode (selection/atom ID/position)
     int nMode;
 
-    /// value mode constants
+    /// Mode constants
     enum {
       AI_SEL = 0,
       AI_AID = 1,
       AI_POS = 2
     };
 
-    /// Selection mode
+    /// Sel obj in the selection mode
     SelectionPtr pSel;
 
-    /// Atom ID value in aid mode
+    /// Atom ID value in the aid mode
     int nAtomID;
 
-    /// String atom ID in aid mode
+    /// String atom ID in the aid mode
     LString strAid;
 
-    /// Position mode
+    /// Cart coord in the position mode
     Vector4D pos;
 
     ////////////////////

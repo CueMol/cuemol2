@@ -6,6 +6,7 @@
 #include <common.h>
 
 #include "PixelBuffer.hpp"
+#include "TextRenderManager.hpp"
 
 using namespace gfx;
 
@@ -38,4 +39,16 @@ void PixelBuffer::clear()
   m_pData = NULL;
 }
 
+void PixelBuffer::renderText(double scl, const LString &lab,
+                             double fontSize, const LString &fontName, const LString &fontStyle, const LString &fontWgt)
+{
+  TextRenderManager *pTRM = TextRenderManager::getInstance();
+  if (pTRM==NULL)
+    return;
+
+  double fsz = fontSize * scl;
+  pTRM->setupFont(fsz, fontName, fontStyle, fontWgt);
+
+  pTRM->renderText(lab, *this);
+}
 

@@ -59,7 +59,7 @@ float getLabelPix2(vec2 pos)
 #endif
 
   int idig = int(fd*255.0 + 0.5);
-  vec2 tx = vec2( float( idig*int(u_digitw) ) + xx,
+  vec2 tx = vec2( float( idig*int(u_digitw+2.0f) ) + xx,
 		  pos.y );
   float c = texture2DRect(labelTex, tx).r;
 

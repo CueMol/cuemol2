@@ -67,6 +67,10 @@ namespace gfx {
 
     void clear();
 
+    /// Render text to this pixel buffer
+    void renderText(double scl, const LString &lab,
+                    double fontSize, const LString &fontName, const LString &fontStyle, const LString &fontWgt);
+
   };
 
 }

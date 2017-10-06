@@ -13,7 +13,6 @@
 #include <gfx/PixelBuffer.hpp>
 #include <gfx/DisplayContext.hpp>
 #include <gfx/Texture.hpp>
-#include <gfx/TextRenderManager.hpp>
 #include <qsys/SceneManager.hpp>
 
 //#include <sysdep/OglShaderSetupHelper.hpp>
@@ -493,16 +492,8 @@ LString NameLabel2Renderer::makeLabelStr( NameLabel2 &lab)
 
 gfx::PixelBuffer *NameLabel2Renderer::createPixBuf(double scl, const LString &lab)
 {
-  gfx::TextRenderManager *pTRM = gfx::TextRenderManager::getInstance();
-  if (pTRM==NULL)
-    return NULL;
-
-  double fsz = m_dFontSize * scl;
-  pTRM->setupFont(fsz, m_strFontName, m_strFontStyle, m_strFontWgt);
-
   auto pixbuf = MB_NEW gfx::PixelBuffer();
-  if (!pTRM->renderText(lab, *pixbuf))
-    return NULL;
+  pixbuf->renderText(scl, lab, m_dFontSize, m_strFontName, m_strFontStyle, m_strFontWgt);
   return pixbuf;
 }
 
