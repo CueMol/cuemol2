@@ -76,13 +76,49 @@ int LByteArray::getValue(int ind) const
   if (!isIntElem())
     MB_THROW(RuntimeException,
 	     LString::format("Element type %d mismatch", m_nElemType));
-      
+  
+
+  int nElemSize = getElemSize(m_nElemType);
+  int addr = ind*nElemSize;
+  const int nsize = getSize();
+  if (ind<0 || nsize<=addr)
+    MB_THROW(IndexOutOfBoundsException,
+             LString::format("LByteArray get() out of index %d", ind));
+  
+  const qbyte *pdata = Array<qbyte>::data();
+  if (m_nElemType==type_consts::QTC_INT32) {
+    const qint32 *pp = reinterpret_cast<const qint32 *>(pdata);
+    return pp[ind];
+  }
+  else if (m_nElemType==type_consts::QTC_INT16) {
+    const qint16 *pp = reinterpret_cast<const qint16 *>(pdata);
+    return pp[ind];
+  }
+  else if (m_nElemType==type_consts::QTC_UINT16) {
+    const quint16 *pp = reinterpret_cast<const quint16 *>(pdata);
+    return pp[ind];
+  }
+  else if (m_nElemType==type_consts::QTC_INT8) {
+    const qint8 *pp = reinterpret_cast<const qint8 *>(pdata);
+    return pp[ind];
+  }
+  else if (m_nElemType==type_consts::QTC_UINT8) {
+    const quint8 *pp = reinterpret_cast<const quint8 *>(pdata);
+    return pp[ind];
+  }
+
+  MB_THROW(RuntimeException,
+	   LString::format("Unsupported element type %d", m_nElemType));
+  return 0;
+
+  /*
   const int nsize = getSize();
   MB_ASSERT(0<=ind && ind<nsize);
   if (ind<0 || nsize<=ind)
     MB_THROW(IndexOutOfBoundsException,
 	     LString::format("LByteArray get() out of index %d", ind));
   return at(ind);
+   */
 }
 
 void LByteArray::setValue(int ind, int value)
@@ -91,12 +127,50 @@ void LByteArray::setValue(int ind, int value)
     MB_THROW(RuntimeException,
 	     LString::format("Element type %d mismatch", m_nElemType));
 
+  int nElemSize = getElemSize(m_nElemType);
+  int addr = ind*nElemSize;
+  const int nsize = getSize();
+  //MB_ASSERT(0<=ind && ind*nElemSize<nsize);
+  if (ind<0 || nsize<=addr)
+    MB_THROW(IndexOutOfBoundsException,
+	     LString::format("LByteArray get() out of index %d", ind));
+
+  qbyte *pdata = Array<qbyte>::data();
+
+  if (m_nElemType==type_consts::QTC_INT32) {
+    qint32 *pp = reinterpret_cast<qint32 *>(pdata);
+    pp[ind] = qint32(value);
+    return;
+  }
+  else if (m_nElemType==type_consts::QTC_INT16) {
+    qint16 *pp = reinterpret_cast<qint16 *>(pdata);
+    pp[ind] = qint16(value);
+    return;
+  }
+  else if (m_nElemType==type_consts::QTC_UINT16) {
+    quint16 *pp = reinterpret_cast<quint16 *>(pdata);
+    pp[ind] = quint16(value);
+    return;
+  }
+  else if (m_nElemType==type_consts::QTC_INT8) {
+    qint8 *pp = reinterpret_cast<qint8 *>(pdata);
+    pp[ind] = qint8(value);
+    return;
+  }
+  else if (m_nElemType==type_consts::QTC_UINT8) {
+    quint8 *pp = reinterpret_cast<quint8 *>(pdata);
+    pp[ind] = quint8(value);
+    return;
+  }
+
+/*
   const int nsize = getSize();
   MB_ASSERT(0<=ind && ind<nsize);
   if (ind<0 || nsize<=ind)
     MB_THROW(IndexOutOfBoundsException,
 	     LString::format("LByteArray get() out of index %d", ind));
   at(ind) = qbyte(value);
+*/
 }
 
 double LByteArray::getValueF(int ind) const

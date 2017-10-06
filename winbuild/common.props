@@ -22,8 +22,8 @@
     <CGALIncludePath>$(BuildSetDir)\CGAL-4.6.1\include</CGALIncludePath>
     <CGALLibraryPath>$(BuildSetDir)\CGAL-4.6.1\lib</CGALLibraryPath>
 
-    <HavePython>No</HavePython>
-    <PythonDir>$(BuildSetDir)\Python-3.6.1</PythonDir>
+    <HavePython>Yes</HavePython>
+    <PythonDir>F:\Python34-64\</PythonDir>
 
     <IncludePath>$(BuildSetDir)\include;$(CGALIncludePath);$(BoostIncludePath);$(IncludePath)</IncludePath>
     <ExecutablePath>$(BuildSetDir)\bin;$(XULRunnerDir)\bin;$(ExecutablePath)</ExecutablePath>

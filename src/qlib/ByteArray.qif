@@ -27,7 +27,7 @@ runtime_class ByteArray
   // properties
   //
 
-  property integer length => redirect(getSize, XXX) (readonly);
+  property integer length => redirect(getElemCount, XXX) (readonly);
 
   //
   // methods

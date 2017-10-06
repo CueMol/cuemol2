@@ -5,7 +5,7 @@
 
 #include <common.h>
 #include <qlib/LDebug.hpp>
-#include <qlib/LChar.hpp>
+#include <qlib/FileStream.hpp>
 
 #include <Python.h>
 
@@ -13,7 +13,7 @@
 #include "PythonBridge.hpp"
 
 using namespace pybr;
-using qlib::LChar;
+using qlib::FileInStream;
 
 SINGLETON_BASE_IMPL(PythonBridge);
 
@@ -36,6 +36,49 @@ PythonBridge::PythonBridge()
 PythonBridge::~PythonBridge()
 {
 }
+
+#ifdef WIN32
+void PythonBridge::runFile(const LString &path)
+{
+  FileInStream fis;
+  fis.open(path);
+
+  LString sbuf;
+  char buf[1024];
+  while (fis.ready()) {
+    int nr = fis.read(buf, 0, sizeof sbuf-1);
+    if (nr==0)
+      break;
+    buf[nr] = '\0';
+    sbuf += buf;
+  }
+
+  {
+    int i;
+    int argc = m_cmdargs.size();
+    wchar_t **argv = new wchar_t *[argc];
+    for (i=0; i<argc; ++i) {
+#if PY_VERSION_HEX < 0x03050000
+      argv[i] = _Py_char2wchar(m_cmdargs[i], NULL);
+#else
+      argv[i] = Py_DecodeLocale(m_cmdargs[i], NULL);
+#endif
+
+    }
+    PySys_SetArgvEx(argc, argv, 0);
+  }
+  
+  int res = PyRun_SimpleString(sbuf.c_str());
+  
+  if (res<0) {
+    LString msg = LString::format("cannot run file: %s", path.c_str());
+    MB_THROW(qlib::IOException, msg);
+    return;
+  }
+
+}
+
+#else
 
 void PythonBridge::runFile(const LString &path)
 {
@@ -75,6 +118,7 @@ void PythonBridge::runFile(const LString &path)
   }
 
 }
+#endif
 
 void PythonBridge::runFile3(const LString &filename, qlib::uid_t scene_id, qlib::uid_t view_id, const LString &args)
 {
