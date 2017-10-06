@@ -37,10 +37,10 @@ runtime_class AtomIntr2Renderer extends Renderer
   default detail = 5;
 
   property real stipple0 => redirect(getStipple0, setStipple0);
-  default stipple0 = 1.0;
+  default stipple0 = 8.0;
 
   property real stipple1 => redirect(getStipple1, setStipple1);
-  default stipple1 = 1.0;
+  default stipple1 = 8.0;
 
   property real stipple2 => redirect(getStipple2, setStipple2);
   default stipple2 = -1.0;
@@ -56,7 +56,7 @@ runtime_class AtomIntr2Renderer extends Renderer
 
   /// width of lines
   property real width => redirect(getWidth, setWidth);
-  default width = 0.1;
+  default width = 1.0;
 
   /// color of lines
   property object<AbstractColor$> color => m_pcolor;
@@ -105,7 +105,7 @@ runtime_class AtomIntr2Renderer extends Renderer
   
   /// add new distance/label for atoms
   integer append(string selection1, string selection2) => appendBySelStr;
-  integer appendById(integer aid1, integer mol_id2, integer mol_id2, boolean showmsg) => appendById;
+  integer appendById(integer aid1, integer mol_id2, integer aid2, boolean showmsg) => appendById;
 
   integer appendBy2Vecs(object<Vector> v1, object<Vector> v2);
 

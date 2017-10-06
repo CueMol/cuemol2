@@ -39,6 +39,9 @@ runtime_class MolCoord extends Object
   property object<AbstractColor$> defaultcolor => redirect(getDefaultColor, setDefaultColor);
   default defaultcolor = gfx::SolidColor::createRGB(1.0, 1.0, 1.0, 1.0);
 
+  property integer atom_size => redirect(getAtomSize, xxx) (readonly);
+  property integer bond_size => redirect(getBondSize, xxx) (readonly);
+
   //////////////////////
   // Access methods
 

@@ -65,9 +65,11 @@ namespace pybr {
       fs::path confpath(szConfPath);
       confpath = confpath.parent_path();
       confpath /= "scripts";
-#ifdef WIN32
+
 confpath /= "python";
+#ifdef WIN32
 #endif
+
       LString strpath = confpath.string();
       strpath = strpath.escapeQuots();
       
