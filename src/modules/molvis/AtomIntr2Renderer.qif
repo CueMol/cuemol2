@@ -6,11 +6,11 @@
 #ifndef ATOM_INTR_RENDERER2_QIF_INCLUDED
 #define ATOM_INTR_RENDERER2_QIF_INCLUDED
 
-#include <qsys/Renderer.qif>
+#include <modules/molstr/MolRenderer.qif>
 #include <modules/molstr/MolCoord.qif>
 #include <modules/molstr/Selection.qif>
 
-runtime_class AtomIntr2Renderer extends Renderer
+runtime_class AtomIntr2Renderer extends MolRenderer
 {
   client_hdr "AtomIntr2Renderer.hpp";
   client_name molvis::AtomIntr2Renderer;
@@ -59,7 +59,7 @@ runtime_class AtomIntr2Renderer extends Renderer
   default width = 1.0;
 
   /// color of lines
-  property object<AbstractColor$> color => m_pcolor;
+  property object<AbstractColor$> color => redirect(getColor, setColor);
   default color = gfx::SolidColor::createRGB(1.0, 1.0, 0.0);
 
   enumdef captype_start {

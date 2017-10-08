@@ -125,6 +125,8 @@
     <ClCompile Include="..\..\src\modules\molvis\CPK2Renderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\CPK3Renderer.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\CPK3Renderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\GLSLAtomIntr2Renderer.cpp" />
+    <ClCompile Include="..\..\src\modules\molvis\GLSLAtomIntr2Renderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\GLSLBallStick2Renderer.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\GLSLBallStick2Renderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molvis\GLSLCPK3Renderer.cpp" />
@@ -414,6 +416,7 @@
     <mcwrapgen3 Include="..\..\src\modules\molvis\BallStick2Renderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\CPK2Renderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\CPK3Renderer.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molvis\GLSLAtomIntr2Renderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\GLSLBallStick2Renderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\GLSLCPK3Renderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molvis\GLSLRcTubeRenderer.qif" />

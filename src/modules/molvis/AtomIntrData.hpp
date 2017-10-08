@@ -11,10 +11,8 @@
 #include <modules/molstr/molstr.hpp>
 #include <qlib/Vector4D.hpp>
 #include <qsys/EditInfo.hpp>
+#include <gfx/PixelBuffer.hpp>
 
-namespace gfx {
-  class PixelBuffer;
-}
 
 namespace molvis {
 
@@ -89,22 +87,31 @@ namespace molvis {
     AtomIntrElem elem3;
 
     /// Label work area
+
+    /// Label image cache ID (for atomintr impl)
     int nLabelCacheID;
+
+    /// Label image pixel buffer (for atomintr2 impl)
+    gfx::PixelBuffer *m_pPixBuf;
 
     ////////////////////
 
-    AtomIntrData() : nmode(0), nLabelCacheID(-1)
+    AtomIntrData() : nmode(0), nLabelCacheID(-1), m_pPixBuf(NULL)
     {
     }
 
-    //~AtomIntrData();
+    ~AtomIntrData()
+    {
+      if (m_pPixBuf!=NULL)
+        delete m_pPixBuf;
+    }
   
     ////////////////////
 
     /// make distance data
     AtomIntrData(qlib::uid_t nMolID1, SelectionPtr pSel1,
 		 qlib::uid_t nMolID2, SelectionPtr pSel2)
-      : nmode(1), nLabelCacheID(-1)
+         : nmode(1), nLabelCacheID(-1), m_pPixBuf(NULL)
     {
       elem0.setSel(pSel1);
       elem0.nMolID = nMolID1;
@@ -116,7 +123,7 @@ namespace molvis {
     /// make distance data by AID
     AtomIntrData(qlib::uid_t nMolID1, int nAid1, 
 		 qlib::uid_t nMolID2, int nAid2)
-      : nmode(1), nLabelCacheID(-1)
+      : nmode(1), nLabelCacheID(-1), m_pPixBuf(NULL)
     {
       elem0.setAtomID(nAid1);
       elem0.nMolID = nMolID1;
@@ -129,7 +136,7 @@ namespace molvis {
     AtomIntrData(qlib::uid_t nMolID1, int nAid1, 
 		 qlib::uid_t nMolID2, int nAid2,
 		 qlib::uid_t nMolID3, int nAid3)
-      : nmode(2), nLabelCacheID(-1)
+      : nmode(2), nLabelCacheID(-1), m_pPixBuf(NULL)
     {
       elem0.setAtomID(nAid1);
       elem0.nMolID = nMolID1;
@@ -146,7 +153,7 @@ namespace molvis {
 		 qlib::uid_t nMolID2, int nAid2,
 		 qlib::uid_t nMolID3, int nAid3,
 		 qlib::uid_t nMolID4, int nAid4)
-      : nmode(3), nLabelCacheID(-1)
+         : nmode(3), nLabelCacheID(-1), m_pPixBuf(NULL)
     {
       elem0.setAtomID(nAid1);
       elem0.nMolID = nMolID1;

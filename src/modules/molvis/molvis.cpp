@@ -16,7 +16,6 @@
 #include "RibbonRenderer.hpp"
 #include "NARenderer.hpp"
 #include "AtomIntrRenderer.hpp"
-#include "AtomIntr2Renderer.hpp"
 #include "Ribbon2Renderer.hpp"
 #include "DisoRenderer.hpp"
 
@@ -26,11 +25,13 @@
 #  include "Spline2RendGLSL.hpp"
 #  include "GLSLTube2Renderer.hpp"
 #  include "GLSLRcTubeRenderer.hpp"
+#  include "GLSLAtomIntr2Renderer.hpp"
 #else
 #  include "BallStick2Renderer.hpp"
 #  include "CPK3Renderer.hpp"
 #  include "Spline2Renderer.hpp"
 #  include "Tube2Renderer.hpp"
+#  include "AtomIntr2Renderer.hpp"
 #endif
 
 #include "Tube2Renderer.hpp"
@@ -67,11 +68,13 @@ bool init()
   pRF->regist<Spline2RendGLSL>();
   pRF->regist<GLSLTube2Renderer>();
   pRF->regist<GLSLRcTubeRenderer>();
+  pRF->regist<GLSLAtomIntr2Renderer>();
 #else
   pRF->regist<BallStick2Renderer>();
   pRF->regist<CPK3Renderer>();
   pRF->regist<Spline2Renderer>();
   pRF->regist<Tube2Renderer>();
+  pRF->regist<AtomIntr2Renderer>();
 #endif
 
   MB_DPRINTLN("molvis init: OK");

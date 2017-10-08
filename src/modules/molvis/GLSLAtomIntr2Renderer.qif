@@ -1,0 +1,23 @@
+// -*-Mode: C++;-*-
+//
+//  GLSL AtomIntrRenderer (ver. 2) interface definition 
+//
+
+#ifndef GLSL_ATOM_INTR_RENDERER2_QIF_INCLUDED
+#define GLSL_ATOM_INTR_RENDERER2_QIF_INCLUDED
+
+#include "AtomIntr2Renderer.qif"
+
+runtime_class GLSLAtomIntr2Renderer extends AtomIntr2Renderer
+{
+  client_hdr "GLSLAtomIntr2Renderer.hpp";
+  client_name molvis::GLSLAtomIntr2Renderer;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+};
+
+#endif
+

@@ -9,12 +9,9 @@
 #include "molvis.hpp"
 
 #include <gfx/SolidColor.hpp>
-#include <gfx/LabelCacheImpl.hpp>
-#include <gfx/DrawAttrArray.hpp>
 
 #include <modules/molstr/molstr.hpp>
 #include <modules/molstr/MolRenderer.hpp>
-#include <modules/molstr/GLSLLabelHelper.hpp>
 
 #include "AtomIntrData.hpp"
 
@@ -22,10 +19,6 @@ class AtomIntr2Renderer_wrap;
 
 namespace gfx {
   class PixelBuffer;
-}
-
-namespace sysdep {
-  class OglProgramObject;
 }
 
 namespace molvis {
@@ -53,11 +46,12 @@ namespace molvis {
     int m_nMode;
     
   public:
+    /// Drawing mode constants
+    static const int AIR_SIMPLE = 0;
+    static const int AIR_FANCY = 1;
+
     int getMode() const { return m_nMode; }
-    void setMode(int nID) {
-      invalidateDisplayCache();
-      m_nMode = nID;
-    }
+    virtual void setMode(int nID);
 
   private:
     /// Label flag
@@ -65,10 +59,7 @@ namespace molvis {
     
   public:
     bool isShowLabel() const { return m_bShowLabel; }
-    void setShowLabel(bool f) {
-      invalidateDisplayCache();
-      m_bShowLabel = f;
-    }
+    virtual void setShowLabel(bool f);
 
   private:
     /// line width
@@ -76,11 +67,7 @@ namespace molvis {
     
   public:
     double getWidth() const { return m_linew; }
-    void setWidth(double d) {
-      m_linew = d;
-      //invalidateDisplayCache();
-    }
-
+    virtual void setWidth(double d);
 
   private:
     /// Shape of line termini (valid for FANCY mode)
@@ -89,6 +76,12 @@ namespace molvis {
     int m_nEndCapType;
     
   public:
+
+    /// end type ID
+    static const int END_FLAT = 0;
+    static const int END_SPHERE = 1;
+    static const int END_ARROW = 2;
+
     int getEndType() const { return m_nEndCapType; }
     void setEndType(int nID) {
       m_nStartCapType = nID;
@@ -116,6 +109,11 @@ namespace molvis {
     /// Color of lines
     ColorPtr m_pcolor;
     
+  public:
+    const ColorPtr &getColor() const { return m_pcolor; }
+	void setColor(const ColorPtr &pcol) { m_pcolor = pcol; }
+
+  private:
     /// Height of arrow (valid for FANCY mode with arrow terminus)
     double m_dArrowHeight;
     
@@ -143,24 +141,13 @@ namespace molvis {
     int getDetail() const { return m_nDetail; }
     void setDetail(int ndetail);
 
-  private:
+  //private:
+  protected:
     static const int MAX_STIPPLE_INDEX = 6;
     
     /// stipple-in/out length
     double m_stipple[MAX_STIPPLE_INDEX];
     int m_nTopStipple;
-    
-    /// label's font name
-    LString m_strFontName;
-    
-    /// label's font size
-    double m_dFontSize;
-    
-    /// label's font style (corresponds to the font-style prop of CSS)
-    LString m_strFontStyle;
-    
-    /// label's font weight (corresponds to the font-weight prop of CSS)
-    LString m_strFontWgt;
     
   public:
     double getStipple0() const { return m_stipple[0]; }
@@ -178,28 +165,26 @@ namespace molvis {
     void setStipple5(double d);
 
   private:
+    /// label's font name
+    LString m_strFontName;
+    
+    /// label's font size
+    double m_dFontSize;
+    
+    /// label's font style (corresponds to the font-style prop of CSS)
+    LString m_strFontStyle;
+    
+    /// label's font weight (corresponds to the font-weight prop of CSS)
+    LString m_strFontWgt;
+    
+    
+    //////////////////////////////////////////////////////
+
+  protected:
     
     /// Implementation data
     AtomIntrSet m_data;
     
-    MolCoordPtr m_pMol;
-    
-    gfx::LabelCacheImpl m_pixCache;
-    
-  public:
-    /// end type ID
-    enum {
-      END_FLAT = 0,
-      END_SPHERE = 1,
-      END_ARROW = 2
-    };
-
-    /// Drawing mode constants
-    enum {
-      AIR_SIMPLE = 0,
-      AIR_FANCY = 1,
-    };
-  
     //////////////////////////////////////////////////////
 
   public:
@@ -208,7 +193,6 @@ namespace molvis {
 
     //////////////////////////////////////////////////////
 
-    virtual bool isCompatibleObj(qsys::ObjectPtr pobj) const;
     virtual LString toString() const;
 
     virtual bool isHitTestSupported() const;
@@ -231,128 +215,32 @@ namespace molvis {
 
     // virtual void displayLabels(DisplayContext *pdc);
 
-    //////////////////////////////////////////////////////
-    // Ver. 2 interface
-
-    /// Use ver2 interface (--> return true)
-    virtual bool isUseVer2Iface() const;
-
-    /// Initialize & setup capabilities (for glsl setup)
-    virtual bool init(DisplayContext *pdc);
-    
-    virtual bool isCacheAvail() const;
-
-    /// Create GLSL data (VBO, texture, etc)
-    virtual void createGLSL();
-
-    /// update VBO positions using CrdArray
-    virtual void updateDynamicGLSL();
-
-    /// update VBO positions using getPos
-    virtual void updateStaticGLSL();
-
-
-    // /// Render to display (using VBO)
-    // virtual void renderVBO(DisplayContext *pdc);
-
-    /// Render to display (using GLSL)
-    virtual void renderGLSL(DisplayContext *pdc);
-
-  private:
-    
-    /// GLSL shader objects
-    sysdep::OglProgramObject *m_pPO;
-
-    struct AttrElem {
-      qfloat32 pos1x, pos1y, pos1z;
-      qfloat32 pos2x, pos2y, pos2z;
-      qfloat32 hwidth;
-      qfloat32 dir;
-    };
-
-    quint32 m_nPos1Loc;
-    quint32 m_nPos2Loc;
-    quint32 m_nHwidthLoc;
-    quint32 m_nDirLoc;
-
-    typedef gfx::DrawAttrElems<quint32, AttrElem> AttrArray;
-
-    /// VBO for GLSL rendering
-    AttrArray *m_pAttrAry;
-    
-    //////////
-
-    /// GLSL shader objects
-    sysdep::OglProgramObject *m_pLabPO;
-
-    /// Attribute for label rendering VBO
-    struct LabAttrElem {
-      // label origin position
-      qfloat32 x, y, z;
-      // label w-direction
-      qfloat32 nx, ny, nz;
-      // label texture coord
-      qfloat32 w, h;
-      // vertex displacement
-      qfloat32 dx, dy;
-    };
-
-    typedef gfx::DrawAttrElems<quint32, LabAttrElem> LabAttrArray;
-
-    /// VBO for GLSL rendering
-    LabAttrArray *m_pLabAttrAry;
-
-    typedef std::vector<qbyte> LabPixBuf;
-
-    static const int LABEL_TEX_UNIT = 0;
-
-    /// label image texture (in GPU)
-    gfx::Texture *m_pLabelTex;
-
-    /// Label image data (in CPU)
-    LabPixBuf m_pixall;
-
-    void createTextureData(DisplayContext *pdc, float asclx, float scly);
-
-    // TO DO: move to gfx::PixelBuffer??
-    gfx::PixelBuffer *createPixBuf(double scl, const LString &lab);
-
-    static const int TEX2D_WIDTH = 2048;
-
-    /// Height and Width of CoordTex (2D texture mode for GL1.3)
-    int m_nTexW, m_nTexH;
-
-    int m_nDigitW, m_nDigitH;
-
-    int m_nDigits;
-    static const int NUM_TEX_UNIT = 1;
-    gfx::Texture *m_pNumTex;
-    LabPixBuf m_numpix;
-
   public:
 
     //////////////////////////////////////////////////////
-    // Specific implementation
+    // AtomIntr specific interface
 
-    // MolCoordPtr getClientMol() const;
-    
+    /// Append distance label by selection string
     int appendBySelStr(const LString &sstr1, const LString &sstr2);
 
+    /// Append distance label by AtomID/ObjID
     int appendById(int nAid1, qlib::uid_t nMolID2, int nAid2, bool bShowMsg);
 
+    /// Append angle label by AtomID/ObjID
     int appendAngleById(int nAid1,
-			qlib::uid_t nMolID2, int nAid2,
-			qlib::uid_t nMolID3, int nAid3);
+                        qlib::uid_t nMolID2, int nAid2,
+                        qlib::uid_t nMolID3, int nAid3);
 
+    /// Append torsion label by AtomID/ObjID
     int appendTorsionById(int nAid1,
-			  qlib::uid_t nMolID2, int nAid2,
-			  qlib::uid_t nMolID3, int nAid3,
-			  qlib::uid_t nMolID4, int nAid4);
+                          qlib::uid_t nMolID2, int nAid2,
+                          qlib::uid_t nMolID3, int nAid3,
+                          qlib::uid_t nMolID4, int nAid4);
 
-    //////////
-
+    /// Append label by cart coord vecs
     int appendByVecs(const std::vector<Vector4D> &vecs);
 
+    /// Append distance label by cart coord vecs
     int appendBy2Vecs(const Vector4D &v1, const Vector4D &v2);
 
     //////////
@@ -379,19 +267,20 @@ namespace molvis {
 
     virtual void styleChanged(qsys::StyleEvent &ev);
 
-  private:
+    //////////////////////////////////////////////////////
+    // Specific implementations
+    
+  protected:
 
     void invalidateAllLabels();
 
     int appendImpl(const AtomIntrData &dat);
 
-    //bool getSelCenter(const MolCoordPtr pmol,
-    //const SelectionPtr &sel,
-    //Vector4D &rval);
-
     void renderDistLabel(AtomIntrData &value, DisplayContext *pdl);
     void renderAngleLabel(AtomIntrData &value, DisplayContext *pdl);
     void renderTorsionLabel(AtomIntrData &value, DisplayContext *pdl);
+
+    void renderLabel(DisplayContext *pdl, AtomIntrData &value, const Vector4D &pos, const LString &strlab);
 
     LString formatAidatJSON(const AtomIntrElem &aie) const;
 
@@ -415,15 +304,14 @@ namespace molvis {
       }
     }
 
+    /// Render label to the pixel buffer
+    gfx::PixelBuffer *createPixBuf(double scl, const LString &lab);
+
     void writeTo2ElemHelper(qlib::LDom2Node *pNode, int nOrder,
 			    const AtomIntrElem &elem) const;
 
     bool readFrom2Helper(qlib::LDom2Node *pNode, int nOrder,
 			 AtomIntrElem &elem);
-
-    void setLineAttr(int ive, const Vector4D &pos1, const Vector4D &pos2);
-    void setLabelAttr(int ive, const Vector4D &pos1, const Vector4D &pos2);
-    void setLabelDigits(int ilab, double dist);
 
   };
 
