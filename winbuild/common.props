@@ -23,7 +23,7 @@
     <CGALLibraryPath>$(BuildSetDir)\CGAL-4.6.1\lib</CGALLibraryPath>
 
     <HavePython>Yes</HavePython>
-    <PythonDir>F:\Python34-64\</PythonDir>
+    <PythonDir>$(BuildSetDir)\Python34\</PythonDir>
 
     <IncludePath>$(BuildSetDir)\include;$(CGALIncludePath);$(BoostIncludePath);$(IncludePath)</IncludePath>
     <ExecutablePath>$(BuildSetDir)\bin;$(XULRunnerDir)\bin;$(ExecutablePath)</ExecutablePath>
