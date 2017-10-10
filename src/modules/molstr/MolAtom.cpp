@@ -37,7 +37,7 @@ MolAtom::MolAtom()
   // m_radius = 0.0;
 }
 
-/** copy ctor */
+/// copy ctor
 MolAtom::MolAtom(const MolAtom &src)
 {
   // Do not copy parent Mol ID
@@ -61,14 +61,14 @@ MolAtom::MolAtom(const MolAtom &src)
   // m_radius = src.m_radius;
 
   m_paib = NULL;
-
   if (src.m_paib!=NULL) {
     m_paib = MB_NEW double[6];
     for (int i=0; i<6; ++i)
       m_paib[i] = src.m_paib[i];
   }
   
-  if (src.m_pXformMat!=NULL) {
+  m_pXformMat = NULL;
+  if (src.m_pXformMat != NULL) {
     m_pXformMat = new qlib::Matrix4D(*src.m_pXformMat);
   }
 }
