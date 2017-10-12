@@ -261,6 +261,10 @@
 
 	<menu id="edit-menu" label="&menu_edit.label;" accesskey="&menu_edit.accesskey;">
 	  <menupopup id="edit-popup">
+	    <menuitem label="Merge molecule..." oncommand="gQm2Main.onMolMerge1();" />
+
+	    <menuseparator/>
+
 	    <menuitem label="&edit_undo.label;"
 	      accesskey="&edit_undo.accesskey;"
 	      key="mkEditUndo"

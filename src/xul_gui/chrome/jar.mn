@@ -303,6 +303,9 @@ cuemol2.jar:
 # Visibility flag set editor
   content/tools/visflagset-edit-dlg.xul
   content/tools/visflagset-edit-dlg.js
+# Merge Mol UI
+  content/tools/mol_merge.xul
+  content/tools/mol_merge.js
 #####
 # Locale files
 #
