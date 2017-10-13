@@ -583,7 +583,6 @@ void MolAnlManager::makeBond(MolCoordPtr pmol, int aid1, int aid2)
   }
 
   pmol->setModifiedFlag(true);
-
   pmol->fireTopologyChanged();
 }
 

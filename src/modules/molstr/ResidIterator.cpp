@@ -16,6 +16,27 @@
 
 using namespace molstr;
 
+ResidIterator::ResidIterator()
+     : m_bIndOrder(true)
+{
+}
+
+/// construct iterator for the all part of the mol pmol
+ResidIterator::ResidIterator(MolCoordPtr pmol)
+     : m_pTarg(pmol), m_bIndOrder(true)
+{
+}
+
+/// construct iterator for part of pmol selected by psel
+ResidIterator::ResidIterator(MolCoordPtr pmol, SelectionPtr psel)
+     : m_pTarg(pmol), m_pSel(psel), m_bIndOrder(true)
+{
+}
+  
+ResidIterator::~ResidIterator()
+{
+}
+
 void ResidIterator::setTarget(MolCoordPtr pmol)
 {
   m_pTarg = pmol;
@@ -42,9 +63,9 @@ SelectionPtr ResidIterator::getSelection() const
 }
 
 ///////////////////////////////////////////////////////////////
-// cursor type interface
+// cursor type interface (ver1)
 
-void ResidIterator::first()
+void ResidIterator::first1()
 {
   m_citer = m_pTarg->begin();
 
@@ -69,10 +90,10 @@ void ResidIterator::first()
     return; // OK
 
   // proceed to the next selected residue
-  next();
+  next1();
 }
 
-void ResidIterator::next()
+void ResidIterator::next1()
 {
   while (m_citer != m_pTarg->end()) {
     MolChainPtr pchain = m_citer->second;
@@ -82,7 +103,7 @@ void ResidIterator::next()
       ++m_riter;
     }
     else  {
-      // the m_riter reached to the end of the chain
+      // the m_riter2 reached to the end of the chain
       ++m_citer;
       if (m_citer == m_pTarg->end())
 	break; // end of chain --> no more resid!!
@@ -92,7 +113,7 @@ void ResidIterator::next()
     }
 
     if (m_riter == pchain->end()) {
-      // the m_riter reached to the end of the chain
+      // the m_riter2 reached to the end of the chain
       // --> check the next residue
       continue;
     }
@@ -108,71 +129,92 @@ void ResidIterator::next()
   return;
 }
 
-bool ResidIterator::hasMore()
+bool ResidIterator::hasMore1()
 {
   return m_citer!=m_pTarg->end() && m_riter!=m_citer->second->end();
 }
 
-MolResiduePtr ResidIterator::get()
+MolResiduePtr ResidIterator::get1()
 {
   MB_ASSERT(hasMore());
-  return  *m_riter;
+  return *m_riter;
 }
 
-bool ResidIterator::checkAllAtoms(MolResiduePtr pRes)
+///////////////////////////////////////////////////////////////
+// cursor type interface (ResIndex-ordered; ver2)
+
+void ResidIterator::first2()
 {
-  /*
-  MolResidue::AtomCursor iter = pRes->atomBegin();
-  for ( ; iter!=pRes->atomEnd(); iter++) {
-    MolAtom *pAtom = m_pTarg->getAtom((*iter).second);
-    if (!m_pSel->isSelected(pAtom))
-      return false;
+  m_citer = m_pTarg->begin();
+
+  if (m_citer==m_pTarg->end())
+    return; // no chains in mol (error)
+
+  MolChainPtr pchain = m_citer->second;
+  m_riter2 = m_citer->second->begin2();
+
+  if (m_riter2==pchain->end2()) {
+    // pchain is empty (no residue)
+    // --> try the next chain
+    next();
+    return;
   }
-  */
-  return true;
+
+  if (m_pSel.isnull()) return;
+
+  //
+
+  if (m_pSel->isSelectedResid(m_riter2->second)!=Selection::SEL_NONE)
+    return; // OK
+
+  // proceed to the next selected residue
+  next();
 }
 
-
-#if 0
-// callback type interface
-void ResidIterator::iterate(ResidIteratorCb *pcback)
+void ResidIterator::next2()
 {
-  MolCoord::ChTabIter iter = m_pTarg->begin();
-  for ( ; iter!=m_pTarg->end(); ++iter) {
-    MolChain *pCh = iter->second;
-    MB_ASSERT(pCh!=NULL);
+  while (m_citer != m_pTarg->end()) {
+    MolChainPtr pchain = m_citer->second;
+    MB_ASSERT(!pchain.isnull());
     
-    int ires=pCh->getBegin();
-    for ( ; ires<=pCh->getEnd(); ires++) {
-      MolResiduePtr pRes = pCh->getAt(ires);
-      if (pRes==NULL)
-        continue;
-      
-      if (m_pSel.isnull()) {
-        pcback->residIterCalled(pRes);
-        continue;
-      }
-      
-      int res = m_pSel->isSelectedResid(pRes);
-      if (res==MolSelection::SEL_NONE)
-        continue;
-      if (res==MolSelection::SEL_ALL) {
-        pcback->residIterCalled(pRes);
-        continue;
-      }
-      if (res!=MolSelection::SEL_UNKNOWN) {
-        // PARTial case
-        // partial selection are interpreted as 'not-selected'.
-        continue;
-      }
-
-      // UNKNOWN case ---
-      //  we should check all atoms of the residue.
-      if (checkAllAtoms(pRes))
-        pcback->residIterCalled(pRes);
+    if (m_riter2 != pchain->end2()) {
+      ++m_riter2;
     }
+    else  {
+      // the m_riter2 reached to the end of the chain
+      ++m_citer;
+      if (m_citer == m_pTarg->end())
+	break; // end of chain --> no more resid!!
+
+      pchain = m_citer->second;
+      m_riter2 = pchain->begin2();
+    }
+
+    if (m_riter2 == pchain->end2()) {
+      // the m_riter2 reached to the end of the chain
+      // --> check the next residue
+      continue;
+    }
+
+    if (m_pSel.isnull()) return;
+
+    if (m_pSel->isSelectedResid(m_riter2->second)!=Selection::SEL_NONE)
+      return; // OK
+
+    // check the next residue
   }
-  
+
+  return;
 }
 
-#endif
+bool ResidIterator::hasMore2()
+{
+  return m_citer!=m_pTarg->end() && m_riter2!=m_citer->second->end2();
+}
+
+MolResiduePtr ResidIterator::get2()
+{
+  MB_ASSERT(hasMore());
+  return m_riter2->second;
+}
+

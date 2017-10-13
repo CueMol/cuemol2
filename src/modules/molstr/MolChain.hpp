@@ -42,6 +42,8 @@ namespace molstr {
   public:
     typedef impl_t::const_iterator ResidCursor;
 
+    typedef map_t::const_iterator ResidCursor2;
+
   public:
     MolChain();
     virtual ~MolChain();
@@ -76,6 +78,11 @@ namespace molstr {
     ResidCursor begin() const { return m_data.begin(); }
     /// Get residue iterator
     ResidCursor end() const { return m_data.end(); }
+
+    /// Get residue iterator
+    ResidCursor2 begin2() const { return m_map.begin(); }
+    /// Get residue iterator
+    ResidCursor2 end2() const { return m_map.end(); }
 
     /// Put new residue at the specified position.
     /// @param pres The new residue to put.

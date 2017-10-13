@@ -54,8 +54,8 @@ namespace molstr {
     /// Negative number should be permitted.
     ResidIndex m_index;
 
-    /// Residue sequence number in the parent chain
-    int m_nSeqNo;
+    // /// Residue sequence number in the parent chain
+    // int m_nSeqNo;
 
     /// Atom table (atom name-->atom ID)
     atomdata_t m_atomData;
@@ -122,11 +122,10 @@ namespace molstr {
     /// get name of this residue
     const LString &getName() const { return m_name; }
 
-    /// Set sequence number
-    void setSeqNo(int val) { m_nSeqNo = val; }
-
-    /// Get sequence number
-    int getSeqNo() const { return m_nSeqNo; }
+    // /// Set sequence number
+    // void setSeqNo(int val) { m_nSeqNo = val; }
+    // /// Get sequence number
+    // int getSeqNo() const { return m_nSeqNo; }
 
     //
 

@@ -43,6 +43,7 @@ bool MolChain::appendResidue(MolResiduePtr pres)
   if (!res)
     return false; // residue with ind already exists --> fail
 
+/*
   // set seqence number
   if (m_data.empty())
     pres->setSeqNo(0);
@@ -50,7 +51,8 @@ bool MolChain::appendResidue(MolResiduePtr pres)
     int lastno = m_data.back()->getSeqNo();
     pres->setSeqNo(lastno+1);
   }
-
+*/
+  
   m_data.push_back(pres);
 
   pres->setChainName(m_name);
@@ -70,7 +72,7 @@ MolResiduePtr MolChain::getResidue(ResidIndex idx) const
 bool MolChain::removeResidue(MolResiduePtr pRes)
 {
   ResidIndex idx = pRes->getIndex();
-  int seqno = pRes->getSeqNo();
+  //int seqno = pRes->getSeqNo();
   map_t::iterator iter = m_map.find(idx);
   if (iter==m_map.end())
     return false;
@@ -82,12 +84,14 @@ bool MolChain::removeResidue(MolResiduePtr pRes)
   m_map.erase(iter);
   i2 = m_data.erase(i2);
 
+/*
   // shift seqno
   impl_t::iterator i2end = m_data.end();
   for (int i=seqno; i2!=i2end; ++i2, ++i) {
     (*i2)->setSeqNo(i);
   }
-
+*/
+  
   return true;
 }
 

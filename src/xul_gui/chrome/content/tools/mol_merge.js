@@ -158,11 +158,29 @@ dlg.onDialogAccept = function (event)
     return false;
   }
 
+  var bcopy = this.mChkCopy.checked;
+
   //
   //
   //
 
-  mgr.copyAtoms(toMol, fromMol, fromSel);
+  // // EDIT TXN START //
+  var scene = fromMol.getScene();
+  scene.startUndoTxn("Merge molecule");
+  try {
+    mgr.copyAtoms(toMol, fromMol, fromSel);
+    if (!bcopy) {
+      mgr.deleteAtoms(fromMol, fromSel);
+    }
+  }
+  catch (e) {
+    debug.exception(e);
+    scene.rollbackUndoTxn();
+    util.alert(window, "Error, merge molecule was failed: "+cuemol.getErrMsg());
+    return false;
+  }
+  scene.commitUndoTxn();
+  // EDIT TXN END //
 
   pref.set(histry_name+"_frommol", fromMol.uid);
   pref.set(histry_name+"_tomol", toMol.uid);
