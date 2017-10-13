@@ -587,7 +587,7 @@ void MolAnlManager::makeBond(MolCoordPtr pmol, int aid1, int aid2)
 }
 
 /// Copy the selected part of pmol2 into this mol (inv. op. of deleteSel())
-bool MolAnlManager::copyAtoms(MolCoordPtr pmol1, MolCoordPtr pmol2, SelectionPtr psel2)
+bool MolAnlManager::copyAtoms(const MolCoordPtr &pmol1, const MolCoordPtr &pmol2, const SelectionPtr &psel2)
 {
   bool bres = true;
 
@@ -603,7 +603,7 @@ bool MolAnlManager::copyAtoms(MolCoordPtr pmol1, MolCoordPtr pmol2, SelectionPtr
 }
 
 /// Delete the selected part of this mol (inv. op. of copy())
-bool MolAnlManager::deleteAtoms(MolCoordPtr pmol1, SelectionPtr psel)
+bool MolAnlManager::deleteAtoms(const MolCoordPtr &pmol1, const SelectionPtr &psel)
 {
   bool bres = true;
 
@@ -616,6 +616,47 @@ bool MolAnlManager::deleteAtoms(MolCoordPtr pmol1, SelectionPtr psel)
   pmol1->setModifiedFlag(true);
   pmol1->fireTopologyChanged();
   return bres;
+}
+
+bool MolAnlManager::changeChainName(const MolCoordPtr &pmol1, const SelectionPtr &psel, const LString &name)
+{
+
+  MolChainPtr pCh = pmol1->getChain(name);
+  if (pCh.isnull()) {
+    pCh = MolChainPtr(MB_NEW MolChain());
+    pCh->setParentUID(pmol1->getUID());
+    pCh->setName(name);
+    pmol1->appendChain(pCh);
+  }
+  
+  ResidIterator riter(pmol1, psel);
+  std::deque<MolResiduePtr> resset;
+  
+  for (riter.first(); riter.hasMore(); riter.next()) {
+    MolResiduePtr pRes = riter.get();
+    resset.push_back(pRes);
+  }
+
+  BOOST_FOREACH (MolResiduePtr pRes, resset) {
+    MolChainPtr pOldCh = pmol1->getChain(pRes->getChainName());
+
+    pRes->setChainName(name);
+
+    MolResidue::AtomCursor iter = pRes->atomBegin();
+    MolResidue::AtomCursor eiter = pRes->atomEnd();
+    for (; iter!=eiter; ++iter) {
+      MolAtomPtr pAtom = pmol1->getAtom(iter->second);
+      pAtom->setChainName(name);
+    }
+
+    pOldCh->removeResidue(pRes);
+    pCh->appendResidue(pRes);
+  }
+  
+  pmol1->setModifiedFlag(true);
+  pmol1->fireTopologyChanged();
+
+  return true;
 }
 
 ////////////////////////////////////////////////////////////////

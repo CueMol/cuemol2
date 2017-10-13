@@ -45,6 +45,8 @@ runtime_class MolAnlManager
   
   boolean deleteAtoms(object<MolCoord$> pmol1, object<MolSelection$> psel);
 
+  boolean changeChainName(object<MolCoord$> pmol1, object<MolSelection$> psel, string name);
+
   //////////////////////////
   // interaction analysis
 

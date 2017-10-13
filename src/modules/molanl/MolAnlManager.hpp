@@ -75,11 +75,14 @@ namespace molanl {
 
     
     /// Copy the selected part of pmol2 into this mol (inv. op. of deleteSel())
-    bool copyAtoms(MolCoordPtr pmol, MolCoordPtr pmol2, SelectionPtr psel2);
+    bool copyAtoms(const MolCoordPtr &pmol, const MolCoordPtr &pmol2, const SelectionPtr &psel2);
     
     /// Delete the selected part of this mol (inv. op. of copy())
-    bool deleteAtoms(MolCoordPtr pmol, SelectionPtr psel);
+    bool deleteAtoms(const MolCoordPtr &pmol, const SelectionPtr &psel);
 
+
+    /// Rename chain name
+    bool changeChainName(const MolCoordPtr &pmol, const SelectionPtr &psel, const LString &name);
 
     //////////////////////////////////////////////////////
 
