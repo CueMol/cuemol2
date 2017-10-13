@@ -315,7 +315,10 @@ if (!("seqpanel" in cuemolui)) {
 	    nsize++;
             this.mRow.push({mol: key, chain: chn});
 	    nres = chdata.length;
-	    res = chdata[nres-1].index;
+            if (nres==0)
+              res = 0;
+            else
+              res = chdata[nres-1].index;
 	    res = parseInt(res);
 	    dd("chain "+chn+", nres="+nres+", lastind="+res);
 	    if (!isNaN(res) && res>nmax)

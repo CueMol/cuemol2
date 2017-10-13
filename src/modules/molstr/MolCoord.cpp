@@ -591,3 +591,33 @@ void MolCoord::setXformMatrix(const qlib::Matrix4D &m)
   }
    */
 }
+
+void MolCoord::changeChainName(const LString &oldname, const ResidIndex &resid, const LString &newname)
+{
+  MolChainPtr pNewCh = getChain(newname);
+  if (pNewCh.isnull()) {
+    pNewCh = MolChainPtr(MB_NEW MolChain());
+    pNewCh->setParentUID(getUID());
+    pNewCh->setName(newname);
+    appendChain(pNewCh);
+  }
+
+  MolChainPtr pOldCh = qlib::ensureNotNull( getChain(oldname) );
+  MolResiduePtr pRes = qlib::ensureNotNull( getResidue(oldname, resid) );
+  
+  pRes->setChainName(newname);
+  MolResidue::AtomCursor iter = pRes->atomBegin();
+  MolResidue::AtomCursor eiter = pRes->atomEnd();
+  for (; iter!=eiter; ++iter) {
+    MolAtomPtr pAtom = qlib::ensureNotNull( getAtom(iter->second) );
+    pAtom->setChainName(newname);
+  }
+
+  pOldCh->removeResidue(pRes);
+  pNewCh->appendResidue(pRes);
+
+  // purge the empty chain
+  if (pOldCh->getSize()==0)
+    removeChain(oldname);
+}
+

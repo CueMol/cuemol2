@@ -164,7 +164,7 @@ dlg.onDialogAccept = function (event)
   var scene = fromMol.getScene();
   scene.startUndoTxn("Merge molecule");
   try {
-    mgr.changeChainName(fromMol, fromSel, "XXX");
+    mgr.changeChainName(fromMol, fromSel, "B");
     /*
     mgr.copyAtoms(toMol, fromMol, fromSel);
     if (!bcopy) {

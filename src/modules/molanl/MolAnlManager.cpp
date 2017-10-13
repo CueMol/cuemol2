@@ -618,44 +618,165 @@ bool MolAnlManager::deleteAtoms(const MolCoordPtr &pmol1, const SelectionPtr &ps
   return bres;
 }
 
+namespace {
+  class ChgChnameEditInfo : public qsys::EditInfo
+  {
+  private:
+    /// Target Mol ID
+    qlib::uid_t m_nTgtUID;
+    
+    /// undo/redo data
+    
+  public:
+    struct ResDat {
+      /// old chain name
+      LString oldnm;
+      /// new chain name
+      LString newnm;
+
+      /// residue index
+      ResidIndex resid;
+    };
+
+    typedef std::deque<ResDat> data_t;
+
+    data_t m_data;
+
+  public:
+    ChgChnameEditInfo() {}
+    virtual ~ChgChnameEditInfo() {}
+    
+    /////////////////////////////////////////////////////
+    
+    void setup(MolCoordPtr pmol)
+    {
+      m_nTgtUID = pmol->getUID();
+    }
+    
+    void append(const LString &oldname, const ResidIndex &resid, const LString &newname) {
+      ResDat d;
+      d.newnm = newname;
+      d.oldnm = oldname;
+      d.resid = resid;
+      m_data.push_back(d);
+    }
+
+    /////////////////////////////////////////////////////
+
+    /// perform undo
+    virtual bool undo()
+    {
+      MolCoord *pmol =
+        qlib::ObjectManager::sGetObj<MolCoord>(m_nTgtUID);
+      
+      if (pmol==NULL)
+        return false;
+
+      // change new --> old
+      BOOST_FOREACH (const ResDat &dat, m_data) {
+        try {
+          pmol->changeChainName(dat.newnm, dat.resid, dat.oldnm);
+        }
+        catch (const qlib::LException &e) {
+          MB_DPRINTLN("ChgChnameEditInfo.undo() residue %s %s not found!!", dat.oldnm.c_str(), dat.resid.toString().c_str());
+        }
+      }
+
+      pmol->applyTopology();
+      pmol->setModifiedFlag(true);
+      pmol->fireTopologyChanged();
+
+      return true;
+    }
+
+    /// perform redo
+    virtual bool redo()
+    {
+      MolCoord *pmol =
+        qlib::ObjectManager::sGetObj<MolCoord>(m_nTgtUID);
+      
+      if (pmol==NULL)
+        return false;
+
+      // change old --> new
+      BOOST_FOREACH (const ResDat &dat, m_data) {
+        try {
+          pmol->changeChainName(dat.oldnm, dat.resid, dat.newnm);
+        }
+        catch (const qlib::LException &e) {
+          MB_DPRINTLN("ChgChnameEditInfo.undo() residue %s %s not found!!", dat.oldnm.c_str(), dat.resid.toString().c_str());
+        }
+      }
+
+      pmol->applyTopology();
+      pmol->setModifiedFlag(true);
+      pmol->fireTopologyChanged();
+
+      return true;
+    }
+
+    virtual bool isUndoable() const
+    {
+      return true;
+    }
+
+    virtual bool isRedoable() const
+    {
+      return true;
+    }
+
+  };
+}
+
 bool MolAnlManager::changeChainName(const MolCoordPtr &pmol1, const SelectionPtr &psel, const LString &name)
 {
-
-  MolChainPtr pCh = pmol1->getChain(name);
-  if (pCh.isnull()) {
-    pCh = MolChainPtr(MB_NEW MolChain());
-    pCh->setParentUID(pmol1->getUID());
-    pCh->setName(name);
-    pmol1->appendChain(pCh);
-  }
-  
+  // Collect and check the target residues
   ResidIterator riter(pmol1, psel);
   std::deque<MolResiduePtr> resset;
   
   for (riter.first(); riter.hasMore(); riter.next()) {
     MolResiduePtr pRes = riter.get();
     resset.push_back(pRes);
+
+    ResidIndex resind = pRes->getIndex();
+    MolResiduePtr pChk = pmol1->getResidue(name, resind);
+    if (!pChk.isnull()) {
+      LString msg = LString::format("Change chain name failed: resid %s %s already exists!!", name.c_str(), resind.toString().c_str());
+      MB_THROW(qlib::RuntimeException, msg);
+      return false;
+    }
   }
 
-  BOOST_FOREACH (MolResiduePtr pRes, resset) {
-    MolChainPtr pOldCh = pmol1->getChain(pRes->getChainName());
-
-    pRes->setChainName(name);
-
-    MolResidue::AtomCursor iter = pRes->atomBegin();
-    MolResidue::AtomCursor eiter = pRes->atomEnd();
-    for (; iter!=eiter; ++iter) {
-      MolAtomPtr pAtom = pmol1->getAtom(iter->second);
-      pAtom->setChainName(name);
+  // Record undo info
+  qsys::UndoManager *pUM = NULL;
+  ChgChnameEditInfo *pEI = NULL;
+  qsys::ScenePtr pScene = pmol1->getScene();
+  if (!pScene.isnull()) {
+    pUM = pScene->getUndoMgr();
+    if (pUM->isOK()) {
+      // record property changed undo/redo info
+      pEI = MB_NEW ChgChnameEditInfo();
+      pEI->setup(pmol1);
     }
+  }
 
-    pOldCh->removeResidue(pRes);
-    pCh->appendResidue(pRes);
+  // Perform change
+  BOOST_FOREACH (MolResiduePtr pRes, resset) {
+    LString oldname = pRes->getChainName();
+    ResidIndex resid = pRes->getIndex();
+    if (pUM!=NULL&&pEI!=NULL)
+      pEI->append(oldname, resid, name);
+    pmol1->changeChainName(oldname, resid, name);
   }
   
+  pmol1->applyTopology();
   pmol1->setModifiedFlag(true);
   pmol1->fireTopologyChanged();
 
+  if (pUM!=NULL&&pEI!=NULL) {
+    pUM->addEditInfo(pEI);
+  }
+  
   return true;
 }
 
