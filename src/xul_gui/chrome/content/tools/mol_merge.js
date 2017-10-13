@@ -140,6 +140,8 @@ dlg.onObjBoxChanged = function (aEvent)
 
 dlg.onDialogAccept = function (event)
 {
+  let mgr = cuemol.getService("MolAnlManager");
+
   var fromSel = this.mFromSelBox.selectedSel;
 
   if (fromSel==null) {
@@ -160,7 +162,7 @@ dlg.onDialogAccept = function (event)
   //
   //
 
-  toMol.copyAtoms(fromMol, fromSel);
+  mgr.copyAtoms(toMol, fromMol, fromSel);
 
   pref.set(histry_name+"_frommol", fromMol.uid);
   pref.set(histry_name+"_tomol", toMol.uid);

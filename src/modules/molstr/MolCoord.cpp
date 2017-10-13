@@ -402,24 +402,35 @@ bool MolCoord::removeBond(int aaid1, int aaid2)
 
 void MolCoord::removeNonpersBonds()
 {
-  std::vector<MolBond*> pers;
+  std::deque<MolBond*> pers;
 
   BOOST_FOREACH (BondPool::value_type &elem, m_bondPool) {
     MolBond *pBond = elem.second;
-    if (pBond->isPersist())
-      pers.push_back(pBond);
+
+    int aid1 = pBond->getAtom1();
+    int aid2 = pBond->getAtom2();
+    MolAtomPtr pA1 = getAtom(aid1);
+    MolAtomPtr pA2 = getAtom(aid2);
+
+    if (pBond->isPersist()){
+      if (!pA1.isnull() && !pA2.isnull())
+        pers.push_back(pBond); // reserve presistent & valid bond
+      else
+        delete pBond; // remove persistent but orphan bond
+    }
     else {
-      int aid1 = pBond->getAtom1();
-      MolAtomPtr pA1 = getAtom(aid1);
-      MB_ASSERT(!pA1.isnull());
-      pA1->removeBond(pBond);
+      // remove non-persistent bond
+      if (!pA1.isnull())
+        pA1->removeBond(pBond);
+      if (!pA2.isnull())
+        pA2->removeBond(pBond);
       delete pBond;
     }
   }
 
   m_bondPool.clear();
 
-  // re-append the persistent bonds
+  // re-append the valid persistent bonds
   BOOST_FOREACH (MolBond *pelem, pers) {
     m_bondPool.put(pelem);
   }

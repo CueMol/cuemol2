@@ -46,6 +46,7 @@ MolAtom::MolAtom(const MolAtom &src)
   m_molID = qlib::invalid_uid;
 
   m_name = src.m_name;
+  m_canonName = src.m_canonName;
   m_chain = src.m_chain;
   m_resname = src.m_resname;
   m_nresid = src.m_nresid;
@@ -73,7 +74,7 @@ MolAtom::MolAtom(const MolAtom &src)
   }
 }
 
-/** dtor */
+/// dtor
 MolAtom::~MolAtom()
 {
   // m_props.clearAndDelete();
@@ -149,14 +150,22 @@ MolBond *MolAtom::getBond(int aid) const
 
 bool MolAtom::addBond(MolBond *pBond)
 {
-  if (pBond->getAtom1()==getID()) {
-    int aid = pBond->getAtom2();
-    if (isBonded(aid))
+  int aid1 = pBond->getAtom1();
+  int aid2 = pBond->getAtom2();
+
+/*  if (aid1<0 || aid1>10000) {
+    MB_ASSERT(false);
+  }
+  if (aid2<0 || aid2>10000) {
+    MB_ASSERT(false);
+  }*/
+
+  if (aid1==getID()) {
+    if (isBonded(aid2))
       return false;
   }
-  else if (pBond->getAtom2()==getID()) {
-    int aid = pBond->getAtom1();
-    if (isBonded(aid))
+  else if (aid2==getID()) {
+    if (isBonded(aid1))
       return false;
   }
   else {

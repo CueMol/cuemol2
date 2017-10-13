@@ -73,6 +73,14 @@ namespace molanl {
     void removeBond(MolCoordPtr pmol, int aid1, int aid2);
     void makeBond(MolCoordPtr pmol, int aid1, int aid2);
 
+    
+    /// Copy the selected part of pmol2 into this mol (inv. op. of deleteSel())
+    bool copyAtoms(MolCoordPtr pmol, MolCoordPtr pmol2, SelectionPtr psel2);
+    
+    /// Delete the selected part of this mol (inv. op. of copy())
+    bool deleteAtoms(MolCoordPtr pmol, SelectionPtr psel);
+
+
     //////////////////////////////////////////////////////
 
     LString calcAtomContactJSON(MolCoordPtr pMol, SelectionPtr pSel,

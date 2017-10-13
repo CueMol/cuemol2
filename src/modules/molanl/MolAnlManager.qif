@@ -31,12 +31,19 @@ runtime_class MolAnlManager
   void calcRMSD(object<MolCoord$> pmol_ref, object<MolSelection$> psel_ref, object<MolCoord$> pmol_mov, object<MolSelection$> psel_mov, string path) => calcRMSDScr;
 
   //////////////////////////
-  // non-standard bond editor
+  // non-standard bond editor (TODO: move to moledit tool?)
 
   string getNostdBondsJSON(object<MolCoord$> pmol);
 
   void removeBond(object<MolCoord$> pmol, integer aid1, integer aid2);
   void makeBond(object<MolCoord$> pmol, integer aid1, integer aid2);
+
+  //////////////////////////
+  // Edit (TODO: move to moledit tool?)
+
+  boolean copyAtoms(object<MolCoord$> pmol1, object<MolCoord$> pmol2, object<MolSelection$> psel2);
+  
+  boolean deleteAtoms(object<MolCoord$> pmol1, object<MolSelection$> psel);
 
   //////////////////////////
   // interaction analysis

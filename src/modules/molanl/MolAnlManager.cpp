@@ -587,6 +587,38 @@ void MolAnlManager::makeBond(MolCoordPtr pmol, int aid1, int aid2)
   pmol->fireTopologyChanged();
 }
 
+/// Copy the selected part of pmol2 into this mol (inv. op. of deleteSel())
+bool MolAnlManager::copyAtoms(MolCoordPtr pmol1, MolCoordPtr pmol2, SelectionPtr psel2)
+{
+  bool bres = true;
+
+  bres = pmol1->copyAtoms(pmol2, psel2);
+
+  if (!bres) {
+    return false;
+  }
+
+  pmol1->setModifiedFlag(true);
+  pmol1->fireTopologyChanged();
+  return bres;
+}
+
+/// Delete the selected part of this mol (inv. op. of copy())
+bool MolAnlManager::deleteAtoms(MolCoordPtr pmol1, SelectionPtr psel)
+{
+  bool bres = true;
+
+  bres = pmol1->deleteAtoms(psel);
+
+  if (!bres) {
+    return false;
+  }
+
+  pmol1->setModifiedFlag(true);
+  pmol1->fireTopologyChanged();
+  return bres;
+}
+
 ////////////////////////////////////////////////////////////////
 
 namespace {
