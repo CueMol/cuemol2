@@ -1,6 +1,6 @@
 // -*-Mode: C++;-*-
 //
-// Molecule merge tool
+// Molecule delete tool
 //
 
 
@@ -9,31 +9,30 @@ if (!cuemol.evtMgr) {
 }
 
 ////////////////////////////////
-// gMolMrgDlg
+// gMolDelDlg
 
 ( function () {
 
-const histry_name = "cuemol2.ui.histories.mol_merge";
+const histry_name = "cuemol2.ui.histories.mol_delete";
 const pref = require("preferences-service");
 
 var util = require("util");
-var dlg = window.gMolMrgDlg = new Object();
+var dlg = window.gMolDelDlg = new Object();
 
 dlg.ctor = function ()
 {
   this.mFromObjBox = null;
-  this.mToObjBox = null;
 
   this.mTargetSceneID = window.arguments[0];
   this.mTargetViewID = window.arguments[1];
-  dd("MolMrgDlg: target="+this.mTargetSceneID);
+  dd("MolDelDlg> target="+this.mTargetSceneID);
 
   var filter_fn = function (elem) {
     return cuemol.implIface(elem.type, "MolCoord");
   };
 
   this.mFromObjBox = new cuemolui.ObjMenuList(
-    "from_obj",
+    "del_obj",
     window, filter_fn,
     cuemol.evtMgr.SEM_OBJECT);
   this.mFromObjBox._tgtSceID = this.mTargetSceneID;
@@ -58,25 +57,16 @@ dlg.onLoad = function ()
 {
   var that = this;
 
-  this.mChkCopy = document.getElementById("chkbox_copy");
-
   this.mFromObjBox.addSelChanged(function(aEvent) {
       try { that.onObjBoxChanged(aEvent);}
       catch (e) { debug.exception(e); }
   });
-  this.mToObjBox.addSelChanged(function(aEvent) {
-      try { that.onObjBoxChanged(aEvent);}
-      catch (e) { debug.exception(e); }
-  });
-
-  this.mFromSelBox = document.getElementById('from_molsel');
-
+  this.mFromSelBox = document.getElementById('del_molsel');
   this.mFromSelBox.targetSceID = this.mTargetSceneID;
 
   ////
 
-  if (this.mFromObjBox._widget.itemCount==0 ||
-      this.mToObjBox._widget.itemCount==0) {
+  if (this.mFromObjBox._widget.itemCount==0) {
     // no mol object in the scene
     document.documentElement.getButton("accept").disabled = true;
     this.mFromSelBox.disabled = true;
@@ -86,11 +76,9 @@ dlg.onLoad = function ()
   ////
 
   this.mFromObjBox._widget.selectedIndex = -1;
-  this.mToObjBox._widget.selectedIndex = -1;
 
   var bOK = false;
   if (pref.has(histry_name+"_frommol")) {
-    //var prev_id = parseInt(pref.get(histry_name+"_refmol"));
     var prev_id = pref.get(histry_name+"_frommol");
     if (this.mFromObjBox.selectObject(prev_id))
       bOK = true;
@@ -99,40 +87,21 @@ dlg.onLoad = function ()
   if (!bOK)
     this.mFromObjBox._widget.selectedIndex = 0;
 
-  bOK = false;
-  if (pref.has(histry_name+"_tomol")) {
-    var prev_id = pref.get(histry_name+"_tomol");
-    if (this.mToObjBox.selectObject(prev_id))
-      bOK = true;
-  }  
-
-  if (!bOK) {
-    // select a different item for to mol
-    if (this.mToObjBox._widget.itemCount>1)
-      this.mToObjBox._widget.selectedIndex = 1;
-    else
-      this.mToObjBox._widget.selectedIndex = 0;
-  }
-  
   dd("*** Dlg.onLoad() OK.");
 }
 
 dlg.onUnload = function ()
 {
-  delete this.mFromObjBox;
-  delete this.mToObjBox;
+  //delete this.mFromObjBox;
 };
 
 dlg.onObjBoxChanged = function (aEvent)
 {
-  dd("MolMrg> ObjSelChg: "+aEvent.target.id);
-  if (aEvent.target.id=="from_obj") {
+  dd("MolDelDlg> ObjSelChg: "+aEvent.target.id);
+  if (aEvent.target.id=="del_obj") {
     var mol = this.mFromObjBox.getSelectedObj();
     if (mol)
       this.mFromSelBox.molID = mol.uid;
-  }
-  else if (aEvent.target.id=="to_obj") {
-    var mol = this.mToObjBox.getSelectedObj();
   }
 };
 
@@ -145,52 +114,37 @@ dlg.onDialogAccept = function (event)
   var fromSel = this.mFromSelBox.selectedSel;
 
   if (fromSel==null) {
-    dd("MolMrg> invalid selection!!");
+    dd("MolDelDlg> invalid selection!!");
     util.alert(window, "Invalid selection.");
     return false;
   }
 
   var fromMol = this.mFromObjBox.getSelectedObj();
-  var toMol = this.mToObjBox.getSelectedObj();
-  if (fromMol==null || toMol==null) {
-    dd("MolMrg> mol not selected!!");
+  if (fromMol==null) {
+    dd("MolDelDlg> mol not selected!!");
     util.alert(window, "Mol is not selected.");
     return false;
   }
 
-  var bcopy = this.mChkCopy.checked;
-
   // // EDIT TXN START //
   var scene = fromMol.getScene();
-  scene.startUndoTxn("Merge molecule");
+  scene.startUndoTxn("Delete atoms");
   try {
-    //mgr.shiftResIndex(fromMol, fromSel, -1);
-    //mgr.changeChainName(fromMol, fromSel, "B");
-
-    mgr.copyAtoms(toMol, fromMol, fromSel);
-    if (!bcopy) {
-      mgr.deleteAtoms(fromMol, fromSel);
-    }
+    mgr.deleteAtoms(fromMol, fromSel);
   }
   catch (e) {
     debug.exception(e);
     scene.rollbackUndoTxn();
-    util.alert(window, "Error, merge molecule was failed: "+cuemol.getErrMsg());
+    util.alert(window, "Error, delete atoms was failed: "+cuemol.getErrMsg());
     return false;
   }
   scene.commitUndoTxn();
   // EDIT TXN END //
 
   pref.set(histry_name+"_frommol", fromMol.uid);
-  pref.set(histry_name+"_tomol", toMol.uid);
 
   // Save selection history
   util.selHistory.append(fromSel.toString());
-
-  delete fromMol;
-  delete fromSel;
-  delete toMol;
-  delete toSel;
 
   return true;
 };
@@ -198,5 +152,5 @@ dlg.onDialogAccept = function (event)
 
 } )();
 
-window.gMolMrgDlg.ctor();
+window.gMolDelDlg.ctor();
 

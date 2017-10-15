@@ -1,15 +1,14 @@
 // -*-Mode: C++;-*-
 //
-// Molecule merge tool
+// Change chain name tool
 //
-
 
 if (!cuemol.evtMgr) {
   cuemol.evtMgr = require("event").manager;
 }
 
 ////////////////////////////////
-// gMolMrgDlg
+// gChgChnmDlg
 
 ( function () {
 
@@ -17,7 +16,7 @@ const histry_name = "cuemol2.ui.histories.mol_merge";
 const pref = require("preferences-service");
 
 var util = require("util");
-var dlg = window.gMolMrgDlg = new Object();
+var dlg = window.gChgChnmDlg = new Object();
 
 dlg.ctor = function ()
 {
@@ -26,7 +25,7 @@ dlg.ctor = function ()
 
   this.mTargetSceneID = window.arguments[0];
   this.mTargetViewID = window.arguments[1];
-  dd("MolMrgDlg: target="+this.mTargetSceneID);
+  dd("ChgChnmDlg> target="+this.mTargetSceneID);
 
   var filter_fn = function (elem) {
     return cuemol.implIface(elem.type, "MolCoord");
@@ -125,7 +124,7 @@ dlg.onUnload = function ()
 
 dlg.onObjBoxChanged = function (aEvent)
 {
-  dd("MolMrg> ObjSelChg: "+aEvent.target.id);
+  dd("ChgChnm> ObjSelChg: "+aEvent.target.id);
   if (aEvent.target.id=="from_obj") {
     var mol = this.mFromObjBox.getSelectedObj();
     if (mol)
@@ -145,7 +144,7 @@ dlg.onDialogAccept = function (event)
   var fromSel = this.mFromSelBox.selectedSel;
 
   if (fromSel==null) {
-    dd("MolMrg> invalid selection!!");
+    dd("ChgChnm> invalid selection!!");
     util.alert(window, "Invalid selection.");
     return false;
   }
@@ -153,7 +152,7 @@ dlg.onDialogAccept = function (event)
   var fromMol = this.mFromObjBox.getSelectedObj();
   var toMol = this.mToObjBox.getSelectedObj();
   if (fromMol==null || toMol==null) {
-    dd("MolMrg> mol not selected!!");
+    dd("ChgChnm> mol not selected!!");
     util.alert(window, "Mol is not selected.");
     return false;
   }
@@ -198,5 +197,5 @@ dlg.onDialogAccept = function (event)
 
 } )();
 
-window.gMolMrgDlg.ctor();
+window.gChgChnmDlg.ctor();
 

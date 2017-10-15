@@ -777,6 +777,38 @@ Qm2Main.prototype.onMolMerge1 = function()
   }
 };
 
+Qm2Main.prototype.onMolDelete1 = function()
+{
+  var stylestr = "chrome,resizable=no,dependent,centerscreen";
+
+  var scene_id = this.mMainWnd.getCurrentSceneID();
+  var view_id = this.mMainWnd.getCurrentViewID();
+  var win = this.mWinMed.getMostRecentWindow("CueMol2:MolDelDlg");
+  if (win) {
+    win.focus();
+  }
+  else {
+    window.openDialog("chrome://cuemol2/content/tools/mol_delete.xul",
+                      "", stylestr, scene_id, view_id);
+  }
+};
+
+Qm2Main.prototype.onChgChName1 = function()
+{
+  var stylestr = "chrome,resizable=no,dependent,centerscreen";
+
+  var scene_id = this.mMainWnd.getCurrentSceneID();
+  var view_id = this.mMainWnd.getCurrentViewID();
+  var win = this.mWinMed.getMostRecentWindow("CueMol2:ChgChnmDlg");
+  if (win) {
+    win.focus();
+  }
+  else {
+    window.openDialog("chrome://cuemol2/content/tools/chg_chname.xul",
+                      "", stylestr, scene_id, view_id);
+  }
+};
+
 Qm2Main.prototype.onSSMSup1 = function()
 {
   //var stylestr = "centerscreen,chrome,resizable=no";

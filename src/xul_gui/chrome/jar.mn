@@ -306,6 +306,10 @@ cuemol2.jar:
 # Merge Mol UI
   content/tools/mol_merge.xul
   content/tools/mol_merge.js
+  content/tools/mol_delete.xul
+  content/tools/mol_delete.js
+  content/tools/chg_chname.xul
+  content/tools/chg_chname.js
 #####
 # Locale files
 #
