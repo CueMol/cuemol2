@@ -782,6 +782,119 @@ bool MolAnlManager::changeChainName(const MolCoordPtr &pmol1, const SelectionPtr
 
 ////////////////////////////////////////////////////////////////
 
+namespace {
+  class ShiftResIndexEditInfo : public qsys::EditInfo
+  {
+  private:
+    /// Target Mol ID
+    qlib::uid_t m_nTgtUID;
+    
+    /// undo/redo data
+    
+  public:
+    struct ResDat {
+      /// old residue index
+      ResidIndex oldind;
+
+      /// new residue index
+      ResidIndex newind;
+
+      /// chain name
+      LString chname;
+    };
+
+    typedef std::deque<ResDat> data_t;
+
+    data_t m_data;
+
+  public:
+    ShiftResIndexEditInfo() {}
+    virtual ~ShiftResIndexEditInfo() {}
+    
+    /////////////////////////////////////////////////////
+    
+    void setup(MolCoordPtr pmol)
+    {
+      m_nTgtUID = pmol->getUID();
+    }
+    
+    void append(const LString &chname, const ResidIndex &oldind, const ResidIndex &newind) {
+      ResDat d;
+      d.chname = chname;
+      d.oldind = oldind;
+      d.newind = newind;
+      m_data.push_back(d);
+    }
+
+    /////////////////////////////////////////////////////
+
+    /// perform undo
+    virtual bool undo()
+    {
+      MolCoord *pmol =
+        qlib::ObjectManager::sGetObj<MolCoord>(m_nTgtUID);
+      
+      if (pmol==NULL)
+        return false;
+
+      // change new --> old
+      BOOST_REVERSE_FOREACH (const ResDat &dat, m_data) {
+        try {
+          pmol->changeResIndex(dat.chname, dat.newind, dat.oldind);
+        }
+        catch (const qlib::LException &e) {
+          MB_DPRINTLN("ShiftResIndexEditInfo.undo() residue %s %s not found!!",
+                      dat.chname.c_str(), dat.newind.toString().c_str());
+        }
+      }
+
+      pmol->applyTopology();
+      pmol->setModifiedFlag(true);
+      pmol->fireTopologyChanged();
+
+      return true;
+    }
+
+    /// perform redo
+    virtual bool redo()
+    {
+      MolCoord *pmol =
+        qlib::ObjectManager::sGetObj<MolCoord>(m_nTgtUID);
+      
+      if (pmol==NULL)
+        return false;
+
+      // change old --> new
+      BOOST_FOREACH (const ResDat &dat, m_data) {
+        try {
+          pmol->changeResIndex(dat.chname, dat.oldind, dat.newind);
+        }
+        catch (const qlib::LException &e) {
+          MB_DPRINTLN("ShiftResIndexEditInfo.redo() residue %s %s not found!!",
+                      dat.chname.c_str(), dat.oldind.toString().c_str());
+        }
+      }
+
+      pmol->applyTopology();
+      pmol->setModifiedFlag(true);
+      pmol->fireTopologyChanged();
+
+      return true;
+    }
+
+    virtual bool isUndoable() const
+    {
+      return true;
+    }
+
+    virtual bool isRedoable() const
+    {
+      return true;
+    }
+
+  };
+}
+
 bool MolAnlManager::shiftResIndex(const MolCoordPtr &pmol1, const SelectionPtr &psel, int nshift)
 {
   // Collect and check the target residues
@@ -816,38 +929,37 @@ bool MolAnlManager::shiftResIndex(const MolCoordPtr &pmol1, const SelectionPtr &
     return false;
   }
 
-/*
   // Record undo info
   qsys::UndoManager *pUM = NULL;
-  ChgChnameEditInfo *pEI = NULL;
+  ShiftResIndexEditInfo *pEI = NULL;
   qsys::ScenePtr pScene = pmol1->getScene();
   if (!pScene.isnull()) {
     pUM = pScene->getUndoMgr();
     if (pUM->isOK()) {
       // record property changed undo/redo info
-      pEI = MB_NEW ChgChnameEditInfo();
+      pEI = MB_NEW ShiftResIndexEditInfo();
       pEI->setup(pmol1);
     }
   }
-*/
+
   // Perform change
   BOOST_FOREACH (MolResiduePtr pRes, resset) {
     LString chname = pRes->getChainName();
     ResidIndex oldind = pRes->getIndex();
-    //if (pUM!=NULL&&pEI!=NULL)
-    //pEI->append(oldname, resid, name);
-    pmol1->shiftResIndex(chname, oldind, nshift);
+    ResidIndex newind = oldind;
+    newind.first += nshift;
+    if (pUM!=NULL&&pEI!=NULL)
+      pEI->append(chname, oldind, newind);
+    pmol1->changeResIndex(chname, oldind, newind);
   }
   
   pmol1->applyTopology();
   pmol1->setModifiedFlag(true);
   pmol1->fireTopologyChanged();
 
-  /*
   if (pUM!=NULL&&pEI!=NULL) {
     pUM->addEditInfo(pEI);
   }
-  */
   
   return true;
 }

@@ -165,7 +165,7 @@ dlg.onDialogAccept = function (event)
   scene.startUndoTxn("Merge molecule");
   try {
 
-    mgr.shiftResIndex(fromMol, fromSel, 1);
+    mgr.shiftResIndex(fromMol, fromSel, -1);
 
     //mgr.changeChainName(fromMol, fromSel, "B");
 

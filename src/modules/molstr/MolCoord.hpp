@@ -206,9 +206,11 @@ namespace molstr {
     /// remove chain by name
     bool removeChain(const LString &cname);
 
+    /// Change chain name of one residue (oldname-->newname)
     void changeChainName(const LString &oldname, const ResidIndex &resid, const LString &newname);
 
-    void shiftResIndex(const LString &chname, const ResidIndex &resid, int nshift);
+    /// Chainge residue index of one residue (oldind-->newind)
+    void changeResIndex(const LString &chname, const ResidIndex &oldind, const ResidIndex &newind);
 
     /////////////////////////////////////////////////////
     // selection operations

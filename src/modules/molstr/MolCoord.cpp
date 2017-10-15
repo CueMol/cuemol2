@@ -621,13 +621,10 @@ void MolCoord::changeChainName(const LString &oldname, const ResidIndex &resid, 
     removeChain(oldname);
 }
 
-void MolCoord::shiftResIndex(const LString &chname, const ResidIndex &resid, int nshift)
+void MolCoord::changeResIndex(const LString &chname, const ResidIndex &oldind, const ResidIndex &newind)
 {
   MolChainPtr pCh = qlib::ensureNotNull( getChain(chname) );
-  MolResiduePtr pRes = qlib::ensureNotNull( getResidue(chname, resid) );
-
-  ResidIndex newind = resid;
-  newind.first += nshift;
+  MolResiduePtr pRes = qlib::ensureNotNull( getResidue(chname, oldind) );
 
   pCh->removeResidue(pRes);
   pRes->setIndex(newind);
@@ -638,6 +635,5 @@ void MolCoord::shiftResIndex(const LString &chname, const ResidIndex &resid, int
     pAtom->setResIndex(newind);
   }
   pCh->appendResidue(pRes);
-
 }
 
