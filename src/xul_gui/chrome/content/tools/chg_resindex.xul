@@ -5,17 +5,17 @@
 <?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
 
 <dialog
-  id = "ChgChainName"
-  windowtype ="CueMol2:ChgChnmDlg"
-  title = "Change chain name"
+  id = "ChgResIndex"
+  windowtype ="CueMol2:ChgResIndDlg"
+  title = "Change residue index"
   xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
-  ondialogaccept = "return window.gChgChnmDlg.onDialogAccept()"
+  ondialogaccept = "return window.gChgResIndDlg.onDialogAccept()"
   buttons="accept,cancel">
   
   <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
   <script type="application/javascript" src="chrome://cuemol2/content/object-menulist.js"/>
   <script type="application/javascript" src="chrome://cuemol2/content/molsellist.js"/>
-  <script type="application/javascript" src="chrome://cuemol2/content/tools/chg_chname.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/tools/chg_resindex.js"/>
 
 <vbox>
 
@@ -41,8 +41,8 @@
       </row>
       
       <row align="center">
-	<label value="To chain name:" />
-	<textbox id="to_chname"/>
+	<label value="Shift residue index:" />
+	<textbox id="resind_shift"/>
       </row>
 
     </rows>

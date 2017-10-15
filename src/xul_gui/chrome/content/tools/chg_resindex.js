@@ -1,6 +1,6 @@
 // -*-Mode: C++;-*-
 //
-// Change chain name tool
+// Change residue index tool
 //
 
 if (!cuemol.evtMgr) {
@@ -8,15 +8,15 @@ if (!cuemol.evtMgr) {
 }
 
 ////////////////////////////////
-// gChgChnmDlg
+// gChgResIndDlg
 
 ( function () {
 
-const histry_name = "cuemol2.ui.histories.chg_chname";
+const histry_name = "cuemol2.ui.histories.chg_resindex";
 const pref = require("preferences-service");
 
 var util = require("util");
-var dlg = window.gChgChnmDlg = new Object();
+var dlg = window.gChgResIndDlg = new Object();
 
 dlg.ctor = function ()
 {
@@ -24,7 +24,7 @@ dlg.ctor = function ()
 
   this.mTargetSceneID = window.arguments[0];
   this.mTargetViewID = window.arguments[1];
-  dd("ChgChnmDlg> target="+this.mTargetSceneID);
+  dd("ChgResIndDlg> target="+this.mTargetSceneID);
 
   var filter_fn = function (elem) {
     return cuemol.implIface(elem.type, "MolCoord");
@@ -90,7 +90,7 @@ dlg.onUnload = function ()
 
 dlg.onObjBoxChanged = function (aEvent)
 {
-  dd("ChgChnm> ObjSelChg: "+aEvent.target.id);
+  dd("ChgResInd> ObjSelChg: "+aEvent.target.id);
   if (aEvent.target.id=="from_obj") {
     var mol = this.mFromObjBox.getSelectedObj();
     if (mol)
@@ -107,20 +107,19 @@ dlg.onDialogAccept = function (event)
   var fromSel = this.mFromSelBox.selectedSel;
 
   if (fromSel==null) {
-    dd("ChgChnm> invalid selection!!");
+    dd("ChgResInd> invalid selection!!");
     util.alert(window, "Invalid selection.");
     return false;
   }
 
   var fromMol = this.mFromObjBox.getSelectedObj();
   if (fromMol==null) {
-    dd("ChgChnm> mol not selected!!");
+    dd("ChgResInd> mol not selected!!");
     util.alert(window, "Mol is not selected.");
     return false;
   }
 
-  var chnmbox  = document.getElementById("to_chname");
-  var to_chname = chnmbox.value;
+  var str_nshift = document.getElementById("resind_shift").value;
 
   // // EDIT TXN START //
   var scene = fromMol.getScene();
@@ -148,5 +147,5 @@ dlg.onDialogAccept = function (event)
 
 } )();
 
-window.gChgChnmDlg.ctor();
+window.gChgResIndDlg.ctor();
 
