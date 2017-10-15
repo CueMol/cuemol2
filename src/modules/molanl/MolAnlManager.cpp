@@ -782,6 +782,78 @@ bool MolAnlManager::changeChainName(const MolCoordPtr &pmol1, const SelectionPtr
 
 ////////////////////////////////////////////////////////////////
 
+bool MolAnlManager::shiftResIndex(const MolCoordPtr &pmol1, const SelectionPtr &psel, int nshift)
+{
+  // Collect and check the target residues
+  ResidIterator riter(pmol1, psel);
+  std::deque<MolResiduePtr> resset;
+  
+  for (riter.first(); riter.hasMore(); riter.next()) {
+    MolResiduePtr pRes = riter.get();
+    if (nshift<0)
+      resset.push_back(pRes);
+    else
+      resset.push_front(pRes);
+
+    LString chname = pRes->getChainName();
+    ResidIndex resind = pRes->getIndex();
+    resind.first += nshift;
+    MolResiduePtr pChk = pmol1->getResidue(chname, resind);
+
+    if (pChk.isnull()) {
+      // OK
+      continue;
+    }
+
+    if (psel->isSelectedResid(pChk)) {
+      // self overwrap --> OK
+      continue;
+    }
+
+    LString msg = LString::format("Shift res index failed: resid <%s %s> already exists!!",
+                                  chname.c_str(), resind.toString().c_str());
+    MB_THROW(qlib::RuntimeException, msg);
+    return false;
+  }
+
+/*
+  // Record undo info
+  qsys::UndoManager *pUM = NULL;
+  ChgChnameEditInfo *pEI = NULL;
+  qsys::ScenePtr pScene = pmol1->getScene();
+  if (!pScene.isnull()) {
+    pUM = pScene->getUndoMgr();
+    if (pUM->isOK()) {
+      // record property changed undo/redo info
+      pEI = MB_NEW ChgChnameEditInfo();
+      pEI->setup(pmol1);
+    }
+  }
+*/
+  // Perform change
+  BOOST_FOREACH (MolResiduePtr pRes, resset) {
+    LString chname = pRes->getChainName();
+    ResidIndex oldind = pRes->getIndex();
+    //if (pUM!=NULL&&pEI!=NULL)
+    //pEI->append(oldname, resid, name);
+    pmol1->shiftResIndex(chname, oldind, nshift);
+  }
+  
+  pmol1->applyTopology();
+  pmol1->setModifiedFlag(true);
+  pmol1->fireTopologyChanged();
+
+  /*
+  if (pUM!=NULL&&pEI!=NULL) {
+    pUM->addEditInfo(pEI);
+  }
+  */
+  
+  return true;
+}
+
+////////////////////////////////////////////////////////////////
+
 namespace {
   void fire2ndryChg(MolCoordPtr pmol)
   {

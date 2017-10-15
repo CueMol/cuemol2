@@ -47,6 +47,8 @@ runtime_class MolAnlManager
 
   boolean changeChainName(object<MolCoord$> pmol1, object<MolSelection$> psel, string name);
 
+  boolean shiftResIndex(object<MolCoord$> pmol1, object<MolSelection$> psel, integer nshift);
+
   //////////////////////////
   // interaction analysis
 

@@ -208,6 +208,8 @@ namespace molstr {
 
     void changeChainName(const LString &oldname, const ResidIndex &resid, const LString &newname);
 
+    void shiftResIndex(const LString &chname, const ResidIndex &resid, int nshift);
+
     /////////////////////////////////////////////////////
     // selection operations
     //

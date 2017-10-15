@@ -80,9 +80,11 @@ namespace molanl {
     /// Delete the selected part of this mol (inv. op. of copy())
     bool deleteAtoms(const MolCoordPtr &pmol, const SelectionPtr &psel);
 
-
     /// Rename chain name
     bool changeChainName(const MolCoordPtr &pmol, const SelectionPtr &psel, const LString &name);
+
+    /// Shift residue index
+    bool shiftResIndex(const MolCoordPtr &pmol, const SelectionPtr &psel, int nshift);
 
     //////////////////////////////////////////////////////
 
