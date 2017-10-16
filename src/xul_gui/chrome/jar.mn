@@ -310,6 +310,8 @@ cuemol2.jar:
   content/tools/mol_delete.js
   content/tools/chg_chname.xul
   content/tools/chg_chname.js
+  content/tools/chg_resindex.xul
+  content/tools/chg_resindex.js
 #####
 # Locale files
 #

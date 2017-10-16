@@ -42,7 +42,7 @@
       
       <row align="center">
 	<label value="Shift residue index:" />
-	<textbox id="resind_shift"/>
+	<textbox id="resind_shift" type="number" size="4" min="-Infinity"/>
       </row>
 
     </rows>

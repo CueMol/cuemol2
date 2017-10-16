@@ -277,6 +277,7 @@
 	    <menuitem label="Merge molecule..." oncommand="gQm2Main.onMolMerge1();" />
 	    <menuitem label="Delete mol atoms..." oncommand="gQm2Main.onMolDelete1();" />
 	    <menuitem label="Change chain name..." oncommand="gQm2Main.onChgChName1();" />
+	    <menuitem label="Shift residue number..." oncommand="gQm2Main.onShiftResIndex1();" />
 
 	    <!--<menuseparator/>-->
 

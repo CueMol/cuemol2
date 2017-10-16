@@ -121,6 +121,10 @@ dlg.onDialogAccept = function (event)
 
   var chnmbox  = document.getElementById("to_chname");
   var to_chname = chnmbox.value;
+  if (to_chname=="") {
+    util.alert(window, "New chain name is empty.");
+    return false;
+  }
 
   // // EDIT TXN START //
   var scene = fromMol.getScene();
@@ -131,7 +135,7 @@ dlg.onDialogAccept = function (event)
   catch (e) {
     debug.exception(e);
     scene.rollbackUndoTxn();
-    util.alert(window, "Error, merge molecule was failed: "+cuemol.getErrMsg());
+    util.alert(window, "Error, change chain name was failed: "+cuemol.getErrMsg());
     return false;
   }
   scene.commitUndoTxn();

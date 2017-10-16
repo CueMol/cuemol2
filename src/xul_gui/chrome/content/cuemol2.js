@@ -809,6 +809,22 @@ Qm2Main.prototype.onChgChName1 = function()
   }
 };
 
+Qm2Main.prototype.onShiftResIndex1 = function()
+{
+  var stylestr = "chrome,resizable=no,dependent,centerscreen";
+
+  var scene_id = this.mMainWnd.getCurrentSceneID();
+  var view_id = this.mMainWnd.getCurrentViewID();
+  var win = this.mWinMed.getMostRecentWindow("CueMol2:ChgResIndDlg");
+  if (win) {
+    win.focus();
+  }
+  else {
+    window.openDialog("chrome://cuemol2/content/tools/chg_resindex.xul",
+                      "", stylestr, scene_id, view_id);
+  }
+};
+
 Qm2Main.prototype.onSSMSup1 = function()
 {
   //var stylestr = "centerscreen,chrome,resizable=no";

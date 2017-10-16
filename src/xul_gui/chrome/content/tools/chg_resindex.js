@@ -120,17 +120,23 @@ dlg.onDialogAccept = function (event)
   }
 
   var str_nshift = document.getElementById("resind_shift").value;
+  
+  var nshift = parseInt(str_nshift);
+  if (isNaN(nshift) || nshift==0) {
+    util.alert(window, "Invalid residue shift value: \""+str_nshift+"\"");
+    return false;
+  }
 
   // // EDIT TXN START //
   var scene = fromMol.getScene();
-  scene.startUndoTxn("Change chain name");
+  scene.startUndoTxn("Shift residue index");
   try {
-    mgr.changeChainName(fromMol, fromSel, to_chname);
+    mgr.shiftResIndex(fromMol, fromSel, nshift);
   }
   catch (e) {
     debug.exception(e);
     scene.rollbackUndoTxn();
-    util.alert(window, "Error, merge molecule was failed: "+cuemol.getErrMsg());
+    util.alert(window, "Error: "+cuemol.getErrMsg());
     return false;
   }
   scene.commitUndoTxn();
