@@ -964,6 +964,96 @@ bool MolAnlManager::shiftResIndex(const MolCoordPtr &pmol1, const SelectionPtr &
   return true;
 }
 
+bool MolAnlManager::renumResIndex(const MolCoordPtr &pmol1, const SelectionPtr &psel, int nstart)
+{
+  // Collect and check the target residues
+  ResidIterator riter(pmol1, psel);
+
+  typedef std::pair<MolResiduePtr, int> elem_t;
+  std::deque< elem_t > resset_pos;
+  std::deque< elem_t > resset_neg;
+  
+  int inewres = nstart;
+  for (riter.first(); riter.hasMore(); riter.next(), inewres++) {
+    MolResiduePtr pRes = riter.get();
+    LString chname = pRes->getChainName();
+    ResidIndex resind = pRes->getIndex();
+
+    if (inewres<resind.first) {
+      // negative shift
+      resset_neg.push_back( elem_t(pRes, inewres) );
+    }
+    else {
+      // positive shift
+      resset_pos.push_back( elem_t(pRes, inewres) );
+    }
+  
+    // overwrapping check
+    ResidIndex newind(inewres);
+    MolResiduePtr pChk = pmol1->getResidue(chname, newind);
+
+    if (pChk.isnull()) {
+      // OK
+      continue;
+    }
+
+    if (psel->isSelectedResid(pChk)) {
+      // self overwrap --> OK
+      continue;
+    }
+
+    LString msg = LString::format("Shift res index failed: resid <%s %s> already exists!!",
+                                  chname.c_str(), resind.toString().c_str());
+    MB_THROW(qlib::RuntimeException, msg);
+    return false;
+  }
+
+  // Record undo info
+  qsys::UndoManager *pUM = NULL;
+  ShiftResIndexEditInfo *pEI = NULL;
+  qsys::ScenePtr pScene = pmol1->getScene();
+  if (!pScene.isnull()) {
+    pUM = pScene->getUndoMgr();
+    if (pUM->isOK()) {
+      // record property changed undo/redo info
+      pEI = MB_NEW ShiftResIndexEditInfo();
+      pEI->setup(pmol1);
+    }
+  }
+
+  // Perform change (negative shift)
+  BOOST_FOREACH (const elem_t &elem, resset_neg) {
+    MolResiduePtr pRes = elem.first;
+    LString chname = pRes->getChainName();
+    ResidIndex oldind = pRes->getIndex();
+    ResidIndex newind( elem.second );
+    if (pUM!=NULL&&pEI!=NULL)
+      pEI->append(chname, oldind, newind);
+    pmol1->changeResIndex(chname, oldind, newind);
+  }
+
+  // Perform change (positive shift)
+  BOOST_REVERSE_FOREACH (const elem_t &elem, resset_pos) {
+    MolResiduePtr pRes = elem.first;
+    LString chname = pRes->getChainName();
+    ResidIndex oldind = pRes->getIndex();
+    ResidIndex newind( elem.second );
+    if (pUM!=NULL&&pEI!=NULL)
+      pEI->append(chname, oldind, newind);
+    pmol1->changeResIndex(chname, oldind, newind);
+  }
+  
+  pmol1->applyTopology();
+  pmol1->setModifiedFlag(true);
+  pmol1->fireTopologyChanged();
+
+  if (pUM!=NULL&&pEI!=NULL) {
+    pUM->addEditInfo(pEI);
+  }
+  
+  return true;
+}
+
 ////////////////////////////////////////////////////////////////
 
 namespace {

@@ -86,6 +86,9 @@ namespace molanl {
     /// Shift residue index
     bool shiftResIndex(const MolCoordPtr &pmol, const SelectionPtr &psel, int nshift);
 
+    /// Renum residue index
+    bool renumResIndex(const MolCoordPtr &pmol, const SelectionPtr &psel, int nstart);
+
     //////////////////////////////////////////////////////
 
     LString calcAtomContactJSON(MolCoordPtr pMol, SelectionPtr pSel,

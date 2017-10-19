@@ -49,6 +49,8 @@ runtime_class MolAnlManager
 
   boolean shiftResIndex(object<MolCoord$> pmol1, object<MolSelection$> psel, integer nshift);
 
+  boolean renumResIndex(object<MolCoord$> pmol1, object<MolSelection$> psel, integer nstart);
+  
   //////////////////////////
   // interaction analysis
 

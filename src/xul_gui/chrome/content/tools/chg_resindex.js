@@ -131,7 +131,8 @@ dlg.onDialogAccept = function (event)
   var scene = fromMol.getScene();
   scene.startUndoTxn("Shift residue index");
   try {
-    mgr.shiftResIndex(fromMol, fromSel, nshift);
+    //mgr.shiftResIndex(fromMol, fromSel, nshift);
+    mgr.renumResIndex(fromMol, fromSel, nshift);
   }
   catch (e) {
     debug.exception(e);
