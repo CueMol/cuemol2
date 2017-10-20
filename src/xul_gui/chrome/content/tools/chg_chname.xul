@@ -7,7 +7,7 @@
 <dialog
   id = "ChgChainName"
   windowtype ="CueMol2:ChgChnmDlg"
-  title = "Change chain name"
+  title = "Change chain ID"
   xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
   ondialogaccept = "return window.gChgChnmDlg.onDialogAccept()"
   buttons="accept,cancel">
@@ -41,8 +41,8 @@
       </row>
       
       <row align="center">
-	<label value="To chain name:" />
-	<textbox id="to_chname"/>
+	<label value="New chain ID:" />
+	<textbox id="to_chname" size="1"/>
       </row>
 
     </rows>

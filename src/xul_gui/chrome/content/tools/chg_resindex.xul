@@ -19,6 +19,8 @@
 
 <vbox>
 
+  <radiogroup id="opt_resind">
+
   <grid flex="1">
     <columns>
       <column/>
@@ -41,13 +43,21 @@
       </row>
       
       <row align="center">
-	<label value="Shift residue index:" />
+	<radio id="opt_resind_shift" label="Shift by:" selected="true" persist="selected"/>
 	<textbox id="resind_shift" type="number" size="4" min="-Infinity"/>
       </row>
+      
+      <row align="center">
+	<radio id="opt_resind_start" label="Start from:" persist="selected"/>
+	<textbox id="resind_start" type="number" size="4" min="-Infinity" disabled="yes"/>
+      </row>
+  
+      <checkbox id="chkbox_renum" label="Renumber" checked="false" persist="checked"/>
 
     </rows>
   </grid>
 
+</radiogroup>
 
 </vbox>
 </dialog>

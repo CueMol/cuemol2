@@ -58,16 +58,31 @@ dlg.onLoad = function ()
   this.mFromSelBox = document.getElementById('from_molsel');
   this.mFromSelBox.targetSceID = this.mTargetSceneID;
 
+  this.mShiftNumBox = document.getElementById('resind_shift');
+  this.mStartNumBox = document.getElementById('resind_start');
+
+  this.mRadioBtn = document.getElementById('opt_resind');
+  this.mRadioBtn.addEventListener("RadioStateChange", function(event){
+    try {that.onRadioStateChange(event);} catch (e) {debug.exception(e);} }, false);
   ////
 
   if (this.mFromObjBox._widget.itemCount==0) {
     // no mol object in the scene
     document.documentElement.getButton("accept").disabled = true;
     this.mFromSelBox.disabled = true;
+    this.mShiftNumBox.disabled = true;
+    this.mStartNumBox.disabled = true;
+    document.getElementById('opt_resind_shift').disabled = true;
+    document.getElementById('opt_resind_start').disabled = true;
     return;
   }
 
   ////
+
+  if (this.mRadioBtn.selectedIndex<0) {
+    this.mRadioBtn.selectedIndex = 0;
+  }
+  this.updateState();
 
   this.mFromObjBox._widget.selectedIndex = -1;
 
@@ -86,6 +101,26 @@ dlg.onLoad = function ()
 
 dlg.onUnload = function ()
 {
+};
+
+dlg.updateState = function ()
+{
+  if (this.mRadioBtn.selectedIndex==0) {
+    // shift mode
+    this.mShiftNumBox.disabled = false;
+    this.mStartNumBox.disabled = true;
+  }
+  else {
+    // start mode
+    this.mShiftNumBox.disabled = true;
+    this.mStartNumBox.disabled = false;
+  }
+};
+
+dlg.onRadioStateChange = function (aEvent)
+{
+  dd("onRadioStateChange");
+  this.updateState();
 };
 
 dlg.onObjBoxChanged = function (aEvent)

@@ -58,12 +58,15 @@ dlg.onLoad = function ()
   this.mFromSelBox = document.getElementById('from_molsel');
   this.mFromSelBox.targetSceID = this.mTargetSceneID;
 
+  this.mChNameBox = document.getElementById('to_chname');
+
   ////
 
   if (this.mFromObjBox._widget.itemCount==0) {
     // no mol object in the scene
     document.documentElement.getButton("accept").disabled = true;
     this.mFromSelBox.disabled = true;
+    this.mChNameBox.disabled = true;
     return;
   }
 
@@ -124,6 +127,20 @@ dlg.onDialogAccept = function (event)
   if (to_chname=="") {
     util.alert(window, "New chain name is empty.");
     return false;
+  }
+  if (to_chname==" ") {
+    let res = util.confirm(window, "Chain ID < > will be converted to <_>. Do you change the chain ID?");
+    if (!res)
+      return false;
+    to_chname=="_"
+  }
+
+  // remove the WSs of both ends
+  to_chname = to_chname.trim();
+  if (to_chname.length>1) {
+    let res = util.confirm(window, "Chain ID longer than 1 character does not conform the PDB format. Do you change the chain ID?");
+    if (!res)
+      return false;
   }
 
   // // EDIT TXN START //
