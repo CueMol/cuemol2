@@ -43,7 +43,7 @@
       </row>
       
       <row align="center">
-	<radio id="opt_resind_shift" label="Shift by:" selected="true" persist="selected"/>
+	<radio id="opt_resind_shift" label="Shift by:" persist="selected"/>
 	<textbox id="resind_shift" type="number" size="4" min="-Infinity"/>
       </row>
       

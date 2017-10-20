@@ -895,10 +895,30 @@ namespace {
   };
 }
 
-bool MolAnlManager::shiftResIndex(const MolCoordPtr &pmol1, const SelectionPtr &psel, int nshift)
+bool MolAnlManager::shiftResIndex(const MolCoordPtr &pmol1, const SelectionPtr &psel, bool bshift, int nval)
 {
-  // Collect and check the target residues
+  // Calculate nshift (shift res num value)
   ResidIterator riter(pmol1, psel);
+  riter.first();
+  if (!riter.hasMore()) {
+    LString msg = LString::format("Selection is empty!!");
+    MB_THROW(qlib::RuntimeException, msg);
+    return false;
+  }
+  MolResiduePtr pResFirst = riter.get();
+  int nResIndFirst = pResFirst->getIndex().first;
+  int nshift;
+  if (bshift)
+    nshift = nval;
+  else
+    nshift = nval - nResIndFirst;
+  if (nshift==0){
+    MB_THROW(qlib::RuntimeException, "Shift value is zero!!");
+    return false;
+  }
+
+  // Collect the target residues
+  // Check the target residues overwrapping
   std::deque<MolResiduePtr> resset;
   
   for (riter.first(); riter.hasMore(); riter.next()) {
@@ -964,15 +984,30 @@ bool MolAnlManager::shiftResIndex(const MolCoordPtr &pmol1, const SelectionPtr &
   return true;
 }
 
-bool MolAnlManager::renumResIndex(const MolCoordPtr &pmol1, const SelectionPtr &psel, int nstart)
+bool MolAnlManager::renumResIndex(const MolCoordPtr &pmol1, const SelectionPtr &psel, bool bshift, int nval)
 {
-  // Collect and check the target residues
+  // Calculate nstart value
   ResidIterator riter(pmol1, psel);
 
+  riter.first();
+  if (!riter.hasMore()) {
+    LString msg = LString::format("Selection is empty!!");
+    MB_THROW(qlib::RuntimeException, msg);
+    return false;
+  }
+  MolResiduePtr pResFirst = riter.get();
+  int nResIndFirst = pResFirst->getIndex().first;
+  int nstart;
+  if (bshift)
+    nstart = nResIndFirst + nval;
+  else
+    nstart = nval;
+  
   typedef std::pair<MolResiduePtr, int> elem_t;
   std::deque< elem_t > resset_pos;
   std::deque< elem_t > resset_neg;
   
+  // Collect and check the target residues
   int inewres = nstart;
   for (riter.first(); riter.hasMore(); riter.next(), inewres++) {
     MolResiduePtr pRes = riter.get();

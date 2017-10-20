@@ -84,10 +84,10 @@ namespace molanl {
     bool changeChainName(const MolCoordPtr &pmol, const SelectionPtr &psel, const LString &name);
 
     /// Shift residue index
-    bool shiftResIndex(const MolCoordPtr &pmol, const SelectionPtr &psel, int nshift);
+    bool shiftResIndex(const MolCoordPtr &pmol, const SelectionPtr &psel, bool bshift, int nval);
 
     /// Renum residue index
-    bool renumResIndex(const MolCoordPtr &pmol, const SelectionPtr &psel, int nstart);
+    bool renumResIndex(const MolCoordPtr &pmol, const SelectionPtr &psel, bool bshift, int nval);
 
     //////////////////////////////////////////////////////
 

@@ -24,7 +24,7 @@ dlg.ctor = function ()
 
   this.mTargetSceneID = window.arguments[0];
   this.mTargetViewID = window.arguments[1];
-  dd("ChgResIndDlg> target="+this.mTargetSceneID);
+  dd("ChgResInd.ctor> target="+this.mTargetSceneID);
 
   var filter_fn = function (elem) {
     return cuemol.implIface(elem.type, "MolCoord");
@@ -80,6 +80,7 @@ dlg.onLoad = function ()
   ////
 
   if (this.mRadioBtn.selectedIndex<0) {
+    dd("ChgResInd.onLoad> RadioBtn not selected: "+this.mRadioBtn.selectedIndex);
     this.mRadioBtn.selectedIndex = 0;
   }
   this.updateState();
@@ -96,7 +97,7 @@ dlg.onLoad = function ()
   if (!bOK)
     this.mFromObjBox._widget.selectedIndex = 0;
 
-  dd("*** Dlg.onLoad() OK.");
+  dd("*** ChgResInd.onLoad> OK.");
 }
 
 dlg.onUnload = function ()
@@ -119,7 +120,6 @@ dlg.updateState = function ()
 
 dlg.onRadioStateChange = function (aEvent)
 {
-  dd("onRadioStateChange");
   this.updateState();
 };
 
@@ -154,20 +154,42 @@ dlg.onDialogAccept = function (event)
     return false;
   }
 
-  var str_nshift = document.getElementById("resind_shift").value;
-  
-  var nshift = parseInt(str_nshift);
-  if (isNaN(nshift) || nshift==0) {
-    util.alert(window, "Invalid residue shift value: \""+str_nshift+"\"");
-    return false;
+  let bshift;
+  let nval;
+  if (this.mRadioBtn.selectedIndex==1) {
+    // start mode
+    nval = parseInt(this.mStartNumBox.value);
+    bshift = false;
+    if (isNaN(nval)) {
+      util.alert(window, "Invalid start residue number: \""+this.mStartNumBox.value+"\"");
+      return false;
+    }
+    if (nval>9999||nval<-999) {
+      let res = util.confirm(window, "Residue number larger than 4 digits does not conform the PDB format. Do you change the chain ID?");
+      if (!res)
+        return false;
+    }
   }
+  else {
+    // shift mode
+    nval = parseInt(this.mShiftNumBox.value);
+    bshift = false;
+    if (isNaN(nval) || nval==0) {
+      util.alert(window, "Invalid residue shift value: \""+this.mShiftNumBox.value+"\"");
+      return false;
+    }
+  }
+
+  let bRenum = document.getElementById("chkbox_renum").checked;
 
   // // EDIT TXN START //
   var scene = fromMol.getScene();
   scene.startUndoTxn("Shift residue index");
   try {
-    //mgr.shiftResIndex(fromMol, fromSel, nshift);
-    mgr.renumResIndex(fromMol, fromSel, nshift);
+    if (bRenum)
+      mgr.renumResIndex(fromMol, fromSel, bshift, nval);
+    else
+      mgr.shiftResIndex(fromMol, fromSel, bshift, nval);
   }
   catch (e) {
     debug.exception(e);
