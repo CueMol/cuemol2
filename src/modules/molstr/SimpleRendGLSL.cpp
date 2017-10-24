@@ -86,6 +86,11 @@ bool SimpleRendGLSL::init(DisplayContext *pdc)
   }
 
   if (m_pPO==NULL)
+#ifdef USE_TBO
+    ssh.defineMacro("USE_TBO", "1");
+#else
+    ssh.defineMacro("TEX2D_WIDTH", LString::format("%d",TEX2D_WIDTH).c_str());
+#endif
     m_pPO = ssh.createProgObj("gpu_simplerend",
                               "%%CONFDIR%%/data/shaders/simple_vertex.glsl",
                               "%%CONFDIR%%/data/shaders/simple_frag.glsl");
@@ -127,10 +132,12 @@ void SimpleRendGLSL::createGLSL()
   if (m_pCoordTex!=NULL)
     delete m_pCoordTex;
 
-  m_pCoordTex = MB_NEW gfx::Texture(); //pdc->createTexture();
+  m_pCoordTex = MB_NEW gfx::Texture();
 
 #ifdef USE_TBO
-  m_pCoordTex->setup(1, gfx::Texture::FMT_R,
+  //m_pCoordTex->setup(1, gfx::Texture::FMT_R,
+  //gfx::Texture::TYPE_FLOAT32);
+  m_pCoordTex->setup(1, gfx::Texture::FMT_RGB,
                      gfx::Texture::TYPE_FLOAT32);
 #else
   m_pCoordTex->setup(2, gfx::Texture::FMT_RGB,
@@ -333,7 +340,8 @@ void SimpleRendGLSL::updateDynamicGLSL()
 
 #ifdef USE_TBO
   if (!m_bUseSels) {
-    m_pCoordTex->setData(natoms*3, 1, 1, crd);
+    //m_pCoordTex->setData(natoms*3, 1, 1, crd);
+    m_pCoordTex->setData(natoms, 1, 1, crd);
     return;
   }
 #endif
@@ -355,7 +363,8 @@ void SimpleRendGLSL::updateDynamicGLSL()
   }
   
 #ifdef USE_TBO
-  m_pCoordTex->setData(natoms*3, 1, 1, &m_coordbuf[0]);
+  //m_pCoordTex->setData(natoms*3, 1, 1, &m_coordbuf[0]);
+  m_pCoordTex->setData(natoms, 1, 1, &m_coordbuf[0]);
 #else
   MB_DPRINTLN("tex size %d x %d x 3 = %d x 3", m_nTexW, m_nTexH, m_nTexW*m_nTexH);
   MB_DPRINTLN("buf size %d", m_coordbuf.size());
@@ -388,14 +397,14 @@ void SimpleRendGLSL::updateStaticGLSL()
   }
 
 #ifdef USE_TBO
-  m_pCoordTex->setData(natoms*3, 1, 1, &m_coordbuf[0]);
+  //m_pCoordTex->setData(natoms*3, 1, 1, &m_coordbuf[0]);
+ m_pCoordTex->setData(natoms, 1, 1, &m_coordbuf[0]);
 #else
   MB_DPRINTLN("tex size %d x %d = %d", m_nTexW, m_nTexH, m_nTexW*m_nTexH);
   MB_DPRINTLN("buf size %d", m_coordbuf.size());
   MB_DPRINTLN("crd size %d", natoms*3);
   m_pCoordTex->setData(m_nTexW, m_nTexH, 1, &m_coordbuf[0]);
 #endif
-  //m_pCoordTex->setData(natoms, &m_coordbuf[0]);
 }
 
 void SimpleRendGLSL::invalidateDisplayCache()
