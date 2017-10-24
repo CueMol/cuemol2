@@ -22,7 +22,7 @@
 #include <qsys/Scene.hpp>
 
 #ifdef WIN32
-//#define USE_TBO 1
+#define USE_TBO 1
 #else
 #endif
 
@@ -46,6 +46,7 @@ SimpleRendGLSL::SimpleRendGLSL()
   // m_bUseGLSL = true;
 
   // m_bChkShaderDone = false;
+  //setForceGLSL(true);
 }
 
 SimpleRendGLSL::~SimpleRendGLSL()
@@ -225,10 +226,8 @@ void SimpleRendGLSL::createGLSL()
   
   nva = nbons * 4;
 
-  //if (nva>32768)
-  //nva = 32768;
 
-  //
+  /////////////
   // Create VBO
   //
   

@@ -37,14 +37,12 @@ attribute vec4 a_color;
 
 vec3 getAtomPos(in int ind)
 {
-/*
-*/
-  
 #ifdef USE_TBO
   float x = texelFetch(coordTex, ind*3+0).r;
   float y = texelFetch(coordTex, ind*3+1).r;
   float z = texelFetch(coordTex, ind*3+2).r;
-  return vec3(x,y,z);
+  //return vec3(x,y,z);
+  return vec3(ind,-ind,0);
 #else
   ivec2 iv;
   iv.x = int( mod(ind, COORDTEX_WIDTH) );
