@@ -28,6 +28,18 @@ vec4 getAtomPos(in AtomCrdTex tex, in int ind)
 #endif
 }
 
+vec3 getAtomPos3(in AtomCrdTex tex, in int ind)
+{
+#ifdef USE_TBO
+  return texelFetch(tex, ind).xyz;
+#else
+  ivec2 iv;
+  iv.x = int( mod(ind, TEX2D_WIDTH) );
+  iv.y = ind/TEX2D_WIDTH;
+  return texelFetch2D(tex, iv, 0).xyz;
+#endif
+}
+
 vec4 getAtomColor(in AtomColTex tex, in int ind)
 {
 #ifdef USE_TBO

@@ -10,66 +10,57 @@
 #extension GL_EXT_gpu_shader4 : enable 
 #endif
 
+@include "lib_common.glsl"
+@include "lib_atoms.glsl"
+
 //precision mediump float;
 
 ////////////////////
 // Uniform variables
-//uniform sampler1D coordTex;
-#ifdef USE_TBO
-uniform samplerBuffer coordTex;
-#else
-#extension GL_EXT_gpu_shader4 : enable
-uniform sampler2D coordTex;
-#endif
+
+uniform AtomCrdTex coordTex;
 
 ////////////////////
 // Vertex attributes
 
 // atom coord indices
-//attribute ivec2 a_ind12;
 attribute vec2 a_ind12;
+
+attribute float a_flag;
 
 // color
 attribute vec4 a_color;
 
 ////////////////////
 
-float rand(float n){return fract(sin(n) * 43758.5453123);}
-
-vec3 getAtomPos(in int ind)
-{
-#ifdef USE_TBO
-  return texelFetch(coordTex, ind).xyz;
-  /*
-  float x = texelFetch(coordTex, ind*3+0).r;
-  float y = texelFetch(coordTex, ind*3+1).r;
-  float z = texelFetch(coordTex, ind*3+2).r;
-  return vec3(x,y,z);
-   */
-#else
-  ivec2 iv;
-  iv.x = int( mod(ind, TEX2D_WIDTH) );
-  iv.y = ind/TEX2D_WIDTH;
-  //iv.x = 1;
-  return ( texelFetch2D(coordTex, iv, 0).xyz );
-#endif
-}
-
-float ffog(in float ecDistance)
-{
-  return(abs(ecDistance));
-}
+const vec3 vstar[6] = vec3[] (
+  vec3(1.0f, 0.0f, 0.0f),
+  vec3(-1.0f, 0.0f, 0.0f),
+  vec3(0.0f, 1.0f, 0.0f),
+  vec3(0.0f, -1.0f, 0.0f),
+  vec3(0.0f, 0.0f, 1.0f),
+  vec3(0.0f, 0.0f, -1.0f)
+  );
 
 void main (void)
 {
-  vec3 pos1 = getAtomPos(int(a_ind12.x));
-  vec3 pos2 = getAtomPos(int(a_ind12.y));
+  int ind1 = int(a_ind12.x);
+  int ind2 = int(a_ind12.y);
+  vec3 vpos;
 
-  vec3 midpos = (pos1+pos2)*0.5;
-  //vec3 midpos = vec3(rand(a_ind12.x), rand(a_ind12.y), rand(a_ind12.x+a_ind12.y));
+  vec3 pos1 = getAtomPos3(coordTex, ind1);
+
+  if (ind2>=0) {
+    vec3 pos2 = getAtomPos3(coordTex, ind2);
+    vpos = (pos1+pos2)*0.5;
+  }
+  else {
+    int ind = -ind2-1;
+    vpos = pos1 + vstar[ind] * 0.25f;
+  }
 
   // Eye-coordinate position of vertex, needed in various calculations
-  vec4 ecPosition = gl_ModelViewMatrix * vec4(midpos, 1.0);
+  vec4 ecPosition = gl_ModelViewMatrix * vec4(vpos, 1.0);
   //gEcPosition = ecPosition;
 
   // Do fixed functionality vertex transform
@@ -78,6 +69,6 @@ void main (void)
   //gl_FrontColor=vec4(xx, xx, xx, 1.0);
   gl_FrontColor=a_color;
 
-  gl_FogFragCoord = ffog(ecPosition.z);
+  gl_FogFragCoord = abs(ecPosition.z);
 }
 

@@ -146,7 +146,6 @@ void SimpleRendGLSL::createGLSL()
 
   std::map<quint32, quint32> aidmap;
   AtomIterator aiter(pCMol, getSelection());
-  // AtomIterator aiter(pCMol);
   for (i=0, aiter.first(); aiter.hasMore(); aiter.next()) {
     int aid = aiter.getID();
     MolAtomPtr pAtom = pCMol->getAtom(aid);
@@ -233,6 +232,21 @@ void SimpleRendGLSL::createGLSL()
   
   nva = nbons * 4;
 
+  //
+  // calculate isolated atoms
+  //
+  std::deque<int> isolated_atoms;
+  //AtomIterator aiter(pCMol, getSelection());
+  for (aiter.first(); aiter.hasMore(); aiter.next()) {
+    int aid = aiter.getID();
+    MolAtomPtr pAtom = pCMol->getAtom(aid);
+    if (pAtom.isnull()) continue; // ignore errors
+    if (bonded_atoms.find(aid)!=bonded_atoms.end())
+      continue; // already bonded
+    isolated_atoms.push_back(aid);
+  }
+  
+  nva += isolated_atoms.size() * 6;
 
   /////////////
   // Create VBO
@@ -254,7 +268,7 @@ void SimpleRendGLSL::createGLSL()
   attra.setDrawMode(gfx::AbstDrawElem::DRAW_LINES);
 
   qlib::uid_t nSceneID = getSceneID();
-  quint32 dcc1, dcc2;
+  quint32 dcc1, dcc2, ind1, ind2;
 
   i = 0;
   for (biter.first(); biter.hasMore(); biter.next()) {
@@ -268,8 +282,8 @@ void SimpleRendGLSL::createGLSL()
     if (pA1.isnull() || pA2.isnull())
       continue; // skip invalid bonds
     
-    quint32 ind1 = aidmap[aid1];
-    quint32 ind2 = aidmap[aid2];
+    ind1 = aidmap[aid1];
+    ind2 = aidmap[aid2];
 
     ColorPtr pcol1 = ColSchmHolder::getColor(pA1);
     ColorPtr pcol2 = ColSchmHolder::getColor(pA2);
@@ -280,44 +294,48 @@ void SimpleRendGLSL::createGLSL()
     // bool bSameCol = (pcol1->equals(*pcol2.get()))?true:false;
     
     // single bond / valbond disabled
-    /*
-    attra.at(i*2+0).ind1 = ind1;
-    attra.at(i*2+0).ind2 = ind1;
-    attra.at(i*2+1).ind1 = ind2;
-    attra.at(i*2+1).ind2 = ind2;
-    ++i;*/
-    
-    attra.at(i*4+0).ind1 = ind1;
-    attra.at(i*4+0).ind2 = ind1;
-    attra.at(i*4+0).r = (qbyte) gfx::getRCode(dcc1);
-    attra.at(i*4+0).g = (qbyte) gfx::getGCode(dcc1);
-    attra.at(i*4+0).b = (qbyte) gfx::getBCode(dcc1);
-    attra.at(i*4+0).a = (qbyte) gfx::getACode(dcc1);
+    attra.at(i).ind1 = ind1;
+    attra.at(i).ind2 = ind1;
+    setColor(attra, i, dcc1);
+    ++i;
 
-    attra.at(i*4+1).ind1 = ind1;
-    attra.at(i*4+1).ind2 = ind2;
-    attra.at(i*4+1).r = (qbyte) gfx::getRCode(dcc1);
-    attra.at(i*4+1).g = (qbyte) gfx::getGCode(dcc1);
-    attra.at(i*4+1).b = (qbyte) gfx::getBCode(dcc1);
-    attra.at(i*4+1).a = (qbyte) gfx::getACode(dcc1);
+    attra.at(i).ind1 = ind1;
+    attra.at(i).ind2 = ind2;
+    setColor(attra, i, dcc1);
+    ++i;
 
-    attra.at(i*4+2).ind1 = ind2;
-    attra.at(i*4+2).ind2 = ind1;
-    attra.at(i*4+2).r = (qbyte) gfx::getRCode(dcc2);
-    attra.at(i*4+2).g = (qbyte) gfx::getGCode(dcc2);
-    attra.at(i*4+2).b = (qbyte) gfx::getBCode(dcc2);
-    attra.at(i*4+2).a = (qbyte) gfx::getACode(dcc2);
+    attra.at(i).ind1 = ind2;
+    attra.at(i).ind2 = ind1;
+    setColor(attra, i, dcc2);
+    ++i;
 
-    attra.at(i*4+3).ind1 = ind2;
-    attra.at(i*4+3).ind2 = ind2;
-    attra.at(i*4+3).r = (qbyte) gfx::getRCode(dcc2);
-    attra.at(i*4+3).g = (qbyte) gfx::getGCode(dcc2);
-    attra.at(i*4+3).b = (qbyte) gfx::getBCode(dcc2);
-    attra.at(i*4+3).a = (qbyte) gfx::getACode(dcc2);
+    attra.at(i).ind1 = ind2;
+    attra.at(i).ind2 = ind2;
+    setColor(attra, i, dcc2);
+    ++i;
 
-    i++;
-    if (i*4+3>nva) {
+    /*if (i>nva) {
       break;
+    }*/
+  }
+
+  for (int aid : isolated_atoms) {
+
+    MolAtomPtr pA1 = pCMol->getAtom(aid);
+    
+    if (pA1.isnull())
+      continue; // skip invalid bonds
+    
+    ColorPtr pcol1 = ColSchmHolder::getColor(pA1);
+    dcc1 = pcol1->getDevCode(nSceneID);
+
+    ind1 = aidmap[aid];
+
+    for (int j=1; j<=6; ++j) {
+      attra.at(i).ind1 = ind1;
+      attra.at(i).ind2 = float(-j);
+      setColor(attra, i, dcc1);
+      i++;
     }
   }
 

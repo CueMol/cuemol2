@@ -7,6 +7,8 @@ vec4 Ambient;
 vec4 Diffuse;
 vec4 Specular;
 
+float rand(float n) { return fract(sin(n) * 43758.5453123); }
+
 void DirectionalLight(in int i, in vec3 normal)
 {
   float nDotVP;         // normal . light direction

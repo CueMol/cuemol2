@@ -99,6 +99,13 @@ namespace molstr {
     /// VBO for GLSL rendering
     AttrArray *m_pAttrAry;
 
+    inline void setColor(AttrArray &attra, int ind, quint32 dcc) {
+      attra.at(ind).r = (qbyte) gfx::getRCode(dcc);
+      attra.at(ind).g = (qbyte) gfx::getGCode(dcc);
+      attra.at(ind).b = (qbyte) gfx::getBCode(dcc);
+      attra.at(ind).a = (qbyte) gfx::getACode(dcc);
+    }
+
   public:
 
     //////////////////////////////////////////////////////
