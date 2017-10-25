@@ -117,6 +117,7 @@ shader_DATA = \
 lib_atoms.glsl \
 simple_vertex.glsl \
 simple_frag.glsl \
+dblbon_vert.glsl \
 namelabel2_vert.glsl \
 namelabel2_frag.glsl \
 $(NULL)
