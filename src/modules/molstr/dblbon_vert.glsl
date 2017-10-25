@@ -1,6 +1,6 @@
 // -*-Mode: C++;-*-
 //
-//  SimpleRenderer vertex shader for OpenGL
+//  SimpleRenderer/double bond vertex shader for OpenGL
 //
 
 #if (__VERSION__>=140)
@@ -20,42 +20,53 @@
 
 uniform AtomCrdTex coordTex;
 
+uniform float u_cvscl;
+//const float u_cvscl = 0.1;
+
 ////////////////////
 // Vertex attributes
 
 // atom coord indices
-attribute vec2 a_ind12;
+attribute vec3 a_ind;
 
 // color
 attribute vec4 a_color;
 
 ////////////////////
 
-const vec3 vstar[6] = vec3[] (
-  vec3(1.0f, 0.0f, 0.0f),
-  vec3(-1.0f, 0.0f, 0.0f),
-  vec3(0.0f, 1.0f, 0.0f),
-  vec3(0.0f, -1.0f, 0.0f),
-  vec3(0.0f, 0.0f, 1.0f),
-  vec3(0.0f, 0.0f, -1.0f)
-  );
+vec3 getNormalVec(in vec3 pos1, in vec3 pos2, in vec3 posd)
+{
+  vec3 v1 = pos2 - pos1;
+  vec3 v2 = posd - pos1;
+
+  vec3 ev1 = normalize(v1);
+  vec3 nv1 = v2 - ev1*( dot(ev1,v2) );
+  nv1 = normalize(nv1);
+  return nv1;
+}
 
 void main (void)
 {
-  int ind1 = int(a_ind12.x);
-  int ind2 = int(a_ind12.y);
+  int vid = gl_VertexID % 4;
+  
+  int ind1 = int(a_ind.x);
+  int ind2 = int(a_ind.y);
+  int ind_d = int(a_ind.z);
   vec3 vpos;
 
   vec3 pos1 = getAtomPos3(coordTex, ind1);
+  vec3 pos2 = getAtomPos3(coordTex, ind2);
+  vec3 posd = getAtomPos3(coordTex, ind_d);
 
-  if (ind2>=0) {
-    vec3 pos2 = getAtomPos3(coordTex, ind2);
-    vpos = (pos1+pos2)*0.5f;
-  }
-  else {
-    int ind = -ind2-1;
-    vpos = pos1 + vstar[ind] * 0.25f;
-  }
+  vec3 nv1 = getNormalVec(pos1, pos2, posd);
+
+  vec3 verts[4];
+  verts[0] = pos1;
+  verts[2] = pos2;
+  verts[1] = verts[3] = (pos1+pos2)*0.5f;
+
+  vpos = verts[vid];
+  vpos += nv1 * u_cvscl;
 
   // Eye-coordinate position of vertex, needed in various calculations
   vec4 ecPosition = gl_ModelViewMatrix * vec4(vpos, 1.0);

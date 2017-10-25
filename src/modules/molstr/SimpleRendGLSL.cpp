@@ -42,6 +42,9 @@ SimpleRendGLSL::SimpleRendGLSL()
   m_pAttrAry = NULL;
   m_pCoordTex = NULL;
 
+  m_pDbnPO = NULL;
+  m_pDbnAttrAry = NULL;
+
   // m_bUseGLSL = false;
   // m_bUseGLSL = true;
 
@@ -55,6 +58,7 @@ SimpleRendGLSL::~SimpleRendGLSL()
   //  in unloading() method of DispCacheRend impl,
   // and so they must be NULL when the destructor is called.
   MB_ASSERT(m_pAttrAry==NULL);
+  MB_ASSERT(m_pDbnAttrAry==NULL);
   MB_ASSERT(m_pCoordTex==NULL);
 
   MB_DPRINTLN("SimpleRendGLSL destructed %p", this);
@@ -85,7 +89,7 @@ bool SimpleRendGLSL::init(DisplayContext *pdc)
     return false;
   }
 
-  if (m_pPO==NULL)
+  if (m_pPO==NULL) {
 #ifdef USE_TBO
     ssh.defineMacro("USE_TBO", "1");
 #else
@@ -94,13 +98,14 @@ bool SimpleRendGLSL::init(DisplayContext *pdc)
     m_pPO = ssh.createProgObj("gpu_simplerend",
                               "%%CONFDIR%%/data/shaders/simple_vertex.glsl",
                               "%%CONFDIR%%/data/shaders/simple_frag.glsl");
-  
-  if (m_pPO==NULL) {
-    LOG_DPRINTLN("SimpleRendGLSL> ERROR: cannot create progobj.");
-    setShaderAvail(false);
-    return false;
+    
+    if (m_pPO==NULL) {
+      LOG_DPRINTLN("SimpleRendGLSL> ERROR: cannot create progobj.");
+      setShaderAvail(false);
+      return false;
+    }
   }
-
+  
   m_pPO->enable();
 
   // setup uniforms
@@ -111,6 +116,33 @@ bool SimpleRendGLSL::init(DisplayContext *pdc)
   m_nColLoc = m_pPO->getAttribLocation("a_color");
 
   m_pPO->disable();
+
+  /////
+
+  if (m_pDbnPO==NULL) {
+#ifdef USE_TBO
+    ssh.defineMacro("USE_TBO", "1");
+#else
+    ssh.defineMacro("TEX2D_WIDTH", LString::format("%d",TEX2D_WIDTH).c_str());
+#endif
+    m_pDbnPO = ssh.createProgObj("gpu_dblbonrend",
+                                 "%%CONFDIR%%/data/shaders/dblbon_vert.glsl",
+                                 "%%CONFDIR%%/data/shaders/simple_frag.glsl");
+    
+    if (m_pDbnPO==NULL) {
+      LOG_DPRINTLN("SimpleRendGLSL> ERROR: cannot create progobj.");
+      setShaderAvail(false);
+      return false;
+    }
+  }
+  
+  m_pDbnPO->enable();
+
+  // setup uniforms
+  m_pDbnPO->setUniform("coordTex", 0);
+
+  m_pDbnPO->disable();
+
   setShaderAvail(true);
   return true;
 }
@@ -118,7 +150,7 @@ bool SimpleRendGLSL::init(DisplayContext *pdc)
 void SimpleRendGLSL::createGLSL()
 {
   quint32 i, j;
-  quint32 nbons = 0, natoms = 0, nva = 0;
+  quint32 nbons = 0, natoms = 0, nva = 0, ndbl=0;
   MolCoordPtr pCMol = getClientMol();
 
   AnimMol *pAMol = NULL;
@@ -199,9 +231,9 @@ void SimpleRendGLSL::createGLSL()
   }
 
   if (m_bUseSels)
-    LOG_DPRINTLN("SimpleRend> Use indirect CoordTex");
+    LOG_DPRINTLN("SimpleRendGLSL> Use indirect CoordTex");
   else
-    LOG_DPRINTLN("SimpleRend> Use direct CoordTex");
+    LOG_DPRINTLN("SimpleRendGLSL> Use direct CoordTex");
 
   // initialize the coloring scheme
   startColorCalc(pCMol);
@@ -215,6 +247,7 @@ void SimpleRendGLSL::createGLSL()
   
   for (biter.first(); biter.hasMore(); biter.next()) {
     MolBond *pMB = biter.getBond();
+    int nBondType = pMB->getType();
     int aid1 = pMB->getAtom1();
     int aid2 = pMB->getAtom2();
     
@@ -227,6 +260,17 @@ void SimpleRendGLSL::createGLSL()
     if (pA1.isnull() || pA2.isnull())
       continue; // skip invalid bonds
     
+    if (isValBond() &&
+        (nBondType==MolBond::DOUBLE ||
+         nBondType==MolBond::TRIPLE)) {
+      int aid_d = pMB->getDblBondID(pCMol);
+      if (aid_d>=0) {
+        if (aidmap.find(aid_d)!=aidmap.end()) {
+          ++ndbl;
+        }
+      }
+    }
+
     ++nbons;
   }
   
@@ -259,7 +303,7 @@ void SimpleRendGLSL::createGLSL()
   AttrArray &attra = *m_pAttrAry;
   attra.setAttrSize(2);
   attra.setAttrInfo(0, m_nInd12Loc, 2, qlib::type_consts::QTC_FLOAT32,
-		    offsetof(AttrElem, ind1));
+                    offsetof(AttrElem, ind1));
   // attra.setAttrInfo(0, m_nInd12Loc, 2, qlib::type_consts::QTC_INT32,
   // offsetof(AttrElem, ind1));
   attra.setAttrInfo(1, m_nColLoc, 4, qlib::type_consts::QTC_UINT8, offsetof(AttrElem, r));
@@ -269,15 +313,17 @@ void SimpleRendGLSL::createGLSL()
 
   qlib::uid_t nSceneID = getSceneID();
   quint32 dcc1, dcc2, ind1, ind2;
+  int aid1, aid2;
+  MolAtomPtr pA1, pA2;
 
   i = 0;
   for (biter.first(); biter.hasMore(); biter.next()) {
     MolBond *pMB = biter.getBond();
-    int aid1 = pMB->getAtom1();
-    int aid2 = pMB->getAtom2();
+    aid1 = pMB->getAtom1();
+    aid2 = pMB->getAtom2();
     
-    MolAtomPtr pA1 = pCMol->getAtom(aid1);
-    MolAtomPtr pA2 = pCMol->getAtom(aid2);
+    pA1 = pCMol->getAtom(aid1);
+    pA2 = pCMol->getAtom(aid2);
     
     if (pA1.isnull() || pA2.isnull())
       continue; // skip invalid bonds
@@ -339,8 +385,70 @@ void SimpleRendGLSL::createGLSL()
     }
   }
 
-  LOG_DPRINTLN("SimpleRend> %d Attr VBO created", nva);
+  LOG_DPRINTLN("SimpleRendGLSL> %d Attr VBO created", i);
 
+  /////////////
+  // Create VBO for dblbonds
+  //
+  
+  if (isValBond()) {
+
+    if (m_pDbnAttrAry!=NULL)
+      delete m_pDbnAttrAry;
+
+    m_pDbnAttrAry = MB_NEW DbnAttrArray();
+    DbnAttrArray &ar = *m_pDbnAttrAry;
+    ar.setAttrSize(2);
+    ar.setAttrInfo(0, m_pDbnPO->getAttribLocation("a_ind"), 3, qlib::type_consts::QTC_FLOAT32, offsetof(DbnAttrElem, ind1));
+    ar.setAttrInfo(1, m_pDbnPO->getAttribLocation("a_color"), 4, qlib::type_consts::QTC_UINT8, offsetof(DbnAttrElem, r));
+
+    ar.alloc(ndbl * 4);
+    ar.setDrawMode(gfx::AbstDrawElem::DRAW_LINES);
+
+    i = 0;
+    for (biter.first(); biter.hasMore(); biter.next()) {
+      MolBond *pMB = biter.getBond();
+      int nBondType = pMB->getType();
+      aid1 = pMB->getAtom1();
+      aid2 = pMB->getAtom2();
+      int aid_d = pMB->getDblBondID(pCMol);
+
+      pA1 = pCMol->getAtom(aid1);
+      pA2 = pCMol->getAtom(aid2);
+
+      if (pA1.isnull() || pA2.isnull())
+        continue; // skip invalid bonds
+
+      if (nBondType!=MolBond::DOUBLE && nBondType!=MolBond::TRIPLE)
+        continue;
+      aid_d = pMB->getDblBondID(pCMol);
+      if (aid_d<0)
+        continue;
+      auto iter_indd = aidmap.find(aid_d);
+      if (iter_indd==aidmap.end())
+        continue;
+
+      ind1 = aidmap[aid1];
+      ind2 = aidmap[aid2];
+      int ind_d = iter_indd->second;
+
+      ColorPtr pcol1 = ColSchmHolder::getColor(pA1);
+      ColorPtr pcol2 = ColSchmHolder::getColor(pA2);
+      dcc1 = pcol1->getDevCode(nSceneID);
+      dcc2 = pcol2->getDevCode(nSceneID);
+
+      for (j=0; j<4; ++j) {
+        ar.at(i).ind1 = ind1;
+        ar.at(i).ind2 = ind2;
+        ar.at(i).ind3 = ind_d;
+        setColor(ar, i, (j<2)?dcc1:dcc2);
+        ++i;
+      }
+    }
+
+    LOG_DPRINTLN("SimpleRendGLSL> %d Dbon Attr VBO created", i);
+  }
+  
   // finalize the coloring scheme
   endColorCalc(pCMol);
 }
@@ -438,6 +546,10 @@ void SimpleRendGLSL::invalidateDisplayCache()
     delete m_pAttrAry;
     m_pAttrAry = NULL;
   }
+  if (m_pDbnAttrAry!=NULL) {
+    delete m_pDbnAttrAry;
+    m_pDbnAttrAry = NULL;
+  }
 
   super_t::invalidateDisplayCache();
 }
@@ -452,11 +564,20 @@ void SimpleRendGLSL::renderGLSL(DisplayContext *pdc)
   pdc->setLineWidth(getLineWidth());
 
   pdc->useTexture(m_pCoordTex, 0);
+
   m_pPO->enable();
   m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
   pdc->drawElem(*m_pAttrAry);
-
   m_pPO->disable();
+
+  if (m_pDbnAttrAry!=NULL) {
+    m_pDbnPO->enable();
+    m_pDbnPO->setUniformF("u_cvscl", getVBScl1());
+    m_pDbnPO->setUniformF("frag_alpha", pdc->getAlpha());
+    pdc->drawElem(*m_pDbnAttrAry);
+    m_pDbnPO->disable();
+  }
+
   pdc->unuseTexture(m_pCoordTex);
 }
 

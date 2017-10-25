@@ -87,11 +87,56 @@ namespace {
   }
 }
 
+int MolBond::getDblBondID(MolCoordPtr pMol) const
+{
+  //MolAtomPtr pAtom1 = pMol->getAtom( id1 );
+  //MolAtomPtr pAtom2 = pMol->getAtom( id2 );
+
+  int nb1, nb2;
+  Vector4D nv1, nv2;
+
+  int aid1_dist = getDistalAtomID(pMol, true, nb1);
+  int aid2_dist = getDistalAtomID(pMol, false, nb2);
+
+  // isolated bond --> cannot determine the dblbon direction
+  if (aid1_dist<0 && aid2_dist<0) {
+    return -1;
+  }
+  
+  if (aid1_dist>=0 && aid2_dist<0) {
+    return aid1_dist; // Atom2 is dead end
+  }
+
+  if (aid2_dist>=0 && aid1_dist<0) {
+    return aid2_dist; // Atom1 is dead end
+  }
+
+  // both ends have distal atoms
+
+  if (nb1==1 && nb2>1)
+    return aid1_dist; // Atom1 is no branch & Atom2 is multi branch
+
+  if (nb1>1 && nb2==1)
+    return aid2_dist; // Atom2 is no branch & Atom1 is multi branch
+
+  // Topology is branched at the both sides of the bond
+  // --> cannot determine whether nv1 or nv2 is the best choice...
+  return aid2_dist;
+}
+
 Vector4D MolBond::getDblBondDir(MolCoordPtr pMol) const
 {
   MolAtomPtr pAtom1 = pMol->getAtom( id1 );
   MolAtomPtr pAtom2 = pMol->getAtom( id2 );
 
+  int id_d = getDblBondID(pMol);
+  if (id_d<0)
+    return Vector4D(1,0,0);
+
+  MolAtomPtr pAtomD = pMol->getAtom( id_d );
+  return getNormalVec(pAtom1, pAtom2, pAtomD);
+  
+/*
   int nb1, nb2;
   Vector4D nv1, nv2;
 
@@ -128,5 +173,6 @@ Vector4D MolBond::getDblBondDir(MolCoordPtr pMol) const
   // Topology is branched at the both sides of the bond
   // --> cannot determine whether nv1 or nv2 is the best choice...
   return nv2;
+*/
 }
 

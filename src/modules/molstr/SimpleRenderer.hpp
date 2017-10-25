@@ -50,7 +50,7 @@ namespace molstr {
       m_bValBond = val;
       super_t::invalidateDisplayCache();
     }
-    bool getValBond() const { return m_bValBond; }
+    bool isValBond() const { return m_bValBond; }
 
   private:
     /// Valence bond scaling factor 1

@@ -495,6 +495,7 @@
     <mcw_loader Include="..\..\src\gfx\gfx.moddef" />
   </ItemGroup>
   <ItemGroup>
+    <glslshader Include="..\..\src\modules\molstr\dblbon_vert.glsl" />
     <glslshader Include="..\..\src\modules\molstr\lib_atoms.glsl" />
     <glslshader Include="..\..\src\modules\molstr\namelabel2_frag.glsl" />
     <glslshader Include="..\..\src\modules\molstr\namelabel2_vert.glsl" />

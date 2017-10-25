@@ -99,12 +99,32 @@ namespace molstr {
     /// VBO for GLSL rendering
     AttrArray *m_pAttrAry;
 
-    inline void setColor(AttrArray &attra, int ind, quint32 dcc) {
+    template <typename _Attr>
+    inline void setColor(_Attr &attra, int ind, quint32 dcc) {
       attra.at(ind).r = (qbyte) gfx::getRCode(dcc);
       attra.at(ind).g = (qbyte) gfx::getGCode(dcc);
       attra.at(ind).b = (qbyte) gfx::getBCode(dcc);
       attra.at(ind).a = (qbyte) gfx::getACode(dcc);
     }
+
+    //////////
+
+    /// GLSL shader object for dbnbon drawing
+    sysdep::OglProgramObject *m_pDbnPO;
+
+    /// VBO elem for dblbon drawing
+    struct DbnAttrElem {
+      /// a_ind.x, a_ind.y, a_ind.z
+      qfloat32 ind1, ind2, ind3;
+
+      /// a_color
+      qbyte r, g, b, a;
+    };
+
+    typedef gfx::DrawAttrArray<DbnAttrElem> DbnAttrArray;
+
+    /// VBO for GLSL rendering for dblbon drawing
+    DbnAttrArray *m_pDbnAttrAry;
 
   public:
 

@@ -54,7 +54,10 @@ namespace molstr {
     void setType(int val) { nType = val; }
 
     Vector4D getDblBondDir(MolCoordPtr pMol) const;
+    
+    int getDblBondID(MolCoordPtr pMol) const;
 
+  private:
     int getDistalAtomID(MolCoordPtr pMol, bool, int &nbonds) const;
   };
 }
