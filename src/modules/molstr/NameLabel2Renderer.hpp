@@ -8,12 +8,9 @@
 
 #include "molstr.hpp"
 
-//#include <qsys/DispListRenderer.hpp>
 #include "MolRenderer.hpp"
 #include <gfx/SolidColor.hpp>
-// #include <gfx/LabelCacheImpl.hpp>
-
-#include "GLSLLabelHelper.hpp"
+#include <gfx/PixelBuffer.hpp>
 
 class NameLabel2Renderer_wrap;
 
@@ -22,8 +19,44 @@ namespace molstr {
   using qlib::Vector4D;
   using gfx::DisplayContext;
 
-  struct NameLabel2;
-  struct NameLabel2List;
+  struct NameLabel2
+  {
+  public:
+
+    NameLabel2(): m_pPixBuf(NULL)
+    {
+    }
+
+    NameLabel2(const NameLabel2 &arg)
+         : aid(arg.aid), strAid(arg.strAid), str(arg.str), m_pPixBuf(NULL)
+    {
+    }
+
+    virtual ~NameLabel2() {
+      if (m_pPixBuf!=NULL)
+        delete m_pPixBuf;
+    }
+
+    /// Target atom ID
+    int aid;
+
+    /// Target atom in string representation
+    LString strAid;
+
+    /// Custom label string
+    LString str;
+
+    /// Image data of the label (in CPU)
+    gfx::PixelBuffer *m_pPixBuf;
+
+    inline bool equals(const NameLabel2 &a) const {
+      return aid==a.aid;
+    }
+  };
+
+  struct NameLabel2List : public std::list<NameLabel2> {};
+
+  /////////////////////////////////////////////////////////////////////
 
   class MOLSTR_API NameLabel2Renderer : public MolRenderer
   {
@@ -45,7 +78,7 @@ namespace molstr {
   public:
     void setColor(const gfx::ColorPtr &pcol) {
       m_pcolor = pcol;
-      m_glsllabel.m_pcolor = pcol;
+      //m_glsllabel.m_pcolor = pcol;
     }
 
     gfx::ColorPtr getColor() const {
@@ -99,15 +132,12 @@ namespace molstr {
 
   public:
     double getRotTh() const { return m_dRotTh; }
-    void setRotTh(double th);
+    virtual void setRotTh(double th);
 
     //////////////////////////////////////////////////////
 
     /// Label data structure
     NameLabel2List *m_pdata;
-
-    /// OpenGL label image rendering helper
-    GLSLLabelHelper m_glsllabel;
 
     //////////////////////////////////////////////////////
 
@@ -139,35 +169,6 @@ namespace molstr {
     virtual void preRender(DisplayContext *pdc);
     virtual void render(DisplayContext *pdc);
     virtual void postRender(DisplayContext *pdc);
-
-    //////////////////////////////////////////////////////
-    // Ver. 2 interface
-
-    /// Use ver2 interface (--> return true)
-    virtual bool isUseVer2Iface() const;
-
-    /// Initialize & setup capabilities (for glsl setup)
-    virtual bool init(DisplayContext *pdc);
-    
-    virtual bool isCacheAvail() const;
-
-    /// Create GLSL data (VBO, texture, etc)
-    virtual void createGLSL();
-
-    /// update VBO positions using CrdArray
-    virtual void updateDynamicGLSL();
-
-    /// update VBO positions using getPos
-    virtual void updateStaticGLSL();
-
-
-    // /// Render to display (using VBO)
-    // virtual void renderVBO(DisplayContext *pdc);
-
-    /// Render to display (using GLSL)
-    virtual void renderGLSL(DisplayContext *pdc);
-
-    void createTextureData(DisplayContext *pdc, float sclx, float scly);
 
     //////////////////////////////////////////////////////
     // Event handlers
@@ -204,6 +205,8 @@ namespace molstr {
 
 
   };
+
+  //////////////////////////////
 
 } // namespace
 

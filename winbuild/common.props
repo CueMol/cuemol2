@@ -21,12 +21,13 @@
     <BoostIncludePath>$(BuildSetDir)\boost\boost_1_57_0</BoostIncludePath>
     <CGALIncludePath>$(BuildSetDir)\CGAL-4.6.1\include</CGALIncludePath>
     <CGALLibraryPath>$(BuildSetDir)\CGAL-4.6.1\lib</CGALLibraryPath>
-
-    <HavePython>Yes</HavePython>
-    <PythonDir>$(BuildSetDir)\Python34\</PythonDir>
-
     <IncludePath>$(BuildSetDir)\include;$(CGALIncludePath);$(BoostIncludePath);$(IncludePath)</IncludePath>
     <ExecutablePath>$(BuildSetDir)\bin;$(XULRunnerDir)\bin;$(ExecutablePath)</ExecutablePath>
+  </PropertyGroup>
+
+  <PropertyGroup Label="UserMacros" Condition="'$(Platform)'=='x64'">
+    <HavePython>No</HavePython>
+    <PythonDir>$(BuildSetDir)\Python34-64\</PythonDir>
   </PropertyGroup>
 
   <PropertyGroup Label="UserMacros" Condition="'$(Configuration)'=='Release'">
