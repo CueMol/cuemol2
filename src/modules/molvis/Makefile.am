@@ -89,6 +89,7 @@ GLSLTube2Renderer.cpp \
 GLSLRcTubeRenderer.cpp \
 GLSLCPK3Renderer.cpp \
 GLSLBallStick2Renderer.cpp \
+GLSLAtomIntr2Renderer.cpp \
 $(NULL)
 
 MCWG_SRC += \
@@ -97,6 +98,7 @@ GLSLTube2Renderer.qif \
 GLSLRcTubeRenderer.qif \
 GLSLCPK3Renderer.qif \
 GLSLBallStick2Renderer.qif \
+GLSLAtomIntr2Renderer.qif \
 $(NULL)
 
 # OpenGL shader files
