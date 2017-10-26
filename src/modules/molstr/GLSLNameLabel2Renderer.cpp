@@ -4,7 +4,7 @@
 //
 
 #include <common.h>
-#include "NameLabel2Renderer.hpp"
+#include "GLSLNameLabel2Renderer.hpp"
 
 #include "MolCoord.hpp"
 #include "MolChain.hpp"
@@ -25,12 +25,12 @@ GLSLNameLabel2Renderer::GLSLNameLabel2Renderer()
   // m_pAttrAry = NULL;
   // m_pLabelTex = NULL;
   setForceGLSL(true);
+
+  m_dPixPerAng = 10.0;
 }
 
 GLSLNameLabel2Renderer::~GLSLNameLabel2Renderer()
 {
-  m_pdata->clear();
-  delete m_pdata;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -42,6 +42,11 @@ LString GLSLNameLabel2Renderer::toString() const
 
 //////////////////////////////////////////////////////
 // Ver. 2 interface implementations
+
+void GLSLNameLabel2Renderer::renderVBO(DisplayContext *pdc)
+{
+  super_t::render(pdc);
+}
 
 /// Invalidate the display cache
 void GLSLNameLabel2Renderer::invalidateDisplayCache()
@@ -59,7 +64,6 @@ void GLSLNameLabel2Renderer::invalidateDisplayCache()
 /// Use ver2 interface (--> return true)
 bool GLSLNameLabel2Renderer::isUseVer2Iface() const
 {
-  //return false;
   return true;
 }
 
@@ -79,8 +83,9 @@ bool GLSLNameLabel2Renderer::init(DisplayContext *pdc)
 void GLSLNameLabel2Renderer::createGLSL()
 {
   int nlab = m_pdata->size();
-
-  m_glsllabel.alloc(nlab);
+  if (nlab>0) {
+    m_glsllabel.alloc(nlab);
+  }
 }
 
 bool GLSLNameLabel2Renderer::isCacheAvail() const
@@ -91,6 +96,9 @@ bool GLSLNameLabel2Renderer::isCacheAvail() const
 /// Render to display (using GLSL)
 void GLSLNameLabel2Renderer::renderGLSL(DisplayContext *pdc)
 {
+  if (m_pdata->empty())
+    return;
+  
   float width = 1.0f, height = 1.0f;
   float sclx = 1.0f, scly = 1.0f;
   qsys::View *pView = pdc->getTargetView();
@@ -108,7 +116,7 @@ void GLSLNameLabel2Renderer::renderGLSL(DisplayContext *pdc)
   
   // Determine ppa
   float ppa = -1.0f;
-  if (m_bScaling)
+  if (isScaling())
     ppa = float(m_dPixPerAng);
 
   m_glsllabel.draw(pdc, width, height, ppa, getSceneID());
@@ -117,14 +125,17 @@ void GLSLNameLabel2Renderer::renderGLSL(DisplayContext *pdc)
 void GLSLNameLabel2Renderer::createTextureData(DisplayContext *pdc, float asclx, float scly)
 {
   int nlab = m_pdata->size();
+  if (nlab==0)
+    return;
+  
   float sclx = asclx;
   
-  if (m_bScaling) {
+  if (isScaling()) {
     qsys::View *pView = pdc->getTargetView();
     if (pView!=NULL) {
       const double h = pView->getHeight();
       const double zoom = pView->getZoom();
-      // const double dx = zoom/h;
+      // estimate the scaling factor (PPA) from zoom factor
       m_dPixPerAng = h/zoom;
       sclx *= m_dPixPerAng;
     }
@@ -133,31 +144,21 @@ void GLSLNameLabel2Renderer::createTextureData(DisplayContext *pdc, float asclx,
   // Render label pixbuf
   {
     LString strlab;
-    // Vector4D pos;
-    NameLabel2List::iterator iter = m_pdata->begin();
-    NameLabel2List::iterator eiter = m_pdata->end();
-    for (; iter!=eiter; iter++) {
-      NameLabel2 &lab = *iter;
+    for (NameLabel2 &lab : *m_pdata) {
       if (lab.m_pPixBuf==NULL) {
         strlab = makeLabelStr(lab);
         //strlab = "A";
         lab.m_pPixBuf = createPixBuf(sclx, strlab);
       }
-//      MB_ASSERT(nlab.m_nCacheID>=0);
     }
-
-    // m_pixCache.render(sclx);
   }
 
   // Calculate pixdata index
   int npix = 0;
   std::vector<int> pixaddr(nlab);
   {
-    int i=0, j;
-    NameLabel2List::iterator iter = m_pdata->begin();
-    NameLabel2List::iterator eiter = m_pdata->end();
-    for (; iter!=eiter; iter++, ++i) {
-      NameLabel2 &lab = *iter;
+    int i=0;
+    for (const NameLabel2 &lab : *m_pdata) {
       gfx::PixelBuffer *ppb = lab.m_pPixBuf;
       if (ppb==NULL) {
         MB_ASSERT(false);
@@ -169,9 +170,12 @@ void GLSLNameLabel2Renderer::createTextureData(DisplayContext *pdc, float asclx,
       const int height = ppb->getHeight();
       npix += width * height;
 
-      if (m_bScaling) {
-        m_dPixPerAng = height/m_dFontSize;
+      if (isScaling()) {
+        // update the scaling factor (PPA) using the actual text dimension
+        m_dPixPerAng = height/getFontSize();
       }
+
+      ++i;
     }
   }
   
@@ -180,11 +184,8 @@ void GLSLNameLabel2Renderer::createTextureData(DisplayContext *pdc, float asclx,
   {
     GLSLLabelHelper::PixBuf &pixall = m_glsllabel.getPixBuf();
     npix = 0;
-    int i=0, j;
-    NameLabel2List::iterator iter = m_pdata->begin();
-    NameLabel2List::iterator eiter = m_pdata->end();
-    for (; iter!=eiter; iter++, ++i) {
-      NameLabel2 &lab = *iter;
+    int j;
+    for (const NameLabel2 &lab : *m_pdata) {
       gfx::PixelBuffer *ppb = lab.m_pPixBuf;
       if (ppb==NULL) {
         MB_ASSERT(false);
@@ -204,10 +205,10 @@ void GLSLNameLabel2Renderer::createTextureData(DisplayContext *pdc, float asclx,
 
   m_glsllabel.setTexData();
 
-  const float dispx = float(m_xdispl);
-  const float dispy = float(m_ydispl);
+  const float dispx = float(getXDispl());
+  const float dispy = float(getYDispl());
   
-  const double th = qlib::toRadian(m_dRotTh);
+  const double th = qlib::toRadian(getRotTh());
   const double costh = cos(th);
   const double sinth = sin(th);
 
@@ -216,10 +217,7 @@ void GLSLNameLabel2Renderer::createTextureData(DisplayContext *pdc, float asclx,
     int i=0, j;
     LString strlab;
     Vector4D pos;
-    NameLabel2List::iterator iter = m_pdata->begin();
-    NameLabel2List::iterator eiter = m_pdata->end();
-    for (; iter!=eiter; iter++, ++i) {
-      NameLabel2 &lab = *iter;
+    for (const NameLabel2 &lab : *m_pdata) {
       gfx::PixelBuffer *ppb = lab.m_pPixBuf;
       if (ppb==NULL) {
         MB_ASSERT(false);
@@ -261,14 +259,21 @@ void GLSLNameLabel2Renderer::createTextureData(DisplayContext *pdc, float asclx,
 
       pa->at(ive+3).w = dispx + width;
       pa->at(ive+3).h = dispy + height;
-    }
+
+      ++i;
+
+    } // for (const NameLabel2 &lab : *m_pdata)
+
   }
 
-  LOG_DPRINTLN("NameLabel2> %d labels (%d pix tex) created", nlab, npix);
+  // LOG_DPRINTLN("GLSLNameLabel2> %d labels (%d pix tex) created", nlab, npix);
 }
 
 void GLSLNameLabel2Renderer::updateStaticGLSL()
 {
+  if (m_pdata->empty())
+    return;
+  
   int i=0, j;
   LString strlab;
   Vector4D pos;
@@ -277,11 +282,7 @@ void GLSLNameLabel2Renderer::updateStaticGLSL()
 
   auto pa = m_glsllabel.getDrawElem();
 
-  NameLabel2List::iterator iter = m_pdata->begin();
-  NameLabel2List::iterator eiter = m_pdata->end();
-  for (; iter!=eiter; iter++, ++i) {
-    NameLabel2 &lab = *iter;
-
+  for (NameLabel2 &lab : *m_pdata) {
     if (lab.aid<0) {
       makeLabelStr(lab);
     }
@@ -293,7 +294,7 @@ void GLSLNameLabel2Renderer::updateStaticGLSL()
     Vector4D pos = pA->getPos();
 
     const int ive = i*4;
-    const int ifc = i*6;
+    // const int ifc = i*6;
 
     // vertex data
     for (j=0; j<4; ++j) {
@@ -301,6 +302,8 @@ void GLSLNameLabel2Renderer::updateStaticGLSL()
       pa->at(ive+j).y = qfloat32( pos.y() );
       pa->at(ive+j).z = qfloat32( pos.z() );
     }
+
+    ++i;
   }
 
   pa->setUpdated(true);
@@ -315,6 +318,10 @@ void GLSLNameLabel2Renderer::setRotTh(double th)
 {
   m_dRotTh = th;
 
+  int nlab = m_pdata->size();
+  if (nlab==0)
+    return;
+
   // texture, attr not ready --> not update data
   //  if (!m_glsllabel.isPixDataAvail())
   if (!m_glsllabel.isAvailable())
@@ -323,15 +330,13 @@ void GLSLNameLabel2Renderer::setRotTh(double th)
   // texture, attr are ready --> update existing attr
   auto pa = m_glsllabel.getDrawElem();
 
-  int i=0, j;
+  int i, j;
 
   const double rth = qlib::toRadian(m_dRotTh);
   const double costh = cos(rth);
   const double sinth = sin(rth);
 
-  NameLabel2List::iterator iter = m_pdata->begin();
-  NameLabel2List::iterator eiter = m_pdata->end();
-  for (; iter!=eiter; iter++, ++i) {
+  for (i=0; i<nlab; ++i) {
     const int ive = i*4;
 
     // vertex data
@@ -344,4 +349,9 @@ void GLSLNameLabel2Renderer::setRotTh(double th)
   pa->setUpdated(true);
 }
 
+void GLSLNameLabel2Renderer::setColor(const gfx::ColorPtr &pcol)
+{
+  m_glsllabel.m_pcolor = pcol;
+  super_t::setColor(pcol);
+}
 

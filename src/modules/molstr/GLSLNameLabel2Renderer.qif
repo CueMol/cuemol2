@@ -1,0 +1,33 @@
+// -*-Mode: C++;-*-
+//
+//  GLSLNameLabel2Renderer interface definition
+//
+
+#ifndef GLSL_NAME_LABEL2_RENDERER_QIF_INCLUDED
+#define GLSL_NAME_LABEL2_RENDERER_QIF_INCLUDED
+
+#include "NameLabel2Renderer.qif"
+
+runtime_class GLSLNameLabel2Renderer extends NameLabel2Renderer
+{
+  client_hdr "GLSLNameLabel2Renderer.hpp";
+  client_name molstr::GLSLNameLabel2Renderer;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  /// force to use GLSL
+  property boolean force_glsl => redirect(isForceGLSL, setForceGLSL);
+  default force_glsl = true;
+
+  property boolean scaling => redirect(isScaling, setScaling);
+  default scaling = false;
+
+  property real rotation => redirect(getRotTh, setRotTh);
+  default rotation = 0.0;
+
+};
+
+#endif
+

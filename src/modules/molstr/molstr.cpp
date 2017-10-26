@@ -19,7 +19,6 @@
 #include "SelCompiler.hpp"
 #include "TraceRenderer.hpp"
 #include "NameLabelRenderer.hpp"
-#include "NameLabel2Renderer.hpp"
 #include "SelectionRenderer.hpp"
 #include "SelCacheMgr.hpp"
 #include "QdfMolWriter.hpp"
@@ -27,8 +26,10 @@
 
 #ifdef USE_OPENGL
 #  include "SimpleRendGLSL.hpp"
+#  include "GLSLNameLabel2Renderer.hpp"
 #else
 #  include "SimpleRenderer.hpp"
+#  include "NameLabel2Renderer.hpp"
 #endif
 
 extern void molstr_regClasses();
@@ -106,14 +107,14 @@ bool init()
 
 #ifdef USE_OPENGL
   pRF->regist<SimpleRendGLSL>();
-  //pRF->regist<SimpleRenderer>();
+  pRF->regist<GLSLNameLabel2Renderer>();
 #else
   pRF->regist<SimpleRenderer>();
+  pRF->regist<NameLabel2Renderer>();
 #endif
 
   pRF->regist<TraceRenderer>();
   pRF->regist<NameLabelRenderer>();
-  pRF->regist<NameLabel2Renderer>();
   pRF->regist<SelectionRenderer>();
   
   SelCacheMgr::init();

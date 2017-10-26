@@ -9,6 +9,7 @@
 #include "molstr.hpp"
 
 #include "NameLabel2Renderer.hpp"
+#include "GLSLLabelHelper.hpp"
 
 namespace molstr {
 
@@ -23,11 +24,12 @@ namespace molstr {
     //////////////////////////////////////////////////////
     // Properties
 
-
     //////////////////////////////////////////////////////
 
     /// OpenGL label image rendering helper
     GLSLLabelHelper m_glsllabel;
+
+    double m_dPixPerAng;
 
     //////////////////////////////////////////////////////
 
@@ -38,30 +40,15 @@ namespace molstr {
     //////////////////////////////////////////////////////
     // Renderer interface implementation
 
-    virtual bool isCompatibleObj(qsys::ObjectPtr pobj) const;
     virtual LString toString() const;
-
-    virtual bool isHitTestSupported() const;
-
-    virtual Vector4D getCenter() const;
-
-    virtual const char *getTypeName() const;
 
     virtual bool isTransp() const { return true; }
 
-    /// Invalidate the display cache
-    virtual void invalidateDisplayCache();
-
-    //////////////////////////////////////////////////////
-    // Old rendering interface
-    //   (for renderFile()/GL compatible prof)
-
-    virtual void preRender(DisplayContext *pdc);
-    virtual void render(DisplayContext *pdc);
-    virtual void postRender(DisplayContext *pdc);
-
     //////////////////////////////////////////////////////
     // Ver. 2 interface
+
+    /// Invalidate the display cache
+    virtual void invalidateDisplayCache();
 
     /// Use ver2 interface (--> return true)
     virtual bool isUseVer2Iface() const;
@@ -89,23 +76,22 @@ namespace molstr {
 
     void createTextureData(DisplayContext *pdc, float sclx, float scly);
 
+    /// Render to display (using VBO)
+    virtual void renderVBO(DisplayContext *pdc);
+
     //////////////////////////////////////////////////////
     // Event handlers
 
-    virtual void propChanged(qlib::LPropEvent &ev);
+    // virtual void propChanged(qlib::LPropEvent &ev);
 
-    virtual void styleChanged(qsys::StyleEvent &);
+    // virtual void styleChanged(qsys::StyleEvent &);
 
-    //virtual void objectChanged(qsys::ObjectEvent &ev);
+
+    virtual void setColor(const gfx::ColorPtr &pcol);
+
+    virtual void setRotTh(double th);
 
   private:
-    //bool makeLabelStr(NameLabel &n, LString &lab,Vector4D &pos);
-    LString makeLabelStr(NameLabel2 &nlab);
-
-    gfx::PixelBuffer *createPixBuf(double scl, const LString &lab);
-
-    /// clear all cached data
-    void clearAllLabelPix();
 
 
   };

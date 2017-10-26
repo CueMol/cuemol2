@@ -37,6 +37,7 @@
 
 #ifdef USE_OPENGL
 # include "SimpleRendGLSL.qif"
+# include "GLSLNameLabel2Renderer.qif"
 #endif
 
 module molstr
@@ -52,6 +53,7 @@ module molstr
   SimpleRenderer;
 #ifdef USE_OPENGL
   SimpleRendGLSL;
+  GLSLNameLabel2Renderer;
 #endif
   MainChainRenderer uuid 71f2c289-f184-4a0c-9cca-04e7ccc4f1b1;
   TraceRenderer uuid e964c858-f906-4e55-a189-928e0bca65c1;

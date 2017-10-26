@@ -133,7 +133,7 @@ void GLSLLabelHelper::createPixBuf(int npix)
   m_pixall.resize(h*TEX2D_WIDTH);
   m_nTexW = TEX2D_WIDTH;
   m_nTexH = h;
-  LOG_DPRINTLN("NameLabel2> Label Texture2D size=%d,%d", m_nTexW, m_nTexH);
+  LOG_DPRINTLN("GLSLNameLabel2> Label Texture2D size=%d,%d", m_nTexW, m_nTexH);
 #endif
 }
 

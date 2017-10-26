@@ -844,8 +844,8 @@ klass.vcmArndMolSel = function(aDist, aByres)
 
 klass.showAtomLabel = function(objid, atomid)
 {
-  //const labeltype = "*namelabel";
-  const labeltype = "*namelabel2";
+  const labeltype = "*namelabel";
+  //const labeltype = "*namelabel2";
 
   let obj = cuemol.getObject(objid);
   if (!obj) return;

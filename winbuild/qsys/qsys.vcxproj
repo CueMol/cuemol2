@@ -110,6 +110,8 @@
     <ClCompile Include="..\..\src\modules\molstr\ChainIterator.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\ChainIterator_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\GLSLLabelHelper.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\GLSLNameLabel2Renderer.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\GLSLNameLabel2Renderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\MolBond.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\NameLabel2Renderer.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\NameLabel2Renderer_wrap.cpp" />
@@ -409,6 +411,7 @@
     <mcwrapgen3 Include="..\..\src\gfx\MultiGradient.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molstr\AnimMol.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molstr\ChainIterator.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molstr\GLSLNameLabel2Renderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molstr\NameLabel2Renderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molstr\QdfPdbReader.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molstr\SimpleRendGLSL.qif" />

@@ -226,7 +226,7 @@ bool NameLabelRenderer::isHitTestSupported() const
 
 const char *NameLabelRenderer::getTypeName() const
 {
-  return "*namelabel";
+  return "*namelabel1";
 }
 
 //////////////////////////////////////////////////////////////////////////

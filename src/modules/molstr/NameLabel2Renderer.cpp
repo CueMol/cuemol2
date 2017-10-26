@@ -24,7 +24,6 @@ NameLabel2Renderer::NameLabel2Renderer()
   m_strFontStyle = "normal";
   m_strFontWgt = "normal";
   m_bScaling = false;
-  m_dPixPerAng = 10.0;
 }
 
 NameLabel2Renderer::~NameLabel2Renderer()
@@ -53,7 +52,7 @@ bool NameLabel2Renderer::isHitTestSupported() const
 
 const char *NameLabel2Renderer::getTypeName() const
 {
-  return "*namelabel2";
+  return "*namelabel";
 }
 
 Vector4D NameLabel2Renderer::getCenter() const
@@ -65,6 +64,7 @@ Vector4D NameLabel2Renderer::getCenter() const
 //////////////////////////////////////////////////////////////////////////
 // old renderer interface implementations
 
+/*
 /// Invalidate the display cache
 void NameLabel2Renderer::invalidateDisplayCache()
 {
@@ -74,6 +74,7 @@ void NameLabel2Renderer::invalidateDisplayCache()
   // clean-up display list
   super_t::invalidateDisplayCache();
 }
+*/
 
 void NameLabel2Renderer::preRender(DisplayContext *pdc)
 {
@@ -282,6 +283,11 @@ void NameLabel2Renderer::setRotTh(double th)
   m_dRotTh = th;
 }
 
+void NameLabel2Renderer::setColor(const gfx::ColorPtr &pcol)
+{
+  m_pcolor = pcol;
+}
+
 /// clear all label images
 void NameLabel2Renderer::clearAllLabelPix()
 {
@@ -328,7 +334,7 @@ void NameLabel2Renderer::writeTo2(qlib::LDom2Node *pNode) const
   MolCoordPtr pobj = getClientMol();
   MB_ASSERT(!pobj.isnull());
   
-  BOOST_FOREACH(NameLabel2 &value, *m_pdata) {
+  for (NameLabel2 &value : *m_pdata) {
 
     LString said = pobj->toStrAID(value.aid);
     if (said.isEmpty())

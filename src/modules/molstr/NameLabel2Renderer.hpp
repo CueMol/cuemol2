@@ -32,7 +32,7 @@ namespace molstr {
     {
     }
 
-    virtual ~NameLabel2() {
+    ~NameLabel2() {
       if (m_pPixBuf!=NULL)
         delete m_pPixBuf;
     }
@@ -76,14 +76,11 @@ namespace molstr {
     gfx::ColorPtr m_pcolor;
 
   public:
-    void setColor(const gfx::ColorPtr &pcol) {
-      m_pcolor = pcol;
-      //m_glsllabel.m_pcolor = pcol;
-    }
-
     gfx::ColorPtr getColor() const {
       return m_pcolor;
     }
+
+    virtual void setColor(const gfx::ColorPtr &pcol);
 
   private:
     /// displacement along the X axes
@@ -105,6 +102,9 @@ namespace molstr {
     LString m_strFontWgt;
 
   public:
+    double getXDispl() const { return m_xdispl; }
+    double getYDispl() const { return m_ydispl; }
+
     void setFontSize(double val);
     double getFontSize() const { return m_dFontSize; }
   
@@ -121,13 +121,11 @@ namespace molstr {
     /// Scaling mode flag (false: fixed pixel draw mode)
     bool m_bScaling;
 
-    double m_dPixPerAng;
-
   public:
     bool isScaling() const { return m_bScaling; }
     void setScaling(bool b);
 
-  private:
+  protected:
     double m_dRotTh;
 
   public:
@@ -159,8 +157,8 @@ namespace molstr {
 
     virtual bool isTransp() const { return true; }
 
-    /// Invalidate the display cache
-    virtual void invalidateDisplayCache();
+    // /// Invalidate the display cache
+    // virtual void invalidateDisplayCache();
 
     //////////////////////////////////////////////////////
     // Old rendering interface
@@ -194,7 +192,7 @@ namespace molstr {
 
     bool removeLabelByID(int aid);
 
-  private:
+  protected:
     //bool makeLabelStr(NameLabel &n, LString &lab,Vector4D &pos);
     LString makeLabelStr(NameLabel2 &nlab);
 
