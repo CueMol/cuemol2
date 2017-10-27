@@ -99,19 +99,8 @@ if (!("seqpanel" in cuemolui)) {
 
       // setup scene event handler
       var sc_handler = function (args) {
+        dd("SeqPanel> SC_HANDLER: "+args.obj.target_uid);
         switch (args.evtType) {
-        case cuemol.evtMgr.SEM_ADDED:
-          dd("SeqPanel SEM_ADDED: "+args.obj.target_uid);
-          that.addMolIDData(args.obj.target_uid);
-          that.renderSeq();
-          break;
-
-        case cuemol.evtMgr.SEM_REMOVING:
-          dd("SeqPanel SEM_REMOVING:"+args.obj.target_uid);
-          that.removeMolData(args.obj.target_uid);
-          that.renderSeq();
-          break;
-
         case cuemol.evtMgr.SEM_CHANGED:
           if (args.method=="sceneAllCleared" ||
               args.method=="sceneLoaded") {
@@ -126,7 +115,19 @@ if (!("seqpanel" in cuemolui)) {
       
       // setup object event handler
       var ob_handler = function (args) {
+        dd("SeqPanel> OB_HANDLER: "+args.obj.target_uid);
         switch (args.evtType) {
+        case cuemol.evtMgr.SEM_ADDED:
+          dd("SeqPanel> SEM_ADDED: "+args.obj.target_uid);
+          that.addMolIDData(args.obj.target_uid);
+          that.renderSeq();
+          break;
+
+        case cuemol.evtMgr.SEM_REMOVING:
+          dd("SeqPanel SEM_REMOVING:"+args.obj.target_uid);
+          that.removeMolData(args.obj.target_uid);
+          that.renderSeq();
+          break;
 
         case cuemol.evtMgr.SEM_PROPCHG:
           if ("propname" in args.obj) {
@@ -160,12 +161,14 @@ if (!("seqpanel" in cuemolui)) {
                                                    cuemol.evtMgr.SEM_ANY, // event type
                                                    scene.uid, // source (scene) UID
                                                    sc_handler);
+      //dd("seqpanel callback1 slot="+this._callbackID1);
 
       this._callbackID2 = cuemol.evtMgr.addListener("",
                                                    cuemol.evtMgr.SEM_OBJECT,
                                                    cuemol.evtMgr.SEM_ANY, // event type
                                                    scene.uid, // source (scene) UID
                                                    ob_handler);
+      //dd("seqpanel callback2 slot="+this._callbackID2);
       this.loadScene(scene);
       this.renderSeq();
     }
