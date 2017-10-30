@@ -105,10 +105,12 @@ if COND_USE_OPENGL
 CPP_SRC += \
 SimpleRendGLSL.cpp \
 GLSLLabelHelper.cpp \
+GLSLNameLabel2Renderer.cpp \
 $(NULL)
 
 MCWG_SRC += \
 SimpleRendGLSL.qif \
+GLSLNameLabel2Renderer.qif \
 $(NULL)
 
 shaderdir = $(prefix)/data/shaders/
