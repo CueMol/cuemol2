@@ -301,6 +301,8 @@ namespace {
 
     bool m_bCopy;
 
+    std::deque<LString> m_copyAtomIDs;
+
   public:
     MolMergeEditInfo() {
     }
@@ -310,11 +312,32 @@ namespace {
     
     /////////////////////////////////////////////////////
     
+    /*
     void createCopy(MolCoord *pMol1, const MolCoordPtr &pMol2, const SelectionPtr &pSel2) {
       m_nTgtUID = pMol1->getUID();
       m_pMol2 = pMol2;
       m_pSel = pSel2;
       m_bCopy = true;
+    }
+    */
+
+    void createCopy(MolCoord *pMol1, const MolCoordPtr &pMol2, const std::set<int> &aset2)
+    {
+      m_nTgtUID = pMol1->getUID();
+      m_pMol2 = pMol2;
+      //m_pSel = pSel2;
+      m_bCopy = true;
+
+      m_pSel = SelectionPtr();
+      m_copyAtomIDs.clear();
+
+      std::set<int>::const_iterator it2 = aset2.begin();
+      std::set<int>::const_iterator end = aset2.end();
+      for (; it2!=end; it2++) {
+	int aid = *it2;
+	LString strid = pMol2->toStrAID(aid);
+	m_copyAtomIDs.push_back(strid);
+      }
     }
 
     void createDelete(MolCoord *pMol1, const SelectionPtr &pSel) {
@@ -327,6 +350,76 @@ namespace {
     
     /////////////////////////////////////////////////////
     
+  private:
+    void deleteAtoms(MolCoord *pmol) {
+      // conv strid to aid&delete atom
+      std::deque<LString>::const_iterator iter = m_copyAtomIDs.begin();
+      std::deque<LString>::const_iterator end = m_copyAtomIDs.end();
+      for (; iter!=end; iter++) {
+	int aid = pmol->fromStrAID(*iter);
+	if (aid>=0)
+	  pmol->removeAtom(aid);
+	}
+
+      pmol->applyTopology();
+    }
+
+    // copy to pmol <-- (m_pMol2, m_copyAtomIDs)
+    void copyAtoms(MolCoord *pmol)
+    {
+      // conv strid to aid&copy atom
+      std::set<int> atmset;
+      std::deque<LString>::const_iterator iter = m_copyAtomIDs.begin();
+      std::deque<LString>::const_iterator end = m_copyAtomIDs.end();
+      for (; iter!=end; iter++) {
+	int aid = m_pMol2->fromStrAID(*iter);
+	if (aid<0)
+	  continue;
+
+	MolAtomPtr pAtom = m_pMol2->getAtom(aid);
+	if (pAtom.isnull())
+	  continue;
+      
+	MolAtomPtr pNewAtom(pAtom->clone_cast<MolAtom>());
+      
+	// This should not fail.
+	int res = pmol->appendAtom(pNewAtom);
+	MB_ASSERT(res>=0);
+	atmset.insert(aid);
+      }
+
+      pmol->applyTopology();
+
+      // Copy residue property
+      // TO DO: copy once per residue (skip already copied residues)
+      {
+	std::set<int>::const_iterator it2 = atmset.begin();
+	std::set<int>::const_iterator end = atmset.end();
+	for (; it2!=end; it2++) {
+	  int atomid = *it2;
+	  MolAtomPtr pAtom = m_pMol2->getAtom(atomid);
+	  if (pAtom.isnull()) continue;
+	  
+	  MolResiduePtr pRes2 = pAtom->getParentResidue();
+	  //if (copiedSet.find(pRes2)!=copiedSet.end())
+	  //continue;
+	  
+	  const LString &cname = pRes2->getChainName();
+	  ResidIndex nresid = pRes2->getIndex();
+	  
+	  MolResiduePtr pRes = pmol->getResidue(cname, nresid);
+	  if (pRes.isnull()) {
+	    LOG_DPRINTLN("copy resid prop failed");
+	    continue;
+	  }
+	  
+	  copyResProps(pRes2, pRes);
+	}
+      }
+
+    }
+
+  public:
     /// perform undo
     virtual bool undo() {
       MolCoord *pmol =
@@ -334,13 +427,19 @@ namespace {
       if (pmol==NULL)
         return false;
 
-      bool bOK;
+      MB_DPRINTLN("MolMergeEditInfo> perform UNDO");
+      MB_DPRINTLN("  bcopy=%d, mol1=%s, mol2=%s, sel=%s",
+		  m_bCopy, pmol->toString().c_str(),
+		  m_pMol2->toString().c_str(),
+		  m_pSel.isnull()?"(null)":m_pSel->toString().c_str());
+      bool bOK=true;
       if (m_bCopy) {
         // undo of copy --> delete (mol1, sel)
-        bOK = pmol->deleteAtoms(m_pSel);
+        //bOK = pmol->deleteAtoms(m_pSel);
+	deleteAtoms(pmol);
       }
       else {
-        // undo of delete --> copy (mol1, pMol2, sel)
+        // undo of delete --> copy pmol <-- (m_pMol2, m_pSel)
         bOK = pmol->copyAtoms(m_pMol2, m_pSel);
       }
 
@@ -360,10 +459,14 @@ namespace {
       if (pmol==NULL)
         return false;
 
-      bool bOK;
+      bool bOK=true;
       if (m_bCopy) {
         // redo of copy
-        bOK = pmol->copyAtoms(m_pMol2, m_pSel);
+	// copy pmol <-- (m_pMol2, m_pSel)
+        //bOK = pmol->copyAtoms(m_pMol2, m_pSel);
+
+	// copy pmol <-- (m_pMol2, m_copyAtomIDs)
+	copyAtoms(pmol);
       }
       else {
         // redo of delete
@@ -473,7 +576,8 @@ bool MolCoord::copyAtoms(MolCoordPtr pmol2, SelectionPtr psel2)
     if (pUM->isOK()) {
       // record property changed undo/redo info
       pPEI = MB_NEW MolMergeEditInfo();
-      pPEI->createCopy(this, pmol2, psel2);
+      //pPEI->createCopy(this, pmol2, psel2);
+      pPEI->createCopy(this, pmol2, atmset);
       pUM->addEditInfo(pPEI);
     }
   }
