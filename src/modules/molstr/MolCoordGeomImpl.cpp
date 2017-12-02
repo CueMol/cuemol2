@@ -372,61 +372,6 @@ namespace {
       pmol->applyTopology();
     }
 
-    // copy to pmol <-- (m_pMol2, m_copyAtomIDs)
-    void copyAtoms(MolCoord *pmol)
-    {
-      // conv strid to aid&copy atom
-      std::set<int> atmset;
-      std::deque<LString>::const_iterator iter = m_copyAtomIDs.begin();
-      std::deque<LString>::const_iterator end = m_copyAtomIDs.end();
-      for (; iter!=end; iter++) {
-	int aid = m_pMol2->fromStrAID(*iter);
-	if (aid<0)
-	  continue;
-
-	MolAtomPtr pAtom = m_pMol2->getAtom(aid);
-	if (pAtom.isnull())
-	  continue;
-      
-	MolAtomPtr pNewAtom(pAtom->clone_cast<MolAtom>());
-      
-	// This should not fail.
-	int res = pmol->appendAtom(pNewAtom);
-	MB_ASSERT(res>=0);
-	atmset.insert(aid);
-      }
-
-      pmol->applyTopology();
-
-      // Copy residue property
-      // TO DO: copy once per residue (skip already copied residues)
-      {
-	std::set<int>::const_iterator it2 = atmset.begin();
-	std::set<int>::const_iterator end = atmset.end();
-	for (; it2!=end; it2++) {
-	  int atomid = *it2;
-	  MolAtomPtr pAtom = m_pMol2->getAtom(atomid);
-	  if (pAtom.isnull()) continue;
-	  
-	  MolResiduePtr pRes2 = pAtom->getParentResidue();
-	  //if (copiedSet.find(pRes2)!=copiedSet.end())
-	  //continue;
-	  
-	  const LString &cname = pRes2->getChainName();
-	  ResidIndex nresid = pRes2->getIndex();
-	  
-	  MolResiduePtr pRes = pmol->getResidue(cname, nresid);
-	  if (pRes.isnull()) {
-	    LOG_DPRINTLN("copy resid prop failed");
-	    continue;
-	  }
-	  
-	  copyResProps(pRes2, pRes);
-	}
-      }
-
-    }
-
   public:
     /// perform undo
     virtual bool undo() {
@@ -527,6 +472,7 @@ bool MolCoord::copyAtoms(MolCoordPtr pmol2, SelectionPtr psel2)
   }
 
   // copy
+  std::set<MolResidue*> resset;
   {
     std::set<int>::const_iterator it2 = atmset.begin();
     std::set<int>::const_iterator end = atmset.end();
@@ -541,15 +487,36 @@ bool MolCoord::copyAtoms(MolCoordPtr pmol2, SelectionPtr psel2)
       // This should not fail.
       int res = appendAtom(pNewAtom);
       MB_ASSERT(res>=0);
+
+      MolResiduePtr pRes2 = pAtom->getParentResidue();
+      resset.insert(pRes2.get());
     }
   }
   
   applyTopology();
 
   // Copy residue property
+  {
+    std::set<MolResidue*>::const_iterator it2 = resset.begin();
+    std::set<MolResidue*>::const_iterator end = resset.end();
+    for (; it2!=end; it2++) {
+      MolResiduePtr pRes2(*it2);
+      const LString &cname = pRes2->getChainName();
+      ResidIndex nresid = pRes2->getIndex();
+      
+      MolResiduePtr pRes = getResidue(cname, nresid);
+      if (pRes.isnull()) {
+        LOG_DPRINTLN("copyAtoms> copy resid prop failed");
+        continue;
+      }
+      
+      copyResProps(pRes2, pRes);
+    }
+  }
+
+  /*
   // TO DO: copy once per residue (skip already copied residues)
   {
-    // std::set<MolResiduePtr> copiedSet;
     std::set<int>::const_iterator it2 = atmset.begin();
     std::set<int>::const_iterator end = atmset.end();
     for (; it2!=end; it2++) {
@@ -571,9 +538,9 @@ bool MolCoord::copyAtoms(MolCoordPtr pmol2, SelectionPtr psel2)
       }
       
       copyResProps(pRes2, pRes);
-      //copiedSet.insert(pRes2);
     }
   }
+  */
 
   // Setup undo/redo info
   MolMergeEditInfo *pPEI = NULL;
