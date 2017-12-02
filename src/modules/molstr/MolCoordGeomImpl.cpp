@@ -321,16 +321,18 @@ namespace {
     }
     */
 
-    void createCopy(MolCoord *pMol1, const MolCoordPtr &pMol2, const std::set<int> &aset2)
+    void createCopy(MolCoord *pMol1, const MolCoordPtr &pMol2,
+		    const SelectionPtr &pSel2, const std::set<int> &aset2)
     {
-      m_nTgtUID = pMol1->getUID();
-      m_pMol2 = pMol2;
-      //m_pSel = pSel2;
       m_bCopy = true;
 
-      m_pSel = SelectionPtr();
-      m_copyAtomIDs.clear();
+      m_nTgtUID = pMol1->getUID();
+      m_pMol2 = pMol2;
 
+      m_pSel = pSel2;
+      //m_pSel = SelectionPtr();
+
+      m_copyAtomIDs.clear();
       std::set<int>::const_iterator it2 = aset2.begin();
       std::set<int>::const_iterator end = aset2.end();
       for (; it2!=end; it2++) {
@@ -356,10 +358,16 @@ namespace {
       std::deque<LString>::const_iterator iter = m_copyAtomIDs.begin();
       std::deque<LString>::const_iterator end = m_copyAtomIDs.end();
       for (; iter!=end; iter++) {
-	int aid = pmol->fromStrAID(*iter);
-	if (aid>=0)
-	  pmol->removeAtom(aid);
+	const LString &strid = *iter;
+	int aid = pmol->fromStrAID(strid);
+	if (aid<0) {
+	  LOG_DPRINTLN("undo copy: delete atom %s (%d) not found/failed", strid.c_str(), aid);
+	  continue;
 	}
+
+	pmol->removeAtom(aid);
+	//MB_DPRINTLN("undo copy: delete atom %s (%d) OK", strid.c_str(), aid);
+      }
 
       pmol->applyTopology();
     }
@@ -463,10 +471,10 @@ namespace {
       if (m_bCopy) {
         // redo of copy
 	// copy pmol <-- (m_pMol2, m_pSel)
-        //bOK = pmol->copyAtoms(m_pMol2, m_pSel);
+        bOK = pmol->copyAtoms(m_pMol2, m_pSel);
 
-	// copy pmol <-- (m_pMol2, m_copyAtomIDs)
-	copyAtoms(pmol);
+	// // copy pmol <-- (m_pMol2, m_copyAtomIDs)
+	// copyAtoms(pmol);
       }
       else {
         // redo of delete
@@ -577,7 +585,7 @@ bool MolCoord::copyAtoms(MolCoordPtr pmol2, SelectionPtr psel2)
       // record property changed undo/redo info
       pPEI = MB_NEW MolMergeEditInfo();
       //pPEI->createCopy(this, pmol2, psel2);
-      pPEI->createCopy(this, pmol2, atmset);
+      pPEI->createCopy(this, pmol2, psel2, atmset);
       pUM->addEditInfo(pPEI);
     }
   }

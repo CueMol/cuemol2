@@ -257,9 +257,9 @@ void HittestContext::callDisplayList(DisplayContext *pdl)
     Vector4D vv = topMatrix().mulvec(elem.pos);
     vv = m_projMat.mulvec(vv);
 
-    MB_DPRINTLN("***** (%f,%f,%f)->(%f,%f,%f)",
-                elem.pos.x(), elem.pos.y(), elem.pos.z(),
-                vv.x(), vv.y(), vv.z());
+    //MB_DPRINTLN("***** (%f,%f,%f)->(%f,%f,%f)",
+    //elem.pos.x(), elem.pos.y(), elem.pos.z(),
+    //vv.x(), vv.y(), vv.z());
 
     // XXX: z<1.2 is empilical value limit that can be seen in the fog
     if (vv.x()>-1.0 && vv.x()<1.0 &&

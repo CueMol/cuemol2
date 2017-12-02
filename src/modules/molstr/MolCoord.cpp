@@ -91,6 +91,11 @@ MolAtomPtr MolCoord::getAtom(const LString &chain, ResidIndex resid,
   if (pResid.isnull())
     return MolAtomPtr();
 
+  int id = pResid->getAtomID(aname, cConfID);
+  if (id<0) return MolAtomPtr();
+  return getAtom(id);
+
+  /*
   if (cConfID=='\0') {
     int id = pResid->getAtomID(aname);
     if (id<0) return MolAtomPtr();
@@ -102,6 +107,7 @@ MolAtomPtr MolCoord::getAtom(const LString &chain, ResidIndex resid,
     if (id<0) return MolAtomPtr();
     return getAtom(id);
   }
+  */
 }
 
 MolAtomPtr MolCoord::getAtomScr(const LString &chain, const LString &sresid,
@@ -131,8 +137,10 @@ LString MolCoord::toStrAID(int atomid) const
 /// Convert from (persistent) string representation to aid
 int MolCoord::fromStrAID(const LString &strid) const
 {
-  if (!m_reAid.match(strid))
+  if (!m_reAid.match(strid)) {
+    LOG_DPRINTLN("MolCoord> Invalid aid strid=%s (re match failed)", strid.c_str());
     return -1;
+  }
 
   // text type aid
   int nsc = m_reAid.getSubstrCount();
@@ -145,7 +153,7 @@ int MolCoord::fromStrAID(const LString &strid) const
   LString sResInd = m_reAid.getSubstr(2);
   ResidIndex nResInd;
   if (!sResInd.toInt(&nResInd.first)) {
-    LOG_DPRINTLN("AtomIntr> Invalid aid resid value=%s", sResInd.c_str());
+    LOG_DPRINTLN("MolCoord> Invalid aid resid value=%s", sResInd.c_str());
     return -1;
   }
   LString sInsCode = m_reAid.getSubstr(3);
@@ -162,9 +170,14 @@ int MolCoord::fromStrAID(const LString &strid) const
   }
 
   MolAtomPtr pAtom = getAtom(sChainName, nResInd, sAtomName, cAltLoc);
-  if (pAtom.isnull())
+  if (pAtom.isnull()) {
+    LOG_DPRINTLN("MolCoord> fromStrAID/ atom <%s %s %s %c> not found in %s",
+		 sChainName.c_str(), nResInd.toString().c_str(), sAtomName.c_str(),
+		 cAltLoc=='\0'?' ':cAltLoc,
+		 getName().c_str());
     return -1;
-  
+  }
+
   return pAtom->getID();
 }
 
@@ -304,6 +317,7 @@ bool MolCoord::removeAtom(int atomid)
   pAtom->setID(-1);
 
   const LString &aname = pAtom->getName();
+  char cConfID = pAtom->getConfID();
   ResidIndex nresid = pAtom->getResIndex();
   const LString &cname = pAtom->getChainName();
 
@@ -316,7 +330,7 @@ bool MolCoord::removeAtom(int atomid)
     return false;
 
   // remove atom
-  if (!pRes->removeAtom(aname))
+  if (!pRes->removeAtom(aname, cConfID))
     return false;
   if (pRes->getAtomSize()>0)
     return true;
