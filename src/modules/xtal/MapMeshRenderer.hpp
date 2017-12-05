@@ -102,9 +102,13 @@ namespace xtal {
   public:
     const Vector3I &getDspSize() const { return m_dspSize; }
 
-  protected:
     /// Start position of display extent from global origin (in grid unit)
-    int m_nStCol, m_nStRow, m_nStSec;
+    //int m_nStCol, m_nStRow, m_nStSec;
+  private:
+    Vector3I m_glbStPos;
+
+  public:
+    const Vector3I &getGlbStPos() const { return m_glbStPos; }
 
     /// Start position of display extent from map origin (in grid unit)
     int m_nMapStCol, m_nMapStRow, m_nMapStSec;

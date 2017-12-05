@@ -357,9 +357,9 @@ bool MapMeshRenderer::generate(ScalarObject *pMap, DensityMap *pXtal)
   m_dspSize.y() = nrow;
   m_dspSize.z() = nsec;
   
-  m_nStCol = int(vmin.x());
-  m_nStRow = int(vmin.y());
-  m_nStSec = int(vmin.z());
+  m_glbStPos.x() = int(vmin.x());
+  m_glbStPos.y() = int(vmin.y());
+  m_glbStPos.z() = int(vmin.z());
 
   return true;
 }
@@ -439,7 +439,7 @@ void MapMeshRenderer::render(DisplayContext *pdl)
 
     pdl->scale(vtmp);
 
-    vtmp = Vector4D(m_nStCol, m_nStRow, m_nStSec);
+    vtmp = Vector4D(m_glbStPos.x(), m_glbStPos.y(), m_glbStPos.z());
     pdl->translate(vtmp);
   }
 
@@ -871,14 +871,14 @@ void MapMeshRenderer::setupMapRendInfo(ScalarObject *pMap)
   m_mapSize.y() = pMap->getRowNo();
   m_mapSize.z() = pMap->getSecNo();
 
-  m_nStCol = int(vmin.x());
-  m_nStRow = int(vmin.y());
-  m_nStSec = int(vmin.z());
+  m_glbStPos.x() = int(vmin.x());
+  m_glbStPos.y() = int(vmin.y());
+  m_glbStPos.z() = int(vmin.z());
 
   // conv to map-base index (from global origin)
-  m_nMapStCol = m_nStCol - pMap->getStartCol();
-  m_nMapStRow = m_nStRow - pMap->getStartRow();
-  m_nMapStSec = m_nStSec - pMap->getStartSec();
+  m_nMapStCol = m_glbStPos.x() - pMap->getStartCol();
+  m_nMapStRow = m_glbStPos.y() - pMap->getStartRow();
+  m_nMapStSec = m_glbStPos.z() - pMap->getStartSec();
 
   // actual display extent (in grid unit)
   m_dspSize.x() = int(vmax.x() - vmin.x());

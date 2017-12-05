@@ -61,14 +61,6 @@ namespace qlib {
     {
     }
 
-    /// Conversion
-    template <typename _ArgType>
-    explicit
-    Vector4D(const Vector3T<_ArgType> &arg)
-      : super_t(arg)
-    {
-    }
-
     Vector4D(value_type ax,value_type ay, value_type az, value_type aw)
       : super_t(ax, ay, az, aw)
     {
@@ -86,6 +78,14 @@ namespace qlib {
     
     Vector4D(const Vector3T<value_type> &arg, value_type aw)
          : super_t(arg, aw)
+    {
+    }
+
+    /// Conversion from 3D vector with different type (Vector3I, etc)
+    template <typename _ArgType>
+    explicit
+    Vector4D(const Vector3T<_ArgType> &arg)
+         : super_t(arg, _ArgType(0))
     {
     }
 

@@ -277,22 +277,6 @@ void GLSLMapMesh3Renderer::createGLSL()
 
 }
 
-#if 0
-void GLSLMapMesh3Renderer::display(DisplayContext *pdc)
-{
-  if (!m_bChkShaderDone)
-    initShader(pdc);
-  
-  if (m_pPO==NULL) {
-    // TO DO: fallback to non-GPU rendering mode
-    return;
-  }
-
-
-
-}
-#endif
-
 void GLSLMapMesh3Renderer::renderGLSL(DisplayContext *pdc)
 {
   ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
@@ -323,7 +307,7 @@ void GLSLMapMesh3Renderer::renderGLSL(DisplayContext *pdc)
   
   pdc->scale(vtmp);
   
-  vtmp = Vector4D(m_nStCol, m_nStRow, m_nStSec);
+  vtmp = Vector4D(getGlbStPos());
   pdc->translate(vtmp);
 
   pdc->useTexture(m_pMapTex, MAP_TEX_UNIT);
@@ -432,9 +416,9 @@ void GLSLMapMesh3Renderer::renderCPU(DisplayContext *pdc)
   }
 
   int i,j,k;
-  int ncol = m_nActCol;
-  int nrow = m_nActRow;
-  int nsec = m_nActSec;
+  int ncol = m_dspSize.x();
+  int nrow = m_dspSize.y();
+  int nsec = m_dspSize.z();
 
   int triTable[16][2] ={
     {-1,-1}, // 0000

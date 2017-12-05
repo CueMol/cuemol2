@@ -80,6 +80,18 @@ namespace qlib {
       super_t::ai(4) = aw;
     }
 
+    /// construction from 3D vector with different type
+    template <typename _ArgType>
+    explicit
+    Vector4T(const Vector3T<_ArgType> &arg, _ArgType aw)
+      : super_t(0, detail::no_init_tag())
+    {
+      super_t::ai(1) = value_type( arg.ai(1) );
+      super_t::ai(2) = value_type( arg.ai(2) );
+      super_t::ai(3) = value_type( arg.ai(3) );
+      super_t::ai(4) = value_type( aw );
+    }
+    
     /// construction from 3D vector
     Vector4T(const Vector3T<_ValueType> &arg, value_type aw)
       : super_t(0, detail::no_init_tag())
