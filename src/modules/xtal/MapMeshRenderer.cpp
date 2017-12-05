@@ -224,9 +224,9 @@ bool MapMeshRenderer::generate(ScalarObject *pMap, DensityMap *pXtal)
     vmax.z() = floor(qlib::min<double>(vmax.z(), pMap->getStartSec()+pMap->getSecNo()));
   }
 
-  m_nMapColNo = pMap->getColNo();
-  m_nMapRowNo = pMap->getRowNo();
-  m_nMapSecNo = pMap->getSecNo();
+  m_mapSize.x() = pMap->getColNo();
+  m_mapSize.y() = pMap->getRowNo();
+  m_mapSize.z() = pMap->getSecNo();
 
   Vector4D vwi;
   vwi.x() = vmax.x() - vmin.x();
@@ -353,9 +353,9 @@ bool MapMeshRenderer::generate(ScalarObject *pMap, DensityMap *pXtal)
         m_pZCrsLst->at(i,j,k) = crs;
       }
   
-  m_nActCol = ncol;
-  m_nActRow = nrow;
-  m_nActSec = nsec;
+  m_dspSize.x() = ncol;
+  m_dspSize.y() = nrow;
+  m_dspSize.z() = nsec;
   
   m_nStCol = int(vmin.x());
   m_nStRow = int(vmin.y());
@@ -399,9 +399,9 @@ void MapMeshRenderer::render(DisplayContext *pdl)
   //  setup frac-->orth matrix
   //
 
-  int ncol = m_nActCol; //m_nColCrs;
-  int nrow = m_nActRow; //m_nRowCrs;
-  int nsec = m_nActSec; //m_nSecCrs;
+  const int ncol = m_dspSize.x();
+  const int nrow = m_dspSize.y();
+  const int nsec = m_dspSize.z();
 
   pdl->pushMatrix();
 
@@ -799,5 +799,113 @@ void MapMeshRenderer::viewChanged(qsys::ViewEvent &ev)
 }
 
 ///////////////////////////////////////////////////
+
+/// Setup map rendering information (extent, level, etc)
+void MapMeshRenderer::setupMapRendInfo(ScalarObject *pMap)
+{
+  DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
+
+  const Vector4D cent = getCenter();
+  const double extent = getExtent();
+
+  //
+  // col,row,sec
+  //
+  Vector4D vmin(cent.x()-extent, cent.y()-extent, cent.z()-extent);
+  Vector4D vmax(cent.x()+extent, cent.y()+extent, cent.z()+extent);
+
+  //
+  // get origin / translate the origin to (0,0,0)
+  //
+  vmin -= pMap->getOrigin();
+  vmax -= pMap->getOrigin();
+
+  if (pXtal!=NULL) {
+    const CrystalInfo &xt = pXtal->getXtalInfo();
+    xt.orthToFrac(vmin);
+    xt.orthToFrac(vmax);
+
+    // check PBC
+    m_bPBC = false;
+    const double dimx = pMap->getColGridSize()*pMap->getColNo();
+    const double dimy = pMap->getRowGridSize()*pMap->getRowNo();
+    const double dimz = pMap->getSecGridSize()*pMap->getSecNo();
+    const double cea = xt.a();
+    const double ceb = xt.b();
+    const double cec = xt.c();
+    if (qlib::isNear4(dimx, cea) &&
+        qlib::isNear4(dimy, ceb) &&
+        qlib::isNear4(dimz, cec))
+      m_bPBC = true;
+  }
+
+  if (pXtal!=NULL) {
+    vmin.x() *= pXtal->getColInterval();
+    vmin.y() *= pXtal->getRowInterval();
+    vmin.z() *= pXtal->getSecInterval();
+    vmax.x() *= pXtal->getColInterval();
+    vmax.y() *= pXtal->getRowInterval();
+    vmax.z() *= pXtal->getSecInterval();
+  }
+  else {
+    vmin.x() /= pMap->getColGridSize();
+    vmin.y() /= pMap->getRowGridSize();
+    vmin.z() /= pMap->getSecGridSize();
+    vmax.x() /= pMap->getColGridSize();
+    vmax.y() /= pMap->getRowGridSize();
+    vmax.z() /= pMap->getSecGridSize();
+  }
+
+  if (!m_bPBC) {
+    // limit XYZ in the available region of map
+    vmin.x() = floor(qlib::max<double>(vmin.x(), pMap->getStartCol()));
+    vmin.y() = floor(qlib::max<double>(vmin.y(), pMap->getStartRow()));
+    vmin.z() = floor(qlib::max<double>(vmin.z(), pMap->getStartSec()));
+    
+    vmax.x() = floor(qlib::min<double>(vmax.x(), pMap->getStartCol()+pMap->getColNo()));
+    vmax.y() = floor(qlib::min<double>(vmax.y(), pMap->getStartRow()+pMap->getRowNo()));
+    vmax.z() = floor(qlib::min<double>(vmax.z(), pMap->getStartSec()+pMap->getSecNo()));
+  }
+
+  m_mapSize.x() = pMap->getColNo();
+  m_mapSize.y() = pMap->getRowNo();
+  m_mapSize.z() = pMap->getSecNo();
+
+  m_nStCol = int(vmin.x());
+  m_nStRow = int(vmin.y());
+  m_nStSec = int(vmin.z());
+
+  // conv to map-base index (from global origin)
+  m_nMapStCol = m_nStCol - pMap->getStartCol();
+  m_nMapStRow = m_nStRow - pMap->getStartRow();
+  m_nMapStSec = m_nStSec - pMap->getStartSec();
+
+  // actual display extent (in grid unit)
+  m_dspSize.x() = int(vmax.x() - vmin.x());
+  m_dspSize.y() = int(vmax.y() - vmin.y());
+  m_dspSize.z() = int(vmax.z() - vmin.z());
+  
+  //MB_DPRINT("ncol: %d\n", ncol);
+  //MB_DPRINT("nrow: %d\n", nrow);
+  //MB_DPRINT("nsec: %d\n", nsec);
+}
+
+/// Calculate 8-bit contour level
+void MapMeshRenderer::calcContLevel(ScalarObject *pMap)
+{
+  //
+  // calculate the contour level
+  //
+  const double siglevel = getSigLevel();
+  const double level = pMap->getRmsdDensity() * siglevel;
+  double lvtmp = floor( (level-pMap->getLevelBase()) / pMap->getLevelStep());
+  unsigned int lv = (unsigned int)lvtmp;
+  if (lvtmp<0) lv = 0;
+  if (lvtmp>0xFF) lv = 0xFF;
+  
+  MB_DPRINTLN("set isolevel=%d", lv);
+  m_nIsoLevel = lv;
+}
+
 // Mol boundary mode routines
 

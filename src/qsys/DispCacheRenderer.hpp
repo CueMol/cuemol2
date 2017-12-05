@@ -60,6 +60,7 @@ namespace qsys {
 
     virtual void unloading();
 
+    /// Render to display
     virtual void display(DisplayContext *pdc);
 
     virtual void displayHit(DisplayContext *pdc);
@@ -95,9 +96,6 @@ namespace qsys {
     ///  (mainly for GLSL init; default=do nothing)
     virtual bool init(DisplayContext *pdc);
     
-    /// Render to display (version 2)
-    virtual void display2(DisplayContext *pdc);
-
     virtual void createDisplayCache();
 
     virtual bool isCacheAvail() const;

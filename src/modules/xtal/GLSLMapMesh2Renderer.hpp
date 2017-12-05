@@ -117,16 +117,12 @@ namespace xtal {
     AttrArray *m_pAttrAry;
 
     int m_nPosLoc;
-    // int m_nPlaneLoc;
-    // int m_nOrdLoc;
 
     unsigned int m_isolevel;
 
     quint32 m_nVertexLoc;
 
-    //typedef qlib::Array3D<int> MapTmp;
     typedef qlib::Array3D<quint8> MapTmp;
-    //typedef qlib::Array3D<float> MapTmp;
 
     MapTmp m_maptmp;
 
@@ -136,6 +132,7 @@ namespace xtal {
     Vector3I m_ivdel[12];
     
     Vector3F calcVecCrs(const Vector3I &tpos, int iv0, float crs0, int ivbase);
+
   public:
 
     ///////////////////////////////////////////

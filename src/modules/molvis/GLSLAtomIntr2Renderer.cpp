@@ -51,18 +51,6 @@ LString GLSLAtomIntr2Renderer::toString() const
 {
   return LString::format("GLSLAtomIntr2Renderer %p", this);
 }
-/*
-bool GLSLAtomIntr2Renderer::isHitTestSupported() const
-{
-  return false;
-}
-*/
-/*
-const char *GLSLAtomIntr2Renderer::getTypeName() const
-{
-  return "atomintr2";
-}
-*/
 
 bool GLSLAtomIntr2Renderer::isTransp() const
 {
@@ -75,34 +63,15 @@ bool GLSLAtomIntr2Renderer::isTransp() const
 
 
 //////////////////////////////////////////////////////////////////////////
-/*
-void GLSLAtomIntr2Renderer::styleChanged(qsys::StyleEvent &ev)
-{
-  super_t::styleChanged(ev);
-  invalidateAllLabels();
-}*/
-/*
-void GLSLAtomIntr2Renderer::propChanged(qlib::LPropEvent &ev)
-{
-  const LString propnm = ev.getName();
-  if (propnm.equals("color")) {
-    invalidateDisplayCache();
-  }
-  else if (propnm.startsWith("font_")) {
-    invalidateAllLabels();
-    invalidateDisplayCache();
-  }
-  else if (propnm.equals("showlabel")) {
-    invalidateDisplayCache();
-  }
 
-  super_t::propChanged(ev);
-}
-*/
-/// Use ver2 interface (--> return true)
+/// Use ver2 interface, if shader is available
+///  (Fall back to legacy impl (AtomIntr2Renderer) if the shader is not available)
 bool GLSLAtomIntr2Renderer::isUseVer2Iface() const
 {
-  return true;
+  if (isShaderAvail())
+    return true;
+  else
+    return false; // --> fall back to legacy impl
 }
 
 /// Initialize & setup capabilities (for glsl setup)

@@ -16,9 +16,8 @@
 #include "BrixMapReader.qif"
 
 #ifdef USE_OPENGL
-#  include "GLSLMapMeshRenderer.qif"
 #  include "GLSLMapVolRenderer.qif"
-#  include "GLSLMapMesh2Renderer.qif"
+#  include "GLSLMapMesh3Renderer.qif"
 #endif
 
 module xtal
@@ -34,9 +33,8 @@ module xtal
   BrixMapReader;
 
 #ifdef USE_OPENGL
-  GLSLMapMeshRenderer;
   GLSLMapVolRenderer;
-  GLSLMapMesh2Renderer;
+  GLSLMapMesh3Renderer;
 #endif
 
 };

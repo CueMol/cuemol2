@@ -126,17 +126,9 @@ namespace molvis {
     virtual void invalidateDisplayCache();
 
     //////////////////////////////////////////////////////
-    // Old rendering interface
-    //   (for renderFile()/GL compatible prof)
-    
-    //virtual void preRender(DisplayContext *pdc);
-    //virtual void postRender(DisplayContext *pdc);
-    //virtual void render(DisplayContext *pdl);
-
-    //////////////////////////////////////////////////////
     // Ver. 2 interface
 
-    /// Use ver2 interface (--> return true)
+    /// Use ver2 interface
     virtual bool isUseVer2Iface() const;
 
     /// Initialize & setup capabilities (for glsl setup)

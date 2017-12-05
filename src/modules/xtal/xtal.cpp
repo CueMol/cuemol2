@@ -8,7 +8,6 @@
 #include <common.h>
 
 #include "xtal.hpp"
-#include "MapMeshRenderer.hpp"
 #include "MapSurfRenderer.hpp"
 #include "CCP4MapReader.hpp"
 #include "BrixMapReader.hpp"
@@ -18,9 +17,10 @@
 #include "QdfDenMapReader.hpp"
 
 #ifdef USE_OPENGL
-#  include "GLSLMapMeshRenderer.hpp"
 #  include "GLSLMapVolRenderer.hpp"
-#  include "GLSLMapMesh2Renderer.hpp"
+#  include "GLSLMapMesh3Renderer.hpp"
+#else
+#  include "MapMeshRenderer.hpp"
 #endif
 
 extern void xtal_regClasses();
@@ -44,13 +44,13 @@ bool init()
   QdfDenMapReader::regClass();
   
   RendererFactory *pRF = RendererFactory::getInstance();
-  pRF->regist<MapMeshRenderer>();
   pRF->regist<MapSurfRenderer>();
 
 #ifdef USE_OPENGL
   pRF->regist<GLSLMapVolRenderer>();
-  pRF->regist<GLSLMapMeshRenderer>();
-  pRF->regist<GLSLMapMesh2Renderer>();
+  pRF->regist<GLSLMapMesh3Renderer>();
+#else
+  pRF->regist<MapMeshRenderer>();
 #endif
 
   StreamManager *pSM = StreamManager::getInstance();

@@ -40,15 +40,6 @@ void DispCacheRenderer::unloading()
   invalidateHittestCache();
 }
 
-void DispCacheRenderer::display(DisplayContext *pdc)
-{
-  if (isUseVer2Iface())
-    display2(pdc);
-  else
-    m_pCacheImpl->display(pdc, this);
-}
-
-
 //////////
 
 void DispCacheRenderer::preRender(DisplayContext *pdc)
@@ -144,11 +135,12 @@ bool DispCacheRenderer::isUseVer2Iface() const
 bool DispCacheRenderer::init(DisplayContext *pdc)
 {
   // Disable all optional capabilities
+  // --> Use legacy (display-list) interface by default
   setShaderAvail(false);
   return false;
 }
 
-void DispCacheRenderer::display2(DisplayContext *pdc)
+void DispCacheRenderer::display(DisplayContext *pdc)
 {
   if (pdc->isFile()) {
     // case of the file (non-ogl) rendering
@@ -165,6 +157,13 @@ void DispCacheRenderer::display2(DisplayContext *pdc)
     setCapCheckDone(true);
   }
 
+  if (!isUseVer2Iface()) {
+    // Use legacy interface (using display list)
+    m_pCacheImpl->display(pdc, this);
+    return;
+  }
+
+  // Use Ver2 interface (explicit cache creation/rendering)
   if (!isCacheAvail()) {
     createDisplayCache();
     if (!isCacheAvail())

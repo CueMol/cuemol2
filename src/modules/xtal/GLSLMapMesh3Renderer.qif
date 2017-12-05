@@ -1,0 +1,26 @@
+// -*-Mode: C++;-*-
+//
+//
+
+#ifndef GLSL_MAPMESH3_RENDERER_QIF_INCLUDED
+#define GLSL_MAPMESH3_RENDERER_QIF_INCLUDED
+
+#include "MapMeshRenderer.qif"
+
+runtime_class GLSLMapMesh3Renderer extends MapMeshRenderer
+{
+  client_hdr "GLSLMapMesh3Renderer.hpp";
+  client_name xtal::GLSLMapMesh3Renderer;
+  using Color;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  /// Automatically update (including mouse drag event/change default behavior)
+  property boolean dragupdate => redirect(isDragUpdate,setDragUpdate);
+  default dragupdate = true;
+};
+
+#endif
+
