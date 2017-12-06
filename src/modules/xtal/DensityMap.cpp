@@ -8,6 +8,10 @@
 #include "DensityMap.hpp"
 #include "QdfDenMapWriter.hpp"
 
+#ifdef WIN32
+#define USE_TBO
+#endif
+
 using namespace xtal;
 using symm::CrystalInfo;
 
@@ -24,6 +28,7 @@ DensityMap::DensityMap()
   m_dLevelBase = m_dLevelStep = 0.0;
 
 //  m_bUseMolBndry = false;
+  m_pMapTex = NULL;
 }
 
 DensityMap::~DensityMap()
@@ -32,6 +37,9 @@ DensityMap::~DensityMap()
     delete m_pByteMap;
   //if (m_pRealMap!=NULL)
   //delete m_pRealMap;
+
+  if (m_pMapTex!=NULL)
+    delete m_pMapTex;
 }
 
 ///////////////////////////////////////////////
@@ -446,5 +454,34 @@ LString DensityMap::getNormHistogramJSON()
   rval += "]}\n";
   
   return rval;
+}
+
+gfx::Texture *DensityMap::getMapTex() const
+{
+  if (m_pMapTex!=NULL)
+    return m_pMapTex;
+
+  m_pMapTex = MB_NEW gfx::Texture();
+#ifdef USE_TBO
+  m_pMapTex->setup(1, gfx::Texture::FMT_R,
+                   gfx::Texture::TYPE_UINT8);
+#else
+  m_pMapTex->setup(3, gfx::Texture::FMT_R,
+                   gfx::Texture::TYPE_UINT8_COLOR);
+                   //gfx::Texture::TYPE_UINT8);
+#endif
+  
+  int ni = m_pByteMap->getColumns();
+  int nj = m_pByteMap->getRows();
+  int nk = m_pByteMap->getSections();
+
+#ifdef USE_TBO
+  m_pMapTex->setData(ni*nj*nk, 1, 1, m_pByteMap->data());
+#else
+  m_pMapTex->setData(ni, nj, nk, m_pByteMap->data());
+#endif
+  
+
+  return m_pMapTex;
 }
 

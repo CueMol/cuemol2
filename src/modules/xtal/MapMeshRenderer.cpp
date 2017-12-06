@@ -300,8 +300,6 @@ void MapMeshRenderer::calcContLevel(ScalarObject *pMap)
 /// Setup coord xform for map rendering (grid-->world)
 void MapMeshRenderer::setupXform(DisplayContext *pdc, ScalarObject *pMap, DensityMap *pXtal)
 {
-  // pdc->pushMatrix();
-
   if (pXtal==NULL) {
     pdc->translate(pMap->getOrigin());
   }
@@ -326,6 +324,39 @@ void MapMeshRenderer::setupXform(DisplayContext *pdc, ScalarObject *pMap, Densit
   pdc->translate(vtmp);
 }
 
+Matrix4D MapMeshRenderer::getXform(ScalarObject *pMap, DensityMap *pXtal)
+{
+  Matrix4D rval;
+
+  if (pXtal==NULL) {
+    //pdc->translate(pMap->getOrigin());
+    rval.translate(pMap->getOrigin());
+  }
+  else {
+    Matrix3D orthmat = pXtal->getXtalInfo().getOrthMat();
+    rval.matprod(Matrix4D(orthmat));
+  }
+
+  Vector4D vtmp;
+  if (pXtal!=NULL)
+    vtmp = Vector4D(1.0/double(pXtal->getColInterval()),
+                    1.0/double(pXtal->getRowInterval()),
+                    1.0/double(pXtal->getSecInterval()));
+  else
+    vtmp = Vector4D(pMap->getColGridSize(),
+                    pMap->getRowGridSize(),
+                    pMap->getSecGridSize());
+  
+  //pdc->scale(vtmp);
+  rval.matprod(Matrix4D::makeScaleMat(vtmp));
+  
+  vtmp = Vector4D(getGlbStPos());
+  //pdc->translate(vtmp);
+  rval.translate(vtmp);
+
+  return rval;
+}
+
 void MapMeshRenderer::preRender(DisplayContext *pdc)
 {
   pdc->color(getColor());
@@ -336,7 +367,7 @@ void MapMeshRenderer::preRender(DisplayContext *pdc)
 namespace {
   inline float getCrossVal(quint8 d0, quint8 d1, quint8 isolev)
   {
-    if (d0==d1) return -1.0;
+    if (d0==d1 || d0==0 || d1==0) return -1.0;
     
     float crs = float(isolev-d0)/float(d1-d0);
     return crs;
@@ -365,6 +396,8 @@ void MapMeshRenderer::render(DisplayContext *pdl)
   setupMapRendInfo(pMap);
   calcContLevel(pMap);
 
+  // setup mol boundry info (if needed)
+  setupMolBndry();
 
   bool bOrgChg = false;
   if (!m_mapStPos.equals(m_texStPos)) {
@@ -385,14 +418,25 @@ void MapMeshRenderer::render(DisplayContext *pdl)
     bSizeChg = true;
   }
 
+  const int ncol = m_dspSize.x();
+  const int nrow = m_dspSize.y();
+  const int nsec = m_dspSize.z();
+
+  const int stcol = m_mapStPos.x();
+  const int strow = m_mapStPos.y();
+  const int stsec = m_mapStPos.z();
+
   if (bSizeChg || bOrgChg) {
     // (Re)generate texture map
     // create local CPU copy of Texture
     int i,j,k;
-    for (k=0; k<getDspSize().z(); k++)
-      for (j=0; j<getDspSize().y(); j++)
-        for (i=0; i<getDspSize().x(); i++){
-          m_maptmp.at(i,j,k) = getMap(pMap, m_mapStPos.x()+i,  m_mapStPos.y()+j, m_mapStPos.z()+k);
+    for (k=0; k<nsec; k++)
+      for (j=0; j<nrow; j++)
+        for (i=0; i<ncol; i++){
+          if (!inMolBndry(pMap, stcol+i, strow+j, stsec+k))
+            m_maptmp.at(i,j,k) = 0;
+          else
+            m_maptmp.at(i,j,k) = getMap(pMap, stcol+i, strow+j, stsec+k);
         }
     
     m_texStPos = m_mapStPos;
@@ -403,14 +447,6 @@ void MapMeshRenderer::render(DisplayContext *pdl)
   setupXform(pdl, pMap, pXtal);
 
   int i,j,k;
-  const int ncol = m_dspSize.x();
-  const int nrow = m_dspSize.y();
-  const int nsec = m_dspSize.z();
-
-  const int stcol = m_mapStPos.x();
-  const int strow = m_mapStPos.y();
-  const int stsec = m_mapStPos.z();
-
   quint8 val[4];
   quint8 isolev = quint8( m_nIsoLevel );
 

@@ -19,9 +19,14 @@ uniform ivec3 ivdel[12];
 uniform ivec2 edgetab[16];
 
 // Volume data field texture buffer
-uniform int ncol;
-uniform int nrow;
-uniform int nsec;
+//uniform int ncol;
+//uniform int nrow;
+//uniform int nsec;
+
+uniform ivec3 u_dspsz;
+
+uniform ivec3 u_stpos;
+uniform ivec3 u_mapsz;
 
 #ifdef USE_TBO
 uniform usamplerBuffer dataFieldTex; 
@@ -30,6 +35,12 @@ uniform sampler3D dataFieldTex;
 #endif
 
 uniform int u_plane;
+
+uniform mat4 u_xform;
+uniform vec3 u_cen;
+uniform float u_cexten;
+
+uniform vec4 u_color;
 
 ////////////////////
 // Vertex attributes
@@ -40,13 +51,20 @@ attribute float a_dummy;
 ////////////////////
 // Varying variables
 
-//varying int v_bDiscard;
+varying float v_fDiscard;
 varying float v_fFogCoord; 
 
 int getDensity(ivec3 iv)
 {
+  iv += u_stpos;
+
+  iv = (iv + u_mapsz*100) % u_mapsz;
+  //iv.x = iv.x % u_mapsz.x;
+  //iv.y = iv.y % u_mapsz.y;
+  //iv.z = iv.z % u_mapsz.z;
+
 #ifdef USE_TBO
-  int index = iv.x + ncol*(iv.y + nrow*iv.z);
+  int index = iv.x + u_mapsz.x*(iv.y + u_mapsz.y*iv.z);
   return int( texelFetch(dataFieldTex, index).r );
 #else
   float val = texelFetch3D(dataFieldTex, iv, 0).x;
@@ -95,16 +113,16 @@ void vdiscard()
 {
   gl_Position = vec4(0,0,0,1);
   gl_FrontColor = vec4(0,0,0,0);
-  //v_bDiscard = -1;
+  v_fDiscard = 1.0;
 }
 
 void main(void)
 {
-  //v_bDiscard = 1;
+  v_fDiscard = 0.0;
 
   ivec3 ipos; // = ivec3(a_pos.xyz);
 
-  ivec3 vsz = ivec3(ncol-1, nrow-1, nsec-1);
+  ivec3 vsz = ivec3(u_dspsz.x-1, u_dspsz.y-1, u_dspsz.z-1);
 
   int il = gl_VertexID/2;
   ipos.x = il%vsz.x;
@@ -155,7 +173,20 @@ void main(void)
     else
       v = calcVecCrs(ipos, i01.y, crs1, ibase);
 
-    gl_Position = wvertex(v);
+    if (u_cexten>0.0) {
+      vec4 wld = u_xform * v;
+      float d = length(wld.xyz - u_cen);
+      if (d>u_cexten) {
+        vdiscard();
+      }
+    }
+    //gl_FrontColor=vec4(d, d, d, 1.0);
+
+    //gl_Position = wvertex(v);
+    vec4 ecPosition = gl_ModelViewMatrix * v;
+    v_fFogCoord = ffog(ecPosition.z);
+    gl_Position = gl_ProjectionMatrix * ecPosition;
+    gl_FrontColor=u_color;
   }
 
 /*  

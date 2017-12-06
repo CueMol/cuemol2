@@ -80,6 +80,15 @@ namespace xtal {
     bool isDragUpdate() const { return m_bDragUpdate; }
     void setDragUpdate(bool b) { m_bDragUpdate = b; }
 
+    /// Use spherical extent
+
+  private:
+    bool m_bSphExt;
+
+  public:
+    bool isSphExt() const { return m_bSphExt; }
+    void setSphExt(bool b) { m_bSphExt = b; }
+
     ///////////////////////////////////////////
     // work area
 
@@ -190,6 +199,7 @@ namespace xtal {
     void setupMapRendInfo(ScalarObject *pMap);
     void calcContLevel(ScalarObject *pMap);
     void setupXform(DisplayContext *pdc, ScalarObject *pMap, DensityMap *pXtal);
+    Matrix4D getXform(ScalarObject *pMap, DensityMap *pXtal);
 
   protected:
 

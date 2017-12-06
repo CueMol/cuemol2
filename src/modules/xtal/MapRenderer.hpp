@@ -144,6 +144,8 @@ namespace xtal {
     double m_dBndryRng;
 
   public:
+    bool isUseMolBndry() const { return m_bUseMolBndry; }
+
     void setupMolBndry();
     
     bool inMolBndry(ScalarObject *pMap, int nx, int ny, int nz) const

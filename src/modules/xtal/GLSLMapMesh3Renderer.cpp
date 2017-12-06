@@ -18,6 +18,7 @@
 //#define SCALE 0x1000
 //#define DBG_DRAW_AXIS 0
 // #define MY_MAPTEX_DIM GL_TEXTURE_BUFFER
+//#define USE_ALLMAP
 
 #ifdef WIN32
 #define USE_TBO
@@ -202,6 +203,7 @@ bool GLSLMapMesh3Renderer::isCacheAvail() const
 }
 
 
+#ifdef USE_ALLMAP
 void GLSLMapMesh3Renderer::createGLSL()
 {
   ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
@@ -210,32 +212,93 @@ void GLSLMapMesh3Renderer::createGLSL()
 
   calcContLevel(pMap);
 
-  bool bOrgChg = false;
-  if (!m_mapStPos.equals(m_texStPos)) {
-    //if (m_mapStPos.x()!=m_nTexStCol ||
-    //m_mapStPos.y()!=m_nTexStRow ||
-    //m_mapStPos.z()!=m_nTexStSec) {
-    // texture origin changed --> regenerate texture
-    bOrgChg = true;
-  }
-
-  bool bSizeChg = false;
-
-  if (m_maptmp.cols()!=getDspSize().x() ||
-      m_maptmp.rows()!=getDspSize().y() ||
-      m_maptmp.secs()!=getDspSize().z()) {
-    // texture size changed --> regenerate texture/VBO
-    m_maptmp.resize(getDspSize().x(), getDspSize().y(), getDspSize().z());
-    bSizeChg = true;
-  }
-
-  if (bSizeChg) {
+  {
     // (Re)Generate Grid Data VBO
     // size is changed --> generate grid data
     const int vcol = getDspSize().x()-1;
     const int vrow = getDspSize().y()-1;
     const int vsec = getDspSize().z()-1;
     const int nVA = vcol * vrow * vsec * 2;
+
+    if (m_pAttrAry==NULL || nVA!=m_pAttrAry->getSize()) {
+
+      if (m_pAttrAry!=NULL)
+        delete m_pAttrAry;
+
+      m_pAttrAry = MB_NEW AttrArray();
+      
+      AttrArray &ata = *m_pAttrAry;
+      ata.setAttrSize(1);
+      ata.setAttrInfo(0, m_nPosLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, dummy));
+      
+      ata.alloc(nVA);
+      ata.setDrawMode(gfx::AbstDrawElem::DRAW_LINES);
+    }
+  }
+
+  /*
+  if (m_maptmp.cols()!=getMapSize().x() ||
+      m_maptmp.rows()!=getMapSize().y() ||
+      m_maptmp.secs()!=getMapSize().z()) {
+    m_maptmp.resize(getMapSize().x(), getMapSize().y(), getMapSize().z());
+
+    int i,j,k;
+    for (k=0; k<getMapSize().z(); k++)
+      for (j=0; j<getMapSize().y(); j++)
+        for (i=0; i<getMapSize().x(); i++)
+          m_maptmp.at(i,j,k) = getMap(pMap,i, j, k);
+
+#ifdef USE_TBO
+    m_pMapTex->setData(getMapSize().x()*getMapSize().y()*getMapSize().z(), 1, 1, m_maptmp.data());
+#else
+    m_pMapTex->setData(getMapSize().x(), getMapSize().y(), getMapSize().z(), m_maptmp.data());
+#endif
+  }
+  */
+  
+  MB_DPRINTLN("GLSLMapMesh> Make3D texture OK.");
+  m_bCacheValid = true;
+
+}
+#else
+void GLSLMapMesh3Renderer::createGLSL()
+{
+  ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
+
+  setupMapRendInfo(pMap);
+
+  calcContLevel(pMap);
+
+  // setup mol boundry info (if needed)
+  setupMolBndry();
+
+  const int ncol = getDspSize().x();
+  const int nrow = getDspSize().y();
+  const int nsec = getDspSize().z();
+
+  const int stcol = m_mapStPos.x();
+  const int strow = m_mapStPos.y();
+  const int stsec = m_mapStPos.z();
+
+  bool bOrgChg = false;
+  if (!m_mapStPos.equals(m_texStPos)) {
+    bOrgChg = true;
+  }
+
+  bool bSizeChg = false;
+
+  if (m_maptmp.cols()!=ncol ||
+      m_maptmp.rows()!=nrow ||
+      m_maptmp.secs()!=nsec) {
+    // texture size changed --> regenerate texture/VBO
+    m_maptmp.resize(ncol, nrow, nsec);
+    bSizeChg = true;
+  }
+
+  if (bSizeChg) {
+    // (Re)Generate Grid Data VBO
+    // size is changed --> generate grid data
+    const int nVA = (ncol-1) * (nrow-1) * (nsec-1) * 2;
 
     if (m_pAttrAry!=NULL)
       delete m_pAttrAry;
@@ -250,25 +313,25 @@ void GLSLMapMesh3Renderer::createGLSL()
     ata.setDrawMode(gfx::AbstDrawElem::DRAW_LINES);
   }
 
-  if (bSizeChg || bOrgChg) {
+  if (bSizeChg || bOrgChg || isUseMolBndry() ) {
     // (Re)generate texture map
     // create local CPU copy of Texture
     int i,j,k;
-    for (k=0; k<getDspSize().z(); k++)
-      for (j=0; j<getDspSize().y(); j++)
-        for (i=0; i<getDspSize().x(); i++){
-          m_maptmp.at(i,j,k) = getMap(pMap, m_mapStPos.x()+i,  m_mapStPos.y()+j, m_mapStPos.z()+k);
+    for (k=0; k<nsec; k++)
+      for (j=0; j<nrow; j++)
+        for (i=0; i<ncol; i++){
+          if (!inMolBndry(pMap, stcol+i, strow+j, stsec+k))
+            m_maptmp.at(i,j,k) = 0;
+          else
+            m_maptmp.at(i,j,k) = getMap(pMap, stcol+i, strow+j, stsec+k);
         }
-
+    
     m_texStPos = m_mapStPos;
-    //m_nTexStCol = m_mapStPos.x();
-    //m_nTexStRow = m_mapStPos.y();
-    //m_nTexStSec = m_mapStPos.z();
 
 #ifdef USE_TBO
-    m_pMapTex->setData(getDspSize().x()*getDspSize().y()*getDspSize().z(), 1, 1, m_maptmp.data());
+    m_pMapTex->setData(ncol*nrow*nsec, 1, 1, m_maptmp.data());
 #else
-    m_pMapTex->setData(getDspSize().x(), getDspSize().y(), getDspSize().z(), m_maptmp.data());
+    m_pMapTex->setData(ncol, nrow, nsec, m_maptmp.data());
 #endif
 
   }
@@ -278,6 +341,7 @@ void GLSLMapMesh3Renderer::createGLSL()
   m_bCacheValid = true;
 
 }
+#endif
 
 void GLSLMapMesh3Renderer::renderGLSL(DisplayContext *pdc)
 {
@@ -289,19 +353,41 @@ void GLSLMapMesh3Renderer::renderGLSL(DisplayContext *pdc)
 
   pdc->pushMatrix();
 
-  setupXform(pdc, pMap, pXtal);
+  //setupXform(pdc, pMap, pXtal);
+  Matrix4D xfm = getXform(pMap, pXtal);
+  pdc->multMatrix(xfm);
   
+#ifdef USE_ALLMAP
+  pdc->useTexture(pXtal->getMapTex(), MAP_TEX_UNIT);
+#else
   pdc->useTexture(m_pMapTex, MAP_TEX_UNIT);
+#endif
 
   m_pPO->enable();
   
   int i,j,k;
 
+  if (isSphExt()) {
+    m_pPO->setMatrix("u_xform", xfm);
+    m_pPO->setUniformF("u_cen", getCenter().x(), getCenter().y(), getCenter().z());
+    m_pPO->setUniformF("u_cexten", getExtent());
+  }
+  
   m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
   m_pPO->setUniform("isolevel", m_nIsoLevel);
-  m_pPO->setUniform("ncol", getDspSize().x());
-  m_pPO->setUniform("nrow", getDspSize().y());
-  m_pPO->setUniform("nsec", getDspSize().z());
+  //m_pPO->setUniform("ncol", getDspSize().x());
+  //m_pPO->setUniform("nrow", getDspSize().y());
+  //m_pPO->setUniform("nsec", getDspSize().z());
+
+  m_pPO->setUniform("u_dspsz", getDspSize().x(), getDspSize().y(), getDspSize().z());
+
+#ifdef USE_ALLMAP
+  m_pPO->setUniform("u_stpos", m_mapStPos.x(), m_mapStPos.y(), m_mapStPos.z());
+  m_pPO->setUniform("u_mapsz", getMapSize().x(), getMapSize().y(), getMapSize().z());
+#else
+  m_pPO->setUniform("u_stpos", 0,0,0);
+  m_pPO->setUniform("u_mapsz", getDspSize().x(), getDspSize().y(), getDspSize().z());
+#endif
 
   qlib::uid_t nSceneID = getSceneID();
   {
@@ -322,8 +408,12 @@ void GLSLMapMesh3Renderer::renderGLSL(DisplayContext *pdc)
 
   m_pPO->disable();
 
+#ifdef USE_ALLMAP
+  pdc->unuseTexture(pXtal->getMapTex());
+#else
   pdc->unuseTexture(m_pMapTex);
-
+#endif
+  
   pdc->popMatrix();
 
 }
