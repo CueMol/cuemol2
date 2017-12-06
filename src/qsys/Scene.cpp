@@ -21,6 +21,7 @@
 #include <qlib/FileStream.hpp>
 #include <qlib/StringStream.hpp>
 #include <qlib/LVarArgs.hpp>
+#include <qlib/LPerfMeas.hpp>
 
 // for serialization
 #include <qlib/LDOM2Stream.hpp>
@@ -619,6 +620,8 @@ LString makeSectionName(ObjectPtr pObj, RendererPtr prend)
 ///
 void Scene::display(DisplayContext *pdc)
 {
+  qlib::AutoPerfMeas apm(PM_RENDER_SCENE);
+
   // StyleMgr is held in the member variable (at the ctor)
   m_pStyleMgr->pushContextID(getUID());
   pdc->startRender();

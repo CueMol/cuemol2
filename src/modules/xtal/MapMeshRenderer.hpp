@@ -19,6 +19,7 @@ class MapMeshRenderer_wrap;
 namespace xtal {
 
   using qlib::Vector3I;
+  using qlib::Vector3F;
   using gfx::DisplayContext;
   using qsys::ScalarObject;
   class DensityMap;
@@ -111,7 +112,10 @@ namespace xtal {
     const Vector3I &getGlbStPos() const { return m_glbStPos; }
 
     /// Start position of display extent from map origin (in grid unit)
-    int m_nMapStCol, m_nMapStRow, m_nMapStSec;
+    //int m_nMapStCol, m_nMapStRow, m_nMapStSec;
+    Vector3I m_mapStPos;
+
+    const Vector3I &getMapStPos() const { return m_mapStPos; }
 
     /// Level in 8-bit map unit
     unsigned int m_nIsoLevel;
@@ -128,6 +132,11 @@ namespace xtal {
 
     /// delta
     double m_delta;
+
+  protected:
+    typedef qlib::Array3D<quint8> MapTmp;
+    MapTmp m_maptmp;
+    Vector3I m_texStPos;
 
   public:
 
@@ -180,6 +189,7 @@ namespace xtal {
   public:
     void setupMapRendInfo(ScalarObject *pMap);
     void calcContLevel(ScalarObject *pMap);
+    void setupXform(DisplayContext *pdc, ScalarObject *pMap, DensityMap *pXtal);
 
   protected:
 
@@ -206,6 +216,26 @@ namespace xtal {
     ///////////////////////////////////////////////////////////////
 
 
+    Vector3I m_ivdel[12];
+
+    int m_idel[12][3];
+    
+    int m_triTable[16][2];
+
+    Vector3F calcVecCrs(const Vector3I &tpos, int iv0, float crs0, int ivbase);
+    
+    inline Vector3F calcVecCrs(int i, int j, int k, int iv0, float crs0, int ivbase){
+      Vector3F v0(float(i + m_idel[ivbase+iv0][0]),
+                  float(j + m_idel[ivbase+iv0][1]),
+                  float(k + m_idel[ivbase+iv0][2]));
+      
+      Vector3F v1(float(i + m_idel[ivbase+(iv0+1)%4][0]),
+                  float(j + m_idel[ivbase+(iv0+1)%4][1]),
+                  float(k + m_idel[ivbase+(iv0+1)%4][2]));
+      
+      return v0 + (v1-v0).scale(crs0);
+    }
+    
   };
 
 }

@@ -14,6 +14,7 @@
 #define PM_IDLE_TIMER 0
 #define PM_DRAW_SCENE 1
 #define PM_LABEL_RENDER 2
+#define PM_RENDER_SCENE 3
 
 namespace qlib {
 

@@ -94,8 +94,6 @@ namespace xtal {
 
     gfx::Texture *m_pMapTex;
 
-    int m_nTexStCol, m_nTexStRow, m_nTexStSec;
-
     static const int MAP_TEX_UNIT = 0;
 
     struct AttrElem {
@@ -111,9 +109,6 @@ namespace xtal {
 
     quint32 m_nVertexLoc;
 
-    typedef qlib::Array3D<quint8> MapTmp;
-
-    MapTmp m_maptmp;
 
     // Vector3I m_ivdel[12];
     

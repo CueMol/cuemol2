@@ -1,7 +1,6 @@
 //
-// Event manager
+// Performance measurement manager implementation
 //
-// $Id: EventManager.cpp,v 1.2 2010/09/12 12:52:38 rishitani Exp $
 
 #include <common.h>
 

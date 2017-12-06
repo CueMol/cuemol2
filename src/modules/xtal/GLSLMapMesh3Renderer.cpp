@@ -46,9 +46,9 @@ GLSLMapMesh3Renderer::GLSLMapMesh3Renderer()
 
   m_bCacheValid = false;
 
-  m_nTexStCol = -1;
-  m_nTexStRow = -1;
-  m_nTexStSec = -1;
+  //m_nTexStCol = -1;
+  //m_nTexStRow = -1;
+  //m_nTexStSec = -1;
 
   setForceGLSL(true);
 }
@@ -211,9 +211,10 @@ void GLSLMapMesh3Renderer::createGLSL()
   calcContLevel(pMap);
 
   bool bOrgChg = false;
-  if (m_nMapStCol!=m_nTexStCol ||
-      m_nMapStRow!=m_nTexStRow ||
-      m_nMapStSec!=m_nTexStSec) {
+  if (!m_mapStPos.equals(m_texStPos)) {
+    //if (m_mapStPos.x()!=m_nTexStCol ||
+    //m_mapStPos.y()!=m_nTexStRow ||
+    //m_mapStPos.z()!=m_nTexStSec) {
     // texture origin changed --> regenerate texture
     bOrgChg = true;
   }
@@ -256,12 +257,13 @@ void GLSLMapMesh3Renderer::createGLSL()
     for (k=0; k<getDspSize().z(); k++)
       for (j=0; j<getDspSize().y(); j++)
         for (i=0; i<getDspSize().x(); i++){
-          m_maptmp.at(i,j,k) = getMap(pMap, m_nMapStCol+i,  m_nMapStRow+j, m_nMapStSec+k);
+          m_maptmp.at(i,j,k) = getMap(pMap, m_mapStPos.x()+i,  m_mapStPos.y()+j, m_mapStPos.z()+k);
         }
 
-    m_nTexStCol = m_nMapStCol;
-    m_nTexStRow = m_nMapStRow;
-    m_nTexStSec = m_nMapStSec;
+    m_texStPos = m_mapStPos;
+    //m_nTexStCol = m_mapStPos.x();
+    //m_nTexStRow = m_mapStPos.y();
+    //m_nTexStSec = m_mapStPos.z();
 
 #ifdef USE_TBO
     m_pMapTex->setData(getDspSize().x()*getDspSize().y()*getDspSize().z(), 1, 1, m_maptmp.data());
@@ -287,29 +289,8 @@ void GLSLMapMesh3Renderer::renderGLSL(DisplayContext *pdc)
 
   pdc->pushMatrix();
 
-  if (pXtal==NULL) {
-    pdc->translate(pMap->getOrigin());
-  }
-  else {
-    Matrix3D orthmat = pXtal->getXtalInfo().getOrthMat();
-    pdc->multMatrix(Matrix4D(orthmat));
-  }
-
-  Vector4D vtmp;
-  if (pXtal!=NULL)
-    vtmp = Vector4D(1.0/double(pXtal->getColInterval()),
-                    1.0/double(pXtal->getRowInterval()),
-                    1.0/double(pXtal->getSecInterval()));
-  else
-    vtmp = Vector4D(pMap->getColGridSize(),
-                    pMap->getRowGridSize(),
-                    pMap->getSecGridSize());
+  setupXform(pdc, pMap, pXtal);
   
-  pdc->scale(vtmp);
-  
-  vtmp = Vector4D(getGlbStPos());
-  pdc->translate(vtmp);
-
   pdc->useTexture(m_pMapTex, MAP_TEX_UNIT);
 
   m_pPO->enable();
