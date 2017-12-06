@@ -45,6 +45,12 @@ namespace xtal {
     ///////////////////////////////////////////
     // properties
 
+    bool m_bUseGlobMap;
+
+  public:
+    bool isUseGlobMap() const { return m_bUseGlobMap; }
+    void setUseGlobMap(bool b);
+
   public:
 
     ///////////////////////////////////////////
@@ -114,6 +120,9 @@ namespace xtal {
     
     // Vector3F calcVecCrs(const Vector3I &tpos, int iv0, float crs0, int ivbase);
     // void make3DTexMap(ScalarObject *pMap, DensityMap *pXtal);
+
+    void createGLSLGlobMap();
+    void createGLSLLocMap();
 
   private:
 

@@ -20,6 +20,13 @@ runtime_class GLSLMapMesh3Renderer extends MapMeshRenderer
   /// Automatically update (including mouse drag event/change default behavior)
   property boolean dragupdate => redirect(isDragUpdate,setDragUpdate);
   default dragupdate = true;
+
+  /// force to use GLSL
+  property boolean force_glsl => redirect(isForceGLSL, setForceGLSL);
+  default force_glsl = true;
+
+  property boolean use_globmap => redirect(isUseGlobMap, setUseGlobMap);
+  default use_globmap = false;
 };
 
 #endif

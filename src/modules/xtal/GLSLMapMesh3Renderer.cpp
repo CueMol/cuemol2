@@ -51,7 +51,7 @@ GLSLMapMesh3Renderer::GLSLMapMesh3Renderer()
   //m_nTexStRow = -1;
   //m_nTexStSec = -1;
 
-  setForceGLSL(true);
+  // setForceGLSL(true);
 }
 
 // destructor
@@ -202,9 +202,16 @@ bool GLSLMapMesh3Renderer::isCacheAvail() const
     return false;
 }
 
-
-#ifdef USE_ALLMAP
 void GLSLMapMesh3Renderer::createGLSL()
+{
+  if (m_bUseGlobMap)
+    createGLSLGlobMap();
+  else
+    createGLSLLocMap();
+}
+
+/// create GLSL dataset using global map (i.e., texture obj in DensityMap obj)
+void GLSLMapMesh3Renderer::createGLSLGlobMap()
 {
   ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
 
@@ -236,32 +243,12 @@ void GLSLMapMesh3Renderer::createGLSL()
     }
   }
 
-  /*
-  if (m_maptmp.cols()!=getMapSize().x() ||
-      m_maptmp.rows()!=getMapSize().y() ||
-      m_maptmp.secs()!=getMapSize().z()) {
-    m_maptmp.resize(getMapSize().x(), getMapSize().y(), getMapSize().z());
-
-    int i,j,k;
-    for (k=0; k<getMapSize().z(); k++)
-      for (j=0; j<getMapSize().y(); j++)
-        for (i=0; i<getMapSize().x(); i++)
-          m_maptmp.at(i,j,k) = getMap(pMap,i, j, k);
-
-#ifdef USE_TBO
-    m_pMapTex->setData(getMapSize().x()*getMapSize().y()*getMapSize().z(), 1, 1, m_maptmp.data());
-#else
-    m_pMapTex->setData(getMapSize().x(), getMapSize().y(), getMapSize().z(), m_maptmp.data());
-#endif
-  }
-  */
-  
   MB_DPRINTLN("GLSLMapMesh> Make3D texture OK.");
   m_bCacheValid = true;
-
 }
-#else
-void GLSLMapMesh3Renderer::createGLSL()
+
+/// create GLSL dataset using local copy of map
+void GLSLMapMesh3Renderer::createGLSLLocMap()
 {
   ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
 
@@ -341,7 +328,7 @@ void GLSLMapMesh3Renderer::createGLSL()
   m_bCacheValid = true;
 
 }
-#endif
+
 
 void GLSLMapMesh3Renderer::renderGLSL(DisplayContext *pdc)
 {
@@ -357,11 +344,10 @@ void GLSLMapMesh3Renderer::renderGLSL(DisplayContext *pdc)
   Matrix4D xfm = getXform(pMap, pXtal);
   pdc->multMatrix(xfm);
   
-#ifdef USE_ALLMAP
-  pdc->useTexture(pXtal->getMapTex(), MAP_TEX_UNIT);
-#else
-  pdc->useTexture(m_pMapTex, MAP_TEX_UNIT);
-#endif
+  if (m_bUseGlobMap)
+    pdc->useTexture(pXtal->getMapTex(), MAP_TEX_UNIT);
+  else
+    pdc->useTexture(m_pMapTex, MAP_TEX_UNIT);
 
   m_pPO->enable();
   
@@ -381,13 +367,14 @@ void GLSLMapMesh3Renderer::renderGLSL(DisplayContext *pdc)
 
   m_pPO->setUniform("u_dspsz", getDspSize().x(), getDspSize().y(), getDspSize().z());
 
-#ifdef USE_ALLMAP
-  m_pPO->setUniform("u_stpos", m_mapStPos.x(), m_mapStPos.y(), m_mapStPos.z());
-  m_pPO->setUniform("u_mapsz", getMapSize().x(), getMapSize().y(), getMapSize().z());
-#else
-  m_pPO->setUniform("u_stpos", 0,0,0);
-  m_pPO->setUniform("u_mapsz", getDspSize().x(), getDspSize().y(), getDspSize().z());
-#endif
+  if (m_bUseGlobMap) {
+    m_pPO->setUniform("u_stpos", m_mapStPos.x(), m_mapStPos.y(), m_mapStPos.z());
+    m_pPO->setUniform("u_mapsz", getMapSize().x(), getMapSize().y(), getMapSize().z());
+  }    
+  else {
+    m_pPO->setUniform("u_stpos", 0,0,0);
+    m_pPO->setUniform("u_mapsz", getDspSize().x(), getDspSize().y(), getDspSize().z());
+  }
 
   qlib::uid_t nSceneID = getSceneID();
   {
@@ -407,15 +394,38 @@ void GLSLMapMesh3Renderer::renderGLSL(DisplayContext *pdc)
   }
 
   m_pPO->disable();
-
-#ifdef USE_ALLMAP
-  pdc->unuseTexture(pXtal->getMapTex());
-#else
-  pdc->unuseTexture(m_pMapTex);
-#endif
   
+  if (m_bUseGlobMap)
+    pdc->unuseTexture(pXtal->getMapTex());
+  else
+    pdc->unuseTexture(m_pMapTex);
+
   pdc->popMatrix();
 
+}
+
+void GLSLMapMesh3Renderer::setUseGlobMap(bool b)
+{
+  if (b) {
+    ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
+    DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
+    if (pXtal==NULL) {
+      MB_THROW(qlib::IllegalArgumentException, "cannot use global map");
+      return;
+    }
+    if (pXtal->getMapTex()==NULL) {
+      MB_THROW(qlib::IllegalArgumentException, "cannot use global map");
+      return;
+    }
+
+    // cleanup local copy
+    if (m_pMapTex!=NULL)
+      m_pMapTex->setData(1, 1, 1, NULL);
+    m_maptmp.resize(0,0,0);
+  }
+
+  m_bUseGlobMap = b;
+  invalidateDisplayCache();
 }
 
 #if 0
