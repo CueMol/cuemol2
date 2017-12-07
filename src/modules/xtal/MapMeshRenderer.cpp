@@ -178,6 +178,16 @@ void MapMeshRenderer::viewChanged(qsys::ViewEvent &ev)
 
 ///////////////////////////////////////////////////
 
+namespace {
+  inline void calcAxisCross(const Vector4D &aax, const Vector4D &bax, const Vector4D &cax, const Vector4D &cent, double extent,
+                            double &zmin, double &zmax)
+  {
+    Vector4D vn = aax.cross(bax);
+    zmin = (vn.dot(cent) - extent*vn.length())/vn.dot(cax);
+    zmax = (vn.dot(cent) + extent*vn.length())/vn.dot(cax);
+  }
+}
+
 /// Setup map rendering information (extent, level, etc)
 void MapMeshRenderer::setupMapRendInfo(ScalarObject *pMap)
 {
@@ -191,17 +201,64 @@ void MapMeshRenderer::setupMapRendInfo(ScalarObject *pMap)
   const double extent = getExtent();
 
   //
-  // col,row,sec
+  // Calc vmin, vmax
   //
-  Vector4D vmin(cent.x()-extent, cent.y()-extent, cent.z()-extent);
-  Vector4D vmax(cent.x()+extent, cent.y()+extent, cent.z()+extent);
+  Vector4D vmin, vmax;
 
-  //
-  // get map origin / translate the origin to (0,0,0)
-  //
-  vmin -= pMap->getOrigin();
-  vmax -= pMap->getOrigin();
+  if (pXtal!=NULL) {
+    // non-orthogonal grid (crystal, etc)
+    const CrystalInfo &xt = pXtal->getXtalInfo();
 
+    // check PBC
+    m_bPBC = false;
+    const double dimx = pMap->getColGridSize()*pMap->getColNo();
+    const double dimy = pMap->getRowGridSize()*pMap->getRowNo();
+    const double dimz = pMap->getSecGridSize()*pMap->getSecNo();
+    const double cea = xt.a();
+    const double ceb = xt.b();
+    const double cec = xt.c();
+    if (qlib::isNear4(dimx, cea) &&
+        qlib::isNear4(dimy, ceb) &&
+        qlib::isNear4(dimz, cec))
+      m_bPBC = true;
+
+    Vector4D aax(1.0, 0.0, 0.0, 1.0);
+    Vector4D bax(0.0, 1.0, 0.0, 1.0);
+    Vector4D cax(0.0, 0.0, 1.0, 1.0);
+
+    xt.fracToOrth(aax);
+    xt.fracToOrth(bax);
+    xt.fracToOrth(cax);
+
+    calcAxisCross(aax, bax, cax, cent, extent, vmin.z(), vmax.z());
+    calcAxisCross(bax, cax, aax, cent, extent, vmin.x(), vmax.x());
+    calcAxisCross(cax, aax, bax, cent, extent, vmin.y(), vmax.y());
+    
+    vmin.x() *= pXtal->getColInterval();
+    vmin.y() *= pXtal->getRowInterval();
+    vmin.z() *= pXtal->getSecInterval();
+    vmax.x() *= pXtal->getColInterval();
+    vmax.y() *= pXtal->getRowInterval();
+    vmax.z() *= pXtal->getSecInterval();
+  }
+  else {
+    // orthogonal grid (potential map, etc)
+    vmin = Vector4D(cent.x()-extent, cent.y()-extent, cent.z()-extent);
+    vmax = Vector4D(cent.x()+extent, cent.y()+extent, cent.z()+extent);
+
+    // get map origin / translate the origin to (0,0,0)
+    vmin -= pMap->getOrigin();
+    vmax -= pMap->getOrigin();
+
+    vmin.x() /= pMap->getColGridSize();
+    vmin.y() /= pMap->getRowGridSize();
+    vmin.z() /= pMap->getSecGridSize();
+    vmax.x() /= pMap->getColGridSize();
+    vmax.y() /= pMap->getRowGridSize();
+    vmax.z() /= pMap->getSecGridSize();
+  }
+
+/*
   if (pXtal!=NULL) {
     const CrystalInfo &xt = pXtal->getXtalInfo();
     xt.orthToFrac(vmin);
@@ -230,14 +287,9 @@ void MapMeshRenderer::setupMapRendInfo(ScalarObject *pMap)
     vmax.z() *= pXtal->getSecInterval();
   }
   else {
-    vmin.x() /= pMap->getColGridSize();
-    vmin.y() /= pMap->getRowGridSize();
-    vmin.z() /= pMap->getSecGridSize();
-    vmax.x() /= pMap->getColGridSize();
-    vmax.y() /= pMap->getRowGridSize();
-    vmax.z() /= pMap->getSecGridSize();
   }
-
+*/
+  
   if (!m_bPBC) {
     // limit XYZ in the available region of map
     vmin.x() = floor(qlib::max<double>(vmin.x(), pMap->getStartCol()));

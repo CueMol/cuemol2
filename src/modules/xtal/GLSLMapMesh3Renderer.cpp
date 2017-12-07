@@ -358,6 +358,9 @@ void GLSLMapMesh3Renderer::renderGLSL(DisplayContext *pdc)
     m_pPO->setUniformF("u_cen", getCenter().x(), getCenter().y(), getCenter().z());
     m_pPO->setUniformF("u_cexten", getExtent());
   }
+  else {
+    m_pPO->setUniformF("u_cexten", -1.0f);
+  }
   
   m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
   m_pPO->setUniform("isolevel", m_nIsoLevel);
