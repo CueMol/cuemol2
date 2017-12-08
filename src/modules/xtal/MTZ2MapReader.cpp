@@ -512,7 +512,8 @@ void MTZ2MapReader::loadRecipArray()
       for (h=0; h<ncols; ++h)
         hklin.at(h,k,l) = std::complex<float>();
 
-  const float fscale = float(1.0/(m_cella*m_cellb*m_cellc));
+  //const float fscale = float(1.0/(m_cella*m_cellb*m_cellc));
+  const float fscale = float(1.0/m_pMap->getXtalInfo().volume());
   int isym;
 
   // Expand s.f.s by the symop

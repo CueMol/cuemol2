@@ -180,11 +180,20 @@ namespace symm {
       return qlib::LScrVector4D(rval);
     }
 
-    /**
-     Calculate orthogonal space distance of
-     the two point that are fractional coordinates.
-     */
+    /// Calculate orthogonal space distance of
+    /// the two point that are fractional coordinates.
     double fracDist(const Vector4D &f1, const Vector4D &f2);
+
+    /// Calculate cell volume (in angstrom cubic)
+    double volume() const {
+      const double cosalp = cos( qlib::toRadian(alpha()) );
+      const double cosbet = cos( qlib::toRadian(beta()) );
+      const double cosgam = cos( qlib::toRadian(gamma()) );
+      return a() * b() * c() * sqrt( 2.0*cosalp*cosbet*cosgam
+                                    - cosalp*cosalp
+                                    - cosbet*cosbet
+                                    - cosgam*cosgam + 1.0 );
+    }
 
     /// get lattice type name (e.g. monoclinic)
     LString getLatticeName() const;
