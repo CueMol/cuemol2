@@ -480,7 +480,7 @@ qlib::LByteArrayPtr Trajectory::getFrmArray(int nfrm, bool bref) const
   if (!bref) {
     pRet->init(qlib::type_consts::QTC_FLOAT32, ncrds);
     pRet->setDim(2);
-    pRet->setShape(qlib::IntVec3D(natom, 3, 1));
+    pRet->setShape(qlib::Vector3I(natom, 3, 1));
     qfloat32 *pr = reinterpret_cast<qfloat32 *>(pRet->data());
     for (i=0; i<ncrds; ++i) {
       pr[i] = pcrd[i];
@@ -489,7 +489,7 @@ qlib::LByteArrayPtr Trajectory::getFrmArray(int nfrm, bool bref) const
   else {
     pRet->initRefer(qlib::type_consts::QTC_FLOAT32, ncrds, (qbyte *)pcrd);
     pRet->setDim(2);
-    pRet->setShape(qlib::IntVec3D(natom, 3, 1));
+    pRet->setShape(qlib::Vector3I(natom, 3, 1));
   }
 
   return pRet;

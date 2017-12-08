@@ -10,8 +10,9 @@
 #include "xtal.hpp"
 #include "MapRenderer.hpp"
 
-#include <qlib/ByteMap.hpp>
+//#include <qlib/ByteMap.hpp>
 #include <qlib/Vector3I.hpp>
+#include <qlib/Array.hpp>
 #include <qsys/ViewEvent.hpp>
 
 class MapMeshRenderer_wrap;
@@ -30,9 +31,13 @@ namespace xtal {
     MC_SCRIPTABLE;
     MC_CLONEABLE;
 
+  private:
     typedef MapRenderer super_t;
     friend class ::MapMeshRenderer_wrap;
 
+    typedef qlib::Array3D<qbyte> ByteMap;
+    //typedef qlib::ByteMap ByteMap;
+    
     ///////////////////////////////////////////
     // properties
 
@@ -131,20 +136,20 @@ namespace xtal {
 
   private:
     /// section array for x(column) direction
-    qlib::ByteMap *m_pXCrsLst;
+    ByteMap *m_pXCrsLst;
 
     /// section array for y direction
-    qlib::ByteMap *m_pYCrsLst;
+    ByteMap *m_pYCrsLst;
 
     /// section array for z direction
-    qlib::ByteMap *m_pZCrsLst;
+    ByteMap *m_pZCrsLst;
 
     /// delta
     double m_delta;
 
   protected:
-    typedef qlib::Array3D<quint8> MapTmp;
-    MapTmp m_maptmp;
+    //ByteMap m_maptmp;
+    qlib::Array3D<qbyte> m_maptmp;
     Vector3I m_texStPos;
 
   public:

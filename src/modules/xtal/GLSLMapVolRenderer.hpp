@@ -10,7 +10,7 @@
 #include "MapRenderer.hpp"
 
 #include <qlib/ByteMap.hpp>
-#include <qlib/IntVec3D.hpp>
+
 #include <qsys/ScalarObject.hpp>
 #include <qsys/ViewEvent.hpp>
 
@@ -34,7 +34,7 @@ namespace xtal {
   class DensityMap;
   using sysdep::OglProgramObject;
   //using sysdep::OglShaderObject;
-  using qlib::IntVec3D;
+
 
   class GLSLMapVolRenderer : public MapRenderer,
                           public qsys::ViewEventListener

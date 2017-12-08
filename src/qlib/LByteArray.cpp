@@ -10,7 +10,7 @@
 
 using namespace qlib;
 
-void LByteArray::setShape(const IntVec3D &s)
+void LByteArray::setShape(const Vector3I &s)
 {
   // check shape consistency
   const int total = getSize();
@@ -51,7 +51,7 @@ void LByteArray::init(int nElemType, int nElemCount)
   m_nElemType = nElemType;
   Array<qbyte>::allocate(nElemSize*nElemCount);
 
-  m_shape = IntVec3D(nElemCount, 1, 1);
+  m_shape = Vector3I(nElemCount, 1, 1);
   m_nDim = 1;
 }
 
@@ -66,7 +66,7 @@ void LByteArray::initRefer(int nElemType, int nElemCount, qbyte *pdata)
   m_nElemType = nElemType;
   Array<qbyte>::refer(nElemSize*nElemCount, pdata);
 
-  m_shape = IntVec3D(nElemCount, 1, 1);
+  m_shape = Vector3I(nElemCount, 1, 1);
   m_nDim = 1;
 }
 

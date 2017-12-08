@@ -10,7 +10,7 @@
 namespace qlib {
 
   template <class T>
-  class Array3D
+  class Array3D_old
   {
   public:
     typedef T value_type;
@@ -24,17 +24,17 @@ namespace qlib {
     int m_nSecs;
 
   public:
-    Array3D() : m_array(NULL), m_nCols(0), m_nRows(0), m_nSecs(0)
+    Array3D_old() : m_array(NULL), m_nCols(0), m_nRows(0), m_nSecs(0)
     {
     }
 
-    Array3D(int ncol, int nrow, int nsect)
+    Array3D_old(int ncol, int nrow, int nsect)
       : m_nCols(ncol), m_nRows(nrow), m_nSecs(nsect)
     {
       m_array = MB_NEW T[getSize()];
     }
 
-    Array3D(int ncol, int nrow, int nsect, const T *p)
+    Array3D_old(int ncol, int nrow, int nsect, const T *p)
       : m_nCols(ncol), m_nRows(nrow), m_nSecs(nsect)
     {
       m_array = MB_NEW T[ncol*nrow*nsect];
@@ -42,7 +42,7 @@ namespace qlib {
 	m_array[i] = p[i];
     }
 
-    Array3D(const Array3D<T> &arg)
+    Array3D_old(const Array3D_old<T> &arg)
       : m_nCols(arg.m_nCols), m_nRows(arg.m_nRows), m_nSecs(arg.m_nSecs)
     {
       m_array = MB_NEW T[arg.getSize()];
@@ -50,7 +50,7 @@ namespace qlib {
 	m_array[i] = arg[i];
     }
 
-    ~Array3D() {
+    ~Array3D_old() {
       if(m_array!=NULL) delete [] m_array;
     }
 
@@ -113,7 +113,7 @@ namespace qlib {
     const T *data() const { return m_array; }
     operator const T *() const { return m_array; }
 
-    const Array3D<T> &operator =(const Array3D<T> &arg)
+    const Array3D_old<T> &operator =(const Array3D_old<T> &arg)
     {
       if(&arg!=this){
 	if(m_array!=NULL)	delete [] m_array;
@@ -137,8 +137,9 @@ namespace qlib {
     }
   };
 
-  typedef Array3D<unsigned char> ByteMap;
+  typedef Array3D_old<unsigned char> ByteMap;
 
 }
 
 #endif
+

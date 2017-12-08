@@ -10,7 +10,8 @@
 #include "surface.hpp"
 
 //#include <boost/multi_array.hpp>
-#include <qlib/ByteMap.hpp>
+//#include <qlib/ByteMap.hpp>
+#include <qlib/Array.hpp>
 #include <qlib/Vector4D.hpp>
 #include <qsys/ScalarObject.hpp>
 #include <qlib/LDOM2Stream.hpp>

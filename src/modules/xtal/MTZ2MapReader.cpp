@@ -100,7 +100,13 @@ bool MTZ2MapReader::read(qlib::InStream &arg)
   LOG_DPRINTLN("MTZ> FFT target: FWT=%s, PHI=%s, WGT=%s",
                m_sfp.c_str(), m_sphi.c_str(), m_swgt.c_str());
 
-  setupMap();
+  // setup crystal lattice parameters
+  m_pMap->setXtalParams(m_cella, m_cellb, m_cellc, m_alpha, m_beta, m_gamma, m_nSG);
+
+  // Load reciprocal (HKL) array to the Density map obj (FFT will be performed in DensityMap side)
+  loadRecipArray();
+
+  // setupMap();
 
   return true;
 }
@@ -131,16 +137,17 @@ void MTZ2MapReader::readData(qlib::InStream &arg)
   setupSymmOp();
 }
 
+#if 0
 void MTZ2MapReader::setupMap()
 {
+  // setup crystal lattice parameters
+  m_pMap->setXtalParams(m_cella, m_cellb, m_cellc, m_alpha, m_beta, m_gamma, m_nSG);
+
   // Calculate map from the structure factors loaded
   doFFT();
 
   // setup map dimension parameters
   m_pMap->setMapParams(0, 0, 0, m_na, m_nb, m_nc);
-
-  // setup crystal lattice parameters
-  m_pMap->setXtalParams(m_cella, m_cellb, m_cellc, m_alpha, m_beta, m_gamma, m_nSG);
 
 }
 
@@ -242,7 +249,8 @@ void MTZ2MapReader::doFFT()
   noutalloc = sizeof(fftwf_complex) * m_na * m_nb * m_nc;
   std::complex<float> *in = (std::complex<float> *) fftwf_malloc(ninalloc);
   std::complex<float> *out = (std::complex<float> *) fftwf_malloc(noutalloc);
-# define IND(h,k,l) ((l) + m_nc*((k) + m_nb*(h)))
+//# define IND(h,k,l) ((l) + m_nc*((k) + m_nb*(h)))
+# define IND(h,k,l) ((h) + m_na*((k) + m_nb*(l)))
 # define NCS m_nc
 #endif
 
@@ -384,7 +392,8 @@ void MTZ2MapReader::doFFT()
 			    reinterpret_cast<fftwf_complex*>(in),
 			    out, FFTW_ESTIMATE);
 #else
-  p = fftwf_plan_dft_3d(m_na, m_nb, m_nc,
+  //p = fftwf_plan_dft_3d(m_na, m_nb, m_nc,
+  p = fftwf_plan_dft_3d(m_nc, m_nb, m_na,
 			reinterpret_cast<fftwf_complex*>(in),
 			reinterpret_cast<fftwf_complex*>(out),
 			FFTW_FORWARD, FFTW_ESTIMATE);
@@ -399,9 +408,19 @@ void MTZ2MapReader::doFFT()
   //////////////////////////////////////
 
   try {
+#ifdef HERMIT
     // ATTN: FFT axis is different from the map axis,
     // so axis permutation is required.
     m_pMap->setMapFloatArray(out, m_nc, m_nb, m_na, 2, 1, 0);
+#else
+    // create real array
+    std::vector<float> rtmp(m_na*m_nb*m_nc);
+    for (l=0; l<m_nc ; ++l)
+      for (k=0; k<m_nb ; ++k)
+        for (h=0; h<m_na ; ++h)
+          rtmp[IND(h,k,l)] = out[IND(h,k,l)].real();
+    m_pMap->setMapFloatArray(rtmp.data(), m_na, m_nb, m_nc, 0, 1, 2);
+#endif
   }
   catch (...) {
     fftwf_free(out);
@@ -410,6 +429,154 @@ void MTZ2MapReader::doFFT()
 
   fftwf_free(out);
 #endif
+
+}
+#endif
+
+void MTZ2MapReader::loadRecipArray()
+{
+  std::vector<int> vh(m_nrefl);
+  std::vector<int> vk(m_nrefl);
+  std::vector<int> vl(m_nrefl);
+
+  std::vector<float> vFWT(m_nrefl);
+  std::vector<float> vPHI(m_nrefl);
+
+  if (m_nphi<0) {
+    LOG_DPRINTLN("MTZ2Map> Warning: No phase is specified.");
+    LOG_DPRINTLN("MTZ2Map> Result may be Patterson map.");
+  }
+
+  m_maxL = m_maxK = m_maxH = INT_MIN;
+  int nptr=0, iref;
+  for (iref=0; iref<m_nrefl; ++iref) {
+
+    if (nptr+m_ncol>m_nrawdat/4) {
+      MB_THROW(qlib::RuntimeException, "Out of buffer");
+      return;
+    }
+
+    const int hhh = (int) ((float *)m_pbuf)[nptr+m_cind_h];
+    const int kkk = (int) ((float *)m_pbuf)[nptr+m_cind_k];
+    const int lll = (int) ((float *)m_pbuf)[nptr+m_cind_l];
+    vh[iref] = hhh;
+    vk[iref] = kkk;
+    vl[iref] = lll;
+
+    double wgt = 1.0;
+    if (m_nwgt>=0)
+      wgt = ((float *)m_pbuf)[nptr+m_nwgt];
+
+    double fp = ((float *)m_pbuf)[nptr+m_nfp] * wgt;
+
+    double phi = 0.0;
+    if (m_nphi>=0)
+      phi = ((float *)m_pbuf)[nptr+m_nphi];
+
+    if (boost::math::isfinite(fp))
+      vFWT[iref] = fp;
+    else
+      vFWT[iref] = 0.0;
+
+    if (boost::math::isfinite(phi))
+      vPHI[iref] = phi;
+    else
+      vPHI[iref] = 0.0;
+    nptr += m_ncol;
+
+    m_maxH = qlib::max(m_maxH, qlib::abs(hhh));
+    m_maxK = qlib::max(m_maxK, qlib::abs(kkk));
+    m_maxL = qlib::max(m_maxL, qlib::abs(lll));
+  }
+
+  delete m_pbuf;
+  m_pbuf = NULL;
+
+  MB_DPRINTLN("LOAD OK");
+
+  ///////////////////////////////////
+  // calculate grid size
+
+  checkMapResoln();
+  calcgrid();
+
+  int naa = m_na/2+1;
+
+  DensityMap::RecipAry hklin(naa, m_nb, m_nc);
+
+  const int ncols = hklin.cols();
+
+  int h, k, l;
+  for (l=0; l<m_nc; ++l)
+    for (k=0; k<m_nb; ++k)
+      for (h=0; h<ncols; ++h)
+        hklin.at(h,k,l) = std::complex<float>();
+
+  const float fscale = float(1.0/(m_cella*m_cellb*m_cellc));
+  int isym;
+
+  // Expand s.f.s by the symop
+  for (isym=0; isym<m_nsymm; ++isym) {
+    for (iref=0; iref<m_nrefl; ++iref) {
+      // Apply rotation by reciprocal symop
+      const int hh = vh[iref];
+      const int kk = vk[iref];
+      const int ll = vl[iref];
+      Vector4D ohkl(hh, kk, ll);
+      m_rsymm[isym].xform(ohkl);
+      h = int(ohkl.x());
+      k = int(ohkl.y());
+      l = int(ohkl.z());
+
+      // Apply phase translation by (realspace) symop
+      const double xsh = m_symm[isym].aij(1,4);
+      const double ysh = m_symm[isym].aij(2,4);
+      const double zsh = m_symm[isym].aij(3,4);
+      double phsh = 0.0;
+      // Do not apply phase shift in the Patterson map case.
+      if (m_nphi>=0)
+        phsh = (xsh*h + ysh*k + zsh*l)*M_PI*2.0;
+
+      const float ampl = float( vFWT[iref]*fscale );
+      //const float ampl = float( vFWT[iref] );
+      const float phas = float( vPHI[iref]*float(M_PI)/180.0f );
+
+      std::complex<float> floc = std::polar(1.0f, float(phsh)) * std::polar(ampl, phas);
+
+      // ATTN: Avoid overwriting with ZERO value for missing refls.
+      if (qlib::isNear8<double>(abs(floc), 0.0))
+        continue;
+
+      h = (h+10000*m_na)%m_na;
+      k = (k+10000*m_nb)%m_nb;
+      l = (l+10000*m_nc)%m_nc;
+
+      // Make Friedel pair index
+      int mh = (m_na-h)%m_na;
+      int mk = (m_nb-k)%m_nb;
+      int ml = (m_nc-l)%m_nc;
+
+      // Hermitian case: fill the hemisphere (of L>ncc)
+      //  with the Friedel pairs of the refls.
+      if (h<naa) {
+        hklin.at(h,k,l) = std::conj(floc);
+        if (mh<naa) {
+          // Both +L and -L are in the range (0...NCC)
+          // ==> Fill with both F(+)&F(-)
+          hklin.at(mh,mk,ml) = floc;
+        }
+      }
+      else if (mh<naa) {
+        // Fill with Friedel mate
+        hklin.at(mh,mk,ml) = floc;
+      }
+      else {
+        LOG_DPRINTLN("fatal error %d,%d,%d, naa=%d\n",h,k,l,naa);
+      }
+    }
+  }
+
+  m_pMap->setRecipArray(hklin, m_na, m_nb, m_nc);
 
 }
 

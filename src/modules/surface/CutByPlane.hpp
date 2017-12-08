@@ -9,7 +9,8 @@
 #include "surface.hpp"
 #include <qlib/Vector4D.hpp>
 #include <qlib/Matrix3D.hpp>
-#include <qlib/ByteMap.hpp>
+//#include <qlib/ByteMap.hpp>
+#include <qlib/Array.hpp>
 
 #include "MolSurfObj.hpp"
 

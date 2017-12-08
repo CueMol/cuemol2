@@ -179,13 +179,15 @@ private:
   void checkMapResoln();
   void guessFFTColumns();
   void checkHKLColumns();
-  void doFFT();
+  //void doFFT();
 
 protected:
   void readData(qlib::InStream &arg);
-  void setupMap();
+  //void setupMap();
   void selectFFTColumns();
   void cleanup();
+
+  void loadRecipArray();
 
 };
 

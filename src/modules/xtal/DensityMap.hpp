@@ -11,10 +11,13 @@
 #include <qsys/ScalarObject.hpp>
 
 #include <modules/symm/CrystalInfo.hpp>
-#include <qlib/ByteMap.hpp>
+//#include <qlib/ByteMap.hpp>
+#include <qlib/Array.hpp>
 #include <qlib/LDOM2Stream.hpp>
 
 #include <gfx/Texture.hpp>
+
+#include <complex>
 
 #define MAP_FLOAT_MIN (-1e10)
 #define MAP_FLOAT_MAX (1e10)
@@ -36,6 +39,15 @@ namespace xtal {
   class XTAL_API DensityMap : public qsys::ScalarObject
   {
     MC_SCRIPTABLE;
+
+  public:
+    typedef qlib::Array3D<qbyte> ByteMap;
+    //typedef qlib::ByteMap ByteMap;
+
+    typedef qlib::Array3D<qfloat32> FloatMap;
+
+    typedef qlib::Array3D<std::complex<qfloat32>> RecipAry;
+
 
   private:
 
@@ -63,9 +75,13 @@ namespace xtal {
     double m_dRmsdMap;
 
     /// truncated map (8bit)
-    qlib::ByteMap *m_pByteMap;
+    ByteMap *m_pByteMap;
     double m_dLevelBase;
     double m_dLevelStep;
+
+    FloatMap *m_pFloatMap;
+
+    RecipAry *m_pRecipAry;
 
     ///////////////////////////////////////////////
 
@@ -135,6 +151,8 @@ namespace xtal {
                          double rhomin, double rhomax,
                          double mean, double sigma);
 
+    void setRecipArray(const RecipAry &data, int na, int nb, int nc);
+
     /// setup column, row, section params
     void setMapParams(int stacol, int starow, int stasect,
                       int intcol, int introw, int intsect);
@@ -157,6 +175,11 @@ namespace xtal {
     int getSecInterval() const { return m_nSecInt; }
 
     const CrystalInfo &getXtalInfo() const { return m_xtalInfo; }
+
+    void calcMapStats();
+
+    /// Create ByteMap from FloatMap (using map stats calculated by calcMapStats())
+    void createByteMap();
 
   private:
     mutable gfx::Texture *m_pMapTex;

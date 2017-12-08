@@ -10,7 +10,7 @@
 #include "MapRenderer.hpp"
 
 #include <qlib/ByteMap.hpp>
-#include <qlib/IntVec3D.hpp>
+#include <qlib/Vector3I.hpp>
 #include <qsys/ScalarObject.hpp>
 #include <qsys/ViewEvent.hpp>
 

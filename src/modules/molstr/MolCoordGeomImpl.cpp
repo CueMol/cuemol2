@@ -497,7 +497,7 @@ qlib::LByteArrayPtr MolCoord::getCrdArray() const
   int ncrds = natom*3;
   pRet->init(qlib::type_consts::QTC_FLOAT32, ncrds);
   pRet->setDim(2);
-  pRet->setShape(qlib::IntVec3D(natom, 3, 1));
+  pRet->setShape(qlib::Vector3I(natom, 3, 1));
 
   qfloat32 *pcrd = reinterpret_cast<qfloat32 *>(pRet->data());
 

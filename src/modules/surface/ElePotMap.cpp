@@ -90,9 +90,9 @@ bool ElePotMap::setMapFloatArray(const float *array,
   
 double ElePotMap::smoothHelper(int x, int y, int z)
 {
-  const int nx = m_pMap->getColumns();
-  const int ny = m_pMap->getRows();
-  const int nz = m_pMap->getSections();
+  const int nx = m_pMap->cols();
+  const int ny = m_pMap->rows();
+  const int nz = m_pMap->secs();
 
   double sum = 0.0;
   const int ne = m_deltas.size();

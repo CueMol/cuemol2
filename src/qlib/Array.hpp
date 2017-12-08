@@ -1,15 +1,15 @@
 // -*-Mode: C++;-*-
 //
-// Array.h
-//   1D array class Array
+// Array.hpp
+//   Linear array class: Array
 //
-// $Id: Array.hpp,v 1.3 2010/11/23 11:19:33 rishitani Exp $
 
-#ifndef ARRAY_1D_H__
-#define ARRAY_1D_H__
+#ifndef QLIB_ARRAY_1D_HPP_INCLUDED
+#define QLIB_ARRAY_1D_HPP_INCLUDED
 
 #include "LDebugAssert.hpp"
 #include "LDebugNew.hpp"
+#include "Vector3I.hpp"
 
 namespace qlib {
 
@@ -127,8 +127,11 @@ namespace qlib {
 
     inline bool isOwn() const { return m_bOwn; }
 
+    /// alias for resize
     inline void allocate(int newsz) { resize(newsz); }
-    inline void destroy() { resize(0); }
+
+    /// alias for clear
+    inline void destroy() { clear(); }
 
     const _Type &at(int i) const {
       MB_ASSERT(i>=0); MB_ASSERT(i<m_nSize);
@@ -158,12 +161,12 @@ namespace qlib {
     const Array<_Type> &operator =(const Array<_Type> &arg)
     {
       if(&arg!=this){
-	clear();
-	m_array = MB_NEW _Type[arg.getSize()];
-	m_bOwn = true;
-	m_nSize = arg.m_nSize;
-	for(int i=0; i<arg.getSize(); i++)
-	  m_array[i] = arg[i];
+        clear();
+        m_array = MB_NEW _Type[arg.getSize()];
+        m_bOwn = true;
+        m_nSize = arg.m_nSize;
+        for(int i=0; i<arg.getSize(); i++)
+          m_array[i] = arg[i];
       }
       return *this;
     }
@@ -184,6 +187,169 @@ namespace qlib {
     }
   };
 
+  //////////////////////////////
+
+  template <class _Type>
+  class Array3D : public Array<_Type>
+  {
+  public:
+    /// Superclass type
+    typedef Array<_Type> super_t;
+
+  public:
+    
+    /// Default ctor / Make empty array (we must allocate memory by resize() later.)
+    Array3D() : super_t(), m_nRank(3)
+    {
+    }
+
+    Array3D(int ncol, int nrow, int nsect)
+         : super_t(ncol*nrow*nsect), m_nRank(3), m_dim(ncol,nrow,nsect)
+    {
+    }
+
+    Array3D(int ncol, int nrow, int nsect, const _Type *p)
+         : super_t(ncol*nrow*nsect, p), m_nRank(3), m_dim(ncol,nrow,nsect)
+    {
+    }
+
+    /// Copy ctor
+    Array3D(const Array3D<_Type> &arg)
+         : super_t(arg), m_nRank(arg.m_nRank), m_dim(arg.m_dim)
+    {
+    }
+
+    ~Array3D() {
+    }
+
+  private:
+    /// Rank (max: 3)
+    int m_nRank;
+
+  public:
+    int getRank() const { return m_nRank; }
+
+    void setRank(int n) {
+      if (n<1||n>3) {
+        LString msg = LString::format("Array3D.setRank: invalid rank %d", n);
+        MB_THROW(IllegalArgumentException, msg);
+        return;
+      }
+      m_nRank = n;
+    }
+
+  private:
+    /// Dimension of this array (nx, ny, nz)
+	  Vector3I m_dim;
+
+  public:
+    /// Get dimension
+    const Vector3I &getDim() const { return m_dim; }
+
+    /// Set/change dimension without memory allocation
+    void setDim(const Vector3I &s){
+      // check shape consistency
+      const int total = super_t::getSize();
+      if (total<s.x()*s.y()*s.z()) {
+        LString msg = LString::format("LByteArray.setShape: total size(%d) is smaller than (%d,%d,%d)", total, s.x(), s.y(), s.z());
+        MB_THROW(IllegalArgumentException, msg);
+        return;
+      }
+      /*
+      if (m_nRank==2) {
+        if (s.z()>1) {
+          LString msg = LString::format("LByteArray.setShape: dim(%d) and shape(%d,%d,%d) mismatch",
+                                        m_nRank, s.x(), s.y(), s.z());
+          MB_THROW(IllegalArgumentException, msg);
+          return;
+        }
+      }
+      else if (m_nRank==1) {
+        if (s.y()>1 || s.z()>1) {
+          LString msg = LString::format("LByteArray.setShape: dim(%d) and shape(%d,%d,%d) mismatch",
+                                        m_nRank, s.x(), s.y(), s.z());
+          MB_THROW(IllegalArgumentException, msg);
+          return;
+        }
+      }*/
+
+      m_dim = s;
+    }
+
+    inline void resize(int x, int y, int z)
+    {
+      super_t::resize(x * y * z);
+      m_dim = Vector3I(x,y,z);
+    }
+    inline void resize(const Vector3I &nsz)
+    {
+      super_t::resize(nsz.x()*nsz.y()*nsz.z());
+      m_dim = nsz;
+    }
+    
+    inline int cols() const { return m_dim.x(); }
+    inline int rows() const { return m_dim.y(); }
+    inline int secs() const { return m_dim.z(); }
+
+    inline int getColumns() const { return m_dim.x(); }
+    inline int getRows() const { return m_dim.y(); }
+    inline int getSections() const { return m_dim.z(); }
+
+    /// Conversion from 3D to linear access (FORTRAN order)
+    inline int indf(int ix, int iy, int iz) const {
+      //return iz + (iy + ix*m_dim.y())*m_dim.z();
+      return ix + (iy + iz*m_dim.y())*m_dim.x();
+    }
+
+    /// Conversion from 2D to linear access (FORTRAN order)
+    inline int indf(int ix, int iy) const {
+      //return iy + ix*m_dim.y();
+      return ix + iy*m_dim.x();
+    }
+
+    /// Conversion from 3D to linear access (C order)
+    inline int indc(int ix, int iy, int iz) const {
+      return iz + (iy + ix*m_dim.y())*m_dim.z();
+    }
+
+    /// Conversion from 2D to linear access (C order)
+    inline int indc(int ix, int iy) const {
+      return iy + ix*m_dim.y();
+    }
+
+    //////////
+
+    const _Type &at(int i, int j, int k) const {
+      return super_t::at(indf(i, j, k));
+    }
+
+    _Type &at(int i, int j, int k) {
+      return super_t::at(indf(i, j, k));
+    }
+
+    //
+
+    const _Type &at(int i, int j) const {
+      return super_t::at(indf(i, j));
+    }
+
+    _Type &at(int i, int j) {
+      return super_t::at(indf(i, j));
+    }
+
+    //
+
+    const _Type &at(int i) const {
+      return super_t::at(i);
+    }
+
+    _Type &at(int i) {
+      return super_t::at(i);
+    }
+
+  };
+  
 }
 
-#endif // ARRAY_1D_H__
+#endif
+

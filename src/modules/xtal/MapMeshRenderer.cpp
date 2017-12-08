@@ -183,8 +183,11 @@ namespace {
                             double &zmin, double &zmax)
   {
     Vector4D vn = aax.cross(bax);
-    zmin = (vn.dot(cent) - extent*vn.length())/vn.dot(cax);
-    zmax = (vn.dot(cent) + extent*vn.length())/vn.dot(cax);
+    const double vncen = vn.dot(cent);
+    const double vncax = vn.dot(cax);
+    const double evn = extent*vn.length();
+    zmin = (vncen - evn)/vncax;
+    zmax = (vncen + evn)/vncax;
   }
 }
 
@@ -487,8 +490,9 @@ void MapMeshRenderer::render(DisplayContext *pdl)
         for (i=0; i<ncol; i++){
           if (!inMolBndry(pMap, stcol+i, strow+j, stsec+k))
             m_maptmp.at(i,j,k) = 0;
-          else
+          else {
             m_maptmp.at(i,j,k) = getMap(pMap, stcol+i, strow+j, stsec+k);
+          }
         }
     
     m_texStPos = m_mapStPos;
@@ -511,19 +515,21 @@ void MapMeshRenderer::render(DisplayContext *pdl)
         for (int iplane = 0; iplane<3; ++iplane) {
           quint8 flag = 0U;
           quint8 mask = 1U;
+          const int ipl4 = iplane*4;
 
           // Vector3I tpos(i, j, k);
 
           for (int ii=0; ii<4; ++ii) {
             //Vector3I iv = tpos + m_ivdel[ii + iplane*4];
             //val[ii] = m_maptmp.at(iv.ai(1), iv.ai(2), iv.ai(3));
-
-            int ivx = i + m_idel[ii + iplane*4][0];
-            int ivy = j + m_idel[ii + iplane*4][1];
-            int ivz = k + m_idel[ii + iplane*4][2];
+            const int iid = ii + ipl4;
+            int ivx = i + m_idel[iid][0];
+            int ivy = j + m_idel[iid][1];
+            int ivz = k + m_idel[iid][2];
             val[ii] = m_maptmp.at(ivx, ivy, ivz);
 
-            //val[ii] = getMap(pMap, iv.ai(1)+stcol, iv.ai(2)+strow, iv.ai(3)+stsec);
+            //qbyte v2 = getMap(pMap, ivx+stcol, ivy+strow, ivz+stsec);
+
             if (val[ii]>isolev)
               flag += mask;
             mask = mask << 1;

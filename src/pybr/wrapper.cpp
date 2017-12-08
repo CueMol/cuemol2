@@ -927,7 +927,7 @@ PyObject *Wrapper::tondarray(PyObject *self, PyObject *args)
 
     npy_intp dim[3];
     int ndim = (*pba)->getDim();
-    qlib::IntVec3D s = (*pba)->getShape();
+    qlib::Vector3I s = (*pba)->getShape();
     int nx = dim[0] = s.x();
     int ny = dim[1] = s.y();
     int nz = dim[2] = s.z();

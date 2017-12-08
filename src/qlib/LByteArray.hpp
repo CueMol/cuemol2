@@ -15,7 +15,8 @@
 #include "LTypes.hpp"
 #include "mcutils.hpp"
 
-#include "IntVec3D.hpp"
+//#include "IntVec3D.hpp"
+#include "Vector3I.hpp"
 
 namespace qlib {
 
@@ -39,12 +40,12 @@ namespace qlib {
     //////////
   private:
     /// number of elements (max: 3D array)
-    IntVec3D m_shape;
+    Vector3I m_shape;
 
   public:
-    const IntVec3D &getShape() const { return m_shape; }
+    const Vector3I &getShape() const { return m_shape; }
 
-    void setShape(const IntVec3D &s);
+    void setShape(const Vector3I &s);
 
     //////////
 

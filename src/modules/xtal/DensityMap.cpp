@@ -24,19 +24,26 @@ DensityMap::DensityMap()
 
   m_dMinMap = m_dMaxMap = m_dMeanMap = m_dRmsdMap = 0.0;
   m_pByteMap = NULL;
-  // m_pRealMap = NULL;
+  m_pFloatMap = NULL;
+  m_pRecipAry = NULL;
+
   m_dLevelBase = m_dLevelStep = 0.0;
 
 //  m_bUseMolBndry = false;
   m_pMapTex = NULL;
+
 }
 
 DensityMap::~DensityMap()
 {
   if (m_pByteMap!=NULL)
     delete m_pByteMap;
-  //if (m_pRealMap!=NULL)
-  //delete m_pRealMap;
+
+  if (m_pRecipAry!=NULL)
+    delete m_pRecipAry;
+
+  if (m_pFloatMap!=NULL)
+    delete m_pFloatMap;
 
   if (m_pMapTex!=NULL)
     delete m_pMapTex;
@@ -55,21 +62,22 @@ void DensityMap::setMapFloatArray(const float *array,
   m_nRows = nrow;
   m_nSecs = nsect;
 
-  // calculate a statistics of the map
+  // calculate the statistics of the map
   double
     rhomax=MAP_FLOAT_MIN, rhomin=MAP_FLOAT_MAX,
     rhomean=0.0, sqmean=0.0,
     rhodev=0.0;
 
   for (int i=0; i<ntotal; i++) {
-    double rho = (double)array[i];
-    rhomean += rho/float(ntotal);
-    sqmean += rho*rho/float(ntotal);
-    if (rho>rhomax)
-      rhomax = rho;
-    if (rho<rhomin)
-      rhomin = rho;
+    double rho = double( array[i] );
+    rhomean += rho;
+    sqmean += rho*rho;
+    rhomax = qlib::max(rhomax, rho);
+    rhomin = qlib::min(rhomin, rho);
   }
+
+  rhomean /= double(ntotal);
+  sqmean /= double(ntotal);
 
   rhodev = sqrt(sqmean-rhomean*rhomean);
 
@@ -85,41 +93,52 @@ void DensityMap::setMapFloatArray(const float *array,
   MB_DPRINT("   r.m.s.d: %f\n", rhodev);
 
   // map truncation
-  m_dLevelStep = (double)(rhomax - rhomin)/256.0;
+  m_dLevelStep = (rhomax - rhomin)/256.0;
   m_dLevelBase = rhomin;
 
   MB_DPRINT("truncating to 8bit map base: %f, step: %f\n",
 	    m_dLevelBase, m_dLevelStep);
-
-  if (m_pByteMap!=NULL)
-    delete [] m_pByteMap;
 
   //
   //
 
   rotate(m_nCols,m_nRows,m_nSecs,axcol,axrow,axsect);
 
-  m_pByteMap = new qlib::ByteMap(m_nCols,m_nRows,m_nSecs);
-  for (int k=0; k<nsect; k++)
-    for (int j=0; j<nrow; j++)
-      for (int i=0; i<ncol; i++) {
-	double rho = (double)array[i + (j + k*nrow)*ncol];
-	//rho = floor((rho-m_dLevelBase)/m_dLevelStep);
-	rho = (rho-m_dLevelBase)/m_dLevelStep;
-	if (rho<0) rho = 0.0;
-	if (rho>255) rho = 255.0;
-	int ii=i,jj=j,kk=k;
+  if (m_pRecipAry!=NULL)
+    delete m_pRecipAry;
+  m_pRecipAry = NULL;
+
+  if (m_pFloatMap!=NULL)
+    delete m_pFloatMap;
+  m_pFloatMap = MB_NEW FloatMap(m_nCols,m_nRows,m_nSecs);
+
+  if (m_pByteMap!=NULL)
+    delete m_pByteMap;
+  m_pByteMap = MB_NEW ByteMap(m_nCols,m_nRows,m_nSecs);
+
+  int i, j, k, ii, jj, kk;
+  for (k=0; k<nsect; k++)
+    for (j=0; j<nrow; j++)
+      for (i=0; i<ncol; i++) {
+        const double drho = (double)array[i + (j + k*nrow)*ncol];
+        const double rho = qlib::clamp((drho-m_dLevelBase)/m_dLevelStep, 0.0, 255.0);
+        ii=i,jj=j,kk=k;
 	rotate(ii,jj,kk,axcol,axrow,axsect);
-        m_pByteMap->at(ii,jj,kk) = (unsigned char)rho;
-        // (*m_pByteMap)[ii][jj][kk] = (unsigned char)rho;
+        m_pByteMap->at(ii,jj,kk) = qbyte(rho);
+        m_pFloatMap->at(ii,jj,kk) = qfloat32(drho);
       }
+
+  if (m_pMapTex!=NULL)
+    delete m_pMapTex;
+  m_pMapTex = NULL;
 
 
   MB_DPRINTLN("OK.");
 }
 
-/** construct by uchar array
-    array must be sorted by the Fast-Medium-Slow order
+/**
+ construct by uchar array
+ array must be sorted by the Fast-Medium-Slow order
  */
 void DensityMap::setMapByteArray(const unsigned char*array,
                                  int ncol, int nrow, int nsect,
@@ -145,15 +164,22 @@ void DensityMap::setMapByteArray(const unsigned char*array,
   m_dLevelStep = (double)(rhomax - rhomin)/256.0;
   m_dLevelBase = rhomin;
 
+  if (m_pRecipAry!=NULL)
+    delete m_pRecipAry;
+  m_pRecipAry = NULL;
+
+  if (m_pFloatMap!=NULL)
+    delete m_pFloatMap;
+  m_pFloatMap = NULL;
+
   if (m_pByteMap!=NULL)
-    delete [] m_pByteMap;
+    delete m_pByteMap;
+  m_pByteMap = MB_NEW ByteMap(m_nCols,m_nRows,m_nSecs, array);
 
-  m_pByteMap = new qlib::ByteMap(m_nCols,m_nRows,m_nSecs, array);
+  if (m_pMapTex!=NULL)
+    delete m_pMapTex;
+  m_pMapTex = NULL;
 
-  //typedef boost::const_multi_array_ref<QUE_BYTE, 3> ConstArrayRef;
-  //ConstArrayRef source(array, boost::extents[m_nCols][m_nRows][m_nSecs]);
-  //m_pByteMap = new ByteMap(boost::extents[m_nCols][m_nRows][m_nSecs]);
-  //(*m_pByteMap) = source;
 
   MB_DPRINTLN("OK.");
 }
@@ -327,7 +353,7 @@ bool DensityMap::isInBoundary(int i, int j, int k) const
   return true;
 }
 
-unsigned char DensityMap::atByte(int i, int j, int k) const
+qbyte DensityMap::atByte(int i, int j, int k) const
 {
 //  if (m_bUseBndry)
 //    return getAtWithBndry(i, j, k);
@@ -339,7 +365,10 @@ unsigned char DensityMap::atByte(int i, int j, int k) const
 
 double DensityMap::atFloat(int i, int j, int k) const
 {
-  unsigned char b = atByte(i,j,k);
+  if (m_pFloatMap!=NULL)
+    return m_pFloatMap->at(i,j,k);
+
+  qbyte b = atByte(i,j,k);
   return double(b)*m_dLevelStep + m_dLevelBase;
 }
 
@@ -483,5 +512,95 @@ gfx::Texture *DensityMap::getMapTex() const
   
 
   return m_pMapTex;
+}
+
+#include "FFTUtil.hpp"
+
+void DensityMap::setRecipArray(const RecipAry &data, int na, int nb, int nc)
+{
+  m_nCols = na;
+  m_nRows = nb;
+  m_nSecs = nc;
+  setMapParams(0,0,0,na,nb,nc);
+
+  if (m_pRecipAry!=NULL)
+    delete m_pRecipAry;
+  m_pRecipAry = MB_NEW RecipAry(data);
+
+  if (m_pFloatMap!=NULL)
+    delete m_pFloatMap;
+  m_pFloatMap = MB_NEW FloatMap(m_nCols,m_nRows,m_nSecs);
+
+  FFTUtil fft;
+  fft.doit(*m_pRecipAry, *m_pFloatMap);
+
+  MB_DPRINTLN("FFT OK");
+
+  calcMapStats();
+
+  if (m_pByteMap!=NULL)
+    delete m_pByteMap;
+  m_pByteMap = MB_NEW ByteMap(m_nCols,m_nRows,m_nSecs);
+
+  createByteMap();
+
+  if (m_pMapTex!=NULL)
+    delete m_pMapTex;
+  m_pMapTex = NULL;
+
+}
+
+void DensityMap::calcMapStats()
+{
+  MB_ASSERT(m_pFloatMap!=NULL);
+  
+  const int ntotal = m_pFloatMap->size();
+
+  // calculate the statistics of the map
+  double
+    rhomax=MAP_FLOAT_MIN, rhomin=MAP_FLOAT_MAX,
+    rhomean=0.0, sqmean=0.0,
+    rhodev=0.0;
+
+  for (int i=0; i<ntotal; i++) {
+    double rho = double( m_pFloatMap->at(i) );
+    rhomean += rho;
+    sqmean += rho*rho;
+    rhomax = qlib::max(rhomax, rho);
+    rhomin = qlib::min(rhomin, rho);
+  }
+
+  rhomean /= double(ntotal);
+  sqmean /= double(ntotal);
+
+  rhodev = sqrt(sqmean-rhomean*rhomean);
+
+  m_dMinMap = rhomin;
+  m_dMaxMap = rhomax;
+  m_dMeanMap = rhomean;
+  m_dRmsdMap = rhodev;
+
+  LOG_DPRINTLN("Map statistics:");
+  LOG_DPRINTLN("   minimum: %f", rhomin);
+  LOG_DPRINTLN("   maximum: %f", rhomax);
+  LOG_DPRINTLN("   mean   : %f", rhomean);
+  LOG_DPRINTLN("   r.m.s.d: %f", rhodev);
+
+  // map truncation
+  m_dLevelStep = (rhomax - rhomin)/256.0;
+  m_dLevelBase = rhomin;
+}
+
+void DensityMap::createByteMap()
+{
+  int i, j, k;
+  
+  for (k=0; k<m_nSecs; k++)
+    for (j=0; j<m_nRows; j++)
+      for (i=0; i<m_nCols; i++) {
+        const double drho = m_pFloatMap->at(i, j, k);
+        const double rho = qlib::clamp((drho-m_dLevelBase)/m_dLevelStep, 0.0, 255.0);
+        m_pByteMap->at(i,j,k) = qbyte(rho);
+      }
 }
 

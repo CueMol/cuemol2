@@ -156,12 +156,11 @@
     <ClCompile Include="..\..\src\modules\xtal\CCP4MapReader_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\DensityMap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\DensityMap_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\FFTUtil.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\GLSLMapMesh2Renderer.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\GLSLMapMesh2Renderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\GLSLMapMesh3Renderer.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\GLSLMapMesh3Renderer_wrap.cpp" />
-    <ClCompile Include="..\..\src\modules\xtal\GLSLMapMeshRenderer.cpp" />
-    <ClCompile Include="..\..\src\modules\xtal\GLSLMapMeshRenderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\GLSLMapVolRenderer.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\GLSLMapVolRenderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MapMeshRenderer.cpp" />
@@ -189,7 +188,6 @@
     <mcwrapgen3 Include="..\..\src\modules\xtal\DensityMap.qif" />
     <mcwrapgen3 Include="..\..\src\modules\xtal\GLSLMapMesh2Renderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\xtal\GLSLMapMesh3Renderer.qif" />
-    <mcwrapgen3 Include="..\..\src\modules\xtal\GLSLMapMeshRenderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\xtal\GLSLMapVolRenderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\xtal\MapMeshRenderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\xtal\MapRenderer.qif" />
