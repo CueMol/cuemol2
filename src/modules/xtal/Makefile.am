@@ -26,6 +26,7 @@ MapRenderer.cpp \
 QdfDenMapReader.cpp \
 QdfDenMapWriter.cpp \
 BrixMapReader.cpp \
+FFTUtil.cpp \
 $(NULL)
 
 #
@@ -47,26 +48,29 @@ $(NULL)
 if COND_USE_OPENGL
 
 CPP_SRC += \
-GLSLMapMeshRenderer.cpp \
-GLSLMapMesh2Renderer.cpp \
+GLSLMapMesh3Renderer.cpp \
 GLSLMapVolRenderer.cpp
 
 MCWG_SRC += \
-GLSLMapMeshRenderer.qif \
-GLSLMapMesh2Renderer.qif \
+GLSLMapMesh3Renderer.qif \
 GLSLMapVolRenderer.qif
 
 shaderdir = $(prefix)/data/shaders/
 
 shader_DATA = \
-mapmesh_vertex.glsl \
-mapmesh_frag.glsl \
-mapmesh_geom.glsl \
 mapvol_vertex.glsl \
 mapvol_frag.glsl \
 mapmesh2_vert.glsl \
 mapmesh2_frag.glsl \
 $(NULL)
+
+#GLSLMapMeshRenderer.cpp
+#GLSLMapMesh2Renderer.cpp
+#GLSLMapMeshRenderer.qif
+#GLSLMapMesh2Renderer.qif
+#mapmesh_vertex.glsl
+#mapmesh_frag.glsl
+#mapmesh_geom.glsl
 
 endif
 

@@ -11,6 +11,7 @@
 #include <qlib/mcutils.hpp>
 #include <qlib/LExceptions.hpp>
 #include <qlib/Array.hpp>
+#include <complex>
 
 namespace xtal {
   using qlib::Vector3I;
