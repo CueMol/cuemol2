@@ -532,7 +532,8 @@ void DensityMap::setRecipArray(const RecipAry &data, int na, int nb, int nc)
   m_pFloatMap = MB_NEW FloatMap(m_nCols,m_nRows,m_nSecs);
 
   FFTUtil fft;
-  fft.doit(*m_pRecipAry, *m_pFloatMap);
+  //fft.doit(*m_pRecipAry, *m_pFloatMap);
+  fft.doit(const_cast<RecipAry&>(data), *m_pFloatMap);
 
   MB_DPRINTLN("FFT OK");
 
@@ -631,20 +632,47 @@ void DensityMap::sharpenMapPreview(double b_factor)
   const double m02 = 2.0*a_star*c_star*cos(beta_star);
   const double m12 = 2.0*b_star*c_star*cos(alph_star);
 
-  RecipAry hkldata( *m_pRecipAry );
+  const int nh = m_pRecipAry->cols();
+  const int nk = m_pRecipAry->rows();
+  const int nl = m_pRecipAry->secs();
 
-  const int nh = m_nColInt;
-  const int nk = m_nRowInt;
-  const int nl = m_nSecInt;
+  RecipAry hkldata( nh, nk, nl );
 
   int h, k, l;
 
-  for (h=0; h<nh; ++h) 
-    for (k=0; k<nk; ++k) 
-      for (l=0; l<nl; ++l) {
-        double irs = h*(h*m00 + k*m01 + l*m02) + k*(k*m11 + l*m12) + l*(l*m22);
-        hkldata.at(h,k,l) *= exp(-b_factor * irs * 0.25);
+  for (l=0; l<nl; ++l)
+    for (k=0; k<nk; ++k)
+      for (h=0; h<nh; ++h) {
+        double dh = h;
+        double dk = (k>nk/2) ? (k-nk) : k;
+        double dl = (l>nl/2) ? (l-nl) : l;
+
+        double irs = dh*(dh*m00 + dk*m01 + dl*m02) + dk*(dk*m11 + dl*m12) + dl*(dl*m22);
+        hkldata.at(h, k, l) = m_pRecipAry->at(h, k, l) * float(exp(-b_factor * irs * 0.25));
       }
-  
+
+
+  FFTUtil fft;
+  fft.doit(hkldata, *m_pFloatMap);
+
+  MB_DPRINTLN("FFT OK");
+
+  calcMapStats();
+
+  createByteMap();
+
+  if (m_pMapTex!=NULL)
+    delete m_pMapTex;
+  m_pMapTex = NULL;
+
+  {
+    // notify update
+    qsys::ObjectEvent obe;
+    obe.setType(qsys::ObjectEvent::OBE_CHANGED);
+    obe.setTarget(getUID());
+    obe.setDescr("densityModified");
+    fireObjectEvent(obe);
+  }
+
 }
 

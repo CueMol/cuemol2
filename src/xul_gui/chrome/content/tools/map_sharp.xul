@@ -32,7 +32,7 @@
       <row align="center">
 	<label value="B-factor (/&#0197;)sq:"/>
 	<hbox>
-	  <textbox id="bfac-value" type="number" size="2" flex="0"/>
+	  <textbox id="bfac-value" type="number" size="2" flex="0" value="-10.0" min="-1000.0"/>
 	  <spacer flex="1"/>
 	</hbox>
       </row>
