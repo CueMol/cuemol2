@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2-sysdep.css" type="text/css"?>
+
+<dialog
+  id     = "mapsharp-dialog"
+  windowtype="CueMol2:MapSharpDlg"
+  title  = "Map sharening tool"
+  xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  ondialogaccept="return window.gDlgObj.onDialogAccept(event);"
+  buttons="accept,cancel">
+
+  <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/object-menulist.js"/>
+  <script type="application/javascript" src="map_sharp.js"/>
+
+  <label value="Map sharpening:"/>
+  <grid>
+    <columns>
+      <column flex="0"/>
+      <column flex="1"/>
+    </columns>
+    <rows>
+      <row align="center">
+	<label class="disable-target" value="Target map:"/>
+	<menulist id="map-select-box" sizetopopup="none"/>
+      </row>
+
+      <row align="center">
+	<label value="B-factor (/&#0197;)sq:"/>
+	<hbox>
+	  <textbox id="bfac-value" type="number" size="2" flex="0"/>
+	  <spacer flex="1"/>
+	</hbox>
+      </row>
+
+    </rows>
+  </grid>
+</dialog>
+

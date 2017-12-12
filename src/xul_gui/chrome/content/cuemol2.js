@@ -891,6 +891,19 @@ Qm2Main.prototype.surfCutByPlaneTool = function()
 		      "", stylestr, scene_id, view_id);
 }
 
+Qm2Main.prototype.doMapSharpening = function()
+{
+  var stylestr = "chrome,resizable=no,dependent,centerscreen";
+
+  var scene_id = this.mMainWnd.getCurrentSceneID();
+  var win = this.mWinMed.getMostRecentWindow("CueMol2:MapSharpDlg");
+  if (win)
+    win.focus();
+  else
+    window.openDialog("chrome://cuemol2/content/tools/map_sharp.xul",
+                      "", stylestr, scene_id);
+};
+
 Qm2Main.prototype.showConfigDlg = function ()
 {
 #ifdef XP_MACOSX

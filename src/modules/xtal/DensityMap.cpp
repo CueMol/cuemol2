@@ -622,7 +622,7 @@ void DensityMap::sharpenMapPreview(double b_factor)
 
   const double alph_star = acos( (cos(gamma)*cos(beta)-cos(alpha)) /(sin(beta)*sin(gamma)) );
   const double beta_star = acos( (cos(alpha)*cos(gamma)-cos(beta)) /(sin(gamma)*sin(alpha)) );
-  const double gamm_star = acos( (cos(beta)*cos(alpha)-cos(gamma)) /(sin(alpha())*sin(beta())) );
+  const double gamm_star = acos( (cos(beta)*cos(alpha)-cos(gamma)) /(sin(alpha)*sin(beta)) );
 
   const double m00 = a_star*a_star;
   const double m11 = b_star*b_star;

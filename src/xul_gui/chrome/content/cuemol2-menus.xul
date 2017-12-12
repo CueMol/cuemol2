@@ -409,6 +409,9 @@
 	      name="tools-menu-perf-meas"
 	      type="checkbox"
 	      command="cmd_toggle_perfmeas"/>
+
+	    <menuitem label="Map sharpening ..." oncommand="gQm2Main.doMapSharpening();" />
+
 	  </menupopup>
 	</menu>
 
