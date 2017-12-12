@@ -604,3 +604,47 @@ void DensityMap::createByteMap()
       }
 }
 
+void DensityMap::sharpenMapPreview(double b_factor)
+{
+  const double vol = m_xtalInfo.volume();
+
+  const double a = m_xtalInfo.a();
+  const double b = m_xtalInfo.b();
+  const double c = m_xtalInfo.c();
+
+  const double alpha = qlib::toRadian( m_xtalInfo.alpha() );
+  const double beta = qlib::toRadian( m_xtalInfo.beta() );
+  const double gamma = qlib::toRadian( m_xtalInfo.gamma() );
+
+  const double a_star = b*c*sin(alpha)/vol;
+  const double b_star = c*a*sin(beta)/vol;
+  const double c_star = a*b*sin(gamma)/vol;
+
+  const double alph_star = acos( (cos(gamma)*cos(beta)-cos(alpha)) /(sin(beta)*sin(gamma)) );
+  const double beta_star = acos( (cos(alpha)*cos(gamma)-cos(beta)) /(sin(gamma)*sin(alpha)) );
+  const double gamm_star = acos( (cos(beta)*cos(alpha)-cos(gamma)) /(sin(alpha())*sin(beta())) );
+
+  const double m00 = a_star*a_star;
+  const double m11 = b_star*b_star;
+  const double m22 = c_star*c_star;
+  const double m01 = 2.0*a_star*b_star*cos(gamm_star);
+  const double m02 = 2.0*a_star*c_star*cos(beta_star);
+  const double m12 = 2.0*b_star*c_star*cos(alph_star);
+
+  RecipAry hkldata( *m_pRecipAry );
+
+  const int nh = m_nColInt;
+  const int nk = m_nRowInt;
+  const int nl = m_nSecInt;
+
+  int h, k, l;
+
+  for (h=0; h<nh; ++h) 
+    for (k=0; k<nk; ++k) 
+      for (l=0; l<nl; ++l) {
+        double irs = h*(h*m00 + k*m01 + l*m02) + k*(k*m11 + l*m12) + l*(l*m22);
+        hkldata.at(h,k,l) *= exp(-b_factor * irs * 0.25);
+      }
+  
+}
+

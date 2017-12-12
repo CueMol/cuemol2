@@ -187,6 +187,8 @@ namespace xtal {
   public:
     gfx::Texture *getMapTex() const;
 
+    void sharpenMapPreview(double b_factor);
+
     ////////////////////////////////////////////
     // Data chunk serialization
 
