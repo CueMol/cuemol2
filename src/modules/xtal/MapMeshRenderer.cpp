@@ -176,6 +176,21 @@ void MapMeshRenderer::viewChanged(qsys::ViewEvent &ev)
   return;
 }
 
+void MapMeshRenderer::objectChanged(qsys::ObjectEvent &ev)
+{
+  if (isVisible() &&
+      ev.getType()==qsys::ObjectEvent::OBE_CHANGED_DYNAMIC &&
+      ev.getDescr().equals("densityModified")) {
+    // Invalidate the copy of map
+    //m_maptmp.clear();
+    m_maptmp.resize(0,0,0);
+  }
+  else if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED_FIXDYN) {
+  }
+  
+  super_t::objectChanged(ev);
+}
+
 ///////////////////////////////////////////////////
 
 namespace {

@@ -11,6 +11,7 @@
   title  = "Map sharening tool"
   xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
   ondialogaccept="return window.gDlgObj.onDialogAccept(event);"
+  ondialogcancel="return window.gDlgObj.onDialogCancel(event);"
   buttons="accept,cancel">
 
   <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
@@ -30,9 +31,11 @@
       </row>
 
       <row align="center">
-	<label value="B-factor (/&#0197;)sq:"/>
+	<label value="B-factor:"/>
 	<hbox>
-	  <textbox id="bfac-value" type="number" size="2" flex="0" value="-10.0" min="-1000.0"/>
+	  <numslider id="bfac-value" flex="1" size="3"
+	    decimalplaces="1" min="-200" max="200" increment="10" unit="/&#0197;sq"
+	    onchange="window.gDlgObj.onBfacChange(event)"/>
 	  <spacer flex="1"/>
 	</hbox>
       </row>

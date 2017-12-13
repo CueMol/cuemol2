@@ -640,17 +640,23 @@ void DensityMap::sharpenMapPreview(double b_factor)
 
   int h, k, l;
 
-  for (l=0; l<nl; ++l)
-    for (k=0; k<nk; ++k)
-      for (h=0; h<nh; ++h) {
-        double dh = h;
-        double dk = (k>nk/2) ? (k-nk) : k;
-        double dl = (l>nl/2) ? (l-nl) : l;
-
-        double irs = dh*(dh*m00 + dk*m01 + dl*m02) + dk*(dk*m11 + dl*m12) + dl*(dl*m22);
-        hkldata.at(h, k, l) = m_pRecipAry->at(h, k, l) * float(exp(-b_factor * irs * 0.25));
-      }
-
+  if (qlib::isNear4(b_factor, 0.0)) {
+    for (l=0; l<nl; ++l)
+      for (k=0; k<nk; ++k)
+        for (h=0; h<nh; ++h)
+          hkldata.at(h, k, l) = m_pRecipAry->at(h, k, l);
+  }
+  else {
+    for (l=0; l<nl; ++l)
+      for (k=0; k<nk; ++k)
+        for (h=0; h<nh; ++h) {
+          double dh = h;
+          double dk = (k>nk/2) ? (k-nk) : k;
+          double dl = (l>nl/2) ? (l-nl) : l;
+          double irs = dh*(dh*m00 + dk*m01 + dl*m02) + dk*(dk*m11 + dl*m12) + dl*(dl*m22);
+          hkldata.at(h, k, l) = m_pRecipAry->at(h, k, l) * float(exp(-b_factor * irs * 0.25));
+        }
+  }
 
   FFTUtil fft;
   fft.doit(hkldata, *m_pFloatMap);
@@ -668,7 +674,7 @@ void DensityMap::sharpenMapPreview(double b_factor)
   {
     // notify update
     qsys::ObjectEvent obe;
-    obe.setType(qsys::ObjectEvent::OBE_CHANGED);
+    obe.setType(qsys::ObjectEvent::OBE_CHANGED_DYNAMIC);
     obe.setTarget(getUID());
     obe.setDescr("densityModified");
     fireObjectEvent(obe);

@@ -41,32 +41,67 @@
 
     var nobjs = this.mObjBox.getItemCount();
     
+    this.mBfac = document.getElementById("bfac-level");
+
     //alert("item count="+nobjs);
     if (nobjs==0) {
       // no mol obj to calc --> error?
       //this.mSurfName.disabled = true;
     }
     var obj = this.mObjBox.getSelectedObj();
-  }
+  };
   
   dlg.onObjBoxChanged = function (aEvent)
   {
     dd("MapSharpDlg> ObjSelChg: "+aEvent.target.id);
-  }
+  };
 
-  
-  dlg.onDialogAccept = function (event)
+  dlg.onBfacChange = function (aEvent)
+  {
+    if ('isDragging' in aEvent && aEvent.isDragging)
+      dd("Dragging");
+    else
+      dd("Changed");
+
+    this.preview();
+  };
+
+  dlg.preview = function ()
   {
     var tgtobj = this.mObjBox.getSelectedObj();
     if (tgtobj==null)
       return;
 
     ////
-    // density value
-
-    var bfac = parseInt(document.getElementById("bfac-value").value);
+    // Get bfactor value
+    var bfac = parseFloat(document.getElementById("bfac-value").value);
     if (bfac==NaN)
       return; // ERROR
+
+    tgtobj.sharpenMapPreview(bfac);
+  };
+
+  dlg.onDialogCancel = function (event)
+  {
+    var tgtobj = this.mObjBox.getSelectedObj();
+    if (tgtobj==null)
+      return;
+
+    // Reset the preview map
+    tgtobj.sharpenMapPreview(0.0);
+    return;
+  };
+
+  dlg.onDialogAccept = function (event)
+  {
+    var tgtobj = this.mObjBox.getSelectedObj();
+    if (tgtobj==null)
+      return;
+
+    // test -- reset
+    tgtobj.sharpenMapPreview(0.0);
+    return;
+    
 
     // EDIT TXN START //
     //scene.startUndoTxn("Create mol surface");

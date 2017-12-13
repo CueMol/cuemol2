@@ -198,6 +198,8 @@ namespace xtal {
 
     virtual void viewChanged(qsys::ViewEvent &);
 
+    virtual void objectChanged(qsys::ObjectEvent &ev);
+
     ///////////////////////////////////////////////////////////////
 
   public:
