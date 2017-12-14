@@ -181,7 +181,7 @@ StreamListener.prototype.onStatus = function (aRequest, aContext, aStatus, aStat
 // nsIHttpEventSink
 StreamListener.prototype.onRedirect = function (aOldChannel, aNewChannel)
 {
-  dump("********** ON REDIRECT ***** \n");
+  dd("********** ON REDIRECT *****");
 };
 
 // XPCOM interface

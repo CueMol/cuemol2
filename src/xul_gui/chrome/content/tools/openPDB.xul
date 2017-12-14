@@ -77,7 +77,7 @@ window.gPdbDlg = {
         let httpChannel = this.mIoService.newChannelFromURI(uri)
           .QueryInterface(Components.interfaces.nsIHttpChannel);
         httpChannel.requestMethod = "HEAD";
-        httpChannel.redirectionLimit = 0;
+        httpChannel.redirectionLimit = 10;
         httpChannel.open();
         dd("Response "+httpChannel.responseStatus+httpChannel.responseStatusText+" for URL: "+url_pdb);
         if (httpChannel.responseStatus!=200) {
