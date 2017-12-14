@@ -62,13 +62,15 @@ window.gPdbDlg = {
     if (pdbchk) {
       //let url_pdb = "http://www.rcsb.org/pdb/download/downloadFile.do?"+
       //"fileFormat=pdb&compression=NO&structureId="+pdbid;
-      //let url_pdb = "http://files.rcsb.org/download/"+pdbid+".pdb.gz";
 
-      //let svr = document.getElementById('pdb-svr-list').value;
+      let svr = document.getElementById('pdb-svr-list').value;
+
       //if (svr=="EBI")
       //  url_pdb = "http://files.rcsb.org/download/"+pdbid+".cif.gz";
       //else
-      url_pdb = "http://files.rcsb.org/download/"+pdbid+".cif.gz";
+      //url_pdb = "http://files.rcsb.org/download/"+pdbid+".cif.gz";
+
+      url_pdb = cuemolui.replacePDBURL(svr, pdbid);
       let uri = this.mIoService.newURI(url_pdb, null, null);
   
       try {
@@ -135,13 +137,14 @@ window.gPdbDlg = {
   <groupbox>
     <caption label="Coordinates"/>
     <checkbox id="chk-get-pdb" label="Fetch pdb file" checked="true"/>
-    <!--<menulist id="pdb-svr-list">
+    <menulist id="pdb-svr-list">
       <menupopup>
-	<menuitem label="RCSB (files.rcsb.org)" value="RCSB" selected="true"/>
-	<menuitem label="EBI (www.ebi.ac.uk)" value="EBI"/>
-	<menuitem label="PDBj (ftp.pdbj.org)" value="PDBJ"/>
+	<menuitem label="RCSB (files.rcsb.org)/cif.gz" value="http://files.rcsb.org/download/{code}.cif.gz" selected="true"/>
+	<menuitem label="RCSB (files.rcsb.org)/pdb.gz" value="http://files.rcsb.org/download/{code}.pdb.gz" />
+	<menuitem label="EBI (www.ebi.ac.uk)/cif" value="http://www.ebi.ac.uk/pdbe/entry-files/download/{code}_updated.cif" />
+	<menuitem label="EBI (ftp.ebi.ac.uk)/pdb.gz" value="http://ftp.ebi.ac.uk/pub/databases/rcsb/pdb-remediated/data/structures/divided/pdb/{mid}/pdb{code}.ent.gz" />
       </menupopup>
-    </menulist>-->
+    </menulist>
   </groupbox>
 
   <groupbox>

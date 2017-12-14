@@ -1,3 +1,4 @@
+// -*-Mode: C++;-*-
 //
 // web PDB download tool
 //
@@ -261,19 +262,32 @@ Qm2Main.prototype.openPDBsiteImpl = function (pdbid, aPDBURL, afuncs)
   //pdb_url = "http://www.rcsb.org/pdb/download/downloadFile.do?"+"fileFormat=pdb&compression=YES&structureId="+pdbid;
   //pdb_url = "http://www.rcsb.org/pdb/files/"+pdbid+".pdb.gz";
   //pdb_url = "http://www.rcsb.org/pdb/files/"+pdbid+".pdb"
-
-  /*
-  if (bUseMmcif) {
-    pdb_url = "http://files.rcsb.org/download/"+pdbid+".cif.gz"
-  }
-  else {
-    pdb_url = "http://files.rcsb.org/download/"+pdbid+".pdb.gz"
-  }
-   */
-  //var mid = pdbid.substr(1,2);
   //pdb_url = "ftp://ftp.wwpdb.org/pub/pdb/data/structures/divided/pdb/"+mid+"/pdb"+pdbid+".ent.gz"
 
-  cuemol.putLogMsg("open PDB site: URL=\""+pdb_url+"\"");
+  var rdr_type=null;
+  var cmp_type=null;
+  
+  if (pdb_url.match(/\.pdb\.gz$/) ||
+      pdb_url.match(/\.ent\.gz$/)) {
+    rdr_type = "pdb";
+    cmp_type = "gzip";
+  }
+  else if (pdb_url.match(/\.pdb$/) ||
+           pdb_url.match(/\.ent$/)) {
+    rdr_type = "pdb";
+    cmp_type = null;
+  }
+  else if (pdb_url.match(/\.cif\.gz$/)) {
+    rdr_type = "mmcif";
+    cmp_type = "gzip";
+  }
+  else if (pdb_url.match(/\.cif$/)) {
+    rdr_type = "mmcif";
+    cmp_type = null;
+  }
+  
+
+  cuemol.println("Open PDB site: URL=\""+pdb_url+"\"");
   dd("open PDB site: URL=\""+pdb_url+"\"");
   // alert("OK PDBID="+pdb_url);
 
@@ -287,13 +301,11 @@ Qm2Main.prototype.openPDBsiteImpl = function (pdbid, aPDBURL, afuncs)
   var obj_type;
   var rend_types;
   var reader;
-  if (bUseMmcif) {
-    reader = smg.createHandler("mmcif", 0);
-  }
-  else {
-    reader = smg.createHandler("pdb", 0);
-  }
-  reader.compress = "gzip";
+
+  reader = smg.createHandler(rdr_type, 0);
+  if (cmp_type)
+    reader.compress = cmp_type;
+
   ( function () {
     var tmpobj = reader.createDefaultObj();
     obj_type = tmpobj._wrapped.getClassName();
