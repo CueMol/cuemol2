@@ -141,7 +141,6 @@ window.gPdbDlg = {
       <menupopup>
 	<menuitem label="RCSB (files.rcsb.org)/cif.gz" value="http://files.rcsb.org/download/{code}.cif.gz" selected="true"/>
 	<menuitem label="RCSB (files.rcsb.org)/pdb.gz" value="http://files.rcsb.org/download/{code}.pdb.gz" />
-	<menuitem label="EBI (www.ebi.ac.uk)/cif" value="http://www.ebi.ac.uk/pdbe/entry-files/download/{code}_updated.cif" />
 	<menuitem label="EBI (ftp.ebi.ac.uk)/pdb.gz" value="http://ftp.ebi.ac.uk/pub/databases/rcsb/pdb-remediated/data/structures/divided/pdb/{mid}/pdb{code}.ent.gz" />
       </menupopup>
     </menulist>
