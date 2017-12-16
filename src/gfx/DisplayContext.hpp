@@ -29,6 +29,7 @@ namespace gfx {
   class AbstractColor;
   class PixelBuffer;
   class Texture;
+  class ComputeContext;
 
   class GFX_API DisplayContext : public qlib::LObject
   {
@@ -273,6 +274,12 @@ namespace gfx {
 
     virtual bool recordStart();
     virtual void recordEnd();
+
+    ///////////////////////////////
+    // Computing support
+
+    /// Get computing context associated this GPU
+    virtual ComputeContext *getComputeContext();
 
     ////////////////////////////////////////////////////
     // convenience methods

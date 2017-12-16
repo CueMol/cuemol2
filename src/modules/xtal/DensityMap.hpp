@@ -16,6 +16,7 @@
 #include <qlib/LDOM2Stream.hpp>
 
 #include <gfx/Texture.hpp>
+#include <gfx/ComputeContext.hpp>
 
 #include <complex>
 
@@ -188,6 +189,12 @@ namespace xtal {
     gfx::Texture *getMapTex() const;
 
     void sharpenMapPreview(double b_factor);
+
+  private:
+    gfx::ComputeContext *m_pCCtxt;
+    
+  public:
+    void setCompCtxt(gfx::ComputeContext *pCtxt) { m_pCCtxt = pCtxt; }
 
     ////////////////////////////////////////////
     // Data chunk serialization

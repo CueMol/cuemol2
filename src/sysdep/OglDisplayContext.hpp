@@ -216,6 +216,19 @@ namespace sysdep {
     LString m_curMater;
     void setMaterImpl(const LString &name);
 
+#ifdef HAVE_CUDA
+  public:
+    ///////////////////////////////
+    // Computing support (CUDA)
+
+    /// Common computing context
+    static gfx::ComputeContext *m_spCompCtxt;
+
+    /// Get computing context associated this GPU
+    virtual gfx::ComputeContext *getComputeContext();
+#endif
+    
+
   };
 
 }

@@ -1247,3 +1247,25 @@ void OglDisplayContext::unuseTexture(gfx::Texture *pTex)
 {
   pTex->unuse();
 }
+
+//////////
+
+#ifdef HAVE_CUDA
+
+#include "CudaCompContext.hpp"
+
+gfx::ComputeContext *OglDisplayContext::m_spCompCtxt = NULL;
+
+ComputeContext *OglDisplayContext::getComputeContext()
+{
+  if (m_spCompCtxt==NULL) {
+    CudaCompContext *pCtxt = MB_NEW CudaCompContext();
+    pCtxt->init();
+    m_spCompCtxt = pCtxt;
+  }
+
+  return m_spCompCtxt;
+}
+
+#endif
+

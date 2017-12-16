@@ -76,6 +76,11 @@ bool GLSLMapMesh3Renderer::isUseVer2Iface() const
 
 bool GLSLMapMesh3Renderer::init(DisplayContext *pdc)
 {
+  DensityMap *pMap = dynamic_cast<DensityMap *>(getClientObj().get());
+  if (pMap!=NULL) {
+    pMap->setCompCtxt( pdc->getComputeContext() );
+  }
+
   sysdep::OglShaderSetupHelper<GLSLMapMesh3Renderer> ssh(this);
 
   if (m_pPO==NULL)

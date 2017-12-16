@@ -267,3 +267,8 @@ void DisplayContext::attribute(int n)
 {
 }
 
+ComputeContext *DisplayContext::getComputeContext()
+{
+  return NULL;
+}
+
