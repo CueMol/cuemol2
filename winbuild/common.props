@@ -25,11 +25,19 @@
     <ExecutablePath>$(BuildSetDir)\bin;$(XULRunnerDir)\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
 
+  <!-- CUDA config -->
+  <PropertyGroup Label="UserMacros" Condition="'$(Platform)'=='x64'">
+    <HaveCUDA>Yes</HaveCUDA>
+    <CUDAVerName>CUDA 9.0</CUDAVerName>
+  </PropertyGroup>
+
+  <!-- Python config -->
   <PropertyGroup Label="UserMacros" Condition="'$(Platform)'=='x64'">
     <HavePython>No</HavePython>
     <PythonDir>$(BuildSetDir)\Python34-64\</PythonDir>
   </PropertyGroup>
 
+  <!-- Boost config -->
   <PropertyGroup Label="UserMacros" Condition="'$(Configuration)'=='Release'">
     <BoostVer>vc120-mt-1_57</BoostVer>
   </PropertyGroup>
@@ -40,7 +48,6 @@
   <PropertyGroup>
     <_ProjectFileVersion>12.0.21005.1</_ProjectFileVersion>
   </PropertyGroup>
-
 
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
     <OutDir>$(XULDeployDir)\</OutDir>
@@ -53,7 +60,6 @@
     <LinkIncremental>false</LinkIncremental>
     <GenerateManifest>false</GenerateManifest>
   </PropertyGroup>
-
 
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
     <ClCompile>
