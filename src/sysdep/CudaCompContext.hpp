@@ -16,7 +16,64 @@
 
 namespace gfx {
 
-  class GFX_API CudaCompContext : public gfx::ComputeContext
+  class SYSDEP_API CudaCompArray : public gfx::ComputeArray
+  {
+  private:
+    CUdeviceptr m_devptr;
+    int m_nSize;
+
+  public:
+
+    CudaCompArray() : m_devptr(0), m_nSize(0)
+    {
+    }
+
+    virtual ~CudaCompArray()
+    {
+      cleanup();
+    }
+
+    virtual void alloc(int nsz)
+    {
+      CUresult error;
+      error = cuMemAlloc(&m_devptr, nsz);
+      if (error != CUDA_SUCCESS) {
+        MB_THROW(qlib::RuntimeException, "cuMemAlloc failed");
+        return;
+      }
+      m_nSize = nsz;
+    }
+    
+    virtual void cleanup()
+    {
+      CUresult error;
+      if (m_devptr)
+        error = cuMemFree(m_devptr);
+      m_devptr = 0;
+    }
+
+    virtual void copyFrom(const void *pmem, int nsz)
+    {
+      CUresult error;
+      error = cuMemcpyHtoD(m_devptr, pmem, nsz);
+      if (error != CUDA_SUCCESS) {
+        MB_THROW(qlib::RuntimeException, "cuMemcpyHtoD failed");
+        return;
+      }
+    }
+
+    virtual void copyTo(void *pmem, int nsz)
+    {
+      CUresult error;
+      error = cuMemcpyDtoH(pmem, m_devptr, nsz);
+      if (error != CUDA_SUCCESS) {
+        MB_THROW(qlib::RuntimeException, "cuMemcpyDtoH failed");
+        return;
+      }
+    }
+  };
+
+  class SYSDEP_API CudaCompContext : public gfx::ComputeContext
   {
   private:
     CUcontext m_cuContext;
@@ -32,7 +89,7 @@ namespace gfx {
       cleanup();
     }
 
-    void init()
+    virtual void init()
     {
       cuInit(0);
 
@@ -77,8 +134,16 @@ namespace gfx {
     void cleanup()
     {
       CUresult error;
-      error = cuCtxDestroy(m_cuContext);
+      if (m_cuContext)
+        error = cuCtxDestroy(m_cuContext);
+      m_cuContext = 0;
     }
+
+    virtual ComputeArray *createArray()
+    {
+      return MB_NEW CudaCompArray();
+    }
+
   };
   
 }

@@ -32,6 +32,7 @@ DensityMap::DensityMap()
 //  m_bUseMolBndry = false;
   m_pMapTex = NULL;
 
+  m_pCCtxt = NULL;
 }
 
 DensityMap::~DensityMap()
@@ -607,6 +608,12 @@ void DensityMap::createByteMap()
 
 void DensityMap::sharpenMapPreview(double b_factor)
 {
+  if (m_pCCtxt!=NULL) {
+    gfx::ComputeArray *pCAry = m_pCCtxt->createArray();
+    pCAry->initWith(*m_pFloatMap);
+    delete pCAry;
+  }
+
   const double vol = m_xtalInfo.volume();
 
   const double a = m_xtalInfo.a();
