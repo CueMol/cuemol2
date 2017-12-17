@@ -67,6 +67,32 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\common.props" />
   </ImportGroup>
+  <!-- CUDA -->
+  <PropertyGroup Condition="'$(HaveCUDA)'=='Yes'">
+    <CUDAPropsPath Condition="'$(CUDAPropsPath)'==''">$(VCTargetsPath)\BuildCustomizations</CUDAPropsPath>
+  </PropertyGroup>
+  <ImportGroup Condition="'$(HaveCUDA)'=='Yes'" Label="ExtensionSettings">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\$(CUDAVerName).props" />
+  </ImportGroup>
+  <ItemDefinitionGroup Condition="'$(HaveCUDA)'=='Yes'">
+    <ClCompile>
+      <PreprocessorDefinitions>HAVE_CUDA=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>cudart.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(CudaToolkitLibDir);</AdditionalLibraryDirectories>
+    </Link>
+    <CudaCompile>
+      <CodeGeneration>compute_30,sm_30;compute_35,sm_35;compute_37,sm_37;compute_50,sm_50;compute_52,sm_52;compute_60,sm_60;compute_70,sm_70;</CodeGeneration>
+      <AdditionalOptions>-Xcompiler "/wd 4819" %(AdditionalOptions)</AdditionalOptions>
+      <CudaRuntime>Shared</CudaRuntime>
+      <Include>%(AdditionalIncludeDirectories)</Include>
+    </CudaCompile>
+  </ItemDefinitionGroup>
+  <PropertyGroup Condition="'$(HaveCUDA)'=='Yes'">
+    <CudaClVersion>2013</CudaClVersion>
+  </PropertyGroup>
+
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <_ProjectFileVersion>12.0.21005.1</_ProjectFileVersion>
@@ -207,6 +233,11 @@
     <glslshader Include="..\..\src\modules\xtal\mapvol_vertex.glsl" />
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="..\..\src\modules\xtal\test_cuda.cu">
+      <TargetMachinePlatform>64</TargetMachinePlatform>
+    </CudaCompile>
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\qlib\qlib.vcxproj">
       <Project>{17abbaff-4e0b-4cab-ae59-b5fc76a4e285}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
@@ -228,5 +259,9 @@
   <ImportGroup Label="ExtensionTargets">
     <Import Project="..\mcwrapgen3.targets" />
     <Import Project="..\glsl_shader.targets" />
+  </ImportGroup>
+  <!-- CUDA -->
+  <ImportGroup Condition="'$(HaveCUDA)'=='Yes'" Label="ExtensionTargets">
+    <Import Project="$(VCTargetsPath)\BuildCustomizations\$(CUDAVerName).targets" />
   </ImportGroup>
 </Project>

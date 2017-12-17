@@ -160,4 +160,7 @@
       <Filter>Shaders</Filter>
     </glslshader>
   </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="..\..\src\modules\xtal\test_cuda.cu" />
+  </ItemGroup>
 </Project>

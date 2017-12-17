@@ -8,6 +8,9 @@
 #include "DensityMap.hpp"
 #include "QdfDenMapWriter.hpp"
 
+#include <sysdep/CudartCompContext.hpp>
+
+
 #ifdef WIN32
 #define USE_TBO
 #endif
@@ -606,12 +609,33 @@ void DensityMap::createByteMap()
       }
 }
 
+void launchTestKernel(float *input, float *output, int len);
+
 void DensityMap::sharpenMapPreview(double b_factor)
 {
   if (m_pCCtxt!=NULL) {
     gfx::ComputeArray *pCAry = m_pCCtxt->createArray();
     pCAry->initWith(*m_pFloatMap);
+
+    FloatMap map2(m_pFloatMap->cols(), m_pFloatMap->rows(), m_pFloatMap->secs());
+    gfx::ComputeArray *pCA_out = m_pCCtxt->createArray();
+    pCA_out->alloc(map2.size(), sizeof(FloatMap::value_type));
+
+    {
+      sysdep::CudartCompArray *pcin = static_cast<sysdep::CudartCompArray *>(pCAry);
+      float *pin = (float *) pcin->getHandle();
+      
+      sysdep::CudartCompArray *pcout = static_cast<sysdep::CudartCompArray *>(pCA_out);
+      float *pout = (float *) pcout->getHandle();
+      
+      int nlen = m_pFloatMap->size();
+      launchTestKernel(pin, pout, nlen);
+    }
+
+    pCA_out->copyTo(map2);
+
     delete pCAry;
+    delete pCA_out;
   }
 
   const double vol = m_xtalInfo.volume();

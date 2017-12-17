@@ -17,12 +17,20 @@ namespace gfx {
 
   class GFX_API ComputeArray : public qlib::LObject
   {
+  private:
+    int m_nElemCount;
+    int m_nElemSize;
+
   public:
+    ComputeArray() : m_nElemCount(0), m_nElemSize(0)
+    {
+    }
+
     virtual ~ComputeArray()
     {
     }
 
-    virtual void alloc(int nsz)
+    virtual void alloc(int nsz1, int nsz2)
     {
     }
 
@@ -30,36 +38,38 @@ namespace gfx {
     {
     }
 
-    virtual void copyFrom(const void *pmem, int nsz)
+    virtual void copyFrom(const void *pmem, int nsz1, int nsz2)
     {
     }
     
-    virtual void copyTo(void *pmem, int nsz)
+    virtual void copyTo(void *pmem, int nsz1, int nsz2)
     {
     }
 
     //////////
 
+    int getElemCount() const { return m_nElemCount; }
+    int getElemSize() const { return m_nElemSize; }
+
     template <class _Type>
     void initWith(const qlib::Array<_Type> &ary)
     {
-      const int nsz = ary.size() * sizeof(_Type);
-      alloc(nsz);
-      copyFrom(ary.data(), nsz);
+      const int nElemCount = ary.size();
+      const int nElemSize = sizeof(_Type);
+      alloc(nElemCount, nElemSize);
+      copyFrom(ary.data(), nElemCount, nElemSize);
     }
 
     template <class _Type>
     void copyFrom(const qlib::Array<_Type> &ary)
     {
-      const int nsz = ary.size() * sizeof(_Type);
-      copyFrom(ary.data(), nsz);
+      copyFrom(ary.data(), ary.size(), sizeof(_Type));
     }
     
     template <class _Type>
-    void copyTo(void *pmem, int nsz)
+    void copyTo(qlib::Array<_Type> &ary)
     {
-      const int nsz = ary.size() * sizeof(_Type);
-      copyTo(ary.data(), nsz);
+      copyTo(ary.data(), ary.size(), sizeof(_Type));
     }
 
   };
