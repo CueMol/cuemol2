@@ -674,28 +674,24 @@ void DensityMap::sharpenMapPreview(double b_factor)
     for (l=0; l<nl; ++l)
       for (k=0; k<nk; ++k)
         for (h=0; h<nh; ++h) {
-
-          // Hermitian case: h index is already restricted in 0-na/2 range
-          float dh = h;
-          //float dh = (h>nh/2) ? (h-nh) : h;
-
-          float dk = (k>nk/2) ? (k-nk) : k;
-          float dl = (l>nl/2) ? (l-nl) : l;
-
-          float irs = dh*(dh*m00 + dk*m01 + dl*m02) + dk*(dk*m11 + dl*m12) + dl*(dl*m22);
-          /*float xirs = h*(h*m00 + k*m01 + l*m02) + k*(k*m11 + l*m12) + l*(l*m22);
-          if (!qlib::isNear4(irs, xirs)) {
-            MB_DPRINTLN("(%d %d %d) -> (%d %d %d) irs=%f <--> xirs=%f", h, k, l, int(dh), int(dk), int(dl), irs, xirs);
-          }*/
-
-          float scl = float(exp(-b_factor * irs * 0.25));
-          hkldata.at(h, k, l) = m_pRecipAry->at(h, k, l) * scl;
-          /*
-          ++i;
-          if (i%10000==0) {
-            MB_DPRINTLN("(%d %d %d) -> (%d %d %d) res=%.2f scl=exp(%f)=%e", h, k, l, int(dh), int(dk), int(dl), sqrt(1.0/irs), -b_factor * irs * 0.25, scl);
+          float fp = abs( m_pRecipAry->at(h, k, l) );
+          if (qlib::isNear4(fp, 0.0f)) {
+            hkldata.at(h, k, l) = 0.0f;
           }
-           */
+          else {
+            // Hermitian case: h index is already restricted in 0-na/2 range
+            float dh = h;
+            //float dh = (h>nh/2) ? (h-nh) : h;
+            
+            float dk = (k>nk/2) ? (k-nk) : k;
+            float dl = (l>nl/2) ? (l-nl) : l;
+
+            float irs = dh*(dh*m00 + dk*m01 + dl*m02) + dk*(dk*m11 + dl*m12) + dl*(dl*m22);
+            
+            float scl = float(exp(-b_factor * irs * 0.25));
+            
+            hkldata.at(h, k, l) = m_pRecipAry->at(h, k, l) * scl;
+          }
         }
   }
 
