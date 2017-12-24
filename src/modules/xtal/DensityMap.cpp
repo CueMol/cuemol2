@@ -611,7 +611,7 @@ void launchTestKernel(const gfx::ComputeArray *input, gfx::ComputeArray *output)
 
 void DensityMap::sharpenMapPreview(double b_factor)
 {
-  if (m_pCCtxt!=NULL) {
+  /*if (m_pCCtxt!=NULL) {
     gfx::ComputeArray *pCA_in = m_pCCtxt->createArray();
     pCA_in->initWith(*m_pFloatMap);
 
@@ -628,7 +628,7 @@ void DensityMap::sharpenMapPreview(double b_factor)
 
     delete pCA_in;
     delete pCA_out;
-  }
+  }*/
 
   const double vol = m_xtalInfo.volume();
 
@@ -670,14 +670,32 @@ void DensityMap::sharpenMapPreview(double b_factor)
           hkldata.at(h, k, l) = m_pRecipAry->at(h, k, l);
   }
   else {
+    int i=0;
     for (l=0; l<nl; ++l)
       for (k=0; k<nk; ++k)
         for (h=0; h<nh; ++h) {
-          double dh = (h>nh/2) ? (h-nh) : h;
-          double dk = (k>nk/2) ? (k-nk) : k;
-          double dl = (l>nl/2) ? (l-nl) : l;
-          double irs = dh*(dh*m00 + dk*m01 + dl*m02) + dk*(dk*m11 + dl*m12) + dl*(dl*m22);
-          hkldata.at(h, k, l) = m_pRecipAry->at(h, k, l) * float(exp(-b_factor * irs * 0.25));
+
+          // Hermitian case: h index is already restricted in 0-na/2 range
+          float dh = h;
+          //float dh = (h>nh/2) ? (h-nh) : h;
+
+          float dk = (k>nk/2) ? (k-nk) : k;
+          float dl = (l>nl/2) ? (l-nl) : l;
+
+          float irs = dh*(dh*m00 + dk*m01 + dl*m02) + dk*(dk*m11 + dl*m12) + dl*(dl*m22);
+          /*float xirs = h*(h*m00 + k*m01 + l*m02) + k*(k*m11 + l*m12) + l*(l*m22);
+          if (!qlib::isNear4(irs, xirs)) {
+            MB_DPRINTLN("(%d %d %d) -> (%d %d %d) irs=%f <--> xirs=%f", h, k, l, int(dh), int(dk), int(dl), irs, xirs);
+          }*/
+
+          float scl = float(exp(-b_factor * irs * 0.25));
+          hkldata.at(h, k, l) = m_pRecipAry->at(h, k, l) * scl;
+          /*
+          ++i;
+          if (i%10000==0) {
+            MB_DPRINTLN("(%d %d %d) -> (%d %d %d) res=%.2f scl=exp(%f)=%e", h, k, l, int(dh), int(dk), int(dl), sqrt(1.0/irs), -b_factor * irs * 0.25, scl);
+          }
+           */
         }
   }
 
