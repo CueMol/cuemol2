@@ -8,9 +8,6 @@
 #include "DensityMap.hpp"
 #include "QdfDenMapWriter.hpp"
 
-#include <sysdep/CudartCompContext.hpp>
-
-
 #ifdef WIN32
 #define USE_TBO
 #endif
@@ -609,32 +606,27 @@ void DensityMap::createByteMap()
       }
 }
 
-void launchTestKernel(float *input, float *output, int len);
+//void launchTestKernel(float *input, float *output, int len);
+void launchTestKernel(const gfx::ComputeArray *input, gfx::ComputeArray *output);
 
 void DensityMap::sharpenMapPreview(double b_factor)
 {
   if (m_pCCtxt!=NULL) {
-    gfx::ComputeArray *pCAry = m_pCCtxt->createArray();
-    pCAry->initWith(*m_pFloatMap);
+    gfx::ComputeArray *pCA_in = m_pCCtxt->createArray();
+    pCA_in->initWith(*m_pFloatMap);
 
     FloatMap map2(m_pFloatMap->cols(), m_pFloatMap->rows(), m_pFloatMap->secs());
     gfx::ComputeArray *pCA_out = m_pCCtxt->createArray();
     pCA_out->alloc(map2.size(), sizeof(FloatMap::value_type));
 
     {
-      sysdep::CudartCompArray *pcin = static_cast<sysdep::CudartCompArray *>(pCAry);
-      float *pin = (float *) pcin->getHandle();
-      
-      sysdep::CudartCompArray *pcout = static_cast<sysdep::CudartCompArray *>(pCA_out);
-      float *pout = (float *) pcout->getHandle();
-      
-      int nlen = m_pFloatMap->size();
-      launchTestKernel(pin, pout, nlen);
+      //launchTestKernel(pin, pout, nlen);
+      launchTestKernel(pCA_in, pCA_out);
     }
 
     pCA_out->copyTo(map2);
 
-    delete pCAry;
+    delete pCA_in;
     delete pCA_out;
   }
 
@@ -681,7 +673,7 @@ void DensityMap::sharpenMapPreview(double b_factor)
     for (l=0; l<nl; ++l)
       for (k=0; k<nk; ++k)
         for (h=0; h<nh; ++h) {
-          double dh = h;
+          double dh = (h>nh/2) ? (h-nh) : h;
           double dk = (k>nk/2) ? (k-nk) : k;
           double dl = (l>nl/2) ? (l-nl) : l;
           double irs = dh*(dh*m00 + dk*m01 + dl*m02) + dk*(dk*m11 + dl*m12) + dl*(dl*m22);
