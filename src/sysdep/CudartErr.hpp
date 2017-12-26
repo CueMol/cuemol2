@@ -255,12 +255,12 @@ namespace {
       return "cudaErrorNvlinkUncorrectable";
 
       /* Since CUDA 8.5*/
-    case cudaErrorJitCompilerNotFound :
-      return "cudaErrorJitCompilerNotFound";
+//    case cudaErrorJitCompilerNotFound :
+//      return "cudaErrorJitCompilerNotFound";
 
       /* Since CUDA 9.0*/
-    case cudaErrorCooperativeLaunchTooLarge :
-      return "cudaErrorCooperativeLaunchTooLarge";
+//    case cudaErrorCooperativeLaunchTooLarge :
+//      return "cudaErrorCooperativeLaunchTooLarge";
 
     }
 

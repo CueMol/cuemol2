@@ -83,7 +83,7 @@
       <AdditionalLibraryDirectories>$(CudaToolkitLibDir);</AdditionalLibraryDirectories>
     </Link>
     <CudaCompile>
-      <CodeGeneration>compute_30,sm_30;compute_35,sm_35;compute_37,sm_37;compute_50,sm_50;compute_52,sm_52;compute_60,sm_60;compute_70,sm_70;</CodeGeneration>
+      <CodeGeneration>compute_30,sm_30;compute_35,sm_35;compute_37,sm_37;compute_50,sm_50;compute_52,sm_52;compute_60,sm_60;</CodeGeneration>
       <AdditionalOptions>-Xcompiler "/wd 4819" %(AdditionalOptions)</AdditionalOptions>
       <CudaRuntime>Shared</CudaRuntime>
       <Include>%(AdditionalIncludeDirectories)</Include>
@@ -92,7 +92,6 @@
   <PropertyGroup Condition="'$(HaveCUDA)'=='Yes'">
     <CudaClVersion>2013</CudaClVersion>
   </PropertyGroup>
-
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <_ProjectFileVersion>12.0.21005.1</_ProjectFileVersion>
@@ -177,6 +176,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\src\modules\xtal\BrixMapReader.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\BrixMapReader_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\BSharpTool.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\CCP4InStream.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\CCP4MapReader.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\CCP4MapReader_wrap.cpp" />
@@ -189,6 +189,7 @@
     <ClCompile Include="..\..\src\modules\xtal\GLSLMapMesh3Renderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\GLSLMapVolRenderer.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\GLSLMapVolRenderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\HKLList.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MapMeshRenderer.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MapMeshRenderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MapRenderer.cpp" />

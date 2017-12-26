@@ -20,6 +20,8 @@
 
 #include <complex>
 
+#include "HKLList.hpp"
+
 #define MAP_FLOAT_MIN (-1e10)
 #define MAP_FLOAT_MAX (1e10)
 
@@ -31,6 +33,11 @@ namespace xtal {
 
   using symm::CrystalInfo;
   using qlib::Vector4D;
+
+  using qlib::CompArray;
+  using qlib::FloatArray;
+  using qlib::ByteArray;
+  
 
   ///
   ///  Density map object for display.
@@ -83,6 +90,8 @@ namespace xtal {
     FloatMap *m_pFloatMap;
 
     RecipAry *m_pRecipAry;
+
+    HKLList *m_pHKLList;
 
     ///////////////////////////////////////////////
 
@@ -152,7 +161,15 @@ namespace xtal {
                          double rhomin, double rhomax,
                          double mean, double sigma);
 
+    ByteArray *getByteMap() const { return m_pByteMap; }
+
     void setRecipArray(const RecipAry &data, int na, int nb, int nc);
+
+    void setHKLList(HKLList *pHKLList);
+
+    HKLList *getHKLList() const {
+      return m_pHKLList;
+    }
 
     /// setup column, row, section params
     void setMapParams(int stacol, int starow, int stasect,
@@ -177,10 +194,18 @@ namespace xtal {
 
     const CrystalInfo &getXtalInfo() const { return m_xtalInfo; }
 
+    /// Calculate map statistics (min/max/mean/rmsd)
+    static void calcMapStats(const FloatArray &map, double &aMinMap, double &aMaxMap, double &aMeanMap, double &aRmsdMap);
+
     void calcMapStats();
 
     /// Create ByteMap from FloatMap (using map stats calculated by calcMapStats())
     void createByteMap();
+
+    static void createByteMap(const FloatArray &fmap, ByteArray &bmap,
+                              double base, double setp);
+
+    void updateByteMap();
 
   private:
     mutable gfx::Texture *m_pMapTex;

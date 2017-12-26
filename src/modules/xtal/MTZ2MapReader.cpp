@@ -433,6 +433,7 @@ void MTZ2MapReader::doFFT()
 }
 #endif
 
+#if 0
 void MTZ2MapReader::loadRecipArray()
 {
   std::vector<int> vh(m_nrefl);
@@ -578,6 +579,127 @@ void MTZ2MapReader::loadRecipArray()
   }
 
   m_pMap->setRecipArray(hklin, m_na, m_nb, m_nc);
+
+}
+#endif
+
+void MTZ2MapReader::loadRecipArray()
+{
+  std::vector<int> vh(m_nrefl);
+  std::vector<int> vk(m_nrefl);
+  std::vector<int> vl(m_nrefl);
+
+  std::vector<float> vFWT(m_nrefl);
+  std::vector<float> vPHI(m_nrefl);
+
+  if (m_nphi<0) {
+    LOG_DPRINTLN("MTZ2Map> Warning: No phase is specified.");
+    LOG_DPRINTLN("MTZ2Map> Result may be Patterson map.");
+  }
+
+  m_maxL = m_maxK = m_maxH = INT_MIN;
+  int nptr=0, iref;
+  for (iref=0; iref<m_nrefl; ++iref) {
+
+    if (nptr+m_ncol>m_nrawdat/4) {
+      MB_THROW(qlib::RuntimeException, "Out of buffer");
+      return;
+    }
+
+    const int hhh = (int) ((float *)m_pbuf)[nptr+m_cind_h];
+    const int kkk = (int) ((float *)m_pbuf)[nptr+m_cind_k];
+    const int lll = (int) ((float *)m_pbuf)[nptr+m_cind_l];
+    vh[iref] = hhh;
+    vk[iref] = kkk;
+    vl[iref] = lll;
+
+    double wgt = 1.0;
+    if (m_nwgt>=0)
+      wgt = ((float *)m_pbuf)[nptr+m_nwgt];
+
+    double fp = ((float *)m_pbuf)[nptr+m_nfp] * wgt;
+
+    double phi = 0.0;
+    if (m_nphi>=0)
+      phi = ((float *)m_pbuf)[nptr+m_nphi];
+
+    if (boost::math::isfinite(fp))
+      vFWT[iref] = fp;
+    else
+      vFWT[iref] = 0.0;
+
+    if (boost::math::isfinite(phi))
+      vPHI[iref] = phi;
+    else
+      vPHI[iref] = 0.0;
+    nptr += m_ncol;
+
+    m_maxH = qlib::max(m_maxH, qlib::abs(hhh));
+    m_maxK = qlib::max(m_maxK, qlib::abs(kkk));
+    m_maxL = qlib::max(m_maxL, qlib::abs(lll));
+  }
+
+  delete m_pbuf;
+  m_pbuf = NULL;
+
+  MB_DPRINTLN("LOAD OK");
+
+  ///////////////////////////////////
+  // Create HKLList
+  // Expand s.f.s by the symop
+
+  HKLList *pHKLList = new HKLList(m_nrefl * m_nsymm);
+
+  pHKLList->m_ci = CrystalInfo(m_cella,m_cellb,m_cellc,
+                               m_alpha,m_beta,m_gamma, m_nSG);
+
+  int ind=0;
+  for (int isym=0; isym<m_nsymm; ++isym) {
+    for (int iref=0; iref<m_nrefl; ++iref) {
+      // Apply rotation by reciprocal symop
+      const int hh = vh[iref];
+      const int kk = vk[iref];
+      const int ll = vl[iref];
+      Vector4D ohkl(hh, kk, ll);
+      m_rsymm[isym].xform(ohkl);
+      const int h = int(ohkl.x());
+      const int k = int(ohkl.y());
+      const int l = int(ohkl.z());
+
+      // Apply phase translation by (realspace) symop
+      const double xsh = m_symm[isym].aij(1,4);
+      const double ysh = m_symm[isym].aij(2,4);
+      const double zsh = m_symm[isym].aij(3,4);
+      double phsh = 0.0;
+      // Do not apply phase shift in the Patterson map case.
+      if (m_nphi>=0)
+        phsh = (xsh*h + ysh*k + zsh*l)*M_PI*2.0;
+
+      const float ampl = float( vFWT[iref] );
+      const float phas = float( vPHI[iref]*float(M_PI)/180.0f );
+
+      std::complex<float> floc = std::polar(1.0f, float(phsh)) * std::polar(ampl, phas);
+
+      pHKLList->at(ind).ih = h;
+      pHKLList->at(ind).ik = k;
+      pHKLList->at(ind).il = l;
+      pHKLList->at(ind).f_re = floc.real();
+      pHKLList->at(ind).f_im = floc.imag();
+      ++ind;
+    }
+  }
+  
+  pHKLList->calcMaxInd();
+
+  ///////////////////////////////////
+  // calculate grid size
+
+  pHKLList->m_mapr = m_mapr;
+  pHKLList->m_grid = m_grid;
+  pHKLList->checkMapResoln();
+  pHKLList->calcgrid();
+  
+  m_pMap->setHKLList(pHKLList);
 
 }
 

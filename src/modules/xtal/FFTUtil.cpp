@@ -9,7 +9,8 @@
 #ifdef HAVE_FFTW3_H
 #  include <fftw3.h>
 #endif
-
+#include <qlib/Vector3I.hpp>
+using qlib::Vector3I;
 using namespace xtal;
 
 /// complex-->complex transform
@@ -79,3 +80,4 @@ void FFTUtil::doit(FloatArray &in, CompArray &out)
   fftwf_execute(p);
   fftwf_destroy_plan(p);
 }
+

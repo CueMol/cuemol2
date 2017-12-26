@@ -28,7 +28,7 @@
   <!-- CUDA config -->
   <PropertyGroup Label="UserMacros" Condition="'$(Platform)'=='x64'">
     <HaveCUDA>Yes</HaveCUDA>
-    <CUDAVerName>CUDA 9.0</CUDAVerName>
+    <CUDAVerName>CUDA 8.0</CUDAVerName>
   </PropertyGroup>
 
   <!-- Python config -->

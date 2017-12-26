@@ -11,6 +11,8 @@
 #include "LDebugNew.hpp"
 #include "Vector3I.hpp"
 
+#include <complex>
+
 namespace qlib {
 
   template <class _Type>
@@ -349,6 +351,9 @@ namespace qlib {
 
   };
   
+  typedef qlib::Array3D<std::complex<float>> CompArray;
+  typedef qlib::Array3D<float> FloatArray;
+  typedef qlib::Array3D<qbyte> ByteArray;
 }
 
 #endif

@@ -36,14 +36,17 @@
 
 #endif // WIN32
 
+#include <qlib/LScrSmartPtr.hpp>
+
 namespace xtal {
 
-/// Common Initialization for the xtal library
-XTAL_API bool init();
+  /// Common Initialization for the xtal library
+  XTAL_API bool init();
 
-/// Common Finalization for the xtal library
-XTAL_API void fini();
+  /// Common Finalization for the xtal library
+  XTAL_API void fini();
 
+  MC_DECL_SCRSP(DensityMap);
 }
 
 #endif

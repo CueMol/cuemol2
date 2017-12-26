@@ -99,6 +99,12 @@
     <ClCompile Include="..\..\src\modules\xtal\FFTUtil.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\modules\xtal\HKLList.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\xtal\BSharpTool.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <mcwrapgen3 Include="..\..\src\modules\xtal\DensityMap.qif">

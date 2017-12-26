@@ -164,6 +164,7 @@
       <method name="onSliChanged">
 	<parameter name="aEvent"/>
 	<body>
+	  <![CDATA[
 	  if ('isDragging' in aEvent) {
 	    //dd("NumSli> DRAGSTATE CHANGED; drg="+aEvent.isDragging);
 	    // does not prevent bubbling to ancestoral elements
@@ -177,7 +178,7 @@
 
 	  if (this.mDynUpdate && aEvent.isMouse)
 	    aEvent.stopPropagation();
-
+	    ]]>
 	</body>
       </method>
 

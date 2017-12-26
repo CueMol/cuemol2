@@ -195,6 +195,45 @@ namespace symm {
                                     - cosgam*cosgam + 1.0 );
     }
 
+    /// conv HKL index to resolution (1/ressq)
+    double invressq(int h, int k, int l) const {
+      float m00, m11, m22, m01, m02, m12;
+      calcRecipTensor( m00, m11, m22, m01, m02, m12);
+      double irs = h*(h*m00 + k*m01 + l*m02) + k*(k*m11 + l*m12) + l*(l*m22);
+      return irs;
+    }
+
+    void calcRecipTensor(float &m00, float &m11, float &m22,
+                         float &m01, float &m02, float &m12) const
+    {
+      const float vol = float( volume() );
+      
+      const float a = float( this->a() );
+      const float b = float( this->b() );
+      const float c = float( this->c() );
+      
+      const float alpha = qlib::toRadian( float(this->alpha()) );
+      const float beta = qlib::toRadian( float(this->beta()) );
+      const float gamma = qlib::toRadian( float(this->gamma()) );
+      
+      const float a_star = b*c*sin(alpha)/vol;
+      const float b_star = c*a*sin(beta)/vol;
+      const float c_star = a*b*sin(gamma)/vol;
+      
+      const float alph_star = acos( (cos(gamma)*cos(beta)-cos(alpha)) /(sin(beta)*sin(gamma)) );
+      const float beta_star = acos( (cos(alpha)*cos(gamma)-cos(beta)) /(sin(gamma)*sin(alpha)) );
+      const float gamm_star = acos( (cos(beta)*cos(alpha)-cos(gamma)) /(sin(alpha)*sin(beta)) );
+      
+      m00 = a_star*a_star;
+      m11 = b_star*b_star;
+      m22 = c_star*c_star;
+      m01 = 2.0f*a_star*b_star*cos(gamm_star);
+      m02 = 2.0f*a_star*c_star*cos(beta_star);
+      m12 = 2.0f*b_star*c_star*cos(alph_star);
+    }
+
+
+
     /// get lattice type name (e.g. monoclinic)
     LString getLatticeName() const;
 

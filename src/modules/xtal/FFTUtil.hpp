@@ -11,19 +11,18 @@
 #include <qlib/mcutils.hpp>
 #include <qlib/LExceptions.hpp>
 #include <qlib/Array.hpp>
-#include <complex>
 
 namespace xtal {
-  using qlib::Vector3I;
+  using qlib::CompArray;
+  using qlib::FloatArray;
 
   class FFTUtil
   {
   private:
-    // Vector3I m_grid;
 
   public:
-    typedef qlib::Array3D<std::complex<float>> CompArray;
-    typedef qlib::Array3D<float> FloatArray;
+    //typedef qlib::Array3D<std::complex<float>> CompArray;
+    //typedef qlib::Array3D<float> FloatArray;
 
     FFTUtil()
     {
