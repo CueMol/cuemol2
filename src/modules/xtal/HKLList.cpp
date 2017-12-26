@@ -266,7 +266,8 @@ void HKLList::convToArrayHerm(CompArray &recip, float b_factor) const
     int ml = (m_nc-il)%m_nc;
 
     //std::complex<float> floc = std::polar(elem.f * fscl*fscl2, qlib::toRadian(elem.phi));
-    std::complex<float> floc(elem.f_re, elem.f_im);
+    std::complex<float> floc(elem.f_re * fscl*fscl2,
+                             elem.f_im * fscl*fscl2);
 
     // Hermitian case: fill the hemisphere (of L>ncc)
     //  with the Friedel pairs of the refls.

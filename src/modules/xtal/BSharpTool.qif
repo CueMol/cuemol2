@@ -1,0 +1,30 @@
+// -*-Mode: C++;-*-
+//
+// B-factor sharpning tool scripting interface
+//
+
+#ifndef BSHARP_TOOL_QIF_INCLUDED
+#define BSHARP_TOOL_QIF_INCLUDED
+
+#include <qsys/Object.qif>
+
+runtime_class BSharpTool
+{
+  client_hdr "BSharpTool.hpp";
+  client_name xtal::BSharpTool;
+
+  scriptable;
+  smartptr;
+
+  void attach(object<Object$> pMap);
+  void detach();
+    
+  void clear();
+
+  void preview(real b_factor);
+
+  void apply(real b_factor);
+};
+
+#endif
+

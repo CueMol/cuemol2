@@ -59,12 +59,22 @@ void BSharpTool::preview(double b_factor)
 
   double min,max,mean,rmsd;
   DensityMap::calcMapStats(*m_pFloatMap,min,max,mean,rmsd);
+
+  MB_DPRINTLN("Preview Map statistics:");
+  MB_DPRINTLN("   minimum: %f", min);
+  MB_DPRINTLN("   maximum: %f", max);
+  MB_DPRINTLN("   mean   : %f", mean);
+  MB_DPRINTLN("   r.m.s.d: %f", rmsd);
+
+  m_pMap->setMapStats(min,max,mean,rmsd);
   double step = (max-min)/256.0;
   double base = min;
 
   ByteArray *pByteMap = m_pMap->getByteMap();
   
   DensityMap::createByteMap(*m_pFloatMap, *pByteMap, base, step);
+  
+  m_pMap->setMapStats(min,max,mean,rmsd);
   m_pMap->updateByteMap();
 }
 

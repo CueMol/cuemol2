@@ -177,6 +177,7 @@
     <ClCompile Include="..\..\src\modules\xtal\BrixMapReader.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\BrixMapReader_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\BSharpTool.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\BSharpTool_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\CCP4InStream.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\CCP4MapReader.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\CCP4MapReader_wrap.cpp" />
@@ -211,6 +212,7 @@
   </ItemGroup>
   <ItemGroup>
     <mcwrapgen3 Include="..\..\src\modules\xtal\BrixMapReader.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\xtal\BSharpTool.qif" />
     <mcwrapgen3 Include="..\..\src\modules\xtal\CCP4MapReader.qif" />
     <mcwrapgen3 Include="..\..\src\modules\xtal\DensityMap.qif" />
     <mcwrapgen3 Include="..\..\src\modules\xtal\GLSLMapMesh2Renderer.qif" />

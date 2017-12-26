@@ -49,11 +49,16 @@
       //this.mSurfName.disabled = true;
     }
     var obj = this.mObjBox.getSelectedObj();
+
+    this.mTool = cuemol.createObj("BSharpTool");
+    this.mTool.attach(obj);
   };
   
   dlg.onObjBoxChanged = function (aEvent)
   {
     dd("MapSharpDlg> ObjSelChg: "+aEvent.target.id);
+    var obj = this.mObjBox.getSelectedObj();
+    this.mTool.attach(obj);
   };
 
   dlg.onBfacChange = function (aEvent)
@@ -78,7 +83,8 @@
     if (bfac==NaN)
       return; // ERROR
 
-    tgtobj.sharpenMapPreview(bfac);
+    //tgtobj.sharpenMapPreview(bfac);
+    this.mTool.preview(bfac);
   };
 
   dlg.onDialogCancel = function (event)
@@ -88,7 +94,10 @@
       return;
 
     // Reset the preview map
-    tgtobj.sharpenMapPreview(0.0);
+    //tgtobj.sharpenMapPreview(0.0);
+    this.mTool.preview(0.0);
+    this.mTool.detach();
+    this.mTool = null;
     return;
   };
 
@@ -99,22 +108,15 @@
       return;
 
     // test -- reset
-    tgtobj.sharpenMapPreview(0.0);
+    //tgtobj.sharpenMapPreview(0.0);
+    this.mTool.preview(0.0);
+    this.mTool.detach();
+    this.mTool = null;
     return;
     
 
     // EDIT TXN START //
     //scene.startUndoTxn("Create mol surface");
-
-    try {
-      tgtobj.sharpenMapPreview(bfac);
-    }
-    catch (e) {
-      dd("Error: "+e);
-      debug.exception(e);
-      return;
-    }
-
     // EDIT TXN END //
     // scene.commitUndoTxn();
   }

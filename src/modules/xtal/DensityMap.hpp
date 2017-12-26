@@ -205,6 +205,17 @@ namespace xtal {
     static void createByteMap(const FloatArray &fmap, ByteArray &bmap,
                               double base, double setp);
 
+    void setMapStats(double aMinMap, double aMaxMap, double aMeanMap, double aRmsdMap)
+    {
+      m_dMinMap = aMinMap;
+      m_dMaxMap = aMaxMap;
+      m_dMeanMap = aMeanMap;
+      m_dRmsdMap = aRmsdMap;
+      
+      m_dLevelStep = (aMaxMap - aMinMap)/256.0;
+      m_dLevelBase = aMinMap;
+    }
+
     void updateByteMap();
 
   private:
