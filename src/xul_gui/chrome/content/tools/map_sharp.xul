@@ -34,7 +34,7 @@
 	<label value="B-factor:"/>
 	<hbox>
 	  <numslider id="bfac-value" flex="1" size="3"
-	    decimalplaces="1" min="-200" max="200" increment="10" unit="/&#0197;sq"
+	    decimalplaces="1" min="-200" max="200" increment="1" unit="/&#0197;sq"
 	    onchange="window.gDlgObj.onBfacChange(event)"/>
 	  <spacer flex="1"/>
 	</hbox>

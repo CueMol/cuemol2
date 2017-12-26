@@ -758,9 +758,20 @@ void DensityMap::sharpenMapPreview(double b_factor)
 
 void DensityMap::updateByteMap()
 {
-  if (m_pMapTex!=NULL)
-    delete m_pMapTex;
-  m_pMapTex = NULL;
+  if (m_pMapTex!=NULL) {
+    int ni = m_pByteMap->getColumns();
+    int nj = m_pByteMap->getRows();
+    int nk = m_pByteMap->getSections();
+    
+#ifdef USE_TBO
+    m_pMapTex->setData(ni*nj*nk, 1, 1, m_pByteMap->data());
+#else
+    m_pMapTex->setData(ni, nj, nk, m_pByteMap->data());
+#endif
+  }
+  else {
+    getMapTex();
+  }
 
   {
     // notify update
