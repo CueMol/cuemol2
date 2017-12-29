@@ -173,7 +173,7 @@ dlg.onDialogAccept = function (event)
   else {
     // shift mode
     nval = parseInt(this.mShiftNumBox.value);
-    bshift = false;
+    bshift = true;
     if (isNaN(nval) || nval==0) {
       util.alert(window, "Invalid residue shift value: \""+this.mShiftNumBox.value+"\"");
       return false;

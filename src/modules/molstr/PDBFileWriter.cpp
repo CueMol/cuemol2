@@ -167,10 +167,11 @@ bool PDBFileWriter::write(qlib::OutStream &outs)
     char cch = convChainName(chnam);
 
     LString resnam;
-    MolChain::ResidCursor riter = pChn->begin();
+    MolChain::ResidCursor2 riter = pChn->begin2();
     // int nlastres = 0;
-    for (; riter!=pChn->end(); ++riter) {
-      MolResiduePtr pRes = *riter;
+    for (; riter!=pChn->end2(); ++riter) {
+      //MolResiduePtr pRes = *riter;
+      MolResiduePtr pRes = riter->second;
       if (pRes.isnull()) continue;
       ResidIndex rindex = pRes->getIndex();
       resnam = pRes->getName();

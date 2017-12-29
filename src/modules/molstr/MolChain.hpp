@@ -74,14 +74,14 @@ namespace molstr {
       return getResidue(ResidIndex::fromString(str_ind));
     }
 
-    /// Get residue iterator
+    /// Get residue iterator (deque order)
     ResidCursor begin() const { return m_data.begin(); }
-    /// Get residue iterator
+    /// Get residue iterator (deque order)
     ResidCursor end() const { return m_data.end(); }
 
-    /// Get residue iterator
+    /// Get residue iterator (ResidIndex order)
     ResidCursor2 begin2() const { return m_map.begin(); }
-    /// Get residue iterator
+    /// Get residue iterator (ResidIndex order)
     ResidCursor2 end2() const { return m_map.end(); }
 
     /// Put new residue at the specified position.
