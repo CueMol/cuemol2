@@ -332,6 +332,9 @@ bool PDBFileWriter::writeAtomLine(int nserial, const ResidIndex &rindex,
   prs.print("ATOM  ");
   prs.print(shead);
 
+  // Get atom position before applying xformMat, if xformMat is set
+  Vector4D pos = pa->getRawPos();
+
   prs.formatln("   "
                "%8.3f"
                "%8.3f"
@@ -340,9 +343,9 @@ bool PDBFileWriter::writeAtomLine(int nserial, const ResidIndex &rindex,
                "%6.2f"
                "          "
                "    ",
-               pa->getPos().x(),
-               pa->getPos().y(),
-               pa->getPos().z(),
+               pos.x(),
+               pos.y(),
+               pos.z(),
                pa->getOcc(),
                pa->getBfac());
 

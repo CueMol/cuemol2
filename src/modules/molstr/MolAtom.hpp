@@ -139,10 +139,19 @@ namespace molstr {
       setConfID(id.getAt(0));
     }
 
-    /// Atom position
+    /// Get atom position (after applying xformMat)
     Vector4D getPos() const;
 
-    void setPos(const Vector4D &vec)
+    /// Get atom position (without applying xformMat)
+    Vector4D getRawPos() const {
+      return m_pos;
+    }
+
+    /// Set atom position. Set will fail, if xformMat is applied to this mol/atom
+    void setPos(const Vector4D &vec);
+
+    /// Set atom position directly (ignoring xformMat prop)
+    void setRawPos(const Vector4D &vec)
     {
       m_pos = vec;
     }

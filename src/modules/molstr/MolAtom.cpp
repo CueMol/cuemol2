@@ -200,6 +200,15 @@ Vector4D MolAtom::getPos() const
   }
 }
 
+void MolAtom::setPos(const Vector4D &vec)
+{
+  if (m_pXformMat==NULL)
+    m_pos = vec;
+  else {
+    MB_THROW(qlib::RuntimeException, "Cannot set atom position to the xformMat applied atom/mol");
+  }
+}
+
 void MolAtom::setXformMatrix(const qlib::Matrix4D &m)
 {
   resetXformMatrix();

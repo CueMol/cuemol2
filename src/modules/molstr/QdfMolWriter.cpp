@@ -405,8 +405,10 @@ void QdfMolWriter::writeAtomData()
 
   startData();
 
-  aiter = m_pMol->beginAtom();
   quint32 iAtomID = 0;
+  Vector4D pos;
+
+  aiter = m_pMol->beginAtom();
   for (; aiter!=aiend; ++aiter, ++iAtomID) {
     MolAtomPtr pAtom = aiter->second;
     MolResiduePtr pRes = pAtom->getParentResidue();
@@ -421,9 +423,11 @@ void QdfMolWriter::writeAtomData()
     os.writeInt8("conf", pAtom->getConfID());
     os.writeUInt8("elem", pAtom->getElement());
 
-    os.writeFloat32("posx", qfloat32(pAtom->getPos().x()));
-    os.writeFloat32("posy", qfloat32(pAtom->getPos().y()));
-    os.writeFloat32("posz", qfloat32(pAtom->getPos().z()));
+    // Get atom position before applying xformMat, if xformMat is set
+    pos = pAtom->getRawPos();
+    os.writeFloat32("posx", qfloat32(pos.x()));
+    os.writeFloat32("posy", qfloat32(pos.y()));
+    os.writeFloat32("posz", qfloat32(pos.z()));
     os.writeFloat32("bfac", qfloat32(pAtom->getBfac()));
     os.writeFloat32("occ", qfloat32(pAtom->getOcc()));
 
