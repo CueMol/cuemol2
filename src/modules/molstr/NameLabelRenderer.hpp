@@ -91,6 +91,8 @@ public:
 
   virtual void styleChanged(qsys::StyleEvent &);
 
+  virtual void objectChanged(qsys::ObjectEvent &ev);
+
   //////
   // Serialization / deserialization impl for non-prop data
 

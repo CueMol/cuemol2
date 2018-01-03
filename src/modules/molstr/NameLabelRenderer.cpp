@@ -372,6 +372,7 @@ void NameLabelRenderer::propChanged(qlib::LPropEvent &ev)
     if (!pScene.isnull())
       pScene->setUpdateFlag();
   }
+
   /*else if (propnm.startsWith("font_")) {
     makeLabelImg();
     //m_pixCache.invalidate();
@@ -390,6 +391,26 @@ void NameLabelRenderer::styleChanged(qsys::StyleEvent &ev)
 
   //makeLabelImg();
   //m_pixCache.render();
+}
+
+void NameLabelRenderer::objectChanged(qsys::ObjectEvent &ev)
+{
+  int ntyp = ev.getType();
+
+  if (ntyp==qsys::ObjectEvent::OBE_CHANGED) {
+    invalidateAll();
+    return;
+  }
+  
+  if (ntyp==qsys::ObjectEvent::OBE_PROPCHG) {
+    qlib::LPropEvent *pPE = ev.getPropEvent();
+    if (pPE && pPE->getName().equals("xformMat")) {
+      invalidateAll();
+      return;
+    }
+  }
+
+  super_t::objectChanged(ev);
 }
 
 void NameLabelRenderer::writeTo2(qlib::LDom2Node *pNode) const
