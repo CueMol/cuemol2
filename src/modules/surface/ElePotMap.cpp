@@ -10,6 +10,7 @@
 #include "QdfPotWriter.hpp"
 
 using namespace surface;
+using qlib::Matrix3D;
 
 ElePotMap::ElePotMap()
      : m_pMap(NULL)
@@ -250,7 +251,19 @@ double ElePotMap::getValueAt(const Vector4D &pos) const
     return 0.0;
 
   Vector4D tv(pos);
+
+  const Matrix4D &xfm = getXformMatrix();
+  if (!xfm.isIdent()) {
+    // apply inv of xformMat
+    Matrix3D rmat = xfm.getMatrix3D();
+    rmat = rmat.invert();
+    Vector4D tr = xfm.getTransPart();
+    tv -= tr;
+    tv = rmat.mulvec(tv);
+  }
+
   tv -= m_origPos;
+
   //tv = tv.scale(m_scale);
   tv.x() = tv.x() / m_gx;
   tv.y() = tv.y() / m_gy;
@@ -289,7 +302,19 @@ bool ElePotMap::isInRange(const Vector4D &pos) const
     return false;
 
   Vector4D tv(pos);
+
+  const Matrix4D &xfm = getXformMatrix();
+  if (!xfm.isIdent()) {
+    // apply inv of xformMat
+    Matrix3D rmat = xfm.getMatrix3D();
+    rmat = rmat.invert();
+    Vector4D tr = xfm.getTransPart();
+    tv -= tr;
+    tv = rmat.mulvec(tv);
+  }
+
   tv -= m_origPos;
+
   //tv = tv.scale(m_scale);
   tv.x() = tv.x() / m_gx;
   tv.y() = tv.y() / m_gy;
@@ -317,6 +342,13 @@ Vector4D ElePotMap::convToOrth(const Vector4D &index) const
   tv.z() = tv.z() * m_gz;
 
   tv += m_origPos;
+
+  const Matrix4D &xfm = getXformMatrix();
+  if (!xfm.isIdent()) {
+    // Apply xformMat
+    tv.w() = 1.0;
+    tv = xfm.mulvec(tv);
+  }
 
   return tv;
 }
