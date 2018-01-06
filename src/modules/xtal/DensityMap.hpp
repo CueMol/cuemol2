@@ -224,11 +224,13 @@ namespace xtal {
   public:
     gfx::Texture *getMapTex() const;
 
-    void sharpenMapPreview(double b_factor);
+    // void sharpenMapPreview(double b_factor);
 
   private:
     gfx::ComputeContext *m_pCCtxt;
     
+    void cuda_test1();
+
   public:
     void setCompCtxt(gfx::ComputeContext *pCtxt) { m_pCCtxt = pCtxt; }
 

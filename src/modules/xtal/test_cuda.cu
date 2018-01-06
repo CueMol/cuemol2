@@ -53,3 +53,6 @@ void launchTestKernel(const gfx::ComputeArray *pCA_in, gfx::ComputeArray *pCA_ou
   test_kernel<<<grid, block>>>(input, output, nlen);
 }
 
+
+
+

@@ -586,6 +586,7 @@ void DensityMap::setHKLList(HKLList *pHKLList)
 
   createByteMap();
 
+  cuda_test1();
   if (m_pMapTex!=NULL)
     delete m_pMapTex;
   m_pMapTex = NULL;
@@ -658,6 +659,54 @@ void DensityMap::createByteMap(const FloatArray &fmap, ByteArray &bmap,
 //void launchTestKernel(float *input, float *output, int len);
 void launchTestKernel(const gfx::ComputeArray *input, gfx::ComputeArray *output);
 
+#include <sysdep/OglTexture.hpp>
+#include <sysdep/CudartCompContext.hpp>
+
+void convToTex(const gfx::ComputeArray *pCA_in, gfx::Texture *pTex_out)
+{
+  const sysdep::CudartCompArray *pcin = static_cast<const sysdep::CudartCompArray *>(pCA_in);
+  float *input = (float *) pcin->getHandle();
+
+  sysdep::OglTextureRep *pRep = dynamic_cast<sysdep::OglTextureRep *>(pTex_out->getRep());
+  
+}
+
+void DensityMap::cuda_test1()
+{
+  if (m_pCCtxt==NULL) {
+    MB_DPRINTLN("CUDA context is not created.");
+    return;
+  }
+
+  if (m_pMapTex==NULL) {
+    getMapTex();
+  }
+
+  gfx::ComputeArray *pCA_in = m_pCCtxt->createArray();
+  pCA_in->initWith(*m_pByteMap);
+
+  convToTex(pCA_in, m_pMapTex);
+  
+  /*
+  FloatMap map2(m_pFloatMap->cols(), m_pFloatMap->rows(), m_pFloatMap->secs());
+  gfx::ComputeArray *pCA_out = m_pCCtxt->createArray();
+  pCA_out->alloc(map2.size(), sizeof(FloatMap::value_type));
+  
+  {
+    //launchTestKernel(pin, pout, nlen);
+    launchTestKernel(pCA_in, pCA_out);
+  }
+
+    pCA_out->copyTo(map2);
+
+    delete pCA_in;
+    delete pCA_out;
+  }*/
+
+  delete pCA_in;
+}
+
+#if 0
 void DensityMap::sharpenMapPreview(double b_factor)
 {
   /*if (m_pCCtxt!=NULL) {
@@ -755,6 +804,7 @@ void DensityMap::sharpenMapPreview(double b_factor)
 
   updateByteMap();
 }
+#endif
 
 void DensityMap::updateByteMap()
 {
