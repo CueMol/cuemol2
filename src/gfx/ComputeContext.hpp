@@ -48,16 +48,17 @@ namespace gfx {
 
     //////////
 
+
     int getElemCount() const { return m_nElemCount; }
     int getElemSize() const { return m_nElemSize; }
 
     template <class _Type>
     void initWith(const qlib::Array<_Type> &ary)
     {
-      const int nElemCount = ary.size();
-      const int nElemSize = sizeof(_Type);
-      alloc(nElemCount, nElemSize);
-      copyFrom(ary.data(), nElemCount, nElemSize);
+      m_nElemCount = ary.size();
+      m_nElemSize = sizeof(_Type);
+      alloc(m_nElemCount, m_nElemSize);
+      copyFrom(ary.data(), m_nElemCount, m_nElemSize);
     }
 
     template <class _Type>

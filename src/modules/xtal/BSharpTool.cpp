@@ -75,6 +75,7 @@ void BSharpTool::preview(double b_factor)
   DensityMap::createByteMap(*m_pFloatMap, *pByteMap, base, step);
   
   m_pMap->setMapStats(min,max,mean,rmsd);
+
   m_pMap->updateByteMap();
 }
 

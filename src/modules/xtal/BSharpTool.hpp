@@ -17,11 +17,11 @@ namespace xtal {
 
   class HKLList;
 
-  class BSharpTool : public qlib::LNoCopyScrObject
+  class XTAL_API BSharpTool : public qlib::LNoCopyScrObject
   {
     MC_SCRIPTABLE;
 
-  private:
+  protected:
     DensityMapPtr m_pMap;
 
     FloatArray *m_pFloatMap;
@@ -40,14 +40,14 @@ namespace xtal {
 
     virtual ~BSharpTool();
     
-    void attach(const qsys::ObjectPtr &pMap);
-    void detach();
+    virtual void attach(const qsys::ObjectPtr &pMap);
+    virtual void detach();
     
-    void clear();
+    virtual void clear();
 
-    void preview(double b_factor);
+    virtual void preview(double b_factor);
 
-    void apply(double b_factor);
+    virtual void apply(double b_factor);
   };
 
 }

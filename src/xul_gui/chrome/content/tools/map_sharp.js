@@ -50,7 +50,8 @@
     }
     var obj = this.mObjBox.getSelectedObj();
 
-    this.mTool = cuemol.createObj("BSharpTool");
+    //this.mTool = cuemol.createObj("BSharpTool");
+    this.mTool = cuemol.createObj("CudaBSharpTool");
     this.mTool.attach(obj);
   };
   

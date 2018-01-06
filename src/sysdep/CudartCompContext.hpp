@@ -35,7 +35,7 @@ namespace sysdep {
   }
 
 // This will output the proper CUDA error strings in the event that a CUDA host call returns an error
-#define chkCudaErr(val)           chkErrImpl( (val), #val, __FILE__, __LINE__ )
+#define chkCudaErr(val)           sysdep::chkErrImpl( (val), #val, __FILE__, __LINE__ )
 
   class SYSDEP_API CudartCompArray : public gfx::ComputeArray
   {

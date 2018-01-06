@@ -586,7 +586,6 @@ void DensityMap::setHKLList(HKLList *pHKLList)
 
   createByteMap();
 
-  cuda_test1();
   if (m_pMapTex!=NULL)
     delete m_pMapTex;
   m_pMapTex = NULL;
@@ -656,8 +655,8 @@ void DensityMap::createByteMap(const FloatArray &fmap, ByteArray &bmap,
   }
 }
 
-//void launchTestKernel(float *input, float *output, int len);
-void launchTestKernel(const gfx::ComputeArray *input, gfx::ComputeArray *output);
+void launchTestKernel(unsigned char *input, unsigned char *output, int len);
+//void launchTestKernel(const gfx::ComputeArray *input, gfx::ComputeArray *output);
 
 #include <sysdep/OglTexture.hpp>
 #include <sysdep/CudartCompContext.hpp>
@@ -665,10 +664,37 @@ void launchTestKernel(const gfx::ComputeArray *input, gfx::ComputeArray *output)
 void convToTex(const gfx::ComputeArray *pCA_in, gfx::Texture *pTex_out)
 {
   const sysdep::CudartCompArray *pcin = static_cast<const sysdep::CudartCompArray *>(pCA_in);
-  float *input = (float *) pcin->getHandle();
+  unsigned char *input = (unsigned char *) pcin->getHandle();
+
+  //
 
   sysdep::OglTextureRep *pRep = dynamic_cast<sysdep::OglTextureRep *>(pTex_out->getRep());
+  GLuint vbo = pRep->getBufID();
+
+  //
+
+  cudaGraphicsResource *vbo_cuda;
+  chkCudaErr(
+    cudaGraphicsGLRegisterBuffer( &vbo_cuda, vbo, cudaGraphicsMapFlagsWriteDiscard ));
+  chkCudaErr(
+    cudaGraphicsMapResources(1, &vbo_cuda, 0));
   
+  unsigned char* v;
+  size_t bytes;
+  chkCudaErr(
+    cudaGraphicsResourceGetMappedPointer((void**)&v, &bytes, vbo_cuda)
+    );
+  
+  launchTestKernel(input, v, pCA_in->getElemCount());
+  //chkCudaErr(
+  //cudaMemcpy(v, input, pCA_in->getElemCount() * pCA_in->getElemSize(), cudaMemcpyDeviceToDevice)
+  //);
+    
+
+  chkCudaErr(
+    cudaGraphicsUnmapResources(1, &vbo_cuda, 0)
+    );
+
 }
 
 void DensityMap::cuda_test1()
@@ -809,6 +835,7 @@ void DensityMap::sharpenMapPreview(double b_factor)
 void DensityMap::updateByteMap()
 {
   if (m_pMapTex!=NULL) {
+
     int ni = m_pByteMap->getColumns();
     int nj = m_pByteMap->getRows();
     int nk = m_pByteMap->getSections();
@@ -818,10 +845,14 @@ void DensityMap::updateByteMap()
 #else
     m_pMapTex->setData(ni, nj, nk, m_pByteMap->data());
 #endif
+
+    
   }
   else {
     getMapTex();
   }
+
+  // cuda_test1();
 
   {
     // notify update

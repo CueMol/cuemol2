@@ -1,0 +1,21 @@
+// -*-Mode: C++;-*-
+//
+// B-factor sharpning tool scripting interface
+//
+
+#ifndef CUDA_BSHARP_TOOL_QIF_INCLUDED
+#define CUDA_BSHARP_TOOL_QIF_INCLUDED
+
+#include "BSharpTool.qif"
+
+runtime_class CudaBSharpTool extends BSharpTool
+{
+  client_hdr "CudaBSharpTool.hpp";
+  client_name xtal::CudaBSharpTool;
+
+  scriptable;
+  smartptr;
+};
+
+#endif
+

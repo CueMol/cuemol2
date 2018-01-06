@@ -59,6 +59,9 @@ namespace sysdep {
     /// Setup TextureBufferObject
     void setupTBO(int iPixFmt, int iPixType);
 
+    /// Returns OpenGL buffer ID
+    GLuint getBufID() const { return m_nBufID; }
+
     //////////
 
     virtual void setData(int width, int height, int depth, const void *pdata);
