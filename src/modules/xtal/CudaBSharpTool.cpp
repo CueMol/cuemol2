@@ -80,6 +80,7 @@ void CudaBSharpTool::attach(const qsys::ObjectPtr &pMap)
   }
    */
 
+
   gfx::Texture *pTex = m_pMap->getMapTex();
   sysdep::OglTextureRep *pRep = dynamic_cast<sysdep::OglTextureRep *>(pTex->getRep());
   GLuint vbo = pRep->getBufID();
@@ -88,6 +89,8 @@ void CudaBSharpTool::attach(const qsys::ObjectPtr &pMap)
   chkCudaErr(
     cudaGraphicsGLRegisterBuffer( &tbo_cuda, vbo, cudaGraphicsMapFlagsWriteDiscard ));
   m_gfxRes = tbo_cuda;
+
+  LOG_DPRINTLN("CudaBSharpTool> attach OK");
 }
 
 void CudaBSharpTool::clear()
@@ -117,9 +120,11 @@ void CudaBSharpTool::clear()
     m_fftplan = 0;
   }
   
-  cudaGraphicsResource *tbo_cuda = static_cast<cudaGraphicsResource *>(m_gfxRes);
-  cudaGraphicsUnregisterResource(tbo_cuda);
-  m_gfxRes = NULL;
+  if (m_gfxRes!=NULL) {
+    cudaGraphicsResource *tbo_cuda = static_cast<cudaGraphicsResource *>(m_gfxRes);
+    cudaGraphicsUnregisterResource(tbo_cuda);
+    m_gfxRes = NULL;
+  }
 }
 
 
@@ -142,6 +147,9 @@ void CudaBSharpTool::preview(double b_factor)
   m_pMap->setMapStats(m_min,m_max,m_mean,m_rmsd);
 
   makebmap();
+
+  m_pMap->fireMapPreviewChgEvent();
+
 }
 
 void convtoary_herm_cuda(int NBLK, int NTHR,
@@ -181,7 +189,7 @@ void CudaBSharpTool::convtoary_herm(float b_factor)
                       fscl, b_factor,
                       m00, m11, m22, m01, m02, m12);
   
-#ifdef MB_DEBUG
+#ifdef DEBUG
   {
     // print partial results
     CompArray tmp(NXX, NY, NZ);
@@ -213,7 +221,7 @@ void CudaBSharpTool::calcmapstat_herm()
 
   int NTMP = (NSIZE/NTHR + 1)*4;
 
-#ifdef MB_DEBUG
+#ifdef DEBUG
   // print CPU reduction results
   {
     std::vector<float> tmp(NSIZE);
@@ -249,7 +257,8 @@ void CudaBSharpTool::calcmapstat_herm()
     npart ++;
 
   mapstat4_cuda(npart, NTHR, (float*)dp_map, NSIZE, (float*)dp_tmp);
-#ifdef MB_DEBUG
+
+#ifdef DEBUG
   MB_DPRINTLN("Launch mapstat3_kern NBLK=%d, NTHR=%d", npart, NTHR);
   cudaDeviceSynchronize();
   if (cudaGetLastError() != cudaSuccess){
@@ -258,7 +267,7 @@ void CudaBSharpTool::calcmapstat_herm()
 #endif
 
 
-#ifdef MB_DEBUG
+#ifdef DEBUG
   {
     // print partial reduction results
     std::vector<float> tmp(NTMP);
@@ -305,7 +314,7 @@ void CudaBSharpTool::calcmapstat_herm()
     if (npart%NTHR!=0)
       nblk2++;
     mapstat4_cuda2(nblk2, NTHR, (float*)dp_tmp, npart);
-#ifdef MB_DEBUG
+#ifdef DEBUG
     MB_DPRINTLN("Launch mapstat3_kern2 NBLK=%d, NTHR=%d", nblk2, NTHR);
 #endif
     npart = nblk2;
@@ -334,11 +343,15 @@ void CudaBSharpTool::makebmap()
   if (NSIZE%NTHR!=0)
     NBLK ++;
 
-  unsigned char* dp_bmap;
   cudaGraphicsResource *tbo_cuda = static_cast<cudaGraphicsResource *>(m_gfxRes);
+  chkCudaErr(
+    cudaGraphicsMapResources(1, &tbo_cuda, 0));
+
+  unsigned char* dp_bmap;
   size_t bytes;
   chkCudaErr(
     cudaGraphicsResourceGetMappedPointer((void**)&dp_bmap, &bytes, tbo_cuda));
+
 
 #ifdef DEBUG
   MB_DPRINTLN("Launch makebmap_kern NBLK=%d, NTHR=%d", NBLK, NTHR);

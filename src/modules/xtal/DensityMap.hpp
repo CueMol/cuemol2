@@ -218,6 +218,8 @@ namespace xtal {
 
     void updateByteMap();
 
+    void fireMapPreviewChgEvent();
+    
   private:
     mutable gfx::Texture *m_pMapTex;
     

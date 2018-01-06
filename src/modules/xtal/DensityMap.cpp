@@ -854,13 +854,16 @@ void DensityMap::updateByteMap()
 
   // cuda_test1();
 
-  {
-    // notify update
-    qsys::ObjectEvent obe;
-    obe.setType(qsys::ObjectEvent::OBE_CHANGED_DYNAMIC);
-    obe.setTarget(getUID());
-    obe.setDescr("densityModified");
-    fireObjectEvent(obe);
-  }
+  fireMapPreviewChgEvent();
+}
+
+void DensityMap::fireMapPreviewChgEvent()
+{
+  // notify update
+  qsys::ObjectEvent obe;
+  obe.setType(qsys::ObjectEvent::OBE_CHANGED_DYNAMIC);
+  obe.setTarget(getUID());
+  obe.setDescr("densityModified");
+  fireObjectEvent(obe);
 }
 
