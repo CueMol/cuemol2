@@ -81,7 +81,7 @@ void RendIntData::meshEndTrigs()
 {
   int nVerts = m_mesh.getVertexSize() - m_nMeshPivot;
   if (nVerts%3!=0) {
-    LOG_DPRINTLN("RendIntData> Trig mesh: nVerts%3!=0 !!");
+    LOG_DPRINTLN("RendIntData> Trig mesh: nVerts(%d)%%3!=0 !!", nVerts);
   }
 
   int nfmode = MFMOD_MESH;
@@ -1134,6 +1134,8 @@ void RendIntData::calcSilEdgeLines(double dViewDist, double dnangl)
 
   const int nverts = m_pEgMesh->getVertexSize();
   const int nfaces = m_pEgMesh->getFaceSize();
+
+  LOG_DPRINTLN("calcSilEdgeLines> nverts=%d, nfaces=%d", nverts, nfaces);
 
   // convert vertex list to array
   m_vertvec.resize(nverts);

@@ -359,7 +359,7 @@ void FileDisplayContext::startTriangles()
   }
   m_nDrawMode = POV_TRIGS;
 
-  if (m_nPolyMode==POLY_FILL)
+  if (m_nPolyMode==POLY_FILL||m_nPolyMode==POLY_FILL_NORGLN||m_nPolyMode==POLY_FILL_XX)
     m_pIntData->meshStart(m_nDrawMode);
   else if (m_nPolyMode==POLY_LINE) {
     m_nVertCnt = 0;
@@ -403,7 +403,7 @@ void FileDisplayContext::end()
     break;
 
   case POV_TRIGS:
-    if (m_nPolyMode==POLY_FILL)
+    if (m_nPolyMode==POLY_FILL || m_nPolyMode==POLY_FILL_NORGLN || m_nPolyMode==POLY_FILL_XX)
       m_pIntData->meshEndTrigs();
     break;
 
