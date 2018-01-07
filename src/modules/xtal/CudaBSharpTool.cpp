@@ -6,6 +6,8 @@
 #include <common.h>
 #include "CudaBSharpTool.hpp"
 
+#ifdef HAVE_CUDA
+
 #include <sysdep/CudartCompContext.hpp>
 #include <cuda_runtime.h>
 #include <cufft.h>
@@ -23,6 +25,7 @@ CudaBSharpTool::CudaBSharpTool()
   dp_tmp = NULL;
   m_fftplan = 0;
   m_gfxRes = NULL;
+  m_bUseCUDA = true;
 }
 
 CudaBSharpTool::~CudaBSharpTool()
@@ -47,49 +50,57 @@ void CudaBSharpTool::attach(const qsys::ObjectPtr &pMap)
 
   const int HKLSZ = m_pHKLList->size();
 
-  // HKL list
-  // ;
-  chkCudaErr(
-    cudaMalloc(&dp_hkl, sizeof(StrFac)*HKLSZ));
+  m_bUseCUDA = true;
 
-  // ahkl --> dp_hkl copy
-  chkCudaErr(
-    cudaMemcpy(dp_hkl, m_pHKLList->data(), sizeof(StrFac)*HKLSZ, cudaMemcpyHostToDevice));
+  try {
 
-  chkCudaErr(
-    cudaMalloc(&dp_recip, sizeof(cufftComplex)*NR_SIZE));
-
-  chkCudaErr(
-    cudaMalloc(&dp_map, sizeof(float)*NSIZE));
-
-  int NTMP = (NSIZE/NTHR + 1)*4;
-  chkCudaErr(
-    cudaMalloc(&dp_tmp, sizeof(float)*NTMP));
-
-  m_fftplan;
-  if (cufftPlan3d(&m_fftplan, NZ, NY, NX, CUFFT_C2R) != CUFFT_SUCCESS) {
-    MB_THROW(qlib::RuntimeException, "CUFFT error: Plan creation failed");
-  }
-
-  /*
+    // HKL list
+    chkCudaErr(
+      cudaMalloc(&dp_hkl, sizeof(StrFac)*HKLSZ));
+    
+    // src host hkl --> device dp_hkl copy
+    chkCudaErr(
+      cudaMemcpy(dp_hkl, m_pHKLList->data(), sizeof(StrFac)*HKLSZ, cudaMemcpyHostToDevice));
+    
+    chkCudaErr(
+      cudaMalloc(&dp_recip, sizeof(cufftComplex)*NR_SIZE));
+    
+    chkCudaErr(
+      cudaMalloc(&dp_map, sizeof(float)*NSIZE));
+    
+    int NTMP = (NSIZE/NTHR + 1)*4;
+    chkCudaErr(
+      cudaMalloc(&dp_tmp, sizeof(float)*NTMP));
+    
+    m_fftplan;
+    if (cufftPlan3d(&m_fftplan, NZ, NY, NX, CUFFT_C2R) != CUFFT_SUCCESS) {
+      MB_THROW(qlib::RuntimeException, "CUFFT error: Plan creation failed");
+    }
+    
+    /*
   void *dp_bmap;
   cudaMalloc(&dp_bmap, sizeof(char)*NSIZE);
   if (cudaGetLastError() != cudaSuccess){
     fprintf(stderr, "Cuda error: Failed to allocate\n");
     return;
   }
-   */
-
-
-  gfx::Texture *pTex = m_pMap->getMapTex();
-  sysdep::OglTextureRep *pRep = dynamic_cast<sysdep::OglTextureRep *>(pTex->getRep());
-  GLuint vbo = pRep->getBufID();
-
-  cudaGraphicsResource *tbo_cuda;
-  chkCudaErr(
-    cudaGraphicsGLRegisterBuffer( &tbo_cuda, vbo, cudaGraphicsMapFlagsWriteDiscard ));
-  m_gfxRes = tbo_cuda;
-
+     */
+    
+    gfx::Texture *pTex = qlib::ensureNotNull( m_pMap->getMapTex() );
+    sysdep::OglTextureRep *pRep = qlib::ensureNotNull( dynamic_cast<sysdep::OglTextureRep *>(pTex->getRep()) );
+    GLuint vbo = pRep->getBufID();
+    
+    cudaGraphicsResource *tbo_cuda;
+    chkCudaErr(
+      cudaGraphicsGLRegisterBuffer( &tbo_cuda, vbo, cudaGraphicsMapFlagsWriteDiscard ));
+    m_gfxRes = tbo_cuda;
+  }
+  catch (qlib::LException &e) {
+    LOG_DPRINTLN("CudaBSharpTool> CUDA init failed -> use CPU version");
+    m_bUseCUDA = false;
+    return;
+  }
+  
   LOG_DPRINTLN("CudaBSharpTool> attach OK");
 }
 
@@ -130,6 +141,11 @@ void CudaBSharpTool::clear()
 
 void CudaBSharpTool::preview(double b_factor)
 {
+  if ( !m_bUseCUDA ) {
+    super_t::preview(b_factor);
+    return;
+  }
+
   convtoary_herm(float(b_factor));
 
   if (cufftExecC2R(m_fftplan, (cufftComplex *)dp_recip, (float *)dp_map) != CUFFT_SUCCESS){
@@ -363,4 +379,5 @@ void CudaBSharpTool::makebmap()
 }
 
 
+#endif
 

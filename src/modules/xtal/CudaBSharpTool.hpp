@@ -19,6 +19,8 @@ namespace xtal {
 
     typedef BSharpTool super_t;
 
+#ifdef HAVE_CUDA
+
   private:
     // CUDA device ptrs
     /// HKL list
@@ -38,6 +40,9 @@ namespace xtal {
 
     /// Thread number per block
     static const int NTHR = 1024;
+
+    /// CUDA avail flag
+    bool m_bUseCUDA;
 
   public:
 
@@ -62,6 +67,8 @@ namespace xtal {
     void calcmapstat_herm();
 
     void makebmap();
+
+#endif
 
   };
 

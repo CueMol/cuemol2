@@ -64,7 +64,7 @@ namespace symm {
 
   public:
 
-    /** default constructor */
+    /// default constructor
     CrystalInfo()
          : m_cella(100.0), m_cellb(100.0), m_cellc(100.0),
            m_alpha(90.0), m_beta(90.0), m_gamma(90.0),
@@ -81,7 +81,7 @@ namespace symm {
     {
     }
 
-    /** copy constructor */
+    /// copy constructor
     CrystalInfo(const CrystalInfo &src)
          : m_cella(src.m_cella), m_cellb(src.m_cellb), m_cellc(src.m_cellc),
            m_alpha(src.m_alpha), m_beta(src.m_beta), m_gamma(src.m_gamma),
@@ -89,10 +89,10 @@ namespace symm {
     {
     }
 
-    // destructor
+    /// destructor
     ~CrystalInfo();
 
-    // = operator
+    /// = operator
     const CrystalInfo &operator=(const CrystalInfo &src)
     {
       if(&src!=this){

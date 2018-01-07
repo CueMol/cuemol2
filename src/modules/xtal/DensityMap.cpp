@@ -25,7 +25,7 @@ DensityMap::DensityMap()
   m_dMinMap = m_dMaxMap = m_dMeanMap = m_dRmsdMap = 0.0;
   m_pByteMap = NULL;
   m_pFloatMap = NULL;
-  m_pRecipAry = NULL;
+  // m_pRecipAry = NULL;
   m_pHKLList = NULL;
 
   m_dLevelBase = m_dLevelStep = 0.0;
@@ -41,8 +41,8 @@ DensityMap::~DensityMap()
   if (m_pByteMap!=NULL)
     delete m_pByteMap;
 
-  if (m_pRecipAry!=NULL)
-    delete m_pRecipAry;
+  //if (m_pRecipAry!=NULL)
+  //delete m_pRecipAry;
 
   if (m_pFloatMap!=NULL)
     delete m_pFloatMap;
@@ -106,9 +106,9 @@ void DensityMap::setMapFloatArray(const float *array,
 
   rotate(m_nCols,m_nRows,m_nSecs,axcol,axrow,axsect);
 
-  if (m_pRecipAry!=NULL)
-    delete m_pRecipAry;
-  m_pRecipAry = NULL;
+  //if (m_pRecipAry!=NULL)
+  //delete m_pRecipAry;
+  //m_pRecipAry = NULL;
 
   if (m_pFloatMap!=NULL)
     delete m_pFloatMap;
@@ -166,9 +166,9 @@ void DensityMap::setMapByteArray(const unsigned char*array,
   m_dLevelStep = (double)(rhomax - rhomin)/256.0;
   m_dLevelBase = rhomin;
 
-  if (m_pRecipAry!=NULL)
-    delete m_pRecipAry;
-  m_pRecipAry = NULL;
+  //if (m_pRecipAry!=NULL)
+  //delete m_pRecipAry;
+  //m_pRecipAry = NULL;
 
   if (m_pFloatMap!=NULL)
     delete m_pFloatMap;
@@ -516,42 +516,6 @@ gfx::Texture *DensityMap::getMapTex() const
   return m_pMapTex;
 }
 
-#include "FFTUtil.hpp"
-
-void DensityMap::setRecipArray(const RecipAry &data, int na, int nb, int nc)
-{
-  m_nCols = na;
-  m_nRows = nb;
-  m_nSecs = nc;
-  setMapParams(0,0,0,na,nb,nc);
-
-  if (m_pRecipAry!=NULL)
-    delete m_pRecipAry;
-  m_pRecipAry = MB_NEW RecipAry(data);
-
-  if (m_pFloatMap!=NULL)
-    delete m_pFloatMap;
-  m_pFloatMap = MB_NEW FloatMap(m_nCols,m_nRows,m_nSecs);
-
-  FFTUtil fft;
-  //fft.doit(*m_pRecipAry, *m_pFloatMap);
-  fft.doit(const_cast<RecipAry&>(data), *m_pFloatMap);
-
-  MB_DPRINTLN("FFT OK");
-
-  calcMapStats();
-
-  if (m_pByteMap!=NULL)
-    delete m_pByteMap;
-  m_pByteMap = MB_NEW ByteMap(m_nCols,m_nRows,m_nSecs);
-
-  createByteMap();
-
-  if (m_pMapTex!=NULL)
-    delete m_pMapTex;
-  m_pMapTex = NULL;
-
-}
 
 void DensityMap::setHKLList(HKLList *pHKLList)
 {
@@ -564,17 +528,15 @@ void DensityMap::setHKLList(HKLList *pHKLList)
   m_nSecs = m_pHKLList->m_nc;
   setMapParams(0,0,0,m_nCols,m_nRows,m_nSecs);
 
-  if (m_pRecipAry!=NULL)
-    delete m_pRecipAry;
-  m_pRecipAry = MB_NEW RecipAry();
-  m_pHKLList->convToArrayHerm(*m_pRecipAry, 0.0f);
+  RecipAry recip_ary;
+  m_pHKLList->convToArrayHerm(recip_ary, 0.0f);
 
   if (m_pFloatMap!=NULL)
     delete m_pFloatMap;
   m_pFloatMap = MB_NEW FloatMap(m_nCols,m_nRows,m_nSecs);
 
   FFTUtil fft;
-  fft.doit(*m_pRecipAry, *m_pFloatMap);
+  fft.doit(recip_ary, *m_pFloatMap);
 
   MB_DPRINTLN("FFT OK");
 
@@ -655,6 +617,53 @@ void DensityMap::createByteMap(const FloatArray &fmap, ByteArray &bmap,
   }
 }
 
+void DensityMap::updateByteMap()
+{
+  if (m_pMapTex!=NULL) {
+
+    int ni = m_pByteMap->getColumns();
+    int nj = m_pByteMap->getRows();
+    int nk = m_pByteMap->getSections();
+    
+#ifdef USE_TBO
+    m_pMapTex->setData(ni*nj*nk, 1, 1, m_pByteMap->data());
+#else
+    m_pMapTex->setData(ni, nj, nk, m_pByteMap->data());
+#endif
+
+    
+  }
+  else {
+    getMapTex();
+  }
+
+  // cuda_test1();
+
+  fireMapPreviewChgEvent();
+}
+
+void DensityMap::fireMapPreviewChgEvent()
+{
+  // notify update
+  qsys::ObjectEvent obe;
+  obe.setType(qsys::ObjectEvent::OBE_CHANGED_DYNAMIC);
+  obe.setTarget(getUID());
+  obe.setDescr("densityModified");
+  fireObjectEvent(obe);
+}
+
+void DensityMap::fireMapChgEvent()
+{
+  // notify update
+  qsys::ObjectEvent obe;
+  obe.setType(qsys::ObjectEvent::OBE_CHANGED);
+  obe.setTarget(getUID());
+  obe.setDescr("densityModified");
+  fireObjectEvent(obe);
+}
+
+
+#if 0
 void launchTestKernel(unsigned char *input, unsigned char *output, int len);
 //void launchTestKernel(const gfx::ComputeArray *input, gfx::ComputeArray *output);
 
@@ -731,6 +740,45 @@ void DensityMap::cuda_test1()
 
   delete pCA_in;
 }
+#endif
+
+#if 0
+#include "FFTUtil.hpp"
+void DensityMap::setRecipArray(const RecipAry &data, int na, int nb, int nc)
+{
+  m_nCols = na;
+  m_nRows = nb;
+  m_nSecs = nc;
+  setMapParams(0,0,0,na,nb,nc);
+
+  if (m_pRecipAry!=NULL)
+    delete m_pRecipAry;
+  m_pRecipAry = MB_NEW RecipAry(data);
+
+  if (m_pFloatMap!=NULL)
+    delete m_pFloatMap;
+  m_pFloatMap = MB_NEW FloatMap(m_nCols,m_nRows,m_nSecs);
+
+  FFTUtil fft;
+  //fft.doit(*m_pRecipAry, *m_pFloatMap);
+  fft.doit(const_cast<RecipAry&>(data), *m_pFloatMap);
+
+  MB_DPRINTLN("FFT OK");
+
+  calcMapStats();
+
+  if (m_pByteMap!=NULL)
+    delete m_pByteMap;
+  m_pByteMap = MB_NEW ByteMap(m_nCols,m_nRows,m_nSecs);
+
+  createByteMap();
+
+  if (m_pMapTex!=NULL)
+    delete m_pMapTex;
+  m_pMapTex = NULL;
+
+}
+#endif
 
 #if 0
 void DensityMap::sharpenMapPreview(double b_factor)
@@ -831,39 +879,4 @@ void DensityMap::sharpenMapPreview(double b_factor)
   updateByteMap();
 }
 #endif
-
-void DensityMap::updateByteMap()
-{
-  if (m_pMapTex!=NULL) {
-
-    int ni = m_pByteMap->getColumns();
-    int nj = m_pByteMap->getRows();
-    int nk = m_pByteMap->getSections();
-    
-#ifdef USE_TBO
-    m_pMapTex->setData(ni*nj*nk, 1, 1, m_pByteMap->data());
-#else
-    m_pMapTex->setData(ni, nj, nk, m_pByteMap->data());
-#endif
-
-    
-  }
-  else {
-    getMapTex();
-  }
-
-  // cuda_test1();
-
-  fireMapPreviewChgEvent();
-}
-
-void DensityMap::fireMapPreviewChgEvent()
-{
-  // notify update
-  qsys::ObjectEvent obe;
-  obe.setType(qsys::ObjectEvent::OBE_CHANGED_DYNAMIC);
-  obe.setTarget(getUID());
-  obe.setDescr("densityModified");
-  fireObjectEvent(obe);
-}
 

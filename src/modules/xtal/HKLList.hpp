@@ -28,9 +28,19 @@ namespace xtal {
     CrystalInfo m_ci;
 
   public:
+    /// Default ctor
     HKLList() : super_t() {}
+
     HKLList(size_t n) : super_t(n) {}
 
+    /// Copy ctor
+    HKLList(const HKLList& arg)
+         : super_t(arg),
+           m_nMaxH(arg.m_nMaxH), m_nMaxK(arg.m_nMaxK), m_nMaxL(arg.m_nMaxL),
+           m_na(arg.m_na), m_nb(arg.m_nb), m_nc(arg.m_nc), 
+           m_mapr(arg.m_mapr), m_grid(arg.m_grid), m_ci(arg.m_ci)
+      {}
+    
     void calcMaxInd();
 
     static inline int MOD(int a, int b)
