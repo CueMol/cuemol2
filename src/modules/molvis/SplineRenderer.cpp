@@ -242,14 +242,25 @@ void SplineRenderer::propChanged(qlib::LPropEvent &ev)
 
 void SplineRenderer::objectChanged(qsys::ObjectEvent &ev)
 {
-  if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED ||
-      ev.getType()==qsys::ObjectEvent::OBE_CHANGED_DYNAMIC ||
-      ev.getType()==qsys::ObjectEvent::OBE_CHANGED_FIXDYN) {
+  int ntyp = ev.getType();
+
+  if (ntyp==qsys::ObjectEvent::OBE_CHANGED ||
+      ntyp==qsys::ObjectEvent::OBE_CHANGED_DYNAMIC ||
+      ntyp==qsys::ObjectEvent::OBE_CHANGED_FIXDYN) {
     invalidateSplineCoeffs();
     invalidateDisplayCache();
     return;
   }
   
+  if (ntyp==qsys::ObjectEvent::OBE_PROPCHG) {
+    qlib::LPropEvent *pPE = ev.getPropEvent();
+    if (pPE && pPE->getName().equals("xformMat")) {
+      invalidateSplineCoeffs();
+      invalidateDisplayCache();
+      return;
+    }
+  }
+
   super_t::objectChanged(ev);
 }
 

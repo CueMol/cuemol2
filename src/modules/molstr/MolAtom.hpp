@@ -154,8 +154,11 @@ namespace molstr {
     /// Set Atom position
     void setPos(const Vector4D &vec);
 
-    const Vector4D &getPosCache() const { return m_pos; }
-    void setPosCache(const Vector4D &vec) { m_pos = vec; }
+    /// Get atom position (without applying xformMat)
+    const Vector4D &getRawPos() const { return m_pos; }
+
+    /// Set atom position directly (ignoring xformMat prop)
+    void setRawPos(const Vector4D &vec) { m_pos = vec; }
 
     /// Atom position-script version
     LScrVector4D getPosScr() const {

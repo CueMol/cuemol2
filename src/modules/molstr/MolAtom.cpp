@@ -70,11 +70,10 @@ MolAtom::MolAtom(const MolAtom &src)
       m_paib[i] = src.m_paib[i];
   }
   
-  m_pXformMat=NULL;
-  /*
-  if (src.m_pXformMat!=NULL) {
-    m_pXformMat = MB_NEW qlib::Matrix4D(*src.m_pXformMat);
-    }*/
+  m_pXformMat = NULL;
+  if (src.m_pXformMat != NULL) {
+    m_pXformMat = new qlib::Matrix4D(*src.m_pXformMat);
+  }
 }
 
 /// dtor
@@ -106,8 +105,9 @@ Vector4D MolAtom::getPosImpl() const
 Vector4D MolAtom::getPos() const
 {
   Vector4D p = getPosImpl();
-  if (m_pXformMat==NULL)
+  if (m_pXformMat==NULL) {
     return p;
+  }
   else {
     p.w() = 1.0;
     m_pXformMat->xform4D(p);
@@ -118,7 +118,12 @@ Vector4D MolAtom::getPos() const
 /// Set Atom position
 void MolAtom::setPos(const Vector4D &vec)
 {
-  m_pos = vec;
+  if (m_pXformMat==NULL) {
+    m_pos = vec;
+  }
+  else {
+    MB_THROW(qlib::RuntimeException, "Cannot set atom position to the xformMat applied atom/mol");
+  }
 
   if (m_pMol==NULL)
     return;
