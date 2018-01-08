@@ -85,6 +85,30 @@ MolAtom::~MolAtom()
 
 ////////////////////////////////////////
 
+Vector4D MolAtom::getPos() const
+{
+  Vector4D p = m_pos;
+  if (m_pXformMat==NULL) {
+    return p;
+  }
+  else {
+    p.w() = 1.0;
+    m_pXformMat->xform4D(p);
+    return p;
+  }
+}
+
+/// Set Atom position
+void MolAtom::setPos(const Vector4D &vec)
+{
+  if (m_pXformMat==NULL) {
+    m_pos = vec;
+  }
+  else {
+    MB_THROW(qlib::RuntimeException, "Cannot set atom position to the xformMat applied atom/mol");
+  }
+}
+
 MolCoordPtr MolAtom::getParent() const
 {
   qsys::ObjectPtr robj = qsys::SceneManager::getObjectS(m_molID);
@@ -188,26 +212,6 @@ bool MolAtom::removeBond(MolBond *pBond)
   return true;
 }
 
-Vector4D MolAtom::getPos() const
-{
-  if (m_pXformMat==NULL)
-    return m_pos;
-  else {
-    Vector4D res = m_pos;
-    res.w() = 1.0;
-    m_pXformMat->xform4D(res);
-    return res;
-  }
-}
-
-void MolAtom::setPos(const Vector4D &vec)
-{
-  if (m_pXformMat==NULL)
-    m_pos = vec;
-  else {
-    MB_THROW(qlib::RuntimeException, "Cannot set atom position to the xformMat applied atom/mol");
-  }
-}
 
 void MolAtom::setXformMatrix(const qlib::Matrix4D &m)
 {

@@ -142,19 +142,14 @@ namespace molstr {
     /// Get atom position (after applying xformMat)
     Vector4D getPos() const;
 
-    /// Get atom position (without applying xformMat)
-    Vector4D getRawPos() const {
-      return m_pos;
-    }
-
-    /// Set atom position. Set will fail, if xformMat is applied to this mol/atom
+    /// Set atom position. Set will fail if xformMat is applied to this mol/atom
     void setPos(const Vector4D &vec);
 
+    /// Get atom position (without applying xformMat)
+    const Vector4D &getRawPos() const { return m_pos; }
+
     /// Set atom position directly (ignoring xformMat prop)
-    void setRawPos(const Vector4D &vec)
-    {
-      m_pos = vec;
-    }
+    void setRawPos(const Vector4D &vec) { m_pos = vec; }
 
     /// Atom position-script version
     LScrVector4D getPosScr() const {

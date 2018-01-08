@@ -164,7 +164,8 @@ void MolSurfRenderer::preRender(DisplayContext *pdc)
     pdc->setCullFace(m_bCullFace);
   }
   else {
-    // edge/silhouette line is ON --> always don't draw backface (cull backface=true)
+    // edge/silhouette line is ON
+    //   --> always don't draw backface (cull backface=true) for edge rendering
     pdc->setCullFace(true);
   }
 
