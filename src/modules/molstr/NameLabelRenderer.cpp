@@ -413,6 +413,8 @@ void NameLabelRenderer::objectChanged(qsys::ObjectEvent &ev)
   super_t::objectChanged(ev);
 }
 
+///////////////////////
+
 void NameLabelRenderer::writeTo2(qlib::LDom2Node *pNode) const
 {
   // write properties
