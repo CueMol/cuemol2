@@ -82,6 +82,9 @@ namespace qlib {
     /// Log file path
     LString m_logpath;
     
+    /// show cmdline flag
+    bool m_bShowCmdLine;
+
   public:
     void setLogPath(const LString &logpath) {
       m_logpath = logpath;

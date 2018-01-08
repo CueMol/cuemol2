@@ -93,6 +93,11 @@ MolAtomPtr MolCoord::getAtom(const LString &chain, ResidIndex resid,
   if (pResid.isnull())
     return MolAtomPtr();
 
+  int id = pResid->getAtomID(aname, cConfID);
+  if (id<0) return MolAtomPtr();
+  return getAtom(id);
+
+  /*
   if (cConfID=='\0') {
     int id = pResid->getAtomID(aname);
     if (id<0) return MolAtomPtr();
@@ -104,6 +109,7 @@ MolAtomPtr MolCoord::getAtom(const LString &chain, ResidIndex resid,
     if (id<0) return MolAtomPtr();
     return getAtom(id);
   }
+  */
 }
 
 MolAtomPtr MolCoord::getAtomScr(const LString &chain, const LString &sresid,
@@ -133,8 +139,10 @@ LString MolCoord::toStrAID(int atomid) const
 /// Convert from (persistent) string representation to aid
 int MolCoord::fromStrAID(const LString &strid) const
 {
-  if (!m_reAid.match(strid))
+  if (!m_reAid.match(strid)) {
+    LOG_DPRINTLN("MolCoord> Invalid aid strid=%s (re match failed)", strid.c_str());
     return -1;
+  }
 
   // text type aid
   int nsc = m_reAid.getSubstrCount();
@@ -147,7 +155,7 @@ int MolCoord::fromStrAID(const LString &strid) const
   LString sResInd = m_reAid.getSubstr(2);
   ResidIndex nResInd;
   if (!sResInd.toInt(&nResInd.first)) {
-    LOG_DPRINTLN("AtomIntr> Invalid aid resid value=%s", sResInd.c_str());
+    LOG_DPRINTLN("MolCoord> Invalid aid resid value=%s", sResInd.c_str());
     return -1;
   }
   LString sInsCode = m_reAid.getSubstr(3);
@@ -164,9 +172,14 @@ int MolCoord::fromStrAID(const LString &strid) const
   }
 
   MolAtomPtr pAtom = getAtom(sChainName, nResInd, sAtomName, cAltLoc);
-  if (pAtom.isnull())
+  if (pAtom.isnull()) {
+    LOG_DPRINTLN("MolCoord> fromStrAID/ atom <%s %s %s %c> not found in %s",
+		 sChainName.c_str(), nResInd.toString().c_str(), sAtomName.c_str(),
+		 cAltLoc=='\0'?' ':cAltLoc,
+		 getName().c_str());
     return -1;
-  
+  }
+
   return pAtom->getID();
 }
 
@@ -314,6 +327,7 @@ bool MolCoord::removeAtom(int atomid)
   invalidateCrdArray();
 
   const LString &aname = pAtom->getName();
+  char cConfID = pAtom->getConfID();
   ResidIndex nresid = pAtom->getResIndex();
   const LString &cname = pAtom->getChainName();
 
@@ -326,7 +340,7 @@ bool MolCoord::removeAtom(int atomid)
     return false;
 
   // remove atom
-  if (!pRes->removeAtom(aname))
+  if (!pRes->removeAtom(aname, cConfID))
     return false;
   if (pRes->getAtomSize()>0)
     return true;
@@ -412,24 +426,35 @@ bool MolCoord::removeBond(int aaid1, int aaid2)
 
 void MolCoord::removeNonpersBonds()
 {
-  std::vector<MolBond*> pers;
+  std::deque<MolBond*> pers;
 
   BOOST_FOREACH (BondPool::value_type &elem, m_bondPool) {
     MolBond *pBond = elem.second;
-    if (pBond->isPersist())
-      pers.push_back(pBond);
+
+    int aid1 = pBond->getAtom1();
+    int aid2 = pBond->getAtom2();
+    MolAtomPtr pA1 = getAtom(aid1);
+    MolAtomPtr pA2 = getAtom(aid2);
+
+    if (pBond->isPersist()){
+      if (!pA1.isnull() && !pA2.isnull())
+        pers.push_back(pBond); // reserve presistent & valid bond
+      else
+        delete pBond; // remove persistent but orphan bond
+    }
     else {
-      int aid1 = pBond->getAtom1();
-      MolAtomPtr pA1 = getAtom(aid1);
-      MB_ASSERT(!pA1.isnull());
-      pA1->removeBond(pBond);
+      // remove non-persistent bond
+      if (!pA1.isnull())
+        pA1->removeBond(pBond);
+      if (!pA2.isnull())
+        pA2->removeBond(pBond);
       delete pBond;
     }
   }
 
   m_bondPool.clear();
 
-  // re-append the persistent bonds
+  // re-append the valid persistent bonds
   BOOST_FOREACH (MolBond *pelem, pers) {
     m_bondPool.put(pelem);
   }
@@ -599,3 +624,49 @@ void MolCoord::setXformMatrix(const qlib::Matrix4D &m)
   }
    */
 }
+
+void MolCoord::changeChainName(const LString &oldname, const ResidIndex &resid, const LString &newname)
+{
+  MolChainPtr pNewCh = getChain(newname);
+  if (pNewCh.isnull()) {
+    pNewCh = MolChainPtr(MB_NEW MolChain());
+    pNewCh->setParentUID(getUID());
+    pNewCh->setName(newname);
+    appendChain(pNewCh);
+  }
+
+  MolChainPtr pOldCh = qlib::ensureNotNull( getChain(oldname) );
+  MolResiduePtr pRes = qlib::ensureNotNull( getResidue(oldname, resid) );
+  
+  pRes->setChainName(newname);
+  MolResidue::AtomCursor iter = pRes->atomBegin();
+  MolResidue::AtomCursor eiter = pRes->atomEnd();
+  for (; iter!=eiter; ++iter) {
+    MolAtomPtr pAtom = qlib::ensureNotNull( getAtom(iter->second) );
+    pAtom->setChainName(newname);
+  }
+
+  pOldCh->removeResidue(pRes);
+  pNewCh->appendResidue(pRes);
+
+  // purge the empty chain
+  if (pOldCh->getSize()==0)
+    removeChain(oldname);
+}
+
+void MolCoord::changeResIndex(const LString &chname, const ResidIndex &oldind, const ResidIndex &newind)
+{
+  MolChainPtr pCh = qlib::ensureNotNull( getChain(chname) );
+  MolResiduePtr pRes = qlib::ensureNotNull( getResidue(chname, oldind) );
+
+  pCh->removeResidue(pRes);
+  pRes->setIndex(newind);
+  MolResidue::AtomCursor iter = pRes->atomBegin();
+  MolResidue::AtomCursor eiter = pRes->atomEnd();
+  for (; iter!=eiter; ++iter) {
+    MolAtomPtr pAtom = qlib::ensureNotNull( getAtom(iter->second) );
+    pAtom->setResIndex(newind);
+  }
+  pCh->appendResidue(pRes);
+}
+

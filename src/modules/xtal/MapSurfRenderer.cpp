@@ -128,13 +128,19 @@ void MapSurfRenderer::preRender(DisplayContext *pdc)
   }
   else {
     pdc->setLighting(true);
-    pdc->setPolygonMode(gfx::DisplayContext::POLY_FILL);
+    //pdc->setPolygonMode(gfx::DisplayContext::POLY_FILL);
+    // Ridge line generates dot noise on the surface (but this may be bug of marching cubes implementation...)
+    pdc->setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
   }
   
-  if (m_bCullFace)
+  if (getEdgeLineType()==gfx::DisplayContext::ELT_NONE) {
+    pdc->setCullFace(m_bCullFace);
+  }
+  else {
+    // edge/silhouette line is ON
+    //   --> always don't draw backface (cull backface=true) for edge rendering
     pdc->setCullFace(true);
-  else
-    pdc->setCullFace(false);
+  }
 }
 
 void MapSurfRenderer::postRender(DisplayContext *pdc)

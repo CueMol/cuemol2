@@ -96,30 +96,39 @@ if (!("seqpanel" in cuemolui)) {
       dd("SeqPanel: change the tgt scene to "+this.mTgtSceneID);
 
       var that = this;
-      var handler = function (args) {
-	switch (args.evtType) {
-	case cuemol.evtMgr.SEM_ADDED:
-	dd("SeqPanel SEM_ADDED: "+args.obj.target_uid);
-	that.addMolIDData(args.obj.target_uid);
-	that.renderSeq();
-	break;
-	
-	case cuemol.evtMgr.SEM_REMOVING:
-	dd("SeqPanel SEM_REMOVING:"+args.obj.target_uid);
-	that.removeMolData(args.obj.target_uid);
-	that.renderSeq();
-	break;
-	
-	case cuemol.evtMgr.SEM_CHANGED:
-	if (args.method=="sceneAllCleared" ||
-	    args.method=="sceneLoaded") {
-	  dd("SeqPanel SEM_CHANGED:"+args.srcUID);
-	  let scene = cuemol.getScene(args.srcUID);
-	  that.loadScene(scene);
-	  that.renderSeq();
-	}
-	break;
-	
+
+      // setup scene event handler
+      var sc_handler = function (args) {
+        dd("SeqPanel> SC_HANDLER: "+args.obj.target_uid);
+        switch (args.evtType) {
+        case cuemol.evtMgr.SEM_CHANGED:
+          if (args.method=="sceneAllCleared" ||
+              args.method=="sceneLoaded") {
+            dd("SeqPanel SEM_CHANGED:"+args.srcUID);
+            let scene = cuemol.getScene(args.srcUID);
+            that.loadScene(scene);
+            that.renderSeq();
+          }
+          break;
+        }
+      };
+      
+      // setup object event handler
+      var ob_handler = function (args) {
+        dd("SeqPanel> OB_HANDLER: "+args.obj.target_uid);
+        switch (args.evtType) {
+        case cuemol.evtMgr.SEM_ADDED:
+          dd("SeqPanel> SEM_ADDED: "+args.obj.target_uid);
+          that.addMolIDData(args.obj.target_uid);
+          that.renderSeq();
+          break;
+
+        case cuemol.evtMgr.SEM_REMOVING:
+          dd("SeqPanel SEM_REMOVING:"+args.obj.target_uid);
+          that.removeMolData(args.obj.target_uid);
+          that.renderSeq();
+          break;
+
         case cuemol.evtMgr.SEM_PROPCHG:
           if ("propname" in args.obj) {
             let pnm = args.obj.propname;
@@ -133,18 +142,33 @@ if (!("seqpanel" in cuemolui)) {
             }
           }
           break;
+
+        case cuemol.evtMgr.SEM_CHANGED:
+          if (args.method=="topologyChanged") {
+            dd("SeqPanel SEM_CHANGED:"+args.srcUID);
+            let scene = cuemol.getScene(args.srcUID);
+            that.loadScene(scene);
+            that.renderSeq();
+          }
+          break;
+
         }
       };
-      
-      var srctype =
-      cuemol.evtMgr.SEM_SCENE|
-      cuemol.evtMgr.SEM_OBJECT; // source type
 
-      this._callbackID = cuemol.evtMgr.addListener("",
-						   srctype,
-						   cuemol.evtMgr.SEM_ANY, // event type
-						   scene.uid, // source UID
-						   handler);
+      // source category type
+      this._callbackID1 = cuemol.evtMgr.addListener("",
+                                                   cuemol.evtMgr.SEM_SCENE,
+                                                   cuemol.evtMgr.SEM_ANY, // event type
+                                                   scene.uid, // source (scene) UID
+                                                   sc_handler);
+      //dd("seqpanel callback1 slot="+this._callbackID1);
+
+      this._callbackID2 = cuemol.evtMgr.addListener("",
+                                                   cuemol.evtMgr.SEM_OBJECT,
+                                                   cuemol.evtMgr.SEM_ANY, // event type
+                                                   scene.uid, // source (scene) UID
+                                                   ob_handler);
+      //dd("seqpanel callback2 slot="+this._callbackID2);
       this.loadScene(scene);
       this.renderSeq();
     }
@@ -154,9 +178,14 @@ if (!("seqpanel" in cuemolui)) {
     {
       if (oldid==null || oldid<0) return;
       var oldscene = cuemol.getScene(oldid);
-      if (oldscene && this._callbackID)
-	cuemol.evtMgr.removeListener(this._callbackID);
-      this._callbackID = null;
+
+      if (oldscene && this._callbackID1)
+	cuemol.evtMgr.removeListener(this._callbackID1);
+      this._callbackID1 = null;
+
+      if (oldscene && this._callbackID2)
+        cuemol.evtMgr.removeListener(this._callbackID2);
+      this._callbackID1 = null;
 
     };
 
@@ -289,7 +318,10 @@ if (!("seqpanel" in cuemolui)) {
 	    nsize++;
             this.mRow.push({mol: key, chain: chn});
 	    nres = chdata.length;
-	    res = chdata[nres-1].index;
+            if (nres==0)
+              res = 0;
+            else
+              res = chdata[nres-1].index;
 	    res = parseInt(res);
 	    dd("chain "+chn+", nres="+nres+", lastind="+res);
 	    if (!isNaN(res) && res>nmax)

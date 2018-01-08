@@ -1001,13 +1001,14 @@ LString SelPropNode::toString() const
 bool SelPropNode::isSelected(MolAtomPtr pAtom)
 {
   if (getMode()==SelPropNode::APROP) {
-    LOG_DPRINTLN("Warning: APROP not supported in current version!!");
+    LOG_DPRINTLN("SelPropNode> Warning: APROP not supported in current version!!");
     return false;
   }
 
   MolResiduePtr pres = pAtom->getParentResidue();
   if (pres.isnull()) {
-    LOG_DPRINTLN("Warning: RPROP parent residue is NULL!!");
+    LOG_DPRINTLN("SelPropNode(RPROP)> Warning: parent residue of <%s> is NULL!!",
+		 pAtom->toString().c_str());
     return false;
   }
 

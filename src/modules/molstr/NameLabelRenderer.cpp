@@ -373,6 +373,7 @@ void NameLabelRenderer::propChanged(qlib::LPropEvent &ev)
     if (!pScene.isnull())
       pScene->setUpdateFlag();
   }
+
   /*else if (propnm.startsWith("font_")) {
     makeLabelImg();
     //m_pixCache.invalidate();

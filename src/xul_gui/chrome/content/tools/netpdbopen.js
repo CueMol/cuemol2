@@ -1,3 +1,4 @@
+// -*-Mode: C++;-*-
 //
 // web PDB download tool
 //
@@ -47,7 +48,7 @@ StreamListener.prototype.onStartRequest = function (aRequest, aContext)
   if (httpch.responseStatus!=200) {
     this.m_ok = false;
     this.m_strmgr.waitLoadAsync(this.m_tid);
-    alert("PDB ID: "+this.mPDBID+" not found.");
+    alert("PDB ID: <"+this.mPDBID+"> not found ("+httpch.responseStatus+").");
   }
 };
 
@@ -180,7 +181,7 @@ StreamListener.prototype.onStatus = function (aRequest, aContext, aStatus, aStat
 // nsIHttpEventSink
 StreamListener.prototype.onRedirect = function (aOldChannel, aNewChannel)
 {
-  dump("********** ON REDIRECT ***** \n");
+  dd("********** ON REDIRECT *****");
 };
 
 // XPCOM interface
@@ -206,14 +207,19 @@ Qm2Main.prototype.onOpenPDBsite = function ()
   var bmap_2fofc = false;
   var bmap_fofc = false;
 
+  var url_pdb = null;
+  var url_map = null;
+
   window.openDialog("chrome://cuemol2/content/tools/openPDB.xul",
 		    "openPDB",
 		    "chrome,modal,resizable=no,dependent,centerscreen",
-		    function(aArg, aPDB, aMap2FoFc, aMapFoFc) {
-		      pdbid = aArg;
+		    function(aPDBID, aPDB, aMap2FoFc, aMapFoFc, aPDBURL, aMapURL) {
+		      pdbid = aPDBID;
 		      bpdb = aPDB;
 		      bmap_2fofc = aMap2FoFc;
 		      bmap_fofc = aMapFoFc;
+		      url_pdb = aPDBURL;
+		      url_map = aMapURL;
 		    });
 
   if (!pdbid)
@@ -223,19 +229,19 @@ Qm2Main.prototype.onOpenPDBsite = function ()
   
   if (bpdb) {
     funcs.push( function () {
-      gQm2Main.openPDBsiteImpl(pdbid, funcs);
+      gQm2Main.openPDBsiteImpl(pdbid, url_pdb, funcs);
     });
   }
 
   if (bmap_2fofc) {
     funcs.push( function () {
-      gQm2Main.openEDSsiteImpl(pdbid, true, funcs);
+      gQm2Main.openEDSsiteImpl(pdbid, url_map, true, funcs);
     });
   }
 
   if (bmap_fofc) {
     funcs.push( function () {
-      gQm2Main.openEDSsiteImpl(pdbid, false, funcs);
+      gQm2Main.openEDSsiteImpl(pdbid, url_map, false, funcs);
     });
   }
 
@@ -245,30 +251,43 @@ Qm2Main.prototype.onOpenPDBsite = function ()
 }
 
 
-Qm2Main.prototype.openPDBsiteImpl = function (pdbid, afuncs)
+Qm2Main.prototype.openPDBsiteImpl = function (pdbid, aPDBURL, afuncs)
 {
   var bUseMmcif = true;
 
-  var pdb_url = "";
+  var pdb_url = aPDBURL;
   var scene = this.mMainWnd.currentSceneW;
   var listener;
 
   //pdb_url = "http://www.rcsb.org/pdb/download/downloadFile.do?"+"fileFormat=pdb&compression=YES&structureId="+pdbid;
-
   //pdb_url = "http://www.rcsb.org/pdb/files/"+pdbid+".pdb.gz";
   //pdb_url = "http://www.rcsb.org/pdb/files/"+pdbid+".pdb"
-
-  if (bUseMmcif) {
-    pdb_url = "http://files.rcsb.org/download/"+pdbid+".cif.gz"
-  }
-  else {
-    pdb_url = "http://files.rcsb.org/download/"+pdbid+".pdb.gz"
-  }
-
-  //var mid = pdbid.substr(1,2);
   //pdb_url = "ftp://ftp.wwpdb.org/pub/pdb/data/structures/divided/pdb/"+mid+"/pdb"+pdbid+".ent.gz"
 
-  cuemol.putLogMsg("open PDB site: URL=\""+pdb_url+"\"");
+  var rdr_type=null;
+  var cmp_type=null;
+  
+  if (pdb_url.match(/\.pdb\.gz$/) ||
+      pdb_url.match(/\.ent\.gz$/)) {
+    rdr_type = "pdb";
+    cmp_type = "gzip";
+  }
+  else if (pdb_url.match(/\.pdb$/) ||
+           pdb_url.match(/\.ent$/)) {
+    rdr_type = "pdb";
+    cmp_type = null;
+  }
+  else if (pdb_url.match(/\.cif\.gz$/)) {
+    rdr_type = "mmcif";
+    cmp_type = "gzip";
+  }
+  else if (pdb_url.match(/\.cif$/)) {
+    rdr_type = "mmcif";
+    cmp_type = null;
+  }
+  
+
+  cuemol.println("Open PDB site: URL=\""+pdb_url+"\"");
   dd("open PDB site: URL=\""+pdb_url+"\"");
   // alert("OK PDBID="+pdb_url);
 
@@ -282,13 +301,11 @@ Qm2Main.prototype.openPDBsiteImpl = function (pdbid, afuncs)
   var obj_type;
   var rend_types;
   var reader;
-  if (bUseMmcif) {
-    reader = smg.createHandler("mmcif", 0);
-  }
-  else {
-    reader = smg.createHandler("pdb", 0);
-  }
-  reader.compress = "gzip";
+
+  reader = smg.createHandler(rdr_type, 0);
+  if (cmp_type)
+    reader.compress = cmp_type;
+
   ( function () {
     var tmpobj = reader.createDefaultObj();
     obj_type = tmpobj._wrapped.getClassName();
@@ -342,17 +359,20 @@ Qm2Main.prototype.openPDBsiteImpl = function (pdbid, afuncs)
 
 }
 
-Qm2Main.prototype.openEDSsiteImpl = function (pdbid, b2fofc, afuncs)
+Qm2Main.prototype.openEDSsiteImpl = function (pdbid, aURLMap, b2fofc, afuncs)
 {
   var scene = this.mMainWnd.currentSceneW;
-  var eds_url="";
+  var eds_url=aURLMap;
 
   var listener;
 
-  //eds_url = "http://eds.bmc.uu.se/eds/sfd/"+pdbid+"/"+pdbid+"_sigmaa.mtz";
-  // http://www.ebi.ac.uk/pdbe/coordinates/files/1cbs_map.mtz
-  eds_url = "http://www.ebi.ac.uk/pdbe/coordinates/files/"+pdbid+"_map.mtz";
-  dd("open PDBe site (density): URL=\""+eds_url+"\"");
+  // // EDS
+  // eds_url = "http://eds.bmc.uu.se/eds/sfd/"+pdbid+"/"+pdbid+"_sigmaa.mtz";
+  // EBI: http://www.ebi.ac.uk/pdbe/coordinates/files/1cbs_map.mtz
+  //eds_url = "http://www.ebi.ac.uk/pdbe/coordinates/files/"+pdbid+"_map.mtz";
+
+  //dd("open PDBe site (density): URL=\""+eds_url+"\"");
+  cuemol.println("Open map: URL=\""+eds_url+"\"");
 
   var new_obj_name;
   if (b2fofc)
@@ -371,14 +391,24 @@ Qm2Main.prototype.openEDSsiteImpl = function (pdbid, b2fofc, afuncs)
   var reader = smg.createHandler("mtzmap", 0);
   // reader.compress = "gzip";
   if (b2fofc) {
-    //reader.clmn_F = "2FOFCWT";
-    //reader.clmn_PHI = "PH2FOFCWT";
-    reader.clmn_F = "FWT";
-    reader.clmn_PHI = "PHWT";
+    if (eds_url.search(/_sigmaa.mtz$/)) {
+      reader.clmn_F = "2FOFCWT";
+      reader.clmn_PHI = "PH2FOFCWT";
+    }
+    else {
+      reader.clmn_F = "FWT";
+      reader.clmn_PHI = "PHWT";
+    }
   }
   else {
-    reader.clmn_F = "DELFWT";
-    reader.clmn_PHI = "PHDELWT";
+    if (eds_url.search(/_sigmaa.mtz$/)) {
+      reader.clmn_F = "FOFCWT";
+      reader.clmn_PHI = "PHFOFCWT";
+    }
+    else {
+      reader.clmn_F = "DELFWT";
+      reader.clmn_PHI = "PHDELWT";
+    }
   }
   reader.gridsize = 0.25;
   ( function () {

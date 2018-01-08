@@ -1,0 +1,64 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+
+<dialog
+  id = "ChgResIndex"
+  windowtype ="CueMol2:ChgResIndDlg"
+  title = "Change residue index"
+  xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  ondialogaccept = "return window.gChgResIndDlg.onDialogAccept()"
+  buttons="accept,cancel">
+  
+  <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/object-menulist.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/molsellist.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/tools/chg_resindex.js"/>
+
+<vbox>
+
+  <radiogroup id="opt_resind">
+
+  <grid flex="1">
+    <columns>
+      <column/>
+      <column flex="1"/>
+    </columns>
+    
+    <rows>
+      <row align="center">
+	<label value="Molecule:" />
+	<menulist id="from_obj" sizetopopup="none"/>
+      </row>
+      
+      <row align="center">
+	<label value="Selection:" />
+	<molsellist id="from_molsel" editable="true" errorbox="from_molsel_err"/>
+      </row>
+      <row>
+	<spacer/>
+	<label id="from_molsel_err" class="errormsg" noerr="yes" value="Error in the selection code!!"/>
+      </row>
+      
+      <row align="center">
+	<radio id="opt_resind_shift" label="Shift by:" persist="selected"/>
+	<textbox id="resind_shift" type="number" size="4" min="-Infinity"/>
+      </row>
+      
+      <row align="center">
+	<radio id="opt_resind_start" label="Start from:" persist="selected"/>
+	<textbox id="resind_start" type="number" size="4" min="-Infinity" disabled="yes"/>
+      </row>
+  
+      <checkbox id="chkbox_renum" label="Renumber" checked="false" persist="checked"/>
+
+    </rows>
+  </grid>
+
+</radiogroup>
+
+</vbox>
+</dialog>
+
