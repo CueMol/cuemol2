@@ -98,6 +98,7 @@ Vector4D MolAtom::getPos() const
   }
 }
 
+/// Set Atom position
 void MolAtom::setPos(const Vector4D &vec)
 {
   if (m_pXformMat==NULL) {
@@ -210,6 +211,7 @@ bool MolAtom::removeBond(MolBond *pBond)
   m_bonded.erase(i);
   return true;
 }
+
 
 void MolAtom::setXformMatrix(const qlib::Matrix4D &m)
 {
