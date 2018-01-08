@@ -395,19 +395,24 @@ void NameLabelRenderer::styleChanged(qsys::StyleEvent &ev)
 
 void NameLabelRenderer::objectChanged(qsys::ObjectEvent &ev)
 {
+  int ntyp = ev.getType();
+
   // Treat changed and changed_dynamic events as the same
-  if (ev.getType()==qsys::ObjectEvent::OBE_CHANGED ||
-      ev.getType()==qsys::ObjectEvent::OBE_CHANGED_DYNAMIC) {
-    //invalidateDisplayCache();
+  if (ntyp==qsys::ObjectEvent::OBE_CHANGED ||
+      ntyp==qsys::ObjectEvent::OBE_CHANGED_DYNAMIC) {
     invalidateAll();
+    return;
   }
-  else if (ev.getType()==qsys::ObjectEvent::OBE_PROPCHG) {
+
+  if (ntyp==qsys::ObjectEvent::OBE_PROPCHG) {
     qlib::LPropEvent *pPE = ev.getPropEvent();
     if (pPE && pPE->getName().equals("xformMat")) {
-      //invalidateDisplayCache();
       invalidateAll();
+      return;
     }
   }
+
+  super_t::objectChanged(ev);
 }
 
 ///////////////////////

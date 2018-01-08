@@ -5,15 +5,15 @@
 
 #define THR_PER_BLK 1024
 
-__global__ void test_kernel(float *input, float *output, int len)
+__global__ void test_kernel(unsigned char *input, unsigned char *output, int len)
 {
   int i = blockDim.x * blockIdx.x + threadIdx.x;
   if (i < len)
-    output[i] = input[i];
+    output[len-i] = input[i];
 }
 
 
-void launchTestKernel(float *input, float *output, int nlen)
+void launchTestKernel(unsigned char *input, unsigned char *output, int nlen)
 {
 
   int ngrd;
@@ -28,6 +28,7 @@ void launchTestKernel(float *input, float *output, int nlen)
   test_kernel<<<grid, block>>>(input, output, nlen);
 }
 
+/*
 #include <common.h>
 #include <sysdep/CudartCompContext.hpp>
 
@@ -52,4 +53,6 @@ void launchTestKernel(const gfx::ComputeArray *pCA_in, gfx::ComputeArray *pCA_ou
   dim3 grid(ngrd, 1, 1);
   test_kernel<<<grid, block>>>(input, output, nlen);
 }
+*/
+
 

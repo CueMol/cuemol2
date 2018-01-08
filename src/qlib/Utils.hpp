@@ -97,12 +97,12 @@ namespace qlib {
   template <typename _Type>
   _Type toRadian(_Type deg)
   {
-    return deg*M_PI/180.0;
+    return _Type( deg*M_PI/180.0 );
   }
 
   template <typename _Type>
   _Type toDegree(_Type rad) {
-    return rad*180.0/M_PI;
+    return _Type( rad*180.0/M_PI );
   }
 
   template <typename _Type>

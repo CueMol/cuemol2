@@ -23,7 +23,6 @@
     <RootNamespace>qsys</RootNamespace>
     <Keyword>Win32Proj</Keyword>
   </PropertyGroup>
-
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -68,7 +67,6 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
     <Import Project="..\common.props" />
   </ImportGroup>
-
   <!-- CUDA -->
   <PropertyGroup Condition="'$(HaveCUDA)'=='Yes'">
     <CUDAPropsPath Condition="'$(CUDAPropsPath)'==''">$(VCTargetsPath)\BuildCustomizations</CUDAPropsPath>
@@ -85,7 +83,6 @@
       <AdditionalLibraryDirectories>$(CudaToolkitLibDir);</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
-
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <_ProjectFileVersion>12.0.21005.1</_ProjectFileVersion>
@@ -116,7 +113,6 @@
       <AdditionalDependencies>opengl32.lib;glu32.lib;glew32.lib;lcms2.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
-
   <ItemGroup>
     <ClCompile Include="..\..\src\gfx\CmsXform.cpp" />
     <ClCompile Include="..\..\src\gfx\ColProfMgr.cpp" />
@@ -374,6 +370,7 @@
     <ClCompile Include="..\..\src\sysdep\OglDisplayList.cpp" />
     <ClCompile Include="..\..\src\sysdep\OglFBOView.cpp" />
     <ClCompile Include="..\..\src\sysdep\OglProgramObject.cpp" />
+    <ClCompile Include="..\..\src\sysdep\OglTexture.cpp" />
     <ClCompile Include="..\..\src\sysdep\OglView.cpp" />
     <ClCompile Include="..\..\src\sysdep\sysdep.cpp" />
     <ClCompile Include="..\..\src\sysdep\WglDisplayContext.cpp" />
@@ -567,7 +564,6 @@
     <Import Project="..\mcwrapgen3.targets" />
     <Import Project="..\glsl_shader.targets" />
   </ImportGroup>
-
   <!-- CUDA -->
   <ImportGroup Condition="'$(HaveCUDA)'=='Yes'" Label="ExtensionTargets">
     <Import Project="$(VCTargetsPath)\BuildCustomizations\$(CUDAVerName).targets" />

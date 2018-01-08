@@ -50,7 +50,8 @@
     }
     var obj = this.mObjBox.getSelectedObj();
 
-    this.mTool = cuemol.createObj("BSharpTool");
+    //this.mTool = cuemol.createObj("BSharpTool");
+    this.mTool = cuemol.createObj("CudaBSharpTool");
     this.mTool.attach(obj);
   };
   
@@ -71,6 +72,13 @@
     this.preview();
   };
 
+  /// Get bfactor value
+  dlg.getBfacValue = function ()
+  {
+    return parseFloat(document.getElementById("bfac-value").value);
+  };
+  
+
   dlg.preview = function ()
   {
     var tgtobj = this.mObjBox.getSelectedObj();
@@ -79,7 +87,7 @@
 
     ////
     // Get bfactor value
-    var bfac = parseFloat(document.getElementById("bfac-value").value);
+    var bfac = this.getBfacValue();
     if (bfac==NaN)
       return; // ERROR
 
@@ -107,13 +115,25 @@
     if (tgtobj==null)
       return;
 
+    ////
+    // Get bfactor value
+    var bfac = this.getBfacValue();
+    if (bfac==NaN)
+      return; // ERROR
+
+    this.mTool.apply(bfac);
+    this.mTool.detach();
+    this.mTool = null;
+    return;
+
+    /*
     // test -- reset
     //tgtobj.sharpenMapPreview(0.0);
     this.mTool.preview(0.0);
     this.mTool.detach();
     this.mTool = null;
     return;
-    
+    */
 
     // EDIT TXN START //
     //scene.startUndoTxn("Create mol surface");

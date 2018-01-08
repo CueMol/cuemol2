@@ -822,6 +822,9 @@
     <ClCompile Include="..\..\src\modules\molstr\GLSLNameLabel2Renderer_wrap.cpp">
       <Filter>molstr</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\sysdep\OglTexture.cpp">
+      <Filter>sysdep</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\qsys\AbstractColor.hpp">

@@ -5,39 +5,12 @@
 #include "xtal.hpp"
 #include <modules/symm/CrystalInfo.hpp>
 #include "FFTUtil.hpp"
+#include "StrFac.hpp"
 
 namespace xtal {
 
   using symm::CrystalInfo;
   
-  /// Element of HKLList array (index&sf)
-  struct StrFac
-  {
-  public:
-    int ih;
-    int ik;
-    int il;
-    float f_re;
-    float f_im;
-
-    StrFac(int ah, int ak, int al, float af_re, float af_im)
-         : ih(ah), ik(ak), il(al), f_re(af_re), f_im(af_im)
-    {
-    }
-
-    StrFac()
-         : ih(0), ik(0), il(0), f_re(0.0f), f_im(0.0f)
-    {
-    }
-
-    StrFac(const StrFac &a)
-         : ih(a.ih), ik(a.ik), il(a.il), f_re(a.f_re), f_im(a.f_im)
-    {
-    }
-  };
-
-  //////////
-
   class HKLList : public std::vector<StrFac>
   {
   public:
@@ -55,9 +28,19 @@ namespace xtal {
     CrystalInfo m_ci;
 
   public:
+    /// Default ctor
     HKLList() : super_t() {}
+
     HKLList(size_t n) : super_t(n) {}
 
+    /// Copy ctor
+    HKLList(const HKLList& arg)
+         : super_t(arg),
+           m_nMaxH(arg.m_nMaxH), m_nMaxK(arg.m_nMaxK), m_nMaxL(arg.m_nMaxL),
+           m_na(arg.m_na), m_nb(arg.m_nb), m_nc(arg.m_nc), 
+           m_mapr(arg.m_mapr), m_grid(arg.m_grid), m_ci(arg.m_ci)
+      {}
+    
     void calcMaxInd();
 
     static inline int MOD(int a, int b)

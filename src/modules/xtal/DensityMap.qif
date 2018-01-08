@@ -18,7 +18,7 @@ runtime_class DensityMap extends Object
 
   string getNormHistogramJSON();
 
-  void sharpenMapPreview(real b_factor);
+  // void sharpenMapPreview(real b_factor);
 
 };
 

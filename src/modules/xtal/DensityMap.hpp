@@ -89,7 +89,7 @@ namespace xtal {
 
     FloatMap *m_pFloatMap;
 
-    RecipAry *m_pRecipAry;
+    // RecipAry *m_pRecipAry;
 
     HKLList *m_pHKLList;
 
@@ -163,7 +163,7 @@ namespace xtal {
 
     ByteArray *getByteMap() const { return m_pByteMap; }
 
-    void setRecipArray(const RecipAry &data, int na, int nb, int nc);
+    // void setRecipArray(const RecipAry &data, int na, int nb, int nc);
 
     /// Set HKL-list to this map (ownership of pHKLList is transferred to this obj)
     void setHKLList(HKLList *pHKLList);
@@ -222,17 +222,22 @@ namespace xtal {
 
     void updateByteMap();
 
+    void fireMapPreviewChgEvent();
+    void fireMapChgEvent();
+    
   private:
     mutable gfx::Texture *m_pMapTex;
     
   public:
     gfx::Texture *getMapTex() const;
 
-    void sharpenMapPreview(double b_factor);
+    // void sharpenMapPreview(double b_factor);
 
   private:
     gfx::ComputeContext *m_pCCtxt;
     
+    // void cuda_test1();
+
   public:
     void setCompCtxt(gfx::ComputeContext *pCtxt) { m_pCCtxt = pCtxt; }
 

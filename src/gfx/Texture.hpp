@@ -11,7 +11,7 @@
 namespace gfx {
 
   /// Abstract class of Texture implementation REP
-  class TextureRep
+  class GFX_API TextureRep
   {
   public:
     virtual ~TextureRep() {}
@@ -29,7 +29,7 @@ namespace gfx {
   /////////////////////////////////////
 
   /// Texture class
-  class Texture
+  class GFX_API Texture
   {
   public:
     Texture()

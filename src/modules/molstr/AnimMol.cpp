@@ -109,7 +109,7 @@ void AnimMol::updateCrdArray()
     for (i=0; i<natoms; ++i) {
       quint32 aid = m_aidmap[i];
       MolAtomPtr pAtom = getAtom(aid);
-      Vector4D pos = pAtom->getPosCache();
+      Vector4D pos = pAtom->getRawPos();
 
       pcrd[i*3+0] = (float) pos.x();
       pcrd[i*3+1] = (float) pos.y();
@@ -130,7 +130,7 @@ void AnimMol::updateCrdArray()
       Vector4D pos(pcrd[i*3+0],
                    pcrd[i*3+1],
                    pcrd[i*3+2]);
-      pAtom->setPosCache(pos);
+      pAtom->setRawPos(pos);
     }
 
   }

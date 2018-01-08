@@ -6,6 +6,7 @@
 #  include "config.h"
 #else
 #define USE_OPENGL 1
+#define HAVE_CUDA 1
 #endif
 
 #include "DensityMap.qif"
@@ -16,6 +17,9 @@
 #include "BrixMapReader.qif"
 
 #include "BSharpTool.qif"
+#ifdef HAVE_CUDA
+#  include "CudaBSharpTool.qif"
+#endif
 
 #ifdef USE_OPENGL
 #  include "GLSLMapVolRenderer.qif"
@@ -35,6 +39,9 @@ module xtal
   BrixMapReader;
 
   BSharpTool;
+#ifdef HAVE_CUDA
+  CudaBSharpTool;
+#endif
 
 #ifdef USE_OPENGL
   GLSLMapVolRenderer;

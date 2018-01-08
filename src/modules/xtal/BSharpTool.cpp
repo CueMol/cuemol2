@@ -90,10 +90,27 @@ void BSharpTool::preview(double b_factor, double d_min)
   DensityMap::createByteMap(*m_pFloatMap, *pByteMap, base, step);
   
   m_pMap->setMapStats(min,max,mean,rmsd);
+
   m_pMap->updateByteMap();
 }
 
 void BSharpTool::apply(double b_factor)
 {
+  // create new HKLList applied b factor
+  HKLList *pNew = MB_NEW HKLList(*m_pHKLList);
+
+  for (StrFac &elem: *pNew) {
+    float irs = float( pNew->m_ci.invressq(elem.ih, elem.ik, elem.il) );
+    float fscl2 = float( exp(-b_factor * irs * 0.25) );
+    elem.f_re *= fscl2;
+    elem.f_im *= fscl2;
+  }
+
+  m_pMap->setHKLList(pNew);
+  m_pMap->fireMapChgEvent();
+
+  m_pHKLList = NULL;
+  detach();
+
 }
 
