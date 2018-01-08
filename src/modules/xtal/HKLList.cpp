@@ -213,10 +213,12 @@ void HKLList::convToArray(CompArray &recip, float b_factor) const
 #endif
 }
 
-void HKLList::convToArrayHerm(CompArray &recip, float b_factor) const
+void HKLList::convToArrayHerm(CompArray &recip, float b_factor, float d_min) const
 {
   const float fscl = float(1.0/(m_ci.volume()));
-    
+  const float irs_max = 1.0f/(d_min*d_min);
+  MB_DPRINTLN("apply b=%f to d_min: %f", d_min);
+  
   int naa = m_na/2+1;
 
   if (recip.cols()!=naa ||
@@ -255,6 +257,8 @@ void HKLList::convToArrayHerm(CompArray &recip, float b_factor) const
 #endif
     float irs = float( m_ci.invressq(ih, ik, il) );
     float fscl2 = float( exp(-b_factor * irs * 0.25) );
+    if (d_min>0.0f && irs>irs_max)
+      fscl2 = 1.0f;
       
     ih = (ih+10000*m_na)%m_na;
     ik = (ik+10000*m_nb)%m_nb;

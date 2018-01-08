@@ -783,3 +783,9 @@ void DensityMap::updateByteMap()
   }
 }
 
+void DensityMap::calcHKLfromMap()
+{
+  if (m_pFloatMap==NULL) {
+  }
+}
+

@@ -28,11 +28,24 @@ void BSharpTool::clear()
 
 void BSharpTool::attach(const qsys::ObjectPtr &pMap)
 {
-  clear();
+  if (!m_pMap.isnull()) {
+    if (m_pMap->getUID()==pMap->getUID())
+      return; // already attached
+    // cleanup previous map's workarea data
+    clear();
+  }
+
   m_pMap = pMap;
-
-  m_pHKLList = m_pMap->getHKLList();
-
+  HKLList *pHKLList = m_pMap->getHKLList();
+  if (pHKLList==NULL) {
+    m_pMap->calcHKLfromMap();
+    pHKLList = m_pMap->getHKLList();
+    if (pHKLList==NULL) {
+      MB_THROW(qlib::RuntimeException, "Cannot create HKLList for map");
+    }
+  }
+  m_pHKLList = pHKLList;
+  
   m_na = m_pMap->getColNo();
   m_nb = m_pMap->getRowNo();
   m_nc = m_pMap->getSecNo();
@@ -43,11 +56,13 @@ void BSharpTool::attach(const qsys::ObjectPtr &pMap)
 
 void BSharpTool::detach()
 {
-  clear();
-  m_pMap = DensityMapPtr();
+  if (!m_pMap.isnull()) {
+    clear();
+    m_pMap = DensityMapPtr();
+  }
 }
 
-void BSharpTool::preview(double b_factor)
+void BSharpTool::preview(double b_factor, double d_min)
 {
   MB_ASSERT(m_pRecipAry!=NULL);
   m_pHKLList->convToArrayHerm(*m_pRecipAry, b_factor);
