@@ -105,7 +105,20 @@ void TopoBuilder::applyTopology()
 
     appTopoResid(pRes, ptop);
 
-    if (!pPrevRes.isnull() &&
+    // ADDED: 20170130 avoid to search linker data when ptop is not a polymer
+    LString sgrp;
+    bool bPolymer = false;
+    if (ptop->getPropStr("group", sgrp)) {
+      if (sgrp.equals("water") ||
+          sgrp.equals("ion") ||
+          sgrp.equals("non-polymer"))
+        bPolymer = false;
+      else
+        bPolymer = true;
+    }
+
+    if (bPolymer &&
+        !pPrevRes.isnull() &&
         pPrevRes->getChainName()==pRes->getChainName()) {
       appTopo2Resids(pPrevRes, pRes, m_pTopDic);
     }

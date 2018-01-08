@@ -190,20 +190,22 @@ bool MolAtom::removeBond(MolBond *pBond)
 
 Vector4D MolAtom::getPos() const
 {
-  if (m_pXformMat==NULL)
-    return m_pos;
+  Vector4D p = m_pos;
+  if (m_pXformMat==NULL) {
+    return p;
+  }
   else {
-    Vector4D res = m_pos;
-    res.w() = 1.0;
-    m_pXformMat->xform4D(res);
-    return res;
+    p.w() = 1.0;
+    m_pXformMat->xform4D(p);
+    return p;
   }
 }
 
 void MolAtom::setPos(const Vector4D &vec)
 {
-  if (m_pXformMat==NULL)
+  if (m_pXformMat==NULL) {
     m_pos = vec;
+  }
   else {
     MB_THROW(qlib::RuntimeException, "Cannot set atom position to the xformMat applied atom/mol");
   }

@@ -62,8 +62,8 @@ int MolResidue::getAtomID(const LString &atomname, char confid /*= '\0'*/) const
     }
 
     // not found
-    MB_DPRINTLN("MolResid> atom %s not found in", encname.c_str());
     /*{
+    MB_DPRINTLN("MolResid> atom %s not found in", encname.c_str());
       atomdata_t::const_iterator iter = m_atomData.begin();
       atomdata_t::const_iterator iend = m_atomData.end();
       for (; iter!=iend; ++iter) {
