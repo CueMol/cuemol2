@@ -62,7 +62,7 @@ void BSharpTool::detach()
   }
 }
 
-void BSharpTool::preview(double b_factor, double d_min)
+void BSharpTool::preview(double b_factor)
 {
   MB_ASSERT(m_pRecipAry!=NULL);
   m_pHKLList->convToArrayHerm(*m_pRecipAry, b_factor);
