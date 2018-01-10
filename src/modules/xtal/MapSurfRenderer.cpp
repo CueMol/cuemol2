@@ -34,6 +34,8 @@ MapSurfRenderer::MapSurfRenderer()
   m_nDrawMode = MSRDRAW_FILL;
   m_lw = 1.2;
   m_pCMap = NULL;
+
+  m_nBinFac = 1;
 }
 
 // destructor
@@ -167,14 +169,19 @@ void MapSurfRenderer::render(DisplayContext *pdl)
   // generate map-range information
   makerange();
 
-  //  setup frac-->orth matrix
   pdl->pushMatrix();
+
+  const Matrix4D &xfm = pMap->getXformMatrix();
+  if (!xfm.isIdent()) {
+    pdl->multMatrix(xfm);
+  }
+
+  //  setup frac-->orth matrix
   if (pXtal==NULL) {
     pdl->translate(pMap->getOrigin());
   }
   else {
     Matrix3D orthmat = pXtal->getXtalInfo().getOrthMat();
-    //orthmat.transpose();
     pdl->multMatrix(Matrix4D(orthmat));
   }
 
@@ -254,9 +261,15 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
   bool bary[8];
 
   int i,j,k;
+/*
   for (i=0; i<ncol; i++)
     for (j=0; j<nrow; j++)
       for (k=0; k<nsec; k++) {
+  */
+  for (i=0; i<ncol; i+=m_nBinFac)
+    for (j=0; j<nrow; j+=m_nBinFac)
+      for (k=0; k<nsec; k+=m_nBinFac) {
+
         int ix = i+m_nStCol - pMap->getStartCol();
         int iy = j+m_nStRow - pMap->getStartRow();
         int iz = k+m_nStSec - pMap->getStartSec();
@@ -272,9 +285,9 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
         bool bin = false;
         int ii;
         for (ii=0; ii<8; ii++) {
-          const int ixx = ix+vtxoffs[ii][0];
-          const int iyy = iy+vtxoffs[ii][1];
-          const int izz = iz+vtxoffs[ii][2];
+          const int ixx = ix + (vtxoffs[ii][0]) * m_nBinFac;
+          const int iyy = iy + (vtxoffs[ii][1]) * m_nBinFac;
+          const int izz = iz + (vtxoffs[ii][2]) * m_nBinFac;
           values[ii] = getDen(ixx, iyy, izz);
 
           // check mol boundary
@@ -304,24 +317,30 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
 
 void MapSurfRenderer::makerange()
 {
+  Vector4D cent = getCenter();
+  const double extent = getExtent();
+
   ScalarObject *pMap = m_pCMap; //static_cast<ScalarObject *>(getClientObj().get());
   DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
   if (pMap==NULL)
     return;
 
-  Vector4D vcent;
-  vcent = getCenter();
-  double centx = vcent.x();
-  double centy = vcent.y();
-  double centz = vcent.z();
-  // double width = getRange();
-  const double extent = getExtent();
-
   //
   // col,row,sec
   //
-  Vector4D vmin(centx-extent, centy-extent, centz-extent),
-  vmax(centx+extent, centy+extent, centz+extent);
+
+  const Matrix4D &xfm = pMap->getXformMatrix();
+  if (!xfm.isIdent()) {
+    // apply inv of xformMat
+    Matrix3D rmat = xfm.getMatrix3D();
+    rmat = rmat.invert();
+    Vector4D tr = xfm.getTransPart();
+    cent -= tr;
+    cent = rmat.mulvec(cent);
+  }
+
+  Vector4D vmin(cent.x()-extent, cent.y()-extent, cent.z()-extent);
+  Vector4D vmax(cent.x()+extent, cent.y()+extent, cent.z()+extent);
 
   // get origin / translate the origin to (0,0,0)
   vmin -= pMap->getOrigin();
@@ -342,7 +361,8 @@ void MapSurfRenderer::makerange()
     const double cec = xt.c();
     if (qlib::isNear4(dimx, cea) &&
         qlib::isNear4(dimy, ceb) &&
-        qlib::isNear4(dimz, cec))
+        qlib::isNear4(dimz, cec) &&
+        isUsePBC())
       m_bPBC = true;
   }
 
@@ -418,9 +438,11 @@ Vector4D MapSurfRenderer::getGrdNorm(int x, int y, int z)
   int iy = y+ (m_nStRow - m_pCMap->getStartRow());
   int iz = z+ (m_nStSec - m_pCMap->getStartSec());
 
-  rval.x() = getDen(ix-1, iy,   iz  ) - getDen(ix+1, iy,   iz );
-  rval.y() = getDen(ix,   iy-1, iz  ) - getDen(ix,   iy+1, iz  );
-  rval.z() = getDen(ix,   iy,   iz-1) - getDen(ix,   iy,   iz+1);
+  //const int n = m_nBinFac;
+  const int n = 1;
+  rval.x() = getDen(ix-n, iy,   iz  ) - getDen(ix+n, iy,   iz );
+  rval.y() = getDen(ix,   iy-n, iz  ) - getDen(ix,   iy+n, iz  );
+  rval.z() = getDen(ix,   iy,   iz-n) - getDen(ix,   iy,   iz+n);
   return rval;
 }
 
@@ -437,6 +459,8 @@ Vector4D MapSurfRenderer::getNormal(const Vector4D &fV, bool bx, bool by, bool b
   int ix, iy, iz;
   double r;
 
+  const int n = m_nBinFac;
+
   Vector4D v1, v2;
   if (bx&&by) {
     ix = int(fV.x());
@@ -444,7 +468,7 @@ Vector4D MapSurfRenderer::getNormal(const Vector4D &fV, bool bx, bool by, bool b
     iz = int( ::floor(fV.z()) );
     r = fV.z() - double(iz);
     v1 = getGrdNorm(ix, iy, iz);
-    v2 = getGrdNorm(ix, iy, iz+1);
+    v2 = getGrdNorm(ix, iy, iz+n);
     rval = v1.scale(1.0-r) + v2.scale(r);
   }
   else if (by&&bz) {
@@ -453,7 +477,7 @@ Vector4D MapSurfRenderer::getNormal(const Vector4D &fV, bool bx, bool by, bool b
     iz = int(fV.z());
     r = fV.x() - double(ix);
     v1 = getGrdNorm(ix, iy, iz);
-    v2 = getGrdNorm(ix+1, iy, iz);
+    v2 = getGrdNorm(ix+n, iy, iz);
     rval = v1.scale(1.0-r) + v2.scale(r);
   }
   else if (bz&&bx) {
@@ -462,7 +486,7 @@ Vector4D MapSurfRenderer::getNormal(const Vector4D &fV, bool bx, bool by, bool b
     iz = int(fV.z());
     r = fV.y() - double(iy);
     v1 = getGrdNorm(ix, iy, iz);
-    v2 = getGrdNorm(ix, iy+1, iz);
+    v2 = getGrdNorm(ix, iy+n, iz);
     rval = v1.scale(1.0-r) + v2.scale(r);
   }
   else {
@@ -523,15 +547,15 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
       const double fOffset = getOffset(values[ ec0 ], 
                                        values[ ec1 ], m_dLevel);
       
-      asEdgeVertex[iEdge].x() = double(fx) +
-        a2fVertexOffset[ ec0 ][0] +
-          fOffset * a2fEdgeDirection[iEdge][0];
-      asEdgeVertex[iEdge].y() = double(fy) +
-        a2fVertexOffset[ ec0 ][1] +
-          fOffset * a2fEdgeDirection[iEdge][1];
-      asEdgeVertex[iEdge].z() = double(fz) +
-        a2fVertexOffset[ ec0 ][2] +
-          fOffset * a2fEdgeDirection[iEdge][2];
+      asEdgeVertex[iEdge].x() =
+        double(fx) +
+          (a2fVertexOffset[ec0][0] + fOffset*a2fEdgeDirection[iEdge][0]) * m_nBinFac;
+      asEdgeVertex[iEdge].y() =
+        double(fy) +
+          (a2fVertexOffset[ec0][1] + fOffset*a2fEdgeDirection[iEdge][1]) * m_nBinFac;
+      asEdgeVertex[iEdge].z() =
+        double(fz) +
+          (a2fVertexOffset[ec0][2] + fOffset*a2fEdgeDirection[iEdge][2]) * m_nBinFac;
       asEdgeVertex[iEdge].w() = 0;
       
       bool bx = (iedir[iEdge][0]==0);

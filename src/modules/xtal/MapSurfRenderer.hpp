@@ -41,10 +41,6 @@ namespace xtal {
     ///////////////////////////////////////////
     // properties
 
-    /// Periodic boundary flag
-    /// (default: false; set true, if map contains the entire of unit cell)
-    bool m_bPBC;
-
     /// Automatically update the map center as view center
     /// (default: true)
     bool m_bAutoUpdate;
@@ -93,11 +89,23 @@ namespace xtal {
       invalidateDisplayCache();
     }
     
+  private:
+    /// binning
+    int m_nBinFac;
 
+    int getBinFac() const { return m_nBinFac; }
+    void setBinFac(int n) {
+      m_nBinFac = n;
+      invalidateDisplayCache();
+    }
+    
   private:
 
     ///////////////////////////////////////////
     // work area
+
+    /// Periodic boundary flag. This value is determined by the map size and usePBC flag
+    bool m_bPBC;
 
     /// size of map (copy from m_pMap)
     int m_nMapColNo, m_nMapRowNo, m_nMapSecNo;

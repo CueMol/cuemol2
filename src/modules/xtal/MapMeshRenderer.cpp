@@ -145,7 +145,7 @@ unsigned char MapMeshRenderer::getContSec(unsigned int s0,
 
 bool MapMeshRenderer::generate(ScalarObject *pMap, DensityMap *pXtal)
 {
-  const Vector4D cent = getCenter();
+  Vector4D cent = getCenter();
   const double siglevel = getSigLevel();
   const double extent = getExtent();
 
@@ -167,11 +167,19 @@ bool MapMeshRenderer::generate(ScalarObject *pMap, DensityMap *pXtal)
   //
   // col,row,sec
   //
+
+  const Matrix4D &xfm = pMap->getXformMatrix();
+  if (!xfm.isIdent()) {
+    // apply inv of xformMat
+    Matrix3D rmat = xfm.getMatrix3D();
+    rmat = rmat.invert();
+    Vector4D tr = xfm.getTransPart();
+    cent -= tr;
+    cent = rmat.mulvec(cent);
+  }
+
   Vector4D vmin(cent.x()-extent, cent.y()-extent, cent.z()-extent);
   Vector4D vmax(cent.x()+extent, cent.y()+extent, cent.z()+extent);
-
-  //Vector4D vmin(-1000,-1000,-1000),
-  //    vmax(1000,1000,1000);
 
   // get origin / translate the origin to (0,0,0)
   vmin -= pMap->getOrigin();
@@ -405,12 +413,16 @@ void MapMeshRenderer::render(DisplayContext *pdl)
 
   pdl->pushMatrix();
 
-  if (pXtal==NULL)
-    pdl->translate(pMap->getOrigin());
+  const Matrix4D &xfm = pMap->getXformMatrix();
+  if (!xfm.isIdent()) {
+    pdl->multMatrix(xfm);
+  }
 
-  if (pXtal!=NULL) {
+  if (pXtal==NULL) {
+    pdl->translate(pMap->getOrigin());
+  }
+  else {
     Matrix3D orthmat = pXtal->getXtalInfo().getOrthMat();
-    //orthmat.transpose();
     pdl->multMatrix(Matrix4D(orthmat));
   }
 

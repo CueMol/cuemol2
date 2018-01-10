@@ -39,6 +39,10 @@ runtime_class MapRenderer extends Renderer
   /// contour level in the absolute scale
   property real level => redirect(getLevel, setLevel) (nopersist);
 
+  /// Use PBC if possible
+  property boolean use_pbc => redirect(isUsePBC, setUsePBC);
+  default use_pbc = true;
+
   ///////////////
   // mol boundary
 

@@ -85,10 +85,21 @@ namespace xtal {
     void setColor(const ColorPtr &col) { m_pcolor = col; }
     const ColorPtr &getColor() const { return m_pcolor; }
 
+  private:
+    /// Periodic boundary flag
+    ///  true: use PBC if map contains the entire of unit cell
+    ///  false: always not use PBC (only show the original cell)
+    bool m_bUsePBC;
+
   public:
+    void setUsePBC(bool val) { m_bUsePBC = val; }
+    bool isUsePBC() const { return m_bUsePBC; }
+
 
     ///////////////////////////////////////////
     // constructors / destructor
+
+  public:
 
     /// default constructor
     MapRenderer();
