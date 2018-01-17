@@ -1177,6 +1177,22 @@ Qm2Main.prototype.toggleHWStereo = function ()
   // delete view;
 }
 
+Qm2Main.prototype.togglePerfMeas = function (ev)
+{
+  let sm = cuemol.getService("SceneManager");
+  let bchk = ev.target.checked;
+  if (!bchk) {
+    // start measure
+    this.clearLogContents();
+    sm.enablePerfMeas(1);
+    ev.target.checked = true;
+  }
+  else {
+    sm.disablePerfMeas();
+    ev.target.checked = false;
+  }
+}
+
 ///////////////
 // Updater functions
 

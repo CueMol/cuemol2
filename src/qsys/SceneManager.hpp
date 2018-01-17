@@ -142,14 +142,16 @@ namespace qsys {
     ///////////////////////
     // performance measure
 
-    static const int NAVERSIZE = 100;
-
-    std::vector<qint64> m_busytimes;
-
-    int m_nBusyTimeIndex;
+    //static const int NAVERSIZE = 100;
+    //std::vector<qint64> m_busytimes;
+    //int m_nBusyTimeIndex;
+    //bool m_bPerfMeas;
+    //void *m_pTimer;
 
   public:
-    void setBusyTime(quint64 nanosec);
+    void enablePerfMeas(int nID);
+    void disablePerfMeas();
+    //void setBusyTime(quint64 nanosec);
 
   };
 

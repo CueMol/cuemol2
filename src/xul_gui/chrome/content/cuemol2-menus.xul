@@ -93,6 +93,7 @@
       <command id="cmd_config" oncommand="gQm2Main.showConfigDlg()"/>
 
       <command id="cmd_toggle_hwstereo" oncommand="gQm2Main.toggleHWStereo()"/>
+      <command id="cmd_toggle_perfmeas" oncommand="gQm2Main.togglePerfMeas(event)"/>
 
     </commandset>
 
@@ -141,6 +142,10 @@
       <key id="mkToggleHWStereo"
 	keycode="VK_F1"
 	command="cmd_toggle_hwstereo"/>
+
+      <key id="mkTogglePerfMeas"
+	keycode="VK_F2"
+	command="cmd_toggle_perfmeas"/>
 
 #ifdef XP_MACOSX
       <key id="key_configCmdMac"
@@ -269,6 +274,7 @@
 	      accesskey="&edit_redo.accesskey;"
 	      key="mkEditRedo"
 	      command="cmd_redo"/>
+
 	    <menuitem label="Clear undo data"
 	      oncommand="gQm2Main.clearUndoData()"/>
 
@@ -404,6 +410,12 @@
 	    <menuseparator/>
 
 	    <menuitem id="exec_scr_menuitem" label="Execute script..." oncommand="gQm2Main.onExecScr();"/>
+	    <menuitem id="perfmeas_menuitem" label="Performance measure"
+	      accesskey="P"
+	      key="mkTogglePerfMeas"
+	      name="tools-menu-perf-meas"
+	      type="checkbox"
+	      command="cmd_toggle_perfmeas"/>
 	  </menupopup>
 	</menu>
 

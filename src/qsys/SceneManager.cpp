@@ -7,6 +7,7 @@
 #include <common.h>
 
 #include <version.hpp>
+#include <qlib/LPerfMeas.hpp>
 
 #include "SceneManager.hpp"
 
@@ -29,7 +30,6 @@ void SceneManager::finiClass(qlib::LClass *pcls)
 ///////////////
 
 SceneManager::SceneManager()
-     :  m_busytimes(NAVERSIZE), m_nBusyTimeIndex(0)
 {
   MB_DPRINTLN("SceneManager(%p) created", this);
 
@@ -101,7 +101,7 @@ bool SceneManager::destroyScene(qlib::uid_t uid)
 
   ScenePtr scene = iter->second;
 
-  // notify unloading (and deactivate views)
+  // notify unloading (and release view resources)
   scene->unloading();
 
   // destroy all objects (and renderers)
@@ -226,23 +226,28 @@ void SceneManager::setActiveSceneID(qlib::uid_t uid)
   m_nActiveSceneID = uid;
 }
 
-void SceneManager::setBusyTime(quint64 nanosec)
+void SceneManager::enablePerfMeas(int nID)
 {
-//  if (nanosec<1000)
-//    return;
+  qlib::PerfMeasManager *pPM = qlib::PerfMeasManager::getInstance();
+  if (pPM==NULL)
+    return;
   
-  m_busytimes[m_nBusyTimeIndex] = nanosec;
-  m_nBusyTimeIndex ++;
-  if (m_nBusyTimeIndex>=NAVERSIZE) {
-    m_nBusyTimeIndex = 0;
-    double aver = 0.0;
-    for (int i=0; i<NAVERSIZE; ++i) {
-      aver += double(m_busytimes[i]);
-    }
-    aver /= double(NAVERSIZE);
-    LOG_DPRINTLN("Average busy time: %f msec", aver/1000.0);
-  }
-    
+  pPM->enable(nID);
+  
+  //m_bPerfMeas = true;
+  //m_busytimes.resize(naver);
+  //m_nBusyTimeIndex = 0;
+}
+
+void SceneManager::disablePerfMeas()
+{
+  qlib::PerfMeasManager *pPM = qlib::PerfMeasManager::getInstance();
+  if (pPM==NULL)
+    return;
+
+  pPM->disable();
+
+  //m_bPerfMeas = false;
 }
 
 LString SceneManager::getVerArchName() const

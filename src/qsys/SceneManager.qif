@@ -49,6 +49,12 @@ runtime_class SceneManager
   property string build => redirect(getBuildID, XXX) (readonly);
   /// version architecture (32/64bit, etc)
   property string ver_arch => redirect(getVerArchName, XXX) (readonly);
+
+  //// Performance measurement
+  void enablePerfMeas(integer naver);
+
+  void disablePerfMeas();
+
 };
 
 #endif
