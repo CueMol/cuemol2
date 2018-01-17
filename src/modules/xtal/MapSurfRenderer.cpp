@@ -257,9 +257,6 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
   int nrow = m_nActRow;
   int nsec = m_nActSec;
 
-  double values[8];
-  bool bary[8];
-
   int i,j,k;
 /*
   for (i=0; i<ncol; i++)
@@ -288,19 +285,19 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
           const int ixx = ix + (vtxoffs[ii][0]) * m_nBinFac;
           const int iyy = iy + (vtxoffs[ii][1]) * m_nBinFac;
           const int izz = iz + (vtxoffs[ii][2]) * m_nBinFac;
-          values[ii] = getDen(ixx, iyy, izz);
-
+          m_values[ii] = getDen(ixx, iyy, izz);
+          
           // check mol boundary
-          bary[ii] = inMolBndry(pMap, ixx, iyy, izz);
-          if (bary[ii])
+          m_bary[ii] = inMolBndry(pMap, ixx, iyy, izz);
+          if (m_bary[ii])
             bin = true;
         }
-        
+
         if (!bin)
           continue;
 
-        marchCube(pdl, i, j, k, values, bary);
-
+        marchCube(pdl, i, j, k);
+        
         /*
         pdl->startLines();
         pdl->vertex(i,j,k);
@@ -446,6 +443,18 @@ Vector4D MapSurfRenderer::getGrdNorm(int x, int y, int z)
   return rval;
 }
 
+Vector4D MapSurfRenderer::getGrdNorm2(int ix, int iy, int iz)
+{
+  Vector4D rval;
+
+  const int n = 1;
+  rval.x() = getDen(ix-n, iy,   iz  ) - getDen(ix+n, iy,   iz );
+  rval.y() = getDen(ix,   iy-n, iz  ) - getDen(ix,   iy+n, iz  );
+  rval.z() = getDen(ix,   iy,   iz-n) - getDen(ix,   iy,   iz+n);
+
+  return rval;
+}
+
 //vGetNormal() finds the gradient of the scalar field at a point
 //This gradient can be used as a very accurate vertx normal for lighting calculations
 Vector4D MapSurfRenderer::getNormal(const Vector4D &fV, bool bx, bool by, bool bz)
@@ -500,15 +509,13 @@ Vector4D MapSurfRenderer::getNormal(const Vector4D &fV, bool bx, bool by, bool b
     return Vector4D(1.0, 0.0, 0.0);
   
   return rval.divide(len);
-
 }
 
 //////////////////////////////////////////
 
 
 void MapSurfRenderer::marchCube(DisplayContext *pdl,
-                                int fx, int fy, int fz,
-                                double *values, bool *bary)
+                                int fx, int fy, int fz)
 {
   int iCorner, iVertex, iVertexTest, iEdge, iTriangle, iFlagIndex, iEdgeFlags;
 
@@ -519,7 +526,7 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
   // Find which vertices are inside of the surface and which are outside
   iFlagIndex = 0;
   for(iVertexTest = 0; iVertexTest < 8; iVertexTest++) {
-    if(values[iVertexTest] <= m_dLevel) 
+    if(m_values[iVertexTest] <= m_dLevel) 
       iFlagIndex |= 1<<iVertexTest;
   }
 
@@ -531,6 +538,20 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
     return;
   }
 
+  {
+    ScalarObject *pMap = m_pCMap;
+    int ix = fx+m_nStCol - pMap->getStartCol();
+    int iy = fy+m_nStRow - pMap->getStartRow();
+    int iz = fz+m_nStSec - pMap->getStartSec();
+
+    for (int ii=0; ii<8; ii++) {
+      const int ixx = ix + (vtxoffs[ii][0]) * m_nBinFac;
+      const int iyy = iy + (vtxoffs[ii][1]) * m_nBinFac;
+      const int izz = iz + (vtxoffs[ii][2]) * m_nBinFac;
+      m_norms[ii] = getGrdNorm2(ixx, iyy, izz);
+    }
+  }
+
   // Find the point of intersection of the surface with each edge
   // Then find the normal to the surface at those points
   for(iEdge = 0; iEdge < 12; iEdge++) {
@@ -538,14 +559,14 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
     if(iEdgeFlags & (1<<iEdge)) {
       const int ec0 = a2iEdgeConnection[iEdge][0];
       const int ec1 = a2iEdgeConnection[iEdge][1];
-      if (bary[ec0]==false || bary[ec1]==false) {
+      if (m_bary[ec0]==false || m_bary[ec1]==false) {
         edgeBinFlags[iEdge] = false;
         continue;
       }
       edgeBinFlags[iEdge] = true;
       
-      const double fOffset = getOffset(values[ ec0 ], 
-                                       values[ ec1 ], m_dLevel);
+      const double fOffset = getOffset(m_values[ ec0 ], 
+                                       m_values[ ec1 ], m_dLevel);
       
       asEdgeVertex[iEdge].x() =
         double(fx) +
@@ -558,11 +579,14 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
           (a2fVertexOffset[ec0][2] + fOffset*a2fEdgeDirection[iEdge][2]) * m_nBinFac;
       asEdgeVertex[iEdge].w() = 0;
       
-      bool bx = (iedir[iEdge][0]==0);
-      bool by = (iedir[iEdge][1]==0);
-      bool bz = (iedir[iEdge][2]==0);
+      //bool bx = (iedir[iEdge][0]==0);
+      //bool by = (iedir[iEdge][1]==0);
+      //bool bz = (iedir[iEdge][2]==0);
+      //asEdgeNorm[iEdge] = getNormal(asEdgeVertex[iEdge], bx, by, bz);
 
-      asEdgeNorm[iEdge] = getNormal(asEdgeVertex[iEdge], bx, by, bz);
+      Vector4D nv0 = m_norms[ ec0 ];
+      Vector4D nv1 = m_norms[ ec1 ];
+      asEdgeNorm[iEdge] = (nv0.scale(1.0-fOffset) + nv1.scale(fOffset)).normalize();
     }
   }
 
@@ -588,8 +612,8 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
       // getVertexColor(sColor, asEdgeVertex[iVertex], asEdgeNorm[iVertex]);
       // glColor3f(sColor.x, sColor.y, sColor.z);
 
-      if (getLevel()<0) {
-      // if (m_dLevel<0) {
+      //if (getLevel()<0) {
+      if (m_dLevel<0) {
         if (pdl!=NULL) {
           pdl->normal(-asEdgeNorm[iVertex]);
           pdl->vertex(asEdgeVertex[iVertex]);

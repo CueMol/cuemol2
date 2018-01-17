@@ -166,13 +166,13 @@ namespace xtal {
 
     void renderImpl(DisplayContext *pdl);
 
-    void marchCube(DisplayContext *pdl, int fx, int fy, int fz, double *values, bool *bary);
+    void marchCube(DisplayContext *pdl, int fx, int fy, int fz);
 
     double getOffset(double fValue1, double fValue2, double fValueDesired);
     void getVertexColor(Vector4D &rfColor, Vector4D &rfPosition, Vector4D &rfNormal);
     Vector4D getNormal(const Vector4D &rfNormal,bool,bool,bool);
 
-    inline double getDen(int x, int y, int z) const
+    inline float getDen(int x, int y, int z) const
     {
       // TO DO: support symop
 
@@ -196,6 +196,11 @@ namespace xtal {
     }
 
     Vector4D getGrdNorm(int ix, int iy, int iz);
+    Vector4D getGrdNorm2(int ix, int iy, int iz);
+
+    float m_values[8];
+    bool m_bary[8];
+    Vector4D m_norms[8];
 
   private:
     std::deque<surface::MSVert> m_msverts;
