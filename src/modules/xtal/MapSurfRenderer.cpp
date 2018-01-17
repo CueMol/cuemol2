@@ -588,8 +588,8 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
       // getVertexColor(sColor, asEdgeVertex[iVertex], asEdgeNorm[iVertex]);
       // glColor3f(sColor.x, sColor.y, sColor.z);
 
-      // if (getLevel()<0) {
-      if (m_dLevel<0) {
+      if (getLevel()<0) {
+      // if (m_dLevel<0) {
         if (pdl!=NULL) {
           pdl->normal(-asEdgeNorm[iVertex]);
           pdl->vertex(asEdgeVertex[iVertex]);

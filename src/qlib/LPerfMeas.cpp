@@ -10,6 +10,8 @@
 #include <boost/timer/timer.hpp>
 #endif  
 
+#define NAVER_SIZE 10
+
 namespace qlib {
   SINGLETON_BASE_IMPL(PerfMeasManager);
 }
