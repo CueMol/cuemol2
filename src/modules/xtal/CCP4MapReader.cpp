@@ -27,7 +27,8 @@ CCP4MapReader::CCP4MapReader()
   m_bTruncMin = false;
   m_dMin = 0.0;
   
-  m_bTruncMax = true;
+  //m_bTruncMax = true;
+  m_bTruncMax = false;
   m_dMax = 5.0;
 }
 
