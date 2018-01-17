@@ -680,3 +680,88 @@ qsys::ObjectPtr MapSurfRenderer::generateSurfObj()
   return rval;
 }
 
+///////////////////////////////////////////////////////////
+
+#if 0
+
+void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
+{
+  ScalarObject *pMap = m_pCMap;
+
+  /////////////////////
+  // setup workarea
+
+  //m_dLevel = getLevel()*pMap->getRmsdDensity();
+  const double siglevel = getSigLevel();
+  m_dLevel = pMap->getRmsdDensity() * siglevel;
+  m_nMapColNo = pMap->getColNo();
+  m_nMapRowNo = pMap->getRowNo();
+  m_nMapSecNo = pMap->getSecNo();
+
+  /////////////////////
+  // do marching cubes
+
+  int ncol = m_nActCol;
+  int nrow = m_nActRow;
+  int nsec = m_nActSec;
+
+  double values[8];
+  bool bary[8];
+
+  struct XYEdgeBuf {
+    int id_x;
+    int id_y;
+  };
+
+  std::vector<XYEdgeBuf> ebuf1(ncol*nrow);
+  std::vector<XYEdgeBuf> ebuf3(ncol*nrow);
+
+  struct ZEdgeBuf {
+    int id;
+    int flag;
+  };
+
+  std::vector<ZEdgeBuf> ebuf2(ncol*nrow);
+
+  int i,j,k;
+  for (k=0; k<nsec; k++)
+    for (j=0; j<nrow; j++) {
+      for (i=0; i<ncol; i++) {
+
+        int ix = i+m_nStCol - pMap->getStartCol();
+        int iy = j+m_nStRow - pMap->getStartRow();
+        int iz = k+m_nStSec - pMap->getStartSec();
+        if (!m_bPBC) {
+          if (ix<0||iy<0||iz<0)
+            continue;
+          if (ix+1>=m_nMapColNo||
+              iy+1>=m_nMapRowNo||
+              iz+1>=m_nMapSecNo)
+            continue;
+        }
+
+        // fill buf2 (z-dir)
+        v0 = getDen(ix, iy, iz);
+        v1 = getDen(ix, iy, iz+1);
+        if (v0<m_dLevel && v1>m_dLevel) {
+          const double fOffset = getOffset(v0, v1, m_dLevel);
+          
+        }
+
+        /*
+        pdl->startLines();
+        pdl->vertex(i,j,k);
+        pdl->vertex(i+1,j,k);
+        pdl->vertex(i,j,k);
+        pdl->vertex(i,j+1,k);
+        pdl->vertex(i,j,k);
+        pdl->vertex(i,j,k+1);
+        pdl->end();*/
+      }
+    }
+  
+
+}
+
+#endif
+
