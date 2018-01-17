@@ -50,14 +50,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "importers", "importers\impo
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pybr", "pybr\pybr.vcxproj", "{2E28B002-7D9C-4513-8E16-2124681E2A51}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{BA2A8052-219B-4133-AFE6-D085235AE4ED}"
-	ProjectSection(SolutionItems) = preProject
-		パフォーマンス1.psess = パフォーマンス1.psess
-		パフォーマンス2.psess = パフォーマンス2.psess
-		パフォーマンス3.psess = パフォーマンス3.psess
-		パフォーマンス4.psess = パフォーマンス4.psess
-	EndProjectSection
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -233,8 +225,5 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
 	EndGlobalSection
 EndGlobal
