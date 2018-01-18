@@ -538,7 +538,7 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
     return;
   }
 
-  {
+  /*{
     ScalarObject *pMap = m_pCMap;
     int ix = fx+m_nStCol - pMap->getStartCol();
     int iy = fy+m_nStRow - pMap->getStartRow();
@@ -550,7 +550,17 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
       const int izz = iz + (vtxoffs[ii][2]) * m_nBinFac;
       m_norms[ii] = getGrdNorm2(ixx, iyy, izz);
     }
+  }*/
+
+  {
+    for (int ii=0; ii<8; ii++) {
+      m_norms[ii].w() = -1.0;
+    }
   }
+  ScalarObject *pMap = m_pCMap;
+  const int ix = fx+m_nStCol - pMap->getStartCol();
+  const int iy = fy+m_nStRow - pMap->getStartRow();
+  const int iz = fz+m_nStSec - pMap->getStartSec();
 
   // Find the point of intersection of the surface with each edge
   // Then find the normal to the surface at those points
@@ -579,13 +589,38 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
           (a2fVertexOffset[ec0][2] + fOffset*a2fEdgeDirection[iEdge][2]) * m_nBinFac;
       asEdgeVertex[iEdge].w() = 0;
       
-      //bool bx = (iedir[iEdge][0]==0);
-      //bool by = (iedir[iEdge][1]==0);
-      //bool bz = (iedir[iEdge][2]==0);
-      //asEdgeNorm[iEdge] = getNormal(asEdgeVertex[iEdge], bx, by, bz);
+      /*
+      bool bx = (iedir[iEdge][0]==0);
+      bool by = (iedir[iEdge][1]==0);
+      bool bz = (iedir[iEdge][2]==0);
+      asEdgeNorm[iEdge] = getNormal(asEdgeVertex[iEdge], bx, by, bz);
+       */
 
+      /*
       Vector4D nv0 = m_norms[ ec0 ];
       Vector4D nv1 = m_norms[ ec1 ];
+      asEdgeNorm[iEdge] = (nv0.scale(1.0-fOffset) + nv1.scale(fOffset)).normalize();
+       */
+
+      Vector4D nv0,nv1;
+      if (m_norms[ ec0 ].w()<0.0) {
+        const int ixx = ix + (vtxoffs[ec0][0]) * m_nBinFac;
+        const int iyy = iy + (vtxoffs[ec0][1]) * m_nBinFac;
+        const int izz = iz + (vtxoffs[ec0][2]) * m_nBinFac;
+        nv0 = m_norms[ec0] = getGrdNorm2(ixx, iyy, izz);
+      }
+      else {
+        nv0 = m_norms[ec0];
+      }
+      if (m_norms[ ec1 ].w()<0.0) {
+        const int ixx = ix + (vtxoffs[ec1][0]) * m_nBinFac;
+        const int iyy = iy + (vtxoffs[ec1][1]) * m_nBinFac;
+        const int izz = iz + (vtxoffs[ec1][2]) * m_nBinFac;
+        nv1 = m_norms[ec1] = getGrdNorm2(ixx, iyy, izz);
+      }
+      else {
+        nv1 = m_norms[ec1];
+      }
       asEdgeNorm[iEdge] = (nv0.scale(1.0-fOffset) + nv1.scale(fOffset)).normalize();
     }
   }
