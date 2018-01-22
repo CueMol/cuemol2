@@ -110,5 +110,43 @@ exports.filePicker = function (aWindow, aExt, aDesc)
   }
 
   return fp.file.path;
-}
+};
+
+exports.rendPicker = function (aWindow, aMsg, aRegExp)
+{
+  const util = require("util");
+
+  let sceMgr = cuemol.getService("SceneManager");
+  let scene = sceMgr.getScene(sceMgr.activeSceneID);
+
+  let tgtid = util.doSelectObjPrompt(aWindow, scene, aMsg,
+  function (type, elem) {
+    if (type!="renderer")
+      return null;
+    if (!elem.type.match(aRegExp))
+      return null;
+    return elem.name + " (" + elem.type + ", id="+elem.ID+")";
+  });
+
+  return sceMgr.getRenderer(tgtid);
+};
+
+exports.objPicker = function (aWindow, aMsg, aRegExp)
+{
+  const util = require("util");
+
+  let sceMgr = cuemol.getService("SceneManager");
+  let scene = sceMgr.getScene(sceMgr.activeSceneID);
+
+  let tgtid = util.doSelectObjPrompt(aWindow, scene, aMsg,
+  function (type, elem) {
+    if (type!="object")
+      return null;
+    if (!elem.type.match(aRegExp))
+      return null;
+    return elem.name + " (" + elem.type + ", id="+elem.ID+")";
+  });
+
+  return sceMgr.getObject(tgtid);
+};
 
