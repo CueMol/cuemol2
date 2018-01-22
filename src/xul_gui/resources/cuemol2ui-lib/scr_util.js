@@ -93,3 +93,22 @@ exports.txn = function (aScene, aMsg, aFunc) {
   return true;
 };
 
+exports.filePicker = function (aWindow, aExt, aDesc)
+{
+  const nsIFilePicker = Ci.nsIFilePicker;
+  let fp = Cc["@mozilla.org/filepicker;1"].createInstance(nsIFilePicker);
+
+  fp.init(aWindow, "Select a File", nsIFilePicker.modeOpen);
+
+  if (aExt && aDesc) {
+    fp.appendFilter(aDesc, aExt);
+  }
+
+  let res = fp.show();
+  if (res!=nsIFilePicker.returnOK) {
+    return null;
+  }
+
+  return fp.file.path;
+}
+
