@@ -811,7 +811,9 @@ void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
 
   std::vector<ZEdgeBuf> ebuf2(ncol*nrow);
 
-  int i,j,k;
+  Vector4D vert, norm;
+  int i,j,k, ii;
+  int flag_ind;
   for (k=0; k<nsec; k++)
     for (j=0; j<nrow; j++) {
       for (i=0; i<ncol; i++) {
@@ -828,14 +830,75 @@ void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
             continue;
         }
 
-        // fill buf2 (z-dir)
-        v0 = getDen(ix, iy, iz);
-        v1 = getDen(ix, iy, iz+1);
-        if (v0<m_dLevel && v1>m_dLevel) {
-          const double fOffset = getOffset(v0, v1, m_dLevel);
+        // Calc flag index
+        // TO DO: reuse result
+        for (ii=0; ii<8; ii++) {
+          const int ixx = ix + (vtxoffs[ii][0]) * m_nBinFac;
+          const int iyy = iy + (vtxoffs[ii][1]) * m_nBinFac;
+          const int izz = iz + (vtxoffs[ii][2]) * m_nBinFac;
+          m_values[ii] = getDen(ixx, iyy, izz);
           
+          // check mol boundary
+          m_bary[ii] = inMolBndry(pMap, ixx, iyy, izz);
+          if (m_bary[ii])
+            bin = true;
+        }
+        
+        // Find which vertices are inside of the surface and which are outside
+        flag_ind = 0;
+        for (ii=0; ii<8; ii++) {
+          if(m_values[ii] <= m_dLevel) 
+            flag_ind |= 1<<ii;
         }
 
+        // Find which edges are intersected by the surface
+        edge_flag = aiCubeEdgeFlags[flag_ind];
+
+        //If the cube is entirely inside or outside of the surface, then there will be no intersections
+        if(edge_flag == 0) {
+          continue;
+        }
+
+        for(ii = 0; ii<3; ii++) {
+          if(edge_flag & (1<<ii)) {
+            if (ii==0) {
+              if (ebuf1[i, j].id_x<0) {
+                // calc vert/norm
+              }
+            }
+            else if (ii==1) {
+              if (ebuf1[i+1, j].id_y<0) {
+                // calc vert/norm
+              }
+            }
+            else if (ii==2) {
+              if (ebuf1[i, j+1].id_x<0) {
+                // calc vert/norm
+              }
+            }
+            else {
+              if (ebuf1[i, j].id_y<0) {
+                // calc vert/norm
+              }
+            }
+
+            const int ec0 = a2iEdgeConnection[ii][0];
+            const int ec1 = a2iEdgeConnection[ii][1];
+            const double fOffset = getOffset(m_values[ ec0 ], 
+                                             m_values[ ec1 ], m_dLevel);
+
+            vert.x() =
+              double(fx) +
+                (a2fVertexOffset[ec0][0] + fOffset*a2fEdgeDirection[iEdge][0]) * m_nBinFac;
+            vert.y() =
+              double(fy) +
+                (a2fVertexOffset[ec0][1] + fOffset*a2fEdgeDirection[iEdge][1]) * m_nBinFac;
+            vert.z() =
+              double(fz) +
+                (a2fVertexOffset[ec0][2] + fOffset*a2fEdgeDirection[iEdge][2]) * m_nBinFac;
+          }
+        }
+        
         /*
         pdl->startLines();
         pdl->vertex(i,j,k);
