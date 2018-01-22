@@ -93,12 +93,23 @@ namespace xtal {
     /// binning
     int m_nBinFac;
 
+  public:
     int getBinFac() const { return m_nBinFac; }
     void setBinFac(int n) {
       m_nBinFac = n;
       invalidateDisplayCache();
     }
     
+  private:
+    /// Max extent (in grid unit; default=100x100x100 grid)
+    int m_nMaxGridExt;
+
+  public:
+    int getMaxGridExtent() const { return m_nMaxGridExt; }
+    void setMaxGridExtent(int n);
+
+    int getMaxExtent() const;
+
   private:
 
     ///////////////////////////////////////////

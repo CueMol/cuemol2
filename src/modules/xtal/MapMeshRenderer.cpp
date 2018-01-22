@@ -76,6 +76,15 @@ void MapMeshRenderer::setBufSize(int nsize)
     nsize = 10;
   m_nBufSize = nsize;
   setCrossArraySize(m_nBufSize,m_nBufSize,m_nBufSize);
+
+  if (getClientObj().isnull())
+    return; // not initialized (-> don't get maxext/change the extent)
+  
+  double dmax = getMaxExtent();
+  double dext = getExtent();
+  if (dmax<dext) {
+    setExtent(dmax);
+  }
 }
 
 bool MapMeshRenderer::setCrossArraySize(int ncol, int nrow, int nsec)
@@ -750,8 +759,6 @@ double MapMeshRenderer::getMaxExtent() const
 
   return qlib::min(xmax, qlib::min(ymax, zmax));
 }
-
-
 
 void MapMeshRenderer::setSceneID(qlib::uid_t nid)
 {
