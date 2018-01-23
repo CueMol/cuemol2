@@ -179,7 +179,12 @@ namespace xtal {
 
     void marchCube(DisplayContext *pdl, int fx, int fy, int fz);
 
-    double getOffset(double fValue1, double fValue2, double fValueDesired);
+    void MapSurfRenderer::marchCube2(int fx, int fy, int fz,
+                                    const float *values,
+                                    const bool *bary,
+                                    std::deque<surface::MSVert> &verts);
+      
+    //double getOffset(double fValue1, double fValue2, double fValueDesired);
     void getVertexColor(Vector4D &rfColor, Vector4D &rfPosition, Vector4D &rfNormal);
     Vector4D getNormal(const Vector4D &rfNormal,bool,bool,bool);
 

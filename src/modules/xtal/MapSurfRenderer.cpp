@@ -19,6 +19,10 @@
 #include <qsys/Scene.hpp>
 #include <modules/molstr/AtomIterator.hpp>
 
+#ifdef _OPENMP
+#  include <omp.h>
+#endif
+
 using namespace xtal;
 using qlib::Matrix4D;
 using qlib::Matrix3D;
@@ -249,10 +253,10 @@ void MapSurfRenderer::render(DisplayContext *pdl)
   MB_DPRINTLN("MapSurfRenderer Rendereing...");
 
   pdl->startTriangles();
-  renderImpl(pdl);
+  //renderImpl(pdl);
+  renderImpl2(pdl);
   pdl->end();
 
-  //renderImpl2(pdl);
 
 #ifdef SHOW_NORMAL
   pdl->startLines();
@@ -291,11 +295,14 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
   int nsec = m_nActSec;
 
   int i,j,k;
-/*
+  /*
   for (i=0; i<ncol; i++)
     for (j=0; j<nrow; j++)
       for (k=0; k<nsec; k++) {
-  */
+        //if (i==1&&j==1)
+        //MB_DPRINTLN("i=%d, thr=%d", k, omp_get_thread_num());
+*/
+
   for (i=0; i<ncol; i+=m_nBinFac)
     for (j=0; j<nrow; j+=m_nBinFac)
       for (k=0; k<nsec; k+=m_nBinFac) {
@@ -440,14 +447,16 @@ void MapSurfRenderer::makerange()
 
 //fGetOffset finds the approximate point of intersection of the surface
 // between two points with the values fValue1 and fValue2
-double MapSurfRenderer::getOffset(double fValue1, double fValue2, double fValueDesired)
-{
-  double fDelta = fValue2 - fValue1;
- 
-  if(fDelta == 0.0) {
-    return 0.5;
+namespace {
+  inline float getOffset(float fValue1, float fValue2, float fValueDesired)
+  {
+    float fDelta = fValue2 - fValue1;
+    
+    if(fDelta == 0.0f) {
+      return 0.5f;
+    }
+    return (fValueDesired - fValue1)/fDelta;
   }
-  return (fValueDesired - fValue1)/fDelta;
 }
 
 /*
@@ -772,8 +781,218 @@ qsys::ObjectPtr MapSurfRenderer::generateSurfObj()
   return rval;
 }
 
-///////////////////////////////////////////////////////////
+namespace {
+  typedef std::deque<surface::MSVert> MSVertList;
+}
 
+void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
+{
+  ScalarObject *pMap = m_pCMap;
+
+  /////////////////////
+  // setup workarea
+
+  const double siglevel = getSigLevel();
+  m_dLevel = pMap->getRmsdDensity() * siglevel;
+
+  m_nMapColNo = pMap->getColNo();
+  m_nMapRowNo = pMap->getRowNo();
+  m_nMapSecNo = pMap->getSecNo();
+
+  /////////////////////
+  // do marching cubes
+
+  int ncol = m_nActCol;
+  int nrow = m_nActRow;
+  int nsec = m_nActSec;
+
+  int i,j,k;
+
+  omp_set_num_threads(1);
+
+  int nthr = omp_get_max_threads();
+  std::vector<MSVertList> verts(nthr);
+
+  MB_DPRINTLN("nthr=%d", nthr);
+
+  for (i=0; i<ncol; i+=m_nBinFac)
+    for (j=0; j<nrow; j+=m_nBinFac)
+//#pragma omp parallel for  schedule(dynamic)
+      for (k=0; k<nsec; k+=m_nBinFac) {
+        int ithr = omp_get_thread_num();
+
+        if (i==1&&j==1)
+          MB_DPRINTLN("i=%d, thr=%d", k, ithr);
+
+        float values[8];
+        bool bary[8];
+
+        //if (i==1&&j==1)
+        //MB_DPRINTLN("i=%d, thr=%d", k, omp_get_thread_num());
+
+        int ix = i+m_nStCol - pMap->getStartCol();
+        int iy = j+m_nStRow - pMap->getStartRow();
+        int iz = k+m_nStSec - pMap->getStartSec();
+        if (!m_bPBC) {
+          if (ix<0||iy<0||iz<0)
+            continue;
+          if (ix+1>=m_nMapColNo||
+              iy+1>=m_nMapRowNo||
+              iz+1>=m_nMapSecNo)
+            continue;
+        }
+
+        bool bin = false;
+        int ii;
+        for (ii=0; ii<8; ii++) {
+          const int ixx = ix + (vtxoffs[ii][0]) * m_nBinFac;
+          const int iyy = iy + (vtxoffs[ii][1]) * m_nBinFac;
+          const int izz = iz + (vtxoffs[ii][2]) * m_nBinFac;
+          values[ii] = getDen(ixx, iyy, izz);
+          
+          // check mol boundary
+          bary[ii] = inMolBndry(pMap, ixx, iyy, izz);
+          if (bary[ii])
+            bin = true;
+        }
+
+        if (!bin)
+          continue;
+
+        marchCube2(i, j, k, values, bary, verts[ithr]);
+      }
+
+  for (i=0; i<nthr; ++i) {
+    BOOST_FOREACH (surface::MSVert &v, verts[i]) {
+      pdl->normal(v.n3d());
+      pdl->vertex(v.v3d());
+    }
+  }
+}
+
+void MapSurfRenderer::marchCube2(int fx, int fy, int fz,
+                                 const float *values,
+                                 const bool *bary,
+                                std::deque<surface::MSVert> &verts)
+{
+  int iCorner, iVertex, iVertexTest, iEdge, iTriangle, iFlagIndex, iEdgeFlags;
+
+  Vector4D asEdgeVertex[12];
+  Vector4D asEdgeNorm[12];
+  bool edgeBinFlags[12];
+  Vector4D norms[8];
+
+  // Find which vertices are inside of the surface and which are outside
+  iFlagIndex = 0;
+  for(iVertexTest = 0; iVertexTest < 8; iVertexTest++) {
+    if(values[iVertexTest] <= m_dLevel) 
+      iFlagIndex |= 1<<iVertexTest;
+  }
+
+  // Find which edges are intersected by the surface
+  iEdgeFlags = aiCubeEdgeFlags[iFlagIndex];
+
+  //If the cube is entirely inside or outside of the surface, then there will be no intersections
+  if(iEdgeFlags == 0) {
+    return;
+  }
+
+  for (int ii=0; ii<8; ii++) {
+    norms[ii].w() = -1.0;
+  }
+
+  ScalarObject *pMap = m_pCMap;
+  const int ix = fx+m_nStCol - pMap->getStartCol();
+  const int iy = fy+m_nStRow - pMap->getStartRow();
+  const int iz = fz+m_nStSec - pMap->getStartSec();
+
+  // Find the point of intersection of the surface with each edge
+  // Then find the normal to the surface at those points
+  for(iEdge = 0; iEdge < 12; iEdge++) {
+    //if there is an intersection on this edge
+    if(iEdgeFlags & (1<<iEdge)) {
+      const int ec0 = a2iEdgeConnection[iEdge][0];
+      const int ec1 = a2iEdgeConnection[iEdge][1];
+      if (m_bary[ec0]==false || m_bary[ec1]==false) {
+        edgeBinFlags[iEdge] = false;
+        continue;
+      }
+      edgeBinFlags[iEdge] = true;
+      
+      const double fOffset = getOffset(values[ ec0 ], 
+                                       values[ ec1 ], m_dLevel);
+      
+      asEdgeVertex[iEdge].x() =
+        double(fx) +
+          (a2fVertexOffset[ec0][0] + fOffset*a2fEdgeDirection[iEdge][0]) * m_nBinFac;
+      asEdgeVertex[iEdge].y() =
+        double(fy) +
+          (a2fVertexOffset[ec0][1] + fOffset*a2fEdgeDirection[iEdge][1]) * m_nBinFac;
+      asEdgeVertex[iEdge].z() =
+        double(fz) +
+          (a2fVertexOffset[ec0][2] + fOffset*a2fEdgeDirection[iEdge][2]) * m_nBinFac;
+      asEdgeVertex[iEdge].w() = 0;
+      
+      Vector4D nv0,nv1;
+      if (norms[ ec0 ].w()<0.0) {
+        const int ixx = ix + (vtxoffs[ec0][0]) * m_nBinFac;
+        const int iyy = iy + (vtxoffs[ec0][1]) * m_nBinFac;
+        const int izz = iz + (vtxoffs[ec0][2]) * m_nBinFac;
+        nv0 = norms[ec0] = getGrdNorm2(ixx, iyy, izz);
+      }
+      else {
+        nv0 = norms[ec0];
+      }
+      if (norms[ ec1 ].w()<0.0) {
+        const int ixx = ix + (vtxoffs[ec1][0]) * m_nBinFac;
+        const int iyy = iy + (vtxoffs[ec1][1]) * m_nBinFac;
+        const int izz = iz + (vtxoffs[ec1][2]) * m_nBinFac;
+        nv1 = norms[ec1] = getGrdNorm2(ixx, iyy, izz);
+      }
+      else {
+        nv1 = norms[ec1];
+      }
+      asEdgeNorm[iEdge] = (nv0.scale(1.0-fOffset) + nv1.scale(fOffset)).normalize();
+    }
+  }
+
+  // Draw the triangles that were found.  There can be up to five per cube
+  for(iTriangle = 0; iTriangle < 5; iTriangle++) {
+    if(a2iTriangleConnectionTable[iFlagIndex][3*iTriangle] < 0)
+      break;
+    
+    bool bNotDraw = false;
+    for(iCorner = 0; iCorner < 3; iCorner++) {
+      iVertex = a2iTriangleConnectionTable[iFlagIndex][3*iTriangle+iCorner];
+      if (!edgeBinFlags[iVertex]) {
+        bNotDraw = true;
+        break;
+      }
+    }
+    if (bNotDraw)
+      continue;
+
+    for(iCorner = 0; iCorner < 3; iCorner++) {
+      iVertex = a2iTriangleConnectionTable[iFlagIndex][3*iTriangle+iCorner];
+      
+      if (m_dLevel<0) {
+        verts.push_back( surface::MSVert(asEdgeVertex[iVertex],
+                                         -asEdgeNorm[iVertex]) );
+      }
+      else {
+        verts.push_back( surface::MSVert(asEdgeVertex[iVertex],
+                                         asEdgeNorm[iVertex]) );
+      }
+      
+    } // for(iCorner = 0; iCorner < 3; iCorner++)
+
+  } // for(iTriangle = 0; iTriangle < 5; iTriangle++)
+
+  return;
+}
+
+#if 0
+///////////////////////////////////////////////////////////
 
 static const char ebuftab[12][4] =
 {
@@ -805,7 +1024,6 @@ static const char ebuftab[12][4] =
   {0, 1, 0, 2},
 };
 
-
 void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
 {
   ScalarObject *pMap = m_pCMap;
@@ -827,30 +1045,20 @@ void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
   int nrow = m_nActRow;
   int nsec = m_nActSec;
 
-  struct Edges {
-    int id[3];
-  };
-
-  qlib::Array3D<Edges> edgebuf(ncol+1, nrow+1, nsec+1);
-
-  std::deque<surface::MSFace> faces;
+  int nthr = omp_get_max_threads();
+  typedef std::deque<surface::MSVert> MSVertList;
+  std::vector<MSVertList> verts(nthr);
 
   Vector4D vert, norm;
   int i,j,k, ii, jj;
   int flag_ind, edge_flag;
   int iface[3];
 
-  m_msverts.clear();
-  for (k=0; k<nsec+1; k++)
-    for (j=0; j<nrow+1; j++)
-      for (i=0; i<ncol+1; i++)
-        for (ii=0; ii<3; ii++)
-          edgebuf.at(i,j,k).id[ii] = -1;
-
   for (k=0; k<nsec; k++)
     for (j=0; j<nrow; j++) {
       for (i=0; i<ncol; i++) {
-
+        if (k==1&&j==1)
+          MB_DPRINTLN("i=%d, thr=%d", i, omp_get_thread_num());
         int ix = i+m_nStCol - pMap->getStartCol();
         int iy = j+m_nStRow - pMap->getStartRow();
         int iz = k+m_nStSec - pMap->getStartSec();
@@ -869,8 +1077,8 @@ void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
           const int ixx = ix + (vtxoffs[ii][0]) * m_nBinFac;
           const int iyy = iy + (vtxoffs[ii][1]) * m_nBinFac;
           const int izz = iz + (vtxoffs[ii][2]) * m_nBinFac;
-          m_values[ii] = getDen(ixx, iyy, izz);
-          m_norms[ii].w() = -1.0;
+          values[ii] = getDen(ixx, iyy, izz);
+          norms[ii].w() = -1.0;
 
 	  /*
           // check mol boundary
@@ -883,7 +1091,7 @@ void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
         // Find which vertices are inside of the surface and which are outside
         flag_ind = 0;
         for (ii=0; ii<8; ii++) {
-          if(m_values[ii] <= m_dLevel) 
+          if(values[ii] <= m_dLevel) 
             flag_ind |= 1<<ii;
         }
 
@@ -907,8 +1115,8 @@ void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
 	    if (edge_id<0) {
 	      const int ec0 = a2iEdgeConnection[ii][0];
 	      const int ec1 = a2iEdgeConnection[ii][1];
-	      const double fOffset = getOffset(m_values[ ec0 ], 
-                                               m_values[ ec1 ], m_dLevel);
+	      const double fOffset = getOffset(values[ ec0 ], 
+                                               values[ ec1 ], m_dLevel);
               ////
 
 	      vert.x() =
@@ -1003,4 +1211,5 @@ void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
   pdl->drawMesh(mesh);
 }
 
+#endif
 

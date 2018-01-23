@@ -164,7 +164,12 @@
     <ClCompile Include="..\..\src\modules\xtal\MapMeshRenderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MapRenderer.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MapRenderer_wrap.cpp" />
-    <ClCompile Include="..\..\src\modules\xtal\MapSurfRenderer.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\MapSurfRenderer.cpp">
+      <OpenMPSupport Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</OpenMPSupport>
+      <OpenMPSupport Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</OpenMPSupport>
+      <OpenMPSupport Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</OpenMPSupport>
+      <OpenMPSupport Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</OpenMPSupport>
+    </ClCompile>
     <ClCompile Include="..\..\src\modules\xtal\MapSurfRenderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MTZ2MapReader.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MTZ2MapReader_wrap.cpp" />
