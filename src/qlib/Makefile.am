@@ -57,6 +57,7 @@ LWrapper.cpp \
 LDataSrcContainer.cpp \
 LObjStream3.cpp \
 LProcMgr.cpp \
+LPerfMeas.cpp \
  \
 qlib.cpp
 

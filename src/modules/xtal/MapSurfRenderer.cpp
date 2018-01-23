@@ -770,7 +770,37 @@ qsys::ObjectPtr MapSurfRenderer::generateSurfObj()
 
 ///////////////////////////////////////////////////////////
 
-#if 0
+
+static const char ebuftab[12][4] =
+{
+  // 0: 0-1 ＝ (0,0,0)-(1,0,0) (ix, iy, iz) X entry [0]
+  {0, 0, 0, 0},
+  // 1: 1-2 = (1,0,0)-(1,1,0) (ix+1, iy, iz) Y entry [1]
+  {1, 0, 0, 0},
+  // 2: 2-3 = (1,1,0)-(0,1,0) (ix, iy+1, iz) X entry [0]
+  {0, 1, 0, 0},
+  // 3: 3-0 = (0,1,0)-(0,0,0) (ix, iy, iz) Y entry [1]
+  {0, 0, 0, 1},
+
+  //4: 4-5 = (0,0,1)-(1,0,1) (ix, iy, iz+1) X entry [0]
+  {0, 0, 1, 0},
+  //5: 5-6 = (1,0,1)-(1,1,1) (ix+1, iy, iz+1) Y entry [1]
+  {1, 0, 1, 1},
+  //6: 6-7 = (1,1,1)-(0,1,1) (ix, iy+1, iz+1) X entry [0]
+  {0, 1, 1, 0},
+  //7: 7-4 = (0,1,1)-(0,0,1) (ix, iy, iz+1) Y entry[1]
+  {0, 0, 1, 1},
+
+  //8: 0-4 = (0,0,0)-(0,0,1) (ix, iy, iz) Z entry [2]
+  {0, 0, 0, 2},
+  //9: 1-5 = (1,0,0)-(1,0,1) (ix+1, iy, iz) Z entry [2]
+  {1, 0, 0, 2},
+  //10: 2-6 = (1,1,0)-(1,1,1) (ix+1, iy+1, iz) Z entry [2]
+  {1, 1, 0, 2},
+  //11: 3-7 = (0,1,0)-(0,1,1) (ix, iy+1, iz) Z entry [2]
+  {0, 1, 0, 2},
+};
+
 
 void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
 {
@@ -793,27 +823,26 @@ void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
   int nrow = m_nActRow;
   int nsec = m_nActSec;
 
-  double values[8];
-  bool bary[8];
-
-  struct XYEdgeBuf {
-    int id_x;
-    int id_y;
+  struct Edges {
+    int id[3];
   };
 
-  std::vector<XYEdgeBuf> ebuf1(ncol*nrow);
-  std::vector<XYEdgeBuf> ebuf3(ncol*nrow);
+  qlib::Array3D<Edges> edgebuf(ncol+1, nrow+1, nsec+1);
 
-  struct ZEdgeBuf {
-    int id;
-    int flag;
-  };
-
-  std::vector<ZEdgeBuf> ebuf2(ncol*nrow);
+  std::deque<surface::MSFace> faces;
 
   Vector4D vert, norm;
-  int i,j,k, ii;
-  int flag_ind;
+  int i,j,k, ii, jj;
+  int flag_ind, edge_flag;
+  int iface[3];
+
+  m_msverts.clear();
+  for (k=0; k<nsec; k++)
+    for (j=0; j<nrow; j++)
+      for (i=0; i<ncol; i++)
+	for (ii=0; ii<3; i++)
+	  edgebuf.at(i,j,k).id[ii] = -1;
+
   for (k=0; k<nsec; k++)
     for (j=0; j<nrow; j++) {
       for (i=0; i<ncol; i++) {
@@ -838,10 +867,12 @@ void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
           const int izz = iz + (vtxoffs[ii][2]) * m_nBinFac;
           m_values[ii] = getDen(ixx, iyy, izz);
           
+	  /*
           // check mol boundary
           m_bary[ii] = inMolBndry(pMap, ixx, iyy, izz);
           if (m_bary[ii])
             bin = true;
+	  */
         }
         
         // Find which vertices are inside of the surface and which are outside
@@ -854,51 +885,59 @@ void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
         // Find which edges are intersected by the surface
         edge_flag = aiCubeEdgeFlags[flag_ind];
 
-        //If the cube is entirely inside or outside of the surface, then there will be no intersections
+        //If the cube is entirely inside or outside of the surface,
+	//   then there will be no intersections
         if(edge_flag == 0) {
           continue;
         }
 
-        for(ii = 0; ii<3; ii++) {
+        for(ii = 0; ii<12; ii++) {
           if(edge_flag & (1<<ii)) {
-            if (ii==0) {
-              if (ebuf1[i, j].id_x<0) {
-                // calc vert/norm
-              }
-            }
-            else if (ii==1) {
-              if (ebuf1[i+1, j].id_y<0) {
-                // calc vert/norm
-              }
-            }
-            else if (ii==2) {
-              if (ebuf1[i, j+1].id_x<0) {
-                // calc vert/norm
-              }
-            }
-            else {
-              if (ebuf1[i, j].id_y<0) {
-                // calc vert/norm
-              }
-            }
+	    const int dix = ebuftab[ii][0];
+	    const int diy = ebuftab[ii][1];
+	    const int diz = ebuftab[ii][2];
+	    const int ent = ebuftab[ii][3];
 
-            const int ec0 = a2iEdgeConnection[ii][0];
-            const int ec1 = a2iEdgeConnection[ii][1];
-            const double fOffset = getOffset(m_values[ ec0 ], 
-                                             m_values[ ec1 ], m_dLevel);
+	    int edge_id = edgebuf.at(i+dix, j+diy, k+diz).id[ent];
+	    if (edge_id<0) {
+	      const int ec0 = a2iEdgeConnection[ii][0];
+	      const int ec1 = a2iEdgeConnection[ii][1];
+	      const double fOffset = getOffset(m_values[ ec0 ], 
+					       m_values[ ec1 ], m_dLevel);
+	      vert.x() =
+		double(i) +
+                (a2fVertexOffset[ec0][0] + fOffset*a2fEdgeDirection[ii][0]) * m_nBinFac;
+	      vert.y() =
+		double(j) +
+                (a2fVertexOffset[ec0][1] + fOffset*a2fEdgeDirection[ii][1]) * m_nBinFac;
+	      vert.z() =
+		double(k) +
+                (a2fVertexOffset[ec0][2] + fOffset*a2fEdgeDirection[ii][2]) * m_nBinFac;
 
-            vert.x() =
-              double(fx) +
-                (a2fVertexOffset[ec0][0] + fOffset*a2fEdgeDirection[iEdge][0]) * m_nBinFac;
-            vert.y() =
-              double(fy) +
-                (a2fVertexOffset[ec0][1] + fOffset*a2fEdgeDirection[iEdge][1]) * m_nBinFac;
-            vert.z() =
-              double(fz) +
-                (a2fVertexOffset[ec0][2] + fOffset*a2fEdgeDirection[iEdge][2]) * m_nBinFac;
-          }
+	      edge_id = addMSVert(vert, norm);
+	      edgebuf.at(i+dix, j+diy, k+diz).id[ent] = edge_id;
+	    }
+	  }
         }
         
+	// Draw the triangles that were found.  There can be up to five per cube
+	for(ii = 0; ii < 5; ii++) {
+	  if(a2iTriangleConnectionTable[flag_ind][3*ii] < 0)
+	    break;
+	  for (jj=0; jj<3; ++jj) {
+	    int ie = a2iTriangleConnectionTable[flag_ind][3*ii+jj];
+	    const int dix = ebuftab[ie][0];
+	    const int diy = ebuftab[ie][1];
+	    const int diz = ebuftab[ie][2];
+	    const int ent = ebuftab[ie][3];
+	    iface[jj] = edgebuf.at(i+dix, j+diy, k+diz).id[ent];
+	  }
+
+	  faces.push_back( surface::MSFace(iface[0], iface[1], iface[2]) );
+	} // for(ii = 0; ii < 5; ii++) {
+	
+
+
         /*
         pdl->startLines();
         pdl->vertex(i,j,k);
@@ -914,5 +953,4 @@ void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
 
 }
 
-#endif
 

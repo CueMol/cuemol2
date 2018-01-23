@@ -213,11 +213,13 @@ namespace xtal {
     bool m_bary[8];
     Vector4D m_norms[8];
 
+    void renderImpl2(DisplayContext *pdl);
+
   private:
     std::deque<surface::MSVert> m_msverts;
     Matrix4D m_xform;
 
-    void addMSVert(const Vector4D &v, const Vector4D &n)
+    int addMSVert(const Vector4D &v, const Vector4D &n)
     {
       Vector4D vv(v);
       vv.w() = 1.0;
@@ -227,7 +229,10 @@ namespace xtal {
       nn.w() = 0.0;
       m_xform.xform4D(nn);
 
+      int nid = m_msverts.size();
       m_msverts.push_back( surface::MSVert(vv, nn) );
+
+      return nid;
     }
 
   public:    
