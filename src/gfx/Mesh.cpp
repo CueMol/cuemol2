@@ -11,6 +11,10 @@
 using namespace gfx;
 using qlib::Vector4D;
 
+Mesh::~Mesh()
+{
+}
+
 void Mesh::init(int nverts, int nfaces)
 {
   m_nVerts = nverts;
@@ -19,12 +23,6 @@ void Mesh::init(int nverts, int nfaces)
   m_norms = std::vector<float>(nverts*3);
   m_colptrs = std::vector<ColorPtr>(nverts*3);
   m_faces = std::vector<int>(nfaces*3);
-  /*
-  m_pVerts = new float[nverts*3];
-  m_pNorms = new float[nverts*3];
-  m_pCols = new IntColor[nverts];
-  m_pFaces = new int[nfaces*3];
-   */
 }
 
 bool Mesh::reduce(int nverts, int nfaces)

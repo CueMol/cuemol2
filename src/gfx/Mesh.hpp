@@ -13,115 +13,126 @@
 
 namespace gfx {
 
-using qlib::Vector4D;
+  using qlib::Vector4D;
 
-class GFX_API Mesh
-{
-private:
-  //typedef ColorTable::elem_t IntColor;
-
-  int m_nVerts;
-  int m_nFaces;
-
-  //float *m_pVerts;
-  //float *m_pNorms;
-  //IntColor *m_pCols;
-  //int *m_pFaces;
-
-  std::vector<float> m_verts;
-  std::vector<float> m_norms;
-  std::vector<ColorPtr> m_colptrs;
-  std::vector<int> m_faces;
-
-  /////
-
-  Vector4D m_curNorm;
-  //IntColor m_curCol;
-  ColorPtr m_pCurCol;
-
-  /////
-
-  // ColorTable m_clut;
-  
-public:
-  Mesh()
-       : m_nVerts(0), m_nFaces(0)
-         //m_pVerts(NULL),
-         //m_pNorms(NULL), m_pFaces(NULL)
+  class GFX_API Mesh
   {
-  }
+  private:
 
-  virtual ~Mesh()
-  {
-    //if (m_pVerts!=NULL) delete [] m_pVerts;
-    //if (m_pNorms!=NULL) delete [] m_pNorms;
-    //if (m_pCols!=NULL) delete [] m_pCols;
-    //if (m_pFaces!=NULL) delete [] m_pFaces;
-  }
+    int m_nVerts;
+    int m_nFaces;
+
+    std::vector<float> m_verts;
+    std::vector<float> m_norms;
+    std::vector<ColorPtr> m_colptrs;
+    std::vector<int> m_faces;
+
+    /////
+
+    Vector4D m_curNorm;
+
+    ColorPtr m_pCurCol;
+
+    /////
+
+  public:
+    Mesh()
+         : m_nVerts(0), m_nFaces(0)
+    {
+    }
+
+    virtual ~Mesh();
+
+    void init(int nverts, int nfaces);
+
+
+    ////////////////////////////////////////
+
+    bool reduce(int nverts, int nfaces);
+
+    void setVertex(int i, const Vector4D &v);
+
+
+    inline void setVertex(int i, float x, float y, float z)
+    {
+      m_verts[i*3+0] = x;
+      m_verts[i*3+1] = y;
+      m_verts[i*3+2] = z;
+      
+      m_norms[i*3+0] = (float) m_curNorm.x();
+      m_norms[i*3+1] = (float) m_curNorm.y();
+      m_norms[i*3+2] = (float) m_curNorm.z();
   
-  void init(int nverts, int nfaces);
+      m_colptrs[i] = m_pCurCol;
+    }
 
-
-  ////////////////////////////////////////
-
-  bool reduce(int nverts, int nfaces);
-
-  void setVertex(int i, const Vector4D &v);
-
-  Vector4D getVertex(int i) const {
-    return Vector4D (m_verts[i*3+0],
-                     m_verts[i*3+1],
-                     m_verts[i*3+2]);
-  }
+    inline void setVertex(int i, float x, float y, float z, float nx, float ny, float nz)
+    {
+      m_verts[i*3+0] = x;
+      m_verts[i*3+1] = y;
+      m_verts[i*3+2] = z;
+      
+      m_norms[i*3+0] = nx;
+      m_norms[i*3+1] = ny;
+      m_norms[i*3+2] = nz;
   
-  void normal(const Vector4D &n) {
-    m_curNorm = n;
-  }
-  Vector4D getNormal(int i) const {
-    return Vector4D (m_norms[i*3+0],
-                     m_norms[i*3+1],
-                     m_norms[i*3+2]);
-  }
+      m_colptrs[i] = m_pCurCol;
+    }
 
-  void color(const ColorPtr &c);
-  //void color(const ColorPtr &c, const LString &mtr);
+    Vector4D getVertex(int i) const {
+      return Vector4D (m_verts[i*3+0],
+                       m_verts[i*3+1],
+                       m_verts[i*3+2]);
+    }
 
-  void setFace(int fid, int vid1, int vid2, int vid3) {
-    //MB_ASSERT(m_pFaces!=NULL);
-    MB_ASSERT(fid<m_nFaces);
-    m_faces[fid*3+0] = vid1;
-    m_faces[fid*3+1] = vid2;
-    m_faces[fid*3+2] = vid3;
-  }
+    void normal(const Vector4D &n) {
+      m_curNorm = n;
+    }
+    Vector4D getNormal(int i) const {
+      return Vector4D (m_norms[i*3+0],
+                       m_norms[i*3+1],
+                       m_norms[i*3+2]);
+    }
 
-  ////////////////////////////////////////
+    void color(const ColorPtr &c);
+    //void color(const ColorPtr &c, const LString &mtr);
 
-  int getVertSize() const {
-    return m_nVerts;
-  }
+    void setFace(int fid, int vid1, int vid2, int vid3) {
+      //MB_ASSERT(m_pFaces!=NULL);
+      MB_ASSERT(fid<m_nFaces);
+      m_faces[fid*3+0] = vid1;
+      m_faces[fid*3+1] = vid2;
+      m_faces[fid*3+2] = vid3;
+    }
 
-  int getFaceSize() const {
-    return m_nFaces;
-  }
+    ////////////////////////////////////////
 
-  const float *getFloatVerts() const {
-    return &m_verts[0];
-  }
+    int getVertSize() const {
+      return m_nVerts;
+    }
 
-  const float *getFloatNorms() const {
-    return &m_norms[0];
-  }
+    int getFaceSize() const {
+      return m_nFaces;
+    }
 
-  const int *getFaces() const {
-    return &m_faces[0];
-  }
+    const float *getFloatVerts() const {
+      return &m_verts[0];
+    }
 
-  //bool getRGBAFloatCol(float &r, float &g, float &b, float &a, int iv) const;
-  bool getCol(ColorPtr &c, int iv) const;
+    const float *getFloatNorms() const {
+      return &m_norms[0];
+    }
 
-  bool convRGBAByteCols(quint8 *pcols, int nsize, int defalpha=255, qlib::uid_t nSceneID=qlib::invalid_uid) const;
+    const int *getFaces() const {
+      return &m_faces[0];
+    }
 
-/*
+    //bool getRGBAFloatCol(float &r, float &g, float &b, float &a, int iv) const;
+    bool getCol(ColorPtr &c, int iv) const;
+
+    bool convRGBAByteCols(quint8 *pcols, int nsize, int defalpha=255, qlib::uid_t nSceneID=qlib::invalid_uid) const;
+
+    /*
 private:
   int clutNewColor(unsigned int ccode);
 
@@ -129,7 +140,7 @@ private:
     double tr = qlib::trunc(rho, 0.0, 1.0);
     return (unsigned char) (tr*255.0+0.5);
   }*/
-};
+  };
 
 }
 

@@ -11,6 +11,7 @@
 #include "MapSurfRenderer_consts.hpp"
 #include "DensityMap.hpp"
 #include <gfx/DisplayContext.hpp>
+#include <gfx/Mesh.hpp>
 
 #include <qsys/ScrEventManager.hpp>
 #include <qsys/ViewEvent.hpp>
@@ -244,11 +245,14 @@ void MapSurfRenderer::render(DisplayContext *pdl)
   }
 
   MB_DPRINTLN("MapSurfRenderer Rendereing...");
+
+
   pdl->startTriangles();
-
   renderImpl(pdl);
-
   pdl->end();
+
+  
+  //renderImpl2(pdl);
 
 #ifdef SHOW_NORMAL
   pdl->startLines();
@@ -773,10 +777,10 @@ qsys::ObjectPtr MapSurfRenderer::generateSurfObj()
 
 static const char ebuftab[12][4] =
 {
-  // 0: 0-1 ＝ (0,0,0)-(1,0,0) (ix, iy, iz) X entry [0]
+  // 0: 0-1 ? (0,0,0)-(1,0,0) (ix, iy, iz) X entry [0]
   {0, 0, 0, 0},
   // 1: 1-2 = (1,0,0)-(1,1,0) (ix+1, iy, iz) Y entry [1]
-  {1, 0, 0, 0},
+  {1, 0, 0, 1},
   // 2: 2-3 = (1,1,0)-(0,1,0) (ix, iy+1, iz) X entry [0]
   {0, 1, 0, 0},
   // 3: 3-0 = (0,1,0)-(0,0,0) (ix, iy, iz) Y entry [1]
@@ -837,11 +841,11 @@ void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
   int iface[3];
 
   m_msverts.clear();
-  for (k=0; k<nsec; k++)
-    for (j=0; j<nrow; j++)
-      for (i=0; i<ncol; i++)
-	for (ii=0; ii<3; i++)
-	  edgebuf.at(i,j,k).id[ii] = -1;
+  for (k=0; k<nsec+1; k++)
+    for (j=0; j<nrow+1; j++)
+      for (i=0; i<ncol+1; i++)
+        for (ii=0; ii<3; ii++)
+          edgebuf.at(i,j,k).id[ii] = -1;
 
   for (k=0; k<nsec; k++)
     for (j=0; j<nrow; j++) {
@@ -866,7 +870,8 @@ void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
           const int iyy = iy + (vtxoffs[ii][1]) * m_nBinFac;
           const int izz = iz + (vtxoffs[ii][2]) * m_nBinFac;
           m_values[ii] = getDen(ixx, iyy, izz);
-          
+          m_norms[ii].w() = -1.0;
+
 	  /*
           // check mol boundary
           m_bary[ii] = inMolBndry(pMap, ixx, iyy, izz);
@@ -903,7 +908,9 @@ void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
 	      const int ec0 = a2iEdgeConnection[ii][0];
 	      const int ec1 = a2iEdgeConnection[ii][1];
 	      const double fOffset = getOffset(m_values[ ec0 ], 
-					       m_values[ ec1 ], m_dLevel);
+                                               m_values[ ec1 ], m_dLevel);
+              ////
+
 	      vert.x() =
 		double(i) +
                 (a2fVertexOffset[ec0][0] + fOffset*a2fEdgeDirection[ii][0]) * m_nBinFac;
@@ -913,6 +920,31 @@ void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
 	      vert.z() =
 		double(k) +
                 (a2fVertexOffset[ec0][2] + fOffset*a2fEdgeDirection[ii][2]) * m_nBinFac;
+
+              ////
+
+              Vector4D nv0,nv1;
+              if (m_norms[ ec0 ].w()<0.0) {
+                const int ixx = ix + (vtxoffs[ec0][0]) * m_nBinFac;
+                const int iyy = iy + (vtxoffs[ec0][1]) * m_nBinFac;
+                const int izz = iz + (vtxoffs[ec0][2]) * m_nBinFac;
+                nv0 = m_norms[ec0] = getGrdNorm2(ixx, iyy, izz);
+              }
+              else {
+                nv0 = m_norms[ec0];
+              }
+              if (m_norms[ ec1 ].w()<0.0) {
+                const int ixx = ix + (vtxoffs[ec1][0]) * m_nBinFac;
+                const int iyy = iy + (vtxoffs[ec1][1]) * m_nBinFac;
+                const int izz = iz + (vtxoffs[ec1][2]) * m_nBinFac;
+                nv1 = m_norms[ec1] = getGrdNorm2(ixx, iyy, izz);
+              }
+              else {
+                nv1 = m_norms[ec1];
+              }
+              norm = (nv0.scale(1.0-fOffset) + nv1.scale(fOffset)).normalize();
+
+              ////
 
 	      edge_id = addMSVert(vert, norm);
 	      edgebuf.at(i+dix, j+diy, k+diz).id[ent] = edge_id;
@@ -930,14 +962,13 @@ void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
 	    const int diy = ebuftab[ie][1];
 	    const int diz = ebuftab[ie][2];
 	    const int ent = ebuftab[ie][3];
-	    iface[jj] = edgebuf.at(i+dix, j+diy, k+diz).id[ent];
+            iface[jj] = edgebuf.at(i+dix, j+diy, k+diz).id[ent];
+            MB_ASSERT(iface[jj]>=0);
 	  }
 
 	  faces.push_back( surface::MSFace(iface[0], iface[1], iface[2]) );
 	} // for(ii = 0; ii < 5; ii++) {
 	
-
-
         /*
         pdl->startLines();
         pdl->vertex(i,j,k);
@@ -946,11 +977,30 @@ void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
         pdl->vertex(i,j+1,k);
         pdl->vertex(i,j,k);
         pdl->vertex(i,j,k+1);
-        pdl->end();*/
+        pdl->end();
+         */
       }
     }
   
+  gfx::Mesh mesh;
+  int nv = m_msverts.size();
+  int nf = faces.size();
+  mesh.init(nv, nf);
+  mesh.color(getColor());
+  
+  i=0;
+  BOOST_FOREACH (const surface::MSVert &elem, m_msverts) {
+    mesh.setVertex(i, elem.x, elem.y, elem.z, elem.nx, elem.ny, elem.nz);
+    ++i;
+  }  
 
+  i=0;
+  BOOST_FOREACH (const surface::MSFace &elem, faces) {
+    mesh.setFace(i, elem.id1, elem.id2, elem.id3);
+    ++i;
+  }
+
+  pdl->drawMesh(mesh);
 }
 
 
