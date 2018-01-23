@@ -42,7 +42,9 @@ PovDisplayContext::PovDisplayContext()
 
   m_nEdgeCornerType = ECT_ALL;
 
-  m_dCreaseLimit = qlib::toRadian(85.0);
+  //default: no crease limit
+  m_dCreaseLimit = -1.0; //qlib::toRadian(85.0);
+
   m_dEdgeRise = 0.5;
 
   m_bWritePix = false;

@@ -115,7 +115,8 @@ void MapSurfRenderer::viewChanged(qsys::ViewEvent &ev)
 void MapSurfRenderer::setMaxGridExtent(int n)
 {
   m_nMaxGridExt = n;
-  
+
+  /*
   if (getClientObj().isnull())
     return; // not initialized (-> don't get maxext/change the extent)
   
@@ -125,6 +126,7 @@ void MapSurfRenderer::setMaxGridExtent(int n)
   if (dmax<dext) {
     setExtent(dmax);
   }
+   */
 }
 
 int MapSurfRenderer::getMaxExtent() const
@@ -246,12 +248,10 @@ void MapSurfRenderer::render(DisplayContext *pdl)
 
   MB_DPRINTLN("MapSurfRenderer Rendereing...");
 
-
   pdl->startTriangles();
   renderImpl(pdl);
   pdl->end();
 
-  
   //renderImpl2(pdl);
 
 #ifdef SHOW_NORMAL

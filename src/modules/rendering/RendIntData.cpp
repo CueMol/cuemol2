@@ -1175,9 +1175,6 @@ void RendIntData::calcSilEdgeLines(double dViewDist, double dnangl)
   // current view point
   Vector4D vcam(0,0,m_dViewDist);
 
-  // Limit angle of normals for creating crease lines
-  // const double dnangl = m_dCreaseLimit;
-
   Vector4D v1, v2, n1, n2;
 
   // Select crease & silhouette lines (m_silEdges) from mesh edges (eset)
@@ -1213,7 +1210,7 @@ void RendIntData::calcSilEdgeLines(double dViewDist, double dnangl)
         continue;
       }
 
-      if (checkCrease(n1, n2, dnangl)) {
+      if (dnangl>0.0 && checkCrease(n1, n2, dnangl)) {
         m_silEdges.insert(elem);
       }
       else {
