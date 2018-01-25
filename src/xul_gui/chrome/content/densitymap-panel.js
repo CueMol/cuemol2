@@ -133,10 +133,15 @@ denmap.updateWidget = function (aRend, aPropName)
   }
 
   if (aPropName==undefined ||
-      aPropName=="extent" ||
-      aPropName=="bufsize" ||
-      aPropName=="maxGridExt") {
+      aPropName=="extent") {
     this.mExtent.value = aRend.extent;
+  }
+
+  if (aPropName==undefined ||
+      aPropName=="bufsize" ||
+      aPropName=="max_grids") {
+    if (this.mExtent.value>aRend.maxExtent)
+      this.mExtent.value = aRend.maxExtent;
     this.mExtent.max = aRend.maxExtent;
   }
 

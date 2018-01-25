@@ -101,14 +101,15 @@ namespace xtal {
     }
     
   private:
-    /// Max extent (in grid unit; default=100x100x100 grid)
-    int m_nMaxGridExt;
+    /// Max grid size (default=100x100x100 grid)
+    int m_nMaxGrid;
 
   public:
-    int getMaxGridExtent() const { return m_nMaxGridExt; }
-    void setMaxGridExtent(int n);
+    int getMaxGrids() const { return m_nMaxGrid; }
+    void setMaxGrids(int n);
 
-    int getMaxExtent() const;
+    /// Get max extent (in angstrom unit; calculated from m_nMaxGrid)
+    double getMaxExtent() const;
 
   private:
 

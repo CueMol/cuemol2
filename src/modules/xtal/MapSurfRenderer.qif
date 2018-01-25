@@ -45,9 +45,9 @@ runtime_class MapSurfRenderer extends MapRenderer
   property integer binning => redirect(getBinFac, setBinFac);
   default binning = 1;
 
-  /// Max extent (in grid unit; default=100x100x100 grid)
-  property real maxGridExt => redirect(getMaxGridExtent, setMaxGridExtent);
-  default maxGridExt = 100;
+  /// Max grid size (in grid unit; default=100x100x100 grid)
+  property real max_grids => redirect(getMaxGrids, setMaxGrids);
+  default max_grids = 100;
 
   /// Max extent (in angstrom unit)
   property real maxExtent => redirect(getMaxExtent, XXX) (readonly);

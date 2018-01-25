@@ -41,7 +41,7 @@ MapSurfRenderer::MapSurfRenderer()
   m_pCMap = NULL;
 
   m_nBinFac = 1;
-  m_nMaxGridExt = 100;
+  m_nMaxGrid = 100;
 }
 
 // destructor
@@ -116,9 +116,9 @@ void MapSurfRenderer::viewChanged(qsys::ViewEvent &ev)
   return;
 }
 
-void MapSurfRenderer::setMaxGridExtent(int n)
+void MapSurfRenderer::setMaxGrids(int n)
 {
-  m_nMaxGridExt = n;
+  m_nMaxGrid = n;
 
   /*
   if (getClientObj().isnull())
@@ -133,7 +133,7 @@ void MapSurfRenderer::setMaxGridExtent(int n)
    */
 }
 
-int MapSurfRenderer::getMaxExtent() const
+double MapSurfRenderer::getMaxExtent() const
 {
   MapSurfRenderer *pthis = const_cast<MapSurfRenderer *>(this);
   ScalarObject *pMap = (ScalarObject *) pthis->getClientObj().get();
@@ -145,7 +145,7 @@ int MapSurfRenderer::getMaxExtent() const
                       qlib::min(pMap->getRowGridSize(),
                                 pMap->getSecGridSize()));
 
-  return m_nMaxGridExt * pMap->getColGridSize() / 2.0;
+  return m_nMaxGrid * pMap->getColGridSize() / 2.0;
 }
 
 ///////////////////////////////////////////////////////////////
@@ -355,7 +355,9 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
 void MapSurfRenderer::makerange()
 {
   Vector4D cent = getCenter();
-  const double extent = getExtent();
+  double extent = getExtent();
+  if (extent>getMaxExtent())
+    extent = getMaxExtent();
 
   ScalarObject *pMap = m_pCMap; //static_cast<ScalarObject *>(getClientObj().get());
   DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);

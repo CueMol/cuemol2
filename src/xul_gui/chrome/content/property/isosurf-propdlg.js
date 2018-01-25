@@ -11,7 +11,7 @@ var gMain = new cuemolui.GenPropEdit();
 var gComm = new cuemolui.RendCommPropPage(gMain);
 gMain.registerPage("common-tab", gComm);
 
-var gMapMesh = ( function () { try {
+var gMapSurf = ( function () { try {
 
 var util = require("util");
 
@@ -33,9 +33,12 @@ IsosurfPropEdit.prototype.onLoad = function ()
 
   this.mUpdate = document.getElementById("map-update");
   this.mWidth = document.getElementById("map-width");
+
   // this.mBufSize = document.getElementById("map-bufsize");
+  this.mMaxGrid = document.getElementById("map-maxgrid");
 
   this.mDrawMode = document.getElementById("map-drawmode");
+
 
   this.mCullFace = document.getElementById("map-cullsurf");
   
@@ -81,6 +84,8 @@ IsosurfPropEdit.prototype.updateWidgets = function ()
 
   // elem = gMain.findPropData("bufsize");
   // this.mBufSize.value = elem.value;
+  elem = gMain.findPropData("max_grids");
+  this.mMaxGrid.value = elem.value;
 
   elem = gMain.findPropData("drawmode");
   util.selectMenuListByValue(this.mDrawMode, elem.value);
@@ -150,6 +155,11 @@ IsosurfPropEdit.prototype.validateWidgets = function (aEvent)
     return;
   gMain.updateData("width", new_val);
 
+  new_val = parseInt(this.mMaxGrid.value);
+  if (isNaN(new_val) || new_val<10)
+    return;
+  gMain.updateData("max_grids", new_val);
+
   gMain.updateData("cullface", this.mCullFace.checked);
 
   var bMapLim = this.mMapLim.checked;
@@ -217,5 +227,5 @@ return new IsosurfPropEdit();
 } catch (e) {debug.exception(e)}
 } ) ();
 
-gMain.registerPage("isosurf-tab", gMapMesh);
+gMain.registerPage("isosurf-tab", gMapSurf);
 
