@@ -149,7 +149,8 @@ ws.onPasteRend = function (aEvent)
 
     let scene = obj.getScene();
     if (bary) {
-      let rends = gQm2Main.mStrMgr.arrayFromXML(xmldat, scene.uid);
+      // let rends = gQm2Main.mStrMgr.arrayFromXML(xmldat, scene.uid);
+      let rends = gQm2Main.mStrMgr.rendArrayFromXML(xmldat, scene.uid);
       let nrends = rends.length -1;
 
       // alert("group="+rends[0]);
