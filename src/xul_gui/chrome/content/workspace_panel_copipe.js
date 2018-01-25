@@ -59,6 +59,11 @@ ws.onMultiCopy = function (aEvent)
   if (type=="renderer") {
     this.multiRendCopyImpl(elemList);
   }
+
+  if (type=="object") {
+    util.alert(window, "Multiple copy of object: not supported.");
+    return;
+  }
 };
 
 ws.multiRendCopyImpl = function (aElemList, aGrpName)

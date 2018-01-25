@@ -253,8 +253,8 @@ void MapSurfRenderer::render(DisplayContext *pdl)
   MB_DPRINTLN("MapSurfRenderer Rendereing...");
 
   pdl->startTriangles();
-  //renderImpl(pdl);
-  renderImpl2(pdl);
+  renderImpl(pdl);
+  // renderImpl2(pdl);
   pdl->end();
 
 
@@ -808,9 +808,14 @@ void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
 
   int i,j,k;
 
+#ifdef _OPENMP
   omp_set_num_threads(1);
+#endif
 
-  int nthr = omp_get_max_threads();
+  int nthr = 1;
+#ifdef _OPENMP
+  nthr = omp_get_max_threads();
+#endif
   std::vector<MSVertList> verts(nthr);
 
   MB_DPRINTLN("nthr=%d", nthr);
@@ -819,7 +824,10 @@ void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
     for (j=0; j<nrow; j+=m_nBinFac)
 //#pragma omp parallel for  schedule(dynamic)
       for (k=0; k<nsec; k+=m_nBinFac) {
-        int ithr = omp_get_thread_num();
+        int ithr = 1;
+#ifdef _OPENMP
+        ithr = omp_get_thread_num();
+#endif
 
         if (i==1&&j==1)
           MB_DPRINTLN("i=%d, thr=%d", k, ithr);
