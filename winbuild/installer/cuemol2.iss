@@ -82,6 +82,7 @@ Source: {#WinBuildDir}\qmzlib.dll; DestDir: {app}; Flags: ignoreversion
 ; C/C++ stdlib
 Source: {#SysDLLDir}\msvcp120.dll; DestDir: {app}; Flags: ignoreversion
 Source: {#SysDLLDir}\msvcr120.dll; DestDir: {app}; Flags: ignoreversion
+Source: {#SysDLLDir}\vcomp120.dll; DestDir: {app}; Flags: ignoreversion
 ; boost
 Source: {#SysDLLDir}\boost_thread-{#BoostVer}.dll; DestDir: {app}; Flags: ignoreversion
 Source: {#SysDLLDir}\boost_chrono-{#BoostVer}.dll; DestDir: {app}; Flags: ignoreversion

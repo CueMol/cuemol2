@@ -55,6 +55,14 @@ runtime_class MapSurfRenderer extends MapRenderer
   /// Convert to MolSurfObj
   object<Object$> generateSurfObj();
 
+  //////////
+
+  property boolean use_openmp => redirect(isUseOpenMP, setUseOpenMP);
+  default use_openmp = false;
+
+  property integer omp_thr => redirect(getOmpThr, setOmpThr);
+  default omp_thr = -1;
+
 };
 
 #endif

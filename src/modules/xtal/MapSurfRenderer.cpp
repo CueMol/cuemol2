@@ -42,6 +42,9 @@ MapSurfRenderer::MapSurfRenderer()
 
   m_nBinFac = 1;
   m_nMaxGrid = 100;
+
+  m_bUseOpenMP = false;
+  m_nOmpThr = -1;
 }
 
 // destructor
@@ -252,10 +255,17 @@ void MapSurfRenderer::render(DisplayContext *pdl)
 
   MB_DPRINTLN("MapSurfRenderer Rendereing...");
 
-  pdl->startTriangles();
-  renderImpl(pdl);
-  // renderImpl2(pdl);
-  pdl->end();
+  if (!m_bUseOpenMP) {
+    pdl->startTriangles();
+    renderImpl(pdl);
+    pdl->end();
+  }
+  else {
+    pdl->startTriangles();
+    renderImpl2(pdl);
+    pdl->end();
+  }
+
 
 
 #ifdef SHOW_NORMAL
@@ -784,7 +794,6 @@ qsys::ObjectPtr MapSurfRenderer::generateSurfObj()
 }
 
 namespace {
-  typedef std::deque<surface::MSVert> MSVertList;
 }
 
 void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
@@ -796,6 +805,9 @@ void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
 
   const double siglevel = getSigLevel();
   m_dLevel = pMap->getRmsdDensity() * siglevel;
+
+  int lv = int( floor( (m_dLevel - pMap->getLevelBase()) / pMap->getLevelStep() ) );
+  m_bIsoLev = qbyte( qlib::trunc<int>(lv, 0, 255) );
 
   m_nMapColNo = pMap->getColNo();
   m_nMapRowNo = pMap->getRowNo();
@@ -810,39 +822,47 @@ void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
 
   int i,j,k;
 
-#ifdef _OPENMP
-  omp_set_num_threads(1);
-#endif
-
   int nthr = 1;
 #ifdef _OPENMP
+  if (m_nOmpThr>0)
+    omp_set_num_threads(m_nOmpThr);
   nthr = omp_get_max_threads();
 #endif
   std::vector<MSVertList> verts(nthr);
+  int nsize_estim = ncol*nrow*nsec*3/nthr;
+  //LOG_DPRINTLN("voxels %d", ncol*nrow*nsec);
+  //LOG_DPRINTLN("estim size %d", nsize_estim);
+  for (i=0; i<nthr; ++i) {
+    verts[i].reserve(nsize_estim);
+  }
 
-  MB_DPRINTLN("nthr=%d", nthr);
+  //LOG_DPRINTLN("nthr=%d", nthr);
 
+  const int nbcol = m_nStCol - pMap->getStartCol();
+  const int nbrow = m_nStRow - pMap->getStartRow();
+  const int nbsec = m_nStSec - pMap->getStartSec();
+
+#pragma omp parallel for private (j,k) schedule(dynamic)
   for (i=0; i<ncol; i+=m_nBinFac)
     for (j=0; j<nrow; j+=m_nBinFac)
-//#pragma omp parallel for  schedule(dynamic)
       for (k=0; k<nsec; k+=m_nBinFac) {
         int ithr = 1;
 #ifdef _OPENMP
         ithr = omp_get_thread_num();
 #endif
 
-        if (i==1&&j==1)
-          MB_DPRINTLN("i=%d, thr=%d", k, ithr);
+        //if (i==1&&j==1)
+        //MB_DPRINTLN("i=%d, thr=%d", k, ithr);
 
-        float values[8];
+        qbyte values[8];
         bool bary[8];
 
         //if (i==1&&j==1)
         //MB_DPRINTLN("i=%d, thr=%d", k, omp_get_thread_num());
 
-        int ix = i+m_nStCol - pMap->getStartCol();
-        int iy = j+m_nStRow - pMap->getStartRow();
-        int iz = k+m_nStSec - pMap->getStartSec();
+        int ix = i+nbcol;
+        int iy = j+nbrow;
+        int iz = k+nbsec;
         if (!m_bPBC) {
           if (ix<0||iy<0||iz<0)
             continue;
@@ -858,7 +878,7 @@ void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
           const int ixx = ix + (vtxoffs[ii][0]) * m_nBinFac;
           const int iyy = iy + (vtxoffs[ii][1]) * m_nBinFac;
           const int izz = iz + (vtxoffs[ii][2]) * m_nBinFac;
-          values[ii] = getDen(ixx, iyy, izz);
+          values[ii] = getByteDen(ixx, iyy, izz);
           
           // check mol boundary
           bary[ii] = inMolBndry(pMap, ixx, iyy, izz);
@@ -873,6 +893,7 @@ void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
       }
 
   for (i=0; i<nthr; ++i) {
+    //LOG_DPRINTLN("Triangles: %d for thr %d", verts[i].size(), i);
     BOOST_FOREACH (surface::MSVert &v, verts[i]) {
       pdl->normal(v.n3d());
       pdl->vertex(v.v3d());
@@ -880,10 +901,22 @@ void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
   }
 }
 
+namespace {
+  inline float getOffset(qbyte val1, qbyte val2, qbyte isolev)
+  {
+    int delta = int(val2) - int(val1);
+    
+    if(delta == 0) {
+      return 0.5f;
+    }
+    return float(int(isolev) - int(val1))/float(delta);
+  }
+}
+
 void MapSurfRenderer::marchCube2(int fx, int fy, int fz,
-                                 const float *values,
+                                 const qbyte *values,
                                  const bool *bary,
-                                std::deque<surface::MSVert> &verts)
+                                 MSVertList &verts)
 {
   int iCorner, iVertex, iVertexTest, iEdge, iTriangle, iFlagIndex, iEdgeFlags;
 
@@ -895,7 +928,7 @@ void MapSurfRenderer::marchCube2(int fx, int fy, int fz,
   // Find which vertices are inside of the surface and which are outside
   iFlagIndex = 0;
   for(iVertexTest = 0; iVertexTest < 8; iVertexTest++) {
-    if(values[iVertexTest] <= m_dLevel) 
+    if(values[iVertexTest] <= m_bIsoLev) 
       iFlagIndex |= 1<<iVertexTest;
   }
 
@@ -930,7 +963,7 @@ void MapSurfRenderer::marchCube2(int fx, int fy, int fz,
       edgeBinFlags[iEdge] = true;
       
       const double fOffset = getOffset(values[ ec0 ], 
-                                       values[ ec1 ], m_dLevel);
+                                       values[ ec1 ], m_bIsoLev);
       
       asEdgeVertex[iEdge].x() =
         double(fx) +

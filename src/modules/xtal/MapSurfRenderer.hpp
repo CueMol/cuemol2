@@ -112,6 +112,28 @@ namespace xtal {
     double getMaxExtent() const;
 
   private:
+    /// Use OpenMP (experimental)
+    bool m_bUseOpenMP;
+
+  public:
+    bool isUseOpenMP() const { return m_bUseOpenMP; }
+    void setUseOpenMP(bool b) {
+      m_bUseOpenMP = b;
+      invalidateDisplayCache();
+    }
+
+  private:
+    /// OpenMP Thread number(-1: use all system cores)
+    int m_nOmpThr;
+
+  public:
+    int getOmpThr() const { return m_nOmpThr; }
+    void setOmpThr(int val) {
+      m_nOmpThr = val;
+      invalidateDisplayCache();
+    }
+
+  private:
 
     ///////////////////////////////////////////
     // work area
@@ -180,11 +202,6 @@ namespace xtal {
 
     void marchCube(DisplayContext *pdl, int fx, int fy, int fz);
 
-    void MapSurfRenderer::marchCube2(int fx, int fy, int fz,
-                                    const float *values,
-                                    const bool *bary,
-                                    std::deque<surface::MSVert> &verts);
-      
     //double getOffset(double fValue1, double fValue2, double fValueDesired);
     void getVertexColor(Vector4D &rfColor, Vector4D &rfPosition, Vector4D &rfNormal);
     Vector4D getNormal(const Vector4D &rfNormal,bool,bool,bool);
@@ -219,7 +236,41 @@ namespace xtal {
     bool m_bary[8];
     Vector4D m_norms[8];
 
+    //////////
+
+    // Experimental rendering impl
     void renderImpl2(DisplayContext *pdl);
+    
+    typedef std::vector<surface::MSVert> MSVertList;
+
+    void MapSurfRenderer::marchCube2(int fx, int fy, int fz,
+                                     const qbyte *values,
+                                     const bool *bary,
+                                     MSVertList &verts);
+      
+    inline qbyte getByteDen(int x, int y, int z) const
+    {
+      // TO DO: support symop
+
+      if (m_bPBC) {
+        const int xx = (x+10000*m_nMapColNo)%m_nMapColNo;
+        const int yy = (y+10000*m_nMapRowNo)%m_nMapRowNo;
+        const int zz = (z+10000*m_nMapSecNo)%m_nMapSecNo;
+        return m_pCMap->atByte(xx,yy,zz);
+      }
+      else {
+        if (x<0||y<0||z<0)
+          return 0;
+        if (x>=m_nMapColNo||
+            y>=m_nMapRowNo||
+            z>=m_nMapSecNo)
+          return 0;
+        return m_pCMap->atByte(x, y, z);
+      }
+      
+    }
+
+    qbyte m_bIsoLev;
 
   private:
     std::deque<surface::MSVert> m_msverts;
