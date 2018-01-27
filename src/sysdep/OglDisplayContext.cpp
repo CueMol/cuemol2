@@ -1168,6 +1168,16 @@ void OglDisplayContext::drawElem(const AbstDrawElem &ade)
         const qbyte *pdata = static_cast<const DrawElemVC&>(de).getData();
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(DrawElemVC::Elem)*nelems, pdata);
       }
+      else if (ntype==DrawElem::VA_VNC) {
+        const qbyte *pdata = static_cast<const DrawElemVNC&>(de).getData();
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(DrawElemVNC::Elem)*nelems, pdata);
+      }
+      else if (ntype==DrawElem::VA_VNCI) {
+        MB_DPRINTLN("Update for DrawElem::VA_VNCI not implemented");
+      }
+      else if (ntype==DrawElem::VA_VNCI32) {
+        MB_DPRINTLN("Update for DrawElem::VA_VNCI32 not implemented");
+      }
       de.setUpdated(false);
     }
     

@@ -253,7 +253,6 @@ namespace xtal {
     void MapSurfRenderer::marchCube2(int fx, int fy, int fz,
                                      const qbyte *values,
                                      const bool *bary,
-                                     gfx::DrawElemVNC *pverts,
                                      int *pvind);
 
                                      //MSVertList &verts);
@@ -296,8 +295,12 @@ namespace xtal {
     int m_nbrow;
     int m_nbsec;
 
-    std::vector<gfx::DrawElemVNC> m_verts;
+    qbyte m_col_r, m_col_g, m_col_b, m_col_a;
+    //std::vector<gfx::DrawElemVNC> m_verts;
+    gfx::DrawElemVNC *m_pVBO;
     
+    /// Workarea data OK/NG (invalid)
+    bool m_bWorkOK;
 
   private:
     std::deque<surface::MSVert> m_msverts;

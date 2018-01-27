@@ -41,6 +41,9 @@ MapSurfRenderer::MapSurfRenderer()
 
   m_bUseOpenMP = false;
   m_nOmpThr = -1;
+  m_bIsoLev = 0;
+  m_bWorkOK = false;
+  m_pVBO=NULL;
 }
 
 // destructor
@@ -49,6 +52,9 @@ MapSurfRenderer::~MapSurfRenderer()
   // for safety, remove from event manager is needed here...
   ScrEventManager *pSEM = ScrEventManager::getInstance();
   pSEM->removeViewListener(this);
+
+  if (m_pVBO!=NULL)
+    delete m_pVBO;
 }
 
 /////////////////////////////////

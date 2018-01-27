@@ -42,12 +42,12 @@ void MapSurfRenderer::display(DisplayContext *pdc)
 
   m_pCMap = pMap;
 
-  if (m_verts.empty()) {
+  if (!m_bWorkOK) {
     // check and setup mol boundary data
     setupMolBndry();
     // generate map-range information
     makerange();
-
+    // CreateVBO
     renderImpl2(pdc);
   }
   
@@ -98,11 +98,8 @@ void MapSurfRenderer::display(DisplayContext *pdc)
     pdc->translate(vtmp);
   }
 
-  const int nthr = m_verts.size();
-  int i;
-  for (i=0; i<nthr; ++i) {
-    pdc->drawElem(m_verts[i]);
-  }
+  if (m_pVBO!=NULL)
+    pdc->drawElem(*m_pVBO);
 
   pdc->popMatrix();
 
@@ -113,7 +110,8 @@ void MapSurfRenderer::display(DisplayContext *pdc)
 
 void MapSurfRenderer::invalidateDisplayCache()
 {
-  m_verts.clear();
+  //m_verts.clear();
+  m_bWorkOK = false;
   super_t::invalidateDisplayCache();
 }
 
@@ -147,36 +145,60 @@ void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
 #ifdef _OPENMP
   if (m_nOmpThr>0)
     omp_set_num_threads(m_nOmpThr);
+  else
+    omp_set_num_threads(omp_get_num_procs());
   nthr = omp_get_max_threads();
 #endif
 
-  m_verts.resize(nthr);
   std::vector<int> vinds(nthr);
 
-  int nsize_estim = ncol*nrow*nsec*3/nthr;
-  //LOG_DPRINTLN("voxels %d", ncol*nrow*nsec);
-  //LOG_DPRINTLN("estim size %d", nsize_estim);
-  for (i=0; i<nthr; ++i) {
-    //verts[i].reserve(nsize_estim);
-    m_verts[i].setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
-    m_verts[i].alloc(nsize_estim);
-    vinds[i] = 0;
+  int nsz_est_thr = ncol*nrow*nsec*3/nthr;
+  int nsz_est_tot = nsz_est_thr * nthr;
+  
+  if (m_pVBO!=NULL && m_pVBO->getSize()!=nsz_est_tot) {
+    delete m_pVBO;
+    m_pVBO=NULL;
   }
 
-  //LOG_DPRINTLN("nthr=%d", nthr);
+  if (m_pVBO==NULL) {
+    m_pVBO = MB_NEW gfx::DrawElemVNC();
+    m_pVBO->setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
+    m_pVBO->alloc(nsz_est_tot);
+  }
+
+  MB_DPRINTLN("nthr=%d", nthr);
+  MB_DPRINTLN("voxels %d", ncol*nrow*nsec);
+  MB_DPRINTLN("estim size %d", nsz_est_tot);
+  MB_DPRINTLN("estim size per thr%d", nsz_est_thr);
+  
+  for (i=0; i<nsz_est_tot; ++i) {
+    m_pVBO->m_pData[i] = {0.0f, 0.0f, 0.0f,0.0f, 0.0f, 0.0f,0,0,0,0};
+  }
+  std::vector<int> iverts(nthr);
+  for (i=0; i<nthr; ++i) {
+    iverts[i] = i*nsz_est_thr;
+  }
+
+  quint32 cc = getColor()->getCode();
+  m_col_r = gfx::getRCode(cc);
+  m_col_g = gfx::getGCode(cc);
+  m_col_b = gfx::getBCode(cc);
+  m_col_a = gfx::getACode(cc);
+
 
   m_nbcol = m_nStCol - pMap->getStartCol();
   m_nbrow = m_nStRow - pMap->getStartRow();
   m_nbsec = m_nStSec - pMap->getStartSec();
 
 #pragma omp parallel for private (j,k) schedule(dynamic)
-  for (i=0; i<ncol; i+=m_nBinFac)
-    for (j=0; j<nrow; j+=m_nBinFac)
-      for (k=0; k<nsec; k+=m_nBinFac) {
-        int ithr = 1;
+  for (i=0; i<ncol; i+=m_nBinFac) {
+    int ithr = 0;
 #ifdef _OPENMP
-        ithr = omp_get_thread_num();
+    ithr = omp_get_thread_num();
 #endif
+
+    for (j=0; j<nrow; j+=m_nBinFac) {
+      for (k=0; k<nsec; k+=m_nBinFac) {
 
         //if (i==1&&j==1)
         //MB_DPRINTLN("i=%d, thr=%d", k, ithr);
@@ -217,22 +239,28 @@ void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
           continue;
 
         //marchCube2(i, j, k, values, bary, verts[ithr]);
-        marchCube2(i, j, k, values, bary, &m_verts[ithr], &vinds[ithr]);
+        marchCube2(i, j, k, values, bary, &iverts[ithr]);
       }
-
+    }
+  }
+/*
   //pdl->startTriangles();
   for (i=0; i<nthr; ++i) {
     //LOG_DPRINTLN("Triangles: %d for thr %d", verts[i].size(), i);
-    /*BOOST_FOREACH (surface::MSVert &v, verts[i]) {
-      pdl->normal(v.n3d());
-      pdl->vertex(v.v3d());
-    }*/
+    //BOOST_FOREACH (surface::MSVert &v, verts[i]) {
+    //pdl->normal(v.n3d());
+    //pdl->vertex(v.v3d());
+    //}
 
     MB_DPRINTLN("Triangles: %d for thr %d", vinds[i], i);
     m_verts[i].setSize(vinds[i]);
     //pdl->drawElem(verts[i]);
   }
   //pdl->end();
+*/
+      
+  m_pVBO->setUpdated(true);
+  m_bWorkOK = true;
 }
 
 namespace {
@@ -250,7 +278,6 @@ namespace {
 void MapSurfRenderer::marchCube2(int fx, int fy, int fz,
                                  const qbyte *values,
                                  const bool *bary,
-                                 gfx::DrawElemVNC *pverts,
                                  int *pvind)
                                  //MSVertList &verts)
 {
@@ -348,7 +375,7 @@ void MapSurfRenderer::marchCube2(int fx, int fy, int fz,
     }
   }
 
-  const int nverts = pverts->getSize();
+  const int nverts = m_pVBO->getSize();
   int i;
 
   // Draw the triangles that were found.  There can be up to five per cube
@@ -374,18 +401,21 @@ void MapSurfRenderer::marchCube2(int fx, int fy, int fz,
 
       i = *pvind;
       if (i<nverts) {
-        pverts->m_pData[i].x = asEdgeVertex[iVertex][0];
-        pverts->m_pData[i].y = asEdgeVertex[iVertex][1];
-        pverts->m_pData[i].z = asEdgeVertex[iVertex][2];
+        m_pVBO->m_pData[i].x = asEdgeVertex[iVertex][0];
+        m_pVBO->m_pData[i].y = asEdgeVertex[iVertex][1];
+        m_pVBO->m_pData[i].z = asEdgeVertex[iVertex][2];
         
-        pverts->m_pData[i].nx = asEdgeNorm[iVertex][0];
-        pverts->m_pData[i].ny = asEdgeNorm[iVertex][1];
-        pverts->m_pData[i].nz = asEdgeNorm[iVertex][2];
+        m_pVBO->m_pData[i].nx = asEdgeNorm[iVertex][0];
+        m_pVBO->m_pData[i].ny = asEdgeNorm[iVertex][1];
+        m_pVBO->m_pData[i].nz = asEdgeNorm[iVertex][2];
 
-        pverts->m_pData[i].r = 255;
-        pverts->m_pData[i].g = 255;
-        pverts->m_pData[i].b = 255;
-        pverts->m_pData[i].a = 255;
+        m_pVBO->m_pData[i].r = m_col_r;
+        m_pVBO->m_pData[i].g = m_col_g;
+        m_pVBO->m_pData[i].b = m_col_b;
+        m_pVBO->m_pData[i].a = m_col_a;
+      }
+      else {
+        MB_DPRINTLN("index out of range: %d", i);
       }
       (*pvind)++;
     } // for(iCorner = 0; iCorner < 3; iCorner++)
