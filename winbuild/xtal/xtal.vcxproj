@@ -170,6 +170,7 @@
     <ClCompile Include="..\..\src\modules\xtal\MapRenderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MapSurfRenderer.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MapSurfRenderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\MapSurfRendImpl2.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MTZ2MapReader.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MTZ2MapReader_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\QdfDenMapReader.cpp" />

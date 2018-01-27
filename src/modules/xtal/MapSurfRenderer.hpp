@@ -16,6 +16,7 @@
 #include <modules/molstr/BSPTree.hpp>
 
 #include <modules/surface/MolSurfObj.hpp>
+#include <gfx/DrawElem.hpp>
 
 class MapSurfRenderer_wrap;
 
@@ -238,7 +239,13 @@ namespace xtal {
 
     //////////
 
-    // Experimental rendering impl
+    // Experimental rendering impl (OpenMP/VBO)
+    virtual void display(DisplayContext *pdc);
+
+    virtual void invalidateDisplayCache();
+    
+    // void renderOmp1(DisplayContext *pdl);
+
     void renderImpl2(DisplayContext *pdl);
     
     typedef std::vector<surface::MSVert> MSVertList;
@@ -246,7 +253,10 @@ namespace xtal {
     void MapSurfRenderer::marchCube2(int fx, int fy, int fz,
                                      const qbyte *values,
                                      const bool *bary,
-                                     MSVertList &verts);
+                                     gfx::DrawElemVNC *pverts,
+                                     int *pvind);
+
+                                     //MSVertList &verts);
       
     inline qbyte getByteDen(int x, int y, int z) const
     {
@@ -270,7 +280,24 @@ namespace xtal {
       
     }
 
+    inline void MapSurfRenderer::getGrdNormByte(int ix, int iy, int iz,
+                                                float *norm)
+    {
+      const int del = 1;
+      norm[0] = float(getByteDen(ix-del, iy,   iz  )) - float(getByteDen(ix+del, iy,   iz  ));
+      norm[1] = float(getByteDen(ix,   iy-del, iz  )) - float(getByteDen(ix,   iy+del, iz  ));
+      norm[2] = float(getByteDen(ix,   iy,   iz-del)) - float(getByteDen(ix,   iy,   iz+del));
+      norm[3] = 0.0f;
+    }
+    
     qbyte m_bIsoLev;
+
+    int m_nbcol;
+    int m_nbrow;
+    int m_nbsec;
+
+    std::vector<gfx::DrawElemVNC> m_verts;
+    
 
   private:
     std::deque<surface::MSVert> m_msverts;

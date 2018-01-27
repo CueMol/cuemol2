@@ -71,6 +71,16 @@ namespace surface {
     {
     }
 
+    MSVert(const float *v, const float *n)
+         : x(v[0]), y(v[1]), z(v[2]),
+           nx(n[0]), ny(n[1]), nz(n[2]),
+           info(0)
+#ifdef USE_VERT_TYPE_ID
+        ,ntype(0)
+#endif
+    {
+    }
+
     const MSVert &operator=(const MSVert &arg) {
       if(&arg!=this){
         x = arg.x;
