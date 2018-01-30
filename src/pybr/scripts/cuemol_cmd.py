@@ -77,7 +77,7 @@ def load(aFileName, aName=None, aFmt=None, aScene=None, aOpts=None):
     ncat = gelem["category"]
 
     if ncat == 0:
-        obj = fileio.loadObject(aFileName, name, aScene, gelem["name"], aOpts)
+        return fileio.loadObject(aFileName, name, aScene, gelem["name"], aOpts)
         # _setupDefaultRenderer(obj)
         
     elif ncat == 3:

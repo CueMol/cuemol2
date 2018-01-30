@@ -47,6 +47,12 @@ runtime_class MolAtom
   string getPropTypeName(string name);
   integer getAtomPropInt(string name);
   void setAtomPropInt(string name, integer value);
+
+  ////
+
+  //real distance(MolAtom$) => calcDist;
+  real dihedral(object<MolAtom$>,object<MolAtom$>,object<MolAtom$>) => calcDihe;
+
 };
 
 #endif // MOL_ATOM_QIF_INCLUDED_

@@ -3,6 +3,15 @@
 # pybr module makefile
 #
 
+scriptdir = $(pkgdatadir)/python/
+script_DATA = \
+scripts/cuemol.py \
+scripts/fileio.py \
+scripts/mol_util.py \
+scripts/cuemol_cmd.py \
+scripts/util.py \
+$(NULL)
+
 ######################################################
 # C++ mcinfo generation rule
 

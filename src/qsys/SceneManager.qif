@@ -41,6 +41,8 @@ runtime_class SceneManager
 
   property integer activeSceneID => redirect(getActiveSceneID, XXX) (readonly, nopersist);
 
+  void setActiveSceneID(integer);
+
   //// version info
 
   /// version number (x.x.x.x)
