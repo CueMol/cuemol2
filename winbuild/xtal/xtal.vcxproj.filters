@@ -93,6 +93,9 @@
     <ClCompile Include="..\..\src\modules\xtal\MapSurfRendImpl2.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\modules\xtal\GLSLMapSurfRendImpl1.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <mcwrapgen3 Include="..\..\src\modules\xtal\DensityMap.qif">

@@ -162,6 +162,7 @@
     <ClCompile Include="..\..\src\modules\xtal\DensityMap_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\GLSLMapMeshRenderer.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\GLSLMapMeshRenderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\GLSLMapSurfRendImpl1.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\GLSLMapVolRenderer.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\GLSLMapVolRenderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MapMeshRenderer.cpp" />

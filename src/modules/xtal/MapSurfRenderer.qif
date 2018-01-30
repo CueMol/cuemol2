@@ -57,8 +57,17 @@ runtime_class MapSurfRenderer extends MapRenderer
 
   //////////
 
-  property boolean use_openmp => redirect(isUseOpenMP, setUseOpenMP);
-  default use_openmp = false;
+  //property boolean use_openmp => redirect(isUseOpenMP, setUseOpenMP);
+  //default use_openmp = false;
+
+  /// OpenGL rendering mode
+  enumdef glrender_mode {
+    shader = xtal::MapSurfRenderer::MSR_REND_SHADER;
+    vbo = xtal::MapSurfRenderer::MSR_REND_VBO;
+    displist = xtal::MapSurfRenderer::MSR_REND_DLIST;
+  }
+  property enum glrender_mode => redirect(getGLRenderMode, setGLRenderMode);
+  default glrender_mode = "displist";
 
   property integer omp_thr => redirect(getOmpThr, setOmpThr);
   default omp_thr = -1;

@@ -112,16 +112,33 @@ namespace xtal {
     /// Get max extent (in angstrom unit; calculated from m_nMaxGrid)
     double getMaxExtent() const;
 
+  public:
+    /// OpenGL rendering mode const
+    static const int MSR_REND_DLIST=0;
+    static const int MSR_REND_VBO=1;
+    static const int MSR_REND_SHADER=2;
+
   private:
+    /// OpenGL rendering mode
+    int m_nGlRendMode;
+
     /// Use OpenMP (experimental)
-    bool m_bUseOpenMP;
+    // bool m_bUseOpenMP;
 
   public:
+    int getGLRenderMode() const { return m_nGlRendMode; }
+    void setGLRenderMode(int n) {
+      invalidateDisplayCache();
+      m_nGlRendMode = n;
+    } 
+
+    /*
     bool isUseOpenMP() const { return m_bUseOpenMP; }
     void setUseOpenMP(bool b) {
       m_bUseOpenMP = b;
       invalidateDisplayCache();
     }
+     */
 
   private:
     /// OpenMP Thread number(-1: use all system cores)
@@ -237,16 +254,20 @@ namespace xtal {
     bool m_bary[8];
     Vector4D m_norms[8];
 
-    //////////
+    void setupXformMat(DisplayContext *pdl);
 
+    //////////
     // Experimental rendering impl (OpenMP/VBO)
+
+    /// Workarea data OK/NG (invalid)
+    bool m_bWorkOK;
+
     virtual void display(DisplayContext *pdc);
 
     virtual void invalidateDisplayCache();
     
-    // void renderOmp1(DisplayContext *pdl);
-
-    void renderImpl2(DisplayContext *pdl);
+    void createVBO1(DisplayContext *pdl);
+    void displayVBO1(DisplayContext *pdl);
     
     typedef std::vector<surface::MSVert> MSVertList;
 
@@ -299,8 +320,11 @@ namespace xtal {
     //std::vector<gfx::DrawElemVNC> m_verts;
     gfx::DrawElemVNC *m_pVBO;
     
-    /// Workarea data OK/NG (invalid)
-    bool m_bWorkOK;
+    //////////
+    // Experimental rendering impl (OpenMP/GLSL)
+    
+    void displayGLSL1(DisplayContext *pdc);
+    void createGLSL1(DisplayContext *pdc);
 
   private:
     std::deque<surface::MSVert> m_msverts;

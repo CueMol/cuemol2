@@ -39,7 +39,9 @@ MapSurfRenderer::MapSurfRenderer()
   m_nBinFac = 1;
   m_nMaxGrid = 100;
 
-  m_bUseOpenMP = false;
+  //m_bUseOpenMP = false;
+  m_nGlRendMode = MSR_REND_DLIST;
+  
   m_nOmpThr = -1;
   m_bIsoLev = 0;
   m_bWorkOK = false;
@@ -196,21 +198,10 @@ void MapSurfRenderer::postRender(DisplayContext *pdc)
   pdc->setLighting(false);
 }
 
-// generate display list
-void MapSurfRenderer::render(DisplayContext *pdl)
+void MapSurfRenderer::setupXformMat(DisplayContext *pdl)
 {
-  ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
+  ScalarObject *pMap = m_pCMap;
   DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
-
-  m_pCMap = pMap;
-
-  // check and setup mol boundary data
-  setupMolBndry();
-
-  // generate map-range information
-  makerange();
-
-  pdl->pushMatrix();
 
   const Matrix4D &xfm = pMap->getXformMatrix();
   if (!xfm.isIdent()) {
@@ -254,6 +245,22 @@ void MapSurfRenderer::render(DisplayContext *pdl)
     vtmp = Vector4D(m_nStCol, m_nStRow, m_nStSec);
     pdl->translate(vtmp);
   }
+}
+
+// generate display list
+void MapSurfRenderer::render(DisplayContext *pdl)
+{
+  ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
+  m_pCMap = pMap;
+
+  // check and setup mol boundary data
+  setupMolBndry();
+
+  // generate map-range information
+  makerange();
+
+  pdl->pushMatrix();
+  setupXformMat(pdl);
 
   MB_DPRINTLN("MapSurfRenderer Rendereing...");
 

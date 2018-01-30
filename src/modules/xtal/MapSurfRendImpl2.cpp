@@ -11,11 +11,11 @@
 #include <gfx/DisplayContext.hpp>
 #include <gfx/Mesh.hpp>
 
-#include <qsys/ScrEventManager.hpp>
-#include <qsys/ViewEvent.hpp>
-#include <qsys/View.hpp>
-#include <qsys/Scene.hpp>
-#include <modules/molstr/AtomIterator.hpp>
+//#include <qsys/ScrEventManager.hpp>
+//#include <qsys/ViewEvent.hpp>
+//#include <qsys/View.hpp>
+//#include <qsys/Scene.hpp>
+//#include <modules/molstr/AtomIterator.hpp>
 
 #ifdef _OPENMP
 #  include <omp.h>
@@ -24,19 +24,29 @@
 using namespace xtal;
 using qlib::Matrix4D;
 using qlib::Matrix3D;
-using qsys::ScrEventManager;
-using molstr::AtomIterator;
+//using qsys::ScrEventManager;
+//using molstr::AtomIterator;
 
-/// Rendering using OpenMP/VBO
 void MapSurfRenderer::display(DisplayContext *pdc)
 {
-  if (!m_bUseOpenMP) {
+  if (m_nGlRendMode==MSR_REND_DLIST||
+      pdc->isFile()) {
     super_t::display(pdc);
     return;
   }
+  else if (m_nGlRendMode==MSR_REND_VBO) {
+    displayVBO1(pdc);
+    return;
+  }
+  else if (m_nGlRendMode==MSR_REND_SHADER) {
+    displayGLSL1(pdc);
+    return;
+  }
+}
 
-  /// Rendering using OpenMP
-
+/// Rendering using OpenMP/VBO
+void MapSurfRenderer::displayVBO1(DisplayContext *pdc)
+{
   ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
   DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
 
@@ -48,55 +58,13 @@ void MapSurfRenderer::display(DisplayContext *pdc)
     // generate map-range information
     makerange();
     // CreateVBO
-    renderImpl2(pdc);
+    createVBO1(pdc);
   }
   
   preRender(pdc);
 
   pdc->pushMatrix();
-
-  const Matrix4D &xfm = pMap->getXformMatrix();
-  if (!xfm.isIdent()) {
-    pdc->multMatrix(xfm);
-  }
-
-  //  setup frac-->orth matrix
-  if (pXtal==NULL) {
-    pdc->translate(pMap->getOrigin());
-  }
-  else {
-    Matrix3D orthmat = pXtal->getXtalInfo().getOrthMat();
-    pdc->multMatrix(Matrix4D(orthmat));
-  }
-
-#ifdef DBG_DRAW_AXIS
-  pdc->startLines();
-  // pdc->color(1,1,0);
-  pdc->vertex(0,0,0);
-  pdc->vertex(1,0,0);
-  pdc->vertex(0,0,0);
-  pdc->vertex(0,1,0);
-  pdc->vertex(0,0,0);
-  pdc->vertex(0,0,1);
-  pdc->end();
-#endif
-
-  {  
-    Vector4D vtmp;
-    if (pXtal!=NULL)
-      vtmp = Vector4D(1.0/double(pXtal->getColInterval()),
-                      1.0/double(pXtal->getRowInterval()),
-                      1.0/double(pXtal->getSecInterval()));
-    else
-      vtmp = Vector4D(pMap->getColGridSize(),
-                      pMap->getRowGridSize(),
-                      pMap->getSecGridSize());
-
-    pdc->scale(vtmp);
-
-    vtmp = Vector4D(m_nStCol, m_nStRow, m_nStSec);
-    pdc->translate(vtmp);
-  }
+  setupXformMat(pdc);
 
   if (m_pVBO!=NULL)
     pdc->drawElem(*m_pVBO);
@@ -115,7 +83,7 @@ void MapSurfRenderer::invalidateDisplayCache()
   super_t::invalidateDisplayCache();
 }
 
-void MapSurfRenderer::renderImpl2(DisplayContext *pdl)
+void MapSurfRenderer::createVBO1(DisplayContext *pdl)
 {
   ScalarObject *pMap = m_pCMap;
 
