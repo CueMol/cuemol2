@@ -588,7 +588,7 @@ AC_ARG_WITH(python,
   yes)
    AC_MSG_RESULT($with_python)
    dnl check python inc/lib
-   AM_PATH_PYTHON(3.6.0)
+   AM_PATH_PYTHON(3.5.0)
    PY_PREFIX=`$PYTHON -c 'import sys ; print(sys.prefix)'`
    PYTHON_LDADD="-lpython${PYTHON_VERSION}m"
    PYTHON_LDFLAGS="-L$PY_PREFIX/lib"
@@ -612,7 +612,7 @@ AC_ARG_WITH(python,
     AC_MSG_RESULT($with_python)
     PYTHON=$with_python/bin/python3
    dnl check python inc/lib
-   AM_PATH_PYTHON(3.6.0)
+   AM_PATH_PYTHON(3.5.0)
    PY_PREFIX=`$PYTHON -c 'import sys ; print(sys.prefix)'`
    PYTHON_LDADD="-lpython${PYTHON_VERSION}m"
    PYTHON_LDFLAGS="-L$PY_PREFIX/lib"
@@ -918,8 +918,21 @@ AC_ARG_WITH(fftw,
 [  --with-fftw[=DIR]      Look for FFTW library in DIR (default=no) ],
 [ case "$with_fftw" in
   no)
-    
+    AC_MSG_RESULT($with_fftw)
     ;;
+
+  yes)
+    AC_CHECK_HEADERS(fftw3.h)
+    AC_CHECK_DECLS(fftwf_execute,
+                   [],
+		   ,
+		   [#include <fftw3.h>])
+    AC_CHECK_LIB(fftw3f, fftwf_execute,
+                 [],
+		 ,
+		 [])
+    ;;
+
   *)
     AC_MSG_RESULT($with_fftw)
     _cppflags=${CPPFLAGS}
@@ -941,15 +954,8 @@ AC_ARG_WITH(fftw,
     LDFLAGS=$_ldflags
     ;;
   esac ],
-[   AC_CHECK_HEADERS(fftw3.h)
-    AC_CHECK_DECLS(fftwf_execute,
-                   [],
-		   ,
-		   [#include <fftw3.h>])
-    AC_CHECK_LIB(fftw3f, fftwf_execute,
-                 [],
-		 ,
-		 [])
+[
+    AC_MSG_RESULT(no)
 ])
 
 dnl [AC_MSG_ERROR(Cannot find fftw library file)]

@@ -22,6 +22,7 @@ MTZ2MapReader.cpp \
 DensityMap.cpp \
 MapMeshRenderer.cpp \
 MapSurfRenderer.cpp \
+MapSurfRendImpl2.cpp \
 MapRenderer.cpp \
 QdfDenMapReader.cpp \
 QdfDenMapWriter.cpp \

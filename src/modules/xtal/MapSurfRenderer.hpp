@@ -250,10 +250,10 @@ namespace xtal {
     
     typedef std::vector<surface::MSVert> MSVertList;
 
-    void MapSurfRenderer::marchCube2(int fx, int fy, int fz,
-                                     const qbyte *values,
-                                     const bool *bary,
-                                     int *pvind);
+    void marchCube2(int fx, int fy, int fz,
+		    const qbyte *values,
+		    const bool *bary,
+		    int *pvind);
 
                                      //MSVertList &verts);
       
@@ -279,8 +279,8 @@ namespace xtal {
       
     }
 
-    inline void MapSurfRenderer::getGrdNormByte(int ix, int iy, int iz,
-                                                float *norm)
+    inline void getGrdNormByte(int ix, int iy, int iz,
+			       float *norm)
     {
       const int del = 1;
       norm[0] = float(getByteDen(ix-del, iy,   iz  )) - float(getByteDen(ix+del, iy,   iz  ));
