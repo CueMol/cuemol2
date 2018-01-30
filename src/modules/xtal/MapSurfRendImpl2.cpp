@@ -271,7 +271,6 @@ void MapSurfRenderer::marchCube2(int fx, int fy, int fz,
 
   // Find which edges are intersected by the surface
   iEdgeFlags = aiCubeEdgeFlags[iFlagIndex];
-
   //If the cube is entirely inside or outside of the surface, then there will be no intersections
   if(iEdgeFlags == 0) {
     return;

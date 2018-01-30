@@ -18,6 +18,8 @@ using namespace xtal;
 using qlib::Matrix4D;
 using qlib::Matrix3D;
 
+#define MAXTRIG 4
+
 /// Rendering using OpenMP/VBO
 void MapSurfRenderer::displayGLSL1(DisplayContext *pdc)
 {
@@ -50,6 +52,18 @@ void MapSurfRenderer::displayGLSL1(DisplayContext *pdc)
   m_pCMap = NULL;
 }
 
+namespace {
+  inline float getOffset(qbyte val1, qbyte val2, qbyte isolev)
+  {
+    int delta = int(val2) - int(val1);
+    
+    if(delta == 0) {
+      return 0.5f;
+    }
+    return float(int(isolev) - int(val1))/float(delta);
+  }
+}
+
 void MapSurfRenderer::createGLSL1(DisplayContext *pdl)
 {
   ScalarObject *pMap = m_pCMap;
@@ -76,19 +90,7 @@ void MapSurfRenderer::createGLSL1(DisplayContext *pdl)
 
   int i,j,k;
 
-  int nthr = 1;
-#ifdef _OPENMP
-  if (m_nOmpThr>0)
-    omp_set_num_threads(m_nOmpThr);
-  else
-    omp_set_num_threads(omp_get_num_procs());
-  nthr = omp_get_max_threads();
-#endif
-
-  std::vector<int> vinds(nthr);
-
-  int nsz_est_thr = ncol*nrow*nsec*3/nthr;
-  int nsz_est_tot = nsz_est_thr * nthr;
+  int nsz_est_tot = ncol*nrow*nsec*3;
   
   if (m_pVBO!=NULL && m_pVBO->getSize()!=nsz_est_tot) {
     delete m_pVBO;
@@ -101,17 +103,18 @@ void MapSurfRenderer::createGLSL1(DisplayContext *pdl)
     m_pVBO->alloc(nsz_est_tot);
   }
 
-  MB_DPRINTLN("nthr=%d", nthr);
+  struct Voxel {
+    quint32 ind;
+    quint16 flag;
+    quint16 ivert;
+  };
+  std::vector<Voxel> voxdat(ncol*nrow*nsec*6);
+
   MB_DPRINTLN("voxels %d", ncol*nrow*nsec);
-  MB_DPRINTLN("estim size %d", nsz_est_tot);
-  MB_DPRINTLN("estim size per thr%d", nsz_est_thr);
+  MB_DPRINTLN("estimated vertex size %d", nsz_est_tot);
   
   for (i=0; i<nsz_est_tot; ++i) {
     m_pVBO->m_pData[i] = {0.0f, 0.0f, 0.0f,0.0f, 0.0f, 0.0f,0,0,0,0};
-  }
-  std::vector<int> iverts(nthr);
-  for (i=0; i<nthr; ++i) {
-    iverts[i] = i*nsz_est_thr;
   }
 
   quint32 cc = getColor()->getCode();
@@ -120,20 +123,18 @@ void MapSurfRenderer::createGLSL1(DisplayContext *pdl)
   m_col_b = gfx::getBCode(cc);
   m_col_a = gfx::getACode(cc);
 
-
   m_nbcol = m_nStCol - pMap->getStartCol();
   m_nbrow = m_nStRow - pMap->getStartRow();
   m_nbsec = m_nStSec - pMap->getStartSec();
 
-#pragma omp parallel for private (j,k) schedule(dynamic)
-  for (i=0; i<ncol; i+=m_nBinFac) {
-    int ithr = 0;
-#ifdef _OPENMP
-    ithr = omp_get_thread_num();
-#endif
+  int iCorner, iVertex, iVertexTest, iEdge, iTriangle, iFlagIndex, iEdgeFlags;
+  int ix, iy, iz;
+  int ixx, iyy, izz;
 
+  int vxind = 0;
+  for (k=0; k<nsec; k+=m_nBinFac) {
     for (j=0; j<nrow; j+=m_nBinFac) {
-      for (k=0; k<nsec; k+=m_nBinFac) {
+      for (i=0; i<ncol; i+=m_nBinFac) {
 
         //if (i==1&&j==1)
         //MB_DPRINTLN("i=%d, thr=%d", k, ithr);
@@ -144,9 +145,9 @@ void MapSurfRenderer::createGLSL1(DisplayContext *pdl)
         //if (i==1&&j==1)
         //MB_DPRINTLN("i=%d, thr=%d", k, omp_get_thread_num());
 
-        int ix = i + m_nbcol;
-        int iy = j + m_nbrow;
-        int iz = k + m_nbsec;
+        ix = i + m_nbcol;
+        iy = j + m_nbrow;
+        iz = k + m_nbsec;
         if (!m_bPBC) {
           if (ix<0||iy<0||iz<0)
             continue;
@@ -159,9 +160,9 @@ void MapSurfRenderer::createGLSL1(DisplayContext *pdl)
         bool bin = false;
         int ii;
         for (ii=0; ii<8; ii++) {
-          const int ixx = ix + (vtxoffs[ii][0]) * m_nBinFac;
-          const int iyy = iy + (vtxoffs[ii][1]) * m_nBinFac;
-          const int izz = iz + (vtxoffs[ii][2]) * m_nBinFac;
+          ixx = ix + (vtxoffs[ii][0]) * m_nBinFac;
+          iyy = iy + (vtxoffs[ii][1]) * m_nBinFac;
+          izz = iz + (vtxoffs[ii][2]) * m_nBinFac;
           values[ii] = getByteDen(ixx, iyy, izz);
           
           // check mol boundary
@@ -173,9 +174,128 @@ void MapSurfRenderer::createGLSL1(DisplayContext *pdl)
         if (!bin)
           continue;
 
-        marchCube2(i, j, k, values, bary, &iverts[ithr]);
+        // Find which vertices are inside of the surface and which are outside
+        iFlagIndex = 0;
+        for(iVertexTest = 0; iVertexTest < 8; iVertexTest++) {
+          if(values[iVertexTest] <= m_bIsoLev) 
+            iFlagIndex |= 1<<iVertexTest;
+        }
+
+        // Find which edges are intersected by the surface
+        iEdgeFlags = aiCubeEdgeFlags[iFlagIndex];
+
+        if(iEdgeFlags == 0)
+          continue;
+
+#ifdef USE_TCTAB
+        for (iCorner = 0; iCorner < 3*MAXTRIG; iCorner++) {
+          if (vxind<voxdat.size()) {
+            voxdat[vxind].ind = i + (j + k*nrow)*ncol;
+            voxdat[vxind].flag = quint16(iFlagIndex);
+            voxdat[vxind].ivert = quint16(iCorner);
+          }
+          else {
+            //MB_DPRINTLN("XXX");
+            //continue;
+          }
+          ++vxind;
+        }
+#else
+        for (iCorner = 0; iCorner < 3*MAXTRIG; iCorner++) {
+          iEdge = a2iTriangleConnectionTable[iFlagIndex][iCorner];
+          if (iEdge<0)
+            break;
+
+          if (vxind<voxdat.size()) {
+            voxdat[vxind].ind = i + (j + k*nrow)*ncol;
+            voxdat[vxind].flag = quint16(iFlagIndex);
+            voxdat[vxind].ivert = quint16(iEdge);
+          }
+
+          ++vxind;
+        }
+#endif
+
       }
     }
+  }
+
+  MB_DPRINTLN("voxdat size=%d / actual=%d", voxdat.size(), vxind);
+  int nvx = qlib::min<int>(vxind, voxdat.size());
+  int ivbo = 0;
+  float norm[3], norm0[4], norm1[4];
+
+  for (vxind=0; vxind<nvx; ++vxind) {
+    i = voxdat[vxind].ind % ncol;
+    int itt = voxdat[vxind].ind / ncol;
+    j = itt % nrow;
+    k = itt / nrow;
+
+    ix = i + m_nbcol;
+    iy = j + m_nbrow;
+    iz = k + m_nbsec;
+
+    iFlagIndex = voxdat[vxind].flag;
+
+#ifdef USE_TCTAB
+    iCorner = voxdat[vxind].ivert;
+    iEdge = a2iTriangleConnectionTable[iFlagIndex][iCorner];
+    if (iEdge<0)
+      continue;
+#else
+    iEdge = voxdat[vxind].ivert;
+#endif
+
+    const int ec0 = a2iEdgeConnection[iEdge][0];
+    const int ec1 = a2iEdgeConnection[iEdge][1];
+
+    ixx = ix + (vtxoffs[ec0][0]) * m_nBinFac;
+    iyy = iy + (vtxoffs[ec0][1]) * m_nBinFac;
+    izz = iz + (vtxoffs[ec0][2]) * m_nBinFac;
+    qbyte val0 = getByteDen(ixx, iyy, izz);
+    getGrdNormByte(ixx, iyy, izz, norm0);
+
+    ixx = ix + (vtxoffs[ec1][0]) * m_nBinFac;
+    iyy = iy + (vtxoffs[ec1][1]) * m_nBinFac;
+    izz = iz + (vtxoffs[ec1][2]) * m_nBinFac;
+    qbyte val1 = getByteDen(ixx, iyy, izz);
+    getGrdNormByte(ixx, iyy, izz, norm1);
+
+    const float fOffset = getOffset(val0, val1, m_bIsoLev);
+      
+    const float roffs = (1.0f-fOffset);
+    norm[0] = norm0[0]*roffs + norm1[0]*fOffset;
+    norm[1] = norm0[1]*roffs + norm1[1]*fOffset;
+    norm[2] = norm0[2]*roffs + norm1[2]*fOffset;
+    float len = sqrt(norm[0]*norm[0] +
+                     norm[1]*norm[1] +
+                     norm[2]*norm[2]);
+    if (m_dLevel<0.0)
+      len *= -1.0f;
+    norm[0] /= len;
+    norm[1] /= len;
+    norm[2] /= len;
+
+    if (ivbo<m_pVBO->getSize()) {
+      gfx::DrawElemVNC::Elem &dat = m_pVBO->m_pData[ivbo];
+      dat.x = float(i) +
+        (a2fVertexOffset[ec0][0] + fOffset*a2fEdgeDirection[iEdge][0]) * m_nBinFac;
+      dat.y = float(j) +
+        (a2fVertexOffset[ec0][1] + fOffset*a2fEdgeDirection[iEdge][1]) * m_nBinFac;
+      dat.z = float(k) +
+        (a2fVertexOffset[ec0][2] + fOffset*a2fEdgeDirection[iEdge][2]) * m_nBinFac;
+      
+      dat.nx = norm[0];
+      dat.ny = norm[1];
+      dat.nz = norm[2];
+
+      dat.r = m_col_r;
+      dat.g = m_col_g;
+      dat.b = m_col_b;
+      dat.a = m_col_a;
+    }
+
+    ++ivbo;
   }
 
   m_pVBO->setUpdated(true);
