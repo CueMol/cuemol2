@@ -47,15 +47,18 @@ void PythonBridge::runFile(const LString &path)
     return;
   }
   
-  /*
   int i;
   int argc = m_cmdargs.size();
-  char **argv = new char *[argc];
+  wchar_t **argv = new wchar_t *[argc];
   for (i=0; i<argc; ++i) {
-    argv[i] = LChar::dup(m_cmdargs[i]);
+    //argv[i] = LChar::dup(m_cmdargs[i]);
+    argv[i] = Py_DecodeLocale(m_cmdargs[i].c_str(), NULL);
   }
   PySys_SetArgvEx(argc, argv, 0);
-   */
+  for (i=0; i<argc; ++i) {
+    PyMem_RawFree(argv[i]);
+  }
+  delete [] argv;
 
   int res = PyRun_SimpleFile(fp, path.c_str());
   

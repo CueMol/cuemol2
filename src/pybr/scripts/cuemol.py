@@ -126,4 +126,15 @@ def col(aColStr, aScene=None):
     color = stylem.compileColor(aColStr, s.uid)
     return color
 
+##########
 
+def copy(aObj, aNewObjName):
+    objin = obj(aObj)
+    s = objin.getScene()
+    sm = svc("StreamManager")
+    xml = sm.toXML(objin)
+    print("XML: "+str(xml)+"\n")
+    newobj = sm.fromXML(xml, s.uid)
+    newobj.name = aNewObjName
+    s.addObject(newobj)
+    return newobj
