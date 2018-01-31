@@ -140,8 +140,8 @@ void GLSLMapVolRenderer::initShader()
 
   if (!ssh.checkEnvVS()) {
     LOG_DPRINTLN("GPUMapMesh> ERROR: OpenGL GPU shading not supported.");
-    MB_THROW(qlib::RuntimeException, "OpenGL GPU shading not supported");
     m_bChkShaderDone = true;
+    MB_THROW(qlib::RuntimeException, "OpenGL GPU shading not supported");
     return;
   }
 

@@ -46,6 +46,9 @@ MapSurfRenderer::MapSurfRenderer()
   m_bIsoLev = 0;
   m_bWorkOK = false;
   m_pVBO=NULL;
+
+  m_bChkShaderDone = false;
+
 }
 
 // destructor

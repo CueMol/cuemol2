@@ -326,6 +326,8 @@ namespace xtal {
     void displayGLSL1(DisplayContext *pdc);
     void createGLSL1(DisplayContext *pdc);
 
+    bool m_bChkShaderDone;
+
   private:
     std::deque<surface::MSVert> m_msverts;
     Matrix4D m_xform;

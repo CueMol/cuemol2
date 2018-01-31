@@ -23,6 +23,9 @@ using qlib::Matrix3D;
 /// Rendering using OpenMP/VBO
 void MapSurfRenderer::displayGLSL1(DisplayContext *pdc)
 {
+  if (!m_bChkShaderDone)
+    initShader();
+
   ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
   DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
 
@@ -50,6 +53,49 @@ void MapSurfRenderer::displayGLSL1(DisplayContext *pdc)
   postRender(pdc);
 
   m_pCMap = NULL;
+}
+
+bool MapSurfRenderer::initShader()
+{
+  MB_ASSERT(m_pPO == NULL);
+
+  sysdep::ShaderSetupHelper<MapSurfRenderer> ssh(this);
+
+  if (!ssh.checkEnvVS()) {
+    LOG_DPRINTLN("GPUMapSurf> ERROR: OpenGL GPU shading not supported.");
+    m_bChkShaderDone = true;
+    MB_THROW(qlib::RuntimeException, "OpenGL GPU shading not supported");
+    return;
+  }
+
+  m_pPO = ssh.createProgObj("gpu_mapsurf1",
+                            "%%CONFDIR%%/data/shaders/mapsurf1_vertex.glsl",
+                            "%%CONFDIR%%/data/shaders/mapsurf1_frag.glsl");
+  
+  if (m_pPO==NULL) {
+    LOG_DPRINTLN("GPUMapSurf> ERROR: cannot create progobj.");
+    m_bChkShaderDone = true;
+    return false;
+  }
+
+  m_pPO->enable();
+
+  // setup constant tables
+  // vtxoffs
+
+  // a2fVertexOffset
+
+  // a2fEdgeDirection
+
+  // a2iEdgeConnection
+
+  // a2iTriangleConnectionTable
+
+
+  m_pPO->disable();
+
+  m_bChkShaderDone = true;
+  return true;
 }
 
 namespace {
