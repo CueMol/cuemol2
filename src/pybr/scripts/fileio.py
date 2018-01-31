@@ -76,7 +76,7 @@ def guessFormatFromFname(aPathName, aFmt):
 
 ##     return rend
 
-def loadScene(aFileName, aName, aScene, aFmtName, aOpts):
+def loadScene(aFileName, aName, aScene, aFmtName, aOpts=None):
     scene = cuemol.scene(aScene)
 
     strMgr = cuemol.svc("StreamManager")
@@ -91,7 +91,7 @@ def loadScene(aFileName, aName, aScene, aFmtName, aOpts):
 
     return aScene
         
-def loadObject(aFileName, aName, aScene, aFmtName, aOpts):
+def loadObject(aFileName, aName, aScene, aFmtName, aOpts=None):
     scene = cuemol.scene(aScene)
 
     strMgr = cuemol.svc("StreamManager")
@@ -107,4 +107,15 @@ def loadObject(aFileName, aName, aScene, aFmtName, aOpts):
     scene.addObject(newobj)
 
     return newobj
+
+def saveObject(aObj, aFileName, aFmtName, aOpts=None):
+    obj = cuemol.obj(aObj)
+
+    strMgr = cuemol.svc("StreamManager")
+    writer = strMgr.createHandler(aFmtName, 1)
+    writer.setPath(aFileName)
+
+    writer.attach(obj)
+    writer.write();
+    writer.detach();
 

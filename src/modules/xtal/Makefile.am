@@ -23,6 +23,7 @@ DensityMap.cpp \
 MapMeshRenderer.cpp \
 MapSurfRenderer.cpp \
 MapSurfRendImpl2.cpp \
+GLSLMapSurfRendImpl1.cpp \
 MapRenderer.cpp \
 QdfDenMapReader.cpp \
 QdfDenMapWriter.cpp \

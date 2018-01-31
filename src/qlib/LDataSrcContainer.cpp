@@ -50,21 +50,30 @@ void LDataSrcContainer::readFromPath(const LString &path)
 // static
 LString  LDataSrcContainer::selectSrcAltSrc(const LString &src,
                                             const LString &altsrc,
-                                            const LString &base_path,
+                                            const LString &aBasePath,
                                             bool &rbReadFromAltSrc)
 {
-  LOG_DPRINTLN("selSrcAltSrc> called src=%s", src.c_str());
-  LOG_DPRINTLN("  > altsrc=%s", altsrc.c_str());
-  LOG_DPRINTLN("  > base_path=%s", base_path.c_str());
+  LOG_DPRINTLN("LDataSrcContainer.selectSrcAltSrc> called");
+  LOG_DPRINTLN("  > src=<%s>", src.c_str());
+  LOG_DPRINTLN("  > altsrc=<%s>", altsrc.c_str());
+  LOG_DPRINTLN("  > base_path=<%s>", aBasePath.c_str());
 
   bool bReadFromAltSrc = false;
 
   LString abs_path;
+  LString base_path = aBasePath;
+
+  if (base_path.isEmpty() && altsrc.isEmpty()) {
+    // only the src is supplied: load from cwd (this occurs in the CUI case)
+    base_path = ".";
+  }
 
   // First, try to convert "src" to abs path
-  if (isAbsolutePath(src))
+  if (isAbsolutePath(src)) {
     abs_path = src;
+  }
   else if (!base_path.isEmpty()) {
+    // Convert src to abs path using base_path
     MB_DPRINTLN("Abs path (orig)>");
     abs_path.dump();
     MB_DPRINTLN("Base path>");
