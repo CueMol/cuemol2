@@ -49,6 +49,10 @@ MapSurfRenderer::MapSurfRenderer()
 
   m_bChkShaderDone = false;
 
+  m_pPO = NULL;
+  m_pAttrArray = NULL;
+  m_nMapTexID = 0;
+  m_nMapBufID = 0;
 }
 
 // destructor
@@ -60,6 +64,9 @@ MapSurfRenderer::~MapSurfRenderer()
 
   if (m_pVBO!=NULL)
     delete m_pVBO;
+
+  if (m_pAttrArray!=NULL)
+    delete m_pAttrArray;
 }
 
 /////////////////////////////////

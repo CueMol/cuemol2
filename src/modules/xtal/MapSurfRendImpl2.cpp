@@ -39,7 +39,8 @@ void MapSurfRenderer::display(DisplayContext *pdc)
     return;
   }
   else if (m_nGlRendMode==MSR_REND_SHADER) {
-    displayGLSL1(pdc);
+    //displayGLSL1(pdc);
+    displayGLSL2(pdc);
     return;
   }
 }

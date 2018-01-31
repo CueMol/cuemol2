@@ -203,6 +203,8 @@
     <glslshader Include="..\..\src\modules\xtal\mapmesh_frag.glsl" />
     <glslshader Include="..\..\src\modules\xtal\mapmesh_geom.glsl" />
     <glslshader Include="..\..\src\modules\xtal\mapmesh_vertex.glsl" />
+    <glslshader Include="..\..\src\modules\xtal\mapsurf1_frag.glsl" />
+    <glslshader Include="..\..\src\modules\xtal\mapsurf1_vertex.glsl" />
     <glslshader Include="..\..\src\modules\xtal\mapvol_frag.glsl" />
     <glslshader Include="..\..\src\modules\xtal\mapvol_vertex.glsl" />
   </ItemGroup>

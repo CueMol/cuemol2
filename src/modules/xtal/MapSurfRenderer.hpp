@@ -16,9 +16,14 @@
 #include <modules/molstr/BSPTree.hpp>
 
 #include <modules/surface/MolSurfObj.hpp>
-#include <gfx/DrawElem.hpp>
+//#include <gfx/DrawElem.hpp>
+#include <gfx/DrawAttrArray.hpp>
 
 class MapSurfRenderer_wrap;
+
+namespace sysdep {
+  class OglProgramObject;
+}
 
 namespace xtal {
 
@@ -326,7 +331,35 @@ namespace xtal {
     void displayGLSL1(DisplayContext *pdc);
     void createGLSL1(DisplayContext *pdc);
 
+    void displayGLSL2(DisplayContext *pdc);
+    void createGLSL2(DisplayContext *pdc);
+    bool initShader();
+
+    /// Called just before this object is unloaded
+    virtual void unloading();
+
+  private:
     bool m_bChkShaderDone;
+
+    struct AttrElem {
+      qfloat32 ind;
+      qfloat32 flag;
+      qfloat32 ivert;
+    };
+    
+    typedef gfx::DrawAttrArray<AttrElem> AttrArray;
+
+    sysdep::OglProgramObject *m_pPO;
+
+    AttrArray *m_pAttrArray;
+    
+    typedef qlib::Array3D<qbyte> MapTmp;
+
+    MapTmp m_maptmp;
+
+    /// Map 3D texture ID
+    quint32 m_nMapTexID;
+    quint32 m_nMapBufID;
 
   private:
     std::deque<surface::MSVert> m_msverts;

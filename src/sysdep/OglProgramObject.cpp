@@ -252,7 +252,7 @@ void OglProgramObject::use()
 
   //glUseProgramObjectARB(m_hPO);
   glUseProgram(m_hPO);
-  //CHK_GLERROR("PO.use");
+  CHK_GLERROR("PO.use");
 }
 
 void OglProgramObject::validate()
