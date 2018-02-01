@@ -335,6 +335,11 @@ void MapSurfRenderer::displayGLSL2(DisplayContext *pdc)
     createGLSL2(pdc);
   }
 
+  if (m_pAttrArray==NULL) {
+    MB_DPRINTLN("ERROR: attr array is null");
+    return;
+  }
+
   preRender(pdc);
 
   pdc->pushMatrix();
@@ -346,8 +351,7 @@ void MapSurfRenderer::displayGLSL2(DisplayContext *pdc)
 
   m_pPO->enable();
 
-  if (m_pAttrArray=NULL)
-    pdc->drawElem(*m_pAttrArray);
+  pdc->drawElem(*m_pAttrArray);
 
   m_pPO->disable();
 
@@ -376,7 +380,7 @@ bool MapSurfRenderer::initShader()
   m_pPO = ssh.createProgObj("gpu_mapsurf1",
                             "%%CONFDIR%%/data/shaders/mapsurf1_vertex.glsl",
                             "%%CONFDIR%%/data/shaders/mapsurf1_frag.glsl");
-  
+
   if (m_pPO==NULL) {
     LOG_DPRINTLN("GPUMapSurf> ERROR: cannot create progobj.");
     m_bChkShaderDone = true;
@@ -385,11 +389,6 @@ bool MapSurfRenderer::initShader()
 
   m_pPO->enable();
 
-  m_pPO->getAttribLocation("a_ind");
-  m_pPO->getAttribLocation("a_flag");
-  m_pPO->getAttribLocation("a_ivert");
-
-/*
   // setup constant tables
   int i;
   LString key;
@@ -417,7 +416,7 @@ bool MapSurfRenderer::initShader()
     key = LString::format("iegconn[%d]", i);
     m_pPO->setUniform(key, a2iEdgeConnection[i][0], a2iEdgeConnection[i][1]);
   }
-*/
+
   // a2iTriangleConnectionTable
 
 
@@ -426,10 +425,10 @@ bool MapSurfRenderer::initShader()
   // setup texture (TBO)
   glGenBuffersARB(1, &m_nMapBufID);
   glGenTextures(1, &m_nMapTexID);
-  //glActiveTexture(GL_TEXTURE0);
-  //glEnable(GL_TEXTURE_BUFFER);
-  //glBindTexture(GL_TEXTURE_BUFFER, m_nMapTexID);
-  //glBindTexture(GL_TEXTURE_BUFFER, 0);
+  glActiveTexture(GL_TEXTURE0);
+  glEnable(GL_TEXTURE_BUFFER);
+  glBindTexture(GL_TEXTURE_BUFFER, m_nMapTexID);
+  glBindTexture(GL_TEXTURE_BUFFER, 0);
 
   m_bChkShaderDone = true;
   return true;
@@ -501,7 +500,8 @@ void MapSurfRenderer::createGLSL2(DisplayContext *pdl)
     m_pAttrArray->setAttrInfo(2, m_pPO->getAttribLocation("a_ivert"), 1,
                              qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, ivert));
 
-    m_pAttrArray->setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
+    //m_pAttrArray->setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
+    m_pAttrArray->setDrawMode(gfx::AbstDrawElem::DRAW_POINTS);
     m_pAttrArray->alloc(nsz_est_tot);
   }
 
@@ -588,9 +588,9 @@ void MapSurfRenderer::createGLSL2(DisplayContext *pdl)
             break;
 
           if (vxind<m_pAttrArray->getSize()) {
-            m_pAttrArray->at(i).ind = i + (j + k*nrow)*ncol;
-            m_pAttrArray->at(i).flag = iFlagIndex;
-            m_pAttrArray->at(i).ivert = iEdge;
+            m_pAttrArray->at(vxind).ind = i + (j + k*nrow)*ncol;
+            m_pAttrArray->at(vxind).flag = iFlagIndex;
+            m_pAttrArray->at(vxind).ivert = iEdge;
           }
 #endif
           ++vxind;
