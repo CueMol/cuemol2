@@ -10,10 +10,10 @@
 
 void main()
 {
-  //vec4 color;
-  //color = gl_Color;
+  vec4 color;
+  color = gl_Color;
 
-  //gl_FragColor = color;
-  gl_FragColor = vec4(1,1,1,1);
+  gl_FragColor = color;
+  //gl_FragColor = vec4(1,1,1,1);
 }
 

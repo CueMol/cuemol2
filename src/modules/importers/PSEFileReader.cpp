@@ -95,20 +95,6 @@ const char *PSEFileReader::getFileExt() const
 
 //////////////////////////////////////////////////
 
-double PSEFileReader::getRealSetting(int id)
-{
-  //qlib::LVarList *pTuple = m_pSet->getList(id);
-  //MB_ASSERT(pTuple->getInt(0)==id);
-  return m_pSet->getReal(id);
-}
-
-int PSEFileReader::getIntSetting(int id)
-{
-  //qlib::LVarList *pTuple = m_pSet->getList(id);
-  //MB_ASSERT(pTuple->getInt(0)==id);
-  return m_pSet->getInt(id);
-}
-
 void PSEFileReader::setupSettingList(qlib::LVarList *pSet)
 {
   if (m_pSet==NULL)
@@ -137,6 +123,7 @@ void PSEFileReader::setupSettingList(qlib::LVarList *pSet)
     m_pSet->at(id) = pTuple->at(2);
   }
   
+  m_pSet->dump();
 }
 
 void PSEFileReader::read()
@@ -166,6 +153,8 @@ void PSEFileReader::read()
   }
 
   LVarDict *pDict = pTop->getDictPtr();
+
+  //pDict->dump();
 
   int ver = pDict->getInt("version");
   LOG_DPRINTLN("PyMOL version %d", ver);
@@ -227,9 +216,14 @@ void PSEFileReader::procViewSettings(LVarList *pView)
   double depthdist = pView->getReal(k);
   ++k;
 
-  double fov = getRealSetting(PSESC_field_of_view);
+  double fov = 20.0;
+  if (hasRealSetting(PSESC_field_of_view))
+    fov = getRealSetting(PSESC_field_of_view);
   double zoom = -vec1.z() * tan(qlib::toRadian(fov));
-  bool isOrtho = (bool) getIntSetting(PSESC_ortho);
+
+  bool isOrtho = true;
+  if (hasIntSetting(PSESC_ortho))
+    isOrtho = (bool) getIntSetting(PSESC_ortho);
 
   CameraPtr pcam(new Camera);
   pcam->setCenter(vec2);
@@ -247,6 +241,8 @@ void PSEFileReader::procNames(LVarList *pNames)
   LVarList::const_iterator iter = pNames->begin();
   LVarList::const_iterator eiter = pNames->end();
 
+//  pNames->dump();
+
   for (; iter!=eiter; ++iter) {
     LVariant *pElem = *iter;
     if (!pElem->isList()) {
@@ -259,7 +255,7 @@ void PSEFileReader::procNames(LVarList *pNames)
     LString name = pList->getString(0);
     int type = pList->getInt(1);
     int visible = pList->getInt(2);
-    LVarList *pRepOn = pList->getList(3);
+    // LVarList *pRepOn = pList->getList(3);
     int extra_int = pList->getInt(4);
     LVarList *pData = pList->getList(5);
     
@@ -489,23 +485,38 @@ void PSEFileReader::parseObjectMolecule(LVarList *pData, MolCoordPtr pMol)
       LOG_DPRINTLN(msg);
     }
 
-    LVarList *pVisReps = pAtmDat->getList(AT_VISREP);
-    if (pVisReps->getInt(REP_STICKS)==1) {
-      rsSticks.append(res, res+1);
-    }
-    if (pVisReps->getInt(REP_SPHERES)==1) {
-      rsSpheres.append(res, res+1);
-    }
-    if (pVisReps->getInt(REP_CARTOON)==1) {
-      rsCartoon.append(res, res+1);
-    }
-    if (pVisReps->getInt(REP_LINES)==1) {
-      rsLines.append(res, res+1);
-    }
-    if (pVisReps->getInt(REP_SURFACE)==1) {
-      rsSurface.append(res, res+1);
+    LVarList *pVisReps = NULL;
+    int bitmask = 0;
+    if (pAtmDat->at(AT_VISREP)->isList())
+      pVisReps = pAtmDat->getList(AT_VISREP);
+    else if (pAtmDat->at(AT_VISREP)->isInt())
+      bitmask = pAtmDat->getInt(AT_VISREP);
+    else {
+      LOG_DPRINTLN("Unsupported AT_VISREP record type");
+      continue;
     }
 
+    if ((pVisReps&&pVisReps->getInt(REP_STICKS)==1) ||
+        (bitmask & 1<<REP_STICKS)) {
+      rsSticks.append(res, res+1);
+    }
+    if ((pVisReps&&pVisReps->getInt(REP_SPHERES)==1) ||
+        (bitmask & 1<<REP_SPHERES)) {
+      rsSpheres.append(res, res+1);
+    }
+    if ((pVisReps&&pVisReps->getInt(REP_CARTOON)==1) ||
+        (bitmask & 1<<REP_CARTOON)) {
+      rsCartoon.append(res, res+1);
+    }
+    if ((pVisReps&&pVisReps->getInt(REP_LINES)==1) ||
+        (bitmask & 1<<REP_LINES)) {
+      rsLines.append(res, res+1);
+    }
+    if ((pVisReps&&pVisReps->getInt(REP_SURFACE)==1) ||
+        (bitmask & 1<<REP_SURFACE)) {
+      rsSurface.append(res, res+1);
+    }
+    
     LString label = pAtmDat->getString(AT_LABEL);
     if (!label.isEmpty()) {
       MB_DPRINTLN("atom %d label=%s", i, label.c_str());
@@ -560,7 +571,7 @@ void PSEFileReader::parseObjectMeas(LVarList *pData, MolCoordPtr pMol)
   // LVarList *pOffs = pMeas->getList(8);
   bool bHaveLabels = pMeas->size()>8;
   int color = pSetting->getInt(2);
-  if (color < 0)
+  if (color < 0 && hasRealSetting(PSESC_dash_color))
     color = (int) getRealSetting(PSESC_dash_color);
   
   int nsz = pList->size();

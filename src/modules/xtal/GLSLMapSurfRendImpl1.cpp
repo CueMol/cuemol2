@@ -402,13 +402,13 @@ bool MapSurfRenderer::initShader()
   // a2fVertexOffset
   for (i=0; i<8; ++i) {
     key = LString::format("fvtxoffs[%d]", i);
-    m_pPO->setUniform(key, a2fVertexOffset[i][0], a2fVertexOffset[i][1], a2fVertexOffset[i][2]);
+    m_pPO->setUniformF(key, a2fVertexOffset[i][0], a2fVertexOffset[i][1], a2fVertexOffset[i][2]);
   }
 
   // a2fEdgeDirection
   for (i=0; i<12; ++i) {
     key = LString::format("fegdir[%d]", i);
-    m_pPO->setUniform(key, a2fEdgeDirection[i][0], a2fEdgeDirection[i][1], a2fEdgeDirection[i][2]);
+    m_pPO->setUniformF(key, a2fEdgeDirection[i][0], a2fEdgeDirection[i][1], a2fEdgeDirection[i][2]);
   }
 
   // a2iEdgeConnection
@@ -440,9 +440,14 @@ void MapSurfRenderer::unloading()
   if (m_nMapBufID!=0) {
     glDeleteTextures(1, &m_nMapTexID);
     glDeleteBuffersARB(1, &m_nMapBufID);
+    m_nMapTexID = 0;
+    m_nMapBufID = 0;
   }
-  if (m_pAttrArray!=NULL)
+  
+  if (m_pAttrArray!=NULL) {
     delete m_pAttrArray;
+    m_pAttrArray = NULL;
+  }
   
   // ProgramObject is owned by DisplayContext
   // and will be reused other renderes,
@@ -500,17 +505,19 @@ void MapSurfRenderer::createGLSL2(DisplayContext *pdl)
     m_pAttrArray->setAttrInfo(2, m_pPO->getAttribLocation("a_ivert"), 1,
                              qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, ivert));
 
-    //m_pAttrArray->setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
+    m_pAttrArray->setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
     //m_pAttrArray->setDrawMode(gfx::AbstDrawElem::DRAW_LINES);
-    m_pAttrArray->setDrawMode(gfx::AbstDrawElem::DRAW_POINTS);
+    //m_pAttrArray->setDrawMode(gfx::AbstDrawElem::DRAW_POINTS);
     m_pAttrArray->alloc(nsz_est_tot);
   }
 
   MB_DPRINTLN("voxels %d", ncol*nrow*nsec);
   MB_DPRINTLN("estimated vertex size %d", nsz_est_tot);
   
-  for (i=0; i<nsz_est_tot; ++i) {
-    m_pAttrArray->at(i) = {0.0f, 0.0f, 0.0f};
+  for (i=0; i<m_pAttrArray->getSize(); ++i) {
+    m_pAttrArray->at(i).ind = 0.0f;
+    m_pAttrArray->at(i).flag = 0.0f;
+    m_pAttrArray->at(i).ivert = 0.0f;
   }
 
   quint32 cc = getColor()->getCode();
@@ -522,10 +529,16 @@ void MapSurfRenderer::createGLSL2(DisplayContext *pdl)
   m_nbcol = m_nStCol - pMap->getStartCol();
   m_nbrow = m_nStRow - pMap->getStartRow();
   m_nbsec = m_nStSec - pMap->getStartSec();
+  MB_DPRINTLN("bcol,row,sec=(%d,%d,%d)", m_nbcol, m_nbrow, m_nbsec);
+  MB_DPRINTLN("bisolev=%d", m_bIsoLev);
 
   int iCorner, iVertex, iVertexTest, iEdge, iTriangle, iFlagIndex, iEdgeFlags;
   int ix, iy, iz;
   int ixx, iyy, izz;
+
+  int mncol = ncol + 1;
+  int mnrow = nrow + 1;
+  int mnsec = nsec + 1;
 
   int vxind = 0;
   for (k=0; k<nsec; k+=m_nBinFac) {
@@ -582,7 +595,7 @@ void MapSurfRenderer::createGLSL2(DisplayContext *pdl)
             break;
 
           if (vxind<m_pAttrArray->getSize()) {
-            m_pAttrArray->at(vxind).ind = i + (j + k*nrow)*ncol;
+            m_pAttrArray->at(vxind).ind = i + (j + k*mnrow)*mncol;
             m_pAttrArray->at(vxind).flag = iFlagIndex;
             m_pAttrArray->at(vxind).ivert = iEdge;
           }
@@ -592,16 +605,17 @@ void MapSurfRenderer::createGLSL2(DisplayContext *pdl)
     }
   }
 
+  //MB_DPRINTLN("filled vbo: %d", vxind);
   m_pAttrArray->setUpdated(true);
 
   ///////////////////////
   // Create texture (TBO)
 
   bool bReuse;
-  if (m_maptmp.cols()!=ncol ||
-      m_maptmp.rows()!=nrow ||
-      m_maptmp.secs()!=nsec) {
-    m_maptmp.resize(ncol, nrow, nsec);
+  if (m_maptmp.cols()!=mncol ||
+      m_maptmp.rows()!=mnrow ||
+      m_maptmp.secs()!=mnsec) {
+    m_maptmp.resize(mncol, mnrow, mnsec);
     bReuse = false;
   }
   else {
@@ -609,9 +623,9 @@ void MapSurfRenderer::createGLSL2(DisplayContext *pdl)
     bReuse = true;
   }
   
-  for (k=0; k<nsec; k++)
-    for (j=0; j<nrow; j++)
-      for (i=0; i<ncol; i++){
+  for (k=0; k<mnsec; k++)
+    for (j=0; j<mnrow; j++)
+      for (i=0; i<mncol; i++){
         ix = i + m_nbcol;
         iy = j + m_nbrow;
         iz = k + m_nbsec;
@@ -628,11 +642,11 @@ void MapSurfRenderer::createGLSL2(DisplayContext *pdl)
   CHK_GLERROR("glBindBuffer");
 
   if (!bReuse) {
-    glBufferDataARB(GL_TEXTURE_BUFFER, ncol*nrow*nsec*sizeof(MapTmp::value_type), m_maptmp.data(), GL_DYNAMIC_DRAW_ARB);
+    glBufferDataARB(GL_TEXTURE_BUFFER, mncol*mnrow*mnsec*sizeof(MapTmp::value_type), m_maptmp.data(), GL_DYNAMIC_DRAW_ARB);
     CHK_GLERROR("glBufferDataARB");
   }
   else {
-    glBufferSubDataARB(GL_TEXTURE_BUFFER, 0, ncol*nrow*nsec*sizeof(MapTmp::value_type), m_maptmp.data());
+    glBufferSubDataARB(GL_TEXTURE_BUFFER, 0, mncol*mnrow*mnsec*sizeof(MapTmp::value_type), m_maptmp.data());
     CHK_GLERROR("glBufferDataARB");
   }
 
@@ -653,10 +667,10 @@ void MapSurfRenderer::createGLSL2(DisplayContext *pdl)
   m_pPO->setUniform("u_isolevel", m_bIsoLev);
   CHK_GLERROR("setUniform isolevel");
 
-  m_pPO->setUniform("u_ncol", ncol);
+  m_pPO->setUniform("u_ncol", mncol);
   CHK_GLERROR("setUniform ncol");
 
-  m_pPO->setUniform("u_nrow", nrow);
+  m_pPO->setUniform("u_nrow", mnrow);
   CHK_GLERROR("setUniform nrow");
 
   m_pPO->disable();

@@ -141,6 +141,8 @@ namespace qlib {
       return at(index).getObjectPtr();
     }
 
+    void dump() const;
+
   };
 
   typedef LScrSp<LVarArray> LVarArrayPtr;

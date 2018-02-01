@@ -1445,6 +1445,13 @@ void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
       nvbo_ind = pRep->m_nBufID;
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, nvbo_ind);
     }
+
+    if (ada.isUpdated()) {
+      glBufferSubData(GL_ARRAY_BUFFER, 0, ada.getDataSize(), ada.getData());
+      if (itype==AbstDrawElem::VA_ATTR_INDS) {
+        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, ada.getIndDataSize(),ada.getIndData());
+      }
+    }
   }
 
   size_t nattr = ada.getAttrSize();

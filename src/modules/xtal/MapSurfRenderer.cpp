@@ -65,8 +65,8 @@ MapSurfRenderer::~MapSurfRenderer()
   if (m_pVBO!=NULL)
     delete m_pVBO;
 
-  if (m_pAttrArray!=NULL)
-    delete m_pAttrArray;
+  //if (m_pAttrArray!=NULL)
+  //delete m_pAttrArray;
 }
 
 /////////////////////////////////
