@@ -35,6 +35,8 @@ attribute float a_ind;
 attribute float a_flag;
 attribute float a_ivert;
 
+const int u_binfac = 1;
+
 uint getDensity(ivec3 iv)
 {
   int index = iv.x + u_ncol*(iv.y + u_nrow*iv.z);
@@ -43,22 +45,59 @@ uint getDensity(ivec3 iv)
 
 void main(void)
 {
-  int iind = int(a_ind);
-  int flag = int(a_flag);
-  int ivert = int(a_ivert);
-  
-  int ind_i = iind % u_ncol;
-  int itt = iind / u_ncol;
-  int ind_j = itt % u_nrow;
-  int ind_k = itt / u_nrow;
+  int vid = gl_VertexID%3;
 
-  float dum = (a_flag + a_ivert + u_isolevel + ivtxoffs[0].x + fvtxoffs[0].x + fegdir[0].x + iegconn[0].x + getDensity(ivec3(0,0,0)))*1.0e-10 + 1.0;
-  if (dum!=0.0)
-    dum = 1.0;
+  int iind = int(a_ind);
+  int iflag = int(a_flag);
+  int iedge = int(a_ivert);
+  
+  ivec3 vind;
+  vind.x = iind % u_ncol;
+  int itt = iind / u_ncol;
+  vind.y = itt % u_nrow;
+  vind.z = itt / u_nrow;
+
+  int ec0 = iegconn[iedge].x;
+  int ec1 = iegconn[iedge].y;
+
+  int ixx, iyy, izz;
+  ixx = vind.x + (ivtxoffs[ec0].x);// * u_binfac;
+  iyy = vind.y + (ivtxoffs[ec0].y);// * u_binfac;
+  izz = vind.z + (ivtxoffs[ec0].z);// * u_binfac;
+
+  uint val0 = getDensity(ivec3(ixx, iyy, izz));
+
+  ixx = vind.x + (ivtxoffs[ec1].x);// * u_binfac;
+  iyy = vind.y + (ivtxoffs[ec1].y);// * u_binfac;
+  izz = vind.z + (ivtxoffs[ec1].z);// * u_binfac;
+
+  uint val1 = getDensity(ivec3(ixx, iyy, izz));
+
+
+  float fOffset; // = getOffset(val0, val1, u_isolevel);
+  {
+    int delta = int(val1) - int(val0);
+    
+    if(delta == 0)
+      fOffset = 0.5f;
+    else
+      fOffset = float(int(u_isolevel) - int(val0))/float(delta);
+  }
+  fOffset = 0.5f;
+
+  vec4 vec;
+
+  vec.x = float(vind.x) + 
+    (fvtxoffs[ec0].x + fOffset*fegdir[iedge].x);// * u_binfac;
+  vec.y = float(vind.y) + 
+    (fvtxoffs[ec0].y + fOffset*fegdir[iedge].y);// * u_binfac;
+  vec.z = float(vind.z) + 
+    (fvtxoffs[ec0].z + fOffset*fegdir[iedge].z);// * u_binfac;
+  vec.w = 1.0;
 
   ////
   
-  vec4 ecPosition = gl_ModelViewMatrix * vec4(ind_i, ind_j, ind_k, dum);
+  vec4 ecPosition = gl_ModelViewMatrix * vec;
   gl_Position = gl_ProjectionMatrix * ecPosition;
 
   //gl_FogFragCoord = dum;

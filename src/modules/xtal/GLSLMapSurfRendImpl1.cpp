@@ -501,6 +501,7 @@ void MapSurfRenderer::createGLSL2(DisplayContext *pdl)
                              qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, ivert));
 
     //m_pAttrArray->setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
+    //m_pAttrArray->setDrawMode(gfx::AbstDrawElem::DRAW_LINES);
     m_pAttrArray->setDrawMode(gfx::AbstDrawElem::DRAW_POINTS);
     m_pAttrArray->alloc(nsz_est_tot);
   }
@@ -576,13 +577,6 @@ void MapSurfRenderer::createGLSL2(DisplayContext *pdl)
           continue;
 
         for (iCorner = 0; iCorner < 3*MAXTRIG; iCorner++) {
-#ifdef USE_TCTAB
-          if (vxind<voxdat.size()) {
-            voxdat[vxind].ind = i + (j + k*nrow)*ncol;
-            voxdat[vxind].flag = quint16(iFlagIndex);
-            voxdat[vxind].ivert = quint16(iCorner);
-          }
-#else
           iEdge = a2iTriangleConnectionTable[iFlagIndex][iCorner];
           if (iEdge<0)
             break;
@@ -592,7 +586,6 @@ void MapSurfRenderer::createGLSL2(DisplayContext *pdl)
             m_pAttrArray->at(vxind).flag = iFlagIndex;
             m_pAttrArray->at(vxind).ivert = iEdge;
           }
-#endif
           ++vxind;
         }
       }
@@ -625,6 +618,12 @@ void MapSurfRenderer::createGLSL2(DisplayContext *pdl)
         m_maptmp.at(i,j,k) = getByteDen(ix, iy, iz);
       }
 
+  glEnable(GL_TEXTURE_BUFFER);
+  CHK_GLERROR("glEnable(GL_TEXTURE_BUFFER)");
+
+  glActiveTexture(GL_TEXTURE0);
+  CHK_GLERROR("glActiveTexture(GL_TEXTURE0)");
+
   glBindBufferARB(GL_TEXTURE_BUFFER, m_nMapBufID);
   CHK_GLERROR("glBindBuffer");
 
@@ -640,7 +639,6 @@ void MapSurfRenderer::createGLSL2(DisplayContext *pdl)
   glBindBufferARB(GL_TEXTURE_BUFFER, 0);
 
   glActiveTexture(GL_TEXTURE0);
-  // glEnable(MY_MAPTEX_DIM);
   glBindTexture(GL_TEXTURE_BUFFER, m_nMapTexID);
 
   glTexBufferARB(GL_TEXTURE_BUFFER, GL_R8UI, m_nMapBufID);
