@@ -119,8 +119,9 @@ void TopoBuilder::applyTopology()
 
     if (bPolymer &&
         !pPrevRes.isnull() &&
-        pPrevRes->getChainName()==pRes->getChainName())
+        pPrevRes->getChainName()==pRes->getChainName()) {
       appTopo2Resids(pPrevRes, pRes, m_pTopDic);
+    }
 
     pPrevRes = pRes;
   }
