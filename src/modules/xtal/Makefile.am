@@ -64,6 +64,8 @@ mapmesh_frag.glsl \
 mapmesh_geom.glsl \
 mapvol_vertex.glsl \
 mapvol_frag.glsl \
+mapsurf1_vertex.glsl \
+mapsurf1_frag.glsl \
 $(NULL)
 
 endif

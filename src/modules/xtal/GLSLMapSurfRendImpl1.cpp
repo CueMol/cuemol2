@@ -123,7 +123,17 @@ void MapSurfRenderer::createGLSL1(DisplayContext *pdl)
   MB_DPRINTLN("estimated vertex size %d", nsz_est_tot);
   
   for (i=0; i<nsz_est_tot; ++i) {
-    m_pVBO->m_pData[i] = {0.0f, 0.0f, 0.0f,0.0f, 0.0f, 0.0f,0,0,0,0};
+    //m_pVBO->m_pData[i] = {0.0f, 0.0f, 0.0f,0.0f, 0.0f, 0.0f,0,0,0,0};
+    m_pVBO->m_pData[i].x = 0.0f;
+    m_pVBO->m_pData[i].y = 0.0f;
+    m_pVBO->m_pData[i].z = 0.0f;
+    m_pVBO->m_pData[i].nx = 0.0f;
+    m_pVBO->m_pData[i].ny = 0.0f;
+    m_pVBO->m_pData[i].nz = 0.0f;
+    m_pVBO->m_pData[i].r = 0;
+    m_pVBO->m_pData[i].g = 0;
+    m_pVBO->m_pData[i].b = 0;
+    m_pVBO->m_pData[i].a = 0;
   }
 
   quint32 cc = getColor()->getCode();
