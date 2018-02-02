@@ -67,8 +67,8 @@ runtime_class MapSurfRenderer extends MapRenderer
     displist = xtal::MapSurfRenderer::MSR_REND_DLIST;
   }
   property enum glrender_mode => redirect(getGLRenderMode, setGLRenderMode);
-  //default glrender_mode = "displist";
-  default glrender_mode = "shader";
+  default glrender_mode = "displist";
+  // default glrender_mode = "shader";
 
   property integer omp_thr => redirect(getOmpThr, setOmpThr);
   default omp_thr = -1;
