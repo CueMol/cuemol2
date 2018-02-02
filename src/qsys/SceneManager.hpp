@@ -159,11 +159,10 @@ namespace qsys {
     /// Idle task support:
     /// Check scene update periodically
     virtual void doIdleTask();
-    
-
+ 
   };
 
 }
 
-
 #endif
+

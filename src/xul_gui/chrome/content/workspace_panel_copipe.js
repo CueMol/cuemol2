@@ -59,6 +59,11 @@ ws.onMultiCopy = function (aEvent)
   if (type=="renderer") {
     this.multiRendCopyImpl(elemList);
   }
+
+  if (type=="object") {
+    util.alert(window, "Multiple copy of object: not supported.");
+    return;
+  }
 };
 
 ws.multiRendCopyImpl = function (aElemList, aGrpName)
@@ -144,7 +149,8 @@ ws.onPasteRend = function (aEvent)
 
     let scene = obj.getScene();
     if (bary) {
-      let rends = gQm2Main.mStrMgr.arrayFromXML(xmldat, scene.uid);
+      // let rends = gQm2Main.mStrMgr.arrayFromXML(xmldat, scene.uid);
+      let rends = gQm2Main.mStrMgr.rendArrayFromXML(xmldat, scene.uid);
       let nrends = rends.length -1;
 
       // alert("group="+rends[0]);

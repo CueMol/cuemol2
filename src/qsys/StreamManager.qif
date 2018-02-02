@@ -41,7 +41,8 @@ runtime_class StreamManager
   object<ByteArray$> rendGrpToXML(array, string);
 
   object<LScrObject$> fromXML(object<ByteArray$>, integer);
-  array objListFromXML(object<ByteArray$>, integer);
+  array rendArrayFromXML(object<ByteArray$>, integer);
+  // array objArrayFromXML(object<ByteArray$>, integer);
 
 };
 

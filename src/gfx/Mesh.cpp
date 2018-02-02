@@ -11,6 +11,10 @@
 using namespace gfx;
 using qlib::Vector4D;
 
+Mesh::~Mesh()
+{
+}
+
 void Mesh::init(int nverts, int nfaces)
 {
   initVerts(nverts);

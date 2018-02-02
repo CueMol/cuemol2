@@ -127,19 +127,40 @@ namespace qsys {
     //////////
 
   public:
+    /// Convert object to XML byte stream
+    /// @param pObj object to be serialized to the stream
+    /// @return XML byte stream
     qlib::LByteArrayPtr toXML(const qlib::LScrObjBasePtr &pObj);
+
+    /// Convert renderer to XML byte stream
+    /// @param pObj renderer to be serialized to the stream
+    /// @param type_ovwr new renderer type (renderer type attr in the stream will be changed to type_ovwr)
+    /// @return XML byte stream
     qlib::LByteArrayPtr toXML2(const qlib::LScrObjBasePtr &pObj,
                                const LString &type_ovwr);
 
+    /// Convert renderers (in array) to XML byte stream
+    /// @param objs renderer ptrs stored in variant array
+    /// @return XML byte stream
     qlib::LByteArrayPtr arrayToXML(const qlib::LVarArray &objs) {
       return rendGrpToXML(objs, LString());
     }
+
+    /// Convert renderer group (in array) to XML byte stream
+    /// @param objs renderer ptrs stored in variant array
+    /// @param grpname name ob the group stored in the stream
+    /// @return XML byte stream
     qlib::LByteArrayPtr rendGrpToXML(const qlib::LVarArray &objs, const LString &grpname);
 
+    /// Convert XML byte stream to object (obj, rend, etc.)
+    /// @param pObj XML byte stream
+    /// @param nSceneID ID of the scene that will be used to evaluate the XML attrubutes (i.e., color and selection)
+    /// @return new object created from the stream (obj, rend, etc.)
     qlib::LScrObjBasePtr fromXML(const qlib::LByteArrayPtr &pObj,
                                  qlib::uid_t nSceneID);
-    qlib::LVarArray objListFromXML(const qlib::LByteArrayPtr &pbuf,
-                                   qlib::uid_t nSceneID);
+
+    qlib::LVarArray rendArrayFromXML(const qlib::LByteArrayPtr &pbuf,
+                                     qlib::uid_t nSceneID);
 
   public:
   

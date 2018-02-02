@@ -331,7 +331,7 @@ void OglProgramObject::use()
   }
   
   glUseProgram(m_hPO);
-  //CHK_GLERROR("PO.use");
+  CHK_GLERROR("PO.use");
 }
 
 void OglProgramObject::disable()

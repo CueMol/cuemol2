@@ -11,6 +11,7 @@
 #include "MapSurfRenderer_consts.hpp"
 #include "DensityMap.hpp"
 #include <gfx/DisplayContext.hpp>
+#include <gfx/Mesh.hpp>
 
 #include <qsys/ScrEventManager.hpp>
 #include <qsys/ViewEvent.hpp>
@@ -34,6 +35,24 @@ MapSurfRenderer::MapSurfRenderer()
   m_nDrawMode = MSRDRAW_FILL;
   m_lw = 1.2;
   m_pCMap = NULL;
+
+  m_nBinFac = 1;
+  m_nMaxGrid = 100;
+
+  //m_bUseOpenMP = false;
+  m_nGlRendMode = MSR_REND_DLIST;
+  
+  m_nOmpThr = -1;
+  m_bIsoLev = 0;
+  m_bWorkOK = false;
+  m_pVBO=NULL;
+
+  m_bChkShaderDone = false;
+
+  m_pPO = NULL;
+  m_pAttrArray = NULL;
+  m_nMapTexID = 0;
+  m_nMapBufID = 0;
 }
 
 // destructor
@@ -42,6 +61,12 @@ MapSurfRenderer::~MapSurfRenderer()
   // for safety, remove from event manager is needed here...
   ScrEventManager *pSEM = ScrEventManager::getInstance();
   pSEM->removeViewListener(this);
+
+  if (m_pVBO!=NULL)
+    delete m_pVBO;
+
+  //if (m_pAttrArray!=NULL)
+  //delete m_pAttrArray;
 }
 
 /////////////////////////////////
@@ -50,8 +75,6 @@ const char *MapSurfRenderer::getTypeName() const
 {
   return "isosurf";
 }
-
-/////////////////////////////////
 
 void MapSurfRenderer::setSceneID(qlib::uid_t nid)
 {
@@ -110,6 +133,38 @@ void MapSurfRenderer::viewChanged(qsys::ViewEvent &ev)
   return;
 }
 
+void MapSurfRenderer::setMaxGrids(int n)
+{
+  m_nMaxGrid = n;
+
+  /*
+  if (getClientObj().isnull())
+    return; // not initialized (-> don't get maxext/change the extent)
+  
+  // shrink the extent, if the extent exceeds maxext.
+  double dmax = getMaxExtent();
+  double dext = getExtent();
+  if (dmax<dext) {
+    setExtent(dmax);
+  }
+   */
+}
+
+double MapSurfRenderer::getMaxExtent() const
+{
+  MapSurfRenderer *pthis = const_cast<MapSurfRenderer *>(this);
+  ScalarObject *pMap = (ScalarObject *) pthis->getClientObj().get();
+
+  double grdsz = 1.0;
+
+  if (pMap!=NULL)
+    grdsz = qlib::min(pMap->getColGridSize(),
+                      qlib::min(pMap->getRowGridSize(),
+                                pMap->getSecGridSize()));
+
+  return m_nMaxGrid * pMap->getColGridSize() / 2.0;
+}
+
 ///////////////////////////////////////////////////////////////
 
 void MapSurfRenderer::preRender(DisplayContext *pdc)
@@ -153,28 +208,22 @@ void MapSurfRenderer::postRender(DisplayContext *pdc)
   pdc->setLighting(false);
 }
 
-// generate display list
-void MapSurfRenderer::render(DisplayContext *pdl)
+void MapSurfRenderer::setupXformMat(DisplayContext *pdl)
 {
-  ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
+  ScalarObject *pMap = m_pCMap;
   DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
 
-  m_pCMap = pMap;
-
-  // check and setup mol boundary data
-  setupMolBndry();
-
-  // generate map-range information
-  makerange();
+  const Matrix4D &xfm = pMap->getXformMatrix();
+  if (!xfm.isIdent()) {
+    pdl->multMatrix(xfm);
+  }
 
   //  setup frac-->orth matrix
-  pdl->pushMatrix();
   if (pXtal==NULL) {
     pdl->translate(pMap->getOrigin());
   }
   else {
     Matrix3D orthmat = pXtal->getXtalInfo().getOrthMat();
-    //orthmat.transpose();
     pdl->multMatrix(Matrix4D(orthmat));
   }
 
@@ -206,12 +255,27 @@ void MapSurfRenderer::render(DisplayContext *pdl)
     vtmp = Vector4D(m_nStCol, m_nStRow, m_nStSec);
     pdl->translate(vtmp);
   }
+}
+
+// generate display list
+void MapSurfRenderer::render(DisplayContext *pdl)
+{
+  ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
+  m_pCMap = pMap;
+
+  // check and setup mol boundary data
+  setupMolBndry();
+
+  // generate map-range information
+  makerange();
+
+  pdl->pushMatrix();
+  setupXformMat(pdl);
 
   MB_DPRINTLN("MapSurfRenderer Rendereing...");
+
   pdl->startTriangles();
-
   renderImpl(pdl);
-
   pdl->end();
 
 #ifdef SHOW_NORMAL
@@ -236,9 +300,9 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
   /////////////////////
   // setup workarea
 
-  //m_dLevel = getLevel()*pMap->getRmsdDensity();
   const double siglevel = getSigLevel();
   m_dLevel = pMap->getRmsdDensity() * siglevel;
+
   m_nMapColNo = pMap->getColNo();
   m_nMapRowNo = pMap->getRowNo();
   m_nMapSecNo = pMap->getSecNo();
@@ -250,13 +314,19 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
   int nrow = m_nActRow;
   int nsec = m_nActSec;
 
-  double values[8];
-  bool bary[8];
-
   int i,j,k;
+  /*
   for (i=0; i<ncol; i++)
     for (j=0; j<nrow; j++)
       for (k=0; k<nsec; k++) {
+        //if (i==1&&j==1)
+        //MB_DPRINTLN("i=%d, thr=%d", k, omp_get_thread_num());
+*/
+
+  for (i=0; i<ncol; i+=m_nBinFac)
+    for (j=0; j<nrow; j+=m_nBinFac)
+      for (k=0; k<nsec; k+=m_nBinFac) {
+
         int ix = i+m_nStCol - pMap->getStartCol();
         int iy = j+m_nStRow - pMap->getStartRow();
         int iz = k+m_nStSec - pMap->getStartSec();
@@ -272,22 +342,22 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
         bool bin = false;
         int ii;
         for (ii=0; ii<8; ii++) {
-          const int ixx = ix+vtxoffs[ii][0];
-          const int iyy = iy+vtxoffs[ii][1];
-          const int izz = iz+vtxoffs[ii][2];
-          values[ii] = getDen(ixx, iyy, izz);
-
+          const int ixx = ix + (vtxoffs[ii][0]) * m_nBinFac;
+          const int iyy = iy + (vtxoffs[ii][1]) * m_nBinFac;
+          const int izz = iz + (vtxoffs[ii][2]) * m_nBinFac;
+          m_values[ii] = getDen(ixx, iyy, izz);
+          
           // check mol boundary
-          bary[ii] = inMolBndry(pMap, ixx, iyy, izz);
-          if (bary[ii])
+          m_bary[ii] = inMolBndry(pMap, ixx, iyy, izz);
+          if (m_bary[ii])
             bin = true;
         }
-        
+
         if (!bin)
           continue;
 
-        marchCube(pdl, i, j, k, values, bary);
-
+        marchCube(pdl, i, j, k);
+        
         /*
         pdl->startLines();
         pdl->vertex(i,j,k);
@@ -304,24 +374,32 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
 
 void MapSurfRenderer::makerange()
 {
+  Vector4D cent = getCenter();
+  double extent = getExtent();
+  if (extent>getMaxExtent())
+    extent = getMaxExtent();
+
   ScalarObject *pMap = m_pCMap; //static_cast<ScalarObject *>(getClientObj().get());
   DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
   if (pMap==NULL)
     return;
 
-  Vector4D vcent;
-  vcent = getCenter();
-  double centx = vcent.x();
-  double centy = vcent.y();
-  double centz = vcent.z();
-  // double width = getRange();
-  const double extent = getExtent();
-
   //
   // col,row,sec
   //
-  Vector4D vmin(centx-extent, centy-extent, centz-extent),
-  vmax(centx+extent, centy+extent, centz+extent);
+
+  const Matrix4D &xfm = pMap->getXformMatrix();
+  if (!xfm.isIdent()) {
+    // apply inv of xformMat
+    Matrix3D rmat = xfm.getMatrix3D();
+    rmat = rmat.invert();
+    Vector4D tr = xfm.getTransPart();
+    cent -= tr;
+    cent = rmat.mulvec(cent);
+  }
+
+  Vector4D vmin(cent.x()-extent, cent.y()-extent, cent.z()-extent);
+  Vector4D vmax(cent.x()+extent, cent.y()+extent, cent.z()+extent);
 
   // get origin / translate the origin to (0,0,0)
   vmin -= pMap->getOrigin();
@@ -342,7 +420,8 @@ void MapSurfRenderer::makerange()
     const double cec = xt.c();
     if (qlib::isNear4(dimx, cea) &&
         qlib::isNear4(dimy, ceb) &&
-        qlib::isNear4(dimz, cec))
+        qlib::isNear4(dimz, cec) &&
+        isUsePBC())
       m_bPBC = true;
   }
 
@@ -390,14 +469,16 @@ void MapSurfRenderer::makerange()
 
 //fGetOffset finds the approximate point of intersection of the surface
 // between two points with the values fValue1 and fValue2
-double MapSurfRenderer::getOffset(double fValue1, double fValue2, double fValueDesired)
-{
-  double fDelta = fValue2 - fValue1;
- 
-  if(fDelta == 0.0) {
-    return 0.5;
+namespace {
+  inline float getOffset(float fValue1, float fValue2, float fValueDesired)
+  {
+    float fDelta = fValue2 - fValue1;
+    
+    if(fDelta == 0.0f) {
+      return 0.5f;
+    }
+    return (fValueDesired - fValue1)/fDelta;
   }
-  return (fValueDesired - fValue1)/fDelta;
 }
 
 /*
@@ -418,9 +499,23 @@ Vector4D MapSurfRenderer::getGrdNorm(int x, int y, int z)
   int iy = y+ (m_nStRow - m_pCMap->getStartRow());
   int iz = z+ (m_nStSec - m_pCMap->getStartSec());
 
-  rval.x() = getDen(ix-1, iy,   iz  ) - getDen(ix+1, iy,   iz );
-  rval.y() = getDen(ix,   iy-1, iz  ) - getDen(ix,   iy+1, iz  );
-  rval.z() = getDen(ix,   iy,   iz-1) - getDen(ix,   iy,   iz+1);
+  //const int n = m_nBinFac;
+  const int n = 1;
+  rval.x() = getDen(ix-n, iy,   iz  ) - getDen(ix+n, iy,   iz );
+  rval.y() = getDen(ix,   iy-n, iz  ) - getDen(ix,   iy+n, iz  );
+  rval.z() = getDen(ix,   iy,   iz-n) - getDen(ix,   iy,   iz+n);
+  return rval;
+}
+
+Vector4D MapSurfRenderer::getGrdNorm2(int ix, int iy, int iz)
+{
+  Vector4D rval;
+
+  const int n = 1;
+  rval.x() = getDen(ix-n, iy,   iz  ) - getDen(ix+n, iy,   iz );
+  rval.y() = getDen(ix,   iy-n, iz  ) - getDen(ix,   iy+n, iz  );
+  rval.z() = getDen(ix,   iy,   iz-n) - getDen(ix,   iy,   iz+n);
+
   return rval;
 }
 
@@ -437,6 +532,8 @@ Vector4D MapSurfRenderer::getNormal(const Vector4D &fV, bool bx, bool by, bool b
   int ix, iy, iz;
   double r;
 
+  const int n = m_nBinFac;
+
   Vector4D v1, v2;
   if (bx&&by) {
     ix = int(fV.x());
@@ -444,7 +541,7 @@ Vector4D MapSurfRenderer::getNormal(const Vector4D &fV, bool bx, bool by, bool b
     iz = int( ::floor(fV.z()) );
     r = fV.z() - double(iz);
     v1 = getGrdNorm(ix, iy, iz);
-    v2 = getGrdNorm(ix, iy, iz+1);
+    v2 = getGrdNorm(ix, iy, iz+n);
     rval = v1.scale(1.0-r) + v2.scale(r);
   }
   else if (by&&bz) {
@@ -453,7 +550,7 @@ Vector4D MapSurfRenderer::getNormal(const Vector4D &fV, bool bx, bool by, bool b
     iz = int(fV.z());
     r = fV.x() - double(ix);
     v1 = getGrdNorm(ix, iy, iz);
-    v2 = getGrdNorm(ix+1, iy, iz);
+    v2 = getGrdNorm(ix+n, iy, iz);
     rval = v1.scale(1.0-r) + v2.scale(r);
   }
   else if (bz&&bx) {
@@ -462,7 +559,7 @@ Vector4D MapSurfRenderer::getNormal(const Vector4D &fV, bool bx, bool by, bool b
     iz = int(fV.z());
     r = fV.y() - double(iy);
     v1 = getGrdNorm(ix, iy, iz);
-    v2 = getGrdNorm(ix, iy+1, iz);
+    v2 = getGrdNorm(ix, iy+n, iz);
     rval = v1.scale(1.0-r) + v2.scale(r);
   }
   else {
@@ -476,15 +573,13 @@ Vector4D MapSurfRenderer::getNormal(const Vector4D &fV, bool bx, bool by, bool b
     return Vector4D(1.0, 0.0, 0.0);
   
   return rval.divide(len);
-
 }
 
 //////////////////////////////////////////
 
 
 void MapSurfRenderer::marchCube(DisplayContext *pdl,
-                                int fx, int fy, int fz,
-                                double *values, bool *bary)
+                                int fx, int fy, int fz)
 {
   int iCorner, iVertex, iVertexTest, iEdge, iTriangle, iFlagIndex, iEdgeFlags;
 
@@ -495,7 +590,7 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
   // Find which vertices are inside of the surface and which are outside
   iFlagIndex = 0;
   for(iVertexTest = 0; iVertexTest < 8; iVertexTest++) {
-    if(values[iVertexTest] <= m_dLevel) 
+    if(m_values[iVertexTest] <= m_dLevel) 
       iFlagIndex |= 1<<iVertexTest;
   }
 
@@ -507,6 +602,30 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
     return;
   }
 
+  /*{
+    ScalarObject *pMap = m_pCMap;
+    int ix = fx+m_nStCol - pMap->getStartCol();
+    int iy = fy+m_nStRow - pMap->getStartRow();
+    int iz = fz+m_nStSec - pMap->getStartSec();
+
+    for (int ii=0; ii<8; ii++) {
+      const int ixx = ix + (vtxoffs[ii][0]) * m_nBinFac;
+      const int iyy = iy + (vtxoffs[ii][1]) * m_nBinFac;
+      const int izz = iz + (vtxoffs[ii][2]) * m_nBinFac;
+      m_norms[ii] = getGrdNorm2(ixx, iyy, izz);
+    }
+  }*/
+
+  {
+    for (int ii=0; ii<8; ii++) {
+      m_norms[ii].w() = -1.0;
+    }
+  }
+  ScalarObject *pMap = m_pCMap;
+  const int ix = fx+m_nStCol - pMap->getStartCol();
+  const int iy = fy+m_nStRow - pMap->getStartRow();
+  const int iz = fz+m_nStSec - pMap->getStartSec();
+
   // Find the point of intersection of the surface with each edge
   // Then find the normal to the surface at those points
   for(iEdge = 0; iEdge < 12; iEdge++) {
@@ -514,31 +633,59 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
     if(iEdgeFlags & (1<<iEdge)) {
       const int ec0 = a2iEdgeConnection[iEdge][0];
       const int ec1 = a2iEdgeConnection[iEdge][1];
-      if (bary[ec0]==false || bary[ec1]==false) {
+      if (m_bary[ec0]==false || m_bary[ec1]==false) {
         edgeBinFlags[iEdge] = false;
         continue;
       }
       edgeBinFlags[iEdge] = true;
       
-      const double fOffset = getOffset(values[ ec0 ], 
-                                       values[ ec1 ], m_dLevel);
+      const double fOffset = getOffset(m_values[ ec0 ], 
+                                       m_values[ ec1 ], m_dLevel);
       
-      asEdgeVertex[iEdge].x() = double(fx) +
-        a2fVertexOffset[ ec0 ][0] +
-          fOffset * a2fEdgeDirection[iEdge][0];
-      asEdgeVertex[iEdge].y() = double(fy) +
-        a2fVertexOffset[ ec0 ][1] +
-          fOffset * a2fEdgeDirection[iEdge][1];
-      asEdgeVertex[iEdge].z() = double(fz) +
-        a2fVertexOffset[ ec0 ][2] +
-          fOffset * a2fEdgeDirection[iEdge][2];
+      asEdgeVertex[iEdge].x() =
+        double(fx) +
+          (a2fVertexOffset[ec0][0] + fOffset*a2fEdgeDirection[iEdge][0]) * m_nBinFac;
+      asEdgeVertex[iEdge].y() =
+        double(fy) +
+          (a2fVertexOffset[ec0][1] + fOffset*a2fEdgeDirection[iEdge][1]) * m_nBinFac;
+      asEdgeVertex[iEdge].z() =
+        double(fz) +
+          (a2fVertexOffset[ec0][2] + fOffset*a2fEdgeDirection[iEdge][2]) * m_nBinFac;
       asEdgeVertex[iEdge].w() = 0;
       
+      /*
       bool bx = (iedir[iEdge][0]==0);
       bool by = (iedir[iEdge][1]==0);
       bool bz = (iedir[iEdge][2]==0);
-
       asEdgeNorm[iEdge] = getNormal(asEdgeVertex[iEdge], bx, by, bz);
+       */
+
+      /*
+      Vector4D nv0 = m_norms[ ec0 ];
+      Vector4D nv1 = m_norms[ ec1 ];
+      asEdgeNorm[iEdge] = (nv0.scale(1.0-fOffset) + nv1.scale(fOffset)).normalize();
+       */
+
+      Vector4D nv0,nv1;
+      if (m_norms[ ec0 ].w()<0.0) {
+        const int ixx = ix + (vtxoffs[ec0][0]) * m_nBinFac;
+        const int iyy = iy + (vtxoffs[ec0][1]) * m_nBinFac;
+        const int izz = iz + (vtxoffs[ec0][2]) * m_nBinFac;
+        nv0 = m_norms[ec0] = getGrdNorm2(ixx, iyy, izz);
+      }
+      else {
+        nv0 = m_norms[ec0];
+      }
+      if (m_norms[ ec1 ].w()<0.0) {
+        const int ixx = ix + (vtxoffs[ec1][0]) * m_nBinFac;
+        const int iyy = iy + (vtxoffs[ec1][1]) * m_nBinFac;
+        const int izz = iz + (vtxoffs[ec1][2]) * m_nBinFac;
+        nv1 = m_norms[ec1] = getGrdNorm2(ixx, iyy, izz);
+      }
+      else {
+        nv1 = m_norms[ec1];
+      }
+      asEdgeNorm[iEdge] = (nv0.scale(1.0-fOffset) + nv1.scale(fOffset)).normalize();
     }
   }
 
@@ -564,7 +711,8 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
       // getVertexColor(sColor, asEdgeVertex[iVertex], asEdgeNorm[iVertex]);
       // glColor3f(sColor.x, sColor.y, sColor.z);
 
-      if (getLevel()<0) {
+      //if (getLevel()<0) {
+      if (m_dLevel<0) {
         if (pdl!=NULL) {
           pdl->normal(-asEdgeNorm[iVertex]);
           pdl->vertex(asEdgeVertex[iVertex]);

@@ -31,7 +31,10 @@ PovSceneExporter::PovSceneExporter()
   m_bPostBlend = false;
 
   m_bEnableEdgeLines = true;
-  m_dCreaseLimit = qlib::toRadian(60.0);
+
+  //default: no crease limit
+  m_dCreaseLimit = -1.0; //qlib::toRadian(85.0);
+
   m_dEdgeRise = 0.5;
 
   m_bWritePix = false;

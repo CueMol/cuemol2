@@ -687,6 +687,7 @@ void Scene::display(DisplayContext *pdc)
     rendtab_t::const_iterator ie = m_rendtab.end();
     for (; i!=ie; ++i) {
       RendererPtr prend = i->second;
+
       ObjectPtr pObj = prend->getClientObj();
       if (!pObj.isnull() &&
           pObj->isVisible() &&
@@ -763,6 +764,7 @@ void Scene::processHit(DisplayContext *pdc)
   rendtab_t::const_iterator i = m_rendtab.begin();
   for (; i!=m_rendtab.end(); ++i) {
     RendererPtr prend = i->second;
+
     ObjectPtr pObj = prend->getClientObj();
     if (pObj.isnull() || (pObj->isVisible() && !pObj->isUILocked())) {
       if (prend->isVisible() && !prend->isUILocked()) {

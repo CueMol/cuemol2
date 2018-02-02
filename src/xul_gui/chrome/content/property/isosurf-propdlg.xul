@@ -50,7 +50,7 @@
 	    <row align="center" class="propdlg-rowbox">
 	      <label value="Center update:"/>
 	      <menulist id="map-update" flex="0" class="propdlg-menulist"
-		oncommand="gMapMesh.validateWidgets(event)">
+		oncommand="gMapSurf.validateWidgets(event)">
 		<menupopup>
 		  <menuitem label="None" value="none"/>
 		  <menuitem label="Automatic" value="auto"/>
@@ -62,7 +62,7 @@
 	    <row align="center" class="propdlg-rowbox">
 	      <label value="Drawing Mode:"/>
 	      <menulist id="map-drawmode" flex="0" class="propdlg-menulist"
-		oncommand="gMapMesh.validateWidgets(event)">
+		oncommand="gMapSurf.validateWidgets(event)">
 		<menupopup>
 		  <menuitem label="fill" value="fill"/>
 		  <menuitem label="line" value="line"/>
@@ -75,12 +75,20 @@
 	      <label value="Line/Point size:"/>
 	      <numslider id="map-width" flex="1" size="2"
 			 decimalplaces="1" min="0" max="10" increment="0.1" unit="px"
-			 onchange="gMapMesh.validateWidgets(event)"/>
+			 onchange="gMapSurf.validateWidgets(event)"/>
+	    </row>
+
+	    <row align="center" class="propdlg-rowbox">
+	      <label value="Max grid size:"/>
+	      <textbox id="map-maxgrid" flex="1" size="3"
+		       decimalplaces="0" min="50" type="number"
+		       increment="10"
+		       onchange="gMapSurf.validateWidgets(event)"/>
 	    </row>
 
 	    <hbox>
 	      <checkbox id="map-cullsurf" flex="0" label="Back-face culling"
-		oncommand="gMapMesh.validateWidgets(event)"/>
+		oncommand="gMapSurf.validateWidgets(event)"/>
 	    </hbox>
 	  </rows>
 	</grid>
@@ -88,7 +96,7 @@
 	<groupbox flex="0">
 	  <caption>
 	    <checkbox id="map-limit" flex="0" label="Limit display by"
-		      oncommand="gMapMesh.validateWidgets(event)"/>
+		      oncommand="gMapSurf.validateWidgets(event)"/>
 	  </caption>
 	  <grid>
 	    <columns>
@@ -111,7 +119,7 @@
 		<label value="Distance:"/>
 		<numslider id="map-limrng" flex="1" size="2"
 			   decimalplaces="1" min="0" max="10" increment="0.1" unit="&#0197;"
-			   onchange="gMapMesh.validateWidgets(event)"/>
+			   onchange="gMapSurf.validateWidgets(event)"/>
 	      </row>
 
 	    </rows>

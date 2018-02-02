@@ -114,6 +114,14 @@
     <ClCompile Include="..\..\src\modules\xtal\CudaBSharpTool_wrap.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
+
+    <ClCompile Include="..\..\src\modules\xtal\MapSurfRendImpl2.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\xtal\GLSLMapSurfRendImpl1.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+
   </ItemGroup>
   <ItemGroup>
     <mcwrapgen3 Include="..\..\src\modules\xtal\DensityMap.qif">
@@ -178,6 +186,12 @@
       <Filter>Shaders</Filter>
     </glslshader>
     <glslshader Include="..\..\src\modules\xtal\mapmesh2_frag.glsl">
+      <Filter>Shaders</Filter>
+    </glslshader>
+    <glslshader Include="..\..\src\modules\xtal\mapsurf1_frag.glsl">
+      <Filter>Shaders</Filter>
+    </glslshader>
+    <glslshader Include="..\..\src\modules\xtal\mapsurf1_vertex.glsl">
       <Filter>Shaders</Filter>
     </glslshader>
   </ItemGroup>

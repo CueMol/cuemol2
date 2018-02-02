@@ -22,6 +22,8 @@ MTZ2MapReader.cpp \
 DensityMap.cpp \
 MapMeshRenderer.cpp \
 MapSurfRenderer.cpp \
+MapSurfRendImpl2.cpp \
+GLSLMapSurfRendImpl1.cpp \
 MapRenderer.cpp \
 QdfDenMapReader.cpp \
 QdfDenMapWriter.cpp \
@@ -62,6 +64,8 @@ mapvol_vertex.glsl \
 mapvol_frag.glsl \
 mapmesh2_vert.glsl \
 mapmesh2_frag.glsl \
+mapsurf1_vertex.glsl \
+mapsurf1_frag.glsl \
 $(NULL)
 
 #GLSLMapMeshRenderer.cpp

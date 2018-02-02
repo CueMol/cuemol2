@@ -18,7 +18,6 @@ namespace gfx {
   class GFX_API Mesh
   {
   private:
-    //typedef ColorTable::elem_t IntColor;
 
     int m_nVerts;
     int m_nFaces;
@@ -35,17 +34,13 @@ namespace gfx {
 
     /////
 
-    // ColorTable m_clut;
-
   public:
     Mesh()
          : m_nVerts(0), m_nFaces(0)
     {
     }
 
-    virtual ~Mesh()
-    {
-    }
+    virtual ~Mesh();
 
     void init(int nverts, int nfaces);
 
@@ -57,6 +52,32 @@ namespace gfx {
     bool reduce(int nverts, int nfaces);
 
     void setVertex(int i, const Vector4D &v);
+
+    inline void setVertex(int i, float x, float y, float z)
+    {
+      m_verts[i*3+0] = x;
+      m_verts[i*3+1] = y;
+      m_verts[i*3+2] = z;
+      
+      m_norms[i*3+0] = (float) m_curNorm.x();
+      m_norms[i*3+1] = (float) m_curNorm.y();
+      m_norms[i*3+2] = (float) m_curNorm.z();
+  
+      m_colptrs[i] = m_pCurCol;
+    }
+
+    inline void setVertex(int i, float x, float y, float z, float nx, float ny, float nz)
+    {
+      m_verts[i*3+0] = x;
+      m_verts[i*3+1] = y;
+      m_verts[i*3+2] = z;
+      
+      m_norms[i*3+0] = nx;
+      m_norms[i*3+1] = ny;
+      m_norms[i*3+2] = nz;
+  
+      m_colptrs[i] = m_pCurCol;
+    }
 
     Vector4D getVertex(int i) const {
       return Vector4D (m_verts[i*3+0],

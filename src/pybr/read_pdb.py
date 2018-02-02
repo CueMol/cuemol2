@@ -30,7 +30,7 @@ for line in open(fname):
         elem = line[76:78].strip()
 
     else:        
-        print "PDB: ", line
+        print("PDB: ", line)
         continue
 
 # print "name=", aname

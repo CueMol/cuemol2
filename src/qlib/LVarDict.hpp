@@ -86,6 +86,18 @@ namespace qlib {
       return pval->getListPtr();
     }
 
+    void dump() const {
+      super_t::const_iterator i = super_t::begin();
+      super_t::const_iterator e = super_t::end();
+      for (; i!=e; ++i) {
+        MB_DPRINT("%s->", i->first.c_str());
+        if (i->second!=NULL) {
+          i->second->dump();
+        }
+      }
+    }
+    
+
   };
 
   // typedef LScrSp<LVarDict> LVarDictPtr;

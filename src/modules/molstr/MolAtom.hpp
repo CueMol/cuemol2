@@ -339,6 +339,11 @@ namespace molstr {
       setDynPropStr(propnm, pvalue);
     }
 
+    ////////////////////////
+    // Scripting utility methods
+  public:
+    double calcDihe(const MolAtomPtr &pA2,const MolAtomPtr &pA3,const MolAtomPtr &pA4);
+
   };
 
 }

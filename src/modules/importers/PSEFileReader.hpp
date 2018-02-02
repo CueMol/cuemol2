@@ -11,10 +11,8 @@
 #include <qsys/Scene.hpp>
 #include <qsys/InOutHandler.hpp>
 #include <modules/molstr/molstr.hpp>
+#include <qlib/LVarList.hpp>
 
-namespace qlib {
-  class LVarList;
-}
 
 namespace importers {
 
@@ -77,9 +75,28 @@ namespace importers {
 
     void parseObjectMeas(qlib::LVarList *pData, molstr::MolCoordPtr pMol);
 
-    double getRealSetting(int id);
+    double getRealSetting(int id)
+    {
+      return m_pSet->getReal(id);
+    }
 
-    int getIntSetting(int id);
+    bool hasRealSetting(int id) {
+      if (m_pSet->at(id)==NULL) return false;
+      if (!m_pSet->at(id)->isReal()) return false;
+      return true;
+    }
+
+    int getIntSetting(int id)
+    {
+      return m_pSet->getInt(id);
+    }
+
+    bool hasIntSetting(int id) {
+      if (m_pSet->at(id)==NULL) return false;
+      if (!m_pSet->at(id)->isInt()) return false;
+      return true;
+    }
+
     void setupSettingList(qlib::LVarList *pSet);
     
   };

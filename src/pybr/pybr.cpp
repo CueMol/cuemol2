@@ -36,7 +36,8 @@ namespace pybr {
 
     PyImport_AppendInittab("cuemol_internal", &Wrapper::init);
 
-    // Append local python script path to sys.path
+#ifdef HAVE_LOCAL_PYTHON
+    // Set local python path as PYTHONHOME
     if (szConfPath!=NULL) {
       fs::path confpath(szConfPath);
       confpath = confpath.parent_path();
@@ -50,11 +51,11 @@ namespace pybr {
 #else
 	wchar_t *wbuf = Py_DecodeLocale(strpath.c_str(), NULL);
 #endif
-
         Py_SetPythonHome(wbuf);
-	MB_DPRINTLN("***** SetPythonHome=%s", strpath.c_str());
+	LOG_DPRINTLN("Python> SetPythonHome=%s", strpath.c_str());
       }
     }
+#endif
 
     Py_Initialize();
 
@@ -64,12 +65,11 @@ namespace pybr {
     if (szConfPath!=NULL) {
       fs::path confpath(szConfPath);
       confpath = confpath.parent_path();
-      confpath /= "scripts";
-
-confpath /= "python";
 #ifdef WIN32
+      confpath /= "scripts";
+#else
+      confpath /= "python";
 #endif
-
       LString strpath = confpath.string();
       strpath = strpath.escapeQuots();
       
@@ -80,6 +80,7 @@ confpath /= "python";
         strpath.c_str());
 
       PyRun_SimpleString(src.c_str());
+      LOG_DPRINTLN("Python> local script path=%s added", strpath.c_str());
     }
 
     //bool res = Wrapper::setup();
@@ -144,7 +145,7 @@ sys.stderr = catchOutErr\n\
 
 namespace pybr {
 
-  bool init()
+  bool init(const char *szConfPath)
   {
     return true;
   }

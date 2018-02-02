@@ -1156,10 +1156,7 @@ void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
       //else
       pRep = MB_NEW OglDrawArrayAttrsImpl(m_nSceneID);
     }
-
     ada.setImpl(pRep);
-
-    //de.create();
     pRep->create(ada);
   }
   else if (ada.isUpdated()) {
@@ -1167,16 +1164,6 @@ void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
     ada.setUpdated(false);
   }
 
-  /*
-  glLineWidth( de.getLineWidth() * float(getPixSclFac()) );
-  glPointSize( de.getLineWidth() * float(getPixSclFac()) );
-  quint32 cc = de.getDefColor();
-  glColor4ub(gfx::getRCode(cc),
-             gfx::getGCode(cc),
-             gfx::getBCode(cc),
-             gfx::getACode(cc));
-   */
-  
   pRep->preDraw(ada);
   pRep->draw(ada);
   pRep->postDraw(ada);

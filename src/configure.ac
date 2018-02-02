@@ -919,6 +919,19 @@ AC_ARG_WITH(fftw,
 		 ,
 		 [])
     ;;
+
+  yes)
+    AC_CHECK_HEADERS(fftw3.h)
+    AC_CHECK_DECLS(fftwf_execute,
+                   [],
+		   ,
+		   [#include <fftw3.h>])
+    AC_CHECK_LIB(fftw3f, fftwf_execute,
+                 [],
+		 ,
+		 [])
+    ;;
+
   *)
     AC_MSG_RESULT($with_fftw)
     _cppflags=${CPPFLAGS}
@@ -940,7 +953,9 @@ AC_ARG_WITH(fftw,
     LDFLAGS=$_ldflags
     ;;
   esac ],
-[AC_MSG_ERROR(Require fftw library)])
+[
+    AC_MSG_ERROR(Require fftw library)
+])
 
 AC_SUBST(FFTW_CPPFLAGS)
 AC_SUBST(FFTW_LDFLAGS)

@@ -316,7 +316,12 @@ void LVarList::dump() const
   int nsz = size();
   MB_DPRINTLN("list(%d)[", nsz);
   for (int i=0; i<nsz; ++i) {
-    at(i)->dump();
+    MB_DPRINT("%d: ", i);
+    if (at(i)==NULL)
+      MB_DPRINT("(null)");
+    else
+      at(i)->dump();
+    MB_DPRINTLN("");
   }
   MB_DPRINTLN("]");
 }

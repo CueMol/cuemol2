@@ -212,6 +212,7 @@ void DensityMap::setXtalParams(double a, double b, double c,
 
 Vector4D DensityMap::getCenter() const
 {
+/*
   Vector4D fcen;
   fcen.x() = (double(m_nStartCol)+double(m_nCols)/2.0)/double(m_nColInt);
   fcen.y() = (double(m_nStartRow)+double(m_nRows)/2.0)/double(m_nRowInt);
@@ -219,6 +220,12 @@ Vector4D DensityMap::getCenter() const
   
   m_xtalInfo.fracToOrth(fcen);
   return fcen;
+*/
+  Vector4D tv(double(m_nStartCol+m_nCols)/2.0,
+              double(m_nStartRow+m_nRows)/2.0,
+              double(m_nStartSec+m_nSecs)/2.0);
+  tv = convToOrth(tv);
+  return tv;
 }
 
 /*
@@ -250,6 +257,17 @@ void DensityMap::dump()
 double DensityMap::getValueAt(const Vector4D &pos) const
 {
   Vector4D tv(pos);
+
+  const Matrix4D &xfm = getXformMatrix();
+  if (!xfm.isIdent()) {
+    // apply inv of xformMat
+    qlib::Matrix3D rmat = xfm.getMatrix3D();
+    rmat = rmat.invert();
+    Vector4D tr = xfm.getTransPart();
+    tv -= tr;
+    tv = rmat.mulvec(tv);
+  }
+
   m_xtalInfo.orthToFrac(tv);
   
   tv.x() *= double(getColInterval());
@@ -275,6 +293,17 @@ double DensityMap::getValueAt(const Vector4D &pos) const
 bool DensityMap::isInRange(const Vector4D &pos) const
 {
   Vector4D tv(pos);
+
+  const Matrix4D &xfm = getXformMatrix();
+  if (!xfm.isIdent()) {
+    // apply inv of xformMat
+    qlib::Matrix3D rmat = xfm.getMatrix3D();
+    rmat = rmat.invert();
+    Vector4D tr = xfm.getTransPart();
+    tv -= tr;
+    tv = rmat.mulvec(tv);
+  }
+
   m_xtalInfo.orthToFrac(tv);
   
   tv.x() *= double(getColInterval());
@@ -314,6 +343,14 @@ Vector4D DensityMap::convToOrth(const Vector4D &index) const
   m_xtalInfo.fracToOrth(tv);
 
   // tv is now in orthogonal coord.
+
+  const Matrix4D &xfm = getXformMatrix();
+  if (!xfm.isIdent()) {
+    // Apply xformMat
+    tv.w() = 1.0;
+    tv = xfm.mulvec(tv);
+  }
+
   return tv;
 }
 

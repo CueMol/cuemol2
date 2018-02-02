@@ -264,6 +264,17 @@ void MolAtom::resetXformMatrix()
 }
 
 
+double MolAtom::calcDihe(const MolAtomPtr &pA2,const MolAtomPtr &pA3,const MolAtomPtr &pA4)
+{
+  Vector4D pos1 = getPos();
+  Vector4D pos2 = pA2->getPos();
+  Vector4D pos3 = pA3->getPos();
+  Vector4D pos4 = pA4->getPos();
+
+  return Vector4D::torsion(pos1, pos2, pos3, pos4);
+}
+
+
 ////////////
 #if 0
 

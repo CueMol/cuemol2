@@ -15,3 +15,10 @@ void LVarArray::copyFrom(const LVarArray &a)
   MB_ASSERT(false);
 }
 
+void LVarArray::dump() const
+{
+  for (int i=0; i<size(); ++i) {
+    at(i)->dump;
+  }
+}
+

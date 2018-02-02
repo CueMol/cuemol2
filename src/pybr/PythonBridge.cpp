@@ -104,7 +104,13 @@ void PythonBridge::runFile(const LString &path)
 #endif
 
     }
+
     PySys_SetArgvEx(argc, argv, 0);
+
+    for (i=0; i<argc; ++i)
+      PyMem_RawFree(argv[i]);
+    delete [] argv;
+
   }
     
   int res = PyRun_SimpleFile(fp, path.c_str());

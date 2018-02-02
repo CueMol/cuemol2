@@ -1234,7 +1234,7 @@ Qm2Main.prototype.togglePerfMeas = function (ev)
   if (!bchk) {
     // start measure
     this.clearLogContents();
-    sm.enablePerfMeas(3);
+    sm.enablePerfMeas(1);
     ev.target.checked = true;
   }
   else {

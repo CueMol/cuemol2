@@ -274,6 +274,7 @@
 	      accesskey="&edit_redo.accesskey;"
 	      key="mkEditRedo"
 	      command="cmd_redo"/>
+
 	    <menuitem label="Clear undo data"
 	      oncommand="gQm2Main.clearUndoData()"/>
 

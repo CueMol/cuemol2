@@ -16,8 +16,14 @@
 #include <modules/molstr/BSPTree.hpp>
 
 #include <modules/surface/MolSurfObj.hpp>
+//#include <gfx/DrawElem.hpp>
+#include <gfx/DrawAttrArray.hpp>
 
 class MapSurfRenderer_wrap;
+
+namespace sysdep {
+  class OglProgramObject;
+}
 
 namespace xtal {
 
@@ -40,10 +46,6 @@ namespace xtal {
 
     ///////////////////////////////////////////
     // properties
-
-    /// Periodic boundary flag
-    /// (default: false; set true, if map contains the entire of unit cell)
-    bool m_bPBC;
 
     /// Automatically update the map center as view center
     /// (default: true)
@@ -93,11 +95,74 @@ namespace xtal {
       invalidateDisplayCache();
     }
     
+  private:
+    /// binning
+    int m_nBinFac;
+
+  public:
+    int getBinFac() const { return m_nBinFac; }
+    void setBinFac(int n) {
+      m_nBinFac = n;
+      invalidateDisplayCache();
+    }
+    
+  private:
+    /// Max grid size (default=100x100x100 grid)
+    int m_nMaxGrid;
+
+  public:
+    int getMaxGrids() const { return m_nMaxGrid; }
+    void setMaxGrids(int n);
+
+    /// Get max extent (in angstrom unit; calculated from m_nMaxGrid)
+    double getMaxExtent() const;
+
+  public:
+    /// OpenGL rendering mode const
+    static const int MSR_REND_DLIST=0;
+    static const int MSR_REND_VBO=1;
+    static const int MSR_REND_SHADER=2;
+
+  private:
+    /// OpenGL rendering mode
+    int m_nGlRendMode;
+
+    /// Use OpenMP (experimental)
+    // bool m_bUseOpenMP;
+
+  public:
+    int getGLRenderMode() const { return m_nGlRendMode; }
+    void setGLRenderMode(int n) {
+      invalidateDisplayCache();
+      m_nGlRendMode = n;
+    } 
+
+    /*
+    bool isUseOpenMP() const { return m_bUseOpenMP; }
+    void setUseOpenMP(bool b) {
+      m_bUseOpenMP = b;
+      invalidateDisplayCache();
+    }
+     */
+
+  private:
+    /// OpenMP Thread number(-1: use all system cores)
+    int m_nOmpThr;
+
+  public:
+    int getOmpThr() const { return m_nOmpThr; }
+    void setOmpThr(int val) {
+      m_nOmpThr = val;
+      invalidateDisplayCache();
+    }
 
   private:
 
     ///////////////////////////////////////////
     // work area
+
+    /// Periodic boundary flag. This value is determined by the map size and usePBC flag
+    bool m_bPBC;
 
     /// size of map (copy from m_pMap)
     int m_nMapColNo, m_nMapRowNo, m_nMapSecNo;
@@ -158,13 +223,13 @@ namespace xtal {
 
     void renderImpl(DisplayContext *pdl);
 
-    void marchCube(DisplayContext *pdl, int fx, int fy, int fz, double *values, bool *bary);
+    void marchCube(DisplayContext *pdl, int fx, int fy, int fz);
 
-    double getOffset(double fValue1, double fValue2, double fValueDesired);
+    //double getOffset(double fValue1, double fValue2, double fValueDesired);
     void getVertexColor(Vector4D &rfColor, Vector4D &rfPosition, Vector4D &rfNormal);
     Vector4D getNormal(const Vector4D &rfNormal,bool,bool,bool);
 
-    inline double getDen(int x, int y, int z) const
+    inline float getDen(int x, int y, int z) const
     {
       // TO DO: support symop
 
@@ -188,12 +253,119 @@ namespace xtal {
     }
 
     Vector4D getGrdNorm(int ix, int iy, int iz);
+    Vector4D getGrdNorm2(int ix, int iy, int iz);
+
+    float m_values[8];
+    bool m_bary[8];
+    Vector4D m_norms[8];
+
+    void setupXformMat(DisplayContext *pdl);
+
+    //////////
+    // Experimental rendering impl (OpenMP/VBO)
+
+    /// Workarea data OK/NG (invalid)
+    bool m_bWorkOK;
+
+    virtual void display(DisplayContext *pdc);
+
+    virtual void invalidateDisplayCache();
+    
+    void createVBO1(DisplayContext *pdl);
+    void displayVBO1(DisplayContext *pdl);
+    
+    typedef std::vector<surface::MSVert> MSVertList;
+
+    void marchCube2(int fx, int fy, int fz,
+		    const qbyte *values,
+		    const bool *bary,
+		    int *pvind);
+
+                                     //MSVertList &verts);
+      
+    inline qbyte getByteDen(int x, int y, int z) const
+    {
+      // TO DO: support symop
+
+      if (m_bPBC) {
+        const int xx = (x+10000*m_nMapColNo)%m_nMapColNo;
+        const int yy = (y+10000*m_nMapRowNo)%m_nMapRowNo;
+        const int zz = (z+10000*m_nMapSecNo)%m_nMapSecNo;
+        return m_pCMap->atByte(xx,yy,zz);
+      }
+      else {
+        if (x<0||y<0||z<0)
+          return 0;
+        if (x>=m_nMapColNo||
+            y>=m_nMapRowNo||
+            z>=m_nMapSecNo)
+          return 0;
+        return m_pCMap->atByte(x, y, z);
+      }
+      
+    }
+
+    inline void getGrdNormByte(int ix, int iy, int iz,
+			       float *norm)
+    {
+      const int del = 1;
+      norm[0] = float(getByteDen(ix-del, iy,   iz  )) - float(getByteDen(ix+del, iy,   iz  ));
+      norm[1] = float(getByteDen(ix,   iy-del, iz  )) - float(getByteDen(ix,   iy+del, iz  ));
+      norm[2] = float(getByteDen(ix,   iy,   iz-del)) - float(getByteDen(ix,   iy,   iz+del));
+      norm[3] = 0.0f;
+    }
+    
+    qbyte m_bIsoLev;
+
+    int m_nbcol;
+    int m_nbrow;
+    int m_nbsec;
+
+    qbyte m_col_r, m_col_g, m_col_b, m_col_a;
+    //std::vector<gfx::DrawElemVNC> m_verts;
+    gfx::DrawElemVNC *m_pVBO;
+    
+    //////////
+    // Experimental rendering impl (OpenMP/GLSL)
+    
+    void displayGLSL1(DisplayContext *pdc);
+    void createGLSL1(DisplayContext *pdc);
+
+    void displayGLSL2(DisplayContext *pdc);
+    void createGLSL2(DisplayContext *pdc);
+    bool initShader();
+
+    /// Called just before this object is unloaded
+    virtual void unloading();
+
+  private:
+    bool m_bChkShaderDone;
+
+    struct AttrElem {
+      qfloat32 ind;
+      qfloat32 flag;
+      qfloat32 ivert;
+    };
+    
+    typedef gfx::DrawAttrArray<AttrElem> AttrArray;
+
+    sysdep::OglProgramObject *m_pPO;
+
+    AttrArray *m_pAttrArray;
+    
+    typedef qlib::Array3D<qbyte> MapTmp;
+
+    MapTmp m_maptmp;
+
+    /// Map 3D texture ID
+    quint32 m_nMapTexID;
+    quint32 m_nMapBufID;
 
   private:
     std::deque<surface::MSVert> m_msverts;
     Matrix4D m_xform;
 
-    void addMSVert(const Vector4D &v, const Vector4D &n)
+    int addMSVert(const Vector4D &v, const Vector4D &n)
     {
       Vector4D vv(v);
       vv.w() = 1.0;
@@ -203,7 +375,10 @@ namespace xtal {
       nn.w() = 0.0;
       m_xform.xform4D(nn);
 
+      int nid = m_msverts.size();
       m_msverts.push_back( surface::MSVert(vv, nn) );
+
+      return nid;
     }
 
   public:    

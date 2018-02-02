@@ -41,7 +41,37 @@ runtime_class MapSurfRenderer extends MapRenderer
   property real width => redirect(getLineWidth, setLineWidth);
   default width = 1.2;
 
+  /// Binning factor
+  property integer binning => redirect(getBinFac, setBinFac);
+  default binning = 1;
+
+  /// Max grid size (in grid unit; default=100x100x100 grid)
+  property real max_grids => redirect(getMaxGrids, setMaxGrids);
+  default max_grids = 100;
+
+  /// Max extent (in angstrom unit)
+  property real maxExtent => redirect(getMaxExtent, XXX) (readonly);
+
+  /// Convert to MolSurfObj
   object<Object$> generateSurfObj();
+
+  //////////
+
+  //property boolean use_openmp => redirect(isUseOpenMP, setUseOpenMP);
+  //default use_openmp = false;
+
+  /// OpenGL rendering mode
+  enumdef glrender_mode {
+    shader = xtal::MapSurfRenderer::MSR_REND_SHADER;
+    vbo = xtal::MapSurfRenderer::MSR_REND_VBO;
+    displist = xtal::MapSurfRenderer::MSR_REND_DLIST;
+  }
+  property enum glrender_mode => redirect(getGLRenderMode, setGLRenderMode);
+  default glrender_mode = "displist";
+  // default glrender_mode = "shader";
+
+  property integer omp_thr => redirect(getOmpThr, setOmpThr);
+  default omp_thr = -1;
 
 };
 
