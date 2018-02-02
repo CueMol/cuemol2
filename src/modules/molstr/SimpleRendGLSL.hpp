@@ -82,10 +82,10 @@ namespace molstr {
     sysdep::OglProgramObject *m_pPO;
 
     struct AttrElem {
-      /// a_ind12.x, a_ind12.y
-      qfloat32 ind1, ind2;
-      //qint32 ind1, ind2;
-      /// a_color
+      /// for a_ind12.x, a_ind12.y
+      gfx::attr_int32 ind1, ind2;
+
+      /// for a_color
       qbyte r, g, b, a;
     };
 
@@ -114,8 +114,8 @@ namespace molstr {
 
     /// VBO elem for dblbon drawing
     struct DbnAttrElem {
-      /// a_ind.x, a_ind.y, a_ind.z
-      qfloat32 ind1, ind2, ind3;
+      /// for a_ind.x, a_ind.y, a_ind.z
+      gfx::attr_int32 ind1, ind2, ind3;
 
       /// a_color
       qbyte r, g, b, a;

@@ -24,7 +24,11 @@ uniform AtomCrdTex coordTex;
 // Vertex attributes
 
 // atom coord indices
+#ifdef HAVE_OGL_INTATTR
+attribute ivec2 a_ind12;
+#else
 attribute vec2 a_ind12;
+#endif
 
 // color
 attribute vec4 a_color;

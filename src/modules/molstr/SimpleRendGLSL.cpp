@@ -95,6 +95,11 @@ bool SimpleRendGLSL::init(DisplayContext *pdc)
 #else
     ssh.defineMacro("TEX2D_WIDTH", LString::format("%d",TEX2D_WIDTH).c_str());
 #endif
+
+#ifdef HAVE_OGL_INTATTR
+    ssh.defineMacro("HAVE_OGL_INTATTR", "1");
+#endif
+
     m_pPO = ssh.createProgObj("gpu_simplerend",
                               "%%CONFDIR%%/data/shaders/simple_vertex.glsl",
                               "%%CONFDIR%%/data/shaders/simple_frag.glsl");
@@ -125,6 +130,11 @@ bool SimpleRendGLSL::init(DisplayContext *pdc)
 #else
     ssh.defineMacro("TEX2D_WIDTH", LString::format("%d",TEX2D_WIDTH).c_str());
 #endif
+
+#ifdef HAVE_OGL_INTATTR
+    ssh.defineMacro("HAVE_OGL_INTATTR", "1");
+#endif
+
     m_pDbnPO = ssh.createProgObj("gpu_dblbonrend",
                                  "%%CONFDIR%%/data/shaders/dblbon_vert.glsl",
                                  "%%CONFDIR%%/data/shaders/simple_frag.glsl");
@@ -302,10 +312,8 @@ void SimpleRendGLSL::createGLSL()
   m_pAttrAry = MB_NEW AttrArray();
   AttrArray &attra = *m_pAttrAry;
   attra.setAttrSize(2);
-  attra.setAttrInfo(0, m_nInd12Loc, 2, qlib::type_consts::QTC_FLOAT32,
+  attra.setAttrInfo(0, m_nInd12Loc, 2, gfx::DATTR_INT32,
                     offsetof(AttrElem, ind1));
-  // attra.setAttrInfo(0, m_nInd12Loc, 2, qlib::type_consts::QTC_INT32,
-  // offsetof(AttrElem, ind1));
   attra.setAttrInfo(1, m_nColLoc, 4, qlib::type_consts::QTC_UINT8, offsetof(AttrElem, r));
 
   attra.alloc(nva);
@@ -399,8 +407,10 @@ void SimpleRendGLSL::createGLSL()
     m_pDbnAttrAry = MB_NEW DbnAttrArray();
     DbnAttrArray &ar = *m_pDbnAttrAry;
     ar.setAttrSize(2);
-    ar.setAttrInfo(0, m_pDbnPO->getAttribLocation("a_ind"), 3, qlib::type_consts::QTC_FLOAT32, offsetof(DbnAttrElem, ind1));
-    ar.setAttrInfo(1, m_pDbnPO->getAttribLocation("a_color"), 4, qlib::type_consts::QTC_UINT8, offsetof(DbnAttrElem, r));
+    ar.setAttrInfo(0, m_pDbnPO->getAttribLocation("a_ind"), 3,
+                   gfx::DATTR_INT32, offsetof(DbnAttrElem, ind1));
+    ar.setAttrInfo(1, m_pDbnPO->getAttribLocation("a_color"), 4,
+                   qlib::type_consts::QTC_UINT8, offsetof(DbnAttrElem, r));
 
     ar.alloc(ndbl * 4);
     ar.setDrawMode(gfx::AbstDrawElem::DRAW_LINES);

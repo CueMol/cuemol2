@@ -27,7 +27,11 @@ uniform float u_cvscl;
 // Vertex attributes
 
 // atom coord indices
+#ifdef HAVE_OGL_INTATTR
+attribute ivec3 a_ind;
+#else
 attribute vec3 a_ind;
+#endif
 
 // color
 attribute vec4 a_color;

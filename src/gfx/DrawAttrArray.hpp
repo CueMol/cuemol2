@@ -10,8 +10,24 @@
 #include "gfx.hpp"
 #include "DrawElem.hpp"
 
+#ifdef WIN32
+#define HAVE_OGL_INTATTR 1
+#endif
+
 namespace gfx {
 
+  /// integer type for attribute array
+#ifdef HAVE_OGL_INTATTR
+  typedef qint32 attr_int32;
+  static const int DATTR_INT32 = qlib::type_consts::QTC_INT32;
+#else
+  typedef qfloat32 attr_int32;
+  static const int DATTR_INT32 = qlib::type_consts::QTC_FLOAT32;
+#endif
+  
+  ///
+  /// Common super class of attribute array objects
+  ///
   class GFX_API AbstDrawAttrs : public AbstDrawElem
   {
   private:
