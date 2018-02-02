@@ -174,12 +174,30 @@ panel.onLoad = function ()
 {
   var that = this;
 
+  // setup objmenu selection change event handler
   this.mSelector.addSelChanged(function(aEvent) {
     try {
-      that.targetChanged(aEvent);
+      that.targetChanged();
     }
     catch (e) { debug.exception(e); }
   });
+
+  // setup object event handler for topology change
+  var ob_handler = function (args) {
+    if (args.evtType == cuemol.evtMgr.SEM_CHANGED &&
+        args.method=="topologyChanged") {
+      obj = that.mSelector.getSelectedObj();
+      if (obj.uid==args.obj.target_uid) {
+        that.targetChanged();
+      }
+    }
+  };
+  
+  this._callbackID = cuemol.evtMgr.addListener("topologyChanged",
+                                               cuemol.evtMgr.SEM_OBJECT,
+                                               cuemol.evtMgr.SEM_CHANGED,
+                                               -1, // source (scene) UID==>ANY
+                                               ob_handler);
 
   // this.mSelector.reload();
 
@@ -199,6 +217,8 @@ panel.onLoad = function ()
 
 panel.onUnLoad = function ()
 {
+  if (this._callbackID)
+    cuemol.evtMgr.removeListener(this._callbackID);
 }
 
 panel.onPanelShown = function ()
@@ -210,7 +230,7 @@ panel.onPanelMoved = function ()
   this.mTreeView.ressignTreeView();
 }
 
-panel.targetChanged = function (scid)
+panel.targetChanged = function ()
 {
   var obj;
   try {
@@ -379,29 +399,6 @@ panel.onBtnSelCmd = function (nMode)
 
   cuemolui.chgMolSel(mol, selstr, "Change mol selection", true);
 
-  /*
-  // EDIT TXN START //
-  scene.startUndoTxn("Change mol selection");
-  try {
-    sel = cuemol.makeSel(selstr);
-    if (sel===null) {
-      throw "cannot compile selstr:"+selstr;
-    }
-    mol.sel = sel;
-  }
-  catch(e) {
-    dd("SetProp error");
-    debug.exception(e);
-    scene.rollbackUndoTxn();
-    return;
-  }
-  scene.commitUndoTxn();
-  // EDIT TXN END //
-  
-  // Save to selHistory
-  util.selHistory.append(selstr);
-*/
-  
   if (nMode>=1) {
     try {
       var view = document.getElementById("main_view").currentViewW;

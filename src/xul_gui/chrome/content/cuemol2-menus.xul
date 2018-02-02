@@ -274,9 +274,15 @@
 	      accesskey="&edit_redo.accesskey;"
 	      key="mkEditRedo"
 	      command="cmd_redo"/>
-
 	    <menuitem label="Clear undo data"
 	      oncommand="gQm2Main.clearUndoData()"/>
+
+	    <menuseparator/>
+
+	    <menuitem label="Merge molecule..." oncommand="gQm2Main.onMolMerge1();" />
+	    <menuitem label="Delete mol atoms..." oncommand="gQm2Main.onMolDelete1();" />
+	    <menuitem label="Change chain ID..." oncommand="gQm2Main.onChgChName1();" />
+	    <menuitem label="Change residue number..." oncommand="gQm2Main.onShiftResIndex1();" />
 
 	    <!--<menuseparator/>-->
 

@@ -306,6 +306,15 @@ cuemol2.jar:
 # Map sharpening
   content/tools/map_sharp.xul
   content/tools/map_sharp.js
+# Merge Mol UI
+  content/tools/mol_merge.xul
+  content/tools/mol_merge.js
+  content/tools/mol_delete.xul
+  content/tools/mol_delete.js
+  content/tools/chg_chname.xul
+  content/tools/chg_chname.js
+  content/tools/chg_resindex.xul
+  content/tools/chg_resindex.js
 #####
 # Locale files
 #

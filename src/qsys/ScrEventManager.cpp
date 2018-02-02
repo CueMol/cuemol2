@@ -93,6 +93,8 @@ bool ScrEventManager::fireEventScript(const LString &aCatStr,
     //return iter->first;
     {
       const int nSlotID = iter->first;
+      //MB_DPRINTLN("ScrEvent> fire event Slot=%d Cat=%s Tgt=%d Evt=%d", nSlotID, aCatStr.c_str(), aTgtType, aEvtType);
+
       qlib::LVarArgs args(6);
       
       // target slot ID

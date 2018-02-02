@@ -65,6 +65,8 @@ LProcMgr::LProcMgr()
   // register to idle task list
   EventManager *pEM = EventManager::getInstance();
   pEM->addIdleTask(this);
+
+  m_bShowCmdLine = true;
 }
 
 LProcMgr::~LProcMgr()
@@ -340,6 +342,11 @@ void LProcMgr::checkQueue()
       if (pEnt==NULL || iter==m_queue.end())
 	return; // no available tasks
     
+      // Print run command and args
+      if (m_bShowCmdLine) {
+        LOG_DPRINTLN("ProcMgr> Run: %s %s",pEnt->m_path.c_str(), pEnt->m_cmdline.c_str());
+      }
+      
       // create a real process
       // (This possibly fails if cmd not found...)
       ProcInThread *pThr = NULL;
@@ -478,3 +485,4 @@ void LProcMgr::doIdleTask()
 {
   checkQueue();
 }
+

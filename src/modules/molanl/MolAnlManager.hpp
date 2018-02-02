@@ -73,6 +73,22 @@ namespace molanl {
     void removeBond(MolCoordPtr pmol, int aid1, int aid2);
     void makeBond(MolCoordPtr pmol, int aid1, int aid2);
 
+    
+    /// Copy the selected part of pmol2 into this mol (inv. op. of deleteSel())
+    bool copyAtoms(const MolCoordPtr &pmol, const MolCoordPtr &pmol2, const SelectionPtr &psel2);
+    
+    /// Delete the selected part of this mol (inv. op. of copy())
+    bool deleteAtoms(const MolCoordPtr &pmol, const SelectionPtr &psel);
+
+    /// Rename chain name
+    bool changeChainName(const MolCoordPtr &pmol, const SelectionPtr &psel, const LString &name);
+
+    /// Shift residue index
+    bool shiftResIndex(const MolCoordPtr &pmol, const SelectionPtr &psel, bool bshift, int nval);
+
+    /// Renum residue index
+    bool renumResIndex(const MolCoordPtr &pmol, const SelectionPtr &psel, bool bshift, int nval);
+
     //////////////////////////////////////////////////////
 
     LString calcAtomContactJSON(MolCoordPtr pMol, SelectionPtr pSel,

@@ -165,11 +165,15 @@ namespace xtal {
 
     // void setRecipArray(const RecipAry &data, int na, int nb, int nc);
 
+    /// Set HKL-list to this map (ownership of pHKLList is transferred to this obj)
     void setHKLList(HKLList *pHKLList);
 
     HKLList *getHKLList() const {
       return m_pHKLList;
     }
+
+    /// Calculate HKL-list from float map
+    void calcHKLfromMap();
 
     /// setup column, row, section params
     void setMapParams(int stacol, int starow, int stasect,

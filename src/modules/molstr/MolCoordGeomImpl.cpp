@@ -289,18 +289,178 @@ void MolCoord::applyTopology(bool bAutoBuild/*=true*/)
   }
 }
 
-/// copy all props of pRes2 to pRes
-static void copyResProps(MolResiduePtr pRes2, MolResiduePtr pRes)
-{
-  std::set<LString> names;
-  pRes2->getResPropNames(names);
+namespace {
 
-  BOOST_FOREACH (const LString &nm, names) {
-    LString value;
-    if (!pRes2->getPropStr(nm, value))
-      continue;
-    pRes->setPropStr(nm, value);
+  /// copy all props of pRes2 to pRes
+  void copyResProps(MolResiduePtr pRes2, MolResiduePtr pRes)
+  {
+    std::set<LString> names;
+    pRes2->getResPropNames(names);
+    
+    BOOST_FOREACH (const LString &nm, names) {
+      LString value;
+      if (!pRes2->getPropStr(nm, value))
+        continue;
+      pRes->setPropStr(nm, value);
+    }
   }
+  
+  class MOLSTR_API MolMergeEditInfo : public qsys::EditInfo
+  {
+  private:
+    /// Target Mol ID
+    qlib::uid_t m_nTgtUID;
+    
+    MolCoordPtr m_pMol2;
+
+    SelectionPtr m_pSel;
+
+    bool m_bCopy;
+
+    std::deque<LString> m_copyAtomIDs;
+
+  public:
+    MolMergeEditInfo() {
+    }
+    
+    virtual ~MolMergeEditInfo() {
+    }
+    
+    /////////////////////////////////////////////////////
+    
+    /*
+    void createCopy(MolCoord *pMol1, const MolCoordPtr &pMol2, const SelectionPtr &pSel2) {
+      m_nTgtUID = pMol1->getUID();
+      m_pMol2 = pMol2;
+      m_pSel = pSel2;
+      m_bCopy = true;
+    }
+    */
+
+    void createCopy(MolCoord *pMol1, const MolCoordPtr &pMol2,
+		    const SelectionPtr &pSel2, const std::set<int> &aset2)
+    {
+      m_bCopy = true;
+
+      m_nTgtUID = pMol1->getUID();
+      m_pMol2 = pMol2;
+
+      m_pSel = pSel2;
+      //m_pSel = SelectionPtr();
+
+      m_copyAtomIDs.clear();
+      std::set<int>::const_iterator it2 = aset2.begin();
+      std::set<int>::const_iterator end = aset2.end();
+      for (; it2!=end; it2++) {
+	int aid = *it2;
+	LString strid = pMol2->toStrAID(aid);
+	m_copyAtomIDs.push_back(strid);
+      }
+    }
+
+    void createDelete(MolCoord *pMol1, const SelectionPtr &pSel) {
+      m_nTgtUID = pMol1->getUID();
+      m_pSel = pSel;
+      m_bCopy = false;
+      m_pMol2 = MolCoordPtr(MB_NEW MolCoord());
+      m_pMol2->copyAtoms(MolCoordPtr(pMol1), pSel);
+    }
+    
+    /////////////////////////////////////////////////////
+    
+  private:
+    void deleteAtoms(MolCoord *pmol) {
+      // conv strid to aid&delete atom
+      std::deque<LString>::const_iterator iter = m_copyAtomIDs.begin();
+      std::deque<LString>::const_iterator end = m_copyAtomIDs.end();
+      for (; iter!=end; iter++) {
+	const LString &strid = *iter;
+	int aid = pmol->fromStrAID(strid);
+	if (aid<0) {
+	  LOG_DPRINTLN("undo copy: delete atom %s (%d) not found/failed", strid.c_str(), aid);
+	  continue;
+	}
+
+	pmol->removeAtom(aid);
+	//MB_DPRINTLN("undo copy: delete atom %s (%d) OK", strid.c_str(), aid);
+      }
+
+      pmol->applyTopology();
+    }
+
+  public:
+    /// perform undo
+    virtual bool undo() {
+      MolCoord *pmol =
+        qlib::ObjectManager::sGetObj<MolCoord>(m_nTgtUID);
+      if (pmol==NULL)
+        return false;
+
+      MB_DPRINTLN("MolMergeEditInfo> perform UNDO");
+      MB_DPRINTLN("  bcopy=%d, mol1=%s, mol2=%s, sel=%s",
+		  m_bCopy, pmol->toString().c_str(),
+		  m_pMol2->toString().c_str(),
+		  m_pSel.isnull()?"(null)":m_pSel->toString().c_str());
+      bool bOK=true;
+      if (m_bCopy) {
+        // undo of copy --> delete (mol1, sel)
+        //bOK = pmol->deleteAtoms(m_pSel);
+	deleteAtoms(pmol);
+      }
+      else {
+        // undo of delete --> copy pmol <-- (m_pMol2, m_pSel)
+        bOK = pmol->copyAtoms(m_pMol2, m_pSel);
+      }
+
+      if (!bOK)
+        return false;
+
+      pmol->setModifiedFlag(true);
+      pmol->fireTopologyChanged();
+      
+      return true;
+    }
+    
+    /// perform redo
+    virtual bool redo() {
+      MolCoord *pmol =
+        qlib::ObjectManager::sGetObj<MolCoord>(m_nTgtUID);
+      if (pmol==NULL)
+        return false;
+
+      bool bOK=true;
+      if (m_bCopy) {
+        // redo of copy
+	// copy pmol <-- (m_pMol2, m_pSel)
+        bOK = pmol->copyAtoms(m_pMol2, m_pSel);
+
+	// // copy pmol <-- (m_pMol2, m_copyAtomIDs)
+	// copyAtoms(pmol);
+      }
+      else {
+        // redo of delete
+        bOK = pmol->deleteAtoms(m_pSel);
+      }
+
+      if (!bOK)
+        return false;
+
+      pmol->setModifiedFlag(true);
+      pmol->fireTopologyChanged();
+
+      return true;
+    }
+    
+    virtual bool isUndoable() const {
+      return true;
+    }
+
+    virtual bool isRedoable() const {
+      return true;
+    }
+    
+  };
+
 }
 
 ///  Copy the selected part of pmol2 into this mol
@@ -328,6 +488,7 @@ bool MolCoord::copyAtoms(MolCoordPtr pmol2, SelectionPtr psel2)
   }
 
   // copy
+  std::set<MolResidue*> resset;
   {
     std::set<int>::const_iterator it2 = atmset.begin();
     std::set<int>::const_iterator end = atmset.end();
@@ -342,15 +503,36 @@ bool MolCoord::copyAtoms(MolCoordPtr pmol2, SelectionPtr psel2)
       // This should not fail.
       int res = appendAtom(pNewAtom);
       MB_ASSERT(res>=0);
+
+      MolResiduePtr pRes2 = pAtom->getParentResidue();
+      resset.insert(pRes2.get());
     }
   }
   
   applyTopology();
 
   // Copy residue property
+  {
+    std::set<MolResidue*>::const_iterator it2 = resset.begin();
+    std::set<MolResidue*>::const_iterator end = resset.end();
+    for (; it2!=end; it2++) {
+      MolResiduePtr pRes2(*it2);
+      const LString &cname = pRes2->getChainName();
+      ResidIndex nresid = pRes2->getIndex();
+      
+      MolResiduePtr pRes = getResidue(cname, nresid);
+      if (pRes.isnull()) {
+        LOG_DPRINTLN("copyAtoms> copy resid prop failed");
+        continue;
+      }
+      
+      copyResProps(pRes2, pRes);
+    }
+  }
+
+  /*
   // TO DO: copy once per residue (skip already copied residues)
   {
-    // std::set<MolResiduePtr> copiedSet;
     std::set<int>::const_iterator it2 = atmset.begin();
     std::set<int>::const_iterator end = atmset.end();
     for (; it2!=end; it2++) {
@@ -372,10 +554,25 @@ bool MolCoord::copyAtoms(MolCoordPtr pmol2, SelectionPtr psel2)
       }
       
       copyResProps(pRes2, pRes);
-      //copiedSet.insert(pRes2);
     }
   }
+  */
 
+  // Setup undo/redo info
+  MolMergeEditInfo *pPEI = NULL;
+  UndoManager *pUM = NULL;
+  qsys::ScenePtr pSc = getScene();
+  if (!pSc.isnull()) {
+    pUM = pSc->getUndoMgr();
+    if (pUM->isOK()) {
+      // record property changed undo/redo info
+      pPEI = MB_NEW MolMergeEditInfo();
+      //pPEI->createCopy(this, pmol2, psel2);
+      pPEI->createCopy(this, pmol2, psel2, atmset);
+      pUM->addEditInfo(pPEI);
+    }
+  }
+  
   return true;
 }
 
@@ -384,6 +581,19 @@ bool MolCoord::copyAtoms(MolCoordPtr pmol2, SelectionPtr psel2)
 bool MolCoord::deleteAtoms(SelectionPtr psel)
 {
   MolCoordPtr pmol(this);
+
+  // Setup undo/redo info
+  MolMergeEditInfo *pPEI = NULL;
+  UndoManager *pUM = NULL;
+  qsys::ScenePtr pSc = getScene();
+  if (!pSc.isnull()) {
+    pUM = pSc->getUndoMgr();
+    if (pUM->isOK()) {
+      // record property changed undo/redo info
+      pPEI = MB_NEW MolMergeEditInfo();
+      pPEI->createDelete(this, psel);
+    }
+  }
 
   // Collect atom IDs to remove
   //  (We cannot remove atom safely, with using its iterator!)
@@ -402,6 +612,12 @@ bool MolCoord::deleteAtoms(SelectionPtr psel)
     removeAtom(atomid);
     //delete pAtom;
   }
+
+  // rebuild bond data
+  applyTopology();
+
+  if (pUM!=NULL&&pPEI!=NULL)
+    pUM->addEditInfo(pPEI);
 
   return true;
 }

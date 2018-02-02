@@ -880,3 +880,9 @@ void DensityMap::sharpenMapPreview(double b_factor)
 }
 #endif
 
+void DensityMap::calcHKLfromMap()
+{
+  if (m_pFloatMap==NULL) {
+  }
+}
+

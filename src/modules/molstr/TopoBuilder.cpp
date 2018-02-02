@@ -310,6 +310,8 @@ bool getLinkAtomIDs(ResiPatch *pLink, MolResiduePtr pRes1, MolResiduePtr pRes2,
 //
 bool TopoBuilder::appTopo2Resids(MolResiduePtr pRes1, MolResiduePtr pRes2, TopoDB *pLinkDict)
 {
+  //MB_DPRINTLN("appTopo2Resids %s <--> %s", pRes1->toString().c_str(), pRes2->toString().c_str());
+
   // // residue must be owned by the same obj
   // if (pRes1->getParent().get()!=pRes2->getParent().get())
   // return false;

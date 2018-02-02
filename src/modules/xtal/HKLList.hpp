@@ -56,9 +56,11 @@ namespace xtal {
 
     void checkMapResoln();
 
+    /// Convert to 3D array of comp. s.f. (Full)
     void convToArray(CompArray &recip, float b_factor) const;
 
-    void convToArrayHerm(CompArray &recip, float b_factor) const;
+    /// Convert to 3D array of comp. s.f. (Hermite)
+    void convToArrayHerm(CompArray &recip, float b_factor, float d_min=-1.0) const;
   };
 
 }

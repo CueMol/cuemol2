@@ -43,11 +43,11 @@ int MolResidue::getAtomID(const LString &atomname, char confid /*= '\0'*/) const
 
     // check the canonical names
     {
-      atomdata_t::const_iterator iter = m_atomData.begin();
-      atomdata_t::const_iterator iend = m_atomData.end();
       MolCoordPtr pmol = getParent();
       if (pmol.isnull())
         return -1;
+      atomdata_t::const_iterator iter = m_atomData.begin();
+      atomdata_t::const_iterator iend = m_atomData.end();
       for (; iter!=iend; ++iter) {
         const int aid = iter->second;
         if (aid<0) continue;
@@ -60,7 +60,16 @@ int MolResidue::getAtomID(const LString &atomname, char confid /*= '\0'*/) const
           return aid;
       }
     }
+
     // not found
+    /*{
+    MB_DPRINTLN("MolResid> atom %s not found in", encname.c_str());
+      atomdata_t::const_iterator iter = m_atomData.begin();
+      atomdata_t::const_iterator iend = m_atomData.end();
+      for (; iter!=iend; ++iter) {
+	MB_DPRINTLN("   %s (%d)", iter->first.c_str(), iter->second);
+	}
+	}*/
     return -1;
   }
   

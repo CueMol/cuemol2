@@ -1,0 +1,54 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+
+<dialog
+  id = "ChgChainName"
+  windowtype ="CueMol2:ChgChnmDlg"
+  title = "Change chain ID"
+  xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  ondialogaccept = "return window.gChgChnmDlg.onDialogAccept()"
+  buttons="accept,cancel">
+  
+  <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/object-menulist.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/molsellist.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/tools/chg_chname.js"/>
+
+<vbox>
+
+  <grid flex="1">
+    <columns>
+      <column/>
+      <column flex="1"/>
+    </columns>
+    
+    <rows>
+      <row align="center">
+	<label value="Molecule:" />
+	<menulist id="from_obj" sizetopopup="none"/>
+      </row>
+      
+      <row align="center">
+	<label value="Selection:" />
+	<molsellist id="from_molsel" editable="true" errorbox="from_molsel_err"/>
+      </row>
+      <row>
+	<spacer/>
+	<label id="from_molsel_err" class="errormsg" noerr="yes" value="Error in the selection code!!"/>
+      </row>
+      
+      <row align="center">
+	<label value="New chain ID:" />
+	<textbox id="to_chname" size="1"/>
+      </row>
+
+    </rows>
+  </grid>
+
+
+</vbox>
+</dialog>
+

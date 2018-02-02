@@ -383,3 +383,13 @@ cuemolui.molSelClear = function (aMol)
 */
 };
 
+cuemolui.replacePDBURL = function (aURL, aPdbId)
+{
+  var retval = aURL.replace(/\{code\}/g, aPdbId);
+
+  var mid = aPdbId.substr(1,2);
+  retval = retval.replace(/\{mid\}/g, mid);
+
+  return retval;
+};
+

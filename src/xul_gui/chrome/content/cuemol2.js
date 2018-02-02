@@ -798,6 +798,70 @@ Qm2Main.prototype.openAboutDialog = function()
 		      "About", "centerscreen,chrome,resizable=no");
 }
 
+Qm2Main.prototype.onMolMerge1 = function()
+{
+  var stylestr = "chrome,resizable=no,dependent,centerscreen";
+
+  var scene_id = this.mMainWnd.getCurrentSceneID();
+  var view_id = this.mMainWnd.getCurrentViewID();
+  var win = this.mWinMed.getMostRecentWindow("CueMol2:MolMrgDlg");
+  if (win) {
+    win.focus();
+  }
+  else {
+    window.openDialog("chrome://cuemol2/content/tools/mol_merge.xul",
+                      "", stylestr, scene_id, view_id);
+  }
+};
+
+Qm2Main.prototype.onMolDelete1 = function()
+{
+  var stylestr = "chrome,resizable=no,dependent,centerscreen";
+
+  var scene_id = this.mMainWnd.getCurrentSceneID();
+  var view_id = this.mMainWnd.getCurrentViewID();
+  var win = this.mWinMed.getMostRecentWindow("CueMol2:MolDelDlg");
+  if (win) {
+    win.focus();
+  }
+  else {
+    window.openDialog("chrome://cuemol2/content/tools/mol_delete.xul",
+                      "", stylestr, scene_id, view_id);
+  }
+};
+
+Qm2Main.prototype.onChgChName1 = function()
+{
+  var stylestr = "chrome,resizable=no,dependent,centerscreen";
+
+  var scene_id = this.mMainWnd.getCurrentSceneID();
+  var view_id = this.mMainWnd.getCurrentViewID();
+  var win = this.mWinMed.getMostRecentWindow("CueMol2:ChgChnmDlg");
+  if (win) {
+    win.focus();
+  }
+  else {
+    window.openDialog("chrome://cuemol2/content/tools/chg_chname.xul",
+                      "", stylestr, scene_id, view_id);
+  }
+};
+
+Qm2Main.prototype.onShiftResIndex1 = function()
+{
+  var stylestr = "chrome,resizable=no,dependent,centerscreen";
+
+  var scene_id = this.mMainWnd.getCurrentSceneID();
+  var view_id = this.mMainWnd.getCurrentViewID();
+  var win = this.mWinMed.getMostRecentWindow("CueMol2:ChgResIndDlg");
+  if (win) {
+    win.focus();
+  }
+  else {
+    window.openDialog("chrome://cuemol2/content/tools/chg_resindex.xul",
+                      "", stylestr, scene_id, view_id);
+  }
+};
+
 Qm2Main.prototype.onSSMSup1 = function()
 {
   //var stylestr = "centerscreen,chrome,resizable=no";
