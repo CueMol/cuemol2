@@ -24,7 +24,7 @@ namespace gfx {
   class GFX_API DrawElemImpl
   {
   public:
-	  virtual ~DrawElemImpl();
+    virtual ~DrawElemImpl();
 
     virtual void create(const AbstDrawElem &ade) =0;
 

@@ -26,8 +26,6 @@
 #  error no glu.h
 #endif
 
-#define USE_GL_VBO_INST 1
-
 #include <gfx/TextRenderManager.hpp>
 #include <gfx/PixelBuffer.hpp>
 #include <gfx/SolidColor.hpp>
@@ -1137,6 +1135,9 @@ void OglDisplayContext::drawElemVA(const DrawElem &de)
   }
 }
 
+#ifdef WIN32
+//#define USE_VAO
+#endif
 
 void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
 {
@@ -1145,25 +1146,39 @@ void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
   gfx::DrawElemImpl *pRep = ada.getImpl();
   if (pRep==NULL) {
     if (itype==AbstDrawElem::VA_ATTR_INDS) {
-      //if(GLEW_ARB_vertex_array_object)
-      //pRep = MB_NEW OglVAOElemImpl(m_nSceneID);
-      //else
-      pRep = MB_NEW OglDrawElemAttrsImpl(m_nSceneID);
+#ifdef USE_VAO
+      if(GLEW_ARB_vertex_array_object)
+        pRep = MB_NEW OglVAOElemImpl(m_nSceneID, this);
+      else
+#endif
+        pRep = MB_NEW OglDrawElemAttrsImpl(m_nSceneID);
     }
     else {
-      //if(GLEW_ARB_vertex_array_object)
-      //  pRep = MB_NEW OglVAOArrayImpl(m_nSceneID);
-      //else
-      pRep = MB_NEW OglDrawArrayAttrsImpl(m_nSceneID);
+#ifdef USE_VAO
+      if(GLEW_ARB_vertex_array_object)
+        pRep = MB_NEW OglVAOArrayImpl(m_nSceneID, this);
+      else
+#endif
+        pRep = MB_NEW OglDrawArrayAttrsImpl(m_nSceneID);
     }
     ada.setImpl(pRep);
     pRep->create(ada);
   }
-  else if (ada.isUpdated()) {
-    pRep->update(ada);
-    ada.setUpdated(false);
-  }
+  else {
+    
+#ifdef USE_VAO
+    OglVAOArrayImpl *pp = dynamic_cast<OglVAOArrayImpl *>(pRep);
+    if (pp!=NULL) {
+      pp->setCurrCtxt(this, ada);
+    }
+#endif
 
+    if (ada.isUpdated()) {
+      pRep->update(ada);
+      ada.setUpdated(false);
+    }
+  }
+  
   pRep->preDraw(ada);
   pRep->draw(ada);
   pRep->postDraw(ada);

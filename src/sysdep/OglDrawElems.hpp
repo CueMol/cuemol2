@@ -105,10 +105,14 @@ namespace sysdep {
   
   /////////////////////////////////////////////////
 
+  /// OpenGL generic object class implementation
   class OglBufRepBase
   {
   protected:
+    /// Scene ID to which this buffer object belongs
     qlib::uid_t m_nSceneID;
+
+    /// Buffer ID
     GLuint m_nBufID;
 
   public:
@@ -148,6 +152,7 @@ namespace sysdep {
 
   };
 
+  /// OpenGL buffer object class implementation
   class OglBufRep : public OglBufRepBase
   {
   public:
@@ -489,6 +494,7 @@ namespace sysdep {
 
   /////////////////////////////////////////////////////////
 
+  /// OpenGL vertex array object (VAO) class
   class OglVAORep : public OglBufRepBase
   {
   public:
@@ -520,18 +526,55 @@ namespace sysdep {
   {
   public:
     OglBufRep m_buf;
-    OglVAORep m_vao;
+    //OglVAORep m_vao;
     
-    OglVAOArrayImpl(qlib::uid_t nSceneID) : m_buf(nSceneID), m_vao(nSceneID) {}
+    typedef std::map<int, OglVAORep> VAORepTab;
+    
+    VAORepTab m_tab;
+
+    qlib::uid_t m_nSceneID;
+
+    int m_nCurID;
+
+    OglVAOArrayImpl(qlib::uid_t nSceneID, OglDisplayContext *pctxt)
+         : m_buf(nSceneID)//, m_vao(nSceneID)
+    {
+      m_nSceneID = nSceneID;
+      int id = (int) pctxt;
+      m_tab.insert( VAORepTab::value_type(id, OglVAORep(m_nSceneID)) );
+      m_nCurID = id;
+    }
 
     //////////
 
+    OglVAORep &getVAO() {
+      VAORepTab::iterator i = m_tab.find(m_nCurID);
+      MB_ASSERT(i!=m_tab.end());
+      OglVAORep &vao = i->second;
+      if (!vao.isCreated())
+        vao.create();
+      return vao;
+    }
+
+    void setCurrCtxt(OglDisplayContext *pctxt, const AbstDrawElem &ade) {
+      int id = (int) pctxt;
+      if (m_tab.find(id)!=m_tab.end())
+        return;
+      m_tab.insert( VAORepTab::value_type(id, OglVAORep(m_nSceneID)) );
+      m_nCurID = id;
+
+      // create new VAO for this context
+      create(ade);
+    }
+
     virtual void create(const AbstDrawElem &ade)
     {
-      if (!m_vao.isCreated())
-        m_vao.create();
+      OglVAORep &vao = getVAO();
+      
+      if (!vao.isCreated())
+        vao.create();
 
-      m_vao.bind();
+      vao.bind();
 
       if (!m_buf.isCreated())
         m_buf.create();
@@ -588,7 +631,8 @@ namespace sysdep {
       int ninst = ada.getInstCount();
       GLenum mode = convDrawMode(ada.getDrawMode());
 
-      m_vao.bind();
+      OglVAORep &vao = getVAO();
+      vao.bind();
 
       if (ninst>0 && GLEW_ARB_instanced_arrays)
         glDrawArraysInstanced(mode, 0, ada.getSize(), ninst);
@@ -614,7 +658,10 @@ namespace sysdep {
 
   public:
     
-    OglVAOElemImpl(qlib::uid_t nSceneID) : super_t(nSceneID), m_indBuf(nSceneID) {}
+    OglVAOElemImpl(qlib::uid_t nSceneID, OglDisplayContext *pctxt)
+         : super_t(nSceneID, pctxt), m_indBuf(nSceneID)
+    {
+    }
 
     //////////
 
@@ -651,7 +698,8 @@ namespace sysdep {
     virtual void draw(const AbstDrawElem &ade)
     {
       //const gfx::AbstDrawAttrs &ada = static_cast<const gfx::AbstDrawAttrs &>(ade);
-      m_vao.bind();
+      auto vao = getVAO();
+      vao.bind();
       
       int ninst = ade.getInstCount();
       GLenum mode = convDrawMode(ade.getDrawMode());
