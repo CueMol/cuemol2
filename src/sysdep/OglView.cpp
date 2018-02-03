@@ -341,7 +341,7 @@ void OglView::drawScene()
     return;
   }
 
-  // pdc->setCurrent();
+   pdc->setCurrent();
 
   gfx::ColorPtr pBgCol = pScene->getBgColor();
   glClearColor(float(pBgCol->fr()), float(pBgCol->fg()), float(pBgCol->fb()), 1.0f);
@@ -351,7 +351,7 @@ void OglView::drawScene()
 
   ////////////////////////////////////////////////
 
-  if (isProjChange())
+  //if (isProjChange())
     setUpProjMat(-1, -1);
 
   switch (getStereoMode()) {

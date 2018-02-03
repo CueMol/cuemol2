@@ -31,8 +31,8 @@ bool WglDisplayContext::attach(HGLRC hGL)
 
 bool WglDisplayContext::setCurrent()
 {
-  if (isCurrent())
-    return true;
+ // if (isCurrent())
+ //   return true;
   
   WglView *pView = dynamic_cast<WglView *>(getTargetView());
   if (pView==NULL)
