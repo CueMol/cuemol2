@@ -16,27 +16,34 @@ namespace sysdep {
   {
   private:
     HGLRC m_hGlrc;
-    HDC m_hDC;
 
-    WglView *m_pTargetView;
+    // HDC m_hDC;
+    // WglView *m_pTargetView;
 
   public:
-    WglDisplayContext(int sceneid, WglView *pView);
+    //WglDisplayContext(int sceneid, WglView *pView);
+    WglDisplayContext(int sceneid) : OglDisplayContext(sceneid)
+    {
+    }
+
 
     virtual ~WglDisplayContext();
 
     virtual bool setCurrent();
     virtual bool isCurrent() const;
-
-    virtual qsys::View *getTargetView() const {
-      return m_pTargetView;
-    }
+    
+    // virtual qsys::View *getTargetView() const {
+    // return m_pTargetView;
+    // }
 
     ///////////////
     // system dependent methods
 
     //bool setup(HDC hdc, DisplayContext *pShareCtxt);
-    bool attach(HDC hdc, HGLRC hGL);
+    //bool attach(HDC hdc, HGLRC hGL);
+
+    bool attach(HGLRC hGL);
+
     HGLRC getHGLRC() const { return m_hGlrc; }
   };
 

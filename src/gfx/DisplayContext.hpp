@@ -50,6 +50,8 @@ namespace gfx {
     /// Edge line color
     ColorPtr m_egLineCol;
 
+    qsys::View *m_pTargView;
+
   public:
     /// Polygon rendering mode
     enum {
@@ -80,6 +82,8 @@ namespace gfx {
 
     virtual bool setCurrent() =0;
     virtual bool isCurrent() const =0;
+
+    virtual void setTargetView(qsys::View *);
     virtual qsys::View *getTargetView() const;
 
     /// Returns whether the rendering target of this context is a file or not.

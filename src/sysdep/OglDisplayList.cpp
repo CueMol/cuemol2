@@ -64,7 +64,6 @@ OglDisplayList::~OglDisplayList()
     return;
   }
   gfx::DisplayContext *pctxt = rvw->getDisplayContext();
-  pctxt->setCurrent();
 
   glDeleteLists(m_nID, 1);
 

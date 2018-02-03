@@ -501,12 +501,15 @@ void View::setStereoMode(int f)
 bool View::safeSetCurrent()
 {
   gfx::DisplayContext *pCtxt = getDisplayContext();
-  if (pCtxt==NULL) return false;
-  if (!pCtxt->isCurrent())
-    if (!pCtxt->setCurrent()) {
-      LOG_DPRINTLN("View::setup() setCurrent failed.");
-      return false;
-    }
+  if (pCtxt==NULL)
+    return false;
+
+  pCtxt->setTargetView(this);
+  if (!pCtxt->setCurrent()) {
+    LOG_DPRINTLN("View::setup() setCurrent failed.");
+    return false;
+  }
+
   return true;
 }
 

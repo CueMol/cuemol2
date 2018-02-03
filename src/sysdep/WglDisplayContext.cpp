@@ -18,20 +18,14 @@
 
 using namespace sysdep;
 
-WglDisplayContext::WglDisplayContext(int sceneid, WglView *pView)
-     : OglDisplayContext(sceneid), m_pTargetView(pView)
-{
-}
-
 WglDisplayContext::~WglDisplayContext()
 {
 }
 
-bool WglDisplayContext::attach(HDC hdc, HGLRC hGL)
+bool WglDisplayContext::attach(HGLRC hGL)
 {
-  m_hDC = hdc;
+  //m_hDC = hdc;
   m_hGlrc = hGL;
-
   return true;
 }
 
@@ -40,7 +34,13 @@ bool WglDisplayContext::setCurrent()
   if (isCurrent())
     return true;
   
-  if (!::wglMakeCurrent(m_hDC, m_hGlrc))
+  WglView *pView = dynamic_cast<WglView *>(getTargetView());
+  if (pView==NULL)
+    return false;
+
+  HDC hDC = pView->getDC();
+
+  if (!::wglMakeCurrent(hDC, m_hGlrc))
     return false;
   
   return true;

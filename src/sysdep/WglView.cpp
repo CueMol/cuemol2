@@ -29,10 +29,12 @@ using qsys::InDevEvent;
 
 using namespace sysdep;
 
+WglDisplayContext *WglView::m_pCtxt = NULL;
+
+
 WglView::WglView()
 {
   m_bCursorIn = false;
-  // m_pHitBuf = MB_NEW GLuint[HITBUF_SIZE];
   m_bInitOK = false;
 
   m_pCtxt = NULL;
@@ -44,12 +46,6 @@ WglView::WglView()
   m_nDragStart = DRAG_NONE;
 
   m_bHasQuadBuffer = false;
-/*
-  m_hStdCursor = ::LoadCursor(NULL, IDC_ARROW);
-  m_hWaitCursor = ::LoadCursor(NULL, IDC_WAIT);
-  m_hHandCursor = ::LoadCursor(NULL, IDC_SIZEALL);
-  m_hCrossCursor = ::LoadCursor(NULL, IDC_CROSS);
- */
 }
 
 WglView::~WglView()
@@ -70,6 +66,8 @@ void WglView::swapBuffers()
 
 DisplayContext *WglView::getDisplayContext()
 {
+  m_pCtxt->setTargetView(this);
+  m_pCtxt->setCurrent();
   return m_pCtxt;
 }
 
@@ -80,14 +78,10 @@ bool WglView::attach(HWND hWnd, HDC hDC)
   MB_ASSERT(hDC != NULL);
   MB_ASSERT(hWnd != NULL);
 
-  // Save the old WND/DC
-  HWND hOldWnd = NULL;
-  HDC hOldDC = NULL;
   HGLRC hOldGL = NULL;
   if (m_hWnd!=NULL) {
-    hOldWnd = m_hWnd;
-    hOldDC = m_hDC;
-    hOldGL = m_hGL;
+    // Current HWND is not NULL: reload() case
+    // TO DO: ???
   }
 
   m_hWnd = hWnd;
@@ -96,27 +90,21 @@ bool WglView::attach(HWND hWnd, HDC hDC)
   MB_DPRINTLN("HWND==%p", m_hWnd);
   MB_DPRINTLN("HDC==%p", m_hDC);
 
-  m_hGL = setupWglContext();
+  if (m_pCtxt==NULL) {
+    // Display context has not been created (startup case)
+    setupPixelFormat();
+    m_hGL = ::wglCreateContext( m_hDC );
+    m_pCtxt = MB_NEW WglDisplayContext(getSceneID());
 
-  if (hOldGL==NULL)
-    setupShareList();
-  else {
-    ::wglShareLists(hOldGL, m_hGL);
-    ::wglMakeCurrent( NULL, NULL );
-    ::wglDeleteContext(hOldGL);
+    if (!m_pCtxt->attach(m_hGL)) {
+      // NOTE: This cannot be happen!!
+      //LOG_DPRINTLN("Fatal error Cannot create WglDisplayContext!!");
+      //delete pCtxt;
+      return false;
+    }
   }
-
-  // create display context object for OpenGL
-  if (m_pCtxt==NULL)
-    m_pCtxt = MB_NEW WglDisplayContext(getSceneID(), this);
-
-  if (!m_pCtxt->attach(m_hDC, m_hGL)) {
-    // NOTE: This cannot be happen!!
-    //LOG_DPRINTLN("Fatal error Cannot create WglDisplayContext!!");
-    //delete pCtxt;
-    return false;
-  }
-
+  
+  m_pCtxt->setTargetView(this);
   m_pCtxt->setCurrent();
 
   // perform OpenGL-common initialization tasks
@@ -136,13 +124,14 @@ void WglView::unloading()
     m_hDC = NULL;
   }*/
   
+  /*
   if (m_pCtxt!=NULL) {
     delete m_pCtxt;
     m_pCtxt = NULL;
   }
-
-  ::wglMakeCurrent( NULL, NULL );
-  ::wglDeleteContext( m_hGL );
+   */
+  //::wglMakeCurrent( NULL, NULL );
+  // ::wglDeleteContext( m_hGL );
 }
 
 ////////////////////////////////////////////

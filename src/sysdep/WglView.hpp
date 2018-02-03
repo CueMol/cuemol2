@@ -21,8 +21,6 @@ namespace sysdep {
   private:
     typedef OglView super_t;
 
-    WglDisplayContext *m_pCtxt;
-
     /// Window handle to which this view is attached
     HWND m_hWnd;
     
@@ -70,22 +68,11 @@ namespace sysdep {
     /// Query hardware stereo capability
     virtual bool hasHWStereo() const;
 
-    ////
-    // framebuffer operations
-    
-    // void readPixels(int x, int y, int width, int height, char *pbuf, int nbufsize);
-    // /** setup the projection matrix for hit-testing */
-    // void setUpHitProjMat(int x, int y);
-    // virtual Hittest *hitTest(int x, int y);
-    // virtual void readObj(qlib::ObjInStream &dis);
-    // virtual void setCursor(int nCursorID);
 
     ///////////////////////////////
     // System dependent implementations
 
     bool attach(HWND hWnd, HDC hDC);
-
-    // LRESULT handleEvent(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
     HDC getDC() const { return m_hDC; }
     HWND getHWND() const { return m_hWnd; }
@@ -102,7 +89,9 @@ namespace sysdep {
     int choosePixFmt(int nColorBits, bool bStereo);
     bool setPixFmt(int);
 
-    // void setUpMouseEvent(UINT nFlags, POINTS point, qsys::InDevEvent &ev);
+    //WglDisplayContext *m_pCtxt;
+
+    static WglDisplayContext *m_pCtxt;
 
   };
 

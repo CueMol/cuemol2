@@ -151,7 +151,6 @@ void OglView::setUpProjMat(int cx, int cy)
   GLenum errc;
 
   DisplayContext *pdc = getDisplayContext();
-  pdc->setCurrent();
 
   if (cx<0 || cy<0) {
     cx = getWidth();
@@ -261,6 +260,7 @@ void OglView::setUpModelMat(int nid)
 
 void OglView::setUpLightColor()
 {
+  if (!safeSetCurrent()) return;
   //if (pdc==NULL) pdc = getDisplayContext();
   //pdc->setCurrent();
 
@@ -330,7 +330,8 @@ void OglView::setUpLightColor()
 void OglView::drawScene()
 {
   if (!m_bInitOK) return;
-  if (!safeSetCurrent()) return;
+  // if (!safeSetCurrent()) return;
+  DisplayContext *pdc = getDisplayContext();
 
   qlib::AutoPerfMeas apm(PM_DRAW_SCENE);
 
@@ -340,8 +341,7 @@ void OglView::drawScene()
     return;
   }
 
-  DisplayContext *pdc = getDisplayContext();
-  pdc->setCurrent();
+  // pdc->setCurrent();
 
   gfx::ColorPtr pBgCol = pScene->getBgColor();
   glClearColor(float(pBgCol->fr()), float(pBgCol->fg()), float(pBgCol->fb()), 1.0f);
@@ -874,7 +874,7 @@ LString OglView::hitTest(int ax, int ay)
   int y = convToBackingY(ay);
 
   DisplayContext *pdc = getDisplayContext();
-  pdc->setCurrent();
+  // pdc->setCurrent();
 
   double dHitPrec = convToBackingX( qsys::ViewInputConfig::getInstance()->getHitPrec() );
 
@@ -935,7 +935,7 @@ LString OglView::hitTestRect(int ax, int ay, int aw, int ah, bool bNearest)
   int h = convToBackingY(ah);
 
   DisplayContext *pdc = getDisplayContext();
-  pdc->setCurrent();
+  // pdc->setCurrent();
 
   double cnx = double(x) + double(w)/2.0;
   double cny = double(y) + double(h)/2.0;

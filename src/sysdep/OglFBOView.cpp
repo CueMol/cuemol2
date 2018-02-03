@@ -209,6 +209,7 @@ void OglFBOView::drawScene()
   }
 
   DisplayContext *pdc = getDisplayContext();
+  pdc->setTargetView(this);
   pdc->setCurrent();
 
   pdc->setLighting(false);

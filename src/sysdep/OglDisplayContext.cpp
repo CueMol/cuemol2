@@ -1043,7 +1043,6 @@ namespace {
         return;
       }
       gfx::DisplayContext *pctxt = rvw->getDisplayContext();
-      pctxt->setCurrent();
       
       GLuint buffers[1];
       buffers[0] = m_nBufID;

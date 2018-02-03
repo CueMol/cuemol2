@@ -18,6 +18,7 @@ DisplayContext::DisplayContext()
   m_dPixSclFac = 1.0;
   m_dEdgeLineWidth = -1.0;
   m_nEdgeLineType = ELT_NONE;
+  m_pTargView = NULL;
 }
 
 bool DisplayContext::isRenderPixmap() const
@@ -30,9 +31,14 @@ bool DisplayContext::isDrawElemSupported() const
   return false;
 }
 
+void DisplayContext::setTargetView(qsys::View *pView)
+{
+  m_pTargView = pView;
+}
+
 qsys::View *DisplayContext::getTargetView() const
 {
-  return NULL;
+  return m_pTargView;
 }
 
 void DisplayContext::vertex(double x, double y, double z)
