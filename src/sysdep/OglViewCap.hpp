@@ -64,6 +64,14 @@ namespace sysdep {
         LOG_DPRINTLN("OglCap> Warning: Geometry Shader not supported!!");
       }
 
+      // Check integer attrib, etc.
+      if ( GLEW_EXT_gpu_shader4 ) {
+        LOG_DPRINTLN("OglCap> gpu_shader4 support OK");
+      }
+      else {
+        LOG_DPRINTLN("OglCap> gpu_shader4 not supported");
+      }
+
       // Check TBO
       if ( GLEW_ARB_texture_buffer_object || GLEW_EXT_texture_buffer_object ) {
         LOG_DPRINTLN("OglCap> TBO support OK");
@@ -71,7 +79,6 @@ namespace sysdep {
       else {
         LOG_DPRINTLN("OglCap> TBO not supported");
       }
-
 
       // Check VAO
       if (GLEW_ARB_vertex_array_object) {

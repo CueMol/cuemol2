@@ -10,8 +10,9 @@
 #include "gfx.hpp"
 #include "DrawElem.hpp"
 
-#ifdef WIN32
 #define HAVE_OGL_INTATTR 1
+
+#ifdef WIN32
 #endif
 
 namespace gfx {

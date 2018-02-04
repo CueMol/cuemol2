@@ -364,11 +364,11 @@ namespace sysdep {
         int ap = ada.getAttrPos(i);
         if (at==qlib::type_consts::QTC_INT32 ||
             at==qlib::type_consts::QTC_UINT32) {
-          glVertexAttribIPointer(al,
-                                 az,
-                                 convGLConsts(at),
-                                 ada.getElemSize(),
-                                 (void *) ap);
+          glVertexAttribIPointerEXT(al,
+				    az,
+				    convGLConsts(at),
+				    ada.getElemSize(),
+				    (void *) ap);
         }
         else {
           glVertexAttribPointer(al,
@@ -508,16 +508,37 @@ namespace sysdep {
     }
 
     inline void create() {
+#ifdef GUI_ARCH_OSX
+      glGenVertexArraysAPPLE(1, &m_nBufID);
+#else
       glGenVertexArrays(1, &m_nBufID);
+#endif
+      MB_DPRINTLN("OglVAO> created %d", m_nBufID);
     }
 
     inline void destroy() {
+#ifdef GUI_ARCH_OSX
+      glDeleteVertexArraysAPPLE(1, &m_nBufID);
+#else
       glDeleteVertexArrays(1, &m_nBufID);
+#endif
       m_nBufID = 0;
     }
 
     inline void bind() {
+#ifdef GUI_ARCH_OSX
+      glBindVertexArrayAPPLE(m_nBufID);
+#else
       glBindVertexArray(m_nBufID);
+#endif
+    }
+
+    inline void unbind() {
+#ifdef GUI_ARCH_OSX
+      glBindVertexArrayAPPLE(0);
+#else
+      glBindVertexArray(0);
+#endif
     }
   };
 
@@ -543,6 +564,7 @@ namespace sysdep {
       int id = (long) pctxt;
       m_tab.insert( VAORepTab::value_type(id, OglVAORep(m_nSceneID)) );
       m_nCurID = id;
+      MB_DPRINTLN("OglVAOArray> created");
     }
 
     //////////
@@ -593,11 +615,11 @@ namespace sysdep {
         int ap = ada.getAttrPos(i);
         if (at==qlib::type_consts::QTC_INT32 ||
             at==qlib::type_consts::QTC_UINT32) {
-          glVertexAttribIPointer(al,
-                                 az,
-                                 convGLConsts(at),
-                                 ada.getElemSize(),
-                                 (void *) ap);
+          glVertexAttribIPointerEXT(al,
+				    az,
+				    convGLConsts(at),
+				    ada.getElemSize(),
+				    (void *) ap);
         }
         else {
           glVertexAttribPointer(al,
@@ -611,6 +633,7 @@ namespace sysdep {
       }
 
       //glBindVertexArray(0);
+      vao.unbind();
     }
 
     virtual void update(const AbstDrawElem &ade)
@@ -639,7 +662,8 @@ namespace sysdep {
       else
         glDrawArrays(mode, 0, ada.getSize());
 
-      glBindVertexArray(0);
+      //glBindVertexArray(0);
+      vao.unbind();
     }
 
     virtual void postDraw(const AbstDrawElem &ade)
@@ -661,6 +685,7 @@ namespace sysdep {
     OglVAOElemImpl(qlib::uid_t nSceneID, OglDisplayContext *pctxt)
          : super_t(nSceneID, pctxt), m_indBuf(nSceneID)
     {
+      MB_DPRINTLN("OglVAOElem> created");
     }
 
     //////////
@@ -723,7 +748,8 @@ namespace sysdep {
         MB_ASSERT(false);
       }
 
-      glBindVertexArray(0);
+      vao.unbind();
+      //glBindVertexArray(0);
     }
     
     /*virtual void postDraw(const AbstDrawElem &ade)
