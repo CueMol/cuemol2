@@ -23,12 +23,16 @@ uniform vec2 u_winsz;
 uniform LabelTex labelTex;
 
 varying vec2 v_labpos;
-varying float v_width;
-varying float v_addr;
+
+//varying float v_width;
+//varying float v_addr;
+flat varying int v_width;
+flat varying int v_addr;
 
 float getLabelPix(vec2 pos)
 {
-  int ind = int(v_addr) + int(pos.x) + int(pos.y) * int(v_width);
+  //int ind = int(v_addr) + int(pos.x) + int(pos.y) * int(v_width);
+  int ind = v_addr + int(pos.x) + int(pos.y)*v_width;
 
 #ifdef USE_TBO
   float x = texelFetch(labelTex, ind).r;

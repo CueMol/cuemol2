@@ -1139,8 +1139,6 @@ void OglDisplayContext::drawElemVA(const DrawElem &de)
 //#define USE_VAO
 #endif
 
-#define USE_VAO
-
 void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
 {
   const int itype = ada.getType();
