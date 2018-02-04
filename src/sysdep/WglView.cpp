@@ -37,10 +37,7 @@ WglView::WglView()
   m_bCursorIn = false;
   m_bInitOK = false;
 
-  m_pCtxt = NULL;
-
   m_hDC = NULL;
-  m_hGL = NULL;
   m_hWnd = NULL;
 
   m_nDragStart = DRAG_NONE;
@@ -50,7 +47,19 @@ WglView::WglView()
 
 WglView::~WglView()
 {
-  MB_DPRINTLN("WglView (ctxt=%p) destructing.", m_pCtxt);
+  MB_DPRINTLN("WglView (ctxt=%p) destructed.", m_pCtxt);
+
+  if (m_pCtxt!=NULL) {
+    HGLRC h = m_pCtxt->getHGLRC();
+    delete m_pCtxt;
+
+    wglMakeCurrent(NULL, NULL);
+    if (wglDeleteContext(h))
+      MB_DPRINTLN("WglDisplayContext> delete ctxt %p OK", h);
+    else
+      MB_DPRINTLN("WglDisplayContext> delete ctxt %p failed", h);
+  }
+  m_pCtxt = NULL;
 }
 
 LString WglView::toString() const
@@ -90,18 +99,14 @@ bool WglView::attach(HWND hWnd, HDC hDC)
   MB_DPRINTLN("HWND==%p", m_hWnd);
   MB_DPRINTLN("HDC==%p", m_hDC);
 
+  // Apply pixel format to this window's HDC
+  setupPixelFormat();
+
   if (m_pCtxt==NULL) {
     // Display context has not been created (startup case)
-    setupPixelFormat();
-    m_hGL = ::wglCreateContext( m_hDC );
+    HGLRC hGL = ::wglCreateContext( m_hDC );
     m_pCtxt = MB_NEW WglDisplayContext(getSceneID());
-
-    if (!m_pCtxt->attach(m_hGL)) {
-      // NOTE: This cannot be happen!!
-      //LOG_DPRINTLN("Fatal error Cannot create WglDisplayContext!!");
-      //delete pCtxt;
-      return false;
-    }
+    m_pCtxt->setHGLRC(hGL);
   }
   
   m_pCtxt->setTargetView(this);
@@ -118,58 +123,19 @@ bool WglView::attach(HWND hWnd, HDC hDC)
 
 void WglView::unloading()
 {
-  /*if (m_hDC!=NULL && m_hWnd!=NULL) {
-    // HDC will be destroyed at delete m_pDspCtxt!!
-    ::ReleaseDC(m_hWnd, m_hDC);
-    m_hDC = NULL;
-  }*/
-  
-  /*
-  if (m_pCtxt!=NULL) {
+  MB_DPRINTLN("WglView> unloading() called.");
+/*
+  if (m_pCtxt!=NULL)
     delete m_pCtxt;
-    m_pCtxt = NULL;
-  }
-   */
-  //::wglMakeCurrent( NULL, NULL );
-  // ::wglDeleteContext( m_hGL );
+  m_pCtxt = NULL;
+ */
 }
 
 ////////////////////////////////////////////
 
-/// Setup OpenGL (stage 1)
-HGLRC WglView::setupWglContext()
-{
-  setupPixelFormat();
-  
-  // create and enable the render context (RC)
-  return ::wglCreateContext( m_hDC );
-}
-
-/// Setup OpenGL (stage 2)
-bool WglView::setupShareList()
-{
-  DisplayContext *pShare = getSiblingCtxt();
-  WglDisplayContext *pwshcx = dynamic_cast<WglDisplayContext *>(pShare);
-  if (pwshcx==NULL) {
-    MB_DPRINTLN("WGL> No sibling context.");
-    return true;
-  }
-  HGLRC shcx = pwshcx->getHGLRC();
-  ::wglShareLists(shcx, m_hGL);
-  return true;
-}
-
 bool WglView::setupPixelFormat()
 {
   int ipx;
-  /*
-  int ipx = ::GetPixelFormat(m_hDC);
-  if (ipx>0) {
-    ::DescribePixelFormat(m_hDC, ipx,
-                          sizeof(PIXELFORMATDESCRIPTOR), &m_pfd);
-    return true;
-  }
-   */
 
   ::memset(&m_pfd, 0, sizeof(PIXELFORMATDESCRIPTOR));
   m_pfd.nSize = (sizeof(PIXELFORMATDESCRIPTOR));
@@ -197,16 +163,18 @@ bool WglView::setupPixelFormat()
   for (i=0; bufsz[i]>0; ++i) {
     ipx = choosePixFmt(bufsz[i], true);
     if (ipx>0) {
-      LOG_DPRINTLN("WglView.PixFmt> cbits=%d (hardware stereo) is accepted.", bufsz[i]);
+      // LOG_DPRINTLN("WglView> Hardware quadbuf stereo cap is found.");
+      LOG_DPRINTLN("WglView> Quadbuffer stereo capable videoboard is detected.");
       m_bHasQuadBuffer = true;
       break;
     }
   }
 
   if (m_bHasQuadBuffer) {
-    LOG_DPRINTLN("WglView.PixFmt> Quadbuffer stereo capable videoboard is detected.");
     if (getStereoMode()==qsys::Camera::CSM_HW_QBUF) {
       setPixFmt(ipx);
+      LOG_DPRINTLN("WglView> pixel format cbits=%d (HW stereo) is applied to HDC %p.",
+                   bufsz[i], m_hDC);
       return true; // ==> Use the found quadbuffer stereo pixel format
     }
   }
@@ -218,13 +186,14 @@ bool WglView::setupPixelFormat()
   for (i=0; bufsz[i]>0; ++i) {
     ipx = choosePixFmt(bufsz[i], false);
     if (ipx>0) {
-      LOG_DPRINTLN("WglView.PixFmt> cbits=%d (no stereo) is accepted.", bufsz[i]);
       setPixFmt(ipx);
+      LOG_DPRINTLN("WglView> pixel format cbits=%d (no stereo) is applied to HDC %p.",
+                   bufsz[i], m_hDC);
       return true;
     }
   }
 
-  LOG_DPRINTLN("WglView.PixFmt> FATAL ERROR, No suitable OpenGL pixel format was found!!");
+  LOG_DPRINTLN("WglView> FATAL ERROR, No suitable OpenGL pixel format was found!!");
   return false;
 }
 

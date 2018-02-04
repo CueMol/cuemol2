@@ -27,9 +27,7 @@ namespace sysdep {
     /// GDI display context
     HDC m_hDC;
 
-    /// Main GL rendering context
-    HGLRC m_hGL;
-
+    /// Pixel format descriptor applied to this view's HDC
     PIXELFORMATDESCRIPTOR m_pfd;
 
     /// For mouse drag event generation
@@ -79,11 +77,6 @@ namespace sysdep {
 
   private:
     bool m_bHasQuadBuffer;
-
-    HGLRC setupWglContext();
-    bool setupShareList();
-
-    // void changeBufMode(bool bSte);
 
     bool setupPixelFormat();
     int choosePixFmt(int nColorBits, bool bStereo);

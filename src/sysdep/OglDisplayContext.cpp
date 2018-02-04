@@ -84,72 +84,84 @@ void OglDisplayContext::init()
     return;
 
 #if HAVE_GLEW
-  m_pDefPO = createProgramObject("default");
+  m_pDefPO = getProgramObject("default");
   if (m_pDefPO==NULL) {
-    m_bUseShaderAlpha = false;
-    return;
+    m_pDefPO = createProgramObject("default");
+    if (m_pDefPO==NULL) {
+      m_bUseShaderAlpha = false;
+      return;
+    }
+
+    //glFogi(GL_FOG_COORDINATE_SOURCE, GL_FRAGMENT_DEPTH);
+    //glFogi(GL_FOG_COORDINATE_SOURCE, GL_FOG_COORDINATE);
+    m_pDefPO->loadShader("vert",
+                         "%%CONFDIR%%/data/shaders/default_vert.glsl",
+                         GL_VERTEX_SHADER);
+    m_pDefPO->loadShader("frag",
+                         "%%CONFDIR%%/data/shaders/default_frag.glsl",
+                         GL_FRAGMENT_SHADER);
+    m_pDefPO->link();
+    
+    m_pDefPO->enable();
+    m_pDefPO->setUniform("enable_lighting", 0);
+    m_pDefPO->setUniformF("frag_alpha", 1.0);
+    m_pDefPO->disable();
   }
-
-  //glFogi(GL_FOG_COORDINATE_SOURCE, GL_FRAGMENT_DEPTH);
-  //glFogi(GL_FOG_COORDINATE_SOURCE, GL_FOG_COORDINATE);
-  m_pDefPO->loadShader("vert",
-                       "%%CONFDIR%%/data/shaders/default_vert.glsl",
-                       GL_VERTEX_SHADER);
-  m_pDefPO->loadShader("frag",
-                       "%%CONFDIR%%/data/shaders/default_frag.glsl",
-                       GL_FRAGMENT_SHADER);
-  m_pDefPO->link();
-
-  m_pDefPO->enable();
-  m_pDefPO->setUniform("enable_lighting", 0);
-  m_pDefPO->setUniformF("frag_alpha", 1.0);
-  m_pDefPO->disable();
+  
 
   //////////
 
-  m_pEdgePO = createProgramObject("edge");
+  m_pEdgePO = getProgramObject("edge");
   if (m_pEdgePO==NULL) {
-    LOG_DPRINTLN("Failed to load Edge ProgramObject");
-    return;
-  }
-  m_pEdgePO->loadShader("vert",
+    m_pEdgePO = createProgramObject("edge");
+    if (m_pEdgePO==NULL) {
+      LOG_DPRINTLN("Failed to load Edge ProgramObject");
+      return;
+    }
+    m_pEdgePO->loadShader("vert",
                         "%%CONFDIR%%/data/shaders/edge_vert.glsl",
-                       GL_VERTEX_SHADER);
-  m_pEdgePO->loadShader("frag",
-                        "%%CONFDIR%%/data/shaders/edge_frag.glsl",
-                        GL_FRAGMENT_SHADER);
-  m_pEdgePO->link();
-  
-  m_pEdgePO->enable();
-  m_pEdgePO->setUniformF("frag_alpha", 1.0);
-  // m_pEdgePO->setUniformF("frag_zdisp", 0.001);
-  m_pEdgePO->setUniformF("edge_width", 0.001);
-  m_pEdgePO->setUniformF("edge_color", 0,0,0,1);
-  m_pEdgePO->disable();
+                        GL_VERTEX_SHADER);
+    m_pEdgePO->loadShader("frag",
+                          "%%CONFDIR%%/data/shaders/edge_frag.glsl",
+                          GL_FRAGMENT_SHADER);
+    m_pEdgePO->link();
+
+    m_pEdgePO->enable();
+    m_pEdgePO->setUniformF("frag_alpha", 1.0);
+    // m_pEdgePO->setUniformF("frag_zdisp", 0.001);
+    m_pEdgePO->setUniformF("edge_width", 0.001);
+    m_pEdgePO->setUniformF("edge_color", 0,0,0,1);
+    m_pEdgePO->disable();
+  }
 
   //////////
 
-  m_pSilhPO = createProgramObject("silh");
+  m_pSilhPO = getProgramObject("silh");
   if (m_pSilhPO==NULL) {
-    LOG_DPRINTLN("Failed to load Silhouette ProgramObject");
-    return;
+    m_pSilhPO = createProgramObject("silh");
+    if (m_pSilhPO==NULL) {
+      LOG_DPRINTLN("Failed to load Silhouette ProgramObject");
+      return;
+    }
+
+    m_pSilhPO->loadShader("vert",
+                          "%%CONFDIR%%/data/shaders/silh_vert.glsl",
+                          GL_VERTEX_SHADER);
+    m_pSilhPO->loadShader("frag",
+                          "%%CONFDIR%%/data/shaders/silh_frag.glsl",
+                          GL_FRAGMENT_SHADER);
+    m_pSilhPO->link();
+
+    m_pSilhPO->enable();
+    m_pSilhPO->setUniformF("frag_alpha", 1.0);
+    // m_pSilhPO->setUniformF("backz", 0.001);
+    m_pSilhPO->setUniformF("edge_width", 0.001);
+    m_pSilhPO->setUniformF("edge_color", 0,0,0,1);
+    m_pSilhPO->disable();
   }
-  m_pSilhPO->loadShader("vert",
-                        "%%CONFDIR%%/data/shaders/silh_vert.glsl",
-                       GL_VERTEX_SHADER);
-  m_pSilhPO->loadShader("frag",
-                        "%%CONFDIR%%/data/shaders/silh_frag.glsl",
-                        GL_FRAGMENT_SHADER);
-  m_pSilhPO->link();
-  
-  m_pSilhPO->enable();
-  m_pSilhPO->setUniformF("frag_alpha", 1.0);
-  // m_pSilhPO->setUniformF("backz", 0.001);
-  m_pSilhPO->setUniformF("edge_width", 0.001);
-  m_pSilhPO->setUniformF("edge_color", 0,0,0,1);
-  m_pSilhPO->disable();
 
 #endif
+
 }
 
 bool OglDisplayContext::isFile() const

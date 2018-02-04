@@ -33,7 +33,7 @@ namespace mdtools {
 
   void fini()
   {
-    // mdtools_unregClasses();
+    mdtools_unregClasses();
 
     MB_DPRINTLN("mdtools fini: OK");
   }

@@ -55,10 +55,9 @@ bool init()
 
 void fini()
 {
-  // PDBFileReader::unregClass();
-  // symm_unregClasses();
-  
   SymOpDB::fini();
+
+  symm_unregClasses();
 
   MB_DPRINTLN("symm fini: OK");
 }

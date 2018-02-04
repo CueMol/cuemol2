@@ -20,13 +20,7 @@ using namespace sysdep;
 
 WglDisplayContext::~WglDisplayContext()
 {
-}
-
-bool WglDisplayContext::attach(HGLRC hGL)
-{
-  //m_hDC = hdc;
-  m_hGlrc = hGL;
-  return true;
+  // m_hGlrc = NULL;
 }
 
 bool WglDisplayContext::setCurrent()

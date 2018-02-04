@@ -22,7 +22,7 @@ namespace sysdep {
 
   public:
     //WglDisplayContext(int sceneid, WglView *pView);
-    WglDisplayContext(int sceneid) : OglDisplayContext(sceneid)
+    WglDisplayContext(int sceneid) : OglDisplayContext(sceneid), m_hGlrc(NULL)
     {
     }
 
@@ -39,10 +39,7 @@ namespace sysdep {
     ///////////////
     // system dependent methods
 
-    //bool setup(HDC hdc, DisplayContext *pShareCtxt);
-    //bool attach(HDC hdc, HGLRC hGL);
-
-    bool attach(HGLRC hGL);
+    void setHGLRC(HGLRC hGL) { m_hGlrc = hGL; }
 
     HGLRC getHGLRC() const { return m_hGlrc; }
   };

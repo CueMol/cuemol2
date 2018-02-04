@@ -33,6 +33,7 @@ ClassA *ClassA::fromStringS(const LString &aStr)
 */
 
 void qlib_regClasses();
+void qlib_unregClasses();
 
 static int s_nInitCount = 0;
 
@@ -76,6 +77,7 @@ void qlib::fini()
 
   if (s_nInitCount==0) {
     MB_DPRINTLN("qlib::fini() finalized.");
+    qlib_unregClasses();
     PerfMeasManager::fini();
     ClassRegistry::fini();
     ObjectManager::fini();

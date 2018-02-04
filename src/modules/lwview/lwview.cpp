@@ -48,7 +48,7 @@ namespace lwview {
 
   void fini()
   {
-    // lwview_unregClasses();
+    lwview_unregClasses();
 
     MB_DPRINTLN("lwview fini: OK");
   }

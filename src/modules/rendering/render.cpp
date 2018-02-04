@@ -51,7 +51,7 @@ namespace render {
 
   void fini()
   {
-    // render_unregClasses();
+    render_unregClasses();
 
     MB_DPRINTLN("render fini: OK");
   }

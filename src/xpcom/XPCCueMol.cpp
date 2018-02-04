@@ -173,8 +173,8 @@ XPCCueMol::XPCCueMol()
 XPCCueMol::~XPCCueMol()
 {
   gpXPCCueMol = NULL;
-  if (m_bInit)
-    Fini();
+  //if (m_bInit)
+  //Fini();
 }
 
 //static
@@ -300,11 +300,12 @@ NS_IMETHODIMP XPCCueMol::Fini()
   //finiTextRender();
   sysdep::destroyTextRender(m_pTR);
 
-  MB_DPRINTLN("=== Cleaning up the unreleased wrappers... ===");
+  MB_DPRINTLN("=== Cleaning up the unreleased %d wrappers... ===", m_pool.size());
   for (i=0; i<m_pool.size(); ++i) {
     if (m_pool[i].ptr) {
       XPCObjWrapper *pwr = m_pool[i].ptr;
-      MB_DPRINTLN("Unreleased wrapper: %d %p", i, pwr);
+      LString clsnm = typeid(*(pwr->getWrappedObj())).name();
+      MB_DPRINTLN("Detach wrapper for class %s: %d %p", clsnm.c_str(), i, pwr);
       pwr->detach();
     }
   }
