@@ -540,7 +540,7 @@ namespace sysdep {
          : m_buf(nSceneID)//, m_vao(nSceneID)
     {
       m_nSceneID = nSceneID;
-      int id = (int) pctxt;
+      int id = (long) pctxt;
       m_tab.insert( VAORepTab::value_type(id, OglVAORep(m_nSceneID)) );
       m_nCurID = id;
     }
@@ -557,7 +557,7 @@ namespace sysdep {
     }
 
     void setCurrCtxt(OglDisplayContext *pctxt, const AbstDrawElem &ade) {
-      int id = (int) pctxt;
+      int id = (long) pctxt;
       if (m_tab.find(id)!=m_tab.end())
         return;
       m_tab.insert( VAORepTab::value_type(id, OglVAORep(m_nSceneID)) );

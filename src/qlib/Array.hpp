@@ -351,7 +351,7 @@ namespace qlib {
 
   };
   
-  typedef qlib::Array3D<std::complex<float>> CompArray;
+  typedef qlib::Array3D<std::complex<float> > CompArray;
   typedef qlib::Array3D<float> FloatArray;
   typedef qlib::Array3D<qbyte> ByteArray;
 }

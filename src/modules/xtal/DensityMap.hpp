@@ -54,7 +54,7 @@ namespace xtal {
 
     typedef qlib::Array3D<qfloat32> FloatMap;
 
-    typedef qlib::Array3D<std::complex<qfloat32>> RecipAry;
+    typedef qlib::Array3D<std::complex<qfloat32> > RecipAry;
 
 
   private:
