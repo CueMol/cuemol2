@@ -298,10 +298,12 @@ void GLSLMapMesh3Renderer::createGLSLLocMap()
     m_pAttrAry = MB_NEW AttrArray();
 
     AttrArray &ata = *m_pAttrAry;
-    //ata.setAttrSize(0);
+//    ata.setAttrSize(0);
+
     ata.setAttrSize(1);
     ata.setAttrInfo(0, m_nPosLoc, 1,
 		    qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, dummy));
+
     ata.alloc(nVA);
     ata.setDrawMode(gfx::AbstDrawElem::DRAW_LINES);
   }
