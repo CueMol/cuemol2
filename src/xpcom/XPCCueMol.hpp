@@ -69,6 +69,9 @@ namespace xpcom {
     /// Dump wrapper pool info
     void dumpWrappers() const;
 
+    /// Cleanup unreleased wrapper objects
+    void cleanupWrappers();
+
     void setErrMsg(const LString &msg)
     {
       m_errMsg = msg;

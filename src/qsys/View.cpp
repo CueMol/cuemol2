@@ -107,7 +107,7 @@ void View::unloading()
 
 LString View::toString() const
 {
-  return LString::format("View(name=%s)",m_name.c_str());
+  return LString::format("View(name=%s, UID=%d)",m_name.c_str(), getUID());
 }
 
 void View::dump() const

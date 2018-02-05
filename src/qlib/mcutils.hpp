@@ -41,6 +41,8 @@
     qlib::ClassRegistry *pMgr = qlib::ClassRegistry::getInstance();     \
     bool res = pMgr->unregClassObj<fqclsnm>();                          \
     MB_ASSERT(res);                                                     \
+    delete sClassObj_##commonname;                                      \
+    sClassObj_##commonname = NULL;                                      \
   }
 
 #define MC_CLONEABLE \

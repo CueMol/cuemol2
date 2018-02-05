@@ -300,16 +300,7 @@ NS_IMETHODIMP XPCCueMol::Fini()
   //finiTextRender();
   sysdep::destroyTextRender(m_pTR);
 
-  MB_DPRINTLN("=== Cleaning up the unreleased %d wrappers... ===", m_pool.size());
-  for (i=0; i<m_pool.size(); ++i) {
-    if (m_pool[i].ptr) {
-      XPCObjWrapper *pwr = m_pool[i].ptr;
-      LString clsnm = typeid(*(pwr->getWrappedObj())).name();
-      MB_DPRINTLN("Detach wrapper for class %s: %d %p", clsnm.c_str(), i, pwr);
-      pwr->detach();
-    }
-  }
-  MB_DPRINTLN("=== Done ===");
+  cleanupWrappers();
 
   // cleanup timer
   qlib::EventManager::getInstance()->finiTimer();
@@ -672,6 +663,37 @@ NS_IMETHODIMP XPCCueMol::CreateBAryFromIStream(nsIInputStream *aInputStream, qIO
   NS_ADDREF((*_retval));
 
   return NS_OK;
+}
+
+void XPCCueMol::cleanupWrappers()
+{
+  int i;
+  
+  MB_DPRINTLN("=== Cleaning up the unreleased %d wrappers... ===", m_pool.size());
+  for (i=0; i<m_pool.size(); ++i) {
+    if (m_pool[i].ptr) {
+      XPCObjWrapper *pwr = m_pool[i].ptr;
+      qlib::LScriptable *pscr = pwr->getWrappedObj();
+
+#ifdef MB_DEBUG
+      LString clsnm = typeid(*(pscr)).name();
+      MB_DPRINTLN("Detach wrapper for class %s: %d %p", clsnm.c_str(), i, pwr);
+
+      LString strrep = pscr->toString();
+      MB_DPRINTLN("  str rep=<%s>", strrep.c_str());
+
+      if (pscr->isSmartPtr()) {
+        //pscr = pscr->getSPInner();
+        long nref = dynamic_cast<qlib::LSupScrSp*>(pscr)->use_count();
+        MB_DPRINTLN("  ref ctr=%d", nref);
+      }
+#endif
+
+      pwr->detach();
+    }
+  }
+  m_pool.clear();
+  MB_DPRINTLN("=== Done ===");
 }
 
 ///////////////////////

@@ -563,6 +563,10 @@ namespace qsys {
 
     int getIccIntent() const;
     void setIccIntent(int n);
+
+    /// convert to string
+    virtual LString toString() const;
+    
   };
 
 }

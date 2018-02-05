@@ -56,7 +56,7 @@ static void mod_dtor()
 {
   //printf("##### QM_XPCOM %%%%%% MOD DTOR called %p\n", pmod);
   if (gpXPCCueMol!=NULL) {
-    gpXPCCueMol->dumpWrappers();
+    //gpXPCCueMol->dumpWrappers();
     gpXPCCueMol->Fini();
   }
   qlib::fini();

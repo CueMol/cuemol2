@@ -102,7 +102,6 @@ void OglView::setup()
   setUpProjMat(-1, -1);
   setupLightSource();
 
-  // clear();
   MB_DPRINTLN("OglView::setup() OK.");
 
 #ifdef HAVE_GLEW

@@ -70,6 +70,16 @@ LSupScrSp::~LSupScrSp()
   }
 }
 
+void LSupScrSp::check_copy()
+{
+/*
+  LString clsnm = typeid(*m_ptr).name();
+  if (clsnm.equals("class qsys::Scene")) {
+    MB_DPRINTLN("qsys::Scene refctr = %d", *m_pcnt);
+  }
+  */
+}
+
 bool LSupScrSp::isStrConv() const
 {
   if (m_ptr)
