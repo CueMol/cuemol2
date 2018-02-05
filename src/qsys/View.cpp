@@ -498,6 +498,7 @@ void View::setStereoMode(int f)
 /////////////////////////////////////////////////////
 // Utility routines
 
+/*
 bool View::safeSetCurrent()
 {
   gfx::DisplayContext *pCtxt = getDisplayContext();
@@ -512,6 +513,7 @@ bool View::safeSetCurrent()
 
   return true;
 }
+*/
 
 /////////////////////////////////////////////////////
 // View size

@@ -41,6 +41,8 @@
 #include "OglDisplayContext.hpp"
 #include "OglViewCap.hpp"
 
+#include "AutoDispCtxt.hpp"
+
 #include <gfx/HittestContext.hpp>
 
 using gfx::DisplayContext;
@@ -71,7 +73,8 @@ LString OglView::toString() const
 
 void OglView::setup()
 {
-  if (!safeSetCurrent()) return;
+  AutoDispCtxt adc(this);
+  DisplayContext *pdc = adc.getDC();
 
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_CULL_FACE);
@@ -97,7 +100,7 @@ void OglView::setup()
   glFogfv(GL_FOG_COLOR, fogColor);
 
   setUpProjMat(-1, -1);
-  setUpLightColor();
+  setupLightSource();
 
   // clear();
   MB_DPRINTLN("OglView::setup() OK.");
@@ -122,9 +125,9 @@ void OglView::setup()
     setViewCap(pVC);
   }
 
-  OglDisplayContext *pdc = static_cast<OglDisplayContext *>( getDisplayContext() );
+  OglDisplayContext *pogldc = static_cast<OglDisplayContext *>( pdc );
   try {
-    pdc->init();
+    pogldc->init();
   }
   catch (qlib::LException &e) {
     LOG_DPRINTLN("Exception: %s", e.getMsg().c_str());
@@ -258,13 +261,11 @@ void OglView::setUpModelMat(int nid)
   glTranslated(-c.x(), -c.y(), -c.z());
 }
 
-void OglView::setUpLightColor()
+void OglView::setupLightSource()
 {
-  if (!safeSetCurrent()) return;
-  //if (pdc==NULL) pdc = getDisplayContext();
-  //pdc->setCurrent();
-
   GLfloat tmpv[4] = {0.0, 0.0, 0.0, 1.0};
+
+  glLoadIdentity();
 
 /*
   tmpv[0] = 0.2f; //m_ltAmbi.fr();
@@ -330,8 +331,10 @@ void OglView::setUpLightColor()
 void OglView::drawScene()
 {
   if (!m_bInitOK) return;
-  // if (!safeSetCurrent()) return;
-  DisplayContext *pdc = getDisplayContext();
+
+  AutoDispCtxt adc(this);
+  //DisplayContext *pdc = getDisplayContext();
+  DisplayContext *pdc = adc.getDC();
 
   qlib::AutoPerfMeas apm(PM_DRAW_SCENE);
 
@@ -340,8 +343,6 @@ void OglView::drawScene()
     MB_DPRINTLN("DrawScene: invalid scene %d !!", getSceneID());
     return;
   }
-
-   pdc->setCurrent();
 
   gfx::ColorPtr pBgCol = pScene->getBgColor();
   glClearColor(float(pBgCol->fr()), float(pBgCol->fg()), float(pBgCol->fb()), 1.0f);
@@ -1046,7 +1047,7 @@ void OglView::readPixels(int x, int y, int width, int height, char *pbuf, int nb
 /// clean-up the drawing display with the current bg color
 void OglView::clear()
 {
-  if (!safeSetCurrent()) return;
+  AutoDispCtxt adc(this);
 
   qsys::ScenePtr pScene = getScene();
   if (pScene.isnull()) {

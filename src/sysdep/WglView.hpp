@@ -85,7 +85,7 @@ namespace sysdep {
     //WglDisplayContext *m_pCtxt;
 
     static WglDisplayContext *m_pCtxt;
-
+    static int m_nCtxtRefs;
   };
 
 }

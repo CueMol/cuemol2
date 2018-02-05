@@ -21,6 +21,7 @@
 
 #include "WglView.hpp"
 #include "WglDisplayContext.hpp"
+#include "AutoDispCtxt.hpp"
 
 // #include "UpdateEvent.hpp"
 
@@ -30,6 +31,7 @@ using qsys::InDevEvent;
 using namespace sysdep;
 
 WglDisplayContext *WglView::m_pCtxt = NULL;
+int WglView::m_nCtxtRefs = 0;
 
 
 WglView::WglView()
@@ -49,17 +51,23 @@ WglView::~WglView()
 {
   MB_DPRINTLN("WglView (ctxt=%p) destructed.", m_pCtxt);
 
-  if (m_pCtxt!=NULL) {
-    HGLRC h = m_pCtxt->getHGLRC();
-    delete m_pCtxt;
+  --m_nCtxtRefs;
+  MB_DPRINTLN("WglView> dtor() ctxt ref=%d", m_nCtxtRefs);
 
-    wglMakeCurrent(NULL, NULL);
-    if (wglDeleteContext(h))
-      MB_DPRINTLN("WglDisplayContext> delete ctxt %p OK", h);
-    else
-      MB_DPRINTLN("WglDisplayContext> delete ctxt %p failed", h);
+  if (m_nCtxtRefs==0) {
+    MB_DPRINTLN("WglView> destructing ctxt");
+    if (m_pCtxt!=NULL) {
+      HGLRC h = m_pCtxt->getHGLRC();
+      delete m_pCtxt;
+      
+      wglMakeCurrent(NULL, NULL);
+      if (wglDeleteContext(h))
+        MB_DPRINTLN("WglDisplayContext> delete ctxt %p OK", h);
+      else
+        MB_DPRINTLN("WglDisplayContext> delete ctxt %p failed", h);
+    }
+    m_pCtxt = NULL;
   }
-  m_pCtxt = NULL;
 }
 
 LString WglView::toString() const
@@ -75,8 +83,8 @@ void WglView::swapBuffers()
 
 DisplayContext *WglView::getDisplayContext()
 {
-  m_pCtxt->setTargetView(this);
-  m_pCtxt->setCurrent();
+  //m_pCtxt->setTargetView(this);
+  //m_pCtxt->setCurrent();
   return m_pCtxt;
 }
 
@@ -108,9 +116,12 @@ bool WglView::attach(HWND hWnd, HDC hDC)
     m_pCtxt = MB_NEW WglDisplayContext(getSceneID());
     m_pCtxt->setHGLRC(hGL);
   }
+  ++m_nCtxtRefs;
+  MB_DPRINTLN("WglView> attach() ctxt ref=%d", m_nCtxtRefs);
   
-  m_pCtxt->setTargetView(this);
-  m_pCtxt->setCurrent();
+  // m_pCtxt->setTargetView(this);
+  // m_pCtxt->setCurrent();
+  AutoDispCtxt adc(this);
 
   // perform OpenGL-common initialization tasks
   OglView::setup();
@@ -124,6 +135,7 @@ bool WglView::attach(HWND hWnd, HDC hDC)
 void WglView::unloading()
 {
   MB_DPRINTLN("WglView> unloading() called.");
+
 /*
   if (m_pCtxt!=NULL)
     delete m_pCtxt;

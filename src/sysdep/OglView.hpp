@@ -67,15 +67,14 @@ namespace sysdep {
 
     ///////////////////////////////
 
-    /// Setup the light source color
-    void setUpLightColor();
-    
+  protected:
     /// Setup the projection matrix for stereo (View interface)
     virtual void setUpModelMat(int nid);
     
     /// Setup projection matrix (View interface)
     virtual void setUpProjMat(int w, int h);
     
+  public:
     /// Draw current scene
     virtual void drawScene();
     
@@ -132,6 +131,9 @@ namespace sysdep {
   protected:
     void setFogColorImpl();
 
+    /// Setup the light source color
+    void setupLightSource();
+    
   };
 
 }

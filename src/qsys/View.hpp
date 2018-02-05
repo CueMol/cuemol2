@@ -293,6 +293,7 @@ namespace qsys {
     /////////////////////////////////////////////////////////
     // Projection
 
+  protected:
     /// setup the projection matrix
     virtual void setUpProjMat(int w, int h) =0;
     
@@ -304,6 +305,7 @@ namespace qsys {
     void resetProjChgFlag() { m_bProjChg = false; } 
     bool isProjChange() const { return m_bProjChg; }
 
+  protected:
     /// ID for setUpModelMat() method
     enum {
       MM_NORMAL=0,
@@ -317,6 +319,7 @@ namespace qsys {
     ///        nid==MM_STEREO_RIGHT : stereo right eye
     virtual void setUpModelMat(int nid) =0;
 
+  public:
     /// reverse projection from view to world coord
     void convZTrans(double dz, Vector4D &vec) const;
     void convXYTrans(double dx, double dy, Vector4D &vec) const;
@@ -488,7 +491,7 @@ namespace qsys {
                          double prevX, double prevY,
                          Vector4D &axis_phi, double &rphi);
     
-    bool safeSetCurrent();
+    // bool safeSetCurrent();
 
     gfx::DisplayContext *getSiblingCtxt();
 
