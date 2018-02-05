@@ -9,18 +9,7 @@
 #include "sysdep.hpp"
 
 #include <gfx/DrawAttrArray.hpp>
-
-#ifndef CHK_GLERROR
-#define CHK_GLERROR(MSG)\
-{ \
-  GLenum errc; \
-  errc = glGetError(); \
-  if (errc!=GL_NO_ERROR) \
-    MB_DPRINTLN("%s GLError(%d): %s", MSG, errc, gluErrorString(errc)); \
-  else \
-    MB_DPRINTLN("%s : OK", MSG); \
-}
-#endif
+#include "OglError.hpp"
 
 
 namespace sysdep {
@@ -510,17 +499,21 @@ namespace sysdep {
     inline void create() {
 #ifdef GUI_ARCH_OSX
       glGenVertexArraysAPPLE(1, &m_nBufID);
+      CHK_GLERROR("glGenVertexArraysAPPLE");
 #else
       glGenVertexArrays(1, &m_nBufID);
+      CHK_GLERROR("glGenVertexArrays");
 #endif
-      MB_DPRINTLN("OglVAO> created %d", m_nBufID);
+      LOG_DPRINTLN("OglVAO> created %d", m_nBufID);
     }
 
     inline void destroy() {
 #ifdef GUI_ARCH_OSX
       glDeleteVertexArraysAPPLE(1, &m_nBufID);
+      CHK_GLERROR("glDeleteVertexArraysAPPLE");
 #else
       glDeleteVertexArrays(1, &m_nBufID);
+      CHK_GLERROR("glDeleteVertexArrays");
 #endif
       m_nBufID = 0;
     }
@@ -528,16 +521,21 @@ namespace sysdep {
     inline void bind() {
 #ifdef GUI_ARCH_OSX
       glBindVertexArrayAPPLE(m_nBufID);
+      CHK_GLERROR("glBindVertexArrayAPPLE");
 #else
       glBindVertexArray(m_nBufID);
+      CHK_GLERROR("glBindVertexArray");
 #endif
+
     }
 
     inline void unbind() {
 #ifdef GUI_ARCH_OSX
       glBindVertexArrayAPPLE(0);
+      CHK_GLERROR("glBindVertexArrayAPPLE(0)");
 #else
       glBindVertexArray(0);
+      CHK_GLERROR("glBindVertexArray(0)");
 #endif
     }
   };
@@ -564,7 +562,7 @@ namespace sysdep {
       int id = (long) pctxt;
       m_tab.insert( VAORepTab::value_type(id, OglVAORep(m_nSceneID)) );
       m_nCurID = id;
-      MB_DPRINTLN("OglVAOArray> created");
+      LOG_DPRINTLN("OglVAOArray> VAO created");
     }
 
     //////////
@@ -598,38 +596,49 @@ namespace sysdep {
 
       vao.bind();
 
-      if (!m_buf.isCreated())
-        m_buf.create();
-      
-      // Init VBO & transfer data
-      glBindBuffer(GL_ARRAY_BUFFER, m_buf.getID());
-      glBufferData(GL_ARRAY_BUFFER, ade.getDataSize(), ade.getData(), GL_STATIC_DRAW);
-
       const gfx::AbstDrawAttrs &ada = static_cast<const gfx::AbstDrawAttrs &>(ade);
-
       size_t nattr = ada.getAttrSize();
-      for (int i=0; i<nattr; ++i) {
-        int al = ada.getAttrLoc(i);
-        int az = ada.getAttrElemSize(i);
-        int at = ada.getAttrTypeID(i);
-        int ap = ada.getAttrPos(i);
-        if (at==qlib::type_consts::QTC_INT32 ||
-            at==qlib::type_consts::QTC_UINT32) {
-          glVertexAttribIPointerEXT(al,
-				    az,
-				    convGLConsts(at),
-				    ada.getElemSize(),
-				    (void *) ap);
-        }
-        else {
-          glVertexAttribPointer(al,
-                                az,
-                                convGLConsts(at),
-                                convGLNorm(at),
-                                ada.getElemSize(),
-                                (void *) ap);
-        }
-        glEnableVertexAttribArray(al);
+
+      if (nattr>0) {
+
+	if (!m_buf.isCreated())
+	  m_buf.create();
+	
+	// Init VBO & transfer data
+	glBindBuffer(GL_ARRAY_BUFFER, m_buf.getID());
+	CHK_GLERROR("glBindBuffer");
+	glBufferData(GL_ARRAY_BUFFER, ada.getDataSize(), ada.getData(), GL_STATIC_DRAW);
+	CHK_GLERROR("glBufferData");
+	
+	for (int i=0; i<nattr; ++i) {
+	  int al = ada.getAttrLoc(i);
+	  int az = ada.getAttrElemSize(i);
+	  int at = ada.getAttrTypeID(i);
+	  int ap = ada.getAttrPos(i);
+	  if (at==qlib::type_consts::QTC_INT32 ||
+	      at==qlib::type_consts::QTC_UINT32) {
+	    glVertexAttribIPointerEXT(al,
+				      az,
+				      convGLConsts(at),
+				      ada.getElemSize(),
+				      (void *) ap);
+	    CHK_GLERROR("glVertexAttribIPointerEXT");
+	  }
+	  else {
+	    glVertexAttribPointer(al,
+				  az,
+				  convGLConsts(at),
+				  convGLNorm(at),
+				  ada.getElemSize(),
+				  (void *) ap);
+	    CHK_GLERROR("glVertexAttribPointer");
+	  }
+	  glEnableVertexAttribArray(al);
+	  CHK_GLERROR("glEnableVertexAttribArray");
+	}
+      }
+      else {
+	MB_DPRINTLN("VAO with empty attr created");
       }
 
       //glBindVertexArray(0);
@@ -640,7 +649,9 @@ namespace sysdep {
     {
       // VBO updated --> call glBufferSubData
       glBindBuffer(GL_ARRAY_BUFFER, m_buf.getID());
+      CHK_GLERROR("glBindBuffer");
       glBufferSubData(GL_ARRAY_BUFFER, 0, ade.getDataSize(), ade.getData());
+      CHK_GLERROR("glBufferSubData");
     }
     
     virtual void preDraw(const AbstDrawElem &ade)
@@ -657,10 +668,15 @@ namespace sysdep {
       OglVAORep &vao = getVAO();
       vao.bind();
 
-      if (ninst>0 && GLEW_ARB_instanced_arrays)
+      if (ninst>0 && GLEW_ARB_instanced_arrays) {
         glDrawArraysInstanced(mode, 0, ada.getSize(), ninst);
-      else
+	CHK_GLERROR("glDrawArraysInstanced");
+      }
+      else {
         glDrawArrays(mode, 0, ada.getSize());
+	MB_DPRINTLN("glDrawArrays(%d, 0, %d)", mode, ada.getSize());
+	CHK_GLERROR("glDrawArrays");
+      }
 
       //glBindVertexArray(0);
       vao.unbind();

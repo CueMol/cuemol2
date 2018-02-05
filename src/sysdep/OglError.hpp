@@ -14,8 +14,6 @@
   errc = glGetError(); \
   if (errc!=GL_NO_ERROR) \
     MB_DPRINTLN("%s GLError (%d)", MSG, errc); \
-  else \
-    MB_DPRINTLN("%s noerror", MSG); \
 }
 #  else
 // check error - GLU version
@@ -25,12 +23,11 @@
   errc = glGetError(); \
   if (errc!=GL_NO_ERROR) \
     MB_DPRINTLN("%s GLError(%d): %s", MSG, errc, gluErrorString(errc)); \
-  else \
-    MB_DPRINTLN("%s noerror", MSG);\
 }
 #  endif // ifdef USE_GLES2
 #else
-#  define CHK_GLERROR(MSG) glGetError()
+// #  define CHK_GLERROR(MSG) glGetError()
+#  define CHK_GLERROR(MSG)
 #endif
 
 #define CLR_GLERROR() glGetError()
