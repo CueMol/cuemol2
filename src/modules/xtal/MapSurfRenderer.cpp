@@ -39,8 +39,10 @@ MapSurfRenderer::MapSurfRenderer()
   m_nBinFac = 1;
   m_nMaxGrid = 100;
 
-  //m_bUseOpenMP = false;
   m_nGlRendMode = MSR_REND_DLIST;
+
+#if (GUI_ARCH!=CLI)
+  //m_bUseOpenMP = false;
   
   m_nOmpThr = -1;
   m_bIsoLev = 0;
@@ -53,6 +55,7 @@ MapSurfRenderer::MapSurfRenderer()
   m_pAttrArray = NULL;
   m_nMapTexID = 0;
   m_nMapBufID = 0;
+#endif
 }
 
 // destructor
@@ -62,11 +65,10 @@ MapSurfRenderer::~MapSurfRenderer()
   ScrEventManager *pSEM = ScrEventManager::getInstance();
   pSEM->removeViewListener(this);
 
+#if (GUI_ARCH!=CLI)
   if (m_pVBO!=NULL)
     delete m_pVBO;
-
-  //if (m_pAttrArray!=NULL)
-  //delete m_pAttrArray;
+#endif
 }
 
 /////////////////////////////////
