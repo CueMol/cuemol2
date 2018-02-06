@@ -29,6 +29,7 @@ using qlib::Matrix3D;
 
 void MapSurfRenderer::display(DisplayContext *pdc)
 {
+
   if (m_nGlRendMode==MSR_REND_DLIST||
       pdc->isFile()) {
     super_t::display(pdc);
@@ -43,6 +44,7 @@ void MapSurfRenderer::display(DisplayContext *pdc)
     displayGLSL2(pdc);
     return;
   }
+
 }
 
 /// Rendering using OpenMP/VBO

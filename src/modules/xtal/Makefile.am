@@ -22,8 +22,6 @@ MTZ2MapReader.cpp \
 DensityMap.cpp \
 MapMeshRenderer.cpp \
 MapSurfRenderer.cpp \
-MapSurfRendImpl2.cpp \
-GLSLMapSurfRendImpl1.cpp \
 MapRenderer.cpp \
 QdfDenMapReader.cpp \
 QdfDenMapWriter.cpp \
@@ -50,7 +48,10 @@ if COND_USE_OPENGL
 
 CPP_SRC += \
 GLSLMapMeshRenderer.cpp \
-GLSLMapVolRenderer.cpp
+GLSLMapVolRenderer.cpp \
+MapSurfRendImpl2.cpp \
+GLSLMapSurfRendImpl1.cpp \
+$(NULL)
 
 MCWG_SRC += \
 GLSLMapMeshRenderer.qif \
