@@ -50,7 +50,9 @@ namespace gfx {
     /// Edge line color
     ColorPtr m_egLineCol;
 
+    /// Target view
     qsys::View *m_pTargView;
+
 
   public:
     /// Polygon rendering mode

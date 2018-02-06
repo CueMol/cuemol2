@@ -52,9 +52,10 @@ using gfx::DrawElemVNCI;
 using gfx::DrawElemVNCI32;
 using gfx::DrawElemPix;
 
-OglDisplayContext::OglDisplayContext(int sceneid)
+OglDisplayContext::OglDisplayContext()
+     : super_t()
 {
-  m_nSceneID = sceneid;
+  // m_nSceneID = sceneid;
   m_pGluData = NULL;
   m_color = Vector4D(1.0, 1.0, 1.0, 1.0);
   m_nDetail = 5;
@@ -73,6 +74,13 @@ OglDisplayContext::~OglDisplayContext()
   BOOST_FOREACH (ProgTab::value_type &elem, m_progs) {
     delete elem.second;
   }
+}
+
+void OglDisplayContext::setTargetView(qsys::View *pView)
+{
+  super_t::setTargetView(pView);
+  m_nViewID = pView->getUID();
+  m_nSceneID = pView->getSceneID();
 }
 
 void OglDisplayContext::init()
@@ -353,7 +361,7 @@ void OglDisplayContext::color(const ColorPtr &c)
 {
   //::glColor4ub(c->r(), c->g(), c->b(), c->a());
 
-  quint32 devcolc = c->getDevCode(m_nSceneID);
+  quint32 devcolc = c->getDevCode( getSceneID() );
 
   m_color.x() = gfx::getFR(devcolc); //c->fr();
   m_color.y() = gfx::getFG(devcolc); //c->fg();
@@ -381,7 +389,7 @@ void OglDisplayContext::color(double r, double g, double b, double a)
 {
   Vector4D vcol(r,g,b);
   gfx::ColProfMgr *pCPM = gfx::ColProfMgr::getInstance();
-  pCPM->doXForm(m_nSceneID, vcol, m_color);
+  pCPM->doXForm( getSceneID(), vcol, m_color);
 
   //m_color.x() = r;
   //m_color.y() = g;
@@ -399,8 +407,8 @@ void OglDisplayContext::color(double r, double g, double b)
 {
   Vector4D vcol(r,g,b);
   gfx::ColProfMgr *pCPM = gfx::ColProfMgr::getInstance();
-  pCPM->doXForm(m_nSceneID, vcol, m_color);
-
+  pCPM->doXForm( getSceneID(), vcol, m_color);
+  
   //m_color.x() = r;
   //m_color.y() = g;
   //m_color.z() = b;
@@ -757,12 +765,17 @@ void OglDisplayContext::texCoord(float fx, float fy)
 
 DisplayContext *OglDisplayContext::createDisplayList()
 {
-  OglDisplayList *pdl = MB_NEW OglDisplayList(m_nSceneID);
+  OglDisplayList *pdl = MB_NEW OglDisplayList();
+
+  // Targets the same view as this
+  pdl->setTargetView( getTargetView() );
+
   // inherit properties (default alpha/material/pixsclfac)
   pdl->setAlpha(getAlpha());
   pdl->setMaterial(getMaterial());
   pdl->setUseShaderAlpha(useShaderAlpha());
   pdl->setPixSclFac(getPixSclFac());
+
   return pdl;
 }
 
@@ -953,7 +966,7 @@ void OglDisplayContext::drawMesh(const gfx::Mesh &mesh)
     calpha = int(getAlpha()* 255.0 + 0.5);
   else
     calpha = 255;
-  mesh.convRGBAByteCols(pcols, nverts*4, calpha, m_nSceneID);
+  mesh.convRGBAByteCols(pcols, nverts*4, calpha, getSceneID() );
 
   glColorPointer(4, GL_UNSIGNED_BYTE, 0, pcols);
 
@@ -1098,7 +1111,7 @@ void OglDisplayContext::drawElem(const AbstDrawElem &ade)
     glGenBuffers(1, &nvbo);
     OglVBORep *pRep = MB_NEW OglVBORep();
     pRep->m_nBufID = nvbo;
-    pRep->m_nSceneID = m_nSceneID;
+    pRep->m_nSceneID = getSceneID();
     de.setVBO(pRep);
 
     // Init VBO & copy data
@@ -1124,7 +1137,7 @@ void OglDisplayContext::drawElem(const AbstDrawElem &ade)
       glGenBuffers(1, &nvbo_ind);
       OglVBORep *pRep = MB_NEW OglVBORep();
       pRep->m_nBufID = nvbo_ind;
-      pRep->m_nSceneID = m_nSceneID;
+      pRep->m_nSceneID = getSceneID();
       devnci.setIndexVBO(pRep);
       ninds = devnci.getIndexSize();
 
@@ -1142,7 +1155,7 @@ void OglDisplayContext::drawElem(const AbstDrawElem &ade)
       glGenBuffers(1, &nvbo_ind);
       OglVBORep *pRep = MB_NEW OglVBORep();
       pRep->m_nBufID = nvbo_ind;
-      pRep->m_nSceneID = m_nSceneID;
+      pRep->m_nSceneID = getSceneID();
       devnci.setIndexVBO(pRep);
       ninds = devnci.getIndexSize();
 
@@ -1413,7 +1426,7 @@ void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
     glGenBuffers(1, &nvbo);
     OglVBORep *pRep = MB_NEW OglVBORep();
     pRep->m_nBufID = nvbo;
-    pRep->m_nSceneID = m_nSceneID;
+    pRep->m_nSceneID = getSceneID();
     ada.setVBO(pRep);
 
     // Init VBO & copy data
@@ -1425,7 +1438,7 @@ void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
       glGenBuffers(1, &nvbo_ind);
       OglVBORep *pRep = MB_NEW OglVBORep();
       pRep->m_nBufID = nvbo_ind;
-      pRep->m_nSceneID = m_nSceneID;
+      pRep->m_nSceneID = getSceneID();
       ada.setIndexVBO(pRep);
 
       glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, nvbo_ind);

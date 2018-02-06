@@ -5,6 +5,12 @@
 #ifndef __COMMON_H_INCLUDED__
 #define __COMMON_H_INCLUDED__
 
+#define MB_GUI_ARCH_CLI 0
+#define MB_GUI_ARCH_WIN 1
+#define MB_GUI_ARCH_OSX 2
+#define MB_GUI_ARCH_X11 3
+#define MB_GUI_ARCH_IPHONEOS 4
+
 #if defined(HAVE_CONFIG_H)
 # include "config.h"
 #endif

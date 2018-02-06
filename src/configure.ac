@@ -180,7 +180,7 @@ dnl Check iOS build flag
 AC_ARG_ENABLE(iphoneos,
     [--enable-iphoneos         enable iOS support],
     [if test $enableval = yes ; then
-	GUI_ARCH=IPHONEOS
+	GUI_ARCH=MB_GUI_ARCH_IPHONEOS
         BUILD_OSDEP=sysdep
      fi],
 [])
@@ -191,7 +191,7 @@ AC_ARG_ENABLE(cli,
     [
 dnl CLI option supplied --> enable CLI build
 if test $enableval = yes ; then
-    GUI_ARCH=CLI
+    GUI_ARCH=MB_GUI_ARCH_CLI
     BUILD_OSDEP=
     BUILD_CLI=cli
 fi],
@@ -200,7 +200,7 @@ dnl no option --> use GUI (X11/OSX)
 if test x$GUI_ARCH = x ; then
 case $host_os in
      darwin*)
-	GUI_ARCH=OSX
+	GUI_ARCH=MB_GUI_ARCH_OSX
 	BUILD_OSDEP="sysdep osxbuild stub"
 
         # make_distr.pl substitutions
@@ -224,7 +224,7 @@ case $host_os in
 	#echo "$CXXFLAGS, $HAVE_CXX11, $CXX11_CXXFLAGS"
      ;;
      *)
-	GUI_ARCH=X11
+	GUI_ARCH=MB_GUI_ARCH_X11
 	BUILD_OSDEP="sysdep uxdist"
         dnl Linux/Gecko23 build requires std=c++0x feature (char16_t)
         AX_CXX_COMPILE_STDCXX_0X
@@ -238,16 +238,24 @@ esac
 fi])
 
 
-AM_CONDITIONAL(COND_BUILD_OSX, test x$GUI_ARCH = xOSX)
-AM_CONDITIONAL(COND_BUILD_X11, test x$GUI_ARCH = xX11)
-AM_CONDITIONAL(COND_BUILD_IPHONEOS, test x$GUI_ARCH = xIPHONEOS)
+AM_CONDITIONAL(COND_BUILD_OSX, test x$GUI_ARCH = xMB_GUI_ARCH_OSX)
+AM_CONDITIONAL(COND_BUILD_X11, test x$GUI_ARCH = xMB_GUI_ARCH_X11)
+AM_CONDITIONAL(COND_BUILD_IPHONEOS, test x$GUI_ARCH = xMB_GUI_ARCH_IPHONEOS)
 AC_SUBST(BUILD_OSDEP)
 AC_SUBST(BUILD_CLI)
 
 echo GUI_ARCH: $GUI_ARCH
 AC_DEFINE_UNQUOTED([GUI_ARCH], [${GUI_ARCH}], [Name of the GUI archtecture])
-AC_DEFINE_UNQUOTED([STR_GUI_ARCH], ["${GUI_ARCH}"], [Name of the GUI archtecture])
 
+if test x$GUI_ARCH == xMB_GUI_ARCH_CLI ; then
+  AC_DEFINE_UNQUOTED([STR_GUI_ARCH], ["CLI"], [Name of the GUI archtecture])
+elif test x$GUI_ARCH == xMB_GUI_ARCH_OSX ; then
+  AC_DEFINE_UNQUOTED([STR_GUI_ARCH], ["OSX"], [Name of the GUI archtecture])
+elif test x$GUI_ARCH == xMB_GUI_ARCH_X11 ; then
+  AC_DEFINE_UNQUOTED([STR_GUI_ARCH], ["X11"], [Name of the GUI archtecture])
+elif test x$GUI_ARCH == xMB_GUI_ARCH_IPHONEOS ; then
+  AC_DEFINE_UNQUOTED([STR_GUI_ARCH], ["IPHONEOS"], [Name of the GUI archtecture])
+fi
 
 #######################################################
 #
@@ -471,7 +479,7 @@ AC_SUBST([USE_BOOST_TIMER])
 
 #####
 
-if test x$GUI_ARCH != xCLI ; then
+if test x$GUI_ARCH != xMB_GUI_ARCH_CLI ; then
 
 #######################################################
 #
@@ -538,7 +546,7 @@ SCR_CPPFLAGS=
 SCR_LDADD=
 SCR_LDFLAGS=
 
-dnl if test x$GUI_ARCH = xCLI ; then
+dnl if test x$GUI_ARCH = xMB_GUI_ARCH_CLI ; then
     # Use internal js impl in the standalone CLI build
     BUILD_SCR="$BUILD_SCR js jsbr"
     # overall settings
@@ -733,7 +741,7 @@ AC_SUBST(SCR_LDFLAGS)
 
 m4_ifdef([PKG_CHECK_MODULES], [], [define(PKG_CHECK_MODULES)])
 
-if test x$GUI_ARCH = xX11 ; then
+if test x$GUI_ARCH = xMB_GUI_ARCH_X11 ; then
     echo
     PKG_CHECK_MODULES(GTK2, gtk+-2.0 >= 2.10.0 glib-2.0 gobject-2.0 gdk-x11-2.0)
 fi
@@ -744,7 +752,7 @@ fi
 #
 USE_OPENGL=
 
-if test x$GUI_ARCH != xCLI ; then
+if test x$GUI_ARCH != xMB_GUI_ARCH_CLI ; then
 # GL is only checked in non-CLI builds
 GL_CPPFLAGS=
 GL_LDFLAGS=

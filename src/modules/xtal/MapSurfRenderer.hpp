@@ -261,7 +261,7 @@ namespace xtal {
 
     void setupXformMat(DisplayContext *pdl);
 
-#if (GUI_ARCH!=CLI)
+#if (GUI_ARCH!=MB_GUI_ARCH_CLI)
     //////////
     // Experimental rendering impl (OpenMP/VBO)
 

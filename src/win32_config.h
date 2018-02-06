@@ -16,6 +16,7 @@
 #define SIZEOF_LONG_LONG 8
 #define SIZEOF_FLOAT 4
 #define SIZEOF_DOUBLE 8
+#define GUI_ARCH MB_GUI_ARCH_WIN
 #define STR_GUI_ARCH "WIN"
 
 #ifdef _WIN64

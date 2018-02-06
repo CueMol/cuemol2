@@ -119,6 +119,7 @@ namespace qsys {
     /// Cameras in this scene
     camtab_t m_camtab;
 
+    /// Scene event management
     SceneEventCaster *m_pEvtCaster;
 
     /// Undo/Redo manager for this scene

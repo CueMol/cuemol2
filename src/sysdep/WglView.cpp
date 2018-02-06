@@ -96,10 +96,14 @@ bool WglView::attach(HWND hWnd, HDC hDC)
   MB_DPRINTLN("HWND==%p", m_hWnd);
   MB_DPRINTLN("HDC==%p", m_hDC);
 
-  m_hGL = setupWglContext();
+  setupPixelFormat();
+  
+  // create and enable the render context (RC)
+  m_hGL = ::wglCreateContext( m_hDC );
 
-  if (hOldGL==NULL)
+  if (hOldGL==NULL) {
     setupShareList();
+  }
   else {
     ::wglShareLists(hOldGL, m_hGL);
     ::wglMakeCurrent( NULL, NULL );
@@ -107,15 +111,12 @@ bool WglView::attach(HWND hWnd, HDC hDC)
   }
 
   // create display context object for OpenGL
-  if (m_pCtxt==NULL)
-    m_pCtxt = MB_NEW WglDisplayContext(getSceneID(), this);
-
-  if (!m_pCtxt->attach(m_hDC, m_hGL)) {
-    // NOTE: This cannot be happen!!
-    //LOG_DPRINTLN("Fatal error Cannot create WglDisplayContext!!");
-    //delete pCtxt;
-    return false;
+  if (m_pCtxt==NULL) {
+    m_pCtxt = MB_NEW WglDisplayContext();
+    m_pCtxt->setTargetView(this);
   }
+
+  m_pCtxt->attach(m_hDC, m_hGL);
 
   m_pCtxt->setCurrent();
 
@@ -130,12 +131,6 @@ bool WglView::attach(HWND hWnd, HDC hDC)
 
 void WglView::unloading()
 {
-  /*if (m_hDC!=NULL && m_hWnd!=NULL) {
-    // HDC will be destroyed at delete m_pDspCtxt!!
-    ::ReleaseDC(m_hWnd, m_hDC);
-    m_hDC = NULL;
-  }*/
-  
   if (m_pCtxt!=NULL) {
     delete m_pCtxt;
     m_pCtxt = NULL;
@@ -146,15 +141,6 @@ void WglView::unloading()
 }
 
 ////////////////////////////////////////////
-
-/// Setup OpenGL (stage 1)
-HGLRC WglView::setupWglContext()
-{
-  setupPixelFormat();
-  
-  // create and enable the render context (RC)
-  return ::wglCreateContext( m_hDC );
-}
 
 /// Setup OpenGL (stage 2)
 bool WglView::setupShareList()
