@@ -168,10 +168,9 @@ void fini()
   ViewInputConfig::fini();
   SysConfig::fini();
 
-  gfx::fini();
+  qsys_unregClasses();
 
-  // unregClasses();
-  // qlib::fini();
+  gfx::fini();
 }
 
 }

@@ -113,7 +113,7 @@ bool ClassRegistry::unregClassObj(const std::type_info &t)
 {
   ClassTable::iterator iter = m_abitab.find(t.name());
   if (iter==m_abitab.end()) {
-    MB_DPRINTLN("ClassRegistry::unregClassObj> Class %s not found.", t.name());
+    MB_DPRINTLN("ClsReg> unregClassObj() Class %s not found.", t.name());
     return false;
   }
 
@@ -136,9 +136,12 @@ bool ClassRegistry::unregClassObj(const std::type_info &t)
   // call the class finalization function
   pcls->callFini();
 
-  MB_DPRINTLN("Class %s: %p UNregistered", t.name(), pcls);
+  // LClass inherits SingletonBase class,
+  //  so pcls will be destructed in the SingletonBase::fini() method.
+  // delete pcls;
 
-  delete pcls;
+  MB_DPRINTLN("ClsReg> MetaClass for %s (%p) unregistered", t.name(), pcls);
+  
   return true;
 }
 

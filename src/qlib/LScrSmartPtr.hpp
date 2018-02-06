@@ -43,7 +43,12 @@ namespace qlib {
       // never throws
       m_pcnt = r.m_pcnt;
       ++*m_pcnt;
+#ifdef MB_DEBUG
+      check_copy();
+#endif
     }
+
+    void check_copy();
 
     LScriptable *get() const {
       // never throws

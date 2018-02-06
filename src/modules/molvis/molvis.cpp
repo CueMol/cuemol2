@@ -52,7 +52,7 @@ bool init()
 void fini()
 {
   // PDBFileReader::unregClass();
-  // molvis_unregClasses();
+  molvis_unregClasses();
   
   MB_DPRINTLN("molvis fini: OK");
 }

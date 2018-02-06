@@ -29,7 +29,7 @@ namespace anim {
 
   void fini()
   {
-    // anim_unregClasses();
+    anim_unregClasses();
 
     MB_DPRINTLN("anim fini: OK");
   }

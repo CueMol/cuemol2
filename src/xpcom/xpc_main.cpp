@@ -55,9 +55,11 @@ static nsresult mod_ctor()
 static void mod_dtor()
 {
   //printf("##### QM_XPCOM %%%%%% MOD DTOR called %p\n", pmod);
+  if (gpXPCCueMol!=NULL) {
+    //gpXPCCueMol->dumpWrappers();
+    gpXPCCueMol->Fini();
+  }
   qlib::fini();
-  if (gpXPCCueMol!=NULL)
-    gpXPCCueMol->dumpWrappers();
 }
 
 static const mozilla::Module kModule = {

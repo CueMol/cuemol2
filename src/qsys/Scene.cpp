@@ -129,10 +129,15 @@ void Scene::init()
 #ifndef NO_SCRIPT
   if (m_pInterp!=NULL) delete m_pInterp;
   ScenePtr rThis(this);
-  m_pInterp = jsbr::createInterp(rThis.copy());
-  if (m_pInterp==NULL)
-    return;
-
+  {
+    LScriptable *ps = rThis.copy();
+    m_pInterp = jsbr::createInterp(ps);
+    if (m_pInterp==NULL) {
+      ps->destruct();
+      return;
+    }
+  }
+  
   // setup system default script path
   SysConfig *pconf = SysConfig::getInstance();
   LString scrdir = pconf->get("script_dir");
@@ -1966,5 +1971,10 @@ void Scene::setIccIntent(int n)
   pXfm->reset();
   pXfm->setIccIntent(n);
   setIccFileName(m_iccFileName);
+}
+
+LString Scene::toString() const
+{
+  return LString::format("Scene(name=%s, UID=%d)",m_name.c_str(), getUID());
 }
 
