@@ -9,16 +9,19 @@
 #include "sysdep.hpp"
 
 #include <qlib/SingletonBase.hpp>
+#include <qsys/SceneEvent.hpp>
 
 namespace sysdep {
 
+  using qlib::LString;
   class OglProgramObject;
+  class OglDisplayContext;
 
   ///
   ///  Program object manager
   ///
-  class SYSDEP_API OglProgObjManager
-       : public qlib::SingletonBase<OglProgObjManager>,
+  class SYSDEP_API OglProgObjMgr
+       : public qlib::SingletonBase<OglProgObjMgr>,
          public qsys::SceneEventListener
   {
   private:
@@ -27,15 +30,15 @@ namespace sysdep {
     data_t m_data;
 
   public:
-    OglProgObjManager() {}
-    ~OglProgObjManager() {}
+    OglProgObjMgr() {}
+    ~OglProgObjMgr() {}
 
     OglProgramObject *createProgramObject(const LString &name, OglDisplayContext *pdc);
     OglProgramObject *getProgramObject(const LString &name, OglDisplayContext *pdc);
     
-    virtual void sceneChanged(SceneEvent &ev);
+    virtual void sceneChanged(qsys::SceneEvent &ev);
 
-  }
+  };
 
   
 }

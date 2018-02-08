@@ -79,7 +79,6 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
   </PropertyGroup>
-
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
     <ClCompile>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;QSYS_EXPORTS;SYSDEP_EXPORTS;JSBR_EXPORTS;GFX_EXPORTS;MOLSTR_EXPORTS;MOLVIS_EXPORTS;XTAL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -89,7 +88,6 @@
       <AdditionalDependencies>opengl32.lib;glu32.lib;glew32.lib;lcms2.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
-
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
     <ClCompile>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;QSYS_EXPORTS;SYSDEP_EXPORTS;JSBR_EXPORTS;GFX_EXPORTS;MOLSTR_EXPORTS;MOLVIS_EXPORTS;XTAL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -99,7 +97,6 @@
       <AdditionalDependencies>opengl32.lib;glu32.lib;glew32.lib;lcms2.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
-
   <ItemGroup>
     <ClCompile Include="..\..\src\gfx\CmsXform.cpp" />
     <ClCompile Include="..\..\src\gfx\ColProfMgr.cpp" />
@@ -325,6 +322,7 @@
     <ClCompile Include="..\..\src\sysdep\OglDisplayContext.cpp" />
     <ClCompile Include="..\..\src\sysdep\OglDisplayList.cpp" />
     <ClCompile Include="..\..\src\sysdep\OglFBOView.cpp" />
+    <ClCompile Include="..\..\src\sysdep\OglProgObjMgr.cpp" />
     <ClCompile Include="..\..\src\sysdep\OglProgramObject.cpp" />
     <ClCompile Include="..\..\src\sysdep\OglView.cpp" />
     <ClCompile Include="..\..\src\sysdep\sysdep.cpp" />

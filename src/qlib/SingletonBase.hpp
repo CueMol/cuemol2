@@ -7,6 +7,8 @@
 #ifndef SINGLETON_BASE_HPP_INCLUDE_
 #define SINGLETON_BASE_HPP_INCLUDE_
 
+#include "LDebug.hpp"
+
 namespace qlib {
 
   class LClass;

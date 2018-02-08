@@ -29,6 +29,7 @@
 #include "OglDisplayContext.hpp"
 #include "OglDisplayList.hpp"
 #include "OglProgramObject.hpp"
+#include "OglProgObjMgr.hpp"
 
 #include <gfx/TextRenderManager.hpp>
 #include <gfx/PixelBuffer.hpp>
@@ -71,9 +72,9 @@ OglDisplayContext::~OglDisplayContext()
   if (m_pGluData!=NULL)
     ::gluDeleteQuadric((GLUquadricObj *)m_pGluData);
 
-  BOOST_FOREACH (ProgTab::value_type &elem, m_progs) {
+  /*BOOST_FOREACH (ProgTab::value_type &elem, m_progs) {
     delete elem.second;
-  }
+  }*/
 }
 
 void OglDisplayContext::setTargetView(qsys::View *pView)
@@ -1511,6 +1512,14 @@ void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
 
 OglProgramObject *OglDisplayContext::createProgramObject(const LString &name)
 {
+  if (!qsys::View::hasVS())
+    return NULL;
+  
+  OglProgObjMgr *pMgr = OglProgObjMgr::getInstance();
+
+  return pMgr->createProgramObject(name, this);
+
+/*
   OglProgramObject *pRval = NULL;
 
   if (!qsys::View::hasVS())
@@ -1531,16 +1540,24 @@ OglProgramObject *OglDisplayContext::createProgramObject(const LString &name)
 #endif
 
   return pRval;
+*/
 }
 
 OglProgramObject *OglDisplayContext::getProgramObject(const LString &name)
 {
+  OglProgObjMgr *pMgr = OglProgObjMgr::getInstance();
+
+  return pMgr->getProgramObject(name, this);
+
+/*
   ProgTab::const_iterator i = m_progs.find(name);
   if (i==m_progs.end())
     return NULL;
   return i->second;
+  */
 }
 
+/*
 bool OglDisplayContext::destroyProgramObject(const LString &name)
 {
   ProgTab::iterator i = m_progs.find(name);
@@ -1552,4 +1569,5 @@ bool OglDisplayContext::destroyProgramObject(const LString &name)
   delete pdel;
   return true;
 }
+*/
 

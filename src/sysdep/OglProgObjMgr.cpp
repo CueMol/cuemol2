@@ -23,16 +23,19 @@
 #include "OglProgramObject.hpp"
 
 #include <qsys/SceneEvent.hpp>
+#include <qsys/SceneManager.hpp>
 
 using namespace sysdep;
 using gfx::DisplayContext;
 using qsys::SceneEvent;
 
-OglProgramObject *OglProgObjManager::createProgramObject(const LString &name, OglDisplayContext *pdc)
+SINGLETON_BASE_IMPL(OglProgObjMgr);
+
+OglProgramObject *OglProgObjMgr::createProgramObject(const LString &name, OglDisplayContext *pdc)
 {
   OglProgramObject *pRval = NULL;
 
-  pRval = getProgramObject(name);
+  pRval = getProgramObject(name, pdc);
   if (pRval!=NULL)
     return pRval;
 
@@ -50,10 +53,11 @@ OglProgramObject *OglProgObjManager::createProgramObject(const LString &name, Og
   }
 
   LString key = LString::format("%s@%d", name.c_str(), pdc->getSceneID());
-  m_data.insert(data_t::value_type(name, pRval));
+  m_data.insert(data_t::value_type(key, pRval));
+  return pRval;
 }
 
-OglProgramObject *OglProgObjManager::getProgramObject(const LString &name, OglDisplayContext *pdc)
+OglProgramObject *OglProgObjMgr::getProgramObject(const LString &name, OglDisplayContext *pdc)
 {
   LString key = LString::format("%s@%d", name.c_str(), pdc->getSceneID());
   
@@ -64,7 +68,7 @@ OglProgramObject *OglProgObjManager::getProgramObject(const LString &name, OglDi
   return i->second;
 }
 
-void OglProgObjManager::sceneChanged(SceneEvent &ev)
+void OglProgObjMgr::sceneChanged(SceneEvent &ev)
 {
   if (ev.getType()!=SceneEvent::SCE_SCENE_REMOVING)
     return;
@@ -72,11 +76,21 @@ void OglProgObjManager::sceneChanged(SceneEvent &ev)
   qlib::uid_t nid = ev.getTarget();
   LString key = LString::format("@%d", nid);
 
+  std::list<LString> delkeys;
+
   BOOST_FOREACH (data_t::value_type &elem, m_data) {
     if (elem.first.endsWith(key)) {
-      MB_DPRINTLN("Destroy progobj: %s", elem.first.c_str());
-      delete elem.second;
-      elem.second = NULL;
+      delkeys.push_back(elem.first);
+    }
+  }
+  
+  BOOST_FOREACH (const LString &key, delkeys) {
+    data_t::iterator &iter = m_data.find(key);
+    if (iter!=m_data.end()) {
+      MB_DPRINTLN("Destroy progobj: %s", key.c_str());
+      if (iter->second!=NULL)
+        delete iter->second;
+      m_data.erase(iter);
     }
   }
 }
