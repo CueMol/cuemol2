@@ -3,15 +3,6 @@
 # pybr module makefile
 #
 
-scriptdir = $(pkgdatadir)/python/
-script_DATA = \
-scripts/cuemol.py \
-scripts/fileio.py \
-scripts/mol_util.py \
-scripts/cuemol_cmd.py \
-scripts/util.py \
-$(NULL)
-
 ######################################################
 # C++ mcinfo generation rule
 
@@ -116,14 +107,15 @@ endif
 #####################################
 # Python scripts
 
-scriptdir = $(pkgdatadir)/scripts/
+scriptdir = $(pkgdatadir)/python/
 script_DATA = \
-$(top_srcdir)/xul_gui/scripts/python/cuemol.py \
-$(top_srcdir)/xul_gui/scripts/python/fileio.py \
-$(top_srcdir)/xul_gui/scripts/python/molu.py \
-$(top_srcdir)/xul_gui/scripts/python/qmd.py \
-$(top_srcdir)/xul_gui/scripts/python/util.py \
+scripts/cuemol.py \
+scripts/fileio.py \
+scripts/mol_util.py \
+scripts/cuemol_cmd.py \
+scripts/util.py \
 $(NULL)
+
 
 #####################################
 

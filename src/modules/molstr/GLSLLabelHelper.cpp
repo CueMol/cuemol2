@@ -98,8 +98,8 @@ void GLSLLabelHelper::alloc(int nlab)
   attra.setAttrInfo(0, m_nXyzLoc, 3, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, x));
   attra.setAttrInfo(1, m_nWhLoc, 2, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, w));
   attra.setAttrInfo(2, m_nNxyLoc, 2, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, nx));
-  attra.setAttrInfo(3, m_nWidthLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, width));
-  attra.setAttrInfo(4, m_nAddrLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, addr));
+  attra.setAttrInfo(3, m_nWidthLoc, 1, qlib::type_consts::QTC_INT32, offsetof(AttrElem, width));
+  attra.setAttrInfo(4, m_nAddrLoc, 1, qlib::type_consts::QTC_INT32, offsetof(AttrElem, addr));
 
   attra.alloc(nlab*4);
   attra.allocInd(nlab*6);

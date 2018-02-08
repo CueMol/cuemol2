@@ -1139,23 +1139,39 @@ void OglDisplayContext::drawElemVA(const DrawElem &de)
 //#define USE_VAO
 #endif
 
+#define USE_VAO
+
 void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
 {
   const int itype = ada.getType();
   
   gfx::DrawElemImpl *pRep = ada.getImpl();
   if (pRep==NULL) {
+    // VBO with index array (for glDrawElem)
     if (itype==AbstDrawElem::VA_ATTR_INDS) {
 #ifdef USE_VAO
-      if(GLEW_ARB_vertex_array_object)
+      if(
+#ifdef GUI_ARCH_OSX
+	 GLEW_APPLE_vertex_array_object
+#else
+	 GLEW_ARB_vertex_array_object
+#endif
+	 )
         pRep = MB_NEW OglVAOElemImpl(m_nSceneID, this);
       else
 #endif
         pRep = MB_NEW OglDrawElemAttrsImpl(m_nSceneID);
     }
     else {
+      // itype==VA_ATTRS --> VBO without index (for glDrawArray)
 #ifdef USE_VAO
-      if(GLEW_ARB_vertex_array_object)
+      if(
+#ifdef GUI_ARCH_OSX
+	 GLEW_APPLE_vertex_array_object
+#else
+	 GLEW_ARB_vertex_array_object
+#endif
+	 )
         pRep = MB_NEW OglVAOArrayImpl(m_nSceneID, this);
       else
 #endif

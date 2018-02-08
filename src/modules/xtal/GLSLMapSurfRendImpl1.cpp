@@ -1,4 +1,4 @@
-<// -*-Mode: C++;-*-
+// -*-Mode: C++;-*-
 //
 // Generate/Render the map contour surface of ScalarObject
 //

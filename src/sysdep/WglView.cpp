@@ -12,6 +12,7 @@
 
 #ifdef HAVE_GLEW
 #include <GL/glew.h>
+#include <GL/wglew.h>
 #pragma comment(lib, "glew32.lib")
 #endif
 
@@ -119,9 +120,11 @@ bool WglView::attach(HWND hWnd, HDC hDC)
 
   m_pCtxt->setCurrent();
 
-//  wglSwapIntervalEXT(0);
   // perform OpenGL-common initialization tasks
   OglView::setup();
+
+  if (WGLEW_EXT_swap_control)
+    wglSwapIntervalEXT(0);
 
   m_bInitOK = true;
   MB_DPRINTLN("WglView::setup() OK.");

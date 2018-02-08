@@ -29,6 +29,7 @@ QdfDenMapReader.cpp \
 QdfDenMapWriter.cpp \
 BrixMapReader.cpp \
 FFTUtil.cpp \
+BSharpTool.cpp \
 $(NULL)
 
 #
@@ -42,6 +43,8 @@ MapRenderer.qif \
 MTZ2MapReader.qif \
 CCP4MapReader.qif \
 BrixMapReader.qif \
+BSharpTool.qif \
+HKLList.cpp \
 $(NULL)
 
 ######################################################

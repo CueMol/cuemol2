@@ -24,6 +24,7 @@ OglDisplayContext.cpp \
 OglFBOView.cpp \
 OglProgramObject.cpp \
 Canvas2DTextRender2.cpp \
+OglTexture.cpp \
 $(NULL)
 endif
 
@@ -40,6 +41,7 @@ OglDisplayContext.cpp \
 OglFBOView.cpp \
 OglProgramObject.cpp \
 Canvas2DTextRender2.cpp \
+OglTexture.cpp \
 $(NULL)
 endif
 

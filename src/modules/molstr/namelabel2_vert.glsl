@@ -3,6 +3,9 @@
 //  NameLabel2 vertex shader for OpenGL
 //
 
+//#extension GL_ARB_compatibility : enable
+#extension GL_EXT_gpu_shader4 : enable 
+
 @include "lib_common.glsl"
 
 ////////////////////
@@ -11,8 +14,10 @@
 attribute vec3 a_xyz;
 attribute vec2 a_wh;
 attribute vec2 a_nxy;
-attribute float a_width;
-attribute float a_addr;
+//attribute float a_width;
+//attribute float a_addr;
+attribute int a_width;
+attribute int a_addr;
 
 ////////////////////
 // Uniform variables
@@ -26,8 +31,10 @@ uniform float u_ppa;
 
 varying vec2 v_labpos;
 
-varying float v_width;
-varying float v_addr;
+//varying float v_width;
+//varying float v_addr;
+flat varying int v_width;
+flat varying int v_addr;
 
 void main (void)
 {
@@ -60,7 +67,7 @@ void main (void)
   v_labpos.x = a_wh.x;
   v_labpos.y = a_wh.y;
 
-  v_width = (a_width);
-  v_addr = (a_addr);
+  v_width = int(a_width);
+  v_addr = int(a_addr);
 }
 

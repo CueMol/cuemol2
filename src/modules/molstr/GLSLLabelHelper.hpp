@@ -41,8 +41,8 @@ namespace molstr {
       qfloat32 x, y, z;
       qfloat32 w, h;
       qfloat32 nx, ny;
-      qfloat32 width;
-      qfloat32 addr;
+      qint32 width;
+      qint32 addr;
     };
 
     typedef gfx::DrawAttrElems<quint32, AttrElem> AttrArray;
