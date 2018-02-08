@@ -202,6 +202,8 @@
     <ClCompile Include="..\..\src\modules\xtal\MapMeshRenderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MapRenderer.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MapRenderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\MapSurf2Renderer.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\MapSurf2Renderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MapSurfRenderer.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MapSurfRenderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MapSurfRendImpl2.cpp" />
@@ -229,6 +231,7 @@
     <mcwrapgen3 Include="..\..\src\modules\xtal\GLSLMapVolRenderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\xtal\MapMeshRenderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\xtal\MapRenderer.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\xtal\MapSurf2Renderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\xtal\MapSurfRenderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\xtal\MTZ2MapReader.qif" />
   </ItemGroup>

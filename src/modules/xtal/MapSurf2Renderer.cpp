@@ -61,7 +61,7 @@ MapSurf2Renderer::~MapSurf2Renderer()
 
 const char *MapSurf2Renderer::getTypeName() const
 {
-  return "isosurf";
+  return "isosurf2";
 }
 
 void MapSurf2Renderer::setSceneID(qlib::uid_t nid)
@@ -841,11 +841,10 @@ namespace {
   }
 }
 
-void MapSurfRenderer::marchCube2(int fx, int fy, int fz,
-                                 const qbyte *values,
-                                 const bool *bary,
-                                 int *pvind)
-                                 //MSVertList &verts)
+void MapSurf2Renderer::marchCube2(int fx, int fy, int fz,
+                                  const qbyte *values,
+                                  const bool *bary,
+                                  int *pvind)
 {
   int iCorner, iVertex, iVertexTest, iEdge, iTriangle, iFlagIndex, iEdgeFlags;
 
