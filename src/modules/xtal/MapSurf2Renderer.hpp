@@ -1,10 +1,10 @@
 // -*-Mode: C++;-*-
 //
-// Generate/Render the contour surface of ScalarObject
+// Generate/Render the contour surface of ScalarObject (ver.2)
 //
 
-#ifndef XTAL_MAP_SURF_RENDERER_HPP_INCLUDED
-#define XTAL_MAP_SURF_RENDERER_HPP_INCLUDED
+#ifndef XTAL_MAP_SURF2_RENDERER_HPP_INCLUDED
+#define XTAL_MAP_SURF2_RENDERER_HPP_INCLUDED
 
 #include "xtal.hpp"
 #include "MapRenderer.hpp"
@@ -16,8 +16,7 @@
 #include <modules/molstr/BSPTree.hpp>
 
 #include <modules/surface/MolSurfObj.hpp>
-//#include <gfx/DrawElem.hpp>
-#include <gfx/DrawAttrArray.hpp>
+#include <gfx/DrawElem.hpp>
 
 class MapSurfRenderer_wrap;
 
@@ -34,7 +33,10 @@ namespace xtal {
   using molstr::BSPTree;
   class DensityMap;
 
-  class MapSurfRenderer : public MapRenderer,
+  /// Map surface renderer class (ver.2)
+  /// This class uses ver2 interface to perform file,
+  /// display-list and VBO (with Omp) rendering
+  class MapSurf2Renderer : public MapRenderer,
                           public qsys::ViewEventListener
   {
     MC_SCRIPTABLE;
@@ -117,23 +119,6 @@ namespace xtal {
     /// Get max extent (in angstrom unit; calculated from m_nMaxGrid)
     double getMaxExtent() const;
 
-  public:
-    /// OpenGL rendering mode const
-    static const int MSR_REND_DLIST=0;
-    static const int MSR_REND_VBO=1;
-    static const int MSR_REND_SHADER=2;
-
-  private:
-    /// OpenGL rendering mode
-    int m_nGlRendMode;
-
-  public:
-    int getGLRenderMode() const { return m_nGlRendMode; }
-    void setGLRenderMode(int n) {
-      invalidateDisplayCache();
-      m_nGlRendMode = n;
-    } 
-
   private:
     /// OpenMP Thread number(-1: use all system cores)
     int m_nOmpThr;
@@ -166,16 +151,19 @@ namespace xtal {
     /// for debug
     std::deque<Vector4D> m_tmpv;
     
+    // cached ptr of target obj
+    ScalarObject *m_pCMap;
+
   public:
 
     ///////////////////////////////////////////
     // constructors / destructor
 
     /// default constructor
-    MapSurfRenderer();
+    MapSurf2Renderer();
 
     /// destructor
-    virtual ~MapSurfRenderer();
+    virtual ~MapSurf2Renderer();
 
     ///////////////////////////////////////////
 
@@ -186,7 +174,12 @@ namespace xtal {
 
     virtual qlib::uid_t detachObj();
 
+    /// For updating the center by the mouse events
+    virtual void viewChanged(qsys::ViewEvent &);
+
     ///////////////////////////////////////////
+    // Old/common rendering interface
+    //   (for file/display-list rendering)
 
     virtual void render(DisplayContext *pdl);
     virtual void preRender(DisplayContext *pdc);
@@ -194,19 +187,9 @@ namespace xtal {
 
     // virtual bool isTransp() const { return true; }
 
-    ///////////////////////////////////////////////////////////////
-
-    virtual void viewChanged(qsys::ViewEvent &);
-
-  protected:
-    // We must override firePropertyChanged() to avoid destructing the display list,
-    // when only the color was changed.
-    // virtual void firePropertyChanged(qlib::PropChgEvent &ev);
-
   private:
 
-    // cached ptr of target obj
-    ScalarObject *m_pCMap;
+    void setupXformMat(DisplayContext *pdl);
 
     void makerange();
 
@@ -241,36 +224,58 @@ namespace xtal {
       
     }
 
-    Vector4D getGrdNorm(int ix, int iy, int iz);
-    Vector4D getGrdNorm2(int ix, int iy, int iz);
+    inline Vector4D getGrdNorm2(int ix, int iy, int iz) {
+      const int n = 1;
+      return Vector4D(getDen(ix-n, iy,   iz  ) - getDen(ix+n, iy,   iz ),
+                      getDen(ix,   iy-n, iz  ) - getDen(ix,   iy+n, iz  ),
+                      getDen(ix,   iy,   iz-n) - getDen(ix,   iy,   iz+n));
+    }
+
 
     float m_values[8];
     bool m_bary[8];
     Vector4D m_norms[8];
 
-    void setupXformMat(DisplayContext *pdl);
+    ////////////////////////////////////////////////
+    // New rendering interface (for VBO/GLSL)
 
-    //////////
-    // Experimental rendering impl (OpenMP/VBO)
+  public:
+
+    /// Use Ver2 interface (returns true)
+    virtual bool isUseVer2Iface() const;
+
+    virtual void invalidateDisplayCache();
+    
+    virtual void createDisplayCache();
+
+    virtual bool isCacheAvail() const;
+
+    virtual void renderVBO(DisplayContext *pdc);
+
+    // virtual void renderGLSL(DisplayContext *pdc);
+
+  private:
 
     /// Workarea data OK/NG (invalid)
     bool m_bWorkOK;
 
-    virtual void display(DisplayContext *pdc);
+    qbyte m_bIsoLev;
 
-    virtual void invalidateDisplayCache();
-    
+    int m_nbcol;
+    int m_nbrow;
+    int m_nbsec;
+
+    qbyte m_col_r, m_col_g, m_col_b, m_col_a;
+
+    gfx::DrawElemVNC *m_pVBO;
+
     void createVBO1(DisplayContext *pdl);
     void displayVBO1(DisplayContext *pdl);
     
-    typedef std::vector<surface::MSVert> MSVertList;
-
     void marchCube2(int fx, int fy, int fz,
 		    const qbyte *values,
 		    const bool *bary,
 		    int *pvind);
-
-                                     //MSVertList &verts);
       
     inline qbyte getByteDen(int x, int y, int z) const
     {
@@ -291,11 +296,9 @@ namespace xtal {
           return 0;
         return m_pCMap->atByte(x, y, z);
       }
-      
     }
 
-    inline void getGrdNormByte(int ix, int iy, int iz,
-			       float *norm)
+    inline void getGrdNormByte(int ix, int iy, int iz, float *norm)
     {
       const int del = 1;
       norm[0] = float(getByteDen(ix-del, iy,   iz  )) - float(getByteDen(ix+del, iy,   iz  ));
@@ -304,51 +307,8 @@ namespace xtal {
       norm[3] = 0.0f;
     }
     
-    qbyte m_bIsoLev;
-
-    int m_nbcol;
-    int m_nbrow;
-    int m_nbsec;
-
-    qbyte m_col_r, m_col_g, m_col_b, m_col_a;
-    //std::vector<gfx::DrawElemVNC> m_verts;
-    gfx::DrawElemVNC *m_pVBO;
-    
-    //////////
-    // Experimental rendering impl (OpenMP/GLSL)
-    
-    void displayGLSL1(DisplayContext *pdc);
-    void createGLSL1(DisplayContext *pdc);
-
-    void displayGLSL2(DisplayContext *pdc);
-    void createGLSL2(DisplayContext *pdc);
-    bool initShader();
-
-    /// Called just before this object is unloaded
-    virtual void unloading();
-
-  private:
-    bool m_bChkShaderDone;
-
-    struct AttrElem {
-      qfloat32 ind;
-      qfloat32 flag;
-      qfloat32 ivert;
-    };
-    
-    typedef gfx::DrawAttrArray<AttrElem> AttrArray;
-
-    sysdep::OglProgramObject *m_pPO;
-
-    AttrArray *m_pAttrArray;
-    
-    typedef qlib::Array3D<qbyte> MapTmp;
-
-    MapTmp m_maptmp;
-
-    /// Map 3D texture ID
-    quint32 m_nMapTexID;
-    quint32 m_nMapBufID;
+    ///////////////////////////////////////////////
+    // Surface object generation
 
   private:
     std::deque<surface::MSVert> m_msverts;

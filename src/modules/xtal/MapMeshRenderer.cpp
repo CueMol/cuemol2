@@ -27,19 +27,12 @@ MapMeshRenderer::MapMeshRenderer()
      :  super_t()
 
 {
-  m_pXCrsLst = NULL;
-  m_pYCrsLst = NULL;
-  m_pZCrsLst = NULL;
-
   m_nBufSize = 100;
   m_lw = 1.0;
   m_bPBC = false;
   m_bAutoUpdate = true;
 
   //resetAllProps();
-
-  // // default work area size 100x100x100
-  // setCrossArraySize(m_nBufSize,m_nBufSize,m_nBufSize);
 
   // X-Y plane
   m_ivdel[0] = Vector3I(0,0,0);
@@ -92,15 +85,6 @@ MapMeshRenderer::MapMeshRenderer()
 // destructor
 MapMeshRenderer::~MapMeshRenderer()
 {
-  if (m_pXCrsLst!=NULL)
-    delete m_pXCrsLst;
-
-  if (m_pYCrsLst!=NULL)
-    delete m_pYCrsLst;
-
-  if (m_pZCrsLst!=NULL)
-    delete m_pZCrsLst;
-
   //if (m_pdl!=NULL)
   //delete m_pdl;
 

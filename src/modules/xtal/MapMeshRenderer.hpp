@@ -36,7 +36,6 @@ namespace xtal {
     friend class ::MapMeshRenderer_wrap;
 
     typedef qlib::Array3D<qbyte> ByteMap;
-    //typedef qlib::ByteMap ByteMap;
     
     ///////////////////////////////////////////
     // properties
@@ -97,9 +96,8 @@ namespace xtal {
     ///////////////////////////////////////////
     // work area
 
-    /// Size of map (in grid unit/copy from m_pMap)
-    //int m_nMapColNo, m_nMapRowNo, m_nMapSecNo;
   private:
+    /// Size of map (in grid unit/copy from m_pMap)
     Vector3I m_mapSize;
 
   public:
@@ -109,43 +107,27 @@ namespace xtal {
     /// size of section array
     int m_nColCrs, m_nRowCrs, m_nSecCrs;
 
-    /// Actual size of display extent (in grid unit)
-    //int m_nActCol, m_nActRow, m_nActSec;
   private:
+    /// Actual size of display extent (in grid unit)
     Vector3I m_dspSize;
 
   public:
     const Vector3I &getDspSize() const { return m_dspSize; }
 
-    /// Start position of display extent from global origin (in grid unit)
-    //int m_nStCol, m_nStRow, m_nStSec;
   private:
+    /// Start position of display extent from global origin (in grid unit)
     Vector3I m_glbStPos;
 
   public:
     const Vector3I &getGlbStPos() const { return m_glbStPos; }
 
     /// Start position of display extent from map origin (in grid unit)
-    //int m_nMapStCol, m_nMapStRow, m_nMapStSec;
     Vector3I m_mapStPos;
 
     const Vector3I &getMapStPos() const { return m_mapStPos; }
 
     /// Level in 8-bit map unit
-    unsigned int m_nIsoLevel;
-
-  private:
-    /// section array for x(column) direction
-    ByteMap *m_pXCrsLst;
-
-    /// section array for y direction
-    ByteMap *m_pYCrsLst;
-
-    /// section array for z direction
-    ByteMap *m_pZCrsLst;
-
-    /// delta
-    double m_delta;
+    qbyte m_nIsoLevel;
 
   protected:
     //ByteMap m_maptmp;
