@@ -31,7 +31,7 @@ namespace sysdep {
 
   public:
     OglProgObjMgr() {}
-    ~OglProgObjMgr() {}
+    ~OglProgObjMgr();
 
     OglProgramObject *createProgramObject(const LString &name, OglDisplayContext *pdc);
     OglProgramObject *getProgramObject(const LString &name, OglDisplayContext *pdc);

@@ -31,6 +31,16 @@ using qsys::SceneEvent;
 
 SINGLETON_BASE_IMPL(OglProgObjMgr);
 
+OglProgObjMgr::~OglProgObjMgr()
+{
+  BOOST_FOREACH (data_t::value_type &elem, m_data) {
+    MB_DPRINTLN("OglProgMgr> dtor() Warning: %s not removed", elem.first.c_str());
+    if (elem.second!=NULL) {
+      delete elem.second;
+    }
+  }
+}
+
 OglProgramObject *OglProgObjMgr::createProgramObject(const LString &name, OglDisplayContext *pdc)
 {
   OglProgramObject *pRval = NULL;
