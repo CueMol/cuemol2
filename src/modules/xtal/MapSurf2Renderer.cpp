@@ -18,6 +18,10 @@
 #include <qsys/Scene.hpp>
 #include <modules/molstr/AtomIterator.hpp>
 
+#ifdef _OPENMP
+#  include <omp.h>
+#endif
+
 using namespace xtal;
 using qlib::Matrix4D;
 using qlib::Matrix3D;
@@ -666,16 +670,18 @@ void MapSurf2Renderer::invalidateDisplayCache()
     
 void MapSurf2Renderer::createDisplayCache()
 {
+  ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
+  m_pCMap = pMap;
+
   // check and setup mol boundary data
   setupMolBndry();
 
   // generate map-range information
   makerange();
 
-  // CreateVBO
-  ScalarObject *pMap = m_pCMap;
-
   /////////////////////
+  // CreateVBO
+
   // setup workarea
 
   const double siglevel = getSigLevel();
@@ -996,6 +1002,9 @@ bool MapSurf2Renderer::isCacheAvail() const
 
 void MapSurf2Renderer::renderVBO(DisplayContext *pdc)
 {
+  ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
+  m_pCMap = pMap;
+
   preRender(pdc);
 
   pdc->pushMatrix();
@@ -1007,5 +1016,7 @@ void MapSurf2Renderer::renderVBO(DisplayContext *pdc)
   pdc->popMatrix();
 
   postRender(pdc);
+
+  m_pCMap = NULL;
 }
 

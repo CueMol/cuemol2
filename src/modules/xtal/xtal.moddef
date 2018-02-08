@@ -26,6 +26,8 @@
 #  include "GLSLMapMesh3Renderer.qif"
 #endif
 
+#include "MapSurf2Renderer.qif"
+
 module xtal
 {
   init xtal::init();
@@ -47,6 +49,8 @@ module xtal
   GLSLMapVolRenderer;
   GLSLMapMesh3Renderer;
 #endif
+
+  MapSurf2Renderer;
 
 };
 

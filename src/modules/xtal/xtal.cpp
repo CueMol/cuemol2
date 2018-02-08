@@ -23,6 +23,8 @@
 #  include "MapMeshRenderer.hpp"
 #endif
 
+#include "MapSurf2Renderer.hpp"
+
 extern void xtal_regClasses();
 extern void xtal_unregClasses();
 
@@ -45,6 +47,8 @@ bool init()
   
   RendererFactory *pRF = RendererFactory::getInstance();
   pRF->regist<MapSurfRenderer>();
+
+  pRF->regist<MapSurf2Renderer>();
 
 #ifdef USE_OPENGL
   pRF->regist<GLSLMapVolRenderer>();

@@ -18,7 +18,7 @@
 #include <modules/surface/MolSurfObj.hpp>
 #include <gfx/DrawElem.hpp>
 
-class MapSurfRenderer_wrap;
+class MapSurf2Renderer_wrap;
 
 namespace sysdep {
   class OglProgramObject;
@@ -44,7 +44,7 @@ namespace xtal {
 
   private:
     typedef MapRenderer super_t;
-    friend class ::MapSurfRenderer_wrap;
+    friend class ::MapSurf2Renderer_wrap;
 
     ///////////////////////////////////////////
     // properties
