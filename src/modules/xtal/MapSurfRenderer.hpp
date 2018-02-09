@@ -106,17 +106,6 @@ namespace xtal {
       invalidateDisplayCache();
     }
     
-  private:
-    /// Max grid size (default=100x100x100 grid)
-    int m_nMaxGrid;
-
-  public:
-    int getMaxGrids() const { return m_nMaxGrid; }
-    void setMaxGrids(int n);
-
-    /// Get max extent (in angstrom unit; calculated from m_nMaxGrid)
-    double getMaxExtent() const;
-
   public:
     /// OpenGL rendering mode const
     static const int MSR_REND_DLIST=0;

@@ -108,6 +108,7 @@ namespace xtal {
       invalidateDisplayCache();
     }
     
+/*
   private:
     /// Max grid size (default=100x100x100 grid)
     int m_nMaxGrid;
@@ -118,7 +119,8 @@ namespace xtal {
 
     /// Get max extent (in angstrom unit; calculated from m_nMaxGrid)
     double getMaxExtent() const;
-
+*/
+    
   private:
     /// OpenMP Thread number(-1: use all system cores)
     int m_nOmpThr;
@@ -136,14 +138,14 @@ namespace xtal {
     // work area
 
     /// Periodic boundary flag. This value is determined by the map size and usePBC flag
-    bool m_bPBC;
+    // bool m_bPBC;
 
     /// size of map (copy from m_pMap)
-    int m_nMapColNo, m_nMapRowNo, m_nMapSecNo;
+    // int m_nMapColNo, m_nMapRowNo, m_nMapSecNo;
 
     /// size of section array
-    int m_nActCol, m_nActRow, m_nActSec;
-    int m_nStCol, m_nStRow, m_nStSec;
+    // int m_nActCol, m_nActRow, m_nActSec;
+    // int m_nStCol, m_nStRow, m_nStSec;
 
     /// contour level (not a property)
     double m_dLevel;
@@ -189,9 +191,9 @@ namespace xtal {
 
   private:
 
-    void setupXformMat(DisplayContext *pdl);
+    // void setupXformMat(DisplayContext *pdl);
 
-    void makerange();
+    // void makerange();
 
     void renderImpl(DisplayContext *pdl);
 
@@ -206,18 +208,18 @@ namespace xtal {
       // TO DO: support symop
 
       if (m_bPBC) {
-        const int xx = (x+10000*m_nMapColNo)%m_nMapColNo;
-        const int yy = (y+10000*m_nMapRowNo)%m_nMapRowNo;
-        const int zz = (z+10000*m_nMapSecNo)%m_nMapSecNo;
+        const int xx = (x+10000*m_mapSize.x())%m_mapSize.x();
+        const int yy = (y+10000*m_mapSize.y())%m_mapSize.y();
+        const int zz = (z+10000*m_mapSize.z())%m_mapSize.z();
         // return pMap->atByte(xx,yy,zz);
         return m_pCMap->atFloat(xx, yy, zz);
       }
       else {
         if (x<0||y<0||z<0)
           return 0.0;
-        if (x>=m_nMapColNo||
-            y>=m_nMapRowNo||
-            z>=m_nMapSecNo)
+        if (x>=m_mapSize.x()||
+            y>=m_mapSize.y()||
+            z>=m_mapSize.z())
           return 0.0;
         return m_pCMap->atFloat(x, y, z);
       }
@@ -259,7 +261,7 @@ namespace xtal {
     /// Workarea data OK/NG (invalid)
     bool m_bWorkOK;
 
-    qbyte m_bIsoLev;
+    // qbyte m_bIsoLev;
 
     int m_nbcol;
     int m_nbrow;
@@ -282,17 +284,17 @@ namespace xtal {
       // TO DO: support symop
 
       if (m_bPBC) {
-        const int xx = (x+10000*m_nMapColNo)%m_nMapColNo;
-        const int yy = (y+10000*m_nMapRowNo)%m_nMapRowNo;
-        const int zz = (z+10000*m_nMapSecNo)%m_nMapSecNo;
+        const int xx = (x+10000*m_mapSize.x())%m_mapSize.x();
+        const int yy = (y+10000*m_mapSize.y())%m_mapSize.y();
+        const int zz = (z+10000*m_mapSize.z())%m_mapSize.z();
         return m_pCMap->atByte(xx,yy,zz);
       }
       else {
         if (x<0||y<0||z<0)
           return 0;
-        if (x>=m_nMapColNo||
-            y>=m_nMapRowNo||
-            z>=m_nMapSecNo)
+        if (x>=m_mapSize.x()||
+            y>=m_mapSize.y()||
+            z>=m_mapSize.z())
           return 0;
         return m_pCMap->atByte(x, y, z);
       }

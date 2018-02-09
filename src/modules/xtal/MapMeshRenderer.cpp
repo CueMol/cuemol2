@@ -27,9 +27,8 @@ MapMeshRenderer::MapMeshRenderer()
      :  super_t()
 
 {
-  m_nBufSize = 100;
+ // m_nBufSize = 100;
   m_lw = 1.0;
-  m_bPBC = false;
   m_bAutoUpdate = true;
 
   //resetAllProps();
@@ -177,240 +176,6 @@ void MapMeshRenderer::objectChanged(qsys::ObjectEvent &ev)
 
 ///////////////////////////////////////////////////
 
-namespace {
-  inline void calcAxisCross(const Vector4D &aax, const Vector4D &bax, const Vector4D &cax, const Vector4D &cent, double extent,
-                            double &zmin, double &zmax)
-  {
-    Vector4D vn = aax.cross(bax);
-    const double vncen = vn.dot(cent);
-    const double vncax = vn.dot(cax);
-    const double evn = extent*vn.length();
-    zmin = (vncen - evn)/vncax;
-    zmax = (vncen + evn)/vncax;
-  }
-}
-
-/// Setup map rendering information (extent, level, etc)
-void MapMeshRenderer::setupMapRendInfo(ScalarObject *pMap)
-{
-  DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
-
-  m_mapSize.x() = pMap->getColNo();
-  m_mapSize.y() = pMap->getRowNo();
-  m_mapSize.z() = pMap->getSecNo();
-
-  const Vector4D cent = getCenter();
-  const double extent = getExtent();
-
-  //
-  // Calc vmin, vmax
-  //
-  Vector4D vmin, vmax;
-
-  if (pXtal!=NULL) {
-    // non-orthogonal grid (crystal, etc)
-    const CrystalInfo &xt = pXtal->getXtalInfo();
-
-    // check PBC
-    m_bPBC = false;
-    const double dimx = pMap->getColGridSize()*pMap->getColNo();
-    const double dimy = pMap->getRowGridSize()*pMap->getRowNo();
-    const double dimz = pMap->getSecGridSize()*pMap->getSecNo();
-    const double cea = xt.a();
-    const double ceb = xt.b();
-    const double cec = xt.c();
-    if (qlib::isNear4(dimx, cea) &&
-        qlib::isNear4(dimy, ceb) &&
-        qlib::isNear4(dimz, cec))
-      m_bPBC = true;
-
-    Vector4D aax(1.0, 0.0, 0.0, 1.0);
-    Vector4D bax(0.0, 1.0, 0.0, 1.0);
-    Vector4D cax(0.0, 0.0, 1.0, 1.0);
-
-    xt.fracToOrth(aax);
-    xt.fracToOrth(bax);
-    xt.fracToOrth(cax);
-
-    calcAxisCross(aax, bax, cax, cent, extent, vmin.z(), vmax.z());
-    calcAxisCross(bax, cax, aax, cent, extent, vmin.x(), vmax.x());
-    calcAxisCross(cax, aax, bax, cent, extent, vmin.y(), vmax.y());
-    
-    vmin.x() *= pXtal->getColInterval();
-    vmin.y() *= pXtal->getRowInterval();
-    vmin.z() *= pXtal->getSecInterval();
-    vmax.x() *= pXtal->getColInterval();
-    vmax.y() *= pXtal->getRowInterval();
-    vmax.z() *= pXtal->getSecInterval();
-  }
-  else {
-    // orthogonal grid (potential map, etc)
-    vmin = Vector4D(cent.x()-extent, cent.y()-extent, cent.z()-extent);
-    vmax = Vector4D(cent.x()+extent, cent.y()+extent, cent.z()+extent);
-
-    // get map origin / translate the origin to (0,0,0)
-    vmin -= pMap->getOrigin();
-    vmax -= pMap->getOrigin();
-
-    vmin.x() /= pMap->getColGridSize();
-    vmin.y() /= pMap->getRowGridSize();
-    vmin.z() /= pMap->getSecGridSize();
-    vmax.x() /= pMap->getColGridSize();
-    vmax.y() /= pMap->getRowGridSize();
-    vmax.z() /= pMap->getSecGridSize();
-  }
-
-/*
-  if (pXtal!=NULL) {
-    const CrystalInfo &xt = pXtal->getXtalInfo();
-    xt.orthToFrac(vmin);
-    xt.orthToFrac(vmax);
-
-    // check PBC
-    m_bPBC = false;
-    const double dimx = pMap->getColGridSize()*pMap->getColNo();
-    const double dimy = pMap->getRowGridSize()*pMap->getRowNo();
-    const double dimz = pMap->getSecGridSize()*pMap->getSecNo();
-    const double cea = xt.a();
-    const double ceb = xt.b();
-    const double cec = xt.c();
-    if (qlib::isNear4(dimx, cea) &&
-        qlib::isNear4(dimy, ceb) &&
-        qlib::isNear4(dimz, cec))
-      m_bPBC = true;
-  }
-
-  if (pXtal!=NULL) {
-    vmin.x() *= pXtal->getColInterval();
-    vmin.y() *= pXtal->getRowInterval();
-    vmin.z() *= pXtal->getSecInterval();
-    vmax.x() *= pXtal->getColInterval();
-    vmax.y() *= pXtal->getRowInterval();
-    vmax.z() *= pXtal->getSecInterval();
-  }
-  else {
-  }
-*/
-  
-  if (!m_bPBC) {
-    // limit XYZ in the available region of map
-    vmin.x() = floor(qlib::max<double>(vmin.x(), pMap->getStartCol()));
-    vmin.y() = floor(qlib::max<double>(vmin.y(), pMap->getStartRow()));
-    vmin.z() = floor(qlib::max<double>(vmin.z(), pMap->getStartSec()));
-    
-    vmax.x() = floor(qlib::min<double>(vmax.x(), pMap->getStartCol()+pMap->getColNo()));
-    vmax.y() = floor(qlib::min<double>(vmax.y(), pMap->getStartRow()+pMap->getRowNo()));
-    vmax.z() = floor(qlib::min<double>(vmax.z(), pMap->getStartSec()+pMap->getSecNo()));
-  }
-
-  m_glbStPos = Vector3I(vmin.xyz());
-
-  // conv to map-base index (from global origin)
-  m_mapStPos.x() = m_glbStPos.x() - pMap->getStartCol();
-  m_mapStPos.y() = m_glbStPos.y() - pMap->getStartRow();
-  m_mapStPos.z() = m_glbStPos.z() - pMap->getStartSec();
-
-  // actual display extent (in grid unit)
-  m_dspSize = Vector3I( (vmax-vmin).xyz() );
-  
-  /*{
-    Vector4D xmin(m_glbStPos);
-    Vector4D xmax(m_glbStPos+m_dspSize);
-
-    xmin.x() /= pXtal->getColInterval();
-    xmin.y() /= pXtal->getRowInterval();
-    xmin.z() /= pXtal->getSecInterval();
-
-    xmax.x() /= pXtal->getColInterval();
-    xmax.y() /= pXtal->getRowInterval();
-    xmax.z() /= pXtal->getSecInterval();
-
-    const CrystalInfo &xt = pXtal->getXtalInfo();
-    xt.fracToOrth(xmin);
-    xt.fracToOrth(xmax);
-
-    MB_DPRINTLN("actual range dist-min: %f", (xmin-cent).length());
-    MB_DPRINTLN("actual range dist-max: %f", (xmax-cent).length());
-  }*/
-}
-
-/// Calculate 8-bit contour level
-void MapMeshRenderer::calcContLevel(ScalarObject *pMap)
-{
-  //
-  // calculate the contour level
-  //
-  const double siglevel = getSigLevel();
-  const double level = pMap->getRmsdDensity() * siglevel;
-  double lvtmp = floor( (level-pMap->getLevelBase()) / pMap->getLevelStep());
-  unsigned int lv = (unsigned int)lvtmp;
-  if (lvtmp<0) lv = 0;
-  if (lvtmp>0xFF) lv = 0xFF;
-  
-  MB_DPRINTLN("set isolevel=%d", lv);
-  m_nIsoLevel = lv;
-}
-
-/// Setup coord xform for map rendering (grid-->world)
-void MapMeshRenderer::setupXform(DisplayContext *pdc, ScalarObject *pMap, DensityMap *pXtal)
-{
-  if (pXtal==NULL) {
-    pdc->translate(pMap->getOrigin());
-  }
-  else {
-    Matrix3D orthmat = pXtal->getXtalInfo().getOrthMat();
-    pdc->multMatrix(Matrix4D(orthmat));
-  }
-
-  Vector4D vtmp;
-  if (pXtal!=NULL)
-    vtmp = Vector4D(1.0/double(pXtal->getColInterval()),
-                    1.0/double(pXtal->getRowInterval()),
-                    1.0/double(pXtal->getSecInterval()));
-  else
-    vtmp = Vector4D(pMap->getColGridSize(),
-                    pMap->getRowGridSize(),
-                    pMap->getSecGridSize());
-  
-  pdc->scale(vtmp);
-  
-  vtmp = Vector4D(getGlbStPos());
-  pdc->translate(vtmp);
-}
-
-Matrix4D MapMeshRenderer::getXform(ScalarObject *pMap, DensityMap *pXtal)
-{
-  Matrix4D rval;
-
-  if (pXtal==NULL) {
-    //pdc->translate(pMap->getOrigin());
-    rval.translate(pMap->getOrigin());
-  }
-  else {
-    Matrix3D orthmat = pXtal->getXtalInfo().getOrthMat();
-    rval.matprod(Matrix4D(orthmat));
-  }
-
-  Vector4D vtmp;
-  if (pXtal!=NULL)
-    vtmp = Vector4D(1.0/double(pXtal->getColInterval()),
-                    1.0/double(pXtal->getRowInterval()),
-                    1.0/double(pXtal->getSecInterval()));
-  else
-    vtmp = Vector4D(pMap->getColGridSize(),
-                    pMap->getRowGridSize(),
-                    pMap->getSecGridSize());
-  
-  //pdc->scale(vtmp);
-  rval.matprod(Matrix4D::makeScaleMat(vtmp));
-  
-  vtmp = Vector4D(getGlbStPos());
-  //pdc->translate(vtmp);
-  rval.translate(vtmp);
-
-  return rval;
-}
-
 void MapMeshRenderer::preRender(DisplayContext *pdc)
 {
   pdc->color(getColor());
@@ -448,7 +213,7 @@ void MapMeshRenderer::render(DisplayContext *pdl)
   ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
   DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
 
-  setupMapRendInfo(pMap);
+  calcMapDispExtent(pMap);
   calcContLevel(pMap);
 
   // setup mol boundry info (if needed)
@@ -553,23 +318,4 @@ void MapMeshRenderer::render(DisplayContext *pdl)
 
   pdl->popMatrix();
 }
-
-void MapMeshRenderer::setBufSize(int nsize)
-{
-}
-
-double MapMeshRenderer::getMaxExtent() const
-{
-  MapMeshRenderer *pthis = const_cast<MapMeshRenderer *>(this);
-  ScalarObject *pMap = (ScalarObject *) pthis->getClientObj().get();
-
-  const int nCrs = 100;
-
-  const double xmax = nCrs * pMap->getColGridSize() / 2.0;
-  const double ymax = nCrs * pMap->getRowGridSize() / 2.0;
-  const double zmax = nCrs * pMap->getSecGridSize() / 2.0;
-
-  return qlib::min(xmax, qlib::min(ymax, zmax));
-}
-
 

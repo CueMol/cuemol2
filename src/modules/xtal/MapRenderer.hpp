@@ -9,6 +9,8 @@
 #include "xtal.hpp"
 
 #include <qlib/Vector4D.hpp>
+#include <qlib/Vector3I.hpp>
+#include <qlib/Vector3F.hpp>
 #include <gfx/gfx.hpp>
 #include <gfx/AbstractColor.hpp>
 #include <qsys/DispListRenderer.hpp>
@@ -24,8 +26,10 @@ namespace gfx {
 
 namespace xtal {
 
-  using gfx::ColorPtr;
+  using qlib::Vector3I;
+  using qlib::Vector3F;
   using qlib::Vector4D;
+  using gfx::ColorPtr;
   using qsys::ScalarObject;
   using molstr::SelectionPtr;
   using molstr::MolCoordPtr;
@@ -38,7 +42,7 @@ namespace xtal {
     typedef qsys::DispListRenderer super_t;
 
     ///////////////////////////////////////////////////////////////
-    // properties, setter/getter
+    // Properties, setter/getter
 
   private:
     /// center of the display extent
@@ -87,7 +91,7 @@ namespace xtal {
 
   private:
     /// Periodic boundary flag
-    ///  true: use PBC if map contains the entire of unit cell
+    ///  true: use PBC, if map contains the entire of unit cell
     ///  false: always not use PBC (only show the original cell)
     bool m_bUsePBC;
 
@@ -95,6 +99,61 @@ namespace xtal {
     void setUsePBC(bool val) { m_bUsePBC = val; }
     bool isUsePBC() const { return m_bUsePBC; }
 
+  private:
+    /// Max grid size (default=100x100x100 grid)
+    int m_nMaxGrid;
+
+  public:
+    int getMaxGrids() const { return m_nMaxGrid; }
+    void setMaxGrids(int n) { m_nMaxGrid = n; }
+
+    /// Get max extent (in angstrom unit; calculated from m_nMaxGrid)
+    double getMaxExtent() const;
+
+    ///////////////////////////////////////////////////////
+    // Workarea (for derived classes MapMesh, MapSurf, etc)
+    
+  protected:
+
+    /// Periodic boundary availability flag
+    /// (This flag is set true, when PBC is available,
+    ///   i.e., map contains the entire of unit cell)
+    bool m_bPBC;
+
+    /// Size of map (in grid unit/copy of Map's property)
+    Vector3I m_mapSize;
+
+    const Vector3I &getMapSize() const { return m_mapSize; }
+
+    /// Actual size of display extent (in grid unit)
+    Vector3I m_dspSize;
+
+    const Vector3I &getDspSize() const { return m_dspSize; }
+
+    /// Start position of display extent from global origin (in grid unit)
+    Vector3I m_glbStPos;
+
+    const Vector3I &getGlbStPos() const { return m_glbStPos; }
+
+    /// Start position of display extent from map origin (in grid unit)
+    Vector3I m_mapStPos;
+
+    const Vector3I &getMapStPos() const { return m_mapStPos; }
+
+    /// Level in 8-bit map unit
+    qbyte m_nIsoLevel;
+
+    /// Calculate 8-bit contour level
+    void calcContLevel(ScalarObject *pMap);
+
+    /// Calculate map display extent
+    void calcMapDispExtent(ScalarObject *pMap);
+
+    /// Calc coord xform mat for map rendering (grid-->world)
+    Matrix4D calcXformMat(ScalarObject *pMap, DensityMap *pXtal);
+
+    /// Calc coord xform (grid-->world) & set to the display context
+    void setupXform(gfx::DisplayContext *pdc, ScalarObject *pMap, DensityMap *pXtal);
 
     ///////////////////////////////////////////
     // constructors / destructor

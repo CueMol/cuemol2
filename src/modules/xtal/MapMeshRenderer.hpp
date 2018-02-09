@@ -51,19 +51,21 @@ namespace xtal {
     }
     double getLineWidth() const { return m_lw; }
 
-
+/*
   private:
     /// Internal buffer size (default: 100x100x100 points)
     int m_nBufSize;
-
   public:
+    
     int getBufSize() const { return m_nBufSize; }
-    void setBufSize(int nsize);
-
-  protected:
-    /// Periodic boundary flag
-    /// (default: false; set true, if map contains the entire of unit cell)
-    bool m_bPBC;
+    void setBufSize(int nsize) {
+      m_nMaxGrid = nsize;
+    }
+*/
+  public:
+    // for compatibility
+    int getBufSize() const { return getMaxGrids(); }
+    void setBufSize(int nsize) { setMaxGrids(nsize); }
 
     /// Automatically update the map center as view center
     /// (default: true)
@@ -96,42 +98,15 @@ namespace xtal {
     ///////////////////////////////////////////
     // work area
 
-  private:
-    /// Size of map (in grid unit/copy from m_pMap)
-    Vector3I m_mapSize;
-
-  public:
-    const Vector3I &getMapSize() const { return m_mapSize; }
-
+    /*
   protected:
     /// size of section array
     int m_nColCrs, m_nRowCrs, m_nSecCrs;
-
-  private:
-    /// Actual size of display extent (in grid unit)
-    Vector3I m_dspSize;
-
-  public:
-    const Vector3I &getDspSize() const { return m_dspSize; }
-
-  private:
-    /// Start position of display extent from global origin (in grid unit)
-    Vector3I m_glbStPos;
-
-  public:
-    const Vector3I &getGlbStPos() const { return m_glbStPos; }
-
-    /// Start position of display extent from map origin (in grid unit)
-    Vector3I m_mapStPos;
-
-    const Vector3I &getMapStPos() const { return m_mapStPos; }
-
-    /// Level in 8-bit map unit
-    qbyte m_nIsoLevel;
-
+     */
+    
   protected:
-    //ByteMap m_maptmp;
     qlib::Array3D<qbyte> m_maptmp;
+
     Vector3I m_texStPos;
 
   public:
@@ -167,14 +142,16 @@ namespace xtal {
     bool generate(ScalarObject *pMap, DensityMap *pXtal);
 
     /// Set internal buffer size
-    bool setCrossArraySize(int ncol, int nrow, int nsec);
+    // bool setCrossArraySize(int ncol, int nrow, int nsec);
 
+    /*
     /// Get internal buffer size (in col direction)
     int getColCrsSize() const { return m_nColCrs; }
     int getRowCrsSize() const { return m_nRowCrs; }
     int getSecCrsSize() const { return m_nSecCrs; }
-
-    double getMaxExtent() const;
+     */
+    
+    // double getMaxExtent() const;
 
     ///////////////////////////////////////////////////////////////
 
@@ -185,10 +162,6 @@ namespace xtal {
     ///////////////////////////////////////////////////////////////
 
   public:
-    void setupMapRendInfo(ScalarObject *pMap);
-    void calcContLevel(ScalarObject *pMap);
-    void setupXform(DisplayContext *pdc, ScalarObject *pMap, DensityMap *pXtal);
-    Matrix4D getXform(ScalarObject *pMap, DensityMap *pXtal);
 
   protected:
 

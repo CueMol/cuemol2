@@ -37,7 +37,7 @@ MapSurfRenderer::MapSurfRenderer()
   m_pCMap = NULL;
 
   m_nBinFac = 1;
-  m_nMaxGrid = 100;
+//  m_nMaxGrid = 100;
 
   //m_bUseOpenMP = false;
   m_nGlRendMode = MSR_REND_DLIST;
@@ -131,38 +131,6 @@ void MapSurfRenderer::viewChanged(qsys::ViewEvent &ev)
   }
   
   return;
-}
-
-void MapSurfRenderer::setMaxGrids(int n)
-{
-  m_nMaxGrid = n;
-
-  /*
-  if (getClientObj().isnull())
-    return; // not initialized (-> don't get maxext/change the extent)
-  
-  // shrink the extent, if the extent exceeds maxext.
-  double dmax = getMaxExtent();
-  double dext = getExtent();
-  if (dmax<dext) {
-    setExtent(dmax);
-  }
-   */
-}
-
-double MapSurfRenderer::getMaxExtent() const
-{
-  MapSurfRenderer *pthis = const_cast<MapSurfRenderer *>(this);
-  ScalarObject *pMap = (ScalarObject *) pthis->getClientObj().get();
-
-  double grdsz = 1.0;
-
-  if (pMap!=NULL)
-    grdsz = qlib::min(pMap->getColGridSize(),
-                      qlib::min(pMap->getRowGridSize(),
-                                pMap->getSecGridSize()));
-
-  return m_nMaxGrid * pMap->getColGridSize() / 2.0;
 }
 
 ///////////////////////////////////////////////////////////////

@@ -220,7 +220,7 @@ void GLSLMapMesh3Renderer::createGLSLGlobMap()
 {
   ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
 
-  setupMapRendInfo(pMap);
+  calcMapDispExtent(pMap);
 
   calcContLevel(pMap);
 
@@ -257,7 +257,7 @@ void GLSLMapMesh3Renderer::createGLSLLocMap()
 {
   ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
 
-  setupMapRendInfo(pMap);
+  calcMapDispExtent(pMap);
 
   calcContLevel(pMap);
 
@@ -349,7 +349,7 @@ void GLSLMapMesh3Renderer::renderGLSL(DisplayContext *pdc)
   pdc->pushMatrix();
 
   //setupXform(pdc, pMap, pXtal);
-  Matrix4D xfm = getXform(pMap, pXtal);
+  Matrix4D xfm = calcXformMat(pMap, pXtal);
   pdc->multMatrix(xfm);
   
   if (m_bUseGlobMap)

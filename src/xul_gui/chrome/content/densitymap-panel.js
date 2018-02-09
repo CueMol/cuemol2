@@ -23,6 +23,7 @@ denmap.mMapList = new cuemolui.ObjMenuList(
   function (elem) {
     if (elem.type=="contour"||
 	elem.type=="isosurf"||
+	elem.type=="isosurf2"||
 	elem.type=="gpu_mapmesh"||
 	elem.type=="gpu_mapvol") return true;
     return false; },

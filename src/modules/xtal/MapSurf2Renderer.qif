@@ -18,6 +18,10 @@ runtime_class MapSurf2Renderer extends MapRenderer
   smartptr;
   cloneable;
 
+  /// Override the default color
+  property object<AbstractColor$> color => redirect(getColor, setColor);
+  default color = gfx::SolidColor::createRGB(1.0, 1.0, 1.0);
+
   /// Automatically update the map center as view center (only in mouseUp event)
   property boolean autoupdate => m_bAutoUpdate;
   default autoupdate = true;
