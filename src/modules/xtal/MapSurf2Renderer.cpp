@@ -708,6 +708,7 @@ void MapSurf2Renderer::createDisplayCache()
   else
     omp_set_num_threads(omp_get_num_procs());
   nthr = omp_get_max_threads();
+  LOG_DPRINTLN("MapSurf2> using OpenMP %d threads", nthr);
 #endif
 
   std::vector<int> vinds(nthr);
