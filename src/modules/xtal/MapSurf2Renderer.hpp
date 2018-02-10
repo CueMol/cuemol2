@@ -49,15 +49,6 @@ namespace xtal {
     ///////////////////////////////////////////
     // properties
 
-    /// Automatically update the map center as view center
-    /// (default: true)
-    bool m_bAutoUpdate;
-
-    /// Automatically update the map center as view center
-    /// in both mouse-drag and mouse-up events
-    /// (default: false)
-    bool m_bDragUpdate;
-
   public:
     enum {
       MSRDRAW_FILL = 0,
@@ -97,7 +88,8 @@ namespace xtal {
       invalidateDisplayCache();
     }
     
-  private:
+  //private:
+  protected:
     /// binning
     int m_nBinFac;
 
@@ -132,7 +124,7 @@ namespace xtal {
       invalidateDisplayCache();
     }
 
-  private:
+  protected:
 
     ///////////////////////////////////////////
     // work area
@@ -256,7 +248,7 @@ namespace xtal {
 
     // virtual void renderGLSL(DisplayContext *pdc);
 
-  private:
+  protected:
 
     /// Workarea data OK/NG (invalid)
     bool m_bWorkOK;

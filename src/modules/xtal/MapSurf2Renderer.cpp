@@ -33,8 +33,8 @@ MapSurf2Renderer::MapSurf2Renderer()
      : super_t()
 {
   m_bPBC = false;
-  m_bAutoUpdate = true;
-  m_bDragUpdate = false;
+  //m_bAutoUpdate = true;
+  //m_bDragUpdate = false;
   m_nDrawMode = MSRDRAW_FILL;
   m_lw = 1.2;
   m_pCMap = NULL;
@@ -93,7 +93,7 @@ void MapSurf2Renderer::viewChanged(qsys::ViewEvent &ev)
       nType!=qsys::ViewEvent::VWE_PROPCHG_DRG)
     return;
 
-  if (!m_bAutoUpdate && !m_bDragUpdate)
+  if (!isAutoUpdate() && !isDragUpdate())
     return;
 
   if (!ev.getDescr().equals("center"))
@@ -105,7 +105,7 @@ void MapSurf2Renderer::viewChanged(qsys::ViewEvent &ev)
 
   Vector4D c = pView->getViewCenter();
 
-  if (m_bDragUpdate) {
+  if (isDragUpdate()) {
     if (nType==qsys::ViewEvent::VWE_PROPCHG ||
         nType==qsys::ViewEvent::VWE_PROPCHG_DRG) {
       setCenter(c);
@@ -114,7 +114,7 @@ void MapSurf2Renderer::viewChanged(qsys::ViewEvent &ev)
     return;
   }
 
-  if (m_bAutoUpdate) {
+  if (isAutoUpdate()) {
     if (nType==qsys::ViewEvent::VWE_PROPCHG) {
       setCenter(c);
       setDefaultPropFlag("center", false);
@@ -658,6 +658,7 @@ qsys::ObjectPtr MapSurf2Renderer::generateSurfObj()
 /// Use Ver2 interface (returns true)
 bool MapSurf2Renderer::isUseVer2Iface() const
 {
+  //return false;
   return true;
 }
 
@@ -748,6 +749,7 @@ void MapSurf2Renderer::createDisplayCache()
   std::vector<int> iverts(nthr);
   for (i=0; i<nthr; ++i) {
     iverts[i] = i*nsz_est_thr;
+    MB_DPRINTLN("thr %d start id %d", i, iverts[i]);
   }
 
   quint32 cc = getColor()->getCode();
@@ -767,15 +769,19 @@ void MapSurf2Renderer::createDisplayCache()
   /////////////////////
   // do marching cubes
 
+#ifdef _OPENMP
 #pragma omp parallel for private (j,k) schedule(dynamic)
   for (i=0; i<ncol; i+=m_nBinFac) {
     int ithr = 0;
-#ifdef _OPENMP
     ithr = omp_get_thread_num();
-#endif
-
     for (j=0; j<nrow; j+=m_nBinFac) {
       for (k=0; k<nsec; k+=m_nBinFac) {
+#else
+  int ithr = 0;
+  for (i=0; i<ncol; i+=m_nBinFac) {
+    for (j=0; j<nrow; j+=m_nBinFac) {
+      for (k=0; k<nsec; k+=m_nBinFac) {
+#endif
 
         //if (i==1&&j==1)
         //MB_DPRINTLN("i=%d, thr=%d", k, ithr);
@@ -819,6 +825,7 @@ void MapSurf2Renderer::createDisplayCache()
       }
     }
   }
+
 /*
   //pdl->startTriangles();
   for (i=0; i<nthr; ++i) {
@@ -835,6 +842,13 @@ void MapSurf2Renderer::createDisplayCache()
   //pdl->end();
 */
       
+#ifdef MB_DEBUG
+  for (i=0; i<nthr; ++i) {
+    MB_DPRINTLN("Triangles: thr %d last vid %d", i, iverts[i]);
+  }
+#endif
+
+
   m_pVBO->setUpdated(true);
   m_bWorkOK = true;
   m_pCMap = NULL;
@@ -901,7 +915,7 @@ void MapSurf2Renderer::marchCube2(int fx, int fy, int fz,
     if(iEdgeFlags & (1<<iEdge)) {
       const int ec0 = a2iEdgeConnection[iEdge][0];
       const int ec1 = a2iEdgeConnection[iEdge][1];
-      if (m_bary[ec0]==false || m_bary[ec1]==false) {
+      if (bary[ec0]==false || bary[ec1]==false) {
         edgeBinFlags[iEdge] = false;
         continue;
       }
@@ -957,7 +971,7 @@ void MapSurf2Renderer::marchCube2(int fx, int fy, int fz,
   for(iTriangle = 0; iTriangle < 5; iTriangle++) {
     if(a2iTriangleConnectionTable[iFlagIndex][3*iTriangle] < 0)
       break;
-    
+
     bool bNotDraw = false;
     for(iCorner = 0; iCorner < 3; iCorner++) {
       iVertex = a2iTriangleConnectionTable[iFlagIndex][3*iTriangle+iCorner];
@@ -975,6 +989,7 @@ void MapSurf2Renderer::marchCube2(int fx, int fy, int fz,
       //asEdgeNorm[iVertex]) );
 
       i = *pvind;
+      MB_DPRINTLN("i=%d", i);
       if (i<nverts) {
         m_pVBO->m_pData[i].x = asEdgeVertex[iVertex][0];
         m_pVBO->m_pData[i].y = asEdgeVertex[iVertex][1];

@@ -29,7 +29,7 @@ MapMeshRenderer::MapMeshRenderer()
 {
  // m_nBufSize = 100;
   m_lw = 1.0;
-  m_bAutoUpdate = true;
+  // m_bAutoUpdate = true;
 
   //resetAllProps();
 
@@ -126,7 +126,7 @@ void MapMeshRenderer::viewChanged(qsys::ViewEvent &ev)
       nType!=qsys::ViewEvent::VWE_PROPCHG_DRG)
     return;
 
-  if (!m_bAutoUpdate && !m_bDragUpdate)
+  if (!isAutoUpdate() && !isDragUpdate())
     return;
 
   if (!ev.getDescr().equals("center") &&
@@ -139,7 +139,7 @@ void MapMeshRenderer::viewChanged(qsys::ViewEvent &ev)
 
   Vector4D c = pView->getViewCenter();
 
-  if (m_bDragUpdate) {
+  if (isDragUpdate()) {
     if (nType==qsys::ViewEvent::VWE_PROPCHG ||
         nType==qsys::ViewEvent::VWE_PROPCHG_DRG) {
       setCenter(c);
@@ -148,7 +148,7 @@ void MapMeshRenderer::viewChanged(qsys::ViewEvent &ev)
     return;
   }
 
-  if (m_bAutoUpdate) {
+  if (isAutoUpdate()) {
     if (nType==qsys::ViewEvent::VWE_PROPCHG) {
       setCenter(c);
       setDefaultPropFlag("center", false);

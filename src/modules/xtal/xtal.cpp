@@ -19,6 +19,7 @@
 #ifdef USE_OPENGL
 #  include "GLSLMapVolRenderer.hpp"
 #  include "GLSLMapMesh3Renderer.hpp"
+#  include "GLSLMapSurf2Renderer.hpp"
 #else
 #  include "MapMeshRenderer.hpp"
 #endif
@@ -48,13 +49,13 @@ bool init()
   RendererFactory *pRF = RendererFactory::getInstance();
   pRF->regist<MapSurfRenderer>();
 
-  pRF->regist<MapSurf2Renderer>();
-
 #ifdef USE_OPENGL
   pRF->regist<GLSLMapVolRenderer>();
   pRF->regist<GLSLMapMesh3Renderer>();
+  pRF->regist<GLSLMapSurf2Renderer>();
 #else
   pRF->regist<MapMeshRenderer>();
+  pRF->regist<MapSurf2Renderer>();
 #endif
 
   StreamManager *pSM = StreamManager::getInstance();

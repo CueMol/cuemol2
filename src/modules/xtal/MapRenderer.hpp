@@ -110,6 +110,25 @@ namespace xtal {
     /// Get max extent (in angstrom unit; calculated from m_nMaxGrid)
     double getMaxExtent() const;
 
+    /// Automatically update the map center as view center
+    /// (default: true)
+  private:
+    bool m_bAutoUpdate;
+
+  public:
+    bool isAutoUpdate() const { return m_bAutoUpdate; }
+    void setAutoUpdate(bool b) { m_bAutoUpdate = b; }
+
+    /// Automatically update the map center as view center
+    /// in both mouse-drag and mouse-up events
+    /// (default: false)
+  private:
+    bool m_bDragUpdate;
+
+  public:
+    bool isDragUpdate() const { return m_bDragUpdate; }
+    void setDragUpdate(bool b) { m_bDragUpdate = b; }
+
     ///////////////////////////////////////////////////////
     // Workarea (for derived classes MapMesh, MapSurf, etc)
     

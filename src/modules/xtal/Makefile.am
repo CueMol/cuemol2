@@ -57,11 +57,14 @@ CPP_SRC += \
 GLSLMapMesh3Renderer.cpp \
 GLSLMapVolRenderer.cpp \
 GLSLMapSurfRendImpl1.cpp \
+GLSLMapSurf2Renderer.cpp \
 $(NULL)
 
 MCWG_SRC += \
 GLSLMapMesh3Renderer.qif \
-GLSLMapVolRenderer.qif
+GLSLMapVolRenderer.qif \
+GLSLMapSurf2Renderer.qif \
+$(NULL)
 
 shaderdir = $(prefix)/data/shaders/
 
