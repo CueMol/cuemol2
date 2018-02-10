@@ -1,0 +1,32 @@
+// -*-Mode: C++;-*-
+//
+//
+
+#ifndef GLSL_MAPSURF2_RENDERER_QIF_INCLUDED
+#define GLSL_MAPSURF2_RENDERER_QIF_INCLUDED
+
+#include "MapSurf2Renderer.qif"
+
+runtime_class GLSLMapSurf2Renderer extends MapSurf2Renderer
+{
+  client_hdr "GLSLMapSurf2Renderer.hpp";
+  client_name xtal::GLSLMapSurf2Renderer;
+  using Color;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  /// Automatically update (including mouse drag event/change default behavior)
+  property boolean dragupdate => redirect(isDragUpdate,setDragUpdate);
+  default dragupdate = true;
+
+  /// force to use GLSL
+  property boolean force_glsl => redirect(isForceGLSL, setForceGLSL);
+  default force_glsl = true;
+
+  property boolean use_globmap => redirect(isUseGlobMap, setUseGlobMap);
+  default use_globmap = false;
+};
+
+#endif
