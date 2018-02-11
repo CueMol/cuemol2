@@ -14,6 +14,7 @@
 #include <qsys/Scene.hpp>
 
 #include <sysdep/OglShaderSetupHelper.hpp>
+#include <sysdep/OglError.hpp>
 
 //#define SCALE 0x1000
 //#define DBG_DRAW_AXIS 0
@@ -23,14 +24,6 @@
 #ifdef WIN32
 #define USE_TBO
 #endif
-
-#define CHK_GLERROR(MSG)\
-{ \
-  GLenum errc; \
-  errc = glGetError(); \
-  if (errc!=GL_NO_ERROR) \
-    MB_DPRINTLN("%s GLError(%d): %s", MSG, errc, gluErrorString(errc)); \
-}
 
 using namespace xtal;
 using qlib::Matrix4D;
@@ -87,8 +80,6 @@ bool GLSLMapMesh3Renderer::init(DisplayContext *pdc)
     ssh.setUseInclude(true);
 #ifdef USE_TBO
     ssh.defineMacro("USE_TBO", "1");
-#else
-  //ssh.defineMacro("TEX2D_WIDTH", LString::format("%d",TEX2D_WIDTH).c_str());
 #endif
     m_pPO = ssh.createProgObj("mapmesh2",
                               "%%CONFDIR%%/data/shaders/mapmesh2_vert.glsl",
@@ -158,8 +149,7 @@ bool GLSLMapMesh3Renderer::init(DisplayContext *pdc)
                    gfx::Texture::TYPE_UINT8);
 #else
   m_pMapTex->setup(3, gfx::Texture::FMT_R,
-                   gfx::Texture::TYPE_UINT8_COLOR);
-                   //gfx::Texture::TYPE_UINT8);
+		   gfx::Texture::TYPE_UINT8);
 #endif
 
   setShaderAvail(true);

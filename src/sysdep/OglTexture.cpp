@@ -118,15 +118,19 @@ void OglTextureRep::setup(int iDim, int iPixFmt, int iPixType)
     switch (iPixFmt) {
     case Texture::FMT_R:
       m_iGlIntPixFmt = GL_R8UI;
+      m_iGlPixFmt = GL_RED_INTEGER;
       break;
     case Texture::FMT_RG:
       m_iGlIntPixFmt = GL_RG8UI;
+      m_iGlPixFmt = GL_RG_INTEGER;
       break;
     case Texture::FMT_RGB:
       m_iGlIntPixFmt = GL_RGB8UI;
+      m_iGlPixFmt = GL_RGB_INTEGER;
       break;
     case Texture::FMT_RGBA:
       m_iGlIntPixFmt = GL_RGBA8UI;
+      m_iGlPixFmt = GL_RGBA_INTEGER;
       break;
     default:
       LString msg = LString::format("Unsupported pixel type=%d format=%d",
@@ -167,16 +171,16 @@ void OglTextureRep::setup(int iDim, int iPixFmt, int iPixType)
     // set internal pixel format (mediump)
     switch (iPixFmt) {
     case Texture::FMT_R:
-      m_iGlIntPixFmt = GL_R16F;
+      m_iGlIntPixFmt = GL_R32F;
       break;
     case Texture::FMT_RG:
-      m_iGlIntPixFmt = GL_RG16F;
+      m_iGlIntPixFmt = GL_RG32F;
       break;
     case Texture::FMT_RGB:
-      m_iGlIntPixFmt = GL_RGB16F;
+      m_iGlIntPixFmt = GL_RGB32F;
       break;
     case Texture::FMT_RGBA:
-      m_iGlIntPixFmt = GL_RGBA16F;
+      m_iGlIntPixFmt = GL_RGBA32F;
       break;
     default:
       LString msg = LString::format("Unsupported pixel type=%d format=%d",

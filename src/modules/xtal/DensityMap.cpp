@@ -535,8 +535,7 @@ gfx::Texture *DensityMap::getMapTex() const
                    gfx::Texture::TYPE_UINT8);
 #else
   m_pMapTex->setup(3, gfx::Texture::FMT_R,
-                   gfx::Texture::TYPE_UINT8_COLOR);
-                   //gfx::Texture::TYPE_UINT8);
+                   gfx::Texture::TYPE_UINT8);
 #endif
   
   int ni = m_pByteMap->getColumns();

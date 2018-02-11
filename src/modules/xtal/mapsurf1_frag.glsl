@@ -7,7 +7,7 @@
 #if (__VERSION__>=140)
 //#extension GL_compatibility : enable
 #else
-#extension GL_ARB_compatibility : enable
+//#extension GL_ARB_compatibility : enable
 #endif
 
 #extension GL_EXT_gpu_shader4 : enable 

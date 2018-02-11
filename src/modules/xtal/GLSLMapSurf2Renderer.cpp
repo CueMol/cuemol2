@@ -19,7 +19,10 @@ using namespace xtal;
 using qlib::Matrix4D;
 using qlib::Matrix3D;
 
-#define USE_TBO 1
+#ifdef WIN32
+#define USE_TBO
+#endif
+
 //#define USE_DRAW_INSTANCED 65536
 
 /// default constructor
@@ -67,7 +70,6 @@ bool GLSLMapSurf2Renderer::init(DisplayContext *pdc)
 #ifdef USE_TBO
     ssh.defineMacro("USE_TBO", "1");
 #else
-    //ssh.defineMacro("TEX2D_WIDTH", LString::format("%d",TEX2D_WIDTH).c_str());
 #endif
     
 #ifdef USE_DRAW_INSTANCED
@@ -128,8 +130,8 @@ bool GLSLMapSurf2Renderer::init(DisplayContext *pdc)
                    gfx::Texture::TYPE_UINT8);
 #else
   m_pMapTex->setup(3, gfx::Texture::FMT_R,
-                   gfx::Texture::TYPE_UINT8_COLOR);
-                   //gfx::Texture::TYPE_UINT8);
+                   //gfx::Texture::TYPE_UINT8_COLOR);
+                   gfx::Texture::TYPE_UINT8);
 #endif
 
   // a2iTriangleConnectionTable (256x5x3)
@@ -144,12 +146,9 @@ bool GLSLMapSurf2Renderer::init(DisplayContext *pdc)
     delete m_pTriTex;
   m_pTriTex = MB_NEW gfx::Texture();
 
-#ifdef USE_TBO
   m_pTriTex->setup(1, gfx::Texture::FMT_R,
                    gfx::Texture::TYPE_UINT8);
   m_pTriTex->setData(256*5*3, 1, 1, m_tritex.data());
-#else
-#endif
 
   setShaderAvail(true);
   return true;
@@ -427,7 +426,8 @@ void GLSLMapSurf2Renderer::createGLSL2()
     m_pAttrArray->setAttrSize(1);
     m_pAttrArray->setAttrInfo(0, m_pPO->getAttribLocation("a_ind"), 1,
                               qlib::type_consts::QTC_UINT32, offsetof(AttrElem, ind));
-    m_pAttrArray->setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
+    //m_pAttrArray->setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
+    m_pAttrArray->setDrawMode(gfx::AbstDrawElem::DRAW_POINTS);
     m_pAttrArray->alloc(nasz);
 #if (USE_DRAW_INSTANCED>=1)
     m_pAttrArray->setInstCount(USE_DRAW_INSTANCED);

@@ -8,14 +8,13 @@
 // #version 140
 #if (__VERSION__>=140)
 // #extension GL_compatibility : enable
-#define USE_TBO 1
 #else
-#extension GL_ARB_compatibility : enable
+//#extension GL_ARB_compatibility : enable
 #endif
 
 #extension GL_EXT_gpu_shader4 : enable 
 
-#if (USE_DRAW_INSTANCED>=1)
+#ifdef USE_DRAW_INSTANCED
 #extension GL_ARB_draw_instanced : enable
 #endif
 
@@ -43,8 +42,6 @@ uniform vec3 fegdir[12];
 
 uniform ivec2 iegconn[12];
 
-// uniform int itconn[256*15];
-
 #ifdef USE_TBO
 uniform usamplerBuffer u_maptex;
 uniform usamplerBuffer u_tritex;
@@ -67,7 +64,7 @@ uniform vec4 u_color;
 
 const int u_binfac = 1;
 
-#if (USE_DRAW_INSTANCED>=1)
+#ifdef USE_DRAW_INSTANCED
 uniform int u_vbosz;
 uniform int u_vmax;
 #endif
@@ -93,8 +90,7 @@ int getDensity(ivec3 iv)
   int index = iv.x + u_mapsz.x*(iv.y + u_mapsz.y*iv.z);
   return int( texelFetch(u_maptex, index).r );
 #else
-  float val = texelFetch3D(dataFieldTex, iv, 0).x;
-  return int(val * 255.0 + 0.5);
+  return int( texelFetch3D(u_maptex, iv, 0).r );
 #endif
 }
 
@@ -103,6 +99,7 @@ int itconn(int index)
 #ifdef USE_TBO
   return int( texelFetch(u_tritex, index).r );
 #else
+  return int( texelFetch1D(u_tritex, index, 0).r );
 #endif
 }
 
@@ -132,7 +129,7 @@ void main(void)
 
   // int vid = gl_VertexID%3;
 
-#if (USE_DRAW_INSTANCED>=1)
+#ifdef USE_DRAW_INSTANCED
   int vid = gl_InstanceID*u_vbosz + gl_VertexID;
   if (vid>u_vmax) {
     vdiscard();
@@ -154,6 +151,18 @@ void main(void)
   vind.y = itt % u_nrow;
   vind.z = itt / u_nrow;
   
+  /*
+  vec4 vec;
+  vec.xyz = vec3(vind); // + (fvtxoffs[ec0] + fegdir[iedge] * fOffset) * float(u_binfac);
+  vec.w = 1.0;
+  vec4 ecPosition = gl_ModelViewMatrix * vec;
+  gl_Position = gl_ProjectionMatrix * ecPosition;
+  v_ecpos_z = ecPosition.z;
+  v_color = vec4(1,1,1,1);
+  return;
+  */
+
+#if 1
   //////////
 
   //int values[8];
@@ -211,7 +220,7 @@ void main(void)
   }
 
   vec4 vec;
-  vec.xyz = vec3(vind) + (fvtxoffs[ec0] + fegdir[iedge] * fOffset) * float(u_binfac);
+  vec.xyz = vec3(vind); // + (fvtxoffs[ec0] + fegdir[iedge] * fOffset) * float(u_binfac);
   vec.w = 1.0;
 
   ////
@@ -226,6 +235,6 @@ void main(void)
 
   v_ecpos_z = ecPosition.z;
   v_color = flight(normalize(gl_NormalMatrix * norm), ecPosition, u_color);
-
+#endif
 }
 

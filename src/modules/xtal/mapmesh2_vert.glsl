@@ -4,10 +4,11 @@
 //    vertex shader
 //
 
-#ifndef USE_TBO
+//#if (__VERSION__<=140)
+//#extension GL_ARB_compatibility : enable
+//#endif
+
 #extension GL_EXT_gpu_shader4 : enable 
-// #extension GL_ARB_compatibility : enable
-#endif
 
 ////////////////////
 // Uniform variables
@@ -26,7 +27,7 @@ uniform ivec3 u_mapsz;
 #ifdef USE_TBO
 uniform usamplerBuffer dataFieldTex; 
 #else
-uniform sampler3D dataFieldTex; 
+uniform usampler3D dataFieldTex; 
 #endif
 
 uniform int u_plane;
@@ -59,9 +60,7 @@ int getDensity(ivec3 iv)
   int index = iv.x + u_mapsz.x*(iv.y + u_mapsz.y*iv.z);
   return int( texelFetch(dataFieldTex, index).r );
 #else
-  float val = texelFetch3D(dataFieldTex, iv, 0).x;
-  return int(val * 255.0 + 0.5);
-  //return int( texelFetch3D(dataFieldTex, iv, 0).x );
+  return int( texelFetch3D(dataFieldTex, iv, 0).x );
 #endif
 }
 

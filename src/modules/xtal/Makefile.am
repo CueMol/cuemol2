@@ -23,7 +23,6 @@ DensityMap.cpp \
 MapMeshRenderer.cpp \
 MapSurfRenderer.cpp \
 MapSurf2Renderer.cpp \
-MapSurfRendImpl2.cpp \
 MapRenderer.cpp \
 QdfDenMapReader.cpp \
 QdfDenMapWriter.cpp \
@@ -56,7 +55,6 @@ if COND_USE_OPENGL
 CPP_SRC += \
 GLSLMapMesh3Renderer.cpp \
 GLSLMapVolRenderer.cpp \
-GLSLMapSurfRendImpl1.cpp \
 GLSLMapSurf2Renderer.cpp \
 $(NULL)
 
