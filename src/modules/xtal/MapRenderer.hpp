@@ -171,6 +171,9 @@ namespace xtal {
     /// Calc coord xform mat for map rendering (grid-->world)
     Matrix4D calcXformMat(ScalarObject *pMap, DensityMap *pXtal);
 
+    /// Calc normal xform mat for map rendering (grid-->world)
+    Matrix4D calcNormMat(ScalarObject *pMap, DensityMap *pXtal);
+
     /// Calc coord xform (grid-->world) & set to the display context
     void setupXform(gfx::DisplayContext *pdc, ScalarObject *pMap, DensityMap *pXtal);
 

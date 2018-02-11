@@ -281,6 +281,19 @@ Matrix4D MapRenderer::calcXformMat(ScalarObject *pMap, DensityMap *pXtal)
   return rval;
 }
 
+Matrix4D MapRenderer::calcNormMat(ScalarObject *pMap, DensityMap *pXtal)
+{
+  Matrix4D rval;
+
+  // check the object's xform matrix
+  const Matrix4D &xfm = pMap->getXformMatrix();
+  if (!xfm.isIdent()) {
+    rval = xfm;
+  }
+
+  return rval;
+}
+
 void MapRenderer::setupXform(gfx::DisplayContext *pdc, ScalarObject *pMap, DensityMap *pXtal)
 {
   pdc->multMatrix( calcXformMat(pMap, pXtal) );

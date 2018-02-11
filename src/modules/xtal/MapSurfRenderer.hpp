@@ -239,6 +239,7 @@ namespace xtal {
 
     void setupXformMat(DisplayContext *pdl);
 
+#if 0
     //////////
     // Experimental rendering impl (OpenMP/VBO)
 
@@ -338,7 +339,8 @@ namespace xtal {
     /// Map 3D texture ID
     quint32 m_nMapTexID;
     quint32 m_nMapBufID;
-
+#endif
+    
   private:
     std::deque<surface::MSVert> m_msverts;
     Matrix4D m_xform;

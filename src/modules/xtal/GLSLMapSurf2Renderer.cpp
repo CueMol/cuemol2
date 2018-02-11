@@ -19,6 +19,8 @@ using namespace xtal;
 using qlib::Matrix4D;
 using qlib::Matrix3D;
 
+#define USE_TBO 1
+
 /// default constructor
 GLSLMapSurf2Renderer::GLSLMapSurf2Renderer()
   : super_t()
@@ -66,7 +68,7 @@ bool GLSLMapSurf2Renderer::init(DisplayContext *pdc)
   //ssh.defineMacro("TEX2D_WIDTH", LString::format("%d",TEX2D_WIDTH).c_str());
 #endif
     m_pPO = ssh.createProgObj("mapsurf1",
-                              "%%CONFDIR%%/data/shaders/mapsurf1_vert.glsl",
+                              "%%CONFDIR%%/data/shaders/mapsurf1_vertex.glsl",
                               "%%CONFDIR%%/data/shaders/mapsurf1_frag.glsl");
   
   if (m_pPO==NULL) {
@@ -161,6 +163,7 @@ void GLSLMapSurf2Renderer::createDisplayCache()
 void GLSLMapSurf2Renderer::createGLSL()
 {
   ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
+  m_pCMap = pMap;
 
   calcMapDispExtent(pMap);
 
@@ -401,8 +404,7 @@ void GLSLMapSurf2Renderer::renderGLSL(DisplayContext *pdc)
   */
 
   m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
-  m_pPO->setUniform("isolevel", m_nIsoLevel);
-
+  m_pPO->setUniform("u_isolevel", m_nIsoLevel);
   m_pPO->setUniform("u_dspsz", getDspSize().x(), getDspSize().y(), getDspSize().z());
 
   /*
