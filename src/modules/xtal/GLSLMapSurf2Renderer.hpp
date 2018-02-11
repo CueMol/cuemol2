@@ -82,10 +82,15 @@ namespace xtal {
 
     virtual void createDisplayCache();
 
+  private:
     /// Create GLSL data (VBO, texture, etc)
     void createGLSL();
 
-	void createGLSL2();
+    void createGLSL2();
+
+    void createGlobMapTex();
+
+    void createLocMapTex();
 
   private:
 

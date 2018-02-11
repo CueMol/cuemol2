@@ -21,9 +21,11 @@
 // Vertex attributes
 
 // index
-attribute float a_ind;
+attribute int a_ind;
+/*
 attribute float a_flag;
 attribute float a_ivert;
+*/
 
 ////////////////////
 // Uniform variables
@@ -39,12 +41,22 @@ uniform ivec2 iegconn[12];
 
 // uniform int itconn[256*15];
 
+#ifdef USE_TBO
 uniform usamplerBuffer u_maptex;
 uniform usamplerBuffer u_tritex;
+#else
+uniform usampler3D u_maptex;
+uniform usampler1D u_tritex;
+#endif
 
 uniform int u_isolevel;
-uniform int u_ncol;
-uniform int u_nrow;
+//uniform int u_ncol;
+//uniform int u_nrow;
+
+/// Size of MapTex
+uniform ivec3 u_mapsz;
+uniform ivec3 u_dspsz;
+uniform ivec3 u_stpos;
 
 // surface color
 uniform vec4 u_color;
@@ -59,15 +71,30 @@ varying float v_ecpos_z;
 
 flat varying int v_fDiscard;
 
+////////////////////
+
 int getDensity(ivec3 iv)
 {
-  int index = iv.x + u_ncol*(iv.y + u_nrow*iv.z);
+  iv += u_stpos;
+
+  iv = (iv + u_mapsz*100) % u_mapsz;
+
+#ifdef USE_TBO
+  //int index = iv.x + u_ncol*(iv.y + u_nrow*iv.z);
+  int index = iv.x + u_mapsz.x*(iv.y + u_mapsz.y*iv.z);
   return int( texelFetch(u_maptex, index).r );
+#else
+  float val = texelFetch3D(dataFieldTex, iv, 0).x;
+  return int(val * 255.0 + 0.5);
+#endif
 }
 
 int itconn(int index)
 {
+#ifdef USE_TBO
   return int( texelFetch(u_tritex, index).r );
+#else
+#endif
 }
 
 vec3 getNorm(ivec3 iv)
@@ -79,7 +106,7 @@ vec3 getNorm(ivec3 iv)
   ivr.z = getDensity(ivec3(iv.x, iv.y, iv.z-del)) - getDensity(ivec3(iv.x, iv.y, iv.z+del));
 
   return normalize(ivr);
-  return ivr;
+  // return ivr;
 }
 
 void vdiscard()
@@ -98,6 +125,9 @@ void main(void)
   int iind = gl_VertexID/15;
   int icorn = gl_VertexID%15;
 
+  int u_ncol = u_dspsz.x;
+  int u_nrow = u_dspsz.y;
+  
   ivec3 vind;
   vind.x = iind % u_ncol;
   int itt = iind / u_ncol;
@@ -107,24 +137,22 @@ void main(void)
   //////////
 
   //int values[8];
-  ivec3 vvind;
+  // ivec3 vvind;
   int val;
   int imask = 1;
   int iflag = 0;
   for (int ii=0; ii<8; ii++) {
-    vvind = vind + ivtxoffs[ii]; // * m_nBinFac;
-    val = getDensity(vvind);
+    // vvind = vind + ivtxoffs[ii]; // * m_nBinFac;
+    //val = getDensity(vind + ivtxoffs[ii]);
 
-    if(val <= u_isolevel)
+    if(getDensity(vind + ivtxoffs[ii]) <= u_isolevel)
       iflag |= 1<<ii;
   }
 
-  /*
   if (iflag==0 || iflag==255) {
     vdiscard();
     return;
   }
-  */
   
   //////////
 
@@ -161,7 +189,6 @@ void main(void)
     else
       fOffset = float(int(u_isolevel) - int(val0))/float(delta);
   }
-  float roffs = 1.0f-fOffset;
 
   vec4 vec;
   vec.xyz = vec3(vind) + (fvtxoffs[ec0] + fegdir[iedge] * fOffset) * float(u_binfac);
@@ -170,9 +197,7 @@ void main(void)
   ////
 
   //vec3 norm = normalize( norm0*roffs + norm1*fOffset );
-  vec3 norm = norm0*roffs + norm1*fOffset;
-  //float th = float(gl_VertexID%256) / 255.0;
-  //vec3 norm = normalize( vec3(th,sqrt(1.0-th*th),0) );
+  vec3 norm = norm0*(1.0-fOffset) + norm1*fOffset;
 
   ////
   
@@ -181,10 +206,6 @@ void main(void)
 
   v_ecpos_z = ecPosition.z;
   v_color = flight(normalize(gl_NormalMatrix * norm), ecPosition, u_color);
-  //v_color = flight(norm, ecPosition, u_color);
-  //v_color = vec4(norm, 1.0);
 
-  //gl_FogFragCoord = dum;
-  //gl_Position = vec4(1,1,1,1);
 }
 

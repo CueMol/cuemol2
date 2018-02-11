@@ -19,12 +19,7 @@ uniform ivec3 ivdel[12];
 uniform ivec2 edgetab[16];
 
 // Volume data field texture buffer
-//uniform int ncol;
-//uniform int nrow;
-//uniform int nsec;
-
 uniform ivec3 u_dspsz;
-
 uniform ivec3 u_stpos;
 uniform ivec3 u_mapsz;
 
@@ -59,9 +54,6 @@ int getDensity(ivec3 iv)
   iv += u_stpos;
 
   iv = (iv + u_mapsz*100) % u_mapsz;
-  //iv.x = iv.x % u_mapsz.x;
-  //iv.y = iv.y % u_mapsz.y;
-  //iv.z = iv.z % u_mapsz.z;
 
 #ifdef USE_TBO
   int index = iv.x + u_mapsz.x*(iv.y + u_mapsz.y*iv.z);
@@ -128,8 +120,9 @@ void main(void)
   ipos.x = il%vsz.x;
   int ixx = il/vsz.x;
   ipos.y = ixx%vsz.y;
-  int iyy = ixx/vsz.y;
-  ipos.z = iyy%vsz.z;
+  ipos.z = ixx/vsz.y;
+  //int iyy = ixx/vsz.y;
+  //ipos.z = iyy%vsz.z;
 
   //int iplane = int( a_plane );
   int iplane = u_plane;

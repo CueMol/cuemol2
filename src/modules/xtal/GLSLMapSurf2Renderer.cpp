@@ -424,9 +424,38 @@ void GLSLMapSurf2Renderer::createGLSL2()
   ///////////////////////
   // Create texture (3D/TBO)
 
-  int mncol = ncol + 1;
-  int mnrow = nrow + 1;
-  int mnsec = nsec + 1;
+  if (m_bUseGlobMap)
+    createGlobMapTex();
+  else
+    createLocMapTex();
+
+  m_bWorkOK = true;
+}
+
+/// create global map texture (i.e., texture obj in DensityMap obj)
+void GLSLMapSurf2Renderer::createGlobMapTex()
+{
+  // nothing to be copied
+
+  // Setup uniform values
+
+  m_pPO->enable();
+  m_pPO->setUniform("u_isolevel", m_nIsoLevel);
+  CHK_GLERROR("setUniform isolevel");
+
+  m_pPO->setUniform("u_dspsz", getDspSize().x(), getDspSize().y(), getDspSize().z());
+  m_pPO->setUniform("u_stpos", m_mapStPos.x(), m_mapStPos.y(), m_mapStPos.z());
+  m_pPO->setUniform("u_mapsz", getMapSize().x(), getMapSize().y(), getMapSize().z());
+
+  m_pPO->disable();
+}
+
+/// create texture using local copy of map
+void GLSLMapSurf2Renderer::createLocMapTex()
+{
+  int mncol = m_dspSize.x() + 2;
+  int mnrow = m_dspSize.y() + 2;
+  int mnsec = m_dspSize.z() + 2;
 
   bool bReuse;
   if (m_maptmp.cols()!=mncol ||
@@ -440,26 +469,25 @@ void GLSLMapSurf2Renderer::createGLSL2()
     bReuse = true;
   }
   
-  m_nbcol = m_mapStPos.x();
-  m_nbrow = m_mapStPos.y();
-  m_nbsec = m_mapStPos.z();
+  m_nbcol = m_mapStPos.x()-1;
+  m_nbrow = m_mapStPos.y()-1;
+  m_nbsec = m_mapStPos.z()-1;
   //MB_DPRINTLN("bcol,row,sec=(%d,%d,%d)", m_nbcol, m_nbrow, m_nbsec);
 
-  int ix, iy, iz;
+  int i, j, k;
   
   for (k=0; k<mnsec; k++)
     for (j=0; j<mnrow; j++)
       for (i=0; i<mncol; i++){
-        ix = i + m_nbcol;
-        iy = j + m_nbrow;
-        iz = k + m_nbsec;
-        m_maptmp.at(i,j,k) = getByteDen(ix, iy, iz);
+        m_maptmp.at(i,j,k) = getByteDen(i + m_nbcol,
+                                        j + m_nbrow,
+                                        k + m_nbsec);
       }
 
 #ifdef USE_TBO
-    m_pMapTex->setData(ncol*nrow*nsec, 1, 1, m_maptmp.data());
+  m_pMapTex->setData(mncol*mnrow*mnsec, 1, 1, m_maptmp.data());
 #else
-    m_pMapTex->setData(ncol, nrow, nsec, m_maptmp.data());
+  m_pMapTex->setData(mncol, mnrow, mnsec, m_maptmp.data());
 #endif
 
 
@@ -470,15 +498,11 @@ void GLSLMapSurf2Renderer::createGLSL2()
   m_pPO->setUniform("u_isolevel", m_nIsoLevel);
   CHK_GLERROR("setUniform isolevel");
 
-  m_pPO->setUniform("u_ncol", mncol);
-  CHK_GLERROR("setUniform ncol");
-
-  m_pPO->setUniform("u_nrow", mnrow);
-  CHK_GLERROR("setUniform nrow");
+  m_pPO->setUniform("u_dspsz", getDspSize().x(), getDspSize().y(), getDspSize().z());
+  m_pPO->setUniform("u_stpos", 1,1,1);
+  m_pPO->setUniform("u_mapsz", mncol, mnrow, mnsec);
 
   m_pPO->disable();
-
-  m_bWorkOK = true;
 }
 
 /// Render to display (using GLSL)
@@ -499,13 +523,11 @@ void GLSLMapSurf2Renderer::renderGLSL(DisplayContext *pdc)
   Matrix4D xfm = calcXformMat(pMap, pXtal);
   pdc->multMatrix(xfm);
   
-  /*
   if (m_bUseGlobMap)
     pdc->useTexture(pXtal->getMapTex(), MAP_TEX_UNIT);
   else
     pdc->useTexture(m_pMapTex, MAP_TEX_UNIT);
-  */
-  pdc->useTexture(m_pMapTex, MAP_TEX_UNIT);
+
   pdc->useTexture(m_pTriTex, TRI_TEX_UNIT);
 
   m_pPO->enable();
@@ -524,19 +546,6 @@ void GLSLMapSurf2Renderer::renderGLSL(DisplayContext *pdc)
   */
 
   m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
-  m_pPO->setUniform("u_isolevel", m_nIsoLevel);
-  // m_pPO->setUniform("u_dspsz", getDspSize().x(), getDspSize().y(), getDspSize().z());
-
-  /*
-  if (m_bUseGlobMap) {
-    m_pPO->setUniform("u_stpos", m_mapStPos.x(), m_mapStPos.y(), m_mapStPos.z());
-    m_pPO->setUniform("u_mapsz", getMapSize().x(), getMapSize().y(), getMapSize().z());
-  }    
-  else {
-    m_pPO->setUniform("u_stpos", 0,0,0);
-    m_pPO->setUniform("u_mapsz", getDspSize().x(), getDspSize().y(), getDspSize().z());
-  }
-  */
 
   qlib::uid_t nSceneID = getSceneID();
   {
@@ -553,13 +562,11 @@ void GLSLMapSurf2Renderer::renderGLSL(DisplayContext *pdc)
 
   m_pPO->disable();
   
-  /*
   if (m_bUseGlobMap)
     pdc->unuseTexture(pXtal->getMapTex());
   else
     pdc->unuseTexture(m_pMapTex);
-  */
-  pdc->unuseTexture(m_pMapTex);
+
   pdc->unuseTexture(m_pTriTex);
 
   pdc->popMatrix();
