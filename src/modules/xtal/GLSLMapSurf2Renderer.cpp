@@ -79,7 +79,7 @@ bool GLSLMapSurf2Renderer::init(DisplayContext *pdc)
   m_pPO->enable();
 
   // setup constant tables
-  int i;
+  int i, j;
   LString key;
 
   // vtxoffs
@@ -106,7 +106,13 @@ bool GLSLMapSurf2Renderer::init(DisplayContext *pdc)
     m_pPO->setUniform(key, a2iEdgeConnection[i][0], a2iEdgeConnection[i][1]);
   }
 
-  // a2iTriangleConnectionTable
+  // a2iTriangleConnectionTable (256x5x3)
+  for (i=0; i<256; ++i) {
+    for (j=0; j<5*3; ++j) {
+      key = LString::format("itconn[%d]", i*5*3 + j);
+      m_pPO->setUniform(key, a2iTriangleConnectionTable[i][j]);
+    }
+  }
 
   m_pPO->disable();
 
@@ -301,6 +307,7 @@ void GLSLMapSurf2Renderer::createGLSL()
             m_pAttrArray->at(vxind).ind = i + (j + k*mnrow)*mncol;
             m_pAttrArray->at(vxind).flag = iFlagIndex;
             m_pAttrArray->at(vxind).ivert = iEdge;
+            //m_pAttrArray->at(vxind).ivert = iCorner;
           }
           ++vxind;
         }

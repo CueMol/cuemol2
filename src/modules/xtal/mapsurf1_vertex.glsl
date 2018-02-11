@@ -36,6 +36,8 @@ uniform vec3 fegdir[12];
 
 uniform ivec2 iegconn[12];
 
+// uniform int itconn[256*15];
+
 uniform usamplerBuffer u_maptex;
 
 uniform int u_isolevel;
@@ -71,6 +73,13 @@ vec3 getNorm(ivec3 iv)
   return ivr;
 }
 
+void vdiscard()
+{
+  gl_Position = vec4(0,0,0,1);
+  gl_FrontColor = vec4(0,0,0,0);
+  //v_fDiscard = 1.0;
+}
+
 void main(void)
 {
   int vid = gl_VertexID%3;
@@ -79,12 +88,21 @@ void main(void)
   int iflag = int(a_flag);
   int iedge = int(a_ivert);
   
+/*
+  int icorn = int(a_ivert);
+  int iedge = itconn[iflag*15 + icorn];
+  if (iedge<0) {
+    vdiscard();
+    return;
+  }
+*/
+
   ivec3 vind;
   vind.x = iind % u_ncol;
   int itt = iind / u_ncol;
   vind.y = itt % u_nrow;
   vind.z = itt / u_nrow;
-
+  
   int ec0 = iegconn[iedge].x;
   int ec1 = iegconn[iedge].y;
 
