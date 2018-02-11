@@ -28,6 +28,7 @@ GLSLMapSurf2Renderer::GLSLMapSurf2Renderer()
   m_pPO = NULL;
   m_pMapTex = NULL;
   m_pAttrArray = NULL;
+  m_pTriTex = NULL;
 }
 
 /// destructor
@@ -106,13 +107,8 @@ bool GLSLMapSurf2Renderer::init(DisplayContext *pdc)
     m_pPO->setUniform(key, a2iEdgeConnection[i][0], a2iEdgeConnection[i][1]);
   }
 
-  // a2iTriangleConnectionTable (256x5x3)
-  for (i=0; i<256; ++i) {
-    for (j=0; j<5*3; ++j) {
-      key = LString::format("itconn[%d]", i*5*3 + j);
-      m_pPO->setUniform(key, a2iTriangleConnectionTable[i][j]);
-    }
-  }
+  m_pPO->setUniform("u_maptex", MAP_TEX_UNIT);
+  m_pPO->setUniform("u_tritex", TRI_TEX_UNIT);
 
   m_pPO->disable();
 
@@ -127,6 +123,25 @@ bool GLSLMapSurf2Renderer::init(DisplayContext *pdc)
   m_pMapTex->setup(3, gfx::Texture::FMT_R,
                    gfx::Texture::TYPE_UINT8_COLOR);
                    //gfx::Texture::TYPE_UINT8);
+#endif
+
+  // a2iTriangleConnectionTable (256x5x3)
+  m_tritex.resize(256*5*3);
+  for (i=0; i<256; ++i) {
+    for (j=0; j<5*3; ++j) {
+      m_tritex[i*5*3 + j] = qbyte( a2iTriangleConnectionTable[i][j] );
+    }
+  }
+  
+  if (m_pTriTex != NULL)
+    delete m_pTriTex;
+  m_pTriTex = MB_NEW gfx::Texture();
+
+#ifdef USE_TBO
+  m_pTriTex->setup(1, gfx::Texture::FMT_R,
+                   gfx::Texture::TYPE_UINT8);
+  m_pTriTex->setData(256*5*3, 1, 1, m_tritex.data());
+#else
 #endif
 
   setShaderAvail(true);
@@ -144,6 +159,10 @@ void GLSLMapSurf2Renderer::unloading()
     delete m_pAttrArray;
   m_pAttrArray = NULL;
 
+  if (m_pTriTex != NULL)
+    delete m_pTriTex;
+  m_pTriTex = NULL;
+
   // ProgramObject is owned by DisplayContext
   // and will be reused other renderes,
   // so m_pPO should not be deleted here.
@@ -159,7 +178,8 @@ void GLSLMapSurf2Renderer::unloading()
 void GLSLMapSurf2Renderer::createDisplayCache()
 {
   if (isUseShader()) {
-    createGLSL();
+    //createGLSL();
+    createGLSL2();
   }
   //else {
   //}
@@ -168,16 +188,13 @@ void GLSLMapSurf2Renderer::createDisplayCache()
 /// Create GLSL data (VBO, texture, etc)
 void GLSLMapSurf2Renderer::createGLSL()
 {
+#if 0
   ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
   m_pCMap = pMap;
 
   calcMapDispExtent(pMap);
 
   calcContLevel(pMap);
-
-  //m_nMapColNo = pMap->getColNo();
-  //m_nMapRowNo = pMap->getRowNo();
-  //m_nMapSecNo = pMap->getSecNo();
 
   int ncol = m_dspSize.x(); //m_nActCol;
   int nrow = m_dspSize.y(); //m_nActCol;
@@ -220,12 +237,6 @@ void GLSLMapSurf2Renderer::createGLSL()
     m_pAttrArray->at(i).flag = 0.0f;
     m_pAttrArray->at(i).ivert = 0.0f;
   }
-
-  quint32 cc = getColor()->getCode();
-  m_col_r = gfx::getRCode(cc);
-  m_col_g = gfx::getGCode(cc);
-  m_col_b = gfx::getBCode(cc);
-  m_col_a = gfx::getACode(cc);
 
   m_nbcol = m_mapStPos.x();
   m_nbrow = m_mapStPos.y();
@@ -306,8 +317,8 @@ void GLSLMapSurf2Renderer::createGLSL()
           if (vxind<m_pAttrArray->getSize()) {
             m_pAttrArray->at(vxind).ind = i + (j + k*mnrow)*mncol;
             m_pAttrArray->at(vxind).flag = iFlagIndex;
-            m_pAttrArray->at(vxind).ivert = iEdge;
-            //m_pAttrArray->at(vxind).ivert = iCorner;
+            //m_pAttrArray->at(vxind).ivert = iEdge;
+            m_pAttrArray->at(vxind).ivert = iCorner;
           }
           ++vxind;
         }
@@ -319,7 +330,7 @@ void GLSLMapSurf2Renderer::createGLSL()
   m_pAttrArray->setUpdated(true);
 
   ///////////////////////
-  // Create texture (TBO)
+  // Create texture (3D/TBO)
 
   bool bReuse;
   if (m_maptmp.cols()!=mncol ||
@@ -353,8 +364,109 @@ void GLSLMapSurf2Renderer::createGLSL()
   /// Setup uniform values
 
   m_pPO->enable();
-  m_pPO->setUniform("u_maptex", 0);
+  m_pPO->setUniform("u_isolevel", m_nIsoLevel);
+  CHK_GLERROR("setUniform isolevel");
 
+  m_pPO->setUniform("u_ncol", mncol);
+  CHK_GLERROR("setUniform ncol");
+
+  m_pPO->setUniform("u_nrow", mnrow);
+  CHK_GLERROR("setUniform nrow");
+
+  m_pPO->disable();
+
+  m_bWorkOK = true;
+#endif
+}
+
+/// Create GLSL data (VBO, texture, etc)
+void GLSLMapSurf2Renderer::createGLSL2()
+{
+  ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
+  m_pCMap = pMap;
+
+  calcMapDispExtent(pMap);
+
+  calcContLevel(pMap);
+
+  int ncol = m_dspSize.x(); //m_nActCol;
+  int nrow = m_dspSize.y(); //m_nActCol;
+  int nsec = m_dspSize.z(); //m_nActCol;
+
+  int i,j,k;
+
+  ///////////////////////
+  // Create attribute VBO
+
+  MB_DPRINTLN("voxels=%d", ncol*nrow*nsec);
+  MB_DPRINTLN("bisolev=%d", m_nIsoLevel);
+
+  int nvsz = ncol*nrow*nsec*15;
+  
+  if (m_pAttrArray!=NULL && m_pAttrArray->getSize()!=nvsz) {
+    delete m_pAttrArray;
+    m_pAttrArray=NULL;
+  }
+
+  if (m_pAttrArray==NULL) {
+    m_pAttrArray = MB_NEW AttrArray();
+    m_pAttrArray->setAttrSize(1);
+    m_pAttrArray->setAttrInfo(0, m_pPO->getAttribLocation("a_ind"), 1,
+                              qlib::type_consts::QTC_UINT32, offsetof(AttrElem, ind));
+    m_pAttrArray->setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
+    m_pAttrArray->alloc(nvsz);
+  }
+
+  MB_DPRINTLN("VBO %d created", nvsz);
+  
+  // m_pAttrArray->setUpdated(true);
+
+  ///////////////////////
+  // Create texture (3D/TBO)
+
+  int mncol = ncol + 1;
+  int mnrow = nrow + 1;
+  int mnsec = nsec + 1;
+
+  bool bReuse;
+  if (m_maptmp.cols()!=mncol ||
+      m_maptmp.rows()!=mnrow ||
+      m_maptmp.secs()!=mnsec) {
+    m_maptmp.resize(mncol, mnrow, mnsec);
+    bReuse = false;
+  }
+  else {
+    MB_DPRINTLN("reuse texture");
+    bReuse = true;
+  }
+  
+  m_nbcol = m_mapStPos.x();
+  m_nbrow = m_mapStPos.y();
+  m_nbsec = m_mapStPos.z();
+  //MB_DPRINTLN("bcol,row,sec=(%d,%d,%d)", m_nbcol, m_nbrow, m_nbsec);
+
+  int ix, iy, iz;
+  
+  for (k=0; k<mnsec; k++)
+    for (j=0; j<mnrow; j++)
+      for (i=0; i<mncol; i++){
+        ix = i + m_nbcol;
+        iy = j + m_nbrow;
+        iz = k + m_nbsec;
+        m_maptmp.at(i,j,k) = getByteDen(ix, iy, iz);
+      }
+
+#ifdef USE_TBO
+    m_pMapTex->setData(ncol*nrow*nsec, 1, 1, m_maptmp.data());
+#else
+    m_pMapTex->setData(ncol, nrow, nsec, m_maptmp.data());
+#endif
+
+
+  ////////////////////////
+  /// Setup uniform values
+
+  m_pPO->enable();
   m_pPO->setUniform("u_isolevel", m_nIsoLevel);
   CHK_GLERROR("setUniform isolevel");
 
@@ -394,6 +506,7 @@ void GLSLMapSurf2Renderer::renderGLSL(DisplayContext *pdc)
     pdc->useTexture(m_pMapTex, MAP_TEX_UNIT);
   */
   pdc->useTexture(m_pMapTex, MAP_TEX_UNIT);
+  pdc->useTexture(m_pTriTex, TRI_TEX_UNIT);
 
   m_pPO->enable();
   
@@ -412,7 +525,7 @@ void GLSLMapSurf2Renderer::renderGLSL(DisplayContext *pdc)
 
   m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
   m_pPO->setUniform("u_isolevel", m_nIsoLevel);
-  m_pPO->setUniform("u_dspsz", getDspSize().x(), getDspSize().y(), getDspSize().z());
+  // m_pPO->setUniform("u_dspsz", getDspSize().x(), getDspSize().y(), getDspSize().z());
 
   /*
   if (m_bUseGlobMap) {
@@ -447,6 +560,7 @@ void GLSLMapSurf2Renderer::renderGLSL(DisplayContext *pdc)
     pdc->unuseTexture(m_pMapTex);
   */
   pdc->unuseTexture(m_pMapTex);
+  pdc->unuseTexture(m_pTriTex);
 
   pdc->popMatrix();
 

@@ -4,14 +4,15 @@
 //    fragment shader
 //
 
-@include "lib_common.glsl"
-
 #if (__VERSION__>=140)
 //#extension GL_compatibility : enable
 #else
 #extension GL_ARB_compatibility : enable
-#extension GL_EXT_gpu_shader4 : enable 
 #endif
+
+#extension GL_EXT_gpu_shader4 : enable 
+
+@include "lib_common.glsl"
 
 ////////////////////
 // Uniform variables
@@ -25,8 +26,13 @@ varying vec4 v_color;
 
 varying float v_ecpos_z;
 
+flat varying int v_fDiscard;
+
 void main()
 {
+  if (v_fDiscard!=0)
+    discard;
+
   vec4 color;
   //color = gl_Color;
   color = v_color;

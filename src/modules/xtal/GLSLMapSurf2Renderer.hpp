@@ -74,9 +74,6 @@ namespace xtal {
     
     // virtual bool isCacheAvail() const;
 
-    /// Create GLSL data (VBO, texture, etc)
-    virtual void createGLSL();
-
     /// Render to display (using GLSL)
     virtual void renderGLSL(DisplayContext *pdc);
 
@@ -85,15 +82,20 @@ namespace xtal {
 
     virtual void createDisplayCache();
 
+    /// Create GLSL data (VBO, texture, etc)
+    void createGLSL();
+
+	void createGLSL2();
+
   private:
 
     ///////////////////////////////////////////
     // work area
 
     struct AttrElem {
-      qfloat32 ind;
-      qfloat32 flag;
-      qfloat32 ivert;
+      quint32 ind;
+      //qfloat32 flag;
+      //qfloat32 ivert;
     };
     
     typedef gfx::DrawAttrArray<AttrElem> AttrArray;
@@ -111,6 +113,13 @@ namespace xtal {
     gfx::Texture *m_pMapTex;
 
     static const int MAP_TEX_UNIT = 0;
+
+    /// MC triangle table (256x15x3)
+    gfx::Texture *m_pTriTex;
+
+    static const int TRI_TEX_UNIT = 1;
+
+    std::vector<qbyte> m_tritex;
 
   };
 }

@@ -7,12 +7,13 @@
 // GLSL version 1.40
 // #version 140
 #if (__VERSION__>=140)
-//#extension GL_compatibility : enable
+// #extension GL_compatibility : enable
 #define USE_TBO 1
 #else
 #extension GL_ARB_compatibility : enable
-#extension GL_EXT_gpu_shader4 : enable 
 #endif
+
+#extension GL_EXT_gpu_shader4 : enable 
 
 @include "lib_common.glsl"
 
@@ -39,6 +40,7 @@ uniform ivec2 iegconn[12];
 // uniform int itconn[256*15];
 
 uniform usamplerBuffer u_maptex;
+uniform usamplerBuffer u_tritex;
 
 uniform int u_isolevel;
 uniform int u_ncol;
@@ -55,10 +57,17 @@ varying vec4 v_color;
 
 varying float v_ecpos_z;
 
+flat varying int v_fDiscard;
+
 int getDensity(ivec3 iv)
 {
   int index = iv.x + u_ncol*(iv.y + u_nrow*iv.z);
   return int( texelFetch(u_maptex, index).r );
+}
+
+int itconn(int index)
+{
+  return int( texelFetch(u_tritex, index).r );
 }
 
 vec3 getNorm(ivec3 iv)
@@ -77,25 +86,17 @@ void vdiscard()
 {
   gl_Position = vec4(0,0,0,1);
   gl_FrontColor = vec4(0,0,0,0);
-  //v_fDiscard = 1.0;
+  v_fDiscard = 1;
 }
 
 void main(void)
 {
-  int vid = gl_VertexID%3;
+  v_fDiscard = 0;
 
-  int iind = int(a_ind);
-  int iflag = int(a_flag);
-  int iedge = int(a_ivert);
-  
-/*
-  int icorn = int(a_ivert);
-  int iedge = itconn[iflag*15 + icorn];
-  if (iedge<0) {
-    vdiscard();
-    return;
-  }
-*/
+  // int vid = gl_VertexID%3;
+
+  int iind = gl_VertexID/15;
+  int icorn = gl_VertexID%15;
 
   ivec3 vind;
   vind.x = iind % u_ncol;
@@ -103,6 +104,41 @@ void main(void)
   vind.y = itt % u_nrow;
   vind.z = itt / u_nrow;
   
+  //////////
+
+  //int values[8];
+  ivec3 vvind;
+  int val;
+  int imask = 1;
+  int iflag = 0;
+  for (int ii=0; ii<8; ii++) {
+    vvind = vind + ivtxoffs[ii]; // * m_nBinFac;
+    val = getDensity(vvind);
+
+    if(val <= u_isolevel)
+      iflag |= 1<<ii;
+  }
+
+  /*
+  if (iflag==0 || iflag==255) {
+    vdiscard();
+    return;
+  }
+  */
+  
+  //////////
+
+  // int iind = int(a_ind);
+  // int iflag = int(a_flag);
+  // int iedge = int(a_ivert);
+  // int icorn = int(a_ivert);
+
+  int iedge = itconn(iflag*15 + icorn);
+  if (iedge<0) {
+    vdiscard();
+    return;
+  }
+
   int ec0 = iegconn[iedge].x;
   int ec1 = iegconn[iedge].y;
 
@@ -133,7 +169,8 @@ void main(void)
 
   ////
 
-  vec3 norm = normalize( norm0*roffs + norm1*fOffset );
+  //vec3 norm = normalize( norm0*roffs + norm1*fOffset );
+  vec3 norm = norm0*roffs + norm1*fOffset;
   //float th = float(gl_VertexID%256) / 255.0;
   //vec3 norm = normalize( vec3(th,sqrt(1.0-th*th),0) );
 
@@ -143,8 +180,8 @@ void main(void)
   gl_Position = gl_ProjectionMatrix * ecPosition;
 
   v_ecpos_z = ecPosition.z;
-  // v_color = flight(gl_NormalMatrix * norm, ecPosition, u_color);
-   v_color = flight(norm, ecPosition, u_color);
+  v_color = flight(normalize(gl_NormalMatrix * norm), ecPosition, u_color);
+  //v_color = flight(norm, ecPosition, u_color);
   //v_color = vec4(norm, 1.0);
 
   //gl_FogFragCoord = dum;
