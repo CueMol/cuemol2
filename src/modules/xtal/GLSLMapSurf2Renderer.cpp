@@ -20,6 +20,7 @@ using qlib::Matrix4D;
 using qlib::Matrix3D;
 
 #define USE_TBO 1
+//#define USE_DRAW_INSTANCED 65536
 
 /// default constructor
 GLSLMapSurf2Renderer::GLSLMapSurf2Renderer()
@@ -61,16 +62,22 @@ bool GLSLMapSurf2Renderer::init(DisplayContext *pdc)
 
   sysdep::OglShaderSetupHelper<GLSLMapSurf2Renderer> ssh(this);
 
-  if (m_pPO==NULL)
+  if (m_pPO==NULL) {
     ssh.setUseInclude(true);
 #ifdef USE_TBO
     ssh.defineMacro("USE_TBO", "1");
 #else
-  //ssh.defineMacro("TEX2D_WIDTH", LString::format("%d",TEX2D_WIDTH).c_str());
+    //ssh.defineMacro("TEX2D_WIDTH", LString::format("%d",TEX2D_WIDTH).c_str());
+#endif
+    
+#ifdef USE_DRAW_INSTANCED
+    ssh.defineMacro("USE_DRAW_INSTANCED", LString::format("%d",USE_DRAW_INSTANCED).c_str());
+#else
 #endif
     m_pPO = ssh.createProgObj("mapsurf1",
                               "%%CONFDIR%%/data/shaders/mapsurf1_vertex.glsl",
                               "%%CONFDIR%%/data/shaders/mapsurf1_frag.glsl");
+  }
   
   if (m_pPO==NULL) {
     LOG_DPRINTLN("GPUMapSurf2> ERROR: cannot create progobj.");
@@ -402,8 +409,15 @@ void GLSLMapSurf2Renderer::createGLSL2()
   MB_DPRINTLN("bisolev=%d", m_nIsoLevel);
 
   int nvsz = ncol*nrow*nsec*15;
+  int nasz = nvsz;
   
-  if (m_pAttrArray!=NULL && m_pAttrArray->getSize()!=nvsz) {
+#if (USE_DRAW_INSTANCED>=1)
+  nasz = (nvsz/USE_DRAW_INSTANCED/3) * 3;
+  while (nasz* USE_DRAW_INSTANCED - nvsz<0)
+    nasz +=3;
+#endif
+
+  if (m_pAttrArray!=NULL && m_pAttrArray->getSize()!=nasz) {
     delete m_pAttrArray;
     m_pAttrArray=NULL;
   }
@@ -414,10 +428,20 @@ void GLSLMapSurf2Renderer::createGLSL2()
     m_pAttrArray->setAttrInfo(0, m_pPO->getAttribLocation("a_ind"), 1,
                               qlib::type_consts::QTC_UINT32, offsetof(AttrElem, ind));
     m_pAttrArray->setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
-    m_pAttrArray->alloc(nvsz);
+    m_pAttrArray->alloc(nasz);
+#if (USE_DRAW_INSTANCED>=1)
+    m_pAttrArray->setInstCount(USE_DRAW_INSTANCED);
+    m_pPO->enable();
+    m_pPO->setUniform("u_vbosz", nasz);
+    m_pPO->setUniform("u_vmax", nvsz);
+    m_pPO->disable();
+    MB_DPRINTLN("VBO %d x inst %d = %d", nasz, USE_DRAW_INSTANCED, nasz* USE_DRAW_INSTANCED);
+    MB_DPRINTLN("del = %d", nasz* USE_DRAW_INSTANCED - nvsz);
+#else
+    MB_DPRINTLN("VBO %d created", nasz);
+#endif
   }
 
-  MB_DPRINTLN("VBO %d created", nvsz);
   
   // m_pAttrArray->setUpdated(true);
 
@@ -583,7 +607,6 @@ void GLSLMapSurf2Renderer::invalidateDisplayCache()
 
 void GLSLMapSurf2Renderer::setUseGlobMap(bool b)
 {
-  /*
   if (b) {
     ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
     DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
@@ -601,7 +624,7 @@ void GLSLMapSurf2Renderer::setUseGlobMap(bool b)
       m_pMapTex->setData(1, 1, 1, NULL);
     m_maptmp.resize(0,0,0);
   }
-  */
+
   m_bUseGlobMap = b;
-  // invalidateDisplayCache();
+  invalidateDisplayCache();
 }

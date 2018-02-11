@@ -15,6 +15,10 @@
 
 #extension GL_EXT_gpu_shader4 : enable 
 
+#if (USE_DRAW_INSTANCED>=1)
+#extension GL_ARB_draw_instanced : enable
+#endif
+
 @include "lib_common.glsl"
 
 ////////////////////
@@ -62,6 +66,11 @@ uniform ivec3 u_stpos;
 uniform vec4 u_color;
 
 const int u_binfac = 1;
+
+#if (USE_DRAW_INSTANCED>=1)
+uniform int u_vbosz;
+uniform int u_vmax;
+#endif
 
 ////////////////////
 // varying
@@ -112,7 +121,8 @@ vec3 getNorm(ivec3 iv)
 void vdiscard()
 {
   gl_Position = vec4(0,0,0,1);
-  gl_FrontColor = vec4(0,0,0,0);
+  v_color = vec4(0,0,0,0);
+  //gl_FrontColor = vec4(0,0,0,0);
   v_fDiscard = 1;
 }
 
@@ -122,12 +132,22 @@ void main(void)
 
   // int vid = gl_VertexID%3;
 
+#if (USE_DRAW_INSTANCED>=1)
+  int vid = gl_InstanceID*u_vbosz + gl_VertexID;
+  if (vid>u_vmax) {
+    vdiscard();
+    return;
+  }
+  int iind = vid/15;
+  int icorn = vid%15;
+#else
   int iind = gl_VertexID/15;
   int icorn = gl_VertexID%15;
+#endif  
 
   int u_ncol = u_dspsz.x;
   int u_nrow = u_dspsz.y;
-  
+
   ivec3 vind;
   vind.x = iind % u_ncol;
   int itt = iind / u_ncol;

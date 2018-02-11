@@ -378,10 +378,15 @@ namespace sysdep {
       int ninst = ada.getInstCount();
       GLenum mode = convDrawMode(ada.getDrawMode());
 
-      if (ninst>0 && GLEW_ARB_instanced_arrays)
-        glDrawArraysInstanced(mode, 0, ada.getSize(), ninst);
-      else
+      if (ninst>0 && GLEW_ARB_instanced_arrays) {
+      //if (ninst>0 && GLEW_GL_ARB_draw_instanced) {
+        glDrawArraysInstancedARB(mode, 0, ada.getSize(), ninst);
+        MB_DPRINTLN("glDrawArraysInstancedARB(%d, %d, %d, %d)", mode, 0, ada.getSize(), ninst);
+        CHK_GLERROR("glDrawArraysInstancedARB");
+      }
+      else {
         glDrawArrays(mode, 0, ada.getSize());
+      }
     }
     
     virtual void postDraw(const AbstDrawElem &ade)
