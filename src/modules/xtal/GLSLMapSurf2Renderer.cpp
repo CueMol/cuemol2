@@ -20,7 +20,7 @@ using qlib::Matrix4D;
 using qlib::Matrix3D;
 
 #ifdef WIN32
-#define USE_TBO
+// #define USE_TBO
 #endif
 
 //#define USE_DRAW_INSTANCED 65536
@@ -126,11 +126,12 @@ bool GLSLMapSurf2Renderer::init(DisplayContext *pdc)
   m_pMapTex = MB_NEW gfx::Texture();
 
 #ifdef USE_TBO
-  m_pMapTex->setup(1, gfx::Texture::FMT_R,
+  m_pMapTex->setup(gfx::Texture::DIM_DATA,
+                   gfx::Texture::FMT_R,
                    gfx::Texture::TYPE_UINT8);
 #else
-  m_pMapTex->setup(3, gfx::Texture::FMT_R,
-                   //gfx::Texture::TYPE_UINT8_COLOR);
+  m_pMapTex->setup(gfx::Texture::DIM_3D,
+                   gfx::Texture::FMT_R,
                    gfx::Texture::TYPE_UINT8);
 #endif
 
@@ -146,9 +147,17 @@ bool GLSLMapSurf2Renderer::init(DisplayContext *pdc)
     delete m_pTriTex;
   m_pTriTex = MB_NEW gfx::Texture();
 
-  m_pTriTex->setup(1, gfx::Texture::FMT_R,
+#ifdef USE_TBO
+  m_pTriTex->setup(gfx::Texture::DIM_DATA,
+                   gfx::Texture::FMT_R,
                    gfx::Texture::TYPE_UINT8);
   m_pTriTex->setData(256*5*3, 1, 1, m_tritex.data());
+#else
+  m_pTriTex->setup(gfx::Texture::DIM_1D,
+                   gfx::Texture::FMT_R,
+                   gfx::Texture::TYPE_UINT8);
+  m_pTriTex->setData(256*5*3, 1, 1, m_tritex.data());
+#endif
 
   setShaderAvail(true);
   return true;
@@ -426,9 +435,12 @@ void GLSLMapSurf2Renderer::createGLSL2()
     m_pAttrArray->setAttrSize(1);
     m_pAttrArray->setAttrInfo(0, m_pPO->getAttribLocation("a_ind"), 1,
                               qlib::type_consts::QTC_UINT32, offsetof(AttrElem, ind));
-    //m_pAttrArray->setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
-    m_pAttrArray->setDrawMode(gfx::AbstDrawElem::DRAW_POINTS);
+
+    m_pAttrArray->setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
+    //m_pAttrArray->setDrawMode(gfx::AbstDrawElem::DRAW_POINTS);
+
     m_pAttrArray->alloc(nasz);
+
 #if (USE_DRAW_INSTANCED>=1)
     m_pAttrArray->setInstCount(USE_DRAW_INSTANCED);
     m_pPO->enable();
@@ -510,8 +522,10 @@ void GLSLMapSurf2Renderer::createLocMapTex()
 
 #ifdef USE_TBO
   m_pMapTex->setData(mncol*mnrow*mnsec, 1, 1, m_maptmp.data());
+  MB_DPRINTLN("GLSLMapSurf2> %d bytes TexBO created", mncol*mnrow*mnsec);
 #else
   m_pMapTex->setData(mncol, mnrow, mnsec, m_maptmp.data());
+  MB_DPRINTLN("GLSLMapSurf2> %dx%dx%d voxels 3DTex created", mncol,mnrow,mnsec);
 #endif
 
 
@@ -582,6 +596,7 @@ void GLSLMapSurf2Renderer::renderGLSL(DisplayContext *pdc)
     m_pPO->setUniformF("u_color", r, g, b, 1.0f);
   }
 
+  // pdc->setPointSize(3.0);
   pdc->drawElem(*m_pAttrArray);
 
   m_pPO->disable();

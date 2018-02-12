@@ -57,13 +57,26 @@ namespace gfx {
     }
 
   public:
-    /// pixel format
+    /////////////////////////////////////
+    // Dimension
+
+    static const int DIM_1D = 1;
+    static const int DIM_2D = 2;
+    static const int DIM_3D = 3;
+    static const int DIM_DATA = 10;
+    static const int DIM_2DRECT = 12;
+
+    /////////////////////////////////////
+    // pixel format
+
     static const int FMT_R = 0;
     static const int FMT_RG = 1;
     static const int FMT_RGB = 2;
     static const int FMT_RGBA = 3;
 
-    /// pixel type
+    /////////////////////////////////////
+    // Pixel type
+
     static const int TYPE_UINT8 = 0;
     static const int TYPE_UINT16 = 1;
     static const int TYPE_UINT32 = 2;

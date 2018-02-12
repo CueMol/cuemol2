@@ -62,25 +62,20 @@ void OglTextureRep::setup(int iDim, int iPixFmt, int iPixType)
 
   MB_DPRINTLN("OglTex setup(%d, %d, %d) called.", iDim, iPixFmt, iPixType);
 
-  if (iDim==1 &&
-      /*(iPixType!=Texture::TYPE_UINT8_COLOR) &&*/
-      /*iPixFmt==Texture::FMT_R &&*/
-      isTBOAvailable() ) {
+  switch (iDim) {
+  case Texture::DIM_DATA:
     setupTBO(iPixFmt, iPixType);
     return;
-  }
-
-  switch (iDim) {
-  case 1:
+  case Texture::DIM_1D:
     m_iGlDimType = GL_TEXTURE_1D;
     break;
-  case 2:
+  case Texture::DIM_2D:
     m_iGlDimType = GL_TEXTURE_2D;
     break;
-  case 3:
+  case Texture::DIM_3D:
     m_iGlDimType = GL_TEXTURE_3D;
     break;
-  case 12:
+  case Texture::DIM_2DRECT:
     m_iGlDimType = GL_TEXTURE_RECTANGLE;
     break;
   default:

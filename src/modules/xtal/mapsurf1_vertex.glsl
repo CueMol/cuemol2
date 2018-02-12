@@ -86,7 +86,6 @@ int getDensity(ivec3 iv)
   iv = (iv + u_mapsz*100) % u_mapsz;
 
 #ifdef USE_TBO
-  //int index = iv.x + u_ncol*(iv.y + u_nrow*iv.z);
   int index = iv.x + u_mapsz.x*(iv.y + u_mapsz.y*iv.z);
   return int( texelFetch(u_maptex, index).r );
 #else
@@ -119,13 +118,14 @@ void vdiscard()
 {
   gl_Position = vec4(0,0,0,1);
   v_color = vec4(0,0,0,0);
-  //gl_FrontColor = vec4(0,0,0,0);
+  gl_FrontColor = vec4(0,0,0,0);
   v_fDiscard = 1;
 }
 
 void main(void)
 {
   v_fDiscard = 0;
+  vec4 color = u_color;
 
   // int vid = gl_VertexID%3;
 
@@ -191,7 +191,7 @@ void main(void)
   // int icorn = int(a_ivert);
 
   int iedge = itconn(iflag*15 + icorn);
-  if (iedge<0) {
+  if (iedge>11) {
     vdiscard();
     return;
   }
@@ -213,14 +213,16 @@ void main(void)
   {
     int delta = int(val1) - int(val0);
     
-    if(delta == 0)
+    if(delta == 0) {
       fOffset = 0.5f;
-    else
+    }
+    else {
       fOffset = float(int(u_isolevel) - int(val0))/float(delta);
+    }
   }
 
   vec4 vec;
-  vec.xyz = vec3(vind); // + (fvtxoffs[ec0] + fegdir[iedge] * fOffset) * float(u_binfac);
+  vec.xyz = vec3(vind) + (fvtxoffs[ec0] + fegdir[iedge] * fOffset) * float(u_binfac);
   vec.w = 1.0;
 
   ////
@@ -234,7 +236,8 @@ void main(void)
   gl_Position = gl_ProjectionMatrix * ecPosition;
 
   v_ecpos_z = ecPosition.z;
-  v_color = flight(normalize(gl_NormalMatrix * norm), ecPosition, u_color);
+  v_color = flight(normalize(gl_NormalMatrix * norm), ecPosition, color);
+  // v_color = color;
 #endif
 }
 
