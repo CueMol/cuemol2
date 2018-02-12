@@ -24,8 +24,10 @@
 // Vertex attributes
 
 // index
-attribute int a_ind;
+attribute float a_dummy;
+
 /*
+attribute int a_ind;
 attribute float a_flag;
 attribute float a_ivert;
 */

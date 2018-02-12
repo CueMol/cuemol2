@@ -20,10 +20,10 @@ using qlib::Matrix4D;
 using qlib::Matrix3D;
 
 #ifdef WIN32
-// #define USE_TBO
+#define USE_TBO
 #endif
 
-//#define USE_DRAW_INSTANCED 65536
+#define USE_DRAW_INSTANCED 65536
 
 /// default constructor
 GLSLMapSurf2Renderer::GLSLMapSurf2Renderer()
@@ -87,6 +87,11 @@ bool GLSLMapSurf2Renderer::init(DisplayContext *pdc)
   }
 
   m_pPO->enable();
+
+  m_nDummyLoc = m_pPO->getAttribLocation("a_dummy");
+  if (m_nDummyLoc<0)
+    m_nDummyLoc = 0;
+  MB_DPRINTLN("a_dummy location: %d", m_nDummyLoc);
 
   // setup constant tables
   int i, j;
@@ -379,6 +384,7 @@ void GLSLMapSurf2Renderer::createGLSL()
   /// Setup uniform values
 
   m_pPO->enable();
+
   m_pPO->setUniform("u_isolevel", m_nIsoLevel);
   CHK_GLERROR("setUniform isolevel");
 
@@ -433,8 +439,9 @@ void GLSLMapSurf2Renderer::createGLSL2()
   if (m_pAttrArray==NULL) {
     m_pAttrArray = MB_NEW AttrArray();
     m_pAttrArray->setAttrSize(1);
-    m_pAttrArray->setAttrInfo(0, m_pPO->getAttribLocation("a_ind"), 1,
-                              qlib::type_consts::QTC_UINT32, offsetof(AttrElem, ind));
+    m_pAttrArray->setAttrInfo(0, m_nDummyLoc, 1,
+                              qlib::type_consts::QTC_FLOAT32,
+			      offsetof(AttrElem, dummy));
 
     m_pAttrArray->setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
     //m_pAttrArray->setDrawMode(gfx::AbstDrawElem::DRAW_POINTS);

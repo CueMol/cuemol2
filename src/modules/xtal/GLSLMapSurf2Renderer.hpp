@@ -98,7 +98,8 @@ namespace xtal {
     // work area
 
     struct AttrElem {
-      quint32 ind;
+      qfloat32 dummy;
+      // quint32 ind;
       //qfloat32 flag;
       //qfloat32 ivert;
     };
@@ -106,6 +107,8 @@ namespace xtal {
     typedef gfx::DrawAttrArray<AttrElem> AttrArray;
 
     sysdep::OglProgramObject *m_pPO;
+
+    int m_nDummyLoc;
 
     AttrArray *m_pAttrArray;
     
