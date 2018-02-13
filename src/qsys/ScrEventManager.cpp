@@ -38,6 +38,8 @@ ScrEventManager::ScrEventManager()
   qlib::LMsgLog *pLog = qlib::LMsgLog::getInstance();
   if (pLog!=NULL)
     m_nLogLsnID = pLog->addListener(this);
+
+  m_bDisableEvent = false;
 }
 
 ScrEventManager::~ScrEventManager()
@@ -54,6 +56,9 @@ bool ScrEventManager::fireEventScript(const LString &aCatStr,
                                       qlib::uid_t aSrcID,
                                       qlib::LEvent &event)
 {
+  if (m_bDisableEvent && aTgtType!=SEM_LOG)
+    return true;
+  
   if (m_pCb.isnull()) return false;
 
   SlotTab::const_iterator iter = m_slot.begin();

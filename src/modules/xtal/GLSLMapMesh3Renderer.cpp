@@ -240,8 +240,11 @@ void GLSLMapMesh3Renderer::createGLSLGlobMap()
       m_pAttrAry = MB_NEW AttrArray();
       
       AttrArray &ata = *m_pAttrAry;
+#ifdef USE_ATTRLESS_REND
+#else
       ata.setAttrSize(1);
       ata.setAttrInfo(0, m_nPosLoc, 1, qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, dummy));
+#endif
       
       ata.alloc(nVA);
       ata.setDrawMode(gfx::AbstDrawElem::DRAW_LINES);
@@ -291,6 +294,7 @@ void GLSLMapMesh3Renderer::createGLSLLocMap()
     // (Re)Generate Grid Data VBO
     // size is changed --> generate grid data
     const int nVA = (ncol-1) * (nrow-1) * (nsec-1) * 2;
+    //const int nVA = (ncol-1) * (nrow-1) * (nsec-1) * 2 * 3;
 
     if (m_pAttrAry!=NULL)
       delete m_pAttrAry;
@@ -298,12 +302,12 @@ void GLSLMapMesh3Renderer::createGLSLLocMap()
     m_pAttrAry = MB_NEW AttrArray();
 
     AttrArray &ata = *m_pAttrAry;
-//    ata.setAttrSize(0);
-
+#ifdef USE_ATTRLESS_REND
+#else
     ata.setAttrSize(1);
     ata.setAttrInfo(0, m_nPosLoc, 1,
-		    qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, dummy));
-
+                    qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, dummy));
+#endif
     ata.alloc(nVA);
     ata.setDrawMode(gfx::AbstDrawElem::DRAW_LINES);
   }
@@ -403,6 +407,7 @@ void GLSLMapMesh3Renderer::renderGLSL(DisplayContext *pdc)
     m_pPO->setUniform("u_plane", iplane);
     pdc->drawElem(*m_pAttrAry);
   }
+  //pdc->drawElem(*m_pAttrAry);
 
   m_pPO->disable();
   

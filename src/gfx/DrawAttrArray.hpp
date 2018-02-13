@@ -142,6 +142,43 @@ namespace gfx {
 
   };
 
+
+  /// Empty attribute array for attrbute-less rendering
+  class EmptyDrawArray : public AbstDrawAttrs
+  {
+  private:
+    typedef AbstDrawAttrs super_t;
+
+  public:
+
+    EmptyDrawArray() : super_t() {
+      setAttrSize(0);
+    }
+
+    virtual ~EmptyDrawArray() {}
+
+    virtual int getType() const {
+      return AbstDrawElem::VA_ATTRS;
+    }
+
+    virtual void alloc(int nsize)
+    {
+      // m_data.allocate(nsize);
+      super_t::setSize(nsize);
+    }
+
+    virtual const qbyte *getData() const
+    {
+      return NULL;
+    }
+
+    virtual size_t getElemSize() const {
+      return 0;
+    }
+
+  };
+
+
   /// Attribute array with indeces for shading language
   template <class _IndType, class _ElemType>
   class DrawAttrElems : public DrawAttrArray<_ElemType>

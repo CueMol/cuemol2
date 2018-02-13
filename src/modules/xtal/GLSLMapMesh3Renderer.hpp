@@ -17,6 +17,8 @@
 #include <gfx/Texture.hpp>
 #include <gfx/DrawAttrArray.hpp>
 
+/// Use attribute-less rendering (requires VAO)
+//#define USE_ATTRLESS_REND 1
 
 class GLSLMapMesh3Renderer_wrap;
 
@@ -102,12 +104,15 @@ namespace xtal {
 
     static const int MAP_TEX_UNIT = 0;
 
+#ifdef USE_ATTRLESS_REND
+    typedef gfx::EmptyDrawArray AttrArray;
+#else
     struct AttrElem {
       qfloat32 dummy;
     };
-
     typedef gfx::DrawAttrArray<AttrElem> AttrArray;
-
+#endif
+    
     /// VBO for glsl map rendering
     AttrArray *m_pAttrAry;
 

@@ -125,6 +125,7 @@ void main(void)
   ivec3 vsz = ivec3(u_dspsz.x-1, u_dspsz.y-1, u_dspsz.z-1);
 
   int il = gl_VertexID/2;
+  //int il = gl_VertexID/6;
   ipos.x = il%vsz.x;
   int ixx = il/vsz.x;
   ipos.y = ixx%vsz.y;
@@ -132,7 +133,9 @@ void main(void)
   ipos.z = iyy%vsz.z;
 
   //int iplane = int( a_plane );
+  //int iplane = gl_InstanceID;
   int iplane = u_plane;
+  //int iplane = (gl_VertexID/2)%3;
 
   int val[4];
   int uisolev = int(isolevel);

@@ -21,6 +21,8 @@ runtime_class ScrEventManager
 
   integer append(string cat, integer src_type, integer evt_type, integer src_uid);
   boolean remove(integer id);
+
+  void setEventDisable(boolean);
 };
 
 #endif

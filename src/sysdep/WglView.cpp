@@ -123,9 +123,11 @@ bool WglView::attach(HWND hWnd, HDC hDC)
   // perform OpenGL-common initialization tasks
   OglView::setup();
 
-  if (WGLEW_EXT_swap_control)
-    wglSwapIntervalEXT(0);
-
+  if (WGLEW_EXT_swap_control) {
+    int res = wglSwapIntervalEXT(0);
+    LOG_DPRINTLN("WglView> wglSwapIntervalEXT(0): %d", res);
+  }
+  
   m_bInitOK = true;
   MB_DPRINTLN("WglView::setup() OK.");
 

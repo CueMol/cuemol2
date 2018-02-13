@@ -134,6 +134,12 @@ public:
   void addViewListener(qlib::uid_t nFilter,
                        ViewEventListener *pL);
   bool removeViewListener(ViewEventListener *pL);
+
+  bool m_bDisableEvent;
+  void setEventDisable(bool b) {
+    m_bDisableEvent = b;
+  }
+
 };
 
 }
