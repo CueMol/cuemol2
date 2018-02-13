@@ -177,12 +177,12 @@ void SimpleRendGLSL::createGLSL()
   m_pCoordTex = MB_NEW gfx::Texture();
 
 #ifdef USE_TBO
-  //m_pCoordTex->setup(1, gfx::Texture::FMT_R,
-  //gfx::Texture::TYPE_FLOAT32);
-  m_pCoordTex->setup(1, gfx::Texture::FMT_RGB,
+  m_pCoordTex->setup(gfx::Texture::DIM_DATA,
+                     gfx::Texture::FMT_RGB,
                      gfx::Texture::TYPE_FLOAT32);
 #else
-  m_pCoordTex->setup(2, gfx::Texture::FMT_RGB,
+  m_pCoordTex->setup(gfx::Texture::DIM_2D,
+                     gfx::Texture::FMT_RGB,
                      gfx::Texture::TYPE_FLOAT32);
 #endif
 

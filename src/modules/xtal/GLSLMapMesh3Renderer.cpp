@@ -145,11 +145,13 @@ bool GLSLMapMesh3Renderer::init(DisplayContext *pdc)
   m_pMapTex = MB_NEW gfx::Texture();
 
 #ifdef USE_TBO
-  m_pMapTex->setup(1, gfx::Texture::FMT_R,
+  m_pMapTex->setup(gfx::Texture::DIM_DATA,
+                   gfx::Texture::FMT_R,
                    gfx::Texture::TYPE_UINT8);
 #else
-  m_pMapTex->setup(3, gfx::Texture::FMT_R,
-		   gfx::Texture::TYPE_UINT8);
+  m_pMapTex->setup(gfx::Texture::DIM_3D,
+                   gfx::Texture::FMT_R,
+                   gfx::Texture::TYPE_UINT8);
 #endif
 
   setShaderAvail(true);

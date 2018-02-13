@@ -94,28 +94,38 @@ void GLSLRcTubeRenderer::setupGLSL(detail::SplineSegment *pASeg)
 {
   GLSLTube2SS *pSeg = static_cast<GLSLTube2SS *>(pASeg);
 
+#ifdef USE_TBO
+  const int ndim = gfx::Texture::DIM_DATA;
+#else
+  const int ndim = gfx::Texture::DIM_1D;
+#endif
+  
   if (pSeg->m_pCoefTex!=NULL)
     delete pSeg->m_pCoefTex;
-  pSeg->m_pCoefTex = MB_NEW gfx::Texture(); //pdc->createTexture();
-  pSeg->m_pCoefTex->setup(1, gfx::Texture::FMT_RGB,
+  pSeg->m_pCoefTex = MB_NEW gfx::Texture();
+  pSeg->m_pCoefTex->setup(ndim,
+                          gfx::Texture::FMT_RGB,
                           gfx::Texture::TYPE_FLOAT32);
 
   if (pSeg->m_pBinormTex!=NULL)
     delete pSeg->m_pBinormTex;
-  pSeg->m_pBinormTex = MB_NEW gfx::Texture(); //pdc->createTexture();
-  pSeg->m_pBinormTex->setup(1, gfx::Texture::FMT_RGB,
+  pSeg->m_pBinormTex = MB_NEW gfx::Texture();
+  pSeg->m_pBinormTex->setup(ndim,
+                            gfx::Texture::FMT_RGB,
                             gfx::Texture::TYPE_FLOAT32);
 
   if (pSeg->m_pColorTex!=NULL)
     delete pSeg->m_pColorTex;
-  pSeg->m_pColorTex = MB_NEW gfx::Texture(); //pdc->createTexture();
-  pSeg->m_pColorTex->setup(1, gfx::Texture::FMT_RGBA,
+  pSeg->m_pColorTex = MB_NEW gfx::Texture();
+  pSeg->m_pColorTex->setup(ndim,
+                           gfx::Texture::FMT_RGBA,
                            gfx::Texture::TYPE_UINT8_COLOR);
   
   if (pSeg->m_pPuttyTex!=NULL)
     delete pSeg->m_pPuttyTex;
   pSeg->m_pPuttyTex = MB_NEW gfx::Texture();
-  pSeg->m_pPuttyTex->setup(1, gfx::Texture::FMT_RG,
+  pSeg->m_pPuttyTex->setup(ndim,
+                           gfx::Texture::FMT_RG,
                            gfx::Texture::TYPE_FLOAT32);
 
   const int nDetail = getAxialDetail();

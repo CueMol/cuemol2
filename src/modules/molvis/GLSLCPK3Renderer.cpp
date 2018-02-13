@@ -138,10 +138,12 @@ void GLSLCPK3Renderer::createGLSL()
   m_pCoordTex = MB_NEW gfx::Texture();
 
 #ifdef USE_TBO
-  m_pCoordTex->setup(1, gfx::Texture::FMT_RGB,
+  m_pCoordTex->setup(gfx::Texture::DIM_DATA,
+                     gfx::Texture::FMT_RGB,
                      gfx::Texture::TYPE_FLOAT32);
 #else
-  m_pCoordTex->setup(2, gfx::Texture::FMT_RGB,
+  m_pCoordTex->setup(gfx::Texture::DIM_2D,
+                     gfx::Texture::FMT_RGB,
                      gfx::Texture::TYPE_FLOAT32);
 #endif
 
@@ -172,13 +174,15 @@ void GLSLCPK3Renderer::createGLSL()
   m_pColorTex = MB_NEW gfx::Texture();
 
 #ifdef USE_TBO
- m_pColorTex->setup(1, gfx::Texture::FMT_RGBA,
-                           gfx::Texture::TYPE_UINT8_COLOR);
+ m_pColorTex->setup(gfx::Texture::DIM_DATA,
+                    gfx::Texture::FMT_RGBA,
+                    gfx::Texture::TYPE_UINT8_COLOR);
   m_colorTexData.resize(natoms*4);
   LOG_DPRINTLN("GLSLCPK3Rend> Color Texture (TBO) size=%d", natoms*4);
 #else
-  m_pColorTex->setup(2, gfx::Texture::FMT_RGBA,
-                           gfx::Texture::TYPE_UINT8_COLOR);
+  m_pColorTex->setup(gfx::Texture::DIM_2D,
+                     gfx::Texture::FMT_RGBA,
+                     gfx::Texture::TYPE_UINT8_COLOR);
   m_colorTexData.resize(m_nTexW*m_nTexH*4);
   LOG_DPRINTLN("GLSLCPK3Rend> Color Texture2D size=%d,%d", m_nTexW, m_nTexH);
 #endif

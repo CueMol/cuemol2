@@ -78,10 +78,12 @@ void GLSLLabelHelper::alloc(int nlab)
   m_pLabelTex = MB_NEW gfx::Texture();
 
 #ifdef USE_TBO
-  m_pLabelTex->setup(1, gfx::Texture::FMT_R,
+  m_pLabelTex->setup(gfx::Texture::DIM_DATA,
+                     gfx::Texture::FMT_R,
                      gfx::Texture::TYPE_UINT8_COLOR);
 #else
-  m_pLabelTex->setup(2, gfx::Texture::FMT_R,
+  m_pLabelTex->setup(gfx::Texture::DIM_2D,
+                     gfx::Texture::FMT_R,
                      gfx::Texture::TYPE_UINT8_COLOR);
 #endif
 

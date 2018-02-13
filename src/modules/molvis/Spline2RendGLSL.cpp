@@ -107,14 +107,20 @@ void Spline2RendGLSL::setupGLSL(detail::SplineSegment *pASeg)
   if (pSeg->m_pCoefTex != NULL)
     delete pSeg->m_pCoefTex;
 
-  pSeg->m_pCoefTex = MB_NEW gfx::Texture(); //pdc->createTexture();
-  pSeg->m_pCoefTex->setup(1, gfx::Texture::FMT_RGB,
+#ifdef USE_TBO
+  const int ndim = gfx::Texture::DIM_DATA;
+#else
+  const int ndim = gfx::Texture::DIM_1D;
+#endif
+
+  pSeg->m_pCoefTex = MB_NEW gfx::Texture();
+  pSeg->m_pCoefTex->setup(ndim, gfx::Texture::FMT_RGB,
                     gfx::Texture::TYPE_FLOAT32);
   
   if (pSeg->m_pColorTex!=NULL)
     delete pSeg->m_pColorTex;
   pSeg->m_pColorTex = MB_NEW gfx::Texture();
-  pSeg->m_pColorTex->setup(1, gfx::Texture::FMT_RGBA,
+  pSeg->m_pColorTex->setup(ndim, gfx::Texture::FMT_RGBA,
                            gfx::Texture::TYPE_UINT8_COLOR);
   
   const int nDetail = getAxialDetail() * 10;

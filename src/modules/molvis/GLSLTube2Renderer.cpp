@@ -25,6 +25,12 @@
 #else
 #endif
 
+#ifdef USE_TBO
+#define NDIM gfx::Texture::DIM_DATA
+#else
+#define NDIM gfx::Texture::DIM_1D
+#endif
+
 using namespace molvis;
 using namespace molstr;
 using qlib::Matrix3D;
@@ -136,7 +142,7 @@ void GLSLTube2Renderer::setupSectGLSL()
     delete m_pSectTex;
 
   m_pSectTex = MB_NEW gfx::Texture(); //pdc->createTexture();
-  m_pSectTex->setup(1, gfx::Texture::FMT_RGBA,
+  m_pSectTex->setup(NDIM, gfx::Texture::FMT_RGBA,
                     gfx::Texture::TYPE_FLOAT32);
   updateSectGLSL();
 }
@@ -148,26 +154,26 @@ void GLSLTube2Renderer::setupGLSL(detail::SplineSegment *pASeg)
   if (pSeg->m_pCoefTex!=NULL)
     delete pSeg->m_pCoefTex;
   pSeg->m_pCoefTex = MB_NEW gfx::Texture();
-  pSeg->m_pCoefTex->setup(1, gfx::Texture::FMT_RGB,
+  pSeg->m_pCoefTex->setup(NDIM, gfx::Texture::FMT_RGB,
                           gfx::Texture::TYPE_FLOAT32);
 
   if (pSeg->m_pBinormTex!=NULL)
     delete pSeg->m_pBinormTex;
   pSeg->m_pBinormTex = MB_NEW gfx::Texture();
-  pSeg->m_pBinormTex->setup(1, gfx::Texture::FMT_RGB,
+  pSeg->m_pBinormTex->setup(NDIM, gfx::Texture::FMT_RGB,
                             gfx::Texture::TYPE_FLOAT32);
 
   if (pSeg->m_pColorTex!=NULL)
     delete pSeg->m_pColorTex;
   pSeg->m_pColorTex = MB_NEW gfx::Texture();
-  pSeg->m_pColorTex->setup(1, gfx::Texture::FMT_RGBA,
+  pSeg->m_pColorTex->setup(NDIM, gfx::Texture::FMT_RGBA,
                            gfx::Texture::TYPE_UINT8_COLOR);
   
   if (pSeg->m_pPuttyTex!=NULL)
     delete pSeg->m_pPuttyTex;
   if (getPuttyMode()!=TBR_PUTTY_OFF) {
     pSeg->m_pPuttyTex = MB_NEW gfx::Texture();
-    pSeg->m_pPuttyTex->setup(1, gfx::Texture::FMT_R,
+    pSeg->m_pPuttyTex->setup(NDIM, gfx::Texture::FMT_R,
                              gfx::Texture::TYPE_FLOAT32);
   }
 

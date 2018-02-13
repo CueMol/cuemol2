@@ -228,7 +228,8 @@ void GLSLAtomIntr2Renderer::createGLSL()
 
   m_pLabelTex = MB_NEW gfx::Texture();
   m_pLabelTex->setLinIntpol(true);
-  m_pLabelTex->setup(12, gfx::Texture::FMT_R,
+  m_pLabelTex->setup(gfx::Texture::DIM_2DRECT,
+                     gfx::Texture::FMT_R,
                      gfx::Texture::TYPE_UINT8_COLOR);
 
   // Create number data texture
@@ -237,7 +238,8 @@ void GLSLAtomIntr2Renderer::createGLSL()
     delete m_pNumTex;
   m_pNumTex = MB_NEW gfx::Texture();
 
-  m_pNumTex->setup(1, gfx::Texture::FMT_R,
+  m_pNumTex->setup(gfx::Texture::DIM_1D,
+                   gfx::Texture::FMT_R,
                    gfx::Texture::TYPE_UINT8_COLOR);
 
   m_numpix.resize(nlabels * m_nDigits);
