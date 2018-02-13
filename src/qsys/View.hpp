@@ -134,7 +134,13 @@ namespace qsys {
     virtual gfx::DisplayContext *getDisplayContext() =0;
 
     virtual void drawScene() =0;
+
+    /// Swap front and back buffers
     virtual void swapBuffers();
+
+    /// Set swap interval ( default impl does nothing. )
+    /// @param nint swap interval. 0 specifies that GPU does not wait v-sync.
+    virtual void setSwapInterval(int nint);
 
     virtual void unloading();
 
@@ -293,6 +299,7 @@ namespace qsys {
     /////////////////////////////////////////////////////////
     // Projection
 
+  protected:
     /// setup the projection matrix
     virtual void setUpProjMat(int w, int h) =0;
     
@@ -304,6 +311,7 @@ namespace qsys {
     void resetProjChgFlag() { m_bProjChg = false; } 
     bool isProjChange() const { return m_bProjChg; }
 
+  protected:
     /// ID for setUpModelMat() method
     enum {
       MM_NORMAL=0,
@@ -317,6 +325,7 @@ namespace qsys {
     ///        nid==MM_STEREO_RIGHT : stereo right eye
     virtual void setUpModelMat(int nid) =0;
 
+  public:
     /// reverse projection from view to world coord
     void convZTrans(double dz, Vector4D &vec) const;
     void convXYTrans(double dx, double dy, Vector4D &vec) const;

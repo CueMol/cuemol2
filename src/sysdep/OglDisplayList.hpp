@@ -14,16 +14,16 @@ namespace sysdep {
   class OglDisplayList : public OglDisplayContext
   {
   private:
-    /** Display List ID */
+    /// Display List ID
     GLuint m_nID;
 
     bool m_fValid;
 
-    /** parent display context */
+    // /** parent display context */
     //OglDisplayContext *m_pParent;
 
   public:
-    OglDisplayList(int sceneid);
+    OglDisplayList();
     virtual ~OglDisplayList();
 
     ///////////////////////////////

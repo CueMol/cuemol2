@@ -127,17 +127,18 @@ void fini()
 {
   SelCacheMgr::fini();
 
-  TopparManager::fini();
-  
-  SelCompiler::fini();
-  ElemSym::fini();
-  
   // for external record handler registrer
   PDBFileReader::fini();
   QdfPdbReader::fini();
 
+  TopparManager::fini();
+  SelCompiler::fini();
+  ElemSym::fini();
+
   // PDBFileReader::unregClass();
-  // molstr_unregClasses();
+  QdfMolWriter::unregClass();
+  QdfMolReader::unregClass();
+  molstr_unregClasses();
   
   MB_DPRINTLN("molstr fini: OK");
 }

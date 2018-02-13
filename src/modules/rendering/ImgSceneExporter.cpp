@@ -89,10 +89,9 @@ void ImgSceneExporter::write()
     if (pbuf!=NULL)
       delete [] pbuf;
     delete pImgView;
-    // restore view settings
-    DisplayContext *pdc = pView->getDisplayContext();
-    pdc->setCurrent();
-    pView->setUpProjMat(-1, -1);
+    // // restore view settings
+    // DisplayContext *pdc = pView->getDisplayContext();
+    // pView->setUpProjMat(-1, -1);
     throw;
   }
 
@@ -100,10 +99,9 @@ void ImgSceneExporter::write()
   delete [] pbuf;
   delete pImgView;
 
-  // restore view settings
-  DisplayContext *pdc = pView->getDisplayContext();
-  pdc->setCurrent();
-  pView->setUpProjMat(-1, -1);
+  // // restore view settings
+  // DisplayContext *pdc = pView->getDisplayContext();
+  // pView->setUpProjMat(-1, -1);
 
 
 /*

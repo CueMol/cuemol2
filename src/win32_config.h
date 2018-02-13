@@ -8,7 +8,6 @@
 // We only support wintel 32bit OS Windows version.
 #define _CRT_SECURE_NO_WARNINGS 1
 #define BYTEORDER 1234
-#define GUI_ARCH WINDOWS
 #define HOST_FLOAT_FORMAT IEEE_LE
 #define SIZEOF_CHAR 1
 #define SIZEOF_SHORT 2
@@ -17,6 +16,7 @@
 #define SIZEOF_LONG_LONG 8
 #define SIZEOF_FLOAT 4
 #define SIZEOF_DOUBLE 8
+#define GUI_ARCH MB_GUI_ARCH_WIN
 #define STR_GUI_ARCH "WIN"
 #define GUI_ARCH_WIN 1
 

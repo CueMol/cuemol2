@@ -62,8 +62,7 @@ bool init()
 
 void fini()
 {
-  // PDBFileReader::unregClass();
-  // surface_unregClasses();
+  surface_unregClasses();
   
   MB_DPRINTLN("surface fini: OK");
 }

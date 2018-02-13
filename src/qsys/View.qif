@@ -118,6 +118,8 @@ runtime_class View
 
   void redraw() => forceRedraw;
 
+  void setSwapInterval(integer nint);
+
   /////////////
 
   // integer addListener(object<LScrCallBack$>);

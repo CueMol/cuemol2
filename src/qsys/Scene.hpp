@@ -119,6 +119,7 @@ namespace qsys {
     /// Cameras in this scene
     camtab_t m_camtab;
 
+    /// Scene event management
     SceneEventCaster *m_pEvtCaster;
 
     /// Undo/Redo manager for this scene
@@ -563,6 +564,10 @@ namespace qsys {
 
     int getIccIntent() const;
     void setIccIntent(int n);
+
+    /// convert to string
+    virtual LString toString() const;
+    
   };
 
 }

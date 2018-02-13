@@ -38,6 +38,8 @@ namespace sysdep {
 
     virtual void swapBuffers();
 
+    virtual void setSwapInterval(int nint);
+
     virtual void unloading();
 
     ////

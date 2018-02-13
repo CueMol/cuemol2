@@ -18,8 +18,8 @@
 
 using namespace sysdep;
 
-WglDisplayContext::WglDisplayContext(int sceneid, WglView *pView)
-     : OglDisplayContext(sceneid), m_pTargetView(pView)
+WglDisplayContext::WglDisplayContext()
+     : OglDisplayContext()
 {
 }
 

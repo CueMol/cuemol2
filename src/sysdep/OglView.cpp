@@ -464,10 +464,10 @@ void OglView::drawScene()
     glMatrixMode(GL_MODELVIEW);
   }  
 
-  /// Complete the rendering operations
-  //glFinish();
-
   swapBuffers();
+
+  /// Complete the rendering operations
+  glFinish();
 
   // pdc->unsetCurrent();
   // m_bBusy = FALSE;
@@ -488,15 +488,16 @@ LString OglView::hitTest(int ax, int ay)
   int x = convToBackingX(ax);
   int y = convToBackingY(ay);
 
-  HittestContext *phc = MB_NEW HittestContext();
-
+  //HittestContext *phc = MB_NEW HittestContext();
+  HittestContext hc;
+  
   double dHitPrec = convToBackingX( qsys::ViewInputConfig::getInstance()->getHitPrec() );
 
   // Perform hittest (single hit)
-  if ( !hitTestImpl(phc, Vector4D(x, y, dHitPrec, dHitPrec), false, 1.0) )
+  if ( !hitTestImpl(&hc, Vector4D(x, y, dHitPrec, dHitPrec), false, 1.0) )
     return LString();
 
-  m_hitdata.createNearest(phc);
+  m_hitdata.createNearest(&hc);
 
   qlib::uid_t rend_id = m_hitdata.getNearestRendID();
   if (rend_id==qlib::invalid_uid) {
@@ -547,13 +548,14 @@ LString OglView::hitTestRect(int ax, int ay, int aw, int ah, bool bNearest)
   double cnx = double(x) + double(w)/2.0;
   double cny = double(y) + double(h)/2.0;
 
-  HittestContext *phc = MB_NEW HittestContext();
+  //HittestContext *phc = MB_NEW HittestContext();
+  HittestContext hc;
 
   // Perform hittest (multiple hit)
-  if ( !hitTestImpl(phc, Vector4D(cnx, cny, w, h), true, 1.0) )
+  if ( !hitTestImpl(&hc, Vector4D(cnx, cny, w, h), true, 1.0) )
     return LString();
 
-  m_hitdata.createAll(phc);
+  m_hitdata.createAll(&hc);
 
   int nrend = m_hitdata.getRendSize();
   if (nrend==0) // no hit

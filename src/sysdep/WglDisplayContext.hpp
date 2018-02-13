@@ -18,19 +18,13 @@ namespace sysdep {
     HGLRC m_hGlrc;
     HDC m_hDC;
 
-    WglView *m_pTargetView;
-
   public:
-    WglDisplayContext(int sceneid, WglView *pView);
+    WglDisplayContext();
 
     virtual ~WglDisplayContext();
 
     virtual bool setCurrent();
     virtual bool isCurrent() const;
-
-    virtual qsys::View *getTargetView() const {
-      return m_pTargetView;
-    }
 
     ///////////////
     // system dependent methods

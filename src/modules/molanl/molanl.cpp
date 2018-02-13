@@ -31,8 +31,7 @@ bool init()
 
 void fini()
 {
-  // PDBFileReader::unregClass();
-  // molanl_unregClasses();
+  molanl_unregClasses();
   
   MB_DPRINTLN("molanl fini: OK");
 }

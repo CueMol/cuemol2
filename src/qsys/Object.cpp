@@ -68,7 +68,7 @@ void Object::unloading()
 
 LString Object::toString() const
 {
-  return LString::format("Object(name=%s)",m_name.c_str());
+  return LString::format("Object(name=%s, UID=%d)",m_name.c_str(), getUID());
 }
 
 void Object::dump() const

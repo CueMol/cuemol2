@@ -18,6 +18,9 @@ DisplayContext::DisplayContext()
   m_dPixSclFac = 1.0;
   m_dEdgeLineWidth = -1.0;
   m_nEdgeLineType = ELT_NONE;
+  m_pTargView = NULL;
+  // m_nSceneID = qlib::invalid_uid;
+  // m_nViewID = qlib::invalid_uid;
 }
 
 bool DisplayContext::isRenderPixmap() const
@@ -30,9 +33,16 @@ bool DisplayContext::isDrawElemSupported() const
   return false;
 }
 
+void DisplayContext::setTargetView(qsys::View *pView)
+{
+  m_pTargView = pView;
+  // m_nSceneID = pView->getSceneID();
+  // m_nViewID = pView->getUID();
+}
+
 qsys::View *DisplayContext::getTargetView() const
 {
-  return NULL;
+  return m_pTargView;
 }
 
 void DisplayContext::vertex(double x, double y, double z)

@@ -339,6 +339,7 @@ namespace xtal {
     /// Map 3D texture ID
     quint32 m_nMapTexID;
     quint32 m_nMapBufID;
+    
 #endif
     
   private:

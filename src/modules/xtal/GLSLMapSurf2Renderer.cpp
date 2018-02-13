@@ -23,7 +23,7 @@ using qlib::Matrix3D;
 #define USE_TBO
 #endif
 
-#define USE_DRAW_INSTANCED 65536
+// #define USE_DRAW_INSTANCED 65536
 
 /// default constructor
 GLSLMapSurf2Renderer::GLSLMapSurf2Renderer()

@@ -36,7 +36,7 @@ namespace importers {
 
   void fini()
   {
-    // importers_unregClasses();
+    importers_unregClasses();
 
     MB_DPRINTLN("importers fini: OK");
   }

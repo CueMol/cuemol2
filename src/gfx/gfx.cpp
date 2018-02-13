@@ -9,13 +9,14 @@
 #include "ColProfMgr.hpp"
 
 extern void gfx_regClasses();
+extern void gfx_unregClasses();
 
 namespace gfx {
 
   bool init()
   {
     gfx_regClasses();
-    GradientColor::regClass();
+
     TextRenderManager::init();
     ColCompiler::init();
     ColProfMgr::init();
@@ -24,9 +25,11 @@ namespace gfx {
 
   void fini()
   {
-    TextRenderManager::fini();
-    ColCompiler::fini();
     ColProfMgr::fini();
+    ColCompiler::fini();
+    TextRenderManager::fini();
+
+    gfx_unregClasses();
   }
 
 }

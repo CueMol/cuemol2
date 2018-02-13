@@ -369,6 +369,7 @@
     <ClCompile Include="..\..\src\sysdep\OglDisplayContext.cpp" />
     <ClCompile Include="..\..\src\sysdep\OglDisplayList.cpp" />
     <ClCompile Include="..\..\src\sysdep\OglFBOView.cpp" />
+    <ClCompile Include="..\..\src\sysdep\OglProgObjMgr.cpp" />
     <ClCompile Include="..\..\src\sysdep\OglProgramObject.cpp" />
     <ClCompile Include="..\..\src\sysdep\OglTexture.cpp" />
     <ClCompile Include="..\..\src\sysdep\OglView.cpp" />

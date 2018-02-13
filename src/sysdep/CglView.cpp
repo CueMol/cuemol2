@@ -78,6 +78,13 @@ void CglView::swapBuffers()
   // MB_DPRINTLN("SwapBuffers");
 }
 
+void CglView::setSwapInterval(int nint)
+{
+  long swapInterval = nint;
+  CGLError res = CGLSetParameter(m_pCtxt->getCGLContext(), kCGLCPSwapInterval, &swapInterval);
+  LOG_DPRINTLN("CglView> SetSwapInterval(%d)", nint);
+}
+
 DisplayContext *CglView::getDisplayContext()
 {
   return m_pCtxt;

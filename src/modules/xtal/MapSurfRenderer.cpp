@@ -39,8 +39,9 @@ MapSurfRenderer::MapSurfRenderer()
   m_nBinFac = 1;
 //  m_nMaxGrid = 100;
 
-  //m_bUseOpenMP = false;
   m_nGlRendMode = MSR_REND_DLIST;
+
+  //m_bUseOpenMP = false;
   
 /*
   m_nOmpThr = -1;
@@ -54,6 +55,7 @@ MapSurfRenderer::MapSurfRenderer()
   m_pAttrArray = NULL;
   m_nMapTexID = 0;
   m_nMapBufID = 0;
+
 */
 }
 
@@ -63,6 +65,7 @@ MapSurfRenderer::~MapSurfRenderer()
   // for safety, remove from event manager is needed here...
   ScrEventManager *pSEM = ScrEventManager::getInstance();
   pSEM->removeViewListener(this);
+
 /*
   if (m_pVBO!=NULL)
     delete m_pVBO;

@@ -70,15 +70,7 @@ namespace sysdep {
     /// Query hardware stereo capability
     virtual bool hasHWStereo() const;
 
-    ////
-    // framebuffer operations
-    
-    // void readPixels(int x, int y, int width, int height, char *pbuf, int nbufsize);
-    // /** setup the projection matrix for hit-testing */
-    // void setUpHitProjMat(int x, int y);
-    // virtual Hittest *hitTest(int x, int y);
-    // virtual void readObj(qlib::ObjInStream &dis);
-    // virtual void setCursor(int nCursorID);
+    virtual void setSwapInterval(int nint);
 
     ///////////////////////////////
     // System dependent implementations
@@ -93,10 +85,7 @@ namespace sysdep {
   private:
     bool m_bHasQuadBuffer;
 
-    HGLRC setupWglContext();
     bool setupShareList();
-
-    // void changeBufMode(bool bSte);
 
     bool setupPixelFormat();
     int choosePixFmt(int nColorBits, bool bStereo);

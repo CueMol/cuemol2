@@ -72,8 +72,7 @@ bool init()
 
 void fini()
 {
-  // PDBFileReader::unregClass();
-  // xtal_unregClasses();
+  xtal_unregClasses();
   
   MB_DPRINTLN("xtal fini: OK");
 }

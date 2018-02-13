@@ -34,8 +34,8 @@
 
 using namespace sysdep;
 
-OglDisplayList::OglDisplayList(int sceneid)
-  : OglDisplayContext(sceneid), m_nID(0), m_fValid(false)
+OglDisplayList::OglDisplayList()
+  : OglDisplayContext(), m_nID(0), m_fValid(false)
 {
   //MB_DPRINTLN("GLlist %d created", m_nID);
 }

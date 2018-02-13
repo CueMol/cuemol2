@@ -107,7 +107,7 @@ void View::unloading()
 
 LString View::toString() const
 {
-  return LString::format("View(name=%s)",m_name.c_str());
+  return LString::format("View(name=%s, UID=%d)",m_name.c_str(), getUID());
 }
 
 void View::dump() const
@@ -498,17 +498,22 @@ void View::setStereoMode(int f)
 /////////////////////////////////////////////////////
 // Utility routines
 
+
 bool View::safeSetCurrent()
 {
   gfx::DisplayContext *pCtxt = getDisplayContext();
-  if (pCtxt==NULL) return false;
-  if (!pCtxt->isCurrent())
-    if (!pCtxt->setCurrent()) {
-      LOG_DPRINTLN("View::setup() setCurrent failed.");
-      return false;
-    }
+  if (pCtxt==NULL)
+    return false;
+
+  pCtxt->setTargetView(this);
+  if (!pCtxt->setCurrent()) {
+    LOG_DPRINTLN("View::setup() setCurrent failed.");
+    return false;
+  }
+
   return true;
 }
+
 
 /////////////////////////////////////////////////////
 // View size
@@ -1189,5 +1194,9 @@ bool View::hasVBO()
 {
   if (m_spViewCap==NULL) return false;
   return m_spViewCap->hasVBO();
+}
+
+void View::setSwapInterval(int nint)
+{
 }
 

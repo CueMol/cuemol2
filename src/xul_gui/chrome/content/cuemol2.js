@@ -1232,15 +1232,19 @@ Qm2Main.prototype.togglePerfMeas = function (ev)
 {
   let sm = cuemol.getService("SceneManager");
   let bchk = ev.target.checked;
+  let view = this.mMainWnd.currentViewW;
+
   if (!bchk) {
     // start measure
-    this.clearLogContents();
+    // this.clearLogContents();
     sm.enablePerfMeas(1);
     ev.target.checked = true;
+    view.setSwapInterval(0);
   }
   else {
     sm.disablePerfMeas();
     ev.target.checked = false;
+    view.setSwapInterval(1);
   }
 }
 

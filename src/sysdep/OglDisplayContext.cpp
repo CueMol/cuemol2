@@ -41,6 +41,7 @@
 #include "OglDisplayList.hpp"
 #include "OglProgramObject.hpp"
 #include "OglDrawElems.hpp"
+#include "OglProgObjMgr.hpp"
 
 using namespace sysdep;
 using gfx::DisplayContext;
@@ -53,9 +54,10 @@ using gfx::DrawElemVNCI;
 using gfx::DrawElemVNCI32;
 using gfx::DrawElemPix;
 
-OglDisplayContext::OglDisplayContext(int sceneid)
+OglDisplayContext::OglDisplayContext()
+     : super_t()
 {
-  m_nSceneID = sceneid;
+  // m_nSceneID = sceneid;
   m_pGluData = NULL;
   m_color = Vector4D(1.0, 1.0, 1.0, 1.0);
   m_nDetail = 5;
@@ -71,9 +73,16 @@ OglDisplayContext::~OglDisplayContext()
   if (m_pGluData!=NULL)
     ::gluDeleteQuadric((GLUquadricObj *)m_pGluData);
 
-  BOOST_FOREACH (ProgTab::value_type &elem, m_progs) {
+  /*BOOST_FOREACH (ProgTab::value_type &elem, m_progs) {
     delete elem.second;
-  }
+  }*/
+}
+
+void OglDisplayContext::setTargetView(qsys::View *pView)
+{
+  super_t::setTargetView(pView);
+  m_nViewID = pView->getUID();
+  m_nSceneID = pView->getSceneID();
 }
 
 void OglDisplayContext::init()
@@ -355,7 +364,7 @@ void OglDisplayContext::color(const ColorPtr &c)
 {
   //::glColor4ub(c->r(), c->g(), c->b(), c->a());
 
-  quint32 devcolc = c->getDevCode(m_nSceneID);
+  quint32 devcolc = c->getDevCode( getSceneID() );
 
   m_color.x() = gfx::getFR(devcolc); //c->fr();
   m_color.y() = gfx::getFG(devcolc); //c->fg();
@@ -383,7 +392,7 @@ void OglDisplayContext::color(double r, double g, double b, double a)
 {
   Vector4D vcol(r,g,b);
   gfx::ColProfMgr *pCPM = gfx::ColProfMgr::getInstance();
-  pCPM->doXForm(m_nSceneID, vcol, m_color);
+  pCPM->doXForm( getSceneID(), vcol, m_color);
 
   //m_color.x() = r;
   //m_color.y() = g;
@@ -401,8 +410,8 @@ void OglDisplayContext::color(double r, double g, double b)
 {
   Vector4D vcol(r,g,b);
   gfx::ColProfMgr *pCPM = gfx::ColProfMgr::getInstance();
-  pCPM->doXForm(m_nSceneID, vcol, m_color);
-
+  pCPM->doXForm( getSceneID(), vcol, m_color);
+  
   //m_color.x() = r;
   //m_color.y() = g;
   //m_color.z() = b;
@@ -759,12 +768,17 @@ void OglDisplayContext::texCoord(float fx, float fy)
 
 DisplayContext *OglDisplayContext::createDisplayList()
 {
-  OglDisplayList *pdl = MB_NEW OglDisplayList(m_nSceneID);
+  OglDisplayList *pdl = MB_NEW OglDisplayList();
+
+  // Targets the same view as this
+  pdl->setTargetView( getTargetView() );
+
   // inherit properties (default alpha/material/pixsclfac)
   pdl->setAlpha(getAlpha());
   pdl->setMaterial(getMaterial());
   pdl->setUseShaderAlpha(useShaderAlpha());
   pdl->setPixSclFac(getPixSclFac());
+
   return pdl;
 }
 
@@ -955,7 +969,7 @@ void OglDisplayContext::drawMesh(const gfx::Mesh &mesh)
     calpha = int(getAlpha()* 255.0 + 0.5);
   else
     calpha = 255;
-  mesh.convRGBAByteCols(pcols, nverts*4, calpha, m_nSceneID);
+  mesh.convRGBAByteCols(pcols, nverts*4, calpha, getSceneID() );
 
   glColorPointer(4, GL_UNSIGNED_BYTE, 0, pcols);
 
@@ -1204,6 +1218,14 @@ void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
 
 OglProgramObject *OglDisplayContext::createProgramObject(const LString &name)
 {
+  if (!qsys::View::hasVS())
+    return NULL;
+  
+  OglProgObjMgr *pMgr = OglProgObjMgr::getInstance();
+
+  return pMgr->createProgramObject(name, this);
+
+/*
   OglProgramObject *pRval = NULL;
 
   if (!qsys::View::hasVS())
@@ -1224,16 +1246,24 @@ OglProgramObject *OglDisplayContext::createProgramObject(const LString &name)
 #endif
 
   return pRval;
+*/
 }
 
 OglProgramObject *OglDisplayContext::getProgramObject(const LString &name)
 {
+  OglProgObjMgr *pMgr = OglProgObjMgr::getInstance();
+
+  return pMgr->getProgramObject(name, this);
+
+/*
   ProgTab::const_iterator i = m_progs.find(name);
   if (i==m_progs.end())
     return NULL;
   return i->second;
+  */
 }
 
+/*
 bool OglDisplayContext::destroyProgramObject(const LString &name)
 {
   ProgTab::iterator i = m_progs.find(name);
@@ -1245,6 +1275,7 @@ bool OglDisplayContext::destroyProgramObject(const LString &name)
   delete pdel;
   return true;
 }
+*/
 
 //////////
 
