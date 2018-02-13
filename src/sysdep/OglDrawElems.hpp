@@ -341,9 +341,11 @@ namespace sysdep {
 
     virtual void preDraw(const AbstDrawElem &ade)
     {
-      const gfx::AbstDrawAttrs &ada = static_cast<const gfx::AbstDrawAttrs &>(ade);
+      const gfx::AbstDrawAttrs &ada =
+	static_cast<const gfx::AbstDrawAttrs &>(ade);
 
       glBindBuffer(GL_ARRAY_BUFFER, m_buf.getID());
+      CHK_GLERROR("glBindBuffer(GL_ARRAY_BUFFER, m_buf.getID())");
 
       size_t nattr = ada.getAttrSize();
       for (int i=0; i<nattr; ++i) {
@@ -358,6 +360,7 @@ namespace sysdep {
 				    convGLConsts(at),
 				    ada.getElemSize(),
 				    (void *) ap);
+	  CHK_GLERROR("glVertexAttribIPointerEXT(al,...)");
         }
         else {
           glVertexAttribPointer(al,
@@ -366,8 +369,10 @@ namespace sysdep {
                                 convGLNorm(at),
                                 ada.getElemSize(),
                                 (void *) ap);
+	  CHK_GLERROR("glVertexAttribPointer(al,...)");
         }
         glEnableVertexAttribArray(al);
+        CHK_GLERROR("glEnableVertexAttribArray(al)");
       }
     }
 
@@ -378,10 +383,16 @@ namespace sysdep {
       int ninst = ada.getInstCount();
       GLenum mode = convDrawMode(ada.getDrawMode());
 
-      if (ninst>0 && GLEW_ARB_instanced_arrays)
-        glDrawArraysInstanced(mode, 0, ada.getSize(), ninst);
-      else
+      if (ninst>0 && GLEW_ARB_instanced_arrays) {
+      //if (ninst>0 && GLEW_GL_ARB_draw_instanced) {
+        glDrawArraysInstancedARB(mode, 0, ada.getSize(), ninst);
+        MB_DPRINTLN("glDrawArraysInstancedARB(%d, %d, %d, %d)", mode, 0, ada.getSize(), ninst);
+        CHK_GLERROR("glDrawArraysInstancedARB");
+      }
+      else {
         glDrawArrays(mode, 0, ada.getSize());
+        CHK_GLERROR("glDrawArrays(mode, 0, ada.getSize())");
+      }
     }
     
     virtual void postDraw(const AbstDrawElem &ade)

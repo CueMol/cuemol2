@@ -19,9 +19,12 @@
 #ifdef USE_OPENGL
 #  include "GLSLMapVolRenderer.hpp"
 #  include "GLSLMapMesh3Renderer.hpp"
+#  include "GLSLMapSurf2Renderer.hpp"
 #else
 #  include "MapMeshRenderer.hpp"
 #endif
+
+#include "MapSurf2Renderer.hpp"
 
 extern void xtal_regClasses();
 extern void xtal_unregClasses();
@@ -49,8 +52,10 @@ bool init()
 #ifdef USE_OPENGL
   pRF->regist<GLSLMapVolRenderer>();
   pRF->regist<GLSLMapMesh3Renderer>();
+  pRF->regist<GLSLMapSurf2Renderer>();
 #else
   pRF->regist<MapMeshRenderer>();
+  pRF->regist<MapSurf2Renderer>();
 #endif
 
   StreamManager *pSM = StreamManager::getInstance();

@@ -1013,7 +1013,8 @@ Qm2Main.prototype.showPropDlg = function (aTarget, aScene, aWindow, aTypeName)
              aTarget.type_name == "gpu_mapmesh" ||
              aTarget.type_name == "gpu_mapvol")
       URL = "chrome://cuemol2/content/property/contour-propdlg.xul";
-    else if (aTarget.type_name == "isosurf")
+    else if (aTarget.type_name == "isosurf" ||
+             aTarget.type_name == "isosurf2" )
       URL = "chrome://cuemol2/content/property/isosurf-propdlg.xul";
     else if (aTarget.type_name == "cpk")
       URL = "chrome://cuemol2/content/property/cpk-propdlg.xul";

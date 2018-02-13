@@ -24,7 +24,10 @@
 #ifdef USE_OPENGL
 #  include "GLSLMapVolRenderer.qif"
 #  include "GLSLMapMesh3Renderer.qif"
+#  include "GLSLMapSurf2Renderer.qif"
 #endif
+
+#include "MapSurf2Renderer.qif"
 
 module xtal
 {
@@ -46,7 +49,10 @@ module xtal
 #ifdef USE_OPENGL
   GLSLMapVolRenderer;
   GLSLMapMesh3Renderer;
+  GLSLMapSurf2Renderer;
 #endif
+
+  MapSurf2Renderer;
 
 };
 

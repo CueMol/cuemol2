@@ -36,7 +36,6 @@ namespace xtal {
     friend class ::MapMeshRenderer_wrap;
 
     typedef qlib::Array3D<qbyte> ByteMap;
-    //typedef qlib::ByteMap ByteMap;
     
     ///////////////////////////////////////////
     // properties
@@ -52,38 +51,21 @@ namespace xtal {
     }
     double getLineWidth() const { return m_lw; }
 
-
+/*
   private:
     /// Internal buffer size (default: 100x100x100 points)
     int m_nBufSize;
-
   public:
+    
     int getBufSize() const { return m_nBufSize; }
-    void setBufSize(int nsize);
-
-  protected:
-    /// Periodic boundary flag
-    /// (default: false; set true, if map contains the entire of unit cell)
-    bool m_bPBC;
-
-    /// Automatically update the map center as view center
-    /// (default: true)
-  private:
-    bool m_bAutoUpdate;
-
+    void setBufSize(int nsize) {
+      m_nMaxGrid = nsize;
+    }
+*/
   public:
-    bool isAutoUpdate() const { return m_bAutoUpdate; }
-    void setAutoUpdate(bool b) { m_bAutoUpdate = b; }
-
-    /// Automatically update the map center as view center
-    /// in both mouse-drag and mouse-up events
-    /// (default: false)
-  private:
-    bool m_bDragUpdate;
-
-  public:
-    bool isDragUpdate() const { return m_bDragUpdate; }
-    void setDragUpdate(bool b) { m_bDragUpdate = b; }
+    // for compatibility
+    int getBufSize() const { return getMaxGrids(); }
+    void setBufSize(int nsize) { setMaxGrids(nsize); }
 
     /// Use spherical extent
 
@@ -97,59 +79,15 @@ namespace xtal {
     ///////////////////////////////////////////
     // work area
 
-    /// Size of map (in grid unit/copy from m_pMap)
-    //int m_nMapColNo, m_nMapRowNo, m_nMapSecNo;
-  private:
-    Vector3I m_mapSize;
-
-  public:
-    const Vector3I &getMapSize() const { return m_mapSize; }
-
+    /*
   protected:
     /// size of section array
     int m_nColCrs, m_nRowCrs, m_nSecCrs;
-
-    /// Actual size of display extent (in grid unit)
-    //int m_nActCol, m_nActRow, m_nActSec;
-  private:
-    Vector3I m_dspSize;
-
-  public:
-    const Vector3I &getDspSize() const { return m_dspSize; }
-
-    /// Start position of display extent from global origin (in grid unit)
-    //int m_nStCol, m_nStRow, m_nStSec;
-  private:
-    Vector3I m_glbStPos;
-
-  public:
-    const Vector3I &getGlbStPos() const { return m_glbStPos; }
-
-    /// Start position of display extent from map origin (in grid unit)
-    //int m_nMapStCol, m_nMapStRow, m_nMapStSec;
-    Vector3I m_mapStPos;
-
-    const Vector3I &getMapStPos() const { return m_mapStPos; }
-
-    /// Level in 8-bit map unit
-    unsigned int m_nIsoLevel;
-
-  private:
-    /// section array for x(column) direction
-    ByteMap *m_pXCrsLst;
-
-    /// section array for y direction
-    ByteMap *m_pYCrsLst;
-
-    /// section array for z direction
-    ByteMap *m_pZCrsLst;
-
-    /// delta
-    double m_delta;
-
+     */
+    
   protected:
-    //ByteMap m_maptmp;
     qlib::Array3D<qbyte> m_maptmp;
+
     Vector3I m_texStPos;
 
   public:
@@ -185,14 +123,16 @@ namespace xtal {
     bool generate(ScalarObject *pMap, DensityMap *pXtal);
 
     /// Set internal buffer size
-    bool setCrossArraySize(int ncol, int nrow, int nsec);
+    // bool setCrossArraySize(int ncol, int nrow, int nsec);
 
+    /*
     /// Get internal buffer size (in col direction)
     int getColCrsSize() const { return m_nColCrs; }
     int getRowCrsSize() const { return m_nRowCrs; }
     int getSecCrsSize() const { return m_nSecCrs; }
-
-    double getMaxExtent() const;
+     */
+    
+    // double getMaxExtent() const;
 
     ///////////////////////////////////////////////////////////////
 
@@ -203,10 +143,6 @@ namespace xtal {
     ///////////////////////////////////////////////////////////////
 
   public:
-    void setupMapRendInfo(ScalarObject *pMap);
-    void calcContLevel(ScalarObject *pMap);
-    void setupXform(DisplayContext *pdc, ScalarObject *pMap, DensityMap *pXtal);
-    Matrix4D getXform(ScalarObject *pMap, DensityMap *pXtal);
 
   protected:
 

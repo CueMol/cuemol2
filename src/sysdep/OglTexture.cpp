@@ -62,25 +62,20 @@ void OglTextureRep::setup(int iDim, int iPixFmt, int iPixType)
 
   MB_DPRINTLN("OglTex setup(%d, %d, %d) called.", iDim, iPixFmt, iPixType);
 
-  if (iDim==1 &&
-      /*(iPixType!=Texture::TYPE_UINT8_COLOR) &&*/
-      /*iPixFmt==Texture::FMT_R &&*/
-      isTBOAvailable() ) {
+  switch (iDim) {
+  case Texture::DIM_DATA:
     setupTBO(iPixFmt, iPixType);
     return;
-  }
-
-  switch (iDim) {
-  case 1:
+  case Texture::DIM_1D:
     m_iGlDimType = GL_TEXTURE_1D;
     break;
-  case 2:
+  case Texture::DIM_2D:
     m_iGlDimType = GL_TEXTURE_2D;
     break;
-  case 3:
+  case Texture::DIM_3D:
     m_iGlDimType = GL_TEXTURE_3D;
     break;
-  case 12:
+  case Texture::DIM_2DRECT:
     m_iGlDimType = GL_TEXTURE_RECTANGLE;
     break;
   default:
@@ -118,15 +113,19 @@ void OglTextureRep::setup(int iDim, int iPixFmt, int iPixType)
     switch (iPixFmt) {
     case Texture::FMT_R:
       m_iGlIntPixFmt = GL_R8UI;
+      m_iGlPixFmt = GL_RED_INTEGER;
       break;
     case Texture::FMT_RG:
       m_iGlIntPixFmt = GL_RG8UI;
+      m_iGlPixFmt = GL_RG_INTEGER;
       break;
     case Texture::FMT_RGB:
       m_iGlIntPixFmt = GL_RGB8UI;
+      m_iGlPixFmt = GL_RGB_INTEGER;
       break;
     case Texture::FMT_RGBA:
       m_iGlIntPixFmt = GL_RGBA8UI;
+      m_iGlPixFmt = GL_RGBA_INTEGER;
       break;
     default:
       LString msg = LString::format("Unsupported pixel type=%d format=%d",
@@ -167,16 +166,16 @@ void OglTextureRep::setup(int iDim, int iPixFmt, int iPixType)
     // set internal pixel format (mediump)
     switch (iPixFmt) {
     case Texture::FMT_R:
-      m_iGlIntPixFmt = GL_R16F;
+      m_iGlIntPixFmt = GL_R32F;
       break;
     case Texture::FMT_RG:
-      m_iGlIntPixFmt = GL_RG16F;
+      m_iGlIntPixFmt = GL_RG32F;
       break;
     case Texture::FMT_RGB:
-      m_iGlIntPixFmt = GL_RGB16F;
+      m_iGlIntPixFmt = GL_RGB32F;
       break;
     case Texture::FMT_RGBA:
-      m_iGlIntPixFmt = GL_RGBA16F;
+      m_iGlIntPixFmt = GL_RGBA32F;
       break;
     default:
       LString msg = LString::format("Unsupported pixel type=%d format=%d",

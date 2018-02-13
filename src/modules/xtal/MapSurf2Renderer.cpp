@@ -7,11 +7,10 @@
 
 // #define SHOW_NORMAL
 
-#include "MapSurfRenderer.hpp"
+#include "MapSurf2Renderer.hpp"
 #include "MapSurfRenderer_consts.hpp"
 #include "DensityMap.hpp"
 #include <gfx/DisplayContext.hpp>
-#include <gfx/Mesh.hpp>
 
 #include <qsys/ScrEventManager.hpp>
 #include <qsys/ViewEvent.hpp>
@@ -19,19 +18,23 @@
 #include <qsys/Scene.hpp>
 #include <modules/molstr/AtomIterator.hpp>
 
+#ifdef _OPENMP
+#  include <omp.h>
+#endif
+
 using namespace xtal;
 using qlib::Matrix4D;
 using qlib::Matrix3D;
 using qsys::ScrEventManager;
 using molstr::AtomIterator;
 
-// default constructor
-MapSurfRenderer::MapSurfRenderer()
+/// default constructor
+MapSurf2Renderer::MapSurf2Renderer()
      : super_t()
 {
   m_bPBC = false;
-  m_bAutoUpdate = true;
-  m_bDragUpdate = false;
+  //m_bAutoUpdate = true;
+  //m_bDragUpdate = false;
   m_nDrawMode = MSRDRAW_FILL;
   m_lw = 1.2;
   m_pCMap = NULL;
@@ -39,44 +42,33 @@ MapSurfRenderer::MapSurfRenderer()
   m_nBinFac = 1;
 //  m_nMaxGrid = 100;
 
-  //m_bUseOpenMP = false;
-  m_nGlRendMode = MSR_REND_DLIST;
-  
-/*
   m_nOmpThr = -1;
-  m_bIsoLev = 0;
+  //  m_bIsoLev = 0;
   m_bWorkOK = false;
   m_pVBO=NULL;
 
-  m_bChkShaderDone = false;
-
-  m_pPO = NULL;
-  m_pAttrArray = NULL;
-  m_nMapTexID = 0;
-  m_nMapBufID = 0;
-*/
 }
 
 // destructor
-MapSurfRenderer::~MapSurfRenderer()
+MapSurf2Renderer::~MapSurf2Renderer()
 {
   // for safety, remove from event manager is needed here...
   ScrEventManager *pSEM = ScrEventManager::getInstance();
   pSEM->removeViewListener(this);
-/*
+
   if (m_pVBO!=NULL)
     delete m_pVBO;
-*/
+
 }
 
 /////////////////////////////////
 
-const char *MapSurfRenderer::getTypeName() const
+const char *MapSurf2Renderer::getTypeName() const
 {
-  return "isosurf";
+  return "isosurf2";
 }
 
-void MapSurfRenderer::setSceneID(qlib::uid_t nid)
+void MapSurf2Renderer::setSceneID(qlib::uid_t nid)
 {
   super_t::setSceneID(nid);
   if (nid!=qlib::invalid_uid) {
@@ -85,7 +77,7 @@ void MapSurfRenderer::setSceneID(qlib::uid_t nid)
   }
 }
 
-qlib::uid_t MapSurfRenderer::detachObj()
+qlib::uid_t MapSurf2Renderer::detachObj()
 {
   ScrEventManager *pSEM = ScrEventManager::getInstance();
   pSEM->removeViewListener(this);
@@ -93,7 +85,7 @@ qlib::uid_t MapSurfRenderer::detachObj()
   return super_t::detachObj();
 }  
 
-void MapSurfRenderer::viewChanged(qsys::ViewEvent &ev)
+void MapSurf2Renderer::viewChanged(qsys::ViewEvent &ev)
 {
   const int nType = ev.getType();
   
@@ -101,7 +93,7 @@ void MapSurfRenderer::viewChanged(qsys::ViewEvent &ev)
       nType!=qsys::ViewEvent::VWE_PROPCHG_DRG)
     return;
 
-  if (!m_bAutoUpdate && !m_bDragUpdate)
+  if (!isAutoUpdate() && !isDragUpdate())
     return;
 
   if (!ev.getDescr().equals("center"))
@@ -113,7 +105,7 @@ void MapSurfRenderer::viewChanged(qsys::ViewEvent &ev)
 
   Vector4D c = pView->getViewCenter();
 
-  if (m_bDragUpdate) {
+  if (isDragUpdate()) {
     if (nType==qsys::ViewEvent::VWE_PROPCHG ||
         nType==qsys::ViewEvent::VWE_PROPCHG_DRG) {
       setCenter(c);
@@ -122,7 +114,7 @@ void MapSurfRenderer::viewChanged(qsys::ViewEvent &ev)
     return;
   }
 
-  if (m_bAutoUpdate) {
+  if (isAutoUpdate()) {
     if (nType==qsys::ViewEvent::VWE_PROPCHG) {
       setCenter(c);
       setDefaultPropFlag("center", false);
@@ -133,9 +125,10 @@ void MapSurfRenderer::viewChanged(qsys::ViewEvent &ev)
   return;
 }
 
+
 ///////////////////////////////////////////////////////////////
 
-void MapSurfRenderer::preRender(DisplayContext *pdc)
+void MapSurf2Renderer::preRender(DisplayContext *pdc)
 {
   pdc->color(getColor());
 
@@ -166,7 +159,7 @@ void MapSurfRenderer::preRender(DisplayContext *pdc)
   }
 }
 
-void MapSurfRenderer::postRender(DisplayContext *pdc)
+void MapSurf2Renderer::postRender(DisplayContext *pdc)
 {
   // reset to default drawing options
   pdc->setPolygonMode(gfx::DisplayContext::POLY_FILL);
@@ -176,7 +169,8 @@ void MapSurfRenderer::postRender(DisplayContext *pdc)
   pdc->setLighting(false);
 }
 
-void MapSurfRenderer::setupXformMat(DisplayContext *pdl)
+#if 0
+void MapSurf2Renderer::setupXformMat(DisplayContext *pdl)
 {
   ScalarObject *pMap = m_pCMap;
   DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
@@ -224,23 +218,27 @@ void MapSurfRenderer::setupXformMat(DisplayContext *pdl)
     pdl->translate(vtmp);
   }
 }
+#endif
 
-// generate display list
-void MapSurfRenderer::render(DisplayContext *pdl)
+/// Generate display list
+void MapSurf2Renderer::render(DisplayContext *pdl)
 {
   ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
+  DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
   m_pCMap = pMap;
 
   // check and setup mol boundary data
   setupMolBndry();
 
   // generate map-range information
-  makerange();
+  // makerange();
+  calcMapDispExtent(pMap);
 
   pdl->pushMatrix();
-  setupXformMat(pdl);
+  //setupXformMat(pdl);
+  setupXform(pdl, pMap, pXtal);
 
-  MB_DPRINTLN("MapSurfRenderer Rendereing...");
+  MB_DPRINTLN("MapSurf2Renderer Rendereing...");
 
   pdl->startTriangles();
   renderImpl(pdl);
@@ -255,13 +253,13 @@ void MapSurfRenderer::render(DisplayContext *pdl)
   m_tmpv.clear();
 #endif
   
-  MB_DPRINTLN("MapSurfRenderer Rendereing OK\n");
+  MB_DPRINTLN("MapSurf2Renderer Rendereing OK\n");
 
   pdl->popMatrix();
   m_pCMap = NULL;
 }
 
-void MapSurfRenderer::renderImpl(DisplayContext *pdl)
+void MapSurf2Renderer::renderImpl(DisplayContext *pdl)
 {
   ScalarObject *pMap = m_pCMap;
 
@@ -271,39 +269,37 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
   const double siglevel = getSigLevel();
   m_dLevel = pMap->getRmsdDensity() * siglevel;
 
-  m_nMapColNo = pMap->getColNo();
-  m_nMapRowNo = pMap->getRowNo();
-  m_nMapSecNo = pMap->getSecNo();
+  // m_nMapColNo = pMap->getColNo();
+  // m_nMapRowNo = pMap->getRowNo();
+  // m_nMapSecNo = pMap->getSecNo();
+
+  int ncol = m_dspSize.x(); //m_nActCol;
+  int nrow = m_dspSize.y(); //m_nActRow;
+  int nsec = m_dspSize.z(); //m_nActSec;
+
+  const int ixmax = m_mapSize.x();
+  const int iymax = m_mapSize.y();
+  const int izmax = m_mapSize.z();
+
+  m_nbcol = m_mapStPos.x();
+  m_nbrow = m_mapStPos.y();
+  m_nbsec = m_mapStPos.z();
 
   /////////////////////
   // do marching cubes
 
-  int ncol = m_nActCol;
-  int nrow = m_nActRow;
-  int nsec = m_nActSec;
-
   int i,j,k;
-  /*
-  for (i=0; i<ncol; i++)
-    for (j=0; j<nrow; j++)
-      for (k=0; k<nsec; k++) {
-        //if (i==1&&j==1)
-        //MB_DPRINTLN("i=%d, thr=%d", k, omp_get_thread_num());
-*/
 
   for (i=0; i<ncol; i+=m_nBinFac)
     for (j=0; j<nrow; j+=m_nBinFac)
       for (k=0; k<nsec; k+=m_nBinFac) {
 
-        int ix = i+m_nStCol - pMap->getStartCol();
-        int iy = j+m_nStRow - pMap->getStartRow();
-        int iz = k+m_nStSec - pMap->getStartSec();
+        int ix = i + m_nbcol;
+        int iy = j + m_nbrow;
+        int iz = k + m_nbsec;
         if (!m_bPBC) {
-          if (ix<0||iy<0||iz<0)
-            continue;
-          if (ix+1>=m_nMapColNo||
-              iy+1>=m_nMapRowNo||
-              iz+1>=m_nMapSecNo)
+          if (ix<0||iy<0||iz<0 ||
+              ix+1>=ixmax|| iy+1>=iymax|| iz+1>=izmax)
             continue;
         }
 
@@ -340,7 +336,8 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
 
 }
 
-void MapSurfRenderer::makerange()
+#if 0
+void MapSurf2Renderer::makerange()
 {
   Vector4D cent = getCenter();
   double extent = getExtent();
@@ -432,6 +429,7 @@ void MapSurfRenderer::makerange()
   //int strow = int(vmin.y())-pMap->getStartRow();
   //int stsec = int(vmin.z())-pMap->getStartSec();
 }
+#endif
 
 /////////////////////////////////////////////////////////////////////////////////
 
@@ -449,104 +447,10 @@ namespace {
   }
 }
 
-/*
-inline bool isInt(double x) {
-  const double m = ::fmod(x, 1.0);
-  if (qlib::isNear(m, 0.0))
-    return true;
-  if (qlib::isNear(m, 1.0))
-    return true;
-  return false;
-}*/
-
-Vector4D MapSurfRenderer::getGrdNorm(int x, int y, int z)
-{
-  Vector4D rval;
-
-  int ix = x+ (m_nStCol - m_pCMap->getStartCol());
-  int iy = y+ (m_nStRow - m_pCMap->getStartRow());
-  int iz = z+ (m_nStSec - m_pCMap->getStartSec());
-
-  //const int n = m_nBinFac;
-  const int n = 1;
-  rval.x() = getDen(ix-n, iy,   iz  ) - getDen(ix+n, iy,   iz );
-  rval.y() = getDen(ix,   iy-n, iz  ) - getDen(ix,   iy+n, iz  );
-  rval.z() = getDen(ix,   iy,   iz-n) - getDen(ix,   iy,   iz+n);
-  return rval;
-}
-
-Vector4D MapSurfRenderer::getGrdNorm2(int ix, int iy, int iz)
-{
-  Vector4D rval;
-
-  const int n = 1;
-  rval.x() = getDen(ix-n, iy,   iz  ) - getDen(ix+n, iy,   iz );
-  rval.y() = getDen(ix,   iy-n, iz  ) - getDen(ix,   iy+n, iz  );
-  rval.z() = getDen(ix,   iy,   iz-n) - getDen(ix,   iy,   iz+n);
-
-  return rval;
-}
-
-//vGetNormal() finds the gradient of the scalar field at a point
-//This gradient can be used as a very accurate vertx normal for lighting calculations
-Vector4D MapSurfRenderer::getNormal(const Vector4D &fV, bool bx, bool by, bool bz)
-{
-  Vector4D rval;
-
-  //bool bx = isInt( fV.x() );
-  //bool by = isInt( fV.y() );
-  //bool bz = isInt( fV.z() );
-
-  int ix, iy, iz;
-  double r;
-
-  const int n = m_nBinFac;
-
-  Vector4D v1, v2;
-  if (bx&&by) {
-    ix = int(fV.x());
-    iy = int(fV.y());
-    iz = int( ::floor(fV.z()) );
-    r = fV.z() - double(iz);
-    v1 = getGrdNorm(ix, iy, iz);
-    v2 = getGrdNorm(ix, iy, iz+n);
-    rval = v1.scale(1.0-r) + v2.scale(r);
-  }
-  else if (by&&bz) {
-    ix = int( ::floor(fV.x()) );
-    iy = int(fV.y());
-    iz = int(fV.z());
-    r = fV.x() - double(ix);
-    v1 = getGrdNorm(ix, iy, iz);
-    v2 = getGrdNorm(ix+n, iy, iz);
-    rval = v1.scale(1.0-r) + v2.scale(r);
-  }
-  else if (bz&&bx) {
-    ix = int(fV.x());
-    iy = int( ::floor(fV.y()));
-    iz = int(fV.z());
-    r = fV.y() - double(iy);
-    v1 = getGrdNorm(ix, iy, iz);
-    v2 = getGrdNorm(ix, iy+n, iz);
-    rval = v1.scale(1.0-r) + v2.scale(r);
-  }
-  else {
-    // error!!
-    MB_DPRINTLN("getNormal error!!");
-    return Vector4D(1.0, 0.0, 0.0);
-  }
-
-  double len = rval.length();
-  if (qlib::isNear(len, 0.0))
-    return Vector4D(1.0, 0.0, 0.0);
-  
-  return rval.divide(len);
-}
-
 //////////////////////////////////////////
 
 
-void MapSurfRenderer::marchCube(DisplayContext *pdl,
+void MapSurf2Renderer::marchCube(DisplayContext *pdl,
                                 int fx, int fy, int fz)
 {
   int iCorner, iVertex, iVertexTest, iEdge, iTriangle, iFlagIndex, iEdgeFlags;
@@ -570,29 +474,15 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
     return;
   }
 
-  /*{
-    ScalarObject *pMap = m_pCMap;
-    int ix = fx+m_nStCol - pMap->getStartCol();
-    int iy = fy+m_nStRow - pMap->getStartRow();
-    int iz = fz+m_nStSec - pMap->getStartSec();
-
-    for (int ii=0; ii<8; ii++) {
-      const int ixx = ix + (vtxoffs[ii][0]) * m_nBinFac;
-      const int iyy = iy + (vtxoffs[ii][1]) * m_nBinFac;
-      const int izz = iz + (vtxoffs[ii][2]) * m_nBinFac;
-      m_norms[ii] = getGrdNorm2(ixx, iyy, izz);
-    }
-  }*/
-
   {
     for (int ii=0; ii<8; ii++) {
       m_norms[ii].w() = -1.0;
     }
   }
   ScalarObject *pMap = m_pCMap;
-  const int ix = fx+m_nStCol - pMap->getStartCol();
-  const int iy = fy+m_nStRow - pMap->getStartRow();
-  const int iz = fz+m_nStSec - pMap->getStartSec();
+  const int ix = fx + m_nbcol;
+  const int iy = fy + m_nbrow;
+  const int iz = fz + m_nbsec;
 
   // Find the point of intersection of the surface with each edge
   // Then find the normal to the surface at those points
@@ -621,19 +511,6 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
           (a2fVertexOffset[ec0][2] + fOffset*a2fEdgeDirection[iEdge][2]) * m_nBinFac;
       asEdgeVertex[iEdge].w() = 0;
       
-      /*
-      bool bx = (iedir[iEdge][0]==0);
-      bool by = (iedir[iEdge][1]==0);
-      bool bz = (iedir[iEdge][2]==0);
-      asEdgeNorm[iEdge] = getNormal(asEdgeVertex[iEdge], bx, by, bz);
-       */
-
-      /*
-      Vector4D nv0 = m_norms[ ec0 ];
-      Vector4D nv1 = m_norms[ ec1 ];
-      asEdgeNorm[iEdge] = (nv0.scale(1.0-fOffset) + nv1.scale(fOffset)).normalize();
-       */
-
       Vector4D nv0,nv1;
       if (m_norms[ ec0 ].w()<0.0) {
         const int ixx = ix + (vtxoffs[ec0][0]) * m_nBinFac;
@@ -717,15 +594,18 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
   return;
 }
 
-qsys::ObjectPtr MapSurfRenderer::generateSurfObj()
+qsys::ObjectPtr MapSurf2Renderer::generateSurfObj()
 {
   ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
   DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
   m_pCMap = pMap;
 
   // generate map-range information
-  makerange();
+  // makerange();
+  calcMapDispExtent(pMap);
 
+  m_xform = calcXformMat(pMap, pXtal);
+#if 0
   //  setup frac-->orth matrix
   if (pXtal==NULL) {
     m_xform = Matrix4D::makeTransMat(pMap->getOrigin());
@@ -753,6 +633,7 @@ qsys::ObjectPtr MapSurfRenderer::generateSurfObj()
     // pdl->translate(vtmp);
     m_xform.matprod( Matrix4D::makeTransMat(vtmp) );
   }
+#endif
 
   surface::MolSurfObj *pSurfObj = new surface::MolSurfObj();
   m_msverts.clear();
@@ -769,5 +650,396 @@ qsys::ObjectPtr MapSurfRenderer::generateSurfObj()
 
   qsys::ObjectPtr rval = qsys::ObjectPtr(pSurfObj);
   return rval;
+}
+
+////////////////////////////////////////////////
+// New rendering interface (for VBO/GLSL)
+
+/// Use Ver2 interface (returns true)
+bool MapSurf2Renderer::isUseVer2Iface() const
+{
+  //return false;
+  return true;
+}
+
+void MapSurf2Renderer::invalidateDisplayCache()
+{
+  m_bWorkOK = false;
+  super_t::invalidateDisplayCache();
+}
+    
+void MapSurf2Renderer::createDisplayCache()
+{
+  ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
+  m_pCMap = pMap;
+
+  // check and setup mol boundary data
+  setupMolBndry();
+
+  // generate map-range information
+  //makerange();
+  calcMapDispExtent(pMap);
+  
+  const double siglevel = getSigLevel();
+  m_dLevel = pMap->getRmsdDensity() * siglevel;
+  int lv = int( floor( (m_dLevel - pMap->getLevelBase()) / pMap->getLevelStep() ) );
+  m_nIsoLevel = qbyte( qlib::clamp<int>(lv, 0, 255) );
+  // calcContLevel(pMap);
+
+
+  /////////////////////
+  // CreateVBO
+
+  // setup workarea
+
+  //m_nMapColNo = pMap->getColNo();
+  //m_nMapRowNo = pMap->getRowNo();
+  //m_nMapSecNo = pMap->getSecNo();
+
+  int ncol = m_dspSize.x(); //m_nActCol;
+  int nrow = m_dspSize.y(); //m_nActCol;
+  int nsec = m_dspSize.z(); //m_nActCol;
+
+  int i,j,k;
+
+  int nthr = 1;
+#ifdef _OPENMP
+  if (m_nOmpThr>0)
+    omp_set_num_threads(m_nOmpThr);
+  else
+    omp_set_num_threads(omp_get_num_procs());
+  nthr = omp_get_max_threads();
+  LOG_DPRINTLN("MapSurf2> using OpenMP %d threads", nthr);
+#endif
+
+  std::vector<int> vinds(nthr);
+
+  int nsz_est_thr = ncol*nrow*nsec*3/nthr;
+  int nsz_est_tot = nsz_est_thr * nthr;
+  
+  if (m_pVBO!=NULL && m_pVBO->getSize()!=nsz_est_tot) {
+    delete m_pVBO;
+    m_pVBO=NULL;
+  }
+
+  if (m_pVBO==NULL) {
+    m_pVBO = MB_NEW gfx::DrawElemVNC();
+    m_pVBO->setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
+    m_pVBO->alloc(nsz_est_tot);
+  }
+
+  MB_DPRINTLN("nthr=%d", nthr);
+  MB_DPRINTLN("voxels %d", ncol*nrow*nsec);
+  MB_DPRINTLN("estim size %d", nsz_est_tot);
+  MB_DPRINTLN("estim size per thr%d", nsz_est_thr);
+  
+  for (i=0; i<nsz_est_tot; ++i) {
+    //m_pVBO->m_pData[i] = {0.0f, 0.0f, 0.0f,0.0f, 0.0f, 0.0f,0,0,0,0};
+    m_pVBO->m_pData[i].x = 0.0f;
+    m_pVBO->m_pData[i].y = 0.0f;
+    m_pVBO->m_pData[i].z = 0.0f;
+    m_pVBO->m_pData[i].nx = 0.0f;
+    m_pVBO->m_pData[i].ny = 0.0f;
+    m_pVBO->m_pData[i].nz = 0.0f;
+    m_pVBO->m_pData[i].r = 0;
+    m_pVBO->m_pData[i].g = 0;
+    m_pVBO->m_pData[i].b = 0;
+    m_pVBO->m_pData[i].a = 0;
+  }
+  std::vector<int> iverts(nthr);
+  for (i=0; i<nthr; ++i) {
+    iverts[i] = i*nsz_est_thr;
+    MB_DPRINTLN("thr %d start id %d", i, iverts[i]);
+  }
+
+  quint32 cc = getColor()->getCode();
+  m_col_r = gfx::getRCode(cc);
+  m_col_g = gfx::getGCode(cc);
+  m_col_b = gfx::getBCode(cc);
+  m_col_a = gfx::getACode(cc);
+
+  m_nbcol = m_mapStPos.x();
+  m_nbrow = m_mapStPos.y();
+  m_nbsec = m_mapStPos.z();
+
+  const int ixmax = m_mapSize.x();
+  const int iymax = m_mapSize.y();
+  const int izmax = m_mapSize.z();
+
+  /////////////////////
+  // do marching cubes
+
+#ifdef _OPENMP
+#pragma omp parallel for private (j,k) schedule(dynamic)
+  for (i=0; i<ncol; i+=m_nBinFac) {
+    int ithr = 0;
+    ithr = omp_get_thread_num();
+    for (j=0; j<nrow; j+=m_nBinFac) {
+      for (k=0; k<nsec; k+=m_nBinFac) {
+#else
+  int ithr = 0;
+  for (i=0; i<ncol; i+=m_nBinFac) {
+    for (j=0; j<nrow; j+=m_nBinFac) {
+      for (k=0; k<nsec; k+=m_nBinFac) {
+#endif
+
+        //if (i==1&&j==1)
+        //MB_DPRINTLN("i=%d, thr=%d", k, ithr);
+
+        qbyte values[8];
+        bool bary[8];
+
+        //if (i==1&&j==1)
+        //MB_DPRINTLN("i=%d, thr=%d", k, omp_get_thread_num());
+
+        int ix = i + m_nbcol;
+        int iy = j + m_nbrow;
+        int iz = k + m_nbsec;
+        if (!m_bPBC) {
+          if (ix<0||iy<0||iz<0)
+            continue;
+          if (ix+1>=ixmax||
+              iy+1>=iymax||
+              iz+1>=izmax)
+            continue;
+        }
+
+        bool bin = false;
+        int ii;
+        for (ii=0; ii<8; ii++) {
+          const int ixx = ix + (vtxoffs[ii][0]) * m_nBinFac;
+          const int iyy = iy + (vtxoffs[ii][1]) * m_nBinFac;
+          const int izz = iz + (vtxoffs[ii][2]) * m_nBinFac;
+          values[ii] = getByteDen(ixx, iyy, izz);
+          
+          // check mol boundary
+          bary[ii] = inMolBndry(pMap, ixx, iyy, izz);
+          if (bary[ii])
+            bin = true;
+        }
+
+        if (!bin)
+          continue;
+
+        marchCube2(i, j, k, values, bary, &iverts[ithr]);
+      }
+    }
+  }
+
+/*
+  //pdl->startTriangles();
+  for (i=0; i<nthr; ++i) {
+    //LOG_DPRINTLN("Triangles: %d for thr %d", verts[i].size(), i);
+    //BOOST_FOREACH (surface::MSVert &v, verts[i]) {
+    //pdl->normal(v.n3d());
+    //pdl->vertex(v.v3d());
+    //}
+
+    MB_DPRINTLN("Triangles: %d for thr %d", vinds[i], i);
+    m_verts[i].setSize(vinds[i]);
+    //pdl->drawElem(verts[i]);
+  }
+  //pdl->end();
+*/
+      
+#ifdef MB_DEBUG
+  for (i=0; i<nthr; ++i) {
+    MB_DPRINTLN("Triangles: thr %d last vid %d", i, iverts[i]);
+  }
+#endif
+
+
+  m_pVBO->setUpdated(true);
+  m_bWorkOK = true;
+  m_pCMap = NULL;
+}
+
+namespace {
+  inline float getOffset(qbyte val1, qbyte val2, qbyte isolev)
+  {
+    int delta = int(val2) - int(val1);
+    
+    if(delta == 0) {
+      return 0.5f;
+    }
+    return float(int(isolev) - int(val1))/float(delta);
+  }
+}
+
+void MapSurf2Renderer::marchCube2(int fx, int fy, int fz,
+                                  const qbyte *values,
+                                  const bool *bary,
+                                  int *pvind)
+{
+  int iCorner, iVertex, iVertexTest, iEdge, iTriangle, iFlagIndex, iEdgeFlags;
+
+  //Vector4D asEdgeVertex[12];
+  float asEdgeVertex[12][3];
+
+  //Vector4D asEdgeNorm[12];
+  float asEdgeNorm[12][3];
+
+  bool edgeBinFlags[12];
+
+  //Vector4D norms[8];
+  float norms[8][4];
+
+  // Find which vertices are inside of the surface and which are outside
+  iFlagIndex = 0;
+  for(iVertexTest = 0; iVertexTest < 8; iVertexTest++) {
+    if(values[iVertexTest] <= m_nIsoLevel) 
+      iFlagIndex |= 1<<iVertexTest;
+  }
+
+  // Find which edges are intersected by the surface
+  iEdgeFlags = aiCubeEdgeFlags[iFlagIndex];
+  //If the cube is entirely inside or outside of the surface, then there will be no intersections
+  if(iEdgeFlags == 0) {
+    return;
+  }
+
+  for (int ii=0; ii<8; ii++) {
+    //norms[ii].w() = -1.0;
+    norms[ii][3] = -1.0f;
+  }
+
+  ScalarObject *pMap = m_pCMap;
+  const int ix = fx + m_nbcol;
+  const int iy = fy + m_nbrow;
+  const int iz = fz + m_nbsec;
+
+  // Find the point of intersection of the surface with each edge
+  // Then find the normal to the surface at those points
+  for(iEdge = 0; iEdge < 12; iEdge++) {
+    //if there is an intersection on this edge
+    if(iEdgeFlags & (1<<iEdge)) {
+      const int ec0 = a2iEdgeConnection[iEdge][0];
+      const int ec1 = a2iEdgeConnection[iEdge][1];
+      if (bary[ec0]==false || bary[ec1]==false) {
+        edgeBinFlags[iEdge] = false;
+        continue;
+      }
+      edgeBinFlags[iEdge] = true;
+      
+      const float fOffset = getOffset(values[ ec0 ], 
+                                      values[ ec1 ], m_nIsoLevel);
+      
+      asEdgeVertex[iEdge][0] =
+        float(fx) +
+          (a2fVertexOffset[ec0][0] + fOffset*a2fEdgeDirection[iEdge][0]) * m_nBinFac;
+      asEdgeVertex[iEdge][1] =
+        float(fy) +
+          (a2fVertexOffset[ec0][1] + fOffset*a2fEdgeDirection[iEdge][1]) * m_nBinFac;
+      asEdgeVertex[iEdge][2] =
+        float(fz) +
+          (a2fVertexOffset[ec0][2] + fOffset*a2fEdgeDirection[iEdge][2]) * m_nBinFac;
+      //asEdgeVertex[iEdge].w() = 0;
+      
+      //Vector4D nv0,nv1;
+      if (norms[ec0][3]<0.0) {
+        const int ixx = ix + (vtxoffs[ec0][0]) * m_nBinFac;
+        const int iyy = iy + (vtxoffs[ec0][1]) * m_nBinFac;
+        const int izz = iz + (vtxoffs[ec0][2]) * m_nBinFac;
+        getGrdNormByte(ixx, iyy, izz, &norms[ec0][0]);
+      }
+      if (norms[ec1][3]<0.0) {
+        const int ixx = ix + (vtxoffs[ec1][0]) * m_nBinFac;
+        const int iyy = iy + (vtxoffs[ec1][1]) * m_nBinFac;
+        const int izz = iz + (vtxoffs[ec1][2]) * m_nBinFac;
+        getGrdNormByte(ixx, iyy, izz, &norms[ec1][0]);
+      }
+
+      const float roffs = (1.0f-fOffset);
+      asEdgeNorm[iEdge][0] = norms[ec0][0]*roffs + norms[ec1][0]*fOffset;
+      asEdgeNorm[iEdge][1] = norms[ec0][1]*roffs + norms[ec1][1]*fOffset;
+      asEdgeNorm[iEdge][2] = norms[ec0][2]*roffs + norms[ec1][2]*fOffset;
+      float len = sqrt(asEdgeNorm[iEdge][0]*asEdgeNorm[iEdge][0] +
+                       asEdgeNorm[iEdge][1]*asEdgeNorm[iEdge][1] +
+                       asEdgeNorm[iEdge][2]*asEdgeNorm[iEdge][2]);
+      if (m_dLevel<0.0)
+        len *= -1.0f;
+      asEdgeNorm[iEdge][0] /= len;
+      asEdgeNorm[iEdge][1] /= len;
+      asEdgeNorm[iEdge][2] /= len;
+    }
+  }
+
+  const int nverts = m_pVBO->getSize();
+  int i;
+
+  // Draw the triangles that were found.  There can be up to five per cube
+  for(iTriangle = 0; iTriangle < 5; iTriangle++) {
+    if(a2iTriangleConnectionTable[iFlagIndex][3*iTriangle] < 0)
+      break;
+
+    bool bNotDraw = false;
+    for(iCorner = 0; iCorner < 3; iCorner++) {
+      iVertex = a2iTriangleConnectionTable[iFlagIndex][3*iTriangle+iCorner];
+      if (!edgeBinFlags[iVertex]) {
+        bNotDraw = true;
+        break;
+      }
+    }
+    if (bNotDraw)
+      continue;
+
+    for(iCorner = 0; iCorner < 3; iCorner++) {
+      iVertex = a2iTriangleConnectionTable[iFlagIndex][3*iTriangle+iCorner];
+      //verts.push_back( surface::MSVert(asEdgeVertex[iVertex],
+      //asEdgeNorm[iVertex]) );
+
+      i = *pvind;
+      MB_DPRINTLN("i=%d", i);
+      if (i<nverts) {
+        m_pVBO->m_pData[i].x = asEdgeVertex[iVertex][0];
+        m_pVBO->m_pData[i].y = asEdgeVertex[iVertex][1];
+        m_pVBO->m_pData[i].z = asEdgeVertex[iVertex][2];
+        
+        m_pVBO->m_pData[i].nx = asEdgeNorm[iVertex][0];
+        m_pVBO->m_pData[i].ny = asEdgeNorm[iVertex][1];
+        m_pVBO->m_pData[i].nz = asEdgeNorm[iVertex][2];
+
+        m_pVBO->m_pData[i].r = m_col_r;
+        m_pVBO->m_pData[i].g = m_col_g;
+        m_pVBO->m_pData[i].b = m_col_b;
+        m_pVBO->m_pData[i].a = m_col_a;
+      }
+      else {
+        MB_DPRINTLN("index out of range: %d", i);
+      }
+      (*pvind)++;
+    } // for(iCorner = 0; iCorner < 3; iCorner++)
+
+  } // for(iTriangle = 0; iTriangle < 5; iTriangle++)
+
+  return;
+}
+
+bool MapSurf2Renderer::isCacheAvail() const
+{
+  return m_bWorkOK;
+}
+
+void MapSurf2Renderer::renderVBO(DisplayContext *pdc)
+{
+  ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
+  DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
+  m_pCMap = pMap;
+  
+
+  preRender(pdc);
+
+  pdc->pushMatrix();
+  //setupXformMat(pdc);
+  setupXform(pdc, pMap, pXtal);
+
+  if (m_pVBO!=NULL)
+    pdc->drawElem(*m_pVBO);
+
+  pdc->popMatrix();
+
+  postRender(pdc);
+
+  m_pCMap = NULL;
 }
 

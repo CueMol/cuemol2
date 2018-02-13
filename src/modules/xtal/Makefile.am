@@ -22,8 +22,7 @@ MTZ2MapReader.cpp \
 DensityMap.cpp \
 MapMeshRenderer.cpp \
 MapSurfRenderer.cpp \
-MapSurfRendImpl2.cpp \
-GLSLMapSurfRendImpl1.cpp \
+MapSurf2Renderer.cpp \
 MapRenderer.cpp \
 QdfDenMapReader.cpp \
 QdfDenMapWriter.cpp \
@@ -37,9 +36,10 @@ $(NULL)
 #
 MCWG_SRC= \
 DensityMap.qif \
+MapRenderer.qif \
 MapMeshRenderer.qif \
 MapSurfRenderer.qif \
-MapRenderer.qif \
+MapSurf2Renderer.qif \
 MTZ2MapReader.qif \
 CCP4MapReader.qif \
 BrixMapReader.qif \
@@ -54,11 +54,15 @@ if COND_USE_OPENGL
 
 CPP_SRC += \
 GLSLMapMesh3Renderer.cpp \
-GLSLMapVolRenderer.cpp
+GLSLMapVolRenderer.cpp \
+GLSLMapSurf2Renderer.cpp \
+$(NULL)
 
 MCWG_SRC += \
 GLSLMapMesh3Renderer.qif \
-GLSLMapVolRenderer.qif
+GLSLMapVolRenderer.qif \
+GLSLMapSurf2Renderer.qif \
+$(NULL)
 
 shaderdir = $(prefix)/data/shaders/
 

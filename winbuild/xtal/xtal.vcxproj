@@ -190,11 +190,10 @@
     <ClCompile Include="..\..\src\modules\xtal\DensityMap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\DensityMap_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\FFTUtil.cpp" />
-    <ClCompile Include="..\..\src\modules\xtal\GLSLMapMesh2Renderer.cpp" />
-    <ClCompile Include="..\..\src\modules\xtal\GLSLMapMesh2Renderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\GLSLMapMesh3Renderer.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\GLSLMapMesh3Renderer_wrap.cpp" />
-    <ClCompile Include="..\..\src\modules\xtal\GLSLMapSurfRendImpl1.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\GLSLMapSurf2Renderer.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\GLSLMapSurf2Renderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\GLSLMapVolRenderer.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\GLSLMapVolRenderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\HKLList.cpp" />
@@ -202,9 +201,10 @@
     <ClCompile Include="..\..\src\modules\xtal\MapMeshRenderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MapRenderer.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MapRenderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\MapSurf2Renderer.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\MapSurf2Renderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MapSurfRenderer.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MapSurfRenderer_wrap.cpp" />
-    <ClCompile Include="..\..\src\modules\xtal\MapSurfRendImpl2.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MTZ2MapReader.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MTZ2MapReader_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\QdfDenMapReader.cpp" />
@@ -224,11 +224,12 @@
     <mcwrapgen3 Include="..\..\src\modules\xtal\CCP4MapReader.qif" />
     <mcwrapgen3 Include="..\..\src\modules\xtal\CudaBSharpTool.qif" />
     <mcwrapgen3 Include="..\..\src\modules\xtal\DensityMap.qif" />
-    <mcwrapgen3 Include="..\..\src\modules\xtal\GLSLMapMesh2Renderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\xtal\GLSLMapMesh3Renderer.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\xtal\GLSLMapSurf2Renderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\xtal\GLSLMapVolRenderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\xtal\MapMeshRenderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\xtal\MapRenderer.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\xtal\MapSurf2Renderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\xtal\MapSurfRenderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\xtal\MTZ2MapReader.qif" />
   </ItemGroup>
