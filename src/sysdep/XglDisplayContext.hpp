@@ -22,19 +22,23 @@ namespace sysdep {
     Window m_xwin;
     GLXContext m_glcx;
 
-    XglView *m_pTargetView;
+    // XglView *m_pTargetView;
 
   public:
-    XglDisplayContext(int sceneid, XglView *pView);
+    // XglDisplayContext(int sceneid, XglView *pView);
+
+    XglDisplayContext();
 
     virtual ~XglDisplayContext();
 
     virtual bool setCurrent();
     virtual bool isCurrent() const;
 
+    /*
     virtual qsys::View *getTargetView() const {
       return m_pTargetView;
     }
+    */
 
     ///////////////
 

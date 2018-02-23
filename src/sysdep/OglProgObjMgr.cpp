@@ -95,7 +95,7 @@ void OglProgObjMgr::sceneChanged(SceneEvent &ev)
   }
   
   BOOST_FOREACH (const LString &key, delkeys) {
-    data_t::iterator &iter = m_data.find(key);
+    data_t::iterator iter = m_data.find(key);
     if (iter!=m_data.end()) {
       MB_DPRINTLN("Destroy progobj: %s", key.c_str());
       if (iter->second!=NULL)
