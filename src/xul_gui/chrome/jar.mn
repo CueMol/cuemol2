@@ -267,6 +267,7 @@ cuemol2.jar:
   content/tools/aintr-edit-dlg.js
 # Net PDB Open UI
   content/tools/openPDB.xul
+  content/tools/openPDB.js
   content/tools/netpdbopen.js
   content/tools/netpdb-progress-dlg.xul
 # Mol superpose UI

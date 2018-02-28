@@ -659,6 +659,82 @@ exports.packToHTMLColor = function ( rgb )
 // selection
 
 var _storage = require("simple-storage");
+
+exports.History = function(nm)
+{
+  this._data = [];
+  this._stor_name = nm;
+  this._nmax = 10;
+};
+
+var History = exports.History.prototype;
+
+History.getLength = function ()
+{
+  return this._data.length;
+};
+
+History.getEntry = function (ind)
+{
+  return this._data[ind];
+};
+
+History.append = function (str)
+{
+  if (str===null || str===undefined || str==="") return;
+  
+  var nitems = this._data.length;
+  var nmat = null;
+  for (var i=0; i<nitems; ++i) { 
+    if (this._data[i]==str) {
+      nmat = i;
+      break;
+    }
+  }
+  if (nmat!==null) {
+    dd("His("+this._stor_name+").append: "+str+" is already in history");
+    var item = this._data.splice(nmat, 1)[0];
+    //dd("!!! splice typeof item = "+typeof item);
+    this._data.unshift(item);
+    //dd("!!! selHis = "+this._data);
+    return;
+  }
+
+  var newlen = this._data.unshift(str);
+  if (newlen>this._nmax)
+    this._data.pop();
+};
+
+History.saveToPref = function ()
+{
+  var nitems = this._data.length;
+  var tmp = new Array(nitems);
+  for (var i=0; i<nitems; ++i) {
+    dd("save to: "+this._stor_name+" ("+i+")"+this._data[i]);
+    tmp[i] = this._data[i];
+  }
+  _storage.storage[this._stor_name] = tmp;
+};
+
+History.loadFromPref = function ()
+{
+  if (_storage.storage[this._stor_name]) {
+    var src = _storage.storage[this._stor_name];
+    var nitems = src.length;
+    var tmp = new Array(nitems);
+    for (var i=0; i<nitems; ++i) {
+      dd("load from: "+this._stor_name+" ("+i+")"+src[i]);
+      tmp[i] = src[i];
+    }
+    this._data = tmp;
+  }
+  else {
+    dd("load from: "+this._stor_name+" not found.");
+  }
+};
+
+//////////
+
 var _stor_name = "selection_history";
 
 exports.selHistory = {
