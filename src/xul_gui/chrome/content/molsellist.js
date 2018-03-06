@@ -66,27 +66,26 @@ cls.buildBox = function (aResvSel)
   var stylem = cuemol.getService("StyleManager");
   var element = this._outer.mSelBox;
   
-  var oldselval = null;
+  var initselval = null;
   if (aResvSel && element.selectedItem) {
     dd("MolSel.buildBox> Old selected item: "+element.selectedItem.label);
-    oldselval = element.selectedItem.value;
+    initselval = element.selectedItem.value;
   }
 
   ///////////////////////////////
   // start menulist building
 
   // Remove all items in the menulist.
-  dd("MolSel.buildBox> removeAllItems()");
+  // dd("MolSel.buildBox> removeAllItems()");
   element.removeAllItems();
   
   // Append the original selection
   dd("MolSel.buildBox> orig sel: <"+this.mOrigSel+">");
   if (this.mOrigSel) {
-    //element.appendItem(this.mOrigSel.toString(), this.mOrigSel.toString());
-    //element.menupopup.insertBefore(document.createElement("menuseparator"), null);
     this.appendMenuItem(element, this.mOrigSel.toString(), this.mOrigSel.toString())
     this.appendSeparator(element);
-    oldselval = this.mOrigSel.toString();
+    // force to set origSel as the initial selection
+    initselval = this.mOrigSel.toString();
   }
   
   var sce_id = null;
@@ -101,7 +100,6 @@ cls.buildBox = function (aResvSel)
     if ("sel" in obj) {
       var selstr = obj.sel.toString();
       if (selstr.length>0) {
-	//element.appendItem("current ("+selstr+")", selstr);
 	this.appendMenuItem(element, "current ("+selstr+")", selstr);
       }
     }
@@ -110,7 +108,6 @@ cls.buildBox = function (aResvSel)
     sce_id = this.targetSceID;
   }
   
-  //element.appendItem("all (*)", "*");
   this.appendMenuItem(element, "none", "");
   this.appendMenuItem(element, "all (*)", "*");
   var prev_sep = this.appendSeparator(element);
@@ -146,17 +143,18 @@ cls.buildBox = function (aResvSel)
   }
   
   ///////////////////////////////
-  // setup the menulist selection
+  // setup the initial menulist selection
 
   this.mCurSelIndex = -1;
 
-  if (aResvSel && oldselval) {
-    dd("MolSel.buildBox oldsel="+oldselval);
+  //if (aResvSel && initselval) {
+  if (initselval) {
+    dd("MolSel.buildBox oldsel="+initselval);
     var nitems = element.menupopup.childNodes.length;
     var i;
     for (i=0; i<nitems; ++i) {
       var item = element.menupopup.childNodes[i];
-      if (item && item.value == oldselval) {
+      if (item && item.value == initselval) {
         dd("=== BuildBox oldsel is selected"+item.value);
         element.selectedIndex = i;
         break;

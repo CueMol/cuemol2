@@ -98,7 +98,6 @@
 
       <method name="buildBox">
 	<body>
-	  //this.mImpl.buildBox(false);
 	  // reserve current selection, if possible
 	  this.mImpl.buildBox(true);
 	</body>
