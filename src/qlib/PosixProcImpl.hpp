@@ -49,6 +49,8 @@
     })
 #endif 
 
+// Passed to posix_spawnp to inherit all env variables
+extern "C" char **environ;
 
 namespace qlib {
 
@@ -62,7 +64,7 @@ public:
   virtual void run()
   {
     // Read output from the child process's pipe for STDOUT
-    const int kBufferSize = 1024;
+    const int kBufferSize = 1024*64; // 64 kB buf
     char sbuf[kBufferSize];
 
     try {
@@ -241,7 +243,8 @@ public:
 	return NULL;
       }
       
-      res = posix_spawnp(&child, prog_path, &actions, NULL, (char*const*)prog_argv, NULL);
+      //res = posix_spawnp(&child, prog_path, &actions, NULL, (char*const*)prog_argv, NULL);
+      res = posix_spawnp(&child, prog_path, &actions, NULL, (char*const*)prog_argv, environ);
       if (res != 0) {
 	MB_THROW(RuntimeException, "PosixProc: posix_spawnp failed");
 	return NULL;
