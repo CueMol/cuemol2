@@ -18,6 +18,7 @@
 
   const apbs_exe_key = "cuemol2.ui.apbs-exe-path";
   const pdb2pqr_py_key = "cuemol2.ui.pdb2pqr-py-path";
+  const tgtsel_key = "cuemol2.ui.apbstool-tgtsel";
 
   var dlg = window.gDlgObj = new Object();
 
@@ -114,6 +115,11 @@
 	this.mElepotName.value = this.makeSugName(mol.name);
       }
     }
+
+    // set default selection (from history)
+    if (pref.has(tgtsel_key))
+      this.mSelBox.origSel = cuemol.makeSel(pref.get(tgtsel_key), this.mTgtSceID);
+
     this.mSelBox.buildBox();
 
     //this.onChgMthSel("use-internal-pqr");
@@ -502,8 +508,11 @@
 
     // setup seleciton
     var molsel = null;
-    if (!this.mSelBox.disabled)
+    if (!this.mSelBox.disabled) {
       molsel = this.mSelBox.selectedSel;
+      // save to pref
+      pref.set(tgtsel_key, molsel.toString());
+    }
     this.mMolSel = molsel;
 
     // select charge method
