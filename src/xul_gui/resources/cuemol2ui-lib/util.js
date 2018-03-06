@@ -660,11 +660,14 @@ exports.packToHTMLColor = function ( rgb )
 
 var _storage = require("simple-storage");
 
-exports.History = function(nm)
+exports.History = function(aname,anmax)
 {
   this._data = [];
-  this._stor_name = nm;
-  this._nmax = 10;
+  this._stor_name = aname;
+  if (anmax>0)
+    this._nmax = anmax;
+  else
+    this._nmax = 10;
 };
 
 var History = exports.History.prototype;

@@ -17,6 +17,11 @@
   const pov_dpi_key = "cuemol2.ui.render.pov-img-dpi";
   const pov_unit_key = "cuemol2.ui.render.pov-img-unit";
   const pov_ncpu_key = "cuemol2.ui.render.pov-ncpu";
+  const pov_proj_key = "cuemol2.ui.render.pov-projection";
+  const pov_stereo_key = "cuemol2.ui.render.pov-stereo";
+  const pov_stedep_key = "cuemol2.ui.render.pov-stereodepth";
+  const pov_transp_key = "cuemol2.ui.render.pov-transp";
+  const pov_blend_key = "cuemol2.ui.render.pov-useblend";
   const pov_radio_key = "cuemol2.ui.render.pov-radiosity";
 
   var dlg = window.gDlgObj = new Object();
@@ -62,6 +67,13 @@
     this.mOutImgDPI = document.getElementById("output-image-dpi");
     this.mOutImgUnit = document.getElementById("output-image-unit");
     this.mNumThreads = document.getElementById("num-threads");
+
+    this.mProjMode = document.getElementById("proj-mode-list");
+    this.mSteMode = document.getElementById("stereo-mode-list");
+    this.mSteDep = document.getElementById("stereo-depth");
+    this.mBgTransp = document.getElementById("use-transp-bg");
+    this.mUseBlend = document.getElementById("enable-post-blend");
+
     this.mRadMode = document.getElementById("radio-mode-list");
     this.mRadMode.addEventListener(
       "select", function (a) { that.onRadioModeSel(a); } , false);
@@ -95,14 +107,33 @@
 	    this.mOutImgWidth.value = val;
     }
     if (pref.has(pov_height_key)) {
-	let val = parseFloat( pref.get(pov_height_key) );
-	if (!isNaN(val))
-	    this.mOutImgHeight.value = val;
+      let val = parseFloat( pref.get(pov_height_key) );
+      if (!isNaN(val))
+	this.mOutImgHeight.value = val;
     }
     if (pref.has(pov_ncpu_key)) {
       let val = parseInt( pref.get(pov_ncpu_key) );
       if (!isNaN(val))
 	this.mNumThreads.value = val;
+    }
+    if (pref.has(pov_proj_key)) {
+      let val = pref.get(pov_proj_key);
+      util.selectMenuListByValue(this.mProjMode, val);
+    }
+    if (pref.has(pov_stereo_key)) {
+      let val = pref.get(pov_stereo_key);
+      util.selectMenuListByValue(this.mSteMode, val);
+    }
+    if (pref.has(pov_stedep_key)) {
+      let val = parseFloat( pref.get(pov_stedep_key) );
+      if (!isNaN(val))
+	this.mSteDep.value = val;
+    }
+    if (pref.has(pov_transp_key)) {
+      this.mBgTransp.checked = pref.get(pov_transp_key);
+    }
+    if (pref.has(pov_blend_key)) {
+      this.mUseBlend.checked = pref.get(pov_blend_key);
     }
     if (pref.has(pov_radio_key)) {
       let val = parseInt( pref.get(pov_radio_key) );
@@ -156,9 +187,10 @@
   
   dlg.onUnload = function ()
   {
-    util.persistChkBox("use-transp-bg", document);
+    // util.persistChkBox("use-transp-bg", document);
+    //util.persistChkBox("enable-post-blend", document);
+
     util.persistChkBox("enable-clip-plane", document);
-    util.persistChkBox("enable-post-blend", document);
     util.persistChkBox("enable-shadow", document);
     util.persistChkBox("enable-edgelines", document);
     util.persistChkBox("povopt-lightdefault", document);
@@ -178,6 +210,11 @@
     }
     pref.set(pov_unit_key, this.mOutImgUnit.value);
     pref.set(pov_ncpu_key, this.mNumThreads.value);
+    pref.set(pov_proj_key, this.mProjMode.value);
+    pref.set(pov_stereo_key, this.mSteMode.value);
+    pref.set(pov_stedep_key, this.mSteDep.value);
+    pref.set(pov_transp_key, this.mBgTransp.checked);
+    pref.set(pov_blend_key, this.mUseBlend.checked);
     pref.set(pov_radio_key, this.mRadMode.value);
 
     dd("PovRender: ***** prefs saved");
@@ -507,27 +544,24 @@
     this.mPovRender.img_width = Math.round( this.convImgSizeUnit(this.mOutImgWidth.value, dpi, unit) );
     // alert("value:"+this.mOutImgHeight.value+", DPI="+dpi+", UNIT="+unit+"--> "+this.mPovRender.img_height);
 
-    var stereoElem = document.getElementById("stereo-mode-list");
     var steDep = document.getElementById("stereo-depth");
     let steDepVal = parseFloat(steDep.value);
     if (isNaN(steDepVal) || steDepVal<0 || steDepVal>1)
       steDepVal = 0.03; // default value
-    if (stereoElem.selectedItem.value=="right") {
+    if (this.mSteMode.selectedItem.value=="right") {
       this.mPovRender.nStereo = 1;
       this.mPovRender.dSteDep = steDepVal;
     }
-    else if (stereoElem.selectedItem.value=="left") {
+    else if (this.mSteMode.selectedItem.value=="left") {
       this.mPovRender.nStereo = -1;
       this.mPovRender.dSteDep = steDepVal;
     }
     else
       this.mPovRender.nStereo = 0;
 
-    elem = document.getElementById("proj-mode-list");
-    this.mPovRender.bOrtho = (elem.selectedItem.value=="ortho");
+    this.mPovRender.bOrtho = (this.mProjMode.selectedItem.value=="ortho");
 
-    elem = document.getElementById("use-transp-bg");
-    if (elem.checked) {
+    if (this.mBgTransp.checked) {
       this.mPovRender.mbOutputAlpha = true;
       this.mPovRender.mbUseFog = false;
     }
@@ -539,8 +573,7 @@
     elem = document.getElementById("enable-clip-plane");
     this.mPovRender.mbClip = elem.checked;
 
-    elem = document.getElementById("enable-post-blend");
-    this.mPovRender.mbPostBlend = elem.checked;
+    this.mPovRender.mbPostBlend = this.mUseBlend.checked;
 
     elem = document.getElementById("enable-edgelines");
     this.mPovRender.mbShowEdgeLines = elem.checked;
@@ -748,10 +781,9 @@
     //var scene = cuemol.getScene(this.mTgtSceID);
     var ini_name = util.removeFileExt( this.mSceName ); //scene.name;
     
-    var stereoElem = document.getElementById("stereo-mode-list");
-    if (stereoElem.selectedItem.value=="right")
+    if (this.mSteMode.selectedItem.value=="right")
       ini_name = ini_name + "_r";
-    else if (stereoElem.selectedItem.value=="left")
+    else if (this.mSteMode.selectedItem.value=="left")
       ini_name = ini_name + "_l";
     
     ini_name = ini_name + ".png";

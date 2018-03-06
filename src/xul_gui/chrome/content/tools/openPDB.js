@@ -17,7 +17,9 @@ window.gPdbDlg = {
     his.loadFromPref();
     var nhis = his.getLength();
     for (var i=0; i<nhis; ++i) {
-      dd("entry "+i+": "+his.getEntry(i));
+      let val = his.getEntry(i);
+      dd("entry "+i+": "+val);
+      this.mPdbIdBox.appendItem(val,val);
     }
   },
 

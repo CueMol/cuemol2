@@ -93,7 +93,7 @@
 	  
 	  <hbox align="center">
 	    <label value="Projection: "/>
-	    <menulist id="proj-mode-list" class="disable-target" >
+	    <menulist id="proj-mode-list" class="disable-target">
 	      <menupopup>
 		<menuitem value="perspec" label="Perspective" selected="true"/>
 		<menuitem value="ortho" label="Orthographic"/>
@@ -101,7 +101,7 @@
 	    </menulist>
 	    
 	    <label value="Stereo: "/>
-	    <menulist id="stereo-mode-list" class="disable-target" >
+	    <menulist id="stereo-mode-list" class="disable-target">
 	      <menupopup>
 		<menuitem value="none" label="None" selected="true"/>
 		<menuitem value="right" label="Right eye"/>
@@ -117,13 +117,13 @@
 	  <hbox align="center">
 	    <label value="CPU: "/>
 	    <textbox class="disable-target" id="num-threads"
-	      value="2" size="2" type="number" min="0" max="32" increment="1"/>
-	    <checkbox id="use-transp-bg" label="Transp background" checked="false" persist="checked"/>
+	      value="2" size="2" type="number" min="1" max="32" increment="1" persist="value"/>
+	    <checkbox id="use-transp-bg" label="Transp background" checked="false"/>
 	  </hbox>
 	  
 	  <hbox align="center">
 	    <checkbox id="enable-clip-plane" label="Clipping plane" checked="true" persist="checked"/>
-	    <checkbox id="enable-post-blend" label="Post-render alpha blending" checked="true" persist="checked"/>
+	    <checkbox id="enable-post-blend" label="Post-render alpha blending" checked="true"/>
 	    <checkbox id="enable-edgelines" label="Edge lines" checked="true" persist="checked"/>
 	    <checkbox id="enable-pixlabels" label="Pix labels" checked="false" persist="checked"/>
 	  </hbox>
