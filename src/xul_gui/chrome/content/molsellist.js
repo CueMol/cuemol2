@@ -60,6 +60,15 @@ cls.init = function ()
   catch (e) { debug.exception(e); }
 };
 
+cls.setOrigSel = function (aVal)
+{
+    if (typeof aVal == 'string')
+      this.mOrigSel = cuemol.makeSel(aVal, this.targetSceID);
+    else
+      this.mOrigSel = aVal;
+    return aVal;
+};
+
 cls.buildBox = function (aResvSel)
 {
   dd("MolSel.buildBox> enter, aResvSel="+aResvSel);

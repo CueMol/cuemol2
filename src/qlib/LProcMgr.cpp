@@ -80,8 +80,9 @@ void LProcMgr::setSlotSize(int n)
 }
 
 int LProcMgr::queueTask(const LString &path,
-                        const LString &args,
-                        const LString &wait)
+			const LString &args,
+			const LString &wait,
+			const LString &wdir /*= LString()*/)
 {
   int id = m_nNextIndex;
   m_nNextIndex ++;
@@ -90,6 +91,8 @@ int LProcMgr::queueTask(const LString &path,
   pEnt->m_nProcID = id;
   pEnt->m_path = path;
   pEnt->m_cmdline = args;
+  pEnt->m_wdir = wdir;
+
   // pEnt->m_pThr = NULL;
   
   int val;
@@ -347,7 +350,7 @@ void LProcMgr::checkQueue()
       // (This possibly fails if cmd not found...)
       ProcInThread *pThr = NULL;
       try {
-        pThr = m_pImpl->createProcess(pEnt->m_path, pEnt->m_cmdline);
+        pThr = m_pImpl->createProcess(pEnt->m_path, pEnt->m_cmdline, pEnt->m_wdir);
       }
       catch (const qlib::LException &e) {
         LString msg = LString::format("Exception occurred in createProcess: %s", e.getMsg().c_str());

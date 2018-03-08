@@ -45,6 +45,9 @@
   window.addEventListener("load", function(){
     try {dlg.onLoad();} catch (e) {debug.exception(e);}
   }, false);
+  window.addEventListener("unload", function(){
+    try {dlg.onUnload();} catch (e) {debug.exception(e);}
+  }, false);
   
   dlg.mMolSel = null;
 
@@ -54,7 +57,7 @@
   if (dlg.mPlfName=="Windows_NT")
     default_path = util.createDefaultPath("CurProcD", "apbs", "apbs.exe");
   else
-    default_path = util.createDefaultPath("CurProcD", "apbs", "apbs");
+    default_path = util.createDefaultPath("CurProcD", "apbs-pdb2pqr", "apbs");
 
   if (pref.has(apbs_exe_key))
     dlg.mApbsExePath = pref.get(apbs_exe_key);
@@ -65,7 +68,7 @@
   if (dlg.mPlfName=="Windows_NT")
     default_path = util.createDefaultPath("CurProcD", "apbs", "pdb2pqr_wrap.bat");
   else
-    default_path = util.createDefaultPath("CurProcD", "pdb2pqr.py");
+    default_path = util.createDefaultPath("CurProcD", "apbs-pdb2pqr", "pdb2pqr");
 
   if (pref.has(pdb2pqr_py_key))
     dlg.mPdb2pqrPath = pref.get(pdb2pqr_py_key);
@@ -118,7 +121,7 @@
 
     // set default selection (from history)
     if (pref.has(tgtsel_key))
-      this.mSelBox.origSel = cuemol.makeSel(pref.get(tgtsel_key), this.mTgtSceID);
+      this.mSelBox.origSel = pref.get(tgtsel_key);
 
     this.mSelBox.buildBox();
 
@@ -134,6 +137,11 @@
     this.mCloseBtn = document.documentElement.getButton("cancel");
   }
   
+  dlg.onUnload = function ()
+  {
+    util.persistChkBox("selection-check", document);
+  };
+
   dlg.disableButtons = function (aFlag)
   {
     dd("Disable target = "+this.mDisableTgt);
@@ -573,6 +581,9 @@
     var tgtmol = this.mTgtMol;
     var molsel = this.mMolSel;
 
+    // working directory (=exe dir)
+    p2pdir = this.mP2pFile.parent;
+
     // force field name
     var ffname = "charmm";
     var elem = document.getElementById("pdb2pqr-ff-list");
@@ -619,9 +630,12 @@
 
     let strargs = args.join(" ");
 
-    dd("APBSDlg> pdb2pqr.py args= "+strargs);
+    dd("APBSDlg> pdb2pqr = "+this.mP2pFile.path);
+    dd("APBSDlg> pdb2pqr args= "+strargs);
+    dd("APBSDlg> pdb2pqr wdir= "+p2pdir.path);
     // util.run_proc(this.mPdb2pqrPathBox.value, pdb2pqr_py_key, args);
-    let tid = procMgr.queueTask(this.mP2pFile.path, strargs, "");
+    //let tid = procMgr.queueTask(this.mP2pFile.path, strargs, "");
+    let tid = procMgr.queueTask2(this.mP2pFile.path, strargs, "", p2pdir.path);
     //this.mProcs.push(tid);
     this.mP2pProc = tid;
 

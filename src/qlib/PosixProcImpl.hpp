@@ -172,7 +172,8 @@ public:
   }
 
   virtual ProcInThread *createProcess(const LString &path,
-                                      const LString &args)
+                                      const LString &args,
+				      const LString &wdir)
   {
     std::vector<LString> vargs;
     if (!parseCmdLine(args, vargs)) {
@@ -204,6 +205,8 @@ public:
       prog_argv[i+1] = vargs[i].c_str();
     }
     prog_argv[nargs+1] = NULL;
+
+    char *cur_wdir = NULL;
 
     try {
       res = posix_spawn_file_actions_init(&actions);
@@ -243,11 +246,24 @@ public:
 	return NULL;
       }
       
+      if (wdir.length()>0) {
+	cur_wdir = getcwd(NULL, 0);
+	chdir(wdir.c_str());
+	MB_DPRINTLN("PosixProc: wdir is changed to %s", wdir.c_str());
+      }
+
       //res = posix_spawnp(&child, prog_path, &actions, NULL, (char*const*)prog_argv, NULL);
       res = posix_spawnp(&child, prog_path, &actions, NULL, (char*const*)prog_argv, environ);
       if (res != 0) {
 	MB_THROW(RuntimeException, "PosixProc: posix_spawnp failed");
 	return NULL;
+      }
+
+      if (cur_wdir!=NULL) {
+	MB_DPRINTLN("PosixProc: wdir is returned to %s", cur_wdir);
+	chdir(cur_wdir);
+	free(cur_wdir);
+	cur_wdir = NULL;
       }
 
       MB_DPRINTLN("posix_spawn: %d", res);
@@ -259,6 +275,13 @@ public:
 	posix_spawn_file_actions_destroy(&actions);
       close(ifd[1]);
       close(ifd[0]);
+
+      if (cur_wdir!=NULL) {
+	chdir(cur_wdir);
+	free(cur_wdir);
+	cur_wdir = NULL;
+      }
+
       throw;
     }
     

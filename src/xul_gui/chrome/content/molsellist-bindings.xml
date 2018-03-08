@@ -57,8 +57,7 @@
           return this.mImpl.mOrigSel;
         </getter>
         <setter>
-	  this.mImpl.mOrigSel = val;
-	  return val;
+	  return this.mImpl.setOrigSel(val);
         </setter>
       </property>
 

@@ -17,5 +17,5 @@ builddmg:
 	perl make_distr.pl CueMol2.app $(XUL_FRAMEWORK_DIR)
 
 buildpovdmg:
-	perl add_povray.pl CueMol2.app xxx $(HOME)/bundle/povray/ $(HOME)/bundle/ffmpeg/
+	perl add_povray.pl CueMol2.app xxx $(HOME)/bundle/povray/ $(HOME)/bundle/ffmpeg/ $(HOME)/bundle/apbs-pdb2pqr/
 

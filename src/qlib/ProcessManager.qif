@@ -21,6 +21,7 @@ runtime_class ProcessManager
   integer getSlotSize();
 
   integer queueTask(string path, string args, string waitfor);
+  integer queueTask2(string path, string args, string waitfor, string cwd) => queueTask;
   boolean isAlive(integer);
   integer getTaskStatus(integer) => getState;
   void waitForExit(integer);
