@@ -98,7 +98,7 @@ if (!("Prot2ndryTool" in cuemolui)) {
 	return;
       }
 
-      // tgt mol
+      // tgt mol/sel
       var his_name = history_name_prefix + ".tgtmol";
       var selind = 0;
       if (pref.has(his_name)) {
@@ -109,6 +109,11 @@ if (!("Prot2ndryTool" in cuemolui)) {
       }
       this.mTargMol._widget.selectedIndex = selind;
       this.onTargMolChanged();
+      
+      var his_name = history_name_prefix + ".tgtsel";
+      if (pref.has(his_name))
+	  this.mTargSel.origSel = pref.get(his_name);
+
       this.mTargSel.buildBox();
 
       // sec_type
@@ -205,6 +210,9 @@ if (!("Prot2ndryTool" in cuemolui)) {
       his_name = history_name_prefix + ".tgtmol";
       pref.set(his_name, tgtmol.name);
       dd("Save his: "+his_name+" = "+pref.get(his_name));
+
+      // save history (tgtsel)
+      pref.set(history_name_prefix + ".tgtsel", this.mTargSel.selectedSel.toString());
 
       // save history (sec_type)
       let nsectype = this.mSecTypeSel.selectedIndex;

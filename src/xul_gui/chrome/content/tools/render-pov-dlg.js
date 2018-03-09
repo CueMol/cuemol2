@@ -129,12 +129,10 @@
       if (!isNaN(val))
 	this.mSteDep.value = val;
     }
-    if (pref.has(pov_transp_key)) {
+    if (pref.has(pov_transp_key))
       this.mBgTransp.checked = pref.get(pov_transp_key);
-    }
-    if (pref.has(pov_blend_key)) {
+    if (pref.has(pov_blend_key))
       this.mUseBlend.checked = pref.get(pov_blend_key);
-    }
     if (pref.has(pov_radio_key)) {
       let val = parseInt( pref.get(pov_radio_key) );
       if (!isNaN(val)) {

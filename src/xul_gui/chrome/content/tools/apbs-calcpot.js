@@ -19,6 +19,7 @@
   const apbs_exe_key = "cuemol2.ui.apbs-exe-path";
   const pdb2pqr_py_key = "cuemol2.ui.pdb2pqr-py-path";
   const tgtsel_key = "cuemol2.ui.apbstool-tgtsel";
+  const selchk_key = "cuemol2.ui.apbstool-selchk";
 
   var dlg = window.gDlgObj = new Object();
 
@@ -105,11 +106,25 @@
 
     var nobjs = this.mObjBox.getItemCount();
 
+    // disable widgets when running the calculation
+    this.mDisableTgt = document.getElementsByClassName("disable-target");
+
+    // buttons
+    this.mStartStopBtn = document.documentElement.getButton("accept");
+    this.mCloseBtn = document.documentElement.getButton("cancel");
+    this.mSelChk = document.getElementById("selection-check");
+
+    if (pref.has(selchk_key))
+      this.mSelChk.checked = pref.get(selchk_key);
+    // synchronize selbox/selchk btns
+    this.onSelChk();
+
     //alert("item count="+nobjs);
     if (nobjs==0) {
-      document.getElementById("selection-check").disabled = true;
+      this.mSelChk.disabled = true;
       this.mSelBox.disabled = true;
       this.mElepotName.disabled = true;
+      this.mStartStopBtn.disabled = true;
     }
     else {
       var mol = this.mObjBox.getSelectedObj();
@@ -125,21 +140,22 @@
 
     this.mSelBox.buildBox();
 
-    //this.onChgMthSel("use-internal-pqr");
+    // Default charge method: PDB2PQR
     this.onChgMthSel("use-pdb2pqr");
+    //this.onChgMthSel("use-internal-pqr");
 
     this.mPdb2pqrPathBox = document.getElementById("pdb2pqr-py-path");
     this.mPdb2pqrPathBox.value = this.mPdb2pqrPath;
 
-    // disable widgets when running the calculation
-    this.mDisableTgt = document.getElementsByClassName("disable-target");
-    this.mStartStopBtn = document.documentElement.getButton("accept");
-    this.mCloseBtn = document.documentElement.getButton("cancel");
   }
   
   dlg.onUnload = function ()
   {
-    util.persistChkBox("selection-check", document);
+    pref.set(tgtsel_key, this.mSelBox.selectedSel.toString());
+    pref.set(selchk_key, this.mSelChk.checked);
+
+    pref.set(apbs_exe_key, this.mApbsExePathBox.value);
+    pref.set(pdb2pqr_py_key, this.mPdb2pqrPathBox.value);
   };
 
   dlg.disableButtons = function (aFlag)
@@ -191,12 +207,14 @@
   }
 
 
-  dlg.onSelChk = function (aEvent)
+  dlg.onSelChk = function ()
   {
-    if (aEvent.target.checked)
-      this.mSelBox.disabled = false;
-    else
-      this.mSelBox.disabled = true;
+    if (this.mSelChk.enabled) {
+      if (this.mSelChk.checked)
+	this.mSelBox.disabled = false;
+      else
+	this.mSelBox.disabled = true;
+    }
   }
   
   dlg.onApbsExePath = function ()
@@ -220,7 +238,7 @@
 
     var path = fp.file.path;
     this.mApbsExePathBox.value = path;
-    pref.set(apbs_exe_key, path);
+    // pref.set(apbs_exe_key, path);
   }
 
   dlg.onChgMthSel = function (id)
@@ -269,7 +287,7 @@
 
     var path = fp.file.path;
     this.mPdb2pqrPathBox.value = path;
-    pref.set(pdb2pqr_py_key, path);
+    //pref.set(pdb2pqr_py_key, path);
   };
 
   dlg.setupPaths = function ()
@@ -281,7 +299,7 @@
       if (!this.mP2pFile.exists() || !this.mP2pFile.isFile()) {
 	throw "Pdb2pqr file \""+str_p2ppath+"\" not found";
       }    
-      pref.set(apbs_exe_key, this.mP2pFile.path);
+      // pref.set(pdb2pqr_py_key, this.mP2pFile.path);
     }
     
     // APBS exe file
@@ -290,8 +308,7 @@
     if (!this.mApbsFile.exists() || !this.mApbsFile.isFile()) {
       throw "Apbs file \""+str_apbsexe+"\" not found";
     }    
-    pref.set(apbs_exe_key, this.mApbsFile.path);
-    
+    // pref.set(apbs_exe_key, this.mApbsFile.path);
   };
   
   ///////////////////////////////////////////
@@ -518,8 +535,8 @@
     var molsel = null;
     if (!this.mSelBox.disabled) {
       molsel = this.mSelBox.selectedSel;
-      // save to pref
-      pref.set(tgtsel_key, molsel.toString());
+      // // save to pref
+      // pref.set(tgtsel_key, molsel.toString());
     }
     this.mMolSel = molsel;
 
