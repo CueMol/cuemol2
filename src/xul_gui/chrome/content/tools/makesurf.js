@@ -9,6 +9,9 @@
   // Initialization
   
   const pref = require("preferences-service");
+  const pref_tgtsel_key = "cuemol2.ui.makesurf-tool-tgtsel";
+  const pref_selchk_key = "cuemol2.ui.makesurf-tool-selchk";
+
   const util = require("util");
   
   var dlg = window.gDlgObj = new Object();
@@ -57,8 +60,9 @@
       catch (e) { debug.exception(e); }
     });
 
-    var sel_chk = document.getElementById("selection-check");
-    sel_chk.checked = false;
+    //var sel_chk = document.getElementById("selection-check");
+    this.mSelChk = document.getElementById("selection-check");
+    this.mSelChk.checked = false;
     this.mSelBox.disabled = true;
 
     var nobjs = this.mObjBox.getItemCount();
@@ -66,14 +70,16 @@
     //alert("item count="+nobjs);
     if (nobjs==0) {
       // no mol obj to calc --> error?
-      sel_chk.disabled = true;
+      this.mSelChk.disabled = true;
       this.mSelBox.disabled = true;
       this.mSurfName.disabled = true;
+      return;
     }
+
     if (this.mRegenMode) {
       // Regenerate-mode
       // --> disable mol,sel,name,pradius widgets
-      sel_chk.disabled = true;
+      this.mSelChk.disabled = true;
       this.mSelBox.disabled = true;
       this.mSurfName.disabled = true;
       this.mObjBox._widget.disabled = true;
@@ -90,29 +96,46 @@
       if (orig_sel!="") {
 	let mol = this.mObjBox.getSelectedObj();
 	this.mSelBox.molID = mol.uid;
+	this.mSelBox.origSel = orig_sel;
 	this.mSelBox.selectedSel = orig_sel;
-	sel_chk.checked = true;
-	alert("origsel="+orig_sel);
+	this.mSelChk.checked = true;
+	// alert("origsel="+orig_sel);
       }
     }
     else {
+      // Normal mode
+      // --> Enable all UI
       var mol = this.mObjBox.getSelectedObj();
       if (mol) {
 	this.mSelBox.molID = mol.uid;
 	this.mSurfName.value = this.makeSugName(mol.name);
       }
 
-      try {
+      if (pref.has(pref_tgtsel_key))
+	this.mSelBox.origSel = pref.get(pref_tgtsel_key);
+
+      // load default sel from pref
+      if (pref.has(pref_selchk_key))
+	this.mSelChk.checked = pref.get(pref_selchk_key);
+      
+      // synchronize chk/sel state
+      this.onSelChk();
+
+      /*try {
 	if (mol.sel.toString().length>0) {
 	  // target is mol and has valid selection --> enable selection option
-	  sel_chk.checked = true;
+	  this.mSelChk.checked = true;
 	  this.mSelBox.disabled = false;
 	}
-      } catch (e) {}
+	} catch (e) {}*/
     }
     this.mSelBox.buildBox();
   }
   
+  //dlg.onUnload = function ()
+  //{
+  //};
+
   dlg.makeSugName = function (name)
   {
     var newname = "sf_"+name;
@@ -139,9 +162,9 @@
     }
   }
 
-  dlg.onSelChk = function (aEvent)
+  dlg.onSelChk = function ()
   {
-    if (aEvent.target.checked)
+    if (this.mSelChk.checked)
       this.mSelBox.disabled = false;
     else
       this.mSelBox.disabled = true;
@@ -157,6 +180,7 @@
       this.regenMolSurf();
     else
       this.buildMolSurf();
+
   }
 
   ////////////////
@@ -231,6 +255,15 @@
 
     // EDIT TXN END //
     scene.commitUndoTxn();
+
+    // Save to pref
+    if (molsel!=null) {
+      let selstr = molsel.toString();
+      //if (selstr.length>0)
+      dd("pref set: "+pref_tgtsel_key+"=<"+selstr+">");
+      pref.set(pref_tgtsel_key, selstr);
+    }
+    pref.set(pref_selchk_key, this.mSelChk.checked);
   }
 
   // Regenerate molsurf

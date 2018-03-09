@@ -46,9 +46,9 @@
   window.addEventListener("load", function(){
     try {dlg.onLoad();} catch (e) {debug.exception(e);}
   }, false);
-  window.addEventListener("unload", function(){
-    try {dlg.onUnload();} catch (e) {debug.exception(e);}
-  }, false);
+  //window.addEventListener("unload", function(){
+  //try {dlg.onUnload();} catch (e) {debug.exception(e);}
+  //}, false);
   
   dlg.mMolSel = null;
 
@@ -149,6 +149,7 @@
 
   }
   
+  /*
   dlg.onUnload = function ()
   {
     pref.set(tgtsel_key, this.mSelBox.selectedSel.toString());
@@ -157,6 +158,7 @@
     pref.set(apbs_exe_key, this.mApbsExePathBox.value);
     pref.set(pdb2pqr_py_key, this.mPdb2pqrPathBox.value);
   };
+  */
 
   dlg.disableButtons = function (aFlag)
   {
@@ -358,6 +360,13 @@
     this.mCalcRunning = true;
     this.disableButtons(true);
     this.appendLog("APBS calculation started...");
+
+    // save to preferences
+    pref.set(tgtsel_key, this.mSelBox.selectedSel.toString());
+    pref.set(selchk_key, this.mSelChk.checked);
+    pref.set(apbs_exe_key, this.mApbsExePathBox.value);
+    pref.set(pdb2pqr_py_key, this.mPdb2pqrPathBox.value);
+
     return true;
   };
 
