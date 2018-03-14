@@ -11,6 +11,12 @@
 
 #define DEBUG 1
 
+#undef _OPENMP
+
+#ifdef _OPENMP
+#  include <omp.h>
+#endif
+
 using namespace xtal;
 
 void HKLList::calcMaxInd()
@@ -170,7 +176,21 @@ void HKLList::convToArray(CompArray &recip, float b_factor) const
 		    recip.at(h,k,l).real(), recip.at(h,k,l).imag());
 #endif
 
-  for (int i=0; i<nsize; ++i) {
+  int nthr = -1;
+#ifdef _OPENMP
+  omp_set_num_threads(omp_get_num_procs());
+  nthr = omp_get_max_threads();
+  // LOG_DPRINTLN("MapSurf2> using OpenMP %d threads", nthr);
+#endif
+
+  int i;
+
+#ifdef _OPENMP
+#pragma omp parallel for schedule(dynamic)
+  for (i=0; i<nsize; ++i) {
+#else
+  for (i=0; i<nsize; ++i) {
+#endif
     const StrFac &elem = super_t::at(i);
 
     int ih = elem.ih;
@@ -215,9 +235,10 @@ void HKLList::convToArray(CompArray &recip, float b_factor) const
 
 void HKLList::convToArrayHerm(CompArray &recip, float b_factor, float d_min) const
 {
+  MB_DPRINTLN("HKLList.convToArrayHerm> apply b=%f to d_min: %f", b_factor, d_min);
+
   const float fscl = float(1.0/(m_ci.volume()));
   const float irs_max = 1.0f/(d_min*d_min);
-  MB_DPRINTLN("apply b=%f to d_min: %f", d_min);
   
   int naa = m_na/2+1;
 

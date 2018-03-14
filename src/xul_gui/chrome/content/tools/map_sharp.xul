@@ -44,7 +44,8 @@
 	<label value="Resoln limit :"/>
 	<hbox align="center">
 	  <textbox id="resoln-limit" flex="0" size="3" type="number" 
-	    decimalplaces="2" increment="0.01" min="0.1" value="3.0"/>
+	    decimalplaces="2" increment="0.01" min="0.1" value="3.0"
+	    onchange="window.gDlgObj.onDMinChange(event)"/>
 	  <label value="&#0197;"/>
 	  <spacer flex="1"/>
 	</hbox>

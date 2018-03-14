@@ -6,6 +6,10 @@
 #include <common.h>
 #include "BSharpTool.hpp"
 
+#ifdef _OPENMP
+#  include <omp.h>
+#endif
+
 using namespace xtal;
 
 BSharpTool::BSharpTool()
@@ -16,6 +20,10 @@ BSharpTool::BSharpTool()
   m_pRecipAry = NULL;
   m_dmin = -1.0;
   m_dCurBfacVal = 0.0;
+  m_bForceRecipAry = false;
+  //m_bForceRecipAry = true;
+
+  m_nOmpThr = -1;
 }
 
 BSharpTool::~BSharpTool()
@@ -28,6 +36,7 @@ BSharpTool::~BSharpTool()
 
   if (m_pRecipAry!=NULL)
     delete m_pRecipAry;
+
 }
 
 void BSharpTool::clear()
@@ -64,9 +73,11 @@ void BSharpTool::attach(const qsys::ObjectPtr &pMap)
   m_nb = m_pMap->getRowNo();
   m_nc = m_pMap->getSecNo();
   int naa = m_na/2+1;
+  const CrystalInfo &ci = m_pMap->getXtalInfo();
 
   HKLList *pHKLList = m_pMap->getHKLList();
-  if (pHKLList==NULL) {
+
+  if (m_bForceRecipAry || pHKLList==NULL) {
     DensityMap::FloatMap *pFMap = m_pMap->getFloatMap();
     if (pFMap==NULL) {
       MB_THROW(qlib::RuntimeException, "No float map available");
@@ -85,7 +96,6 @@ void BSharpTool::attach(const qsys::ObjectPtr &pMap)
           m_pRecipAry->at(h,k,l) *= fscl;
 
     // Estimate d_min from Nyquist freq
-    const CrystalInfo &ci = m_pMap->getXtalInfo();
     double res_a = 1.0/sqrt( ci.invressq(naa, 0, 0) );
     double res_b = 1.0/sqrt( ci.invressq(0, m_nb/2+1, 0) );
     double res_c = 1.0/sqrt( ci.invressq(0, 0, m_nc/2+1) );
@@ -93,11 +103,25 @@ void BSharpTool::attach(const qsys::ObjectPtr &pMap)
     MB_DPRINTLN("BSharpTool> d_min (a*) = %.2f", res_a);
     MB_DPRINTLN("BSharpTool> d_min (b*) = %.2f", res_b);
     MB_DPRINTLN("BSharpTool> d_min (c*) = %.2f", res_c);
-    MB_DPRINTLN("BSharpTool> Estimated d_min = %.2f", m_dmin);
+    //LOG_DPRINTLN("BSharpTool> Estimated d_min = %.2f", m_dmin);
   }
   else {
     m_pHKLList = pHKLList;
+
+    // Find d_min
+    int nsize = m_pHKLList->size();
+    double irs_max = 0.0;
+    for (int i=0; i<nsize; ++i) {
+      const StrFac &elem = m_pHKLList->at(i);
+      irs_max = qlib::max<double>(irs_max, ci.invressq(elem.ih, elem.ik, elem.il));
+    }
+    if (qlib::isNear4(irs_max, 0.0))
+      m_dmin = -1.0;
+    else
+      m_dmin = 1.0/sqrt(irs_max);
+
   }
+  LOG_DPRINTLN("BSharpTool> Estimated d_min = %.2f", m_dmin);
   
   m_pRecipTmpAry = MB_NEW CompArray(naa, m_nb, m_nc);
   m_pFloatMap = MB_NEW FloatArray(m_na,m_nb,m_nc);
@@ -143,7 +167,7 @@ void BSharpTool::preview(double b_factor)
     return;
 
   if (m_pHKLList!=NULL) {
-    m_pHKLList->convToArrayHerm(*m_pRecipTmpAry, b_factor);
+    m_pHKLList->convToArrayHerm(*m_pRecipTmpAry, b_factor, m_dmin);
   }
   else {
     applyBfacTmpAry(b_factor);
@@ -190,6 +214,8 @@ void BSharpTool::resetPreview()
 
   // Notify update
   m_pMap->updateByteMap();
+
+  m_dCurBfacVal = 0.0;
 }
 
 void BSharpTool::apply(double b_factor)

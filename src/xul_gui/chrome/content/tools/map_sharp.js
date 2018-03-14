@@ -57,9 +57,9 @@
     var obj = this.mObjBox.getSelectedObj();
 
     this.mTool = cuemol.createObj("BSharpTool");
-    this.mbDragUpdate = false;
+    //this.mbDragUpdate = false;
     //this.mTool = cuemol.createObj("CudaBSharpTool");
-    //this.mbDragUpdate = true;
+    this.mbDragUpdate = true;
 
     this.attachObj(obj);
   };
@@ -68,16 +68,9 @@
   {
     this.mTool.attach(aObj);
 
-    if (this.mTool.use_hkl_list) {
-      this.mDMin.disabled = true;
-    }
-    else {
-      this.mDMin.disabled = false;
-      let d_min = this.mTool.d_min;
-      this.mDMin.value = d_min;
-      this.mDMin.min = d_min;
-    }
-
+    let d_min = this.mTool.d_min;
+    this.mDMin.value = d_min;
+    this.mDMin.min = d_min;
   }
 
   dlg.onPreviewChange = function (aEvent) {
@@ -91,7 +84,12 @@
   {
     dd("MapSharpDlg> ObjSelChg: "+aEvent.target.id);
     var obj = this.mObjBox.getSelectedObj();
-    //this.mTool.attach(obj);
+
+    // reset cur obj's preview state
+    if (this.mPvwChk.checked)
+      this.resetPreview();
+
+    // switch to the new obj
     this.attachObj(obj);
   };
 
@@ -120,6 +118,14 @@
     }
   };
 
+  dlg.onDMinChange = function (aEvent)
+  {
+    if (!this.mPvwChk.checked)
+      return;
+
+    this.preview();
+  };
+
   /// Get bfactor value
   dlg.getBfacValue = function ()
   {
@@ -139,6 +145,14 @@
     if (bfac==NaN)
       return; // ERROR
 
+    // Get resoln limit value
+    var dmin = parseFloat( this.mDMin.value );
+    if (dmin==NaN)
+      dmin = -1.0;
+
+    this.mTool.d_min = dmin;
+    
+    dd("preview with bfac="+bfac+", dmin="+dmin);
     //tgtobj.sharpenMapPreview(bfac);
     this.mTool.preview(bfac);
   };

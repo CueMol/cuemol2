@@ -40,6 +40,10 @@ namespace xtal {
 
     double m_dCurBfacVal;
 
+    bool m_bForceRecipAry;
+
+    int m_nOmpThr;
+
   public:
 
     BSharpTool();
