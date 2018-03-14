@@ -50,7 +50,7 @@
       <method name="dragStateChanged">
         <parameter name="isDragging"/>
         <body>
-	  //dd("NumSliCore.dragStateChg> "+isDragging);
+dd("NumSliCore.dragStateChg> "+isDragging);
 	  var changeEvent = document.createEvent("Events");
 	  changeEvent.initEvent("change", true, true);
 	  changeEvent.isDragging = isDragging;
@@ -164,6 +164,8 @@
       <method name="onSliChanged">
 	<parameter name="aEvent"/>
 	<body>
+	  aEvent.isSliChanged = true;
+//dd("NumSli.onSliChanged> called "+aEvent);
 	  <![CDATA[
 	  if ('isDragging' in aEvent) {
 	    //dd("NumSli> DRAGSTATE CHANGED; drg="+aEvent.isDragging);
@@ -185,8 +187,9 @@
       <method name="onBoxChanged">
 	<parameter name="aEvent"/>
 	<body>
+	  aEvent.isNumBoxChanged = true;
 	  var value = this.mNumBox.value;
-	  // dd("NumSli> onNBoxChg value="+value);
+//dd("NumSli> onNBoxChg value="+value);
 	  this.mScale.value = this.convToScaleVal(value);
 	</body>
       </method>

@@ -24,6 +24,15 @@ runtime_class BSharpTool
   void preview(real b_factor);
 
   void apply(real b_factor);
+
+  void resetPreview();
+
+  // Properties
+  property real d_min => redirect(getDMin, setDMin);
+  // default d_min = -1.0;
+  
+  property boolean use_hkl_list => redirect(isUseHKLList, XXX) (readonly);
+
 };
 
 #endif

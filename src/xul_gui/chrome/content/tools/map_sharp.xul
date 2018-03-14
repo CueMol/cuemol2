@@ -18,7 +18,7 @@
   <script type="application/javascript" src="chrome://cuemol2/content/object-menulist.js"/>
   <script type="application/javascript" src="map_sharp.js"/>
 
-  <label value="Map sharpening:"/>
+  <label value="Map sharpening"/>
   <grid>
     <columns>
       <column flex="0"/>
@@ -32,13 +32,26 @@
 
       <row align="center">
 	<label value="B-factor:"/>
-	<hbox>
+	<hbox align="center">
 	  <numslider id="bfac-value" flex="1" size="3"
-	    decimalplaces="1" min="-200" max="200" increment="1" unit="/&#0197;sq"
+	    decimalplaces="1" min="-200" max="200" increment="1" unit="/&#0197;&#0178;"
 	    onchange="window.gDlgObj.onBfacChange(event)"/>
 	  <spacer flex="1"/>
 	</hbox>
       </row>
+
+      <row align="center">
+	<label value="Resoln limit :"/>
+	<hbox align="center">
+	  <textbox id="resoln-limit" flex="0" size="3" type="number" 
+	    decimalplaces="2" increment="0.01" min="0.1" value="3.0"/>
+	  <label value="&#0197;"/>
+	  <spacer flex="1"/>
+	</hbox>
+      </row>
+
+      <checkbox id="preview-check" label="Preview:"
+	oncommand="window.gDlgObj.onPreviewChange(event)"/>
 
     </rows>
   </grid>

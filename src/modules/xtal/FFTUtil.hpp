@@ -32,15 +32,16 @@ namespace xtal {
     {
     }
 
-    /// complex-->complex transform
+    /// complex-->complex transform (recip to real space)
     void doit(CompArray &in, CompArray &out);
 
+    /// complex-->complex transform (real to recip space)
     void doit_rev(CompArray &in, CompArray &out);
 
-    /// hermit complex-->real(float) transform
+    /// hermit complex-->real(float) transform (recip to real space)
     void doit(CompArray &in, FloatArray &out);
 
-    /// real(float)-->hermite complex transform
+    /// real(float)-->hermite complex transform (real to recip space)
     void doit(FloatArray &in, CompArray &out);
 
   };

@@ -26,17 +26,23 @@ namespace xtal {
 
     FloatArray *m_pFloatMap;
 
+    CompArray *m_pRecipTmpAry;
+
     CompArray *m_pRecipAry;
 
     int m_na, m_nb, m_nc;
     HKLList *m_pHKLList;
 
+    /// Apply b-factor to m_pRecipAry and copy to m_pRecipTmpAry
+    void applyBfacTmpAry(double b_factor);
+    
+    double m_dmin;
+
+    double m_dCurBfacVal;
+
   public:
 
-    BSharpTool()
-         : m_pFloatMap(NULL), m_pRecipAry(NULL)
-    {
-    }
+    BSharpTool();
 
     virtual ~BSharpTool();
     
@@ -48,6 +54,13 @@ namespace xtal {
     virtual void preview(double b_factor);
 
     virtual void apply(double b_factor);
+
+    void setDMin(double val) { m_dmin = val; }
+    double getDMin() const { return m_dmin; }
+
+    bool isUseHKLList() const { return m_pHKLList!=NULL; }
+
+    void resetPreview();
   };
 
 }

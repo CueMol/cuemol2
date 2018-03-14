@@ -916,9 +916,28 @@ void DensityMap::sharpenMapPreview(double b_factor)
 }
 #endif
 
+/*
 void DensityMap::calcHKLfromMap()
 {
   if (m_pFloatMap==NULL) {
+    LOG_DPRINTLN("Float map required for HKLList calculation.");
+    MB_THROW(qlib::RuntimeException, "Cannot calc HKLList for map");
+    return;
   }
+
+  CompArray recip;
+  
+  recip.resize(m_nCols, m_nRows, m_nSecs);
+
+  FFTUtil fft;
+  fft.doit(*m_pFloatMap, recip);
+
+  
+  if (m_pHKLList!=NULL)
+    delete m_pHKLList;
+  m_pHKLList = MB_NEW HKLList();
+
+  m_pHKLList->m_ci = m_xtalInfo;
 }
+*/
 

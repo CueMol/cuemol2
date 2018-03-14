@@ -172,8 +172,12 @@ namespace xtal {
       return m_pHKLList;
     }
 
-    /// Calculate HKL-list from float map
-    void calcHKLfromMap();
+    FloatMap *getFloatMap() const {
+      return m_pFloatMap;
+    }
+
+    // /// Calculate HKL-list from float map
+    // void calcHKLfromMap();
 
     /// setup column, row, section params
     void setMapParams(int stacol, int starow, int stasect,

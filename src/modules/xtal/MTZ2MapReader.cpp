@@ -202,7 +202,7 @@ void MTZ2MapReader::loadRecipArray()
   // Create HKLList
   // Expand s.f.s by the symop
 
-  HKLList *pHKLList = new HKLList(m_nrefl * m_nsymm);
+  HKLList *pHKLList = MB_NEW HKLList(m_nrefl * m_nsymm);
 
   pHKLList->m_ci = CrystalInfo(m_cella,m_cellb,m_cellc,
                                m_alpha,m_beta,m_gamma, m_nSG);

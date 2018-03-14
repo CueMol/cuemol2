@@ -42,34 +42,82 @@
     var nobjs = this.mObjBox.getItemCount();
     
     this.mBfac = document.getElementById("bfac-level");
-
+    this.mDMin = document.getElementById("resoln-limit");
+    this.mPvwChk = document.getElementById("preview-check");
+    
     //alert("item count="+nobjs);
     if (nobjs==0) {
-      // no mol obj to calc --> error?
-      //this.mSurfName.disabled = true;
+      // no map obj to calc --> disable all
+      this.mBfac.disabled = true;
+      this.mDMin.disabled = true;
+      this.mPvwChk.disabled = true;
+      this.mTool = null;
+      return;
     }
     var obj = this.mObjBox.getSelectedObj();
 
-    //this.mTool = cuemol.createObj("BSharpTool");
-    this.mTool = cuemol.createObj("CudaBSharpTool");
-    this.mTool.attach(obj);
+    this.mTool = cuemol.createObj("BSharpTool");
+    this.mbDragUpdate = false;
+    //this.mTool = cuemol.createObj("CudaBSharpTool");
+    //this.mbDragUpdate = true;
+
+    this.attachObj(obj);
   };
   
+  dlg.attachObj = function (aObj)
+  {
+    this.mTool.attach(aObj);
+
+    if (this.mTool.use_hkl_list) {
+      this.mDMin.disabled = true;
+    }
+    else {
+      this.mDMin.disabled = false;
+      let d_min = this.mTool.d_min;
+      this.mDMin.value = d_min;
+      this.mDMin.min = d_min;
+    }
+
+  }
+
+  dlg.onPreviewChange = function (aEvent) {
+    if (this.mPvwChk.checked)
+      this.preview();
+    else
+      this.resetPreview();
+  }
+
   dlg.onObjBoxChanged = function (aEvent)
   {
     dd("MapSharpDlg> ObjSelChg: "+aEvent.target.id);
     var obj = this.mObjBox.getSelectedObj();
-    this.mTool.attach(obj);
+    //this.mTool.attach(obj);
+    this.attachObj(obj);
   };
 
   dlg.onBfacChange = function (aEvent)
   {
-    if ('isDragging' in aEvent && aEvent.isDragging)
-      dd("Dragging");
-    else
-      dd("Changed");
+    let bDragging = true;
+    if ('isSliChanged' in aEvent && aEvent.isSliChanged) {
+      if ('isDragging' in aEvent)
+        bDragging = aEvent.isDragging;
+    }
+    else if ('isNumBoxChanged' in aEvent && aEvent.isNumBoxChanged)
+      bDragging = false;
 
-    this.preview();
+    //dd("onBfacChange> isDragging="+('isDragging' in aEvent));
+    dd("onBfacChange> bDragging="+bDragging);
+
+    if (!this.mPvwChk.checked)
+      return;
+
+    if (bDragging) {
+      if (this.mbDragUpdate)
+        this.preview();
+    }
+    else {
+      this.preview();
+    }
   };
 
   /// Get bfactor value
@@ -95,6 +143,12 @@
     this.mTool.preview(bfac);
   };
 
+  dlg.resetPreview = function ()
+  {
+    //this.mTool.preview(0.0);
+    this.mTool.resetPreview();
+  }
+
   dlg.onDialogCancel = function (event)
   {
     var tgtobj = this.mObjBox.getSelectedObj();
@@ -102,8 +156,8 @@
       return;
 
     // Reset the preview map
-    //tgtobj.sharpenMapPreview(0.0);
-    this.mTool.preview(0.0);
+    //this.mTool.preview(0.0);
+    this.resetPreview();
     this.mTool.detach();
     this.mTool = null;
     return;
@@ -111,6 +165,9 @@
 
   dlg.onDialogAccept = function (event)
   {
+    if (this.mTool==null)
+      return;
+    
     var tgtobj = this.mObjBox.getSelectedObj();
     if (tgtobj==null)
       return;
