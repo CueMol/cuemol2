@@ -68,21 +68,41 @@ void loadSysConfig(const LString &path)
 bool loadStyle()
 {
   SysConfig *pconf = SysConfig::getInstance();
-  //StyleMgr *pSM = StyleMgr::getInstance();
-  StyleFile sfile;
   SysConfig::Section *psec = pconf->getSection("style");
   bool bOK = false;
+
+  // Set system's style file directory
+  if (psec!=NULL) {
+    SysConfig::const_iterator iter = psec->begin();
+    iter=psec->findName(iter, "style_dir");
+    for (; iter!=psec->end(); iter=psec->findName(++iter, "style_dir")) {
+      SysConfig::Section *pchild = *iter;
+      LString val = pchild->getStringData();
+      if (val.isEmpty()) continue;
+      val = pconf->convPathName(val);
+      MB_DPRINTLN("LoadStyle> System style dir=%s", val.c_str());
+      StyleMgr *pMgr = StyleMgr::getInstance();
+      pMgr->setDefaultDir(val);
+      bOK = true;
+      break;
+    }
+  }
+
+  // Load default system style file (default_style.xml)
+  StyleFile sfile;
   if (psec!=NULL) {
     SysConfig::const_iterator iter = psec->begin();
     iter=psec->findName(iter, "style_file");
     for (; iter!=psec->end(); iter=psec->findName(++iter, "style_file")) {
       SysConfig::Section *pchild = *iter;
       LString val = pchild->getStringData();
-      if (val.isEmpty()) continue;;
+      if (val.isEmpty())
+        continue;
       val = pconf->convPathName(val);
       
       try {
         sfile.loadFile(val, qlib::invalid_uid);
+        bOK = true;
       }
       catch (qlib::LException &e) {
         // ignore errors to avoid crash in startup

@@ -19,18 +19,21 @@ runtime_class StyleManager
   scriptable;
   singleton;
 
+  /////////////////////////////////////////////////////////////
   //
   // properties
   //
   
-  /////////////////////////////////////////////////////////////
+  property string defaultDir => redirect(getDefaultDir, XXX) (readonly);
 
+  /////////////////////////////////////////////////////////////
   //
   // methods
   //
 
-  /////////////////////////////////////////////////////////////
+  //
   // styles, style sets
+  //
   
   integer createStyleSet(string name, integer nScopeID) => createStyleSetScr;
 
@@ -50,8 +53,9 @@ runtime_class StyleManager
 
   string getStyleSetsJSON(integer nScopeID);
 
-  /////////////////////////////////////////////////////////////
+  //
   // File I/O
+  //
 
   /// Save style-set to file (StyleMgrStyleImpl.cpp)
   boolean saveStyleSetToFile(integer nScopeID, integer nStyleSetID, string path_name);

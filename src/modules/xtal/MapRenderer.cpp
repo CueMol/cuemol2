@@ -25,7 +25,9 @@ MapRenderer::MapRenderer()
   //m_pcolor = gfx::SolidColor::createRGB(0.0, 0.0, 1.0);
   //m_dSigLevel = 1.1;
   //m_dMapRange = 15.0;
+
   m_bUseMolBndry = false;
+  m_bUseAbsLev = false;
 }
 
 // destructor

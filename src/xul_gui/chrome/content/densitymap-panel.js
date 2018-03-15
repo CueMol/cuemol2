@@ -30,7 +30,7 @@ denmap.mMapList = new cuemolui.ObjMenuList(
   
 // Observe properties of the selected map
 // to update the panel widgets
-denmap.mMapList.addPropChgListener("*", function(args){denmap.propChange(args);});
+denmap.mMapList.addPropChgListener("*", function(args){denmap.propChanged(args);});
 
 window.addEventListener("load", function(){denmap.onLoad();}, false);
 //window.addEventListener("unload", function() {denmap.onUnLoad();}, false);
@@ -58,7 +58,7 @@ denmap.setupWidget = function ()
 }
 
 // (any) prop of (any) renderer changed
-denmap.propChange = function (args)
+denmap.propChanged = function (args)
 {
   if (this.mTgtRend===null)
     return;
@@ -70,7 +70,12 @@ denmap.propChange = function (args)
   // var parentname = args.obj.parentname;
   dd("DenmapPanel> TargetPropChanged prop: "+propname);
 
-  this.updateWidget(this.mTgtRend, propname);
+  if (propname=="styles") {
+    this.updateWidget(this.mTgtRend);
+    alert("XXX");
+  }
+  else
+    this.updateWidget(this.mTgtRend, propname);
 }
 
 // MapList change event
@@ -133,24 +138,55 @@ denmap.updateWidget = function (aRend, aPropName)
   }
 
   if (aPropName==undefined ||
-      aPropName=="extent") {
-    this.mExtent.value = aRend.extent;
-  }
-
-  if (aPropName==undefined ||
       aPropName=="bufsize" ||
       aPropName=="max_grids") {
+    dd(">>>>> Max extent="+aRend.maxExtent);
     if (this.mExtent.value>aRend.maxExtent)
       this.mExtent.value = aRend.maxExtent;
     this.mExtent.max = aRend.maxExtent;
   }
 
   if (aPropName==undefined ||
+      aPropName=="extent") {
+    dd(">>>>> Extent="+aRend.extent);
+    if (aRend.extent>this.mExtent.max)
+      this.mExtent.value = this.mExtent.max;
+    else
+      this.mExtent.value = aRend.extent;
+  }
+
+  if (aPropName==undefined ||
+      aPropName=="use_abslevel" ||
       aPropName=="siglevel") {
-    this.mLevel.value = aRend.siglevel;
-    this.mLevel.max = aRend.maxLevel;
-    this.mLevel.min = aRend.minLevel;
-    dd("map level min="+aRend.minLevel+" max="+aRend.maxLevel);
+
+    dd(">>>>> map level min="+aRend.minLevel+" max="+aRend.maxLevel);
+
+    if (aRend.use_abslevel) {
+      let obj = aRend.getClientObj();
+      let sig = obj.den_sigma;
+      let rng = (aRend.maxLevel - aRend.minLevel)*sig
+      this.mLevel.value = aRend.siglevel*sig;
+      this.mLevel.max = aRend.maxLevel*sig;
+      this.mLevel.min = aRend.minLevel*sig;
+      this.mLevel.setAttribute("unit", "");
+      //dd(">>>>> slider rng="+rng);
+      let x = Math.log10(rng/100.0);
+      //dd(">>>>> slider log(rng/100)="+x);
+      x = Math.floor(x);
+      //dd(">>>>> slider floor(log(rng/100))="+x);
+      let delta = Math.pow(10, x );
+      dd(">>>>> slider delta="+delta);
+      this.mLevel.setAttribute("increment", delta);
+      this.mLevel.setAttribute("decimalplaces", -x);
+    }
+    else {
+      this.mLevel.value = aRend.siglevel;
+      this.mLevel.max = aRend.maxLevel;
+      this.mLevel.min = aRend.minLevel;
+      this.mLevel.setAttribute("unit", String.fromCharCode(963)); // sigma
+      this.mLevel.setAttribute("increment", 0.1);
+      this.mLevel.setAttribute("decimalplaces", 1);
+    }
   }
 }
 
@@ -183,6 +219,12 @@ denmap.validateWidget = function (aEvent)
       break;
     case "denmap-panel-level":
       value = this.mLevel.value;
+      dd(">>>>>>>> this.mTgtRend.use_abslevel="+this.mTgtRend.use_abslevel);
+      if (this.mTgtRend.use_abslevel) {
+	let obj = this.mTgtRend.getClientObj();
+	let sig = obj.den_sigma;
+	value /= sig;
+      }
       propname = "siglevel";
       break;
     case "denmap-panel-color":
