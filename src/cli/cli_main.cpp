@@ -93,7 +93,7 @@ void process_input(const LString &loadscr, const std::deque<LString> &args);
 ///
 ///   main routine for CueTTY (CLI version)
 ///
-int main(int argc, const char *argv[])
+int internal_main(int argc, const char *argv[])
 {
   if (qlib::init())
     MB_DPRINTLN("qlib::init() OK.");
@@ -224,6 +224,24 @@ int main(int argc, const char *argv[])
 
   std::cerr << "=== Terminated normaly ===" << std::endl;
   return 0;
+}
+
+int main(int argc, const char *argv[])
+{
+  try {
+    internal_main(argc, argv);
+  }
+  catch (const qlib::LException &e) {
+    LOG_DPRINTLN("Caught exception <%s>", typeid(e).name());
+    LOG_DPRINTLN("Reason: %s", e.getMsg().c_str());
+  }
+  catch (std::exception &e) {
+    LOG_DPRINTLN("Caught exception <%s>", typeid(e).name());
+    LOG_DPRINTLN("Reason: %s", e.what());
+  }
+  catch (...) {
+    LOG_DPRINTLN("Caught unknown exception");
+  }
 }
 
 namespace fs = boost::filesystem;
