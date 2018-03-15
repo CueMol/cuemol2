@@ -43,6 +43,11 @@ runtime_class MapRenderer extends Renderer
   property boolean use_pbc => redirect(isUsePBC, setUsePBC);
   default use_pbc = true;
 
+  /// Contour level mode
+  property boolean use_abslevel => redirect(isUseAbsLev, setUseAbsLev);
+  default use_abslevel = false;
+  //default use_abslevel = true;
+
   ///////////////
   // mol boundary
 

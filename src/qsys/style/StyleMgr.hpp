@@ -63,6 +63,13 @@ namespace qsys {
     /// Global context
     StyleList *m_pGlob;
 
+    /// Default style directory
+    LString m_defaultDir;
+
+  public:
+    void setDefaultDir(const LString &dir) { m_defaultDir = dir; }
+    LString getDefaultDir() const { return m_defaultDir; }
+
     ////////////////////////////////////////////
   public:
     

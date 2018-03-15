@@ -96,6 +96,17 @@ namespace xtal {
     bool isUsePBC() const { return m_bUsePBC; }
 
 
+  private:
+    /// Absolute contour level flag
+    ///  This flag has no effect on the renderers behaviour.
+    ///  (UI should change behaviour based on the value of this flag)
+    bool m_bUseAbsLev;
+
+  public:
+    void setUseAbsLev(bool val) { m_bUseAbsLev = val; }
+    bool isUseAbsLev() const { return m_bUseAbsLev; }
+
+
     ///////////////////////////////////////////
     // constructors / destructor
 

@@ -86,6 +86,9 @@ Qm2Main.prototype.setDefaultStyles = function(mol, rend)
   else if (rend_type === "contour") {
     rend.applyStyles("DefaultContour");
   }
+  else if (rend_type === "isosurf") {
+    rend.applyStyles("DefaultIsoSurf");
+  }
   else if ('coloring' in rend) {
     rend.applyStyles("DefaultCPKColoring");
   }

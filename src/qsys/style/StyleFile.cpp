@@ -17,6 +17,8 @@
 #include <qlib/FileStream.hpp>
 #include <qlib/LDOM2Stream.hpp>
 
+#include <qlib/Utils.hpp>
+
 using namespace qsys;
 
 using qlib::LDom2Node;
@@ -32,10 +34,20 @@ StyleFile::StyleFile()
 
 // load
 
-qlib::uid_t StyleFile::loadFile(const LString &path, qlib::uid_t scope, const LString &id)
+qlib::uid_t StyleFile::loadFile(const LString &aPath, qlib::uid_t scope, const LString &id)
 {
   qlib::FileInStream fis;
+  LString path;
+  if (qlib::isAbsolutePath(aPath)) {
+    path = aPath;
+  }
+  else {
+    // relative to the default style dir
+    LString basedir = m_pTarg->getDefaultDir();
+    path = qlib::makeAbsolutePath(aPath, basedir);
+  }
   fis.open(path);
+
   return loadStream(fis, scope, path, id);
 }
 
