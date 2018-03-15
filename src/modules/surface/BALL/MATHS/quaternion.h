@@ -12,7 +12,8 @@
 #	include <BALL/MATHS/vector3.h>
 #endif
 
-#include <boost/math/quaternion.hpp>
+//#include <boost/math/quaternion.hpp>
+#include "boost1_64_math_quaternion.hpp"
 #include <iostream>
 
 namespace BALL
@@ -28,7 +29,7 @@ namespace BALL
 	*/
 	template <typename T>
 	class TQuaternion
-		: public boost::math::quaternion<T> //{/*...*/};
+		: public XXXboost::math::quaternion<T> //{/*...*/};
 	{
 		public:
 
@@ -51,10 +52,10 @@ namespace BALL
 		TQuaternion(const TQuaternion& q);
 
 		/**	Detailed constructor.
-				Create a new TQuaternion object from a boost::math::quaternion.
-				@param boost::math::quaternion<T>
+				Create a new TQuaternion object from a XXXboost::math::quaternion.
+				@param XXXboost::math::quaternion<T>
 		*/
-		TQuaternion(const boost::math::quaternion<T>& q);
+		TQuaternion(const XXXboost::math::quaternion<T>& q);
 
 		/**	Detailed constructor.
 				Create a new TQuaternion object from four values of type <b>T</b>.
@@ -92,7 +93,7 @@ namespace BALL
 		void set(const TQuaternion& q);
 
 		///
-		void set(const boost::math::quaternion<T>& q);
+		void set(const XXXboost::math::quaternion<T>& q);
 
 		/**	Assign the TQuaternion components.
 				@param axis the new axis component
@@ -116,9 +117,9 @@ namespace BALL
 		TQuaternion& operator = (const TQuaternion& q);
 
 		/**	Assignment operator
-				Assign the TQuaternion components from a boost::math::quaternion.
+				Assign the TQuaternion components from a XXXboost::math::quaternion.
 		*/
-		TQuaternion& operator = (const boost::math::quaternion<T>& q);
+		TQuaternion& operator = (const XXXboost::math::quaternion<T>& q);
 
 		/** Set to an identity matrix.
 			angular component w = 1;
@@ -266,32 +267,32 @@ namespace BALL
 
 	template <typename T>
 	TQuaternion<T>::TQuaternion()
-		: boost::math::quaternion<T>()
+		: XXXboost::math::quaternion<T>()
 	{
 		this->setIdentity();
 	}
 
 	template <typename T>
 	TQuaternion<T>::TQuaternion(const TQuaternion& q)
-		:	boost::math::quaternion<T>(q)
+		:	XXXboost::math::quaternion<T>(q)
 	{
 	}
 
 	template <typename T>
-	TQuaternion<T>::TQuaternion(const boost::math::quaternion<T>& q)
-		:	boost::math::quaternion<T>(q)
+	TQuaternion<T>::TQuaternion(const XXXboost::math::quaternion<T>& q)
+		:	XXXboost::math::quaternion<T>(q)
 	{
 	}
 
 	template <typename T>
 	TQuaternion<T>::TQuaternion(const T& w, const T& i, const T& j, const T& k)
-		: boost::math::quaternion<T>(w, i, j, k)
+		: XXXboost::math::quaternion<T>(w, i, j, k)
 	{
 	}
 
 	template <typename T>
 	TQuaternion<T>::TQuaternion(const TVector3<T>& axis, const T& angle)
-		: boost::math::quaternion<T>()
+		: XXXboost::math::quaternion<T>()
 	{
 		fromAxisAngle(axis, angle);
 	}
@@ -310,13 +311,13 @@ namespace BALL
 	template <typename T>
 	void TQuaternion<T>::set(const TQuaternion<T>& q)
 	{
-		boost::math::quaternion<T>::operator= (q);
+		XXXboost::math::quaternion<T>::operator= (q);
 	}
 
 	template <typename T>
-	void TQuaternion<T>::set(const boost::math::quaternion<T>& q)
+	void TQuaternion<T>::set(const XXXboost::math::quaternion<T>& q)
 	{
-		boost::math::quaternion<T>::operator= (q);
+		XXXboost::math::quaternion<T>::operator= (q);
 	}
 
 	template <typename T>
@@ -339,7 +340,7 @@ namespace BALL
 
 	template <typename T>
 	BALL_INLINE
-	TQuaternion<T>& TQuaternion<T>::operator = (const boost::math::quaternion<T>& q)
+	TQuaternion<T>& TQuaternion<T>::operator = (const XXXboost::math::quaternion<T>& q)
 	{
 		set(q);
 		return *this;
@@ -361,11 +362,23 @@ namespace BALL
 		this->b = this->c = this->d = (T)0;
 	}
 
+	namespace detail {
+		template <typename T>
+		BALL_INLINE
+		T norm(const TQuaternion<T>& q) {
+			return T( sqrt( q.R_component_1()*q.R_component_1() +
+											q.R_component_2()*q.R_component_2() +
+											q.R_component_3()*q.R_component_3() +
+											q.R_component_4()*q.R_component_4() ));
+		}
+	}
+
 	template <typename T>
 	BALL_INLINE
 	TQuaternion<T>& TQuaternion<T>::normalize()
 	{
-		T length = boost::math::norm(*this);
+		//T length = boost::math::norm(*this);
+		T length = detail::norm(*this);
 
 		if (!(Maths::isEqual(length, (T)0)))
 		{
@@ -537,7 +550,8 @@ namespace BALL
 	template <typename T>
 	TMatrix4x4<T>& TQuaternion<T>::getRotationMatrix(TMatrix4x4<T>& m) const
 	{
-		T s = 2.0 / boost::math::norm(*this);
+		//T s = 2.0 / boost::math::norm(*this);
+		T s = 2.0 / detail::norm(*this);
 		m.set
 			(
 				(T)(1.0 - s * (this->c * this->c + this->d * this->d)),
@@ -568,8 +582,8 @@ namespace BALL
 	BALL_INLINE
 	TQuaternion<T> TQuaternion<T>::getInverse() const
 	{
-
-		return conj(*this) / boost::math::norm(*this);
+		//return conj(*this) / boost::math::norm(*this);
+		return conj(*this) / detail::norm(*this);
 	}
 
 	template <typename T>
