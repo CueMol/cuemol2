@@ -43,6 +43,7 @@ cuetty_CXXFLAGS = \
 cuetty_LDADD = \
   @MODULES_LDADD@ \
   @SCR_LDADD@ \
+  @OSDEP_LDADD@ \
   -lqsys \
   -lgfx \
   -lqlib \
@@ -64,6 +65,7 @@ $(NULL)
 cuetty_LDFLAGS= \
   @MODULES_LDFLAGS@ \
   @SCR_LDFLAGS@ \
+  @OSDEP_LDFLAGS@ \
   -L../qsys \
   -L../gfx \
   -L../qlib \
