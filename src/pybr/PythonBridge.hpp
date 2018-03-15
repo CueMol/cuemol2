@@ -49,6 +49,8 @@ namespace pybr {
       m_cmdargs = args;
     }
 
+    void runInteractiveShell();
+
   public:
     // these methods are called by ClassReg (ignore)
     static bool initClass(qlib::LClass *);

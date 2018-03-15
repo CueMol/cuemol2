@@ -101,4 +101,10 @@ void PythonBridge::runString(const LString &src)
   PyRun_SimpleString(src.c_str());
 }
 
+void PythonBridge::runInteractiveShell()
+{
+  runString("import code\n"
+	    "code.interact()\n");
+}
+
 
