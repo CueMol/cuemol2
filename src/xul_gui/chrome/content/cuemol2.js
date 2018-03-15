@@ -685,7 +685,7 @@ Qm2Main.prototype.createNewScene = function(scname)
 
   // Load optional default style files (read-only)
   var stylem = cuemol.getService("StyleManager");
-  stylem.loadStyleSetFromFile(sc.uid, "em_style.xml", true);
+  // stylem.loadStyleSetFromFile(sc.uid, "em_style.xml", true);
 
   // Initial view's name is always "0"
   vw = this.createNewView(sc, "0", false);

@@ -103,8 +103,11 @@ void PythonBridge::runString(const LString &src)
 
 void PythonBridge::runInteractiveShell()
 {
-  runString("import code\n"
-	    "code.interact()\n");
+  //runString("import code\n"
+  //"import readline\n"
+  //"code.interact()\n");
+  PyImport_ImportModule("readline");
+  PyRun_InteractiveLoop(stdin, "");
 }
 
 
