@@ -4,17 +4,19 @@ my $arch = "Linux-Intel64";
 my $inst_top = $ARGV[0];
 my $top_srcdir = $ARGV[1];
 my $boost_dir = $ARGV[2];
-my $xul_frm_dir = $ARGV[3];
+my $xul_sdk_dir = $ARGV[3];
+
+my $xul_frm_dir = "$xul_sdk_dir/bin";
 
 ##########
 
 if (!-d $inst_top) {
     die "inst_top ($inst_top) not found.\n".
-	"Usage: $0 <inst_top> <top_srcdir> <boost dir> <xulrunner-runtime dir>\n";
+	"Usage: $0 <inst_top> <top_srcdir> <boost dir> <xulrunner-sdk dir>\n";
 }
 if (!-d $top_srcdir) {
     die "top_srcdir ($top_srcdir) not found.\n".
-	"Usage: $0 <inst_top> <top_srcdir> <boost dir> <xulrunner-runtime dir>\n";
+	"Usage: $0 <inst_top> <top_srcdir> <boost dir> <xulrunner-sdk dir>\n";
 }
 
 $boost_dir =~ s/^-L//;
@@ -28,9 +30,9 @@ else {
 
 if (!-d $xul_frm_dir) {
     die "xul-sdk-dir ($xul_frm_dir) not found.\n".
-	"Usage: $0 <inst_top> <top_srcdir> <boost dir> <xulrunner-runtime dir>\n";
+	"Usage: $0 <inst_top> <top_srcdir> <boost dir> <xulrunner-sdk dir>\n";
 }
-print "xulrunner-runtime dir $xul_frm_dir\n";
+print "xulrunner-sdk dir $xul_frm_dir\n";
 
 ##########
 
@@ -127,7 +129,7 @@ foreach my $libf (@copylib) {
 #
 
 if ($CHRPATH) {
-    open(IN, "find $dist_top/bin $dist_top/lib -perm 0755 -type f -print |") || die "$!:$?";
+    open(IN, "find $dist_top/bin $dist_top/lib $dist_top/components -perm 0755 -type f -print |") || die "$!:$?";
     while (<IN>) {
 	chomp;
 	my $binfile = $_;
