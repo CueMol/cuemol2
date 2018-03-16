@@ -309,6 +309,22 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
   m_nMapRowNo = pMap->getRowNo();
   m_nMapSecNo = pMap->getSecNo();
 
+  m_pColMapObj = NULL;
+  m_pGrad = NULL;
+
+  if (getColorMode()==MapRenderer::MAPREND_MULTIGRAD) {
+    m_pGrad = getMultiGrad().get();
+    LString nm = getColorMapName();
+    if (!nm.isEmpty()) {
+      qsys::ObjectPtr pobj = ensureNotNull(getScene())->getObjectByName(nm);
+      m_pColMapObj = dynamic_cast<qsys::ScalarObject*>(pobj.get());
+    }
+    if (m_pColMapObj==NULL) {
+      LOG_DPRINTLN("MapSurfRend> \"%s\" is not a scalar object.", nm.c_str());
+    }
+    setupXformMat();
+  }
+
   /////////////////////
   // do marching cubes
 
@@ -372,6 +388,8 @@ void MapSurfRenderer::renderImpl(DisplayContext *pdl)
       }
         
 
+  m_pColMapObj = NULL;
+  m_pGrad = NULL;
 }
 
 void MapSurfRenderer::makerange()
@@ -521,6 +539,7 @@ Vector4D MapSurfRenderer::getGrdNorm2(int ix, int iy, int iz)
   return rval;
 }
 
+#if 0
 //vGetNormal() finds the gradient of the scalar field at a point
 //This gradient can be used as a very accurate vertx normal for lighting calculations
 Vector4D MapSurfRenderer::getNormal(const Vector4D &fV, bool bx, bool by, bool bz)
@@ -576,6 +595,7 @@ Vector4D MapSurfRenderer::getNormal(const Vector4D &fV, bool bx, bool by, bool b
   
   return rval.divide(len);
 }
+#endif
 
 //////////////////////////////////////////
 
@@ -603,20 +623,6 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
   if(iEdgeFlags == 0) {
     return;
   }
-
-  /*{
-    ScalarObject *pMap = m_pCMap;
-    int ix = fx+m_nStCol - pMap->getStartCol();
-    int iy = fy+m_nStRow - pMap->getStartRow();
-    int iz = fz+m_nStSec - pMap->getStartSec();
-
-    for (int ii=0; ii<8; ii++) {
-      const int ixx = ix + (vtxoffs[ii][0]) * m_nBinFac;
-      const int iyy = iy + (vtxoffs[ii][1]) * m_nBinFac;
-      const int izz = iz + (vtxoffs[ii][2]) * m_nBinFac;
-      m_norms[ii] = getGrdNorm2(ixx, iyy, izz);
-    }
-  }*/
 
   {
     for (int ii=0; ii<8; ii++) {
@@ -655,19 +661,6 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
           (a2fVertexOffset[ec0][2] + fOffset*a2fEdgeDirection[iEdge][2]) * m_nBinFac;
       asEdgeVertex[iEdge].w() = 0;
       
-      /*
-      bool bx = (iedir[iEdge][0]==0);
-      bool by = (iedir[iEdge][1]==0);
-      bool bz = (iedir[iEdge][2]==0);
-      asEdgeNorm[iEdge] = getNormal(asEdgeVertex[iEdge], bx, by, bz);
-       */
-
-      /*
-      Vector4D nv0 = m_norms[ ec0 ];
-      Vector4D nv1 = m_norms[ ec1 ];
-      asEdgeNorm[iEdge] = (nv0.scale(1.0-fOffset) + nv1.scale(fOffset)).normalize();
-       */
-
       Vector4D nv0,nv1;
       if (m_norms[ ec0 ].w()<0.0) {
         const int ixx = ix + (vtxoffs[ec0][0]) * m_nBinFac;
@@ -710,10 +703,9 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
     for(iCorner = 0; iCorner < 3; iCorner++) {
       iVertex = a2iTriangleConnectionTable[iFlagIndex][3*iTriangle+iCorner];
       
-      // getVertexColor(sColor, asEdgeVertex[iVertex], asEdgeNorm[iVertex]);
-      // glColor3f(sColor.x, sColor.y, sColor.z);
+      if (getColorMode()!=MapRenderer::MAPREND_SIMPLE)
+        setVertexColor(pdl, asEdgeVertex[iVertex]);
 
-      //if (getLevel()<0) {
       if (m_dLevel<0) {
         if (pdl!=NULL) {
           pdl->normal(-asEdgeNorm[iVertex]);
@@ -751,14 +743,10 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
   return;
 }
 
-qsys::ObjectPtr MapSurfRenderer::generateSurfObj()
+void MapSurfRenderer::setupXformMat()
 {
-  ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
+  ScalarObject *pMap = m_pCMap;
   DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
-  m_pCMap = pMap;
-
-  // generate map-range information
-  makerange();
 
   //  setup frac-->orth matrix
   if (pXtal==NULL) {
@@ -787,6 +775,17 @@ qsys::ObjectPtr MapSurfRenderer::generateSurfObj()
     // pdl->translate(vtmp);
     m_xform.matprod( Matrix4D::makeTransMat(vtmp) );
   }
+}
+
+qsys::ObjectPtr MapSurfRenderer::generateSurfObj()
+{
+  ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
+  m_pCMap = pMap;
+
+  // generate map-range information
+  makerange();
+
+  setupXformMat();
 
   surface::MolSurfObj *pSurfObj = new surface::MolSurfObj();
   m_msverts.clear();
@@ -803,5 +802,19 @@ qsys::ObjectPtr MapSurfRenderer::generateSurfObj()
 
   qsys::ObjectPtr rval = qsys::ObjectPtr(pSurfObj);
   return rval;
+}
+
+void MapSurfRenderer::setVertexColor(DisplayContext *pdl, const Vector4D &pos)
+{
+  if (m_pColMapObj==NULL)
+    return;
+
+  Vector4D vv(pos);
+  vv.w() = 1.0;
+  m_xform.xform4D(vv);
+
+  double par = m_pColMapObj->getValueAt(vv);
+  ColorPtr pcol = m_pGrad->getColor(par);
+  pdl->color(pcol);
 }
 

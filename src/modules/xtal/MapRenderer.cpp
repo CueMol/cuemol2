@@ -28,6 +28,7 @@ MapRenderer::MapRenderer()
 
   m_bUseMolBndry = false;
   m_bUseAbsLev = false;
+  m_pGrad = gfx::MultiGradientPtr(MB_NEW gfx::MultiGradient());
 }
 
 // destructor

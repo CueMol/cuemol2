@@ -125,8 +125,6 @@ if (!("logpanel" in cuemolui)) {
         }
       }
 
-      dd("this.mCmdBox.selectionStart="+this.mCmdBox.selectionStart);
-      dd("this.mCmdBox.selectionEnd="+this.mCmdBox.selectionEnd);
     };
 
     panel.execCmd = function (aCmd)

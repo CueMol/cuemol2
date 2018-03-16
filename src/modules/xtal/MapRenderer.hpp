@@ -11,6 +11,7 @@
 #include <qlib/Vector4D.hpp>
 #include <gfx/gfx.hpp>
 #include <gfx/AbstractColor.hpp>
+#include <gfx/MultiGradient.hpp>
 #include <qsys/DispListRenderer.hpp>
 #include <qsys/ScalarObject.hpp>
 
@@ -65,6 +66,8 @@ namespace xtal {
       invalidateDisplayCache();
     }
 
+    /////////
+
   private:
     /// display extent of the map (in angstrom unit)
     double m_dMapExtent;
@@ -76,6 +79,8 @@ namespace xtal {
       invalidateDisplayCache();
     }
 
+    /////////
+
   private:
     /// display color
     ColorPtr m_pcolor;
@@ -84,6 +89,27 @@ namespace xtal {
     /// display color
     void setColor(const ColorPtr &col) { m_pcolor = col; }
     const ColorPtr &getColor() const { return m_pcolor; }
+
+    /////////
+
+  private:
+    /// Coloring mode
+    int m_nMode;
+
+  public:
+    enum {
+      MAPREND_SIMPLE = 0,
+      MAPREND_MOLFANC = 3,
+      MAPREND_MULTIGRAD = 4,
+    };
+
+    int getColorMode() const { return m_nMode; }
+    void setColorMode(int n) {
+      m_nMode = n;
+      invalidateDisplayCache();
+    }
+
+    /////////
 
   private:
     /// Periodic boundary flag
@@ -109,6 +135,32 @@ namespace xtal {
     void setUseAbsLev(bool val) { m_bUseAbsLev = val; }
     bool isUseAbsLev() const { return m_bUseAbsLev; }
 
+
+  private:
+    /// Multi gradient data
+    gfx::MultiGradientPtr m_pGrad;
+
+  public:
+    gfx::MultiGradientPtr getMultiGrad() const {
+      return m_pGrad;
+    }
+
+    void setMultiGrad(const gfx::MultiGradientPtr &val) {
+      m_pGrad = val;
+    }
+
+  private:
+    /// Scalar field object name by which painting color is determined.
+    /// (used in MULTIGRAD mode)
+    LString m_sColorMap;
+
+  public:
+    /// reference coloring map target (used in MULTIGRAD mode)
+    LString getColorMapName() const { return m_sColorMap; }
+    void setColorMapName(const LString &n) {
+      m_sColorMap = n;
+      invalidateDisplayCache();
+    }
 
     ///////////////////////////////////////////
     // constructors / destructor

@@ -590,3 +590,4 @@ void MolSurfRenderer::sceneChanged(qsys::SceneEvent &ev)
 
   super_t::sceneChanged(ev);
 }
+

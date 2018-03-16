@@ -383,11 +383,16 @@ bool MapMeshRenderer::generate(ScalarObject *pMap, DensityMap *pXtal)
   return true;
 }
 
-namespace {
-  inline void drawline(DisplayContext *pdl,
-                       float x1, float y1, float z1,
-                       float x2, float y2, float z2)
-  {
+void MapMeshRenderer::drawline(DisplayContext *pdl,
+                               float x1, float y1, float z1,
+                               float x2, float y2, float z2)
+{
+  if (getColorMode()==MapRenderer::MAPREND_MULTIGRAD) {
+    // TO DO: impl
+    pdl->vertex(x1, y1, z1);
+    pdl->vertex(x2, y2, z2);
+  }
+  else {
     pdl->vertex(x1, y1, z1);
     pdl->vertex(x2, y2, z2);
   }

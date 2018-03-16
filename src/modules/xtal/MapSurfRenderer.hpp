@@ -226,8 +226,14 @@ namespace xtal {
     void marchCube(DisplayContext *pdl, int fx, int fy, int fz);
 
     //double getOffset(double fValue1, double fValue2, double fValueDesired);
-    void getVertexColor(Vector4D &rfColor, Vector4D &rfPosition, Vector4D &rfNormal);
-    Vector4D getNormal(const Vector4D &rfNormal,bool,bool,bool);
+    // Vector4D getNormal(const Vector4D &rfNormal,bool,bool,bool);
+
+    /// Coloring map object (for MULTIGRAD mode)
+    qsys::ScalarObject *m_pColMapObj;
+
+    gfx::MultiGradient *m_pGrad;
+
+    void setVertexColor(DisplayContext *pdl, const Vector4D &rfPosition);
 
     inline float getDen(int x, int y, int z) const
     {
@@ -260,6 +266,7 @@ namespace xtal {
     Vector4D m_norms[8];
 
     void setupXformMat(DisplayContext *pdl);
+    void setupXformMat();
 
 #if (GUI_ARCH!=MB_GUI_ARCH_CLI)
     //////////

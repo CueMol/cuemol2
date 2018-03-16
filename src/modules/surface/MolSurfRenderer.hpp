@@ -104,10 +104,7 @@ namespace surface {
     /// used if MolID cannot be resolved (when deserialized from qsc file...)
     LString m_sTgtMolName;
 
-    /// potentialmap object name by which painting color is determined.
-    /// (used in ELEPOT mode)
-    LString m_sTgtElePot;
-
+  private:
     /// Selection for atompos-map (used in MOLFANC mode)
     SelectionPtr m_pMolSel;
 
@@ -126,6 +123,19 @@ namespace surface {
     ColorPtr m_colMid;
 
     ColorPtr m_colLow;
+
+  private:
+    /// Scalar field object name by which painting color is determined.
+    /// (used in ELEPOT/MULTIGRAD mode)
+    LString m_sTgtElePot;
+
+  public:
+    /// reference elepot target (used in potential mode)
+    LString getTgtElePotName() const { return m_sTgtElePot; }
+    void setTgtElePotName(const LString &n) {
+      m_sTgtElePot = n;
+      invalidateDisplayCache();
+    }
 
   private:
     /// Ramp_above mode
@@ -242,13 +252,6 @@ namespace surface {
     //////////
     // for "potential" mode
 
-    /// reference elepot target (used in potential mode)
-    LString getTgtElePotName() const { return m_sTgtElePot; }
-    void setTgtElePotName(const LString &n) {
-      m_sTgtElePot = n;
-      invalidateDisplayCache();
-    }
-
     double getLowPar() const { return m_dParLow; }
     void setLowPar(double d) {
       m_dParLow = d;
@@ -328,6 +331,13 @@ namespace surface {
     /// scene-changed event handler (for onloaded event)
     virtual void sceneChanged(qsys::SceneEvent &ev);
 
+    /////////////////
+    // Serialization
+
+    // virtual void writeTo2(LDom2Node *pNode) const;
+
+    //virtual void readFrom2(LDom2Node *pNode);
+
   private:
 
     bool getColorSca(const Vector4D &v, ColorPtr &rcol);
@@ -337,6 +347,7 @@ namespace surface {
 
     /// Resolve mol name, set m_nTgtMolID, listen the MolCoord events, and returns MolCoord object
     MolCoordPtr resolveMolIDImpl(const LString &name);
+
   };
 
 }

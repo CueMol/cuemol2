@@ -39,7 +39,7 @@
       </row>
 
       <row align="center">
-	<checkbox id="selection-check" label="Selection:" oncommand="gDlgObj.onSelChk(event)" persist="checked"/>
+	<checkbox id="selection-check" label="Selection:" oncommand="gDlgObj.onSelChk()"/>
 	<molsellist class="disable-target" id="mol-selection-list"
 		    editable="true" disabled="true"/>
       </row>

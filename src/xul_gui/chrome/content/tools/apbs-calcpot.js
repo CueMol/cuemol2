@@ -208,10 +208,9 @@
     }      
   }
 
-
   dlg.onSelChk = function ()
   {
-    if (this.mSelChk.enabled) {
+    if (!this.mSelChk.disabled) {
       if (this.mSelChk.checked)
 	this.mSelBox.disabled = false;
       else
@@ -362,10 +361,14 @@
     this.appendLog("APBS calculation started...");
 
     // save to preferences
-    pref.set(tgtsel_key, this.mSelBox.selectedSel.toString());
+    let selstr = this.mSelBox.selectedSel.toString();
+    pref.set(tgtsel_key, selstr);
     pref.set(selchk_key, this.mSelChk.checked);
     pref.set(apbs_exe_key, this.mApbsExePathBox.value);
     pref.set(pdb2pqr_py_key, this.mPdb2pqrPathBox.value);
+
+    // add to sel history
+    util.selHistory.append(selstr);
 
     return true;
   };

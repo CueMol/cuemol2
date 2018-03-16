@@ -17,168 +17,169 @@ class MapMeshRenderer_wrap;
 
 namespace xtal {
 
-using gfx::DisplayContext;
-using qsys::ScalarObject;
-class DensityMap;
+  using gfx::DisplayContext;
+  using qsys::ScalarObject;
+  class DensityMap;
 
-class MapMeshRenderer : public MapRenderer,
-                        public qsys::ViewEventListener
-{
-  MC_SCRIPTABLE;
-  MC_CLONEABLE;
+  class MapMeshRenderer : public MapRenderer,
+                          public qsys::ViewEventListener
+  {
+    MC_SCRIPTABLE;
+    MC_CLONEABLE;
 
-  typedef MapRenderer super_t;
-  friend class ::MapMeshRenderer_wrap;
+    typedef MapRenderer super_t;
+    friend class ::MapMeshRenderer_wrap;
 
-  ///////////////////////////////////////////
-  // properties
+    ///////////////////////////////////////////
+    // properties
 
-  /// Drawing line width (in pixel unit)
-  double m_lw;
+    /// Drawing line width (in pixel unit)
+    double m_lw;
 
-  /// Internal buffer size (default: 100x100x100 points)
-  int m_nBufSize;
+    /// Internal buffer size (default: 100x100x100 points)
+    int m_nBufSize;
 
-  /// Periodic boundary flag
-  /// (default: false; set true, if map contains the entire of unit cell)
-  bool m_bPBC;
+    /// Periodic boundary flag
+    /// (default: false; set true, if map contains the entire of unit cell)
+    bool m_bPBC;
 
-  /// Automatically update the map center as view center
-  /// (default: true)
-  bool m_bAutoUpdate;
+    /// Automatically update the map center as view center
+    /// (default: true)
+    bool m_bAutoUpdate;
 
-  /// Automatically update the map center as view center
-  /// in both mouse-drag and mouse-up events
-  /// (default: false)
-  bool m_bDragUpdate;
+    /// Automatically update the map center as view center
+    /// in both mouse-drag and mouse-up events
+    /// (default: false)
+    bool m_bDragUpdate;
 
-private:
+  private:
 
-  ///////////////////////////////////////////
-  // work area
-  
-  /// size of map (copy from m_pMap)
-  int m_nMapColNo, m_nMapRowNo, m_nMapSecNo;
+    ///////////////////////////////////////////
+    // work area
 
-  /// size of section array
-  int m_nColCrs, m_nRowCrs, m_nSecCrs;
+    /// size of map (copy from m_pMap)
+    int m_nMapColNo, m_nMapRowNo, m_nMapSecNo;
 
-  int m_nActCol, m_nActRow, m_nActSec;
-  int m_nStCol, m_nStRow, m_nStSec;
+    /// size of section array
+    int m_nColCrs, m_nRowCrs, m_nSecCrs;
 
-  /// section array for x(column) direction
-  qlib::ByteMap *m_pXCrsLst;
+    int m_nActCol, m_nActRow, m_nActSec;
+    int m_nStCol, m_nStRow, m_nStSec;
 
-  /// section array for y direction
-  qlib::ByteMap *m_pYCrsLst;
+    /// section array for x(column) direction
+    qlib::ByteMap *m_pXCrsLst;
 
-  /// section array for z direction
-  qlib::ByteMap *m_pZCrsLst;
+    /// section array for y direction
+    qlib::ByteMap *m_pYCrsLst;
 
-  /// delta
-  double m_delta;
+    /// section array for z direction
+    qlib::ByteMap *m_pZCrsLst;
 
-public:
+    /// delta
+    double m_delta;
 
-  ///////////////////////////////////////////
-  // constructors / destructor
+  public:
 
-  /// default constructor
-  MapMeshRenderer();
+    ///////////////////////////////////////////
+    // constructors / destructor
 
-  /// destructor
-  virtual ~MapMeshRenderer();
+    /// default constructor
+    MapMeshRenderer();
 
-  ///////////////////////////////////////////
+    /// destructor
+    virtual ~MapMeshRenderer();
 
-  virtual const char *getTypeName() const;
+    ///////////////////////////////////////////
 
-  //virtual void attachObj(qlib::uid_t obj_uid);
-  virtual void setSceneID(qlib::uid_t nid);
+    virtual const char *getTypeName() const;
 
-  virtual qlib::uid_t detachObj();
+    //virtual void attachObj(qlib::uid_t obj_uid);
+    virtual void setSceneID(qlib::uid_t nid);
 
-  ///////////////////////////////////////////
+    virtual qlib::uid_t detachObj();
 
-  virtual void render(DisplayContext *pdl);
-  virtual void preRender(DisplayContext *pdc);
-  virtual void postRender(DisplayContext *pdc) {}
+    ///////////////////////////////////////////
 
-  virtual bool isTransp() const { return true; }
+    virtual void render(DisplayContext *pdl);
+    virtual void preRender(DisplayContext *pdc);
+    virtual void postRender(DisplayContext *pdc) {}
 
-  ///////////////////////////////////////////////////////////////
+    virtual bool isTransp() const { return true; }
 
-  /// Generate contour level lines
-  bool generate(ScalarObject *pMap, DensityMap *pXtal);
+    ///////////////////////////////////////////////////////////////
 
-  /// Set internal buffer size
-  bool setCrossArraySize(int ncol, int nrow, int nsec);
-  /// Get internal buffer size (in col direction)
-  int getColCrsSize() const { return m_nColCrs; }
-  int getRowCrsSize() const { return m_nRowCrs; }
-  int getSecCrsSize() const { return m_nSecCrs; }
+    /// Generate contour level lines
+    bool generate(ScalarObject *pMap, DensityMap *pXtal);
 
-  ///////////////////////////////////////////////////////////////
+    /// Set internal buffer size
+    bool setCrossArraySize(int ncol, int nrow, int nsec);
+    /// Get internal buffer size (in col direction)
+    int getColCrsSize() const { return m_nColCrs; }
+    int getRowCrsSize() const { return m_nRowCrs; }
+    int getSecCrsSize() const { return m_nSecCrs; }
 
-  void setLineWidth(double f) {
-    m_lw = f;
-    super_t::invalidateDisplayCache();
-  }
-  double getLineWidth() const { return m_lw; }
+    ///////////////////////////////////////////////////////////////
 
-  double getMaxExtent() const;
+    void setLineWidth(double f) {
+      m_lw = f;
+      super_t::invalidateDisplayCache();
+    }
+    double getLineWidth() const { return m_lw; }
 
-  int getBufSize() const { return m_nBufSize; }
-  void setBufSize(int nsize);
+    double getMaxExtent() const;
 
-  ///////////////////////////////////////////////////////////////
+    int getBufSize() const { return m_nBufSize; }
+    void setBufSize(int nsize);
 
-  /*
+    ///////////////////////////////////////////////////////////////
+
+    /*
   // display manager listener
   // (required for capturing the view-changed event and updating the map center)
   virtual void attachDisplayMgr(DisplayMgr *pMgr);
   virtual void detachDisplayMgr();
   virtual void dispMgrChanged(DispMgrEvent &ev);
-    */
-  
-  virtual void viewChanged(qsys::ViewEvent &);
+     */
 
-protected:
-  // We must override firePropertyChanged() to avoid destructing the display list,
-  // when only the color was changed.
-  // virtual void firePropertyChanged(qlib::PropChgEvent &ev);
+    virtual void viewChanged(qsys::ViewEvent &);
 
-  
-  ///////////////////////////////////////////////////////////////
+  protected:
+    // We must override firePropertyChanged() to avoid destructing the display list,
+    // when only the color was changed.
+    // virtual void firePropertyChanged(qlib::PropChgEvent &ev);
 
-private:
-  
-  unsigned char getContSec(unsigned int s0,
-			   unsigned int s1,
-			   unsigned int lv);
 
-  unsigned char getMap(ScalarObject *pMap, int x, int y, int z) const
-  {
-    // TO DO: support symop
+    ///////////////////////////////////////////////////////////////
 
-    if (m_bPBC) {
-      const int xx = (x+10000*m_nMapColNo)%m_nMapColNo;
-      const int yy = (y+10000*m_nMapRowNo)%m_nMapRowNo;
-      const int zz = (z+10000*m_nMapSecNo)%m_nMapSecNo;
-      return pMap->atByte(xx,yy,zz);
+  private:
+
+    unsigned char getContSec(unsigned int s0,
+                             unsigned int s1,
+                             unsigned int lv);
+
+    unsigned char getMap(ScalarObject *pMap, int x, int y, int z) const
+    {
+      // TO DO: support symop
+
+      if (m_bPBC) {
+        const int xx = (x+10000*m_nMapColNo)%m_nMapColNo;
+        const int yy = (y+10000*m_nMapRowNo)%m_nMapRowNo;
+        const int zz = (z+10000*m_nMapSecNo)%m_nMapSecNo;
+        return pMap->atByte(xx,yy,zz);
+      }
+      else {
+        if (pMap->isInBoundary(x,y,z))
+          return pMap->atByte(x,y,z);
+        else
+          return 0;
+      }
     }
-    else {
-      if (pMap->isInBoundary(x,y,z))
-        return pMap->atByte(x,y,z);
-      else
-        return 0;
-    }
-  }
 
-  ///////////////////////////////////////////////////////////////
+    void drawline(DisplayContext *pdl, float x1, float y1, float z1, float x2, float y2, float z2);
 
-  
-};
+
+
+  };
 
 }
 
