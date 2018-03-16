@@ -8,6 +8,7 @@
 
 #include <qsys/Renderer.qif>
 #include <gfx/Color.qif>
+#include <gfx/MultiGradient.qif>
 #include <modules/molstr/ColoringScheme.qif>
 #include <modules/molstr/SelCommand.qif>
 
@@ -45,6 +46,7 @@ runtime_class MolSurfRenderer extends Renderer
     solid = surface::MolSurfRenderer::SFREND_SIMPLE;
     potential = surface::MolSurfRenderer::SFREND_SCAPOT;
     molecule = surface::MolSurfRenderer::SFREND_MOLFANC;
+    multigrad = surface::MolSurfRenderer::SFREND_MULTIGRAD;
   }
   property enum colormode => redirect(getColorMode, setColorMode);
   default colormode = "solid";
@@ -81,6 +83,15 @@ runtime_class MolSurfRenderer extends Renderer
 
   property object<AbstractColor$> lowcol => redirect(getLowCol, setLowCol);
   default lowcol = gfx::SolidColor::createRGB(1.0, 0.0, 0.0);
+
+  //////////
+  // for "multigrad" mode
+
+  property object<MultiGradient$> multi_grad => redirect(getMultiGrad, xxx) (readonly);
+  // default multi_grad = gfx::MultiGradient::createDefaultS();
+
+  //////////
+  // ramp_above/ramp_value props are used in both potential & multigrad modes
 
   property boolean ramp_above => redirect(isRampAbove, setRampAbove);
   default ramp_above = false;

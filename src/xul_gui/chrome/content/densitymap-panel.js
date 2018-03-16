@@ -30,7 +30,7 @@ denmap.mMapList = new cuemolui.ObjMenuList(
   
 // Observe properties of the selected map
 // to update the panel widgets
-denmap.mMapList.addPropChgListener("*", function(args){denmap.propChanged(args);});
+denmap.mMapList.addPropChgListener("*", function(args){denmap.onPropChanged(args);});
 
 window.addEventListener("load", function(){denmap.onLoad();}, false);
 //window.addEventListener("unload", function() {denmap.onUnLoad();}, false);
@@ -58,7 +58,7 @@ denmap.setupWidget = function ()
 }
 
 // (any) prop of (any) renderer changed
-denmap.propChanged = function (args)
+denmap.onPropChanged = function (args)
 {
   if (this.mTgtRend===null)
     return;
@@ -72,14 +72,13 @@ denmap.propChanged = function (args)
 
   if (propname=="styles") {
     this.updateWidget(this.mTgtRend);
-    alert("XXX");
   }
   else
     this.updateWidget(this.mTgtRend, propname);
 }
 
 // MapList change event
-denmap.listChg = function (aEvent)
+denmap.onListChanged = function (aEvent)
 {
   if (aEvent.itemCount==0)
     this.setDisabled(true);
@@ -87,7 +86,7 @@ denmap.listChg = function (aEvent)
     this.setDisabled(false);
 }
 
-denmap.selChg = function (aEvent)
+denmap.onSelChanged = function (aEvent)
 {
   var seli = this.mMapList._widget.selectedIndex;
   dd("denmapPanel targetChanged() "+seli);
@@ -108,17 +107,34 @@ denmap.selChg = function (aEvent)
   this.updateWidget(rend);
 }
 
+denmap.onMenuChanged = function (aEvent)
+{
+  let val = aEvent.originalTarget.value;
+  dd("onMenuChanged selected="+val);
+  
+  if (val=="level-sigma") {
+    this.changeProp("use_abslevel", false);
+    return;
+  }
+  else if (val=="level-abs") {
+    this.changeProp("use_abslevel", true);
+    return;
+  }
+};
+
 denmap.setDisabled = function (aValue)
 {
   if (!('mRedraw' in this))
     this.setupWidget();
 
-  this.mRedraw.disabled = 
-    this.mShowCell.disabled = 
-      this.mColor.disabled = 
-	this.mTransp.disabled = 
-	  this.mLevel.disabled = 
-	    this.mExtent.disabled = aValue;
+  this.mRedraw.disabled =  aValue;
+  this.mShowCell.disabled =  aValue;
+  this.mColor.disabled =  aValue;
+  this.mTransp.disabled =  aValue;
+  this.mLevel.disabled =  aValue;
+  this.mExtent.disabled = aValue;
+
+  document.getElementById("denmap-panel-menubtn").disabled = aValue;
 }
   
 // data (renderer) --> widget
@@ -242,24 +258,29 @@ denmap.validateWidget = function (aEvent)
     if (value===null||propname===null)
       return;
 
-    var scene = this.mTgtRend.getScene();
-
-    // EDIT TXN START //
-    scene.startUndoTxn("Change map renderer prop");
-    try {
-      this.mTgtRend._wrapped.setProp(propname, value);
-    }
-    catch (e) {
-      dd("PaintPanel.commitPropChg> FATAL ERROR: "+e);
-      debug.exception(e);
-      scene.rollbackUndoTxn();
-      return;
-    }
-    scene.commitUndoTxn();
-    // EDIT TXN END //
+    this.changeProp(propname, value);
 
   } catch (e) { debug.exception(e); }
 
+};
+
+denmap.changeProp = function (aPropName, aPropVal)
+{
+  var scene = this.mTgtRend.getScene();
+
+  // EDIT TXN START //
+  scene.startUndoTxn("Change map renderer prop");
+  try {
+    this.mTgtRend._wrapped.setProp(aPropName, aPropVal);
+  }
+  catch (e) {
+    dd("PaintPanel.commitPropChg> FATAL ERROR: "+e);
+    debug.exception(e);
+    scene.rollbackUndoTxn();
+    return;
+  }
+  scene.commitUndoTxn();
+  // EDIT TXN END //
 };
 
 // redraw map (setcenter)
@@ -267,8 +288,15 @@ denmap.onRedraw = function (aEvent)
 {
   //var view = document.getElementById("main_view").currentViewW;
   //vcenter = view.getViewCenter();
-  var vcenter = document.getElementById("main_view").viewCenter;
-  var scene = this.mTgtRend.getScene();
+  let vcenter = document.getElementById("main_view").viewCenter;
+  let scene = this.mTgtRend.getScene();
+
+  
+  let diff = this.mTgtRend.center.sub(vcenter).length();
+  if (diff<0.1) {
+    dd("denmap-panel> ignore small movement: "+diff);
+    return;
+  }
   
   // EDIT TXN START //
   scene.startUndoTxn("Change map renderer center");

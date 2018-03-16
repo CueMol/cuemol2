@@ -72,6 +72,10 @@
 		       increment="10"
 		       onchange="gMapMesh.validateWidgets(event)"/>
 	    </row>
+
+	    <checkbox id="use-pbc" flex="0" label="Use periodic boundary"
+	      oncommand="gMapMesh.validateWidgets(event)"/>
+
 	  </rows>
 	</grid>
 

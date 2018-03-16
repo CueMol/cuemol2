@@ -210,7 +210,8 @@ bool MapMeshRenderer::generate(ScalarObject *pMap, DensityMap *pXtal)
     const double cec = xt.c();
     if (qlib::isNear4(dimx, cea) &&
         qlib::isNear4(dimy, ceb) &&
-        qlib::isNear4(dimz, cec))
+        qlib::isNear4(dimz, cec) &&
+        isUsePBC())
       m_bPBC = true;
   }
 

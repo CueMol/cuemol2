@@ -92,7 +92,10 @@ namespace xtal {
     bool m_bUsePBC;
 
   public:
-    void setUsePBC(bool val) { m_bUsePBC = val; }
+    void setUsePBC(bool val) {
+      m_bUsePBC = val;
+      invalidateDisplayCache();
+    }
     bool isUsePBC() const { return m_bUsePBC; }
 
 

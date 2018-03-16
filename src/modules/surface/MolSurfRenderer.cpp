@@ -39,6 +39,8 @@ MolSurfRenderer::MolSurfRenderer()
   m_dRampVal = 1.4;
 
   m_nTgtMolID = qlib::invalid_uid;
+
+  m_pGrad = gfx::MultiGradientPtr(MB_NEW gfx::MultiGradient());
 }
 
 /// destructor
@@ -126,35 +128,42 @@ bool MolSurfRenderer::getColorSca(const Vector4D &v, ColorPtr &rcol)
 
   double par = m_pScaObj->getValueAt(v);
 
-  if (par<m_dParLow) {
-    rcol = m_colLow;
-  }
-  else if (par>m_dParHigh) {
-    rcol = m_colHigh;
-  }
-  else if (par>m_dParMid) {
-    // high<-->mid
-    double ratio;
-    if (qlib::Util::isNear(m_dParHigh, m_dParMid))
-      ratio = 1.0;
-    else
-      ratio = (par-m_dParMid)/(m_dParHigh-m_dParMid);
+  if (m_nMode==SFREND_SCAPOT) {
+    if (par<m_dParLow) {
+      rcol = m_colLow;
+    }
+    else if (par>m_dParHigh) {
+      rcol = m_colHigh;
+    }
+    else if (par>m_dParMid) {
+      // high<-->mid
+      double ratio;
+      if (qlib::Util::isNear(m_dParHigh, m_dParMid))
+        ratio = 1.0;
+      else
+        ratio = (par-m_dParMid)/(m_dParHigh-m_dParMid);
 
-    rcol = ColorPtr(new gfx::GradientColor(m_colHigh, m_colMid, ratio));
-    // rcol = LColor(m_colHigh, m_colMid, ratio);
+      rcol = ColorPtr(new gfx::GradientColor(m_colHigh, m_colMid, ratio));
+      // rcol = LColor(m_colHigh, m_colMid, ratio);
+    }
+    else {
+      // mid<-->low
+      double ratio;
+      if (qlib::Util::isNear(m_dParMid, m_dParLow))
+        ratio = 1.0;
+      else
+        ratio = (par-m_dParLow)/(m_dParMid-m_dParLow);
+
+      rcol = ColorPtr(new gfx::GradientColor(m_colMid, m_colLow, ratio));
+      // rcol = LColor(m_colMid, m_colLow, ratio);
+    }
   }
   else {
-    // mid<-->low
-    double ratio;
-    if (qlib::Util::isNear(m_dParMid, m_dParLow))
-      ratio = 1.0;
-    else
-      ratio = (par-m_dParLow)/(m_dParMid-m_dParLow);
-
-    rcol = ColorPtr(new gfx::GradientColor(m_colMid, m_colLow, ratio));
-    // rcol = LColor(m_colMid, m_colLow, ratio);
+    //if (m_pGrad.isnull())
+    //return false;
+    rcol = m_pGrad->getColor(par);
   }
-
+  
   return true;
 }
 
@@ -230,7 +239,8 @@ void MolSurfRenderer::render(DisplayContext *pdl)
   mesh.color(getDefaultColor());
   if (m_nMode==SFREND_SIMPLE) {
   }
-  else if (m_nMode==SFREND_SCAPOT) {
+  else if (m_nMode==SFREND_SCAPOT||
+           m_nMode==SFREND_MULTIGRAD) {
     //
     // ELEPOT mode --> resolve target name
     //
@@ -290,7 +300,8 @@ void MolSurfRenderer::render(DisplayContext *pdl)
       }
     }
 
-    if (m_nMode==SFREND_SCAPOT) {
+    if (m_nMode==SFREND_SCAPOT ||
+        m_nMode==SFREND_MULTIGRAD) {
       bool res;
       if (m_bRampAbove) {
         res = getColorSca(pos + norm.scale(m_dRampVal), col);

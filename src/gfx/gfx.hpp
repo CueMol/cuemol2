@@ -36,18 +36,20 @@
 
 namespace gfx {
 
-  /** Initialize the gfx library */
+  /// Initialize the gfx library
   GFX_API bool init();
-
-  /** Cleanup the gfx library */
+  
+  /// Cleanup the gfx library
   GFX_API void fini();
 
-  class SolidColor;
-  typedef qlib::LScrSp<SolidColor> SolidColorPtr;
+  //class SolidColor;
+  //typedef qlib::LScrSp<SolidColor> SolidColorPtr;
+  MC_DECL_SCRSP(SolidColor);
 
   class AbstractColor;
   typedef qlib::LScrSp<AbstractColor> ColorPtr;
 
+  MC_DECL_SCRSP(MultiGradient);
 }
 
 #endif // GFX_DLL_H__

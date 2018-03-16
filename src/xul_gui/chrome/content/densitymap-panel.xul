@@ -12,12 +12,24 @@
     <script type="application/javascript" src="chrome://cuemol2/content/densitymap-panel.js"/>
 
     <vbox id="denmap-panel" flex="0" title="&denmapPanel.title;">
-      <menulist id="denmap-rend-list" sizetopopup="none"
-	onselect="cuemolui.panels.denmap.selChg(event)"
-	onchange="cuemolui.panels.denmap.listChg(event)">
-	<menupopup/>
-      </menulist>
+      <hbox>
+	<!-- Renderer selection widget -->
+	<menulist id="denmap-rend-list" sizetopopup="none" flex="1"
+	  onselect="cuemolui.panels.denmap.onSelChanged(event)"
+	  onchange="cuemolui.panels.denmap.onListChanged(event)"/>
 
+	<!-- Dropdown menu widget -->
+	<toolbarbutton id="denmap-panel-menubtn" type="menu" flex="0"
+	  class="dropdown-button"
+	  label="" oncommand="cuemolui.panels.denmap.onMenuChanged(event)"
+	  style="margin: 3px 0px 3px;">
+	  <menupopup>
+	    <menuitem value="level-sigma" label="Use sigma contour level" type="radio" checked="true"/>
+	    <menuitem value="level-abs" label="Use absolute contour level" type="radio"/>
+	  </menupopup>
+	</toolbarbutton>
+      </hbox>
+      
       <grid flex="1">
 	<columns>
 	  <column/>

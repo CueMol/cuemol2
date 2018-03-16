@@ -45,25 +45,35 @@ namespace gfx {
     };
 
     typedef std::set<Node, NodeComp> data_t;
-    
+
     data_t m_data;
 
     data_t::const_iterator getIterAt(int ind) const;
     data_t::iterator getIterAt(int ind);
-    
+
   public:
     MultiGradient();
     // MultiGradient(const MultiGradient &r);
 
     virtual ~MultiGradient();
-    
+
     /// clear all gradient nodes
     void clear() { m_data.clear(); }
 
     /// append a new node
-    void insert(double value, const ColorPtr &color)
+    /// @return returns index of the inserted node. returns -1 if the same value alreadly presents.
+    int insert(double value, const ColorPtr &color)
     {
-      m_data.insert(Node(value, color));
+      std::pair<data_t::iterator, bool> res = m_data.insert(Node(value, color));
+      if (!res.second)
+        return -1;
+      int nres = 0;
+      data_t::iterator iter = m_data.begin();
+      for (; iter!=m_data.end(); ++iter, ++nres) {
+        if (iter==res.first)
+          break;
+      }
+      return nres;
     }
 
     /// get color
@@ -79,7 +89,7 @@ namespace gfx {
     bool changeAt(int ind, double value, const ColorPtr &color)
     {
       if (!removeAt(ind))
-	return false;
+        return false;
       insert(value, color);
       return true;
     }
@@ -90,7 +100,10 @@ namespace gfx {
 
     virtual void writeTo2(qlib::LDom2Node *pNode) const;
     virtual void readFrom2(qlib::LDom2Node *pNode);
-};
+
+    // utility method for creating default value
+    static MultiGradientPtr createDefaultS();
+  };
 
 }
 

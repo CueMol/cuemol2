@@ -16,6 +16,14 @@ runtime_class MultiGradient
 
   property integer size => redirect(getSize, XXX) (readonly);
 
+  void clear();
+  integer insert(real value, object<AbstractColor$> pCol);
+
+  real getValueAt(integer ind);
+  object<AbstractColor$> getColorAt(integer ind);
+  
+  boolean removeAt(integer ind);
+  boolean changeAt(integer ind, real value, object<AbstractColor$> pCol);
 };
 
 #endif

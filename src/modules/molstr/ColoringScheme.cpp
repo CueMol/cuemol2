@@ -42,7 +42,7 @@ bool ColoringScheme::getResidColor(MolResiduePtr pResid, ColorPtr &color)
 
 ColoringSchemePtr ColoringScheme::createDefaultS()
 {
-  return ColoringSchemePtr(MB_NEW SolidColoring);
+  return ColoringSchemePtr(MB_NEW SolidColoring());
 }
 
 //////////

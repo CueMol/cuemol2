@@ -86,10 +86,12 @@
 		       onchange="gMapSurf.validateWidgets(event)"/>
 	    </row>
 
-	    <hbox>
-	      <checkbox id="map-cullsurf" flex="0" label="Back-face culling"
-		oncommand="gMapSurf.validateWidgets(event)"/>
-	    </hbox>
+	    <checkbox id="map-cullsurf" flex="0" label="Back-face culling"
+	      oncommand="gMapSurf.validateWidgets(event)"/>
+
+	    <checkbox id="use-pbc" flex="0" label="Use periodic boundary"
+	      oncommand="gMapSurf.validateWidgets(event)"/>
+
 	  </rows>
 	</grid>
 

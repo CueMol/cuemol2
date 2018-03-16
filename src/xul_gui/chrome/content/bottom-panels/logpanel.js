@@ -103,14 +103,30 @@ if (!("logpanel" in cuemolui)) {
         if (this.mHisPos>0) {
           this.mHisPos--;
           this.mCmdBox.value = this.mCmdHis[this.mHisPos];
+
+          let n = this.mCmdBox.value.length;
+          let that = this;
+          setTimeout( function () { that.mCmdBox.setSelectionRange(n, n); }, 0);
+          
         }
       }
       else if (aEvent.keyCode==Ci.nsIDOMKeyEvent.DOM_VK_DOWN) {
         if (this.mHisPos<this.mCmdHis.length) {
           this.mHisPos++;
-          this.mCmdBox.value = this.mCmdHis[this.mHisPos];
+          if (this.mHisPos<this.mCmdHis.length) {
+            this.mCmdBox.value = this.mCmdHis[this.mHisPos];
+            
+            let n = this.mCmdBox.value.length;
+            let that = this;
+            setTimeout( function () { that.mCmdBox.setSelectionRange(n, n); }, 0);
+          }
+          else
+            this.mCmdBox.value = "";
         }
       }
+
+      dd("this.mCmdBox.selectionStart="+this.mCmdBox.selectionStart);
+      dd("this.mCmdBox.selectionEnd="+this.mCmdBox.selectionEnd);
     };
 
     panel.execCmd = function (aCmd)

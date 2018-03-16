@@ -35,6 +35,12 @@ ColorPtr MultiGradient::getColor(double rho) const
   if (m_data.size()==1)
     return iter->pColor;
 
+  // check lower bound
+  if (iter->value>rho) {
+    return iter->pColor;
+  }
+  
+  // check higher bound
   data_t::const_iterator eiter = m_data.end();
   data_t::const_iterator iter2 = eiter;
   --iter2;
@@ -42,6 +48,7 @@ ColorPtr MultiGradient::getColor(double rho) const
     return iter2->pColor;
   }
 
+  // check middle points (iter, iter2)
   for (; iter!=eiter; ++iter) {
     iter2 = iter;
     iter2++;
@@ -140,11 +147,11 @@ void MultiGradient::writeTo2(qlib::LDom2Node *pNode) const
     {
       // write num (value) of tuple (maybe stored as attribute)
       LString val = LString::format("%f", pt.value);
-      pChNode->appendStrAttr("value", val);
+      pChNode->appendStrAttr("par", val);
     }
     {
       // write color of tuple (maybe stored as attribute)
-      qlib::LDom2Node *pColNode = pChNode->appendChild("color");
+      qlib::LDom2Node *pColNode = pChNode->appendChild("col");
       pColNode->setupByObject(pt.pColor.get());
     }
 
@@ -164,19 +171,19 @@ void MultiGradient::readFrom2(qlib::LDom2Node *pNode)
       continue;
     }
 
-    if (pChNode->findChild("value")==NULL) {
+    if (pChNode->findChild("par")==NULL) {
       LOG_DPRINTLN("MultiGradient.readFrom> no value attr in gradnode tag!!");
       continue;
     }
 
-    LString valstr = pChNode->getStrAttr("value");
+    LString valstr = pChNode->getStrAttr("par");
     double val;
     if (!valstr.toDouble(&val)) {
       LOG_DPRINTLN("MultiGradient.readFrom> invalid value attr in gradnode tag!!");
       continue;
     }
 
-    qlib::LDom2Node *pColNode = pChNode->findChild("color");
+    qlib::LDom2Node *pColNode = pChNode->findChild("col");
     if (pColNode==NULL) {
       LOG_DPRINTLN("MultiGradient.readFrom> no color valule in gradnode tag!!");
       continue;
@@ -186,5 +193,13 @@ void MultiGradient::readFrom2(qlib::LDom2Node *pNode)
     insert(val, pCol);
   }
 
+}
+
+//static
+MultiGradientPtr MultiGradient::createDefaultS()
+{
+  MultiGradientPtr pRes(MB_NEW MultiGradient());
+  pRes->insert(0.0, SolidColor::createRGB(1.0, 1.0, 1.0, 1.0));
+  return pRes;
 }
 
