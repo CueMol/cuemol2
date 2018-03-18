@@ -7,6 +7,7 @@
 #define DENSITY_MAP_QIF_INCLUDED
 
 #include <qsys/Object.qif>
+#include <qsys/View.qif>
 
 runtime_class DensityMap extends Object
 {
@@ -24,6 +25,8 @@ runtime_class DensityMap extends Object
   
   // Methods
   string getNormHistogramJSON();
+
+  void fitView(object<View$> pView);
 
 };
 

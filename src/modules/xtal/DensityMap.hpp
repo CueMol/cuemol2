@@ -117,6 +117,8 @@ public:
 
   virtual Vector4D convToOrth(const Vector4D &index) const;
 
+  virtual void fitView(const qsys::ViewPtr &pView) const;
+
   ///////////////////////////////////////////////
   // setup density map
 

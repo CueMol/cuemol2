@@ -57,7 +57,7 @@ ColorPtr MultiGradient::getColor(double rho) const
     double v2 = iter2->value;
     if (v1<=rho && rho<v2) {
       double rho2 = (rho-v1)/(v2-v1);
-      return ColorPtr(new GradientColor(iter->pColor, iter2->pColor, rho2)); 
+      return ColorPtr(new GradientColor(iter2->pColor, iter->pColor, rho2)); 
     }
   }
 

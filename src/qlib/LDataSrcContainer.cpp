@@ -53,10 +53,10 @@ LString  LDataSrcContainer::selectSrcAltSrc(const LString &src,
                                             const LString &aBasePath,
                                             bool &rbReadFromAltSrc)
 {
-  LOG_DPRINTLN("LDataSrcContainer.selectSrcAltSrc> called");
-  LOG_DPRINTLN("  > src=<%s>", src.c_str());
-  LOG_DPRINTLN("  > altsrc=<%s>", altsrc.c_str());
-  LOG_DPRINTLN("  > base_path=<%s>", aBasePath.c_str());
+  MB_DPRINTLN("LDataSrcContainer.selectSrcAltSrc> called");
+  MB_DPRINTLN("  > src=<%s>", src.c_str());
+  MB_DPRINTLN("  > altsrc=<%s>", altsrc.c_str());
+  MB_DPRINTLN("  > base_path=<%s>", aBasePath.c_str());
 
   bool bReadFromAltSrc = false;
 

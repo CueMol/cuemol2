@@ -814,6 +814,11 @@ ws.onBtnZoomCmd = function ()
       target.fitView2(rend.sel, view);
       return;
     }
+    else if ('fitView' in target) {
+      // scalar obj/map
+      target.fitView(view);
+      return;
+    }
     else if (rend.has_center) {
       let pos = rend.getCenter();
       view.setViewCenter(pos);
