@@ -288,8 +288,8 @@ namespace molstr {
       return qlib::LScrVector4D(getBoundBoxMax(fselect));
     }
 
-    void fitView(bool fselect, qsys::ViewPtr pView) const;
-    void fitView2(SelectionPtr pSel, qsys::ViewPtr pView) const;
+    void fitView(qsys::ViewPtr pView, bool fselect) const;
+    void fitView2(qsys::ViewPtr pView, SelectionPtr pSel) const;
 
     ///
     /// Calculate secondary structure (impl: Prot2ndry.cpp)

@@ -493,12 +493,12 @@ using qlib::Matrix4D;
 using qlib::Matrix3D;
 using qlib::Box3D;
 
-void DensityMap::fitView(const qsys::ViewPtr &pView) const
+void DensityMap::fitView(const qsys::ViewPtr &pView, bool dummy) const
 {
   qlib::LQuat rotq = pView->getRotQuat();
   Matrix4D ecmat = Matrix4D::makeRotMat(rotq);
 
-  Box3D bbox;
+  Box3D bbox, ecbbox;
 
   {
     Vector4D vpos;
@@ -518,10 +518,25 @@ void DensityMap::fitView(const qsys::ViewPtr &pView) const
     bbox.merge( xform.mulvec(Vector4D(0,1,1,1)) );
     bbox.merge( xform.mulvec(Vector4D(1,0,1,1)) );
     bbox.merge( xform.mulvec(Vector4D(1,1,1,1)) );
+
+    // xform = xform * ecmat
+    xform.matprod( ecmat );
+
+    ecbbox.merge( xform.mulvec(Vector4D(0,0,0,1)) );
+    ecbbox.merge( xform.mulvec(Vector4D(1,0,0,1)) );
+    ecbbox.merge( xform.mulvec(Vector4D(0,1,0,1)) );
+    ecbbox.merge( xform.mulvec(Vector4D(0,0,1,1)) );
+    ecbbox.merge( xform.mulvec(Vector4D(1,1,0,1)) );
+    ecbbox.merge( xform.mulvec(Vector4D(0,1,1,1)) );
+    ecbbox.merge( xform.mulvec(Vector4D(1,0,1,1)) );
+    ecbbox.merge( xform.mulvec(Vector4D(1,1,1,1)) );
   }
   
   MB_DPRINTLN("map bbox start: (%f,%f,%f)", bbox.vstart.x(), bbox.vstart.y(), bbox.vstart.z());
   MB_DPRINTLN("map bbox   end: (%f,%f,%f)", bbox.vend.x(), bbox.vend.y(), bbox.vend.z());
+
+  MB_DPRINTLN("map ec bbox start: (%f,%f,%f)", ecbbox.vstart.x(), ecbbox.vstart.y(), ecbbox.vstart.z());
+  MB_DPRINTLN("map ec bbox   end: (%f,%f,%f)", ecbbox.vend.x(), ecbbox.vend.y(), ecbbox.vend.z());
 
   /*{
     // inflate box by 20%
@@ -530,26 +545,23 @@ void DensityMap::fitView(const qsys::ViewPtr &pView) const
     bbox.vstart -= dv;
   }*/
 
-  Vector4D cen = bbox.center();
-  pView->setViewCenter(cen);
+  pView->setViewCenter( bbox.center() );
 
-  Vector4D ecboxst = ecmat.mulvec(bbox.vstart-cen);
-  Vector4D ecboxen = ecmat.mulvec(bbox.vend-cen);
-
-  MB_DPRINTLN("ec bbox start: (%f,%f,%f)", ecboxst.x(), ecboxst.y(), ecboxst.z());
-  MB_DPRINTLN("ec bbox   end: (%f,%f,%f)", ecboxen.x(), ecboxen.y(), ecboxen.z());
-
+  Vector4D ecboxst = ecbbox.vstart - ecbbox.center();
+  Vector4D ecboxen = ecbbox.vend - ecbbox.center();
+  
   int cx = pView->getWidth();
   int cy = pView->getHeight();
   double fasp = double(cx)/double(cy);
+
   double mx = qlib::abs(ecboxen.x()-ecboxst.x());
   double my = qlib::abs(ecboxen.y()-ecboxst.y());
   double masp = mx / my;
 
-  // MB_DPRINTLN("mx: %f", mx);
-  // MB_DPRINTLN("my: %f", my);
-  // MB_DPRINTLN("fasp: %f", fasp);
-  // MB_DPRINTLN("masp: %f", masp);
+  MB_DPRINTLN("mx: %f", mx);
+  MB_DPRINTLN("my: %f", my);
+  MB_DPRINTLN("fasp: %f", fasp);
+  MB_DPRINTLN("masp: %f", masp);
 
   double zoom;
   if (fasp>1.0) {
@@ -571,6 +583,7 @@ void DensityMap::fitView(const qsys::ViewPtr &pView) const
 
   // MB_DPRINTLN("Zoom: %f", zoom);
   pView->setZoom(zoom);
-  pView->setSlabDepth(qlib::abs(ecboxen.z()-ecboxst.z()));
+
+  // pView->setSlabDepth(qlib::abs(ecboxen.z()-ecboxst.z()));
 }
 

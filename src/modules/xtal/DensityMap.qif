@@ -26,7 +26,7 @@ runtime_class DensityMap extends Object
   // Methods
   string getNormHistogramJSON();
 
-  void fitView(object<View$> pView);
+  void fitView(object<View$> pView, boolean dummy);
 
 };
 

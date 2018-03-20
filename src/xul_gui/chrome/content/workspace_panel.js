@@ -803,7 +803,7 @@ ws.onBtnZoomCmd = function ()
   if (elem.type=="object") {
     target = cuemol.getObject(id);
     if ('fitView' in target) {
-      target.fitView(false, view);
+      target.fitView(view, false);
       return;
     }
   }
@@ -811,12 +811,12 @@ ws.onBtnZoomCmd = function ()
     var rend = cuemol.getRenderer(id);
     target = rend.getClientObj();
     if (('sel' in rend) && ('fitView' in target)) {
-      target.fitView2(rend.sel, view);
+      target.fitView2(view, rend.sel);
       return;
     }
     else if ('fitView' in target) {
       // scalar obj/map
-      target.fitView(view);
+      target.fitView(view, false);
       return;
     }
     else if (rend.has_center) {

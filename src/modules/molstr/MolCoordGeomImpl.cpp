@@ -114,7 +114,7 @@ qlib::Vector4D MolCoord::getBoundBoxMax(bool fselect) const
   return pos.vend;
 }
 
-void MolCoord::fitView(bool fselect, qsys::ViewPtr pView) const
+void MolCoord::fitView(qsys::ViewPtr pView, bool fselect) const
 {
   qlib::LQuat rotq = pView->getRotQuat();
   Matrix4D rmat = Matrix4D::makeRotMat(rotq);
@@ -183,12 +183,12 @@ void MolCoord::fitView(bool fselect, qsys::ViewPtr pView) const
   pView->setSlabDepth(bbox.vend.z()-bbox.vstart.z());
 }
 
-void MolCoord::fitView2(SelectionPtr pSel, qsys::ViewPtr pView) const
+void MolCoord::fitView2(qsys::ViewPtr pView, SelectionPtr pSel) const
 {
   MolCoord *pthis = const_cast<MolCoord *>(this);
   SelectionPtr pOldSel = getSelection();
   pthis->setSelection(pSel);
-  fitView(true, pView);
+  fitView(pView, true);
   pthis->setSelection(pOldSel);
 }
 
