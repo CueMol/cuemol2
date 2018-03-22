@@ -168,6 +168,8 @@ private:
 
   DisplayContext *m_pdc;
   
+  bool m_bSearchTerm;
+
 /*
   bool setupTargetList();
   void rendHitSymm(DisplayContext *pdc, Renderer *prend);

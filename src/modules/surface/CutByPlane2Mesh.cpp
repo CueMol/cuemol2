@@ -118,10 +118,12 @@ void CutByPlane2::makeSectionMesh(Boundary &outer)
   catch (const CGAL::Assertion_exception &e) {
     LString msg = LString::format("CutByPlane2 insert_constraint failed: %s", e.what());
     MB_THROW(qlib::RuntimeException, msg);
+    //LOG_DPRINTLN("CutByPlane2 insert_constraint failed: %s --> ignored", e.what());
     return;
   }
   catch (...) {
     MB_THROW(qlib::RuntimeException, "Setup CDT failed by unknown exception");
+    //LOG_DPRINTLN("Setup CDT failed by unknown exception --> ignored");
     return;
   }
     

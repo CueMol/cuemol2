@@ -38,6 +38,7 @@ SymmRenderer::SymmRenderer()
   m_nMaxOps = 100;
   m_bShowHiddenRends = false;
   m_bUpdate = true;
+  m_bSearchTerm = false;
 }
 
 SymmRenderer::~SymmRenderer()
@@ -262,6 +263,7 @@ int SymmRenderer::genByExtent()
     //Vector4D fmoltmp = fmol;
     //pmat[i].xform(fmoltmp);
 
+    m_bSearchTerm = false;
     searchX(nv);
   }
 
@@ -312,8 +314,12 @@ bool SymmRenderer::checkPos(const Vector4D &trn)
   MB_DPRINTLN(" --> OK");
   mat.dump();
 
-  //addOperator(mat, m_matname);
-  m_data.push_back(data_t::value_type(m_matname, mat));
+  // Limit addition to max operator size
+  if (m_data.size()<m_nMaxOps)
+    m_data.push_back(data_t::value_type(m_matname, mat));
+  else
+    m_bSearchTerm = true;
+
   return true;
 }
 
@@ -327,6 +333,8 @@ int SymmRenderer::searchZ(const Vector4D &trn)
     int dnok = 0;
 
     bool fp = checkPos(trn_plus);
+    if (m_bSearchTerm)
+      return 0;
     if (fp)
       dnok++;
 
@@ -335,6 +343,8 @@ int SymmRenderer::searchZ(const Vector4D &trn)
       trn_minus.z() -= (double)iz;
 
       bool fm = checkPos(trn_minus);
+      if (m_bSearchTerm)
+        return 0;
       if (fm)
         dnok++;
     }
@@ -358,12 +368,16 @@ int SymmRenderer::searchY(const Vector4D &trn)
     int dnok = 0;
 
     dnok += searchZ(trn_plus);
+    if (m_bSearchTerm)
+      return 0;
 
     if (iy!=0) {
       Vector4D trn_minus(trn);
       trn_minus.y() -= double(iy);
       
       dnok += searchZ(trn_minus);
+      if (m_bSearchTerm)
+        return 0;
     }
 
     nok += dnok;
@@ -385,12 +399,16 @@ int SymmRenderer::searchX(const Vector4D &trn)
     int dnok = 0;
 
     dnok += searchY(trn_plus);
+    if (m_bSearchTerm)
+      return 0;
 
     if (ix!=0) {
       Vector4D trn_minus(trn);
       trn_minus.x() -= double(ix);
 
       dnok += searchY(trn_minus);
+      if (m_bSearchTerm)
+        return 0;
     }
 
     nok += dnok;
