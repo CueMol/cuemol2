@@ -176,20 +176,24 @@ Qm2Main.prototype.doSetupRend = function(sc, result)
   if ("sel" in rend && result.sel)
     rend.sel = result.sel;
 
+  let view = this.mMainWnd.currentViewW;
   if (result.center) {
     //alert("result.center="+result.center);
     //alert("rend.has_center="+rend.has_center);
-    let view = this.mMainWnd.currentViewW;
     if (clsname === "DensityMap") {
-      // in the case of density map,
-      // we set the view center to the map center
-      let pos = view.getViewCenter();
-      rend.center = pos;
+      // recenter to the volume center / size
+      obj.fitView(view, false);
     }
     else if (rend.has_center) {
       var pos = rend.getCenter();
       view.setViewCenter(pos);
     }
+  }
+  else if (result.redraw && clsname === "DensityMap") {
+    // Redraw option
+    // --> we set the view center to the map center
+    let pos = view.getViewCenter();
+    rend.center = pos;
   }
 
   // special treatment for the call from netpdbopen.js

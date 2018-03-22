@@ -372,6 +372,8 @@ namespace xtal {
 #endif
 
   private:
+    bool m_bGenSurfMode;
+
     std::deque<surface::MSVert> m_msverts;
     Matrix4D m_xform;
 

@@ -584,6 +584,18 @@ void DensityMap::fitView(const qsys::ViewPtr &pView, bool dummy) const
   // MB_DPRINTLN("Zoom: %f", zoom);
   pView->setZoom(zoom);
 
-  // pView->setSlabDepth(qlib::abs(ecboxen.z()-ecboxst.z()));
+  double sd = qlib::abs(ecboxen.z()-ecboxst.z());
+  if (pView->getSlabDepth()>sd)
+    return;
+  
+  if (pView->getViewDist()*2>sd)
+    pView->setSlabDepth(sd);
+  else {
+    // slab depth is wider than the view distance
+    // --> have to change the view distance to enough accomodate the slab depth
+    pView->setViewDist(sd/2);
+    pView->setSlabDepth(sd);
+  }
+
 }
 

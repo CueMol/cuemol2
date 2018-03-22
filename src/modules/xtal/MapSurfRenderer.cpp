@@ -41,6 +41,8 @@ MapSurfRenderer::MapSurfRenderer()
 
   m_nGlRendMode = MSR_REND_DLIST;
 
+  m_bGenSurfMode = false;
+
 #if (GUI_ARCH!=CLI)
   //m_bUseOpenMP = false;
   
@@ -781,6 +783,7 @@ qsys::ObjectPtr MapSurfRenderer::generateSurfObj()
 {
   ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
   m_pCMap = pMap;
+  m_bGenSurfMode = true;
 
   // generate map-range information
   makerange();
@@ -800,12 +803,17 @@ qsys::ObjectPtr MapSurfRenderer::generateSurfObj()
     pSurfObj->setFace(i, i*3, i*3+1, i*3+2);
   m_msverts.clear();
 
+  m_bGenSurfMode = false;
+
   qsys::ObjectPtr rval = qsys::ObjectPtr(pSurfObj);
   return rval;
 }
 
 void MapSurfRenderer::setVertexColor(DisplayContext *pdl, const Vector4D &pos)
 {
+  if (m_bGenSurfMode)
+    return;
+
   if (m_pColMapObj==NULL)
     return;
 
