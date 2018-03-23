@@ -116,9 +116,16 @@ void CutByPlane2::makeSectionMesh(Boundary &outer)
     setupCDTRecur(cdt, outer, this, true);
   }
   catch (const CGAL::Assertion_exception &e) {
+    MB_DPRINTLN("setupCDTRecur failed for boundary size=%d", noutsz);
+
+    for (int i=0; i<outer.getSize(); ++i) {
+      v2d = outer.getVert(i);
+      MB_DPRINTLN("%d %f %f", i, v2d.x(), v2d.y());
+    }
+
     LString msg = LString::format("CutByPlane2 insert_constraint failed: %s", e.what());
-    MB_THROW(qlib::RuntimeException, msg);
-    //LOG_DPRINTLN("CutByPlane2 insert_constraint failed: %s --> ignored", e.what());
+    //MB_THROW(qlib::RuntimeException, msg);
+    LOG_DPRINTLN("CutByPlane2 insert_constraint failed: %s --> ignored", e.what());
     return;
   }
   catch (...) {

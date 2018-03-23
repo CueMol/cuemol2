@@ -31,6 +31,8 @@ namespace surface {
     /// Build bondary set from SID Map
     void build(std::map<int, int> &sidmap, CutByPlane2 *pCBP);
 
+    void build2(std::map<int, int> &sidmap, CutByPlane2 *pCBP);
+
   private:
     /// Build inner boundary structures
     void buildInnerBoundary();

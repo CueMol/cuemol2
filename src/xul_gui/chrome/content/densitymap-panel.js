@@ -151,7 +151,7 @@ denmap.onMenuShowing = function (aEvent)
     solid.disabled = false;
     multig.disabled = false;
 
-    //dd("denmap.onMenuShowing> rend.use_abslevel = "+rend.use_abslevel);
+    dd("denmap.onMenuShowing> rend.use_abslevel = "+rend.use_abslevel);
     if (rend.use_abslevel) {
       sigma.removeAttribute("checked");
       abs.setAttribute("checked", true);
@@ -161,7 +161,7 @@ denmap.onMenuShowing = function (aEvent)
       abs.removeAttribute("checked");
     }
 
-    //dd("denmap.onMenuShowing> rend.colormode = "+rend.colormode);
+    dd("denmap.onMenuShowing> rend.colormode = "+rend.colormode);
     if (rend.colormode=="multigrad") {
       solid.removeAttribute("checked");
       multig.setAttribute("checked", true);

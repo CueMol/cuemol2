@@ -160,6 +160,7 @@ void CutByPlane2::doit(double cden, const Vector4D &norm, const Vector4D &pos,
   //
 
   m_outers.build(m_sidmap, this);
+  //m_outers.build2(m_sidmap, this);
   m_sidmap.clear();
 
 #ifdef MB_DEBUG

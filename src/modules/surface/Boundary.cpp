@@ -62,10 +62,97 @@ BoundarySet::~BoundarySet()
                 qlib::delete_ptr<Boundary *>());
 }
 
+#include <modules/molstr/BSPTree.hpp>
+
+/// Build bondary set from SID Map
+void BoundarySet::build2(std::map<int, int> &sidmap, CutByPlane2 *pCBP)
+{
+  int j;
+
+  typedef std::map<int, int> SIDMap;
+
+  molstr::BSPTree<int> bsp;
+  bsp.alloc(sidmap.size()*2);
+  int i=0;
+  BOOST_FOREACH (const SIDMap::value_type &elem, sidmap) {
+    //MB_DPRINTLN("%d --> %d", elem.first, elem.second);
+    bsp.setAt(i, pCBP->getVert(elem.first), elem.first);
+    ++i;
+    bsp.setAt(i, pCBP->getVert(elem.second), elem.second);
+    ++i;
+  }
+  bsp.build();
+  
+  std::vector<int> res;
+  SIDMap sidmap2;
+  int nres;
+  BOOST_FOREACH (const SIDMap::value_type &elem, sidmap) {
+    std::pair<int,int> elem2 = elem;
+    nres = bsp.findAround(pCBP->getVert(elem.first), 1.0e-8, res);
+    if (nres>1) {
+      MB_DPRINTLN("degen vert %d", elem.first);
+      int idmin = res[0];
+      for (int ii=0; ii<nres; ++ii) {
+        Vector4D v = pCBP->getVert(res[ii]);
+        MB_DPRINTLN("  %d (%f,%f,%f)", res[ii], v.x(), v.y(), v.z());
+        idmin = qlib::min(idmin, res[ii]);
+      }
+      elem2.first = idmin;
+    }
+
+    nres = bsp.findAround(pCBP->getVert(elem.second), 1.0e-8, res);
+    if (nres>1) {
+      MB_DPRINTLN("degen vert %d", elem.second);
+      int idmin = res[0];
+      for (int ii=0; ii<nres; ++ii) {
+        Vector4D v = pCBP->getVert(res[ii]);
+        MB_DPRINTLN("  %d (%f,%f,%f)", res[ii], v.x(), v.y(), v.z());
+        idmin = qlib::min(idmin, res[ii]);
+      }
+      elem2.second = idmin;
+    }
+
+    auto res = sidmap2.insert(elem2);
+    if (!res.second) {
+      MB_DPRINTLN("XXX");
+    }
+  }
+
+
+  while (sidmap2.size()>0) {
+    Boundary *pbn = MB_NEW Boundary;
+
+    std::map<int,int>::iterator iter = sidmap2.begin();
+    std::pair<int,int> ed = *iter;
+    sidmap2.erase(iter);
+    pbn->insert(ed.first, pCBP->ontoPlane(ed.first));
+
+    for (j=0;;++j) {
+      int nextid = ed.second;
+      iter = sidmap2.find(nextid);
+      if (iter==sidmap2.end()) {
+        break;
+      }
+      
+      ed = *iter;
+      sidmap2.erase(iter);
+
+      pbn->insert(ed.first, pCBP->ontoPlane(ed.first));
+    }
+
+    MB_DPRINTLN("boundary no %d size=%d", super_t::size(), pbn->getSize());
+    super_t::push_back(pbn);
+  }
+
+  buildInnerBoundary();
+}
+
 /// Build bondary set from SID Map
 void BoundarySet::build(std::map<int, int> &sidmap, CutByPlane2 *pCBP)
 {
   int j;
+
+  typedef std::map<int, int> SIDMap;
 
   while (sidmap.size()>0) {
     Boundary *pbn = MB_NEW Boundary;
@@ -76,10 +163,12 @@ void BoundarySet::build(std::map<int, int> &sidmap, CutByPlane2 *pCBP)
     pbn->insert(ed.first, pCBP->ontoPlane(ed.first));
 
     for (j=0;;++j) {
-      iter = sidmap.find(ed.second);
-      if (iter==sidmap.end())
+      int nextid = ed.second;
+      iter = sidmap.find(nextid);
+      if (iter==sidmap.end()) {
         break;
-
+      }
+      
       ed = *iter;
       sidmap.erase(iter);
 
