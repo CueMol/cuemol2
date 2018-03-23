@@ -120,6 +120,58 @@ denmap.onMenuChanged = function (aEvent)
     this.changeProp("use_abslevel", true);
     return;
   }
+  else if (val=="color-solid") {
+    this.changeProp("colormode", "solid");
+    return;
+  }
+  else if (val=="color-multigrad") {
+    this.changeProp("colormode", "multigrad");
+    return;
+  }
+};
+
+denmap.onMenuShowing = function (aEvent)
+{
+  let rend = this.mTgtRend;
+
+  let sigma = document.getElementById("denmap-panel-levelopt-sigma");
+  let abs = document.getElementById("denmap-panel-levelopt-abs");
+  let solid = document.getElementById("denmap-panel-coloropt-solid");
+  let multig = document.getElementById("denmap-panel-coloropt-multig");
+
+  if (rend==null) {
+    sigma.disabled = true;
+    abs.disabled = true;
+    solid.disabled = true;
+    multig.disabled = true;
+  }
+  else {
+    sigma.disabled = false;
+    abs.disabled = false;
+    solid.disabled = false;
+    multig.disabled = false;
+
+    //dd("denmap.onMenuShowing> rend.use_abslevel = "+rend.use_abslevel);
+    if (rend.use_abslevel) {
+      sigma.removeAttribute("checked");
+      abs.setAttribute("checked", true);
+    }
+    else {
+      sigma.setAttribute("checked", true);
+      abs.removeAttribute("checked");
+    }
+
+    //dd("denmap.onMenuShowing> rend.colormode = "+rend.colormode);
+    if (rend.colormode=="multigrad") {
+      solid.removeAttribute("checked");
+      multig.setAttribute("checked", true);
+    }
+    else {
+      solid.setAttribute("checked", true);
+      multig.removeAttribute("checked");
+    }
+
+  }
 };
 
 denmap.setDisabled = function (aValue)
@@ -204,6 +256,18 @@ denmap.updateWidget = function (aRend, aPropName)
       this.mLevel.setAttribute("decimalplaces", 1);
     }
   }
+
+  if (aPropName==undefined ||
+      aPropName=="colormode") {
+    if (aRend.colormode=="multigrad") {
+      document.getElementById("denmap-panel-color-deck").selectedIndex = 1;
+    }
+    else {
+      document.getElementById("denmap-panel-color-deck").selectedIndex = 0;
+    }
+      
+  }
+
 }
 
 // widget --> data (renderer)
@@ -343,6 +407,22 @@ denmap.onShowCell = function (aEvent)
 
   scene.commitUndoTxn();
   // EDIT TXN END //
+};
+
+denmap.onEditColor = function (aEvent)
+{
+  let rend = this.mTgtRend;
+  let scene = rend.getScene();
+
+  var argobj = {
+  scene_id: scene.uid,
+  rend_id: rend.uid
+  };
+
+  var stylestr = "chrome,modal,resizable=yes,dependent,centerscreen";
+  window.openDialog("chrome://cuemol2/content/tools/multigrad_editor.xul",
+		    "", stylestr, argobj);
+
 };
 
 } )();

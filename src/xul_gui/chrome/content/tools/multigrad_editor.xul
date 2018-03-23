@@ -1,0 +1,81 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+
+<!-- -*- xml -*- -->
+
+<dialog
+  id     = "multigrad-editor-dialog"
+  windowtype="CueMol2:MultiGradEditDlg"
+  title  = "Multi-gradient editor"
+  xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  buttons="accept,cancel"
+  ondialogaccept="return gMain.onDialogAccept(event);"
+  >
+
+  <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/treeview.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/tools/multigrad_editor.js"/>
+
+
+  <vbox id="coloring-deck-paint" flex="1">
+    <!-- tree view for gradient data -->
+    <tree id="paint-listbox" flex="1"
+      hidecolumnpicker="true" editable="false"
+      treelines="false" seltype="multiple" style="height: 10em;">
+      <treecols>
+	<treecol id="paint_name" primary="true"
+	  label="Param" flex="1"
+	  persist="hidden ordinal width"/>
+	<splitter class="tree-splitter"/>
+	<treecol id="paint_value"
+	  label="Color" flex="1"
+	  persist="hidden ordinal width"/>
+      </treecols>
+      <treechildren id="paint-listbox-children" class="noindent-tree-children"/>
+    </tree>
+    
+    <!-- command buttons -->
+    <hbox flex="0">
+      
+      <toolbarbutton
+	id="paintpanel-addbtn"
+	class="toolbar-button add-button"
+	disabled="true"
+	oncommand="cuemolui.panels.paint.onAddCmd(event);"
+	tooltiptext="Add"/>
+      <toolbarbutton
+	id="paintpanel-delbtn"
+	class="toolbar-button delete-button"
+	disabled="true"
+	oncommand="cuemolui.panels.paint.onDeleteCmd(event);"
+	tooltiptext="Delete"/>
+      <toolbarbutton
+	id="paintpanel-delallbtn"
+	class="toolbar-button cleartext-button"
+	oncommand="cuemolui.panels.paint.onDeleteCmd(event);"
+	tooltiptext="Delete all"/>
+      <toolbarbutton
+	id="paintpanel-propbtn"
+	class="toolbar-button prop-button"
+	disabled="true"
+	oncommand="cuemolui.panels.paint.onPropCmd(event)"
+	tooltiptext="Change"/>
+      
+      <toolbarbutton
+	id="paintpanel-moveupbtn"
+	class="toolbar-button moveup-button"
+	disabled="true"
+	oncommand="cuemolui.panels.paint.onMoveUpCmd(event);"
+	tooltiptext="Move up"/>
+      <toolbarbutton
+	id="paintpanel-movedownbtn"
+	class="toolbar-button movedown-button"
+	disabled="true"
+	oncommand="cuemolui.panels.paint.onMoveDownCmd(event);"
+	tooltiptext="Move down"/>
+    </hbox>
+  </vbox>
+
+</dialog>
+

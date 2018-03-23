@@ -313,6 +313,9 @@ cuemol2.jar:
   content/tools/chg_chname.js
   content/tools/chg_resindex.xul
   content/tools/chg_resindex.js
+# Multi-gradient editor UI
+  content/tools/multigrad_editor.xul
+  content/tools/multigrad_editor.js
 #####
 # Locale files
 #
