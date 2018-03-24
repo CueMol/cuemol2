@@ -64,7 +64,7 @@ BoundarySet::~BoundarySet()
 
 #include <modules/molstr/BSPTree.hpp>
 
-/// Build bondary set from SID Map
+/// Build bondary set from Section edge-vertex graph
 void BoundarySet::build2(std::map<int, int> &sidmap, CutByPlane2 *pCBP)
 {
   int j;
@@ -90,11 +90,11 @@ void BoundarySet::build2(std::map<int, int> &sidmap, CutByPlane2 *pCBP)
     std::pair<int,int> elem2 = elem;
     nres = bsp.findAround(pCBP->getVert(elem.first), 1.0e-8, res);
     if (nres>1) {
-      MB_DPRINTLN("degen vert %d", elem.first);
+      // MB_DPRINTLN("degen vert %d", elem.first);
       int idmin = res[0];
       for (int ii=0; ii<nres; ++ii) {
         Vector4D v = pCBP->getVert(res[ii]);
-        MB_DPRINTLN("  %d (%f,%f,%f)", res[ii], v.x(), v.y(), v.z());
+        // MB_DPRINTLN("  %d (%f,%f,%f)", res[ii], v.x(), v.y(), v.z());
         idmin = qlib::min(idmin, res[ii]);
       }
       elem2.first = idmin;
@@ -102,11 +102,11 @@ void BoundarySet::build2(std::map<int, int> &sidmap, CutByPlane2 *pCBP)
 
     nres = bsp.findAround(pCBP->getVert(elem.second), 1.0e-8, res);
     if (nres>1) {
-      MB_DPRINTLN("degen vert %d", elem.second);
+      // MB_DPRINTLN("degen vert %d", elem.second);
       int idmin = res[0];
       for (int ii=0; ii<nres; ++ii) {
         Vector4D v = pCBP->getVert(res[ii]);
-        MB_DPRINTLN("  %d (%f,%f,%f)", res[ii], v.x(), v.y(), v.z());
+        // MB_DPRINTLN("  %d (%f,%f,%f)", res[ii], v.x(), v.y(), v.z());
         idmin = qlib::min(idmin, res[ii]);
       }
       elem2.second = idmin;
@@ -114,10 +114,15 @@ void BoundarySet::build2(std::map<int, int> &sidmap, CutByPlane2 *pCBP)
 
     auto res = sidmap2.insert(elem2);
     if (!res.second) {
-      MB_DPRINTLN("XXX");
+      LOG_DPRINTLN("ERROR!! XXX");
     }
   }
 
+#ifdef MB_DEBUG
+  BOOST_FOREACH (const SIDMap::value_type &elem, sidmap2) {
+    MB_DPRINTLN("%d --> %d", elem.first, elem.second);
+  }
+#endif
 
   while (sidmap2.size()>0) {
     Boundary *pbn = MB_NEW Boundary;

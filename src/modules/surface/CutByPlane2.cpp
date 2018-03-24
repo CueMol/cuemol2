@@ -159,8 +159,8 @@ void CutByPlane2::doit(double cden, const Vector4D &norm, const Vector4D &pos,
   // Preprosessing for building the section mesh faces
   //
 
-  m_outers.build(m_sidmap, this);
-  //m_outers.build2(m_sidmap, this);
+  //m_outers.build(m_sidmap, this);
+  m_outers.build2(m_sidmap, this);
   m_sidmap.clear();
 
 #ifdef MB_DEBUG
