@@ -393,6 +393,11 @@ namespace xtal {
       return nid;
     }
 
+    int addMSVert(int ix, int iy, int iz, int nx, int ny, int nz)
+    {
+      return addMSVert(Vector4D(ix, iy, iz), Vector4D(nx, ny, nz));
+    }
+
   public:    
     qsys::ObjectPtr generateSurfObj();
 
