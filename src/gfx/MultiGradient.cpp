@@ -203,3 +203,16 @@ MultiGradientPtr MultiGradient::createDefaultS()
   return pRes;
 }
 
+void MultiGradient::copyFrom(const MultiGradientPtr &pSrc)
+{
+  clear();
+
+  int i, nsize = pSrc->getSize();
+  for (i=0; i<nsize; ++i) {
+    double par = pSrc->getValueAt(i);
+    ColorPtr col = pSrc->getColorAt(i);
+    insert(par, col);
+  }
+}
+
+

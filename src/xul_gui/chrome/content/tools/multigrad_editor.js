@@ -24,7 +24,7 @@ if (!("MultiGradEditor" in cuemolui)) {
 
       this.mTreeView = new cuemolui.TreeView(window, "paint-listbox");
       this.mTreeView.clickHandler = function (ev, row, col) {
-	that.onPaintItemClick(ev, row, col);
+	that.onItemClick(ev, row, col);
       }
       //this.mTreeView.defCtxtMenuId = "paintPanelCtxtMenu";
 
@@ -49,10 +49,14 @@ if (!("MultiGradEditor" in cuemolui)) {
 	return;
       }
 
+      this.mParBox = document.getElementById("edit-param");
+      this.mColBox = document.getElementById("edit-color");
+
       // color_mapname
 
       // multi_grad
       this.setupListBox(rend);
+      this.setupPreview(rend);
     };
 
     klass.removePaintColCSS = function ()
@@ -100,9 +104,9 @@ if (!("MultiGradEditor" in cuemolui)) {
         var node = new Object();
         node.obj_id = i;
         node.name = sel.toString();
-        node.values = { paint_value: col.toString() };
+        node.values = { color_value: col.toString() };
 	var propval = "col_"+this._serial+"_"+i;
-        node.props = { paint_value: propval };
+        node.props = { color_value: propval };
 	nodes.push(node);
 	this.setPaintColCSS(propval, col);
       }
@@ -112,6 +116,59 @@ if (!("MultiGradEditor" in cuemolui)) {
       this.mTreeView.buildView();
     };
     
+    klass.setupPreview = function (aRend)
+    {
+      let coloring = aRend.multi_grad;
+      //let obj = aRend.getClientObj();
+      let obj = aRend.getColorMapObj();
+      
+      let i, col, sel;
+      let nlen = coloring.size;
+
+      let min_lab = document.getElementById("min_value");
+      let max_lab = document.getElementById("max_value");
+      let grad_elem = document.getElementById("preview_grad");
+
+      // remove all gradient stops
+      while (grad_elem.firstChild)
+	grad_elem.removeChild(grad_elem.firstChild);
+      
+      let dmin = obj.den_min;
+      let dmax = obj.den_max;
+      min_lab.value = dmin.toFixed(2);
+      max_lab.value = dmax.toFixed(2);
+
+      for (i=0; i<nlen; ++i) {
+	let val = coloring.getValueAt(i);
+	let col = coloring.getColorAt(i);
+
+	dd("par="+val+", col="+col);
+	let rho = (val-dmin)/(dmax-dmin);
+
+	let strcol = "rgb("+col.r()+","+col.g()+","+col.b()+")";
+
+	let stop_elem = document.createElementNS("http://www.w3.org/2000/svg", "stop");
+	stop_elem.setAttribute("offset", rho);
+	stop_elem.setAttribute("stop-color", strcol);
+	grad_elem.appendChild(stop_elem);
+      }
+      
+    };
+
+    klass.onItemClick = function (aEvent, elem, col)
+    {
+      var elem = this.mTreeView.getSelectedNode();
+      //this.mColTgt = elem;
+      if (!elem) {
+	//this.enableColNameValBoxes(false);
+	return;
+      }
+      
+      //this.enableColNameValBoxes(true);
+      this.mParBox.value = parseFloat(elem.name);
+      this.mColBox.setColorText(elem.values.color_value);
+    }
+
     klass.onDialogAccept = function ()
     {
       return true;

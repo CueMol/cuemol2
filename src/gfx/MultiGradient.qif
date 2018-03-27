@@ -24,6 +24,8 @@ runtime_class MultiGradient
   
   boolean removeAt(integer ind);
   boolean changeAt(integer ind, real value, object<AbstractColor$> pCol);
+
+  void copyFrom(object<MultiGradient$> src);
 };
 
 #endif

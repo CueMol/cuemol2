@@ -9,26 +9,52 @@
   windowtype="CueMol2:MultiGradEditDlg"
   title  = "Multi-gradient editor"
   xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  xmlns:svg="http://www.w3.org/2000/svg"
   buttons="accept,cancel"
   ondialogaccept="return gMain.onDialogAccept(event);"
   >
 
   <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
   <script type="application/javascript" src="chrome://cuemol2/content/treeview.js"/>
+  <script src="chrome://cuemol2/content/colpicker.js"/>
   <script type="application/javascript" src="chrome://cuemol2/content/tools/multigrad_editor.js"/>
 
-
-  <vbox id="coloring-deck-paint" flex="1">
+  <vbox flex="1">
+    
+    <label value="Preview:"/>
+    <vbox style="margin-left: 5px; margin-right: 5px">
+      <svg:svg version="1.1" width="100%" height="16px">
+	<svg:defs>
+	  <svg:linearGradient id="preview_grad">
+	    <!--<svg:stop offset="0" stop-color="#FF0000" anonid="grad_0"/>
+	    <svg:stop offset=".16666666666666666666" stop-color="#FFFF00" anonid="grad_60"/>
+	    <svg:stop offset=".33333333333333333333" stop-color="#00FF00" anonid="grad_120"/>
+	    <svg:stop offset="0.5" stop-color="#00FFFF" anonid="grad_180"/>
+	    <svg:stop offset=".66666666666666666666" stop-color="#0000FF" anonid="grad_240"/>
+	    <svg:stop offset=".83333333333333333333" stop-color="#FF00FF" anonid="grad_300"/>
+	      <svg:stop offset="1" stop-color="#FF0000" anonid="grad_360"/>-->
+	  </svg:linearGradient>
+	</svg:defs>
+	<svg:rect id="preview_rect1" x="0" y="0"
+	  width="100%" height="100%" fill="url(#preview_grad)"/>
+      </svg:svg>
+    </vbox>
+    <hbox>
+      <label id="min_value" value="Min" flex="0"/>
+      <spacer flex="1"/>
+      <label id="max_value" value="Max" flex="0"/>
+    </hbox>
+    
     <!-- tree view for gradient data -->
     <tree id="paint-listbox" flex="1"
       hidecolumnpicker="true" editable="false"
-      treelines="false" seltype="multiple" style="height: 10em;">
+      treelines="false" seltype="single" style="height: 10em;">
       <treecols>
 	<treecol id="paint_name" primary="true"
 	  label="Param" flex="1"
 	  persist="hidden ordinal width"/>
 	<splitter class="tree-splitter"/>
-	<treecol id="paint_value"
+	<treecol id="color_value"
 	  label="Color" flex="1"
 	  persist="hidden ordinal width"/>
       </treecols>
@@ -37,7 +63,6 @@
     
     <!-- command buttons -->
     <hbox flex="0">
-      
       <toolbarbutton
 	id="paintpanel-addbtn"
 	class="toolbar-button add-button"
@@ -55,26 +80,14 @@
 	class="toolbar-button cleartext-button"
 	oncommand="cuemolui.panels.paint.onDeleteCmd(event);"
 	tooltiptext="Delete all"/>
-      <toolbarbutton
-	id="paintpanel-propbtn"
-	class="toolbar-button prop-button"
-	disabled="true"
-	oncommand="cuemolui.panels.paint.onPropCmd(event)"
-	tooltiptext="Change"/>
-      
-      <toolbarbutton
-	id="paintpanel-moveupbtn"
-	class="toolbar-button moveup-button"
-	disabled="true"
-	oncommand="cuemolui.panels.paint.onMoveUpCmd(event);"
-	tooltiptext="Move up"/>
-      <toolbarbutton
-	id="paintpanel-movedownbtn"
-	class="toolbar-button movedown-button"
-	disabled="true"
-	oncommand="cuemolui.panels.paint.onMoveDownCmd(event);"
-	tooltiptext="Move down"/>
     </hbox>
+
+    <!-- command buttons -->
+    <hbox flex="0">
+      <textbox id="edit-param" type="number" decimalplaces="2" flex="1"/>
+      <mycolpicker id="edit-color" flex="1" onchange=""/>
+    </hbox>
+
   </vbox>
 
 </dialog>

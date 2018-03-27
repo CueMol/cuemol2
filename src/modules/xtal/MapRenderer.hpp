@@ -162,6 +162,9 @@ namespace xtal {
       invalidateDisplayCache();
     }
 
+    /// get color-map object (valid in MULTIGRAD mode)
+    qsys::ObjectPtr getColorMapObj() const;
+
     ///////////////////////////////////////////
     // constructors / destructor
 

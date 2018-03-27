@@ -15,6 +15,18 @@ runtime_class ElePotMap extends Object
 
   scriptable;
   smartptr;
+
+  // Properties
+  property real den_sigma => redirect(getRmsdDensity, XXX) (readonly);
+  property real den_min => redirect(getMinDensity, XXX) (readonly);
+  property real den_max => redirect(getMaxDensity, XXX) (readonly);
+  property real den_mean => redirect(getMeanDensity, XXX) (readonly);
+  
+  // Methods
+  string getNormHistogramJSON();
+
+  void fitView(object<View$> pView, boolean dummy);
+
 };
 
 #endif

@@ -62,7 +62,7 @@ runtime_class MolSurfRenderer extends Renderer
   //////////
   // for "potential" mode
 
-  /// reference elepot target (used in potential mode)
+  /// reference elepot target (used in potential/multigrad mode)
   property string elepot => redirect(getTgtElePotName, setTgtElePotName);
   default elepot = "";
 

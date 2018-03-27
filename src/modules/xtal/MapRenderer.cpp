@@ -162,3 +162,9 @@ void MapRenderer::setupMolBndry()
   m_bUseMolBndry = true;
 }
 
+qsys::ObjectPtr MapRenderer::getColorMapObj() const
+{
+  qsys::ObjectPtr pobj = ensureNotNull(getScene())->getObjectByName(getColorMapName());
+  return pobj;
+}
+

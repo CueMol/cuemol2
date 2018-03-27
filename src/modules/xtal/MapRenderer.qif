@@ -82,6 +82,8 @@ runtime_class MapRenderer extends Renderer
 
   property string color_mapname => redirect(getColorMapName, setColorMapName);
   default color_mapname = "";
+
+  object<Object$> getColorMapObj();
 };
 
 #endif

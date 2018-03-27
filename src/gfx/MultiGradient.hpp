@@ -101,6 +101,8 @@ namespace gfx {
     virtual void writeTo2(qlib::LDom2Node *pNode) const;
     virtual void readFrom2(qlib::LDom2Node *pNode);
 
+    void copyFrom(const MultiGradientPtr &pSrc);
+
     // utility method for creating default value
     static MultiGradientPtr createDefaultS();
   };
