@@ -127,6 +127,9 @@ namespace surface {
       m_ins.push_back(pbn2);
     }
 
+    ///////////
+
+    void dump() const;
   };
 
 }

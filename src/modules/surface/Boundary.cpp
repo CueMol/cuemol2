@@ -88,7 +88,7 @@ void BoundarySet::build2(std::map<int, int> &sidmap, CutByPlane2 *pCBP)
   int nres;
   BOOST_FOREACH (const SIDMap::value_type &elem, sidmap) {
     std::pair<int,int> elem2 = elem;
-    nres = bsp.findAround(pCBP->getVert(elem.first), 1.0e-8, res);
+    nres = bsp.findAround(pCBP->getVert(elem.first), 1.0e-6, res);
     if (nres>1) {
       // MB_DPRINTLN("degen vert %d", elem.first);
       int idmin = res[0];
@@ -100,7 +100,7 @@ void BoundarySet::build2(std::map<int, int> &sidmap, CutByPlane2 *pCBP)
       elem2.first = idmin;
     }
 
-    nres = bsp.findAround(pCBP->getVert(elem.second), 1.0e-8, res);
+    nres = bsp.findAround(pCBP->getVert(elem.second), 1.0e-6, res);
     if (nres>1) {
       // MB_DPRINTLN("degen vert %d", elem.second);
       int idmin = res[0];
@@ -118,12 +118,13 @@ void BoundarySet::build2(std::map<int, int> &sidmap, CutByPlane2 *pCBP)
     }
   }
 
-#ifdef MB_DEBUG
+#if 0 //def MB_DEBUG
   BOOST_FOREACH (const SIDMap::value_type &elem, sidmap2) {
     MB_DPRINTLN("%d --> %d", elem.first, elem.second);
   }
 #endif
 
+  int nextid=-1;
   while (sidmap2.size()>0) {
     Boundary *pbn = MB_NEW Boundary;
 
@@ -133,7 +134,7 @@ void BoundarySet::build2(std::map<int, int> &sidmap, CutByPlane2 *pCBP)
     pbn->insert(ed.first, pCBP->ontoPlane(ed.first));
 
     for (j=0;;++j) {
-      int nextid = ed.second;
+      nextid = ed.second;
       iter = sidmap2.find(nextid);
       if (iter==sidmap2.end()) {
         break;
@@ -146,7 +147,24 @@ void BoundarySet::build2(std::map<int, int> &sidmap, CutByPlane2 *pCBP)
     }
 
     MB_DPRINTLN("boundary no %d size=%d", super_t::size(), pbn->getSize());
-    super_t::push_back(pbn);
+
+    if (pbn->getSize()>0) {
+      int nfirst = pbn->getID(0);
+      if (nfirst!=nextid) {
+        LOG_DPRINTLN("ERROR: boundary no %d is not circular --> discard", super_t::size());
+        pbn->dump();
+        Vector2D ve = pCBP->ontoPlane(nextid);
+        LOG_DPRINTLN("X %d %f %f", nextid, ve.x(), ve.y());
+        delete pbn;
+      }
+      else {
+        super_t::push_back(pbn);
+      }
+    }
+    else {
+      MB_DPRINTLN("ERROR: empty boundary no %d --> skip", super_t::size());
+      delete pbn;
+    }
   }
 
   buildInnerBoundary();
@@ -214,5 +232,16 @@ void BoundarySet::buildInnerBoundary()
   } // outer loop
 
   return;
+}
+
+void Boundary::dump() const
+{
+#ifdef MB_DEBUG
+  Vector2D v2d;
+  for (int i=0; i<getSize(); ++i) {
+    v2d = getVert(i);
+    LOG_DPRINTLN("%d %d %f %f", i, getID(i),v2d.x(), v2d.y());
+  }
+#endif
 }
 

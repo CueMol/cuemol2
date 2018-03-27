@@ -163,7 +163,7 @@ void CutByPlane2::doit(double cden, const Vector4D &norm, const Vector4D &pos,
   m_outers.build2(m_sidmap, this);
   m_sidmap.clear();
 
-#ifdef MB_DEBUG
+#if 0 //def MB_DEBUG
   {
     int j=0;
     BOOST_FOREACH (Boundary *pbndry, m_outers) {
