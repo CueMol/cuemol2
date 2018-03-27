@@ -535,6 +535,18 @@ Vector4D MapSurfRenderer::getGrdNorm2(int ix, int iy, int iz)
   return rval;
 }
 
+inline int getVertFlag4(int iVertFlag, const int *iv)
+{
+  int ires = 0;
+
+  for (int i=0; i<4; ++i)
+    if (iVertFlag & (1<<iv[i]))
+      ires |= 1<<i;
+
+  return ires;
+}
+
+
 //////////////////////////////////////////
 
 void MapSurfRenderer::marchCube(DisplayContext *pdl,
@@ -546,7 +558,7 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
   Vector4D asEdgeNorm[12];
   bool edgeBinFlags[12];
 
-  // Find which vertices are inside of the surface and which are outside
+  // Find which vertices are inside (0) of the surface and which are outside (1)
   iFlagIndex = 0;
   for(iVertexTest = 0; iVertexTest < 8; iVertexTest++) {
     if(m_values[iVertexTest] <= m_dLevel) 
@@ -560,11 +572,8 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
     return;
   }
 
-  // Find which edges are intersected by the surface
-  iEdgeFlags = aiCubeEdgeFlags[iFlagIndex];
-
+  // Calclate the 6-bit border flags
   int border_flag = 0;
-  
   if (fx==0)
     border_flag |= 1<<0;
   if (m_nActCol<=fx+m_nBinFac)
@@ -578,11 +587,12 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
   if (m_nActSec<=fz+m_nBinFac)
     border_flag |= 1<<5;
 
-  if(iEdgeFlags == 0 && pdl==NULL) {
+  if(iFlagIndex == 0 && pdl==NULL) {
+    // Fill the border of the extent
     // inside of the iso-surface
     int nx, ny, nz, dx, dy, dz, dx2, dy2, dz2;
 
-    for (int i=0; i<5; ++i) {
+    for (int i=0; i<6; ++i) {
       int mask = 1<<i;
       if (border_flag & mask) {
 
@@ -603,78 +613,11 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
         }
       }
     }
-/*
-    if (fx==0) {
-      nBorderID = 0;
-      nx = border_normal[nBorderID][0];
-      ny = border_normal[nBorderID][1];
-      nz = border_normal[nBorderID][2];
-      dx = ( (nx+1)/2 )*m_nBinFac;
-      dy = ( (ny+1)/2 )*m_nBinFac;
-      dz = ( (nz+1)/2 )*m_nBinFac;
-      for (int i=0; i<6; ++i)
-        addMSVert(fx+dx, fy+dy + border_plane[i][1], fz+dz + border_plane[i][2], nx, ny, nz);
-    }
-    else if (m_nActCol<=fx+m_nBinFac) {
-      nBorderID = 1;
-      nx = border_normal[nBorderID][0];
-      ny = border_normal[nBorderID][1];
-      nz = border_normal[nBorderID][2];
-      dx = ( (nx+1)/2 )*m_nBinFac;
-      dy = ( (ny+1)/2 )*m_nBinFac;
-      dz = ( (nz+1)/2 )*m_nBinFac;
-      for (int i=0; i<6; ++i)
-        addMSVert(fx+dx, fy+dy + border_plane[i][2], fz+dz + border_plane[i][1], nx, ny, nz);
-    }
-
-    if (fy==0) {
-      nBorderID = 2;
-      nx = border_normal[nBorderID][0];
-      ny = border_normal[nBorderID][1];
-      nz = border_normal[nBorderID][2];
-      dx = ( (nx+1)/2 )*m_nBinFac;
-      dy = ( (ny+1)/2 )*m_nBinFac;
-      dz = ( (nz+1)/2 )*m_nBinFac;
-      for (int i=0; i<6; ++i)
-        addMSVert(fx+dx + border_plane[i][2], fy+dy, fz+dz + border_plane[i][1], nx, ny, nz);
-    }
-    else if (m_nActRow<=fy+m_nBinFac) {
-      nBorderID = 3;
-      nx = border_normal[nBorderID][0];
-      ny = border_normal[nBorderID][1];
-      nz = border_normal[nBorderID][2];
-      dx = ( (nx+1)/2 )*m_nBinFac;
-      dy = ( (ny+1)/2 )*m_nBinFac;
-      dz = ( (nz+1)/2 )*m_nBinFac;
-      for (int i=0; i<6; ++i)
-        addMSVert(fx+dx + border_plane[i][1], fy+dy, fz+dz + border_plane[i][2], nx, ny, nz);
-    }
-
-    if (fz==0) {
-      nBorderID = 4;
-      nx = border_normal[nBorderID][0];
-      ny = border_normal[nBorderID][1];
-      nz = border_normal[nBorderID][2];
-      dx = ( (nx+1)/2 )*m_nBinFac;
-      dy = ( (ny+1)/2 )*m_nBinFac;
-      dz = ( (nz+1)/2 )*m_nBinFac;
-      for (int i=0; i<6; ++i)
-        addMSVert(fx+dx + border_plane[i][1], fy+dy + border_plane[i][2], fz+dz, nx, ny, nz);
-    }
-    else if (m_nActSec<=fz+m_nBinFac) {
-      nBorderID = 5;
-      nx = border_normal[nBorderID][0];
-      ny = border_normal[nBorderID][1];
-      nz = border_normal[nBorderID][2];
-      dx = ( (nx+1)/2 )*m_nBinFac;
-      dy = ( (ny+1)/2 )*m_nBinFac;
-      dz = ( (nz+1)/2 )*m_nBinFac;
-      for (int i=0; i<6; ++i)
-        addMSVert(fx+dx + border_plane[i][2], fy+dy + border_plane[i][1], fz+dz, nx, ny, nz);
-    }
-*/
     return;
   }
+
+  // Find which edges are intersected by the surface
+  iEdgeFlags = aiCubeEdgeFlags[iFlagIndex];
 
   {
     for (int ii=0; ii<8; ii++) {
@@ -792,7 +735,188 @@ void MapSurfRenderer::marchCube(DisplayContext *pdl,
 
   } // for(iTriangle = 0; iTriangle < 5; iTriangle++)
 
-  return;
+
+  // Fill the border of the extent
+  if(pdl==NULL) {
+    Vector4D v[8+12];
+    for (int i=0; i<8; ++i) {
+      v[i].x() = double(fx) + a2fVertexOffset[i][0] * m_nBinFac;
+      v[i].y() = double(fy) + a2fVertexOffset[i][1] * m_nBinFac;
+      v[i].z() = double(fz) + a2fVertexOffset[i][2] * m_nBinFac;
+      v[i].w() = 0;
+    }
+    for (int i=0; i<12; ++i) {
+      v[i+8] = asEdgeVertex[i];
+    }
+    
+    for (int iBorder=0; iBorder<6; ++iBorder) {
+      int mask = 1<<iBorder;
+      if (border_flag & mask) {
+        
+        Vector4D norm(border_normal[iBorder][0], border_normal[iBorder][1], border_normal[iBorder][2]);
+        
+        const int *iverts = bdr_verts[iBorder]; //{0, 4, 7, 3};
+        const int *iedges = bdr_edges[iBorder]; //[4] = {8, 7, 11, 3};
+        
+        int ivf4 = getVertFlag4(iFlagIndex, iverts);
+        
+        for (int j=0; j<3*3; ++j) {
+          int ix = bdr_tris[ivf4][j];
+          if (ix<0) break;
+          addMSVert(v[iverts[ix]], norm);
+        }
+        
+
+            /*
+          switch (ivf4) {
+            // 1-tri case
+          case 15-1:
+            addMSVert(v[iverts[0]], norm);
+            addMSVert(v[iverts[0+4]], norm);
+            addMSVert(v[iverts[3+4]], norm);
+            break;
+          case 15-2:
+            addMSVert(v[iverts[1]], norm);
+            addMSVert(v[iverts[1+4]], norm);
+            addMSVert(v[iverts[0+4]], norm);
+            break;
+          case 15-4:
+            addMSVert(v[iverts[2]], norm);
+            addMSVert(v[iverts[2+4]], norm);
+            addMSVert(v[iverts[1+4]], norm);
+            break;
+          case 15-8:
+            addMSVert(v[iverts[3]], norm);
+            addMSVert(v[iverts[3+4]], norm);
+            addMSVert(v[iverts[2+4]], norm);
+            break;
+
+            // 2-tri case
+          case 12: // 1100
+            addMSVert(v[iverts[0]], norm);
+            addMSVert(v[iverts[1]], norm);
+            addMSVert(asEdgeVertex[iedges[3]], norm);
+            
+            addMSVert(v[iverts[1]], norm);
+            addMSVert(asEdgeVertex[iedges[1]], norm);
+            addMSVert(asEdgeVertex[iedges[3]], norm);
+            break;
+            
+          case 3: // 0011
+            addMSVert(v[iverts[2]], norm);
+            addMSVert(v[iverts[3]], norm);
+            addMSVert(asEdgeVertex[iedges[1]], norm);
+            
+            addMSVert(v[iverts[3]], norm);
+            addMSVert(asEdgeVertex[iedges[3]], norm);
+            addMSVert(asEdgeVertex[iedges[1]], norm);
+            break;
+
+          case 6: // 0110
+            addMSVert(v[iverts[3]], norm);
+            addMSVert(v[iverts[0]], norm);
+            addMSVert(asEdgeVertex[iedges[2]], norm);
+            
+            addMSVert(v[iverts[0]], norm);
+            addMSVert(asEdgeVertex[iedges[0]], norm);
+            addMSVert(asEdgeVertex[iedges[2]], norm);
+            break;
+
+          case 9: // 1001
+            addMSVert(v[iverts[1]], norm);
+            addMSVert(v[iverts[2]], norm);
+            addMSVert(asEdgeVertex[iedges[0]], norm);
+            
+            addMSVert(v[iverts[2]], norm);
+            addMSVert(asEdgeVertex[iedges[2]], norm);
+            addMSVert(asEdgeVertex[iedges[0]], norm);
+            break;
+
+            
+          case 5:
+          case 10:
+            LOG_DPRINTLN("XXX");
+            break;
+            
+          case 0:
+            addMSVert(v[iverts[0]], norm);
+            addMSVert(v[iverts[1]], norm);
+            addMSVert(v[iverts[3]], norm);
+
+            addMSVert(v[iverts[1]], norm);
+            addMSVert(v[iverts[2]], norm);
+            addMSVert(v[iverts[3]], norm);
+            break;
+
+          case 15:
+            break;
+            
+
+            // 3-tri case
+          case 1:
+            addMSVert(v[iverts[2]], norm);
+            addMSVert(asEdgeVertex[iedges[3]], norm);
+            addMSVert(asEdgeVertex[iedges[0]], norm);
+
+            addMSVert(v[iverts[2]], norm);
+            addMSVert(asEdgeVertex[iedges[0]], norm);
+            addMSVert(v[iverts[1]], norm);
+
+            addMSVert(v[iverts[2]], norm);
+            addMSVert(v[iverts[3]], norm);
+            addMSVert(asEdgeVertex[iedges[3]], norm);
+            break;
+
+          case 2:
+            addMSVert(v[iverts[3]], norm);
+            addMSVert(asEdgeVertex[iedges[0]], norm);
+            addMSVert(asEdgeVertex[iedges[1]], norm);
+
+            addMSVert(v[iverts[3]], norm);
+            addMSVert(asEdgeVertex[iedges[1]], norm);
+            addMSVert(v[iverts[2]], norm);
+
+            addMSVert(v[iverts[3]], norm);
+            addMSVert(v[iverts[0]], norm);
+            addMSVert(asEdgeVertex[iedges[0]], norm);
+            break;
+
+          case 4:
+            addMSVert(v[iverts[0]], norm);
+            addMSVert(asEdgeVertex[iedges[1]], norm);
+            addMSVert(asEdgeVertex[iedges[2]], norm);
+            
+            addMSVert(v[iverts[0]], norm);
+            addMSVert(asEdgeVertex[iedges[2]], norm);
+            addMSVert(v[iverts[3]], norm);
+
+            addMSVert(v[iverts[0]], norm);
+            addMSVert(v[iverts[1]], norm);
+            addMSVert(asEdgeVertex[iedges[1]], norm);
+            break;
+
+          case 8:
+            addMSVert(v[iverts[1]], norm);
+            addMSVert(asEdgeVertex[iedges[2]], norm);
+            addMSVert(asEdgeVertex[iedges[3]], norm);
+            
+            addMSVert(v[iverts[1]], norm);
+            addMSVert(asEdgeVertex[iedges[3]], norm);
+            addMSVert(v[iverts[0]], norm);
+
+            addMSVert(v[iverts[1]], norm);
+            addMSVert(v[iverts[2]], norm);
+            addMSVert(asEdgeVertex[iedges[2]], norm);
+            break;
+          }
+             */
+
+
+      }
+    }
+    return;
+  }
+
 }
 
 void MapSurfRenderer::setupXformMat()
