@@ -231,7 +231,7 @@ namespace xtal {
     /// Coloring map object (for MULTIGRAD mode)
     qsys::ScalarObject *m_pColMapObj;
 
-    gfx::MultiGradient *m_pGrad;
+    qsys::MultiGradient *m_pGrad;
 
     void setVertexColor(DisplayContext *pdl, const Vector4D &rfPosition);
 

@@ -3,11 +3,11 @@
 //  Multi-color gradient
 //
 
-#ifndef GFX_MULTI_GRADIENT_HPP_INCLUDE_
-#define GFX_MULTI_GRADIENT_HPP_INCLUDE_
+#ifndef QSYS_MULTI_GRADIENT_HPP_INCLUDE_
+#define QSYS_MULTI_GRADIENT_HPP_INCLUDE_
 
-#include "gfx.hpp"
-#include "AbstractColor.hpp"
+#include "qsys.hpp"
+#include <gfx/AbstractColor.hpp>
 
 using qlib::LString;
 
@@ -15,12 +15,12 @@ namespace qlib {
   class Vector4D;
 }
 
-namespace gfx {
+namespace qsys {
 
   ///
-  //   Multi-color gradient class
-  //
-  class GFX_API MultiGradient : public qlib::LSimpleCopyScrObject
+  ///   Multi-color gradient class (without undo/redo support)
+  ///
+  class QSYS_API MultiGradient : public qlib::LSimpleCopyScrObject
   {
     MC_SCRIPTABLE;
     MC_CLONEABLE;
@@ -32,8 +32,8 @@ namespace gfx {
     struct Node
     {
       double value;
-      ColorPtr pColor;
-      Node(double aval, ColorPtr acol) : value(aval), pColor(acol) {}
+      gfx::ColorPtr pColor;
+      Node(double aval, gfx::ColorPtr acol) : value(aval), pColor(acol) {}
     };
 
     struct NodeComp
@@ -62,7 +62,7 @@ namespace gfx {
 
     /// append a new node
     /// @return returns index of the inserted node. returns -1 if the same value alreadly presents.
-    int insert(double value, const ColorPtr &color)
+    int insert(double value, const gfx::ColorPtr &color)
     {
       std::pair<data_t::iterator, bool> res = m_data.insert(Node(value, color));
       if (!res.second)
@@ -77,16 +77,16 @@ namespace gfx {
     }
 
     /// get color
-    ColorPtr getColor(double rho) const;
+    gfx::ColorPtr getColor(double rho) const;
 
     /// get node count
     int getSize() const { return m_data.size(); }
 
-    ColorPtr getColorAt(int ind) const;
+    gfx::ColorPtr getColorAt(int ind) const;
     double getValueAt(int ind) const;
 
     bool removeAt(int ind);
-    bool changeAt(int ind, double value, const ColorPtr &color)
+    bool changeAt(int ind, double value, const gfx::ColorPtr &color)
     {
       if (!removeAt(ind))
         return false;
@@ -101,7 +101,7 @@ namespace gfx {
     virtual void writeTo2(qlib::LDom2Node *pNode) const;
     virtual void readFrom2(qlib::LDom2Node *pNode);
 
-    void copyFrom(const MultiGradientPtr &pSrc);
+    virtual void copyFrom(const MultiGradientPtr &pSrc);
 
     // utility method for creating default value
     static MultiGradientPtr createDefaultS();

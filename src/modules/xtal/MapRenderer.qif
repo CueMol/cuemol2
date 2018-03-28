@@ -8,7 +8,7 @@
 
 #include <qsys/Renderer.qif>
 #include <gfx/Color.qif>
-#include <gfx/MultiGradient.qif>
+#include <qsys/MultiGradient.qif>
 #include <modules/molstr/SelCommand.qif>
 
 runtime_class MapRenderer extends Renderer

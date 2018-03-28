@@ -17,7 +17,7 @@
 #include <sysdep/OglDisplayContext.hpp>
 #include <sysdep/OglProgramObject.hpp>
 
-#include <gfx/MultiGradient.hpp>
+#include <qsys/MultiGradient.hpp>
 
 class GLSLMapVolRenderer_wrap;
 
@@ -61,7 +61,7 @@ namespace xtal {
     /// (default: false)
     bool m_bDragUpdate;
 
-    gfx::MultiGradient m_xferfn;
+    qsys::MultiGradient m_xferfn;
 
   public:
     /// Auto xfer function type ID

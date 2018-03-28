@@ -8,7 +8,7 @@
 
 #include <qsys/Renderer.qif>
 #include <gfx/Color.qif>
-#include <gfx/MultiGradient.qif>
+#include <qsys/MultiGradient.qif>
 #include <modules/molstr/ColoringScheme.qif>
 #include <modules/molstr/SelCommand.qif>
 
@@ -88,7 +88,6 @@ runtime_class MolSurfRenderer extends Renderer
   // for "multigrad" mode
 
   property object<MultiGradient$> multi_grad => redirect(getMultiGrad, xxx) (readonly);
-  // default multi_grad = gfx::MultiGradient::createDefaultS();
 
   //////////
   // ramp_above/ramp_value props are used in both potential & multigrad modes

@@ -46,6 +46,11 @@ TreeView.prototype.setData = function (aData)
   this._data = aData;
 };
 
+TreeView.prototype.getData = function ()
+{
+  return this._data;
+};
+
 /////
 
 TreeView.prototype.saveOpenState = function (aId)
@@ -619,6 +624,7 @@ TreeView.prototype._onClick = function (aEvent)
   }
 
   if (this.clickHandler) {
+    //dd("TreeView._onClick()");
     if (row.value<0) {
       // no selection
       this.clickHandler(aEvent, null, null);
@@ -627,6 +633,7 @@ TreeView.prototype._onClick = function (aEvent)
       var node = this.getNodeByRow(row.value);
       this.clickHandler(aEvent, node, col.value.id);
     }
+    return;
   }
 };
 

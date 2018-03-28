@@ -55,6 +55,8 @@ namespace qsys {
   MC_DECL_SCRSP(ObjExtData);
   MC_DECL_SCRSP(DrawObj);
   MC_DECL_SCRSP(AnimMgr);
+
+  MC_DECL_SCRSP(MultiGradient);
 }
 
 #endif // QSYS_DLL_H__

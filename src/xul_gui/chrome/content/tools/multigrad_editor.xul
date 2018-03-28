@@ -25,15 +25,7 @@
     <vbox style="margin-left: 5px; margin-right: 5px">
       <svg:svg version="1.1" width="100%" height="16px">
 	<svg:defs>
-	  <svg:linearGradient id="preview_grad">
-	    <!--<svg:stop offset="0" stop-color="#FF0000" anonid="grad_0"/>
-	    <svg:stop offset=".16666666666666666666" stop-color="#FFFF00" anonid="grad_60"/>
-	    <svg:stop offset=".33333333333333333333" stop-color="#00FF00" anonid="grad_120"/>
-	    <svg:stop offset="0.5" stop-color="#00FFFF" anonid="grad_180"/>
-	    <svg:stop offset=".66666666666666666666" stop-color="#0000FF" anonid="grad_240"/>
-	    <svg:stop offset=".83333333333333333333" stop-color="#FF00FF" anonid="grad_300"/>
-	      <svg:stop offset="1" stop-color="#FF0000" anonid="grad_360"/>-->
-	  </svg:linearGradient>
+	  <svg:linearGradient id="preview_grad"/>
 	</svg:defs>
 	<svg:rect id="preview_rect1" x="0" y="0"
 	  width="100%" height="100%" fill="url(#preview_grad)"/>
@@ -64,27 +56,32 @@
     <!-- command buttons -->
     <hbox flex="0">
       <toolbarbutton
-	id="paintpanel-addbtn"
+	id="add-btn"
 	class="toolbar-button add-button"
-	disabled="true"
-	oncommand="cuemolui.panels.paint.onAddCmd(event);"
+	oncommand="gMain.onAddNode(event);"
 	tooltiptext="Add"/>
       <toolbarbutton
-	id="paintpanel-delbtn"
+	id="del-btn"
 	class="toolbar-button delete-button"
 	disabled="true"
-	oncommand="cuemolui.panels.paint.onDeleteCmd(event);"
+	oncommand="gMain.onDelNode(event);"
 	tooltiptext="Delete"/>
       <toolbarbutton
-	id="paintpanel-delallbtn"
+	id="delall-btn"
 	class="toolbar-button cleartext-button"
-	oncommand="cuemolui.panels.paint.onDeleteCmd(event);"
+	oncommand="gMain.onDelAllNodes(event);"
 	tooltiptext="Delete all"/>
+      <toolbarbutton label="Load preset" type="menu">
+	<menupopup>
+	  <menuitem label="Rainbow"/>
+	  <menuitem label="ResMap"/>
+	</menupopup>
+      </toolbarbutton>
     </hbox>
 
     <!-- command buttons -->
     <hbox flex="0">
-      <textbox id="edit-param" type="number" decimalplaces="2" flex="1"/>
+      <textbox id="edit-param" type="number" decimalplaces="2" flex="1" min="-NaN" max="NaN"/>
       <mycolpicker id="edit-color" flex="1" onchange=""/>
     </hbox>
 

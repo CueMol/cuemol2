@@ -49,7 +49,6 @@ namespace gfx {
   class AbstractColor;
   typedef qlib::LScrSp<AbstractColor> ColorPtr;
 
-  MC_DECL_SCRSP(MultiGradient);
 }
 
 #endif // GFX_DLL_H__

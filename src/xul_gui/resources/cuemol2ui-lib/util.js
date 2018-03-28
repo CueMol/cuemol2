@@ -655,6 +655,18 @@ exports.packToHTMLColor = function ( rgb )
         (b < 16 ? '0' : '') + b.toString(16);
 }
 
+exports.getHTMLColor = function ( aCol )
+{
+  var r = aCol.r();
+  var g = aCol.g();
+  var b = aCol.b();
+  
+  return '#' + 
+    (r < 16 ? '0' : '') + r.toString(16) +
+      (g < 16 ? '0' : '') + g.toString(16) +
+        (b < 16 ? '0' : '') + b.toString(16);
+}
+
 ////////////////////////////////////////////////
 // selection
 

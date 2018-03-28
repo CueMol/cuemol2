@@ -6,15 +6,15 @@
 #include <common.h>
 
 #include "MultiGradient.hpp"
-#include "SolidColor.hpp"
-#include "GradientColor.hpp"
+#include <gfx/SolidColor.hpp>
+#include <gfx/GradientColor.hpp>
 #include <qlib/Utils.hpp>
 #include <qlib/Vector4D.hpp>
 #include <qlib/LDOM2Tree.hpp>
 
-using namespace gfx;
+using namespace qsys;
 
-MC_CLONEABLE_IMPL(gfx::MultiGradient);
+// MC_CLONEABLE_IMPL(qsys::MultiGradient);
 
 MultiGradient::MultiGradient()
 {
@@ -25,10 +25,10 @@ MultiGradient::~MultiGradient()
 }
 
 /// get color
-ColorPtr MultiGradient::getColor(double rho) const
+gfx::ColorPtr MultiGradient::getColor(double rho) const
 {
   if (m_data.empty())
-    return SolidColor::createRGB(0.0, 0.0, 0.0, 1.0);
+    return gfx::SolidColor::createRGB(0.0, 0.0, 0.0, 1.0);
 
   data_t::const_iterator iter = m_data.begin();
 
@@ -57,7 +57,7 @@ ColorPtr MultiGradient::getColor(double rho) const
     double v2 = iter2->value;
     if (v1<=rho && rho<v2) {
       double rho2 = (rho-v1)/(v2-v1);
-      return ColorPtr(new GradientColor(iter2->pColor, iter->pColor, rho2)); 
+      return gfx::ColorPtr(MB_NEW gfx::GradientColor(iter2->pColor, iter->pColor, rho2)); 
     }
   }
 
@@ -112,7 +112,7 @@ double MultiGradient::getValueAt(int ind) const
   return iter->value;
 }
 
-ColorPtr MultiGradient::getColorAt(int ind) const
+gfx::ColorPtr MultiGradient::getColorAt(int ind) const
 {
   data_t::const_iterator iter = getIterAt(ind);
 
@@ -188,7 +188,7 @@ void MultiGradient::readFrom2(qlib::LDom2Node *pNode)
       LOG_DPRINTLN("MultiGradient.readFrom> no color valule in gradnode tag!!");
       continue;
     }
-    ColorPtr pCol(gfx::AbstractColor::fromNode(pColNode));
+    gfx::ColorPtr pCol(gfx::AbstractColor::fromNode(pColNode));
 
     insert(val, pCol);
   }
@@ -199,8 +199,46 @@ void MultiGradient::readFrom2(qlib::LDom2Node *pNode)
 MultiGradientPtr MultiGradient::createDefaultS()
 {
   MultiGradientPtr pRes(MB_NEW MultiGradient());
-  pRes->insert(0.0, SolidColor::createRGB(1.0, 1.0, 1.0, 1.0));
+  pRes->insert(0.0, gfx::SolidColor::createRGB(1.0, 1.0, 1.0, 1.0));
   return pRes;
+}
+
+namespace {
+/*
+class MultiGradEditInfo : public qsys::PropEditInfoBase
+{
+public:
+
+  MultiGradEditInfo()
+  {
+  }
+
+  virtual ~MultiGradEditInfo()
+  {
+  }
+
+  //////////
+
+  /// Perform undo
+  virtual bool undo()
+  {
+  }
+  
+  /// Perform redo
+  virtual bool redo() {
+  }
+  
+  virtual bool isUndoable() const {
+    if (m_pSel.isnull() || m_pCol.isnull()) return false;
+    return true;
+  }
+  virtual bool isRedoable() const {
+    if (m_pSel.isnull() || m_pCol.isnull()) return false;
+    return true;
+  }
+
+};
+*/
 }
 
 void MultiGradient::copyFrom(const MultiGradientPtr &pSrc)
@@ -210,7 +248,7 @@ void MultiGradient::copyFrom(const MultiGradientPtr &pSrc)
   int i, nsize = pSrc->getSize();
   for (i=0; i<nsize; ++i) {
     double par = pSrc->getValueAt(i);
-    ColorPtr col = pSrc->getColorAt(i);
+    gfx::ColorPtr col = pSrc->getColorAt(i);
     insert(par, col);
   }
 }

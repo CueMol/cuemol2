@@ -4,15 +4,16 @@
 #ifndef MULTI_GRADIENT_QIF_INCLUDED
 #define MULTI_GRADIENT_QIF_INCLUDED
 
-#include "AbstractColor.qif"
+#include <gfx/AbstractColor.qif>
 
 runtime_class MultiGradient
 {
   client_hdr "MultiGradient.hpp";
-  client_name gfx::MultiGradient;
+  client_name qsys::MultiGradient;
 
   scriptable;
   smartptr;
+  cloneable;
 
   property integer size => redirect(getSize, XXX) (readonly);
 

@@ -40,7 +40,7 @@ MolSurfRenderer::MolSurfRenderer()
 
   m_nTgtMolID = qlib::invalid_uid;
 
-  m_pGrad = gfx::MultiGradientPtr(MB_NEW gfx::MultiGradient());
+  m_pGrad = qsys::MultiGradientPtr(MB_NEW qsys::MultiGradient());
 }
 
 /// destructor

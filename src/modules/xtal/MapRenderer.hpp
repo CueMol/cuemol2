@@ -11,7 +11,7 @@
 #include <qlib/Vector4D.hpp>
 #include <gfx/gfx.hpp>
 #include <gfx/AbstractColor.hpp>
-#include <gfx/MultiGradient.hpp>
+#include <qsys/MultiGradient.hpp>
 #include <qsys/DispListRenderer.hpp>
 #include <qsys/ScalarObject.hpp>
 
@@ -138,14 +138,14 @@ namespace xtal {
 
   private:
     /// Multi gradient data
-    gfx::MultiGradientPtr m_pGrad;
+    qsys::MultiGradientPtr m_pGrad;
 
   public:
-    gfx::MultiGradientPtr getMultiGrad() const {
+    qsys::MultiGradientPtr getMultiGrad() const {
       return m_pGrad;
     }
 
-    void setMultiGrad(const gfx::MultiGradientPtr &val) {
+    void setMultiGrad(const qsys::MultiGradientPtr &val) {
       m_pGrad = val;
     }
 
