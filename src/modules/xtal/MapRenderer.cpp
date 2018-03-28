@@ -29,6 +29,8 @@ MapRenderer::MapRenderer()
   m_bUseMolBndry = false;
   m_bUseAbsLev = false;
   m_pGrad = qsys::MultiGradientPtr(MB_NEW qsys::MultiGradient());
+
+  super_t::setupParentData("multi_grad");
 }
 
 // destructor
@@ -167,4 +169,15 @@ qsys::ObjectPtr MapRenderer::getColorMapObj() const
   qsys::ObjectPtr pobj = ensureNotNull(getScene())->getObjectByName(getColorMapName());
   return pobj;
 }
+
+void MapRenderer::propChanged(qlib::LPropEvent &ev)
+{
+  if (ev.getParentName().equals("multi_grad") &&
+      m_nMode==MAPREND_MULTIGRAD) {
+    invalidateDisplayCache();
+  }
+
+  super_t::propChanged(ev);
+}
+
 

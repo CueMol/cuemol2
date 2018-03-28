@@ -146,7 +146,8 @@ public:
 
   /// Histogram generation in JSON format
   // (can be moved to ScalarObj level??)
-  LString getNormHistogramJSON();
+  //LString getNormHistogramJSON();
+  LString getHistogramJSON(double min, double max, int nbins);
 
   ///////////////////////////////////////////////////////////////
   // Get/set map properties.

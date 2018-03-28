@@ -105,6 +105,13 @@ namespace qsys {
 
     // utility method for creating default value
     static MultiGradientPtr createDefaultS();
+
+    void copyFromImpl(const MultiGradient *pSrc);
+
+  private:
+
+    qsys::ScenePtr getScene() const;
+
   };
 
 }

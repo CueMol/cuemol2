@@ -186,7 +186,7 @@ namespace xtal {
 
     virtual LString toString() const;
 
-    // virtual void propChanged(qlib::LPropEvent &ev);
+    virtual void propChanged(qlib::LPropEvent &ev);
 
     ///////////////////////////////////////////
 

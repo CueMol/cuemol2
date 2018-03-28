@@ -495,3 +495,56 @@ void ElePotMap::writeDataChunkTo(qlib::LDom2OutStream &oos) const
   writer.detach();
 }
 
+LString ElePotMap::getHistogramJSON(double min, double max, int nbins)
+{
+  double dbinw = (max-min)/double(nbins);
+  //int nbins = int( (m_dMaxMap-m_dMinMap)/dbinw );
+  MB_DPRINTLN("DenMap.hist> nbins=%d", nbins);
+
+  int ni = m_pMap->getColumns();
+  int nj = m_pMap->getRows();
+  int nk = m_pMap->getSections();
+
+  std::vector<int> histo(nbins);
+  for (int i=0; i<nbins; ++i)
+    histo[i] = 0;
+  
+  for (int i=0; i<ni; ++i)
+    for (int j=0; j<nj; ++j)
+      for (int k=0; k<nk; ++k) {
+        double rho = atFloat(i,j,k);
+        int ind = (int) ::floor( (rho-min)/dbinw );
+        if (ind<0 || ind>=nbins) {
+          //MB_DPRINTLN("ERROR!! invalid density value at (%d,%d,%d)=%f", i,j,k,rho);
+        }
+        else {
+          histo[ind]++;
+        }
+      }
+        
+  int nmax = 0;
+  for (int i=0; i<nbins; ++i)
+    nmax = qlib::max(histo[i], nmax);
+
+  LString rval = "{";
+  rval += LString::format("\"min\":%f,\n", m_dMinMap);
+  rval += LString::format("\"max\":%f,\n", m_dMaxMap);
+  rval += LString::format("\"nbin\":%d,\n", nbins);
+  rval += LString::format("\"nmax\":%d,\n", nmax);
+  rval += LString::format("\"sig\":%f,\n", m_dRmsdMap);
+  rval += "\"histo\":[";
+  for (int i=0; i<nbins; ++i) {
+    MB_DPRINTLN("%d %d", i, histo[i]);
+    if (i>0)
+      rval += ",";
+    rval += LString::format("%d", histo[i]);
+  }
+  rval += "]}\n";
+  
+  return rval;
+}
+
+void ElePotMap::fitView(const qsys::ViewPtr &pView, bool dummy) const
+{
+}
+

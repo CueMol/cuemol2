@@ -444,10 +444,10 @@ void DensityMap::writeDataChunkTo(qlib::LDom2OutStream &oos) const
 }
 
 
-LString DensityMap::getNormHistogramJSON()
+LString DensityMap::getHistogramJSON(double min, double max, int nbins)
 {
-  double dbinw = m_dRmsdMap/10.0;
-  int nbins = int( (m_dMaxMap-m_dMinMap)/dbinw );
+  double dbinw = (max-min)/double(nbins);
+  //int nbins = int( (m_dMaxMap-m_dMinMap)/dbinw );
   MB_DPRINTLN("DenMap.hist> nbins=%d", nbins);
 
   int ni = m_pByteMap->getColumns();
@@ -462,19 +462,24 @@ LString DensityMap::getNormHistogramJSON()
     for (int j=0; j<nj; ++j)
       for (int k=0; k<nk; ++k) {
         double rho = atFloat(i,j,k);
-        int ind = (int) ::floor( (rho-m_dMinMap)/dbinw );
+        int ind = (int) ::floor( (rho-min)/dbinw );
         if (ind<0 || ind>=nbins) {
-          MB_DPRINTLN("ERROR!! invalid density value at (%d,%d,%d)=%f", i,j,k,rho);
+          //MB_DPRINTLN("ERROR!! invalid density value at (%d,%d,%d)=%f", i,j,k,rho);
         }
         else {
           histo[ind]++;
         }
       }
         
+  int nmax = 0;
+  for (int i=0; i<nbins; ++i)
+    nmax = qlib::max(histo[i], nmax);
+
   LString rval = "{";
   rval += LString::format("\"min\":%f,\n", m_dMinMap/m_dRmsdMap);
   rval += LString::format("\"max\":%f,\n", m_dMaxMap/m_dRmsdMap);
   rval += LString::format("\"nbin\":%d,\n", nbins);
+  rval += LString::format("\"nmax\":%d,\n", nmax);
   rval += LString::format("\"sig\":%f,\n", m_dRmsdMap);
   rval += "\"histo\":[";
   for (int i=0; i<nbins; ++i) {

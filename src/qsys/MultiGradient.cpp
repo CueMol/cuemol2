@@ -6,11 +6,21 @@
 #include <common.h>
 
 #include "MultiGradient.hpp"
+
+#include "Renderer.hpp"
+#include "Object.hpp"
+#include "Scene.hpp"
+#include "PropEditInfo.hpp"
+#include "UndoManager.hpp"
+
 #include <gfx/SolidColor.hpp>
 #include <gfx/GradientColor.hpp>
 #include <qlib/Utils.hpp>
 #include <qlib/Vector4D.hpp>
 #include <qlib/LDOM2Tree.hpp>
+#include <qlib/LPropEvent.hpp>
+
+#include <qlib/ObjectManager.hpp>
 
 using namespace qsys;
 
@@ -204,44 +214,117 @@ MultiGradientPtr MultiGradient::createDefaultS()
 }
 
 namespace {
-/*
-class MultiGradEditInfo : public qsys::PropEditInfoBase
-{
-public:
 
-  MultiGradEditInfo()
+  class MultiGradEvent : public qlib::LPropEvent
   {
-  }
+  public:
+    MultiGradEvent() : qlib::LPropEvent() {}
+    MultiGradEvent(const LString &name) : qlib::LPropEvent(name) {}
 
-  virtual ~MultiGradEditInfo()
+    /// Internal data structure is changed by non-setter method(s)
+    /// (i.e. append/insertBefore, etc)
+    virtual bool isIntrDataChanged() const { return true; }
+  };
+
+  class MultiGradEditInfo : public qsys::PropEditInfoBase
   {
-  }
+  public:
 
-  //////////
+    MultiGradEditInfo()
+    {
+    }
 
-  /// Perform undo
-  virtual bool undo()
-  {
-  }
-  
-  /// Perform redo
-  virtual bool redo() {
-  }
-  
-  virtual bool isUndoable() const {
-    if (m_pSel.isnull() || m_pCol.isnull()) return false;
-    return true;
-  }
-  virtual bool isRedoable() const {
-    if (m_pSel.isnull() || m_pCol.isnull()) return false;
-    return true;
-  }
+    virtual ~MultiGradEditInfo()
+    {
+    }
 
-};
-*/
+    //////////
+
+    MultiGradientPtr m_pOld;
+    MultiGradientPtr m_pNew;
+
+    MultiGradient *getTargetObj() const
+    {
+      qlib::LPropSupport *pTgtRoot = getTarget();
+      if (pTgtRoot==NULL) return NULL;
+      
+      qlib::NestedPropHandler nph(getPropName(), pTgtRoot);
+      qlib::LPropSupport *pTgt = nph.apply();
+      qlib::LVariant lvar;
+      if (!pTgt->getProperty(nph.last_name(), lvar))
+        return NULL;
+      if (!lvar.isObject())
+        return NULL;
+      qlib::LScriptable *pScr = lvar.getBareObjectPtr();
+      MultiGradient *pTgt2 = dynamic_cast<MultiGradient *>(pScr);
+      return pTgt2;
+    }
+
+    /// Perform undo
+    virtual bool undo()
+    {
+      MultiGradient *pTgt = getTargetObj();
+      if (pTgt==NULL)
+        return false;
+
+      pTgt->copyFrom(m_pOld);
+
+      return true;
+    }
+
+    /// Perform redo
+    virtual bool redo()
+    {
+      MultiGradient *pTgt = getTargetObj();
+      if (pTgt==NULL)
+        return false;
+
+      pTgt->copyFrom(m_pNew);
+
+      return true;
+    }
+
+    virtual bool isUndoable() const {
+      if (m_pOld.isnull() || m_pNew.isnull()) return false;
+      return true;
+    }
+    virtual bool isRedoable() const {
+      if (m_pOld.isnull() || m_pNew.isnull()) return false;
+      return true;
+    }
+
+  };
+
 }
 
-void MultiGradient::copyFrom(const MultiGradientPtr &pSrc)
+qsys::ScenePtr MultiGradient::getScene() const
+{
+  qsys::ScenePtr pScene;
+
+  qlib::uid_t rootuid = getRootUID();
+  if (rootuid==qlib::invalid_uid)
+    return pScene;
+
+  {
+    // try renderer
+    qsys::Renderer *pTgtRoot =
+      qlib::ObjectManager::sGetObj<qsys::Renderer>(rootuid);
+    if (pTgtRoot!=NULL)
+      return pTgtRoot->getScene();
+  }
+  
+  {
+    // try object
+    qsys::Object *pTgtRoot =
+      qlib::ObjectManager::sGetObj<qsys::Object>(rootuid);
+    if (pTgtRoot!=NULL)
+      return pTgtRoot->getScene();
+  }
+
+  return pScene;
+}
+
+void MultiGradient::copyFromImpl(const MultiGradient *pSrc)
 {
   clear();
 
@@ -251,6 +334,36 @@ void MultiGradient::copyFrom(const MultiGradientPtr &pSrc)
     gfx::ColorPtr col = pSrc->getColorAt(i);
     insert(par, col);
   }
+}
+
+void MultiGradient::copyFrom(const MultiGradientPtr &pSrc)
+{
+  // setup undo infor
+  qsys::UndoUtil uu(getScene());
+
+  // save the old data
+  MultiGradientPtr pOld;
+  if (uu.isOK()) {
+    pOld = MultiGradientPtr(MB_NEW MultiGradient());
+    pOld->copyFromImpl(this);
+  }
+  
+  copyFromImpl(pSrc.get());
+
+  if (uu.isOK()) {
+	  MultiGradientPtr pNew = MultiGradientPtr(MB_NEW MultiGradient());
+    pNew->copyFromImpl(pSrc.get());
+    MultiGradEditInfo *pInfo = MB_NEW MultiGradEditInfo();
+    pInfo->setup(this);
+    pInfo->m_pOld = pOld;
+    pInfo->m_pNew = pNew;
+    uu.add(pInfo);
+  }
+
+  // Fire prop changed event
+  MultiGradEvent ev(m_thisname);
+  nodePropChgImpl(ev);
+
 }
 
 

@@ -31,6 +31,8 @@ if (!("MultiGradEditor" in cuemolui)) {
 	try { that.onLoad(); } catch (e) { debug.exception(e); }
       }, false);
 
+      this.mOrigGrad = null;
+
       dd("MultiGradEditor> taget scene UID="+this.mSceneID);
     };
 
@@ -65,30 +67,14 @@ if (!("MultiGradEditor" in cuemolui)) {
       this.setupListBox(rend);
       //this.setupPreview(rend);
       this.setupPreview(this.mTreeView.getData());
-    };
 
-    klass.removePaintColCSS = function ()
-    {
-      var i, nlen = document.styleSheets.length;
-      for (i=0; i<nlen; ++i) {
-	var ss = document.styleSheets[i];
-	for (var j=ss.cssRules.length-1; j>=0; --j) {
-	  var sr = ss.cssRules[j];
-	  if ('selectorText' in sr &&
-	      sr.selectorText.indexOf("#paint-listbox-children::-moz-tree-cellcol")==0) {
-	    ss.deleteRule(j);
-	  }
-	}
-      }
-    }
+      // this.setupHistogram();
+    };
 
     klass.setupListBox = function (aRend)
     {
       let coloring = aRend.multi_grad;
 
-      // remove existing rules
-      this.removePaintColCSS();
-      
       let i, col, par, nlen = coloring.size;
       let nodes = new Array();
       
@@ -127,11 +113,14 @@ if (!("MultiGradEditor" in cuemolui)) {
     
     klass.realizeNodeColors = function (aNodes)
     {
+      // remove existing rules
+      this._removeColCSS();
+      
       let node, propval;
       const nsize = aNodes.length;
       for (let i=0; i<nsize; ++i) {
 	node = aNodes[i];
-	// node.obj_id = i;
+	node.obj_id = i;
 	propval = "col_"+this.mSerial+"_"+i;
 	node.props = { color_value: propval };
 	this._setColCSS(node);
@@ -139,11 +128,26 @@ if (!("MultiGradEditor" in cuemolui)) {
       ++this.mSerial;
     };
 
+    klass._removeColCSS = function ()
+    {
+      var i, nlen = document.styleSheets.length;
+      for (i=0; i<nlen; ++i) {
+	var ss = document.styleSheets[i];
+	for (var j=ss.cssRules.length-1; j>=0; --j) {
+	  var sr = ss.cssRules[j];
+	  if ('selectorText' in sr &&
+	      sr.selectorText.indexOf("#paint-listbox-children::-moz-tree-cellcol")==0) {
+	    ss.deleteRule(j);
+	  }
+	}
+      }
+    };
+
     klass._setColCSS = function (aNode)
     {
       var ss = document.styleSheets[document.styleSheets.length-1];
       var propnm = aNode.props.color_value;
-      var insid = ss.insertRule("#color-listbox-children::-moz-tree-cell("+propnm+") {}",
+      var insid = ss.insertRule("#paint-listbox-children::-moz-tree-cell("+propnm+") {}",
 				ss.cssRules.length);
       var sr = ss.cssRules[insid];
       sr.style.backgroundColor = aNode.values.html_colstr;
@@ -162,8 +166,18 @@ if (!("MultiGradEditor" in cuemolui)) {
 	if (par>max_par) max_par = par;
       }
 
-      this.mMinPar = min_par;
-      this.mMaxPar = max_par;
+      let bChg = false;
+      if (this.mMinPar != min_par) {
+	bChg = true;
+	this.mMinPar = min_par;
+      }
+      if (this.mMaxPar != max_par) {
+	bChg = true;
+	this.mMaxPar = max_par;
+      }
+
+      if (bChg)
+	this.setupHistogram();
     };
 
     klass.sortNodes = function (aNodes)
@@ -219,6 +233,47 @@ if (!("MultiGradEditor" in cuemolui)) {
 	grad_elem.appendChild(stop_elem);
       }
       
+    };
+
+    klass.setupHistogram = function ()
+    {
+      let rend = cuemol.getRenderer(this.mRendID);
+      let obj = rend.getColorMapObj();
+
+      if (!'getHistogramJSON' in obj) {
+	// no histogram data --> do not show the graph
+	let box = document.getElementById("histo_box");
+	box.setAttribute("collapsed", "true");
+	return;
+      }
+
+      let scl = 2;
+
+      let canvas = document.getElementById("histo_canvas");
+      dd("canvas.width = "+canvas.width);
+      let ctx = canvas.getContext("2d");
+      canvas.height = 32;
+
+      //return;
+      let nbin = canvas.width/scl;
+      let min = this.mMinPar;
+      let max = this.mMaxPar;
+
+      let data;
+      try {
+	data = JSON.parse(obj.getHistogramJSON(min, max, nbin));
+      }
+      catch (e) {
+	debug.exception(e);
+	return;
+      }
+      
+      ctx.fillStyle = "rgb(0,0,0)";
+      let h = canvas.height;
+      for (let i=0; i<nbin; ++i) {
+	let val = data.histo[i] / data.nmax;
+	ctx.fillRect(i*scl, (1.0-val)*h, scl, val*h);
+      }
     };
 
     klass.onItemClick = function (aEvent, elem, col)
@@ -291,30 +346,39 @@ if (!("MultiGradEditor" in cuemolui)) {
       
     };
 
+    klass.createNewNode = function (aPar, aColStr)
+    {
+      let col = cuemol.makeColor(aColStr);
+      let htmlcol = util.getHTMLColor(col);
+      
+      var newnode = new Object();
+      newnode.name = aPar.toFixed(2);
+      newnode.values = {
+	'par_value' : aPar,
+	'color_value': aColStr,
+	'html_colstr': htmlcol
+	};
+
+      return newnode;
+    };
+
     klass.onAddNode = function (aEvent)
     {
-      var elem = this.mTreeView.getSelectedNode();
       var newpar = 0.0;
-      var strcol = "#FFFFFF";
       var newval = "rgb(1,1,1)";
+
+      var elem = this.mTreeView.getSelectedNode();
       if (elem) {
 	// Duplicate the current selection if available
 	newpar = elem.values.par_value;
 	newval = elem.values.color_value;
-	strcol = elem.values.html_colstr;
       }
 
-      var newnode = new Object();
-      newnode.name = newpar.toFixed(2);
-      newnode.values = {
-	'par_value' : newpar,
-	'color_value': newval,
-	'html_colstr': strcol
-	};
+      var newnode = this.createNewNode(newpar, newval);
 
-      //this.mColDefs.splice(ind, 0, newnode);
       let nodes = this.mTreeView.getData();
       nodes.push(newnode);
+
       this.sortNodes( nodes );
       this.updateMinMax( nodes );
       this.realizeNodeColors( nodes );
@@ -347,9 +411,108 @@ if (!("MultiGradEditor" in cuemolui)) {
       this.setupPreview( nodes );
     };
     
-    klass.onDialogAccept = function ()
+    klass.onPresetSel = function (aEvent)
     {
+      let nodes = new Array();
+      let value = aEvent.target.value;
+      
+      let rend = cuemol.getRenderer(this.mRendID);
+      let obj = rend.getClientObj();
+      let mean = obj.den_mean;
+      let sig = obj.den_sigma;
+
+      if (value=="rainbow1") {
+	// rainbow color from -3 sig to +3 sig
+	//nodes.push( this.createNewNode(-3.0*sig+mean, "#FF0000") );
+	nodes.push( this.createNewNode(-2.0*sig+mean, "#FF0000") );
+	nodes.push( this.createNewNode(-1.0*sig+mean, "#FFFF00") );
+	nodes.push( this.createNewNode( 0.0*sig+mean, "#00FF00") );
+	nodes.push( this.createNewNode( 1.0*sig+mean, "#00FFFF") );
+	nodes.push( this.createNewNode( 2.0*sig+mean, "#0000FF") );
+	nodes.push( this.createNewNode( 3.0*sig+mean, "#FF00FF") );
+      }
+      else if (value=="resmap1") {
+      }
+
+      this.sortNodes( nodes );
+      this.updateMinMax( nodes );
+      this.realizeNodeColors(nodes);
+
+      this.mTreeView.setData(nodes);
+      this.mTreeView.buildView();
+
+      this.setupPreview(nodes);
+    };
+
+    klass.createGrad = function (aNodes)
+    {
+      let res = cuemol.createObj("MultiGradient");
+      let nlen = aNodes.length;
+      let i, col, val;
+
+      for (i=0; i<nlen; ++i) {
+	let elem = aNodes[i];
+	val = elem.values.par_value;
+	col = elem.values.color_value;
+	res.insert( val, cuemol.makeColor(col) );
+      }
+
+      return res;
+    };
+
+    klass.onPreview = function (aEvent)
+    {
+      if (this.mOrigGrad==null) {
+	// Save the original gradient (for preview/undo)
+	this.mOrigGrad = cuemol.createObj("MultiGradient");
+	let rend = cuemol.getRenderer(this.mRendID);
+	this.mOrigGrad.copyFrom(rend.multi_grad);
+      }
+
+      let grad = this.createGrad( this.mTreeView.getData() );
+      let rend = cuemol.getRenderer(this.mRendID);
+      rend.multi_grad.copyFrom( grad );
+      
       return true;
+    };
+
+    klass.onDialogAccept = function (aEvent)
+    {
+      this.resetToOrigGrad();
+      let rend = cuemol.getRenderer(this.mRendID);
+      let scene = rend.getScene();
+
+      // // EDIT TXN START //
+      scene.startUndoTxn("Change multi gradient color");
+      try {
+	let grad = this.createGrad( this.mTreeView.getData() );
+	rend.multi_grad.copyFrom( grad );
+      }
+      catch (e) {
+	debug.exception(e);
+	scene.rollbackUndoTxn();
+	util.alert(window, "Error: "+cuemol.getErrMsg());
+	return false;
+      }
+      scene.commitUndoTxn();
+      // EDIT TXN END //
+      
+      return true;
+    };
+
+    klass.onDialogCancel = function (aEvent)
+    {
+      this.resetToOrigGrad();
+      return true;
+    };
+
+    klass.resetToOrigGrad = function ()
+    {
+      if (this.mOrigGrad!=null) {
+	// reset to the original grad
+	let rend = cuemol.getRenderer(this.mRendID);
+	rend.multi_grad.copyFrom( this.mOrigGrad );
+      }
     };
 
     return ctor;
