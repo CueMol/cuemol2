@@ -37,6 +37,9 @@ runtime_class MapRenderer extends Renderer
   property object<AbstractColor$> color => redirect(getColor, setColor);
   default color = gfx::SolidColor::createRGB(0.0, 0.0, 1.0);
 
+  /// synonim of color for compatibility with other renderers
+  property object<AbstractColor$> defaultcolor => redirect(getColor, setColor) (nopersist);
+
   /// Contour leve (in sigma unit)
   property real siglevel => redirect(getSigLevel, setSigLevel);
   default siglevel = 1.1;

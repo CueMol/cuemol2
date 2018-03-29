@@ -60,6 +60,7 @@ if (!("MultiGradEditor" in cuemolui)) {
 
       this.mAddBtn = document.getElementById("add-btn");
       this.mDelBtn = document.getElementById("del-btn");
+      this.mKRBtn = document.getElementById("keepratio-btn");
 
       // color_mapname
 
@@ -299,23 +300,74 @@ if (!("MultiGradEditor" in cuemolui)) {
 
     klass.onParChanged = function (aEvent)
     {
-      var elem = this.mTreeView.getSelectedNode();
+      let elem = this.mTreeView.getSelectedNode();
       if (!elem)
 	return;
 
       dd("onParChanged called for "+elem.name);
 
-      let newval = parseFloat(this.mParBox.value);
-      elem.name = newval.toFixed(2);
-      elem.values.par_value = newval;
-
+      let bKR = this.mKRBtn.checked;
       let nodes = this.mTreeView.getData();
-      this.sortNodes( nodes );
+      let newval = parseFloat(this.mParBox.value);
+
+      if (bKR) {
+	// shift all nodes with keeping the ratio
+
+	let nrows = this.mTreeView.getRowCount();
+	let irow = this.mTreeView.getSelectedRow();
+
+	let par_min = nodes[0].values.par_value;
+	let par_max = nodes[nrows-1].values.par_value;
+	let oldval = nodes[irow].values.par_value;
+
+	if (irow>0 && irow<nrows-1) {
+	  if (newval - par_min<0.001 ||
+	      par_max - newval<0.001 ||
+	      oldval - par_min<0.001 ||
+	      par_max - oldval<0.001) {
+	    // spacing is too small --> cancel the change
+	    this.mParBox.value = elem.values.par_value;
+	    return;
+	  }
+	}
+	
+	let del = oldval - par_min;
+	let new_del = newval - par_min;
+	for (i=1; i<irow; ++i) {
+	  let oval = nodes[i].values.par_value;
+	  let nval = (oval-par_min)/del*new_del + par_min;
+	  dd("node "+i+" new par="+nval);
+	  nodes[i].name = nval.toFixed(2);
+	  nodes[i].values.par_value = nval;
+	}
+	
+	nodes[irow].name = newval.toFixed(2);
+	nodes[irow].values.par_value = newval;
+	
+	del = par_max - oldval;
+	new_del = par_max - newval;
+	for (i=irow+1; i<nrows-1; ++i) {
+	  let oval = nodes[i].values.par_value;
+	  let nval = (oval-oldval)/del*new_del + newval;
+	  dd("node "+i+" new par="+nval);
+	  nodes[i].name = nval.toFixed(2);
+	  nodes[i].values.par_value = nval;
+	}
+
+      }
+      else {
+	// change only the target node
+	elem.name = newval.toFixed(2);
+	elem.values.par_value = newval;
+	this.sortNodes( nodes );
+      }
+      
       this.updateMinMax( nodes );
 
       // update all nodes
-      //this.mTreeView.updateNode(function (node) { return true; });
       this.mTreeView.buildView();
+
+      // reselect the target node
       this.mTreeView.selectNodeByFunc(function (node) { return node==elem; });
 
       this.setupPreview(nodes);
@@ -417,21 +469,48 @@ if (!("MultiGradEditor" in cuemolui)) {
       let value = aEvent.target.value;
       
       let rend = cuemol.getRenderer(this.mRendID);
-      let obj = rend.getClientObj();
+      // let obj = rend.getClientObj();
+      let obj = rend.getColorMapObj();
+
       let mean = obj.den_mean;
       let sig = obj.den_sigma;
+      let dmin = obj.den_min;
+      let dmax = obj.den_max;
 
       if (value=="rainbow1") {
+	/*
 	// rainbow color from -3 sig to +3 sig
-	//nodes.push( this.createNewNode(-3.0*sig+mean, "#FF0000") );
 	nodes.push( this.createNewNode(-2.0*sig+mean, "#FF0000") );
 	nodes.push( this.createNewNode(-1.0*sig+mean, "#FFFF00") );
 	nodes.push( this.createNewNode( 0.0*sig+mean, "#00FF00") );
 	nodes.push( this.createNewNode( 1.0*sig+mean, "#00FFFF") );
 	nodes.push( this.createNewNode( 2.0*sig+mean, "#0000FF") );
 	nodes.push( this.createNewNode( 3.0*sig+mean, "#FF00FF") );
+	 */
+	// Rainbow color regular interval between min and max
+	let delta = (dmax-dmin)/5.0;
+	nodes.push( this.createNewNode(dmin, "#FF0000") );
+	nodes.push( this.createNewNode(dmin + delta, "#FFFF00") );
+	nodes.push( this.createNewNode(dmin + delta*2, "#00FF00") );
+	nodes.push( this.createNewNode(dmin + delta*3, "#00FFFF") );
+	nodes.push( this.createNewNode(dmin + delta*4, "#0000FF") );
+	nodes.push( this.createNewNode(dmin + delta*5, "#FF00FF") );
       }
       else if (value=="resmap1") {
+	// Resmap color regular interval between min and max
+	let delta = (dmax-dmin)/4.0;
+	nodes.push( this.createNewNode(dmin, "#0F77CF") );
+	nodes.push( this.createNewNode(dmin + delta, "#87E3E7") );
+	nodes.push( this.createNewNode(dmin + delta*2, "#FFFFFF") );
+	nodes.push( this.createNewNode(dmin + delta*3, "#CF8FAF") );
+	nodes.push( this.createNewNode(dmin + delta*4, "#9E205E") );
+      }
+      else if (value=="heatmap1") {
+	// heatmap color with regular interval between min and max
+	let delta = dmax-dmin;
+	nodes.push( this.createNewNode(dmin, "Red") );
+	nodes.push( this.createNewNode(dmin + delta*0.6666, "Yellow") );
+	nodes.push( this.createNewNode(dmax, "White") );
       }
 
       this.sortNodes( nodes );

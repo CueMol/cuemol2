@@ -79,10 +79,18 @@
 	class="toolbar-button cleartext-button"
 	oncommand="gMain.onDelAllNodes(event);"
 	tooltiptext="Delete all"/>
+
+      <toolbarbutton
+	id="keepratio-btn"
+	type="checkbox"
+	class="toolbar-button"
+	label="Keep ratio"/>
+
       <toolbarbutton label="Load preset" type="menu" oncommand="window.gMain.onPresetSel(event)">
 	<menupopup>
 	  <menuitem label="Rainbow" value="rainbow1"/>
 	  <menuitem label="ResMap" value="resmap1"/>
+	  <menuitem label="HeatMap" value="heatmap1"/>
 	</menupopup>
       </toolbarbutton>
     </hbox>

@@ -63,6 +63,13 @@
 	  </hbox>
 	</vbox>
 
+	<vbox id="coloring-deck-multigrad">
+	  <description value="Multi-gradient coloring:"/>
+	  <menulist id="paint-colmap-obj-selector"/>
+	  <button class="panel-button" id="colpanel-editmultig" label="Edit color..."
+	    oncommand="cuemolui.panels.paint.onEditMultiGrad(event)" flex="0"/>
+	</vbox>
+
       </deck>
     </vbox>
   </overlaytarget>
