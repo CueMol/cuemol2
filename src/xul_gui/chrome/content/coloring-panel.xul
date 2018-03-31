@@ -29,17 +29,17 @@
 	  style="margin: 3px 0px 3px;"
 	  oncommand="cuemolui.panels.paint.onChgColoring(event)">
 	  <menupopup>
-	    <!--<menuitem id="paint-type-paint" label="Paint coloring" type="radio" checked="true"/>-->
 	    <menu id="paint-type-paint" label="Paint coloring"
 	      onpopupshowing="cuemolui.panels.paint.onPaintColShowing(event)">
-	      <menupopup/>
+	      <menupopup id="paint-type-paint-popup"/>
 	    </menu>
-	    <menuitem value="paint-type-solid" label="Solid coloring"/>
-	    <menuitem value="paint-type-cpk" label="CPK coloring"/>
-	    <menuitem value="paint-type-bfac" label="Bfac/Occ coloring"/>
-	    <menuitem value="paint-type-rainbow" label="Rainbow coloring"/>
+	    <menuitem id="paint-type-solid" value="paint-type-solid" label="Solid coloring"/>
+	    <menuitem id="paint-type-cpk" value="paint-type-cpk" label="CPK coloring"/>
+	    <menuitem id="paint-type-bfac" value="paint-type-bfac" label="Bfac/Occ coloring"/>
+	    <menuitem id="paint-type-rainbow" value="paint-type-rainbow" label="Rainbow coloring"/>
 	    <menuitem id="paint-type-elepot" value="paint-type-elepot" label="Electrostatic potential"/>
-	    <menuitem value="paint-type-resetdef" label="Reset to default style"/>
+	    <menuitem id="paint-type-multigrad" value="paint-type-multigrad" label="Multi-gradient coloring"/>
+	    <menuitem id="paint-type-resetdef" value="paint-type-resetdef" label="Reset to default style"/>
 	  </menupopup>
 	</toolbarbutton>
       </hbox>
