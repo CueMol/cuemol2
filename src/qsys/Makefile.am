@@ -56,6 +56,7 @@ anim/AnimObjEvent.cpp \
 qsys.cpp \
 SceneExporter.cpp \
 RendGroup.cpp \
+MultiGradient.cpp \
 $(NULL)
 
 # CueMol interface definitions for MCWRAPGEN
@@ -81,6 +82,7 @@ anim/AnimMgr.qif \
 anim/AnimObj.qif \
 SceneExporter.qif \
 RendGroup.qif \
+MultiGradient.qif \
 $(NULL)
 
 # Editor (desktop ver) C++ source files
