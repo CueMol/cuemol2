@@ -1,0 +1,36 @@
+// -*-Mode: C++;-*-
+//
+// Scalar-field object scripting interface
+//
+
+#ifndef QSYS_SCALAR_OBJ_QIF_INCLUDED
+#define QSYS_SCALAR_OBJ_QIF_INCLUDED
+
+#include <qsys/Object.qif>
+
+runtime_class ScalarObject extends Object
+{
+  client_hdr "ScalarObject.hpp";
+  client_name qsys::ScalarObject;
+  dllexport QSYS_API;
+
+  scriptable;
+  abstract;
+  smartptr;
+
+  // Properties
+  property real den_sigma => redirect(getRmsdDensity, XXX) (readonly);
+  property real den_min => redirect(getMinDensity, XXX) (readonly);
+  property real den_max => redirect(getMaxDensity, XXX) (readonly);
+  property real den_mean => redirect(getMeanDensity, XXX) (readonly);
+  
+  // Methods
+  string getHistogramJSON(real min, real max, integer nbin);
+
+  // void fitView(object<View$> pView, boolean dummy);
+
+};
+
+#endif
+
+
