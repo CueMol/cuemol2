@@ -117,6 +117,7 @@
     <ClCompile Include="..\..\src\qsys\InOutHandler.cpp" />
     <ClCompile Include="..\..\src\qsys\MultiGradient.cpp" />
     <ClCompile Include="..\..\src\qsys\MultiGradient_wrap.cpp" />
+    <ClCompile Include="..\..\src\qsys\ScalarObject_wrap.cpp" />
     <ClCompile Include="..\..\src\qsys\style\StyleSupports.cpp" />
     <ClCompile Include="..\..\src\sysdep\Canvas2DTextRender2.cpp" />
     <ClCompile Include="..\..\src\sysdep\MouseEventHandler.cpp" />
@@ -391,6 +392,7 @@
     <mcwrapgen3 Include="..\..\src\qsys\ObjWriter.qif" />
     <mcwrapgen3 Include="..\..\src\qsys\Renderer.qif" />
     <mcwrapgen3 Include="..\..\src\qsys\RendGroup.qif" />
+    <mcwrapgen3 Include="..\..\src\qsys\ScalarObject.qif" />
     <mcwrapgen3 Include="..\..\src\qsys\Scene.qif" />
     <mcwrapgen3 Include="..\..\src\qsys\SceneExporter.qif" />
     <mcwrapgen3 Include="..\..\src\qsys\SceneManager.qif" />

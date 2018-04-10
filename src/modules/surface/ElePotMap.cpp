@@ -495,6 +495,7 @@ void ElePotMap::writeDataChunkTo(qlib::LDom2OutStream &oos) const
   writer.detach();
 }
 
+#if 0
 LString ElePotMap::getHistogramJSON(double min, double max, int nbins)
 {
   double dbinw = (max-min)/double(nbins);
@@ -543,6 +544,7 @@ LString ElePotMap::getHistogramJSON(double min, double max, int nbins)
   
   return rval;
 }
+#endif
 
 void ElePotMap::fitView(const qsys::ViewPtr &pView, bool dummy) const
 {

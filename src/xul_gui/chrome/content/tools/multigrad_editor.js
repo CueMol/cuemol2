@@ -269,10 +269,13 @@ if (!("MultiGradEditor" in cuemolui)) {
 	return;
       }
       
+      dd(">>>>>>>>>>>>> nbin="+nbin);
+      
       ctx.fillStyle = "rgb(0,0,0)";
       let h = canvas.height;
       for (let i=0; i<nbin; ++i) {
 	let val = data.histo[i] / data.nmax;
+	dd("i="+i+", dat="+data.histo[i]+", nmax="+data.nmax+", val="+val);
 	ctx.fillRect(i*scl, (1.0-val)*h, scl, val*h);
       }
     };
@@ -336,7 +339,7 @@ if (!("MultiGradEditor" in cuemolui)) {
 	for (i=1; i<irow; ++i) {
 	  let oval = nodes[i].values.par_value;
 	  let nval = (oval-par_min)/del*new_del + par_min;
-	  dd("node "+i+" new par="+nval);
+	  //dd("node "+i+" new par="+nval);
 	  nodes[i].name = nval.toFixed(2);
 	  nodes[i].values.par_value = nval;
 	}
@@ -349,7 +352,7 @@ if (!("MultiGradEditor" in cuemolui)) {
 	for (i=irow+1; i<nrows-1; ++i) {
 	  let oval = nodes[i].values.par_value;
 	  let nval = (oval-oldval)/del*new_del + newval;
-	  dd("node "+i+" new par="+nval);
+	  //dd("node "+i+" new par="+nval);
 	  nodes[i].name = nval.toFixed(2);
 	  nodes[i].values.par_value = nval;
 	}

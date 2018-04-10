@@ -444,6 +444,7 @@ void DensityMap::writeDataChunkTo(qlib::LDom2OutStream &oos) const
 }
 
 
+#if 0
 LString DensityMap::getHistogramJSON(double min, double max, int nbins)
 {
   double dbinw = (max-min)/double(nbins);
@@ -492,6 +493,7 @@ LString DensityMap::getHistogramJSON(double min, double max, int nbins)
   
   return rval;
 }
+#endif
 
 using qlib::Vector4D;
 using qlib::Matrix4D;

@@ -729,6 +729,9 @@
     <ClCompile Include="..\..\src\qsys\MultiGradient_wrap.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\qsys\ScalarObject_wrap.cpp">
+      <Filter>QIF wrapper</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\qsys\AbstractColor.hpp">
@@ -963,6 +966,9 @@
     </mcwrapgen3>
     <mcwrapgen3 Include="..\..\src\qsys\MultiGradient.qif">
       <Filter>Source files</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qsys\ScalarObject.qif">
+      <Filter>QIF source</Filter>
     </mcwrapgen3>
   </ItemGroup>
   <ItemGroup>

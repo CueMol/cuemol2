@@ -89,15 +89,6 @@ if (!("paint" in cuemolui.panels)) {
       return false;
     };
 
-    panel.mSelector = new cuemolui.ObjMenuList(
-      "colpanel-rend-menulist",
-      window,
-      paint_coloring_filter,
-      cuemol.evtMgr.SEM_RENDERER|cuemol.evtMgr.SEM_OBJECT);
-    
-    // set listener for receiving all property changes (for widget update)
-    panel.mSelector.addPropChgListener("*", function(args) {panel.targetPropChanged(args)} );
-    
     ////////
     // "potential object" menulist for ELEPOT mode
 
@@ -117,6 +108,19 @@ if (!("paint" in cuemolui.panels)) {
       cuemol.evtMgr.SEM_OBJECT);
 
 
+    ////////
+    // Initialize Panel's main selector menulist mSelector
+    // (this should be initialized finally, so that the event handlers of mSelector will be called finally)
+
+    panel.mSelector = new cuemolui.ObjMenuList(
+      "colpanel-rend-menulist",
+      window,
+      paint_coloring_filter,
+      cuemol.evtMgr.SEM_RENDERER|cuemol.evtMgr.SEM_OBJECT);
+    
+    // set listener for receiving all property changes (for widget update)
+    panel.mSelector.addPropChgListener("*", function(args) {panel.targetPropChanged(args)} );
+    
     //////////////////////////
     // methods
 
@@ -1889,8 +1893,14 @@ panel.updateMultigradWidgets = function (aRend)
 {
   if ('elepot' in aRend)
     this.mColMapSel.selectObjectByName(aRend.elepot);
-  else if ('color_mapname' in aRend)
-    this.mColMapSel.selectObjectByName(aRend.color_mapname);
+  else if ('color_mapname' in aRend) {
+    let res = this.mColMapSel.selectObjectByName(aRend.color_mapname);
+    //dd("this.mColMapSel._data = "+debug.dumpObjectTree(this.mColMapSel._data));
+    debug.trace();
+    dd("this.mColMapSel._data = "+this.mColMapSel._data);
+    dd("this.mColMapSel._data.length = "+this.mColMapSel._data.length);
+    alert("update color_mapname to: "+aRend.color_mapname+" res="+res);
+  }
 };
 
 /// elepot selector change event listener
@@ -1910,6 +1920,7 @@ panel.onColMapSelChanged = function (aEvent)
   else if ('color_mapname' in rend) {
     if (rend.color_mapname==obj.name)
       return;
+    alert("change color_mapname to: "+obj.name);
     this.commitElepotPropChange("color_mapname", obj.name);
   }
 };

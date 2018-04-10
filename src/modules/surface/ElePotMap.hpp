@@ -124,7 +124,7 @@ public:
 
   //
 
-  LString getHistogramJSON(double min, double max, int nbin);
+  // LString getHistogramJSON(double min, double max, int nbin);
   void fitView(const qsys::ViewPtr &pView, bool dummy) const;
 
 };

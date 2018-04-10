@@ -26,6 +26,7 @@
 #include "SceneExporter.qif"
 #include "RendGroup.qif"
 #include "MultiGradient.qif"
+#include "ScalarObject.qif"
 
 module qsys
 {
@@ -55,6 +56,7 @@ module qsys
 
   RendGroup;
   MultiGradient;
+  ScalarObject;
   
 #if !defined(QM_BUILD_LW)
   SceneExporter;
