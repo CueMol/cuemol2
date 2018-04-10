@@ -1899,7 +1899,7 @@ panel.updateMultigradWidgets = function (aRend)
     debug.trace();
     dd("this.mColMapSel._data = "+this.mColMapSel._data);
     dd("this.mColMapSel._data.length = "+this.mColMapSel._data.length);
-    alert("update color_mapname to: "+aRend.color_mapname+" res="+res);
+    //alert("update color_mapname to: "+aRend.color_mapname+" res="+res);
   }
 };
 
@@ -1920,7 +1920,7 @@ panel.onColMapSelChanged = function (aEvent)
   else if ('color_mapname' in rend) {
     if (rend.color_mapname==obj.name)
       return;
-    alert("change color_mapname to: "+obj.name);
+    //alert("change color_mapname to: "+obj.name);
     this.commitElepotPropChange("color_mapname", obj.name);
   }
 };
