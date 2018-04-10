@@ -83,6 +83,7 @@ anim/AnimObj.qif \
 SceneExporter.qif \
 RendGroup.qif \
 MultiGradient.qif \
+ScalarObject.qif \
 $(NULL)
 
 # Editor (desktop ver) C++ source files
