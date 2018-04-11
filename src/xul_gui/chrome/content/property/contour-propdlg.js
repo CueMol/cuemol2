@@ -34,6 +34,7 @@ ContourPropEdit.prototype.onLoad = function ()
   this.mUpdate = document.getElementById("map-update");
   this.mWidth = document.getElementById("map-width");
   this.mBufSize = document.getElementById("map-bufsize");
+  this.mUsePBC = document.getElementById("use-pbc");
 
   this.mMapLim = document.getElementById("map-limit");
 
@@ -77,6 +78,9 @@ ContourPropEdit.prototype.updateWidgets = function ()
 
   elem = gMain.findPropData("bufsize");
   this.mBufSize.value = elem.value;
+
+  elem = gMain.findPropData("use_pbc");
+  this.mUsePBC.checked = elem.value;
 
   elem = gMain.findPropData("autoupdate");
   var value;
@@ -152,6 +156,8 @@ ContourPropEdit.prototype.validateWidgets = function (aEvent)
     new_val = 200;
   }
   gMain.updateData("bufsize", new_val);
+
+  gMain.updateData("use_pbc", this.mUsePBC.checked);
 
   var bMapLim = this.mMapLim.checked;
   dd("Validate> MapLim = "+bMapLim);

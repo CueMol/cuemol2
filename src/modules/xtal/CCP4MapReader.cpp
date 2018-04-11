@@ -211,7 +211,7 @@ bool CCP4MapReader::read(qlib::InStream &arg)
     //o2kz = pf[51];
   }
 
-  LOG_DPRINT("CCP4MapReader read...\n");
+  LOG_DPRINT("CCP4Map> Header Info:\n");
   LOG_DPRINT("  map size  : (%d,%d,%d)\n", ncol, nrow, nsect);
   LOG_DPRINT("  map start : (%d,%d,%d)\n", stacol, starow, stasect);
   LOG_DPRINT("  map axis order : (%d,%d,%d)\n", axcol, axrow, axsect);
@@ -232,7 +232,7 @@ bool CCP4MapReader::read(qlib::InStream &arg)
   int ntotal = ncol*nrow*nsect;
 
   if (nmode==MRC_TYPE_FLOAT) {
-    float *fbuf = new float[ntotal];
+    float *fbuf = MB_NEW float[ntotal];
     LOG_DPRINT("memory allocation %d bytes\n", ntotal*sizeof (float));
     if (fbuf==NULL) {
       MB_THROW(qlib::OutOfMemoryException, "CCP4MapReader read: cannot allocate memory");
@@ -242,19 +242,19 @@ bool CCP4MapReader::read(qlib::InStream &arg)
     in.fetch_floatArray(fbuf, ntotal);
 
     if (m_bTruncMin) {
-      LOG_DPRINTLN("Truncate map lower than: %f sigma", m_dMin);
+      LOG_DPRINTLN("CCP4Map> Truncate map lower than: %f sigma", m_dMin);
       for (int i=0; i<ntotal; ++i)
         fbuf[i] = qlib::max(fbuf[i], float(m_dMin * rhosig));
     }
 
     if (m_bTruncMax) {
-      LOG_DPRINTLN("Truncate map higher than: %f sigma", m_dMax);
+      LOG_DPRINTLN("CCP4Map> Truncate map higher than: %f sigma", m_dMax);
       for (int i=0; i<ntotal; ++i)
         fbuf[i] = qlib::min(fbuf[i], float(m_dMax * rhosig));
     }
 
     if (m_bNormalize) {
-      LOG_DPRINTLN("Normalize map");
+      LOG_DPRINTLN("CCP4Map> Normalizing map by sig=%f, mean=%f", rhosig, rhomean);
       for (int i=0; i<ntotal; ++i) {
         double v = fbuf[i];
         v = (v - rhomean)/rhosig;
@@ -270,7 +270,7 @@ bool CCP4MapReader::read(qlib::InStream &arg)
     delete [] fbuf;
   }
   else if (nmode==MRC_TYPE_BYTE) {
-    quint8 *buf = new quint8[ntotal];
+    quint8 *buf = MB_NEW quint8[ntotal];
     LOG_DPRINT("memory allocation %d bytes\n", ntotal*sizeof(quint8));
     if (buf==NULL) {
       MB_THROW(qlib::OutOfMemoryException, "CCP4MapReader read: cannot allocate memory");

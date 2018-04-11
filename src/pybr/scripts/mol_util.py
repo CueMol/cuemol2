@@ -23,7 +23,7 @@ import cuemol
 class AtomIter:
     def __init__(self, aMol, aSel):
         molObj = cuemol.obj(aMol)
-        uid = molObj.uid
+        #uid = molObj.uid
         selObj = cuemol.sel(aSel, molObj.scene_uid)
 
         self.mIter = cuemol.createObj("AtomIterator");
@@ -43,17 +43,14 @@ class AtomIter:
         return rval
 
 def forEachResid(aMol, aSel, aFn):
-    aMolObj = cuemol.obj(aMol)
+    molObj = cuemol.obj(aMol)
 
-    uid = aMolObj.uid
-    aSelObj = cuemol.sel(aSel, molObj.scene_uid)
+    selObj = cuemol.sel(aSel, molObj.scene_uid)
 
     iter = cuemol.createObj("ResidIterator");
-    #let sel = cuemol.createObj("SelCommand");
-    #sel.compile(aSelStr, 0);
 
-    iter.target = aMolObj;
-    iter.sel = aSelObj;
+    iter.target = molObj;
+    iter.sel = selObj;
 
     iter.first()
     while True:
@@ -91,6 +88,22 @@ def sameAtom(aMol, aAtom):
     aname = aAtom.name
     return aMol.getAtom(chname, resid, aname)
 
+def sameResid(aMol, aResid):
+    chname = aResid.chainName
+    resid = aResid.sindex
+    return aMol.getResidue(chname, resid)
+
+def rotateZ(aMol, aCen, aDeg, aSel=None):
+    sel=aSel
+    if sel is None:
+        sel = cuemol.sel("*")
+    else:
+        sel = cuemol.sel(aSel)
+        
+    mat = cuemol.createObj("Matrix")
+    mat.setRotate(aCen, cuemol.vec(0,0,1), aDeg)
+    aMol.xformByMat(mat, sel)
+
 def showArrow(aMol, aRendName, aPos1, aPos2, aMol2=None):
     rend = aMol.getRendererByName(aRendName)
 
@@ -125,3 +138,33 @@ def showArrow(aMol, aRendName, aPos1, aPos2, aMol2=None):
     else:
         raise RuntimeError("showArrow() unknown aPos1/aPos2 type")
 
+
+def del_atoms(aMol, aSel):
+    mgr = cuemol.getService("MolAnlManager");
+    mol = cuemol.obj(aMol)
+    sel = cuemol.sel(aSel, mol.getScene())
+    mgr.deleteAtoms(mol, sel);
+    
+def ssm_fit(aRefMol, aRefSel, aMovMol, aMovSel):
+    mgr = cuemol.getService("MolAnlManager");
+    refMol = cuemol.obj(aRefMol)
+    refSel = cuemol.sel(aRefSel, refMol.getScene())
+    movMol = cuemol.obj(aMovMol)
+    movSel = cuemol.sel(aMovSel, movMol.getScene())
+    mgr.superposeSSM1(refMol, refSel, movMol, movSel, False);
+
+def merge(aToMol, aFromMol, aFromSel, aCopy=False):
+    mgr = cuemol.getService("MolAnlManager");
+    toMol = cuemol.obj(aToMol)
+    fromMol = cuemol.obj(aFromMol)
+    fromSel = cuemol.sel(aFromSel, fromMol.getScene())
+    mgr.copyAtoms(toMol, fromMol, fromSel);
+    if not aCopy:
+        mgr.deleteAtoms(fromMol, fromSel);
+
+def chg_chain(aFromMol, aFromSel, aNewChName):
+    mgr = cuemol.getService("MolAnlManager");
+    fromMol = cuemol.obj(aFromMol)
+    fromSel = cuemol.sel(aFromSel, fromMol.getScene())
+    mgr.changeChainName(fromMol, fromSel, aNewChName);
+    

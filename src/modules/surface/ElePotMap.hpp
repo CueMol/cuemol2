@@ -119,9 +119,15 @@ public:
   ////////////////////////////////////////////
   // Data chunk serialization
 
-    virtual bool isDataSrcWritable() const { return true; }
+  virtual bool isDataSrcWritable() const { return true; }
   virtual LString getDataChunkReaderName(int nQdfVer) const;
   virtual void writeDataChunkTo(qlib::LDom2OutStream &oos) const;
+
+  //
+
+  // LString getHistogramJSON(double min, double max, int nbin);
+  void fitView(const qsys::ViewPtr &pView, bool dummy) const;
+
 };
 
 }

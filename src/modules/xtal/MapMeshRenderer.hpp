@@ -21,6 +21,7 @@ namespace xtal {
 
   using qlib::Vector3I;
   using qlib::Vector3F;
+
   using gfx::DisplayContext;
   using qsys::ScalarObject;
   class DensityMap;
@@ -68,7 +69,6 @@ namespace xtal {
     void setBufSize(int nsize) { setMaxGrids(nsize); }
 
     /// Use spherical extent
-
   private:
     bool m_bSphExt;
 

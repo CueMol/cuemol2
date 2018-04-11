@@ -1,0 +1,33 @@
+// -*-Mode: C++;-*-
+//
+
+#ifndef MULTI_GRADIENT_QIF_INCLUDED
+#define MULTI_GRADIENT_QIF_INCLUDED
+
+#include <gfx/AbstractColor.qif>
+
+runtime_class MultiGradient
+{
+  client_hdr "MultiGradient.hpp";
+  client_name qsys::MultiGradient;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  property integer size => redirect(getSize, XXX) (readonly);
+
+  void clear();
+  integer insert(real value, object<AbstractColor$> pCol);
+
+  real getValueAt(integer ind);
+  object<AbstractColor$> getColorAt(integer ind);
+  
+  boolean removeAt(integer ind);
+  boolean changeAt(integer ind, real value, object<AbstractColor$> pCol);
+
+  void copyFrom(object<MultiGradient$> src);
+};
+
+#endif
+

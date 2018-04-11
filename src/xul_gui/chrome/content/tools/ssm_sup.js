@@ -48,14 +48,6 @@ dlg.ctor = function ()
   window.addEventListener("unload", function(){
       try {that.onUnload();} catch (e) {debug.exception(e);} }, false);
 
-/*
-  window.addEventListener("dialogaccept", function(){
-      try {var res = that.onDialogAccept();
-        if (!res)
-          alert("XXX: "+res);
-        return res;
-      } catch (e) {debug.exception(e);} }, false);
-*/
 }
 
 dlg.onLoad = function ()
@@ -76,7 +68,7 @@ dlg.onLoad = function ()
       try { that.onObjBoxChanged(aEvent);}
       catch (e) { debug.exception(e); }
   });
-
+  
   this.mRefSelBox = document.getElementById('ref_molsel');
   this.mMovSelBox = document.getElementById('mov_molsel');
 
@@ -101,8 +93,7 @@ dlg.onLoad = function ()
 
   var bOK = false;
   if (pref.has(histry_name+"_refmol")) {
-    //var prev_id = parseInt(pref.get(histry_name+"_refmol"));
-    var prev_id = pref.get(histry_name+"_refmol");
+    let prev_id = pref.get(histry_name+"_refmol");
     if (this.mRefObjBox.selectObject(prev_id))
       bOK = true;
   }  
@@ -112,8 +103,7 @@ dlg.onLoad = function ()
 
   bOK = false;
   if (pref.has(histry_name+"_movmol")) {
-    //var prev_id = parseInt(pref.get(histry_name+"_movmol"));
-    var prev_id = pref.get(histry_name+"_movmol");
+    let prev_id = pref.get(histry_name+"_movmol");
     if (this.mMovObjBox.selectObject(prev_id))
       bOK = true;
   }  
@@ -126,11 +116,21 @@ dlg.onLoad = function ()
       this.mMovObjBox._widget.selectedIndex = 0;
   }
   
+  // history: algorithm selection
   if (pref.has(histry_name+"_algsel")) {
     var prev_id = pref.get(histry_name+"_algsel");
     this.mAlgoSel.selectedIndex = prev_id;
   }
   
+  // history: mol selections
+  if (pref.has(histry_name+"_movmol_sel"))
+    this.mMovSelBox.origSel = pref.get(histry_name+"_movmol_sel");
+  if (pref.has(histry_name+"_refmol_sel"))
+    this.mRefSelBox.origSel = pref.get(histry_name+"_refmol_sel");
+
+  this.mRefSelBox.buildBox();
+  this.mMovSelBox.buildBox();
+
   dd("*** Dlg.onLoad() OK.");
 }
 
@@ -214,9 +214,13 @@ dlg.onDialogAccept = function (event)
   scene.commitUndoTxn();
   // EDIT TXN END //
   
+  // Save to widget history
   pref.set(histry_name+"_refmol", refMol.uid);
   pref.set(histry_name+"_movmol", movMol.uid);
   pref.set(histry_name+"_algsel", this.mAlgoSel.selectedIndex);
+
+  pref.set(histry_name+"_refmol_sel", refSel.toString());
+  pref.set(histry_name+"_movmol_sel", movSel.toString());
 
   // Save selection history
   util.selHistory.append(refSel.toString());

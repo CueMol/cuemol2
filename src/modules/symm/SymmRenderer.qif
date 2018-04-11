@@ -19,7 +19,7 @@ runtime_class SymmRenderer extends Renderer
   cloneable;
 
   property integer maxop => redirect(getMaxOp, setMaxOp);
-  default maxop = 100;
+  default maxop = 1000;
 
   property real extent => redirect(getExtent, setExtent);
   default extent = 50.0;

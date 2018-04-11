@@ -6,15 +6,21 @@
 #ifndef ELE_POT_MAP_QIF_INCLUDED
 #define ELE_POT_MAP_QIF_INCLUDED
 
-#include <qsys/Object.qif>
+#include <qsys/ScalarObject.qif>
 
-runtime_class ElePotMap extends Object
+runtime_class ElePotMap extends ScalarObject
 {
   client_hdr "ElePotMap.hpp";
   client_name surface::ElePotMap;
 
   scriptable;
   smartptr;
+
+  // Methods
+  //string getHistogramJSON(real min, real max, integer nbin);
+
+  void fitView(object<View$> pView, boolean dummy);
+
 };
 
 #endif

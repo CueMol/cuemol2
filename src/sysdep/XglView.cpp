@@ -59,7 +59,9 @@ bool XglView::setup(Display *pDsp, Window xwin)
     return false;
   }
 
-  XglDisplayContext *pCtxt = MB_NEW XglDisplayContext(getSceneID(), this);
+  //XglDisplayContext *pCtxt = MB_NEW XglDisplayContext(getSceneID(), this);
+  XglDisplayContext *pCtxt = MB_NEW XglDisplayContext();
+  pCtxt->setTargetView(this);
   if (!pCtxt->setup(pDsp, xwin, getSiblingCtxt())) {
     delete pCtxt;
     return false;

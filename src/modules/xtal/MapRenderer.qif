@@ -8,6 +8,7 @@
 
 #include <qsys/Renderer.qif>
 #include <gfx/Color.qif>
+#include <qsys/MultiGradient.qif>
 #include <modules/molstr/SelCommand.qif>
 
 runtime_class MapRenderer extends Renderer
@@ -23,25 +24,45 @@ runtime_class MapRenderer extends Renderer
   property real maxLevel => redirect(getMaxLevel, XXX) (readonly);
   property real minLevel => redirect(getMinLevel, XXX) (readonly);
 
+  /// coloring mode
+  enumdef colormode {
+    solid = xtal::MapRenderer::MAPREND_SIMPLE;
+    molecule = xtal::MapRenderer::MAPREND_MOLFANC;
+    multigrad = xtal::MapRenderer::MAPREND_MULTIGRAD;
+  }
+  property enum colormode => redirect(getColorMode, setColorMode);
+  default colormode = "solid";
 
+  /// Color for solid coloring mode
   property object<AbstractColor$> color => redirect(getColor, setColor);
   default color = gfx::SolidColor::createRGB(0.0, 0.0, 1.0);
 
+  /// synonim of color for compatibility with other renderers
+  property object<AbstractColor$> defaultcolor => redirect(getColor, setColor) (nopersist);
+
+  /// Contour leve (in sigma unit)
   property real siglevel => redirect(getSigLevel, setSigLevel);
   default siglevel = 1.1;
 
+  /// Display extent
   property real extent => redirect(getExtent, setExtent);
   default extent = 15.0;
   
+  /// Display center
   property object<Vector> center => redirect(getCenter, setCenter);
   default center = qlib::Vector4D();
 
-  /// contour level in the absolute scale
+  /// contour level in the absolute unit
   property real level => redirect(getLevel, setLevel) (nopersist);
 
   /// Use PBC if possible
   property boolean use_pbc => redirect(isUsePBC, setUsePBC);
   default use_pbc = true;
+
+  /// Contour level mode
+  property boolean use_abslevel => redirect(isUseAbsLev, setUseAbsLev);
+  default use_abslevel = false;
+  //default use_abslevel = true;
 
   ///////////////
   // mol boundary
@@ -57,6 +78,15 @@ runtime_class MapRenderer extends Renderer
   property object<MolSelection$> bndry_sel => redirect(getBndrySel, setBndrySel);
   default bndry_sel = molstr::SelectionPtr(new molstr::SelCommand());
 
+  ///////////////
+  // multigrad
+
+  property object<MultiGradient$> multi_grad => redirect(getMultiGrad, xxx) (readonly);
+
+  property string color_mapname => redirect(getColorMapName, setColorMapName);
+  default color_mapname = "";
+
+  object<Object$> getColorMapObj();
 };
 
 #endif

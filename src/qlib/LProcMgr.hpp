@@ -28,7 +28,8 @@ namespace qlib {
     virtual int getCPUCount() const =0;
 
     virtual ProcInThread *createProcess(const LString &path,
-                                        const LString &args) =0;
+                                        const LString &args,
+					const LString &wdir) =0;
 
     virtual void kill(ProcInThread *) =0;
 
@@ -41,6 +42,7 @@ namespace qlib {
     int m_nProcID;
     LString m_path;
     LString m_cmdline;
+    LString m_wdir;
     ProcInThread *m_pThr;
 
     ProcEnt() : m_nProcID(-1), m_pThr(NULL) {}
@@ -115,7 +117,8 @@ namespace qlib {
 
     int queueTask(const LString &path,
                   const LString &args,
-                  const LString &wait_ids);
+                  const LString &wait_ids,
+		  const LString &wdir = LString());
 
     enum {
       PM_QUEUED=0,

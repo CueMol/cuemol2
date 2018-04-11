@@ -163,6 +163,7 @@
     //this.loadMSMSFile();
     this.buildMolSurf();
 
+    /*
     if (this.mXyzrFile) {
       try { this.mXyzrFile.remove(false); } catch (e) {}
       this.mXyzrFile = null;
@@ -175,214 +176,10 @@
       try { this.mVertFile.remove(false); } catch (e) {}
       this.mVertFile = null;
     }
-    
+    */
   }
 
   ////////////////
-
-  dlg.makeXyzrFile = function ()
-  {
-    var tgtmol = this.mObjBox.getSelectedObj();
-    if (tgtmol==null)
-      return;
-
-    // create exporter obj
-    var strMgr = cuemol.getService("StreamManager");
-    var exporter = strMgr.createHandler("xyzr", 1);
-    if (typeof exporter==="undefined" || exporter===null) {
-      window.alert("Save: get exporter Failed.");
-      throw "cannot create exporter for xyzr";
-    }
-
-    // setup seleciton
-    var molsel = null;
-    if (!this.mSelBox.disabled)
-      molsel = this.mSelBox.selectedSel;
-    if (molsel && molsel.toString()!=="") {
-      this.mMolSel = exporter.sel = molsel;
-      this.mSelBox.addHistorySel();
-    }
-    this.mMolSel = molsel;
-
-    // make xyzr tmp file
-    var file;
-    file = Cc["@mozilla.org/file/directory_service;1"]
-      .getService(Ci.nsIProperties)
-	.get("TmpD", Ci.nsIFile);
-    file.append("surface_tmp.xyzr");
-    file.createUnique(Ci.nsIFile.NORMAL_FILE_TYPE, 0664);
-
-    dd("tmp xyzr file: "+file.path);
-
-    this.mXyzrFile = file;
-    var xyzrFileName = file.path;
-
-    // write xyzr files
-    try {
-      dd("write: " + xyzrFileName);
-      
-      // use camera of the current view (TO DO: configurable)
-      exporter.setPath(xyzrFileName);
-      exporter.attach(tgtmol);
-      exporter.write();
-      exporter.detach();
-    }
-    catch (e) {
-      delete sc;
-      delete exporter;
-      throw e;
-    }
-    
-    // exporter is expected to be removed by GC...
-    delete sc;
-    delete exporter;
-  }
-
-  dlg.runMSMS = function ()
-  {
-    var str_msmsexe = this.mMsmsExePathBox.value;
-
-    var msmsexe = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsILocalFile);
-    try {
-      msmsexe.initWithPath(str_msmsexe);
-      if (!msmsexe.isFile()) {
-	throw "cannot open msms exe file: "+str_msmsexe;
-      }    
-      pref.set(msms_exe_key, msmsexe.path);
-    }
-    catch (e) {
-      util.alert(window, "Cannot open povray executable file: "+str_msmsexe);
-      throw e;
-      return;
-    }
-    
-    var proc = this.mProc = Cc["@mozilla.org/process/util;1"].createInstance(Ci.nsIProcess);
-    proc.init(msmsexe);
-    
-    ////
-    // density value
-
-    var nden = parseInt(document.getElementById("point-density-value").value);
-    if (nden==NaN || nden<1)
-      nden = 1;
-
-    ////
-    // probe radius
-
-    var prad = parseFloat(document.getElementById("probe-radius").value);
-    if (prad==NaN || prad<0.1)
-      prad = 1.4;
-
-    ////
-
-    // make output vert/face file
-    file = Cc["@mozilla.org/file/directory_service;1"]
-      .getService(Ci.nsIProperties)
-	.get("TmpD", Ci.nsIFile);
-    file.append("msms_tmp.face");
-    file.createUnique(Ci.nsIFile.NORMAL_FILE_TYPE, 0664);
-
-    dd("tmp face file: "+file.path);
-
-    this.mFaceFile = file;
-
-    var face_path = this.mFaceFile.path;
-    var cpos = util.splitFileName(face_path, "*.face");
-    var msms_out = face_path.substr(0, cpos);
-    var vert_path = msms_out+".vert";
-
-    var args = ["-if", this.mXyzrFile.path, "-of", msms_out, "-density", nden, "-probe", prad];
-    
-    dd("MSMS args> "+args.join(","));
-    /*
-    var that = this;
-    this.mTimer = require("timer").setInterval(function() {
-      try { that.onTimer(); }
-      catch (e) {
-	dd("Error: "+e);
-	debug.exception(e);
-      }
-    }, 1000);
-     */
-    
-    // block running of povray process
-    proc.run(true, args, args.length);
-
-    this.mVertFile = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsILocalFile);
-    try {
-      this.mVertFile.initWithPath(vert_path);
-      if (!this.mVertFile.isFile()) {
-	throw "cannot open msms output vert file: "+vert_path;
-      }    
-    }
-    catch (e) {
-      util.alert(window, "Run MSMS is failed (no output file)");
-      throw e;
-      return;
-    }
-  }
-
-  dlg.loadMSMSFile = function ()
-  {
-    var scene = cuemol.getScene(this.mTgtSceID);
-
-    var strMgr = cuemol.getService("StreamManager");
-    var reader = strMgr.createHandler("msms", 0);
-    reader.setPath(this.mFaceFile.path);
-    reader.vertex_file = this.mVertFile.path;
-
-    // make default names
-
-    var tgtmol = this.mObjBox.getSelectedObj();
-    var newname = this.mSurfName.value; //"sf_"+tgtmol.name;
-    /*if (scene.getObjectByName(newname)!=null) {
-      newname = util.makeUniqName2(
-	function (a) {return newname+"("+a+")"},
-	function (a) {return scene.getObjectByName(a);} );
-    }*/
-
-    var rend_name = util.makeUniqName2(
-      function (a) {return "molsurf"+a; },
-      function (a) {return scene.getRendByName(a);} );
-
-    // EDIT TXN START //
-    scene.startUndoTxn("Open MSMS file");
-
-    try {
-      var newobj = reader.createDefaultObj();
-      reader.attach(newobj);
-      reader.read();
-      reader.detach();
-
-      newobj.name = newname;
-      scene.addObject(newobj);
-      newobj.forceEmbed();
-
-      // create default renderer
-      rend = newobj.createRenderer("molsurf");
-      rend.name = rend_name;
-      
-      rend.target = tgtmol.name;
-      if (this.mMolSel)
-	rend.sel = this.mMolSel;
-      rend.colormode = "molecule";
-      rend.coloring = cuemol.createObj("CPKColoring");
-    }
-    catch (e) {
-      dd("File Open Error: "+e);
-      debug.exception(e);
-      
-      util.alert(window, "Failed to open MSMS file: "+path);
-      reader = null;
-      scene.rollbackUndoTxn();
-      return;
-    }
-
-    reader = null;
-    
-    scene.commitUndoTxn();
-    // EDIT TXN END //
-  }
 
   dlg.buildMolSurf = function ()
   {
@@ -392,12 +189,6 @@
 
     var tgtmol = this.mObjBox.getSelectedObj();
     var newname = this.mSurfName.value;
-    //"sf_"+tgtmol.name;
-    /*if (scene.getObjectByName(newname)!=null) {
-      newname = util.makeUniqName2(
-	function (a) {return newname+"("+a+")"},
-	function (a) {return scene.getObjectByName(a);} );
-    }*/
 
     var rend_name = util.makeUniqName2(
       function (a) {return "molsurf"+a; },
@@ -465,3 +256,198 @@
 
 } catch (e) {debug.exception(e);} } )();
 
+
+  /*
+  dlg.makeXyzrFile = function ()
+  {
+    var tgtmol = this.mObjBox.getSelectedObj();
+    if (tgtmol==null)
+      return;
+
+    // create exporter obj
+    var strMgr = cuemol.getService("StreamManager");
+    var exporter = strMgr.createHandler("xyzr", 1);
+    if (typeof exporter==="undefined" || exporter===null) {
+      window.alert("Save: get exporter Failed.");
+      throw "cannot create exporter for xyzr";
+    }
+
+    // setup seleciton
+    var molsel = null;
+    if (!this.mSelBox.disabled)
+      molsel = this.mSelBox.selectedSel;
+    if (molsel && molsel.toString()!=="") {
+      this.mMolSel = exporter.sel = molsel;
+      this.mSelBox.addHistorySel();
+    }
+    this.mMolSel = molsel;
+
+    // make xyzr tmp file
+    var file;
+    file = Cc["@mozilla.org/file/directory_service;1"]
+      .getService(Ci.nsIProperties)
+	.get("TmpD", Ci.nsIFile);
+    file.append("surface_tmp.xyzr");
+    file.createUnique(Ci.nsIFile.NORMAL_FILE_TYPE, 0664);
+
+    dd("tmp xyzr file: "+file.path);
+
+    this.mXyzrFile = file;
+    var xyzrFileName = file.path;
+
+    // write xyzr files
+    try {
+      dd("write: " + xyzrFileName);
+      
+      // use camera of the current view (TO DO: configurable)
+      exporter.setPath(xyzrFileName);
+      exporter.attach(tgtmol);
+      exporter.write();
+      exporter.detach();
+    }
+    catch (e) {
+      delete sc;
+      delete exporter;
+      throw e;
+    }
+    
+    // exporter is expected to be removed by GC...
+    delete sc;
+    delete exporter;
+  }
+  */
+
+  /*
+  dlg.runMSMS = function ()
+  {
+    var str_msmsexe = this.mMsmsExePathBox.value;
+
+    var msmsexe = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsILocalFile);
+    try {
+      msmsexe.initWithPath(str_msmsexe);
+      if (!msmsexe.isFile()) {
+	throw "cannot open msms exe file: "+str_msmsexe;
+      }    
+      pref.set(msms_exe_key, msmsexe.path);
+    }
+    catch (e) {
+      util.alert(window, "Cannot open povray executable file: "+str_msmsexe);
+      throw e;
+      return;
+    }
+    
+    var proc = this.mProc = Cc["@mozilla.org/process/util;1"].createInstance(Ci.nsIProcess);
+    proc.init(msmsexe);
+    
+    ////
+    // density value
+
+    var nden = parseInt(document.getElementById("point-density-value").value);
+    if (nden==NaN || nden<1)
+      nden = 1;
+
+    ////
+    // probe radius
+
+    var prad = parseFloat(document.getElementById("probe-radius").value);
+    if (prad==NaN || prad<0.1)
+      prad = 1.4;
+
+    ////
+
+    // make output vert/face file
+    file = Cc["@mozilla.org/file/directory_service;1"]
+      .getService(Ci.nsIProperties)
+	.get("TmpD", Ci.nsIFile);
+    file.append("msms_tmp.face");
+    file.createUnique(Ci.nsIFile.NORMAL_FILE_TYPE, 0664);
+
+    dd("tmp face file: "+file.path);
+
+    this.mFaceFile = file;
+
+    var face_path = this.mFaceFile.path;
+    var cpos = util.splitFileName(face_path, "*.face");
+    var msms_out = face_path.substr(0, cpos);
+    var vert_path = msms_out+".vert";
+
+    var args = ["-if", this.mXyzrFile.path, "-of", msms_out, "-density", nden, "-probe", prad];
+    
+    dd("MSMS args> "+args.join(","));
+    
+    // block running of povray process
+    proc.run(true, args, args.length);
+
+    this.mVertFile = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsILocalFile);
+    try {
+      this.mVertFile.initWithPath(vert_path);
+      if (!this.mVertFile.isFile()) {
+	throw "cannot open msms output vert file: "+vert_path;
+      }    
+    }
+    catch (e) {
+      util.alert(window, "Run MSMS is failed (no output file)");
+      throw e;
+      return;
+    }
+  }
+  */
+
+  /*
+  dlg.loadMSMSFile = function ()
+  {
+    var scene = cuemol.getScene(this.mTgtSceID);
+
+    var strMgr = cuemol.getService("StreamManager");
+    var reader = strMgr.createHandler("msms", 0);
+    reader.setPath(this.mFaceFile.path);
+    reader.vertex_file = this.mVertFile.path;
+
+    // make default names
+
+    var tgtmol = this.mObjBox.getSelectedObj();
+    var newname = this.mSurfName.value; //"sf_"+tgtmol.name;
+
+    var rend_name = util.makeUniqName2(
+      function (a) {return "molsurf"+a; },
+      function (a) {return scene.getRendByName(a);} );
+
+    // EDIT TXN START //
+    scene.startUndoTxn("Open MSMS file");
+
+    try {
+      var newobj = reader.createDefaultObj();
+      reader.attach(newobj);
+      reader.read();
+      reader.detach();
+
+      newobj.name = newname;
+      scene.addObject(newobj);
+      newobj.forceEmbed();
+
+      // create default renderer
+      rend = newobj.createRenderer("molsurf");
+      rend.name = rend_name;
+      
+      rend.target = tgtmol.name;
+      if (this.mMolSel)
+	rend.sel = this.mMolSel;
+      rend.colormode = "molecule";
+      rend.coloring = cuemol.createObj("CPKColoring");
+    }
+    catch (e) {
+      dd("File Open Error: "+e);
+      debug.exception(e);
+      
+      util.alert(window, "Failed to open MSMS file: "+path);
+      reader = null;
+      scene.rollbackUndoTxn();
+      return;
+    }
+
+    reader = null;
+    
+    scene.commitUndoTxn();
+    // EDIT TXN END //
+  }
+  */

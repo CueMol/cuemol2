@@ -35,6 +35,7 @@ module xtal
   fini xtal::fini();
 
   DensityMap;
+  MapRenderer;
   MapMeshRenderer;
   MapSurfRenderer;
   MTZ2MapReader;

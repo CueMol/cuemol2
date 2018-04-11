@@ -93,7 +93,7 @@ void process_input(const LString &loadscr, const std::deque<LString> &args);
 ///
 ///   main routine for CueTTY (CLI version)
 ///
-int main(int argc, const char *argv[])
+int internal_main(int argc, const char *argv[])
 {
   if (qlib::init())
     MB_DPRINTLN("qlib::init() OK.");
@@ -174,9 +174,9 @@ int main(int argc, const char *argv[])
 
   //////////
 
-  if (!loadscr.isEmpty()) {
-    process_input(loadscr, args2);
-  }
+  //if (!loadscr.isEmpty()) {
+  process_input(loadscr, args2);
+  //}
 
 #ifdef USE_XMLRPC
   // Wait for XML-RPC requests
@@ -226,6 +226,24 @@ int main(int argc, const char *argv[])
   return 0;
 }
 
+int main(int argc, const char *argv[])
+{
+  try {
+    internal_main(argc, argv);
+  }
+  catch (const qlib::LException &e) {
+    LOG_DPRINTLN("Caught exception <%s>", typeid(e).name());
+    LOG_DPRINTLN("Reason: %s", e.getMsg().c_str());
+  }
+  catch (std::exception &e) {
+    LOG_DPRINTLN("Caught exception <%s>", typeid(e).name());
+    LOG_DPRINTLN("Reason: %s", e.what());
+  }
+  catch (...) {
+    LOG_DPRINTLN("Caught unknown exception");
+  }
+}
+
 namespace fs = boost::filesystem;
 
 void process_input(const LString &loadscr, const std::deque<LString> &args)
@@ -237,6 +255,7 @@ void process_input(const LString &loadscr, const std::deque<LString> &args)
   
   fs::path full_path = fs::system_complete( scr_path );
 
+  /*
   if ( !fs::exists( full_path ) ) {
 #if (BOOST_FILESYSTEM_VERSION==2)
     std::cout << "\nNot found: " << full_path.file_string() << std::endl;
@@ -245,12 +264,16 @@ void process_input(const LString &loadscr, const std::deque<LString> &args)
 #endif
     return;
   }
+  */
 
   //std::cerr << "\nFull path: " << full_path.file_string() << std::endl;
   //std::cerr << "Extn: " << full_path.extension() << std::endl;
 
+  bool bInvokeIntrShell = false;
+
   if (full_path.extension()==".qsc") {
     //qsys::ScenePtr rscene = pSM->loadSceneFrom(scr_path.file_string(), "xml");
+    bInvokeIntrShell = true;
     //qlib::FileOutStream &fos = qlib::FileOutStream::getStdErr();
     //rscene->writeTo(fos, true);
   }
@@ -291,6 +314,19 @@ void process_input(const LString &loadscr, const std::deque<LString> &args)
     LOG_DPRINTLN("Python not supported!!");
 #endif
   }
+  else {
+    // no input file --> try to run interactive shell
+    bInvokeIntrShell = true;
+  }
+  
+#ifdef HAVE_PYTHON
+  {
+    pybr::PythonBridge *pSvc = pybr::PythonBridge::getInstance();
+    MB_DPRINTLN("");
+    pSvc->runInteractiveShell();
+  }
+#endif
+
   MB_DPRINTLN("main> cleanup ...");
   pSM->destroyAllScenes();
   MB_DPRINTLN("main> cleanup done.");

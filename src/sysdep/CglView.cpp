@@ -54,7 +54,9 @@ bool CglView::attach(void *pnsctxt, CGLContextObj ctx)
     return false;
   }
 
-  CglDisplayContext *pCtxt = MB_NEW CglDisplayContext(getSceneID(), this);
+  // CglDisplayContext *pCtxt = MB_NEW CglDisplayContext(getSceneID(), this);
+  CglDisplayContext *pCtxt = MB_NEW CglDisplayContext();
+  pCtxt->setTargetView(this);
   if (!pCtxt->attach(pnsctxt, ctx)) {
     delete pCtxt;
     return false;

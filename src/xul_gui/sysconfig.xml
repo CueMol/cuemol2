@@ -1,6 +1,7 @@
 <cueconfig>
   <entry name="style">
-    <entry name="style_file" value="%%CONFDIR%%/data/default_style.xml"/>
+    <entry name="style_dir" value="%%CONFDIR%%/data/"/>
+    <entry name="style_file" value="default_style.xml"/>
   </entry>
   <entry name="toppar">
     <!--<entry name="toppar_file" value="cns:%%CONFDIR%%/data/queptl.prm"/>

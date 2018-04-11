@@ -18,6 +18,7 @@ if (!("paint" in cuemolui.panels)) {
     const COL_BFAC    = 6;
     const COL_ELEPOT  = 7;
     const COL_SCRIPT  = 8;
+    const COL_MULTIGRAD  = 9;
 
     var panel = cuemolui.panels.paint = new Object();
 
@@ -63,6 +64,10 @@ if (!("paint" in cuemolui.panels)) {
 
       if (!("coloring" in rend)) {
         // dd("PaintColoringFilter> uobj "+rend.name+" has no coloring");
+        // check multi-grad renderer
+        if ("multi_grad" in rend)
+          return true;
+        
         return false;
       }
 
@@ -84,6 +89,29 @@ if (!("paint" in cuemolui.panels)) {
       return false;
     };
 
+    ////////
+    // "potential object" menulist for ELEPOT mode
+
+    panel.mPotSel = new cuemolui.ObjMenuList(
+      "paint-elepot-obj-selector",
+      window,
+      function (elem) { return (elem.type=="ElePotMap")?true:false; },
+      cuemol.evtMgr.SEM_OBJECT);
+
+    ////////
+    // "colormap object" menulist for MULTIGRAD mode
+
+    panel.mColMapSel = new cuemolui.ObjMenuList(
+      "paint-colmap-obj-selector",
+      window,
+      function (elem) { return (elem.type=="ElePotMap"||elem.type=="DensityMap")?true:false; },
+      cuemol.evtMgr.SEM_OBJECT);
+
+
+    ////////
+    // Initialize Panel's main selector menulist mSelector
+    // (this should be initialized finally, so that the event handlers of mSelector will be called finally)
+
     panel.mSelector = new cuemolui.ObjMenuList(
       "colpanel-rend-menulist",
       window,
@@ -93,16 +121,6 @@ if (!("paint" in cuemolui.panels)) {
     // set listener for receiving all property changes (for widget update)
     panel.mSelector.addPropChgListener("*", function(args) {panel.targetPropChanged(args)} );
     
-    ////////
-    // "potential object" menulist
-
-    panel.mPotSel = new cuemolui.ObjMenuList(
-      "paint-elepot-obj-selector",
-      window,
-      function (elem) { return (elem.type=="ElePotMap")?true:false; },
-      cuemol.evtMgr.SEM_OBJECT);
-
-
     //////////////////////////
     // methods
 
@@ -149,7 +167,6 @@ if (!("paint" in cuemolui.panels)) {
       // remove existing rules
       this._removePaintColCSS();
       
-      //this.mPanelDeck.selectedIndex = 2;
       this._selectDeckById("coloring-deck-paint");
       var i, col, sel, nlen = coloring.size;
       var nodes = new Array();
@@ -207,16 +224,37 @@ panel._setupData = function (aRend)
   // ", type="+aRend._wrapped.getClassName()+
   // ", coloring="+aRend.coloring);
 
+  let res = true;
+
   if (!('coloring' in aRend) || aRend.coloring==null) {
     dd("ColoringPanel> target "+aRend.name+" has no coloring");
-    if ('defaultcolor' in aRend) {
+    //alert("ColoringPanel> target "+aRend.name+" has no coloring");
+
+    // check multi-grad color for scalar-field renderers
+    if ('multi_grad' in aRend &&
+        aRend.colormode=="multigrad") {
+      this._selectDeckById("coloring-deck-multigrad");
+      this.mTgtColType = COL_MULTIGRAD;
+      this.mColMenu.disabled = false;
+      res = true;
+    }
+    else if ('defaultcolor' in aRend) {
       this._setupSolidColoring(aRend);
-      return true;
+      if ('multi_grad' in aRend)
+        this.mColMenu.disabled = false;
+      res = true;
     }
     else {
+      // Unknown renderer
       this._setupUnknownColoring(aRend);
-      return false;
+      // ERROR ??
+      res = false;
     }
+
+    // Setup the coloring pull-down menulist
+    this.setupColoringSelector(aRend);
+
+    return res;
   }
 
   // dd("*** COLORING rend.coloring._wrapped: "+aRend.coloring._wrapped);
@@ -231,13 +269,22 @@ panel._setupData = function (aRend)
     rend_type = aRend.type_name;
 
   // make the coloring pull-down menulist
-  this.setupColoringSelector(aRend, clsname);
+  this.setupColoringSelector(aRend);
 
-  if ((rend_type == "molsurf" || rend_type == "dsurface")&&
-      aRend.colormode == "potential") {
-    this._selectDeckById("coloring-deck-elepot");
-    this.mTgtColType = COL_ELEPOT;
-    return true;
+  // check surface mesh renderers
+  if (rend_type == "molsurf" || rend_type == "dsurface") {
+    if (aRend.colormode == "potential") {
+      this._selectDeckById("coloring-deck-elepot");
+      this.mTgtColType = COL_ELEPOT;
+      return true;
+    }
+
+    if ('multi_grad' in aRend &&
+        aRend.colormode=="multigrad") {
+      this._selectDeckById("coloring-deck-multigrad");
+      this.mTgtColType = COL_MULTIGRAD;
+      return true;
+    }
   }
 
   if (clsname == "CPKColoring") {
@@ -303,22 +350,41 @@ panel._setPaintColCSS = function (aPropName, aColor)
 }
 
 /// Setup coloring selector dropdown menu
-panel.setupColoringSelector = function (aRend, clsname)
+panel.setupColoringSelector = function (aRend)
 {
-  var elepot_elem = document.getElementById("paint-type-elepot");
-
   var rend_type = "";
   if ('type_name' in aRend)
     rend_type = aRend.type_name;
 
-  if (rend_type == "molsurf" || rend_type == "dsurface") {
-    elepot_elem.hidden = false;
-    /*if (aRend.colormode == "potential") {
-      return;
-    }*/
+  if ("multi_grad" in aRend) {
+    document.getElementById("paint-type-multigrad").hidden = false;
   }
   else {
-    elepot_elem.hidden = true;
+    document.getElementById("paint-type-multigrad").hidden = true;
+  }
+
+  if ("coloring" in aRend) {
+    document.getElementById("paint-type-paint-popup").hidden = false;
+    document.getElementById("paint-type-cpk").hidden = false;
+    document.getElementById("paint-type-bfac").hidden = false;
+    document.getElementById("paint-type-rainbow").hidden = false;
+    document.getElementById("paint-type-elepot").hidden = false;
+    document.getElementById("paint-type-resetdef").hidden = false;
+  }
+  else {
+    document.getElementById("paint-type-paint-popup").hidden = true;
+    document.getElementById("paint-type-cpk").hidden = true;
+    document.getElementById("paint-type-bfac").hidden = true;
+    document.getElementById("paint-type-rainbow").hidden = true;
+    document.getElementById("paint-type-elepot").hidden = true;
+    document.getElementById("paint-type-resetdef").hidden = true;
+  }
+  
+  if (rend_type == "molsurf" || rend_type == "dsurface") {
+    document.getElementById("paint-type-elepot").hidden = false;
+  }
+  else {
+    document.getElementById("paint-type-elepot").hidden = true;
   }
 }
 
@@ -361,6 +427,10 @@ panel._initWidgets = function (aRend)
   }
   case COL_SCRIPT: {
     this.updateScriptWidgets(aRend);
+    break;
+  }
+  case COL_MULTIGRAD: {
+    this.updateMultigradWidgets(aRend);
     break;
   }
   }
@@ -411,6 +481,10 @@ panel._updateWidgets = function (aRend, aPropName, aParentName)
   }
   case COL_SCRIPT: {
     this.updateScriptWidgets(aRend);
+    break;
+  }
+  case COL_MULTIGRAD: {
+    this.updateMultigradWidgets(aRend);
     break;
   }
   }
@@ -482,6 +556,9 @@ panel.onLoad = function ()
     this.loadElepotWidgets();
 
     this.loadScriptWidgets();
+
+    // Multigrad panel
+    this.loadMultigradWidgets();
 
     // set listener for elepot-obj-selector "select" change event
     this.mPotSel.addSelChanged(function(args) {that.onPotSelChanged(args)});
@@ -559,9 +636,6 @@ panel.onChgColoring = function (aEvent)
       scene.startUndoTxn("Reset coloring style");
       try {
         cuemol.resetProp(rend, "coloring");
-        //let s = rend.style;
-        //rend.applyStyles("");
-        //rend.applyStyles(s);
       }
       catch (e) {
         debug.exception(e);
@@ -570,6 +644,31 @@ panel.onChgColoring = function (aEvent)
       }
       scene.commitUndoTxn();
       // EDIT TXN END //
+      return;
+    }
+    else if (id=="paint-type-multigrad") {
+      this.setDefaultMultiGrad(rend);
+      return;
+    }
+
+    if (!('coloring' in rend)) {
+      if (id=="paint-type-solid") {
+        if ("colormode" in rend) {
+          // EDIT TXN START //
+          let scene = rend.getScene();
+          scene.startUndoTxn("Set solid coloring");
+          try {
+            rend.colormode = "solid";
+          }
+          catch (e) {
+            debug.exception(e);
+            scene.rollbackUndoTxn();
+            return;
+          }
+          scene.commitUndoTxn();
+          // EDIT TXN END //
+        }
+      }
       return;
     }
 
@@ -583,6 +682,7 @@ panel.onChgColoring = function (aEvent)
         return;
       }
     }
+
 
     dd("setRendColoring: id="+id+", rend="+rend.name);
     gQm2Main.setRendColoring(id, rend);
@@ -1604,7 +1704,7 @@ panel.onPotSelChanged = function (aEvent)
   // alert("onPotSelChanged called: rend="+rend.name+", elepot="+obj.name);
 
   this.commitElepotPropChange("elepot", obj.name);
-}
+};
 
 /// Data --> widgets
 panel.updateElepotWidgets = function (aRend, aPropName)
@@ -1776,6 +1876,111 @@ panel.onLoadColoringScript = function (aEvent)
   }
   scene.commitUndoTxn();
   // EDIT TXN END //
+
+};
+
+////////////////////////////////////////////////////////////////
+// Multigrad coloring implementation
+
+panel.loadMultigradWidgets = function ()
+{
+  let that = this;
+  // set listener for elepot-obj-selector "select" change event
+  this.mColMapSel.addSelChanged(function(args) {that.onColMapSelChanged(args)});
+};
+
+panel.updateMultigradWidgets = function (aRend)
+{
+  if ('elepot' in aRend)
+    this.mColMapSel.selectObjectByName(aRend.elepot);
+  else if ('color_mapname' in aRend) {
+    let res = this.mColMapSel.selectObjectByName(aRend.color_mapname);
+    //dd("this.mColMapSel._data = "+debug.dumpObjectTree(this.mColMapSel._data));
+    debug.trace();
+    dd("this.mColMapSel._data = "+this.mColMapSel._data);
+    dd("this.mColMapSel._data.length = "+this.mColMapSel._data.length);
+    //alert("update color_mapname to: "+aRend.color_mapname+" res="+res);
+  }
+};
+
+/// elepot selector change event listener
+panel.onColMapSelChanged = function (aEvent)
+{
+  var obj = this.mColMapSel.getSelectedObj();
+  if (!obj)
+    return;
+
+  var rend = cuemol.getUIDObj(this.mTgtRendID);
+
+  if ('elepot' in rend) {
+    if (rend.elepot==obj.name)
+      return;
+    this.commitElepotPropChange("elepot", obj.name);
+  }
+  else if ('color_mapname' in rend) {
+    if (rend.color_mapname==obj.name)
+      return;
+    //alert("change color_mapname to: "+obj.name);
+    this.commitElepotPropChange("color_mapname", obj.name);
+  }
+};
+
+/// Setup default multi-gradient coloring
+panel.setDefaultMultiGrad = function (aRend)
+{
+  if (!"colormode" in aRend) {
+    dd("setDefaultMultiGrad> ERROR!! aRend does not have colormode prop");
+    return;
+  }
+
+  let tgtname = null;
+  if (this.mColMapSel.getItemCount()>0) {
+    if (aRend.color_mapname=="") {
+      let pot = this.mColMapSel.getSelectedObj();
+      tgtname = pot.name;
+    }
+  }
+
+  var scene = aRend.getScene();
+  // EDIT TXN START //
+  scene.startUndoTxn("Change to multigrad coloring");
+  try {
+    if (tgtname) {
+      if ("color_mapname" in aRend)
+        aRend.color_mapname = tgtname;
+      else if ("elepot" in aRend)
+        aRend.elepot = tgtname;
+      else {
+        dd("setDefaultMultiGrad> ERROR!! aRend does not have color_map/elepot prop");
+      }
+    }
+    aRend.colormode = "multigrad";
+  }
+  catch (e) {
+    dd("PaintPanel.setDefaultMultiGrad> FATAL ERROR: "+e);
+    debug.exception(e);
+    scene.rollbackUndoTxn();
+    return;
+  }
+  scene.commitUndoTxn();
+  // EDIT TXN END //
+  
+  return;
+};
+
+panel.onEditMultiGrad = function (aEvent)
+{
+  var rend = cuemol.getUIDObj(this.mTgtRendID);
+  let scene = rend.getScene();
+
+  var argobj = {
+  scene_id: scene.uid,
+  rend_id: rend.uid
+  };
+
+  var stylestr = "chrome,modal,resizable=yes,dependent,centerscreen";
+  window.openDialog("chrome://cuemol2/content/tools/multigrad_editor.xul",
+		    "", stylestr, argobj);
 
 };
 

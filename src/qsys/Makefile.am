@@ -56,6 +56,7 @@ anim/AnimObjEvent.cpp \
 qsys.cpp \
 SceneExporter.cpp \
 RendGroup.cpp \
+MultiGradient.cpp \
 TTYView.cpp \
 $(NULL)
 
@@ -82,6 +83,8 @@ anim/AnimMgr.qif \
 anim/AnimObj.qif \
 SceneExporter.qif \
 RendGroup.qif \
+MultiGradient.qif \
+ScalarObject.qif \
 $(NULL)
 
 # Editor (desktop ver) C++ source files

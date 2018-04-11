@@ -151,9 +151,11 @@ fi
 echo "host_os: $host_os"
 echo "target_os: $target_os"
 
-BUILD_CLI=
+BUILD_CLI=cli
 BUILD_OSDEP=
 BUILD_BIT=
+OSDEP_LDADD=
+OSDEP_LDFLAGS=
 
 dnl Whether 32- or 64-bit build?
 case "$host_cpu" in
@@ -189,11 +191,14 @@ dnl Check CLI/GUI build
 AC_ARG_ENABLE(cli,
     [--enable-cli         enable command line interface],
     [
-dnl CLI option supplied --> enable CLI build
+dnl CLI option supplied --> enable CLI-only build
 if test $enableval = yes ; then
+    # CLI-only build does not require os-dependent features
     GUI_ARCH=MB_GUI_ARCH_CLI
     BUILD_OSDEP=
-    BUILD_CLI=cli
+    OSDEP_LDADD=
+    OSDEP_LDFLAGS=
+    # BUILD_CLI=cli
 fi],
     [
 dnl no option --> use GUI (X11/OSX)
@@ -203,6 +208,8 @@ case $host_os in
 	GUI_ARCH=MB_GUI_ARCH_OSX
 	AC_DEFINE([GUI_ARCH_OSX],[1],[GUI Arch OSX])
 	BUILD_OSDEP="sysdep osxbuild stub"
+	OSDEP_LDADD=-lsysdep
+	OSDEP_LDFLAGS=-L../sysdep
 
         # make_distr.pl substitutions
         OSXDISTR_ARCH=MacOSX-Intel$BUILD_BIT
@@ -228,6 +235,8 @@ case $host_os in
 	GUI_ARCH=MB_GUI_ARCH_X11
 	AC_DEFINE([GUI_ARCH_X11],[1],[GUI Arch X11])
 	BUILD_OSDEP="sysdep uxdist"
+	OSDEP_LDADD=-lsysdep
+	OSDEP_LDFLAGS=-L../sysdep
         dnl Linux/Gecko23 build requires std=c++0x feature (char16_t)
         AX_CXX_COMPILE_STDCXX_0X
 	if test $ax_cv_cxx_compile_cxx0x_cxx = yes ; then
@@ -244,6 +253,8 @@ AM_CONDITIONAL(COND_BUILD_OSX, test x$GUI_ARCH = xMB_GUI_ARCH_OSX)
 AM_CONDITIONAL(COND_BUILD_X11, test x$GUI_ARCH = xMB_GUI_ARCH_X11)
 AM_CONDITIONAL(COND_BUILD_IPHONEOS, test x$GUI_ARCH = xMB_GUI_ARCH_IPHONEOS)
 AC_SUBST(BUILD_OSDEP)
+AC_SUBST(OSDEP_LDADD)
+AC_SUBST(OSDEP_LDFLAGS)
 AC_SUBST(BUILD_CLI)
 
 echo GUI_ARCH: $GUI_ARCH
@@ -886,7 +897,7 @@ if test x$BUILD_LW != xyes ; then
   MODULES_LDFLAGS="-L../modules/mdtools $MODULES_LDFLAGS"
   MODULES_CXXFLAGS="-DHAVE_MDTOOLS_MODULE $MODULES_CXXFLAGS"
 
-  # Importers module (experimental)
+  # Importers module
   BUILD_MODULES="$BUILD_MODULES modules/importers"
   MODULES_LDADD="-limporters $MODULES_LDADD"
   MODULES_LDFLAGS="-L../modules/importers $MODULES_LDFLAGS"

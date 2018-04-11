@@ -12,6 +12,7 @@
 
 using namespace sysdep;
 
+/*
 XglDisplayContext::XglDisplayContext(int sceneid, XglView *pView)
   : OglDisplayContext(sceneid)
 {
@@ -19,6 +20,15 @@ XglDisplayContext::XglDisplayContext(int sceneid, XglView *pView)
   m_xwin = 0;
   m_glcx = NULL;
   m_pTargetView = pView;
+}
+*/
+
+XglDisplayContext::XglDisplayContext()
+  : OglDisplayContext()
+{
+  m_pDisplay = NULL;
+  m_xwin = 0;
+  m_glcx = NULL;
 }
 
 XglDisplayContext::~XglDisplayContext()

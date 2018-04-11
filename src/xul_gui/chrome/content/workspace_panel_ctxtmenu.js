@@ -291,11 +291,28 @@ ws.onGenSurfObj = function ()
     function (a) {return obj.name+"_sf"+a},
     function (a) {return scene.getObjectByName(a);} );
 
+  let rendtype = "molsurf";
+  let rendnm = util.makeUniqName2(
+    function (a) {return rendtype+a; },
+    function (a) {return scene.getRendByName(a);} );
+
   // EDIT TXN START //
   scene.startUndoTxn("Generate surfobj");
   try {
     newobj.name = sgnm;
     scene.addObject(newobj);
+    let newrend = newobj.createRenderer(rendtype);
+    newrend.name = rendnm;
+
+    if (rend.colormode=="multigrad") {
+      newrend.colormode = "multigrad";
+      newrend.multi_grad.copyFrom(rend.multi_grad);
+      newrend.elepot = rend.color_mapname;
+    }
+    else {
+      //newrend.colormode = "solid";
+      newrend.defaultcolor = rend.color;
+    }
   }
   catch (e) {
     debug.exception(e);

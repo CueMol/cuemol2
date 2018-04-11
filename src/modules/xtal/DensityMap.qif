@@ -6,9 +6,10 @@
 #ifndef DENSITY_MAP_QIF_INCLUDED
 #define DENSITY_MAP_QIF_INCLUDED
 
-#include <qsys/Object.qif>
+#include <qsys/ScalarObject.qif>
+#include <qsys/View.qif>
 
-runtime_class DensityMap extends Object
+runtime_class DensityMap extends ScalarObject
 {
   client_hdr "DensityMap.hpp";
   client_name xtal::DensityMap;
@@ -16,7 +17,17 @@ runtime_class DensityMap extends Object
   scriptable;
   smartptr;
 
-  string getNormHistogramJSON();
+  // Properties
+  //property real den_sigma => redirect(getRmsdDensity, XXX) (readonly);
+  //property real den_min => redirect(getMinDensity, XXX) (readonly);
+  //property real den_max => redirect(getMaxDensity, XXX) (readonly);
+  //property real den_mean => redirect(getMeanDensity, XXX) (readonly);
+  
+  // Methods
+  //string getNormHistogramJSON();
+  //string getHistogramJSON(real min, real max, integer nbin);
+
+  void fitView(object<View$> pView, boolean dummy);
 
   // void sharpenMapPreview(real b_factor);
 

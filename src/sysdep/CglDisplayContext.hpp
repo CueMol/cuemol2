@@ -21,19 +21,16 @@ namespace sysdep {
     // ptr to the NSOpenGLContext (objC) associated with m_glcx
     void *m_pnsc;
 
-    CglView *m_pTargetView;
-
+    // CglView *m_pTargetView;
+    
   public:
-    CglDisplayContext(int sceneid, CglView *pView);
+    //CglDisplayContext(int sceneid, CglView *pView);
+    CglDisplayContext();
 
     virtual ~CglDisplayContext();
 
     virtual bool setCurrent();
     virtual bool isCurrent() const;
-
-    virtual qsys::View *getTargetView() const {
-      return m_pTargetView;
-    }
 
     ///////////////
     // System dependent impl.

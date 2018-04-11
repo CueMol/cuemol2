@@ -14,10 +14,19 @@
 
 using namespace sysdep;
 
+/*
 CglDisplayContext::CglDisplayContext(int sceneid, CglView *pView)
   : OglDisplayContext(sceneid), m_pTargetView(pView)
 {
   m_glcx=NULL;
+}
+*/
+
+CglDisplayContext::CglDisplayContext()
+  : OglDisplayContext()
+{
+  m_pnsc = NULL;
+  m_glcx = NULL;
 }
 
 CglDisplayContext::~CglDisplayContext()
@@ -28,7 +37,6 @@ bool CglDisplayContext::attach(void *pnsc, CGLContextObj cx)
 {
   m_pnsc = pnsc;
   m_glcx = cx;
-
   return true;
 }
 

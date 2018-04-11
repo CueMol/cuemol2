@@ -18,6 +18,9 @@
 #include <modules/symm/CrystalInfo.hpp>
 #include <modules/symm/SymOpDB.hpp>
 
+/// Max atom counts thr. for prot 2ndry str auto calc.
+#define MAX_ATOMS_PROTSEC 1000000
+
 using namespace molstr;
 using namespace importers;
 
@@ -136,16 +139,12 @@ bool MmcifMolReader::read(qlib::InStream &ins)
   m_pMol->applyTopology(m_bAutoTopoGen);
   m_pMol->calcBasePair(3.7, 30);
 
-  if (m_nReadAtoms>100000 && !m_bLoadSecstr) {
+  if (m_nReadAtoms>MAX_ATOMS_PROTSEC && !m_bLoadSecstr) {
     LOG_DPRINTLN("mmCIF> Too many atoms are loaded: secstr reassgnment is disabled (--> loaded from the file)!!");
     m_bLoadSecstr = true;
   }
 
   if (m_bLoadSecstr) {
-    //applySecstr("helix", "H", m_rngHelix);
-    //applySecstr("helix", "G", m_rng310Helix);
-    //applySecstr("helix", "I", m_rngPiHelix);
-    //applySecstr("sheet", "E", m_rngSheet);
     apply2ndry("H", "helix", m_helix);
     apply2ndry("G", "helix", m_helix310);
     apply2ndry("I", "helix", m_helixpi);
@@ -353,9 +352,11 @@ void MmcifMolReader::readLoopDataItem()
     readAtomLine();
   else if (m_bLoadAnisoU && m_strCatName.equals("_atom_site_anisotrop"))
     readAnisoULine();
-  else if (m_bLoadSecstr && m_strCatName.equals("_struct_conf"))
+  //else if (m_bLoadSecstr && m_strCatName.equals("_struct_conf"))
+  else if (m_strCatName.equals("_struct_conf"))
     readHelixLine();
-  else if (m_bLoadSecstr && m_strCatName.equals("_struct_sheet_range"))
+  //else if (m_bLoadSecstr && m_strCatName.equals("_struct_sheet_range"))
+  else if (m_strCatName.equals("_struct_sheet_range"))
     readSheetLine();
   else if (m_strCatName.equals("_struct_conn"))
     readConnLine();

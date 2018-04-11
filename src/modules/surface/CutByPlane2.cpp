@@ -159,15 +159,40 @@ void CutByPlane2::doit(double cden, const Vector4D &norm, const Vector4D &pos,
   // Preprosessing for building the section mesh faces
   //
 
-  m_outers.build(m_sidmap, this);
+  //m_outers.build(m_sidmap, this);
+  m_outers.build2(m_sidmap, this);
   m_sidmap.clear();
+
+#if 0 //def MB_DEBUG
+  {
+    int j=0;
+    BOOST_FOREACH (Boundary *pbndry, m_outers) {
+      Boundary &outer = *pbndry;
+      Vector2D v2d;
+      LOG_DPRINTLN("=== %d ===", j);
+      for (int i=0; i<outer.getSize(); ++i) {
+        v2d = outer.getVert(i);
+        LOG_DPRINTLN("%d %f %f", i, v2d.x(), v2d.y());
+      }
+      ++j;
+    }
+  }
+#endif
 
   BoundarySet::const_iterator iter = m_outers.begin();
   BoundarySet::const_iterator iend = m_outers.end();
+  int nSkip = 0;
   for (; iter!=iend; ++iter) {
     Boundary *pbndry = *iter;
-    makeSectionMesh(*pbndry);
+
+    if (pbndry->getSize()>2)
+      makeSectionMesh(*pbndry);
+    else
+      ++nSkip;
   }
+
+  if (nSkip>0)
+    LOG_DPRINTLN("CutByPlane> WARNING: %d incomplete/too-small sections were ignored.", nSkip);
 
   update();
 }

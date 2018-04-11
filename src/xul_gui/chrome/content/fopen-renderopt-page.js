@@ -33,11 +33,12 @@ klass.init = function ()
   var that = this;
 
   this.mRendNameEdit = document.getElementById('renderopt-rendname');
-  //this.mRendNameEdit.emptyText = "Rend1";
   this.mRendNameEdit.addEventListener("change", function (a) { that.onRendNameChanged(a); }, false);
   
   this.mSelCheck = document.getElementById('selection-check');
   this.mSelCheck.addEventListener("command", function () { that.onSelCheck();}, false);
+
+  this.mCenOptDeck = document.getElementById("recenter-options");
 
   /////
 
@@ -64,14 +65,23 @@ klass.init = function ()
       this.mSelList.disabled = true;
       this.mSelCheck.checked = false;
       this.mSelCheck.disabled = true;
+
+      if ( cuemol.implIface(obj0.obj_type, "DensityMap") ) {
+        // scalar object type: enable redraw/center options
+        this.mCenOptDeck.selectedIndex = 1;
+      }
+
     }
   }
-  /*else if (objs.length>1) {
+  else if (objs.length>1) {
+    // multiple object target: ???
+    /*
     var testobj = cuemol.getObject(objs[0].uid);
     if (testobj) {
       this.mSelList.targetSceID = testobj.scene_uid;
-    }
-  }*/
+    }*/
+  }
+  
   this.mSelList.buildBox();
   
   /////
@@ -282,7 +292,13 @@ klass.onDialogAccept = function(event)
       return true;
     }
 
-    this.mData.center = document.getElementById('center').checked;
+    if (this.mCenOptDeck.selectedIndex==0)
+      this.mData.center = document.getElementById("center").checked;
+    else {
+      this.mData.center = document.getElementById("center-view").selected;
+      this.mData.redraw = document.getElementById("redraw-view").selected;
+    }
+
     this.mData.rendtype  = this.mRendTypeSel.value;
 
     this.mData.obj_id  = this.mData.target[0].uid;

@@ -12,6 +12,9 @@
 #define USE_TBO
 #endif
 
+#include <qlib/Box3D.hpp>
+#include <qsys/View.hpp>
+
 using namespace xtal;
 using symm::CrystalInfo;
 
@@ -88,11 +91,11 @@ void DensityMap::setMapFloatArray(const float *array,
   m_dMeanMap = rhomean;
   m_dRmsdMap = rhodev;
 
-  MB_DPRINT("load density map ...\n");
-  MB_DPRINT("   minimum: %f\n", rhomin);
-  MB_DPRINT("   maximum: %f\n", rhomax);
-  MB_DPRINT("   mean   : %f\n", rhomean);
-  MB_DPRINT("   r.m.s.d: %f\n", rhodev);
+  LOG_DPRINT("DensityMap.load> calculated stats:\n");
+  LOG_DPRINT("  map minimum density  : %f\n", rhomin);
+  LOG_DPRINT("  map maximum density  : %f\n", rhomax);
+  LOG_DPRINT("  map mean density     : %f\n", rhomean);
+  LOG_DPRINT("  map density r.m.s.d. : %f\n", rhodev);
 
   // map truncation
   m_dLevelStep = (rhomax - rhomin)/256.0;
@@ -480,10 +483,11 @@ void DensityMap::writeDataChunkTo(qlib::LDom2OutStream &oos) const
 }
 
 
-LString DensityMap::getNormHistogramJSON()
+#if 0
+LString DensityMap::getHistogramJSON(double min, double max, int nbins)
 {
-  double dbinw = m_dRmsdMap/10.0;
-  int nbins = int( (m_dMaxMap-m_dMinMap)/dbinw );
+  double dbinw = (max-min)/double(nbins);
+  //int nbins = int( (m_dMaxMap-m_dMinMap)/dbinw );
   MB_DPRINTLN("DenMap.hist> nbins=%d", nbins);
 
   int ni = m_pByteMap->getColumns();
@@ -498,19 +502,24 @@ LString DensityMap::getNormHistogramJSON()
     for (int j=0; j<nj; ++j)
       for (int k=0; k<nk; ++k) {
         double rho = atFloat(i,j,k);
-        int ind = (int) ::floor( (rho-m_dMinMap)/dbinw );
+        int ind = (int) ::floor( (rho-min)/dbinw );
         if (ind<0 || ind>=nbins) {
-          MB_DPRINTLN("ERROR!! invalid density value at (%d,%d,%d)=%f", i,j,k,rho);
+          //MB_DPRINTLN("ERROR!! invalid density value at (%d,%d,%d)=%f", i,j,k,rho);
         }
         else {
           histo[ind]++;
         }
       }
         
+  int nmax = 0;
+  for (int i=0; i<nbins; ++i)
+    nmax = qlib::max(histo[i], nmax);
+
   LString rval = "{";
   rval += LString::format("\"min\":%f,\n", m_dMinMap/m_dRmsdMap);
   rval += LString::format("\"max\":%f,\n", m_dMaxMap/m_dRmsdMap);
   rval += LString::format("\"nbin\":%d,\n", nbins);
+  rval += LString::format("\"nmax\":%d,\n", nmax);
   rval += LString::format("\"sig\":%f,\n", m_dRmsdMap);
   rval += "\"histo\":[";
   for (int i=0; i<nbins; ++i) {
@@ -522,6 +531,118 @@ LString DensityMap::getNormHistogramJSON()
   rval += "]}\n";
   
   return rval;
+}
+#endif
+
+using qlib::Vector4D;
+using qlib::Matrix4D;
+using qlib::Matrix3D;
+using qlib::Box3D;
+
+void DensityMap::fitView(const qsys::ViewPtr &pView, bool dummy) const
+{
+  qlib::LQuat rotq = pView->getRotQuat();
+  Matrix4D ecmat = Matrix4D::makeRotMat(rotq);
+
+  Box3D bbox, ecbbox;
+
+  {
+    Vector4D vpos;
+
+    // get object xform
+    Matrix4D xform = getXformMatrix();
+
+    // get frac-->orth matrix
+    Matrix3D orthmat = getXtalInfo().getOrthMat();
+    xform.matprod( Matrix4D(orthmat) );
+
+    bbox.merge( xform.mulvec(Vector4D(0,0,0,1)) );
+    bbox.merge( xform.mulvec(Vector4D(1,0,0,1)) );
+    bbox.merge( xform.mulvec(Vector4D(0,1,0,1)) );
+    bbox.merge( xform.mulvec(Vector4D(0,0,1,1)) );
+    bbox.merge( xform.mulvec(Vector4D(1,1,0,1)) );
+    bbox.merge( xform.mulvec(Vector4D(0,1,1,1)) );
+    bbox.merge( xform.mulvec(Vector4D(1,0,1,1)) );
+    bbox.merge( xform.mulvec(Vector4D(1,1,1,1)) );
+
+    // xform = xform * ecmat
+    xform.matprod( ecmat );
+
+    ecbbox.merge( xform.mulvec(Vector4D(0,0,0,1)) );
+    ecbbox.merge( xform.mulvec(Vector4D(1,0,0,1)) );
+    ecbbox.merge( xform.mulvec(Vector4D(0,1,0,1)) );
+    ecbbox.merge( xform.mulvec(Vector4D(0,0,1,1)) );
+    ecbbox.merge( xform.mulvec(Vector4D(1,1,0,1)) );
+    ecbbox.merge( xform.mulvec(Vector4D(0,1,1,1)) );
+    ecbbox.merge( xform.mulvec(Vector4D(1,0,1,1)) );
+    ecbbox.merge( xform.mulvec(Vector4D(1,1,1,1)) );
+  }
+  
+  MB_DPRINTLN("map bbox start: (%f,%f,%f)", bbox.vstart.x(), bbox.vstart.y(), bbox.vstart.z());
+  MB_DPRINTLN("map bbox   end: (%f,%f,%f)", bbox.vend.x(), bbox.vend.y(), bbox.vend.z());
+
+  MB_DPRINTLN("map ec bbox start: (%f,%f,%f)", ecbbox.vstart.x(), ecbbox.vstart.y(), ecbbox.vstart.z());
+  MB_DPRINTLN("map ec bbox   end: (%f,%f,%f)", ecbbox.vend.x(), ecbbox.vend.y(), ecbbox.vend.z());
+
+  /*{
+    // inflate box by 20%
+    Vector4D dv = (bbox.vend - bbox.vstart).scale(0.2);
+    bbox.vend += dv;
+    bbox.vstart -= dv;
+  }*/
+
+  pView->setViewCenter( bbox.center() );
+
+  Vector4D ecboxst = ecbbox.vstart - ecbbox.center();
+  Vector4D ecboxen = ecbbox.vend - ecbbox.center();
+  
+  int cx = pView->getWidth();
+  int cy = pView->getHeight();
+  double fasp = double(cx)/double(cy);
+
+  double mx = qlib::abs(ecboxen.x()-ecboxst.x());
+  double my = qlib::abs(ecboxen.y()-ecboxst.y());
+  double masp = mx / my;
+
+  MB_DPRINTLN("mx: %f", mx);
+  MB_DPRINTLN("my: %f", my);
+  MB_DPRINTLN("fasp: %f", fasp);
+  MB_DPRINTLN("masp: %f", masp);
+
+  double zoom;
+  if (fasp>1.0) {
+    if (masp>fasp) {
+      zoom = mx/fasp;
+    }
+    else {
+      zoom = my;
+    }
+  }
+  else {
+    if (masp>fasp) {
+      zoom = mx/fasp;
+    }
+    else {
+      zoom = my;
+    }
+  }
+
+  // MB_DPRINTLN("Zoom: %f", zoom);
+  pView->setZoom(zoom);
+
+  double sd = qlib::abs(ecboxen.z()-ecboxst.z());
+  if (pView->getSlabDepth()>sd)
+    return;
+  
+  if (pView->getViewDist()*2>sd)
+    pView->setSlabDepth(sd);
+  else {
+    // slab depth is wider than the view distance
+    // --> have to change the view distance to enough accomodate the slab depth
+    pView->setViewDist(sd/2);
+    pView->setSlabDepth(sd);
+  }
+
 }
 
 gfx::Texture *DensityMap::getMapTex() const

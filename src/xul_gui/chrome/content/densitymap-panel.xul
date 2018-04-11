@@ -12,12 +12,28 @@
     <script type="application/javascript" src="chrome://cuemol2/content/densitymap-panel.js"/>
 
     <vbox id="denmap-panel" flex="0" title="&denmapPanel.title;">
-      <menulist id="denmap-rend-list" sizetopopup="none"
-	onselect="cuemolui.panels.denmap.selChg(event)"
-	onchange="cuemolui.panels.denmap.listChg(event)">
-	<menupopup/>
-      </menulist>
+      <hbox>
+	<!-- Renderer selection widget -->
+	<menulist id="denmap-rend-list" sizetopopup="none" flex="1"
+	  onselect="cuemolui.panels.denmap.onSelChanged(event)"
+	  onchange="cuemolui.panels.denmap.onListChanged(event)"/>
 
+	<!-- Dropdown menu widget -->
+	<toolbarbutton id="denmap-panel-menubtn" type="menu" flex="0"
+	  class="dropdown-button"
+	  label="" oncommand="cuemolui.panels.denmap.onMenuChanged(event)"
+	  style="margin: 3px 0px 3px;">
+	  <menupopup
+	    onpopupshowing="cuemolui.panels.denmap.onMenuShowing(event)">
+	    <menuitem id="denmap-panel-levelopt-sigma" name="denmap-panel-levelopt" value="level-sigma" label="Use sigma contour level" type="radio" checked="true"/>
+	    <menuitem id="denmap-panel-levelopt-abs" name="denmap-panel-levelopt" value="level-abs" label="Use absolute contour level" type="radio"/>
+	    <menuseparator/>
+	    <menuitem id="denmap-panel-coloropt-solid" name="denmap-panel-coloropt" value="color-solid" label="Solid coloring" type="radio" checked="true"/>
+	    <menuitem id="denmap-panel-coloropt-multig" name="denmap-panel-coloropt" value="color-multigrad" label="Multi gradient" type="radio"/>
+	  </menupopup>
+	</toolbarbutton>
+      </hbox>
+      
       <grid flex="1">
 	<columns>
 	  <column/>
@@ -30,8 +46,12 @@
 	      oncommand="cuemolui.panels.denmap.onRedraw(event)" flex="0"/>
 	    <button class="panel-button" id="denmap-panel-showcell" label="Cell"
 	      oncommand="cuemolui.panels.denmap.onShowCell(event)" flex="0"/>
-	    <mycolpicker id="denmap-panel-color" flex="1"
-	      onchange="cuemolui.panels.denmap.validateWidget(event)"/>
+	    <deck id="denmap-panel-color-deck" selectedIndex="0" flex="1">
+	      <mycolpicker id="denmap-panel-color" flex="0"
+		onchange="cuemolui.panels.denmap.validateWidget(event)"/>
+	      <button class="panel-button" id="denmap-panel-editmultig" label="Edit color..."
+		oncommand="cuemolui.panels.denmap.onEditColor(event)" flex="0"/>
+	    </deck>
 	  </hbox>
 	  <row align="center">
 	    <label value="Transp: "/>

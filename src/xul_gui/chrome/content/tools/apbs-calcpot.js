@@ -18,6 +18,8 @@
 
   const apbs_exe_key = "cuemol2.ui.apbs-exe-path";
   const pdb2pqr_py_key = "cuemol2.ui.pdb2pqr-py-path";
+  const tgtsel_key = "cuemol2.ui.apbstool-tgtsel";
+  const selchk_key = "cuemol2.ui.apbstool-selchk";
 
   var dlg = window.gDlgObj = new Object();
 
@@ -44,6 +46,9 @@
   window.addEventListener("load", function(){
     try {dlg.onLoad();} catch (e) {debug.exception(e);}
   }, false);
+  //window.addEventListener("unload", function(){
+  //try {dlg.onUnload();} catch (e) {debug.exception(e);}
+  //}, false);
   
   dlg.mMolSel = null;
 
@@ -53,7 +58,7 @@
   if (dlg.mPlfName=="Windows_NT")
     default_path = util.createDefaultPath("CurProcD", "apbs", "apbs.exe");
   else
-    default_path = util.createDefaultPath("CurProcD", "apbs", "apbs");
+    default_path = util.createDefaultPath("CurProcD", "apbs-pdb2pqr", "apbs");
 
   if (pref.has(apbs_exe_key))
     dlg.mApbsExePath = pref.get(apbs_exe_key);
@@ -64,7 +69,7 @@
   if (dlg.mPlfName=="Windows_NT")
     default_path = util.createDefaultPath("CurProcD", "apbs", "pdb2pqr_wrap.bat");
   else
-    default_path = util.createDefaultPath("CurProcD", "pdb2pqr.py");
+    default_path = util.createDefaultPath("CurProcD", "apbs-pdb2pqr", "pdb2pqr");
 
   if (pref.has(pdb2pqr_py_key))
     dlg.mPdb2pqrPath = pref.get(pdb2pqr_py_key);
@@ -101,11 +106,25 @@
 
     var nobjs = this.mObjBox.getItemCount();
 
+    // disable widgets when running the calculation
+    this.mDisableTgt = document.getElementsByClassName("disable-target");
+
+    // buttons
+    this.mStartStopBtn = document.documentElement.getButton("accept");
+    this.mCloseBtn = document.documentElement.getButton("cancel");
+    this.mSelChk = document.getElementById("selection-check");
+
+    if (pref.has(selchk_key))
+      this.mSelChk.checked = pref.get(selchk_key);
+    // synchronize selbox/selchk btns
+    this.onSelChk();
+
     //alert("item count="+nobjs);
     if (nobjs==0) {
-      document.getElementById("selection-check").disabled = true;
+      this.mSelChk.disabled = true;
       this.mSelBox.disabled = true;
       this.mElepotName.disabled = true;
+      this.mStartStopBtn.disabled = true;
     }
     else {
       var mol = this.mObjBox.getSelectedObj();
@@ -114,20 +133,33 @@
 	this.mElepotName.value = this.makeSugName(mol.name);
       }
     }
+
+    // set default selection (from history)
+    if (pref.has(tgtsel_key))
+      this.mSelBox.origSel = pref.get(tgtsel_key);
+
     this.mSelBox.buildBox();
 
-    //this.onChgMthSel("use-internal-pqr");
+    // Default charge method: PDB2PQR
     this.onChgMthSel("use-pdb2pqr");
+    //this.onChgMthSel("use-internal-pqr");
 
     this.mPdb2pqrPathBox = document.getElementById("pdb2pqr-py-path");
     this.mPdb2pqrPathBox.value = this.mPdb2pqrPath;
 
-    // disable widgets when running the calculation
-    this.mDisableTgt = document.getElementsByClassName("disable-target");
-    this.mStartStopBtn = document.documentElement.getButton("accept");
-    this.mCloseBtn = document.documentElement.getButton("cancel");
   }
   
+  /*
+  dlg.onUnload = function ()
+  {
+    pref.set(tgtsel_key, this.mSelBox.selectedSel.toString());
+    pref.set(selchk_key, this.mSelChk.checked);
+
+    pref.set(apbs_exe_key, this.mApbsExePathBox.value);
+    pref.set(pdb2pqr_py_key, this.mPdb2pqrPathBox.value);
+  };
+  */
+
   dlg.disableButtons = function (aFlag)
   {
     dd("Disable target = "+this.mDisableTgt);
@@ -176,13 +208,14 @@
     }      
   }
 
-
-  dlg.onSelChk = function (aEvent)
+  dlg.onSelChk = function ()
   {
-    if (aEvent.target.checked)
-      this.mSelBox.disabled = false;
-    else
-      this.mSelBox.disabled = true;
+    if (!this.mSelChk.disabled) {
+      if (this.mSelChk.checked)
+	this.mSelBox.disabled = false;
+      else
+	this.mSelBox.disabled = true;
+    }
   }
   
   dlg.onApbsExePath = function ()
@@ -206,7 +239,7 @@
 
     var path = fp.file.path;
     this.mApbsExePathBox.value = path;
-    pref.set(apbs_exe_key, path);
+    // pref.set(apbs_exe_key, path);
   }
 
   dlg.onChgMthSel = function (id)
@@ -255,7 +288,7 @@
 
     var path = fp.file.path;
     this.mPdb2pqrPathBox.value = path;
-    pref.set(pdb2pqr_py_key, path);
+    //pref.set(pdb2pqr_py_key, path);
   };
 
   dlg.setupPaths = function ()
@@ -267,7 +300,7 @@
       if (!this.mP2pFile.exists() || !this.mP2pFile.isFile()) {
 	throw "Pdb2pqr file \""+str_p2ppath+"\" not found";
       }    
-      pref.set(apbs_exe_key, this.mP2pFile.path);
+      // pref.set(pdb2pqr_py_key, this.mP2pFile.path);
     }
     
     // APBS exe file
@@ -276,8 +309,7 @@
     if (!this.mApbsFile.exists() || !this.mApbsFile.isFile()) {
       throw "Apbs file \""+str_apbsexe+"\" not found";
     }    
-    pref.set(apbs_exe_key, this.mApbsFile.path);
-    
+    // pref.set(apbs_exe_key, this.mApbsFile.path);
   };
   
   ///////////////////////////////////////////
@@ -327,6 +359,17 @@
     this.mCalcRunning = true;
     this.disableButtons(true);
     this.appendLog("APBS calculation started...");
+
+    // save to preferences
+    let selstr = this.mSelBox.selectedSel.toString();
+    pref.set(tgtsel_key, selstr);
+    pref.set(selchk_key, this.mSelChk.checked);
+    pref.set(apbs_exe_key, this.mApbsExePathBox.value);
+    pref.set(pdb2pqr_py_key, this.mPdb2pqrPathBox.value);
+
+    // add to sel history
+    util.selHistory.append(selstr);
+
     return true;
   };
 
@@ -502,8 +545,11 @@
 
     // setup seleciton
     var molsel = null;
-    if (!this.mSelBox.disabled)
+    if (!this.mSelBox.disabled) {
       molsel = this.mSelBox.selectedSel;
+      // // save to pref
+      // pref.set(tgtsel_key, molsel.toString());
+    }
     this.mMolSel = molsel;
 
     // select charge method
@@ -564,6 +610,9 @@
     var tgtmol = this.mTgtMol;
     var molsel = this.mMolSel;
 
+    // working directory (=exe dir)
+    p2pdir = this.mP2pFile.parent;
+
     // force field name
     var ffname = "charmm";
     var elem = document.getElementById("pdb2pqr-ff-list");
@@ -610,9 +659,12 @@
 
     let strargs = args.join(" ");
 
-    dd("APBSDlg> pdb2pqr.py args= "+strargs);
+    dd("APBSDlg> pdb2pqr = "+this.mP2pFile.path);
+    dd("APBSDlg> pdb2pqr args= "+strargs);
+    dd("APBSDlg> pdb2pqr wdir= "+p2pdir.path);
     // util.run_proc(this.mPdb2pqrPathBox.value, pdb2pqr_py_key, args);
-    let tid = procMgr.queueTask(this.mP2pFile.path, strargs, "");
+    //let tid = procMgr.queueTask(this.mP2pFile.path, strargs, "");
+    let tid = procMgr.queueTask2(this.mP2pFile.path, strargs, "", p2pdir.path);
     //this.mProcs.push(tid);
     this.mP2pProc = tid;
 

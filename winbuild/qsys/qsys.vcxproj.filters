@@ -666,12 +666,6 @@
     <ClCompile Include="..\..\src\gfx\TextRenderManager.cpp">
       <Filter>gfx</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\gfx\MultiGradient_wrap.cpp">
-      <Filter>gfx</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\src\gfx\MultiGradient.cpp">
-      <Filter>gfx</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\sysdep\Canvas2DTextRender2.cpp">
       <Filter>sysdep</Filter>
     </ClCompile>
@@ -827,6 +821,15 @@
     </ClCompile>
     <ClCompile Include="..\..\src\sysdep\OglProgObjMgr.cpp">
       <Filter>sysdep</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\MultiGradient.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\MultiGradient_wrap.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\qsys\ScalarObject_wrap.cpp">
+      <Filter>QIF wrapper</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1042,9 +1045,6 @@
     <mcwrapgen3 Include="..\..\src\gfx\TextImgBuf.qif">
       <Filter>gfx</Filter>
     </mcwrapgen3>
-    <mcwrapgen3 Include="..\..\src\gfx\MultiGradient.qif">
-      <Filter>gfx</Filter>
-    </mcwrapgen3>
     <mcwrapgen3 Include="..\..\src\modules\molvis\CPK2Renderer.qif">
       <Filter>molvis</Filter>
     </mcwrapgen3>
@@ -1104,6 +1104,12 @@
     </mcwrapgen3>
     <mcwrapgen3 Include="..\..\src\modules\molstr\GLSLNameLabel2Renderer.qif">
       <Filter>molstr</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qsys\MultiGradient.qif">
+      <Filter>Source files</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\qsys\ScalarObject.qif">
+      <Filter>QIF source</Filter>
     </mcwrapgen3>
   </ItemGroup>
   <ItemGroup>

@@ -51,7 +51,8 @@ public:
   }
 
   virtual ProcInThread *createProcess(const LString &path,
-                                      const LString &args)
+                                      const LString &args,
+                                      const LString &wdir)
   {
     HANDLE out_read = NULL;
     HANDLE out_write = NULL;

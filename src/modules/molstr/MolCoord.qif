@@ -56,8 +56,8 @@ runtime_class MolCoord extends Object
   object<Vector> getBoundBoxMin(boolean fsel) => getBoundBoxMinScr;
   object<Vector> getBoundBoxMax(boolean fsel) => getBoundBoxMaxScr;
 
-  void fitView(boolean fsel, object<View$> pView);
-  void fitView2(object<MolSelection$> sel, object<View$> pView);
+  void fitView(object<View$> pView, boolean fsel);
+  void fitView2(object<View$> pView, object<MolSelection$> sel);
 
   // Operations
   string getChainNameCandsJSON();

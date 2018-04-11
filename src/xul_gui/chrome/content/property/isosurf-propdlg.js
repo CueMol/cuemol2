@@ -41,6 +41,7 @@ IsosurfPropEdit.prototype.onLoad = function ()
 
 
   this.mCullFace = document.getElementById("map-cullsurf");
+  this.mUsePBC = document.getElementById("use-pbc");
   
   this.mMapLim = document.getElementById("map-limit");
 
@@ -92,6 +93,9 @@ IsosurfPropEdit.prototype.updateWidgets = function ()
 
   elem = gMain.findPropData("cullface");
   this.mCullFace.checked = elem.value;
+
+  elem = gMain.findPropData("use_pbc");
+  this.mUsePBC.checked = elem.value;
 
   elem = gMain.findPropData("autoupdate");
   var value;
@@ -161,6 +165,8 @@ IsosurfPropEdit.prototype.validateWidgets = function (aEvent)
   gMain.updateData("max_grids", new_val);
 
   gMain.updateData("cullface", this.mCullFace.checked);
+
+  gMain.updateData("use_pbc", this.mUsePBC.checked);
 
   var bMapLim = this.mMapLim.checked;
   dd("Validate> MapLim = "+bMapLim);

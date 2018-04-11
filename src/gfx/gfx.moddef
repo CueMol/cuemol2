@@ -7,7 +7,7 @@
 #include "NamedColor.qif"
 #include "MolColorRef.qif"
 #include "TextImgBuf.qif"
-#include "MultiGradient.qif"
+//#include "MultiGradient.qif"
 #include "GradientColor.qif"
 
 module gfx
@@ -20,7 +20,7 @@ module gfx
   NamedColor;
   MolColorRef;
   TextImgBuf;
-  MultiGradient;
+  //MultiGradient;
   GradientColor;
 };
 

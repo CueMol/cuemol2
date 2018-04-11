@@ -6,6 +6,7 @@ my $top_srcdir = "@top_srcdir@";
 my $inst_top = $ARGV[0];
 my $povray_dir = $ARGV[2];
 my $ffmpeg_dir = $ARGV[3];
+my $apbs_dir = $ARGV[4];
 
 my $ICON = "$top_srcdir/osxbuild/cuemol-disk1.icns";
 
@@ -43,6 +44,14 @@ if (-d $ffmpeg_dir) {
     my $TARGET_DIR = "$dist_top/CueMol2.app/Contents/Resources/ffmpeg";
     system("mkdir -p $TARGET_DIR/bin");
     system("cp $ffmpeg_dir/ffmpeg $TARGET_DIR/bin/");
+}
+
+if (-d $apbs_dir) {
+    my $TARGET_DIR = "$dist_top/CueMol2.app/Contents/Resources/apbs-pdb2pqr";
+    system("mkdir -p $TARGET_DIR");
+    system("cp $apbs_dir/apbs $TARGET_DIR/");
+    system("cp $apbs_dir/pdb2pqr $TARGET_DIR/");
+    system("cp -r $apbs_dir/dat $TARGET_DIR/");
 }
 
 # system("perl $top_srcdir/osxbuild/pkg-dmg --source $dist_top --target ${dist_top}+povray.dmg"); 

@@ -27,10 +27,16 @@ MapRenderer::MapRenderer()
   //m_pcolor = gfx::SolidColor::createRGB(0.0, 0.0, 1.0);
   //m_dSigLevel = 1.1;
   //m_dMapRange = 15.0;
+
   m_bUseMolBndry = false;
 
   m_bPBC = false;
   m_nMaxGrid = 100;
+
+  m_bUseAbsLev = false;
+  m_pGrad = qsys::MultiGradientPtr(MB_NEW qsys::MultiGradient());
+
+  super_t::setupParentData("multi_grad");
 }
 
 // destructor
@@ -375,4 +381,21 @@ void MapRenderer::setupMolBndry()
   m_boundary.build();
   m_bUseMolBndry = true;
 }
+
+qsys::ObjectPtr MapRenderer::getColorMapObj() const
+{
+  qsys::ObjectPtr pobj = ensureNotNull(getScene())->getObjectByName(getColorMapName());
+  return pobj;
+}
+
+void MapRenderer::propChanged(qlib::LPropEvent &ev)
+{
+  if (ev.getParentName().equals("multi_grad") &&
+      m_nMode==MAPREND_MULTIGRAD) {
+    invalidateDisplayCache();
+  }
+
+  super_t::propChanged(ev);
+}
+
 

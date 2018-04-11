@@ -23,6 +23,7 @@ OglDisplayList.cpp \
 OglDisplayContext.cpp \
 OglFBOView.cpp \
 OglProgramObject.cpp \
+OglProgObjMgr.cpp \
 Canvas2DTextRender2.cpp \
 OglTexture.cpp \
 $(NULL)
@@ -40,6 +41,7 @@ OglDisplayList.cpp \
 OglDisplayContext.cpp \
 OglFBOView.cpp \
 OglProgramObject.cpp \
+OglProgObjMgr.cpp \
 Canvas2DTextRender2.cpp \
 OglTexture.cpp \
 $(NULL)

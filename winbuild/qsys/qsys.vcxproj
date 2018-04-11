@@ -118,8 +118,6 @@
     <ClCompile Include="..\..\src\gfx\ColProfMgr.cpp" />
     <ClCompile Include="..\..\src\gfx\GradientColor_wrap.cpp" />
     <ClCompile Include="..\..\src\gfx\Hittest.cpp" />
-    <ClCompile Include="..\..\src\gfx\MultiGradient.cpp" />
-    <ClCompile Include="..\..\src\gfx\MultiGradient_wrap.cpp" />
     <ClCompile Include="..\..\src\gfx\TextImgBuf.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\AnimMol.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\AnimMol_wrap.cpp" />
@@ -166,6 +164,9 @@
     <ClCompile Include="..\..\src\qsys\DispCacheRenderer.cpp" />
     <ClCompile Include="..\..\src\qsys\InDevEvent.cpp" />
     <ClCompile Include="..\..\src\qsys\InOutHandler.cpp" />
+    <ClCompile Include="..\..\src\qsys\MultiGradient.cpp" />
+    <ClCompile Include="..\..\src\qsys\MultiGradient_wrap.cpp" />
+    <ClCompile Include="..\..\src\qsys\ScalarObject_wrap.cpp" />
     <ClCompile Include="..\..\src\qsys\style\StyleSupports.cpp" />
     <ClCompile Include="..\..\src\sysdep\Canvas2DTextRender2.cpp" />
     <ClCompile Include="..\..\src\sysdep\MouseEventHandler.cpp" />
@@ -426,7 +427,6 @@
   </ItemGroup>
   <ItemGroup>
     <mcwrapgen3 Include="..\..\src\gfx\GradientColor.qif" />
-    <mcwrapgen3 Include="..\..\src\gfx\MultiGradient.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molstr\AnimMol.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molstr\ChainIterator.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molstr\GLSLNameLabel2Renderer.qif" />
@@ -449,11 +449,13 @@
     <mcwrapgen3 Include="..\..\src\qsys\Camera.qif" />
     <mcwrapgen3 Include="..\..\src\qsys\DrawObj.qif" />
     <mcwrapgen3 Include="..\..\src\qsys\InOutHandler.qif" />
+    <mcwrapgen3 Include="..\..\src\qsys\MultiGradient.qif" />
     <mcwrapgen3 Include="..\..\src\qsys\Object.qif" />
     <mcwrapgen3 Include="..\..\src\qsys\ObjReader.qif" />
     <mcwrapgen3 Include="..\..\src\qsys\ObjWriter.qif" />
     <mcwrapgen3 Include="..\..\src\qsys\Renderer.qif" />
     <mcwrapgen3 Include="..\..\src\qsys\RendGroup.qif" />
+    <mcwrapgen3 Include="..\..\src\qsys\ScalarObject.qif" />
     <mcwrapgen3 Include="..\..\src\qsys\Scene.qif" />
     <mcwrapgen3 Include="..\..\src\qsys\SceneExporter.qif" />
     <mcwrapgen3 Include="..\..\src\qsys\SceneManager.qif" />

@@ -60,33 +60,58 @@ cls.init = function ()
   catch (e) { debug.exception(e); }
 };
 
+cls.setOrigSel = function (aVal)
+{
+    if (typeof aVal == 'string')
+      this.mOrigSel = cuemol.makeSel(aVal, this.targetSceID);
+    else
+      this.mOrigSel = aVal;
+    return aVal;
+};
+
 cls.buildBox = function (aResvSel)
 {
   dd("MolSel.buildBox> enter, aResvSel="+aResvSel);
   var stylem = cuemol.getService("StyleManager");
   var element = this._outer.mSelBox;
   
-  var oldselval = null;
+  var initselval = null;
   if (aResvSel && element.selectedItem) {
     dd("MolSel.buildBox> Old selected item: "+element.selectedItem.label);
-    oldselval = element.selectedItem.value;
+    initselval = element.selectedItem.value;
   }
 
   ///////////////////////////////
   // start menulist building
 
   // Remove all items in the menulist.
-  dd("MolSel.buildBox> removeAllItems()");
+  // dd("MolSel.buildBox> removeAllItems()");
   element.removeAllItems();
   
+  // Create the history list
+  let his = require("util").selHistory;
+  let nitems = his.getLength();
+  let hislist = new Array();
+  for (let i=0; i<nitems; ++i) {
+    let val = his.getEntry(i);
+    if (val=="*"||val=="none"||val=="")
+      continue; // Exclude*/none/(empty) from history list
+    hislist.push(val);
+  }
+
   // Append the original selection
   dd("MolSel.buildBox> orig sel: <"+this.mOrigSel+">");
   if (this.mOrigSel) {
-    //element.appendItem(this.mOrigSel.toString(), this.mOrigSel.toString());
-    //element.menupopup.insertBefore(document.createElement("menuseparator"), null);
-    this.appendMenuItem(element, this.mOrigSel.toString(), this.mOrigSel.toString())
-    this.appendSeparator(element);
-    oldselval = this.mOrigSel.toString();
+    let origsel_str = this.mOrigSel.toString();
+    if (!hislist.find(function (elem) {
+      return elem == origsel_str;
+    })) {
+      this.appendMenuItem(element, this.mOrigSel.toString(), this.mOrigSel.toString());
+      this.appendSeparator(element);
+    }
+    // set origSel as the initial selection
+    if (initselval==null)
+      initselval = origsel_str;
   }
   
   var sce_id = null;
@@ -101,8 +126,9 @@ cls.buildBox = function (aResvSel)
     if ("sel" in obj) {
       var selstr = obj.sel.toString();
       if (selstr.length>0) {
-	//element.appendItem("current ("+selstr+")", selstr);
 	this.appendMenuItem(element, "current ("+selstr+")", selstr);
+        if (initselval==null)
+          initselval=selstr;
       }
     }
   }
@@ -110,23 +136,22 @@ cls.buildBox = function (aResvSel)
     sce_id = this.targetSceID;
   }
   
-  //element.appendItem("all (*)", "*");
-  this.appendMenuItem(element, "none", "");
   this.appendMenuItem(element, "all (*)", "*");
+  this.appendMenuItem(element, "none", "");
   var prev_sep = this.appendSeparator(element);
+  if (initselval==null)
+    initselval=""; // init value is not set --> set as "none"
   
   // Selection history
-  var his = require("util").selHistory;
-  var nitems = his.getLength();
-  if (nitems>0) {
-    for (var i=0; i<nitems; ++i) {
-      //element.appendItem(his.getEntry(i), his.getEntry(i));
-      if (his.getEntry(i)=="*"||his.getEntry(i)=="none"||his.getEntry(i)=="")
-	continue;
-      this.appendMenuItem(element, his.getEntry(i), his.getEntry(i));
+  if (hislist.length>0) {
+    for (let i=0; i<hislist.length; ++i) {
+      let val = hislist[i];
+      this.appendMenuItem(element, val, val);
     }
     prev_sep.setAttribute("label", "History");
     prev_sep = this.appendSeparator(element);
+    // if (initselval==null)
+    //  initselval=hislist[0];
   }
 
   // Scene's selection defs
@@ -146,18 +171,19 @@ cls.buildBox = function (aResvSel)
   }
   
   ///////////////////////////////
-  // setup the menulist selection
+  // setup the initial menulist selection
 
   this.mCurSelIndex = -1;
 
-  if (aResvSel && oldselval) {
-    dd("MolSel.buildBox oldsel="+oldselval);
-    var nitems = element.menupopup.childNodes.length;
-    var i;
+  //if (aResvSel && initselval) {
+  if (initselval!=null) {
+    dd("MolSel.buildBox oldsel="+initselval);
+    let nitems = element.menupopup.childNodes.length;
+    let i;
     for (i=0; i<nitems; ++i) {
       var item = element.menupopup.childNodes[i];
-      if (item && item.value == oldselval) {
-        dd("=== BuildBox oldsel is selected"+item.value);
+      if (item && item.value == initselval) {
+        dd("=== BuildBox oldsel is selected"+item.label);
         element.selectedIndex = i;
         break;
       }
@@ -219,7 +245,8 @@ cls.onMListSelected = function (aEvent)
 
   var sbox = this._outer.mSelBox;
   if (sbox.selectedItem==null) {
-    dd("onMListSelected: error, selectedItem is NULL!!"+debug.dumpObjectTree(aEvent));
+    //dd("onMListSelected: error, selectedItem is NULL!!"+debug.dumpObjectTree(aEvent));
+    dd("onMListSelected: error, selectedItem is NULL!!");
     return;
   }
   

@@ -55,7 +55,17 @@
 
 	</grid>
 
-	<checkbox id="center" label="Recenter view" checked="true" persist="checked"/>
+	<deck id="recenter-options" selectedIndex="0">
+	  <!-- 0: normal type -->
+	  <checkbox id="center" label="Recenter view"
+		    checked="true" persist="checked"/>
+
+	  <!-- 1: scalar-obj type -->
+	  <radiogroup>
+	    <radio id="redraw-view" label="Set map center" selected="true"/>
+	    <radio id="center-view" label="Move view center"/>
+	  </radiogroup>
+	</deck>
 
       </vbox>
     </tabpanel>

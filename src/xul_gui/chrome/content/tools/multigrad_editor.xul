@@ -1,0 +1,107 @@
+<?xml version="1.0"?>
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+
+<!-- -*- xml -*- -->
+
+<dialog
+  id     = "multigrad-editor-dialog"
+  windowtype="CueMol2:MultiGradEditDlg"
+  title  = "Multi-gradient editor"
+  xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  xmlns:svg="http://www.w3.org/2000/svg"
+  xmlns:html="http://www.w3.org/1999/xhtml"
+  buttons="extra1,accept,cancel"
+  buttonlabelextra1="Preview"
+  ondialogextra1="return gMain.onPreview(event);"
+  ondialogaccept="return gMain.onDialogAccept(event);"
+  ondialogcancel="return gMain.onDialogCancel(event);"
+  >
+
+  <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/treeview.js"/>
+  <script src="chrome://cuemol2/content/colpicker.js"/>
+  <script type="application/javascript" src="chrome://cuemol2/content/tools/multigrad_editor.js"/>
+
+  <vbox flex="1">
+    
+    <label value="Preview:"/>
+    <vbox id="histo_box" style="margin-left: 5px; margin-right: 5px; margin-bottom: 5px">
+      <html:canvas id="histo_canvas" flex="0"/>
+    </vbox>
+
+    <vbox style="margin-left: 5px; margin-right: 5px">
+      <svg:svg version="1.1" width="100%" height="16px">
+	<svg:defs>
+	  <svg:linearGradient id="preview_grad"/>
+	</svg:defs>
+	<svg:rect id="preview_rect1" x="0" y="0"
+	  width="100%" height="100%" fill="url(#preview_grad)"/>
+      </svg:svg>
+    </vbox>
+    <hbox>
+      <label id="min_value" value="Min" flex="0"/>
+      <spacer flex="1"/>
+      <label id="max_value" value="Max" flex="0"/>
+    </hbox>
+    
+    <!-- tree view for gradient data -->
+    <tree id="paint-listbox" flex="1"
+      hidecolumnpicker="true" editable="false"
+      treelines="false" seltype="single" style="height: 10em;">
+      <treecols>
+	<treecol id="paint_name" primary="true"
+	  label="Param" flex="1"
+	  persist="hidden ordinal width"/>
+	<splitter class="tree-splitter"/>
+	<treecol id="color_value"
+	  label="Color" flex="1"
+	  persist="hidden ordinal width"/>
+      </treecols>
+      <treechildren id="paint-listbox-children" class="noindent-tree-children"/>
+    </tree>
+    
+    <!-- command buttons -->
+    <hbox flex="0">
+      <toolbarbutton
+	id="add-btn"
+	class="toolbar-button add-button"
+	oncommand="gMain.onAddNode(event);"
+	tooltiptext="Add"/>
+      <toolbarbutton
+	id="del-btn"
+	class="toolbar-button delete-button"
+	disabled="true"
+	oncommand="gMain.onDelNode(event);"
+	tooltiptext="Delete"/>
+      <toolbarbutton
+	id="delall-btn"
+	class="toolbar-button cleartext-button"
+	oncommand="gMain.onDelAllNodes(event);"
+	tooltiptext="Delete all"/>
+
+      <toolbarbutton
+	id="keepratio-btn"
+	type="checkbox"
+	class="toolbar-button"
+	label="Keep ratio"/>
+
+      <toolbarbutton label="Load preset" type="menu" oncommand="window.gMain.onPresetSel(event)">
+	<menupopup>
+	  <menuitem label="Rainbow" value="rainbow1"/>
+	  <menuitem label="ResMap" value="resmap1"/>
+	  <menuitem label="HeatMap" value="heatmap1"/>
+	</menupopup>
+      </toolbarbutton>
+    </hbox>
+
+    <!-- edit boxes -->
+    <hbox flex="0">
+      <textbox id="edit-param" type="number" decimalplaces="2" flex="1" min="-NaN" max="NaN" size="2"/>
+      <mycolpicker id="edit-color" flex="1" size="2"/>
+    </hbox>
+
+  </vbox>
+
+</dialog>
+

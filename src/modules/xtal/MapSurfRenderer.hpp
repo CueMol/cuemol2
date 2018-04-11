@@ -204,8 +204,14 @@ namespace xtal {
     void marchCube(DisplayContext *pdl, int fx, int fy, int fz);
 
     //double getOffset(double fValue1, double fValue2, double fValueDesired);
-    void getVertexColor(Vector4D &rfColor, Vector4D &rfPosition, Vector4D &rfNormal);
-    Vector4D getNormal(const Vector4D &rfNormal,bool,bool,bool);
+    // Vector4D getNormal(const Vector4D &rfNormal,bool,bool,bool);
+
+    /// Coloring map object (for MULTIGRAD mode)
+    qsys::ScalarObject *m_pColMapObj;
+
+    qsys::MultiGradient *m_pGrad;
+
+    void setVertexColor(DisplayContext *pdl, const Vector4D &rfPosition);
 
     inline float getDen(int x, int y, int z) const
     {
@@ -238,6 +244,7 @@ namespace xtal {
     Vector4D m_norms[8];
 
     void setupXformMat(DisplayContext *pdl);
+    void setupXformMat();
 
 #if 0
     //////////
@@ -343,6 +350,8 @@ namespace xtal {
 #endif
     
   private:
+    bool m_bGenSurfMode;
+
     std::deque<surface::MSVert> m_msverts;
     Matrix4D m_xform;
 
@@ -360,6 +369,11 @@ namespace xtal {
       m_msverts.push_back( surface::MSVert(vv, nn) );
 
       return nid;
+    }
+
+    int addMSVert(int ix, int iy, int iz, int nx, int ny, int nz)
+    {
+      return addMSVert(Vector4D(ix, iy, iz), Vector4D(nx, ny, nz));
     }
 
   public:    

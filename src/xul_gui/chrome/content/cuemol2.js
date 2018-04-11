@@ -16,7 +16,6 @@ if (cuemol.xpc.isInitialized()) {
 
   ////////////////////////////////
   // secondary window
-  // (this should not happen in the current version...)
 
   /*
   let bCmdLineOK = false;
@@ -720,6 +719,10 @@ Qm2Main.prototype.createNewScene = function(scname)
 
   sc = cuemol.sceMgr.createScene();
   sc.setName(scname);
+
+  // Load optional default style files (read-only)
+  var stylem = cuemol.getService("StyleManager");
+  // stylem.loadStyleSetFromFile(sc.uid, "em_style.xml", true);
 
   // Initial view's name is always "0"
   vw = this.createNewView(sc, "0", false);
