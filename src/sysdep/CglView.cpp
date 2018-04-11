@@ -80,7 +80,8 @@ void CglView::swapBuffers()
 
 void CglView::setSwapInterval(int nint)
 {
-  long swapInterval = nint;
+  //long swapInterval = nint;
+  GLint swapInterval = nint;
   CGLError res = CGLSetParameter(m_pCtxt->getCGLContext(), kCGLCPSwapInterval, &swapInterval);
   LOG_DPRINTLN("CglView> SetSwapInterval(%d)", nint);
 }
