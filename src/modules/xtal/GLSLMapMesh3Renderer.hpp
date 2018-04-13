@@ -7,7 +7,7 @@
 #define XTAL_GLSL_MAP_MESH3_RENDERER_HPP_INCLUDED
 
 #include "xtal.hpp"
-#include "MapMeshRenderer.hpp"
+#include "MapMesh3Renderer.hpp"
 
 #include <qlib/ByteMap.hpp>
 #include <qlib/Vector3F.hpp>
@@ -35,12 +35,12 @@ namespace xtal {
 
   using qlib::Vector3F;
 
-  class GLSLMapMesh3Renderer : public MapMeshRenderer
+  class GLSLMapMesh3Renderer : public MapMesh3Renderer
   {
     MC_SCRIPTABLE;
     MC_CLONEABLE;
 
-    typedef MapMeshRenderer super_t;
+    typedef MapMesh3Renderer super_t;
     friend class ::GLSLMapMesh3Renderer_wrap;
 
   private:

@@ -5,9 +5,9 @@
 #ifndef GLSL_MAPMESH3_RENDERER_QIF_INCLUDED
 #define GLSL_MAPMESH3_RENDERER_QIF_INCLUDED
 
-#include "MapMeshRenderer.qif"
+#include "MapMesh3Renderer.qif"
 
-runtime_class GLSLMapMesh3Renderer extends MapMeshRenderer
+runtime_class GLSLMapMesh3Renderer extends MapMesh3Renderer
 {
   client_hdr "GLSLMapMesh3Renderer.hpp";
   client_name xtal::GLSLMapMesh3Renderer;

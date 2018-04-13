@@ -7,13 +7,9 @@
 #define XTAL_MAP_SURF2_RENDERER_HPP_INCLUDED
 
 #include "xtal.hpp"
-#include "MapRenderer.hpp"
+#include "Map3Renderer.hpp"
 
-#include <qlib/ByteMap.hpp>
 #include <qsys/ScalarObject.hpp>
-#include <qsys/ViewEvent.hpp>
-#include <modules/molstr/molstr.hpp>
-#include <modules/molstr/BSPTree.hpp>
 
 #include <modules/surface/MolSurfObj.hpp>
 #include <gfx/DrawElem.hpp>
@@ -30,20 +26,18 @@ namespace xtal {
   using qsys::ScalarObject;
   using molstr::SelectionPtr;
   using molstr::MolCoordPtr;
-  using molstr::BSPTree;
   class DensityMap;
 
   /// Map surface renderer class (ver.2)
   /// This class uses ver2 interface to perform file,
   /// display-list and VBO (with Omp) rendering
-  class MapSurf2Renderer : public MapRenderer,
-                          public qsys::ViewEventListener
+  class MapSurf2Renderer : public Map3Renderer
   {
     MC_SCRIPTABLE;
     MC_CLONEABLE;
 
   private:
-    typedef MapRenderer super_t;
+    typedef Map3Renderer super_t;
     friend class ::MapSurf2Renderer_wrap;
 
     ///////////////////////////////////////////
@@ -100,19 +94,6 @@ namespace xtal {
       invalidateDisplayCache();
     }
     
-/*
-  private:
-    /// Max grid size (default=100x100x100 grid)
-    int m_nMaxGrid;
-
-  public:
-    int getMaxGrids() const { return m_nMaxGrid; }
-    void setMaxGrids(int n);
-
-    /// Get max extent (in angstrom unit; calculated from m_nMaxGrid)
-    double getMaxExtent() const;
-*/
-    
   private:
     /// OpenMP Thread number(-1: use all system cores)
     int m_nOmpThr;
@@ -129,17 +110,7 @@ namespace xtal {
     ///////////////////////////////////////////
     // work area
 
-    /// Periodic boundary flag. This value is determined by the map size and usePBC flag
-    // bool m_bPBC;
-
-    /// size of map (copy from m_pMap)
-    // int m_nMapColNo, m_nMapRowNo, m_nMapSecNo;
-
-    /// size of section array
-    // int m_nActCol, m_nActRow, m_nActSec;
-    // int m_nStCol, m_nStRow, m_nStSec;
-
-    /// contour level (not a property)
+    /// contour level (cached value/not a property)
     double m_dLevel;
 
     /// for debug
@@ -168,8 +139,8 @@ namespace xtal {
 
     virtual qlib::uid_t detachObj();
 
-    /// For updating the center by the mouse events
-    virtual void viewChanged(qsys::ViewEvent &);
+    // /// For updating the center by the mouse events
+    // virtual void viewChanged(qsys::ViewEvent &);
 
     ///////////////////////////////////////////
     // Old/common rendering interface

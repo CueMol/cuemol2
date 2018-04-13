@@ -85,7 +85,7 @@ qlib::uid_t MapSurf2Renderer::detachObj()
   return super_t::detachObj();
 }  
 
-void MapSurf2Renderer::viewChanged(qsys::ViewEvent &ev)
+/*void MapSurf2Renderer::viewChanged(qsys::ViewEvent &ev)
 {
   const int nType = ev.getType();
   
@@ -123,7 +123,7 @@ void MapSurf2Renderer::viewChanged(qsys::ViewEvent &ev)
   }
   
   return;
-}
+}*/
 
 
 ///////////////////////////////////////////////////////////////

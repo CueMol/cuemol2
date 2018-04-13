@@ -10,8 +10,6 @@
 #endif
 
 #include "DensityMap.qif"
-#include "MapMeshRenderer.qif"
-#include "MapSurfRenderer.qif"
 #include "MTZ2MapReader.qif"
 #include "CCP4MapReader.qif"
 #include "BrixMapReader.qif"
@@ -20,6 +18,11 @@
 #ifdef HAVE_CUDA
 #  include "CudaBSharpTool.qif"
 #endif
+
+#include "MapMeshRenderer.qif"
+#include "MapSurfRenderer.qif"
+
+#include "MapMesh3Renderer.qif"
 
 #ifdef USE_OPENGL
 #  include "GLSLMapVolRenderer.qif"
@@ -35,9 +38,7 @@ module xtal
   fini xtal::fini();
 
   DensityMap;
-  MapRenderer;
-  MapMeshRenderer;
-  MapSurfRenderer;
+
   MTZ2MapReader;
   CCP4MapReader;
   BrixMapReader;
@@ -46,6 +47,13 @@ module xtal
 #ifdef HAVE_CUDA
   CudaBSharpTool;
 #endif
+
+  MapRenderer;
+
+  Map3Renderer;
+  MapMesh3Renderer;
+
+  MapSurfRenderer;
 
 #ifdef USE_OPENGL
   GLSLMapVolRenderer;
