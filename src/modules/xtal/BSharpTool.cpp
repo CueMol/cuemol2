@@ -78,7 +78,7 @@ void BSharpTool::attach(const qsys::ObjectPtr &pMap)
   HKLList *pHKLList = m_pMap->getHKLList();
 
   if (m_bForceRecipAry || pHKLList==NULL) {
-    DensityMap::FloatMap *pFMap = m_pMap->getFloatMap();
+    FloatArray *pFMap = m_pMap->getFloatMap();
     if (pFMap==NULL) {
       MB_THROW(qlib::RuntimeException, "No float map available");
       return;
@@ -128,7 +128,7 @@ void BSharpTool::attach(const qsys::ObjectPtr &pMap)
 
 /*
   if (pHKLList==NULL) {
-    DensityMap::FloatMap *pFMap = m_pMap->getFloatMap();
+    FloatMap *pFMap = m_pMap->getFloatMap();
     int h, k, l;
     //const CrystalInfo &ci = m_pMap->getXtalInfo();
     //const float fscl = float(1.0/(ci.volume()));

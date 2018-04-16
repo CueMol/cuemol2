@@ -11,14 +11,10 @@
 #include <qsys/ScalarObject.hpp>
 
 #include <modules/symm/CrystalInfo.hpp>
-//#include <qlib/ByteMap.hpp>
-#include <qlib/Array.hpp>
 #include <qlib/LDOM2Stream.hpp>
 
 #include <gfx/Texture.hpp>
 #include <gfx/ComputeContext.hpp>
-
-#include <complex>
 
 #include "HKLList.hpp"
 
@@ -49,13 +45,6 @@ namespace xtal {
     MC_SCRIPTABLE;
 
   public:
-    typedef qlib::Array3D<qbyte> ByteMap;
-    //typedef qlib::ByteMap ByteMap;
-
-    typedef qlib::Array3D<qfloat32> FloatMap;
-
-    typedef qlib::Array3D<std::complex<qfloat32> > RecipAry;
-
 
   private:
 
@@ -83,11 +72,11 @@ namespace xtal {
     double m_dRmsdMap;
 
     /// truncated map (8bit)
-    ByteMap *m_pByteMap;
+    ByteArray *m_pByteMap;
     double m_dLevelBase;
     double m_dLevelStep;
 
-    FloatMap *m_pFloatMap;
+    FloatArray *m_pFloatMap;
 
     // RecipAry *m_pRecipAry;
 
@@ -174,7 +163,7 @@ namespace xtal {
       return m_pHKLList;
     }
 
-    FloatMap *getFloatMap() const {
+    FloatArray *getFloatMap() const {
       return m_pFloatMap;
     }
 

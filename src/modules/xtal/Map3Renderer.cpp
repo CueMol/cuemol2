@@ -248,7 +248,7 @@ void Map3Renderer::calcMapDispExtent(ScalarObject *pMap)
   
 }
 
-Matrix4D Map3Renderer::calcXformMat(ScalarObject *pMap, DensityMap *pXtal)
+Matrix4D Map3Renderer::calcXformMat(ScalarObject *pMap, DensityMap *pXtal, bool bTrGlbPos/*=true*/)
 {
   Matrix4D rval;
 
@@ -277,13 +277,13 @@ Matrix4D Map3Renderer::calcXformMat(ScalarObject *pMap, DensityMap *pXtal)
                     pMap->getRowGridSize(),
                     pMap->getSecGridSize());
   
-  //pdc->scale(vtmp);
   rval.matprod(Matrix4D::makeScaleMat(vtmp));
   
-  vtmp = Vector4D(getGlbStPos());
-  //pdc->translate(vtmp);
-  rval.translate(vtmp);
-
+  if (bTrGlbPos) {
+    vtmp = Vector4D(getGlbStPos());
+    rval.translate(vtmp);
+  }
+  
   return rval;
 }
 
@@ -300,9 +300,9 @@ Matrix4D Map3Renderer::calcNormMat(ScalarObject *pMap, DensityMap *pXtal)
   return rval;
 }
 
-void Map3Renderer::setupXform(gfx::DisplayContext *pdc, ScalarObject *pMap, DensityMap *pXtal)
+void Map3Renderer::setupXform(gfx::DisplayContext *pdc, ScalarObject *pMap, DensityMap *pXtal, bool b)
 {
-  pdc->multMatrix( calcXformMat(pMap, pXtal) );
+  pdc->multMatrix( calcXformMat(pMap, pXtal, b) );
 }
 
 ///////////////////////////////////////////////////

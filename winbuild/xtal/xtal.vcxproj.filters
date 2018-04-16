@@ -126,6 +126,9 @@
     <ClCompile Include="..\..\src\modules\xtal\MapMesh3Renderer_wrap.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\modules\xtal\MapMesh3RendBsplImpl.cpp">
+      <Filter>Source files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <mcwrapgen3 Include="..\..\src\modules\xtal\DensityMap.qif">

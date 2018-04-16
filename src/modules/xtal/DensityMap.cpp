@@ -115,11 +115,11 @@ void DensityMap::setMapFloatArray(const float *array,
 
   if (m_pFloatMap!=NULL)
     delete m_pFloatMap;
-  m_pFloatMap = MB_NEW FloatMap(m_nCols,m_nRows,m_nSecs);
+  m_pFloatMap = MB_NEW FloatArray(m_nCols,m_nRows,m_nSecs);
 
   if (m_pByteMap!=NULL)
     delete m_pByteMap;
-  m_pByteMap = MB_NEW ByteMap(m_nCols,m_nRows,m_nSecs);
+  m_pByteMap = MB_NEW ByteArray(m_nCols,m_nRows,m_nSecs);
 
   int i, j, k, ii, jj, kk;
   for (k=0; k<nsect; k++)
@@ -179,7 +179,7 @@ void DensityMap::setMapByteArray(const unsigned char*array,
 
   if (m_pByteMap!=NULL)
     delete m_pByteMap;
-  m_pByteMap = MB_NEW ByteMap(m_nCols,m_nRows,m_nSecs, array);
+  m_pByteMap = MB_NEW ByteArray(m_nCols,m_nRows,m_nSecs, array);
 
   if (m_pMapTex!=NULL)
     delete m_pMapTex;
@@ -687,12 +687,12 @@ void DensityMap::setHKLList(HKLList *pHKLList)
   m_nSecs = m_pHKLList->m_nc;
   setMapParams(0,0,0,m_nCols,m_nRows,m_nSecs);
 
-  RecipAry recip_ary;
+  CompArray recip_ary;
   m_pHKLList->convToArrayHerm(recip_ary, 0.0f);
 
   if (m_pFloatMap!=NULL)
     delete m_pFloatMap;
-  m_pFloatMap = MB_NEW FloatMap(m_nCols,m_nRows,m_nSecs);
+  m_pFloatMap = MB_NEW FloatArray(m_nCols,m_nRows,m_nSecs);
 
   FFTUtil fft;
   fft.doit(recip_ary, *m_pFloatMap);
@@ -703,7 +703,7 @@ void DensityMap::setHKLList(HKLList *pHKLList)
 
   if (m_pByteMap!=NULL)
     delete m_pByteMap;
-  m_pByteMap = MB_NEW ByteMap(m_nCols,m_nRows,m_nSecs);
+  m_pByteMap = MB_NEW ByteArray(m_nCols,m_nRows,m_nSecs);
 
   createByteMap();
 
@@ -882,9 +882,9 @@ void DensityMap::cuda_test1()
   convToTex(pCA_in, m_pMapTex);
   
   /*
-  FloatMap map2(m_pFloatMap->cols(), m_pFloatMap->rows(), m_pFloatMap->secs());
+  FloatArray map2(m_pFloatMap->cols(), m_pFloatMap->rows(), m_pFloatMap->secs());
   gfx::ComputeArray *pCA_out = m_pCCtxt->createArray();
-  pCA_out->alloc(map2.size(), sizeof(FloatMap::value_type));
+  pCA_out->alloc(map2.size(), sizeof(FloatArray::value_type));
   
   {
     //launchTestKernel(pin, pout, nlen);
@@ -903,7 +903,7 @@ void DensityMap::cuda_test1()
 
 #if 0
 #include "FFTUtil.hpp"
-void DensityMap::setRecipArray(const RecipAry &data, int na, int nb, int nc)
+void DensityMap::setRecipArray(const CompArray &data, int na, int nb, int nc)
 {
   m_nCols = na;
   m_nRows = nb;
@@ -912,15 +912,15 @@ void DensityMap::setRecipArray(const RecipAry &data, int na, int nb, int nc)
 
   if (m_pRecipAry!=NULL)
     delete m_pRecipAry;
-  m_pRecipAry = MB_NEW RecipAry(data);
+  m_pRecipAry = MB_NEW CompArray(data);
 
   if (m_pFloatMap!=NULL)
     delete m_pFloatMap;
-  m_pFloatMap = MB_NEW FloatMap(m_nCols,m_nRows,m_nSecs);
+  m_pFloatMap = MB_NEW FloatArray(m_nCols,m_nRows,m_nSecs);
 
   FFTUtil fft;
   //fft.doit(*m_pRecipAry, *m_pFloatMap);
-  fft.doit(const_cast<RecipAry&>(data), *m_pFloatMap);
+  fft.doit(const_cast<CompArray&>(data), *m_pFloatMap);
 
   MB_DPRINTLN("FFT OK");
 
@@ -928,7 +928,7 @@ void DensityMap::setRecipArray(const RecipAry &data, int na, int nb, int nc)
 
   if (m_pByteMap!=NULL)
     delete m_pByteMap;
-  m_pByteMap = MB_NEW ByteMap(m_nCols,m_nRows,m_nSecs);
+  m_pByteMap = MB_NEW ByteArray(m_nCols,m_nRows,m_nSecs);
 
   createByteMap();
 
@@ -946,9 +946,9 @@ void DensityMap::sharpenMapPreview(double b_factor)
     gfx::ComputeArray *pCA_in = m_pCCtxt->createArray();
     pCA_in->initWith(*m_pFloatMap);
 
-    FloatMap map2(m_pFloatMap->cols(), m_pFloatMap->rows(), m_pFloatMap->secs());
+    FloatArray map2(m_pFloatMap->cols(), m_pFloatMap->rows(), m_pFloatMap->secs());
     gfx::ComputeArray *pCA_out = m_pCCtxt->createArray();
-    pCA_out->alloc(map2.size(), sizeof(FloatMap::value_type));
+    pCA_out->alloc(map2.size(), sizeof(FloatArray::value_type));
 
     {
       //launchTestKernel(pin, pout, nlen);
@@ -990,7 +990,7 @@ void DensityMap::sharpenMapPreview(double b_factor)
   const int nk = m_pRecipAry->rows();
   const int nl = m_pRecipAry->secs();
 
-  RecipAry hkldata( nh, nk, nl );
+  CompArray hkldata( nh, nk, nl );
 
   int h, k, l;
 

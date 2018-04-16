@@ -47,6 +47,7 @@ namespace xtal {
   XTAL_API void fini();
 
   MC_DECL_SCRSP(DensityMap);
+
 }
 
 #endif

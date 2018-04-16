@@ -23,6 +23,8 @@ MapMesh3Renderer::MapMesh3Renderer()
      :  super_t()
 
 {
+  m_pBsplCoeff=NULL;
+
   m_lw = 1.0;
 
   //resetAllProps();
@@ -133,16 +135,6 @@ void MapMesh3Renderer::preRender(DisplayContext *pdc)
   pdc->setLighting(false);
 }
 
-namespace {
-  inline float getCrossVal(quint8 d0, quint8 d1, quint8 isolev)
-  {
-    if (d0==d1 || d0==0 || d1==0) return -1.0;
-    
-    float crs = float(isolev-d0)/float(d1-d0);
-    return crs;
-  }
-}
-
 Vector3F MapMesh3Renderer::calcVecCrs(const Vector3I &tpos, int iv0, float crs0, int ivbase)
 {
   Vector3F vbase = Vector3F(tpos);
@@ -158,6 +150,14 @@ Vector3F MapMesh3Renderer::calcVecCrs(const Vector3I &tpos, int iv0, float crs0,
 /// File rendering/Generate display list (legacy interface)
 void MapMesh3Renderer::render(DisplayContext *pdl)
 {
+  //renderImpl1(pdl);
+  renderImplTest2(pdl);
+}
+
+
+/// File rendering/Generate display list (legacy interface)
+void MapMesh3Renderer::renderImpl1(DisplayContext *pdl)
+{
   // TO DO: support object xformMat property!!
 
   ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
@@ -171,9 +171,6 @@ void MapMesh3Renderer::render(DisplayContext *pdl)
 
   bool bOrgChg = false;
   if (!m_mapStPos.equals(m_texStPos)) {
-    //if (m_mapStPos.x()!=m_nTexStCol ||
-    //m_mapStPos.y()!=m_nTexStRow ||
-    //m_mapStPos.z()!=m_nTexStSec) {
     // texture origin changed --> regenerate texture
     bOrgChg = true;
   }
@@ -243,12 +240,12 @@ void MapMesh3Renderer::render(DisplayContext *pdl)
             int ivz = k + m_idel[iid][2];
             val[ii] = m_maptmp.at(ivx, ivy, ivz);
 
-            //qbyte v2 = getMap(pMap, ivx+stcol, ivy+strow, ivz+stsec);
-
             if (val[ii]>isolev)
               flag += mask;
             mask = mask << 1;
           }
+
+          // TO DO: use flag value (0000/1111) to omit calc for empty voxels
 
           int iv0 = m_triTable[flag][0];
           int iv1 = m_triTable[flag][1];

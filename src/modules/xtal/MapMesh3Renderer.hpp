@@ -19,6 +19,7 @@ namespace xtal {
 
   using qlib::Vector3I;
   using qlib::Vector3F;
+  using qlib::FloatArray;
 
   using gfx::DisplayContext;
   using qsys::ScalarObject;
@@ -119,6 +120,10 @@ namespace xtal {
 
     ///////////////////////////////////////////////////////////////
 
+    /// Rendering implementation 1 (using basic marching planes alg.)
+    void renderImpl1(DisplayContext *pdl);
+
+    void renderImplTest2(DisplayContext *pdl);
 
     virtual void objectChanged(qsys::ObjectEvent &ev);
 
@@ -150,12 +155,19 @@ namespace xtal {
 
     ///////////////////////////////////////////////////////////////
 
-
     Vector3I m_ivdel[12];
 
     int m_idel[12][3];
     
     int m_triTable[16][2];
+
+    static inline float getCrossVal(quint8 d0, quint8 d1, quint8 isolev)
+    {
+      if (d0==d1 || d0==0 || d1==0) return -1.0;
+      
+      float crs = float(isolev-d0)/float(d1-d0);
+      return crs;
+    }
 
     Vector3F calcVecCrs(const Vector3I &tpos, int iv0, float crs0, int ivbase);
     
@@ -170,6 +182,33 @@ namespace xtal {
       
       return v0 + (v1-v0).scale(crs0);
     }
+    
+    ///////////////////////////////////////////////////////////////
+
+    FloatArray *m_pBsplCoeff;
+    
+    float calcIpolBspl3(const Vector3F &pos) const;
+    Vector3F calcIpolBspl3Diff(const Vector3F &pos) const;
+
+    std::complex<float> calc_cm2(int i, int N)
+    {
+      int ii;
+      if (i<N/2)
+        ii = i;
+      else
+        ii = i-N;
+
+      float u = float(ii)/float(N);
+      
+      std::complex<float> piu(0.0f, -2.0f*M_PI*u);
+      std::complex<float> rval = std::complex<float>(3,0) * std::exp(piu) / std::complex<float>(2.0 + cos(2.0*M_PI*u),0);
+
+      return rval;
+
+    }
+
+    Vector3F getXValF(float val0, const Vector3F &vec0, float val1, const Vector3F &vec1, float isolev);
+    Vector3F getXValFBsec(float val0, const Vector3F &vec0, float val1, const Vector3F &vec1, float isolev);
     
   };
 

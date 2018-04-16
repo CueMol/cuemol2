@@ -255,13 +255,14 @@ namespace xtal {
     void calcMapDispExtent(ScalarObject *pMap);
 
     /// Calc coord xform mat for map rendering (grid-->world)
-    Matrix4D calcXformMat(ScalarObject *pMap, DensityMap *pXtal);
+    /// @param bTrGlbPos apply getGlbStPos() translation to the matrix, if bTrGlbPos is true (default)
+    Matrix4D calcXformMat(ScalarObject *pMap, DensityMap *pXtal, bool bTrGlbPos=true);
 
     /// Calc normal xform mat for map rendering (grid-->world)
     Matrix4D calcNormMat(ScalarObject *pMap, DensityMap *pXtal);
 
     /// Calc coord xform (grid-->world) & set to the display context
-    void setupXform(gfx::DisplayContext *pdc, ScalarObject *pMap, DensityMap *pXtal);
+    void setupXform(gfx::DisplayContext *pdc, ScalarObject *pMap, DensityMap *pXtal, bool bTrGlbPos=true);
 
     ///////////////////////////////////////////
     // constructors / destructor
