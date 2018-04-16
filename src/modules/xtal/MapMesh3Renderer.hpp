@@ -189,6 +189,7 @@ namespace xtal {
     
     float calcIpolBspl3(const Vector3F &pos) const;
     Vector3F calcIpolBspl3Diff(const Vector3F &pos) const;
+    Vector3F calcIpolBspl3DscDiff(const Vector3F &pos) const;
 
     std::complex<float> calc_cm2(int i, int N)
     {
@@ -209,6 +210,7 @@ namespace xtal {
 
     Vector3F getXValF(float val0, const Vector3F &vec0, float val1, const Vector3F &vec1, float isolev);
     Vector3F getXValFBsec(float val0, const Vector3F &vec0, float val1, const Vector3F &vec1, float isolev);
+    Vector3F getXValFNr(float val0, const Vector3F &vec0, float val1, const Vector3F &vec1, float isolev);
     
   };
 

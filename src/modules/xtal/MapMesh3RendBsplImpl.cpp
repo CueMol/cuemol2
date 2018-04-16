@@ -101,6 +101,20 @@ float MapMesh3Renderer::calcIpolBspl3(const Vector3F &pos) const
 
 }
 
+Vector3F MapMesh3Renderer::calcIpolBspl3DscDiff(const Vector3F &pos) const
+{
+  const float delta = 0.01;
+  float ex0 = calcIpolBspl3(pos+Vector3F(-delta,0,0));
+  float ex1 = calcIpolBspl3(pos+Vector3F(delta,0,0));
+  float ey0 = calcIpolBspl3(pos+Vector3F(0,-delta,0));
+  float ey1 = calcIpolBspl3(pos+Vector3F(0,delta,0));
+  float ez0 = calcIpolBspl3(pos+Vector3F(0,0,-delta));
+  float ez1 = calcIpolBspl3(pos+Vector3F(0,0,delta));
+    
+  return Vector3F((ex1-ex0)/(2*delta), (ey1-ey0)/(2*delta), (ez1-ez0)/(2*delta));
+  //rval = getDensityCubic(pos);
+}
+
 Vector3F MapMesh3Renderer::calcIpolBspl3Diff(const Vector3F &pos) const
 {
   int i, j, k;
@@ -198,6 +212,29 @@ Vector3F MapMesh3Renderer::getXValFBsec(float val0, const Vector3F &vec0, float 
     // find between vec0 & mid
     return getXValFBsec(val0, vec0, valm, mid, isolev);
   }
+}
+
+Vector3F MapMesh3Renderer::getXValFNr(float val0, const Vector3F &vec0, float val1, const Vector3F &vec1, float isolev)
+{
+  // init estim. by lin. intpol
+  Vector3F dv = (vec1 - vec0);
+
+  float rho = (isolev-val0)/(val1-val0);
+  float frho, dfrho;
+  Vector3F vrho;
+  int i;
+
+  for (i=0; i<10; ++i) {
+    vrho = vec0 + dv.scale(rho);
+    frho = calcIpolBspl3(vrho);
+    if (qlib::isNear4(frho, isolev))
+      break;
+    dfrho = dv.dot( calcIpolBspl3DscDiff(vrho) );
+
+    rho += -frho/dfrho;
+  }
+
+  return vrho;
 }
 
 /// File rendering/Generate display list (legacy interface)
