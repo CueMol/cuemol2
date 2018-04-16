@@ -24,6 +24,7 @@ MapMesh3Renderer::MapMesh3Renderer()
 
 {
   m_pBsplCoeff=NULL;
+  m_dArcMax = 0.25;
 
   m_lw = 1.0;
 

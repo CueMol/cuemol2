@@ -124,6 +124,7 @@ Vector3F MapMesh3Renderer::calcIpolBspl3Diff(const Vector3F &pos) const
   float dx2, dy2, dz2;
   float dx3, dy3, dz3;
   float Nx[4], Ny[4], Nz[4];
+  float Gx[4], Gy[4], Gz[4];
 
   int na = m_pBsplCoeff->cols();
   int nb = m_pBsplCoeff->rows();
@@ -151,33 +152,94 @@ Vector3F MapMesh3Renderer::calcIpolBspl3Diff(const Vector3F &pos) const
   dy = ym - yf;
   dz = zm - zf;
 
+  //
+
   dx2 = dx*dx;
-  Nx[0] = -0.5 * (1-dx)*(1-dx);
-  Nx[1] = 1.5 * dx2 - 2.0*dx;
-  Nx[2] =-1.5 * dx2 + dx + 0.5;
-  Nx[3] = 0.5 * dx2;
+  dx3 = dx2*dx;
+  Nx[0] = 1.0/6.0 * (1-dx)*(1-dx)*(1-dx);
+  Nx[1] = 0.5 * dx3 - dx2 + 2.0/3.0;
+  Nx[2] =-0.5 * dx3 + 0.5*dx2 + 0.5*dx + 1.0/6.0;
+  Nx[3] = 1.0/6.0 * dx3;
 
   dy2 = dy*dy;
-  Ny[0] = -0.5 * (1-dy)*(1-dy);
-  Ny[1] = 1.5 * dy2 - 2.0*dy;
-  Ny[2] =-1.5 * dy2 + dy + 0.5;
-  Ny[3] = 0.5 * dy2;
+  dy3 = dy2*dy;
+  Ny[0] = 1.0/6.0 * (1-dy)*(1-dy)*(1-dy);
+  Ny[1] = 0.5 * dy3 - dy2 + 2.0/3.0;
+  Ny[2] =-0.5 * dy3 + 0.5*dy2 + 0.5*dy + 1.0/6.0;
+  Ny[3] = 1.0/6.0 * dy3;
 
   dz2 = dz*dz;
-  Nz[0] = -0.5 * (1-dz)*(1-dz);
-  Nz[1] = 1.5 * dz2 - 2.0*dz;
-  Nz[2] =-1.5 * dz2 + dz + 0.5;
-  Nz[3] = 0.5 * dz2;
+  dz3 = dz2*dz;
+  Nz[0] = 1.0/6.0 * (1-dz)*(1-dz)*(1-dz);
+  Nz[1] = 0.5 * dz3 - dz2 + 2.0/3.0;
+  Nz[2] =-0.5 * dz3 + 0.5*dz2 + 0.5*dz + 1.0/6.0;
+  Nz[3] = 1.0/6.0 * dz3;
 
-  float w = 0.0f;
-  for (i=0; i<4; ++i)
-    for (j=0; j<4; ++j)
-      for (k=0; k<4; ++k) {
-        w += Nx[i] * Ny[j] * Nz[k] * m_pBsplCoeff->at((ix+i)%na, (iy+j)%nb, (iz+k)%nc);
+  //
+
+  dx2 = dx*dx;
+  Gx[0] = -0.5 * (1-dx)*(1-dx);
+  Gx[1] = 1.5 * dx2 - 2.0*dx;
+  Gx[2] =-1.5 * dx2 + dx + 0.5;
+  Gx[3] = 0.5 * dx2;
+
+  dy2 = dy*dy;
+  Gy[0] = -0.5 * (1-dy)*(1-dy);
+  Gy[1] = 1.5 * dy2 - 2.0*dy;
+  Gy[2] =-1.5 * dy2 + dy + 0.5;
+  Gy[3] = 0.5 * dy2;
+
+  dz2 = dz*dz;
+  Gz[0] = -0.5 * (1-dz)*(1-dz);
+  Gz[1] = 1.5 * dz2 - 2.0*dz;
+  Gz[2] =-1.5 * dz2 + dz + 0.5;
+  Gz[3] = 0.5 * dz2;
+
+  /*
+  float su = 0.0;
+  for ( i = 0; i < 4; i++ ) {
+    float sv = 0.0;
+    for ( j = 0; j < 4; j++ ) {
+      float sw = 0.0;
+      for ( k = 0; k < 4; k++ ) {
+	sw += Nz[k] * m_pBsplCoeff->at((ix+i)%na, (iy+j)%nb, (iz+k)%nc);
       }
+      sv += Ny[j] * sw;
+    }
+    su += Nx[i] * sv;
+  }
+  return su;
+   */
 
-  //return w;
-  return Vector3F();
+  float rho, s1, s2, s3;
+  float du1, dv1, dv2, dw1, dw2, dw3;
+  du1 = dv1 = dw1 = 0.0;
+
+  // s1 = 0.0f;
+  for ( i = 0; i < 4; i++ ) {
+    s2 = dv2 = dw2 = 0.0;
+    for ( j = 0; j < 4; j++ ) {
+      //iw = iv;
+      s3 = dw3 = 0.0;
+      for ( k = 0; k < 4; k++ ) {
+        rho = m_pBsplCoeff->at((ix+i)%na, (iy+j)%nb, (iz+k)%nc);
+        s3 += Nz[k] * rho;
+        dw3 += Gz[k] * rho;
+      }
+      s2 += Ny[j] * s3;
+      dv2 += Gy[j] * s3;
+      dw2 += Ny[j] * dw3;
+    }
+    // s1 += Nx[i] * s2;
+    du1 += Gx[i] * s2;
+    dv1 += Nx[i] * dv2;
+    dw1 += Nx[i] * dw2;
+  }
+  // rval = float(s1);
+  Vector3F grad(du1, dv1, dw1);
+
+
+  return grad;
 }
 
 Vector3F MapMesh3Renderer::getXValF(float val0, const Vector3F &vec0, float val1, const Vector3F &vec1, float isolev)
@@ -214,27 +276,90 @@ Vector3F MapMesh3Renderer::getXValFBsec(float val0, const Vector3F &vec0, float 
   }
 }
 
-Vector3F MapMesh3Renderer::getXValFNr(float val0, const Vector3F &vec0, float val1, const Vector3F &vec1, float isolev)
+bool MapMesh3Renderer::getXValFNr(float val0, const Vector3F &vec0, float val1, const Vector3F &vec1, float isolev, Vector3F &rval)
 {
   // init estim. by lin. intpol
   Vector3F dv = (vec1 - vec0);
 
   float rho = (isolev-val0)/(val1-val0);
   float frho, dfrho;
-  Vector3F vrho;
+  Vector3F vrho, dvrho, dvrho2;
   int i;
 
+  bool bConv = false;
   for (i=0; i<10; ++i) {
     vrho = vec0 + dv.scale(rho);
     frho = calcIpolBspl3(vrho);
-    if (qlib::isNear4(frho, isolev))
+    if (qlib::isNear4(frho, isolev)) {
+      bConv = true;
       break;
-    dfrho = dv.dot( calcIpolBspl3DscDiff(vrho) );
+    }
+    
+    // dvrho = calcIpolBspl3DscDiff(vrho);
+    dvrho2 = calcIpolBspl3Diff(vrho);
 
-    rho += -frho/dfrho;
+    dfrho = dv.dot( dvrho2 );
+
+    rho += -(frho-isolev)/dfrho;
   }
 
-  return vrho;
+  if (rho<=-1.0f || 2.0f <=rho) {
+    MB_DPRINTLN("XXX invalid %f", rho);
+    return false;
+  }
+
+  rval = vrho;
+  return bConv;
+}
+
+void MapMesh3Renderer::divideAndDraw(DisplayContext *pdl, const Vector3F &v0, const Vector3F &v1, float isolev, const Vector3F &pln)
+{
+  float frho, dfrho;
+  Vector3F vrho, dvrho, dvrho2;
+  int ii;
+
+  Vector3F dv = v1-v0;
+  Vector3F vm = (v1+v0).scale(0.5f);
+  Vector3F vn = dv.cross(pln);
+  float rho = 0.0;
+
+  bool bConv = false;
+  for (ii=0; ii<10; ++ii) {
+    vrho = vm + vn.scale(rho);
+    frho = calcIpolBspl3(vrho);
+    if (qlib::isNear4(frho, isolev)) {
+      bConv = true;
+      break;
+    }
+
+    dvrho2 = calcIpolBspl3Diff(vrho);
+    dfrho = vn.dot( dvrho2 );
+    rho += -(frho-isolev)/dfrho;
+  }
+
+  float len;
+  
+  if (bConv) {
+    len = (v0-vrho).length();
+    if (len>m_dArcMax)
+      divideAndDraw(pdl, v0, vrho, isolev, pln);
+    else {
+      pdl->vertex(v0.x(), v0.y(), v0.z());
+      pdl->vertex(vrho.x(), vrho.y(), vrho.z());
+    }
+    
+    len = (v1-vrho).length();
+    if (len>m_dArcMax)
+      divideAndDraw(pdl, vrho, v1, isolev, pln);
+    else {
+      pdl->vertex(vrho.x(), vrho.y(), vrho.z());
+      pdl->vertex(v1.x(), v1.y(), v1.z());
+    }
+  }
+  else {
+    pdl->vertex(v0.x(), v0.y(), v0.z());
+    pdl->vertex(v1.x(), v1.y(), v1.z());
+  }
 }
 
 /// File rendering/Generate display list (legacy interface)
@@ -323,11 +448,21 @@ void MapMesh3Renderer::renderImplTest2(DisplayContext *pdl)
   pdl->color(getColor());
   pdl->startLines();
 
+  // plane normal vector;
+  Vector3F pln;
+
   for (k=0; k<nsec-1; k++)
     for (j=0; j<nrow-1; j++)
       for (i=0; i<ncol-1; i++){
-        //for (int iplane = 0; iplane<3; ++iplane) {
-        for (int iplane = 0; iplane<1; ++iplane) {
+        for (int iplane = 0; iplane<3; ++iplane) {
+        //for (int iplane = 2; iplane<3; ++iplane) {
+          if (iplane==0)
+            pln = Vector3F(0,0,1);
+          else if (iplane==1)
+            pln = Vector3F(1,0,0);
+          else
+            pln = Vector3F(0,1,0);
+          
           quint8 flag = 0U;
           quint8 mask = 1U;
           const int ipl4 = iplane*4;
@@ -356,25 +491,23 @@ void MapMesh3Renderer::renderImplTest2(DisplayContext *pdl)
           if (iv0<0)
             continue;
           
-          Vector3F v0 = getXValFBsec(val[iv0], vec[iv0], val[(iv0+1)%4], vec[(iv0+1)%4], isolev);
-          Vector3F v1 = getXValFBsec(val[iv1], vec[iv1], val[(iv1+1)%4], vec[(iv1+1)%4], isolev);
 
-          /*
-          Vector3F v0 = getXValF(val[iv0], vec[iv0], val[(iv0+1)%4], vec[(iv0+1)%4], isolev);
-          Vector3F v1 = getXValF(val[iv1], vec[iv1], val[(iv1+1)%4], vec[(iv1+1)%4], isolev);
-           */
-          pdl->vertex(v0.x(), v0.y(), v0.z());
-          pdl->vertex(v1.x(), v1.y(), v1.z());
-
-          /*
-          float crs0 = getXValF(val[iv0], vec[iv0], val[(iv0+1)%4], vec[(iv0+1)%4], isolev);
-          float crs1 = getXValF(val[iv1], vec[iv1], val[(iv1+1)%4], vec[(iv1+1)%4], isolev);
-          if (crs0>=-0.0 && crs1>=-0.0) {
-            Vector3F v0 = calcVecCrs(i, j, k, iv0, crs0, iplane*4);
-            Vector3F v1 = calcVecCrs(i, j, k, iv1, crs1, iplane*4);
+          Vector3F v0, v1;
+          if (getXValFNr(val[iv0], vec[iv0], val[(iv0+1)%4], vec[(iv0+1)%4], isolev, v0) &&
+              getXValFNr(val[iv1], vec[iv1], val[(iv1+1)%4], vec[(iv1+1)%4], isolev, v1) ){
+            divideAndDraw(pdl, v0, v1, isolev, pln);
+            //pdl->vertex(v0.x(), v0.y(), v0.z());
+            //pdl->vertex(v1.x(), v1.y(), v1.z());
+          }
+          else {
+            v0 = getXValF(val[iv0], vec[iv0], val[(iv0+1)%4], vec[(iv0+1)%4], isolev);
+            v1 = getXValF(val[iv1], vec[iv1], val[(iv1+1)%4], vec[(iv1+1)%4], isolev);
             pdl->vertex(v0.x(), v0.y(), v0.z());
             pdl->vertex(v1.x(), v1.y(), v1.z());
           }
+          /*
+          Vector3F v0 = getXValFBsec(val[iv0], vec[iv0], val[(iv0+1)%4], vec[(iv0+1)%4], isolev);
+          Vector3F v1 = getXValFBsec(val[iv1], vec[iv1], val[(iv1+1)%4], vec[(iv1+1)%4], isolev);
            */
         }
       }
