@@ -20,10 +20,12 @@ CCP4MapReader.cpp \
 XplorMapReader.cpp \
 MTZ2MapReader.cpp \
 DensityMap.cpp \
-MapMeshRenderer.cpp \
+MapMesh3Renderer.cpp \
 MapSurfRenderer.cpp \
 MapSurf2Renderer.cpp \
 MapRenderer.cpp \
+Map3Renderer.cpp \
+MapMesh3RendBsplImpl.cpp \
 QdfDenMapReader.cpp \
 QdfDenMapWriter.cpp \
 BrixMapReader.cpp \
@@ -37,7 +39,8 @@ $(NULL)
 MCWG_SRC= \
 DensityMap.qif \
 MapRenderer.qif \
-MapMeshRenderer.qif \
+Map3Renderer.qif \
+MapMesh3Renderer.qif \
 MapSurfRenderer.qif \
 MapSurf2Renderer.qif \
 MTZ2MapReader.qif \
@@ -74,14 +77,6 @@ mapmesh2_frag.glsl \
 mapsurf1_vertex.glsl \
 mapsurf1_frag.glsl \
 $(NULL)
-
-#GLSLMapMeshRenderer.cpp
-#GLSLMapMesh2Renderer.cpp
-#GLSLMapMeshRenderer.qif
-#GLSLMapMesh2Renderer.qif
-#mapmesh_vertex.glsl
-#mapmesh_frag.glsl
-#mapmesh_geom.glsl
 
 endif
 

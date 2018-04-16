@@ -75,14 +75,30 @@ float MapMesh3Renderer::calcIpolBspl3(const Vector3F &pos) const
   Nz[2] =-0.5 * dz3 + 0.5*dz2 + 0.5*dz + 1.0/6.0;
   Nz[3] = 1.0/6.0 * dz3;
 
+  /*
   float w = 0.0f;
   for (i=0; i<4; ++i)
     for (j=0; j<4; ++j)
       for (k=0; k<4; ++k) {
         w += Nx[i] * Ny[j] * Nz[k] * m_pBsplCoeff->at((ix+i)%na, (iy+j)%nb, (iz+k)%nc);
       }
-
   return w;
+  */
+
+  float su = 0.0;
+  for ( i = 0; i < 4; i++ ) {
+    float sv = 0.0;
+    for ( j = 0; j < 4; j++ ) {
+      float sw = 0.0;
+      for ( k = 0; k < 4; k++ ) {
+	sw += Nz[k] * m_pBsplCoeff->at((ix+i)%na, (iy+j)%nb, (iz+k)%nc);
+      }
+      sv += Ny[j] * sw;
+    }
+    su += Nx[i] * sv;
+  }
+  return su;
+
 }
 
 Vector3F MapMesh3Renderer::calcIpolBspl3Diff(const Vector3F &pos) const
@@ -146,7 +162,8 @@ Vector3F MapMesh3Renderer::calcIpolBspl3Diff(const Vector3F &pos) const
         w += Nx[i] * Ny[j] * Nz[k] * m_pBsplCoeff->at((ix+i)%na, (iy+j)%nb, (iz+k)%nc);
       }
 
-  return w;
+  //return w;
+  return Vector3F();
 }
 
 Vector3F MapMesh3Renderer::getXValF(float val0, const Vector3F &vec0, float val1, const Vector3F &vec1, float isolev)
