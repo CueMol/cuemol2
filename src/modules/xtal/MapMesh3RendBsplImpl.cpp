@@ -276,40 +276,86 @@ Vector3F MapMesh3Renderer::getXValFBsec(float val0, const Vector3F &vec0, float 
   }
 }
 
-bool MapMesh3Renderer::getXValFNr(float val0, const Vector3F &vec0, float val1, const Vector3F &vec1, float isolev, Vector3F &rval)
+bool MapMesh3Renderer::getXValFNrImpl1(const Vector3F &vec0, const Vector3F &dv, float rho, float isolev, float &rval)
 {
-  // init estim. by lin. intpol
-  Vector3F dv = (vec1 - vec0);
-
-  float rho = (isolev-val0)/(val1-val0);
   float frho, dfrho;
-  Vector3F vrho, dvrho, dvrho2;
-  int i;
+  Vector3F vrho, dvrho;
+  int i, j;
 
   bool bConv = false;
   for (i=0; i<10; ++i) {
     vrho = vec0 + dv.scale(rho);
-    frho = calcIpolBspl3(vrho);
-    if (qlib::isNear4(frho, isolev)) {
+    frho = calcIpolBspl3(vrho)-isolev;
+    if (qlib::isNear4(frho, 0.0f)) {
       bConv = true;
       break;
     }
     
     // dvrho = calcIpolBspl3DscDiff(vrho);
-    dvrho2 = calcIpolBspl3Diff(vrho);
+    dvrho = calcIpolBspl3Diff(vrho);
 
-    dfrho = dv.dot( dvrho2 );
+    dfrho = dv.dot( dvrho );
 
-    rho += -(frho-isolev)/dfrho;
+    rho += -frho/dfrho;
+
+    if (rho<0.0f || 1.0f <rho) {
+      return false;
+    }
   }
 
-  if (rho<=-1.0f || 2.0f <=rho) {
+  rval = rho;
+  return true;
+}
+
+bool MapMesh3Renderer::getXValFNr(float val0, const Vector3F &vec0, float val1, const Vector3F &vec1, float isolev, Vector3F &rval)
+{
+  // init estim. by lin. intpol
+  Vector3F dv = (vec1 - vec0);
+
+  float rho0 = (isolev-val0)/(val1-val0);
+  float rho2;
+
+  float rho = rho0;
+  float rhoL = 0.0f;
+  float rhoU = 1.0f;
+  
+  int sign0 = (val0-isolev<0)?-1:1;
+  int sign1 = (val1-isolev<0)?-1:1;
+
+  for (int i=0; i<10; ++i) {
+    if (getXValFNrImpl1(vec0, dv, rho, isolev, rho2)) {
+      rval = vec0 + dv.scale(rho2);
+      return true;
+    }
+
+    float frho0 = calcIpolBspl3(vec0 + dv.scale(rho));
+    int signm = (frho0<isolev)?-1:1;
+  
+    if (sign0*signm>0) {
+      // find between mid & vec1
+      rhoL = rho;
+      rho = (rho + rhoU)/2.0;
+    }
+    else {
+      // find between vec0 & mid
+      rhoU = rho;
+      rho = (rho + rhoL)/2.0;
+    }
+  }
+
+  {
     MB_DPRINTLN("XXX invalid %f", rho);
+    FILE *fp = fopen("tmp.txt", "w");
+    for (int i=0; i<100; i++) {
+      rho = float(i)/100.0f;
+      Vector3F vrho = vec0 + dv.scale(rho);
+      float frho = calcIpolBspl3(vrho);
+      fprintf(fp, "%d %f %f\n", i, rho, frho);
+      MB_DPRINTLN("%d %f %f", i, rho, frho);
+    }
+    fclose(fp);
     return false;
   }
-
-  rval = vrho;
-  return bConv;
 }
 
 void MapMesh3Renderer::divideAndDraw(DisplayContext *pdl, const Vector3F &v0, const Vector3F &v1, float isolev, const Vector3F &pln)
@@ -318,14 +364,25 @@ void MapMesh3Renderer::divideAndDraw(DisplayContext *pdl, const Vector3F &v0, co
   Vector3F vrho, dvrho, dvrho2;
   int ii;
 
+  float xi = 0.1f;
+
   Vector3F dv = v1-v0;
-  Vector3F vm = (v1+v0).scale(0.5f);
+  Vector3F vm = v0 + dv.scale(xi);
   Vector3F vn = dv.cross(pln);
   float rho = 0.0;
+  float len = dv.length();
 
   bool bConv = false;
   for (ii=0; ii<10; ++ii) {
     vrho = vm + vn.scale(rho);
+
+    if ((vrho-v0).length()>len ||
+        (vrho-v1).length()>len) {
+      // vrho does not converge to the local solution --> abort
+      bConv = false;
+      break;
+    }
+
     frho = calcIpolBspl3(vrho);
     if (qlib::isNear4(frho, isolev)) {
       bConv = true;
@@ -337,8 +394,6 @@ void MapMesh3Renderer::divideAndDraw(DisplayContext *pdl, const Vector3F &v0, co
     rho += -(frho-isolev)/dfrho;
   }
 
-  float len;
-  
   if (bConv) {
     len = (v0-vrho).length();
     if (len>m_dArcMax)
@@ -357,6 +412,18 @@ void MapMesh3Renderer::divideAndDraw(DisplayContext *pdl, const Vector3F &v0, co
     }
   }
   else {
+
+    MB_DPRINTLN("XXX invalid %f", rho);
+    FILE *fp = fopen("tmp.txt", "w");
+    for (int i=0; i<100; i++) {
+      rho = float(i)/100.0f;
+      Vector3F vrho = vm + vn.scale(rho);
+      float frho = calcIpolBspl3(vrho) - isolev;
+      fprintf(fp, "%d %f %f\n", i, rho, frho);
+      MB_DPRINTLN("%d %f %f", i, rho, frho);
+    }
+    fclose(fp);
+
     pdl->vertex(v0.x(), v0.y(), v0.z());
     pdl->vertex(v1.x(), v1.y(), v1.z());
   }
