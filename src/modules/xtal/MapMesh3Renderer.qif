@@ -36,6 +36,10 @@ runtime_class MapMesh3Renderer extends Map3Renderer
   /// Use spherical extent display
   property boolean spher_extent => redirect(isSphExt,setSphExt);
   default spher_extent = false;
+
+  /// Arc detail (max division no of a unit grid)
+  property integer arc_detail => redirect(getArcDetail,setArcDetail);
+  default arc_detail = -1;
 };
 
 #endif

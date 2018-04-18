@@ -187,10 +187,12 @@ namespace xtal {
 
     FloatArray *m_pBsplCoeff;
     
+  public:
     float calcIpolBspl3(const Vector3F &pos) const;
     Vector3F calcIpolBspl3Diff(const Vector3F &pos) const;
     Vector3F calcIpolBspl3DscDiff(const Vector3F &pos) const;
 
+  private:
     std::complex<float> calc_cm2(int i, int N)
     {
       int ii;
@@ -218,7 +220,36 @@ namespace xtal {
     
     void divideAndDraw(DisplayContext *pdl, const Vector3F &v0, const Vector3F &v1, float isolev, const Vector3F &pln);
 
+    void divideDraw2(DisplayContext *pdl, const Vector3F &v0, const Vector3F &v1, int ipln);
+
+    float m_isolev;
+
+    int m_triTab2[16][4];
+
+  private:
+    int m_nArcDet;
     float m_dArcMax;
+
+  public:
+    void setArcDetail(int ndet) {
+      m_nArcDet = ndet;
+      if (ndet>0)
+        m_dArcMax = 1.0/float(ndet);
+      else
+        m_dArcMax = -1.0;
+      super_t::invalidateDisplayCache();
+    }
+
+    int getArcDetail() const {
+      return m_nArcDet;
+      /*
+      if (m_dArcMax<=0.0)
+        return -1;
+      else
+        return int(1.0/m_dArcMax);
+        */
+    }
+
   };
 
 }

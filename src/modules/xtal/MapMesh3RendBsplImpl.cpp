@@ -429,6 +429,263 @@ void MapMesh3Renderer::divideAndDraw(DisplayContext *pdl, const Vector3F &v0, co
   }
 }
 
+class DivideDraw
+{
+public:
+  float m_r;
+  int m_ipln;
+  MapMesh3Renderer *m_ppar;
+  Vector3F m_v0;
+  float m_isolev;
+
+  Vector3F getVth(float th) const
+  {
+    if (m_ipln==0)
+      return Vector3F(m_r*cos(th), m_r*sin(th), 0.0f);
+    else if (m_ipln==1)
+      return Vector3F(0.0f, m_r*cos(th), m_r*sin(th));
+    else /*if (m_ipln==2)*/
+      return Vector3F(m_r*sin(th), 0.0f, m_r*cos(th));
+  }
+
+  Vector3F getDvth(float th) const
+  {
+    if (m_ipln==0)
+      return Vector3F(-m_r*sin(th), m_r*cos(th), 0.0f);
+    else if (m_ipln==1)
+      return Vector3F(0.0f, -m_r*sin(th), m_r*cos(th));
+    else /*if (m_ipln==2)*/
+      return Vector3F(m_r*cos(th), 0.0f, -m_r*sin(th));
+    //return vth;
+  }
+
+  inline Vector3F getV(float th) const
+  {
+    return m_v0 + getVth(th);
+  }
+
+  inline float getF(float th) const
+  {
+    return m_ppar->calcIpolBspl3(getV(th)) - m_isolev;
+  }
+
+  bool findRootNrImpl1(float thL, float thM, float thU, float &rval)
+  {
+    float fth, dfth;
+    Vector3F vth, dfdv, dvdth;
+    
+    // initial estimate: thM (=(thL+thU)/2)
+    float th = thM;
+    
+    bool bConv = false;
+    for (int i=0; i<10; ++i) {
+      vth = getV(th);
+      fth = m_ppar->calcIpolBspl3(vth)-m_isolev;
+      if (qlib::isNear4(fth, 0.0f)) {
+        bConv = true;
+        break;
+      }
+      
+      dfdv = m_ppar->calcIpolBspl3Diff(vth);
+      dvdth = getDvth(th);
+      dfth = dvdth.dot( dfdv );
+      
+      th += -fth/dfth;
+      
+      if (th<thL || thU<th) {
+        // th goes out of the range (thU,thL)
+        //  --> root not found
+        return false;
+      }
+    }
+    
+    rval = th;
+    return true;
+  }
+
+  bool findRootImpl1(float thL, float thU, float &rval)
+  {
+    float thM = (thL+thU)*0.5f;
+    float fthL = getF(thL);
+    float fthU = getF(thU);
+    
+    if (fthL * fthU>0.0)
+      return false;
+    
+    float th; // = 0.0f;
+    
+    // root should exist between thL & thU
+    
+    for (int i=0; i<10; ++i) {
+      if (findRootNrImpl1(thL, thM, thU, th)) {
+        //rval = getV(th);
+        rval = th;
+        return true;
+      }
+      
+      float fthM = getF(thM);
+      
+      if (fthL*fthM<0) {
+        // find between thL & thM
+        thU = thM;
+      }
+      else {
+        // find between thM & thU
+        thL = thM;
+      }
+      thM = (thL + thU)*0.5f;
+    }
+    
+    // ERROR!! not converged
+    return false;
+  }
+  
+  bool findRootImpl2(float &sol1, float &sol2)
+  {
+    const int ndiv = 8;
+
+    int i;
+    float th, thU, thL;
+    float dth = M_PI*2.0/float(ndiv);
+
+    std::vector<float> roots;
+    
+    for (i=0; i<ndiv; ++i) {
+      thL = i*dth;
+      thU = thL + dth;
+      if (findRootImpl1(thL, thU, th)) {
+        roots.push_back(th);
+      }
+    }
+
+    if (roots.size()==2) {
+      sol1 = roots[0];
+      sol2 = roots[1];
+      return true;
+    }
+    
+    MB_DPRINTLN("%d root soln found.", roots.size());
+    for (i=0; i<100; ++i) {
+      th = i* (2.0*M_PI/100.0);
+      MB_DPRINTLN("%d %f %f %f", i, th, qlib::toDegree(th), getF(th));
+    }
+
+    for (i=0; i<ndiv; ++i) {
+      thL = i*dth;
+      thU = thL + dth;
+      if (findRootImpl1(thL, thU, th)) {
+        //roots.push_back(th);
+      }
+    }
+
+    return false;
+    
+  }
+
+};
+
+
+void MapMesh3Renderer::divideDraw2(DisplayContext *pdl, const Vector3F &v0, const Vector3F &v1, int ipln)
+{
+  DivideDraw dd;
+
+  dd.m_r = m_dArcMax;
+  dd.m_ipln = ipln;
+  dd.m_isolev = m_isolev;
+  dd.m_ppar = this;
+
+  const int ndiv = 8;
+
+  float sol1, sol2;
+  float th, prev_th;
+  Vector3F vi;
+
+  std::vector<Vector3F> verts;
+
+  dd.m_v0 = v0;
+  if (!dd.findRootImpl2(sol1, sol2)) {
+    return;
+  }
+
+  prev_th = sol1;
+  vi = dd.getV(prev_th);
+  verts.push_back(vi);
+
+  int ntry = int( (v0-v1).length()/m_dArcMax ) * 10;
+
+  float fsol1, fsol2;
+  bool bOK = false;
+  for (int i=0; i<ntry; i++) {
+    if ((vi-v1).length()<m_dArcMax) {
+      bOK = true;
+      break;
+    }
+    
+    dd.m_v0 = vi;
+    if (!dd.findRootImpl2(fsol1, fsol2)) {
+      return;
+    }
+    if (qlib::isNear4<float>(qlib::abs<float>(fsol1-prev_th), M_PI))
+      prev_th = fsol2;
+    else
+      prev_th = fsol1;
+
+    vi = dd.getV(prev_th);
+    verts.push_back(vi);
+  }
+
+  if (bOK) {
+    Vector3F prev = v0;
+    BOOST_FOREACH (const Vector3F &v, verts) {
+      pdl->vertex(prev.x(), prev.y(), prev.z());
+      pdl->vertex(v.x(), v.y(), v.z());
+      prev = v;
+    }
+    pdl->vertex(prev.x(), prev.y(), prev.z());
+    pdl->vertex(v1.x(), v1.y(), v1.z());
+    return;
+  }
+
+  verts.clear();
+  prev_th = sol2;
+  vi = dd.getV(prev_th);
+  verts.push_back(vi);
+  bOK = false;
+
+  for (int i=0; i<ntry; i++) {
+    if ((vi-v1).length()<m_dArcMax) {
+      bOK = true;
+      break;
+    }
+    
+    dd.m_v0 = vi;
+    if (!dd.findRootImpl2(fsol1, fsol2)) {
+      return;
+    }
+    if (qlib::isNear4<float>(qlib::abs<float>(fsol1-prev_th), M_PI))
+      prev_th = fsol2;
+    else
+      prev_th = fsol1;
+
+    vi = dd.getV(prev_th);
+    verts.push_back(vi);
+  }
+
+  if (bOK) {
+    Vector3F prev = v0;
+    BOOST_FOREACH (const Vector3F &v, verts) {
+      pdl->vertex(prev.x(), prev.y(), prev.z());
+      pdl->vertex(v.x(), v.y(), v.z());
+      prev = v;
+    }
+    pdl->vertex(prev.x(), prev.y(), prev.z());
+    pdl->vertex(v1.x(), v1.y(), v1.z());
+    return;
+  }
+
+  return;
+}
+
 /// File rendering/Generate display list (legacy interface)
 void MapMesh3Renderer::renderImplTest2(DisplayContext *pdl)
 {
@@ -442,22 +699,6 @@ void MapMesh3Renderer::renderImplTest2(DisplayContext *pdl)
 
   // setup mol boundry info (if needed)
   setupMolBndry();
-
-  bool bOrgChg = false;
-  if (!m_mapStPos.equals(m_texStPos)) {
-    // texture origin changed --> regenerate texture
-    bOrgChg = true;
-  }
-
-  bool bSizeChg = false;
-
-  if (m_maptmp.cols()!=getDspSize().x() ||
-      m_maptmp.rows()!=getDspSize().y() ||
-      m_maptmp.secs()!=getDspSize().z()) {
-    // texture size changed --> regenerate texture/VBO
-    m_maptmp.resize(getDspSize().x(), getDspSize().y(), getDspSize().z());
-    bSizeChg = true;
-  }
 
   const int ncol = m_dspSize.x();
   const int nrow = m_dspSize.y();
@@ -477,7 +718,7 @@ void MapMesh3Renderer::renderImplTest2(DisplayContext *pdl)
   if (m_pBsplCoeff==NULL) {
     HKLList *pHKLList = pXtal->getHKLList();
     if (pHKLList==NULL) {
-      // TO DO: impl
+      // TO DO: XXX implementation
       return;
     }
 
@@ -489,7 +730,7 @@ void MapMesh3Renderer::renderImplTest2(DisplayContext *pdl)
     // conv hkl list to recpi array
     pHKLList->convToArrayHerm(recipAry, 0.0, -1.0);
 
-    // apply filter
+    // apply filter and generate 3rd-order b-spline coeffs
     int i,j,k;
     for (k=0; k<nc; k++)
       for (j=0; j<nb; j++)
@@ -511,6 +752,7 @@ void MapMesh3Renderer::renderImplTest2(DisplayContext *pdl)
   float val[4];
   Vector3F vec[4];
   float isolev = float( pMap->getRmsdDensity() * getSigLevel() );
+  m_isolev = isolev;
 
   pdl->color(getColor());
   pdl->startLines();
@@ -518,6 +760,8 @@ void MapMesh3Renderer::renderImplTest2(DisplayContext *pdl)
   // plane normal vector;
   Vector3F pln;
 
+  int ii;
+  
   for (k=0; k<nsec-1; k++)
     for (j=0; j<nrow-1; j++)
       for (i=0; i<ncol-1; i++){
@@ -534,8 +778,8 @@ void MapMesh3Renderer::renderImplTest2(DisplayContext *pdl)
           quint8 mask = 1U;
           const int ipl4 = iplane*4;
 
-          for (int ii=0; ii<4; ++ii) {
-
+          for (ii=0; ii<4; ++ii) {
+            
             const int iid = ii + ipl4;
             int ivx = i + m_idel[iid][0]+stcol;
             int ivy = j + m_idel[iid][1]+strow;
@@ -553,29 +797,47 @@ void MapMesh3Renderer::renderImplTest2(DisplayContext *pdl)
             mask = mask << 1;
           }
 
-          int iv0 = m_triTable[flag][0];
-          int iv1 = m_triTable[flag][1];
-          if (iv0<0)
+          if (flag==0||flag==15) {
+            // no intersections
             continue;
+          }
+
+            /*
+          if (flag==5 || flag==10) {
+            //0101 == 0100 {1,2} + 0001 {0,3};
+            //1010 == 1000 {2,3} + 0010 {0,1};
+
+            LOG_DPRINTLN("MapMesh> Wanring: section flag %d not implemented!!", flag);
+            continue;
+          }*/
+        
+          for (ii=0; ii<2; ii++) {
+            int iv0 = m_triTab2[flag][ii*2+0];
+            int iv1 = m_triTab2[flag][ii*2+1];
+            if (iv0<0)
+              break;
           
 
-          Vector3F v0, v1;
-          if (getXValFNr(val[iv0], vec[iv0], val[(iv0+1)%4], vec[(iv0+1)%4], isolev, v0) &&
-              getXValFNr(val[iv1], vec[iv1], val[(iv1+1)%4], vec[(iv1+1)%4], isolev, v1) ){
-            divideAndDraw(pdl, v0, v1, isolev, pln);
-            //pdl->vertex(v0.x(), v0.y(), v0.z());
-            //pdl->vertex(v1.x(), v1.y(), v1.z());
+            Vector3F v0, v1;
+            if (getXValFNr(val[iv0], vec[iv0], val[(iv0+1)%4], vec[(iv0+1)%4], isolev, v0) &&
+                getXValFNr(val[iv1], vec[iv1], val[(iv1+1)%4], vec[(iv1+1)%4], isolev, v1) ){
+              if (m_dArcMax>0.0f) {
+                //divideAndDraw(pdl, v0, v1, isolev, pln);
+                divideDraw2(pdl, v0, v1, iplane);
+              }
+              else {
+                pdl->vertex(v0.x(), v0.y(), v0.z());
+                pdl->vertex(v1.x(), v1.y(), v1.z());
+              }
+            }
+            else {
+              // ERROR!! Newton method does not converge
+              v0 = getXValF(val[iv0], vec[iv0], val[(iv0+1)%4], vec[(iv0+1)%4], isolev);
+              v1 = getXValF(val[iv1], vec[iv1], val[(iv1+1)%4], vec[(iv1+1)%4], isolev);
+              pdl->vertex(v0.x(), v0.y(), v0.z());
+              pdl->vertex(v1.x(), v1.y(), v1.z());
+            }
           }
-          else {
-            v0 = getXValF(val[iv0], vec[iv0], val[(iv0+1)%4], vec[(iv0+1)%4], isolev);
-            v1 = getXValF(val[iv1], vec[iv1], val[(iv1+1)%4], vec[(iv1+1)%4], isolev);
-            pdl->vertex(v0.x(), v0.y(), v0.z());
-            pdl->vertex(v1.x(), v1.y(), v1.z());
-          }
-          /*
-          Vector3F v0 = getXValFBsec(val[iv0], vec[iv0], val[(iv0+1)%4], vec[(iv0+1)%4], isolev);
-          Vector3F v1 = getXValFBsec(val[iv1], vec[iv1], val[(iv1+1)%4], vec[(iv1+1)%4], isolev);
-           */
         }
       }
 
