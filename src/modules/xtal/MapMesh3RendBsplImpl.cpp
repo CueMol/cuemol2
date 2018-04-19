@@ -276,7 +276,7 @@ Vector3F MapMesh3Renderer::getXValFBsec(float val0, const Vector3F &vec0, float 
   }
 }
 
-bool MapMesh3Renderer::getXValFNrImpl1(const Vector3F &vec0, const Vector3F &dv, float rho, float isolev, float &rval)
+bool MapMesh3Renderer::getXValFNrImpl1(const Vector3F &vec0, const Vector3F &dv, float rho, float &rval)
 {
   float frho, dfrho;
   Vector3F vrho, dvrho;
@@ -285,7 +285,7 @@ bool MapMesh3Renderer::getXValFNrImpl1(const Vector3F &vec0, const Vector3F &dv,
   bool bConv = false;
   for (i=0; i<10; ++i) {
     vrho = vec0 + dv.scale(rho);
-    frho = calcIpolBspl3(vrho)-isolev;
+    frho = calcIpolBspl3(vrho)-m_isolev;
     if (qlib::isNear4(frho, 0.0f)) {
       bConv = true;
       break;
@@ -307,53 +307,55 @@ bool MapMesh3Renderer::getXValFNrImpl1(const Vector3F &vec0, const Vector3F &dv,
   return true;
 }
 
-bool MapMesh3Renderer::getXValFNr(float val0, const Vector3F &vec0, float val1, const Vector3F &vec1, float isolev, Vector3F &rval)
+bool MapMesh3Renderer::getXValFNr(float val0, const Vector3F &vec0, float val1, const Vector3F &vec1, Vector3F &rval)
 {
   // init estim. by lin. intpol
   Vector3F dv = (vec1 - vec0);
 
-  float rho0 = (isolev-val0)/(val1-val0);
+  float rho0 = (m_isolev-val0)/(val1-val0);
   float rho2;
 
   float rho = rho0;
   float rhoL = 0.0f;
   float rhoU = 1.0f;
-  
-  int sign0 = (val0-isolev<0)?-1:1;
-  int sign1 = (val1-isolev<0)?-1:1;
+
+  float fL = val0-m_isolev;
+  float fU = val1-m_isolev;
 
   for (int i=0; i<10; ++i) {
-    if (getXValFNrImpl1(vec0, dv, rho, isolev, rho2)) {
+    if (getXValFNrImpl1(vec0, dv, rho, rho2)) {
       rval = vec0 + dv.scale(rho2);
       return true;
     }
 
-    float frho0 = calcIpolBspl3(vec0 + dv.scale(rho));
-    int signm = (frho0<isolev)?-1:1;
+    float frho0 = calcIpolBspl3(vec0 + dv.scale(rho)) - m_isolev;
   
-    if (sign0*signm>0) {
-      // find between mid & vec1
+    if (frho0*fU<0.0) {
+      // find between mid & rhoU
       rhoL = rho;
       rho = (rho + rhoU)/2.0;
+      fL = calcIpolBspl3(vec0 + dv.scale(rhoL)) - m_isolev;
     }
-    else {
-      // find between vec0 & mid
+    else if (frho0*fL<0.0) {
+      // find between rhoL & mid
       rhoU = rho;
       rho = (rho + rhoL)/2.0;
+      fU = calcIpolBspl3(vec0 + dv.scale(rhoU)) - m_isolev;
+    }
+    else {
+      MB_DPRINTLN("getXValFNr> inconsistent fL/fU");
+      break;
     }
   }
 
   {
     MB_DPRINTLN("XXX invalid %f", rho);
-    FILE *fp = fopen("tmp.txt", "w");
     for (int i=0; i<100; i++) {
       rho = float(i)/100.0f;
       Vector3F vrho = vec0 + dv.scale(rho);
       float frho = calcIpolBspl3(vrho);
-      fprintf(fp, "%d %f %f\n", i, rho, frho);
       MB_DPRINTLN("%d %f %f", i, rho, frho);
     }
-    fclose(fp);
     return false;
   }
 }
@@ -971,7 +973,7 @@ void MapMesh3Renderer::renderImplTest2(DisplayContext *pdl)
   int i, j, k;
 
   // calc b-spline coeffs
-  if (m_pBsplCoeff==NULL) {
+  if (m_bUseIntpol && m_pBsplCoeff==NULL) {
     HKLList *pHKLList = pXtal->getHKLList();
     if (pHKLList==NULL) {
       // TO DO: XXX implementation
@@ -1058,25 +1060,16 @@ void MapMesh3Renderer::renderImplTest2(DisplayContext *pdl)
             continue;
           }
 
-            /*
-          if (flag==5 || flag==10) {
-            //0101 == 0100 {1,2} + 0001 {0,3};
-            //1010 == 1000 {2,3} + 0010 {0,1};
-
-            LOG_DPRINTLN("MapMesh> Wanring: section flag %d not implemented!!", flag);
-            continue;
-          }*/
-        
           for (ii=0; ii<2; ii++) {
             int iv0 = m_triTab2[flag][ii*2+0];
             int iv1 = m_triTab2[flag][ii*2+1];
             if (iv0<0)
               break;
           
-
             Vector3F v0, v1;
-            if (getXValFNr(val[iv0], vec[iv0], val[(iv0+1)%4], vec[(iv0+1)%4], isolev, v0) &&
-                getXValFNr(val[iv1], vec[iv1], val[(iv1+1)%4], vec[(iv1+1)%4], isolev, v1) ){
+            if (m_bUseIntpol &&
+                getXValFNr(val[iv0], vec[iv0], val[(iv0+1)%4], vec[(iv0+1)%4], v0) &&
+                getXValFNr(val[iv1], vec[iv1], val[(iv1+1)%4], vec[(iv1+1)%4], v1) ){
               if (m_dArcMax>0.0f) {
                 divideAndDraw(pdl, v0, v1, iplane);
                 //divideDraw2(pdl, v0, v1, iplane);
@@ -1087,12 +1080,13 @@ void MapMesh3Renderer::renderImplTest2(DisplayContext *pdl)
               }
             }
             else {
-              // ERROR!! Newton method does not converge
+              // do not use intpol / ERROR!! Newton method does not converge
               v0 = getXValF(val[iv0], vec[iv0], val[(iv0+1)%4], vec[(iv0+1)%4], isolev);
               v1 = getXValF(val[iv1], vec[iv1], val[(iv1+1)%4], vec[(iv1+1)%4], isolev);
               pdl->vertex(v0.x(), v0.y(), v0.z());
               pdl->vertex(v1.x(), v1.y(), v1.z());
             }
+            
           }
         }
       }

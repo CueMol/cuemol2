@@ -213,9 +213,9 @@ namespace xtal {
     Vector3F getXValF(float val0, const Vector3F &vec0, float val1, const Vector3F &vec1, float isolev);
     Vector3F getXValFBsec(float val0, const Vector3F &vec0, float val1, const Vector3F &vec1, float isolev);
     //Vector3F getXValFNr(float val0, const Vector3F &vec0, float val1, const Vector3F &vec1, float isolev);
-    bool getXValFNr(float val0, const Vector3F &vec0, float val1, const Vector3F &vec1, float isolev, Vector3F &rval);
+    bool getXValFNr(float val0, const Vector3F &vec0, float val1, const Vector3F &vec1, Vector3F &rval);
 
-    bool getXValFNrImpl1(const Vector3F &vec0, const Vector3F &dv, float rho, float isolev, float &rval);
+    bool getXValFNrImpl1(const Vector3F &vec0, const Vector3F &dv, float rho, float &rval);
 
     
     //void divideAndDraw(DisplayContext *pdl, const Vector3F &v0, const Vector3F &v1, float isolev, const Vector3F &pln);
@@ -252,6 +252,21 @@ namespace xtal {
       else
         return int(1.0/m_dArcMax);
         */
+    }
+
+  private:
+    bool m_bUseIntpol;
+
+  public:
+    void setUseIntpol(bool v) {
+      if (m_bUseIntpol!=v) {
+        m_bUseIntpol = v;
+        super_t::invalidateDisplayCache();
+      }
+    }
+
+    bool isUseIntpol() const {
+      return m_bUseIntpol;
     }
 
   };

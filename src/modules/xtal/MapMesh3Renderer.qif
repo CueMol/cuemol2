@@ -37,6 +37,10 @@ runtime_class MapMesh3Renderer extends Map3Renderer
   property boolean spher_extent => redirect(isSphExt,setSphExt);
   default spher_extent = false;
 
+  /// Use map spline interpolation
+  property boolean use_intpol => redirect(isUseIntpol,setUseIntpol);
+  default use_intpol = false;
+
   /// Arc detail (max division no of a unit grid)
   property integer arc_detail => redirect(getArcDetail,setArcDetail);
   default arc_detail = -1;
