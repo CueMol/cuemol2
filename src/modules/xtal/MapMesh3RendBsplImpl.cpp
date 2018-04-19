@@ -731,7 +731,9 @@ public:
 };
 
 
-void MapMesh3Renderer::divideDraw2(DisplayContext *pdl, const Vector3F &v0, const Vector3F &v1, const Vector3F &vm, int ipln)
+void MapMesh3Renderer::divideDraw2(DisplayContext *pdl,
+                                   const Vector3F &v0, const Vector3F &v1, const Vector3F &vm,
+                                   int ipln)
 {
   DivideDraw dd;
 
@@ -743,43 +745,69 @@ void MapMesh3Renderer::divideDraw2(DisplayContext *pdl, const Vector3F &v0, cons
 
   const int ndiv = 8;
 
-  float sol1, sol2;
+  float sol[2];
   float th, prev_th;
   Vector3F vi;
 
-  std::vector<Vector3F> verts;
+  //std::vector<Vector3F> verts;
 
   dd.m_v0 = vm;
-  if (!dd.findBothRoot(sol1, sol2)) {
+  if (!dd.findBothRoot(sol[0], sol[1])) {
+    MB_DPRINTLN("divideDraw2> findBothRoot failed!!");
     return;
   }
 
+  /*
   if ( (dd.getV(sol1)-v1).length() > (dd.getV(sol2)-v1).length() )
     std::swap(sol1, sol2);
+   */
 
-  prev_th = sol1;
-  vi = dd.getV(prev_th);
-  verts.push_back(vi);
+  const int ntry = int( (v0-v1).length()/m_dArcMax ) * 100;
 
-  int ntry = int( (v0-v1).length()/m_dArcMax ) * 100;
+  for (int j=0; j<2; ++j) {
 
-  float fsol1, fsol2;
-  bool bOK = false;
-  for (int i=0; i<ntry; i++) {
-    if ((vi-v1).length()<m_dArcMax) {
-      bOK = true;
-      break;
-    }
-    
-    dd.m_v0 = vi;
-    if (!dd.findAnotherRoot(prev_th-M_PI, fsol2)) {
-      return;
-    }
-    prev_th = fsol2;
+    dd.m_v0 = vm;
+    prev_th = sol[j];
     vi = dd.getV(prev_th);
-    verts.push_back(vi);
-  }
+    //verts.push_back(vi);
+    pdl->vertex(vm.x(), vm.y(), vm.z());
+    pdl->vertex(vi.x(), vi.y(), vi.z());
 
+    pdl->vertex(vi.x(), vi.y(), vi.z());
+
+    float fsol;
+    bool bOK = false;
+    bool bV1;
+    for (int i=0; i<ntry; i++) {
+      if ((vi-v1).length()<m_dArcMax) {
+        bOK = true;
+        bV1 = true;
+        break;
+      }
+      if ((vi-v0).length()<m_dArcMax) {
+        bOK = true;
+        bV1 = false;
+        break;
+      }
+
+      dd.m_v0 = vi;
+      if (!dd.findAnotherRoot(prev_th-M_PI, fsol)) {
+        break;
+      }
+      prev_th = fsol;
+      vi = dd.getV(prev_th);
+      //verts.push_back(vi);
+      pdl->vertex(vi.x(), vi.y(), vi.z());
+      pdl->vertex(vi.x(), vi.y(), vi.z());
+    }
+
+    if (bV1)
+      pdl->vertex(v1.x(), v1.y(), v1.z());
+    else
+      pdl->vertex(v0.x(), v0.y(), v0.z());
+  }
+  
+  /*
   if (bOK) {
     Vector3F prev = v0;
     BOOST_FOREACH (const Vector3F &v, verts) {
@@ -790,12 +818,13 @@ void MapMesh3Renderer::divideDraw2(DisplayContext *pdl, const Vector3F &v0, cons
     pdl->vertex(prev.x(), prev.y(), prev.z());
     pdl->vertex(v1.x(), v1.y(), v1.z());
     return;
-  }
+  }*/
 
-  verts.clear();
+  /*
+  //verts.clear();
   prev_th = sol2;
   vi = dd.getV(prev_th);
-  verts.push_back(vi);
+  //verts.push_back(vi);
   bOK = false;
 
   for (int i=0; i<ntry; i++) {
@@ -826,9 +855,12 @@ void MapMesh3Renderer::divideDraw2(DisplayContext *pdl, const Vector3F &v0, cons
   }
 
   return;
+   */
 }
 
-void MapMesh3Renderer::divideAndDraw(DisplayContext *pdl, const Vector3F &v0, const Vector3F &v1, float isolev, int ipln)
+void MapMesh3Renderer::divideAndDraw(DisplayContext *pdl,
+                                     const Vector3F &v0, const Vector3F &v1,
+                                     int ipln)
 {
   Vector3F pln;
   if (ipln==0)
@@ -862,14 +894,14 @@ void MapMesh3Renderer::divideAndDraw(DisplayContext *pdl, const Vector3F &v0, co
     }
 
     frho = calcIpolBspl3(vrho);
-    if (qlib::isNear4(frho, isolev)) {
+    if (qlib::isNear4(frho, m_isolev)) {
       bConv = true;
       break;
     }
 
     dvrho2 = calcIpolBspl3Diff(vrho);
     dfrho = vn.dot( dvrho2 );
-    rho += -(frho-isolev)/dfrho;
+    rho += -(frho-m_isolev)/dfrho;
   }
 
   if (bConv) {
@@ -877,7 +909,7 @@ void MapMesh3Renderer::divideAndDraw(DisplayContext *pdl, const Vector3F &v0, co
     /*
     len = (v0-vrho).length();
     if (len>m_dArcMax)
-      divideAndDraw(pdl, v0, vrho, isolev, pln);
+      divideAndDraw(pdl, v0, vrho, m_isolev, pln);
     else {
       pdl->vertex(v0.x(), v0.y(), v0.z());
       pdl->vertex(vrho.x(), vrho.y(), vrho.z());
@@ -885,7 +917,7 @@ void MapMesh3Renderer::divideAndDraw(DisplayContext *pdl, const Vector3F &v0, co
     
     len = (v1-vrho).length();
     if (len>m_dArcMax)
-      divideAndDraw(pdl, vrho, v1, isolev, pln);
+      divideAndDraw(pdl, vrho, v1, m_isolev, pln);
     else {
       pdl->vertex(vrho.x(), vrho.y(), vrho.z());
       pdl->vertex(v1.x(), v1.y(), v1.z());
@@ -898,7 +930,7 @@ void MapMesh3Renderer::divideAndDraw(DisplayContext *pdl, const Vector3F &v0, co
     for (int i=0; i<100; i++) {
       rho = float(i)/100.0f;
       Vector3F vrho = vm + vn.scale(rho);
-      float frho = calcIpolBspl3(vrho) - isolev;
+      float frho = calcIpolBspl3(vrho) - m_isolev;
       fprintf(fp, "%d %f %f\n", i, rho, frho);
       MB_DPRINTLN("%d %f %f", i, rho, frho);
     }
@@ -1046,8 +1078,8 @@ void MapMesh3Renderer::renderImplTest2(DisplayContext *pdl)
             if (getXValFNr(val[iv0], vec[iv0], val[(iv0+1)%4], vec[(iv0+1)%4], isolev, v0) &&
                 getXValFNr(val[iv1], vec[iv1], val[(iv1+1)%4], vec[(iv1+1)%4], isolev, v1) ){
               if (m_dArcMax>0.0f) {
-                //divideAndDraw(pdl, v0, v1, isolev, pln);
-                divideDraw2(pdl, v0, v1, iplane);
+                divideAndDraw(pdl, v0, v1, iplane);
+                //divideDraw2(pdl, v0, v1, iplane);
               }
               else {
                 pdl->vertex(v0.x(), v0.y(), v0.z());

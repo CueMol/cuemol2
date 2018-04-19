@@ -218,9 +218,13 @@ namespace xtal {
     bool getXValFNrImpl1(const Vector3F &vec0, const Vector3F &dv, float rho, float isolev, float &rval);
 
     
-    void divideAndDraw(DisplayContext *pdl, const Vector3F &v0, const Vector3F &v1, float isolev, const Vector3F &pln);
+    //void divideAndDraw(DisplayContext *pdl, const Vector3F &v0, const Vector3F &v1, float isolev, const Vector3F &pln);
 
-    void divideDraw2(DisplayContext *pdl, const Vector3F &v0, const Vector3F &v1, int ipln);
+    void divideAndDraw(DisplayContext *pdl,
+                       const Vector3F &v0, const Vector3F &v1,
+                       int ipln);
+
+    void divideDraw2(DisplayContext *pdl, const Vector3F &v0, const Vector3F &v1, const Vector3F &vm, int ipln);
 
     float m_isolev;
 
