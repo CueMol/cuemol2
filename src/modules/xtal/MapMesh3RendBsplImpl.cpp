@@ -349,7 +349,7 @@ bool MapMesh3Renderer::getXValFNr(float val0, const Vector3F &vec0, float val1, 
   }
 
   {
-    MB_DPRINTLN("XXX invalid %f", rho);
+    MB_DPRINTLN("getXValFNr failed, rho=%f", rho);
     for (int i=0; i<100; i++) {
       rho = float(i)/100.0f;
       Vector3F vrho = vec0 + dv.scale(rho);
@@ -409,42 +409,6 @@ public:
     return m_ppar->calcIpolBspl3(getV(th)) - m_isolev;
   }
 
-  /*
-  bool findRootNrImpl1(float thL, float thM, float thU, float &rval)
-  {
-    float fth, dfth;
-    Vector3F vth, dfdv, dvdth;
-    
-    // initial estimate: thM (=(thL+thU)/2)
-    float th = thM;
-    
-    bool bConv = false;
-    for (int i=0; i<10; ++i) {
-      vth = getV(th);
-      fth = m_ppar->calcIpolBspl3(vth)-m_isolev;
-      if (isNear(fth, 0.0f)) {
-        bConv = true;
-        break;
-      }
-      
-      dfdv = m_ppar->calcIpolBspl3Diff(vth);
-      dvdth = getDvth(th);
-      dfth = dvdth.dot( dfdv );
-      
-      th += -fth/dfth;
-      
-      if (th<thL || thU<th) {
-        // th goes out of the range (thU,thL)
-        //  --> root not found
-        return false;
-      }
-    }
-    
-    rval = th;
-    return bConv;
-  }
-   */
-  
   bool findRootNrImpl2(float thM, float &rval, bool bnorm = true)
   {
     int i, j;
@@ -538,85 +502,6 @@ public:
     return false;
   }
 
-  /*
-  bool findRootImpl1(float thL, float thU, float &rval)
-  {
-    float thM = (thL+thU)*0.5f;
-    float fthL = getF(thL);
-    float fthU = getF(thU);
-    
-    if (fthL * fthU>0.0)
-      return false;
-    
-    float th; // = 0.0f;
-    
-    // root should exist between thL & thU
-    
-    for (int i=0; i<10; ++i) {
-      if (findRootNrImpl1(thL, thM, thU, th)) {
-        //rval = getV(th);
-        rval = th;
-        return true;
-      }
-      
-      float fthM = getF(thM);
-      
-      if (fthL*fthM<0) {
-        // find between thL & thM
-        thU = thM;
-      }
-      else {
-        // find between thM & thU
-        thL = thM;
-      }
-      thM = (thL + thU)*0.5f;
-    }
-    
-    // ERROR!! not converged
-    return false;
-  }
-  */
-  /*
-  bool findRootImpl2(float &sol1, float &sol2)
-  {
-    const int ndiv = 8;
-
-    int i;
-    float th, thU, thL;
-    float dth = M_PI*2.0/float(ndiv);
-
-    std::vector<float> roots;
-    
-    for (i=0; i<ndiv; ++i) {
-      thL = i*dth;
-      thU = thL + dth;
-      if (findRootImpl1(thL, thU, th)) {
-        roots.push_back(th);
-      }
-    }
-
-    if (roots.size()==2) {
-      sol1 = roots[0];
-      sol2 = roots[1];
-      return true;
-    }
-    
-    MB_DPRINTLN("%d root soln found.", roots.size());
-    for (i=0; i<100; ++i) {
-      th = i* (2.0*M_PI/100.0);
-      MB_DPRINTLN("%d %f %f %f", i, th, qlib::toDegree(th), getF(th));
-    }
-
-    for (i=0; i<ndiv; ++i) {
-      thL = i*dth;
-      thU = thL + dth;
-      if (findRootImpl1(thL, thU, th)) {
-        //roots.push_back(th);
-      }
-    }
-
-    return false;
-  }*/
 
   //////////
 
@@ -809,61 +694,233 @@ void MapMesh3Renderer::divideDraw2(DisplayContext *pdl,
       pdl->vertex(v0.x(), v0.y(), v0.z());
   }
   
-  /*
-  if (bOK) {
-    Vector3F prev = v0;
-    BOOST_FOREACH (const Vector3F &v, verts) {
-      pdl->vertex(prev.x(), prev.y(), prev.z());
-      pdl->vertex(v.x(), v.y(), v.z());
-      prev = v;
-    }
-    pdl->vertex(prev.x(), prev.y(), prev.z());
-    pdl->vertex(v1.x(), v1.y(), v1.z());
-    return;
-  }*/
+}
 
-  /*
-  //verts.clear();
-  prev_th = sol2;
-  vi = dd.getV(prev_th);
-  //verts.push_back(vi);
-  bOK = false;
+class DivideDrawLine
+{
+public:
+  int m_ipln;
+  Vector3F m_pln;
+  MapMesh3Renderer *m_ppar;
+  float m_isolev;
+  float m_eps;
 
-  for (int i=0; i<ntry; i++) {
-    if ((vi-v1).length()<m_dArcMax) {
-      bOK = true;
-      break;
+  Vector3F m_v0, m_dv, m_vn, m_vm;
+  float m_xi;
+  // float m_rho;
+
+  inline bool isNear(float f0, float f1) const {
+    float del = qlib::abs(f0-f1);
+    if (del<m_eps)
+      return true;
+    else
+      return false;
+  }
+
+  inline Vector3F getV(float rho) const
+  {
+    return m_vm + m_vn.scale(rho);
+  }
+
+  inline float getF(float rho) const
+  {
+    return m_ppar->calcIpolBspl3(getV(rho)) - m_isolev;
+  }
+
+  inline float getDF(float rho) const
+  {
+    Vector3F dfdv = m_ppar->calcIpolBspl3Diff(getV(rho));
+    return m_vn.dot( dfdv );
+  }
+
+  void setup(MapMesh3Renderer *ppar, const Vector3F &v0, const Vector3F &v1, float xi, int ipln)
+  {
+    m_ppar = ppar;
+    m_ipln = ipln;
+    if (ipln==0)
+      m_pln = Vector3F(0,0,1);
+    else if (ipln==1)
+      m_pln = Vector3F(1,0,0);
+    else /*if (ipln==2)*/
+      m_pln = Vector3F(0,1,0);
+    
+    m_v0 = v0;
+    m_dv = v1-v0;
+    m_xi = xi;
+    m_vm = v0 + m_dv.scale(xi);
+    m_vn = m_dv.cross(m_pln);
+  }
+
+  bool findPlusMinus(float &rval0, float &rval1)
+  {
+    float rho = 0.0f;
+    float Frho;
+    float dvlen = m_dv.length() * 0.1f;
+
+    int i, j;
+    
+    for (i=1; i<100; ++i) {
+      Frho = getF(rho);
+      if (qlib::abs(Frho)>m_eps*10.0f)
+        break;
+      rho += dvlen * float(i*i);
+      //rho += 0.1;
     }
     
-    dd.m_v0 = vi;
-    if (!dd.findAnotherRoot(prev_th-M_PI, fsol2)) {
-      return;
+    rval0 = rho;
+
+    if (i==100) {
+      MB_DPRINTLN("findPlusMinus> line search for |F(rho)|>dtol failed.");
     }
-    prev_th = fsol2;
-    vi = dd.getV(prev_th);
-    verts.push_back(vi);
+
+    float del;
+    if (i>1)
+      del = rho*2.0f;
+    else
+      del = dvlen;
+    
+    float rhop, Fp;
+    
+    for (j=1; j<10; ++j) {
+      rhop = rho + del * float(j*j);
+      Fp = getF(rhop);
+      if (Frho*Fp<0.0) {
+        rval1 = rhop;
+        return true;
+      }
+      
+      rhop = rho - del * float(j*j);
+      Fp = getF(rhop);
+      if (Frho*Fp<0.0) {
+        rval1 = rhop;
+        return true;
+      }
+    }
+
+    return false;
   }
 
-  if (bOK) {
-    Vector3F prev = v0;
-    BOOST_FOREACH (const Vector3F &v, verts) {
-      pdl->vertex(prev.x(), prev.y(), prev.z());
-      pdl->vertex(v.x(), v.y(), v.z());
-      prev = v;
+  bool findRootNrImpl2(float rhoM, float &rval, bool bdump = true)
+  {
+    int i, j;
+    float Frho, dFrho, mu;
+    
+    // initial estimate: rhoM
+    float rho = rhoM;
+    
+    bool bConv = false;
+    for (i=0; i<10; ++i) {
+      Frho = getF(rho);
+      if (isNear(Frho, 0.0f)) {
+        bConv = true;
+        break;
+      }
+      
+      dFrho = getDF(rho);
+      
+      mu = 1.0f;
+
+      if (bdump) {
+        for (j=0; j<10; ++j) {
+          float ftest1 = qlib::abs( getF(rho - (Frho/dFrho) * mu) );
+          float ftest2 = (1.0f-mu/4.0f) * qlib::abs(Frho);
+          if (ftest1<ftest2)
+            break;
+          mu = mu * 0.5f;
+        }
+        if (j == 10) {
+          // cannot determine dumping factor mu
+          //  --> does not use dumping
+          mu = 1.0f;
+        }
+      }
+      
+
+      rho += -(Frho/dFrho) * mu;
     }
-    pdl->vertex(prev.x(), prev.y(), prev.z());
-    pdl->vertex(v1.x(), v1.y(), v1.z());
-    return;
+    
+    rval = rho;
+    return bConv;
   }
 
-  return;
-   */
-}
+  /// Find root restricted between rhoL and rhoU (by Newton/Bisec hybrid method)
+  bool findRootNrRestr1(float rhoL, float rhoU, float &rval)
+  {
+    float rhoM = (rhoL+rhoU)*0.5f;
+    
+    float rho; // = 0.0f;
+    bool res;
+    
+    for (int i=0; i<10; ++i) {
+      res = findRootNrImpl2(rhoM, rho, true);
+      if (res) {
+        if (rhoL<=rho && rho<=rhoU) {
+          rval = rho;
+          return true;
+        }
+        else {
+          //MB_DPRINTLN("solution out of range --> retry");
+        }
+      }
+      
+      float fL = getF(rhoL);
+      float fU = getF(rhoU);
+      float fM = getF(rhoM);
+      
+      if (fL*fM<0 && fU*fM>0) {
+        // find between rhoL & rhoM
+        rhoU = rhoM;
+      }
+      else if (fL*fM>0 && fU*fM<0) {
+        // find between rhoM & rhoU
+        rhoL = rhoM;
+      }
+      else {
+        MB_DPRINTLN("solution is not between thL and thU --> ERROR!!");
+        return false;
+      }
+
+      rhoM = (rhoL + rhoU)*0.5f;
+    }
+    
+    // ERROR!! not converged
+    return false;
+  }
+};
 
 void MapMesh3Renderer::divideAndDraw(DisplayContext *pdl,
                                      const Vector3F &v0, const Vector3F &v1,
                                      int ipln)
 {
+  DivideDrawLine dd;
+  dd.m_isolev = m_isolev;
+  dd.m_eps = FLT_EPSILON*100.0f;
+  dd.setup(this, v0, v1, 0.5f, ipln);
+
+  float rhoL, rhoU;
+  if (!dd.findPlusMinus(rhoL, rhoU)) {
+    dd.findPlusMinus(rhoL, rhoU);
+    MB_DPRINTLN("XXX");
+    return;
+  }
+
+  if (rhoL>rhoU)
+    std::swap(rhoL, rhoU);
+  
+  float rho;
+  
+  if (!dd.findRootNrRestr1(rhoL, rhoU, rho)) {
+    dd.findRootNrRestr1(rhoL, rhoU, rho);
+    MB_DPRINTLN("XXX");
+    return;
+  }
+
+  Vector3F vrho = dd.m_vm + dd.m_vn.scale(rho);
+  divideDraw2(pdl, v0, v1, vrho, ipln);
+  return;
+
+  
+#if 0
   Vector3F pln;
   if (ipln==0)
     pln = Vector3F(0,0,1);
@@ -881,7 +938,6 @@ void MapMesh3Renderer::divideAndDraw(DisplayContext *pdl,
   Vector3F dv = v1-v0;
   Vector3F vm = v0 + dv.scale(xi);
   Vector3F vn = dv.cross(pln);
-  float rho = 0.0;
   float len = dv.length();
 
   bool bConv = false;
@@ -908,39 +964,22 @@ void MapMesh3Renderer::divideAndDraw(DisplayContext *pdl,
 
   if (bConv) {
     divideDraw2(pdl, v0, v1, vrho, ipln);
-    /*
-    len = (v0-vrho).length();
-    if (len>m_dArcMax)
-      divideAndDraw(pdl, v0, vrho, m_isolev, pln);
-    else {
-      pdl->vertex(v0.x(), v0.y(), v0.z());
-      pdl->vertex(vrho.x(), vrho.y(), vrho.z());
-    }
-    
-    len = (v1-vrho).length();
-    if (len>m_dArcMax)
-      divideAndDraw(pdl, vrho, v1, m_isolev, pln);
-    else {
-      pdl->vertex(vrho.x(), vrho.y(), vrho.z());
-      pdl->vertex(v1.x(), v1.y(), v1.z());
-    }*/
+    return;
   }
-  else {
 
-    MB_DPRINTLN("XXX invalid %f", rho);
-    FILE *fp = fopen("tmp.txt", "w");
-    for (int i=0; i<100; i++) {
-      rho = float(i)/100.0f;
-      Vector3F vrho = vm + vn.scale(rho);
-      float frho = calcIpolBspl3(vrho) - m_isolev;
-      fprintf(fp, "%d %f %f\n", i, rho, frho);
-      MB_DPRINTLN("%d %f %f", i, rho, frho);
-    }
-    fclose(fp);
 
-    pdl->vertex(v0.x(), v0.y(), v0.z());
-    pdl->vertex(v1.x(), v1.y(), v1.z());
+  MB_DPRINTLN("divideAndDraw() not converged; rho=%f", rho);
+  for (int i=0; i<100; i++) {
+    rho = float(i)/100.0f;
+    Vector3F vrho = vm + vn.scale(rho);
+    float frho = calcIpolBspl3(vrho) - m_isolev;
+    MB_DPRINTLN("%d %f %f", i, rho, frho);
   }
+  
+  pdl->vertex(v0.x(), v0.y(), v0.z());
+  pdl->vertex(v1.x(), v1.y(), v1.z());
+#endif
+  
 }
 
 
