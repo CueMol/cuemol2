@@ -23,7 +23,7 @@ MapMesh3Renderer::MapMesh3Renderer()
      :  super_t()
 
 {
-  m_pBsplCoeff=NULL;
+//  m_pBsplCoeff=NULL;
   m_dArcMax = -1.0; //0.25;
   m_bUseIntpol = false;
   

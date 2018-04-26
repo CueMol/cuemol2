@@ -10,6 +10,8 @@
 #include "xtal.hpp"
 #include "Map3Renderer.hpp"
 
+#include "MapBsplIpol.hpp"
+
 #include <qlib/Vector3I.hpp>
 #include <qlib/Array.hpp>
 
@@ -185,6 +187,9 @@ namespace xtal {
     
     ///////////////////////////////////////////////////////////////
 
+    MapBsplIpol m_ipol;
+
+/*
     FloatArray *m_pBsplCoeff;
     
   public:
@@ -210,13 +215,13 @@ namespace xtal {
 
     }
 
-    Vector3F getXValF(float val0, const Vector3F &vec0, float val1, const Vector3F &vec1, float isolev);
     Vector3F getXValFBsec(float val0, const Vector3F &vec0, float val1, const Vector3F &vec1, float isolev);
     //Vector3F getXValFNr(float val0, const Vector3F &vec0, float val1, const Vector3F &vec1, float isolev);
     bool getXValFNr(float val0, const Vector3F &vec0, float val1, const Vector3F &vec1, Vector3F &rval);
 
     bool getXValFNrImpl1(const Vector3F &vec0, const Vector3F &dv, float rho, float &rval);
-
+*/
+    Vector3F getXValF(float val0, const Vector3F &vec0, float val1, const Vector3F &vec1, float isolev);
     
     //void divideAndDraw(DisplayContext *pdl, const Vector3F &v0, const Vector3F &v1, float isolev, const Vector3F &pln);
 
