@@ -1,0 +1,67 @@
+// -*-Mode: C++;-*-
+//
+// Generate/Render the contour surface of ScalarObject (ver.2)
+//
+
+#ifndef MAP_IPOLSURF2_RENDERER_QIF_INCLUDED
+#define MAP_IPOLSURF2_RENDERER_QIF_INCLUDED
+
+#include "Map3Renderer.qif"
+#include <modules/molstr/SelCommand.qif>
+
+runtime_class MapIpolSurf2Renderer extends Map3Renderer
+{
+  client_hdr "MapIpolSurf2Renderer.hpp";
+  client_name xtal::MapIpolSurf2Renderer;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  /// Override the default color
+  property object<AbstractColor$> color => redirect(getColor, setColor);
+  default color = gfx::SolidColor::createRGB(1.0, 1.0, 1.0);
+
+  /// Automatically update the map center as view center (only in mouseUp event)
+  property boolean autoupdate => redirect(isAutoUpdate,setAutoUpdate);
+  default autoupdate = false;
+
+  /// Automatically update (including mouse drag event)
+  property boolean dragupdate => redirect(isDragUpdate,setDragUpdate);
+  default dragupdate = false;
+
+  property boolean cullface => redirect(isCullFace, setCullFace);
+  default cullface = false;
+
+  /// Mesh drawing mode
+  enumdef drawmode {
+    fill = xtal::MapIpolSurf2Renderer::MSRDRAW_FILL;
+    line = xtal::MapIpolSurf2Renderer::MSRDRAW_LINE;
+    point = xtal::MapIpolSurf2Renderer::MSRDRAW_POINT;
+  }
+  property enum drawmode => redirect(getDrawMode, setDrawMode);
+  default drawmode = "fill";
+
+  /// Line/Dot size in wireframe/dot mode
+  property real width => redirect(getLineWidth, setLineWidth);
+  default width = 1.2;
+
+  /// Max grid size (in grid unit; default=100x100x100 grid)
+  property real max_grids => redirect(getMaxGrids, setMaxGrids);
+  default max_grids = 100;
+
+  /// Max extent (in angstrom unit)
+  property real maxExtent => redirect(getMaxExtent, XXX) (readonly);
+
+  /// Convert to MolSurfObj
+  object<Object$> generateSurfObj();
+
+  //////////
+
+  property integer omp_thr => redirect(getOmpThr, setOmpThr);
+  default omp_thr = -1;
+
+};
+
+#endif
+

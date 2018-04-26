@@ -19,10 +19,9 @@
 #  include "CudaBSharpTool.qif"
 #endif
 
-#include "MapMeshRenderer.qif"
-#include "MapSurfRenderer.qif"
-
 #include "MapMesh3Renderer.qif"
+
+#include "MapIpolSurf2Renderer.qif"
 
 #ifdef USE_OPENGL
 #  include "GLSLMapVolRenderer.qif"
@@ -48,20 +47,19 @@ module xtal
   CudaBSharpTool;
 #endif
 
-  MapRenderer;
-
   Map3Renderer;
   MapMesh3Renderer;
-
-  MapSurfRenderer;
+  MapSurf2Renderer;
 
 #ifdef USE_OPENGL
+  // for GLSLMapVolRenderer
+  MapRenderer;
+
   GLSLMapVolRenderer;
   GLSLMapMesh3Renderer;
   GLSLMapSurf2Renderer;
 #endif
 
-  MapSurf2Renderer;
-
+  MapIpolSurf2Renderer;
 };
 

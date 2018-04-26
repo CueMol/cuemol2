@@ -152,10 +152,10 @@ namespace xtal {
       
       {
         MB_DPRINTLN("getXValFNr failed, rho=%f", rho);
-        for (int i=0; i<100; i++) {
+        for (int i=0; i<=100; i++) {
           rho = float(i)/100.0f;
           Vector3F vrho = vec0 + dv.scale(rho);
-          float frho = m_pipol->calcAt(vrho);
+          float frho = m_pipol->calcAt(vrho) - m_isolev;
           MB_DPRINTLN("%d %f %f", i, rho, frho);
         }
         return false;

@@ -8,12 +8,14 @@
 
 #include "surface.hpp"
 #include <qlib/Vector4D.hpp>
+#include <qlib/Vector3F.hpp>
 #include <qlib/Array.hpp>
 #include <qlib/LTypes.hpp>
 
 namespace surface {
 
   using qlib::Vector4D;
+  using qlib::Vector3F;
 
   class MSVert
   {
@@ -52,6 +54,16 @@ namespace surface {
     }
 
     MSVert(const Vector4D &v, const Vector4D &n)
+      : x((float)v.x()), y((float)v.y()), z((float)v.z()),
+        nx((float)n.x()), ny((float)n.y()), nz((float)n.z()),
+        info(0)
+#ifdef USE_VERT_TYPE_ID
+        ,ntype(0)
+#endif
+    {
+    }
+
+    MSVert(const Vector3F &v, const Vector3F &n)
       : x((float)v.x()), y((float)v.y()), z((float)v.z()),
         nx((float)n.x()), ny((float)n.y()), nz((float)n.z()),
         info(0)

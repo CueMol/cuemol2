@@ -21,10 +21,11 @@
 #  include "GLSLMapMesh3Renderer.hpp"
 #  include "GLSLMapSurf2Renderer.hpp"
 #else
-#  include "MapMeshRenderer.hpp"
+#  include "MapMesh3Renderer.hpp"
 #endif
 
 #include "MapSurf2Renderer.hpp"
+#include "MapIpolSurf2Renderer.hpp"
 
 extern void xtal_regClasses();
 extern void xtal_unregClasses();
@@ -47,16 +48,17 @@ bool init()
   QdfDenMapReader::regClass();
   
   RendererFactory *pRF = RendererFactory::getInstance();
-  pRF->regist<MapSurfRenderer>();
+  // pRF->regist<MapSurfRenderer>();
 
 #ifdef USE_OPENGL
   pRF->regist<GLSLMapVolRenderer>();
   pRF->regist<GLSLMapMesh3Renderer>();
   pRF->regist<GLSLMapSurf2Renderer>();
 #else
-  pRF->regist<MapMeshRenderer>();
+  pRF->regist<MapMesh3Renderer>();
   pRF->regist<MapSurf2Renderer>();
 #endif
+  pRF->regist<MapIpolSurf2Renderer>();
 
   StreamManager *pSM = StreamManager::getInstance();
   pSM->registReader<CCP4MapReader>();
