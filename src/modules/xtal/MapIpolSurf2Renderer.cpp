@@ -217,6 +217,23 @@ inline float calcNormScore(const Vector3F &v0, const Vector3F &v1, const Vector3
   return qlib::abs(nav.dot(fav));
 }
 
+inline Vector3F calcNorm(const Vector3F &v1, const Vector3F &v2, const Vector3F &v3)
+{
+  Vector3F tmp = (v2-v1).cross(v3-v1);
+  return tmp;
+  //return tmp.normalize();
+}
+
+inline bool checkSide(const Vector3F &v1, const Vector3F &v2, const Vector3F &v3, const Vector3F &vcom)
+{
+  Vector3F vn = calcNorm(v1, v2, v3);
+  float det = vn.dot(vcom-v1);
+  if (det>0.0f)
+    return true;
+  else
+    return false;
+}
+
 void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
 {
   ScalarObject *pMap = m_pCMap;
@@ -430,31 +447,36 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
     h1 = cgm.next(h1);
     Vector3F v11 = convToV3F( cgm.point( cgm.target(h1) ) );
 
-    Vector3F n00 = calcNorm(v00);
-    Vector3F n01 = calcNorm(v01);
-    Vector3F n10 = calcNorm(v10);
-    Vector3F n11 = calcNorm(v11);
-
     //float q0 = radratio(v00, v10, v01) + radratio(v00, v10, v11);
     //float q1 = radratio(v01, v11, v00) + radratio(v01, v11, v10);
 
     //float q0 = qlib::min( minangl(v00, v10, v01), minangl(v00, v10, v11) );
     //float q1 = qlib::min( minangl(v01, v11, v00), minangl(v01, v11, v10) );
 
+    /*
+    Vector3F n00 = calcNorm(v00);
+    Vector3F n01 = calcNorm(v01);
+    Vector3F n10 = calcNorm(v10);
+    Vector3F n11 = calcNorm(v11);
+
     float q0 =
       calcNormScore(v00, v10, v01,
                     n00, n10, n01) +
         calcNormScore(v00, v10, v11,
                       n00, n10, n11);
-
     float q1 =
       calcNormScore(v01, v11, v00,
                     n01, n11, n00) +
         calcNormScore(v01, v11, v10,
                       n01, n11, n10);
+     */
 
-    if (q0<q1) {
-      MB_DPRINTLN("flip tri (q0=%f, q1=%f)", q0, q1);
+    Vector3F vcom = (v00+v01+v10+v11).scale(0.25f);
+
+    if (checkSide(v00, v01, v10, vcom)) {
+
+      //if (q0<q1) {
+      //MB_DPRINTLN("flip tri (q0=%f, q1=%f)", q0, q1);
       //cgm.remove_edge();
       //cgm.add_edge();
       pdl->color(1.0, 0.0, 0.0);
