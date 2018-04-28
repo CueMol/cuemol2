@@ -142,9 +142,9 @@ namespace xtal {
 
   private:
 
-    void renderImpl(DisplayContext *pdl);
+    //void renderImpl(DisplayContext *pdl);
 
-    void marchCube(DisplayContext *pdl, int fx, int fy, int fz);
+    //void marchCube(DisplayContext *pdl, int fx, int fy, int fz);
 
     void getVertexColor(Vector4D &rfColor, Vector4D &rfPosition, Vector4D &rfNormal);
     Vector4D getNormal(const Vector4D &rfNormal,bool,bool,bool);

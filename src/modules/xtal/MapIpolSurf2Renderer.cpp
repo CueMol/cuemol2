@@ -21,13 +21,219 @@
 
 #include <CGAL/Simple_cartesian.h>
 #include <CGAL/Surface_mesh.h>
-#include <CGAL/Subdivision_method_3.h>
+//#include <CGAL/Polygon_mesh_processing/refine.h>
+#include <CGAL/Polygon_mesh_processing/remesh.h>
 
 using namespace xtal;
 using qlib::Matrix4D;
 using qlib::Matrix3D;
 using qsys::ScrEventManager;
 using molstr::AtomIterator;
+
+class FindProjSurf
+{
+public:
+  MapBsplIpol *m_pipol;
+  Vector3F m_v0, m_dir;
+  float m_isolev;
+  float m_eps;
+
+  inline bool isNear(float f0, float f1) const {
+    float del = qlib::abs(f0-f1);
+    if (del<m_eps)
+      return true;
+    else
+      return false;
+  }
+
+  inline Vector3F getV(float rho) const
+  {
+    return m_v0 + m_dir.scale(rho);
+  }
+
+  inline float getF(float rho) const
+  {
+    return m_pipol->calcAt(getV(rho)) - m_isolev;
+  }
+
+  inline float getDF(float rho) const
+  {
+    Vector3F dfdv = m_pipol->calcDiffAt(getV(rho));
+    return m_dir.dot( dfdv );
+  }
+
+  inline Vector3F calcNorm(const Vector3F &v) const
+  {
+    Vector3F rval = m_pipol->calcDiffAt(v);
+    rval.normalizeSelf();
+    return rval;
+  }
+
+  inline void setup(const Vector3F &vini)
+  {
+    m_v0 = vini;
+    m_dir = calcNorm(vini);
+  }
+
+  bool findPlusMinus(float &del, bool &bSol)
+  {
+    del = 0.0f;
+    float F0 = getF(del);
+    if (isNear(F0, 0.0f)) {
+      bSol = true;
+      return true;
+    }
+    
+    bSol = false;
+    int i;
+
+    if (F0>0.0) {
+      del = -0.1;
+      for (i=0; i<10; ++i) {
+        if (F0*getF(del)<0.0f)
+          return true;
+        del -= 0.1;
+      }
+    }
+    else {
+      del = 0.1;
+      for (i=0; i<10; ++i) {
+        if (F0*getF(del)<0.0f)
+          return true;
+        del += 0.1;
+      }
+    }
+
+    return false;
+  }
+
+  bool solve(float &rval)
+  {
+    bool bSol;
+    float del;
+
+    if (!findPlusMinus(del, bSol)) {
+      findPlusMinus(del, bSol);
+      return false;
+    }
+
+    if (bSol) {
+      rval = 0.0f;
+      return true;
+    }
+
+    float rhoL = 0.0f;
+    float rhoU = del;
+    
+    if (rhoL>rhoU)
+      std::swap(rhoL, rhoU);
+
+    if (findRoot(rhoL, rhoU, rval)) {
+      return true;
+    }
+      
+    findRoot(rhoL, rhoU, rval);
+    return false;
+  }
+
+  bool findRoot(float rhoL, float rhoU, float &rval) const
+  {
+    float fL = getF(rhoL);
+    float fU = getF(rhoU);
+
+    float rho;
+    float rho_sol;
+
+    //// Initial estimation
+    // Bisec
+    rho = (rhoL+rhoU) * 0.5f;
+    // FP
+    //rho = (rhoL*fU - rhoU*fL)/(fU-fL);
+    
+    for (int i=0; i<10; ++i) {
+      if (findRootNrImpl2(rho, rho_sol, true)) {
+        if (rho_sol<rhoL || rhoU<rho_sol) {
+          MB_DPRINTLN("ProjSurf.findRoot> root %f is not found in rhoL %f /rhoU %f", rho_sol, rhoL, rhoU);
+        }
+        rval = rho_sol;
+        return true;
+      }
+
+      // Newton method failed --> bracket the solution by Bisec/FP method
+      float frho = getF(rho);
+
+      // select the upper/lower bounds
+      if (frho*fU<0.0) {
+        // find between mid & rhoU
+        rhoL = rho;
+        fL = frho;
+      }
+      else if (frho*fL<0.0) {
+        // find between rhoL & mid
+        rhoU = rho;
+        fU = frho;
+      }
+      else {
+        MB_DPRINTLN("ProjSurf.findRoot> inconsistent fL/fU");
+        break;
+      }
+
+      // Update the solution estimate
+      // Bisection
+      rho = (rhoL + rhoU)*0.5;
+      // FP
+      //rho = (rhoL*fU - rhoU*fL)/(fU-fL);
+    }
+
+    MB_DPRINTLN("ProjSurf.findRoot> root not found");
+    return false;
+  }
+
+  bool findRootNrImpl2(float rho0, float &rval, bool bdump = true) const
+  {
+    int i, j;
+    float Frho, dFrho, mu;
+
+    // initial estimate: rho0
+    float rho = rho0;
+
+    bool bConv = false;
+    for (i=0; i<10; ++i) {
+      Frho = getF(rho);
+      if (isNear(Frho, 0.0f)) {
+        rval = rho;
+        bConv = true;
+        break;
+      }
+
+      dFrho = getDF(rho);
+
+      mu = 1.0f;
+
+      if (bdump) {
+        for (j=0; j<10; ++j) {
+          float ftest1 = qlib::abs( getF(rho - (Frho/dFrho) * mu) );
+          float ftest2 = (1.0f-mu/4.0f) * qlib::abs(Frho);
+          if (ftest1<ftest2)
+            break;
+          mu = mu * 0.5f;
+        }
+        if (j == 10) {
+          // cannot determine dumping factor mu
+          //  --> does not use dumping
+          mu = 1.0f;
+        }
+      }
+
+
+      rho += -(Frho/dFrho) * mu;
+    }
+
+    rval = rho;
+    return bConv;
+  }
+
+};
 
 /// default constructor
 MapIpolSurf2Renderer::MapIpolSurf2Renderer()
@@ -111,6 +317,7 @@ void MapIpolSurf2Renderer::preRender(DisplayContext *pdc)
     //   --> always don't draw backface (cull backface=true) for edge rendering
     pdc->setCullFace(true);
   }
+
 }
 
 void MapIpolSurf2Renderer::postRender(DisplayContext *pdc)
@@ -178,6 +385,7 @@ typedef CGAL::Simple_cartesian<double> K;
 typedef CGAL::Surface_mesh<K::Point_3> Mesh;
 typedef Mesh::Vertex_index vid_t;
 typedef Mesh::Face_index fid_t;
+namespace PMP = CGAL::Polygon_mesh_processing;
 
 inline Vector3F convToV3F(const K::Point_3 &src) {
   return Vector3F(src.x(), src.y(), src.z());
@@ -424,11 +632,90 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
       }
 
   //////////
+/*
+  pdl->setLineWidth(1.0);
+  pdl->setLighting(false);
+  pdl->startLines();
+  pdl->color(1,0,0);
+
+  for(Mesh::Edge_index ei : cgm.edges()){
+    Mesh::Halfedge_index h0 = cgm.halfedge(ei, 0);
+    Vector3F v00 = convToV3F( cgm.point( cgm.target(h0) ) );
+
+    Mesh::Halfedge_index h1 = cgm.halfedge(ei, 1);
+    Vector3F v10 = convToV3F( cgm.point( cgm.target(h1) ) );
+    
+    pdl->vertex(v00);
+    pdl->vertex(v10);
+  }
+  pdl->end();
+ */
+
+  int nv = cgm.number_of_vertices();
+  int nf = cgm.number_of_faces();
+  
+  MB_DPRINTLN("start remeshing nv=%d, nf=%d", nv, nf);
+  double target_edge_length = 0;
+  unsigned int nb_iter = 3;
+  PMP::isotropic_remeshing(
+    faces(cgm),
+    target_edge_length,
+    cgm,
+//    PMP::parameters::number_of_iterations(nb_iter).number_of_relaxation_steps(0));
+    PMP::parameters::number_of_iterations(nb_iter));
+
+  nv = cgm.number_of_vertices();
+  nf = cgm.number_of_faces();
+
+  MB_DPRINTLN("Remeshing done, nv=%d, nf=%d", nv, nf);
+
+
+  pdl->setLineWidth(1.0);
+  pdl->setLighting(false);
+  pdl->startLines();
+  pdl->color(1,1,0);
+
+  for(Mesh::Edge_index ei : cgm.edges()){
+    Mesh::Halfedge_index h0 = cgm.halfedge(ei, 0);
+    Vector3F v00 = convToV3F( cgm.point( cgm.target(h0) ) );
+
+    Mesh::Halfedge_index h1 = cgm.halfedge(ei, 1);
+    Vector3F v10 = convToV3F( cgm.point( cgm.target(h1) ) );
+    
+    pdl->vertex(v00);
+    pdl->vertex(v10);
+  }
+  pdl->end();
+  pdl->setLighting(true);
+  //return;
+
+  {
+    MB_DPRINTLN("Projecting vertices to surf");
+    float del;
+    FindProjSurf sol;
+    sol.m_pipol = &m_ipol;
+    sol.m_isolev = m_dLevel;
+    sol.m_eps = FLT_EPSILON*100.0f;
+    bool bSol;
+    
+    for(vid_t vd : cgm.vertices()){
+      Vector3F v00 = convToV3F( cgm.point( vd ) );
+      sol.setup(v00);
+      if (sol.solve(del)) {
+        Vector3F vnew = sol.getV(del);
+        cgm.point(vd) = convToCGP3(vnew);
+      }
+      else {
+        MB_DPRINTLN("proj failed.");
+      }
+    }
+    MB_DPRINTLN("done");
+  }
 
   K::Point_3 cgpt;
   Vector3F pt, norm;
 
-
+#if 0
   pdl->setLineWidth(2.0);
   pdl->setLighting(false);
   pdl->startLines();
@@ -501,7 +788,7 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
   pdl->end();
   pdl->setLighting(true);
   return;
-
+#endif
 
 /*
   pdl->color(gfx::SolidColor::createRGB(1.0, 0.0, 0.0));
@@ -530,18 +817,16 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
   //////////
 
   gfx::Mesh mesh;
-  int nv = cgm.number_of_vertices();
-  int nf = cgm.number_of_faces();
   mesh.init(nv, nf);
   mesh.color(getColor());
 
+  pdl->startLines();
   for(vid_t vd : cgm.vertices()){
     //std::cout << vd << std::endl;
-    cgpt = cgm.point(vd);
-    pt.x() = cgpt.x();
-    pt.y() = cgpt.y();
-    pt.z() = cgpt.z();
+    pt = convToV3F( cgm.point(vd) );
     norm = calcNorm(pt);
+    pdl->vertex(pt);
+    pdl->vertex(pt+norm.scale(0.1));
     mesh.setVertex(int(vd), pt.x(), pt.y(), pt.z(), norm.x(), norm.y(), norm.z());
   }
 
@@ -582,243 +867,6 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
 
 
 
-void MapIpolSurf2Renderer::renderImpl(DisplayContext *pdl)
-{
-  /////////////////////
-  // setup workarea
-
-  ScalarObject *pMap = m_pCMap;
-
-  const double siglevel = getSigLevel();
-  m_dLevel = pMap->getRmsdDensity() * siglevel;
-
-  int ncol = m_dspSize.x(); //m_nActCol;
-  int nrow = m_dspSize.y(); //m_nActRow;
-  int nsec = m_dspSize.z(); //m_nActSec;
-
-  const int ixmax = m_mapSize.x();
-  const int iymax = m_mapSize.y();
-  const int izmax = m_mapSize.z();
-
-  m_nbcol = m_mapStPos.x();
-  m_nbrow = m_mapStPos.y();
-  m_nbsec = m_mapStPos.z();
-
-  /////////////////////
-  // do marching cubes
-
-  int i,j,k;
-
-  for (i=0; i<ncol; i++)
-    for (j=0; j<nrow; j++)
-      for (k=0; k<nsec; k++) {
-
-        int ix = i + m_nbcol;
-        int iy = j + m_nbrow;
-        int iz = k + m_nbsec;
-        if (!m_bPBC) {
-          if (ix<0||iy<0||iz<0 ||
-              ix+1>=ixmax|| iy+1>=iymax|| iz+1>=izmax)
-            continue;
-        }
-
-        bool bin = false;
-        int ii;
-        for (ii=0; ii<8; ii++) {
-          const int ixx = ix + (vtxoffs[ii][0]);
-          const int iyy = iy + (vtxoffs[ii][1]);
-          const int izz = iz + (vtxoffs[ii][2]);
-          m_values[ii] = getDen(ixx, iyy, izz);
-          
-          // check mol boundary
-          m_bary[ii] = inMolBndry(pMap, ixx, iyy, izz);
-          if (m_bary[ii])
-            bin = true;
-        }
-
-        if (!bin)
-          continue;
-
-        marchCube(pdl, i, j, k);
-        
-        /*
-        pdl->startLines();
-        pdl->vertex(i,j,k);
-        pdl->vertex(i+1,j,k);
-        pdl->vertex(i,j,k);
-        pdl->vertex(i,j+1,k);
-        pdl->vertex(i,j,k);
-        pdl->vertex(i,j,k+1);
-        pdl->end();*/
-      }
-        
-
-}
-
-
-/////////////////////////////////////////////////////////////////////////////////
-
-//fGetOffset finds the approximate point of intersection of the surface
-// between two points with the values fValue1 and fValue2
-namespace {
-  inline float getOffset(float fValue1, float fValue2, float fValueDesired)
-  {
-    float fDelta = fValue2 - fValue1;
-    
-    if(fDelta == 0.0f) {
-      return 0.5f;
-    }
-    return (fValueDesired - fValue1)/fDelta;
-  }
-}
-
-//////////////////////////////////////////
-
-
-void MapIpolSurf2Renderer::marchCube(DisplayContext *pdl,
-                                     int fx, int fy, int fz)
-{
-  int iCorner, iVertex, iVertexTest, iEdge, iTriangle, iFlagIndex, iEdgeFlags;
-
-  Vector4D asEdgeVertex[12];
-  Vector4D asEdgeNorm[12];
-  bool edgeBinFlags[12];
-
-  // Find which vertices are inside of the surface and which are outside
-  iFlagIndex = 0;
-  for(iVertexTest = 0; iVertexTest < 8; iVertexTest++) {
-    if(m_values[iVertexTest] <= m_dLevel) 
-      iFlagIndex |= 1<<iVertexTest;
-  }
-
-  // Find which edges are intersected by the surface
-  iEdgeFlags = aiCubeEdgeFlags[iFlagIndex];
-
-  //If the cube is entirely inside or outside of the surface, then there will be no intersections
-  if(iEdgeFlags == 0) {
-    return;
-  }
-
-  {
-    for (int ii=0; ii<8; ii++) {
-      m_norms[ii].w() = -1.0;
-    }
-  }
-  ScalarObject *pMap = m_pCMap;
-  const int ix = fx + m_nbcol;
-  const int iy = fy + m_nbrow;
-  const int iz = fz + m_nbsec;
-
-  // Find the point of intersection of the surface with each edge
-  // Then find the normal to the surface at those points
-  for(iEdge = 0; iEdge < 12; iEdge++) {
-    //if there is an intersection on this edge
-    if(iEdgeFlags & (1<<iEdge)) {
-      const int ec0 = a2iEdgeConnection[iEdge][0];
-      const int ec1 = a2iEdgeConnection[iEdge][1];
-      if (m_bary[ec0]==false || m_bary[ec1]==false) {
-        edgeBinFlags[iEdge] = false;
-        continue;
-      }
-      edgeBinFlags[iEdge] = true;
-      
-      const double fOffset = getOffset(m_values[ ec0 ], 
-                                       m_values[ ec1 ], m_dLevel);
-      
-      asEdgeVertex[iEdge].x() =
-        double(fx) +
-          (a2fVertexOffset[ec0][0] + fOffset*a2fEdgeDirection[iEdge][0]);
-      asEdgeVertex[iEdge].y() =
-        double(fy) +
-          (a2fVertexOffset[ec0][1] + fOffset*a2fEdgeDirection[iEdge][1]);
-      asEdgeVertex[iEdge].z() =
-        double(fz) +
-          (a2fVertexOffset[ec0][2] + fOffset*a2fEdgeDirection[iEdge][2]);
-      asEdgeVertex[iEdge].w() = 0;
-      
-      Vector4D nv0,nv1;
-      if (m_norms[ ec0 ].w()<0.0) {
-        const int ixx = ix + (vtxoffs[ec0][0]);
-        const int iyy = iy + (vtxoffs[ec0][1]);
-        const int izz = iz + (vtxoffs[ec0][2]);
-        nv0 = m_norms[ec0] = getGrdNorm2(ixx, iyy, izz);
-      }
-      else {
-        nv0 = m_norms[ec0];
-      }
-      if (m_norms[ ec1 ].w()<0.0) {
-        const int ixx = ix + (vtxoffs[ec1][0]);
-        const int iyy = iy + (vtxoffs[ec1][1]);
-        const int izz = iz + (vtxoffs[ec1][2]);
-        nv1 = m_norms[ec1] = getGrdNorm2(ixx, iyy, izz);
-      }
-      else {
-        nv1 = m_norms[ec1];
-      }
-      asEdgeNorm[iEdge] = (nv0.scale(1.0-fOffset) + nv1.scale(fOffset)).normalize();
-    }
-  }
-
-  // Draw the triangles that were found.  There can be up to five per cube
-  for(iTriangle = 0; iTriangle < 5; iTriangle++) {
-    if(a2iTriangleConnectionTable[iFlagIndex][3*iTriangle] < 0)
-      break;
-    
-    bool bNotDraw = false;
-    for(iCorner = 0; iCorner < 3; iCorner++) {
-      iVertex = a2iTriangleConnectionTable[iFlagIndex][3*iTriangle+iCorner];
-      if (!edgeBinFlags[iVertex]) {
-        bNotDraw = true;
-        break;
-      }
-    }
-    if (bNotDraw)
-      continue;
-
-    for(iCorner = 0; iCorner < 3; iCorner++) {
-      iVertex = a2iTriangleConnectionTable[iFlagIndex][3*iTriangle+iCorner];
-      
-      // getVertexColor(sColor, asEdgeVertex[iVertex], asEdgeNorm[iVertex]);
-      // glColor3f(sColor.x, sColor.y, sColor.z);
-
-      //if (getLevel()<0) {
-      if (m_dLevel<0) {
-        if (pdl!=NULL) {
-          pdl->normal(-asEdgeNorm[iVertex]);
-          pdl->vertex(asEdgeVertex[iVertex]);
-        }
-        else {
-          addMSVert(asEdgeVertex[iVertex], -asEdgeNorm[iVertex]);
-        }
-#ifdef SHOW_NORMAL
-        m_tmpv.push_back(asEdgeVertex[iVertex]);
-        m_tmpv.push_back(asEdgeVertex[iVertex]-asEdgeNorm[iVertex]);
-#endif
-
-      }
-      else {
-        if (pdl!=NULL) {
-          pdl->normal(asEdgeNorm[iVertex]);
-          pdl->vertex(asEdgeVertex[iVertex]);
-        }
-        else {
-          addMSVert(asEdgeVertex[iVertex], asEdgeNorm[iVertex]);
-        }
-        
-#ifdef SHOW_NORMAL
-        m_tmpv.push_back(asEdgeVertex[iVertex]);
-        m_tmpv.push_back(asEdgeVertex[iVertex]+asEdgeNorm[iVertex]);
-#endif
-      }
-
-
-    } // for(iCorner = 0; iCorner < 3; iCorner++)
-
-  } // for(iTriangle = 0; iTriangle < 5; iTriangle++)
-
-  return;
-}
-
 qsys::ObjectPtr MapIpolSurf2Renderer::generateSurfObj()
 {
   ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
@@ -833,7 +881,7 @@ qsys::ObjectPtr MapIpolSurf2Renderer::generateSurfObj()
 
   surface::MolSurfObj *pSurfObj = new surface::MolSurfObj();
   m_msverts.clear();
-  renderImpl(NULL);
+  //renderImpl(NULL);
   int nverts = m_msverts.size();
   int nfaces = nverts/3;
   pSurfObj->setVertSize(nverts);
