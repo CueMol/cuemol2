@@ -376,6 +376,13 @@ void MapIpolSurf2Renderer::render(DisplayContext *pdl)
 Vector3F MapIpolSurf2Renderer::calcNorm(const Vector3F &v) const
 {
   Vector3F rval = m_ipol.calcDiffAt(v);
+/*
+  Vector3F rval2 = m_ipol.calcDscDiffAt(v);
+  rval2 -= rval;
+  if (rval2.sqlen()>0.001) {
+    MB_DPRINTLN("xXx");
+  }
+*/
   rval.normalizeSelf();
   return -rval;
 }
@@ -669,7 +676,7 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
 
   MB_DPRINTLN("Remeshing done, nv=%d, nf=%d", nv, nf);
 
-
+/*
   pdl->setLineWidth(1.0);
   pdl->setLighting(false);
   pdl->startLines();
@@ -688,7 +695,8 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
   pdl->end();
   pdl->setLighting(true);
   //return;
-
+*/
+  
   {
     MB_DPRINTLN("Projecting vertices to surf");
     float del;
@@ -820,15 +828,16 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
   mesh.init(nv, nf);
   mesh.color(getColor());
 
-  pdl->startLines();
+  //pdl->startLines();
   for(vid_t vd : cgm.vertices()){
     //std::cout << vd << std::endl;
     pt = convToV3F( cgm.point(vd) );
     norm = calcNorm(pt);
-    pdl->vertex(pt);
-    pdl->vertex(pt+norm.scale(0.1));
+    //pdl->vertex(pt);
+    //pdl->vertex(pt+norm.scale(0.5));
     mesh.setVertex(int(vd), pt.x(), pt.y(), pt.z(), norm.x(), norm.y(), norm.z());
   }
+  //pdl->end();
 
   int fid[3];
   for(fid_t fd : cgm.faces()){
