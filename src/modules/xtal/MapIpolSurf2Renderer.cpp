@@ -21,6 +21,7 @@
 
 #include <CGAL/Simple_cartesian.h>
 #include <CGAL/Surface_mesh.h>
+#include <CGAL/Subdivision_method_3.h>
 
 using namespace xtal;
 using qlib::Matrix4D;
@@ -177,6 +178,44 @@ typedef CGAL::Simple_cartesian<double> K;
 typedef CGAL::Surface_mesh<K::Point_3> Mesh;
 typedef Mesh::Vertex_index vid_t;
 typedef Mesh::Face_index fid_t;
+
+inline Vector3F convToV3F(const K::Point_3 &src) {
+  return Vector3F(src.x(), src.y(), src.z());
+}
+
+inline K::Point_3 convToCGP3(const Vector3F &src) {
+  return K::Point_3(src.x(), src.y(), src.z());
+}
+
+inline float radratio(const Vector3F &v0, const Vector3F &v1, const Vector3F &v2) {
+  float a = (v0-v1).length();
+  float b = (v1-v2).length();
+  float c = (v2-v0).length();
+  return (b + c - a)*(c + a - b)*(a + b - c) / (a*b*c);
+}
+
+inline float angle(const Vector3F &v1, const Vector3F &v2)
+{
+  const float u = float( v1.dot(v2) );
+  const float l = float( v1.length() ) * float( v2.length()  );
+  const float res = ::acos( u/l );
+  return res;
+}
+
+inline float minangl(const Vector3F &v0, const Vector3F &v1, const Vector3F &v2) {
+  float a = angle( (v1-v0), (v2-v0) );
+  float b = angle( (v0-v1), (v2-v1) );
+  float c = angle( (v1-v2), (v0-v2) );
+  return qlib::min( qlib::min(a, b), c);
+}
+
+inline float calcNormScore(const Vector3F &v0, const Vector3F &v1, const Vector3F &v2,
+                           const Vector3F &n0, const Vector3F &n1, const Vector3F &n2)
+{
+  Vector3F nav = (n0+n1+n2).normalize();
+  Vector3F fav = ((v1-v0).cross(v2-v0)).normalize();
+  return qlib::abs(nav.dot(fav));
+}
 
 void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
 {
@@ -369,14 +408,111 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
 
   //////////
 
+  K::Point_3 cgpt;
+  Vector3F pt, norm;
+
+
+  pdl->setLineWidth(2.0);
+  pdl->setLighting(false);
+  pdl->startLines();
+
+  for(Mesh::Edge_index ei : cgm.edges()){
+    if (cgm.is_border(ei))
+      continue;
+
+    Mesh::Halfedge_index h0 = cgm.halfedge(ei, 0);
+    Vector3F v00 = convToV3F( cgm.point( cgm.target(h0) ) );
+    h0 = cgm.next(h0);
+    Vector3F v01 = convToV3F( cgm.point( cgm.target(h0) ) );
+
+    Mesh::Halfedge_index h1 = cgm.halfedge(ei, 1);
+    Vector3F v10 = convToV3F( cgm.point( cgm.target(h1) ) );
+    h1 = cgm.next(h1);
+    Vector3F v11 = convToV3F( cgm.point( cgm.target(h1) ) );
+
+    Vector3F n00 = calcNorm(v00);
+    Vector3F n01 = calcNorm(v01);
+    Vector3F n10 = calcNorm(v10);
+    Vector3F n11 = calcNorm(v11);
+
+    //float q0 = radratio(v00, v10, v01) + radratio(v00, v10, v11);
+    //float q1 = radratio(v01, v11, v00) + radratio(v01, v11, v10);
+
+    //float q0 = qlib::min( minangl(v00, v10, v01), minangl(v00, v10, v11) );
+    //float q1 = qlib::min( minangl(v01, v11, v00), minangl(v01, v11, v10) );
+
+    float q0 =
+      calcNormScore(v00, v10, v01,
+                    n00, n10, n01) +
+        calcNormScore(v00, v10, v11,
+                      n00, n10, n11);
+
+    float q1 =
+      calcNormScore(v01, v11, v00,
+                    n01, n11, n00) +
+        calcNormScore(v01, v11, v10,
+                      n01, n11, n10);
+
+    if (q0<q1) {
+      MB_DPRINTLN("flip tri (q0=%f, q1=%f)", q0, q1);
+      //cgm.remove_edge();
+      //cgm.add_edge();
+      pdl->color(1.0, 0.0, 0.0);
+      pdl->vertex(v00);
+      pdl->vertex(v10);
+      pdl->color(0.0, 1.0, 0.0);
+      pdl->vertex(v01);
+      pdl->vertex(v11);
+
+      pdl->color(0.0, 0.0, 1.0);
+      pdl->vertex(v10);
+      pdl->vertex(v01);
+      pdl->vertex(v01);
+      pdl->vertex(v00);
+      pdl->vertex(v00);
+      pdl->vertex(v11);
+      pdl->vertex(v11);
+      pdl->vertex(v10);
+    }
+  }
+
+  pdl->end();
+  pdl->setLighting(true);
+  return;
+
+
+/*
+  pdl->color(gfx::SolidColor::createRGB(1.0, 0.0, 0.0));
+  pdl->setLineWidth(2.0);
+  pdl->startLines();
+  for(Mesh::Edge_index ei : cgm.edges()){
+    if (cgm.is_border(ei)) {
+      vid = cgm.vertex(ei, 0);
+      cgpt = cgm.point(vid);
+      pt.x() = cgpt.x();
+      pt.y() = cgpt.y();
+      pt.z() = cgpt.z();
+      pdl->vertex(pt);
+
+      vid = cgm.vertex(ei, 1);
+      cgpt = cgm.point(vid);
+      pt.x() = cgpt.x();
+      pt.y() = cgpt.y();
+      pt.z() = cgpt.z();
+      pdl->vertex(pt);
+    }
+  }
+  pdl->end();
+*/
+  
+  //////////
+
   gfx::Mesh mesh;
   int nv = cgm.number_of_vertices();
   int nf = cgm.number_of_faces();
   mesh.init(nv, nf);
   mesh.color(getColor());
 
-  K::Point_3 cgpt;
-  Vector3F pt, norm;
   for(vid_t vd : cgm.vertices()){
     //std::cout << vd << std::endl;
     cgpt = cgm.point(vd);
