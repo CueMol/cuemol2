@@ -49,20 +49,31 @@ public:
     float r0;
   };
 
+  struct Angle {
+    int id1;
+    int id2;
+    int id3;
+    float th0;
+  };
+
   std::vector<Bond> m_bonds;
+
+  std::vector<Angle> m_angls;
 
   int m_nMaxIter;
   float m_isolev;
   float m_mapscl;
   float m_bondscl;
+  float m_anglscl;
 
   /// vid-> particle index map
   std::unordered_map<int,int> m_vidmap;
 
-  void setup(int npos, int nbond) {
+  void setup(int npos, int nbond, int nangl=0) {
     m_posary.resize(npos*3);
     m_grad.resize(npos*3);
     m_bonds.resize(nbond);
+    m_angls.resize(nangl);
   }
 
   Vector3F getPos(int vid)
@@ -86,12 +97,37 @@ public:
     m_bonds[bind].r0 = r0;
   }
 
+  void setAngle(int ind, int vid1, int vid2, int vid3, float th0)
+  {
+    m_angls[ind].id1 = m_vidmap[vid1];
+    m_angls[ind].id2 = m_vidmap[vid2];
+    m_angls[ind].id3 = m_vidmap[vid3];
+    m_angls[ind].th0 = th0;
+  }
+
+  float calcAngle(int vid1, int vid2, int vid3)
+  {
+    int ai = m_vidmap[vid1]*3;
+    int aj = m_vidmap[vid2]*3;
+    int ak = m_vidmap[vid3]*3;
+
+    Vector3F vi(&m_posary[ai]), vj(&m_posary[aj]), vk(&m_posary[ak]);
+
+    Vector3F vij = vi-vj;
+    Vector3F vkj = vk-vj;
+    
+    const float u = vij.dot(vkj);
+    const float l = vij.length() * vkj.length();
+    return ::acos( u/l );
+  }
+
   float calcFdF(std::vector<float> &pres)
   {
     int i, id1, id2;
     float len, con, ss;
 
     int nbon = m_bonds.size();
+    int nang = m_angls.size();
     int ncrds = m_posary.size();
     int npart = ncrds/3;
 
@@ -109,8 +145,8 @@ public:
       const float dz = m_posary[id1+2] - m_posary[id2+2];
 
       len = sqrt(dx*dx + dy*dy + dz*dz);
-      ss = qlib::min(0.0f,  len - m_bonds[i].r0);
-      //ss = len - m_bonds[i].r0;
+      //ss = qlib::min(0.0f,  len - m_bonds[i].r0);
+      ss = len - m_bonds[i].r0;
 
       con = 2.0f * m_bondscl * ss/len;
       
@@ -123,6 +159,86 @@ public:
       pres[id2+2] -= con * dz;
 
       eng += ss * ss * m_bondscl;
+    }
+
+    int ai, aj, ak;
+    float rijx, rijy, rijz;
+    float rkjx, rkjy, rkjz;
+    float Rij, Rkj;
+    float costh, theta, dtheta, eangl;
+
+    float df, Dij, Dkj, sinth;
+    float vec_dijx,vec_dijy,vec_dijz;
+    float vec_dkjx,vec_dkjy,vec_dkjz;
+
+    for (i=0; i<nang; ++i) {
+      ai = m_angls[i].id1 * 3;
+      aj = m_angls[i].id2 * 3;
+      ak = m_angls[i].id3 * 3;
+
+      rijx = m_posary[ai+0] - m_posary[aj+0];
+      rijy = m_posary[ai+1] - m_posary[aj+1];
+      rijz = m_posary[ai+2] - m_posary[aj+2];
+      
+      rkjx = m_posary[ak+0] - m_posary[aj+0];
+      rkjy = m_posary[ak+1] - m_posary[aj+1];
+      rkjz = m_posary[ak+2] - m_posary[aj+2];
+      
+      // distance
+      Rij = sqrt(qlib::max<float>(F_EPS8, rijx*rijx + rijy*rijy + rijz*rijz));
+      Rkj = sqrt(qlib::max<float>(F_EPS8, rkjx*rkjx + rkjy*rkjy + rkjz*rkjz));
+      
+      // normalization
+      float eijx, eijy, eijz;
+      float ekjx, ekjy, ekjz;
+      eijx = rijx / Rij;
+      eijy = rijy / Rij;
+      eijz = rijz / Rij;
+      
+      ekjx = rkjx / Rkj;
+      ekjy = rkjy / Rkj;
+      ekjz = rkjz / Rkj;
+      
+      // angle
+      costh = eijx*ekjx + eijy*ekjy + eijz*ekjz;
+      costh = qlib::min<float>(1.0f, qlib::max<float>(-1.0f, costh));
+      theta = (::acos(costh));
+      //dtheta = (theta - m_angls[i].th0);
+      dtheta = qlib::min(0.0f, theta - m_angls[i].th0);
+      eangl = m_anglscl*dtheta*dtheta;
+      
+      eng += eangl;
+
+      // calc gradient
+      df = 2.0*m_anglscl*dtheta;
+
+      sinth = sqrt(qlib::max<float>(0.0f, 1.0f-costh*costh));
+      Dij =  df/(qlib::max<float>(F_EPS16, sinth)*Rij);
+      Dkj =  df/(qlib::max<float>(F_EPS16, sinth)*Rkj);
+
+      vec_dijx = Dij*(costh*eijx - ekjx);
+      vec_dijy = Dij*(costh*eijy - ekjy);
+      vec_dijz = Dij*(costh*eijz - ekjz);
+    
+      vec_dkjx = Dkj*(costh*ekjx - eijx);
+      vec_dkjy = Dkj*(costh*ekjy - eijy);
+      vec_dkjz = Dkj*(costh*ekjz - eijz);
+
+      pres[ai+0] += vec_dijx;
+      pres[ai+1] += vec_dijy;
+      pres[ai+2] += vec_dijz;
+      
+      pres[aj+0] -= vec_dijx;
+      pres[aj+1] -= vec_dijy;
+      pres[aj+2] -= vec_dijz;
+      
+      pres[ak+0] += vec_dkjx;
+      pres[ak+1] += vec_dkjy;
+      pres[ak+2] += vec_dkjz;
+      
+      pres[aj+0] -= vec_dkjx;
+      pres[aj+1] -= vec_dkjy;
+      pres[aj+2] -= vec_dkjz;
     }
 
     Vector3F pos, dF;
@@ -519,7 +635,7 @@ qlib::uid_t MapIpolSurf2Renderer::detachObj()
 
 void MapIpolSurf2Renderer::preRender(DisplayContext *pdc)
 {
-/*
+
   pdc->color(getColor());
 
   if (m_nDrawMode==MSRDRAW_POINT) {
@@ -547,7 +663,7 @@ void MapIpolSurf2Renderer::preRender(DisplayContext *pdc)
     //   --> always don't draw backface (cull backface=true) for edge rendering
     pdc->setCullFace(true);
   }
-*/
+
 }
 
 void MapIpolSurf2Renderer::postRender(DisplayContext *pdc)
@@ -899,7 +1015,12 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
     pr.m_isolev = m_dLevel;
 
     int ne = cgm.number_of_edges();
-    pr.setup(nv, ne);
+    int nangl = 0;
+    /*for(vid_t vd : cgm.vertices()){
+      nangl += cgm.degree(vd);
+    }*/
+
+    pr.setup(nv, ne, nangl);
 
     i=0;
     for(vid_t vd : cgm.vertices()){
@@ -914,27 +1035,53 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
       vid_t vid0 = cgm.target(h0);
       Mesh::Halfedge_index h1 = cgm.halfedge(ei, 1);
       vid_t vid1 = cgm.target(h1);
-      pr.setBond(i, int(vid0), int(vid1), 0.6);
+      pr.setBond(i, int(vid0), int(vid1), 0.7);
       ++i;
     }
 
-    pr.m_nMaxIter = 10;
+    /*
+    i=0;
+    int j;
+    for(vid_t vd : cgm.vertices()){
+      int ndgr = cgm.degree(vd);
+      std::vector<vid_t> svs(ndgr);
+      j=0;
+      BOOST_FOREACH(vid_t avd, vertices_around_target(cgm.halfedge(vd), cgm)){
+        svs[j] = avd;
+        ++j;
+      } 
+      float anglsum = 0.0f;
+      for (j=0; j<ndgr; ++j) {
+        anglsum += pr.calcAngle(int(svs[j]), int(vd), int(svs[(j+1)%ndgr]));
+      }      
+      for (j=0; j<ndgr; ++j) {
+        pr.setAngle(i, int(svs[j]), int(vd), int(svs[(j+1)%ndgr]), anglsum/ndgr);
+        ++i;
+        ++j;
+      }
+    }          
+     */
+
+    pr.m_nMaxIter = 20;
     pr.m_mapscl = 10.0f;
     pr.m_bondscl = 0.01f;
+    //pr.m_anglscl = 0.01f;
     pr.refine();
 
     pr.m_bondscl = 0.05f;
+    //pr.m_anglscl = 0.05f;
     pr.refine();
 
     pr.m_bondscl = 0.1f;
-    pr.refine();
-
-    pr.m_bondscl = 0.5f;
-    pr.refine();
-
-    pr.m_bondscl = 1.0f;
     pr.m_nMaxIter = 100;
     pr.refine();
+
+    //pr.m_bondscl = 0.5f;
+    //pr.refine();
+
+    //pr.m_bondscl = 1.0f;
+    //pr.m_nMaxIter = 100;
+    //pr.refine();
 
     for(vid_t vd : cgm.vertices()){
       vnew = pr.getPos(int(vd));
@@ -959,7 +1106,7 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
   MB_DPRINTLN("Remeshing done, nv=%d, nf=%d", nv, nf);
 */
   
-
+/*
   pdl->setLineWidth(1.0);
   pdl->setLighting(false);
   pdl->startLines();
@@ -978,7 +1125,7 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
   pdl->end();
   pdl->setLighting(true);
   //return;
-
+*/
   
   /*
   {
@@ -1053,7 +1200,7 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
   
   //////////
 
-  /*{
+  {
     gfx::Mesh mesh;
     mesh.init(nv, nf);
     mesh.color(getColor());
@@ -1087,7 +1234,7 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
       ++i;
     }
     pdl->drawMesh(mesh);
-  }*/
+  }
   
 }
 
