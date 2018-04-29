@@ -23,6 +23,7 @@
 #include <CGAL/Surface_mesh.h>
 //#include <CGAL/Polygon_mesh_processing/refine.h>
 #include <CGAL/Polygon_mesh_processing/remesh.h>
+#include <unordered_map>
 
 using namespace xtal;
 using qlib::Matrix4D;
@@ -383,7 +384,7 @@ Vector3F MapIpolSurf2Renderer::calcNorm(const Vector3F &v) const
     MB_DPRINTLN("xXx");
   }
 */
-  rval.normalizeSelf();
+  //rval.normalizeSelf();
   return -rval;
 }
 
@@ -662,14 +663,15 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
   int nf = cgm.number_of_faces();
   
   MB_DPRINTLN("start remeshing nv=%d, nf=%d", nv, nf);
-  double target_edge_length = 0;
+  double target_edge_length = 0.5;
   unsigned int nb_iter = 3;
+  unsigned int rel_iter = 1;
   PMP::isotropic_remeshing(
     faces(cgm),
     target_edge_length,
     cgm,
-//    PMP::parameters::number_of_iterations(nb_iter).number_of_relaxation_steps(0));
-    PMP::parameters::number_of_iterations(nb_iter));
+    PMP::parameters::number_of_iterations(nb_iter).number_of_relaxation_steps(rel_iter));
+//    PMP::parameters::number_of_iterations(nb_iter));
 
   nv = cgm.number_of_vertices();
   nf = cgm.number_of_faces();
@@ -722,6 +724,91 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
 
   K::Point_3 cgpt;
   Vector3F pt, norm;
+
+  /*{
+    pdl->setLineWidth(1.0);
+    pdl->setLighting(false);
+    pdl->startLines();
+    pdl->color(1,1,0);
+
+    for(Mesh::Edge_index ei : cgm.edges()){
+      Mesh::Halfedge_index h0 = cgm.halfedge(ei, 0);
+      Vector3F v00 = convToV3F( cgm.point( cgm.target(h0) ) );
+      
+      Mesh::Halfedge_index h1 = cgm.halfedge(ei, 1);
+      Vector3F v10 = convToV3F( cgm.point( cgm.target(h1) ) );
+      
+      pdl->vertex(v00);
+      pdl->vertex(v10);
+    }
+    pdl->end();
+    pdl->setLighting(true);
+  }*/
+  
+/*
+  pdl->color(gfx::SolidColor::createRGB(1.0, 0.0, 0.0));
+  pdl->setLineWidth(2.0);
+  pdl->startLines();
+  for(Mesh::Edge_index ei : cgm.edges()){
+    if (cgm.is_border(ei)) {
+      vid = cgm.vertex(ei, 0);
+      cgpt = cgm.point(vid);
+      pt.x() = cgpt.x();
+      pt.y() = cgpt.y();
+      pt.z() = cgpt.z();
+      pdl->vertex(pt);
+
+      vid = cgm.vertex(ei, 1);
+      cgpt = cgm.point(vid);
+      pt.x() = cgpt.x();
+      pt.y() = cgpt.y();
+      pt.z() = cgpt.z();
+      pdl->vertex(pt);
+    }
+  }
+  pdl->end();
+*/
+  
+  //////////
+
+  {
+    gfx::Mesh mesh;
+    mesh.init(nv, nf);
+    mesh.color(getColor());
+    std::unordered_map<int,int> vidmap;
+
+    //pdl->startLines();
+    i=0;
+    for(vid_t vd : cgm.vertices()){
+      pt = convToV3F( cgm.point(vd) );
+      norm = calcNorm(pt);
+      //pdl->vertex(pt);
+      //pdl->vertex(pt+norm.scale(0.5));
+      mesh.setVertex(i, pt.x(), pt.y(), pt.z(), norm.x(), norm.y(), norm.z());
+      vidmap.insert(std::pair<int,int>(int(vd), i));
+      ++i;
+    }
+    //pdl->end();
+
+    int vid[3];
+    i=0;
+    for(fid_t fd : cgm.faces()){
+      j=0;
+      BOOST_FOREACH(vid_t vd,vertices_around_face(cgm.halfedge(fd), cgm)){
+        MB_ASSERT(j<3);
+        vid[j] = int(vd);
+        ++j;
+      }
+      MB_ASSERT(j==3);
+
+      mesh.setFace(i, vidmap[vid[0]], vidmap[vid[1]], vidmap[vid[2]]);
+      ++i;
+    }
+    pdl->drawMesh(mesh);
+  }
+  
+}
+
 
 #if 0
   pdl->setLineWidth(2.0);
@@ -797,82 +884,6 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
   pdl->setLighting(true);
   return;
 #endif
-
-/*
-  pdl->color(gfx::SolidColor::createRGB(1.0, 0.0, 0.0));
-  pdl->setLineWidth(2.0);
-  pdl->startLines();
-  for(Mesh::Edge_index ei : cgm.edges()){
-    if (cgm.is_border(ei)) {
-      vid = cgm.vertex(ei, 0);
-      cgpt = cgm.point(vid);
-      pt.x() = cgpt.x();
-      pt.y() = cgpt.y();
-      pt.z() = cgpt.z();
-      pdl->vertex(pt);
-
-      vid = cgm.vertex(ei, 1);
-      cgpt = cgm.point(vid);
-      pt.x() = cgpt.x();
-      pt.y() = cgpt.y();
-      pt.z() = cgpt.z();
-      pdl->vertex(pt);
-    }
-  }
-  pdl->end();
-*/
-  
-  //////////
-
-  gfx::Mesh mesh;
-  mesh.init(nv, nf);
-  mesh.color(getColor());
-
-  //pdl->startLines();
-  for(vid_t vd : cgm.vertices()){
-    //std::cout << vd << std::endl;
-    pt = convToV3F( cgm.point(vd) );
-    norm = calcNorm(pt);
-    //pdl->vertex(pt);
-    //pdl->vertex(pt+norm.scale(0.5));
-    mesh.setVertex(int(vd), pt.x(), pt.y(), pt.z(), norm.x(), norm.y(), norm.z());
-  }
-  //pdl->end();
-
-  int fid[3];
-  for(fid_t fd : cgm.faces()){
-    i=0;
-    BOOST_FOREACH(vid_t vd,vertices_around_face(cgm.halfedge(fd), cgm)){
-      MB_ASSERT(i<3);
-      fid[i] = int(vd);
-      ++i;
-    } 
-    MB_ASSERT(i==3);
-    mesh.setFace(int(fd), fid[0], fid[1], fid[2]);
-  }
-
-/*
-  gfx::Mesh mesh;
-  int nv = verts.size();
-  int nf = faces.size();
-  mesh.init(nv, nf);
-  mesh.color(getColor());
-  
-  i=0;
-  BOOST_FOREACH (const surface::MSVert &elem, verts) {
-    mesh.setVertex(i, elem.x, elem.y, elem.z, elem.nx, elem.ny, elem.nz);
-    ++i;
-  }  
-
-  i=0;
-  BOOST_FOREACH (const surface::MSFace &elem, faces) {
-    mesh.setFace(i, elem.id1, elem.id2, elem.id3);
-    ++i;
-  }
-*/
-  pdl->drawMesh(mesh);
-}
-
 
 
 
