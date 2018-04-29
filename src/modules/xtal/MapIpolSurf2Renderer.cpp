@@ -25,11 +25,239 @@
 #include <CGAL/Polygon_mesh_processing/remesh.h>
 #include <unordered_map>
 
+#define GSL_DLL 1
+#include <gsl/gsl_multimin.h>
+#include <gsl/gsl_blas.h>
+
 using namespace xtal;
 using qlib::Matrix4D;
 using qlib::Matrix3D;
 using qsys::ScrEventManager;
 using molstr::AtomIterator;
+
+class ParticleRefine
+{
+public:
+  MapBsplIpol *m_pipol;
+  
+  std::vector<float> m_posary;
+  std::vector<float> m_grad;
+
+  struct Bond {
+    int id1;
+    int id2;
+    float r0;
+  };
+
+  std::vector<Bond> m_bonds;
+
+  int m_nMaxIter;
+  float m_isolev;
+  float m_mapscl;
+  float m_bondscl;
+
+  /// vid-> particle index map
+  std::unordered_map<int,int> m_vidmap;
+
+  void setup(int npos, int nbond) {
+    m_posary.resize(npos*3);
+    m_grad.resize(npos*3);
+    m_bonds.resize(nbond);
+  }
+
+  Vector3F getPos(int vid)
+  {
+    int ind = m_vidmap[vid];
+    return Vector3F(&m_posary[ind*3]);
+  }
+  
+  void setPos(int ind, int vid, const Vector3F &pos)
+  {
+    m_posary[ind*3 + 0] = pos.x();
+    m_posary[ind*3 + 1] = pos.y();
+    m_posary[ind*3 + 2] = pos.z();
+    m_vidmap.insert(std::pair<int,int>(vid, ind));
+ }
+  
+  void setBond(int bind, int vid1, int vid2, float r0)
+  {
+    m_bonds[bind].id1 = m_vidmap[vid1];
+    m_bonds[bind].id2 = m_vidmap[vid2];
+    m_bonds[bind].r0 = r0;
+  }
+
+  float calcFdF(std::vector<float> &pres)
+  {
+    int i, id1, id2;
+    float len, con, ss;
+
+    int nbon = m_bonds.size();
+    int ncrds = m_posary.size();
+    int npart = ncrds/3;
+
+    float eng = 0.0f;
+    for (i=0; i<ncrds; ++i) {
+      pres[i] = 0.0f;
+    }
+
+    for (i=0; i<nbon; ++i) {
+      id1 = m_bonds[i].id1 * 3;
+      id2 = m_bonds[i].id2 * 3;
+
+      const float dx = m_posary[id1+0] - m_posary[id2+0];
+      const float dy = m_posary[id1+1] - m_posary[id2+1];
+      const float dz = m_posary[id1+2] - m_posary[id2+2];
+
+      len = sqrt(dx*dx + dy*dy + dz*dz);
+      ss = qlib::min(0.0f,  len - m_bonds[i].r0);
+      //ss = len - m_bonds[i].r0;
+
+      con = 2.0f * m_bondscl * ss/len;
+      
+      pres[id1+0] += con * dx;
+      pres[id1+1] += con * dy;
+      pres[id1+2] += con * dz;
+      
+      pres[id2+0] -= con * dx;
+      pres[id2+1] -= con * dy;
+      pres[id2+2] -= con * dz;
+
+      eng += ss * ss * m_bondscl;
+    }
+
+    Vector3F pos, dF;
+    float f;
+    
+    for (i=0; i<npart; ++i) {
+      id1 = i*3;
+      pos.x() = m_posary[id1+0];
+      pos.y() = m_posary[id1+1];
+      pos.z() = m_posary[id1+2];
+
+      f = m_pipol->calcAt(pos) - m_isolev;
+
+      dF = m_pipol->calcDiffAt(pos);
+      dF = dF.scale(2.0*f*m_mapscl);
+
+      //F = f^2 = (val-iso)^2;
+      //dF = 2*f * d(f);
+
+      pres[id1+0] += dF.x();
+      pres[id1+1] += dF.y();
+      pres[id1+2] += dF.z();
+
+      eng += f*f*m_mapscl;
+    }
+
+    return eng;
+  }
+
+  static inline void copyToGsl(gsl_vector *dst, const std::vector<float> &src)
+  {
+    int i;
+    const int ncrd = src.size();
+    for (i=0; i<ncrd; ++i)
+      gsl_vector_set(dst, i, src[i]);
+  }
+  
+  static inline void copyToVec(std::vector<float> &dst, const gsl_vector *src)
+  {
+    int i;
+    const int ncrd = dst.size();
+    for (i=0; i<ncrd; ++i)
+      dst[i] = float( gsl_vector_get(src, i) );
+  }
+  
+  static void calc_fdf(const gsl_vector *x, void *params, double *f, gsl_vector *g)
+  {
+    ParticleRefine *pMin = static_cast<ParticleRefine *>(params);
+    
+    copyToVec(pMin->m_posary, x);
+    
+    float energy = pMin->calcFdF(pMin->m_grad);
+    
+    //printf("copy to gsl %p from vec %p\n", g, &grad);
+    if (g!=NULL)
+      copyToGsl(g, pMin->m_grad);
+    *f = energy;
+    
+    // printf("target fdf OK\n");
+  }
+  
+  static double calc_f(const gsl_vector *x, void *params)
+  {
+    double energy;
+    calc_fdf(x, params, &energy, NULL);
+    return energy;
+  }
+  
+  static void calc_df(const gsl_vector *x, void *params, gsl_vector *g)
+  {
+    double dummy;
+    calc_fdf(x, params, &dummy, g);
+  }
+  
+  void refine()
+  {
+    int ncrd = m_posary.size();
+    int nbon = m_bonds.size();
+
+    gsl_multimin_function_fdf targ_func;
+
+    MB_DPRINTLN("ncrd=%d, nbond=%d\n", ncrd, nbon);
+    targ_func.n = ncrd;
+    targ_func.f = calc_f;
+    targ_func.df = calc_df;
+    targ_func.fdf = calc_fdf;
+    targ_func.params = this;
+
+    const gsl_multimin_fdfminimizer_type *pMinType;
+    gsl_multimin_fdfminimizer *pMin;
+
+    pMinType = gsl_multimin_fdfminimizer_conjugate_pr;
+    //pMinType = gsl_multimin_fdfminimizer_vector_bfgs2;
+
+    pMin = gsl_multimin_fdfminimizer_alloc(pMinType, ncrd);
+
+    gsl_vector *x = gsl_vector_alloc(ncrd);
+    copyToGsl(x, m_posary);
+    float tolerance = 0.06;
+    double step_size = 0.05 * gsl_blas_dnrm2(x);
+
+    MB_DPRINTLN("set step=%f, tol=%f", step_size, tolerance);
+
+    gsl_multimin_fdfminimizer_set(pMin, &targ_func, x, step_size, tolerance);
+    MB_DPRINTLN("set OK");
+
+    int iter=0, status;
+    
+    do {
+      iter++;
+      status = gsl_multimin_fdfminimizer_iterate(pMin);
+      
+      if (status)
+        break;
+      
+      status = gsl_multimin_test_gradient(pMin->gradient, 1e-3);
+      
+      if (status == GSL_SUCCESS)
+        MB_DPRINTLN("Minimum found");
+      
+      MB_DPRINTLN("iter = %d energy=%f", iter, pMin->f);
+    }
+    while (status == GSL_CONTINUE && iter < m_nMaxIter);
+    
+    MB_DPRINTLN("status = %d", status);
+    copyToVec(m_posary, pMin->x);
+
+    //printf("Atom0 %f,%f,%f\n", pMol->m_crds[0], pMol->m_crds[1], pMol->m_crds[2]);
+
+    gsl_multimin_fdfminimizer_free(pMin);
+    gsl_vector_free(x);
+  }
+
+};
+
 
 class FindProjSurf
 {
@@ -291,6 +519,7 @@ qlib::uid_t MapIpolSurf2Renderer::detachObj()
 
 void MapIpolSurf2Renderer::preRender(DisplayContext *pdc)
 {
+/*
   pdc->color(getColor());
 
   if (m_nDrawMode==MSRDRAW_POINT) {
@@ -318,7 +547,7 @@ void MapIpolSurf2Renderer::preRender(DisplayContext *pdc)
     //   --> always don't draw backface (cull backface=true) for edge rendering
     pdc->setCullFace(true);
   }
-
+*/
 }
 
 void MapIpolSurf2Renderer::postRender(DisplayContext *pdc)
@@ -661,7 +890,59 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
 
   int nv = cgm.number_of_vertices();
   int nf = cgm.number_of_faces();
-  
+
+  {
+    Vector3F vnew, pt;
+
+    ParticleRefine pr;
+    pr.m_pipol = &m_ipol;
+    pr.m_isolev = m_dLevel;
+
+    int ne = cgm.number_of_edges();
+    pr.setup(nv, ne);
+
+    i=0;
+    for(vid_t vd : cgm.vertices()){
+      pt = convToV3F( cgm.point(vd) );
+      pr.setPos(i, int(vd), pt);
+      ++i;
+    }
+    
+    i=0;
+    for(Mesh::Edge_index ei : cgm.edges()){
+      Mesh::Halfedge_index h0 = cgm.halfedge(ei, 0);
+      vid_t vid0 = cgm.target(h0);
+      Mesh::Halfedge_index h1 = cgm.halfedge(ei, 1);
+      vid_t vid1 = cgm.target(h1);
+      pr.setBond(i, int(vid0), int(vid1), 0.6);
+      ++i;
+    }
+
+    pr.m_nMaxIter = 10;
+    pr.m_mapscl = 10.0f;
+    pr.m_bondscl = 0.01f;
+    pr.refine();
+
+    pr.m_bondscl = 0.05f;
+    pr.refine();
+
+    pr.m_bondscl = 0.1f;
+    pr.refine();
+
+    pr.m_bondscl = 0.5f;
+    pr.refine();
+
+    pr.m_bondscl = 1.0f;
+    pr.m_nMaxIter = 100;
+    pr.refine();
+
+    for(vid_t vd : cgm.vertices()){
+      vnew = pr.getPos(int(vd));
+      cgm.point(vd) = convToCGP3(vnew);
+    }
+  }
+
+/*
   MB_DPRINTLN("start remeshing nv=%d, nf=%d", nv, nf);
   double target_edge_length = 0.5;
   unsigned int nb_iter = 3;
@@ -671,14 +952,14 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
     target_edge_length,
     cgm,
     PMP::parameters::number_of_iterations(nb_iter).number_of_relaxation_steps(rel_iter));
-//    PMP::parameters::number_of_iterations(nb_iter));
 
   nv = cgm.number_of_vertices();
   nf = cgm.number_of_faces();
 
   MB_DPRINTLN("Remeshing done, nv=%d, nf=%d", nv, nf);
+*/
+  
 
-/*
   pdl->setLineWidth(1.0);
   pdl->setLighting(false);
   pdl->startLines();
@@ -697,8 +978,9 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
   pdl->end();
   pdl->setLighting(true);
   //return;
-*/
+
   
+  /*
   {
     MB_DPRINTLN("Projecting vertices to surf");
     float del;
@@ -721,7 +1003,7 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
     }
     MB_DPRINTLN("done");
   }
-
+*/
   K::Point_3 cgpt;
   Vector3F pt, norm;
 
@@ -771,7 +1053,7 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
   
   //////////
 
-  {
+  /*{
     gfx::Mesh mesh;
     mesh.init(nv, nf);
     mesh.color(getColor());
@@ -805,7 +1087,7 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
       ++i;
     }
     pdl->drawMesh(mesh);
-  }
+  }*/
   
 }
 
