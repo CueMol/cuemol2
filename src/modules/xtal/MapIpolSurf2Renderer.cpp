@@ -42,6 +42,7 @@ public:
   
   std::vector<float> m_posary;
   std::vector<float> m_grad;
+  std::vector<bool> m_fix;
 
   struct Bond {
     int id1;
@@ -72,6 +73,8 @@ public:
   void setup(int npos, int nbond, int nangl=0) {
     m_posary.resize(npos*3);
     m_grad.resize(npos*3);
+    m_fix.resize(npos);
+    for (int i=0; i<npos; ++i) m_fix[i] = false;
     m_bonds.resize(nbond);
     m_angls.resize(nangl);
   }
@@ -97,6 +100,11 @@ public:
     m_bonds[bind].r0 = r0;
   }
 
+  void setFixed(int vid1)
+  {
+    m_fix[ m_vidmap[vid1] ] = true;
+  }
+  
   void setAngle(int ind, int vid1, int vid2, int vid3, float th0)
   {
     m_angls[ind].id1 = m_vidmap[vid1];
@@ -145,19 +153,24 @@ public:
       const float dz = m_posary[id1+2] - m_posary[id2+2];
 
       len = sqrt(dx*dx + dy*dy + dz*dz);
+      ss = qlib::max(0.0f,  len - m_bonds[i].r0);
       //ss = qlib::min(0.0f,  len - m_bonds[i].r0);
-      ss = len - m_bonds[i].r0;
+      //ss = len - m_bonds[i].r0;
 
       con = 2.0f * m_bondscl * ss/len;
       
-      pres[id1+0] += con * dx;
-      pres[id1+1] += con * dy;
-      pres[id1+2] += con * dz;
+      if (!m_fix[id1/3]) {
+        pres[id1+0] += con * dx;
+        pres[id1+1] += con * dy;
+        pres[id1+2] += con * dz;
+      }
       
-      pres[id2+0] -= con * dx;
-      pres[id2+1] -= con * dy;
-      pres[id2+2] -= con * dz;
-
+      if (!m_fix[id2/3]) {
+        pres[id2+0] -= con * dx;
+        pres[id2+1] -= con * dy;
+        pres[id2+2] -= con * dz;
+      }
+      
       eng += ss * ss * m_bondscl;
     }
 
@@ -763,11 +776,14 @@ inline float angle(const Vector3F &v1, const Vector3F &v2)
   return res;
 }
 
-inline float minangl(const Vector3F &v0, const Vector3F &v1, const Vector3F &v2) {
+inline float minangl(const Vector3F &v0, const Vector3F &v1, const Vector3F &v2, bool bmax = false) {
   float a = angle( (v1-v0), (v2-v0) );
   float b = angle( (v0-v1), (v2-v1) );
   float c = angle( (v1-v2), (v0-v2) );
-  return qlib::min( qlib::min(a, b), c);
+  if (bmax)
+    return qlib::max( qlib::max(a, b), c);
+  else
+    return qlib::min( qlib::min(a, b), c);
 }
 
 inline float calcNormScore(const Vector3F &v0, const Vector3F &v1, const Vector3F &v2,
@@ -793,6 +809,42 @@ inline bool checkSide(const Vector3F &v1, const Vector3F &v2, const Vector3F &v3
     return true;
   else
     return false;
+}
+
+void dumpTriStats(const LString &fname, const Mesh &cgm, const MapBsplIpol &ip)
+{
+  FILE *fp = fopen(fname, "w");
+  int i, j;
+  
+  //vid_t vid[3];
+  Vector3F v[3], g[3], vn;
+  float minang, maxang, rr, ns;
+
+  i=0;
+  for(fid_t fd : cgm.faces()){
+
+    j=0;
+    BOOST_FOREACH(vid_t vd,vertices_around_face(cgm.halfedge(fd), cgm)){
+      MB_ASSERT(j<3);
+      v[j] = convToV3F( cgm.point(vd) );
+      g[j] = -(ip.calcDiffAt(v[j])).normalize();
+      ++j;
+    }
+    MB_ASSERT(j==3);
+
+    minang = minangl(v[0], v[1], v[2]);
+    maxang = minangl(v[0], v[1], v[2], true);
+    rr = radratio(v[0], v[1], v[2]);
+    vn = calcNorm(v[0], v[1], v[2]).normalize();
+    ns = (vn.dot(g[0]) + vn.dot(g[1]) + vn.dot(g[2]))/3.0f;
+
+    fprintf(fp, "Tri %d min %f max %f rr %f ns %f\n",
+            i, qlib::toDegree(minang), qlib::toDegree(maxang), rr, ns);
+    ++i;
+  }
+
+  fclose(fp);
+
 }
 
 void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
@@ -1007,6 +1059,8 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
   int nv = cgm.number_of_vertices();
   int nf = cgm.number_of_faces();
 
+  dumpTriStats("mc.txt", cgm, m_ipol);
+
   {
     Vector3F vnew, pt;
 
@@ -1035,8 +1089,12 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
       vid_t vid0 = cgm.target(h0);
       Mesh::Halfedge_index h1 = cgm.halfedge(ei, 1);
       vid_t vid1 = cgm.target(h1);
-      pr.setBond(i, int(vid0), int(vid1), 0.7);
+      pr.setBond(i, int(vid0), int(vid1), 0.5);
       ++i;
+      if (cgm.is_border(ei)) {
+        pr.setFixed(int(vid0));
+        pr.setFixed(int(vid1));
+      }
     }
 
     /*
@@ -1065,16 +1123,15 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
     pr.m_nMaxIter = 20;
     pr.m_mapscl = 10.0f;
     pr.m_bondscl = 0.01f;
-    //pr.m_anglscl = 0.01f;
     pr.refine();
 
-    pr.m_bondscl = 0.05f;
-    //pr.m_anglscl = 0.05f;
-    pr.refine();
-
-    pr.m_bondscl = 0.1f;
     pr.m_nMaxIter = 100;
+    pr.m_bondscl = 0.05f;
     pr.refine();
+
+    //pr.m_nMaxIter = 100;
+    //pr.m_bondscl = 0.1f;
+    //pr.refine();
 
     //pr.m_bondscl = 0.5f;
     //pr.refine();
@@ -1088,6 +1145,8 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
       cgm.point(vd) = convToCGP3(vnew);
     }
   }
+
+  dumpTriStats("mcmin.txt", cgm, m_ipol);
 
 /*
   MB_DPRINTLN("start remeshing nv=%d, nf=%d", nv, nf);
@@ -1180,24 +1239,58 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
   pdl->startLines();
   for(Mesh::Edge_index ei : cgm.edges()){
     if (cgm.is_border(ei)) {
-      vid = cgm.vertex(ei, 0);
-      cgpt = cgm.point(vid);
-      pt.x() = cgpt.x();
-      pt.y() = cgpt.y();
-      pt.z() = cgpt.z();
-      pdl->vertex(pt);
-
-      vid = cgm.vertex(ei, 1);
-      cgpt = cgm.point(vid);
-      pt.x() = cgpt.x();
-      pt.y() = cgpt.y();
-      pt.z() = cgpt.z();
-      pdl->vertex(pt);
+      pdl->vertex(convToV3F(cgm.point(cgm.vertex(ei, 0))));
+      pdl->vertex(convToV3F(cgm.point(cgm.vertex(ei, 1))));
     }
   }
   pdl->end();
 */
   
+  //////////
+
+  {
+    pdl->color(gfx::SolidColor::createRGB(1.0, 0.0, 0.0));
+    pdl->setLineWidth(2.0);
+    pdl->startLines();
+
+    int i, j;
+    Vector3F v[3], g[3], vn;
+    float minang, maxang, rr, ns;
+
+    i=0;
+    for(fid_t fd : cgm.faces()){
+      
+      j=0;
+      BOOST_FOREACH(vid_t vd,vertices_around_face(cgm.halfedge(fd), cgm)){
+        MB_ASSERT(j<3);
+        v[j] = convToV3F( cgm.point(vd) );
+        g[j] = -(m_ipol.calcDiffAt(v[j])).normalize();
+        ++j;
+      }
+      MB_ASSERT(j==3);
+      
+      //minang = minangl(v[0], v[1], v[2]);
+      //maxang = minangl(v[0], v[1], v[2], true);
+      //rr = radratio(v[0], v[1], v[2]);
+
+      vn = ::calcNorm(v[0], v[1], v[2]).normalize();
+      ns = (vn.dot(g[0]) + vn.dot(g[1]) + vn.dot(g[2]))/3.0f;
+      
+      if (ns<0.5) {
+        pdl->vertex(v[0]);
+        pdl->vertex(v[1]);
+
+        pdl->vertex(v[1]);
+        pdl->vertex(v[2]);
+
+        pdl->vertex(v[2]);
+        pdl->vertex(v[0]);
+      }
+      ++i;
+    }
+    pdl->end();
+  }
+
   //////////
 
   {
