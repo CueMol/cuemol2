@@ -547,7 +547,7 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
       vid_t vid0 = cgm.target(h0);
       Mesh::Halfedge_index h1 = cgm.halfedge(ei, 1);
       vid_t vid1 = cgm.target(h1);
-      pr.setBond(i, int(vid0), int(vid1), edge_len);
+      pr.setBond(i, int(vid0), int(vid1), edge_len * 0.8);
       ++i;
       if (cgm.is_border(ei)) {
         pr.setFixed(int(vid0));
@@ -583,14 +583,16 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
     pr.m_bondscl = 0.01f;
     pr.refine();
 
-    pr.m_nMaxIter = 100;
+    pr.m_nMaxIter = 20;
     pr.m_bondscl = 0.05f;
     pr.refine();
 
-    //pr.m_nMaxIter = 100;
-    //pr.m_bondscl = 0.1f;
-    //pr.refine();
+    pr.m_nMaxIter = 100;
+    pr.m_bondscl = 0.1f;
+    pr.m_mapscl = 100.0f;
+    pr.refine();
 
+    //pr.m_nMaxIter = 100;
     //pr.m_bondscl = 0.5f;
     //pr.refine();
 
@@ -606,11 +608,10 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
 
   dumpTriStats("mcmin.txt", cgm, m_ipol);
 
-/*
   MB_DPRINTLN("start remeshing nv=%d, nf=%d", nv, nf);
   double target_edge_length = 0.5;
-  unsigned int nb_iter = 3;
-  unsigned int rel_iter = 1;
+  unsigned int nb_iter = 1;
+  unsigned int rel_iter = 0;
   PMP::isotropic_remeshing(
     faces(cgm),
     target_edge_length,
@@ -621,11 +622,78 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
   nf = cgm.number_of_faces();
 
   MB_DPRINTLN("Remeshing done, nv=%d, nf=%d", nv, nf);
-*/
   
-  drawMeshLines(pdl, cgm, 1,1,0);
+  // drawMeshLines(pdl, cgm, 1,1,0);
   
-  /*
+  {
+    Vector3F vnew, pt;
+
+    ParticleRefine pr;
+    pr.m_pipol = &m_ipol;
+    pr.m_isolev = m_dLevel;
+    pr.m_bUseMap = true;
+    pr.m_bUseProj = false;
+
+    int ne = cgm.number_of_edges();
+    int nangl = 0;
+    /*for(vid_t vd : cgm.vertices()){
+      nangl += cgm.degree(vd);
+    }*/
+
+    pr.setup(nv, ne, nangl);
+
+    i=0;
+    for(vid_t vd : cgm.vertices()){
+      pt = convToV3F( cgm.point(vd) );
+      pr.setPos(i, int(vd), pt);
+      ++i;
+    }
+    
+    i=0;
+    float edge_len = 0.0f;
+    for(Mesh::Edge_index ei : cgm.edges()){
+      Vector3F v0 = convToV3F(cgm.point( cgm.target(cgm.halfedge(ei, 0))));
+      Vector3F v1 = convToV3F(cgm.point( cgm.target(cgm.halfedge(ei, 1))));
+      edge_len += (v0-v1).length();
+      i++;
+    }
+    edge_len /= float(i);
+    MB_DPRINTLN("average edge length: %f", edge_len);
+
+    i=0;
+    for(Mesh::Edge_index ei : cgm.edges()){
+      Mesh::Halfedge_index h0 = cgm.halfedge(ei, 0);
+      vid_t vid0 = cgm.target(h0);
+      Mesh::Halfedge_index h1 = cgm.halfedge(ei, 1);
+      vid_t vid1 = cgm.target(h1);
+      pr.setBond(i, int(vid0), int(vid1), edge_len * 0.8);
+      ++i;
+      if (cgm.is_border(ei)) {
+        pr.setFixed(int(vid0));
+        pr.setFixed(int(vid1));
+      }
+    }
+
+    pr.m_nMaxIter = 20;
+    pr.m_mapscl = 20.0f;
+    pr.m_bondscl = 0.01f;
+    pr.refine();
+
+    pr.m_nMaxIter = 20;
+    pr.m_bondscl = 0.05f;
+    pr.refine();
+
+    pr.m_nMaxIter = 20;
+    pr.m_bondscl = 0.1f;
+    pr.m_mapscl = 100.0f;
+    pr.refine();
+
+    for(vid_t vd : cgm.vertices()){
+      vnew = pr.getPos(int(vd));
+      cgm.point(vd) = convToCGP3(vnew);
+    }
+  }
+
   {
     MB_DPRINTLN("Projecting vertices to surf");
     float del;
@@ -648,9 +716,10 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
     }
     MB_DPRINTLN("done");
   }
-*/
 
   drawMeshLines(pdl, cgm, 1,1,0);
+
+  dumpTriStats("mcminrem.txt", cgm, m_ipol);
 
   K::Point_3 cgpt;
   Vector3F pt, norm;
@@ -715,7 +784,7 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
 
   //////////
 
-  /*{
+  {
     gfx::Mesh mesh;
     mesh.init(nv, nf);
     mesh.color(getColor());
@@ -749,7 +818,7 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
       ++i;
     }
     pdl->drawMesh(mesh);
-  }*/
+  }
   
 }
 

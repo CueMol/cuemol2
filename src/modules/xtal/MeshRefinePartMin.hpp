@@ -336,8 +336,8 @@ namespace xtal {
             const float dz = m_posary[id1+2] - m_posary[id2+2];
 
             len = sqrt(dx*dx + dy*dy + dz*dz);
-            //ss = qlib::max(0.0f,  len - m_bonds[i].r0);
-            ss = qlib::min(0.0f,  len - m_bonds[i].r0);
+            ss = qlib::max(0.0f,  len - m_bonds[i].r0);
+            //ss = qlib::min(0.0f,  len - m_bonds[i].r0);
             //ss = len - m_bonds[i].r0;
 
             con = 2.0f * m_bondscl * ss/len;
