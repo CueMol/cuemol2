@@ -10,10 +10,12 @@
 #include "xtal.hpp"
 
 #include <qlib/Array.hpp>
+#include <qlib/Matrix3T.hpp>
 
 namespace xtal {
 
   using qlib::FloatArray;
+  using qlib::Matrix3F;
 
   class MapBsplIpol
   {
@@ -40,6 +42,15 @@ namespace xtal {
 
     /// for debugging
     Vector3F calcDscDiffAt(const Vector3F &pos) const;
+
+    void calcCurvAt(const Vector3F &pos,
+                    Matrix3F *pcurv,
+                    Vector3F *pgrad,
+                    float *rval) const;
+
+    /// for debugging
+    Matrix3F calcDscCurvAt(const Vector3F &pos) const;
+
 
     std::complex<float> calc_cm2(int i, int N);
 

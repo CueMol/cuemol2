@@ -79,6 +79,24 @@ namespace qlib {
       aij(3, 3) = e3.z();
     }
 
+    Matrix3T(value_type a11, value_type a12, value_type a13,
+             value_type a21, value_type a22, value_type a23,
+             value_type a31, value_type a32, value_type a33)
+         : super_t(0, detail::no_init_tag())
+    {
+      aij(1, 1) = a11;
+      aij(2, 1) = a21;
+      aij(3, 1) = a31;
+  
+      aij(1, 2) = a12;
+      aij(2, 2) = a22;
+      aij(3, 2) = a32;
+  
+      aij(1, 3) = a13;
+      aij(2, 3) = a23;
+      aij(3, 3) = a33;
+    }
+
     ////////////////////////////////////////////////////////////
     // methods
 
@@ -179,8 +197,16 @@ namespace qlib {
          : super_t(e1, e2, e3)
     {
     }
-
-
+    
+    Matrix3F(value_type a11, value_type a12, value_type a13,
+             value_type a21, value_type a22, value_type a23,
+             value_type a31, value_type a32, value_type a33)
+         : super_t(a11, a12, a13,
+                   a21, a22, a23,
+                   a31, a32, a33)
+    {
+    }
+    
     ////////////////////////////////////////////////////////////
     // Methods
 

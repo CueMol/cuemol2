@@ -19,12 +19,6 @@
 #include <qsys/Scene.hpp>
 #include <modules/molstr/AtomIterator.hpp>
 
-#include <CGAL/Simple_cartesian.h>
-#include <CGAL/Surface_mesh.h>
-//#include <CGAL/Polygon_mesh_processing/refine.h>
-#include <CGAL/Polygon_mesh_processing/remesh.h>
-#include <unordered_map>
-
 #include "MeshRefinePartMin.hpp"
 
 using namespace xtal;
@@ -185,127 +179,6 @@ Vector3F MapIpolSurf2Renderer::calcNorm(const Vector3F &v) const
 */
   //rval.normalizeSelf();
   return -rval;
-}
-
-typedef CGAL::Simple_cartesian<double> K;
-typedef CGAL::Surface_mesh<K::Point_3> Mesh;
-typedef Mesh::Vertex_index vid_t;
-typedef Mesh::Face_index fid_t;
-namespace PMP = CGAL::Polygon_mesh_processing;
-
-inline Vector3F convToV3F(const K::Point_3 &src) {
-  return Vector3F(src.x(), src.y(), src.z());
-}
-
-inline K::Point_3 convToCGP3(const Vector3F &src) {
-  return K::Point_3(src.x(), src.y(), src.z());
-}
-
-inline float radratio(const Vector3F &v0, const Vector3F &v1, const Vector3F &v2) {
-  float a = (v0-v1).length();
-  float b = (v1-v2).length();
-  float c = (v2-v0).length();
-  return (b + c - a)*(c + a - b)*(a + b - c) / (a*b*c);
-}
-
-inline float angle(const Vector3F &v1, const Vector3F &v2)
-{
-  const float u = float( v1.dot(v2) );
-  const float l = float( v1.length() ) * float( v2.length()  );
-  const float res = ::acos( u/l );
-  return res;
-}
-
-inline float minangl(const Vector3F &v0, const Vector3F &v1, const Vector3F &v2, bool bmax = false) {
-  float a = angle( (v1-v0), (v2-v0) );
-  float b = angle( (v0-v1), (v2-v1) );
-  float c = angle( (v1-v2), (v0-v2) );
-  if (bmax)
-    return qlib::max( qlib::max(a, b), c);
-  else
-    return qlib::min( qlib::min(a, b), c);
-}
-
-inline float calcNormScore(const Vector3F &v0, const Vector3F &v1, const Vector3F &v2,
-                           const Vector3F &n0, const Vector3F &n1, const Vector3F &n2)
-{
-  Vector3F nav = (n0+n1+n2).normalize();
-  Vector3F fav = ((v1-v0).cross(v2-v0)).normalize();
-  return qlib::abs(nav.dot(fav));
-}
-
-inline Vector3F calcNorm(const Vector3F &v1, const Vector3F &v2, const Vector3F &v3)
-{
-  Vector3F tmp = (v2-v1).cross(v3-v1);
-  return tmp;
-  //return tmp.normalize();
-}
-
-inline bool checkSide(const Vector3F &v1, const Vector3F &v2, const Vector3F &v3, const Vector3F &vcom)
-{
-  Vector3F vn = calcNorm(v1, v2, v3);
-  float det = vn.dot(vcom-v1);
-  if (det>0.0f)
-    return true;
-  else
-    return false;
-}
-
-void dumpTriStats(const LString &fname, const Mesh &cgm, const MapBsplIpol &ip)
-{
-  FILE *fp = fopen(fname, "w");
-  int i, j;
-  
-  //vid_t vid[3];
-  Vector3F v[3], g[3], vn;
-  float minang, maxang, rr, ns;
-
-  i=0;
-  for(fid_t fd : cgm.faces()){
-
-    j=0;
-    BOOST_FOREACH(vid_t vd,vertices_around_face(cgm.halfedge(fd), cgm)){
-      MB_ASSERT(j<3);
-      v[j] = convToV3F( cgm.point(vd) );
-      g[j] = -(ip.calcDiffAt(v[j])).normalize();
-      ++j;
-    }
-    MB_ASSERT(j==3);
-
-    minang = minangl(v[0], v[1], v[2]);
-    maxang = minangl(v[0], v[1], v[2], true);
-    rr = radratio(v[0], v[1], v[2]);
-    vn = calcNorm(v[0], v[1], v[2]).normalize();
-    ns = (vn.dot(g[0]) + vn.dot(g[1]) + vn.dot(g[2]))/3.0f;
-
-    fprintf(fp, "Tri %d min %f max %f rr %f ns %f\n",
-            i, qlib::toDegree(minang), qlib::toDegree(maxang), rr, ns);
-    ++i;
-  }
-
-  fclose(fp);
-
-}
-
-void drawMeshLines(DisplayContext *pdl, const Mesh &cgm, float r, float g, float b)
-{
-    pdl->setLineWidth(1.0);
-    pdl->setLighting(false);
-    pdl->startLines();
-  pdl->color(r,g,b);
-
-    for(Mesh::Edge_index ei : cgm.edges()){
-      Mesh::Halfedge_index h0 = cgm.halfedge(ei, 0);
-      Vector3F v00 = convToV3F( cgm.point( cgm.target(h0) ) );
-      
-      Mesh::Halfedge_index h1 = cgm.halfedge(ei, 1);
-      Vector3F v10 = convToV3F( cgm.point( cgm.target(h1) ) );
-      
-      pdl->vertex(v00);
-      pdl->vertex(v10);
-    }
-    pdl->end();
-    pdl->setLighting(true);
 }
 
 void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
@@ -507,76 +380,10 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
   dumpTriStats("mc.txt", cgm, m_ipol);
 
   {
-    Vector3F vnew, pt;
-
     ParticleRefine pr;
-    pr.m_pipol = &m_ipol;
     pr.m_isolev = m_dLevel;
-    pr.m_bUseMap = true;
-    pr.m_bUseProj = false;
-
-    int ne = cgm.number_of_edges();
-    int nangl = 0;
-    /*for(vid_t vd : cgm.vertices()){
-      nangl += cgm.degree(vd);
-    }*/
-
-    pr.setup(nv, ne, nangl);
-
-    i=0;
-    for(vid_t vd : cgm.vertices()){
-      pt = convToV3F( cgm.point(vd) );
-      pr.setPos(i, int(vd), pt);
-      ++i;
-    }
-    
-    i=0;
-    float edge_len = 0.0f;
-    for(Mesh::Edge_index ei : cgm.edges()){
-      Vector3F v0 = convToV3F(cgm.point( cgm.target(cgm.halfedge(ei, 0))));
-      Vector3F v1 = convToV3F(cgm.point( cgm.target(cgm.halfedge(ei, 1))));
-      edge_len += (v0-v1).length();
-      i++;
-    }
-    edge_len /= float(i);
-    MB_DPRINTLN("average edge length: %f", edge_len);
-
-    i=0;
-    for(Mesh::Edge_index ei : cgm.edges()){
-      Mesh::Halfedge_index h0 = cgm.halfedge(ei, 0);
-      vid_t vid0 = cgm.target(h0);
-      Mesh::Halfedge_index h1 = cgm.halfedge(ei, 1);
-      vid_t vid1 = cgm.target(h1);
-      pr.setBond(i, int(vid0), int(vid1), edge_len * 0.8);
-      ++i;
-      if (cgm.is_border(ei)) {
-        pr.setFixed(int(vid0));
-        pr.setFixed(int(vid1));
-      }
-    }
-
-    /*
-    i=0;
-    int j;
-    for(vid_t vd : cgm.vertices()){
-      int ndgr = cgm.degree(vd);
-      std::vector<vid_t> svs(ndgr);
-      j=0;
-      BOOST_FOREACH(vid_t avd, vertices_around_target(cgm.halfedge(vd), cgm)){
-        svs[j] = avd;
-        ++j;
-      } 
-      float anglsum = 0.0f;
-      for (j=0; j<ndgr; ++j) {
-        anglsum += pr.calcAngle(int(svs[j]), int(vd), int(svs[(j+1)%ndgr]));
-      }      
-      for (j=0; j<ndgr; ++j) {
-        pr.setAngle(i, int(svs[j]), int(vd), int(svs[(j+1)%ndgr]), anglsum/ndgr);
-        ++i;
-        ++j;
-      }
-    }          
-     */
+    pr.m_bUseAdp = false;
+    pr.refineSetup(&m_ipol, cgm);
 
     pr.m_nMaxIter = 20;
     pr.m_mapscl = 20.0f;
@@ -587,7 +394,7 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
     pr.m_bondscl = 0.05f;
     pr.refine();
 
-    pr.m_nMaxIter = 100;
+    pr.m_nMaxIter = 20;
     pr.m_bondscl = 0.1f;
     pr.m_mapscl = 100.0f;
     pr.refine();
@@ -600,10 +407,7 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
     //pr.m_nMaxIter = 100;
     //pr.refine();
 
-    for(vid_t vd : cgm.vertices()){
-      vnew = pr.getPos(int(vd));
-      cgm.point(vd) = convToCGP3(vnew);
-    }
+    pr.writeResult(cgm);
   }
 
   dumpTriStats("mcmin.txt", cgm, m_ipol);
@@ -626,53 +430,10 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
   // drawMeshLines(pdl, cgm, 1,1,0);
   
   {
-    Vector3F vnew, pt;
-
     ParticleRefine pr;
-    pr.m_pipol = &m_ipol;
     pr.m_isolev = m_dLevel;
-    pr.m_bUseMap = true;
-    pr.m_bUseProj = false;
-
-    int ne = cgm.number_of_edges();
-    int nangl = 0;
-    /*for(vid_t vd : cgm.vertices()){
-      nangl += cgm.degree(vd);
-    }*/
-
-    pr.setup(nv, ne, nangl);
-
-    i=0;
-    for(vid_t vd : cgm.vertices()){
-      pt = convToV3F( cgm.point(vd) );
-      pr.setPos(i, int(vd), pt);
-      ++i;
-    }
-    
-    i=0;
-    float edge_len = 0.0f;
-    for(Mesh::Edge_index ei : cgm.edges()){
-      Vector3F v0 = convToV3F(cgm.point( cgm.target(cgm.halfedge(ei, 0))));
-      Vector3F v1 = convToV3F(cgm.point( cgm.target(cgm.halfedge(ei, 1))));
-      edge_len += (v0-v1).length();
-      i++;
-    }
-    edge_len /= float(i);
-    MB_DPRINTLN("average edge length: %f", edge_len);
-
-    i=0;
-    for(Mesh::Edge_index ei : cgm.edges()){
-      Mesh::Halfedge_index h0 = cgm.halfedge(ei, 0);
-      vid_t vid0 = cgm.target(h0);
-      Mesh::Halfedge_index h1 = cgm.halfedge(ei, 1);
-      vid_t vid1 = cgm.target(h1);
-      pr.setBond(i, int(vid0), int(vid1), edge_len * 0.8);
-      ++i;
-      if (cgm.is_border(ei)) {
-        pr.setFixed(int(vid0));
-        pr.setFixed(int(vid1));
-      }
-    }
+    pr.m_bUseAdp = false;
+    pr.refineSetup(&m_ipol, cgm);
 
     pr.m_nMaxIter = 20;
     pr.m_mapscl = 20.0f;
@@ -683,16 +444,43 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
     pr.m_bondscl = 0.05f;
     pr.refine();
 
+    //pr.writeResult(cgm);
+
+    dumpEdgeStats("edge_mcmin.txt", cgm, m_ipol);
+
+    pr.setAdpBondWeights(cgm, 0.2, 2.0);
+
+    pr.m_nMaxIter = 20;
+    pr.m_mapscl = 20.0f;
+    pr.m_bondscl = 0.01f;
+    pr.refine();
+
+    //pr.setAdpBondWeights(cgm, 0.3, 1.7);
+
+    pr.m_nMaxIter = 20;
+    pr.m_bondscl = 0.05f;
+    pr.refine();
+
     pr.m_nMaxIter = 20;
     pr.m_bondscl = 0.1f;
     pr.m_mapscl = 100.0f;
     pr.refine();
 
-    for(vid_t vd : cgm.vertices()){
-      vnew = pr.getPos(int(vd));
-      cgm.point(vd) = convToCGP3(vnew);
-    }
+    pr.m_nMaxIter = 20;
+    pr.m_bondscl = 1.0f;
+    pr.m_mapscl = 100.0f;
+    pr.refine();
+
+    pr.m_nMaxIter = 100;
+    pr.m_bondscl = 10.0f;
+    pr.m_mapscl = 100.0f;
+    pr.refine();
+
+    pr.writeResult(cgm);
+
   }
+
+  dumpEdgeStats("edge_mcmin2.txt", cgm, m_ipol);
 
   {
     MB_DPRINTLN("Projecting vertices to surf");
