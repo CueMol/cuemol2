@@ -470,8 +470,8 @@ namespace xtal {
         const float dz = m_posary[id1+2] - m_posary[id2+2];
 
         len = sqrt(dx*dx + dy*dy + dz*dz);
-        ss = qlib::max(0.0f,  len - m_bonds[i].r0);
-        //ss = qlib::min(0.0f,  len - m_bonds[i].r0);
+        //ss = qlib::max(0.0f,  len - m_bonds[i].r0);
+        ss = qlib::min(0.0f,  len - m_bonds[i].r0);
         //ss = len - m_bonds[i].r0;
 
         con = 2.0f * m_bondscl * ss/len;
@@ -600,6 +600,69 @@ namespace xtal {
       return eng;
     }
 
+
+    void refine()
+    {
+      m_bUseProj = true;
+
+      if (m_bUseProj) {
+        m_sol.m_pipol = m_pipol;
+        m_sol.m_isolev = m_isolev;
+        m_sol.m_eps = FLT_EPSILON*100.0f;
+      }
+
+      int ncrd = m_posary.size();
+      int nbon = m_bonds.size();
+
+      float tolerance = 0.06;
+      float deltat = 0.01;// * gsl_blas_dnrm2(x);
+
+      MB_DPRINTLN("set step=%f, tol=%f", deltat, tolerance);
+
+      MB_DPRINTLN("set OK");
+
+      int npart = m_posary.size()/3;
+      int id1;
+      int iter, i;
+      float eng, len, lenmax = -1.0e10;
+
+      for (iter=0; iter<m_nMaxIter; ++iter) {
+
+        eng = calcFdF(m_grad);
+
+        
+        for (i=0; i<npart; ++i) {
+          id1 = i*3;
+          len = sqrt(m_grad[id1+0]*m_grad[id1+0] +
+                     m_grad[id1+1]*m_grad[id1+1] +
+                     m_grad[id1+2]*m_grad[id1+2]);
+          lenmax = qlib::max(lenmax, len);
+        }
+
+        if (lenmax>0.1)
+          deltat = 0.1/lenmax;
+        else
+          deltat = 0.1;
+        MB_DPRINTLN("grad lenmax = %f scale %f", lenmax, deltat);
+        
+
+        for (i=0; i<npart; ++i) {
+          id1 = i*3;
+          m_posary[id1+0] -= deltat * m_grad[id1+0];
+          m_posary[id1+1] -= deltat * m_grad[id1+1];
+          m_posary[id1+2] -= deltat * m_grad[id1+2];
+        }
+
+        if (m_bUseProj)
+          project(NULL);
+
+        MB_DPRINTLN("iter = %d energy=%f", iter, eng);
+      }
+
+    }
+
+    //////////
+
     static inline void copyToGsl(gsl_vector *dst, const std::vector<float> &src)
     {
       int i;
@@ -680,7 +743,7 @@ namespace xtal {
     }
 
 
-    void refine()
+    void refineGsl()
     {
       //m_bUseMap = false;
 
@@ -935,7 +998,7 @@ namespace xtal {
         Mesh::Halfedge_index h1 = cgm.halfedge(ei, 1);
         vid_t vid1 = cgm.target(h1);
 
-        setBond(i, int(vid0), int(vid1), edge_len * 0.8);
+        setBond(i, int(vid0), int(vid1), edge_len * 1.2);
         ++i;
         if (cgm.is_border(ei)) {
           setFixed(int(vid0));

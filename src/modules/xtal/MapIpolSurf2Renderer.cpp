@@ -412,6 +412,7 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
 
   dumpTriStats("mcmin.txt", cgm, m_ipol);
 
+#if 0
   MB_DPRINTLN("start remeshing nv=%d, nf=%d", nv, nf);
   double target_edge_length = 0.5;
   unsigned int nb_iter = 1;
@@ -479,6 +480,7 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
     pr.writeResult(cgm);
 
   }
+#endif
 
   dumpEdgeStats("edge_mcmin2.txt", cgm, m_ipol);
 
