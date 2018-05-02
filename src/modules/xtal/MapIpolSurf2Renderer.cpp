@@ -378,12 +378,18 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
   int nf = cgm.number_of_faces();
 
   dumpTriStats("mc.txt", cgm, m_ipol);
+  dumpEdgeStats("edge_mc.txt", cgm, m_ipol);
 
   {
     ParticleRefine pr;
     pr.m_isolev = m_dLevel;
-    pr.m_bUseAdp = false;
+
     pr.refineSetup(&m_ipol, cgm);
+
+    //pr.m_bUseAdp = false;
+    pr.m_bUseAdp = true;
+    pr.m_bUseMap = false;
+    pr.m_bUseProj = true;
 
     pr.m_nMaxIter = 20;
     pr.m_mapscl = 20.0f;
@@ -396,21 +402,17 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
 
     pr.m_nMaxIter = 20;
     pr.m_bondscl = 0.1f;
-    pr.m_mapscl = 100.0f;
     pr.refine();
 
-    //pr.m_nMaxIter = 100;
-    //pr.m_bondscl = 0.5f;
-    //pr.refine();
-
-    //pr.m_bondscl = 1.0f;
-    //pr.m_nMaxIter = 100;
-    //pr.refine();
+    pr.m_nMaxIter = 100;
+    pr.m_bondscl = 1.0f;
+    pr.refine();
 
     pr.writeResult(cgm);
   }
 
-  dumpTriStats("mcmin.txt", cgm, m_ipol);
+  dumpTriStats("mcmin1.txt", cgm, m_ipol);
+  dumpEdgeStats("edge_mcmin1.txt", cgm, m_ipol);
 
 #if 0
   MB_DPRINTLN("start remeshing nv=%d, nf=%d", nv, nf);
@@ -430,6 +432,7 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
   
   // drawMeshLines(pdl, cgm, 1,1,0);
   
+
   {
     ParticleRefine pr;
     pr.m_isolev = m_dLevel;
@@ -480,9 +483,10 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
     pr.writeResult(cgm);
 
   }
-#endif
 
   dumpEdgeStats("edge_mcmin2.txt", cgm, m_ipol);
+
+#endif
 
   {
     MB_DPRINTLN("Projecting vertices to surf");
@@ -509,7 +513,7 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
 
   drawMeshLines(pdl, cgm, 1,1,0);
 
-  dumpTriStats("mcminrem.txt", cgm, m_ipol);
+  //dumpTriStats("mcminrem.txt", cgm, m_ipol);
 
   K::Point_3 cgpt;
   Vector3F pt, norm;

@@ -12,6 +12,7 @@
 //#include <CGAL/Polygon_mesh_processing/refine.h>
 #include <CGAL/Polygon_mesh_processing/remesh.h>
 #include <unordered_map>
+#include <qlib/Utils.hpp>
 
 namespace xtal {
 
@@ -377,6 +378,8 @@ namespace xtal {
     bool m_bUseMap;
     bool m_bUseProj;
 
+    float m_averEdgeLen;
+
     /// vid-> particle index map
     std::unordered_map<int,int> m_vidmap;
 
@@ -470,8 +473,8 @@ namespace xtal {
         const float dz = m_posary[id1+2] - m_posary[id2+2];
 
         len = sqrt(dx*dx + dy*dy + dz*dz);
-        //ss = qlib::max(0.0f,  len - m_bonds[i].r0);
-        ss = qlib::min(0.0f,  len - m_bonds[i].r0);
+        ss = qlib::max(0.0f,  len - m_bonds[i].r0);
+        //ss = qlib::min(0.0f,  len - m_bonds[i].r0);
         //ss = len - m_bonds[i].r0;
 
         con = 2.0f * m_bondscl * ss/len;
@@ -603,8 +606,6 @@ namespace xtal {
 
     void refine()
     {
-      m_bUseProj = true;
-
       if (m_bUseProj) {
         m_sol.m_pipol = m_pipol;
         m_sol.m_isolev = m_isolev;
@@ -625,12 +626,14 @@ namespace xtal {
       int id1;
       int iter, i;
       float eng, len, lenmax = -1.0e10;
+      float grad_max = 0.2;
 
       for (iter=0; iter<m_nMaxIter; ++iter) {
 
         eng = calcFdF(m_grad);
 
         
+        lenmax = -1.0e10;
         for (i=0; i<npart; ++i) {
           id1 = i*3;
           len = sqrt(m_grad[id1+0]*m_grad[id1+0] +
@@ -639,10 +642,10 @@ namespace xtal {
           lenmax = qlib::max(lenmax, len);
         }
 
-        if (lenmax>0.1)
-          deltat = 0.1/lenmax;
+        if (lenmax>grad_max)
+          deltat = grad_max/lenmax;
         else
-          deltat = 0.1;
+          deltat = grad_max;
         MB_DPRINTLN("grad lenmax = %f scale %f", lenmax, deltat);
         
 
@@ -655,6 +658,10 @@ namespace xtal {
 
         if (m_bUseProj)
           project(NULL);
+
+        if (m_bUseAdp)
+          setAdpBondWeights();
+
 
         MB_DPRINTLN("iter = %d energy=%f", iter, eng);
       }
@@ -787,12 +794,13 @@ namespace xtal {
 
       int iter=0, status;
 
+      if (m_bUseAdp)
+        setAdpBondWeights();
+
       do {
+
         iter++;
         status = gsl_multimin_fdfminimizer_iterate(pMin);
-
-        if (m_bUseProj)
-          project(pMin->x);
 
         if (status)
           break;
@@ -803,6 +811,10 @@ namespace xtal {
           MB_DPRINTLN("Minimum found");
 
         MB_DPRINTLN("iter = %d energy=%f", iter, pMin->f);
+
+        if (m_bUseProj)
+          project(pMin->x);
+
       }
       while (status == GSL_CONTINUE && iter < m_nMaxIter);
 
@@ -924,7 +936,7 @@ namespace xtal {
       float c = calcMaxCurv(vm);
 
       //float rval = 2.0 * sin(qlib::toRadian(160.0)*0.5)/c;
-      float rval = 0.25 / c;
+      float rval = 0.5 / c;
 
       return rval;
     }
@@ -990,6 +1002,7 @@ namespace xtal {
       }
       edge_len /= float(i);
       MB_DPRINTLN("average edge length: %f", edge_len);
+      m_averEdgeLen = edge_len;
 
       i=0;
       for(Mesh::Edge_index ei : cgm.edges()){
@@ -998,7 +1011,7 @@ namespace xtal {
         Mesh::Halfedge_index h1 = cgm.halfedge(ei, 1);
         vid_t vid1 = cgm.target(h1);
 
-        setBond(i, int(vid0), int(vid1), edge_len * 1.2);
+        setBond(i, int(vid0), int(vid1), edge_len * 1.0);
         ++i;
         if (cgm.is_border(ei)) {
           setFixed(int(vid0));
@@ -1031,9 +1044,8 @@ namespace xtal {
 
     }
 
-    void setAdpBondWeights(Mesh &cgm, float lo, float hi)
+    float calcAverEdgeLen() const
     {
-      m_bUseAdp = true;
       const int nbon = m_bonds.size();
 
       Vector3F v0, v1;
@@ -1050,7 +1062,18 @@ namespace xtal {
       edge_len /= float(nbon);
       MB_DPRINTLN("average edge length: %f", edge_len);
 
+      return edge_len;
+    }
+
+    //void setAdpBondWeights(Mesh &cgm, float lo, float hi)
+    void setAdpBondWeights(float aver_len = -1.0f)
+    {
+      MB_DPRINTLN("Update adaptive bond weights ave=%f", m_averEdgeLen);
+      const int nbon = m_bonds.size();
+
       float fh = 1.0f;
+      Vector3F v0, v1;
+      int id1, id2, i;
 
       i=0;
       for(i=0; i<nbon; ++i){
@@ -1059,7 +1082,11 @@ namespace xtal {
         v0 = Vector3F(&m_posary[id1+0]);
         v1 = Vector3F(&m_posary[id2+0]);
         fh = calcHImpl2(v0, v1);
-        m_bonds[i].r0 = fh; //aedge_len * fh * 0.8;
+        //fh = qlib::clamp(fh, 0.1f, 2.0f);
+        if (aver_len<0.0f)
+          m_bonds[i].r0 = m_averEdgeLen * fh;
+        else
+          m_bonds[i].r0 = aver_len * fh;
       }
     }
 
