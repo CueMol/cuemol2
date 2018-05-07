@@ -356,6 +356,7 @@ namespace xtal {
       int id1;
       int id2;
       float r0;
+      float kf;
     };
 
     struct Angle {
@@ -411,6 +412,7 @@ namespace xtal {
       m_bonds[bind].id1 = m_vidmap[vid1];
       m_bonds[bind].id2 = m_vidmap[vid2];
       m_bonds[bind].r0 = r0;
+      m_bonds[bind].kf = 1.0f;
     }
 
     void setFixed(int vid1)
@@ -452,7 +454,7 @@ namespace xtal {
     float calcFdF(std::vector<float> &pres)
     {
       int i, id1, id2;
-      float len, con, ss;
+      float len, con, ss, locscl;
 
       const int nbon = m_bonds.size();
       const int nang = m_angls.size();
@@ -477,7 +479,8 @@ namespace xtal {
         //ss = qlib::min(0.0f,  len - m_bonds[i].r0);
         //ss = len - m_bonds[i].r0;
 
-        con = 2.0f * m_bondscl * ss/len;
+        locscl = m_bondscl * m_bonds[i].kf;
+        con = 2.0f * locscl * ss/len;
 
         if (!m_fix[id1/3]) {
           pres[id1+0] += con * dx;
@@ -491,7 +494,7 @@ namespace xtal {
           pres[id2+2] -= con * dz;
         }
 
-        eng += ss * ss * m_bondscl;
+        eng += ss * ss * locscl;
       }
 
       int ai, aj, ak;
@@ -1083,10 +1086,15 @@ namespace xtal {
         v1 = Vector3F(&m_posary[id2+0]);
         fh = calcHImpl2(v0, v1);
         //fh = qlib::clamp(fh, 0.1f, 2.0f);
-        if (aver_len<0.0f)
+        if (aver_len<0.0f) {
           m_bonds[i].r0 = m_averEdgeLen * fh;
-        else
+          m_bonds[i].kf = 1.0f;
+          //m_bonds[i].kf = 1.0f/fh;
+        }
+        else {
           m_bonds[i].r0 = aver_len * fh;
+          m_bonds[i].kf = 1.0f;
+        }
       }
     }
 
@@ -1165,6 +1173,318 @@ namespace xtal {
     fclose(fp);
   }
   
+
+  template<typename PolygonMesh,
+  typename GeomTraits>
+  class Incremental_remesher
+  {
+  private:
+    typedef PolygonMesh PM;
+    typedef typename boost::graph_traits<PM>::halfedge_descriptor halfedge_descriptor;
+    typedef typename boost::graph_traits<PM>::edge_descriptor     edge_descriptor;
+    typedef typename boost::graph_traits<PM>::vertex_descriptor   vertex_descriptor;
+    typedef typename boost::graph_traits<PM>::face_descriptor     face_descriptor;
+    
+    typedef typename GeomTraits::Point_3    Point;
+    typedef typename GeomTraits::Vector_3   Vector_3;
+    typedef typename GeomTraits::Plane_3    Plane_3;
+    typedef typename GeomTraits::Triangle_3 Triangle_3;
+    
+    /*
+    typedef Incremental_remesher<PM,
+    VertexPointMap,
+    GeomTraits,
+    EdgeIsConstrainedMap,
+    VertexIsConstrainedMap,
+    FacePatchMap,
+    FaceIndexMap> Self;
+     */
+
+  public:
+    Incremental_remesher(PolygonMesh& pmesh)
+         : mesh_(pmesh)
+    {
+    }
+
+    //void split_long_edges(const double& high)
+    void split_long_edges(const double& high)
+    {
+      typedef boost::bimap<
+        boost::bimaps::set_of<halfedge_descriptor>,
+        boost::bimaps::multiset_of<double, std::greater<double> > >  Boost_bimap;
+      typedef typename Boost_bimap::value_type                       long_edge;
+
+      //double sq_high = high*high;
+
+      //collect long edges
+      Boost_bimap long_edges;
+      BOOST_FOREACH(edge_descriptor e, edges(mesh_))
+      {
+        if (!is_split_allowed(e))
+          continue;
+        double sqlen = sqlength(e);
+        halfedge_descriptor he = halfedge(e, mesh_);
+        double ideal_len = calcIdealL(he);
+        if(sqlen > ideal_len*ideal_len)
+          long_edges.insert(long_edge(he, sqlen));
+      }
+
+      //split long edges
+      unsigned int nb_splits = 0;
+      while (!long_edges.empty())
+      {
+        //the edge with longest length
+        typename Boost_bimap::right_map::iterator eit = long_edges.right.begin();
+        halfedge_descriptor he = eit->second;
+        double sqlen = eit->first;
+        long_edges.right.erase(eit);
+
+        //split edge
+        Point mid_point = this->midpoint(he);
+        halfedge_descriptor hnew = CGAL::Euler::split_edge(he, mesh_);
+        //CGAL_assertion(he == next(hnew, mesh_));
+        ++nb_splits;
+
+        //after splitting
+        vertex_descriptor vnew = target(hnew, mesh_);
+        mesh_.point(vnew) = mid_point;
+        halfedge_descriptor hnew_opp = opposite(hnew, mesh_);
+
+        /*
+        //check sub-edges
+        double sqlen_new = 0.25 * sqlen;
+        if (sqlen_new > sq_high)
+        {
+          //if it was more than twice the "long" threshold, insert them
+          long_edges.insert(long_edge(hnew,              sqlen_new));
+          long_edges.insert(long_edge(next(hnew, mesh_), sqlen_new));
+        }
+         */
+        //insert new edges to keep triangular faces, and update long_edges
+        if (!is_on_border(hnew)) {
+          halfedge_descriptor hnew2 = CGAL::Euler::split_face(hnew,
+                                                              next(next(hnew, mesh_), mesh_),
+                                                              mesh_);
+          /*
+          Halfedge_status snew = (is_on_patch(hnew) || is_on_patch_border(hnew))
+            ? PATCH
+            : MESH;
+          halfedge_added(hnew2,                  snew);
+          halfedge_added(opposite(hnew2, mesh_), snew);
+          set_patch_id(face(hnew2, mesh_), patch_id);
+          set_patch_id(face(opposite(hnew2, mesh_), mesh_), patch_id);
+           */
+          /*if (snew == PATCH)
+          {
+            double sql = sqlength(hnew2);
+            if (sql > sq_high)
+              long_edges.insert(long_edge(hnew2, sql));
+          }*/
+        }
+
+        //do it again on the other side if we're not on boundary
+        if (!is_on_border(hnew_opp))
+        {
+          halfedge_descriptor hnew2 = CGAL::Euler::split_face(prev(hnew_opp, mesh_),
+                                                              next(hnew_opp, mesh_),
+                                                              mesh_);
+          /*
+          Halfedge_status snew = (is_on_patch(hnew_opp) || is_on_patch_border(hnew_opp))
+             ? PATCH
+            : MESH;
+          halfedge_added(hnew2,                  snew);
+          halfedge_added(opposite(hnew2, mesh_), snew);
+          set_patch_id(face(hnew2, mesh_), patch_id_opp);
+          set_patch_id(face(opposite(hnew2, mesh_), mesh_), patch_id_opp);
+           */
+          /*if (snew == PATCH)
+          {
+            double sql = sqlength(hnew2);
+            if (sql > sq_high)
+              long_edges.insert(long_edge(hnew2, sql));
+          }*/
+        }
+        
+      }
+    }
+
+    void equalize_valences()
+    {
+      unsigned int nb_flips = 0;
+      BOOST_FOREACH(edge_descriptor e, edges(mesh_))
+      {
+        //only the patch edges are allowed to be flipped
+        if (!is_flip_allowed(e))
+          continue;
+
+        halfedge_descriptor he = CGAL::halfedge(e, mesh_);
+        vertex_descriptor va = CGAL::source(he, mesh_);
+        vertex_descriptor vb = CGAL::target(he, mesh_);
+        vertex_descriptor vc = CGAL::target(CGAL::next(he, mesh_), mesh_);
+        vertex_descriptor vd = CGAL::target(CGAL::next(CGAL::opposite(he, mesh_), mesh_), mesh_);
+
+        int vva = valence(va), tvva = target_valence(va);
+        int vvb = valence(vb), tvvb = target_valence(vb);
+        int vvc = valence(vc), tvvc = target_valence(vc);
+        int vvd = valence(vd), tvvd = target_valence(vd);
+        int deviation_pre = CGAL::abs(vva - tvva)
+                          + CGAL::abs(vvb - tvvb)
+                          + CGAL::abs(vvc - tvvc)
+                          + CGAL::abs(vvd - tvvd);
+
+        CGAL::Euler::flip_edge(he, mesh_);
+        vva -= 1;
+        vvb -= 1;
+        vvc += 1;
+        vvd += 1;
+        ++nb_flips;
+
+        int deviation_post = CGAL::abs(vva - tvva)
+                           + CGAL::abs(vvb - tvvb)
+                           + CGAL::abs(vvc - tvvc)
+                           + CGAL::abs(vvd - tvvd);
+
+        if (deviation_pre <= deviation_post) {
+          CGAL::Euler::flip_edge(he, mesh_);
+          --nb_flips;
+        }
+
+      }
+
+      MB_DPRINTLN("equalize_valences> nb_flips = %d", nb_flips);
+    }
+
+  public:
+    const MapBsplIpol *m_pipol;
+
+  private:
+
+    float calcMaxCurv(const Vector3F &pos) const
+    {
+      Matrix3F ct;
+      Vector3F grad;
+      m_pipol->calcCurvAt(pos, &ct, &grad, NULL);
+      //Matrix3F ctd = m_pipol->calcDscCurvAt(vm);
+      //ctd -= ct;
+
+      float len = grad.length();
+      Vector3F n = grad.divide(len);
+
+      Matrix3F P(1.0f -n.x()*n.x(), -n.x()*n.y(), -n.x()*n.z(),
+                 -n.y()*n.x(), 1.0f -n.y()*n.y(), -n.y()*n.z(),
+                 -n.z()*n.x(), - n.z()*n.y(), 1.0f -n.z()*n.z());
+
+      Matrix3F G = P*ct*P;
+      G /= len;
+
+      Matrix3F ctu;
+      Vector3F evals;
+      ParticleRefine::mat33_diag(G, ctu, evals);
+
+      evals.x() = qlib::abs(evals.x());
+      evals.y() = qlib::abs(evals.y());
+      evals.z() = qlib::abs(evals.z());
+
+      if (evals.x()>=evals.y() &&
+          evals.x()>=evals.z())
+        return evals.x();
+      else if (evals.y()>=evals.x() &&
+               evals.y()>=evals.z())
+        return evals.y();
+      else
+        return evals.z();
+    }
+
+    float calcIdealL(const halfedge_descriptor& h) const
+    {
+      Point mid_point = midpoint(h);
+
+      Vector3F vm = convToV3F(mid_point);
+      float c = calcMaxCurv(vm);
+
+      //float rval = 2.0 * sin(qlib::toRadian(160.0)*0.5)/c;
+      float rval = 0.5 / c;
+
+      return rval;
+    }
+
+
+    inline Point getPoint(const vertex_descriptor& v1) const {
+      return mesh_.point(v1);
+    }
+
+    bool is_split_allowed(const edge_descriptor& e) const
+    {
+      //halfedge_descriptor h = halfedge(e, mesh_);
+      //halfedge_descriptor hopp = opposite(h, mesh_);
+      return is_flip_allowed(e);
+    }
+
+    bool is_on_border(const halfedge_descriptor& h) const
+    {
+      bool res = is_border(h, mesh_);
+      //bool res = (status(h) == MESH_BORDER);
+      //CGAL_assertion(res == is_border(h, mesh_));
+      //CGAL_assertion(res == is_border(next(h, mesh_), mesh_));
+      return res;
+    }
+
+    bool is_on_border(const edge_descriptor& e) const
+    {
+      return is_on_border(halfedge(e, mesh_))
+          || is_on_border(opposite(halfedge(e, mesh_), mesh_));
+    }
+
+    double sqlength(const vertex_descriptor& v1,
+                    const vertex_descriptor& v2) const
+    {
+      return CGAL::to_double(CGAL::squared_distance(getPoint(v1), getPoint(v2)));
+    }
+
+    double sqlength(const halfedge_descriptor& h) const
+    {
+      vertex_descriptor v1 = target(h, mesh_);
+      vertex_descriptor v2 = source(h, mesh_);
+      return sqlength(v1, v2);
+    }
+
+    double sqlength(const edge_descriptor& e) const
+    {
+      return sqlength(halfedge(e, mesh_));
+    }
+
+    Point midpoint(const halfedge_descriptor& he) const
+    {
+      Point p1 = getPoint(target(he, mesh_));
+      Point p2 = getPoint(source(he, mesh_));
+      return CGAL::midpoint(p1, p2);
+    }
+
+    bool is_flip_allowed(const edge_descriptor& e) const
+    {
+      // XXX
+      return is_flip_allowed(halfedge(e, mesh_))
+          && is_flip_allowed(opposite(halfedge(e, mesh_), mesh_));
+    }
+    
+    bool is_flip_allowed(const halfedge_descriptor& h) const
+    {
+      return !is_border(h, mesh_);
+    }
+
+    int valence(const vertex_descriptor& v) const
+    {
+      return static_cast<int>(degree(v, mesh_));
+    }
+
+    int target_valence(const vertex_descriptor& v) const
+    {
+      return (is_border(v, mesh_)) ? 4 : 6;
+    }
+
+  private:
+    PolygonMesh& mesh_;
+  };
 
 }
 

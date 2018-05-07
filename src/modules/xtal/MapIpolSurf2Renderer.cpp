@@ -386,13 +386,17 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
 
     pr.refineSetup(&m_ipol, cgm);
 
-    //pr.m_bUseAdp = false;
-    pr.m_bUseAdp = true;
-    pr.m_bUseMap = false;
-    pr.m_bUseProj = true;
+    pr.m_bUseAdp = false;
+    //pr.m_bUseAdp = true;
+
+    //pr.m_bUseMap = false;
+    pr.m_bUseMap = true;
+
+    //pr.m_bUseProj = true;
+    pr.m_bUseProj = false;
 
     pr.m_nMaxIter = 20;
-    pr.m_mapscl = 20.0f;
+    pr.m_mapscl =  10.0f;
     pr.m_bondscl = 0.01f;
     pr.refine();
 
@@ -404,7 +408,8 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
     pr.m_bondscl = 0.1f;
     pr.refine();
 
-    pr.m_nMaxIter = 100;
+    pr.m_nMaxIter = 20;
+    pr.m_mapscl = 50.0f;
     pr.m_bondscl = 1.0f;
     pr.refine();
 
@@ -414,9 +419,10 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
   dumpTriStats("mcmin1.txt", cgm, m_ipol);
   dumpEdgeStats("edge_mcmin1.txt", cgm, m_ipol);
 
-#if 0
+#if 1
   MB_DPRINTLN("start remeshing nv=%d, nf=%d", nv, nf);
   double target_edge_length = 0.5;
+/*
   unsigned int nb_iter = 1;
   unsigned int rel_iter = 0;
   PMP::isotropic_remeshing(
@@ -425,41 +431,62 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
     cgm,
     PMP::parameters::number_of_iterations(nb_iter).number_of_relaxation_steps(rel_iter));
 
+*/
+  {
+    typedef Mesh PM;
+    typedef PMP::GetGeomTraits<PM>::type GT;
+
+    /*
+    typedef typename GetVertexPointMap<PM, NamedParameters>::type VPMap;
+    typedef typename boost::lookup_named_param_def <
+      internal_np::edge_is_constrained_t,
+    NamedParameters,
+    internal::Border_constraint_pmap<PM, FaceRange, FIMap>
+      >::type ECMap;
+  typedef typename boost::lookup_named_param_def <
+      internal_np::vertex_is_constrained_t,
+      NamedParameters,
+      internal::No_constraint_pmap<vertex_descriptor>//default
+    > ::type VCMap;
+  typedef typename boost::lookup_named_param_def <
+      internal_np::face_patch_t,
+      NamedParameters,
+      internal::Connected_components_pmap<PM, ECMap, FIMap>//default
+    > ::type FPMap;
+    typedef typename GetFaceIndexMap<PM, NamedParameters>::type FIMap;
+     */
+    Incremental_remesher<PM, GT> irm(cgm);
+    irm.m_pipol = &m_ipol;
+    irm.split_long_edges(target_edge_length);
+    irm.equalize_valences();
+  }
+
   nv = cgm.number_of_vertices();
   nf = cgm.number_of_faces();
-
   MB_DPRINTLN("Remeshing done, nv=%d, nf=%d", nv, nf);
   
   // drawMeshLines(pdl, cgm, 1,1,0);
   
-
+  
   {
     ParticleRefine pr;
     pr.m_isolev = m_dLevel;
-    pr.m_bUseAdp = false;
+
     pr.refineSetup(&m_ipol, cgm);
 
+    //pr.m_bUseAdp = false;
+    pr.m_bUseAdp = true;
+
+    //pr.m_bUseMap = false;
+    pr.m_bUseMap = true;
+
+    //pr.m_bUseProj = true;
+    pr.m_bUseProj = false;
+
     pr.m_nMaxIter = 20;
-    pr.m_mapscl = 20.0f;
+    pr.m_mapscl =  10.0f;
     pr.m_bondscl = 0.01f;
     pr.refine();
-
-    pr.m_nMaxIter = 20;
-    pr.m_bondscl = 0.05f;
-    pr.refine();
-
-    //pr.writeResult(cgm);
-
-    dumpEdgeStats("edge_mcmin.txt", cgm, m_ipol);
-
-    pr.setAdpBondWeights(cgm, 0.2, 2.0);
-
-    pr.m_nMaxIter = 20;
-    pr.m_mapscl = 20.0f;
-    pr.m_bondscl = 0.01f;
-    pr.refine();
-
-    //pr.setAdpBondWeights(cgm, 0.3, 1.7);
 
     pr.m_nMaxIter = 20;
     pr.m_bondscl = 0.05f;
@@ -467,28 +494,21 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
 
     pr.m_nMaxIter = 20;
     pr.m_bondscl = 0.1f;
-    pr.m_mapscl = 100.0f;
     pr.refine();
 
     pr.m_nMaxIter = 20;
+    pr.m_mapscl = 50.0f;
     pr.m_bondscl = 1.0f;
-    pr.m_mapscl = 100.0f;
-    pr.refine();
-
-    pr.m_nMaxIter = 100;
-    pr.m_bondscl = 10.0f;
-    pr.m_mapscl = 100.0f;
     pr.refine();
 
     pr.writeResult(cgm);
-
   }
 
   dumpEdgeStats("edge_mcmin2.txt", cgm, m_ipol);
 
 #endif
 
-  {
+  /*{
     MB_DPRINTLN("Projecting vertices to surf");
     float del;
     FindProjSurf sol;
@@ -509,7 +529,7 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
       }
     }
     MB_DPRINTLN("done");
-  }
+  }*/
 
   drawMeshLines(pdl, cgm, 1,1,0);
 
