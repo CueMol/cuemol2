@@ -421,7 +421,7 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
     dumpTriStats("mcmin1-01.txt", cgm, m_ipol);
     dumpEdgeStats("edge_mcmin1-01.txt", cgm, m_ipol);
 */
-    pr.m_nMaxIter = 1000;
+    pr.m_nMaxIter = 50;
     pr.m_mapscl = 50.0f;
     pr.m_bondscl = 1.0f;
     //pr.refine();
@@ -439,18 +439,18 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
 
   for (i=0; i<3; ++i) {
 
-    MB_DPRINTLN("start remeshing nv=%d, nf=%d", nv, nf);
-/*
-  double target_edge_length = 0.5;
-  unsigned int nb_iter = 1;
-  unsigned int rel_iter = 0;
-  PMP::isotropic_remeshing(
-    faces(cgm),
-    target_edge_length,
-    cgm,
-    PMP::parameters::number_of_iterations(nb_iter).number_of_relaxation_steps(rel_iter));
-*/
-    {
+    MB_DPRINTLN("Refine cycle %d start remeshing nv=%d, nf=%d", i, nv, nf);
+
+    double target_edge_length = 0.5;
+    unsigned int nb_iter = 1;
+    unsigned int rel_iter = 0;
+    PMP::isotropic_remeshing(
+      faces(cgm),
+      target_edge_length,
+      cgm,
+      PMP::parameters::number_of_iterations(nb_iter).number_of_relaxation_steps(rel_iter));
+
+    /*{
       typedef Mesh PM;
       typedef PMP::GetGeomTraits<PM>::type GT;
       
@@ -458,7 +458,7 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
       irm.m_pipol = &m_ipol;
       irm.split_long_edges();
       irm.equalize_valences();
-    }
+    }*/
     
     nv = cgm.number_of_vertices();
     nf = cgm.number_of_faces();
@@ -472,8 +472,11 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
       
       pr.refineSetup(&m_ipol, cgm);
       
-      //pr.m_bUseAdp = false;
-      pr.m_bUseAdp = true;
+      //if (i>=1)
+      //pr.m_nBondType = ParticleRefine::BOND_FULL;
+
+      pr.m_bUseAdp = false;
+      //pr.m_bUseAdp = true;
       
       //pr.m_bUseMap = false;
       pr.m_bUseMap = true;
@@ -481,23 +484,10 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
       //pr.m_bUseProj = true;
       pr.m_bUseProj = false;
       
-      pr.m_nMaxIter = 20;
-      pr.m_mapscl =  10.0f;
-      pr.m_bondscl = 0.01f;
-      pr.refine();
-      
-      //pr.m_nMaxIter = 20;
-      //pr.m_bondscl = 0.05f;
-      //pr.refine();
-      
-      //pr.m_nMaxIter = 20;
-      //pr.m_bondscl = 0.1f;
-      //pr.refine();
-      
-      pr.m_nMaxIter = 20;
-      pr.m_mapscl = 50.0f;
+      pr.m_nMaxIter = 50;
+      pr.m_mapscl = 20.0f;
       pr.m_bondscl = 1.0f;
-      pr.refine();
+      pr.refineGsl();
       
       pr.writeResult(cgm);
     }
@@ -530,9 +520,9 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
     MB_DPRINTLN("done");
   }
 
-  drawMeshLines(pdl, cgm, 1,1,0);
+  //drawMeshLines(pdl, cgm, 1,1,0);
 
-  //dumpTriStats("mcminrem.txt", cgm, m_ipol);
+  dumpTriStats("mcminrem.txt", cgm, m_ipol);
 
   K::Point_3 cgpt;
   Vector3F pt, norm;

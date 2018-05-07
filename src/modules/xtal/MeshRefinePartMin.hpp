@@ -451,6 +451,14 @@ namespace xtal {
       return ::acos( u/l );
     }
 
+	enum {
+		BOND_SHRINK,
+		BOND_STRETCH,
+		BOND_FULL,
+	};
+
+    int m_nBondType;
+
     float calcFdF(std::vector<float> &pres)
     {
       int i, id1, id2;
@@ -475,9 +483,12 @@ namespace xtal {
         const float dz = m_posary[id1+2] - m_posary[id2+2];
 
         len = sqrt(dx*dx + dy*dy + dz*dz);
-        ss = qlib::max(0.0f,  len - m_bonds[i].r0);
-        //ss = qlib::min(0.0f,  len - m_bonds[i].r0);
-        //ss = len - m_bonds[i].r0;
+        ss = len - m_bonds[i].r0;
+
+        if (m_nBondType==BOND_SHRINK)
+          ss = qlib::max(0.0f,  ss);
+        else if (m_nBondType==BOND_STRETCH)
+          ss = qlib::min(0.0f,  ss);
 
         locscl = m_bondscl * m_bonds[i].kf;
         con = 2.0f * locscl * ss/len;
@@ -684,8 +695,10 @@ namespace xtal {
         if (m_bUseProj)
           project(NULL);
 
-        if (m_bUseAdp)
+        if (m_bUseAdp) {
+          m_averEdgeLen = 1.0f;
           setAdpBondWeights();
+        }
 
         MB_DPRINTLN("iter = %d energy=%f", iter, eng);
 
@@ -803,15 +816,16 @@ namespace xtal {
 
       //pMinType = gsl_multimin_fdfminimizer_steepest_descent;
       //pMinType = gsl_multimin_fdfminimizer_conjugate_pr;
-      pMinType = gsl_multimin_fdfminimizer_conjugate_fr;
-      //pMinType = gsl_multimin_fdfminimizer_vector_bfgs2;
+      //pMinType = gsl_multimin_fdfminimizer_conjugate_fr;
+      pMinType = gsl_multimin_fdfminimizer_vector_bfgs2;
 
       pMin = gsl_multimin_fdfminimizer_alloc(pMinType, ncrd);
 
       gsl_vector *x = gsl_vector_alloc(ncrd);
       copyToGsl(x, m_posary);
-      float tolerance = 0.06;
-      double step_size = 0.1 * gsl_blas_dnrm2(x);
+      //float tolerance = 0.06;
+      float tolerance = 0.1;
+      double step_size = 0.01 * gsl_blas_dnrm2(x);
 
       MB_DPRINTLN("set step=%f, tol=%f", step_size, tolerance);
 
@@ -820,8 +834,10 @@ namespace xtal {
 
       int iter=0, status;
 
-      if (m_bUseAdp)
+      if (m_bUseAdp) {
+        m_averEdgeLen = 1.0f;
         setAdpBondWeights();
+      }
 
       do {
 
@@ -831,13 +847,14 @@ namespace xtal {
         if (status)
           break;
 
-        status = gsl_multimin_test_gradient(pMin->gradient, 1e-3);
+        status = GSL_CONTINUE;
+        //status = gsl_multimin_test_gradient(pMin->gradient, 1e-3);
+        //if (status == GSL_SUCCESS)
+        //MB_DPRINTLN("Minimum found");
+        double norm = gsl_blas_dnrm2(pMin->gradient);
 
-        if (status == GSL_SUCCESS)
-          MB_DPRINTLN("Minimum found");
-
-        MB_DPRINTLN("iter = %d energy=%f", iter, pMin->f);
-        m_refilog.push_back(RefineLog(iter, pMin->f, 0.0f));
+        MB_DPRINTLN("iter = %d energy=%f grad=%f", iter, pMin->f, norm);
+        m_refilog.push_back(RefineLog(iter, pMin->f, norm));
 
         if (m_bUseProj)
           project(pMin->x);
@@ -1000,6 +1017,7 @@ namespace xtal {
       // m_isolev = m_dLevel;
       m_bUseMap = true;
       m_bUseProj = false;
+      m_nBondType = BOND_SHRINK;
 
       int nv = cgm.number_of_vertices();
       int nf = cgm.number_of_faces();
@@ -1330,6 +1348,7 @@ namespace xtal {
         }
         
       }
+      MB_DPRINTLN("split_long> nb_splits = %d", nb_splits);
     }
 
     void equalize_valences()
