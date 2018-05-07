@@ -485,8 +485,12 @@ namespace xtal {
         len = sqrt(dx*dx + dy*dy + dz*dz);
         ss = len - m_bonds[i].r0;
 
-        if (m_nBondType==BOND_SHRINK)
+        if (m_nBondType==BOND_SHRINK) {
+          //if (ss<0.0f) {
+          //ss *= 0.1f;
+          //}
           ss = qlib::max(0.0f,  ss);
+        }
         else if (m_nBondType==BOND_STRETCH)
           ss = qlib::min(0.0f,  ss);
 
@@ -695,10 +699,10 @@ namespace xtal {
         if (m_bUseProj)
           project(NULL);
 
-        if (m_bUseAdp) {
+        /*if (m_bUseAdp) {
           m_averEdgeLen = 1.0f;
           setAdpBondWeights();
-        }
+        }*/
 
         MB_DPRINTLN("iter = %d energy=%f", iter, eng);
 
@@ -834,10 +838,10 @@ namespace xtal {
 
       int iter=0, status;
 
-      if (m_bUseAdp) {
+      /*if (m_bUseAdp) {
         m_averEdgeLen = 1.0f;
         setAdpBondWeights();
-      }
+      }*/
 
       do {
 
@@ -1110,8 +1114,7 @@ namespace xtal {
       return edge_len;
     }
 
-    //void setAdpBondWeights(Mesh &cgm, float lo, float hi)
-    void setAdpBondWeights(float aver_len = -1.0f)
+    void setAdpBondWeights(float aver_len)
     {
       MB_DPRINTLN("Update adaptive bond weights ave=%f", m_averEdgeLen);
       const int nbon = m_bonds.size();
@@ -1127,16 +1130,11 @@ namespace xtal {
         v0 = Vector3F(&m_posary[id1+0]);
         v1 = Vector3F(&m_posary[id2+0]);
         fh = calcHImpl2(v0, v1);
-        //fh = qlib::clamp(fh, 0.1f, 2.0f);
-        if (aver_len<0.0f) {
-          m_bonds[i].r0 = m_averEdgeLen * fh;
-          m_bonds[i].kf = 1.0f;
-          //m_bonds[i].kf = 1.0f/fh;
-        }
-        else {
-          m_bonds[i].r0 = aver_len * fh;
-          m_bonds[i].kf = 1.0f;
-        }
+
+        fh = qlib::clamp(fh, 0.0f, aver_len);
+
+        m_bonds[i].r0 = fh;
+        m_bonds[i].kf = 1.0f;
       }
     }
 

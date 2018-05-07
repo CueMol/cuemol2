@@ -380,68 +380,149 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
   dumpTriStats("mc.txt", cgm, m_ipol);
   dumpEdgeStats("edge_mc.txt", cgm, m_ipol);
 
-  {
-    ParticleRefine pr;
-    pr.m_isolev = m_dLevel;
+  for (i=0; i<3; ++i) {
 
-    pr.refineSetup(&m_ipol, cgm);
+    {
+      ParticleRefine pr;
+      pr.m_isolev = m_dLevel;
 
-    pr.m_bUseAdp = false;
-    //pr.m_bUseAdp = true;
+      pr.refineSetup(&m_ipol, cgm);
 
-    //pr.m_bUseMap = false;
-    pr.m_bUseMap = true;
+      pr.m_bUseAdp = false;
+      //pr.m_bUseAdp = true;
 
-    //pr.m_bUseProj = true;
-    pr.m_bUseProj = false;
+      //pr.m_bUseMap = false;
+      pr.m_bUseMap = true;
 
-    /*
-    pr.m_nMaxIter = 20;
-    pr.m_mapscl =  10.0f;
-    pr.m_bondscl = 0.01f;
-    pr.refine();
+      //pr.m_bUseProj = true;
+      pr.m_bUseProj = false;
 
-    pr.writeResult(cgm);
-    dumpTriStats("mcmin1-001.txt", cgm, m_ipol);
-    dumpEdgeStats("edge_mcmin1-001.txt", cgm, m_ipol);
+      pr.m_nMaxIter = 50;
+      pr.m_mapscl = 50.0f;
+      pr.m_bondscl = 1.0f;
+      //pr.refine();
+      pr.refineGsl();
 
-    pr.m_nMaxIter = 20;
-    pr.m_bondscl = 0.05f;
-    pr.refine();
+      pr.writeResult(cgm);
+      dumpTriStats("mcmin1-1.txt", cgm, m_ipol);
+      dumpEdgeStats("edge_mcmin1-1.txt", cgm, m_ipol);
 
-    pr.writeResult(cgm);
-    dumpTriStats("mcmin1-005.txt", cgm, m_ipol);
-    dumpEdgeStats("edge_mcmin1-005.txt", cgm, m_ipol);
+      pr.dumpRefineLog("min1_trace.txt");
+    }
 
-    pr.m_nMaxIter = 20;
-    pr.m_bondscl = 0.1f;
-    pr.refine();
-
-    pr.writeResult(cgm);
-    dumpTriStats("mcmin1-01.txt", cgm, m_ipol);
-    dumpEdgeStats("edge_mcmin1-01.txt", cgm, m_ipol);
-*/
-    pr.m_nMaxIter = 50;
-    pr.m_mapscl = 50.0f;
-    pr.m_bondscl = 1.0f;
-    //pr.refine();
-    pr.refineGsl();
-
-    pr.writeResult(cgm);
-    dumpTriStats("mcmin1-1.txt", cgm, m_ipol);
-    dumpEdgeStats("edge_mcmin1-1.txt", cgm, m_ipol);
-
-    pr.dumpRefineLog("min1_trace.txt");
+    if (i<2) {
+      double target_edge_length = 1.0;
+      unsigned int nb_iter = 1;
+      unsigned int rel_iter = 0;
+      PMP::isotropic_remeshing(
+        faces(cgm),
+        target_edge_length,
+        cgm,
+        PMP::parameters::number_of_iterations(nb_iter).number_of_relaxation_steps(rel_iter));
+      
+      nv = cgm.number_of_vertices();
+      nf = cgm.number_of_faces();
+      MB_DPRINTLN("Remeshing done, nv=%d, nf=%d", nv, nf);
+    }
   }
 
+  for (i=0; i<2; ++i) {
+    {
+      double target_edge_length = 0.5;
+      unsigned int nb_iter = 1;
+      unsigned int rel_iter = 0;
+      PMP::isotropic_remeshing(
+        faces(cgm),
+        target_edge_length,
+        cgm,
+        PMP::parameters::number_of_iterations(nb_iter).number_of_relaxation_steps(rel_iter));
+      
+      nv = cgm.number_of_vertices();
+      nf = cgm.number_of_faces();
+      MB_DPRINTLN("Remeshing done, nv=%d, nf=%d", nv, nf);
+    }
+
+    {
+      ParticleRefine pr;
+      pr.m_isolev = m_dLevel;
+
+      pr.refineSetup(&m_ipol, cgm);
+
+      pr.m_bUseAdp = false;
+      //pr.m_bUseAdp = true;
+
+      //pr.m_bUseMap = false;
+      pr.m_bUseMap = true;
+
+      //pr.m_bUseProj = true;
+      pr.m_bUseProj = false;
+
+      pr.m_nMaxIter = 50;
+      pr.m_mapscl = 50.0f;
+      pr.m_bondscl = 1.0f;
+      //pr.refine();
+      pr.refineGsl();
+
+      pr.writeResult(cgm);
+      dumpTriStats("mcmin2.txt", cgm, m_ipol);
+      dumpEdgeStats("edge_mcmin2.txt", cgm, m_ipol);
+
+      pr.dumpRefineLog("min2_trace.txt");
+    }
+  }
+
+  for (i=0; i<2; ++i) {
+    {
+      double target_edge_length = 0.25;
+      unsigned int nb_iter = 1;
+      unsigned int rel_iter = 0;
+      PMP::isotropic_remeshing(
+        faces(cgm),
+        target_edge_length,
+        cgm,
+        PMP::parameters::number_of_iterations(nb_iter).number_of_relaxation_steps(rel_iter));
+      
+      nv = cgm.number_of_vertices();
+      nf = cgm.number_of_faces();
+      MB_DPRINTLN("Remeshing done, nv=%d, nf=%d", nv, nf);
+    }
+
+    {
+      ParticleRefine pr;
+      pr.m_isolev = m_dLevel;
+
+      pr.refineSetup(&m_ipol, cgm);
+
+      pr.m_bUseAdp = false;
+      //pr.m_bUseAdp = true;
+
+      //pr.m_bUseMap = false;
+      pr.m_bUseMap = true;
+
+      //pr.m_bUseProj = true;
+      pr.m_bUseProj = false;
+
+      pr.m_nMaxIter = 50;
+      pr.m_mapscl = 50.0f;
+      pr.m_bondscl = 1.0f;
+      //pr.refine();
+      pr.refineGsl();
+
+      pr.writeResult(cgm);
+      dumpTriStats("mcmin2.txt", cgm, m_ipol);
+      dumpEdgeStats("edge_mcmin2.txt", cgm, m_ipol);
+
+      pr.dumpRefineLog("min2_trace.txt");
+    }
+  }
 
 #if 1
 
   for (i=0; i<3; ++i) {
 
     MB_DPRINTLN("Refine cycle %d start remeshing nv=%d, nf=%d", i, nv, nf);
-
-    double target_edge_length = 0.5;
+    /*
+    double target_edge_length = 0.25;
     unsigned int nb_iter = 1;
     unsigned int rel_iter = 0;
     PMP::isotropic_remeshing(
@@ -449,8 +530,8 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
       target_edge_length,
       cgm,
       PMP::parameters::number_of_iterations(nb_iter).number_of_relaxation_steps(rel_iter));
-
-    /*{
+*/
+    {
       typedef Mesh PM;
       typedef PMP::GetGeomTraits<PM>::type GT;
       
@@ -458,13 +539,11 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
       irm.m_pipol = &m_ipol;
       irm.split_long_edges();
       irm.equalize_valences();
-    }*/
+    }
     
     nv = cgm.number_of_vertices();
     nf = cgm.number_of_faces();
     MB_DPRINTLN("Remeshing done, nv=%d, nf=%d", nv, nf);
-  
-  // drawMeshLines(pdl, cgm, 1,1,0);
   
     {
       ParticleRefine pr;
@@ -472,11 +551,9 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
       
       pr.refineSetup(&m_ipol, cgm);
       
-      //if (i>=1)
-      //pr.m_nBondType = ParticleRefine::BOND_FULL;
-
-      pr.m_bUseAdp = false;
-      //pr.m_bUseAdp = true;
+      //pr.m_bUseAdp = false;
+      pr.m_bUseAdp = true;
+      pr.setAdpBondWeights(1.0f);
       
       //pr.m_bUseMap = false;
       pr.m_bUseMap = true;
@@ -485,9 +562,10 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
       pr.m_bUseProj = false;
       
       pr.m_nMaxIter = 50;
-      pr.m_mapscl = 20.0f;
+      pr.m_mapscl = 50.0f;
       pr.m_bondscl = 1.0f;
-      pr.refineGsl();
+      //pr.refineGsl();
+      pr.refine();
       
       pr.writeResult(cgm);
     }
