@@ -606,9 +606,33 @@ namespace xtal {
       return eng;
     }
 
+    struct RefineLog
+    {
+      int niter;
+      float eng;
+      float mov_max;
+      RefineLog(int aniter,float aeng,float amov_max)
+           : niter(aniter), eng(aeng), mov_max(amov_max)
+      {
+      }
+    };
+    std::vector<RefineLog> m_refilog;
+
+    void dumpRefineLog(const LString &fname)
+    {
+      FILE *fp = fopen(fname.c_str(), "w");
+      if (fp==NULL) return;
+      for (const RefineLog &ent : m_refilog)
+      {
+        fprintf(fp, "niter %d eng %f movmax %f\n", ent.niter, ent.eng, ent.mov_max);
+      }
+      fclose(fp);
+    }
 
     void refine()
     {
+      //m_refilog.clear();
+
       if (m_bUseProj) {
         m_sol.m_pipol = m_pipol;
         m_sol.m_isolev = m_isolev;
@@ -619,23 +643,21 @@ namespace xtal {
       int nbon = m_bonds.size();
 
       float tolerance = 0.06;
-      float deltat = 0.01;// * gsl_blas_dnrm2(x);
+      float deltat;// * gsl_blas_dnrm2(x);
 
-      MB_DPRINTLN("set step=%f, tol=%f", deltat, tolerance);
-
-      MB_DPRINTLN("set OK");
+      //MB_DPRINTLN("set step=%f, tol=%f", deltat, tolerance);
+      //MB_DPRINTLN("set OK");
 
       int npart = m_posary.size()/3;
       int id1;
       int iter, i;
       float eng, len, lenmax = -1.0e10;
-      float grad_max = 0.2;
+      float grad_max = 0.01;
 
       for (iter=0; iter<m_nMaxIter; ++iter) {
 
         eng = calcFdF(m_grad);
 
-        
         lenmax = -1.0e10;
         for (i=0; i<npart; ++i) {
           id1 = i*3;
@@ -645,10 +667,10 @@ namespace xtal {
           lenmax = qlib::max(lenmax, len);
         }
 
-        if (lenmax>grad_max)
+        /*if (lenmax>grad_max)
           deltat = grad_max/lenmax;
-        else
-          deltat = grad_max;
+        else*/
+        deltat = grad_max;
         MB_DPRINTLN("grad lenmax = %f scale %f", lenmax, deltat);
         
 
@@ -665,8 +687,9 @@ namespace xtal {
         if (m_bUseAdp)
           setAdpBondWeights();
 
-
         MB_DPRINTLN("iter = %d energy=%f", iter, eng);
+
+        m_refilog.push_back(RefineLog(iter, eng, lenmax));
       }
 
     }
@@ -778,9 +801,9 @@ namespace xtal {
       const gsl_multimin_fdfminimizer_type *pMinType;
       gsl_multimin_fdfminimizer *pMin;
 
-      pMinType = gsl_multimin_fdfminimizer_steepest_descent;
+      //pMinType = gsl_multimin_fdfminimizer_steepest_descent;
       //pMinType = gsl_multimin_fdfminimizer_conjugate_pr;
-      //pMinType = gsl_multimin_fdfminimizer_conjugate_fr;
+      pMinType = gsl_multimin_fdfminimizer_conjugate_fr;
       //pMinType = gsl_multimin_fdfminimizer_vector_bfgs2;
 
       pMin = gsl_multimin_fdfminimizer_alloc(pMinType, ncrd);
@@ -814,6 +837,7 @@ namespace xtal {
           MB_DPRINTLN("Minimum found");
 
         MB_DPRINTLN("iter = %d energy=%f", iter, pMin->f);
+        m_refilog.push_back(RefineLog(iter, pMin->f, 0.0f));
 
         if (m_bUseProj)
           project(pMin->x);
@@ -1207,7 +1231,7 @@ namespace xtal {
     }
 
     //void split_long_edges(const double& high)
-    void split_long_edges(const double& high)
+    void split_long_edges()
     {
       typedef boost::bimap<
         boost::bimaps::set_of<halfedge_descriptor>,
@@ -1224,7 +1248,7 @@ namespace xtal {
           continue;
         double sqlen = sqlength(e);
         halfedge_descriptor he = halfedge(e, mesh_);
-        double ideal_len = calcIdealL(he);
+        double ideal_len = calcIdealL(he) * 1.2;
         if(sqlen > ideal_len*ideal_len)
           long_edges.insert(long_edge(he, sqlen));
       }
