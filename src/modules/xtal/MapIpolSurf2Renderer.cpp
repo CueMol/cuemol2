@@ -20,7 +20,7 @@
 #include <modules/molstr/AtomIterator.hpp>
 
 #include "MeshRefinePartMin.hpp"
-#include "my_remesh_impl.h"
+#include "cgal_remesh_impl.h"
 
 using namespace xtal;
 using qlib::Matrix4D;
@@ -397,12 +397,13 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
 
       //pr.m_bUseProj = true;
       pr.m_bUseProj = false;
+      pr.setConstBond(1.0);
 
-      pr.m_nMaxIter = 50;
+      pr.m_nMaxIter = 10;
       pr.m_mapscl = 50.0f;
       pr.m_bondscl = 1.0f;
       //pr.refine();
-      pr.refineGsl();
+      pr.refineGsl(ParticleRefine::MIN_SD);
 
       pr.writeResult(cgm);
       dumpTriStats("mcmin1-1.txt", cgm, m_ipol);
@@ -412,21 +413,113 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
     }
 
     if (i<2) {
-      double target_edge_length = 1.0;
-      unsigned int nb_iter = 1;
-      unsigned int rel_iter = 0;
-      PMP::my_isotropic_remeshing(
-        faces(cgm),
-        target_edge_length,
-        cgm,
-        PMP::parameters::number_of_iterations(nb_iter).number_of_relaxation_steps(rel_iter));
-      
+      PMP::iso_remesh(cgm, 1.0);
       nv = cgm.number_of_vertices();
       nf = cgm.number_of_faces();
       MB_DPRINTLN("Remeshing done, nv=%d, nf=%d", nv, nf);
     }
   }
 
+    {
+      ParticleRefine pr;
+      pr.m_isolev = m_dLevel;
+
+      pr.refineSetup(&m_ipol, cgm);
+
+      pr.m_bUseAdp = false;
+      //pr.m_bUseAdp = true;
+
+      //pr.m_bUseMap = false;
+      pr.m_bUseMap = true;
+
+      //pr.m_bUseProj = true;
+      pr.m_bUseProj = false;
+
+      pr.m_nBondType = ParticleRefine::BOND_FULL;
+      pr.setConstBond(1.0);
+
+      pr.m_nMaxIter = 10;
+      pr.m_mapscl = 50.0f;
+      //pr.m_bondscl = 1.0f;
+      pr.m_bondscl = 0.1f;
+      pr.refineGsl(ParticleRefine::MIN_SD);
+      //PMP::iso_remesh(cgm, 1.0);
+
+      pr.m_bondscl = 0.2f;
+      pr.refineGsl(ParticleRefine::MIN_SD);
+      //PMP::iso_remesh(cgm, 1.0);
+
+      pr.m_bondscl = 0.4f;
+      pr.refineGsl(ParticleRefine::MIN_SD);
+      //PMP::iso_remesh(cgm, 1.0);
+
+      pr.m_nMaxIter = 20;
+      pr.m_mapscl = 200.0f;
+      pr.m_bondscl = 1.0f;
+      pr.refineGsl(ParticleRefine::MIN_SD);
+      //PMP::iso_remesh(cgm, 1.0);
+      //nv = cgm.number_of_vertices();
+      //nf = cgm.number_of_faces();
+
+      pr.writeResult(cgm);
+      dumpTriStats("mcmin1-2.txt", cgm, m_ipol);
+      dumpEdgeStats("edge_mcmin1-2.txt", cgm, m_ipol);
+
+      //pr.dumpRefineLog("min1_trace.txt");
+    }
+
+
+    MB_DPRINTLN("Refine cycle %d start remeshing nv=%d, nf=%d", i, nv, nf);
+    {
+      typedef Mesh PM;
+      typedef PMP::GetGeomTraits<PM>::type GT;
+      
+      Incremental_remesher<PM, GT> irm(cgm);
+      irm.m_pipol = &m_ipol;
+      irm.m_curv_scl = 0.3;
+      irm.m_ideall_max = 1.0;
+      irm.split_long_edges();
+      irm.equalize_valences();
+    }
+    
+    nv = cgm.number_of_vertices();
+    nf = cgm.number_of_faces();
+    MB_DPRINTLN("Remeshing done, nv=%d, nf=%d", nv, nf);
+  
+  for (i=0; i<20; ++i) {
+    {
+      ParticleRefine pr;
+      pr.m_isolev = m_dLevel;
+      
+      pr.refineSetup(&m_ipol, cgm);
+      
+      //pr.m_bUseAdp = false;
+      pr.m_bUseAdp = true;
+      pr.m_curv_scl = 0.3;
+      pr.m_ideall_max = 1.0;
+      pr.setAdpBond();
+      
+      //pr.m_bUseMap = false;
+      pr.m_bUseMap = true;
+      
+      //pr.m_bUseProj = true;
+      pr.m_bUseProj = false;
+      
+      //pr.m_nBondType = ParticleRefine::BOND_FULL;
+      pr.m_nMaxIter = 10;
+      pr.m_mapscl = 50.0f;
+      pr.m_bondscl = 1.0f;
+      pr.refineGsl(ParticleRefine::MIN_SD);
+      
+      pr.writeResult(cgm);
+    }
+  }
+  
+  dumpEdgeStats("edge_mcmin2.txt", cgm, m_ipol);
+
+
+
+/*
   for (i=0; i<1; ++i) {
     {
       double target_edge_length = 0.5;
@@ -471,65 +564,8 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
       pr.dumpRefineLog("min2_trace.txt");
     }
   }
-
-#if 0
-  for (i=0; i<3; ++i) {
-
-    MB_DPRINTLN("Refine cycle %d start remeshing nv=%d, nf=%d", i, nv, nf);
-    /*
-    double target_edge_length = 0.25;
-    unsigned int nb_iter = 1;
-    unsigned int rel_iter = 0;
-    PMP::isotropic_remeshing(
-      faces(cgm),
-      target_edge_length,
-      cgm,
-      PMP::parameters::number_of_iterations(nb_iter).number_of_relaxation_steps(rel_iter));
 */
-    {
-      typedef Mesh PM;
-      typedef PMP::GetGeomTraits<PM>::type GT;
-      
-      Incremental_remesher<PM, GT> irm(cgm);
-      irm.m_pipol = &m_ipol;
-      irm.split_long_edges();
-      irm.equalize_valences();
-    }
-    
-    nv = cgm.number_of_vertices();
-    nf = cgm.number_of_faces();
-    MB_DPRINTLN("Remeshing done, nv=%d, nf=%d", nv, nf);
   
-    {
-      ParticleRefine pr;
-      pr.m_isolev = m_dLevel;
-      
-      pr.refineSetup(&m_ipol, cgm);
-      
-      //pr.m_bUseAdp = false;
-      pr.m_bUseAdp = true;
-      pr.setAdpBondWeights(1.0f);
-      
-      //pr.m_bUseMap = false;
-      pr.m_bUseMap = true;
-      
-      //pr.m_bUseProj = true;
-      pr.m_bUseProj = false;
-      
-      pr.m_nMaxIter = 50;
-      pr.m_mapscl = 50.0f;
-      pr.m_bondscl = 1.0f;
-      //pr.refineGsl();
-      pr.refine();
-      
-      pr.writeResult(cgm);
-    }
-  }
-  
-  dumpEdgeStats("edge_mcmin2.txt", cgm, m_ipol);
-
-#endif
-
   {
     MB_DPRINTLN("Projecting vertices to surf");
     float del;
@@ -577,7 +613,7 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
 
   {
     pdl->color(1,0,0);
-    pdl->setLineWidth(2.0);
+    pdl->setLineWidth(4.0);
     pdl->startLines();
 
     int i, j;

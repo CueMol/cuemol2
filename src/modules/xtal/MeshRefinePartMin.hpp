@@ -374,6 +374,7 @@ namespace xtal {
     float m_isolev;
     float m_mapscl;
     float m_bondscl;
+    float m_bondscl2;
     float m_anglscl;
 
     bool m_bUseMap;
@@ -451,11 +452,12 @@ namespace xtal {
       return ::acos( u/l );
     }
 
-	enum {
-		BOND_SHRINK,
-		BOND_STRETCH,
-		BOND_FULL,
-	};
+    enum {
+      BOND_SHRINK,
+      BOND_STRETCH,
+      BOND_FULL,
+      BOND_FULL2,
+    };
 
     int m_nBondType;
 
@@ -485,16 +487,21 @@ namespace xtal {
         len = sqrt(dx*dx + dy*dy + dz*dz);
         ss = len - m_bonds[i].r0;
 
-        if (m_nBondType==BOND_SHRINK) {
-          //if (ss<0.0f) {
-          //ss *= 0.1f;
-          //}
-          ss = qlib::max(0.0f,  ss);
-        }
-        else if (m_nBondType==BOND_STRETCH)
-          ss = qlib::min(0.0f,  ss);
+        locscl = m_bondscl;// * m_bonds[i].kf;
 
-        locscl = m_bondscl * m_bonds[i].kf;
+        if (m_nBondType==BOND_SHRINK) {
+          if (ss<0.0f)
+            locscl = 0.0f;
+        }
+        else if (m_nBondType==BOND_STRETCH) {
+          if (ss>0.0f)
+            locscl = 0.0f;
+        }
+        else if (m_nBondType==BOND_FULL2) {
+          if (ss>0.0f)
+            locscl = m_bondscl2;
+        }
+
         con = 2.0f * locscl * ss/len;
 
         if (!m_fix[id1/3]) {
@@ -792,8 +799,13 @@ namespace xtal {
         copyToGsl(x, m_posary);
     }
 
+    enum {
+      MIN_CG,
+      MIN_SD,
+      MIN_BFGS,
+    };
 
-    void refineGsl()
+    void refineGsl(int ntype=MIN_BFGS)
     {
       //m_bUseMap = false;
 
@@ -818,10 +830,14 @@ namespace xtal {
       const gsl_multimin_fdfminimizer_type *pMinType;
       gsl_multimin_fdfminimizer *pMin;
 
-      //pMinType = gsl_multimin_fdfminimizer_steepest_descent;
+      if (ntype==MIN_BFGS)
+        pMinType = gsl_multimin_fdfminimizer_vector_bfgs2;
+      else if (ntype==MIN_SD)
+        pMinType = gsl_multimin_fdfminimizer_steepest_descent;
+      else
+        pMinType = gsl_multimin_fdfminimizer_conjugate_fr;
+
       //pMinType = gsl_multimin_fdfminimizer_conjugate_pr;
-      //pMinType = gsl_multimin_fdfminimizer_conjugate_fr;
-      pMinType = gsl_multimin_fdfminimizer_vector_bfgs2;
 
       pMin = gsl_multimin_fdfminimizer_alloc(pMinType, ncrd);
 
@@ -978,39 +994,17 @@ namespace xtal {
         return evals.z();
     }
 
-    float calcHImpl2(const Vector3F &v0, const Vector3F &v1) const
+  public:
+    float m_curv_scl;
+    float m_ideall_max;
+
+    float calcIdealL(const Vector3F &v0, const Vector3F &v1) const
     {
       Vector3F vm = (v0 + v1).scale(0.5);
       float c = calcMaxCurv(vm);
-
-      //float rval = 2.0 * sin(qlib::toRadian(160.0)*0.5)/c;
-      float rval = 0.5 / c;
-
+      float rval = qlib::min(m_curv_scl/c, m_ideall_max);
       return rval;
     }
-    
-    float calcHImpl1(const Vector3F &v0, const Vector3F &v1, float lo, float hi) const
-    {
-      Vector3F g0 = calcNorm(v0);
-      Vector3F g1 = calcNorm(v1);
-      float angl = acos(g0.dot(g1));
-      
-      const float h00 = hi;
-      const float h90 = lo;
-      const float d90 = qlib::toRadian(30.0f);
-
-      float rval;
-      if (angl<d90) {
-        rval = angl/d90 * (h90-h00) + h00;
-      }
-      else {
-        rval = h90;
-      }
-      //MB_DPRINTLN("%f %f", angl, rval);
-
-      return rval;
-    }
-      
 
     void refineSetup(MapBsplIpol *pipol, Mesh &cgm)
     {
@@ -1114,7 +1108,7 @@ namespace xtal {
       return edge_len;
     }
 
-    void setAdpBondWeights(float aver_len)
+    void setAdpBond()
     {
       MB_DPRINTLN("Update adaptive bond weights ave=%f", m_averEdgeLen);
       const int nbon = m_bonds.size();
@@ -1129,11 +1123,18 @@ namespace xtal {
         id2 = m_bonds[i].id2 * 3;
         v0 = Vector3F(&m_posary[id1+0]);
         v1 = Vector3F(&m_posary[id2+0]);
-        fh = calcHImpl2(v0, v1);
-
-        fh = qlib::clamp(fh, 0.0f, aver_len);
-
+        fh = calcIdealL(v0, v1);
         m_bonds[i].r0 = fh;
+        m_bonds[i].kf = 1.0f;
+      }
+    }
+
+    void setConstBond(float val)
+    {
+      const int nbon = m_bonds.size();
+      int id1, id2, i;
+      for(i=0; i<nbon; ++i){
+        m_bonds[i].r0 = val;
         m_bonds[i].kf = 1.0f;
       }
     }
@@ -1264,7 +1265,7 @@ namespace xtal {
           continue;
         double sqlen = sqlength(e);
         halfedge_descriptor he = halfedge(e, mesh_);
-        double ideal_len = calcIdealL(he) * 1.2;
+        double ideal_len = calcIdealL(he) * (4.0/3.0);
         if(sqlen > ideal_len*ideal_len)
           long_edges.insert(long_edge(he, sqlen));
       }
@@ -1436,6 +1437,10 @@ namespace xtal {
         return evals.z();
     }
 
+  public:
+    float m_curv_scl;
+    float m_ideall_max;
+
     float calcIdealL(const halfedge_descriptor& h) const
     {
       Point mid_point = midpoint(h);
@@ -1444,7 +1449,7 @@ namespace xtal {
       float c = calcMaxCurv(vm);
 
       //float rval = 2.0 * sin(qlib::toRadian(160.0)*0.5)/c;
-      float rval = 0.5 / c;
+      float rval = qlib::min(m_curv_scl/c, m_ideall_max);
 
       return rval;
     }

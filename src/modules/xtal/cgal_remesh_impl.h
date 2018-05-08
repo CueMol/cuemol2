@@ -369,94 +369,6 @@ namespace MY_internal {
     }
 
 
-    // split edges of edge_range that have their length > high
-    template<typename EdgeRange>
-    void split_long_edges(const EdgeRange& edge_range,
-                          const double& high)
-    {
-      typedef boost::bimap<
-        boost::bimaps::set_of<halfedge_descriptor>,
-        boost::bimaps::multiset_of<double, std::greater<double> > >  Boost_bimap;
-      typedef typename Boost_bimap::value_type                       long_edge;
-
-#ifdef CGAL_PMP_REMESHING_VERBOSE
-      std::cout << "Split long edges (" << high << ")...";
-      std::cout.flush();
-#endif
-      double sq_high = high*high;
-
-      //collect long edges
-      Boost_bimap long_edges;
-      BOOST_FOREACH(edge_descriptor e, edge_range)
-      {
-        double sqlen = sqlength(e);
-        if (sqlen > sq_high)
-        {
-          long_edges.insert(long_edge(halfedge(e, mesh_), sqlen));
-          put(ecmap_, e, false);
-        }
-        else
-          put(ecmap_, e, true);
-      }
-
-      //split long edges
-      unsigned int nb_splits = 0;
-      while (!long_edges.empty())
-      {
-        //the edge with longest length
-        typename Boost_bimap::right_map::iterator eit = long_edges.right.begin();
-        halfedge_descriptor he = eit->second;
-        double sqlen = eit->first;
-        long_edges.right.erase(eit);
-
-        //split edge
-        Point refinement_point = this->midpoint(he);
-        halfedge_descriptor hnew = CGAL::Euler::split_edge(he, mesh_);
-        CGAL_assertion(he == next(hnew, mesh_));
-        ++nb_splits;
-
-        //move refinement point
-        vertex_descriptor vnew = target(hnew, mesh_);
-        put(vpmap_, vnew, refinement_point);
-#ifdef CGAL_PMP_REMESHING_VERY_VERBOSE
-        std::cout << "   refinement point : " << refinement_point << std::endl;
-#endif
-
-        //check sub-edges
-        double sqlen_new = 0.25 * sqlen;
-        if (sqlen_new > sq_high)
-        {
-          //if it was more than twice the "long" threshold, insert them
-          long_edges.insert(long_edge(hnew, sqlen_new));
-          long_edges.insert(long_edge(next(hnew, mesh_), sqlen_new));
-        }
-        else
-        {
-          put(ecmap_, edge(hnew, mesh_), true);
-          put(ecmap_, edge(next(hnew, mesh_), mesh_), true);
-        }
-
-        //insert new edges to keep triangular faces, and update long_edges
-        if (!is_border(hnew, mesh_))
-        {
-          CGAL::Euler::split_face(hnew, next(next(hnew, mesh_), mesh_), mesh_);
-        }
-
-        //do it again on the other side if we're not on boundary
-        halfedge_descriptor hnew_opp = opposite(hnew, mesh_);
-        if (!is_border(hnew_opp, mesh_))
-        {
-          CGAL::Euler::split_face(prev(hnew_opp, mesh_), next(hnew_opp, mesh_), mesh_);
-        }
-      }
-#ifdef CGAL_PMP_REMESHING_VERBOSE
-      std::cout << " done (" << nb_splits << " splits)." << std::endl;
-#endif
-#ifdef CGAL_DUMP_REMESHING_STEPS
-      dump("0-border_split.off");
-#endif
-    }
-
     // PMP book :
     // "visits all edges of the mesh
     //if an edge is longer than the given threshold `high`, the edge
@@ -468,9 +380,8 @@ namespace MY_internal {
         boost::bimaps::multiset_of<double, std::greater<double> > >  Boost_bimap;
       typedef typename Boost_bimap::value_type                       long_edge;
 
-#ifdef CGAL_PMP_REMESHING_VERBOSE
-      std::cout << "Split long edges (" << high << ")..." << std::endl;
-#endif
+      MB_DPRINTLN("Split long edges (%f)...", high);
+
       double sq_high = high*high;
 
       //collect long edges
@@ -578,9 +489,8 @@ namespace MY_internal {
           }
         }
       }
-#ifdef CGAL_PMP_REMESHING_VERBOSE
-      std::cout << " done ("<< nb_splits << " splits)." << std::endl;
-#endif
+
+      MB_DPRINTLN(" done (%d splits).", nb_splits);
 
 #ifdef CGAL_PMP_REMESHING_DEBUG
       CGAL_expensive_assertion(is_triangle_mesh(mesh_));
@@ -588,9 +498,6 @@ namespace MY_internal {
       debug_self_intersections();
 #endif
 
-#ifdef CGAL_DUMP_REMESHING_STEPS
-      dump("1-edge_split.off");
-#endif
     }
 
     // PMP book :
@@ -604,14 +511,8 @@ namespace MY_internal {
         boost::bimaps::multiset_of<double, std::less<double> > >  Boost_bimap;
       typedef typename Boost_bimap::value_type                    short_edge;
 
-#ifdef CGAL_PMP_REMESHING_VERBOSE
-      std::cout << "Collapse short edges (" << low << ", " << high << ")..."
-                << std::endl;
-#endif
-#ifdef CGAL_PMP_REMESHING_VERBOSE_PROGRESS
-      std::cout << "Fill bimap...";
-      std::cout.flush();
-#endif
+      MB_DPRINTLN("Collapse short edges (%f, %f)...", low, high);
+
       double sq_low = low*low;
       double sq_high = high*high;
 
@@ -622,9 +523,6 @@ namespace MY_internal {
         if( (sqlen < sq_low) && is_collapse_allowed(e) )
           short_edges.insert(short_edge(halfedge(e, mesh_), sqlen));
       }
-#ifdef CGAL_PMP_REMESHING_VERBOSE_PROGRESS
-      std::cout << "done." << std::endl;
-#endif
 
       unsigned int nb_collapses = 0;
       while (!short_edges.empty())
@@ -788,13 +686,7 @@ namespace MY_internal {
         }//end if(collapse_ok)
       }
 
-#ifdef CGAL_PMP_REMESHING_VERBOSE
-      std::cout << " done (" << nb_collapses << " collapses)." << std::endl;
-#endif
-
-#ifdef CGAL_DUMP_REMESHING_STEPS
-      dump("2-edge_collapse.off");
-#endif
+      MB_DPRINTLN(" done (%d collapses).", nb_collapses);
 
 #ifdef CGAL_PMP_REMESHING_DEBUG
       CGAL_expensive_assertion(is_triangle_mesh(mesh_));
@@ -812,9 +704,8 @@ namespace MY_internal {
     // to the target valences decreases. If not, the edge is flipped back"
     void equalize_valences()
     {
-#ifdef CGAL_PMP_REMESHING_VERBOSE
-      std::cout << "Equalize valences..." << std::endl;
-#endif
+      MB_DPRINTLN("Equalize valences...");
+
       unsigned int nb_flips = 0;
       BOOST_FOREACH(edge_descriptor e, edges(mesh_))
       {
@@ -849,10 +740,6 @@ namespace MY_internal {
         vvd += 1;
         ++nb_flips;
 
-#ifdef CGAL_PMP_REMESHING_VERBOSE_PROGRESS
-        std::cout << "\r\t(" << nb_flips << " flips)";
-        std::cout.flush();
-#endif
         CGAL_assertion_code(Halfedge_status s2 = status(he));
         CGAL_assertion_code(Halfedge_status s2o = status(opposite(he, mesh_)));
         CGAL_assertion(s1 == s2   && s1 == PATCH);
@@ -894,9 +781,7 @@ namespace MY_internal {
         set_patch_id(face(opposite(he, mesh_), mesh_), pid);
       }
 
-#ifdef CGAL_PMP_REMESHING_VERBOSE
-      std::cout << "\r\tdone ("<< nb_flips << " flips)" << std::endl;
-#endif
+      MB_DPRINTLN("done (%d flips)", nb_flips);
 
 #ifdef CGAL_PMP_REMESHING_DEBUG
       debug_status_map();
@@ -906,167 +791,6 @@ namespace MY_internal {
       debug_self_intersections();
 #endif
 
-#ifdef CGAL_DUMP_REMESHING_STEPS
-      dump("3-edge_flips.off");
-#endif
-    }
-
-    // PMP book :
-    // "applies an iterative smoothing filter to the mesh.
-    // The vertex movement has to be constrained to the vertex tangent plane [...]
-    // smoothing algorithm with uniform Laplacian weights"
-    void tangential_relaxation(const bool relax_constraints/*1d smoothing*/
-                             , const unsigned int nb_iterations)
-    {
-#ifdef CGAL_PMP_REMESHING_VERBOSE
-      std::cout << "Tangential relaxation (" << nb_iterations << " iter.)...";
-      std::cout << std::endl;
-#endif
-      for (unsigned int nit = 0; nit < nb_iterations; ++nit)
-      {
-#ifdef CGAL_PMP_REMESHING_VERBOSE_PROGRESS
-        std::cout << "\r\t(iteration " << (nit + 1) << " / ";
-        std::cout << nb_iterations << ") ";
-        std::cout.flush();
-#endif
-      //todo : use boost::vector_property_map to improve computing time
-      typedef std::map<vertex_descriptor, Vector_3> VNormalsMap;
-      VNormalsMap vnormals;
-      boost::associative_property_map<VNormalsMap> propmap_normals(vnormals);
-      std::map<vertex_descriptor, Point> barycenters;
-
-      // at each vertex, compute vertex normal
-      // at each vertex, compute barycenter of neighbors
-      BOOST_FOREACH(vertex_descriptor v, vertices(mesh_))
-      {
-        if (is_constrained(v) || is_isolated(v))
-          continue;
-
-        else if (is_on_patch(v))
-        {
-        Vector_3 vn = PMP::compute_vertex_normal(v, mesh_
-                            , PMP::parameters::vertex_point_map(vpmap_)
-                            .geom_traits(GeomTraits()));
-        put(propmap_normals, v, vn);
-
-          Vector_3 move = CGAL::NULL_VECTOR;
-          unsigned int star_size = 0;
-          BOOST_FOREACH(halfedge_descriptor h, halfedges_around_target(v, mesh_))
-          {
-            move = move + Vector_3(get(vpmap_, v), get(vpmap_, source(h, mesh_)));
-            ++star_size;
-          }
-          CGAL_assertion(star_size > 0); //isolated vertices have already been discarded
-          move = (1. / (double)star_size) * move;
-
-          barycenters[v] = get(vpmap_, v) + move;
-        }
-        else if (relax_constraints
-              && !protect_constraints_
-              && is_on_patch_border(v)
-              && !is_corner(v))
-        {
-          put(propmap_normals, v, CGAL::NULL_VECTOR);
-
-          std::vector<halfedge_descriptor> border_halfedges;
-          BOOST_FOREACH(halfedge_descriptor h, halfedges_around_target(v, mesh_))
-          {
-            if (is_on_patch_border(h) || is_on_patch_border(opposite(h, mesh_)))
-              border_halfedges.push_back(h);
-          }
-          if (border_halfedges.size() == 2)//others are corner cases
-          {
-            vertex_descriptor ph0 = source(border_halfedges[0], mesh_);
-            vertex_descriptor ph1 = source(border_halfedges[1], mesh_);
-            double dot = to_double(Vector_3(get(vpmap_, v), get(vpmap_, ph0))
-                                   * Vector_3(get(vpmap_, v), get(vpmap_, ph1)));
-            //check squared cosine is < 0.25 (~120 degrees)
-            if (0.25 < dot / (sqlength(border_halfedges[0]) * sqlength(border_halfedges[0])))
-              barycenters[v] = CGAL::midpoint(midpoint(border_halfedges[0]),
-                                              midpoint(border_halfedges[1]));
-          }
-        }
-      }
-
-      // compute moves
-      typedef typename std::map<vertex_descriptor, Point>::value_type VP_pair;
-      std::map<vertex_descriptor, Point> new_locations;
-      BOOST_FOREACH(const VP_pair& vp, barycenters)
-      {
-        vertex_descriptor v = vp.first;
-        Point pv = get(vpmap_, v);
-        Vector_3 nv = boost::get(propmap_normals, v);
-        Point qv = vp.second; //barycenter at v
-
-        new_locations[v] = qv + (nv * Vector_3(qv, pv)) * nv;
-      }
-
-      // perform moves
-      BOOST_FOREACH(const VP_pair& vp, new_locations)
-      {
-        const Point initial_pos = get(vpmap_, vp.first);
-        const Vector_3 move(initial_pos, vp.second);
-
-        put(vpmap_, vp.first, vp.second);
-
-        //check that no inversion happened
-        double frac = 1.;
-        while (frac > 0.03 //5 attempts maximum
-           && !check_normals(vp.first)) //if a face has been inverted
-        {
-          frac = 0.5 * frac;
-          put(vpmap_, vp.first, initial_pos + frac * move);//shorten the move by 2
-        }
-        if (frac <= 0.02)
-          put(vpmap_, vp.first, initial_pos);//cancel move
-      }
-
-      CGAL_assertion(is_valid(mesh_));
-      CGAL_assertion(is_triangle_mesh(mesh_));
-      }//end for loop (nit == nb_iterations)
-
-#ifdef CGAL_PMP_REMESHING_DEBUG
-      debug_self_intersections();
-#endif
-#ifdef CGAL_PMP_REMESHING_VERBOSE
-      std::cout << "done." << std::endl;
-#endif
-#ifdef CGAL_DUMP_REMESHING_STEPS
-      dump("4-relaxation.off");
-#endif
-    }
-
-    // PMP book :
-    // "maps the vertices back to the surface"
-    void project_to_surface()
-    {
-      //todo : handle the case of boundary vertices
-#ifdef CGAL_PMP_REMESHING_VERBOSE
-      std::cout << "Project to surface...";
-      std::cout.flush();
-#endif
-
-      BOOST_FOREACH(vertex_descriptor v, vertices(mesh_))
-      {
-        if (is_constrained(v) || is_isolated(v) || !is_on_patch(v))
-          continue;
-        //note if v is constrained, it has not moved
-
-        Point proj = trees[patch_id_to_index_map[get_patch_id(face(halfedge(v, mesh_), mesh_))]]->closest_point(get(vpmap_, v));
-        put(vpmap_, v, proj);
-      }
-      CGAL_assertion(is_valid(mesh_));
-      CGAL_assertion(is_triangle_mesh(mesh_));
-#ifdef CGAL_PMP_REMESHING_DEBUG
-      debug_self_intersections();
-#endif
-#ifdef CGAL_PMP_REMESHING_VERBOSE
-      std::cout << "done." << std::endl;
-#endif
-
-#ifdef CGAL_DUMP_REMESHING_STEPS
-      dump("5-project.off");
-#endif
     }
 
 private:
@@ -1912,10 +1636,10 @@ private:
 template<typename PolygonMesh
        , typename FaceRange
        , typename NamedParameters>
-void my_isotropic_remeshing(const FaceRange& faces
-                       , const double& target_edge_length
-                       , PolygonMesh& pmesh
-                       , const NamedParameters& np)
+void my_isotropic_remeshing(const FaceRange& faces,
+                            const double& target_edge_length,
+                            PolygonMesh& pmesh,
+                            const NamedParameters& np)
 {
   if (boost::begin(faces)==boost::end(faces))
     return;
@@ -1938,31 +1662,31 @@ void my_isotropic_remeshing(const FaceRange& faces
   typedef typename boost::lookup_named_param_def <
       internal_np::edge_is_constrained_t,
       NamedParameters,
-      internal::Border_constraint_pmap<PM, FaceRange, FIMap>//default
+      MY_internal::Border_constraint_pmap<PM, FaceRange, FIMap>//default
     > ::type ECMap;
-  ECMap ecmap = (boost::is_same<ECMap, internal::Border_constraint_pmap<PM, FaceRange, FIMap> >::value)
+  ECMap ecmap = (boost::is_same<ECMap, MY_internal::Border_constraint_pmap<PM, FaceRange, FIMap> >::value)
      //avoid constructing the Border_constraint_pmap if it's not used
     ? choose_param(get_param(np, internal_np::edge_is_constrained)
-                 , internal::Border_constraint_pmap<PM, FaceRange, FIMap>(pmesh, faces, fimap))
+                 , MY_internal::Border_constraint_pmap<PM, FaceRange, FIMap>(pmesh, faces, fimap))
     : choose_param(get_param(np, internal_np::edge_is_constrained)
-                 , internal::Border_constraint_pmap<PM, FaceRange, FIMap>());
+                 , MY_internal::Border_constraint_pmap<PM, FaceRange, FIMap>());
 
   typedef typename boost::lookup_named_param_def <
       internal_np::vertex_is_constrained_t,
       NamedParameters,
-      internal::No_constraint_pmap<vertex_descriptor>//default
+      MY_internal::No_constraint_pmap<vertex_descriptor>//default
     > ::type VCMap;
   VCMap vcmap = choose_param(get_param(np, internal_np::vertex_is_constrained),
-                             internal::No_constraint_pmap<vertex_descriptor>());
+                             MY_internal::No_constraint_pmap<vertex_descriptor>());
 
   typedef typename boost::lookup_named_param_def <
       internal_np::face_patch_t,
       NamedParameters,
-      internal::Connected_components_pmap<PM, ECMap, FIMap>//default
+      MY_internal::Connected_components_pmap<PM, ECMap, FIMap>//default
     > ::type FPMap;
   FPMap fpmap = choose_param(
     get_param(np, internal_np::face_patch),
-    internal::Connected_components_pmap<PM, ECMap, FIMap>(pmesh, ecmap, fimap,
+    MY_internal::Connected_components_pmap<PM, ECMap, FIMap>(pmesh, ecmap, fimap,
         boost::is_default_param(get_param(np, internal_np::face_patch))));
 
   double low = 4. / 5. * target_edge_length;
@@ -1970,8 +1694,8 @@ void my_isotropic_remeshing(const FaceRange& faces
 
   bool protect = false; //choose_param(get_param(np, internal_np::protect_constraints), false);
 
-  typename internal::Incremental_remesher<PM, VPMap, GT, ECMap, VCMap, FPMap, FIMap>
-    remesher(pmesh, vpmap, protect, ecmap, vcmap, fpmap, fimap);
+  typename MY_internal::Incremental_remesher<PM, VPMap, GT, ECMap, VCMap, FPMap, FIMap>
+    remesher(pmesh, vpmap, protect, ecmap, vcmap, fpmap, fimap, false);
   remesher.init_remeshing(faces);
 
 
@@ -1994,7 +1718,17 @@ void my_isotropic_remeshing(const FaceRange& faces
   }
 
   remesher.update_constraints_property_map();
+}
 
+template<typename PolygonMesh>
+void iso_remesh(PolygonMesh& cgm,
+                const double& target_edge_length)
+{
+  my_isotropic_remeshing(
+    faces(cgm),
+    target_edge_length,
+    cgm,
+    PMP::parameters::all_default());
 }
 
 }//end namespace Polygon_mesh_processing
