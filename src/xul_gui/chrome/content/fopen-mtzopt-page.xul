@@ -50,10 +50,10 @@
 	    </row>
 	    <row align="center">
 	      <label value="Grid spacing: "/>
-	      <menulist id="mtzopt-gridsize-list">
+	      <menulist id="mtzopt-gridsize-list" editable="true">
 		<menupopup>
-		  <menuitem label="Fine" value="0.25"/>
-		  <menuitem label="Coarse" value="0.333333"/>
+		  <menuitem label="Fine (0.25)" value="0.25"/>
+		  <menuitem label="Coarse (0.33)" value="0.333333"/>
 		</menupopup>
 	      </menulist>
 	    </row>

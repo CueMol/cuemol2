@@ -94,7 +94,16 @@ onDlgOk: function (aEvent)
       else
 	rdr.clmn_WT = "";
 
-      rdr.gridsize = parseFloat(this.mGridList.selectedItem.value);
+      let sval;
+      if (this.mGridList.selectedItem)
+	sval = this.mGridList.selectedItem.value;
+      else
+	sval = this.mGridList.inputField.value;
+      sval = parseFloat(sval);
+      if (isNaN(sval))
+	rdr.gridsize = 1.0/3.0;
+      else
+	rdr.gridsize = sval;
       rdr.resolution = parseFloat(this.mResoln.value);
     }
     catch (e) {

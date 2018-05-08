@@ -27,6 +27,7 @@ namespace xtal {
     MC_SCRIPTABLE;
     MC_CLONEABLE;
 
+  private:
     typedef MapRenderer super_t;
     friend class ::MapMeshRenderer_wrap;
 
@@ -34,11 +35,25 @@ namespace xtal {
     // properties
 
     /// Drawing line width (in pixel unit)
+  private:
     double m_lw;
 
+  public:
+    void setLineWidth(double f) {
+      m_lw = f;
+      super_t::invalidateDisplayCache();
+    }
+    double getLineWidth() const { return m_lw; }
+
+  private:
     /// Internal buffer size (default: 100x100x100 points)
     int m_nBufSize;
+  public:
+    
+    int getBufSize() const { return m_nBufSize; }
+    void setBufSize(int nsize);
 
+  private:
     /// Periodic boundary flag
     /// (default: false; set true, if map contains the entire of unit cell)
     bool m_bPBC;
@@ -120,16 +135,7 @@ namespace xtal {
 
     ///////////////////////////////////////////////////////////////
 
-    void setLineWidth(double f) {
-      m_lw = f;
-      super_t::invalidateDisplayCache();
-    }
-    double getLineWidth() const { return m_lw; }
-
     double getMaxExtent() const;
-
-    int getBufSize() const { return m_nBufSize; }
-    void setBufSize(int nsize);
 
     ///////////////////////////////////////////////////////////////
 
