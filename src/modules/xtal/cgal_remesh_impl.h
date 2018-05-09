@@ -368,6 +368,67 @@ namespace MY_internal {
       }
     }
 
+    float m_curv_scl;
+    float m_ideall_max;
+
+    float calcIdealL(const halfedge_descriptor& he) const
+    {
+      return calcIdealL(target(he, mesh_), source(he, mesh_));
+    }
+
+    float calcIdealL(const vertex_descriptor& v1,
+                     const vertex_descriptor& v2) const
+    {
+      Point p1 = get(vpmap_, v1);
+      Point p2 = get(vpmap_, v2);
+      Point mid_point = CGAL::midpoint(p1, p2);
+
+      //Point mid_point = midpoint(h);
+
+      Vector3F vm = convToV3F(mid_point);
+      float c = m_pipol->calcMaxCurv(vm);
+
+      //float rval = 2.0 * sin(qlib::toRadian(160.0)*0.5)/c;
+      float rval = qlib::min(m_curv_scl/c, m_ideall_max);
+
+      return rval;
+    }
+    
+
+    inline bool checkSplit(double sqlen, double high, double sq_high,
+                           const vertex_descriptor &v1, const vertex_descriptor &v2)
+    {
+      if (high>0.0) {
+        return (sqlen > sq_high);
+      }
+      else {
+        double ideal_len = calcIdealL(v1, v2) * (4.0/3.0);
+        return (sqlen > ideal_len*ideal_len);
+      }
+    }
+
+    inline bool checkSplit(double sqlen, double high, double sq_high, const halfedge_descriptor &he)
+    {
+      if (high>0.0) {
+        return (sqlen > sq_high);
+      }
+      else {
+        double ideal_len = calcIdealL(he) * (4.0/3.0);
+        return (sqlen > ideal_len*ideal_len);
+      }
+    }
+    
+    inline bool checkSplit(double sqlen, double high, double sq_high, const edge_descriptor &e)
+    {
+      if (high>0.0) {
+        return (sqlen > sq_high);
+      }
+      else {
+        halfedge_descriptor he = halfedge(e, mesh_);
+        double ideal_len = calcIdealL(he) * (4.0/3.0);
+        return (sqlen > ideal_len*ideal_len);
+      }
+    }
 
     // PMP book :
     // "visits all edges of the mesh
@@ -391,7 +452,7 @@ namespace MY_internal {
         if (!is_split_allowed(e))
           continue;
         double sqlen = sqlength(e);
-        if(sqlen > sq_high)
+        if (checkSplit(sqlen, high, sq_high, e))
           long_edges.insert(long_edge(halfedge(e, mesh_), sqlen));
       }
 
@@ -438,7 +499,9 @@ namespace MY_internal {
 
         //check sub-edges
         double sqlen_new = 0.25 * sqlen;
-        if (sqlen_new > sq_high)
+
+        //if (sqlen_new > sq_high)
+        if (checkSplit(sqlen_new , high, sq_high, hnew))
         {
           //if it was more than twice the "long" threshold, insert them
           long_edges.insert(long_edge(hnew,              sqlen_new));
@@ -462,7 +525,8 @@ namespace MY_internal {
           if (snew == PATCH)
           {
             double sql = sqlength(hnew2);
-            if (sql > sq_high)
+            //if (sql > sq_high)
+            if (checkSplit(sql , high, sq_high, hnew2))
               long_edges.insert(long_edge(hnew2, sql));
           }
         }
@@ -484,7 +548,8 @@ namespace MY_internal {
           if (snew == PATCH)
           {
             double sql = sqlength(hnew2);
-            if (sql > sq_high)
+            //if (sql > sq_high)
+            if (checkSplit(sql , high, sq_high, hnew2))
               long_edges.insert(long_edge(hnew2, sql));
           }
         }
@@ -498,6 +563,29 @@ namespace MY_internal {
       debug_self_intersections();
 #endif
 
+    }
+
+    inline bool checkCollapse(double sqlen, double low, double sq_low, const edge_descriptor &e)
+    {
+      if (low>0.0) {
+        return (sqlen < sq_low);
+      }
+      else {
+        halfedge_descriptor he = halfedge(e, mesh_);
+        double ideal_len = calcIdealL(he) * (4.0/5.0);
+        return (sqlen < ideal_len*ideal_len);
+      }
+    }
+
+    inline bool checkCollapse(double sqlen, double low, double sq_low, const halfedge_descriptor &he)
+    {
+      if (low>0.0) {
+        return (sqlen < sq_low);
+      }
+      else {
+        double ideal_len = calcIdealL(he) * (4.0/5.0);
+        return (sqlen < ideal_len*ideal_len);
+      }
     }
 
     // PMP book :
@@ -520,7 +608,8 @@ namespace MY_internal {
       BOOST_FOREACH(edge_descriptor e, edges(mesh_))
       {
         double sqlen = sqlength(e);
-        if( (sqlen < sq_low) && is_collapse_allowed(e) )
+        //if( (sqlen < sq_low) && is_collapse_allowed(e) )
+        if( checkCollapse(sqlen, low, sq_low, e) && is_collapse_allowed(e) )
           short_edges.insert(short_edge(halfedge(e, mesh_), sqlen));
       }
 
@@ -602,7 +691,8 @@ namespace MY_internal {
         BOOST_FOREACH(halfedge_descriptor ha, halfedges_around_target(va, mesh_))
         {
           vertex_descriptor va_i = source(ha, mesh_);
-          if (sqlength(vb, va_i) > sq_high)
+          //if (sqlength(vb, va_i) > sq_high)
+          if (checkSplit(sqlength(vb, va_i), high, sq_high, vb, va_i))
           {
             collapse_ok = false;
             break;
@@ -669,7 +759,7 @@ namespace MY_internal {
           if (constrained_case)//we have made sure that collapse goes to constrained vertex
             set_constrained(vkept, true);
 
-          fix_degenerate_faces(vkept, short_edges, sq_low);
+          fix_degenerate_faces(vkept, short_edges, sq_low, low);
 
 #ifdef CGAL_PMP_REMESHING_DEBUG
           debug_status_map();
@@ -680,7 +770,8 @@ namespace MY_internal {
           BOOST_FOREACH(halfedge_descriptor ht, halfedges_around_target(vkept, mesh_))
           {
             double sqlen = sqlength(ht);
-            if( (sqlen < sq_low) && is_collapse_allowed(edge(ht, mesh_)) )
+            //if( (sqlen < sq_low) && is_collapse_allowed(edge(ht, mesh_)) )
+            if( checkCollapse(sqlen, low, sq_low, ht) && is_collapse_allowed(e) )
               short_edges.insert(short_edge(ht, sqlen));
           }
         }//end if(collapse_ok)
@@ -1267,7 +1358,8 @@ private:
     template<typename Bimap>
     void fix_degenerate_faces(const vertex_descriptor& v,
                               Bimap& short_edges,
-                              const double& sq_low)
+                              const double& sq_low,
+                              const double& low)
     {
       CGAL_assertion_code(std::size_t nb_done = 0);
       boost::unordered_set<halfedge_descriptor> degenerate_faces;
@@ -1331,7 +1423,8 @@ private:
             if (is_collapse_allowed(edge(hf, mesh_)))
             {
               double sqlen = sqlength(hf);
-              if (sqlen < sq_low)
+              //if (sqlen < sq_low)
+              if( checkCollapse(sqlen, low, sq_low, hf) )
                 short_edges.insert(typename Bimap::value_type(hf, sqlen));
             }
 
@@ -1629,6 +1722,10 @@ private:
     VertexIsConstrainedMap vcmap_;
     FaceIndexMap fimap_;
 
+  public:
+    const xtal::MapBsplIpol *m_pipol;
+
+
   };//end class Incremental_remesher
 }//end namespace internal
 
@@ -1636,7 +1733,8 @@ private:
 template<typename PolygonMesh
        , typename FaceRange
        , typename NamedParameters>
-void my_isotropic_remeshing(const FaceRange& faces,
+void my_isotropic_remeshing(const xtal::MapBsplIpol *pipol,
+                            const FaceRange& faces,
                             const double& target_edge_length,
                             PolygonMesh& pmesh,
                             const NamedParameters& np)
@@ -1696,6 +1794,11 @@ void my_isotropic_remeshing(const FaceRange& faces,
 
   typename MY_internal::Incremental_remesher<PM, VPMap, GT, ECMap, VCMap, FPMap, FIMap>
     remesher(pmesh, vpmap, protect, ecmap, vcmap, fpmap, fimap, false);
+
+  remesher.m_pipol = pipol;
+  remesher.m_curv_scl = 0.3;
+  remesher.m_ideall_max = 1.0;
+  
   remesher.init_remeshing(faces);
 
 
@@ -1725,8 +1828,21 @@ void iso_remesh(PolygonMesh& cgm,
                 const double& target_edge_length)
 {
   my_isotropic_remeshing(
+    NULL,
     faces(cgm),
     target_edge_length,
+    cgm,
+    PMP::parameters::all_default());
+}
+
+template<typename PolygonMesh>
+void adp_remesh(const xtal::MapBsplIpol *pipol,
+                PolygonMesh& cgm)
+{
+  my_isotropic_remeshing(
+    pipol,
+    faces(cgm),
+    -1.0,
     cgm,
     PMP::parameters::all_default());
 }

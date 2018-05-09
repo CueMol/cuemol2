@@ -471,6 +471,7 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
 
     MB_DPRINTLN("Refine cycle %d start remeshing nv=%d, nf=%d", i, nv, nf);
     {
+      /*
       typedef Mesh PM;
       typedef PMP::GetGeomTraits<PM>::type GT;
       
@@ -480,6 +481,8 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
       irm.m_ideall_max = 1.0;
       irm.split_long_edges();
       irm.equalize_valences();
+       */
+      PMP::adp_remesh(&m_ipol, cgm);
     }
     
     nv = cgm.number_of_vertices();

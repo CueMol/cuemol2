@@ -893,107 +893,6 @@ namespace xtal {
 
     bool m_bUseAdp;
 
-
-    template <typename T>
-    inline static T sqr(T val) { return val*val; }
-  
-    inline static void mkevec(const Matrix3F &mat, const Vector3F &ev, Matrix3F &evecs, int i, int j, int k)
-    {
-      Vector4D v1;
-      v1.x() = (mat.aij(1,1)-ev.ai(j))*(mat.aij(1,1)-ev.ai(k)) + mat.aij(1,2)*mat.aij(2,1) + mat.aij(1,3)*mat.aij(3,1);
-      v1.y() = (mat.aij(1,1)-ev.ai(j))*mat.aij(1,2) + mat.aij(1,2)*(mat.aij(2,2)-ev.ai(k)) + mat.aij(1,3)*mat.aij(3,2);
-      v1.z() = (mat.aij(1,1)-ev.ai(j))*mat.aij(1,3) + mat.aij(1,2)*mat.aij(2,3) + mat.aij(1,3)*(mat.aij(3,3)-ev.ai(k));
-      
-      double len1 = sqrt( sqr(v1.x()) + sqr(v1.y()) + sqr(v1.z()));
-      evecs.aij(1,i) = v1.x() / len1;
-      evecs.aij(2,i) = v1.y() / len1;
-      evecs.aij(3,i) = v1.z() / len1;
-    }
-
-    inline static void mat33_diag(const Matrix3F &mat, Matrix3F &evecs, Vector3F &evals)
-    {
-      double p1 = sqr( mat.aij(1,2) ) + sqr( mat.aij(1,3) ) + sqr( mat.aij(2,3) );
-
-      if (p1==0.0) {
-        evals.x() = mat.aij(1,1);
-        evals.y() = mat.aij(2,2);
-        evals.z() = mat.aij(3,3);
-      }
-      else {
-        Matrix3F I;
-
-        double q = (mat.aij(1,1) + mat.aij(2,2) + mat.aij(3,3))/3.0;
-        double p2 = sqr(mat.aij(1,1) - q) + sqr(mat.aij(2,2) - q) + sqr(mat.aij(3,3) - q) + 2.0 * p1;
-        double p = sqrt(p2 / 6.0);
-
-        //B = (1 / p) * (A - q * I); // I is the identity matrix
-        Matrix3F B = (mat - I.scale(q)).scale(1.0/p);
-
-        double r = B.deter() / 2.0;
-
-        // In exact arithmetic for a symmetric matrix  -1 <= r <= 1
-        // but computation error can leave it slightly outside this range.
-        double phi;
-        if (r <= -1.0)
-          phi = M_PI / 3.0;
-        else if (r >= 1.0)
-          phi = 0.0;
-        else
-          phi = acos(r) / 3.0;
-
-        // the eigenvalues satisfy eig3 <= eig2 <= eig1
-        evals.x() = q + 2.0 * p * cos(phi);
-        evals.y() = q + 2.0 * p * cos(phi + (2.0*M_PI/3));
-        evals.z() = 3.0 * q - evals.x() - evals.y();     // since trace(A) = eig1 + eig2 + eig3
-
-
-        if (evals.x()<=evals.y() &&
-            evals.x()<=evals.z())
-          mkevec(mat, evals, evecs, 1, 2, 3);
-        else if (evals.y()<=evals.x() &&
-                 evals.y()<=evals.z())
-          mkevec(mat, evals, evecs, 1, 3, 1);
-        else
-          mkevec(mat, evals, evecs, 1, 1, 2);
-      }
-    }
-
-    float calcMaxCurv(const Vector3F &pos) const
-    {
-      Matrix3F ct;
-      Vector3F grad;
-      m_pipol->calcCurvAt(pos, &ct, &grad, NULL);
-      //Matrix3F ctd = m_pipol->calcDscCurvAt(vm);
-      //ctd -= ct;
-
-      float len = grad.length();
-      Vector3F n = grad.divide(len);
-
-      Matrix3F P(1.0f -n.x()*n.x(), -n.x()*n.y(), -n.x()*n.z(),
-                 -n.y()*n.x(), 1.0f -n.y()*n.y(), -n.y()*n.z(),
-                 -n.z()*n.x(), - n.z()*n.y(), 1.0f -n.z()*n.z());
-
-      Matrix3F G = P*ct*P;
-      G /= len;
-
-      Matrix3F ctu;
-      Vector3F evals;
-      mat33_diag(G, ctu, evals);
-
-      evals.x() = qlib::abs(evals.x());
-      evals.y() = qlib::abs(evals.y());
-      evals.z() = qlib::abs(evals.z());
-
-      if (evals.x()>=evals.y() &&
-          evals.x()>=evals.z())
-        return evals.x();
-      else if (evals.y()>=evals.x() &&
-               evals.y()>=evals.z())
-        return evals.y();
-      else
-        return evals.z();
-    }
-
   public:
     float m_curv_scl;
     float m_ideall_max;
@@ -1001,7 +900,7 @@ namespace xtal {
     float calcIdealL(const Vector3F &v0, const Vector3F &v1) const
     {
       Vector3F vm = (v0 + v1).scale(0.5);
-      float c = calcMaxCurv(vm);
+      float c = m_pipol->calcMaxCurv(vm);
       float rval = qlib::min(m_curv_scl/c, m_ideall_max);
       return rval;
     }
@@ -1157,7 +1056,7 @@ namespace xtal {
         id2 = m_bonds[i].id2 * 3;
         v0 = Vector3F(&m_posary[id1+0]);
         v1 = Vector3F(&m_posary[id2+0]);
-        float c = calcMaxCurv((v0+v1).scale(0.5));
+        float c = m_pipol->calcMaxCurv((v0+v1).scale(0.5));
         cmin = qlib::min(c,cmin);
         cmax = qlib::max(c,cmax);
         pdl->color(gfx::SolidColor::createHSB(c/3.0, 1, 1));
@@ -1200,7 +1099,7 @@ namespace xtal {
       v0 = convToV3F(cgm.point( vid0 ));
       v1 = convToV3F(cgm.point( vid1 ));
 
-      float c = pr.calcMaxCurv((v0+v1).scale(0.5));
+      float c = ip.calcMaxCurv((v0+v1).scale(0.5));
 
       Vector3F g0 = ( ip.calcDiffAt(v0) ).normalize();
       Vector3F g1 = ( ip.calcDiffAt(v1) ).normalize();
@@ -1401,6 +1300,7 @@ namespace xtal {
 
   private:
 
+/*
     float calcMaxCurv(const Vector3F &pos) const
     {
       Matrix3F ct;
@@ -1436,6 +1336,7 @@ namespace xtal {
       else
         return evals.z();
     }
+*/
 
   public:
     float m_curv_scl;
@@ -1446,7 +1347,7 @@ namespace xtal {
       Point mid_point = midpoint(h);
 
       Vector3F vm = convToV3F(mid_point);
-      float c = calcMaxCurv(vm);
+      float c = m_pipol->calcMaxCurv(vm);
 
       //float rval = 2.0 * sin(qlib::toRadian(160.0)*0.5)/c;
       float rval = qlib::min(m_curv_scl/c, m_ideall_max);
