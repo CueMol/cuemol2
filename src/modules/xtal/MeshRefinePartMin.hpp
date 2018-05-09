@@ -117,7 +117,7 @@ namespace xtal {
 
   void drawMeshLines(DisplayContext *pdl, const Mesh &cgm, float r, float g, float b)
   {
-    pdl->setLineWidth(1.0);
+    pdl->setLineWidth(2.0);
     pdl->setLighting(false);
     pdl->startLines();
     pdl->color(r,g,b);
@@ -820,7 +820,7 @@ namespace xtal {
 
       gsl_multimin_function_fdf targ_func;
 
-      MB_DPRINTLN("ncrd=%d, nbond=%d\n", ncrd, nbon);
+      MB_DPRINTLN("RefineGSL> ncrd=%d, nbond=%d", ncrd, nbon);
       targ_func.n = ncrd;
       targ_func.f = calc_f;
       targ_func.df = calc_df;
@@ -847,10 +847,10 @@ namespace xtal {
       float tolerance = 0.1;
       double step_size = 0.01 * gsl_blas_dnrm2(x);
 
-      MB_DPRINTLN("set step=%f, tol=%f", step_size, tolerance);
+      //MB_DPRINTLN("set step=%f, tol=%f", step_size, tolerance);
 
       gsl_multimin_fdfminimizer_set(pMin, &targ_func, x, step_size, tolerance);
-      MB_DPRINTLN("set OK");
+      //MB_DPRINTLN("set OK");
 
       int iter=0, status;
 
@@ -882,7 +882,7 @@ namespace xtal {
       }
       while (status == GSL_CONTINUE && iter < m_nMaxIter);
 
-      MB_DPRINTLN("status = %d", status);
+      MB_DPRINTLN("End status = %d", status);
       copyToVec(m_posary, pMin->x);
 
       //printf("Atom0 %f,%f,%f\n", pMol->m_crds[0], pMol->m_crds[1], pMol->m_crds[2]);

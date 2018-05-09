@@ -501,12 +501,12 @@ namespace MY_internal {
         double sqlen_new = 0.25 * sqlen;
 
         //if (sqlen_new > sq_high)
-        if (checkSplit(sqlen_new , high, sq_high, hnew))
+        /*if (checkSplit(sqlen_new , high, sq_high, hnew))
         {
           //if it was more than twice the "long" threshold, insert them
           long_edges.insert(long_edge(hnew,              sqlen_new));
           long_edges.insert(long_edge(next(hnew, mesh_), sqlen_new));
-        }
+        }*/
 
         //insert new edges to keep triangular faces, and update long_edges
         if (!is_on_border(hnew))
@@ -522,13 +522,13 @@ namespace MY_internal {
           set_patch_id(face(hnew2, mesh_), patch_id);
           set_patch_id(face(opposite(hnew2, mesh_), mesh_), patch_id);
 
-          if (snew == PATCH)
+          /*if (snew == PATCH)
           {
             double sql = sqlength(hnew2);
             //if (sql > sq_high)
             if (checkSplit(sql , high, sq_high, hnew2))
               long_edges.insert(long_edge(hnew2, sql));
-          }
+          }*/
         }
 
         //do it again on the other side if we're not on boundary
@@ -545,13 +545,13 @@ namespace MY_internal {
           set_patch_id(face(hnew2, mesh_), patch_id_opp);
           set_patch_id(face(opposite(hnew2, mesh_), mesh_), patch_id_opp);
 
-          if (snew == PATCH)
+          /*if (snew == PATCH)
           {
             double sql = sqlength(hnew2);
             //if (sql > sq_high)
             if (checkSplit(sql , high, sq_high, hnew2))
               long_edges.insert(long_edge(hnew2, sql));
-          }
+          }*/
         }
       }
 
@@ -881,6 +881,121 @@ namespace MY_internal {
                             .geom_traits(GeomTraits())));
       debug_self_intersections();
 #endif
+
+    }
+
+    // PMP book :
+    // "applies an iterative smoothing filter to the mesh.
+    // The vertex movement has to be constrained to the vertex tangent plane [...]
+    // smoothing algorithm with uniform Laplacian weights"
+    void tangential_relaxation(const bool relax_constraints/*1d smoothing*/
+                             , const unsigned int nb_iterations)
+    {
+      MB_DPRINTLN("Tangential relaxation (%d iter.)...", nb_iterations);
+
+      for (unsigned int nit = 0; nit < nb_iterations; ++nit)
+      {
+      //todo : use boost::vector_property_map to improve computing time
+      typedef std::map<vertex_descriptor, Vector_3> VNormalsMap;
+      VNormalsMap vnormals;
+      boost::associative_property_map<VNormalsMap> propmap_normals(vnormals);
+      std::map<vertex_descriptor, Point> barycenters;
+
+      // at each vertex, compute vertex normal
+      // at each vertex, compute barycenter of neighbors
+      BOOST_FOREACH(vertex_descriptor v, vertices(mesh_))
+      {
+        if (is_constrained(v) || is_isolated(v))
+          continue;
+
+        else if (is_on_patch(v))
+        {
+        Vector_3 vn = PMP::compute_vertex_normal(v, mesh_
+                            , PMP::parameters::vertex_point_map(vpmap_)
+                            .geom_traits(GeomTraits()));
+        put(propmap_normals, v, vn);
+
+          Vector_3 move = CGAL::NULL_VECTOR;
+          unsigned int star_size = 0;
+          BOOST_FOREACH(halfedge_descriptor h, halfedges_around_target(v, mesh_))
+          {
+            move = move + Vector_3(get(vpmap_, v), get(vpmap_, source(h, mesh_)));
+            ++star_size;
+          }
+          CGAL_assertion(star_size > 0); //isolated vertices have already been discarded
+          move = (1. / (double)star_size) * move;
+
+          barycenters[v] = get(vpmap_, v) + move;
+        }
+        else if (relax_constraints
+              && !protect_constraints_
+              && is_on_patch_border(v)
+              && !is_corner(v))
+        {
+          put(propmap_normals, v, CGAL::NULL_VECTOR);
+
+          std::vector<halfedge_descriptor> border_halfedges;
+          BOOST_FOREACH(halfedge_descriptor h, halfedges_around_target(v, mesh_))
+          {
+            if (is_on_patch_border(h) || is_on_patch_border(opposite(h, mesh_)))
+              border_halfedges.push_back(h);
+          }
+          if (border_halfedges.size() == 2)//others are corner cases
+          {
+            vertex_descriptor ph0 = source(border_halfedges[0], mesh_);
+            vertex_descriptor ph1 = source(border_halfedges[1], mesh_);
+            double dot = to_double(Vector_3(get(vpmap_, v), get(vpmap_, ph0))
+                                   * Vector_3(get(vpmap_, v), get(vpmap_, ph1)));
+            //check squared cosine is < 0.25 (~120 degrees)
+            if (0.25 < dot / (sqlength(border_halfedges[0]) * sqlength(border_halfedges[0])))
+              barycenters[v] = CGAL::midpoint(midpoint(border_halfedges[0]),
+                                              midpoint(border_halfedges[1]));
+          }
+        }
+      }
+
+      // compute moves
+      typedef typename std::map<vertex_descriptor, Point>::value_type VP_pair;
+      std::map<vertex_descriptor, Point> new_locations;
+      BOOST_FOREACH(const VP_pair& vp, barycenters)
+      {
+        vertex_descriptor v = vp.first;
+        Point pv = get(vpmap_, v);
+        Vector_3 nv = boost::get(propmap_normals, v);
+        Point qv = vp.second; //barycenter at v
+
+        new_locations[v] = qv + (nv * Vector_3(qv, pv)) * nv;
+      }
+
+      // perform moves
+      BOOST_FOREACH(const VP_pair& vp, new_locations)
+      {
+        const Point initial_pos = get(vpmap_, vp.first);
+        const Vector_3 move(initial_pos, vp.second);
+
+        put(vpmap_, vp.first, vp.second);
+
+        //check that no inversion happened
+        double frac = 1.;
+        while (frac > 0.03 //5 attempts maximum
+           && !check_normals(vp.first)) //if a face has been inverted
+        {
+          frac = 0.5 * frac;
+          put(vpmap_, vp.first, initial_pos + frac * move);//shorten the move by 2
+        }
+        if (frac <= 0.02)
+          put(vpmap_, vp.first, initial_pos);//cancel move
+      }
+
+      CGAL_assertion(is_valid(mesh_));
+      CGAL_assertion(is_triangle_mesh(mesh_));
+      }//end for loop (nit == nb_iterations)
+
+#ifdef CGAL_PMP_REMESHING_DEBUG
+      debug_self_intersections();
+#endif
+
+      MB_DPRINTLN("done.");
 
     }
 
@@ -1796,26 +1911,32 @@ void my_isotropic_remeshing(const xtal::MapBsplIpol *pipol,
     remesher(pmesh, vpmap, protect, ecmap, vcmap, fpmap, fimap, false);
 
   remesher.m_pipol = pipol;
-  remesher.m_curv_scl = 0.3;
+  remesher.m_curv_scl = 0.4;
   remesher.m_ideall_max = 1.0;
   
+  if (low>=0.0)
+    MB_DPRINTLN("Start isotropic increment remesh (low=%f, hi=%f)", low, high);
+  else
+    MB_DPRINTLN("Start adaptive increment remesh (curv_scl=%f, max(idealL)=%f)",
+                remesher.m_curv_scl, remesher.m_ideall_max);
+
   remesher.init_remeshing(faces);
 
-
   unsigned int nb_iterations = choose_param(get_param(np, internal_np::number_of_iterations), 1);
-  //bool smoothing_1d = choose_param(get_param(np, internal_np::relax_constraints), false);
-  //unsigned int nb_laplacian = choose_param(get_param(np, internal_np::number_of_relaxation_steps), 1);
+  bool smoothing_1d = false; //choose_param(get_param(np, internal_np::relax_constraints), false);
+  unsigned int nb_laplacian = choose_param(get_param(np, internal_np::number_of_relaxation_steps), 1);
 
 
   for (unsigned int i = 0; i < nb_iterations; ++i)
   {
-    if (target_edge_length>0)
+    MB_DPRINTLN("Remesh> iteration %d", i);
+    //if (target_edge_length>0)
     {
       remesher.split_long_edges(high);
       remesher.collapse_short_edges(low, high);
     }
     remesher.equalize_valences();
-    //remesher.tangential_relaxation(smoothing_1d, nb_laplacian);
+    remesher.tangential_relaxation(smoothing_1d, nb_laplacian);
     //remesher.project_to_surface();
 
   }
@@ -1837,14 +1958,14 @@ void iso_remesh(PolygonMesh& cgm,
 
 template<typename PolygonMesh>
 void adp_remesh(const xtal::MapBsplIpol *pipol,
-                PolygonMesh& cgm)
+	PolygonMesh& cgm, int nb_iter = 1, int rel_iter = 1)
 {
   my_isotropic_remeshing(
     pipol,
     faces(cgm),
     -1.0,
     cgm,
-    PMP::parameters::all_default());
+    PMP::parameters::number_of_iterations(nb_iter).number_of_relaxation_steps(rel_iter));
 }
 
 }//end namespace Polygon_mesh_processing

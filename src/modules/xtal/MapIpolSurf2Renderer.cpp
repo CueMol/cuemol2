@@ -469,7 +469,6 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
     }
 
 
-    MB_DPRINTLN("Refine cycle %d start remeshing nv=%d, nf=%d", i, nv, nf);
     {
       /*
       typedef Mesh PM;
@@ -482,14 +481,14 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
       irm.split_long_edges();
       irm.equalize_valences();
        */
-      PMP::adp_remesh(&m_ipol, cgm);
+      PMP::adp_remesh(&m_ipol, cgm, 5, 2);
     }
     
     nv = cgm.number_of_vertices();
     nf = cgm.number_of_faces();
     MB_DPRINTLN("Remeshing done, nv=%d, nf=%d", nv, nf);
-  
-  for (i=0; i<20; ++i) {
+
+  for (i=0; i<2; ++i) {
     {
       ParticleRefine pr;
       pr.m_isolev = m_dLevel;
@@ -498,8 +497,8 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
       
       //pr.m_bUseAdp = false;
       pr.m_bUseAdp = true;
-      pr.m_curv_scl = 0.3;
-      pr.m_ideall_max = 1.0;
+      pr.m_curv_scl = 0.4;
+      pr.m_ideall_max = 0.8;
       pr.setAdpBond();
       
       //pr.m_bUseMap = false;
@@ -517,7 +516,7 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
       pr.writeResult(cgm);
     }
   }
-  
+
   dumpEdgeStats("edge_mcmin2.txt", cgm, m_ipol);
 
 
@@ -592,7 +591,7 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
     MB_DPRINTLN("done");
   }
 
-  //drawMeshLines(pdl, cgm, 1,1,0);
+  drawMeshLines(pdl, cgm, 0,0,0);
 
   dumpTriStats("mcminrem.txt", cgm, m_ipol);
 
