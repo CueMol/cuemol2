@@ -894,15 +894,10 @@ namespace xtal {
     bool m_bUseAdp;
 
   public:
-    float m_curv_scl;
-    float m_ideall_max;
-
-    float calcIdealL(const Vector3F &v0, const Vector3F &v1) const
+    inline float calcIdealL(const Vector3F &v0, const Vector3F &v1) const
     {
       Vector3F vm = (v0 + v1).scale(0.5);
-      float c = m_pipol->calcMaxCurv(vm);
-      float rval = qlib::min(m_curv_scl/c, m_ideall_max);
-      return rval;
+      return m_pipol->calcIdealL(vm);
     }
 
     void refineSetup(MapBsplIpol *pipol, Mesh &cgm)
@@ -1083,7 +1078,7 @@ namespace xtal {
     FILE *fp = fopen(fname, "w");
     int i, j;
 
-    Vector3F v0, v1;
+    Vector3F v0, v1, vm;
     float angl;
 
     ParticleRefine pr;
@@ -1099,14 +1094,15 @@ namespace xtal {
       v0 = convToV3F(cgm.point( vid0 ));
       v1 = convToV3F(cgm.point( vid1 ));
 
-      float c = ip.calcMaxCurv((v0+v1).scale(0.5));
+      vm = (v0+v1).scale(0.5);
 
       Vector3F g0 = ( ip.calcDiffAt(v0) ).normalize();
       Vector3F g1 = ( ip.calcDiffAt(v1) ).normalize();
       angl = acos(g0.dot(g1));
 
       fprintf(fp, "Edge %d len %f diffcuv %f cuv %f il %f\n",
-              i, (v0-v1).length(), qlib::toDegree(angl), c, 2.0 * sin(qlib::toRadian(160.0)*0.5)/c);
+              i, (v0-v1).length(), qlib::toDegree(angl),
+              ip.calcMaxCurv(vm), ip.calcIdealL(vm));
       ++i;
     }
 

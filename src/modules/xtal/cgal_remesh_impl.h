@@ -368,9 +368,6 @@ namespace MY_internal {
       }
     }
 
-    float m_curv_scl;
-    float m_ideall_max;
-
     float calcIdealL(const halfedge_descriptor& he) const
     {
       return calcIdealL(target(he, mesh_), source(he, mesh_));
@@ -386,12 +383,7 @@ namespace MY_internal {
       //Point mid_point = midpoint(h);
 
       Vector3F vm = convToV3F(mid_point);
-      float c = m_pipol->calcMaxCurv(vm);
-
-      //float rval = 2.0 * sin(qlib::toRadian(160.0)*0.5)/c;
-      float rval = qlib::min(m_curv_scl/c, m_ideall_max);
-
-      return rval;
+      return m_pipol->calcIdealL(vm);
     }
     
 
@@ -1911,15 +1903,16 @@ void my_isotropic_remeshing(const xtal::MapBsplIpol *pipol,
     remesher(pmesh, vpmap, protect, ecmap, vcmap, fpmap, fimap, false);
 
   remesher.m_pipol = pipol;
-  remesher.m_curv_scl = 0.4;
-  remesher.m_ideall_max = 1.0;
+  //remesher.m_curv_scl = curv_scl;
+  //remesher.m_ideall_min = l_min;
+  //remesher.m_ideall_max = l_max;
   
   if (low>=0.0)
     MB_DPRINTLN("Start isotropic increment remesh (low=%f, hi=%f)", low, high);
   else
-    MB_DPRINTLN("Start adaptive increment remesh (curv_scl=%f, max(idealL)=%f)",
-                remesher.m_curv_scl, remesher.m_ideall_max);
-
+    MB_DPRINTLN("Start adaptive increment remesh (curv_scl=%f, min(L)=%f, max(L)=%f)",
+                pipol->m_curv_scl, pipol->m_lmin, pipol->m_lmax);
+  
   remesher.init_remeshing(faces);
 
   unsigned int nb_iterations = choose_param(get_param(np, internal_np::number_of_iterations), 1);
@@ -1958,7 +1951,8 @@ void iso_remesh(PolygonMesh& cgm,
 
 template<typename PolygonMesh>
 void adp_remesh(const xtal::MapBsplIpol *pipol,
-	PolygonMesh& cgm, int nb_iter = 1, int rel_iter = 1)
+                PolygonMesh& cgm,
+                int nb_iter = 1, int rel_iter = 1)
 {
   my_isotropic_remeshing(
     pipol,

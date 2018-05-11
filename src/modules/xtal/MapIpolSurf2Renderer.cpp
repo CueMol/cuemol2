@@ -381,7 +381,7 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
   dumpTriStats("mc.txt", cgm, m_ipol);
   dumpEdgeStats("edge_mc.txt", cgm, m_ipol);
 
-  for (i=0; i<3; ++i) {
+  for (i=0; i<2; ++i) {
 
     {
       ParticleRefine pr;
@@ -412,7 +412,7 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
       pr.dumpRefineLog("min1_trace.txt");
     }
 
-    if (i<2) {
+    if (i<1) {
       PMP::iso_remesh(cgm, 1.0);
       nv = cgm.number_of_vertices();
       nf = cgm.number_of_faces();
@@ -420,7 +420,7 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
     }
   }
 
-    {
+  {
       ParticleRefine pr;
       pr.m_isolev = m_dLevel;
 
@@ -469,52 +469,41 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
     }
 
 
-    {
-      /*
-      typedef Mesh PM;
-      typedef PMP::GetGeomTraits<PM>::type GT;
-      
-      Incremental_remesher<PM, GT> irm(cgm);
-      irm.m_pipol = &m_ipol;
-      irm.m_curv_scl = 0.3;
-      irm.m_ideall_max = 1.0;
-      irm.split_long_edges();
-      irm.equalize_valences();
-       */
-      PMP::adp_remesh(&m_ipol, cgm, 5, 2);
-    }
+  m_ipol.m_curv_scl = 0.5;
+  m_ipol.m_lmin = 0.2;
+  m_ipol.m_lmax = 1.0;
+
+  for (i=0; i<10; ++i) {
+
+    PMP::adp_remesh(&m_ipol, cgm,
+                    1, 2);
     
     nv = cgm.number_of_vertices();
     nf = cgm.number_of_faces();
     MB_DPRINTLN("Remeshing done, nv=%d, nf=%d", nv, nf);
-
-  for (i=0; i<2; ++i) {
-    {
-      ParticleRefine pr;
-      pr.m_isolev = m_dLevel;
-      
-      pr.refineSetup(&m_ipol, cgm);
-      
-      //pr.m_bUseAdp = false;
-      pr.m_bUseAdp = true;
-      pr.m_curv_scl = 0.4;
-      pr.m_ideall_max = 0.8;
-      pr.setAdpBond();
-      
-      //pr.m_bUseMap = false;
-      pr.m_bUseMap = true;
-      
-      //pr.m_bUseProj = true;
-      pr.m_bUseProj = false;
-      
-      //pr.m_nBondType = ParticleRefine::BOND_FULL;
-      pr.m_nMaxIter = 10;
-      pr.m_mapscl = 50.0f;
-      pr.m_bondscl = 1.0f;
-      pr.refineGsl(ParticleRefine::MIN_SD);
-      
-      pr.writeResult(cgm);
-    }
+    
+    ParticleRefine pr;
+    pr.m_isolev = m_dLevel;
+    
+    pr.refineSetup(&m_ipol, cgm);
+    
+    //pr.m_bUseAdp = false;
+    pr.m_bUseAdp = true;
+    pr.setAdpBond();
+    
+    //pr.m_bUseMap = false;
+    pr.m_bUseMap = true;
+    
+    //pr.m_bUseProj = true;
+    pr.m_bUseProj = false;
+    
+    //pr.m_nBondType = ParticleRefine::BOND_FULL;
+    pr.m_nMaxIter = 10;
+    pr.m_mapscl = 10.0f;
+    pr.m_bondscl = 0.1f;
+    pr.refineGsl(ParticleRefine::MIN_SD);
+    
+    pr.writeResult(cgm);
   }
 
   dumpEdgeStats("edge_mcmin2.txt", cgm, m_ipol);
