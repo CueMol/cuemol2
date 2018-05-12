@@ -31,9 +31,9 @@
 #include <CGAL/Polygon_mesh_processing/measure.h>
 #include <CGAL/Polygon_mesh_processing/connected_components.h>
 
-#include <CGAL/AABB_tree.h>
-#include <CGAL/AABB_traits.h>
-#include <CGAL/AABB_triangle_primitive.h>
+//#include <CGAL/AABB_tree.h>
+//#include <CGAL/AABB_traits.h>
+//#include <CGAL/AABB_triangle_primitive.h>
 
 #include <CGAL/property_map.h>
 #include <CGAL/iterator.h>
@@ -280,11 +280,13 @@ namespace MY_internal {
     typedef std::vector<Patch_id>                        Patch_id_list;
     typedef std::map<Patch_id,std::size_t>               Patch_id_to_index_map;
 
+    /*
     typedef CGAL::AABB_triangle_primitive<GeomTraits,
                      typename Triangle_list::iterator>    AABB_primitive;
     typedef CGAL::AABB_traits<GeomTraits, AABB_primitive> AABB_traits;
     typedef CGAL::AABB_tree<AABB_traits>                  AABB_tree;
-
+     */
+    
     typedef typename boost::property_map<
       PM, CGAL::dynamic_halfedge_property_t<Halfedge_status> >::type Halfedge_status_pmap;
 
@@ -296,10 +298,10 @@ namespace MY_internal {
                        , VertexIsConstrainedMap vcmap
                        , FacePatchMap fpmap
                        , FaceIndexMap fimap
-                       , const bool build_tree = true)//built by the remesher
+                       /*, const bool build_tree = true*/)//built by the remesher
       : mesh_(pmesh)
       , vpmap_(vpmap)
-      , build_tree_(build_tree)
+//      , build_tree_(build_tree)
       , has_border_(false)
       , input_triangles_()
       , input_patch_ids_()
@@ -319,11 +321,13 @@ namespace MY_internal {
 
     ~Incremental_remesher()
     {
+      /*
       if (build_tree_){
         for(std::size_t i=0; i < trees.size();++i){
           delete trees[i];
         }
       }
+       */
     }
 
     template<typename FaceRange>
@@ -349,6 +353,7 @@ namespace MY_internal {
       }
       CGAL_assertion(input_triangles_.size() == input_patch_ids_.size());
 
+      /*
       if (!build_tree_)
         return;
       trees.resize(patch_id_to_index_map.size());
@@ -366,6 +371,7 @@ namespace MY_internal {
         trees[i]->build();
         trees[i]->accelerate_distance_queries();
       }
+       */
     }
 
     float calcIdealL(const halfedge_descriptor& he) const
@@ -1816,9 +1822,9 @@ private:
   private:
     PolygonMesh& mesh_;
     VertexPointMap& vpmap_;
-    bool build_tree_;
+    // bool build_tree_;
     bool has_border_;
-    std::vector<AABB_tree*> trees;
+    // std::vector<AABB_tree*> trees;
     Patch_id_to_index_map patch_id_to_index_map;
     Triangle_list input_triangles_;
     Patch_id_list input_patch_ids_;
@@ -1900,7 +1906,7 @@ void my_isotropic_remeshing(const xtal::MapBsplIpol *pipol,
   bool protect = false; //choose_param(get_param(np, internal_np::protect_constraints), false);
 
   typename MY_internal::Incremental_remesher<PM, VPMap, GT, ECMap, VCMap, FPMap, FIMap>
-    remesher(pmesh, vpmap, protect, ecmap, vcmap, fpmap, fimap, false);
+    remesher(pmesh, vpmap, protect, ecmap, vcmap, fpmap, fimap);
 
   remesher.m_pipol = pipol;
   //remesher.m_curv_scl = curv_scl;

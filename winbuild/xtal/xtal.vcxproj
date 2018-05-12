@@ -96,12 +96,10 @@
   <PropertyGroup>
     <_ProjectFileVersion>12.0.21005.1</_ProjectFileVersion>
   </PropertyGroup>
-
   <PropertyGroup>
     <IncludePath>$(BuildSetDir)\gsl-2.4;$(IncludePath)</IncludePath>
     <LibraryPath>$(BuildSetDir)\gsl-2.4\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
-
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -214,6 +212,7 @@
     <ClCompile Include="..\..\src\modules\xtal\MapRenderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MapSurf2Renderer.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MapSurf2Renderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\MeshRefinePartMin.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MTZ2MapReader.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MTZ2MapReader_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\QdfDenMapReader.cpp" />

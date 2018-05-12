@@ -11,11 +11,15 @@
 
 #include <qlib/Array.hpp>
 #include <qlib/Matrix3T.hpp>
+#include <qlib/Matrix4D.hpp>
+#include <qlib/Vector3F.hpp>
 
 namespace xtal {
 
   using qlib::FloatArray;
   using qlib::Matrix3F;
+  using qlib::Matrix4D;
+  using qlib::Vector3F;
 
   class MapBsplIpol
   {
@@ -109,7 +113,7 @@ namespace xtal {
   
     inline static void mkevec(const Matrix3F &mat, const Vector3F &ev, Matrix3F &evecs, int i, int j, int k)
     {
-      Vector4D v1;
+      Vector3F v1;
       v1.x() = (mat.aij(1,1)-ev.ai(j))*(mat.aij(1,1)-ev.ai(k)) + mat.aij(1,2)*mat.aij(2,1) + mat.aij(1,3)*mat.aij(3,1);
       v1.y() = (mat.aij(1,1)-ev.ai(j))*mat.aij(1,2) + mat.aij(1,2)*(mat.aij(2,2)-ev.ai(k)) + mat.aij(1,3)*mat.aij(3,2);
       v1.z() = (mat.aij(1,1)-ev.ai(j))*mat.aij(1,3) + mat.aij(1,2)*mat.aij(2,3) + mat.aij(1,3)*(mat.aij(3,3)-ev.ai(k));
