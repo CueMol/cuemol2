@@ -142,13 +142,6 @@ namespace xtal {
 
   private:
 
-    //void renderImpl(DisplayContext *pdl);
-
-    //void marchCube(DisplayContext *pdl, int fx, int fy, int fz);
-
-    void getVertexColor(Vector4D &rfColor, Vector4D &rfPosition, Vector4D &rfNormal);
-    Vector4D getNormal(const Vector4D &rfNormal,bool,bool,bool);
-
     inline float getDen(int x, int y, int z) const
     {
       // TO DO: support symop
@@ -172,25 +165,13 @@ namespace xtal {
       
     }
 
-    inline Vector4D getGrdNorm2(int ix, int iy, int iz) {
-      const int n = 1;
-      return Vector4D(getDen(ix-n, iy,   iz  ) - getDen(ix+n, iy,   iz ),
-                      getDen(ix,   iy-n, iz  ) - getDen(ix,   iy+n, iz  ),
-                      getDen(ix,   iy,   iz-n) - getDen(ix,   iy,   iz+n));
-    }
-
-
-    float m_values[8];
-    bool m_bary[8];
-    Vector4D m_norms[8];
-
-    ////////////////////////////////////////////////
-
     MapBsplIpol m_ipol;
 
     void renderImpl2(DisplayContext *pdl);
 
     Vector3F calcNorm(const Vector3F &v) const;
+
+    void marchCube(void *);
 
   public:
 

@@ -182,44 +182,22 @@ Vector3F MapIpolSurf2Renderer::calcNorm(const Vector3F &v) const
   return -rval;
 }
 
-void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
+void MapIpolSurf2Renderer::marchCube(void *pMesh)
 {
-  ScalarObject *pMap = m_pCMap;
-  DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
-
-  // Setup grid-space (map origin) coord xform 
-  setupXform(pdl, pMap, pXtal, false);
-
-  const double siglevel = getSigLevel();
-  m_dLevel = pMap->getRmsdDensity() * siglevel;
-
-  int ncol = m_dspSize.x(); //m_nActCol;
-  int nrow = m_dspSize.y(); //m_nActRow;
-  int nsec = m_dspSize.z(); //m_nActSec;
+  const int ncol = m_dspSize.x(); //m_nActCol;
+  const int nrow = m_dspSize.y(); //m_nActRow;
+  const int nsec = m_dspSize.z(); //m_nActSec;
 
   const int ixmax = m_mapSize.x();
   const int iymax = m_mapSize.y();
   const int izmax = m_mapSize.z();
 
-  m_nbcol = m_mapStPos.x();
-  m_nbrow = m_mapStPos.y();
-  m_nbsec = m_mapStPos.z();
-
-  if (m_ipol.m_pBsplCoeff==NULL)
-    m_ipol.calcCoeffs(pXtal);
+  Mesh &cgm = *(static_cast<Mesh *>(pMesh));
 
   MapCrossValSolver xsol;
   xsol.m_pipol = &m_ipol;
   xsol.m_isolev = m_dLevel;
   xsol.m_eps = FLT_EPSILON*100.0f;
-
-  /////////////////////
-  // Do marching cubes
-
-  // std::deque<surface::MSVert> verts;
-
-  // CGAL Surface_mesh
-  Mesh cgm;
 
   struct CrossID {
     vid_t id[3];
@@ -371,7 +349,36 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
 
       }
 
+}
+
+void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
+{
+  ScalarObject *pMap = m_pCMap;
+  DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
+
+  // Setup grid-space (map origin) coord xform 
+  setupXform(pdl, pMap, pXtal, false);
+
+  const double siglevel = getSigLevel();
+  m_dLevel = pMap->getRmsdDensity() * siglevel;
+
+  m_nbcol = m_mapStPos.x();
+  m_nbrow = m_mapStPos.y();
+  m_nbsec = m_mapStPos.z();
+
+  if (m_ipol.m_pBsplCoeff==NULL)
+    m_ipol.calcCoeffs(pXtal);
+
+  // CGAL Surface_mesh
+  Mesh cgm;
+
+  /////////////////////
+  // Do marching cubes
+
+  marchCube(&cgm);
+
   //////////
+  int i,j,k;
 
   //drawMeshLines(pdl, cgm, 1,0,0);
 
@@ -509,53 +516,6 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
   dumpEdgeStats("edge_mcmin2.txt", cgm, m_ipol);
 
 
-
-/*
-  for (i=0; i<1; ++i) {
-    {
-      double target_edge_length = 0.5;
-      unsigned int nb_iter = 1;
-      unsigned int rel_iter = 0;
-      PMP::my_isotropic_remeshing(
-        faces(cgm),
-        target_edge_length,
-        cgm,
-        PMP::parameters::number_of_iterations(nb_iter).number_of_relaxation_steps(rel_iter));
-      
-      nv = cgm.number_of_vertices();
-      nf = cgm.number_of_faces();
-      MB_DPRINTLN("Remeshing done, nv=%d, nf=%d", nv, nf);
-    }
-
-    {
-      ParticleRefine pr;
-      pr.m_isolev = m_dLevel;
-
-      pr.refineSetup(&m_ipol, cgm);
-
-      pr.m_bUseAdp = false;
-      //pr.m_bUseAdp = true;
-
-      //pr.m_bUseMap = false;
-      pr.m_bUseMap = true;
-
-      //pr.m_bUseProj = true;
-      pr.m_bUseProj = false;
-
-      pr.m_nMaxIter = 20;
-      pr.m_mapscl = 50.0f;
-      pr.m_bondscl = 1.0f;
-      //pr.refine();
-      pr.refineGsl();
-
-      pr.writeResult(cgm);
-      dumpTriStats("mcmin2.txt", cgm, m_ipol);
-      dumpEdgeStats("edge_mcmin2.txt", cgm, m_ipol);
-
-      pr.dumpRefineLog("min2_trace.txt");
-    }
-  }
-*/
   
   {
     MB_DPRINTLN("Projecting vertices to surf");
@@ -684,83 +644,6 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
   }
   
 }
-
-
-#if 0
-  pdl->setLineWidth(2.0);
-  pdl->setLighting(false);
-  pdl->startLines();
-
-  for(Mesh::Edge_index ei : cgm.edges()){
-    if (cgm.is_border(ei))
-      continue;
-
-    Mesh::Halfedge_index h0 = cgm.halfedge(ei, 0);
-    Vector3F v00 = convToV3F( cgm.point( cgm.target(h0) ) );
-    h0 = cgm.next(h0);
-    Vector3F v01 = convToV3F( cgm.point( cgm.target(h0) ) );
-
-    Mesh::Halfedge_index h1 = cgm.halfedge(ei, 1);
-    Vector3F v10 = convToV3F( cgm.point( cgm.target(h1) ) );
-    h1 = cgm.next(h1);
-    Vector3F v11 = convToV3F( cgm.point( cgm.target(h1) ) );
-
-    //float q0 = radratio(v00, v10, v01) + radratio(v00, v10, v11);
-    //float q1 = radratio(v01, v11, v00) + radratio(v01, v11, v10);
-
-    //float q0 = qlib::min( minangl(v00, v10, v01), minangl(v00, v10, v11) );
-    //float q1 = qlib::min( minangl(v01, v11, v00), minangl(v01, v11, v10) );
-
-    /*
-    Vector3F n00 = calcNorm(v00);
-    Vector3F n01 = calcNorm(v01);
-    Vector3F n10 = calcNorm(v10);
-    Vector3F n11 = calcNorm(v11);
-
-    float q0 =
-      calcNormScore(v00, v10, v01,
-                    n00, n10, n01) +
-        calcNormScore(v00, v10, v11,
-                      n00, n10, n11);
-    float q1 =
-      calcNormScore(v01, v11, v00,
-                    n01, n11, n00) +
-        calcNormScore(v01, v11, v10,
-                      n01, n11, n10);
-     */
-
-    Vector3F vcom = (v00+v01+v10+v11).scale(0.25f);
-
-    if (checkSide(v00, v01, v10, vcom)) {
-
-      //if (q0<q1) {
-      //MB_DPRINTLN("flip tri (q0=%f, q1=%f)", q0, q1);
-      //cgm.remove_edge();
-      //cgm.add_edge();
-      pdl->color(1.0, 0.0, 0.0);
-      pdl->vertex(v00);
-      pdl->vertex(v10);
-      pdl->color(0.0, 1.0, 0.0);
-      pdl->vertex(v01);
-      pdl->vertex(v11);
-
-      pdl->color(0.0, 0.0, 1.0);
-      pdl->vertex(v10);
-      pdl->vertex(v01);
-      pdl->vertex(v01);
-      pdl->vertex(v00);
-      pdl->vertex(v00);
-      pdl->vertex(v11);
-      pdl->vertex(v11);
-      pdl->vertex(v10);
-    }
-  }
-
-  pdl->end();
-  pdl->setLighting(true);
-  return;
-#endif
-
 
 
 qsys::ObjectPtr MapIpolSurf2Renderer::generateSurfObj()
