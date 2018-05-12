@@ -108,6 +108,23 @@ double Map3Renderer::getMaxExtent() const
   return m_nMaxGrid * pMap->getColGridSize() / 2.0;
 }
 
+void Map3Renderer::setCenter(const Vector4D &v)
+{
+  m_center = v;
+  invalidateDisplayCache();
+}
+
+void Map3Renderer::setExtent(double value)
+{
+  m_dMapExtent = value;
+  invalidateDisplayCache();
+}
+
+void Map3Renderer::setSigLevel(double value)
+{
+  m_dSigLevel = value;
+  invalidateDisplayCache();
+}
 
 ///////////////////////////////////////////////////
 // Common implementations
@@ -439,25 +456,4 @@ void Map3Renderer::viewChanged(qsys::ViewEvent &ev)
   return;
 }
 
-
-#if 0
-
-void Map3Renderer::createDisplayCache()
-{
-  if (isUseShader()) {
-    createGPU();
-    updateGPU();
-  }
-  else {
-    createCPU();
-    updateCPU();
-  }
-}
-
-/// Object change handler (map sharpening, etc)
-void Map3Renderer::objectChanged(qsys::ObjectEvent &ev)
-{
-}
-
-#endif
 

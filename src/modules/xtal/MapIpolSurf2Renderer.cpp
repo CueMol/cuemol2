@@ -42,8 +42,7 @@ MapIpolSurf2Renderer::MapIpolSurf2Renderer()
 
   m_nOmpThr = -1;
 
-  m_bWorkOK = false;
-
+  m_pMesh = NULL;
 }
 
 // destructor
@@ -53,6 +52,9 @@ MapIpolSurf2Renderer::~MapIpolSurf2Renderer()
   ScrEventManager *pSEM = ScrEventManager::getInstance();
   pSEM->removeViewListener(this);
 
+  Mesh *pMesh = static_cast<Mesh *>(m_pMesh);
+  if (pMesh!=NULL)
+    delete pMesh;
 }
 
 /////////////////////////////////
@@ -166,6 +168,30 @@ void MapIpolSurf2Renderer::render(DisplayContext *pdl)
 
   pdl->popMatrix();
   m_pCMap = NULL;
+}
+
+void MapIpolSurf2Renderer::setCenter(const Vector4D &v)
+{
+  Mesh *pMesh = static_cast<Mesh *>(m_pMesh);
+  if (pMesh!=NULL)
+    delete pMesh;
+  m_pMesh = NULL;
+}
+
+void MapIpolSurf2Renderer::setExtent(double value)
+{
+  Mesh *pMesh = static_cast<Mesh *>(m_pMesh);
+  if (pMesh!=NULL)
+    delete pMesh;
+  m_pMesh = NULL;
+}
+
+void MapIpolSurf2Renderer::setSigLevel(double value)
+{
+  Mesh *pMesh = static_cast<Mesh *>(m_pMesh);
+  if (pMesh!=NULL)
+    delete pMesh;
+  m_pMesh = NULL;
 }
 
 Vector3F MapIpolSurf2Renderer::calcNorm(const Vector3F &v) const
@@ -351,33 +377,24 @@ void MapIpolSurf2Renderer::marchCube(void *pMesh)
 
 }
 
-void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
+void MapIpolSurf2Renderer::buildMeshData(DisplayContext *pdl)
 {
-  ScalarObject *pMap = m_pCMap;
-  DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
+  Mesh *pMesh = static_cast<Mesh *>(m_pMesh);
 
-  // Setup grid-space (map origin) coord xform 
-  setupXform(pdl, pMap, pXtal, false);
+  if (pMesh!=NULL)
+    delete pMesh;
 
-  const double siglevel = getSigLevel();
-  m_dLevel = pMap->getRmsdDensity() * siglevel;
-
-  m_nbcol = m_mapStPos.x();
-  m_nbrow = m_mapStPos.y();
-  m_nbsec = m_mapStPos.z();
-
-  if (m_ipol.m_pBsplCoeff==NULL)
-    m_ipol.calcCoeffs(pXtal);
-
-  // CGAL Surface_mesh
-  Mesh cgm;
+  pMesh = MB_NEW Mesh;
+  m_pMesh = pMesh;
 
   /////////////////////
   // Do marching cubes
 
-  marchCube(&cgm);
+  marchCube(pMesh);
 
-  //////////
+  Mesh &cgm = *pMesh;
+
+  /////////////////////
   int i,j,k;
 
   //drawMeshLines(pdl, cgm, 1,0,0);
@@ -515,7 +532,6 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
 
   dumpEdgeStats("edge_mcmin2.txt", cgm, m_ipol);
 
-
   
   {
     MB_DPRINTLN("Projecting vertices to surf");
@@ -605,44 +621,78 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
     pdl->end();
   }
 
-  //////////
+}
 
-  {
-    gfx::Mesh mesh;
-    mesh.init(nv, nf);
-    mesh.color(getColor());
-    std::unordered_map<int,int> vidmap;
+void MapIpolSurf2Renderer::renderMeshImpl(DisplayContext *pdl)
+{
+  K::Point_3 cgpt;
+  Vector3F pt, norm;
 
-    //pdl->startLines();
-    i=0;
-    for(vid_t vd : cgm.vertices()){
-      pt = convToV3F( cgm.point(vd) );
-      norm = calcNorm(pt);
-      //pdl->vertex(pt);
-      //pdl->vertex(pt+norm.scale(0.5));
-      mesh.setVertex(i, pt.x(), pt.y(), pt.z(), norm.x(), norm.y(), norm.z());
-      vidmap.insert(std::pair<int,int>(int(vd), i));
-      ++i;
+  int i,j,k;
+
+  Mesh &cgm = *(static_cast<Mesh *>(m_pMesh));
+  const int nv = cgm.number_of_vertices();
+  const int nf = cgm.number_of_faces();
+
+  gfx::Mesh mesh;
+  mesh.init(nv, nf);
+  mesh.color(getColor());
+  std::unordered_map<int,int> vidmap;
+
+  //pdl->startLines();
+  i=0;
+  for(vid_t vd : cgm.vertices()){
+    pt = convToV3F( cgm.point(vd) );
+    norm = calcNorm(pt);
+    //pdl->vertex(pt);
+    //pdl->vertex(pt+norm.scale(0.5));
+    mesh.setVertex(i, pt.x(), pt.y(), pt.z(), norm.x(), norm.y(), norm.z());
+    vidmap.insert(std::pair<int,int>(int(vd), i));
+    ++i;
+  }
+  //pdl->end();
+
+  int vid[3];
+  i=0;
+  for(fid_t fd : cgm.faces()){
+    j=0;
+    BOOST_FOREACH(vid_t vd,vertices_around_face(cgm.halfedge(fd), cgm)){
+      MB_ASSERT(j<3);
+      vid[j] = int(vd);
+      ++j;
     }
-    //pdl->end();
+    MB_ASSERT(j==3);
 
-    int vid[3];
-    i=0;
-    for(fid_t fd : cgm.faces()){
-      j=0;
-      BOOST_FOREACH(vid_t vd,vertices_around_face(cgm.halfedge(fd), cgm)){
-        MB_ASSERT(j<3);
-        vid[j] = int(vd);
-        ++j;
-      }
-      MB_ASSERT(j==3);
+    mesh.setFace(i, vidmap[vid[0]], vidmap[vid[1]], vidmap[vid[2]]);
+    ++i;
+  }
+  pdl->drawMesh(mesh);
+}
 
-      mesh.setFace(i, vidmap[vid[0]], vidmap[vid[1]], vidmap[vid[2]]);
-      ++i;
-    }
-    pdl->drawMesh(mesh);
+void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
+{
+  ScalarObject *pMap = m_pCMap;
+  DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
+
+  // Setup grid-space (map origin) coord xform 
+  setupXform(pdl, pMap, pXtal, false);
+
+  const double siglevel = getSigLevel();
+  m_dLevel = pMap->getRmsdDensity() * siglevel;
+
+  m_nbcol = m_mapStPos.x();
+  m_nbrow = m_mapStPos.y();
+  m_nbsec = m_mapStPos.z();
+
+  if (m_ipol.m_pBsplCoeff==NULL) {
+    m_ipol.calcCoeffs(pXtal);
   }
   
+  if (m_pMesh==NULL) {
+    buildMeshData(pdl);
+  }
+
+  renderMeshImpl(pdl);
 }
 
 
@@ -683,7 +733,6 @@ bool MapIpolSurf2Renderer::isUseVer2Iface() const
 
 void MapIpolSurf2Renderer::invalidateDisplayCache()
 {
-  m_bWorkOK = false;
   super_t::invalidateDisplayCache();
 }
     

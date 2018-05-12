@@ -55,14 +55,11 @@ namespace xtal {
     Vector4D m_center;
 
   public:
-    void setCenter(const Vector4D &v) {
-      m_center = v;
-      invalidateDisplayCache();
-    }
-
     virtual Vector4D getCenter() const {
       return m_center;
     }
+
+    virtual void setCenter(const Vector4D &v);
 
   private:
     /// contour level in sigma unit
@@ -70,10 +67,7 @@ namespace xtal {
 
   public:
     double getSigLevel() const { return m_dSigLevel; }
-    void setSigLevel(double value) {
-      m_dSigLevel = value;
-      invalidateDisplayCache();
-    }
+    virtual void setSigLevel(double value);
 
     double getLevel() const;
     void setLevel(double value);
@@ -89,10 +83,8 @@ namespace xtal {
 
   public:
     double getExtent() const { return m_dMapExtent; }
-    void setExtent(double value) {
-      m_dMapExtent = value;
-      invalidateDisplayCache();
-    }
+
+    void setExtent(double value);
 
     /////////
 

@@ -173,23 +173,27 @@ namespace xtal {
 
     void marchCube(void *);
 
+    void *m_pMesh;
+
+    void buildMeshData(DisplayContext *pdl);
+
+    void renderMeshImpl(DisplayContext *pdl);
+
   public:
 
     virtual bool isUseVer2Iface() const;
 
     virtual void invalidateDisplayCache();
     
+    virtual void setCenter(const Vector4D &v);
+    virtual void setExtent(double value);
+    virtual void setSigLevel(double value);
+
   protected:
-
-    /// Workarea data OK/NG (invalid)
-    bool m_bWorkOK;
-
-    // qbyte m_bIsoLev;
 
     int m_nbcol;
     int m_nbrow;
     int m_nbsec;
-
 
     ///////////////////////////////////////////////
     // Surface object generation
