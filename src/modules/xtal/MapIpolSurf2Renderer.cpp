@@ -172,6 +172,7 @@ void MapIpolSurf2Renderer::render(DisplayContext *pdl)
 
 void MapIpolSurf2Renderer::setCenter(const Vector4D &v)
 {
+  super_t::setCenter(v);
   Mesh *pMesh = static_cast<Mesh *>(m_pMesh);
   if (pMesh!=NULL)
     delete pMesh;
@@ -180,6 +181,7 @@ void MapIpolSurf2Renderer::setCenter(const Vector4D &v)
 
 void MapIpolSurf2Renderer::setExtent(double value)
 {
+  super_t::setExtent(value);
   Mesh *pMesh = static_cast<Mesh *>(m_pMesh);
   if (pMesh!=NULL)
     delete pMesh;
@@ -188,6 +190,7 @@ void MapIpolSurf2Renderer::setExtent(double value)
 
 void MapIpolSurf2Renderer::setSigLevel(double value)
 {
+  super_t::setSigLevel(value);
   Mesh *pMesh = static_cast<Mesh *>(m_pMesh);
   if (pMesh!=NULL)
     delete pMesh;
