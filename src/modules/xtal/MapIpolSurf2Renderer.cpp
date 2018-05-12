@@ -559,7 +559,7 @@ void MapIpolSurf2Renderer::buildMeshData(DisplayContext *pdl)
     MB_DPRINTLN("done");
   }
 
-  drawMeshLines(pdl, cgm, 0,0,0);
+  //drawMeshLines(pdl, cgm, 0,0,0);
 
   dumpTriStats("mcminrem.txt", cgm, m_ipol);
 
