@@ -15,12 +15,21 @@ using qlib::Matrix3D;
 namespace xtal {
 void dumpTriStats(const LString &fname, const Mesh &cgm, const MapBsplIpol &ip)
 {
-  FILE *fp = fopen(fname, "w");
+  FILE *fp = NULL;
+  if (!fname.isEmpty())
+    fp = fopen(fname, "w");
+
   int i, j;
 
   //vid_t vid[3];
   Vector3F v[3], g[3], vn;
   float minang, maxang, rr, ns;
+
+  double rr_sum = 0.0f;
+  double rr_sqsum = 0.0f;
+
+  double ns_sum = 0.0f;
+  double ns_sqsum = 0.0f;
 
   i=0;
   for(fid_t fd : cgm.faces()){
@@ -40,12 +49,84 @@ void dumpTriStats(const LString &fname, const Mesh &cgm, const MapBsplIpol &ip)
     vn = calcNorm(v[0], v[1], v[2]).normalize();
     ns = (vn.dot(g[0]) + vn.dot(g[1]) + vn.dot(g[2]))/3.0f;
 
-    fprintf(fp, "Tri %d min %f max %f rr %f ns %f\n",
-            i, qlib::toDegree(minang), qlib::toDegree(maxang), rr, ns);
+    if (fp)
+      fprintf(fp, "Tri %d min %f max %f rr %f ns %f\n",
+              i, qlib::toDegree(minang), qlib::toDegree(maxang), rr, ns);
+
+    rr_sum += rr;
+    rr_sqsum += rr*rr;
+
+    ns_sum += ns;
+    ns_sqsum += ns*ns;
+
     ++i;
   }
 
-  fclose(fp);
+  rr_sum /= double(i);
+  rr_sqsum /= double(i);
+  ns_sum /= double(i);
+  ns_sqsum /= double(i);
+
+  LOG_DPRINTLN("Face stat> av(RR): %f sig(RR): %f av(ns): %f sig(ns): %f",
+               rr_sum,
+               sqrt(rr_sqsum - rr_sum*rr_sum),
+               ns_sum,
+               sqrt(ns_sqsum - ns_sum*ns_sum));
+
+  if (fp)
+    fclose(fp);
+}
+
+void dumpEdgeStats(const LString &fname, const Mesh &cgm, const MapBsplIpol &ip)
+{
+  FILE *fp = NULL;
+  if (!fname.isEmpty())
+    fp = fopen(fname, "w");
+
+  int i, j;
+
+  Vector3F v0, v1, vm;
+  float angl;
+
+  double nld_sum = 0.0f;
+  double nld_sqsum = 0.0f;
+
+  i=0;
+  for(Mesh::Edge_index ei : cgm.edges()){
+    Mesh::Halfedge_index h0 = cgm.halfedge(ei, 0);
+    vid_t vid0 = cgm.target(h0);
+    Mesh::Halfedge_index h1 = cgm.halfedge(ei, 1);
+    vid_t vid1 = cgm.target(h1);
+
+    v0 = convToV3F(cgm.point( vid0 ));
+    v1 = convToV3F(cgm.point( vid1 ));
+
+    vm = (v0+v1).scale(0.5);
+
+    Vector3F g0 = ( ip.calcDiffAt(v0) ).normalize();
+    Vector3F g1 = ( ip.calcDiffAt(v1) ).normalize();
+    angl = acos(g0.dot(g1));
+
+    float len = (v0-v1).length();
+    float il = ip.calcIdealL(vm);
+    float nld = (len-il)/il;
+
+    if (fp)
+      fprintf(fp, "Edge %d len %f diffcuv %f cuv %f ideal_len %f norm_lendev %f\n",
+              i, len, qlib::toDegree(angl),
+              ip.calcMaxCurv(vm), il, nld);
+    
+    nld_sum += nld;
+    nld_sqsum += nld*nld;
+    ++i;
+  }
+  nld_sum /= double(i);
+  nld_sqsum /= double(i);
+
+  if (fp)
+    fclose(fp);
+
+  LOG_DPRINTLN("Edge stat> av(NLD): %f sig(NLD): %f", nld_sum, sqrt(nld_sqsum - nld_sum*nld_sum));
 }
 
 void drawMeshLines(DisplayContext *pdl, const Mesh &cgm, float r, float g, float b)
@@ -69,41 +150,63 @@ void drawMeshLines(DisplayContext *pdl, const Mesh &cgm, float r, float g, float
   pdl->setLighting(true);
 }
 
-
-void dumpEdgeStats(const LString &fname, const Mesh &cgm, const MapBsplIpol &ip)
+void drawMeshBorderLines(DisplayContext *pdl, const Mesh &cgm, float r, float g, float b)
 {
-  FILE *fp = fopen(fname, "w");
+  pdl->color(gfx::SolidColor::createRGB(r,g,b));
+  pdl->setLineWidth(2.0);
+  pdl->startLines();
+  for(Mesh::Edge_index ei : cgm.edges()){
+    if (cgm.is_border(ei)) {
+      pdl->vertex(convToV3F(cgm.point(cgm.vertex(ei, 0))));
+      pdl->vertex(convToV3F(cgm.point(cgm.vertex(ei, 1))));
+    }
+  }
+  pdl->end();
+
+}
+
+void checkMeshNorm1(DisplayContext *pdl, const Mesh &cgm, const MapBsplIpol &ip)
+{
+  pdl->color(1,0,0);
+  pdl->setLineWidth(4.0);
+  pdl->startLines();
+
   int i, j;
-
-  Vector3F v0, v1, vm;
-  float angl;
-
-  ParticleRefine pr;
-  pr.m_pipol = &ip;
+  Vector3F v[3], g[3], vn;
+  float minang, maxang, rr, ns;
 
   i=0;
-  for(Mesh::Edge_index ei : cgm.edges()){
-    Mesh::Halfedge_index h0 = cgm.halfedge(ei, 0);
-    vid_t vid0 = cgm.target(h0);
-    Mesh::Halfedge_index h1 = cgm.halfedge(ei, 1);
-    vid_t vid1 = cgm.target(h1);
+  for(fid_t fd : cgm.faces()){
 
-    v0 = convToV3F(cgm.point( vid0 ));
-    v1 = convToV3F(cgm.point( vid1 ));
+    j=0;
+    BOOST_FOREACH(vid_t vd,vertices_around_face(cgm.halfedge(fd), cgm)){
+      MB_ASSERT(j<3);
+      v[j] = convToV3F( cgm.point(vd) );
+      g[j] = -(ip.calcDiffAt(v[j])).normalize();
+      ++j;
+    }
+    MB_ASSERT(j==3);
 
-    vm = (v0+v1).scale(0.5);
+    //minang = minangl(v[0], v[1], v[2]);
+    //maxang = minangl(v[0], v[1], v[2], true);
+    //rr = radratio(v[0], v[1], v[2]);
 
-    Vector3F g0 = ( ip.calcDiffAt(v0) ).normalize();
-    Vector3F g1 = ( ip.calcDiffAt(v1) ).normalize();
-    angl = acos(g0.dot(g1));
+    vn = ::calcNorm(v[0], v[1], v[2]).normalize();
+    ns = (vn.dot(g[0]) + vn.dot(g[1]) + vn.dot(g[2]))/3.0f;
 
-    fprintf(fp, "Edge %d len %f diffcuv %f cuv %f il %f\n",
-            i, (v0-v1).length(), qlib::toDegree(angl),
-            ip.calcMaxCurv(vm), ip.calcIdealL(vm));
+    if (ns<0.5) {
+      pdl->vertex(v[0]);
+      pdl->vertex(v[1]);
+
+      pdl->vertex(v[1]);
+      pdl->vertex(v[2]);
+
+      pdl->vertex(v[2]);
+      pdl->vertex(v[0]);
+    }
     ++i;
   }
-
-  fclose(fp);
+  pdl->end();
 }
 
 }

@@ -96,6 +96,8 @@ namespace xtal {
 
   void drawMeshLines(DisplayContext *pdl, const Mesh &cgm, float r, float g, float b);
 
+  void checkMeshNorm1(DisplayContext *pdl, const Mesh &cgm, const MapBsplIpol &ip);
+
   class FindProjSurf
   {
   public:

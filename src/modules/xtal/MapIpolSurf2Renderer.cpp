@@ -390,6 +390,10 @@ void MapIpolSurf2Renderer::buildMeshData(DisplayContext *pdl)
   pMesh = MB_NEW Mesh;
   m_pMesh = pMesh;
 
+  m_ipol.m_curv_scl = 0.5;
+  m_ipol.m_lmin = 0.2;
+  m_ipol.m_lmax = 1.0;
+
   /////////////////////
   // Do marching cubes
 
@@ -409,6 +413,7 @@ void MapIpolSurf2Renderer::buildMeshData(DisplayContext *pdl)
   dumpEdgeStats("edge_mc.txt", cgm, m_ipol);
 
   for (i=0; i<2; ++i) {
+    LOG_DPRINTLN("Regular refine step %d", i);
 
     {
       ParticleRefine pr;
@@ -433,8 +438,6 @@ void MapIpolSurf2Renderer::buildMeshData(DisplayContext *pdl)
       pr.refineGsl(ParticleRefine::MIN_SD);
 
       pr.writeResult(cgm);
-      dumpTriStats("mcmin1-1.txt", cgm, m_ipol);
-      dumpEdgeStats("edge_mcmin1-1.txt", cgm, m_ipol);
 
       pr.dumpRefineLog("min1_trace.txt");
     }
@@ -443,11 +446,14 @@ void MapIpolSurf2Renderer::buildMeshData(DisplayContext *pdl)
       PMP::iso_remesh(cgm, 1.0);
       nv = cgm.number_of_vertices();
       nf = cgm.number_of_faces();
-      MB_DPRINTLN("Remeshing done, nv=%d, nf=%d", nv, nf);
+      LOG_DPRINTLN("Remeshing done, nv=%d, nf=%d", nv, nf);
     }
+
+    dumpTriStats("mcmin1-1.txt", cgm, m_ipol);
+    dumpEdgeStats("edge_mcmin1-1.txt", cgm, m_ipol);
   }
 
-  {
+  /*{
       ParticleRefine pr;
       pr.m_isolev = m_dLevel;
 
@@ -493,21 +499,17 @@ void MapIpolSurf2Renderer::buildMeshData(DisplayContext *pdl)
       dumpEdgeStats("edge_mcmin1-2.txt", cgm, m_ipol);
 
       //pr.dumpRefineLog("min1_trace.txt");
-    }
+  }*/
 
-
-  m_ipol.m_curv_scl = 0.5;
-  m_ipol.m_lmin = 0.2;
-  m_ipol.m_lmax = 1.0;
 
   for (i=0; i<10; ++i) {
+    LOG_DPRINTLN("Adaptive refine step %d", i);
 
-    PMP::adp_remesh(&m_ipol, cgm,
-                    1, 2);
+    PMP::adp_remesh(&m_ipol, cgm, 1, 2);
     
     nv = cgm.number_of_vertices();
     nf = cgm.number_of_faces();
-    MB_DPRINTLN("Remeshing done, nv=%d, nf=%d", nv, nf);
+    LOG_DPRINTLN("Remeshing done, nv=%d, nf=%d", nv, nf);
     
     ParticleRefine pr;
     pr.m_isolev = m_dLevel;
@@ -518,26 +520,24 @@ void MapIpolSurf2Renderer::buildMeshData(DisplayContext *pdl)
     pr.m_bUseAdp = true;
     pr.setAdpBond();
     
-    //pr.m_bUseMap = false;
     pr.m_bUseMap = true;
     
-    //pr.m_bUseProj = true;
     pr.m_bUseProj = false;
     
-    //pr.m_nBondType = ParticleRefine::BOND_FULL;
+    pr.m_nBondType = ParticleRefine::BOND_FULL;
     pr.m_nMaxIter = 10;
-    pr.m_mapscl = 10.0f;
+    pr.m_mapscl = 50.0f;
     pr.m_bondscl = 0.1f;
     pr.refineGsl(ParticleRefine::MIN_SD);
     
     pr.writeResult(cgm);
+
+    dumpTriStats(LString(), cgm, m_ipol);
+    dumpEdgeStats(LString(), cgm, m_ipol);
   }
 
-  dumpEdgeStats("edge_mcmin2.txt", cgm, m_ipol);
-
-  
   {
-    MB_DPRINTLN("Projecting vertices to surf");
+    LOG_DPRINTLN("Projecting vertices to surf");
     float del;
     FindProjSurf sol;
     sol.m_pipol = &m_ipol;
@@ -563,66 +563,10 @@ void MapIpolSurf2Renderer::buildMeshData(DisplayContext *pdl)
 
   dumpTriStats("mcminrem.txt", cgm, m_ipol);
 
-  K::Point_3 cgpt;
-  Vector3F pt, norm;
+  dumpEdgeStats("edge_mcmin2.txt", cgm, m_ipol);
 
-/*
-  pdl->color(gfx::SolidColor::createRGB(1.0, 0.0, 0.0));
-  pdl->setLineWidth(2.0);
-  pdl->startLines();
-  for(Mesh::Edge_index ei : cgm.edges()){
-    if (cgm.is_border(ei)) {
-      pdl->vertex(convToV3F(cgm.point(cgm.vertex(ei, 0))));
-      pdl->vertex(convToV3F(cgm.point(cgm.vertex(ei, 1))));
-    }
-  }
-  pdl->end();
-*/
   
-  //////////
-
-  {
-    pdl->color(1,0,0);
-    pdl->setLineWidth(4.0);
-    pdl->startLines();
-
-    int i, j;
-    Vector3F v[3], g[3], vn;
-    float minang, maxang, rr, ns;
-
-    i=0;
-    for(fid_t fd : cgm.faces()){
-      
-      j=0;
-      BOOST_FOREACH(vid_t vd,vertices_around_face(cgm.halfedge(fd), cgm)){
-        MB_ASSERT(j<3);
-        v[j] = convToV3F( cgm.point(vd) );
-        g[j] = -(m_ipol.calcDiffAt(v[j])).normalize();
-        ++j;
-      }
-      MB_ASSERT(j==3);
-      
-      //minang = minangl(v[0], v[1], v[2]);
-      //maxang = minangl(v[0], v[1], v[2], true);
-      //rr = radratio(v[0], v[1], v[2]);
-
-      vn = ::calcNorm(v[0], v[1], v[2]).normalize();
-      ns = (vn.dot(g[0]) + vn.dot(g[1]) + vn.dot(g[2]))/3.0f;
-      
-      if (ns<0.5) {
-        pdl->vertex(v[0]);
-        pdl->vertex(v[1]);
-
-        pdl->vertex(v[1]);
-        pdl->vertex(v[2]);
-
-        pdl->vertex(v[2]);
-        pdl->vertex(v[0]);
-      }
-      ++i;
-    }
-    pdl->end();
-  }
+  checkMeshNorm1(pdl, cgm, m_ipol);
 
 }
 
