@@ -443,7 +443,7 @@ void MapIpolSurf2Renderer::buildMeshData(DisplayContext *pdl)
     }
 
     if (i<1) {
-      PMP::iso_remesh(cgm, 1.0);
+      PMP::iso_remesh(&m_ipol, cgm, 1.0);
       nv = cgm.number_of_vertices();
       nf = cgm.number_of_faces();
       LOG_DPRINTLN("Remeshing done, nv=%d, nf=%d", nv, nf);
@@ -453,7 +453,7 @@ void MapIpolSurf2Renderer::buildMeshData(DisplayContext *pdl)
     dumpEdgeStats("edge_mcmin1-1.txt", cgm, m_ipol);
   }
 
-  /*{
+  {
       ParticleRefine pr;
       pr.m_isolev = m_dLevel;
 
@@ -476,30 +476,30 @@ void MapIpolSurf2Renderer::buildMeshData(DisplayContext *pdl)
       //pr.m_bondscl = 1.0f;
       pr.m_bondscl = 0.1f;
       pr.refineGsl(ParticleRefine::MIN_SD);
-      //PMP::iso_remesh(cgm, 1.0);
+
+dumpTriStats(LString(), cgm, m_ipol);
 
       pr.m_bondscl = 0.2f;
       pr.refineGsl(ParticleRefine::MIN_SD);
-      //PMP::iso_remesh(cgm, 1.0);
+
+dumpTriStats(LString(), cgm, m_ipol);
 
       pr.m_bondscl = 0.4f;
       pr.refineGsl(ParticleRefine::MIN_SD);
-      //PMP::iso_remesh(cgm, 1.0);
+
+dumpTriStats(LString(), cgm, m_ipol);
 
       pr.m_nMaxIter = 20;
       pr.m_mapscl = 200.0f;
       pr.m_bondscl = 1.0f;
       pr.refineGsl(ParticleRefine::MIN_SD);
-      //PMP::iso_remesh(cgm, 1.0);
-      //nv = cgm.number_of_vertices();
-      //nf = cgm.number_of_faces();
 
       pr.writeResult(cgm);
       dumpTriStats("mcmin1-2.txt", cgm, m_ipol);
       dumpEdgeStats("edge_mcmin1-2.txt", cgm, m_ipol);
 
       //pr.dumpRefineLog("min1_trace.txt");
-  }*/
+  }
 
 
   for (i=0; i<10; ++i) {
@@ -524,7 +524,7 @@ void MapIpolSurf2Renderer::buildMeshData(DisplayContext *pdl)
     
     pr.m_bUseProj = false;
     
-    pr.m_nBondType = ParticleRefine::BOND_FULL;
+    //pr.m_nBondType = ParticleRefine::BOND_FULL;
     pr.m_nMaxIter = 10;
     pr.m_mapscl = 50.0f;
     pr.m_bondscl = 0.1f;

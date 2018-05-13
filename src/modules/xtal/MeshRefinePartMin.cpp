@@ -31,6 +31,8 @@ void dumpTriStats(const LString &fname, const Mesh &cgm, const MapBsplIpol &ip)
   double ns_sum = 0.0f;
   double ns_sqsum = 0.0f;
 
+  int nbadns = 0;
+
   i=0;
   for(fid_t fd : cgm.faces()){
 
@@ -59,6 +61,9 @@ void dumpTriStats(const LString &fname, const Mesh &cgm, const MapBsplIpol &ip)
     ns_sum += ns;
     ns_sqsum += ns*ns;
 
+    if (ns<0.5)
+      ++nbadns;
+
     ++i;
   }
 
@@ -67,11 +72,12 @@ void dumpTriStats(const LString &fname, const Mesh &cgm, const MapBsplIpol &ip)
   ns_sum /= double(i);
   ns_sqsum /= double(i);
 
-  LOG_DPRINTLN("Face stat> av(RR): %f sig(RR): %f av(ns): %f sig(ns): %f",
+  LOG_DPRINTLN("Face stat> av(RR): %f sig(RR): %f av(ns): %f sig(ns): %f badns: %d",
                rr_sum,
                sqrt(rr_sqsum - rr_sum*rr_sum),
                ns_sum,
-               sqrt(ns_sqsum - ns_sum*ns_sum));
+               sqrt(ns_sqsum - ns_sum*ns_sum),
+               nbadns);
 
   if (fp)
     fclose(fp);

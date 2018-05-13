@@ -882,6 +882,69 @@ namespace MY_internal {
 
     }
 
+    float calc_normdev(const vertex_descriptor& v1,
+                       const vertex_descriptor& v2,
+                       const vertex_descriptor& v3) const
+    {
+      Vector3F p1 = convToV3F( get(vpmap_, v1) );
+      Vector3F p2 = convToV3F( get(vpmap_, v2) );
+      Vector3F p3 = convToV3F( get(vpmap_, v3) );
+
+      Vector3F g1 = -(m_pipol->calcDiffAt(p1)).normalize();
+      Vector3F g2 = -(m_pipol->calcDiffAt(p2)).normalize();
+      Vector3F g3 = -(m_pipol->calcDiffAt(p3)).normalize();
+
+      Vector3F vn = calcNorm(p1, p2, p3).normalize();
+
+      return (vn.dot(g1) + vn.dot(g2) + vn.dot(g3))/3.0f;
+    }
+
+    void flip_by_normdev()
+    {
+      MB_DPRINTLN("Flip by normdev...");
+
+      unsigned int nb_flips = 0;
+      BOOST_FOREACH(edge_descriptor e, edges(mesh_))
+      {
+        //only the patch edges are allowed to be flipped
+        if (!is_flip_allowed(e))
+          continue;
+
+        halfedge_descriptor he = halfedge(e, mesh_);
+        vertex_descriptor va = source(he, mesh_);
+        vertex_descriptor vb = target(he, mesh_);
+        vertex_descriptor vc = target(next(he, mesh_), mesh_);
+        vertex_descriptor vd = target(next(opposite(he, mesh_), mesh_), mesh_);
+
+        Patch_id pid = get_patch_id(face(he, mesh_));
+
+        float rr0 = calc_normdev(va, vb, vc);
+        float rr1 = calc_normdev(vb, va, vd);
+
+        float rr2 = calc_normdev(vc, vd, vb);
+        float rr3 = calc_normdev(vd, vc, va);
+
+        if (rr0+rr1<rr2+rr3 &&
+            check_normals(he) &&
+            !incident_to_degenerate(he) &&
+            !incident_to_degenerate(opposite(he, mesh_)) &&
+            is_on_triangle(he) &&
+            is_on_triangle(opposite(he, mesh_)) &&
+            check_normals(target(he, mesh_)) &&
+            check_normals(source(he, mesh_))) {
+          CGAL::Euler::flip_edge(he, mesh_);
+          ++nb_flips;
+        }
+
+        set_patch_id(face(he, mesh_), pid);
+        set_patch_id(face(opposite(he, mesh_), mesh_), pid);
+      }
+
+      MB_DPRINTLN("done (%d flips)", nb_flips);
+
+
+    }
+
     // PMP book :
     // "applies an iterative smoothing filter to the mesh.
     // The vertex movement has to be constrained to the vertex tangent plane [...]
@@ -1935,6 +1998,7 @@ void my_isotropic_remeshing(const xtal::MapBsplIpol *pipol,
       remesher.collapse_short_edges(low, high);
     }
     remesher.equalize_valences();
+    //remesher.flip_by_normdev();
     remesher.tangential_relaxation(smoothing_1d, nb_laplacian);
     //remesher.project_to_surface();
 
@@ -1944,11 +2008,12 @@ void my_isotropic_remeshing(const xtal::MapBsplIpol *pipol,
 }
 
 template<typename PolygonMesh>
-void iso_remesh(PolygonMesh& cgm,
+void iso_remesh(const xtal::MapBsplIpol *pipol,
+                PolygonMesh& cgm,
                 const double& target_edge_length)
 {
   my_isotropic_remeshing(
-    NULL,
+    pipol,
     faces(cgm),
     target_edge_length,
     cgm,
