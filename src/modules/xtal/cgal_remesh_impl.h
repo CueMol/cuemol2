@@ -921,6 +921,9 @@ namespace MY_internal {
         float rr0 = calc_normdev(va, vb, vc);
         float rr1 = calc_normdev(vb, va, vd);
 
+        if ((rr0+rr1)>0.5*2.0)
+          continue;
+
         float rr2 = calc_normdev(vc, vd, vb);
         float rr3 = calc_normdev(vd, vc, va);
 
@@ -1972,9 +1975,6 @@ void my_isotropic_remeshing(const xtal::MapBsplIpol *pipol,
     remesher(pmesh, vpmap, protect, ecmap, vcmap, fpmap, fimap);
 
   remesher.m_pipol = pipol;
-  //remesher.m_curv_scl = curv_scl;
-  //remesher.m_ideall_min = l_min;
-  //remesher.m_ideall_max = l_max;
   
   if (low>=0.0)
     MB_DPRINTLN("Start isotropic increment remesh (low=%f, hi=%f)", low, high);
@@ -1998,7 +1998,7 @@ void my_isotropic_remeshing(const xtal::MapBsplIpol *pipol,
       remesher.collapse_short_edges(low, high);
     }
     remesher.equalize_valences();
-    //remesher.flip_by_normdev();
+    // remesher.flip_by_normdev();
     remesher.tangential_relaxation(smoothing_1d, nb_laplacian);
     //remesher.project_to_surface();
 
@@ -2010,14 +2010,16 @@ void my_isotropic_remeshing(const xtal::MapBsplIpol *pipol,
 template<typename PolygonMesh>
 void iso_remesh(const xtal::MapBsplIpol *pipol,
                 PolygonMesh& cgm,
-                const double& target_edge_length)
+                const double& target_edge_length,
+                int nb_iter = 1, int rel_iter = 1)
 {
   my_isotropic_remeshing(
     pipol,
     faces(cgm),
     target_edge_length,
     cgm,
-    PMP::parameters::all_default());
+    PMP::parameters::number_of_iterations(nb_iter).number_of_relaxation_steps(rel_iter));
+  //PMP::parameters::all_default());
 }
 
 template<typename PolygonMesh>

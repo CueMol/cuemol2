@@ -43,6 +43,10 @@ MapIpolSurf2Renderer::MapIpolSurf2Renderer()
   m_nOmpThr = -1;
 
   m_pMesh = NULL;
+  m_dCurvScl = 0.5;
+  m_dLMin = 0.1;
+  m_dLMax = 1.2;
+  m_bUseAdp = true;
 }
 
 // destructor
@@ -170,27 +174,42 @@ void MapIpolSurf2Renderer::render(DisplayContext *pdl)
   m_pCMap = NULL;
 }
 
+void MapIpolSurf2Renderer::setColor(const ColorPtr &col)
+{
+  super_t::setColor(col);
+  invalidateDisplayCache();
+}
+
 void MapIpolSurf2Renderer::setCenter(const Vector4D &v)
 {
+  Vector4D curpos = getCenter();
+  if ( qlib::isNear4(v.x(), curpos.x()) &&
+       qlib::isNear4(v.y(), curpos.y()) &&
+       qlib::isNear4(v.z(), curpos.z()) )
+    return;
+
+  clearMeshData();
   super_t::setCenter(v);
-  Mesh *pMesh = static_cast<Mesh *>(m_pMesh);
-  if (pMesh!=NULL)
-    delete pMesh;
-  m_pMesh = NULL;
 }
 
 void MapIpolSurf2Renderer::setExtent(double value)
 {
+  if (qlib::isNear4(value,getExtent()))
+    return;
+  clearMeshData();
   super_t::setExtent(value);
-  Mesh *pMesh = static_cast<Mesh *>(m_pMesh);
-  if (pMesh!=NULL)
-    delete pMesh;
-  m_pMesh = NULL;
 }
 
 void MapIpolSurf2Renderer::setSigLevel(double value)
 {
+  if (qlib::isNear4(value,getSigLevel()))
+    return;
+  clearMeshData();
   super_t::setSigLevel(value);
+}
+
+void MapIpolSurf2Renderer::clearMeshData()
+{
   Mesh *pMesh = static_cast<Mesh *>(m_pMesh);
   if (pMesh!=NULL)
     delete pMesh;
@@ -390,10 +409,6 @@ void MapIpolSurf2Renderer::buildMeshData(DisplayContext *pdl)
   pMesh = MB_NEW Mesh;
   m_pMesh = pMesh;
 
-  m_ipol.m_curv_scl = 0.5;
-  m_ipol.m_lmin = 0.2;
-  m_ipol.m_lmax = 1.0;
-
   /////////////////////
   // Do marching cubes
 
@@ -403,6 +418,10 @@ void MapIpolSurf2Renderer::buildMeshData(DisplayContext *pdl)
 
   /////////////////////
   int i,j,k;
+
+  m_ipol.m_curv_scl = m_dCurvScl;
+  m_ipol.m_lmin = 0.1;
+  m_ipol.m_lmax = 1.2;
 
   //drawMeshLines(pdl, cgm, 1,0,0);
 
@@ -443,7 +462,7 @@ void MapIpolSurf2Renderer::buildMeshData(DisplayContext *pdl)
     }
 
     if (i<1) {
-      PMP::iso_remesh(&m_ipol, cgm, 1.0);
+      PMP::iso_remesh(&m_ipol, cgm, 1.0, 1, 2);
       nv = cgm.number_of_vertices();
       nf = cgm.number_of_faces();
       LOG_DPRINTLN("Remeshing done, nv=%d, nf=%d", nv, nf);
@@ -453,7 +472,7 @@ void MapIpolSurf2Renderer::buildMeshData(DisplayContext *pdl)
     dumpEdgeStats("edge_mcmin1-1.txt", cgm, m_ipol);
   }
 
-  {
+  /*{
       ParticleRefine pr;
       pr.m_isolev = m_dLevel;
 
@@ -499,13 +518,13 @@ dumpTriStats(LString(), cgm, m_ipol);
       dumpEdgeStats("edge_mcmin1-2.txt", cgm, m_ipol);
 
       //pr.dumpRefineLog("min1_trace.txt");
-  }
+  }*/
 
-
+  if (m_bUseAdp) {
   for (i=0; i<10; ++i) {
     LOG_DPRINTLN("Adaptive refine step %d", i);
 
-    PMP::adp_remesh(&m_ipol, cgm, 1, 2);
+    PMP::adp_remesh(&m_ipol, cgm, 1, 1);
     
     nv = cgm.number_of_vertices();
     nf = cgm.number_of_faces();
@@ -534,6 +553,7 @@ dumpTriStats(LString(), cgm, m_ipol);
 
     dumpTriStats(LString(), cgm, m_ipol);
     dumpEdgeStats(LString(), cgm, m_ipol);
+  }
   }
 
   {
@@ -565,8 +585,7 @@ dumpTriStats(LString(), cgm, m_ipol);
 
   dumpEdgeStats("edge_mcmin2.txt", cgm, m_ipol);
 
-  
-  checkMeshNorm1(pdl, cgm, m_ipol);
+  // checkMeshNorm1(pdl, cgm, m_ipol);
 
 }
 
@@ -614,6 +633,24 @@ void MapIpolSurf2Renderer::renderMeshImpl(DisplayContext *pdl)
     ++i;
   }
   pdl->drawMesh(mesh);
+
+  if (m_nDrawMode==MSRDRAW_FILL_LINE) {
+    pdl->setLineWidth(m_lw);
+    pdl->startLines();
+    pdl->color(getEdgeLineColor());
+
+    for(Mesh::Edge_index ei : cgm.edges()){
+      Mesh::Halfedge_index h0 = cgm.halfedge(ei, 0);
+      Vector3F v00 = convToV3F( cgm.point( cgm.target(h0) ) );
+      
+      Mesh::Halfedge_index h1 = cgm.halfedge(ei, 1);
+      Vector3F v10 = convToV3F( cgm.point( cgm.target(h1) ) );
+      
+      pdl->vertex(v00);
+      pdl->vertex(v10);
+    }
+    pdl->end();
+  }
 }
 
 void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)

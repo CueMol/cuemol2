@@ -49,14 +49,12 @@ namespace xtal {
       MSRDRAW_FILL = 0,
       MSRDRAW_LINE = 1,
       MSRDRAW_POINT = 2,
+      MSRDRAW_FILL_LINE = 3,
     };
     
   private:
     /// Mesh-drawing mode
     int m_nDrawMode;
-
-    /// Line width (used in LINE/POINT mode)
-    double m_lw;
 
   public:
     int getDrawMode() const { return m_nDrawMode; }
@@ -65,6 +63,11 @@ namespace xtal {
       invalidateDisplayCache();
     }
     
+  private:
+    /// Line width (used in LINE/POINT mode)
+    double m_lw;
+
+  public:
     void setLineWidth(double f) {
       m_lw = f;
       invalidateDisplayCache();
@@ -83,6 +86,53 @@ namespace xtal {
       invalidateDisplayCache();
     }
     
+
+  private:
+    /// Use Adaptive remeshing
+    bool m_bUseAdp;
+
+  public:
+    bool isUseAdp() const { return m_bUseAdp; }
+    void setUseAdp(bool b) {
+      m_bUseAdp = b;
+      clearMeshData();
+      invalidateDisplayCache();
+    }
+
+  private:
+    double m_dCurvScl;
+
+  public:
+    void setAdpScl(double f) {
+      m_dCurvScl = f;
+      clearMeshData();
+      invalidateDisplayCache();
+    }
+    double getAdpScl() const { return m_dCurvScl; }
+
+
+  private:
+    double m_dLMin;
+
+  public:
+    void setLMin(double f) {
+      m_dLMin = f;
+      clearMeshData();
+      invalidateDisplayCache();
+    }
+    double getLMin() const { return m_dLMin; }
+
+  private:
+    double m_dLMax;
+
+  public:
+    void setLMax(double f) {
+      m_dLMax = f;
+      clearMeshData();
+      invalidateDisplayCache();
+    }
+    double getLMax() const { return m_dLMax; }
+
 
   private:
     /// OpenMP Thread number(-1: use all system cores)
@@ -179,6 +229,7 @@ namespace xtal {
 
     void renderMeshImpl(DisplayContext *pdl);
 
+    void clearMeshData();
   public:
 
     virtual bool isUseVer2Iface() const;
@@ -188,6 +239,8 @@ namespace xtal {
     virtual void setCenter(const Vector4D &v);
     virtual void setExtent(double value);
     virtual void setSigLevel(double value);
+
+    virtual void setColor(const ColorPtr &col);
 
   protected:
 

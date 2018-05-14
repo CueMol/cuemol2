@@ -38,6 +38,7 @@ runtime_class MapIpolSurf2Renderer extends Map3Renderer
     fill = xtal::MapIpolSurf2Renderer::MSRDRAW_FILL;
     line = xtal::MapIpolSurf2Renderer::MSRDRAW_LINE;
     point = xtal::MapIpolSurf2Renderer::MSRDRAW_POINT;
+    fill_line = xtal::MapIpolSurf2Renderer::MSRDRAW_FILL_LINE;
   }
   property enum drawmode => redirect(getDrawMode, setDrawMode);
   default drawmode = "fill";
@@ -61,6 +62,17 @@ runtime_class MapIpolSurf2Renderer extends Map3Renderer
   property integer omp_thr => redirect(getOmpThr, setOmpThr);
   default omp_thr = -1;
 
+  property boolean ada_mesh => redirect(isUseAdp, setUseAdp);
+  default ada_mesh = true;
+
+  property real ada_scl => redirect(getAdpScl, setAdpScl);
+  default ada_scl = 0.5;
+
+  property real len_min => redirect(getLMin, setLMin);
+  default len_min = 0.1;
+
+  property real len_max => redirect(getLMax, setLMax);
+  default len_max = 1.2;
 };
 
 #endif

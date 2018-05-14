@@ -94,7 +94,7 @@ namespace xtal {
 
   public:
     /// display color
-    void setColor(const ColorPtr &col) { m_pcolor = col; }
+    virtual void setColor(const ColorPtr &col) { m_pcolor = col; }
     const ColorPtr &getColor() const { return m_pcolor; }
 
     /////////
