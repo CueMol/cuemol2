@@ -188,6 +188,15 @@ namespace surface {
       m_pGrad = val;
     }
 
+  public:
+
+    /// reference coloring map target (used in MULTIGRAD mode)
+    LString getColorMapName() const { return getTgtElePotName(); }
+    void setColorMapName(const LString &n) { setTgtElePotName(n); }
+
+    /// get color-map object (valid in MULTIGRAD mode)
+    qsys::ObjectPtr getColorMapObj() const;
+
   private:
 
     /////////////

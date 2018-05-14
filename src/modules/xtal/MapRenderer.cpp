@@ -28,8 +28,8 @@ MapRenderer::MapRenderer()
 
   m_bUseMolBndry = false;
   m_bUseAbsLev = false;
-  m_pGrad = qsys::MultiGradientPtr(MB_NEW qsys::MultiGradient());
 
+  m_pGrad = qsys::MultiGradientPtr(MB_NEW qsys::MultiGradient());
   super_t::setupParentData("multi_grad");
 }
 

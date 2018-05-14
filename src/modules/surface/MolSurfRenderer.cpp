@@ -42,6 +42,7 @@ MolSurfRenderer::MolSurfRenderer()
   m_nTgtMolID = qlib::invalid_uid;
 
   m_pGrad = qsys::MultiGradientPtr(MB_NEW qsys::MultiGradient());
+  super_t::setupParentData("multi_grad");
 }
 
 /// destructor
@@ -456,19 +457,26 @@ bool MolSurfRenderer::hasCenter() const
 
 void MolSurfRenderer::propChanged(qlib::LPropEvent &ev)
 {
-  if (ev.getName().equals("coloring")||
-      ev.getParentName().equals("coloring")||
-      ev.getParentName().startsWith("coloring.")) {
+  LString name = ev.getName();
+  LString pname = ev.getParentName();
+  
+  if (name.equals("coloring")||
+      pname.equals("coloring")||
+      pname.startsWith("coloring.")) {
     invalidateDisplayCache();
   }
-  else if (ev.getName().equals("target") ||
-           ev.getName().equals("defaultcolor") ||
-           ev.getName().equals("colormode")) {
+  else if (name.equals("target") ||
+           name.equals("defaultcolor") ||
+           name.equals("colormode")) {
     invalidateDisplayCache();
   }
-  else if (ev.getName().equals("cullface")||
-           ev.getName().equals("wireframe")||
-           ev.getName().equals("dot")) {
+  else if (name.equals("cullface")||
+           name.equals("wireframe")||
+           name.equals("dot")) {
+    invalidateDisplayCache();
+  }
+  else if (pname.equals("multi_grad") &&
+           m_nMode==SFREND_MULTIGRAD) {
     invalidateDisplayCache();
   }
 
@@ -596,5 +604,11 @@ void MolSurfRenderer::sceneChanged(qsys::SceneEvent &ev)
   }
 
   super_t::sceneChanged(ev);
+}
+
+qsys::ObjectPtr MolSurfRenderer::getColorMapObj() const
+{
+  qsys::ObjectPtr pobj = ensureNotNull(getScene())->getObjectByName(getColorMapName());
+  return pobj;
 }
 

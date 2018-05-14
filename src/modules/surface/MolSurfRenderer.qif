@@ -89,6 +89,12 @@ runtime_class MolSurfRenderer extends Renderer
 
   property object<MultiGradient$> multi_grad => redirect(getMultiGrad, xxx) (readonly);
 
+  /// Coloring map (density/elepot) name property. The same as elepot property.
+  property string color_mapname => redirect(getColorMapName, setColorMapName);
+
+  /// Get coloring map (map/elepot) name. The same as elepot property.
+  object<Object$> getColorMapObj();
+
   //////////
   // ramp_above/ramp_value props are used in both potential & multigrad modes
 

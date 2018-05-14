@@ -63,6 +63,7 @@
 	  </hbox>
 	</vbox>
 
+	<!-- for Multi-gradient coloring (1) -->
 	<vbox id="coloring-deck-multigrad">
 	  <description value="Multi-gradient coloring:"/>
 	  <menulist id="paint-colmap-obj-selector"/>
