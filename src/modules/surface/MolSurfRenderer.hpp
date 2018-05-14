@@ -25,6 +25,7 @@ namespace qsys { class ScalarObject; }
 namespace molstr {
   class MolCoord;
   class AtomPosMap;
+  class AtomPosMap2;
 }
 
 namespace surface {
@@ -35,6 +36,7 @@ namespace surface {
   using molstr::MolCoordPtr;
   using molstr::SelectionPtr;
   using molstr::AtomPosMap;
+  using molstr::AtomPosMap2;
 
   class SURFACE_API MolSurfRenderer : public qsys::DispListRenderer, public molstr::ColSchmHolder
   {
@@ -186,6 +188,15 @@ namespace surface {
       m_pGrad = val;
     }
 
+  public:
+
+    /// reference coloring map target (used in MULTIGRAD mode)
+    LString getColorMapName() const { return getTgtElePotName(); }
+    void setColorMapName(const LString &n) { setTgtElePotName(n); }
+
+    /// get color-map object (valid in MULTIGRAD mode)
+    qsys::ObjectPtr getColorMapObj() const;
+
   private:
 
     /////////////
@@ -193,7 +204,7 @@ namespace surface {
     qsys::ScalarObject *m_pScaObj;
 
     MolCoordPtr m_pMol;
-    AtomPosMap *m_pAmap;
+    AtomPosMap2 *m_pAmap;
 
     /// target surface object
     MolSurfObj *m_pSurf;

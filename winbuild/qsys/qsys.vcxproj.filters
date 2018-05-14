@@ -831,6 +831,9 @@
     <ClCompile Include="..\..\src\qsys\ScalarObject_wrap.cpp">
       <Filter>QIF wrapper</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\AtomPosMap2.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\qsys\AbstractColor.hpp">

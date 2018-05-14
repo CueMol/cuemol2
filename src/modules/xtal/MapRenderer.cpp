@@ -34,8 +34,8 @@ MapRenderer::MapRenderer()
   m_nMaxGrid = 100;
 
   m_bUseAbsLev = false;
-  m_pGrad = qsys::MultiGradientPtr(MB_NEW qsys::MultiGradient());
 
+  m_pGrad = qsys::MultiGradientPtr(MB_NEW qsys::MultiGradient());
   super_t::setupParentData("multi_grad");
 }
 

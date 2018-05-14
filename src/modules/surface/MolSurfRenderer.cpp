@@ -14,7 +14,8 @@
 #include <qsys/ScalarObject.hpp>
 #include <qsys/Scene.hpp>
 #include <qsys/SceneManager.hpp>
-#include <modules/molstr/AtomPosMap.hpp>
+//#include <modules/molstr/AtomPosMap.hpp>
+#include <modules/molstr/AtomPosMap2.hpp>
 #include <modules/molstr/MolAtom.hpp>
 #include <modules/molstr/MolCoord.hpp>
 
@@ -41,6 +42,7 @@ MolSurfRenderer::MolSurfRenderer()
   m_nTgtMolID = qlib::invalid_uid;
 
   m_pGrad = qsys::MultiGradientPtr(MB_NEW qsys::MultiGradient());
+  super_t::setupParentData("multi_grad");
 }
 
 /// destructor
@@ -455,19 +457,26 @@ bool MolSurfRenderer::hasCenter() const
 
 void MolSurfRenderer::propChanged(qlib::LPropEvent &ev)
 {
-  if (ev.getName().equals("coloring")||
-      ev.getParentName().equals("coloring")||
-      ev.getParentName().startsWith("coloring.")) {
+  LString name = ev.getName();
+  LString pname = ev.getParentName();
+  
+  if (name.equals("coloring")||
+      pname.equals("coloring")||
+      pname.startsWith("coloring.")) {
     invalidateDisplayCache();
   }
-  else if (ev.getName().equals("target") ||
-           ev.getName().equals("defaultcolor") ||
-           ev.getName().equals("colormode")) {
+  else if (name.equals("target") ||
+           name.equals("defaultcolor") ||
+           name.equals("colormode")) {
     invalidateDisplayCache();
   }
-  else if (ev.getName().equals("cullface")||
-           ev.getName().equals("wireframe")||
-           ev.getName().equals("dot")) {
+  else if (name.equals("cullface")||
+           name.equals("wireframe")||
+           name.equals("dot")) {
+    invalidateDisplayCache();
+  }
+  else if (pname.equals("multi_grad") &&
+           m_nMode==SFREND_MULTIGRAD) {
     invalidateDisplayCache();
   }
 
@@ -479,9 +488,15 @@ void MolSurfRenderer::makeAtomPosMap()
 {
   if (!m_pMol.isnull()) {
     if (m_pAmap!=NULL) delete m_pAmap;
+    /*
     m_pAmap = MB_NEW AtomPosMap();
     m_pAmap->setTarget(m_pMol);
     m_pAmap->setSpacing(3.5);
+    m_pAmap->generate(m_pMolSel);
+      */
+
+    m_pAmap = MB_NEW AtomPosMap2();
+    m_pAmap->setTarget(m_pMol);
     m_pAmap->generate(m_pMolSel);
   }
 }
@@ -589,5 +604,11 @@ void MolSurfRenderer::sceneChanged(qsys::SceneEvent &ev)
   }
 
   super_t::sceneChanged(ev);
+}
+
+qsys::ObjectPtr MolSurfRenderer::getColorMapObj() const
+{
+  qsys::ObjectPtr pobj = ensureNotNull(getScene())->getObjectByName(getColorMapName());
+  return pobj;
 }
 

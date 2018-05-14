@@ -121,6 +121,7 @@
     <ClCompile Include="..\..\src\gfx\TextImgBuf.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\AnimMol.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\AnimMol_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\AtomPosMap2.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\ChainIterator.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\ChainIterator_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\GLSLLabelHelper.cpp" />
