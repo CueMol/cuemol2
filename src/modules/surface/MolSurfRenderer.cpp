@@ -14,7 +14,8 @@
 #include <qsys/ScalarObject.hpp>
 #include <qsys/Scene.hpp>
 #include <qsys/SceneManager.hpp>
-#include <modules/molstr/AtomPosMap.hpp>
+//#include <modules/molstr/AtomPosMap.hpp>
+#include <modules/molstr/AtomPosMap2.hpp>
 #include <modules/molstr/MolAtom.hpp>
 #include <modules/molstr/MolCoord.hpp>
 
@@ -479,9 +480,15 @@ void MolSurfRenderer::makeAtomPosMap()
 {
   if (!m_pMol.isnull()) {
     if (m_pAmap!=NULL) delete m_pAmap;
+    /*
     m_pAmap = MB_NEW AtomPosMap();
     m_pAmap->setTarget(m_pMol);
     m_pAmap->setSpacing(3.5);
+    m_pAmap->generate(m_pMolSel);
+      */
+
+    m_pAmap = MB_NEW AtomPosMap2();
+    m_pAmap->setTarget(m_pMol);
     m_pAmap->generate(m_pMolSel);
   }
 }

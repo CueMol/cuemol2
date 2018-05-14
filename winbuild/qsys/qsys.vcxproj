@@ -102,6 +102,7 @@
     <ClCompile Include="..\..\src\gfx\ColProfMgr.cpp" />
     <ClCompile Include="..\..\src\gfx\GradientColor_wrap.cpp" />
     <ClCompile Include="..\..\src\gfx\Hittest.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\AtomPosMap2.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\ChainIterator.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\ChainIterator_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\MolBond.cpp" />
