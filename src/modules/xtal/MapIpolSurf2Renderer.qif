@@ -62,8 +62,14 @@ runtime_class MapIpolSurf2Renderer extends Map3Renderer
   property integer omp_thr => redirect(getOmpThr, setOmpThr);
   default omp_thr = -1;
 
-  property boolean ada_mesh => redirect(isUseAdp, setUseAdp);
-  default ada_mesh = true;
+  enumdef meshmode {
+    marchcube = xtal::MapIpolSurf2Renderer::MISR_MC;
+    mc_proj = xtal::MapIpolSurf2Renderer::MISR_MCPROJ;
+    iso_mesh = xtal::MapIpolSurf2Renderer::MISR_ISOMESH;
+    ada_mesh = xtal::MapIpolSurf2Renderer::MISR_ADAMESH;
+  }
+  property enum meshmode => redirect(getMeshMode, setMeshMode);
+  default meshmode = "marchcube";
 
   property real ada_scl => redirect(getAdpScl, setAdpScl);
   default ada_scl = 0.5;

@@ -55,23 +55,26 @@ namespace xtal {
     /// for debugging
     Matrix3F calcDscCurvAt(const Vector3F &pos) const;
 
-
+  private:
+    /// Calculate recip space filter to generate B-spline coeffs
     std::complex<float> calc_cm2(int i, int N);
 
+  public:
+    /// Compute B-spline coeffs
     void calcCoeffs(DensityMap *pXtal);
 
     float m_curv_scl;
     float m_lmin;
     float m_lmax;
 
+    /// Compute ideal edge length at position pos (based on the max curvature)
     float calcIdealL(const Vector3F &pos) const
     {
       float c = calcMaxCurv(pos);
-      //float rval = 2.0 * sin(qlib::toRadian(160.0)*0.5)/c;
-      //float rval = qlib::min(m_curv_scl/c, m_ideall_max);
       return qlib::clamp(m_curv_scl/c, m_lmin, m_lmax);
     }
     
+    /// Compute maximum curvature from Hessian at pos
     float calcMaxCurv(const Vector3F &pos) const
     {
       Matrix3F ct;

@@ -86,17 +86,28 @@ namespace xtal {
       invalidateDisplayCache();
     }
     
-
-  private:
-    /// Use Adaptive remeshing
-    bool m_bUseAdp;
+    //////////
 
   public:
-    bool isUseAdp() const { return m_bUseAdp; }
-    void setUseAdp(bool b) {
-      m_bUseAdp = b;
-      clearMeshData();
-      invalidateDisplayCache();
+    enum {
+      MISR_MC=0,
+      MISR_MCPROJ=1,
+      MISR_ISOMESH=2,
+      MISR_ADAMESH=3,
+    };
+
+  private:
+    /// Mesh build method
+    int m_nMeshMode;
+
+  public:
+    int getMeshMode() const { return m_nMeshMode; }
+    void setMeshMode(int n) {
+      if (n!=m_nMeshMode) {
+        m_nMeshMode = n;
+        clearMeshData();
+        invalidateDisplayCache();
+      }
     }
 
   private:
@@ -133,6 +144,7 @@ namespace xtal {
     }
     double getLMax() const { return m_dLMax; }
 
+    //////////
 
   private:
     /// OpenMP Thread number(-1: use all system cores)

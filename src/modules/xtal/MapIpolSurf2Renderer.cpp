@@ -46,7 +46,8 @@ MapIpolSurf2Renderer::MapIpolSurf2Renderer()
   m_dCurvScl = 0.5;
   m_dLMin = 0.1;
   m_dLMax = 1.2;
-  m_bUseAdp = true;
+
+  m_nMeshMode = MISR_MC;
 }
 
 // destructor
@@ -414,15 +415,26 @@ void MapIpolSurf2Renderer::buildMeshData(DisplayContext *pdl)
 
   marchCube(pMesh);
 
-  Mesh &cgm = *pMesh;
+  if (m_nMeshMode==MISR_MC||
+      m_nMeshMode==MISR_MCPROJ)
+    return;
 
   /////////////////////
+
+  Mesh &cgm = *pMesh;
+
   int i,j,k;
 
   m_ipol.m_curv_scl = m_dCurvScl;
-  m_ipol.m_lmin = 0.1;
-  m_ipol.m_lmax = 1.2;
+  m_ipol.m_lmin = m_dLMin; //0.1;
+  m_ipol.m_lmax = m_dLMax; //1.2;
 
+  double isoL;// = m_dLMax;
+  if (m_nMeshMode==MISR_ISOMESH)
+    isoL = m_dLMax;
+  else
+    isoL = 1.0;
+  
   //drawMeshLines(pdl, cgm, 1,0,0);
 
   int nv = cgm.number_of_vertices();
@@ -431,8 +443,12 @@ void MapIpolSurf2Renderer::buildMeshData(DisplayContext *pdl)
   dumpTriStats("mc.txt", cgm, m_ipol);
   dumpEdgeStats("edge_mc.txt", cgm, m_ipol);
 
-  for (i=0; i<2; ++i) {
-    LOG_DPRINTLN("Regular refine step %d", i);
+  int nIsoRefi = 5;
+  if (m_nMeshMode==MISR_ADAMESH)
+    nIsoRefi = 2;
+
+  for (i=0; i<nIsoRefi; ++i) {
+    LOG_DPRINTLN("Regular (L=%f) refine step %d", isoL, i);
 
     {
       ParticleRefine pr;
@@ -448,11 +464,11 @@ void MapIpolSurf2Renderer::buildMeshData(DisplayContext *pdl)
 
       //pr.m_bUseProj = true;
       pr.m_bUseProj = false;
-      pr.setConstBond(1.0);
+      pr.setConstBond(isoL);
 
-      pr.m_nMaxIter = 10;
+      pr.m_nMaxIter = 50;
       pr.m_mapscl = 50.0f;
-      pr.m_bondscl = 1.0f;
+      pr.m_bondscl = 0.1f;
       //pr.refine();
       pr.refineGsl(ParticleRefine::MIN_SD);
 
@@ -461,8 +477,8 @@ void MapIpolSurf2Renderer::buildMeshData(DisplayContext *pdl)
       pr.dumpRefineLog("min1_trace.txt");
     }
 
-    if (i<1) {
-      PMP::iso_remesh(&m_ipol, cgm, 1.0, 1, 2);
+    if (i<nIsoRefi-1) {
+      PMP::iso_remesh(&m_ipol, cgm, isoL, 1, 2);
       nv = cgm.number_of_vertices();
       nf = cgm.number_of_faces();
       LOG_DPRINTLN("Remeshing done, nv=%d, nf=%d", nv, nf);
@@ -472,7 +488,7 @@ void MapIpolSurf2Renderer::buildMeshData(DisplayContext *pdl)
     dumpEdgeStats("edge_mcmin1-1.txt", cgm, m_ipol);
   }
 
-  /*{
+  /*if (!m_bUseAdp) {
       ParticleRefine pr;
       pr.m_isolev = m_dLevel;
 
@@ -520,43 +536,43 @@ dumpTriStats(LString(), cgm, m_ipol);
       //pr.dumpRefineLog("min1_trace.txt");
   }*/
 
-  if (m_bUseAdp) {
-  for (i=0; i<10; ++i) {
-    LOG_DPRINTLN("Adaptive refine step %d", i);
+  if (m_nMeshMode==MISR_ADAMESH) {
+    for (i=0; i<10; ++i) {
+      LOG_DPRINTLN("Adaptive refine step %d", i);
 
-    PMP::adp_remesh(&m_ipol, cgm, 1, 1);
-    
-    nv = cgm.number_of_vertices();
-    nf = cgm.number_of_faces();
-    LOG_DPRINTLN("Remeshing done, nv=%d, nf=%d", nv, nf);
-    
-    ParticleRefine pr;
-    pr.m_isolev = m_dLevel;
-    
-    pr.refineSetup(&m_ipol, cgm);
-    
-    //pr.m_bUseAdp = false;
-    pr.m_bUseAdp = true;
-    pr.setAdpBond();
-    
-    pr.m_bUseMap = true;
-    
-    pr.m_bUseProj = false;
-    
-    //pr.m_nBondType = ParticleRefine::BOND_FULL;
-    pr.m_nMaxIter = 10;
-    pr.m_mapscl = 50.0f;
-    pr.m_bondscl = 0.1f;
-    pr.refineGsl(ParticleRefine::MIN_SD);
-    
-    pr.writeResult(cgm);
+      PMP::adp_remesh(&m_ipol, cgm, 1, 1);
 
-    dumpTriStats(LString(), cgm, m_ipol);
-    dumpEdgeStats(LString(), cgm, m_ipol);
+      nv = cgm.number_of_vertices();
+      nf = cgm.number_of_faces();
+      LOG_DPRINTLN("Remeshing done, nv=%d, nf=%d", nv, nf);
+
+      ParticleRefine pr;
+      pr.m_isolev = m_dLevel;
+
+      pr.refineSetup(&m_ipol, cgm);
+
+      //pr.m_bUseAdp = false;
+      pr.m_bUseAdp = true;
+      pr.setAdpBond();
+
+      pr.m_bUseMap = true;
+
+      pr.m_bUseProj = false;
+
+      //pr.m_nBondType = ParticleRefine::BOND_FULL;
+      pr.m_nMaxIter = 10;
+      pr.m_mapscl = 50.0f;
+      pr.m_bondscl = 0.1f;
+      pr.refineGsl(ParticleRefine::MIN_SD);
+
+      pr.writeResult(cgm);
+
+      dumpTriStats(LString(), cgm, m_ipol);
+      dumpEdgeStats(LString(), cgm, m_ipol);
+    }
   }
-  }
 
-  {
+  if (0) {
     LOG_DPRINTLN("Projecting vertices to surf");
     float del;
     FindProjSurf sol;

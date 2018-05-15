@@ -203,6 +203,7 @@
     <ClCompile Include="..\..\src\modules\xtal\HKLList.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\Map3Renderer.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\Map3Renderer_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\xtal\MapBsplIpol.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MapIpolSurf2Renderer.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MapIpolSurf2Renderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\xtal\MapMesh3RendBsplImpl.cpp" />
