@@ -27,6 +27,8 @@ namespace xtal {
   public:
     FloatArray *m_pBsplCoeff;
 
+    float m_rmsd;
+
   public:
     MapBsplIpol()
          : m_pBsplCoeff(NULL)

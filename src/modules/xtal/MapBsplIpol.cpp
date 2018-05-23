@@ -415,6 +415,9 @@ void MapBsplIpol::calcCoeffs(DensityMap *pXtal)
 {
   MB_DPRINTLN("MapBsplIpol> compute coeff");
 
+  //LOG_DPRINTLN("MapBsplIpol> compute coeff; map stdev: %f", pXtal->getRmsdDensity());
+  m_rmsd = pXtal->getRmsdDensity();
+
   const int na = pXtal->getColNo();
   const int nb = pXtal->getRowNo();
   const int nc = pXtal->getSecNo();

@@ -241,6 +241,28 @@ bool CCP4MapReader::read(qlib::InStream &arg)
 
     in.fetch_floatArray(fbuf, ntotal);
 
+    // Calculate actual map stats
+    {
+      double drmax=-1e10, drmin=1e10;
+      double drmean=0.0; double sqmean=0.0;
+      
+      for (int i=0; i<ntotal; i++) {
+        double rho = double( fbuf[i] );
+        drmean += rho;
+        sqmean += rho*rho;
+        drmax = qlib::max<double>(drmax, rho);
+        drmin = qlib::min<double>(drmin, rho);
+      }
+      
+      drmean /= double(ntotal);
+      sqmean /= double(ntotal);
+      
+      rhomean = float( drmean );
+      rhosig = float( sqrt(sqmean-drmean*drmean) );
+      rhomin = float( drmin );
+      rhomax = float( drmax );
+    }
+
     if (m_bTruncMin) {
       LOG_DPRINTLN("CCP4Map> Truncate map lower than: %f sigma", m_dMin);
       for (int i=0; i<ntotal; ++i)

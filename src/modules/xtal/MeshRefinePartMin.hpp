@@ -95,6 +95,7 @@ namespace xtal {
   void dumpEdgeStats(const LString &fname, const Mesh &cgm, const MapBsplIpol &ip);
 
   void drawMeshLines(DisplayContext *pdl, const Mesh &cgm, float r, float g, float b);
+  void drawMeshLines2(DisplayContext *pdl, const Mesh &cgm, const MapBsplIpol &ip);
 
   void checkMeshNorm1(DisplayContext *pdl, const Mesh &cgm, const MapBsplIpol &ip);
 
@@ -183,6 +184,7 @@ namespace xtal {
     int m_nMaxIter;
     float m_isolev;
     float m_mapscl;
+    float m_mapscl2;
     float m_bondscl;
     float m_bondscl2;
     float m_anglscl;

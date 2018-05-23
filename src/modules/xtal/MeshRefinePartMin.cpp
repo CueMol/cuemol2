@@ -156,6 +156,32 @@ void drawMeshLines(DisplayContext *pdl, const Mesh &cgm, float r, float g, float
   pdl->setLighting(true);
 }
 
+void drawMeshLines2(DisplayContext *pdl, const Mesh &cgm, const MapBsplIpol &ip)
+{
+  pdl->setLineWidth(2.0);
+  pdl->setLighting(false);
+  pdl->startLines();
+
+  for(Mesh::Edge_index ei : cgm.edges()){
+    Mesh::Halfedge_index h0 = cgm.halfedge(ei, 0);
+    Vector3F v00 = convToV3F( cgm.point( cgm.target(h0) ) );
+
+    Mesh::Halfedge_index h1 = cgm.halfedge(ei, 1);
+    Vector3F v10 = convToV3F( cgm.point( cgm.target(h1) ) );
+
+    float c0 = ip.calcDiffAt(v00).length();
+    float c1 = ip.calcDiffAt(v10).length();
+
+    pdl->color(gfx::SolidColor::createHSB(c0, 1, 1));
+    pdl->vertex(v00);
+
+    pdl->color(gfx::SolidColor::createHSB(c1, 1, 1));
+    pdl->vertex(v10);
+  }
+  pdl->end();
+  pdl->setLighting(true);
+}
+
 void drawMeshBorderLines(DisplayContext *pdl, const Mesh &cgm, float r, float g, float b)
 {
   pdl->color(gfx::SolidColor::createRGB(r,g,b));
@@ -519,6 +545,7 @@ float ParticleRefine::calcFdF(std::vector<float> &pres)
 
   Vector3F pos, dF;
   float f;
+  float mapscl = m_mapscl * m_mapscl2;
 
   if (m_bUseMap) {
     for (i=0; i<npart; ++i) {
@@ -530,7 +557,7 @@ float ParticleRefine::calcFdF(std::vector<float> &pres)
       f = m_pipol->calcAt(pos) - m_isolev;
 
       dF = m_pipol->calcDiffAt(pos);
-      dF = dF.scale(2.0*f*m_mapscl);
+      dF = dF.scale(2.0*f*mapscl);
 
       //F = f^2 = (val-iso)^2;
       //dF = 2*f * d(f);
@@ -539,7 +566,7 @@ float ParticleRefine::calcFdF(std::vector<float> &pres)
       pres[id1+1] += dF.y();
       pres[id1+2] += dF.z();
 
-      eng += f*f*m_mapscl;
+      eng += f*f*mapscl;
     }
   }
 
@@ -601,6 +628,9 @@ void ParticleRefine::refineSetup(MapBsplIpol *pipol, Mesh &cgm)
       setFixed(int(vid1));
     }
   }
+
+  m_mapscl = 50.0f;
+  m_mapscl2 = 1.0/m_pipol->m_rmsd;//getRmsd();
 
   /*
     i=0;

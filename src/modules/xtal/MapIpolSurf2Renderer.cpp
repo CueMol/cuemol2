@@ -572,7 +572,7 @@ dumpTriStats(LString(), cgm, m_ipol);
     }
   }
 
-  if (0) {
+  if (1) {
     LOG_DPRINTLN("Projecting vertices to surf");
     float del;
     FindProjSurf sol;
@@ -595,8 +595,8 @@ dumpTriStats(LString(), cgm, m_ipol);
     MB_DPRINTLN("done");
   }
 
-  //drawMeshLines(pdl, cgm, 0,0,0);
-
+  //drawMeshLines2(pdl, cgm, m_ipol);
+  
   dumpTriStats("mcminrem.txt", cgm, m_ipol);
 
   dumpEdgeStats("edge_mcmin2.txt", cgm, m_ipol);
@@ -607,6 +607,9 @@ dumpTriStats(LString(), cgm, m_ipol);
 
 void MapIpolSurf2Renderer::renderMeshImpl(DisplayContext *pdl)
 {
+  // //XXX
+  // return;
+
   K::Point_3 cgpt;
   Vector3F pt, norm;
 

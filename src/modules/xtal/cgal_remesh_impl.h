@@ -1999,7 +1999,9 @@ void my_isotropic_remeshing(const xtal::MapBsplIpol *pipol,
     }
     remesher.equalize_valences();
     // remesher.flip_by_normdev();
-    remesher.tangential_relaxation(smoothing_1d, nb_laplacian);
+
+    if (nb_laplacian>0)
+      remesher.tangential_relaxation(smoothing_1d, nb_laplacian);
     //remesher.project_to_surface();
 
   }
