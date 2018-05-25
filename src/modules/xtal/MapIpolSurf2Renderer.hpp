@@ -207,6 +207,8 @@ namespace xtal {
     inline float getDen(int x, int y, int z) const
     {
       // TO DO: support symop
+      //if (!inMolBndry(m_pCMap, x, y, z))
+      //return 0.0f;
 
       if (m_bPBC) {
         const int xx = (x+10000*m_mapSize.x())%m_mapSize.x();

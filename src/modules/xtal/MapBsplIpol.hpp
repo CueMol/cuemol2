@@ -236,6 +236,14 @@ namespace xtal {
       return true;
     }
 
+    inline
+      void linIpol(float val0, const Vector3F &vec0, float val1, const Vector3F &vec1, Vector3F &rval) const
+    {
+      Vector3F dv = (vec1 - vec0);
+      float rho0 = (m_isolev-val0)/(val1-val0);
+      rval = vec0 + dv.scale(rho0);
+    }
+    
     bool solve(float val0, const Vector3F &vec0, float val1, const Vector3F &vec1, Vector3F &rval) const
     {
       // init estim. by lin. intpol

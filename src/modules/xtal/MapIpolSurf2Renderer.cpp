@@ -272,6 +272,8 @@ void MapIpolSurf2Renderer::marchCube(void *pMesh)
   Vector3F vs;
   int id, iflag;
 
+  bool bUseNsol = (m_nMeshMode==MISR_MCPROJ);
+
   for (i=0; i<ncol+1; i++)
     for (j=0; j<nrow+1; j++)
       for (k=0; k<nsec+1; k++) {
@@ -297,12 +299,14 @@ void MapIpolSurf2Renderer::marchCube(void *pMesh)
           iflag |= 1<<1; // 1,0,0
 
         if (y0*y1<0) {
-          if (!xsol.solve(val0, Vector3F(ix, iy, iz), val1, Vector3F(ix+1, iy, iz), vs)) {
-            MB_DPRINTLN("NR for %d,%d,%d xdir failed.", i, j, k);
+          if (bUseNsol) {
+            if (!xsol.solve(val0, Vector3F(ix, iy, iz), val1, Vector3F(ix+1, iy, iz), vs)) {
+              MB_DPRINTLN("NR for %d,%d,%d xdir failed.", i, j, k);
+            }
           }
-          //id = verts.size();
-          //verts.push_back( surface::MSVert(vs, calcNorm(vs)) );
-          //xvertids.at(i,j,k).id[0] = id;
+          else {
+            xsol.linIpol(val0, Vector3F(ix, iy, iz), val1, Vector3F(ix+1, iy, iz), vs);
+          }
           vid = cgm.add_vertex(K::Point_3(vs.x(), vs.y(), vs.z()));
           xvertids.at(i,j,k).id[0] = vid;
         }
@@ -314,13 +318,15 @@ void MapIpolSurf2Renderer::marchCube(void *pMesh)
           iflag |= 1<<3; // 0,1,0
 
         if (y0*y1<0) {
-          if (!xsol.solve(val0, Vector3F(ix, iy, iz), val1, Vector3F(ix, iy+1, iz), vs)) {
-            MB_DPRINTLN("NR for %d,%d,%d ydir failed.", i, j, k);
-            xsol.solve(val0, Vector3F(ix, iy, iz), val1, Vector3F(ix, iy+1, iz), vs);
+          if (bUseNsol) {
+            if (!xsol.solve(val0, Vector3F(ix, iy, iz), val1, Vector3F(ix, iy+1, iz), vs)) {
+              MB_DPRINTLN("NR for %d,%d,%d ydir failed.", i, j, k);
+              //xsol.solve(val0, Vector3F(ix, iy, iz), val1, Vector3F(ix, iy+1, iz), vs);
+            }
           }
-          //id = verts.size();
-          //verts.push_back( surface::MSVert(vs, calcNorm(vs)) );
-          //xvertids.at(i,j,k).id[1] = id;
+          else {
+            xsol.linIpol(val0, Vector3F(ix, iy, iz), val1, Vector3F(ix, iy+1, iz), vs);
+          }
           vid = cgm.add_vertex(K::Point_3(vs.x(), vs.y(), vs.z()));
           xvertids.at(i,j,k).id[1] = vid;
         }
@@ -332,12 +338,14 @@ void MapIpolSurf2Renderer::marchCube(void *pMesh)
           iflag |= 1<<4; // 0,0,1
 
         if (y0*y1<0) {
-          if (!xsol.solve(val0, Vector3F(ix, iy, iz), val1, Vector3F(ix, iy, iz+1), vs)) {
-            MB_DPRINTLN("NR for %d,%d,%d zdir failed.", i, j, k);
+          if (bUseNsol) {
+            if (!xsol.solve(val0, Vector3F(ix, iy, iz), val1, Vector3F(ix, iy, iz+1), vs)) {
+              MB_DPRINTLN("NR for %d,%d,%d zdir failed.", i, j, k);
+            }
           }
-          //id = verts.size();
-          //verts.push_back( surface::MSVert(vs, calcNorm(vs)) );
-          //xvertids.at(i,j,k).id[2] = id;
+          else {
+            xsol.linIpol(val0, Vector3F(ix, iy, iz), val1, Vector3F(ix, iy, iz+1), vs);
+          }
           vid = cgm.add_vertex(K::Point_3(vs.x(), vs.y(), vs.z()));
           xvertids.at(i,j,k).id[2] = vid;
         }
@@ -361,6 +369,7 @@ void MapIpolSurf2Renderer::marchCube(void *pMesh)
   bool bOK;
   vid_t iface[3];
   // std::deque<surface::MSFace> faces;
+  Vector3F v0, v1, v2;
   
   for (i=0; i<ncol; i++)
     for (j=0; j<nrow; j++)
@@ -390,10 +399,24 @@ void MapIpolSurf2Renderer::marchCube(void *pMesh)
             
           } // for(iCorner = 0; iCorner < 3; iCorner++)
 
-          if (bOK) {
-            //faces.push_back( surface::MSFace(iface[0], iface[1], iface[2]) );
-            cgm.add_face(vid_t(iface[0]), vid_t(iface[1]), vid_t(iface[2]));
+          if (!bOK)
+            continue;
+          
+          /*
+          if (isUseMolBndry()) {
+            v0 = convToV3F( cgm.point(iface[0]) );
+            v1 = convToV3F( cgm.point(iface[0]) );
+            v2 = convToV3F( cgm.point(iface[0]) );
+            if (!inMolBndry(m_pCMap, v0.x(), v0.y(), v0.z()) ||
+                !inMolBndry(m_pCMap, v1.x(), v1.y(), v1.z()) ||
+                !inMolBndry(m_pCMap, v2.x(), v2.y(), v2.z()))
+              bOK = false;
           }
+            */
+          
+          if (bOK)
+            cgm.add_face(iface[0], iface[1], iface[2]);
+
         } // for(iTriangle = 0; iTriangle < 5; iTriangle++)
 
       }
@@ -638,8 +661,11 @@ void MapIpolSurf2Renderer::renderMeshImpl(DisplayContext *pdl)
   //pdl->end();
 
   int vid[3];
+  Vector3F v0, v1, v2;
+
   i=0;
   for(fid_t fd : cgm.faces()){
+
     j=0;
     BOOST_FOREACH(vid_t vd,vertices_around_face(cgm.halfedge(fd), cgm)){
       MB_ASSERT(j<3);
@@ -647,6 +673,16 @@ void MapIpolSurf2Renderer::renderMeshImpl(DisplayContext *pdl)
       ++j;
     }
     MB_ASSERT(j==3);
+
+    if (isUseMolBndry()) {
+      v0 = convToV3F( cgm.point(vid_t(vid[0])) );
+      v1 = convToV3F( cgm.point(vid_t(vid[1])) );
+      v2 = convToV3F( cgm.point(vid_t(vid[2])) );
+      if (!inMolBndry(m_pCMap, v0.x(), v0.y(), v0.z()) ||
+          !inMolBndry(m_pCMap, v1.x(), v1.y(), v1.z()) ||
+          !inMolBndry(m_pCMap, v2.x(), v2.y(), v2.z()))
+        continue;
+    }
 
     mesh.setFace(i, vidmap[vid[0]], vidmap[vid[1]], vidmap[vid[2]]);
     ++i;
@@ -660,13 +696,19 @@ void MapIpolSurf2Renderer::renderMeshImpl(DisplayContext *pdl)
 
     for(Mesh::Edge_index ei : cgm.edges()){
       Mesh::Halfedge_index h0 = cgm.halfedge(ei, 0);
-      Vector3F v00 = convToV3F( cgm.point( cgm.target(h0) ) );
+      v0 = convToV3F( cgm.point( cgm.target(h0) ) );
       
       Mesh::Halfedge_index h1 = cgm.halfedge(ei, 1);
-      Vector3F v10 = convToV3F( cgm.point( cgm.target(h1) ) );
+      v1 = convToV3F( cgm.point( cgm.target(h1) ) );
       
-      pdl->vertex(v00);
-      pdl->vertex(v10);
+      if (isUseMolBndry()) {
+        if (!inMolBndry(m_pCMap, v0.x(), v0.y(), v0.z()) ||
+            !inMolBndry(m_pCMap, v1.x(), v1.y(), v1.z()))
+          continue;
+      }
+
+      pdl->vertex(v0);
+      pdl->vertex(v1);
     }
     pdl->end();
   }

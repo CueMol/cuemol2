@@ -8,6 +8,8 @@
 #include "Map3Renderer.hpp"
 
 #include "DensityMap.hpp"
+
+#include <qlib/Box3D.hpp>
 #include <gfx/SolidColor.hpp>
 
 #include <qsys/Scene.hpp>
@@ -159,14 +161,102 @@ namespace {
   }
 }
 
-/// Setup map rendering information (extent, level, etc)
-void Map3Renderer::calcMapDispExtent(ScalarObject *pMap)
+
+bool Map3Renderer::calcExtMolBndry(ScalarObject *pMap)
 {
   DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
 
+  qsys::ObjectPtr pobj = ensureNotNull(getScene())->getObjectByName(m_strBndryMol);
+  MolCoordPtr pMol = MolCoordPtr(pobj, qlib::no_throw_tag());
+
+  if (pMol.isnull()) {
+    m_strBndryMol = LString();
+    return false;
+  }
+
+  qlib::Box3D bbox;
+  Vector4D pos;
+
+  // non-orthogonal grid (crystal, etc)
+  const CrystalInfo &xt = pXtal->getXtalInfo();
+  Matrix3D tofrac = xt.getFracMat();
+
+  AtomIterator aiter(pMol, m_pSelBndry);
+  int i, natoms=0;
+  for (aiter.first();
+       aiter.hasMore();
+       aiter.next()) {
+    pos = aiter.get()->getPos();
+    pos = tofrac.mulvec(pos);
+    bbox.merge(pos);
+  }
+
+  double rad = m_dBndryRng*1.1;
+  double dfx = rad/xt.a();
+  double dfy = rad/xt.b();
+  double dfz = rad/xt.c();
+
+  Vector4D vmin = bbox.vstart;
+  vmin.x() -= dfx;
+  vmin.y() -= dfy;
+  vmin.z() -= dfz;
+  Vector4D vmax = bbox.vend;
+  vmax.x() += dfx;
+  vmax.y() += dfy;
+  vmax.z() += dfz;
+  
+  vmin.x() *= pXtal->getColInterval();
+  vmin.y() *= pXtal->getRowInterval();
+  vmin.z() *= pXtal->getSecInterval();
+  vmax.x() *= pXtal->getColInterval();
+  vmax.y() *= pXtal->getRowInterval();
+  vmax.z() *= pXtal->getSecInterval();
+
+  if (!isUsePBC() || !m_bPBC) {
+    // Not in PBC mode
+    // --> limit XYZ in the available region of map
+    vmin.x() = floor(qlib::max<double>(vmin.x(), pMap->getStartCol()));
+    vmin.y() = floor(qlib::max<double>(vmin.y(), pMap->getStartRow()));
+    vmin.z() = floor(qlib::max<double>(vmin.z(), pMap->getStartSec()));
+    
+    vmax.x() = floor(qlib::min<double>(vmax.x(), pMap->getStartCol()+pMap->getColNo()));
+    vmax.y() = floor(qlib::min<double>(vmax.y(), pMap->getStartRow()+pMap->getRowNo()));
+    vmax.z() = floor(qlib::min<double>(vmax.z(), pMap->getStartSec()+pMap->getSecNo()));
+  }
+
+  MB_DPRINTLN("MolBndry> vmin=(%f,%f,%f)", vmin.x(), vmin.y(), vmin.z());
+  MB_DPRINTLN("MolBndry> vmax=(%f,%f,%f)", vmax.x(), vmax.y(), vmax.z());
+
+  m_glbStPos = Vector3I(vmin.xyz());
+
+  // conv to map-base index (from global origin)
+  m_mapStPos.x() = m_glbStPos.x() - pMap->getStartCol();
+  m_mapStPos.y() = m_glbStPos.y() - pMap->getStartRow();
+  m_mapStPos.z() = m_glbStPos.z() - pMap->getStartSec();
+
+  // actual display extent (in grid unit)
+  m_dspSize = Vector3I( (vmax-vmin).xyz() );
+
+  MB_DPRINTLN("MolBndry> map start pos = (%d,%d,%d)", m_mapStPos.x(), m_mapStPos.y(), m_mapStPos.z());
+  MB_DPRINTLN("MolBndry> map disp size = (%d,%d,%d)", m_dspSize.x(), m_dspSize.y(), m_dspSize.z());
+
+  return true;
+}
+
+
+/// Setup map rendering information (extent, level, etc)
+void Map3Renderer::calcMapDispExtent(ScalarObject *pMap)
+{
   m_mapSize.x() = pMap->getColNo();
   m_mapSize.y() = pMap->getRowNo();
   m_mapSize.z() = pMap->getSecNo();
+
+  if (isUseMolBndry()) {
+    if (calcExtMolBndry(pMap))
+      return;
+  }
+
+  DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
 
   Vector4D cent = getCenter();
   const double extent = getExtent();

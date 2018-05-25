@@ -341,7 +341,7 @@ namespace xtal {
 
     void setupMolBndry();
     
-    bool inMolBndry(ScalarObject *pMap, int nx, int ny, int nz) const
+    bool inMolBndry(ScalarObject *pMap, double nx, double ny, double nz) const
     {
       if (!m_bUseMolBndry)
         return true;
@@ -352,6 +352,13 @@ namespace xtal {
       return true;
     }
   
+    inline bool inMolBndry(ScalarObject *pMap, int nx, int ny, int nz) const
+    {
+      return inMolBndry(pMap, double(nx), double(ny), double(nz));
+    }
+
+  private:
+    bool calcExtMolBndry(ScalarObject *pMap);
 
   };
 
