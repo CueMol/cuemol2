@@ -64,7 +64,6 @@ runtime_class MapIpolSurf2Renderer extends Map3Renderer
 
   enumdef meshmode {
     marchcube = xtal::MapIpolSurf2Renderer::MISR_MC;
-    mc_proj = xtal::MapIpolSurf2Renderer::MISR_MCPROJ;
     iso_mesh = xtal::MapIpolSurf2Renderer::MISR_ISOMESH;
     ada_mesh = xtal::MapIpolSurf2Renderer::MISR_ADAMESH;
   }
@@ -79,6 +78,9 @@ runtime_class MapIpolSurf2Renderer extends Map3Renderer
 
   property real len_max => redirect(getLMax, setLMax);
   default len_max = 1.2;
+
+  property boolean projvert => redirect(isProjVert, setProjVert);
+  default projvert = false;
 };
 
 #endif

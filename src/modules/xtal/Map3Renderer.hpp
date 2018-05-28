@@ -322,7 +322,10 @@ namespace xtal {
     double getBndryRng() const { return m_dBndryRng; }
     void setBndryRng(double d);
 
-  private:
+  //private:
+  protected:
+
+    MolCoordPtr getBndryMol() const;
 
     /// Boundary target mol name
     LString m_strBndryMol;

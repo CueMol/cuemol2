@@ -19,6 +19,8 @@
 #include <qsys/Scene.hpp>
 #include <modules/molstr/AtomIterator.hpp>
 
+#include <modules/molstr/AtomPosMap2.hpp>
+
 #include "MeshRefinePartMin.hpp"
 #include "cgal_remesh_impl.h"
 
@@ -27,6 +29,7 @@ using qlib::Matrix4D;
 using qlib::Matrix3D;
 using qsys::ScrEventManager;
 using molstr::AtomIterator;
+using molstr::AtomPosMap2;
 
 
 /// default constructor
@@ -48,6 +51,7 @@ MapIpolSurf2Renderer::MapIpolSurf2Renderer()
   m_dLMax = 1.2;
 
   m_nMeshMode = MISR_MC;
+  m_bProjVert = false;
 }
 
 // destructor
@@ -109,6 +113,7 @@ void MapIpolSurf2Renderer::preRender(DisplayContext *pdc)
     //pdc->setPolygonMode(gfx::DisplayContext::POLY_FILL);
     // Ridge line generates dot noise on the surface (but this may be bug of marching cubes implementation...)
     pdc->setPolygonMode(gfx::DisplayContext::POLY_FILL_NORGLN);
+    //pdc->setPolygonMode(gfx::DisplayContext::POLY_FILL_XX);
   }
   
   if (getEdgeLineType()==gfx::DisplayContext::ELT_NONE) {
@@ -272,7 +277,10 @@ void MapIpolSurf2Renderer::marchCube(void *pMesh)
   Vector3F vs;
   int id, iflag;
 
-  bool bUseNsol = (m_nMeshMode==MISR_MCPROJ);
+  bool bUseNsol = true;
+  
+  if (m_nMeshMode==MISR_MC && !m_bProjVert)
+    bUseNsol = false;
 
   for (i=0; i<ncol+1; i++)
     for (j=0; j<nrow+1; j++)
@@ -438,8 +446,7 @@ void MapIpolSurf2Renderer::buildMeshData(DisplayContext *pdl)
 
   marchCube(pMesh);
 
-  if (m_nMeshMode==MISR_MC||
-      m_nMeshMode==MISR_MCPROJ)
+  if (m_nMeshMode==MISR_MC)
     return;
 
   /////////////////////
@@ -595,7 +602,7 @@ dumpTriStats(LString(), cgm, m_ipol);
     }
   }
 
-  if (1) {
+  if (m_bProjVert) {
     LOG_DPRINTLN("Projecting vertices to surf");
     float del;
     FindProjSurf sol;
@@ -628,15 +635,149 @@ dumpTriStats(LString(), cgm, m_ipol);
 
 }
 
+static const int adjvox[26][3] =
+{
+  {1, 0, 0},{-1, 0, 0},{0, 1, 0},{0, -1, 0},{0, 0, 1},{0, 0, -1},
+  {1, 1, 0},{-1, 1, 0},{1, -1, 0},{-1, -1, 0},
+  {1, 0, 1},{-1, 0, 1},{1, 0, -1},{-1, 0, -1},
+  {0, 1, 1},{0, -1, 1},{0, 1, -1},{0, -1, -1},
+  {1, 1, 1},
+  {1, 1, -1},{1, -1, 1},{-1, 1, 1},
+  {1, -1, -1},{-1, -1, 1},{-1, 1, -1},
+  {-1, -1, -1}
+};
+
 void MapIpolSurf2Renderer::renderMeshImpl(DisplayContext *pdl)
 {
   // //XXX
   // return;
 
-  K::Point_3 cgpt;
-  Vector3F pt, norm;
-
   int i,j,k;
+
+  std::set<int> ind_inc;
+  qlib::Array3D<int> indmap(ncol,nrow,nsec);
+
+  if (isUseMolBndry()) {
+    const int ncol = m_dspSize.x();
+    const int nrow = m_dspSize.y();
+    const int nsec = m_dspSize.z();
+
+    struct Elem {
+      float val;
+      int ix, iy, iz;
+    };
+
+    std::vector<Elem> map0(ncol*nrow*nsec);
+    for (i=0; i<ncol; i++)
+      for (j=0; j<nrow; j++)
+        for (k=0; k<nsec; k++) {
+          int ix = i + m_nbcol;
+          int iy = j + m_nbrow;
+          int iz = k + m_nbsec;
+          float val = getDen(ix, iy, iz);
+          const int idx = i + (j + k*nrow)*ncol;
+          map0[idx].val = val;
+          map0[idx].ix = i;
+          map0[idx].iy = j;
+          map0[idx].iz = k;
+        }
+
+    std::sort(map0.begin(), map0.end(),
+              [](const Elem &x, const Elem &y) -> bool {
+                return x.val>y.val;
+              });
+
+    for (i=0; i<indmap.size(); ++i)
+      indmap.at(i) = -1;
+
+    int iadj, nadj;
+    int l, ii, jj, kk;
+    std::vector<Elem> adjmap;
+    float val, maxval;
+    int maxind;
+    int imark = 0;
+
+    for (const Elem &elem: map0) {
+      i = elem.ix;
+      j = elem.iy;
+      k = elem.iz;
+
+      maxval = -1.0e10;
+      maxind = -1;
+      
+      // Find voxel having max value
+      for (l=0; l<26; l++) {
+        ii = i + adjvox[l][0];
+        jj = j + adjvox[l][1];
+        kk = k + adjvox[l][2];
+
+        if (0<=ii && ii<ncol &&
+            0<=jj && jj<nrow &&
+            0<=kk && kk<nsec) {
+          iadj = indmap.at(ii, jj, kk);
+          if (iadj>=0) {
+            val = getDen(ii+m_nbcol, jj+m_nbrow, kk+m_nbsec);
+            if (val>maxval) {
+              maxind = iadj;
+            }
+          }
+        }
+      }
+
+      if (maxind<0) {
+        // Voxel with max value not found --> assign new index
+        indmap.at(i, j, k) = imark;
+        ++imark;
+      }
+      else {
+        indmap.at(i, j, k) = maxind;
+      }
+
+    } // for (const Elem &elem: map0)
+
+    LOG_DPRINTLN("WatShed> segmented to %d regions", imark);
+
+    AtomIterator aiter(getBndryMol(), getBndrySel());
+    Vector4D pos;
+    for (aiter.first();
+         aiter.hasMore();
+         aiter.next()) {
+      pos = aiter.get()->getPos();
+      pos = m_pCMap->convToGrid(pos);
+      i = int( floor( pos.x()+0.5 ) ) - m_nbcol;
+      j = int( floor( pos.y()+0.5 ) ) - m_nbrow;
+      k = int( floor( pos.z()+0.5 ) ) - m_nbsec;
+      if (0<=i && i<ncol &&
+          0<=j && j<nrow &&
+          0<=k && k<nsec) {
+        ind_inc.insert( indmap.at(i, j, k) );
+      }
+    }
+
+    for (int ind: ind_inc) {
+      LOG_DPRINTLN("show: %d", ind);
+    }
+    /*
+    AtomPosMap2 amap;
+    amap.setTarget(getBndryMol());
+    amap.generate(getBndrySel());
+
+    for (i=0; i<ncol; i++)
+      for (j=0; j<nrow; j++)
+        for (k=0; k<nsec; k++) {
+          int ix = i + m_nbcol;
+          int iy = j + m_nbrow;
+          int iz = k + m_nbsec;
+          
+          Vector4D tv(ix, iy, iz);
+          tv = m_pCMap->convToOrth(tv);
+          
+        }
+     */
+  }
+  
+  //K::Point_3 cgpt;
+  Vector3F pt, norm;
 
   Mesh &cgm = *(static_cast<Mesh *>(m_pMesh));
   const int nv = cgm.number_of_vertices();
@@ -649,7 +790,7 @@ void MapIpolSurf2Renderer::renderMeshImpl(DisplayContext *pdl)
 
   //pdl->startLines();
   i=0;
-  for(vid_t vd : cgm.vertices()){
+  for (vid_t vd : cgm.vertices()){
     pt = convToV3F( cgm.point(vd) );
     norm = calcNorm(pt);
     //pdl->vertex(pt);
@@ -678,10 +819,13 @@ void MapIpolSurf2Renderer::renderMeshImpl(DisplayContext *pdl)
       v0 = convToV3F( cgm.point(vid_t(vid[0])) );
       v1 = convToV3F( cgm.point(vid_t(vid[1])) );
       v2 = convToV3F( cgm.point(vid_t(vid[2])) );
+
+      /*
       if (!inMolBndry(m_pCMap, v0.x(), v0.y(), v0.z()) ||
           !inMolBndry(m_pCMap, v1.x(), v1.y(), v1.z()) ||
           !inMolBndry(m_pCMap, v2.x(), v2.y(), v2.z()))
         continue;
+       */
     }
 
     mesh.setFace(i, vidmap[vid[0]], vidmap[vid[1]], vidmap[vid[2]]);

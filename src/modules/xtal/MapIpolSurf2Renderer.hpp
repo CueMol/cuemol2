@@ -91,7 +91,7 @@ namespace xtal {
   public:
     enum {
       MISR_MC=0,
-      MISR_MCPROJ=1,
+      // MISR_MCPROJ=1,
       MISR_ISOMESH=2,
       MISR_ADAMESH=3,
     };
@@ -143,6 +143,19 @@ namespace xtal {
       invalidateDisplayCache();
     }
     double getLMax() const { return m_dLMax; }
+
+    //////////
+
+    /// project vertex onto isosurf
+    bool m_bProjVert;
+
+  public:
+    bool isProjVert() const { return m_bProjVert; }
+    void setProjVert(bool b) {
+      m_bProjVert = b;
+      clearMeshData();
+      invalidateDisplayCache();
+    }
 
     //////////
 

@@ -114,7 +114,11 @@ public:
   virtual double getRowGridSize() const ;
   virtual double getSecGridSize() const ;
 
+  /// Convert grid index to orthogonal coordinate (in angstrom)
   virtual Vector4D convToOrth(const Vector4D &index) const;
+  
+  /// Convert 3D cart (in angstrom) to grid index 
+  virtual Vector4D convToGrid(const Vector4D &pos) const;
 
   ////////////////////////////////////////////
   // Data chunk serialization

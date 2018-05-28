@@ -353,6 +353,12 @@ Vector4D ElePotMap::convToOrth(const Vector4D &index) const
   return tv;
 }
 
+Vector4D ElePotMap::convToGrid(const Vector4D &pos) const
+{
+  // TO DO: impl
+  return pos;
+}
+
 Vector4D ElePotMap::getCenter() const
 {
   if (m_pMap==NULL)

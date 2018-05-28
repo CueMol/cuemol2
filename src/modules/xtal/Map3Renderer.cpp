@@ -162,12 +162,19 @@ namespace {
 }
 
 
+MolCoordPtr Map3Renderer::getBndryMol() const
+{
+  qsys::ObjectPtr pobj = ensureNotNull(getScene())->getObjectByName(m_strBndryMol);
+  MolCoordPtr pMol = MolCoordPtr(pobj, qlib::no_throw_tag());
+  return pMol;
+}
+
 bool Map3Renderer::calcExtMolBndry(ScalarObject *pMap)
 {
   DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
 
-  qsys::ObjectPtr pobj = ensureNotNull(getScene())->getObjectByName(m_strBndryMol);
-  MolCoordPtr pMol = MolCoordPtr(pobj, qlib::no_throw_tag());
+  //qsys::ObjectPtr pobj = ensureNotNull(getScene())->getObjectByName(m_strBndryMol);
+  MolCoordPtr pMol = getBndryMol(); //MolCoordPtr(pobj, qlib::no_throw_tag());
 
   if (pMol.isnull()) {
     m_strBndryMol = LString();
@@ -461,8 +468,8 @@ void Map3Renderer::setupMolBndry()
   if (m_strBndryMol.isEmpty())
     return;
 
-  qsys::ObjectPtr pobj = ensureNotNull(getScene())->getObjectByName(m_strBndryMol);
-  MolCoordPtr pMol = MolCoordPtr(pobj, qlib::no_throw_tag());
+  //qsys::ObjectPtr pobj = ensureNotNull(getScene())->getObjectByName(m_strBndryMol);
+  MolCoordPtr pMol = getBndryMol(); //MolCoordPtr(pobj, qlib::no_throw_tag());
 
   if (pMol.isnull()) {
     m_strBndryMol = LString();

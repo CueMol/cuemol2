@@ -357,6 +357,34 @@ Vector4D DensityMap::convToOrth(const Vector4D &index) const
   return tv;
 }
 
+Vector4D DensityMap::convToGrid(const Vector4D &pos) const
+{
+  Vector4D tv = pos;
+
+  const Matrix4D &xfm = getXformMatrix();
+  if (!xfm.isIdent()) {
+    // Apply xformMat
+    // TO DO: impl
+    // tv = inv_xfm.mulvec(tv);
+  }
+
+  // conv orth (in ang) --> frac
+  m_xtalInfo.orthToFrac(tv);
+
+  // tv is now fractional coord.
+
+  // interval == 1/(grid spacing)
+  tv.x() *= double(getColInterval());
+  tv.y() *= double(getRowInterval());
+  tv.z() *= double(getSecInterval());
+
+  tv.x() -= double(m_nStartCol);
+  tv.y() -= double(m_nStartRow);
+  tv.z() -= double(m_nStartSec);
+
+  return tv;
+}
+
 //////////////////////////////////////////////////////////
 
 double DensityMap::getRmsdDensity() const
