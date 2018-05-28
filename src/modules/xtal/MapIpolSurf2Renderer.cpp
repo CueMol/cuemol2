@@ -652,16 +652,17 @@ void MapIpolSurf2Renderer::renderMeshImpl(DisplayContext *pdl)
   // //XXX
   // return;
 
-  int i,j,k;
+  int i,j,k,l;
+  int ii, jj, kk;
+
+  const int ncol = m_dspSize.x();
+  const int nrow = m_dspSize.y();
+  const int nsec = m_dspSize.z();
 
   std::set<int> ind_inc;
   qlib::Array3D<int> indmap(ncol,nrow,nsec);
 
   if (isUseMolBndry()) {
-    const int ncol = m_dspSize.x();
-    const int nrow = m_dspSize.y();
-    const int nsec = m_dspSize.z();
-
     struct Elem {
       float val;
       int ix, iy, iz;
@@ -691,7 +692,6 @@ void MapIpolSurf2Renderer::renderMeshImpl(DisplayContext *pdl)
       indmap.at(i) = -1;
 
     int iadj, nadj;
-    int l, ii, jj, kk;
     std::vector<Elem> adjmap;
     float val, maxval;
     int maxind;
@@ -744,9 +744,9 @@ void MapIpolSurf2Renderer::renderMeshImpl(DisplayContext *pdl)
          aiter.next()) {
       pos = aiter.get()->getPos();
       pos = m_pCMap->convToGrid(pos);
-      i = int( floor( pos.x()+0.5 ) ) - m_nbcol;
-      j = int( floor( pos.y()+0.5 ) ) - m_nbrow;
-      k = int( floor( pos.z()+0.5 ) ) - m_nbsec;
+      i = int( std::round( pos.x() ) ) - m_nbcol;
+      j = int( std::round( pos.y() ) ) - m_nbrow;
+      k = int( std::round( pos.z() ) ) - m_nbsec;
       if (0<=i && i<ncol &&
           0<=j && j<nrow &&
           0<=k && k<nsec) {
@@ -757,23 +757,6 @@ void MapIpolSurf2Renderer::renderMeshImpl(DisplayContext *pdl)
     for (int ind: ind_inc) {
       LOG_DPRINTLN("show: %d", ind);
     }
-    /*
-    AtomPosMap2 amap;
-    amap.setTarget(getBndryMol());
-    amap.generate(getBndrySel());
-
-    for (i=0; i<ncol; i++)
-      for (j=0; j<nrow; j++)
-        for (k=0; k<nsec; k++) {
-          int ix = i + m_nbcol;
-          int iy = j + m_nbrow;
-          int iz = k + m_nbsec;
-          
-          Vector4D tv(ix, iy, iz);
-          tv = m_pCMap->convToOrth(tv);
-          
-        }
-     */
   }
   
   //K::Point_3 cgpt;
@@ -802,7 +785,8 @@ void MapIpolSurf2Renderer::renderMeshImpl(DisplayContext *pdl)
   //pdl->end();
 
   int vid[3];
-  Vector3F v0, v1, v2;
+  Vector3F v[3];
+  int nOK;
 
   i=0;
   for(fid_t fd : cgm.faces()){
@@ -816,9 +800,25 @@ void MapIpolSurf2Renderer::renderMeshImpl(DisplayContext *pdl)
     MB_ASSERT(j==3);
 
     if (isUseMolBndry()) {
-      v0 = convToV3F( cgm.point(vid_t(vid[0])) );
-      v1 = convToV3F( cgm.point(vid_t(vid[1])) );
-      v2 = convToV3F( cgm.point(vid_t(vid[2])) );
+      nOK = 0;
+      for (k=0; k<3; ++k) {
+        v[k] = convToV3F( cgm.point(vid_t(vid[k])) );
+        ii = int( std::round( v[k].x() ) ) - m_nbcol;
+        jj = int( std::round( v[k].y() ) ) - m_nbrow;
+        kk = int( std::round( v[k].z() ) ) - m_nbsec;
+        if (0<=ii && ii<ncol &&
+            0<=jj && jj<nrow &&
+            0<=kk && kk<nsec) {
+          int ind = indmap.at(ii, jj, kk);
+          if (ind_inc.find(ind)!=ind_inc.end())
+            ++nOK;
+          else
+            break;
+        }
+      }
+
+      if (nOK!=3)
+        continue;
 
       /*
       if (!inMolBndry(m_pCMap, v0.x(), v0.y(), v0.z()) ||
@@ -840,19 +840,19 @@ void MapIpolSurf2Renderer::renderMeshImpl(DisplayContext *pdl)
 
     for(Mesh::Edge_index ei : cgm.edges()){
       Mesh::Halfedge_index h0 = cgm.halfedge(ei, 0);
-      v0 = convToV3F( cgm.point( cgm.target(h0) ) );
+      v[0] = convToV3F( cgm.point( cgm.target(h0) ) );
       
       Mesh::Halfedge_index h1 = cgm.halfedge(ei, 1);
-      v1 = convToV3F( cgm.point( cgm.target(h1) ) );
+      v[1] = convToV3F( cgm.point( cgm.target(h1) ) );
       
-      if (isUseMolBndry()) {
+      /*if (isUseMolBndry()) {
         if (!inMolBndry(m_pCMap, v0.x(), v0.y(), v0.z()) ||
             !inMolBndry(m_pCMap, v1.x(), v1.y(), v1.z()))
           continue;
-      }
+      }*/
 
-      pdl->vertex(v0);
-      pdl->vertex(v1);
+      pdl->vertex(v[0]);
+      pdl->vertex(v[1]);
     }
     pdl->end();
   }
