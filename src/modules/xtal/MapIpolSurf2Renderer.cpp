@@ -628,9 +628,7 @@ dumpTriStats(LString(), cgm, m_ipol);
   //drawMeshLines2(pdl, cgm, m_ipol);
   
   dumpTriStats("mcminrem.txt", cgm, m_ipol);
-
   dumpEdgeStats("edge_mcmin2.txt", cgm, m_ipol);
-
   // checkMeshNorm1(pdl, cgm, m_ipol);
 
 }
@@ -664,17 +662,19 @@ void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
   }
   
   AtomPosMap2 amap;
+  auto pSel = getBndrySel();
   if (!pMol.isnull()) {
     amap.setTarget(pMol);
-    amap.generate(getBndrySel());
+    //amap.generate(pSel);
+    amap.generate();
   }
 
   //pdl->startLines();
   i=0;
   Vector4D pos;
+  gfx::ColorPtr pCol;
   for (vid_t vd : cgm.vertices()){
     pt = convToV3F( cgm.point(vd) );
-    norm = calcNorm(pt);
 
     //pdl->vertex(pt);
     //pdl->vertex(pt+norm.scale(0.5));
@@ -682,13 +682,17 @@ void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
     pos = m_pCMap->convToOrth(Vector4D(pt));
     int aid = amap.searchNearestAtom(pos);
     molstr::MolAtomPtr pa = pMol->getAtom(aid);
-    if (!pa.isnull()) {
-      mesh.color(molstr::ColSchmHolder::getColor(pa));
-    }
-    else {
+    if (pa.isnull() || !pSel->isSelected(pa))
+      continue;
+
+    pCol = molstr::ColSchmHolder::getColor(pa);
+
+    if (!pCol.isnull())
+      mesh.color(pCol);
+    else
       mesh.color(xtal::Map3Renderer::getColor());
-    }
       
+    norm = calcNorm(pt);
     mesh.setVertex(i, pt.x(), pt.y(), pt.z(), norm.x(), norm.y(), norm.z());
     vidmap.insert(std::pair<int,int>(int(vd), i));
     ++i;
@@ -708,9 +712,18 @@ void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
     j=0;
     BOOST_FOREACH(vid_t vd,vertices_around_face(cgm.halfedge(fd), cgm)){
       MB_ASSERT(j<3);
-      vid[j] = int(vd);
+      auto iter = vidmap.find(int(vd));
+      if (iter==vidmap.end()) {
+        break;
+      }
+      vid[j] = iter->second;
+      //v[j] = convToV3F( cgm.point(vd) );
       ++j;
     }
+
+    if (j<3) continue;
+    
+    /*
     MB_ASSERT(j==3);
 
     for (k=0; k<3; ++k)
@@ -722,8 +735,10 @@ void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
           !inMolBndry(m_pCMap, v[2].x(), v[2].y(), v[2].z()))
         continue;
     }
+     */
 
-    mesh.setFace(i, vidmap[vid[0]], vidmap[vid[1]], vidmap[vid[2]]);
+    //mesh.setFace(i, vidmap[vid[0]], vidmap[vid[1]], vidmap[vid[2]]);
+    mesh.setFace(i, vid[0], vid[1], vid[2]);
     ++i;
   }
 
@@ -743,12 +758,13 @@ void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
       Mesh::Halfedge_index h1 = cgm.halfedge(ei, 1);
       v[1] = convToV3F( cgm.point( cgm.target(h1) ) );
       
+      /*
       if (isUseMolBndry()) {
         if (!inMolBndry(m_pCMap, v[0].x(), v[0].y(), v[0].z()) ||
             !inMolBndry(m_pCMap, v[1].x(), v[1].y(), v[1].z()))
           continue;
       }
-
+*/
       pdl->vertex(v[0]);
       pdl->vertex(v[1]);
     }
@@ -794,6 +810,7 @@ void MapIpolSurf2Renderer::renderMeshImpl2(DisplayContext *pdl)
   if (!pMol.isnull()) {
     amap.setTarget(pMol);
     amap.generate(getBndrySel());
+    //amap.generate();
   }
 
   if (isUseMolBndry()) {
