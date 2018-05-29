@@ -13,6 +13,8 @@
 #include <qsys/ViewEvent.hpp>
 #include <qsys/View.hpp>
 
+#include <cfloat>
+
 using namespace xtal;
 using qlib::Matrix4D;
 using qlib::Matrix3D;

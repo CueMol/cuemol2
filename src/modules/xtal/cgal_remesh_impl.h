@@ -82,6 +82,8 @@ namespace PMP = Polygon_mesh_processing;
 namespace Polygon_mesh_processing {
 namespace MY_internal {
 
+  using qlib::Vector3F;
+
   enum Halfedge_status {
     PATCH,       //h and hopp belong to the patch to be remeshed
     PATCH_BORDER,//h belongs to the patch, hopp is MESH
@@ -388,7 +390,7 @@ namespace MY_internal {
 
       //Point mid_point = midpoint(h);
 
-      Vector3F vm = convToV3F(mid_point);
+      Vector3F vm = xtal::convToV3F(mid_point);
       return m_pipol->calcIdealL(vm);
     }
     
@@ -886,15 +888,15 @@ namespace MY_internal {
                        const vertex_descriptor& v2,
                        const vertex_descriptor& v3) const
     {
-      Vector3F p1 = convToV3F( get(vpmap_, v1) );
-      Vector3F p2 = convToV3F( get(vpmap_, v2) );
-      Vector3F p3 = convToV3F( get(vpmap_, v3) );
+      Vector3F p1 = xtal::convToV3F( get(vpmap_, v1) );
+      Vector3F p2 = xtal::convToV3F( get(vpmap_, v2) );
+      Vector3F p3 = xtal::convToV3F( get(vpmap_, v3) );
 
       Vector3F g1 = -(m_pipol->calcDiffAt(p1)).normalize();
       Vector3F g2 = -(m_pipol->calcDiffAt(p2)).normalize();
       Vector3F g3 = -(m_pipol->calcDiffAt(p3)).normalize();
 
-      Vector3F vn = calcNorm(p1, p2, p3).normalize();
+      Vector3F vn = xtal::calcNorm(p1, p2, p3).normalize();
 
       return (vn.dot(g1) + vn.dot(g2) + vn.dot(g3))/3.0f;
     }

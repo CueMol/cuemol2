@@ -31,6 +31,9 @@ QdfDenMapWriter.cpp \
 BrixMapReader.cpp \
 FFTUtil.cpp \
 BSharpTool.cpp \
+MapIpolSurf2Renderer.cpp \
+MapBsplIpol.cpp \
+MeshRefinePartMin.cpp \
 $(NULL)
 
 #
@@ -48,6 +51,7 @@ CCP4MapReader.qif \
 BrixMapReader.qif \
 BSharpTool.qif \
 HKLList.cpp \
+MapIpolSurf2Renderer.qif \
 $(NULL)
 
 ######################################################
@@ -107,6 +111,7 @@ libxtal_la_CXXFLAGS = \
   -DXTAL_EXPORTS=1 \
   -I$(top_srcdir) -I$(srcdir) \
   @BOOST_CPPFLAGS@ \
+  @CGAL_CPPFLAGS@ \
   @FFTW_CPPFLAGS@ \
   @GLEW_CPPFLAGS@ \
   $(NULL)
@@ -114,10 +119,12 @@ libxtal_la_CXXFLAGS = \
 libxtal_la_LIBADD = \
   @FFTW_LIBADD@ \
   @GLEW_LIBADD@ \
+  @CGAL_LIBADD@ \
   -lsymm \
   -lqsys \
   -lgfx \
   -lqlib \
+  -lgsl -lgslcblas \
   $(NULL)
 
 libxtal_la_LDFLAGS = \
@@ -127,6 +134,8 @@ libxtal_la_LDFLAGS = \
   -L../../qlib \
   @FFTW_LDFLAGS@ \
   @GLEW_LDFLAGS@ \
+  @BOOST_LDFLAGS@ \
+  @CGAL_LDFLAGS@ \
 $(NULL)
 
 #-Wall

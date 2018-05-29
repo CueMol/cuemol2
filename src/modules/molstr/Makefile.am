@@ -57,6 +57,7 @@ NameLabel2Renderer.cpp \
 SelectionRenderer.cpp \
 Prot2ndry.cpp \
 AtomPosMap.cpp \
+AtomPosMap2.cpp \
 MolArrayMap.cpp \
 MolXformEditInfo.cpp \
 RectSelDrawObj.cpp \
@@ -152,6 +153,7 @@ libmolstr_la_CXXFLAGS = \
   -DMOLSTR_EXPORTS=1 \
   -I$(top_srcdir) -I$(srcdir) \
   @BOOST_CPPFLAGS@ \
+  @CGAL_CPPFLAGS@ \
   @GLEW_CPPFLAGS@ \
   $(NULL)
 
