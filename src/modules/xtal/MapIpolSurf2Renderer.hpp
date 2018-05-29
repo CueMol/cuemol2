@@ -13,6 +13,9 @@
 #include <modules/surface/MolSurfObj.hpp>
 #include <gfx/SolidColor.hpp>
 
+#include <modules/molstr/molstr.hpp>
+#include <modules/molstr/ColoringScheme.hpp>
+
 #include "MapBsplIpol.hpp"
 
 class MapIpolSurf2Renderer_wrap;
@@ -32,7 +35,7 @@ namespace xtal {
   /// Map surface renderer class (ver.2)
   /// This class uses ver2 interface to perform file,
   /// display-list and VBO (with Omp) rendering
-  class MapIpolSurf2Renderer : public Map3Renderer
+  class MapIpolSurf2Renderer : public Map3Renderer, public molstr::ColSchmHolder
   {
     MC_SCRIPTABLE;
     MC_CLONEABLE;
@@ -45,6 +48,10 @@ namespace xtal {
     // properties
 
   public:
+    void setColor2(const ColorPtr &col) { super_t::setColor(col); }
+    const ColorPtr &getColor2() const { return super_t::getColor(); }
+
+
     enum {
       MSRDRAW_FILL = 0,
       MSRDRAW_LINE = 1,
@@ -160,6 +167,26 @@ namespace xtal {
     //////////
 
   private:
+    double m_dBndryRng2;
+
+  public:
+    double getBndryRng2() const { return m_dBndryRng2; }
+    void setBndryRng2(double d);
+
+  private:
+    int m_nWatShedBin;
+
+  public:
+    int getWatShedBin() const { return m_nWatShedBin; }
+    void setWatShedBin(int val) { 
+      if (val!=m_nWatShedBin){
+        m_nWatShedBin = val;
+        invalidateDisplayCache();
+      }
+    }
+
+
+  private:
     /// OpenMP Thread number(-1: use all system cores)
     int m_nOmpThr;
 
@@ -257,6 +284,7 @@ namespace xtal {
     void renderMeshImpl(DisplayContext *pdl);
 
     void clearMeshData();
+
   public:
 
     virtual bool isUseVer2Iface() const;

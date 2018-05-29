@@ -96,7 +96,7 @@ qlib::uid_t MapIpolSurf2Renderer::detachObj()
 void MapIpolSurf2Renderer::preRender(DisplayContext *pdc)
 {
 
-  pdc->color(getColor());
+  pdc->color(xtal::Map3Renderer::getColor());
 
   if (m_nDrawMode==MSRDRAW_POINT) {
     pdc->setLighting(false);
@@ -659,7 +659,7 @@ void MapIpolSurf2Renderer::renderMeshImpl(DisplayContext *pdl)
   const int nrow = m_dspSize.y();
   const int nsec = m_dspSize.z();
 
-  const int nbin = 2;
+  int nbin = m_nWatShedBin;
 
   const int nidcol = m_dspSize.x() * nbin;
   const int nidrow = m_dspSize.y() * nbin;
@@ -667,6 +667,13 @@ void MapIpolSurf2Renderer::renderMeshImpl(DisplayContext *pdl)
 
   std::set<int> ind_inc;
   qlib::Array3D<int> indmap(nidcol, nidrow, nidsec);
+
+  AtomPosMap2 amap;
+  MolCoordPtr pMol = getBndryMol();
+  if (!pMol.isnull()) {
+    amap.setTarget(pMol);
+    amap.generate(getBndrySel());
+  }
 
   if (isUseMolBndry()) {
 
@@ -785,9 +792,9 @@ pdl->end();
       if (maxind<0) {
         // Voxel with max value not found --> assign new index
         indmap.at(i, j, k) = imark;
-        posmap.insert(PosMap::value_type(imark, Vector3F(float(ii)/float(nbin) + float(m_nbcol),
-                                                         float(jj)/float(nbin) + float(m_nbrow),
-                                                         float(kk)/float(nbin) + float(m_nbsec))));
+        posmap.insert(PosMap::value_type(imark, Vector3F(float(i)/float(nbin) + float(m_nbcol),
+                                                         float(j)/float(nbin) + float(m_nbrow),
+                                                         float(k)/float(nbin) + float(m_nbsec))));
         ++imark;
         //pdl->color(gfx::SolidColor::createHSB(float(imark-1)*0.1, 1, 1));
         //pdl->sphere(0.3, Vector4D(i+m_nbcol, j+m_nbrow, k+m_nbsec));
@@ -816,12 +823,7 @@ pdl->end();
 */
 
     Vector4D pos;
-
-    AtomPosMap2 amap;
-    MolCoordPtr pMol = getBndryMol();
     molstr::MolAtomPtr pAtom;
-    amap.setTarget(pMol);
-    amap.generate(getBndrySel());
 
     for (const PosMap::value_type &elem: posmap) {
       int imk = elem.first;
@@ -832,7 +834,7 @@ pdl->end();
       pAtom = pMol->getAtom(aid);
       if (pAtom.isnull())
         continue;
-      if ( (pos-pAtom->getPos()).length() < m_dBndryRng ) {
+      if ( (pos-pAtom->getPos()).length() < m_dBndryRng2 ) {
         ind_inc.insert( imk );
       }
     }
@@ -897,25 +899,40 @@ pdl->end();
 
   gfx::Mesh mesh;
   mesh.init(nv, nf);
-  mesh.color(getColor());
+  mesh.color(xtal::Map3Renderer::getColor());
   std::unordered_map<int,int> vidmap;
 
+  molstr::ColoringSchemePtr pCS;
+  // MolCoordPtr pMol = getBndryMol();
+  if (!pMol.isnull()) {
+    pCS = getColSchm();
+    if (!pCS.isnull())
+      pCS->start(pMol, this);
+  }
+  
   //pdl->startLines();
   i=0;
+  Vector4D pos;
   for (vid_t vd : cgm.vertices()){
     pt = convToV3F( cgm.point(vd) );
     norm = calcNorm(pt);
     //pdl->vertex(pt);
     //pdl->vertex(pt+norm.scale(0.5));
 
-    //ii = ( int(std::round(pt.x())) - m_nbcol ) * nbin;
-    //jj = ( int(std::round(pt.y())) - m_nbrow ) * nbin;
-    //kk = ( int(std::round(pt.z())) - m_nbsec ) * nbin;
-
+    pos = m_pCMap->convToOrth(Vector4D(pt));
+    int aid = amap.searchNearestAtom(pos);
+    molstr::MolAtomPtr pa = pMol->getAtom(aid);
+    if (!pa.isnull()) {
+      mesh.color(molstr::ColSchmHolder::getColor(pa));
+    }
+    else {
+      mesh.color(xtal::Map3Renderer::getColor());
+    }
+      
+    /*
     ii = int(std::round( (pt.x()- float(m_nbcol)) * float(nbin) ));
     jj = int(std::round( (pt.y()- float(m_nbrow)) * float(nbin) ));
     kk = int(std::round( (pt.z()- float(m_nbsec)) * float(nbin) ));
-
     int ind;
     if (0<=ii && ii<nidcol &&
         0<=jj && jj<nidrow &&
@@ -926,12 +943,17 @@ pdl->end();
     else {
       mesh.color(getColor());
     }
+     */
 
     mesh.setVertex(i, pt.x(), pt.y(), pt.z(), norm.x(), norm.y(), norm.z());
     vidmap.insert(std::pair<int,int>(int(vd), i));
     ++i;
   }
   //pdl->end();
+
+  if (!pCS.isnull())
+    pCS->end();
+
 
   int vid[3];
   Vector3F v[3];
@@ -952,10 +974,6 @@ pdl->end();
       nOK = 0;
       for (k=0; k<3; ++k) {
         v[k] = convToV3F( cgm.point(vid_t(vid[k])) );
-
-        //ii = ( int( std::round( v[k].x() ) ) - m_nbcol ) * nbin;
-        //jj = ( int( std::round( v[k].y() ) ) - m_nbrow ) * nbin;
-        //kk = ( int( std::round( v[k].z() ) ) - m_nbsec ) * nbin;
 
         ii = int(std::round( (v[k].x()- float(m_nbcol)) * float(nbin) ));
         jj = int(std::round( (v[k].y()- float(m_nbrow)) * float(nbin) ));
@@ -1006,11 +1024,29 @@ pdl->end();
       Mesh::Halfedge_index h1 = cgm.halfedge(ei, 1);
       v[1] = convToV3F( cgm.point( cgm.target(h1) ) );
       
-      /*if (isUseMolBndry()) {
+      if (isUseMolBndry()) {
+        nOK = 0;
+        for (k=0; k<2; ++k) {
+          ii = int(std::round( (v[k].x()- float(m_nbcol)) * float(nbin) ));
+          jj = int(std::round( (v[k].y()- float(m_nbrow)) * float(nbin) ));
+          kk = int(std::round( (v[k].z()- float(m_nbsec)) * float(nbin) ));
+          if (0<=ii && ii<nidcol &&
+              0<=jj && jj<nidrow &&
+              0<=kk && kk<nidsec &&
+              (ind = indmap.at(ii, jj, kk))>=0) {
+            if (ind_inc.find(ind)!=ind_inc.end())
+              nOK += 1;
+          }
+        }
+
+        if (nOK<2)
+          continue;
+        /*
         if (!inMolBndry(m_pCMap, v0.x(), v0.y(), v0.z()) ||
             !inMolBndry(m_pCMap, v1.x(), v1.y(), v1.z()))
           continue;
-      }*/
+         */
+      }
 
       pdl->vertex(v[0]);
       pdl->vertex(v[1]);
@@ -1045,6 +1081,18 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
   renderMeshImpl(pdl);
 }
 
+void MapIpolSurf2Renderer::setBndryRng2(double d)
+{
+  if (d<0.0)
+    MB_THROW(qlib::RuntimeException, "xxx");
+
+  if (qlib::isNear4(d, m_dBndryRng2))
+    return;
+
+  m_dBndryRng2 = d;
+
+  invalidateDisplayCache();
+}
 
 qsys::ObjectPtr MapIpolSurf2Renderer::generateSurfObj()
 {
