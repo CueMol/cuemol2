@@ -23,6 +23,7 @@
 
 #include "MeshRefinePartMin.hpp"
 #include "cgal_remesh_impl.h"
+#include <unordered_set>
 
 using namespace xtal;
 using qlib::Matrix4D;
@@ -729,10 +730,11 @@ void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
 
     ++i;
   }
-  MB_DPRINTLN("ConMap> segmented to %d regions", i);
+  LOG_DPRINTLN("ConMap> segmented to %d regions", i);
 
   //pdl->startLines();
 
+  std::unordered_set<int> inc_rgn;
   std::unordered_map<int,int> vidmap;
   i=0;
   Vector4D pos;
@@ -746,15 +748,16 @@ void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
     pos = m_pCMap->convToOrth(Vector4D(pt));
     int aid = amap.searchNearestAtom(pos);
     molstr::MolAtomPtr pa = pMol->getAtom(aid);
-    if (pa.isnull() || !pSel->isSelected(pa))
-      continue;
 
-    pCol = molstr::ColSchmHolder::getColor(pa);
-
-    if (!pCol.isnull())
-      mesh.color(pCol);
-    else
-      mesh.color(xtal::Map3Renderer::getColor());
+    if (!pa.isnull() && pSel->isSelected(pa)) {
+      pCol = molstr::ColSchmHolder::getColor(pa);
+      if (!pCol.isnull())
+        mesh.color(pCol);
+      
+      if ((pos - pa->getPos()).length()<1.0 ) {
+        inc_rgn.insert( conmap[int(vd)] );
+      }
+    }
 
     //int imark = conmap[int(vd)];
     //mesh.color(gfx::SolidColor::createHSB(float(imark)*0.1, 1, 1));
@@ -780,11 +783,14 @@ void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
     BOOST_FOREACH(vid_t vd,vertices_around_face(cgm.halfedge(fd), cgm)){
       MB_ASSERT(j<3);
       auto iter = vidmap.find(int(vd));
-      if (iter==vidmap.end()) {
+      if (iter==vidmap.end())
         break;
-      }
+
+      if (inc_rgn.find(conmap[int(vd)])==inc_rgn.end())
+        break;
+
       vid[j] = iter->second;
-      //v[j] = convToV3F( cgm.point(vd) );
+
       ++j;
     }
 
