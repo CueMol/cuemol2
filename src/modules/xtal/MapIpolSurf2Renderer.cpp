@@ -633,6 +633,49 @@ dumpTriStats(LString(), cgm, m_ipol);
 
 }
 
+void markAroundVert(Mesh &cgm, vid_t vd, int id, std::unordered_map<int,int> &conmap,
+                    std::deque<vid_t> &trav)
+{
+  BOOST_FOREACH(Mesh::halfedge_index hi,
+                halfedges_around_target(cgm.halfedge(vd), cgm)) {
+    vid_t vd2 = cgm.source(hi);
+    auto iter = conmap.find(int(vd2));
+    if (iter==conmap.end()) {
+      conmap[int(vd2)] = id;
+      //markAroundVert(cgm, vd2, id, conmap);
+      trav.push_back(vd2);
+    }
+  }
+
+/*
+  if (!cgm.is_valid(vd)) {
+    MB_DPRINTLN("vd %d is invalid", int(vd));
+    return;
+  }
+
+  Mesh::halfedge_index hi_start = cgm.halfedge(vd);
+  if (!cgm.is_valid(hi_start)) {
+    MB_DPRINTLN("vd %d has no valid halfedge", int(vd));
+    return;
+  }
+  
+  auto hi = hi_start;
+
+  for (;;) {
+    vid_t vd2 = cgm.source(hi);
+    
+    auto iter = conmap.find(int(vd2));
+    if (iter==conmap.end()) {
+      conmap[int(vd2)] = id;
+      markAroundVert(cgm, vd2, id, conmap);
+    }
+    
+    hi = cgm.next_around_target(hi);
+    if (hi==hi_start)
+      break;
+  }*/
+}
+
 void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
 {
   int i,j,k,l,ind;
@@ -651,7 +694,6 @@ void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
   gfx::Mesh mesh;
   mesh.init(nv, nf);
   mesh.color(xtal::Map3Renderer::getColor());
-  std::unordered_map<int,int> vidmap;
 
   MolCoordPtr pMol = getBndryMol();
   molstr::ColoringSchemePtr pCS;
@@ -669,7 +711,29 @@ void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
     amap.generate();
   }
 
+  std::unordered_map<int,int> conmap;
+  i=0;
+  for (vid_t vd : cgm.vertices()){
+    auto iter = conmap.find(int(vd));
+    if (iter!=conmap.end())
+      continue;
+
+    conmap[int(vd)] = i;
+    std::deque<vid_t> trav;
+    markAroundVert(cgm, vd, i, conmap, trav);
+    while (!trav.empty()) {
+      vid_t vd2 = trav.front();
+      trav.pop_front();
+      markAroundVert(cgm, vd2, i, conmap, trav);
+    }
+
+    ++i;
+  }
+  MB_DPRINTLN("ConMap> segmented to %d regions", i);
+
   //pdl->startLines();
+
+  std::unordered_map<int,int> vidmap;
   i=0;
   Vector4D pos;
   gfx::ColorPtr pCol;
@@ -691,7 +755,10 @@ void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
       mesh.color(pCol);
     else
       mesh.color(xtal::Map3Renderer::getColor());
-      
+
+    //int imark = conmap[int(vd)];
+    //mesh.color(gfx::SolidColor::createHSB(float(imark)*0.1, 1, 1));
+
     norm = calcNorm(pt);
     mesh.setVertex(i, pt.x(), pt.y(), pt.z(), norm.x(), norm.y(), norm.z());
     vidmap.insert(std::pair<int,int>(int(vd), i));
