@@ -281,7 +281,8 @@ namespace xtal {
 
     void buildMeshData(DisplayContext *pdl);
 
-    void renderMeshImpl(DisplayContext *pdl);
+    void renderMeshImpl1(DisplayContext *pdl);
+    void renderMeshImpl2(DisplayContext *pdl);
 
     void clearMeshData();
 
