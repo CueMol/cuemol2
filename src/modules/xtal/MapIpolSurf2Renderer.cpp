@@ -652,37 +652,85 @@ void MapIpolSurf2Renderer::renderMeshImpl(DisplayContext *pdl)
   // //XXX
   // return;
 
-  int i,j,k,l;
+  int i,j,k,l,ind;
   int ii, jj, kk;
 
   const int ncol = m_dspSize.x();
   const int nrow = m_dspSize.y();
   const int nsec = m_dspSize.z();
 
+  const int nbin = 2;
+
+  const int nidcol = m_dspSize.x() * nbin;
+  const int nidrow = m_dspSize.y() * nbin;
+  const int nidsec = m_dspSize.z() * nbin;
+
   std::set<int> ind_inc;
-  qlib::Array3D<int> indmap(ncol,nrow,nsec);
+  qlib::Array3D<int> indmap(nidcol, nidrow, nidsec);
 
   if (isUseMolBndry()) {
+
+//pdl->setLighting(false);
+//pdl->setPolygonMode(gfx::DisplayContext::POLY_FILL);
+
     struct Elem {
       float val;
-      int ix, iy, iz;
+      int i, j, k;
     };
+    Elem elm2;
 
-    std::vector<Elem> map0(ncol*nrow*nsec);
-    for (i=0; i<ncol; i++)
-      for (j=0; j<nrow; j++)
-        for (k=0; k<nsec; k++) {
-          int ix = i + m_nbcol;
-          int iy = j + m_nbrow;
-          int iz = k + m_nbsec;
-          float val = getDen(ix, iy, iz);
-          const int idx = i + (j + k*nrow)*ncol;
-          map0[idx].val = val;
-          map0[idx].ix = i;
-          map0[idx].iy = j;
-          map0[idx].iz = k;
+    //std::vector<Elem> map0(ncol*nrow*nsec);
+    std::deque<Elem> map0; //(ncol*nrow*nsec);
+    for (i=0; i<nidcol; i++)
+      for (j=0; j<nidrow; j++)
+        for (k=0; k<nidsec; k++) {
+          float ix = float(i)/float(nbin) + float(m_nbcol);
+          float iy = float(j)/float(nbin) + float(m_nbrow);
+          float iz = float(k)/float(nbin) + float(m_nbsec);
+          //float val = getDen(ix, iy, iz);
+          float val = m_ipol.calcAt(Vector3F(ix,iy,iz));
+
+          if (val<m_dLevel) {
+            bool bOK = false;
+            for (l=0; l<26; l++) {
+              float ix = float(i+adjvox[l][0])/float(nbin) + float(m_nbcol);
+              float iy = float(j+adjvox[l][1])/float(nbin) + float(m_nbrow);
+              float iz = float(k+adjvox[l][2])/float(nbin) + float(m_nbsec);
+              float val2 = m_ipol.calcAt(Vector3F(ix,iy,iz));
+              //float val2 = getDen(ii, jj, kk);
+              if (val2>=m_dLevel) {
+                bOK = true;
+                break;
+              }
+            }
+
+            if (!bOK)
+              continue;
+          }
+
+          //const int idx = i + (j + k*nrow)*ncol;
+          elm2.val = val;
+          elm2.i = i;
+          elm2.j = j;
+          elm2.k = k;
+          map0.push_back(elm2);
+
         }
 
+/*
+pdl->startLines();
+          // draw grid lines
+          pdl->vertex(m_nbcol, j + m_nbrow, k + m_nbsec);
+          pdl->vertex(ncol + m_nbcol, j + m_nbrow, k + m_nbsec);
+          
+          pdl->vertex(i + m_nbcol, m_nbrow, k + m_nbsec);
+          pdl->vertex(i + m_nbcol, nrow + m_nbrow, k + m_nbsec);
+          
+          pdl->vertex(i + m_nbcol, j + m_nbrow, m_nbsec);
+          pdl->vertex(i + m_nbcol, j + m_nbrow, nsec + m_nbsec);
+pdl->end();
+*/
+    LOG_DPRINTLN("WatShed> sorting %d elems...", map0.size());
     std::sort(map0.begin(), map0.end(),
               [](const Elem &x, const Elem &y) -> bool {
                 return x.val>y.val;
@@ -697,26 +745,36 @@ void MapIpolSurf2Renderer::renderMeshImpl(DisplayContext *pdl)
     int maxind;
     int imark = 0;
 
+    typedef std::map<int, Vector3F> PosMap;
+    PosMap posmap;
+
     for (const Elem &elem: map0) {
-      i = elem.ix;
-      j = elem.iy;
-      k = elem.iz;
+      i = elem.i;
+      j = elem.j;
+      k = elem.k;
 
       maxval = -1.0e10;
       maxind = -1;
       
       // Find voxel having max value
       for (l=0; l<26; l++) {
+      //for (l=0; l<6; l++) {
         ii = i + adjvox[l][0];
         jj = j + adjvox[l][1];
         kk = k + adjvox[l][2];
 
-        if (0<=ii && ii<ncol &&
-            0<=jj && jj<nrow &&
-            0<=kk && kk<nsec) {
+        if (0<=ii && ii<nidcol &&
+            0<=jj && jj<nidrow &&
+            0<=kk && kk<nidsec) {
           iadj = indmap.at(ii, jj, kk);
           if (iadj>=0) {
-            val = getDen(ii+m_nbcol, jj+m_nbrow, kk+m_nbsec);
+            //val = getDen(ii+m_nbcol, jj+m_nbrow, kk+m_nbsec);
+
+            float ix = float(ii)/float(nbin) + float(m_nbcol);
+            float iy = float(jj)/float(nbin) + float(m_nbrow);
+            float iz = float(kk)/float(nbin) + float(m_nbsec);
+            float val = m_ipol.calcAt(Vector3F(ix,iy,iz));
+
             if (val>maxval) {
               maxind = iadj;
             }
@@ -727,7 +785,12 @@ void MapIpolSurf2Renderer::renderMeshImpl(DisplayContext *pdl)
       if (maxind<0) {
         // Voxel with max value not found --> assign new index
         indmap.at(i, j, k) = imark;
+        posmap.insert(PosMap::value_type(imark, Vector3F(float(ii)/float(nbin) + float(m_nbcol),
+                                                         float(jj)/float(nbin) + float(m_nbrow),
+                                                         float(kk)/float(nbin) + float(m_nbsec))));
         ++imark;
+        //pdl->color(gfx::SolidColor::createHSB(float(imark-1)*0.1, 1, 1));
+        //pdl->sphere(0.3, Vector4D(i+m_nbcol, j+m_nbrow, k+m_nbsec));
       }
       else {
         indmap.at(i, j, k) = maxind;
@@ -737,8 +800,70 @@ void MapIpolSurf2Renderer::renderMeshImpl(DisplayContext *pdl)
 
     LOG_DPRINTLN("WatShed> segmented to %d regions", imark);
 
-    AtomIterator aiter(getBndryMol(), getBndrySel());
+
+    // Dump grid IDs
+/*    for (i=0; i<nidcol; i++)
+      for (j=0; j<nidrow; j++)
+        for (k=0; k<nidsec; k++) {
+          int imk = indmap.at(i, j, k);
+          if (imk<0) continue;
+          pdl->color(gfx::SolidColor::createHSB(float(imk)*0.1, 1, 1));
+          float ix = float(i)/float(nbin) + float(m_nbcol);
+          float iy = float(j)/float(nbin) + float(m_nbrow);
+          float iz = float(k)/float(nbin) + float(m_nbsec);
+          pdl->sphere(0.1, Vector4D(ix, iy, iz));
+        }
+*/
+
     Vector4D pos;
+
+    AtomPosMap2 amap;
+    MolCoordPtr pMol = getBndryMol();
+    molstr::MolAtomPtr pAtom;
+    amap.setTarget(pMol);
+    amap.generate(getBndrySel());
+
+    for (const PosMap::value_type &elem: posmap) {
+      int imk = elem.first;
+      Vector4D gpos = Vector4D(elem.second);
+
+      pos = m_pCMap->convToOrth(gpos);
+      int aid = amap.searchNearestAtom(pos);
+      pAtom = pMol->getAtom(aid);
+      if (pAtom.isnull())
+        continue;
+      if ( (pos-pAtom->getPos()).length() < m_dBndryRng ) {
+        ind_inc.insert( imk );
+      }
+    }
+    
+/*
+    for (i=0; i<nidcol; i++)
+      for (j=0; j<nidrow; j++)
+        for (k=0; k<nidsec; k++) {
+          int imk = indmap.at(i, j, k);
+          if (imk<0)
+            continue;
+
+          float ix = float(i)/float(nbin) + float(m_nbcol);
+          float iy = float(j)/float(nbin) + float(m_nbrow);
+          float iz = float(k)/float(nbin) + float(m_nbsec);
+
+          pos = m_pCMap->convToOrth(Vector4D(ix, iy, iz));
+          int aid = amap.searchNearestAtom(pos);
+          pAtom = pMol->getAtom(aid);
+          if (pAtom.isnull())
+            continue;
+          if ( (pos-pAtom->getPos()).length() < 0.5 ) {
+            ind_inc.insert( imk );
+            //pdl->color(gfx::SolidColor::createHSB(float(imk)*0.1, 1, 1));
+            //pdl->sphere(0.1, Vector4D(i+m_nbcol, j+m_nbrow, k+m_nbsec));
+          }
+        }    
+*/
+    
+    /*
+    AtomIterator aiter(getBndryMol(), getBndrySel());
     for (aiter.first();
          aiter.hasMore();
          aiter.next()) {
@@ -750,9 +875,13 @@ void MapIpolSurf2Renderer::renderMeshImpl(DisplayContext *pdl)
       if (0<=i && i<ncol &&
           0<=j && j<nrow &&
           0<=k && k<nsec) {
-        ind_inc.insert( indmap.at(i, j, k) );
+        int imk = indmap.at(i, j, k);
+        ind_inc.insert( imk );
+        //pdl->color(gfx::SolidColor::createHSB(float(imk)*0.1, 1, 1));
+        //pdl->sphere(0.1, Vector4D(i+m_nbcol, j+m_nbrow, k+m_nbsec));
       }
     }
+     */
 
     for (int ind: ind_inc) {
       LOG_DPRINTLN("show: %d", ind);
@@ -778,6 +907,26 @@ void MapIpolSurf2Renderer::renderMeshImpl(DisplayContext *pdl)
     norm = calcNorm(pt);
     //pdl->vertex(pt);
     //pdl->vertex(pt+norm.scale(0.5));
+
+    //ii = ( int(std::round(pt.x())) - m_nbcol ) * nbin;
+    //jj = ( int(std::round(pt.y())) - m_nbrow ) * nbin;
+    //kk = ( int(std::round(pt.z())) - m_nbsec ) * nbin;
+
+    ii = int(std::round( (pt.x()- float(m_nbcol)) * float(nbin) ));
+    jj = int(std::round( (pt.y()- float(m_nbrow)) * float(nbin) ));
+    kk = int(std::round( (pt.z()- float(m_nbsec)) * float(nbin) ));
+
+    int ind;
+    if (0<=ii && ii<nidcol &&
+        0<=jj && jj<nidrow &&
+        0<=kk && kk<nidsec &&
+        (ind = indmap.at(ii, jj, kk))>=0) {
+      mesh.color(gfx::SolidColor::createHSB(float(ind)*0.1, 1, 1));
+    }
+    else {
+      mesh.color(getColor());
+    }
+
     mesh.setVertex(i, pt.x(), pt.y(), pt.z(), norm.x(), norm.y(), norm.z());
     vidmap.insert(std::pair<int,int>(int(vd), i));
     ++i;
@@ -803,22 +952,31 @@ void MapIpolSurf2Renderer::renderMeshImpl(DisplayContext *pdl)
       nOK = 0;
       for (k=0; k<3; ++k) {
         v[k] = convToV3F( cgm.point(vid_t(vid[k])) );
-        ii = int( std::round( v[k].x() ) ) - m_nbcol;
-        jj = int( std::round( v[k].y() ) ) - m_nbrow;
-        kk = int( std::round( v[k].z() ) ) - m_nbsec;
-        if (0<=ii && ii<ncol &&
-            0<=jj && jj<nrow &&
-            0<=kk && kk<nsec) {
-          int ind = indmap.at(ii, jj, kk);
+
+        //ii = ( int( std::round( v[k].x() ) ) - m_nbcol ) * nbin;
+        //jj = ( int( std::round( v[k].y() ) ) - m_nbrow ) * nbin;
+        //kk = ( int( std::round( v[k].z() ) ) - m_nbsec ) * nbin;
+
+        ii = int(std::round( (v[k].x()- float(m_nbcol)) * float(nbin) ));
+        jj = int(std::round( (v[k].y()- float(m_nbrow)) * float(nbin) ));
+        kk = int(std::round( (v[k].z()- float(m_nbsec)) * float(nbin) ));
+
+        if (0<=ii && ii<nidcol &&
+            0<=jj && jj<nidrow &&
+            0<=kk && kk<nidsec &&
+            (ind = indmap.at(ii, jj, kk))>=0) {
           if (ind_inc.find(ind)!=ind_inc.end())
-            ++nOK;
-          else
-            break;
+            nOK += 1;
         }
       }
 
-      if (nOK!=3)
+      if (nOK<3)
         continue;
+
+      //if (nOK<2)
+      //continue;
+      //if (nOK<1)
+      //continue;
 
       /*
       if (!inMolBndry(m_pCMap, v0.x(), v0.y(), v0.z()) ||
@@ -831,6 +989,9 @@ void MapIpolSurf2Renderer::renderMeshImpl(DisplayContext *pdl)
     mesh.setFace(i, vidmap[vid[0]], vidmap[vid[1]], vidmap[vid[2]]);
     ++i;
   }
+
+//pdl->setCullFace(false);
+//pdl->setPolygonMode(gfx::DisplayContext::POLY_LINE);
   pdl->drawMesh(mesh);
 
   if (m_nDrawMode==MSRDRAW_FILL_LINE) {
