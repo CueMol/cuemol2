@@ -87,10 +87,9 @@ def loadScene(aFileName, aName, aScene, aFmtName, aOpts=None):
     reader.read()
     reader.detach()
     if not aName==None:
-        #aScene.name = aName
-        aScene.setName(aName)
+        scene.setName(aName)
 
-    return aScene
+    return scene
         
 def loadObject(aFileName, aName, aScene, aFmtName, aOpts=None):
     scene = cuemol.scene(aScene)

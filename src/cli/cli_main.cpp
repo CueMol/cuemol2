@@ -320,7 +320,7 @@ void process_input(const LString &loadscr, const std::deque<LString> &args)
   }
   
 #ifdef HAVE_PYTHON
-  {
+  if (bInvokeIntrShell) {
     pybr::PythonBridge *pSvc = pybr::PythonBridge::getInstance();
     MB_DPRINTLN("");
     pSvc->runInteractiveShell();

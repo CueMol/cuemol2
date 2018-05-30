@@ -130,6 +130,11 @@ def col(aColStr, aScene=None):
     color = stylem.compileColor(aColStr, s.uid)
     return color
 
+def timeval(aMilli):
+    tv = ci.createObj("TimeValue")
+    tv.millisec = aMilli
+    return tv
+
 ##########
 
 def copy(aObj, aNewObjName):
