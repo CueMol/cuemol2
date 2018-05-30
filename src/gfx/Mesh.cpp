@@ -84,14 +84,14 @@ bool Mesh::convRGBAByteCols(quint8 *pcols, int nsize, int defalpha/*=255*/, qlib
 
   for (i=0; i<m_nVerts; ++i) {
     pcol = m_colptrs[i];
-	if (pcol.isnull())
-		ccode = 0;
-	else {
-		if (nSceneID != qlib::invalid_uid)
-			ccode = pcol->getDevCode(nSceneID);
-		else
-			ccode = pcol->getCode();
-	}
+    if (pcol.isnull())
+      ccode = 0;
+    else {
+      if (nSceneID != qlib::invalid_uid)
+        ccode = pcol->getDevCode(nSceneID);
+      else
+        ccode = pcol->getCode();
+    }
 
     quint8 *pelem = &pcols[i*4];
     pelem[0] = getRCode(ccode);

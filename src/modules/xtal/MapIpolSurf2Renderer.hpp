@@ -151,8 +151,6 @@ namespace xtal {
     }
     double getLMax() const { return m_dLMax; }
 
-    //////////
-
     /// project vertex onto isosurf
     bool m_bProjVert;
 
@@ -172,6 +170,21 @@ namespace xtal {
   public:
     double getBndryRng2() const { return m_dBndryRng2; }
     void setBndryRng2(double d);
+
+  private:
+    /// line color
+    ColorPtr m_pLineCol;
+
+  public:
+    /// Line color (only used for fill_line mode)
+    virtual void setLineColor(const ColorPtr &col) {
+      m_pLineCol = col;
+      invalidateDisplayCache();
+    }
+    const ColorPtr &getLineColor() const { return m_pLineCol; }
+
+
+    //////////
 
   private:
     int m_nWatShedBin;

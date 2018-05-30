@@ -59,8 +59,8 @@ runtime_class MapIpolSurf2Renderer extends Map3Renderer
 
   //////////
 
-  property integer omp_thr => redirect(getOmpThr, setOmpThr);
-  default omp_thr = -1;
+  //property integer omp_thr => redirect(getOmpThr, setOmpThr);
+  //default omp_thr = -1;
 
   enumdef meshmode {
     marchcube = xtal::MapIpolSurf2Renderer::MISR_MC;
@@ -85,8 +85,12 @@ runtime_class MapIpolSurf2Renderer extends Map3Renderer
   property real bndry_rng2 => redirect(getBndryRng2, setBndryRng2);
   default bndry_rng2 = 3.0;
 
-  property integer watshed_bin => redirect(getWatShedBin, setWatShedBin);
-  default watshed_bin = 2;
+  //property integer watshed_bin => redirect(getWatShedBin, setWatShedBin);
+  //default watshed_bin = 2;
+
+  /// Line color (only used for fill_line mode)
+  property object<AbstractColor$> line_color => redirect(getLineColor, setLineColor);
+  default line_color = gfx::SolidColor::createRGB(0.0, 0.0, 0.0);
 
   //
 
