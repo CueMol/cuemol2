@@ -692,10 +692,6 @@ void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
   const int nv = cgm.number_of_vertices();
   const int nf = cgm.number_of_faces();
 
-  gfx::Mesh mesh;
-  mesh.init(nv, nf);
-  mesh.color(xtal::Map3Renderer::getColor());
-
   MolCoordPtr pMol = getBndryMol();
   molstr::ColoringSchemePtr pCS;
   if (!pMol.isnull()) {
@@ -747,15 +743,21 @@ void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
 
     if (pa.isnull()) {
       aidmap.insert(std::pair<int,int>(int(vd), -1));
+      continue;
     }
-    else {
-      aidmap.insert(std::pair<int,int>(int(vd), aid));
-      if ( (pos - pa->getPos()).length()<m_dBndryRng2 )
-        inc_rgn.insert( conmap[int(vd)] );
-    }
+
+    aidmap.insert(std::pair<int,int>(int(vd), aid));
+
+    if ( pSel->isSelected(pa) &&
+         (pos - pa->getPos()).length()<m_dBndryRng2 )
+      inc_rgn.insert( conmap[int(vd)] );
   }
 
   LOG_DPRINTLN("ConMap> display %d regions.", inc_rgn.size());
+
+  gfx::Mesh mesh;
+  mesh.init(nv, nf);
+  mesh.color(xtal::Map3Renderer::getColor());
 
   std::unordered_map<int,int> vidmap;
   i=0;
@@ -795,6 +797,8 @@ void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
     ++i;
   }
   //pdl->end();
+
+  int mesh_nv = i;
 
   if (!pCS.isnull())
     pCS->end();
@@ -842,6 +846,9 @@ void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
     ++i;
   }
 
+  int mesh_nf = i;
+  mesh.reduce(mesh_nv, mesh_nf);
+
 //pdl->setCullFace(false);
 //pdl->setPolygonMode(gfx::DisplayContext::POLY_LINE);
   pdl->drawMesh(mesh);
@@ -849,22 +856,23 @@ void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
   if (m_nDrawMode==MSRDRAW_FILL_LINE) {
     pdl->setLineWidth(m_lw);
     pdl->startLines();
-    pdl->color(getEdgeLineColor());
+    pdl->color(getLineColor());
 
     for(Mesh::Edge_index ei : cgm.edges()){
-      Mesh::Halfedge_index h0 = cgm.halfedge(ei, 0);
-      v[0] = convToV3F( cgm.point( cgm.target(h0) ) );
-      
-      Mesh::Halfedge_index h1 = cgm.halfedge(ei, 1);
-      v[1] = convToV3F( cgm.point( cgm.target(h1) ) );
-      
-      /*
-      if (isUseMolBndry()) {
-        if (!inMolBndry(m_pCMap, v[0].x(), v[0].y(), v[0].z()) ||
-            !inMolBndry(m_pCMap, v[1].x(), v[1].y(), v[1].z()))
-          continue;
+
+      for (j=0; j<2; ++j) {
+
+        Mesh::Halfedge_index h0 = cgm.halfedge(ei, j);
+        vid_t vd = cgm.target(h0);
+        
+        if (vidmap.find(int(vd))==vidmap.end())
+          break;
+
+        v[j] = convToV3F( cgm.point( vd ) );
       }
-*/
+      
+      if (j<2) continue;
+
       pdl->vertex(v[0]);
       pdl->vertex(v[1]);
     }
