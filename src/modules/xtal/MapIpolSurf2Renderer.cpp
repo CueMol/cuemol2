@@ -23,6 +23,7 @@
 
 #include "MeshRefinePartMin.hpp"
 #include "cgal_remesh_impl.h"
+#include <unordered_set>
 
 using namespace xtal;
 using qlib::Matrix4D;
@@ -628,11 +629,52 @@ dumpTriStats(LString(), cgm, m_ipol);
   //drawMeshLines2(pdl, cgm, m_ipol);
   
   dumpTriStats("mcminrem.txt", cgm, m_ipol);
-
   dumpEdgeStats("edge_mcmin2.txt", cgm, m_ipol);
-
   // checkMeshNorm1(pdl, cgm, m_ipol);
 
+}
+
+void markAroundVert(Mesh &cgm, vid_t vd, int id, std::unordered_map<int,int> &conmap,
+                    std::deque<vid_t> &trav)
+{
+  BOOST_FOREACH(Mesh::halfedge_index hi,
+                halfedges_around_target(cgm.halfedge(vd), cgm)) {
+    vid_t vd2 = cgm.source(hi);
+    auto iter = conmap.find(int(vd2));
+    if (iter==conmap.end()) {
+      conmap[int(vd2)] = id;
+      //markAroundVert(cgm, vd2, id, conmap);
+      trav.push_back(vd2);
+    }
+  }
+
+/*
+  if (!cgm.is_valid(vd)) {
+    MB_DPRINTLN("vd %d is invalid", int(vd));
+    return;
+  }
+
+  Mesh::halfedge_index hi_start = cgm.halfedge(vd);
+  if (!cgm.is_valid(hi_start)) {
+    MB_DPRINTLN("vd %d has no valid halfedge", int(vd));
+    return;
+  }
+  
+  auto hi = hi_start;
+
+  for (;;) {
+    vid_t vd2 = cgm.source(hi);
+    
+    auto iter = conmap.find(int(vd2));
+    if (iter==conmap.end()) {
+      conmap[int(vd2)] = id;
+      markAroundVert(cgm, vd2, id, conmap);
+    }
+    
+    hi = cgm.next_around_target(hi);
+    if (hi==hi_start)
+      break;
+  }*/
 }
 
 void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
@@ -653,7 +695,6 @@ void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
   gfx::Mesh mesh;
   mesh.init(nv, nf);
   mesh.color(xtal::Map3Renderer::getColor());
-  std::unordered_map<int,int> vidmap;
 
   MolCoordPtr pMol = getBndryMol();
   molstr::ColoringSchemePtr pCS;
@@ -664,31 +705,91 @@ void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
   }
   
   AtomPosMap2 amap;
+  auto pSel = getBndrySel();
   if (!pMol.isnull()) {
     amap.setTarget(pMol);
-    amap.generate(getBndrySel());
+    //amap.generate(pSel);
+    amap.generate();
   }
 
-  //pdl->startLines();
+  std::unordered_map<int,int> conmap;
   i=0;
+  for (vid_t vd : cgm.vertices()){
+    auto iter = conmap.find(int(vd));
+    if (iter!=conmap.end())
+      continue;
+
+    conmap[int(vd)] = i;
+    std::deque<vid_t> trav;
+    trav.push_back(vd);
+    while (!trav.empty()) {
+      vid_t vd2 = trav.front();
+      trav.pop_front();
+      markAroundVert(cgm, vd2, i, conmap, trav);
+    }
+
+    ++i;
+  }
+  LOG_DPRINTLN("ConMap> Surf was segmented to %d regions", i);
+
+  //pdl->startLines();
+
+  std::unordered_set<int> inc_rgn;
+  std::unordered_map<int,int> aidmap;
   Vector4D pos;
+
   for (vid_t vd : cgm.vertices()){
     pt = convToV3F( cgm.point(vd) );
-    norm = calcNorm(pt);
-
-    //pdl->vertex(pt);
-    //pdl->vertex(pt+norm.scale(0.5));
 
     pos = m_pCMap->convToOrth(Vector4D(pt));
     int aid = amap.searchNearestAtom(pos);
     molstr::MolAtomPtr pa = pMol->getAtom(aid);
-    if (!pa.isnull()) {
-      mesh.color(molstr::ColSchmHolder::getColor(pa));
+
+    if (pa.isnull()) {
+      aidmap.insert(std::pair<int,int>(int(vd), -1));
     }
     else {
-      mesh.color(xtal::Map3Renderer::getColor());
+      aidmap.insert(std::pair<int,int>(int(vd), aid));
+      if ( (pos - pa->getPos()).length()<m_dBndryRng2 )
+        inc_rgn.insert( conmap[int(vd)] );
     }
-      
+  }
+
+  LOG_DPRINTLN("ConMap> display %d regions.", inc_rgn.size());
+
+  std::unordered_map<int,int> vidmap;
+  i=0;
+  gfx::ColorPtr pCol;
+  for (vid_t vd : cgm.vertices()){
+    pt = convToV3F( cgm.point(vd) );
+
+    //pdl->vertex(pt);
+    //pdl->vertex(pt+norm.scale(0.5));
+
+    int aid = aidmap[int(vd)];
+    if (aid<0)
+      continue;
+    
+    if (inc_rgn.find(conmap[int(vd)])==inc_rgn.end())
+      continue;
+
+    molstr::MolAtomPtr pa = pMol->getAtom(aid);
+    if (pa.isnull())
+      continue;
+
+    if (!pSel->isSelected(pa))
+      continue;
+
+    pCol = molstr::ColSchmHolder::getColor(pa);
+    if (!pCol.isnull())
+      mesh.color(pCol);
+    else
+      mesh.color(xtal::Map3Renderer::getColor());
+
+    //int imark = conmap[int(vd)];
+    //mesh.color(gfx::SolidColor::createHSB(float(imark)*0.1, 1, 1));
+
+    norm = calcNorm(pt);
     mesh.setVertex(i, pt.x(), pt.y(), pt.z(), norm.x(), norm.y(), norm.z());
     vidmap.insert(std::pair<int,int>(int(vd), i));
     ++i;
@@ -708,9 +809,21 @@ void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
     j=0;
     BOOST_FOREACH(vid_t vd,vertices_around_face(cgm.halfedge(fd), cgm)){
       MB_ASSERT(j<3);
-      vid[j] = int(vd);
+      auto iter = vidmap.find(int(vd));
+      if (iter==vidmap.end())
+        break;
+
+      //if (inc_rgn.find(conmap[int(vd)])==inc_rgn.end())
+      //break;
+
+      vid[j] = iter->second;
+
       ++j;
     }
+
+    if (j<3) continue;
+    
+    /*
     MB_ASSERT(j==3);
 
     for (k=0; k<3; ++k)
@@ -722,8 +835,10 @@ void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
           !inMolBndry(m_pCMap, v[2].x(), v[2].y(), v[2].z()))
         continue;
     }
+     */
 
-    mesh.setFace(i, vidmap[vid[0]], vidmap[vid[1]], vidmap[vid[2]]);
+    //mesh.setFace(i, vidmap[vid[0]], vidmap[vid[1]], vidmap[vid[2]]);
+    mesh.setFace(i, vid[0], vid[1], vid[2]);
     ++i;
   }
 
@@ -743,12 +858,13 @@ void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
       Mesh::Halfedge_index h1 = cgm.halfedge(ei, 1);
       v[1] = convToV3F( cgm.point( cgm.target(h1) ) );
       
+      /*
       if (isUseMolBndry()) {
         if (!inMolBndry(m_pCMap, v[0].x(), v[0].y(), v[0].z()) ||
             !inMolBndry(m_pCMap, v[1].x(), v[1].y(), v[1].z()))
           continue;
       }
-
+*/
       pdl->vertex(v[0]);
       pdl->vertex(v[1]);
     }
@@ -794,6 +910,7 @@ void MapIpolSurf2Renderer::renderMeshImpl2(DisplayContext *pdl)
   if (!pMol.isnull()) {
     amap.setTarget(pMol);
     amap.generate(getBndrySel());
+    //amap.generate();
   }
 
   if (isUseMolBndry()) {

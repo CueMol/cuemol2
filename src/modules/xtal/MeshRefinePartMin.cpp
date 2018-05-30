@@ -16,8 +16,11 @@ namespace xtal {
 void dumpTriStats(const LString &fname, const Mesh &cgm, const MapBsplIpol &ip)
 {
   FILE *fp = NULL;
+
+#ifdef MB_DEBUG
   if (!fname.isEmpty())
     fp = fopen(fname, "w");
+#endif
 
   int i, j;
 
@@ -86,8 +89,11 @@ void dumpTriStats(const LString &fname, const Mesh &cgm, const MapBsplIpol &ip)
 void dumpEdgeStats(const LString &fname, const Mesh &cgm, const MapBsplIpol &ip)
 {
   FILE *fp = NULL;
+
+#ifdef MB_DEBUG
   if (!fname.isEmpty())
     fp = fopen(fname, "w");
+#endif
 
   int i, j;
 
@@ -962,12 +968,17 @@ void ParticleRefine::showMeshCurvCol(DisplayContext *pdl, const Mesh &cgm)
 
 void ParticleRefine::dumpRefineLog(const LString &fname)
 {
-  FILE *fp = fopen(fname.c_str(), "w");
+#ifdef MB_DEBUG
+  FILE *fp = NULL;
+  
+  fp = fopen(fname.c_str(), "w");
+  
   if (fp==NULL) return;
   for (const RefineLog &ent : m_refilog)
-    {
-      fprintf(fp, "niter %d eng %f movmax %f\n", ent.niter, ent.eng, ent.mov_max);
-    }
+  {
+    fprintf(fp, "niter %d eng %f movmax %f\n", ent.niter, ent.eng, ent.mov_max);
+  }
   fclose(fp);
+#endif
 }
 
