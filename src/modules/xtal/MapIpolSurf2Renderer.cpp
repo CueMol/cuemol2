@@ -721,7 +721,7 @@ void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
 
     conmap[int(vd)] = i;
     std::deque<vid_t> trav;
-    markAroundVert(cgm, vd, i, conmap, trav);
+    trav.push_back(vd);
     while (!trav.empty()) {
       vid_t vd2 = trav.front();
       trav.pop_front();
@@ -730,14 +730,35 @@ void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
 
     ++i;
   }
-  LOG_DPRINTLN("ConMap> segmented to %d regions", i);
+  LOG_DPRINTLN("ConMap> Surf was segmented to %d regions", i);
 
   //pdl->startLines();
 
   std::unordered_set<int> inc_rgn;
+  std::unordered_map<int,int> aidmap;
+  Vector4D pos;
+
+  for (vid_t vd : cgm.vertices()){
+    pt = convToV3F( cgm.point(vd) );
+
+    pos = m_pCMap->convToOrth(Vector4D(pt));
+    int aid = amap.searchNearestAtom(pos);
+    molstr::MolAtomPtr pa = pMol->getAtom(aid);
+
+    if (pa.isnull()) {
+      aidmap.insert(std::pair<int,int>(int(vd), -1));
+    }
+    else {
+      aidmap.insert(std::pair<int,int>(int(vd), aid));
+      if ( (pos - pa->getPos()).length()<m_dBndryRng2 )
+        inc_rgn.insert( conmap[int(vd)] );
+    }
+  }
+
+  LOG_DPRINTLN("ConMap> display %d regions.", inc_rgn.size());
+
   std::unordered_map<int,int> vidmap;
   i=0;
-  Vector4D pos;
   gfx::ColorPtr pCol;
   for (vid_t vd : cgm.vertices()){
     pt = convToV3F( cgm.point(vd) );
@@ -745,19 +766,25 @@ void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
     //pdl->vertex(pt);
     //pdl->vertex(pt+norm.scale(0.5));
 
-    pos = m_pCMap->convToOrth(Vector4D(pt));
-    int aid = amap.searchNearestAtom(pos);
-    molstr::MolAtomPtr pa = pMol->getAtom(aid);
+    int aid = aidmap[int(vd)];
+    if (aid<0)
+      continue;
+    
+    if (inc_rgn.find(conmap[int(vd)])==inc_rgn.end())
+      continue;
 
-    if (!pa.isnull() && pSel->isSelected(pa)) {
-      pCol = molstr::ColSchmHolder::getColor(pa);
-      if (!pCol.isnull())
-        mesh.color(pCol);
-      
-      if ((pos - pa->getPos()).length()<1.0 ) {
-        inc_rgn.insert( conmap[int(vd)] );
-      }
-    }
+    molstr::MolAtomPtr pa = pMol->getAtom(aid);
+    if (pa.isnull())
+      continue;
+
+    if (!pSel->isSelected(pa))
+      continue;
+
+    pCol = molstr::ColSchmHolder::getColor(pa);
+    if (!pCol.isnull())
+      mesh.color(pCol);
+    else
+      mesh.color(xtal::Map3Renderer::getColor());
 
     //int imark = conmap[int(vd)];
     //mesh.color(gfx::SolidColor::createHSB(float(imark)*0.1, 1, 1));
@@ -786,8 +813,8 @@ void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
       if (iter==vidmap.end())
         break;
 
-      if (inc_rgn.find(conmap[int(vd)])==inc_rgn.end())
-        break;
+      //if (inc_rgn.find(conmap[int(vd)])==inc_rgn.end())
+      //break;
 
       vid[j] = iter->second;
 
