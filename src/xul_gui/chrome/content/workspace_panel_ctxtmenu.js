@@ -187,7 +187,7 @@ ws.checkColoring = function ()
     return null;
 
   if (!('coloring' in target)) {
-    dd("WS.coloringMol> Error, coloring not supported in rend, "+elem.obj_id);
+    //dd("WS.coloringMol> Error, coloring not supported in rend, "+elem.obj_id);
     return null;
   }
 

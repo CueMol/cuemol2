@@ -153,7 +153,7 @@ void PovDisplayContext::writeEdgeLineImpl(PrintStream &ips, int xa1, int xa2,
   const double rise = w/2.0;
   LString secname = getSecName();
 
-  //if (xa1==255 && xa2==255) {
+  if (xa1==255 && xa2==255) {
     // solid lines
     ips.format("edge_line(");
     ips.format("<%f, %f, %f>, ", x1.x(), x1.y(), x1.z());
@@ -164,10 +164,11 @@ void PovDisplayContext::writeEdgeLineImpl(PrintStream &ips, int xa1, int xa2,
     ips.format("%f*%s_sl_scl, ", w, secname.c_str());
     ips.format("%s_sl_tex, <%f,%f,%f>)\n",secname.c_str(), r, g, b);
 
-/*
   }
   else {
-    // semi-transparent lines
+    // Modified 180601 (commeted in the existing code)
+    // Make the edge-lines semitransparent, when the vertex is also semitransparent.
+    // This enables (seg-end) fading out of the tubes with edge lines
     ips.format("edge_line2(<%f, %f, %f>, <%f,%f,%f>, %f, <%f, %f, %f>, <%f,%f,%f>, %f, %s_sl_rise*%f,",
                x1.x(), x1.y(), x1.z(),
                n1.x(), n1.y(), n1.z(),
@@ -178,7 +179,7 @@ void PovDisplayContext::writeEdgeLineImpl(PrintStream &ips, int xa1, int xa2,
                secname.c_str(), rise);
     ips.format("%f*%s_sl_scl, ", w, secname.c_str());
     ips.format("%s_sl_tex, <%f,%f,%f>)\n",secname.c_str(), r, g, b);
-  }*/
+  }
 }
 
 void PovDisplayContext::writePointImpl(PrintStream &ips,
@@ -197,22 +198,26 @@ void PovDisplayContext::writePointImpl(PrintStream &ips,
   const double rise = w/2.0;
   LString secname = getSecName();
 
-  ips.format("sphere{<%f, %f, %f> + %s_sl_rise*%f*<%f,%f,%f>, ",
-             v1.x(), v1.y(), v1.z(),
-             secname.c_str(), rise,
-             n1.x(), n1.y(), n1.z());
-  ips.format("%f*%s_sl_scl ", w, secname.c_str());
+  if (alpha==255) {
+    ips.format("sphere{<%f, %f, %f> + %s_sl_rise*%f*<%f,%f,%f>, ",
+               v1.x(), v1.y(), v1.z(),
+               secname.c_str(), rise,
+               n1.x(), n1.y(), n1.z());
+    ips.format("%f*%s_sl_scl ", w, secname.c_str());
 
-  //if (alpha==255) {
     ips.format("texture { %s_sl_tex pigment { color rgb <%f,%f,%f> }}\n",
                secname.c_str(), r, g, b);
-/*}
+    ips.format("}\n");
+  }
   else {
-    ips.format("texture { %s_sl_tex pigment { color rgbt <%f,%f,%f,%f> }}\n",
-               secname.c_str(), r, g, b, (1.0-alpha/255.0));
-  }*/
+    // Modified 180601
+    // Do not write junction dots when the edge lines are semitransparent,
+    // to avoid overlapping spheres and cyls, which makes the edge lines spotty.
+
+//    ips.format("texture { %s_sl_tex pigment { color rgbt <%f,%f,%f,%f> }}\n",
+//               secname.c_str(), r, g, b, (1.0-alpha/255.0));
+  }
   
-  ips.format("}\n");
 }
 
 
