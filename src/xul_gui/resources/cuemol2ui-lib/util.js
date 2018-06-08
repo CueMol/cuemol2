@@ -668,7 +668,26 @@ exports.getHTMLColor = function ( aCol )
 }
 
 ////////////////////////////////////////////////
-// selection
+// selection/history
+
+exports.chkboxLoad = function (aDoc, aID, aPrefix)
+{
+  const pref = require("preferences-service");
+  let elem = aDoc.getElementById(aID);
+  let hisnm = aPrefix + "."+aID;
+
+  if (pref.has(hisnm))
+    elem.checked = pref.get(hisnm);
+};
+
+exports.chkboxSave = function (aDoc, aID, aPrefix)
+{
+  const pref = require("preferences-service");
+  let elem = aDoc.getElementById(aID);
+  let hisnm = aPrefix + "."+aID;
+
+  pref.set(hisnm, elem.checked);
+};
 
 var _storage = require("simple-storage");
 

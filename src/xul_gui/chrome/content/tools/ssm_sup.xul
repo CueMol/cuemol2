@@ -81,9 +81,9 @@
     </grid>
   </groupbox>
 
-  <checkbox id="auto_recenter" label="Auto recenter" checked="true" persist="checked"/>
-  <checkbox id="rmsd_file" label="Write RMSD info file" checked="false" persist="checked"/>
-  <checkbox id="xform_by_prop" label="Use xformMat property" checked="false" persist="checked"/>
+  <checkbox id="auto_recenter" label="Auto recenter" checked="true"/>
+  <checkbox id="rmsd_file" label="Write RMSD info file" checked="false"/>
+  <checkbox id="xform_by_prop" label="Use xformMat property" checked="false"/>
 
 </vbox>
 </dialog>

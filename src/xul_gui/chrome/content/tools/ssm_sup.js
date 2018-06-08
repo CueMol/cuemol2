@@ -128,6 +128,11 @@ dlg.onLoad = function ()
   if (pref.has(histry_name+"_refmol_sel"))
     this.mRefSelBox.origSel = pref.get(histry_name+"_refmol_sel");
 
+  // history: checkboxes
+  util.chkboxLoad(document, "auto_recenter", histry_name);
+  util.chkboxLoad(document, "rmsd_file", histry_name);
+  util.chkboxLoad(document, "xform_by_prop", histry_name);
+
   this.mRefSelBox.buildBox();
   this.mMovSelBox.buildBox();
 
@@ -222,6 +227,11 @@ dlg.onDialogAccept = function (event)
   pref.set(histry_name+"_refmol_sel", refSel.toString());
   pref.set(histry_name+"_movmol_sel", movSel.toString());
 
+  // History: chexboxes
+  util.chkboxSave(document, "auto_recenter", histry_name);
+  util.chkboxSave(document, "rmsd_file", histry_name);
+  util.chkboxSave(document, "xform_by_prop", histry_name);
+
   // Save selection history
   util.selHistory.append(refSel.toString());
   util.selHistory.append(movSel.toString());
@@ -229,7 +239,7 @@ dlg.onDialogAccept = function (event)
   if (recenter) {
     var view = cuemol.getView(this.mTargetViewID);
     if (view) {
-      movMol.fitView2(movSel, view);
+      movMol.fitView2(view, movSel);
     }
   }
 
