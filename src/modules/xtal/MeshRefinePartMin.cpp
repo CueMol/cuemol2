@@ -13,239 +13,310 @@ using qlib::Matrix4D;
 using qlib::Matrix3D;
 
 namespace xtal {
-void dumpTriStats(const LString &fname, const Mesh &cgm, const MapBsplIpol &ip)
-{
-  FILE *fp = NULL;
+
+  void dumpTriStats(const LString &fname, const Mesh &cgm, const MapBsplIpol &ip)
+  {
+    FILE *fp = NULL;
 
 #ifdef MB_DEBUG
-  if (!fname.isEmpty())
-    fp = fopen(fname, "w");
+    if (!fname.isEmpty())
+      fp = fopen(fname, "w");
 #endif
 
-  int i, j;
+    int i, j;
 
-  //vid_t vid[3];
-  Vector3F v[3], g[3], vn;
-  float minang, maxang, rr, ns;
+    //vid_t vid[3];
+    Vector3F v[3], g[3], vn;
+    float minang, maxang, rr, ns;
 
-  double rr_sum = 0.0f;
-  double rr_sqsum = 0.0f;
+    double rr_sum = 0.0f;
+    double rr_sqsum = 0.0f;
 
-  double ns_sum = 0.0f;
-  double ns_sqsum = 0.0f;
+    double ns_sum = 0.0f;
+    double ns_sqsum = 0.0f;
 
-  int nbadns = 0;
+    int nbadns = 0;
+    int nnan = 0;
 
-  i=0;
-  for(fid_t fd : cgm.faces()){
+    i=0;
+    for(fid_t fd : cgm.faces()){
 
-    j=0;
-    BOOST_FOREACH(vid_t vd,vertices_around_face(cgm.halfedge(fd), cgm)){
-      MB_ASSERT(j<3);
-      v[j] = convToV3F( cgm.point(vd) );
-      g[j] = -(ip.calcDiffAt(v[j])).normalize();
-      ++j;
+      j=0;
+      BOOST_FOREACH(vid_t vd,vertices_around_face(cgm.halfedge(fd), cgm)){
+        MB_ASSERT(j<3);
+        v[j] = convToV3F( cgm.point(vd) );
+        g[j] = -(ip.calcDiffAt(v[j])).normalize();
+        ++j;
+
+        if (Vector3F_isNaN(v[j]) && fp) {
+          MB_DPRINTLN("# face %d vert %d (%d) pos contains NaN", int(fd), int(vd), j);
+          //fprintf(fp, "# face %d vert %d (%d) pos contains NaN\n", int(fd), int(vd), j);
+        }
+        if (Vector3F_isNaN(g[j]) && fp) {
+          MB_DPRINTLN("# face %d vert %d (%d) grad contains NaN", int(fd), int(vd), j);
+          //fprintf(fp, "# face %d vert %d (%d) grad contains NaN", int(fd), int(vd), j);
+        }
+      }
+      MB_ASSERT(j==3);
+
+      minang = minangl(v[0], v[1], v[2]);
+      maxang = minangl(v[0], v[1], v[2], true);
+      rr = radratio(v[0], v[1], v[2]);
+      vn = calcNorm(v[0], v[1], v[2]).normalize();
+      ns = (vn.dot(g[0]) + vn.dot(g[1]) + vn.dot(g[2]))/3.0f;
+
+      if (fp)
+        fprintf(fp, "Tri %d min %f max %f rr %f ns %f\n",
+                i, qlib::toDegree(minang), qlib::toDegree(maxang), rr, ns);
+
+      if (std::isnan(rr) || std::isnan(ns)) {
+        ++nnan;
+        continue;
+      }
+
+      rr_sum += rr;
+      rr_sqsum += rr*rr;
+
+      ns_sum += ns;
+      ns_sqsum += ns*ns;
+
+      if (ns<0.5)
+        ++nbadns;
+
+      ++i;
     }
-    MB_ASSERT(j==3);
 
-    minang = minangl(v[0], v[1], v[2]);
-    maxang = minangl(v[0], v[1], v[2], true);
-    rr = radratio(v[0], v[1], v[2]);
-    vn = calcNorm(v[0], v[1], v[2]).normalize();
-    ns = (vn.dot(g[0]) + vn.dot(g[1]) + vn.dot(g[2]))/3.0f;
+    rr_sum /= double(i);
+    rr_sqsum /= double(i);
+    ns_sum /= double(i);
+    ns_sqsum /= double(i);
+
+    LOG_DPRINTLN("Face stat> av(RR): %f sig(RR): %f av(ns): %f sig(ns): %f badns: %d nan: %d",
+                 rr_sum,
+                 sqrt(rr_sqsum - rr_sum*rr_sum),
+                 ns_sum,
+                 sqrt(ns_sqsum - ns_sum*ns_sum),
+                 nbadns, nnan);
 
     if (fp)
-      fprintf(fp, "Tri %d min %f max %f rr %f ns %f\n",
-              i, qlib::toDegree(minang), qlib::toDegree(maxang), rr, ns);
-
-    rr_sum += rr;
-    rr_sqsum += rr*rr;
-
-    ns_sum += ns;
-    ns_sqsum += ns*ns;
-
-    if (ns<0.5)
-      ++nbadns;
-
-    ++i;
+      fclose(fp);
   }
 
-  rr_sum /= double(i);
-  rr_sqsum /= double(i);
-  ns_sum /= double(i);
-  ns_sqsum /= double(i);
-
-  LOG_DPRINTLN("Face stat> av(RR): %f sig(RR): %f av(ns): %f sig(ns): %f badns: %d",
-               rr_sum,
-               sqrt(rr_sqsum - rr_sum*rr_sum),
-               ns_sum,
-               sqrt(ns_sqsum - ns_sum*ns_sum),
-               nbadns);
-
-  if (fp)
-    fclose(fp);
-}
-
-void dumpEdgeStats(const LString &fname, const Mesh &cgm, const MapBsplIpol &ip)
-{
-  FILE *fp = NULL;
+  void dumpEdgeStats(const LString &fname, const Mesh &cgm, const MapBsplIpol &ip)
+  {
+    FILE *fp = NULL;
 
 #ifdef MB_DEBUG
-  if (!fname.isEmpty())
-    fp = fopen(fname, "w");
+    if (!fname.isEmpty())
+      fp = fopen(fname, "w");
 #endif
 
-  int i, j;
+    int i, j;
 
-  Vector3F v0, v1, vm;
-  float angl;
+    Vector3F v0, v1, vm;
+    float angl;
 
-  double nld_sum = 0.0f;
-  double nld_sqsum = 0.0f;
+    double nld_sum = 0.0f;
+    double nld_sqsum = 0.0f;
 
-  i=0;
-  for(Mesh::Edge_index ei : cgm.edges()){
-    Mesh::Halfedge_index h0 = cgm.halfedge(ei, 0);
-    vid_t vid0 = cgm.target(h0);
-    Mesh::Halfedge_index h1 = cgm.halfedge(ei, 1);
-    vid_t vid1 = cgm.target(h1);
+    i=0;
+    for(Mesh::Edge_index ei : cgm.edges()){
+      hid_t h0 = cgm.halfedge(ei, 0);
+      vid_t vid0 = cgm.target(h0);
+      hid_t h1 = cgm.halfedge(ei, 1);
+      vid_t vid1 = cgm.target(h1);
 
-    v0 = convToV3F(cgm.point( vid0 ));
-    v1 = convToV3F(cgm.point( vid1 ));
+      v0 = convToV3F(cgm.point( vid0 ));
+      v1 = convToV3F(cgm.point( vid1 ));
 
-    vm = (v0+v1).scale(0.5);
+      vm = (v0+v1).scale(0.5);
 
-    Vector3F g0 = ( ip.calcDiffAt(v0) ).normalize();
-    Vector3F g1 = ( ip.calcDiffAt(v1) ).normalize();
-    angl = acos(g0.dot(g1));
+      Vector3F g0 = ( ip.calcDiffAt(v0) ).normalize();
+      Vector3F g1 = ( ip.calcDiffAt(v1) ).normalize();
+      angl = acos(g0.dot(g1));
 
-    float len = (v0-v1).length();
-    float il = ip.calcIdealL(vm);
-    float nld = (len-il)/il;
+      float len = (v0-v1).length();
+      float il = ip.calcIdealL(vm);
+      float nld = (len-il)/il;
+
+      if (fp)
+        fprintf(fp, "Edge %d len %f diffcuv %f cuv %f ideal_len %f norm_lendev %f\n",
+                i, len, qlib::toDegree(angl),
+                ip.calcMaxCurv(vm), il, nld);
+
+      nld_sum += nld;
+      nld_sqsum += nld*nld;
+      ++i;
+    }
+    nld_sum /= double(i);
+    nld_sqsum /= double(i);
 
     if (fp)
-      fprintf(fp, "Edge %d len %f diffcuv %f cuv %f ideal_len %f norm_lendev %f\n",
-              i, len, qlib::toDegree(angl),
-              ip.calcMaxCurv(vm), il, nld);
-    
-    nld_sum += nld;
-    nld_sqsum += nld*nld;
-    ++i;
+      fclose(fp);
+
+    LOG_DPRINTLN("Edge stat> av(NLD): %f sig(NLD): %f", nld_sum, sqrt(nld_sqsum - nld_sum*nld_sum));
   }
-  nld_sum /= double(i);
-  nld_sqsum /= double(i);
 
-  if (fp)
-    fclose(fp);
+  void drawMeshLines(DisplayContext *pdl, const Mesh &cgm, float r, float g, float b)
+  {
+    pdl->setLineWidth(2.0);
+    pdl->setLighting(false);
+    pdl->startLines();
+    pdl->color(r,g,b);
 
-  LOG_DPRINTLN("Edge stat> av(NLD): %f sig(NLD): %f", nld_sum, sqrt(nld_sqsum - nld_sum*nld_sum));
-}
+    for(Mesh::Edge_index ei : cgm.edges()){
+      hid_t h0 = cgm.halfedge(ei, 0);
+      Vector3F v00 = convToV3F( cgm.point( cgm.target(h0) ) );
 
-void drawMeshLines(DisplayContext *pdl, const Mesh &cgm, float r, float g, float b)
-{
-  pdl->setLineWidth(2.0);
-  pdl->setLighting(false);
-  pdl->startLines();
-  pdl->color(r,g,b);
+      hid_t h1 = cgm.halfedge(ei, 1);
+      Vector3F v10 = convToV3F( cgm.point( cgm.target(h1) ) );
 
-  for(Mesh::Edge_index ei : cgm.edges()){
-    Mesh::Halfedge_index h0 = cgm.halfedge(ei, 0);
-    Vector3F v00 = convToV3F( cgm.point( cgm.target(h0) ) );
-
-    Mesh::Halfedge_index h1 = cgm.halfedge(ei, 1);
-    Vector3F v10 = convToV3F( cgm.point( cgm.target(h1) ) );
-
-    pdl->vertex(v00);
-    pdl->vertex(v10);
-  }
-  pdl->end();
-  pdl->setLighting(true);
-}
-
-void drawMeshLines2(DisplayContext *pdl, const Mesh &cgm, const MapBsplIpol &ip)
-{
-  pdl->setLineWidth(2.0);
-  pdl->setLighting(false);
-  pdl->startLines();
-
-  for(Mesh::Edge_index ei : cgm.edges()){
-    Mesh::Halfedge_index h0 = cgm.halfedge(ei, 0);
-    Vector3F v00 = convToV3F( cgm.point( cgm.target(h0) ) );
-
-    Mesh::Halfedge_index h1 = cgm.halfedge(ei, 1);
-    Vector3F v10 = convToV3F( cgm.point( cgm.target(h1) ) );
-
-    float c0 = ip.calcDiffAt(v00).length();
-    float c1 = ip.calcDiffAt(v10).length();
-
-    pdl->color(gfx::SolidColor::createHSB(c0, 1, 1));
-    pdl->vertex(v00);
-
-    pdl->color(gfx::SolidColor::createHSB(c1, 1, 1));
-    pdl->vertex(v10);
-  }
-  pdl->end();
-  pdl->setLighting(true);
-}
-
-void drawMeshBorderLines(DisplayContext *pdl, const Mesh &cgm, float r, float g, float b)
-{
-  pdl->color(gfx::SolidColor::createRGB(r,g,b));
-  pdl->setLineWidth(2.0);
-  pdl->startLines();
-  for(Mesh::Edge_index ei : cgm.edges()){
-    if (cgm.is_border(ei)) {
-      pdl->vertex(convToV3F(cgm.point(cgm.vertex(ei, 0))));
-      pdl->vertex(convToV3F(cgm.point(cgm.vertex(ei, 1))));
+      pdl->vertex(v00);
+      pdl->vertex(v10);
     }
+    pdl->end();
+    pdl->setLighting(true);
   }
-  pdl->end();
 
-}
+  void drawMeshLines2(DisplayContext *pdl, const Mesh &cgm, const MapBsplIpol &ip)
+  {
+    pdl->setLineWidth(2.0);
+    pdl->setLighting(false);
+    pdl->startLines();
 
-void checkMeshNorm1(DisplayContext *pdl, const Mesh &cgm, const MapBsplIpol &ip)
-{
-  pdl->color(1,0,0);
-  pdl->setLineWidth(4.0);
-  pdl->startLines();
+    for(Mesh::Edge_index ei : cgm.edges()){
+      hid_t h0 = cgm.halfedge(ei, 0);
+      Vector3F v00 = convToV3F( cgm.point( cgm.target(h0) ) );
 
-  int i, j;
-  Vector3F v[3], g[3], vn;
-  float minang, maxang, rr, ns;
+      hid_t h1 = cgm.halfedge(ei, 1);
+      Vector3F v10 = convToV3F( cgm.point( cgm.target(h1) ) );
 
-  i=0;
-  for(fid_t fd : cgm.faces()){
+      float c0 = ip.calcDiffAt(v00).length();
+      float c1 = ip.calcDiffAt(v10).length();
 
-    j=0;
-    BOOST_FOREACH(vid_t vd,vertices_around_face(cgm.halfedge(fd), cgm)){
-      MB_ASSERT(j<3);
-      v[j] = convToV3F( cgm.point(vd) );
-      g[j] = -(ip.calcDiffAt(v[j])).normalize();
-      ++j;
+      pdl->color(gfx::SolidColor::createHSB(c0, 1, 1));
+      pdl->vertex(v00);
+
+      pdl->color(gfx::SolidColor::createHSB(c1, 1, 1));
+      pdl->vertex(v10);
     }
-    MB_ASSERT(j==3);
-
-    //minang = minangl(v[0], v[1], v[2]);
-    //maxang = minangl(v[0], v[1], v[2], true);
-    //rr = radratio(v[0], v[1], v[2]);
-
-    vn = ::calcNorm(v[0], v[1], v[2]).normalize();
-    ns = (vn.dot(g[0]) + vn.dot(g[1]) + vn.dot(g[2]))/3.0f;
-
-    if (ns<0.5) {
-      pdl->vertex(v[0]);
-      pdl->vertex(v[1]);
-
-      pdl->vertex(v[1]);
-      pdl->vertex(v[2]);
-
-      pdl->vertex(v[2]);
-      pdl->vertex(v[0]);
-    }
-    ++i;
+    pdl->end();
+    pdl->setLighting(true);
   }
-  pdl->end();
-}
+
+  void drawMeshBorderLines(DisplayContext *pdl, const Mesh &cgm, float r, float g, float b)
+  {
+    pdl->color(gfx::SolidColor::createRGB(r,g,b));
+    pdl->setLineWidth(2.0);
+    pdl->startLines();
+    for(Mesh::Edge_index ei : cgm.edges()){
+      if (cgm.is_border(ei)) {
+        pdl->vertex(convToV3F(cgm.point(cgm.vertex(ei, 0))));
+        pdl->vertex(convToV3F(cgm.point(cgm.vertex(ei, 1))));
+      }
+    }
+    pdl->end();
+
+  }
+
+  void checkMeshNorm1(DisplayContext *pdl, const Mesh &cgm, const MapBsplIpol &ip)
+  {
+    pdl->color(1,0,0);
+    pdl->setLineWidth(4.0);
+    pdl->startLines();
+
+    int i, j;
+    Vector3F v[3], g[3], vn;
+    float minang, maxang, rr, ns;
+
+    i=0;
+    for(fid_t fd : cgm.faces()){
+
+      j=0;
+      BOOST_FOREACH(vid_t vd,vertices_around_face(cgm.halfedge(fd), cgm)){
+        MB_ASSERT(j<3);
+        v[j] = convToV3F( cgm.point(vd) );
+        g[j] = -(ip.calcDiffAt(v[j])).normalize();
+        ++j;
+      }
+      MB_ASSERT(j==3);
+
+      //minang = minangl(v[0], v[1], v[2]);
+      //maxang = minangl(v[0], v[1], v[2], true);
+      //rr = radratio(v[0], v[1], v[2]);
+
+      vn = ::calcNorm(v[0], v[1], v[2]).normalize();
+      ns = (vn.dot(g[0]) + vn.dot(g[1]) + vn.dot(g[2]))/3.0f;
+
+      if (ns<0.5) {
+        pdl->vertex(v[0]);
+        pdl->vertex(v[1]);
+
+        pdl->vertex(v[1]);
+        pdl->vertex(v[2]);
+
+        pdl->vertex(v[2]);
+        pdl->vertex(v[0]);
+      }
+      ++i;
+    }
+    pdl->end();
+  }
+
+  void removeBadNSFaces(Mesh &cgm, const MapBsplIpol &ip, float ns_thr)
+  {
+    int i, j;
+
+    //vid_t vid[3];
+    Vector3F v[3], g[3], vn;
+    float minang, maxang, rr, ns;
+
+    int nbadns = 0;
+
+    //typedef boost::graph_traits<Mesh>::face_descriptor face_descriptor;
+
+    std::deque<fid_t> remv_fcs;
+
+    i=0;
+    for(fid_t fd : cgm.faces()){
+
+      j=0;
+      BOOST_FOREACH(vid_t vd,vertices_around_face(cgm.halfedge(fd), cgm)){
+        MB_ASSERT(j<3);
+        v[j] = convToV3F( cgm.point(vd) );
+        g[j] = -(ip.calcDiffAt(v[j])).normalize();
+        ++j;
+      }
+      MB_ASSERT(j==3);
+
+      vn = calcNorm(v[0], v[1], v[2]).normalize();
+      ns = (vn.dot(g[0]) + vn.dot(g[1]) + vn.dot(g[2]))/3.0f;
+
+      if (ns<ns_thr) {
+        remv_fcs.push_back(fd);
+
+        /*BOOST_FOREACH(hid_t hid, halfedges_around_face(cgm.halfedge(fd), cgm)){
+          remv_hes.push_back(hid);
+        }*/
+
+        ++nbadns;
+      }
+      
+      ++i;
+    }
+
+    LOG_DPRINTLN("Face> remove badNS: %d", nbadns);
+
+    LOG_DPRINTLN("Face> faces: %d", cgm.number_of_faces());
+    for (fid_t fd: remv_fcs) {
+      //cgm.remove_face(fd);
+      hid_t hd = cgm.halfedge(fd);
+      CGAL::Euler::remove_face(hd, cgm);
+    }
+
+    LOG_DPRINTLN("Face> faces: %d", cgm.number_of_faces());
+
+  }
 
 }
 
@@ -437,6 +508,9 @@ float ParticleRefine::calcFdF(std::vector<float> &pres)
     len = sqrt(dx*dx + dy*dy + dz*dz);
     ss = len - m_bonds[i].r0;
 
+    // // ignore too-long bonds
+    // if (ss>m_bonds[i].r0) continue;
+
     locscl = m_bondscl;// * m_bonds[i].kf;
 
     if (m_nBondType==BOND_SHRINK) {
@@ -622,9 +696,9 @@ void ParticleRefine::refineSetup(MapBsplIpol *pipol, Mesh &cgm)
 
   i=0;
   for(Mesh::Edge_index ei : cgm.edges()){
-    Mesh::Halfedge_index h0 = cgm.halfedge(ei, 0);
+    hid_t h0 = cgm.halfedge(ei, 0);
     vid_t vid0 = cgm.target(h0);
-    Mesh::Halfedge_index h1 = cgm.halfedge(ei, 1);
+    hid_t h1 = cgm.halfedge(ei, 1);
     vid_t vid1 = cgm.target(h1);
 
     setBond(i, int(vid0), int(vid1), edge_len * 1.0);

@@ -30,7 +30,16 @@ namespace xtal {
   typedef CGAL::Surface_mesh<K::Point_3> Mesh;
   typedef Mesh::Vertex_index vid_t;
   typedef Mesh::Face_index fid_t;
+  typedef Mesh::Halfedge_index hid_t;
   namespace PMP = CGAL::Polygon_mesh_processing;
+
+  inline bool Vector3F_isNaN(const Vector3F &vec)
+  {
+    return (std::isnan(vec.x()) ||
+            std::isnan(vec.y()) ||
+            std::isnan(vec.z()));
+  }
+
 
   inline Vector3F convToV3F(const K::Point_3 &src) {
     return Vector3F(src.x(), src.y(), src.z());
@@ -98,6 +107,8 @@ namespace xtal {
   void drawMeshLines2(DisplayContext *pdl, const Mesh &cgm, const MapBsplIpol &ip);
 
   void checkMeshNorm1(DisplayContext *pdl, const Mesh &cgm, const MapBsplIpol &ip);
+
+  void removeBadNSFaces(Mesh &cgm, const MapBsplIpol &ip, float ns_thr);
 
   class FindProjSurf
   {
