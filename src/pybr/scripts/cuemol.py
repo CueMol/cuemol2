@@ -44,22 +44,31 @@ def iscol(aObj):
 ##########
 
 def scene(aScene=None):
-    print("***\n")
+#    print("***\n")
     if isscene(aScene):
         return aScene
 
-    print("*** aScene="+str(aScene)+"\n")
+#    print("*** aScene="+str(aScene)+"\n")
     sceMgr = ci.getService("SceneManager")
     scid=None
     if aScene==None:
         scid = sceMgr.activeSceneID
+        if scid==0:
+            raise RuntimeError("Active scene ID is not defined!!")
     elif isinstance(aScene, int):
         scid = aScene
     else:
         raise RuntimeError("scene "+str(aScene)+" not found")
 
-    print("*** scid="+str(scid)+"\n")
+#    print("*** scid="+str(scid)+"\n")
     return sceMgr.getScene(scid)
+
+def createScene():
+    sceMgr = ci.getService("SceneManager")
+    scene = sceMgr.createScene();
+    # set created scene as the active scene
+    sceMgr.setActiveSceneID(scene.uid)
+    return scene
 
 def svc(name):
     return ci.getService(name)
