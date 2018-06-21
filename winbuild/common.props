@@ -34,8 +34,8 @@
 
   <!-- Python config -->
   <PropertyGroup Label="UserMacros" Condition="'$(Platform)'=='x64'">
-    <HavePython>No</HavePython>
-    <PythonDir>$(BuildSetDir)\Python34-64\</PythonDir>
+    <HavePython>Yes</HavePython>
+    <PythonDir>$(BuildSetDir)\Python-3.6.1\</PythonDir>
   </PropertyGroup>
 
   <!-- Boost config -->

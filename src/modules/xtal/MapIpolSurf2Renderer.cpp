@@ -237,6 +237,15 @@ Vector3F MapIpolSurf2Renderer::calcNorm(const Vector3F &v) const
   return -rval;
 }
 
+namespace {
+  vid_t Mesh_addVert(const Vector3F &vs, Mesh &cgm) {
+    if (Vector3F_isNaN(vs)) {
+      return vid_t(-1);
+    }
+    return cgm.add_vertex(K::Point_3(vs.x(), vs.y(), vs.z()));
+  }
+}
+
 void MapIpolSurf2Renderer::marchCube(void *pMesh)
 {
   const int ncol = m_dspSize.x(); //m_nActCol;
@@ -316,7 +325,7 @@ void MapIpolSurf2Renderer::marchCube(void *pMesh)
           else {
             xsol.linIpol(val0, Vector3F(ix, iy, iz), val1, Vector3F(ix+1, iy, iz), vs);
           }
-          vid = cgm.add_vertex(K::Point_3(vs.x(), vs.y(), vs.z()));
+          vid = Mesh_addVert(vs, cgm);
           xvertids.at(i,j,k).id[0] = vid;
         }
         
@@ -336,7 +345,7 @@ void MapIpolSurf2Renderer::marchCube(void *pMesh)
           else {
             xsol.linIpol(val0, Vector3F(ix, iy, iz), val1, Vector3F(ix, iy+1, iz), vs);
           }
-          vid = cgm.add_vertex(K::Point_3(vs.x(), vs.y(), vs.z()));
+          vid = Mesh_addVert(vs, cgm);
           xvertids.at(i,j,k).id[1] = vid;
         }
 
@@ -355,7 +364,7 @@ void MapIpolSurf2Renderer::marchCube(void *pMesh)
           else {
             xsol.linIpol(val0, Vector3F(ix, iy, iz), val1, Vector3F(ix, iy, iz+1), vs);
           }
-          vid = cgm.add_vertex(K::Point_3(vs.x(), vs.y(), vs.z()));
+          vid = Mesh_addVert(vs, cgm);
           xvertids.at(i,j,k).id[2] = vid;
         }
 
@@ -442,17 +451,23 @@ void MapIpolSurf2Renderer::buildMeshData(DisplayContext *pdl)
   pMesh = MB_NEW Mesh;
   m_pMesh = pMesh;
 
+  Mesh &cgm = *pMesh;
+
   /////////////////////
   // Do marching cubes
 
-  marchCube(pMesh);
+  marchCube(&cgm);
+
+  dumpTriStats("mc.txt", cgm, m_ipol);
+  dumpEdgeStats("edge_mc.txt", cgm, m_ipol);
 
   if (m_nMeshMode==MISR_MC)
     return;
 
   /////////////////////
 
-  Mesh &cgm = *pMesh;
+  int nv = cgm.number_of_vertices();
+  int nf = cgm.number_of_faces();
 
   int i,j,k;
 
@@ -468,12 +483,6 @@ void MapIpolSurf2Renderer::buildMeshData(DisplayContext *pdl)
   
   //drawMeshLines(pdl, cgm, 1,0,0);
 
-  int nv = cgm.number_of_vertices();
-  int nf = cgm.number_of_faces();
-
-  dumpTriStats("mc.txt", cgm, m_ipol);
-  dumpEdgeStats("edge_mc.txt", cgm, m_ipol);
-
   int nIsoRefi = 5;
   if (m_nMeshMode==MISR_ADAMESH)
     nIsoRefi = 2;
@@ -481,6 +490,12 @@ void MapIpolSurf2Renderer::buildMeshData(DisplayContext *pdl)
   for (i=0; i<nIsoRefi; ++i) {
     LOG_DPRINTLN("Regular (L=%f) refine step %d", isoL, i);
 
+    {
+      PMP::iso_remesh(&m_ipol, cgm, isoL, 1, 2);
+      nv = cgm.number_of_vertices();
+      nf = cgm.number_of_faces();
+      LOG_DPRINTLN("Remeshing done, nv=%d, nf=%d", nv, nf);
+    }
     {
       ParticleRefine pr;
       pr.m_isolev = m_dLevel;
@@ -508,12 +523,12 @@ void MapIpolSurf2Renderer::buildMeshData(DisplayContext *pdl)
       pr.dumpRefineLog("min1_trace.txt");
     }
 
-    if (i<nIsoRefi-1) {
+    /*if (i<nIsoRefi-1) {
       PMP::iso_remesh(&m_ipol, cgm, isoL, 1, 2);
       nv = cgm.number_of_vertices();
       nf = cgm.number_of_faces();
       LOG_DPRINTLN("Remeshing done, nv=%d, nf=%d", nv, nf);
-    }
+    }*/
 
     dumpTriStats("mcmin1-1.txt", cgm, m_ipol);
     dumpEdgeStats("edge_mcmin1-1.txt", cgm, m_ipol);
@@ -689,6 +704,10 @@ void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
   Vector3F pt, norm;
 
   Mesh &cgm = *(static_cast<Mesh *>(m_pMesh));
+
+  removeBadNSFaces(cgm, m_ipol, 0.3);
+  //checkMeshNorm1(pdl, cgm, m_ipol);
+
   const int nv = cgm.number_of_vertices();
   const int nf = cgm.number_of_faces();
 
@@ -704,10 +723,14 @@ void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
   auto pSel = getBndrySel();
   if (!pMol.isnull()) {
     amap.setTarget(pMol);
+
     //amap.generate(pSel);
     amap.generate();
   }
 
+  //
+  // Segment the map by mesh connectivity
+  //
   std::unordered_map<int,int> conmap;
   i=0;
   for (vid_t vd : cgm.vertices()){
@@ -730,14 +753,17 @@ void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
 
   //pdl->startLines();
 
+  //
+  // Enumerate the regions near the boundary atoms (in bndry_rng2)
+  //
   std::unordered_set<int> inc_rgn;
   std::unordered_map<int,int> aidmap;
   Vector4D pos;
 
   for (vid_t vd : cgm.vertices()){
     pt = convToV3F( cgm.point(vd) );
-
     pos = m_pCMap->convToOrth(Vector4D(pt));
+
     int aid = amap.searchNearestAtom(pos);
     molstr::MolAtomPtr pa = pMol->getAtom(aid);
 
@@ -780,6 +806,11 @@ void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
       continue;
 
     if (!pSel->isSelected(pa))
+      continue;
+
+    // carving by bndry_rng distance criteria
+    pos = m_pCMap->convToOrth(Vector4D(pt));
+    if ((pos - pa->getPos()).length()>m_dBndryRng)
       continue;
 
     pCol = molstr::ColSchmHolder::getColor(pa);
