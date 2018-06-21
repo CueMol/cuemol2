@@ -62,25 +62,31 @@ namespace pybr {
     //LOG_DPRINTLN("Python> PythonHome=%s", Py_EncodeLocale(Py_GetPythonHome(), NULL));
 
     // Append local python script path to sys.path
+    std::list<fs::path> syspath;
+    
     if (szConfPath!=NULL) {
       fs::path confpath(szConfPath);
-      confpath = confpath.parent_path();
+      fs::path confdir = confpath.parent_path();
 #ifdef WIN32
-      confpath /= "scripts";
+      //confpath /= "scripts";
+      syspath.push_back(confdir/"scripts");
+      syspath.push_back((confdir/"scripts")/"python");
 #else
-      confpath /= "python";
+      syspath.push_back(confdir/"python");
 #endif
-      LString strpath = confpath.string();
-      strpath = strpath.escapeQuots();
-      
-      LString src = LString::format(
-        "import sys\n"
-        "sys.path.append('%s')\n",
-        //"print(sys.path)\n",
-        strpath.c_str());
+    }
 
+    if (!syspath.empty()) {
+      LString src("import sys\n");
+
+      for (auto elem: syspath) {
+        LString strpath = elem.string();
+        strpath = strpath.escapeQuots();
+        src += LString::format("sys.path.append('%s')\n", strpath.c_str());
+        LOG_DPRINTLN("Python> local script path=%s added", strpath.c_str());
+      }
+      
       PyRun_SimpleString(src.c_str());
-      LOG_DPRINTLN("Python> local script path=%s added", strpath.c_str());
     }
 
     //bool res = Wrapper::setup();
