@@ -692,6 +692,106 @@ void markAroundVert(Mesh &cgm, vid_t vd, int id, std::unordered_map<int,int> &co
   }*/
 }
 
+/// Mesh rendering without boundary molecule
+void MapIpolSurf2Renderer::renderMeshImpl0(DisplayContext *pdl)
+{
+  int i,j,k,l,ind;
+  int ii, jj, kk;
+
+  const int ncol = m_dspSize.x();
+  const int nrow = m_dspSize.y();
+  const int nsec = m_dspSize.z();
+
+  Vector3F pt, norm;
+
+  Mesh &cgm = *(static_cast<Mesh *>(m_pMesh));
+
+  removeBadNSFaces(cgm, m_ipol, 0.3);
+  //checkMeshNorm1(pdl, cgm, m_ipol);
+
+  const int nv = cgm.number_of_vertices();
+  const int nf = cgm.number_of_faces();
+
+  gfx::Mesh mesh;
+  mesh.init(nv, nf);
+  mesh.color(xtal::Map3Renderer::getColor());
+
+  std::unordered_map<int,int> vidmap;
+  i=0;
+  gfx::ColorPtr pCol;
+  for (vid_t vd : cgm.vertices()){
+    pt = convToV3F( cgm.point(vd) );
+
+    norm = calcNorm(pt);
+    mesh.setVertex(i, pt.x(), pt.y(), pt.z(), norm.x(), norm.y(), norm.z());
+    vidmap.insert(std::pair<int,int>(int(vd), i));
+    ++i;
+  }
+
+  int mesh_nv = i;
+
+  int vid[3];
+  Vector3F v[3];
+  int nOK;
+
+  i=0;
+  for(fid_t fd : cgm.faces()){
+
+    j=0;
+    BOOST_FOREACH(vid_t vd,vertices_around_face(cgm.halfedge(fd), cgm)){
+      MB_ASSERT(j<3);
+      auto iter = vidmap.find(int(vd));
+      if (iter==vidmap.end())
+        break;
+
+
+      vid[j] = iter->second;
+
+      ++j;
+    }
+
+    if (j<3) continue;
+    
+    mesh.setFace(i, vid[0], vid[1], vid[2]);
+    ++i;
+  }
+
+  int mesh_nf = i;
+  mesh.reduce(mesh_nv, mesh_nf);
+
+//pdl->setCullFace(false);
+//pdl->setPolygonMode(gfx::DisplayContext::POLY_LINE);
+  pdl->drawMesh(mesh);
+
+  if (m_nDrawMode==MSRDRAW_FILL_LINE) {
+    pdl->setLineWidth(m_lw);
+    pdl->startLines();
+    pdl->color(getLineColor());
+
+    for(Mesh::Edge_index ei : cgm.edges()){
+
+      for (j=0; j<2; ++j) {
+
+        Mesh::Halfedge_index h0 = cgm.halfedge(ei, j);
+        vid_t vd = cgm.target(h0);
+        
+        if (vidmap.find(int(vd))==vidmap.end())
+          break;
+
+        v[j] = convToV3F( cgm.point( vd ) );
+      }
+      
+      if (j<2) continue;
+
+      pdl->vertex(v[0]);
+      pdl->vertex(v[1]);
+    }
+    pdl->end();
+  }
+}
+
+
+/// Mesh rendering with boundary molecule
 void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
 {
   int i,j,k,l,ind;
@@ -911,6 +1011,7 @@ void MapIpolSurf2Renderer::renderMeshImpl1(DisplayContext *pdl)
   }
 }
 
+#if 0
 static const int adjvox[26][3] =
 {
   {1, 0, 0},{-1, 0, 0},{0, 1, 0},{0, -1, 0},{0, 0, 1},{0, 0, -1},
@@ -1349,6 +1450,7 @@ pdl->end();
     pdl->end();
   }
 }
+#endif
 
 void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
 {
@@ -1373,7 +1475,10 @@ void MapIpolSurf2Renderer::renderImpl2(DisplayContext *pdl)
     buildMeshData(pdl);
   }
 
-  renderMeshImpl1(pdl);
+  if (getBndryMol().isnull())
+    renderMeshImpl0(pdl);
+  else
+    renderMeshImpl1(pdl);
 }
 
 void MapIpolSurf2Renderer::setBndryRng2(double d)
