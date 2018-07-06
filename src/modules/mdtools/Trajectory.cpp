@@ -34,23 +34,6 @@ Trajectory::~Trajectory()
   //m_pAllMol = MolCoordPtr();
 }
 
-/*
-/// Append a new atom.
-int Trajectory::appendAtom(MolAtomPtr pAtom)
-{
-  if (super_t::getAtomSize()!=0) {
-    // already constructed --> cannot append new atoms
-    MB_THROW(qlib::RuntimeException, "Trajectory: appendAtom to created traj not supported");
-    return -1;
-  }
-  
-  if (m_pAllMol.isnull()) {
-    m_pAllMol = MolCoordPtr(MB_NEW MolCoord());
-    m_pAllMol->setSceneID(getSceneID());
-  }
-  return m_pAllMol->appendAtom(pAtom);
-}
-*/
 
 /// Remove an atom by atom ID
 bool Trajectory::removeAtom(int atomid)
@@ -59,66 +42,42 @@ bool Trajectory::removeAtom(int atomid)
   return false;
 }
 
-/*
-void Trajectory::createMol(SelectionPtr pSel)
+MolCoordPtr Trajectory::createMolCoord(int ifrm)
 {
-  if (super_t::getAtomSize()!=0) {
-    // already constructed --> cannot append new atoms
-    MB_THROW(qlib::RuntimeException, "Trajectory: appendAtom to created traj not supported");
-    return;
+  if (!m_bInit) {
+    // not initialized --> no topology available!!
+    MB_THROW(qlib::RuntimeException, "Trajectory: not initialized with coords");
+    return MolCoordPtr();
   }
 
-  m_pAllMol->applyTopology(false);
-  
-  std::deque<int> aidmap;
-  AtomIter aiter = m_pAllMol->beginAtom();
-  AtomIter eiter = m_pAllMol->endAtom();
+  MolCoordPtr pRet(MB_NEW MolCoord());
+  pRet->copyAtoms(MolCoordPtr(this), m_pLoadSel);
 
-  int i=0, j=0;
-  for (; aiter!=eiter; ++aiter, ++i) {
-    MolAtomPtr pAtom = aiter->second;
-    int aid = aiter->first;
-    MB_ASSERT(aid==i);
-
-    if (pSel.isnull() || pSel->isSelected(pAtom)) {
-      // add the copy of the original atom
-      MolAtomPtr pNewAtom(static_cast<MolAtom *>(pAtom->clone()));
-      int aid2 = super_t::appendAtom(pNewAtom);
-      MB_ASSERT(aid2==j);
-      aidmap.push_back(aid);
-      ++j;
-    }
-  }
-  
-  // m_pReadSel = pSel;
-
-  m_selIndArray.resize( aidmap.size() );
-  m_selIndArray.assign( aidmap.begin(), aidmap.end() );
-
-  m_nAllAtomSize = m_pAllMol->getAtomSize();
-  m_pAllMol = MolCoordPtr();
+  return pRet;
 }
-*/
 
 void Trajectory::setup()
 {
   m_nAllAtomSize = getAtomSize();
-  m_selIndArray.resize( m_nAllAtomSize );
+  m_loadSelAry.resize( m_nAllAtomSize );
 
   int i = 0;
   AtomIter aiter = super_t::beginAtom();
   AtomIter eiter = super_t::endAtom();
   for (; aiter!=eiter; ++aiter, ++i) {
     int aid = aiter->first;
-    m_selIndArray[i] = aid;
+    m_loadSelAry[i] = aid;
   }
+  // load all atoms
+  m_pLoadSel = SelectionPtr();
 }
 
-void Trajectory::setupSel(int nAll, const std::deque<int> &aidmap)
+void Trajectory::setupSel(int nAll, const SelectionPtr &pLoadSel, const std::deque<int> &aidmap)
 {
-  m_selIndArray.resize( aidmap.size() );
-  m_selIndArray.assign( aidmap.begin(), aidmap.end() );
+  m_loadSelAry.resize( aidmap.size() );
+  m_loadSelAry.assign( aidmap.begin(), aidmap.end() );
   m_nAllAtomSize = nAll;
+  m_pLoadSel = pLoadSel;
 }
 
 //////////
@@ -182,6 +141,7 @@ qfloat32 *Trajectory::getCrdArrayImpl()
 
 void Trajectory::invalidateCrdArray()
 {
+  // do nothing
 }
 
 void Trajectory::createIndexMapImpl(CrdIndexMap &indmap, AidIndexMap &aidmap)
@@ -266,34 +226,6 @@ void Trajectory::findBlk(int iframe, int &nBlkInd, int &nFrmInd)
 
 void Trajectory::update(int iframe, bool bDyn)
 {
-  /*
-  int ind1 = 0;
-  int ind2 = -1;
-
-  TrajBlockPtr pBlk;
-  BOOST_FOREACH (TrajBlockPtr pelem, m_blocks) {
-    int istart = pelem->getStartIndex();
-    int iend = istart + pelem->getSize() -1;
-    if (istart<=iframe && iframe<=iend) {
-      ind2 = iframe - istart;
-      pBlk = pelem;
-      break;
-    }
-    ++ind1;
-  }
-
-  if (ind2<0) {
-    // ERROR: iframe out of range
-    MB_THROW(qlib::RuntimeException, "update(): iframe out of range");
-    return;
-  }
-
-  //qfloat32 *pcrd = pBlk->getCrdArray(ind2);
-  m_nCurFrm = iframe;
-  m_nBlkInd = ind1;
-  m_nFrmInd = ind2;
-*/
-
   findBlk(iframe, m_nBlkInd, m_nFrmInd);
   m_nCurFrm = iframe;
   // invalidate the averbuf

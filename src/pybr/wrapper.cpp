@@ -20,18 +20,9 @@ using qlib::LScriptable;
 //////////
 // wrapper object type/instance definition
 
-/// wrapper instance type
-typedef struct {
-  PyObject_HEAD
-
-  /// wrapped object
-  qlib::LScriptable *m_pObj;
-
-} QpyWrapObj;
-
 // prototype declarations
 static void wr_dealloc(QpyWrapObj *pSelf);
-static PyObject *wr_getattr(QpyWrapObj *pSelf, const char *name);
+//static PyObject *wr_getattr(QpyWrapObj *pSelf, const char *name);
 static int wr_setattr(QpyWrapObj *pSelf, const char *name, PyObject *pValue);
 static PyObject *wr_str(QpyWrapObj *pSelf);
 
@@ -45,7 +36,7 @@ static PyTypeObject gWrapperType = {
   0,                         /*tp_itemsize*/
   (destructor) wr_dealloc,   /*tp_dealloc*/
   0,                         /*tp_print*/
-  (getattrfunc) wr_getattr,  /*tp_getattr*/
+  (getattrfunc) Wrapper::getattr,  /*tp_getattr*/
   (setattrfunc) wr_setattr,  /*tp_setattr*/
   0,                         /*tp_compare*/
   0,                         /*tp_repr*/
@@ -104,8 +95,12 @@ static void wr_dealloc(QpyWrapObj *pSelf)
 }
 
 /// getter (method/property)
-static PyObject *wr_getattr(QpyWrapObj *pSelf, const char *name)
+PyObject *Wrapper::getattr(QpyWrapObj *pSelf, const char *name)
 {
+  if (LString(name).equals("__getattr__")) {
+    return Wrapper::createMethodObj((PyObject *)pSelf, "__getattr__");
+  }
+
   qlib::LScriptable *pObj = pSelf->m_pObj;
   if (pObj==NULL) {
     PyErr_SetString(PyExc_RuntimeError, "wrapped obj is null");

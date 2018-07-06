@@ -149,6 +149,17 @@ static PyObject *meth_call(PyObject *func, PyObject *arg, PyObject *kw)
 {
   QpyMethObj* pFunc = (QpyMethObj*)func;
   PyObject *pSelf = pFunc->m_self;
+
+  if (pFunc->m_pName->equals("__getattr__")) {
+    const char *propname;
+    PyObject *pPyObj;
+    if (!PyArg_ParseTuple(arg, "Os", &pPyObj, &propname)) {
+      PyErr_SetString(PyExc_RuntimeError, "invalid arguments");
+      return NULL;
+    }
+    return Wrapper::getattr((QpyWrapObj*)pPyObj, propname);
+  }
+
   const char *name = pFunc->m_pName->c_str();
 
   qlib::LScriptable *pScrObj = Wrapper::getWrapped(pSelf);

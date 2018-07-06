@@ -12,6 +12,16 @@
 
 namespace pybr {
 
+/// wrapper instance type
+typedef struct {
+  PyObject_HEAD
+
+  /// wrapped object
+  qlib::LScriptable *m_pObj;
+
+} QpyWrapObj;
+
+
   using qlib::LString;
 
   /// wrapper utility methods
@@ -83,6 +93,9 @@ namespace pybr {
     /// create python function object for native methods
     static PyObject *createMethodObj(PyObject *pObj, const char *mthname);
     
+    static PyObject *getattr(QpyWrapObj *pSelf, const char *name);
+    
+
     //////////
     // conversion methods
 

@@ -93,14 +93,14 @@ namespace mdtools {
 
     void findBlk(int nfrm, int &nBlkInd, int &nFrmInd);
 
-    // /// For partial read selection impl
-    // MolCoordPtr m_pAllMol;
+    /// Load Selection obj
+    SelectionPtr m_pLoadSel;
 
-    /// Selection index array:
+    /// Load Selection index array:
     /// Array of atom indeces to be read from the traj data file.
     /// Other atoms that are not contained in this array will be ignored,
     /// when traj data files are read.
-    std::vector<quint32> m_selIndArray;
+    std::vector<quint32> m_loadSelAry;
     
     int m_nAllAtomSize;
 
@@ -108,22 +108,21 @@ namespace mdtools {
 
   public:
 
-    // /// setup molecule (m_selIndArray, m_nAllAtomSize, etc)
-    // /// from the appended atoms and the selection (arg)
-    // void createMol(SelectionPtr pSel);
-
     void setup();
 
     /// Setup with readsel
-    void setupSel(int nAll, const std::deque<int> &aidmap);
+    void setupSel(int nAll, const SelectionPtr &pLoadSel, const std::deque<int> &aidmap);
 
     quint32 getAllAtomSize() const {
       return m_nAllAtomSize;
     }
 
     const quint32 *getSelIndexArray() const {
-      return &m_selIndArray[0];
+      return &m_loadSelAry[0];
     }
+
+    /// Create MolCoord obj
+    MolCoordPtr createMolCoord(int ifrm);
 
     /////////////////////////////////////////////////////
     // properties

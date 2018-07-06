@@ -344,7 +344,7 @@ void PsfReader::readSel(qlib::InStream &ins)
   
   // m_pReadSel = pSel;
 
-  pTraj->setupSel(pAllMol->getAtomSize(), aidmap);
+  pTraj->setupSel(pAllMol->getAtomSize(), m_pReadSel, aidmap);
 }
 
 void PsfReader::readLine()
