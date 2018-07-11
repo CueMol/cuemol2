@@ -32,8 +32,11 @@ runtime_class Trajectory extends AnimMol
 
   void append(object<TrajBlock$> pblk);
 
-  /// array access method
+  /// array access method (coordinate array)
   object<ByteArray$> getFrmArray(integer ifrm, boolean bref);
+
+  /// array access method (cell dim array)
+  object<ByteArray$> getCellArray(integer ifrm);
 
   /// Create MolCoord obj
   object<MolCoord$> createMolCoord(integer ifrm);

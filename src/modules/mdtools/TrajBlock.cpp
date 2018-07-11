@@ -31,6 +31,8 @@ void TrajBlock::allocate(int natom, int nsize)
     m_flags[i] = false;
   }
 
+  // allocate cell dim array
+  m_cells.resize(CELL_SIZE*m_nSize);
 }
 
 void TrajBlock::clear()
@@ -41,6 +43,7 @@ void TrajBlock::clear()
   //m_data.clear();
   m_data.destroy();
   m_flags.clear();
+  m_cells.clear();
 }
 
 bool TrajBlock::isAllLoaded() const

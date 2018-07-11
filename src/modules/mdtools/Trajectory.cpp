@@ -82,7 +82,7 @@ void Trajectory::setupSel(int nAll, const SelectionPtr &pLoadSel, const std::deq
 
 //////////
 
-qfloat32 *Trajectory::getCrdArrayImplImpl(int ifrm)
+TrajBlockPtr Trajectory::getTrajBlkImpl(int ifrm, int &rBlkInd, int &rFrmInd) const
 {
   int nBlkInd, nFrmInd;
   
@@ -97,12 +97,42 @@ qfloat32 *Trajectory::getCrdArrayImplImpl(int ifrm)
   if (nBlkInd==-1 || nFrmInd==-1) {
     LString msg = LString::format("getCrdArrayImpl: frame %d not found in the trajectory", ifrm);
     MB_THROW(qlib::RuntimeException, msg);
+    return TrajBlockPtr();
+  }
+  TrajBlockPtr pBlk = m_blocks[nBlkInd];
+  if (!pBlk->isLoaded(nFrmInd)) {
+    pBlk->load(nFrmInd);
+  }
+
+  rBlkInd = nBlkInd;
+  rFrmInd = nFrmInd;
+  return pBlk;
+}
+
+qfloat32 *Trajectory::getCrdArrayImplImpl(int ifrm)
+{
+  int nBlkInd, nFrmInd;
+
+  /*
+  if (ifrm<0) {
+    nBlkInd = m_nBlkInd;
+    nFrmInd = m_nFrmInd;
+  }
+  else {
+    findBlk(ifrm, nBlkInd, nFrmInd);
+  }
+  if (nBlkInd==-1 || nFrmInd==-1) {
+    LString msg = LString::format("getCrdArrayImpl: frame %d not found in the trajectory", ifrm);
+    MB_THROW(qlib::RuntimeException, msg);
     return NULL;
   }
   TrajBlockPtr pBlk = m_blocks[nBlkInd];
   if (!pBlk->isLoaded(nFrmInd)) {
     pBlk->load(nFrmInd);
   }
+  */
+
+  TrajBlockPtr pBlk = getTrajBlkImpl(ifrm, nBlkInd, nFrmInd);
   return pBlk->getCrdArray(nFrmInd);
 }
 
@@ -197,7 +227,7 @@ void Trajectory::append(TrajBlockPtr pBlk)
   LOG_DPRINTLN("Traj> append blk start=%d, size=%d", nnext, pBlk->getSize());
 }
 
-void Trajectory::findBlk(int iframe, int &nBlkInd, int &nFrmInd)
+void Trajectory::findBlk(int iframe, int &nBlkInd, int &nFrmInd) const
 {
   int ind1 = 0;
   int ind2 = -1;
@@ -426,3 +456,28 @@ qlib::LByteArrayPtr Trajectory::getFrmArray(int nfrm, bool bref) const
 
   return pRet;
 }
+
+qlib::LByteArrayPtr Trajectory::getCellArray(int ifrm) const
+{
+  Trajectory *pthis = const_cast<Trajectory *>(this);
+
+  int nBlkInd, nFrmInd;
+  TrajBlockPtr pBlk = getTrajBlkImpl(ifrm, nBlkInd, nFrmInd);
+  qfloat32 *pcell = pBlk->getCellArray(nFrmInd);
+
+  qlib::LByteArrayPtr pRet(MB_NEW qlib::LByteArray());
+
+  int i;
+  const int nsize = TrajBlock::CELL_SIZE;
+
+  pRet->init(qlib::type_consts::QTC_FLOAT32, nsize);
+  pRet->setDim(1);
+  pRet->setShape(qlib::Vector3I(nsize,1,1));
+  qfloat32 *pr = reinterpret_cast<qfloat32 *>(pRet->data());
+  for (i=0; i<nsize; ++i) {
+    pr[i] = pcell[i];
+  }
+
+  return pRet;
+}
+

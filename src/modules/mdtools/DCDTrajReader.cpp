@@ -239,17 +239,17 @@ void DCDTrajReader::readBody(qlib::InStream &ins)
   int jj, istep, nrlen;
   std::vector<float> tmpv(m_natom * 3);
   
-  std::vector<double> *pEng[6];
+  std::vector<double> *pCell[6];
   /*
   for (int i=0; i<6; ++i) {
     if (fcell) {
       LString propname = LString::format("CELL_%d", i);
-      pEng[i] = m_pTraj->getProp<double>(propname);
-      if (pEng[i]==NULL)
-	pEng[i] = m_pTraj->makeProp<double>(propname);
+      pCell[i] = m_pTraj->getProp<double>(propname);
+      if (pCell[i]==NULL)
+	pCell[i] = m_pTraj->makeProp<double>(propname);
     }
     else
-      pEng[i] = NULL;
+      pCell[i] = NULL;
   }
    */
   
@@ -283,7 +283,7 @@ void DCDTrajReader::readBody(qlib::InStream &ins)
       //dcell[3], dcell[4], dcell[5]);
 
       // for (i=0; i<6; ++i)
-      // pEng[i]->at(nTotalInd) = dcell[i];
+      // pCell[i]->at(nTotalInd) = dcell[i];
     }
     
     //
@@ -365,6 +365,7 @@ void DCDTrajReader::loadFrm(int ifrm, TrajBlock *pTB)
   std::vector<float> tmpv(m_natom * 3);
   
   qfloat32 *pcoord = NULL;
+  qfloat32 *pcells = NULL;
   
   int nfrmsz = (4 + m_natom*4 + 4)*3;
   if (m_fcell)
@@ -375,6 +376,8 @@ void DCDTrajReader::loadFrm(int ifrm, TrajBlock *pTB)
 
   pcoord = pTB->getCrdArray(ifrm);
   FortBinInStream fbis(*m_pIn);
+
+  pcells = pTB->getCellArray();
 
   //
   // Read cell geometry
@@ -395,7 +398,7 @@ void DCDTrajReader::loadFrm(int ifrm, TrajBlock *pTB)
     //dcell[0], dcell[1], dcell[2],
     //dcell[3], dcell[4], dcell[5]);
     // for (i=0; i<6; ++i)
-    // pEng[i]->at(nTotalInd) = dcell[i];
+    // pCell[i]->at(nTotalInd) = dcell[i];
   }
     
   // Read X coordinates record

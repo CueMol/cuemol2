@@ -73,6 +73,16 @@ namespace mdtools {
     int m_nSize;
     
   public:
+    /// Size of cell size (symm matrix)
+    static const int CELL_SIZE = 6;
+
+  private:
+    /// Cell dimension array (CELL_SIZE*m_nSize)
+    typedef std::vector<float> CellArray;
+
+    CellArray m_cells;
+
+  public:
     /// default ctor
     TrajBlock();
     
@@ -108,6 +118,15 @@ namespace mdtools {
 
     int getCrdSize() const {
       return m_nCrds;
+    }
+
+    /// get cell dimension array
+    qfloat32 *getCellArray(int ifrm=0)
+    {
+      MB_ASSERT(0<=ifrm);
+      MB_ASSERT(ifrm<m_nSize);
+
+      return &m_cells[ifrm*CELL_SIZE];
     }
 
   private:

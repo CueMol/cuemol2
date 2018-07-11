@@ -89,6 +89,7 @@ namespace mdtools {
     qlib::InStream *m_pIn;
 
   public:
+    /// lazy load interface (called from TrajBlock::load(ifrm))
     virtual void loadFrm(int ifrm, TrajBlock *pTB);
     
 

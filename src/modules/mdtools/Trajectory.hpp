@@ -91,7 +91,7 @@ namespace mdtools {
 
   private:
 
-    void findBlk(int nfrm, int &nBlkInd, int &nFrmInd);
+    void findBlk(int nfrm, int &nBlkInd, int &nFrmInd) const;
 
     /// Load Selection obj
     SelectionPtr m_pLoadSel;
@@ -104,6 +104,7 @@ namespace mdtools {
     
     int m_nAllAtomSize;
 
+    TrajBlockPtr getTrajBlkImpl(int ifrm, int &rBlkInd, int &rFrmInd) const;
     qfloat32 *getCrdArrayImplImpl(int ifrm);
 
   public:
@@ -186,6 +187,9 @@ namespace mdtools {
 
     /// Get array (ref) of specific frame
     qlib::LByteArrayPtr getFrmArray(int nfrm, bool bref) const;
+
+    /// Get array of cell dim (6-elem vec)
+    qlib::LByteArrayPtr getCellArray(int nfrm) const;
 
   };
 
