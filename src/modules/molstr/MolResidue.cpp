@@ -317,4 +317,30 @@ qlib::LScrVector4D MolResidue::getPivotPosScr() const
   return qlib::LScrVector4D(rval);
 }
 
+//////////
+
+#include <qlib/LByteArray.hpp>
+
+qlib::LByteArrayPtr MolResidue::getAtomArray() const
+{
+  MolCoordPtr pmol = getParent();
+  if (pmol.isnull())
+    return qlib::LByteArrayPtr();
+
+  qlib::LByteArrayPtr pRet(MB_NEW qlib::LByteArray());
+
+  int natom = getAtomSize();
+  pRet->init(qlib::type_consts::QTC_INT32, natom);
+  qint32 *pid = reinterpret_cast<qint32 *>(pRet->data());
+
+  int i = 0;
+  AtomCursor iter = atomBegin();
+  AtomCursor eiter = atomEnd();
+  for (; iter!=eiter; ++iter) {
+    pid[i] = iter->second;
+    ++i;
+  }
+
+  return pRet;
+}
 

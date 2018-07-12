@@ -219,6 +219,9 @@ namespace molstr {
     }
 
     LString toString() const;
+
+    qlib::LByteArrayPtr getAtomArray() const;
+    
   };
 
 

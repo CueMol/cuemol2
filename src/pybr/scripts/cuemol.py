@@ -36,7 +36,7 @@ def isrend(aObj):
     return isimpl(aObj, "Renderer")
     
 def issel(aObj):
-    return isimpl(aObj, "Selection")
+    return isimpl(aObj, "MolSelection")
 
 def iscol(aObj):
     return isimpl(aObj, "AbstractColor")
