@@ -163,7 +163,7 @@ bool PDBFileWriter::write(qlib::OutStream &outs)
     LString chnam = *cniter;
     MolChainPtr pChn = pMol->getChain(chnam);
 
-    // format chain name
+    // format one-letter chain name
     char cch = convChainName(chnam);
 
     LString resnam;
@@ -203,7 +203,7 @@ bool PDBFileWriter::write(qlib::OutStream &outs)
         }
 
         writeAtomLine(nserial, rindex, resnam,
-                      cch, pAtm, prs);
+                      cch, chnam, pAtm, prs);
         nserial++;
       }
       // nlastres = rindex.first;
@@ -269,7 +269,7 @@ LString PDBFileWriter::formatAtomName(MolAtomPtr pAtom)
 }
 
 bool PDBFileWriter::writeAtomLine(int nserial, const ResidIndex &rindex,
-                                  const char *resnam, char chainch,
+				  const char *resnam, char chainch, const LString &chstr,
                                   MolAtomPtr pa, qlib::PrintStream &prs)
 {
   int resind = rindex.first;
@@ -312,7 +312,10 @@ bool PDBFileWriter::writeAtomLine(int nserial, const ResidIndex &rindex,
 
   LString shead;
 
-  shead = LString::format("%5d ", nserial);
+  if (nserial<100000)
+    shead = LString::format("%5d ", nserial);
+  else
+    shead = LString("***** ");
 
   // format atom name
   shead += formatAtomName(pa);
@@ -335,19 +338,30 @@ bool PDBFileWriter::writeAtomLine(int nserial, const ResidIndex &rindex,
   // Get atom position before applying xformMat, if xformMat is set
   Vector4D pos = pa->getRawPos();
 
+  LString segid = "    ";
+  if (m_bSaveSegID) {
+    segid = chstr + segid;
+    segid = segid.substr(0,4);
+  }
+
+  LString elenam = ElemSym::symID2Str(pa->getElement());
+  elenam = elenam.toUpperCase();
+
   prs.formatln("   "
                "%8.3f"
                "%8.3f"
                "%8.3f"
                "%6.2f"
                "%6.2f"
-               "          "
-               "    ",
+               "      %4s"
+               "% 2s  ",
                pos.x(),
                pos.y(),
                pos.z(),
                pa->getOcc(),
-               pa->getBfac());
+               pa->getBfac(),
+	       segid.c_str(),
+	       elenam.c_str());
 
   if (pa->hasAnIsoU()) {
     prs.print("ANISOU");

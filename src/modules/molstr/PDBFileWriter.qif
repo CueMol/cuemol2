@@ -20,6 +20,11 @@ runtime_class PDBFileWriter extends ObjWriter
 
   property object<MolSelection$> sel => redirect(getSelection, setSelection);
   default sel = molstr::SelectionPtr(new molstr::SelCommand());
+
+  /// save chain ID as seg ID
+  property boolean savesegid => redirect(isSaveSegID, setSaveSegID);
+  default savesegid = false;
+
 };
 
 #endif

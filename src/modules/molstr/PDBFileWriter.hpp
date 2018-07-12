@@ -53,6 +53,7 @@ namespace molstr {
     virtual bool canHandle(qsys::ObjectPtr pobj) const;
 
     /////////
+    // Properties
 
   private:
     SelectionPtr m_pSel;
@@ -69,6 +70,17 @@ namespace molstr {
       return m_pSel;
     }
     
+  private:
+    bool m_bSaveSegID;
+
+  public:
+    void setSaveSegID(bool b) {
+      m_bSaveSegID = b;
+    }
+
+    bool isSaveSegID() const {
+      return m_bSaveSegID;
+    }
 
     /////////
 
@@ -78,7 +90,7 @@ namespace molstr {
     MolCoord *m_pMol;
 
     bool writeAtomLine(int nserial, const ResidIndex &rindex,
-                       const char *resnam, char chainch,
+                       const char *resnam, char chainch, const LString &chstr,
                        MolAtomPtr pa, qlib::PrintStream &prs);
 
 
