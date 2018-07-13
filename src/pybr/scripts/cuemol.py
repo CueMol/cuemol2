@@ -36,7 +36,7 @@ def isrend(aObj):
     return isimpl(aObj, "Renderer")
     
 def issel(aObj):
-    return isimpl(aObj, "Selection")
+    return isimpl(aObj, "MolSelection")
 
 def iscol(aObj):
     return isimpl(aObj, "AbstractColor")
@@ -44,19 +44,31 @@ def iscol(aObj):
 ##########
 
 def scene(aScene=None):
+#    print("***\n")
     if isscene(aScene):
         return aScene
 
+#    print("*** aScene="+str(aScene)+"\n")
     sceMgr = ci.getService("SceneManager")
     scid=None
     if aScene==None:
         scid = sceMgr.activeSceneID
+        if scid==0:
+            raise RuntimeError("Active scene ID is not defined!!")
     elif isinstance(aScene, int):
         scid = aScene
     else:
-        return None
+        raise RuntimeError("scene "+str(aScene)+" not found")
 
+#    print("*** scid="+str(scid)+"\n")
     return sceMgr.getScene(scid)
+
+def createScene():
+    sceMgr = ci.getService("SceneManager")
+    scene = sceMgr.createScene();
+    # set created scene as the active scene
+    sceMgr.setActiveSceneID(scene.uid)
+    return scene
 
 def svc(name):
     return ci.getService(name)
@@ -114,6 +126,7 @@ def sel(aSelStr, aScene=None):
     if issel(aSelStr):
         return aSelStr
     s = scene(aScene)
+    print("sel> scene="+str(s)+"\n")
     selobj = ci.createObj("SelCommand")
     selobj.compile(aSelStr, s.uid)
     return selobj

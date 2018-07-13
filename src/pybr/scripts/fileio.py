@@ -1,7 +1,7 @@
 import sys, traceback,os
 
 import cuemol
-import cuemol_internal
+import cuemol_internal as ci
 import json
 
 def guessFormatFromFname(aPathName, aFmt):
@@ -81,6 +81,12 @@ def loadScene(aFileName, aName, aScene, aFmtName, aOpts=None):
 
     strMgr = cuemol.svc("StreamManager")
     reader = strMgr.createHandler(aFmtName, 3)
+
+    if aOpts is not None:
+        for k,v in aOpts.items():
+            print("scene reader set prop: k=",k,"v=",v)
+            ci.setProp(reader, k, v)
+
     reader.setPath(aFileName)
      
     reader.attach(scene)
@@ -96,6 +102,12 @@ def loadObject(aFileName, aName, aScene, aFmtName, aOpts=None):
 
     strMgr = cuemol.svc("StreamManager")
     reader = strMgr.createHandler(aFmtName, 0)
+
+    if aOpts is not None:
+        for k,v in aOpts.items():
+            print("reader set prop: k=",k,"v=",v)
+            ci.setProp(reader, k, v)
+
     reader.setPath(aFileName)
     newobj = reader.createDefaultObj()
 
@@ -113,6 +125,12 @@ def saveObject(aObj, aFileName, aFmtName, aOpts=None):
 
     strMgr = cuemol.svc("StreamManager")
     writer = strMgr.createHandler(aFmtName, 1)
+
+    if aOpts is not None:
+        for k,v in aOpts.items():
+            print("writer set prop: k=",k,"v=",v)
+            ci.setProp(writer, k, v)
+
     writer.setPath(aFileName)
 
     writer.attach(obj)

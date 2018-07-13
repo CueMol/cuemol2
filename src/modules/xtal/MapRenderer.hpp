@@ -79,7 +79,7 @@ namespace xtal {
       invalidateDisplayCache();
     }
 
-    /////////
+    //////////////////
 
   private:
     /// display color
@@ -90,7 +90,7 @@ namespace xtal {
     void setColor(const ColorPtr &col) { m_pcolor = col; }
     const ColorPtr &getColor() const { return m_pcolor; }
 
-    /////////
+    //////////////////
 
   private:
     /// Coloring mode
@@ -109,7 +109,7 @@ namespace xtal {
       invalidateDisplayCache();
     }
 
-    /////////
+    //////////////////
 
   private:
     /// Periodic boundary flag
@@ -135,6 +135,7 @@ namespace xtal {
     void setUseAbsLev(bool val) { m_bUseAbsLev = val; }
     bool isUseAbsLev() const { return m_bUseAbsLev; }
 
+    //////////////////
 
   private:
     /// Multi gradient data
