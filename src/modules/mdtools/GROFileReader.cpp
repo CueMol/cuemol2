@@ -76,15 +76,15 @@ bool GROFileReader::read(qlib::InStream &ins)
   m_nErrMax = 50;
   m_nDupAtoms = 0;
   m_nLostAtoms = 0;
-
+  */
   try {
     readContents(ins);
   }
   catch (const qlib::LException &e) {
     // ERROR !!
     m_pMol = MolCoordPtr();
-    m_pCurChain = MolChainPtr();
-    m_pPrevAtom = MolAtomPtr();
+    //m_pCurChain = MolChainPtr();
+    //m_pPrevAtom = MolAtomPtr();
     LOG_DPRINTLN("GROFileReader> Fatal Error; exception: %s",
                  e.getFmtMsg().c_str());
     throw;
@@ -92,8 +92,8 @@ bool GROFileReader::read(qlib::InStream &ins)
   catch (...) {
     // ERROR !!
     m_pMol = MolCoordPtr();
-    m_pCurChain = MolChainPtr();
-    m_pPrevAtom = MolAtomPtr();
+    //m_pCurChain = MolChainPtr();
+    //m_pPrevAtom = MolAtomPtr();
     LOG_DPRINTLN("GROFileReader> Fatal Error; unknown exception");
     throw;
   }
@@ -104,6 +104,7 @@ bool GROFileReader::read(qlib::InStream &ins)
   // notify modification
   // m_pMol->fireAtomsAppended();
 
+  /*
   if (m_nErrCount>m_nErrMax)
     LOG_DPRINTLN("GROFileReader> Too many errors (%d) were supressed", m_nErrCount-m_nErrMax);
 
@@ -130,7 +131,20 @@ void GROFileReader::readContents(qlib::InStream &ins)
   bool res;
   LString buf;
 
-  for ( ;; ) {
+  readRecord(lin);
+  LOG_DPRINTLN("1: %s", m_recbuf.c_str());
+
+  // NATOM
+  int natom;
+  readRecord(lin);
+  if (!m_recbuf.toInt(&natom)) {
+    MB_THROW(qlib::FileFormatException, "Cannot read natom line");
+    return;
+  }
+  LOG_DPRINTLN("GRO> natoms=%d", natom);
+
+  int i;
+  for (i=0; i<natom; ++i) {
     if (!readRecord(lin))
       break;
 
@@ -138,89 +152,65 @@ void GROFileReader::readContents(qlib::InStream &ins)
     if (m_recbuf.isEmpty())
       continue;
     
-    // read record name string
-    LString recnam = readStr(1,6);
-    recnam = recnam.trim();
-    if (recnam.isEmpty()) {
-      // LOG_DPRINTLN("GROFileReader> warning: Empty line.");
+    // read residue number field
+    LString str_resid = readStrTrim(1,5);
+    if (str_resid.isEmpty()) {
+       LOG_DPRINTLN("GROFileReader> warning: Empty resid num.");
       continue;
     }
-    // MB_DPRINT("record name : <%s>\n", recnam.c_str());
+    int nresid;
+    if (!str_resid.toInt(&nresid)) {
+      MB_THROW(qlib::FileFormatException, "Cannot read XXX");
+      return;
+    }
 
-    /*
-    if (recnam.equals("ATOM") || recnam.equals("HETATM")) {
-      if (m_nDefaultModel==-2)
-        m_nDefaultModel = m_nCurrModel;
-      //if (m_nDefaultModel == m_nCurrModel)
+    //LOG_DPRINT("residue number: <%s>\n", str_resid.c_str());
 
-      res = readAtom();
-      if (res)
-        m_nReadAtoms ++;
+    // read residue name field
+    LString str_resnm = readStrTrim(6,10);
+    if (str_resnm.isEmpty()) {
+       LOG_DPRINTLN("GROFileReader> warning: Empty resid name.");
+      continue;
     }
-    else if (recnam.equals("HEADER") ||
-             recnam.equals("TITLE") ||
-             recnam.equals("EXPDTA") ||
-             recnam.equals("AUTHOR") ||
-             recnam.equals("REVDAT")) {
-      buf = readStr(1,70);
-      // buf = buf.toUpperCase();
-      LOG_DPRINTLN("GROFileReader> %s", buf.c_str());
+
+    // read atom name field
+    LString str_atmnm = readStrTrim(11,15);
+    if (str_atmnm.isEmpty()) {
+       LOG_DPRINTLN("GROFileReader> warning: Empty atom name.");
+      continue;
     }
-    else if (recnam.equals("HELIX")) {
-      if (!readHelixRecord()) {
-        buf = readStr(1,70);
-        // buf = buf.toUpperCase();
-        m_nErrCount ++;
-        if (m_nErrCount<m_nErrMax)
-          LOG_DPRINTLN("PDBRead> invalid HELIX line %s", buf.c_str());
-      }
+
+    // read atom number field
+    LString str_atmid = readStrTrim(16,20);
+    if (str_atmid.isEmpty()) {
+       LOG_DPRINTLN("GROFileReader> warning: Empty atom number.");
+      continue;
     }
-    else if (recnam.equals("SHEET")) {
-      if (!readSheetRecord()) {
-        buf = readStr(1,70);
-        // buf = buf.toUpperCase();
-        m_nErrCount ++;
-        if (m_nErrCount<m_nErrMax)
-          LOG_DPRINTLN("PDBRead> invalid SHEET line %s", buf.c_str());
-      }
+    int atomid;
+    if (!str_resid.toInt(&atomid)) {
+      MB_THROW(qlib::FileFormatException, "Cannot read XXX");
+      return;
     }
-    else if (recnam.equals("ANISOU")) {
-      if (m_bLoadAnisoU)
-        readAnisou();
-    }
-    else if (recnam.equals("MODEL")) {
-      buf = readStr(11, 14);
-      if (buf.toInt(&m_nCurrModel)) {
-        // valid model record ...
-        LOG_DPRINTLN("Read model %d", m_nCurrModel);
-        if (m_nDefaultModel!=-2 && m_nCurrModel!=m_nDefaultModel)
-          LOG_DPRINTLN("PDBReader> WARNING: MODEL %d is ignored!", m_nCurrModel);
-      }
-      else {
-        readError("MODEL");
-        m_nCurrModel = -1;
-      }
-    }
-    else if (recnam.equals("ENDMDL")) {
-      // end of model section
-      m_nCurrModel = -1;
-    }
-    else if (recnam.equals("SSBOND")) {
-      if (!readSSBond()) {
-        readError("SSBOND");
-      }
-    }
-    else if (recnam.equals("LINK")) {
-      if (!readLink()) {
-        readError("LINK");
-      }
-    }
-    else if (recnam.equals("REMARK")) {
-      if (!readRemark()) {
-        readError("REMARK");
-      }
-    }
-    */
+
+    // read atom number field
+    double xpos;
+    readDouble(21,28,&xpos);
+
+    // read atom number field
+    double ypos;
+    readDouble(29,36,&ypos);
+
+    // read atom number field
+    double zpos;
+    readDouble(37,42,&zpos);
+
+    LOG_DPRINTLN("read: %s/%d/%s/%d (%f,%f,%f)",
+	       str_resnm.c_str(),
+	       nresid,
+	       str_atmnm.c_str(),
+	       atomid,
+	       xpos, ypos, zpos
+	       );
   }
 }
 

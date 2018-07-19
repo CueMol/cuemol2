@@ -125,6 +125,24 @@ namespace mdtools {
       return m_recbuf.substr(start, end-start+1);
     }
 
+    LString readStrTrim(int start, int end) const
+    {
+      return readStr(start, end).trim();
+    }
+
+    void readDouble(int start, int end, double *pnum) const
+    {
+      LString str = readStrTrim(29,36);
+      if (str.isEmpty()) {
+	MB_THROW(qlib::FileFormatException, "Cannot read XXX");
+	return;
+      }
+      if (!str.toDouble(pnum)) {
+	MB_THROW(qlib::FileFormatException, "Cannot read XXX");
+	return;
+      }
+    }
+
     bool isAvailStr(int start, int end) const
     {
       start --; end --;

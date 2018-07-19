@@ -25,7 +25,7 @@ def guessFormatFromFname(aPathName, aFmt):
 
     # Search matching fext in info data
     for elem in info:
-        if not aFmt==None:
+        if aFmt is not None:
             # Format name is specified
             if aFmt==elem["name"]:
                 return (elem, basenm, comp)
@@ -92,7 +92,7 @@ def loadScene(aFileName, aName, aScene, aFmtName, aOpts=None):
     reader.attach(scene)
     reader.read()
     reader.detach()
-    if not aName==None:
+    if aName is not None:
         scene.setName(aName)
 
     return scene
@@ -114,7 +114,7 @@ def loadObject(aFileName, aName, aScene, aFmtName, aOpts=None):
     reader.attach(newobj)
     reader.read();
     reader.detach();
-    if not aName==None:
+    if aName is not None:
         newobj.name = aName
     scene.addObject(newobj)
 
