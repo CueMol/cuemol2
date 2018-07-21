@@ -5,8 +5,33 @@
 
 #include <common.h>
 #include "TrajBlock.hpp"
+#include "Trajectory.hpp"
+
+#include <qsys/SceneManager.hpp>
 
 using namespace mdtools;
+
+TrajectoryPtr TrajBlockReader::getTargTraj() const
+{
+  TrajectoryPtr pTraj;
+  qlib::uid_t ttuid = getTargTrajUID();
+  if (ttuid!=qlib::invalid_uid) {
+    pTraj = qsys::SceneManager::getObjectS(ttuid);
+  }
+  else {
+    TrajBlockPtr pTrajBlk( getTarget<TrajBlock>() );
+    if (pTrajBlk.isnull()) {
+      MB_THROW(qlib::NullPointerException, "TrajBlockReader not attached to TrajBlock");
+      return pTraj;
+    }
+    qlib::uid_t nTrajUID = pTrajBlk->getTrajUID();
+    pTraj = qsys::SceneManager::getObjectS(nTrajUID);
+  }
+  return pTraj;
+}
+
+
+///////////
 
 TrajBlock::TrajBlock()
      : m_nIndex(0), m_nCrds(0), m_nSize(0)

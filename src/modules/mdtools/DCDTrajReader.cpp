@@ -10,7 +10,6 @@
 #include "Trajectory.hpp"
 #include "FortBinStream.hpp"
 #include <qlib/Array.hpp>
-#include <qsys/SceneManager.hpp>
 #include <modules/molstr/Selection.hpp>
 
 using qlib::Array;
@@ -74,25 +73,6 @@ bool DCDTrajReader::read(qlib::InStream &ins)
   readBody(ins);
 
   return true;
-}
-
-TrajectoryPtr DCDTrajReader::getTargTraj() const
-{
-  TrajectoryPtr pTraj;
-  qlib::uid_t ttuid = getTargTrajUID();
-  if (ttuid!=qlib::invalid_uid) {
-    pTraj = qsys::SceneManager::getObjectS(ttuid);
-  }
-  else {
-    TrajBlockPtr pTrajBlk( getTarget<TrajBlock>() );
-    if (pTrajBlk.isnull()) {
-      MB_THROW(qlib::NullPointerException, "DCDTrajReader not attached to TrajBlk");
-      return pTraj;
-    }
-    qlib::uid_t nTrajUID = pTrajBlk->getTrajUID();
-    pTraj = qsys::SceneManager::getObjectS(nTrajUID);
-  }
-  return pTraj;
 }
 
 void DCDTrajReader::readHeader(qlib::InStream &ins)

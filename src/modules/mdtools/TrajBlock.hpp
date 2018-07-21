@@ -23,6 +23,7 @@ namespace mdtools {
   public:
     TrajBlockReader() : super_t(), m_bLazyLoad(false), m_nTrajUID(qlib::invalid_uid) {}
 
+    /// Lazy load interface: Load specific block / frame (ifrm) from the stream
     virtual void loadFrm(int ifrm, TrajBlock *pTB) =0;
 
   private:
@@ -39,6 +40,7 @@ namespace mdtools {
     qlib::uid_t getTargTrajUID() const { return m_nTrajUID; }
     void setTargTrajUID(qlib::uid_t uid) { m_nTrajUID = uid; }
     
+    TrajectoryPtr getTargTraj() const;
   };
 
   MC_DECL_SCRSP(TrajBlockReader);

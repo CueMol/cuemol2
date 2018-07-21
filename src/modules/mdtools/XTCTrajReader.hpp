@@ -1,10 +1,10 @@
 // -*-Mode: C++;-*-
 //
-// Xplor/CHARMM/NAMD DCD binary trajectory file reader
+// Gromacs XTC binary trajectory file reader
 //
 
-#ifndef DCD_TRAJECTORY_READER_HPP_
-#define DCD_TRAJECTORY_READER_HPP_
+#ifndef XTC_TRAJECTORY_READER_HPP
+#define XTC_TRAJECTORY_READER_HPP
 
 #include "mdtools.hpp"
 
@@ -20,7 +20,7 @@ namespace mdtools {
 
   using molstr::SelectionPtr;
 
-  class MDTOOLS_API DCDTrajReader : public TrajBlockReader
+  class MDTOOLS_API XTCTrajReader : public TrajBlockReader
   {
     MC_SCRIPTABLE;
 
@@ -30,10 +30,10 @@ namespace mdtools {
 
   public:
     /// default constructor
-    DCDTrajReader();
+    XTCTrajReader();
     
     /// destructor
-    virtual ~DCDTrajReader();
+    virtual ~XTCTrajReader();
     
 
     //////////////////////////////////////////////
@@ -53,9 +53,7 @@ namespace mdtools {
 
     ///////////////////////////////////////////
 
-    ///
     /// Read from the input stream ins, and build the attached object.
-    ///
     virtual bool read(qlib::InStream &ins);
     
     /// lazy load interface (called from TrajBlock::load(ifrm))
@@ -76,15 +74,10 @@ namespace mdtools {
     }
 
   private:
-    int m_natom;
-    int m_nfile;
-    bool m_fcell;
-    
-    qint64 m_nHeadPos;
-    qlib::InStream *m_pIn;
 
     void readHeader(qlib::InStream &ins);
     void readBody(qlib::InStream &ins);
+    
 
   };
 

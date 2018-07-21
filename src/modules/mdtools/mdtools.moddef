@@ -7,6 +7,7 @@
 #include "TrajBlock.qif"
 #include "Trajectory.qif"
 #include "GROFileReader.qif"
+#include "XTCTrajReader.qif"
 
 module mdtools
 {
@@ -17,6 +18,7 @@ module mdtools
   DCDTrajReader;
   PsfReader;
   GROFileReader;
+  XTCTrajReader;
   
   TrajBlock;
   Trajectory;

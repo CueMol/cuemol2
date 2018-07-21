@@ -13,6 +13,7 @@
 #include "PsfReader.hpp"
 #include "DCDTrajReader.hpp"
 #include "GROFileReader.hpp"
+#include "XTCTrajReader.hpp"
 
 extern void mdtools_regClasses();
 extern void mdtools_unregClasses();
@@ -32,6 +33,7 @@ namespace mdtools {
     pSM->registWriter<PsfReader>();
     pSM->registWriter<DCDTrajReader>();
     pSM->registWriter<GROFileReader>();
+    pSM->registWriter<XTCTrajReader>();
 
     MB_DPRINTLN("mdtools init: OK");
     return true;
