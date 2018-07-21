@@ -24,6 +24,7 @@ namespace mdtools {
 
   using qlib::LString;
   using molstr::MolCoordPtr;
+  using molstr::MolAtomPtr;
 
   ///
   ///   GROMACS GRO File (coord) reader class
@@ -50,16 +51,14 @@ namespace mdtools {
     /// building molecular coordinate obj
     MolCoordPtr m_pMol;
 
-    /// previous atom object
-    //MolAtomPtr m_pPrevAtom;
+    /// building molecular coordinate obj
+    TrajectoryPtr m_pTraj;
 
     /// Read atom count
     int m_nReadAtoms;
 
-    // int m_nErrCount;
-    // int m_nErrMax;
-    // int m_nDupAtoms;
-    // int m_nLostAtoms;
+    /// All atom count (in header)
+    int m_nAllAtoms;
 
     //////////////////////////////////////////////
   public:
@@ -130,15 +129,32 @@ namespace mdtools {
       return readStr(start, end).trim();
     }
 
+    void readInt(int start, int end, int *pnum) const
+    {
+      LString str = readStrTrim(start, end);
+      if (str.isEmpty()) {
+	LString msg = LString::format("Cannot read (%d-%d)", start, end);
+	MB_THROW(qlib::FileFormatException, msg);
+	return;
+      }
+      if (!str.toInt(pnum)) {
+	LString msg = LString::format("<%s> is not an integer", str.c_str());
+	MB_THROW(qlib::FileFormatException, msg);
+	return;
+      }
+    }
+
     void readDouble(int start, int end, double *pnum) const
     {
-      LString str = readStrTrim(29,36);
+      LString str = readStrTrim(start, end);
       if (str.isEmpty()) {
-	MB_THROW(qlib::FileFormatException, "Cannot read XXX");
+	LString msg = LString::format("Cannot read (%d-%d)", start, end);
+	MB_THROW(qlib::FileFormatException, msg);
 	return;
       }
       if (!str.toDouble(pnum)) {
-	MB_THROW(qlib::FileFormatException, "Cannot read XXX");
+	LString msg = LString::format("<%s> is not an integer", str.c_str());
+	MB_THROW(qlib::FileFormatException, msg);
 	return;
       }
     }
@@ -185,19 +201,15 @@ namespace mdtools {
 
     int convFromAname(const LString &atomname);
 
-    //
-    /// process ATOM/HETATM record
-    bool readAtom();
+    /// read atom record and create MolAtom
+    MolAtomPtr readAtom();
 
 
     void postProcess();
 
-    bool isAminoAcidName(const LString &nm) const;
-    bool isNuclAcidName(const LString &nm) const;
-    bool isOrganicAtom(int eleid) const;
-
-    void readError(const LString &recnam);
-
+    //bool isAminoAcidName(const LString &nm) const;
+    //bool isNuclAcidName(const LString &nm) const;
+    //bool isOrganicAtom(int eleid) const;
 
   };
 

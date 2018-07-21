@@ -18,10 +18,14 @@
 #include <modules/molstr/ResidIterator.hpp>
 #include <modules/molstr/TopparManager.hpp>
 
+#include "Trajectory.hpp"
+
 using namespace mdtools;
 using qlib::LChar;
 using molstr::MolCoord;
 using molstr::MolCoordPtr;
+using molstr::MolAtom;
+using molstr::MolAtomPtr;
 using molstr::ElemSym;
 
 GROFileReader::GROFileReader()
@@ -63,28 +67,18 @@ qsys::ObjectPtr GROFileReader::createDefaultObj() const
 bool GROFileReader::read(qlib::InStream &ins)
 {
   // get the target
-  m_pMol = MolCoordPtr(getTarget<MolCoord>());
-
-  /*
-  m_curChainTag = LString();
-  m_pCurChain = MolChainPtr();
-  m_nPrevResIdx = -1;
-  m_pPrevAtom = MolAtomPtr();
+  m_pMol = MolCoordPtr( getTarget<MolCoord>() );
+  m_pTraj = TrajectoryPtr( getTarget<Trajectory>() );
 
   m_nReadAtoms = 0;
-  m_nErrCount = 0;
-  m_nErrMax = 50;
-  m_nDupAtoms = 0;
-  m_nLostAtoms = 0;
-  */
+
   try {
     readContents(ins);
   }
   catch (const qlib::LException &e) {
     // ERROR !!
     m_pMol = MolCoordPtr();
-    //m_pCurChain = MolChainPtr();
-    //m_pPrevAtom = MolAtomPtr();
+    m_pTraj = TrajectoryPtr();
     LOG_DPRINTLN("GROFileReader> Fatal Error; exception: %s",
                  e.getFmtMsg().c_str());
     throw;
@@ -92,8 +86,7 @@ bool GROFileReader::read(qlib::InStream &ins)
   catch (...) {
     // ERROR !!
     m_pMol = MolCoordPtr();
-    //m_pCurChain = MolChainPtr();
-    //m_pPrevAtom = MolAtomPtr();
+    m_pTraj = TrajectoryPtr();
     LOG_DPRINTLN("GROFileReader> Fatal Error; unknown exception");
     throw;
   }
@@ -101,26 +94,12 @@ bool GROFileReader::read(qlib::InStream &ins)
   // perform post-processing
   postProcess();
 
-  // notify modification
-  // m_pMol->fireAtomsAppended();
-
-  /*
-  if (m_nErrCount>m_nErrMax)
-    LOG_DPRINTLN("GROFileReader> Too many errors (%d) were supressed", m_nErrCount-m_nErrMax);
-
-  if (m_nLostAtoms>0)
-    LOG_DPRINTLN("GROFileReader> Warning!! %d atom(s) lost", m_nLostAtoms);
-
-  if (m_nDupAtoms>0)
-    LOG_DPRINTLN("GROFileReader> Warning!! names of %d duplicated atom(s) changed", m_nDupAtoms);
-
   LOG_DPRINTLN("GROFileReader> read %d atoms", m_nReadAtoms);
 
   // Clean-up the workspace
   m_pMol = MolCoordPtr();
-  m_pCurChain = MolChainPtr();
-  m_pPrevAtom = MolAtomPtr();
-  */
+  m_pTraj = TrajectoryPtr();
+
   return true;
 }
 
@@ -132,7 +111,7 @@ void GROFileReader::readContents(qlib::InStream &ins)
   LString buf;
 
   readRecord(lin);
-  LOG_DPRINTLN("1: %s", m_recbuf.c_str());
+  // LOG_DPRINTLN("1: %s", m_recbuf.c_str());
 
   // NATOM
   int natom;
@@ -142,154 +121,71 @@ void GROFileReader::readContents(qlib::InStream &ins)
     return;
   }
   LOG_DPRINTLN("GRO> natoms=%d", natom);
+  m_nAllAtoms = natom;
 
+  //LString schain("_");
+  MolAtomPtr pAtom;
+  char cchain = 'A';
+  int prev_resid = -1;
   int i;
   for (i=0; i<natom; ++i) {
-    if (!readRecord(lin))
+    if (!readRecord(lin)) {
+      LOG_DPRINTLN("GRO> readRecord failed for %d-th atom", i);
       break;
+    }
 
-    // Skip empty lines
-    if (m_recbuf.isEmpty())
+    pAtom = readAtom();
+    if (pAtom.isnull())
       continue;
+
+    int nresid = pAtom->getResIndex().first;
+    if (nresid<prev_resid && cchain<='Z')
+      cchain ++;
+
+    pAtom->setChainName(LString(cchain));
+
+    int inum = 0, naid;
     
-    // read residue number field
-    LString str_resid = readStrTrim(1,5);
-    if (str_resid.isEmpty()) {
-       LOG_DPRINTLN("GROFileReader> warning: Empty resid num.");
-      continue;
-    }
-    int nresid;
-    if (!str_resid.toInt(&nresid)) {
-      MB_THROW(qlib::FileFormatException, "Cannot read XXX");
-      return;
-    }
+    for (;;++inum) {
+      naid = m_pMol->appendAtom(pAtom);
+      if (naid>=0) {
+	prev_resid = nresid;
+	m_nReadAtoms++;
+	break; // OK
+      }
 
-    //LOG_DPRINT("residue number: <%s>\n", str_resid.c_str());
+      if (cchain>='Z') {
+	LOG_DPRINTLN("GRO> ERROR: append atom failed.");
+	break;
+      }
+      
+      cchain ++;
+      pAtom->setChainName(LString(cchain));
+      // --> retry
 
-    // read residue name field
-    LString str_resnm = readStrTrim(6,10);
-    if (str_resnm.isEmpty()) {
-       LOG_DPRINTLN("GROFileReader> warning: Empty resid name.");
-      continue;
-    }
+    } // for (;;++inum)...
+    
+  } // for
 
-    // read atom name field
-    LString str_atmnm = readStrTrim(11,15);
-    if (str_atmnm.isEmpty()) {
-       LOG_DPRINTLN("GROFileReader> warning: Empty atom name.");
-      continue;
-    }
 
-    // read atom number field
-    LString str_atmid = readStrTrim(16,20);
-    if (str_atmid.isEmpty()) {
-       LOG_DPRINTLN("GROFileReader> warning: Empty atom number.");
-      continue;
-    }
-    int atomid;
-    if (!str_resid.toInt(&atomid)) {
-      MB_THROW(qlib::FileFormatException, "Cannot read XXX");
-      return;
-    }
-
-    // read atom number field
-    double xpos;
-    readDouble(21,28,&xpos);
-
-    // read atom number field
-    double ypos;
-    readDouble(29,36,&ypos);
-
-    // read atom number field
-    double zpos;
-    readDouble(37,42,&zpos);
-
-    LOG_DPRINTLN("read: %s/%d/%s/%d (%f,%f,%f)",
-	       str_resnm.c_str(),
-	       nresid,
-	       str_atmnm.c_str(),
-	       atomid,
-	       xpos, ypos, zpos
-	       );
+  if (!readRecord(lin)) {
+    LOG_DPRINTLN("GRO> readRecord failed for cell dim");
+    return;
   }
+
+  // cell info
+  //  10.00000  10.00000   8.00000
+
+  double cella, cellb, cellc;
+  readDouble(1,10,&cella);
+  readDouble(11,20,&cellb);
+  readDouble(21,30,&cellc);
+  LOG_DPRINTLN("PBC: %f, %f, %f", cella, cellb, cellc);
+
 }
 
 
-bool GROFileReader::isOrganicAtom(int eleid) const
-{
-  if (eleid==ElemSym::H ||
-      eleid==ElemSym::C ||
-      eleid==ElemSym::N ||
-      eleid==ElemSym::O ||
-      eleid==ElemSym::P ||
-      eleid==ElemSym::S)
-    return true;
-  else
-    return false;
-}
-
-
-bool GROFileReader::checkAtomRecord(LString &chain, LString &resname, LString &atom)
-{
-  if (chain.isEmpty())
-    chain = "_";
-
-  if (resname.length()<=0)
-    return false;
-  
-#if defined(QTL_CONV)
-  if (resname.equals("A")) {
-    // residue A represents ADE
-    resname = "ADE";
-  }
-  else if (resname.equals("C")) {
-    // residue C represents CYT
-    resname = "CYT";
-  }
-  else if (resname.equals("G")) {
-    // residue G represents GUA
-    resname = "GUA";
-  }
-  else if (resname.equals("T")) {
-    // residue T represents THY
-    resname = "THY";
-  }
-  else if (resname.equals("U")) {
-    // residue U represents URI
-    resname = "URI";
-  }
-
-  // convert "*" to "'"
-  int len = atom.length();
-  if (len<=0)
-    return false;
-  char lastch = (atom.c_str())[len-1];
-  if (lastch=='*') {
-    //LString tmp = atom.left(len-1);
-    atom = atom.left(len-1) + '\''; //tmp.append('\'');
-  }
-
-  // convert THY's C5M to C5A
-  if (resname.equals("THY") && atom.equals("C5M")) {
-    atom = "C5A";
-  }
-
-  // convert ILE's CD1 to CD
-  if (resname.equals("ILE") && atom.equals("CD1")) {
-    atom = "CD";
-  }
-
-#elif defined(CCP4_CONV)
-  // convert ILE's CD to CD1
-  if (resname.equals("ILE") && atom.equals("CD")) {
-    atom = "CD1";
-  }
-#endif
-
-  return true;
-}
-
-/** get element name from atomname (for illegal PDB files) */
+/// get element name from atomname (for illegal PDB files)
 int GROFileReader::convFromAname(const LString &atomname)
 {
   int i, nsize = atomname.length();
@@ -355,12 +251,74 @@ int GROFileReader::convFromAname(const LString &atomname)
   return ElemSym::XX;
 }
 
-bool GROFileReader::readAtom()
+MolAtomPtr GROFileReader::readAtom()
 {
-  return true;
+  // Skip empty lines
+  if (m_recbuf.isEmpty())
+    return MolAtomPtr();
+    
+  // read residue number field
+  int nresid;
+  readInt(1,5,&nresid);
+
+  //LOG_DPRINT("residue number: <%s>\n", str_resid.c_str());
+
+  // read residue name field
+  LString str_resnm = readStrTrim(6,10);
+  if (str_resnm.isEmpty()) {
+    LOG_DPRINTLN("GROFileReader> warning: Empty resid name.");
+    return MolAtomPtr();
+  }
+
+  // read atom name field
+  LString str_atmnm = readStrTrim(11,15);
+  if (str_atmnm.isEmpty()) {
+    LOG_DPRINTLN("GROFileReader> warning: Empty atom name.");
+    return MolAtomPtr();
+  }
+
+  // read atom number field
+  int atomid;
+  readInt(16,20,&atomid);
+
+  // read atom number field
+  double xpos;
+  readDouble(21,28,&xpos);
+
+  // read atom number field
+  double ypos;
+  readDouble(29,36,&ypos);
+
+  // read atom number field
+  double zpos;
+  readDouble(37,42,&zpos);
+
+  int eleid = convFromAname(str_atmnm);
+
+  // if (nresid<prev_resid && cchain<='Z')
+  //  cchain ++;
+
+  MolAtomPtr pAtom = MolAtomPtr(MB_NEW MolAtom());
+  pAtom->setName(str_atmnm);
+  pAtom->setElement(eleid);
+  // pAtom->setChainName(LString(cchain));
+  pAtom->setResIndex(nresid);
+  pAtom->setResName(str_resnm);
+
+  pAtom->setPos(Vector4D(xpos*10.0, ypos*10.0, zpos*10.0));
+
+    /*
+      LOG_DPRINTLN("GRO> append: %s/%d/%s/%d (%f,%f,%f) append atom...",
+		   str_resnm.c_str(),
+		   nresid,
+		   str_atmnm.c_str(),
+		   atomid,
+		   xpos, ypos, zpos
+		   );
+    */
+
+  return pAtom;
 }
-
-
 
 bool GROFileReader::readRecord(qlib::LineStream &ins)
 {
