@@ -155,7 +155,7 @@ void MapMesh3Renderer::objectChanged(qsys::ObjectEvent &ev)
 
 void MapMesh3Renderer::preRender(DisplayContext *pdc)
 {
-  pdc->color(getColor());
+  pdc->color(getDefaultColor());
   pdc->setLineWidth(m_lw);
   pdc->setLighting(false);
 }
@@ -243,7 +243,7 @@ void MapMesh3Renderer::renderImpl1(DisplayContext *pdl)
   quint8 val[4];
   quint8 isolev = quint8( m_nIsoLevel );
 
-  pdl->color(getColor());
+  pdl->color(getDefaultColor());
   pdl->startLines();
 
   for (k=0; k<nsec-1; k++)

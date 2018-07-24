@@ -23,8 +23,8 @@ runtime_class Map3Renderer extends Renderer
   abstract;
   smartptr;
 
-  property real maxLevel => redirect(getMaxLevel, XXX) (readonly);
-  property real minLevel => redirect(getMinLevel, XXX) (readonly);
+  ///////////////
+  // Coloring
 
   /// coloring mode
   enumdef colormode {
@@ -35,12 +35,37 @@ runtime_class Map3Renderer extends Renderer
   property enum colormode => redirect(getColorMode, setColorMode);
   default colormode = "solid";
 
-  /// Color for solid coloring mode
-  property object<AbstractColor$> color => redirect(getColor, setColor);
-  default color = gfx::SolidColor::createRGB(0.0, 0.0, 1.0);
+  // /// Color for solid coloring mode
+  // property object<AbstractColor$> color => redirect(getColor, setColor);
+  // default color = gfx::SolidColor::createRGB(0.0, 0.0, 1.0);
 
-  /// synonim of color for compatibility with other renderers
-  property object<AbstractColor$> defaultcolor => redirect(getColor, setColor) (nopersist);
+  /// synonim of color for compatibility with prev ver
+  property object<AbstractColor$> color => redirect(getDefaultColor, setDefaultColor) (nopersist);
+
+  property object<AbstractColor$> defaultcolor => redirect(getDefaultColor, setDefaultColor);
+  default defaultcolor = gfx::SolidColor::createRGB(192.0/255.0, 192.0/255.0, 1.0, 1.0);
+
+  // Molcolor mode
+
+  property object<ColoringScheme$> coloring => redirect(getColSchm, setColSchm);
+  default coloring = molstr::ColoringScheme::createDefaultS();
+
+  property string color_molname => redirect(getColorMolName, setColorMolName);
+  default color_molname = "";
+
+  // Multigrad (mapcolor) mode
+
+  property object<MultiGradient$> multi_grad => redirect(getMultiGrad, xxx) (readonly);
+
+  property string color_mapname => redirect(getColorMapName, setColorMapName);
+  default color_mapname = "";
+
+  object<Object$> getColorMapObj();
+
+  ///////////////
+
+  property real maxLevel => redirect(getMaxLevel, XXX) (readonly);
+  property real minLevel => redirect(getMinLevel, XXX) (readonly);
 
   /// Contour leve (in sigma unit)
   property real siglevel => redirect(getSigLevel, setSigLevel);
@@ -80,15 +105,6 @@ runtime_class Map3Renderer extends Renderer
   property object<MolSelection$> bndry_sel => redirect(getBndrySel, setBndrySel);
   default bndry_sel = molstr::SelectionPtr(new molstr::SelCommand());
 
-  ///////////////
-  // multigrad
-
-  property object<MultiGradient$> multi_grad => redirect(getMultiGrad, xxx) (readonly);
-
-  property string color_mapname => redirect(getColorMapName, setColorMapName);
-  default color_mapname = "";
-
-  object<Object$> getColorMapObj();
 };
 
 #endif

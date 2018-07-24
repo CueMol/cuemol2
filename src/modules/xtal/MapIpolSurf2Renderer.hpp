@@ -11,12 +11,13 @@
 
 #include <qsys/ScalarObject.hpp>
 #include <modules/surface/MolSurfObj.hpp>
+#include <modules/molstr/molstr.hpp>
 #include <gfx/SolidColor.hpp>
 
-#include <modules/molstr/molstr.hpp>
-#include <modules/molstr/ColoringScheme.hpp>
-
 #include "MapBsplIpol.hpp"
+
+#include <unordered_set>
+#include <unordered_map>
 
 class MapIpolSurf2Renderer_wrap;
 
@@ -30,12 +31,13 @@ namespace xtal {
   using qsys::ScalarObject;
   using molstr::SelectionPtr;
   using molstr::MolCoordPtr;
+  using molstr::MolAtomPtr;
   class DensityMap;
 
-  /// Map surface renderer class (ver.2)
-  /// This class uses ver2 interface to perform file,
-  /// display-list and VBO (with Omp) rendering
-  class MapIpolSurf2Renderer : public Map3Renderer, public molstr::ColSchmHolder
+  ///
+  /// Map surface renderer using B-spline interpolation (v2)
+  ///
+  class MapIpolSurf2Renderer : public Map3Renderer
   {
     MC_SCRIPTABLE;
     MC_CLONEABLE;
@@ -47,11 +49,13 @@ namespace xtal {
     ///////////////////////////////////////////
     // properties
 
+    /*
   public:
     void setColor2(const ColorPtr &col) { super_t::setColor(col); }
     const ColorPtr &getColor2() const { return super_t::getColor(); }
+*/
 
-
+  public:
     enum {
       MSRDRAW_FILL = 0,
       MSRDRAW_LINE = 1,
@@ -164,6 +168,27 @@ namespace xtal {
 
     //////////
 
+  public:
+    /// carving mode/no carving (box/extent)
+    static const int CRV_NONE = 0;
+    /// carving mode/no carving (bounding box of bndryMol+bndryRng)
+    static const int CRV_BBOX = 1;
+    /// carving mode/atom distance based carving (using bndryMol+bndryRng)
+    static const int CRV_ATOMDIST = 2;
+    /// carving mode/atom dist + mesh connectivity based carving
+    static const int CRV_MESHCONN = 3;
+    
+  private:
+    /// Mesh carving mode
+    int m_nCarvMode;
+
+  public:
+    int getCarvMode() const { return m_nCarvMode; }
+    void setCarvMode(int n) {
+      m_nCarvMode = n;
+      invalidateDisplayCache();
+    }
+    
   private:
     double m_dBndryRng2;
 
@@ -185,19 +210,6 @@ namespace xtal {
 
 
     //////////
-
-  private:
-    int m_nWatShedBin;
-
-  public:
-    int getWatShedBin() const { return m_nWatShedBin; }
-    void setWatShedBin(int val) { 
-      if (val!=m_nWatShedBin){
-        m_nWatShedBin = val;
-        invalidateDisplayCache();
-      }
-    }
-
 
   private:
     /// OpenMP Thread number(-1: use all system cores)
@@ -290,15 +302,22 @@ namespace xtal {
 
     void marchCube(void *);
 
+    /// CGAL mesh data
     void *m_pMesh;
+
+    typedef std::unordered_map<int,int> IntMap;
 
     void buildMeshData(DisplayContext *pdl);
 
-    void renderMeshImpl0(DisplayContext *pdl);
-    void renderMeshImpl1(DisplayContext *pdl);
-    //void renderMeshImpl2(DisplayContext *pdl);
+    void renderNocarv(DisplayContext *pdl);
+    void renderCrvAtomDist(DisplayContext *pdl);
+    void renderCrvMeshConn(DisplayContext *pdl);
 
     void clearMeshData();
+
+    void renderMeshImpl(DisplayContext *pdl, const IntMap &vidmap, gfx::Mesh &mesh);
+
+    gfx::ColorPtr calcColor(const MolAtomPtr &pAtm);
 
   public:
 

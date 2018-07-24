@@ -502,6 +502,13 @@ qsys::ObjectPtr Map3Renderer::getColorMapObj() const
   return pobj;
 }
 
+MolCoordPtr Map3Renderer::getColorMolObj() const
+{
+  qsys::ObjectPtr pobj = ensureNotNull(getScene())->getObjectByName(getColorMolName());
+  MolCoordPtr pMol = MolCoordPtr(pobj);
+  return pMol;
+}
+
 void Map3Renderer::propChanged(qlib::LPropEvent &ev)
 {
   if (ev.getParentName().equals("multi_grad") &&

@@ -130,7 +130,7 @@ qlib::uid_t MapSurf2Renderer::detachObj()
 
 void MapSurf2Renderer::preRender(DisplayContext *pdc)
 {
-  pdc->color(getColor());
+  pdc->color(getDefaultColor());
 
   if (m_nDrawMode==MSRDRAW_POINT) {
     pdc->setLighting(false);
@@ -752,7 +752,7 @@ void MapSurf2Renderer::createDisplayCache()
     MB_DPRINTLN("thr %d start id %d", i, iverts[i]);
   }
 
-  quint32 cc = getColor()->getCode();
+  quint32 cc = getDefaultColor()->getCode();
   m_col_r = gfx::getRCode(cc);
   m_col_g = gfx::getGCode(cc);
   m_col_b = gfx::getBCode(cc);

@@ -696,7 +696,7 @@ void MapMesh3Renderer::renderImplTest2(DisplayContext *pdl)
   xsol.m_isolev = isolev;
   xsol.m_eps = FLT_EPSILON*100.0f;
 
-  pdl->color(getColor());
+  pdl->color(getDefaultColor());
   pdl->startLines();
 
   // plane normal vector;

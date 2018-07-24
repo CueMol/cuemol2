@@ -22,6 +22,9 @@
 #include <modules/molstr/molstr.hpp>
 #include <modules/molstr/Selection.hpp>
 #include <modules/molstr/BSPTree.hpp>
+// #include <modules/molstr/molstr.hpp>
+#include <modules/molstr/ColoringScheme.hpp>
+
 
 namespace gfx {
   class DisplayContext;
@@ -39,7 +42,8 @@ namespace xtal {
   using molstr::BSPTree;
 
   class XTAL_API Map3Renderer : public qsys::DispListRenderer,
-                                public qsys::ViewEventListener
+                                public qsys::ViewEventListener,
+                                public molstr::ColSchmHolder
   {
     MC_SCRIPTABLE;
 
@@ -85,36 +89,6 @@ namespace xtal {
     double getExtent() const { return m_dMapExtent; }
 
     void setExtent(double value);
-
-    /////////
-
-  private:
-    /// display color
-    ColorPtr m_pcolor;
-
-  public:
-    /// display color
-    virtual void setColor(const ColorPtr &col) { m_pcolor = col; }
-    const ColorPtr &getColor() const { return m_pcolor; }
-
-    /////////
-
-  private:
-    /// Coloring mode
-    int m_nMode;
-
-  public:
-    enum {
-      MAPREND_SIMPLE = 0,
-      MAPREND_MOLFANC = 3,
-      MAPREND_MULTIGRAD = 4,
-    };
-
-    int getColorMode() const { return m_nMode; }
-    void setColorMode(int n) {
-      m_nMode = n;
-      invalidateDisplayCache();
-    }
 
     /////////
 
@@ -178,6 +152,44 @@ namespace xtal {
     bool isUseAbsLev() const { return m_bUseAbsLev; }
 
 
+    ///////////////////////////////////////////////////////
+    // Coloring related properties
+
+  private:
+    /// Coloring mode
+    int m_nMode;
+
+  public:
+    enum {
+      MAPREND_SIMPLE = 0,
+      MAPREND_MOLFANC = 3,
+      MAPREND_MULTIGRAD = 4,
+    };
+
+    int getColorMode() const { return m_nMode; }
+    void setColorMode(int n) {
+      m_nMode = n;
+      invalidateDisplayCache();
+    }
+
+    /////////
+
+    /*
+  private:
+    /// Solid coloring (for SIMPLE mode)
+    ColorPtr m_pcolor;
+
+*/
+  public:
+    virtual void setColor(const ColorPtr &col) {
+      molstr::ColSchmHolder::setDefaultColor(col);
+    }
+    ColorPtr getColor() const {
+      return molstr::ColSchmHolder::getDefaultColor();
+    }
+    
+    /////////
+
   private:
     /// Multi gradient data
     qsys::MultiGradientPtr m_pGrad;
@@ -206,6 +218,21 @@ namespace xtal {
 
     /// get color-map object (valid in MULTIGRAD mode)
     qsys::ObjectPtr getColorMapObj() const;
+
+  private:
+    /// MolCoord object name by which painting color is determined.
+    /// (used in MOLFANC mode)
+    LString m_sColorMol;
+
+  public:
+    LString getColorMolName() const { return m_sColorMol; }
+    void setColorMolName(const LString &s) {
+      m_sColorMol = s;
+      invalidateDisplayCache();
+    }
+
+    /// get color-mol object (valid in MOLFUNC mode)
+    MolCoordPtr getColorMolObj() const;
 
     ///////////////////////////////////////////////////////
     // Workarea (for derived classes MapMesh, MapSurf, etc)

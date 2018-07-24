@@ -19,8 +19,8 @@ runtime_class MapSurf2Renderer extends Map3Renderer
   cloneable;
 
   /// Override the default color
-  property object<AbstractColor$> color => redirect(getColor, setColor);
-  default color = gfx::SolidColor::createRGB(1.0, 1.0, 1.0);
+  property object<AbstractColor$> defaultcolor => redirect(getDefaultColor, setDefaultColor);
+  default defaultcolor = gfx::SolidColor::createRGB(1.0, 1.0, 1.0);
 
   /// Automatically update the map center as view center (only in mouseUp event)
   property boolean autoupdate => redirect(isAutoUpdate,setAutoUpdate);
