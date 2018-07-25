@@ -78,7 +78,6 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
   </PropertyGroup>
-
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
     <ClCompile>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;MDTOOLS_EXPORTS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -95,6 +94,8 @@
     <ClCompile Include="..\..\src\modules\mdtools\DCDTrajReader.cpp" />
     <ClCompile Include="..\..\src\modules\mdtools\DCDTrajReader_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\mdtools\FortBinStream.cpp" />
+    <ClCompile Include="..\..\src\modules\mdtools\GROFileReader.cpp" />
+    <ClCompile Include="..\..\src\modules\mdtools\GROFileReader_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\mdtools\mdtools.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
@@ -107,16 +108,20 @@
     <ClCompile Include="..\..\src\modules\mdtools\TrajBlock_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\mdtools\Trajectory.cpp" />
     <ClCompile Include="..\..\src\modules\mdtools\Trajectory_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\mdtools\XTCTrajReader.cpp" />
+    <ClCompile Include="..\..\src\modules\mdtools\XTCTrajReader_wrap.cpp" />
   </ItemGroup>
   <ItemGroup>
     <mcw_loader Include="..\..\src\modules\mdtools\mdtools.moddef" />
   </ItemGroup>
   <ItemGroup>
     <mcwrapgen3 Include="..\..\src\modules\mdtools\DCDTrajReader.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\mdtools\GROFileReader.qif" />
     <mcwrapgen3 Include="..\..\src\modules\mdtools\NAMDCoorReader.qif" />
     <mcwrapgen3 Include="..\..\src\modules\mdtools\PsfReader.qif" />
     <mcwrapgen3 Include="..\..\src\modules\mdtools\TrajBlock.qif" />
     <mcwrapgen3 Include="..\..\src\modules\mdtools\Trajectory.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\mdtools\XTCTrajReader.qif" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\qlib\qlib.vcxproj">

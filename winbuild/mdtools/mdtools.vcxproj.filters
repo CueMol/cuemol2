@@ -46,6 +46,18 @@
     <ClCompile Include="..\..\src\modules\mdtools\Trajectory_wrap.cpp">
       <Filter>Source file</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\modules\mdtools\GROFileReader.cpp">
+      <Filter>Source file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\mdtools\XTCTrajReader.cpp">
+      <Filter>Source file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\mdtools\GROFileReader_wrap.cpp">
+      <Filter>Source file</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\modules\mdtools\XTCTrajReader_wrap.cpp">
+      <Filter>Source file</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <mcw_loader Include="..\..\src\modules\mdtools\mdtools.moddef">
@@ -66,6 +78,12 @@
       <Filter>Source file</Filter>
     </mcwrapgen3>
     <mcwrapgen3 Include="..\..\src\modules\mdtools\Trajectory.qif">
+      <Filter>Source file</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\mdtools\GROFileReader.qif">
+      <Filter>Source file</Filter>
+    </mcwrapgen3>
+    <mcwrapgen3 Include="..\..\src\modules\mdtools\XTCTrajReader.qif">
       <Filter>Source file</Filter>
     </mcwrapgen3>
   </ItemGroup>
