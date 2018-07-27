@@ -47,16 +47,20 @@ private:
   qlib::Box3D m_bbox;
   qlib::Vector4D m_vCenter;
   
+  /// Kd-tree data (for around op impl ver2)
+  void *m_pExtData;
+
 public:
   SelCacheData()
        : m_nCacheID(-1), m_nMolID(qlib::invalid_uid), m_bAsetValid(false),
-         m_nSel(0), m_bBboxValid(false)
+         m_nSel(0), m_bBboxValid(false), m_pExtData(NULL)
     {
     }
   
   ~SelCacheData()
-    {
-    }
+  {
+    clearExtData();
+  }
 
   int getCacheID() const {
     return m_nCacheID;
@@ -78,6 +82,15 @@ public:
     return m_vCenter;
   }
 
+  void *getExtData() const {
+    return m_pExtData;
+  }
+  void setExtData(void *p) {
+    m_pExtData = p;
+  }
+
+  /// Impl in SelAroundImpl2.cpp
+  void clearExtData();
 };
   
 

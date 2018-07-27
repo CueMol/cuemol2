@@ -735,6 +735,9 @@
     <ClCompile Include="..\..\src\modules\molstr\AtomPosMap2.cpp">
       <Filter>molstr</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\modules\molstr\SelAroundImpl2.cpp">
+      <Filter>molstr</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\src\qsys\AbstractColor.hpp">

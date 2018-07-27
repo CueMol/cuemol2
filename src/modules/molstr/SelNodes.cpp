@@ -94,14 +94,18 @@ bool SelOpNode::isSelected(MolAtomPtr pAtom)
     return ! (getNode()->isSelected(pAtom));
 
   case OP_AROUND:
-    return chkAroundNode(pAtom, false);
+    //return chkAroundNode(pAtom, false);
+    return chkAroundNode2(pAtom, false);
   case OP_EXPAND:
-    return chkAroundNode(pAtom, true);
+    //return chkAroundNode(pAtom, true);
+    return chkAroundNode2(pAtom, true);
 
   case OP_NEIGHBOR:
-    return false; //chkAroundNode(patom);
+    // TO DO: implementation !!
+    return false;
   case OP_EXTEND:
-    return false; //chkAroundNode(patom);
+    // TO DO: implementation !!
+    return false;
 
   case OP_BYRES:
     return chkByresNode(pAtom);

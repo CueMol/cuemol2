@@ -237,7 +237,31 @@ void SelCacheMgr::invalidateCache(int id)
 void SelCacheMgr::objectChanged(qsys::ObjectEvent &ev)
 {
   qlib::uid_t target_id = ev.getTarget();
+  if (ev.getType()!=qsys::ObjectEvent::OBE_CHANGED)
+    return;
+  LString descr = ev.getDescr();
+  if (!descr.equals("atomsMoved") &&
+      !descr.equals("topologyChanged")) {
+    return;
+  }
 
-  // TO DO: implementation
+  // LOG_DPRINTLN("SelCacheMgr> objectChanged(tgt=%d, descr=%s)", target_id, descr.c_str());
+
+  CacheEntTab::const_iterator ii = m_data.begin();
+  CacheEntTab::const_iterator ie = m_data.end();
+  std::set<int> toremv;
+  for (; ii!=ie; ++ii) {
+    if (ii->second->getMolID()==target_id) {
+      toremv.insert(ii->second->getCacheID());
+    }
+  }
+
+  if (toremv.empty())
+    return;
+
+  BOOST_FOREACH (int i, toremv) {
+    LOG_DPRINTLN("SelCacheMgr> remove entry %d for mol %d", i, target_id);
+    invalidateCache(i);
+  }
 }
 

@@ -114,6 +114,9 @@ namespace molstr {
   private:
     /// OP_AROUND/OP_EXPAND implementation (in SelAroundImpl.cpp)
     bool chkAroundNode(MolAtomPtr patom, bool bExpn);
+
+    /// OP_AROUND/OP_EXPAND implementation (in SelAroundImpl2.cpp)
+    bool chkAroundNode2(MolAtomPtr patom, bool bExpn);
     
     bool chkByresNode(MolAtomPtr patom);
     bool chkMainSideChainNode(MolAtomPtr patom, bool);
