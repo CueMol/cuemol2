@@ -51,8 +51,7 @@ LString MapRenderer::toString() const
 
 double MapRenderer::getMaxLevel() const
 {
-  MapRenderer *pthis = const_cast<MapRenderer *>(this);
-  ScalarObject *pMap = (ScalarObject *) pthis->getClientObj().get();
+  ScalarObject *pMap = qlib::ensureNotNull( getScalarObj() );
 
   double sig = pMap->getRmsdDensity();
   //if (qlib::isNear4(sig, 0.0))
@@ -62,8 +61,7 @@ double MapRenderer::getMaxLevel() const
 
 double MapRenderer::getMinLevel() const
 {
-  MapRenderer *pthis = const_cast<MapRenderer *>(this);
-  ScalarObject *pMap = (ScalarObject *) pthis->getClientObj().get();
+  ScalarObject *pMap = qlib::ensureNotNull( getScalarObj() );
 
   double sig = pMap->getRmsdDensity();
   //if (qlib::isNear4(sig, 0.0))
@@ -73,16 +71,16 @@ double MapRenderer::getMinLevel() const
 
 double MapRenderer::getLevel() const
 {
-  MapRenderer *pthis = const_cast<MapRenderer *>(this);
-  ScalarObject *pMap = (ScalarObject *) pthis->getClientObj().get();
+  ScalarObject *pMap = qlib::ensureNotNull( getScalarObj() );
+
   double sig = pMap->getRmsdDensity();
   return m_dSigLevel * sig;
 }
 
 void MapRenderer::setLevel(double value)
 {
-  MapRenderer *pthis = const_cast<MapRenderer *>(this);
-  ScalarObject *pMap = (ScalarObject *) pthis->getClientObj().get();
+  ScalarObject *pMap = qlib::ensureNotNull( getScalarObj() );
+
   double sig = pMap->getRmsdDensity();
   setSigLevel(value/sig);
 }

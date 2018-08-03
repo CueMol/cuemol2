@@ -62,8 +62,7 @@ const char *GLSLMapVolRenderer::getTypeName() const
 
 double GLSLMapVolRenderer::getMaxExtent() const
 {
-  GLSLMapVolRenderer *pthis = const_cast<GLSLMapVolRenderer *>(this);
-  ScalarObject *pMap = (ScalarObject *) pthis->getClientObj().get();
+  ScalarObject *pMap = qlib::ensureNotNull( getScalarObj() );
 
   const double xmax = pMap->getColNo() * pMap->getColGridSize() / 2.0;
   const double ymax = pMap->getRowNo() * pMap->getRowGridSize() / 2.0;
@@ -462,7 +461,7 @@ void GLSLMapVolRenderer::display(DisplayContext *pdc)
   if (!m_bChkShaderDone)
     initShader();
 
-  ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
+  ScalarObject *pMap = getScalarObj();
   DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
 
   if (!m_bMapTexOK) {
@@ -612,7 +611,7 @@ void GLSLMapVolRenderer::renderGPU(DisplayContext *pdc)
     return;
   }
 
-  ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
+  ScalarObject *pMap = getScalarObj();
   DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
 
   int i,j,k;

@@ -50,7 +50,7 @@ void MapSurfRenderer::display(DisplayContext *pdc)
 /// Rendering using OpenMP/VBO
 void MapSurfRenderer::displayVBO1(DisplayContext *pdc)
 {
-  ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
+  ScalarObject *pMap = getScalarObj();
   DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
 
   m_pCMap = pMap;

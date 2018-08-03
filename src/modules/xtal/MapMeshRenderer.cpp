@@ -413,7 +413,7 @@ void MapMeshRenderer::render(DisplayContext *pdl)
       m_pZCrsLst==NULL)
     return;
 
-  ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
+  ScalarObject *pMap = getScalarObj();
   DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
 
   if (!generate(pMap, pXtal))
@@ -757,8 +757,7 @@ void MapMeshRenderer::render(DisplayContext *pdl)
 
 double MapMeshRenderer::getMaxExtent() const
 {
-  MapMeshRenderer *pthis = const_cast<MapMeshRenderer *>(this);
-  ScalarObject *pMap = (ScalarObject *) pthis->getClientObj().get();
+  ScalarObject *pMap = qlib::ensureNotNull( getScalarObj() );
 
   const double xmax = m_nColCrs * pMap->getColGridSize() / 2.0;
   const double ymax = m_nRowCrs * pMap->getRowGridSize() / 2.0;

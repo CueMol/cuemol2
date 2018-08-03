@@ -16,6 +16,7 @@
 #include <qlib/LPropEvent.hpp>
 #include <qlib/ObjectManager.hpp>
 #include <qlib/LRegExpr.hpp>
+#include <qlib/LExceptions.hpp>
 
 using namespace qsys;
 using qlib::LDom2Node;
@@ -83,25 +84,32 @@ void StyleSheet::applyStyleHelper(const LString &parent_name, LScriptable *pthat
 
   std::set<LString> nameset;
   pthat->getPropNames(nameset);
+  qlib::PropSpec spec;
 
   BOOST_FOREACH(const LString &key, nameset) {
 
-    // Get the property's spec description
-    qlib::PropSpec spec;
-    if (!pthat->getPropSpecImpl(key, &spec)) {
-      // TO DO: throw exception ??
-      MB_DPRINTLN("StyleSheet::applyStyle>"
-                  "Fatal error, prop %s is not found", key.c_str());
+    try {
+      // Get the property's spec description
+      if (!pthat->getPropSpecImpl(key, &spec)) {
+        // TO DO: throw exception ??
+        MB_DPRINTLN("StyleSheet::applyStyle>"
+                    "Fatal error, prop %s is not found", key.c_str());
+        continue;
+      }
+
+      if (!pthat->getProperty(key, variant)) {
+        // TO DO: throw exception ??
+        MB_DPRINTLN("StyleSheet::applyStyle>"
+                    "Fatal error, prop %s is not found", key.c_str());
+        continue;
+      }
+    }
+    catch (qlib::LException &e) {
+      MB_DPRINTLN("applyStyle> Exception occured in getProp for %s: %s (skipped)",
+                  key.c_str(), e.getFmtMsg().c_str());
       continue;
     }
-
-    if (!pthat->getProperty(key, variant)) {
-      // TO DO: throw exception ??
-      MB_DPRINTLN("StyleSheet::applyStyle>"
-                  "Fatal error, prop %s is not found", key.c_str());
-      continue;
-    }
-
+    
     LString nested_name;
     if (parent_name.isEmpty())
       nested_name = key;

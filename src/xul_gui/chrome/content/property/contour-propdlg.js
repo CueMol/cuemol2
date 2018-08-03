@@ -107,6 +107,7 @@ ContourPropEdit.prototype.updateWidgets = function ()
 
   elem = gMain.findPropData("bndry_sel");
   var selstr = elem.value;
+
   this.mLimSel.origSel = selstr;
   this.mLimSel.buildBox();
 

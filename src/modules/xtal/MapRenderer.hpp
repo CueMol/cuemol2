@@ -197,6 +197,12 @@ namespace xtal {
     double getMaxLevel() const;
     double getMinLevel() const;
 
+    ScalarObject *getScalarObj() const
+    {
+      MapRenderer *pthis = const_cast<MapRenderer *>(this);
+      return static_cast<ScalarObject *>( pthis->getClientObj().get() );
+    }
+
     ///////////////////////////////////////////////////////////////
     // MolBoundary properties/implementation
 

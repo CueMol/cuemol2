@@ -32,7 +32,7 @@ using qlib::Matrix3D;
 /// Rendering using OpenMP/VBO
 void MapSurfRenderer::displayGLSL1(DisplayContext *pdc)
 {
-  ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
+  ScalarObject *pMap = getScalarObj();
   DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
 
   m_pCMap = pMap;
@@ -331,7 +331,7 @@ void MapSurfRenderer::displayGLSL2(DisplayContext *pdc)
 
   if (m_pPO==NULL) return; // not initialized
 
-  ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
+  ScalarObject *pMap = getScalarObj();
   DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
 
   m_pCMap = pMap;

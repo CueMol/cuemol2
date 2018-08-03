@@ -156,8 +156,7 @@ void MapSurfRenderer::setMaxGrids(int n)
 
 double MapSurfRenderer::getMaxExtent() const
 {
-  MapSurfRenderer *pthis = const_cast<MapSurfRenderer *>(this);
-  ScalarObject *pMap = (ScalarObject *) pthis->getClientObj().get();
+  ScalarObject *pMap = qlib::ensureNotNull( getScalarObj() );
 
   double grdsz = 1.0;
 
@@ -264,7 +263,7 @@ void MapSurfRenderer::setupXformMat(DisplayContext *pdl)
 // generate display list
 void MapSurfRenderer::render(DisplayContext *pdl)
 {
-  ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
+  ScalarObject *pMap = getScalarObj();
   m_pCMap = pMap;
 
   // check and setup mol boundary data
@@ -955,7 +954,7 @@ void MapSurfRenderer::setupXformMat()
 
 qsys::ObjectPtr MapSurfRenderer::generateSurfObj()
 {
-  ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
+  ScalarObject *pMap = getScalarObj();
   m_pCMap = pMap;
   m_bGenSurfMode = true;
 

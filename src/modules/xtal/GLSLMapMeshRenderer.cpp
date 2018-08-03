@@ -72,8 +72,7 @@ const char *GLSLMapMeshRenderer::getTypeName() const
 
 double GLSLMapMeshRenderer::getMaxExtent() const
 {
-  GLSLMapMeshRenderer *pthis = const_cast<GLSLMapMeshRenderer *>(this);
-  ScalarObject *pMap = (ScalarObject *) pthis->getClientObj().get();
+  ScalarObject *pMap = qlib::ensureNotNull( getScalarObj() );
 
   const double xmax = 100 * pMap->getColGridSize() / 2.0;
   const double ymax = 100 * pMap->getRowGridSize() / 2.0;
@@ -524,7 +523,7 @@ void GLSLMapMeshRenderer::display(DisplayContext *pdc)
     return;
   }
 
-  ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
+  ScalarObject *pMap = getScalarObj();
   DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
 
   if (!m_bMapTexOK) {
@@ -574,7 +573,7 @@ void GLSLMapMeshRenderer::renderGPU(DisplayContext *pdc)
   if (m_pPO==NULL)
     return;
   
-  ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
+  ScalarObject *pMap = getScalarObj();
   DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
 
   glActiveTexture(GL_TEXTURE0);
@@ -649,7 +648,7 @@ Vector4D GLSLMapMeshRenderer::calcVecCrs(const IntVec3D &tpos, int iv0, float cr
 
 void GLSLMapMeshRenderer::renderCPU(DisplayContext *pdc)
 {
-  ScalarObject *pMap = static_cast<ScalarObject *>(getClientObj().get());
+  ScalarObject *pMap = getScalarObj();
   DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
 
   if (!m_bMapTexOK) {
