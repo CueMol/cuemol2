@@ -149,6 +149,9 @@
     <ClCompile Include="..\..\src\modules\rendering\FileDisplayContext.cpp" />
     <ClCompile Include="..\..\src\modules\rendering\ImgSceneExporter.cpp" />
     <ClCompile Include="..\..\src\modules\rendering\ImgSceneExporter_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\rendering\LuxCoreDisplayContext.cpp" />
+    <ClCompile Include="..\..\src\modules\rendering\LuxCoreSceneExporter.cpp" />
+    <ClCompile Include="..\..\src\modules\rendering\LuxCoreSceneExporter_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\rendering\LuxRendDisplayContext.cpp" />
     <ClCompile Include="..\..\src\modules\rendering\LuxRendSceneExporter.cpp" />
     <ClCompile Include="..\..\src\modules\rendering\LuxRendSceneExporter_wrap.cpp" />
@@ -177,6 +180,7 @@
   </ItemGroup>
   <ItemGroup>
     <mcwrapgen3 Include="..\..\src\modules\rendering\ImgSceneExporter.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\rendering\LuxCoreSceneExporter.qif" />
     <mcwrapgen3 Include="..\..\src\modules\rendering\LuxRendSceneExporter.qif" />
     <mcwrapgen3 Include="..\..\src\modules\rendering\MqoSceneExporter.qif" />
     <mcwrapgen3 Include="..\..\src\modules\rendering\PngSceneExporter.qif" />

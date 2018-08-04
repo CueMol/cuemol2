@@ -873,7 +873,8 @@ Qm2Main.prototype.exportScene = function()
       return;
     }
   }
-  else if (exporter.name == "luxrend") {
+  else if (exporter.name == "luxrend" ||
+	exporter.name == "luxcore") {
     // show LuxRender option dialog
     let dlgdata = new Object();
     dlgdata.exporter = exporter;

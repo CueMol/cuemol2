@@ -1,0 +1,44 @@
+// -*-Mode: C++;-*-
+//
+// LuxCore scene output class
+//
+
+#ifndef LUXCORE_SCENE_EXPORTER_QIF_INCLUDED
+#define LUXCORE_SCENE_EXPORTER_QIF_INCLUDED
+
+#include <qsys/SceneExporter.qif>
+
+runtime_class LuxCoreSceneExporter extends SceneExporter
+{
+  client_hdr "LuxCoreSceneExporter.hpp";
+  client_name render::LuxCoreSceneExporter;
+
+  scriptable;
+  smartptr;
+
+  ////////////////////
+  // Property definition
+
+  /// halt condition (sample per pixel)
+  property integer haltspp => m_nHaltSPP;
+  default haltspp = 10000;
+
+  /// Film output options (tonemapping param, etc)
+  property string filmopts => m_sFilmOpts;
+
+  // /// transparent background
+  // property boolean bg_transp => m_bBgTransp;
+
+  // Background type
+  enumdef bgmode {
+    transp = render::LuxCoreSceneExporter::BG_TRANSP;
+    wall = render::LuxCoreSceneExporter::BG_WALL;
+    box = render::LuxCoreSceneExporter::BG_BOX;
+  }
+  property enum bgmode => m_nBgMode;
+  default bgmode = "transp";
+
+};
+
+#endif
+
