@@ -883,6 +883,9 @@ bool PovDisplayContext::writeMeshes(bool bMask/*=false*/)
   int nverts = pMesh->getVertexSize();
   int nfaces = pMesh->getFaceSize();
 
+  if (nverts==0 || nfaces==0)
+    return true; // no meshes to write
+
   // convert vertex list to array
   std::vector<MeshVert*> pmary(nverts);
   std::copy(pMesh->m_verts.begin(), pMesh->m_verts.end(), pmary.begin());
