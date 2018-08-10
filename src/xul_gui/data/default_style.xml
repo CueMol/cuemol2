@@ -365,13 +365,13 @@ texture {
 
   <material id="toon1">
     <def type="pov">
-      texture {finish {ambient 0.0 diffuse 0.85 brilliance 0} pigment { color rgbt @COLOR@ }}
+      texture {finish {ambient 0.0 diffuse 0.8 brilliance 0} pigment { color rgbt @COLOR@ }}
     </def>
   </material>
 
   <material id="toon2">
     <def type="pov">
-      texture {finish {ambient 0.0 diffuse 0.85 brilliance 0 specular 10000 roughness 0.005} pigment { color rgbt @COLOR@ }}
+      texture {finish {ambient 0.3 diffuse 0.5 brilliance 0 phong 10000 phong_size 50} pigment { color rgbt @COLOR@ }}
     </def>
   </material>
 
