@@ -41,6 +41,8 @@ MTZ2MapReader::MTZ2MapReader()
   m_nfp = -1.0;
   m_nphi = -1.0;
   m_nwgt = -1.0;
+
+  m_bChkResGrid = false;
 }
 
 // destructor
@@ -669,7 +671,8 @@ void MTZ2MapReader::readResoln(const char *sbuf)
   m_dResMax = ::sqrt(1.0/tmp);
 
   // set building map resolution as the highest resln in MTZ file
-  m_mapr = m_dResMax;
+  if (m_mapr<0.0)
+    m_mapr = m_dResMax;
   MB_DPRINTLN("Resolution: %.2f - %.2f", m_dResMin, m_dResMax);
 }
 
@@ -760,41 +763,42 @@ namespace {
   inline int MOD(int a, int b) {
     return a%b;
   }
-}
 
-/**
-  calculate number suitable for FFT grid
- */
-int calcprime(int N, int base1, int base2, int prim)
-{
-  int NN, P;
-  bool CLOOP;
+  ///
+  ///  calculate number suitable for FFT grid
+  ///
+  int calcprime(int N, int base1, int base2, int prim)
+  {
+    int NN, P;
+    bool CLOOP;
 
-  NN=0;
-  N=N-1;
-  while (NN!=1) {
-    // increment N until base1 and base2 are factors of N
-    CLOOP=true;
-    
-    while (CLOOP) {
-      N++;
-      if (MOD(N, base1)==0 && MOD(N, base2)==0)
-	CLOOP=false;
-    }
+    NN=0;
+    N=N-1;
+    while (NN!=1) {
+      // increment N until base1 and base2 are factors of N
+      CLOOP=true;
 
-    // divide N/BASE2 by integers less equal prim
-    NN = N/base2;
-    P=qlib::min(NN,prim);
-
-    while (P>1) {
-      while (MOD(NN,P)==0) {
-	NN = NN/P;
+      while (CLOOP) {
+        N++;
+        if (MOD(N, base1)==0 && MOD(N, base2)==0)
+          CLOOP=false;
       }
-      P=P-1;
+
+      // divide N/BASE2 by integers less equal prim
+      NN = N/base2;
+      P=qlib::min(NN,prim);
+
+      while (P>1) {
+        while (MOD(NN,P)==0) {
+          NN = NN/P;
+        }
+        P=P-1;
+      }
     }
+
+    return N;
   }
 
-  return N;
 }
 
 #define ftprim 5
@@ -837,19 +841,15 @@ void MTZ2MapReader::calcgrid()
   m_nb = nb;
   m_nc = nc;
 
-  if (m_maxH>(na-1.0)/2.0) {
-    MB_THROW(qlib::RuntimeException, "Grid in x-direction too coarse");
-    return;
+  if (m_bChkResGrid) {
+    if (m_maxH>(na-1.0)/2.0)
+      MB_THROW(qlib::RuntimeException, "Grid in x-direction too coarse");
+    if (m_maxK>(nb-1.0)/2.0)
+      MB_THROW(qlib::RuntimeException, "Grid in y-direction too coarse");
+    if (m_maxL>(nc-1.0)/2.0)
+      MB_THROW(qlib::RuntimeException, "Grid in z-direction too coarse");
   }
-  if (m_maxK>(nb-1.0)/2.0) {
-    MB_THROW(qlib::RuntimeException, "Grid in y-direction too coarse");
-    return;
-  }
-  if (m_maxL>(nc-1.0)/2.0) {
-    MB_THROW(qlib::RuntimeException, "Grid in z-direction too coarse");
-    return;
-  }
-
+  
   return;
 }
 
@@ -866,9 +866,11 @@ void MTZ2MapReader::checkMapResoln()
 
   bool bauto = false;
   if (m_mapr>0.1) {
-    if (m_mapr*m_grid>=maxg) {
-      MB_DPRINTLN("MTZ> FFT grid (resoln=%f, grid=%f) is too coarse", m_mapr, m_grid);
-      bauto = true;
+    if (m_bChkResGrid) {
+      if (m_mapr*m_grid>=maxg) {
+        LOG_DPRINTLN("MTZ> FFT grid (resoln=%f, grid=%f) is too coarse -> use auto resoln", m_mapr, m_grid);
+        bauto = true;
+      }
     }
   }
   else {
@@ -879,7 +881,7 @@ void MTZ2MapReader::checkMapResoln()
     // determine from max HKL
     m_grid = 0.33;
     m_mapr = maxg/m_grid;
-    MB_DPRINTLN("MTZ> Auto resoln: resoln=%f, grid=%f", m_mapr, m_grid);
+    LOG_DPRINTLN("MTZ> Auto resoln: resoln=%f, grid=%f", m_mapr, m_grid);
   }
 
 }

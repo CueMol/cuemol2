@@ -31,12 +31,6 @@ class XTAL_API MTZ2MapReader : public qsys::ObjReader
 
   friend class ::MTZ2MapReader_wrap;
 
-  //MCINFO: double m_mapr => resolution
-  //MCINFO: double m_grid => gridsize
-  //MCINFO: LString m_strClmnF => clmn_F
-  //MCINFO: LString m_strClmnPHI => clmn_PHI
-  //MCINFO: LString m_strClmnWT => clmn_WT
-
 public:
   //////////////////////////////////////////////
 
@@ -73,7 +67,7 @@ public:
   LString getColumnInfoJSON();
 
 protected:
-  /// Map resolution (default: auto)
+  /// Map (max; high) resolution (default: auto)
   double m_mapr;
 
   /// Map grid size (default: 0.33)
@@ -87,6 +81,9 @@ protected:
 
   /// column name for SF weight (e.g. FOM)
   LString m_strClmnWT;
+
+  /// Check resolution and grid size
+  bool m_bChkResGrid;
 
 private:
   /// target map object
