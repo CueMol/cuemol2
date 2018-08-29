@@ -122,9 +122,8 @@ void MTZ2MapReader::readData(qlib::InStream &arg)
   if (m_ncol<=3 || m_nrefl==0 || m_ncol!=m_columns.size())
     MB_THROW(qlib::FileFormatException, "No refls in mtzfile");
 
-  LOG_DPRINT("  unit cell a=%.2fA, b=%.2fA, c=%.2fA,\n", m_cella, m_cellb, m_cellc);
-  LOG_DPRINT("            alpha=%.2fdeg, beta=%.2fdeg, gamma=%.2fdeg,\n",
-             m_alpha, m_beta, m_gamma);
+  LOG_DPRINT("MTZ> Unit cell a=%.2fA, b=%.2fA, c=%.2fA,\n", m_cella, m_cellb, m_cellc);
+  LOG_DPRINT("MTZ> alpha=%.2f, beta=%.2f, gamma=%.2f,\n", m_alpha, m_beta, m_gamma);
 
   checkHKLColumns();
   MB_DPRINTLN("MTZ> FFT target: HKL %d %d %d", m_cind_h, m_cind_k, m_cind_l);
@@ -866,10 +865,13 @@ void MTZ2MapReader::checkMapResoln()
 
   bool bauto = false;
   if (m_mapr>0.1) {
-    if (m_bChkResGrid) {
-      if (m_mapr*m_grid>=maxg) {
+    if (m_mapr*m_grid>=maxg) {
+      if (m_bChkResGrid) {
         LOG_DPRINTLN("MTZ> FFT grid (resoln=%f, grid=%f) is too coarse -> use auto resoln", m_mapr, m_grid);
         bauto = true;
+      }
+      else {
+        LOG_DPRINTLN("MTZ> FFT grid (resoln=%f, grid=%f) is too coarse -> ignored", m_mapr, m_grid);
       }
     }
   }
