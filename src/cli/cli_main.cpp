@@ -251,7 +251,7 @@ void process_input(const LString &loadscr, const std::deque<LString> &args)
   qsys::SceneManager *pSM = qsys::SceneManager::getInstance();
   LOG_DPRINTLN("CueMol version %s build %s", pSM->getVersion().c_str(), pSM->getBuildID().c_str());
 
-  fs::path scr_path(loadscr);
+  fs::path scr_path(loadscr.c_str());
   
   fs::path full_path = fs::system_complete( scr_path );
 
@@ -278,11 +278,7 @@ void process_input(const LString &loadscr, const std::deque<LString> &args)
     //rscene->writeTo(fos, true);
   }
   else if (full_path.extension()==".js") {
-    //qsys::ScenePtr rscene = pSM->createScene();
-    //qlib::uid_t scene_id = rscene->getUID();
-    //rscene->execJSFile(loadscr);
-    //pSM->destroyScene(scene_id);
-
+#ifdef HAVE_JAVASCRIPT
     jsbr::Interp *pInt = jsbr::createInterp(NULL);
     pInt->setCmdArgs(args);
 
@@ -300,6 +296,9 @@ void process_input(const LString &loadscr, const std::deque<LString> &args)
     pInt->execFile(loadscr);
 
     delete pInt;
+#else
+    LOG_DPRINTLN("Javascript not supported!!");
+#endif
   }
   else if (full_path.extension()==".py") {
 #ifdef HAVE_PYTHON

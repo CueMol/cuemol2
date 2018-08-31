@@ -289,7 +289,7 @@ namespace {
     }
   }
   
-  class MOLSTR_API MolMergeEditInfo : public qsys::EditInfo
+  class MolMergeEditInfo : public qsys::EditInfo
   {
   private:
     /// Target Mol ID

@@ -1,0 +1,69 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <BasePlatformToolset Condition="'$(BasePlatformToolset)' == '' and ('$(MSBuildToolsVersion)' == '15.0' or '$(VisualStudioVersion)' == '15.0')">v141_xp</BasePlatformToolset>
+    <BasePlatformToolset Condition="'$(BasePlatformToolset)' == '' and '$(VCTargetsPath14)' != ''">v140_xp</BasePlatformToolset>
+    <BasePlatformToolset Condition="'$(BasePlatformToolset)' == '' and '$(VCTargetsPath12)' != ''">v120_xp</BasePlatformToolset>
+    <PlatformToolset Condition="'$(PlatformToolset)' == ''">$(BasePlatformToolset)</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+
+  <PropertyGroup Label="UserMacros">
+
+    <BuildSetDir Condition="'$(Platform)'=='x64'">$(PROJ64_DIR)</BuildSetDir>
+    <BuildSetDir Condition="'$(Platform)'=='Win32'">$(PROJ_DIR)</BuildSetDir>
+    <BuildSetDir Condition="'$(MSBuildToolsVersion)' == '15.0' or '$(VisualStudioVersion)' == '15.0'">$(SolutionDir)..\..\</BuildSetDir>
+
+    <SourceDir>$(SolutionDir)..\src\</SourceDir>
+
+    <!-- BOOST -->
+    <BoostVersion>1_64</BoostVersion>
+
+    <BoostLibArch Condition="'$(Platform)'=='x64'">lib64</BoostLibArch>
+    <BoostLibArch Condition="'$(Platform)'=='Win32'">lib32</BoostLibArch>
+    <BoostPTS Condition="$(BasePlatformToolset.StartsWith(`v141`))">14.1</BoostPTS>
+    <BoostPTS2 Condition="$(BasePlatformToolset.StartsWith(`v141`))">141</BoostPTS2>
+    <BoostPTS Condition="$(BasePlatformToolset.StartsWith(`v120`))">12.0</BoostPTS>
+    <BoostPTS2 Condition="$(BasePlatformToolset.StartsWith(`v120`))">120</BoostPTS2>
+    <BoostLibraryPath>$(BuildSetDir)\boost\boost_$(BoostVersion)_0\$(BoostLibArch)-msvc-$(BoostPTS)</BoostLibraryPath>
+    <BoostIncludePath>$(BuildSetDir)\boost\boost_$(BoostVersion)_0</BoostIncludePath>
+    <BoostVer Condition="'$(Configuration)'=='Release'">vc$(BoostPTS2)-mt-$(BoostVersion)</BoostVer>
+    <BoostVer Condition="'$(Configuration)'=='Debug'">vc$(BoostPTS2)-mt-gd-$(BoostVersion)</BoostVer>
+
+    <!-- CGAL -->
+    <CGALIncludePath>$(BuildSetDir)\CGAL-4.12\include</CGALIncludePath>
+    <CGALLibraryPath>$(BuildSetDir)\CGAL-4.12\lib</CGALLibraryPath>
+
+    <!-- Python -->
+    <PythonDir>$(BuildSetDir)\Python-3.7.0</PythonDir>
+    <HavePython Condition="Exists('$(PythonDir)')">Yes</HavePython>
+    <HavePython Condition="!Exists('$(PythonDir)')">No</HavePython>
+
+    <!-- XUL -->
+    <XULRunnerDir Condition="'$(Platform)'=='Win32'">$(BuildSetDir)xulrunner\xulrunner-39.0-sdk\</XULRunnerDir>
+    <XULRunnerDir Condition="'$(Platform)'=='x64'">$(BuildSetDir)xulrunner\xulrunner-39.0b7-sdk\</XULRunnerDir>
+    <HaveXUL Condition="Exists('$(XULRunnerDir)')">Yes</HaveXUL>
+    <HaveXUL Condition="!Exists('$(XULRunnerDir)')">No</HaveXUL>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(HaveXUL)'=='Yes'">
+    <XULDeployDir>$(SolutionDir)xul_$(Configuration)_$(Platform)\</XULDeployDir>
+    <QMDeployDir>$(XULDeployDir)</QMDeployDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(HaveXUL)'=='No'">
+    <QMDeployDir>$(SolutionDir)$(Configuration)_$(Platform)\</QMDeployDir>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <BuildMacro Include="SourceDir">
+      <Value>$(SourceDir)</Value>
+    </BuildMacro>
+    <BuildMacro Include="XULRunnerDir">
+      <Value>$(XULRunnerDir)</Value>
+    </BuildMacro>
+    <BuildMacro Include="XULDeployDir">
+      <Value>$(XULDeployDir)</Value>
+    </BuildMacro>
+  </ItemGroup>
+
+</Project>
