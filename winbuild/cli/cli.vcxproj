@@ -71,12 +71,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
-
   <PropertyGroup>
     <LocalDebuggerEnvironment>PYTHONHOME=$(PythonDir)
 PATH=$(BuildSetDir)\bin;%PATH%</LocalDebuggerEnvironment>
   </PropertyGroup>
-
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
@@ -222,6 +220,15 @@ PATH=$(BuildSetDir)\bin;%PATH%</LocalDebuggerEnvironment>
     <ProjectReference Include="..\pybr\pybr.vcxproj">
       <Project>{2e28b002-7d9c-4513-8e16-2124681e2a51}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\src\xul_gui\sysconfig.xml">
+      <Command>copy $(SourceDir)xul_gui\sysconfig.xml $(QMDeployDir) /Y
+xcopy $(SourceDir)xul_gui\data $(QMDeployDir)\data /E /Y /I
+xcopy $(SourceDir)xul_gui\scripts $(QMDeployDir)\scripts /E /Y /I
+</Command>
+      <Outputs>$(QMDeployDir)sysconfig.xml</Outputs>
+    </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

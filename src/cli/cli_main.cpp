@@ -87,7 +87,7 @@ using qlib::LString;
 void process_input(const LString &loadscr, const std::deque<LString> &args);
 
 #ifndef DEFAULT_CONFIG
-#define DEFAULT_CONFIG ""
+#define DEFAULT_CONFIG "sysconfig.xml"
 #endif
 
 ///
