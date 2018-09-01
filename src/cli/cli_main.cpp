@@ -83,6 +83,25 @@ namespace anim {
   extern void fini();
 }
 
+#include "TTYView.hpp"
+
+namespace cli {
+  class TTYViewFactory : public qsys::ViewFactory
+  {
+  public:
+    TTYViewFactory() {}
+    virtual ~TTYViewFactory() {}
+    virtual qsys::View* create() {
+      return MB_NEW TTYView();
+    }
+  };
+  void registerViewFactory()
+  {
+    qsys::View::setViewFactory(MB_NEW TTYViewFactory());
+  }
+}
+
+
 using qlib::LString;
 void process_input(const LString &loadscr, const std::deque<LString> &args);
 

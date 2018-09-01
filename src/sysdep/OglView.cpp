@@ -61,7 +61,7 @@ OglView::~OglView()
 {
   // delete [] m_pHitBuf;
   if (m_pqua!=NULL)
-    gluDeleteQuadric(m_pqua);
+    gluDeleteQuadric(static_cast<GLUquadricObj*>(m_pqua));
 }
 
 LString OglView::toString() const

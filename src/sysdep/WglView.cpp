@@ -273,13 +273,13 @@ bool WglView::hasHWStereo() const
 
 ////////////////////////////////////////////
 
-namespace qsys {
-  //static
-  qsys::View *View::createView()
-  {
-    qsys::View *pret = MB_NEW WglView();
-    MB_DPRINTLN("WglView created (%p, ID=%d)", pret, pret->getUID());
-    return pret;
-//    return NULL;
-  }
-}
+// namespace qsys {
+//   //static
+//   qsys::View *View::createView()
+//   {
+//     qsys::View *pret = MB_NEW WglView();
+//     MB_DPRINTLN("WglView created (%p, ID=%d)", pret, pret->getUID());
+//     return pret;
+// //    return NULL;
+//   }
+// }

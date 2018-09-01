@@ -170,6 +170,7 @@ PATH=$(BuildSetDir)\bin;%PATH%</LocalDebuggerEnvironment>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\cli\cli_main.cpp" />
+    <ClCompile Include="..\..\src\cli\TTYView.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\anim\anim.vcxproj">

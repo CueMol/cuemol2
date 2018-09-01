@@ -5,12 +5,10 @@
 
 #include <common.h>
 
-#include <qsys/qsys.hpp>
-#include <qsys/View.hpp>
-#include <qsys/Scene.hpp>
+#include "TTYView.hpp"
 #include <gfx/DisplayContext.hpp>
 
-namespace {
+namespace cli {
 
   class TTYDisplayContext : public gfx::DisplayContext
   {
@@ -47,57 +45,54 @@ namespace {
     virtual void end() {}
 
   };
-  
-
-  class TTYView : public qsys::View
-  {
-  private:
-    TTYDisplayContext *m_pCtxt;
-  public:
-
-    TTYView() : m_pCtxt(new TTYDisplayContext()) {}
-
-    TTYView(const TTYView &r) {}
-
-    virtual ~TTYView() {}
-  
-    //////////
-  
-  public:
-    virtual LString toString() const { return LString("TTYView"); }
-
-    /// Setup the projection matrix for stereo (View interface)
-    virtual void setUpModelMat(int nid) {}
-    
-    /// Setup projection matrix (View interface)
-    virtual void setUpProjMat(int w, int h) {}
-    
-    /// Draw current scene
-    virtual void drawScene()
-    {
-      qsys::ScenePtr pScene = getScene();
-      if (pScene.isnull()) {
-	MB_DPRINTLN("DrawScene: invalid scene %d !!", getSceneID());
-	return;
-      }
-      
-      gfx::DisplayContext *pdc = getDisplayContext();
-      pdc->setCurrent();
-      pScene->display(pdc);
-    }
-    
-    virtual gfx::DisplayContext *getDisplayContext() { return m_pCtxt; }
-
-  };
-
 }
 
-namespace qsys {
-  //static
-  qsys::View *View::createView()
-  {
-    qsys::View *pret = MB_NEW TTYView();
-    MB_DPRINTLN("TTYView created (%p, ID=%d)", pret, pret->getUID());
-    return pret;
+using namespace cli;
+
+TTYView::TTYView() : m_pCtxt(new TTYDisplayContext())
+{
+}
+
+TTYView::TTYView(const TTYView &r)
+{
+}
+
+TTYView::~TTYView()
+{
+}
+
+//////////
+  
+LString TTYView::toString() const { return LString("TTYView"); }
+
+/// Setup the projection matrix for stereo (View interface)
+void TTYView::setUpModelMat(int nid) {}
+
+/// Setup projection matrix (View interface)
+void TTYView::setUpProjMat(int w, int h) {}
+
+/// Draw current scene
+void TTYView::drawScene()
+{
+  qsys::ScenePtr pScene = getScene();
+  if (pScene.isnull()) {
+    MB_DPRINTLN("DrawScene: invalid scene %d !!", getSceneID());
+    return;
   }
+  
+  gfx::DisplayContext *pdc = getDisplayContext();
+  pdc->setCurrent();
+  pScene->display(pdc);
 }
+
+gfx::DisplayContext *TTYView::getDisplayContext() { return m_pCtxt; }
+
+// namespace qsys {
+//   //static
+//   qsys::View *View::createView()
+//   {
+//     qsys::View *pret = MB_NEW TTYView();
+//     MB_DPRINTLN("TTYView created (%p, ID=%d)", pret, pret->getUID());
+//     return pret;
+//   }
+// }
