@@ -7,6 +7,7 @@
 
 #include "EventManager.hpp"
 #include "LEvent.hpp"
+#include "LExceptions.hpp"
 
 #ifdef HAVE_BOOST_THREAD
 #  include <boost/thread.hpp>
@@ -112,10 +113,14 @@ void EventManager::initTimer(TimerImpl *pimpl)
 {
   MB_ASSERT(m_pImpl==NULL);
   m_pImpl = pimpl;
+
+  // m_pImpl->start();
 }
 
 void EventManager::finiTimer()
 {
+  m_pImpl->stop();
+
   if (m_pImpl!=NULL)
     delete m_pImpl;
   m_pImpl = NULL;
@@ -135,16 +140,18 @@ void EventManager::checkTimerQueue()
     TimerListener *pobj = rtt.pobj;
     time_value dur_end = rtt.end-curr;
     if (dur_end<=0) {
+      // process ended timer (last event)
       iter = m_timerq.erase(iter);
       pobj->onTimer(1.0, curr, true);
       continue;
     }
     else {
+      // process active timer
       double rho = double(curr-rtt.start)/double(rtt.end-rtt.start);
       if (!pobj->onTimer(rho, curr, false)) {
         // timer iteration is canceled
-        MB_DPRINTLN("timer canceled");
         iter = m_timerq.erase(iter);
+        MB_DPRINTLN("EvtMgr> timer canceled");
         continue;
       }
     }
@@ -154,14 +161,17 @@ void EventManager::checkTimerQueue()
 
 //////////
 
-#include <boost/chrono/chrono.hpp>
-
 TimerImpl::~TimerImpl()
 {
 }
 
+#ifdef HAVE_BOOST_CHRONO
+#include <boost/chrono/chrono.hpp>
+#endif
+
 time_value TimerImpl::getCurrentTime()
 {
+#ifdef HAVE_BOOST_CHRONO
   using namespace boost::chrono;
 
   high_resolution_clock::time_point tp = high_resolution_clock::now();
@@ -170,5 +180,46 @@ time_value TimerImpl::getCurrentTime()
   time_value t1 = duration_cast<nanoseconds>(tp.time_since_epoch()).count();
 
   return t1;
+#else
+  return time_value(0);
+#endif
 }
 
+//////////
+
+#include "LPerfMeas.hpp"
+
+IdleTask::~IdleTask()
+{
+}
+
+void EventManager::performIdleTasks()
+{
+  try {
+    qlib::AutoPerfMeas apm(PM_IDLE_TIMER);
+    
+    // process events
+    messageLoop();
+    
+    // process timer events
+    checkTimerQueue();
+    
+    BOOST_FOREACH (IdleTask *pTask, m_idleTasks) {
+      pTask->doIdleTask();
+    }
+  }
+  catch (qlib::LException &e) {
+    LOG_DPRINTLN("Exception occured in performIdleTask: %s",
+		 e.getFmtMsg().c_str());
+    throw;
+  }
+  catch (std::exception &e) {
+    LOG_DPRINTLN("Exception occured in performIdleTask: %s",
+		 e.what());
+    throw;
+  }
+  catch (...) {
+    LOG_DPRINTLN("Unknown exception occured in performIdleTask");
+    throw;
+  }
+}
