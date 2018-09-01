@@ -28,7 +28,7 @@ namespace sysdep {
   protected:
     bool m_bInitOK;
 
-    GLUquadricObj *m_pqua;
+    void *m_pqua;
 
     bool m_bUseGlShader;
 

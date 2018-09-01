@@ -43,6 +43,8 @@ namespace render {
 
     Vector4D m_vSpotLightPos;
 
+    double m_dOrthoScl;
+
   public:
     LuxCoreDisplayContext();
     virtual ~LuxCoreDisplayContext();

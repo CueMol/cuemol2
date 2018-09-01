@@ -106,7 +106,12 @@ void PythonBridge::runInteractiveShell()
   //runString("import code\n"
   //"import readline\n"
   //"code.interact()\n");
+
+#if !defined(WIN32)
+  // readline module is not available in WIN32
   PyImport_ImportModule("readline");
+#endif
+  
   PyRun_InteractiveLoop(stdin, "");
 }
 

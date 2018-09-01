@@ -19,7 +19,9 @@ using qlib::LString;
 
 namespace gfx {
 
-  inline double convB2F(qbyte color) {
+  QM_USING_QTYPES;
+
+  inline double convB2F(qlib::qbyte color) {
     return double(color)/255.0;
   }
   inline double convI2F(int color) {
@@ -54,7 +56,7 @@ namespace gfx {
     ///////////////////////////
     // Common access interfaces
 
-    virtual quint32 getCode() const =0;
+    virtual qlib::quint32 getCode() const =0;
     
     virtual LString getMaterial() const =0;
 
@@ -70,7 +72,7 @@ namespace gfx {
     // access interface for the rendering device
 
     /// Get color after conversion for proofing
-    virtual quint32 getDevCode(qlib::uid_t ctxtid) const;
+    virtual qlib::quint32 getDevCode(qlib::uid_t ctxtid) const;
 
     /// check if the color is in the gamut of the current proofing profile
     virtual bool isInGamut(qlib::uid_t ctxtid) const;
@@ -100,7 +102,7 @@ namespace gfx {
       RGBtoHSB(r(), g(), b(), hue, sat, bri);
     }
 
-    static quint32 HSBtoRGB(double hue, double saturation, double brightness);
+    static qlib::quint32 HSBtoRGB(double hue, double saturation, double brightness);
     
     static void HSBtoRGB(double hue, double saturation, double brightness,
                          double &r, double &g, double &b);

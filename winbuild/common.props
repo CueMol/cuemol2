@@ -2,38 +2,57 @@
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ImportGroup Label="PropertySheets" />
 
+  <PropertyGroup>
+    <BasePlatformToolset Condition="'$(BasePlatformToolset)' == '' and ('$(MSBuildToolsVersion)' == '15.0' or '$(VisualStudioVersion)' == '15.0')">v141_xp</BasePlatformToolset>
+    <BasePlatformToolset Condition="'$(BasePlatformToolset)' == '' and '$(VCTargetsPath14)' != ''">v140_xp</BasePlatformToolset>
+    <BasePlatformToolset Condition="'$(BasePlatformToolset)' == '' and '$(VCTargetsPath12)' != ''">v120_xp</BasePlatformToolset>
+    <PlatformToolset Condition="'$(PlatformToolset)' == ''">$(BasePlatformToolset)</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+
+  <PropertyGroup Label="UserMacros">
+    <BuildSetDir>$(SolutionDir)..\.\</BuildSetDir>
+  </PropertyGroup>
+
   <PropertyGroup Label="UserMacros" Condition="'$(Platform)'=='Win32'">
-    <BuildSetDir>$(PROJ_DIR)</BuildSetDir>
     <XULDeployDir>$(SolutionDir)xul_$(Configuration)\</XULDeployDir>
-    <LibraryPath>$(PROJ_DIR)\lib;$(PROJ_DIR)\CGAL-4.6.1\lib;$(PROJ_DIR)\boost\boost_1_57_0\lib32-msvc-12.0;$(LibraryPath)</LibraryPath>
     <XULRunnerDir>$(BuildSetDir)\xulrunner\xulrunner-39.0-sdk\</XULRunnerDir>
   </PropertyGroup>
 
   <PropertyGroup Label="UserMacros" Condition="'$(Platform)'=='x64'">
-    <BuildSetDir>$(PROJ64_DIR)</BuildSetDir>
     <XULDeployDir>$(SolutionDir)xul_$(Configuration)64\</XULDeployDir>
-    <LibraryPath>$(PROJ64_DIR)\lib;$(PROJ64_DIR)\CGAL-4.6.1\lib;$(PROJ64_DIR)\boost\boost_1_57_0\lib64-msvc-12.0;$(LibraryPath)</LibraryPath>
     <XULRunnerDir>$(BuildSetDir)\xulrunner\xulrunner-39.0b7-sdk\</XULRunnerDir>
   </PropertyGroup>
 
   <PropertyGroup Label="UserMacros">
     <SourceDir>$(SolutionDir)..\src\</SourceDir>
-    <BoostIncludePath>$(BuildSetDir)\boost\boost_1_57_0</BoostIncludePath>
-    <CGALIncludePath>$(BuildSetDir)\CGAL-4.6.1\include</CGALIncludePath>
-    <CGALLibraryPath>$(BuildSetDir)\CGAL-4.6.1\lib</CGALLibraryPath>
 
-    <HavePython>No</HavePython>
-    <PythonDir>$(BuildSetDir)\Python-3.6.1</PythonDir>
+    <BoostVersion>1_64</BoostVersion>
+    <BoostLibArch Condition="'$(Platform)'=='x64'">lib64</BoostLibArch>
+    <BoostLibArch Condition="'$(Platform)'=='Win32'">lib32</BoostLibArch>
+
+    <BoostPTS Condition="$(BasePlatformToolset.StartsWith(`v141`))">14.1</BoostPTS>
+    <BoostPTS Condition="$(BasePlatformToolset.StartsWith(`v120`))">12.0</BoostPTS>
+
+    <BoostLibraryPath>$(BuildSetDir)\boost\boost_$(BoostVersion)_0\$(BoostLibArch)-msvc-$(BoostPTS)</BoostLibraryPath>
+    <BoostIncludePath>$(BuildSetDir)\boost\boost_$(BoostVersion)_0</BoostIncludePath>
+
+    <CGALIncludePath>$(BuildSetDir)\CGAL-4.12\include</CGALIncludePath>
+    <CGALLibraryPath>$(BuildSetDir)\CGAL-4.12\lib</CGALLibraryPath>
+
+    <PythonDir>$(BuildSetDir)\Python-3.7.0</PythonDir>
+    <HavePython Condition="exists('$(PythonDir)')">Yes</HavePython>
 
     <IncludePath>$(BuildSetDir)\include;$(CGALIncludePath);$(BoostIncludePath);$(IncludePath)</IncludePath>
+    <LibraryPath>$(BuildSetDir)\lib;$(BoostLibraryPath);$(CGALLibraryPath);$(LibraryPath)</LibraryPath>
     <ExecutablePath>$(BuildSetDir)\bin;$(XULRunnerDir)\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
 
   <PropertyGroup Label="UserMacros" Condition="'$(Configuration)'=='Release'">
-    <BoostVer>vc120-mt-1_57</BoostVer>
+    <BoostVer>vc120-mt-$(BoostVersion)</BoostVer>
   </PropertyGroup>
   <PropertyGroup Label="UserMacros" Condition="'$(Configuration)'=='Debug'">
-    <BoostVer>vc120-mt-gd-1_57</BoostVer>
+    <BoostVer>vc120-mt-gd-$(BoostVersion)</BoostVer>
   </PropertyGroup>
 
   <PropertyGroup>

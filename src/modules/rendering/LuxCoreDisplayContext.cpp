@@ -165,11 +165,16 @@ void LuxCoreDisplayContext::writeHeader()
   PrintStream ps2(*m_pOut2);
   
   // write film cfg
-  ps.format("\n");
-  //ps.format("Film \"fleximage\"\n");
-  ps.format("film.height = %d\n", width);
-  ps.format("film.width = %d\n", height);
-  ps.format("image.filename = %s.png\n", m_pParent->m_sRelOutBase.c_str());
+  ps.format("scene.file = %s.scn\n", m_pParent->m_sRelOutBase.c_str());
+  ps.format("film.width = %d\n", width);
+  ps.format("film.height = %d\n", height);
+  //ps.format("image.filename = %s.png\n", m_pParent->m_sRelOutBase.c_str());
+
+  ps.println("film.imagepipeline.0.type = TONEMAP_LINEAR");
+  ps.println("film.imagepipeline.1.type = GAMMA_CORRECTION");
+  ps.println("film.imagepipeline.1.value = 2.2");
+  ps.println("film.outputs.1.type = RGBA_TONEMAPPED");
+  ps.format("film.outputs.1.filename = %s.png\n", m_pParent->m_sRelOutBase.c_str());
 
   //ps.format("     \"bool premultiplyalpha\" [\"true\"]\n");
   //ps.format("     \"bool write_png\" [\"true\"]\n");
@@ -203,9 +208,13 @@ void LuxCoreDisplayContext::writeHeader()
   // orthographic mode
   ps2.println(scmt_orth+"scene.camera.type = \"orthographic\"");
   ps2.format(scmt_orth+"scene.camera.lookat.orig = 0 0 %f\n", m_dSlabDepth/2.0);
-  ps2.format(scmt_orth+"scene.camera.screenwindow = %f %f %f %f\n",
-             -zoomx/2.0, zoomx/2.0, -zoomy/2.0, zoomy/2.0);
 
+  m_dOrthoScl = 1.0/(zoomx/2.0);
+  //ps2.format(scmt_orth+"scene.camera.screenwindow = %f %f %f %f\n",
+  //-zoomx/2.0, zoomx/2.0, -zoomy/2.0, zoomy/2.0);
+
+
+  writeLights(ps2);
 
   // overwrite perspec flag
   setPerspective(bPerspec);
@@ -213,51 +222,56 @@ void LuxCoreDisplayContext::writeHeader()
 
 void LuxCoreDisplayContext::writeTailer()
 {
+
 }
 
 /// Write light sources, etc
-void LuxCoreDisplayContext::writeLights(PrintStream &ps)
+void LuxCoreDisplayContext::writeLights(PrintStream &ps2)
 {
+
+  ps2.println("# Light1");
+  ps2.println("scene.lights.il.type = constantinfinite");
+  ps2.println("scene.lights.il.color = 1 1 1");
+  ps2.println("scene.lights.il.gain = 0.15 0.15 0.15");
+  ps2.println("# Light2");
+  ps2.println("scene.lights.distl.type = distant");
+  ps2.println("scene.lights.distl.color = 1 1 1");
+  ps2.println("scene.lights.distl.gain = 20 20 20");
+  ps2.println("scene.lights.distl.direction = 1 1 -1");
+  ps2.println("scene.lights.distl.theta = 10");
+
 }
 
 void LuxCoreDisplayContext::writeObjects()
 {
-  PrintStream ps(*m_pOut);
+  PrintStream ps2(*m_pOut2);
+  //PrintStream ps(*m_pOut);
 
   // write material/texture section
-  writeMaterials(ps);
+  writeMaterials(ps2);
 
   //ps.format("AttributeBegin # Object %s\n", getSecName().c_str());
 
   // write lines
-  writeLines(ps);
+  writeLines(ps2);
 
   // convert sphere to mesh
   m_pIntData->convSpheres();
   // convert cylinder to mesh
   m_pIntData->convCylinders();
   // write meshes
-  writeMeshes(ps);
+  writeMeshes(ps2);
 
 }
 
-void LuxCoreDisplayContext::writeMaterials(PrintStream &ps)
+void LuxCoreDisplayContext::writeMaterials(PrintStream &ps2)
 {
-}
+  LString secnm = getSecName();
 
-bool LuxCoreDisplayContext::writeCylXform(PrintStream &ps,
-					  const Vector4D &v1, const Vector4D &v2,
-					  double &rlen)
-{
-  return true;
-}
+  ps2.format("scene.textures.%s.type = \"hitpointcolor\"\n", secnm.c_str());
+  ps2.format("scene.materials.%s.type = matte\n", secnm.c_str());
+  ps2.format("scene.materials.%s.kd = %s\n", secnm.c_str(), secnm.c_str());
 
-void LuxCoreDisplayContext::writeSpheres(PrintStream &ps)
-{
-}
-
-void LuxCoreDisplayContext::writeCyls(PrintStream &ps)
-{
 }
 
 void LuxCoreDisplayContext::writeMeshes(PrintStream &ps)
@@ -343,9 +357,37 @@ void LuxCoreDisplayContext::writeMeshes(PrintStream &ps)
 
   out2.close();
 
+  //////////
+
+  ps.format("scene.shapes.%s.type = mesh\n", secnm.c_str());
+  ps.format("scene.shapes.%s.ply = %s\n", secnm.c_str(), ply_name.c_str());
+  ps.format("scene.objects.%s.material = %s\n", secnm.c_str(), secnm.c_str());
+  ps.format("scene.objects.%s.shape = %s\n", secnm.c_str(), secnm.c_str());
+  ps.format("scene.objects.%s.transformation ="
+            " %f 0 0 0 0 %f 0 0 0 0 %f 0 0 0 0 1\n",
+            secnm.c_str(),
+            m_dOrthoScl, m_dOrthoScl, m_dOrthoScl);
+
+
+
 }
 
 void LuxCoreDisplayContext::writeLines(PrintStream &ps)
+{
+}
+
+bool LuxCoreDisplayContext::writeCylXform(PrintStream &ps,
+					  const Vector4D &v1, const Vector4D &v2,
+					  double &rlen)
+{
+  return true;
+}
+
+void LuxCoreDisplayContext::writeSpheres(PrintStream &ps)
+{
+}
+
+void LuxCoreDisplayContext::writeCyls(PrintStream &ps)
 {
 }
 

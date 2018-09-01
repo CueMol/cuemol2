@@ -360,7 +360,7 @@ void PovDisplayContext::writeHeader()
   ps.format("\n");
   ps.format("#end\n");
   ps.format("\n");
-  ps.format("SpecLighting(_light_spread, _distance, _light_inten*(1-_amb_frac)*(1-_flash_frac), _shadow)\n");
+  ps.format("SpecLighting(_light_spread, _distance, _light_inten*(1-_amb_frac)*(1-_flash_frac), 1)\n");
   ps.format("FlashLighting(_light_inten*(1-_amb_frac)*_flash_frac)\n");
 
   ps.format("//////////////////////\n");
@@ -472,6 +472,11 @@ void PovDisplayContext::writeTailer()
   ps.format("}\n");
   ps.format("\n");
 
+  ////////
+
+  ips.println("#if (!_shadow)");
+  ips.println("  no_shadow");
+  ips.println("#end");
   ips.println("} // union");
   ips.println("");
 }
@@ -882,6 +887,9 @@ bool PovDisplayContext::writeMeshes(bool bMask/*=false*/)
 
   int nverts = pMesh->getVertexSize();
   int nfaces = pMesh->getFaceSize();
+
+  if (nverts==0 || nfaces==0)
+    return true; // no meshes to write
 
   // convert vertex list to array
   std::vector<MeshVert*> pmary(nverts);

@@ -87,12 +87,12 @@ DisplayContext *CglView::getDisplayContext()
 
 ////////////////////////////////////////////
 
-namespace qsys {
-  //static
-  SYSDEP_API qsys::View *View::createView()
-  {
-    qsys::View *pret = MB_NEW CglView();
-    MB_DPRINTLN("CglView created (%p, ID=%d)", pret, pret->getUID());
-    return pret;
-  }
-}
+// namespace qsys {
+//   //static
+//   SYSDEP_API qsys::View *View::createView()
+//   {
+//     qsys::View *pret = MB_NEW CglView();
+//     MB_DPRINTLN("CglView created (%p, ID=%d)", pret, pret->getUID());
+//     return pret;
+//   }
+// }

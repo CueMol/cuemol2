@@ -287,12 +287,12 @@ void XglView::handleEvent(XEvent *xevent, Boolean *b)
 
 ////////////////////////////////////////////
 
-namespace qsys {
-  //static
-  SYSDEP_API qsys::View *View::createView()
-  {
-    qsys::View *pret = MB_NEW XglView();
-    MB_DPRINTLN("XglView created (%p, ID=%d)", pret, pret->getUID());
-    return pret;
-  }
-}
+// namespace qsys {
+//   //static
+//   SYSDEP_API qsys::View *View::createView()
+//   {
+//     qsys::View *pret = MB_NEW XglView();
+//     MB_DPRINTLN("XglView created (%p, ID=%d)", pret, pret->getUID());
+//     return pret;
+//   }
+// }

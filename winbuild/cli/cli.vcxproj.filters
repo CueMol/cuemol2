@@ -19,4 +19,7 @@
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\src\xul_gui\sysconfig.xml" />
+  </ItemGroup>
 </Project>

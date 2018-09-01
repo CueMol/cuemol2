@@ -83,11 +83,30 @@ namespace anim {
   extern void fini();
 }
 
+#include "TTYView.hpp"
+
+namespace cli {
+  class TTYViewFactory : public qsys::ViewFactory
+  {
+  public:
+    TTYViewFactory() {}
+    virtual ~TTYViewFactory() {}
+    virtual qsys::View* create() {
+      return MB_NEW TTYView();
+    }
+  };
+  void registerViewFactory()
+  {
+    qsys::View::setViewFactory(MB_NEW TTYViewFactory());
+  }
+}
+
+
 using qlib::LString;
 void process_input(const LString &loadscr, const std::deque<LString> &args);
 
 #ifndef DEFAULT_CONFIG
-#define DEFAULT_CONFIG ""
+#define DEFAULT_CONFIG "./sysconfig.xml"
 #endif
 
 ///
@@ -96,7 +115,7 @@ void process_input(const LString &loadscr, const std::deque<LString> &args);
 int internal_main(int argc, const char *argv[])
 {
   if (qlib::init())
-    MB_DPRINTLN("qlib::init() OK.");
+    LOG_DPRINTLN("qlib::init() OK.");
   else {
     LOG_DPRINTLN("Init: ERROR!!");
     return -1;
@@ -138,7 +157,9 @@ int internal_main(int argc, const char *argv[])
     return -1;
   }
 
-  MB_DPRINTLN("main> confpath=%s", confpath.c_str());
+  LOG_DPRINTLN("main> confpath=%s", confpath.c_str());
+
+  cli::registerViewFactory();
 
   // load molstr/lwview module
   molstr::init();
@@ -251,7 +272,7 @@ void process_input(const LString &loadscr, const std::deque<LString> &args)
   qsys::SceneManager *pSM = qsys::SceneManager::getInstance();
   LOG_DPRINTLN("CueMol version %s build %s", pSM->getVersion().c_str(), pSM->getBuildID().c_str());
 
-  fs::path scr_path(loadscr);
+  fs::path scr_path(loadscr.c_str());
   
   fs::path full_path = fs::system_complete( scr_path );
 
@@ -278,11 +299,7 @@ void process_input(const LString &loadscr, const std::deque<LString> &args)
     //rscene->writeTo(fos, true);
   }
   else if (full_path.extension()==".js") {
-    //qsys::ScenePtr rscene = pSM->createScene();
-    //qlib::uid_t scene_id = rscene->getUID();
-    //rscene->execJSFile(loadscr);
-    //pSM->destroyScene(scene_id);
-
+#ifdef HAVE_JAVASCRIPT
     jsbr::Interp *pInt = jsbr::createInterp(NULL);
     pInt->setCmdArgs(args);
 
@@ -300,6 +317,9 @@ void process_input(const LString &loadscr, const std::deque<LString> &args)
     pInt->execFile(loadscr);
 
     delete pInt;
+#else
+    LOG_DPRINTLN("Javascript not supported!!");
+#endif
   }
   else if (full_path.extension()==".py") {
 #ifdef HAVE_PYTHON
