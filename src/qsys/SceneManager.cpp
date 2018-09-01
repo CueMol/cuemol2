@@ -41,6 +41,11 @@ SceneManager::SceneManager()
                                  m_verInfo.revision,
                                  m_verInfo.build_no);
 
+  // register to idle task list
+  qlib::EventManager *pEM = qlib::EventManager::getInstance();
+  pEM->addIdleTask(this);
+
+  m_nActiveSceneID = qlib::invalid_uid;
 }
 
 SceneManager::~SceneManager()
@@ -260,3 +265,7 @@ LString SceneManager::getVerArchName() const
   return LString::format("%s%d", plf.toLowerCase().c_str(), nbit);
 }
 
+void SceneManager::doIdleTask()
+{
+  checkAndUpdateScenes();
+}

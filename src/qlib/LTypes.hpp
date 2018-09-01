@@ -231,7 +231,18 @@ using qlib::qfloat64; \
 using qlib::qvoidp;
 
 #ifndef NO_USING_QTYPES
-QM_USING_QTYPES
+using qlib::qint8;
+using qlib::qint16;
+using qlib::qint32;
+using qlib::qint64;
+using qlib::qbyte;
+using qlib::quint8;
+using qlib::quint16;
+using qlib::quint32;
+using qlib::quint64;
+using qlib::qfloat32;
+using qlib::qfloat64;
+using qlib::qvoidp;
 #endif
 
 #endif // QUE_DATA_TYPES_HPP_INCLUDED_

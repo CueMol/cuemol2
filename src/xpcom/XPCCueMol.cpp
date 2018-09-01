@@ -248,6 +248,7 @@ XPCCueMol::Observe(nsISupports* aSubject, const char* aTopic,
 
 NS_IMETHODIMP XPCCueMol::Init(const char *confpath, bool *_retval)
 {
+  try {
   // XXX
   //AddRef();
   
@@ -322,6 +323,17 @@ NS_IMETHODIMP XPCCueMol::Init(const char *confpath, bool *_retval)
   MB_DPRINTLN("XPCCueMol> CueMol initialized.");
   m_bInit = true;
   *_retval = PR_TRUE;
+
+  }
+  catch (const qlib::LException &e) {
+    LOG_DPRINTLN("Init> Caught exception <%s>", typeid(e).name());
+    LOG_DPRINTLN("Init> Reason: %s", e.getMsg().c_str());
+    return NS_ERROR_NOT_IMPLEMENTED;
+  }
+  catch (...) {
+    LOG_DPRINTLN("Init> Caught unknown exception");
+    return NS_ERROR_NOT_IMPLEMENTED;
+  }
 
   return NS_OK;
 }

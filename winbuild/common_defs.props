@@ -10,14 +10,14 @@
 
   <PropertyGroup Label="UserMacros">
 
-    <BuildSetDir Condition="'$(Platform)'=='x64'">$(PROJ64_DIR)</BuildSetDir>
-    <BuildSetDir Condition="'$(Platform)'=='Win32'">$(PROJ_DIR)</BuildSetDir>
+    <BuildSetDir Condition="'$(Platform)'=='x64'">$(PROJ64_DIR)\</BuildSetDir>
+    <BuildSetDir Condition="'$(Platform)'=='Win32'">$(PROJ_DIR)\</BuildSetDir>
     <BuildSetDir Condition="'$(MSBuildToolsVersion)' == '15.0' or '$(VisualStudioVersion)' == '15.0'">$(SolutionDir)..\..\</BuildSetDir>
 
     <SourceDir>$(SolutionDir)..\src\</SourceDir>
 
     <!-- BOOST -->
-    <BoostVersion>1_64</BoostVersion>
+    <BoostVersion>1_57</BoostVersion>
 
     <BoostLibArch Condition="'$(Platform)'=='x64'">lib64</BoostLibArch>
     <BoostLibArch Condition="'$(Platform)'=='Win32'">lib32</BoostLibArch>
