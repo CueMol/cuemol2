@@ -87,7 +87,7 @@ using qlib::LString;
 void process_input(const LString &loadscr, const std::deque<LString> &args);
 
 #ifndef DEFAULT_CONFIG
-#define DEFAULT_CONFIG "sysconfig.xml"
+#define DEFAULT_CONFIG "./sysconfig.xml"
 #endif
 
 ///
@@ -139,11 +139,6 @@ int internal_main(int argc, const char *argv[])
   }
 
   LOG_DPRINTLN("main> confpath=%s", confpath.c_str());
-
-  char sbuf[256];
-  printf("input: ");
-  fgets(sbuf, 250, stdin);
-  printf("input: %s\n", sbuf);
 
   // load molstr/lwview module
   molstr::init();
