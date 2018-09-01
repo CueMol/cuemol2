@@ -262,12 +262,17 @@ void LuxCoreDisplayContext::writeCyls(PrintStream &ps)
 
 void LuxCoreDisplayContext::writeMeshes(PrintStream &ps)
 {
+  //Mesh *pMeshOrig = &m_pIntData->m_mesh;
+  //Mesh *pMesh = m_pIntData->simplifyMesh(pMeshOrig, 0);
+  //LOG_DPRINTLN("Orig verts=%d, faces=%d", pMeshOrig->getVertexSize(), pMeshOrig->getFaceSize());
+
   Mesh *pMesh = &m_pIntData->m_mesh;
+
   int i;
   int nverts = pMesh->getVertexSize();
   int nfaces = pMesh->getFaceSize();
 
-  LOG_DPRINTLN("verts=%d, faces=%d", nverts, nfaces);
+  LOG_DPRINTLN("Mesh verts=%d, faces=%d", nverts, nfaces);
 
   if (nverts<=0 || nfaces<=0)
     return;
@@ -300,6 +305,8 @@ void LuxCoreDisplayContext::writeMeshes(PrintStream &ps)
   ps2.println("property list uchar uint vertex_indices");
   ps2.println("end_header");
 
+  Vector4D vc;
+
   //for (i=0; i<nverts; i++) {
   BOOST_FOREACH (MeshVert *p, pMesh->m_verts) {
     // Vertex
@@ -325,7 +332,8 @@ void LuxCoreDisplayContext::writeMeshes(PrintStream &ps)
     }
 
     // Color
-    ps2.print("255 255 255\n");
+    m_pIntData->m_clut.getRGBAVecColor(p->c, vc);
+    ps2.format("%d %d %d\n", gfx::convF2I(vc.x()), gfx::convF2I(vc.y()), gfx::convF2I(vc.z()));
   }
 
   //for (i=0; i<nfaces; i++) {
