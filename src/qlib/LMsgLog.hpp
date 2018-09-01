@@ -95,6 +95,7 @@ namespace qlib {
   private:
     static LMsgLog *s_pLog;
 
+    void resetOutput();
   };
 
 }

@@ -20,8 +20,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Xml Include="..\..\src\xul_gui\sysconfig.xml">
-      <Filter>ソース ファイル</Filter>
-    </Xml>
+    <CustomBuild Include="..\..\src\xul_gui\sysconfig.xml" />
   </ItemGroup>
 </Project>

@@ -154,6 +154,18 @@ PATH=$(BuildSetDir)\bin;%PATH%</LocalDebuggerEnvironment>
     <ClCompile>
       <PreprocessorDefinitions>HAVE_PYTHON=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <Link>
+      <EntryPointSymbol Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">mainCRTStartup</EntryPointSymbol>
+    </Link>
+    <Link>
+      <EntryPointSymbol Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">mainCRTStartup</EntryPointSymbol>
+    </Link>
+    <Link>
+      <EntryPointSymbol Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">mainCRTStartup</EntryPointSymbol>
+    </Link>
+    <Link>
+      <EntryPointSymbol Condition="'$(Configuration)|$(Platform)'=='Release|x64'">mainCRTStartup</EntryPointSymbol>
+    </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\cli\cli_main.cpp" />

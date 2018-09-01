@@ -41,20 +41,31 @@ namespace qlib {
 
 using namespace qlib;
 
+
 LMsgLog::LMsgLog()
      : m_pImpl( MB_NEW LMsgLogImpl() )
 {
-//#if defined(MB_DEBUG) || !defined(WIN32)
+  resetOutput();
+  m_pImpl->m_bAccumMsg = true;
+}
 
-#if defined(WIN32) && !defined(MB_DEBUG)
-  // windows (release ver): no stderr
-  m_pImpl->m_fp = NULL;
+void LMsgLog::resetOutput()
+{
+#if defined(WIN32)
+  HANDLE hStdErr = GetStdHandle(STD_ERROR_HANDLE);
+  //printf("hStdErr=%p\n", hStdErr);
+  if (hStdErr) {
+    // has console --> output to stderr
+    m_pImpl->m_fp = stderr;
+  }
+  else {
+    m_pImpl->m_fp = NULL;
+  }
 #else
-  // unix: write msgs to stderr
+  // posix: Always write msgs to stderr
   m_pImpl->m_fp = stderr;
 #endif
 
-  m_pImpl->m_bAccumMsg = true;
 }
 
 LMsgLog::~LMsgLog()
@@ -93,11 +104,8 @@ void LMsgLog::setFileRedirPath(const LString &path)
 
   if (path.isEmpty()) {
     // reset to default
-#ifdef _WIN32
-    m_pImpl->m_fp = NULL;
-#else
-    m_pImpl->m_fp = stderr;
-#endif
+    resetOutput();
+    return;
   }
   else {
 #ifdef _WIN32

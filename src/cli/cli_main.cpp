@@ -96,7 +96,7 @@ void process_input(const LString &loadscr, const std::deque<LString> &args);
 int internal_main(int argc, const char *argv[])
 {
   if (qlib::init())
-    MB_DPRINTLN("qlib::init() OK.");
+    LOG_DPRINTLN("qlib::init() OK.");
   else {
     LOG_DPRINTLN("Init: ERROR!!");
     return -1;
@@ -138,7 +138,12 @@ int internal_main(int argc, const char *argv[])
     return -1;
   }
 
-  MB_DPRINTLN("main> confpath=%s", confpath.c_str());
+  LOG_DPRINTLN("main> confpath=%s", confpath.c_str());
+
+  char sbuf[256];
+  printf("input: ");
+  fgets(sbuf, 250, stdin);
+  printf("input: %s\n", sbuf);
 
   // load molstr/lwview module
   molstr::init();
