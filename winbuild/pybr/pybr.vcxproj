@@ -60,21 +60,9 @@
   <PropertyGroup>
     <_ProjectFileVersion>12.0.21005.1</_ProjectFileVersion>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(PythonDir)\Include;$(PythonDir)\PC;$(IncludePath)</IncludePath>
-    <LibraryPath>$(PythonDir)\PCbuild\win32;$(LibraryPath)</LibraryPath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(PythonDir)\Include;$(PythonDir)\PC;$(IncludePath)</IncludePath>
-    <LibraryPath>$(PythonDir)\PCbuild\amd64;$(LibraryPath)</LibraryPath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(PythonDir)\Include;$(PythonDir)\PC;$(IncludePath)</IncludePath>
-    <LibraryPath>$(PythonDir)\PCbuild\win32;$(LibraryPath)</LibraryPath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(PythonDir)\Include;$(PythonDir)\PC;$(IncludePath)</IncludePath>
-    <LibraryPath>$(PythonDir)\PCbuild\amd64;$(LibraryPath)</LibraryPath>
+  <PropertyGroup>
+    <IncludePath>$(PythonDir)Include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(PythonDir)libs;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
     <ClCompile>
