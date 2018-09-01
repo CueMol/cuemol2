@@ -159,6 +159,8 @@ int internal_main(int argc, const char *argv[])
 
   LOG_DPRINTLN("main> confpath=%s", confpath.c_str());
 
+  cli::registerViewFactory();
+
   // load molstr/lwview module
   molstr::init();
   lwview::init();
