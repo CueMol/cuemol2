@@ -1,0 +1,150 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{6A1AC0C6-690C-4450-8A15-F5D2B0820CB5}</ProjectGuid>
+    <RootNamespace>pymodule</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="..\common_defs.props" />
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <Import Project="..\common_set.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>12.0.21005.1</_ProjectFileVersion>
+  </PropertyGroup>
+  <PropertyGroup>
+    <IncludePath>$(PythonDir)Include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(PythonDir)libs;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'">
+    <LinkIncremental>true</LinkIncremental>
+    <TargetExt>.pyd</TargetExt>
+    <TargetName>cuemol_internal_d</TargetName>
+    <OutDir>$(QMDeployDir)\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <LinkIncremental>false</LinkIncremental>
+    <TargetExt>.pyd</TargetExt>
+    <TargetName>cuemol_internal</TargetName>
+    <OutDir>$(QMDeployDir)\</OutDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
+    <ClCompile>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;PYBR_EXPORTS;BUILD_PYMODULE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
+    <ClCompile>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;PYBR_EXPORTS;BUILD_PYMODULE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(HavePython)'=='Yes'">
+    <ClCompile>
+      <PreprocessorDefinitions>HAVE_PYTHON=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup Condition="'$(HavePython)'=='Yes'">
+    <ClCompile Include="..\..\src\pybr\wrapper.cpp" />
+    <ClCompile Include="..\..\src\pybr\convert.cpp" />
+    <ClCompile Include="..\..\src\pybr\methodobj.cpp" />
+    <ClCompile Include="..\..\src\pybr\initcuemol.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\anim\anim.vcxproj">
+      <Project>{b894856f-f978-4874-92a5-6898372a2d66}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\importers\importers.vcxproj">
+      <Project>{02e9d2e5-f0aa-4f6b-8390-2b7ecb4cc2ea}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\jsbr\jsbr.vcxproj">
+      <Project>{99dbf289-b4b8-43d0-8d74-8c0a26ffb5d1}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\libpng\libpng.vcxproj">
+      <Project>{d3f094b8-da6d-4fca-86ac-1576477b610a}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\lwview\lwview.vcxproj">
+      <Project>{2f145560-b55c-430d-80a0-111153651540}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\mdtools\mdtools.vcxproj">
+      <Project>{986d044c-ea72-49ca-bc1f-9430493d621c}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\molanl\molanl.vcxproj">
+      <Project>{ac52574d-6896-4b90-97f5-56fe501324a4}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\qlib\qlib.vcxproj">
+      <Project>{17abbaff-4e0b-4cab-ae59-b5fc76a4e285}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\qsys\qsys.vcxproj">
+      <Project>{dbd4410b-6495-4051-b5e4-4609bb8da327}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\rendering\render.vcxproj">
+      <Project>{96857bf4-b1b1-4122-8765-1bc6aeaa0efa}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\surface\surface.vcxproj">
+      <Project>{b59ec231-1731-4fbe-9e2a-dbad581be05d}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\symm\symm.vcxproj">
+      <Project>{7cad1179-b1cf-4e17-bbfa-dbd5aea51e7b}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\xtal\xtal.vcxproj">
+      <Project>{a0aceca2-0c73-4a1a-9736-f3f7a3158878}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\zlib\zlib.vcxproj">
+      <Project>{f76f5626-feaf-46f1-8f81-e60cbcb3320d}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>

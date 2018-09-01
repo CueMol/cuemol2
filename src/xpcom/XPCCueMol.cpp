@@ -260,7 +260,6 @@ NS_IMETHODIMP XPCCueMol::Init(const char *confpath, bool *_retval)
   }
 
   registerFileType();
-  registerViewFactory();
 
   // CueMol2 Application initialization
   qsys::init(confpath);
@@ -319,6 +318,8 @@ NS_IMETHODIMP XPCCueMol::Init(const char *confpath, bool *_retval)
   xrbr::init();
   MB_DPRINTLN("---------- setup XRBR OK");
 #endif
+
+  registerViewFactory();
 
   MB_DPRINTLN("XPCCueMol> CueMol initialized.");
   m_bInit = true;

@@ -18,6 +18,7 @@
 
     <!-- BOOST -->
     <BoostVersion>1_57</BoostVersion>
+    <BoostVersion Condition="'$(MSBuildToolsVersion)' == '15.0' or '$(VisualStudioVersion)' == '15.0'">1_64</BoostVersion>
 
     <BoostLibArch Condition="'$(Platform)'=='x64'">lib64</BoostLibArch>
     <BoostLibArch Condition="'$(Platform)'=='Win32'">lib32</BoostLibArch>
