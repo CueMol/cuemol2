@@ -146,5 +146,10 @@
       <Project>{f76f5626-feaf-46f1-8f81-e60cbcb3320d}</Project>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\src\pybr\scripts\cuemol.py">
+      <FileType>Document</FileType>
+    </CustomBuild>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>
