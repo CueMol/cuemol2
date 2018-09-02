@@ -37,6 +37,10 @@ initcuemol_internal()
 
 ////////////////////////////////////////////////
 
+#ifdef USE_XMLRPC
+#include <xmlrpc_bridge/xrbr.hpp>
+#endif
+
 namespace render {
   extern bool init();
   extern void fini();
@@ -93,6 +97,7 @@ namespace importers {
 }
 
 namespace pybr {
+
   /// CueMol initialization routine
   PyObject *initCueMol(PyObject *self, PyObject *args)
   {
@@ -101,27 +106,85 @@ namespace pybr {
     if (!PyArg_ParseTuple(args, "s", &config))
       return NULL;
   
-    qsys::init(config);
-    sysdep::init();
+    try {
+      qsys::init(config);
+      sysdep::init();
 
-    // load other modules
-    render::init();
-    molstr::init();
-    molvis::init();
-    xtal::init();
-    symm::init();
-    surface::init();
-    molanl::init();
-    lwview::init();
-    anim::init();
-    mdtools::init();
-    importers::init();
+      // load other modules
+      render::init();
+      molstr::init();
+      molvis::init();
+      xtal::init();
+      symm::init();
+      surface::init();
+      molanl::init();
+      lwview::init();
+      anim::init();
 
-    // initTextRender();
-    // MB_DPRINTLN("---------- initTextRender() OK");
+      mdtools::init();
+
+      importers::init();
+
+#ifdef USE_XMLRPC
+      // load python module
+      xrbr::init();
+      MB_DPRINTLN("---------- setup XRBR OK");
+#endif
+
+      // initTextRender();
+      // MB_DPRINTLN("---------- initTextRender() OK");
+      MB_DPRINTLN("CueMol> initialized.");
+    }
+    catch (const qlib::LException &e) {
+      LOG_DPRINTLN("Init> Caught exception <%s>", typeid(e).name());
+      LOG_DPRINTLN("Init> Reason: %s", e.getMsg().c_str());
+      //return NS_ERROR_NOT_IMPLEMENTED;
+    }
+    catch (...) {
+      LOG_DPRINTLN("Init> Caught unknown exception");
+      //return NS_ERROR_NOT_IMPLEMENTED;
+    }
+    
+    return Py_BuildValue("");
+  }
+
+  //////////
+
+  /// CueMol finalization routine
+  PyObject *finiCueMol(PyObject *self, PyObject *args)
+  {
+#ifdef USE_XMLRPC
+    // unload XMLRPC module
+    xrbr::fini();
+    MB_DPRINTLN("=== xrbr::fini() OK ===");
+#endif
+
+    // cleanup timer
+    qlib::EventManager::getInstance()->finiTimer();
+
+    importers::fini();
+    
+    mdtools::fini();
+    
+    anim::fini();
+    lwview::fini();
+    molanl::fini();
+    surface::fini();
+    symm::fini();
+    xtal::fini();
+    molvis::fini();
+    molstr::fini();
+    render::fini();
+    
+    // CueMol-App finalization
+    sysdep::fini();
+    qsys::fini();
+    
+    MB_DPRINTLN("CueMol> CueMol finalized.");
 
     return Py_BuildValue("");
   }
+
 }
 
 #endif

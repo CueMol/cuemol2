@@ -748,6 +748,7 @@ PyObject *Wrapper::print(PyObject *self, PyObject *args)
 namespace pybr {
 #ifdef BUILD_PYMODULE
   PyObject *initCueMol(PyObject *self, PyObject *args);
+  PyObject *finiCueMol(PyObject *self, PyObject *args);
 #endif
 }
 
@@ -771,6 +772,7 @@ static PyMethodDef cuemol_methods[] = {
   {"print", (PyCFunction)Wrapper::print, METH_VARARGS, "print log message.\n"},
 #ifdef BUILD_PYMODULE
   {"initCueMol", (PyCFunction)initCueMol, METH_VARARGS, "initialize CueMol system.\n"},
+  {"finiCueMol", (PyCFunction)finiCueMol, METH_VARARGS, "finalize CueMol system.\n"},
 #endif
 #ifdef HAVE_NUMPY
   {"numpychk", (PyCFunction)Wrapper::numpychk, METH_VARARGS, "numpychk.\n"},
