@@ -96,7 +96,7 @@ typedef struct {
     
     static PyObject *getattr(QpyWrapObj *pSelf, const char *name);
     
-    static PyObject *dir_impl(QpyWrapObj *pSelf);
+    static PyObject *invokeMethodImpl(qlib::LScriptable *pScrObj, const char *mthname, PyObject *arg, int nb);
 
     //////////
     // conversion methods

@@ -255,37 +255,6 @@ static PyObject *wr_str(QpyWrapObj *pSelf)
 #endif
 }
 
-//static
-PyObject *Wrapper::dir_impl(QpyWrapObj *pSelf)
-{
-  LOG_DPRINTLN("Wrapper::dir_impl called!!");
-
-  qlib::LScriptable *pObj = pSelf->m_pObj;
-  if (pObj==NULL) {
-    PyErr_SetString(PyExc_RuntimeError, "wrapped obj is null");
-    return NULL;
-  }
-  
-  std::set<LString> names;
-  pObj->getPropNames(names);
-
-  PyObject *rc = PyList_New(0);
-  if (!rc)
-    return NULL;
-
-  BOOST_FOREACH (const LString &nm, names) {
-    PyObject *po = PyUnicode_FromString(nm.c_str());
-    if (po != NULL)
-      PyList_Append(rc, po);
-    Py_XDECREF(po);
-  }
-
-  return rc;
-}
-
-
-
-
 //////////////////////////////////////////////////////////////////////
 // cuemol services
 
@@ -765,30 +734,37 @@ PyObject *Wrapper::invokeMethod(PyObject *self, PyObject *arg)
   LString mthname;
   PyObject *pPySelf;
 
-  int nargs = PyTuple_GET_SIZE(arg)-2;
-
-  //if (!PyArg_ParseTuple(arg, "Os|", &pPySelf, &mthname)) {
-  if (nargs<0) {
+  if (PyTuple_GET_SIZE(arg)<2) {
     PyErr_SetString(PyExc_RuntimeError, "invokeMethod called without self/propnm");
     return NULL;
   }
 
   pPySelf = PyTuple_GET_ITEM(arg, 0);
-
+  qlib::LScriptable *pScrObj = Wrapper::getWrapped(pPySelf);
+  if (pScrObj==NULL) {
+    PyErr_SetString(PyExc_RuntimeError, "wrapped obj is NULL!!");
+    return NULL;
+  }
+  
   PyObject *pPyObj = PyTuple_GET_ITEM(arg, 1);
+  bool bOK = false;
   // string
 #if PY_MAJOR_VERSION >= 3
   if (PyBytes_Check(pPyObj)) {
     const char *pstr = PyBytes_AsString(pPyObj);
+    mthname = pstr;
+    bOK = true;
+  }
 #else
   if (PyString_Check(pPyObj)) {
     const char *pstr = PyString_AsString(pPyObj);
-#endif
     mthname = pstr;
+    bOK = true;
   }
+#endif
 
   // string (unicode)
-  if (PyUnicode_Check(pPyObj)) {
+  if (!bOK && PyUnicode_Check(pPyObj)) {
     // TO DO: debug
     PyObject *pUTF8Obj = PyUnicode_AsUTF8String(pPyObj);
 #if PY_MAJOR_VERSION >= 3
@@ -797,11 +773,25 @@ PyObject *Wrapper::invokeMethod(PyObject *self, PyObject *arg)
     const char *pstr = PyString_AsString(pUTF8Obj);
 #endif
     mthname = pstr;
+    bOK = true;
     Py_DECREF(pUTF8Obj);
   }
 
-  if (mthname.isEmpty()) {
+  if (mthname.isEmpty()||!bOK) {
     PyErr_SetString(PyExc_RuntimeError, "invokeMethod called without propnm");
+    return NULL;
+  }
+  
+  return Wrapper::invokeMethodImpl(pScrObj, mthname.c_str(), arg, 2);
+}
+  
+//static
+PyObject *Wrapper::invokeMethodImpl(qlib::LScriptable *pScrObj, const char *mthname, PyObject *arg, int nb)
+{
+  int nargs = PyTuple_GET_SIZE(arg) - nb;
+
+  if (nargs<0) {
+    PyErr_SetString(PyExc_RuntimeError, "invokeMethod called without self/propnm");
     return NULL;
   }
 
@@ -811,7 +801,7 @@ PyObject *Wrapper::invokeMethod(PyObject *self, PyObject *arg)
   LString errmsg;
 
   for (i = 0; i < nargs; ++i) {
-    PyObject *pArg = PyTuple_GET_ITEM(arg, i+2);
+    PyObject *pArg = PyTuple_GET_ITEM(arg, i+nb);
     ok = false;
     errmsg = LString();
     try {
@@ -820,11 +810,11 @@ PyObject *Wrapper::invokeMethod(PyObject *self, PyObject *arg)
     }
     catch (const qlib::LException &e) {
       errmsg = LString::format("call method %s: cannot convert arg %d, %s",
-		  mthname.c_str(), i, e.getMsg().c_str());
+		  mthname, i, e.getMsg().c_str());
     }
     catch (...) {
       errmsg = LString::format("call method %s: cannot convert arg %d",
-		  mthname.c_str(), i);
+		  mthname, i);
     }
     if (!ok) {
       PyErr_SetString(PyExc_RuntimeError, errmsg);
@@ -832,9 +822,61 @@ PyObject *Wrapper::invokeMethod(PyObject *self, PyObject *arg)
     }
   }
 
-  MB_DPRINTLN("invoke method %s nargs=%d", mthname.c_str(), nargs);
+  MB_DPRINTLN("invoke method %s nargs=%d", mthname, nargs);
 
-  return NULL;
+  // Invoke method
+
+  ok = false;
+  errmsg = LString();
+
+  try {
+    ok = pScrObj->invokeMethod(mthname, largs);
+    if (!ok)
+      errmsg = LString::format("call method %s: failed", mthname);
+  }
+  catch (qlib::LException &e) {
+    errmsg = 
+      LString::format("Exception occured in native method %s: %s",
+		      mthname, e.getMsg().c_str());
+  }
+  catch (std::exception &e) {
+    errmsg = 
+      LString::format("Std::exception occured in native method %s: %s",
+		      mthname, e.what());
+  }
+  catch (...) {
+    errmsg = 
+      LString::format("Unknown Exception occured in native method %s",
+		      mthname);
+  }
+
+  if (!ok) {
+    PyErr_SetString(PyExc_RuntimeError, errmsg);
+    return NULL;
+  }
+
+  // Convert returned value
+
+  PyObject *pRVal = NULL;
+  errmsg = LString();
+
+  try {
+    pRVal = Wrapper::lvarToPyObj(largs.retval());
+  }
+  catch (const qlib::LException &e) {
+    errmsg = LString::format("call method %s: cannot convert rval, %s",
+			     mthname, e.getMsg().c_str());
+  }
+  catch (...) {
+    errmsg = LString::format("call method %s: cannot convert rval",
+			     mthname);
+  }
+  if (pRVal==NULL) {
+    PyErr_SetString(PyExc_RuntimeError, errmsg);
+    return NULL;
+  }
+
+  return pRVal;
 }
 
 //static

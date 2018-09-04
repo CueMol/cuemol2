@@ -175,6 +175,9 @@ static PyObject *meth_call(PyObject *func, PyObject *arg, PyObject *kw)
     return NULL;
   }
 
+  return Wrapper::invokeMethodImpl(pScrObj, name, arg, 0);
+
+  /*
   int nargs = PyTuple_GET_SIZE(arg);
   if (nargs<0) {
     PyErr_SetString(PyExc_RuntimeError, "internal error; invalid arg tuple size");
@@ -266,8 +269,8 @@ static PyObject *meth_call(PyObject *func, PyObject *arg, PyObject *kw)
     return NULL;
   }
 
-
   return pRVal;
+  */
 }
 
 /*

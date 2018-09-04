@@ -36,7 +36,7 @@
     <CGALLibraryPath>$(BuildSetDir)\CGAL-4.12\lib</CGALLibraryPath>
 
     <!-- Python -->
-    <PythonDir>$(BuildSetDir)\Python-3.7.0-src\</PythonDir>
+    <PythonDir>$(BuildSetDir)\Python-3.7.0\</PythonDir>
     <HavePython Condition="Exists('$(PythonDir)')">Yes</HavePython>
     <HavePython Condition="!Exists('$(PythonDir)')">No</HavePython>
 

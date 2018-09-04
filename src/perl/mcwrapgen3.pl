@@ -31,6 +31,7 @@ use Parser;
 use Wrapper;
 use ModLdr;
 use Jsclass;
+use Pyclass;
 
 my $msvc=0;
 
@@ -81,6 +82,11 @@ for (;;) {
   elsif ($arg eq "-jsdir") {
     shift @ARGV;
     $Jsclass::out_dir = shift @ARGV;
+    next;
+  }
+  elsif ($arg eq "-pydir") {
+    shift @ARGV;
+    $Pyclass::out_dir = shift @ARGV;
     next;
   }
   elsif ($arg eq "-D") {
@@ -147,6 +153,9 @@ elsif ($mode eq "mod") {
 }
 elsif ($mode eq "js") {
   Jsclass::genJsWrapper($Parser::db{$curcls});
+}
+elsif ($mode eq "py") {
+  Pyclass::genWrapper($Parser::db{$curcls});
 }
 else {
     die "unknown mode: $mode";
