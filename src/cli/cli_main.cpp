@@ -290,7 +290,7 @@ void process_input(const LString &loadscr, const std::deque<LString> &args)
   //std::cerr << "\nFull path: " << full_path.file_string() << std::endl;
   //std::cerr << "Extn: " << full_path.extension() << std::endl;
 
-  bool bInvokeIntrShell = false;
+  bool bInvokeIntrShell = true;
 
   if (full_path.extension()==".qsc") {
     //qsys::ScenePtr rscene = pSM->loadSceneFrom(scr_path.file_string(), "xml");

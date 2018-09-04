@@ -12,6 +12,15 @@
 
 namespace pybr {
 
+/// wrapper instance type
+typedef struct {
+  PyObject_HEAD
+
+  /// wrapped object
+  qlib::LScriptable *m_pObj;
+
+} QpyWrapObj;
+
   using qlib::LString;
 
   /// wrapper utility methods
@@ -64,6 +73,8 @@ namespace pybr {
     /// Get enum type definition in JSON format
     static PyObject *getEnumDefsJSON(PyObject *self, PyObject *args);
 
+    static PyObject *invokeMethod(PyObject *self, PyObject *args);
+
     /// print log
     static PyObject *print(PyObject *self, PyObject *args);
 
@@ -83,6 +94,10 @@ namespace pybr {
     /// create python function object for native methods
     static PyObject *createMethodObj(PyObject *pObj, const char *mthname);
     
+    static PyObject *getattr(QpyWrapObj *pSelf, const char *name);
+    
+    static PyObject *dir_impl(QpyWrapObj *pSelf);
+
     //////////
     // conversion methods
 

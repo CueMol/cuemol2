@@ -74,7 +74,7 @@
   <PropertyGroup>
     <LocalDebuggerWorkingDirectory>$(QMDeployDir)</LocalDebuggerWorkingDirectory>
     <LocalDebuggerEnvironment>PYTHONHOME=$(PythonDir)
-PATH=$(BuildSetDir)\bin;%PATH%</LocalDebuggerEnvironment>
+PATH=$(PythonDir);$(BuildSetDir)\bin;%PATH%</LocalDebuggerEnvironment>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

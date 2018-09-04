@@ -20,18 +20,9 @@ using qlib::LScriptable;
 //////////
 // wrapper object type/instance definition
 
-/// wrapper instance type
-typedef struct {
-  PyObject_HEAD
-
-  /// wrapped object
-  qlib::LScriptable *m_pObj;
-
-} QpyWrapObj;
-
 // prototype declarations
 static void wr_dealloc(QpyWrapObj *pSelf);
-static PyObject *wr_getattr(QpyWrapObj *pSelf, const char *name);
+//static PyObject *wr_getattr(QpyWrapObj *pSelf, const char *name);
 static int wr_setattr(QpyWrapObj *pSelf, const char *name, PyObject *pValue);
 static PyObject *wr_str(QpyWrapObj *pSelf);
 
@@ -45,7 +36,7 @@ static PyTypeObject gWrapperType = {
   0,                         /*tp_itemsize*/
   (destructor) wr_dealloc,   /*tp_dealloc*/
   0,                         /*tp_print*/
-  (getattrfunc) wr_getattr,  /*tp_getattr*/
+  (getattrfunc) Wrapper::getattr,  /*tp_getattr*/
   (setattrfunc) wr_setattr,  /*tp_setattr*/
   0,                         /*tp_compare*/
   0,                         /*tp_repr*/
@@ -58,7 +49,8 @@ static PyTypeObject gWrapperType = {
   0,                         /*tp_getattro*/
   0,                         /*tp_setattro*/
   0,                         /*tp_as_buffer*/
-  Py_TPFLAGS_DEFAULT,        /*tp_flags*/
+  Py_TPFLAGS_DEFAULT|Py_TPFLAGS_BASETYPE
+    ,        /*tp_flags*/
   "CueMol wrapper objects",  /* tp_doc */
 //  0,                         /* tp_traverse */
 //  0,                         /* tp_clear */
@@ -104,8 +96,14 @@ static void wr_dealloc(QpyWrapObj *pSelf)
 }
 
 /// getter (method/property)
-static PyObject *wr_getattr(QpyWrapObj *pSelf, const char *name)
+PyObject *Wrapper::getattr(QpyWrapObj *pSelf, const char *name)
 {
+  LOG_DPRINTLN("Wrapper::getattr(%s) called!!", name);
+
+  if (LString(name).equals("__getattr__")) {
+    return Wrapper::createMethodObj((PyObject *)pSelf, "__getattr__");
+  }
+
   qlib::LScriptable *pObj = pSelf->m_pObj;
   if (pObj==NULL) {
     PyErr_SetString(PyExc_RuntimeError, "wrapped obj is null");
@@ -256,6 +254,37 @@ static PyObject *wr_str(QpyWrapObj *pSelf)
   return PyString_FromString(str);
 #endif
 }
+
+//static
+PyObject *Wrapper::dir_impl(QpyWrapObj *pSelf)
+{
+  LOG_DPRINTLN("Wrapper::dir_impl called!!");
+
+  qlib::LScriptable *pObj = pSelf->m_pObj;
+  if (pObj==NULL) {
+    PyErr_SetString(PyExc_RuntimeError, "wrapped obj is null");
+    return NULL;
+  }
+  
+  std::set<LString> names;
+  pObj->getPropNames(names);
+
+  PyObject *rc = PyList_New(0);
+  if (!rc)
+    return NULL;
+
+  BOOST_FOREACH (const LString &nm, names) {
+    PyObject *po = PyUnicode_FromString(nm.c_str());
+    if (po != NULL)
+      PyList_Append(rc, po);
+    Py_XDECREF(po);
+  }
+
+  return rc;
+}
+
+
+
 
 //////////////////////////////////////////////////////////////////////
 // cuemol services
@@ -731,6 +760,84 @@ PyObject *Wrapper::getEnumDefsJSON(PyObject *self, PyObject *args)
 }
 
 //static
+PyObject *Wrapper::invokeMethod(PyObject *self, PyObject *arg)
+{
+  LString mthname;
+  PyObject *pPySelf;
+
+  int nargs = PyTuple_GET_SIZE(arg)-2;
+
+  //if (!PyArg_ParseTuple(arg, "Os|", &pPySelf, &mthname)) {
+  if (nargs<0) {
+    PyErr_SetString(PyExc_RuntimeError, "invokeMethod called without self/propnm");
+    return NULL;
+  }
+
+  pPySelf = PyTuple_GET_ITEM(arg, 0);
+
+  PyObject *pPyObj = PyTuple_GET_ITEM(arg, 1);
+  // string
+#if PY_MAJOR_VERSION >= 3
+  if (PyBytes_Check(pPyObj)) {
+    const char *pstr = PyBytes_AsString(pPyObj);
+#else
+  if (PyString_Check(pPyObj)) {
+    const char *pstr = PyString_AsString(pPyObj);
+#endif
+    mthname = pstr;
+  }
+
+  // string (unicode)
+  if (PyUnicode_Check(pPyObj)) {
+    // TO DO: debug
+    PyObject *pUTF8Obj = PyUnicode_AsUTF8String(pPyObj);
+#if PY_MAJOR_VERSION >= 3
+    const char *pstr = PyBytes_AsString(pUTF8Obj);
+#else
+    const char *pstr = PyString_AsString(pUTF8Obj);
+#endif
+    mthname = pstr;
+    Py_DECREF(pUTF8Obj);
+  }
+
+  if (mthname.isEmpty()) {
+    PyErr_SetString(PyExc_RuntimeError, "invokeMethod called without propnm");
+    return NULL;
+  }
+
+  qlib::LVarArgs largs(nargs);
+  int i;
+  bool ok;
+  LString errmsg;
+
+  for (i = 0; i < nargs; ++i) {
+    PyObject *pArg = PyTuple_GET_ITEM(arg, i+2);
+    ok = false;
+    errmsg = LString();
+    try {
+      Wrapper::pyObjToLVar(pArg, largs.at(i));
+      ok = true;
+    }
+    catch (const qlib::LException &e) {
+      errmsg = LString::format("call method %s: cannot convert arg %d, %s",
+		  mthname.c_str(), i, e.getMsg().c_str());
+    }
+    catch (...) {
+      errmsg = LString::format("call method %s: cannot convert arg %d",
+		  mthname.c_str(), i);
+    }
+    if (!ok) {
+      PyErr_SetString(PyExc_RuntimeError, errmsg);
+      return NULL;
+    }
+  }
+
+  MB_DPRINTLN("invoke method %s nargs=%d", mthname.c_str(), nargs);
+
+  return NULL;
+}
+
+//static
 PyObject *Wrapper::print(PyObject *self, PyObject *args)
 {
   const char *msg;
@@ -768,6 +875,7 @@ static PyMethodDef cuemol_methods[] = {
   {"resetProp", (PyCFunction)Wrapper::resetProp, METH_VARARGS, "\n"},
   {"getPropsJSON", (PyCFunction)Wrapper::getPropsJSON, METH_VARARGS, "\n"},
   {"getEnumDefsJSON", (PyCFunction)Wrapper::getEnumDefsJSON, METH_VARARGS, "\n"},
+  {"invokeMethod", (PyCFunction)Wrapper::invokeMethod, METH_VARARGS, "\n"},
 
   {"print", (PyCFunction)Wrapper::print, METH_VARARGS, "print log message.\n"},
 #ifdef BUILD_PYMODULE
@@ -828,6 +936,7 @@ PyObject *Wrapper::init()
   PyObject* m;
 
   gWrapperType.tp_new = PyType_GenericNew;
+  //gWrapperType.tp_base = &PyBaseObject_Type;
   if (PyType_Ready(&gWrapperType) < 0)
     return NULL;
 

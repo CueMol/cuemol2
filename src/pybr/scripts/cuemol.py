@@ -51,7 +51,7 @@ def scene(aScene=None):
 #    print("*** aScene="+str(aScene)+"\n")
     sceMgr = ci.getService("SceneManager")
     scid=None
-    if aScene==None:
+    if aScene is None:
         scid = sceMgr.activeSceneID
         if scid==0:
             raise RuntimeError("Active scene ID is not defined!!")
@@ -96,7 +96,7 @@ def rend(aRend, aObj=None):
 
     rend = None
 
-    if aObj==None:
+    if aObj is None:
         s = scene()
         if isinstance(aName, str):
             rend = s.getRendByName(aName)
@@ -110,7 +110,7 @@ def rend(aRend, aObj=None):
         elif isinstance(aName, int):
             rend = o.getRenderer(aName)
     
-    if rend==None:
+    if rend is None:
         raise RuntimeError("renderer "+str(aName)+" not found")
 
     return rend
