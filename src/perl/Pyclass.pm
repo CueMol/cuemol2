@@ -176,7 +176,7 @@ sub genEnumPropCode($$$)
 
     print OUT "    \@property\n";
     print OUT "    def $key(self):\n";
-    print OUT "        return ci.getEnumDef(self._wrapped, \"$propnm\", \"$defnm\") )\n";
+    print OUT "        return ci.getEnumDef(self._wrapped, \"$propnm\", \"$defnm\")\n";
     print OUT "\n";
 
     # print OUT "\n";
@@ -253,6 +253,16 @@ sub makeMthSignt($)
   return join(", ", @rval);
 }
 
+sub isCallbackObj($)
+{
+  my $arg = shift;
+
+  return 0 if ($arg->{"type"} ne "object");
+
+  return 1 if ($arg->{"qif"} eq "LScrCallBack");
+  return 0;
+}
+
 sub makeMthArg($)
 {
   my $mth = shift;
@@ -264,7 +274,11 @@ sub makeMthArg($)
   my $ind = 0;
   foreach my $arg (@{$args}) {
     my $arg_type = $arg->{"type"};
-    if ($arg_type eq "object") {
+    if (isCallbackObj($arg)) {
+      # function obj can be directly passed to the ci methods (it is converted to callback obj in the wrapper)
+      push(@rval, "arg_$ind");
+    }
+    elsif ($arg_type eq "object") {
       push(@rval, "arg_${ind}._wrapped");
     }
     else {
