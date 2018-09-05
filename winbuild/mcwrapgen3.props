@@ -8,16 +8,29 @@
   <PropertyGroup>
     <mcwrapgen3DependsOn
       Condition="'$(ConfigurationType)' != 'Makefile'">_SelectedFiles;$(mcwrapgen3DependsOn)</mcwrapgen3DependsOn>
+
+      <MCWrapGen>perl.exe $(SolutionDir)..\src\perl\mcwrapgen3.pl</MCWrapGen>
+      <MCWrapGenCmd>$(MCWrapGen) -MSVC -I $(SolutionDir)..\src\ -m hdr %(FullPath)</MCWrapGenCmd>
+      <MCWrapGenCmd>$(MCWrapGenCmd)
+$(MCWrapGen) -MSVC -I $(SolutionDir)..\src\ -m src %(FullPath)</MCWrapGenCmd>
+      <MCWrapGenCmd>$(MCWrapGenCmd)
+$(MCWrapGen) -MSVC -I $(SolutionDir)..\src\ -m js -jsdir $(SolutionDir)..\src\xul_gui\resources\cuemol-wrappers\ %(FullPath)</MCWrapGenCmd>
+
+      <MCWrapGenCmd Condition="'$(HavePython)'=='Yes'">$(MCWrapGenCmd)
+$(MCWrapGen) -MSVC -I $(SolutionDir)..\src\ -m py -pydir $(SolutionDir)..\src\pybr\scripts\wrappers\ %(FullPath)</MCWrapGenCmd>
+
+      <MCWrapGenOut>%(RootDir)%(Directory)%(Filename)_wrap.cpp;%(RootDir)%(Directory)%(Filename)_wrap.hpp</MCWrapGenOut>
+      <MCWrapGenOut Condition="'$(HavePython)'=='Yes'">$(MCWrapGenOut);$(SolutionDir)..\src\pybr\scripts\wrappers\%(Filename).py</MCWrapGenOut>
+
   </PropertyGroup>
   <ItemDefinitionGroup>
     <mcwrapgen3>
-      <CommandLineTemplate>perl.exe $(SolutionDir)..\src\perl\mcwrapgen3.pl -MSVC -I $(SolutionDir)..\src\ -m hdr  %(FullPath)
-perl.exe $(SolutionDir)..\src\perl\mcwrapgen3.pl -MSVC -I $(SolutionDir)..\src\ -m src  %(FullPath)
-perl.exe $(SolutionDir)..\src\perl\mcwrapgen3.pl -MSVC -I $(SolutionDir)..\src\ -m js  -jsdir $(SolutionDir)..\src\xul_gui\resources\cuemol-wrappers\ %(FullPath)
-</CommandLineTemplate>
-      <Outputs>%(RootDir)%(Directory)%(Filename)_wrap.cpp;%(RootDir)%(Directory)%(Filename)_wrap.hpp</Outputs>
+      <CommandLineTemplate>$(MCWrapGenCmd)</CommandLineTemplate>
+      <Outputs>$(MCWrapGenOut)</Outputs>
     </mcwrapgen3>
   </ItemDefinitionGroup>
+
+
   <PropertyGroup
     Condition="'$(mcw_loaderBeforeTargets)' == '' and '$(mcw_loaderAfterTargets)' == '' and '$(ConfigurationType)' != 'Makefile'">
     <mcw_loaderBeforeTargets>Midl</mcw_loaderBeforeTargets>

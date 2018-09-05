@@ -73,6 +73,10 @@ typedef struct {
     /// Get enum type definition in JSON format
     static PyObject *getEnumDefsJSON(PyObject *self, PyObject *args);
 
+    /// Get enum type definition (integer ID)
+    static PyObject *getEnumDef(PyObject *self, PyObject *args);
+
+    /// Invoke native method
     static PyObject *invokeMethod(PyObject *self, PyObject *args);
 
     /// print log

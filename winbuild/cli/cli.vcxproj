@@ -74,6 +74,7 @@
   <PropertyGroup>
     <LocalDebuggerWorkingDirectory>$(QMDeployDir)</LocalDebuggerWorkingDirectory>
     <LocalDebuggerEnvironment>PYTHONHOME=$(PythonDir)
+PYTHONPATH=$(SourceDir)\pybr\scripts
 PATH=$(PythonDir);$(BuildSetDir)\bin;%PATH%</LocalDebuggerEnvironment>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

@@ -729,6 +729,13 @@ PyObject *Wrapper::getEnumDefsJSON(PyObject *self, PyObject *args)
 }
 
 //static
+PyObject *Wrapper::getEnumDef(PyObject *self, PyObject *args)
+{
+  PyErr_SetString(PyExc_RuntimeError, "Not implemented");
+  return NULL;
+}
+
+//static
 PyObject *Wrapper::invokeMethod(PyObject *self, PyObject *arg)
 {
   LString mthname;
@@ -917,6 +924,7 @@ static PyMethodDef cuemol_methods[] = {
   {"resetProp", (PyCFunction)Wrapper::resetProp, METH_VARARGS, "\n"},
   {"getPropsJSON", (PyCFunction)Wrapper::getPropsJSON, METH_VARARGS, "\n"},
   {"getEnumDefsJSON", (PyCFunction)Wrapper::getEnumDefsJSON, METH_VARARGS, "\n"},
+  {"getEnumDef", (PyCFunction)Wrapper::getEnumDef, METH_VARARGS, "\n"},
   {"invokeMethod", (PyCFunction)Wrapper::invokeMethod, METH_VARARGS, "\n"},
 
   {"print", (PyCFunction)Wrapper::print, METH_VARARGS, "print log message.\n"},
