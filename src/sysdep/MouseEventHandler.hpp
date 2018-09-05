@@ -43,7 +43,7 @@ namespace sysdep {
 
     static const int EVENTBUF_SIZE = 16;
     static const int AVER_TIME = 500;
-    static const int DBLCLICK_TIME = 500;
+    static const int DBLCLICK_TIME = 500*1000*1000;
 
     InDevEvent m_lastEvent;
 

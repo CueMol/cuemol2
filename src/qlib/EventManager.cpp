@@ -130,7 +130,7 @@ void EventManager::checkTimerQueue()
 {
   if (m_timerq.empty()) return;
   time_value curr = m_pImpl->getCurrentTime();
-MB_DPRINTLN("EventManager::checkTimerQueue() curr=%d", curr);
+MB_DPRINTLN("EventManager::checkTimerQueue() curr=%lld", curr);
 
   TimerQueue::iterator iter = m_timerq.begin();
   //TimerQueue::iterator eiter = m_timerq.end();
@@ -180,6 +180,7 @@ time_value TimerImpl::getCurrentTime()
   // time_value is in nano-sec rep with int64 precision
   time_value t1 = duration_cast<nanoseconds>(tp.time_since_epoch()).count();
 
+  // LOG_DPRINTLN("getCurrentTime() = %llu", t1);
   return t1;
 #else
   return time_value(0);
