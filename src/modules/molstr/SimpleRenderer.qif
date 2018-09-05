@@ -7,7 +7,7 @@
 #define SIMPLE_RENDERER_QIF_INCLUDED
 
 #include "MolRenderer.qif"
-#include "Selection.qif"
+#include "MolSelection.qif"
 
 runtime_class SimpleRenderer extends MolRenderer
 {

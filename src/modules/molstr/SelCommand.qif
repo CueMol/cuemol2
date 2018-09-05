@@ -6,7 +6,7 @@
 #ifndef SEL_COMMAND_QIF_INCLUDED
 #define SEL_COMMAND_QIF_INCLUDED
 
-#include "Selection.qif"
+#include "MolSelection.qif"
 
 runtime_class SelCommand extends MolSelection
 {

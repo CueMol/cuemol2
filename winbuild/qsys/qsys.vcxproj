@@ -233,7 +233,7 @@
     <ClCompile Include="..\..\src\modules\molstr\SelCommand.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\SelCommand_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\SelCompiler.cpp" />
-    <ClCompile Include="..\..\src\modules\molstr\Selection_wrap.cpp" />
+    <ClCompile Include="..\..\src\modules\molstr\MolSelection_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\SelectionRenderer.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\SelectionRenderer_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\molstr\SelNodes.cpp" />
@@ -413,7 +413,7 @@
     <mcwrapgen3 Include="..\..\src\modules\molstr\ResidIterator.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molstr\ResidRangeSet.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molstr\SelCommand.qif" />
-    <mcwrapgen3 Include="..\..\src\modules\molstr\Selection.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\molstr\MolSelection.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molstr\SelectionRenderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molstr\SimpleRenderer.qif" />
     <mcwrapgen3 Include="..\..\src\modules\molstr\SolidColoring.qif" />

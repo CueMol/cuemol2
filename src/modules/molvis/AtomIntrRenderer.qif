@@ -8,7 +8,7 @@
 
 #include <qsys/Renderer.qif>
 #include <modules/molstr/MolCoord.qif>
-#include <modules/molstr/Selection.qif>
+#include <modules/molstr/MolSelection.qif>
 
 runtime_class AtomIntrRenderer extends Renderer
 {

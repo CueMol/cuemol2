@@ -7,7 +7,7 @@
 #define CPK_RENDERER_QIF
 
 #include <modules/molstr/MolRenderer.qif>
-#include <modules/molstr/Selection.qif>
+#include <modules/molstr/MolSelection.qif>
 
 runtime_class CPKRenderer extends MolRenderer
 {

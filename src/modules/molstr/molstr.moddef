@@ -11,7 +11,7 @@
 #include "AtomIterator.qif"
 #include "ResidIterator.qif"
 #include "ChainIterator.qif"
-#include "Selection.qif"
+#include "MolSelection.qif"
 #include "SelCommand.qif"
 #include "ColoringScheme.qif"
 #include "CPKColoring.qif"

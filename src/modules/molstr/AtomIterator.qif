@@ -4,7 +4,7 @@
 
 #include "MolAtom.qif"
 #include "MolCoord.qif"
-#include "Selection.qif"
+#include "MolSelection.qif"
 
 runtime_class AtomIterator
 {

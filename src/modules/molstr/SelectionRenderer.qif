@@ -7,7 +7,7 @@
 #define SELECTION_RENDERER_QIF_INCLUDED
 
 #include "MolRenderer.qif"
-#include "Selection.qif"
+#include "MolSelection.qif"
 
 runtime_class SelectionRenderer extends MolRenderer
 {

@@ -76,7 +76,7 @@ ColoringScheme.qif \
 SolidColoring.qif \
 SimpleRenderer.qif \
 SelCommand.qif \
-Selection.qif \
+MolSelection.qif \
 ResidIterator.qif \
 ChainIterator.qif \
 AtomIterator.qif \
