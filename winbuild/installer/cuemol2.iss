@@ -91,7 +91,7 @@ Source: {#SysDLLDir}\boost_system-{#BoostVer}.dll; DestDir: {app}; Flags: ignore
 Source: {#SysDLLDir}\boost_filesystem-{#BoostVer}.dll; DestDir: {app}; Flags: ignoreversion
 Source: {#SysDLLDir}\boost_timer-{#BoostVer}.dll; DestDir: {app}; Flags: ignoreversion
 ; others
-Source: {#SysDLLDir}\CGAL-vc120-mt-gd-4.12.dll; DestDir: {app}; Flags: ignoreversion
+Source: {#SysDLLDir}\CGAL-vc120-mt-4.12.dll; DestDir: {app}; Flags: ignoreversion
 Source: {#SysDLLDir}\libfftw3f-3.dll; DestDir: {app}; Flags: ignoreversion
 Source: {#SysDLLDir}\glew32.dll; DestDir: {app}; Flags: ignoreversion
 Source: {#SysDLLDir}\lcms2.dll; DestDir: {app}; Flags: ignoreversion
