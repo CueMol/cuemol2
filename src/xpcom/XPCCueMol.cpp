@@ -71,6 +71,7 @@ void registerFileType()
 {
 }
 #elif defined(XP_MACOSX)
+#include <OpenGL/OpenGL.h>
 #include <sysdep/CglView.hpp>
 namespace {
   class CglViewFactory : public qsys::ViewFactory

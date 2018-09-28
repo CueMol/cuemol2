@@ -29,6 +29,8 @@ StlDisplayContext.cpp \
 StlSceneExporter.cpp \
 LuxRendDisplayContext.cpp \
 LuxRendSceneExporter.cpp \
+LuxCoreSceneExporter.cpp \
+LuxCoreDisplayContext.cpp \
 $(NULL)
 
 #
@@ -42,6 +44,7 @@ PovSceneExporter.qif \
 WbpSceneExporter.qif \
 StlSceneExporter.qif \
 LuxRendSceneExporter.qif \
+LuxCoreSceneExporter.qif \
 $(NULL)
 
 
