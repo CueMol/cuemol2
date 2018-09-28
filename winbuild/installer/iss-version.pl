@@ -51,9 +51,9 @@ die unless (-d $buildset_dir);
 print "xuldeploy_dir=$xuldeploy_dir\n";
 die unless (-d $xuldeploy_dir);
 
-my $platform="win32";
-if ($xuldeploy_dir=~/Release64/) {
-  $platform="x64";
+my $platform="x64";
+if ($xuldeploy_dir=~/Release_Win32/) {
+  $platform="win32";
 }
 
 # check boost lib location
