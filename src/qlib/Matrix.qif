@@ -45,6 +45,9 @@ runtime_class Matrix
   /// set Identity matrix
   void setIdent();
 
+  /// set as rotation matrix (cen, axis, degree)
+  void setRotate(object<Vector> cen, object<Vector> ax, real degree);
+
   /// check identity matrix
   boolean isIdent();
 

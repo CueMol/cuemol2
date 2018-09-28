@@ -27,6 +27,7 @@ SelCommand.cpp \
 SelNodes.cpp \
 SelCacheMgr.cpp \
 SelAroundImpl.cpp \
+SelAroundImpl2.cpp \
 SelCompiler.cpp \
 parser_sel.yxx scanner_sel.lxx \
 BondIterator.cpp \

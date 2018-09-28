@@ -9,6 +9,7 @@
 #include "Matrix3D.hpp"
 #include "Utils.hpp"
 #include "LRegExpr.hpp"
+#include "LQuat.hpp"
 
 using namespace qlib;
 
@@ -136,5 +137,18 @@ LScrMatrix4D LScrMatrix4D::diag3() const
     swapcols(rval, 2, 3);
 
   return rval;
+}
+
+void LScrMatrix4D::setRotate(const LScrVector4D &cen, const LScrVector4D &ax, double degree)
+{
+  LQuat q(ax, toRadian(degree)/2.0);
+  Matrix4D mrot = q.toRotMatrix();
+  Matrix4D mtr1 = Matrix4D::makeTransMat(-cen);
+  Matrix4D mtr2 = Matrix4D::makeTransMat(cen);
+
+  Matrix4D::operator=( mtr2.mul(mrot.mul(mtr1)) );
+
+  //LScrMatrix4D rval = LScrMatrix4D( mtr2.mul(mrot.mul(mtr1)) );
+  //return rval;
 }
 

@@ -104,6 +104,9 @@ namespace qlib {
                           aij(4,i));
     }
 
+    void setRotate(const LScrVector4D &cen, const LScrVector4D &ax, double degree);
+    
+
   };
 
 }
