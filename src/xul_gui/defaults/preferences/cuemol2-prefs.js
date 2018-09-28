@@ -35,3 +35,7 @@ pref("webgl.force-enabled", true);
 
 // Needed due to https://bugzilla.mozilla.org/show_bug.cgi?id=1181977
 pref("browser.hiddenWindowChromeURL", "chrome://cuemol2/content/hiddenWindow.xul");
+
+// Use GL shader by default
+pref("cuemol2.ui.view.use_gl_shader", true); 
+
