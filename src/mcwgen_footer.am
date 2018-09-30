@@ -4,15 +4,22 @@
 
 # xpcom_DATA = $(IDL_XPT)
 
-BUILT_SOURCES=\
-$(MC_HDRS)
+if COND_USE_PYTHON
+PYWRAPS = $(MCWG_SRC:.qif=.py)
+else
+PYWRAPS = $(NULL)
+endif
 
-# $(XPC_HDRS)
-# $(IDL_SRC) $(IDL_HDR) $(IDL_XPT)
+pywrapdir = $(pkgdatadir)/python/wrappers
+pywrap_DATA = $(PYWRAPS)
+
+BUILT_SOURCES=\
+$(MC_HDRS) \
+$(NULL)
 
 CLEANFILES=\
-$(MC_HDRS) $(MC_SRCS) \
-$(MODLDR_SRC) $(XPCLDR_SRC)
-
-# $(XPC_HDRS) $(XPC_SRCS)
-# $(IDL_SRC) $(IDL_HDR) $(IDL_XPT)
+$(MC_HDRS) \
+$(MC_SRCS) \
+$(MODLDR_SRC) \
+$(PYWRAPS) \
+$(NULL)

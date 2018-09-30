@@ -19,6 +19,11 @@ MCWG_INCLUDES= -D HAVE_CONFIG_H -I $(top_srcdir) -I $(top_builddir)
 %_loader.cpp: %.moddef
 	$(MCWRAPGEN) $(MCWG_INCLUDES) -m mod $<
 
+if COND_USE_PYTHON
+%.py : %.qif
+	$(MCWRAPGEN) $(MCWG_INCLUDES) -m py -pydir $(@D) $<
+endif
+
 ######################################################
 
 plugindir=${prefix}/plugins

@@ -3,7 +3,7 @@
 # pybr module makefile
 #
 
-scriptdir = $(pkgdatadir)/python/
+scriptdir = $(pkgdatadir)/python/cuemol
 script_DATA = \
 scripts/cuemol/scene.py \
 scripts/cuemol/__init__.py \
@@ -70,3 +70,7 @@ libpybr_la_LIBADD = \
 
 include $(top_srcdir)/mcwgen_footer.am
 
+pywrap_DATA += \
+scripts/wrappers/__init__.py \
+scripts/wrappers/basewrapper.py \
+$(NULL)

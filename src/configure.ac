@@ -676,6 +676,8 @@ fi
     ],
     [])
 
+AM_CONDITIONAL(COND_USE_PYTHON, test x$HAVE_PYTHON = xyes)
+
 #######################################################
 # XML-RPC supports
 
