@@ -11,7 +11,10 @@
 #include <qlib/EventManager.hpp>
 #include <qsys/qsys.hpp>
 #include <qsys/SceneManager.hpp>
-#include <sysdep/sysdep.hpp>
+
+#if (GUI_ARCH!=MB_GUI_ARCH_CLI)
+#  include <sysdep/sysdep.hpp>
+#endif
 
 #include "wrapper.hpp"
 
@@ -108,7 +111,10 @@ namespace pybr {
   
     try {
       qsys::init(config);
+
+#if (GUI_ARCH!=MB_GUI_ARCH_CLI)
       sysdep::init();
+#endif
 
       // load other modules
       render::init();
@@ -177,7 +183,10 @@ namespace pybr {
     render::fini();
     
     // CueMol-App finalization
+#if (GUI_ARCH!=MB_GUI_ARCH_CLI)
     sysdep::fini();
+#endif
+    
     qsys::fini();
     
     MB_DPRINTLN("CueMol> CueMol finalized.");

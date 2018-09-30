@@ -678,6 +678,14 @@ fi
 
 AM_CONDITIONAL(COND_USE_PYTHON, test x$HAVE_PYTHON = xyes)
 
+BUILD_PYMODULE=no
+if test x$HAVE_PYTHON = xyes ; then
+BUILD_PYMODULE=yes
+AC_SUBST([BUILD_PYMODULE])
+fi
+
+AM_CONDITIONAL(COND_BUILD_PYMODULE, test x$BUILD_PYMODULE = xyes)
+
 #######################################################
 # XML-RPC supports
 

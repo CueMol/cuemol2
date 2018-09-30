@@ -43,7 +43,8 @@ MapSurfRenderer::MapSurfRenderer()
 
   m_bGenSurfMode = false;
 
-#if (GUI_ARCH!=CLI)
+#if (GUI_ARCH!=MB_GUI_ARCH_CLI)
+//#if (GUI_ARCH!=CLI)
   //m_bUseOpenMP = false;
   
   m_nOmpThr = -1;
@@ -67,7 +68,8 @@ MapSurfRenderer::~MapSurfRenderer()
   ScrEventManager *pSEM = ScrEventManager::getInstance();
   pSEM->removeViewListener(this);
 
-#if (GUI_ARCH!=CLI)
+#if (GUI_ARCH!=MB_GUI_ARCH_CLI)
+//#if (GUI_ARCH!=CLI)
   if (m_pVBO!=NULL)
     delete m_pVBO;
 #endif
