@@ -986,7 +986,7 @@ PyObject *Wrapper::init()
   PyObject* m;
 
   gWrapperType.tp_new = PyType_GenericNew;
-  //gWrapperType.tp_base = &PyBaseObject_Type;
+  gWrapperType.tp_base = &PyBaseObject_Type;
   if (PyType_Ready(&gWrapperType) < 0)
     return NULL;
 

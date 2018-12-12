@@ -205,11 +205,15 @@ void PDBFileReader::readContents(qlib::InStream &ins)
         readAnisou();
     }
     else if (recnam.equals("MODEL")) {
-      buf = readStr(11, 14);
+      //buf = readStr(11, 14);
+      buf = m_recbuf.substr(6);
       if (buf.toInt(&m_nCurrModel)) {
         // valid model record ...
-        LOG_DPRINTLN("Read model %d", m_nCurrModel);
-        if (m_nDefaultModel!=-2 && m_nCurrModel!=m_nDefaultModel)
+	// LOG_DPRINTLN("line: %s", readStr(1,70).c_str());
+	// LOG_DPRINTLN("buf: %s", buf.c_str());
+        // LOG_DPRINTLN("Read model %d (def=%d, flag=%d)", m_nCurrModel, m_nDefaultModel, m_bLoadMultiModel);
+
+	if (m_nDefaultModel!=-2 && m_nCurrModel!=m_nDefaultModel)
           LOG_DPRINTLN("PDBReader> WARNING: MODEL %d is ignored!", m_nCurrModel);
       }
       else {

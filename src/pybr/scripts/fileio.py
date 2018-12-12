@@ -105,6 +105,7 @@ def loadObject(aFileName, aName, aScene, aFmtName, aOpts=None):
 
     if aOpts is not None:
         for k,v in aOpts.items():
+            print("reader:",reader)
             print("reader set prop: k=",k,"v=",v)
             ci.setProp(reader, k, v)
 
