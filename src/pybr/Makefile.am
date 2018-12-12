@@ -66,64 +66,6 @@ libpybr_la_LIBADD = \
  @PYTHON_LDADD@ \
  $(NULL)
 
-#####################################
-
-if COND_BUILD_PYMODULE
-lib_LTLIBRARIES += cuemol_internal.la
-
-cuemol_internal_la_SOURCES = \
-wrapper.cpp \
-convert.cpp \
-methodobj.cpp \
-initcuemol.cpp \
-$(NULL)
-
-cuemol_internal_la_CXXFLAGS = \
-  @CFLAGS_VIS_HIDDEN@ \
-  @CXXFLAGS_VIS_HIDDEN@ \
-  -DPYBR_EXPORTS=1 \
-  -DBUILD_PYMODULE \
-  -DXP_UNIX \
-  -I$(top_srcdir) -I$(srcdir) \
-  @PYTHON_CPPFLAGS@ \
-  @BOOST_CPPFLAGS@ \
-  $(NULL)
-
-cuemol_internal_la_LDFLAGS = \
-  @MODULES_LDFLAGS@ \
-  @SCR_LDFLAGS@ \
-  @OSDEP_LDFLAGS@ \
-  -L../qsys \
-  -L../gfx \
-  -L../qlib \
-  -L../pcre \
-  -L../expat \
-  @BOOST_LDFLAGS@ \
-  @CGAL_LDFLAGS@ \
- @PYTHON_LDFLAGS@ \
- -module \
- $(NULL)
-
-cuemol_internal_la_LIBADD = \
-  @MODULES_LDADD@ \
-  @SCR_LDADD@ \
-  @OSDEP_LDADD@ \
-  -lqsys \
-  -lgfx \
-  -lqlib \
-  -lpcre \
-  -lexpat \
-  @BOOST_FILESYSTEM_LIB@ \
-  @BOOST_SYSTEM_LIB@ \
-  @BOOST_THREAD_LIB@ \
-  @BOOST_TIMER_LIB@ \
-  @BOOST_CHRONO_LIB@ \
-  @CGAL_LIBADD@ \
- @PYTHON_LDADD@ \
- $(NULL)
-
-endif
-
 ######################################################
 
 include $(top_srcdir)/mcwgen_footer.am
