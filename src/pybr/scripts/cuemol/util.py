@@ -185,7 +185,7 @@ def sel(aSelStr, aScene=None):
     if issel(aSelStr):
         return aSelStr
     s = scene(aScene)
-    print("sel> scene="+str(s)+"\n")
+    # print("sel> scene="+str(s)+"\n")
     selobj = createObj("SelCommand")
     selobj.compile(aSelStr, s.uid)
     return selobj
@@ -210,7 +210,7 @@ def copy(aObj, aNewObjName):
     s = objin.getScene()
     sm = svc("StreamManager")
     xml = sm.toXML(objin)
-    print("XML: "+str(xml)+"\n")
+    # print("XML: "+str(xml)+"\n")
     newobj = sm.fromXML(xml, s.uid)
     newobj.name = aNewObjName
     s.addObject(newobj)

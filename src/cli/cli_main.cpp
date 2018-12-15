@@ -103,7 +103,7 @@ namespace cli {
 
 
 using qlib::LString;
-void process_input(const LString &loadscr, const std::deque<LString> &args);
+void process_input(const LString &loadscr, const std::deque<LString> &args,bool bInvokeIntrShell);
 
 #ifndef DEFAULT_CONFIG
 #define DEFAULT_CONFIG "./sysconfig.xml"
@@ -126,18 +126,26 @@ int internal_main(int argc, const char *argv[])
   LString confpath;
   std::deque<LString> args2;
 
+  bool bInvokeIntrShell = false;
+
   for (i=1; i<argc; ++i) {
     MB_DPRINTLN("arg%d=%s", i, argv[i]);
     LString value = argv[i];
 
-    if (value.equals("-conf")) {
+    if (value.equals("-i")) {
+      bInvokeIntrShell = true;
+      continue;
+    }
+    else if (value.equals("-conf")) {
       ++i;
       if (i>=argc) break;
       confpath = argv[i];
-      ++i;
+      // ++i;
+      continue;
     }
-
-    break;
+    else {
+      break;
+    }
   }
   
   for (; i<argc; ++i) {
@@ -196,7 +204,7 @@ int internal_main(int argc, const char *argv[])
   //////////
 
   //if (!loadscr.isEmpty()) {
-  process_input(loadscr, args2);
+  process_input(loadscr, args2, bInvokeIntrShell);
   //}
 
 #ifdef USE_XMLRPC
@@ -267,7 +275,7 @@ int main(int argc, const char *argv[])
 
 namespace fs = boost::filesystem;
 
-void process_input(const LString &loadscr, const std::deque<LString> &args)
+void process_input(const LString &loadscr, const std::deque<LString> &args, bool bInvokeIntrShell )
 {
   qsys::SceneManager *pSM = qsys::SceneManager::getInstance();
   LOG_DPRINTLN("CueMol version %s build %s", pSM->getVersion().c_str(), pSM->getBuildID().c_str());
@@ -290,7 +298,7 @@ void process_input(const LString &loadscr, const std::deque<LString> &args)
   //std::cerr << "\nFull path: " << full_path.file_string() << std::endl;
   //std::cerr << "Extn: " << full_path.extension() << std::endl;
 
-  bool bInvokeIntrShell = true;
+  // bool bInvokeIntrShell = true;
 
   if (full_path.extension()==".qsc") {
     //qsys::ScenePtr rscene = pSM->loadSceneFrom(scr_path.file_string(), "xml");

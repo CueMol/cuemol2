@@ -349,9 +349,18 @@ double MolAnlManager::calcRMSD(MolCoordPtr pRefMol, SelectionPtr pRefSel,
         LString::format("ref %s %d  mov %s %d %f",
                         iter_ref->first.chain.c_str(), iter_ref->first.resid,
                         iter_mov->first.chain.c_str(), iter_mov->first.resid, ::sqrt(distsq));
-      MB_DPRINTLN(msg);
       if (pPS!=NULL)
         pPS->println(msg);
+
+      /*
+      LString msg2 =
+        LString::format("ref %s %d %s mov %s %d %s : %f",
+                        iter_ref->first.chain.c_str(), iter_ref->first.resid, iter_ref->first.pA->toString().c_str(),
+                        iter_mov->first.chain.c_str(), iter_mov->first.resid, iter_mov->first.pA->toString().c_str(),
+			::sqrt(distsq));
+      */
+      //LOG_DPRINTLN(msg2);
+
     }
 
   }

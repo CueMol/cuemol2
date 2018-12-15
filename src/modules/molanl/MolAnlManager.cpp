@@ -167,7 +167,7 @@ namespace {
   }
 }
 
-void MolAnlManager::superposeSSM1(MolCoordPtr pmol_ref, SelectionPtr psel_ref,
+Matrix4D MolAnlManager::superposeSSM1(MolCoordPtr pmol_ref, SelectionPtr psel_ref,
                                   MolCoordPtr pmol_mov, SelectionPtr psel_mov, bool bUseProp/*=false*/)
 {
   qsys::AutoStyleCtxt asc(pmol_ref->getSceneID());
@@ -190,7 +190,7 @@ void MolAnlManager::superposeSSM1(MolCoordPtr pmol_ref, SelectionPtr psel_ref,
   if (rc!=0) {
     LString msg = LString::format("SSM-superpose is failed (error code=%d)", rc);
     MB_THROW(qlib::RuntimeException, msg);
-    return;
+    return Matrix4D();
   }
 
   Matrix4D xfmat;
@@ -345,6 +345,7 @@ void MolAnlManager::superposeSSM1(MolCoordPtr pmol_ref, SelectionPtr psel_ref,
     pmol_mov->fireAtomsMoved();
   }
   
+  return xfmat;
 }
 
 void MolAnlManager::superposeSSM2(qlib::uid_t mol_ref, const LString &sel_ref,
