@@ -10,8 +10,8 @@ scripts/cuemol/__init__.py \
 scripts/cuemol/renderer.py \
 scripts/cuemol/util.py \
 scripts/cuemol/fileio.py \
-scripts/mol_util.py \
-scripts/cuemol_cmd.py \
+scripts/cuemol/mol_util.py \
+scripts/cuemol/cmd.py \
 $(NULL)
 
 ######################################################

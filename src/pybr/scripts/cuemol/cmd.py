@@ -2,6 +2,7 @@ import sys, traceback,os
 
 import cuemol
 import cuemol_internal
+import cuemol.fileio
 
 # set scene's background color
 def bgcolor(aCol):
@@ -59,8 +60,6 @@ def delete(aObj, aType=None):
 
     return False
 #    raise RuntimeError("rm: object not found, "+str(aObj))
-
-import fileio
 
 def load(aFileName, aName=None, aFmt=None, aScene=None, aOpts=None):
 
