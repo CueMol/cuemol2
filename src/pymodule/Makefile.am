@@ -45,6 +45,7 @@ cuemol_internal_la_CXXFLAGS = \
   -I$(top_srcdir) -I$(srcdir) \
   @PYTHON_CPPFLAGS@ \
   @BOOST_CPPFLAGS@ \
+  -DDEFAULT_CONFIG=\"$(pkgdatadir)/sysconfig.xml\" \
   $(NULL)
 
 cuemol_internal_la_LDFLAGS = \

@@ -3,8 +3,9 @@
 import cuemol_internal as ci
 import os
 if not ci.isInitialized():
-    conf_file = os.environ['CUEMOL2_SYSCONFIG']
-    ci.initCueMol(conf_file)
+#    conf_file = os.environ['CUEMOL2_SYSCONFIG']
+#    ci.initCueMol(conf_file)
+    ci.initCueMol("")
 
 from .util import *
 

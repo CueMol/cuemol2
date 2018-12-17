@@ -16,6 +16,10 @@
 #  include <sysdep/sysdep.hpp>
 #endif
 
+#ifndef DEFAULT_CONFIG
+#define DEFAULT_CONFIG "./sysconfig.xml"
+#endif
+
 #include "wrapper.hpp"
 
 using namespace pybr;
@@ -121,8 +125,14 @@ namespace pybr {
     if (!PyArg_ParseTuple(args, "s", &config))
       return NULL;
   
+    LString confpath(config);
+
     try {
-      qsys::init(config);
+      if (confpath.isEmpty()) {
+	confpath = DEFAULT_CONFIG;
+      }
+
+      qsys::init(confpath);
 
 #if (GUI_ARCH!=MB_GUI_ARCH_CLI)
       sysdep::init();
