@@ -3,27 +3,26 @@
 cwd=`pwd`
 top_srcdir=$cwd/../src/
 
-install_dir=$HOME/app/cuemol2-dev201608
+#install_dir=$HOME/app/cuemol2
+install_dir=/mnt/cuemol2/app
 
 #debug="--enable-debug --enable-m64"
 debug="--disable-debug --enable-m64"
 
-usepybr="--with-python=$HOME/app/Python3/"
+usepybr="--with-python"
 #usepybr="--disable-python"
 
-#usexrbr="--with-xmlrpc=$HOME/proj64/xmlrpc-c"
+# usexrbr="--with-xmlrpc=$HOME/proj64/xmlrpc-c"
 usexrbr="--without-xmlrpc"
 
-lcms="--without-lcms"
-xz="--with-xz=$HOME/proj/xz"
-
-#use_boost_timer="--enable-boosttimer"
+lcms="--with-lcms=$HOME/app/lcms2-2.7"
+xz="--with-xz=$HOME/app/xz-5.2.2"
 
 ##
 
-boost_dir=/home/ishitani/app/boost_1_60_0/
-fftw_dir=/home/ishitani/app/fftw/
-cgal_dir=/home/ishitani/app/CGAL-4.6.1/
+boost_dir=$HOME/app/boost_1_57_0/
+fftw_dir=$HOME/app/fftw-3.3.4/
+cgal_dir=$HOME/app/CGAL-4.12/
 
 #######################
 
@@ -50,7 +49,6 @@ $lcms \
 $xz \
 $usepybr \
 $usexrbr \
-$use_boost_timer \
 --enable-cli \
 --with-boost=$boost_dir \
 --with-fftw=$fftw_dir \

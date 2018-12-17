@@ -905,6 +905,7 @@ namespace pybr {
 #ifdef BUILD_PYMODULE
   PyObject *initCueMol(PyObject *self, PyObject *args);
   PyObject *finiCueMol(PyObject *self, PyObject *args);
+  PyObject *isInitialized(PyObject *self, PyObject *args);
 #endif
 }
 
@@ -931,6 +932,7 @@ static PyMethodDef cuemol_methods[] = {
 #ifdef BUILD_PYMODULE
   {"initCueMol", (PyCFunction)initCueMol, METH_VARARGS, "initialize CueMol system.\n"},
   {"finiCueMol", (PyCFunction)finiCueMol, METH_VARARGS, "finalize CueMol system.\n"},
+  {"isInitialized", (PyCFunction)isInitialized, METH_VARARGS, "check initialization.\n"},
 #endif
 #ifdef HAVE_NUMPY
   {"numpychk", (PyCFunction)Wrapper::numpychk, METH_VARARGS, "numpychk.\n"},
