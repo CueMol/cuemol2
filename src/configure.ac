@@ -473,7 +473,7 @@ fi
 AC_SUBST(BOOST_LDFLAGS)
 AC_SUBST(BOOST_CPPFLAGS)
 
-# Check for boost_timer library
+# Check for boost_timer library (TO DO: remove!!)
 USE_BOOST_TIMER=
 AC_ARG_ENABLE(boosttimer,
     [--enable-boosttimer     Enable performance measurement using boost_timer (boost_timer required)],
@@ -1009,6 +1009,18 @@ AC_ARG_WITH(cgal,
   no)
     ;;
 
+  yes)
+    AC_MSG_RESULT($with_cgal)
+    _cppflags=${CPPFLAGS}
+    CPPFLAGS="$CPPFLAGS $BOOST_CPPFLAGS"
+    AC_CHECK_HEADERS(CGAL/basic.h)
+    CPPFLAGS=$_cppflags
+
+    CGAL_CPPFLAGS=""
+    CGAL_LDFLAGS=""
+    CGAL_LIBADD="-lCGAL"
+    ;;
+
   *)
     AC_MSG_RESULT($with_cgal)
     _cppflags=${CPPFLAGS}
@@ -1022,6 +1034,15 @@ AC_ARG_WITH(cgal,
     ;;
   esac ],
 [])
+
+AC_ARG_ENABLE(cgal-gmp,
+    [--enable-cgal-gmp     use GMP dependent CGAL library],
+    [
+if test $enableval = yes ; then
+    CGAL_LIBADD="$CGAL_LIBADD -lgmp"
+fi
+    ],
+    [])
 
 AC_SUBST(CGAL_CPPFLAGS)
 AC_SUBST(CGAL_LDFLAGS)

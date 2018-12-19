@@ -943,22 +943,24 @@ static PyMethodDef cuemol_methods[] = {
 // Dummy initialization methods (for embedded python)
 
 #ifndef BUILD_PYMODULE
+namespace pybr {
 
-PyObject *initCueMol(PyObject *self, PyObject *args)
-{
-  return Py_BuildValue("");
+  PyObject *initCueMol(PyObject *self, PyObject *args)
+  {
+    return Py_BuildValue("");
+  }
+
+  PyObject *finiCueMol(PyObject *self, PyObject *args)
+  {
+    return Py_BuildValue("");
+  }
+
+  PyObject *isInitialized(PyObject *self, PyObject *args)
+  {
+    Py_RETURN_TRUE;
+  }
+
 }
-
-PyObject *finiCueMol(PyObject *self, PyObject *args)
-{
-  return Py_BuildValue("");
-}
-
-PyObject *isInitialized(PyObject *self, PyObject *args)
-{
-  Py_RETURN_TRUE;
-}
-
 #endif
 
 //////////////////////////////////////////////////////////////////////
