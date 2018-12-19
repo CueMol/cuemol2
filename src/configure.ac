@@ -385,13 +385,13 @@ AC_ARG_WITH(lcms,
     dnl default LCMS2 location (/usr, etc)
     AC_MSG_RESULT(yes)
     AC_CHECK_HEADERS([lcms2.h],,[AC_MSG_ERROR(lcms2.h not found)],[])
-    AC_CHECK_DECLS(cmsGetEncodedCMMversion,
+    AC_CHECK_DECLS(cmsUnregisterPlugins,
                    [],
-		   [AC_MSG_ERROR(cmsGetEncodedCMMversion() not found)],
+		   [AC_MSG_ERROR(cmsUnregisterPlugins() not found)],
 		   [#include <lcms2.h>])
-    AC_CHECK_LIB(lcms, cmsGetEncodedCMMversion,
+    AC_CHECK_LIB(lcms2, cmsUnregisterPlugins,
                  [LCMS_LIBADD=" -llcms2"],
-		 [AC_MSG_ERROR(cmsGetEncodedCMMversion() not found)],
+		 [AC_MSG_ERROR(cmsUnregisterPlugins() not found)],
 		 [])
 
     ;;
@@ -403,9 +403,9 @@ AC_ARG_WITH(lcms,
     CPPFLAGS="-I$with_lcms/include $CPPFLAGS"
     AC_CHECK_HEADERS([lcms2.h],,[AC_MSG_ERROR(lcms2.h not found)],[])
 
-    AC_CHECK_DECLS(cmsGetEncodedCMMversion,
+    AC_CHECK_DECLS(cmsUnregisterPlugins,
                    [LCMS_CPPFLAGS="-I$with_lcms/include"],
-		   [AC_MSG_ERROR(cmsGetEncodedCMMversion() not found)],
+		   [AC_MSG_ERROR(cmsUnregisterPlugins() not found)],
 		   [#include <lcms2.h>])
     CPPFLAGS=$_cppflags
 
@@ -413,10 +413,10 @@ AC_ARG_WITH(lcms,
     _libs=${LIBS}
     LDFLAGS="-L$with_lcms/lib $LDFLAGS"
     LIBS="-llcms2 $LIBS"
-    AC_CHECK_LIB(lcms2, cmsGetEncodedCMMversion,
+    AC_CHECK_LIB(lcms2, cmsUnregisterPlugins,
                  [LCMS_LDFLAGS="-L$with_lcms/lib"
 		  LCMS_LIBADD=" -llcms2"],
-		 [AC_MSG_ERROR(cmsGetEncodedCMMversion() not found)],
+		 [AC_MSG_ERROR(cmsUnregisterPlugins() not found)],
 		 [])
     LDFLAGS=$_ldflags
     LIBS=$_libs
