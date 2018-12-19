@@ -6,6 +6,7 @@
 #define MOLANL_MANAGER_QIF_INCLUDED
 
 #include <qlib/LScrObject.qif>
+#include <qlib/Matrix.qif>
 #include <modules/molstr/MolCoord.qif>
 
 runtime_class MolAnlManager
@@ -20,7 +21,7 @@ runtime_class MolAnlManager
   // molecular superposition
 
   /// Superpose SSM (object version)
-  void superposeSSM1(object<MolCoord$> pmol_ref, object<MolSelection$> psel_ref, object<MolCoord$> pmol_mov, object<MolSelection$> psel_mov, boolean useprop);
+  object<Matrix> superposeSSM1(object<MolCoord$> pmol_ref, object<MolSelection$> psel_ref, object<MolCoord$> pmol_mov, object<MolSelection$> psel_mov, boolean useprop);
 
   /// Superpose SSM (object ID/selection string version)
   void superposeSSM2(integer, string, integer, string);
@@ -28,7 +29,7 @@ runtime_class MolAnlManager
   /// Superpose LSQ
   void superposeLSQ1(object<MolCoord$> pmol_ref, object<MolSelection$> psel_ref, object<MolCoord$> pmol_mov, object<MolSelection$> psel_mov, boolean useprop);
 
-  void calcRMSD(object<MolCoord$> pmol_ref, object<MolSelection$> psel_ref, object<MolCoord$> pmol_mov, object<MolSelection$> psel_mov, string path) => calcRMSDScr;
+  real calcRMSD(object<MolCoord$> pmol_ref, object<MolSelection$> psel_ref, object<MolCoord$> pmol_mov, object<MolSelection$> psel_mov, string path) => calcRMSDScr;
 
   //////////////////////////
   // non-standard bond editor (TODO: move to moledit tool?)

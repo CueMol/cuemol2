@@ -902,10 +902,9 @@ PyObject *Wrapper::print(PyObject *self, PyObject *args)
 //////////////////////////////////////////////////////
 
 namespace pybr {
-#ifdef BUILD_PYMODULE
   PyObject *initCueMol(PyObject *self, PyObject *args);
   PyObject *finiCueMol(PyObject *self, PyObject *args);
-#endif
+  PyObject *isInitialized(PyObject *self, PyObject *args);
 }
 
 static PyMethodDef cuemol_methods[] = {
@@ -928,16 +927,39 @@ static PyMethodDef cuemol_methods[] = {
   {"invokeMethod", (PyCFunction)Wrapper::invokeMethod, METH_VARARGS, "\n"},
 
   {"print", (PyCFunction)Wrapper::print, METH_VARARGS, "print log message.\n"},
-#ifdef BUILD_PYMODULE
+
   {"initCueMol", (PyCFunction)initCueMol, METH_VARARGS, "initialize CueMol system.\n"},
   {"finiCueMol", (PyCFunction)finiCueMol, METH_VARARGS, "finalize CueMol system.\n"},
-#endif
+  {"isInitialized", (PyCFunction)isInitialized, METH_VARARGS, "check initialization.\n"},
+
 #ifdef HAVE_NUMPY
   {"numpychk", (PyCFunction)Wrapper::numpychk, METH_VARARGS, "numpychk.\n"},
   {"tondarray", (PyCFunction)Wrapper::tondarray, METH_VARARGS, "conv to numpy ndarray.\n"},
 #endif
   {NULL}  /* Sentinel */
 };
+
+//////////////////////////////////////////////////////////////////////
+// Dummy initialization methods (for embedded python)
+
+#ifndef BUILD_PYMODULE
+
+PyObject *initCueMol(PyObject *self, PyObject *args)
+{
+  return Py_BuildValue("");
+}
+
+PyObject *finiCueMol(PyObject *self, PyObject *args)
+{
+  return Py_BuildValue("");
+}
+
+PyObject *isInitialized(PyObject *self, PyObject *args)
+{
+  Py_RETURN_TRUE;
+}
+
+#endif
 
 //////////////////////////////////////////////////////////////////////
 // initialization
@@ -986,7 +1008,7 @@ PyObject *Wrapper::init()
   PyObject* m;
 
   gWrapperType.tp_new = PyType_GenericNew;
-  //gWrapperType.tp_base = &PyBaseObject_Type;
+  gWrapperType.tp_base = &PyBaseObject_Type;
   if (PyType_Ready(&gWrapperType) < 0)
     return NULL;
 

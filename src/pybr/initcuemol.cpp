@@ -16,6 +16,10 @@
 #  include <sysdep/sysdep.hpp>
 #endif
 
+#ifndef DEFAULT_CONFIG
+#define DEFAULT_CONFIG "./sysconfig.xml"
+#endif
+
 #include "wrapper.hpp"
 
 using namespace pybr;
@@ -101,16 +105,34 @@ namespace importers {
 
 namespace pybr {
 
+  bool g_bInitOK = false;
+
+  PyObject *isInitialized(PyObject *self, PyObject *args)
+  {
+    if (g_bInitOK)
+      Py_RETURN_TRUE;
+    else
+      Py_RETURN_FALSE;
+  }
+
   /// CueMol initialization routine
   PyObject *initCueMol(PyObject *self, PyObject *args)
   {
-    const char *config;
+    if (g_bInitOK)
+      return Py_BuildValue("");
 
+    const char *config;
     if (!PyArg_ParseTuple(args, "s", &config))
       return NULL;
   
+    LString confpath(config);
+
     try {
-      qsys::init(config);
+      if (confpath.isEmpty()) {
+	confpath = DEFAULT_CONFIG;
+      }
+
+      qsys::init(confpath);
 
 #if (GUI_ARCH!=MB_GUI_ARCH_CLI)
       sysdep::init();
@@ -140,6 +162,7 @@ namespace pybr {
       // initTextRender();
       // MB_DPRINTLN("---------- initTextRender() OK");
       MB_DPRINTLN("CueMol> initialized.");
+      g_bInitOK = true;
     }
     catch (const qlib::LException &e) {
       LOG_DPRINTLN("Init> Caught exception <%s>", typeid(e).name());
@@ -159,6 +182,11 @@ namespace pybr {
   /// CueMol finalization routine
   PyObject *finiCueMol(PyObject *self, PyObject *args)
   {
+    if (!g_bInitOK) {
+      LOG_DPRINTLN("CueMol> CueMol not initialized!!");
+      return Py_BuildValue("");
+    }
+    
 #ifdef USE_XMLRPC
     // unload XMLRPC module
     xrbr::fini();
@@ -189,6 +217,7 @@ namespace pybr {
     
     qsys::fini();
     
+    g_bInitOK = false;
     MB_DPRINTLN("CueMol> CueMol finalized.");
 
     return Py_BuildValue("");

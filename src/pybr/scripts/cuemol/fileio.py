@@ -80,8 +80,10 @@ def loadObject(aFileName, aName, aScene, aFmtName, aOpts=None):
 
     if aOpts is not None:
         for k,v in aOpts.items():
+            print("reader:",reader._wrapped)
             print("reader set prop: k=",k,"v=",v)
-            ci.setProp(reader, k, v)
+            ci.setProp(reader._wrapped, k, v)
+            print(ci.getProp(reader._wrapped, k))
 
     reader.setPath(aFileName)
     newobj = reader.createDefaultObj()
@@ -105,7 +107,7 @@ def saveObject(aObj, aFileName, aFmtName, aOpts=None):
     if aOpts is not None:
         for k,v in aOpts.items():
             print("writer set prop: k=",k,"v=",v)
-            ci.setProp(writer, k, v)
+            ci.setProp(writer._wrapped, k, v)
 
     writer.setPath(aFileName)
 

@@ -21,7 +21,7 @@ import cuemol
 # } 
 
 class AtomIter:
-    def __init__(self, aMol, aSel):
+    def __init__(self, aMol, aSel="*"):
         molObj = cuemol.obj(aMol)
         #uid = molObj.uid
         selObj = cuemol.sel(aSel, molObj.scene_uid)
@@ -62,7 +62,7 @@ def forEachResid(aMol, aSel, aFn):
         iter.next()
 
 class ResidIter:
-    def __init__(self, aMol, aSel):
+    def __init__(self, aMol, aSel="*"):
         molObj = cuemol.obj(aMol)
         selObj = cuemol.sel(aSel, molObj.scene_uid)
 
@@ -151,7 +151,17 @@ def ssm_fit(aRefMol, aRefSel, aMovMol, aMovSel):
     refSel = cuemol.sel(aRefSel, refMol.getScene())
     movMol = cuemol.obj(aMovMol)
     movSel = cuemol.sel(aMovSel, movMol.getScene())
-    mgr.superposeSSM1(refMol, refSel, movMol, movSel, False);
+    xfmat = mgr.superposeSSM1(refMol, refSel, movMol, movSel, False);
+    return xfmat
+
+def calc_rmsd(aRefMol, aRefSel, aMovMol, aMovSel):
+    mgr = cuemol.getService("MolAnlManager");
+    refMol = cuemol.obj(aRefMol)
+    refSel = cuemol.sel(aRefSel, refMol.getScene())
+    movMol = cuemol.obj(aMovMol)
+    movSel = cuemol.sel(aMovSel, movMol.getScene())
+    rmsd = mgr.calcRMSD(refMol, refSel, movMol, movSel, "")
+    return rmsd
 
 def merge(aToMol, aFromMol, aFromSel, aCopy=False):
     mgr = cuemol.getService("MolAnlManager");

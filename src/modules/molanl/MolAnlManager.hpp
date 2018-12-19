@@ -21,6 +21,7 @@ namespace qlib {
 namespace molanl {
 
   using qlib::LString;
+  using qlib::Matrix4D;
   using molstr::MolCoordPtr;
   using molstr::SelectionPtr;
 
@@ -44,8 +45,8 @@ namespace molanl {
     // void transformMol(MolCoordPtr pmol_mov, const qlib::Matrix4D &mat);
 
     /// SSM superpose (1)
-    void superposeSSM1(MolCoordPtr pmol_ref, SelectionPtr psel_ref,
-                       MolCoordPtr pmol_mov, SelectionPtr psel_mov, bool bUseProp=false);
+    Matrix4D superposeSSM1(MolCoordPtr pmol_ref, SelectionPtr psel_ref,
+			   MolCoordPtr pmol_mov, SelectionPtr psel_mov, bool bUseProp=false);
 
     void superposeSSM2(qlib::uid_t mol_ref, const LString &sel_ref,
                        qlib::uid_t mol_mov, const LString &sel_mov);

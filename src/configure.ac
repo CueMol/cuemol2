@@ -678,13 +678,17 @@ fi
 
 AM_CONDITIONAL(COND_USE_PYTHON, test x$HAVE_PYTHON = xyes)
 
+# Python module support
+
 BUILD_PYMODULE=no
+
 if test x$HAVE_PYTHON = xyes ; then
-BUILD_PYMODULE=yes
-AC_SUBST([BUILD_PYMODULE])
+  BUILD_PYMODULE=yes
+  BUILD_CLI="$BUILD_CLI pymodule"
+  AC_SUBST([BUILD_PYMODULE])
 fi
 
-AM_CONDITIONAL(COND_BUILD_PYMODULE, test x$BUILD_PYMODULE = xyes)
+# AM_CONDITIONAL(COND_BUILD_PYMODULE, test x$BUILD_PYMODULE = xyes)
 
 #######################################################
 # XML-RPC supports
@@ -1040,6 +1044,7 @@ AC_CONFIG_FILES([
 	qlib/Makefile
 	jsbr/Makefile
 	pybr/Makefile
+	pymodule/Makefile
 	xmlrpc_bridge/Makefile
 	gfx/Makefile
 	qsys/Makefile
