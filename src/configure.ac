@@ -688,7 +688,7 @@ if test x$HAVE_PYTHON = xyes ; then
   AC_SUBST([BUILD_PYMODULE])
 fi
 
-# AM_CONDITIONAL(COND_BUILD_PYMODULE, test x$BUILD_PYMODULE = xyes)
+AM_CONDITIONAL(COND_BUILD_PYMODULE, test x$BUILD_PYMODULE = xyes)
 
 #######################################################
 # XML-RPC supports

@@ -2,7 +2,7 @@
 # $Id: mcwgen_footer.am,v 2.3 2008/05/04 15:52:51 rishitani Exp $
 #
 
-# xpcom_DATA = $(IDL_XPT)
+pywrapdir = $(pkgdatadir)/python/cuemol/wrappers
 
 if COND_USE_PYTHON
 PYWRAPS = $(MCWG_SRC:.qif=.py)
@@ -10,8 +10,10 @@ else
 PYWRAPS = $(NULL)
 endif
 
-pywrapdir = $(pkgdatadir)/python/cuemol/wrappers
 pywrap_DATA = $(PYWRAPS)
+
+pymodulewrapdir = $(pythondir)/cuemol/wrappers
+pymodulewrap_DATA = $(PYWRAPS)
 
 BUILT_SOURCES=\
 $(MC_HDRS) \

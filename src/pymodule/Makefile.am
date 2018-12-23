@@ -30,7 +30,7 @@ include $(top_srcdir)/mcwgen.am
 pkgpythondir = $(pythondir)/cuemol
 pkgpyexecdir = $(pyexecdir)/cuemol
 
-pkgpython_PYTHON = \
+pkgpython_DATA = \
 ../pybr/scripts/__init__.py \
 ../pybr/scripts/scene.py \
 ../pybr/scripts/renderer.py \
@@ -100,4 +100,9 @@ _internal_la_LIBADD = \
 ######################################################
 
 include $(top_srcdir)/mcwgen_footer.am
+
+pymodulewrap_DATA += \
+../pybr/scripts/wrappers/__init__.py \
+../pybr/scripts/wrappers/basewrapper.py \
+$(NULL)
 
