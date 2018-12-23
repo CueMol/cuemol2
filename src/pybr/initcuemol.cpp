@@ -28,9 +28,9 @@ using namespace pybr;
 
 PyMODINIT_FUNC
 #if PY_MAJOR_VERSION >= 3
-PyInit_cuemol_internal()
+PyInit__internal()
 #else
-initcuemol_internal()
+init_internal()
 #endif
 {
   qlib::init();

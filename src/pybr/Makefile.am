@@ -5,13 +5,13 @@
 
 scriptdir = $(pkgdatadir)/python/cuemol
 script_DATA = \
-scripts/cuemol/scene.py \
-scripts/cuemol/__init__.py \
-scripts/cuemol/renderer.py \
-scripts/cuemol/util.py \
-scripts/cuemol/fileio.py \
-scripts/cuemol/mol_util.py \
-scripts/cuemol/cmd.py \
+scripts/scene.py \
+scripts/__init__.py \
+scripts/renderer.py \
+scripts/cuemol.py \
+scripts/fileio.py \
+scripts/mol_util.py \
+scripts/cmd.py \
 $(NULL)
 
 ######################################################

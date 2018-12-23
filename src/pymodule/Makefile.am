@@ -27,16 +27,30 @@ include $(top_srcdir)/mcwgen.am
 
 ######################################################
 
-lib_LTLIBRARIES = cuemol_internal.la
+pkgpythondir = $(pythondir)/cuemol
+pkgpyexecdir = $(pyexecdir)/cuemol
 
-cuemol_internal_la_SOURCES = \
+pkgpython_PYTHON = \
+../pybr/scripts/__init__.py \
+../pybr/scripts/scene.py \
+../pybr/scripts/renderer.py \
+../pybr/scripts/cuemol.py \
+../pybr/scripts/fileio.py \
+../pybr/scripts/mol_util.py \
+../pybr/scripts/cmd.py \
+$(NULL)
+
+pkgpyexec_LTLIBRARIES = _internal.la
+#lib_LTLIBRARIES = _internal.la
+
+_internal_la_SOURCES = \
 ../pybr/wrapper.cpp \
 ../pybr/convert.cpp \
 ../pybr/methodobj.cpp \
 ../pybr/initcuemol.cpp \
 $(NULL)
 
-cuemol_internal_la_CXXFLAGS = \
+_internal_la_CXXFLAGS = \
   @CFLAGS_VIS_HIDDEN@ \
   @CXXFLAGS_VIS_HIDDEN@ \
   -DPYBR_EXPORTS=1 \
@@ -48,7 +62,7 @@ cuemol_internal_la_CXXFLAGS = \
   -DDEFAULT_CONFIG=\"$(pkgdatadir)/sysconfig.xml\" \
   $(NULL)
 
-cuemol_internal_la_LDFLAGS = \
+_internal_la_LDFLAGS = \
   @MODULES_LDFLAGS@ \
   @SCR_LDFLAGS@ \
   @OSDEP_LDFLAGS@ \
@@ -60,10 +74,10 @@ cuemol_internal_la_LDFLAGS = \
   @BOOST_LDFLAGS@ \
   @CGAL_LDFLAGS@ \
   @PYTHON_LDFLAGS@ \
-  -module \
+  -avoid-version -module -shared -export-dynamic \
   $(NULL)
 
-cuemol_internal_la_LIBADD = \
+_internal_la_LIBADD = \
   @MODULES_LDADD@ \
   @OSDEP_LDADD@ \
   -ljsbr \

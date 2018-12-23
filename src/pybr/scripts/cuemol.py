@@ -2,11 +2,11 @@
 CueMol utility functions
 """
 
-import cuemol_internal as ci
+import cuemol._internal as ci
 import importlib
-import wrappers.basewrapper
+import cuemol.wrappers.basewrapper as basewrapper
 
-__all__ = ['createObj', 'getService', 'print', 'println',
+__all__ = ['getWrpClass', 'createWrapper', 'createObj', 'getService', 'print', 'println',
            'iswrapper', 'isimpl', 'isscene', 'isview', 'isobj', 'isrend', 'issel', 'iscol',
            'scene', 'view', 'createScene', 'svc', 'obj', 'rend',
            'sceMgr', 'strMgr',
@@ -16,7 +16,7 @@ __all__ = ['createObj', 'getService', 'print', 'println',
 ##########
 
 def getWrpClass(clsnm):
-    modnm = "wrappers."+clsnm
+    modnm = "cuemol.wrappers."+clsnm
     m = importlib.import_module(modnm)
     cls = m.__dict__[clsnm]
     return cls
@@ -42,18 +42,10 @@ def println(astr):
 ##########
 
 def iswrapper(aObj):
-    return isinstance(aObj, wrappers.basewrapper.BaseWrapper)
-#    tp = type(aObj)
-#    if str(tp) == "<class 'cuemol.Wrapper'>":
-#        return True
-#    else:
-#        return False
+    return isinstance(aObj, basewrapper.BaseWrapper)
 
 def isimpl(aObj, aIfName):
     return isinstance(aObj, getWrpClass(aIfName))
-#    if not iswrapper(aObj):
-#        return False
-#    return ci.isInstanceOf(aObj, aIfName)
 
 def isscene(aObj):
     return isimpl(aObj, "Scene")

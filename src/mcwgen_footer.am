@@ -10,7 +10,7 @@ else
 PYWRAPS = $(NULL)
 endif
 
-pywrapdir = $(pkgdatadir)/python/wrappers
+pywrapdir = $(pkgdatadir)/python/cuemol/wrappers
 pywrap_DATA = $(PYWRAPS)
 
 BUILT_SOURCES=\
