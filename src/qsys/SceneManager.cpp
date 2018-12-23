@@ -118,6 +118,26 @@ bool SceneManager::destroyScene(qlib::uid_t uid)
   return true;
 }
 
+LString SceneManager::getSceneUIDList() const
+{
+  LString res;
+  bool bfirst=true;
+  data_t::const_iterator iter = m_data.begin();
+  data_t::const_iterator eiter = m_data.end();
+  for (; iter!=eiter; ++iter) {
+    uid_t uid = iter->first;
+    //ScenePtr pScene = iter->second;
+    if (bfirst) {
+      res += LString::format("%d", int(uid));
+      bfirst = false;
+    }
+    else {
+      res += LString::format(",%d", int(uid));
+    }
+  }
+  return res;
+}
+
 void SceneManager::checkAndUpdateScenes() const
 {
   data_t::const_iterator iter = m_data.begin();

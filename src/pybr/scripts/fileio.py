@@ -3,12 +3,11 @@ CueMol File I/O related functions
 """
 
 import sys
-#import traceback
 import os
 import json
 
-import cuemol_internal as ci
-from . import util as cm
+import cuemol._internal as ci
+import cuemol as cm
 from . import renderer
 
 __all__ = ['loadScene', 'loadObject', 'load']
@@ -59,7 +58,7 @@ def loadScene(aFileName, aName, aScene, aFmtName, aOpts=None):
     if aOpts is not None:
         for k,v in aOpts.items():
             print("scene reader set prop: k=",k,"v=",v)
-            ci.setProp(reader, k, v)
+            ci.setProp(reader._wrapped, k, v)
 
     reader.setPath(aFileName)
      
@@ -151,5 +150,5 @@ def load(filename, name=None, format=None, scene=None):
         return loadScene(filename, name, scene, format)
     else:
         # Unknown category ID, throw exception here
-        raise Exception("Unknown category ID")
+        raise RuntimeError("Unknown category ID:"+str(ncat))
 

@@ -28,6 +28,10 @@ runtime_class SceneManager
   object<Scene$> getSceneByName(string name);
   boolean destroyScene(integer uid);
 
+  void destroyAllScenes();
+  void checkAndUpdateScenes();
+  string getSceneUIDList();
+
   object<Object$> getObject(integer uid);
   object<View$> getView(integer uid);
   object<Renderer$> getRenderer(integer uid);

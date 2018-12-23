@@ -74,6 +74,11 @@ def scene(aScene=None):
     mgr = sceMgr()
     scid=None
     if aScene is None:
+        sstr = mgr.getSceneUIDList()
+        if sstr=="":
+            # No scene exists
+            # --> Create default scene
+            return createScene()
         scid = mgr.activeSceneID
         if scid==0:
             raise RuntimeError("Active scene ID is not defined!!")

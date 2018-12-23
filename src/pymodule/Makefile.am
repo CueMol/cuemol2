@@ -32,12 +32,12 @@ pkgpyexecdir = $(pyexecdir)/cuemol
 
 pkgpython_DATA = \
 ../pybr/scripts/__init__.py \
-../pybr/scripts/scene.py \
-../pybr/scripts/renderer.py \
 ../pybr/scripts/cuemol.py \
 ../pybr/scripts/fileio.py \
-../pybr/scripts/mol_util.py \
 ../pybr/scripts/cmd.py \
+../pybr/scripts/scene_util.py \
+../pybr/scripts/renderer.py \
+../pybr/scripts/mol_util.py \
 $(NULL)
 
 pkgpyexec_LTLIBRARIES = _internal.la

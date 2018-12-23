@@ -1,8 +1,7 @@
 import sys, traceback, re, os
 
-import cuemol_internal as ci
+import cuemol._internal as ci
 import cuemol as cm
-import util
 
 def bg_color(colstr, aScene=None):
     scene = cm.scene(aScene)
@@ -12,9 +11,32 @@ def bg_color(colstr, aScene=None):
         # TO DO: report error
         return
 
-    with util.UndoTxn("Change background color", scene):
+    with cm.UndoTxn("Change background color", scene):
         scene.bgcolor = col
 
+def get_scene_ids():
+    mgr = cm.sceMgr()
+    idstr = mgr.getSceneUIDList()
+    if idstr=="":
+        return list()
+    res =  map(int, idstr.split(","))
+    return list(res)
+
+def get_scenes():
+    mgr = cm.sceMgr()
+    res =  map(lambda x: mgr.getScene(x), get_scene_ids())
+    return list(res)
+
+def del_scene(scene):
+    if scene is None:
+        raise RuntimeError("scene is None")
+    s = cm.scene(scene)
+    mgr = cm.sceMgr()
+    mgr.destroyScene(s.uid)
+
+def del_all_scenes():
+    mgr = cm.sceMgr()
+    mgr.destroyAllScenes()
 
 def undo(aScene=None):
     scene = cm.scene(aScene)

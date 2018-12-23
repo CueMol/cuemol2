@@ -58,6 +58,9 @@ namespace qsys {
 
     void dump() const;
 
+    /// get all Scene's UID list in comma-separated string
+    LString getSceneUIDList() const;
+
     /// Destroy all scenes.
     void destroyAllScenes();
 

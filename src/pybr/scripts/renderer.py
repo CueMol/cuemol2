@@ -2,9 +2,9 @@
 Renderer related utility
 """
 
-import cuemol_internal as ci
-from . import util as cm
-
+import cuemol._internal as ci
+import cuemol as cm
+import traceback
 
 def setupDefaultRenderer(obj):
     """
@@ -17,8 +17,7 @@ def setupDefaultRenderer(obj):
         scene = obj.getScene()
         
         ## EDIT TXN START ##
-        scene.startUndoTxn("Create default renderer")
-        try:
+        with cm.UndoTxn("Create default renderer", scene):
             rend = obj.createRenderer("simple")
             rend.applyStyles("DefaultCPKColoring")
             rend.name = "simple1"
@@ -30,14 +29,14 @@ def setupDefaultRenderer(obj):
             else:
                 pos = rend.getCenter()
                 view.setViewCenter(pos)
-        except:
-            print("setupDefaultRenderer error")
-            msg = traceback.format_exc()
-            print(msg)
-            scene.rollbackUndoTxn()
-            return None
-        else:
-            scene.commitUndoTxn()
+#         except:
+#             print("setupDefaultRenderer error")
+#             msg = traceback.format_exc()
+#             print(msg)
+#             scene.rollbackUndoTxn()
+#             return None
+#         else:
+#             scene.commitUndoTxn()
             ## EDIT TXN END ##
     except:
         print("setupDefaultRenderer error")
