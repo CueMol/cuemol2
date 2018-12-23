@@ -29,6 +29,11 @@
 #	include <BALL/COMMON/macros.h>
 #endif
 
+// c++11 functionality
+#if (__cplusplus>=201103L)
+#include <cmath>
+#endif
+
 namespace BALL 
 {
 	

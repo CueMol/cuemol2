@@ -61,10 +61,10 @@ JSObject *ObjWrapper::makeWrapper(JSContext *pcx, LScriptable *pnewobj)
   
   JSObject *pjsobj = JS_NewObject(pcx, &wrapper_class, NULL, NULL);
   if (pjsobj==NULL)
-    return JS_FALSE;
+    return (JSObject *) JS_FALSE;
 
   if (!JS_SetPrivate(pcx, pjsobj, pnewobj))
-    return JS_FALSE;
+    return (JSObject *) JS_FALSE;
 
   // MB_DPRINTLN("JS_SetPrivate cx:%p, js:%p, qlib:%p", pcx, pjsobj, pnewobj);
   return pjsobj;
