@@ -1,12 +1,15 @@
 import tempfile
 import os
 import json
+import shlex
+import subprocess
+from pathlib import Path
 
 import cuemol as cm
 import cuemol.fileio as fileio
 
-POVRAY_BIN = "~/bundle/povray/unix/povray"
-POVRAY_INC = "~/bundle/povray/include/"
+POVRAY_BIN = "/Users/user/bundle/povray/unix/povray"
+POVRAY_INC = "/Users/user/bundle/povray/include/"
 
 def render(scene, out_png_file, width=640, height=480):
     
@@ -55,5 +58,40 @@ def render(scene, out_png_file, width=640, height=480):
     if exporter.imgFileNames:
         print("Img pix fnames:", exporter.imgFileNames)
 
+    povfile_dir = Path(pov_fname).parent
+
+    args = [POVRAY_BIN,
+            "Input_File_Name='{}'".format(pov_fname),
+            "Output_File_Name='{}'".format(out_png_file),
+            "Library_Path='{}'".format(POVRAY_INC),
+            "Library_Path='{}'".format(povfile_dir),
+            "Declare=_stereo={}".format(0),
+            "Declare=_iod={}".format(0),
+            "Declare=_perspective={}".format(0),
+            "Declare=_shadow={}".format(0),
+            "Declare=_light_inten={}".format(1.3),
+            "Declare=_flash_frac={}".format(0.8/1.3),
+            "Declare=_amb_frac={}".format(0),
+            "File_Gamma=1",
+            "-D",
+            "+WT{}".format(1),
+            "+W{}".format(width),
+            "+H{}".format(height),
+            "+FN8",
+            "Quality=11",
+            "Antialias=On",
+            "Antialias_Depth=3",
+            "Antialias_Threshold=0.1",
+            "Jitter=Off"]
+    
+    cmd = ' '.join(map(lambda x: shlex.quote(str(x)), args)) + " 2>&1"
+
+    print(cmd, flush=True)
+    res = subprocess.call(cmd, shell=True)
+
+    if res != 0 or not Path(out_png_file).is_file():
+        raise RuntimeError("render failed: "+pov_fname)
+
     os.remove(pov_fname)
     os.remove(inc_fname)
+
