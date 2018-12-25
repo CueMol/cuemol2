@@ -38,6 +38,7 @@ pkgpython_DATA = \
 ../pybr/scripts/scene_util.py \
 ../pybr/scripts/renderer.py \
 ../pybr/scripts/mol_util.py \
+../pybr/scripts/povrender.py \
 $(NULL)
 
 pkgpyexec_LTLIBRARIES = _internal.la

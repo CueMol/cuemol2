@@ -12,6 +12,7 @@ scripts/cmd.py \
 scripts/scene_util.py \
 scripts/renderer.py \
 scripts/mol_util.py \
+scripts/povrender.py \
 $(NULL)
 
 ######################################################
