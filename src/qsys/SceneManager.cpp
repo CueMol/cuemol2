@@ -125,7 +125,7 @@ LString SceneManager::getSceneUIDList() const
   data_t::const_iterator iter = m_data.begin();
   data_t::const_iterator eiter = m_data.end();
   for (; iter!=eiter; ++iter) {
-    uid_t uid = iter->first;
+    qlib::uid_t uid = iter->first;
     //ScenePtr pScene = iter->second;
     if (bfirst) {
       res += LString::format("%d", int(uid));

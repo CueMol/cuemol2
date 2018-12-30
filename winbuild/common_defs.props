@@ -39,6 +39,8 @@
     <PythonDir>$(BuildSetDir)\Python-3.7.0\</PythonDir>
     <HavePython Condition="Exists('$(PythonDir)')">Yes</HavePython>
     <HavePython Condition="!Exists('$(PythonDir)')">No</HavePython>
+    <!-- Python2 for XPIDL compilation -->
+    <PYTHON2>$(BuildSetDir)\Python27\python.exe</PYTHON2>
 
     <!-- XUL -->
     <XULRunnerDir Condition="'$(Platform)'=='Win32'">$(BuildSetDir)xulrunner\xulrunner-39.0-sdk\</XULRunnerDir>

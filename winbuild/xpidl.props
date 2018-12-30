@@ -11,8 +11,8 @@
   </PropertyGroup>
   <ItemDefinitionGroup>
     <XPIDL>
-      <CommandLineTemplate>python $(XULRunnerDir)\sdk\bin\header.py -I $(XULRunnerDir)\idl -I $(SourceDir)\$(ProjectName) --cachedir=. -o %(RootDir)%(Directory)%(Filename).h %(FullPath) 
- python $(XULRunnerDir)\sdk\bin\typelib.py -I $(XULRunnerDir)\idl -I $(SourceDir)\$(ProjectName) --cachedir=. -o $(XULDeployDir)components\%(Filename).xpt %(FullPath)</CommandLineTemplate>
+      <CommandLineTemplate>$(PYTHON2) $(XULRunnerDir)\sdk\bin\header.py -I $(XULRunnerDir)\idl -I $(SourceDir)\$(ProjectName) --cachedir=. -o %(RootDir)%(Directory)%(Filename).h %(FullPath) 
+ $(PYTHON2) $(XULRunnerDir)\sdk\bin\typelib.py -I $(XULRunnerDir)\idl -I $(SourceDir)\$(ProjectName) --cachedir=. -o $(XULDeployDir)components\%(Filename).xpt %(FullPath)</CommandLineTemplate>
       <Outputs>%(RootDir)%(Directory)%(Filename).h;$(XULDeployDir)components\%(Filename).xpt</Outputs>
     </XPIDL>
   </ItemDefinitionGroup>
