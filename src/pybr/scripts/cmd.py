@@ -1,8 +1,9 @@
 import sys, traceback,os
 
 import cuemol
-import cuemol_internal
-import cuemol.fileio
+import cuemol._internal as cuemol_internal
+import cuemol.fileio as fileio
+import cuemol.renderer as renderer
 
 # set scene's background color
 def bgcolor(aCol):
@@ -12,14 +13,24 @@ def bgcolor(aCol):
         col = cuemol.col(aCol, sc.uid)
     sc.bgcolor = col
 
+# get renderer property
+def get(aObj, aName):
+    obj = cuemol.rend(aObj)
+    if obj==None:
+        raise Exception("renderer not found: "+aObj)
+    
+    return cuemol_internal.getProp(obj._wrapped, aName)
 
-# set property
+# set renderer property
 def set(aObj, aName, aVal):
     obj = cuemol.rend(aObj)
     if obj==None:
         raise Exception("renderer not found: "+aObj)
     
-    cuemol_internal.setProp(obj, aName, aVal)
+    v = aVal
+    if cuemol.iswrapper(v):
+        v = aVal._wrapped
+    cuemol_internal.setProp(obj._wrapped, aName, v)
     #obj.__setattr__(aProp, aVal)
 
 # reset property to default value
@@ -28,7 +39,7 @@ def reset(aObj, aName):
     if obj==None:
         raise Exception("renderer not found: "+aObj)
     
-    cuemol_internal.resetProp(obj, aName)
+    cuemol_internal.resetProp(obj._wrapped, aName)
 
 # delete object/renderer
 def delete(aObj, aType=None):
@@ -76,8 +87,9 @@ def load(aFileName, aName=None, aFmt=None, aScene=None, aOpts=None):
     ncat = gelem["category"]
 
     if ncat == 0:
-        return fileio.loadObject(aFileName, name, aScene, gelem["name"], aOpts)
-        # _setupDefaultRenderer(obj)
+        obj = fileio.loadObject(aFileName, name, aScene, gelem["name"], aOpts)
+        renderer.setupDefaultRenderer(obj)
+        return obj
         
     elif ncat == 3:
         return fileio.loadScene(aFileName, name, aScene, gelem["name"], aOpts)

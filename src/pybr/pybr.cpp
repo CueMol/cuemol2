@@ -33,6 +33,9 @@ namespace pybr {
   bool init(const char *szConfPath)
   {
     pybr_regClasses();
+
+
+
     Py_SetProgramName(Py_DecodeLocale("cuemol2", NULL));
 
     // PyImport_AppendInittab("cuemol", &initDummyPkg);
@@ -75,11 +78,7 @@ namespace pybr {
     if (szConfPath!=NULL) {
       fs::path confpath(szConfPath);
       confpath = confpath.parent_path();
-#ifdef WIN32
-      confpath /= "scripts";
-#else
       confpath /= "python";
-#endif
       LString strpath = confpath.string();
       strpath = strpath.escapeQuots();
       

@@ -76,19 +76,16 @@
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
   </ItemDefinitionGroup>
-
   <ItemDefinitionGroup Condition="'$(HavePython)'=='Yes'">
     <ClCompile>
       <PreprocessorDefinitions>HAVE_PYTHON=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
-
   <ItemGroup>
     <ClCompile Include="..\..\src\pybr\pybr.cpp">
       <PrecompiledHeader>Create</PrecompiledHeader>
     </ClCompile>
   </ItemGroup>
-
   <ItemGroup Condition="'$(HavePython)'=='Yes'">
     <ClCompile Include="..\..\src\pybr\wrapper.cpp" />
     <ClCompile Include="..\..\src\pybr\convert.cpp" />
@@ -99,11 +96,128 @@
     <mcwrapgen3 Include="..\..\src\pybr\PythonBridge.qif" />
     <mcw_loader Include="..\..\src\pybr\pybr.moddef" />
   </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\qlib\qlib.vcxproj">
       <Project>{17abbaff-4e0b-4cab-ae59-b5fc76a4e285}</Project>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\src\pybr\scripts\cmd.py">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\..\src\pybr\scripts\cuemol.py">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\..\src\pybr\scripts\fileio.py">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\..\src\pybr\scripts\mol_util.py">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\..\src\pybr\scripts\povrender.py">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\..\src\pybr\scripts\renderer.py">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\..\src\pybr\scripts\scene_util.py">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\..\src\pybr\scripts\__init__.py">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(XULDeployDir)\python\cuemol\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\src\pybr\scripts\wrappers\basewrapper.py">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\wrappers\</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\wrappers\</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\wrappers\</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\wrappers\</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(XULDeployDir)\python\cuemol\wrappers\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(XULDeployDir)\python\cuemol\wrappers\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(XULDeployDir)\python\cuemol\wrappers\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(XULDeployDir)\python\cuemol\wrappers\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\..\src\pybr\scripts\wrappers\__init__.py">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\wrappers\</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\wrappers\</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\wrappers\</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">xcopy /Y /I %(FullPath) $(XULDeployDir)\python\cuemol\wrappers\</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(XULDeployDir)\python\cuemol\wrappers\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(XULDeployDir)\python\cuemol\wrappers\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(XULDeployDir)\python\cuemol\wrappers\%(Filename)%(Extension);%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(XULDeployDir)\python\cuemol\wrappers\%(Filename)%(Extension);%(Outputs)</Outputs>
+    </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -79,7 +79,7 @@
     <LocalDebuggerCommandArguments>-greapp $(XULRunnerDir)\bin $(XULDeployDir)</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerEnvironment>PYTHONHOME=$(PythonDir)
-PATH=$(BuildSetDir)\bin;%PATH%</LocalDebuggerEnvironment>
+PATH=$(BuildSetDir)\bin;$(PythonDir);%PATH%</LocalDebuggerEnvironment>
   </PropertyGroup>
 
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
