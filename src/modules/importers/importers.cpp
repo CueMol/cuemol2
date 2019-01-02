@@ -11,6 +11,7 @@
 #include <qsys/StreamManager.hpp>
 #include "PSEFileReader.hpp"
 #include "MmcifMolReader.hpp"
+#include "SDFMolReader.hpp"
 
 extern void importers_regClasses();
 extern void importers_unregClasses();
@@ -29,6 +30,7 @@ namespace importers {
     pSM->registWriter<PSEFileReader>();
 
     pSM->registWriter<MmcifMolReader>();
+    pSM->registWriter<SDFMolReader>();
 
     MB_DPRINTLN("importers init: OK");
     return true;

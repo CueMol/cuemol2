@@ -83,11 +83,14 @@
     <ClCompile Include="..\..\src\modules\importers\PSEFileReader.cpp" />
     <ClCompile Include="..\..\src\modules\importers\PSEFileReader_wrap.cpp" />
     <ClCompile Include="..\..\src\modules\importers\importers_loader.cpp" />
+    <ClCompile Include="..\..\src\modules\importers\SDFMolReader.cpp" />
+    <ClCompile Include="..\..\src\modules\importers\SDFMolReader_wrap.cpp" />
   </ItemGroup>
   <ItemGroup>
     <mcwrapgen3 Include="..\..\src\modules\importers\AtomPropColoring.qif" />
     <mcwrapgen3 Include="..\..\src\modules\importers\MmcifMolReader.qif" />
     <mcwrapgen3 Include="..\..\src\modules\importers\PSEFileReader.qif" />
+    <mcwrapgen3 Include="..\..\src\modules\importers\SDFMolReader.qif" />
   </ItemGroup>
   <ItemGroup>
     <mcw_loader Include="..\..\src\modules\importers\importers.moddef" />
