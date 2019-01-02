@@ -739,6 +739,32 @@ History.append = function (str)
     this._data.pop();
 };
 
+History.push = function (str)
+{
+  if (str===null || str===undefined || str==="") return;
+  
+  var nitems = this._data.length;
+  var nmat = null;
+  for (var i=0; i<nitems; ++i) { 
+    if (this._data[i]==str) {
+      nmat = i;
+      break;
+    }
+  }
+  if (nmat!==null) {
+    dd("His("+this._stor_name+").append: "+str+" is already in history");
+    var item = this._data.splice(nmat, 1)[0];
+    //dd("!!! splice typeof item = "+typeof item);
+    this._data.push(item);
+    //dd("!!! selHis = "+this._data);
+    return;
+  }
+
+  var newlen = this._data.push(str);
+  if (newlen>this._nmax)
+    this._data.shift();
+};
+
 History.saveToPref = function ()
 {
   var nitems = this._data.length;
@@ -765,6 +791,16 @@ History.loadFromPref = function ()
   else {
     dd("load from: "+this._stor_name+" not found.");
   }
+};
+
+History.dumpToStr = function ()
+{
+  var str = "";
+  var nitems = this._data.length;
+  for (var i=0; i<nitems; ++i) {
+    str += i + ": " + this._data[i] + "\n";
+  }
+  return str;
 };
 
 //////////

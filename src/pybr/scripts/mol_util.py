@@ -93,7 +93,7 @@ def sameResid(aMol, aResid):
     resid = aResid.sindex
     return aMol.getResidue(chname, resid)
 
-def rotateZ(aMol, aCen, aDeg, aSel=None):
+def rotate(aMol, aCen, aAxis, aDeg, aSel=None, aNotify=True):
     sel=aSel
     if sel is None:
         sel = cuemol.sel("*")
@@ -101,8 +101,26 @@ def rotateZ(aMol, aCen, aDeg, aSel=None):
         sel = cuemol.sel(aSel)
         
     mat = cuemol.createObj("Matrix")
-    mat.setRotate(aCen, cuemol.vec(0,0,1), aDeg)
+    mat.setRotate(aCen, aAxis, aDeg)
     aMol.xformByMat(mat, sel)
+    if aNotify:
+        aMol.fireAtomsMoved()
+
+def rotateZ(aMol, aCen, aDeg, aSel=None, aNotify=True):
+    rotate(aMol, aCen, cuemol.vec(0,0,1), aDeg, aSel, aNotify)
+
+def shift(aMol, aShift, aSel=None, aNotify=True):
+    sel=aSel
+    if sel is None:
+        sel = cuemol.sel("*")
+    else:
+        sel = cuemol.sel(aSel)
+        
+    mat = cuemol.createObj("Matrix")
+    mat.setTranslate(aShift)
+    aMol.xformByMat(mat, sel)
+    if aNotify:
+        aMol.fireAtomsMoved()
 
 def showArrow(aMol, aRendName, aPos1, aPos2, aMol2=None):
     rend = aMol.getRendererByName(aRendName)

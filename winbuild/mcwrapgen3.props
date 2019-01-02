@@ -20,7 +20,7 @@ $(MCWrapGen) -MSVC -I $(SolutionDir)..\src\ -m js -jsdir $(SolutionDir)..\src\xu
 $(MCWrapGen) -MSVC -I $(SolutionDir)..\src\ -m py -pydir $(XULDeployDir)\python\cuemol\wrappers\ %(FullPath)</MCWrapGenCmd>
 
       <MCWrapGenOut>%(RootDir)%(Directory)%(Filename)_wrap.cpp;%(RootDir)%(Directory)%(Filename)_wrap.hpp</MCWrapGenOut>
-      <MCWrapGenOut Condition="'$(HavePython)'=='Yes'">$(MCWrapGenOut);$(SolutionDir)..\src\pybr\scripts\wrappers\%(Filename).py</MCWrapGenOut>
+      <!-- <MCWrapGenOut Condition="'$(HavePython)'=='Yes'">$(MCWrapGenOut)</MCWrapGenOut> -->
 
   </PropertyGroup>
   <ItemDefinitionGroup>

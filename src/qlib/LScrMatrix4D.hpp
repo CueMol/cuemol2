@@ -106,6 +106,7 @@ namespace qlib {
 
     void setRotate(const LScrVector4D &cen, const LScrVector4D &ax, double degree);
     
+    void setTranslate(const LScrVector4D &shift);
 
   };
 

@@ -48,6 +48,9 @@ runtime_class Matrix
   /// set as rotation matrix (cen, axis, degree)
   void setRotate(object<Vector> cen, object<Vector> ax, real degree);
 
+  /// set as translation matrix (shift)
+  void setTranslate(object<Vector> shift);
+
   /// check identity matrix
   boolean isIdent();
 

@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*-
+// -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 //
 // logpanel.js: log output bottom-panel implementation
 //
@@ -76,8 +76,10 @@ if (!("logpanel" in cuemolui)) {
       }
 
       // Setup history array
-      this.mCmdHis = [];
-      this.mHisPos = 0;
+      // this.mCmdHis = [];
+      this.mCmdHis = new util.History("cmd_prompt_history", 100);
+      this.mCmdHis.loadFromPref();
+      this.mHisPos = this.mCmdHis.getLength();
     };
     
     panel.onUnLoad = function ()
@@ -102,19 +104,23 @@ if (!("logpanel" in cuemolui)) {
       else if (aEvent.keyCode==Ci.nsIDOMKeyEvent.DOM_VK_UP) {
         if (this.mHisPos>0) {
           this.mHisPos--;
-          this.mCmdBox.value = this.mCmdHis[this.mHisPos];
+          //this.mCmdBox.value = this.mCmdHis[this.mHisPos];
+          this.mCmdBox.value = this.mCmdHis.getEntry(this.mHisPos);
 
           let n = this.mCmdBox.value.length;
           let that = this;
           setTimeout( function () { that.mCmdBox.setSelectionRange(n, n); }, 0);
-          
+	  
         }
       }
       else if (aEvent.keyCode==Ci.nsIDOMKeyEvent.DOM_VK_DOWN) {
-        if (this.mHisPos<this.mCmdHis.length) {
+	// if (this.mHisPos<this.mCmdHis.length) {
+        if (this.mHisPos<this.mCmdHis.getLength()) {
           this.mHisPos++;
-          if (this.mHisPos<this.mCmdHis.length) {
-            this.mCmdBox.value = this.mCmdHis[this.mHisPos];
+          // if (this.mHisPos<this.mCmdHis.length) {
+          if (this.mHisPos<this.mCmdHis.getLength()) {
+            // this.mCmdBox.value = this.mCmdHis[this.mHisPos];
+            this.mCmdBox.value = this.mCmdHis.getEntry(this.mHisPos);
             
             let n = this.mCmdBox.value.length;
             let that = this;
@@ -135,6 +141,7 @@ if (!("logpanel" in cuemolui)) {
           this.mPyBr.runString(aCmd);
         }
         catch (e) {
+          cuemol.putLogMsg(e.message);
           debug.exception(e);
         }
       }
@@ -151,8 +158,14 @@ if (!("logpanel" in cuemolui)) {
         }
       }
 
+      // this.mCmdHis.push(aCmd);
       this.mCmdHis.push(aCmd);
-      this.mHisPos = this.mCmdHis.length;
+      // this.mHisPos = this.mCmdHis.length;
+      this.mHisPos = this.mCmdHis.getLength();
+
+      // cuemol.putLogMsg(this.mCmdHis.dumpToStr());
+
+      this.mCmdHis.saveToPref();
     };
 
     panel.clearLogContents = function ()

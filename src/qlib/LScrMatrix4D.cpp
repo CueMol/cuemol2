@@ -152,3 +152,8 @@ void LScrMatrix4D::setRotate(const LScrVector4D &cen, const LScrVector4D &ax, do
   //return rval;
 }
 
+void LScrMatrix4D::setTranslate(const LScrVector4D &shift)
+{
+  Matrix4D mtr = Matrix4D::makeTransMat(shift);
+  Matrix4D::operator=( mtr );
+}

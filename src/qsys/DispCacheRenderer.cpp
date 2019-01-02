@@ -71,7 +71,11 @@ void DispCacheRenderer::renderHit(DisplayContext *phl)
 void DispCacheRenderer::objectChanged(ObjectEvent &ev)
 {
   if (ev.getType()==ObjectEvent::OBE_CHANGED) {
+    // atom pos etc. changed
+    //  --> update both display and hittest
     invalidateDisplayCache();
+    MB_DPRINTLN("XXX DispCacheRenderer::objectChanged> CALL invalidateHittestCache()");
+    invalidateHittestCache();
   }
   else if (ev.getType()==qsys::ObjectEvent::OBE_PROPCHG) {
     qlib::LPropEvent *pPE = ev.getPropEvent();
