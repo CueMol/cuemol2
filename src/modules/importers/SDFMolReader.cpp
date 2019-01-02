@@ -55,16 +55,43 @@ qsys::ObjectPtr SDFMolReader::createDefaultObj() const
 
 /////////
 
-// read PDB file from stream
+/// read SDF from stream
 bool SDFMolReader::read(qlib::InStream &ins)
 {
-  m_nReadAtoms = 0;
   m_pMol = MolCoordPtr(getTarget<MolCoord>());
 
-  qlib::LineStream lin(ins);
+  m_nReadAtoms = 0;
+  m_chainName = "_";
+  m_nResInd = 0;
 
+  qlib::LineStream lin(ins);
+  LString str;
+  
+  for (;;) {
+    readMol(lin);
+    m_nResInd ++;
+    
+    for (;;) {
+      str = lin.readLine();
+      if (str.trim().isEmpty())
+	return true;
+
+      if (str.startsWith("$$$$"))
+	break;
+    }
+  }
+  
+  // NOT REACHED
+  return true;
+}
+
+/// read one MOL entry from stream
+void SDFMolReader::readMol(qlib::LineStream &lin)
+{
   LString cmpd_name = lin.readLine();
   cmpd_name = cmpd_name.trim(" \t\r\n");
+  if (cmpd_name.isEmpty() && !lin.ready())
+    return;
   lin.readLine();
   lin.readLine();
   LOG_DPRINTLN("SDFMolReader> reading compound <%s>", cmpd_name.c_str());
@@ -130,8 +157,8 @@ bool SDFMolReader::read(qlib::InStream &ins)
     pAtom->setName(aname);
     pAtom->setElement(eleid);
 
-    pAtom->setChainName("A");
-    pAtom->setResIndex(1);
+    pAtom->setChainName(m_chainName);
+    pAtom->setResIndex(m_nResInd);
     pAtom->setResName(cmpd_name);
     
     pAtom->setPos(Vector4D(xx,yy,zz));
@@ -193,15 +220,5 @@ bool SDFMolReader::read(qlib::InStream &ins)
     //LOG_DPRINTLN("bond %d<-->%d: %d", natm_id1, natm_id2, nbont);
   }
 
-  for (;;) {
-    str = lin.readLine();
-    if (str.trim().isEmpty())
-      MB_THROW(SDFFormatException, "MOL end marker not found");
-
-    if (str.startsWith("$$$$"))
-      break;
-  }
-  
-  return true;
 }
 

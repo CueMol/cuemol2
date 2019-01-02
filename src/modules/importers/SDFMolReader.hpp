@@ -104,6 +104,9 @@ namespace importers {
 
   private:
 
+    /// read one MOL entry from stream
+    void readMol(qlib::LineStream &lin);
+
   };
 
   /// File format exception
