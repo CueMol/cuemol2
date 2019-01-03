@@ -43,30 +43,30 @@ namespace importers {
     /// Read atom count
     int m_nReadAtoms;
 
-    /// default chain name
-    LString m_chainName;
+    /// Read bond count
+    int m_nReadBonds;
 
-    /// default residue index
-    int m_nResInd;
+    /// Read compound count
+    int m_nReadCmpds;
+
+    int m_nCurrResid;
+    LString m_sCurrChName;
 
   public:
     //////////////////////////////////////////////
     // properties
 
-    /// load multiple models
-    bool m_bLoadMultiModel;
+    /// Load a selected compound (-1 for loading all cmpds)
+    int m_iLoadCmpd;
 
-    /// load alternate conformations
-    bool m_bLoadAltConf;
+    /// Load multi compounds as chain (or residue for false)
+    bool m_bLoadAsChain;
 
-    ///  load anisotropic B factors
-    bool m_bLoadAnisoU;
+    /// default chain name
+    LString m_chainName;
 
-    /// Load protein secondary structure from the file
-    bool m_bLoadSecstr;
-    
-    /// Auto generate unknown compound's topology
-    bool m_bAutoTopoGen;
+    /// default residue index
+    int m_nResInd;
 
     //////////////////////////////////////////////
   public:
@@ -105,7 +105,7 @@ namespace importers {
   private:
 
     /// read one MOL entry from stream
-    void readMol(qlib::LineStream &lin);
+    void readMol(qlib::LineStream &lin, bool bskip);
 
   };
 

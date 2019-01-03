@@ -70,6 +70,7 @@ void TopoBuilder::applyTopology()
   // erase non-persistent bonds (made by the previous applyTopology() call)
   m_pMol->removeNonpersBonds();
 
+  LString noautogen_val;
   ResidIterator iter(m_pMol);
   MolResiduePtr pPrevRes;
   for (iter.first(); iter.hasMore(); iter.next()) {
@@ -83,8 +84,14 @@ void TopoBuilder::applyTopology()
     if (ptop==NULL || ptop->getAtomNum()==0) {
       //MB_DPRINTLN("TopoBuild> topology for %s not found", resnam.c_str());    
 
+      // Avoid autogen if "noautogen" resprop is "true".
+      // This prop is set true, if the resid is loaded from bond-aware formats (i.e., SDF, MOL2, etc)
+      noautogen_val = "";      
+      pRes->getPropStr("noautogen", noautogen_val);
+
       if (m_nAutogenMode!=AUTOGEN_NONE &&
-          pRes->getAtomSize()>1) {
+          pRes->getAtomSize()>1 &&
+	  !noautogen_val.equals("true")) {
         autogen(pRes, ptop, uid);
         ptop = m_pTopDic->get(resnam, uid);
         if (ptop==NULL) {

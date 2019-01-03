@@ -164,17 +164,20 @@ namespace molstr {
     // @param value Value of the property.
     bool setPropStr(const char *propname, const LString &value);
 
-
     /// remove property
+    // @param propname Name of the property to remove.
     bool removePropStr(const char *propname);
 
     /// Get the property of this residue.
     // @param propname Name of the property to get.
-    // @return Value of the property.
+    // @param value Value of the property.
+    // @return true if property exists and is retrieved.
     bool getPropStr(const char *propname, LString &value) const;
     
+    /// Get all property names in this residue.
+    // @param names Set of the property names.
+    // @return number of property names added to param names.
     int getResPropNames(std::set<LString> &names) const;
-    
 
     //////////////////////////////////////////////////////////
     // other operations

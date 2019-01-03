@@ -20,10 +20,14 @@ using namespace importers;
 
 SDFMolReader::SDFMolReader()
 {
-  m_bLoadAltConf = true;
-  m_bLoadAnisoU = true;
-  m_bLoadSecstr = true;
+  m_nReadBonds = 0;
   m_nReadAtoms = 0;
+  m_nReadCmpds = 0;
+
+  m_iLoadCmpd = -1;
+  m_bLoadAsChain = false;
+  m_chainName = "A";
+  m_nResInd = 1;
 }
 
 SDFMolReader::~SDFMolReader()
@@ -61,21 +65,39 @@ bool SDFMolReader::read(qlib::InStream &ins)
   m_pMol = MolCoordPtr(getTarget<MolCoord>());
 
   m_nReadAtoms = 0;
-  m_chainName = "_";
-  m_nResInd = 0;
+  m_nReadBonds = 0;
+  m_nReadCmpds = 0;
 
   qlib::LineStream lin(ins);
   LString str;
   
-  for (;;) {
-    readMol(lin);
-    m_nResInd ++;
+  int cmpd_id;
+  for (cmpd_id=0;; cmpd_id++) {
+    if (m_bLoadAsChain) {
+      m_sCurrChName = MolCoord::encodeModelInChain(m_chainName, cmpd_id);
+      m_nCurrResid = m_nResInd;
+    }
+    else {
+      m_sCurrChName = m_chainName;
+      m_nCurrResid = cmpd_id + m_nResInd;
+    }
     
+    bool bskip = false;
+    if (m_iLoadCmpd>= 0 && cmpd_id != m_iLoadCmpd)
+      bskip = true;
+
+    readMol(lin, bskip);
+    if (!bskip)
+      m_nReadCmpds ++;
+
     for (;;) {
       str = lin.readLine();
-      if (str.trim().isEmpty())
+      if (str.trim().isEmpty() && !lin.ready()) {
+	LOG_DPRINTLN("SDFMolReader> read %d cmpds/%d atoms/%d bonds",
+		     m_nReadCmpds, m_nReadAtoms, m_nReadBonds);
 	return true;
-
+      }
+      
       if (str.startsWith("$$$$"))
 	break;
     }
@@ -86,7 +108,7 @@ bool SDFMolReader::read(qlib::InStream &ins)
 }
 
 /// read one MOL entry from stream
-void SDFMolReader::readMol(qlib::LineStream &lin)
+void SDFMolReader::readMol(qlib::LineStream &lin, bool bskip)
 {
   LString cmpd_name = lin.readLine();
   cmpd_name = cmpd_name.trim(" \t\r\n");
@@ -94,7 +116,11 @@ void SDFMolReader::readMol(qlib::LineStream &lin)
     return;
   lin.readLine();
   lin.readLine();
-  LOG_DPRINTLN("SDFMolReader> reading compound <%s>", cmpd_name.c_str());
+
+  if (bskip)
+    LOG_DPRINTLN("SDFMolReader> skipping compound <%s>", cmpd_name.c_str());
+  else
+    LOG_DPRINTLN("SDFMolReader> reading compound <%s>", cmpd_name.c_str());
 
   LString str_ct = lin.readLine();
 
@@ -118,8 +144,8 @@ void SDFMolReader::readMol(qlib::LineStream &lin)
     MB_THROW(SDFFormatException, msg);
   }
 
-  LOG_DPRINTLN("SDFMolReader> natom: %d", natom);
-  LOG_DPRINTLN("SDFMolReader> nbond: %d", nbond);
+  //LOG_DPRINTLN("SDFMolReader> natom: %d", natom);
+  //LOG_DPRINTLN("SDFMolReader> nbond: %d", nbond);
 
   int i;
   LString str, sx, sy, sz, satom, aname;
@@ -152,28 +178,28 @@ void SDFMolReader::readMol(qlib::LineStream &lin)
 
     // LOG_DPRINTLN("Atom: %f, %f, %f, <%s> %d", xx, yy, zz, aname.c_str(), eleid);
 
-    MolAtomPtr pAtom = MolAtomPtr(MB_NEW MolAtom());
-    pAtom->setParentUID(m_pMol->getUID());
-    pAtom->setName(aname);
-    pAtom->setElement(eleid);
+    if (!bskip) {
+      MolAtomPtr pAtom = MolAtomPtr(MB_NEW MolAtom());
+      pAtom->setParentUID(m_pMol->getUID());
+      pAtom->setName(aname);
+      pAtom->setElement(eleid);
 
-    pAtom->setChainName(m_chainName);
-    pAtom->setResIndex(m_nResInd);
-    pAtom->setResName(cmpd_name);
+      pAtom->setChainName(m_sCurrChName);
+      pAtom->setResIndex(m_nCurrResid);
+      pAtom->setResName(cmpd_name);
     
-    pAtom->setPos(Vector4D(xx,yy,zz));
-    pAtom->setBfac(0.0);
-    pAtom->setOcc(1.0);
+      pAtom->setPos(Vector4D(xx,yy,zz));
+      pAtom->setBfac(0.0);
+      pAtom->setOcc(1.0);
     
-    int naid = m_pMol->appendAtom(pAtom);
-    if (naid<0)
-      MB_THROW(SDFFormatException, "invalid SDF format, appendAtom() failed!!");
+      int naid = m_pMol->appendAtom(pAtom);
+      if (naid<0)
+	MB_THROW(SDFFormatException, "invalid SDF format, appendAtom() failed!!");
 
-    atommap.insert(std::pair<int,int>(i, naid));
-    m_nReadAtoms++;
+      atommap.insert(std::pair<int,int>(i, naid));
+      m_nReadAtoms++;
+    }
   }
-
-  LOG_DPRINTLN("SDFMolReader> read %d atoms", m_nReadAtoms);
 
   int natm1, natm2, nbont;
   int natm_id1, natm_id2;
@@ -194,31 +220,50 @@ void SDFMolReader::readMol(qlib::LineStream &lin)
       MB_THROW(SDFFormatException, "Invalid bond line (bond type)");
     }
 
-    iter = atommap.find(natm1-1);
-    if (iter==atommap.end())
-      MB_THROW(SDFFormatException, "Invalid bond line (bond atom1 not found)");
-    natm_id1 = iter->second;
+    if (!bskip) {
+      iter = atommap.find(natm1-1);
+      if (iter==atommap.end())
+	MB_THROW(SDFFormatException, "Invalid bond line (bond atom1 not found)");
+      natm_id1 = iter->second;
 
-    iter = atommap.find(natm2-1);
-    if (iter==atommap.end())
-      MB_THROW(SDFFormatException, "Invalid bond line (bond atom2 not found)");
-    natm_id2 = iter->second;
+      iter = atommap.find(natm2-1);
+      if (iter==atommap.end())
+	MB_THROW(SDFFormatException, "Invalid bond line (bond atom2 not found)");
+      natm_id2 = iter->second;
 
-    MolBond *pB = m_pMol->makeBond(natm_id1, natm_id2, true);
-    if (pB==NULL)
-      MB_THROW(SDFFormatException, "makeBond failed");
+      MolBond *pB = m_pMol->makeBond(natm_id1, natm_id2, true);
+      if (pB==NULL)
+	MB_THROW(SDFFormatException, "makeBond failed");
 
-    if (nbont==1)
-      pB->setType(MolBond::SINGLE);
-    else if (nbont==2)
-      pB->setType(MolBond::DOUBLE);
-    else if (nbont==3)
-      pB->setType(MolBond::TRIPLE);
-    else if (nbont>=4)
-      pB->setType(MolBond::DELOC);
+      if (nbont==1)
+	pB->setType(MolBond::SINGLE);
+      else if (nbont==2)
+	pB->setType(MolBond::DOUBLE);
+      else if (nbont==3)
+	pB->setType(MolBond::TRIPLE);
+      else if (nbont>=4)
+	pB->setType(MolBond::DELOC);
+
+      m_nReadBonds++;
+    }
 
     //LOG_DPRINTLN("bond %d<-->%d: %d", natm_id1, natm_id2, nbont);
   }
+  
+  // Set noautogen prop to this residue,
+  // to avoid topology autogen, when saved to and loaded from the qdf stream.
+  if (!bskip) {
+    iter = atommap.find(0);
+    if (iter!=atommap.end()) {
+      int aid0 = iter->second;
+      MolAtomPtr pA = m_pMol->getAtom(aid0);
+      if (!pA.isnull()) {
+	MolResiduePtr pRes = pA->getParentResidue();
+	if (!pRes.isnull()) {
+	  pRes->setPropStr("noautogen", "true");
+	}
+      }
+    }      
+  }
 
 }
-

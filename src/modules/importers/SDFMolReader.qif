@@ -16,20 +16,18 @@ runtime_class SDFMolReader extends ObjReader
   scriptable;
   smartptr;
 
-  property boolean loadmodel => m_bLoadMultiModel;
-  default loadmodel = false;
+  property integer load_cmpd_id => m_iLoadCmpd;
+  default load_cmpd_id = -1;
 
-  property boolean loadanisou => m_bLoadAnisoU;
-  default loadanisou = true;
+  property boolean load_as_chain => m_bLoadAsChain;
+  default load_as_chain = false;
 
-  property boolean loadaltconf => m_bLoadAltConf;
-  default loadaltconf = true;
+  property string chain_name => m_chainName;
+  default chain_name = "_";
 
-  property boolean loadsecstr => m_bLoadSecstr;
-  default loadsecstr = false;
+  property integer resid_index => m_nResInd;
+  default resid_index = 1;
 
-  property boolean autoTopoGen => m_bAutoTopoGen;
-  default autoTopoGen = true;
 };
 
 #endif
