@@ -323,6 +323,7 @@ Qm2Main.prototype.openPDBsiteImpl = function (pdbid, aPDBURL, afuncs)
   dlgdata.target[0].rend_types = rend_types;
   dlgdata.target[0].reader_name = "xxx";
   // dlgdata.target[0].reader = reader;
+  dlgdata.target[0].preset_types = this.getCompatibleRendPresetNames(obj_type, scene.uid);
 
   this.doSetupRendDlg(dlgdata);
   if (!dlgdata.ok)

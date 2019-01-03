@@ -647,6 +647,7 @@ klass.createSymmObj = function ()
     data[i].name = newname;
     data[i].rend_types = mol.searchCompatibleRendererNames();
     data[i].obj_type = mol._wrapped.getClassName();
+    data[i].preset_types = gQm2Main.getCompatibleRendPresetNames(data[i].obj_type, scene.uid);
     
     result = gQm2Main.doSetupRendDlg({
     target: data, sceneID: scene.uid, ok: false, bEditObjName : true });

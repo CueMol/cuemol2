@@ -274,6 +274,12 @@
     <renderer type="ballstick" sel="!nucleic&amp;!protein" style="DefaultBallStick,DefaultCPKColoring"/>
   </style>
 
+  <style id="Default2RendPreset" type="MolCoord-rendpreset" desc="Default preset 2">
+    <renderer type="cartoon" sel="protein" style="DefaultCartoon,DefaultHSCPaint"/>
+    <renderer type="nucl" sel="nucleic" style="DefaultNucl"/>
+    <renderer type="ballstick" sel="!nucleic&amp;!protein" style="DefaultBallStick,DefaultCPKColoring"/>
+  </style>
+
   <style id="Simple1RendPreset" type="MolCoord-rendpreset" desc="Simple preset 1">
     <renderer type="trace" sel="protein|nucleic" style="DefaultCPKColoring"/>
     <renderer type="simple" sel="!nucleic&amp;!protein" style="DefaultCPKColoring"/>
