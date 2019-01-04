@@ -1,0 +1,31 @@
+// -*-Mode: C++;-*-
+//
+// MOL2 reader scripting interface
+//
+
+#ifndef MOL2_MOL_READER_QIF_INCLUDED
+#define MOL2_MOL_READER_QIF_INCLUDED
+
+#include <qsys/ObjReader.qif>
+
+runtime_class MOL2MolReader extends ObjReader
+{
+  client_hdr "MOL2MolReader.hpp";
+  client_name importers::MOL2MolReader;
+
+  scriptable;
+  smartptr;
+
+  property integer load_cmpd_id => m_iLoadCmpd;
+  default load_cmpd_id = -1;
+
+  property string chain_name => m_chainName;
+  default chain_name = "_";
+
+  property integer resid_index => m_nResInd;
+  default resid_index = 1;
+
+};
+
+#endif
+
