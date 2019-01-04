@@ -12,11 +12,9 @@
 
 #include <qlib/Vector4D.hpp>
 #include <qlib/LExceptions.hpp>
-#include <qlib/LRegExpr.hpp>
 #include <qlib/LDOM2Tree.hpp>
 
 using namespace gfx;
-using qlib::LRegExpr;
 using qlib::Vector4D;
 
 AbstractColor *AbstractColor::fromStringS(const qlib::LString &aSrc)

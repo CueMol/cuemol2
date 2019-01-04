@@ -12,6 +12,7 @@
 #include "PSEFileReader.hpp"
 #include "MmcifMolReader.hpp"
 #include "SDFMolReader.hpp"
+#include "MOL2MolReader.hpp"
 
 extern void importers_regClasses();
 extern void importers_unregClasses();
@@ -31,6 +32,7 @@ namespace importers {
 
     pSM->registWriter<MmcifMolReader>();
     pSM->registWriter<SDFMolReader>();
+    pSM->registWriter<MOL2MolReader>();
 
     MB_DPRINTLN("importers init: OK");
     return true;

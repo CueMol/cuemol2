@@ -5,6 +5,7 @@
 #include "AtomPropColoring.qif"
 #include "MmcifMolReader.qif"
 #include "SDFMolReader.qif"
+#include "MOL2MolReader.qif"
 
 module importers
 {
@@ -15,5 +16,6 @@ module importers
   AtomPropColoring;
   MmcifMolReader;
   SDFMolReader;
-};
+  MOL2MolReader;
 
+};
