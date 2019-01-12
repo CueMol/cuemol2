@@ -36,7 +36,7 @@
     <CGALLibraryPath>$(BuildSetDir)\CGAL-4.12\lib</CGALLibraryPath>
 
     <!-- Python -->
-    <PythonDir>$(BuildSetDir)\Python-3.7.2-build\</PythonDir>
+    <PythonDir><!--$(BuildSetDir)\Python-3.7.2-build\--></PythonDir>
     <HavePython Condition="Exists('$(PythonDir)')">Yes</HavePython>
     <HavePython Condition="!Exists('$(PythonDir)')">No</HavePython>
     <!-- Python2 for XPIDL compilation -->
