@@ -15,6 +15,7 @@ variables:
   buildConfiguration: 'Release'
   appxPackageDir: '$(build.artifactStagingDirectory)\AppxPackages\'
 
+steps:
 - task: VSBuild@1
   inputs:
     platform: 'x86'
