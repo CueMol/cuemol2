@@ -8,8 +8,10 @@ from pathlib import Path
 import cuemol as cm
 import cuemol.fileio as fileio
 
-POVRAY_BIN = "/Users/user/bundle/povray/unix/povray"
-POVRAY_INC = "/Users/user/bundle/povray/include/"
+# POVRAY_BIN = "/Users/user/bundle/povray/unix/povray"
+POVRAY_BIN = "povray"
+# POVRAY_INC = "/Users/user/bundle/povray/include/"
+POVRAY_INC = None
 
 def render(scene, out_png_file, width=640, height=480):
     

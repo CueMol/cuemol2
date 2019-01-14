@@ -79,6 +79,9 @@ typedef struct {
     /// Invoke native method
     static PyObject *invokeMethod(PyObject *self, PyObject *args);
 
+    /// convert bytes to bytearray obj
+    static PyObject *createBAryFromBytes(PyObject *self, PyObject *args);
+
     /// print log
     static PyObject *print(PyObject *self, PyObject *args);
 

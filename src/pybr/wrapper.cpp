@@ -11,6 +11,7 @@
 #include <qlib/LVarArray.hpp>
 #include <qlib/ClassRegistry.hpp>
 #include <qlib/PropSpec.hpp>
+#include <qlib/LByteArray.hpp>
 
 #include "wrapper.hpp"
 
@@ -887,6 +888,36 @@ PyObject *Wrapper::invokeMethodImpl(qlib::LScriptable *pScrObj, const char *mthn
 }
 
 //static
+PyObject *Wrapper::createBAryFromBytes(PyObject *self, PyObject *args)
+{
+  //PyObject *pPyObj;
+  PyObject *pPyBytes;
+
+  if (!PyArg_ParseTuple(args, "S", &pPyBytes)) {
+    PyErr_SetString(PyExc_RuntimeError, "invalid arguments");
+    return NULL;
+  }
+  
+  if (!PyBytes_Check(pPyBytes)) {
+    PyErr_SetString(PyExc_RuntimeError, "invalid arguments");
+    return NULL;
+  }
+
+  int nlen = PyBytes_Size(pPyBytes);
+
+  qlib::LByteArray *pNewObj = new qlib::LByteArray(nlen);
+  if (nlen>0) {
+    const char *ptr = PyBytes_AsString(pPyBytes);
+    char *pBuf = (char *)(pNewObj->data());
+    for (int i=0; i<nlen; ++i)
+      pBuf[i] = ptr[i];
+  }
+  
+  return createWrapper(pNewObj);
+}
+
+
+//static
 PyObject *Wrapper::print(PyObject *self, PyObject *args)
 {
   const char *msg;
@@ -925,6 +956,7 @@ static PyMethodDef cuemol_methods[] = {
   {"getEnumDefsJSON", (PyCFunction)Wrapper::getEnumDefsJSON, METH_VARARGS, "\n"},
   {"getEnumDef", (PyCFunction)Wrapper::getEnumDef, METH_VARARGS, "\n"},
   {"invokeMethod", (PyCFunction)Wrapper::invokeMethod, METH_VARARGS, "\n"},
+  {"createBAryFromBytes", (PyCFunction)Wrapper::createBAryFromBytes, METH_VARARGS, "create ByteArray obj from bytes\n"},
 
   {"print", (PyCFunction)Wrapper::print, METH_VARARGS, "print log message.\n"},
 
