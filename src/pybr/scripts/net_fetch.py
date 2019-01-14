@@ -6,9 +6,10 @@ import urllib.request
 
 import cuemol._internal as ci
 import cuemol as cm
-import cuemol.fileio as fileio
+# import cuemol.fileio as fileio
+import cuemol.renderer as renderer
 
-def load(aURL):
+def load_url(aURL):
 
     rdr_type = "pdb"
     cmp_type = None
@@ -57,4 +58,18 @@ def load(aURL):
 
     res = sm.waitLoadAsync(tid);
     print("res",res)
+    return res
+    #return cm.createWrapper(res)
     
+def fetch(pdbid, scene=None):
+    sc = cm.scene(scene)
+    url_tmpl = "http://files.rcsb.org/download/{}.cif.gz"
+    obj = load_url(url_tmpl.format(pdbid.lower()))
+
+    sc.addObject(obj)
+
+    print("obj.scene:", obj.getScene())
+    renderer.setupDefaultRenderer(obj)
+
+    return obj
+

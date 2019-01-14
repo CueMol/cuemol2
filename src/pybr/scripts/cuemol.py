@@ -6,7 +6,7 @@ import cuemol._internal as ci
 import importlib
 import cuemol.wrappers.basewrapper as basewrapper
 
-__all__ = ['getWrpClass', 'createWrapper', 'createObj', 'getService', 'print', 'println',
+__all__ = ['getWrpClass', 'createWrapper', 'createObj', 'getService', 'println',
            'iswrapper', 'isimpl', 'isscene', 'isview', 'isobj', 'isrend', 'issel', 'iscol',
            'scene', 'view', 'createScene', 'svc', 'obj', 'rend',
            'sceMgr', 'strMgr',
@@ -22,6 +22,9 @@ def getWrpClass(clsnm):
     return cls
 
 def createWrapper(obj):
+    if obj is None:
+        return None
+    print("createWrapper obj:",obj)
     clsnm = ci.getClassName(obj)
     cls = getWrpClass(clsnm)
     wr = cls(obj)
@@ -33,8 +36,8 @@ def createObj(name):
 def getService(name):
     return createWrapper( ci.getService(name) )
 
-def print(astr):
-    return ci.print(astr)
+# def print(astr):
+#     return ci.print(astr)
 
 def println(astr):
     return ci.print(astr+"\n")
