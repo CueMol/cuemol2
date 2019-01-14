@@ -66,6 +66,7 @@ def fetch(pdbid, scene=None):
     url_tmpl = "http://files.rcsb.org/download/{}.cif.gz"
     obj = load_url(url_tmpl.format(pdbid.lower()))
 
+    obj.name = pdbid
     sc.addObject(obj)
 
     print("obj.scene:", obj.getScene())

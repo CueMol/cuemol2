@@ -31,6 +31,7 @@ runtime_class SceneManager
   void destroyAllScenes();
   void checkAndUpdateScenes();
   string getSceneUIDList();
+  property string scene_uids => redirect(getSceneUIDList, XXX) (readonly);
 
   object<Object$> getObject(integer uid);
   object<View$> getView(integer uid);

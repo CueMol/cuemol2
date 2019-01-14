@@ -24,7 +24,7 @@ def getWrpClass(clsnm):
 def createWrapper(obj):
     if obj is None:
         return None
-    print("createWrapper obj:",obj)
+    # print("createWrapper obj:",obj)
     clsnm = ci.getClassName(obj)
     cls = getWrpClass(clsnm)
     wr = cls(obj)
@@ -102,15 +102,22 @@ def view(aScene=None, aView=None):
     vwid=None
 
     if aView is None:
+        if sce.getViewCount()==0:
+            # No scene exists
+            # --> Create default view
+            return sce.createView()
+
         # Get active view (from sce)
         vwid = sce.activeViewID
         if vwid==0:
-            raise RuntimeError("Active view ID is not defined in scene: "+str(sce))
+            return None
+            # raise RuntimeError("Active view ID is not defined in scene: "+str(sce))
     elif isinstance(aView, int):
         # Get view obj from Integer View ID
         vwid = aView
     else:
-        raise RuntimeError("view "+str(aView)+" not found")
+        return None
+        # raise RuntimeError("view "+str(aView)+" not found")
 
     return mgr.getView(vwid)
 
