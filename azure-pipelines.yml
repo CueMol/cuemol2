@@ -10,7 +10,9 @@ pool:
   vmImage: 'Ubuntu-16.04'
 
 steps:
-- script: echo Hello, world!
+- script: |
+    echo Hello, world!
+    which automake
   displayName: 'Run a one-line script'
 
 - script: |
