@@ -12,7 +12,11 @@ pool:
 steps:
 - script: |
     echo Hello, world!
-    which automake
+    pwd
+    ls -la
+    cd uxbuild
+    pwd
+    ls -la
   displayName: 'Run a one-line script'
 
 - script: |
