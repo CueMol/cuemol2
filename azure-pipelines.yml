@@ -44,10 +44,14 @@ steps:
     --with-boost \
     --with-fftw \
     --with-cgal \
+    --enable-cgal-gmp \
     $debug
   displayName: 'Run a configure script'
 
 - script: |
+    pwd
+    ls -la
+    cd uxbuild
     make
     make install
   displayName: 'build and install'
