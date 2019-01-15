@@ -11,11 +11,43 @@ pool:
 
 steps:
 - script: |
-    echo Hello, world!
-    sudo apt-get install -y emacs
-  displayName: 'Run a one-line script'
+    sudo apt-get install -y fftw3-dev liblcms2-dev libboost-all-dev libcgal-dev liblzma-dev
+  displayName: 'Install prereqs'
 
 - script: |
-    echo Add other tasks to build, test, and deploy your project.
-    echo See https://aka.ms/yaml
-  displayName: 'Run a multi-line script'
+    cd uxbuild
+    install_dir=$HOME/app/cuemol2
+    debug="--disable-debug --enable-m64"
+    usepybr="--disable-python"
+    usexrbr="--without-xmlrpc"
+    lcms="--with-lcms"
+    xz="--with-xz"
+    config_scr=../src/configure
+    if test ! -f $config_scr; then
+    (
+        cd ../src
+        aclocal; libtoolize; aclocal; autoheader; automake -a; autoconf;
+        cd js
+        aclocal; libtoolize; aclocal; autoheader; automake -a; autoconf;
+    )
+    fi
+    env CC=gcc CXX=g++ CXXFLAGS="-std=c++0x -O" \
+    $config_scr \
+    --disable-static \
+    --enable-shared \
+    --prefix=$install_dir \
+    $lcms \
+    $xz \
+    $usepybr \
+    $usexrbr \
+    --enable-cli \
+    --with-boost \
+    --with-fftw \
+    --with-cgal \
+    $debug
+  displayName: 'Run a configure script'
+
+- script: |
+    make
+    make install
+  displayName: 'build and install'
