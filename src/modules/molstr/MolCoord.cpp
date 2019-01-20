@@ -561,8 +561,14 @@ void MolCoord::propChanged(qlib::LPropEvent &ev)
 //static
 LString MolCoord::encodeModelInChain(const LString &chainname, int nModel)
 {
-  LString ret = LString::format("%02d_%s", nModel, chainname.c_str());
-  return ret;
+  if (nModel<=0) {
+    // Model no is 0-based
+    MB_THROW(qlib::IllegalArgumentException, "invalid model no");
+  }
+  if (nModel==1)
+    return chainname;
+  
+  return LString::format("%02d_%s", nModel, chainname.c_str());
 }
 
 //static

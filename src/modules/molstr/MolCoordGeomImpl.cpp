@@ -30,6 +30,22 @@ using qlib::Box3D;
 
 using qsys::UndoManager;
 
+int MolCoord::getAtomSize(SelectionPtr pSel) const
+{
+  int nres = 0;
+
+  {
+    AtomIterator iter(MolCoordPtr(const_cast<MolCoord *>(this)), pSel);
+    for (iter.first(); iter.hasMore(); iter.next()) {
+      MolAtomPtr pAtom = iter.get();
+      MB_ASSERT(!pAtom.isnull());
+      nres++;
+    }
+  }
+
+  return nres;
+}
+
 qlib::Vector4D MolCoord::getCenterPos(bool fselect) const
 {
   qlib::Vector4D pos;

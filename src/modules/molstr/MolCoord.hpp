@@ -179,6 +179,9 @@ namespace molstr {
       return m_atomPool.size();
     }
 
+    /// Get the number of selected atoms in this molecule
+    int getAtomSize(SelectionPtr pSel) const;
+
     /// Convert aid to (persistent) string representation
     LString toStrAID(int atomid) const;
     
@@ -216,7 +219,7 @@ namespace molstr {
     // selection operations
     //
 
-    /** Get the current selection */
+    /// Get the current selection
     SelectionPtr getSelection() const;
 
     void setSelection(SelectionPtr pNewSel);
@@ -225,28 +228,6 @@ namespace molstr {
     // event-related convenience methods
 
     // virtual void propChanged(qlib::LPropEvent &ev);
-
-#if 0
-    /** notify listeners to the change of selection */
-    void fireSelectionChanged() {
-      MolSelectEvent ev;
-      ev.setTarget(this);
-      fireMbObjEvent(ev);
-    }
-
-    void fireAtomsAppended() {
-      MolAtomsAppendedEvent ev;
-      ev.setTarget(this);
-      fireMbObjEvent(ev);
-    }
-
-    void fireAtomsRemoved() {
-      MolAtomsRemovedEvent ev;
-      ev.setTarget(this);
-      fireMbObjEvent(ev);
-    }
-
-#endif
 
     void fireAtomsMoved();
     void fireTopologyChanged();
@@ -379,7 +360,10 @@ namespace molstr {
     static MolCoordPtr getMolByID(qlib::uid_t uid, qlib::no_throw_tag xx);
     static MolCoordPtr getMolByID(qlib::uid_t uid);
 
+    /// Encode model ID into the chain name
     static LString encodeModelInChain(const LString &chainname, int nModel);
+
+    /// Decode model ID and orig chain name from the chain name
     static bool decodeModelFromChain(const LString &orig, LString &chain, int &nModel);
 
   };

@@ -47,6 +47,12 @@ runtime_class MolCoord extends Object
   object<MolResidue$> getResidue(string name, string sindex) =>getResidScr;
   object<MolChain$> getChain(string name);
 
+  integer getAtomSize();
+  integer getAtomSelSize(object<MolSelection$> psel) => getAtomSize;
+
+  /// Encode model ID into the chain name
+  string encodeModelInChain(string chain_name, integer imodel);
+
   string getChainsJSON();
 
   object<Vector> getCenterPos(boolean fsel) => getCenterPosScr;
