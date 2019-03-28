@@ -104,8 +104,10 @@ def view(aScene=None, aView=None):
     if aView is None:
         if sce.getViewCount()==0:
             # No scene exists
-            # --> Create default view
-            return sce.createView()
+            # --> Create default view & set as active
+            vw = sce.createView()
+            sce.setActiveViewID(vw.uid)
+            return vw
 
         # Get active view (from sce)
         vwid = sce.activeViewID

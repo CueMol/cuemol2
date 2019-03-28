@@ -57,6 +57,7 @@ qsys.cpp \
 SceneExporter.cpp \
 RendGroup.cpp \
 MultiGradient.cpp \
+TTYView.cpp \
 $(NULL)
 
 # CueMol interface definitions for MCWRAPGEN

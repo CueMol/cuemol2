@@ -2,6 +2,7 @@ import sys, traceback, re, os
 
 import cuemol._internal as ci
 import cuemol as cm
+from pathlib import Path
 
 def bg_color(colstr, aScene=None):
     scene = cm.scene(aScene)
@@ -82,3 +83,19 @@ def current(rend_name=None, aScene=None):
 
     return
 
+
+def load_camera_file(scene, file_name, name=None, view=None):
+    path = Path(file_name)
+    if name is None:
+        name = str(path.name)
+
+    newcam = scene.loadCamera(str(path))
+    scene.setCamera(name, newcam)
+    if view is None:
+        vid = scene.activeViewID
+    else:
+        vid = view.uid
+
+    scene.loadViewFromCam(vid, name)
+
+    return newcam

@@ -103,6 +103,24 @@ namespace importers {
   extern void fini();
 }
 
+#include <qsys/TTYView.hpp>
+
+namespace pybr {
+  class TTYViewFactory : public qsys::ViewFactory
+  {
+  public:
+    TTYViewFactory() {}
+    virtual ~TTYViewFactory() {}
+    virtual qsys::View* create() {
+      return MB_NEW qsys::TTYView();
+    }
+  };
+  void registerViewFactory()
+  {
+    qsys::View::setViewFactory(MB_NEW TTYViewFactory());
+  }
+}
+
 namespace pybr {
 
   bool g_bInitOK = false;
@@ -137,6 +155,8 @@ namespace pybr {
 #if (GUI_ARCH!=MB_GUI_ARCH_CLI)
       sysdep::init();
 #endif
+
+      pybr::registerViewFactory();
 
       // load other modules
       render::init();

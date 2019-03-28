@@ -13,8 +13,12 @@ POVRAY_BIN = "povray"
 # POVRAY_INC = "/Users/user/bundle/povray/include/"
 POVRAY_INC = None
 
-def render(scene, out_png_file, width=640, height=480):
+
+def render(scene, out_png_file, width=640, height=480, camera="__current"):
     
+    scene.loadViewFromCam(scene.activeViewID, camera)
+    scene.saveViewToCam(scene.activeViewID, "__current")
+
     strMgr = cm.svc("StreamManager")
     exporter = strMgr.createHandler("pov", 2)
 
@@ -43,7 +47,7 @@ def render(scene, out_png_file, width=640, height=480):
     exporter.usePixImgs = True #this.mbUsePixImgs;
 
     exporter.makeRelIncPath = False
-    exporter.camera = "__current"
+    exporter.camera = camera
     exporter.width = width
     exporter.height = height
 
