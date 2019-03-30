@@ -68,8 +68,14 @@ Qm2Main.prototype.onDrop = function (aEvent)
 
   let names;
   try {
-    // 0 is category ID for obj reader
-    names = this.makeFilter(null, 0);
+      // 0 is category ID for obj reader
+      names = this.makeFilter(null, 0);
+      for (let i=0; i<names.length; ++i) {
+	  if (names[i].name=="pdb") {
+	      names[i].fext += "; *.pdbqt"
+	      dd("onDrop makeFilter: "+debug.dumpObjectTree(names[i], 10));
+	  }
+      }
   }
   catch (e) {
     dd("Make filter is failed: "+e);
