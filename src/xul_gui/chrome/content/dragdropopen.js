@@ -73,7 +73,7 @@ Qm2Main.prototype.onDrop = function (aEvent)
       for (let i=0; i<names.length; ++i) {
 	  if (names[i].name=="pdb") {
 	      names[i].fext += "; *.pdbqt"
-	      dd("onDrop makeFilter: "+debug.dumpObjectTree(names[i], 10));
+	      // dd("onDrop makeFilter: "+debug.dumpObjectTree(names[i], 10));
 	  }
       }
   }

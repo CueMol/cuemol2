@@ -39,6 +39,12 @@ if (!("IntrTool" in cuemolui)) {
 	cuemol.evtMgr.SEM_OBJECT);
       this.mTargMol._tgtSceID = this.mTargetSceneID;
 
+      this.mTargMol2 = new cuemolui.ObjMenuList(
+	"targ_mol2",
+	window, filter_fn,
+	cuemol.evtMgr.SEM_OBJECT);
+      this.mTargMol2._tgtSceID = this.mTargetSceneID;
+
       window.addEventListener("load", function(){that.onLoad();}, false);
     };
 
@@ -58,6 +64,11 @@ if (!("IntrTool" in cuemolui)) {
 
       this.mTargSel = document.getElementById('targ_molsel');
       this.mTargSel.targetSceID = this.mTargetSceneID;
+
+      this.mTargMol2.addSelChanged(function(aEvent) {
+	try { that.onTargMolChanged(aEvent);}
+	catch (e) { debug.exception(e); }
+      });
 
       this.mTargSel2 = document.getElementById('targ_molsel2');
       this.mTargSel2.targetSceID = this.mTargetSceneID;
@@ -88,11 +99,19 @@ if (!("IntrTool" in cuemolui)) {
       this.mTgtList.addEventListener(
 	"popupshowing", function (a) { that.onTgtListShowing(a); }, false);
 
+      this.mMol2Chk = document.getElementById("chk_mol2");
+      this.mMol2Chk.addEventListener(
+	"command", function (a) { that.onTargMol2Checked(); }, false);
+
       this.mSel2Chk = document.getElementById("chk_molsel2");
       this.mSel2Chk.addEventListener(
 	"command", function (a) { that.onTargSel2Checked(); }, false);
-      // sync to the checkbox state
-      this.onTargSel2Checked();
+
+      // sync widgets to the checkbox states
+      setTimeout( function() {
+	that.onTargMol2Checked();
+	that.onTargSel2Checked();
+      }, 0);
     };
     
     klass.onTargMolChanged = function ()
@@ -110,6 +129,14 @@ if (!("IntrTool" in cuemolui)) {
 	this.mTargSel2.disabled = false;
       else
 	this.mTargSel2.disabled = true;
+    };
+
+    klass.onTargMol2Checked = function ()
+    {
+      if (this.mMol2Chk.checked)
+	this.mTargMol2._widget.disabled = false;
+      else
+	this.mTargMol2._widget.disabled = true;
     };
 
     klass.onTgtListShowing = function (aEvent)
@@ -144,21 +171,21 @@ if (!("IntrTool" in cuemolui)) {
       } catch (e) {debug.exception(e);}
     };
 
-function searchRend(obj, labeltype, labelname)
-{
-    const size = obj.getRendCount();
-  for (let i=0; i<size; ++i) {
+    function searchRend(obj, labeltype, labelname)
+    {
+      const size = obj.getRendCount();
+      for (let i=0; i<size; ++i) {
 	let rend = obj.getRendererByIndex(i);
 	if (rend) {
-	    if (rend.type_name==labeltype &&
-		rend.name==labelname) {
-		return rend;
-	    }
+	  if (rend.type_name==labeltype &&
+	      rend.name==labelname) {
+	    return rend;
+	  }
 	}
-    }
+      }
 
-    return null;
-}
+      return null;
+    }
 
     klass.onDialogAccept = function ()
     {
@@ -169,6 +196,13 @@ function searchRend(obj, labeltype, labelname)
 	return false;
       }
       let scene = tgtmol.getScene();
+
+      let tgtmol2 = null;
+      if (this.mMol2Chk.checked) {
+	tgtmol2 = this.mTargMol2.getSelectedObj();
+	if (tgtmol.uid==tgtmol2.uid)
+	  tgtmol2 = null
+      }
 
       let tgtsel = this.mTargSel.selectedSel;
       let tgtsel2 = this.mTargSel2.selectedSel;
@@ -204,11 +238,18 @@ function searchRend(obj, labeltype, labelname)
       let bhbon = this.mChkHbon.checked;
 
       let mgr = cuemol.getService("MolAnlManager");
-      let json;
-      if (this.mSel2Chk.checked)
-	json = mgr.calcAtomContact2JSON(tgtmol, tgtsel, tgtsel2, rmin, rmax, bhbon, nmaxlabs);
-      else
-	json = mgr.calcAtomContactJSON(tgtmol, tgtsel, rmin, rmax, bhbon, nmaxlabs);
+      let json = null;
+
+      if (tgtmol2==null) {
+	if (this.mSel2Chk.checked)
+	  json = mgr.calcAtomContact2JSON(tgtmol, tgtsel, tgtsel2, rmin, rmax, bhbon, nmaxlabs);
+	else
+	  json = mgr.calcAtomContactJSON(tgtmol, tgtsel, rmin, rmax, bhbon, nmaxlabs);
+      }
+      else {
+	// tgtmol2!=null
+	json = mgr.calcAtomContact3JSON(tgtmol, tgtsel, tgtmol2, tgtsel2, rmin, rmax, bhbon, nmaxlabs);
+      }
       dd("JSON: "+json);
       
       let npairs = 0;
@@ -249,7 +290,10 @@ function searchRend(obj, labeltype, labelname)
 	  let aid1 = elem[0];
 	  let aid2 = elem[1];
 	  dd("define label "+aid1+" <--> "+aid2);
-	  label_rend.appendById(aid1, tgtmol.uid, aid2, false);
+	  if (tgtmol2==null)
+	    label_rend.appendById(aid1, tgtmol.uid, aid2, false);
+	  else
+	    label_rend.appendById(aid1, tgtmol2.uid, aid2, false);
 	}
       }
       catch (e) {

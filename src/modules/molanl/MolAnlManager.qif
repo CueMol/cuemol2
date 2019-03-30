@@ -57,6 +57,7 @@ runtime_class MolAnlManager
 
   string calcAtomContactJSON(object<MolCoord$> pMol, object<MolSelection$> pSel, real r_min, real r_max, boolean hbond, integer nMax);
   string calcAtomContact2JSON(object<MolCoord$> pMol, object<MolSelection$> pSel, object<MolSelection$> pSel2, real r_min, real r_max, boolean hbond, integer nMax);
+  string calcAtomContact3JSON(object<MolCoord$> pMol, object<MolSelection$> pSel, object<MolCoord$> pMol2, object<MolSelection$> pSel2, real r_min, real r_max, boolean hbond, integer nMax);
   
   //////////////////////////
   // protein secondary structure
