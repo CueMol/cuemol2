@@ -132,6 +132,8 @@ libxpcqm_la_LIBADD = \
 @BOOST_THREAD_LIB@ \
 $(NULL)
 
+# -lxpcomglue_s
+
 ############################
 
 xpcom_DATA = $(IDL_XPT)

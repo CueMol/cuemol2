@@ -93,7 +93,8 @@ nsresult NSArrayToLArray(nsIVariant *aValue, qlib::LVariant &variant)
       XPCObjWrapper *pp = dynamic_cast<XPCObjWrapper *>(piobj.get());
       if (pp==NULL) {
         LOG_DPRINTLN("NSVar2LVar> FATAL ERROR: unknown wrapper type (unsupported)");
-        nsMemory::Free(rawArray);
+        //nsMemory::Free(rawArray);
+        NS_Free(rawArray);
         return NS_ERROR_NOT_IMPLEMENTED;
       }
 
@@ -103,7 +104,8 @@ nsresult NSArrayToLArray(nsIVariant *aValue, qlib::LVariant &variant)
     }
   }
 
-  nsMemory::Free(rawArray);
+  //nsMemory::Free(rawArray);
+  NS_Free(rawArray);
   
   // Container array is temporaly owned by wrapper function context
   //  (and will be freed after the execution)
@@ -217,7 +219,8 @@ nsresult NSVarToLVar(nsIVariant *aValue, qlib::LVariant &variant)
 	qlib::UCS16toUTF8((U16Char *)psz, nlen, retval);
 	// MB_DPRINTLN("NSVar: wstring(%s)", retval.c_str());
 	variant.setStringValue(retval);
-	nsMemory::Free(psz);
+	//nsMemory::Free(psz);
+	NS_Free(psz);
       }
       else {
 	variant.setStringValue(LString());
@@ -1091,7 +1094,8 @@ NS_IMETHODIMP XPCObjWrapper::Invoke(const char *name, nsIVariant *valueArray, ns
       break;
     } // switch (dt)
 
-    nsMemory::Free(pArrayValue);
+    //nsMemory::Free(pArrayValue);
+    NS_Free(pArrayValue);
   } // if (nelem>0)
 
   if (!bOK) {
