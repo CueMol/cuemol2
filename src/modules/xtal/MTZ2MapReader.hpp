@@ -156,11 +156,11 @@ private:
   //int m_nFloatArraySize;
 
   /// Read header / File type check
-  void readHeader(qlib::InStream &ins) throw (qlib::FileFormatException);
-  void readBody(qlib::InStream &ins) throw (qlib::FileFormatException);
-  void readFooter(qlib::LineStream &ins) throw (qlib::FileFormatException);
+  void readHeader(qlib::InStream &ins);
+  void readBody(qlib::InStream &ins);
+  void readFooter(qlib::LineStream &ins);
 
-  void skipBody(qlib::InStream &ins) throw (qlib::FileFormatException);
+  void skipBody(qlib::InStream &ins);
 
   void readNcol(const char *sbuf);
   void readColumn(const char *sbuf);

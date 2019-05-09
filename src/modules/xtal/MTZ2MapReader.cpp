@@ -414,7 +414,7 @@ void MTZ2MapReader::doFFT()
 
 }
 
-void MTZ2MapReader::readHeader(qlib::InStream &ins) throw (qlib::FileFormatException)
+void MTZ2MapReader::readHeader(qlib::InStream &ins)
 {
   char sbuf[256];
 
@@ -449,7 +449,7 @@ void MTZ2MapReader::readHeader(qlib::InStream &ins) throw (qlib::FileFormatExcep
   // OK
 }
 
-void MTZ2MapReader::readBody(qlib::InStream &ins) throw (qlib::FileFormatException)
+void MTZ2MapReader::readBody(qlib::InStream &ins)
 {
   m_nrawdat = (m_nhdrst-1)*4 - 20*4;
   m_pbuf = new char[m_nrawdat];
@@ -462,7 +462,7 @@ void MTZ2MapReader::readBody(qlib::InStream &ins) throw (qlib::FileFormatExcepti
   ins.readFully(m_pbuf, 0, m_nrawdat*sizeof(char));
 }
 
-void MTZ2MapReader::skipBody(qlib::InStream &ins) throw (qlib::FileFormatException)
+void MTZ2MapReader::skipBody(qlib::InStream &ins)
 {
   m_nrawdat = (m_nhdrst-1)*4 - 20*4;
   ins.skip(m_nrawdat*sizeof(char));
@@ -675,7 +675,7 @@ void MTZ2MapReader::readResoln(const char *sbuf)
   MB_DPRINTLN("Resolution: %.2f - %.2f", m_dResMin, m_dResMax);
 }
 
-void MTZ2MapReader::readFooter(qlib::LineStream &ins) throw (qlib::FileFormatException)
+void MTZ2MapReader::readFooter(qlib::LineStream &ins)
 {
   char sbuf[256];
   

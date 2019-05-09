@@ -871,6 +871,15 @@ AC_ARG_WITH(glew,
   no)
     AC_MSG_RESULT($with_glew)
     ;;
+
+  yes)
+    AC_MSG_RESULT($with_glew)
+    AC_CHECK_HEADERS(GL/glew.h, [ AC_DEFINE(HAVE_GLEW,[1],[Use GLew]) ],,)
+    GLEW_CPPFLAGS=
+    GLEW_LDFLAGS=
+    GLEW_LIBADD=-lGLEW
+    ;;
+
   *)
     AC_MSG_RESULT($with_glew)
     _cppflags=${CPPFLAGS}
