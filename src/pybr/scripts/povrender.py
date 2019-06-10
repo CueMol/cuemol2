@@ -14,7 +14,7 @@ POVRAY_BIN = "povray"
 POVRAY_INC = None
 
 
-def render(scene, out_png_file, width=640, height=480, camera="__current"):
+def render(scene, out_png_file, width=640, height=480, camera="__current", nthr=1):
     
     scene.loadViewFromCam(scene.activeViewID, camera)
     scene.saveViewToCam(scene.activeViewID, "__current")
@@ -80,7 +80,7 @@ def render(scene, out_png_file, width=640, height=480, camera="__current"):
             "Declare=_amb_frac={}".format(0),
             "File_Gamma=1",
             "-D",
-            "+WT{}".format(1),
+            "+WT{}".format(nthr),
             "+W{}".format(width),
             "+H{}".format(height),
             "+FN8",

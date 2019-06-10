@@ -44,12 +44,19 @@ namespace molanl {
 
     // void transformMol(MolCoordPtr pmol_mov, const qlib::Matrix4D &mat);
 
+    void *superposeSSM_impl(const MolCoordPtr &pmol_ref, const SelectionPtr &psel_ref,
+			    const MolCoordPtr &pmol_mov, const SelectionPtr &psel_mov,
+			    bool bPrintAlgn);
+
     /// SSM superpose (1)
-    Matrix4D superposeSSM1(MolCoordPtr pmol_ref, SelectionPtr psel_ref,
-			   MolCoordPtr pmol_mov, SelectionPtr psel_mov, bool bUseProp=false);
+    Matrix4D superposeSSM1(const MolCoordPtr &pmol_ref, const SelectionPtr &psel_ref,
+			   const MolCoordPtr &pmol_mov, const SelectionPtr &psel_mov, bool bUseProp=false);
 
     void superposeSSM2(qlib::uid_t mol_ref, const LString &sel_ref,
                        qlib::uid_t mol_mov, const LString &sel_mov);
+
+    double superposeSSM_rmsd(const MolCoordPtr &pmol_ref, const SelectionPtr &psel_ref,
+			     const MolCoordPtr &pmol_mov, const SelectionPtr &psel_mov, bool bShowLog=false);
 
     /// LSQ superpose
     void superposeLSQ1(MolCoordPtr pmol_ref, SelectionPtr psel_ref,

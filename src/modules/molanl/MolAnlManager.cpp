@@ -167,11 +167,12 @@ namespace {
   }
 }
 
-Matrix4D MolAnlManager::superposeSSM1(MolCoordPtr pmol_ref, SelectionPtr psel_ref,
-                                  MolCoordPtr pmol_mov, SelectionPtr psel_mov, bool bUseProp/*=false*/)
+void *MolAnlManager::superposeSSM_impl(const MolCoordPtr &pmol_ref, const SelectionPtr &psel_ref,
+				       const MolCoordPtr &pmol_mov, const SelectionPtr &psel_mov,
+				       bool bPrintLog)
 {
-  qsys::AutoStyleCtxt asc(pmol_ref->getSceneID());
-
+  int i;
+  
   // mol1: reference molecule
   CMMDBManager *pMol1 = new CMMDBManager;
   ResnList rlist1;
@@ -190,23 +191,145 @@ Matrix4D MolAnlManager::superposeSSM1(MolCoordPtr pmol_ref, SelectionPtr psel_re
   if (rc!=0) {
     LString msg = LString::format("SSM-superpose is failed (error code=%d)", rc);
     MB_THROW(qlib::RuntimeException, msg);
-    return Matrix4D();
+    return NULL;
   }
 
-  Matrix4D xfmat;
-  int i,j;
-  for (i=0;i<4;i++)
-    for (j=0;j<4;j++)
-      xfmat.aij(i+1,j+1) = pAln->TMatrix[i][j];
-  
-  LOG_DPRINTLN("===== SSM superpose result =====");
-  LOG_DPRINTLN(" Ref: %s, Mov: %s", pmol_ref->getName().c_str(), pmol_mov->getName().c_str());
-  LOG_DPRINTLN(" RMSD: %f angstrom", pAln->rmsd);
-  LOG_DPRINTLN(" Nalgn: %d", pAln->nalgn);
-  LOG_DPRINTLN(" Ngaps: %d", pAln->ngaps);
-  //LOG_DPRINTLN(" Nres 1: %d 2: %d", pAln->nres1, pAln->nres2);
-  //LOG_DPRINTLN(" Nsel 1: %d 2: %d", pAln->nsel1, pAln->nsel2);
+  if (bPrintLog) {
+    try {
+      const double rmsd = pAln->rmsd;
+      LString aln1, match, aln2;
+      std::deque<int> ialn1, ialn2;
+      int ind1=-1, ind2=-1;
+      if (pAln->Ca1 && (pAln->nsel1>0)) {
+	const int nsel1 = pAln->nsel1;
+	bool bGap = false;
+	for (i=0;i<nsel1;i++)  {
+	  const int ca1 = pAln->Ca1[i];
+	  const double dca1 = pAln->dist1[i];
+	  if (ca1>=0) {
+	    if (bGap || ca1-ind1>1) {
+	      int ng2 = i - ind2 -1;
+	      // int ng2c = gap2.length();
+	      int ng1 = ca1 - ind1 -1;
+	      int ngmin = qlib::min(ng1, ng2);
+	      for (int j=0; j<ngmin; j++) {
+		aln1 += rlist1.at(ind1+1+j).second;
+		aln2 += rlist2.at(ind2+1+j).second;
+		ialn1.push_back(rlist1.at(ind1+1+j).first);
+		ialn2.push_back(rlist2.at(ind2+1+j).first);
+		match += ' ';
+	      }
+	      if (ng1>ng2) {
+		// aln1 gap is longer
+		for (int j=ngmin; j<ng1; j++) {
+		  aln1 += rlist1.at(ind1+1+j).second;
+		  aln2 += '-';
+		  ialn1.push_back(rlist1.at(ind1+1+j).first);
+		  ialn2.push_back(0);
+		  match += ' ';
+		}
+	      }
+	      else {
+		// aln2 gap is longer
+		for (int j=ngmin; j<ng2; j++) {
+		  aln1 += '-';
+		  aln2 += rlist2.at(ind2+1+j).second;
+		  ialn1.push_back(0);
+		  ialn2.push_back(rlist2.at(ind2+1+j).first);
+		  match += ' ';
+		}
+	      }
+	    }
+	    aln1 += rlist1.at(ca1).second;
+	    aln2 += rlist2.at(i).second;
+	    ialn1.push_back(rlist1.at(ca1).first);
+	    ialn2.push_back(rlist2.at(i).first);
+	    if (dca1<rmsd)
+	      match += '*';
+	    else
+	      match += '.';
+	    ind1 = ca1;
+	    ind2 = i;
+	    bGap = false;
+	  }
+	  else {
+	    bGap = true;
+	    //gap1 += "X";
+	    //gap2 += rlist2.at(i).second;
+	  }
+	  // LOG_DPRINTLN("i=%d, Ca1=%d dist1=%f", i, ca1, pAln->dist1[i] );
+	}
+      }
 
+      LOG_DPRINTLN(" Alignment:");
+
+      const int row_size = 60;
+      const int naln_len = aln1.length();
+      const int nrows = naln_len/row_size+1;
+      for (int i=0; i<nrows; ++i) {
+	const int nst = i*row_size;
+	int ist1=0, ist2=0, ien1=0, ien2=0;
+	if (nst<ialn1.size())
+	  ist1 = ialn1[nst];
+	if (nst<ialn2.size())
+	  ist2 = ialn2[nst];
+	const int nen = nst+row_size-1;
+	if (nen<ialn1.size())
+	  ien1 = ialn1[nen];
+	else
+	  ien1 = ialn1.back();
+	if (nen<ialn2.size())
+	  ien2 = ialn2.back();
+	if (i>0)
+	  LOG_DPRINTLN("");
+	LOG_DPRINTLN(" Ref% 4d %s", ist1, aln1.substr(nst, row_size).c_str());
+	LOG_DPRINTLN("         %s", match.substr(nst, row_size).c_str());
+	LOG_DPRINTLN(" Mov% 4d %s", ist2, aln2.substr(nst, row_size).c_str());
+      }
+
+      /*
+	LOG_DPRINTLN("1: %s", aln1.c_str());
+	LOG_DPRINTLN("   %s", match.c_str());
+	LOG_DPRINTLN("2: %s", aln2.c_str());
+      */
+    }
+    catch (...) {
+      LOG_DPRINTLN("   *** FATAL ERROR: Alignment calculation failed. ***");
+    }
+
+  }
+  
+  delete pMol1;
+  delete pMol2;
+
+  return pAln;
+}
+
+Matrix4D MolAnlManager::superposeSSM1(const MolCoordPtr &pmol_ref, const SelectionPtr &psel_ref,
+				      const MolCoordPtr &pmol_mov, const SelectionPtr &psel_mov, bool bUseProp/*=false*/)
+{
+  qsys::AutoStyleCtxt asc(pmol_ref->getSceneID());
+
+  Matrix4D xfmat;
+  {
+    CSSMAlign *pAln = (CSSMAlign *) superposeSSM_impl(pmol_ref, psel_ref, pmol_mov, psel_mov, True);
+
+    int i, j;
+    for (i=0;i<4;i++)
+      for (j=0;j<4;j++)
+	xfmat.aij(i+1,j+1) = pAln->TMatrix[i][j];
+  
+    LOG_DPRINTLN("===== SSM superpose result =====");
+    LOG_DPRINTLN(" Ref: %s, Mov: %s", pmol_ref->getName().c_str(), pmol_mov->getName().c_str());
+    LOG_DPRINTLN(" RMSD: %f angstrom", pAln->rmsd);
+    LOG_DPRINTLN(" Nalgn: %d", pAln->nalgn);
+    LOG_DPRINTLN(" Ngaps: %d", pAln->ngaps);
+    //LOG_DPRINTLN(" Nres 1: %d 2: %d", pAln->nres1, pAln->nres2);
+    //LOG_DPRINTLN(" Nsel 1: %d 2: %d", pAln->nsel1, pAln->nsel2);
+
+    delete pAln;
+  }
+  
   {
     const double e3 =  xfmat.aij(1,1) + xfmat.aij(2,2) + xfmat.aij(3,3) + 1.0;
     if (e3>0.0) {
@@ -218,114 +341,7 @@ Matrix4D MolAnlManager::superposeSSM1(MolCoordPtr pmol_ref, SelectionPtr psel_re
     }
   }
 
-  try {
-    const double rmsd = pAln->rmsd;
-    LString aln1, match, aln2;
-    std::deque<int> ialn1, ialn2;
-    int ind1=-1, ind2=-1;
-    if (pAln->Ca1 && (pAln->nsel1>0)) {
-      const int nsel1 = pAln->nsel1;
-      bool bGap = false;
-      for (i=0;i<nsel1;i++)  {
-        const int ca1 = pAln->Ca1[i];
-        const double dca1 = pAln->dist1[i];
-        if (ca1>=0) {
-          if (bGap || ca1-ind1>1) {
-            int ng2 = i - ind2 -1;
-            // int ng2c = gap2.length();
-            int ng1 = ca1 - ind1 -1;
-            int ngmin = qlib::min(ng1, ng2);
-            for (int j=0; j<ngmin; j++) {
-              aln1 += rlist1.at(ind1+1+j).second;
-              aln2 += rlist2.at(ind2+1+j).second;
-              ialn1.push_back(rlist1.at(ind1+1+j).first);
-              ialn2.push_back(rlist2.at(ind2+1+j).first);
-              match += ' ';
-            }
-            if (ng1>ng2) {
-              // aln1 gap is longer
-              for (int j=ngmin; j<ng1; j++) {
-                aln1 += rlist1.at(ind1+1+j).second;
-                aln2 += '-';
-                ialn1.push_back(rlist1.at(ind1+1+j).first);
-                ialn2.push_back(0);
-                match += ' ';
-              }
-            }
-            else {
-              // aln2 gap is longer
-              for (int j=ngmin; j<ng2; j++) {
-                aln1 += '-';
-                aln2 += rlist2.at(ind2+1+j).second;
-                ialn1.push_back(0);
-                ialn2.push_back(rlist2.at(ind2+1+j).first);
-                match += ' ';
-              }
-            }
-          }
-          aln1 += rlist1.at(ca1).second;
-          aln2 += rlist2.at(i).second;
-          ialn1.push_back(rlist1.at(ca1).first);
-          ialn2.push_back(rlist2.at(i).first);
-          if (dca1<rmsd)
-            match += '*';
-          else
-            match += '.';
-          ind1 = ca1;
-          ind2 = i;
-          bGap = false;
-        }
-        else {
-          bGap = true;
-          //gap1 += "X";
-          //gap2 += rlist2.at(i).second;
-        }
-        // LOG_DPRINTLN("i=%d, Ca1=%d dist1=%f", i, ca1, pAln->dist1[i] );
-      }
-    }
-
-    LOG_DPRINTLN(" Alignment:");
-
-    const int row_size = 60;
-    const int naln_len = aln1.length();
-    const int nrows = naln_len/row_size+1;
-    for (int i=0; i<nrows; ++i) {
-      const int nst = i*row_size;
-      int ist1=0, ist2=0, ien1=0, ien2=0;
-      if (nst<ialn1.size())
-        ist1 = ialn1[nst];
-      if (nst<ialn2.size())
-        ist2 = ialn2[nst];
-      const int nen = nst+row_size-1;
-      if (nen<ialn1.size())
-        ien1 = ialn1[nen];
-      else
-        ien1 = ialn1.back();
-      if (nen<ialn2.size())
-        ien2 = ialn2.back();
-      if (i>0)
-        LOG_DPRINTLN("");
-      LOG_DPRINTLN(" Ref% 4d %s", ist1, aln1.substr(nst, row_size).c_str());
-      LOG_DPRINTLN("         %s", match.substr(nst, row_size).c_str());
-      LOG_DPRINTLN(" Mov% 4d %s", ist2, aln2.substr(nst, row_size).c_str());
-    }
-
-    /*
-    LOG_DPRINTLN("1: %s", aln1.c_str());
-    LOG_DPRINTLN("   %s", match.c_str());
-    LOG_DPRINTLN("2: %s", aln2.c_str());
-     */
-  }
-  catch (...) {
-    LOG_DPRINTLN("   *** FATAL ERROR: Alignment calculation failed. ***");
-  }
-
   LOG_DPRINTLN("========================");
-  LOG_DPRINTLN("");
-
-  delete pAln;
-  delete pMol1;
-  delete pMol2;
 
   Matrix4D origmat = pmol_mov->getXformMatrix();
   if (!origmat.isIdent()) {
@@ -358,6 +374,25 @@ void MolAnlManager::superposeSSM2(qlib::uid_t mol_ref, const LString &sel_ref,
   SelectionPtr pSelMov = SelectionPtr(new SelCommand(sel_mov));
 
   superposeSSM1(pMolRef, pSelRef, pMolMov, pSelMov);
+}
+
+double MolAnlManager::superposeSSM_rmsd(const MolCoordPtr &pmol_ref, const SelectionPtr &psel_ref,
+					const MolCoordPtr &pmol_mov, const SelectionPtr &psel_mov, bool bShowLog)
+{
+  qsys::AutoStyleCtxt asc(pmol_ref->getSceneID());
+
+  CSSMAlign *pAln = (CSSMAlign *) superposeSSM_impl(pmol_ref, psel_ref, pmol_mov, psel_mov, bShowLog);
+
+  if (bShowLog) {
+    LOG_DPRINTLN("===== SSM superpose result =====");
+    LOG_DPRINTLN(" Ref: %s, Mov: %s", pmol_ref->getName().c_str(), pmol_mov->getName().c_str());
+    LOG_DPRINTLN(" RMSD: %f angstrom", pAln->rmsd);
+    LOG_DPRINTLN(" Nalgn: %d", pAln->nalgn);
+    LOG_DPRINTLN(" Ngaps: %d", pAln->ngaps);
+    LOG_DPRINTLN("========================");
+  }
+  
+  return pAln->rmsd;
 }
 
 //////////

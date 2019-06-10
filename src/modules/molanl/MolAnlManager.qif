@@ -26,6 +26,9 @@ runtime_class MolAnlManager
   /// Superpose SSM (object ID/selection string version)
   void superposeSSM2(integer, string, integer, string);
   
+  /// just calc RMSD using SSM
+  real superposeSSM_rmsd(object<MolCoord$> pmol_ref, object<MolSelection$> psel_ref, object<MolCoord$> pmol_mov, object<MolSelection$> psel_mov, boolean bshowlog);
+
   /// Superpose LSQ
   void superposeLSQ1(object<MolCoord$> pmol_ref, object<MolSelection$> psel_ref, object<MolCoord$> pmol_mov, object<MolSelection$> psel_mov, boolean useprop);
 
