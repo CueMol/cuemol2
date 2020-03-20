@@ -29,22 +29,28 @@
 // C header files
 
 /* Define to 1 if you have the <stdarg.h> header file. */
-#@define_HAVE_STDARG_H@ HAVE_STDARG_H
+#cmakedefine HAVE_STDARG_H
+// #@define_HAVE_STDARG_H@ HAVE_STDARG_H
 
 /* Define to 1 if you have the <unistd.h> header file. */
-#@define_HAVE_UNISTD_H@ HAVE_UNISTD_H
+#cmakedefine HAVE_UNISTD_H
+// #@define_HAVE_UNISTD_H@ HAVE_UNISTD_H
 
 /* Define to 1 if you have the <locale.h> header file. */
-#@define_HAVE_LOCALE_H@ HAVE_LOCALE_H
+#cmakedefine HAVE_LOCALE_H
+//#@define_HAVE_LOCALE_H@ HAVE_LOCALE_H
 
 /* Define to 1 if you have the <xlocale.h> header file. */
-#@define_HAVE_XLOCALE_H@ HAVE_XLOCALE_H
+#cmakedefine HAVE_XLOCALE_H
+//#@define_HAVE_XLOCALE_H@ HAVE_XLOCALE_H
 
 /* Define to 1 if you have the <spawn.h> header file. */
-#@define_HAVE_SPAWN_H@ HAVE_SPAWN_H
+#cmakedefine HAVE_SPAWN_H
+//#@define_HAVE_SPAWN_H@ HAVE_SPAWN_H
 
 /* Define to 1 if you have the <sys/wait.h> header file. */
-#@define_HAVE_SYS_WAIT_H@ HAVE_SYS_WAIT_H
+#cmakedefine HAVE_SYS_WAIT_H
+//#@define_HAVE_SYS_WAIT_H@ HAVE_SYS_WAIT_H
 
 
 //////////
