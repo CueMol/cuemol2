@@ -66,6 +66,7 @@ add_definitions(-DHAVE_CONFIG_H=1)
 
 ##########
 
+include("mcwgen.cmake")
 add_subdirectory(pcre)
 add_subdirectory(expat)
 add_subdirectory(zlib)
