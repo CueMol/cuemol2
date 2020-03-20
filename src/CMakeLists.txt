@@ -23,6 +23,10 @@ CHECK_INCLUDE_FILE_CXX("xlocale.h" HAVE_XLOCALE_H)
 CHECK_INCLUDE_FILE_CXX("spawn.h" HAVE_SPAWN_H)
 CHECK_INCLUDE_FILE_CXX("sys/wait.h" HAVE_SYS_WAIT_H)
 
+include(CheckSymbolExists)
+check_symbol_exists("vsnprintf" "stdio.h" HAVE_VSNPRINTF)
+check_symbol_exists("vsnprintf_l" "xlocale.h" HAVE_VSNPRINTF_L)
+
 if (${IS_HOST_BIG_ENDIAN})
   SET(BYTEORDER "4321")
 else (${IS_HOST_BIG_ENDIAN})
@@ -52,44 +56,6 @@ endif (${Boost_THREAD_FOUND})
 if (${Boost_TIMER_FOUND})
   SET(HAVE_BOOST_TIMER "1")
 endif (${Boost_TIMER_FOUND})
-
-#####
-
-# if (${HAVE_STDARG_H})
-#   SET(define_HAVE_STDARG_H "define")
-# else (${HAVE_STDARG_H})
-#   SET(define_HAVE_STDARG_H "undef")
-# endif (${HAVE_STDARG_H})
-
-# if (${HAVE_UNISTD_H})
-#   SET(define_HAVE_UNISTD_H "define")
-# else (${HAVE_UNISTD_H})
-#   SET(define_HAVE_UNISTD_H "undef")
-# endif (${HAVE_UNISTD_H})
-
-# if (${HAVE_LOCALE_H})
-#   SET(define_HAVE_LOCALE_H "define")
-# else (${HAVE_LOCALE_H})
-#   SET(define_HAVE_LOCALE_H "undef")
-# endif (${HAVE_LOCALE_H})
-
-# if (${HAVE_XLOCALE_H})
-#   SET(define_HAVE_XLOCALE_H "define")
-# else (${HAVE_XLOCALE_H})
-#   SET(define_HAVE_XLOCALE_H "undef")
-# endif (${HAVE_XLOCALE_H})
-
-# if (${HAVE_SPAWN_H})
-#   SET(define_HAVE_SPAWN_H "define")
-# else (${HAVE_SPAWN_H})
-#   SET(define_HAVE_SPAWN_H "undef")
-# endif (${HAVE_SPAWN_H})
-
-# if (${HAVE_SYS_WAIT_H})
-#   SET(define_HAVE_SYS_WAIT_H "define")
-# else (${HAVE_SYS_WAIT_H})
-#   SET(define_HAVE_SYS_WAIT_H "undef")
-# endif (${HAVE_SYS_WAIT_H})
 
 #####
 
