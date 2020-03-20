@@ -98,4 +98,8 @@ add_definitions(-DHAVE_CONFIG_H=1)
 
 ##########
 
+add_subdirectory(pcre)
+add_subdirectory(expat)
+add_subdirectory(zlib)
+add_subdirectory(libpng)
 add_subdirectory(qlib)

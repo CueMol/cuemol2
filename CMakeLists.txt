@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(CueMol CXX)
+project(CueMol CXX C)
 find_package(Python)
 
 find_package(Boost 1.65.0 REQUIRED
