@@ -1,5 +1,6 @@
 include_directories(
   ${CMAKE_SOURCE_DIR}/src
+  ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_BINARY_DIR}/src
   ${Boost_INCLUDE_DIRS}
   )
@@ -52,4 +53,43 @@ LPerfMeas.cpp
 qlib.cpp
 )
 
+# CueMol interface definitions for MCWRAPGEN
+SET(QLIB_MCWG_SRCS
+Matrix.qif
+Vector.qif
+RegExpr.qif
+Quat.qif
+RangeSet.qif
+TimeValue.qif
+MsgLog.qif
+LScrCallBack.qif
+ByteArray.qif
+ProcessManager.qif)
+
+# SET(MCWRAPGEN "perl ${CMAKE_SOURCE_DIR}/src/perl/mcwrapgen3.pl")
+SET(MCWG_INCLUDES "-D HAVE_CONFIG_H -I ${CMAKE_SOURCE_DIR}/src -I ${CMAKE_CURRENT_SOURCE_DIR}")
+# SET(MCWG_SRC_CMD "${MCWRAPGEN} ${MCWG_INCLUDES} -m src")
+foreach(_file ${QLIB_MCWG_SRCS})
+  SET(_file "${CMAKE_CURRENT_SOURCE_DIR}/${_file}")
+
+  get_filename_component(_file_stem ${_file} NAME_WE)
+  SET(_out_cpp_file "${CMAKE_CURRENT_SOURCE_DIR}/${_file_stem}_wrap.cpp")
+  SET(_out_hpp_file "${CMAKE_CURRENT_SOURCE_DIR}/${_file_stem}_wrap.hpp")
+  message(STATUS "MCWG file ${_file}")
+  message(STATUS "MCWG file output ${_out_cpp_file}")
+  message(STATUS "MCWG file output ${_out_hpp_file}")
+
+  add_custom_command(
+    OUTPUT ${_out_cpp_file}
+    COMMAND perl ${CMAKE_SOURCE_DIR}/src/perl/mcwrapgen3.pl -m src ${_file}
+    )
+  add_custom_command(
+    OUTPUT ${_out_hpp_file}
+    COMMAND perl ${CMAKE_SOURCE_DIR}/src/perl/mcwrapgen3.pl -m hdr ${_file}
+    )
+  list(APPEND QLIB_SRCS ${_out_cpp_file})
+endforeach()
+
+message(STATUS "src file ${QLIB_SRCS}")
 add_library(qlib SHARED ${QLIB_SRCS})
+target_link_libraries(qlib PRIVATE pcre expat qmzlib Boost::filesystem Boost::timer Boost::thread)
