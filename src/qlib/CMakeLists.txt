@@ -88,8 +88,12 @@ foreach(_file ${QLIB_MCWG_SRCS})
     COMMAND perl ${CMAKE_SOURCE_DIR}/src/perl/mcwrapgen3.pl -m hdr ${_file}
     )
   list(APPEND QLIB_SRCS ${_out_cpp_file})
+  list(APPEND MCWG_HEADERS ${_out_hpp_file})
 endforeach()
+
+add_custom_target(generate_headers DEPENDS ${MCWG_HEADERS})
 
 message(STATUS "src file ${QLIB_SRCS}")
 add_library(qlib SHARED ${QLIB_SRCS})
 target_link_libraries(qlib PRIVATE pcre expat qmzlib Boost::filesystem Boost::timer Boost::thread)
+add_dependencies(qlib  generate_headers)
