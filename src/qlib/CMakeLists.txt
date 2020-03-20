@@ -1,0 +1,55 @@
+include_directories(
+  ${CMAKE_SOURCE_DIR}/src
+  ${CMAKE_BINARY_DIR}/src
+  ${Boost_INCLUDE_DIRS}
+  )
+
+SET(QLIB_SRCS
+NamedObject.cpp
+LMsgLog.cpp
+ClassRegistry.cpp
+LClass.cpp
+LRcObject.cpp
+LVariant.cpp
+LPropSupport.cpp
+LPropContainer.cpp
+LScrObjects.cpp
+LScrSmartPtr.cpp
+LChar.cpp
+LString.cpp
+LUnicode.cpp
+LThread.cpp
+ObjectManager.cpp
+Utils.cpp
+ArrayIOImpl.cpp
+PosixFileStream.cpp
+PrintStream.cpp
+LineStream.cpp
+BinStream.cpp
+StringStream.cpp
+XmlInStream.cpp
+ExpatInStream.cpp
+GzipStream.cpp
+Base64Stream.cpp
+PipeStream.cpp
+VectorHelper.cpp
+MatrixHelper.cpp
+LRegExpr.cpp
+LLogEvent.cpp
+EventManager.cpp
+LDOM2Stream.cpp
+LDOM2Tree.cpp
+LScrVector4D.cpp
+LScrMatrix4D.cpp
+LScrQuat.cpp
+LScrTime.cpp
+LScrRangeSet.cpp
+LWrapper.cpp
+LDataSrcContainer.cpp
+LObjStream3.cpp
+LProcMgr.cpp
+LPerfMeas.cpp
+qlib.cpp
+)
+
+add_library(qlib SHARED ${QLIB_SRCS})

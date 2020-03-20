@@ -268,7 +268,7 @@ FileInStream &FileInStream::getStdIn()
   m_pStdIn = MB_NEW FileInStream();
 #ifndef WIN32
   PosixFIOImpl &impl = dynamic_cast<PosixFIOImpl &>(*m_pStdIn->getImpl());
-  impl.assign(::stdin);
+  impl.assign(stdin);
 #endif
 
   return *m_pStdIn;
@@ -282,7 +282,7 @@ FileOutStream &FileOutStream::getStdOut()
   m_pStdOut = MB_NEW FileOutStream();
 #ifndef WIN32
   PosixFIOImpl &impl = dynamic_cast<PosixFIOImpl &>(*m_pStdOut->getImpl());
-  impl.assign(::stdout);
+  impl.assign(stdout);
 #endif
 
   return *m_pStdOut;
@@ -296,7 +296,7 @@ FileOutStream &FileOutStream::getStdErr()
   m_pStdErr = MB_NEW FileOutStream();
 #ifndef WIN32
   PosixFIOImpl &impl = dynamic_cast<PosixFIOImpl &>(*m_pStdErr->getImpl());
-  impl.assign(::stdout);
+  impl.assign(stderr);
 #endif
 
   return *m_pStdErr;
