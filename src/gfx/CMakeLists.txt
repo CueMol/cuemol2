@@ -1,8 +1,14 @@
+# LCMS2 support
+if (${LCMS2_FOUND})
+  add_definitions(-DHAVE_LCMS2_H=1)
+endif()
+
 include_directories(
   ${CMAKE_SOURCE_DIR}/src
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_BINARY_DIR}/src
   ${Boost_INCLUDE_DIRS}
+  ${LCMS2_INCLUDE_DIR}
   )
 
 # Normal C++ source files
@@ -59,9 +65,6 @@ list(APPEND GFX_SRCS ${BISON_gfx_color_parser_OUTPUTS})
 list(APPEND GFX_SRCS ${FLEX_gfx_color_scanner_OUTPUTS})
 # message("GFX_SRCS ${GFX_SRCS}")
 
-# LCMS2 support
-# TO DO: impl
-
 MCWRAPGEN_CLASS(GFX_SRCS ${GFX_MCWG_QIFS})
 MCWRAPGEN_MODULE(GFX_SRCS ${GFX_MODLDR_SRC} ${GFX_MCWG_QIFS})
 
@@ -70,7 +73,7 @@ if (WIN32)
 endif()
 
 add_library(gfx SHARED ${GFX_SRCS})
-target_link_libraries(gfx PRIVATE qlib)
+target_link_libraries(gfx PRIVATE qlib ${LCMS2_LIBRARIES})
 
 add_custom_target(gfx_generate_headers DEPENDS ${MCWG_HEADERS})
 add_dependencies(gfx gfx_generate_headers)
