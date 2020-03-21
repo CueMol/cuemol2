@@ -5,6 +5,10 @@ SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 find_package(LCMS2)
 message(STATUS "LCMS2 ${LCMS2_FOUND} ${LCMS2_INCLUDE_DIR} ${LCMS2_LIBRARIES}")
 
+find_package(CGAL REQUIRED)
+
+#####
+
 include(CheckTypeSize)
 CHECK_TYPE_SIZE("char" SIZEOF_CHAR LANGUAGE CXX)
 CHECK_TYPE_SIZE("short" SIZEOF_SHORT LANGUAGE CXX)
@@ -90,3 +94,6 @@ add_subdirectory(qlib)
 # add_subdirectory(pymodule)
 add_subdirectory(gfx)
 add_subdirectory(qsys)
+
+# modules
+add_subdirectory(modules/molstr)
