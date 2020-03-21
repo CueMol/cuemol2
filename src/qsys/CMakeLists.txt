@@ -95,7 +95,7 @@ endif()
 add_definitions(-DNO_SCRIPT=1)
 
 add_library(qsys SHARED ${QSYS_SRCS})
-target_link_libraries(qsys PRIVATE qlib gfx Boost::filesystem)
+target_link_libraries(qsys PRIVATE qlib gfx Boost::filesystem Boost::thread)
 
 add_custom_target(qsys_generate_headers DEPENDS ${MCWG_HEADERS})
 add_dependencies(qsys qsys_generate_headers)
