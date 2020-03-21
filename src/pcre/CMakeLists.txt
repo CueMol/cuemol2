@@ -9,7 +9,13 @@ SET(PCRE_SRCS
   pcre.c
   study.c)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -DPOSIX_MALLOC_THRESHOLD=10")
+add_definitions(-DPOSIX_MALLOC_THRESHOLD=10)
+
+if (WIN32)
+else()
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+endif()
+
 add_library(pcre STATIC ${PCRE_SRCS})
 
 message(STATUS "PCRE_SRCS ${PCRE_SRCS}")

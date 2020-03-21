@@ -57,6 +57,10 @@ if (${Boost_TIMER_FOUND})
   SET(HAVE_BOOST_TIMER "1")
 endif (${Boost_TIMER_FOUND})
 
+if (WIN32)
+  add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -DUNICODE -D_UNICODE)
+endif()
+
 #####
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config_cmake.h.in

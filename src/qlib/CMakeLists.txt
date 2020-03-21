@@ -66,34 +66,7 @@ LScrCallBack.qif
 ByteArray.qif
 ProcessManager.qif)
 
-SET(QLIB_MODLDR_SRCS qlib.moddef)
-
-# SET(MCWRAPGEN perl ${CMAKE_SOURCE_DIR}/src/perl/mcwrapgen3.pl)
-# SET(MCWG_INCLUDES "-D" HAVE_CONFIG_H "-I" ${CMAKE_SOURCE_DIR}/src "-I" ${CMAKE_CURRENT_SOURCE_DIR})
-# SET(MCWG_SRC_CMD ${MCWRAPGEN} ${MCWG_INCLUDES} -m src)
-# separate_arguments(MCWG_SRC_CMD NATIVE_COMMAND "${MCWG_SRC_CMD}")
-# message(${MCWG_SRC_CMD})
-# foreach(_file ${QLIB_MCWG_SRCS})
-#   SET(_file "${CMAKE_CURRENT_SOURCE_DIR}/${_file}")
-
-#   get_filename_component(_file_stem ${_file} NAME_WE)
-#   SET(_out_cpp_file "${CMAKE_CURRENT_SOURCE_DIR}/${_file_stem}_wrap.cpp")
-#   SET(_out_hpp_file "${CMAKE_CURRENT_SOURCE_DIR}/${_file_stem}_wrap.hpp")
-#   # message(STATUS "MCWG file ${_file}")
-#   # message(STATUS "MCWG file output ${_out_cpp_file}")
-#   # message(STATUS "MCWG file output ${_out_hpp_file}")
-
-#   add_custom_command(
-#     OUTPUT ${_out_cpp_file}
-#     COMMAND perl ${CMAKE_SOURCE_DIR}/src/perl/mcwrapgen3.pl -m src -D HAVE_CONFIG_H -I ${CMAKE_SOURCE_DIR}/src -I ${CMAKE_CURRENT_SOURCE_DIR} ${_file}
-#     )
-#   add_custom_command(
-#     OUTPUT ${_out_hpp_file}
-#     COMMAND perl ${CMAKE_SOURCE_DIR}/src/perl/mcwrapgen3.pl -m hdr -D HAVE_CONFIG_H -I ${CMAKE_SOURCE_DIR}/src -I ${CMAKE_CURRENT_SOURCE_DIR} ${_file}
-#     )
-#   list(APPEND QLIB_SRCS ${_out_cpp_file})
-#   list(APPEND MCWG_HEADERS ${_out_hpp_file})
-# endforeach()
+SET(QLIB_MODLDR_SRC qlib.moddef)
 
 MCWRAPGEN(QLIB_SRCS ${QLIB_MCWG_SRCS})
 # message(STATUS "MCWG src file output ${QLIB_XX_SRCS}")
@@ -101,23 +74,29 @@ message(STATUS "MCWG hdr file output ${MCWG_HEADERS}")
 
 add_custom_target(generate_headers DEPENDS ${MCWG_HEADERS})
 
-foreach(_file ${QLIB_MODLDR_SRCS})
-  SET(_file "${CMAKE_CURRENT_SOURCE_DIR}/${_file}")
+# foreach(_file ${QLIB_MODLDR_SRCS})
+#   SET(_file "${CMAKE_CURRENT_SOURCE_DIR}/${_file}")
 
-  get_filename_component(_file_stem ${_file} NAME_WE)
-  SET(_out_cpp_file "${CMAKE_CURRENT_SOURCE_DIR}/${_file_stem}_loader.cpp")
+#   get_filename_component(_file_stem ${_file} NAME_WE)
+#   SET(_out_cpp_file "${CMAKE_CURRENT_SOURCE_DIR}/${_file_stem}_loader.cpp")
 
-  add_custom_command(
-    OUTPUT ${_out_cpp_file}
-    COMMAND perl ${CMAKE_SOURCE_DIR}/src/perl/mcwrapgen3.pl -m mod ${_file}
-    DEPENDS ${QLIB_MCWG_SRCS}
-    )
-  list(APPEND QLIB_SRCS ${_out_cpp_file})
-  message(STATUS "LOADER file ${_out_cpp_file}")
-endforeach()
+#   add_custom_command(
+#     OUTPUT ${_out_cpp_file}
+#     COMMAND perl ${CMAKE_SOURCE_DIR}/src/perl/mcwrapgen3.pl -m mod ${_file}
+#     DEPENDS ${QLIB_MCWG_SRCS}
+#     )
+#   list(APPEND QLIB_SRCS ${_out_cpp_file})
+#   message(STATUS "LOADER file ${_out_cpp_file}")
+# endforeach()
+MCWRAPGEN_MODULE(QLIB_SRCS ${QLIB_MODLDR_SRC} ${QLIB_MCWG_SRCS})
 
 
 message(STATUS "src file ${QLIB_SRCS}")
+
+if (WIN32)
+  add_definitions(-DQLIB_EXPORTS=1)
+endif()
+
 add_library(qlib SHARED ${QLIB_SRCS})
 target_link_libraries(qlib PRIVATE pcre expat qmzlib Boost::filesystem Boost::timer Boost::thread)
 add_dependencies(qlib  generate_headers)

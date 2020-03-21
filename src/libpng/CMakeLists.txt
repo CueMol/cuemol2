@@ -9,6 +9,9 @@ png.c		pngmem.c	pngrio.c	pngset.c	pngwrite.c
 pngerror.c	pngpread.c	pngrtran.c	pngtrans.c	pngwtran.c
 pngget.c	pngread.c	pngrutil.c	pngwio.c	pngwutil.c)
 
-
+if (WIN32)
+else()
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+endif()
+
 add_library(qmpng STATIC ${PNG_SRCS})
