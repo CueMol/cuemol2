@@ -99,7 +99,7 @@
 #ifdef HAVE_WCHAR_T_16BIT
 typedef wchar_t U16Char;
 #else
-typedef unsigned QUE_INT_16 U16Char;
+typedef QUE_UINT_16 U16Char;
 #endif
 
 #endif

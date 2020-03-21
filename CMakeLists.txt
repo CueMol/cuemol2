@@ -1,7 +1,15 @@
+#
+#
+#
+
 cmake_minimum_required(VERSION 3.5)
+
 project(CueMol CXX C)
+
 find_package(Python)
 find_package(Perl REQUIRED)
+find_package(BISON REQUIRED)
+find_package(FLEX REQUIRED)
 
 find_package(Boost 1.50.0 REQUIRED
   COMPONENTS system thread filesystem chrono timer)
