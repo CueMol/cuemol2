@@ -62,6 +62,7 @@ if (WIN32)
 endif()
 
 #####
+# Generate config.h
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config_cmake.h.in
   ${CMAKE_CURRENT_BINARY_DIR}/config.h
@@ -69,6 +70,7 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config_cmake.h.in
 add_definitions(-DHAVE_CONFIG_H=1)
 
 ##########
+# Subdirs
 
 include("mcwgen.cmake")
 
@@ -80,4 +82,7 @@ add_subdirectory(libpng)
 
 # main components
 add_subdirectory(qlib)
+# add_subdirectory(pybr)
+# add_subdirectory(pymodule)
 add_subdirectory(gfx)
+add_subdirectory(qsys)

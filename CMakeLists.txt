@@ -14,6 +14,7 @@ find_package(FLEX REQUIRED)
 find_package(Boost 1.50.0 REQUIRED
   COMPONENTS system thread filesystem chrono timer)
 
+# TO DO: build GUI arch config
 
 add_subdirectory(src)
 

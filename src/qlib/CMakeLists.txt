@@ -56,6 +56,7 @@ qlib.cpp
 
 # CueMol interface definitions for MCWRAPGEN
 SET(QLIB_MCWG_QIFS
+LScrObject.qif
 Matrix.qif
 Vector.qif
 RegExpr.qif
@@ -71,7 +72,8 @@ ProcessManager.qif)
 SET(QLIB_MODLDR_SRC qlib.moddef)
 
 MCWRAPGEN_CLASS(QLIB_SRCS ${QLIB_MCWG_QIFS})
-# message(STATUS "MCWG src file output ${QLIB_XX_SRCS}")
+list(REMOVE_ITEM QLIB_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/LScrObject_wrap.cpp")
+message(STATUS "MCWG src file output ${QLIB_SRCS}")
 # message(STATUS "MCWG hdr file output ${MCWG_HEADERS}")
 
 MCWRAPGEN_MODULE(QLIB_SRCS ${QLIB_MODLDR_SRC} ${QLIB_MCWG_QIFS})

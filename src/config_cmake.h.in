@@ -1,3 +1,9 @@
+/* Name of the GUI archtecture */
+#define GUI_ARCH MB_GUI_ARCH_CLI
+
+/* Name of the GUI archtecture */
+#define STR_GUI_ARCH "CLI"
+
 /* The size of `char', as computed by sizeof. */
 #define SIZEOF_CHAR @SIZEOF_CHAR@
 
@@ -30,65 +36,56 @@
 
 /* Define to 1 if you have the <stdarg.h> header file. */
 #cmakedefine HAVE_STDARG_H
-// #@define_HAVE_STDARG_H@ HAVE_STDARG_H
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #cmakedefine HAVE_UNISTD_H
-// #@define_HAVE_UNISTD_H@ HAVE_UNISTD_H
 
 /* Define to 1 if you have the <locale.h> header file. */
 #cmakedefine HAVE_LOCALE_H
-//#@define_HAVE_LOCALE_H@ HAVE_LOCALE_H
 
 /* Define to 1 if you have the <xlocale.h> header file. */
 #cmakedefine HAVE_XLOCALE_H
-//#@define_HAVE_XLOCALE_H@ HAVE_XLOCALE_H
 
 /* Define to 1 if you have the <spawn.h> header file. */
 #cmakedefine HAVE_SPAWN_H
-//#@define_HAVE_SPAWN_H@ HAVE_SPAWN_H
 
 /* Define to 1 if you have the <sys/wait.h> header file. */
 #cmakedefine HAVE_SYS_WAIT_H
-//#@define_HAVE_SYS_WAIT_H@ HAVE_SYS_WAIT_H
 
 
 //////////
 // C functions
 
 /* Define to 1 if you have the `vsnprintf' function. */
-#define HAVE_VSNPRINTF @HAVE_VSNPRINTF@
+#cmakedefine HAVE_VSNPRINTF
 
 /* Define to 1 if you have the `vsnprintf_l' function. */
-#define HAVE_VSNPRINTF_L @HAVE_VSNPRINTF_L@
+#cmakedefine HAVE_VSNPRINTF_L
 
 //////////
 // BOOST
 
 /* define if the Boost library is available */
-#define HAVE_BOOST @HAVE_BOOST@
+#cmakedefine HAVE_BOOST
 
 /* define if the Boost::Chrono library is available */
-#define HAVE_BOOST_CHRONO @HAVE_BOOST_CHRONO@
+#cmakedefine HAVE_BOOST_CHRONO
 
 /* define if the Boost::Filesystem library is available */
-#define HAVE_BOOST_FILESYSTEM @HAVE_BOOST_FILESYSTEM@
+#cmakedefine HAVE_BOOST_FILESYSTEM
 
 /* define if the Boost::System library is available */
-#define HAVE_BOOST_SYSTEM @HAVE_BOOST_SYSTEM@
+#cmakedefine HAVE_BOOST_SYSTEM
 
 /* define if the Boost::Thread library is available */
-#define HAVE_BOOST_THREAD @HAVE_BOOST_THREAD@
+#cmakedefine HAVE_BOOST_THREAD
 
 /* Use boost_timer */
-#define USE_BOOST_TIMER @HAVE_BOOST_TIMER@
+#cmakedefine USE_BOOST_TIMER
 
 
 //////////
 /* config.h.in.  Generated from configure.ac by autoheader.  */
-
-// /* Name of the GUI archtecture */
-// #undef GUI_ARCH
 
 // /* Define to 1 if you have the `bcopy' function. */
 // #undef HAVE_BCOPY
@@ -298,9 +295,6 @@
 
 // /* Define to 1 if you have the ANSI C header files. */
 // #undef STDC_HEADERS
-
-// /* Name of the GUI archtecture */
-// #undef STR_GUI_ARCH
 
 // /* Use GLES2 API */
 // #undef USE_GLES2

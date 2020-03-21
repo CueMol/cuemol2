@@ -53,19 +53,14 @@ FLEX_TARGET(gfx_color_scanner
   COMPILE_FLAGS "-P col")
 ADD_FLEX_BISON_DEPENDENCY(gfx_color_scanner gfx_color_parser)
 
-message(STATUS "BISON_gfx_color_parser_OUTPUTS: ${BISON_gfx_color_parser_OUTPUTS}")
-message(STATUS "FLEX_gfx_color_scanner_OUTPUTS: ${FLEX_gfx_color_scanner_OUTPUTS}")
+# message(STATUS "BISON_gfx_color_parser_OUTPUTS: ${BISON_gfx_color_parser_OUTPUTS}")
+# message(STATUS "FLEX_gfx_color_scanner_OUTPUTS: ${FLEX_gfx_color_scanner_OUTPUTS}")
 list(APPEND GFX_SRCS ${BISON_gfx_color_parser_OUTPUTS})
 list(APPEND GFX_SRCS ${FLEX_gfx_color_scanner_OUTPUTS})
-message("GFX_SRCS ${GFX_SRCS}")
-
-# AM_YFLAGS = -d -p col
-# AM_LFLAGS = -Pcol -olex.yy.c
-# $(srcdir)/color_scanner.cxx: $(srcdir)/color_scanner.lxx
-# $(srcdir)/color_parser.cxx: $(srcdir)/color_parser.yxx
-# color_parser.yxx color_scanner.lxx \
+# message("GFX_SRCS ${GFX_SRCS}")
 
 # LCMS2 support
+# TO DO: impl
 
 MCWRAPGEN_CLASS(GFX_SRCS ${GFX_MCWG_QIFS})
 MCWRAPGEN_MODULE(GFX_SRCS ${GFX_MODLDR_SRC} ${GFX_MCWG_QIFS})
