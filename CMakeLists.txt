@@ -4,6 +4,7 @@
 
 cmake_minimum_required(VERSION 3.12)
 cmake_policy(SET CMP0074 NEW)
+cmake_policy(SET CMP0077 NEW)
 
 project(CueMol CXX C)
 
