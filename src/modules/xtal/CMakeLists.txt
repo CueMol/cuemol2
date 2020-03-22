@@ -49,3 +49,8 @@ target_link_libraries(xtal PRIVATE qlib gfx qsys molstr symm surface)
 
 add_custom_target(xtal_generate_headers DEPENDS ${MCWG_HEADERS})
 add_dependencies(xtal xtal_generate_headers)
+
+install(TARGETS xtal
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )

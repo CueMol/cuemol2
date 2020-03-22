@@ -75,3 +75,8 @@ target_link_libraries(molvis PRIVATE qlib gfx qsys molstr Boost::filesystem Boos
 
 add_custom_target(molvis_generate_headers DEPENDS ${MCWG_HEADERS})
 add_dependencies(molvis molvis_generate_headers)
+
+install(TARGETS molvis
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )

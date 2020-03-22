@@ -91,3 +91,8 @@ target_link_libraries(molanl PRIVATE qlib gfx qsys molstr)
 
 add_custom_target(molanl_generate_headers DEPENDS ${MCWG_HEADERS})
 add_dependencies(molanl molanl_generate_headers)
+
+install(TARGETS molanl
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )

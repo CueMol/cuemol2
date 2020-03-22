@@ -19,7 +19,7 @@ namespace molstr {
   ///
   /// Covalent bond between two atoms
   ///
-  class MolBond
+  class MOLSTR_API MolBond
   {
   private:
     /// Atom-IDs of bonded atoms

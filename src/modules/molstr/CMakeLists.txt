@@ -56,6 +56,7 @@ QdfPdbReader.cpp
 ResidRangeSet.cpp
 QdfMolReader.cpp
 QdfMolWriter.cpp
+Evaluator.cpp
   )
 
 ##########
@@ -125,3 +126,8 @@ target_link_libraries(molstr PRIVATE qlib gfx qsys Boost::filesystem Boost::thre
 
 add_custom_target(molstr_generate_headers DEPENDS ${MCWG_HEADERS})
 add_dependencies(molstr molstr_generate_headers)
+
+install(TARGETS molstr
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )

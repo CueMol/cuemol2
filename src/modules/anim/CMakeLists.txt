@@ -50,3 +50,8 @@ target_link_libraries(anim PRIVATE qlib gfx qsys molstr Boost::filesystem Boost:
 
 add_custom_target(anim_generate_headers DEPENDS ${MCWG_HEADERS})
 add_dependencies(anim anim_generate_headers)
+
+install(TARGETS anim
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )

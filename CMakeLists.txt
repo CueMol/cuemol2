@@ -30,3 +30,5 @@ endif()
 
 message(STATUS "Compiler: ${CMAKE_CXX_COMPILER} (${CMAKE_CXX_COMPILER_VERSION})")
 message(STATUS "Flags: ${CMAKE_CXX_FLAGS}")
+message(STATUS "Install prefix: ${CMAKE_INSTALL_PREFIX}")
+

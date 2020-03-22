@@ -40,3 +40,8 @@ target_link_libraries(lwview PRIVATE qlib gfx qsys molstr render)
 
 add_custom_target(lwview_generate_headers DEPENDS ${MCWG_HEADERS})
 add_dependencies(lwview lwview_generate_headers)
+
+install(TARGETS lwview
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )

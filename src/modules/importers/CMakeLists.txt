@@ -42,3 +42,8 @@ target_link_libraries(importers PRIVATE qlib gfx qsys molstr molvis surface symm
 
 add_custom_target(importers_generate_headers DEPENDS ${MCWG_HEADERS})
 add_dependencies(importers importers_generate_headers)
+
+install(TARGETS importers
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )

@@ -85,7 +85,7 @@ namespace qsys {
   ///
   /// Style's reset property implementation
   ///
-  class StyleResetPropImpl
+  class QSYS_API StyleResetPropImpl
   {
   public:
     /// Utility method: reset property to default/style value

@@ -40,3 +40,8 @@ target_link_libraries(symm PRIVATE qlib gfx qsys molstr)
 
 add_custom_target(symm_generate_headers DEPENDS ${MCWG_HEADERS})
 add_dependencies(symm symm_generate_headers)
+
+install(TARGETS symm
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )

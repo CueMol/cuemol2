@@ -34,3 +34,8 @@ target_link_libraries(mdtools PRIVATE qlib gfx qsys molstr)
 
 add_custom_target(mdtools_generate_headers DEPENDS ${MCWG_HEADERS})
 add_dependencies(mdtools mdtools_generate_headers)
+
+install(TARGETS mdtools
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )

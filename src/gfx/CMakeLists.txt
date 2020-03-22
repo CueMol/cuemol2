@@ -82,3 +82,8 @@ target_link_libraries(gfx PRIVATE qlib ${LCMS2_LIBRARIES})
 
 add_custom_target(gfx_generate_headers DEPENDS ${MCWG_HEADERS})
 add_dependencies(gfx gfx_generate_headers)
+
+install(TARGETS gfx
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )

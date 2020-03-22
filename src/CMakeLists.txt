@@ -69,6 +69,7 @@ endif (${Boost_TIMER_FOUND})
 
 if (WIN32)
   add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -DUNICODE -D_UNICODE)
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/${CMAKE_BUILD_TYPE})
 endif()
 
 #####
@@ -109,3 +110,6 @@ add_subdirectory(modules/rendering)
 add_subdirectory(modules/anim)
 add_subdirectory(modules/mdtools)
 add_subdirectory(modules/importers)
+
+# CLI/main (cuetty)
+add_subdirectory(cli)

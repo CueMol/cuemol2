@@ -55,3 +55,8 @@ target_link_libraries(render PRIVATE qlib gfx qsys CGAL::CGAL qmpng qmzlib Boost
 
 add_custom_target(render_generate_headers DEPENDS ${MCWG_HEADERS})
 add_dependencies(render render_generate_headers)
+
+install(TARGETS render
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )

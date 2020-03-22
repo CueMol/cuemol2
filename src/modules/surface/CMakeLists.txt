@@ -81,3 +81,8 @@ target_link_libraries(surface PRIVATE qlib gfx qsys molstr CGAL::CGAL)
 
 add_custom_target(surface_generate_headers DEPENDS ${MCWG_HEADERS})
 add_dependencies(surface surface_generate_headers)
+
+install(TARGETS surface
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )

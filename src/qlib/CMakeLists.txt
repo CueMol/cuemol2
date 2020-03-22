@@ -88,3 +88,8 @@ target_link_libraries(qlib PRIVATE pcre expat qmzlib Boost::filesystem Boost::ti
 
 add_custom_target(qlib_generate_headers DEPENDS ${MCWG_HEADERS})
 add_dependencies(qlib qlib_generate_headers)
+
+install(TARGETS qlib
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )
