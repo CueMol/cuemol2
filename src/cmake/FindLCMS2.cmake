@@ -34,3 +34,9 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(LCMS2 DEFAULT_MSG LCMS2_LIBRARIES LCMS2_INCLUDE_DIR)
 
 mark_as_advanced(LCMS2_INCLUDE_DIR LCMS2_LIBRARIES)
+
+include(FindPackageMessage)
+if (LCMS2_FOUND)
+  find_package_message(LCMS2 "Found LCMS2: ${LCMS2_INCLUDE_DIR} ${LCMS2_LIBRARIES}"
+    "[${LCMS2_LIBRARIES}][${LCMS2_INCLUDE_DIR}]")
+endif ()

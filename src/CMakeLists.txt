@@ -3,7 +3,7 @@ set(CMAKE_CXX_OUTPUT_EXTENSION_REPLACE 1)  # ref. https://texus.me/2015/09/06/cm
 SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
 find_package(LCMS2)
-message(STATUS "LCMS2_FOUND: ${LCMS2_FOUND} INCLUDE_DIR: ${LCMS2_INCLUDE_DIR} LIBRARIES: ${LCMS2_LIBRARIES}")
+# message(STATUS "LCMS2_FOUND: ${LCMS2_FOUND} INCLUDE_DIR: ${LCMS2_INCLUDE_DIR} LIBRARIES: ${LCMS2_LIBRARIES}")
 
 find_package(CGAL REQUIRED)
 message(STATUS "CGAL_FOUND: ${CGAL_FOUND} INCLUDE_DIR: ${CGAL_INCLUDE_DIRS} LIBRARIES: ${CGAL_LIBRARIES}")
@@ -97,6 +97,9 @@ add_subdirectory(qlib)
 # add_subdirectory(pymodule)
 add_subdirectory(gfx)
 add_subdirectory(qsys)
+if (BUILD_GUI)
+  add_subdirectory(sysdep)
+endif()
 
 # modules
 add_subdirectory(modules/molstr)
