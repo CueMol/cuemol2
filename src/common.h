@@ -37,7 +37,22 @@
 // for Windows platforms
 
 #ifdef WIN32
-#  include "win32_config.h"
+#ifndef HAVE_CONFIG_H
+#include "win32_config.h"
+#else
+// windows is assumed to always have 16-bit wchar_t
+#define HAVE_WCHAR_T_16BIT 1
+#define MB_PATH_SEPARATOR '\\'
+#define fopen_pathconv fopen
+#pragma warning(disable:4786)
+#pragma warning(disable:4251)
+#pragma warning(disable:4290)
+#pragma warning(disable:4661)
+#define DLLEXPORT __declspec(dllexport)
+#ifdef _WIN64
+#pragma warning(disable:4267)
+#endif
+#endif
 #endif
 
 ////////////////////////////////////////////

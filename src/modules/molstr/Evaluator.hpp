@@ -22,7 +22,7 @@ class MOLSTR_API RealNumEvaluator
   // MC_SCRIPTABLE;
 
 public:
-  virtual ~RealNumEvaluator() {}
+  virtual ~RealNumEvaluator();
 
   virtual bool getAtomValue(MolAtom *pAtom, double &value) =0;
 
@@ -35,7 +35,7 @@ class MOLSTR_API IntNumEvaluator
   // MC_SCRIPTABLE;
 
 public:
-  virtual ~IntNumEvaluator() {}
+  virtual ~IntNumEvaluator();
 
   virtual bool getAtomValue(MolAtom *pAtom, int &value) =0;
 

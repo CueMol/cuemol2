@@ -1,5 +1,6 @@
 /*
   Win32 config file
+  (This file may not be used by CMake build)
 */
 
 #ifndef __WIN32CONFIG_H_INCLUDED__
