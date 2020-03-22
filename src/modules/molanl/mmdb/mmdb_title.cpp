@@ -68,6 +68,13 @@
 #endif
 
 
+#ifdef __CYGWIN__
+char *strcasestr(const char *p1, const char *p2)
+{
+  // XXX
+  return strstr(p1, p2);
+}
+#else
 #ifdef _MVS
 char *strcasestr(const char *p1, const char *p2)
 {
@@ -76,6 +83,7 @@ char *strcasestr(const char *p1, const char *p2)
   _strupr(sbuf);
   return strstr(sbuf, p2);
 }
+#endif
 #endif
 
 //  ==============  CTitleContainer  ====================
