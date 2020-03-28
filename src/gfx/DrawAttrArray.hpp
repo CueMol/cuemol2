@@ -28,67 +28,52 @@ namespace gfx {
 
     // attribute query methods
 
-    void setAttrSize(int nsz) {
+    inline void setAttrSize(int nsz) {
       m_attrs.resize(nsz);
     }
-    size_t getAttrSize() const {
+    inline size_t getAttrSize() const {
       return m_attrs.size();
     }
 
-    void setAttrInfo(int ind, int al, int ae, int at, int pos) {
+    inline void setAttrInfo(int ind, int al, int ae, int at, int pos) {
       m_attrs[ind].nAttrLoc = al;
       m_attrs[ind].nAttrElems = ae;
       m_attrs[ind].iAttrType = at;
       m_attrs[ind].nStartPos = pos;
     }
 
-    int getAttrLoc(int ind) const {
+    inline int getAttrLoc(int ind) const {
       return m_attrs[ind].nAttrLoc;
     }
-    int getAttrElemSize(int ind) const {
+    inline int getAttrElemSize(int ind) const {
       return m_attrs[ind].nAttrElems;
     }
-    int getAttrTypeID(int ind) const {
+    inline int getAttrTypeID(int ind) const {
       return m_attrs[ind].iAttrType;
     }
-    int getAttrPos(int ind) const {
+    inline int getAttrPos(int ind) const {
       return m_attrs[ind].nStartPos;
     }
 
   public:
     /// returns attribute buffer ptr
-    virtual const void *getData() const
-    {
-      return NULL;
-    }
-
-    virtual size_t getElemSize() const {
-      return 0;
-    }
+    virtual const void *getData() const;
+    virtual size_t getElemSize() const;
 
     /// returns attribute buffer size (in byte unit)
-    size_t getDataSize() const {
+    inline size_t getDataSize() const {
       return getElemSize() * getSize();
     }
 
     ///
 
     /// returns index buffer ptr
-    virtual const void *getIndData() const
-    {
-      return NULL;
-    }
-
-    virtual size_t getIndElemSize() const {
-      return 0;
-    }
-
-    virtual size_t getIndSize() const {
-      return 0;
-    }
+    virtual const void *getIndData() const;
+    virtual size_t getIndElemSize() const;
+    virtual size_t getIndSize() const;
 
     /// returns index buffer size (in byte unit)
-    size_t getIndDataSize() const {
+    inline size_t getIndDataSize() const {
       return getIndElemSize() * getIndSize();
     }
 

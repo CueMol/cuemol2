@@ -1,7 +1,13 @@
 # LCMS2 support
+find_package(LCMS2)
+# message(STATUS "LCMS2_FOUND: ${LCMS2_FOUND} INCLUDE_DIR: ${LCMS2_INCLUDE_DIR} LIBRARIES: ${LCMS2_LIBRARIES}")
+
 if (${LCMS2_FOUND})
   add_definitions(-DHAVE_LCMS2_H=1)
+  list(APPEND GFX_LINK_LIBRARIES ${LCMS2_LIBRARIES})
 endif()
+
+##########
 
 include_directories(
   ${CMAKE_SOURCE_DIR}/src
@@ -28,6 +34,7 @@ Material.cpp
 PixelBuffer.cpp
 ColCompiler.cpp
 DrawElem.cpp
+DrawAttrArray.cpp
 LabelCacheImpl.cpp
 SphereSet.cpp
 CmsXform.cpp
@@ -78,7 +85,7 @@ if (WIN32)
 endif()
 
 add_library(gfx SHARED ${GFX_SRCS})
-target_link_libraries(gfx PRIVATE qlib ${LCMS2_LIBRARIES})
+target_link_libraries(gfx PRIVATE qlib ${GFX_LINK_LIBRARIES})
 
 add_custom_target(gfx_generate_headers DEPENDS ${MCWG_HEADERS})
 add_dependencies(gfx gfx_generate_headers)

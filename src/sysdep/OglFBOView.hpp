@@ -13,7 +13,7 @@ namespace sysdep {
   class OglDisplayContext;
   using gfx::DisplayContext;
 
-  class QSYS_API OglFBOView : public OglView
+  class SYSDEP_API OglFBOView : public OglView
   {
   private:
     typedef OglView super_t;

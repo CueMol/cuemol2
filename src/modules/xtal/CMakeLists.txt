@@ -1,3 +1,14 @@
+find_package(FFTW)
+message(STATUS "FFTW_FOUND: ${FFTW_FOUND} INCLUDE_DIR: ${FFTW_INCLUDE_DIR} LIBRARIES: ${FFTW_LIBRARIES}")
+
+if (FFTW_FOUND)
+  add_definitions(-DHAVE_FFTW3_H=1)
+  include_directories(${FFTW_INCLUDE_DIR})
+  list(APPEND XTAL_LINK_LIBRARIES ${FFTW_LIBRARIES})
+endif ()  
+  
+##########
+
 include_directories(
   ${CMAKE_SOURCE_DIR}/src
   ${CMAKE_CURRENT_SOURCE_DIR}
@@ -45,7 +56,7 @@ if (WIN32)
 endif()
 
 add_library(xtal SHARED ${XTAL_SRCS})
-target_link_libraries(xtal PRIVATE qlib gfx qsys molstr symm surface)
+target_link_libraries(xtal PRIVATE qlib gfx qsys molstr symm surface ${XTAL_LINK_LIBRARIES})
 
 add_custom_target(xtal_generate_headers DEPENDS ${MCWG_HEADERS})
 add_dependencies(xtal xtal_generate_headers)
