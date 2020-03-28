@@ -6,8 +6,8 @@
 
 #include <common.h>
 
-#ifdef WIN32
-# include <windows.h>
+#if defined(_WIN32)
+#  include <windows.h>
 #endif
 
 #ifdef HAVE_GL_GL_H

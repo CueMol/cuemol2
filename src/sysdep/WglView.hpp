@@ -16,7 +16,7 @@ namespace sysdep {
   class WglDisplayContext;
   using gfx::DisplayContext;
 
-  class QSYS_API WglView : public OglView
+  class SYSDEP_API WglView : public OglView
   {
   private:
     typedef OglView super_t;

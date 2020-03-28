@@ -23,7 +23,7 @@
 
 namespace sysdep {
 
-  class QSYS_API OglView : public qsys::View
+  class SYSDEP_API OglView : public qsys::View
   {
   protected:
     bool m_bInitOK;

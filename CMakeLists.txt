@@ -20,18 +20,14 @@ find_package(FLEX REQUIRED)
 find_package(Boost 1.50.0 REQUIRED
   COMPONENTS system thread filesystem chrono timer)
 
-# TO DO: build GUI arch config
-if (BUILD_GUI)
-  # OpenGL
-  find_package(OpenGL)
-endif ()
-
 add_subdirectory(src)
 
 message(STATUS
   "\n==============\n"
   "Summary report\n"
   "==============\n")
+message(STATUS "BUILD_GUI: ${BUILD_GUI}")
+
 if (DEFINED CMAKE_BUILD_TYPE)
   message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 endif()

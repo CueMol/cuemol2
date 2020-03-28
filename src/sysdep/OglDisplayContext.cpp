@@ -10,6 +10,10 @@
 #  include <GL/glew.h>
 #endif
 
+#if defined(_WIN32)
+#  include <windows.h>
+#endif
+
 #ifdef HAVE_GL_GL_H
 #  include <GL/gl.h>
 #elif defined(HAVE_OPENGL_GL_H)

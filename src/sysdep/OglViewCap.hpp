@@ -11,7 +11,7 @@
 
 namespace sysdep {
 
-  class QSYS_API OglViewCap : public qsys::ViewCap
+  class SYSDEP_API OglViewCap : public qsys::ViewCap
   {
   private:
     bool m_bHasVBO;
