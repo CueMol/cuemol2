@@ -63,5 +63,6 @@ install(FILES ${SYSCONFIG_FILE} DESTINATION data)
 
 # get_filename_component(LCMS2_LIB_DIR ${LCMS2_LIBRARIES} DIRECTORY)
 
+# For VS Debug
 set_target_properties(cuetty PROPERTIES
   VS_DEBUGGER_ENVIRONMENT "PATH=${BOOST_LIBRARYDIR};${CMAKE_PREFIX_PATH}/bin;%PATH%")

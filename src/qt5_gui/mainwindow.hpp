@@ -12,74 +12,80 @@ class QTextEdit;
 class QListWidget;
 QT_END_NAMESPACE
 
+class QtMolWidget;
+
 class MainWindow : public QMainWindow
 {
   Q_OBJECT
 
- public:
+public:
   MainWindow();
 
   bool openFile(const QString &fileName);
 
- protected:
+protected:
   void closeEvent(QCloseEvent *event) override;
 
-  private slots:
-    void newFile();
-    void open();
-    void save();
-    void saveAs();
-    void updateRecentFileActions();
-    void openRecentFile();
+private slots:
+  void newFile();
+  void open();
+  void save();
+  void saveAs();
+  void updateRecentFileActions();
+  void openRecentFile();
 #ifndef QT_NO_CLIPBOARD
-    void cut();
-    void copy();
-    void paste();
+  void cut();
+  void copy();
+  void paste();
 #endif
-    void about();
-    void updateMenus();
-    void updateWindowMenu();
-    // MdiChild *createMdiChild();
-    void switchLayoutDirection();
+  void about();
+  void updateMenus();
+  void updateWindowMenu();
+  // MdiChild *createMdiChild();
+  void switchLayoutDirection();
 
- private:
-    enum { MaxRecentFiles = 5 };
+private:
+  enum { MaxRecentFiles = 5 };
 
-    void createActions();
-    void createStatusBar();
-    void readSettings();
-    void writeSettings();
-    bool loadFile(const QString &fileName);
-    static bool hasRecentFiles();
-    void prependToRecentFiles(const QString &fileName);
-    void setRecentFilesVisible(bool visible);
-    // MdiChild *activeMdiChild() const;
-    // QMdiSubWindow *findMdiChild(const QString &fileName) const;
+  void createActions();
+  void createStatusBar();
+  void readSettings();
+  void writeSettings();
+  bool loadFile(const QString &fileName);
+  static bool hasRecentFiles();
+  void prependToRecentFiles(const QString &fileName);
+  void setRecentFilesVisible(bool visible);
+  // MdiChild *activeMdiChild() const;
+  // QMdiSubWindow *findMdiChild(const QString &fileName) const;
 
-    // QMdiArea *mdiArea;
+  // QMdiArea *mdiArea;
 
-    QMenu *windowMenu;
-    QAction *newAct;
-    QAction *saveAct;
-    QAction *saveAsAct;
-    QAction *recentFileActs[MaxRecentFiles];
-    QAction *recentFileSeparator;
-    QAction *recentFileSubMenuAct;
+  QMenu *windowMenu;
+  QAction *newAct;
+  QAction *saveAct;
+  QAction *saveAsAct;
+  QAction *recentFileActs[MaxRecentFiles];
+  QAction *recentFileSeparator;
+  QAction *recentFileSubMenuAct;
 #ifndef QT_NO_CLIPBOARD
-    QAction *cutAct;
-    QAction *copyAct;
-    QAction *pasteAct;
+  QAction *cutAct;
+  QAction *copyAct;
+  QAction *pasteAct;
 #endif
-    QAction *closeAct;
-    QAction *closeAllAct;
-    QAction *tileAct;
-    QAction *cascadeAct;
-    QAction *nextAct;
-    QAction *previousAct;
-    QAction *windowMenuSeparatorAct;
+  QAction *closeAct;
+  QAction *closeAllAct;
+  QAction *tileAct;
+  QAction *cascadeAct;
+  QAction *nextAct;
+  QAction *previousAct;
+  QAction *windowMenuSeparatorAct;
 
-    QTextEdit *textEdit;
-    QListWidget *customerList;
-    QListWidget *paragraphsList;
+  QTextEdit *textEdit;
+  QListWidget *customerList;
+  QListWidget *paragraphsList;
 
+  QtMolWidget *m_pMolWidget;
+
+  int m_nSceneID, m_nViewID;
+  void setupScene();
 };
