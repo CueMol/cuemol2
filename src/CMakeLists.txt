@@ -67,6 +67,8 @@ endif (${Boost_TIMER_FOUND})
 if (WIN32)
   add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -DUNICODE -D_UNICODE)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/${CMAKE_BUILD_TYPE})
+  add_definitions(-DBOOST_ALL_NO_LIB)
+  add_definitions(-DBOOST_ALL_DYN_LINK)
 endif()
 
 #####
