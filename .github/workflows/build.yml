@@ -19,19 +19,24 @@ jobs:
     - name: Install prerequisite
       shell: bash
       run: |
+        pwd
         wget https://github.com/CueMol/build_prerequisite/releases/download/v0.0.1/win_build_set.tar.gz -O win_build_set.tar.gz
         tar xzvf win_build_set.tar.gz
-        which bison
+        which win_bison.exe
+        which win_flex.exe
 
-    # - uses: actions/checkout@v1
+    - uses: actions/checkout@v1
 
-    # - name: Build
-    #   id: build
-    #   shell: bash
-    #   run: |
-    #     echo "github.ref: ${{ github.ref }}"
-    #     mkdir build
-    #     cd build
-    #     cmake .. -G "Visual Studio 16 2019" -A x64
-    #     cmake --build . --config Release
-    #     ls -la
+    - name: Build
+      id: build
+      shell: bash
+      run: |
+        pwd
+        echo "github.ref: ${{ github.ref }}"
+        TOPDIR=`pwd`
+        ls -lR $TOPDIR/win_build
+        mkdir build
+        cd build
+        cmake .. -G "Visual Studio 16 2019" -A x64 -DCMAKE_PREFIX_PATH=d:\a\cuemol2\cuemol2\win_build -DCGAL_DISABLE_GMP=ON -DBUILD_GUI=OFF
+        cmake --build . --config Release
+        ls -la
