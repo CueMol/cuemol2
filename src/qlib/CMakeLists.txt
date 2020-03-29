@@ -8,16 +8,6 @@ SET(QLIB_LINK_LIBRARIES
   Boost::thread
   )
 
-find_package(LibLZMA)
-message(STATUS "LIBLZMA_FOUND: ${LIBLZMA_FOUND} INCLUDE_DIR: ${LIBLZMA_INCLUDE_DIRS} LIBRARIES: ${LIBLZMA_LIBRARIES}")
-
-if (${LIBLZMA_FOUND})
-  add_definitions(-DHAVE_LZMA_H=1)
-  list(APPEND QLIB_LINK_LIBRARIES LibLZMA::LibLZMA)
-  # SET(HAVE_LZMA_H "1")
-endif()
-
-
 include_directories(
   ${CMAKE_SOURCE_DIR}/src
   ${CMAKE_CURRENT_SOURCE_DIR}
@@ -73,6 +63,13 @@ LProcMgr.cpp
 LPerfMeas.cpp
 qlib.cpp
 )
+
+#####
+
+if (${LIBLZMA_FOUND})
+  list(APPEND QLIB_LINK_LIBRARIES LibLZMA::LibLZMA)
+  list(APPEND QLIB_SRCS XzStream.cpp)
+endif()
 
 # CueMol interface definitions for MCWRAPGEN
 SET(QLIB_MCWG_QIFS
