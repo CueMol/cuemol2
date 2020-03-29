@@ -18,6 +18,8 @@ jobs:
       run: |
         wget https://github.com/CueMol/build_prerequisite/releases/download/v0.0.1/win_build_set.tar.gz -O win_build_set.tar.gz
         tar xzvf win_build_set.tar.gz
+        echo $PATH
+        ./win_build/bin/bison.exe
 
     - uses: actions/checkout@v1
 
