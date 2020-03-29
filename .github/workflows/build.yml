@@ -11,14 +11,17 @@ jobs:
     runs-on: windows-latest
     steps:
 
-    - name: Install wget
+    - name: Install prerequisite 1
       run: |
         choco install wget
         choco install winflexbison3
 
-    - name: Install prerequisite
+    - uses: actions/checkout@v1
+
+    - name: Install prerequisite 2
       shell: bash
       run: |
+        cd ../..
         pwd
         wget https://github.com/CueMol/build_prerequisite/releases/download/v0.0.1/win_build_set.tar.gz -O win_build_set.tar.gz
         tar xzvf win_build_set.tar.gz
@@ -27,8 +30,6 @@ jobs:
         TOPDIR=`pwd`
         ls -lR $TOPDIR
 
-    - uses: actions/checkout@v1
-
     - name: Build
       id: build
       shell: bash
@@ -36,7 +37,7 @@ jobs:
         pwd
         echo "github.ref: ${{ github.ref }}"
         TOPDIR=`pwd`
-        ls -lR $TOPDIR
+        (cd ../..; pwd; ls -la)
         mkdir build
         cd build
         cmake .. -G "Visual Studio 16 2019" -A x64 -DCMAKE_PREFIX_PATH=d:\\a\\cuemol2\\cuemol2\\win_build -DCGAL_DISABLE_GMP=ON -DBUILD_GUI=OFF
