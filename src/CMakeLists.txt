@@ -2,6 +2,10 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_OUTPUT_EXTENSION_REPLACE 1)  # ref. https://texus.me/2015/09/06/cmake-and-gcov/
 SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
+set(Boost_USE_STATIC_LIBS OFF)
+find_package(Boost 1.50.0 REQUIRED
+  COMPONENTS system thread filesystem chrono timer)
+
 find_package(CGAL REQUIRED)
 message(STATUS "CGAL_FOUND: ${CGAL_FOUND} INCLUDE_DIR: ${CGAL_INCLUDE_DIRS} LIBRARIES: ${CGAL_LIBRARIES}")
 
@@ -67,6 +71,8 @@ endif (${Boost_TIMER_FOUND})
 if (WIN32)
   add_definitions(-D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -DUNICODE -D_UNICODE)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/${CMAKE_BUILD_TYPE})
+  add_definitions(-DBOOST_ALL_NO_LIB)
+  add_definitions(-DBOOST_ALL_DYN_LINK)
 endif()
 
 #####

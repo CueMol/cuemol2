@@ -10,16 +10,35 @@ jobs:
     name: "Windows Latest MSVC"
     runs-on: windows-latest
     steps:
+
+    - name: Install prerequisite 1
+      run: |
+        choco install wget
+        choco install winflexbison3
+
     - uses: actions/checkout@v1
+
+    - name: Install prerequisite 2
+      shell: bash
+      run: |
+        cd ../..
+        pwd
+        wget https://github.com/CueMol/build_prerequisite/releases/download/v0.0.1/win_build_set.tar.gz -O win_build_set.tar.gz
+        tar xzvf win_build_set.tar.gz
+        which win_bison.exe
+        which win_flex.exe
+
+        # TOPDIR=`pwd`
+        # ls -lR $TOPDIR
 
     - name: Build
       id: build
-      shell: bash
+      shell: cmd
       run: |
-        echo "github.ref: ${{ github.ref }}"
+        pwd
         mkdir build
         cd build
-        cmake .. -G "Visual Studio 16 2019" -A x64
-        cmake --build . --config Release
-        tar czvf my-artifact.tar.gz Release
-        ls -la
+        cmake .. -G "Visual Studio 16 2019" -A x64 -DCMAKE_PREFIX_PATH=d:\a\win_build -DCGAL_ROOT=d:\a\win_build\CGAL-4.14.3 -DCGAL_DISABLE_GMP=ON -DBUILD_GUI=OFF
+        dir
+        cmake --build . -v --config Release
+

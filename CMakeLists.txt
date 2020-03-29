@@ -10,15 +10,13 @@ endif ()
 
 project(CueMol CXX C)
 
+message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 option(BUILD_GUI "Build CueMol GUI." ON)
 
 find_package(Python)
 find_package(Perl REQUIRED)
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)
-
-find_package(Boost 1.50.0 REQUIRED
-  COMPONENTS system thread filesystem chrono timer)
 
 add_subdirectory(src)
 
