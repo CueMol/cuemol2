@@ -8,6 +8,8 @@
 #include "mainwindow.hpp"
 #include "moc_mainwindow.cpp"
 #include "QtMolWidget.hpp"
+#include "QtScenePanel.hpp"
+#include "QtMolStructPanel.hpp"
 #include <qsys/SceneManager.hpp>
 #include <qsys/StreamManager.hpp>
 #include <qsys/SceneXMLReader.hpp>
@@ -45,6 +47,15 @@ MainWindow::~MainWindow()
 
 void MainWindow::createWidgets()
 {
+  // QDockWidget *dock = new QDockWidget(tr("Scene"), this);
+  auto&& pdock1 = new QtScenePanel();
+  addDockWidget(Qt::LeftDockWidgetArea, pdock1);
+  
+  auto&& pdock2 = new QtMolStructPanel();
+  addDockWidget(Qt::LeftDockWidgetArea, pdock2);
+
+  //////////
+
   m_pMolWidget = new QtMolWidget();
   m_pMolWidget->bind(m_nSceneID, m_nViewID);
 
