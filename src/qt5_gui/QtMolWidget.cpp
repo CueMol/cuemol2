@@ -15,6 +15,8 @@
 #include <qlib/qlib.hpp>
 #include <qsys/SceneManager.hpp>
 #include <sysdep/MouseEventHandler.hpp>
+#include <qsys/StreamManager.hpp>
+#include <qsys/SceneXMLReader.hpp>
 
 #include "moc_QtMolWidget.cpp"
 
@@ -58,6 +60,42 @@ void QtMolWidget::bind(int scid, int vwid)
   m_nSceneID = scid;
   m_nViewID = vwid;
 }
+
+void QtMolWidget::createSceneAndView()
+{
+  auto pScMgr = qsys::SceneManager::getInstance();
+  auto pSc = pScMgr->createScene();
+  // TO DO: locale dependent
+  pSc->setName("Untitled");
+  // m_nSceneID = pSc->getUID();
+
+  auto pView = pSc->createView();
+  pView->setName("0");
+  // m_nViewID = pView->getUID();
+
+  bind(pSc->getUID(), pView->getUID());
+  // LOG_DPRINTLN("scene %d view %d created.", m_nSceneID, m_nViewID);
+}
+
+void QtMolWidget::loadFile(const QString &fileName)
+{
+  auto scMgr = qsys::SceneManager::getInstance();
+  auto scene = scMgr->getScene(m_nSceneID);
+  scene->clearAllData();
+
+  auto strMgr = qsys::StreamManager::getInstance();
+  qsys::SceneXMLReaderPtr reader = strMgr->createHandler("qsc_xml", 3);
+  auto utf8fname = fileName.toUtf8();
+  reader->setPath(utf8fname.constData());
+
+  reader->attach(scene);
+  reader->read();
+  reader->detach();
+
+  scene->loadViewFromCam(m_nViewID, "__current");
+
+}
+
 
 void QtMolWidget::initializeGL()
 {
@@ -311,74 +349,6 @@ void QtMolWidget::panTriggered(QPanGesture *gesture)
 
   QPointF delta = gesture->delta();
   MB_DPRINTLN("  delta=%f, %f", delta.x(), delta.y());
-}
-
-//////////////////////////////////////////////////
-
-// #ifdef WIN32
-// #  include <windows.h>
-// #endif
-
-// #ifdef MB_MACOSX
-// #include <CoreServices/CoreServices.h>
-// #include <mach/mach.h>
-// #include <mach/mach_time.h>
-// #include <unistd.h>
-// #endif
-
-// namespace {
-//   class MyTimerImpl : public qlib::TimerImpl
-
-//   {
-//   private:
-//     QtTimerImpl m_impl;
-
-//   public:
-//     MyTimerImpl()
-//     {
-//     }
-    
-//     virtual ~MyTimerImpl()
-//     {
-//     }
-
-//     virtual qlib::time_value getCurrentTime()
-//     {
-//       qlib::time_value tval;
-// #ifdef WIN32
-//       tval = (qlib::time_value) ::GetTickCount();
-// #endif
-// #ifdef MB_MACOSX
-//       uint64_t abstime = mach_absolute_time();
-//       Nanoseconds nanos = AbsoluteToNanoseconds( *(AbsoluteTime *) &abstime );
-//       tval = UnsignedWideToUInt64(nanos)/1000000;
-// #endif
-//       // TO DO: Linux implementation
-      
-//       return tval;
-//     }
-
-//     virtual void start(qlib::time_value period)
-//     {
-//       // TO DO: adjust unit
-//       // m_impl.start(0);
-//       m_impl.start(period);
-//     }
-
-//     virtual void stop()
-//     {
-//       m_impl.stop();
-//     }
-
-//     //static void timerCallbackFunc(nsITimer *aTimer, void *aClosure);
-//   };
-// }
-
-//static
-void QtMolWidget::setupEventTimer()
-{
-  // qlib::EventManager::getInstance()->initTimer(new MyTimerImpl);
-  // qlib::EventManager::getInstance()->initTimer(new QtTimerImpl);
 }
 
 //////////////////////////////////////////////////

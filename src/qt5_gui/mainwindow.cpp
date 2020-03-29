@@ -11,15 +11,13 @@
 #include "QtScenePanel.hpp"
 #include "QtMolStructPanel.hpp"
 #include <qsys/SceneManager.hpp>
-#include <qsys/StreamManager.hpp>
-#include <qsys/SceneXMLReader.hpp>
 #include <qlib/LMsgLog.hpp>
 
 using qsys::SceneManager;
 
 MainWindow::MainWindow()
 {
-  setupScene();
+  // setupScene();
 
   createWidgets();
 
@@ -37,6 +35,8 @@ MainWindow::MainWindow()
   pLogMgr->removeAccumMsg();
   m_pLogWnd->appendPlainText(msg.c_str());
   m_nLogListenerID = pLogMgr->addListener(this);
+
+  newFile();
 }
 
 MainWindow::~MainWindow()
@@ -47,6 +47,17 @@ MainWindow::~MainWindow()
 
 void MainWindow::createWidgets()
 {
+  m_pTabWnd = new QMdiArea;
+  m_pTabWnd->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+  m_pTabWnd->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+  m_pTabWnd->setViewMode(QMdiArea::TabbedView);
+  m_pTabWnd->setTabsClosable(true);
+  m_pTabWnd->setTabsMovable(true);
+  QTabBar *pBar = m_pTabWnd->findChild<QTabBar*>();
+  pBar->setExpanding(false);
+
+  //////////
+
   // QDockWidget *dock = new QDockWidget(tr("Scene"), this);
   auto&& pdock1 = new QtScenePanel();
   addDockWidget(Qt::LeftDockWidgetArea, pdock1);
@@ -56,8 +67,8 @@ void MainWindow::createWidgets()
 
   //////////
 
-  m_pMolWidget = new QtMolWidget();
-  m_pMolWidget->bind(m_nSceneID, m_nViewID);
+  // m_pMolWidget = new QtMolWidget();
+  // m_pMolWidget->bind(m_nSceneID, m_nViewID);
 
   m_pLogWnd = new QPlainTextEdit();
   m_pLogWnd->setReadOnly(true);
@@ -66,7 +77,8 @@ void MainWindow::createWidgets()
   m_pLogWnd->setFont(fixedFont);
   
   m_pSplitter = new QSplitter(Qt::Vertical);
-  m_pSplitter->addWidget(m_pMolWidget);
+  // m_pSplitter->addWidget(m_pMolWidget);
+  m_pSplitter->addWidget(m_pTabWnd);
   m_pSplitter->addWidget(m_pLogWnd);
   
   m_pSplitter->setStretchFactor(0, 20);
@@ -74,21 +86,6 @@ void MainWindow::createWidgets()
 
   // setCentralWidget(m_pMolWidget);
   setCentralWidget(m_pSplitter);
-}
-
-void MainWindow::setupScene()
-{
-  auto pScMgr = SceneManager::getInstance();
-  auto pSc = pScMgr->createScene();
-  // TO DO: locale dependent
-  pSc->setName("Untitled");
-  m_nSceneID = pSc->getUID();
-
-  auto pView = pSc->createView();
-  pView->setName("0");
-  m_nViewID = pView->getUID();
-
-  LOG_DPRINTLN("scene %d view %d created.", m_nSceneID, m_nViewID);
 }
 
 void MainWindow::logAppended(qlib::LLogEvent &evt)
@@ -102,12 +99,27 @@ void MainWindow::logAppended(qlib::LLogEvent &evt)
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
-  writeSettings();
-  event->accept();
+  m_pTabWnd->closeAllSubWindows();
+  if (m_pTabWnd->currentSubWindow()) {
+    event->ignore();
+  } else {
+    writeSettings();
+    event->accept();
+  }
+}
+
+QtMolWidget *MainWindow::createMolWidget()
+{
+  auto&& pchild = new QtMolWidget;
+  m_pTabWnd->addSubWindow(pchild);
+  return pchild;
 }
 
 void MainWindow::newFile()
 {
+  auto&& pchild = createMolWidget();
+  pchild->createSceneAndView();
+  pchild->showMaximized();
 }
 
 void MainWindow::open()
@@ -127,23 +139,13 @@ bool MainWindow::openFile(const QString &fileName)
 
 bool MainWindow::loadFile(const QString &fileName)
 {
-  auto scMgr = SceneManager::getInstance();
-  auto scene = scMgr->getScene(m_nSceneID);
-  scene->clearAllData();
+  auto&& pchild = createMolWidget();
+  pchild->createSceneAndView();
+  pchild->loadFile(fileName);
+  pchild->showMaximized();
+  pchild->update();
 
-  auto strMgr = qsys::StreamManager::getInstance();
-  qsys::SceneXMLReaderPtr reader = strMgr->createHandler("qsc_xml", 3);
-  auto utf8fname = fileName.toUtf8();
-  reader->setPath(utf8fname.constData());
-
-  reader->attach(scene);
-  reader->read();
-  reader->detach();
-
-  scene->loadViewFromCam(m_nViewID, "__current");
-
-  m_pMolWidget->update();
-
+  // TO DO: close on failure
   return true;
 }
 

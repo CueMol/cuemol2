@@ -65,8 +65,6 @@ private:
   // MdiChild *activeMdiChild() const;
   // QMdiSubWindow *findMdiChild(const QString &fileName) const;
 
-  // QMdiArea *mdiArea;
-
   QMenu *windowMenu;
   QAction *newAct;
   QAction *saveAct;
@@ -91,7 +89,6 @@ private:
   // QListWidget *customerList;
   // QListWidget *paragraphsList;
 
-  QtMolWidget *m_pMolWidget;
   QPlainTextEdit *m_pLogWnd;
   QSplitter *m_pSplitter;
 
@@ -101,4 +98,9 @@ private:
   int m_nLogListenerID;
   virtual void logAppended(qlib::LLogEvent &evt);
 
+  // QtMolWidget *m_pMolWidget;
+  QMdiArea *m_pTabWnd;
+
+  QtMolWidget *createMolWidget();
+  
 };

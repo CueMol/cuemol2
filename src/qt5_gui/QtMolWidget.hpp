@@ -36,10 +36,14 @@ private:
   qt5_gui::QtGlView *m_pView;
   
 public:
+  void createSceneAndView();
+
   void bind(int scid, int vwid);
 
+  void loadFile(const QString &fileName);
+
   /// Setup Event/Timer manager
-  static void setupEventTimer();
+  // static void setupEventTimer();
 
   static void setupTextRender();
 
