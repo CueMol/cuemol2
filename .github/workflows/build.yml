@@ -11,6 +11,13 @@ jobs:
     runs-on: windows-latest
     steps:
 
+    - name: test
+      shell: bash
+      run: |
+        which wget
+        which curl
+        which pacman
+
     - name: Install wget
       run: |
         choco install wget
@@ -22,7 +29,8 @@ jobs:
         tar xzvf win_build_set.tar.gz
         pwd
         echo $PATH
-        cd  ./win_build/bin
+        cd ./win_build/bin
+        pwd
         ./bison.exe --help
 
     # - uses: actions/checkout@v1
