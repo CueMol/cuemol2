@@ -27,8 +27,9 @@ jobs:
         tar xzvf win_build_set.tar.gz
         which win_bison.exe
         which win_flex.exe
-        TOPDIR=`pwd`
-        ls -lR $TOPDIR
+
+        # TOPDIR=`pwd`
+        # ls -lR $TOPDIR
 
     - name: Build
       id: build
