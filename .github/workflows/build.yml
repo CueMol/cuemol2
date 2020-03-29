@@ -13,6 +13,7 @@ jobs:
 
     - name: Install prerequisite 1
       run: |
+        vcpkg install cgal
         choco install wget
         choco install winflexbison3
 
