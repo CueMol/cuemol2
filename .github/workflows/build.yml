@@ -1,0 +1,25 @@
+name: Build
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+  #    types: [assigned, opened, synchronize, reopened, labeled, unlabeled, edited, closed, ready_for_review, locked, unlocked, review_requested, review_request_removed]
+
+jobs:
+  build:
+    name: "Windows Latest MSVC"
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: Build
+      id: build
+      shell: bash
+      run: |
+        echo "github.ref: ${{ github.ref }}"
+        mkdir build
+        cd build
+        cmake .. -G "Visual Studio 16 2019" -A x64
+        cmake --build . --config Release
+        tar czvf my-artifact.tar.gz Release
+        ls -la
