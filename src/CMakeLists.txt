@@ -113,3 +113,7 @@ add_subdirectory(modules/importers)
 
 # CLI/main (cuetty)
 add_subdirectory(cli)
+
+if (BUILD_GUI)
+  add_subdirectory(qt5_gui)
+endif()
