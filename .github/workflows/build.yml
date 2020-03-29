@@ -32,14 +32,12 @@ jobs:
 
     - name: Build
       id: build
-      shell: bash
+      shell: cmd
       run: |
         pwd
-        echo "github.ref: ${{ github.ref }}"
-        TOPDIR=`pwd`
-        (cd ../..; pwd; ls -la)
         mkdir build
         cd build
-        cmake .. -G "Visual Studio 16 2019" -A x64 -DCMAKE_PREFIX_PATH=d:\\a\\win_build -DCGAL_ROOT=d:\\a\\win_build\\CGAL-4.14.3 -DCGAL_DISABLE_GMP=ON -DBUILD_GUI=OFF
-        cmake --build . --config Release
-        ls -la
+        cmake .. -G "Visual Studio 16 2019" -A x64 -DCMAKE_PREFIX_PATH=d:\a\win_build -DCGAL_ROOT=d:\a\win_build\CGAL-4.14.3 -DCGAL_DISABLE_GMP=ON -DBUILD_GUI=OFF
+        dir
+        cmake --build . -v --config Release
+
