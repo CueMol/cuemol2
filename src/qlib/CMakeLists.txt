@@ -1,3 +1,13 @@
+
+SET(QLIB_LINK_LIBRARIES
+  pcre
+  expat
+  qmzlib
+  Boost::filesystem
+  Boost::timer
+  Boost::thread
+  )
+
 include_directories(
   ${CMAKE_SOURCE_DIR}/src
   ${CMAKE_CURRENT_SOURCE_DIR}
@@ -54,6 +64,13 @@ LPerfMeas.cpp
 qlib.cpp
 )
 
+#####
+
+if (${LIBLZMA_FOUND})
+  list(APPEND QLIB_LINK_LIBRARIES LibLZMA::LibLZMA)
+  list(APPEND QLIB_SRCS XzStream.cpp)
+endif()
+
 # CueMol interface definitions for MCWRAPGEN
 SET(QLIB_MCWG_QIFS
 LScrObject.qif
@@ -84,7 +101,7 @@ if (WIN32)
 endif()
 
 add_library(qlib SHARED ${QLIB_SRCS})
-target_link_libraries(qlib PRIVATE pcre expat qmzlib Boost::filesystem Boost::timer Boost::thread)
+target_link_libraries(qlib PRIVATE ${QLIB_LINK_LIBRARIES})
 
 add_custom_target(qlib_generate_headers DEPENDS ${MCWG_HEADERS})
 add_dependencies(qlib qlib_generate_headers)

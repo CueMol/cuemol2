@@ -1,3 +1,5 @@
+![Build](https://github.com/CueMol/cuemol2/workflows/Build/badge.svg)
+
 [CueMol](http://www.cuemol.org/) - Molecular Visualization Framework
 ====================================================================
 

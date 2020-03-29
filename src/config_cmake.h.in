@@ -83,6 +83,9 @@
 /* Use boost_timer */
 #cmakedefine USE_BOOST_TIMER
 
+/* Define to 1 if you have the <lzma.h> header file. */
+#cmakedefine HAVE_LZMA_H
+
 
 //////////
 /* config.h.in.  Generated from configure.ac by autoheader.  */
@@ -169,9 +172,6 @@
 
 // /* Define to 1 if you have the <locale.h> header file. */
 // #undef HAVE_LOCALE_H
-
-// /* Define to 1 if you have the <lzma.h> header file. */
-// #undef HAVE_LZMA_H
 
 // /* Define to 1 if you have the `memmove' function. */
 // #undef HAVE_MEMMOVE
