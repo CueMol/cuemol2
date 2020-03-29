@@ -22,17 +22,18 @@ jobs:
         tar xzvf win_build_set.tar.gz
         pwd
         echo $PATH
-        ./win_build/bin/bison.exe
+        cd  ./win_build/bin
+        ./bison.exe --help
 
-    - uses: actions/checkout@v1
+    # - uses: actions/checkout@v1
 
-    - name: Build
-      id: build
-      shell: bash
-      run: |
-        echo "github.ref: ${{ github.ref }}"
-        mkdir build
-        cd build
-        cmake .. -G "Visual Studio 16 2019" -A x64
-        cmake --build . --config Release
-        ls -la
+    # - name: Build
+    #   id: build
+    #   shell: bash
+    #   run: |
+    #     echo "github.ref: ${{ github.ref }}"
+    #     mkdir build
+    #     cd build
+    #     cmake .. -G "Visual Studio 16 2019" -A x64
+    #     cmake --build . --config Release
+    #     ls -la
