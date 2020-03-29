@@ -7,7 +7,7 @@
 #include "QtGlView.hpp"
 
 #include "QtMolWidget.hpp"
-#include "QtTimerImpl.hpp"
+// #include "QtTimerImpl.hpp"
 
 #include <QtGui/QMouseEvent>
 #include <QtGui/QWindow>
@@ -15,6 +15,8 @@
 #include <qlib/qlib.hpp>
 #include <qsys/SceneManager.hpp>
 #include <sysdep/MouseEventHandler.hpp>
+
+#include "moc_QtMolWidget.cpp"
 
 //using namespace qt5_gui;
 
@@ -313,68 +315,70 @@ void QtMolWidget::panTriggered(QPanGesture *gesture)
 
 //////////////////////////////////////////////////
 
-#ifdef WIN32
-#  include <windows.h>
-#endif
+// #ifdef WIN32
+// #  include <windows.h>
+// #endif
 
-#ifdef MB_MACOSX
-#include <CoreServices/CoreServices.h>
-#include <mach/mach.h>
-#include <mach/mach_time.h>
-#include <unistd.h>
-#endif
+// #ifdef MB_MACOSX
+// #include <CoreServices/CoreServices.h>
+// #include <mach/mach.h>
+// #include <mach/mach_time.h>
+// #include <unistd.h>
+// #endif
 
-namespace {
-  class MyTimerImpl : public qlib::TimerImpl
-  {
-  private:
-    QtTimerImpl m_impl;
+// namespace {
+//   class MyTimerImpl : public qlib::TimerImpl
 
-  public:
-    MyTimerImpl()
-    {
-    }
+//   {
+//   private:
+//     QtTimerImpl m_impl;
+
+//   public:
+//     MyTimerImpl()
+//     {
+//     }
     
-    virtual ~MyTimerImpl()
-    {
-    }
+//     virtual ~MyTimerImpl()
+//     {
+//     }
 
-    virtual qlib::time_value getCurrentTime()
-    {
-      qlib::time_value tval;
-#ifdef WIN32
-      tval = (qlib::time_value) ::GetTickCount();
-#endif
-#ifdef MB_MACOSX
-      uint64_t abstime = mach_absolute_time();
-      Nanoseconds nanos = AbsoluteToNanoseconds( *(AbsoluteTime *) &abstime );
-      tval = UnsignedWideToUInt64(nanos)/1000000;
-#endif
-      // TO DO: Linux implementation
+//     virtual qlib::time_value getCurrentTime()
+//     {
+//       qlib::time_value tval;
+// #ifdef WIN32
+//       tval = (qlib::time_value) ::GetTickCount();
+// #endif
+// #ifdef MB_MACOSX
+//       uint64_t abstime = mach_absolute_time();
+//       Nanoseconds nanos = AbsoluteToNanoseconds( *(AbsoluteTime *) &abstime );
+//       tval = UnsignedWideToUInt64(nanos)/1000000;
+// #endif
+//       // TO DO: Linux implementation
       
-      return tval;
-    }
+//       return tval;
+//     }
 
-    virtual void start(qlib::time_value period)
-    {
-      // TO DO: adjust unit
-      // m_impl.start(0);
-      m_impl.start(period);
-    }
+//     virtual void start(qlib::time_value period)
+//     {
+//       // TO DO: adjust unit
+//       // m_impl.start(0);
+//       m_impl.start(period);
+//     }
 
-    virtual void stop()
-    {
-      m_impl.stop();
-    }
+//     virtual void stop()
+//     {
+//       m_impl.stop();
+//     }
 
-    //static void timerCallbackFunc(nsITimer *aTimer, void *aClosure);
-  };
-}
+//     //static void timerCallbackFunc(nsITimer *aTimer, void *aClosure);
+//   };
+// }
 
 //static
 void QtMolWidget::setupEventTimer()
 {
-  qlib::EventManager::getInstance()->initTimer(new MyTimerImpl);
+  // qlib::EventManager::getInstance()->initTimer(new MyTimerImpl);
+  // qlib::EventManager::getInstance()->initTimer(new QtTimerImpl);
 }
 
 //////////////////////////////////////////////////

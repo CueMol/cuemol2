@@ -1,3 +1,4 @@
+#define NO_USING_QTYPES
 #include <common.h>
 #include <qlib/qlib.hpp>
 #include <qsys/qsys.hpp>
@@ -10,6 +11,7 @@
 
 #include "mainwindow.hpp"
 #include "qt5_gui.hpp"
+#include "QtTimerImpl.hpp"
 
 namespace render {
   extern bool init();
@@ -101,6 +103,10 @@ int main(int argc, char *argv[])
   mdtools::init();
   importers::init();
   qt5_gui::init();
+
+  // setup timer
+  qlib::EventManager::getInstance()->initTimer(new QtTimerImpl);
+  
 
   // QCommandLineParser parser;
   // parser.setApplicationDescription("Qt MDI Example");

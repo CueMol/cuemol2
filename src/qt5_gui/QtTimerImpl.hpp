@@ -6,8 +6,9 @@
 
 #include "qt5_gui.hpp"
 #include <QtCore/QTimer>
+#include <qlib/EventManager.hpp>
 
-class QtTimerImpl : public QObject
+class QtTimerImpl : public QObject, public qlib::TimerImpl
 {
   Q_OBJECT;
 
@@ -19,13 +20,22 @@ public:
   
   virtual ~QtTimerImpl();
 
-  void start(int msec) {
-    m_pTimer->start(msec);
-  }
+  /// Implementation
 
-  void stop() {
-    m_pTimer->stop();
-  }
+  virtual qlib::time_value getCurrentTime();
+
+  virtual void start(qlib::time_value period);
+  virtual void stop();
+
+// private:
+//   void startImpl(int msec) {
+//     m_pTimer->start(msec);
+//   }
+
+//   void stopImpl() {
+//     m_pTimer->stop();
+//   }
+
 
 public slots:
   void timerCallbackFunc();

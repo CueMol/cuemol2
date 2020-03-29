@@ -10,16 +10,22 @@ class QMdiArea;
 class QMdiSubWindow;
 class QTextEdit;
 class QListWidget;
+
+class QSplitter;
+class QPlainTextEdit;
 QT_END_NAMESPACE
 
 class QtMolWidget;
 
-class MainWindow : public QMainWindow
+#include <qlib/LLogEvent.hpp>
+
+class MainWindow : public QMainWindow, public qlib::LLogEventListener
 {
   Q_OBJECT
 
 public:
   MainWindow();
+  ~MainWindow();
 
   bool openFile(const QString &fileName);
 
@@ -47,6 +53,7 @@ private slots:
 private:
   enum { MaxRecentFiles = 5 };
 
+  void createWidgets();
   void createActions();
   void createStatusBar();
   void readSettings();
@@ -80,12 +87,18 @@ private:
   QAction *previousAct;
   QAction *windowMenuSeparatorAct;
 
-  QTextEdit *textEdit;
-  QListWidget *customerList;
-  QListWidget *paragraphsList;
+  // QTextEdit *textEdit;
+  // QListWidget *customerList;
+  // QListWidget *paragraphsList;
 
   QtMolWidget *m_pMolWidget;
+  QPlainTextEdit *m_pLogWnd;
+  QSplitter *m_pSplitter;
 
   int m_nSceneID, m_nViewID;
   void setupScene();
+
+  int m_nLogListenerID;
+  virtual void logAppended(qlib::LLogEvent &evt);
+
 };

@@ -2,10 +2,16 @@
 #include <common.h>
 
 #include <QtWidgets>
+#include <QPlainTextEdit>
+#include <QFontDatabase>
 
 #include "mainwindow.hpp"
+#include "moc_mainwindow.cpp"
 #include "QtMolWidget.hpp"
 #include <qsys/SceneManager.hpp>
+#include <qsys/StreamManager.hpp>
+#include <qsys/SceneXMLReader.hpp>
+#include <qlib/LMsgLog.hpp>
 
 using qsys::SceneManager;
 
@@ -13,10 +19,7 @@ MainWindow::MainWindow()
 {
   setupScene();
 
-  m_pMolWidget = new QtMolWidget();
-  m_pMolWidget->bind(m_nSceneID, m_nViewID);
-
-  setCentralWidget(m_pMolWidget);
+  createWidgets();
 
   createActions();
   createStatusBar();
@@ -26,6 +29,40 @@ MainWindow::MainWindow()
   readSettings();
 
   setUnifiedTitleAndToolBarOnMac(true);
+
+  auto pLogMgr = qlib::LMsgLog::getInstance();
+  auto msg = pLogMgr->getAccumMsg();
+  pLogMgr->removeAccumMsg();
+  m_pLogWnd->appendPlainText(msg.c_str());
+  m_nLogListenerID = pLogMgr->addListener(this);
+}
+
+MainWindow::~MainWindow()
+{
+  auto pLogMgr = qlib::LMsgLog::getInstance();
+  pLogMgr->removeListener(m_nLogListenerID);
+}
+
+void MainWindow::createWidgets()
+{
+  m_pMolWidget = new QtMolWidget();
+  m_pMolWidget->bind(m_nSceneID, m_nViewID);
+
+  m_pLogWnd = new QPlainTextEdit();
+  m_pLogWnd->setReadOnly(true);
+  m_pLogWnd->setMinimumSize(1, 1);
+  auto&& fixedFont = QFontDatabase::systemFont(QFontDatabase::FixedFont);
+  m_pLogWnd->setFont(fixedFont);
+  
+  m_pSplitter = new QSplitter(Qt::Vertical);
+  m_pSplitter->addWidget(m_pMolWidget);
+  m_pSplitter->addWidget(m_pLogWnd);
+  
+  m_pSplitter->setStretchFactor(0, 20);
+  m_pSplitter->setStretchFactor(1, 1);
+
+  // setCentralWidget(m_pMolWidget);
+  setCentralWidget(m_pSplitter);
 }
 
 void MainWindow::setupScene()
@@ -39,7 +76,18 @@ void MainWindow::setupScene()
   auto pView = pSc->createView();
   pView->setName("0");
   m_nViewID = pView->getUID();
+
+  LOG_DPRINTLN("scene %d view %d created.", m_nSceneID, m_nViewID);
 }
+
+void MainWindow::logAppended(qlib::LLogEvent &evt)
+{
+  auto&& msg = evt.getMessage();
+  m_pLogWnd->appendPlainText(msg.c_str());
+  m_pLogWnd->verticalScrollBar()->setValue(m_pLogWnd->verticalScrollBar()->maximum());
+}
+
+//////////
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
@@ -53,7 +101,7 @@ void MainWindow::newFile()
 
 void MainWindow::open()
 {
-  const QString fileName = QFileDialog::getOpenFileName(this);
+  const QString fileName = QFileDialog::getOpenFileName(this, "Open scene file", "", "CueMol Scene (*.qsc)");
   if (!fileName.isEmpty())
     openFile(fileName);
 }
@@ -68,6 +116,23 @@ bool MainWindow::openFile(const QString &fileName)
 
 bool MainWindow::loadFile(const QString &fileName)
 {
+  auto scMgr = SceneManager::getInstance();
+  auto scene = scMgr->getScene(m_nSceneID);
+  scene->clearAllData();
+
+  auto strMgr = qsys::StreamManager::getInstance();
+  qsys::SceneXMLReaderPtr reader = strMgr->createHandler("qsc_xml", 3);
+  auto utf8fname = fileName.toUtf8();
+  reader->setPath(utf8fname.constData());
+
+  reader->attach(scene);
+  reader->read();
+  reader->detach();
+
+  scene->loadViewFromCam(m_nViewID, "__current");
+
+  m_pMolWidget->update();
+
   return true;
 }
 
@@ -179,6 +244,7 @@ void MainWindow::about()
 
 void MainWindow::updateMenus()
 {
+
 }
 
 void MainWindow::updateWindowMenu()
@@ -198,6 +264,33 @@ void MainWindow::updateWindowMenu()
 
 void MainWindow::createActions()
 {
+  QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
+  // QToolBar *fileToolBar = addToolBar(tr("File"));
+  // fileToolBar->setObjectName("fileToolBar");
+
+  // const QIcon newIcon = QIcon::fromTheme("document-new", QIcon(":/images/new.png"));
+  // newAct = new QAction(newIcon, tr("&New"), this);
+  newAct = new QAction(tr("&New"), this);
+  newAct->setShortcuts(QKeySequence::New);
+  newAct->setStatusTip(tr("Create a new file"));
+  connect(newAct, &QAction::triggered, this, &MainWindow::newFile);
+  fileMenu->addAction(newAct);
+  // fileToolBar->addAction(newAct);
+
+  // const QIcon openIcon = QIcon::fromTheme("document-open", QIcon(":/images/open.png"));
+  // QAction *openAct = new QAction(openIcon, tr("&Open..."), this);
+  QAction *openAct = new QAction(tr("&Open..."), this);
+  openAct->setShortcuts(QKeySequence::Open);
+  openAct->setStatusTip(tr("Open an existing file"));
+  connect(openAct, &QAction::triggered, this, &MainWindow::open);
+  fileMenu->addAction(openAct);
+  // fileToolBar->addAction(openAct);
+
+  const QIcon exitIcon = QIcon::fromTheme("application-exit");
+  QAction *exitAct = fileMenu->addAction(exitIcon, tr("E&xit"), qApp, &QApplication::closeAllWindows);
+  exitAct->setShortcuts(QKeySequence::Quit);
+  exitAct->setStatusTip(tr("Exit the application"));
+  fileMenu->addAction(exitAct);
 }
 
 void MainWindow::createStatusBar()
