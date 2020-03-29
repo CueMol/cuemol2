@@ -24,6 +24,8 @@ jobs:
         tar xzvf win_build_set.tar.gz
         which win_bison.exe
         which win_flex.exe
+        TOPDIR=`pwd`
+        ls -lR $TOPDIR
 
     - uses: actions/checkout@v1
 
@@ -34,9 +36,9 @@ jobs:
         pwd
         echo "github.ref: ${{ github.ref }}"
         TOPDIR=`pwd`
-        ls -lR $TOPDIR/win_build
+        ls -lR $TOPDIR
         mkdir build
         cd build
-        cmake .. -G "Visual Studio 16 2019" -A x64 -DCMAKE_PREFIX_PATH=d:\a\cuemol2\cuemol2\win_build -DCGAL_DISABLE_GMP=ON -DBUILD_GUI=OFF
+        cmake .. -G "Visual Studio 16 2019" -A x64 -DCMAKE_PREFIX_PATH=d:\\a\\cuemol2\\cuemol2\\win_build -DCGAL_DISABLE_GMP=ON -DBUILD_GUI=OFF
         cmake --build . --config Release
         ls -la
