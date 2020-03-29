@@ -21,5 +21,4 @@ jobs:
         cd build
         cmake .. -G "Visual Studio 16 2019" -A x64
         cmake --build . --config Release
-        tar czvf my-artifact.tar.gz Release
         ls -la
