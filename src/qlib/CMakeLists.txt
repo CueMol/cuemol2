@@ -1,3 +1,23 @@
+
+SET(QLIB_LINK_LIBRARIES
+  pcre
+  expat
+  qmzlib
+  Boost::filesystem
+  Boost::timer
+  Boost::thread
+  )
+
+find_package(LibLZMA)
+message(STATUS "LIBLZMA_FOUND: ${LIBLZMA_FOUND} INCLUDE_DIR: ${LIBLZMA_INCLUDE_DIRS} LIBRARIES: ${LIBLZMA_LIBRARIES}")
+
+if (${LIBLZMA_FOUND})
+  add_definitions(-DHAVE_LZMA_H=1)
+  list(APPEND QLIB_LINK_LIBRARIES LibLZMA::LibLZMA)
+  # SET(HAVE_LZMA_H "1")
+endif()
+
+
 include_directories(
   ${CMAKE_SOURCE_DIR}/src
   ${CMAKE_CURRENT_SOURCE_DIR}
@@ -84,7 +104,7 @@ if (WIN32)
 endif()
 
 add_library(qlib SHARED ${QLIB_SRCS})
-target_link_libraries(qlib PRIVATE pcre expat qmzlib Boost::filesystem Boost::timer Boost::thread)
+target_link_libraries(qlib PRIVATE ${QLIB_LINK_LIBRARIES})
 
 add_custom_target(qlib_generate_headers DEPENDS ${MCWG_HEADERS})
 add_dependencies(qlib qlib_generate_headers)
