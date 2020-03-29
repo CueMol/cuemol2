@@ -13,10 +13,10 @@ jobs:
 
     - name: Install wget
       run: |
-        pwd
         choco install wget
 
     - name: Install prerequisite
+      shell: bash
       run: |
         wget https://github.com/CueMol/build_prerequisite/releases/download/v0.0.1/win_build_set.tar.gz -O win_build_set.tar.gz
         tar xzvf win_build_set.tar.gz
