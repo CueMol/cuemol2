@@ -36,6 +36,9 @@ public:
 //     m_pTimer->stop();
 //   }
 
+  /// static initialization / setup Event/Timer manager
+  static void init();
+
 
 public slots:
   void timerCallbackFunc();

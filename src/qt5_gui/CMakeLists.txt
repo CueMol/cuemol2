@@ -38,6 +38,7 @@ SET(QT5GUI_SRCS
   QtTimerImpl.cpp
   QtScenePanel.cpp
   QtMolStructPanel.cpp
+  QtTextRender.cpp
   )
 
 SET(QT5GUI_LINK_LIBRARIES

@@ -67,3 +67,10 @@ void QtTimerImpl::stop()
 {
   m_pTimer->stop();
 }
+
+//static
+void QtTimerImpl::init()
+{
+  qlib::EventManager::getInstance()->initTimer(new QtTimerImpl);
+}
+

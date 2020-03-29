@@ -42,9 +42,6 @@ public:
 
   void loadFile(const QString &fileName);
 
-  /// Setup Event/Timer manager
-  // static void setupEventTimer();
-
   static void setupTextRender();
 
 public slots:

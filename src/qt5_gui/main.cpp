@@ -12,6 +12,7 @@
 #include "mainwindow.hpp"
 #include "qt5_gui.hpp"
 #include "QtTimerImpl.hpp"
+#include "QtTextRender.hpp"
 
 namespace render {
   extern bool init();
@@ -105,8 +106,8 @@ int main(int argc, char *argv[])
   qt5_gui::init();
 
   // setup timer
-  qlib::EventManager::getInstance()->initTimer(new QtTimerImpl);
-  
+  QtTimerImpl::init();  
+  QtTextRender::init();  
 
   // QCommandLineParser parser;
   // parser.setApplicationDescription("Qt MDI Example");
