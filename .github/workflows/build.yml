@@ -11,27 +11,17 @@ jobs:
     runs-on: windows-latest
     steps:
 
-    - name: test
-      shell: bash
-      run: |
-        which wget
-        which curl
-        which pacman
-
     - name: Install wget
       run: |
         choco install wget
+        choco install winflexbison3
 
     - name: Install prerequisite
       shell: bash
       run: |
         wget https://github.com/CueMol/build_prerequisite/releases/download/v0.0.1/win_build_set.tar.gz -O win_build_set.tar.gz
         tar xzvf win_build_set.tar.gz
-        pwd
-        echo $PATH
-        cd ./win_build/bin
-        pwd
-        ./bison.exe --help
+        which bison
 
     # - uses: actions/checkout@v1
 
