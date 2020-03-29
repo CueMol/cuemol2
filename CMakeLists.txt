@@ -10,6 +10,7 @@ endif ()
 
 project(CueMol CXX C)
 
+message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 option(BUILD_GUI "Build CueMol GUI." ON)
 
 find_package(Python)

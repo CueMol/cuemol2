@@ -13,7 +13,6 @@ jobs:
 
     - name: Install prerequisite 1
       run: |
-        vcpkg install cgal
         choco install wget
         choco install winflexbison3
 
@@ -41,6 +40,6 @@ jobs:
         (cd ../..; pwd; ls -la)
         mkdir build
         cd build
-        cmake .. -G "Visual Studio 16 2019" -A x64 -DCMAKE_PREFIX_PATH=d:\\a\\cuemol2\\cuemol2\\win_build -DCGAL_DISABLE_GMP=ON -DBUILD_GUI=OFF
+        cmake .. -G "Visual Studio 16 2019" -A x64 -DCMAKE_PREFIX_PATH=d:\\a\\win_build -DCGAL_ROOT=d:\\a\\win_build\\CGAL-4.14.3 -DCGAL_DISABLE_GMP=ON -DBUILD_GUI=OFF
         cmake --build . --config Release
         ls -la
