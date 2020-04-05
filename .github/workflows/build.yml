@@ -38,7 +38,7 @@ jobs:
         pwd
         mkdir build
         cd build
-        cmake .. -G "Visual Studio 16 2019" -A x64 -DCMAKE_PREFIX_PATH=d:\a\win_build -DCGAL_ROOT=d:\a\win_build\CGAL-4.14.3 -DCGAL_DISABLE_GMP=ON -DBUILD_GUI=OFF
+        cmake .. -G "Visual Studio 16 2019" -A x64 -DCMAKE_PREFIX_PATH=d:\a\win_build -DCGAL_ROOT=d:\a\win_build\CGAL-4.14.3 -DCGAL_DISABLE_GMP=ON -DBUILD_GUI=OFF -DBUILD_PYTHON_BINDINGS=ON
         dir
         cmake --build . -v --config Release
         dir Release
