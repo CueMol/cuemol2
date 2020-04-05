@@ -50,11 +50,10 @@ if (WIN32)
   add_definitions(-DRENDER_EXPORTS=1)
 endif()
 
-add_library(render SHARED ${RENDER_SRCS})
+add_library(render SHARED ${RENDER_SRCS} ${MCWG_HEADERS})
 target_link_libraries(render PRIVATE qlib gfx qsys CGAL::CGAL qmpng qmzlib Boost::filesystem)
 
-add_custom_target(render_generate_headers DEPENDS ${MCWG_HEADERS})
-add_dependencies(render render_generate_headers)
+MCWRAPGEN_PYWRAPPERS(render)
 
 install(TARGETS render
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

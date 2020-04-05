@@ -1,7 +1,7 @@
 import sys, traceback,os
 
+import _cuemol_internal as ci
 import cuemol
-import cuemol._internal as cuemol_internal
 import cuemol.fileio as fileio
 import cuemol.renderer as renderer
 
@@ -19,7 +19,7 @@ def get(aObj, aName):
     if obj==None:
         raise Exception("renderer not found: "+aObj)
     
-    return cuemol_internal.getProp(obj._wrapped, aName)
+    return ci.getProp(obj._wrapped, aName)
 
 # set renderer property
 def set(aObj, aName, aVal):
@@ -30,7 +30,7 @@ def set(aObj, aName, aVal):
     v = aVal
     if cuemol.iswrapper(v):
         v = aVal._wrapped
-    cuemol_internal.setProp(obj._wrapped, aName, v)
+    ci.setProp(obj._wrapped, aName, v)
     #obj.__setattr__(aProp, aVal)
 
 # reset property to default value
@@ -39,7 +39,7 @@ def reset(aObj, aName):
     if obj==None:
         raise Exception("renderer not found: "+aObj)
     
-    cuemol_internal.resetProp(obj._wrapped, aName)
+    ci.resetProp(obj._wrapped, aName)
 
 # delete object/renderer
 def delete(aObj, aType=None):

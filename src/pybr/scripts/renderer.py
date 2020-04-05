@@ -2,7 +2,7 @@
 Renderer related utility
 """
 
-import cuemol._internal as ci
+import _cuemol_internal as ci
 import cuemol as cm
 import traceback
 

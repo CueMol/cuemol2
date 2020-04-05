@@ -45,11 +45,10 @@ if (WIN32)
   add_definitions(-DANIM_EXPORTS=1)
 endif()
 
-add_library(anim SHARED ${ANIM_SRCS})
+add_library(anim SHARED ${ANIM_SRCS} ${MCWG_HEADERS})
 target_link_libraries(anim PRIVATE qlib gfx qsys molstr Boost::filesystem Boost::thread)
 
-add_custom_target(anim_generate_headers DEPENDS ${MCWG_HEADERS})
-add_dependencies(anim anim_generate_headers)
+MCWRAPGEN_PYWRAPPERS(anim)
 
 install(TARGETS anim
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

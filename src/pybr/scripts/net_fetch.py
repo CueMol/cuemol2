@@ -4,7 +4,7 @@ import re
 from pathlib import Path
 import urllib.request
 
-import cuemol._internal as ci
+import _cuemol_internal as ci
 import cuemol as cm
 # import cuemol.fileio as fileio
 import cuemol.renderer as renderer

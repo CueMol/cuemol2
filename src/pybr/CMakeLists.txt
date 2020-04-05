@@ -59,13 +59,27 @@ SET(PYBR_LINK_LIBRARIES
   Python3::Python
   )
 
-add_library(pybr SHARED ${PYBR_SRCS})
+add_library(pybr SHARED ${PYBR_SRCS} ${MCWG_HEADERS})
 target_link_libraries(pybr PRIVATE ${PYBR_LINK_LIBRARIES})
 
-add_custom_target(pybr_generate_headers DEPENDS ${MCWG_HEADERS})
-add_dependencies(pybr pybr_generate_headers)
+MCWRAPGEN_PYWRAPPERS(pybr)
 
 install(TARGETS pybr
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   )
+
+set(PYTHON_SCRIPTS
+scripts/__init__.py
+scripts/cuemol.py
+scripts/fileio.py
+scripts/cmd.py
+scripts/scene_util.py
+scripts/renderer.py
+scripts/mol_util.py
+scripts/povrender.py
+scripts/net_fetch.py
+scripts/wrapper_base.py
+  )
+install(FILES ${PYTHON_SCRIPTS} DESTINATION data/python/cuemol)
+install(FILES scripts/wrappers/__init__.py DESTINATION data/python/cuemol/wrappers)

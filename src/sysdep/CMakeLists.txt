@@ -68,9 +68,6 @@ message(STATUS "SYSDEP_LINK_LIBRARIES: ${SYSDEP_LINK_LIBRARIES}")
 add_library(sysdep SHARED ${SYSDEP_SRCS})
 target_link_libraries(sysdep PRIVATE qlib gfx qsys ${SYSDEP_LINK_LIBRARIES})
 
-# add_custom_target(sysdep_generate_headers DEPENDS ${MCWG_HEADERS})
-# add_dependencies(sysdep sysdep_generate_headers)
-
 install(TARGETS sysdep
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

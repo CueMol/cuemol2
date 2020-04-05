@@ -121,11 +121,10 @@ if (WIN32)
   add_definitions(-DMOLSTR_EXPORTS=1)
 endif()
 
-add_library(molstr SHARED ${MOLSTR_SRCS})
+add_library(molstr SHARED ${MOLSTR_SRCS} ${MCWG_HEADERS})
 target_link_libraries(molstr PRIVATE qlib gfx qsys Boost::filesystem Boost::thread CGAL::CGAL)
 
-add_custom_target(molstr_generate_headers DEPENDS ${MCWG_HEADERS})
-add_dependencies(molstr molstr_generate_headers)
+MCWRAPGEN_PYWRAPPERS(molstr)
 
 install(TARGETS molstr
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

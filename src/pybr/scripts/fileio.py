@@ -6,7 +6,7 @@ import sys
 import os
 import json
 
-import cuemol._internal as ci
+import _cuemol_internal as ci
 import cuemol as cm
 from . import renderer
 
