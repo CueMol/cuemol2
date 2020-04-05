@@ -4,16 +4,16 @@
 
 #include <common.h>
 
-#ifdef HAVE_PYTHON
-#include <Python.h>
 #include <qlib/LString.hpp>
-#include "pybr.hpp"
-#include "wrapper.hpp"
-#include "PythonBridge.hpp"
-
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem.hpp>
 namespace fs = boost::filesystem;
+
+#ifdef HAVE_PYTHON
+#include <Python.h>
+#include "pybr.hpp"
+#include "wrapper.hpp"
+#include "PythonBridge.hpp"
 
 extern void pybr_regClasses();
 

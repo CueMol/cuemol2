@@ -16,29 +16,38 @@ STRING(REPLACE "\\" "\\\\" DEFAULT_SYSCONFIG_PATH ${DEFAULT_SYSCONFIG_PATH})
 message("DEFAULT_SYSCONFIG_PATH: ${DEFAULT_SYSCONFIG_PATH}")
 add_definitions(-DDEFAULT_CONFIG=\"${DEFAULT_SYSCONFIG_PATH}\")
 
+SET(CLI_LINK_LIBRARIES
+  pcre
+  expat
+  qmpng
+  qmzlib
+  qlib
+  gfx
+  qsys
+  molstr
+  molvis
+  surface
+  molanl
+  symm
+  xtal
+  lwview
+  render
+  anim
+  mdtools
+  importers
+  Boost::filesystem
+  CGAL::CGAL
+  )
+
+if (BUILD_PYTHON_BINDINGS)
+  list(APPEND CLI_LINK_LIBRARIES pybr)
+  add_definitions(-DHAVE_PYTHON=1)
+endif ()
+
 add_executable(cuetty ${CLI_SRCS})
 target_link_libraries(cuetty PRIVATE
-pcre
-expat
-qmpng
-qmzlib
-qlib
-gfx
-qsys
-molstr
-molvis
-surface
-molanl
-symm
-xtal
-lwview
-render
-anim
-mdtools
-importers
-Boost::filesystem
-CGAL::CGAL
-)
+  ${CLI_LINK_LIBRARIES}
+  )
 
 install(TARGETS cuetty
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
