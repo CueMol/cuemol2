@@ -4,16 +4,16 @@
 
 #include <common.h>
 
-#ifdef HAVE_PYTHON
-#include <Python.h>
 #include <qlib/LString.hpp>
-#include "pybr.hpp"
-#include "wrapper.hpp"
-#include "PythonBridge.hpp"
-
 #include <boost/filesystem/path.hpp>
 #include <boost/filesystem.hpp>
 namespace fs = boost::filesystem;
+
+#ifdef HAVE_PYTHON
+#include <Python.h>
+#include "pybr.hpp"
+#include "wrapper.hpp"
+#include "PythonBridge.hpp"
 
 extern void pybr_regClasses();
 
@@ -34,12 +34,10 @@ namespace pybr {
   {
     pybr_regClasses();
 
-
-
     Py_SetProgramName(Py_DecodeLocale("cuemol2", NULL));
 
-    // PyImport_AppendInittab("cuemol", &initDummyPkg);
-    PyImport_AppendInittab("cuemol._internal", &Wrapper::init);
+    // PyImport_AppendInittab("cuemol._internal", &Wrapper::init);
+    PyImport_AppendInittab("_cuemol_internal", &Wrapper::init);
 
 #ifdef HAVE_LOCAL_PYTHON
     // Case: GUI application with local python installation
@@ -98,12 +96,13 @@ namespace pybr {
     // Redirect stdout/err to the logwindow
     PyRun_SimpleString(
 "import sys\n"
-"import cuemol._internal as cuemol_internal\n"
+//"import cuemol._internal as cuemol_internal\n"
+"import _cuemol_internal as ci\n"
 "class CatchOutErr:\n"
 "    def __init__(self):\n"
 "        self.value = ''\n"
 "    def write(self, txt):\n"
-"        cuemol_internal.print(txt)\n"
+"        ci.print(txt)\n"
 "    def flush(self):\n"
 "        pass\n"
 "catchOutErr = CatchOutErr()\n"

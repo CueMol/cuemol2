@@ -101,8 +101,10 @@ add_subdirectory(libpng)
 
 # main components
 add_subdirectory(qlib)
-# add_subdirectory(pybr)
-# add_subdirectory(pymodule)
+if (BUILD_PYTHON_BINDINGS)
+  add_subdirectory(pybr)
+  # add_subdirectory(pymodule)
+endif ()
 add_subdirectory(gfx)
 add_subdirectory(qsys)
 if (BUILD_GUI)

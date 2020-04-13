@@ -70,11 +70,10 @@ if (WIN32)
   add_definitions(-DMOLVIS_EXPORTS=1)
 endif()
 
-add_library(molvis SHARED ${MOLVIS_SRCS})
+add_library(molvis SHARED ${MOLVIS_SRCS} ${MCWG_HEADERS})
 target_link_libraries(molvis PRIVATE qlib gfx qsys molstr Boost::filesystem Boost::thread)
 
-add_custom_target(molvis_generate_headers DEPENDS ${MCWG_HEADERS})
-add_dependencies(molvis molvis_generate_headers)
+MCWRAPGEN_PYWRAPPERS(molvis)
 
 install(TARGETS molvis
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

@@ -100,11 +100,10 @@ if (WIN32)
   add_definitions(-DQLIB_EXPORTS=1)
 endif()
 
-add_library(qlib SHARED ${QLIB_SRCS})
+add_library(qlib SHARED ${QLIB_SRCS} ${MCWG_HEADERS})
 target_link_libraries(qlib PRIVATE ${QLIB_LINK_LIBRARIES})
 
-add_custom_target(qlib_generate_headers DEPENDS ${MCWG_HEADERS})
-add_dependencies(qlib qlib_generate_headers)
+MCWRAPGEN_PYWRAPPERS(qlib)
 
 install(TARGETS qlib
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

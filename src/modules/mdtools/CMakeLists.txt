@@ -29,11 +29,10 @@ if (WIN32)
   add_definitions(-DMDTOOLS_EXPORTS=1)
 endif()
 
-add_library(mdtools SHARED ${MDTOOLS_SRCS})
+add_library(mdtools SHARED ${MDTOOLS_SRCS} ${MCWG_HEADERS})
 target_link_libraries(mdtools PRIVATE qlib gfx qsys molstr)
 
-add_custom_target(mdtools_generate_headers DEPENDS ${MCWG_HEADERS})
-add_dependencies(mdtools mdtools_generate_headers)
+MCWRAPGEN_PYWRAPPERS(mdtools)
 
 install(TARGETS mdtools
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

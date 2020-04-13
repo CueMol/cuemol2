@@ -35,11 +35,10 @@ if (WIN32)
   add_definitions(-DLWVIEW_EXPORTS=1)
 endif()
 
-add_library(lwview SHARED ${LWVIEW_SRCS})
+add_library(lwview SHARED ${LWVIEW_SRCS} ${MCWG_HEADERS})
 target_link_libraries(lwview PRIVATE qlib gfx qsys molstr render)
 
-add_custom_target(lwview_generate_headers DEPENDS ${MCWG_HEADERS})
-add_dependencies(lwview lwview_generate_headers)
+MCWRAPGEN_PYWRAPPERS(lwview)
 
 install(TARGETS lwview
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

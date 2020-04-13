@@ -2,9 +2,9 @@
 CueMol utility functions
 """
 
-import cuemol._internal as ci
+import _cuemol_internal as ci
 import importlib
-import cuemol.wrappers.basewrapper as basewrapper
+from cuemol.wrapper_base import WrapperBase
 
 __all__ = ['getWrpClass', 'createWrapper', 'createObj', 'getService', 'println',
            'iswrapper', 'isimpl', 'isscene', 'isview', 'isobj', 'isrend', 'issel', 'iscol',
@@ -45,7 +45,7 @@ def println(astr):
 ##########
 
 def iswrapper(aObj):
-    return isinstance(aObj, basewrapper.BaseWrapper)
+    return isinstance(aObj, WrapperBase)
 
 def isimpl(aObj, aIfName):
     return isinstance(aObj, getWrpClass(aIfName))

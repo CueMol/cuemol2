@@ -55,11 +55,10 @@ if (WIN32)
   add_definitions(-DXTAL_EXPORTS=1)
 endif()
 
-add_library(xtal SHARED ${XTAL_SRCS})
+add_library(xtal SHARED ${XTAL_SRCS} ${MCWG_HEADERS})
 target_link_libraries(xtal PRIVATE qlib gfx qsys molstr symm surface ${XTAL_LINK_LIBRARIES})
 
-add_custom_target(xtal_generate_headers DEPENDS ${MCWG_HEADERS})
-add_dependencies(xtal xtal_generate_headers)
+MCWRAPGEN_PYWRAPPERS(xtal)
 
 install(TARGETS xtal
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

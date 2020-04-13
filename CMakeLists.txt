@@ -12,8 +12,8 @@ project(CueMol CXX C)
 
 message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 option(BUILD_GUI "Build CueMol GUI." ON)
+option(BUILD_PYTHON_BINDINGS "Build Python bindings")
 
-find_package(Python)
 find_package(Perl REQUIRED)
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)

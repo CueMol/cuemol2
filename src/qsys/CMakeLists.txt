@@ -94,11 +94,10 @@ if (WIN32)
 endif()
 add_definitions(-DNO_SCRIPT=1)
 
-add_library(qsys SHARED ${QSYS_SRCS})
+add_library(qsys SHARED ${QSYS_SRCS} ${MCWG_HEADERS})
 target_link_libraries(qsys PRIVATE qlib gfx Boost::filesystem Boost::thread)
 
-add_custom_target(qsys_generate_headers DEPENDS ${MCWG_HEADERS})
-add_dependencies(qsys qsys_generate_headers)
+MCWRAPGEN_PYWRAPPERS(qsys)
 
 install(TARGETS qsys
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

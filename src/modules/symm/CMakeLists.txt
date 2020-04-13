@@ -35,11 +35,10 @@ if (WIN32)
   add_definitions(-DSYMM_EXPORTS=1)
 endif()
 
-add_library(symm SHARED ${SYMM_SRCS})
+add_library(symm SHARED ${SYMM_SRCS} ${MCWG_HEADERS})
 target_link_libraries(symm PRIVATE qlib gfx qsys molstr)
 
-add_custom_target(symm_generate_headers DEPENDS ${MCWG_HEADERS})
-add_dependencies(symm symm_generate_headers)
+MCWRAPGEN_PYWRAPPERS(symm)
 
 install(TARGETS symm
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

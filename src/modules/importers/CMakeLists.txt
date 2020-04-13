@@ -37,11 +37,10 @@ if (WIN32)
   add_definitions(-DIMPORTERS_EXPORTS=1)
 endif()
 
-add_library(importers SHARED ${IMPORTERS_SRCS})
+add_library(importers SHARED ${IMPORTERS_SRCS} ${MCWG_HEADERS})
 target_link_libraries(importers PRIVATE qlib gfx qsys molstr molvis surface symm)
 
-add_custom_target(importers_generate_headers DEPENDS ${MCWG_HEADERS})
-add_dependencies(importers importers_generate_headers)
+MCWRAPGEN_PYWRAPPERS(importers)
 
 install(TARGETS importers
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

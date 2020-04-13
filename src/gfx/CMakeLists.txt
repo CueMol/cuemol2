@@ -84,11 +84,10 @@ if (WIN32)
   add_definitions(-DGFX_EXPORTS=1)
 endif()
 
-add_library(gfx SHARED ${GFX_SRCS})
+add_library(gfx SHARED ${GFX_SRCS} ${MCWG_HEADERS})
 target_link_libraries(gfx PRIVATE qlib ${GFX_LINK_LIBRARIES})
 
-add_custom_target(gfx_generate_headers DEPENDS ${MCWG_HEADERS})
-add_dependencies(gfx gfx_generate_headers)
+MCWRAPGEN_PYWRAPPERS(gfx)
 
 install(TARGETS gfx
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

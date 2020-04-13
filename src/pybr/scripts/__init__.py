@@ -1,9 +1,8 @@
-# print("cuemol/__init__.py called")
+print("cuemol/__init__.py called")
 
-import cuemol._internal as ci
+import _cuemol_internal as ci
 import os
 if not ci.isInitialized():
     ci.initCueMol("")
 
-from .cuemol import *
-
+from cuemol.cuemol import *

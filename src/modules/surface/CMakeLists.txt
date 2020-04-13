@@ -76,11 +76,10 @@ if (WIN32)
   add_definitions(-DSURFACE_EXPORTS=1)
 endif()
 
-add_library(surface SHARED ${SURFACE_SRCS})
+add_library(surface SHARED ${SURFACE_SRCS} ${MCWG_HEADERS})
 target_link_libraries(surface PRIVATE qlib gfx qsys molstr CGAL::CGAL)
 
-add_custom_target(surface_generate_headers DEPENDS ${MCWG_HEADERS})
-add_dependencies(surface surface_generate_headers)
+MCWRAPGEN_PYWRAPPERS(surface)
 
 install(TARGETS surface
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
