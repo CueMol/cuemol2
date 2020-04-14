@@ -56,7 +56,7 @@ macro(MCWRAPGEN_CLASS _target_sources)
 
   endforeach()
 
-  message("MCWG_PY_WRAPPERS: ${MCWG_PY_WRAPPERS}")
+  # message("MCWG_PY_WRAPPERS: ${MCWG_PY_WRAPPERS}")
 endmacro()
 
 macro(MCWRAPGEN_MODULE _target_sources _target_moddef)
