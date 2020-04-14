@@ -82,17 +82,17 @@ void EventManager::messageLoop()
 
 ////////////////////////////////////////////////////
 
-void EventManager::setTimer(TimerListener *pobj, time_value dur_msec)
+void EventManager::setTimer(TimerListener *pobj, qlib::time_value dur_msec)
 {
-  time_value curr = m_pImpl->getCurrentTime();
-  TimerTuple tt;
-  tt.start = curr;
-  tt.end = curr + dur_msec;
-  tt.pobj = pobj;
-  m_timerq.push_back(tt);
-
-  //timerEntryMethod();
-  //checkQueueAndSetupTimer(false);
+    qlib::time_value curr = m_pImpl->getCurrentTime();
+    TimerTuple tt;
+    tt.start = curr;
+    tt.end = curr + dur_msec;
+    tt.pobj = pobj;
+    m_timerq.push_back(tt);
+    
+    //timerEntryMethod();
+    //checkQueueAndSetupTimer(false);
 }
 
 void EventManager::removeTimer(TimerListener *pobj)
@@ -129,7 +129,7 @@ void EventManager::finiTimer()
 void EventManager::checkTimerQueue()
 {
   if (m_timerq.empty()) return;
-  time_value curr = m_pImpl->getCurrentTime();
+  qlib::time_value curr = m_pImpl->getCurrentTime();
 MB_DPRINTLN("EventManager::checkTimerQueue() curr=%lld", curr);
 
   TimerQueue::iterator iter = m_timerq.begin();
@@ -139,7 +139,7 @@ MB_DPRINTLN("EventManager::checkTimerQueue() curr=%lld", curr);
   for (; iter!=m_timerq.end(); ) {
     const TimerTuple &rtt = *iter;
     TimerListener *pobj = rtt.pobj;
-    time_value dur_end = rtt.end-curr;
+    qlib::time_value dur_end = rtt.end-curr;
     if (dur_end<=0) {
       // process ended timer (last event)
       iter = m_timerq.erase(iter);
@@ -170,7 +170,7 @@ TimerImpl::~TimerImpl()
 #include <boost/chrono/chrono.hpp>
 #endif
 
-time_value TimerImpl::getCurrentTime()
+qlib::time_value TimerImpl::getCurrentTime()
 {
 #ifdef HAVE_BOOST_CHRONO
   using namespace boost::chrono;
@@ -178,12 +178,12 @@ time_value TimerImpl::getCurrentTime()
   high_resolution_clock::time_point tp = high_resolution_clock::now();
 
   // time_value is in nano-sec rep with int64 precision
-  time_value t1 = duration_cast<nanoseconds>(tp.time_since_epoch()).count();
+  qlib::time_value t1 = duration_cast<nanoseconds>(tp.time_since_epoch()).count();
 
   // LOG_DPRINTLN("getCurrentTime() = %llu", t1);
   return t1;
 #else
-  return time_value(0);
+  return qlib::time_value(0);
 #endif
 }
 
