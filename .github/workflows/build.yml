@@ -59,9 +59,11 @@ jobs:
     - name: Install prerequisite 2
       shell: bash
       run: |
+        mkdir ${GITHUB_WORKSPACE}/build_prerequisites
+        cd ${GITHUB_WORKSPACE}/build_prerequisites
         pwd
         wget https://github.com/CueMol/build_prerequisite/releases/download/v0.0.1/mac_build_set.tar.gz -O mac_build_set.tar.gz
-        tar xzvf mac_build_set.tar.gz
+        tar xzf mac_build_set.tar.gz
 
     - name: Build
       id: build
@@ -69,7 +71,7 @@ jobs:
         pwd
         mkdir build
         cd build
-        cmake .. -G "Unix Makefiles" -DCMAKE_PREFIX_PATH=. -DCGAL_ROOT=. -DCGAL_DISABLE_GMP=ON -DBUILD_GUI=OFF -DBUILD_PYTHON_BINDINGS=ON
+        cmake .. -G "Unix Makefiles" -DCMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/build_prerequisites -DCGAL_DISABLE_GMP=ON -DBUILD_GUI=OFF -DBUILD_PYTHON_BINDINGS=ON -DFFTW_ROOT=${GITHUB_WORKSPACE}/build_prerequisites/fftw
         ls -la
         cmake --build . -v --config Release
         ls -la
