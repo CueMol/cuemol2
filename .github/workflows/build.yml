@@ -50,7 +50,8 @@ jobs:
 
     - name: Install prerequisite 1
       run: |
-        brew install boost xz little-cms2 glew
+        brew list
+        brew install boost little-cms2 glew
         brew list
         pwd
         
