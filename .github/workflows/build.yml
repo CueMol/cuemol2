@@ -51,8 +51,17 @@ jobs:
     - name: Install prerequisite 1
       run: |
         brew install boost xz little-cms2 glew
+        brew list
+        pwd
         
     - uses: actions/checkout@v1
+
+    - name: Install prerequisite 2
+      shell: bash
+      run: |
+        pwd
+        wget https://github.com/CueMol/build_prerequisite/releases/download/v0.0.1/mac_build_set.tar.gz -O mac_build_set.tar.gz
+        tar xzvf mac_build_set.tar.gz
 
     - name: Build
       id: build
