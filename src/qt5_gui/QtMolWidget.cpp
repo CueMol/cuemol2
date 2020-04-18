@@ -32,6 +32,7 @@ QtMolWidget::QtMolWidget(QWidget *parent)
 
   grabGesture(Qt::PinchGesture);
   // grabGesture(Qt::PanGesture);
+
 }
 
 QtMolWidget::QtMolWidget(const QGLFormat &format ,QWidget *parent)
@@ -226,13 +227,15 @@ void QtMolWidget::setupMouseEvent(QMouseEvent *event, qsys::InDevEvent &ev)
 
   // set modifier
   int modif = 0;
-  Qt::MouseButtons btns = event->buttons();
+  // button() should be included for button-up (release) event
+  Qt::MouseButtons btns = event->buttons() | event->button();
   Qt::KeyboardModifiers mdfs = event->modifiers();
 
   if (mdfs & Qt::ControlModifier)
     modif |= qsys::InDevEvent::INDEV_CTRL;
   if (mdfs & Qt::ShiftModifier)
     modif |= qsys::InDevEvent::INDEV_SHIFT;
+
   if (btns & Qt::LeftButton)
     modif |= qsys::InDevEvent::INDEV_LBTN;
   if (btns & Qt::MidButton)
@@ -242,8 +245,6 @@ void QtMolWidget::setupMouseEvent(QMouseEvent *event, qsys::InDevEvent &ev)
 
   // ev.setSource(this);
   ev.setModifier(modif);
-
-  return;
 }
 
 void QtMolWidget::setupWheelEvent(QWheelEvent *event, qsys::InDevEvent &ev)

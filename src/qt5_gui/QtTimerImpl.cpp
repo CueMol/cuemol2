@@ -42,15 +42,24 @@ void QtTimerImpl::timerCallbackFunc()
 qlib::time_value QtTimerImpl::getCurrentTime()
 {
   qlib::time_value tval;
-#ifdef WIN32
-  tval = (qlib::time_value) ::GetTickCount();
-#endif
-#ifdef MB_MACOSX
+#if defined(WIN32)
+  tval = qlib::time_value( ::GetTickCount() );
+  // conv from milli-sec to nano-sec repr
+  tval *= qlib::time_value(1000000);
+#elif defined(XP_MACOSX)
   uint64_t abstime = mach_absolute_time();
   Nanoseconds nanos = AbsoluteToNanoseconds( *(AbsoluteTime *) &abstime );
-  tval = UnsignedWideToUInt64(nanos)/1000000;
+  //tval = UnsignedWideToUInt64(nanos)/1000000;
+  tval = UnsignedWideToUInt64(nanos);
+#else
+  // UNIX (linux, etc)
+  timeval tv;
+  gettimeofday(&tv, NULL);
+  tval = qlib::time_value(tv.tv_sec) * qlib::time_value(1000000) +
+    qlib::time_value(tv.tv_usec);
+  // conv from micro-sec to nano-sec repr
+  tval *= qlib::time_value(1000);
 #endif
-  // TO DO: Linux implementation
       
   return tval;
 }
