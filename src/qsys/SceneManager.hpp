@@ -167,5 +167,6 @@ namespace qsys {
 
 }
 
-#endif
+SINGLETON_BASE_DECL(qsys::SceneManager);
 
+#endif

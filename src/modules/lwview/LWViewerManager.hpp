@@ -55,5 +55,6 @@ namespace lwview {
 
 }
 
-#endif
+SINGLETON_BASE_DECL(lwview::LWViewerManager);
 
+#endif

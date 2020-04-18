@@ -133,5 +133,6 @@ namespace molanl {
 
 }
 
-#endif
+SINGLETON_BASE_DECL(molanl::MolAnlManager);
 
+#endif

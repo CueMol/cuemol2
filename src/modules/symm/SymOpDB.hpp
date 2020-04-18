@@ -149,6 +149,6 @@ private:
 
 } // namespace symm
 
+SINGLETON_BASE_DECL(symm::SymOpDB);
+
 #endif
-
-

@@ -39,9 +39,9 @@ namespace sysdep {
     virtual void sceneChanged(qsys::SceneEvent &ev);
 
   };
-
   
 }
 
-#endif
+SINGLETON_BASE_DECL(sysdep::OglProgObjMgr);
 
+#endif

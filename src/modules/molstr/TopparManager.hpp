@@ -78,4 +78,6 @@ namespace molstr {
   };
 }
 
+SINGLETON_BASE_DECL(molstr::TopparManager);
+
 #endif

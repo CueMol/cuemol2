@@ -6,7 +6,7 @@ on:
   #    types: [assigned, opened, synchronize, reopened, labeled, unlabeled, edited, closed, ready_for_review, locked, unlocked, review_requested, review_request_removed]
 
 jobs:
-  build:
+  build_win:
     name: "Windows Latest MSVC"
     runs-on: windows-latest
     steps:
@@ -43,3 +43,36 @@ jobs:
         cmake --build . -v --config Release
         dir Release
 
+  build_mac:
+    name: "MacOS Latest clang"
+    runs-on: macos-latest
+    steps:
+
+    - name: Install prerequisite 1
+      run: |
+        brew install boost xz little-cms2 glew
+        brew list
+        pwd
+        
+    - uses: actions/checkout@v1
+
+    - name: Install prerequisite 2
+      shell: bash
+      run: |
+        cd ${GITHUB_WORKSPACE}
+        pwd
+        wget https://github.com/CueMol/build_prerequisite/releases/download/v0.0.1/mac_build_set.tar.gz -O mac_build_set.tar.gz
+        tar xvzf mac_build_set.tar.gz
+        ls -la
+
+    - name: Build
+      id: build
+      run: |
+        pwd
+        mkdir build
+        cd build
+        cmake --version
+        cmake .. -G "Unix Makefiles" -DCMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/mac_build_set -DCGAL_DISABLE_GMP=ON -DBUILD_GUI=OFF -DBUILD_PYTHON_BINDINGS=ON -DFFTW_ROOT=${GITHUB_WORKSPACE}/mac_build_set/fftw
+        ls -la
+        cmake --build . -v --config Release
+        ls -la

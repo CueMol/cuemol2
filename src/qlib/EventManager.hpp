@@ -176,6 +176,8 @@ namespace qlib {
 
 }
 
+SINGLETON_BASE_DECL(qlib::EventManager);
+
 #endif
 
 

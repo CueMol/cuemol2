@@ -100,5 +100,7 @@ namespace qlib {
 
 }
 
+SINGLETON_BASE_DECL(qlib::ObjectManager);
+
 #endif // QLIB_OBJECT_MANAGER_HPP_INCLUDED
 

@@ -49,10 +49,14 @@ if (OPENGL_FOUND)
     # Windows case
     add_definitions(-DHAVE_GL_GL_H=1)
     add_definitions(-DHAVE_GL_GLU_H=1)
-  elseif(MACOS)
+  elseif(APPLE)
     # MacOS X
+    add_definitions(-DHAVE_OPENGL_GL_H=1)
+    add_definitions(-DHAVE_OPENGL_GLU_H=1)
   else()
     # Linux/other
+    add_definitions(-DHAVE_GL_GL_H=1)
+    add_definitions(-DHAVE_GL_GLU_H=1)
   endif()
 
   list(APPEND SYSDEP_SRCS ${SYSDEP_OGL_SRCS})

@@ -117,4 +117,6 @@ private:
 
 }
 
+SINGLETON_BASE_DECL(gfx::ColCompiler);
+
 #endif

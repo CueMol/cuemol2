@@ -173,23 +173,23 @@ namespace qlib {
     /// copy ctor (from the same class)
     LScrSp(LScrSp const & r): super_t(r), m_pCached(r.get()) {}
     
-    /// Copy ctor (dynamic_cast from base class "super_t")
-    LScrSp(super_t const & r): super_t(r) {
-      LScriptable *pscr = super_t::get();
-      if (pscr==NULL) {
-        MB_DPRINTLN("LScrSP> in copy ctor (dynamic_cast), src is NULL");
-	m_pCached = NULL;
-	return;
+      /// Copy ctor (dynamic_cast from base class "super_t")
+      LScrSp(super_t const & r): super_t(r) {
+          LScriptable *pscr = super_t::get();
+          if (pscr==NULL) {
+              MB_DPRINTLN("LScrSP> in copy ctor (dynamic_cast), src is NULL");
+              m_pCached = NULL;
+              return;
+          }
+          MB_ASSERT(pscr!=NULL);
+          m_pCached = dynamic_cast<_Type *>(pscr);
+          if (m_pCached==NULL) {
+              LString msg = LString::format("LScrSp<>: dynamic cast from %s to %s failed.",
+                                            typeid(_Type).name(), typeid(r).name());
+              MB_DPRINTLN("%s", msg.c_str());
+              MB_THROW(InvalidCastException, msg);
+          }
       }
-      MB_ASSERT(pscr!=NULL);
-      m_pCached = dynamic_cast<_Type *>(pscr);
-      if (m_pCached==NULL) {
-	LString msg = LString::format("LScrSp<>: dynamic cast from %s to %s failed.",
-				      typeid(_Type).name(), typeid(r).name());
-	MB_DPRINTLN(msg);
-	MB_THROW(InvalidCastException, msg);
-      }
-    }
     
     /// Copy ctor with template (dynamic_cast)
     template<class Y>
@@ -197,8 +197,8 @@ namespace qlib {
       LScriptable *pscr = super_t::get();
       if (pscr==NULL) {
         MB_DPRINTLN("LScrSp> in copy ctor with template (dynamic_cast), src is NULL");
-	m_pCached = NULL;
-	return;
+        m_pCached = NULL;
+        return;
       }
       m_pCached = dynamic_cast<_Type *>(pscr);
       if (m_pCached==NULL) {
@@ -206,8 +206,8 @@ namespace qlib {
                                       " dynamic cast from %s(pscr) to %s(_Type) failed.",
                                       typeid(r).name(),
 				      typeid(*pscr).name(), typeid(_Type).name());
-	MB_DPRINTLN(msg);
-	MB_THROW(InvalidCastException, msg);
+        MB_DPRINTLN("%s", msg.c_str());
+        MB_THROW(InvalidCastException, msg);
         super_t::m_ptr = NULL;
       }
     }

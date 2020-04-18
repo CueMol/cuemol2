@@ -181,5 +181,6 @@ namespace qsys {
 
 }
 
-#endif
+SINGLETON_BASE_DECL(qsys::StreamManager);
 
+#endif

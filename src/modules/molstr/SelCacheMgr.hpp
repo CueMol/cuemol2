@@ -153,5 +153,6 @@ private:
 
 } // namespace molstr
 
-#endif // MOL_SEL_MGR_H__
+SINGLETON_BASE_DECL(molstr::SelCacheMgr);
 
+#endif // MOL_SEL_MGR_H__
