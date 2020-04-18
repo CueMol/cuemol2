@@ -113,6 +113,7 @@ void QtMolWidget::initializeGL()
   // TO DO: set HiDPI scaling value
   // pWglView->setSclFac(m_sclX, m_sclY);
   double r = windowHandle()->devicePixelRatio();
+  LOG_DPRINTLN("QtMolWidget> scale factor: %f", r);
   if (!qlib::isNear4(r, 1.0))
     m_pView->setSclFac(r, r);
 
@@ -134,13 +135,13 @@ void QtMolWidget::resizeGL(int width, int height)
 {
   double r = windowHandle()->devicePixelRatio();
 
-  //double rx = double(width)/r;
-  //double ry = double(height)/r;
-  //MB_DPRINTLN("calling sizeChanged(%f,%f), DPR=%f", rx, ry, r);
-  //m_pView->sizeChanged(int(rx), int(ry));
+  double rx = double(width)/r;
+  double ry = double(height)/r;
+  MB_DPRINTLN("calling sizeChanged(%f,%f), DPR=%f", rx, ry, r);
+  m_pView->sizeChanged(int(rx), int(ry));
 
-  MB_DPRINTLN("calling sizeChanged(%d,%d), DPR=%f", width, height, r);
-  m_pView->sizeChanged(width, height);
+  // LOG_DPRINTLN("calling sizeChanged(%d,%d), DPR=%f", width, height, r);
+  // m_pView->sizeChanged(width, height);
 }
 
 /////////////////
@@ -206,7 +207,10 @@ void QtMolWidget::wheelEvent(QWheelEvent * event)
 
 void QtMolWidget::setupMouseEvent(QMouseEvent *event, qsys::InDevEvent &ev)
 {
-  double r = windowHandle()->devicePixelRatio();
+    // XXX: mouse coord is already DPI-scaled ??
+    const double r = 1.0;
+
+    // const double r = windowHandle()->devicePixelRatio();
   if (!qlib::isNear4(r, 1.0)) {
     ev.setX(int( double(event->x())*r ));
     ev.setY(int( double(event->y())*r ));
