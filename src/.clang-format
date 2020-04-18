@@ -8,7 +8,13 @@ TabWidth:        4
 UseTab:          Never
 AccessModifierOffset: -4
 BreakBeforeBraces: Linux
-ColumnLimit: 80
+ColumnLimit: 88
 Cpp11BracedListStyle: true
 BreakBeforeBinaryOperators: None
 AllowShortFunctionsOnASingleLine: Empty
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex:           '^<common.h>$'
+    Priority:        -1
+  - Regex:           '.*'
+    Priority:        99

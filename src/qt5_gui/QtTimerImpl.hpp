@@ -6,44 +6,44 @@
 
 #include "qt5_gui.hpp"
 #include <QtCore/QTimer>
+#include <QElapsedTimer>
 #include <qlib/EventManager.hpp>
 
 class QtTimerImpl : public QObject, public qlib::TimerImpl
 {
-  Q_OBJECT;
+    Q_OBJECT;
 
 private:
-  QTimer *m_pTimer;
-  
+    QTimer *m_pTimer;
+
+    QElapsedTimer *m_pElaTimer;
+
 public:
-  QtTimerImpl();
-  
-  virtual ~QtTimerImpl();
+    QtTimerImpl();
 
-  /// Implementation
+    virtual ~QtTimerImpl();
 
-  virtual qlib::time_value getCurrentTime();
+    /// Implementation
 
-  virtual void start(qlib::time_value period);
-  virtual void stop();
+    virtual qlib::time_value getCurrentTime();
 
-// private:
-//   void startImpl(int msec) {
-//     m_pTimer->start(msec);
-//   }
+    virtual void start(qlib::time_value period);
+    virtual void stop();
 
-//   void stopImpl() {
-//     m_pTimer->stop();
-//   }
+    // private:
+    //   void startImpl(int msec) {
+    //     m_pTimer->start(msec);
+    //   }
 
-  /// static initialization / setup Event/Timer manager
-  static void init();
+    //   void stopImpl() {
+    //     m_pTimer->stop();
+    //   }
 
+    /// static initialization / setup Event/Timer manager
+    static void init();
 
 public slots:
-  void timerCallbackFunc();
-  
-  
-signals:
+    void timerCallbackFunc();
 
+signals:
 };
