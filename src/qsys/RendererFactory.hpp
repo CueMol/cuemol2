@@ -90,5 +90,6 @@ namespace qsys {
 
 }
 
-#endif
+SINGLETON_BASE_DECL(qsys::RendererFactory);
 
+#endif

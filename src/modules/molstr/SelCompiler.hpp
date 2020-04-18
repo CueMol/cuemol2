@@ -59,4 +59,6 @@ namespace molstr {
 inline int isatty (int ) { return 0; }
 #endif
 
+SINGLETON_BASE_DECL(molstr::SelCompiler);
+
 #endif

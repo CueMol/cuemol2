@@ -7,6 +7,7 @@ find_package(Boost 1.50.0 REQUIRED
   COMPONENTS system thread filesystem chrono timer)
 
 find_package(CGAL REQUIRED)
+message(STATUS "CGAL_CONFIG: ${CGAL_CONFIG}")
 message(STATUS "CGAL_FOUND: ${CGAL_FOUND} INCLUDE_DIR: ${CGAL_INCLUDE_DIRS} LIBRARIES: ${CGAL_LIBRARIES}")
 
 find_package(LibLZMA)

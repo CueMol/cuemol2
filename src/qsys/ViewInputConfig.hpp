@@ -181,6 +181,6 @@ namespace qsys {
 
 }
 
+SINGLETON_BASE_DECL(qsys::ViewInputConfig);
 
-#endif //
-
+#endif

@@ -75,10 +75,10 @@ bool CnsParFile::readRecord()
     }
 
     // check literal token
-    if ('0'<=ch && ch<='9' ||
-	'a'<=ch && ch<='z' ||
-	'A'<=ch && ch<='Z' ||
-	ch=='.' || ch=='-' || ch=='+' || ch=='\'') {
+    if (('0'<=ch && ch<='9') ||
+        ('a'<=ch && ch<='z') ||
+        ('A'<=ch && ch<='Z') ||
+        ch=='.' || ch=='-' || ch=='+' || ch=='\'') {
       sbuf[idx] = ch;
       idx++;
       continue;

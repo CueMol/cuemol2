@@ -323,4 +323,6 @@ namespace qsys {
 
 }
 
+SINGLETON_BASE_DECL(qsys::StyleMgr);
+
 #endif

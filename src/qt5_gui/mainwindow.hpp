@@ -96,7 +96,7 @@ private:
   void setupScene();
 
   int m_nLogListenerID;
-  virtual void logAppended(qlib::LLogEvent &evt);
+  virtual void logAppended(qlib::LLogEvent &evt) override;
 
   // QtMolWidget *m_pMolWidget;
   QMdiArea *m_pTabWnd;

@@ -58,8 +58,8 @@ namespace pybr {
 
   };
 
-
 }
 
-#endif
+SINGLETON_BASE_DECL(pybr::PythonBridge);
 
+#endif

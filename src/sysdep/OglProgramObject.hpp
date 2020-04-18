@@ -37,7 +37,7 @@ namespace sysdep {
  
   public:
     OglShaderObject(const GLenum shader_type )
-         : m_nType(shader_type), m_hGL(NULL)
+         : m_nType(shader_type), m_hGL(0)
     {
     }
     
@@ -66,7 +66,7 @@ namespace sysdep {
     ShaderTab m_shaders;
 
   public:
-    OglProgramObject() : m_hPO(NULL) {}
+    OglProgramObject() : m_hPO(0) {}
     virtual ~OglProgramObject();
 
     bool init();

@@ -138,6 +138,6 @@ public:
 
 }
 
+SINGLETON_BASE_DECL(qsys::ScrEventManager);
+
 #endif
-
-

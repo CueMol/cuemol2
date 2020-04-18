@@ -57,8 +57,10 @@ namespace gfx {
     static void sRegUID(qlib::uid_t uid);
     static void sUnregUID(qlib::uid_t uid);
   };
-  
+
 }
+
+SINGLETON_BASE_DECL(gfx::ColProfMgr);
 
 #endif
 

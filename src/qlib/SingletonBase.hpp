@@ -50,5 +50,8 @@ namespace qlib {
 #define SINGLETON_BASE_IMPL(classname) \
 template <> MB_PUBLIC classname *qlib::SingletonBase<classname>::s_pInst = 0;
 
-#endif
+// for static object declaration
+#define SINGLETON_BASE_DECL(classname) \
+template <> MB_PUBLIC classname *qlib::SingletonBase<classname>::s_pInst;
 
+#endif

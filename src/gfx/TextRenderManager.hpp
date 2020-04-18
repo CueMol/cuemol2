@@ -91,9 +91,8 @@ public:
     }
   };
 
-  ////////////////////////////////////////////
-  //
-
 }
+
+SINGLETON_BASE_DECL(gfx::TextRenderManager);
 
 #endif
