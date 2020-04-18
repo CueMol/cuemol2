@@ -50,8 +50,7 @@ jobs:
 
     - name: Install prerequisite 1
       run: |
-        brew list
-        brew install boost little-cms2 glew
+        brew install boost xz little-cms2 glew
         brew list
         pwd
         
@@ -72,7 +71,7 @@ jobs:
         pwd
         mkdir build
         cd build
-        cmake .. -G "Unix Makefiles" -DCGAL_ROOT=${GITHUB_WORKSPACE}/build_prerequisites/GAL-4.14.3 -DCGAL_DISABLE_GMP=ON -DBUILD_GUI=OFF -DBUILD_PYTHON_BINDINGS=ON -DFFTW_ROOT=${GITHUB_WORKSPACE}/build_prerequisites/fftw
+        cmake .. -G "Unix Makefiles" -DCMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/build_prerequisites -DCGAL_DISABLE_GMP=ON -DBUILD_GUI=OFF -DBUILD_PYTHON_BINDINGS=ON -DFFTW_ROOT=${GITHUB_WORKSPACE}/build_prerequisites/fftw
         ls -la
         cmake --build . -v --config Release
         ls -la
