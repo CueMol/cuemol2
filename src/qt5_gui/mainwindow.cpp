@@ -250,9 +250,8 @@ void MainWindow::paste()
 
 void MainWindow::about()
 {
-  QMessageBox::about(this, tr("About MDI"),
-		     tr("The <b>MDI</b> example demonstrates how to write multiple "
-			"document interface applications using Qt."));
+  QMessageBox::about(this, tr("About CueMol"),
+		     tr("CueMol GUI"));
 }
 
 void MainWindow::updateMenus()
