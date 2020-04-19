@@ -16,8 +16,9 @@
 using namespace pybr;
 using qlib::LScriptable;
 
-/// Callback object
 namespace pybr {
+
+/// Callback object
   class QpyCallBackObj : public qlib::LScrCallBack
   {
   private:

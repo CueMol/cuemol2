@@ -35,11 +35,11 @@ public:
       return m_pScrObj;
     }
     
-    std::list<LString> sl;
+    LStringList sl;
     m_name.split('.', sl);
   
 
-    std::list<LString>::const_iterator iter = sl.begin();
+    auto iter = sl.begin();
     int nc = sl.size() - 1;
     int i=0;
     MB_ASSERT(nc>=1);

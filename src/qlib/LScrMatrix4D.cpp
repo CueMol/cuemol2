@@ -63,7 +63,7 @@ LScrMatrix4D *LScrMatrix4D::fromStringS(const LString &src)
   }
 
   LString val = re1.getSubstr(1);
-  std::list<LString> ls;
+  LStringList ls;
   val.split(',', ls);
   if (ls.size()!=16) {
     // ERROR!!

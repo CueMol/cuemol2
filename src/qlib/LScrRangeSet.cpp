@@ -127,7 +127,7 @@ bool LScrRangeSet::fromString(const LString &src)
   LScrRangeSet res;
 
   // tokenize by comma
-  std::list<LString> ls;
+  LStringList ls;
   src.split(',', ls);
   BOOST_FOREACH (const LString &elem, ls) {
     int cc = elem.indexOf(':');

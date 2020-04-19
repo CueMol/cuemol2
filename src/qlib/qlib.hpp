@@ -32,6 +32,7 @@
 
 #endif // WIN32
 
+/// CueMol base library
 namespace qlib {
 
   /// Initialize the qlib library

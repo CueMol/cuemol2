@@ -54,7 +54,7 @@ private:
   NodeList m_children;
 
   /// Error messages
-  std::list<LString> m_errMsgs;
+  LStringList m_errMsgs;
 
   ////////////////////////
 
