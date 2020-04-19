@@ -68,7 +68,7 @@ public:
     void enumerateStreamHandlers() const {
         auto strMgr = qsys::StreamManager::getInstance();
         auto nhs = strMgr->getStreamHandlerKeys();
-        LOG_DPRINTLN("num handlers: %d", nhs);
+        // LOG_DPRINTLN("num handlers: %d", nhs);
         for (auto nm : nhs) {
             auto shi = strMgr->getStreamHandlerInfo(nm);
             LOG_DPRINTLN("%s: %s", nm.c_str(), shi.nickname.c_str());

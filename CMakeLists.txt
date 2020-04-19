@@ -18,6 +18,11 @@ find_package(Perl REQUIRED)
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)
 
+if (APPLE)
+  set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "" FORCE)
+  # set(CMAKE_CXX_FLAGS "-stdlib=libc++")
+endif ()
+
 add_subdirectory(src)
 
 message(STATUS
