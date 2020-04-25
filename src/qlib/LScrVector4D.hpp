@@ -10,6 +10,7 @@
 #include "LScrObjects.hpp"
 #include "Vector4D.hpp"
 #include "mcutils.hpp"
+#include "LVarDict.hpp"
 
 namespace qlib {
 
@@ -99,6 +100,12 @@ namespace qlib {
 
     typedef boost::true_type has_fromString;
     static LScrVector4D *fromStringS(const LString &src);
+
+    LVarDict getDict() const;
+    void setDict(const LVarDict &dict);
+
+  private:
+    LVarDict m_dictValue;
   };
 
 } // namespace qlib

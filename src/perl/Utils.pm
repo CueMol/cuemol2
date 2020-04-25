@@ -213,6 +213,8 @@ sub getVarTypeName($) {
     return "Array";
   } elsif ($typenm eq "list") {
     return "List";
+  } elsif ($typenm eq "dict") {
+    return "Dict";
   } elsif ($typenm eq "void") {
     return "Void";
   }
@@ -235,6 +237,8 @@ sub isIntrinsic($) {
     } elsif ($typenm eq "array") {
 	return 1;
     } elsif ($typenm eq "list") {
+	return 1;
+    } elsif ($typenm eq "dict") {
 	return 1;
     }
     return 0;
