@@ -356,7 +356,16 @@ public:
     /// This create a new copy of LVarArray object form pArray
     void setArrayValue(const LVarArray &array);
 
-    /// This only set the pointer, and does not copy the pArray
+    /// Set array pointer (ownership is transferred).
+    inline void setArrayPtr(LVarArray *pArray)
+    {
+        cleanup();
+        type = LT_ARRAY;
+        value.pArrayValue = pArray;
+        m_bOwned = true;
+    }
+
+    /// Set array pointer (ownership is NOT transferred).
     inline void shareArrayPtr(LVarArray *pArray)
     {
         cleanup();

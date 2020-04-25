@@ -47,12 +47,3 @@ void LScrVector4D::setStrValue(const LString &val)
     for (int i = 1; i <= 4; ++i) ai(i) = vec.ai(i);
 }
 
-LVarDict LScrVector4D::getDict() const
-{
-    return m_dictValue;
-}
-
-void LScrVector4D::setDict(const LVarDict &dict)
-{
-    m_dictValue = dict;
-}

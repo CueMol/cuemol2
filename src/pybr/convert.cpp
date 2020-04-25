@@ -131,9 +131,16 @@ PyObject *Wrapper::lvarToPyObj(qlib::LVariant &variant)
         }
 
         case qlib::LVariant::LT_ARRAY: {
-            // TO DO: impl
-            LOG_DPRINTLN("Conversion from LT_ARRAY to PyObject not implemented.");
-            break;
+            auto *pLArray = variant.getArrayPtr();
+            int nsize = pLArray->size();
+            PyObject *pPyList = PyList_New(nsize);
+            // transfer elements
+            for (int i=0; i<nsize; ++i) {
+                qlib::LVariant &value = pLArray->at(i);
+                PyObject *pObjValue = lvarToPyObj(value);
+                PyList_SET_ITEM(pPyList, i, pObjValue);
+            }
+            return pPyList;
         }
 
         case qlib::LVariant::LT_DICT: {
@@ -163,22 +170,13 @@ void Wrapper::pyObjToLVar(PyObject *pPyObj, qlib::LVariant &rvar)
 {
     // boolean
     if (PyBool_Check(pPyObj)) {
-#if PY_MAJOR_VERSION >= 3
         rvar.setBoolValue((bool)PyLong_AsLong(pPyObj));
-#else
-        rvar.setBoolValue((bool)PyInt_AsLong(pPyObj));
-#endif
         return;
     }
 
     // plain integer
-#if PY_MAJOR_VERSION >= 3
     if (PyLong_Check(pPyObj)) {
         long tmp = PyLong_AsLong(pPyObj);
-#else
-    if (PyInt_Check(pPyObj)) {
-        long tmp = PyInt_AsLong(pPyObj);
-#endif
         rvar.setIntValue(tmp);
         return;
     }
@@ -217,6 +215,18 @@ void Wrapper::pyObjToLVar(PyObject *pPyObj, qlib::LVariant &rvar)
     // None
     if (pPyObj == Py_None) {
         rvar.setNull();
+        return;
+    }
+
+    // list
+    if (PyList_Check(pPyObj)) {
+        int nsize = PyList_Size(pPyObj);
+        qlib::LVarArray *pArray = MB_NEW qlib::LVarArray(nsize);
+        rvar.setArrayPtr(pArray);
+        for (int i=0; i<nsize; ++i) {
+            PyObject *value = PyList_GetItem(pPyObj, i);
+            pyObjToLVar(value, pArray->at(i));
+        }
         return;
     }
 
