@@ -1,6 +1,7 @@
 // -*-Mode: C++;-*-
 
 #include "Command.qif"
+#include "NewSceneCommand.qif"
 #include "CmdMgr.qif"
 
 module qt5gui
@@ -9,5 +10,6 @@ module qt5gui
   fini qt5_gui::fini();
 
   Command;
+  NewSceneCommand;
   CmdMgr;
 };

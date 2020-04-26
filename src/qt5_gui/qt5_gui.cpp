@@ -12,7 +12,11 @@
 #include <qlib/LString.hpp>
 
 #include "CmdMgr.hpp"
+#include "NewSceneCommand.hpp"
 #include "QtGlView.hpp"
+
+void qt5gui_regClasses();
+void qt5gui_unregClasses();
 
 namespace qt5_gui {
 
@@ -29,14 +33,21 @@ public:
 
 bool init()
 {
+    qt5gui_regClasses();
     CmdMgr::init();
     qsys::View::setViewFactory(new QtGlViewFactory);
+
+    CmdMgr *pMgr = CmdMgr::getInstance();
+    CommandPtr pcmd(MB_NEW NewSceneCommand());
+    pMgr->regist(pcmd);
+
     return true;
 }
 
 void fini()
 {
     CmdMgr::fini();
+    qt5gui_unregClasses();
 }
 
 }  // namespace qt5_gui

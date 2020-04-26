@@ -8,6 +8,8 @@
 #include "Command.hpp"
 #include "qt5_gui.hpp"
 
+class QWidget;
+
 namespace qt5_gui {
 
 using qlib::LString;
@@ -36,6 +38,8 @@ public:
     CommandPtr getCmd(const LString &cmd_name) const {
         return m_cmdtab.get(cmd_name);
     }
+
+    void runGUICmd(const LString &cmd_name, QWidget *pwnd_info) const;
 
     static bool init()
     {

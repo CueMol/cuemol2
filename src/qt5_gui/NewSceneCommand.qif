@@ -1,0 +1,24 @@
+// -*-Mode: C++;-*-
+
+#pragma once
+
+#include "Command.qif"
+
+runtime_class NewSceneCommand extends Command
+{
+    client_hdr "NewSceneCommand.hpp";
+    client_name qt5_gui::NewSceneCommand;
+
+    scriptable;
+    smartptr;
+    cloneable;
+
+    /// Name of the new scene
+    property string scene_name => redirect(getSceneName, setSceneName);
+    default scene_name = "";
+
+    /// Create view flag
+    property boolean create_view => m_bIsCreateView;
+    default create_view = true;
+
+};

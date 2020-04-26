@@ -1,7 +1,6 @@
 // -*-Mode: C++;-*-
 
-#ifndef COMMAND_QIF_INCLUDED
-#define COMMAND_QIF_INCLUDED
+#pragma once
 
 runtime_class Command
 {
@@ -19,5 +18,3 @@ runtime_class Command
     integer getUID();
     void run();
 };
-
-#endif

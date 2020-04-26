@@ -1,3 +1,5 @@
+#define NO_USING_QTYPES
+
 #include <common.h>
 
 #include "Command.hpp"
@@ -17,16 +19,5 @@ Command::~Command()
 }
 
 //////////
-
-/// Execute the command
-void NewSceneCommand::run() {}
-
-void NewSceneCommand::runGUI(QWidget *pwnd_info) {}
-
-/// Get command's unique name
-const char *NewSceneCommand::getName() const
-{
-    return "new_scene";
-}
 
 }  // namespace qt5_gui

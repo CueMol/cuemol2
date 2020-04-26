@@ -52,29 +52,11 @@ public:
     virtual void runGUI(QWidget *pwnd_info) = 0;
 };
 
+MC_DECL_SCRSP(GUICommand);
+
 }  // namespace qt5_gui
 
 //////////
-
-namespace qt5_gui {
-
-/// Abstract Command for GUI actions
-class NewSceneCommand : public GUICommand
-{
-public:
-    NewSceneCommand() = default;
-    virtual ~NewSceneCommand() = default;
-
-    /// Execute the command
-    virtual void run();
-
-    virtual void runGUI(QWidget *pwnd_info);
-
-    /// Get command's unique name
-    virtual const char *getName() const;
-};
-
-}  // namespace qt5_gui
 
 #if 0
 #include "qsys/SceneManager.hpp"
