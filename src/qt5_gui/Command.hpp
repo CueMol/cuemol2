@@ -1,23 +1,78 @@
 #pragma once
 
 #include "qlib/qlib.hpp"
-#include "qsys/SceneManager.hpp"
-#include "qsys/SceneXMLReader.hpp"
-#include "qsys/StreamManager.hpp"
 #include "qt5_gui.hpp"
-#include "sysdep/MouseEventHandler.hpp"
 
 namespace qt5_gui {
 
 /// Abstract Command
-class AbstractCommand
+class Command : public qlib::LSimpleCopyScrObject, public qlib::LUIDObject
+{
+    MC_SCRIPTABLE;
+
+public:
+    Command() = default;
+    virtual ~Command() = default;
+
+    /// Execute the command
+    virtual void run() = 0;
+
+    /// Get command's unique name
+    virtual const char *getName() const = 0;
+
+};
+
+MC_DECL_SCRSP(Command);
+
+}  // namespace qt5_gui
+
+//////////
+
+class QWidget;
+
+namespace qt5_gui {
+
+/// Abstract Command for GUI actions
+class GUICommand : public Command
 {
 public:
-    AbstractCommand() = default;
-    virtual ~AbstractCommand() = default;
+    GUICommand() = default;
+    virtual ~GUICommand() = default;
 
-    virtual void run() = 0;
+    virtual void runGUI(QWidget *pwnd_info) = 0;
+
 };
+
+}  // namespace qt5_gui
+
+//////////
+
+namespace qt5_gui {
+
+/// Abstract Command for GUI actions
+class NewSceneCommand : public GUICommand
+{
+public:
+    GUICommand() = default;
+    virtual ~GUICommand() = default;
+
+    /// Execute the command
+    virtual void run();
+
+    virtual void runGUI(QWidget *pwnd_info);
+
+    /// Get command's unique name
+    virtual const char *getName() const;
+};
+
+}  // namespace qt5_gui
+
+
+#if 0
+#include "qsys/SceneManager.hpp"
+#include "qsys/SceneXMLReader.hpp"
+#include "qsys/StreamManager.hpp"
+#include "sysdep/MouseEventHandler.hpp"
 
 /// Open scene file command class
 class SceneOpenCommand : public AbstractCommand
@@ -104,6 +159,7 @@ public:
 
         scene->loadViewFromCam(m_nViewID, "__current");
     }
-};
 
+};
 }  // namespace qt5_gui
+#endif
