@@ -23,6 +23,7 @@ ClassRegistry.cpp
 LClass.cpp
 LRcObject.cpp
 LVariant.cpp
+LVarDict.cpp
 LPropSupport.cpp
 LPropContainer.cpp
 LScrObjects.cpp

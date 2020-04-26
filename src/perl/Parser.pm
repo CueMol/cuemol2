@@ -217,6 +217,7 @@ sub parseTypeName($) {
       $typenm eq "real" ||
       $typenm eq "string" ||
       $typenm eq "array" ||
+      $typenm eq "dict" ||
       $typenm eq "enum") {
       return ($typenm, 0, $typenm, 0);
   }

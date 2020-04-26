@@ -294,7 +294,8 @@ void LVariant::dump() const
     LVarDict::const_iterator eiter = getDictPtr()->end();
     for (; iter!=eiter; ++iter) {
       MB_DPRINT("%s: ", iter->first.c_str());
-      iter->second->dump();
+      // iter->second->dump();
+      iter->second.dump();
     }
     break;
   }
