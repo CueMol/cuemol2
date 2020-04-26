@@ -8,7 +8,8 @@
 runtime_class CmdMgr
 {
     client_hdr "CmdMgr.hpp";
-    client_name qt5gui::CmdMgr;
+    client_name qt5_gui::CmdMgr;
+    dllexport QT5GUI_API;
 
     scriptable;
     singleton;

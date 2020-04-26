@@ -1,5 +1,9 @@
 #pragma once
 
+#include <qlib/LScrObjects.hpp>
+#include <qlib/LUIDObject.hpp>
+#include <qlib/mcutils.hpp>
+
 #include "qlib/qlib.hpp"
 #include "qt5_gui.hpp"
 
@@ -10,9 +14,14 @@ class Command : public qlib::LSimpleCopyScrObject, public qlib::LUIDObject
 {
     MC_SCRIPTABLE;
 
+private:
+    /// Unique id of this obj
+    ///  (TO DO: move to LUIDObject??)
+    qlib::uid_t m_uid;
+
 public:
-    Command() = default;
-    virtual ~Command() = default;
+    Command();
+    virtual ~Command();
 
     /// Execute the command
     virtual void run() = 0;
@@ -20,6 +29,7 @@ public:
     /// Get command's unique name
     virtual const char *getName() const = 0;
 
+    qlib::uid_t getUID() const { return m_uid; }
 };
 
 MC_DECL_SCRSP(Command);
@@ -40,7 +50,6 @@ public:
     virtual ~GUICommand() = default;
 
     virtual void runGUI(QWidget *pwnd_info) = 0;
-
 };
 
 }  // namespace qt5_gui
@@ -53,8 +62,8 @@ namespace qt5_gui {
 class NewSceneCommand : public GUICommand
 {
 public:
-    GUICommand() = default;
-    virtual ~GUICommand() = default;
+    NewSceneCommand() = default;
+    virtual ~NewSceneCommand() = default;
 
     /// Execute the command
     virtual void run();
@@ -66,7 +75,6 @@ public:
 };
 
 }  // namespace qt5_gui
-
 
 #if 0
 #include "qsys/SceneManager.hpp"

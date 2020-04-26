@@ -3,15 +3,19 @@
 #include <qlib/LScrObjects.hpp>
 #include <qlib/SingletonBase.hpp>
 #include <qlib/mcutils.hpp>
+#include <qlib/MapTable.hpp>
 
 #include "Command.hpp"
 #include "qt5_gui.hpp"
 
 namespace qt5_gui {
 
+using qlib::LString;
+
 class QT5GUI_API CmdMgr : public qlib::LSingletonScrObject,
                           public qlib::SingletonBase<CmdMgr>
 {
+    using super_t = qlib::SingletonBase<CmdMgr>;
     MC_SCRIPTABLE;
 
 private:

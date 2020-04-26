@@ -1,9 +1,10 @@
 #include <common.h>
 
-#include "CmdMgr.cpp"
+#include "CmdMgr.hpp"
+
+SINGLETON_BASE_IMPL(qt5_gui::CmdMgr);
 
 namespace qt5_gui {
-SINGLETON_BASE_IMPL(CmdMgr);
 
 CmdMgr::CmdMgr()
 {

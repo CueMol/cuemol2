@@ -143,11 +143,6 @@ bool MainWindow::loadFile(const QString &fileName)
     auto &&pchild = createMolWidget();
     pchild->createSceneAndView();
 
-    qt5_gui::SceneOpenCommand soc;
-    soc.setSceneID(pchild->getSceneID());
-    soc.setViewID(pchild->getViewID());
-    soc.run();
-
     pchild->loadFile(fileName);
     pchild->showMaximized();
     pchild->update();
