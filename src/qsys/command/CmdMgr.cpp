@@ -6,10 +6,6 @@ SINGLETON_BASE_IMPL(qsys::CmdMgr);
 
 namespace qsys {
 
-CmdMgr::CmdMgr() {}
-
-CmdMgr::~CmdMgr() {}
-
 /// Register a command object
 void CmdMgr::regist(const CommandPtr &pcmd)
 {
@@ -28,6 +24,12 @@ bool CmdMgr::unregist(const LString &cmd_name)
 
     m_cmdtab.remove(cmd_name);
     return true;
+}
+
+CommandPtr CmdMgr::getCmd(const LString &cmd_name) const
+{
+    CommandPtr ptmpl = m_cmdtab.get(cmd_name);
+    return CommandPtr(static_cast<Command *>(ptmpl->copy()));
 }
 
 void CmdMgr::runGUICmd(const LString &cmd_name, void *pwnd_info) const

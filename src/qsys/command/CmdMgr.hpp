@@ -24,8 +24,8 @@ private:
     cmdtab_t m_cmdtab;
 
 public:
-    CmdMgr();
-    virtual ~CmdMgr();
+    CmdMgr() = default;
+    virtual ~CmdMgr() = default;
 
     /// Register a command object
     void regist(const CommandPtr &pcmd);
@@ -34,10 +34,7 @@ public:
     bool unregist(const LString &cmd_name);
 
     /// Get command object by command name
-    CommandPtr getCmd(const LString &cmd_name) const
-    {
-        return m_cmdtab.get(cmd_name);
-    }
+    CommandPtr getCmd(const LString &cmd_name) const;
 
     /// Run non-GUI command
     // TO DO: dict argments?
@@ -55,6 +52,13 @@ public:
     static void fini()
     {
         super_t::fini();
+    }
+
+    // helper method
+    template <typename _Class>
+    inline void regist()
+    {
+        regist(CommandPtr(MB_NEW _Class()));
     }
 };
 

@@ -38,8 +38,9 @@ bool init()
     qsys::View::setViewFactory(new QtGlViewFactory);
 
     auto pMgr = qsys::CmdMgr::getInstance();
-    qsys::CommandPtr pcmd(MB_NEW QtNewSceneCommand());
-    pMgr->regist(pcmd);
+    // qsys::CommandPtr pcmd(MB_NEW QtNewSceneCommand());
+    // pMgr->regist(pcmd);
+    pMgr->regist<QtNewSceneCommand>();
 
     return true;
 }
