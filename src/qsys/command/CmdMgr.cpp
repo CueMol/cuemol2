@@ -83,6 +83,7 @@ qlib::LVarDict CmdMgr::runCmd(const LString &cmd_name, const qlib::LVarDict &arg
             qlib::LVariant var;
             if (!pCmd->getProperty(nm, var)) {
                 // ERROR
+                MB_THROW(qlib::RuntimeException, "unexpected condition");
             }
             result.set(nm, var);
         }

@@ -26,6 +26,7 @@ void QtNewSceneCommand::runGUI(void *pwnd_info)
         auto &&pchild = pWnd->createMolWidget();
         pchild->bind(m_pResScene->getUID(), m_pResView->getUID());
         pchild->showMaximized();
+        pchild->setWindowTitle(m_pResScene->getName().c_str());
     }
 }
 
