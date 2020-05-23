@@ -4,6 +4,7 @@
 #include <qlib/MapTable.hpp>
 #include <qlib/SingletonBase.hpp>
 #include <qlib/mcutils.hpp>
+#include <qlib/LVarDict.hpp>
 #include <qsys/qsys.hpp>
 
 #include "Command.hpp"
@@ -39,6 +40,8 @@ public:
     /// Run non-GUI command
     // TO DO: dict argments?
     void runCmd(const LString &cmd_name) const;
+
+    qlib::LVarDict runCmd(const LString &cmd_name, const qlib::LVarDict &args) const;
 
     /// Run GUI command
     // TO DO: dict argments?

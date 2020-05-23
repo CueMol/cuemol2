@@ -29,8 +29,8 @@ runtime_class Vector
 
   property string strvalue => redirect(toString, setStrValue);
 
-  property dict dict_value => redirect(getDict, setDict);
-  property array array_value => redirect(getArray, setArray);
+  // property dict dict_value => redirect(getDict, setDict);
+  // property array array_value => redirect(getArray, setArray);
 
   // methods
   void set3(real, real, real) => set;

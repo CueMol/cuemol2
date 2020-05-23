@@ -56,4 +56,9 @@ void CmdMgr::runCmd(const LString &cmd_name) const
     pCmd->run();
 }
 
+qlib::LVarDict CmdMgr::runCmd(const LString &cmd_name, const qlib::LVarDict &args) const
+{
+    return qlib::LVarDict();
+}
+
 }  // namespace qsys

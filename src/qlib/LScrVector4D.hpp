@@ -119,7 +119,7 @@ public:
     typedef boost::true_type has_fromString;
     static LScrVector4D *fromStringS(const LString &src);
 
-#if 1
+#if 0
     //////////
     // for test
 

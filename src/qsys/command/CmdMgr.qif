@@ -17,6 +17,7 @@ runtime_class CmdMgr
     object<Command$> getCmd(string name);
 
     void runCmd(string name);
+    dict runCmdArgs(string name, dict args) => runCmd;
 };
 
 #endif
