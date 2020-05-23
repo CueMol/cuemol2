@@ -1,0 +1,15 @@
+// -*-Mode: C++;-*-
+
+#pragma once
+
+#include <qsys/command/NewSceneCommand.qif>
+
+runtime_class QtNewSceneCommand extends NewSceneCommand
+{
+    client_hdr "QtNewSceneCommand.hpp";
+    client_name qt5_gui::QtNewSceneCommand;
+
+    scriptable;
+    smartptr;
+    cloneable;
+};

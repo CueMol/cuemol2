@@ -7,8 +7,8 @@
 #include <QPlainTextEdit>
 #include <QtWidgets>
 
-#include "CmdMgr.hpp"
-#include "Command.hpp"
+#include <qsys/command/CmdMgr.hpp>
+// #include <qsys/command/Command.hpp>
 #include "QtMolStructPanel.hpp"
 #include "QtMolWidget.hpp"
 #include "QtScenePanel.hpp"
@@ -123,8 +123,8 @@ void MainWindow::newFile()
     // auto &&pchild = createMolWidget();
     // pchild->createSceneAndView();
     // pchild->showMaximized();
-    auto *pMgr = qt5_gui::CmdMgr::getInstance();
-    pMgr->runGUICmd("new_scene", this);
+    auto pMgr = qsys::CmdMgr::getInstance();
+    pMgr->runGUICmd("qt_new_scene", this);
 }
 
 void MainWindow::open()

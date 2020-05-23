@@ -1,21 +1,19 @@
 #pragma once
 
 #include <qlib/LScrObjects.hpp>
+#include <qlib/MapTable.hpp>
 #include <qlib/SingletonBase.hpp>
 #include <qlib/mcutils.hpp>
-#include <qlib/MapTable.hpp>
+#include <qsys/qsys.hpp>
 
 #include "Command.hpp"
-#include "qt5_gui.hpp"
 
-class QWidget;
-
-namespace qt5_gui {
+namespace qsys {
 
 using qlib::LString;
 
-class QT5GUI_API CmdMgr : public qlib::LSingletonScrObject,
-                          public qlib::SingletonBase<CmdMgr>
+class QSYS_API CmdMgr : public qlib::LSingletonScrObject,
+                        public qlib::SingletonBase<CmdMgr>
 {
     using super_t = qlib::SingletonBase<CmdMgr>;
     MC_SCRIPTABLE;
@@ -35,11 +33,19 @@ public:
     /// Unregister a command by name
     bool unregist(const LString &cmd_name);
 
-    CommandPtr getCmd(const LString &cmd_name) const {
+    /// Get command object by command name
+    CommandPtr getCmd(const LString &cmd_name) const
+    {
         return m_cmdtab.get(cmd_name);
     }
 
-    void runGUICmd(const LString &cmd_name, QWidget *pwnd_info) const;
+    /// Run non-GUI command
+    // TO DO: dict argments?
+    void runCmd(const LString &cmd_name) const;
+
+    /// Run GUI command
+    // TO DO: dict argments?
+    void runGUICmd(const LString &cmd_name, void *pwnd_info) const;
 
     static bool init()
     {
@@ -52,6 +58,6 @@ public:
     }
 };
 
-}  // namespace qt5_gui
+}  // namespace qsys
 
-SINGLETON_BASE_DECL(qt5_gui::CmdMgr);
+SINGLETON_BASE_DECL(qsys::CmdMgr);

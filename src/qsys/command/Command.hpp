@@ -3,14 +3,13 @@
 #include <qlib/LScrObjects.hpp>
 #include <qlib/LUIDObject.hpp>
 #include <qlib/mcutils.hpp>
+#include <qlib/qlib.hpp>
+#include <qsys/qsys.hpp>
 
-#include "qlib/qlib.hpp"
-#include "qt5_gui.hpp"
-
-namespace qt5_gui {
+namespace qsys {
 
 /// Abstract Command
-class Command : public qlib::LSimpleCopyScrObject, public qlib::LUIDObject
+class QSYS_API Command : public qlib::LSimpleCopyScrObject, public qlib::LUIDObject
 {
     MC_SCRIPTABLE;
 
@@ -26,35 +25,21 @@ public:
     /// Execute the command
     virtual void run() = 0;
 
+    virtual void runGUI(void *pwnd_info) = 0;
+
     /// Get command's unique name
     virtual const char *getName() const = 0;
 
-    qlib::uid_t getUID() const { return m_uid; }
+    qlib::uid_t getUID() const
+    {
+        return m_uid;
+    }
 };
 
 MC_DECL_SCRSP(Command);
 
-}  // namespace qt5_gui
+}  // namespace qsys
 
-//////////
-
-class QWidget;
-
-namespace qt5_gui {
-
-/// Abstract Command for GUI actions
-class GUICommand : public Command
-{
-public:
-    GUICommand() = default;
-    virtual ~GUICommand() = default;
-
-    virtual void runGUI(QWidget *pwnd_info) = 0;
-};
-
-MC_DECL_SCRSP(GUICommand);
-
-}  // namespace qt5_gui
 
 //////////
 
@@ -151,5 +136,5 @@ public:
     }
 
 };
-}  // namespace qt5_gui
+}  // namespace qsys
 #endif

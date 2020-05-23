@@ -107,5 +107,6 @@ private:
     // QtMolWidget *m_pMolWidget;
     QMdiArea *m_pTabWnd;
 
+public:
     QtMolWidget *createMolWidget();
 };

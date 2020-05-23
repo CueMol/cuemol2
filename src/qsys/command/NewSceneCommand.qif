@@ -1,17 +1,25 @@
 // -*-Mode: C++;-*-
 
-#pragma once
+#ifndef NEW_SCENE_COMMAND_QIF
+#define NEW_SCENE_COMMAND_QIF
+
+#include <qsys/Scene.qif>
+#include <qsys/View.qif>
 
 #include "Command.qif"
 
 runtime_class NewSceneCommand extends Command
 {
     client_hdr "NewSceneCommand.hpp";
-    client_name qt5_gui::NewSceneCommand;
+    client_name qsys::NewSceneCommand;
+    dllexport QSYS_API;
 
     scriptable;
     smartptr;
     cloneable;
+
+    //////////
+    // properties (input)
 
     /// Name of the new scene
     property string scene_name => redirect(getSceneName, setSceneName);
@@ -21,4 +29,11 @@ runtime_class NewSceneCommand extends Command
     property boolean create_view => m_bIsCreateView;
     default create_view = true;
 
+    //////////
+    // properties (output)
+
+    property object<Scene$> result_scene => m_pResScene (readonly);
+    property object<View$> result_view => m_pResView (readonly);
 };
+
+#endif

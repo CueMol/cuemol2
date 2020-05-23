@@ -11,8 +11,8 @@
 #include <qlib/EventManager.hpp>
 #include <qlib/LString.hpp>
 
-#include "CmdMgr.hpp"
-#include "NewSceneCommand.hpp"
+#include <qsys/command/CmdMgr.hpp>
+#include "QtNewSceneCommand.hpp"
 #include "QtGlView.hpp"
 
 void qt5gui_regClasses();
@@ -34,11 +34,11 @@ public:
 bool init()
 {
     qt5gui_regClasses();
-    CmdMgr::init();
+    qsys::CmdMgr::init();
     qsys::View::setViewFactory(new QtGlViewFactory);
 
-    CmdMgr *pMgr = CmdMgr::getInstance();
-    CommandPtr pcmd(MB_NEW NewSceneCommand());
+    auto pMgr = qsys::CmdMgr::getInstance();
+    qsys::CommandPtr pcmd(MB_NEW QtNewSceneCommand());
     pMgr->regist(pcmd);
 
     return true;
@@ -46,7 +46,6 @@ bool init()
 
 void fini()
 {
-    CmdMgr::fini();
     qt5gui_unregClasses();
 }
 

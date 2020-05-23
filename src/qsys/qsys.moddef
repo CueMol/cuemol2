@@ -28,6 +28,10 @@
 #include "MultiGradient.qif"
 #include "ScalarObject.qif"
 
+#include "command/Command.qif"
+#include "command/NewSceneCommand.qif"
+#include "command/CmdMgr.qif"
+
 module qsys
 {
   init qsys::init();
@@ -58,6 +62,10 @@ module qsys
   MultiGradient;
   ScalarObject;
   
+  Command;
+  NewSceneCommand;
+  CmdMgr;
+
 #if !defined(QM_BUILD_LW)
   SceneExporter;
 //  ImgSceneExporter;

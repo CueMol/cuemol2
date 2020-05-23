@@ -1,12 +1,10 @@
-#define NO_USING_QTYPES
-
 #include <common.h>
 
 #include "Command.hpp"
 
 #include <qlib/ObjectManager.hpp>
 
-namespace qt5_gui {
+namespace qsys {
 
 Command::Command()
 {
@@ -20,4 +18,4 @@ Command::~Command()
 
 //////////
 
-}  // namespace qt5_gui
+}  // namespace qsys

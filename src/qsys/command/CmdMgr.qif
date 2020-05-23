@@ -8,13 +8,15 @@
 runtime_class CmdMgr
 {
     client_hdr "CmdMgr.hpp";
-    client_name qt5_gui::CmdMgr;
-    dllexport QT5GUI_API;
+    client_name qsys::CmdMgr;
+    dllexport QSYS_API;
 
     scriptable;
     singleton;
 
     object<Command$> getCmd(string name);
+
+    void runCmd(string name);
 };
 
 #endif
