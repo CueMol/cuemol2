@@ -24,11 +24,23 @@ def getWrpClass(clsnm):
 def createWrapper(obj):
     if obj is None:
         return None
-    # print("createWrapper obj:",obj)
-    clsnm = ci.getClassName(obj)
-    cls = getWrpClass(clsnm)
-    wr = cls(obj)
-    return wr
+    if type(obj) == ci.Wrapper:
+        # obj is an internal wrapper obj
+        # print("createWrapper obj:",obj)
+        clsnm = ci.getClassName(obj)
+        cls = getWrpClass(clsnm)
+        wr = cls(obj)
+        return wr
+    elif type(obj) == dict:
+        for k, v in obj.items():
+            obj[k] = createWrapper(v)
+        return obj
+    elif type(obj) == list:
+        for k, v in enumerate(obj):
+            obj[k] = createWrapper(v)
+        return obj
+    else:
+        return obj
 
 def createObj(name):
     return createWrapper( ci.createObj(name) )

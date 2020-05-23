@@ -34,7 +34,6 @@ public:
 bool init()
 {
     qt5gui_regClasses();
-    qsys::CmdMgr::init();
     qsys::View::setViewFactory(new QtGlViewFactory);
 
     auto pMgr = qsys::CmdMgr::getInstance();

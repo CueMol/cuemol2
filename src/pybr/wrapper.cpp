@@ -69,7 +69,10 @@ static PyTypeObject gWrapperType = {
 // static
 qlib::LScriptable *Wrapper::getWrapped(PyObject *pPyObj)
 {
-    if (Py_TYPE(pPyObj) != &gWrapperType) return NULL;
+    if (Py_TYPE(pPyObj) != &gWrapperType) {
+        LOG_DPRINTLN("Wrapper::getWrapped> ERROR pPyObj %p is not a wrapper.");
+        return NULL;
+    }
 
     QpyWrapObj *pObj = (QpyWrapObj *)pPyObj;
     return pObj->m_pObj;
@@ -270,12 +273,14 @@ PyObject *Wrapper::getService(PyObject *self, PyObject *args)
         return NULL;
     }
 
-    MB_DPRINTLN("getService(%s) called, result=%p!!", clsname, pObj);
+    if (pObj == nullptr) {
+        LString msg = LString::format("getService(%s) returned nullptr", clsname);
+        PyErr_SetString(PyExc_RuntimeError, msg);
+        return NULL;
+    }
+    // MB_DPRINTLN("getService(%s) called, result=%p!!", clsname, pObj);
 
-    return createWrapper((qlib::LScriptable *)pObj);
-    // QpyWrapObj *pNewObj = PyObject_New(QpyWrapObj, &gWrapperType);
-    // pNewObj->m_pObj = (qlib::LScriptable *) pObj;
-    // return (PyObject *) pNewObj;
+    return createWrapper(static_cast<qlib::LScriptable *>(pObj));
 }
 
 // static
@@ -376,7 +381,7 @@ PyObject *Wrapper::getClassName(PyObject *self, PyObject *args)
 
     qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
     if (pScObj == NULL) {
-        PyErr_SetString(PyExc_RuntimeError, "wrapper obj not found");
+        PyErr_SetString(PyExc_RuntimeError, "wrapped LScriptable obj not found");
         return NULL;
     }
 

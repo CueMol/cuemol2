@@ -28,6 +28,7 @@ bool CmdMgr::unregist(const LString &cmd_name)
 
 CommandPtr CmdMgr::getCmd(const LString &cmd_name) const
 {
+    if (!m_cmdtab.containsKey(cmd_name)) return CommandPtr();
     CommandPtr ptmpl = m_cmdtab.get(cmd_name);
     return CommandPtr(static_cast<Command *>(ptmpl->copy()));
 }
@@ -58,7 +59,36 @@ void CmdMgr::runCmd(const LString &cmd_name) const
 
 qlib::LVarDict CmdMgr::runCmd(const LString &cmd_name, const qlib::LVarDict &args) const
 {
-    return qlib::LVarDict();
+    CommandPtr pCmd = getCmd(cmd_name);
+    if (pCmd.isnull()) {
+        MB_THROW(qlib::NullPointerException, "command not found");
+        return qlib::LVarDict();
+    }
+
+    pCmd->resetAllProps();
+
+    for (const auto &elem : args) {
+        printf("key: %s\n", elem.first.c_str());
+        const auto &val = elem.second;
+        pCmd->setProperty(elem.first, elem.second);
+    }
+
+    pCmd->run();
+
+    qlib::LVarDict result;
+    std::set<LString> names;
+    pCmd->getPropNames(names);
+    for (const auto &nm : names) {
+        if (!pCmd->hasWritableProperty(nm)) {
+            qlib::LVariant var;
+            if (!pCmd->getProperty(nm, var)) {
+                // ERROR
+            }
+            result.set(nm, var);
+        }
+    }
+
+    return result;
 }
 
 }  // namespace qsys
