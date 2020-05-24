@@ -4,6 +4,8 @@
 
 #include <qlib/ObjectManager.hpp>
 #include <qsys/SceneManager.hpp>
+#include <qsys/SceneXMLReader.hpp>
+#include <qsys/StreamManager.hpp>
 
 namespace qsys {
 
@@ -13,8 +15,7 @@ void LoadSceneCommand::run()
     if (m_pTargScene.isnull()) {
         auto pScMgr = qsys::SceneManager::getInstance();
         m_pResScene = pScMgr->createScene();
-    }
-    else {
+    } else {
         m_pResScene = m_pTargScene;
     }
 

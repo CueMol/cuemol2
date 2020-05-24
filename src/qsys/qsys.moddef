@@ -30,6 +30,7 @@
 
 #include "command/Command.qif"
 #include "command/NewSceneCommand.qif"
+#include "command/LoadSceneCommand.qif"
 #include "command/CmdMgr.qif"
 
 module qsys
@@ -64,6 +65,7 @@ module qsys
   
   Command;
   NewSceneCommand;
+  LoadSceneCommand;
   CmdMgr;
 
 #if !defined(QM_BUILD_LW)
