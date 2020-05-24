@@ -23,7 +23,8 @@ public:
     /// Get command's unique name
     virtual const char *getName() const;
 
-    qlib::LString createFilter(int nCatID) const;
+    bool createFilter(int nCatID, qlib::LStringList &filters,
+                      qlib::LStringList &type_names) const;
 };
 
 }  // namespace qt5_gui

@@ -15,11 +15,11 @@
 
 namespace qt5_gui {
 
-qlib::LString QtLoadSceneCommand::createFilter(int nCatID) const
+bool QtLoadSceneCommand::createFilter(int nCatID, qlib::LStringList &filters,
+                                      qlib::LStringList &type_names) const
 {
     qlib::LRegExpr re_descr("(\\w+[\\w\\s]+\\w+)\\s+\\(");
 
-    qlib::LStringList filters;
     auto strMgr = qsys::StreamManager::getInstance();
     const auto &infos = strMgr->getStreamHandlerInfo();
     for (const auto &i : infos) {
@@ -40,10 +40,11 @@ qlib::LString QtLoadSceneCommand::createFilter(int nCatID) const
         }
         auto ext_fmt = LString::join(" ", exts);
         filters.push_back(sub_descr + " (" + ext_fmt + ")");
+        type_names.push_back(i.second.nickname);
     }
-    auto filter_fmt = LString::join(";;", filters);
+    // auto filter_fmt = LString::join(";;", filters);
 
-    return filter_fmt;
+    return true;
 }
 
 void QtLoadSceneCommand::runGUI(void *pwnd_info)
@@ -55,10 +56,43 @@ void QtLoadSceneCommand::runGUI(void *pwnd_info)
     }
 
     constexpr int nCatID = qsys::InOutHandler::IOH_CAT_SCEREADER;
-    auto filter_str = createFilter(nCatID);
+    qlib::LStringList filters, type_names;
+    createFilter(nCatID, filters, type_names);
+    auto filter_str = LString::join(";;", filters);
 
-    const QString fileName = QFileDialog::getOpenFileName(pWnd, "Open scene file", "",
-                                                          filter_str.c_str());
+    QFileDialog dlg(pWnd, "Open scene file", "", filter_str.c_str());
+    if (dlg.exec() != QDialog::Accepted) {
+        return;
+    }
+
+    auto files = dlg.selectedFiles();
+    auto filter = dlg.selectedNameFilter();
+
+    for (const auto &f : files) {
+        LOG_DPRINTLN("Selected file: %s", f.toUtf8().constData());
+        m_filePath = f.toUtf8().constData();
+        break;
+    }
+
+    LOG_DPRINTLN("Selected filter: %s", filter.toUtf8().constData());
+    LString filter2 = filter.toUtf8().constData();
+    int i = 0;
+    {
+        auto iter_filter = filters.begin();
+        auto iter_type = type_names.begin();
+        for (; iter_filter != filters.end() && iter_type != type_names.end();
+             ++iter_filter, ++iter_type) {
+            if (iter_filter->equals(filter2)) {
+                m_fileFmt = *iter_type;
+                break;
+            }
+        }
+    }
+    LOG_DPRINTLN("selected: %s, %s", m_filePath.c_str(), m_fileFmt.c_str());
+
+    // const QString fileName =
+    //     QFileDialog::getOpenFileName(pWnd, "Open scene file", "",
+    //     filter_str.c_str());
 
     // qsys::LoadSceneCommand::run();
 }
