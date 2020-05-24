@@ -17,7 +17,8 @@ macro(MCWRAPGEN_CLASS _target_sources)
     SET(_abs_file "${CMAKE_CURRENT_SOURCE_DIR}/${_current_file}")
 
     # Set output directory
-    SET(_out_dir "${CMAKE_CURRENT_BINARY_DIR}")
+    # SET(_out_dir "${CMAKE_CURRENT_BINARY_DIR}")
+    get_filename_component(_out_dir ${_abs_file} DIRECTORY)
     # SET(_out_dir "${CMAKE_CURRENT_SOURCE_DIR}")
 
     get_filename_component(_file_name ${_abs_file} NAME)
@@ -33,14 +34,14 @@ macro(MCWRAPGEN_CLASS _target_sources)
     separate_arguments(_mcwg_source_command NATIVE_COMMAND "${MCWG_SRC_CMD}")
     add_custom_command(
       OUTPUT ${_out_cpp_file}
-      COMMAND ${_mcwg_source_command} -outdir ${_out_dir} ${_abs_file}
+      COMMAND ${_mcwg_source_command} ${_abs_file}
       DEPENDS ${_abs_file}
       )
 
     separate_arguments(_mcwg_header_command NATIVE_COMMAND "${MCWG_HDR_CMD}")
     add_custom_command(
       OUTPUT ${_out_hpp_file}
-      COMMAND ${_mcwg_header_command} -outdir ${_out_dir} ${_abs_file}
+      COMMAND ${_mcwg_header_command} ${_abs_file}
       DEPENDS ${_abs_file}
       )
 
@@ -71,8 +72,8 @@ macro(MCWRAPGEN_MODULE _target_sources _target_moddef)
   # message("MCWRAPGEN_MODULE: _target_moddef ${_target_moddef}")
 
   # Set output directory
-  SET(_out_dir "${CMAKE_CURRENT_BINARY_DIR}")
-  # SET(_out_dir "${CMAKE_CURRENT_SOURCE_DIR}")
+  # SET(_out_dir "${CMAKE_CURRENT_BINARY_DIR}")
+  SET(_out_dir "${CMAKE_CURRENT_SOURCE_DIR}")
 
   SET(_depends "${ARGN}")
   SET(_abs_file "${CMAKE_CURRENT_SOURCE_DIR}/${_target_moddef}")
@@ -82,7 +83,7 @@ macro(MCWRAPGEN_MODULE _target_sources _target_moddef)
   # message(${_mcwg_module_command})
   add_custom_command(
     OUTPUT ${_out_cpp_file}
-    COMMAND ${_mcwg_module_command} -outdir ${_out_dir} ${_abs_file}
+    COMMAND ${_mcwg_module_command} ${_abs_file}
     DEPENDS ${_depends} ${_abs_file}
     )
   list(APPEND ${_target_sources} ${_out_cpp_file})
