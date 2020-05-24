@@ -36,6 +36,10 @@ runtime_class LoadSceneCommand extends Command
     /// Target scene (optional/should be empty)
     property object<Scene$> target_scene => m_pTargScene;
 
+    /// Set camera (optional)
+    property boolean set_camera => m_bSetCamera;
+    default set_camera = true;
+
     //////////
     // properties (output)
 

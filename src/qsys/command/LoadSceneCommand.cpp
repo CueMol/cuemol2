@@ -71,8 +71,14 @@ void LoadSceneCommand::run()
     reader->read();
     reader->detach();
 
-    // TO DO: set camera
-    // m_pResScene->loadViewFromCam(m_nViewID, "__current");
+    LOG_DPRINTLN("Set view camera: %d", m_bSetCamera);
+    if (m_bSetCamera) {
+        const auto &views = m_pResScene->getViewTable();
+        for (const auto &elem : views) {
+            LOG_DPRINTLN("Set view camera: %d", elem.second->getUID());
+            m_pResScene->loadViewFromCam(elem.second->getUID(), "__current");
+        }
+    }
 }
 
 void LoadSceneCommand::runGUI(void *pwnd_info) {}

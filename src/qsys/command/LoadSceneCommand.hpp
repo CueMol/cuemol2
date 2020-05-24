@@ -47,6 +47,9 @@ public:
     /// Target scene (optional/should be empty)
     ScenePtr m_pTargScene;
 
+    /// Set camera (optional)
+    bool m_bSetCamera;
+
     //////////
     // properties (output)
 
