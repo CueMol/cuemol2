@@ -102,18 +102,9 @@ public:
     /// Get Stream handler info in JSON format (type 2)
     LString getInfoJSON2() const;
 
-    /// Get Stream handler info (size)
-    qlib::LStringList getStreamHandlerKeys() const {
-        qlib::LStringList result;
-        for (const auto &entry : m_rdrinfotab) {
-            result.push_back(entry.first);
-        }
-        return result;
-    }
-
-    auto getStreamHandlerInfo(const LString &key) const {
-        auto i = m_rdrinfotab.find(key);
-        return i->second;
+    /// Get Stream handler info
+    const auto &getStreamHandlerInfo() const {
+        return m_rdrinfotab;
     }
 
     InOutHandler *createHandlerPtr(const LString &nickname, int nCatID) const;

@@ -30,6 +30,8 @@ public:
     /// Get command's unique name
     virtual const char *getName() const;
 
+    LString guessFileFormat(int nCatID) const;
+
     //////////
     // properties (input)
 
