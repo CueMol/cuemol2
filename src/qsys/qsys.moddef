@@ -2,9 +2,9 @@
 //
 // $Id: qsys.moddef,v 1.19 2011/04/10 10:48:09 rishitani Exp $
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+// #ifdef HAVE_CONFIG_H
+// #  include "config.h"
+// #endif
 
 #include "Scene.qif"
 #include "SceneManager.qif"
@@ -68,11 +68,12 @@ module qsys
   LoadSceneCommand;
   CmdMgr;
 
-#if !defined(QM_BUILD_LW)
   SceneExporter;
+
+// #if !defined(QM_BUILD_LW)
 //  ImgSceneExporter;
 //  PngSceneExporter;
-#endif
+// #endif
 
 };
 

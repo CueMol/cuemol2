@@ -43,6 +43,7 @@ my $curcls;
 my $curmod;
 
 # print "procarg0: ".join(",", @ARGV)."\n";
+my $outdir;
 for (;;) {
   my $arg = $ARGV[0];
   if ($arg eq "-i") {
@@ -81,12 +82,19 @@ for (;;) {
   }
   elsif ($arg eq "-jsdir") {
     shift @ARGV;
-    $Jsclass::out_dir = shift @ARGV;
+    # $Jsclass::out_dir = shift @ARGV;
+    $outdir = shift @ARGV;
     next;
   }
   elsif ($arg eq "-pydir") {
     shift @ARGV;
-    $Pyclass::out_dir = shift @ARGV;
+    # $Pyclass::out_dir = shift @ARGV;
+    $outdir = shift @ARGV;
+    next;
+  }
+  elsif ($arg eq "-outdir") {
+    shift @ARGV;
+    $outdir = shift @ARGV;
     next;
   }
   elsif ($arg eq "-D") {
@@ -102,6 +110,20 @@ for (;;) {
   }
 
   last;
+}
+
+# Set output dir
+if ($mode eq "src" || $mode eq "hdr") {
+    $Utils::out_dir = $outdir;
+}
+elsif ($mode eq "mod") {
+    $ModLdr::out_dir = $outdir;
+}
+elsif ($mode eq "js") {
+    $Jsclass::out_dir = $outdir;
+}
+elsif ($mode eq "py") {
+    $Pyclass::out_dir = $outdir;
 }
 
 ###################################################################
