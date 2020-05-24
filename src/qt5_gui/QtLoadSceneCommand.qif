@@ -1,0 +1,15 @@
+// -*-Mode: C++;-*-
+
+#pragma once
+
+#include <qsys/command/LoadSceneCommand.qif>
+
+runtime_class QtLoadSceneCommand extends LoadSceneCommand
+{
+    client_hdr "QtLoadSceneCommand.hpp";
+    client_name qt5_gui::QtLoadSceneCommand;
+
+    scriptable;
+    smartptr;
+    cloneable;
+};

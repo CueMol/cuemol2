@@ -129,9 +129,12 @@ void MainWindow::newFile()
 
 void MainWindow::open()
 {
-    const QString fileName = QFileDialog::getOpenFileName(this, "Open scene file", "",
-                                                          "CueMol Scene (*.qsc)");
-    if (!fileName.isEmpty()) openFile(fileName);
+    auto pMgr = qsys::CmdMgr::getInstance();
+    pMgr->runGUICmd("qt_load_scene", this);
+    
+    // const QString fileName = QFileDialog::getOpenFileName(this, "Open scene file", "",
+    //                                                       "CueMol Scene (*.qsc)");
+    // if (!fileName.isEmpty()) openFile(fileName);
 }
 
 bool MainWindow::openFile(const QString &fileName)

@@ -22,6 +22,8 @@ public:
 
     /// Get command's unique name
     virtual const char *getName() const;
+
+    qlib::LString createFilter(int nCatID) const;
 };
 
 }  // namespace qt5_gui
