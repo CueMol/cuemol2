@@ -9,6 +9,8 @@
 #include <qlib/ObjectManager.hpp>
 #include <qsys/SceneManager.hpp>
 #include <qsys/StreamManager.hpp>
+#include <qsys/command/CmdMgr.hpp>
+#include <qsys/command/NewSceneCommand.hpp>
 
 #include "QtMolWidget.hpp"
 #include "mainwindow.hpp"
@@ -94,7 +96,12 @@ void QtLoadSceneCommand::runGUI(void *pwnd_info)
     //     QFileDialog::getOpenFileName(pWnd, "Open scene file", "",
     //     filter_str.c_str());
 
-    // qsys::LoadSceneCommand::run();
+    // TO DO: do not creaet scene if active scene is empty.
+    auto pMgr = qsys::CmdMgr::getInstance();
+    auto pResult = pMgr->runGUICmd("qt_new_scene", pWnd);
+    m_pResScene = dynamic_cast<qsys::NewSceneCommand *>(pResult.get())->m_pResScene;
+
+    qsys::LoadSceneCommand::run();
 }
 
 /// Get command's unique name

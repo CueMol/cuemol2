@@ -38,14 +38,14 @@ public:
     CommandPtr getCmd(const LString &cmd_name) const;
 
     /// Run non-GUI command
-    // TO DO: dict argments?
-    void runCmd(const LString &cmd_name) const;
+    CommandPtr runCmd(const LString &cmd_name) const;
 
+    /// Run non-GUI command with dict args 
     qlib::LVarDict runCmd(const LString &cmd_name, const qlib::LVarDict &args) const;
 
     /// Run GUI command
     // TO DO: dict argments?
-    void runGUICmd(const LString &cmd_name, void *pwnd_info) const;
+    CommandPtr runGUICmd(const LString &cmd_name, void *pwnd_info) const;
 
     static bool init()
     {

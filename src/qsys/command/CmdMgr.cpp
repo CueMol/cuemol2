@@ -33,28 +33,32 @@ CommandPtr CmdMgr::getCmd(const LString &cmd_name) const
     return CommandPtr(static_cast<Command *>(ptmpl->copy()));
 }
 
-void CmdMgr::runGUICmd(const LString &cmd_name, void *pwnd_info) const
+CommandPtr CmdMgr::runGUICmd(const LString &cmd_name, void *pwnd_info) const
 {
     CommandPtr pCmd = getCmd(cmd_name);
     if (pCmd.isnull()) {
         MB_THROW(qlib::NullPointerException, "command not found");
-        return;
+        return CommandPtr();
     }
 
     pCmd->resetAllProps();
     pCmd->runGUI(pwnd_info);
+
+    return pCmd;
 }
 
-void CmdMgr::runCmd(const LString &cmd_name) const
+CommandPtr CmdMgr::runCmd(const LString &cmd_name) const
 {
     CommandPtr pCmd = getCmd(cmd_name);
     if (pCmd.isnull()) {
         MB_THROW(qlib::NullPointerException, "command not found");
-        return;
+        return CommandPtr();
     }
 
     pCmd->resetAllProps();
     pCmd->run();
+
+    return pCmd;
 }
 
 qlib::LVarDict CmdMgr::runCmd(const LString &cmd_name, const qlib::LVarDict &args) const
