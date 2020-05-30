@@ -96,16 +96,30 @@ void QtLoadSceneCommand::runGUI(void *pwnd_info)
     //     QFileDialog::getOpenFileName(pWnd, "Open scene file", "",
     //     filter_str.c_str());
 
-    // TO DO: do not creaet scene if active scene is empty.
-    auto pMgr = qsys::CmdMgr::getInstance();
-    auto pResult = pMgr->runGUICmd("qt_new_scene", pWnd);
-    auto pResPtr = dynamic_cast<QtNewSceneCommand *>(pResult.get());
-    m_pTargScene = pResPtr->m_pResScene;
-    auto pWidget = reinterpret_cast<QtMolWidget *>(pResPtr->m_pMolWidget);
+    auto pScMgr = qsys::SceneManager::getInstance();
+    auto actsc_id = pScMgr->getActiveSceneID();
+    auto pActSc = pScMgr->getScene(actsc_id);
+    if (!pActSc.isnull() && pActSc->isJustCreated()) {
+        // Do not creaet scene if active scene is empty.
+        LOG_DPRINTLN("LoadScene> active scene: %d", actsc_id);
+        m_pTargScene = pActSc;
+    }
+    else {
+        LOG_DPRINTLN("LoadScene> no active scene: %d", actsc_id);
+        auto pMgr = qsys::CmdMgr::getInstance();
+        auto pResult = pMgr->runGUICmd("qt_new_scene", pWnd);
+        auto pResPtr = dynamic_cast<QtNewSceneCommand *>(pResult.get());
+        m_pTargScene = pResPtr->m_pResScene;
+        // auto pWidget = reinterpret_cast<QtMolWidget *>(pResPtr->m_pMolWidget);
+    }
     m_bSetCamera = true;
     qsys::LoadSceneCommand::run();
 
     // pWidget->update();
+    pWnd->update();
+    auto p = pWnd->activeMolWidget();
+    if (p!=nullptr)
+        p->update();
 }
 
 /// Get command's unique name

@@ -68,8 +68,6 @@ private:
     static bool hasRecentFiles();
     void prependToRecentFiles(const QString &fileName);
     void setRecentFilesVisible(bool visible);
-    // MdiChild *activeMdiChild() const;
-    // QMdiSubWindow *findMdiChild(const QString &fileName) const;
 
     QMenu *windowMenu;
     QAction *newAct;
@@ -98,18 +96,20 @@ private:
     QPlainTextEdit *m_pLogWnd;
     QSplitter *m_pSplitter;
 
-    int m_nSceneID, m_nViewID;
-    void setupScene();
-
     int m_nLogListenerID;
     virtual void logAppended(qlib::LLogEvent &evt) override;
-
-    // QtMolWidget *m_pMolWidget;
+    
     QMdiArea *m_pTabWnd;
 
 public:
     QtMolWidget *createMolWidget();
+    QtMolWidget *activeMolWidget();
 
+    
 public Q_SLOTS:
     void onActivateMolTabChanged();
+    void onLoaded();
+
+protected:
+    virtual void showEvent(QShowEvent *event) override;
 };

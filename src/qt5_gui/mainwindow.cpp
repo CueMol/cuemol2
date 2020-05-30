@@ -15,11 +15,8 @@
 #include "qlib/LMsgLog.hpp"
 #include "qsys/SceneManager.hpp"
 
-using qsys::SceneManager;
-
 MainWindow::MainWindow()
 {
-    // setupScene();
 
     createWidgets();
 
@@ -37,8 +34,6 @@ MainWindow::MainWindow()
     pLogMgr->removeAccumMsg();
     m_pLogWnd->appendPlainText(msg.c_str());
     m_nLogListenerID = pLogMgr->addListener(this);
-
-    newFile();
 }
 
 MainWindow::~MainWindow()
@@ -47,17 +42,31 @@ MainWindow::~MainWindow()
     pLogMgr->removeListener(m_nLogListenerID);
 }
 
+void MainWindow::onLoaded()
+{
+    newFile();
+}
+
 void MainWindow::onActivateMolTabChanged()
 {
+    auto pScMgr =qsys::SceneManager::getInstance();
     auto activewnd = m_pTabWnd->activeSubWindow();
     if (activewnd == nullptr) {
         LOG_DPRINTLN("XXXX MainWindow::onActivateMolTabChanged(): deactivated");
+        // pScMgr->getActiveSceneID(qlib::invalid_uid);
         return;
     }
-
+    auto molw = activewnd->findChild<QtMolWidget *>();
+    auto scid = molw->getSceneID();
+    auto vwid = molw->getViewID();
     auto title = activewnd->windowTitle();
-    LOG_DPRINTLN("XXXX MainWindow::onActivateMolTabChanged(%s)",
-                 title.toUtf8().constData());
+    printf("XXXX MainWindow::onActivateMolTabChanged(%s:s%d:v%d)\n",
+           title.toUtf8().constData(), scid, vwid);
+    fflush(stdout);
+
+    auto pActSc = pScMgr->getScene(scid);
+    pActSc->setActiveViewID(vwid);
+    // pScMgr->getActiveSceneID(scid);
 }
 
 void MainWindow::createWidgets()
@@ -86,9 +95,6 @@ void MainWindow::createWidgets()
     addDockWidget(Qt::LeftDockWidgetArea, pdock2);
 
     //////////
-
-    // m_pMolWidget = new QtMolWidget();
-    // m_pMolWidget->bind(m_nSceneID, m_nViewID);
 
     m_pLogWnd = new QPlainTextEdit();
     m_pLogWnd->setReadOnly(true);
@@ -126,13 +132,6 @@ void MainWindow::closeEvent(QCloseEvent *event)
         writeSettings();
         event->accept();
     }
-}
-
-QtMolWidget *MainWindow::createMolWidget()
-{
-    auto &&pchild = new QtMolWidget;
-    m_pTabWnd->addSubWindow(pchild);
-    return pchild;
 }
 
 void MainWindow::newFile()
@@ -365,4 +364,26 @@ void MainWindow::switchLayoutDirection()
         QGuiApplication::setLayoutDirection(Qt::RightToLeft);
     else
         QGuiApplication::setLayoutDirection(Qt::LeftToRight);
+}
+
+void MainWindow::showEvent(QShowEvent *event)
+{
+    QWidget::showEvent(event);
+    QTimer::singleShot(0, this, &MainWindow::onLoaded);
+}
+
+QtMolWidget *MainWindow::createMolWidget()
+{
+    auto *pchild = new QtMolWidget;
+    pchild->setObjectName("MolWidget");
+    m_pTabWnd->addSubWindow(pchild);
+    return pchild;
+}
+
+QtMolWidget *MainWindow::activeMolWidget()
+{
+    auto *pActSubWnd = m_pTabWnd->activeSubWindow();
+    if (pActSubWnd == nullptr)
+        return nullptr;
+    return pActSubWnd->findChild<QtMolWidget *>();
 }
