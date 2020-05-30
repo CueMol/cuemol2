@@ -6,7 +6,6 @@
 #include <QFontDatabase>
 #include <QPlainTextEdit>
 #include <QtWidgets>
-
 #include <qsys/command/CmdMgr.hpp>
 // #include <qsys/command/Command.hpp>
 #include "QtMolStructPanel.hpp"
@@ -48,6 +47,19 @@ MainWindow::~MainWindow()
     pLogMgr->removeListener(m_nLogListenerID);
 }
 
+void MainWindow::onActivateMolTabChanged()
+{
+    auto activewnd = m_pTabWnd->activeSubWindow();
+    if (activewnd == nullptr) {
+        LOG_DPRINTLN("XXXX MainWindow::onActivateMolTabChanged(): deactivated");
+        return;
+    }
+
+    auto title = activewnd->windowTitle();
+    LOG_DPRINTLN("XXXX MainWindow::onActivateMolTabChanged(%s)",
+                 title.toUtf8().constData());
+}
+
 void MainWindow::createWidgets()
 {
     m_pTabWnd = new QMdiArea;
@@ -58,6 +70,11 @@ void MainWindow::createWidgets()
     m_pTabWnd->setTabsMovable(true);
     QTabBar *pBar = m_pTabWnd->findChild<QTabBar *>();
     pBar->setExpanding(false);
+
+    // connect(m_pTabWnd, &QMdiArea::subWindowActivated, this,
+    //         &MainWindow::onActivateMolTabChanged);
+    connect(m_pTabWnd, SIGNAL(subWindowActivated(QMdiSubWindow *)), this,
+            SLOT(onActivateMolTabChanged()));
 
     //////////
 
@@ -131,8 +148,9 @@ void MainWindow::open()
 {
     auto pMgr = qsys::CmdMgr::getInstance();
     pMgr->runGUICmd("qt_load_scene", this);
-    
-    // const QString fileName = QFileDialog::getOpenFileName(this, "Open scene file", "",
+
+    // const QString fileName = QFileDialog::getOpenFileName(this, "Open scene file",
+    // "",
     //                                                       "CueMol Scene (*.qsc)");
     // if (!fileName.isEmpty()) openFile(fileName);
 }

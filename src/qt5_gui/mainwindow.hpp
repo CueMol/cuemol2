@@ -109,4 +109,7 @@ private:
 
 public:
     QtMolWidget *createMolWidget();
+
+public Q_SLOTS:
+    void onActivateMolTabChanged();
 };

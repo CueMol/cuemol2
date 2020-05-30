@@ -45,6 +45,9 @@ public:
     /// Create view flag (ignored in the cli version)
     bool m_bIsCreateView;
 
+    // /// Set created scene as active.
+    // bool m_bIsSetActive;
+
     /// scene name generation
     virtual LString generateNewSceneName() const;
 

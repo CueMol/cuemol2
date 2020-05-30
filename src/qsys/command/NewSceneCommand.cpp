@@ -13,6 +13,9 @@ void NewSceneCommand::run()
     auto pScMgr = qsys::SceneManager::getInstance();
     auto pSc = pScMgr->createScene();
 
+    // if (m_bIsSetActive)
+    //     pScMgr->setActiveSceneID(pSc->getUID());
+
     if (m_sceneName.isEmpty()) {
         pSc->setName(generateNewSceneName());
     } else {
