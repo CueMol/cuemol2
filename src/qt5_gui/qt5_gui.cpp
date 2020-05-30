@@ -8,32 +8,45 @@
 
 #include "qt5_gui.hpp"
 
+#include <qlib/EventManager.hpp>
+#include <qlib/LString.hpp>
+
+#include <qsys/command/CmdMgr.hpp>
+#include "QtNewSceneCommand.hpp"
+#include "QtLoadSceneCommand.hpp"
 #include "QtGlView.hpp"
 
-#include <qlib/LString.hpp>
-#include <qlib/EventManager.hpp>
+void qt5gui_regClasses();
+void qt5gui_unregClasses();
 
 namespace qt5_gui {
 
-  class QtGlViewFactory : public qsys::ViewFactory
-  {
-  public:
+class QtGlViewFactory : public qsys::ViewFactory
+{
+public:
     QtGlViewFactory() {}
     virtual ~QtGlViewFactory() {}
-    virtual qsys::View* create() {
-      return new qt5_gui::QtGlView();
+    virtual qsys::View* create()
+    {
+        return new qt5_gui::QtGlView();
     }
-  };
-  
-  bool init()
-  {
+};
+
+bool init()
+{
+    qt5gui_regClasses();
     qsys::View::setViewFactory(new QtGlViewFactory);
+
+    auto pMgr = qsys::CmdMgr::getInstance();
+    pMgr->regist<QtNewSceneCommand>();
+    pMgr->regist<QtLoadSceneCommand>();
+
     return true;
-  }
-
-  void fini()
-  {
-  }
-
 }
 
+void fini()
+{
+    qt5gui_unregClasses();
+}
+
+}  // namespace qt5_gui

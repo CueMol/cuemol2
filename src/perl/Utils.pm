@@ -213,6 +213,8 @@ sub getVarTypeName($) {
     return "Array";
   } elsif ($typenm eq "list") {
     return "List";
+  } elsif ($typenm eq "dict") {
+    return "Dict";
   } elsif ($typenm eq "void") {
     return "Void";
   }
@@ -235,6 +237,8 @@ sub isIntrinsic($) {
     } elsif ($typenm eq "array") {
 	return 1;
     } elsif ($typenm eq "list") {
+	return 1;
+    } elsif ($typenm eq "dict") {
 	return 1;
     }
     return 0;
@@ -323,6 +327,9 @@ sub qif2IfName($) {
 #####
 # QIF File name to other File Names
 
+# Output directory (if specified by cmdargs)
+our $out_dir = "";
+
 sub qifFname2CliHdrFname($) {
   my $file = shift;
   my ($in_base, $in_dir, $in_ext) = fileparse($file, '\.qif');
@@ -332,44 +339,19 @@ sub qifFname2CliHdrFname($) {
 
 sub qifFname2WpHdrFname($) {
   my $file = shift;
-  my ($in_base, $in_dir, $in_ext) = fileparse($file, '\.qif');
-  $in_dir =  "" if ($in_dir eq "./");
-  return "$in_dir${in_base}_wrap.hpp";
+  my ($base, $dir, $ext) = fileparse($file, '\.qif');
+  $dir =  "" if ($dir eq "./");
+  $dir = $out_dir."/" if ($out_dir ne "");
+  return "$dir${base}_wrap.hpp";
 }
 
 sub qifFname2WpSrcFname($) {
   my $file = shift;
-  my ($in_base, $in_dir, $in_ext) = fileparse($file, '\.qif');
-  $in_dir =  "" if ($in_dir eq "./");
-  return "$in_dir${in_base}_wrap.cpp";
+  my ($base, $dir, $ext) = fileparse($file, '\.qif');
+  $dir =  "" if ($dir eq "./");
+  $dir = $out_dir."/" if ($out_dir ne "");
+  return "$dir${base}_wrap.cpp";
 }
-
-# sub qifFname2IdlFname($) {
-#   my $file = shift;
-#   my ($in_base, $in_dir, $in_ext) = fileparse($file, '\.qif');
-#   $in_dir =  "" if ($in_dir eq "./");
-#   return "${in_dir}${in_base}_qi.idl";
-# }
-
-# sub qifFname2IdlHdrFname($) {
-#   my $file = shift;
-#   my ($in_base, $in_dir, $in_ext) = fileparse($file, '\.qif');
-#   $in_dir =  "" if ($in_dir eq "./");
-#   return "${in_dir}${in_base}_qi.h";
-# }
-# sub qifFname2XPCHdrFname($) {
-#   my $file = shift;
-# 
-# }
-# 
-# sub qifFname2XPCSrcFname($) {
-#   my $file = shift;
-#   my ($in_base, $in_dir, $in_ext) = fileparse($file, '\.qif');
-#   $in_dir =  "" if ($in_dir eq "./");
-#   return "$in_dir${in_base}_xpc.cpp";
-# }
-
-
 
 ####################
 # QIF name to file names (use qifFname2XXX routines)
@@ -385,7 +367,15 @@ sub qifFname2WpSrcFname($) {
 sub qif2CliHdrFname($) {
   my $qif = shift;
   my $udef = $Parser::db{$qif}->{"decl_hdr"};
-  return $udef if ($udef);
+  if ($udef) {
+      my $src_fname = $Parser::db{$qif}->{"file"};
+      my ($base, $dir, $ext) = fileparse($src_fname, '\.qif');
+      if ($out_dir ne "") {
+          # case of out-of-src build
+          $udef = "$dir/$udef";
+      }
+      return $udef;
+  }
 
   return qifFname2CliHdrFname($Parser::db{$qif}->{"file"});
 }
@@ -410,5 +400,3 @@ sub qif2WpSrcFname($) {
 
 
 1;
-
-

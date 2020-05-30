@@ -1,0 +1,51 @@
+// -*-Mode: C++;-*-
+
+#ifndef LOAD_SCENE_COMMAND_QIF
+#define LOAD_SCENE_COMMAND_QIF
+
+#include <qsys/Scene.qif>
+#include <qsys/View.qif>
+
+#include "Command.qif"
+
+runtime_class LoadSceneCommand extends Command
+{
+    client_hdr "LoadSceneCommand.hpp";
+    client_name qsys::LoadSceneCommand;
+    dllexport QSYS_API;
+
+    scriptable;
+    smartptr;
+    cloneable;
+
+    //////////
+    // properties (input)
+
+    /// File path to load
+    property string file_path => m_filePath;
+    default file_path = "";
+
+    /// Scene name (optional)
+    property string scene_name => m_sceneName;
+    default scene_name = "";
+
+    /// File format (optional)
+    property string file_format => m_fileFmt;
+    default file_format = "";
+
+    /// Target scene (optional/should be empty)
+    property object<Scene$> target_scene => m_pTargScene;
+
+    /// Set camera (optional)
+    property boolean set_camera => m_bSetCamera;
+    default set_camera = true;
+
+    //////////
+    // properties (output)
+
+    /// resulting scene (new or same as targScene)
+    property object<Scene$> result_scene => m_pResScene (readonly);
+
+};
+
+#endif

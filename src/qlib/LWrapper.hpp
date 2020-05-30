@@ -8,6 +8,7 @@
 
 #include "LVarArgs.hpp"
 #include "LVarArray.hpp"
+#include "LVarDict.hpp"
 #include "ClassRegistry.hpp"
 #include "LPropSupport.hpp"
 #include "PropSpec.hpp"
@@ -537,7 +538,7 @@ namespace qlib {
 
     ///////////////
     // List
-    // TO DO: implementation ??
+    // TO DO: implementation
 
     ///////////////
     // Array
@@ -553,6 +554,21 @@ namespace qlib {
     void setByArrayValue(LVariant &aDest, const LVarArray &aSrc, const LString &propname)
     {
       aDest.setArrayValue(aSrc);
+    }
+
+    ///////////////
+    // Dict
+    
+    static inline
+    void convToDictValue(LVarDict &aDest, const LVariant &aSrc, const LString &propname)
+    {
+      aDest = LVarDict(*aSrc.getDictPtr());
+    }
+
+    static inline
+    void setByDictValue(LVariant &aDest, const LVarDict &aSrc, const LString &propname)
+    {
+      aDest.setDictValue(aSrc);
     }
 
     ///////////////

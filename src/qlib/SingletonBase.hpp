@@ -50,8 +50,13 @@ namespace qlib {
 #define SINGLETON_BASE_IMPL(classname) \
 template <> MB_PUBLIC classname *qlib::SingletonBase<classname>::s_pInst = 0;
 
+#ifdef _MSC_VER
+// static object declaration not correctly function in msvc
+#define SINGLETON_BASE_DECL(classname)
+#else
 // for static object declaration
 #define SINGLETON_BASE_DECL(classname) \
 template <> MB_PUBLIC classname *qlib::SingletonBase<classname>::s_pInst;
+#endif
 
 #endif

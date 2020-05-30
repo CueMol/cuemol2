@@ -192,7 +192,7 @@ LString StreamManager::getWriterInfoJSON() const
 LString StreamManager::getIOHInfoJSONImpl(int aCatID) const
 {
   int i;
-  std::list<LString> tmps;
+  qlib::LStringList tmps;
   LString rval;
   data_t::const_iterator iter;
 
@@ -316,7 +316,7 @@ LString StreamManager::findCompatibleWriterNamesForObj(qlib::uid_t objid)
   ObjectPtr pObj = SceneManager::getInstance()->getObject(objid);
 
   const int kCatID = InOutHandler::IOH_CAT_OBJWRITER;
-  std::list<LString> ls;
+  qlib::LStringList ls;
 
   BOOST_FOREACH(const data_t::value_type &entry, m_rdrinfotab) {
     const LString &nknm = entry.second.nickname;

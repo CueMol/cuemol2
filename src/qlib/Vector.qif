@@ -14,8 +14,6 @@
 
 runtime_class Vector
 {
-  uuid 29b865a2-7b40-4c79-af93-53c0ec506c8b;
-
   client_hdr "LScrVector4D.hpp";
   client_name qlib::LScrVector4D;
 
@@ -30,6 +28,9 @@ runtime_class Vector
   property real w => redirect(getW, setW);
 
   property string strvalue => redirect(toString, setStrValue);
+
+  // property dict dict_value => redirect(getDict, setDict);
+  // property array array_value => redirect(getArray, setArray);
 
   // methods
   void set3(real, real, real) => set;

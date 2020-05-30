@@ -101,7 +101,7 @@ int LProcMgr::queueTask(const LString &path,
   
   int val;
   if (!wait.isEmpty()) {
-    std::list<LString> ls;
+      LStringList ls;
     wait.split(' ', ls);
     BOOST_FOREACH (const LString &elem, ls) {
       if (elem.toInt(&val))

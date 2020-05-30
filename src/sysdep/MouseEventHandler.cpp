@@ -89,8 +89,11 @@ bool MouseEventHandler::buttonUp(InDevEvent &ev)
   if (m_nState==DRAG_CHECK) {
     const qlib::time_value currt = qlib::EventManager::sGetCurrentTime();
     const qlib::time_value del_t = currt - m_prevClickTime;
+    MB_DPRINTLN("prev %f currt %f del_t %f", double(m_prevClickTime), double(currt), double(del_t));
     
     if (del_t<qlib::time_value(DBLCLICK_TIME)) {
+      MB_DPRINTLN("del_t %f < DBLCLICK_TIME %f", double(del_t), double(DBLCLICK_TIME));
+
       // Mouse button doubleclicked
       if (ev.isLButtonOn())
         ev.setType(InDevEvent::INDEV_LBTN_DBLCLICK);

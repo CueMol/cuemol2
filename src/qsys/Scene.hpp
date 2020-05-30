@@ -287,6 +287,9 @@ namespace qsys {
     /// Get current view count (size)
     int getViewCount() const { return m_viewtab.size(); }
 
+    /// Get view table reference
+    const auto &getViewTable() const { return m_viewtab; }
+
     // Active view
   private:
     /// Active view's ID

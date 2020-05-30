@@ -1,0 +1,23 @@
+// -*-Mode: C++;-*-
+
+#ifndef CMD_MGR_QIF_INCLUDED
+#define CMD_MGR_QIF_INCLUDED
+
+#include "Command.qif"
+
+runtime_class CmdMgr
+{
+    client_hdr "CmdMgr.hpp";
+    client_name qsys::CmdMgr;
+    dllexport QSYS_API;
+
+    scriptable;
+    singleton;
+
+    object<Command$> getCmd(string name);
+
+    void runCmd(string name);
+    dict runCmdArgs(string name, dict args) => runCmd;
+};
+
+#endif

@@ -17,13 +17,18 @@ use Wrapper;
 
 #####
 
+# Output directory (if specified by cmdargs)
+our $out_dir = "";
+
 sub gen_mod_ldr($)
 {
   my $in_fname = shift;
 
   my $curmod = Parser::getLastMod();
-  my ($in_base, $in_dir, $in_ext) = fileparse($in_fname, '\.moddef');
-  my $out_fname = "$in_dir${in_base}_loader.cpp";
+  my ($base, $dir, $ext) = fileparse($in_fname, '\.moddef');
+  $dir =  "" if ($dir eq "./");
+  $dir = $out_dir."/" if ($out_dir ne "");
+  my $out_fname = "$dir${base}_loader.cpp";
   debug("Output modldr file: $out_fname\n");
 
   open(OUT, ">$out_fname") || die "$?:$!";
@@ -73,3 +78,4 @@ sub gen_mod_ldr($)
 
 }
 
+1;

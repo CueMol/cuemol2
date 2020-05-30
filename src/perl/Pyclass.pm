@@ -131,7 +131,7 @@ sub genBasicPropCode($$$)
 
   print OUT "    \@property\n";
   print OUT "    def $propnm(self):\n";
-  print OUT "        return ci.getProp(self._wrapped, \"$propnm\")\n";
+  print OUT "        return cuemol.createWrapper(ci.getProp(self._wrapped, \"$propnm\"))\n";
   print OUT "\n";
 
   return if (contains($prop->{"options"}, "readonly"));
@@ -152,7 +152,7 @@ sub genObjPropCode($$$)
 
   print OUT "    \@property\n";
   print OUT "    def $propnm(self):\n";
-  print OUT "        return cuemol.createWrapper( ci.getProp(self._wrapped, \"$propnm\") )\n";
+  print OUT "        return cuemol.createWrapper(ci.getProp(self._wrapped, \"$propnm\"))\n";
   print OUT "\n";
 
   return if (contains($prop->{"options"}, "readonly"));
@@ -224,7 +224,7 @@ sub genInvokeCode($$)
     
     if ($rval_typename eq "object") {
       my $rettype_qif = $rettype->{"qif"};
-      print OUT "        return cuemol.createWrapper( rval )\n";
+      print OUT "        return cuemol.createWrapper(rval)\n";
     }
     elsif ($rval_typename eq "void") {
       print OUT "        return\n";
@@ -233,7 +233,8 @@ sub genInvokeCode($$)
     # }
     else {
       # basic types
-      print OUT "        return rval\n";
+      # print OUT "        return rval\n";
+      print OUT "        return cuemol.createWrapper(rval)\n";
     }
     print OUT "\n";
   }

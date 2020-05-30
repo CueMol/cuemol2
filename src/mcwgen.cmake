@@ -16,12 +16,16 @@ macro(MCWRAPGEN_CLASS _target_sources)
   foreach(_current_file ${ARGN})
     SET(_abs_file "${CMAKE_CURRENT_SOURCE_DIR}/${_current_file}")
 
-    get_filename_component(_file_dir ${_abs_file} DIRECTORY)
+    # Set output directory
+    # SET(_out_dir "${CMAKE_CURRENT_BINARY_DIR}")
+    get_filename_component(_out_dir ${_abs_file} DIRECTORY)
+    # SET(_out_dir "${CMAKE_CURRENT_SOURCE_DIR}")
+
     get_filename_component(_file_name ${_abs_file} NAME)
     get_filename_component(_file_stem ${_file_name} NAME_WE)
 
-    SET(_out_cpp_file "${_file_dir}/${_file_stem}_wrap.cpp")
-    SET(_out_hpp_file "${_file_dir}/${_file_stem}_wrap.hpp")
+    SET(_out_cpp_file "${_out_dir}/${_file_stem}_wrap.cpp")
+    SET(_out_hpp_file "${_out_dir}/${_file_stem}_wrap.hpp")
     # message(STATUS "MCWG file ${_file}")
     # message(STATUS "MCWG file output ${_out_cpp_file}")
     # message(STATUS "MCWG file output ${_out_hpp_file}")
@@ -31,12 +35,14 @@ macro(MCWRAPGEN_CLASS _target_sources)
     add_custom_command(
       OUTPUT ${_out_cpp_file}
       COMMAND ${_mcwg_source_command} ${_abs_file}
+      DEPENDS ${_abs_file}
       )
 
     separate_arguments(_mcwg_header_command NATIVE_COMMAND "${MCWG_HDR_CMD}")
     add_custom_command(
       OUTPUT ${_out_hpp_file}
       COMMAND ${_mcwg_header_command} ${_abs_file}
+      DEPENDS ${_abs_file}
       )
 
     # set(${_target_sources} ${${_target_sources}} ${_out_cpp_file})
@@ -48,9 +54,10 @@ macro(MCWRAPGEN_CLASS _target_sources)
       SET(_out_py_file "${CMAKE_CURRENT_BINARY_DIR}/${_file_stem}.py")
       separate_arguments(_mcwg_py_command NATIVE_COMMAND "${MCWG_PY_CMD}")
       add_custom_command(
-	OUTPUT ${_out_py_file}
-	COMMAND ${_mcwg_py_command} -pydir ${CMAKE_CURRENT_BINARY_DIR} ${_abs_file}
-	)
+	    OUTPUT ${_out_py_file}
+	    COMMAND ${_mcwg_py_command} -pydir ${CMAKE_CURRENT_BINARY_DIR} ${_abs_file}
+        DEPENDS ${_abs_file}
+	    )
       list(APPEND MCWG_PY_WRAPPERS ${_out_py_file})
     endif ()
 
@@ -64,16 +71,20 @@ macro(MCWRAPGEN_MODULE _target_sources _target_moddef)
   # message("MCWRAPGEN_MODULE: _depends ${ARGN}")
   # message("MCWRAPGEN_MODULE: _target_moddef ${_target_moddef}")
 
+  # Set output directory
+  # SET(_out_dir "${CMAKE_CURRENT_BINARY_DIR}")
+  SET(_out_dir "${CMAKE_CURRENT_SOURCE_DIR}")
+
   SET(_depends "${ARGN}")
   SET(_abs_file "${CMAKE_CURRENT_SOURCE_DIR}/${_target_moddef}")
   get_filename_component(_file_stem ${_target_moddef} NAME_WE)
-  SET(_out_cpp_file "${CMAKE_CURRENT_SOURCE_DIR}/${_file_stem}_loader.cpp")
+  SET(_out_cpp_file "${_out_dir}/${_file_stem}_loader.cpp")
   separate_arguments(_mcwg_module_command NATIVE_COMMAND "${MCWG_MOD_CMD}")
   # message(${_mcwg_module_command})
   add_custom_command(
     OUTPUT ${_out_cpp_file}
     COMMAND ${_mcwg_module_command} ${_abs_file}
-    DEPENDS ${_depends}
+    DEPENDS ${_depends} ${_abs_file}
     )
   list(APPEND ${_target_sources} ${_out_cpp_file})
   # message(STATUS "LOADER file ${_out_cpp_file}")

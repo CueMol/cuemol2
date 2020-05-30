@@ -78,6 +78,9 @@ ScenePtr SceneManager::createScene()
 
 ScenePtr SceneManager::getScene(qlib::uid_t uid) const
 {
+    if (uid == qlib::invalid_uid)
+        return ScenePtr();
+
   data_t::const_iterator iter = m_data.find(uid);
 
   if (iter==m_data.end())

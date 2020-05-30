@@ -4,71 +4,82 @@
 
 #pragma once
 
-#include "qt5_gui.hpp"
 #include <QtOpenGL/QGLWidget>
 #include <QtWidgets/QGestureEvent>
+#include <qlib/qlib.hpp>
+
+#include "qt5_gui.hpp"
 
 namespace qt5_gui {
-  class QtGlView;
+class QtGlView;
 }
 
 namespace qsys {
-  class InDevEvent;
+class InDevEvent;
 }
 
 namespace sysdep {
-  class MouseEventHandler;
+class MouseEventHandler;
 }
 
 class QtMolWidget : public QGLWidget
 {
-  Q_OBJECT;
-  
+    Q_OBJECT;
+
 public:
-  QtMolWidget(QWidget *parent = 0);
-  QtMolWidget(const QGLFormat &format ,QWidget *parent = 0);
-  ~QtMolWidget();
-  
+    QtMolWidget(QWidget *parent = 0);
+    QtMolWidget(const QGLFormat &format, QWidget *parent = 0);
+    ~QtMolWidget();
+
 private:
-  int m_nSceneID;
-  int m_nViewID;
-  
-  qt5_gui::QtGlView *m_pView;
-  
+    int m_nSceneID;
+    int m_nViewID;
+
+    qt5_gui::QtGlView *m_pView;
+
 public:
-  void createSceneAndView();
+    void createSceneAndView();
 
-  void bind(int scid, int vwid);
+    void bind(int scid, int vwid);
 
-  void loadFile(const QString &fileName);
+    void loadFile(const QString &fileName);
 
-  static void setupTextRender();
+    inline qlib::uid_t getSceneID() const
+    {
+        return m_nSceneID;
+    }
+    inline qlib::uid_t getViewID() const
+    {
+        return m_nViewID;
+    }
+
+    static void setupTextRender();
 
 public slots:
-  
+
 signals:
-  
+
 protected:
-  void initializeGL() Q_DECL_OVERRIDE;
-  void paintGL() Q_DECL_OVERRIDE;
-  void resizeGL(int width, int height) Q_DECL_OVERRIDE;
+    void initializeGL() Q_DECL_OVERRIDE;
+    void paintGL() Q_DECL_OVERRIDE;
+    void resizeGL(int width, int height) Q_DECL_OVERRIDE;
 
-  void mousePressEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
-  void mouseReleaseEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
-  void mouseMoveEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
-  
-  void wheelEvent(QWheelEvent * event) Q_DECL_OVERRIDE;
+    void mousePressEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
+    void mouseReleaseEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
+    void mouseMoveEvent(QMouseEvent *event) Q_DECL_OVERRIDE;
 
-  bool event(QEvent * event) Q_DECL_OVERRIDE;
+    void wheelEvent(QWheelEvent *event) Q_DECL_OVERRIDE;
+
+    bool event(QEvent *event) Q_DECL_OVERRIDE;
 
 private slots:
-  
-private:
-  void setupMouseEvent(QMouseEvent *event, qsys::InDevEvent &ev);
-  void setupWheelEvent(QWheelEvent *event, qsys::InDevEvent &ev);
-  sysdep::MouseEventHandler *m_pMeh;
 
-  bool gestureEvent(QGestureEvent * event);
-  void pinchTriggered(QPinchGesture *gesture);
-  void panTriggered(QPanGesture *gesture);
+private:
+    void setupMouseEvent(QMouseEvent *event, qsys::InDevEvent &ev);
+    void setupWheelEvent(QWheelEvent *event, qsys::InDevEvent &ev);
+    sysdep::MouseEventHandler *m_pMeh;
+
+    bool gestureEvent(QGestureEvent *event);
+    void pinchTriggered(QPinchGesture *gesture);
+    void panTriggered(QPanGesture *gesture);
 };

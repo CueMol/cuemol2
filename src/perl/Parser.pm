@@ -198,6 +198,9 @@ sub noneState($) {
   elsif ($line =~ /^include\s+(.+)\s*\;/) {
     unshift @user_cxx_incfiles, $1;
   }
+  elsif ($line =~ /^#pragma\s+once/) {
+      # ADDED 2020/4/26: ignore pragma once
+  }
   else {
     print("Warning: *** Unknown words at $cur_file, $lineno: \"$line\" ***\n");
   }
@@ -217,6 +220,7 @@ sub parseTypeName($) {
       $typenm eq "real" ||
       $typenm eq "string" ||
       $typenm eq "array" ||
+      $typenm eq "dict" ||
       $typenm eq "enum") {
       return ($typenm, 0, $typenm, 0);
   }

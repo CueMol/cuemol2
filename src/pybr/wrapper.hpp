@@ -6,27 +6,31 @@
 #ifndef PYBR_WRAPPER_HPP_INCLUDED__
 #define PYBR_WRAPPER_HPP_INCLUDED__
 
-#include "pybr.hpp"
-#include <qlib/LString.hpp>
+#include <Python.h>
+
 #include <qlib/LScriptable.hpp>
+#include <qlib/LString.hpp>
+
+#include "pybr.hpp"
 
 namespace pybr {
 
 /// wrapper instance type
-typedef struct {
-  PyObject_HEAD
+typedef struct
+{
+    PyObject_HEAD;
 
-  /// wrapped object
-  qlib::LScriptable *m_pObj;
+    /// wrapped object
+    qlib::LScriptable *m_pObj;
 
 } QpyWrapObj;
 
-  using qlib::LString;
+using qlib::LString;
 
-  /// wrapper utility methods
-  class PYBR_API Wrapper
-  {
-  public:
+/// wrapper utility methods
+class PYBR_API Wrapper
+{
+public:
     /// initialize wrapper
     static PyObject *init();
 
@@ -50,14 +54,14 @@ typedef struct {
     // Property operations
 
     static PyObject *setProp(PyObject *self, PyObject *args);
-    
+
     static PyObject *getProp(PyObject *self, PyObject *args);
 
     /// Get property's default flag
     ///  args: object, propname
     ///  retval: bool
     static PyObject *isPropDefault(PyObject *self, PyObject *args);
-    
+
     /// Get property's default flag
     ///  args: object, propname
     ///  retval: bool
@@ -100,10 +104,11 @@ typedef struct {
 
     /// create python function object for native methods
     static PyObject *createMethodObj(PyObject *pObj, const char *mthname);
-    
+
     static PyObject *getattr(QpyWrapObj *pSelf, const char *name);
-    
-    static PyObject *invokeMethodImpl(qlib::LScriptable *pScrObj, const char *mthname, PyObject *arg, int nb);
+
+    static PyObject *invokeMethodImpl(qlib::LScriptable *pScrObj, const char *mthname,
+                                      PyObject *arg, int nb);
 
     //////////
     // conversion methods
@@ -114,16 +119,15 @@ typedef struct {
     /// convert PyObject to LVariant
     static void pyObjToLVar(PyObject *pPyObj, qlib::LVariant &rval);
 
-
-    static int setPropImpl(qlib::LScriptable *pObj, const LString &name, PyObject *pValue);
+    static int setPropImpl(qlib::LScriptable *pObj, const LString &name,
+                           PyObject *pValue);
 
     static PyObject *getPropImpl(qlib::LScriptable *pObj, const LString &name);
 
-  private:
+private:
     static bool setupMethObj();
+};
 
-  };
-
-}
+}  // namespace pybr
 
 #endif

@@ -19,6 +19,9 @@
 #include <gfx/gfx.hpp>
 #include "style/StyleMgr.hpp"
 #include "style/StyleFile.hpp"
+#include "command/CmdMgr.hpp"
+#include "command/NewSceneCommand.hpp"
+#include "command/LoadSceneCommand.hpp"
 
 extern void qsys_regClasses();
 extern void qsys_unregClasses();
@@ -151,6 +154,10 @@ bool init(const char *config)
   pRF->regist<RendGroup>();
 
   StyleMgr::init();
+  CmdMgr::init();
+  auto pCmdMgr = CmdMgr::getInstance();
+  pCmdMgr->regist<NewSceneCommand>();
+  pCmdMgr->regist<LoadSceneCommand>();
 
   ///////////////////
   // initialize other services

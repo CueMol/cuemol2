@@ -23,6 +23,7 @@ ClassRegistry.cpp
 LClass.cpp
 LRcObject.cpp
 LVariant.cpp
+LVarDict.cpp
 LPropSupport.cpp
 LPropContainer.cpp
 LScrObjects.cpp
@@ -89,6 +90,7 @@ ProcessManager.qif)
 SET(QLIB_MODLDR_SRC qlib.moddef)
 
 MCWRAPGEN_CLASS(QLIB_SRCS ${QLIB_MCWG_QIFS})
+# list(REMOVE_ITEM QLIB_SRCS "${CMAKE_CURRENT_BINARY_DIR}/LScrObject_wrap.cpp")
 list(REMOVE_ITEM QLIB_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/LScrObject_wrap.cpp")
 # message(STATUS "MCWG src file output ${QLIB_SRCS}")
 # message(STATUS "MCWG hdr file output ${MCWG_HEADERS}")

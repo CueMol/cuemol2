@@ -2,9 +2,9 @@
 //
 // $Id: qsys.moddef,v 1.19 2011/04/10 10:48:09 rishitani Exp $
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
+// #ifdef HAVE_CONFIG_H
+// #  include "config.h"
+// #endif
 
 #include "Scene.qif"
 #include "SceneManager.qif"
@@ -27,6 +27,11 @@
 #include "RendGroup.qif"
 #include "MultiGradient.qif"
 #include "ScalarObject.qif"
+
+#include "command/Command.qif"
+#include "command/NewSceneCommand.qif"
+#include "command/LoadSceneCommand.qif"
+#include "command/CmdMgr.qif"
 
 module qsys
 {
@@ -58,11 +63,17 @@ module qsys
   MultiGradient;
   ScalarObject;
   
-#if !defined(QM_BUILD_LW)
+  Command;
+  NewSceneCommand;
+  LoadSceneCommand;
+  CmdMgr;
+
   SceneExporter;
+
+// #if !defined(QM_BUILD_LW)
 //  ImgSceneExporter;
 //  PngSceneExporter;
-#endif
+// #endif
 
 };
 

@@ -1,0 +1,23 @@
+// -*-Mode: C++;-*-
+
+#ifndef COMMAND_QIF_INCLUDED
+#define COMMAND_QIF_INCLUDED
+
+runtime_class Command
+{
+    client_hdr "Command.hpp";
+    client_name qsys::Command;
+    dllexport QSYS_API;
+
+    scriptable;
+    abstract;
+    smartptr;
+
+    //////////
+
+    string toString();
+    integer getUID();
+    void run();
+};
+
+#endif
