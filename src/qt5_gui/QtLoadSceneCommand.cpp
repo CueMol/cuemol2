@@ -10,9 +10,9 @@
 #include <qsys/SceneManager.hpp>
 #include <qsys/StreamManager.hpp>
 #include <qsys/command/CmdMgr.hpp>
-#include <qsys/command/NewSceneCommand.hpp>
 
 #include "QtMolWidget.hpp"
+#include "QtNewSceneCommand.hpp"
 #include "mainwindow.hpp"
 
 namespace qt5_gui {
@@ -99,9 +99,13 @@ void QtLoadSceneCommand::runGUI(void *pwnd_info)
     // TO DO: do not creaet scene if active scene is empty.
     auto pMgr = qsys::CmdMgr::getInstance();
     auto pResult = pMgr->runGUICmd("qt_new_scene", pWnd);
-    m_pResScene = dynamic_cast<qsys::NewSceneCommand *>(pResult.get())->m_pResScene;
-
+    auto pResPtr = dynamic_cast<QtNewSceneCommand *>(pResult.get());
+    m_pTargScene = pResPtr->m_pResScene;
+    auto pWidget = reinterpret_cast<QtMolWidget *>(pResPtr->m_pMolWidget);
+    m_bSetCamera = true;
     qsys::LoadSceneCommand::run();
+
+    // pWidget->update();
 }
 
 /// Get command's unique name

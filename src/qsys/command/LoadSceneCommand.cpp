@@ -48,8 +48,12 @@ void LoadSceneCommand::run()
     if (m_pTargScene.isnull()) {
         auto pScMgr = qsys::SceneManager::getInstance();
         m_pResScene = pScMgr->createScene();
+        LOG_DPRINTLN("LoadScene> created new scene: %p %d", m_pResScene.get(),
+                     m_pResScene->getUID());
     } else {
         m_pResScene = m_pTargScene;
+        LOG_DPRINTLN("LoadScene> load to scene: %p %d", m_pResScene.get(),
+                     m_pResScene->getUID());
     }
 
     constexpr int nCatID = InOutHandler::IOH_CAT_SCEREADER;
@@ -71,11 +75,12 @@ void LoadSceneCommand::run()
     reader->read();
     reader->detach();
 
-    LOG_DPRINTLN("Set view camera: %d", m_bSetCamera);
+    LOG_DPRINTLN("Set view camera m_bSetCamera = %d", m_bSetCamera);
     if (m_bSetCamera) {
         const auto &views = m_pResScene->getViewTable();
         for (const auto &elem : views) {
-            LOG_DPRINTLN("Set view camera: %d", elem.second->getUID());
+            LOG_DPRINTLN("Set camera to view %p (ID %d)", elem.second.get(),
+                         elem.second->getUID());
             m_pResScene->loadViewFromCam(elem.second->getUID(), "__current");
         }
     }

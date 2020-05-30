@@ -15,13 +15,15 @@ class QtNewSceneCommand : public qsys::NewSceneCommand
     MC_CLONEABLE;
 
 public:
-    QtNewSceneCommand() = default;
+    QtNewSceneCommand() : m_pMolWidget(nullptr) {}
     virtual ~QtNewSceneCommand() = default;
 
     virtual void runGUI(void *pwnd_info);
 
     /// Get command's unique name
     virtual const char *getName() const;
+
+    void *m_pMolWidget;
 };
 
 }  // namespace qt5_gui
