@@ -44,7 +44,8 @@ MainWindow::~MainWindow()
 
 void MainWindow::onLoaded()
 {
-    newFile();
+    if (m_pTabWnd->currentSubWindow() == nullptr)
+        newFile();
 }
 
 void MainWindow::onActivateMolTabChanged()
