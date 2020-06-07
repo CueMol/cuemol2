@@ -44,14 +44,14 @@ SET(PYMODULE_LINK_LIBRARIES
   Python3::Python
   )
 
-# add_library(_internal SHARED ${PYMODULE_SRCS})
-Python3_add_library(_internal MODULE ${PYMODULE_SRCS})
-target_link_libraries(_internal PRIVATE ${PYMODULE_LINK_LIBRARIES})
+# add_library(_cuemol_internal SHARED ${PYMODULE_SRCS})
+Python3_add_library(_cuemol_internal MODULE ${PYMODULE_SRCS})
+target_link_libraries(_cuemol_internal PRIVATE ${PYMODULE_LINK_LIBRARIES})
 
-# set_target_properties(_internal PROPERTIES PREFIX "")  # no 'lib' prefix
-# set_target_properties(_internal PROPERTIES SUFFIX ".${Python3_SOABI}")  # must be .so (not .dylib)
+# set_target_properties(_cuemol_internal PROPERTIES PREFIX "")  # no 'lib' prefix
+# set_target_properties(_cuemol_internal PROPERTIES SUFFIX ".${Python3_SOABI}")  # must be .so (not .dylib)
 
-# install(TARGETS _internal
+# install(TARGETS _cuemol_internal
 #   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 #   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 #   )

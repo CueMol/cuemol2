@@ -1,13 +1,30 @@
+import shutil
+import glob
 import os
 import re
 import sys
 import platform
 import subprocess
+from pathlib import Path
 
 from setuptools import find_packages
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 from distutils.version import LooseVersion
+
+
+def copy_generated_pyfiles(src_dir, build_dir, dest_dir):
+    print(f"src_dir {src_dir}")
+    print(f"build_dir {build_dir}")
+    print(f"dest_dir {dest_dir}")
+
+    for py_file in glob.glob(str(src_dir / "src" / "pybr" / "scripts" / "*")):
+        print(f"copy {py_file} to {dest_dir}")
+        shutil.copy(py_file, dest_dir)
+
+    for py_file in glob.glob(str(build_dir / "**" / "*.py"), recursive=True):
+        pass
+        # print(py_file)
 
 
 class CMakeExtension(Extension):
@@ -43,12 +60,11 @@ class CMakeBuild(build_ext):
         cmake_args = ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
                       '-DPYTHON_EXECUTABLE=' + sys.executable]
         cmake_args += [
-            "-DCMAKE_INSTALL_PREFIX=$HOME/tmp"
             "-DCMAKE_PREFIX_PATH=/usr/local/opt/qt5/lib/cmake/Qt5;/Users/user1/proj64_cmake",
             "-DBUILD_GUI=OFF",
             "-DBUILD_PYTHON_BINDINGS=ON",
             "-DFFTW_ROOT=$HOME/proj64_cmake/fftw"]
-
+        print("********", cmake_args, flush=True)
         cfg = 'Debug' if self.debug else 'Release'
         build_args = ['--config', cfg]
 
@@ -69,6 +85,8 @@ class CMakeBuild(build_ext):
         subprocess.check_call(['cmake', ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env)
         subprocess.check_call(['cmake', '--build', '.'] + build_args, cwd=self.build_temp)
 
+        copy_generated_pyfiles(Path(ext.sourcedir), Path(self.build_temp), Path(extdir))
+
 setup(
     name='cuemol',
     version='0.0.1',
@@ -76,9 +94,10 @@ setup(
     author_email='ishitani@users.sourceforge.net',
     description='CueMol: Molecular Visualization Framework',
     long_description='',
-    ext_modules=[CMakeExtension('cuemol._internal')],
+    ext_modules=[CMakeExtension('cuemol._cuemol_internal')],
     cmdclass=dict(build_ext=CMakeBuild),
     zip_safe=False,
-    packages=["cuemol"],
-    package_dir={"cuemol": "src/pybr/scripts"},
+    # packages=["cuemol"],
+    # package_dir={"": "dist/data/python/",
+    #              "cuemol": "dist/data/python/cuemol"},
 )

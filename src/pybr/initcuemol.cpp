@@ -28,7 +28,7 @@ using namespace pybr;
 
 PyMODINIT_FUNC
 #if PY_MAJOR_VERSION >= 3
-PyInit__internal()
+PyInit__cuemol_internal()
 #else
 init_internal()
 #endif
