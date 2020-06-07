@@ -13,11 +13,16 @@ class WrapperBase:
 
     def __str__(self):
         clsnm = ci.getClassName(self._wrapped)
-        res = "<CueMol {} wrapper {}>".format(clsnm, self.toString())
+        if hasattr(self, "toString"):
+            res = f"<CueMol {clsnm} wrapper {self.toString()}>"
+        else:
+            res = f"<CueMol {clsnm} wrapper>"
         return res
 
     def __repr__(self):
         clsnm = ci.getClassName(self._wrapped)
-        res = "<CueMol {} wrapper {}>".format(clsnm, self.toString())
+        if hasattr(self, "toString"):
+            res = f"<CueMol {clsnm} wrapper {self.toString()}>"
+        else:
+            res = f"<CueMol {clsnm} wrapper>"
         return res
-

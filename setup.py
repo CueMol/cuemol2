@@ -55,15 +55,25 @@ class CMakeBuild(build_ext):
         if not extdir.endswith(os.path.sep):
             extdir += os.path.sep
 
-        print("*******ext full name:", self.get_ext_fullname(ext.name))
-        print("*******extdir:", ext.name, extdir, flush=True)
+        env = os.environ.copy()
+        prefix_path = env.get("CMAKE_PREFIX_PATH", None)
+        print("*******prefix_path:", prefix_path)
+
+        # print("*******ext full name:", self.get_ext_fullname(ext.name))
+        # print("*******extdir:", ext.name, extdir, flush=True)
         cmake_args = ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
                       '-DPYTHON_EXECUTABLE=' + sys.executable]
         cmake_args += [
-            "-DCMAKE_PREFIX_PATH=/usr/local/opt/qt5/lib/cmake/Qt5;/Users/user1/proj64_cmake",
+            # "-DCMAKE_PREFIX_PATH=/usr/local/opt/qt5/lib/cmake/Qt5;/Users/user1/proj64_cmake",
             "-DBUILD_GUI=OFF",
             "-DBUILD_PYTHON_BINDINGS=ON",
-            "-DFFTW_ROOT=$HOME/proj64_cmake/fftw"]
+            "-DBUILD_PYTHON_MODULE=ON",
+            # "-DFFTW_ROOT=$HOME/proj64_cmake/fftw",
+        ]
+        if prefix_path:
+            cmake_args.append(f"-DCMAKE_PREFIX_PATH={prefix_path}")
+            cmake_args.append(f"-DFFTW_ROOT={prefix_path}/fftw")
+
         print("********", cmake_args, flush=True)
         cfg = 'Debug' if self.debug else 'Release'
         build_args = ['--config', cfg]
@@ -77,7 +87,6 @@ class CMakeBuild(build_ext):
             cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]
             # build_args += ['--', '-j2']
 
-        env = os.environ.copy()
         env['CXXFLAGS'] = '{} -DVERSION_INFO=\\"{}\\"'.format(env.get('CXXFLAGS', ''),
                                                               self.distribution.get_version())
         if not os.path.exists(self.build_temp):
