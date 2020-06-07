@@ -2,9 +2,11 @@
 Renderer related utility
 """
 
-import _cuemol_internal as ci
 import cuemol as cm
 import traceback
+from cuemol.internal_loader import import_internal
+
+ci = import_internal()
 
 
 def setupDefaultRenderer(obj):

@@ -2,7 +2,9 @@
 # Python base wrapper class
 #
 
-import _cuemol_internal as ci
+from cuemol.internal_loader import import_internal
+ci = import_internal()
+
 
 class WrapperBase:
 

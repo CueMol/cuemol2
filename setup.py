@@ -11,20 +11,20 @@ from setuptools import find_packages
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 from distutils.version import LooseVersion
+import distutils.dir_util
+import distutils.file_util
 
 
 def copy_generated_pyfiles(src_dir, build_dir, dest_dir):
     print(f"src_dir {src_dir}")
     print(f"build_dir {build_dir}")
     print(f"dest_dir {dest_dir}")
-
-    for py_file in glob.glob(str(src_dir / "src" / "pybr" / "scripts" / "*")):
-        print(f"copy {py_file} to {dest_dir}")
-        shutil.copy(py_file, dest_dir)
-
+    distutils.dir_util.copy_tree(str(src_dir / "src" / "pybr" / "scripts"), str(dest_dir))
     for py_file in glob.glob(str(build_dir / "**" / "*.py"), recursive=True):
-        pass
-        # print(py_file)
+        distutils.file_util.copy_file(py_file, str(dest_dir / "wrappers"))
+
+    distutils.dir_util.copy_tree(str(src_dir / "src" / "xul_gui" / "data"), str(dest_dir / "config" / "data"))
+    distutils.file_util.copy_file(str(src_dir / "src" / "xul_gui" / "sysconfig.xml"), str(dest_dir / "config"))
 
 
 class CMakeExtension(Extension):

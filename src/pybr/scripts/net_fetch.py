@@ -4,10 +4,11 @@ import re
 from pathlib import Path
 import urllib.request
 
-import _cuemol_internal as ci
 import cuemol as cm
-# import cuemol.fileio as fileio
 import cuemol.renderer as renderer
+from cuemol.internal_loader import import_internal
+
+ci = import_internal()
 
 def load_url(aURL):
 
