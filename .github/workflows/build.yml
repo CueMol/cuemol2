@@ -56,6 +56,11 @@ jobs:
         
     - uses: actions/checkout@v1
 
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.7
+
     - name: Install prerequisite 2
       shell: bash
       run: |
@@ -69,10 +74,13 @@ jobs:
       id: build
       run: |
         pwd
-        mkdir build
-        cd build
-        cmake --version
-        cmake .. -G "Unix Makefiles" -DCMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/mac_build_set -DCGAL_DISABLE_GMP=ON -DBUILD_GUI=OFF -DBUILD_PYTHON_BINDINGS=ON -DFFTW_ROOT=${GITHUB_WORKSPACE}/mac_build_set/fftw
-        ls -la
-        cmake --build . -v --config Release
-        ls -la
+        which python
+        python -m pip install pytest
+        env MAKEFLAGS=-j4 CMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/mac_build_set python -m pip install -v -e .
+        pytest tests        
+        # mkdir build
+        # cd build
+        # cmake --version
+        # cmake .. -G "Unix Makefiles" -DCMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/mac_build_set -DCGAL_DISABLE_GMP=ON -DBUILD_GUI=OFF -DBUILD_PYTHON_BINDINGS=ON -DFFTW_ROOT=${GITHUB_WORKSPACE}/mac_build_set/fftw
+        # ls -la
+        # cmake --build . -v --config Release
