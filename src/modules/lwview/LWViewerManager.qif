@@ -19,5 +19,4 @@ runtime_class LWViewerManager
   void convToLWScene(object<Scene$>, object<Scene$>);
 };
 
-#endif // LWVIEWER_MANAGER_QIF_INCLUDED
-
+#endif

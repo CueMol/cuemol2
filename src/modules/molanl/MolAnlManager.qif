@@ -72,5 +72,4 @@ runtime_class MolAnlManager
 
 };
 
-#endif // MOLANL_MANAGER_QIF_INCLUDED
-
+#endif

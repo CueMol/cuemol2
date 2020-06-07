@@ -35,5 +35,5 @@ runtime_class JctTable
 
 };
 
-#endif // TUBE_SECTION_QIF_INCLUDED
-
+#endif
+// TUBE_SECTION_QIF_INCLUDED

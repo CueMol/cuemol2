@@ -77,7 +77,7 @@ jobs:
         which python
         python -m pip install pytest
         env MAKEFLAGS=-j4 CMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/mac_build_set python -m pip install -v -e .
-        pytest tests        
+        # pytest tests        
         # mkdir build
         # cd build
         # cmake --version

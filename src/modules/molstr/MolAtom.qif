@@ -55,5 +55,4 @@ runtime_class MolAtom
 
 };
 
-#endif // MOL_ATOM_QIF_INCLUDED_
-
+#endif
