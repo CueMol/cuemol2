@@ -48,60 +48,52 @@ init_internal()
 #include <xmlrpc_bridge/xrbr.hpp>
 #endif
 
+#ifndef PYBR_MINIMUM_MODULES
 namespace render {
   extern bool init();
   extern void fini();
 }
-
 namespace molstr {
   extern bool init();
   extern void fini();
 }
-
 namespace molvis {
   extern bool init();
   extern void fini();
 }
-
 namespace xtal {
   extern bool init();
   extern void fini();
 }
-
 namespace molanl {
   extern bool init();
   extern void fini();
 }
-
 namespace surface {
   extern bool init();
   extern void fini();
 }
-
 namespace symm {
   extern bool init();
   extern void fini();
 }
-
 namespace lwview {
   extern bool init();
   extern void fini();
 }
-
 namespace anim {
   extern bool init();
   extern void fini();
 }
-
 namespace mdtools {
   extern bool init();
   extern void fini();
 }
-
 namespace importers {
   extern bool init();
   extern void fini();
 }
+#endif
 
 #include <qsys/TTYView.hpp>
 
@@ -158,6 +150,7 @@ namespace pybr {
 
       pybr::registerViewFactory();
 
+#ifndef PYBR_MINIMUM_MODULES
       // load other modules
       render::init();
       molstr::init();
@@ -168,10 +161,9 @@ namespace pybr {
       molanl::init();
       lwview::init();
       anim::init();
-
       mdtools::init();
-
       importers::init();
+#endif
 
 #ifdef USE_XMLRPC
       // load python module
@@ -216,10 +208,9 @@ namespace pybr {
     // cleanup timer
     qlib::EventManager::getInstance()->finiTimer();
 
+#ifndef PYBR_MINIMUM_MODULES
     importers::fini();
-    
     mdtools::fini();
-    
     anim::fini();
     lwview::fini();
     molanl::fini();
@@ -229,6 +220,7 @@ namespace pybr {
     molvis::fini();
     molstr::fini();
     render::fini();
+#endif
     
     // CueMol-App finalization
 #if (GUI_ARCH!=MB_GUI_ARCH_CLI)

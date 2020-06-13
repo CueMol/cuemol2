@@ -3,7 +3,7 @@ find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
 message(STATUS "Python3_Development_FOUND=${Python3_Development_FOUND}")
 message(STATUS "Python: version=${Python3_VERSION} Python3_INCLUDE_DIRS=${Python3_INCLUDE_DIRS} Python3_LIBRARIES=${Python3_LIBRARIES}")
 
-add_definitions(-DHAVE_PYTHON=1 -DBUILD_PYMODULE=1)
+add_definitions(-DHAVE_PYTHON=1 -DBUILD_PYMODULE=1 -DPYBR_MINIMUM_MODULES=1)
 
 include_directories(
   ${CMAKE_SOURCE_DIR}/src
@@ -29,17 +29,17 @@ SET(PYMODULE_LINK_LIBRARIES
   qlib
   gfx
   qsys
-  molstr
-  molvis
-  surface
-  molanl
-  symm
-  xtal
-  lwview
-  render
-  anim
-  mdtools
-  importers
+  # molstr
+  # molvis
+  # surface
+  # molanl
+  # symm
+  # xtal
+  # lwview
+  # render
+  # anim
+  # mdtools
+  # importers
   Boost::filesystem
   Python3::Python
   )
