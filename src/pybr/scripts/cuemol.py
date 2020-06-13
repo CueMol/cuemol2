@@ -198,11 +198,15 @@ def sceMgr():
 def strMgr():
     return getService("StreamManager")
 
-def vec(aX, aY, aZ):
+def vec(aX, aY, aZ, *args):
     v = createObj("Vector");
     v.x = aX;
     v.y = aY;
     v.z = aZ;
+    if len(args) == 1:
+        v.w = args[0]
+    elif len(args) > 1:
+        raise RuntimeError("too many args for vec()")
     return v;
 
 def sel(aSelStr, aScene=None):
