@@ -27,8 +27,8 @@ SET(PYMODULE_LINK_LIBRARIES
   qmpng
   qmzlib
   qlib
-  gfx
-  qsys
+  # gfx
+  # qsys
   # molstr
   # molvis
   # surface

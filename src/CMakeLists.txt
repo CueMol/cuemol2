@@ -109,8 +109,9 @@ if (BUILD_PYTHON_BINDINGS)
     add_subdirectory(pymodule)
   endif ()
 endif ()
-add_subdirectory(gfx)
-add_subdirectory(qsys)
+
+# add_subdirectory(gfx)
+# add_subdirectory(qsys)
 
 if (BUILD_GUI)
   add_subdirectory(sysdep)
