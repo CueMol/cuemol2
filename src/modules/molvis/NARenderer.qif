@@ -49,5 +49,5 @@ runtime_class NARenderer extends TubeRenderer
 
 };
 
-#endif // TUBE_RENDERER_QIF
+#endif
 

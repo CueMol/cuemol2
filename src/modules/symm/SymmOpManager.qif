@@ -24,5 +24,4 @@ runtime_class SymmOpManager
   void changeXtalInfo(integer, real, real, real, real, real, real, integer);
 };
 
-#endif // SYMMOP_MANAGER_QIF_INCLUDED
-
+#endif

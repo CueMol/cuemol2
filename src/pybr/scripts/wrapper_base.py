@@ -2,7 +2,9 @@
 # Python base wrapper class
 #
 
-import _cuemol_internal as ci
+from cuemol.internal_loader import import_internal
+ci = import_internal()
+
 
 class WrapperBase:
 
@@ -11,11 +13,16 @@ class WrapperBase:
 
     def __str__(self):
         clsnm = ci.getClassName(self._wrapped)
-        res = "<CueMol {} wrapper {}>".format(clsnm, self.toString())
+        if hasattr(self, "toString"):
+            res = f"<CueMol {clsnm} wrapper {self.toString()}>"
+        else:
+            res = f"<CueMol {clsnm} wrapper>"
         return res
 
     def __repr__(self):
         clsnm = ci.getClassName(self._wrapped)
-        res = "<CueMol {} wrapper {}>".format(clsnm, self.toString())
+        if hasattr(self, "toString"):
+            res = f"<CueMol {clsnm} wrapper {self.toString()}>"
+        else:
+            res = f"<CueMol {clsnm} wrapper>"
         return res
-

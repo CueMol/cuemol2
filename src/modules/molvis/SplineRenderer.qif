@@ -57,5 +57,5 @@ runtime_class SplineRenderer extends MainChainRenderer
 
 };
 
-#endif // SPLINE_RENDERER_QIF
-
+#endif
+// SPLINE_RENDERER_QIF

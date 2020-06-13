@@ -1,9 +1,11 @@
 import sys, traceback,os
 
-import _cuemol_internal as ci
 import cuemol
 import cuemol.fileio as fileio
 import cuemol.renderer as renderer
+from cuemol.internal_loader import import_internal
+
+ci = import_internal()
 
 # set scene's background color
 def bgcolor(aCol):

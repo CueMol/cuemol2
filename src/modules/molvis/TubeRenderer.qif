@@ -48,5 +48,5 @@ runtime_class TubeRenderer extends SplineRenderer
 
 };
 
-#endif // TUBE_RENDERER_QIF
-
+#endif
+// TUBE_RENDERER_QIF

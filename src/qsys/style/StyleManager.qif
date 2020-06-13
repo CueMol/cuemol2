@@ -112,5 +112,5 @@ runtime_class StyleManager
   void firePendingEvents();
 };
 
-#endif // Style_MANAGER_QIF_INCLUDED
-
+#endif
+// Style_MANAGER_QIF_INCLUDED

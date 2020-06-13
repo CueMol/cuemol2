@@ -1,8 +1,10 @@
 import sys, traceback, re, os
 
-import _cuemol_internal as ci
 import cuemol as cm
 from pathlib import Path
+from cuemol.internal_loader import import_internal
+
+ci = import_internal()
 
 def bg_color(colstr, aScene=None):
     scene = cm.scene(aScene)

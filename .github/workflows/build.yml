@@ -5,6 +5,9 @@ on:
     types: [opened, synchronize]
   #    types: [assigned, opened, synchronize, reopened, labeled, unlabeled, edited, closed, ready_for_review, locked, unlocked, review_requested, review_request_removed]
 
+env:
+  PYTHON_VERSION: 3.8
+
 jobs:
   build_win:
     name: "Windows Latest MSVC"
@@ -56,23 +59,58 @@ jobs:
         
     - uses: actions/checkout@v1
 
+    - name: Setup python ${{ env.PYTHON_VERSION }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Check python ${{ env.PYTHON_VERSION }}
+      shell: bash
+      env:
+        python-version: ${{ env.PYTHON_VERSION }}
+      run: |
+        echo $PYTHON_VERSION
+        echo $pythonLocation
+        PYTHON=`which python$PYTHON_VERSION`
+        echo $PYTHON
+        echo "::set-env name=PYTHON::$PYTHON"
+      
     - name: Install prerequisite 2
       shell: bash
       run: |
+        echo $PYTHON
         cd ${GITHUB_WORKSPACE}
         pwd
         wget https://github.com/CueMol/build_prerequisite/releases/download/v0.0.1/mac_build_set.tar.gz -O mac_build_set.tar.gz
         tar xvzf mac_build_set.tar.gz
         ls -la
+        $PYTHON -m pip install --upgrade pip setuptools wheel
+        $PYTHON -m pip install pytest
 
     - name: Build
       id: build
+      shell: bash
       run: |
         pwd
-        mkdir build
-        cd build
-        cmake --version
-        cmake .. -G "Unix Makefiles" -DCMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/mac_build_set -DCGAL_DISABLE_GMP=ON -DBUILD_GUI=OFF -DBUILD_PYTHON_BINDINGS=ON -DFFTW_ROOT=${GITHUB_WORKSPACE}/mac_build_set/fftw
-        ls -la
-        cmake --build . -v --config Release
-        ls -la
+        $PYTHON --version
+        env MAKEFLAGS=-j4 \
+          BUILD_MINIMUM_MODULES=OFF \
+          CMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/mac_build_set \
+          $PYTHON -m pip install -v -e .
+
+        # mkdir build
+        # cd build
+        # cmake --version
+        # cmake .. -G "Unix Makefiles" -DCMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/mac_build_set -DCGAL_DISABLE_GMP=ON -DBUILD_GUI=OFF -DBUILD_PYTHON_BINDINGS=ON -DFFTW_ROOT=${GITHUB_WORKSPACE}/mac_build_set/fftw
+        # ls -la
+        # cmake --build . -v --config Release
+
+    - name: Tests
+      shell: bash
+      run: |
+        $PYTHON -m pip list
+        $PYTHON -c "import cuemol"
+        pytest tests
+
+    # - name: Setup tmate session
+    #   uses: mxschmitt/action-tmate@v2

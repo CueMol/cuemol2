@@ -6,9 +6,11 @@ import sys
 import os
 import json
 
-import _cuemol_internal as ci
 import cuemol as cm
 from . import renderer
+from cuemol.internal_loader import import_internal
+
+ci = import_internal()
 
 __all__ = ['loadScene', 'loadObject', 'load']
 

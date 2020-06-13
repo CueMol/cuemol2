@@ -137,5 +137,4 @@ runtime_class Ribbon2Renderer extends MainChainRenderer
   // void curvature();
 };
 
-#endif // SPLINE_RENDERER_QIF
-
+#endif

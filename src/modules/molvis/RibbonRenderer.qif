@@ -71,5 +71,5 @@ runtime_class RibbonRenderer extends SplineRenderer
   default sheet_sidecol = gfx::SolidColor::createRGB(1.0, 1.0, 1.0);
 };
 
-#endif // Ribbon_RENDERER_QIF
+#endif
 

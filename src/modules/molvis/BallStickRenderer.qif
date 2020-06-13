@@ -56,5 +56,5 @@ runtime_class BallStickRenderer extends MolRenderer
 
 };
 
-#endif // BALL_STICK_RENDERER_QIF
-
+#endif
+// BALL_STICK_RENDERER_QIF

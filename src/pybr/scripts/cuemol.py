@@ -2,8 +2,9 @@
 CueMol utility functions
 """
 
-import _cuemol_internal as ci
+# import _cuemol_internal as ci
 import importlib
+from cuemol.internal_loader import import_internal
 from cuemol.wrapper_base import WrapperBase
 
 __all__ = ['getWrpClass', 'createWrapper', 'createObj', 'getService', 'println',
@@ -12,6 +13,8 @@ __all__ = ['getWrpClass', 'createWrapper', 'createObj', 'getService', 'println',
            'sceMgr', 'strMgr',
            'vec', 'sel', 'col', 'timeval', 'copy',
            'UndoTxn', 'txn']
+
+ci = import_internal()
 
 ##########
 
