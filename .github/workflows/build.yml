@@ -6,7 +6,7 @@ on:
   #    types: [assigned, opened, synchronize, reopened, labeled, unlabeled, edited, closed, ready_for_review, locked, unlocked, review_requested, review_request_removed]
 
 env:
-  PYTHON_VERSION: 3.8
+  PYTHON_VERSION: 3.7
 
 jobs:
   build_win:
