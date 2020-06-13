@@ -75,8 +75,9 @@ jobs:
       run: |
         pwd
         which python
-        python -m pip install pytest
-        env MAKEFLAGS=-j4 CMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/mac_build_set python -m pip install -v -e .
+        python3 --version
+        python3 -m pip install pytest
+        env MAKEFLAGS=-j4 CMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/mac_build_set python3 -m pip install -v -e .
         # pytest tests        
         # mkdir build
         # cd build
