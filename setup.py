@@ -61,12 +61,17 @@ class CMakeBuild(build_ext):
         cmake_args = ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,]
         # XXX: PYTHON_EXECUTABLE has no effect in the recent version of CMake
         # '-DPYTHON_EXECUTABLE=' + sys.executable]
+        python_exec_path = Path(sys.executable)
+        python_root_dir = python_exec_path.parent.parent
+        print(f"sys.executable: {sys.executable}")
+        print(f"python_root_dir: {python_root_dir}")
 
         cmake_args += [
             "-DBUILD_GUI=OFF",
             "-DBUILD_PYTHON_BINDINGS=ON",
             "-DBUILD_PYTHON_MODULE=ON",
             f"-DBUILD_MINIMUM_MODULES={build_min}",
+            f"-DPython3_ROOT_DIR={python_root_dir}",
         ]
         if prefix_path:
             cmake_args.append(f"-DCMAKE_PREFIX_PATH={prefix_path}")
