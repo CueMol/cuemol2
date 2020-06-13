@@ -13,6 +13,7 @@ project(CueMol CXX C)
 message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 option(BUILD_GUI "Build CueMol GUI." ON)
 option(BUILD_PYTHON_BINDINGS "Build Python bindings")
+option(BUILD_MINIMUM_MODULES "Build CueMol with minimum modules." OFF)
 
 find_package(Perl REQUIRED)
 find_package(BISON REQUIRED)
@@ -30,6 +31,7 @@ message(STATUS
   "Summary report\n"
   "==============\n")
 message(STATUS "BUILD_GUI: ${BUILD_GUI}")
+message(STATUS "BUILD_MINIMUM_MODULES: ${BUILD_MINIMUM_MODULES}")
 
 if (DEFINED CMAKE_BUILD_TYPE)
   message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")

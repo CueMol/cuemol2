@@ -57,24 +57,22 @@ class CMakeBuild(build_ext):
 
         env = os.environ.copy()
         prefix_path = env.get("CMAKE_PREFIX_PATH", None)
-        print("*******prefix_path:", prefix_path)
+        build_min = env.get("BUILD_MINIMUM_MODULES", "OFF")
+        cmake_args = ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,]
+        # XXX: PYTHON_EXECUTABLE has no effect in the recent version of CMake
+        # '-DPYTHON_EXECUTABLE=' + sys.executable]
 
-        # print("*******ext full name:", self.get_ext_fullname(ext.name))
-        # print("*******extdir:", ext.name, extdir, flush=True)
-        cmake_args = ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
-                      '-DPYTHON_EXECUTABLE=' + sys.executable]
         cmake_args += [
-            # "-DCMAKE_PREFIX_PATH=/usr/local/opt/qt5/lib/cmake/Qt5;/Users/user1/proj64_cmake",
             "-DBUILD_GUI=OFF",
             "-DBUILD_PYTHON_BINDINGS=ON",
             "-DBUILD_PYTHON_MODULE=ON",
-            # "-DFFTW_ROOT=$HOME/proj64_cmake/fftw",
+            f"-DBUILD_MINIMUM_MODULES={build_min}",
         ]
         if prefix_path:
             cmake_args.append(f"-DCMAKE_PREFIX_PATH={prefix_path}")
             cmake_args.append(f"-DFFTW_ROOT={prefix_path}/fftw")
 
-        print("********", cmake_args, flush=True)
+        print(f"******** cmake_args: {cmake_args}", flush=True)
         cfg = 'Debug' if self.debug else 'Release'
         build_args = ['--config', cfg]
 
@@ -85,7 +83,6 @@ class CMakeBuild(build_ext):
             build_args += ['--', '/m']
         else:
             cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]
-            # build_args += ['--', '-j2']
 
         env['CXXFLAGS'] = '{} -DVERSION_INFO=\\"{}\\"'.format(env.get('CXXFLAGS', ''),
                                                               self.distribution.get_version())

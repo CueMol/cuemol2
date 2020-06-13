@@ -100,9 +100,37 @@ add_subdirectory(expat)
 add_subdirectory(zlib)
 add_subdirectory(libpng)
 
-# main components
+# main components/modules
 add_subdirectory(qlib)
+
+if (NOT BUILD_MINIMUM_MODULES)
+  add_subdirectory(gfx)
+  add_subdirectory(qsys)
+
+  if (BUILD_GUI)
+    add_subdirectory(sysdep)
+  endif ()
+  
+  add_subdirectory(modules/molstr)
+  add_subdirectory(modules/molvis)
+  add_subdirectory(modules/surface)
+  add_subdirectory(modules/molanl)
+  add_subdirectory(modules/symm)
+  add_subdirectory(modules/xtal)
+  add_subdirectory(modules/lwview)
+  add_subdirectory(modules/rendering)
+  add_subdirectory(modules/anim)
+  add_subdirectory(modules/mdtools)
+  add_subdirectory(modules/importers)
+endif ()
+
+# front ends
 if (BUILD_PYTHON_BINDINGS)
+  find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
+  message(STATUS "Python3_Development_FOUND=${Python3_Development_FOUND}")
+  message(STATUS "Python3_EXECUTABLE=${Python3_EXECUTABLE}")
+  message(STATUS "Python: version=${Python3_VERSION} Python3_INCLUDE_DIRS=${Python3_INCLUDE_DIRS} Python3_LIBRARIES=${Python3_LIBRARIES}")
+
   if (NOT BUILD_PYTHON_MODULE)
     add_subdirectory(pybr)
   else ()
@@ -110,31 +138,11 @@ if (BUILD_PYTHON_BINDINGS)
   endif ()
 endif ()
 
-# add_subdirectory(gfx)
-# add_subdirectory(qsys)
-
-if (BUILD_GUI)
-  add_subdirectory(sysdep)
-endif()
-
-# modules
-# add_subdirectory(modules/molstr)
-# add_subdirectory(modules/molvis)
-# add_subdirectory(modules/surface)
-# add_subdirectory(modules/molanl)
-# add_subdirectory(modules/symm)
-# add_subdirectory(modules/xtal)
-# add_subdirectory(modules/lwview)
-# add_subdirectory(modules/rendering)
-# add_subdirectory(modules/anim)
-# add_subdirectory(modules/mdtools)
-# add_subdirectory(modules/importers)
-
+# CLI/main (cuetty)
 if (NOT BUILD_PYTHON_MODULE)
-  # CLI/main (cuetty)
   add_subdirectory(cli)
 endif ()
 
-if (BUILD_GUI AND NOT BUILD_PYTHON_MODULE)
+if (BUILD_GUI AND NOT BUILD_PYTHON_MODULE AND NOT BUILD_MINIMUM_MODULES)
   add_subdirectory(qt5_gui)
 endif()

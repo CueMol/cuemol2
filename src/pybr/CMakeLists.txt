@@ -1,7 +1,3 @@
-find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
-message(STATUS "Python3_Development_FOUND=${Python3_Development_FOUND}")
-message(STATUS "Python: version=${Python3_VERSION} Python3_INCLUDE_DIRS=${Python3_INCLUDE_DIRS} Python3_LIBRARIES=${Python3_LIBRARIES}")
-
 add_definitions(-DHAVE_PYTHON=1)
 
 include_directories(
