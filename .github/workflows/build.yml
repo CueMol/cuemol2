@@ -84,3 +84,6 @@ jobs:
         # cmake .. -G "Unix Makefiles" -DCMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/mac_build_set -DCGAL_DISABLE_GMP=ON -DBUILD_GUI=OFF -DBUILD_PYTHON_BINDINGS=ON -DFFTW_ROOT=${GITHUB_WORKSPACE}/mac_build_set/fftw
         # ls -la
         # cmake --build . -v --config Release
+
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v2
