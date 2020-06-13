@@ -89,6 +89,7 @@ jobs:
         # cmake --build . -v --config Release
 
     - name: Tests
+      run: |
         cd tests
         python3 -m pip list
         python3 -c "import cuemol"
