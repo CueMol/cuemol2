@@ -56,10 +56,10 @@ jobs:
         
     - uses: actions/checkout@v1
 
-    - name: Set up Python 3.7
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.7
+#    - name: Set up Python 3.7
+#      uses: actions/setup-python@v2
+#      with:
+#        python-version: 3.7
 
     - name: Install prerequisite 2
       shell: bash
@@ -74,6 +74,7 @@ jobs:
 
     - name: Build
       id: build
+      shell: bash
       run: |
         pwd
         which python3
@@ -88,6 +89,7 @@ jobs:
         # cmake --build . -v --config Release
 
     - name: Tests
+      shell: bash
       run: |
         sh run_lldb.sh
         cd tests
