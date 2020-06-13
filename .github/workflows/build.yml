@@ -78,25 +78,26 @@ jobs:
     - name: Install prerequisite 2
       shell: bash
       run: |
+        echo $PYTHON
         cd ${GITHUB_WORKSPACE}
         pwd
         wget https://github.com/CueMol/build_prerequisite/releases/download/v0.0.1/mac_build_set.tar.gz -O mac_build_set.tar.gz
         tar xvzf mac_build_set.tar.gz
         ls -la
-        python3.8 -m pip install --upgrade pip setuptools wheel
-        python3.8 -m pip install pytest
+        $PYTHON -m pip install --upgrade pip setuptools wheel
+        $PYTHON -m pip install pytest
 
     - name: Build
       id: build
       shell: bash
       run: |
         pwd
-        which python3.8
-        python3.8 --version
+        # which python3.8
+        $PYTHON --version
         env MAKEFLAGS=-j4 \
           BUILD_MINIMUM_MODULES=ON \
           CMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/mac_build_set \
-          python3.8 -m pip install -v -e .
+          $PYTHON -m pip install -v -e .
 
         # mkdir build
         # cd build
@@ -108,11 +109,11 @@ jobs:
     - name: Tests
       shell: bash
       run: |
-        sh run_lldb.sh
-        cd tests
-        python3.8 -m pip list
-        python3.8 -c "import cuemol"
-        pytest qlib_tests
+        # sh run_lldb.sh
+        # cd tests
+        $PYTHON -m pip list
+        $PYTHON -c "import cuemol"
+        pytest tests
 
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v2
+    # - name: Setup tmate session
+    #   uses: mxschmitt/action-tmate@v2
