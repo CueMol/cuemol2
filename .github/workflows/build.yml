@@ -6,7 +6,7 @@ on:
   #    types: [assigned, opened, synchronize, reopened, labeled, unlabeled, edited, closed, ready_for_review, locked, unlocked, review_requested, review_request_removed]
 
 env:
-  PYTHON_VERSION: 3.7
+  PYTHON_VERSION: 3.8
 
 jobs:
   build_win:
@@ -92,10 +92,9 @@ jobs:
       shell: bash
       run: |
         pwd
-        # which python3.8
         $PYTHON --version
         env MAKEFLAGS=-j4 \
-          BUILD_MINIMUM_MODULES=ON \
+          BUILD_MINIMUM_MODULES=OFF \
           CMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/mac_build_set \
           $PYTHON -m pip install -v -e .
 
@@ -109,8 +108,6 @@ jobs:
     - name: Tests
       shell: bash
       run: |
-        # sh run_lldb.sh
-        # cd tests
         $PYTHON -m pip list
         $PYTHON -c "import cuemol"
         pytest tests
