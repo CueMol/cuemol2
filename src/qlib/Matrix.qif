@@ -27,11 +27,12 @@ runtime_class Matrix
 
   boolean equals(object<Matrix>);
 
+  // operations on element
   void setAt(integer, integer, real);
   real getAt(integer, integer);
-
   real addAt(integer, integer, real);
 
+  // operations
   object<Matrix> scale(real);
   object<Matrix> divide(real);
   object<Matrix> add(object<Matrix>);
@@ -63,6 +64,10 @@ runtime_class Matrix
   /// diagonalization as 3x3 matrix
   object<Matrix> diag3();
   
+  // operations on row/col vec
+  void setRow(integer i, object<Vector>);
+  void setCol(integer i, object<Vector>);
+
   /// get row vector
   object<Vector> row(integer i);
 
