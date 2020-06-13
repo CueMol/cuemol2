@@ -64,12 +64,14 @@ jobs:
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 
-    # - name: Check python
-    #   shell: bash
-    #   run: |
-    #     PYTHON=`which python${{PYTHON_VERSION}}`
-    #     echo $PYTHON
-    #     echo "::set-env name=PYTHON::$PYTHON"
+    - name: Check python
+      shell: bash
+      run: |
+        PYTHON=`which python${python-version}`
+        echo $PYTHON
+        echo "::set-env name=PYTHON::$PYTHON"
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
       
     - name: Install prerequisite 2
       shell: bash
