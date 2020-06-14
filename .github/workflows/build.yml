@@ -2,7 +2,7 @@ name: Build
 
 on:
   pull_request:
-    types: [opened, synchronize]
+    types: [ready_for_review]
   #    types: [assigned, opened, synchronize, reopened, labeled, unlabeled, edited, closed, ready_for_review, locked, unlocked, review_requested, review_request_removed]
 
 env:
@@ -41,7 +41,7 @@ jobs:
         pwd
         mkdir build
         cd build
-        cmake .. -G "Visual Studio 16 2019" -A x64 -DBOOST_ROOT=%BOOST_ROOT_1_69_0% -DCMAKE_PREFIX_PATH=d:\a\win_build -DCGAL_ROOT=d:\a\win_build\CGAL-4.14.3 -DCGAL_DISABLE_GMP=ON -DBUILD_GUI=OFF -DBUILD_PYTHON_BINDINGS=ON
+        cmake .. -G "Visual Studio 16 2019" -A x64 -DBOOST_ROOT=%BOOST_ROOT_1_69_0% -DCMAKE_PREFIX_PATH=d:\a\win_build -DCGAL_ROOT=d:\a\win_build\CGAL-4.14.3 -DCGAL_DISABLE_GMP=ON -DBUILD_GUI=OFF -DBUILD_PYTHON_BINDINGS=ON -DCMAKE_BUILD_PARALLEL_LEVEL=4
         dir
         cmake --build . -v --config Release
         dir Release
@@ -153,7 +153,7 @@ jobs:
         # tar xvzf mac_build_set.tar.gz
         ls -la
         $PYTHON -m pip install --upgrade pip setuptools wheel
-        $PYTHON -m pip install pytest
+        $PYTHON -m pip install pytest pytest-cov
 
     - name: Build
       id: build
@@ -163,7 +163,6 @@ jobs:
         $PYTHON --version
         env MAKEFLAGS=-j4 \
           BUILD_MINIMUM_MODULES=OFF \
-          CMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/mac_build_set \
           $PYTHON -m pip install -v -e .
 
     - name: Tests
@@ -171,7 +170,7 @@ jobs:
       run: |
         $PYTHON -m pip list
         $PYTHON -c "import cuemol"
-        pytest tests
+        pytest --cov="cuemol" tests
 
     # - name: Setup tmate session
     #   uses: mxschmitt/action-tmate@v2
