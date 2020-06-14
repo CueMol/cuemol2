@@ -114,3 +114,64 @@ jobs:
 
     # - name: Setup tmate session
     #   uses: mxschmitt/action-tmate@v2
+
+  build_linux:
+    name: "Linux Latest clang"
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Install prerequisite 1
+      run: |
+        apt-get install liblzma-dev liblcms2-dev libfftw3-dev libcgal-dev
+        
+    - uses: actions/checkout@v1
+
+    - name: Setup python ${{ env.PYTHON_VERSION }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Check python ${{ env.PYTHON_VERSION }}
+      shell: bash
+      env:
+        python-version: ${{ env.PYTHON_VERSION }}
+      run: |
+        echo $PYTHON_VERSION
+        echo $pythonLocation
+        PYTHON=`which python$PYTHON_VERSION`
+        echo $PYTHON
+        echo "::set-env name=PYTHON::$PYTHON"
+      
+    - name: Install prerequisite 2
+      shell: bash
+      run: |
+        echo $PYTHON
+        cd ${GITHUB_WORKSPACE}
+        pwd
+        # wget https://github.com/CueMol/build_prerequisite/releases/download/v0.0.1/mac_build_set.tar.gz -O mac_build_set.tar.gz
+        # tar xvzf mac_build_set.tar.gz
+        ls -la
+        $PYTHON -m pip install --upgrade pip setuptools wheel
+        $PYTHON -m pip install pytest
+
+    - name: Build
+      id: build
+      shell: bash
+      run: |
+        pwd
+        $PYTHON --version
+        env MAKEFLAGS=-j4 \
+          BUILD_MINIMUM_MODULES=OFF \
+          CMAKE_PREFIX_PATH=${GITHUB_WORKSPACE}/mac_build_set \
+          $PYTHON -m pip install -v -e .
+
+    - name: Tests
+      shell: bash
+      run: |
+        $PYTHON -m pip list
+        $PYTHON -c "import cuemol"
+        pytest tests
+
+    # - name: Setup tmate session
+    #   uses: mxschmitt/action-tmate@v2
+    
