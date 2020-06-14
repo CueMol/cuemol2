@@ -122,7 +122,7 @@ jobs:
 
     - name: Install prerequisite 1
       run: |
-        sudo apt-get install liblzma-dev liblcms2-dev libfftw3-dev libcgal-dev
+        sudo apt-get install bison flex liblzma-dev liblcms2-dev libfftw3-dev libcgal-dev
         
     - uses: actions/checkout@v1
 
