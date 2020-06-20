@@ -108,3 +108,18 @@ def test_qlib_vector_zero(vec_obj1234):
     assert vec_obj1234.y == 0
     assert vec_obj1234.z == 0
     assert vec_obj1234.w == 0
+
+def test_qlib_vector_add():
+    v1 = cuemol.vec(1, 2, 3, 4)
+    v2 = cuemol.vec(1, 2, 3, 4)
+    v = v1.add(v2)
+    assert v.x == 2
+    assert v.y == 4
+    assert v.z == 6
+    assert v.w == 8
+
+def test_qlib_vector_sub():
+    v1 = cuemol.vec(1, 2, 3, 4)
+    v2 = cuemol.vec(1, 2, 3, 4)
+    v = v1.sub(v2)
+    assert v.isZero()
