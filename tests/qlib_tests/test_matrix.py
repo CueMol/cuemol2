@@ -31,6 +31,24 @@ def test_qlib_matrix_elems(mat_obj):
     assert v.getAt(3, 3) == 1111.3
     assert v.getAt(4, 4) == 1234.5
 
+def test_qlib_matrix_index_error(mat_obj):
+    v = mat_obj
+    with pytest.raises(RuntimeError):
+        v.setAt(100, 1, 10.2)
+    with pytest.raises(RuntimeError):
+        v.setAt(1, 100, 10.2)
+
+    with pytest.raises(RuntimeError):
+        v.getAt(100, 1)
+    with pytest.raises(RuntimeError):
+        v.getAt(1, 100)
+
+    with pytest.raises(RuntimeError):
+        v.addAt(100, 1, 0.0)
+    with pytest.raises(RuntimeError):
+        v.addAt(1, 100, 0.0)
+
+
 def test_qlib_matrix_addat(mat_obj):
     v = mat_obj
 

@@ -143,7 +143,7 @@ bool XplorMapReader::read(qlib::InStream &arg)
 }
 
 
-void XplorMapReader::readRecord(qlib::LineStream &ins) throw (qlib::FileFormatException)
+void XplorMapReader::readRecord(qlib::LineStream &ins)
 {
   if (!ins.ready()) {
     MB_THROW(qlib::FileFormatException, "Invalid map format");
@@ -258,7 +258,7 @@ bool XplorMapReader::readAxisInfo()
   return true;
 }
 
-void XplorMapReader::readFloatArray() throw (qlib::FileFormatException)
+void XplorMapReader::readFloatArray()
 {
   int nlen = m_nbuflen; //m_buf.length();
   m_nFloatArraySize = nlen/12;
@@ -291,7 +291,7 @@ void XplorMapReader::readDensity(qlib::LineStream &ins, double &rho)
   m_nFloatArrayCurPos ++;
 }
 
-void XplorMapReader::readHeader(qlib::LineStream &ins) throw (qlib::FileFormatException)
+void XplorMapReader::readHeader(qlib::LineStream &ins)
 {
   // skip the header remarks
   int ntit =-1;

@@ -76,7 +76,7 @@ namespace qlib {
     ///////////////////////
 
     /** get class object by system dependent ABI's name (not throw exception) */
-    LClass *getClassObjByAbiNameNx(const LString &name) throw();
+    LClass *getClassObjByAbiNameNx(const LString &name) noexcept;
 
     /** get class object by system dependent ABI's name (throws exception) */
     LClass *getClassObjByAbiName(const LString &name);

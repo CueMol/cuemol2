@@ -56,6 +56,37 @@ public:
     typedef boost::true_type has_fromString;
     static LScrMatrix4D *fromStringS(const LString &src);
 
+    static inline void indexCheck(int i, int j) {
+        if (i<=0 || Matrix4D::_N_ELEM <i) {
+            auto msg = LString::format("index i=%d out of range", i);
+            MB_THROW(IndexOutOfBoundsException, msg);
+            return;
+        }
+        if (j<=0 || Matrix4D::_N_ELEM <j) {
+            auto msg = LString::format("index j=%d out of range", j);
+            MB_THROW(IndexOutOfBoundsException, msg);
+            return;
+        }
+    }
+
+    void setAt(int i, int j, value_type val)
+    {
+        indexCheck(i, j);
+        Matrix4D::setAt(i, j, val);
+    }
+
+    value_type getAt(int i, int j) const
+    {
+        indexCheck(i, j);
+        return Matrix4D::getAt(i, j);
+    }
+
+    value_type addAt(int i, int j, value_type val)
+    {
+        indexCheck(i, j);
+        return Matrix4D::addAt(i, j, val);
+    }
+
     //////////
     // arithmetics
 
@@ -98,7 +129,8 @@ public:
         aij(i, 1) = v.x();
         aij(i, 2) = v.y();
         aij(i, 3) = v.z();
-        aij(i, 4) = v.w();;
+        aij(i, 4) = v.w();
+        ;
     }
 
     LScrVector4D row(int i) const
@@ -118,7 +150,6 @@ public:
     {
         return LScrVector4D(aij(1, i), aij(2, i), aij(3, i), aij(4, i));
     }
-
 };
 
 }  // namespace qlib

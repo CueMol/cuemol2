@@ -50,9 +50,7 @@ namespace qlib {
       return m_attr.get(name);
     }
 
-    LString getAttr_throw(const LString &name) const
-      throw (InvalidAttrException)
-    {
+    LString getAttr_throw(const LString &name) const {
       if (!m_attr.containsKey(name)) {
 	MB_THROW(InvalidAttrException,
 		 LString::format("Attribute \"%s\" is not found", name.c_str()));
@@ -61,11 +59,11 @@ namespace qlib {
     }
 
     /** get integer attribute */
-    int getIntAttr(const LString &name) const throw (InvalidAttrException);
+    int getIntAttr(const LString &name) const;
     bool getIntAttr(const LString &name, int &) const;
 
     /** get double real attribute */
-    double getDoubleAttr(const LString &name) const throw (InvalidAttrException);
+    double getDoubleAttr(const LString &name) const;
     bool getDoubleAttr(const LString &name, double &) const;
 
     /** check the parent tag */
@@ -73,9 +71,7 @@ namespace qlib {
 
     /** check the parent tag */
     template <class _Class>
-    void checkChildOf(int n=1) const
-      throw (InvalidTagException)
-    {
+    void checkChildOf(int n=1) const {
       if (!isParentTag<_Class>(n)) {
 	MB_THROW(InvalidTagException, "Invalid tag nesting");
       }
@@ -83,21 +79,17 @@ namespace qlib {
 
     bool isRootTag() const;
       
-    void checkRoot() const
-      throw (InvalidTagException)
-    {
+    void checkRoot() const {
       if (!isRootTag()) {
 	MB_THROW(InvalidTagException, "Invalid tag nesting");
       }
     }
 
     /** get the parent tag object */
-    template <class _Class> _Class *getParentTag(int n=1) const throw();
+    template <class _Class> _Class *getParentTag(int n=1) const noexcept;
 
     /** get the parent tag object (throws exception) */
-    template <class _Class> _Class *getParentTag_throw(int n=1) const
-      throw (InvalidTagException)
-    {
+    template <class _Class> _Class *getParentTag_throw(int n=1) const {
       _Class *pp = getParentTag<_Class>(n);
       if (pp==NULL) {
 	MB_THROW(InvalidTagException, "Invalid tag nesting");
@@ -105,7 +97,7 @@ namespace qlib {
       return pp;
     }
 
-    void throwTagError() const throw (InvalidTagException) {
+    void throwTagError() const {
       MB_THROW(InvalidTagException, "");
     }
 
@@ -151,7 +143,7 @@ namespace qlib {
     
     bool registerTag(XmlTagHandler *pth, bool bForce=false);
     
-    XmlTagHandler *getParentTag(int n) const throw();
+    XmlTagHandler *getParentTag(int n) const noexcept;
     
     ////////////////////////////////////////
     
@@ -165,7 +157,7 @@ namespace qlib {
   ///////////////////////////////////////////////////////////////////
 
   template <class _Class>
-  _Class *XmlTagHandler::getParentTag(int n) const throw()
+  _Class *XmlTagHandler::getParentTag(int n) const noexcept
   {
     XmlTagHandler *pp = m_pStream->getParentTag(n);
     _Class *p = dynamic_cast<_Class *>(pp);

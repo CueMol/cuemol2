@@ -77,7 +77,7 @@ private:
 
   char *readStr(int start, int end);
   char *readStrBlock(int bksz, int bkno) { return readStr(bkno*bksz, (bkno+1)*bksz-1); };
-  void readRecord(qlib::LineStream &ins) throw (qlib::FileFormatException);
+  void readRecord(qlib::LineStream &ins);
 
   bool readSectionInfo();
   bool readCellInfo();
@@ -93,11 +93,11 @@ private:
     return qlib::LChar::toInt(m_recbuf, rsec);
   }
 
-  void readFloatArray() throw (qlib::FileFormatException);
+  void readFloatArray();
   void readDensity(qlib::LineStream &ins, double &rho);
 
   /** read header / file type check */  
-  void readHeader(qlib::LineStream &ins) throw (qlib::FileFormatException);
+  void readHeader(qlib::LineStream &ins);
 };
 
 }

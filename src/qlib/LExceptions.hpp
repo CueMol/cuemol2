@@ -12,8 +12,8 @@
 #define MB_DECL_EXCPT_CLASS(APINAME, CLASSNAME, SUPCLSNAME) \
 class APINAME CLASSNAME : public SUPCLSNAME { \
 public: \
-  CLASSNAME() throw () {} \
-  explicit CLASSNAME(const qlib::LString &msg) throw () : SUPCLSNAME(msg) {} \
+  CLASSNAME() noexcept {} \
+  explicit CLASSNAME(const qlib::LString &msg) noexcept : SUPCLSNAME(msg) {} \
 };\
 
 
@@ -51,22 +51,22 @@ namespace qlib {
     int m_lineNo;
 
   public:
-    LException() throw () {}
-    explicit LException(const LString &msg) throw () 
+    LException() noexcept {}
+    explicit LException(const LString &msg) noexcept 
       : m_msg(msg), m_fileName("unknown"), m_funcName("unknown"), m_lineNo(-1)
     {
     }
 
-    virtual ~LException() throw () {}
+    virtual ~LException() noexcept {}
 
-    virtual LString getMsg() const throw () { return m_msg; }
-    virtual void setMsg(const LString &msg) throw () { m_msg = msg; }
+    virtual LString getMsg() const noexcept { return m_msg; }
+    virtual void setMsg(const LString &msg) noexcept { m_msg = msg; }
 
-    void setFileName(const char *str) const throw () { ((LException *)this)->m_fileName = str; }
-    void setFuncName(const char *str) throw () { m_funcName = str; }
-    void setLineNo(int n) throw () { m_lineNo = n; }
+    void setFileName(const char *str) const noexcept { ((LException *)this)->m_fileName = str; }
+    void setFuncName(const char *str) noexcept { m_funcName = str; }
+    void setLineNo(int n) noexcept { m_lineNo = n; }
 
-    LString getFmtMsg() const throw () {
+    LString getFmtMsg() const noexcept {
       return LString::format("%s @ %s in %s:%d", m_msg.c_str(), m_funcName.c_str(), m_fileName.c_str(), m_lineNo);
     }
   };
