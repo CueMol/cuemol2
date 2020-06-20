@@ -8,38 +8,38 @@
 #ifndef L_REG_EXPR_HPP_INCLUDED_
 #define L_REG_EXPR_HPP_INCLUDED_
 
-#include "qlib.hpp"
-
+#include "LExceptions.hpp"
 #include "LScrObjects.hpp"
 #include "LScrSmartPtr.hpp"
-#include "LExceptions.hpp"
 #include "SmartPtr.hpp"
 #include "mcutils.hpp"
+#include "qlib.hpp"
 
 namespace qlib {
 
-  MB_DECL_EXCPT_CLASS(QLIB_API, InvalidREPatternException, RuntimeException);
-  MB_DECL_EXCPT_CLASS(QLIB_API, PatternMatchException, RuntimeException);
-  MB_DECL_EXCPT_CLASS(QLIB_API, SubstrNotFoundException, RuntimeException);
+MB_DECL_EXCPT_CLASS(QLIB_API, InvalidREPatternException, RuntimeException);
+MB_DECL_EXCPT_CLASS(QLIB_API, PatternMatchException, RuntimeException);
+MB_DECL_EXCPT_CLASS(QLIB_API, SubstrNotFoundException, RuntimeException);
 
-  namespace detail {
-    struct ReData {
-    public:
-      bool m_bicase;
-      void *m_pdata;
-      void *m_pextra;
-      ReData() : m_bicase(false), m_pdata(NULL), m_pextra(NULL) {}
-      ~ReData();
-    };
-  }
+namespace detail {
+struct ReData
+{
+public:
+    bool m_bicase;
+    void *m_pdata;
+    void *m_pextra;
+    ReData() : m_bicase(false), m_pdata(NULL), m_pextra(NULL) {}
+    ~ReData();
+};
+}  // namespace detail
 
-  class QLIB_API LRegExpr : public LSimpleCopyScrObject
-  {
+class QLIB_API LRegExpr : public LSimpleCopyScrObject
+{
     MC_SCRIPTABLE;
     MC_CLONEABLE;
 
     //////////
-  public:
+private:
     /** pattern string */
     LString m_pat;
 
@@ -47,72 +47,78 @@ namespace qlib {
     LString m_subj;
 
     //////////
-  private:
-
+private:
     /** internal data */
     sp<detail::ReData> m_pdat;
 
     /** result vector */
     std::vector<int> m_ovector;
 
-    static const int OVECCOUNT=60;
+    static const int OVECCOUNT = 60;
 
     int m_nSubstr;
 
-  public:
-    LRegExpr()
-      : m_pdat(), m_ovector(OVECCOUNT), m_nSubstr(0)
-    {
-    }
+public:
+    LRegExpr() : m_pdat(), m_ovector(OVECCOUNT), m_nSubstr(0) {}
 
     LRegExpr(const LRegExpr &a)
-      : m_pat(a.m_pat), m_subj(a.m_subj),
-	m_pdat(a.m_pdat), m_ovector(a.m_ovector), m_nSubstr(a.m_nSubstr)
+        : m_pat(a.m_pat),
+          m_subj(a.m_subj),
+          m_pdat(a.m_pdat),
+          m_ovector(a.m_ovector),
+          m_nSubstr(a.m_nSubstr)
     {
     }
 
-    LRegExpr(int nsize)
-      : m_pdat(), m_ovector(nsize), m_nSubstr(0)
-    {
-    }
+    LRegExpr(int nsize) : m_pdat(), m_ovector(nsize), m_nSubstr(0) {}
 
     LRegExpr(const LString &pattern)
-      : m_pat(pattern), m_pdat(), m_ovector(OVECCOUNT), m_nSubstr(0)
+        : m_pat(pattern), m_pdat(), m_ovector(OVECCOUNT), m_nSubstr(0)
     {
     }
 
-
     /** copy operator */
-    const LRegExpr &operator=(const LRegExpr &a) {
-      if(&a!=this){
-	m_pat = (a.m_pat);
-	m_subj = (a.m_subj);
-	m_pdat = (a.m_pdat);
-	m_ovector = (a.m_ovector);
-	m_nSubstr = (a.m_nSubstr);
-      }
-      return *this;
+    const LRegExpr &operator=(const LRegExpr &a)
+    {
+        if (&a != this) {
+            m_pat = (a.m_pat);
+            m_subj = (a.m_subj);
+            m_pdat = (a.m_pdat);
+            m_ovector = (a.m_ovector);
+            m_nSubstr = (a.m_nSubstr);
+        }
+        return *this;
     }
-    
 
     virtual ~LRegExpr();
 
     void cleanup();
 
-    void setPattern(const LString &pattern) throw (InvalidREPatternException);
-    const LString &getPattern() const { return m_pat; }
+    const LString &getSubj() const
+    {
+        return m_subj;
+    }
+
+    void setPattern(const LString &pattern);
+    const LString &getPattern() const
+    {
+        return m_pat;
+    }
 
     bool match(const LString &subj)
-      throw (PatternMatchException) {
-      return matchImpl(subj, false);
+    {
+        return matchImpl(subj, false);
     }
 
     bool matchIgnoreCase(const LString &subj)
-      throw (PatternMatchException) {
-      return matchImpl(subj, true);
+    {
+        return matchImpl(subj, true);
     }
 
-    int getSubstrCount() const { return m_nSubstr; }
+    int getSubstrCount() const
+    {
+        return m_nSubstr;
+    }
     LString getSubstr(int index);
     LString getNamedSubstr(const LString &name);
 
@@ -122,11 +128,10 @@ namespace qlib {
     typedef boost::true_type has_fromString;
     static LRegExpr *fromStringS(const LString &src);
 
-  private:
-    bool matchImpl(const LString &pattern, bool bIcase)
-      throw (PatternMatchException);
-  };
+private:
+    bool matchImpl(const LString &pattern, bool bIcase);
+};
 
-}
+}  // namespace qlib
 
-#endif // L_REG_EXPR_HPP_INCLUDED_
+#endif  // L_REG_EXPR_HPP_INCLUDED_

@@ -73,7 +73,7 @@ public:
 
   ///////////////////////////////////////////
 
-  //virtual void attach(MbObject *pMap) throw (InvalidObjNameException);
+  //virtual void attach(MbObject *pMap);
   //virtual MbObject *detach();
   //virtual bool isCompat(MbObject *pobj) const;
 

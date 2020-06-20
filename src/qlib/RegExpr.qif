@@ -28,8 +28,8 @@ runtime_class RegExpr
   // persistent;
 
   // properties
-  property string p => m_pat;
-  property string s => m_subj;
+  property string p => redirect(getPattern, setPattern);
+  property string s => redirect(getSubj, XXX) (readonly);
 
   // methods
   void setup(string) => setPattern;

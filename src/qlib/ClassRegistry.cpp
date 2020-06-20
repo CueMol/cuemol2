@@ -48,7 +48,7 @@ ClassRegistry::~ClassRegistry()
   }
 }
 
-LClass *ClassRegistry::getClassObjByAbiNameNx(const LString &name) throw ()
+LClass *ClassRegistry::getClassObjByAbiNameNx(const LString &name) noexcept
 {
   ClassTable::const_iterator iter = m_abitab.find(name);
   if (iter==m_abitab.end()) {

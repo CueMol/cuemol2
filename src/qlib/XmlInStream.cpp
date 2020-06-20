@@ -37,7 +37,6 @@ bool XmlTagHandler::isRootTag() const
 
 /** get integer attribute */
 int XmlTagHandler::getIntAttr(const LString &name) const
-  throw (InvalidAttrException)
 {
   LString val = m_attr.get(name);
   int rval;
@@ -65,7 +64,6 @@ bool XmlTagHandler::getIntAttr(const LString &name, int &rval) const
 
 /** get double real attribute */
 double XmlTagHandler::getDoubleAttr(const LString &name) const
-  throw (InvalidAttrException)
 {
   LString val = m_attr.get(name);
   double rval;
@@ -112,7 +110,7 @@ bool XmlInStream::registerTag(XmlTagHandler *pth, bool bForce)
   return true;
 }
 
-XmlTagHandler *XmlInStream::getParentTag(int n) const throw()
+XmlTagHandler *XmlInStream::getParentTag(int n) const noexcept
 {
   if (n>=m_stack.size())
     return NULL;

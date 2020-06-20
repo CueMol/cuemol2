@@ -806,6 +806,7 @@ PyObject *Wrapper::invokeMethodImpl(qlib::LScriptable *pScrObj, const char *mthn
         errmsg = LString::format("Std::exception occured in native method %s: %s",
                                  mthname, e.what());
     } catch (...) {
+        LOG_DPRINTLN("*********");
         errmsg =
             LString::format("Unknown Exception occured in native method %s", mthname);
     }
