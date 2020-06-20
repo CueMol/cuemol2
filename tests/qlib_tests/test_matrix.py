@@ -205,3 +205,48 @@ def test_qlib_matrix_diag3(mat_obj2):
     assert v.getAt(2, 3) == pytest.approx(0)
     assert v.getAt(3, 3) == pytest.approx(1)
     assert v.getAt(4, 3) == pytest.approx(1111.3)
+
+def test_qlib_matrix_setrow(mat_obj):
+    m = mat_obj
+    m.setRow(1, cuemol.vec(1, 2, 3, 4))
+    m.setRow(2, cuemol.vec(1, 2, 3, 4))
+    m.setRow(3, cuemol.vec(1, 2, 3, 4))
+    m.setRow(4, cuemol.vec(1, 2, 3, 4))
+
+    for i in range(1, 5):
+        for j in range(1, 5):
+            assert m.getAt(i, j) == j
+
+def test_qlib_matrix_setcol(mat_obj):
+    m = mat_obj
+    m.setCol(1, cuemol.vec(1, 2, 3, 4))
+    m.setCol(2, cuemol.vec(1, 2, 3, 4))
+    m.setCol(3, cuemol.vec(1, 2, 3, 4))
+    m.setCol(4, cuemol.vec(1, 2, 3, 4))
+
+    for i in range(1, 5):
+        for j in range(1, 5):
+            assert m.getAt(i, j) == i
+            
+def test_qlib_matrix_getrow(mat_obj):
+    m = mat_obj
+    for i in range(1, 5):
+        for j in range(1, 5):
+            m.setAt(i, j, j)
+
+    cuemol.vec(1, 2, 3, 4).equals(m.row(1))
+    cuemol.vec(1, 2, 3, 4).equals(m.row(2))
+    cuemol.vec(1, 2, 3, 4).equals(m.row(3))
+    cuemol.vec(1, 2, 3, 4).equals(m.row(4))
+
+def test_qlib_matrix_getcol(mat_obj):
+    m = mat_obj
+    for i in range(1, 5):
+        for j in range(1, 5):
+            m.setAt(i, j, i)
+
+    cuemol.vec(1, 2, 3, 4).equals(m.col(1))
+    cuemol.vec(1, 2, 3, 4).equals(m.col(2))
+    cuemol.vec(1, 2, 3, 4).equals(m.col(3))
+    cuemol.vec(1, 2, 3, 4).equals(m.col(4))
+

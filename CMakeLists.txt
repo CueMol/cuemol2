@@ -4,7 +4,9 @@
 
 cmake_minimum_required(VERSION 3.12)
 if (COMMAND cmake_policy)
+  # find_package() uses <PackageName>_ROOT variables.
   cmake_policy(SET CMP0074 NEW)
+  # option() honors normal variables.
   cmake_policy(SET CMP0077 NEW)
 endif ()
 
