@@ -41,7 +41,10 @@ public:
     /// object file path
     LString m_filePath;
 
-    /// scene file format (optional)
+    /// object name (optional)
+    LString m_objectName;
+
+    /// object file format (optional)
     LString m_fileFmt;
 
     //////////

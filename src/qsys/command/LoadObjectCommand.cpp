@@ -63,18 +63,14 @@ void LoadObjectCommand::run()
     qsys::SceneXMLReaderPtr reader = strMgr->createHandler(m_fileFmt, nCatID);
     reader->setPath(m_filePath);
 
-    reader->attach(m_pResScene);
+    reader->attach(m_pResObj);
     reader->read();
     reader->detach();
 
-    LOG_DPRINTLN("Set view camera m_bSetCamera = %d", m_bSetCamera);
-    if (m_bSetCamera) {
-        const auto &views = m_pResScene->getViewTable();
-        for (const auto &elem : views) {
-            LOG_DPRINTLN("Set camera to view %p (ID %d)", elem.second.get(),
-                         elem.second->getUID());
-            m_pResScene->loadViewFromCam(elem.second->getUID(), "__current");
-        }
+    if (m_objectName.isEmpty()) {
+        fs::path file_path = m_filePath.c_str();
+        auto stem = file_path.stem().string();
+        m_pResObj->setPropStr("name", stem)
     }
 }
 

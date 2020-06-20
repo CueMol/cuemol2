@@ -58,6 +58,7 @@ QdfAbsWriter.cpp
 command/Command.cpp
 command/NewSceneCommand.cpp
 command/LoadSceneCommand.cpp
+command/LoadObjectCommand.cpp
 command/CmdMgr.cpp
   )
 
@@ -89,6 +90,7 @@ ScalarObject.qif
 command/Command.qif
 command/NewSceneCommand.qif
 command/LoadSceneCommand.qif
+command/LoadObjectCommand.qif
 command/CmdMgr.qif
   )
 
