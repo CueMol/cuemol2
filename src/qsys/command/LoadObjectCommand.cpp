@@ -5,7 +5,7 @@
 #include <boost/filesystem.hpp>
 #include <qlib/ObjectManager.hpp>
 #include <qsys/SceneManager.hpp>
-#include <qsys/SceneXMLReader.hpp>
+#include <qsys/ObjReader.hpp>
 #include <qsys/StreamManager.hpp>
 
 namespace fs = boost::filesystem;
@@ -60,18 +60,27 @@ void LoadObjectCommand::run()
     }
 
     auto strMgr = qsys::StreamManager::getInstance();
-    qsys::SceneXMLReaderPtr reader = strMgr->createHandler(m_fileFmt, nCatID);
+    qsys::ObjReaderPtr reader = strMgr->createHandler(m_fileFmt, nCatID);
     reader->setPath(m_filePath);
 
+    // check compression
+    fs::path file_path = m_filePath.c_str();
+    auto extension = LString(file_path.extension().string());
+    if (extension.equalsIgnoreCase(".gz"))
+        reader->setPropStr("compress", "gzip");
+
+    m_pResObj = reader->createDefaultObj();
     reader->attach(m_pResObj);
     reader->read();
     reader->detach();
 
     if (m_objectName.isEmpty()) {
-        fs::path file_path = m_filePath.c_str();
         auto stem = file_path.stem().string();
         m_pResObj->setPropStr("name", stem);
     }
+
+    // TO DO: setup renderer (optional)
+
 }
 
 void LoadObjectCommand::runGUI(void *pwnd_info) {}

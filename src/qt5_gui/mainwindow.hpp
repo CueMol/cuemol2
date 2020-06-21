@@ -42,6 +42,7 @@ private slots:
     void newScene();
     void openScene();
     void openObject();
+    void execPyScr();
     void save();
     void saveAs();
     void updateRecentFileActions();

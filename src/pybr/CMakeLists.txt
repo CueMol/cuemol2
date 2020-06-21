@@ -67,6 +67,7 @@ install(TARGETS pybr
 
 set(PYTHON_SCRIPTS
 scripts/__init__.py
+scripts/internal_loader.py
 scripts/cuemol.py
 scripts/fileio.py
 scripts/cmd.py
