@@ -70,7 +70,7 @@ void LoadObjectCommand::run()
     if (m_objectName.isEmpty()) {
         fs::path file_path = m_filePath.c_str();
         auto stem = file_path.stem().string();
-        m_pResObj->setPropStr("name", stem)
+        m_pResObj->setPropStr("name", stem);
     }
 }
 

@@ -39,8 +39,9 @@ protected:
     void closeEvent(QCloseEvent *event) override;
 
 private slots:
-    void newFile();
-    void open();
+    void newScene();
+    void openScene();
+    void openObject();
     void save();
     void saveAs();
     void updateRecentFileActions();

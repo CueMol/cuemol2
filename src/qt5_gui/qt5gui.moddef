@@ -2,6 +2,7 @@
 
 #include "QtNewSceneCommand.qif"
 #include "QtLoadSceneCommand.qif"
+#include "QtLoadObjectCommand.qif"
 
 module qt5gui
 {
@@ -10,4 +11,5 @@ module qt5gui
 
   QtNewSceneCommand;
   QtLoadSceneCommand;
+  QtLoadObjectCommand;
 };

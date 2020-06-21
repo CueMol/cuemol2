@@ -18,7 +18,7 @@
 namespace qt5_gui {
 
 bool QtLoadSceneCommand::createFilter(int nCatID, qlib::LStringList &filters,
-                                      qlib::LStringList &type_names) const
+                                      qlib::LStringList &type_names)
 {
     qlib::LRegExpr re_descr("(\\w+[\\w\\s]+\\w+)\\s+\\(");
 
