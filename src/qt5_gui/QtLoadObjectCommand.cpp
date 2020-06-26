@@ -14,6 +14,7 @@
 #include "QtMolWidget.hpp"
 #include "QtLoadSceneCommand.hpp"
 #include "mainwindow.hpp"
+#include "QtCreateRendDlg.hpp"
 
 namespace qt5_gui {
 
@@ -59,6 +60,12 @@ void QtLoadObjectCommand::runGUI(void *pwnd_info)
         }
     }
     LOG_DPRINTLN("selected: %s, %s", m_filePath.c_str(), m_fileFmt.c_str());
+
+    // XXX
+    QtCreateRendDlg crdlg(pWnd);
+    if (crdlg.exec() != QDialog::Accepted) {
+        return;
+    }
 
     qsys::LoadObjectCommand::run();
 

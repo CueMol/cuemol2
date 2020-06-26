@@ -43,6 +43,7 @@ SET(QT5GUI_SRCS
   QtLoadSceneCommand.cpp
   QtLoadObjectCommand.cpp
   QtGUIManager.cpp
+  QtCreateRendDlg.cpp
   )
 
 #####
