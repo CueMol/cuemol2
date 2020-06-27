@@ -11,15 +11,22 @@
 #include <qsys/StreamManager.hpp>
 #include <qsys/command/CmdMgr.hpp>
 
-#include "QtMolWidget.hpp"
-#include "QtLoadSceneCommand.hpp"
-#include "mainwindow.hpp"
 #include "QtCreateRendDlg.hpp"
+#include "QtLoadSceneCommand.hpp"
+#include "QtMolWidget.hpp"
+#include "mainwindow.hpp"
 
 namespace qt5_gui {
 
 void QtLoadObjectCommand::runGUI(void *pwnd_info)
 {
+    // get default scene
+    if (m_pTargScene.isnull()) {
+        auto pScMgr = qsys::SceneManager::getInstance();
+        auto actsc_id = pScMgr->getActiveSceneID();
+        m_pTargScene = pScMgr->getScene(actsc_id);
+    }
+
     auto pWnd = dynamic_cast<MainWindow *>(reinterpret_cast<QWidget *>(pwnd_info));
     if (pWnd == NULL) {
         MB_THROW(qlib::RuntimeException, "Invalid pwnd_info");
@@ -61,13 +68,27 @@ void QtLoadObjectCommand::runGUI(void *pwnd_info)
     }
     LOG_DPRINTLN("selected: %s, %s", m_filePath.c_str(), m_fileFmt.c_str());
 
-    // XXX
-    QtCreateRendDlg crdlg(pWnd);
+    // XXX: load object renderer options
+    QtCreateRendDlg crdlg(m_pTargScene->getUID(), pWnd);
+    crdlg.setObjectName(createDefaultObjName());
     if (crdlg.exec() != QDialog::Accepted) {
         return;
     }
 
+    m_objectName = crdlg.getObjectName();
+
     qsys::LoadObjectCommand::run();
+
+    // XXX: create renderer
+    auto pResRend = m_pResObj->createRenderer(crdlg.getRendTypeName());
+    pResRend->setPropStr("name", crdlg.getRendName());
+    auto pos = pResRend->getCenter();
+    const auto &views = m_pTargScene->getViewTable();
+    for (const auto &elem : views) {
+        LOG_DPRINTLN("Set view %p (ID %d) center (%f, %f, %f)", elem.second.get(),
+                     elem.second->getUID(), pos.x(), pos.y(), pos.z());
+        elem.second->setViewCenter(pos);
+    }
 
     pWnd->update();
     auto p = pWnd->activeMolWidget();

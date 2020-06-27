@@ -32,6 +32,8 @@ public:
 
     LString guessFileFormat(int nCatID) const;
 
+    LString createDefaultObjName() const;
+
     //////////
     // properties (input)
 

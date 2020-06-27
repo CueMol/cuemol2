@@ -75,12 +75,21 @@ void LoadObjectCommand::run()
     reader->detach();
 
     if (m_objectName.isEmpty()) {
-        auto stem = file_path.stem().string();
-        m_pResObj->setPropStr("name", stem);
+        // auto stem = file_path.stem().string();
+        m_pResObj->setPropStr("name", createDefaultObjName());
     }
+
+    m_pTargScene->addObject(m_pResObj);
 
     // TO DO: setup renderer (optional)
 
+}
+
+LString LoadObjectCommand::createDefaultObjName() const
+{
+    fs::path file_path = m_filePath.c_str();
+    auto stem = file_path.stem().string();
+    return LString(stem);
 }
 
 void LoadObjectCommand::runGUI(void *pwnd_info) {}
