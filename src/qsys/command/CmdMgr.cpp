@@ -2,6 +2,8 @@
 
 #include "CmdMgr.hpp"
 
+#include <qsys/Scene.hpp>
+
 SINGLETON_BASE_IMPL(qsys::CmdMgr);
 
 namespace qsys {
@@ -45,6 +47,22 @@ CommandPtr CmdMgr::runGUICmd(const LString &cmd_name, void *pwnd_info) const
     pCmd->runGUI(pwnd_info);
 
     return pCmd;
+}
+
+CommandPtr CmdMgr::runGUICmdWithTxn(const LString &cmd_name, void *pwnd_info,
+                                    const ScenePtr &pTargScene,
+                                    const LString &txn_msg) const
+{
+    CommandPtr pResult;
+    pTargScene->startUndoTxn(txn_msg);
+    try {
+        pResult = runGUICmd(cmd_name, pwnd_info);
+    } catch (...) {
+        pTargScene->rollbackUndoTxn();
+        throw;
+    }
+    pTargScene->commitUndoTxn();
+    return pResult;
 }
 
 CommandPtr CmdMgr::runCmd(const LString &cmd_name) const

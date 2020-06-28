@@ -47,6 +47,10 @@ public:
     // TO DO: dict argments?
     CommandPtr runGUICmd(const LString &cmd_name, void *pwnd_info) const;
 
+    CommandPtr runGUICmdWithTxn(const LString &cmd_name, void *pwnd_info,
+                                const ScenePtr &pTargScene,
+                                const LString &txn_msg) const;
+
     static bool init()
     {
         return super_t::init();
