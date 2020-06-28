@@ -1,10 +1,10 @@
 #pragma once
 #define NO_USING_QTYPES
 
-//#include <QWidget>
-//#include <QDialog>
 #include <QtWidgets>
 #include <qlib/LString.hpp>
+
+#include "qt5_gui.hpp"
 
 class QCheckBox;
 class QLabel;

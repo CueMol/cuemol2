@@ -43,6 +43,9 @@ public:
     /// Recenter/Fit view flag
     bool m_bRecenView;
 
+    /// Other Properties (optional)
+    qlib::LVarDict m_props;
+
     //////////
     // properties (output)
 

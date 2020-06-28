@@ -1,7 +1,10 @@
+#define NO_USING_QTYPES
+#include <common.h>
+
 #include "QtCreateRendDlg.hpp"
 
 #include <QtWidgets>
-#include <qsys/SceneManager.cpp>
+#include <qsys/SceneManager.hpp>
 
 QtCreateRendDlg::QtCreateRendDlg(qlib::uid_t nSceneID, QWidget *parent /*= nullptr*/)
     : QDialog(parent), m_nSceneID(nSceneID)
