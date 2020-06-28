@@ -1,7 +1,7 @@
 // -*-Mode: C++;-*-
 
-#ifndef LOAD_SCENE_COMMAND_QIF
-#define LOAD_SCENE_COMMAND_QIF
+#ifndef LOAD_OBJECT_COMMAND_QIF
+#define LOAD_OBJECT_COMMAND_QIF
 
 #include <qsys/Object.qif>
 #include <qsys/View.qif>

@@ -9,12 +9,7 @@ QtCreateRendDlg::QtCreateRendDlg(qlib::uid_t nSceneID, QWidget *parent /*= nullp
     setWindowTitle(tr("Create renderer"));
     m_objNameEdit = new QLineEdit;
 
-    // TO DO: impl
     m_rendTypeBox = new QComboBox;
-    m_rendTypeBox->addItem("simple");
-    m_rendTypeBox->addItem("trace");
-    m_rendTypeBox->addItem("ribbon");
-    m_rendTypeBox->addItem("cartoon");
 
     m_rendNameEdit = new QLineEdit;
     // TO DO: impl
@@ -45,6 +40,19 @@ QtCreateRendDlg::QtCreateRendDlg(qlib::uid_t nSceneID, QWidget *parent /*= nullp
 
     connect(m_rendTypeBox, SIGNAL(currentIndexChanged(int)), this,
             SLOT(rendTypeBoxChanged(int)));
+
+}
+
+void QtCreateRendDlg::initRendTypeBox(const qlib::LStringList &rend_types)
+{
+    // Remove system renderer from the list
+    for (const auto &elem : rend_types) {
+        if (elem.startsWith("*"))
+            continue;
+        m_rendTypeBox->addItem(elem.c_str());
+    }
+
+    // TO DO: composite renderer
 
     // reset init state
     m_rendTypeBox->setCurrentIndex(0);

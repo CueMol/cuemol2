@@ -10,6 +10,7 @@
 #include <qsys/SceneManager.hpp>
 #include <qsys/StreamManager.hpp>
 #include <qsys/command/CmdMgr.hpp>
+#include <qsys/command/NewRendererCommand.hpp>
 
 #include "QtCreateRendDlg.hpp"
 #include "QtLoadSceneCommand.hpp"
@@ -68,8 +69,10 @@ void QtLoadObjectCommand::runGUI(void *pwnd_info)
     }
     LOG_DPRINTLN("selected: %s, %s", m_filePath.c_str(), m_fileFmt.c_str());
 
-    // XXX: load object renderer options
+    // XXX: Renderer/LoadObj options dialog GUI
+    auto rend_types = searchCompatibleRendNames();
     QtCreateRendDlg crdlg(m_pTargScene->getUID(), pWnd);
+    crdlg.initRendTypeBox(rend_types);
     crdlg.setObjectName(createDefaultObjName());
     if (crdlg.exec() != QDialog::Accepted) {
         return;
@@ -79,17 +82,15 @@ void QtLoadObjectCommand::runGUI(void *pwnd_info)
 
     qsys::LoadObjectCommand::run();
 
-    // XXX: create renderer
-    auto pResRend = m_pResObj->createRenderer(crdlg.getRendTypeName());
-    pResRend->setPropStr("name", crdlg.getRendName());
-    auto pos = pResRend->getCenter();
-    const auto &views = m_pTargScene->getViewTable();
-    for (const auto &elem : views) {
-        LOG_DPRINTLN("Set view %p (ID %d) center (%f, %f, %f)", elem.second.get(),
-                     elem.second->getUID(), pos.x(), pos.y(), pos.z());
-        elem.second->setViewCenter(pos);
-    }
-
+    // Create renderer
+    auto pMgr = qsys::CmdMgr::getInstance();
+    auto pNewRendCmd = pMgr->getCmd<qsys::NewRendererCommand>("new_renderer");
+    pNewRendCmd->m_pTargObj = m_pResObj;
+    pNewRendCmd->m_rendTypeName = crdlg.getRendTypeName();
+    pNewRendCmd->m_rendName = crdlg.getRendName();
+    pNewRendCmd->m_bRecenView = crdlg.isRecenView();
+    pNewRendCmd->run();
+    
     pWnd->update();
     auto p = pWnd->activeMolWidget();
     if (p != nullptr) p->update();

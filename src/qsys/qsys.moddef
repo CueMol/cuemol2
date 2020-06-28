@@ -30,7 +30,9 @@
 
 #include "command/Command.qif"
 #include "command/NewSceneCommand.qif"
+#include "command/NewRendererCommand.qif"
 #include "command/LoadSceneCommand.qif"
+#include "command/LoadObjectCommand.qif"
 #include "command/CmdMgr.qif"
 
 module qsys
@@ -65,7 +67,9 @@ module qsys
   
   Command;
   NewSceneCommand;
+  NewRendererCommand;
   LoadSceneCommand;
+  LoadObjectCommand;
   CmdMgr;
 
   SceneExporter;

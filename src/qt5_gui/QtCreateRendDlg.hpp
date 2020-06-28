@@ -8,7 +8,6 @@
 
 class QCheckBox;
 class QLabel;
-class QErrorMessage;
 
 class QtCreateRendDlg : public QDialog
 {
@@ -29,17 +28,26 @@ private:
 public:
     QtCreateRendDlg(qlib::uid_t nSceneID, QWidget *parent = nullptr);
 
+    void initRendTypeBox(const qlib::LStringList &rend_types);
+
     void setObjectName(const qlib::LString &name);
     qlib::LString getObjectName() const;
 
     qlib::LString getRendTypeName() const;
 
-    qlib::LString getRendName() const {
+    qlib::LString getRendName() const
+    {
         return qlib::LString(m_rendNameEdit->text().toUtf8().constData());
     }
 
-    qlib::LString getMolSelStr() const {
+    qlib::LString getMolSelStr() const
+    {
         return qlib::LString(m_molSelBox->text().toUtf8().constData());
+    }
+
+    bool isRecenView() const
+    {
+        return m_recenViewCbx->isChecked();
     }
 
     // void setSceneID(qlib::uid_t id)

@@ -48,8 +48,6 @@ void LoadObjectCommand::run()
 {
     MB_ASSERT(!m_pTargScene.isnull());
 
-    constexpr int nCatID = InOutHandler::IOH_CAT_OBJREADER;
-
     if (m_fileFmt.isEmpty()) {
         m_fileFmt = guessFileFormat(nCatID);
         if (m_fileFmt.isEmpty()) {
@@ -80,9 +78,18 @@ void LoadObjectCommand::run()
     }
 
     m_pTargScene->addObject(m_pResObj);
+}
 
-    // TO DO: setup renderer (optional)
-
+qlib::LStringList LoadObjectCommand::searchCompatibleRendNames() const
+{
+    // TO DO: reuse reader obj
+    auto strMgr = qsys::StreamManager::getInstance();
+    qsys::ObjReaderPtr reader = strMgr->createHandler(m_fileFmt, nCatID);
+    auto pTmpObj = reader->createDefaultObj();
+    LString str = pTmpObj->searchCompatibleRendererNames();
+    qlib::LStringList strlist1;
+    str.split(',', strlist1);
+    return strlist1;
 }
 
 LString LoadObjectCommand::createDefaultObjName() const

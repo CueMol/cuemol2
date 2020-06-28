@@ -21,7 +21,9 @@
 #include "style/StyleFile.hpp"
 #include "command/CmdMgr.hpp"
 #include "command/NewSceneCommand.hpp"
+#include "command/NewRendererCommand.hpp"
 #include "command/LoadSceneCommand.hpp"
+#include "command/LoadObjectCommand.hpp"
 
 extern void qsys_regClasses();
 extern void qsys_unregClasses();
@@ -157,7 +159,9 @@ bool init(const char *config)
   CmdMgr::init();
   auto pCmdMgr = CmdMgr::getInstance();
   pCmdMgr->regist<NewSceneCommand>();
+  pCmdMgr->regist<NewRendererCommand>();
   pCmdMgr->regist<LoadSceneCommand>();
+  pCmdMgr->regist<LoadObjectCommand>();
 
   ///////////////////
   // initialize other services

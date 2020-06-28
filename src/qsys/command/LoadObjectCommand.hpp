@@ -1,5 +1,7 @@
 #pragma once
 
+#include <qlib/LString.hpp>
+#include <qsys/ObjReader.hpp>
 #include <qsys/Scene.hpp>
 #include <qsys/View.hpp>
 #include <qsys/qsys.hpp>
@@ -17,6 +19,7 @@ class QSYS_API LoadObjectCommand : public Command
     MC_CLONEABLE;
 
 private:
+    static constexpr int nCatID = InOutHandler::IOH_CAT_OBJREADER;
 
 public:
     LoadObjectCommand() = default;
@@ -33,6 +36,8 @@ public:
     LString guessFileFormat(int nCatID) const;
 
     LString createDefaultObjName() const;
+
+    qlib::LStringList searchCompatibleRendNames() const;
 
     //////////
     // properties (input)
@@ -54,7 +59,6 @@ public:
 
     /// resulting object
     ObjectPtr m_pResObj;
-
 };
 
 }  // namespace qsys
