@@ -7,7 +7,7 @@ import importlib
 from cuemol.internal_loader import import_internal
 from cuemol.wrapper_base import WrapperBase
 
-__all__ = ['getWrpClass', 'createWrapper', 'createObj', 'getService', 'println',
+__all__ = ['getWrpClass', 'createWrapper', 'conv_dict_arg', 'createObj', 'getService', 'println',
            'iswrapper', 'isimpl', 'isscene', 'isview', 'isobj', 'isrend', 'issel', 'iscol',
            'scene', 'view', 'createScene', 'svc', 'obj', 'rend',
            'sceMgr', 'strMgr',
@@ -44,6 +44,16 @@ def createWrapper(obj):
         return obj
     else:
         return obj
+
+def conv_dict_arg(d):
+    assert type(d) == dict
+    result = {}
+    for k, v in d.items():
+        if iswrapper(v):
+            result[k] = v._wrapped
+        else:
+            result[k] = v
+    return result
 
 def createObj(name):
     return createWrapper( ci.createObj(name) )

@@ -1,0 +1,46 @@
+// -*-Mode: C++;-*-
+
+#ifndef NEW_RENDERER_COMMAND_QIF
+#define NEW_RENDERER_COMMAND_QIF
+
+#include <qsys/Object.qif>
+#include <qsys/Renderer.qif>
+#include <qsys/View.qif>
+
+#include "Command.qif"
+
+runtime_class NewRendererCommand extends Command
+{
+    client_hdr "NewRendererCommand.hpp";
+    client_name qsys::NewRendererCommand;
+    dllexport QSYS_API;
+
+    scriptable;
+    smartptr;
+    cloneable;
+
+    //////////
+    // properties (input)
+
+    /// Target object
+    property object<Object$> target_object => m_pTargObj;
+
+    /// Type of the new renderer
+    property string renderer_type => m_rendTypeName;
+    default renderer_type = "";
+
+    /// Name of the new renderer (optional)
+    property string renderer_name => m_rendName;
+    default renderer_name = "";
+
+    /// Recenter view flag (optional)
+    property boolean recenter_view => m_bRecenView;
+    default recenter_view = false;
+
+    //////////
+    // properties (output)
+
+    property object<Renderer$> result_renderer => m_pResRend (readonly);
+};
+
+#endif

@@ -283,6 +283,9 @@ sub makeMthArg($)
     elsif ($arg_type eq "object") {
       push(@rval, "arg_${ind}._wrapped");
     }
+    elsif ($arg_type eq "dict") {
+      push(@rval, "cuemol.conv_dict_arg(arg_${ind})");
+    }
     else {
       push(@rval, "arg_$ind");
     }

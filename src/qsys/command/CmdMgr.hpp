@@ -1,10 +1,10 @@
 #pragma once
 
 #include <qlib/LScrObjects.hpp>
+#include <qlib/LVarDict.hpp>
 #include <qlib/MapTable.hpp>
 #include <qlib/SingletonBase.hpp>
 #include <qlib/mcutils.hpp>
-#include <qlib/LVarDict.hpp>
 #include <qsys/qsys.hpp>
 
 #include "Command.hpp"
@@ -40,12 +40,16 @@ public:
     /// Run non-GUI command
     CommandPtr runCmd(const LString &cmd_name) const;
 
-    /// Run non-GUI command with dict args 
+    /// Run non-GUI command with dict args
     qlib::LVarDict runCmd(const LString &cmd_name, const qlib::LVarDict &args) const;
 
     /// Run GUI command
     // TO DO: dict argments?
     CommandPtr runGUICmd(const LString &cmd_name, void *pwnd_info) const;
+
+    CommandPtr runGUICmdWithTxn(const LString &cmd_name, void *pwnd_info,
+                                const ScenePtr &pTargScene,
+                                const LString &txn_msg) const;
 
     static bool init()
     {
@@ -57,11 +61,17 @@ public:
         super_t::fini();
     }
 
-    // helper method
+    // helper methods
     template <typename _Class>
     inline void regist()
     {
         regist(CommandPtr(MB_NEW _Class()));
+    }
+
+    template <typename _Class>
+    inline qlib::LScrSp<_Class> getCmd(const LString &cmd_name) const
+    {
+        return qlib::LScrSp<_Class>(getCmd(cmd_name));
     }
 };
 

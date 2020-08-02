@@ -8,6 +8,9 @@
 #include <QtWidgets>
 #include <qsys/command/CmdMgr.hpp>
 // #include <qsys/command/Command.hpp>
+#include <pybr/PythonBridge.hpp>
+#include <pybr/pybr.hpp>
+
 #include "QtMolStructPanel.hpp"
 #include "QtMolWidget.hpp"
 #include "QtScenePanel.hpp"
@@ -17,7 +20,6 @@
 
 MainWindow::MainWindow()
 {
-
     createWidgets();
 
     createActions();
@@ -44,13 +46,12 @@ MainWindow::~MainWindow()
 
 void MainWindow::onLoaded()
 {
-    if (m_pTabWnd->currentSubWindow() == nullptr)
-        newFile();
+    if (m_pTabWnd->currentSubWindow() == nullptr) newScene();
 }
 
 void MainWindow::onActivateMolTabChanged()
 {
-    auto pScMgr =qsys::SceneManager::getInstance();
+    auto pScMgr = qsys::SceneManager::getInstance();
     auto activewnd = m_pTabWnd->activeSubWindow();
     if (activewnd == nullptr) {
         LOG_DPRINTLN("XXXX MainWindow::onActivateMolTabChanged(): deactivated");
@@ -135,24 +136,47 @@ void MainWindow::closeEvent(QCloseEvent *event)
     }
 }
 
-void MainWindow::newFile()
+void MainWindow::newScene()
 {
-    // auto &&pchild = createMolWidget();
-    // pchild->createSceneAndView();
-    // pchild->showMaximized();
     auto pMgr = qsys::CmdMgr::getInstance();
     pMgr->runGUICmd("qt_new_scene", this);
 }
 
-void MainWindow::open()
+void MainWindow::openScene()
 {
     auto pMgr = qsys::CmdMgr::getInstance();
     pMgr->runGUICmd("qt_load_scene", this);
+}
 
-    // const QString fileName = QFileDialog::getOpenFileName(this, "Open scene file",
-    // "",
-    //                                                       "CueMol Scene (*.qsc)");
-    // if (!fileName.isEmpty()) openFile(fileName);
+void MainWindow::openObject()
+{
+    auto pMgr = qsys::CmdMgr::getInstance();
+    pMgr->runGUICmd("qt_load_object", this);
+}
+
+void MainWindow::execPyScr()
+{
+    QFileDialog dlg(this, "Open python script", "", "");
+    if (dlg.exec() != QDialog::Accepted) {
+        return;
+    }
+    auto files = dlg.selectedFiles();
+    pybr::PythonBridge *pSvc = pybr::PythonBridge::getInstance();
+    for (const auto &f : files) {
+        auto filePath = LString(f.toUtf8().constData());
+        LOG_DPRINTLN("Selected file: %s", filePath.c_str());
+        try {
+            pSvc->runFile(filePath);
+        } catch (const qlib::LException &e) {
+            LOG_DPRINTLN("Caught exception <%s>", typeid(e).name());
+            LOG_DPRINTLN("Reason: %s", e.getMsg().c_str());
+        } catch (std::exception &e) {
+            LOG_DPRINTLN("Caught exception <%s>", typeid(e).name());
+            LOG_DPRINTLN("Reason: %s", e.what());
+        } catch (...) {
+            LOG_DPRINTLN("Caught unknown exception");
+        }
+    }
 }
 
 bool MainWindow::openFile(const QString &fileName)
@@ -295,27 +319,48 @@ void MainWindow::updateWindowMenu()
 void MainWindow::createActions()
 {
     QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
+    fileMenu->setObjectName("fileMenu"); 
+    auto *p = menuBar()->findChild<QMenu*>("fileMenu");
+    LOG_DPRINTLN("******* %p %p", fileMenu, p);
     // QToolBar *fileToolBar = addToolBar(tr("File"));
     // fileToolBar->setObjectName("fileToolBar");
+
+    // File-New action
 
     // const QIcon newIcon = QIcon::fromTheme("document-new",
     // QIcon(":/images/new.png")); newAct = new QAction(newIcon, tr("&New"), this);
     newAct = new QAction(tr("&New"), this);
     newAct->setShortcuts(QKeySequence::New);
     newAct->setStatusTip(tr("Create a new file"));
-    connect(newAct, &QAction::triggered, this, &MainWindow::newFile);
+    connect(newAct, &QAction::triggered, this, &MainWindow::newScene);
     fileMenu->addAction(newAct);
     // fileToolBar->addAction(newAct);
 
+    // File-Open scene action
+
     // const QIcon openIcon = QIcon::fromTheme("document-open",
-    // QIcon(":/images/open.png")); QAction *openAct = new QAction(openIcon,
+    // QIcon(":/images/open.png")); QAction *openSceneAct = new QAction(openIcon,
     // tr("&Open..."), this);
-    QAction *openAct = new QAction(tr("&Open..."), this);
-    openAct->setShortcuts(QKeySequence::Open);
-    openAct->setStatusTip(tr("Open an existing file"));
-    connect(openAct, &QAction::triggered, this, &MainWindow::open);
-    fileMenu->addAction(openAct);
-    // fileToolBar->addAction(openAct);
+    QAction *openSceneAct = new QAction(tr("&Open scene..."), this);
+    openSceneAct->setShortcuts(QKeySequence::Open);
+    openSceneAct->setStatusTip(tr("Open an existing scene file"));
+    connect(openSceneAct, &QAction::triggered, this, &MainWindow::openScene);
+    fileMenu->addAction(openSceneAct);
+    // fileToolBar->addAction(openSceneAct);
+
+    // File-Open object action
+    QAction *openObjAct = new QAction(tr("&Open file..."), this);
+    openObjAct->setShortcuts(QKeySequence::Open);
+    openObjAct->setStatusTip(tr("Open an existing object file"));
+    connect(openObjAct, &QAction::triggered, this, &MainWindow::openObject);
+    fileMenu->addAction(openObjAct);
+
+    // File-Open python script action
+    QAction *openPyScrAct = new QAction(tr("&Exec pyscr..."), this);
+    // openPyScrAct->setShortcuts(QKeySequence::Open);
+    openPyScrAct->setStatusTip(tr("Execute python script"));
+    connect(openPyScrAct, &QAction::triggered, this, &MainWindow::execPyScr);
+    fileMenu->addAction(openPyScrAct);
 
     const QIcon exitIcon = QIcon::fromTheme("application-exit");
     QAction *exitAct = fileMenu->addAction(exitIcon, tr("E&xit"), qApp,
@@ -384,7 +429,6 @@ QtMolWidget *MainWindow::createMolWidget()
 QtMolWidget *MainWindow::activeMolWidget()
 {
     auto *pActSubWnd = m_pTabWnd->activeSubWindow();
-    if (pActSubWnd == nullptr)
-        return nullptr;
+    if (pActSubWnd == nullptr) return nullptr;
     return pActSubWnd->findChild<QtMolWidget *>();
 }

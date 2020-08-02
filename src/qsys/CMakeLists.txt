@@ -57,7 +57,9 @@ TTYView.cpp
 QdfAbsWriter.cpp
 command/Command.cpp
 command/NewSceneCommand.cpp
+command/NewRendererCommand.cpp
 command/LoadSceneCommand.cpp
+command/LoadObjectCommand.cpp
 command/CmdMgr.cpp
   )
 
@@ -88,7 +90,9 @@ MultiGradient.qif
 ScalarObject.qif
 command/Command.qif
 command/NewSceneCommand.qif
+command/NewRendererCommand.qif
 command/LoadSceneCommand.qif
+command/LoadObjectCommand.qif
 command/CmdMgr.qif
   )
 

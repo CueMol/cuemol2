@@ -1,0 +1,47 @@
+// -*-Mode: C++;-*-
+
+#ifndef LOAD_OBJECT_COMMAND_QIF
+#define LOAD_OBJECT_COMMAND_QIF
+
+#include <qsys/Object.qif>
+#include <qsys/View.qif>
+
+#include "Command.qif"
+
+runtime_class LoadObjectCommand extends Command
+{
+    client_hdr "LoadObjectCommand.hpp";
+    client_name qsys::LoadObjectCommand;
+    dllexport QSYS_API;
+
+    scriptable;
+    smartptr;
+    cloneable;
+
+    //////////
+    // properties (input)
+
+    /// Target scene (mandatory)
+    property object<Scene$> target_scene => m_pTargScene;
+
+    /// File path to load
+    property string file_path => m_filePath;
+    default file_path = "";
+
+    /// Object name (optional)
+    property string object_name => m_objectName;
+    default object_name = "";
+
+    /// File format (optional)
+    property string file_format => m_fileFmt;
+    default file_format = "";
+
+    //////////
+    // properties (output)
+
+    /// resulting object (new or same as targObject)
+    property object<Object$> result_object => m_pResObj (readonly);
+
+};
+
+#endif

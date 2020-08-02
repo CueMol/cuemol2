@@ -14,6 +14,7 @@
 #include <qsys/command/CmdMgr.hpp>
 #include "QtNewSceneCommand.hpp"
 #include "QtLoadSceneCommand.hpp"
+#include "QtLoadObjectCommand.hpp"
 #include "QtGlView.hpp"
 
 void qt5gui_regClasses();
@@ -40,6 +41,7 @@ bool init()
     auto pMgr = qsys::CmdMgr::getInstance();
     pMgr->regist<QtNewSceneCommand>();
     pMgr->regist<QtLoadSceneCommand>();
+    pMgr->regist<QtLoadObjectCommand>();
 
     return true;
 }

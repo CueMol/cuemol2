@@ -5,7 +5,7 @@
 #include <boost/filesystem.hpp>
 #include <qlib/ObjectManager.hpp>
 #include <qsys/SceneManager.hpp>
-#include <qsys/SceneXMLReader.hpp>
+#include <qsys/ObjReader.hpp>
 #include <qsys/StreamManager.hpp>
 
 namespace fs = boost::filesystem;
@@ -48,8 +48,6 @@ void LoadObjectCommand::run()
 {
     MB_ASSERT(!m_pTargScene.isnull());
 
-    constexpr int nCatID = InOutHandler::IOH_CAT_OBJREADER;
-
     if (m_fileFmt.isEmpty()) {
         m_fileFmt = guessFileFormat(nCatID);
         if (m_fileFmt.isEmpty()) {
@@ -60,22 +58,45 @@ void LoadObjectCommand::run()
     }
 
     auto strMgr = qsys::StreamManager::getInstance();
-    qsys::SceneXMLReaderPtr reader = strMgr->createHandler(m_fileFmt, nCatID);
+    qsys::ObjReaderPtr reader = strMgr->createHandler(m_fileFmt, nCatID);
     reader->setPath(m_filePath);
 
-    reader->attach(m_pResScene);
+    // check compression
+    fs::path file_path = m_filePath.c_str();
+    auto extension = LString(file_path.extension().string());
+    if (extension.equalsIgnoreCase(".gz"))
+        reader->setPropStr("compress", "gzip");
+
+    m_pResObj = reader->createDefaultObj();
+    reader->attach(m_pResObj);
     reader->read();
     reader->detach();
 
-    LOG_DPRINTLN("Set view camera m_bSetCamera = %d", m_bSetCamera);
-    if (m_bSetCamera) {
-        const auto &views = m_pResScene->getViewTable();
-        for (const auto &elem : views) {
-            LOG_DPRINTLN("Set camera to view %p (ID %d)", elem.second.get(),
-                         elem.second->getUID());
-            m_pResScene->loadViewFromCam(elem.second->getUID(), "__current");
-        }
+    if (m_objectName.isEmpty()) {
+        // auto stem = file_path.stem().string();
+        m_pResObj->setPropStr("name", createDefaultObjName());
     }
+
+    m_pTargScene->addObject(m_pResObj);
+}
+
+qlib::LStringList LoadObjectCommand::searchCompatibleRendNames() const
+{
+    // TO DO: reuse reader obj
+    auto strMgr = qsys::StreamManager::getInstance();
+    qsys::ObjReaderPtr reader = strMgr->createHandler(m_fileFmt, nCatID);
+    auto pTmpObj = reader->createDefaultObj();
+    LString str = pTmpObj->searchCompatibleRendererNames();
+    qlib::LStringList strlist1;
+    str.split(',', strlist1);
+    return strlist1;
+}
+
+LString LoadObjectCommand::createDefaultObjName() const
+{
+    fs::path file_path = m_filePath.c_str();
+    auto stem = file_path.stem().string();
+    return LString(stem);
 }
 
 void LoadObjectCommand::runGUI(void *pwnd_info) {}
