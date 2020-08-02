@@ -17,11 +17,6 @@ set(CMAKE_AUTORCC ON)
 find_package(Qt5 REQUIRED COMPONENTS Core Widgets OpenGL)
 message(STATUS "Qt5Widgets_FOUND: ${Qt5Widgets_FOUND}")
 
-# Make this a GUI application on Windows
-if(WIN32)
-  set(CMAKE_WIN32_EXECUTABLE ON)
-endif()
-
 # Default config path
 file(TO_NATIVE_PATH "${CMAKE_INSTALL_PREFIX}/data/sysconfig.xml" DEFAULT_SYSCONFIG_PATH)
 STRING(REPLACE "\\" "\\\\" DEFAULT_SYSCONFIG_PATH ${DEFAULT_SYSCONFIG_PATH})
@@ -61,7 +56,7 @@ SET(QT5GUI_MODLDR_SRC qt5gui.moddef)
 MCWRAPGEN_CLASS(QT5GUI_SRCS ${QT5GUI_MCWG_QIFS})
 MCWRAPGEN_MODULE(QT5GUI_SRCS ${QT5GUI_MODLDR_SRC} ${QT5GUI_MCWG_QIFS})
 
-#####
+##################################################
 
 SET(QT5GUI_LINK_LIBRARIES
   pcre
@@ -90,18 +85,122 @@ SET(QT5GUI_LINK_LIBRARIES
   Qt5::OpenGL
   )
 
-add_executable(cuemol2 ${QT5GUI_SRCS} ${MCWG_HEADERS})
-
 # Add the Qt5 Widgets for linking
-target_link_libraries(cuemol2 ${QT5GUI_LINK_LIBRARIES})
+# target_link_libraries(cuemol2 ${QT5GUI_LINK_LIBRARIES})
 
-MCWRAPGEN_PYWRAPPERS(cuemol2)
+# MCWRAPGEN_PYWRAPPERS(cuemol2)
 
-install(TARGETS cuemol2
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  )
+# install(TARGETS cuemol2
+#   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+#   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#   )
 
-# For VS Debug
-set_target_properties(cuemol2 PROPERTIES
-  VS_DEBUGGER_ENVIRONMENT "PATH=${BOOST_LIBRARYDIR};${CMAKE_PREFIX_PATH}/bin;%PATH%")
+# # For VS Debug
+# set_target_properties(cuemol2 PROPERTIES
+#   VS_DEBUGGER_ENVIRONMENT "PATH=${BOOST_LIBRARYDIR};${CMAKE_PREFIX_PATH}/bin;%PATH%")
+
+
+# ================================== Shiboken detection ======================================
+
+SET(PYSIDE2_DIR "${Python3_SITELIB}/PySide2")
+FILE(TO_NATIVE_PATH "${PYSIDE2_DIR}/examples/utils/pyside2_config.py" PYSIDE2_CONFIG)
+MESSAGE(STATUS "PYSIDE2_CONFIG: ${Python3_EXECUTABLE} ${PYSIDE2_CONFIG}")
+
+# Macro to get various pyside / python include / link flags and paths.
+# Uses the not entirely supported utils/pyside2_config.py file.
+macro(pyside2_config option output_var)
+    if(${ARGC} GREATER 2)
+        set(is_list ${ARGV2})
+    else()
+        set(is_list "")
+    endif()
+
+    #      COMMAND ${python_interpreter} "${CMAKE_SOURCE_DIR}/pyside2_config.py"
+    execute_process(
+      COMMAND ${Python3_EXECUTABLE} ${PYSIDE2_CONFIG}
+              ${option}
+      OUTPUT_VARIABLE ${output_var}
+      OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+    if ("${${output_var}}" STREQUAL "")
+        message(FATAL_ERROR "Error: Calling pyside2_config.py ${option} returned no output.")
+    endif()
+    if(is_list)
+        string (REPLACE " " ";" ${output_var} "${${output_var}}")
+    endif()
+    MESSAGE(STATUS "PYSIDE2_CONFIG OK: ${output_var} ${${output_var}}")
+endmacro()
+
+# Query for the shiboken generator path, Python path, include paths and linker flags.
+# pyside2_config(--shiboken2-module-path shiboken2_module_path)
+pyside2_config(--shiboken2-generator-path shiboken2_generator_path)
+# pyside2_config(--python-include-path python_include_dir)
+pyside2_config(--shiboken2-generator-include-path shiboken_include_dir 1)
+pyside2_config(--shiboken2-module-shared-libraries-cmake shiboken_shared_libraries 0)
+# pyside2_config(--python-link-flags-cmake python_linking_data 0)
+pyside2_config(--pyside2-shared-libraries-cmake pyside2_link 0)
+
+set(shiboken_path "${shiboken2_generator_path}/shiboken2${CMAKE_EXECUTABLE_SUFFIX}")
+if(NOT EXISTS ${shiboken_path})
+    message(FATAL_ERROR "Shiboken executable not found at path: ${shiboken_path}")
+endif()
+
+MESSAGE(STATUS "shiboken path: ${shiboken_path}")
+
+# ====================== Shiboken target for generating binding C++ files  ====================
+
+get_target_property(qtcore_lib_includes Qt5::Core INTERFACE_INCLUDE_DIRECTORIES)
+list(JOIN qtcore_lib_includes ";-I" lib_includes)
+set(lib_includes "-I${lib_includes}")
+
+# Set up the options to pass to shiboken.
+set(shiboken_options --generator-set=shiboken --enable-parent-ctor-heuristic
+    --enable-return-value-heuristic --use-isnull-as-nb_nonzero
+    --avoid-protected-hack
+    --enable-pyside-extensions
+    ${lib_includes}
+    -I${CMAKE_CURRENT_SOURCE_DIR}
+    -T${CMAKE_CURRENT_SOURCE_DIR}
+    -T${PYSIDE2_DIR}/typesystems/
+    --output-directory=${CMAKE_CURRENT_BINARY_DIR}
+    )
+
+set(wrapped_header ${CMAKE_CURRENT_SOURCE_DIR}/bindings.h)
+set(typesystem_file ${CMAKE_CURRENT_SOURCE_DIR}/bindings.xml)
+set(generated_sources
+  ${CMAKE_CURRENT_BINARY_DIR}/qt5gui/qtmolwidget_wrapper.cpp
+  ${CMAKE_CURRENT_BINARY_DIR}/qt5gui/qt5gui_module_wrapper.cpp)
+
+
+set(generated_sources_dependencies ${wrapped_header} ${typesystem_file})
+
+# Add custom target to run shiboken to generate the binding cpp files.
+add_custom_command(OUTPUT ${generated_sources}
+  COMMAND ${shiboken_path}
+  ${shiboken_options} ${wrapped_header} ${typesystem_file}
+  DEPENDS ${generated_sources_dependencies}
+  IMPLICIT_DEPENDS CXX ${wrapped_header}
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+  COMMENT "Running generator for ${typesystem_file}.")
+
+
+# =============================== CMake target - qt5gui ===============================
+
+Python3_add_library(qt5gui SHARED ${QT5GUI_SRCS} ${MCWG_HEADERS} ${generated_sources})
+MCWRAPGEN_PYWRAPPERS(qt5gui)
+target_link_libraries(qt5gui PRIVATE ${QT5GUI_LINK_LIBRARIES})
+
+target_link_libraries(qt5gui PRIVATE ${shiboken_shared_libraries})
+# target_link_libraries(qt5gui PRIVATE ${sample_library})
+target_link_libraries(qt5gui PRIVATE ${pyside2_link})
+
+target_include_directories(qt5gui PRIVATE ${PYSIDE2_DIR}/include/)
+target_include_directories(qt5gui PRIVATE ${PYSIDE2_DIR}/include/QtCore)
+target_include_directories(qt5gui PRIVATE ${shiboken_include_dir})
+
+
+
+# set_property(TARGET qt5gui PROPERTY PREFIX "")
+# Needed mostly on Windows to export symbols, and create a .lib file, otherwise the binding
+# library can't link to the sample library.
+# target_compile_definitions(qt5gui PRIVATE BINDINGS_BUILD)

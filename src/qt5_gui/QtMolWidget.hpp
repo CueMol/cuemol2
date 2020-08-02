@@ -6,7 +6,7 @@
 
 #include <QtOpenGL/QGLWidget>
 #include <QtWidgets/QGestureEvent>
-#include <qlib/qlib.hpp>
+// #include <qlib/qlib.hpp>
 
 #include "qt5_gui.hpp"
 
@@ -44,16 +44,16 @@ public:
 
     void loadFile(const QString &fileName);
 
-    inline qlib::uid_t getSceneID() const
+    inline int getSceneID() const
     {
         return m_nSceneID;
     }
-    inline qlib::uid_t getViewID() const
+    inline int getViewID() const
     {
         return m_nViewID;
     }
 
-    static void setupTextRender();
+    // static void setupTextRender();
 
 public slots:
 
