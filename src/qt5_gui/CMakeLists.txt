@@ -186,13 +186,9 @@ add_custom_command(OUTPUT ${generated_sources}
 
 # =============================== CMake target - qt5gui ===============================
 
-Python3_add_library(qt5gui SHARED ${QT5GUI_SRCS} ${MCWG_HEADERS} ${generated_sources})
+Python3_add_library(qt5gui MODULE ${QT5GUI_SRCS} ${MCWG_HEADERS} ${generated_sources})
 MCWRAPGEN_PYWRAPPERS(qt5gui)
-target_link_libraries(qt5gui PRIVATE ${QT5GUI_LINK_LIBRARIES})
-
-target_link_libraries(qt5gui PRIVATE ${shiboken_shared_libraries})
-# target_link_libraries(qt5gui PRIVATE ${sample_library})
-target_link_libraries(qt5gui PRIVATE ${pyside2_link})
+target_link_libraries(qt5gui PRIVATE ${QT5GUI_LINK_LIBRARIES} ${shiboken_shared_libraries} ${pyside2_link})
 
 target_include_directories(qt5gui PRIVATE ${PYSIDE2_DIR}/include/)
 target_include_directories(qt5gui PRIVATE ${PYSIDE2_DIR}/include/QtCore)

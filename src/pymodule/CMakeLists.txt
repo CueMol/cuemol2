@@ -1,9 +1,9 @@
-# find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
-
-# message(STATUS "Python3_Development_FOUND=${Python3_Development_FOUND}")
-# message(STATUS "Python: version=${Python3_VERSION} Python3_INCLUDE_DIRS=${Python3_INCLUDE_DIRS} Python3_LIBRARIES=${Python3_LIBRARIES}")
 
 add_definitions(-DHAVE_PYTHON=1 -DBUILD_PYMODULE=1)
+
+if (WIN32)
+  add_definitions(-DPYBR_EXPORTS=1)
+endif()
 
 if (BUILD_MINIMUM_MODULES)
   add_definitions(-DPYBR_MINIMUM_MODULES=1)
