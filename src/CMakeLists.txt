@@ -143,6 +143,6 @@ if (NOT BUILD_PYTHON_MODULE)
   add_subdirectory(cli)
 endif ()
 
-if (BUILD_GUI AND NOT BUILD_PYTHON_MODULE AND NOT BUILD_MINIMUM_MODULES)
+if (BUILD_GUI AND NOT BUILD_MINIMUM_MODULES)
   add_subdirectory(qt5_gui)
 endif()

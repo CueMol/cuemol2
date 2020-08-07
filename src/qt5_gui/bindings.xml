@@ -1,6 +1,5 @@
 <?xml version="1.0"?>
 <typesystem package="qt5gui">
     <object-type name="QtMolWidget">
-        <!--<enum-type name="MyEnum" />-->
     </object-type>
 </typesystem>

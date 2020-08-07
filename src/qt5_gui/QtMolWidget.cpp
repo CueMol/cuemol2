@@ -8,7 +8,7 @@
 #include "QtMolWidget.hpp"
 
 #include "QtGlView.hpp"
-// #include "QtTimerImpl.hpp"
+#include "QtTimerImpl.hpp"
 
 #include <QtGui/QMouseEvent>
 #include <QtGui/QWindow>
@@ -20,7 +20,7 @@
 
 #include "moc_QtMolWidget.cpp"
 
-// using namespace qt5_gui;
+using namespace qt5_gui;
 
 QtMolWidget::QtMolWidget(QWidget *parent) : QGLWidget(parent)
 {
