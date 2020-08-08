@@ -30,10 +30,10 @@
 
 namespace qt5_gui {
 
-  /// Initialize the qt5_gui library
-  QT5GUI_API bool init();
+/// Initialize the qt5_gui library
+bool init();
 
-  /// Cleanup the qt5_gui library
-  QT5GUI_API void fini();
-}
+/// Cleanup the qt5_gui library
+void fini();
 
+}  // namespace qt5_gui

@@ -26,7 +26,7 @@ add_definitions(-DDEFAULT_CONFIG=\"${DEFAULT_SYSCONFIG_PATH}\")
 SET(QT5GUI_SRCS
   # main.cpp
   # mainwindow.cpp
-  # qt5_gui.cpp
+  qt5_gui.cpp
   QtGlDisplayContext.cpp
   QtGlView.cpp
   QtMolWidget.cpp
@@ -144,7 +144,7 @@ MESSAGE(STATUS "shiboken path: ${shiboken_path}")
 
 # ====================== Shiboken target for generating binding C++ files  ====================
 
-get_target_property(qtcore_lib_includes Qt5::Core INTERFACE_INCLUDE_DIRECTORIES)
+get_target_property(qtcore_lib_includes Qt5::OpenGL INTERFACE_INCLUDE_DIRECTORIES)
 list(JOIN qtcore_lib_includes ";-I" lib_includes)
 set(lib_includes "-I${lib_includes}")
 
@@ -182,11 +182,14 @@ add_custom_command(OUTPUT ${generated_sources}
 # =============================== CMake target - qt5gui ===============================
 
 Python3_add_library(qt5gui MODULE ${QT5GUI_SRCS} ${MCWG_HEADERS} ${generated_sources})
-MCWRAPGEN_PYWRAPPERS(qt5gui)
+# MCWRAPGEN_PYWRAPPERS(qt5gui)
 target_link_libraries(qt5gui PRIVATE ${QT5GUI_LINK_LIBRARIES} ${shiboken_shared_libraries} ${pyside2_link})
 
 target_include_directories(qt5gui PRIVATE ${PYSIDE2_DIR}/include/)
 target_include_directories(qt5gui PRIVATE ${PYSIDE2_DIR}/include/QtCore)
+target_include_directories(qt5gui PRIVATE ${PYSIDE2_DIR}/include/QtWidgets)
+target_include_directories(qt5gui PRIVATE ${PYSIDE2_DIR}/include/QtGui)
+target_include_directories(qt5gui PRIVATE ${PYSIDE2_DIR}/include/QtOpenGL)
 target_include_directories(qt5gui PRIVATE ${shiboken_include_dir})
 
 set_target_properties(qt5gui PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
@@ -200,5 +203,9 @@ set_target_properties(qt5gui PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_RUNTIME
 # For VS Debug
 set_target_properties(qt5gui PROPERTIES
   VS_DEBUGGER_COMMAND "${Python3_EXECUTABLE}"
-  VS_DEBUGGER_ENVIRONMENT "PATH=${BOOST_LIBRARYDIR};${CMAKE_PREFIX_PATH}/bin;%PATH%"
+  VS_DEBUGGER_COMMAND_ARGUMENTS "${CMAKE_SOURCE_DIR}/src/python/cuemol_gui/startup.py"
+  VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${CMAKE_CFG_INTDIR}"
+  VS_DEBUGGER_ENVIRONMENT "PATH=${BOOST_LIBRARYDIR};${CMAKE_PREFIX_PATH}/bin;%PATH%
+PYTHONPATH=${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${CMAKE_CFG_INTDIR};${CMAKE_SOURCE_DIR}/src/python;${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/python
+CUEMOL_SYSCONFIG_PATH=${CMAKE_SOURCE_DIR}/src/xul_gui"
   )
