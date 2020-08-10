@@ -80,8 +80,8 @@ SET(QT5GUI_LINK_LIBRARIES
   # importers
   # pybr
   Boost::filesystem
-  CGAL::CGAL
-  Qt5::Widgets
+  # CGAL::CGAL
+  # Qt5::Widgets
   Qt5::OpenGL
   )
 
@@ -216,6 +216,7 @@ Python3_add_library(qt5gui MODULE ${QT5GUI_SRCS} ${MCWG_HEADERS} ${generated_sou
 # MCWRAPGEN_PYWRAPPERS(qt5gui)
 target_link_libraries(qt5gui PRIVATE ${QT5GUI_LINK_LIBRARIES} ${shiboken_shared_libraries} ${pyside2_link})
 
+# target_include_directories(qt5gui PRIVATE ${QT_INCLUDE_DIR} ${Qt5OpenGL_INCLUDE_DIRS})
 target_include_directories(qt5gui PRIVATE ${PYSIDE2_DIR}/include/)
 target_include_directories(qt5gui PRIVATE ${PYSIDE2_DIR}/include/QtCore)
 target_include_directories(qt5gui PRIVATE ${PYSIDE2_DIR}/include/QtWidgets)
@@ -225,6 +226,8 @@ target_include_directories(qt5gui PRIVATE ${shiboken_include_dir})
 
 if (WIN32)
   set_target_properties(qt5gui PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+else ()
+  set_target_properties(qt5gui PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 endif ()
 
 # set_property(TARGET qt5gui PROPERTY PREFIX "")

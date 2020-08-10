@@ -62,6 +62,8 @@ target_link_libraries(_cuemol_internal PRIVATE ${PYMODULE_LINK_LIBRARIES})
 
 if (WIN32)
   set_target_properties(_cuemol_internal PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+else ()
+  set_target_properties(_cuemol_internal PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 endif ()
 
 # get_target_property(_cuemol_internal_location _cuemol_internal LIBRARY_OUTPUT_DIRECTORY)
