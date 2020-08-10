@@ -48,8 +48,11 @@ macro(MCWRAPGEN_CLASS _target_sources)
     
     # Generate python wrapper scripts
     if (BUILD_PYTHON_BINDINGS)
-      # SET(_out_py_dir ${CMAKE_CURRENT_BINARY_DIR})
-      SET(_out_py_dir "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/python/wrappers")
+      if (WIN32)
+        SET(_out_py_dir "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/python/wrappers")
+      else ()
+        SET(_out_py_dir "${CMAKE_BINARY_DIR}/python/wrappers")
+      endif()
       SET(_out_py_file "${_out_py_dir}/${_file_stem}.py")
       separate_arguments(_mcwg_py_command NATIVE_COMMAND "${MCWG_PY_CMD}")
       add_custom_command(

@@ -145,14 +145,34 @@ MESSAGE(STATUS "shiboken path: ${shiboken_path}")
 # ====================== Shiboken target for generating binding C++ files  ====================
 
 get_target_property(qtcore_lib_includes Qt5::OpenGL INTERFACE_INCLUDE_DIRECTORIES)
+MESSAGE(STATUS "qtcore_lib_includes: ${qtcore_lib_includes}")
 list(JOIN qtcore_lib_includes ";-I" lib_includes)
 set(lib_includes "-I${lib_includes}")
+
+list(GET Qt5Core_INCLUDE_DIRS 0 QT_INCLUDE_DIR)
+message(STATUS "*** QT_INCLUDE_DIR= ${QT_INCLUDE_DIR}")
+get_target_property(QtCore_is_framework Qt5::Core FRAMEWORK)
+if (QtCore_is_framework)
+    # Get the path to the framework dir.
+    get_filename_component(QT_FRAMEWORK_INCLUDE_DIR "${QT_INCLUDE_DIR}/../" ABSOLUTE)
+    message(STATUS "*** QT_FRAMEWORK_INCLUDE_DIR is ${QT_FRAMEWORK_INCLUDE_DIR}")
+endif()
+
+set(shiboken_framework_include_dirs_option "")
+if (CMAKE_HOST_APPLE)
+  set(shiboken_framework_include_dirs "${QT_FRAMEWORK_INCLUDE_DIR}")
+  # make_path(shiboken_framework_include_dirs ${shiboken_framework_include_dirs})
+  set(shiboken_framework_include_dirs_option "--framework-include-paths=${shiboken_framework_include_dirs}")
+  message(STATUS "*** shiboken_framework_include_dirs_option= ${shiboken_framework_include_dirs_option}")
+endif ()
+
 
 # Set up the options to pass to shiboken.
 set(shiboken_options --generator-set=shiboken --enable-parent-ctor-heuristic
     --enable-return-value-heuristic --use-isnull-as-nb_nonzero
     --avoid-protected-hack
     --enable-pyside-extensions
+    ${shiboken_framework_include_dirs_option}
     ${lib_includes}
     -I${CMAKE_CURRENT_SOURCE_DIR}
     -T${CMAKE_CURRENT_SOURCE_DIR}
@@ -192,8 +212,9 @@ target_include_directories(qt5gui PRIVATE ${PYSIDE2_DIR}/include/QtGui)
 target_include_directories(qt5gui PRIVATE ${PYSIDE2_DIR}/include/QtOpenGL)
 target_include_directories(qt5gui PRIVATE ${shiboken_include_dir})
 
-set_target_properties(qt5gui PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-
+if (WIN32)
+  set_target_properties(qt5gui PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+endif ()
 
 # set_property(TARGET qt5gui PROPERTY PREFIX "")
 # Needed mostly on Windows to export symbols, and create a .lib file, otherwise the binding

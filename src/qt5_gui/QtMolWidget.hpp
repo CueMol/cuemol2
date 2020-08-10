@@ -6,6 +6,8 @@
 
 #include <QtOpenGL/QGLWidget>
 #include <QtWidgets/QGestureEvent>
+// #include <QGLWidget>
+// #include <QGestureEvent>
 // #include <qlib/qlib.hpp>
 
 #include "qt5_gui.hpp"

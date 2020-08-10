@@ -60,12 +60,12 @@ list(APPEND PYMODULE_LINK_LIBRARIES
 Python3_add_library(_cuemol_internal MODULE ${PYMODULE_SRCS})
 target_link_libraries(_cuemol_internal PRIVATE ${PYMODULE_LINK_LIBRARIES})
 
-set_target_properties(_cuemol_internal PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+if (WIN32)
+  set_target_properties(_cuemol_internal PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+endif ()
 
 # get_target_property(_cuemol_internal_location _cuemol_internal LIBRARY_OUTPUT_DIRECTORY)
 # message (STATUS "_cuemol_internal_location == ${_cuemol_internal_location}")
-message(STATUS "CMAKE_LIBRARY_OUTPUT_DIRECTORY: ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}")
-message(STATUS "CMAKE_RUNTIME_OUTPUT_DIRECTORY: ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 # set_target_properties(_cuemol_internal PROPERTIES PREFIX "")  # no 'lib' prefix
 # set_target_properties(_cuemol_internal PROPERTIES SUFFIX ".${Python3_SOABI}")  # must be .so (not .dylib)
 
