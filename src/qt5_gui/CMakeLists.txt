@@ -144,11 +144,6 @@ MESSAGE(STATUS "shiboken path: ${shiboken_path}")
 
 # ====================== Shiboken target for generating binding C++ files  ====================
 
-get_target_property(qtcore_lib_includes Qt5::OpenGL INTERFACE_INCLUDE_DIRECTORIES)
-MESSAGE(STATUS "qtcore_lib_includes: ${qtcore_lib_includes}")
-list(JOIN qtcore_lib_includes ";-I" lib_includes)
-set(lib_includes "-I${lib_includes}")
-
 list(GET Qt5Core_INCLUDE_DIRS 0 QT_INCLUDE_DIR)
 message(STATUS "*** QT_INCLUDE_DIR= ${QT_INCLUDE_DIR}")
 get_target_property(QtCore_is_framework Qt5::Core FRAMEWORK)
@@ -156,7 +151,13 @@ if (QtCore_is_framework)
     # Get the path to the framework dir.
     get_filename_component(QT_FRAMEWORK_INCLUDE_DIR "${QT_INCLUDE_DIR}/../" ABSOLUTE)
     message(STATUS "*** QT_FRAMEWORK_INCLUDE_DIR is ${QT_FRAMEWORK_INCLUDE_DIR}")
+
+    # QT_INCLUDE_DIR points to the QtCore.framework directory, so we need to adjust this to point
+    # to the actual include directory, which has include files for non-framework parts of Qt.
+    get_filename_component(QT_INCLUDE_DIR "${QT_INCLUDE_DIR}/../../include" ABSOLUTE)
 endif()
+
+message(STATUS "*** computed QT_INCLUDE_DIR as ${QT_INCLUDE_DIR}")
 
 set(shiboken_framework_include_dirs_option "")
 if (CMAKE_HOST_APPLE)
@@ -166,6 +167,15 @@ if (CMAKE_HOST_APPLE)
   message(STATUS "*** shiboken_framework_include_dirs_option= ${shiboken_framework_include_dirs_option}")
 endif ()
 
+##########
+
+string(REPLACE ";" ":" core_includes "${Qt5Core_INCLUDE_DIRS}")
+set(shiboken_include_dirs ${QT_INCLUDE_DIR}:${core_includes})
+# get_target_property(qtcore_lib_includes Qt5::OpenGL INTERFACE_INCLUDE_DIRECTORIES)
+# MESSAGE(STATUS "qtcore_lib_includes: ${qtcore_lib_includes}")
+# list(JOIN qtcore_lib_includes ";-I" lib_includes)
+# set(lib_includes "-I${lib_includes}")
+
 
 # Set up the options to pass to shiboken.
 set(shiboken_options --generator-set=shiboken --enable-parent-ctor-heuristic
@@ -173,7 +183,8 @@ set(shiboken_options --generator-set=shiboken --enable-parent-ctor-heuristic
     --avoid-protected-hack
     --enable-pyside-extensions
     ${shiboken_framework_include_dirs_option}
-    ${lib_includes}
+    --include-paths=${shiboken_include_dirs}
+    # ${lib_includes}
     -I${CMAKE_CURRENT_SOURCE_DIR}
     -T${CMAKE_CURRENT_SOURCE_DIR}
     -T${PYSIDE2_DIR}/typesystems/
