@@ -169,12 +169,18 @@ endif ()
 
 ##########
 
-string(REPLACE ";" ":" core_includes "${Qt5Core_INCLUDE_DIRS}")
-set(shiboken_include_dirs ${QT_INCLUDE_DIR}:${core_includes})
-# get_target_property(qtcore_lib_includes Qt5::OpenGL INTERFACE_INCLUDE_DIRECTORIES)
-# MESSAGE(STATUS "qtcore_lib_includes: ${qtcore_lib_includes}")
-# list(JOIN qtcore_lib_includes ";-I" lib_includes)
-# set(lib_includes "-I${lib_includes}")
+if (WIN32)
+  # semicolon should be escaped twice
+  set(PATH_SEP "\\\;")
+else()
+  set(PATH_SEP ":")
+endif()
+
+# string(REPLACE ";" "${PATH_SEP}" core_includes "${Qt5Core_INCLUDE_DIRS}")
+set(shiboken_include_dirs ${QT_INCLUDE_DIR})
+list(APPEND shiboken_include_dirs ${Qt5Core_INCLUDE_DIRS})
+string(REPLACE ";" "${PATH_SEP}" shiboken_include_dirs "${shiboken_include_dirs}")
+# MESSAGE(STATUS "shiboken_include_dirs: ${shiboken_include_dirs}")
 
 
 # Set up the options to pass to shiboken.
@@ -190,6 +196,7 @@ set(shiboken_options --generator-set=shiboken --enable-parent-ctor-heuristic
     -T${PYSIDE2_DIR}/typesystems/
     --output-directory=${CMAKE_CURRENT_BINARY_DIR}
     )
+# MESSAGE(STATUS "shiboken_options: ${shiboken_options}")
 
 set(wrapped_header ${CMAKE_CURRENT_SOURCE_DIR}/bindings.h)
 set(typesystem_file ${CMAKE_CURRENT_SOURCE_DIR}/bindings.xml)
