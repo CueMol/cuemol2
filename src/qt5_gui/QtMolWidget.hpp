@@ -40,11 +40,11 @@ private:
     qt5_gui::QtGlView *m_pView;
 
 public:
-    void createSceneAndView();
 
     void bind(int scid, int vwid);
 
-    void loadFile(const QString &fileName);
+    // void createSceneAndView();
+    // void loadFile(const QString &fileName);
 
     inline int getSceneID() const
     {

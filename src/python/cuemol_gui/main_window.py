@@ -20,12 +20,14 @@ from cuemol_gui.gui_command_manager import GUICommandManager
 from cuemol_gui.event_manager import EventManager
 # import main
 
+import qt5gui
 from qt5gui import QtMolWidget
 
 # from main import event, CmdPrompt
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
+        # qt5gui.qt5gui_init()
         super().__init__(parent)
         self.init_ui()
         self.on_new_scene()

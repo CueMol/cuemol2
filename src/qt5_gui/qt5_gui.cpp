@@ -56,3 +56,9 @@ void fini()
 }
 
 }  // namespace qt5_gui
+
+void qt5gui_init()
+{
+    LOG_DPRINTLN("XXXXX qt5gui_init called!!");
+    qt5_gui::init();
+}

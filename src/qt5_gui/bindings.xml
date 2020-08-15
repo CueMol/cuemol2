@@ -4,15 +4,11 @@
   <load-typesystem name="typesystem_opengl.xml" generate="no" />
 
   <inject-code class="native" position="beginning">
-    namespace qt5_gui {
-      bool init();
-    }
-  </inject-code>
-
-  <inject-code class="target" position="beginning">
-    qt5_gui::init();
+    void qt5gui_init();
   </inject-code>
 
   <object-type name="QtMolWidget">
   </object-type>
+
+  <function signature="qt5gui_init()"/>
 </typesystem>
