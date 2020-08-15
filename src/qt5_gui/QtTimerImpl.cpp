@@ -10,12 +10,12 @@
 #include "moc_QtTimerImpl.cpp"
 #include <qlib/EventManager.hpp>
 
-#include <QThread>
+// #include <QThread>
 
 QtTimerImpl::QtTimerImpl()
 {
-    auto *pthr = QThread::currentThread();
-    printf("thread: %p\n", pthr);
+    // auto *pthr = QThread::currentThread();
+    // printf("thread: %p\n", pthr);
 
     m_pTimer = new QTimer(this);
     m_pTimer->setSingleShot(false);
@@ -33,7 +33,7 @@ QtTimerImpl::~QtTimerImpl()
 
 void QtTimerImpl::timerCallbackFunc()
 {
-    LOG_DPRINTLN("*** TimerCallback Called");
+    // LOG_DPRINTLN("*** TimerCallback Called");
 
     qlib::EventManager *pEM = qlib::EventManager::getInstance();
     pEM->performIdleTasks();

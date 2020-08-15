@@ -2,7 +2,7 @@ import cuemol
 from cuemol_gui.gui_command_manager import GUICommandBase
 
 
-class QtNewSceneCommand:
+class QtNewSceneCommand(GUICommandBase):
     def get_name(self):
         return "qt_new_scene"
     

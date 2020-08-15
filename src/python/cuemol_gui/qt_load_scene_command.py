@@ -4,41 +4,51 @@ import cuemol
 from cuemol_gui.gui_command_manager import GUICommandBase, GUICommandManager
 from PySide2.QtWidgets import QFileDialog, QDialog
 
-class QtLoadSceneCommand:
+def create_filter(category_name):
+    str_mgr = cuemol.svc("StreamManager")
+    info = json.loads(str_mgr.getInfoJSON2())
+
+    if category_name == "scene_reader":
+        cat_id = str_mgr.SCENE_READER
+    elif category_name == "object_reader":
+        cat_id = str_mgr.OBJECT_READER
+    elif category_name == "scene_writer":
+        cat_id = str_mgr.SCENE_WRITER
+    elif category_name == "object_writer":
+        cat_id = str_mgr.OBJECT_WRITER
+    else:
+        raise ValueError(f"Unknown category name: {category_name}")
+
+    filters = []
+    type_names = []
+    for elem in info:
+        if elem["category"] != cat_id:
+            continue
+        # TODO: candidate
+
+        # TODO: QDF type handling
+
+        descr = elem["descr"]
+        fext = elem["fext"]
+        m = re.search(r"(\w+[\w\s]+\w+)\s+\(", descr)
+        if m is None:
+            print("XXX")
+            continue
+        sub_descr = m.groups()[0]
+        ext_list = fext.split("; ") 
+        ext_fmt = " ".join(ext_list)
+
+        filters.append(f"{sub_descr} ({ext_fmt})")
+        type_names.append(elem["name"])
+    return filters, type_names
+
+
+class QtLoadSceneCommand(GUICommandBase):
     def get_name(self):
         return "qt_load_scene"
     
-    def create_filter(self, cat_id):
-        str_mgr = cuemol.svc("StreamManager")
-        info = json.loads(str_mgr.getInfoJSON2())
-
-        filters = []
-        type_names = []
-        for elem in info:
-            if elem["category"] != cat_id:
-                continue
-            # TODO: candidate
-        
-            # TODO: QDF type handling
-
-            descr = elem["descr"]
-            fext = elem["fext"]
-            m = re.search(r"(\w+[\w\s]+\w+)\s+\(", descr)
-            if m is None:
-                print("XXX")
-                continue
-            sub_descr = m.groups()[0]
-            ext_list = fext.split("; ") 
-            ext_fmt = " ".join(ext_list)
-
-            filters.append(f"{sub_descr} ({ext_fmt})")
-            type_names.append(elem["name"])
-        return filters, type_names
-
-
     def run(self, widget):
-        # 3==IOH_CAT_SCEREADER
-        filters, type_names = self.create_filter(3)
+        filters, type_names = create_filter("scene_reader")
         filter_str = ";;".join(filters)
         dlg = QFileDialog(widget, "Open scene file", "", filter_str)
         if dlg.exec() != QDialog.Accepted:

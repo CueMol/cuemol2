@@ -8,7 +8,7 @@ from PySide2.QtWidgets import QApplication
 app = QApplication(sys.argv)
 
 import cuemol
-from cuemol_gui.application import Application
+# from cuemol_gui.application import Application
 from cuemol_gui.gui_command_manager import GUICommandManager
 from cuemol_gui.qt_new_scene_command import QtNewSceneCommand
 from cuemol_gui.qt_load_scene_command import QtLoadSceneCommand

@@ -44,6 +44,12 @@ runtime_class StreamManager
   array rendArrayFromXML(object<ByteArray$>, integer);
   // array objArrayFromXML(object<ByteArray$>, integer);
 
+  // InOutHander category IDs
+  property integer OBJECT_READER => redirect(getCAT_OBJREADER, XXX) (readonly);
+  property integer OBJECT_WRITER => redirect(getCAT_OBJWRITER, XXX) (readonly);
+  property integer SCENE_READER => redirect(getCAT_SCEREADER, XXX) (readonly);
+  property integer SCENE_WRITER => redirect(getCAT_SCEWRITER, XXX) (readonly);
+
 };
 
 #endif
