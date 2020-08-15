@@ -13,9 +13,6 @@ void NewSceneCommand::run()
     auto pScMgr = qsys::SceneManager::getInstance();
     auto pSc = pScMgr->createScene();
 
-    // if (m_bIsSetActive)
-    //     pScMgr->setActiveSceneID(pSc->getUID());
-
     if (m_sceneName.isEmpty()) {
         pSc->setName(generateNewSceneName());
     } else {
@@ -30,7 +27,13 @@ void NewSceneCommand::run()
         // auto &&pchild = pWnd->createMolWidget();
         // pchild->bind(pSc->getUID(), pView->getUID());
         // pchild->showMaximized();
+        if (m_bIsSetActive)
+            pSc->setActiveViewID(pView->getUID());
     }
+
+    if (m_bIsSetActive)
+        pScMgr->setActiveSceneID(pSc->getUID());
+
 }
 
 void NewSceneCommand::runGUI(void *pwnd_info) {}

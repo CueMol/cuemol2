@@ -7,7 +7,7 @@ import json
 
 from PySide2.QtWidgets import (QApplication, QWidget, QMainWindow,
                                QGridLayout, QVBoxLayout, QHBoxLayout,
-                               QLabel, QLineEdit, QPushButton)
+                               QLabel, QLineEdit, QPushButton, QTabBar)
 from PySide2.QtWidgets import QMdiArea
 # from PySide2.QtOpenGL import QGLFormat
 from PySide2.QtWidgets import QAction
@@ -28,7 +28,7 @@ class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.init_ui()
-        self.new_scene()
+        self.on_new_scene()
         self.show()
 
     def closeEvent(self, event):
@@ -61,23 +61,9 @@ class MainWindow(QMainWindow):
     def init_ui(self):
 
         self.create_widgets()
-
-        # fopenAction = QAction('&Open file', self)
-        # fopenAction.setShortcut('Ctrl+O')
-        # fopenAction.setStatusTip('Open file')
-        # fopenAction.triggered.connect(self.onOpenFile)
-
-        exitAction = QAction(QIcon('exit.png'), '&Exit', self)
-        exitAction.setShortcut('Ctrl+Q')
-        exitAction.setStatusTip('Exit application')
-        exitAction.triggered.connect(self.on_exit_app)
+        self.create_menu()
 
         self.statusBar()
-        
-        menubar = self.menuBar()
-        fileMenu = menubar.addMenu('&File')
-        # fileMenu.addAction(fopenAction)
-        fileMenu.addAction(exitAction)
         
         self.resize(800, 600)
         self.load_settings()
@@ -91,6 +77,51 @@ class MainWindow(QMainWindow):
         evm = EventManager.get_instance()
         evm.add_listener("log", -1, -1, -1, self.on_log_event)
 
+    def create_menu(self):
+        fopenAction = QAction('&Open scene', self)
+        fopenAction.setShortcut('Ctrl+O')
+        fopenAction.setStatusTip('Open scene')
+        fopenAction.triggered.connect(self.on_open_scene)
+
+        new_scene_act = QAction('&New scene', self)
+        new_scene_act.setShortcut('Ctrl+N')
+        new_scene_act.setStatusTip('New scene')
+        new_scene_act.triggered.connect(self.on_new_scene)
+
+        exitAction = QAction(QIcon('exit.png'), '&Exit', self)
+        exitAction.setShortcut('Ctrl+Q')
+        exitAction.setStatusTip('Exit application')
+        exitAction.triggered.connect(self.on_exit_app)
+
+        menubar = self.menuBar()
+        fileMenu = menubar.addMenu('&File')
+        fileMenu.addAction(fopenAction)
+        fileMenu.addAction(new_scene_act)
+        fileMenu.addAction(exitAction)
+        
+    def active_mol_widget(self):
+        active_wnd = self._mdi_area.activeSubWindow()
+        if not active_wnd:
+            return None
+        mol_widget = active_wnd.findChild(QtMolWidget)
+        return mol_widget
+
+    def on_active_moltab_changed(self):
+        print("onActiveMolTabChanged called!!")
+        sc_mgr = cuemol.svc("SceneManager")
+
+        mol_widget = self.active_mol_widget()
+        if not mol_widget:
+            print("XXXX MainWindow::onActivateMolTabChanged(): deactivated")
+            return
+        scid = mol_widget.getSceneID()
+        vwid = mol_widget.getViewID()
+        # title = active_wnd.windowTitle()
+        print(f"XXXX MainWindow::onActivateMolTabChanged(sc:{scid} vw:{vwid})")
+
+        active_scene = sc_mgr.getScene(scid)
+        active_scene.setActiveViewID(vwid)
+
     def create_widgets(self):
         # Create tabbed mol view container
         mdi_area = QMdiArea()
@@ -99,10 +130,13 @@ class MainWindow(QMainWindow):
         mdi_area.setViewMode(QMdiArea.TabbedView)
         mdi_area.setTabsClosable(True)
         mdi_area.setTabsMovable(True)
-        # QTabBar *pBar = m_pTabWnd->findChild<QTabBar *>();
-        # pBar->setExpanding(false);
-        # connect(m_pTabWnd, SIGNAL(subWindowActivated(QMdiSubWindow *)), this,
-        #         SLOT(onActivateMolTabChanged()));
+        # Change tabbar style
+        tabbar = mdi_area.findChild(QTabBar)
+        tabbar.setExpanding(False)
+        # Listen tab events
+        mdi_area.subWindowActivated.connect(self.on_active_moltab_changed)
+        # self.connect(mdi_area, SIGNAL(subWindowActivated(QMdiSubWindow *)), this,
+        #              SLOT(onActivateMolTabChanged()))
         self._mdi_area = mdi_area
 
         # Create log widget
@@ -128,16 +162,19 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(splitter)
 
     def create_mol_widget(self):
-        mw = QtMolWidget()
-        # print(f"mol widget: {mw}")
+        mol_widget = QtMolWidget()
+        # print(f"mol widget: {mol_widget}")
         # print(f"mdi area: {self._mdi_area}")
-        self._mdi_area.addSubWindow(mw)
-        return mw
+        self._mdi_area.addSubWindow(mol_widget)
+        return mol_widget
 
-    def new_scene(self):
+    def on_new_scene(self):
         mgr = GUICommandManager.get_instance()
         mgr.run_command("qt_new_scene", self)
         
+    def on_open_scene(self):
+        mgr = GUICommandManager.get_instance()
+        mgr.run_command("qt_load_scene", self)
 
     def save_settings(self):
         qset = QSettings("BKR-LAB", "CueMol")

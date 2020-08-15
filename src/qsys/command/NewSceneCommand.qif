@@ -29,6 +29,10 @@ runtime_class NewSceneCommand extends Command
     property boolean create_view => m_bIsCreateView;
     default create_view = true;
 
+    /// Activate flag
+    property boolean activate => m_bIsSetActive;
+    default activate = false;
+
     //////////
     // properties (output)
 

@@ -10,6 +10,7 @@ class QtNewSceneCommand:
         mgr = cuemol.svc("CmdMgr")
         new_scene_cmd = mgr.getCmd("new_scene")
         new_scene_cmd.create_view = True
+        new_scene_cmd.activate = True
 
         new_scene_cmd.run()
 
@@ -23,3 +24,6 @@ class QtNewSceneCommand:
         mol_widget.showMaximized()
         mol_widget.setWindowTitle(sce.name)
         
+        # set results
+        self.result_scene = sce
+        self.result_view = viw

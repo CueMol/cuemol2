@@ -27,6 +27,8 @@ class GUICommandManager(object):
         return self._data[name]
 
     def run_command(self, name, widget):
+        if name not in self._data:
+            raise KeyError(f"{name} not found in command names")
         cmd = copy.deepcopy(self._data[name])
         cmd.run(widget)
         return cmd

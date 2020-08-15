@@ -16,6 +16,7 @@
 // #include "QtLoadSceneCommand.hpp"
 // #include "QtLoadObjectCommand.hpp"
 #include "QtGlView.hpp"
+#include "QtTimerImpl.hpp"
 
 void qt5gui_regClasses();
 void qt5gui_unregClasses();
@@ -42,6 +43,9 @@ bool init()
     // pMgr->regist<QtNewSceneCommand>();
     // pMgr->regist<QtLoadSceneCommand>();
     // pMgr->regist<QtLoadObjectCommand>();
+
+    QtTimerImpl::init();
+    // QtTextRender::init();
 
     return true;
 }
