@@ -80,26 +80,32 @@ class MainWindow(QMainWindow):
         evm.add_listener("log", -1, -1, -1, self.on_log_event)
 
     def create_menu(self):
-        fopenAction = QAction('&Open scene', self)
-        fopenAction.setShortcut('Ctrl+O')
-        fopenAction.setStatusTip('Open scene')
-        fopenAction.triggered.connect(self.on_open_scene)
+        scene_open_act = QAction('&Open scene', self)
+        scene_open_act.setShortcut('Ctrl+Shift+O')
+        scene_open_act.setStatusTip('Open scene')
+        scene_open_act.triggered.connect(self.on_open_scene)
+
+        obj_open_act = QAction('&Open file', self)
+        obj_open_act.setShortcut('Ctrl+O')
+        obj_open_act.setStatusTip('Open file')
+        obj_open_act.triggered.connect(self.on_open_object)
 
         new_scene_act = QAction('&New scene', self)
         new_scene_act.setShortcut('Ctrl+N')
         new_scene_act.setStatusTip('New scene')
         new_scene_act.triggered.connect(self.on_new_scene)
 
-        exitAction = QAction(QIcon('exit.png'), '&Exit', self)
-        exitAction.setShortcut('Ctrl+Q')
-        exitAction.setStatusTip('Exit application')
-        exitAction.triggered.connect(self.on_exit_app)
+        exit_act = QAction(QIcon('exit.png'), '&Exit', self)
+        exit_act.setShortcut('Ctrl+Q')
+        exit_act.setStatusTip('Exit application')
+        exit_act.triggered.connect(self.on_exit_app)
 
         menubar = self.menuBar()
         fileMenu = menubar.addMenu('&File')
-        fileMenu.addAction(fopenAction)
+        fileMenu.addAction(scene_open_act)
         fileMenu.addAction(new_scene_act)
-        fileMenu.addAction(exitAction)
+        fileMenu.addAction(obj_open_act)
+        fileMenu.addAction(exit_act)
         
     def active_mol_widget(self):
         active_wnd = self._mdi_area.activeSubWindow()
@@ -177,6 +183,10 @@ class MainWindow(QMainWindow):
     def on_open_scene(self):
         mgr = GUICommandManager.get_instance()
         mgr.run_command("qt_load_scene", self)
+
+    def on_open_object(self):
+        mgr = GUICommandManager.get_instance()
+        mgr.run_command("qt_load_object", self)
 
     def save_settings(self):
         qset = QSettings("BKR-LAB", "CueMol")

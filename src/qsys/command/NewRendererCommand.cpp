@@ -13,6 +13,11 @@ void NewRendererCommand::run()
 
     m_pResRend = m_pTargObj->createRenderer(m_rendTypeName);
     m_pResRend->setPropStr("name", m_rendName);
+
+    if (!m_styleName.isEmpty()) {
+        m_pResRend->applyStyles(m_styleName);
+    }
+
     if (m_bRecenView) {
         auto pTargScene = m_pTargObj->getScene();
         auto pos = m_pResRend->getCenter();
