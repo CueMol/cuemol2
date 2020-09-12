@@ -2,7 +2,7 @@ import cuemol
 
 from PySide2.QtCore import Qt
 from PySide2.QtWidgets import QDialog, QLineEdit, QPushButton, QFormLayout, QDialogButtonBox, QCheckBox, QComboBox, QVBoxLayout
-
+from cuemol_gui.mol_select_box import MolSelectBox
 
 class CreateRendererDialog(QDialog):
 
@@ -17,15 +17,16 @@ class CreateRendererDialog(QDialog):
         self.rend_name_edit = QLineEdit()
         
         # TODO: impl
-        self.mol_sel_box = QLineEdit()
-        self.recen_view_cbx = QCheckBox(self.tr("&Recenter view:"))
+        self.mol_sel_box = MolSelectBox()
+        self.sel_chk = QCheckBox(self.tr("&Selection:"))
+        self.recen_view_chk = QCheckBox(self.tr("&Recenter view:"))
 
         form_layout = QFormLayout()
         form_layout.addRow(self.tr("&Object:"), self.obj_name_edit)
         form_layout.addRow(self.tr("&Renderer type:"), self.rend_type_box)
         form_layout.addRow(self.tr("&Renderer name:"), self.rend_name_edit)
-        form_layout.addRow(self.tr("&Selection:"), self.mol_sel_box)
-        form_layout.addRow(self.recen_view_cbx)
+        form_layout.addRow(self.sel_chk, self.mol_sel_box)
+        form_layout.addRow(self.recen_view_chk)
 
         self.button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, Qt.Horizontal)
         
@@ -36,10 +37,14 @@ class CreateRendererDialog(QDialog):
 
         self.setLayout(vbox)
 
+        self.update_widgets()
+
+        # Events
         self.button_box.accepted.connect(self.accept)
         self.button_box.rejected.connect(self.reject)
 
         self.rend_type_box.currentIndexChanged.connect(self.rend_typebox_changed)
+        self.sel_chk.stateChanged.connect(self.sel_chk_changed)
 
     @property
     def object_name(self):
@@ -62,7 +67,7 @@ class CreateRendererDialog(QDialog):
 
     @property
     def recenter_view(self):
-        return self.recen_view_cbx.isChecked()
+        return self.recen_view_chk.isChecked()
 
     @property
     def mol_select_str(self):
@@ -83,6 +88,16 @@ class CreateRendererDialog(QDialog):
     def rend_typebox_changed(self, isel):
         print(f"rend_typebox_changed {isel}")
         self.set_default_rend_name()
+
+    def sel_chk_changed(self, i):
+        print(f"sel_chk_changed {i}")
+        self.update_widgets()
+
+    def update_widgets(self):
+        if self.sel_chk.isChecked():
+            self.mol_sel_box.setEnabled(True)
+        else:
+            self.mol_sel_box.setEnabled(False)
 
     def set_default_rend_name(self):
         selvalue = self.rend_type_name
