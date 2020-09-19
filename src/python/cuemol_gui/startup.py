@@ -1,13 +1,12 @@
 import sys
-import os
 
-from PySide2 import QtOpenGL
+from PySide2 import QtOpenGL  # NOQA
 from PySide2.QtWidgets import QApplication
 
 # app = Application(sys.argv)
 app = QApplication(sys.argv)
 
-import cuemol
+import cuemol  # NOQA
 # from cuemol_gui.application import Application
 
 # Load commands

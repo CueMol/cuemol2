@@ -1,29 +1,28 @@
-import sys
-import json
-from PySide2 import QtWidgets
-from PySide2 import QtGui
-from PySide2 import QtCore
 import json
 
-from PySide2.QtWidgets import (QApplication, QWidget, QMainWindow,
-                               QGridLayout, QVBoxLayout, QHBoxLayout,
-                               QLabel, QLineEdit, QPushButton, QTabBar)
-from PySide2.QtWidgets import QMdiArea
-# from PySide2.QtOpenGL import QGLFormat
-from PySide2.QtWidgets import QAction
-# from PySide2.QtWidgets import QFileDialog
-from PySide2.QtGui import QIcon, QFont
-from PySide2.QtCore import QSettings, Qt
-
-import cuemol
-from cuemol_gui.gui_command_manager import GUICommandManager
 from cuemol_gui.event_manager import EventManager
-# import main
-
-import qt5gui
+from cuemol_gui.gui_command_manager import GUICommandManager
+from PySide2 import QtCore, QtWidgets
+from PySide2.QtCore import QSettings, Qt
+# from PySide2.QtWidgets import QFileDialog
+from PySide2.QtGui import QFont, QIcon
+# from PySide2.QtOpenGL import QGLFormat
+from PySide2.QtWidgets import (
+    QAction,
+    QApplication,
+    QMainWindow,
+    QMdiArea,
+    QTabBar,
+)
 from qt5gui import QtMolWidget
 
+import cuemol
+
+# import main
+
+
 # from main import event, CmdPrompt
+
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
@@ -48,17 +47,19 @@ class MainWindow(QMainWindow):
         #     print("  target ID="+str(aTgtTypeID))
         #     print("  event ID="+str(aEvtTypeID))
         #     print("  src ID="+str(aSrcID))
-        #print("LogEvent info : "+aInfoStr)
+        # print("LogEvent info : "+aInfoStr)
         info = json.loads(str(aInfoStr))
         # print("info : "+str(info))
         # print("info.content : "+str(info["content"]))
         self.append_log(info["content"])
         #        if info["newline"]:
         #            self.appendLog("\n")
-        
+
     def append_log(self, msg):
         self._logwnd.appendPlainText(msg)
-        self._logwnd.verticalScrollBar().setValue(self._logwnd.verticalScrollBar().maximum())
+        self._logwnd.verticalScrollBar().setValue(
+            self._logwnd.verticalScrollBar().maximum()
+        )
 
     def init_ui(self):
 
@@ -66,10 +67,10 @@ class MainWindow(QMainWindow):
         self.create_menu()
 
         self.statusBar()
-        
+
         self.resize(800, 600)
         self.load_settings()
-        self.setWindowTitle('CueMol')
+        self.setWindowTitle("CueMol")
 
         # Setup log event handler
         log_mgr = cuemol.getService("MsgLog")
@@ -80,33 +81,33 @@ class MainWindow(QMainWindow):
         evm.add_listener("log", -1, -1, -1, self.on_log_event)
 
     def create_menu(self):
-        scene_open_act = QAction('&Open scene', self)
-        scene_open_act.setShortcut('Ctrl+Shift+O')
-        scene_open_act.setStatusTip('Open scene')
+        scene_open_act = QAction("&Open scene", self)
+        scene_open_act.setShortcut("Ctrl+Shift+O")
+        scene_open_act.setStatusTip("Open scene")
         scene_open_act.triggered.connect(self.on_open_scene)
 
-        obj_open_act = QAction('&Open file', self)
-        obj_open_act.setShortcut('Ctrl+O')
-        obj_open_act.setStatusTip('Open file')
+        obj_open_act = QAction("&Open file", self)
+        obj_open_act.setShortcut("Ctrl+O")
+        obj_open_act.setStatusTip("Open file")
         obj_open_act.triggered.connect(self.on_open_object)
 
-        new_scene_act = QAction('&New scene', self)
-        new_scene_act.setShortcut('Ctrl+N')
-        new_scene_act.setStatusTip('New scene')
+        new_scene_act = QAction("&New scene", self)
+        new_scene_act.setShortcut("Ctrl+N")
+        new_scene_act.setStatusTip("New scene")
         new_scene_act.triggered.connect(self.on_new_scene)
 
-        exit_act = QAction(QIcon('exit.png'), '&Exit', self)
-        exit_act.setShortcut('Ctrl+Q')
-        exit_act.setStatusTip('Exit application')
+        exit_act = QAction(QIcon("exit.png"), "&Exit", self)
+        exit_act.setShortcut("Ctrl+Q")
+        exit_act.setStatusTip("Exit application")
         exit_act.triggered.connect(self.on_exit_app)
 
         menubar = self.menuBar()
-        fileMenu = menubar.addMenu('&File')
+        fileMenu = menubar.addMenu("&File")
         fileMenu.addAction(scene_open_act)
         fileMenu.addAction(new_scene_act)
         fileMenu.addAction(obj_open_act)
         fileMenu.addAction(exit_act)
-        
+
     def active_mol_widget(self):
         active_wnd = self._mdi_area.activeSubWindow()
         if not active_wnd:
@@ -154,7 +155,7 @@ class MainWindow(QMainWindow):
         f.setStyleHint(QFont.TypeWriter)
         logwnd.setFont(f)
         # print("Logwnd minimumSizeHint=" + str( self._logwnd.minimumSizeHint() ))
-        logwnd.setMinimumSize(1,1)
+        logwnd.setMinimumSize(1, 1)
         self._logwnd = logwnd
 
         # Create molview/logwnd splitter
@@ -165,7 +166,7 @@ class MainWindow(QMainWindow):
         # splitter.setStretchFactor(0, 20)
         # splitter.setStretchFactor(1, 1)
         self._splitter = splitter
-        
+
         # Set central widget
         self.setCentralWidget(splitter)
 
@@ -179,7 +180,7 @@ class MainWindow(QMainWindow):
     def on_new_scene(self):
         mgr = GUICommandManager.get_instance()
         mgr.run_command("qt_new_scene", self)
-        
+
     def on_open_scene(self):
         mgr = GUICommandManager.get_instance()
         mgr.run_command("qt_load_scene", self)

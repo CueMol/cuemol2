@@ -1,0 +1,16 @@
+[tool.black]
+line-length = 88
+exclude = "__init__.py"
+
+[tool.isort]
+# settings which does not conflict with black
+# (https://github.com/timothycrosley/isort/issues/694)
+skip="__init__.py"
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+line_length = 88
+
+known_first_party = ["cuemol"]
+default_section = "THIRDPARTY"

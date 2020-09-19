@@ -2,21 +2,47 @@
 CueMol utility functions
 """
 
-# import _cuemol_internal as ci
 import importlib
+
 from cuemol.internal_loader import import_internal
 from cuemol.wrapper_base import WrapperBase
 
-__all__ = ['getWrpClass', 'createWrapper', 'conv_dict_arg', 'createObj', 'getService', 'println',
-           'iswrapper', 'isimpl', 'isscene', 'isview', 'isobj', 'isrend', 'issel', 'iscol',
-           'scene', 'view', 'createScene', 'svc', 'obj', 'rend',
-           'sceMgr', 'strMgr',
-           'vec', 'sel', 'col', 'timeval', 'copy',
-           'UndoTxn', 'txn']
+__all__ = [
+    "getWrpClass",
+    "createWrapper",
+    "conv_dict_arg",
+    "createObj",
+    "getService",
+    "println",
+    "iswrapper",
+    "isimpl",
+    "isscene",
+    "isview",
+    "isobj",
+    "isrend",
+    "issel",
+    "iscol",
+    "scene",
+    "view",
+    "createScene",
+    "svc",
+    "obj",
+    "rend",
+    "sceMgr",
+    "strMgr",
+    "vec",
+    "sel",
+    "col",
+    "timeval",
+    "copy",
+    "UndoTxn",
+    "txn",
+]
 
 ci = import_internal()
 
 ##########
+
 
 def getWrpClass(clsnm):
     """Get wrapper class for class clsnm.
@@ -35,6 +61,7 @@ def getWrpClass(clsnm):
             continue
         cls = m.__dict__[clsnm]
         return cls
+
 
 def createWrapper(obj):
     if obj is None:
@@ -57,6 +84,7 @@ def createWrapper(obj):
     else:
         return obj
 
+
 def conv_dict_arg(d):
     assert type(d) == dict
     result = {}
@@ -67,67 +95,83 @@ def conv_dict_arg(d):
             result[k] = v
     return result
 
+
 def createObj(name):
-    return createWrapper( ci.createObj(name) )
+    return createWrapper(ci.createObj(name))
+
 
 def getService(name):
-    return createWrapper( ci.getService(name) )
+    return createWrapper(ci.getService(name))
+
 
 # def print(astr):
 #     return ci.print(astr)
 
+
 def println(astr):
-    return ci.print(astr+"\n")
+    return ci.print(astr + "\n")
+
 
 ##########
+
 
 def iswrapper(aObj):
     return isinstance(aObj, WrapperBase)
 
+
 def isimpl(aObj, aIfName):
     return isinstance(aObj, getWrpClass(aIfName))
+
 
 def isscene(aObj):
     return isimpl(aObj, "Scene")
 
+
 def isview(aObj):
     return isimpl(aObj, "View")
+
 
 def isobj(aObj):
     return isimpl(aObj, "Object")
 
+
 def isrend(aObj):
     return isimpl(aObj, "Renderer")
-    
+
+
 def issel(aObj):
     return isimpl(aObj, "MolSelection")
+
 
 def iscol(aObj):
     return isimpl(aObj, "AbstractColor")
 
+
 ##########
+
 
 def scene(aScene=None):
     if isscene(aScene):
         return aScene
 
     mgr = sceMgr()
-    scid=None
+    scid = None
     if aScene is None:
         sstr = mgr.getSceneUIDList()
-        if sstr=="":
+        if sstr == "":
             # No scene exists
             # --> Create default scene
             return createScene()
         scid = mgr.activeSceneID
-        if scid==0:
+        if scid == 0:
             raise RuntimeError("Active scene ID is not defined!!")
     elif isinstance(aScene, int):
         scid = aScene
     else:
-        raise RuntimeError("scene "+str(aScene)+" not found")
+        raise RuntimeError("scene " + str(aScene) + " not found")
 
     return mgr.getScene(scid)
+
 
 def view(aScene=None, aView=None):
     sce = scene(aScene)
@@ -136,10 +180,10 @@ def view(aScene=None, aView=None):
         return aView
 
     mgr = sceMgr()
-    vwid=None
+    vwid = None
 
     if aView is None:
-        if sce.getViewCount()==0:
+        if sce.getViewCount() == 0:
             # No scene exists
             # --> Create default view & set as active
             vw = sce.createView()
@@ -148,7 +192,7 @@ def view(aScene=None, aView=None):
 
         # Get active view (from sce)
         vwid = sce.activeViewID
-        if vwid==0:
+        if vwid == 0:
             return None
             # raise RuntimeError("Active view ID is not defined in scene: "+str(sce))
     elif isinstance(aView, int):
@@ -160,20 +204,23 @@ def view(aScene=None, aView=None):
 
     return mgr.getView(vwid)
 
+
 def createScene():
     mgr = sceMgr()
-    scene = mgr.createScene();
+    scene = mgr.createScene()
     # set created scene as the active scene
     mgr.setActiveSceneID(scene.uid)
     return scene
 
+
 def svc(name):
     return getService(name)
+
 
 def obj(aName, aScene=None):
     if isobj(aName):
         return aName
-    
+
     sc = scene(aScene)
 
     obj = None
@@ -182,10 +229,11 @@ def obj(aName, aScene=None):
     elif isinstance(aName, int):
         obj = sc.getObject(aName)
 
-    if obj==None:
-        raise RuntimeError("object "+str(aName)+" not found")
+    if obj is None:
+        raise RuntimeError("object " + str(aName) + " not found")
 
     return obj
+
 
 def rend(aRend, aObj=None):
     if isrend(aRend):
@@ -206,30 +254,35 @@ def rend(aRend, aObj=None):
             rend = o.getRendererByName(aRend)
         elif isinstance(aRend, int):
             rend = o.getRenderer(aRend)
-    
+
     if rend is None:
-        raise RuntimeError("renderer "+str(aRend)+" not found")
+        raise RuntimeError("renderer " + str(aRend) + " not found")
 
     return rend
 
+
 ##########
+
 
 def sceMgr():
     return getService("SceneManager")
 
+
 def strMgr():
     return getService("StreamManager")
 
+
 def vec(aX, aY, aZ, *args):
-    v = createObj("Vector");
-    v.x = aX;
-    v.y = aY;
-    v.z = aZ;
+    v = createObj("Vector")
+    v.x = aX
+    v.y = aY
+    v.z = aZ
     if len(args) == 1:
         v.w = args[0]
     elif len(args) > 1:
         raise RuntimeError("too many args for vec()")
-    return v;
+    return v
+
 
 def sel(aSelStr, aScene=None):
     if issel(aSelStr):
@@ -240,6 +293,7 @@ def sel(aSelStr, aScene=None):
     selobj.compile(aSelStr, s.uid)
     return selobj
 
+
 def col(aColStr, aScene=None):
     if iscol(aColStr):
         return aColStr
@@ -248,12 +302,15 @@ def col(aColStr, aScene=None):
     color = stylem.compileColor(aColStr, s.uid)
     return color
 
+
 def timeval(aMilli):
     tv = createObj("TimeValue")
     tv.millisec = aMilli
     return tv
 
+
 ##########
+
 
 def copy(aObj, aNewObjName):
     objin = obj(aObj)
@@ -266,58 +323,52 @@ def copy(aObj, aNewObjName):
     s.addObject(newobj)
     return newobj
 
+
 ##########
 
+
 class UndoTxn:
-
     def __init__(self, aMsg=None, aScene=None):
-#        print('__init__')
+        #        print('__init__')
 
-        if aScene==None:
-            self.scene = cuemol.scene()
+        if aScene is None:
+            self.scene = scene()
         else:
             self.scene = aScene
 
-        if aMsg==None:
+        if aMsg is None:
             self.msg = ""
         else:
             self.msg = aMsg
 
-
-#    def __del__(self):
-#        print('__del__')
+    #    def __del__(self):
+    #        print('__del__')
 
     def __enter__(self):
-#        print('__enter__')
+        #        print('__enter__')
         self.scene.startUndoTxn(self.msg)
-        #raise ValueError # [LABEL C]
+        # raise ValueError # [LABEL C]
         return self
 
     def __exit__(self, exception_type, exception_value, traceback):
-#        print('__exit__')
-        if exception_value==None:
+        #        print('__exit__')
+        if exception_value is None:
             self.scene.commitUndoTxn()
         else:
             self.scene.rollbackUndoTxn()
-            print('  exception_type:', exception_type)
-            print('  exception_value:', exception_value)
-            print('  traceback:', traceback)
+            print("  exception_type:", exception_type)
+            print("  exception_value:", exception_value)
+            print("  traceback:", traceback)
 
 
 def txn(aScene, aMsg, aFunc):
-    ## EDIT TXN START
+    # EDIT TXN START
     aScene.startUndoTxn(aMsg)
     try:
         aFunc()
-#    except Exception, e:
-#        print e, 'error occurred'
-#        aScene.rollbackUndoTxn()
-#        return False
-    except:
+    except Exception:
         aScene.rollbackUndoTxn()
         return False
     aScene.commitUndoTxn()
-    ## EDIT TXN END
+    # EDIT TXN END
     return True
-
-

@@ -2,24 +2,25 @@
 CueMol File I/O related functions
 """
 
-import sys
-import os
 import json
+import os
 
 import cuemol as cm
-from . import renderer
 from cuemol.internal_loader import import_internal
+
+from . import renderer
 
 ci = import_internal()
 
-__all__ = ['loadScene', 'loadObject', 'load']
+__all__ = ["loadScene", "loadObject", "load"]
+
 
 def guessFormatFromFname(aPathName, aFmt=None):
     sm = cm.strMgr()
-    
+
     info = json.loads(sm.getInfoJSON2())
     # print("", info)
-    
+
     # Check compression fileext
     basenm, ext = os.path.splitext(aPathName)
     comp = ""
@@ -30,14 +31,14 @@ def guessFormatFromFname(aPathName, aFmt=None):
     elif ext == ".xz":
         comp = "xz"
         filenm = basenm
-        
+
     basenm = os.path.basename(filenm)
 
     # Search matching fext in info data
     for elem in info:
         if aFmt is not None:
             # Format name is specified
-            if aFmt==elem["name"]:
+            if aFmt == elem["name"]:
                 return (elem, basenm, comp)
         else:
             # Guess format from file name
@@ -48,7 +49,7 @@ def guessFormatFromFname(aPathName, aFmt=None):
                     print("fext=", ext, "")
                     return (elem, basenm, comp)
 
-    raise RuntimeError("cannot guess file format from pathname: "+aPathName)
+    raise RuntimeError("cannot guess file format from pathname: " + aPathName)
 
 
 def loadScene(aFileName, aName, aScene, aFmtName, aOpts=None):
@@ -58,12 +59,12 @@ def loadScene(aFileName, aName, aScene, aFmtName, aOpts=None):
     reader = strMgr.createHandler(aFmtName, 3)
 
     if aOpts is not None:
-        for k,v in aOpts.items():
-            print("scene reader set prop: k=",k,"v=",v)
+        for k, v in aOpts.items():
+            print("scene reader set prop: k=", k, "v=", v)
             ci.setProp(reader._wrapped, k, v)
 
     reader.setPath(aFileName)
-     
+
     reader.attach(scene)
     reader.read()
     reader.detach()
@@ -80,9 +81,9 @@ def loadObject(aFileName, aName, aScene, aFmtName, aOpts=None):
     reader = strMgr.createHandler(aFmtName, 0)
 
     if aOpts is not None:
-        for k,v in aOpts.items():
-            print("reader:",reader._wrapped)
-            print("reader set prop: k=",k,"v=",v)
+        for k, v in aOpts.items():
+            print("reader:", reader._wrapped)
+            print("reader set prop: k=", k, "v=", v)
             ci.setProp(reader._wrapped, k, v)
             print(ci.getProp(reader._wrapped, k))
 
@@ -90,8 +91,8 @@ def loadObject(aFileName, aName, aScene, aFmtName, aOpts=None):
     newobj = reader.createDefaultObj()
 
     reader.attach(newobj)
-    reader.read();
-    reader.detach();
+    reader.read()
+    reader.detach()
     if aName is not None:
         newobj.name = aName
     scene.addObject(newobj)
@@ -106,15 +107,15 @@ def saveObject(aObj, aFileName, aFmtName, aOpts=None):
     writer = strMgr.createHandler(aFmtName, 1)
 
     if aOpts is not None:
-        for k,v in aOpts.items():
-            print("writer set prop: k=",k,"v=",v)
+        for k, v in aOpts.items():
+            print("writer set prop: k=", k, "v=", v)
             ci.setProp(writer._wrapped, k, v)
 
     writer.setPath(aFileName)
 
     writer.attach(obj)
-    writer.write();
-    writer.detach();
+    writer.write()
+    writer.detach()
 
 
 def getReaderCategoryID(format):
@@ -126,7 +127,7 @@ def getReaderCategoryID(format):
 
 def load(filename, name=None, format=None, scene=None):
 
-    scMgr = cm.sceMgr()
+    # scMgr = cm.sceMgr()
 
     scene = cm.scene(scene)
 
@@ -137,7 +138,7 @@ def load(filename, name=None, format=None, scene=None):
     print("guessed comp mode: ", comp)
 
     if format is None:
-        format = gformat['name']
+        format = gformat["name"]
 
     if name is None:
         name = gname
@@ -152,5 +153,4 @@ def load(filename, name=None, format=None, scene=None):
         return loadScene(filename, name, scene, format)
     else:
         # Unknown category ID, throw exception here
-        raise RuntimeError("Unknown category ID:"+str(ncat))
-
+        raise RuntimeError("Unknown category ID:" + str(ncat))

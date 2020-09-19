@@ -1,5 +1,5 @@
 import cuemol
-import sys
+
 
 class EventManager:
     def __init__(self):
@@ -20,17 +20,17 @@ class EventManager:
             obs = self._slot[sSlotID]
             if callable(obs):
                 obs(aSlotID, aCatStr, aTgtTypeID, aEvtTypeID, aSrcID, aInfoStr)
-                
+
     def add_listener(self, aCatStr, aSrcType, aEvtType, aSrcID, aObs):
         slot_id = self._mgr.append(aCatStr, aSrcType, aEvtType, aSrcID)
         # dd("event listener registered: <"+aCatStr+">, id="+slot_id);
-        self._slot[str(slot_id)] = aObs;
-        return slot_id;
+        self._slot[str(slot_id)] = aObs
+        return slot_id
 
     def remove_listener(self, nID):
         if self._mgr:
             self._mgr.remove(nID)
-  
+
         # dd("EventManager, unload slot: "+nID);
         # this.mSlot[nID.toString()] = null;
         del self._slot[str(nID)]
