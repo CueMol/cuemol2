@@ -290,8 +290,11 @@ def sel(aSelStr, aScene=None):
     s = scene(aScene)
     # print("sel> scene="+str(s)+"\n")
     selobj = createObj("SelCommand")
-    selobj.compile(aSelStr, s.uid)
-    return selobj
+    if selobj.compile(aSelStr, s.uid):
+        return selobj
+    else:
+        # compile failed
+        raise RuntimeError(selobj.error_msg)
 
 
 def col(aColStr, aScene=None):

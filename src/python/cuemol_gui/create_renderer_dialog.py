@@ -1,23 +1,30 @@
+from cuemol_gui.mol_select_box import MolSelectBox
+from PySide2.QtCore import Qt
+from PySide2.QtWidgets import (
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QDialogButtonBox,
+    QFormLayout,
+    QLineEdit,
+    QVBoxLayout,
+)
+
 import cuemol
 
-from PySide2.QtCore import Qt
-from PySide2.QtWidgets import QDialog, QLineEdit, QPushButton, QFormLayout, QDialogButtonBox, QCheckBox, QComboBox, QVBoxLayout
-from cuemol_gui.mol_select_box import MolSelectBox
 
 class CreateRendererDialog(QDialog):
-
-    def __init__(self, n_scene_id, parent=None):
+    def __init__(self, scene_id, parent=None):
         super().__init__(parent)
-        self.n_scene_id = n_scene_id
-        
+        self.scene_id = scene_id
+
         self.setWindowTitle(self.tr("Create renderer"))
 
         self.obj_name_edit = QLineEdit()
         self.rend_type_box = QComboBox()
         self.rend_name_edit = QLineEdit()
-        
-        # TODO: impl
-        self.mol_sel_box = MolSelectBox()
+
+        self.mol_sel_box = MolSelectBox(scene_id=scene_id)
         self.sel_chk = QCheckBox(self.tr("&Selection:"))
         self.recen_view_chk = QCheckBox(self.tr("&Recenter view:"))
 
@@ -28,12 +35,14 @@ class CreateRendererDialog(QDialog):
         form_layout.addRow(self.sel_chk, self.mol_sel_box)
         form_layout.addRow(self.recen_view_chk)
 
-        self.button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel, Qt.Horizontal)
-        
+        self.button_box = QDialogButtonBox(
+            QDialogButtonBox.Ok | QDialogButtonBox.Cancel, Qt.Horizontal
+        )
+
         vbox = QVBoxLayout()
-        vbox.addLayout(form_layout);
-        vbox.addWidget(self.button_box);
-        vbox.setContentsMargins(20, 20, 20, 20);
+        vbox.addLayout(form_layout)
+        vbox.addWidget(self.button_box)
+        vbox.setContentsMargins(20, 20, 20, 20)
 
         self.setLayout(vbox)
 
@@ -84,7 +93,7 @@ class CreateRendererDialog(QDialog):
         # reset init state
         self.rend_type_box.setCurrentIndex(0)
         self.rend_typebox_changed(0)
-            
+
     def rend_typebox_changed(self, isel):
         print(f"rend_typebox_changed {isel}")
         self.set_default_rend_name()
@@ -110,10 +119,10 @@ class CreateRendererDialog(QDialog):
         self.rend_name_edit.setText(default_name)
 
     def create_default_rend_name(self, rend_type_name):
-        print(f"setDefaultRendName> scene ID={self.n_scene_id}")
-            
+        print(f"setDefaultRendName> scene ID={self.scene_id}")
+
         mgr = cuemol.svc("SceneManager")
-        sce = mgr.getScene(self.n_scene_id)
+        sce = mgr.getScene(self.scene_id)
         idx = 0
         while True:
             s = f"{rend_type_name}{idx}"

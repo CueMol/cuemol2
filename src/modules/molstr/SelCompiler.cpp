@@ -108,8 +108,10 @@ bool SelCompiler::checkNameRef(const char *name)
 
   LString value = pPM->getStrData("sel", name, nScopeID);
   if (value.isEmpty()) {
-    LOG_DPRINTLN("SelCompiler> undefined reference %s", name);
-    return false;
+      LString msg = LString::format("undefined reference %s", name);  
+      LOG_DPRINTLN(msg.c_str());
+      getInstance()->setErrorMsg(msg);
+      return false;
   }
 
   return true;

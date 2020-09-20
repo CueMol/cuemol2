@@ -97,7 +97,9 @@ bool SelCommand::compile(const LString &com, qlib::uid_t nCtxtID /*= qlib::inval
 
   // Enter new context
   qsys::AutoStyleCtxt ctxt(nCtxtID);
+  SelCompiler::getInstance()->setErrorMsg("");
   pnode = SelCompiler::getInstance()->compile(com);
+  m_errorMsg = SelCompiler::getInstance()->getErrorMsg();
   
   if (pnode==NULL) {
     return false;
