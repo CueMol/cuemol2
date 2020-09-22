@@ -6,6 +6,10 @@ from PySide2.QtWidgets import QApplication
 # app = Application(sys.argv)
 app = QApplication(sys.argv)
 
+# Set application settings
+app.setOrganizationName("BKR-LAB")
+app.setApplicationName("CueMol")
+
 import cuemol  # NOQA
 # from cuemol_gui.application import Application
 

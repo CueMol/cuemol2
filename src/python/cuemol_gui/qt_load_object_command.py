@@ -1,11 +1,13 @@
 from pathlib import Path
-import re
-import json
-import cuemol
-from cuemol_gui.gui_command_manager import GUICommandBase, GUICommandManager
-from PySide2.QtWidgets import QFileDialog, QDialog
-from cuemol_gui.qt_load_scene_command import create_filter
+
 from cuemol_gui.create_renderer_dialog import CreateRendererDialog
+from cuemol_gui.gui_command_manager import GUICommandBase
+from cuemol_gui.history import update_molsel_history
+from cuemol_gui.qt_load_scene_command import create_filter
+from PySide2.QtWidgets import QDialog, QFileDialog
+
+import cuemol
+
 
 class QtLoadObjectCommand(GUICommandBase):
     def get_name(self):
@@ -33,7 +35,7 @@ class QtLoadObjectCommand(GUICommandBase):
             if f == sel_filter:
                 file_fmt = t
                 break
-        assert file_fmt != None
+        assert file_fmt is not None
 
         print(f"selected: {file_path} {file_fmt}")
 
@@ -49,11 +51,10 @@ class QtLoadObjectCommand(GUICommandBase):
         if not active_scene:
             # TODO: show msgbox
             return
-        
+
         # Object Setup Dialog
         crdlg = CreateRendererDialog(active_scene_id, widget)
-        rend_types = self.search_compatible_rend_names(file_fmt)
-        crdlg.init_rend_type_box(rend_types)
+        crdlg.setup_by_file_format(file_fmt)
         crdlg.object_name = self.create_default_obj_name(file_path)
         if crdlg.exec() != QDialog.Accepted:
             return
@@ -79,24 +80,23 @@ class QtLoadObjectCommand(GUICommandBase):
         new_rend_cmd.renderer_type = crdlg.rend_type_name
         new_rend_cmd.renderer_name = crdlg.renderer_name
         new_rend_cmd.recenter_view = crdlg.recenter_view
-        new_rend_cmd.default_style_name = "DefaultCPKColoring"
-        
+        # new_rend_cmd.default_style_name = "DefaultCPKColoring"
+
         new_rend_cmd.run()
+
+        # Set default styles
+        new_rend_cmd.result_renderer.applyStyles("DefaultCPKColoring")
+
+        # Set selection
+        sel = crdlg.mol_select
+        if sel is not None:
+            new_rend_cmd.result_renderer.sel = sel
+            # save to history
+            update_molsel_history(sel.toString())
 
         # set results
         self.result_renderer = new_rend_cmd.result_renderer
 
-        # Set default styles
-        # self.result_renderer.applyStyles("DefaultCPKColoring")
-        
     @staticmethod
     def create_default_obj_name(file_path):
         return Path(file_path).stem
-
-    def search_compatible_rend_names(self, file_fmt):
-        mgr = cuemol.svc("StreamManager")
-        reader = mgr.createHandler(file_fmt, mgr.OBJECT_READER)
-        tmp_obj = reader.createDefaultObj()
-        names = tmp_obj.searchCompatibleRendererNames()
-        return names.split(",")
-    

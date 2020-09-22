@@ -1,4 +1,6 @@
 import json
+
+from cuemol_gui.history import get_molsel_history
 from PySide2.QtCore import Qt
 from PySide2.QtWidgets import (
     QCheckBox,
@@ -34,11 +36,17 @@ class MolSelectBox(QComboBox):
     def selection(self):
         return self._sel
 
+    def build_box_history(self):
+        histlist = get_molsel_history()
+        for s in histlist:
+            if s != "*" and s != "none" and s != "":
+                self.addItem(s, s)
+        self.insertSeparator(self.count())
+
     def build_box(self):
         self.clear()
 
         initselval = None
-        # TODO: history
 
         # Append the original selection
         print(f"MolSel.buildBox> orig sel: <{self._sel}>")
@@ -80,6 +88,9 @@ class MolSelectBox(QComboBox):
         if initselval is None:
             initselval = ""  # init value is not set --> set as "none"
 
+        # History
+        self.build_box_history()
+
         # Scene's selection defs
         stylem = cuemol.getService("StyleManager")
         if sce_id is not None:
@@ -103,15 +114,15 @@ class MolSelectBox(QComboBox):
         for em in seldefs:
             self.addItem(em, em)
         return len(seldefs)
-        
+
     def content_changed(self, text):
         selstr = self.currentText()
         print(f"content_changed: {selstr}")
         try:
             sel = cuemol.sel(selstr, self._scene_id)
-        except RuntimeError as e:
+        except ValueError as e:
             print(f"compile {selstr} failed. {e}")
             self._sel = None
             return
-            
+
         self._sel = sel

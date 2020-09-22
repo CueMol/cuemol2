@@ -82,6 +82,10 @@ class CreateRendererDialog(QDialog):
     def mol_select_str(self):
         return self.mol_sel_box.text()
 
+    @property
+    def mol_select(self):
+        return self.mol_sel_box.selection
+
     def init_rend_type_box(self, rend_types):
         for rend_type in rend_types:
             if rend_type.startswith("*"):
@@ -129,3 +133,20 @@ class CreateRendererDialog(QDialog):
             if sce.getRendByName(s) is None:
                 return s
             idx += 1
+
+    def setup_by_file_format(self, file_fmt):
+        mgr = cuemol.svc("StreamManager")
+        reader = mgr.createHandler(file_fmt, mgr.OBJECT_READER)
+        tmp_obj = reader.createDefaultObj()
+        names = tmp_obj.searchCompatibleRendererNames()
+        rend_types = names.split(",")
+        self.init_rend_type_box(rend_types)
+
+        if hasattr(tmp_obj, "sel"):
+            self.sel_chk.setEnabled(True)
+        else:
+            self.sel_chk.setEnabled(False)
+            self.sel_chk.setChecked(False)
+            self.mol_sel_box.setEnabled(False)
+
+        self.update_widgets()

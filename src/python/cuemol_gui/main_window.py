@@ -190,7 +190,8 @@ class MainWindow(QMainWindow):
         mgr.run_command("qt_load_object", self)
 
     def save_settings(self):
-        qset = QSettings("BKR-LAB", "CueMol")
+        # qset = QSettings("BKR-LAB", "CueMol")
+        qset = QSettings()
         qset.beginGroup("mainwindow")
 
         qset.setValue("geometry", self.saveGeometry())
@@ -207,7 +208,8 @@ class MainWindow(QMainWindow):
         qset.endGroup()
 
     def load_settings(self):
-        qset = QSettings("BKR-LAB", "CueMol")
+        # qset = QSettings("BKR-LAB", "CueMol")
+        qset = QSettings()
         qset.beginGroup("mainwindow")
 
         self.restoreGeometry(qset.value("geometry", self.saveGeometry()))

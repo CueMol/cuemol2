@@ -294,7 +294,7 @@ def sel(aSelStr, aScene=None):
         return selobj
     else:
         # compile failed
-        raise RuntimeError(selobj.error_msg)
+        raise ValueError(selobj.error_msg)
 
 
 def col(aColStr, aScene=None):
