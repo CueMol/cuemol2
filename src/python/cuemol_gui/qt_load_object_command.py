@@ -7,13 +7,14 @@ from cuemol_gui.qt_load_scene_command import create_filter
 from PySide2.QtWidgets import QDialog, QFileDialog
 
 import cuemol
+from cuemol.undo_txn import UndoTxn
 
 
 class QtLoadObjectCommand(GUICommandBase):
     def get_name(self):
         return "qt_load_object"
 
-    def run(self, widget):
+    def run(self, widget, undo_txn):
 
         filters, type_names = create_filter("object_reader")
 
@@ -60,39 +61,40 @@ class QtLoadObjectCommand(GUICommandBase):
             return
         obj_name = crdlg.object_name
 
-        # Emit load_object command
-        cmd_mgr = cuemol.svc("CmdMgr")
-        load_obj_cmd = cmd_mgr.getCmd("load_object")
+        with UndoTxn("load object", active_scene, undo_txn):
+            # Emit load_object command
+            cmd_mgr = cuemol.svc("CmdMgr")
+            load_obj_cmd = cmd_mgr.getCmd("load_object")
 
-        load_obj_cmd.target_scene = active_scene
-        load_obj_cmd.file_path = file_path
-        load_obj_cmd.object_name = obj_name
-        load_obj_cmd.file_format = file_fmt
+            load_obj_cmd.target_scene = active_scene
+            load_obj_cmd.file_path = file_path
+            load_obj_cmd.object_name = obj_name
+            load_obj_cmd.file_format = file_fmt
 
-        load_obj_cmd.run()
+            load_obj_cmd.run()
 
-        # set results
-        self.result_object = load_obj_cmd.result_object
+            # set results
+            self.result_object = load_obj_cmd.result_object
 
-        # Create initial renderer
-        new_rend_cmd = cmd_mgr.getCmd("new_renderer")
-        new_rend_cmd.target_object = self.result_object
-        new_rend_cmd.renderer_type = crdlg.rend_type_name
-        new_rend_cmd.renderer_name = crdlg.renderer_name
-        new_rend_cmd.recenter_view = crdlg.recenter_view
-        # new_rend_cmd.default_style_name = "DefaultCPKColoring"
+            # Create initial renderer
+            new_rend_cmd = cmd_mgr.getCmd("new_renderer")
+            new_rend_cmd.target_object = self.result_object
+            new_rend_cmd.renderer_type = crdlg.rend_type_name
+            new_rend_cmd.renderer_name = crdlg.renderer_name
+            new_rend_cmd.recenter_view = crdlg.recenter_view
+            # new_rend_cmd.default_style_name = "DefaultCPKColoring"
 
-        new_rend_cmd.run()
+            new_rend_cmd.run()
 
-        # Set default styles
-        new_rend_cmd.result_renderer.applyStyles("DefaultCPKColoring")
+            # Set default styles
+            new_rend_cmd.result_renderer.applyStyles("DefaultCPKColoring")
 
-        # Set selection
-        sel = crdlg.mol_select
-        if sel is not None:
-            new_rend_cmd.result_renderer.sel = sel
-            # save to history
-            update_molsel_history(sel.toString())
+            # Set selection
+            sel = crdlg.mol_select
+            if sel is not None:
+                new_rend_cmd.result_renderer.sel = sel
+                # save to history
+                update_molsel_history(sel.toString())
 
         # set results
         self.result_renderer = new_rend_cmd.result_renderer

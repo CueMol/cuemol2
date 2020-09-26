@@ -29,8 +29,8 @@ class MainWindow(QMainWindow):
         # qt5gui.qt5gui_init()
         super().__init__(parent)
         self.init_ui()
-        self.on_new_scene()
         self.show()
+        self.on_new_scene()
 
     def closeEvent(self, event):
         print("MainWindow.closeEvent called!!")
@@ -81,6 +81,10 @@ class MainWindow(QMainWindow):
         evm.add_listener("log", -1, -1, -1, self.on_log_event)
 
     def create_menu(self):
+        menubar = self.menuBar()
+
+        # File menu
+
         scene_open_act = QAction("&Open scene", self)
         scene_open_act.setShortcut("Ctrl+Shift+O")
         scene_open_act.setStatusTip("Open scene")
@@ -101,33 +105,62 @@ class MainWindow(QMainWindow):
         exit_act.setStatusTip("Exit application")
         exit_act.triggered.connect(self.on_exit_app)
 
-        menubar = self.menuBar()
         fileMenu = menubar.addMenu("&File")
         fileMenu.addAction(scene_open_act)
         fileMenu.addAction(new_scene_act)
         fileMenu.addAction(obj_open_act)
         fileMenu.addAction(exit_act)
 
+        # Edit menu
+        
+        undo_act = QAction("&Undo", self)
+        undo_act.setShortcut("Ctrl+Z")
+        undo_act.setStatusTip("Undo")
+        undo_act.triggered.connect(self.on_undo)
+
+        redo_act = QAction("&Redo", self)
+        redo_act.setShortcut("Ctrl+Shift+Z")
+        redo_act.setStatusTip("Redo")
+        redo_act.triggered.connect(self.on_redo)
+
+        editMenu = menubar.addMenu("&Edit")
+        editMenu.addAction(undo_act)
+        editMenu.addAction(redo_act)
+
     def active_mol_widget(self):
         active_wnd = self._mdi_area.activeSubWindow()
-        if not active_wnd:
+        print(f"active_wnd: {active_wnd}")
+        if active_wnd is None:
             return None
         mol_widget = active_wnd.findChild(QtMolWidget)
+        print(f"active mol_widget: {mol_widget}")
         return mol_widget
+
+    def active_scene_view_ids(self):
+        mol_widget = self.active_mol_widget()
+        if mol_widget is None:
+            return None, None
+        scid = mol_widget.getSceneID()
+        vwid = mol_widget.getViewID()
+        print(f"active : {scid}, {vwid}")
+        return scid, vwid
+
+    def active_scene_view(self):
+        scid, vwid = self.active_scene_view_ids()
+        if scid is None:
+            return None, None
+        mgr = cuemol.svc("SceneManager")
+        return mgr.getScene(scid),  mgr.getScene(vwid)
 
     def on_active_moltab_changed(self):
         print("onActiveMolTabChanged called!!")
-        sc_mgr = cuemol.svc("SceneManager")
-
-        mol_widget = self.active_mol_widget()
-        if not mol_widget:
+        scid, vwid = self.active_scene_view_ids()
+        if scid is None:
             print("XXXX MainWindow::onActivateMolTabChanged(): deactivated")
             return
-        scid = mol_widget.getSceneID()
-        vwid = mol_widget.getViewID()
-        # title = active_wnd.windowTitle()
-        print(f"XXXX MainWindow::onActivateMolTabChanged(sc:{scid} vw:{vwid})")
 
+        print(f"XXXX MainWindow::onActivateMolTabChanged(sc:{scid} vw:{vwid})")
+        sc_mgr = cuemol.svc("SceneManager")
         active_scene = sc_mgr.getScene(scid)
         active_scene.setActiveViewID(vwid)
 
@@ -142,10 +175,9 @@ class MainWindow(QMainWindow):
         # Change tabbar style
         tabbar = mdi_area.findChild(QTabBar)
         tabbar.setExpanding(False)
+
         # Listen tab events
         mdi_area.subWindowActivated.connect(self.on_active_moltab_changed)
-        # self.connect(mdi_area, SIGNAL(subWindowActivated(QMdiSubWindow *)), this,
-        #              SLOT(onActivateMolTabChanged()))
         self._mdi_area = mdi_area
 
         # Create log widget
@@ -172,9 +204,10 @@ class MainWindow(QMainWindow):
 
     def create_mol_widget(self):
         mol_widget = QtMolWidget()
-        # print(f"mol widget: {mol_widget}")
-        # print(f"mdi area: {self._mdi_area}")
         self._mdi_area.addSubWindow(mol_widget)
+        print(f"create_mol_widget mol widget: {mol_widget}")
+        print(f"create_mol_widget mdi area: {self._mdi_area}")
+        self.active_mol_widget()
         return mol_widget
 
     def on_new_scene(self):
@@ -188,6 +221,22 @@ class MainWindow(QMainWindow):
     def on_open_object(self):
         mgr = GUICommandManager.get_instance()
         mgr.run_command("qt_load_object", self)
+
+    def on_undo(self):
+        scene, _ = self.active_scene_view()
+        print(f"undo scene: {scene}")
+        if scene is None:
+            return
+        print(f"undo size: {scene.getUndoSize()}")
+        scene.undo(0)
+
+    def on_redo(self):
+        scene, _ = self.active_scene_view()
+        print(f"redo scene: {scene}")
+        if scene is None:
+            return
+        print(f"redo size: {scene.getRedoSize()}")
+        scene.redo(0)
 
     def save_settings(self):
         # qset = QSettings("BKR-LAB", "CueMol")

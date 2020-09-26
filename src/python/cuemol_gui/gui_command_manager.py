@@ -5,7 +5,7 @@ class GUICommandBase(object):
     def __init__(self):
         pass
 
-    def run(self, widget):
+    def run(self, widget, undo_txn):
         raise NotImplementedError()
 
     def get_name(self):
@@ -26,11 +26,11 @@ class GUICommandManager(object):
     def get_command(self, name):
         return self._data[name]
 
-    def run_command(self, name, widget):
+    def run_command(self, name, widget, undo_txn=True):
         if name not in self._data:
             raise KeyError(f"{name} not found in command names")
         cmd = copy.deepcopy(self._data[name])
-        cmd.run(widget)
+        cmd.run(widget, undo_txn)
         return cmd
     
     @classmethod

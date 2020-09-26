@@ -6,7 +6,7 @@ class QtNewSceneCommand(GUICommandBase):
     def get_name(self):
         return "qt_new_scene"
     
-    def run(self, widget):
+    def run(self, widget, undo_txn):
         mgr = cuemol.svc("CmdMgr")
         new_scene_cmd = mgr.getCmd("new_scene")
         new_scene_cmd.create_view = True

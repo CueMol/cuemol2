@@ -1,8 +1,11 @@
-import re
 import json
-import cuemol
+import re
+
 from cuemol_gui.gui_command_manager import GUICommandBase, GUICommandManager
-from PySide2.QtWidgets import QFileDialog, QDialog
+from PySide2.QtWidgets import QDialog, QFileDialog
+
+import cuemol
+
 
 def create_filter(category_name):
     str_mgr = cuemol.svc("StreamManager")
@@ -32,10 +35,10 @@ def create_filter(category_name):
         fext = elem["fext"]
         m = re.search(r"(\w+[\w\s]+\w+)\s+\(", descr)
         if m is None:
-            print("XXX")
+            # print(f"re not matched: {descr}")
             continue
         sub_descr = m.groups()[0]
-        ext_list = fext.split("; ") 
+        ext_list = fext.split("; ")
         ext_fmt = " ".join(ext_list)
 
         filters.append(f"{sub_descr} ({ext_fmt})")
@@ -46,8 +49,8 @@ def create_filter(category_name):
 class QtLoadSceneCommand(GUICommandBase):
     def get_name(self):
         return "qt_load_scene"
-    
-    def run(self, widget):
+
+    def run(self, widget, undo_txn):
         filters, type_names = create_filter("scene_reader")
         filter_str = ";;".join(filters)
         dlg = QFileDialog(widget, "Open scene file", "", filter_str)
@@ -88,7 +91,7 @@ class QtLoadSceneCommand(GUICommandBase):
 
         load_scene_cmd = cmd_mgr.getCmd("load_scene")
         load_scene_cmd.file_path = file_path
-        # load_scene_cmd.scene_name = 
+        # load_scene_cmd.scene_name =
         load_scene_cmd.file_format = file_fmt
         load_scene_cmd.target_scene = targ_scene
         load_scene_cmd.set_camera = True
