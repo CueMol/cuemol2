@@ -1,7 +1,20 @@
+import os
 import sys
 
 from PySide2 import QtOpenGL  # NOQA
 from PySide2.QtWidgets import QApplication
+
+# Set DLL directory for windows
+if hasattr(os, "add_dll_directory") and "CUEMOL_DLL_DIR" in os.environ:
+    dir_str = os.environ["CUEMOL_DLL_DIR"]
+    dir_list = dir_str.split(";")
+    for d in dir_list:
+        print(f"add_dll_directory: {d}")
+        os.add_dll_directory(d)
+
+print("sys.path:")
+for i in sys.path:
+    print(i)
 
 # app = Application(sys.argv)
 app = QApplication(sys.argv)
