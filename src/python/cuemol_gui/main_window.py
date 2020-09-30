@@ -36,18 +36,8 @@ class MainWindow(QMainWindow):
         QApplication.instance().quit()
 
     def on_log_event(self, aSlotID, aCatStr, aTgtTypeID, aEvtTypeID, aSrcID, aInfoStr):
-        #     print("  slot ID="+str(aSlotID))
-        #     print("  cat str="+str(aCatStr))
-        #     print("  target ID="+str(aTgtTypeID))
-        #     print("  event ID="+str(aEvtTypeID))
-        #     print("  src ID="+str(aSrcID))
-        # print("LogEvent info : "+aInfoStr)
         info = json.loads(str(aInfoStr))
-        # print("info : "+str(info))
-        # print("info.content : "+str(info["content"]))
         self.append_log(info["content"])
-        #        if info["newline"]:
-        #            self.appendLog("\n")
 
     def append_log(self, msg):
         self._logwnd.appendPlainText(msg)
@@ -72,7 +62,13 @@ class MainWindow(QMainWindow):
         log_mgr.removeAccumMsg()
         self.append_log(accum_msg)
         evm = EventManager.get_instance()
-        evm.add_listener("log", -1, -1, -1, self.on_log_event)
+        evm.add_listener(
+            "log",
+            evm.impl.SEM_ANY,  # source type
+            evm.impl.SEM_LOG,  # event type
+            evm.impl.SEM_ANY,  # source uid
+            self.on_log_event,
+        )
 
     def create_menu(self):
         menubar = self.menuBar()
@@ -219,10 +215,19 @@ class MainWindow(QMainWindow):
             print("XXXX MainWindow::onActivateMolTabChanged(): deactivated")
             return
 
-        print(f"XXXX MainWindow::onActivateMolTabChanged(sc:{scid} vw:{vwid})")
+        print(f"MainWindow::onActivateMolTabChanged(sc:{scid} vw:{vwid})")
         sc_mgr = cuemol.svc("SceneManager")
         active_scene = sc_mgr.getScene(scid)
         active_scene.setActiveViewID(vwid)
+
+        evm = EventManager.get_instance()
+        evm.add_listener(
+            "mouseClicked",
+            evm.impl.SEM_INDEV,  # target type
+            evm.impl.SEM_ANY,  # event type
+            vwid,  # source uid
+            self.on_molview_clicked,
+        )
 
     def create_widgets(self):
         # Create tabbed mol view container
@@ -267,8 +272,11 @@ class MainWindow(QMainWindow):
         self._mdi_area.addSubWindow(mol_widget)
         print(f"create_mol_widget mol widget: {mol_widget}")
         print(f"create_mol_widget mdi area: {self._mdi_area}")
-        self.active_mol_widget()
+        # self.active_mol_widget()
         return mol_widget
+
+    def on_molview_clicked(self, aSlotID, aCatStr, aTgtTypeID, aEvtTypeID, aSrcID, aInfoStr):
+        print("on_molview_clicked")
 
     def on_new_scene(self):
         mgr = GUICommandManager.get_instance()

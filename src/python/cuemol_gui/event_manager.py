@@ -7,6 +7,10 @@ class EventManager:
         self._mgr.addListener(self._listener)
         self._slot = {}
 
+    @property
+    def impl(self):
+        return self._mgr
+
     def _listener(self, aSlotID, aCatStr, aTgtTypeID, aEvtTypeID, aSrcID, aInfoStr):
         # print("Event listener called!!")
         #         print("  slot ID="+str(aSlotID))
