@@ -1,4 +1,8 @@
+import json
+
 import cuemol
+
+ci = cuemol.import_internal()
 
 
 class EventManager:
@@ -20,10 +24,31 @@ class EventManager:
         #         print("  src ID="+str(aSrcID))
         #         print("  info : "+str(aInfoStr))
         sSlotID = str(aSlotID)
-        if sSlotID in self._slot:
-            obs = self._slot[sSlotID]
-            if callable(obs):
-                obs(aSlotID, aCatStr, aTgtTypeID, aEvtTypeID, aSrcID, aInfoStr)
+        if sSlotID not in self._slot:
+            # TODO: log error msg??
+            return
+        obs = self._slot[sSlotID]
+        if not callable(obs):
+            # TODO: log error msg??
+            return
+
+        # parse info arg
+        info = None
+        if isinstance(aInfoStr, str):
+            # json str
+            try:
+                info = json.loads(str(aInfoStr))
+            except json.JSONDecodeError:
+                # TODO: log error msg??
+                pass
+        elif type(aInfoStr) == ci.Wrapper:
+            # C++ object
+            info = cuemol.createWrapper(aInfoStr)
+        else:
+            # unknown: no conv
+            info = aInfoStr
+
+        obs(aSlotID, aCatStr, aTgtTypeID, aEvtTypeID, aSrcID, info)
 
     def add_listener(self, aCatStr, aSrcType, aEvtType, aSrcID, aObs):
         slot_id = self._mgr.append(aCatStr, aSrcType, aEvtType, aSrcID)
@@ -39,6 +64,11 @@ class EventManager:
         # this.mSlot[nID.toString()] = null;
         del self._slot[str(nID)]
         # dd(" --> removed: "+this.mSlot[nID.toString()]);
+
+    def update_listener(self, nID, aCatStr, aSrcType, aEvtType, aSrcID, aObs):
+        if nID is not None:
+            self.remove_listener(nID)
+        return self.add_listener(aCatStr, aSrcType, aEvtType, aSrcID, aObs)
 
     @classmethod
     def get_instance(cls):

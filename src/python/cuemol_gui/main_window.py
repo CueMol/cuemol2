@@ -20,6 +20,8 @@ import cuemol
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
+        self._clicked_event = None
+
         # qt5gui.qt5gui_init()
         super().__init__(parent)
         self.init_ui()
@@ -35,8 +37,7 @@ class MainWindow(QMainWindow):
         self.save_settings()
         QApplication.instance().quit()
 
-    def on_log_event(self, aSlotID, aCatStr, aTgtTypeID, aEvtTypeID, aSrcID, aInfoStr):
-        info = json.loads(str(aInfoStr))
+    def on_log_event(self, aSlotID, aCatStr, aTgtTypeID, aEvtTypeID, aSrcID, info):
         self.append_log(info["content"])
 
     def append_log(self, msg):
@@ -221,7 +222,8 @@ class MainWindow(QMainWindow):
         active_scene.setActiveViewID(vwid)
 
         evm = EventManager.get_instance()
-        evm.add_listener(
+        self._clicked_event = evm.update_listener(
+            self._clicked_event,
             "mouseClicked",
             evm.impl.SEM_INDEV,  # target type
             evm.impl.SEM_ANY,  # event type
@@ -275,8 +277,9 @@ class MainWindow(QMainWindow):
         # self.active_mol_widget()
         return mol_widget
 
-    def on_molview_clicked(self, aSlotID, aCatStr, aTgtTypeID, aEvtTypeID, aSrcID, aInfoStr):
-        print("on_molview_clicked")
+    def on_molview_clicked(self, aSlotID, aCatStr, aTgtTypeID, aEvtTypeID, aSrcID, info):
+        x, y, mod = info["x"], info["y"], info["mod"]
+        print("on_molview_clicked", x, y, mod)
 
     def on_new_scene(self):
         mgr = GUICommandManager.get_instance()
