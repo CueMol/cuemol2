@@ -7,13 +7,7 @@ from PySide2.QtCore import QSettings, Qt
 # from PySide2.QtWidgets import QFileDialog
 from PySide2.QtGui import QFont, QIcon
 # from PySide2.QtOpenGL import QGLFormat
-from PySide2.QtWidgets import (
-    QAction,
-    QApplication,
-    QMainWindow,
-    QMdiArea,
-    QTabBar,
-)
+from PySide2.QtWidgets import QAction, QApplication, QMainWindow, QMdiArea, QTabBar
 from qt5gui import QtMolWidget
 
 import cuemol
@@ -112,20 +106,86 @@ class MainWindow(QMainWindow):
         fileMenu.addAction(exit_act)
 
         # Edit menu
-        
+
         undo_act = QAction("&Undo", self)
         undo_act.setShortcut("Ctrl+Z")
         undo_act.setStatusTip("Undo")
         undo_act.triggered.connect(self.on_undo)
+        self._undo_act = undo_act
 
         redo_act = QAction("&Redo", self)
         redo_act.setShortcut("Ctrl+Shift+Z")
         redo_act.setStatusTip("Redo")
         redo_act.triggered.connect(self.on_redo)
+        self._redo_act = redo_act
 
         editMenu = menubar.addMenu("&Edit")
         editMenu.addAction(undo_act)
         editMenu.addAction(redo_act)
+
+        editMenu.aboutToShow.connect(self.on_edit_menu_showing)
+
+    def get_undo_size(self):
+        scene, _ = self.active_scene_view()
+        print(f"undo scene: {scene}")
+        if scene is None:
+            return 0
+        nundo = scene.getUndoSize()
+        print(f"undo size: {nundo}")
+        return nundo
+
+    def get_top_undo_description(self):
+        scene, _ = self.active_scene_view()
+        print(f"undo scene: {scene}")
+        if scene is None:
+            return None
+        undo_desc = scene.getUndoDesc(0)
+        print(f"undo desc: {undo_desc}")
+        return undo_desc
+
+    def get_redo_size(self):
+        scene, _ = self.active_scene_view()
+        if scene is None:
+            return 0
+        nredo = scene.getRedoSize()
+        return nredo
+
+    def get_top_redo_description(self):
+        scene, _ = self.active_scene_view()
+        print(f"redo scene: {scene}")
+        if scene is None:
+            return None
+        redo_desc = scene.getRedoDesc(0)
+        print(f"redo desc: {redo_desc}")
+        return redo_desc
+
+    def on_edit_menu_showing(self):
+        print("on_edit_menu_showing triggered")
+        # Update undo menu
+        n_undo = self.get_undo_size()
+        if n_undo > 0:
+            self._undo_act.setEnabled(True)
+            desc = self.get_top_undo_description()
+            if desc is not None:
+                self._undo_act.setText(f"&Undo: {desc}")
+            else:
+                self._undo_act.setText("&Undo")
+        else:
+            self._undo_act.setEnabled(False)
+            self._undo_act.setText("&Undo")
+
+        # Update redo menu
+        n_redo = self.get_redo_size()
+        if n_redo > 0:
+            self._redo_act.setEnabled(True)
+            desc = self.get_top_redo_description()
+            if desc is not None:
+                self._redo_act.setText(f"&Redo: {desc}")
+            else:
+                self._redo_act.setText("&Redo")
+        else:
+            self._redo_act.setEnabled(False)
+            self._redo_act.setText("&Redo")
 
     def active_mol_widget(self):
         active_wnd = self._mdi_area.activeSubWindow()
@@ -150,7 +210,7 @@ class MainWindow(QMainWindow):
         if scid is None:
             return None, None
         mgr = cuemol.svc("SceneManager")
-        return mgr.getScene(scid),  mgr.getScene(vwid)
+        return mgr.getScene(scid), mgr.getScene(vwid)
 
     def on_active_moltab_changed(self):
         print("onActiveMolTabChanged called!!")
