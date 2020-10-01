@@ -207,7 +207,7 @@ class MainWindow(QMainWindow):
         if scid is None:
             return None, None
         mgr = cuemol.svc("SceneManager")
-        return mgr.getScene(scid), mgr.getScene(vwid)
+        return mgr.getScene(scid), mgr.getView(vwid)
 
     def on_active_moltab_changed(self):
         print("onActiveMolTabChanged called!!")
@@ -221,6 +221,7 @@ class MainWindow(QMainWindow):
         active_scene = sc_mgr.getScene(scid)
         active_scene.setActiveViewID(vwid)
 
+        # Setup molview event(s)
         evm = EventManager.get_instance()
         self._clicked_event = evm.update_listener(
             self._clicked_event,
@@ -277,9 +278,32 @@ class MainWindow(QMainWindow):
         # self.active_mol_widget()
         return mol_widget
 
-    def on_molview_clicked(self, aSlotID, aCatStr, aTgtTypeID, aEvtTypeID, aSrcID, info):
+    def on_molview_clicked(
+        self, aSlotID, aCatStr, aTgtTypeID, aEvtTypeID, aSrcID, info
+    ):
         x, y, mod = info["x"], info["y"], info["mod"]
         print("on_molview_clicked", x, y, mod)
+        _, view = self.active_scene_view()
+        if view is None:
+            print("on_molview_clicked: view is None")
+            return
+        sres = view.hitTest(x, y)
+        # self.append_log(sres)
+        try:
+            print(f"Hittest result: {sres}")
+            res = json.loads(sres)
+        except json.JSONDecodeError as e:
+            # TODO: error handling??
+            print(f"invalid hittest result: {e}")
+
+        msg = (
+            f"Molecule [{res['obj_name']}],"
+            + f" {res['message']}, "
+            + f"O: {res['occ']} B: {res['bfac']} "
+            + f"Pos: ({res['x']}, {res['y']}, {res['z']})"
+        )
+        print(msg)
+        self.append_log(msg)
 
     def on_new_scene(self):
         mgr = GUICommandManager.get_instance()
