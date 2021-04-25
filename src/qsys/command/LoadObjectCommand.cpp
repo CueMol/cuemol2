@@ -73,8 +73,10 @@ void LoadObjectCommand::run()
     reader->detach();
 
     if (m_objectName.isEmpty()) {
-        // auto stem = file_path.stem().string();
         m_pResObj->setPropStr("name", createDefaultObjName());
+    }
+    else {
+        m_pResObj->setPropStr("name", m_objectName);
     }
 
     m_pTargScene->addObject(m_pResObj);

@@ -469,7 +469,9 @@ extern char *yytext;
 
 int yyerror(char* error)
 {
-  LOG_DPRINTLN("ERROR: %s at \"%s\"", error, yytext);
+  LString msg = LString::format("ERROR: %s at \"%s\"", error, yytext);
+  LOG_DPRINTLN(msg.c_str());
+  SelCompiler::getInstance()->setErrorMsg(msg);
   return 0;
 }
 

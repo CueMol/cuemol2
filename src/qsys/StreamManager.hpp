@@ -166,6 +166,19 @@ public:
     qlib::LVarArray rendArrayFromXML(const qlib::LByteArrayPtr &pbuf,
                                      qlib::uid_t nSceneID);
 
+    /// For enum (ID) handling
+    inline int getCAT_OBJREADER() const { return InOutHandler::IOH_CAT_OBJREADER; }
+    inline int getCAT_OBJWRITER() const { return InOutHandler::IOH_CAT_OBJWRITER; }
+
+    inline int getCAT_RENDTOFILE() const { return InOutHandler::IOH_CAT_RENDTOFILE; }
+    inline int getCAT_SCEREADER() const { return InOutHandler::IOH_CAT_SCEREADER; }
+    inline int getCAT_SCEWRITER() const { return InOutHandler::IOH_CAT_SCEWRITER; }
+    
+    inline int getCOMP_NONE() const { return InOutHandler::COMP_NONE; }
+    inline int getCOMP_GZIP() const { return InOutHandler::COMP_GZIP; }
+    inline int getCOMP_BZIP2() const { return InOutHandler::COMP_BZIP2; }
+    inline int getCOMP_XZIP() const { return InOutHandler::COMP_XZIP; }
+
 public:
     //////////
     // Initializer/finalizer (called from qlib-appfw)

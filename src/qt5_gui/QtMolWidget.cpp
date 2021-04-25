@@ -8,7 +8,7 @@
 #include "QtMolWidget.hpp"
 
 #include "QtGlView.hpp"
-// #include "QtTimerImpl.hpp"
+#include "QtTimerImpl.hpp"
 
 #include <QtGui/QMouseEvent>
 #include <QtGui/QWindow>
@@ -20,7 +20,7 @@
 
 #include "moc_QtMolWidget.cpp"
 
-// using namespace qt5_gui;
+using namespace qt5_gui;
 
 QtMolWidget::QtMolWidget(QWidget *parent) : QGLWidget(parent)
 {
@@ -59,39 +59,39 @@ void QtMolWidget::bind(int scid, int vwid)
     m_nViewID = vwid;
 }
 
-void QtMolWidget::createSceneAndView()
-{
-    auto pScMgr = qsys::SceneManager::getInstance();
-    auto pSc = pScMgr->createScene();
-    // TO DO: locale dependent
-    pSc->setName("Untitled");
-    // m_nSceneID = pSc->getUID();
+// void QtMolWidget::createSceneAndView()
+// {
+//     auto pScMgr = qsys::SceneManager::getInstance();
+//     auto pSc = pScMgr->createScene();
+//     // TO DO: locale dependent
+//     pSc->setName("Untitled");
+//     // m_nSceneID = pSc->getUID();
 
-    auto pView = pSc->createView();
-    pView->setName("0");
-    // m_nViewID = pView->getUID();
+//     auto pView = pSc->createView();
+//     pView->setName("0");
+//     // m_nViewID = pView->getUID();
 
-    bind(pSc->getUID(), pView->getUID());
-    // LOG_DPRINTLN("scene %d view %d created.", m_nSceneID, m_nViewID);
-}
+//     bind(pSc->getUID(), pView->getUID());
+//     // LOG_DPRINTLN("scene %d view %d created.", m_nSceneID, m_nViewID);
+// }
 
-void QtMolWidget::loadFile(const QString &fileName)
-{
-    auto scMgr = qsys::SceneManager::getInstance();
-    auto scene = scMgr->getScene(m_nSceneID);
-    scene->clearAllData();
+// void QtMolWidget::loadFile(const QString &fileName)
+// {
+//     auto scMgr = qsys::SceneManager::getInstance();
+//     auto scene = scMgr->getScene(m_nSceneID);
+//     scene->clearAllData();
 
-    auto strMgr = qsys::StreamManager::getInstance();
-    qsys::SceneXMLReaderPtr reader = strMgr->createHandler("qsc_xml", 3);
-    auto utf8fname = fileName.toUtf8();
-    reader->setPath(utf8fname.constData());
+//     auto strMgr = qsys::StreamManager::getInstance();
+//     qsys::SceneXMLReaderPtr reader = strMgr->createHandler("qsc_xml", 3);
+//     auto utf8fname = fileName.toUtf8();
+//     reader->setPath(utf8fname.constData());
 
-    reader->attach(scene);
-    reader->read();
-    reader->detach();
+//     reader->attach(scene);
+//     reader->read();
+//     reader->detach();
 
-    scene->loadViewFromCam(m_nViewID, "__current");
-}
+//     scene->loadViewFromCam(m_nViewID, "__current");
+// }
 
 void QtMolWidget::initializeGL()
 {
@@ -122,6 +122,7 @@ void QtMolWidget::initializeGL()
 
 void QtMolWidget::paintGL()
 {
+    LOG_DPRINTLN("QtMolWidget::paintGL called!!");
     m_pView->forceRedraw();
 }
 

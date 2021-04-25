@@ -43,10 +43,18 @@ namespace molstr {
 
     void evalNode(SelSuperNode *pNode);
 
+    void setErrorMsg(const LString &msg) {
+        m_errorMsg = msg;
+    }
+    LString getErrorMsg() const {
+        return m_errorMsg;
+    }
+
   private:
     SelSuperNode *m_pBuilt;
     char *m_sbuf;
     int m_nsize;
+    LString m_errorMsg;
 
     int yyparse_wrapper();
     static void resetScannerState();

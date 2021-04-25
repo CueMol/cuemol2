@@ -21,6 +21,25 @@ runtime_class ScrEventManager
 
   integer append(string cat, integer src_type, integer evt_type, integer src_uid);
   boolean remove(integer id);
+
+  // Event manager's enum IDs
+  property integer SEM_ANY => redirect(getSEM_ANY, XXX) (readonly);
+  property integer SEM_LOG => redirect(getSEM_LOG, XXX) (readonly);
+  property integer SEM_INDEV => redirect(getSEM_INDEV, XXX) (readonly);
+  property integer SEM_SCENE => redirect(getSEM_SCENE, XXX) (readonly);
+  property integer SEM_OBJECT => redirect(getSEM_OBJECT, XXX) (readonly);
+  property integer SEM_RENDERER => redirect(getSEM_RENDERER, XXX) (readonly);
+  property integer SEM_VIEW => redirect(getSEM_VIEW, XXX) (readonly);
+  property integer SEM_CAMERA => redirect(getSEM_CAMERA, XXX) (readonly);
+  property integer SEM_STYLE => redirect(getSEM_STYLE, XXX) (readonly);
+  property integer SEM_ANIM => redirect(getSEM_ANIM, XXX) (readonly);
+  property integer SEM_EXTND => redirect(getSEM_EXTND, XXX) (readonly);
+
+  property integer SEM_ADDED => redirect(getSEM_ADDED, XXX) (readonly);
+  property integer SEM_REMOVING => redirect(getSEM_REMOVING, XXX) (readonly);
+  property integer SEM_PROPCHG => redirect(getSEM_PROPCHG, XXX) (readonly);
+  property integer SEM_CHANGED => redirect(getSEM_CHANGED, XXX) (readonly);
+  property integer SEM_OTHER => redirect(getSEM_OTHER, XXX) (readonly);
 };
 
 #endif

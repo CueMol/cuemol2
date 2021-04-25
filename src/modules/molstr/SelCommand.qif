@@ -27,6 +27,10 @@ runtime_class SelCommand extends MolSelection
   boolean compile(string cmd, integer uid);
 
   string dumpNodes();
+
+  property string error_msg => redirect(getErrorMsg, setErrorMsg);
+  default error_msg = "";
+  
 };
 
 #endif

@@ -10,9 +10,15 @@
 #include "moc_QtTimerImpl.cpp"
 #include <qlib/EventManager.hpp>
 
+// #include <QThread>
+
 QtTimerImpl::QtTimerImpl()
 {
+    // auto *pthr = QThread::currentThread();
+    // printf("thread: %p\n", pthr);
+
     m_pTimer = new QTimer(this);
+    m_pTimer->setSingleShot(false);
     connect(m_pTimer, SIGNAL(timeout()), this, SLOT(timerCallbackFunc()));
 
     m_pElaTimer = new QElapsedTimer();
@@ -27,7 +33,7 @@ QtTimerImpl::~QtTimerImpl()
 
 void QtTimerImpl::timerCallbackFunc()
 {
-    // MB_DPRINTLN("*** TimerCallback Called");
+    // LOG_DPRINTLN("*** TimerCallback Called");
 
     qlib::EventManager *pEM = qlib::EventManager::getInstance();
     pEM->performIdleTasks();
@@ -47,16 +53,19 @@ void QtTimerImpl::start(qlib::time_value period)
     // period is in nanosec
     // QTimer's msec is std::chrono::milliseconds
 
-    m_pTimer->start(period / (1000 * 1000));
+    //m_pTimer->start(period / (1000 * 1000));
+    m_pTimer->start();
 }
 
 void QtTimerImpl::stop()
 {
-    m_pTimer->stop();
+    //m_pTimer->stop();
 }
 
 // static
 void QtTimerImpl::init()
 {
-    qlib::EventManager::getInstance()->initTimer(new QtTimerImpl);
+    QtTimerImpl *ptimer = new QtTimerImpl();
+    qlib::EventManager::getInstance()->initTimer(ptimer);
+    ptimer->start(1);
 }

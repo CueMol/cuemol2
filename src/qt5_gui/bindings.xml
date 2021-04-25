@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<typesystem package="qt5gui">
+  <!--<load-typesystem name="typesystem_core.xml" generate="no"/>-->
+  <load-typesystem name="typesystem_opengl.xml" generate="no" />
+
+  <inject-code class="native" position="beginning">
+    void qt5gui_init();
+  </inject-code>
+
+  <object-type name="QtMolWidget">
+  </object-type>
+
+  <function signature="qt5gui_init()"/>
+</typesystem>

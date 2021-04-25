@@ -1,9 +1,9 @@
-# find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
-
-# message(STATUS "Python3_Development_FOUND=${Python3_Development_FOUND}")
-# message(STATUS "Python: version=${Python3_VERSION} Python3_INCLUDE_DIRS=${Python3_INCLUDE_DIRS} Python3_LIBRARIES=${Python3_LIBRARIES}")
 
 add_definitions(-DHAVE_PYTHON=1 -DBUILD_PYMODULE=1)
+
+if (WIN32)
+  add_definitions(-DPYBR_EXPORTS=1)
+endif()
 
 if (BUILD_MINIMUM_MODULES)
   add_definitions(-DPYBR_MINIMUM_MODULES=1)
@@ -60,6 +60,14 @@ list(APPEND PYMODULE_LINK_LIBRARIES
 Python3_add_library(_cuemol_internal MODULE ${PYMODULE_SRCS})
 target_link_libraries(_cuemol_internal PRIVATE ${PYMODULE_LINK_LIBRARIES})
 
+if (WIN32)
+  set_target_properties(_cuemol_internal PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+else ()
+  set_target_properties(_cuemol_internal PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+endif ()
+
+# get_target_property(_cuemol_internal_location _cuemol_internal LIBRARY_OUTPUT_DIRECTORY)
+# message (STATUS "_cuemol_internal_location == ${_cuemol_internal_location}")
 # set_target_properties(_cuemol_internal PROPERTIES PREFIX "")  # no 'lib' prefix
 # set_target_properties(_cuemol_internal PROPERTIES SUFFIX ".${Python3_SOABI}")  # must be .so (not .dylib)
 

@@ -37,6 +37,10 @@ runtime_class NewRendererCommand extends Command
     property boolean recenter_view => m_bRecenView;
     default recenter_view = false;
 
+    /// Name of the default style to apply (optional)
+    property string default_style_name => m_styleName;
+    default default_style_name = "";
+
     //////////
     // properties (output)
 

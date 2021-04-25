@@ -41,6 +41,8 @@ namespace molstr {
 
     LString m_origcmd;
 
+    LString m_errorMsg;
+
   public:
     /// default ctor
     SelCommand();
@@ -77,6 +79,12 @@ namespace molstr {
 
     LString dumpNodes() const;
 
+    void setErrorMsg(const LString &msg) {
+        m_errorMsg = msg;
+    }
+    LString getErrorMsg() const {
+        return m_errorMsg;
+    }
   };
 
 }

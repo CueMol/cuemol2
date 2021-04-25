@@ -6,22 +6,32 @@
 #include <common.h>
 
 #include "TTYView.hpp"
+
 #include <gfx/DisplayContext.hpp>
 
 namespace qsys {
 
-  class TTYDisplayContext : public gfx::DisplayContext
-  {
-  private:
+class TTYDisplayContext : public gfx::DisplayContext
+{
+private:
     typedef gfx::DisplayContext super_t;
 
-  public:
+public:
     TTYDisplayContext() {}
     virtual ~TTYDisplayContext() {}
 
-    virtual bool setCurrent() { return true; }
-    virtual bool isCurrent() const { return true; }
-    virtual bool isFile() const { return true; }
+    virtual bool setCurrent()
+    {
+        return true;
+    }
+    virtual bool isCurrent() const
+    {
+        return true;
+    }
+    virtual bool isFile() const
+    {
+        return true;
+    }
 
     virtual void vertex(const qlib::Vector4D &) {}
     virtual void normal(const qlib::Vector4D &) {}
@@ -43,27 +53,23 @@ namespace qsys {
     virtual void startQuadStrip() {}
     virtual void startQuads() {}
     virtual void end() {}
-
-  };
-}
+};
+}  // namespace qsys
 
 using namespace qsys;
 
-TTYView::TTYView() : m_pCtxt(new TTYDisplayContext())
-{
-}
+TTYView::TTYView() : m_pCtxt(new TTYDisplayContext()) {}
 
-TTYView::TTYView(const TTYView &r)
-{
-}
+TTYView::TTYView(const TTYView &r) {}
 
-TTYView::~TTYView()
-{
-}
+TTYView::~TTYView() {}
 
 //////////
-  
-LString TTYView::toString() const { return LString("TTYView"); }
+
+LString TTYView::toString() const
+{
+    return LString("TTYView");
+}
 
 /// Setup the projection matrix for stereo (View interface)
 void TTYView::setUpModelMat(int nid) {}
@@ -74,18 +80,21 @@ void TTYView::setUpProjMat(int w, int h) {}
 /// Draw current scene
 void TTYView::drawScene()
 {
-  qsys::ScenePtr pScene = getScene();
-  if (pScene.isnull()) {
-    MB_DPRINTLN("DrawScene: invalid scene %d !!", getSceneID());
-    return;
-  }
-  
-  gfx::DisplayContext *pdc = getDisplayContext();
-  pdc->setCurrent();
-  pScene->display(pdc);
+    qsys::ScenePtr pScene = getScene();
+    if (pScene.isnull()) {
+        MB_DPRINTLN("DrawScene: invalid scene %d !!", getSceneID());
+        return;
+    }
+
+    gfx::DisplayContext *pdc = getDisplayContext();
+    pdc->setCurrent();
+    pScene->display(pdc);
 }
 
-gfx::DisplayContext *TTYView::getDisplayContext() { return m_pCtxt; }
+gfx::DisplayContext *TTYView::getDisplayContext()
+{
+    return m_pCtxt;
+}
 
 // namespace qsys {
 //   //static

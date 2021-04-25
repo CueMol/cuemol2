@@ -43,6 +43,9 @@ public:
     /// Recenter/Fit view flag
     bool m_bRecenView;
 
+    /// Default style name
+    LString m_styleName;
+
     /// Other Properties (optional)
     qlib::LVarDict m_props;
 

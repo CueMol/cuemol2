@@ -57,6 +57,8 @@ class CMakeBuild(build_ext):
 
         env = os.environ.copy()
         prefix_path = env.get("CMAKE_PREFIX_PATH", None)
+        boost_root = env.get("BOOST_ROOT", None)
+        boost_libdir = env.get("BOOST_LIBRARYDIR", None)
         build_min = env.get("BUILD_MINIMUM_MODULES", "OFF")
         cmake_args = ['-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,]
         # XXX: PYTHON_EXECUTABLE has no effect in the recent version of CMake
@@ -72,10 +74,15 @@ class CMakeBuild(build_ext):
             "-DBUILD_PYTHON_MODULE=ON",
             f"-DBUILD_MINIMUM_MODULES={build_min}",
             f"-DPython3_ROOT_DIR={python_root_dir}",
+            "-DCGAL_DISABLE_GMP=ON"
         ]
         if prefix_path:
             cmake_args.append(f"-DCMAKE_PREFIX_PATH={prefix_path}")
             cmake_args.append(f"-DFFTW_ROOT={prefix_path}/fftw")
+        if boost_root:
+            cmake_args.append(f"-DBOOST_ROOT={boost_root}")
+        if boost_libdir:
+            cmake_args.append(f"-DBOOST_LIBRARYDIR={boost_libdir}")
 
         print(f"******** cmake_args: {cmake_args}", flush=True)
         cfg = 'Debug' if self.debug else 'Release'
