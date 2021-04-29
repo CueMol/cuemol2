@@ -7,7 +7,7 @@
 
 #include "QtMolWidget2.hpp"
 
-#include "QtGlView.hpp"
+#include "QtGlView2.hpp"
 #include "QtTimerImpl.hpp"
 
 #include <QtGui/QMouseEvent>
@@ -22,14 +22,14 @@
 
 using namespace qt5_gui;
 
-QtMolWidget2::QtMolWidget2(QWidget *parent) : QOpenGLWidget(parent)
+QtMolWidget2::QtMolWidget2(QWindow *parent) : super_t(NoPartialUpdate, parent)
 {
     m_pView = NULL;
     m_nSceneID = qlib::invalid_uid;
     m_nViewID = qlib::invalid_uid;
     m_pMeh = new sysdep::MouseEventHandler();
 
-    grabGesture(Qt::PinchGesture);
+    // grabGesture(Qt::PinchGesture);
     // grabGesture(Qt::PanGesture);
 }
 
@@ -47,7 +47,7 @@ QtMolWidget2::~QtMolWidget2() {}
 void QtMolWidget2::bind(int scid, int vwid)
 {
     qsys::ViewPtr pView = qsys::SceneManager::getViewS(vwid);
-    m_pView = dynamic_cast<qt5_gui::QtGlView *>(pView.get());
+    m_pView = dynamic_cast<qt5_gui::QtGlView2 *>(pView.get());
 
     if (m_pView == NULL) {
         LOG_DPRINTLN("QtMolWidget2> FatalError; Cannot cast view %d to QtGlView!!",
@@ -69,12 +69,11 @@ void QtMolWidget2::initializeGL()
     // // turn off autoswapbuffer
     // super_t::setAutoBufferSwap(false);
 
-    // TO DO: set useshader flag
+    // TODO: set useshader flag
     // pWglView->setUseGlShader(m_bUseGlShader);
 
-    // TO DO: set HiDPI scaling value
-    // pWglView->setSclFac(m_sclX, m_sclY);
-    double r = windowHandle()->devicePixelRatio();
+    // TODO: set HiDPI scaling value
+    double r = devicePixelRatio();
     LOG_DPRINTLN("QtMolWidget2> scale factor: %f", r);
     if (!qlib::isNear4(r, 1.0)) m_pView->setSclFac(r, r);
 
@@ -94,7 +93,7 @@ void QtMolWidget2::paintGL()
 
 void QtMolWidget2::resizeGL(int width, int height)
 {
-    double r = windowHandle()->devicePixelRatio();
+    double r = devicePixelRatio();
 
     double rx = double(width) / r;
     double ry = double(height) / r;

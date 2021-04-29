@@ -5,22 +5,23 @@
 
 #pragma once
 
-#include "qt5_gui.hpp"
 #include <sysdep/OglDisplayContext.hpp>
+
 #include "QtGlView2.hpp"
+#include "qt5_gui.hpp"
 
 namespace qt5_gui {
 
-  class QT5GUI_API QtGlDisplayContext2 : public sysdep::OglDisplayContext
-  {
-  private:
-
+class QT5GUI_API QtGlDisplayContext2 : public sysdep::OglDisplayContext
+{
+private:
     QtGlView2 *m_pTargetView;
 
     void *m_pCtxt;
+    void *m_pQtWidget;
 
-  public:
-    QtGlDisplayContext2();
+public:
+    QtGlDisplayContext2(void *pQtWidget);
 
     virtual ~QtGlDisplayContext2();
 
@@ -31,8 +32,7 @@ namespace qt5_gui {
     // system dependent methods
 
     void setup(void *pCtxt);
-  };
+    void *getImpl() { return m_pCtxt; }
+};
 
-}
-
-
+}  // namespace qt5_gui

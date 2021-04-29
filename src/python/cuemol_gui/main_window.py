@@ -7,8 +7,8 @@ from PySide2.QtCore import QSettings, Qt
 # from PySide2.QtWidgets import QFileDialog
 from PySide2.QtGui import QFont, QIcon
 # from PySide2.QtOpenGL import QGLFormat
-from PySide2.QtWidgets import QAction, QApplication, QMainWindow, QMdiArea, QTabBar
-from qt5gui import QtMolWidget
+from PySide2.QtWidgets import QAction, QApplication, QMainWindow, QMdiArea, QTabBar, QWidget
+from qt5gui import QtMolWidget2
 
 import cuemol
 
@@ -189,7 +189,7 @@ class MainWindow(QMainWindow):
         print(f"active_wnd: {active_wnd}")
         if active_wnd is None:
             return None
-        mol_widget = active_wnd.findChild(QtMolWidget)
+        mol_widget = active_wnd.findChild(QtMolWidget2)
         print(f"active mol_widget: {mol_widget}")
         return mol_widget
 
@@ -271,8 +271,10 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(splitter)
 
     def create_mol_widget(self):
-        mol_widget = QtMolWidget()
-        self._mdi_area.addSubWindow(mol_widget)
+        mol_widget = QtMolWidget2()
+        wrapper = QWidget.createWindowContainer(mol_widget)
+        self._mdi_area.addSubWindow(wrapper)
+        # self._mdi_area.addSubWindow(mol_widget)
         print(f"create_mol_widget mol widget: {mol_widget}")
         print(f"create_mol_widget mdi area: {self._mdi_area}")
         # self.active_mol_widget()

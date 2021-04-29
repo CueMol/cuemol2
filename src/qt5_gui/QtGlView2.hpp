@@ -11,7 +11,7 @@
 
 namespace qt5_gui {
 
-  class QtGlDisplayContext;
+  class QtGlDisplayContext2;
   using gfx::DisplayContext;
 
   class QT5GUI_API QtGlView2 : public sysdep::OglView
@@ -19,7 +19,7 @@ namespace qt5_gui {
   private:
     typedef sysdep::OglView super_t;
 
-    QtGlDisplayContext *m_pCtxt;
+    QtGlDisplayContext2 *m_pCtxt;
 
     /// Mouse dragging start
     int m_nDragStart;
