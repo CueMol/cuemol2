@@ -7,9 +7,6 @@
 
 #include "QtMolWidget2.hpp"
 
-#include "QtGlView2.hpp"
-#include "QtTimerImpl.hpp"
-
 #include <QtGui/QMouseEvent>
 #include <QtGui/QWindow>
 #include <qlib/qlib.hpp>
@@ -18,29 +15,22 @@
 #include <qsys/StreamManager.hpp>
 #include <sysdep/MouseEventHandler.hpp>
 
+#include "QtGlView2.hpp"
+#include "QtTimerImpl.hpp"
 #include "moc_QtMolWidget2.cpp"
 
 using namespace qt5_gui;
 
-QtMolWidget2::QtMolWidget2(QWindow *parent) : super_t(NoPartialUpdate, parent)
+QtMolWidget2::QtMolWidget2(QWidget *parent) : super_t(parent)
 {
     m_pView = NULL;
     m_nSceneID = qlib::invalid_uid;
     m_nViewID = qlib::invalid_uid;
     m_pMeh = new sysdep::MouseEventHandler();
 
-    // grabGesture(Qt::PinchGesture);
-    // grabGesture(Qt::PanGesture);
+    grabGesture(Qt::PinchGesture);
+    grabGesture(Qt::PanGesture);
 }
-
-// QtMolWidget2::QtMolWidget2(const QGLFormat &format, QWidget *parent)
-//     : QGLWidget(format, parent)
-// {
-//     m_pView = NULL;
-//     m_nSceneID = qlib::invalid_uid;
-//     m_nViewID = qlib::invalid_uid;
-//     m_pMeh = new sysdep::MouseEventHandler();
-// }
 
 QtMolWidget2::~QtMolWidget2() {}
 
@@ -57,12 +47,14 @@ void QtMolWidget2::bind(int scid, int vwid)
 
     m_nSceneID = scid;
     m_nViewID = vwid;
+    LOG_DPRINTLN("QtMolWidget2> bind(%d, %d) OK", scid, vwid);
 }
 
 void QtMolWidget2::initializeGL()
 {
-    if (m_pView == NULL) {
-        LOG_DPRINTLN("QtMolWidget2> FatalError; QtGlView is not attached!!");
+    if (m_pView == nullptr) {
+        LOG_DPRINTLN(
+            "QtMolWidget2::initializeGL> FatalError; QtGlView is not attached!!");
         return;
     }
 
@@ -78,7 +70,7 @@ void QtMolWidget2::initializeGL()
     if (!qlib::isNear4(r, 1.0)) m_pView->setSclFac(r, r);
 
     if (!m_pView->initGL(this)) {
-        LOG_DPRINTLN("QtMolWidget2> FatalError; initGL() failed!!");
+        LOG_DPRINTLN("QtMolWidget2::initializeGL> FatalError; initGL() failed!!");
         return;
     }
 
@@ -95,13 +87,15 @@ void QtMolWidget2::resizeGL(int width, int height)
 {
     double r = devicePixelRatio();
 
-    double rx = double(width) / r;
-    double ry = double(height) / r;
-    MB_DPRINTLN("calling sizeChanged(%f,%f), DPR=%f", rx, ry, r);
+    double rx = double(width);
+    double ry = double(height);
+    LOG_DPRINTLN("QtMolWidget2::resizeGL> calling sizeChanged(%f,%f), DPR=%f", rx, ry,
+                 r);
+    if (m_pView == nullptr) {
+        LOG_DPRINTLN("QtMolWidget2::resizeGL> FatalError; QtGlView is not attached!!");
+        return;
+    }
     m_pView->sizeChanged(int(rx), int(ry));
-
-    // LOG_DPRINTLN("calling sizeChanged(%d,%d), DPR=%f", width, height, r);
-    // m_pView->sizeChanged(width, height);
 }
 
 /////////////////
@@ -201,11 +195,13 @@ void QtMolWidget2::setupMouseEvent(QMouseEvent *event, qsys::InDevEvent &ev)
 
 void QtMolWidget2::setupWheelEvent(QWheelEvent *event, qsys::InDevEvent &ev)
 {
-    ev.setX(event->x());
-    ev.setY(event->y());
+    const auto &pos = event->position();
+    ev.setX(pos.x());
+    ev.setY(pos.y());
 
-    ev.setRootX(event->globalX());
-    ev.setRootY(event->globalY());
+    const auto &gpos = event->globalPosition();
+    ev.setRootX(gpos.x());
+    ev.setRootY(gpos.y());
 
     // set modifier
     int modif = 0;
@@ -254,25 +250,30 @@ bool QtMolWidget2::gestureEvent(QGestureEvent *event)
 
 void QtMolWidget2::pinchTriggered(QPinchGesture *gesture)
 {
-    MB_DPRINTLN("* PinchGesture!!");
+    LOG_DPRINTLN("* PinchGesture!!");
 
     QPinchGesture::ChangeFlags changeFlags = gesture->changeFlags();
     if (changeFlags & QPinchGesture::RotationAngleChanged) {
         double rot = gesture->rotationAngle() - gesture->lastRotationAngle();
         MB_DPRINTLN("** Pinch gesture rotation %f", rot);
         m_pView->rotateView(0.0f, 0.0f, rot * 4.0);
+        update();
     }
 
     if (changeFlags & QPinchGesture::ScaleFactorChanged) {
-        MB_DPRINTLN("** Pinch gesture scale %f", gesture->scaleFactor());
-        MB_DPRINTLN("** Pinch gesture total scale %f", gesture->totalScaleFactor());
+        // LOG_DPRINTLN("** Pinch gesture scale %f", gesture->scaleFactor());
+        // LOG_DPRINTLN("** Pinch gesture total scale %f", gesture->totalScaleFactor());
 
-        double delta = gesture->scaleFactor() - gesture->lastScaleFactor();
+        double delta = gesture->scaleFactor();  // / gesture->lastScaleFactor();
 
         double vw = m_pView->getZoom();
-        double dw = double(-delta) * vw;
-        m_pView->setZoom(vw + dw);
-        m_pView->setUpProjMat(-1, -1);
+        m_pView->setZoom(vw / delta);
+        // m_pView->setUpProjMat(-1, -1);
+        // m_pView->setProjChange();
+        // m_pView->setUpdateFlag();
+        
+        LOG_DPRINTLN("New zoom: %f", m_pView->getZoom());
+        update();
     }
 
     if (gesture->state() == Qt::GestureFinished) {
@@ -281,7 +282,6 @@ void QtMolWidget2::pinchTriggered(QPinchGesture *gesture)
         MB_DPRINTLN("** Pinch gesture finished");
     }
 
-    // update();
 }
 
 void QtMolWidget2::panTriggered(QPanGesture *gesture)

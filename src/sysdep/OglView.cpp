@@ -183,7 +183,7 @@ void OglView::setUpProjMat(int cx, int cy)
   double vw = zoom/2.0f;
   double fasp = (double)cx/(double)cy;
   
-  MB_DPRINTLN("OglView.setUpProjMat> CX=%d, CY=%d, Vw=%f, Fasp=%f", cx, cy, vw, fasp);
+  LOG_DPRINTLN("OglView.setUpProjMat> CX=%d, CY=%d, Vw=%f, Fasp=%f", cx, cy, vw, fasp);
 
   int bcx = convToBackingX(cx);
   int bcy = convToBackingY(cy);
@@ -345,6 +345,7 @@ void OglView::drawScene()
 
   gfx::ColorPtr pBgCol = pScene->getBgColor();
   glClearColor(float(pBgCol->fr()), float(pBgCol->fg()), float(pBgCol->fb()), 1.0f);
+  
   setFogColorImpl();
   
   pdc->setLighting(false);
@@ -360,6 +361,7 @@ void OglView::drawScene()
     setUpModelMat(MM_NORMAL);
     glDrawBuffer(GL_BACK);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
     // Draw main 3D objects
     pScene->display(pdc);
     break;
@@ -421,7 +423,7 @@ void OglView::drawScene()
     ::glEnable(GL_LINE_SMOOTH);
 
   }
-  
+
   // Display UI drawing objects
   View::showDrawObj(pdc);
 
@@ -450,7 +452,6 @@ void OglView::drawScene()
     
     ::glDisable(GL_LIGHTING);
     ::glDisable(GL_LINE_SMOOTH);
-
     if (getCenterMark()==Camera::CCM_CROSS) {
       const double dsize = 10.0;
       pdc->pushMatrix();
@@ -468,9 +469,8 @@ void OglView::drawScene()
 
     // Display 2D-UI drawing objects
     View::showDrawObj2D(pdc);
-
     ::glEnable(GL_LINE_SMOOTH);
-    ::glEnable(GL_CULL_FACE);
+    // ::glEnable(GL_CULL_FACE);
     pdc->popMatrix();
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();

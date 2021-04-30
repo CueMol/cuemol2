@@ -4,8 +4,8 @@
 
 #pragma once
 
-//#include <QtWidgets/QOpenGLWidget>
-#include <QtGui/QOpenGLWindow>
+#include <QtWidgets/QOpenGLWidget>
+//#include <QtGui/QOpenGLWindow>
 #include <QtWidgets/QGestureEvent>
 // #include <QGLWidget>
 // #include <QGestureEvent>
@@ -25,15 +25,15 @@ namespace sysdep {
 class MouseEventHandler;
 }
 
-class QtMolWidget2 : public QOpenGLWindow
+class QtMolWidget2 : public QOpenGLWidget
 {
     Q_OBJECT;
 
-    using super_t = QOpenGLWindow;
+    using super_t = QOpenGLWidget;
 
 public:
-    //QtMolWidget2(QWidget *parent = 0);
-    QtMolWidget2(QWindow *parent = nullptr);
+    QtMolWidget2(QWidget *parent = 0);
+    // QtMolWidget2(QWindow *parent = nullptr);
     // QtMolWidget2(const QGLFormat &format, QWidget *parent = 0);
     ~QtMolWidget2();
 

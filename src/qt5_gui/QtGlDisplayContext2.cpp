@@ -29,9 +29,10 @@ void QtGlDisplayContext2::setup(void *pCtxt)
 
 bool QtGlDisplayContext2::setCurrent()
 {
-    QOpenGLWindow *pGLWidget = static_cast<QOpenGLWindow *>(m_pQtWidget);
-    QOpenGLContext *pqctxt = static_cast<QOpenGLContext *>(m_pCtxt);
-    pqctxt->makeCurrent(pGLWidget);
+    // LOG_DPRINTLN("QtGlDisplayContext2.setCurrent called!!");
+    // QOpenGLWidget *pGLWidget = static_cast<QOpenGLWidget *>(m_pQtWidget);
+    // QOpenGLContext *pqctxt = static_cast<QOpenGLContext *>(m_pCtxt);
+    // pqctxt->makeCurrent(pGLWidget);
     return true;
 }
 

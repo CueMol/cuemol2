@@ -7,16 +7,20 @@ from PySide2.QtCore import QSettings, Qt
 # from PySide2.QtWidgets import QFileDialog
 from PySide2.QtGui import QFont, QIcon
 # from PySide2.QtOpenGL import QGLFormat
-from PySide2.QtWidgets import QAction, QApplication, QMainWindow, QMdiArea, QTabBar, QWidget
+from PySide2.QtWidgets import QAction, QApplication, QMainWindow, QMdiArea, QTabBar, QWidget, QOpenGLWidget
 from qt5gui import QtMolWidget2
 
 import cuemol
 
-# import main
+class MyWidget(QOpenGLWidget):
+    def initializeGL(self):
+        print("initializeGL(self)")
 
+    def paintGL(self):
+        print("paintGL(self)")
 
-# from main import event, CmdPrompt
-
+    def bind(self, _x, _y):
+        pass
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
@@ -270,11 +274,13 @@ class MainWindow(QMainWindow):
         # Set central widget
         self.setCentralWidget(splitter)
 
-    def create_mol_widget(self):
+    def create_mol_widget(self, scid, vwid):
         mol_widget = QtMolWidget2()
-        wrapper = QWidget.createWindowContainer(mol_widget)
-        self._mdi_area.addSubWindow(wrapper)
-        # self._mdi_area.addSubWindow(mol_widget)
+        mol_widget.bind(scid, vwid)
+        # wrapper = QWidget.createWindowContainer(mol_widget)
+        # self._mdi_area.addSubWindow(wrapper)
+        # mol_widget = MyWidget()
+        self._mdi_area.addSubWindow(mol_widget)
         print(f"create_mol_widget mol widget: {mol_widget}")
         print(f"create_mol_widget mdi area: {self._mdi_area}")
         # self.active_mol_widget()

@@ -8,7 +8,8 @@
 
 #include "QtGlView2.hpp"
 
-#include <QtGui/QOpenGLWindow>
+#include <QtWidgets/QOpenGLWidget>
+#include <QtGui/QOpenGLContext>
 #include <qlib/Utils.hpp>
 
 #include "QtGlDisplayContext2.hpp"
@@ -37,9 +38,10 @@ LString QtGlView2::toString() const
 
 void QtGlView2::swapBuffers()
 {
-    QOpenGLWindow *pGLWidget = static_cast<QOpenGLWindow *>(m_pWidget);
-    QOpenGLContext *pCtxt = static_cast<QOpenGLContext *>(m_pCtxt->getImpl());
-    pCtxt->swapBuffers(pGLWidget);
+    // LOG_DPRINTLN("XXX QtGlView2::swapBuffers called");
+    // QOpenGLWidget *pGLWidget = static_cast<QOpenGLWidget *>(m_pWidget);
+    // QOpenGLContext *pCtxt = static_cast<QOpenGLContext *>(m_pCtxt->getImpl());
+    // pCtxt->swapBuffers(pGLWidget);
 }
 
 DisplayContext *QtGlView2::getDisplayContext()
@@ -53,11 +55,10 @@ bool QtGlView2::initGL(void *pWidget)
 {
     MB_ASSERT(m_pCtxt == NULL);
     m_pWidget = pWidget;
-    QOpenGLWindow *pGLWidget = static_cast<QOpenGLWindow *>(pWidget);
+    QOpenGLWidget *pGLWidget = static_cast<QOpenGLWidget *>(pWidget);
 
     // TO DO: setup context sharing
 
-    // m_pCtxt = MB_NEW QtGlDisplayContext(getSceneID(), this, pGLWidget->context());
     // create display context object for OpenGL
     if (m_pCtxt == NULL) {
         m_pCtxt = MB_NEW QtGlDisplayContext2(pGLWidget);
