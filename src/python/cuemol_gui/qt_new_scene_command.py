@@ -1,11 +1,12 @@
-import cuemol
 from cuemol_gui.gui_command_manager import GUICommandBase
+
+import cuemol
 
 
 class QtNewSceneCommand(GUICommandBase):
     def get_name(self):
         return "qt_new_scene"
-    
+
     def run(self, widget, undo_txn):
         mgr = cuemol.svc("CmdMgr")
         new_scene_cmd = mgr.getCmd("new_scene")
@@ -22,7 +23,7 @@ class QtNewSceneCommand(GUICommandBase):
         mol_widget = widget.create_mol_widget(sce.getUID(), viw.getUID())
         mol_widget.showMaximized()
         mol_widget.setWindowTitle(sce.name)
-        
+
         # set results
         self.result_scene = sce
         self.result_view = viw

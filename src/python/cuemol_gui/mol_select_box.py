@@ -1,17 +1,7 @@
 import json
 
 from cuemol_gui.history import get_molsel_history
-from PySide2.QtCore import Qt
-from PySide2.QtWidgets import (
-    QCheckBox,
-    QComboBox,
-    QDialog,
-    QDialogButtonBox,
-    QFormLayout,
-    QLineEdit,
-    QPushButton,
-    QVBoxLayout,
-)
+from PySide2.QtWidgets import QComboBox
 
 import cuemol
 

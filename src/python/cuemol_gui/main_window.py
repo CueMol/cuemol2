@@ -4,13 +4,12 @@ from cuemol_gui.event_manager import EventManager
 from cuemol_gui.gui_command_manager import GUICommandManager
 from PySide2 import QtCore, QtWidgets
 from PySide2.QtCore import QSettings, Qt
-# from PySide2.QtWidgets import QFileDialog
 from PySide2.QtGui import QFont, QIcon
-# from PySide2.QtOpenGL import QGLFormat
-from PySide2.QtWidgets import QAction, QApplication, QMainWindow, QMdiArea, QTabBar, QWidget, QOpenGLWidget
+from PySide2.QtWidgets import QAction, QApplication, QMainWindow, QMdiArea, QTabBar
 from qt5gui import QtMolWidget2
 
 import cuemol
+
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
@@ -36,9 +35,7 @@ class MainWindow(QMainWindow):
 
     def append_log(self, msg):
         self._logwnd.appendPlainText(msg)
-        self._logwnd.verticalScrollBar().setValue(
-            self._logwnd.verticalScrollBar().maximum()
-        )
+        self._logwnd.verticalScrollBar().setValue(self._logwnd.verticalScrollBar().maximum())
 
     def init_ui(self):
 
@@ -273,9 +270,7 @@ class MainWindow(QMainWindow):
         # self.active_mol_widget()
         return mol_widget
 
-    def on_molview_clicked(
-        self, aSlotID, aCatStr, aTgtTypeID, aEvtTypeID, aSrcID, info
-    ):
+    def on_molview_clicked(self, aSlotID, aCatStr, aTgtTypeID, aEvtTypeID, aSrcID, info):
         # XXX
         return
 
