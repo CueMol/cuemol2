@@ -14,15 +14,13 @@ import cuemol
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
+        self.navi_mgr = NavigatorManager()
         self._clicked_event = None
 
-        # qt5gui.qt5gui_init()
         super().__init__(parent)
         self.init_ui()
         self.show()
         self.on_new_scene()
-
-        self.navi_mgr = NavigatorManager()
 
     def closeEvent(self, event):
         print("MainWindow.closeEvent called!!")
@@ -276,29 +274,7 @@ class MainWindow(QMainWindow):
         return mol_widget
 
     def on_molview_clicked(self, aSlotID, aCatStr, aTgtTypeID, aEvtTypeID, aSrcID, info):
-        x, y, mod = info["x"], info["y"], info["mod"]
-        print("on_molview_clicked", x, y, mod)
-        _, view = self.active_scene_view()
-        if view is None:
-            print("on_molview_clicked: view is None")
-            return
-        sres = view.hitTest(x, y)
-        # self.append_log(sres)
-        try:
-            print(f"Hittest result: {sres}")
-            res = json.loads(sres)
-        except json.JSONDecodeError as e:
-            # TODO: error handling??
-            print(f"invalid hittest result: {e}")
-
-        msg = (
-            f"Molecule [{res['obj_name']}],"
-            + f" {res['message']}, "
-            + f"O: {res['occ']} B: {res['bfac']} "
-            + f"Pos: ({res['x']}, {res['y']}, {res['z']})"
-        )
-        print(msg)
-        self.append_log(msg)
+        self.navi_mgr.active_view_clicked(info["x"], info["y"], info["mod"])
 
     def on_new_scene(self):
         mgr = GUICommandManager.get_instance()
