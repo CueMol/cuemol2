@@ -2,6 +2,7 @@ import json
 
 from cuemol_gui.event_manager import EventManager
 from cuemol_gui.commands.gui_command_manager import GUICommandManager
+from cuemol_gui.navigators.navigator_manager import NavigatorManager
 from PySide2 import QtCore, QtWidgets
 from PySide2.QtCore import QSettings, Qt
 from PySide2.QtGui import QFont, QIcon
@@ -20,6 +21,8 @@ class MainWindow(QMainWindow):
         self.init_ui()
         self.show()
         self.on_new_scene()
+
+        self.navi_mgr = NavigatorManager()
 
     def closeEvent(self, event):
         print("MainWindow.closeEvent called!!")
@@ -222,6 +225,8 @@ class MainWindow(QMainWindow):
             vwid,  # source uid
             self.on_molview_clicked,
         )
+
+        self.navi_mgr.active_view_changed(vwid)
 
     def create_widgets(self):
         # Create tabbed mol view container
