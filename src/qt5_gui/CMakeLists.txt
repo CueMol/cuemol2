@@ -19,9 +19,9 @@ message(STATUS "Qt5Widgets_FOUND: ${Qt5Widgets_FOUND}")
 
 SET(QT5GUI_SRCS
   qt5_gui.cpp
-  QtGlDisplayContext.cpp
-  QtGlView.cpp
-  QtMolWidget.cpp
+  QtGlDisplayContext2.cpp
+  QtGlView2.cpp
+  QtMolWidget2.cpp
   QtTimerImpl.cpp
   )
 
@@ -140,7 +140,7 @@ set(shiboken_options --generator-set=shiboken --enable-parent-ctor-heuristic
 set(wrapped_header ${CMAKE_CURRENT_SOURCE_DIR}/bindings.h)
 set(typesystem_file ${CMAKE_CURRENT_SOURCE_DIR}/bindings.xml)
 set(generated_sources
-  ${CMAKE_CURRENT_BINARY_DIR}/qt5gui/qtmolwidget_wrapper.cpp
+  ${CMAKE_CURRENT_BINARY_DIR}/qt5gui/qtmolwidget2_wrapper.cpp
   ${CMAKE_CURRENT_BINARY_DIR}/qt5gui/qt5gui_module_wrapper.cpp)
 
 

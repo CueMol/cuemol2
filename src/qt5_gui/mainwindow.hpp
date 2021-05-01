@@ -15,7 +15,7 @@ class QSplitter;
 class QPlainTextEdit;
 QT_END_NAMESPACE
 
-class QtMolWidget;
+class QtMolWidget2;
 
 #include <qlib/LLogEvent.hpp>
 
@@ -104,8 +104,8 @@ private:
     QMdiArea *m_pTabWnd;
 
 public:
-    QtMolWidget *createMolWidget();
-    QtMolWidget *activeMolWidget();
+    QtMolWidget2 *createMolWidget();
+    QtMolWidget2 *activeMolWidget();
 
     
 public Q_SLOTS:

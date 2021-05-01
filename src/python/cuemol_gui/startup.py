@@ -12,9 +12,9 @@ if hasattr(os, "add_dll_directory") and "CUEMOL_DLL_DIR" in os.environ:
         print(f"add_dll_directory: {d}")
         os.add_dll_directory(d)
 
-print("sys.path:")
-for i in sys.path:
-    print(i)
+# print("sys.path:")
+# for i in sys.path:
+#     print(i)
 
 # app = Application(sys.argv)
 app = QApplication(sys.argv)

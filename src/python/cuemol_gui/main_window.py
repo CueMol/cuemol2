@@ -7,16 +7,10 @@ from PySide2.QtCore import QSettings, Qt
 # from PySide2.QtWidgets import QFileDialog
 from PySide2.QtGui import QFont, QIcon
 # from PySide2.QtOpenGL import QGLFormat
-from PySide2.QtWidgets import QAction, QApplication, QMainWindow, QMdiArea, QTabBar
-from qt5gui import QtMolWidget
+from PySide2.QtWidgets import QAction, QApplication, QMainWindow, QMdiArea, QTabBar, QWidget, QOpenGLWidget
+from qt5gui import QtMolWidget2
 
 import cuemol
-
-# import main
-
-
-# from main import event, CmdPrompt
-
 
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
@@ -189,7 +183,7 @@ class MainWindow(QMainWindow):
         print(f"active_wnd: {active_wnd}")
         if active_wnd is None:
             return None
-        mol_widget = active_wnd.findChild(QtMolWidget)
+        mol_widget = active_wnd.findChild(QtMolWidget2)
         print(f"active mol_widget: {mol_widget}")
         return mol_widget
 
@@ -270,8 +264,9 @@ class MainWindow(QMainWindow):
         # Set central widget
         self.setCentralWidget(splitter)
 
-    def create_mol_widget(self):
-        mol_widget = QtMolWidget()
+    def create_mol_widget(self, scid, vwid):
+        mol_widget = QtMolWidget2()
+        mol_widget.bind(scid, vwid)
         self._mdi_area.addSubWindow(mol_widget)
         print(f"create_mol_widget mol widget: {mol_widget}")
         print(f"create_mol_widget mdi area: {self._mdi_area}")
@@ -281,6 +276,9 @@ class MainWindow(QMainWindow):
     def on_molview_clicked(
         self, aSlotID, aCatStr, aTgtTypeID, aEvtTypeID, aSrcID, info
     ):
+        # XXX
+        return
+
         x, y, mod = info["x"], info["y"], info["mod"]
         print("on_molview_clicked", x, y, mod)
         _, view = self.active_scene_view()

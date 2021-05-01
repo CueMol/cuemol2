@@ -15,7 +15,7 @@
 // #include "QtNewSceneCommand.hpp"
 // #include "QtLoadSceneCommand.hpp"
 // #include "QtLoadObjectCommand.hpp"
-#include "QtGlView.hpp"
+#include "QtGlView2.hpp"
 #include "QtTimerImpl.hpp"
 
 void qt5gui_regClasses();
@@ -30,7 +30,7 @@ public:
     virtual ~QtGlViewFactory() {}
     virtual qsys::View* create()
     {
-        return new qt5_gui::QtGlView();
+        return new qt5_gui::QtGlView2();
     }
 };
 

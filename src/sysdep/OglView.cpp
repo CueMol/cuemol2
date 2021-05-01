@@ -360,6 +360,7 @@ void OglView::drawScene()
     setUpModelMat(MM_NORMAL);
     glDrawBuffer(GL_BACK);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
     // Draw main 3D objects
     pScene->display(pdc);
     break;
@@ -421,7 +422,7 @@ void OglView::drawScene()
     ::glEnable(GL_LINE_SMOOTH);
 
   }
-  
+
   // Display UI drawing objects
   View::showDrawObj(pdc);
 
@@ -447,10 +448,8 @@ void OglView::drawScene()
     pdc->pushMatrix();
     pdc->loadIdent();
     ::glTranslated(0,0, -dist); //slabnear);
-    
     ::glDisable(GL_LIGHTING);
     ::glDisable(GL_LINE_SMOOTH);
-
     if (getCenterMark()==Camera::CCM_CROSS) {
       const double dsize = 10.0;
       pdc->pushMatrix();
@@ -465,12 +464,11 @@ void OglView::drawScene()
       ::glEnd();
       pdc->popMatrix();
     }
-
     // Display 2D-UI drawing objects
     View::showDrawObj2D(pdc);
-
     ::glEnable(GL_LINE_SMOOTH);
-    ::glEnable(GL_CULL_FACE);
+    // XXX: 2021/4/30 This causes strange drawing in QOpenGLWidget.
+    // ::glEnable(GL_CULL_FACE);
     pdc->popMatrix();
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();

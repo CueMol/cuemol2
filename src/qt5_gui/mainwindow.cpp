@@ -12,7 +12,7 @@
 #include <pybr/pybr.hpp>
 
 #include "QtMolStructPanel.hpp"
-#include "QtMolWidget.hpp"
+#include "QtMolWidget2.hpp"
 #include "QtScenePanel.hpp"
 #include "moc_mainwindow.cpp"
 #include "qlib/LMsgLog.hpp"
@@ -58,7 +58,7 @@ void MainWindow::onActivateMolTabChanged()
         // pScMgr->getActiveSceneID(qlib::invalid_uid);
         return;
     }
-    auto molw = activewnd->findChild<QtMolWidget *>();
+    auto molw = activewnd->findChild<QtMolWidget2 *>();
     auto scid = molw->getSceneID();
     auto vwid = molw->getViewID();
     auto title = activewnd->windowTitle();
@@ -418,17 +418,17 @@ void MainWindow::showEvent(QShowEvent *event)
     QTimer::singleShot(0, this, &MainWindow::onLoaded);
 }
 
-QtMolWidget *MainWindow::createMolWidget()
+QtMolWidget2 *MainWindow::createMolWidget()
 {
-    auto *pchild = new QtMolWidget;
+    auto *pchild = new QtMolWidget2();
     pchild->setObjectName("MolWidget");
     m_pTabWnd->addSubWindow(pchild);
     return pchild;
 }
 
-QtMolWidget *MainWindow::activeMolWidget()
+QtMolWidget2 *MainWindow::activeMolWidget()
 {
     auto *pActSubWnd = m_pTabWnd->activeSubWindow();
     if (pActSubWnd == nullptr) return nullptr;
-    return pActSubWnd->findChild<QtMolWidget *>();
+    return pActSubWnd->findChild<QtMolWidget2 *>();
 }

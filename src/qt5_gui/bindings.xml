@@ -7,7 +7,7 @@
     void qt5gui_init();
   </inject-code>
 
-  <object-type name="QtMolWidget">
+  <object-type name="QtMolWidget2">
   </object-type>
 
   <function signature="qt5gui_init()"/>
