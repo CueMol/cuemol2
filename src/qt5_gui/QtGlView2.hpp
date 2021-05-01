@@ -48,6 +48,9 @@ namespace qt5_gui {
 
     virtual DisplayContext *getDisplayContext();
 
+    /// Draw current scene
+    virtual void drawScene();
+
     virtual void swapBuffers();
 
     /// Query hardware stereo capability
@@ -57,6 +60,8 @@ namespace qt5_gui {
     // System dependent implementations
 
     bool initGL(void *pWidget);
+
+    void drawSceneImpl();
 
   private:
     void *m_pWidget;

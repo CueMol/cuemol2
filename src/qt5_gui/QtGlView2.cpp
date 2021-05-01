@@ -91,3 +91,15 @@ bool QtGlView2::hasHWStereo() const
     // LOG_DPRINTLN("WglView> hasHWStereo: %d", m_bHasQuadBuffer);
     return m_bHasQuadBuffer;
 }
+
+void QtGlView2::drawScene()
+{
+    QOpenGLWidget *pGLWidget = static_cast<QOpenGLWidget *>(m_pWidget);
+    MB_ASSERT(pGLWidget!=nullptr);
+    pGLWidget->update();
+}
+
+void QtGlView2::drawSceneImpl()
+{
+    super_t::drawScene();
+}

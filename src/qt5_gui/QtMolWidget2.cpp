@@ -30,7 +30,7 @@ QtMolWidget2::QtMolWidget2(QWidget *parent) : super_t(parent)
     m_pMeh = new sysdep::MouseEventHandler();
 
     grabGesture(Qt::PinchGesture);
-    grabGesture(Qt::PanGesture);
+    // grabGesture(Qt::PanGesture);
 }
 
 QtMolWidget2::~QtMolWidget2() {}
@@ -81,7 +81,7 @@ void QtMolWidget2::initializeGL()
 void QtMolWidget2::paintGL()
 {
     LOG_DPRINTLN("QtMolWidget2::paintGL called!!");
-    m_pView->forceRedraw();
+    m_pView->drawSceneImpl();
 }
 
 void QtMolWidget2::resizeGL(int width, int height)
@@ -120,7 +120,7 @@ void QtMolWidget2::mouseReleaseEvent(QMouseEvent *event)
         return;  // click/drag state error --> skip event invokation
     m_pView->fireInDevEvent(ev);
 
-    MB_DPRINTLN("mouse release %d, %d", ev.getX(), ev.getY());
+    LOG_DPRINTLN("mouse release %d, %d", ev.getX(), ev.getY());
     event->accept();
 }
 
@@ -250,7 +250,7 @@ QString ToString(const EnumType &enumValue)
 bool QtMolWidget2::event(QEvent *event)
 {
     // LOG_DPRINTLN("QtMolWidget2::event %s",
-    // ToString(event->type()).toLocal8Bit().constData());
+    //              ToString(event->type()).toLocal8Bit().constData());
     if (event->type() == QEvent::Gesture)
         return gestureEvent(static_cast<QGestureEvent *>(event));
     return super_t::event(event);
