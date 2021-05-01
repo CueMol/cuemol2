@@ -1,7 +1,7 @@
 import json
 
 from cuemol_gui.event_manager import EventManager
-from cuemol_gui.gui_command_manager import GUICommandManager
+from cuemol_gui.commands.gui_command_manager import GUICommandManager
 from PySide2 import QtCore, QtWidgets
 from PySide2.QtCore import QSettings, Qt
 from PySide2.QtGui import QFont, QIcon
@@ -271,9 +271,6 @@ class MainWindow(QMainWindow):
         return mol_widget
 
     def on_molview_clicked(self, aSlotID, aCatStr, aTgtTypeID, aEvtTypeID, aSrcID, info):
-        # XXX
-        return
-
         x, y, mod = info["x"], info["y"], info["mod"]
         print("on_molview_clicked", x, y, mod)
         _, view = self.active_scene_view()

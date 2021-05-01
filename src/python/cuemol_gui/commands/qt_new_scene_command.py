@@ -1,6 +1,6 @@
-from cuemol_gui.gui_command_manager import GUICommandBase
-
 import cuemol
+
+from .gui_command_base import GUICommandBase
 
 
 class QtNewSceneCommand(GUICommandBase):

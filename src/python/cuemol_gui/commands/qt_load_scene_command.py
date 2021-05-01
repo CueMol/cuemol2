@@ -1,10 +1,12 @@
 import json
 import re
 
-from cuemol_gui.gui_command_manager import GUICommandBase, GUICommandManager
 from PySide2.QtWidgets import QDialog, QFileDialog
 
 import cuemol
+
+from .gui_command_base import GUICommandBase
+from .gui_command_manager import GUICommandManager
 
 
 def create_filter(category_name):

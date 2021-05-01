@@ -1,13 +1,14 @@
 from pathlib import Path
 
 from cuemol_gui.create_renderer_dialog import CreateRendererDialog
-from cuemol_gui.gui_command_manager import GUICommandBase
 from cuemol_gui.history import update_molsel_history
-from cuemol_gui.qt_load_scene_command import create_filter
 from PySide2.QtWidgets import QDialog, QFileDialog
 
 import cuemol
 from cuemol.undo_txn import UndoTxn
+
+from .gui_command_base import GUICommandBase
+from .qt_load_scene_command import create_filter
 
 
 class QtLoadObjectCommand(GUICommandBase):

@@ -4,6 +4,8 @@ import sys
 from PySide2 import QtOpenGL  # NOQA
 from PySide2.QtWidgets import QApplication
 
+import cuemol  # NOQA
+
 # Set DLL directory for windows
 if hasattr(os, "add_dll_directory") and "CUEMOL_DLL_DIR" in os.environ:
     dir_str = os.environ["CUEMOL_DLL_DIR"]
@@ -18,26 +20,26 @@ app = QApplication(sys.argv)
 app.setOrganizationName("BKR-LAB")
 app.setApplicationName("CueMol")
 
-import qt5gui  # NOQA
 
-# Load commands
-# TODO: move to other file
-from cuemol_gui.gui_command_manager import GUICommandManager  # NOQA
-from cuemol_gui.main_window import MainWindow  # NOQA
-from cuemol_gui.qt_load_object_command import QtLoadObjectCommand  # NOQA
-from cuemol_gui.qt_load_scene_command import QtLoadSceneCommand  # NOQA
-from cuemol_gui.qt_new_scene_command import QtNewSceneCommand  # NOQA
+def _run_qt5gui_init():
+    import qt5gui  # NOQA
 
-import cuemol  # NOQA
+    qt5gui.qt5gui_init()
 
-qt5gui.qt5gui_init()
 
-# Load commands
-# TODO: move to other file
-mgr = GUICommandManager.get_instance()
-mgr.register(QtNewSceneCommand())
-mgr.register(QtLoadSceneCommand())
-mgr.register(QtLoadObjectCommand())
+def _load_gui_commands():
+    from cuemol_gui.commands import load_commands  # NOQA
 
-main_window = MainWindow()
-sys.exit(app.exec_())
+    load_commands()
+
+
+def _launch_main_window():
+    from cuemol_gui.main_window import MainWindow  # NOQA
+
+    _ = MainWindow()
+    sys.exit(app.exec_())
+
+
+_run_qt5gui_init()
+_load_gui_commands()
+_launch_main_window()
