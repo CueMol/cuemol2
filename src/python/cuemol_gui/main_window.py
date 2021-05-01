@@ -289,6 +289,9 @@ class MainWindow(QMainWindow):
     def on_molview_clicked(
         self, aSlotID, aCatStr, aTgtTypeID, aEvtTypeID, aSrcID, info
     ):
+        # XXX
+        return
+
         x, y, mod = info["x"], info["y"], info["mod"]
         print("on_molview_clicked", x, y, mod)
         _, view = self.active_scene_view()

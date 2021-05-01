@@ -7,6 +7,7 @@
 
 #include "QtMolWidget2.hpp"
 
+#include <QtCore/QMetaEnum>
 #include <QtGui/QMouseEvent>
 #include <QtGui/QWindow>
 #include <qlib/qlib.hpp>
@@ -139,12 +140,23 @@ void QtMolWidget2::wheelEvent(QWheelEvent *event)
     QPoint numPixels = event->pixelDelta();
     QPoint numDegrees = event->angleDelta();
 
-    qsys::InDevEvent ev;
-    setupWheelEvent(event, ev);
-
     if (!numPixels.isNull()) {
-        // scrollWithPixels(numPixels);
+        LOG_DPRINTLN("QtMolWidget2::wheelEvent numPixels=%d, %d", numPixels.x(),
+                     numPixels.y());
+
+        const float factor = -1.0f;
+        qlib::Vector4D vec;
+        const float deltaX = numPixels.x();
+        const float deltaY = numPixels.y();
+        m_pView->convXYTrans(deltaX * factor, deltaY * factor, vec);
+        m_pView->setViewCenter(m_pView->getViewCenter() - vec);
+        update();
     } else if (!numDegrees.isNull()) {
+        qsys::InDevEvent ev;
+        setupWheelEvent(event, ev);
+
+        LOG_DPRINTLN("QtMolWidget2::wheelEvent numDegrees=%d, %d", numDegrees.x(),
+                     numDegrees.y());
         int zDelta = numDegrees.y();
 
         ev.setType(qsys::InDevEvent::INDEV_WHEEL);
@@ -220,8 +232,25 @@ void QtMolWidget2::setupWheelEvent(QWheelEvent *event, qsys::InDevEvent &ev)
     return;
 }
 
+template <typename EnumType>
+QString ToString(const EnumType &enumValue)
+{
+    const char *enumName = qt_getEnumName(enumValue);
+    const QMetaObject *metaObject = qt_getEnumMetaObject(enumValue);
+    if (metaObject) {
+        const int enumIndex = metaObject->indexOfEnumerator(enumName);
+        return QString("%1::%2::%3")
+            .arg(metaObject->className(), enumName,
+                 metaObject->enumerator(enumIndex).valueToKey(enumValue));
+    }
+
+    return QString("%1::%2").arg(enumName).arg(static_cast<int>(enumValue));
+}
+
 bool QtMolWidget2::event(QEvent *event)
 {
+    // LOG_DPRINTLN("QtMolWidget2::event %s",
+    // ToString(event->type()).toLocal8Bit().constData());
     if (event->type() == QEvent::Gesture)
         return gestureEvent(static_cast<QGestureEvent *>(event));
     return super_t::event(event);
@@ -229,19 +258,13 @@ bool QtMolWidget2::event(QEvent *event)
 
 bool QtMolWidget2::gestureEvent(QGestureEvent *event)
 {
-    MB_DPRINTLN("***** gestureEvent called!!");
-
-    /*
+    // LOG_DPRINTLN("QtMolWidget2::gestureEvent");
     if (QGesture *swipe = event->gesture(Qt::SwipeGesture)) {
-      // swipeTriggered(static_cast<QSwipeGesture *>(swipe));
-      MB_DPRINTLN("* SwipeGesture!!");
-    }
-    else if (QGesture *pan = event->gesture(Qt::PanGesture)) {
-    panTriggered(static_cast<QPanGesture *>(pan));
-    }
-    */
-
-    if (QGesture *pinch = event->gesture(Qt::PinchGesture)) {
+        // swipeTriggered(static_cast<QSwipeGesture *>(swipe));
+        MB_DPRINTLN("* SwipeGesture!!");
+    } else if (QGesture *pan = event->gesture(Qt::PanGesture)) {
+        panTriggered(static_cast<QPanGesture *>(pan));
+    } else if (QGesture *pinch = event->gesture(Qt::PinchGesture)) {
         pinchTriggered(static_cast<QPinchGesture *>(pinch));
     }
 
@@ -271,7 +294,7 @@ void QtMolWidget2::pinchTriggered(QPinchGesture *gesture)
         // m_pView->setUpProjMat(-1, -1);
         // m_pView->setProjChange();
         // m_pView->setUpdateFlag();
-        
+
         LOG_DPRINTLN("New zoom: %f", m_pView->getZoom());
         update();
     }
@@ -281,12 +304,11 @@ void QtMolWidget2::pinchTriggered(QPinchGesture *gesture)
         // currentStepScaleFactor = 1;
         MB_DPRINTLN("** Pinch gesture finished");
     }
-
 }
 
 void QtMolWidget2::panTriggered(QPanGesture *gesture)
 {
-    MB_DPRINTLN("* PanGesture!!");
+    LOG_DPRINTLN("* PanGesture!!");
 
 #ifndef QT_NO_CURSOR
     switch (gesture->state()) {
@@ -300,5 +322,5 @@ void QtMolWidget2::panTriggered(QPanGesture *gesture)
 #endif
 
     QPointF delta = gesture->delta();
-    MB_DPRINTLN("  delta=%f, %f", delta.x(), delta.y());
+    LOG_DPRINTLN("delta=%f, %f", delta.x(), delta.y());
 }

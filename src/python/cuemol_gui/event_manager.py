@@ -17,7 +17,7 @@ class EventManager:
 
     def _listener(self, aSlotID, aCatStr, aTgtTypeID, aEvtTypeID, aSrcID, aInfoStr):
         # print("Event listener called!!")
-        #         print("  slot ID="+str(aSlotID))
+        print(f"  slot ID={aSlotID}")
         #         print("  cat str="+str(aCatStr))
         #         print("  target ID="+str(aTgtTypeID))
         #         print("  event ID="+str(aEvtTypeID))
