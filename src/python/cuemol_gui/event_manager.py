@@ -17,12 +17,12 @@ class EventManager:
 
     def _listener(self, aSlotID, aCatStr, aTgtTypeID, aEvtTypeID, aSrcID, aInfoStr):
         # print("Event listener called!!")
-        print(f"  slot ID={aSlotID}")
-        #         print("  cat str="+str(aCatStr))
-        #         print("  target ID="+str(aTgtTypeID))
-        #         print("  event ID="+str(aEvtTypeID))
-        #         print("  src ID="+str(aSrcID))
-        #         print("  info : "+str(aInfoStr))
+        # print(f"  slot ID={aSlotID}")
+        # print(f"  cat str={aCatStr}")
+        # print(f"  target ID={aTgtTypeID}")
+        # print(f"  event ID={aEvtTypeID}")
+        # print(f"  src ID={aSrcID}")
+        # print(f"  info : {aInfoStr}")
         sSlotID = str(aSlotID)
         if sSlotID not in self._slot:
             # TODO: log error msg??

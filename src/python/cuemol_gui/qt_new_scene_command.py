@@ -20,9 +20,8 @@ class QtNewSceneCommand(GUICommandBase):
         print(f"new view:{viw}")
 
         mol_widget = widget.create_mol_widget(sce.getUID(), viw.getUID())
-        # mol_widget.bind()
         mol_widget.showMaximized()
-        # mol_widget.setWindowTitle(sce.name)
+        mol_widget.setWindowTitle(sce.name)
         
         # set results
         self.result_scene = sce

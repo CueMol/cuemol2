@@ -183,7 +183,7 @@ void OglView::setUpProjMat(int cx, int cy)
   double vw = zoom/2.0f;
   double fasp = (double)cx/(double)cy;
   
-  LOG_DPRINTLN("OglView.setUpProjMat> CX=%d, CY=%d, Vw=%f, Fasp=%f", cx, cy, vw, fasp);
+  MB_DPRINTLN("OglView.setUpProjMat> CX=%d, CY=%d, Vw=%f, Fasp=%f", cx, cy, vw, fasp);
 
   int bcx = convToBackingX(cx);
   int bcy = convToBackingY(cy);
@@ -345,7 +345,6 @@ void OglView::drawScene()
 
   gfx::ColorPtr pBgCol = pScene->getBgColor();
   glClearColor(float(pBgCol->fr()), float(pBgCol->fg()), float(pBgCol->fb()), 1.0f);
-  
   setFogColorImpl();
   
   pdc->setLighting(false);
@@ -449,7 +448,6 @@ void OglView::drawScene()
     pdc->pushMatrix();
     pdc->loadIdent();
     ::glTranslated(0,0, -dist); //slabnear);
-    
     ::glDisable(GL_LIGHTING);
     ::glDisable(GL_LINE_SMOOTH);
     if (getCenterMark()==Camera::CCM_CROSS) {
@@ -466,10 +464,10 @@ void OglView::drawScene()
       ::glEnd();
       pdc->popMatrix();
     }
-
     // Display 2D-UI drawing objects
     View::showDrawObj2D(pdc);
     ::glEnable(GL_LINE_SMOOTH);
+    // XXX: 2021/4/30 This causes strange drawing in QOpenGLWidget.
     // ::glEnable(GL_CULL_FACE);
     pdc->popMatrix();
     glMatrixMode(GL_PROJECTION);

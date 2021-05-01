@@ -12,16 +12,6 @@ from qt5gui import QtMolWidget2
 
 import cuemol
 
-class MyWidget(QOpenGLWidget):
-    def initializeGL(self):
-        print("initializeGL(self)")
-
-    def paintGL(self):
-        print("paintGL(self)")
-
-    def bind(self, _x, _y):
-        pass
-
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         self._clicked_event = None
@@ -277,9 +267,6 @@ class MainWindow(QMainWindow):
     def create_mol_widget(self, scid, vwid):
         mol_widget = QtMolWidget2()
         mol_widget.bind(scid, vwid)
-        # wrapper = QWidget.createWindowContainer(mol_widget)
-        # self._mdi_area.addSubWindow(wrapper)
-        # mol_widget = MyWidget()
         self._mdi_area.addSubWindow(mol_widget)
         print(f"create_mol_widget mol widget: {mol_widget}")
         print(f"create_mol_widget mdi area: {self._mdi_area}")
