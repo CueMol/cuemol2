@@ -10,7 +10,7 @@ def get_molsel_history():
     else:
         strlist = val
     qset.endGroup()
-    
+
     print(f"get_molsel_history: {strlist}")
     return strlist
 

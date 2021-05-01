@@ -69,7 +69,7 @@ class QtLoadSceneCommand(GUICommandBase):
             if f == sel_filter:
                 file_fmt = t
                 break
-        assert file_fmt != None
+        assert file_fmt is not None
 
         sc_mgr = cuemol.svc("SceneManager")
         cmd_mgr = cuemol.svc("CmdMgr")

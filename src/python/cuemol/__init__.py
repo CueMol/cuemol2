@@ -1,10 +1,10 @@
 import os
-from cuemol.internal_loader import import_internal
 from pathlib import Path
+
+from cuemol.internal_loader import import_internal
 
 # print("cuemol/__init__.py called", here)
 
-# import _cuemol_internal as ci
 ci = import_internal()
 if not ci.isInitialized():
     conf_path = os.getenv("CUEMOL_SYSCONFIG_PATH")
@@ -15,4 +15,4 @@ if not ci.isInitialized():
         conf_path = Path(conf_path)
     ci.initCueMol(str(conf_path / "sysconfig.xml"))
 
-from cuemol.cuemol import *
+from cuemol.cuemol import *  # NOQA

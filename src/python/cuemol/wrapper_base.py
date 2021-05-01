@@ -3,11 +3,11 @@
 #
 
 from cuemol.internal_loader import import_internal
+
 ci = import_internal()
 
 
 class WrapperBase:
-
     def __init__(self, aWrapped):
         self._wrapped = aWrapped
 

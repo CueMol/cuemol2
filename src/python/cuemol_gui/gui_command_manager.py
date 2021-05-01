@@ -10,7 +10,7 @@ class GUICommandBase(object):
 
     def get_name(self):
         raise NotImplementedError()
-        
+
 
 class GUICommandManager(object):
     def __init__(self):
@@ -32,7 +32,7 @@ class GUICommandManager(object):
         cmd = copy.deepcopy(self._data[name])
         cmd.run(widget, undo_txn)
         return cmd
-    
+
     @classmethod
     def get_instance(cls):
         if not hasattr(cls, "_instance"):

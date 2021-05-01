@@ -1,7 +1,4 @@
-import tempfile
-import os
 import re
-from pathlib import Path
 import urllib.request
 
 import cuemol as cm
@@ -10,35 +7,36 @@ from cuemol.internal_loader import import_internal
 
 ci = import_internal()
 
+
 def load_url(aURL):
 
     rdr_type = "pdb"
     cmp_type = None
 
-    if re.search("\.pdb\.gz$", aURL) or re.search("\.ent\.gz$", aURL):
+    if re.search(r"\.pdb\.gz$", aURL) or re.search(r"\.ent\.gz$", aURL):
         rdr_type = "pdb"
         cmp_type = "gzip"
-    elif re.search("\.pdb$", aURL) or re.search("\.ent$", aURL):
+    elif re.search(r"\.pdb$", aURL) or re.search(r"\.ent$", aURL):
         rdr_type = "pdb"
         cmp_type = None
-    elif re.search("\.cif\.gz$", aURL):
+    elif re.search(r"\.cif\.gz$", aURL):
         rdr_type = "mmcif"
         cmp_type = "gzip"
-    elif re.search("\.cif$", aURL):
+    elif re.search(r"\.cif$", aURL):
         rdr_type = "mmcif"
         cmp_type = None
 
-    print("XXX",re.search("\.cif\.gz$", aURL))
+    print("XXX", re.search(r"\.cif\.gz$", aURL))
     print("rdr_type", rdr_type)
     print("cmp_type", cmp_type)
 
     sm = cm.strMgr()
 
-    reader = sm.createHandler(rdr_type, 0);
+    reader = sm.createHandler(rdr_type, 0)
     if cmp_type:
         reader.compress = cmp_type
 
-    tid = sm.loadObjectAsync(reader);
+    tid = sm.loadObjectAsync(reader)
 
     # tmpobj = reader.createDefaultObj()
     # obj_type = tmpobj._wrapped.getClassName()
@@ -52,16 +50,17 @@ def load_url(aURL):
             chunk = response.read(nchunksz)
             if chunk:
                 print("read:", type(chunk))
-                b = cm.createWrapper( ci.createBAryFromBytes(chunk) )
-                sm.supplyDataAsync(tid, b, len(chunk));
+                b = cm.createWrapper(ci.createBAryFromBytes(chunk))
+                sm.supplyDataAsync(tid, b, len(chunk))
             else:
-                break 
+                break
 
-    res = sm.waitLoadAsync(tid);
-    print("res",res)
+    res = sm.waitLoadAsync(tid)
+    print("res", res)
     return res
-    #return cm.createWrapper(res)
-    
+    # return cm.createWrapper(res)
+
+
 def fetch(pdbid, scene=None):
     sc = cm.scene(scene)
     url_tmpl = "http://files.rcsb.org/download/{}.cif.gz"
@@ -74,4 +73,3 @@ def fetch(pdbid, scene=None):
     renderer.setupDefaultRenderer(obj)
 
     return obj
-

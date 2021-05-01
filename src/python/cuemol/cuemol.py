@@ -240,18 +240,18 @@ def rend(aRend, aObj=None):
     rend = None
 
     if aObj is None:
-        s = scene()
+        sce = scene()
         if isinstance(aRend, str):
-            rend = s.getRendByName(aRend)
+            rend = sce.getRendByName(aRend)
         elif isinstance(aRend, int):
-            rend = o.getRenderer(aRend)
+            rend = sce.getRenderer(aRend)
 
     else:
-        o = obj(aObj)
+        ob = obj(aObj)
         if isinstance(aRend, str):
-            rend = o.getRendererByName(aRend)
+            rend = ob.getRendererByName(aRend)
         elif isinstance(aRend, int):
-            rend = o.getRenderer(aRend)
+            rend = ob.getRenderer(aRend)
 
     if rend is None:
         raise RuntimeError("renderer " + str(aRend) + " not found")
