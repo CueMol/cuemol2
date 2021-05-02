@@ -2,9 +2,9 @@ from cuemol_gui.commands.gui_command_manager import GUICommandManager
 from cuemol_gui.event_manager import EventManager
 from cuemol_gui.navigators.navigator_manager import NavigatorManager
 from PySide2 import QtCore, QtWidgets
-from PySide2.QtCore import QSettings, Qt, QPoint
+from PySide2.QtCore import QSettings, Qt
 from PySide2.QtGui import QFont, QIcon
-from PySide2.QtWidgets import QAction, QApplication, QMainWindow, QMdiArea, QTabBar, QMenu
+from PySide2.QtWidgets import QAction, QApplication, QMainWindow, QMdiArea, QTabBar
 from qt5gui import QtMolWidget2
 
 import cuemol

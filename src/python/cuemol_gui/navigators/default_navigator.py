@@ -1,7 +1,8 @@
+from PySide2.QtCore import QPoint
+from PySide2.QtWidgets import QAction, QMenu
+
 from cuemol import logging
 
-from PySide2.QtWidgets import QMenu, QAction
-from PySide2.QtCore import QPoint
 from .base_navigator import BaseNavigator
 
 logger = logging.get_logger(__name__)
