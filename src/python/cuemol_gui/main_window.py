@@ -2,9 +2,9 @@ from cuemol_gui.commands.gui_command_manager import GUICommandManager
 from cuemol_gui.event_manager import EventManager
 from cuemol_gui.navigators.navigator_manager import NavigatorManager
 from PySide2 import QtCore, QtWidgets
-from PySide2.QtCore import QSettings, Qt
+from PySide2.QtCore import QSettings, Qt, QPoint
 from PySide2.QtGui import QFont, QIcon
-from PySide2.QtWidgets import QAction, QApplication, QMainWindow, QMdiArea, QTabBar
+from PySide2.QtWidgets import QAction, QApplication, QMainWindow, QMdiArea, QTabBar, QMenu
 from qt5gui import QtMolWidget2
 
 import cuemol
@@ -271,11 +271,11 @@ class MainWindow(QMainWindow):
         self._mdi_area.addSubWindow(mol_widget)
         logger.info(f"create_mol_widget mol widget: {mol_widget}")
         logger.info(f"create_mol_widget mdi area: {self._mdi_area}")
-        # self.active_mol_widget()
         return mol_widget
 
     def on_molview_clicked(self, aSlotID, aCatStr, aTgtTypeID, aEvtTypeID, aSrcID, info):
-        self.navi_mgr.active_view_clicked(info["x"], info["y"], info["mod"])
+        active_widget = self.active_mol_widget()
+        self.navi_mgr.active_view_clicked(info["x"], info["y"], info["mod"], active_widget)
 
     def on_new_scene(self):
         mgr = GUICommandManager.get_instance()

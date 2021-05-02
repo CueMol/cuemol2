@@ -42,7 +42,7 @@ class NavigatorManager(object):
     def active_view_changed(self, view_id: int):
         self._active_view_id = view_id
 
-    def active_view_clicked(self, x: int, y: int, mod: int):
+    def active_view_clicked(self, x: int, y: int, mod: int, widget):
         view = cuemol.sceMgr().getView(self._active_view_id)
         logger.info(f"on_molview_clicked x, y:{x}, {y}, mod: {mod}")
         if view is None:
@@ -60,6 +60,6 @@ class NavigatorManager(object):
 
         dmod = conv_modifier(mod)
         if dmod["lbtn"]:
-            self._default_navi.mouse_lbtn_clicked(x, y, dmod, hit_res)
+            self._default_navi.mouse_lbtn_clicked(x, y, dmod, hit_res, widget)
         elif dmod["rbtn"]:
-            self._default_navi.mouse_rbtn_clicked(x, y, dmod, hit_res)
+            self._default_navi.mouse_rbtn_clicked(x, y, dmod, hit_res, widget)
