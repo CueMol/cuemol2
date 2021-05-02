@@ -1,4 +1,8 @@
+from cuemol import logging
+
 from .base_navigator import BaseNavigator
+
+logger = logging.get_logger(__name__)
 
 
 class DefaultNavigator(BaseNavigator):
@@ -16,3 +20,4 @@ class DefaultNavigator(BaseNavigator):
             + f"Pos: ({hit_res['x']}, {hit_res['y']}, {hit_res['z']})"
         )
         print(msg)
+        logger.info(msg)

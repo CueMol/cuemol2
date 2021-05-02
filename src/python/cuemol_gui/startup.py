@@ -5,6 +5,7 @@ from PySide2 import QtOpenGL  # NOQA
 from PySide2.QtWidgets import QApplication
 
 import cuemol  # NOQA
+from cuemol import logging
 
 # Set DLL directory for windows
 if hasattr(os, "add_dll_directory") and "CUEMOL_DLL_DIR" in os.environ:
@@ -39,6 +40,8 @@ def _launch_main_window():
     _ = MainWindow()
     sys.exit(app.exec_())
 
+
+logging.setup()
 
 _run_qt5gui_init()
 _load_gui_commands()

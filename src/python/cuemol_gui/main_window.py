@@ -1,7 +1,5 @@
-import json
-
-from cuemol_gui.event_manager import EventManager
 from cuemol_gui.commands.gui_command_manager import GUICommandManager
+from cuemol_gui.event_manager import EventManager
 from cuemol_gui.navigators.navigator_manager import NavigatorManager
 from PySide2 import QtCore, QtWidgets
 from PySide2.QtCore import QSettings, Qt
@@ -10,6 +8,9 @@ from PySide2.QtWidgets import QAction, QApplication, QMainWindow, QMdiArea, QTab
 from qt5gui import QtMolWidget2
 
 import cuemol
+from cuemol import logging
+
+logger = logging.get_logger(__name__)
 
 
 class MainWindow(QMainWindow):
@@ -23,11 +24,11 @@ class MainWindow(QMainWindow):
         self.on_new_scene()
 
     def closeEvent(self, event):
-        print("MainWindow.closeEvent called!!")
+        logger.info("MainWindow.closeEvent called!!")
         self.save_settings()
 
     def on_exit_app(self):
-        print("MainWindow.on_exit_app called!!")
+        logger.info("MainWindow.on_exit_app called!!")
         self.save_settings()
         QApplication.instance().quit()
 
@@ -116,20 +117,20 @@ class MainWindow(QMainWindow):
 
     def get_undo_size(self):
         scene, _ = self.active_scene_view()
-        print(f"undo scene: {scene}")
+        logger.info(f"undo scene: {scene}")
         if scene is None:
             return 0
         nundo = scene.getUndoSize()
-        print(f"undo size: {nundo}")
+        logger.info(f"undo size: {nundo}")
         return nundo
 
     def get_top_undo_description(self):
         scene, _ = self.active_scene_view()
-        print(f"undo scene: {scene}")
+        logger.info(f"undo scene: {scene}")
         if scene is None:
             return None
         undo_desc = scene.getUndoDesc(0)
-        print(f"undo desc: {undo_desc}")
+        logger.info(f"undo desc: {undo_desc}")
         return undo_desc
 
     def get_redo_size(self):
@@ -141,15 +142,15 @@ class MainWindow(QMainWindow):
 
     def get_top_redo_description(self):
         scene, _ = self.active_scene_view()
-        print(f"redo scene: {scene}")
+        logger.info(f"redo scene: {scene}")
         if scene is None:
             return None
         redo_desc = scene.getRedoDesc(0)
-        print(f"redo desc: {redo_desc}")
+        logger.info(f"redo desc: {redo_desc}")
         return redo_desc
 
     def on_edit_menu_showing(self):
-        print("on_edit_menu_showing triggered")
+        logger.info("on_edit_menu_showing triggered")
         # Update undo menu
         n_undo = self.get_undo_size()
         if n_undo > 0:
@@ -178,11 +179,11 @@ class MainWindow(QMainWindow):
 
     def active_mol_widget(self):
         active_wnd = self._mdi_area.activeSubWindow()
-        print(f"active_wnd: {active_wnd}")
+        logger.info(f"active_wnd: {active_wnd}")
         if active_wnd is None:
             return None
         mol_widget = active_wnd.findChild(QtMolWidget2)
-        print(f"active mol_widget: {mol_widget}")
+        logger.info(f"active mol_widget: {mol_widget}")
         return mol_widget
 
     def active_scene_view_ids(self):
@@ -191,7 +192,7 @@ class MainWindow(QMainWindow):
             return None, None
         scid = mol_widget.getSceneID()
         vwid = mol_widget.getViewID()
-        print(f"active : {scid}, {vwid}")
+        logger.info(f"active : {scid}, {vwid}")
         return scid, vwid
 
     def active_scene_view(self):
@@ -202,13 +203,13 @@ class MainWindow(QMainWindow):
         return mgr.getScene(scid), mgr.getView(vwid)
 
     def on_active_moltab_changed(self):
-        print("onActiveMolTabChanged called!!")
+        logger.info("onActiveMolTabChanged called!!")
         scid, vwid = self.active_scene_view_ids()
         if scid is None:
-            print("XXXX MainWindow::onActivateMolTabChanged(): deactivated")
+            logger.info("XXXX MainWindow::onActivateMolTabChanged(): deactivated")
             return
 
-        print(f"MainWindow::onActivateMolTabChanged(sc:{scid} vw:{vwid})")
+        logger.info(f"MainWindow::onActivateMolTabChanged(sc:{scid} vw:{vwid})")
         sc_mgr = cuemol.svc("SceneManager")
         active_scene = sc_mgr.getScene(scid)
         active_scene.setActiveViewID(vwid)
@@ -248,7 +249,7 @@ class MainWindow(QMainWindow):
         f = QFont("Monospace")
         f.setStyleHint(QFont.TypeWriter)
         logwnd.setFont(f)
-        # print("Logwnd minimumSizeHint=" + str( self._logwnd.minimumSizeHint() ))
+        # logger.info("Logwnd minimumSizeHint=" + str( self._logwnd.minimumSizeHint() ))
         logwnd.setMinimumSize(1, 1)
         self._logwnd = logwnd
 
@@ -268,8 +269,8 @@ class MainWindow(QMainWindow):
         mol_widget = QtMolWidget2()
         mol_widget.bind(scid, vwid)
         self._mdi_area.addSubWindow(mol_widget)
-        print(f"create_mol_widget mol widget: {mol_widget}")
-        print(f"create_mol_widget mdi area: {self._mdi_area}")
+        logger.info(f"create_mol_widget mol widget: {mol_widget}")
+        logger.info(f"create_mol_widget mdi area: {self._mdi_area}")
         # self.active_mol_widget()
         return mol_widget
 
@@ -290,18 +291,18 @@ class MainWindow(QMainWindow):
 
     def on_undo(self):
         scene, _ = self.active_scene_view()
-        print(f"undo scene: {scene}")
+        logger.info(f"undo scene: {scene}")
         if scene is None:
             return
-        print(f"undo size: {scene.getUndoSize()}")
+        logger.info(f"undo size: {scene.getUndoSize()}")
         scene.undo(0)
 
     def on_redo(self):
         scene, _ = self.active_scene_view()
-        print(f"redo scene: {scene}")
+        logger.info(f"redo scene: {scene}")
         if scene is None:
             return
-        print(f"redo size: {scene.getRedoSize()}")
+        logger.info(f"redo size: {scene.getRedoSize()}")
         scene.redo(0)
 
     def save_settings(self):
@@ -312,7 +313,7 @@ class MainWindow(QMainWindow):
         qset.setValue("geometry", self.saveGeometry())
         qset.setValue("savestate", self.saveState())
         qset.setValue("maximized", self.isMaximized())
-        print(f"is_maximized: {self.isMaximized()}")
+        logger.info(f"is_maximized: {self.isMaximized()}")
         if not self.isMaximized():
             qset.setValue("pos", self.pos())
             qset.setValue("size", self.size())
@@ -333,7 +334,7 @@ class MainWindow(QMainWindow):
         self.resize(qset.value("size", self.size()))
 
         str_maximized = qset.value("maximized")
-        print(f"str_maximized: {str_maximized}")
+        logger.info(f"str_maximized: {str_maximized}")
         if str_maximized == "true":
             self.showMaximized()
 
