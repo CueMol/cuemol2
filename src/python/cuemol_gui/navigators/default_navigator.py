@@ -9,7 +9,7 @@ class DefaultNavigator(BaseNavigator):
     def __init__(self):
         pass
 
-    def mouse_clicked(self, x: int, y: int, mod: int, hit_res):
+    def mouse_lbtn_clicked(self, x: int, y: int, mod, hit_res):
         if hit_res is None:
             return
 
@@ -19,5 +19,7 @@ class DefaultNavigator(BaseNavigator):
             + f"O: {hit_res['occ']} B: {hit_res['bfac']} "
             + f"Pos: ({hit_res['x']}, {hit_res['y']}, {hit_res['z']})"
         )
-        print(msg)
         logger.info(msg)
+
+    def mouse_rbtn_clicked(self, x: int, y: int, mod, hit_res):
+        pass

@@ -4,9 +4,12 @@ import re
 from PySide2.QtWidgets import QDialog, QFileDialog
 
 import cuemol
+from cuemol import logging
 
 from .gui_command_base import GUICommandBase
 from .gui_command_manager import GUICommandManager
+
+logger = logging.get_logger(__name__)
 
 
 def create_filter(category_name):
@@ -37,7 +40,7 @@ def create_filter(category_name):
         fext = elem["fext"]
         m = re.search(r"(\w+[\w\s]+\w+)\s+\(", descr)
         if m is None:
-            # print(f"re not matched: {descr}")
+            # logger.info(f"re not matched: {descr}")
             continue
         sub_descr = m.groups()[0]
         ext_list = fext.split("; ")
@@ -77,12 +80,12 @@ class QtLoadSceneCommand(GUICommandBase):
         cmd_mgr = cuemol.svc("CmdMgr")
 
         actsc_id = sc_mgr.activeSceneID
-        print(f"actsc_id: {actsc_id}")
+        logger.info(f"actsc_id: {actsc_id}")
         act_sc = None
         targ_scene = None
         if actsc_id > 0:
             act_sc = sc_mgr.getScene(actsc_id)
-            print(f"act_sc: {act_sc}")
+            logger.info(f"act_sc: {act_sc}")
         if act_sc and act_sc.isJustCreated():
             targ_scene = act_sc
         else:

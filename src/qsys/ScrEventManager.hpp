@@ -11,6 +11,7 @@
 #include <qlib/mcutils.hpp>
 
 #include "qsys.hpp"
+#include "InDevEvent.hpp"
 
 #ifndef QSYS_SCR_EVENT_MANAGER_HPP_
 #define QSYS_SCR_EVENT_MANAGER_HPP_
@@ -152,6 +153,12 @@ public:
     inline int getSEM_CHANGED() const { return SEM_CHANGED; }
     inline int getSEM_OTHER() const { return SEM_OTHER; }
 
+    inline int getINDEV_SHIFT() const { return InDevEvent::INDEV_SHIFT; }
+    inline int getINDEV_CTRL() const { return InDevEvent::INDEV_CTRL; }
+    inline int getINDEV_ALT() const { return InDevEvent::INDEV_ALT; }
+    inline int getINDEV_LBTN() const { return InDevEvent::INDEV_LBTN; }
+    inline int getINDEV_MBTN() const { return InDevEvent::INDEV_MBTN; }
+    inline int getINDEV_RBTN() const { return InDevEvent::INDEV_RBTN; }
 
 };
 

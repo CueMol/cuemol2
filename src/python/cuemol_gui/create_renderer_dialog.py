@@ -11,6 +11,9 @@ from PySide2.QtWidgets import (
 )
 
 import cuemol
+from cuemol import logging
+
+logger = logging.get_logger(__name__)
 
 
 class CreateRendererDialog(QDialog):
@@ -99,11 +102,11 @@ class CreateRendererDialog(QDialog):
         self.rend_typebox_changed(0)
 
     def rend_typebox_changed(self, isel):
-        print(f"rend_typebox_changed {isel}")
+        logger.info(f"rend_typebox_changed {isel}")
         self.set_default_rend_name()
 
     def sel_chk_changed(self, i):
-        print(f"sel_chk_changed {i}")
+        logger.info(f"sel_chk_changed {i}")
         self.update_widgets()
 
     def update_widgets(self):
@@ -116,14 +119,14 @@ class CreateRendererDialog(QDialog):
         selvalue = self.rend_type_name
         if selvalue == "":
             return
-        print(f"setDefaultRendName> selected item={selvalue}")
+        logger.info(f"setDefaultRendName> selected item={selvalue}")
         if selvalue.startswith("*"):
             selvalue = selvalue[1:]
         default_name = self.create_default_rend_name(selvalue)
         self.rend_name_edit.setText(default_name)
 
     def create_default_rend_name(self, rend_type_name):
-        print(f"setDefaultRendName> scene ID={self.scene_id}")
+        logger.info(f"setDefaultRendName> scene ID={self.scene_id}")
 
         mgr = cuemol.svc("SceneManager")
         sce = mgr.getScene(self.scene_id)

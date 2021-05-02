@@ -40,6 +40,14 @@ runtime_class ScrEventManager
   property integer SEM_PROPCHG => redirect(getSEM_PROPCHG, XXX) (readonly);
   property integer SEM_CHANGED => redirect(getSEM_CHANGED, XXX) (readonly);
   property integer SEM_OTHER => redirect(getSEM_OTHER, XXX) (readonly);
+
+  // InDevEvent's mouse modifier IDs
+  property integer INDEV_SHIFT => redirect(getINDEV_SHIFT, XXX) (readonly);
+  property integer INDEV_CTRL => redirect(getINDEV_CTRL, XXX) (readonly);
+  property integer INDEV_ALT => redirect(getINDEV_ALT, XXX) (readonly);
+  property integer INDEV_LBTN => redirect(getINDEV_LBTN, XXX) (readonly);
+  property integer INDEV_MBTN => redirect(getINDEV_MBTN, XXX) (readonly);
+  property integer INDEV_RBTN => redirect(getINDEV_RBTN, XXX) (readonly);
 };
 
 #endif

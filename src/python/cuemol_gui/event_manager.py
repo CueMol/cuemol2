@@ -1,7 +1,10 @@
 import json
+import traceback
 
 import cuemol
+from cuemol import logging
 
+logger = logging.get_logger(__name__)
 ci = cuemol.import_internal()
 
 
@@ -11,18 +14,25 @@ class EventManager:
         self._mgr.addListener(self._listener)
         self._slot = {}
 
+        self.INDEV_SHIFT = self._mgr.INDEV_SHIFT
+        self.INDEV_CTRL = self._mgr.INDEV_CTRL
+        self.INDEV_ALT = self._mgr.INDEV_ALT
+        self.INDEV_LBTN = self._mgr.INDEV_LBTN
+        self.INDEV_MBTN = self._mgr.INDEV_MBTN
+        self.INDEV_RBTN = self._mgr.INDEV_RBTN
+
     @property
     def impl(self):
         return self._mgr
 
     def _listener(self, aSlotID, aCatStr, aTgtTypeID, aEvtTypeID, aSrcID, aInfoStr):
-        # print("Event listener called!!")
-        # print(f"  slot ID={aSlotID}")
-        # print(f"  cat str={aCatStr}")
-        # print(f"  target ID={aTgtTypeID}")
-        # print(f"  event ID={aEvtTypeID}")
-        # print(f"  src ID={aSrcID}")
-        # print(f"  info : {aInfoStr}")
+        # logger.debug("Event listener called!!")
+        # logger.debug(f"  slot ID={aSlotID}")
+        # logger.debug(f"  cat str={aCatStr}")
+        # logger.debug(f"  target ID={aTgtTypeID}")
+        # logger.debug(f"  event ID={aEvtTypeID}")
+        # logger.debug(f"  src ID={aSrcID}")
+        # logger.debug(f"  info : {aInfoStr}")
         sSlotID = str(aSlotID)
         if sSlotID not in self._slot:
             # TODO: log error msg??
@@ -48,7 +58,11 @@ class EventManager:
             # unknown: no conv
             info = aInfoStr
 
-        obs(aSlotID, aCatStr, aTgtTypeID, aEvtTypeID, aSrcID, info)
+        try:
+            obs(aSlotID, aCatStr, aTgtTypeID, aEvtTypeID, aSrcID, info)
+        except Exception:
+            traceback.print_exc()
+            logger.error("exception occured in the event listener was ignored.")
 
     def add_listener(self, aCatStr, aSrcType, aEvtType, aSrcID, aObs):
         slot_id = self._mgr.append(aCatStr, aSrcType, aEvtType, aSrcID)
@@ -75,12 +89,3 @@ class EventManager:
         if not hasattr(cls, "_instance"):
             cls._instance = cls()
         return cls._instance
-
-
-# _instance = None
-# def getEventManager():
-#     print("********** getEventManager called!!")
-#     global _instance
-#     if _instance is None:
-#         _instance = EventManager()
-#     return _instance
