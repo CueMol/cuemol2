@@ -1,5 +1,9 @@
 from PySide2.QtCore import QSettings
 
+from cuemol import logging
+
+logger = logging.get_logger(__name__)
+
 
 def get_molsel_history():
     qset = QSettings()
@@ -11,7 +15,7 @@ def get_molsel_history():
         strlist = val
     qset.endGroup()
 
-    print(f"get_molsel_history: {strlist}")
+    logger.info(f"get_molsel_history: {strlist}")
     return strlist
 
 
@@ -19,7 +23,7 @@ def update_molsel_history(newval):
     strlist = get_molsel_history()
     strlist.insert(0, newval)
     strlist = strlist[:10]
-    print(f"update_molsel_history: {strlist}")
+    logger.info(f"update_molsel_history: {strlist}")
 
     qset = QSettings()
     qset.beginGroup("molsel_history")

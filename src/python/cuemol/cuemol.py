@@ -254,7 +254,7 @@ def rend(aRend, aObj=None):
             rend = ob.getRenderer(aRend)
 
     if rend is None:
-        raise RuntimeError("renderer " + str(aRend) + " not found")
+        raise RuntimeError(f"renderer {aRend} not found")
 
     return rend
 

@@ -1,13 +1,17 @@
 from pathlib import Path
 
 from cuemol_gui.create_renderer_dialog import CreateRendererDialog
-from cuemol_gui.gui_command_manager import GUICommandBase
 from cuemol_gui.history import update_molsel_history
-from cuemol_gui.qt_load_scene_command import create_filter
 from PySide2.QtWidgets import QDialog, QFileDialog
 
 import cuemol
+from cuemol import logging
 from cuemol.undo_txn import UndoTxn
+
+from .gui_command_base import GUICommandBase
+from .qt_load_scene_command import create_filter
+
+logger = logging.get_logger(__name__)
 
 
 class QtLoadObjectCommand(GUICommandBase):
@@ -38,17 +42,17 @@ class QtLoadObjectCommand(GUICommandBase):
                 break
         assert file_fmt is not None
 
-        print(f"selected: {file_path} {file_fmt}")
+        logger.info(f"selected: {file_path} {file_fmt}")
 
         # Determine target scene
         sc_mgr = cuemol.svc("SceneManager")
         active_scene_id = sc_mgr.activeSceneID
-        # print(f"active_scene_id: {active_scene_id}")
+        # logger.info(f"active_scene_id: {active_scene_id}")
         active_scene = None
         # targ_scene = None
         if active_scene_id > 0:
             active_scene = sc_mgr.getScene(active_scene_id)
-            print(f"active_scene: {active_scene}")
+            logger.info(f"active_scene: {active_scene}")
         if not active_scene:
             # TODO: show msgbox
             return

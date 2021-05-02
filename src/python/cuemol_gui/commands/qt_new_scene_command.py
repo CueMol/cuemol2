@@ -1,6 +1,9 @@
-from cuemol_gui.gui_command_manager import GUICommandBase
-
 import cuemol
+from cuemol import logging
+
+from .gui_command_base import GUICommandBase
+
+logger = logging.get_logger(__name__)
 
 
 class QtNewSceneCommand(GUICommandBase):
@@ -17,8 +20,8 @@ class QtNewSceneCommand(GUICommandBase):
 
         sce = new_scene_cmd.result_scene
         viw = new_scene_cmd.result_view
-        print(f"new scene:{sce}")
-        print(f"new view:{viw}")
+        logger.info(f"new scene:{sce}")
+        logger.info(f"new view:{viw}")
 
         mol_widget = widget.create_mol_widget(sce.getUID(), viw.getUID())
         mol_widget.showMaximized()
