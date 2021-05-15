@@ -1,6 +1,7 @@
 from PySide2.QtCore import QPoint
 from PySide2.QtWidgets import QAction, QMenu
 
+import cuemol
 from cuemol import logging
 
 from .base_navigator import BaseNavigator
@@ -23,12 +24,17 @@ class DefaultNavigator(BaseNavigator):
             + f"Pos: ({hit_res['x']}, {hit_res['y']}, {hit_res['z']})"
         )
         logger.info(msg)
+        cuemol.println(msg)
 
     def mouse_rbtn_clicked(self, x: int, y: int, mod, hit_res, widget):
+        if hit_res is None:
+            return
+
         menu = QMenu(widget)
         loc = QPoint(x, y)
         loc = widget.mapToGlobal(loc)
         logger.info(f"menu: {menu}")
         logger.info(f"loc: {loc}")
-        menu.addAction(QAction("xxx", widget))
+        msg = f"{hit_res['obj_name']}: {hit_res['message']}"
+        menu.addAction(QAction(msg, widget))
         menu.popup(loc)
