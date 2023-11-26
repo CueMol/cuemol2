@@ -16,6 +16,19 @@ if (${LIBLZMA_FOUND})
   SET(HAVE_LZMA_H "1")
 endif()
 
+# OpenGL
+find_package(OpenGL)
+message(STATUS "OPENGL_FOUND: ${OPENGL_FOUND} OPENGL_GLU_FOUND: ${OPENGL_GLU_FOUND} OpenGL_OpenGL_FOUND: ${OpenGL_OpenGL_FOUND}")
+message(STATUS "OPENGL_INCLUDE_DIR: ${OPENGL_INCLUDE_DIR}")
+find_package(GLEW)
+message(STATUS "GLEW_FOUND: ${GLEW_FOUND} ${GLEW_LIBRARIES}")
+if (OPENGL_FOUND AND GLEW_FOUND)
+   SET(BUILD_OPENGL_SYSDEP "TRUE")
+else ()
+   SET(BUILD_OPENGL_SYSDEP "FALSE")
+endif ()
+message(STATUS "Build OGL sysdep: ${BUILD_OPENGL_SYSDEP}")
+
 #####
 
 include(CheckTypeSize)
@@ -107,7 +120,7 @@ if (NOT BUILD_MINIMUM_MODULES)
   add_subdirectory(gfx)
   add_subdirectory(qsys)
 
-  if (BUILD_GUI)
+  if (BUILD_OPENGL_SYSDEP)
     add_subdirectory(sysdep)
   endif ()
   
