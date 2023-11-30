@@ -1,4 +1,4 @@
-
+# Dependent libs
 SET(QLIB_LINK_LIBRARIES
   pcre
   expat
@@ -7,13 +7,6 @@ SET(QLIB_LINK_LIBRARIES
   Boost::timer
   Boost::chrono
   Boost::thread
-  )
-
-include_directories(
-  ${CMAKE_SOURCE_DIR}/src
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_BINARY_DIR}/src
-  ${Boost_INCLUDE_DIRS}
   )
 
 # Normal C++ source files
@@ -66,11 +59,123 @@ LPerfMeas.cpp
 qlib.cpp
 )
 
+# API header files
+SET(QLIB_HDRS
+Array.hpp
+ArrayIOImpl.hpp
+BSPTree.hpp
+Base64Stream.hpp
+BinStream.hpp
+Box3D.hpp
+ByteMap.hpp
+ChunkDelimFilter.hpp
+ChunkFilterImpl2.hpp
+ClassRegistry.hpp
+EventCaster.hpp
+EventManager.hpp
+ExpatInStream.hpp
+FileStream.hpp
+FilterStream.hpp
+FormatStream.hpp
+GenericTable.hpp
+GzipStream.hpp
+HashMap.hpp
+HashTable.hpp
+IndexedTable.hpp
+IntVec3D.hpp
+LByteArray.hpp
+LChar.hpp
+LClass.hpp
+LClassUtils.hpp
+LDOM2Stream.hpp
+LDOM2Tree.hpp
+LDOMTree.hpp
+LDataSrcContainer.hpp
+LDebug.hpp
+LDebugAssert.hpp
+LDebugNew.hpp
+LDynamic.hpp
+LEvent.hpp
+LExceptions.hpp
+LLogEvent.hpp
+LMapPropContainer.hpp
+LMsgLog.hpp
+LObjStream3.hpp
+LObjStreamXMLParser2.hpp
+LObject.hpp
+LPerfMeas.hpp
+LProcMgr.hpp
+LPropContainer.hpp
+LPropEvent.hpp
+LPropSupport.hpp
+LQuat.hpp
+LRcObject.hpp
+LRegExpr.hpp
+LScrCallBack.hpp
+LScrMatrix4D.hpp
+LScrObjects.hpp
+LScrQuat.hpp
+LScrRangeSet.hpp
+LScrSmartPtr.hpp
+LScrTime.hpp
+LScrVector4D.hpp
+LScriptable.hpp
+LSerializable.hpp
+LStrConvCap.hpp
+LStream.hpp
+LStreamImpl.hpp
+LString.hpp
+LThread.hpp
+LTimeValue.hpp
+LTypes.hpp
+LUIDGen.hpp
+LUIDObject.hpp
+LUnicode.hpp
+LVarArgs.hpp
+LVarArray.hpp
+LVarDict.hpp
+LVarList.hpp
+LVariant.hpp
+LWrapper.hpp
+LineStream.hpp
+MapTable.hpp
+Matrix3D.hpp
+Matrix4D.hpp
+MatrixND.hpp
+MthrEventCaster.hpp
+NamedObject.hpp
+NestedPropHandler.hpp
+ObjectManager.hpp
+PipeStream.hpp
+PosixProcImpl.hpp
+PrintStream.hpp
+PropSpec.hpp
+RangeSet.hpp
+SingletonBase.hpp
+SmartPtr.hpp
+StringStream.hpp
+TagName.hpp
+TestClass.hpp
+TimerEvent.hpp
+TypeTraits.hpp
+Utils.hpp
+Vector2D.hpp
+Vector4D.hpp
+VectorND.hpp
+WinProcImpl.hpp
+XmlInStream.hpp
+mcutils.hpp
+qIObjWrapper.h
+qlib.hpp
+xpcutil.hpp
+)
+
 #####
 
 if (${LIBLZMA_FOUND})
   list(APPEND QLIB_LINK_LIBRARIES LibLZMA::LibLZMA)
   list(APPEND QLIB_SRCS XzStream.cpp)
+  list(APPEND QLIB_HDRS XzStream.hpp)
 endif()
 
 # CueMol interface definitions for MCWRAPGEN
@@ -99,11 +204,29 @@ list(REMOVE_ITEM QLIB_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/LScrObject_wrap.cpp")
 MCWRAPGEN_MODULE(QLIB_SRCS ${QLIB_MODLDR_SRC} ${QLIB_MCWG_QIFS})
 # message(STATUS "src file ${QLIB_SRCS}")
 
+#####################
+# qlib library target
+
+add_library(qlib SHARED)
+
 if (WIN32)
-  add_definitions(-DQLIB_EXPORTS=1)
+  # add_definitions(-DQLIB_EXPORTS=1)
+  target_compile_definitions(qlib PUBLIC QLIB_EXPORTS=1)
 endif()
 
-add_library(qlib SHARED ${QLIB_SRCS} ${MCWG_HEADERS})
+target_sources(qlib
+  PRIVATE ${QLIB_SRCS} ${MCWG_HEADERS}
+  PUBLIC FILE_SET HEADERS 
+  BASE_DIRS ${PROJECT_SOURCE_DIR}/src
+  FILES ${QLIB_HDRS}
+  )
+target_include_directories(
+  qlib PRIVATE
+  ${CMAKE_SOURCE_DIR}/src
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_BINARY_DIR}/src
+  ${Boost_INCLUDE_DIRS}
+  )
 target_link_libraries(qlib PRIVATE ${QLIB_LINK_LIBRARIES})
 
 MCWRAPGEN_PYWRAPPERS(qlib)
@@ -111,4 +234,5 @@ MCWRAPGEN_PYWRAPPERS(qlib)
 install(TARGETS qlib
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  FILE_SET HEADERS
   )

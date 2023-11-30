@@ -159,3 +159,17 @@ endif ()
 if (BUILD_GUI AND NOT BUILD_MINIMUM_MODULES)
   add_subdirectory(qt5_gui)
 endif()
+
+add_library(cuemol2 INTERFACE)
+target_sources(cuemol2
+    INTERFACE FILE_SET HEADERS 
+    BASE_DIRS ${PROJECT_SOURCE_DIR}/src
+    FILES common.h qmtypes.h version.hpp
+)
+# message(STATUS "PROJECT_BINARY_DIR=${PROJECT_BINARY_DIR}")
+target_sources(cuemol2
+    INTERFACE FILE_SET HEADERS 
+    BASE_DIRS ${PROJECT_BINARY_DIR}
+    FILES ${PROJECT_BINARY_DIR}/src/config.h
+)
+install(TARGETS cuemol2 FILE_SET HEADERS)
