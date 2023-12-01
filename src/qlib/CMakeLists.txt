@@ -219,14 +219,16 @@ target_sources(qlib
   PUBLIC FILE_SET HEADERS 
   BASE_DIRS ${PROJECT_SOURCE_DIR}/src
   FILES ${QLIB_HDRS}
-  )
+)
+
 target_include_directories(
   qlib PRIVATE
   ${CMAKE_SOURCE_DIR}/src
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_BINARY_DIR}/src
   ${Boost_INCLUDE_DIRS}
-  )
+)
+
 target_link_libraries(qlib PRIVATE ${QLIB_LINK_LIBRARIES})
 
 MCWRAPGEN_PYWRAPPERS(qlib)
@@ -235,4 +237,4 @@ install(TARGETS qlib
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   FILE_SET HEADERS
-  )
+)
