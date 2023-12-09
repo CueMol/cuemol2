@@ -168,9 +168,13 @@ target_sources(cuemol2
     FILES common.h qmtypes.h version.hpp
 )
 # message(STATUS "PROJECT_BINARY_DIR=${PROJECT_BINARY_DIR}")
-target_sources(cuemol2
-    INTERFACE FILE_SET HEADERS 
-    BASE_DIRS ${PROJECT_BINARY_DIR}
-    FILES ${PROJECT_BINARY_DIR}/src/config.h
-)
 install(TARGETS cuemol2 FILE_SET HEADERS)
+
+install(FILES ${PROJECT_BINARY_DIR}/src/config.h DESTINATION include)
+ 
+# target_sources(cuemol2
+#   INTERFACE FILE_SET HEADERS
+#   BASE_DIRS ${PROJECT_BINARY_DIR}
+#   FILES
+# )
+# install(TARGETS cuemol2 FILE_SET HEADERS)
