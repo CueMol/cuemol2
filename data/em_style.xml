@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<styles id="em_defaults">
+
+  <!-- contour styles -->
+  <style id="DefaultContour" type="renderer" desc="Default"
+    use_abslevel="true"
+    extent="50.0"
+    bufsize="200">
+  </style>
+
+  <!-- isosurf styles -->
+  <style id="DefaultIsoSurf" type="renderer" desc="Default"
+    use_abslevel="true"
+    extent="50.0"
+    max_grids="200">
+  </style>
+
+</styles>

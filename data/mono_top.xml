@@ -1,0 +1,184 @@
+<?xml version="1.0"?>
+<toppar>
+  <topology>
+    <resid id="HOH" desc="water" group="water">
+      <synonyms>
+        <synonym value="WAT"/>
+        <synonym value="H2O"/>
+        <synonym value="OH2"/>
+        <synonym value="DOD"/>
+        <synonym value="TIP"/>
+        <synonym value="TIP3"/>
+      </synonyms>
+      <atoms>
+        <atom id="O" elem="O" type="OH2" charge="-0.408"/>
+        <atom id="H1" elem="H" type="HOH2" charge="0.204"/>
+        <atom id="H2" elem="H" type="HOH2" charge="0.204"/>
+      </atoms>
+      <bonds>
+        <bond id1="O" id2="H1" type="single" value="0.980" esd="0.020"/>
+        <bond id1="O" id2="H2" type="single" value="0.980" esd="0.020"/>
+      </bonds>
+    </resid>
+
+    <resid id="PO4" desc="phosphate-(PO4)" group="ion">
+      <synonyms>
+        <synonym value="PHO"/>
+      </synonyms>
+      <atoms>
+        <atom id="P" elem="P" type="P" charge="0.0"/>
+        <atom id="O1" elem="O" type="OP" charge="-0.75"/>
+        <atom id="O2" elem="O" type="OP" charge="-0.75"/>
+        <atom id="O3" elem="O" type="OP" charge="-0.75"/>
+        <atom id="O4" elem="O" type="OP" charge="-0.75"/>
+      </atoms>
+      <bonds>
+        <bond id1="P" id2="O1" type="deloc" value="1.510" esd="0.020"/>
+        <bond id1="P" id2="O2" type="deloc" value="1.510" esd="0.020"/>
+        <bond id1="P" id2="O3" type="deloc" value="1.510" esd="0.020"/>
+        <bond id1="P" id2="O4" type="deloc" value="1.510" esd="0.020"/>
+      </bonds>
+    </resid>
+
+    <resid id="SO4" desc="sulphate-(SO4)" group="ion">
+      <synonyms>
+        <synonym value="SUL"/>
+        <synonym value="SO1"/>
+        <synonym value="SO2"/>
+      </synonyms>
+      <atoms>
+        <atom id="S" elem="S" type="S" charge="0.00"/>
+        <atom id="O1" elem="O" type="OS" charge="-0.5"/>
+        <atom id="O2" elem="O" type="OS" charge="-0.5"/>
+        <atom id="O3" elem="O" type="OS" charge="-0.5"/>
+        <atom id="O4" elem="O" type="OS" charge="-0.5"/>
+      </atoms>
+      <bonds>
+        <bond id1="S" id2="O1" type="deloc" value="1.460" esd="0.020"/>
+        <bond id1="S" id2="O2" type="deloc" value="1.460" esd="0.020"/>
+        <bond id1="S" id2="O3" type="deloc" value="1.460" esd="0.020"/>
+        <bond id1="S" id2="O4" type="deloc" value="1.460" esd="0.020"/>
+      </bonds>
+    </resid>
+
+    <resid id="GOL" desc="GLYCEROL" group="non-polymer">
+      <atoms>
+        <atom id="O3" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO3" elem="H" type="HOH1" charge="0.000"/>
+        <atom id="C3" elem="C" type="CH2" charge="0.000"/>
+        <atom id="H31" elem="H" type="HCH2" charge="0.000"/>
+        <atom id="H32" elem="H" type="HCH2" charge="0.000"/>
+        <atom id="C2" elem="C" type="CH1" charge="0.000"/>
+        <atom id="H2" elem="H" type="HCH1" charge="0.000"/>
+        <atom id="O2" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO2" elem="H" type="HOH1" charge="0.000"/>
+        <atom id="C1" elem="C" type="CH2" charge="0.000"/>
+        <atom id="H11" elem="H" type="HCH2" charge="0.000"/>
+        <atom id="H12" elem="H" type="HCH2" charge="0.000"/>
+        <atom id="O1" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO1" elem="H" type="HOH1" charge="0.000"/>
+      </atoms>
+      <bonds>
+        <bond id1="HO3" id2="O3" type="single" value="0.980" esd="0.020"/>
+        <bond id1="C3" id2="O3" type="single" value="1.410" esd="0.020"/>
+        <bond id1="H31" id2="C3" type="single" value="1.090" esd="0.020"/>
+        <bond id1="H32" id2="C3" type="single" value="1.090" esd="0.020"/>
+        <bond id1="C2" id2="C3" type="single" value="1.524" esd="0.020"/>
+        <bond id1="H2" id2="C2" type="single" value="1.090" esd="0.020"/>
+        <bond id1="O2" id2="C2" type="single" value="1.410" esd="0.020"/>
+        <bond id1="HO2" id2="O2" type="single" value="0.980" esd="0.020"/>
+        <bond id1="C1" id2="C2" type="single" value="1.524" esd="0.020"/>
+        <bond id1="H11" id2="C1" type="single" value="1.090" esd="0.020"/>
+        <bond id1="H12" id2="C1" type="single" value="1.090" esd="0.020"/>
+        <bond id1="O1" id2="C1" type="single" value="1.410" esd="0.020"/>
+        <bond id1="HO1" id2="O1" type="single" value="0.980" esd="0.020"/>
+      </bonds>
+    </resid>
+
+    <resid id="EDO" desc="1,2-ETHANEDIOL [ETHYLEN GLYCOL]" group="non-polymer">
+      <atoms>
+        <atom id="O2" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO2" elem="H" type="H" charge="0.000"/>
+        <atom id="C2" elem="C" type="CH2" charge="0.000"/>
+        <atom id="H2_1" elem="H" type="H" charge="0.000"/>
+        <atom id="H2_2" elem="H" type="H" charge="0.000"/>
+        <atom id="C1" elem="C" type="CH2" charge="0.000"/>
+        <atom id="H1_1" elem="H" type="H" charge="0.000"/>
+        <atom id="H1_2" elem="H" type="H" charge="0.000"/>
+        <atom id="O1" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO1" elem="H" type="H" charge="0.000"/>
+      </atoms>
+      <bonds>
+        <bond id1="O1" id2="C1" type="single" value="1.432" esd="0.020"/>
+        <bond id1="C1" id2="C2" type="single" value="1.524" esd="0.020"/>
+        <bond id1="H1_1" id2="C1" type="single" value="1.092" esd="0.020"/>
+        <bond id1="H1_2" id2="C1" type="single" value="1.092" esd="0.020"/>
+        <bond id1="HO1" id2="O1" type="single" value="0.967" esd="0.020"/>
+        <bond id1="C2" id2="O2" type="single" value="1.432" esd="0.020"/>
+        <bond id1="H2_1" id2="C2" type="single" value="1.092" esd="0.020"/>
+        <bond id1="H2_2" id2="C2" type="single" value="1.092" esd="0.020"/>
+        <bond id1="HO2" id2="O2" type="single" value="0.967" esd="0.020"/>
+      </bonds>
+    </resid>
+
+    <resid id="SCN" three="SCN" desc="THIOCYANATE ION" group="non-polymer">
+      <atoms>
+        <atom id="N" elem="N" type="NS" charge="0.000"/>
+        <atom id="C" elem="C" type="CSP" charge="0.000"/>
+        <atom id="S" elem="S" type="S1" charge="-1.000"/>
+      </atoms>
+      <bonds>
+        <bond id1="S" id2="C" type="single" value="1.490" esd="0.020"/>
+        <bond id1="C" id2="N" type="triple" value="1.158" esd="0.020"/>
+      </bonds>
+    </resid>
+
+    <resid id="ATP">
+      <rings>
+        <ring value="N1 C2 N3 C4 C5 C6"/>
+        <ring value="C4 C5 N7 C8 N9"/>
+        <ring value="C1* C2* C3* C4* O4*"/>
+      </rings>
+    </resid>
+
+    <resid id="AMP">
+      <rings>
+        <ring value="N1 C2 N3 C4 C5 C6"/>
+        <ring value="C4 C5 N7 C8 N9"/>
+        <ring value="C1* C2* C3* C4* O4*"/>
+      </rings>
+    </resid>
+
+    <resid id="CMP">
+      <rings>
+        <ring value="N1 C2 N3 C4 C5 C6"/>
+        <ring value="C1* C2* C3* C4* O4*"/>
+      </rings>
+    </resid>
+
+    <resid id="CTP">
+      <rings>
+        <ring value="N1 C2 N3 C4 C5 C6"/>
+        <ring value="C1* C2* C3* C4* O4*"/>
+      </rings>
+    </resid>
+
+    <resid id="GTP">
+      <rings>
+        <ring value="N1 C2 N3 C4 C5 C6"/>
+        <ring value="C4 C5 N7 C8 N9"/>
+        <ring value="C1* C2* C3* C4* O4*"/>
+      </rings>
+    </resid>
+
+    <resid id="GMP">
+      <rings>
+        <ring value="N1 C2 N3 C4 C5 C6"/>
+        <ring value="C4 C5 N7 C8 N9"/>
+        <ring value="C1* C2* C3* C4* O4*"/>
+      </rings>
+    </resid>
+
+  </topology>
+</toppar>
+

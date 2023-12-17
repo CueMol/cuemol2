@@ -1,0 +1,202 @@
+<?xml version="1.0"?>
+<toppar>
+  <params ns="ccp4">
+    <atoms>
+      <atom id="CSP" elem="C" mass="12.01150" hbon="N" vdwr="1.700" vdwhr="1.700" valency="4" hybr="sp1"/>
+      <atom id="CSP1" elem="C" mass="12.01150" hbon="N" vdwr="1.700" vdwhr="1.700" valency="4" hybr="sp1"/>
+      <atom id="C" elem="C" mass="12.01150" hbon="N" vdwr="1.700" vdwhr="1.750" valency="4" hybr="sp2"/>
+      <atom id="C1" elem="C" mass="12.01150" hbon="N" vdwr="1.700" vdwhr="1.820" valency="4" hybr="sp2"/>
+      <atom id="C2" elem="C" mass="12.01150" hbon="N" vdwr="1.700" vdwhr="1.800" valency="4" hybr="sp2"/>
+      <atom id="CR1" elem="C" mass="12.01150" hbon="N" vdwr="1.700" vdwhr="1.800" valency="4" hybr="sp2"/>
+      <atom id="CR2" elem="C" mass="12.01150" hbon="N" vdwr="1.700" vdwhr="1.800" valency="4" hybr="sp2"/>
+      <atom id="CR1H" elem="C" mass="12.01150" hbon="N" vdwr="1.700" vdwhr="1.800" valency="4" hybr="sp2"/>
+      <atom id="CR15" elem="C" mass="12.01150" hbon="N" vdwr="1.700" vdwhr="1.740" valency="4" hybr="sp2"/>
+      <atom id="CR5" elem="C" mass="12.01150" hbon="N" vdwr="1.700" vdwhr="1.740" valency="4" hybr="sp2"/>
+      <atom id="CR56" elem="C" mass="12.01150" hbon="N" vdwr="1.700" vdwhr="1.740" valency="4" hybr="sp2"/>
+      <atom id="CR55" elem="C" mass="12.01150" hbon="N" vdwr="1.700" vdwhr="1.740" valency="4" hybr="sp2"/>
+      <atom id="CR16" elem="C" mass="12.01150" hbon="N" vdwr="1.700" vdwhr="1.820" valency="4" hybr="sp2"/>
+      <atom id="CR6" elem="C" mass="12.01150" hbon="N" vdwr="1.700" vdwhr="1.740" valency="4" hybr="sp2"/>
+      <atom id="CR66" elem="C" mass="12.01150" hbon="N" vdwr="1.700" vdwhr="1.740" valency="4" hybr="sp2"/>
+      <atom id="CH1" elem="C" mass="12.01150" hbon="N" vdwr="1.700" vdwhr="1.950" valency="4" hybr="sp3"/>
+      <atom id="CH2" elem="C" mass="12.01150" hbon="N" vdwr="1.700" vdwhr="1.920" valency="4" hybr="sp3"/>
+      <atom id="CH3" elem="C" mass="12.01150" hbon="N" vdwr="1.700" vdwhr="1.940" valency="4" hybr="sp3"/>
+      <atom id="CT" elem="C" mass="12.01150" hbon="N" vdwr="1.700" vdwhr="1.850" valency="4" hybr="sp3"/>
+      <atom id="NS" elem="N" mass="14.00670" hbon="N" vdwr="1.550" vdwhr="1.600" ionr="1.32" valency="3" hybr="sp1"/>
+      <atom id="N" elem="N" mass="14.00670" hbon="N" vdwr="1.550" vdwhr="1.600" ionr="1.32" valency="3" hybr="sp2"/>
+      <atom id="NC1" elem="N" mass="14.00670" hbon="D" vdwr="1.550" vdwhr="1.600" ionr="1.32" valency="3" hybr="sp2"/>
+      <atom id="NH1" elem="N" mass="14.00670" hbon="D" vdwr="1.550" vdwhr="1.600" ionr="1.32" valency="3" hybr="sp2"/>
+      <atom id="NC2" elem="N" mass="14.00670" hbon="D" vdwr="1.550" vdwhr="1.600" ionr="1.32" valency="3" hybr="sp2"/>
+      <atom id="NH2" elem="N" mass="14.00670" hbon="D" vdwr="1.550" vdwhr="1.600" ionr="1.32" valency="3" hybr="sp2"/>
+      <atom id="NC3" elem="N" mass="14.00670" hbon="D" vdwr="1.550" vdwhr="1.600" ionr="1.32" valency="3" hybr="sp2"/>
+      <atom id="NT" elem="N" mass="14.00670" hbon="D" vdwr="1.550" vdwhr="1.600" ionr="1.32" valency="3" hybr="sp3"/>
+      <atom id="NT1" elem="N" mass="14.00670" hbon="D" vdwr="1.550" vdwhr="1.600" ionr="1.32" valency="3" hybr="sp3"/>
+      <atom id="NT2" elem="N" mass="14.00670" hbon="D" vdwr="1.550" vdwhr="1.600" ionr="1.32" valency="3" hybr="sp3"/>
+      <atom id="NT3" elem="N" mass="14.00670" hbon="D" vdwr="1.550" vdwhr="1.600" ionr="1.32" valency="3" hybr="sp3"/>
+      <atom id="NPA" elem="N" mass="14.00670" hbon="A" vdwr="1.550" vdwhr="1.600" ionr="1.32" valency="3" hybr="sp2"/>
+      <atom id="NPB" elem="N" mass="14.00670" hbon="A" vdwr="1.550" vdwhr="1.600" ionr="1.32" valency="3" hybr="sp2"/>
+      <atom id="NR5" elem="N" mass="14.00670" hbon="N" vdwr="1.550" vdwhr="1.600" ionr="1.32" valency="3" hybr="sp2"/>
+      <atom id="NR15" elem="N" mass="14.00670" hbon="D" vdwr="1.550" vdwhr="1.600" ionr="1.32" valency="3" hybr="sp2"/>
+      <atom id="NRD5" elem="N" mass="14.00670" hbon="A" vdwr="1.550" vdwhr="1.600" ionr="1.32" valency="3" hybr="sp2"/>
+      <atom id="NR56" elem="N" mass="14.00670" hbon="A" vdwr="1.550" vdwhr="1.600" ionr="1.32" valency="3" hybr="sp2"/>
+      <atom id="NR55" elem="N" mass="14.00670" hbon="A" vdwr="1.550" vdwhr="1.600" ionr="1.32" valency="3" hybr="sp2"/>
+      <atom id="NR6" elem="N" mass="14.00670" hbon="N" vdwr="1.550" vdwhr="1.600" ionr="1.32" valency="3" hybr="sp2"/>
+      <atom id="NR66" elem="N" mass="14.00670" hbon="N" vdwr="1.550" vdwhr="1.600" ionr="1.32" valency="3" hybr="sp2"/>
+      <atom id="NR16" elem="N" mass="14.00670" hbon="D" vdwr="1.550" vdwhr="1.600" ionr="1.32" valency="3" hybr="sp2"/>
+      <atom id="NRD6" elem="N" mass="14.00670" hbon="A" vdwr="1.550" vdwhr="1.600" ionr="1.32" valency="3" hybr="sp2"/>
+      <atom id="OS" elem="O" mass="15.99940" hbon="A" vdwr="1.520" vdwhr="1.520" ionr="1.28" valency="2" hybr="sp2"/>
+      <atom id="O" elem="O" mass="15.99940" hbon="A" vdwr="1.520" vdwhr="1.520" ionr="1.28" valency="2" hybr="sp2"/>
+      <atom id="O2" elem="O" mass="15.99940" hbon="A" vdwr="1.520" vdwhr="1.520" ionr="1.28" valency="2" hybr="sp3"/>
+      <atom id="OH1" elem="O" mass="15.99940" hbon="B" vdwr="1.520" vdwhr="1.520" ionr="1.28" valency="2" hybr="sp3"/>
+      <atom id="OH2" elem="O" mass="15.99940" hbon="B" vdwr="1.520" vdwhr="1.520" ionr="1.28" valency="2" hybr="sp3"/>
+      <atom id="OHA" elem="O" mass="15.99940" hbon="B" vdwr="1.520" vdwhr="1.680" ionr="1.28" valency="2" hybr="sp3"/>
+      <atom id="OHB" elem="O" mass="15.99940" hbon="B" vdwr="1.520" vdwhr="1.680" ionr="1.28" valency="2" hybr="sp3"/>
+      <atom id="OHC" elem="O" mass="15.99940" hbon="B" vdwr="1.520" vdwhr="1.680" ionr="1.28" valency="2" hybr="sp3"/>
+      <atom id="OC2" elem="O" mass="15.99940" hbon="A" vdwr="1.520" vdwhr="1.520" ionr="1.28" valency="2" hybr="sp2"/>
+      <atom id="OC" elem="O" mass="15.99940" hbon="A" vdwr="1.520" vdwhr="1.520" ionr="1.28" valency="2" hybr="sp2"/>
+      <atom id="OP" elem="O" mass="15.99940" hbon="A" vdwr="1.520" vdwhr="1.520" ionr="1.28" valency="2" hybr="sp2"/>
+      <atom id="OB" elem="O" mass="15.99940" hbon="A" vdwr="1.520" vdwhr="1.520" ionr="1.28" valency="2" hybr="sp2"/>
+      <atom id="P" elem="P" mass="30.97380" hbon="N" vdwr="1.800" vdwhr="1.88" ionr="0.59" valency="5"/>
+      <atom id="P1" elem="P" mass="30.97380" hbon="N" vdwr="1.800" vdwhr="1.88" ionr="0.59" valency="5"/>
+      <atom id="PS" elem="P" mass="30.97380" hbon="N" vdwr="1.800" vdwhr="1.90" ionr="0.59" valency="5"/>
+      <atom id="S" elem="S" mass="32.06400" hbon="A" vdwr="1.800" vdwhr="1.88" ionr="0.4" valency="2"/>
+      <atom id="S3" elem="S" mass="32.06400" hbon="A" vdwr="1.800" vdwhr="1.88" ionr="0.4" valency="4"/>
+      <atom id="S2" elem="S" mass="32.06400" hbon="A" vdwr="1.800" vdwhr="1.88" ionr="0.4" valency="2"/>
+      <atom id="S1" elem="S" mass="32.06400" hbon="A" vdwr="1.800" vdwhr="1.88" ionr="0.4" valency="2"/>
+      <atom id="ST" elem="S" mass="32.06400" hbon="A" vdwr="1.800" vdwhr="1.88" ionr="0.4" valency="6"/>
+      <atom id="SH1" elem="S" mass="32.06400" hbon="B" vdwr="1.800" vdwhr="1.950" ionr="0.4" valency="2"/>
+      <atom id="H" elem="H" mass="1.00800" hbon="N" vdwr="1.200" valency="1"/>
+      <atom id="HCH" elem="H" mass="1.00800" hbon="N" vdwr="1.200" valency="1"/>
+      <atom id="HCH1" elem="H" mass="1.00800" hbon="N" vdwr="1.200" valency="1"/>
+      <atom id="HCH2" elem="H" mass="1.00800" hbon="N" vdwr="1.200" valency="1"/>
+      <atom id="HCH3" elem="H" mass="1.00800" hbon="N" vdwr="1.200" valency="1"/>
+      <atom id="HCR1" elem="H" mass="1.00800" hbon="N" vdwr="1.200" valency="1"/>
+      <atom id="HC2" elem="H" mass="1.00800" hbon="N" vdwr="1.200" valency="1"/>
+      <atom id="HC1" elem="H" mass="1.00800" hbon="N" vdwr="1.200" valency="1"/>
+      <atom id="HC2" elem="H" mass="1.00800" hbon="N" vdwr="1.200" valency="1"/>
+      <atom id="HCR5" elem="H" mass="1.00800" hbon="N" vdwr="1.200" valency="1"/>
+      <atom id="HCR6" elem="H" mass="1.00800" hbon="N" vdwr="1.200" valency="1"/>
+      <atom id="HNC1" elem="H" mass="1.00800" hbon="H" vdwr="1.200" valency="1"/>
+      <atom id="HNC2" elem="H" mass="1.00800" hbon="H" vdwr="1.200" valency="1"/>
+      <atom id="HNH1" elem="H" mass="1.00800" hbon="H" vdwr="1.200" valency="1"/>
+      <atom id="HNH2" elem="H" mass="1.00800" hbon="H" vdwr="1.200" valency="1"/>
+      <atom id="HNR5" elem="H" mass="1.00800" hbon="H" vdwr="1.200" valency="1"/>
+      <atom id="HNR6" elem="H" mass="1.00800" hbon="H" vdwr="1.200" valency="1"/>
+      <atom id="HNT1" elem="H" mass="1.00800" hbon="H" vdwr="1.200" valency="1"/>
+      <atom id="HNT2" elem="H" mass="1.00800" hbon="H" vdwr="1.200" valency="1"/>
+      <atom id="HNT3" elem="H" mass="1.00800" hbon="H" vdwr="1.200" valency="1"/>
+      <atom id="HOH1" elem="H" mass="1.00800" hbon="H" vdwr="1.200" valency="1"/>
+      <atom id="HOH2" elem="H" mass="1.00800" hbon="H" vdwr="1.200" valency="1"/>
+      <atom id="HOHA" elem="H" mass="1.00800" hbon="H" vdwr="1.200" valency="1"/>
+      <atom id="HOHB" elem="H" mass="1.00800" hbon="H" vdwr="1.200" valency="1"/>
+      <atom id="HOHC" elem="H" mass="1.00800" hbon="H" vdwr="1.200" valency="1"/>
+      <atom id="HSH1" elem="H" mass="1.00800" hbon="H" vdwr="1.200" valency="1"/>
+      <atom id="SI" elem="Si" mass="28.0855" hbon="N" vdwr="2.10" ionr="0.40" valency="4" hybr="sp3"/>
+      <atom id="SI1" elem="Si" mass="28.0855" hbon="N" vdwr="2.10" ionr="0.40" valency="4"/>
+      <atom id="GE" elem="Ge" mass="72.59" hbon="N" vdwr="2.10" ionr="0.40" valency="1"/>
+      <atom id="GE1" elem="Ge" mass="72.59" hbon="N" vdwr="2.10" ionr="0.40" valency="1"/>
+      <atom id="SN" elem="Sn" mass="118.69" hbon="N" vdwr="2.17" ionr="0.69" valency="1"/>
+      <atom id="PB" elem="Pb" mass="207.2" hbon="N" vdwr="2.02" ionr="0.79" valency="1"/>
+      <atom id="LI" elem="Li" mass="6.941" hbon="N" vdwr="1.82" ionr="0.73" valency="1"/>
+      <atom id="NA" elem="Na" mass="22.990" hbon="N" vdwr="2.27" ionr="1.13" valency="1"/>
+      <atom id="K" elem="K" mass="30.0983" hbon="N" vdwr="2.75" ionr="1.51" valency="1"/>
+      <atom id="RB" elem="Rb" mass="85.468" hbon="N" vdwr="2.00" ionr="1.48" valency="1"/>
+      <atom id="CS" elem="Cs" mass="132.905" hbon="N" vdwr="2.98" ionr="1.81" valency="1"/>
+      <atom id="FR" elem="Fr" mass="223.0" hbon="N" ionr="1.94" valency="1"/>
+      <atom id="BE" elem="Be" mass="9.0123" hbon="N" vdwr="1.12" ionr="0.41" valency="1"/>
+      <atom id="MG" elem="Mg" mass="24.30500" hbon="N" vdwr="1.73" ionr="0.71" valency="1"/>
+      <atom id="CA" elem="Ca" mass="40.08000" hbon="N" vdwr="1.94" ionr="1.14" valency="1"/>
+      <atom id="SR" elem="Sr" mass="87.62" hbon="N" vdwr="2.19" ionr="1.32" valency="1"/>
+      <atom id="BA" elem="Ba" mass="137.33" hbon="N" vdwr="2.53" ionr="1.49" valency="1"/>
+      <atom id="RA" elem="Ra" mass="226.025" hbon="N" vdwr="2.15" ionr="1.62" valency="1"/>
+      <atom id="SC" elem="Sc" mass="44.9559" hbon="N" vdwr="1.60" ionr="0.885" valency="1"/>
+      <atom id="Y" elem="Y" mass="88.9059" hbon="N" vdwr="1.80" ionr="1.04" valency="1"/>
+      <atom id="LA" elem="La" mass="138.9055" hbon="N" vdwr="1.95" ionr="1.172" valency="1"/>
+      <atom id="CE" elem="Ce" mass="140.12" hbon="N" vdwr="1.85" ionr="1.01" valency="1"/>
+      <atom id="PR" elem="Pr" mass="140.9077" hbon="N" vdwr="1.85" ionr="0.99" valency="1"/>
+      <atom id="ND" elem="Nd" mass="144.24" hbon="N" vdwr="1.85" ionr="1.123" valency="1"/>
+      <atom id="PM" elem="Pm" hbon="N" ionr="1.11" valency="1"/>
+      <atom id="SM" elem="Sm" mass="150.36" hbon="N" vdwr="1.85" ionr="1.098" valency="1"/>
+      <atom id="EU" elem="Eu" mass="151.96" hbon="N" vdwr="1.85" ionr="1.087" valency="1"/>
+      <atom id="GD" elem="Gd" mass="157.25" hbon="N" vdwr="1.80" ionr="1.078" valency="1"/>
+      <atom id="TB" elem="Tb" mass="158.9254" hbon="N" vdwr="1.75" ionr="0.90" valency="1"/>
+      <atom id="DY" elem="Dy" mass="162.50" hbon="N" vdwr="1.75" ionr="1.052" valency="1"/>
+      <atom id="HO" elem="Ho" mass="164.9304" hbon="N" vdwr="1.75" ionr="1.041" valency="1"/>
+      <atom id="ER" elem="Er" mass="167.26" hbon="N" vdwr="1.75" ionr="1.03" valency="1"/>
+      <atom id="TM" elem="Tm" mass="168.9342" hbon="N" vdwr="1.75" ionr="1.02" valency="1"/>
+      <atom id="YB" elem="Yb" mass="173.04" hbon="N" vdwr="1.75" ionr="1.008" valency="1"/>
+      <atom id="LU" elem="Lu" mass="174.967" hbon="N" vdwr="1.75" ionr="1.001" valency="1"/>
+      <atom id="AC" elem="Ac" mass="227.028" hbon="N" vdwr="1.95" ionr="1.26" valency="1"/>
+      <atom id="TH" elem="Th" mass="232.0" hbon="N" vdwr="1.80" ionr="1.08" valency="1"/>
+      <atom id="PA" elem="Pa" mass="231.0" hbon="N" vdwr="1.80" ionr="0.92" valency="1"/>
+      <atom id="U" elem="U" mass="238.0" hbon="N" vdwr="1.86" ionr="0.66" valency="1"/>
+      <atom id="NP" elem="Np" mass="237.0" hbon="N" vdwr="1.75" ionr="0.85" valency="1"/>
+      <atom id="PU" elem="Pu" mass="239.0" hbon="N" vdwr="1.75" ionr="0.85" valency="1"/>
+      <atom id="AM" elem="Am" mass="241.0" hbon="N" vdwr="1.75" ionr="0.99" valency="1"/>
+      <atom id="CM" elem="Cm" mass="244.0" hbon="N" ionr="0.99" valency="1"/>
+      <atom id="BK" elem="Bk" mass="249.0" hbon="N" ionr="0.97" valency="1"/>
+      <atom id="CF" elem="Cf" mass="252.0" hbon="N" ionr="0.961" valency="1"/>
+      <atom id="ES" elem="Es" mass="253.0" hbon="N" valency="1"/>
+      <atom id="FM" elem="Fm" mass="257.0" hbon="N" valency="1"/>
+      <atom id="MD" elem="Md" mass="256.0" hbon="N" valency="1"/>
+      <atom id="NO" elem="No" mass="255.0" hbon="N" valency="1"/>
+      <atom id="LR" elem="Lr" mass="256.0" hbon="N" valency="1"/>
+      <atom id="TI" elem="Ti" mass="47.88" hbon="N" vdwr="1.40" ionr="0.56" valency="1"/>
+      <atom id="ZR" elem="Zr" mass="91.22" hbon="N" vdwr="1.55" ionr="0.73" valency="1"/>
+      <atom id="HF" elem="Hf" mass="178.49" hbon="N" vdwr="1.55" ionr="0.72" valency="1"/>
+      <atom id="RF" elem="Rf" hbon="N" valency="1"/>
+      <atom id="V" elem="V" mass="50.9415" hbon="N" vdwr="1.35" ionr="0.68" valency="1"/>
+      <atom id="NB" elem="Nb" mass="92.9064" hbon="N" vdwr="1.45" ionr="0.62" valency="1"/>
+      <atom id="TA" elem="Ta" mass="180.9479" hbon="N" vdwr="1.45" ionr="0.78" valency="1"/>
+      <atom id="DB" elem="Db" hbon="N" valency="1"/>
+      <atom id="CR" elem="Cr" mass="51.996" hbon="N" vdwr="1.40" ionr="0.53" valency="1"/>
+      <atom id="MO" elem="Mo" mass="95.94" hbon="N" vdwr="1.45" ionr="0.55" valency="1"/>
+      <atom id="W" elem="W" mass="183.85" hbon="N" vdwr="1.35" ionr="0.56" valency="1"/>
+      <atom id="SG" elem="Sg" hbon="N" valency="1"/>
+      <atom id="MN" elem="Mn" mass="54.938" hbon="N" vdwr="1.40" ionr="0.46" valency="1"/>
+      <atom id="TC" elem="Tc" mass="98.906" hbon="N" vdwr="1.35" ionr="0.51" valency="1"/>
+      <atom id="RE" elem="Re" mass="186.207" hbon="N" vdwr="1.35" ionr="0.52" valency="1"/>
+      <atom id="BH" elem="Bh" hbon="N" valency="1"/>
+      <atom id="FE" elem="Fe" mass="55.847" hbon="N" vdwr="1.40" ionr="0.68" valency="1"/>
+      <atom id="RU" elem="Ru" mass="101.07" hbon="N" vdwr="1.30" ionr="0.52" valency="1"/>
+      <atom id="OSE" elem="Os" mass="190.2" hbon="N" vdwr="1.30" ionr="0.53" valency="1"/>
+      <atom id="HS" elem="Hs" hbon="N" valency="1"/>
+      <atom id="CO" elem="Co" mass="58.9332" hbon="N" vdwr="1.35" ionr="0.54" valency="1"/>
+      <atom id="RH" elem="Rh" mass="102.9055" hbon="N" vdwr="1.35" ionr="0.69" valency="1"/>
+      <atom id="IR" elem="Ir" mass="192.22" hbon="N" vdwr="1.35" ionr="0.71" valency="1"/>
+      <atom id="MT" elem="Mt" hbon="N" valency="1"/>
+      <atom id="NI" elem="Ni" mass="58.69" hbon="N" vdwr="1.63" ionr="0.63" valency="1"/>
+      <atom id="PD" elem="Pd" mass="106.42" hbon="N" vdwr="1.63" ionr="0.78" valency="1"/>
+      <atom id="PT" elem="Pt" mass="195.08" hbon="N" vdwr="1.75" ionr="0.71" valency="1"/>
+      <atom id="CU" elem="Cu" mass="63.546" hbon="N" vdwr="1.40" ionr="0.71" valency="1"/>
+      <atom id="AG" elem="Ag" mass="107.868" hbon="N" vdwr="1.72" ionr="0.81" valency="1"/>
+      <atom id="AU" elem="Au" mass="196.9665" hbon="N" vdwr="1.66" ionr="0.71" valency="1"/>
+      <atom id="ZN" elem="Zn" mass="65.38" hbon="N" vdwr="1.39" ionr="0.74" valency="1"/>
+      <atom id="CD" elem="Cd" mass="112.41" hbon="N" vdwr="1.58" ionr="0.92" valency="1"/>
+      <atom id="HG" elem="Hg" mass="200.59" hbon="N" vdwr="1.55" ionr="1.10" valency="1"/>
+      <atom id="B" elem="B" mass="10.81" hbon="N" vdwr="0.85" ionr="0.25" valency="1"/>
+      <atom id="AL" elem="Al" mass="26.98154" hbon="N" vdwr="1.25" ionr="0.53" valency="1"/>
+      <atom id="GA" elem="Ga" mass="69.72" hbon="N" vdwr="1.87" ionr="0.61" valency="1"/>
+      <atom id="IN" elem="In" mass="114.82" hbon="N" vdwr="1.93" ionr="0.76" valency="1"/>
+      <atom id="TL" elem="Tl" mass="204.383" hbon="N" vdwr="1.96" ionr="0.89" valency="1"/>
+      <atom id="AS" elem="As" mass="74.9216" hbon="N" vdwr="1.85" ionr="0.475" valency="1"/>
+      <atom id="AS1" elem="As" mass="74.9216" hbon="N" vdwr="1.85" ionr="0.475" valency="1"/>
+      <atom id="SB" elem="Sb" mass="121.75" hbon="N" vdwr="1.8" ionr="0.90" valency="1"/>
+      <atom id="BI" elem="Bi" mass="208.9804" hbon="N" vdwr="1.8" ionr="0.90" valency="1"/>
+      <atom id="SE" elem="Se" mass="78.96" hbon="N" vdwr="1.90" ionr="0.42" valency="1"/>
+      <atom id="TE" elem="Te" mass="127.60" hbon="N" vdwr="2.06" ionr="0.57" valency="1"/>
+      <atom id="PO" elem="Po" mass="210.0" hbon="N" vdwr="2.0" ionr="0.81" valency="1"/>
+      <atom id="F" elem="F" mass="18.998" hbon="B" vdwr="1.47" ionr="1.19" valency="1"/>
+      <atom id="CL" elem="Cl" mass="35.453" hbon="A" vdwr="1.75" ionr="1.67" valency="1"/>
+      <atom id="BR" elem="Br" mass="79.904" hbon="N" vdwr="1.85" ionr="0.73" valency="1"/>
+      <atom id="I" elem="I" mass="126.9045" hbon="N" vdwr="1.98" ionr="0.56" valency="1"/>
+      <atom id="AT" elem="At" mass="210.0" hbon="N" vdwr="1.80" ionr="0.76" valency="1"/>
+      <atom id="HE" elem="He" mass="4.0026" hbon="N" vdwr="1.40" valency="1"/>
+      <atom id="NE" elem="Ne" mass="20.179" hbon="N" vdwr="1.54" ionr="1.12" valency="1"/>
+      <atom id="AR" elem="Ar" mass="39.948" hbon="N" vdwr="1.88" ionr="1.54" valency="1"/>
+      <atom id="KR" elem="Kr" mass="83.80" hbon="N" vdwr="2.02" ionr="1.69" valency="1"/>
+      <atom id="XE" elem="Xe" mass="131.29" hbon="N" vdwr="2.16" ionr="1.90" valency="1"/>
+      <atom id="RN" elem="Rn" mass="222.0" hbon="N" vdwr="2.20" ionr="2.0" valency="1"/>
+      <atom id="DUM" elem="O" mass="16.0" hbon="N" vdwr="0.6" vdwhr="0.6" ionr="0.6"/>
+    </atoms>
+  </params>
+</toppar>
