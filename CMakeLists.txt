@@ -16,13 +16,14 @@ message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 option(BUILD_GUI "Build CueMol GUI." ON)
 option(BUILD_PYTHON_BINDINGS "Build Python bindings")
 option(BUILD_MINIMUM_MODULES "Build CueMol with minimum modules." OFF)
+option(BUILD_XPCJS_BINDINGS "Build XPCOM-js bindings")
 
 find_package(Perl REQUIRED)
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)
 
 if (APPLE)
-  set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "" FORCE)
+  # set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "" FORCE)
   # set(CMAKE_CXX_FLAGS "-stdlib=libc++")
 endif ()
 

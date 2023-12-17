@@ -1,0 +1,1281 @@
+remarks file toppar/protein.param 
+remarks   protein parameters with Lennard-Jones van der Waals parameters
+remarks   for crystallographic structure determination 
+
+!
+! Please cite the following reference when using these parameters:
+! Engh, R.A. and  Huber, R. (1991). Accurate Bond and 
+!  Angle Parameters for X-ray Protein-Structure Refinement, 
+!  Acta Cryst. A47, 392-400.
+!
+!
+
+set echo=false end
+
+
+ checkversion 1.0
+
+
+bond C5W  CW   1827.161  1.433 ! 0.018
+bond CW   CW   2048.443  1.409 ! 0.017
+bond C    CH1E 1342.404  1.525 ! 0.021
+bond C5   CH2E 3020.408  1.497 ! 0.014
+bond C5W  CH2E  616.025  1.498 ! 0.031
+bond CF   CH2E 1119.093  1.502 ! 0.023
+bond CY   CH2E 1223.141  1.512 ! 0.022
+bond C    CH2E  947.200  1.516 ! 0.025
+bond C    CH2G 1827.161  1.516 ! 0.010
+bond C5W  CR1E  947.200  1.365 ! 0.025
+bond CW   CR1E 2312.500  1.398 ! 0.016
+bond CW   CR1W 1342.404  1.394 ! 0.021
+bond CF   CR1E 1342.404  1.384 ! 0.021
+bond CY   CR1E 1342.404  1.389 ! 0.021
+bond CY2  CR1E 1027.778  1.378 ! 0.024
+bond C5   CR1H 4892.562  1.354 ! 0.011
+bond C5   CR1E 4892.562  1.356 ! 0.011
+bond C    N    2312.500  1.341 ! 0.016
+bond C    NC2  1827.161  1.326 ! 0.018
+bond C5   NH1  4892.562  1.378 ! 0.011
+bond CW   NH1  4892.562  1.370 ! 0.011
+bond C    NH1  3020.408  1.329 ! 0.014
+bond C    NH2  1342.404  1.328 ! 0.021
+bond C5   NR   2048.443  1.371 ! 0.017
+bond C    O    1480.000  1.231 ! 0.020
+bond C    OC   1639.889  1.249 ! 0.019
+bond CY2  OH1  1342.404  1.376 ! 0.021
+bond C    OH1  1223.141  1.304 ! 0.022
+bond CH1E CH1E  812.071  1.540 ! 0.027
+bond CH1E CH2E 1480.000  1.530 ! 0.020
+bond CH1E CH3E  543.618  1.521 ! 0.033
+bond CH1E N    2631.111  1.466 ! 0.015
+bond CH1E NH1  1639.889  1.458 ! 0.019
+bond CH1E NH3  1342.404  1.491 ! 0.021
+bond CH1E OH1  2312.500  1.433 ! 0.016
+bond CH2E CH2E  657.778  1.520 ! 0.030
+bond CH2P CH2E  236.800  1.492 ! 0.050
+bond CH2P CH2P  512.111  1.503 ! 0.034
+bond CH2E CH3E  389.218  1.513 ! 0.039
+bond CH2P N    3020.408  1.473 ! 0.014
+bond CH2P NH3  3020.408  1.473 ! 0.014  
+bond CH2G NH1  2312.500  1.451 ! 0.016
+bond CH2E NH1  1827.161  1.460 ! 0.018
+bond CH3E NH1  1827.161  1.460 ! copied for special residue
+bond CH2E NH3   657.778  1.489 ! 0.030
+bond CH3E NH3   657.778  1.489 ! 0.030 taken from CH2E parameter PDA 6/98
+bond CH2G NH3   657.778  1.489 ! 0.030*
+bond CH2E OH1  1480.000  1.417 ! 0.020
+bond CH2E S    1480.000  1.822 ! 0.020
+bond CH2E SE    500.000  1.930 ! PDA & data from Mike Carson (UAB) 6/99
+bond CH2E SM    512.111  1.803 ! 0.034
+bond CH2E SH1E  543.618  1.808 ! 0.033
+bond CH3E SE    500.000  1.930 ! PDA & data from Mike Carson (UAB) 6/99
+bond CH3E SM    170.066  1.791 ! 0.059
+bond CR1E CR1E  657.778  1.382 ! 0.030
+bond CR1E CR1W  947.200  1.400 ! 0.025
+bond CR1W CR1W 1639.889  1.368 ! 0.019
+bond CR1E NH1  1342.404  1.374 ! 0.021
+bond CRH  NH1  1480.000  1.345 ! 0.020
+bond CRHH NH1  5920.000  1.321 ! 0.010
+bond CR1H NH1  4892.562  1.374 ! 0.011
+bond CR1E NR    657.778  1.382 ! 0.030
+bond S    S    2410.110  2.030 ! 0.008
+bond CRH  NR   3502.958  1.319 ! 0.013
+bond H    NH1    405.0  0.98 !*
+bond H    NH2    405.0  0.98 !*
+bond H    OH1    450.0  0.96 !*
+bond HA   C      350.0  1.08 !*
+bond HA   CT     300.0  1.08 !*
+bond HC   NC2    405.0  1.00 !*
+bond HC   NH1    405.0  0.98 !*
+bond HC   NH3    405.0  1.04 !*
+
+
+
+
+angle C5W  CW   CW   1349.600  107.200 !1.2
+angle CW   C5W  CH2E  991.543  126.800 !1.4
+angle C5W  CW   CR1E 1943.424  133.900 !1.0
+angle CW   CW   CR1E 1943.424  118.800 !1.0
+angle CW   CW   CR1W 1943.424  122.400 !1.0
+angle CW   C5W  CR1E  759.150  106.300 !1.6
+angle CW   CW   NH1  1149.956  107.400 !1.3
+angle CH1E C    N     863.744  116.900 !1.5
+angle CH1E C    NH1   485.856  116.200 !2.0
+angle CH1E C    O     672.465  120.800 !1.7
+angle CH1E C    OC    310.948  117.000 !2.5
+angle CH2E C5   CR1E 1149.956  129.100 !1.3
+angle CH2E C5   CR1H 1149.956  131.200 !1.3
+angle CH2E CF   CR1E  672.465  120.700 !1.7
+angle CH2E C5W  CR1E  863.744  126.900 !1.5
+angle CH2E CY   CR1E  863.744  120.800 !1.5
+angle CH2E C    N     440.686  118.200 !2.1
+angle CH2G C    N     440.686  118.200 !2.1 *
+angle CH2E C5   NH1   863.744  122.700 !1.5
+angle CH2E C    NH1   440.686  116.500 !2.1
+angle CH2G C    NH1   440.686  116.400 !2.1 *
+angle CH2E C    NH2   863.744  116.400 !1.5
+angle CH2E C5   NR    863.744  121.600 !1.5
+angle CH2E C    O     485.856  120.800 !2.0
+angle CH2G C    O     440.686  120.800 !2.1
+angle CH2E C    OC    367.377  118.400 !2.3
+angle CH2G C    OC    367.377  118.400 !2.3 *
+angle CR1E CY2  CR1E  485.856  120.300 !2.0
+angle CR1E CY   CR1E  863.744  118.100 !1.5
+angle CR1E CF   CR1E  863.744  118.600 !1.5 
+angle CR1W CW   NH1   863.744  130.100 !1.5
+angle CR1E C5   NH1  1943.424  105.200 !1.0
+angle CR1H C5   NH1  1943.424  106.100 !1.0
+angle CR1E C5  NR    1943.424  109.200  !0.7 HISE, taken as 1.0
+angle CR1E CY2  OH1   215.936  119.900 !3.0
+angle N    C    O     991.543  122.000 !1.4
+angle NC2  C    NC2   599.823  119.700 !1.8
+angle NC2  C    NH1   538.345  120.000 !1.9
+angle NH1  C    O     759.150  123.000 !1.6
+angle NH2  C    O    1943.424  122.600 !1.0
+angle OC   C    OC    337.400  122.900 !2.4
+angle C    CH1E CH1E  401.534  109.100 !2.2
+angle C    CH1E CH2E  538.345  110.100 !1.9
+angle C    CH1E CH3E  863.744  110.500 !1.5
+angle C    CH1E N     310.948  111.800 !2.5
+angle C    CH1E NH1   247.886  111.200 !2.8
+angle C    CH1E NH3   247.886  111.200 !2.8 *
+angle CH1E CH1E CH2E  672.465  110.400 !1.7
+angle CH1E CH1E CH3E  672.465  110.500 !1.7
+angle CH1E CH1E NH1   672.465  111.500 !1.7
+angle CH1E CH1E NH3   672.465  111.500 !1.7 *
+angle CH1E CH1E OH1   863.744  109.600 !1.5
+angle CH2E CH1E CH3E  215.936  110.700 !3.0
+angle CH2E CH1E N    1606.136  103.000 !1.1
+angle CH2E CH1E NH1   672.465  110.500 !1.7
+angle CH2E CH1E NH3   672.465  110.500 !1.7 *
+angle CH3E CH1E CH3E  401.534  110.800 !2.2
+angle CH3E CH1E NH1   863.744  110.400 !1.5
+angle CH3E CH1E NH3   672.465  110.500 !1.7 *
+angle CH3E CH1E OH1   485.856  109.300 !2.0
+angle C    CH2E CH1E 1943.424  112.600 !1.0
+angle C5   CH2E CH1E 1943.424  113.800 !1.0
+angle CF   CH2E CH1E 1943.424  113.800 !1.0
+angle C5W  CH2E CH1E  538.345  113.600 !1.9
+angle CY   CH2E CH1E  599.823  113.900 !1.8
+angle C    CH2E CH2E  672.465  112.600 !1.7
+angle C    CH2G NH1   231.085  112.500 !2.9
+angle C    CH2G NH3   231.085  112.500 !2.9 *
+angle CH1E CH2E CH1E  158.647  116.300 !3.5
+angle CH1E CH2E CH2P  538.345  104.500 !1.9
+angle CH1E CH2E CH2E  485.856  114.100 !2.0
+angle CH1E CH2E CH3E  440.686  113.800 !2.1
+angle CH1E CH2E OH1   485.856  111.100 !2.0
+angle CH1E CH2E S     367.377  114.400 !2.3
+angle CH1E CH2E SH1E  367.377  114.400 !2.3 *
+angle CH2E CH2E CH2E  367.377  111.300 !2.3
+angle CH2E CH2P CH2P  189.788  106.100 !3.2
+angle CH2P CH2P N     863.744  103.200 !1.5
+angle CH2P CH2P NH3    863.744  103.200 !1.5  !added ATB 5/19/93
+angle CH2E CH2E NH1   401.534  112.000 !2.2
+angle CH2E CH2E NH3   189.788  111.900 !3.2
+angle CH2E CH2E SE    215.936  112.700 ! guess based on methionine PDA 9/16/97
+angle CH2E CH2E SM    215.936  112.700 !3.0
+angle CY2  CR1E CR1E  599.823  119.600 !1.8
+angle CW   CR1E CR1E 1149.956  118.600 !1.3
+angle CW   CR1W CR1W 1149.956  117.500 !1.3
+angle CF   CR1E CR1E  672.465  120.700 !1.7
+angle CY   CR1E CR1E  863.744  121.200 !1.5
+angle C5   CR1E NH1  1943.424  106.500 !1.0
+angle C5   CR1H NH1  1943.424  107.200 !1.0
+angle C5W  CR1E NH1  1149.956  110.200 !1.3
+angle C5   CR1E NR    367.377  109.500 !2.3
+angle CR1E CR1E CR1W 1149.956  121.100 !1.3
+angle CR1W CR1W CR1E 1149.956  121.500 !1.3
+angle CR1E CR1E CR1E  599.823  120.000 !1.8
+angle NH1  CRHH NH1  1943.424  108.400 !1.0
+angle NH1  CRH NR   1149.956  111.700 !1.3  HisE, applied also to HisD
+angle C    N    CH1E   77.737  122.600 !5.0
+angle C    N    CH2P  115.611  125.000 !4.1
+angle HC   NH3  CH2P  500.     125.000 !4.1  !added ATB 5/19/93
+angle CH1E N    CH2P  991.543  112.000 !1.4
+angle CH1E NH3  CH2P  991.543  112.000 !1.4  ! added ATB 5/19/93
+angle C    NH1  CH1E  599.823  121.700 !1.8
+angle C    NH1  CH2G  672.465  120.600 !1.7
+angle C    NH1  CH2E  863.744  124.200 !1.5
+angle C    NH1  CH3E  672.465  120.600 !1.7 *
+angle C5   NH1  CRHH  672.465  109.300 !1.7
+angle C5   NH1  CRH   672.465  109.000 !1.7 *
+angle CW   NH1  CR1E  599.823  108.900 !1.8
+angle CRHH NH1  CR1H 1943.424  109.000 !1.0
+angle CRH  NH1  CR1E 1149.956  106.900 !1.3
+angle C5   NR   CRH  1943.424  105.600 !1.0 HisE
+angle CR1E NR   CRH   215.936  107.000 !3.0, HisD, weak statistics
+angle CH2E SE   CH3E  400.000   98.900 ! PDA & data from Mike Carson (UAB) 6/99
+angle CH2E SM   CH3E  401.534  100.900 !2.2
+angle CH2E S    S     599.823  103.800 !1.8
+angle C    NC2  HC      35.0 120.0 !*
+angle HC   NC2  HC      40.0 120.0 !*
+angle C    NH1  H       30.0 120.0 !*
+angle CW   NH1  H       30.0 120.0 !*
+angle C5W  NH1  H       30.0 120.0 !*
+angle C5   NH1  H       30.0 120.0 !*
+angle CH1E NH1  H       35.0 120.0 !*
+angle CRH  NH1  H       35.0 120.0 !*
+angle CRHH NH1  H       35.0 120.0 !*
+angle CR1H NH1  H       35.0 120.0 !*
+angle CH2E NH1  H       35.0 120.0 !*
+angle CH2G NH1  H       35.0 120.0 !*
+angle CH3E NH1  H       35.0 120.0 !*
+angle CR1E NH1  H       35.0 120.0 !*
+angle C    NH2  H       30.0 120.0 !*
+angle CH1E NH2  H       35.0 120.0 !*
+angle CH2E NH2  H       35.0 120.0 !*
+angle H    NH2  H       40.0 125.0 !*
+angle CH1E NH3  HC      35.0 109.5 !*
+angle CH2E NH3  HC      35.0 109.5 !*
+angle CH2E NH3  CH3E    35.0 109.5 !* taken from HC parameter PDA 6/98
+angle CH2G NH3  HC      35.0 109.5 !*
+angle HC   NH3  HC      40.0 109.5 !*
+angle CH3E NH3  CH3E    40.0 109.5 !* taken from HC parameter PDA 6/98
+angle C    OH1  H       50.0 109.5 !*
+angle CY2  OH1  H       50.0 109.5 !*
+angle CH1E OH1  H       35.0 109.5 !*
+angle CH2E OH1  H       35.0 109.5 !*
+
+! SEE ABOVE REGARDING DIHEDRALS
+{ Weis 5/11/92 scaled up 3x for consistency with bond and angle parameters.}
+{ Note: didn't change commented lines.                                     }
+dihe CH1E C    N    CH1E 1250.0    2 180.0! reduced -> to allow cis PRO
+dihe CH2E C    N    CH1E 1250.0       2     180.0
+dihe CH2G C    N    CH1E 1250.0       2     180.0
+!dihe CR1E C    C    CR1E 100.0       2     180.0
+dihe CR1E CW   CW   CR1E 300.0       2     180.0 
+dihe CR1E CW   CW   CR1W 300.0       2     180.0 
+!dihe CR1E C    C    C   100.0       2     180.0 
+dihe CR1W CW   CW   C5W  300.0       2     180.0 
+!dihe CR1E C    C    NH1 100.0       2     180.0 
+dihe CR1E CW   CW   NH1  300.0       2     180.0 
+dihe X    C    CH1E X    0.0       3       0.0
+dihe X    C    CH2E X    0.0       3       0.0
+dihe X    C    CH2G X    0.0       3       0.0
+dihe X    C5   CH2E X    0.0       3       0.0
+dihe X    C5W  CH2E X    0.0       3       0.0
+dihe X    CF   CH2E X    0.0       3       0.0
+dihe X    CY   CH2E X    0.0       3       0.0
+dihe X    C    CR1E X   30.0       2     180.0
+!dihe X    C    CT   X    0.0       3       0.0
+dihe X    C    N    X   24.6       2     180.0 
+dihe X    C    NC2  X   24.6       2     180.0 
+dihe X    C    NH1  X  1250.0       1       0.0 
+dihe X    C    NH2  X   24.6       2     180.0
+!dihe X    C    OH1  X    1.8       2     180.0
+dihe X    CY2  OH1  X    5.4       2     180.0
+dihe X    CH1E CH1E X    4.8       3       0.0
+dihe X    CH1E CH2E X    4.8       3       0.0
+dihe X    CH1E N    X    0.9       3       0.0 
+dihe X    CH1E NH1  X    0.9       3       0.0 
+dihe X    CH1E NH2  X    5.4       3       0.0 
+dihe X    CH1E NH3  X    1.8       3       0.0 
+dihe X    CH1E OH1  X    1.5       3       0.0 
+dihe X    CH2E CH2E X    4.8       3       0.0
+dihe X    CH2E CH2P X    4.8       3       0.0
+dihe X    CH2P CH2P X    4.8       3       0.0
+dihe X    CH2E N    X    0.9       3       0.0 
+dihe X    CH2P N    X    0.9       3       0.0 
+dihe X    CH2P NH3  X    0.9       3       0.0 
+dihe X    CH2E NH1  X    0.9       3       0.0
+dihe X    CH2G NH1  X    0.9       3       0.0
+dihe X    CH2E NH2  X    1.8       3       0.0
+dihe X    CH2E NH3  X    1.8       3       0.0
+dihe X    CH2G NH3  X    1.8       3       0.0
+dihe X    CH2E OH1  X    1.5       3       0.0
+dihe X    CH2E S    X    3.6       2       0.0
+dihe X    CH2E SE   X    3.6       2       0.0 ! guess from MET, PDA 9/16/97
+dihe X    CH2E SM   X    3.6       2       0.0
+!dihe X    CT   CT   X    1.6       3       0.0
+!dihe X    CT   N    X    0.3       3       0.0
+!dihe X    CT   NC2  X    0.3       3       0.0
+!dihe X    CT   NH1  X    0.3       3       0.0
+!dihe X    CT   NH2  X    0.6       3       0.0
+!dihe X    CT   NH3  X    0.6       3       0.0
+!dihe X    CT   OH1  X    0.5       3       0.0
+!dihe X    CT   S    X    1.2       2       0.0
+!dihe X    FE   NR   X    0.05      4       0.0
+!dihe X    FE   CM   X    0.05      4       0.0
+!dihe X    FE   OM   X    0.00      4       0.0
+dihe X    S    S    X   12.0       2       0.0
+dihe CH2E NH1  C  NC2    300.0      2      180. 
+
+
+! SEE ABOVE REGARDING IMPROPERS
+{ Weis 5/11/92 scaled up 3x for consistency with bond and angle parameters.}
+{ Note: didn't change commented lines.                                     }
+impr C    C    CR1E CH2E 750.0    0   0.0
+impr C    CR1E C    CH2E 750.0    0   0.0
+impr C5W  CR1E CW   CH2E 750.0    0   0.0
+impr C    CR1E CR1E CH2E 750.0    0   0.0
+impr CF   CR1E CR1E CH2E 750.0    0   0.0
+impr CY   CR1E CR1E CH2E 750.0    0   0.0
+impr C    CR1E NH1  CH2E 750.0    0   0.0
+impr C5   NH1  CR1E CH2E 750.0    0   0.0
+impr C5   NH1  CR1H CH2E 750.0    0   0.0
+impr C5   NH1  CRHH CH2E 750.0    0   0.0
+impr C    CR1E CR1E OH1  750.0    0   0.0
+impr CY2  CR1E CR1E OH1  750.0    0   0.0
+impr C    H    H    NH2  135.0    0   0.0
+impr C    OC   OC   CH1E 300.0    0   0.0
+impr C    OC   OC   CH2E 300.0    0   0.0
+impr C    X    X    C     75.0    0   0.0
+impr CY   X    X    CY2   75.0    0   0.0
+impr C5W  X    X    CW    75.0    0   0.0
+impr C    X    X    CH2E 270.0    0   0.0
+impr C5   X    X    CH2E 270.0    0   0.0
+impr C    X    X    CH3E 270.0    0   0.0
+impr C   X    X    CR1E  750.0    0   0.0
+impr C5  X    X    CRH   750.0    0   0.0
+impr CF   X    X    CR1E 750.0    0   0.0
+impr CW   X    X    CR1E 750.0    0   0.0
+impr CW   X    X    CR1W 750.0    0   0.0
+impr C5   X    X    CRHH 750.0    0   0.0
+impr C    X    X    H    225.0    0   0.0
+impr C    X    X    HA   225.0    0   0.0
+impr C    X    X    NH1  300.0    0   0.0
+impr CW   X    X    NH1  300.0    0   0.0
+impr C5W  X    X    NH1  300.0    0   0.0
+impr C5   X    X    NH1  300.0    0   0.0
+impr C    X    X    O    300.0    0   0.0
+impr C    X    X    OC   300.0    0   0.0
+impr C    X    X    OH1  450.0    0   0.0
+impr CH1E X    X    CH1E 300.0    0 35.26439 
+impr CH1E X    X    CH2E 300.0    0 35.26439 
+impr CH1E X    X    CH3E 300.0    0 35.26439 
+impr CR1E X    X    CR1E 750.0    0   0.0
+impr CR1E X    X    CRH  750.0    0   0.0
+impr CR1W X    X    CR1E 750.0    0   0.0
+impr CR1H X    X    CRHH 750.0    0   0.0
+impr CR1H X    X    NH1  750.0    0   0.0
+impr CR1E X    X    NH1  750.0    0   0.0
+!impr FE   X    X    NP    20.0    0   0.0
+impr H    X    X    O    135.0    0   0.0
+!impr N    CH1E CH2E C     45.0    0   0.0
+impr N    CH1E CH2P C    135.0    0   0.0
+impr N    X    X    CH2E 135.0    0   0.0
+impr N    X    X    CT   135.0    0   0.0
+impr NC2  X    X    CT   135.0    0   0.0
+impr NC2  X    X    HC   135.0    0   0.0
+impr NH1  X    X    CH1E 135.0    0   0.0
+impr NH1  X    X    CH2E 135.0    0   0.0
+impr NH1  X    X    CH3E 135.0    0   0.0
+impr NH1  X    X    CT   135.0    0   0.0
+impr NH1  X    X    H    135.0    0   0.0
+impr NH1  X    X    NH1   75.0    0   0.0
+impr NH1  X    X    NR    75.0    0   0.0
+impr NH2  X    X    H    135.0    0   0.0
+impr NR   X    X    C5    75.0    0   0.0
+impr NR   X    X    CR1E  750.0    0   0.0  
+impr NR   X    X    CT    75.0    0   0.0
+impr NR   X    X    CH3E  75.0    0   0.0 
+impr HC   NC2  C    NH1  135.0   0    0.0 ! ARG hydrogens PDA 4/98
+
+
+{* nonbonding parameter section *}
+{* ============================ *}
+   nbonds                                    { This statement specifies the   }
+      atom cdie shift eps=1.0  e14fac=0.4    { nonbonded interaction energy   }
+      cutnb=7.5 ctonnb=6.0 ctofnb=6.5        { options.  Note the reduced     }
+      nbxmod=5 vswitch  tolerance=0.5        { nonbonding cutoff to save      }
+   end                                       { some CPU time                  }
+
+
+ !                  eps     sigma       eps(1:4) sigma(1:4)
+ !                  (kcal/mol) (A)
+ !                  ---------------------------------------
+ NONBonded  H       0.0498   1.4254      0.0498   1.4254
+ NONBonded  HA      0.0450   2.6157      0.0450   2.6157 !- charged group.
+ NONBonded  HC      0.0498   1.0691      0.0498   1.0691 !   Reduced vdw radius
+ !
+ NONBonded  C       0.1200   3.7418      0.1000   3.3854 ! carbonyl carbon
+ NONBonded  C5      0.1200   3.7418      0.1000   3.3854 ! carbonyl carbon
+ NONBonded  C5W     0.1200   3.7418      0.1000   3.3854 ! carbonyl carbon
+ NONBonded  CF      0.1200   3.7418      0.1000   3.3854 ! carbonyl carbon
+ NONBonded  CW      0.1200   3.7418      0.1000   3.3854 ! carbonyl carbon
+ NONBonded  CY      0.1200   3.7418      0.1000   3.3854 ! carbonyl carbon
+ NONBonded  CY2     0.1200   3.7418      0.1000   3.3854 ! carbonyl carbon
+ NONBonded  CH1E    0.0486   4.2140      0.1000   3.3854 ! \
+ NONBonded  CH2E    0.1142   3.9823      0.1000   3.3854 !  extended carbons
+ NONBonded  CH2G    0.1142   3.9823      0.1000   3.3854 !  extended carbons
+ NONBonded  CH2P    0.1142   3.9823      0.1000   3.3854 !  extended carbons
+ NONBonded  CH3E    0.1811   3.8576      0.1000   3.3854 ! /
+ NONBonded  CR1E    0.1200   3.7418      0.1000   3.3854 !  ring carbons
+ NONBonded  CR1H    0.1200   3.7418      0.1000   3.3854 !  ring carbons
+ NONBonded  CR1W    0.1200   3.7418      0.1000   3.3854 !  ring carbons
+ NONBonded  CRHH    0.1200   3.7418      0.1000   3.3854 !  ring carbons
+ NONBonded  CRH     0.1200   3.7418      0.1000   3.3854 !  ring carbons
+ !
+ NONBonded  N       0.2384   2.8509      0.2384   2.8509
+ NONBonded  NC2     0.2384   2.8509      0.2384   2.8509
+ NONBonded  NH1     0.2384   2.8509      0.2384   2.8509
+ NONBonded  NH2     0.2384   2.8509      0.2384   2.8509
+ NONBonded  NH3     0.2384   2.8509      0.2384   2.8509
+ NONBonded  NP      0.2384   2.8509      0.2384   2.8509
+ NONBonded  NR      0.2384   2.8509      0.2384   2.8509
+ !
+ NONBonded  O       0.1591   2.8509      0.1591   2.8509
+ NONBonded  OC      0.6469   2.8509      0.6469   2.8509
+ NONBonded  OH1     0.1591   2.8509      0.1591   2.8509
+ !
+ NONBonded  S       0.0430   3.3676      0.0430   3.3676
+ NONBonded  SM      0.0430   3.3676      0.0430   3.3676
+ NONBonded  SH1E    0.0430   3.3676      0.0430   3.3676
+ NONBonded  SE      0.0430   3.5100      0.0430   3.5100 ! guess PDA 9/16/97
+ !
+
+set echo=true end
+
+!----------------------------------------------------------------------
+!----------------------------------------------------------------------
+!----------------------------------------------------------------------
+!----------------------------------------------------------------------
+!----------------------------------------------------------------------
+
+
+remarks file toppar/dna-rna.param
+remarks  nucleic acid rna-dna parameter file for crystallographic 
+remarks  structure determination using Lennard-Jones van der Waals
+remarks  parameters. 
+
+remark  nucleic acid rna-dna parameter file
+remark  ===========================
+remark  Bases 18.75% Sugar  56.6% Phos  154.8% 
+remark  K= scale*(kT/sigma**2), scales=Base 0.1875, Sugar 0.566, Phos 1.548
+! removed references to CA, CF, CS, MG, NH3, OS (ATB 12/30/94)
+! removed TIP3 water model (ATB 12/30/94)
+! mapped NA->NNA, CH3E->CC3E (ATB 12/30/94)
+
+!
+!Please cite the following reference when using these parameters:
+!G. Parkinson, J. Vojtechovsky, L. Clowney, A.T. Brunger, H.M. Berman,
+!  New Parameters for the Refinement of Nucleic Acid Containing Structures,
+!  Acta Cryst. D, 52, 57-64 (1996).
+!
+! Oct. 8, 1996 - Modified by Alexey Bochkarev (McMaster University)
+!                to process properly 5PHO (5'-terminus with phosphate) patch.
+!                Geometry and charges of -O5'-PO3 group were taken from
+!                Saenger W. 1984.  Principles of Nucleic Acid Structure
+!                All modifications are placed between:
+!***AB***
+!....included fragment
+!***AB end***
+!                New atomic types were introduced (see dna-rna.top) to describe
+!                -O5'-PO3 group: O5H (O5') O1PH (O1P) O2PH (O2P) 
+!                                in addition to existing OH (O5T)
+
+set echo=false end
+
+
+ checkversion 1.0
+
+
+!the generic bonds were taken from param11.dna with 3*kq
+bond  C5R  OH       876.000    1.4300     ! 5' end
+bond  C5D  OH       876.000    1.4300     ! 5' end
+bond  C3R  OH       876.000    1.4300     ! 3' end
+bond  C3D  OH       876.000    1.4300     ! 3' end
+bond  HHO   O2R     1350.000    0.9572
+
+!Phos.  - combined RNA/DNA statistics used 
+!                      kq       x_eq       sigma
+bond  P    O1P     1489.209    1.485      ! 0.015  Phos
+bond  P    O2P     1489.209    1.485      ! 0.015  P
+bond  P    O5R     3350.720    1.593      ! 0.010  P
+bond  P    O3R     2326.889    1.607      ! 0.012  P
+!***AB***
+bond  O5H  C5R     1709.551    1.440      ! 0.020  Sugar RNA
+bond  O5H  C5D     1709.551    1.440      ! 0.020  Sugar DNA
+bond  P    O5H     3350.720    1.630      ! 0.020  Phos  
+bond  P    O1PH    1489.209    1.520      ! 0.020  Phos   
+bond  P    O2PH    1489.209    1.520      ! 0.020  Phos   
+bond  P    OH      1489.209    1.520      ! 0.020  Phos  
+!i***AB end***
+!
+!Sugars
+!RNA statistics
+bond  O5R  C5R     1709.551    1.425      ! 0.014  Sugar
+bond  C5R  C4R     1982.674    1.510      ! 0.013  S
+bond  C4R  C3R     2769.190    1.524      ! 0.011  S
+bond  C3R  C2R     2769.190    1.525      ! 0.011  S
+bond  C2R  C1R     3350.720    1.528      ! 0.010  S
+bond  O4R  C1R     2326.888    1.414      ! 0.012  S
+bond  O4R  C4R     2326.888    1.453      ! 0.012  S
+bond  O3R  C3R     1982.674    1.423      ! 0.013  S
+bond  C2R  O2R     1982.674    1.413      ! 0.013  S
+
+!DNA statistics
+bond  O5R  C5D     1709.551    1.427      ! 0.014  Sugar
+bond  C5D  C4D     5235.500    1.511      ! 0.008  S
+bond  C4D  C3D     3350.720    1.528      ! 0.010  S
+bond  C3D  C2D     3350.720    1.518      ! 0.010  S
+bond  C2D  C1D     1709.551    1.521      ! 0.014  S
+bond  O4D  C1D     1982.674    1.420      ! 0.013  S
+bond  O4D  C4D     2769.190    1.446      ! 0.011  S
+bond  O3R  C3D     1982.674    1.431      ! 0.013  S
+
+!Bases
+!base specific bonds taken from param11.dna , 3*kq
+bond  O2U  HHO      1350.000    0.957      ! UR
+bond  HN   NNA     1416.000    1.010      ! URA
+bond  HN   N1T     1416.000    1.010      ! Infer.
+bond  HN   N1C     1416.000    1.010
+bond  HN   N9G     1416.000    1.010
+bond  HN   N9A     1416.000    1.010
+bond  HN   N3U     1416.000    1.010
+bond  H2   N2      1416.000    1.010
+bond  H2   N4C     1416.000    1.010
+bond  H2   N2G     1416.000    1.010
+bond  H2   N6A     1416.000    1.010
+
+bond  HHO   OH      1350.000    0.960      ! PARAM7 (IR stretch 3400 cm-1)
+
+!Base sugar joint bonds (scale from sugar)
+!                      kq       x_eq       sigma
+bond  C1R  N1T     1709.551    1.473      ! 0.014  Base
+bond  C1R  N1U     4136.691    1.469      ! 0.009  B
+bond  C1R  N1C     2326.889    1.470      ! 0.012  B
+bond  C1R  N9G     4136.691    1.459      ! 0.009  B
+bond  C1R  N9A     3350.720    1.462      ! 0.010  B
+
+bond  C1D  N1T     1709.551    1.473      ! 0.014  B   !DNA
+bond  C1D  N1U     4136.691    1.469      ! 0.009  B
+bond  C1D  N1C     2326.889    1.470      ! 0.012  B
+bond  C1D  N9G     4136.691    1.459      ! 0.009  B
+bond  C1D  N9A     3350.720    1.462      ! 0.010  B
+
+!cytosine                      kq          x_eq  sigma
+bond       C2C    ON          1370.370    1.240 !0.009  B
+bond       C4C    N4C         1370.370    1.335 !0.009  B
+bond       N1C    C2C         1110.000    1.397 !0.010  B
+bond       N1C    C6C         3083.333    1.367 !0.006  B
+bond       C2C    NC          1734.375    1.353 !0.008  B
+bond       NC     C4C         2265.306    1.335 !0.007  B
+bond       C4C    C5C         1734.375    1.425 !0.008  B
+bond       C5C    C6C         1734.375    1.339 !0.008  B
+
+!thymine
+bond       N1T    C2T         1734.375    1.376 !0.008  B
+bond       C2T    NNA         1734.375    1.373 !0.008  B
+bond       NNA    C4T         1734.375    1.382 !0.008  B
+bond       C4T    C5T         1370.370    1.445 !0.009  B
+bond       C5T    C6T         2265.306    1.339 !0.007  B
+bond       C6T    N1T         2265.306    1.378 !0.007  B
+bond       C2T    ON          1734.375    1.220 !0.008  B
+bond       C4T    ON          1370.370    1.228 !0.009  B
+bond       C5T    CC3E        3083.333    1.496 !0.006  B
+
+!adenine
+bond       NC     C2A         1370.370    1.339 !0.009  B
+bond       C2A    N3A         1370.370    1.331 !0.009  B
+bond       N3A    C4A         3083.333    1.344 !0.006  B
+bond       C4A    C5A         2265.306    1.383 !0.007  B
+bond       C5A    C6A         1370.370    1.406 !0.009  B
+bond       C6A    NC          2265.306    1.351 !0.007  B
+bond       C5A    N7A         3083.333    1.388 !0.006  B
+bond       N7A    C8A         2265.306    1.311 !0.007  B
+bond       C8A    N9A         1734.375    1.373 !0.008  B
+bond       N9A    C4A         3083.333    1.374 !0.006  B
+bond       C6A    N6A         1734.375    1.335 !0.008  B
+
+!guanine
+bond       NNA    C2G         1734.375    1.373 !0.008  B
+bond       C2G    N3G         1734.375    1.323 !0.008  B
+bond       N3G    C4G         2265.306    1.350 !0.007  B 
+bond       C4G    C5G         2265.306    1.379 !0.007  B
+bond       C5G    C6G         1110.000    1.419 !0.010  B 
+bond       C6G    NNA         2265.306    1.391 !0.007  B 
+bond       C5G    N7G         3083.333    1.388 !0.006  B 
+bond       N7G    C8G         3083.333    1.305 !0.006  B 
+bond       C8G    N9G         2265.306    1.374 !0.007  B 
+bond       N9G    C4G         1734.375    1.375 !0.008  B
+bond       C2G    N2G         1110.000    1.341 !0.010  B
+bond       C6G    O6G         1370.370    1.237 !0.009  B
+
+!uracil
+bond       C2U    ON          1370.370    1.219 !0.009  B
+bond       C4U    ON          1734.375    1.232 !0.008  B
+bond       N1U    C2U         1370.370    1.381 !0.009  B
+bond       N1U    C6U         1370.370    1.375 !0.009  B
+bond       C2U    N3U         2265.306    1.373 !0.007  B
+bond       N3U    C4U         1370.370    1.380 !0.009  B
+bond       C4U    C5U         1370.370    1.431 !0.009  B
+bond       C5U    C6U         1370.370    1.337 !0.009  B
+
+!5-iodo-uracil
+bond       C5U    I5U         1000.000    2.000 ! guess PDA 5/4/99
+
+!Phos.
+!the angles were taken from param11.dna with 3*kq
+angle      HHO     OH     C5R        139.500  107.300 
+angle      HHO     O5R    C5R        139.500  107.300 
+angle      HHO     OH     C5D        139.500  107.300 
+angle      HHO     O5R    C5D        139.500  107.300 
+angle      HHO     O3R    P          139.500  107.300 
+angle      HHO     O2R    C2R        139.500  107.300 
+angle      OH     P      O3R        144.300  102.600 !  O3'-P-O3P
+! ***AB***
+angle      O5H    C5D    C4D       1534.906  110.200 !1.4 P   c4'-c5'-O5' (DNA)
+angle      O5H    C5R    C4R       1534.906  110.200 !1.4 P   c4'-c5'-O5' (RNA)
+angle      P      O5H    C5D       1175.163  120.900 !1.6 P     c5'-O5'-P (DNA)
+angle      P      O5H    C5R       1175.163  120.900 !1.6 P     c5'-O5'-P (RNA)
+angle      O1PH   P      O2PH       296.074  113.000 !2.0 P   O1P-P-O2P
+angle      OH     P      O1PH       296.700  113.000 !2.0 P   O1P-P-O5T
+angle      OH     P      O2PH       296.700  113.000 !2.0 P   O2P-P-O5T
+angle      O5H    P      O1PH       357.719  106.000 !3.0 P     O5'-P-O1P
+angle      O5H    P      O2PH       357.719  106.000 !3.0 P     O5'-P-O2P
+angle      O5H    P      OH         357.719  106.000 !3.0 P     O5'-P-O5T
+!
+!*angle      OH     P      O5R        144.300  102.600 !  
+!*angle      OH     P      O5R        144.300  102.600 !
+!*angle      OH     P      O1P        296.700  108.230 !
+!*angle      OH     P      O2P        296.700  108.230 !
+!***AB end***
+!
+angle      OH     C5R    C4R        210.000  112.000 ! 
+angle      OH     C5D    C4D        210.000  112.000 ! 
+angle      C4D    C3D    OH         139.500  111.000 ! 
+angle      C4R    C3R    OH         139.500  111.000 ! 
+angle      C2D    C3D    OH         139.500  111.000 ! 
+angle      C2R    C3R    OH         139.500  111.000 ! 
+angle      C3R    OH     HHO         139.500  107.300 !
+angle      C3D    OH     HHO         139.500  107.300 !
+
+!Phos.  - combined RNA/DNA statistics used 
+!                                      kq      x_eq  sigma
+angle      O1P    P      O2P       1337.074  119.600 !1.5 P 
+angle      O5R    P      O1P        357.719  108.100 !2.9 P
+angle      O5R    P      O2P        412.677  108.300 !2.7 P 
+angle      O3R    P      O5R        833.356  104.000 !1.9 P   
+angle      O2P    P      O3R        293.791  108.300 !3.2 P
+angle      O1P    P      O3R        293.791  107.400 !3.2 P 
+
+angle      O5R    C5R    C4R       1534.906  110.200 !1.4 P
+angle      P      O5R    C5R       1175.163  120.900 !1.6 P
+angle      P      O3R    C3R       2089.178  119.700 !1.2 P
+
+angle      O5R    C5D    C4D       1534.906  110.200 !1.4 P !DNA
+angle      P      O5R    C5D       1175.163  120.900 !1.6 P
+angle      P      O3R    C3D       2089.178  119.700 !1.2 P
+
+!Sugars
+!RNA statistics
+!                                      kq      x_eq  sigma
+angle      O4R    C4R    C3R        561.212  105.500 !1.4 S
+angle      C5R    C4R    C3R        488.878  115.500 !1.5 S
+angle      C5R    C4R    O4R        561.212  109.200 !1.4 S
+angle      C1R    O4R    C4R       1357.996  109.600 !0.9 S
+angle      C4R    C3R    C2R       1099.976  102.700 !1.0 S
+angle      C3R    C2R    C1R       1357.996  101.500 !0.9 S
+angle      O4R    C1R    C2R        561.212  106.400 !1.4 S
+angle      N1T    C1R    C2R        429.678  113.400 !1.6 S
+angle      N1C    C1R    C2R        429.678  113.400 !1.6 S
+angle      N1U    C1R    C2R        429.678  113.400 !1.6 S
+angle      N9G    C1R    C2R        429.678  113.400 !1.6 S
+angle      N9A    C1R    C2R        429.678  113.400 !1.6 S
+angle      O4R    C1R    N1T       1099.976  108.200 !1.0 S
+angle      O4R    C1R    N1C       1099.976  108.200 !1.0 S
+angle      O4R    C1R    N1U       1099.976  108.200 !1.0 S
+angle      O4R    C1R    N9A       1099.976  108.200 !1.0 S
+angle      O4R    C1R    N9G       1099.976  108.200 !1.0 S
+angle      C1R    C2R    O2R        357.719  110.600 !2.9 S scale from phos.
+angle      C3R    C2R    O2R        357.719  113.300 !2.9 S scale from phos.
+angle      C4R    C3R    O3R        445.032  110.500 !2.6 S scale from phos.
+angle      C2R    C3R    O3R        383.726  111.000 !2.8 S scale from phos.
+
+!DNA statistics
+angle      O4D    C4D    C3D       1099.976  105.600 !1.0 S
+angle      C5D    C4D    C3D        488.878  114.700 !1.5 S
+angle      C5D    C4D    O4D        429.678  109.400 !1.6 S
+angle      C1D    O4D    C4D        650.874  109.700 !1.3 S
+angle      C4D    C3D    C2D       1099.976  103.200 !1.0 S
+angle      C3D    C2D    C1D        650.874  102.700 !1.3 S
+angle      O4D    C1D    C2D        909.071  106.100 !1.1 S
+angle      N1T    C1D    C2D        488.878  114.200 !1.5 S
+angle      N1C    C1D    C2D        488.878  114.200 !1.5 S
+angle      N1U    C1D    C2D        488.878  114.200 !1.5 S
+angle      N9G    C1D    C2D        488.878  114.200 !1.5 S
+angle      N9A    C1D    C2D        488.878  114.200 !1.5 S
+angle      O4D    C1D    N1T       1357.996  107.800 !0.9 S
+angle      O4D    C1D    N1C       1357.996  107.800 !0.9 S
+angle      O4D    C1D    N1U       1357.996  107.800 !0.9 S
+angle      O4D    C1D    N9A       1357.996  107.800 !0.9 S
+angle      O4D    C1D    N9G       1357.996  107.800 !0.9 S
+angle      C4D    C3D    O3R        621.574  110.300 !2.2 S scale from phos.
+angle      C2D    C3D    O3R        412.677  110.600 !2.7 S scale from phos.
+
+!Bases
+!cytosine                            kq       x_eq   sigma
+angle      C6C    N1C    C2C       2277.447  120.300 !0.40 B
+angle      N1C    C2C    NC         743.656  119.200 !0.70 B
+angle      C2C    NC     C4C       1457.566  119.900 !0.50 B
+angle      NC     C4C    C5C       2277.447  121.900 !0.40 B
+angle      C4C    C5C    C6C       1457.566  117.400 !0.50 B
+angle      C5C    C6C    N1C       1457.566  121.000 !0.50 B
+angle      N1C    C2C    ON        1012.199  118.900 !0.60 B
+angle      NC     C2C    ON         743.656  121.900 !0.70 B
+angle      NC     C4C    N4C        743.656  118.000 !0.70 B
+angle      C5C    C4C    N4C        743.656  120.200 !0.70 B
+angle      C6C    N1C    C1R        763.873  120.800 !1.20 B scale from sugar
+angle      C2C    N1C    C1R        909.071  118.800 !1.10 B scale from sugar
+angle      C6C    N1C    C1D        763.873  120.800 !1.20 B !DNA
+angle      C2C    N1C    C1D        909.071  118.800 !1.10 B
+
+angle      C4C    N4C    H2         105.000  120.000 !from param11.dna, 3*keq 
+angle      H2     N4C    H2         105.000  120.000 
+
+!thymine                            kq        x_eq    sigma
+angle      C6T    N1T    C2T       1457.566  121.300 !0.50 B
+angle      N1T    C2T    NNA       1012.199  114.600 !0.60 B
+angle      C2T    NNA    C4T       1012.199  127.200 !0.60 B
+angle      NNA    C4T    C5T       1012.199  115.200 !0.60 B
+angle      C4T    C5T    C6T       1012.199  118.000 !0.60 B
+angle      C5T    C6T    N1T       1012.199  123.700 !0.60 B
+angle      N1T    C2T    ON         569.362  123.100 !0.80 B
+angle      NNA    C2T    ON        1012.199  122.300 !0.60 B
+angle      NNA    C4T    ON        1012.199  119.900 !0.60 B
+angle      C5T    C4T    ON         743.656  124.900 !0.70 B
+angle      C4T    C5T    CC3E      1012.199  119.000 !0.60 B
+angle      C6T    C5T    CC3E      1012.199  122.900 !0.60 B
+angle      C6T    N1T    C1R        488.878  120.400 !1.50 B scale from sugar
+angle      C2T    N1T    C1R        429.678  118.200 !1.60 B scale from sugar
+angle      C6T    N1T    C1D        488.878  120.400 !1.50 B !DNA
+angle      C2T    N1T    C1D        429.678  118.200 !1.60 B
+
+angle      C2T    NNA    HN         105.000  116.500  !from param11.dna, 3*keq 
+angle      C4T    NNA    HN         105.000  116.500  
+
+!adenine                            kq        x_eq    sigma
+angle      C6A    NC     C2A       1012.199  118.600 !0.60 B
+angle      NC     C2A    N3A       1457.566  129.300 !0.50 B
+angle      C2A    N3A    C4A       1457.566  110.600 !0.50 B
+angle      N3A    C4A    C5A        743.656  126.800 !0.70 B
+angle      C4A    C5A    C6A       1457.566  117.000 !0.50 B
+angle      C5A    C6A    NC        1457.566  117.700 !0.50 B
+angle      C4A    C5A    N7A       1457.566  110.700 !0.50 B
+angle      C5A    N7A    C8A       1457.566  103.900 !0.50 B
+angle      N7A    C8A    N9A       1457.566  113.800 !0.50 B
+angle      C8A    N9A    C4A       2277.447  105.800 !0.40 B
+angle      N9A    C4A    C5A       2277.447  105.800 !0.40 B
+angle      N3A    C4A    N9A        569.362  127.400 !0.80 B
+angle      C6A    C5A    N7A        743.656  132.300 !0.70 B
+angle      NC     C6A    N6A       1012.199  118.600 !0.60 B
+angle      C5A    C6A    N6A        569.362  123.700 !0.80 B
+angle      C8A    N9A    C1R        339.499  127.700 !1.80 B scale from sugar
+angle      C4A    N9A    C1R        339.499  126.300 !1.80 B scale from sugar
+angle      C8A    N9A    C1D        339.499  127.700 !1.80 B !DNA
+angle      C4A    N9A    C1D        339.499  126.300 !1.80 B
+
+angle      C6A    N6A    H2         105.000  120.000  !from param11.dna, 3*keq 
+angle      H2     N6A    H2         105.000  120.000
+
+!guanine                             kq        x_eq    sigma
+angle      C6G    NNA    C2G       1012.199  125.100 !0.60 B
+angle      NNA    C2G    N3G       1012.199  123.900 !0.60 B
+angle      C2G    N3G    C4G       1457.566  111.900 !0.50 B
+angle      N3G    C4G    C5G       1457.566  128.600 !0.50 B
+angle      C4G    C5G    C6G       1012.199  118.800 !0.60 B
+angle      C5G    C6G    NNA       1457.566  111.500 !0.50 B
+angle      C4G    C5G    N7G       2277.447  110.800 !0.40 B
+angle      C5G    N7G    C8G       1457.566  104.300 !0.50 B
+angle      N7G    C8G    N9G       1457.566  113.100 !0.50 B
+angle      C8G    N9G    C4G       2277.447  106.400 !0.40 B
+angle      N9G    C4G    C5G       2277.447  105.400 !0.40 B
+angle      N3G    C4G    N9G       1012.199  126.000 !0.60 B
+angle      C6G    C5G    N7G       1012.199  130.400 !0.60 B
+angle      NNA    C2G    N2G        449.866  116.20  !0.90 B
+angle      N3G    C2G    N2G        743.656  119.900 !0.70 B
+angle      NNA    C6G    O6G       1012.199  119.900 !0.60 B
+angle      C5G    C6G    O6G       1012.199  128.600 !0.60 B
+angle      C8G    N9G    C1R        650.874  127.000 !1.30 B scale from sugar
+angle      C4G    N9G    C1R        650.874  126.500 !1.30 B scale from sugar
+angle      C8G    N9G    C1D        650.874  127.000 !1.30 B !DNA
+angle      C4G    N9G    C1D        650.874  126.500 !1.30 B
+
+angle      C2G    N2G    H2         105.000  120.000  !from param11.dna, 3*keq 
+angle      H2     N2G    H2         105.000  120.000
+angle      C2G    NNA    HN         105.000  119.300
+angle      C6G    NNA    HN         105.000  119.300
+
+!uracil                             kq        x_eq    sigma
+angle      C6U    N1U    C2U       1012.199  121.000 !0.60 B
+angle      N1U    C2U    N3U       1012.199  114.900 !0.60 B
+angle      C2U    N3U    C4U       1012.199  127.000 !0.60 B
+angle      N3U    C4U    C5U       1012.199  114.600 !0.60 B
+angle      C4U    C5U    C6U       1012.199  119.700 !0.60 B
+angle      C5U    C6U    N1U       1457.566  122.700 !0.50 B
+angle      N1U    C2U    ON         743.656  122.800 !0.70 B
+angle      N3U    C2U    ON         743.656  122.200 !0.70 B
+angle      N3U    C4U    ON         743.656  119.400 !0.70 B
+angle      C5U    C4U    ON        1012.199  125.900 !0.60 B
+angle      C6U    N1U    C1R        561.212  121.200 !1.40 B
+angle      C2U    N1U    C1R        763.872  117.700 !1.20 B
+angle      C6U    N1U    C1D        561.212  121.200 !1.40 B !DNA
+angle      C2U    N1U    C1D        763.872  117.700 !1.20 B
+
+angle      C4U    ON     HHO         105.000  120.000 !from param11.dna, 3*keq 
+angle      C2U    N3U    HN         105.000  116.500 
+angle      C4U    N3U    HN         105.000  116.500  
+
+!5-iodo-uracil
+angle      I5U    C5U    C4U       1000.00  120.00 ! guess PDA 5/4/99
+angle      I5U    C5U    C6U       1000.00  120.00 ! guess PDA 5/4/99
+
+!Dihedrals from param11.dna (included for terminal residues)
+
+dihedral    X    C2R  C3R  X      4.50 3    0.000
+dihedral    X    C4R  C3R  X      4.50 3    0.000
+dihedral    X    C2R  C1R  X      4.50 3    0.000
+dihedral    X    C5R  O5R  X      1.50 3    0.000
+dihedral    X    C3R  O3R  X      1.50 3    0.000
+dihedral    X    C3R  OH   X      1.50 3    0.000
+dihedral    X    C5R  OH   X      1.50 3    0.000
+dihedral    X    C2R  O2R  X      1.50 3    0.000
+dihedral    X    O5R  P    X      2.25 3    0.000
+dihedral    X    OH   P    X      2.25 3    0.000
+dihedral    OH   C5R  C4R  O4R    4.50 3    0.000
+dihedral    OH   C5R  C4R  C3R    4.50 3    0.000 ! gamma
+dihedral    O5H  C5R  C4R  C3R    4.50 3    0.000 ! same for 5' PHO
+dihedral    C3R  O3R  P    OH     2.25 3    0.000 ! added by infer
+! ??? dihedral    C3R  O3R  P    OH     2.25 2    0.000 ! ATB, 7-SEP-84
+dihedral    C5R  O5R  P    OH     2.25 3    0.000 ! added by infer
+! ??? dihedral    C5R  O5R  P    OH     2.25 2    0.000 ! ATB, 7-SEP-84
+!
+!**AB**
+dihedral    X    C5R  O5H  X      1.50 3    0.000   ! RNA
+dihedral    X    C5D  O5H  X      1.50 3    0.000   ! DNA
+dihedral    X    O5H  P    X      2.25 3    0.000   ! 
+!***AB end***
+!
+dihedral    X    C2D  C3D  X      4.50 3    0.000
+dihedral    X    C4D  C3D  X      4.50 3    0.000  !DNA
+dihedral    X    C2D  C1D  X      4.50 3    0.000
+dihedral    X    C5D  O5R  X      1.50 3    0.000
+dihedral    X    C3D  O3R  X      1.50 3    0.000
+dihedral    X    C3D  OH   X      1.50 3    0.000
+dihedral    X    C5D  OH   X      1.50 3    0.000
+dihedral    OH   C5D  C4D  O4D    4.50 3    0.000
+dihedral    OH   C5D  C4D  C3D    4.50 3    0.000
+dihedral    O5H  C5D  C4D  C3D    4.50 3    0.000  ! same as above but for 5PHO
+dihedral    C3D  O3R  P    OH     2.25 3    0.000
+dihedral    C3D  O3R  P    OH     2.25 2    0.000
+dihedral    C5D  O5R  P    OH     2.25 3    0.000
+dihedral    C5D  O5R  P    OH     2.25 2    0.000
+
+!Base hydrogen dihedrals taken from param11.dna
+DIHEdral    X    C2G  N2G  X     18.0  2  180.000
+DIHEdral    X    C6A  N6A  X     18.0  2  180.000
+DIHEdral    X    C6A  N4C  X     18.00 2  180.000
+DIHEdral    X    C4C  N4C  X     18.00 2  180.000
+
+!Dihedrals to keep the two purine rings parallel:
+!guanine
+DIHEdral    C8G  C4G  C5G  NNA  200.0  2  180.000
+DIHEdral    C8G  C5G  C4G  C2G  200.0  2  180.000
+DIHEdral    N3G  C4G  C5G  N7G  100.0  2  180.000
+DIHEdral    C6G  C5G  C4G  N9G  100.0  2  180.000
+!adenine
+DIHEdral    C8A  C4A  C5A  N9A  200.0  2  180.000 ! WYE AND PATCHED RESIDUES
+DIHEdral    C8A  C5A  C4A  C2A  200.0  2  180.000
+DIHEdral    C8A  C4A  C5A  NC   200.0  2  180.000 
+DIHEdral    N3A  C4A  C5A  N7A  100.0  2  180.000
+DIHEdral    C6A  C5A  C4A  N9A  100.0  2  180.000
+
+!Phos.  - periodical potentials from combined RNA/DNA statistics
+!                                 kq       x_eq       (sigma in parenthesis)
+dihedral    O3R  P    O5R  C5R    1.41 3    6.0   ! alpha !P (20.3)
+dihedral    P    O5R  C5R  C4R    3.45 0  183.5   ! beta  !P (13.0)
+dihedral    O5R  C5R  C4R  C3R   12.24 3   18.3   ! gamma !S (6.9)
+dihedral    O5R  C5R  C4R  O4R   24.28 3   14.1   !       !S (4.9)
+dihedral    C4R  C3R  O3R  P      7.88 0  214.0   ! eps   !P (8.6)
+dihedral    C3R  O3R  P    O5R    1.75 3    0.3   ! zeta  !P (18.3)
+
+dihedral    O3R  P    O5R  C5D    1.41 3    6.0 !DNA
+dihedral    P    O5R  C5D  C4D    3.45 0  183.5
+dihedral    O5R  C5D  C4D  C3D   12.42 3   18.3
+dihedral    O5R  C5D  C4D  O4D   24.28 3   14.1
+dihedral    C4D  C3D  O3R  P      7.88 0  214.0
+dihedral    C3D  O3R  P    O5R    1.75 3    0.3
+
+!Phos.  - discrete values from combined RNA/DNA statistics
+!                                 kq       x_eq       (sigma in parenthesis)
+!dihedral    O3R  P    O5R  C5R    6.07 0  285.3   ! (9.8)  alpha1 !P
+!dihedral    O3R  P    O5R  C5R    3.98 0   81.1   ! (12.1) alpha2;alpha3=180.
+!dihedral    P    O5R  C5R  C4R    3.44 0  183.5   ! (13.0) beta   !P
+!dihedral    O5R  C5R  C4R  C3R   17.94 0   52.5   ! (5.7)  gamma1 !S
+!dihedral    O5R  C5R  C4R  C3R   14.23 0  179.4   ! (6.4)  gamma2 !S
+!dihedral    O5R  C5R  C4R  C3R    3.85 0  292.9   ! (12.3) gamma3 !S
+!dihedral    C4R  C3R  O3R  P      7.88 0  214.0   ! (8.6)  eps    !P
+!dihedral    C3R  O3R  P    O5R   25.30 0  289.2   ! (4.8)  zeta1  !P 
+!dihedral    C3R  O3R  P    O5R    2.85 0   80.7   ! (14.3) zeta2;zeta3=180.
+
+!Sugars
+! c3'-endo conformation as the default for for RNA, c2'-endo for DNA,
+!RNA statistics, C3'-endo
+dihedral    C5R  C4R  C3R  O3R  30.12 0   81.1   ! delta ! c3'-endo S (4.4)
+dihedral    O4R  C4R  C3R  O3R  33.10 0  201.8   !  4.2  ! c3'-endo S  
+dihedral    O4R  C1R  C2R  C3R  24.28 0  335.4   !  4.9  ! c3'-endo S
+dihedral    C1R  C2R  C3R  C4R  74.36 0   35.9   !  2.8  ! c3'-endo S
+dihedral    C2R  C3R  C4R  O4R  60.67 0  324.7   !  3.1  ! c3'-endo S
+dihedral    C3R  C4R  O4R  C1R  22.42 0   20.5   !  5.1  ! c3'-endo S
+dihedral    C4R  O4R  C1R  C2R  15.67 0    2.8   !  6.1  ! c3'-endo S
+dihedral    C5R  C4R  C3R  C2R  60.67 0  204.0   !  3.1  ! c3'-endo S
+dihedral    O3R  C3R  C2R  O2R  28.79 0   44.3   !  4.5  ! c3'-endo S   
+dihedral    C4R  O4R  C1R  N1T  13.80 0  241.4   !  6.5  ! c3'-endo S
+dihedral    C4R  O4R  C1R  N1C  13.80 0  241.4   !  6.5  ! c3'-endo S
+dihedral    C4R  O4R  C1R  N1U  13.80 0  241.4   !  6.5  ! c3'-endo S
+dihedral    C4R  O4R  C1R  N9G  13.80 0  241.4   !  6.5  ! c3'-endo S
+dihedral    C4R  O4R  C1R  N9A  13.80 0  241.4   !  6.5  ! c3'-endo S
+
+!RNA c3'-endo sugar base joint torsions  (combined RNA/DNA statistics used)
+dihedral    O4R  C1R  N1T  C2T  13.38 0  195.7   !  6.6  ! c3'-endo S
+dihedral    O4R  C1R  N1C  C2C  13.38 0  195.7   !  6.6  ! c3'-endo S
+dihedral    O4R  C1R  N1U  C2U  13.38 0  195.7   !  6.6  ! c3'-endo S
+dihedral    O4R  C1R  N9A  C4A   2.97 0  193.3   ! 14.0  ! c3'-endo S
+dihedral    O4R  C1R  N9G  C4G   2.97 0  193.3   ! 14.0  ! c3'-endo S
+
+!DNA statistics (c2'-endo)
+dihedral    C5D  C4D  C3D  O3R   36.44 0  145.2   ! delta ! c2'-endo S (4.0)
+dihedral    O4D  C1D  C2D  C3D   24.28 0   32.8   !  4.9  ! c2'-endo S 
+dihedral    O4D  C4D  C3D  O3R   31.53 0  265.8   !  4.3  ! c2'-endo S 
+dihedral    C1D  C2D  C3D  C4D   44.99 0  326.9   !  3.6  ! c2'-endo S
+dihedral    C2D  C3D  C4D  O4D   28.79 0   22.6   !  4.5  ! c2'-endo S
+dihedral    C3D  C4D  O4D  C1D   15.67 0  357.7   !  6.1  ! c2'-endo S
+dihedral    C4D  O4D  C1D  C2D   14.69 0  340.7   !  6.3  ! c2'-endo S
+dihedral    C5D  C4D  C3D  C2D   34.68 0  262.0   !  4.1  ! c2'-endo S
+dihedral    C4D  O4D  C1D  N1T   12.99 0  217.7   !  6.7  ! c2'-endo S
+dihedral    C4D  O4D  C1D  N1C   12.99 0  217.7   !  6.7  ! c2'-endo S
+dihedral    C4D  O4D  C1D  N1U   12.99 0  217.7   !  6.7  ! c2'-endo S
+dihedral    C4D  O4D  C1D  N9G   12.99 0  217.7   !  6.7  ! c2'-endo S
+dihedral    C4D  O4D  C1D  N9A   12.99 0  217.7   !  6.7  ! c2'-endo S
+
+!DNA c2'-endo sugar base joint torsions  (combined RNA/DNA statistics used)
+dihedral    O4D  C1D  N1T  C2T    1.72 0  229.8   ! 18.4  ! c2'-endo S   
+dihedral    O4D  C1D  N1C  C2C    1.72 0  229.8   ! 18.4  ! c2'-endo S   
+dihedral    O4D  C1D  N1U  C2U    1.72 0  229.8   ! 18.4  ! c2'-endo S   
+dihedral    O4D  C1D  N9A  C4A    1.00 0  237.0   ! 24.3  ! c2'-endo S   
+dihedral    O4D  C1D  N9G  C4G    1.00 0  237.0   ! 24.3  ! c2'-endo S   
+
+!---------------------------------------------------------------------------
+!In the case of c3'-endo conformation, the following dihedrals are provided
+!to overwrite the c2'-endo dihedrals
+
+!RNA statistics (c2'-endo)
+!dihedral    C5R  C4R  C3R  O3R   24.28 0  147.3   ! delta ! c2'-endo S (4.9)
+!dihedral    O4R  C1R  C2R  C3R   50.43 0   35.2   !  3.4  ! c2'-endo S 
+!dihedral    O4R  C4R  C3R  O3R   20.75 0  268.1   !  5.3  ! c2'-endo S 
+!dihedral    C1R  C2R  C3R  C4R   74.36 0  324.6   !  2.8  ! c2'-endo S
+!dihedral    C2R  C3R  C4R  O4R   31.53 0   24.2   !  4.3  ! c2'-endo S
+!dihedral    C3R  C4R  O4R  C1R   17.94 0  357.7   !  5.7  ! c2'-endo S
+!dihedral    C4R  O4R  C1R  C2R   21.56 0  339.2   !  5.2  ! c2'-endo S
+!dihedral    C5R  C4R  C3R  C2R   34.68 0  263.4   !  4.1  ! c2'-endo S
+!dihedral    O3R  C3R  C2R  O2R   33.05 0  319.7   !  4.2  ! c2'-endo S   
+!dihedral    C4R  O4R  C1R  N1T   19.27 0  216.6   !  5.5  ! c2'-endo S
+!dihedral    C4R  O4R  C1R  N1C   19.27 0  216.6   !  5.5  ! c2'-endo S
+!dihedral    C4R  O4R  C1R  N1U   19.27 0  216.6   !  5.5  ! c2'-endo S
+!dihedral    C4R  O4R  C1R  N9G   19.27 0  216.6   !  5.5  ! c2'-endo S
+!dihedral    C4R  O4R  C1R  N9A   19.27 0  216.6   !  5.5  ! c2'-endo S
+
+!RNA c2'-endo sugar base joint torsions  (combined RNA/DNA statistics used) 
+!dihedral    O4R  C1R  N1T  C2T    1.72 0  229.8   ! 18.4  ! c2'-endo S   
+!dihedral    O4R  C1R  N1C  C2C    1.72 0  229.8   ! 18.4  ! c2'-endo S   
+!dihedral    O4R  C1R  N1U  C2U    1.72 0  229.8   ! 18.4  ! c2'-endo S   
+!dihedral    O4R  C1R  N9A  C4A    1.00 0  237.0   ! 24.3  ! c2'-endo S   
+!dihedral    O4R  C1R  N9G  C4G    1.00 0  237.0   ! 24.3  ! c2'-endo S   
+
+!DNA statistics, c3'-endo (insuficient data, RNA values used)
+!dihedral    C5D  C4D  C3D  O3R  30.12 0   81.1   ! delta ! c3'-endo S (4.4)
+!dihedral    O4D  C4D  C3D  O3R  33.10 0  201.8   !  4.2  ! c3'-endo S  
+!dihedral    O4D  C1D  C2D  C3D  24.28 0  335.4   !  4.9  ! c3'-endo S
+!dihedral    C1D  C2D  C3D  C4D  74.36 0   35.9   !  2.8  ! c3'-endo S
+!dihedral    C2D  C3D  C4D  O4D  60.67 0  324.7   !  3.1  ! c3'-endo S
+!dihedral    C3D  C4D  O4D  C1D  22.42 0   20.5   !  5.1  ! c3'-endo S
+!dihedral    C4D  O4D  C1D  C2D  15.67 0    2.8   !  6.1  ! c3'-endo S
+!dihedral    C5D  C4D  C3D  C2D  60.67 0  204.0   !  3.1  ! c3'-endo S
+!dihedral    C4D  O4D  C1D  N1T  13.80 0  241.4   !  6.5  ! c3'-endo S
+!dihedral    C4D  O4D  C1D  N1C  13.80 0  241.4   !  6.5  ! c3'-endo S
+!dihedral    C4D  O4D  C1D  N1U  13.80 0  241.4   !  6.5  ! c3'-endo S
+!dihedral    C4D  O4D  C1D  N9G  13.80 0  241.4   !  6.5  ! c3'-endo S
+!dihedral    C4D  O4D  C1D  N9A  13.80 0  241.4   !  6.5  ! c3'-endo S
+
+!DNA c3'-endo sugar base joint torsions  (combined RNA/DNA statistics used)
+!dihedral    O4D  C1D  N1T  C2T  13.38 0  195.7   !  6.6  ! c3'-endo S
+!dihedral    O4D  C1D  N1C  C2C  13.38 0  195.7   !  6.6  ! c3'-endo S
+!dihedral    O4D  C1D  N1U  C2U  13.38 0  195.7   !  6.6  ! c3'-endo S
+!dihedral    O4D  C1D  N9A  C4A   2.97 0  193.3   ! 14.0  ! c3'-endo S
+!dihedral    O4D  C1D  N9G  C4G   2.97 0  193.3   ! 14.0  ! c3'-endo S
+!---------------------------------------------------------------------------
+!---------------------------------------------------------------------------
+
+!Impropers taken from param11.dna , 3*kq
+improper    C5R  X    X    C2R   94.5  0   35.260
+improper    C5R  X    X    C1R   94.5  0   35.260
+improper    OH   X    X    C3R   94.5  0   35.260
+improper    OH   X    X    C4R   94.5  0   35.260
+improper    OH   X    X    C1R   94.5  0   35.260
+improper    O3R  X    X    C3R   94.5  0   35.260
+improper    O5R  X    X    C1R   94.5  0   35.260
+improper    O2R  X    X    C2R   94.5  0   35.260
+improper    C4R  O5R  C1R  N1T   94.5  0   35.260
+improper    C4R  O5R  C1R  N1C   94.5  0   35.260
+improper    C4R  O5R  C1R  N9G   94.5  0   35.260
+improper    C4R  O5R  C1R  N9A   94.5  0   35.260
+improper    C5R  O4R  C3R  C4R   94.5  0   35.260  
+improper    N1T  C2R  O4R  C1R   94.5  0   35.260  
+improper    N1C  C2R  O4R  C1R   94.5  0   35.260
+improper    N9A  C2R  O4R  C1R   94.5  0   35.260  
+improper    N9G  C2R  O4R  C1R   94.5  0   35.260  
+improper    C4R  O5R  C1R  N1U   94.5  0   35.260
+improper    N1U  C2R  O4R  C1R   94.5  0   35.260  
+
+improper    C5D  X    X    C2D   94.5  0   35.260  !DNA
+improper    C5D  X    X    C1D   94.5  0   35.260
+improper    OH   X    X    C3D   94.5  0   35.260
+improper    OH   X    X    C4D   94.5  0   35.260
+improper    OH   X    X    C1D   94.5  0   35.260
+improper    O3R  X    X    C3D   94.5  0   35.260
+improper    O5R  X    X    C1D   94.5  0   35.260
+improper    C4D  O5R  C1D  N1T   94.5  0   35.260
+improper    C4D  O5R  C1D  N1C   94.5  0   35.260
+improper    C4D  O5R  C1D  N9G   94.5  0   35.260
+improper    C4D  O5R  C1D  N9A   94.5  0   35.260
+improper    C5D  O4D  C3D  C4D   94.5  0   35.260  
+improper    N1T  C2D  O4D  C1D   94.5  0   35.260  
+improper    N1C  C2D  O4D  C1D   94.5  0   35.260
+improper    N9A  C2D  O4D  C1D   94.5  0   35.260  
+improper    N9G  C2D  O4D  C1D   94.5  0   35.260  
+improper    C4D  O5R  C1D  N1U   94.5  0   35.260
+improper    N1U  C2D  O4D  C1D   94.5  0   35.260  
+
+!the following impropers were taken from param11x.dna
+!the higher kq was used to enforce the ring planarity 
+!cytosine
+IMPRoper    C4C  X    X    ON  2400.0  0    0.000
+IMPRoper    C4C  X    X    N1C  250.0  0    0.000
+IMPRoper    C6C  X    X    NC   250.0  0    0.000
+IMPRoper    C4C  X    X    N2  2400.0  0    0.000
+IMPRoper    C2C  X    X    ON  2400.0  0    0.000
+!infer
+IMPRoper    C1R  C2C  C6C  N1C 2400.0  0    0.000
+IMPRoper    C1D  C2C  C6C  N1C 2400.0  0    0.000
+IMPRoper    N4C  NC   C5C  C4C 2400.0  0    0.000
+IMPRoper    C2C  NC   C4C  C5C  250.0  0    0.000
+IMPRoper    C5C  C6C  N1C  C2C  250.0  0    0.000
+IMPRoper    H2   C4C  H2   N4C  250.0  0    0.000
+
+!thymine
+IMPRoper    HN   X    X    NNA  250.0  0    0.000
+IMPRoper    C4T  X    X    ON  2400.0  0    0.000
+IMPRoper    C4T  X    X    N1T  250.0  0    0.000
+IMPRoper    C6T  X    X    NNA  250.0  0    0.000
+IMPRoper    CC3E X    X    C5T 2400.0  0    0.000
+IMPRoper    C2T  X    X    ON  2400.0  0    0.000
+!unknown
+IMPRoper    C2T  NNA  C4T  C5T  250.0  0    0.000
+IMPRoper    C5T  C6T  N1T  C2T  250.0  0    0.000
+IMPRoper    C1R  C2T  C6T  N1T 2400.0  0    0.000
+IMPRoper    C1D  C2T  C6T  N1T 2400.0  0    0.000
+
+!uracil
+IMPRoper    C4U  X    X    ON  2400.0  0    0.000
+IMPRoper    C4U  X    X    N1U  250.0  0    0.000
+IMPRoper    C6U  X    X    N3U  250.0  0    0.000
+IMPRoper    C4U  X    X    N2  2400.0  0    0.000
+IMPRoper    C2U  X    X    ON  2400.0  0    0.000
+IMPRoper    C1R  C2U  C6U  N1U 2400.0  0    0.000
+IMPRoper    C1D  C2U  C6U  N1U 2400.0  0    0.000
+IMPRoper    ON   N3U  C5U  C4U  250.0  0    0.000
+IMPRoper    C2U  N3U  C4U  C5U  250.0  0    0.000
+IMPRoper    C5U  C6U  N1U  C2U  250.0  0    0.000
+IMPRoper    H2   C4U  H2   ON   250.0  0    0.000
+
+!5-iodo-uracil
+IMPRoper    I5U  ON   C6U  C5U  250.0  0    0.000 ! guess PDA 5/4/99
+
+!infer
+IMPRoper    HN   C2U  C4U  N3U  250.0  0    0.000
+
+! The ring-spanning impropers have been left out.
+!adenine
+IMPRoper    N2A  N3A  NC   C2A  250.0  0    0.000
+IMPRoper    H2   C2A  H2   N2A  250.0  0    0.000
+IMPRoper    C4A  C5A  N7A  C8A  250.0  0    0.000
+IMPRoper    C5A  C4A  N9A  C8A  250.0  0    0.000
+IMPRoper    C4A  X    X    NC   250.0  0    0.000
+IMPRoper    C2A  X    X    N9A  250.0  0    0.000
+IMPRoper    C2A  X    X    C5A  250.0  0    0.000
+IMPRoper    C6A  C5A  C4A  N9A  250.0  0    0.000
+IMPRoper    C6A  C5A  C4A  N3A  250.0  0    0.000
+IMPRoper    C5A  X    X    N9A  250.0  0    0.000
+IMPRoper    C6A  X    X    N6A 2400.0  0    0.000
+IMPRoper    H2   X    X    N6A  250.0  0    0.000
+
+!infer
+IMPRoper    C1R  C4A  C8A  N9A 2400.0  0    0.000
+IMPRoper    C1D  C4A  C8A  N9A 2400.0  0    0.000
+IMPRoper    N9A  C4A  C5A  N7A  250.0  0    0.000
+IMPRoper    N7A  C8A  N9A  C4A  250.0  0    0.000
+IMPRoper    N3A  C2A  NC   C6A  250.0  0    0.000
+
+! The ring-spanning impropers have been left out.
+!guanine
+IMPRoper    C4G  C5G  N7G  C8G  250.0  0    0.000
+IMPRoper    C5G  C4G  N9G  C8G  250.0  0    0.000
+IMPRoper    C4G  X    X    NNA  250.0  0    0.000
+IMPRoper    C2G  X    X    N9G  250.0  0    0.000
+IMPRoper    C2G  X    X    C5G  250.0  0    0.000
+IMPRoper    C6G  C5G  C4G  N9G  250.0  0    0.000
+IMPRoper    C6G  C5G  C4G  N3G  250.0  0    0.000
+IMPRoper    C5G  X    X    N9G  250.0  0    0.000
+IMPRoper    C6G  X    X    O6G 2400.0  0    0.000
+IMPRoper    C2G  X    X    N2G 2400.0  0    0.000
+
+!infer
+IMPRoper    C1R  C4G  C8G  N9G 2400.0  0    0.000
+IMPRoper    C1D  C4G  C8G  N9G 2400.0  0    0.000
+IMPRoper    N9G  C4G  C5G  N7G  250.0  0    0.000
+IMPRoper    N7G  C8G  N9G  C4G  250.0  0    0.000
+IMPRoper    N3G  C2G  NNA  C6G  250.0  0    0.000
+IMPRoper    H2   H2   C2G  N2G  250.0  0    0.000
+
+
+{* nonbonding parameter section *}
+{* ============================ *}
+   nbonds                                    { This statement specifies the   }
+      atom cdie shift eps=1.0  e14fac=0.4    { nonbonded interaction energy   }
+      cutnb=7.5 ctonnb=6.0 ctofnb=6.5        { options.  Note the reduced     }
+      nbxmod=5 vswitch  tolerance=0.5        { nonbonding cutoff to save      }
+   end                                       { some CPU time                  }
+
+!                   Lennard-Jones parameters
+!                                       ------1-4-------
+!                  epsilon   sigma       epsilon   sigma
+!                 (Kcal/mol)   (A)      (Kcal/mol) (A)
+! Taken from Rossky Karplus and Rahman BIOPOLY (1979)
+! 0.05 ADDED TO RADII TO IMPROVE ON NUCL.ACID STACKING/LN
+!
+!                  eps     sigma       eps(1:4) sigma(1:4)
+NONBonded  C5R     0.0900   3.2970      0.0900   3.2970
+NONBonded  C1R     0.0900   3.2970      0.0900   3.2970
+NONBonded  C2R     0.0900   3.2970      0.0900   3.2970
+NONBonded  C3R     0.0900   3.2970      0.0900   3.2970
+NONBonded  C4R     0.0900   3.2970      0.0900   3.2970
+
+NONBonded  C5D     0.0900   3.2970      0.0900   3.2970  !DNA
+NONBonded  C1D     0.0900   3.2970      0.0900   3.2970
+NONBonded  C2D     0.0900   3.2970      0.0900   3.2970
+NONBonded  C3D     0.0900   3.2970      0.0900   3.2970
+NONBonded  C4D     0.0900   3.2970      0.0900   3.2970
+NONBonded  HN      0.0045   2.6160      0.0045   2.6160
+NONBonded  H2      0.0045   1.6040      0.0045   1.6040
+!
+! give it the same as th Hn from RKR
+NONBonded  HHO      0.0045   1.6040      0.0045   1.6040 
+
+!
+! THIS STILL IS AN EXTENDED ATOM
+NONBonded  O3R      0.2304   2.7290      0.2304   2.7290
+NONBonded  O4R      0.2304   2.7290      0.2304   2.7290
+NONBonded  O4D      0.2304   2.7290      0.2304   2.7290
+NONBonded  O5R      0.2304   2.7290      0.2304   2.7290
+NONBonded  O1P      0.2304   2.7290      0.2304   2.7290
+NONBonded  O2P      0.2304   2.7290      0.2304   2.7290
+NONBonded  O5T      0.2304   2.7290      0.2304   2.7290
+NONBonded  P        0.5849   3.3854      0.5849   3.3854
+!***AB***
+NONBonded  O5H      0.2304   2.7290      0.2304   2.7290
+NONBonded  O1PH     0.2304   2.7290      0.2304   2.7290
+NONBonded  O2PH     0.2304   2.7290      0.2304   2.7290
+!***AB end***
+!bases
+NONBonded  C2      0.0900   3.2970      0.0900   3.2970
+NONBonded  C3      0.0900   3.2970      0.0900   3.2970
+NONBonded  CB      0.0900   3.2970      0.0900   3.2970
+NONBonded  CE      0.0900   3.2970      0.0900   3.2970
+NONBonded  CH      0.0900   3.2970      0.0900   3.2970
+
+NONBonded  N2      0.1600   2.8591      0.1600   2.8591
+NONBonded  N3U     0.1600   2.8591      0.1600   2.8591
+NONBonded  NNA     0.1600   2.8591      0.1600   2.8591
+NONBonded  NB      0.1600   2.8591      0.1600   2.8591
+NONBonded  NC      0.1600   2.8591      0.1600   2.8591
+
+NONBonded  NH2E    0.1600   3.0291      0.1600   3.0291
+NONBonded  NS      0.1600   2.8591      0.1600   2.8591
+NONBonded  N1T     0.1600   2.8591      0.1600   2.8591
+NONBonded  N1C     0.1600   2.8591      0.1600   2.8591
+NONBonded  N9A     0.1600   2.8591      0.1600   2.8591
+NONBonded  N9G     0.1600   2.8591      0.1600   2.8591
+NONBonded  N1U     0.1600   2.8591      0.1600   2.8591
+NONBonded  ON      0.2304   2.7290      0.2304   2.7290
+NONBonded  O2R     0.2304   2.7290      0.2304   2.7290
+NONBonded  OH      0.2304   2.5508      0.2304   2.5508
+NONBonded  SD      0.3515   2.6727      0.3515   2.6727   ! G U E S S
+
+! NEW
+NONBonded  C6C      0.0900   3.2970      0.0900   3.2970
+NONBonded  C5C      0.0900   3.2970      0.0900   3.2970
+NONBonded  C4C      0.0900   3.2970      0.0900   3.2970
+NONBonded  C2C      0.0900   3.2970      0.0900   3.2970
+NONBonded  C6U      0.0900   3.2970      0.0900   3.2970
+NONBonded  C5U      0.0900   3.2970      0.0900   3.2970
+NONBonded  C4U      0.0900   3.2970      0.0900   3.2970
+NONBonded  C2U      0.0900   3.2970      0.0900   3.2970
+NONBonded  C8A      0.0900   3.2970      0.0900   3.2970
+NONBonded  C6A      0.0900   3.2970      0.0900   3.2970
+NONBonded  C5A      0.0900   3.2970      0.0900   3.2970
+NONBonded  C4A      0.0900   3.2970      0.0900   3.2970
+NONBonded  C2A      0.0900   3.2970      0.0900   3.2970
+NONBonded  C8G      0.0900   3.2970      0.0900   3.2970
+NONBonded  C6G      0.0900   3.2970      0.0900   3.2970
+NONBonded  C5G      0.0900   3.2970      0.0900   3.2970
+NONBonded  C4G      0.0900   3.2970      0.0900   3.2970
+NONBonded  C2G      0.0900   3.2970      0.0900   3.2970
+NONBonded  C6T      0.0900   3.2970      0.0900   3.2970
+NONBonded  C5T      0.0900   3.2970      0.0900   3.2970
+NONBonded  C4T      0.0900   3.2970      0.0900   3.2970
+NONBonded  C2T      0.0900   3.2970      0.0900   3.2970
+NONBonded  N4C      0.1600   2.8591      0.1600   2.8591
+NONBonded  O4U      0.2304   2.7290      0.2304   2.7290
+NONBonded  N7G      0.1600   2.8591      0.1600   2.8591
+NONBonded  N3G      0.1600   2.8591      0.1600   2.8591
+NONBonded  N2G      0.1600   2.8591      0.1600   2.8591
+NONBonded  N3A      0.1600   2.8591      0.1600   2.8591
+NONBonded  N7A      0.1600   2.8591      0.1600   2.8591
+NONBonded  N6A      0.1600   2.8591      0.1600   2.8591
+NONBonded  O6G      0.2304   2.7290      0.2304   2.7290
+NONBonded  CC3E     0.0900   3.2970      0.0900   3.2970
+NONBonded  N2A      0.1600   2.8591      0.1600   2.8591
+
+NONBonded  I5U      0.1500   3.8300      0.1500   3.8300 ! guess PDA 4/5/99
+
+! the following NBFIXes are for DNA-DNA hydrogen bonding 
+
+! terms
+!                                         ------1-4------
+!                   A           B           A          B
+!           [Kcal/(mol A^12)] [Kcal/(mol A^6)]
+!
+nbfix  HHO   ON      0.05       0.1      0.05       0.1
+nbfix  HHO   O3R     0.05       0.1      0.05       0.1
+nbfix  HHO   O5R     0.05       0.1      0.05       0.1
+nbfix  HHO   OH      0.05       0.1      0.05       0.1
+nbfix  HHO   O2R     0.05       0.1      0.05       0.1
+nbfix  HHO   NC      0.05       0.1      0.05       0.1
+
+  
+
+nbfix  HN   ON      0.05       0.1      0.05       0.1
+nbfix  HN   O2R     0.05       0.1      0.05       0.1
+nbfix  HN   OH      0.05       0.1      0.05       0.1
+nbfix  HN   NC      0.05       0.1      0.05       0.1
+
+nbfix  H2   ON      0.05       0.1      0.05       0.1
+nbfix  H2   O2R     0.05       0.1      0.05       0.1
+nbfix  H2   OH      0.05       0.1      0.05       0.1
+
+nbfix  H2   NC      0.05       0.1      0.05       0.1
+
+set echo=true end
+

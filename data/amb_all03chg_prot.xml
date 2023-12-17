@@ -1,0 +1,638 @@
+<?xml version="1.0"?>
+<toppar>
+  <topology>
+    <!--
+    <resid id="ACE" desc="ACE BEGINNING GROUP">
+      <atoms ns="amber">
+        <atom id="HH31"  type="HC" charge="0.076010"/>
+        <atom id="CH3"  type="CT" charge="-0.190264"/>
+        <atom id="HH32"  type="HC" charge="0.076011"/>
+        <atom id="HH33"  type="HC" charge="0.076010"/>
+        <atom id="C"  type="C" charge="0.512403"/>
+        <atom id="O"  type="O" charge="-0.550170"/>
+      </atoms>
+    </resid>
+      -->
+    <resid id="ALA" desc="ALANINE">
+      <atoms ns="amber">
+        <atom id="N"  type="N" charge="-0.404773"/>
+        <atom id="H"  type="H" charge="0.294276"/>
+        <atom id="CA"  type="CT" charge="-0.027733"/>
+        <atom id="HA"  type="H1" charge="0.120802"/>
+        <atom id="CB"  type="CT" charge="-0.229951"/>
+        <atom id="HB1"  type="HC" charge="0.077428"/>
+        <atom id="HB2"  type="HC" charge="0.077428"/>
+        <atom id="HB3"  type="HC" charge="0.077428"/>
+        <atom id="C"  type="C" charge="0.570224"/>
+        <atom id="O"  type="O" charge="-0.555129"/>
+      </atoms>
+    </resid>
+  
+    <resid id="ARG" desc="ARGININE">
+      <atoms ns="amber">
+        <atom id="N"  type="N" charge="-0.300879"/>
+        <atom id="H"  type="H" charge="0.233693"/>
+        <atom id="CA"  type="CT" charge="-0.131381"/>
+        <atom id="HA"  type="H1" charge="0.053266"/>
+        <atom id="CB"  type="CT" charge="0.036707"/>
+        <atom id="HB2"  type="HC" charge="0.028012"/>
+        <atom id="HB3"  type="HC" charge="0.028012"/>
+        <atom id="CG"  type="CT" charge="0.012454"/>
+        <atom id="HG2"  type="HC" charge="0.002964"/>
+        <atom id="HG3"  type="HC" charge="0.002964"/>
+        <atom id="CD"  type="CT" charge="0.126329"/>
+        <atom id="HD2"  type="H1" charge="0.068148"/>
+        <atom id="HD3"  type="H1" charge="0.068148"/>
+        <atom id="NE"  type="N2" charge="-0.464890"/>
+        <atom id="HE"  type="H" charge="0.326274"/>
+        <atom id="CZ"  type="CA" charge="0.565543"/>
+        <atom id="NH1"  type="N2" charge="-0.685774"/>
+        <atom id="HH11"  type="H" charge="0.391052"/>
+        <atom id="HH12"  type="H" charge="0.391052"/>
+        <atom id="NH2"  type="N2" charge="-0.685774"/>
+        <atom id="HH21"  type="H" charge="0.391052"/>
+        <atom id="HH22"  type="H" charge="0.391052"/>
+        <atom id="C"  type="C" charge="0.730308"/>
+        <atom id="O"  type="O" charge="-0.578332"/>
+      </atoms>
+    </resid>
+  
+    <!--
+    <resid id="ASH" desc="ASP neutral">
+      <atoms ns="amber">
+        <atom id="N"  type="N" charge="-0.392069"/>
+        <atom id="H"  type="H" charge="0.282413"/>
+        <atom id="CA"  type="CT" charge="-0.035317"/>
+        <atom id="HA"  type="H1" charge="0.094292"/>
+        <atom id="CB"  type="CT" charge="-0.121405"/>
+        <atom id="HB2"  type="HC" charge="0.069032"/>
+        <atom id="HB3"  type="HC" charge="0.069032"/>
+        <atom id="CG"  type="C" charge="0.678640"/>
+        <atom id="OD1"  type="O" charge="-0.550940"/>
+        <atom id="OD2"  type="OH" charge="-0.587163"/>
+        <atom id="HD2"  type="HO" charge="0.438035"/>
+        <atom id="C"  type="C" charge="0.620495"/>
+        <atom id="O"  type="O" charge="-0.565045"/>
+      </atoms>
+    </resid>
+      -->
+
+    <resid id="ASN" desc="ASPARAGINE">
+      <atoms ns="amber">
+        <atom id="N"  type="N" charge="-0.430106"/>
+        <atom id="H"  type="H" charge="0.254543"/>
+        <atom id="CA"  type="CT" charge="0.044609"/>
+        <atom id="HA"  type="H1" charge="0.059601"/>
+        <atom id="CB"  type="CT" charge="-0.093650"/>
+        <atom id="HB2"  type="HC" charge="0.043321"/>
+        <atom id="HB3"  type="HC" charge="0.043321"/>
+        <atom id="CG"  type="C" charge="0.583519"/>
+        <atom id="OD1"  type="O" charge="-0.526813"/>
+        <atom id="ND2"  type="N" charge="-0.781735"/>
+        <atom id="HD21"  type="H" charge="0.355079"/>
+        <atom id="HD22"  type="H" charge="0.355079"/>
+        <atom id="C"  type="C" charge="0.617141"/>
+        <atom id="O"  type="O" charge="-0.523909"/>
+      </atoms>
+    </resid>
+  
+    <resid id="ASP" desc="ASPARTIC ACID">
+      <atoms ns="amber">
+        <atom id="N"  type="N" charge="-0.558201"/>
+        <atom id="H"  type="H" charge="0.319676"/>
+        <atom id="CA"  type="CT" charge="0.007225"/>
+        <atom id="HA"  type="H1" charge="0.082375"/>
+        <atom id="CB"  type="CT" charge="-0.047555"/>
+        <atom id="HB2"  type="HC" charge="-0.014836"/>
+        <atom id="HB3"  type="HC" charge="-0.014836"/>
+        <atom id="CG"  type="C" charge="0.745168"/>
+        <atom id="OD1"  type="O2" charge="-0.730385"/>
+        <atom id="OD2"  type="O2" charge="-0.730385"/>
+        <atom id="C"  type="C" charge="0.443199"/>
+        <atom id="O"  type="O" charge="-0.501445"/>
+      </atoms>
+    </resid>
+  
+    <!--
+    <resid id="CYM" desc="CYSTEINE with negative charge">
+      <atoms ns="amber">
+        <atom id="N"  type="N" charge="-0.46300"/>
+        <atom id="HN"  type="H" charge="0.25200"/>
+        <atom id="CA"  type="CT" charge="0.03500"/>
+        <atom id="HA"  type="H1" charge="0.04800"/>
+        <atom id="CB"  type="CT" charge="-0.73600"/>
+        <atom id="HB3"  type="H1" charge="0.24400"/>
+        <atom id="HB2"  type="H1" charge="0.24400"/>
+        <atom id="SG"  type="SH" charge="-0.73600"/>
+        <atom id="C"  type="C" charge="0.61600"/>
+        <atom id="O"  type="O" charge="-0.50400"/>
+      </atoms>
+    </resid>
+      -->
+
+    <resid id="CYS" desc="CYSTEINE">
+      <atoms ns="amber">
+        <atom id="N"  type="N" charge="-0.396165"/>
+        <atom id="H"  type="H" charge="0.295187"/>
+        <atom id="CA"  type="CT" charge="-0.073501"/>
+        <atom id="HA"  type="H1" charge="0.140510"/>
+        <atom id="CB"  type="CT" charge="-0.221371"/>
+        <atom id="HB2"  type="H1" charge="0.146537"/>
+        <atom id="HB3"  type="H1" charge="0.146537"/>
+        <atom id="SG"  type="SH" charge="-0.285182"/>
+        <atom id="HG"  type="HS" charge="0.189274"/>
+        <atom id="C"  type="C" charge="0.643035"/>
+        <atom id="O"  type="O" charge="-0.584861"/>
+      </atoms>
+    </resid>
+  
+    <resid id="CYX" desc="CYSTINE(S-S BRIDGE)">
+      <atoms ns="amber">
+        <atom id="N"  type="N" charge="-0.435921"/>
+        <atom id="H"  type="H" charge="0.290077"/>
+        <atom id="CA"  type="CT" charge="-0.030547"/>
+        <atom id="HA"  type="H1" charge="0.132146"/>
+        <atom id="CB"  type="CT" charge="-0.033006"/>
+        <atom id="HB2"  type="H1" charge="0.078951"/>
+        <atom id="HB3"  type="H1" charge="0.078951"/>
+        <atom id="SG"  type="S" charge="-0.132272"/>
+        <atom id="C"  type="C" charge="0.624788"/>
+        <atom id="O"  type="O" charge="-0.573167"/>
+      </atoms>
+    </resid>
+  
+    <!--
+    <resid id="GLH" desc="GLU neutral">
+      <atoms ns="amber">
+        <atom id="N"  type="N" charge="-0.384536"/>
+        <atom id="H"  type="H" charge="0.263963"/>
+        <atom id="CA"  type="CT" charge="-0.060898"/>
+        <atom id="HA"  type="H1" charge="0.109620"/>
+        <atom id="CB"  type="CT" charge="-0.018753"/>
+        <atom id="HB2"  type="HC" charge="0.034966"/>
+        <atom id="HB3"  type="HC" charge="0.034966"/>
+        <atom id="CG"  type="CT" charge="-0.038364"/>
+        <atom id="HG2"  type="HC" charge="0.048444"/>
+        <atom id="HG3"  type="HC" charge="0.048444"/>
+        <atom id="CD"  type="C" charge="0.638937"/>
+        <atom id="OE1"  type="O" charge="-0.559031"/>
+        <atom id="OE2"  type="OH" charge="-0.588722"/>
+        <atom id="HE2"  type="HO" charge="0.447661"/>
+        <atom id="C"  type="C" charge="0.587056"/>
+        <atom id="O"  type="O" charge="-0.563753"/>
+      </atoms>
+    </resid>
+      -->
+    
+    <resid id="GLN" desc="GLUTAMINE">
+      <atoms ns="amber">
+        <atom id="N"  type="N" charge="-0.387353"/>
+        <atom id="H"  type="H" charge="0.300605"/>
+        <atom id="CA"  type="CT" charge="0.037470"/>
+        <atom id="HA"  type="H1" charge="0.152255"/>
+        <atom id="CB"  type="CT" charge="-0.032112"/>
+        <atom id="HB2"  type="HC" charge="0.030995"/>
+        <atom id="HB3"  type="HC" charge="0.030995"/>
+        <atom id="CG"  type="CT" charge="-0.020264"/>
+        <atom id="HG2"  type="HC" charge="0.030791"/>
+        <atom id="HG3"  type="HC" charge="0.030791"/>
+        <atom id="CD"  type="C" charge="0.667812"/>
+        <atom id="OE1"  type="O" charge="-0.628483"/>
+        <atom id="NE2"  type="N" charge="-0.883393"/>
+        <atom id="HE21"  type="H" charge="0.408312"/>
+        <atom id="HE22"  type="H" charge="0.408312"/>
+        <atom id="C"  type="C" charge="0.418577"/>
+        <atom id="O"  type="O" charge="-0.565310"/>
+      </atoms>
+    </resid>
+  
+    <resid id="GLU" desc="GLUTAMIC ACID">
+      <atoms ns="amber">
+        <atom id="N"  type="N" charge="-0.423392"/>
+        <atom id="H"  type="H" charge="0.306811"/>
+        <atom id="CA"  type="CT" charge="0.031633"/>
+        <atom id="HA"  type="H1" charge="0.065100"/>
+        <atom id="CB"  type="CT" charge="0.074772"/>
+        <atom id="HB2"  type="HC" charge="-0.003535"/>
+        <atom id="HB3"  type="HC" charge="-0.003535"/>
+        <atom id="CG"  type="CT" charge="-0.033909"/>
+        <atom id="HG2"  type="HC" charge="-0.004135"/>
+        <atom id="HG3"  type="HC" charge="-0.004135"/>
+        <atom id="CD"  type="C" charge="0.765188"/>
+        <atom id="OE1"  type="O2" charge="-0.824035"/>
+        <atom id="OE2"  type="O2" charge="-0.824035"/>
+        <atom id="C"  type="C" charge="0.469735"/>
+        <atom id="O"  type="O" charge="-0.592528"/>
+      </atoms>
+    </resid>
+  
+    <resid id="GLY" desc="GLYCINE">
+      <atoms ns="amber">
+        <atom id="N"  type="N" charge="-0.374282"/>
+        <atom id="H"  type="H" charge="0.253981"/>
+        <atom id="CA"  type="CT" charge="-0.128844"/>
+        <atom id="HA2"  type="H0" charge="0.088859"/>
+        <atom id="HA3"  type="H0" charge="0.088859"/>
+        <atom id="C"  type="C" charge="0.580584"/>
+        <atom id="O"  type="O" charge="-0.509157"/>
+      </atoms>
+    </resid>
+  
+    <resid id="HID" desc="HISTIDINE DELTAH">
+      <atoms ns="amber">
+        <atom id="N"  type="N" charge="-0.506799"/>
+        <atom id="H"  type="H" charge="0.351021"/>
+        <atom id="CA"  type="CT" charge="0.119066"/>
+        <atom id="HA"  type="H1" charge="0.137761"/>
+        <atom id="CB"  type="CT" charge="-0.122638"/>
+        <atom id="HB2"  type="HC" charge="0.086329"/>
+        <atom id="HB3"  type="HC" charge="0.086329"/>
+        <atom id="CG"  type="CC" charge="-0.001547"/>
+        <atom id="ND1"  type="NA" charge="-0.205785"/>
+        <atom id="HD1"  type="H" charge="0.318273"/>
+        <atom id="CE1"  type="CR" charge="0.147273"/>
+        <atom id="HE1"  type="H5" charge="0.122182"/>
+        <atom id="NE2"  type="NB" charge="-0.601482"/>
+        <atom id="CD2"  type="CV" charge="0.043744"/>
+        <atom id="HD2"  type="H4" charge="0.110157"/>
+        <atom id="C"  type="C" charge="0.515947"/>
+        <atom id="O"  type="O" charge="-0.599831"/>
+      </atoms>
+    </resid>
+  
+    <!--
+    <resid id="HIE" desc="HISTIDINE EPSILONH">
+      <atoms ns="amber">
+        <atom id="N"  type="N" charge="-0.528120"/>
+        <atom id="H"  type="H" charge="0.281695"/>
+        <atom id="CA"  type="CT" charge="0.031249"/>
+        <atom id="HA"  type="H1" charge="0.085175"/>
+        <atom id="CB"  type="CT" charge="-0.152267"/>
+        <atom id="HB2"  type="HC" charge="0.054608"/>
+        <atom id="HB3"  type="HC" charge="0.054608"/>
+        <atom id="CG"  type="CC" charge="0.278406"/>
+        <atom id="ND1"  type="NB" charge="-0.423316"/>
+        <atom id="CE1"  type="CR" charge="0.025960"/>
+        <atom id="HE1"  type="H5" charge="0.126832"/>
+        <atom id="NE2"  type="NA" charge="-0.097984"/>
+        <atom id="HE2"  type="H" charge="0.266865"/>
+        <atom id="CD2"  type="CW" charge="-0.297563"/>
+        <atom id="HD2"  type="H4" charge="0.160413"/>
+        <atom id="C"  type="C" charge="0.662405"/>
+        <atom id="O"  type="O" charge="-0.528966"/>
+      </atoms>
+    </resid>
+      -->
+  
+    <!--
+    <resid id="HIP" desc="HISTIDINE PLUS">
+      <atoms ns="amber">
+        <atom id="N"  type="N" charge="-0.424967"/>
+        <atom id="H"  type="H" charge="0.285872"/>
+        <atom id="CA"  type="CT" charge="-0.375022"/>
+        <atom id="HA"  type="H1" charge="0.014621"/>
+        <atom id="CB"  type="CT" charge="-0.332123"/>
+        <atom id="HB2"  type="HC" charge="0.107725"/>
+        <atom id="HB3"  type="HC" charge="0.107725"/>
+        <atom id="CG"  type="CC" charge="0.182399"/>
+        <atom id="ND1"  type="NA" charge="0.087602"/>
+        <atom id="HD1"  type="H" charge="0.305096"/>
+        <atom id="CE1"  type="CR" charge="-0.013105"/>
+        <atom id="HE1"  type="H5" charge="0.230635"/>
+        <atom id="NE2"  type="NA" charge="-0.148766"/>
+        <atom id="HE2"  type="H" charge="0.377295"/>
+        <atom id="CD2"  type="CW" charge="-0.192052"/>
+        <atom id="HD2"  type="H4" charge="0.235237"/>
+        <atom id="C"  type="C" charge="0.566646"/>
+        <atom id="O"  type="O" charge="-0.560417"/>
+      </atoms>
+    </resid>
+      -->
+  
+    <resid id="ILE" desc="ISOLEUCINE">
+      <atoms ns="amber">
+        <atom id="N"  type="N" charge="-0.451047"/>
+        <atom id="H"  type="H" charge="0.328831"/>
+        <atom id="CA"  type="CT" charge="-0.101874"/>
+        <atom id="HA"  type="H1" charge="0.174193"/>
+        <atom id="CB"  type="CT" charge="0.062238"/>
+        <atom id="HB"  type="HC" charge="0.061662"/>
+        <atom id="CG2"  type="CT" charge="-0.129989"/>
+        <atom id="HG21"  type="HC" charge="0.030227"/>
+        <atom id="HG22"  type="HC" charge="0.030227"/>
+        <atom id="HG23"  type="HC" charge="0.030227"/>
+        <atom id="CG1"  type="CT" charge="0.022230"/>
+        <atom id="HG12"  type="HC" charge="0.011551"/>
+        <atom id="HG13"  type="HC" charge="0.011551"/>
+        <atom id="CD1"  type="CT" charge="-0.101251"/>
+        <atom id="HD11"  type="HC" charge="0.023792"/>
+        <atom id="HD12"  type="HC" charge="0.023792"/>
+        <atom id="HD13"  type="HC" charge="0.023792"/>
+        <atom id="C"  type="C" charge="0.569383"/>
+        <atom id="O"  type="O" charge="-0.619535"/>
+      </atoms>
+    </resid>
+  
+    <resid id="LEU" desc="LEUCINE">
+      <atoms ns="amber">
+        <atom id="N"  type="N" charge="-0.355153"/>
+        <atom id="H"  type="H" charge="0.262417"/>
+        <atom id="CA"  type="CT" charge="-0.101497"/>
+        <atom id="HA"  type="H1" charge="0.136951"/>
+        <atom id="CB"  type="CT" charge="-0.144399"/>
+        <atom id="HB2"  type="HC" charge="0.052533"/>
+        <atom id="HB3"  type="HC" charge="0.052533"/>
+        <atom id="CG"  type="CT" charge="0.191982"/>
+        <atom id="HG"  type="HC" charge="0.000825"/>
+        <atom id="CD1"  type="CT" charge="-0.123036"/>
+        <atom id="HD11"  type="HC" charge="0.022376"/>
+        <atom id="HD12"  type="HC" charge="0.022376"/>
+        <atom id="HD13"  type="HC" charge="0.022376"/>
+        <atom id="CD2"  type="CT" charge="-0.123036"/>
+        <atom id="HD21"  type="HC" charge="0.022376"/>
+        <atom id="HD22"  type="HC" charge="0.022376"/>
+        <atom id="HD23"  type="HC" charge="0.022376"/>
+        <atom id="C"  type="C" charge="0.573471"/>
+        <atom id="O"  type="O" charge="-0.557847"/>
+      </atoms>
+    </resid>
+  
+    <!--
+    <resid id="LYN" desc="LYSINE neutral">
+      <atoms ns="amber">
+        <atom id="N"  type="N" charge="-0.453388"/>
+        <atom id="H"  type="H" charge="0.289695"/>
+        <atom id="CA"  type="CT" charge="-0.024500"/>
+        <atom id="HA"  type="H1" charge="0.099553"/>
+        <atom id="CB"  type="CT" charge="0.035478"/>
+        <atom id="HB2"  type="HC" charge="0.004797"/>
+        <atom id="HB3"  type="HC" charge="0.004797"/>
+        <atom id="CG"  type="CT" charge="-0.019962"/>
+        <atom id="HG2"  type="HC" charge="-0.015610"/>
+        <atom id="HG3"  type="HC" charge="-0.015610"/>
+        <atom id="CD"  type="CT" charge="0.041105"/>
+        <atom id="HD2"  type="HC" charge="0.008304"/>
+        <atom id="HD3"  type="HC" charge="0.008304"/>
+        <atom id="CE"  type="CT" charge="0.188382"/>
+        <atom id="HE2"  type="HP" charge="0.016810"/>
+        <atom id="HE3"  type="HP" charge="0.016810"/>
+        <atom id="NZ"  type="N3" charge="-0.894254"/>
+        <atom id="HZ2"  type="H" charge="0.332053"/>
+        <atom id="HZ3"  type="H" charge="0.332053"/>
+        <atom id="C"  type="C" charge="0.608464"/>
+        <atom id="O"  type="O" charge="-0.563281"/>
+      </atoms>
+    </resid>
+      -->
+  
+    <resid id="LYS" desc="LYSINE">
+      <atoms ns="amber">
+        <atom id="N"  type="N" charge="-0.435875"/>
+        <atom id="H"  type="H" charge="0.251302"/>
+        <atom id="CA"  type="CT" charge="-0.038773"/>
+        <atom id="HA"  type="H1" charge="0.129478"/>
+        <atom id="CB"  type="CT" charge="-0.108273"/>
+        <atom id="HB2"  type="HC" charge="0.045214"/>
+        <atom id="HB3"  type="HC" charge="0.045214"/>
+        <atom id="CG"  type="CT" charge="0.033341"/>
+        <atom id="HG2"  type="HC" charge="0.010208"/>
+        <atom id="HG3"  type="HC" charge="0.010208"/>
+        <atom id="CD"  type="CT" charge="-0.047841"/>
+        <atom id="HD2"  type="HC" charge="0.070715"/>
+        <atom id="HD3"  type="HC" charge="0.070715"/>
+        <atom id="CE"  type="CT" charge="-0.069974"/>
+        <atom id="HE2"  type="HP" charge="0.119522"/>
+        <atom id="HE3"  type="HP" charge="0.119522"/>
+        <atom id="NZ"  type="N3" charge="-0.250358"/>
+        <atom id="HZ1"  type="H" charge="0.294561"/>
+        <atom id="HZ2"  type="H" charge="0.294561"/>
+        <atom id="HZ3"  type="H" charge="0.294561"/>
+        <atom id="C"  type="C" charge="0.725129"/>
+        <atom id="O"  type="O" charge="-0.563157"/>
+      </atoms>
+    </resid>
+  
+    <resid id="MET" desc="METHIONINE">
+      <atoms ns="amber">
+        <atom id="N"  type="N" charge="-0.394918"/>
+        <atom id="H"  type="H" charge="0.280537"/>
+        <atom id="CA"  type="CT" charge="-0.087681"/>
+        <atom id="HA"  type="H1" charge="0.123080"/>
+        <atom id="CB"  type="CT" charge="0.019227"/>
+        <atom id="HB2"  type="HC" charge="0.048840"/>
+        <atom id="HB3"  type="HC" charge="0.048840"/>
+        <atom id="CG"  type="CT" charge="-0.208167"/>
+        <atom id="HG2"  type="H1" charge="0.124228"/>
+        <atom id="HG3"  type="H1" charge="0.124228"/>
+        <atom id="SD"  type="S" charge="-0.211958"/>
+        <atom id="CE"  type="CT" charge="-0.284698"/>
+        <atom id="HE1"  type="H1" charge="0.128394"/>
+        <atom id="HE2"  type="H1" charge="0.128394"/>
+        <atom id="HE3"  type="H1" charge="0.128394"/>
+        <atom id="C"  type="C" charge="0.599684"/>
+        <atom id="O"  type="O" charge="-0.566424"/>
+      </atoms>
+    </resid>
+  
+    <!--
+    <resid id="NHE" desc="NH2 ENDING GROUP">
+      <atoms ns="amber">
+        <atom id="N"  type="N" charge=""/>
+        <atom id="HN1"  type="H" charge=""/>
+        <atom id="HN2"  type="H" charge=""/>
+      </atoms>
+    </resid>
+  
+    <resid id="NME" desc="N-methyl all atom">
+      <atoms ns="amber">
+        <atom id="N"  type="N" charge="-0.423888"/>
+        <atom id="H"  type="H" charge="0.290111"/>
+        <atom id="CH3"  type="CT" charge="-0.054293"/>
+        <atom id="HH31"  type="H1" charge="0.062690"/>
+        <atom id="HH32"  type="H1" charge="0.062690"/>
+        <atom id="HH33"  type="H1" charge="0.062690"/>
+      </atoms>
+    </resid>
+      -->
+  
+    <resid id="PHE" desc="PHENYLALANINE">
+      <atoms ns="amber">
+        <atom id="N"  type="N" charge="-0.371290"/>
+        <atom id="H"  type="H" charge="0.234053"/>
+        <atom id="CA"  type="CT" charge="-0.030057"/>
+        <atom id="HA"  type="H1" charge="0.102448"/>
+        <atom id="CB"  type="CT" charge="-0.098720"/>
+        <atom id="HB2"  type="HC" charge="0.060989"/>
+        <atom id="HB3"  type="HC" charge="0.060989"/>
+        <atom id="CG"  type="CA" charge="0.021313"/>
+        <atom id="CD1"  type="CA" charge="-0.083109"/>
+        <atom id="HD1"  type="HA" charge="0.098466"/>
+        <atom id="CE1"  type="CA" charge="-0.156974"/>
+        <atom id="HE1"  type="HA" charge="0.123731"/>
+        <atom id="CZ"  type="CA" charge="-0.099824"/>
+        <atom id="HZ"  type="HA" charge="0.114679"/>
+        <atom id="CE2"  type="CA" charge="-0.156974"/>
+        <atom id="HE2"  type="HA" charge="0.123731"/>
+        <atom id="CD2"  type="CA" charge="-0.083109"/>
+        <atom id="HD2"  type="HA" charge="0.098466"/>
+        <atom id="C"  type="C" charge="0.547987"/>
+        <atom id="O"  type="O" charge="-0.506795"/>
+      </atoms>
+    </resid>
+  
+    <resid id="PRO" desc="PROLINE">
+      <atoms ns="amber">
+        <atom id="N"  type="N" charge="-0.088116"/>
+        <atom id="CD"  type="CT" charge="-0.011906"/>
+        <atom id="HD2"  type="H1" charge="0.043951"/>
+        <atom id="HD3"  type="H1" charge="0.043950"/>
+        <atom id="CG"  type="CT" charge="0.013059"/>
+        <atom id="HG2"  type="HC" charge="0.019574"/>
+        <atom id="HG3"  type="HC" charge="0.019574"/>
+        <atom id="CB"  type="CT" charge="-0.003351"/>
+        <atom id="HB2"  type="HC" charge="0.019352"/>
+        <atom id="HB3"  type="HC" charge="0.019352"/>
+        <atom id="CA"  type="CT" charge="-0.034577"/>
+        <atom id="HA"  type="H1" charge="0.059977"/>
+        <atom id="C"  type="C" charge="0.333720"/>
+        <atom id="O"  type="O" charge="-0.434559"/>
+      </atoms>
+    </resid>
+  
+    <resid id="SER" desc="SERINE">
+      <atoms ns="amber">
+        <atom id="N"  type="N" charge="-0.541430"/>
+        <atom id="H"  type="H" charge="0.345415"/>
+        <atom id="CA"  type="CT" charge="0.118140"/>
+        <atom id="HA"  type="H1" charge="0.142177"/>
+        <atom id="CB"  type="CT" charge="0.146998"/>
+        <atom id="HB2"  type="H1" charge="0.040081"/>
+        <atom id="HB3"  type="H1" charge="0.040081"/>
+        <atom id="OG"  type="OH" charge="-0.640312"/>
+        <atom id="HG"  type="HO" charge="0.446255"/>
+        <atom id="C"  type="C" charge="0.483424"/>
+        <atom id="O"  type="O" charge="-0.580829"/>
+      </atoms>
+    </resid>
+  
+    <resid id="THR" desc="THREONINE">
+      <atoms ns="amber">
+        <atom id="N"  type="N" charge="-0.245382"/>
+        <atom id="H"  type="H" charge="0.255339"/>
+        <atom id="CA"  type="CT" charge="-0.271249"/>
+        <atom id="HA"  type="H1" charge="0.163757"/>
+        <atom id="CB"  type="CT" charge="0.237868"/>
+        <atom id="HB"  type="H1" charge="0.044688"/>
+        <atom id="CG2"  type="CT" charge="-0.176489"/>
+        <atom id="HG21"  type="HC" charge="0.060019"/>
+        <atom id="HG22"  type="HC" charge="0.060019"/>
+        <atom id="HG23"  type="HC" charge="0.060019"/>
+        <atom id="OG1"  type="OH" charge="-0.601931"/>
+        <atom id="HG1"  type="HO" charge="0.405484"/>
+        <atom id="C"  type="C" charge="0.559878"/>
+        <atom id="O"  type="O" charge="-0.552020"/>
+      </atoms>
+    </resid>
+  
+    <resid id="TRP" desc="TRYPTOPHAN">
+      <atoms ns="amber">
+        <atom id="N"  type="N" charge="-0.427579"/>
+        <atom id="H"  type="H" charge="0.241716"/>
+        <atom id="CA"  type="CT" charge="-0.020082"/>
+        <atom id="HA"  type="H1" charge="0.106629"/>
+        <atom id="CB"  type="CT" charge="-0.098364"/>
+        <atom id="HB2"  type="HC" charge="0.065424"/>
+        <atom id="HB3"  type="HC" charge="0.065424"/>
+        <atom id="CG"  type="C*" charge="-0.099797"/>
+        <atom id="CD1"  type="CW" charge="-0.174053"/>
+        <atom id="HD1"  type="H4" charge="0.170633"/>
+        <atom id="NE1"  type="NA" charge="-0.298433"/>
+        <atom id="HE1"  type="H" charge="0.322375"/>
+        <atom id="CE2"  type="CN" charge="0.141523"/>
+        <atom id="CZ2"  type="CA" charge="-0.210701"/>
+        <atom id="HZ2"  type="HA" charge="0.125512"/>
+        <atom id="CH2"  type="CA" charge="-0.133022"/>
+        <atom id="HH2"  type="HA" charge="0.119467"/>
+        <atom id="CZ3"  type="CA" charge="-0.164054"/>
+        <atom id="HZ3"  type="HA" charge="0.119250"/>
+        <atom id="CE3"  type="CA" charge="-0.153992"/>
+        <atom id="HE3"  type="HA" charge="0.123084"/>
+        <atom id="CD2"  type="CB" charge="0.089641"/>
+        <atom id="C"  type="C" charge="0.584129"/>
+        <atom id="O"  type="O" charge="-0.494730"/>
+      </atoms>
+    </resid>
+  
+    <resid id="TYR" desc="TYROSINE">
+      <atoms ns="amber">
+        <atom id="N"  type="N" charge="-0.487560"/>
+        <atom id="H"  type="H" charge="0.263521"/>
+        <atom id="CA"  type="CT" charge="0.009614"/>
+        <atom id="HA"  type="H1" charge="0.095501"/>
+        <atom id="CB"  type="CT" charge="-0.051853"/>
+        <atom id="HB2"  type="HC" charge="0.019145"/>
+        <atom id="HB3"  type="HC" charge="0.019145"/>
+        <atom id="CG"  type="CA" charge="0.112601"/>
+        <atom id="CD1"  type="CA" charge="-0.183461"/>
+        <atom id="HD1"  type="HA" charge="0.132715"/>
+        <atom id="CE1"  type="CA" charge="-0.181823"/>
+        <atom id="HE1"  type="HA" charge="0.137303"/>
+        <atom id="CZ"  type="C" charge="0.206277"/>
+        <atom id="OH"  type="OH" charge="-0.421233"/>
+        <atom id="HH"  type="HO" charge="0.329691"/>
+        <atom id="CE2"  type="CA" charge="-0.181823"/>
+        <atom id="HE2"  type="HA" charge="0.137303"/>
+        <atom id="CD2"  type="CA" charge="-0.183461"/>
+        <atom id="HD2"  type="HA" charge="0.132715"/>
+        <atom id="C"  type="C" charge="0.622290"/>
+        <atom id="O"  type="O" charge="-0.526607"/>
+      </atoms>
+    </resid>
+  
+    <resid id="VAL" desc="VALINE">
+      <atoms ns="amber">
+        <atom id="N"  type="N" charge="-0.450087"/>
+        <atom id="H"  type="H" charge="0.440048"/>
+        <atom id="CA"  type="CT" charge="-0.051858"/>
+        <atom id="HA"  type="H1" charge="-0.026204"/>
+        <atom id="CB"  type="CT" charge="0.395217"/>
+        <atom id="HB"  type="HC" charge="-0.115672"/>
+        <atom id="CG1"  type="CT" charge="-0.090132"/>
+        <atom id="HG11"  type="HC" charge="-0.008985"/>
+        <atom id="HG12"  type="HC" charge="-0.008985"/>
+        <atom id="HG13"  type="HC" charge="-0.008985"/>
+        <atom id="CG2"  type="CT" charge="-0.090132"/>
+        <atom id="HG21"  type="HC" charge="-0.008985"/>
+        <atom id="HG22"  type="HC" charge="-0.008985"/>
+        <atom id="HG23"  type="HC" charge="-0.008985"/>
+        <atom id="C"  type="C" charge="0.447359"/>
+        <atom id="O"  type="O" charge="-0.404629"/>
+      </atoms>
+    </resid>
+  
+    <resid id="HOH" desc="WATER, TIP3P MODEL">
+      <atoms ns="amber">
+        <atom id="H1"  type="HW" charge="0.41700"/>
+        <atom id="O"  type="OW" charge="-0.83400"/>
+        <atom id="H2"  type="HW" charge="0.41700"/>
+      </atoms>
+    </resid>
+  
+
+    <!--
+    <resid id="CIM" desc="Chloride Ion">
+      <atoms ns="amber">
+        <atom id="CL-"  type="IM" charge="-1.000"/>
+      </atoms>
+    </resid>
+  
+    <resid id="CIP" desc="Sodium Ion">
+      <atoms ns="amber">
+        <atom id="NA+"  type="IP" charge="1.000"/>
+      </atoms>
+    </resid>
+      -->
+
+
+  </topology>
+</toppar>

@@ -16,6 +16,20 @@ if (${LIBLZMA_FOUND})
   SET(HAVE_LZMA_H "1")
 endif()
 
+# OpenGL
+# XXX???: SET(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH OFF)
+find_package(OpenGL)
+message(STATUS "OPENGL_FOUND: ${OPENGL_FOUND} OPENGL_GLU_FOUND: ${OPENGL_GLU_FOUND} OpenGL_OpenGL_FOUND: ${OpenGL_OpenGL_FOUND}")
+message(STATUS "OPENGL_INCLUDE_DIR: ${OPENGL_INCLUDE_DIR}")
+find_package(GLEW)
+message(STATUS "GLEW_FOUND: ${GLEW_FOUND} ${GLEW_LIBRARIES}")
+if (OPENGL_FOUND AND GLEW_FOUND)
+   SET(BUILD_OPENGL_SYSDEP "TRUE")
+else ()
+   SET(BUILD_OPENGL_SYSDEP "FALSE")
+endif ()
+message(STATUS "Build OGL sysdep: ${BUILD_OPENGL_SYSDEP}")
+
 #####
 
 include(CheckTypeSize)
@@ -107,7 +121,7 @@ if (NOT BUILD_MINIMUM_MODULES)
   add_subdirectory(gfx)
   add_subdirectory(qsys)
 
-  if (BUILD_GUI)
+  if (BUILD_OPENGL_SYSDEP)
     add_subdirectory(sysdep)
   endif ()
   
@@ -146,3 +160,21 @@ endif ()
 if (BUILD_GUI AND NOT BUILD_MINIMUM_MODULES)
   add_subdirectory(qt5_gui)
 endif()
+
+add_library(cuemol2 INTERFACE)
+target_sources(cuemol2
+    INTERFACE FILE_SET HEADERS 
+    BASE_DIRS ${PROJECT_SOURCE_DIR}/src
+    FILES common.h qmtypes.h version.hpp
+)
+# message(STATUS "PROJECT_BINARY_DIR=${PROJECT_BINARY_DIR}")
+install(TARGETS cuemol2 FILE_SET HEADERS)
+
+install(FILES ${PROJECT_BINARY_DIR}/src/config.h DESTINATION include)
+ 
+# target_sources(cuemol2
+#   INTERFACE FILE_SET HEADERS
+#   BASE_DIRS ${PROJECT_BINARY_DIR}
+#   FILES
+# )
+# install(TARGETS cuemol2 FILE_SET HEADERS)

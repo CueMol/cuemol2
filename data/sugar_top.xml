@@ -1,0 +1,491 @@
+<?xml version="1.0"?>
+<toppar>
+  <topology>
+
+    <resid id="FUC-a-L" three="FUC" desc="alpha_L_fucose" group="pyranose">
+      <synonyms>
+        <synonym value="FUC"/>
+        <synonym value="FCA"/>
+        <synonym value="FCB"/>
+      </synonyms>
+      <atoms>
+        <atom id="C1" elem="C" type="CH1" charge="0.000"/>
+        <atom id="H1" elem="H" type="HCH1" charge="0.000"/>
+        <atom id="O1" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO1" elem="H" type="HOH1" charge="0.000"/>
+        <atom id="C2" elem="C" type="CH1" charge="0.000"/>
+        <atom id="H2" elem="H" type="HCH1" charge="0.000"/>
+        <atom id="O2" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO2" elem="H" type="HOH1" charge="0.000"/>
+        <atom id="C3" elem="C" type="CH1" charge="0.000"/>
+        <atom id="H3" elem="H" type="HCH1" charge="0.000"/>
+        <atom id="O3" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO3" elem="H" type="HOH1" charge="0.000"/>
+        <atom id="C4" elem="C" type="CH1" charge="0.000"/>
+        <atom id="H4" elem="H" type="HCH1" charge="0.000"/>
+        <atom id="O4" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO4" elem="H" type="HOH1" charge="0.000"/>
+        <atom id="C5" elem="C" type="CH1" charge="0.000"/>
+        <atom id="H5" elem="H" type="HCH1" charge="0.000"/>
+        <atom id="C6" elem="C" type="CH3" charge="0.000"/>
+        <atom id="H61" elem="H" type="HCH3" charge="0.000"/>
+        <atom id="H62" elem="H" type="HCH3" charge="0.000"/>
+        <atom id="H63" elem="H" type="HCH3" charge="0.000"/>
+        <atom id="O5" elem="O" type="O2" charge="0.000"/>
+      </atoms>
+      <bonds>
+        <bond id1="O1" id2="C1" type="single" value="1.410" esd="0.020"/>
+        <bond id1="C2" id2="C1" type="single" value="1.524" esd="0.020"/>
+        <bond id1="O2" id2="C2" type="single" value="1.410" esd="0.020"/>
+        <bond id1="C3" id2="C2" type="single" value="1.524" esd="0.020"/>
+        <bond id1="O3" id2="C3" type="single" value="1.410" esd="0.020"/>
+        <bond id1="C4" id2="C3" type="single" value="1.524" esd="0.020"/>
+        <bond id1="O4" id2="C4" type="single" value="1.410" esd="0.020"/>
+        <bond id1="C5" id2="C4" type="single" value="1.524" esd="0.020"/>
+        <bond id1="C6" id2="C5" type="single" value="1.524" esd="0.020"/>
+        <bond id1="O5" id2="C5" type="single" value="1.410" esd="0.020"/>
+        <bond id1="H1" id2="C1" type="single" value="1.090" esd="0.020"/>
+        <bond id1="HO1" id2="O1" type="single" value="0.980" esd="0.020"/>
+        <bond id1="H2" id2="C2" type="single" value="1.090" esd="0.020"/>
+        <bond id1="HO2" id2="O2" type="single" value="0.980" esd="0.020"/>
+        <bond id1="H3" id2="C3" type="single" value="1.090" esd="0.020"/>
+        <bond id1="HO3" id2="O3" type="single" value="0.980" esd="0.020"/>
+        <bond id1="H4" id2="C4" type="single" value="1.090" esd="0.020"/>
+        <bond id1="HO4" id2="O4" type="single" value="0.980" esd="0.020"/>
+        <bond id1="H5" id2="C5" type="single" value="1.090" esd="0.020"/>
+        <bond id1="H61" id2="C6" type="single" value="1.090" esd="0.020"/>
+        <bond id1="H62" id2="C6" type="single" value="1.090" esd="0.020"/>
+        <bond id1="H63" id2="C6" type="single" value="1.090" esd="0.020"/>
+        <bond id1="C1" id2="O5" type="single" value="1.410" esd="0.020"/>
+      </bonds>
+    </resid>
+
+    <resid id="GAL-b-D" three="GAL" desc="beta_D_galactose" group="pyranose">
+      <synonyms>
+        <synonym value="GLA"/>
+        <synonym value="GAL"/>
+      </synonyms>
+      <atoms>
+        <atom id="C1" elem="C" type="CH1" charge="0.000"/>
+        <atom id="H1" elem="H" type="HCH1" charge="0.000"/>
+        <atom id="O1" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO1" elem="H" type="HOH1" charge="0.000"/>
+        <atom id="C2" elem="C" type="CH1" charge="0.000"/>
+        <atom id="H2" elem="H" type="HCH1" charge="0.000"/>
+        <atom id="O2" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO2" elem="H" type="HOH1" charge="0.000"/>
+        <atom id="C3" elem="C" type="CH1" charge="0.000"/>
+        <atom id="H3" elem="H" type="HCH1" charge="0.000"/>
+        <atom id="O3" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO3" elem="H" type="HOH1" charge="0.000"/>
+        <atom id="C4" elem="C" type="CH1" charge="0.000"/>
+        <atom id="H4" elem="H" type="HCH1" charge="0.000"/>
+        <atom id="O4" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO4" elem="H" type="HOH1" charge="0.000"/>
+        <atom id="C5" elem="C" type="CH1" charge="0.000"/>
+        <atom id="H5" elem="H" type="HCH1" charge="0.000"/>
+        <atom id="C6" elem="C" type="CH2" charge="0.000"/>
+        <atom id="H61" elem="H" type="HCH2" charge="0.000"/>
+        <atom id="H62" elem="H" type="HCH2" charge="0.000"/>
+        <atom id="O6" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO6" elem="H" type="HOH1" charge="0.000"/>
+        <atom id="O5" elem="O" type="O2" charge="0.000"/>
+      </atoms>
+      <bonds>
+        <bond id1="O1" id2="C1" type="single" value="1.410" esd="0.020"/>
+        <bond id1="C2" id2="C1" type="single" value="1.524" esd="0.020"/>
+        <bond id1="O2" id2="C2" type="single" value="1.410" esd="0.020"/>
+        <bond id1="C3" id2="C2" type="single" value="1.524" esd="0.020"/>
+        <bond id1="O3" id2="C3" type="single" value="1.410" esd="0.020"/>
+        <bond id1="C4" id2="C3" type="single" value="1.524" esd="0.020"/>
+        <bond id1="O4" id2="C4" type="single" value="1.410" esd="0.020"/>
+        <bond id1="C5" id2="C4" type="single" value="1.524" esd="0.020"/>
+        <bond id1="C6" id2="C5" type="single" value="1.524" esd="0.020"/>
+        <bond id1="O6" id2="C6" type="single" value="1.410" esd="0.020"/>
+        <bond id1="O5" id2="C5" type="single" value="1.410" esd="0.020"/>
+        <bond id1="H1" id2="C1" type="single" value="1.090" esd="0.020"/>
+        <bond id1="HO1" id2="O1" type="single" value="0.980" esd="0.020"/>
+        <bond id1="H2" id2="C2" type="single" value="1.090" esd="0.020"/>
+        <bond id1="HO2" id2="O2" type="single" value="0.980" esd="0.020"/>
+        <bond id1="H3" id2="C3" type="single" value="1.090" esd="0.020"/>
+        <bond id1="HO3" id2="O3" type="single" value="0.980" esd="0.020"/>
+        <bond id1="H4" id2="C4" type="single" value="1.090" esd="0.020"/>
+        <bond id1="HO4" id2="O4" type="single" value="0.980" esd="0.020"/>
+        <bond id1="H5" id2="C5" type="single" value="1.090" esd="0.020"/>
+        <bond id1="H61" id2="C6" type="single" value="1.090" esd="0.020"/>
+        <bond id1="H62" id2="C6" type="single" value="1.090" esd="0.020"/>
+        <bond id1="HO6" id2="O6" type="single" value="0.980" esd="0.020"/>
+        <bond id1="C1" id2="O5" type="single" value="1.410" esd="0.020"/>
+      </bonds>
+    </resid>
+
+    <resid id="GLC-b-D" three="GLC" desc="beta_D_glucose" group="pyranose">
+      <synonyms>
+        <synonym value="GLC"/>
+        <synonym value="BGC"/>
+      </synonyms>
+      <atoms>
+        <atom id="C1" elem="C" type="CH1" charge="0.000"/>
+        <atom id="H1" elem="H" type="HCH1" charge="0.000"/>
+        <atom id="O1" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO1" elem="H" type="HOH1" charge="0.000"/>
+        <atom id="C2" elem="C" type="CH1" charge="0.000"/>
+        <atom id="H2" elem="H" type="HCH1" charge="0.000"/>
+        <atom id="O2" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO2" elem="H" type="HOH1" charge="0.000"/>
+        <atom id="C3" elem="C" type="CH1" charge="0.000"/>
+        <atom id="H3" elem="H" type="HCH1" charge="0.000"/>
+        <atom id="O3" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO3" elem="H" type="HOH1" charge="0.000"/>
+        <atom id="C4" elem="C" type="CH1" charge="0.000"/>
+        <atom id="H4" elem="H" type="HCH1" charge="0.000"/>
+        <atom id="O4" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO4" elem="H" type="HOH1" charge="0.000"/>
+        <atom id="C5" elem="C" type="CH1" charge="0.000"/>
+        <atom id="H5" elem="H" type="HCH1" charge="0.000"/>
+        <atom id="C6" elem="C" type="CH2" charge="0.000"/>
+        <atom id="H61" elem="H" type="HCH2" charge="0.000"/>
+        <atom id="H62" elem="H" type="HCH2" charge="0.000"/>
+        <atom id="O6" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO6" elem="H" type="HOH1" charge="0.000"/>
+        <atom id="O5" elem="O" type="O2" charge="0.000"/>
+      </atoms>
+      <bonds>
+        <bond id1="O1" id2="C1" type="single" value="1.410" esd="0.020"/>
+        <bond id1="C2" id2="C1" type="single" value="1.524" esd="0.020"/>
+        <bond id1="O2" id2="C2" type="single" value="1.410" esd="0.020"/>
+        <bond id1="C3" id2="C2" type="single" value="1.524" esd="0.020"/>
+        <bond id1="O3" id2="C3" type="single" value="1.410" esd="0.020"/>
+        <bond id1="C4" id2="C3" type="single" value="1.524" esd="0.020"/>
+        <bond id1="O4" id2="C4" type="single" value="1.410" esd="0.020"/>
+        <bond id1="C5" id2="C4" type="single" value="1.524" esd="0.020"/>
+        <bond id1="C6" id2="C5" type="single" value="1.524" esd="0.020"/>
+        <bond id1="O6" id2="C6" type="single" value="1.410" esd="0.020"/>
+        <bond id1="O5" id2="C5" type="single" value="1.410" esd="0.020"/>
+        <bond id1="H1" id2="C1" type="single" value="1.090" esd="0.020"/>
+        <bond id1="HO1" id2="O1" type="single" value="0.980" esd="0.020"/>
+        <bond id1="H2" id2="C2" type="single" value="1.090" esd="0.020"/>
+        <bond id1="HO2" id2="O2" type="single" value="0.980" esd="0.020"/>
+        <bond id1="H3" id2="C3" type="single" value="1.090" esd="0.020"/>
+        <bond id1="HO3" id2="O3" type="single" value="0.980" esd="0.020"/>
+        <bond id1="H4" id2="C4" type="single" value="1.090" esd="0.020"/>
+        <bond id1="HO4" id2="O4" type="single" value="0.980" esd="0.020"/>
+        <bond id1="H5" id2="C5" type="single" value="1.090" esd="0.020"/>
+        <bond id1="H61" id2="C6" type="single" value="1.090" esd="0.020"/>
+        <bond id1="H62" id2="C6" type="single" value="1.090" esd="0.020"/>
+        <bond id1="HO6" id2="O6" type="single" value="0.980" esd="0.020"/>
+        <bond id1="C1" id2="O5" type="single" value="1.410" esd="0.020"/>
+      </bonds>
+    </resid>
+
+    <resid id="MAN-b-D" three="MAN" desc="beta_D_mannose" group="pyranose">
+      <synonyms>
+        <synonym value="MAN"/>
+        <synonym value="BMA"/>
+      </synonyms>
+      <atoms>
+        <atom id="C1" elem="C" type="CH1" charge="0.000"/>
+        <atom id="H1" elem="H" type="HCH1" charge="0.000"/>
+        <atom id="O1" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO1" elem="H" type="HOH1" charge="0.000"/>
+        <atom id="C2" elem="C" type="CH1" charge="0.000"/>
+        <atom id="H2" elem="H" type="HCH1" charge="0.000"/>
+        <atom id="O2" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO2" elem="H" type="HOH1" charge="0.000"/>
+        <atom id="C3" elem="C" type="CH1" charge="0.000"/>
+        <atom id="H3" elem="H" type="HCH1" charge="0.000"/>
+        <atom id="O3" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO3" elem="H" type="HOH1" charge="0.000"/>
+        <atom id="C4" elem="C" type="CH1" charge="0.000"/>
+        <atom id="H4" elem="H" type="HCH1" charge="0.000"/>
+        <atom id="O4" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO4" elem="H" type="HOH1" charge="0.000"/>
+        <atom id="C5" elem="C" type="CH1" charge="0.000"/>
+        <atom id="H5" elem="H" type="HCH1" charge="0.000"/>
+        <atom id="C6" elem="C" type="CH2" charge="0.000"/>
+        <atom id="H61" elem="H" type="HCH2" charge="0.000"/>
+        <atom id="H62" elem="H" type="HCH2" charge="0.000"/>
+        <atom id="O6" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO6" elem="H" type="HOH1" charge="0.000"/>
+        <atom id="O5" elem="O" type="O2" charge="0.000"/>
+      </atoms>
+      <bonds>
+        <bond id1="O1" id2="C1" type="single" value="1.410" esd="0.020"/>
+        <bond id1="C2" id2="C1" type="single" value="1.524" esd="0.020"/>
+        <bond id1="O2" id2="C2" type="single" value="1.410" esd="0.020"/>
+        <bond id1="C3" id2="C2" type="single" value="1.524" esd="0.020"/>
+        <bond id1="O3" id2="C3" type="single" value="1.410" esd="0.020"/>
+        <bond id1="C4" id2="C3" type="single" value="1.524" esd="0.020"/>
+        <bond id1="O4" id2="C4" type="single" value="1.410" esd="0.020"/>
+        <bond id1="C5" id2="C4" type="single" value="1.524" esd="0.020"/>
+        <bond id1="C6" id2="C5" type="single" value="1.524" esd="0.020"/>
+        <bond id1="O6" id2="C6" type="single" value="1.410" esd="0.020"/>
+        <bond id1="O5" id2="C5" type="single" value="1.410" esd="0.020"/>
+        <bond id1="H1" id2="C1" type="single" value="1.090" esd="0.020"/>
+        <bond id1="HO1" id2="O1" type="single" value="0.980" esd="0.020"/>
+        <bond id1="H2" id2="C2" type="single" value="1.090" esd="0.020"/>
+        <bond id1="HO2" id2="O2" type="single" value="0.980" esd="0.020"/>
+        <bond id1="H3" id2="C3" type="single" value="1.090" esd="0.020"/>
+        <bond id1="HO3" id2="O3" type="single" value="0.980" esd="0.020"/>
+        <bond id1="H4" id2="C4" type="single" value="1.090" esd="0.020"/>
+        <bond id1="HO4" id2="O4" type="single" value="0.980" esd="0.020"/>
+        <bond id1="H5" id2="C5" type="single" value="1.090" esd="0.020"/>
+        <bond id1="H61" id2="C6" type="single" value="1.090" esd="0.020"/>
+        <bond id1="H62" id2="C6" type="single" value="1.090" esd="0.020"/>
+        <bond id1="HO6" id2="O6" type="single" value="0.980" esd="0.020"/>
+        <bond id1="C1" id2="O5" type="single" value="1.410" esd="0.020"/>
+      </bonds>
+    </resid>
+
+    <resid id="NAG-b-D" three="NAG" desc="beta_D_N-acetyl-Glucosamine" group="pyranose">
+      <synonyms>
+        <synonym value="NGA"/>
+        <synonym value="NAG"/>
+      </synonyms>
+      <atoms>
+        <atom id="C1" elem="C" type="CH1" charge="0.000"/>
+        <atom id="H1" elem="H" type="HCH1" charge="0.000"/>
+        <atom id="O1" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO1" elem="H" type="HOH1" charge="0.000"/>
+        <atom id="C2" elem="C" type="CH1" charge="0.000"/>
+        <atom id="H2" elem="H" type="HCH1" charge="0.000"/>
+        <atom id="N2" elem="N" type="NH1" charge="0.000"/>
+        <atom id="HN2" elem="H" type="HNH1" charge="0.000"/>
+        <atom id="C7" elem="C" type="C" charge="0.000"/>
+        <atom id="O7" elem="O" type="O" charge="0.000"/>
+        <atom id="C8" elem="C" type="CH3" charge="0.000"/>
+        <atom id="H81" elem="H" type="HCH3" charge="0.000"/>
+        <atom id="H82" elem="H" type="HCH3" charge="0.000"/>
+        <atom id="H83" elem="H" type="HCH3" charge="0.000"/>
+        <atom id="C3" elem="C" type="CH1" charge="0.000"/>
+        <atom id="H3" elem="H" type="HCH1" charge="0.000"/>
+        <atom id="O3" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO3" elem="H" type="HOH1" charge="0.000"/>
+        <atom id="C4" elem="C" type="CH1" charge="0.000"/>
+        <atom id="H4" elem="H" type="HCH1" charge="0.000"/>
+        <atom id="O4" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO4" elem="H" type="HOH1" charge="0.000"/>
+        <atom id="C5" elem="C" type="CH1" charge="0.000"/>
+        <atom id="H5" elem="H" type="HCH1" charge="0.000"/>
+        <atom id="C6" elem="C" type="CH2" charge="0.000"/>
+        <atom id="H61" elem="H" type="HCH2" charge="0.000"/>
+        <atom id="H62" elem="H" type="HCH2" charge="0.000"/>
+        <atom id="O6" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO6" elem="H" type="HOH1" charge="0.000"/>
+        <atom id="O5" elem="O" type="O2" charge="0.000"/>
+      </atoms>
+      <bonds>
+        <bond id1="O1" id2="C1" type="single" value="1.410" esd="0.020"/>
+        <bond id1="C2" id2="C1" type="single" value="1.524" esd="0.020"/>
+        <bond id1="N2" id2="C2" type="single" value="1.450" esd="0.020"/>
+        <bond id1="C7" id2="N2" type="deloc" value="1.330" esd="0.020"/>
+        <bond id1="O7" id2="C7" type="double" value="1.230" esd="0.020"/>
+        <bond id1="C8" id2="C7" type="single" value="1.500" esd="0.020"/>
+        <bond id1="C3" id2="C2" type="single" value="1.524" esd="0.020"/>
+        <bond id1="O3" id2="C3" type="single" value="1.410" esd="0.020"/>
+        <bond id1="C4" id2="C3" type="single" value="1.524" esd="0.020"/>
+        <bond id1="O4" id2="C4" type="single" value="1.410" esd="0.020"/>
+        <bond id1="C5" id2="C4" type="single" value="1.524" esd="0.020"/>
+        <bond id1="C6" id2="C5" type="single" value="1.524" esd="0.020"/>
+        <bond id1="O6" id2="C6" type="single" value="1.410" esd="0.020"/>
+        <bond id1="O5" id2="C5" type="single" value="1.410" esd="0.020"/>
+        <bond id1="H1" id2="C1" type="single" value="1.090" esd="0.020"/>
+        <bond id1="HO1" id2="O1" type="single" value="0.980" esd="0.020"/>
+        <bond id1="H2" id2="C2" type="single" value="1.090" esd="0.020"/>
+        <bond id1="HN2" id2="N2" type="single" value="1.010" esd="0.020"/>
+        <bond id1="H81" id2="C8" type="single" value="1.090" esd="0.020"/>
+        <bond id1="H82" id2="C8" type="single" value="1.090" esd="0.020"/>
+        <bond id1="H83" id2="C8" type="single" value="1.090" esd="0.020"/>
+        <bond id1="H3" id2="C3" type="single" value="1.090" esd="0.020"/>
+        <bond id1="HO3" id2="O3" type="single" value="0.980" esd="0.020"/>
+        <bond id1="H4" id2="C4" type="single" value="1.090" esd="0.020"/>
+        <bond id1="HO4" id2="O4" type="single" value="0.980" esd="0.020"/>
+        <bond id1="H5" id2="C5" type="single" value="1.090" esd="0.020"/>
+        <bond id1="H61" id2="C6" type="single" value="1.090" esd="0.020"/>
+        <bond id1="H62" id2="C6" type="single" value="1.090" esd="0.020"/>
+        <bond id1="HO6" id2="O6" type="single" value="0.980" esd="0.020"/>
+        <bond id1="C1" id2="O5" type="single" value="1.410" esd="0.020"/>
+      </bonds>
+    </resid>
+
+    <resid id="SIA" three="SIA" desc="sialic-acid" group="L-saccharide">
+      <atoms>
+        <atom id="O10" elem="O" type="O" charge="0.000"/>
+        <atom id="C10" elem="C" type="C" charge="0.000"/>
+        <atom id="C11" elem="C" type="CH3" charge="0.000"/>
+        <atom id="H113" elem="H" type="H" charge="0.000"/>
+        <atom id="H112" elem="H" type="H" charge="0.000"/>
+        <atom id="H111" elem="H" type="H" charge="0.000"/>
+        <atom id="N5" elem="N" type="NH1" charge="0.000"/>
+        <atom id="HN5" elem="H" type="H" charge="0.000"/>
+        <atom id="C5" elem="C" type="CH1" charge="0.000"/>
+        <atom id="H5" elem="H" type="H" charge="0.000"/>
+        <atom id="C4" elem="C" type="CH1" charge="0.000"/>
+        <atom id="H4" elem="H" type="H" charge="0.000"/>
+        <atom id="O4" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO4" elem="H" type="H" charge="0.000"/>
+        <atom id="C3" elem="C" type="CH2" charge="0.000"/>
+        <atom id="H32" elem="H" type="H" charge="0.000"/>
+        <atom id="H31" elem="H" type="H" charge="0.000"/>
+        <atom id="C6" elem="C" type="CH1" charge="0.000"/>
+        <atom id="H6" elem="H" type="H" charge="0.000"/>
+        <atom id="O6" elem="O" type="O2" charge="0.000"/>
+        <atom id="C2" elem="C" type="CT" charge="0.000"/>
+        <atom id="O2" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO2" elem="H" type="H" charge="0.000"/>
+        <atom id="C1" elem="C" type="C" charge="0.000"/>
+        <atom id="O1" elem="O" type="OC" charge="-0.500"/>
+        <atom id="O3" elem="O" type="OC" charge="-0.500"/>
+        <atom id="C7" elem="C" type="CH1" charge="0.000"/>
+        <atom id="H7" elem="H" type="H" charge="0.000"/>
+        <atom id="O7" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO7" elem="H" type="H" charge="0.000"/>
+        <atom id="C8" elem="C" type="CH1" charge="0.000"/>
+        <atom id="H8" elem="H" type="H" charge="0.000"/>
+        <atom id="O8" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO8" elem="H" type="H" charge="0.000"/>
+        <atom id="C9" elem="C" type="CH2" charge="0.000"/>
+        <atom id="H91" elem="H" type="H" charge="0.000"/>
+        <atom id="H92" elem="H" type="H" charge="0.000"/>
+        <atom id="O9" elem="O" type="OH1" charge="0.000"/>
+        <atom id="HO9" elem="H" type="H" charge="0.000"/>
+      </atoms>
+      <bonds>
+        <bond id1="C1" id2="C2" type="single" value="1.507" esd="0.020"/>
+        <bond id1="O1" id2="C1" type="deloc" value="1.250" esd="0.020"/>
+        <bond id1="O3" id2="C1" type="deloc" value="1.250" esd="0.020"/>
+        <bond id1="O2" id2="C2" type="single" value="1.432" esd="0.020"/>
+        <bond id1="C2" id2="C3" type="single" value="1.524" esd="0.020"/>
+        <bond id1="C3" id2="C4" type="single" value="1.524" esd="0.020"/>
+        <bond id1="O4" id2="C4" type="single" value="1.432" esd="0.020"/>
+        <bond id1="C4" id2="C5" type="single" value="1.524" esd="0.020"/>
+        <bond id1="C5" id2="N5" type="single" value="1.450" esd="0.020"/>
+        <bond id1="N5" id2="C10" type="deloc" value="1.330" esd="0.020"/>
+        <bond id1="C10" id2="O10" type="double" value="1.220" esd="0.020"/>
+        <bond id1="C11" id2="C10" type="single" value="1.500" esd="0.020"/>
+        <bond id1="C6" id2="C5" type="single" value="1.524" esd="0.020"/>
+        <bond id1="C7" id2="C6" type="single" value="1.524" esd="0.020"/>
+        <bond id1="O7" id2="C7" type="single" value="1.432" esd="0.020"/>
+        <bond id1="C8" id2="C7" type="single" value="1.524" esd="0.020"/>
+        <bond id1="O8" id2="C8" type="single" value="1.432" esd="0.020"/>
+        <bond id1="C9" id2="C8" type="single" value="1.524" esd="0.020"/>
+        <bond id1="O9" id2="C9" type="single" value="1.432" esd="0.020"/>
+        <bond id1="O6" id2="C6" type="single" value="1.426" esd="0.020"/>
+        <bond id1="HO2" id2="O2" type="single" value="0.967" esd="0.020"/>
+        <bond id1="H31" id2="C3" type="single" value="1.092" esd="0.020"/>
+        <bond id1="H32" id2="C3" type="single" value="1.092" esd="0.020"/>
+        <bond id1="H4" id2="C4" type="single" value="1.099" esd="0.020"/>
+        <bond id1="HO4" id2="O4" type="single" value="0.967" esd="0.020"/>
+        <bond id1="H5" id2="C5" type="single" value="1.099" esd="0.020"/>
+        <bond id1="HN5" id2="N5" type="single" value="1.010" esd="0.020"/>
+        <bond id1="H111" id2="C11" type="single" value="1.059" esd="0.020"/>
+        <bond id1="H112" id2="C11" type="single" value="1.059" esd="0.020"/>
+        <bond id1="H113" id2="C11" type="single" value="1.059" esd="0.020"/>
+        <bond id1="H6" id2="C6" type="single" value="1.099" esd="0.020"/>
+        <bond id1="H7" id2="C7" type="single" value="1.099" esd="0.020"/>
+        <bond id1="HO7" id2="O7" type="single" value="0.967" esd="0.020"/>
+        <bond id1="H8" id2="C8" type="single" value="1.099" esd="0.020"/>
+        <bond id1="HO8" id2="O8" type="single" value="0.967" esd="0.020"/>
+        <bond id1="H91" id2="C9" type="single" value="1.092" esd="0.020"/>
+        <bond id1="H92" id2="C9" type="single" value="1.092" esd="0.020"/>
+        <bond id1="HO9" id2="O9" type="single" value="0.967" esd="0.020"/>
+        <bond id1="C2" id2="O6" type="single" value="1.426" esd="0.020"/>
+      </bonds>
+    </resid>
+
+    <!-- Linkage definitions -->
+    <links>
+      <link id="ALPHA1-2" poly="true">
+	<targets>
+	  <target group1="pyranose" group2="pyranose"/>
+	</targets>
+	<bonds>
+	  <bond id1="O2" id2="C1" type="single" value="1.439" esd=".020"/>
+	</bonds>
+      </link>
+
+      <link id="ALPHA1-3" poly="true">
+	<targets>
+	  <target group1="pyranose" group2="pyranose"/>
+	</targets>
+	<bonds>
+	  <bond id1="O3" id2="C1" type="single" value="1.439" esd=".020"/>
+	</bonds>
+      </link>
+
+      <link id="ALPHA1-4" poly="true">
+	<targets>
+	  <target group1="pyranose" group2="pyranose"/>
+	</targets>
+	<bonds>
+	  <bond id1="O4" id2="C1" type="single" value="1.439" esd=".020"/>
+	</bonds>
+      </link>
+
+      <link id="ALPHA1-6" poly="true">
+	<targets>
+	  <target group1="pyranose" group2="pyranose"/>
+	</targets>
+	<bonds>
+	  <bond id1="O6" id2="C1" type="single" value="1.439" esd=".020"/>
+	</bonds>
+      </link>
+
+      <link id="ALPHA2-3" poly="true">
+	<targets>
+	  <target resid1="SIA" group2="pyranose"/>
+	</targets>
+	<bonds>
+	  <bond id1="C2" id2="O3" type="single" value="1.439" esd=".020"/>
+	</bonds>
+      </link>
+
+      <link id="BETA1-2" poly="true">
+	<targets>
+	  <target group1="pyranose" group2="pyranose"/>
+	</targets>
+	<bonds>
+	  <bond id1="O2" id2="C1" type="single" value="1.439" esd=".020"/>
+	</bonds>
+      </link>
+
+      <link id="BETA1-3" poly="true">
+	<targets>
+	  <target group1="pyranose" group2="pyranose"/>
+	</targets>
+	<bonds>
+	  <bond id1="O3" id2="C1" type="single" value="1.439" esd=".020"/>
+	</bonds>
+      </link>
+
+      <link id="BETA1-4" poly="true">
+	<targets>
+	  <target group1="pyranose" group2="pyranose"/>
+	</targets>
+	<bonds>
+	  <bond id1="O4" id2="C1" type="single" value="1.439" esd=".020"/>
+	</bonds>
+      </link>
+
+      <link id="BETA1-6" poly="true">
+	<targets>
+	  <target group1="pyranose" group2="pyranose"/>
+	</targets>
+	<bonds>
+	  <bond id1="O6" id2="C1" type="single" value="1.439" esd=".020"/>
+	</bonds>
+      </link>
+
+      <link id="BETA2-3" poly="true">
+	<targets>
+	  <target resid1="SIA" group2="pyranose"/>
+	</targets>
+	<bonds>
+	  <bond id1="C2" id2="O3" type="single" value="1.439" esd=".020"/>
+	</bonds>
+      </link>
+
+    </links>
+
+  </topology>
+</toppar>
