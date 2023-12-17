@@ -40,7 +40,7 @@ endif()
 add_library(importers SHARED ${IMPORTERS_SRCS} ${MCWG_HEADERS})
 target_link_libraries(importers PRIVATE qlib gfx qsys molstr molvis surface symm)
 
-MCWRAPGEN_PYWRAPPERS(importers)
+MCWRAPGEN_SCR_WRAPPERS(importers)
 
 install(TARGETS importers
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

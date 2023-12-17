@@ -79,7 +79,7 @@ endif()
 add_library(surface SHARED ${SURFACE_SRCS} ${MCWG_HEADERS})
 target_link_libraries(surface PRIVATE qlib gfx qsys molstr CGAL::CGAL)
 
-MCWRAPGEN_PYWRAPPERS(surface)
+MCWRAPGEN_SCR_WRAPPERS(surface)
 
 install(TARGETS surface
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

@@ -48,7 +48,7 @@ endif()
 add_library(anim SHARED ${ANIM_SRCS} ${MCWG_HEADERS})
 target_link_libraries(anim PRIVATE qlib gfx qsys molstr Boost::filesystem Boost::thread)
 
-MCWRAPGEN_PYWRAPPERS(anim)
+MCWRAPGEN_SCR_WRAPPERS(anim)
 
 install(TARGETS anim
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

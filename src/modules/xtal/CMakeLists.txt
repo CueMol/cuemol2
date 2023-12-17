@@ -58,7 +58,7 @@ endif()
 add_library(xtal SHARED ${XTAL_SRCS} ${MCWG_HEADERS})
 target_link_libraries(xtal PRIVATE qlib gfx qsys molstr symm surface ${XTAL_LINK_LIBRARIES})
 
-MCWRAPGEN_PYWRAPPERS(xtal)
+MCWRAPGEN_SCR_WRAPPERS(xtal)
 
 install(TARGETS xtal
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

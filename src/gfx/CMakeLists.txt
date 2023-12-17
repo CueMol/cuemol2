@@ -121,7 +121,7 @@ target_include_directories(
 )
 target_link_libraries(gfx PRIVATE qlib ${GFX_LINK_LIBRARIES})
 
-MCWRAPGEN_PYWRAPPERS(gfx)
+MCWRAPGEN_SCR_WRAPPERS(gfx)
 
 install(TARGETS gfx
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

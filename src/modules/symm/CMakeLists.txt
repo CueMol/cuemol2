@@ -38,7 +38,7 @@ endif()
 add_library(symm SHARED ${SYMM_SRCS} ${MCWG_HEADERS})
 target_link_libraries(symm PRIVATE qlib gfx qsys molstr)
 
-MCWRAPGEN_PYWRAPPERS(symm)
+MCWRAPGEN_SCR_WRAPPERS(symm)
 
 install(TARGETS symm
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

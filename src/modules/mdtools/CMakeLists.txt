@@ -32,7 +32,7 @@ endif()
 add_library(mdtools SHARED ${MDTOOLS_SRCS} ${MCWG_HEADERS})
 target_link_libraries(mdtools PRIVATE qlib gfx qsys molstr)
 
-MCWRAPGEN_PYWRAPPERS(mdtools)
+MCWRAPGEN_SCR_WRAPPERS(mdtools)
 
 install(TARGETS mdtools
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

@@ -53,7 +53,7 @@ endif()
 add_library(render SHARED ${RENDER_SRCS} ${MCWG_HEADERS})
 target_link_libraries(render PRIVATE qlib gfx qsys CGAL::CGAL qmpng qmzlib Boost::filesystem)
 
-MCWRAPGEN_PYWRAPPERS(render)
+MCWRAPGEN_SCR_WRAPPERS(render)
 
 install(TARGETS render
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

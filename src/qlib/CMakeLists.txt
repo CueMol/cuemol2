@@ -231,7 +231,7 @@ target_include_directories(
 
 target_link_libraries(qlib PRIVATE ${QLIB_LINK_LIBRARIES})
 
-MCWRAPGEN_PYWRAPPERS(qlib)
+MCWRAPGEN_SCR_WRAPPERS(qlib)
 
 install(TARGETS qlib
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

@@ -89,7 +89,7 @@ endif()
 add_library(molanl SHARED ${MOLANL_SRCS} ${MCWG_HEADERS})
 target_link_libraries(molanl PRIVATE qlib gfx qsys molstr)
 
-MCWRAPGEN_PYWRAPPERS(molanl)
+MCWRAPGEN_SCR_WRAPPERS(molanl)
 
 install(TARGETS molanl
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

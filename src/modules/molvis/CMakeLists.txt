@@ -73,7 +73,7 @@ endif()
 add_library(molvis SHARED ${MOLVIS_SRCS} ${MCWG_HEADERS})
 target_link_libraries(molvis PRIVATE qlib gfx qsys molstr Boost::filesystem Boost::thread)
 
-MCWRAPGEN_PYWRAPPERS(molvis)
+MCWRAPGEN_SCR_WRAPPERS(molvis)
 
 install(TARGETS molvis
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

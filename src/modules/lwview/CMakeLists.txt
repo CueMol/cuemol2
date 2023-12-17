@@ -38,7 +38,7 @@ endif()
 add_library(lwview SHARED ${LWVIEW_SRCS} ${MCWG_HEADERS})
 target_link_libraries(lwview PRIVATE qlib gfx qsys molstr render)
 
-MCWRAPGEN_PYWRAPPERS(lwview)
+MCWRAPGEN_SCR_WRAPPERS(lwview)
 
 install(TARGETS lwview
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

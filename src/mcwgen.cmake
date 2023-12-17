@@ -8,9 +8,10 @@ SET(MCWG_INCLUDES "-D HAVE_CONFIG_H -I ${CMAKE_SOURCE_DIR}/src -I ${CMAKE_BINARY
 SET(MCWG_SRC_CMD "${MCWRAPGEN} ${MCWG_INCLUDES} -m src")
 SET(MCWG_HDR_CMD "${MCWRAPGEN} ${MCWG_INCLUDES} -m hdr")
 SET(MCWG_MOD_CMD "${MCWRAPGEN} ${MCWG_INCLUDES} -m mod")
-if (BUILD_PYTHON_BINDINGS)
-  SET(MCWG_PY_CMD "${MCWRAPGEN} ${MCWG_INCLUDES} -m py")
-endif ()
+# Python
+SET(MCWG_PY_CMD "${MCWRAPGEN} ${MCWG_INCLUDES} -m py")
+# XPCOM-js
+SET(MCWG_XPCJS_CMD "${MCWRAPGEN} ${MCWG_INCLUDES} -m js")
 
 macro(MCWRAPGEN_CLASS _target_sources)
   foreach(_current_file ${ARGN})
@@ -63,6 +64,19 @@ macro(MCWRAPGEN_CLASS _target_sources)
       list(APPEND MCWG_PY_WRAPPERS ${_out_py_file})
     endif ()
 
+    # Generate XPCOM-js wrapper scripts
+    if (BUILD_XPCJS_BINDINGS)
+      SET(_out_xpcjs_dir "${CMAKE_BINARY_DIR}/cuemol-wrappers")
+      SET(_out_xpcjs_file "${_out_xpcjs_dir}/${_file_stem}.js")
+      separate_arguments(_mcwg_xpcjs_command NATIVE_COMMAND "${MCWG_XPCJS_CMD}")
+      add_custom_command(
+	    OUTPUT ${_out_xpcjs_file}
+	    COMMAND ${_mcwg_xpcjs_command} -jsdir ${_out_xpcjs_dir} ${_abs_file}
+        DEPENDS ${_abs_file}
+	    )
+      list(APPEND MCWG_XPCJS_WRAPPERS ${_out_xpcjs_file})
+    endif ()
+
   endforeach()
 
   # message("MCWG_PY_WRAPPERS: ${MCWG_PY_WRAPPERS}")
@@ -93,10 +107,17 @@ macro(MCWRAPGEN_MODULE _target_sources _target_moddef)
   
 endmacro()
 
-macro(MCWRAPGEN_PYWRAPPERS _target)
+# Generate scripting language wrapper files
+macro(MCWRAPGEN_SCR_WRAPPERS _target)
   if (BUILD_PYTHON_BINDINGS)
     add_custom_target(${_target}_generate_pywrappers DEPENDS ${MCWG_PY_WRAPPERS})
     add_dependencies(${_target} ${_target}_generate_pywrappers)
     install(FILES ${MCWG_PY_WRAPPERS} DESTINATION data/python/cuemol/wrappers)
+  endif ()
+
+  if (BUILD_XPCJS_BINDINGS)
+    add_custom_target(${_target}_generate_xpcjs_wrappers DEPENDS ${MCWG_XPCJS_WRAPPERS})
+    add_dependencies(${_target} ${_target}_generate_xpcjs_wrappers)
+    install(FILES ${MCWG_XPCJS_WRAPPERS} DESTINATION data/cuemol-wrappers)
   endif ()
 endmacro()

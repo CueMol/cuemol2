@@ -189,7 +189,7 @@ target_compile_definitions(qsys PUBLIC NO_SCRIPT=1)
 
 target_link_libraries(qsys PRIVATE qlib gfx Boost::filesystem Boost::thread)
 
-MCWRAPGEN_PYWRAPPERS(qsys)
+MCWRAPGEN_SCR_WRAPPERS(qsys)
 
 install(TARGETS qsys
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
