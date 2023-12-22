@@ -45,7 +45,13 @@ if (WIN32)
   add_definitions(-DANIM_EXPORTS=1)
 endif()
 
-add_library(anim SHARED ${ANIM_SRCS} ${MCWG_HEADERS})
+# add_library(anim SHARED ${ANIM_SRCS} ${MCWG_HEADERS})
+add_library(anim STATIC ${ANIM_SRCS} ${MCWG_HEADERS})
+if (WIN32)
+else()
+  target_compile_options(anim PUBLIC "-fPIC")
+endif()
+
 target_link_libraries(anim PRIVATE qlib gfx qsys molstr Boost::filesystem Boost::thread)
 
 MCWRAPGEN_SCR_WRAPPERS(anim)

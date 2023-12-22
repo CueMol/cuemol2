@@ -31,11 +31,15 @@ SET(SYMM_MODLDR_SRC symm.moddef)
 MCWRAPGEN_CLASS(SYMM_SRCS ${SYMM_MCWG_QIFS})
 MCWRAPGEN_MODULE(SYMM_SRCS ${SYMM_MODLDR_SRC} ${SYMM_MCWG_QIFS})
 
+# add_library(symm SHARED ${SYMM_SRCS} ${MCWG_HEADERS})
+add_library(symm STATIC ${SYMM_SRCS} ${MCWG_HEADERS})
+
 if (WIN32)
   add_definitions(-DSYMM_EXPORTS=1)
+else()
+  target_compile_options(symm PUBLIC "-fPIC")
 endif()
 
-add_library(symm SHARED ${SYMM_SRCS} ${MCWG_HEADERS})
 target_link_libraries(symm PRIVATE qlib gfx qsys molstr)
 
 MCWRAPGEN_SCR_WRAPPERS(symm)

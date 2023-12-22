@@ -31,11 +31,15 @@ SET(LWVIEW_MODLDR_SRC lwview.moddef)
 MCWRAPGEN_CLASS(LWVIEW_SRCS ${LWVIEW_MCWG_QIFS})
 MCWRAPGEN_MODULE(LWVIEW_SRCS ${LWVIEW_MODLDR_SRC} ${LWVIEW_MCWG_QIFS})
 
+# add_library(lwview SHARED ${LWVIEW_SRCS} ${MCWG_HEADERS})
+add_library(lwview STATIC ${LWVIEW_SRCS} ${MCWG_HEADERS})
+
 if (WIN32)
   add_definitions(-DLWVIEW_EXPORTS=1)
+else()
+  target_compile_options(lwview PUBLIC "-fPIC")
 endif()
 
-add_library(lwview SHARED ${LWVIEW_SRCS} ${MCWG_HEADERS})
 target_link_libraries(lwview PRIVATE qlib gfx qsys molstr render)
 
 MCWRAPGEN_SCR_WRAPPERS(lwview)

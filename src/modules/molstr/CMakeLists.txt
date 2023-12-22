@@ -117,11 +117,15 @@ SET(MOLSTR_MODLDR_SRC molstr.moddef)
 MCWRAPGEN_CLASS(MOLSTR_SRCS ${MOLSTR_MCWG_QIFS})
 MCWRAPGEN_MODULE(MOLSTR_SRCS ${MOLSTR_MODLDR_SRC} ${MOLSTR_MCWG_QIFS})
 
+# add_library(molstr SHARED ${MOLSTR_SRCS} ${MCWG_HEADERS})
+add_library(molstr STATIC ${MOLSTR_SRCS} ${MCWG_HEADERS})
+
 if (WIN32)
   add_definitions(-DMOLSTR_EXPORTS=1)
+else()
+  target_compile_options(molstr PUBLIC "-fPIC")
 endif()
 
-add_library(molstr SHARED ${MOLSTR_SRCS} ${MCWG_HEADERS})
 target_link_libraries(molstr PRIVATE qlib gfx qsys Boost::filesystem Boost::thread CGAL::CGAL)
 
 MCWRAPGEN_SCR_WRAPPERS(molstr)

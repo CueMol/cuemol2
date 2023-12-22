@@ -161,11 +161,50 @@ if (BUILD_GUI AND NOT BUILD_MINIMUM_MODULES)
   add_subdirectory(qt5_gui)
 endif()
 
-add_library(cuemol2 INTERFACE)
+#########################################
+
+SET(CUEMOL2_LINK_LIBRARIES
+  pcre
+  expat
+  qmpng
+  qmzlib
+  qlib
+  gfx
+  qsys
+  molstr
+  molvis
+  surface
+  molanl
+  symm
+  xtal
+  lwview
+  render
+  anim
+  mdtools
+  importers
+  Boost::filesystem
+  CGAL::CGAL
+)
+
+# add_library(cuemol2 INTERFACE)
+add_library(cuemol2 SHARED)
+target_include_directories(
+  cuemol2 PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_BINARY_DIR}/src
+  ${Boost_INCLUDE_DIRS}
+)
+target_link_libraries(cuemol2 PRIVATE ${CUEMOL2_LINK_LIBRARIES})
+# target_sources(cuemol2
+#     INTERFACE FILE_SET HEADERS 
+#     BASE_DIRS ${PROJECT_SOURCE_DIR}/src
+#     FILES common.h qmtypes.h version.hpp
+# )
 target_sources(cuemol2
-    INTERFACE FILE_SET HEADERS 
-    BASE_DIRS ${PROJECT_SOURCE_DIR}/src
-    FILES common.h qmtypes.h version.hpp
+  PRIVATE loader.cpp
+  PUBLIC FILE_SET HEADERS 
+  BASE_DIRS ${PROJECT_SOURCE_DIR}/src
+  FILES common.h qmtypes.h version.hpp
 )
 # message(STATUS "PROJECT_BINARY_DIR=${PROJECT_BINARY_DIR}")
 install(TARGETS cuemol2 FILE_SET HEADERS)

@@ -46,11 +46,15 @@ SET(RENDER_MODLDR_SRC render.moddef)
 MCWRAPGEN_CLASS(RENDER_SRCS ${RENDER_MCWG_QIFS})
 MCWRAPGEN_MODULE(RENDER_SRCS ${RENDER_MODLDR_SRC} ${RENDER_MCWG_QIFS})
 
+# add_library(render SHARED ${RENDER_SRCS} ${MCWG_HEADERS})
+add_library(render STATIC ${RENDER_SRCS} ${MCWG_HEADERS})
+
 if (WIN32)
   add_definitions(-DRENDER_EXPORTS=1)
+else()
+  target_compile_options(render PUBLIC "-fPIC")
 endif()
 
-add_library(render SHARED ${RENDER_SRCS} ${MCWG_HEADERS})
 target_link_libraries(render PRIVATE qlib gfx qsys CGAL::CGAL qmpng qmzlib Boost::filesystem)
 
 MCWRAPGEN_SCR_WRAPPERS(render)

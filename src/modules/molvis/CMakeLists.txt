@@ -66,11 +66,15 @@ SET(MOLVIS_MODLDR_SRC molvis.moddef)
 MCWRAPGEN_CLASS(MOLVIS_SRCS ${MOLVIS_MCWG_QIFS})
 MCWRAPGEN_MODULE(MOLVIS_SRCS ${MOLVIS_MODLDR_SRC} ${MOLVIS_MCWG_QIFS})
 
+# add_library(molvis SHARED ${MOLVIS_SRCS} ${MCWG_HEADERS})
+add_library(molvis STATIC ${MOLVIS_SRCS} ${MCWG_HEADERS})
+
 if (WIN32)
   add_definitions(-DMOLVIS_EXPORTS=1)
+else()
+  target_compile_options(molvis PUBLIC "-fPIC")
 endif()
 
-add_library(molvis SHARED ${MOLVIS_SRCS} ${MCWG_HEADERS})
 target_link_libraries(molvis PRIVATE qlib gfx qsys molstr Boost::filesystem Boost::thread)
 
 MCWRAPGEN_SCR_WRAPPERS(molvis)

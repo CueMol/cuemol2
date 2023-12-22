@@ -25,11 +25,15 @@ SET(MDTOOLS_MODLDR_SRC mdtools.moddef)
 MCWRAPGEN_CLASS(MDTOOLS_SRCS ${MDTOOLS_MCWG_QIFS})
 MCWRAPGEN_MODULE(MDTOOLS_SRCS ${MDTOOLS_MODLDR_SRC} ${MDTOOLS_MCWG_QIFS})
 
+# add_library(mdtools SHARED ${MDTOOLS_SRCS} ${MCWG_HEADERS})
+add_library(mdtools STATIC ${MDTOOLS_SRCS} ${MCWG_HEADERS})
+
 if (WIN32)
   add_definitions(-DMDTOOLS_EXPORTS=1)
+else()
+  target_compile_options(mdtools PUBLIC "-fPIC")
 endif()
 
-add_library(mdtools SHARED ${MDTOOLS_SRCS} ${MCWG_HEADERS})
 target_link_libraries(mdtools PRIVATE qlib gfx qsys molstr)
 
 MCWRAPGEN_SCR_WRAPPERS(mdtools)

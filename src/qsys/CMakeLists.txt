@@ -162,7 +162,8 @@ MCWRAPGEN_MODULE(QSYS_SRCS ${QSYS_MODLDR_SRC} ${QSYS_MCWG_QIFS})
 
 ##########
 
-add_library(qsys SHARED)
+# add_library(qsys SHARED)
+add_library(qsys STATIC)
 
 target_sources(qsys
   PRIVATE ${QSYS_SRCS} ${MCWG_HEADERS}
@@ -183,8 +184,10 @@ target_include_directories(
 if (WIN32)
   # add_definitions(-DQSYS_EXPORTS=1)
   target_compile_definitions(qsys PUBLIC QSYS_EXPORTS=1)
+else()
+  target_compile_options(qsys PUBLIC "-fPIC")
 endif()
-# add_definitions(-DNO_SCRIPT=1)
+
 target_compile_definitions(qsys PUBLIC NO_SCRIPT=1)
 
 target_link_libraries(qsys PRIVATE qlib gfx Boost::filesystem Boost::thread)

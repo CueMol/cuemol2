@@ -33,11 +33,13 @@ SET(IMPORTERS_MODLDR_SRC importers.moddef)
 MCWRAPGEN_CLASS(IMPORTERS_SRCS ${IMPORTERS_MCWG_QIFS})
 MCWRAPGEN_MODULE(IMPORTERS_SRCS ${IMPORTERS_MODLDR_SRC} ${IMPORTERS_MCWG_QIFS})
 
+# add_library(importers SHARED ${IMPORTERS_SRCS} ${MCWG_HEADERS})
+add_library(importers STATIC ${IMPORTERS_SRCS} ${MCWG_HEADERS})
 if (WIN32)
   add_definitions(-DIMPORTERS_EXPORTS=1)
+else()
+  target_compile_options(importers PUBLIC "-fPIC")
 endif()
-
-add_library(importers SHARED ${IMPORTERS_SRCS} ${MCWG_HEADERS})
 target_link_libraries(importers PRIVATE qlib gfx qsys molstr molvis surface symm)
 
 MCWRAPGEN_SCR_WRAPPERS(importers)

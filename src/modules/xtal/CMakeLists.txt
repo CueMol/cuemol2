@@ -51,11 +51,15 @@ SET(XTAL_MODLDR_SRC xtal.moddef)
 MCWRAPGEN_CLASS(XTAL_SRCS ${XTAL_MCWG_QIFS})
 MCWRAPGEN_MODULE(XTAL_SRCS ${XTAL_MODLDR_SRC} ${XTAL_MCWG_QIFS})
 
+# add_library(xtal SHARED ${XTAL_SRCS} ${MCWG_HEADERS})
+add_library(xtal STATIC ${XTAL_SRCS} ${MCWG_HEADERS})
+
 if (WIN32)
   add_definitions(-DXTAL_EXPORTS=1)
+else()
+  target_compile_options(xtal PUBLIC "-fPIC")
 endif()
 
-add_library(xtal SHARED ${XTAL_SRCS} ${MCWG_HEADERS})
 target_link_libraries(xtal PRIVATE qlib gfx qsys molstr symm surface ${XTAL_LINK_LIBRARIES})
 
 MCWRAPGEN_SCR_WRAPPERS(xtal)

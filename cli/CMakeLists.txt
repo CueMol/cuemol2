@@ -26,26 +26,8 @@ message(STATUS "CGAL_FOUND: ${CGAL_FOUND} INCLUDE_DIR: ${CGAL_INCLUDE_DIRS} LIBR
 
 # Dependent libs
 SET(CLI_LINK_LIBRARIES
-  # pcre
-  # expat
-  # qmpng
-  # qmzlib
-  qlib
-  gfx
-  qsys
-  molstr
-  molvis
-  surface
-  molanl
-  symm
-  xtal
-  lwview
-  render
-  anim
-  mdtools
-  importers
+  cuemol2
   Boost::filesystem
-#  CGAL::CGAL
 )
 
 # Normal C++ source files
@@ -112,3 +94,6 @@ install(FILES ${SYSCONFIG_FILE} DESTINATION data)
 # For VS Debug
 set_target_properties(cuetty PROPERTIES
   VS_DEBUGGER_ENVIRONMENT "PATH=${BOOST_LIBRARYDIR};${CMAKE_PREFIX_PATH}/bin;%PATH%")
+
+set_target_properties(cuetty PROPERTIES
+  INSTALL_RPATH "@executable_path/../lib")
