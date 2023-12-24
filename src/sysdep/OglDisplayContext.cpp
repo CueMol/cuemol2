@@ -96,7 +96,7 @@ void OglDisplayContext::init()
   if (!m_bUseShaderAlpha)
     return;
 
-#if HAVE_GLEW
+#ifdef HAVE_GLEW
   m_pDefPO = createProgramObject("default");
   if (m_pDefPO==NULL) {
     m_bUseShaderAlpha = false;

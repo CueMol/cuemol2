@@ -8,9 +8,15 @@
 #include <qlib/qlib.hpp>
 #include <qlib/FileStream.hpp>
 
+#include <gfx/TextRenderManager.hpp>
+
 #include <qsys/qsys.hpp>
 #include <qsys/SceneManager.hpp>
 #include <qsys/SysConfig.hpp>
+
+#ifdef BUILD_OPENGL_SYSDEP
+#include <sysdep/sysdep.hpp>
+#endif
 
 #ifdef HAVE_JAVASCRIPT
 #  include <jsbr/jsbr.hpp>
@@ -83,11 +89,34 @@ namespace anim {
   extern void fini();
 }
 
+#if (GUI_ARCH == MB_GUI_ARCH_OSX)
+#include <OpenGL/OpenGL.h>
+#include <sysdep/CglView.hpp>
+namespace {
+  class CglViewFactory : public qsys::ViewFactory
+  {
+  public:
+    CglViewFactory() {}
+    virtual ~CglViewFactory() {}
+    virtual qsys::View* create() {
+      return new sysdep::CglView();
+    }
+  };
+  void registerViewFactory()
+  {
+    qsys::View::setViewFactory(new CglViewFactory);
+  }
+}
+#else
+#endif
+
 using qlib::LString;
 
 #ifndef DEFAULT_CONFIG
 #define DEFAULT_CONFIG "./sysconfig.xml"
 #endif
+
+namespace cuemol2 {
 
 int init_cuemol2(const LString &confpath)
 {
@@ -106,6 +135,9 @@ int init_cuemol2(const LString &confpath)
     LOG_DPRINTLN("Qsys Init (%s): ERROR!!", confpath.c_str());
     return -1;
   }
+#ifdef BUILD_OPENGL_SYSDEP
+  sysdep::init();
+#endif
 
   LOG_DPRINTLN("main> confpath=%s", confpath.c_str());
 
@@ -124,12 +156,13 @@ int init_cuemol2(const LString &confpath)
   mdtools::init();
   importers::init();
 
+  registerViewFactory();
+
   return 0;
 }
 
 int cuemol2_fini()
 {
-
   // load other modules
   render::fini();
   molvis::fini();
@@ -143,6 +176,9 @@ int cuemol2_fini()
   molstr::fini();
   MB_DPRINTLN("=== molstr::fini() OK ===");
 
+#ifdef BUILD_OPENGL_SYSDEP
+  sysdep::fini();
+#endif
   qsys::fini();
   MB_DPRINTLN("=== qsys::fini() OK ===");
 
@@ -152,3 +188,20 @@ int cuemol2_fini()
   return 0;
 }
 
+#ifdef BUILD_OPENGL_SYSDEP
+gfx::TextRenderImpl *initTextRender()
+{
+  gfx::TextRenderImpl *pTR = (gfx::TextRenderImpl *) sysdep::createTextRender();
+  gfx::TextRenderManager *pTRM = gfx::TextRenderManager::getInstance();
+  pTRM->setImpl(pTR);
+  return pTR;
+}
+
+void finiTextRender(gfx::TextRenderImpl *pTR)
+{
+  sysdep::destroyTextRender(pTR);
+}
+
+#endif
+
+} // namespace cuemol2

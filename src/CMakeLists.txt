@@ -16,7 +16,9 @@ if (${LIBLZMA_FOUND})
   SET(HAVE_LZMA_H "1")
 endif()
 
-# OpenGL
+#####
+
+# OpenGL/GUI
 # XXX???: SET(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH OFF)
 find_package(OpenGL)
 message(STATUS "OPENGL_FOUND: ${OPENGL_FOUND} OPENGL_GLU_FOUND: ${OPENGL_GLU_FOUND} OpenGL_OpenGL_FOUND: ${OpenGL_OpenGL_FOUND}")
@@ -29,6 +31,37 @@ else ()
    SET(BUILD_OPENGL_SYSDEP "FALSE")
 endif ()
 message(STATUS "Build OGL sysdep: ${BUILD_OPENGL_SYSDEP}")
+
+if (BUILD_OPENGL_SYSDEP)
+  SET(HAVE_GL_GLEW_H 1)
+  SET(HAVE_GLEW 1)
+  if (WIN32)
+    # Windows
+    SET(GUI_ARCH MB_GUI_ARCH_WIN)
+    SET(STR_GUI_ARCH win)
+    SET(HAVE_GL_GL_H 1)
+    SET(HAVE_GL_GLU_H 1)
+  elseif(APPLE)
+    # MacOS X
+    SET(GUI_ARCH MB_GUI_ARCH_OSX)
+    SET(STR_GUI_ARCH osx)
+    SET(HAVE_OPENGL_GL_H 1)
+    SET(HAVE_OPENGL_GLU_H 1)
+  else()
+    # Linux/X11
+    SET(GUI_ARCH MB_GUI_ARCH_X11)
+    SET(STR_GUI_ARCH x11)
+    SET(HAVE_GL_GL_H 1)
+    SET(HAVE_GL_GLU_H 1)
+  endif()
+else()
+  # CLI
+  SET(GUI_ARCH MB_GUI_ARCH_CLI)
+  SET(STR_GUI_ARCH cli)
+endif()  
+
+message(STATUS "BUILD_OPENGL_SYSDEP: ${BUILD_OPENGL_SYSDEP}")
+message(STATUS "GUI_ARCH: ${GUI_ARCH}")
 
 #####
 
@@ -153,13 +186,13 @@ if (BUILD_PYTHON_BINDINGS)
 endif ()
 
 # CLI/main (cuetty)
-if (NOT BUILD_PYTHON_MODULE)
-  add_subdirectory(cli)
-endif ()
+# if (NOT BUILD_PYTHON_MODULE)
+#   add_subdirectory(cli)
+# endif ()
 
-if (BUILD_GUI AND NOT BUILD_MINIMUM_MODULES)
-  add_subdirectory(qt5_gui)
-endif()
+# if (BUILD_GUI AND NOT BUILD_MINIMUM_MODULES)
+#   add_subdirectory(qt5_gui)
+# endif()
 
 #########################################
 
@@ -186,6 +219,10 @@ SET(CUEMOL2_LINK_LIBRARIES
   CGAL::CGAL
 )
 
+if (BUILD_OPENGL_SYSDEP)
+  list(APPEND CUEMOL2_LINK_LIBRARIES sysdep)
+  
+endif ()
 # add_library(cuemol2 INTERFACE)
 add_library(cuemol2 SHARED)
 target_include_directories(

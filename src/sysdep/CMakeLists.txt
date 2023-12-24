@@ -62,21 +62,11 @@ SET(SYSDEP_LINK_LIBRARIES
   qlib gfx qsys
   OpenGL::GL OpenGL::GLU GLEW::glew)
 
-##########
-
-# XXX: These should be checked upper layer
-# SET(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH OFF)
-# # OpenGL
-# find_package(OpenGL)
-# message(STATUS "OPENGL_FOUND: ${OPENGL_FOUND} OPENGL_GLU_FOUND: ${OPENGL_GLU_FOUND} OpenGL_OpenGL_FOUND: ${OpenGL_OpenGL_FOUND}")
-# message(STATUS "OPENGL_INCLUDE_DIR: ${OPENGL_INCLUDE_DIR}")
-# find_package(GLEW)
-# message(STATUS "GLEW_FOUND: ${GLEW_FOUND} ${GLEW_LIBRARIES}")
-
 #####################
 # sysdep library target
 
-add_library(sysdep SHARED)
+# add_library(sysdep SHARED)
+add_library(sysdep STATIC)
 
 target_sources(sysdep
   PRIVATE ${SYSDEP_SRCS}
@@ -95,25 +85,10 @@ target_include_directories(
   ${OPENGL_INCLUDE_DIR}
 )
 
-target_compile_definitions(sysdep PUBLIC HAVE_GL_GLEW_H=1)
-target_compile_definitions(sysdep PUBLIC HAVE_GLEW=1)
-
-if (WIN32)
-  # Windows case
-  target_compile_definitions(sysdep PUBLIC HAVE_GL_GL_H=1)
-  target_compile_definitions(sysdep PUBLIC HAVE_GL_GLU_H=1)
-elseif(APPLE)
-  # MacOS X
-  target_compile_definitions(sysdep PUBLIC HAVE_OPENGL_GL_H=1)
-  target_compile_definitions(sysdep PUBLIC HAVE_OPENGL_GLU_H=1)
-else()
-  # Linux/other
-  target_compile_definitions(sysdep PUBLIC HAVE_GL_GL_H=1)
-  target_compile_definitions(sysdep PUBLIC HAVE_GL_GLU_H=1)
-endif()
-
 if (WIN32)
   target_compile_definitions(sysdep PUBLIC SYSDEP_EXPORTS=1)
+else()
+  target_compile_options(sysdep PUBLIC "-fPIC")
 endif()
 
 # message(STATUS "SYSDEP_LINK_LIBRARIES: ${SYSDEP_LINK_LIBRARIES}")
