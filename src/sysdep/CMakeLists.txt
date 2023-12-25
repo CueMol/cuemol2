@@ -60,7 +60,7 @@ endif()
 
 SET(SYSDEP_LINK_LIBRARIES
   qlib gfx qsys
-  OpenGL::GL OpenGL::GLU GLEW::glew)
+  OpenGL::GL OpenGL::GLU GLEW::glew_s)
 
 #####################
 # sysdep library target

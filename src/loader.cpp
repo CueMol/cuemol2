@@ -16,6 +16,7 @@
 
 #ifdef BUILD_OPENGL_SYSDEP
 #include <sysdep/sysdep.hpp>
+#include <sysdep/MouseEventHandler.hpp>
 #endif
 
 #ifdef HAVE_JAVASCRIPT
@@ -118,90 +119,100 @@ using qlib::LString;
 
 namespace cuemol2 {
 
-int init_cuemol2(const LString &confpath)
-{
-  if (qlib::init())
-    LOG_DPRINTLN("qlib::init() OK.");
-  else {
-    LOG_DPRINTLN("Init: ERROR!!");
-    return -1;
-  }
+  int init_cuemol2(const LString &confpath, bool reg_view)
+  {
+    if (qlib::init())
+      LOG_DPRINTLN("qlib::init() OK.");
+    else {
+      LOG_DPRINTLN("Init: ERROR!!");
+      return -1;
+    }
 
-  // if (confpath.isEmpty()) {
-  //   confpath = LString(DEFAULT_CONFIG);
-  // }
+    // if (confpath.isEmpty()) {
+    //   confpath = LString(DEFAULT_CONFIG);
+    // }
 
-  if (!qsys::init(confpath)) {
-    LOG_DPRINTLN("Qsys Init (%s): ERROR!!", confpath.c_str());
-    return -1;
-  }
+    if (!qsys::init(confpath)) {
+      LOG_DPRINTLN("Qsys Init (%s): ERROR!!", confpath.c_str());
+      return -1;
+    }
 #ifdef BUILD_OPENGL_SYSDEP
-  sysdep::init();
+    sysdep::init();
 #endif
 
-  LOG_DPRINTLN("main> confpath=%s", confpath.c_str());
+    LOG_DPRINTLN("main> confpath=%s", confpath.c_str());
 
-  // load molstr/lwview module
-  molstr::init();
-  lwview::init();
-  anim::init();
+    // load molstr/lwview module
+    molstr::init();
+    lwview::init();
+    anim::init();
 
-  // load other modules
-  render::init();
-  molvis::init();
-  xtal::init();
-  symm::init();
-  surface::init();
-  molanl::init();
-  mdtools::init();
-  importers::init();
+    // load other modules
+    render::init();
+    molvis::init();
+    xtal::init();
+    symm::init();
+    surface::init();
+    molanl::init();
+    mdtools::init();
+    importers::init();
 
-  registerViewFactory();
-
-  return 0;
-}
-
-int cuemol2_fini()
-{
-  // load other modules
-  render::fini();
-  molvis::fini();
-  xtal::fini();
-  symm::fini();
-  surface::fini();
-  molanl::fini();
-
-  anim::fini();
-  lwview::fini();
-  molstr::fini();
-  MB_DPRINTLN("=== molstr::fini() OK ===");
-
+    if (reg_view) {
 #ifdef BUILD_OPENGL_SYSDEP
-  sysdep::fini();
+      registerViewFactory();
 #endif
-  qsys::fini();
-  MB_DPRINTLN("=== qsys::fini() OK ===");
+    }
 
-  qlib::fini();
+    return 0;
+  }
 
-  std::cerr << "=== Terminated normaly ===" << std::endl;
-  return 0;
-}
+  int cuemol2_fini()
+  {
+    // load other modules
+    render::fini();
+    molvis::fini();
+    xtal::fini();
+    symm::fini();
+    surface::fini();
+    molanl::fini();
+
+    anim::fini();
+    lwview::fini();
+    molstr::fini();
+    MB_DPRINTLN("=== molstr::fini() OK ===");
 
 #ifdef BUILD_OPENGL_SYSDEP
-gfx::TextRenderImpl *initTextRender()
-{
-  gfx::TextRenderImpl *pTR = (gfx::TextRenderImpl *) sysdep::createTextRender();
-  gfx::TextRenderManager *pTRM = gfx::TextRenderManager::getInstance();
-  pTRM->setImpl(pTR);
-  return pTR;
-}
+    sysdep::fini();
+#endif
+    qsys::fini();
+    MB_DPRINTLN("=== qsys::fini() OK ===");
 
-void finiTextRender(gfx::TextRenderImpl *pTR)
-{
-  sysdep::destroyTextRender(pTR);
-}
+    qlib::fini();
 
+    std::cerr << "=== Terminated normaly ===" << std::endl;
+    return 0;
+  }
+
+#ifdef BUILD_OPENGL_SYSDEP
+  gfx::TextRenderImpl *initTextRender()
+  {
+    gfx::TextRenderImpl *pTR = (gfx::TextRenderImpl *) sysdep::createTextRender();
+    gfx::TextRenderManager *pTRM = gfx::TextRenderManager::getInstance();
+    pTRM->setImpl(pTR);
+    return pTR;
+  }
+
+  void finiTextRender(gfx::TextRenderImpl *pTR)
+  {
+    sysdep::destroyTextRender(pTR);
+  }
+
+#endif
+
+#ifdef BUILD_OPENGL_SYSDEP
+  sysdep::MouseEventHandler *createMouseEventHander() {
+    return new sysdep::MouseEventHandler();
+  }
 #endif
 
 } // namespace cuemol2
