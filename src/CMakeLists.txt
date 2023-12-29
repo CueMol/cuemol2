@@ -186,16 +186,8 @@ if (BUILD_PYTHON_BINDINGS)
   endif ()
 endif ()
 
-# CLI/main (cuetty)
-# if (NOT BUILD_PYTHON_MODULE)
-#   add_subdirectory(cli)
-# endif ()
-
-# if (BUILD_GUI AND NOT BUILD_MINIMUM_MODULES)
-#   add_subdirectory(qt5_gui)
-# endif()
-
 #########################################
+# libcuemol2 library target
 
 SET(CUEMOL2_LINK_LIBRARIES
   pcre
@@ -224,7 +216,7 @@ if (BUILD_OPENGL_SYSDEP)
   list(APPEND CUEMOL2_LINK_LIBRARIES sysdep)
   
 endif ()
-# add_library(cuemol2 INTERFACE)
+
 add_library(cuemol2 SHARED)
 target_include_directories(
   cuemol2 PRIVATE
@@ -233,11 +225,7 @@ target_include_directories(
   ${Boost_INCLUDE_DIRS}
 )
 target_link_libraries(cuemol2 PRIVATE ${CUEMOL2_LINK_LIBRARIES})
-# target_sources(cuemol2
-#     INTERFACE FILE_SET HEADERS 
-#     BASE_DIRS ${PROJECT_SOURCE_DIR}/src
-#     FILES common.h qmtypes.h version.hpp
-# )
+
 target_sources(cuemol2
   PRIVATE loader.cpp
   PUBLIC FILE_SET HEADERS 
@@ -248,10 +236,3 @@ target_sources(cuemol2
 install(TARGETS cuemol2 FILE_SET HEADERS)
 
 install(FILES ${PROJECT_BINARY_DIR}/src/config.h DESTINATION include)
- 
-# target_sources(cuemol2
-#   INTERFACE FILE_SET HEADERS
-#   BASE_DIRS ${PROJECT_BINARY_DIR}
-#   FILES
-# )
-# install(TARGETS cuemol2 FILE_SET HEADERS)
