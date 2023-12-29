@@ -88,7 +88,8 @@ list(APPEND GFX_SRCS ${FLEX_gfx_color_scanner_OUTPUTS})
 #########################
 # gfx library target
 
-add_library(gfx SHARED)
+# add_library(gfx SHARED)
+add_library(gfx STATIC)
 
 # LCMS2 support
 find_package(LCMS2)
@@ -103,6 +104,8 @@ endif()
 if (WIN32)
   # add_definitions(-DGFX_EXPORTS=1)
   target_compile_definitions(gfx PUBLIC GFX_EXPORTS=1)
+else()
+  target_compile_options(gfx PUBLIC "-fPIC")
 endif()
 
 target_sources(gfx
@@ -121,7 +124,7 @@ target_include_directories(
 )
 target_link_libraries(gfx PRIVATE qlib ${GFX_LINK_LIBRARIES})
 
-MCWRAPGEN_PYWRAPPERS(gfx)
+MCWRAPGEN_SCR_WRAPPERS(gfx)
 
 install(TARGETS gfx
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

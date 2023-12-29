@@ -8,7 +8,7 @@
 
 #include "sysdep.hpp"
 
-#if HAVE_GLEW
+#ifdef HAVE_GLEW
 #  include <GL/glew.h>
 #endif
 

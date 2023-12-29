@@ -72,14 +72,18 @@ SET(SURFACE_MODLDR_SRC surface.moddef)
 MCWRAPGEN_CLASS(SURFACE_SRCS ${SURFACE_MCWG_QIFS})
 MCWRAPGEN_MODULE(SURFACE_SRCS ${SURFACE_MODLDR_SRC} ${SURFACE_MCWG_QIFS})
 
+# add_library(surface SHARED ${SURFACE_SRCS} ${MCWG_HEADERS})
+add_library(surface STATIC ${SURFACE_SRCS} ${MCWG_HEADERS})
+
 if (WIN32)
   add_definitions(-DSURFACE_EXPORTS=1)
+else()
+  target_compile_options(surface PUBLIC "-fPIC")
 endif()
 
-add_library(surface SHARED ${SURFACE_SRCS} ${MCWG_HEADERS})
 target_link_libraries(surface PRIVATE qlib gfx qsys molstr CGAL::CGAL)
 
-MCWRAPGEN_PYWRAPPERS(surface)
+MCWRAPGEN_SCR_WRAPPERS(surface)
 
 install(TARGETS surface
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

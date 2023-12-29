@@ -79,17 +79,19 @@ SET(MOLANL_MODLDR_SRC molanl.moddef)
 MCWRAPGEN_CLASS(MOLANL_SRCS ${MOLANL_MCWG_QIFS})
 MCWRAPGEN_MODULE(MOLANL_SRCS ${MOLANL_MODLDR_SRC} ${MOLANL_MCWG_QIFS})
 
+# add_library(molanl SHARED ${MOLANL_SRCS} ${MCWG_HEADERS})
+add_library(molanl STATIC ${MOLANL_SRCS} ${MCWG_HEADERS})
+
 if (WIN32)
   add_definitions(-DMOLANL_EXPORTS=1)
   add_definitions(-D_MVS)
-#elseif (CYGWIN)
-#  add_definitions(-D_MVS)
+else()
+  target_compile_options(molanl PUBLIC "-fPIC")
 endif()
 
-add_library(molanl SHARED ${MOLANL_SRCS} ${MCWG_HEADERS})
 target_link_libraries(molanl PRIVATE qlib gfx qsys molstr)
 
-MCWRAPGEN_PYWRAPPERS(molanl)
+MCWRAPGEN_SCR_WRAPPERS(molanl)
 
 install(TARGETS molanl
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

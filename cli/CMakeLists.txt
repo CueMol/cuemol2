@@ -5,7 +5,7 @@ set(CMAKE_CXX_OUTPUT_EXTENSION_REPLACE 1)  # ref. https://texus.me/2015/09/06/cm
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 ##########
-
+# libcuemol2
 find_package(LIBCUEMOL2)
 message(STATUS "LIBCUEMOL2: ${LIBCUEMOL2_FOUND}")
 message(STATUS "LIBCUEMOL2_LIBDIR: ${LIBCUEMOL2_LIBDIR}")
@@ -13,39 +13,17 @@ message(STATUS "LIBCUEMOL2_INCLUDE_DIR: ${LIBCUEMOL2_INCLUDE_DIR}")
 add_definitions(-DHAVE_CONFIG_H=1)
 
 ##########
-
+# Boost
 set(Boost_USE_STATIC_LIBS OFF)
 find_package(Boost 1.50.0 REQUIRED
   COMPONENTS system thread filesystem chrono timer)
-
-find_package(CGAL REQUIRED)
-message(STATUS "CGAL_CONFIG: ${CGAL_CONFIG}")
-message(STATUS "CGAL_FOUND: ${CGAL_FOUND} INCLUDE_DIR: ${CGAL_INCLUDE_DIRS} LIBRARIES: ${CGAL_LIBRARIES}")
 
 #####################
 
 # Dependent libs
 SET(CLI_LINK_LIBRARIES
-  # pcre
-  # expat
-  # qmpng
-  # qmzlib
-  qlib
-  gfx
-  qsys
-  molstr
-  molvis
-  surface
-  molanl
-  symm
-  xtal
-  lwview
-  render
-  anim
-  mdtools
-  importers
+  cuemol2
   Boost::filesystem
-#  CGAL::CGAL
 )
 
 # Normal C++ source files
@@ -112,3 +90,6 @@ install(FILES ${SYSCONFIG_FILE} DESTINATION data)
 # For VS Debug
 set_target_properties(cuetty PROPERTIES
   VS_DEBUGGER_ENVIRONMENT "PATH=${BOOST_LIBRARYDIR};${CMAKE_PREFIX_PATH}/bin;%PATH%")
+
+set_target_properties(cuetty PROPERTIES
+  INSTALL_RPATH "@executable_path/../lib")

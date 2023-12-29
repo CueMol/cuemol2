@@ -16,11 +16,14 @@ if (${LIBLZMA_FOUND})
   SET(HAVE_LZMA_H "1")
 endif()
 
-# OpenGL
+#####
+
+# OpenGL/GUI
 # XXX???: SET(CMAKE_FIND_USE_SYSTEM_ENVIRONMENT_PATH OFF)
 find_package(OpenGL)
 message(STATUS "OPENGL_FOUND: ${OPENGL_FOUND} OPENGL_GLU_FOUND: ${OPENGL_GLU_FOUND} OpenGL_OpenGL_FOUND: ${OpenGL_OpenGL_FOUND}")
 message(STATUS "OPENGL_INCLUDE_DIR: ${OPENGL_INCLUDE_DIR}")
+SET(GLEW_USE_STATIC_LIBS YES)
 find_package(GLEW)
 message(STATUS "GLEW_FOUND: ${GLEW_FOUND} ${GLEW_LIBRARIES}")
 if (OPENGL_FOUND AND GLEW_FOUND)
@@ -29,6 +32,37 @@ else ()
    SET(BUILD_OPENGL_SYSDEP "FALSE")
 endif ()
 message(STATUS "Build OGL sysdep: ${BUILD_OPENGL_SYSDEP}")
+
+if (BUILD_OPENGL_SYSDEP)
+  SET(HAVE_GL_GLEW_H 1)
+  SET(HAVE_GLEW 1)
+  if (WIN32)
+    # Windows
+    SET(GUI_ARCH MB_GUI_ARCH_WIN)
+    SET(STR_GUI_ARCH win)
+    SET(HAVE_GL_GL_H 1)
+    SET(HAVE_GL_GLU_H 1)
+  elseif(APPLE)
+    # MacOS X
+    SET(GUI_ARCH MB_GUI_ARCH_OSX)
+    SET(STR_GUI_ARCH osx)
+    SET(HAVE_OPENGL_GL_H 1)
+    SET(HAVE_OPENGL_GLU_H 1)
+  else()
+    # Linux/X11
+    SET(GUI_ARCH MB_GUI_ARCH_X11)
+    SET(STR_GUI_ARCH x11)
+    SET(HAVE_GL_GL_H 1)
+    SET(HAVE_GL_GLU_H 1)
+  endif()
+else()
+  # CLI
+  SET(GUI_ARCH MB_GUI_ARCH_CLI)
+  SET(STR_GUI_ARCH cli)
+endif()  
+
+message(STATUS "BUILD_OPENGL_SYSDEP: ${BUILD_OPENGL_SYSDEP}")
+message(STATUS "GUI_ARCH: ${GUI_ARCH}")
 
 #####
 
@@ -152,29 +186,53 @@ if (BUILD_PYTHON_BINDINGS)
   endif ()
 endif ()
 
-# CLI/main (cuetty)
-if (NOT BUILD_PYTHON_MODULE)
-  add_subdirectory(cli)
+#########################################
+# libcuemol2 library target
+
+SET(CUEMOL2_LINK_LIBRARIES
+  pcre
+  expat
+  qmpng
+  qmzlib
+  qlib
+  gfx
+  qsys
+  molstr
+  molvis
+  surface
+  molanl
+  symm
+  xtal
+  lwview
+  render
+  anim
+  mdtools
+  importers
+  Boost::filesystem
+  CGAL::CGAL
+)
+
+if (BUILD_OPENGL_SYSDEP)
+  list(APPEND CUEMOL2_LINK_LIBRARIES sysdep)
+  
 endif ()
 
-if (BUILD_GUI AND NOT BUILD_MINIMUM_MODULES)
-  add_subdirectory(qt5_gui)
-endif()
+add_library(cuemol2 SHARED)
+target_include_directories(
+  cuemol2 PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_BINARY_DIR}/src
+  ${Boost_INCLUDE_DIRS}
+)
+target_link_libraries(cuemol2 PRIVATE ${CUEMOL2_LINK_LIBRARIES})
 
-add_library(cuemol2 INTERFACE)
 target_sources(cuemol2
-    INTERFACE FILE_SET HEADERS 
-    BASE_DIRS ${PROJECT_SOURCE_DIR}/src
-    FILES common.h qmtypes.h version.hpp
+  PRIVATE loader.cpp
+  PUBLIC FILE_SET HEADERS 
+  BASE_DIRS ${PROJECT_SOURCE_DIR}/src
+  FILES common.h qmtypes.h version.hpp
 )
 # message(STATUS "PROJECT_BINARY_DIR=${PROJECT_BINARY_DIR}")
 install(TARGETS cuemol2 FILE_SET HEADERS)
 
 install(FILES ${PROJECT_BINARY_DIR}/src/config.h DESTINATION include)
- 
-# target_sources(cuemol2
-#   INTERFACE FILE_SET HEADERS
-#   BASE_DIRS ${PROJECT_BINARY_DIR}
-#   FILES
-# )
-# install(TARGETS cuemol2 FILE_SET HEADERS)
