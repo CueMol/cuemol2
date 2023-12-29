@@ -116,7 +116,7 @@ jobs:
     #   uses: mxschmitt/action-tmate@v2
 
   build_linux:
-    name: "Linux Latest clang"
+    name: "Ubuntu Latest gcc"
     runs-on: ubuntu-latest
     steps:
 
@@ -124,10 +124,10 @@ jobs:
       run: |
         sudo apt-get install bison flex liblzma-dev liblcms2-dev libfftw3-dev libcgal-dev libboost-all-dev
         
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v3
 
     - name: Setup python ${{ env.PYTHON_VERSION }}
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: ${{ env.PYTHON_VERSION }}
 
@@ -140,7 +140,6 @@ jobs:
         echo $pythonLocation
         PYTHON=`which python$PYTHON_VERSION`
         echo $PYTHON
-        # echo "::set-env name=PYTHON::$PYTHON"
         echo "PYTHON=${PYTHON}" >> $GITHUB_ENV
       
     - name: Install prerequisite 2
