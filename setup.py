@@ -69,7 +69,7 @@ class CMakeBuild(build_ext):
         print(f"python_root_dir: {python_root_dir}")
 
         cmake_args += [
-            "-DBUILD_GUI=OFF",
+            # "-DBUILD_GUI=OFF",
             "-DBUILD_PYTHON_BINDINGS=ON",
             "-DBUILD_PYTHON_MODULE=ON",
             f"-DBUILD_MINIMUM_MODULES={build_min}",
@@ -79,6 +79,7 @@ class CMakeBuild(build_ext):
         if prefix_path:
             cmake_args.append(f"-DCMAKE_PREFIX_PATH={prefix_path}")
             cmake_args.append(f"-DFFTW_ROOT={prefix_path}/fftw")
+            cmake_args.append(f"-DLCMS2_ROOT={prefix_path}/lcms2")
         if boost_root:
             cmake_args.append(f"-DBOOST_ROOT={boost_root}")
         if boost_libdir:
