@@ -38,7 +38,9 @@ LString makeRelativePath(const LString &aAbs, const LString &aBase)
 {
   fs::path abspath(aAbs.c_str());
   fs::path basepath(aBase.c_str());
-  if (!abspath.is_complete() || !basepath.is_complete())
+  // XXX: is_complete() is deprecated --> use is_absolute
+  // if (!abspath.is_complete() || !basepath.is_complete())
+  if (!abspath.is_absolute() || !basepath.is_absolute())
     return aAbs; // aAbs or aBase is not absolute path
 
   if (abspath.root_path()!=basepath.root_path())
@@ -72,7 +74,8 @@ LString makeAbsolutePath(const LString &aRel, const LString &aBase)
 
   fs::path relpath(aRel.c_str());
   fs::path basepath(aBase.c_str());
-  if (relpath.is_complete())
+  if (relpath.is_absolute())
+    // if (relpath.is_complete())
     return aRel; // aRel is already in abs form
 
   // convert to the absolute representation
@@ -118,7 +121,8 @@ LString makeAbsolutePath(const LString &aRel, const LString &aBase)
 bool isAbsolutePath(const LString &aPath)
 {
   fs::path path(aPath.c_str());
-  return path.is_complete();
+  //  return path.is_complete();
+  return path.is_absolute();
 }
 
 bool isFileReadable(const LString &strpath)

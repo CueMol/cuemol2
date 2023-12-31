@@ -9,7 +9,7 @@
 #include <boost/filesystem.hpp>
 namespace fs = boost::filesystem;
 
-#ifdef HAVE_PYTHON
+#ifdef BUILD_PYTHON_BINDINGS
 #include <Python.h>
 #include "pybr.hpp"
 #include "wrapper.hpp"
