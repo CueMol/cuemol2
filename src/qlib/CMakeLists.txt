@@ -211,7 +211,6 @@ MCWRAPGEN_MODULE(QLIB_SRCS ${QLIB_MODLDR_SRC} ${QLIB_MCWG_QIFS})
 add_library(qlib STATIC)
 
 if (WIN32)
-  # add_definitions(-DQLIB_EXPORTS=1)
   target_compile_definitions(qlib PUBLIC QLIB_EXPORTS=1)
 else()
   target_compile_options(qlib PUBLIC "-fPIC")

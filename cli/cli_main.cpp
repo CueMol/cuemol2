@@ -1,5 +1,6 @@
 
 #include <common.h>
+#include <loader.hpp>
 
 #include <iostream>
 #include "boost/filesystem/path.hpp"
@@ -17,71 +18,10 @@
 #  include <jsbr/Interp.hpp>
 #endif
 
-#ifdef HAVE_PYTHON
+#ifdef BUILD_PYTHON_BINDINGS
 #  include <pybr/pybr.hpp>
 #  include <pybr/PythonBridge.hpp>
 #endif
-
-#ifdef USE_XMLRPC
-#  include <xmlrpc_bridge/xrbr.hpp>
-#endif
-
-#if !defined(QM_BUILD_LW)
-
-namespace importers {
-  extern bool init();
-  extern void fini();
-}
-
-namespace mdtools {
-  extern bool init();
-  extern void fini();
-}
-
-namespace render {
-  extern bool init();
-  extern void fini();
-}
-
-namespace molvis {
-  extern bool init();
-  extern void fini();
-}
-
-namespace xtal {
-  extern bool init();
-  extern void fini();
-}
-
-namespace surface {
-  extern bool init();
-  extern void fini();
-}
-
-namespace symm {
-  extern bool init();
-  extern void fini();
-}
-
-namespace molanl {
-  extern bool init();
-  extern void fini();
-}
-
-#endif
-
-namespace molstr {
-  extern bool init();
-  extern void fini();
-}
-namespace lwview {
-  extern bool init();
-  extern void fini();
-}
-namespace anim {
-  extern bool init();
-  extern void fini();
-}
 
 #include "TTYView.hpp"
 
@@ -101,7 +41,6 @@ namespace cli {
   }
 }
 
-
 using qlib::LString;
 void process_input(const LString &loadscr, const std::deque<LString> &args,bool bInvokeIntrShell);
 
@@ -114,10 +53,11 @@ void process_input(const LString &loadscr, const std::deque<LString> &args,bool 
 ///
 int internal_main(int argc, const char *argv[])
 {
-  if (qlib::init())
-    LOG_DPRINTLN("qlib::init() OK.");
+  if (cuemol2::init_qlib()) {
+    LOG_DPRINTLN("cuemol2::init_qlib OK.");
+  }
   else {
-    LOG_DPRINTLN("Init: ERROR!!");
+    printf("Init: ERROR!!\n");
     return -1;
   }
 
@@ -160,105 +100,26 @@ int internal_main(int argc, const char *argv[])
     confpath = DEFAULT_CONFIG;
   }
 
-  if (!qsys::init(confpath)) {
-    LOG_DPRINTLN("Qsys Init (%s): ERROR!!", confpath.c_str());
-    return -1;
+  int result = cuemol2::init(confpath, false);
+  if (result < 0) {
+    return result;
   }
-
-  LOG_DPRINTLN("main> confpath=%s", confpath.c_str());
-
   cli::registerViewFactory();
-
-  // load molstr/lwview module
-  molstr::init();
-  lwview::init();
-  anim::init();
-
-#if !defined(QM_BUILD_LW)
-  // load other modules
-  render::init();
-  molvis::init();
-  xtal::init();
-  symm::init();
-  surface::init();
-  molanl::init();
-  mdtools::init();
-  importers::init();
-#endif
-
-#ifdef HAVE_JAVASCRIPT
-  // load internal JS module
-  jsbr::init();
-#endif
-
-#ifdef HAVE_PYTHON
-  // load python module
-  pybr::init(confpath);
-#endif
-
-#ifdef USE_XMLRPC
-  // load XML-RPC module
-  xrbr::init();
-#endif
-
-  //////////
 
   //if (!loadscr.isEmpty()) {
   process_input(loadscr, args2, bInvokeIntrShell);
   //}
 
-#ifdef USE_XMLRPC
-  // Wait for XML-RPC requests
-  xrbr::serverRun();
-#endif
+  cuemol2::fini();
 
-  //////////
-
-#ifdef USE_XMLRPC
-  // unload XML-RPC module
-  xrbr::fini();
-  MB_DPRINTLN("=== xrbr::fini() OK ===");
-#endif
-
-#ifdef HAVE_PYTHON
-  // unload python module
-  pybr::fini();
-  MB_DPRINTLN("=== pybr::fini() OK ===");
-#endif
-
-#ifdef HAVE_JAVASCRIPT
-  jsbr::fini();
-  MB_DPRINTLN("=== jsbr::fini() OK ===");
-#endif
-
-#if !defined(QM_BUILD_LW)
-  // load other modules
-  render::fini();
-  molvis::fini();
-  xtal::fini();
-  symm::fini();
-  surface::fini();
-  molanl::fini();
-#endif
-
-  anim::fini();
-  lwview::fini();
-  molstr::fini();
-  MB_DPRINTLN("=== molstr::fini() OK ===");
-
-  qsys::fini();
-  MB_DPRINTLN("=== qsys::fini() OK ===");
-
-  qlib::fini();
-
-  std::cerr << "=== Terminated normaly ===" << std::endl;
+  printf("=== Terminated normaly ===\n");
   return 0;
 }
 
 int main(int argc, const char *argv[])
 {
   try {
-    internal_main(argc, argv);
+    return internal_main(argc, argv);
   }
   catch (const qlib::LException &e) {
     LOG_DPRINTLN("Caught exception <%s>", typeid(e).name());
@@ -283,22 +144,6 @@ void process_input(const LString &loadscr, const std::deque<LString> &args, bool
   fs::path scr_path(loadscr.c_str());
   
   fs::path full_path = fs::system_complete( scr_path );
-
-  /*
-  if ( !fs::exists( full_path ) ) {
-#if (BOOST_FILESYSTEM_VERSION==2)
-    std::cout << "\nNot found: " << full_path.file_string() << std::endl;
-#else
-    std::cout << "\nNot found: " << full_path.string() << std::endl;
-#endif
-    return;
-  }
-  */
-
-  //std::cerr << "\nFull path: " << full_path.file_string() << std::endl;
-  //std::cerr << "Extn: " << full_path.extension() << std::endl;
-
-  // bool bInvokeIntrShell = true;
 
   if (full_path.extension()==".qsc") {
     //qsys::ScenePtr rscene = pSM->loadSceneFrom(scr_path.file_string(), "xml");
@@ -330,7 +175,7 @@ void process_input(const LString &loadscr, const std::deque<LString> &args, bool
 #endif
   }
   else if (full_path.extension()==".py") {
-#ifdef HAVE_PYTHON
+#ifdef BUILD_PYTHON_BINDINGS
     pybr::PythonBridge *pSvc = pybr::PythonBridge::getInstance();
     pSvc->setCmdArgs(args);
     pSvc->runFile(loadscr);
@@ -343,7 +188,7 @@ void process_input(const LString &loadscr, const std::deque<LString> &args, bool
     bInvokeIntrShell = true;
   }
   
-#ifdef HAVE_PYTHON
+#ifdef BUILD_PYTHON_BINDINGS
   if (bInvokeIntrShell) {
     pybr::PythonBridge *pSvc = pybr::PythonBridge::getInstance();
     MB_DPRINTLN("");

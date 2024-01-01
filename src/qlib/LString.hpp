@@ -420,7 +420,9 @@ public:
     }
 
     /** comparison of LString (this is used in container class of STL) */
-    struct less_fcn : std::binary_function<LString, LString, bool>
+    struct less_fcn
+    // std::binary_function is deprecated in C++14
+    // : std::binary_function<LString, LString, bool>
     {
         bool operator()(const LString &x, const LString &y) const
         {

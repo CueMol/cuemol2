@@ -1,6 +1,8 @@
 
 #include <common.h>
 
+#include "loader.hpp"
+
 #include <iostream>
 #include "boost/filesystem/path.hpp"
 #include "boost/filesystem/operations.hpp"
@@ -24,13 +26,9 @@
 #  include <jsbr/Interp.hpp>
 #endif
 
-#ifdef HAVE_PYTHON
+#ifdef BUILD_PYTHON_BINDINGS
 #  include <pybr/pybr.hpp>
 #  include <pybr/PythonBridge.hpp>
-#endif
-
-#ifdef USE_XMLRPC
-#  include <xmlrpc_bridge/xrbr.hpp>
 #endif
 
 #if !defined(QM_BUILD_LW)
@@ -90,7 +88,26 @@ namespace anim {
   extern void fini();
 }
 
-#if (GUI_ARCH == MB_GUI_ARCH_OSX)
+#if (GUI_ARCH == MB_GUI_ARCH_WIN)
+// Win32
+#include <sysdep/WglView.hpp>
+namespace {
+  class WglViewFactory : public qsys::ViewFactory
+  {
+  public:
+    WglViewFactory() {}
+    virtual ~WglViewFactory() {}
+    virtual qsys::View* create() {
+      return new sysdep::WglView();
+    }
+  };
+  void registerViewFactory()
+  {
+    qsys::View::setViewFactory(new WglViewFactory);
+  }
+}
+#elif (GUI_ARCH == MB_GUI_ARCH_OSX)
+// MacOS
 #include <OpenGL/OpenGL.h>
 #include <sysdep/CglView.hpp>
 namespace {
@@ -108,7 +125,25 @@ namespace {
     qsys::View::setViewFactory(new CglViewFactory);
   }
 }
+#elif (GUI_ARCH == MB_GUI_ARCH_X11)
+#include <sysdep/XglView.hpp>
+namespace {
+  class XglViewFactory : public qsys::ViewFactory
+  {
+  public:
+    XglViewFactory() {}
+    virtual ~XglViewFactory() {}
+    virtual qsys::View* create() {
+      return new sysdep::XglView();
+    }
+  };
+  void registerViewFactory()
+  {
+    qsys::View::setViewFactory(new XglViewFactory);
+  }
+}
 #else
+#error "No suitable view impl found for current environment"
 #endif
 
 using qlib::LString;
@@ -119,15 +154,13 @@ using qlib::LString;
 
 namespace cuemol2 {
 
-  int init_cuemol2(const LString &confpath, bool reg_view)
+  int init_qlib()
   {
-    if (qlib::init())
-      LOG_DPRINTLN("qlib::init() OK.");
-    else {
-      LOG_DPRINTLN("Init: ERROR!!");
-      return -1;
-    }
+    return qlib::init();
+  }
 
+  int init(const LString &confpath, bool reg_view)
+  {
     // if (confpath.isEmpty()) {
     //   confpath = LString(DEFAULT_CONFIG);
     // }
@@ -157,6 +190,16 @@ namespace cuemol2 {
     mdtools::init();
     importers::init();
 
+#ifdef HAVE_JAVASCRIPT
+    // load internal JS module
+    jsbr::init();
+#endif
+
+#ifdef BUILD_PYTHON_BINDINGS
+    // load python module
+    pybr::init(confpath);
+#endif
+
     if (reg_view) {
 #ifdef BUILD_OPENGL_SYSDEP
       registerViewFactory();
@@ -166,8 +209,19 @@ namespace cuemol2 {
     return 0;
   }
 
-  int cuemol2_fini()
+  int fini()
   {
+#ifdef BUILD_PYTHON_BINDINGS
+  // unload python module
+  pybr::fini();
+  MB_DPRINTLN("=== pybr::fini() OK ===");
+#endif
+
+#ifdef HAVE_JAVASCRIPT
+  jsbr::fini();
+  MB_DPRINTLN("=== jsbr::fini() OK ===");
+#endif
+
     // load other modules
     render::fini();
     molvis::fini();

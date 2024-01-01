@@ -231,11 +231,11 @@ bool LDom2Node::isChildrenConsumed() const
 
 void LDom2Node::dump() const
 {
-  MB_DPRINT("tag_name=["+tag_name+"]");
-  MB_DPRINT(", type=["+m_typeName+"]");
+  MB_DPRINT("tag_name=[%s]", (const char *)(tag_name));
+  MB_DPRINT(", type=[%s]", (const char *)(m_typeName));
   MB_DPRINT(" def:%d ro:%d a:%d c:%d ", m_bIsDefault, m_bReadOnly, m_bIsAttr, m_bConsumed);
   if (getChildCount()==0) {
-    MB_DPRINTLN(", value=["+value+"]");
+    MB_DPRINTLN(", value=[%s]", (const char *)(value));
   }
   else {
     MB_DPRINTLN(", children= {");

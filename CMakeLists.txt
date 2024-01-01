@@ -13,8 +13,8 @@ endif ()
 project(CueMol CXX C)
 
 message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
-# option(BUILD_GUI "Build CueMol GUI." ON)
 option(BUILD_PYTHON_BINDINGS "Build Python bindings")
+option(BUILD_PYTHON_MODULE  "Build Python modules (not embedding)")
 option(BUILD_MINIMUM_MODULES "Build CueMol with minimum modules." OFF)
 option(BUILD_XPCJS_BINDINGS "Build XPCOM-js bindings")
 

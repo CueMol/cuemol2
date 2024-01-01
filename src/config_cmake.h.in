@@ -94,6 +94,10 @@
 
 #cmakedefine BUILD_OPENGL_SYSDEP
 
+// /* Define to 1 if you have python3 */
+#cmakedefine BUILD_PYTHON_BINDINGS
+#cmakedefine BUILD_PYTHON_MODULE
+
 //////////
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
@@ -200,9 +204,6 @@
 
 // /* Define to 1 if you have the <OpenGL/gl.h> header file. */
 // #undef HAVE_OPENGL_GL_H
-
-// /* Define to 1 if you have python3 */
-// #undef HAVE_PYTHON
 
 // /* Define to 1 if you have the `select' function. */
 // #undef HAVE_SELECT

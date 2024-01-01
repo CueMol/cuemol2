@@ -172,17 +172,19 @@ if (NOT BUILD_MINIMUM_MODULES)
   add_subdirectory(modules/importers)
 endif ()
 
-# front ends
+# python binding
 if (BUILD_PYTHON_BINDINGS)
   find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
   message(STATUS "Python3_Development_FOUND=${Python3_Development_FOUND}")
   message(STATUS "Python3_EXECUTABLE=${Python3_EXECUTABLE}")
-  message(STATUS "Python: version=${Python3_VERSION} Python3_INCLUDE_DIRS=${Python3_INCLUDE_DIRS} Python3_LIBRARIES=${Python3_LIBRARIES}")
+  message(STATUS "Python: version=${Python3_VERSION}")
+  message(STATUS "Python3_INCLUDE_DIRS=${Python3_INCLUDE_DIRS}")
+  message(STATUS "Python3_LIBRARIES=${Python3_LIBRARIES}")
 
-  if (NOT BUILD_PYTHON_MODULE)
-    add_subdirectory(pybr)
-  else ()
+  if (BUILD_PYTHON_MODULE)
     add_subdirectory(pymodule)
+  else ()
+    add_subdirectory(pybr)
   endif ()
 endif ()
 
@@ -212,9 +214,17 @@ SET(CUEMOL2_LINK_LIBRARIES
   CGAL::CGAL
 )
 
+if (BUILD_PYTHON_BINDINGS)
+  if (BUILD_PYTHON_MODULE)
+    list(APPEND CUEMOL2_LINK_LIBRARIES pymodule)
+  else ()
+    list(APPEND CUEMOL2_LINK_LIBRARIES pybr)
+    # message(STATUS CUEMOL2_LINK_LIBRARIES"=${CUEMOL2_LINK_LIBRARIES}")
+  endif ()
+endif ()
+
 if (BUILD_OPENGL_SYSDEP)
   list(APPEND CUEMOL2_LINK_LIBRARIES sysdep)
-  
 endif ()
 
 add_library(cuemol2 SHARED)
@@ -230,7 +240,7 @@ target_sources(cuemol2
   PRIVATE loader.cpp
   PUBLIC FILE_SET HEADERS 
   BASE_DIRS ${PROJECT_SOURCE_DIR}/src
-  FILES common.h qmtypes.h version.hpp
+  FILES common.h qmtypes.h version.hpp loader.hpp
 )
 # message(STATUS "PROJECT_BINARY_DIR=${PROJECT_BINARY_DIR}")
 install(TARGETS cuemol2 FILE_SET HEADERS)
