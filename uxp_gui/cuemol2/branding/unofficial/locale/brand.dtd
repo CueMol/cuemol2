@@ -1,0 +1,9 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+
+<!ENTITY  brandFullName         "CueMol2 Application">
+<!ENTITY  brandShortName        "CueMol2">
+<!ENTITY  brandShorterName      "CueMol2">
+<!ENTITY  vendorShortName       "Open Source Community">
+<!ENTITY  sidebarName           "Sidebar">

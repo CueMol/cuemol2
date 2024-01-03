@@ -1,0 +1,14 @@
+# xxx
+
+PROGRAMS_DEST = $(DIST)/bin/components
+
+#.PHONY: repackage
+#tools repackage:: $(PROGRAM)
+libs::
+	echo '$(srcdir)'
+	echo '$(PROGRAMS_DEST)/$(SHARED_LIBRARY)'
+	echo 'CUEMOL_DEPLIB_DIRS=$(CUEMOL_DEPLIB_DIRS)'
+	$(PYTHON) --version
+	$(PYTHON) $(srcdir)/install_dylibs.py -i '$(PROGRAMS_DEST)/$(SHARED_LIBRARY)' --search_path=$(CUEMOL_DEPLIB_DIRS):$(CUEMOL_DIR)/lib --out_dir '$(DIST)/bin'
+
+# @$(foreach V,$(sort $(.VARIABLES)),$(if $(filter-out environment% default automatic,$(origin $V)),$(warning $V=$($V) ($(value $V)))))
