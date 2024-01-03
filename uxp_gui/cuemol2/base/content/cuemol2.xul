@@ -1,0 +1,97 @@
+<?xml version="1.0"?>
+<!-- -*- xml -*- -->
+<?xml-stylesheet href="chrome://global/skin/" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2.css" type="text/css"?>
+<?xml-stylesheet href="chrome://cuemol2/content/cuemol2-sysdep.css" type="text/css"?>
+
+<?xul-overlay href="chrome://cuemol2/content/cuemol2-scripts.xul"?>
+<?xul-overlay href="chrome://cuemol2/content/cuemol2-menus.xul"?>
+#ifdef XP_MACOSX
+<?xul-overlay href="chrome://cuemol2/content/cuemol2-macos-menus.xul"?>
+#endif
+<?xul-overlay href="chrome://cuemol2/content/topbar/cuemol2-ribbon.xul"?>
+<?xul-overlay href="chrome://cuemol2/content/anim/anim-ribbon.xul"?>
+
+<!-- Panel definitions -->
+<?xul-overlay href="chrome://cuemol2/content/workspace_panel.xul"?>
+<?xul-overlay href="chrome://cuemol2/content/molstruct-panel.xul"?>
+<?xul-overlay href="chrome://cuemol2/content/selection-panel.xul"?>
+<?xul-overlay href="chrome://cuemol2/content/coloring-panel.xul"?>
+<?xul-overlay href="chrome://cuemol2/content/symmetry-panel.xul"?>
+<?xul-overlay href="chrome://cuemol2/content/densitymap-panel.xul"?>
+<?xul-overlay href="chrome://cuemol2/content/fakedial-panel.xul"?>
+<?xul-overlay href="chrome://cuemol2/content/anim/anim-panel.xul"?>
+
+<?xul-overlay href="chrome://cuemol2/content/bottom-panels/btmpanel-holder.xul"?>
+
+<!-- <?xul-overlay href="chrome://global/content/globalOverlay.xul"?> -->
+
+<!DOCTYPE window [
+<!ENTITY % brandDTD SYSTEM "chrome://branding/locale/brand.dtd" >
+%brandDTD;
+<!ENTITY % cuemol2DTD SYSTEM "chrome://cuemol2/locale/cuemol2.dtd" >
+%cuemol2DTD;
+]>
+
+<window
+  xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+  xmlns:html="http://www.w3.org/1999/xhtml"
+  id     = "cuemol2"
+  windowtype = "cuemol2:mainwnd"
+  title  = "&cuemol2.title;"
+  width  = "1024"
+  height = "768"
+  persist = "screenX screenY width height"
+  fullscreenbutton = "true"
+  onclose = "return gQm2Main.onCloseEvent(event);">
+
+  <script src="chrome://cuemol2/content/cuemol2-utils.js"/>
+  <script src="chrome://cuemol2/content/cuemol2-panels.js"/>
+  <script src="chrome://cuemol2/content/shortcut-manager.js"/>
+  <script src="chrome://cuemol2/content/cuemol2.js"/>
+
+  <!-- these scripts are used in XBL binding codes -->
+  <script src="chrome://cuemol2/content/tabmolview.js"/>
+  <script src="chrome://cuemol2/content/sidepanelholder.js"/>
+  <script src="chrome://cuemol2/content/colpicker.js"/>
+
+  <stringbundleset id="strbundles">
+    <stringbundle id="strings" src="chrome://cuemol2/locale/mainView.properties"/>
+  </stringbundleset>
+
+  <overlaytarget id="scripts-overlay-target"/>
+
+  <!-- panels will be inserted here by overlays -->
+  <overlaytarget id="panels-overlay-target"/>
+
+  <!-- menus/popup menus will be inserted here by cuemol2-menus.xul -->
+  <overlaytarget id="menus-overlay-target"/>
+
+  <!-- Topbar UI will be inserted here by cuemol2-ribbon.xul -->
+  <overlaytarget id="ribbon-overlay-target"/>
+
+  <hbox id="content-holder" flex="1">
+    <sidepanelholder id="left_side_panel" flex="0" persist="width" width="100px"/>
+
+    <splitter id="sidebar-splitter" hidden="false" collapse="before"/>
+
+    <vbox flex="1">
+
+      <tabmolview id="main_view" flex="1" />
+      <splitter id="bottombar-splitter" hidden="false" collapse="after"/>
+
+
+      <!-- Bottom panel UI will be inserted here by bottom-panels/btmpanel-holder.xul -->
+      <overlaytarget id="btmpanels-overlay-target" persist="height"/>
+      
+    </vbox>
+  </hbox>
+
+  <vbox flex="0">
+    <statusbar>
+      <statusbarpanel id="status" label="" crop="end" flex="1"/>
+      <spacer id="alert-popup-anchor" width="10px"/>
+    </statusbar>
+  </vbox>
+
+</window>

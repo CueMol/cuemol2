@@ -1,0 +1,39 @@
+# vim: set filetype=python:
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+# CUEMOL_DIR = 
+warning("CUEMOL_DIR: <%s>" % CONFIG['CUEMOL_DIR'])
+
+LOCAL_INCLUDES += [
+    '%/opt/homebrew/include/',
+    '%%%s/include' % CONFIG['CUEMOL_DIR'],
+]
+OS_LIBS += ['-L%s/lib' % CONFIG['CUEMOL_DIR'],
+    'cuemol2',
+]
+DEFINES['HAVE_CONFIG_H'] = True
+CXXFLAGS += ['-fexceptions', '-frtti']
+
+XPIDL_SOURCES += [
+    'qICueMol.idl',
+    'qINativeWidget.idl',
+    'qIObjWrapper.idl',
+]
+
+XPIDL_MODULE = 'molwidget'
+
+SOURCES += [
+    'xpc_main.cpp',
+    'XPCCueMol.cpp',
+    'XPCNativeWidget.cpp',
+    'XPCNativeWidgetCocoa.mm',
+    'XPCObjWrapper.cpp',
+    'XPCTimerImpl.cpp',
+]
+
+XPCOMBinaryComponent('molwidget')
+
+# for i in CONFIG.keys():
+#     warning("CFLAGS: %s" % i)

@@ -1,0 +1,118 @@
+
+EXTRA_JS_MODULES += ['appboots.js', 'harness.js']
+
+FINAL_TARGET_FILES += ['harness-options.json']
+
+FINAL_TARGET_FILES['addon-kit-lib'] += [
+    'addon-kit-lib/clipboard.js',
+    'addon-kit-lib/context-menu.js',
+    'addon-kit-lib/hotkeys.js',
+    'addon-kit-lib/notifications.js',
+    'addon-kit-lib/page-mod.js',
+    'addon-kit-lib/page-worker.js',
+    'addon-kit-lib/panel.js',
+    'addon-kit-lib/passwords.js',
+    'addon-kit-lib/private-browsing.js',
+    'addon-kit-lib/request.js',
+    'addon-kit-lib/selection.js',
+    'addon-kit-lib/simple-storage.js',
+    'addon-kit-lib/tabs.js',
+    'addon-kit-lib/timers.js',
+    'addon-kit-lib/widget.js',
+    'addon-kit-lib/windows.js',
+]
+
+FINAL_TARGET_FILES['api-utils-lib'] += [
+    'api-utils-lib/api-utils.js',
+    'api-utils-lib/app-strings.js',
+    'api-utils-lib/array.js',
+    'api-utils-lib/byte-streams.js',
+    'api-utils-lib/collection.js',
+    'api-utils-lib/content.js',
+    'api-utils-lib/cortex.js',
+    'api-utils-lib/cuddlefish.js',
+    'api-utils-lib/e10s.js',
+    'api-utils-lib/errors.js',
+    'api-utils-lib/events.js',
+    'api-utils-lib/file.js',
+    'api-utils-lib/find-tests-e10s-adapter.js',
+    'api-utils-lib/find-tests.js',
+    'api-utils-lib/hidden-frame.js',
+    'api-utils-lib/light-traits.js',
+    'api-utils-lib/list.js',
+    'api-utils-lib/match-pattern.js',
+    'api-utils-lib/memory.js',
+    'api-utils-lib/observer-service.js',
+    'api-utils-lib/plain-text-console.js',
+    'api-utils-lib/preferences-service.js',
+    'api-utils-lib/runtime.js',
+    'api-utils-lib/securable-module.js',
+    'api-utils-lib/self-e10s-adapter.js',
+    'api-utils-lib/self-maker.js',
+    'api-utils-lib/shims.js',
+    'api-utils-lib/tab-browser.js',
+    'api-utils-lib/test.js',
+    'api-utils-lib/text-streams.js',
+    'api-utils-lib/timer-e10s-adapter.js',
+    'api-utils-lib/timer.js',
+    'api-utils-lib/traceback.js',
+    'api-utils-lib/traits.js',
+    'api-utils-lib/type.js',
+    'api-utils-lib/unit-test-finder.js',
+    'api-utils-lib/unit-test.js',
+    'api-utils-lib/unload.js',
+    'api-utils-lib/url-e10s-adapter.js',
+    'api-utils-lib/url.js',
+    'api-utils-lib/window-utils.js',
+    'api-utils-lib/xhr.js',
+    'api-utils-lib/xpcom.js',
+    'api-utils-lib/xul-app.js',
+]
+
+# content/
+FINAL_TARGET_FILES['api-utils-lib'].content += [
+    'api-utils-lib/content/content-proxy.js',
+    'api-utils-lib/content/loader.js',
+    'api-utils-lib/content/symbiont.js',
+    'api-utils-lib/content/worker.js',
+]
+    # dom/
+    # events/
+    # keyboard/
+    # passwords/
+    # tabs/
+    # test/
+    # traits/
+FINAL_TARGET_FILES['api-utils-lib'].traits += [
+    'api-utils-lib/traits/core.js',
+]
+    # utils/
+    # windows/
+
+FINAL_TARGET_FILES['cuemol2ui-lib'] += [
+    'cuemol2ui-lib/atom-picker.js',
+    'cuemol2ui-lib/cuemol.js',
+    'cuemol2ui-lib/debug_util.js',
+    'cuemol2ui-lib/event.js',
+    'cuemol2ui-lib/html-cons.js',
+    'cuemol2ui-lib/mol_util.js',
+    'cuemol2ui-lib/mru-files.js',
+    'cuemol2ui-lib/native-widget.js',
+    'cuemol2ui-lib/povrender.js',
+    'cuemol2ui-lib/qsc-copipe.js',
+    'cuemol2ui-lib/qsc-io.js',
+    'cuemol2ui-lib/scr_util.js',
+    'cuemol2ui-lib/styleutil.js',
+    'cuemol2ui-lib/util.js',
+]
+
+FINAL_TARGET_FILES['cuemol-wrappers'] += [
+    '%%%s/data/cuemol-wrappers/*.js' % CONFIG['CUEMOL_DIR']
+]
+
+FINAL_TARGET_FILES += [
+    '%%%s/data/sysconfig.xml' % CONFIG['CUEMOL_DIR'],
+]
+FINAL_TARGET_FILES["data"] += [
+    '%%%s/data/data/*' % CONFIG['CUEMOL_DIR'],
+]

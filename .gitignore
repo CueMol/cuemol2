@@ -102,3 +102,5 @@ venv.bak/
 *_wrap.cpp
 *_wrap.hpp
 *_loader.cpp
+/uxp_gui/platform/**
+/uxp_gui/obj-*

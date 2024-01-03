@@ -1,0 +1,416 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE overlay SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+<!-- -*- xml -*- -->
+
+<overlay id="workspace-panel"
+         xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+  <overlaytarget id="panels-overlay-target" hidden="true">
+
+    <script type="application/javascript;version=1.8" src="chrome://cuemol2/content/treeview.js"/>
+    <script type="application/javascript;version=1.8" src="chrome://cuemol2/content/workspace_panel.js"/>
+
+    <vbox id="workspace-panel" title="&workspacePanel.title;" flex="1">
+      <tree id="objectTree" flex="2" hidecolumnpicker="true"
+	editable="true" treelines="true" seltype="multiple">
+	<treecols>
+	  <treecol id="object_vis" flex="0" persist="width" label="V" tooltip="Toggle Visible/Invisible"/>
+	  <splitter class="tree-splitter"/>
+	  <!--<treecol id="object_lck" flex="0" persist="width" label="L" tooltip="Toggle Locked/Unlocked"/>
+	  <splitter class="tree-splitter"/>-->
+	  <treecol id="object_name" primary="true"
+	    label="&workspacePanel.object_tree.name;" flex="1"
+	    persist="width"/>
+
+	  <!-- <splitter class="tree-splitter"/>
+	  <treecol id="object_type" label="Type" flex="2" persist="hidden ordinal width"/>
+	  <splitter class="tree-splitter"/>
+	    <treecol id="object_id" label="ID" flex="1" persist="hidden ordinal width"/> -->
+	</treecols>
+	<treechildren class="object-tree-children" draggable="true" ondragstart="cuemolui.panels.workspace.onDragStart(event)"/>
+      </tree>
+      <hbox>
+	<toolbarbutton
+	  id="wspcPanelZoomBtn"
+	  class="toolbar-button zoom-button"
+	  oncommand="cuemolui.panels.workspace.onBtnZoomCmd(event);"
+	  disabled="true"
+	  tooltiptext="Zoom at"/>
+	<toolbarbutton
+	  id="wspcPanelAddBtn"
+	  class="toolbar-button add-button"
+	  disabled="true"
+	  oncommand="cuemolui.panels.workspace.onNewCmd(event);"
+	  tooltiptext="Add"/>
+	<toolbarbutton
+	  id="wspcPanelDeleteBtn"
+	  class="toolbar-button delete-button"
+	  disabled="true"
+	  oncommand="cuemolui.panels.workspace.onDeleteCmd(event);"
+	  tooltiptext="Delete"/>
+	<toolbarbutton
+	  id="wspcPanelPropBtn"
+	  class="toolbar-button prop-button"
+	  disabled="true"
+	  oncommand="cuemolui.panels.workspace.onPropCmd(event)"
+	  tooltiptext="Property"/>
+
+	<!--
+	<toolbarseparator />
+	  <toolbarbutton
+	  id="wspcPanelUpBtn"
+	  class="toolbar-button moveup-button"
+	  disabled="true"
+	  oncommand="cuemolui.panels.workspace.onMoveUpCmd(event);"
+	  tooltiptext="Move up"/>
+	<toolbarbutton
+	  id="wspcPanelDownBtn"
+	  class="toolbar-button movedown-button"
+	  disabled="true"
+	  oncommand="cuemolui.panels.workspace.onMoveDownCmd(event);"
+	  tooltiptext="Move down"/>-->
+
+      </hbox>
+    </vbox>
+
+  </overlaytarget>
+
+  <overlaytarget id="menus-overlay-target">
+    <popupset>
+      <menupopup id="wspcPanelSceneCtxtMenu"
+	onpopupshowing="cuemolui.panels.workspace.onCtxtMenuShowing(event)"
+	>
+	<menu label="Background color">
+	  <menupopup>
+	    <menuitem class="color-menuitem menuitem-iconic" color="white"
+	      label="White" id="wspc-bg-white"
+	      oncommand="gQm2Main.setBgColor('white');"/>
+	    <menuitem class="color-menuitem menuitem-iconic" color="black"
+	      label="Black" id="wspc-bg-black"
+	      oncommand="gQm2Main.setBgColor('black');"/>
+	  </menupopup>
+	</menu>
+	<menuitem id="wspcUseColProof"
+	  label="Use color proofing" type="checkbox" oncommand="gQm2Main.onToggleColProof(event)"/>
+	<menuitem id="wspcPanelSceneCtxtMenu-Paste"
+	  label="Paste" oncommand="cuemolui.panels.workspace.onPasteObj(event);"/>
+	<menuitem label="Properties..." oncommand="cuemolui.panels.workspace.onPropCmd(event)" />
+      </menupopup>
+
+      <!--
+	===== Object context menu =====
+	-->
+      <menupopup id="wspcPanelObjCtxtMenu"
+	onpopupshowing="cuemolui.panels.workspace.onCtxtMenuShowing(event)"
+	>
+
+	<menuitem label="Regenerate surface..." id="wspcPanelMolSurfRegen"
+		  oncommand="cuemolui.panels.workspace.onMolSurfRegen(event);"/>
+
+	<menu label="Selection">
+	  <menupopup>
+	    <menuitem label="Select All"
+		      oncommand="cuemolui.panels.workspace.selectMol('*')"/>
+	    <menuitem label="Unselect"
+		      oncommand="cuemolui.panels.workspace.selectMol(null)"/>
+	    <menuitem label="Invert"
+		      oncommand="cuemolui.panels.workspace.invertMolSel()"/>
+	    <menuitem label="Toggle Sidechain"
+	      oncommand="cuemolui.panels.workspace.toggleSideCh()"/>
+
+	    <menu label="Around Byresid">
+	      <menupopup>
+		<menuitem label="3 &#0197;"
+			  oncommand="cuemolui.panels.workspace.aroundMolSel(3, true)"/>
+		<menuitem label="5 &#0197;"
+			  oncommand="cuemolui.panels.workspace.aroundMolSel(5, true)"/>
+		<menuitem label="7 &#0197;"
+			  oncommand="cuemolui.panels.workspace.aroundMolSel(7, true)"/>
+		<menuitem label="10 &#0197;"
+			  oncommand="cuemolui.panels.workspace.aroundMolSel(10, true)"/>
+	      </menupopup>
+	    </menu>
+	    <menu label="Around">
+	      <menupopup>
+		<menuitem label="3 &#0197;"
+			  oncommand="cuemolui.panels.workspace.aroundMolSel(3, false)"/>
+		<menuitem label="5 &#0197;"
+			  oncommand="cuemolui.panels.workspace.aroundMolSel(5, false)"/>
+		<menuitem label="7 &#0197;"
+			  oncommand="cuemolui.panels.workspace.aroundMolSel(7, false)"/>
+		<menuitem label="10 &#0197;"
+			  oncommand="cuemolui.panels.workspace.aroundMolSel(10, false)"/>
+	      </menupopup>
+	    </menu>
+
+	    <menuseparator/>
+
+	    <menuitem label="Protein"
+		      oncommand="cuemolui.panels.workspace.selectMol('protein')"/>
+	    <menuitem label="Nucleic acid"
+		      oncommand="cuemolui.panels.workspace.selectMol('nucleic')"/>
+	    <menuitem label="Water"
+		      oncommand="cuemolui.panels.workspace.selectMol('water')"/>
+	    <menuitem label="Ligand"
+		      oncommand="cuemolui.panels.workspace.selectMol('ligand)"/>
+	    <menuitem label="Sugar"
+		      oncommand="cuemolui.panels.workspace.selectMol('sugar')"/>
+	    <menuitem label="Hydrogen"
+		      oncommand="cuemolui.panels.workspace.selectMol('hydrogen')"/>
+	  </menupopup>
+	</menu>
+
+	<menuseparator/>
+
+	<!-- Paint menu -->
+	<menu id="wspcPnlObjPaintMenu" label="Paint"
+	  oncommand="cuemolui.panels.workspace.onPaintMol(event)">
+#include color-menu.xul
+	</menu>
+
+	<menuseparator/>
+
+	<menuitem id="wspcPanelObjCtxtMenu-CopyObj"
+	  label="Copy Object" oncommand="cuemolui.panels.workspace.onCopyCmd(event);"/>
+	<menuitem id="wspcPanelObjCtxtMenu-Paste"
+	  label="Paste Renderer" oncommand="cuemolui.panels.workspace.onPasteRend(event);"/>
+	<menuseparator/>
+	<menuitem label="New Renderer..." oncommand="cuemolui.panels.workspace.onNewCmd(event);"/>
+	<menuitem label="New Group..." oncommand="cuemolui.panels.workspace.onNewRendGrp(event);"/>
+	<menuitem label="Save As ..." oncommand="cuemolui.panels.workspace.onSaveAsObj(event);"/>
+	<menuitem label="Delete Object" oncommand="cuemolui.panels.workspace.onDeleteCmd(event);"/>
+	<menuseparator/>
+	<menuitem label="Properties..." oncommand="cuemolui.panels.workspace.onPropCmd(event)" />
+      </menupopup>
+
+      <!--
+	===== Renderer context menu =====
+	-->
+      <menupopup id="wspcPanelRendCtxtMenu"
+	onpopupshowing="cuemolui.panels.workspace.onRendCtxtMenuShowing(event)">
+
+	<menu label="Change sel" id="wspcPanelRendSelMenu" >
+	  <menupopup>
+	    <menuitem label="Current"
+		      oncommand="cuemolui.panels.workspace.setRendSel('current')"/>
+	    <menuitem label="All"
+		      oncommand="cuemolui.panels.workspace.setRendSel('*')"/>
+	    <menuitem label="Protein"
+		      oncommand="cuemolui.panels.workspace.setRendSel('protein')"/>
+	    <menuitem label="Nucleic acid"
+		      oncommand="cuemolui.panels.workspace.setRendSel('nucleic')"/>
+	    <menuitem label="Water"
+		      oncommand="cuemolui.panels.workspace.setRendSel('water')"/>
+	    <menuitem label="Ligand"
+		      oncommand="cuemolui.panels.workspace.setRendSel('!protein &amp; !nucleic &amp; !water')"/>
+	    <menuitem label="Sugar"
+		      oncommand="cuemolui.panels.workspace.setRendSel('sugar')"/>
+	  </menupopup>
+	</menu>
+
+	<!-- Change renderer type menu -->
+	<menu id="wspcPanelChgRendTypeMenu" label="Change type"
+	  onpopupshowing="cuemolui.panels.workspace.onChgRendTypeShowing(event)"
+	  oncommand="cuemolui.panels.workspace.chgRendType(event)">
+	  <menupopup/>
+	</menu>
+
+	<!-- Coloring menu -->
+	<menu label="Coloring" id="wspcPanelRendColMenu" 
+	  oncommand="cuemolui.panels.workspace.onColoringMol(event)">
+	  <menupopup>
+	    <menu id="paint-type-paint" label="Paint (Secondary str.)"
+	      onpopupshowing="cuemolui.onPaintColShowing(event)">
+	      <menupopup/>
+	    </menu>
+	    <menuitem label="CPK molcol" value="style-DefaultCPKColoring"/>
+	    <menuitem label="CPK dark gray" value="style-DarkCPKColoring"/>
+	    <menuitem label="CPK light gray" value="style-LightCPKColoring"/>
+	    <!--<menuitem label="CPK molcol" value="paint-type-cpk"/>
+	    <menuitem label="CPK dark gray" value="paint-type-cpk-darkgray"/>
+	    <menuitem label="CPK light gray" value="paint-type-cpk-lightgray"/>-->
+	    <menuitem label="B-factor" value="paint-type-bfac"/>
+	    <menuitem label="Rainbow" value="paint-type-rainbow"/>
+	  </menupopup>
+	</menu>
+
+	<!-- Paint menu -->
+	<menu id="wspcPanelPaintMenu" label="Paint"
+	  oncommand="cuemolui.panels.workspace.onPaintMol(event)">
+#include color-menu.xul
+	</menu>
+
+	<!-- Style (shape) menu -->
+	<menu id="wspcPanelStyleMenu" label="Style"
+	  onpopupshowing="cuemolui.panels.workspace.onStyleShowing(event)"
+	  oncommand="cuemolui.panels.workspace.styleMol(event)">
+	  <menupopup/>
+	</menu>
+	<menuitem label="Edit style..." id="wspcPanelApplyStyleMenu"
+	  oncommand="cuemolui.panels.workspace.onApplyStyle(event);"/>
+	<menuitem label="Create style..." id="wspcPanelCreateStyleMenu"
+	  oncommand="cuemolui.panels.workspace.onCreateStyle(event);"/>
+
+	<menuseparator/>
+
+	<!-- Rendere specific menus -->
+	<menuitem label="Edit interaction list..." id="wspcPanelEditIntrMenu"
+	  oncommand="cuemolui.panels.workspace.onEditIntr(event);"/>
+
+	<menuitem label="Generate surface obj" id="wspcPanelGenSurfObjMenu"
+	  oncommand="cuemolui.panels.workspace.onGenSurfObj(event);"/>
+
+	<menuitem label="Copy" id="wspcPanelCopyMenu"
+	  oncommand="cuemolui.panels.workspace.onCopyCmd(event);"/>
+	<menuseparator/>
+	<menuitem label="New Renderer..." oncommand="cuemolui.panels.workspace.onNewCmd(event);"/>
+	<menuitem label="Delete" oncommand="cuemolui.panels.workspace.onDeleteCmd(event);"/>
+	<menuseparator/>
+	<menuitem label="Properties..." oncommand="cuemolui.panels.workspace.onPropCmd(event)"/>
+
+      </menupopup>
+
+      <!--
+	===== Renderer group context menu =====
+	-->
+      <menupopup id="wspcPanelRendGrpCtxtMenu"
+	onpopupshowing="cuemolui.panels.workspace.onCtxtMenuShowing(event)"
+	>
+	<menuitem id="wspcRendGrpCopy" label="Copy"
+	  oncommand="cuemolui.panels.workspace.onCopyCmd(event);"/>
+	<menuitem id="wspcPanelRendGrpCtxtMenu-Paste"
+		  label="Paste Renderer" oncommand="cuemolui.panels.workspace.onPasteRend(event);"/>
+	<menuitem label="Change Name" oncommand="cuemolui.panels.workspace.onRenameRendGrp(event);"/>
+	<menuitem label="New Renderer..." oncommand="cuemolui.panels.workspace.onNewCmd(event);"/>
+	<menuitem label="Delete" oncommand="cuemolui.panels.workspace.onDeleteCmd(event);"/>
+      </menupopup>
+      
+      <!--
+	===== Camera context menu =====
+	-->
+      <menupopup id="wspcPanelCameraCtxtMenu"
+		 onpopupshowing="cuemolui.panels.workspace.onCamCtxtShowing(event)">
+	<menuitem label="New Camera..."
+		  oncommand="cuemolui.panels.workspace.onNewCmd(event);"/>
+	<menuitem label="Delete" class="wspcCamCtxt-disable"
+		  oncommand="cuemolui.panels.workspace.onDeleteCmd(event);"/>
+	<menuitem label="Copy" class="wspcCamCtxt-disable"
+		  oncommand="cuemolui.panels.workspace.onCameraCopy(event);"/>
+	<menuitem label="Paste" id="wspcCamCtxt-Paste"
+		  oncommand="cuemolui.panels.workspace.onCameraPaste(event);"/>
+
+	<menuseparator/>
+
+	<menu label="Camera file">
+	  <menupopup>
+	    <menuitem label="Load ..." 
+	      oncommand="cuemolui.panels.workspace.onCamLoadFile(event)"/>
+	    <menuitem label="Reload " id="wspcCamCtxtReload" class="wspcCamCtxt-disable"
+	      oncommand="cuemolui.panels.workspace.onCamReloadFile(event)"/>
+	    <menuitem label="Save" class="wspcCamCtxt-disable"
+	      oncommand="cuemolui.panels.workspace.onCamSaveFile(event)"/>
+	    <menuitem label="Save as..." class="wspcCamCtxt-disable"
+	      oncommand="cuemolui.panels.workspace.onCamSaveFileAs(event)"/>
+	  </menupopup>
+	</menu>
+
+	<menuseparator/>
+
+	<menuitem label="Save from view" class="wspcCamCtxt-disable"
+	  oncommand="cuemolui.panels.workspace.onLoadSaveCam(event, false, false)"/>
+	<menuitem label="Apply to view" class="wspcCamCtxt-disable"
+	  oncommand="cuemolui.panels.workspace.onLoadSaveCam(event, true, false)"/>
+
+	<menuseparator/>
+
+	<menuitem label="Save from scene (with vis flags)" class="wspcCamCtxt-disable"
+	  oncommand="cuemolui.panels.workspace.onLoadSaveCam(event, false, true)"/>
+	<menuitem label="Apply to scene (with vis flags)" class="wspcCamCtxt-disable"
+	  oncommand="cuemolui.panels.workspace.onLoadSaveCam(event, true, true)"/>
+	<menuitem label="Edit vis flags..." class="wspcCamCtxt-disable"
+	  oncommand="cuemolui.panels.workspace.onEditVisFlags(event)"/>
+	<menuitem label="Clear vis flags" class="wspcCamCtxt-disable"
+	  oncommand="cuemolui.panels.workspace.onClearVisFlags(event)"/>
+
+	<menuseparator/>
+
+	<menuitem label="Rename..." class="wspcCamCtxt-disable"
+		  oncommand="cuemolui.panels.workspace.onRenameCamera(event)"/>
+	<menuitem label="Properties..." class="wspcCamCtxt-disable"
+		  oncommand="cuemolui.panels.workspace.onPropCmd(event)"/>
+      </menupopup>
+
+      <!-- ===== Style context menu ====== -->
+
+      <menupopup id="wspcStyleCtxtMenu"
+	onpopupshowing="cuemolui.panels.workspace.onStyCtxtShowing(event)">
+	<menuitem label="New Style..."
+		  oncommand="cuemolui.panels.workspace.onNewCmd(event);"/>
+
+	<menuitem id="wspcStyleCtxtMenu-Copy" label="Copy" class="wspcStyCtxt-disable"
+	  oncommand="cuemolui.panels.workspace.onCopyStyle(event);"/>
+
+	<menuitem id="wspcStyleCtxtMenu-Paste" label="Paste"
+	  oncommand="cuemolui.panels.workspace.onPasteStyle(event);"/>
+
+	<menuitem label="Delete" class="wspcStyCtxt-disable"
+		  oncommand="cuemolui.panels.workspace.onDeleteCmd(event);"/>
+
+	<menuseparator/>
+
+	<menu label="Style file">
+	  <menupopup>
+	    <menuitem label="Load ..." 
+	      oncommand="cuemolui.panels.workspace.onStyLoadFile(event)"/>
+	    <menuitem label="Reload " id="wspcStyCtxtReload" class="wspcStyCtxt-disable"
+	      oncommand="cuemolui.panels.workspace.onStyReloadFile(event)"/>
+	    <menuitem label="Save" class="wspcStyCtxt-disable"
+	      oncommand="cuemolui.panels.workspace.onStySaveFile(event)"/>
+	    <menuitem label="Save As..." class="wspcStyCtxt-disable"
+	      oncommand="cuemolui.panels.workspace.onStySaveFileAs(event)"/>
+	  </menupopup>
+	</menu>
+
+	<menuseparator/>
+
+	<menuitem label="Read-only" id="wspcStyCtxtReadOnly" class="wspcStyCtxt-disable"
+	  type="checkbox"
+	  oncommand="cuemolui.panels.workspace.onStyToggleRo(event)"/>
+	<menuitem label="Rename..." class="wspcStyCtxt-disable"
+	  oncommand="cuemolui.panels.workspace.onRenameStyle(event)"/>
+	<menuitem label="Edit..." class="wspcStyCtxt-disable"
+	  oncommand="cuemolui.panels.workspace.onPropCmd(event)"/>
+
+      </menupopup>
+
+      <!--
+	===== Multi-selected context menu =====
+	-->
+      <menupopup id="wspcPanelMulCtxtMenu"
+	onpopupshowing="cuemolui.panels.workspace.onMulCtxtMenuShowing(event)">
+	<menuitem id="wspcMulCopy" label="Copy"
+	  oncommand="cuemolui.panels.workspace.onCopyCmd(event);"/>
+	<menuitem id="wspcMulDel" label="Delete"
+	  oncommand="cuemolui.panels.workspace.onDeleteCmd(event);"/>
+	<menuitem id="wspcMulShow" label="Show"
+	  oncommand="cuemolui.panels.workspace.onShowHideCmd(event, true);"/>
+	<menuitem id="wspcMulHide" label="Hide"
+	  oncommand="cuemolui.panels.workspace.onShowHideCmd(event, false);"/>
+      </menupopup>
+      
+      <!-- =============================== -->
+
+    </popupset>
+
+  </overlaytarget>
+  
+  <overlaytarget id="window-leftpanels-popup">
+    <menuitem id="menu-workspace-panel-toggle"
+      type="checkbox" autocheck="false"
+      label="&workspacePanel.title;"
+      oncommand="cuemolui.sidepanel.onToggle('workspace-panel')" />
+  </overlaytarget>
+
+</overlay>
+
