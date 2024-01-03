@@ -9,7 +9,6 @@ DIRS += [
     'app',
     'base',
     'components',
-    'modules',
 ]
 
 if CONFIG['MAKENSISU']:
