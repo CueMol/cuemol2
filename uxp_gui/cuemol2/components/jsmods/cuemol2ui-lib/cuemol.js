@@ -33,7 +33,7 @@ function getWrapperCtor(class_name)
   else {
     // wrapper class is not loaded
     // filenm = "resource://app/resources/cuemol-wrappers/"+class_name+".js";
-    filenm = "resource://gre/cuemol-wrappers/"+class_name+".js";
+    const filenm = "resource://gre/cuemol-wrappers/"+class_name+".js";
     dd("NEW Loading: "+filenm);
     Cu.import(filenm, wr_classes);
     ctor = wr_classes[wrClassName];

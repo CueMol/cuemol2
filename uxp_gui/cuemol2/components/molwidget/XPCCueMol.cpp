@@ -439,12 +439,12 @@ NS_IMETHODIMP XPCCueMol::HasClass(const char * clsname, bool *_retval)
       *_retval = true;
   }
   catch (const qlib::LException &e) {
-    MB_DPRINTLN("HasObj> Caught exception <%s>", typeid(e).name());
-    MB_DPRINTLN("HasObj> Reason: %s", e.getMsg().c_str());
+    MB_DPRINTLN("XPCCueMol::HasClass> Caught exception <%s>", typeid(e).name());
+    MB_DPRINTLN("XPCCueMol::HasClass> Reason: %s", e.getMsg().c_str());
     // return NS_ERROR_NOT_IMPLEMENTED;
   }
   catch (...) {
-    LOG_DPRINTLN("HasObj> Caught unknown exception");
+    MB_DPRINTLN("XPCCueMol::HasClass> Caught unknown exception for class name %s", clsname);
     // return NS_ERROR_NOT_IMPLEMENTED;
   }
 

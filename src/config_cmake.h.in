@@ -94,9 +94,12 @@
 
 #cmakedefine BUILD_OPENGL_SYSDEP
 
-// /* Define to 1 if you have python3 */
+/* Define to 1 if you have python3 */
 #cmakedefine BUILD_PYTHON_BINDINGS
 #cmakedefine BUILD_PYTHON_MODULE
+
+/* Enable debug code/verbose log display */
+#cmakedefine MB_DEBUG
 
 //////////
 /* config.h.in.  Generated from configure.ac by autoheader.  */
@@ -270,9 +273,6 @@
 
 // /* Define to the sub-directory where libtool stores uninstalled libraries. */
 // #undef LT_OBJDIR
-
-// /* Enable debug code/verbose log display */
-// #undef MB_DEBUG
 
 // /* Use gcc-style visibility attr */
 // #undef MB_HAVE_GCC_VIS_ATTR

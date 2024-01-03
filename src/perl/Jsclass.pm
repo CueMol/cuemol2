@@ -49,9 +49,9 @@ sub genJsWrapper($)
   print OUT "// Javascript wrapper class for $qifname\n";
   print OUT "//\n";
   print OUT "\n";
-  print OUT "var EXPORTED_SYMBOLS = [\"${js_clsname}\"];\n";
+  print OUT "const EXPORTED_SYMBOLS = [\"${js_clsname}\"];\n";
   print OUT "\n";
-  print OUT "${js_clsname} = function ${qifname}_ctor(aWrapped, aCueMol)\n";
+  print OUT "const ${js_clsname} = function ${qifname}_ctor(aWrapped, aCueMol)\n";
   print OUT "{\n";
   print OUT "  this._wrapped = aWrapped;\n";
   print OUT "  this._cuemol = aCueMol;\n";

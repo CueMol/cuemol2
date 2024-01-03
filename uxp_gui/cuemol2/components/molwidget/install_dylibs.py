@@ -67,15 +67,17 @@ def traverse_deplibs(cur_libpath, search_path):
         if is_system_lib(dep_path):
             print "%s is system lib --> skip" % dep_path
             continue
-        if dep_path.startswith("@executable_path/"):
-            print "%s has @executable_path --> skip" % dep_path
-            continue
+        if "cuemol2" not in dep_path:
+            if dep_path.startswith("@executable_path/"):
+                print "%s has @executable_path --> skip" % dep_path
+                continue
 
         abs_dep_path = find_lib(dep_path, search_path)
         # print abs_dep_path
         abs_dep_list.append(abs_dep_path)
         bn = os.path.basename(dep_path)
-        rewrite_names.append((dep_path, os.path.join("@executable_path", bn)))
+        new_dep_path = os.path.join("@executable_path", bn)
+        rewrite_names.append((dep_path, new_dep_path))
 
     rewr_dict = {cur_libpath: rewrite_names}
 
@@ -113,6 +115,9 @@ def copy_dylibs(rewr_dict, out_dir, nocopy):
 
         for names in rewr_dict[k]:
             orig_nm, dest_nm = names
+            if orig_nm == dest_nm:
+                print "skipped rw %s: %s --> %s" % (dest_path, orig_nm, dest_nm)
+                continue
             subprocess.check_call([NAMETOOL,
                                    '-change',
                                    orig_nm,
@@ -126,6 +131,7 @@ def main():
     root_pathname = args.input_path
     search_path = parse_search_path(args.search_path)
     print "search path: %s" % search_path
+    print "input path: %s" % root_pathname
     rewr = traverse_deplibs(root_pathname, search_path)
     for k in sorted(rewr.keys()):
         print "%s: %s" % (k, rewr[k])
