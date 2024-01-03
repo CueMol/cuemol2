@@ -59,7 +59,7 @@ exports.createMozTmpFile = function(aTmpl)
     .getService(Ci.nsIProperties)
       .get("TmpD", Ci.nsIFile);
   file.append(aTmpl);
-  file.createUnique(Ci.nsIFile.NORMAL_FILE_TYPE, 0664);
+  file.createUnique(Ci.nsIFile.NORMAL_FILE_TYPE, 0o664);
   return file;
 }
 
@@ -392,13 +392,14 @@ exports.getSysConfigFname = function (args)
 
   try {
     // check the existence of confpath (as relative path from "CurProcD")
-    file = curproc_dir.clone();
+    file = curproc_dir.parent.clone();
     file.append(confpath);
     if (file.isFile())
       return file.path;
   }
   catch (e) {
     //bOK = false;
+    dd("file not found: "+file.path);
     debug_util.exception(e);
   }
 

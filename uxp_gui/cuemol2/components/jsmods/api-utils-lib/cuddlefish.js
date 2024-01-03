@@ -173,7 +173,7 @@
    } else {
      // We're being loaded in a JS module.
      global.EXPORTED_SYMBOLS = [];
-     for (name in exports) {
+     for (const name in exports) {
        global.EXPORTED_SYMBOLS.push(name);
        global[name] = exports[name];
      }

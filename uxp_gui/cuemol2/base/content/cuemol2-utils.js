@@ -9,7 +9,8 @@ const Cu = Components.utils;
 const Cr = Components.results;
 
 // Cu.import("resource://app/resources/jpk_hns.js");
-Cu.import("resource://app/components/appboots.js");
+// Cu.import("resource://app/components/appboots.js");
+Cu.import("resource://gre/modules/appboots.js");
 
 var appStartup = Cc['@mozilla.org/toolkit/app-startup;1'].getService(Ci.nsIAppStartup);
 

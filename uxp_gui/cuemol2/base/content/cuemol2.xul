@@ -26,7 +26,13 @@
 
 <!-- <?xul-overlay href="chrome://global/content/globalOverlay.xul"?> -->
 
-<!DOCTYPE window SYSTEM "chrome://cuemol2/locale/cuemol2.dtd">
+<!DOCTYPE window [
+<!ENTITY % brandDTD SYSTEM "chrome://branding/locale/brand.dtd" >
+%brandDTD;
+<!ENTITY % cuemol2DTD SYSTEM "chrome://cuemol2/locale/cuemol2.dtd" >
+%cuemol2DTD;
+]>
+
 <window
   xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
   xmlns:html="http://www.w3.org/1999/xhtml"
@@ -77,7 +83,6 @@
 
       <!-- Bottom panel UI will be inserted here by bottom-panels/btmpanel-holder.xul -->
       <overlaytarget id="btmpanels-overlay-target" persist="height"/>
-      <!--<iframe id="output_log_wnd" persist="height" />-->
       
     </vbox>
   </hbox>

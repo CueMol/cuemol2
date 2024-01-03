@@ -14,31 +14,42 @@ if (!("logpanel" in cuemolui)) {
 
     panel.onLoad = function ()
     {
+      dd("&&&&&&&&&&&&& log wnd onLoad called");
       var logMgr = cuemol.getService("MsgLog");
       var accumMsg = logMgr.getAccumMsg();
       logMgr.removeAccumMsg();
 
+      var that = this;
       // setup log display iframe
       if (!this.mLogWnd) {
-	this.mLogWnd = document.getElementById("output_log_wnd");
-	this.mLogWndDoc = this.mLogWnd.contentDocument;
-	this.mLogWndDoc.writeln("<head><link rel='stylesheet' type='text/css' href='logwindow.css'></head><body><pre id='log_content' class='console-text'/></body>");
-	this.mLogWndDoc.close();
-	this.mLogWndWin = this.mLogWnd.contentWindow;
-	this.mLogWndPre = this.mLogWndDoc.getElementById("log_content");
-	this.mLogWndPre.appendChild(this.mLogWndDoc.createTextNode(accumMsg));
-	this.mLogWndWin.scrollTo(0, this.mLogWndPre.scrollHeight);
+        // this.mLogWnd = document.getElementById("output_log_wnd");
+        // this.mLogWndDoc = this.mLogWnd.contentDocument;
+        this.mLogWndDoc = document;
+        // this.mLogWndDoc.writeln("<head><link rel='stylesheet' type='text/css' href='logwindow.css'/></head><body><pre id='log_content' class='console-text'/></body>");
+        // this.mLogWndDoc.close();
+	// this.mLogWndWin = this.mLogWnd.contentWindow;
+	// this.mLogWndPre = this.mLogWndDoc.getElementById("log_content");
+        this.mLogWnd = this.mLogWndPre = document.getElementById("log_content");
+	// this.mLogWndPre.appendChild(this.mLogWndDoc.createTextNode(accumMsg));
+        this.mLogWndPre.value = accumMsg;
+        this.mLogWndPre.scrollTop = this.mLogWndPre.scrollHeight;
+	// this.mLogWndWin.scrollTo(0, this.mLogWndPre.scrollHeight);
       }
       
-      var that = this;
       var handler = function (args) {
+        dd("&&&&&&&&&&&&& log wnd handler called");
 	var msg = args.obj.content;
 	if (args.obj.newline)
 	  msg += "\n";
-	that.mLogWndPre.appendChild(that.mLogWndDoc.createTextNode(msg));
+	// that.mLogWndPre.appendChild(that.mLogWndDoc.createTextNode(msg));
+        that.mLogWndPre.value += msg;
+        // that.mLogWndPre.scrollTop = that.mLogWndPre.scrollHeight;
+        var pos = that.mLogWndPre.value.length;
+        that.mLogWndPre.selectionStart = pos;
+        that.mLogWndPre.selectionEnd = pos;
 	
 	//logInp.scrollTop = logInp.scrollHeight;
-	that.mLogWndWin.scrollTo(0, that.mLogWndPre.scrollHeight);
+	// that.mLogWndWin.scrollTo(0, that.mLogWndPre.scrollHeight);
       };
 
       this.m_cbid =

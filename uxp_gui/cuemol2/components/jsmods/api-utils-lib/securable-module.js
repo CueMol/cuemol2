@@ -178,8 +178,7 @@
        if (rootPaths) {
          if (rootPaths.constructor.name != "Array")
            rootPaths = [rootPaths];
-         var fses = [new exports.LocalFileSystem(path)
-                     for each (path in rootPaths)];
+         var fses = [for (path of rootPaths) new exports.LocalFileSystem(path)];
          options.fs = new exports.CompositeFileSystem({
            fses: fses,
            metadata: options.metadata,
@@ -344,7 +343,7 @@
          let moduleContents = self.fs.getFile(path);
          var sandbox = self.sandboxFactory.createSandbox(moduleContents);
          self.sandboxes[path] = sandbox;
-         for (name in self.globals)
+         for (const name in self.globals)
            sandbox.defineProperty(name, self.globals[name]);
          var api = self._makeApi(path);
          sandbox.defineProperty('require', api.require);
@@ -753,7 +752,7 @@
    } else {
      // We're being loaded in a JS module.
      global.EXPORTED_SYMBOLS = [];
-     for (name in exports) {
+     for (const name in exports) {
        global.EXPORTED_SYMBOLS.push(name);
        global[name] = exports[name];
      }

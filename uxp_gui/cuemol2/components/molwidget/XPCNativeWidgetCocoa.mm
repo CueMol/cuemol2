@@ -8,11 +8,6 @@
 
 #include "XPCNativeWidgetCocoa.hpp"
 
-//#import <Cocoa/Cocoa.h>
-//#import <Carbon/Carbon.h>
-//#import <IOKit/pwr_mgt/IOPMLib.h>
-//#import <IOKit/IOMessage.h>
-
 #include <prlog.h>
 #include <nsDebug.h>
 

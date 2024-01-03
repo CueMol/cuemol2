@@ -133,7 +133,8 @@ function cancelTimer(timerID) {
 
 require("unload").when(
   function cancelAllPendingTimers() {
-    var timerIDs = [timerID for (timerID in timers)];
+    // var timerIDs = [timerID for (timerID in timers)];
+    var timerIDs = [for (timerID of timers) timerID];
     timerIDs.forEach(function(timerID) { cancelTimer(timerID); });
   });
 

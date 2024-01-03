@@ -9,16 +9,6 @@
   <overlaytarget id="btmpanels-overlay-target">
 
     <script type="application/javascript" src="logpanel.js"/>
-<!--
-    <vbox flex="1">
-      <iframe id="output_log_wnd" flex="1"/>
-      <hbox flex="0" align="center">
-	<label class="plain" value="CMD&gt;" flex="0"/>
-	<textbox flex="1" id="output_cmdbox"/>
-      </hbox>
-    </vbox>
--->
-
     <script type="application/javascript" src="seqpanel.js"/>
 
     <tabbox flex="1">
@@ -26,8 +16,11 @@
 
 	<tabpanel flex="1" id="log-btmpanel-tabpanel" class="ribbon-tabpanel">
 	  <vbox flex="1">
-	    <iframe id="output_log_wnd" flex="1"/>
-	    <hbox flex="0" align="center">
+	    <textbox id="log_content" flex="1"
+		         emptytext="Input selection command"
+                 multiline="true" readonly="true"
+                 style="font-family: monospace;"/>
+        <hbox flex="0" align="center">
 	      <label id="cmd_prompt_label" class="plain" value="&gt;" flex="0"/>
 	      <textbox flex="1" id="output_cmdbox"/>
 	    </hbox>
@@ -36,16 +29,6 @@
 
 	<tabpanel flex="1" id="seq-btmpanel-tabpanel" class="ribbon-tabpanel">
 	  <hbox flex="1">
-
-	    <!--<vbox width="50px" flex="1"
-	      style="overflow-x:hidden; overflow-y:hidden; background-color: white; min-width: 50px">
-	      <hbox flex="0">
-		<html:canvas id="seq_name_canvas" flex="0"/>
-		<spacer flex="1"/>
-	      </hbox>
-	      <spacer flex="1"/>
-	      </vbox>-->
-
 	    <box
 	      id="seq_name_list_container"
 	      persist="width"
