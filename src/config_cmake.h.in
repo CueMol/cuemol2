@@ -92,7 +92,9 @@
 /* Define to 1 if you have the <lzma.h> header file. */
 #cmakedefine HAVE_LZMA_H
 
+/* Use OpenGL */
 #cmakedefine BUILD_OPENGL_SYSDEP
+#cmakedefine USE_OPENGL
 
 /* Define to 1 if you have python3 */
 #cmakedefine BUILD_PYTHON_BINDINGS
@@ -306,9 +308,6 @@
 
 // /* Use GLES2 API */
 // #undef USE_GLES2
-
-// /* Use OpenGL */
-// #undef USE_OPENGL
 
 // /* Use XML-RPC service */
 // #undef USE_XMLRPC

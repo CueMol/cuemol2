@@ -62,6 +62,19 @@ SET(SYSDEP_LINK_LIBRARIES
   qlib gfx qsys
   OpenGL::GL OpenGL::GLU GLEW::glew_s)
 
+###################
+# GLSL shader files
+SET(GLSL_SHADER_FILES
+  default_vert.glsl
+  default_frag.glsl
+  edge_vert.glsl
+  edge_frag.glsl
+  silh_vert.glsl
+  silh_frag.glsl
+  es2_default_vert.glsl
+  es2_default_frag.glsl
+)
+
 #####################
 # sysdep library target
 
@@ -99,3 +112,4 @@ install(TARGETS sysdep
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   FILE_SET HEADERS
 )
+install(FILES ${GLSL_SHADER_FILES} DESTINATION data/shaders)

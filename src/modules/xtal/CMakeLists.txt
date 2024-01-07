@@ -62,21 +62,25 @@ IF (BUILD_OPENGL_SYSDEP)
     GLSLMapMeshRenderer.qif
     GLSLMapVolRenderer.qif
   )
-# shaderdir = $(prefix)/data/shaders/
-# shader_DATA = \
-# mapmesh_vertex.glsl \
-# mapmesh_frag.glsl \
-# mapmesh_geom.glsl \
-# mapvol_vertex.glsl \
-# mapvol_frag.glsl \
-# mapsurf1_vertex.glsl \
-# mapsurf1_frag.glsl \
-# $(NULL)
+
   include_directories(
     ${GLEW_INCLUDE_DIRS}
     ${OPENGL_INCLUDE_DIR}
   )
   list(APPEND XTAL_LINK_LIBRARIES sysdep)
+
+  ###################
+  # GLSL shader files
+  SET(GLSL_SHADER_FILES
+    mapmesh_vertex.glsl
+    mapmesh_frag.glsl
+    mapmesh_geom.glsl
+    mapvol_vertex.glsl
+    mapvol_frag.glsl
+    mapsurf1_vertex.glsl
+    mapsurf1_frag.glsl
+  )
+
 ENDIF ()
 
 MCWRAPGEN_CLASS(XTAL_SRCS ${XTAL_MCWG_QIFS})
@@ -98,4 +102,8 @@ MCWRAPGEN_SCR_WRAPPERS(xtal)
 install(TARGETS xtal
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  )
+)
+
+IF (GLSL_SHADER_FILES)
+  install(FILES ${GLSL_SHADER_FILES} DESTINATION data/shaders)
+ENDIF ()

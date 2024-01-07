@@ -154,58 +154,80 @@ using qlib::LString;
 
 namespace cuemol2 {
 
-  int init_qlib()
+  int init_qlib() noexcept
   {
-    return qlib::init();
+    try {
+      return qlib::init();
+    }
+    catch (const qlib::LException &e) {
+      LOG_DPRINTLN("Loader.init_qlib> Caught exception <%s>", typeid(e).name());
+      LOG_DPRINTLN("Loader.init_qlib> Reason: %s", e.getMsg().c_str());
+    }
+    catch (...) {
+      LOG_DPRINTLN("Loader.init_qlib> Caught unknown exception");
+    }
+    return -1;
   }
 
-  int init(const LString &confpath, bool reg_view)
+  int init(const LString &confpath, bool reg_view) noexcept
   {
-    // if (confpath.isEmpty()) {
-    //   confpath = LString(DEFAULT_CONFIG);
-    // }
+    try {
+      // if (confpath.isEmpty()) {
+      //   confpath = LString(DEFAULT_CONFIG);
+      // }
 
-    if (!qsys::init(confpath)) {
-      LOG_DPRINTLN("Qsys Init (%s): ERROR!!", confpath.c_str());
-      return -1;
-    }
+      if (!qsys::init(confpath)) {
+        LOG_DPRINTLN("Qsys Init (%s): ERROR!!", confpath.c_str());
+        return -1;
+      }
 #ifdef BUILD_OPENGL_SYSDEP
-    sysdep::init();
+      sysdep::init();
 #endif
 
-    LOG_DPRINTLN("main> confpath=%s", confpath.c_str());
+      LOG_DPRINTLN("main> confpath=%s", confpath.c_str());
 
-    // load molstr/lwview module
-    molstr::init();
-    lwview::init();
-    anim::init();
+      // load molstr/lwview module
+      molstr::init();
+      lwview::init();
+      anim::init();
 
-    // load other modules
-    render::init();
-    molvis::init();
-    xtal::init();
-    symm::init();
-    surface::init();
-    molanl::init();
-    mdtools::init();
-    importers::init();
+      // load other modules
+      render::init();
+      molvis::init();
+      xtal::init();
+      symm::init();
+      surface::init();
+      molanl::init();
+      mdtools::init();
+      importers::init();
 
 #ifdef HAVE_JAVASCRIPT
-    // load internal JS module
-    jsbr::init();
+      // load internal JS module
+      jsbr::init();
 #endif
 
 #ifdef BUILD_PYTHON_BINDINGS
-    // load python module
-    pybr::init(confpath);
+      // load python module
+      pybr::init(confpath);
 #endif
 
-    if (reg_view) {
+      if (reg_view) {
 #ifdef BUILD_OPENGL_SYSDEP
-      registerViewFactory();
+        registerViewFactory();
 #endif
-    }
+      }
 
+    }
+    catch (const qlib::LException &e) {
+      LOG_DPRINTLN("Loader.init> Caught exception <%s>", typeid(e).name());
+      LOG_DPRINTLN("Loader.init> Reason: %s", e.getMsg().c_str());
+      return -1;
+    }
+    catch (...) {
+      LOG_DPRINTLN("Loader.init> Caught unknown exception");
+      return -1;
+    }
+    
     return 0;
   }
 
@@ -250,10 +272,21 @@ namespace cuemol2 {
 #ifdef BUILD_OPENGL_SYSDEP
   gfx::TextRenderImpl *initTextRender()
   {
-    gfx::TextRenderImpl *pTR = (gfx::TextRenderImpl *) sysdep::createTextRender();
-    gfx::TextRenderManager *pTRM = gfx::TextRenderManager::getInstance();
-    pTRM->setImpl(pTR);
-    return pTR;
+    try {
+      gfx::TextRenderImpl *pTR = (gfx::TextRenderImpl *) sysdep::createTextRender();
+      gfx::TextRenderManager *pTRM = gfx::TextRenderManager::getInstance();
+      pTRM->setImpl(pTR);
+      return pTR;
+    }
+    catch (const qlib::LException &e) {
+      LOG_DPRINTLN("Loader.initTextRender> Caught exception <%s>", typeid(e).name());
+      LOG_DPRINTLN("Loader.initTextRender> Reason: %s", e.getMsg().c_str());
+    }
+    catch (...) {
+      LOG_DPRINTLN("Loader.initTextRender> Caught unknown exception");
+    }
+    
+    return NULL;
   }
 
   void finiTextRender(gfx::TextRenderImpl *pTR)

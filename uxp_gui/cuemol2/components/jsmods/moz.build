@@ -116,3 +116,6 @@ FINAL_TARGET_FILES += [
 FINAL_TARGET_FILES["data"] += [
     '%%%s/data/data/*' % CONFIG['CUEMOL_DIR'],
 ]
+FINAL_TARGET_FILES["data"]["shaders"] += [
+    '%%%s/data/shaders/*.glsl' % CONFIG['CUEMOL_DIR'],
+]

@@ -8,8 +8,8 @@ namespace sysdep { class MouseEventHandler; }
 
 namespace cuemol2 {
 
-  int init_qlib();
-  int init(const qlib::LString &confpath, bool reg_view);
+  int init_qlib() noexcept;
+  int init(const qlib::LString &confpath, bool reg_view) noexcept;
 
   int fini();
   
