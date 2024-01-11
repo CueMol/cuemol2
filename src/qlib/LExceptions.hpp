@@ -24,12 +24,14 @@ public: \
      __e.setFileName(__FILE__);\
      __e.setLineNo(__LINE__);\
      __e.setFuncName(__func__);\
+     MB_DPRINTLN("Throw " #TYPE ": %s", __e.getFmtMsg().c_str()); \
      throw __e; }
 #else
 #define MB_THROW(TYPE, MSG) \
   { TYPE __e(MSG);\
      __e.setFileName(__FILE__);\
      __e.setLineNo(__LINE__);\
+     MB_DPRINTLN("Throw " #TYPE ": %s", __e.getFmtMsg().c_str()); \
      throw __e; }
 #endif
 

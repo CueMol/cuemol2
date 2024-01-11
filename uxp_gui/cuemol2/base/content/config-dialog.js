@@ -115,6 +115,10 @@ this.init = function ()
 
 this.fini = function ()
 {
+  const pfstr = util.getPlatformString();
+  dd("fini called: "+pfstr);
+  if (pfstr == "Darwin")
+    this.onDialogAccept();
 }
 
 this.setUILang = function (lang_value)

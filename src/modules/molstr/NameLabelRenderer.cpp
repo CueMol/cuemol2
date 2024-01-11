@@ -387,7 +387,12 @@ void NameLabelRenderer::styleChanged(qsys::StyleEvent &ev)
   super_t::styleChanged(ev);
 
   // TO DO: ignore non-relevant styleChanged message
+  MB_DPRINTLN("style changed");
   invalidateAll();
+ 
+  qsys::ScenePtr pScene = getScene();
+  if (!pScene.isnull())
+    pScene->setUpdateFlag();
 
   //makeLabelImg();
   //m_pixCache.render();

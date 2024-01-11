@@ -57,7 +57,9 @@ public:
     m_fp = qlib::fopen_utf8(fname.c_str(), "r");
 #endif
     if (m_fp==NULL) {
-      MB_THROW(IOException, ("Cannot open file:"+fname));
+      auto msg = LString::format("Cannot open file: %s", fname.c_str());
+      MB_DPRINTLN(msg);
+      MB_THROW(IOException, msg);
     }
 
     //setvbuf(m_fp, NULL, _IOFBF, 256*1024*1024);
@@ -138,7 +140,9 @@ public:
       m_fp = qlib::fopen_utf8(fname.c_str(), "w");
 #endif
     if (m_fp==NULL) {
-      MB_THROW(IOException, ("Cannot open file:"+fname));
+      auto msg = LString::format("Cannot open file: %s", fname.c_str());
+      MB_DPRINTLN(msg);
+      MB_THROW(IOException, msg);
     }
 
     //setvbuf(m_fp, NULL, _IOFBF, 256*1024*1024);

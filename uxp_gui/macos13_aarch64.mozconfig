@@ -51,4 +51,4 @@ mk_add_options MOZ_MAKE_FLAGS="-j8"
 
 ac_add_options --enable-cuemol=/Users/user1/tmp/cuemol2/
 ac_add_options --enable-cuemol-deplibs=/Users/user1/proj64/boost_1_84/lib
-
+ac_add_options --enable-cuemol-debug

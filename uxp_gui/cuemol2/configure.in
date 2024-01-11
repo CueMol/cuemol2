@@ -56,3 +56,11 @@ AC_SUBST(CUEMOL_DIR)
 dnl == other dependent libraries ===
 MOZ_ARG_ENABLE_STRING(cuemol-deplibs,[],CUEMOL_DEPLIB_DIRS=$enableval)
 AC_SUBST(CUEMOL_DEPLIB_DIRS)
+
+dnl === cuemol2 debug mode ===
+MOZ_ARG_ENABLE_BOOL(cuemol-debug,[],CUEMOL2_DEBUG=1,CUEMOL2_DEBUG=)
+if test -n "$CUEMOL2_DEBUG"; then
+    AC_DEFINE(CUEMOL2_DEBUG)
+fi
+AC_SUBST(CUEMOL2_DEBUG)
+echo "*** CUEMOL2_DEBUG=${CUEMOL2_DEBUG}"

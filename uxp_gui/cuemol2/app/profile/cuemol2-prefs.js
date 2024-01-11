@@ -24,6 +24,7 @@
 pref("toolkit.defaultChromeURI","chrome://cuemol2/content/cuemol2.xul");
 pref("browser.hiddenWindowChromeURL", "chrome://cuemol2/content/hiddenWindow.xul");
 
+#ifdef CUEMOL2_DEBUG
 // Debug options
 pref("browser.dom.window.dump.enabled", true);
 pref("javascript.options.showInConsole", true);
@@ -31,9 +32,11 @@ pref("javascript.options.strict", true);
 pref("nglayout.debug.disable_xul_cache", true);
 pref("nglayout.debug.disable_xul_fastload", true); 
 pref("dom.report_all_js_exceptions", true);
-
 pref("cuemol2.debug.enable_dump", true);
+#endif
+
 pref("cuemol2.ui.view.use_hidpi", true);
+pref("cuemol2.ui.view.use_gl_shader", true);
 
 #define AM_DOMAIN addons.palemoon.org
 #define AM_AUS_ARGS reqVersion=%REQ_VERSION%&id=%ITEM_ID%&version=%ITEM_VERSION%&maxAppVersion=%ITEM_MAXAPPVERSION%&status=%ITEM_STATUS%&appID=%APP_ID%&appVersion=%APP_VERSION%&appOS=%APP_OS%&appABI=%APP_ABI%&locale=%APP_LOCALE%&currentAppVersion=%CURRENT_APP_VERSION%&updateType=%UPDATE_TYPE%&compatMode=%COMPATIBILITY_MODE%

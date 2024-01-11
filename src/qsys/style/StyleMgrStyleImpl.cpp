@@ -488,6 +488,7 @@ void StyleMgr::fireEventImpl(qlib::uid_t uid, const LString &setname)
   
   for (i=0; i<nsize; ++i) {
     StyleEventListener *pLsnr = cblist[i];
+    MB_DPRINTLN("Fire style event lisner: %s", typeid(*pLsnr).name());
     qlib::uid_t nCtxtID = pLsnr->getStyleCtxtID();
 
     if (uid!=0 && uid!=nCtxtID)

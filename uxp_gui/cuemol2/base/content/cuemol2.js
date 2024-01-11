@@ -153,9 +153,9 @@ Qm2Main.prototype.textRenderInit = function ()
     ctx2.fillText(text, 0, h);
     
     var img = ctx2.getImageData(0,0,width, h);
-    dd("img: "+img);
+    dd("img w="+width+" h="+h+"img: "+img);
     var data = img.data;
-    dd("data: "+data);
+    // dd("data: "+data);
     var i, size = width * h;
     tr.resize(size);
     for (i=0; i<size; ++i) {
