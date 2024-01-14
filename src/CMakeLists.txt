@@ -193,6 +193,9 @@ if (BUILD_PYTHON_BINDINGS)
   endif ()
 endif ()
 
+# utils (blendpng)
+add_subdirectory(utils)
+
 #########################################
 # libcuemol2 library target
 
