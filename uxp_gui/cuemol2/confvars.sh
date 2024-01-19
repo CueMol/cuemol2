@@ -93,7 +93,8 @@ fi
 # Set the chrome packing format
 # Possible values are omni, jar, and flat
 # Currently, only omni and flat are supported
-MOZ_CHROME_FILE_FORMAT=flat
+# MOZ_CHROME_FILE_FORMAT=flat
+MOZ_CHROME_FILE_FORMAT=omni
 JAR_COMPRESSION=brotli
 OMNIJAR_NAME=cuemol2.res
 # OMNIJAR_NAME=${MOZ_APP_NAME}.res

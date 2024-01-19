@@ -12,7 +12,8 @@
  "resourcePackages": {
   "cuemol2ui-lib": "cuemol2ui", 
   "addon-kit-lib": "addon-kit", 
-  "api-utils-lib": "api-utils"
+  "api-utils-lib": "api-utils",
+  "cuemol-wrappers": "cuemol-wrappers"
  }, 
  "resources": {
   "cuemol2ui-lib": [
@@ -23,13 +24,17 @@
   ], 
   "api-utils-lib": [
    "api-utils-lib"
+  ],
+  "cuemol-wrappers": [
+   "cuemol-wrappers"
   ]
  }, 
 
  "rootPaths": [
   "resource://cuemol2ui-lib/", 
   "resource://api-utils-lib/", 
-  "resource://addon-kit-lib/"
+   "resource://addon-kit-lib/",
+   "resource://cuemol-wrappers/"
  ], 
 
  "sdkVersion": "1.0", 
