@@ -248,9 +248,27 @@ target_sources(cuemol2
   PRIVATE loader.cpp
   PUBLIC FILE_SET HEADERS 
   BASE_DIRS ${PROJECT_SOURCE_DIR}/src
-  FILES common.h qmtypes.h version.hpp loader.hpp
+  FILES common.h qmtypes.h _version.h loader.hpp
 )
+
 # message(STATUS "PROJECT_BINARY_DIR=${PROJECT_BINARY_DIR}")
 install(TARGETS cuemol2 FILE_SET HEADERS)
 
-install(FILES ${PROJECT_BINARY_DIR}/src/config.h DESTINATION include)
+install(FILES ${PROJECT_BINARY_DIR}/src/config.h ${PROJECT_BINARY_DIR}/src/version.hpp DESTINATION include)
+
+set(DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../data/)
+set(DATA_FILES
+${DATA_DIR}/prot_top.xml
+${DATA_DIR}/prot_props.xml
+${DATA_DIR}/nucl_top.xml
+${DATA_DIR}/nucl_props.xml
+${DATA_DIR}/sugar_top.xml
+${DATA_DIR}/mono_top.xml
+${DATA_DIR}/default_params.xml
+${DATA_DIR}/symop.dat
+${DATA_DIR}/default_style.xml
+)
+set(SYSCONFIG_FILE ${DATA_DIR}/sysconfig.xml)
+
+install(FILES ${DATA_FILES} DESTINATION data/data)
+install(FILES ${SYSCONFIG_FILE} DESTINATION data)
