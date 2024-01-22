@@ -5,9 +5,6 @@
 
 # Application Basename and Vendor
 # MOZ_APP_BASENAME and MOZ_APP_VENDOR must not have spaces.
-# These values where appropriate are hardcoded in application.ini
-# to "Pale Moon" and "Moonchild Productions" respectively for
-# Pale Moon
 MOZ_APP_BASENAME=CueMol2
 MOZ_APP_VENDOR=CDDD-LAB
 
@@ -93,7 +90,8 @@ fi
 # Set the chrome packing format
 # Possible values are omni, jar, and flat
 # Currently, only omni and flat are supported
-MOZ_CHROME_FILE_FORMAT=flat
+# MOZ_CHROME_FILE_FORMAT=flat
+MOZ_CHROME_FILE_FORMAT=omni
 JAR_COMPRESSION=brotli
 OMNIJAR_NAME=cuemol2.res
 # OMNIJAR_NAME=${MOZ_APP_NAME}.res

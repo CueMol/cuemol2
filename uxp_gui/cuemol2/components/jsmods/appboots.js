@@ -32,11 +32,12 @@ var manager = Components.manager.QueryInterface(Ci.nsIComponentRegistrar);
 // support rebootless addons can still work.)
 
 function setupHarness(installPath, loadReason) {
-  var harnessJs = installPath.clone();
-  // harnessJs.append("components");
-  harnessJs.append("modules");
-  harnessJs.append("harness.js");
-  var path = ios.newFileURI(harnessJs).spec;
+    // var harnessJs = installPath.clone();
+    // // harnessJs.append("components");
+    // harnessJs.append("modules");
+    // harnessJs.append("harness.js");
+  // var path = ios.newFileURI(harnessJs).spec;
+  var path = "resource://gre/modules/harness.js";
   var harness = {};
   var loader = Cc["@mozilla.org/moz/jssubscript-loader;1"]
                .getService(Ci.mozIJSSubScriptLoader);
@@ -74,31 +75,32 @@ function setupHarness(installPath, loadReason) {
     harnessService.load(loadReason);
 }
 
-// ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
+//////////
 dump("******** modules/appboots.js executing ********** \n");
+
+var dirsvc = Cc["@mozilla.org/file/directory_service;1"].getService(Ci.nsIProperties);
+var curproc_dir = dirsvc.get("CurProcD", Ci.nsIFile);
+dump("*** curproc_dir = "+ curproc_dir.path +"\n");
+var gre_dir = dirsvc.get("GreD", Ci.nsIFile);
+dump("*** gre_dir = "+ gre_dir.path +"\n");
+
+//////////
 
 var resProt = ios.getProtocolHandler("resource").QueryInterface(Ci.nsIResProtocolHandler);
 dump("******** resProt = "+ resProt +"\n");
-
-var fileProt = ios.getProtocolHandler("file").QueryInterface(Ci.nsIFileProtocolHandler);
 var greURI = resProt.getSubstitution("gre");
-dump("******** greURI.spec = "+ greURI.spec +"\n");
-// var appURI = resProt.getSubstitution("app");
-// dump("******** appURI.spec = "+ appURI.spec +"\n");
+dump("*** greURI = "+ greURI +"\n");
+dump("*** greURI.spec = "+ greURI.spec +"\n");
+var fileProt = ios.getProtocolHandler("file").QueryInterface(Ci.nsIFileProtocolHandler);
+// // var appURI = resProt.getSubstitution("app");
+// // dump("******** appURI.spec = "+ appURI.spec +"\n");
 
 // var installPath = fileProt.getFileFromURLSpec(appURI.spec);
-var installPath = fileProt.getFileFromURLSpec(greURI.spec);
-dump("******** InstallPath = "+ installPath.path +"\n");
-
-// var dirsvc = Cc["@mozilla.org/file/directory_service;1"].getService(Ci.nsIProperties);
-// var curproc_dir = dirsvc.get("CurProcD", Ci.nsIFile);
-// var installPath = curproc_dir;
-
-dump("******** InstallPath = "+ installPath.path +"\n");
+// var installPath = fileProt.getFileFromURLSpec(greURI.spec);
+var installPath = gre_dir;
 
 if (!gHarness) {
+    dump("******** InstallPath = "+ installPath.path +"\n");
   setupHarness(installPath, "enable");
 }
 

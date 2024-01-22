@@ -12,7 +12,7 @@
 #
 #  - Dashes are delimiters; use underscores instead.
 #  - The first character after a period must be alphabetic.
-#  - Computed values (e.g. 50 * 1024) don't work.
+#  - Computed values (e.g. 50 * 1024) dont work.
 #
 
 #ifdef XP_UNIX
@@ -24,6 +24,7 @@
 pref("toolkit.defaultChromeURI","chrome://cuemol2/content/cuemol2.xul");
 pref("browser.hiddenWindowChromeURL", "chrome://cuemol2/content/hiddenWindow.xul");
 
+#ifdef CUEMOL2_DEBUG
 // Debug options
 pref("browser.dom.window.dump.enabled", true);
 pref("javascript.options.showInConsole", true);
@@ -31,21 +32,18 @@ pref("javascript.options.strict", true);
 pref("nglayout.debug.disable_xul_cache", true);
 pref("nglayout.debug.disable_xul_fastload", true); 
 pref("dom.report_all_js_exceptions", true);
-
 pref("cuemol2.debug.enable_dump", true);
+#endif
+
+#ifdef XP_MACOSX
+pref("cuemol2.ui.mouse-emulate-rbutton", true);
+pref("cuemol2.ui.mouse-momentum-scroll", true);
+pref("cuemol2.ui.mouse-multitouch-pad", true);
+#endif
+
 pref("cuemol2.ui.view.use_hidpi", true);
+pref("cuemol2.ui.view.use_gl_shader", true);
 
-#define AM_DOMAIN addons.palemoon.org
-#define AM_AUS_ARGS reqVersion=%REQ_VERSION%&id=%ITEM_ID%&version=%ITEM_VERSION%&maxAppVersion=%ITEM_MAXAPPVERSION%&status=%ITEM_STATUS%&appID=%APP_ID%&appVersion=%APP_VERSION%&appOS=%APP_OS%&appABI=%APP_ABI%&locale=%APP_LOCALE%&currentAppVersion=%CURRENT_APP_VERSION%&updateType=%UPDATE_TYPE%&compatMode=%COMPATIBILITY_MODE%
-
-
-
-
-// Dictionary download preference
-pref("browser.dictionaries.download.url", "https://@AM_DOMAIN@/dictionaries/");
-
-// Get More Tools link URL
-pref("browser.getdevtools.url","https://@AM_DOMAIN@/?component=integration&type=external&request=devtools");
 
 // Feedback URL
 pref("browser.feedback.url", "https://forum.palemoon.org");
@@ -208,9 +206,6 @@ pref("browser.download.panel.shown", false);
 // This records whether or not at least one session with the Downloads Panel
 // enabled has been completed already.
 pref("browser.download.panel.firstSessionCompleted", false);
-
-// search engines URL
-pref("browser.search.searchEnginesURL",      "https://@AM_DOMAIN@/?component=integration&type=external&request=searchplugins");
 
 // pointer to the default engine name
 pref("browser.search.defaultenginename",      "chrome://browser-region/locale/region.properties");

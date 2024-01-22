@@ -9,6 +9,7 @@
   id     = "config-dialog"
   windowtype="CueMol2:Config"
   title  = "Options"
+  buttons = "accept,cancel"
   xmlns  = "http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
 
   <script type="application/javascript" src="chrome://cuemol2/content/cuemol2-utils.js"/>

@@ -199,3 +199,11 @@ install(TARGETS qsys
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   FILE_SET HEADERS
 )
+
+add_custom_command(
+  DEPENDS "${CMAKE_SOURCE_DIR}/src/_version.h"
+  OUTPUT "${CMAKE_BINARY_DIR}/src/version.hpp"
+  COMMAND "python3" "${CMAKE_SOURCE_DIR}/src/python/make_ver_hpp.py" "-i" "${CMAKE_SOURCE_DIR}/src/_version.h" "-o" "${CMAKE_BINARY_DIR}/src/version.hpp"
+)
+add_custom_target(qsys_gen_ver DEPENDS ${PROJECT_BINARY_DIR}/src/version.hpp)
+add_dependencies(qsys qsys_gen_ver)

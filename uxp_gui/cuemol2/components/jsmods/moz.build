@@ -1,7 +1,6 @@
 
 EXTRA_JS_MODULES += ['appboots.js', 'harness.js']
-
-FINAL_TARGET_FILES += ['harness-options.json']
+# EXTRA_JS_MODULES += ['appboots.js']
 
 FINAL_TARGET_FILES['addon-kit-lib'] += [
     'addon-kit-lib/clipboard.js',
@@ -116,3 +115,9 @@ FINAL_TARGET_FILES += [
 FINAL_TARGET_FILES["data"] += [
     '%%%s/data/data/*' % CONFIG['CUEMOL_DIR'],
 ]
+FINAL_TARGET_FILES["data"]["shaders"] += [
+    '%%%s/data/shaders/*.glsl' % CONFIG['CUEMOL_DIR'],
+]
+
+FINAL_TARGET_FILES += ['harness-options.json']
+# FINAL_TARGET_FILES += ['harness.jsxx']

@@ -21,6 +21,26 @@ var dummy = {
   utils: {}
 };
 
+var loader = Cc["@mozilla.org/moz/jssubscript-loader;1"]
+    .getService(Ci.mozIJSSubScriptLoader);
+var dirsvc = Cc["@mozilla.org/file/directory_service;1"].getService(Ci.nsIProperties);
+var ios = Cc['@mozilla.org/network/io-service;1']
+    .getService(Ci.nsIIOService);
+var gre_dir = dirsvc.get("GreD", Ci.nsIFile);
+
+function importWrapper(class_name)
+{
+    let obj = {};
+    let jsfile = gre_dir.clone();
+    jsfile.append("cuemol-wrappers");
+    jsfile.append(class_name+".js");
+    const path = ios.newFileURI(jsfile).spec;
+    // dd("*** path: "+path);
+    loader.loadSubScript(path, obj);
+    // dd("*** obj: "+debug.dumpObjectTree(obj, 1));
+    return obj;
+}
+
 function getWrapperCtor(class_name)
 {
   var wrClassName = "wrapper_" + class_name;
@@ -31,12 +51,17 @@ function getWrapperCtor(class_name)
     ctor = wr_classes[wrClassName];
   }
   else {
-    // wrapper class is not loaded
-    // filenm = "resource://app/resources/cuemol-wrappers/"+class_name+".js";
-    const filenm = "resource://gre/cuemol-wrappers/"+class_name+".js";
-    dd("NEW Loading: "+filenm);
-    Cu.import(filenm, wr_classes);
-    ctor = wr_classes[wrClassName];
+      // wrapper class is not loaded
+      // // filenm = "resource://app/resources/cuemol-wrappers/"+class_name+".js";
+      // const filenm = "resource://gre/cuemol-wrappers/"+class_name+".js";
+      // dd("NEW Loading: "+filenm);
+      // Cu.import(filenm, wr_classes);
+      // ctor = wr_classes[wrClassName];
+      // dd("*** wr_classes: "+debug.dumpObjectTree(wr_classes, 1));
+
+      const obj = importWrapper(class_name);
+      ctor = obj[wrClassName];
+      wr_classes[wrClassName] = ctor;
   }
 
   return ctor;

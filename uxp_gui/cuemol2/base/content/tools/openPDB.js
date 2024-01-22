@@ -1,6 +1,7 @@
 
-var Cc = Components.classes;
-var Ci = Components.interfaces;
+// Cc, Ci, etc are defined cuemol2-utils.js
+// var Cc = Components.classes;
+// var Ci = Components.interfaces;
 //const util = require("util");
 
 window.gPdbDlg = {
@@ -98,19 +99,19 @@ window.gPdbDlg = {
       if (svr=="EDS")
         url_map = "http://eds.bmc.uu.se/eds/sfd/"+pdbid+"/"+pdbid+"_sigmaa.mtz";
       else
-        url_map = "http://www.ebi.ac.uk/pdbe/coordinates/files/"+pdbid+"_map.mtz";
+        url_map = "https://www.ebi.ac.uk/pdbe/coordinates/files/"+pdbid+"_map.mtz";
 
       let uri = this.mIoService.newURI(url_map, null, null);
   
       try {
         let httpChannel = this.mIoService.newChannelFromURI(uri)
-          .QueryInterface(Components.interfaces.nsIHttpChannel);
+          .QueryInterface(Ci.nsIHttpChannel);
         httpChannel.requestMethod = "HEAD";
         httpChannel.redirectionLimit = 0;
         httpChannel.open();
-        dd("Response "+httpChannel.responseStatus+httpChannel.responseStatusText+" for URL: "+url_map);
+        dd("Response "+httpChannel.responseStatus+" "+httpChannel.responseStatusText+" for URL: "+url_map);
         if (httpChannel.responseStatus!=200) {
-          this.mResBox.value = "PDBe map Entry "+pdbid+" not found.";
+          this.mResBox.value = "Map Entry "+pdbid+" not found in "+svr;
           this.mPdbIdBox.select();
           this.mPdbIdBox.focus();
           return false;

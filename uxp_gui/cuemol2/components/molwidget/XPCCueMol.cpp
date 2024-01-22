@@ -26,6 +26,7 @@
 
 //
 
+#include <loader.hpp>
 #include <qlib/ClassRegistry.hpp>
 #include <qlib/EventManager.hpp>
 #include <qlib/LByteArray.hpp>
@@ -249,83 +250,41 @@ XPCCueMol::Observe(nsISupports* aSubject, const char* aTopic,
 
 NS_IMETHODIMP XPCCueMol::Init(const char *confpath, bool *_retval)
 {
-  try {
   // XXX
   //AddRef();
-  
+
   nsresult rv = NS_OK;
-  
+
   if (m_bInit) {
     LOG_DPRINTLN("XPCCueMol> ERROR: CueMol already initialized.");
     return NS_ERROR_ALREADY_INITIALIZED;
   }
 
-  registerFileType();
-
-  // CueMol2 Application initialization
-  qsys::init(confpath);
-  sysdep::init();
-  //MB_DPRINTLN("---------- qsys::init(confpath) OK");
-
-  // load other modules
-  render::init();
-  molstr::init();
-  molvis::init();
-  xtal::init();
-  symm::init();
-  surface::init();
-  molanl::init();
-  lwview::init();
-  anim::init();
-
-#ifdef HAVE_MDTOOLS_MODULE
-  mdtools::init();
-#endif
-
-#ifdef HAVE_IMPORTERS_MODULE
-  importers::init();
-#endif
+  int result = cuemol2::init(confpath, true);
+  if (result < 0) {
+    return NS_ERROR_FAILURE;
+  }
 
   initTextRender();
   MB_DPRINTLN("---------- initTextRender() OK");
 
-  // setup timer
-  qlib::EventManager::getInstance()->initTimer(new XPCTimerImpl);
+  try {
+    registerFileType();
 
-  // setup quit-app observer
-  nsCOMPtr<nsIObserverService> obs = do_GetService("@mozilla.org/observer-service;1", &rv);
-  NS_ENSURE_SUCCESS(rv, rv);
+    // setup timer
+    qlib::EventManager::getInstance()->initTimer(new XPCTimerImpl);
 
-  rv = obs->AddObserver(this, "xpcom-shutdown", PR_FALSE);
-  // rv = obs->AddObserver(this, "quit-application", PR_FALSE);
-  NS_ENSURE_SUCCESS(rv, rv);
+    // setup quit-app observer
+    nsCOMPtr<nsIObserverService> obs = do_GetService("@mozilla.org/observer-service;1", &rv);
+    NS_ENSURE_SUCCESS(rv, rv);
 
-  MB_DPRINTLN("---------- setup observers OK");
+    rv = obs->AddObserver(this, "xpcom-shutdown", PR_FALSE);
+    // rv = obs->AddObserver(this, "quit-application", PR_FALSE);
+    NS_ENSURE_SUCCESS(rv, rv);
 
-#ifdef HAVE_JAVASCRIPT
-  // load internal JS module
-  jsbr::init();
-  MB_DPRINTLN("---------- jsbr::init() OK");
-#endif
+    MB_DPRINTLN("---------- setup observers OK");
 
-#ifdef HAVE_PYTHON
-  // load python module
-  pybr::init(confpath);
-  MB_DPRINTLN("---------- setup PYBR OK");
-#endif
-
-#ifdef USE_XMLRPC
-  // load python module
-  xrbr::init();
-  MB_DPRINTLN("---------- setup XRBR OK");
-#endif
-
-  registerViewFactory();
-
-  MB_DPRINTLN("XPCCueMol> CueMol initialized.");
-  m_bInit = true;
-  *_retval = PR_TRUE;
-
+    // registerViewFactory();
   }
   catch (const qlib::LException &e) {
     LOG_DPRINTLN("Init> Caught exception <%s>", typeid(e).name());
@@ -336,6 +295,10 @@ NS_IMETHODIMP XPCCueMol::Init(const char *confpath, bool *_retval)
     LOG_DPRINTLN("Init> Caught unknown exception");
     return NS_ERROR_NOT_IMPLEMENTED;
   }
+
+  MB_DPRINTLN("XPCCueMol> CueMol initialized.");
+  m_bInit = true;
+  *_retval = PR_TRUE;
 
   return NS_OK;
 }
@@ -403,11 +366,11 @@ NS_IMETHODIMP XPCCueMol::Fini()
 
 bool XPCCueMol::initTextRender()
 {
-  gfx::TextRenderImpl *pTR = (gfx::TextRenderImpl *) sysdep::createTextRender();
-  gfx::TextRenderManager *pTRM = gfx::TextRenderManager::getInstance();
-  pTRM->setImpl(pTR);
+  // gfx::TextRenderImpl *pTR = (gfx::TextRenderImpl *) sysdep::createTextRender();
+  // gfx::TextRenderManager *pTRM = gfx::TextRenderManager::getInstance();
+  // pTRM->setImpl(pTR);
 
-  m_pTR = pTR;
+  m_pTR =cuemol2::initTextRender(); // pTR;
   return true;
 }
 
