@@ -49,8 +49,9 @@ ac_add_options --host=aarch64-apple-darwin
 
 mk_add_options MOZ_MAKE_FLAGS="-j8"
 
-ac_add_options --enable-cuemol=/Users/user1/tmp/cuemol2/
-ac_add_options --enable-cuemol-deplibs=/Users/user1/proj64/boost_1_84/lib
+ac_add_options --enable-cuemol=$HOME/tmp/cuemol2/
+ac_add_options --enable-cuemol-boostdir=$HOME/proj64/boost_1_84/
+ac_add_options --enable-cuemol-deplibs=$HOME/proj64/boost_1_84/lib
 # ac_add_options --enable-cuemol-debug
 
 # export MOZ_BUILD_DATE=1234567890

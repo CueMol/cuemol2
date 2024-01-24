@@ -1,14 +1,15 @@
 Only in ../../../src/Pale-Moon/platform: .git
 diff -x *.pyc -x *~ -r -u ../../../src/Pale-Moon/platform/build/moz.configure/old.configure platform/build/moz.configure/old.configure
 --- ../../../src/Pale-Moon/platform/build/moz.configure/old.configure	2023-11-17 10:29:06
-+++ platform/build/moz.configure/old.configure	2024-01-10 21:15:54
-@@ -316,6 +316,9 @@
++++ platform/build/moz.configure/old.configure	2024-01-24 21:14:50
+@@ -316,6 +316,10 @@
      '--disable-browser-statusbar',
      '--disable-sync',
      '--disable-personas',
 +    '--enable-cuemol',
 +    '--enable-cuemol-deplibs',
 +    '--enable-cuemol-debug',
++    '--enable-cuemol-boostdir',
      
      # Below are configure flags used by Basilisk
      '--disable-webextensions',
