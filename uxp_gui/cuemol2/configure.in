@@ -49,9 +49,15 @@ fi
 
 AC_SUBST(MOZ_PERSONAS)
 
+dnl ========================================================
+
 dnl === libcuemol2 directory ===
 MOZ_ARG_ENABLE_STRING(cuemol,[],CUEMOL_DIR=$enableval)
 AC_SUBST(CUEMOL_DIR)
+
+dnl === cuemol boost directory ===
+MOZ_ARG_ENABLE_STRING(cuemol-boostdir,[],CUEMOL_BOOST_DIR=$enableval)
+AC_SUBST(CUEMOL_BOOST_DIR)
 
 dnl == other dependent libraries ===
 MOZ_ARG_ENABLE_STRING(cuemol-deplibs,[],CUEMOL_DEPLIB_DIRS=$enableval)

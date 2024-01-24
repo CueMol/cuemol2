@@ -3,11 +3,10 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-# CUEMOL_DIR = 
 warning("CUEMOL_DIR: <%s>" % CONFIG['CUEMOL_DIR'])
 
 LOCAL_INCLUDES += [
-    '%/opt/homebrew/include/',
+    '%%%s/include' % CONFIG['CUEMOL_BOOST_DIR'],
     '%%%s/include' % CONFIG['CUEMOL_DIR'],
 ]
 OS_LIBS += ['-L%s/lib' % CONFIG['CUEMOL_DIR'],
