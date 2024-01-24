@@ -1,11 +1,13 @@
---- platform/build/moz.configure/old.configure	2023-11-04 15:47:00
-+++ ../../../src/uxp_example1/platform/build/moz.configure/old.configure	2023-12-27 21:05:54
-@@ -316,6 +316,8 @@
+diff -x *.pyc -x *~ -r -u platform/build/moz.configure/old.configure ../../../src/Pale-Moon/platform/build/moz.configure/old.configure
+--- platform/build/moz.configure/old.configure	2024-01-10 21:15:54
++++ ../../../src/Pale-Moon/platform/build/moz.configure/old.configure	2023-11-17 10:29:06
+@@ -316,9 +316,6 @@
      '--disable-browser-statusbar',
      '--disable-sync',
      '--disable-personas',
-+    '--enable-cuemol',
-+    '--enable-cuemol-deplibs',
+-    '--enable-cuemol',
+-    '--enable-cuemol-deplibs',
+-    '--enable-cuemol-debug',
      
      # Below are configure flags used by Basilisk
      '--disable-webextensions',
