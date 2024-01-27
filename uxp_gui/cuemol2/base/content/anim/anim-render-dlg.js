@@ -61,17 +61,17 @@
 
     // Setup log window
     this.mLogWnd = document.getElementById("output-log-frame");
-    this.mLogWndDoc = this.mLogWnd.contentDocument;
-    this.mLogWndDoc.writeln("<head><link rel='stylesheet' type='text/css' href='chrome://cuemol2/content/logwindow.css'></head><body><pre id='log_content' class='console-text'/></body>");
-    this.mLogWndDoc.close();
-    this.mLogWndWin = this.mLogWnd.contentWindow;
-    this.mLogWndPre = this.mLogWndDoc.getElementById("log_content");
+    // this.mLogWndDoc = this.mLogWnd.contentDocument;
+    // this.mLogWndDoc.writeln("<head><link rel='stylesheet' type='text/css' href='chrome://cuemol2/content/logwindow.css'></head><body><pre id='log_content' class='console-text'/></body>");
+    // this.mLogWndDoc.close();
+    // this.mLogWndWin = this.mLogWnd.contentWindow;
+    // this.mLogWndPre = this.mLogWndDoc.getElementById("log_content");
 
     // set initial values
     if (prefsvc.has(output_dir_key)) {
       let path = prefsvc.get(output_dir_key);
       if (util.chkCreateMozDir(path))
-	this.mOutputPathBox.value = path;
+	    this.mOutputPathBox.value = path;
     }
     
     this.mOutputBaseBox.value = "output";
@@ -110,8 +110,8 @@
 
   dlg.appendLog = function(msg)
   {
-    this.mLogWndPre.appendChild(this.mLogWndDoc.createTextNode(msg));
-    this.mLogWndWin.scrollTo(0, this.mLogWndPre.scrollHeight);
+    // this.mLogWndPre.appendChild(this.mLogWndDoc.createTextNode(msg));
+    // this.mLogWndWin.scrollTo(0, this.mLogWndPre.scrollHeight);
   };
 
   dlg.onStart = function ()
@@ -630,9 +630,9 @@
       // default ffmpeg path
       let default_path;
       if (this.mPovRender.mPlfName=="Windows_NT")
-	default_path = util.createDefaultPath("CurProcD", "ffmpeg", "bin", "ffmpeg.exe");
+	    default_path = util.createDefaultPath("GreD", "ffmpeg", "bin", "ffmpeg.exe");
       else
-	default_path = util.createDefaultPath("CurProcD", "ffmpeg", "bin", "ffmpeg");
+	    default_path = util.createDefaultPath("GreD", "ffmpeg", "bin", "ffmpeg");
       
       this.mFfExePathBox.value = default_path;
     }

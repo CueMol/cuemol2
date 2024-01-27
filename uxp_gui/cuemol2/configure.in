@@ -70,3 +70,7 @@ if test -n "$CUEMOL2_DEBUG"; then
 fi
 AC_SUBST(CUEMOL2_DEBUG)
 echo "*** CUEMOL2_DEBUG=${CUEMOL2_DEBUG}"
+
+dnl === cuemol2 bundle software directory ===
+MOZ_ARG_ENABLE_STRING(cuemol-bundle,[],CUEMOL_BUNDLE_DIR=$enableval)
+AC_SUBST(CUEMOL_BUNDLE_DIR)

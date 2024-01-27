@@ -122,7 +122,11 @@
 	  </hbox>
 	  <groupbox flex="1">
 	    <caption label="Log"/>
-	    <iframe id="output-log-frame" flex="1"/>
+	    <!-- <iframe id="output-log-frame" flex="1"/> -->
+	    <textbox id="output-log-frame" flex="1"
+                 multiline="true" readonly="true"
+                 class="plain"
+                 style="font-family: monospace; font-weight: bold;"/>
 	  </groupbox>
 	</vbox>
       </tabpanel>

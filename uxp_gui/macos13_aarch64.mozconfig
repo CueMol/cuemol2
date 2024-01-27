@@ -52,7 +52,5 @@ mk_add_options MOZ_MAKE_FLAGS="-j8"
 ac_add_options --enable-cuemol=$HOME/tmp/cuemol2/
 ac_add_options --enable-cuemol-boostdir=$HOME/proj64/boost_1_84/
 ac_add_options --enable-cuemol-deplibs=$HOME/proj64/boost_1_84/lib
-# ac_add_options --enable-cuemol-debug
-
-# export MOZ_BUILD_DATE=1234567890
-# $PYTHON ${_topsrcdir}/$MOZ_BUILD_APP/config/extract_version.py -i ${CUEMOL_DIR}/include/version.hpp
+ac_add_options --enable-cuemol-debug
+ac_add_options --enable-cuemol-bundle=$HOME/proj64/cuemol2_bundle_0.0.1/

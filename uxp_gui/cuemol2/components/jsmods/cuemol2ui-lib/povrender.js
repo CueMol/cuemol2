@@ -12,6 +12,7 @@ const cuemol = require("cuemol");
 
 //////////
 
+const blendpng_key = "cuemol2.ui.render.blendpng-path";
 const pov_exe_key = "cuemol2.ui.render.pov-exe-path";
 const pov_inc_key = "cuemol2.ui.render.pov-inc-path";
 
@@ -66,10 +67,10 @@ function PovRender()
 
   // default povray path
   if (this.mPlfName=="Windows_NT") {
-    this.mDefaultPovPath = util.createDefaultPath("CurProcD", "povray", "bin", "povray.exe");
+    this.mDefaultPovPath = util.createDefaultPath("GreD", "povray", "bin", "povray.exe");
   }
   else {
-    this.mDefaultPovPath = util.createDefaultPath("CurProcD", "povray", "bin", "povray");
+    this.mDefaultPovPath = util.createDefaultPath("GreD", "povray", "bin", "povray");
   }
   
   this.mPovExePath = this.mDefaultPovPath;
@@ -78,18 +79,35 @@ function PovRender()
     if (util.chkCreateMozFile(strpath))
       this.mPovExePath = strpath;
   }
+  dd("PovRender> pov exe path="+this.mPovExePath);
   
   // default inc path
-  this.mDefaultIncPath = util.createDefaultPath("CurProcD", "povray", "include");
+  this.mDefaultIncPath = util.createDefaultPath("GreD", "povray", "include");
   this.mPovIncPath = this.mDefaultIncPath;
   if (pref.has(pov_inc_key)) {
     let strpath = pref.get(pov_inc_key);
     if (util.chkCreateMozDir(strpath))
       this.mPovIncPath = strpath;
   }
-
-  dd("PovRender> pov exe path="+this.mPovExePath);
   dd("PovRender> pov inc path="+this.mPovIncPath);
+
+  // default blendpng path
+  if (this.mPlfName=="Windows_NT") {
+    this.mDefaultBlendExePath = util.createDefaultPath("GreD", "blendpng.exe");
+  }
+  else {
+    this.mDefaultBlendExePath = util.createDefaultPath("GreD", "blendpng");
+  }
+  dd("this.mDefaultBlendExePath="+this.mDefaultBlendExePath);
+  
+  this.mBlendExePath = this.mDefaultBlendExePath;
+  if (pref.has(blendpng_key)) {
+    let strpath = pref.get(blendpng_key);
+    if (util.chkCreateMozFile(strpath))
+      this.mBlendExePath = strpath;
+  }
+  dd("PovRender> blendpng path="+this.mBlendExePath);
+  
 }
 
 PovRender.prototype.setPovExePath = function (path)
@@ -388,11 +406,14 @@ PovRender.prototype.startRender = function ()
 PovRender.prototype.setupPovPaths = function ()
 {
   var str_povexe = this.mPovExePath;
+  var str_blendpng_path = this.mBlendExePath;
   var str_povinc = this.mPovIncPath;
 
   dd("doRenderImpl povpath="+str_povexe);
   dd("             incpath="+str_povinc);
+  dd("             blendpng="+str_blendpng_path);
 
+  // povray/povray.exe
   var povexe = util.chkCreateMozFile(str_povexe);
   if (povexe==null) {
     throw "povray exe file doesn't exist: "+str_povexe;
@@ -400,6 +421,7 @@ PovRender.prototype.setupPovPaths = function ()
   }
   pref.set(pov_exe_key, povexe.path);
 
+  // povray include dir
   var povinc = util.chkCreateMozDir(str_povinc);
   if (povinc==null) {
     throw "povray incdir doesn't exist: "+str_povinc;
@@ -407,16 +429,25 @@ PovRender.prototype.setupPovPaths = function ()
   }
   pref.set(pov_inc_key, povinc.path);
 
+  // blendpng
+  var blendpng_path = util.chkCreateMozFile(str_blendpng_path);
+  if (blendpng_path==null) {
+    throw "blendpng exe file doesn't exist: "+str_blendpng_path;
+    return;
+  }
+  pref.set(blendpng_key, blendpng_path.path);
+
   this.mPovExePath = povexe;
   this.mPovIncPath = povinc;
+  this.mBlendExePath = blendpng_path;
 
-  // blendpng/blendpng.exe path
-  if (this.mPlfName=="Windows_NT") {
-    this.mBlendExePath = util.createMozFile(util.createDefaultPath("CurProcD", "blendpng.exe"));
-  }
-  else {
-    this.mBlendExePath = util.createMozFile(util.createDefaultPath("CurProcD", "bin", "blendpng"));
-  }
+  // // blendpng/blendpng.exe path
+  // if (this.mPlfName=="Windows_NT") {
+  //   this.mBlendExePath = util.createMozFile(util.createDefaultPath("CurProcD", "blendpng.exe"));
+  // }
+  // else {
+  //   this.mBlendExePath = util.createMozFile(util.createDefaultPath("CurProcD", "bin", "blendpng"));
+  // }
 
 };
 
