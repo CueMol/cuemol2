@@ -63,13 +63,14 @@ exports.createMozTmpFile = function(aTmpl)
   return file;
 }
 
-exports.createDefaultPath = function(aPropName)
+exports.createDefaultPath = function()
 {
   var default_path = "";
   try {
-    var file = Cc["@mozilla.org/file/directory_service;1"]
+    const topdir = arguments[0]
+    let file = Cc["@mozilla.org/file/directory_service;1"]
       .getService(Ci.nsIProperties)
-        .get("CurProcD", Ci.nsIFile);
+        .get(topdir, Ci.nsIFile);
     
     for (var i=1; i<arguments.length; ++i) {
       file.append(arguments[i]);

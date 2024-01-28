@@ -120,4 +120,4 @@ FINAL_TARGET_FILES["data"]["shaders"] += [
 ]
 
 FINAL_TARGET_FILES += ['harness-options.json']
-# FINAL_TARGET_FILES += ['harness.jsxx']
+

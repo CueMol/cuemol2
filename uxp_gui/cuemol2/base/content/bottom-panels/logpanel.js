@@ -1,4 +1,3 @@
-// -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 //
 // logpanel.js: log output bottom-panel implementation
 //
@@ -6,50 +5,38 @@
 if (!("logpanel" in cuemolui)) {
 
   ( function () {
-
-    var panel = cuemolui.logpanel = new Object();
+    let panel = cuemolui.logpanel = new Object();
 
     addEventListener("load", function () {panel.onLoad();}, false);
     addEventListener("unload", function () {panel.onUnLoad();}, false);
 
+    panel.scrollToBottom = function ()
+    {
+      const pos = this.mLogWnd.value.length;
+      this.mLogWnd.selectionStart = pos;
+      this.mLogWnd.selectionEnd = pos;
+    }
+
     panel.onLoad = function ()
     {
-      dd("&&&&&&&&&&&&& log wnd onLoad called");
-      var logMgr = cuemol.getService("MsgLog");
-      var accumMsg = logMgr.getAccumMsg();
+      const logMgr = cuemol.getService("MsgLog");
+      const accumMsg = logMgr.getAccumMsg();
       logMgr.removeAccumMsg();
 
-      var that = this;
+      let that = this;
       // setup log display iframe
       if (!this.mLogWnd) {
-        // this.mLogWnd = document.getElementById("output_log_wnd");
-        // this.mLogWndDoc = this.mLogWnd.contentDocument;
-        this.mLogWndDoc = document;
-        // this.mLogWndDoc.writeln("<head><link rel='stylesheet' type='text/css' href='logwindow.css'/></head><body><pre id='log_content' class='console-text'/></body>");
-        // this.mLogWndDoc.close();
-	// this.mLogWndWin = this.mLogWnd.contentWindow;
-	// this.mLogWndPre = this.mLogWndDoc.getElementById("log_content");
-        this.mLogWnd = this.mLogWndPre = document.getElementById("log_content");
-	// this.mLogWndPre.appendChild(this.mLogWndDoc.createTextNode(accumMsg));
-        this.mLogWndPre.value = accumMsg;
-        this.mLogWndPre.scrollTop = this.mLogWndPre.scrollHeight;
-	// this.mLogWndWin.scrollTo(0, this.mLogWndPre.scrollHeight);
+        this.mLogWnd = document.getElementById("log_content");
+        this.mLogWnd.value = accumMsg;
+        this.scrollToBottom();
       }
       
-      var handler = function (args) {
-        dd("&&&&&&&&&&&&& log wnd handler called");
-	var msg = args.obj.content;
+      const handler = function (args) {
+	let msg = args.obj.content;
 	if (args.obj.newline)
 	  msg += "\n";
-	// that.mLogWndPre.appendChild(that.mLogWndDoc.createTextNode(msg));
-        that.mLogWndPre.value += msg;
-        // that.mLogWndPre.scrollTop = that.mLogWndPre.scrollHeight;
-        var pos = that.mLogWndPre.value.length;
-        that.mLogWndPre.selectionStart = pos;
-        that.mLogWndPre.selectionEnd = pos;
-	
-	//logInp.scrollTop = logInp.scrollHeight;
-	// that.mLogWndWin.scrollTo(0, that.mLogWndPre.scrollHeight);
+        that.mLogWnd.value += msg;
+        that.scrollToBottom();
       };
 
       this.m_cbid =
@@ -181,9 +168,7 @@ if (!("logpanel" in cuemolui)) {
 
     panel.clearLogContents = function ()
     {
-      var pre = this.mLogWndPre;
-      while (pre.firstChild)
-	pre.removeChild(pre.firstChild);
+      this.mLogWnd.value = "";
     };
 
   } )();

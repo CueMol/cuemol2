@@ -72,12 +72,12 @@
 	      type="menu" label="Preset size"
 	      oncommand="window.gDlgObj.onPresetSel(event)">
 	      <menupopup>
-		<menuitem value="320,240" label="QVGA (320x240)"/>
-		<menuitem value="640,480" label="VGA (640x480)"/>
-		<menuitem value="800,600" label="SVGA (800x600)"/>
-		<menuitem value="1024,768" label="XGA (1024x768)"/>
-		<menuitem value="1280,720" label="HD720 (1280x720)"/>
-		<menuitem value="1920,1080" label="HD1080 (1920x1080)"/>
+		    <menuitem value="320,240" label="QVGA (320x240)"/>
+		    <menuitem value="640,480" label="VGA (640x480)"/>
+		    <menuitem value="800,600" label="SVGA (800x600)"/>
+		    <menuitem value="1024,768" label="XGA (1024x768)"/>
+		    <menuitem value="1280,720" label="HD720 (1280x720)"/>
+		    <menuitem value="1920,1080" label="HD1080 (1920x1080)"/>
 	      </menupopup>
 	    </button>
 	    
@@ -107,9 +107,9 @@
 	    <label class="disable-target" value="Frame rate:"/>
 	    <menulist id="main-mlist-fps" class="disable-target" editable="true">
 	      <menupopup>
-		<menuitem value="24" label="24" />
-		<menuitem value="30" label="30" selected="true"/>
-		<menuitem value="60" label="60" />
+		    <menuitem value="24" label="24" />
+		    <menuitem value="30" label="30" selected="true"/>
+		    <menuitem value="60" label="60" />
 	      </menupopup>
 	    </menulist>
 	    <label value="fps" class="unit-right"/>
@@ -122,7 +122,11 @@
 	  </hbox>
 	  <groupbox flex="1">
 	    <caption label="Log"/>
-	    <iframe id="output-log-frame" flex="1"/>
+	    <!-- <iframe id="output-log-frame" flex="1"/> -->
+	    <textbox id="output-log-frame" flex="1"
+                 multiline="true" readonly="true"
+                 class="plain"
+                 style="font-family: monospace; font-weight: bold;"/>
 	  </groupbox>
 	</vbox>
       </tabpanel>
@@ -207,9 +211,12 @@
 	      <menulist id="ffmpeg-oformat" class="disable-target">
 		<menupopup>
 		  <menuitem value="mov_h264" label="QuickTime/H.264" selected="true"/>
+		  <menuitem value="mov_h265" label="QuickTime/H.265"/>
 		  <menuitem value="mov_raw" label="QuickTime/Raw"/>
-		  <menuitem value="wmv2" label="wmv"/>
 		  <menuitem value="mp4_h264" label="MP4/H.264" />
+		  <menuitem value="mp4_h265" label="MP4/H.265" />
+		  <menuitem value="wmv2" label="wmv"/>
+		  <menuitem value="gifanim" label="GIF animation" />
 		</menupopup>
 	      </menulist>
 	    </row>

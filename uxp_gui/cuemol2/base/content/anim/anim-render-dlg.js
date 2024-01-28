@@ -61,17 +61,12 @@
 
     // Setup log window
     this.mLogWnd = document.getElementById("output-log-frame");
-    this.mLogWndDoc = this.mLogWnd.contentDocument;
-    this.mLogWndDoc.writeln("<head><link rel='stylesheet' type='text/css' href='chrome://cuemol2/content/logwindow.css'></head><body><pre id='log_content' class='console-text'/></body>");
-    this.mLogWndDoc.close();
-    this.mLogWndWin = this.mLogWnd.contentWindow;
-    this.mLogWndPre = this.mLogWndDoc.getElementById("log_content");
 
     // set initial values
     if (prefsvc.has(output_dir_key)) {
       let path = prefsvc.get(output_dir_key);
       if (util.chkCreateMozDir(path))
-	this.mOutputPathBox.value = path;
+	    this.mOutputPathBox.value = path;
     }
     
     this.mOutputBaseBox.value = "output";
@@ -108,10 +103,17 @@
     this.mPovIncPathBox.value = this.mPovRender.mPovIncPath;
   };
 
+  dlg.scrollToBottom = function ()
+  {
+    const pos = this.mLogWnd.value.length;
+    this.mLogWnd.selectionStart = pos;
+    this.mLogWnd.selectionEnd = pos;
+  }
+
   dlg.appendLog = function(msg)
   {
-    this.mLogWndPre.appendChild(this.mLogWndDoc.createTextNode(msg));
-    this.mLogWndWin.scrollTo(0, this.mLogWndPre.scrollHeight);
+    this.mLogWnd.value += msg;
+    this.scrollToBottom();
   };
 
   dlg.onStart = function ()
@@ -123,7 +125,6 @@
     document.getElementById("tabs-overlay-target").selectedIndex=0;
 
     // main options
-    //let fps_val = document.getElementById("main-mlist-fps").value;
     this.mFPSVal = document.getElementById("main-mlist-fps").value;
     let img_height = this.mOutImgHeight.value;
     let img_width = this.mOutImgWidth.value;
@@ -172,24 +173,24 @@
 
       var out_dir = util.chkCreateMozDir(this.mOutputPathBox.value);
       if (out_dir==null) {
-	util.alert(window, "Invalid output dir: "+this.mOutputPathBox.value);
-	return;
+	    util.alert(window, "Invalid output dir: "+this.mOutputPathBox.value);
+	    return;
       }
 
       // set output logfile
       {
-	let out = out_dir.clone();
-	let base = this.mOutputBaseBox.value;
-	prefsvc.set(outbase_key, base);
-	out.append(base+".log");
-	procMgr.setLogPath(out.path);
+	    let out = out_dir.clone();
+	    let base = this.mOutputBaseBox.value;
+	    prefsvc.set(outbase_key, base);
+	    out.append(base+".log");
+	    procMgr.setLogPath(out.path);
       }
       
       let scene = cuemol.getScene(dlg.mTgtSceID);
       let am = scene.getAnimMgr();
       if (am.size<=0) {
-	util.alert(window, "No animation in scene: "+scene.name);
-	return;
+	    util.alert(window, "No animation in scene: "+scene.name);
+	    return;
       }
 
       this._bRender = true;
@@ -260,11 +261,11 @@
     var that = this;
     this.mTimer = timer.setInterval(function() {
       try {
-	that.onTimer();
+	    that.onTimer();
       }
       catch (e) {
-	dd("Error: "+e);
-	debug.exception(e);
+	    dd("Error: "+e);
+	    debug.exception(e);
       }
     }, 100);
   };
@@ -349,13 +350,13 @@
   dlg.onTimer = function()
   {
     let i;
-
+    
     try {
       this.procTaskMsgs();
       
       if (procMgr.queue_len>10) {
-	dd("Timer> queue is full");
-	return;
+	    dd("Timer> queue is full");
+	    return;
       }
       
       // make new tasks
@@ -505,12 +506,12 @@
       // progressbar (stopped)
       this.mProgBar.value = 0;
       this.mProgBar.disabled = true;
-
+      
       // re-encode button (ffmpeg page)
       if (this.mbRenderOK)
-	this.mReencBtn.disabled = false;
+	    this.mReencBtn.disabled = false;
       else
-	this.mReencBtn.disabled = true;
+        this.mReencBtn.disabled = true;
     }
     
 
@@ -630,9 +631,9 @@
       // default ffmpeg path
       let default_path;
       if (this.mPovRender.mPlfName=="Windows_NT")
-	default_path = util.createDefaultPath("CurProcD", "ffmpeg", "bin", "ffmpeg.exe");
+	    default_path = util.createDefaultPath("GreD", "ffmpeg", "bin", "ffmpeg.exe");
       else
-	default_path = util.createDefaultPath("CurProcD", "ffmpeg", "bin", "ffmpeg");
+	    default_path = util.createDefaultPath("GreD", "ffmpeg", "bin", "ffmpeg");
       
       this.mFfExePathBox.value = default_path;
     }
@@ -728,6 +729,18 @@
       this.mMainOpt.value = "-c:v wmv2";
       this.mFfOutFileExt = ".wmv";
       break;
+    case "gifanim":
+      this.mMainOpt.value = "";
+      this.mFfOutFileExt = ".gif";
+      break;
+    case "mov_h265":
+      this.mMainOpt.value = "-c:v libx265 -tag hvc1 -f mov";
+      this.mFfOutFileExt = ".mov";
+      break;
+    case "mp4_h265":
+      this.mMainOpt.value = "-c:v libx265 -f mp4";
+      this.mFfOutFileExt = ".mp4";
+      break;
     }
   };
   
@@ -770,15 +783,17 @@
     if (this.mFfOFmtList.selectedItem.value=="mov_raw") {
       // raw format, no bitrate
     }
-    else
+    else {
       strargs += " -b:v "+bitr+"k";
+    }
 
     // output main options
     strargs += " " + this.mMainOpt.value;
 
     // pixel format
     let pixfmt = "";
-    if (this.mMainOpt.value.indexOf("libx264")>0) {
+    if (this.mMainOpt.value.indexOf("libx264")>0 ||
+        this.mMainOpt.value.indexOf("libx265")>0) {
       pixfmt = ",format=yuv420p";
     }
 

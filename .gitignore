@@ -8,7 +8,6 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-build/
 develop-eggs/
 dist/
 downloads/
@@ -104,3 +103,4 @@ venv.bak/
 *_loader.cpp
 /uxp_gui/platform/**
 /uxp_gui/obj-*
+build/**

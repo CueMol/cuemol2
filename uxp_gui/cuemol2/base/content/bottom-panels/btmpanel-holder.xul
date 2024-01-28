@@ -17,7 +17,6 @@
 	<tabpanel flex="1" id="log-btmpanel-tabpanel" class="ribbon-tabpanel">
 	  <vbox flex="1">
 	    <textbox id="log_content" flex="1"
-		         emptytext="Input selection command"
                  multiline="true" readonly="true"
                  class="plain"
                  style="font-family: monospace; font-weight: bold;"/>

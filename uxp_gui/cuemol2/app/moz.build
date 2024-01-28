@@ -65,3 +65,15 @@ if CONFIG['MOZ_LINKER']:
 
 if CONFIG['HAVE_CLOCK_MONOTONIC']:
     OS_LIBS += CONFIG['REALTIME_LIBS']
+
+#####
+# helper applications
+
+FINAL_TARGET_FILES += ['%%%s/bin/blendpng' % CONFIG['CUEMOL_DIR']]
+
+if CONFIG['CUEMOL_BUNDLE_DIR']:
+    # povray
+    FINAL_TARGET_FILES["povray"] += ['%%%s/povray/**' % CONFIG['CUEMOL_BUNDLE_DIR']]
+    # ffmpeg
+    FINAL_TARGET_FILES["ffmpeg"] += ['%%%s/ffmpeg/**' % CONFIG['CUEMOL_BUNDLE_DIR']]
+    

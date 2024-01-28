@@ -1,5 +1,3 @@
-export CC=clang
-export CXX=clang++
 
 # Clear this if not a 64bit build
 _BUILD_64=1
@@ -43,14 +41,17 @@ ac_add_options --with-pthreads
 
 # export MOZ_PKG_SPECIAL=gtk$_GTK_VERSION
 
-ac_add_options --with-macos-sdk=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX13.3.sdk
-ac_add_options --target=aarch64-apple-darwin
-ac_add_options --host=aarch64-apple-darwin
+ac_add_options --with-macos-sdk=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX11.1.sdk
+ac_add_options --target=x86_64-apple-darwin
+ac_add_options --host=x86_64-apple-darwin
 
 mk_add_options MOZ_MAKE_FLAGS="-j8"
 
-ac_add_options --enable-cuemol=$HOME/tmp/cuemol2/
-ac_add_options --enable-cuemol-boostdir=$HOME/proj64/boost_1_84/
-ac_add_options --enable-cuemol-deplibs=$HOME/proj64/boost_1_84/lib
-ac_add_options --enable-cuemol-debug
-ac_add_options --enable-cuemol-bundle=$HOME/proj64/cuemol2_bundle_0.0.1/
+ac_add_options --enable-cuemol=/Users/user/tmp/cuemol2/
+ac_add_options --enable-cuemol-boostdir=/Users/user/proj64/boost_1_84/
+ac_add_options --enable-cuemol-deplibs=/Users/user/proj64/boost_1_84/lib
+# ac_add_options --enable-cuemol-debug
+
+export CC=clang
+export CXX=clang++
+export CXXFLAGS="-stdlib=libc++"
