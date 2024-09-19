@@ -56,7 +56,7 @@ void PovSceneExporter::write()
     if (!str_povpath.isEmpty() && !str_incpath.isEmpty()) {
       // Check and modify the main pov file path
       fs::path povpath(str_povpath.c_str());
-      if (!povpath.is_complete()) {
+      if (!povpath.is_absolute()) {
 #if (BOOST_FILESYSTEM_VERSION==2)
         povpath = fs::complete(povpath);
         setPath(povpath.file_string());
@@ -68,7 +68,7 @@ void PovSceneExporter::write()
       fs::path base_path = povpath.parent_path();
       // Check and modify the inc file path
       fs::path incpath(str_incpath.c_str());
-      if (!incpath.is_complete()) {
+      if (!incpath.is_absolute()) {
         ppovdc->setIncFileName(str_incpath);
 #if (BOOST_FILESYSTEM_VERSION==2)
         incpath = fs::complete(incpath, base_path);
@@ -92,7 +92,7 @@ void PovSceneExporter::write()
   else {
     ppovdc->setIncFileName(str_incpath);
   }
-  
+
   // Main stream
   qlib::OutStream *pOutPov = createOutStream();
   // Sub stream (inc file)
@@ -106,7 +106,7 @@ void PovSceneExporter::write()
   // ppovdc->setTargetView(pView);
   ppovdc->init(pOutPov, pOutInc);
   //ppovdc->startPovRender();
-  
+
   ppovdc->setClipZ(m_bUseClipZ);
   ppovdc->setPostBlend(m_bPostBlend);
   ppovdc->setPerspective(m_bPerspective);
@@ -125,7 +125,7 @@ void PovSceneExporter::write()
   ppovdc->loadIdent();
   ppovdc->rotate(pCam->m_rotQuat);
   ppovdc->translate(-(pCam->m_center));
-  
+
   // calc line width factor
   int height = getHeight();
   if (height<=0 && pScene->getViewCount()>0) {

@@ -53,7 +53,7 @@ errorReporterFunc(JSContext *cx, const char *message, JSErrorReport *report)
   }
 
   LString prefix;
-  if (report->lineno) { 
+  if (report->lineno) {
     prefix = LString::format("%s %u:",
 			     (report->filename)?(report->filename):"(unknown)",
 			     report->lineno);
@@ -62,12 +62,12 @@ errorReporterFunc(JSContext *cx, const char *message, JSErrorReport *report)
     prefix = LString::format("%s:",
 			     report->filename);
   }
-  
+
   if (JSREPORT_IS_WARNING(report->flags)) {
     prefix += LString::format("%swarning: ",
 			      JSREPORT_IS_STRICT(report->flags) ? "strict " : "");
   }
-  
+
   LOG_DPRINTLN("%s %s", prefix.c_str(), message);
   return;
 }
@@ -102,7 +102,7 @@ bool Interp::init(qlib::LScriptable *pMainObj)
 #endif
   if (!pJsGlob)
     return false;
-  
+
   JSBool res = JS_InitStandardClasses(pcx, pJsGlob);
   if (!res)
     return false;
@@ -225,7 +225,7 @@ void Interp::eval(const qlib::LString &scr)
 {
   JSContext *pcx = (JSContext *)m_pdata;
   JSObject *pJsGlob = (JSObject *)m_pGlob;
-  
+
   const char *script = scr.c_str();
   const char *filename = "(none)";
   int lineno = 0;
@@ -264,10 +264,10 @@ LString Interp::resolvePath(const LString &fname) const
   fs::path inpath(fname.c_str());
 
 #if (BOOST_FILESYSTEM_VERSION==2)
-  if (inpath.is_complete())
+  if (inpath.is_absolute())
     return inpath.file_string();
 #else
-  if (inpath.is_complete())
+  if (inpath.is_absolute())
     return inpath.string();
 #endif
 
