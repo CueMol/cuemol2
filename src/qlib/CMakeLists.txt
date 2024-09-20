@@ -1,7 +1,7 @@
 # Dependent libs
 SET(QLIB_LINK_LIBRARIES
-  pcre
-  expat
+  qmpcre
+  qmexpat
   qmzlib
   Boost::filesystem
   Boost::timer

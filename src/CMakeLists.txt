@@ -211,8 +211,8 @@ endif()
 # libcuemol2 library target
 
 SET(CUEMOL2_LINK_LIBRARIES
-  pcre
-  expat
+  qmpcre
+  qmexpat
   qmpng
   qmzlib
   qlib
