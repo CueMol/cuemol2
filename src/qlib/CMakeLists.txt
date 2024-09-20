@@ -1,6 +1,6 @@
 # Dependent libs
 SET(QLIB_LINK_LIBRARIES
-  pcre
+  qmpcre
   qmexpat
   qmzlib
   Boost::filesystem

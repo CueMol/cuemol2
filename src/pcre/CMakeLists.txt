@@ -12,31 +12,31 @@ pcre.h
 
 ##########
 
-add_library(pcre STATIC)
+add_library(qmpcre STATIC)
 
-target_sources(pcre PRIVATE ${PCRE_SRCS}
+target_sources(qmpcre PRIVATE ${PCRE_SRCS}
   PUBLIC FILE_SET HEADERS 
   BASE_DIRS ${PROJECT_SOURCE_DIR}/src
   FILES ${PCRE_HDRS}
 )
 
 target_include_directories(
-  pcre PRIVATE
+  qmpcre PRIVATE
   ${CMAKE_SOURCE_DIR}/src
   ${CMAKE_BINARY_DIR}/src
 )
 
 # add_definitions(-DPOSIX_MALLOC_THRESHOLD=10)
-target_compile_definitions(pcre PUBLIC POSIX_MALLOC_THRESHOLD=10)
+target_compile_definitions(qmpcre PUBLIC POSIX_MALLOC_THRESHOLD=10)
 
 if (WIN32)
 else()
-  # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
-  target_compile_options(pcre PUBLIC "-fPIC")
+  # target_compile_options(qmpcre PUBLIC "-fPIC")
+  set_property(TARGET qmpcre PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()
 
-install(TARGETS pcre
-  FILE_SET HEADERS
-)
+# install(TARGETS qmpcre
+#   FILE_SET HEADERS
+# )
 
 message(STATUS "PCRE_SRCS ${PCRE_SRCS}")
