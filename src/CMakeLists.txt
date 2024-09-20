@@ -212,7 +212,7 @@ endif()
 
 SET(CUEMOL2_LINK_LIBRARIES
   pcre
-  expat
+  qmexpat
   qmpng
   qmzlib
   qlib

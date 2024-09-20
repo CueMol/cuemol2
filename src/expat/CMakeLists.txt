@@ -24,9 +24,9 @@ xmltok_impl.h
 
 #####
 
-add_library(expat STATIC)
+add_library(qmexpat STATIC)
 
-target_sources(expat
+target_sources(qmexpat
   PRIVATE ${EXPAT_SRCS}
   PUBLIC FILE_SET HEADERS 
   BASE_DIRS ${PROJECT_SOURCE_DIR}/src
@@ -35,12 +35,12 @@ target_sources(expat
 
 if (WIN32)
   # add_definitions(-DCOMPILED_FROM_DSP)
-  target_compile_definitions(expat PUBLIC COMPILED_FROM_DSP)
+  target_compile_definitions(qmexpat PUBLIC COMPILED_FROM_DSP)
 else()
-  # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
-  target_compile_options(expat PUBLIC "-fPIC")
+  # target_compile_options(qmexpat PUBLIC "-fPIC")
+  set_property(TARGET qmexpat PROPERTY POSITION_INDEPENDENT_CODE ON)
   # add_definitions(-DHAVE_EXPAT_CONFIG_H=1)
-  target_compile_definitions(expat PUBLIC HAVE_EXPAT_CONFIG_H=1)
+  target_compile_definitions(qmexpat PUBLIC HAVE_EXPAT_CONFIG_H=1)
 
   include(TestBigEndian)
   test_big_endian(WORDS_BIGENDIAN)
@@ -60,12 +60,12 @@ else()
 endif()
 
 target_include_directories(
-  expat PRIVATE
+  qmexpat PRIVATE
   ${CMAKE_SOURCE_DIR}/src
   ${CMAKE_BINARY_DIR}/src
   ${CMAKE_CURRENT_BINARY_DIR}
   )
 
-install(TARGETS expat
-  FILE_SET HEADERS
-)
+# install(TARGETS qmexpat
+#   FILE_SET HEADERS
+# )
