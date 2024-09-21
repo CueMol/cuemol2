@@ -30,6 +30,6 @@ else()
   target_compile_options(qmpng PUBLIC "-fPIC")
 endif()
 
-install(TARGETS qmpng
-  FILE_SET HEADERS
-)
+# install(TARGETS qmpng
+#   FILE_SET HEADERS
+# )

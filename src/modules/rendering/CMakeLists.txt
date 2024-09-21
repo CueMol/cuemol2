@@ -52,14 +52,15 @@ add_library(render STATIC ${RENDER_SRCS} ${MCWG_HEADERS})
 if (WIN32)
   add_definitions(-DRENDER_EXPORTS=1)
 else()
-  target_compile_options(render PUBLIC "-fPIC")
+  # target_compile_options(render PUBLIC "-fPIC")
+  set_property(TARGET render PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()
 
 target_link_libraries(render PRIVATE qlib gfx qsys CGAL::CGAL qmpng qmzlib Boost::filesystem)
 
 MCWRAPGEN_SCR_WRAPPERS(render)
 
-install(TARGETS render
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  )
+# install(TARGETS render
+#   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+#   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#   )

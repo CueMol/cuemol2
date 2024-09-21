@@ -212,7 +212,8 @@ add_library(qlib STATIC)
 if (WIN32)
   target_compile_definitions(qlib PUBLIC QLIB_EXPORTS=1)
 else()
-  target_compile_options(qlib PUBLIC "-fPIC")
+  # target_compile_options(qlib PUBLIC "-fPIC")
+  set_property(TARGET qlib PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()
 
 target_sources(qlib

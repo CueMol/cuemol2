@@ -40,13 +40,14 @@ add_library(importers STATIC ${IMPORTERS_SRCS} ${MCWG_HEADERS})
 if (WIN32)
   add_definitions(-DIMPORTERS_EXPORTS=1)
 else()
-  target_compile_options(importers PUBLIC "-fPIC")
+  # target_compile_options(importers PUBLIC "-fPIC")
+  set_property(TARGET importers PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()
 target_link_libraries(importers PRIVATE qlib gfx qsys molstr molvis surface symm)
 
 MCWRAPGEN_SCR_WRAPPERS(importers)
 
-install(TARGETS importers
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  )
+# install(TARGETS importers
+#   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+#   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#   )

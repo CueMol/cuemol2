@@ -37,14 +37,15 @@ add_library(lwview STATIC ${LWVIEW_SRCS} ${MCWG_HEADERS})
 if (WIN32)
   add_definitions(-DLWVIEW_EXPORTS=1)
 else()
-  target_compile_options(lwview PUBLIC "-fPIC")
+  # target_compile_options(lwview PUBLIC "-fPIC")
+  set_target_properties(lwview PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 
 target_link_libraries(lwview PRIVATE qlib gfx qsys molstr render)
 
 MCWRAPGEN_SCR_WRAPPERS(lwview)
 
-install(TARGETS lwview
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  )
+# install(TARGETS lwview
+#   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+#   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#   )
