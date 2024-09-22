@@ -311,22 +311,8 @@ PyObject *Wrapper::createObj(PyObject *self, PyObject *args)
 // static
 PyObject *Wrapper::getAllClassNamesJSON(PyObject *self, PyObject *args)
 {
-    qlib::ClassRegistry *pMgr = qlib::ClassRegistry::getInstance();
-    MB_ASSERT(pMgr != NULL);
-
-    std::list<qlib::LString> ls;
-    pMgr->getAllClassNames(ls);
-
-    LString rstr = "[";
-    bool ffirst = true;
-    BOOST_FOREACH (const LString &str, ls) {
-        MB_DPRINTLN("GACNJSON> class %s", str.c_str());
-        if (!ffirst) rstr += ",";
-        rstr += "\"" + str + "\"";
-        ffirst = false;
-    }
-    rstr += "]";
-
+    LString rstr, errmsg;
+    cuemol2::getAllClassNamesJSON(rstr, errmsg);
     return Py_BuildValue("s", rstr.c_str());
 }
 

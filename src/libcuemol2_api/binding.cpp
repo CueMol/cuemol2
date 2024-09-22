@@ -52,6 +52,29 @@ namespace cuemol2 {
     return false;
   }
 
+  LIBCUEMOL_API bool getAllClassNamesJSON(qlib::LString &retval,
+                                          qlib::LString &errmsg) noexcept
+  {
+    qlib::ClassRegistry *pMgr = qlib::ClassRegistry::getInstance();
+    MB_ASSERT(pMgr != NULL);
+
+    std::list<qlib::LString> ls;
+    pMgr->getAllClassNames(ls);
+
+    LString rstr = "[";
+    bool ffirst = true;
+    BOOST_FOREACH (const LString &str, ls) {
+        MB_DPRINTLN("GACNJSON> class %s", str.c_str());
+        if (!ffirst) rstr += ",";
+        rstr += "\"" + str + "\"";
+        ffirst = false;
+    }
+    rstr += "]";
+
+    retval = rstr;
+    return true;
+  }
+
   bool getService(const qlib::LString &svcname,
                   // qlib::LDynamic **prval,
                   qlib::LScriptable **prval,

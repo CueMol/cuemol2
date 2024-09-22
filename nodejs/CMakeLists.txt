@@ -1,5 +1,21 @@
 cmake_minimum_required(VERSION 3.15...3.26)
 project(cuemol LANGUAGES C CXX)
+set(CMAKE_CXX_STANDARD 14)
+
+##########
+# libcuemol2
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../src/cmake)
+find_package(LIBCUEMOL2 REQUIRED)
+message(STATUS "LIBCUEMOL2: ${LIBCUEMOL2_FOUND}")
+message(STATUS "LIBCUEMOL2_LIBDIR: ${LIBCUEMOL2_LIBDIR}")
+message(STATUS "LIBCUEMOL2_INCLUDE_DIR: ${LIBCUEMOL2_INCLUDE_DIR}")
+add_definitions(-DHAVE_CONFIG_H=1)
+
+##########
+# Boost
+set(Boost_USE_STATIC_LIBS OFF)
+find_package(Boost 1.50.0 REQUIRED
+  COMPONENTS system thread filesystem chrono timer)
 
 # Include node-addon-api wrappers
 execute_process(COMMAND node -p "require('node-addon-api').include"
@@ -12,15 +28,6 @@ message(STATUS "NODE_ADDON_API_DIR: ${NODE_ADDON_API_DIR}")
 
 # Essential include files to build a node addon,
 # you should add this line in every CMake.js based project.
-
-include_directories(
-  ${CMAKE_SOURCE_DIR}/src
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_BINARY_DIR}/src
-  ${Boost_INCLUDE_DIRS}
-  ${NODE_ADDON_API_DIR}
-  ${CMAKE_JS_INC}
-  )
 
 #####################
 
@@ -35,14 +42,38 @@ SET(NODEJS_LINK_LIBRARIES
 
 # Normal C++ source files
 SET(NODEJS_SRCS
-  src/nodejs.cpp
   src/init_cuemol.cpp
+  src/services.cpp
   src/wrapper.cpp
   ${CMAKE_JS_SRC}
   )
 
 add_library(cuemol_internal SHARED ${NODEJS_SRCS})
-target_link_libraries(cuemol_internal PRIVATE ${NODEJS_LINK_LIBRARIES})
+target_include_directories(
+  cuemol_internal PRIVATE
+  ${CMAKE_SOURCE_DIR}/src
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_BINARY_DIR}/src
+  ${Boost_INCLUDE_DIRS}
+  ${LIBCUEMOL2_INCLUDE_DIR}
+  ${NODE_ADDON_API_DIR}
+  ${CMAKE_JS_INC}
+)
+
+target_link_directories(
+  cuemol_internal PRIVATE
+  ${LIBCUEMOL2_LIBDIR}
+)
+
+target_link_libraries(
+  cuemol_internal PRIVATE
+  ${NODEJS_LINK_LIBRARIES}
+)
+
+file(TO_NATIVE_PATH "${LIBCUEMOL2_ROOT}/data/sysconfig.xml" DEFAULT_SYSCONFIG_PATH)
+STRING(REPLACE "\\" "\\\\" DEFAULT_SYSCONFIG_PATH ${DEFAULT_SYSCONFIG_PATH})
+message(STATUS "DEFAULT_SYSCONFIG_PATH: ${DEFAULT_SYSCONFIG_PATH}")
+target_compile_definitions(cuemol_internal PUBLIC DEFAULT_CONFIG=\"${DEFAULT_SYSCONFIG_PATH}\")
 
 # This line will give our library file a .node extension without any "lib" prefix
 set_target_properties(cuemol_internal PROPERTIES PREFIX "" SUFFIX ".node")

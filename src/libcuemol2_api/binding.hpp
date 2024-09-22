@@ -16,6 +16,9 @@ namespace cuemol2 {
                               bool *retval,
                               qlib::LString &errmsg) noexcept;
 
+  LIBCUEMOL_API bool getAllClassNamesJSON(qlib::LString &retval,
+                                      qlib::LString &errmsg) noexcept;
+
   LIBCUEMOL_API bool getService(const qlib::LString &svcname,
                                 qlib::LScriptable **prval,
                                 qlib::LString &errmsg) noexcept;
@@ -24,6 +27,8 @@ namespace cuemol2 {
                                const qlib::LString &strval,
                                qlib::LScriptable **prval,
                                qlib::LString &errmsg) noexcept;
+
+  //////////
 
   LIBCUEMOL_API bool hasProp(qlib::LScriptable *pthis,
                              const qlib::LString &propname,
