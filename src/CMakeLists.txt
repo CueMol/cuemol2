@@ -254,7 +254,7 @@ install(TARGETS cuemol2 FILE_SET HEADERS)
 
 install(FILES ${PROJECT_BINARY_DIR}/src/config.h ${PROJECT_BINARY_DIR}/src/version.hpp DESTINATION include)
 
-set(DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../data/)
+set(DATA_DIR ${CMAKE_SOURCE_DIR}/data/)
 set(DATA_FILES
 ${DATA_DIR}/prot_top.xml
 ${DATA_DIR}/prot_props.xml
@@ -270,3 +270,15 @@ set(SYSCONFIG_FILE ${DATA_DIR}/sysconfig.xml)
 
 install(FILES ${DATA_FILES} DESTINATION data/data)
 install(FILES ${SYSCONFIG_FILE} DESTINATION data)
+
+if (BUILD_NODEJS_BINDINGS)
+  add_custom_command(
+    TARGET cuemol2 POST_BUILD
+    COMMAND python3
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/make_es6_wrapper_table.py
+    --input_dir ${CMAKE_BINARY_DIR}/js/wrappers
+    --output_js ${CMAKE_BINARY_DIR}/js/wrappers/wrapper_loader.js
+  )
+  install(FILES ${CMAKE_BINARY_DIR}/js/wrappers/wrapper_loader.js
+    DESTINATION ${PROJECT_SOURCE_DIR}/nodejs/src/wrappers)
+endif()

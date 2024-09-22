@@ -42,9 +42,9 @@ SET(NODEJS_LINK_LIBRARIES
 
 # Normal C++ source files
 SET(NODEJS_SRCS
-  src/init_cuemol.cpp
-  src/services.cpp
-  src/wrapper.cpp
+  cxx_src/init_cuemol.cpp
+  cxx_src/services.cpp
+  cxx_src/wrapper.cpp
   ${CMAKE_JS_SRC}
   )
 
@@ -85,34 +85,3 @@ install(TARGETS cuemol_internal
 
 SET(JS_OUTPUT_DIR ${CMAKE_BINARY_DIR}/javascript)
 
-# add_custom_command(
-#   TARGET cuemol_internal POST_BUILD
-#   COMMAND python3 ${CMAKE_SOURCE_DIR}/src/python/make_wrapper_table.py --input_dir ${CMAKE_BINARY_DIR}/javascript/wrappers --output_js ${JS_OUTPUT_DIR}/wrapper_loader.js
-#   )
-
-# add_custom_target(cuemol_internal_copy)
-
-# add_custom_command(
-#   TARGET cuemol_internal_copy PRE_BUILD
-#   COMMAND ${CMAKE_COMMAND} -E copy
-#   ${CMAKE_CURRENT_SOURCE_DIR}/es6/*.js
-#   ${JS_OUTPUT_DIR}
-#   )
-
-# XXX: copy to deploy dir
-# add_custom_command(
-#   TARGET cuemol_internal_copy PRE_BUILD
-#   COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/data/shaders
-#   COMMAND ${CMAKE_COMMAND} -E copy
-#   ${CMAKE_CURRENT_SOURCE_DIR}/shaders/*
-#   ${CMAKE_BINARY_DIR}/data/shaders
-#   )
-
-# add_dependencies(cuemol_internal cuemol_internal_copy)
-
-# add_custom_command(
-#   TARGET cuemol_internal POST_BUILD
-#   COMMAND ${CMAKE_COMMAND} -E copy
-#   ${CMAKE_CURRENT_SOURCE_DIR}/es6/base_wrapper.js
-#   ${JS_OUTPUT_DIR}/base_wrapper.js
-#   )

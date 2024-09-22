@@ -14,7 +14,7 @@ message(STATUS "CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 option(BUILD_PYTHON_BINDINGS "Build Python bindings")
 option(BUILD_MINIMUM_MODULES "Build CueMol with minimum modules." OFF)
 option(BUILD_XPCJS_BINDINGS "Build XPCOM-js bindings")
-option(BUILD_NODEJS_BINDINGS "Build node.js bindings" OFF)
+option(BUILD_NODEJS_BINDINGS "Build node.js bindings")
 
 find_package(Perl 5.10.0 REQUIRED)
 message(STATUS "PERL_EXECUTABLE: ${PERL_EXECUTABLE}")

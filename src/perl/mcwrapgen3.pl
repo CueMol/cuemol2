@@ -122,6 +122,9 @@ elsif ($mode eq "mod") {
 elsif ($mode eq "js") {
     $Jsclass::out_dir = $outdir;
 }
+elsif ($mode eq "nodejs") {
+    $Jsclass::out_dir = $outdir;
+}
 elsif ($mode eq "py") {
     $Pyclass::out_dir = $outdir;
 }
@@ -175,6 +178,10 @@ elsif ($mode eq "mod") {
 }
 elsif ($mode eq "js") {
   Jsclass::genJsWrapper($Parser::db{$curcls});
+}
+elsif ($mode eq "nodejs") {
+    $Jsclass::use_es6_mod = 1;
+    Jsclass::genJsWrapper($Parser::db{$curcls});
 }
 elsif ($mode eq "py") {
   Pyclass::genWrapper($Parser::db{$curcls});

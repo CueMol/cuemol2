@@ -14,6 +14,7 @@ use Parser;
 
 our $out_dir;
 
+our $use_es6_mod = 0;
 our $js_nsname = "wrapper";
 
 ##########
@@ -50,6 +51,14 @@ sub genJsWrapper($)
   print OUT "// Javascript wrapper class for $qifname\n";
   print OUT "//\n";
   print OUT "\n";
+  if ($use_es6_mod) {
+      $js_clsname = $qifname;
+      print OUT "\n";
+      print OUT "import { BaseWrapper } from '../base_wrapper';\n";
+      print OUT "\n";
+      print OUT "export class ${js_clsname} extends BaseWrapper {\n";
+  }
+  else {
   print OUT "var EXPORTED_SYMBOLS = [\"${js_clsname}\"];\n";
   print OUT "\n";
   print OUT "var ${js_clsname} = function ${qifname}_ctor(aWrapped, aCueMol)\n";
@@ -58,8 +67,17 @@ sub genJsWrapper($)
   print OUT "  this._cuemol = aCueMol;\n";
   print OUT "}\n";
   print OUT "\n";
+  }
 
   genJsSupclsCodeImpl($js_clsname, $qifname);
+
+  if ($use_es6_mod) {
+      print OUT "\n";
+      print OUT "}\n";
+      print OUT "\n";
+      genJsES6ImplData($js_clsname, $qifname);
+      print OUT "\n";
+  }
 
   close(OUT);
 }
@@ -79,11 +97,17 @@ sub genJsSupclsCodeImpl($$)
   print OUT "//\n";
   print OUT "\n";
 
+  if (not $use_es6_mod) {
   my $clskey = "\@implements_$supcls_name";
   print OUT "${class_name}[\"$clskey\"] = \"yes\";\n\n";
-
+  }
+  
   genJsPropCode($supcls, $class_name);
-  genJsInvokeCode($supcls, $class_name);
+  if ($use_es6_mod) {
+      genEs6InvokeCode($supcls, $class_name);
+  } else {
+      genJsInvokeCode($supcls, $class_name);
+  }
 }
 
 sub genJsPropCode($$)
@@ -103,13 +127,27 @@ sub genJsPropCode($$)
     print OUT "// property: $propnm, type: $type\n";
 
     if ($type eq "object") {
-      genJsObjPropCode($clsname, $propnm, $prop);
+        if ($use_es6_mod) {
+            genEs6ObjPropCode($clsname, $propnm, $prop);
+        }
+        else {
+            genJsObjPropCode($clsname, $propnm, $prop);
+        }
     }
     elsif ($type eq "enum") {
-      genJsEnumPropCode($clsname, $propnm, $prop);
+        if ($use_es6_mod) {
+            genEs6EnumPropCode($clsname, $propnm, $prop);
+        } else {
+            genJsEnumPropCode($clsname, $propnm, $prop);
+        }
     }
     else {
-      genJsBasicPropCode($clsname, $propnm, $prop);
+        if ($use_es6_mod) {
+            genEs6BasicPropCode($clsname, $propnm, $prop);
+        }
+        else {
+            genJsBasicPropCode($clsname, $propnm, $prop);
+        }
     }
   }
 }
@@ -135,12 +173,30 @@ sub genJsBasicPropCode($$$)
   print OUT "\n";
 }
 
-sub genJsObjPropCode($$$)
+sub genEs6BasicPropCode($$$)
 {
   my $classnm = shift;
   my $propnm = shift;
   my $prop = shift;
 
+  print OUT "  get $propnm() {\n";
+  print OUT "    return this.getProp(\'$propnm\');\n";
+  print OUT "  }\n";
+  print OUT "\n";
+      
+  return if (contains($prop->{"options"}, "readonly"));
+
+  print OUT "  set $propnm(arg0) {\n";
+  print OUT "    this.setProp(\'$propnm\', arg0);\n";
+  print OUT "  }\n";
+  print OUT "\n";
+}
+
+sub genJsObjPropCode($$$)
+{
+  my $classnm = shift;
+  my $propnm = shift;
+  my $prop = shift;
   my $propqif = $prop->{"qif"};
 
   print OUT "${classnm}.prototype.__defineGetter__(\"$propnm\", function()\n";
@@ -158,28 +214,61 @@ sub genJsObjPropCode($$$)
   print OUT "\n";
 }
 
+sub genEs6ObjPropCode($$$)
+{
+  my $classnm = shift;
+  my $propnm = shift;
+  my $prop = shift;
+  my $propqif = $prop->{"qif"};
+
+  print OUT "  get $propnm() {\n";
+  print OUT "    const result = this.getProp(\'$propnm\');\n";
+  print OUT "    return this.createWrapper(result);\n";
+  print OUT "  }\n";
+  print OUT "\n";
+      
+  return if (contains($prop->{"options"}, "readonly"));
+
+  print OUT "  set $propnm(arg0) {\n";
+  print OUT "    this.setProp(\'$propnm\', arg0.wrapped);\n";
+  print OUT "  }\n";
+  print OUT "\n";
+}
+
 sub genJsEnumPropCode($$$)
 {
   my ($classnm, $propnm, $prop) = @_;
-
   genJsBasicPropCode($classnm, $propnm, $prop);
-
   defined($prop->{"enumdef"}) || die;
 
   my %enums = %{ $prop->{"enumdef"} };
   foreach my $defnm (sort keys %enums) {
     my $key = $propnm."_".uc($defnm);
     my $value = $enums{$defnm};
-
     print OUT "\n";
     print OUT "${classnm}.prototype.__defineGetter__(\"$key\", function()\n";
     print OUT "{\n";
     print OUT "  return this._wrapped.getEnumDef(\"$propnm\", \"$defnm\");\n";
     print OUT "});\n";
     print OUT "\n";
-
   }	  
+}
 
+sub genEs6EnumPropCode($$$)
+{
+  my ($classnm, $propnm, $prop) = @_;
+  genEs6BasicPropCode($classnm, $propnm, $prop);
+  defined($prop->{"enumdef"}) || die;
+
+  my %enums = %{ $prop->{"enumdef"} };
+  foreach my $defnm (sort keys %enums) {
+    my $key = $propnm."_".uc($defnm);
+    my $value = $enums{$defnm};
+    print OUT "  get $key() {\n";
+    print OUT "    return this.getEnumDef(\'$propnm\', \'$defnm\');\n";
+    print OUT "  }\n";
+    print OUT "\n";
+  }	  
 }
 
 #####################
@@ -229,6 +318,48 @@ sub genJsInvokeCode($$)
     if ($rval_typename eq "object") {
       my $rettype_qif = $rettype->{"qif"};
       print OUT "  return this._cuemol.utils.convPolymObj(rval);\n";
+    }
+    elsif ($rval_typename eq "void") {
+      # No return code
+    }
+    # elsif ($rval_typename eq "enum") {
+    # }
+    else {
+      # basic types
+      print OUT "  return rval;\n";
+    }
+
+    print OUT "};\n";
+    print OUT "\n";
+  }
+
+  print OUT "\n";
+}
+
+sub genEs6InvokeCode($$)
+{
+  my $cls = shift;
+  my $classnm = shift;
+  return if (!$cls->{"methods"});
+
+  my %mths = %{$cls->{"methods"}};
+  foreach my $nm (sort keys %mths) {
+    my $mth = $mths{$nm};
+    my $nargs = int(@{$mth->{"args"}});
+    my $rettype = $mth->{"rettype"};
+    my $rval_typename = $rettype->{"type"};
+    print OUT "// method: $nm\n";
+    print OUT "  ${nm}(".makeMthSignt($mth).") {\n";
+    if ($rval_typename ne "void") {
+        print OUT "    const result = ";
+    }
+    else {
+        print OUT "    ";
+    }
+    print OUT "this.invokeMethod(".makeMthArg($mth).");\n";
+
+    if ($rval_typename eq "object") {
+        print OUT "    return this.createWrapper(result);\n";
     }
     elsif ($rval_typename eq "void") {
       # No return code
@@ -321,6 +452,18 @@ sub checkCallbackReg($)
   return 0;
 }
 
+sub genJsES6ImplData($$)
+{
+  my ($class_name, $supcls_name) = @_;
+  my $supcls = $Parser::db{$supcls_name};
+
+  my @extends = @{$supcls->{"extends"}} if ($supcls->{"extends"});
+  foreach my $i (@extends) {
+      genJsES6ImplData($class_name, $i);
+  }
+
+  my $clskey = "\@implements_$supcls_name";
+  print OUT "${class_name}.prototype[\'$clskey\'] = \'yes\';\n";
+}
+
 1;
-
-
