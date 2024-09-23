@@ -18,6 +18,7 @@ BOOST_DIR=$BASEDIR/$BOOST_VER
 INST_PATH=$BASEDIR/cuemol2
 
 cd $WORKSPACE/nodejs
+npm install
 npx cmake-js compile \
     --CDLIBCUEMOL2_ROOT=$INST_PATH \
     --CDBoost_ROOT=$BOOST_DIR
