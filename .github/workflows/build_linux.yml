@@ -48,13 +48,13 @@ jobs:
       with:
         basedir: ${{ github.workspace }}/target
         
-    - name: Build python module
-      uses: ./build_scripts/build_pymod_posix
+    - name: Build node.js addon
+      uses: ./build_scripts/build_nodejs_posix
       with:
         basedir: ${{ github.workspace }}/target
 
-    - name: Build node.js addon
-      uses: ./build_scripts/build_nodejs_posix
+    - name: Build python module
+      uses: ./build_scripts/build_pymod_posix
       with:
         basedir: ${{ github.workspace }}/target
 

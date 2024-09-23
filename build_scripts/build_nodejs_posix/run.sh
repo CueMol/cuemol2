@@ -25,6 +25,10 @@ npx cmake-js compile \
 
 # npx cmake-js install
 npm install
-npm test
 
+# Copy dependent libs (boost)
+ls -la $BOOST_DIR/lib/lib*
+cp $BOOST_DIR/lib/lib* $BASEDIR/cuemol2/lib/
 
+env LD_LIBRARY_PATH=$INST_PATH/lib \
+    npm test
