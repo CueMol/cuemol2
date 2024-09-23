@@ -497,10 +497,9 @@ NS_IMETHODIMP XPCObjWrapper::GetProp(const char *propname, nsIVariant **_retval)
 
   //MB_DPRINTLN("wrapped: %p/%s", m_pWrapped, typeid(*m_pWrapped).name());
   qlib::LVariant lvar;
-  bool ok;
   LString errmsg;
 
-  ok = cuemol2::getProp(m_pWrapped, propname, lvar, errmsg);
+  bool ok = cuemol2::getProp(m_pWrapped, propname, lvar, errmsg);
   
   if (!ok) {
     LOG_DPRINTLN("GetProp: getProperty(\"%s\") call failed.", propname);

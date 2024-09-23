@@ -178,22 +178,6 @@ if (NOT BUILD_MINIMUM_MODULES)
   add_subdirectory(modules/importers)
 endif ()
 
-# # python binding
-# if (BUILD_PYTHON_BINDINGS)
-#   find_package(Python3 COMPONENTS Interpreter Development REQUIRED)
-#   message(STATUS "Python3_Development_FOUND=${Python3_Development_FOUND}")
-#   message(STATUS "Python3_EXECUTABLE=${Python3_EXECUTABLE}")
-#   message(STATUS "Python: version=${Python3_VERSION}")
-#   message(STATUS "Python3_INCLUDE_DIRS=${Python3_INCLUDE_DIRS}")
-#   message(STATUS "Python3_LIBRARIES=${Python3_LIBRARIES}")
-# 
-#   if (BUILD_PYTHON_MODULE)
-#     add_subdirectory(pymodule)
-#   else ()
-#     add_subdirectory(pybr)
-#   endif ()
-# endif ()
-
 # utils (blendpng)
 add_subdirectory(utils)
 
@@ -235,15 +219,6 @@ SET(CUEMOL2_LINK_LIBRARIES
 
 SET(CUEMOL2_DEFS "")
 
-# if (BUILD_PYTHON_BINDINGS)
-#   if (BUILD_PYTHON_MODULE)
-#     list(APPEND CUEMOL2_LINK_LIBRARIES pymodule)
-#   else ()
-#     list(APPEND CUEMOL2_LINK_LIBRARIES pybr)
-#     # message(STATUS CUEMOL2_LINK_LIBRARIES"=${CUEMOL2_LINK_LIBRARIES}")
-#   endif ()
-# endif ()
-
 if (BUILD_OPENGL_SYSDEP)
   list(APPEND CUEMOL2_LINK_LIBRARIES sysdep)
 endif ()
@@ -279,7 +254,7 @@ install(TARGETS cuemol2 FILE_SET HEADERS)
 
 install(FILES ${PROJECT_BINARY_DIR}/src/config.h ${PROJECT_BINARY_DIR}/src/version.hpp DESTINATION include)
 
-set(DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../data/)
+set(DATA_DIR ${CMAKE_SOURCE_DIR}/data/)
 set(DATA_FILES
 ${DATA_DIR}/prot_top.xml
 ${DATA_DIR}/prot_props.xml
@@ -295,3 +270,15 @@ set(SYSCONFIG_FILE ${DATA_DIR}/sysconfig.xml)
 
 install(FILES ${DATA_FILES} DESTINATION data/data)
 install(FILES ${SYSCONFIG_FILE} DESTINATION data)
+
+if (BUILD_NODEJS_BINDINGS)
+  add_custom_command(
+    TARGET cuemol2 POST_BUILD
+    COMMAND python3
+    ${CMAKE_CURRENT_SOURCE_DIR}/python/make_es6_wrapper_table.py
+    --input_dir ${CMAKE_BINARY_DIR}/js/wrappers
+    --output_js ${CMAKE_BINARY_DIR}/js/wrappers/wrapper_loader.js
+  )
+  install(FILES ${CMAKE_BINARY_DIR}/js/wrappers/wrapper_loader.js
+    DESTINATION ${PROJECT_SOURCE_DIR}/nodejs/src/wrappers)
+endif()

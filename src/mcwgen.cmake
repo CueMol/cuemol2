@@ -12,6 +12,8 @@ SET(MCWG_MOD_CMD "${MCWRAPGEN} ${MCWG_INCLUDES} -m mod")
 SET(MCWG_PY_CMD "${MCWRAPGEN} ${MCWG_INCLUDES} -m py")
 # XPCOM-js
 SET(MCWG_XPCJS_CMD "${MCWRAPGEN} ${MCWG_INCLUDES} -m js")
+# node.js
+SET(MCWG_NODEJS_CMD "${MCWRAPGEN} ${MCWG_INCLUDES} -m nodejs")
 
 macro(MCWRAPGEN_CLASS _target_sources)
   foreach(_current_file ${ARGN})
@@ -77,6 +79,19 @@ macro(MCWRAPGEN_CLASS _target_sources)
       list(APPEND MCWG_XPCJS_WRAPPERS ${_out_xpcjs_file})
     endif ()
 
+    # Generate node.js wrapper scripts
+    if (BUILD_NODEJS_BINDINGS)
+      SET(_out_nodejs_dir "${CMAKE_BINARY_DIR}/js/wrappers")
+      SET(_out_nodejs_file "${_out_nodejs_dir}/${_file_stem}.js")
+      separate_arguments(_mcwg_nodejs_command NATIVE_COMMAND "${MCWG_NODEJS_CMD}")
+      add_custom_command(
+	    OUTPUT ${_out_nodejs_file}
+	    COMMAND ${_mcwg_nodejs_command} -jsdir ${_out_nodejs_dir} ${_abs_file}
+        DEPENDS ${_abs_file}
+	    )
+      list(APPEND MCWG_NODEJS_WRAPPERS ${_out_nodejs_file})
+    endif ()
+
   endforeach()
 
   # message("MCWG_PY_WRAPPERS: ${MCWG_PY_WRAPPERS}")
@@ -109,16 +124,23 @@ endmacro()
 
 # Generate scripting language wrapper files
 macro(MCWRAPGEN_SCR_WRAPPERS _target)
+  # For python wrapper scripts
   if (BUILD_PYTHON_BINDINGS)
     add_custom_target(${_target}_generate_pywrappers DEPENDS ${MCWG_PY_WRAPPERS})
     add_dependencies(${_target} ${_target}_generate_pywrappers)
     # install(FILES ${MCWG_PY_WRAPPERS} DESTINATION data/python/cuemol/wrappers)
     install(FILES ${MCWG_PY_WRAPPERS} DESTINATION "${PROJECT_SOURCE_DIR}/pymod/python/cuemol/wrappers")
   endif ()
-
+  # For XPC-js wrapper scripts
   if (BUILD_XPCJS_BINDINGS)
     add_custom_target(${_target}_generate_xpcjs_wrappers DEPENDS ${MCWG_XPCJS_WRAPPERS})
     add_dependencies(${_target} ${_target}_generate_xpcjs_wrappers)
     install(FILES ${MCWG_XPCJS_WRAPPERS} DESTINATION data/cuemol-wrappers)
+  endif ()
+  # For node.js wrapper scripts
+  if (BUILD_NODEJS_BINDINGS)
+    add_custom_target(${_target}_generate_nodejs_wrappers DEPENDS ${MCWG_NODEJS_WRAPPERS})
+    add_dependencies(${_target} ${_target}_generate_nodejs_wrappers)
+    install(FILES ${MCWG_NODEJS_WRAPPERS} DESTINATION "${PROJECT_SOURCE_DIR}/nodejs/src/wrappers")
   endif ()
 endmacro()
