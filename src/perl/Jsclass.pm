@@ -54,7 +54,7 @@ sub genJsWrapper($)
   if ($use_es6_mod) {
       $js_clsname = $qifname;
       print OUT "\n";
-      print OUT "import { BaseWrapper } from '../base_wrapper';\n";
+      print OUT "import { BaseWrapper } from '../base_wrapper.js';\n";
       print OUT "\n";
       print OUT "export class ${js_clsname} extends BaseWrapper {\n";
   }

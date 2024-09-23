@@ -43,9 +43,9 @@ Napi::Value isInitialized(const Napi::CallbackInfo& info)
 {
     Napi::Env env = info.Env();
     if (g_bInitOK)
-        Napi::Boolean::New(env, true);
+        return Napi::Boolean::New(env, true);
     else
-        Napi::Boolean::New(env, false);
+        return Napi::Boolean::New(env, false);
 }
 
 /// CueMol main initialization
@@ -54,12 +54,15 @@ Napi::Value initCueMol(const Napi::CallbackInfo &info)
     Napi::Env env = info.Env();
     if (g_bInitOK) return env.Null();
 
+    int nargs = info.Length();
+    MB_DPRINTLN("initCueMol() called. nargs=%d", nargs);
+
     LString confpath;
-    if (info.Length() < 1) {
+    if (nargs < 1) {
       // without argments --> use embedded path string
       confpath = LString(DEFAULT_CONFIG);
     }
-    else if (info.Length() == 1 && info[0].IsString()) {
+    else if (nargs == 1 && info[0].IsString()) {
         confpath = info[0].As<Napi::String>().Utf8Value();
     }
     else {
@@ -68,7 +71,7 @@ Napi::Value initCueMol(const Napi::CallbackInfo &info)
         return env.Null();
     }
 
-    LOG_DPRINTLN("initCueMol(%s) called.", confpath.c_str());
+    LOG_DPRINTLN("initCueMol('%s') called.", confpath.c_str());
 
     int result = cuemol2::init(confpath, true);
     if (result < 0) {

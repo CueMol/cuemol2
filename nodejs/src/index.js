@@ -1,17 +1,24 @@
-const path = require('path');
-const _internal = require('bindings')('cuemol_internal.node');
-const { CueMol, EventManager } = require('./cuemol');
+// const path = require('path');
+// const _internal = require('bindings')('cuemol_internal.node');
+// const { CueMol, EventManager } = require('./cuemol');
+import path from 'path';
+import bindings from 'bindings';
+const _internal = bindings('cuemol_internal.node');
+import { CueMol, EventManager } from './cuemol.js';
+
+const cuemol = {'value': null};
+
+console.log("bindings: ", bindings);
+console.log("bindings('cuemol_internal.node'): ", bindings('cuemol_internal.node'));
 console.log("_internal: ", _internal);
 
-// function getModule() {
-//   return _internal;
-// }
-
-exports.getModule = function () {
+// exports.getModule = function () {
+export function getModule() {
   return _internal;
 };
 
-exports.getSysConfigPath = function () {
+// exports.getSysConfigPath = function () {
+export function getSysConfigPath() {
   // console.log('XXX path.resolve:',path.resolve('.'));
   // console.log('XXX __filename:', __filename);
   // console.log('XXX __dirname:', __dirname);
@@ -20,27 +27,21 @@ exports.getSysConfigPath = function () {
   return load_path;
 };
 
-let cuemol = null;
-
-exports.createCueMol = function (sysconfig_path = '') {
-  if (cuemol) {
+// exports.createCueMol = function (sysconfig_path = '') {
+export function createCueMol(sysconfig_path = '') {
+  if (cuemol.value) {
     console.log('cuemol already created');
     return cuemol;
   }
-  cuemol = new CueMol({internal: _internal});
-  if (!sysconfig_path) {
-    cuemol.initCueMol();
-    // cuemol.initCueMol(exports.getSysConfigPath());
-  }
-  else {
-    cuemol.initCueMol(sysconfig_path);
-  }
-  return cuemol;
+  cuemol.value = new CueMol({internal: _internal});
+  cuemol.value.initCueMol(sysconfig_path);
+  return cuemol.value;
 };
 
 let event_manager = null;
 
-exports.getEventManager = function() {
+// exports.getEventManager = function() {
+export function getEventManager() {
   if (cuemol === null) {
     console.log('cuemol not created');
     return null;

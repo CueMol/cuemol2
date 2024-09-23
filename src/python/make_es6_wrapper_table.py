@@ -23,7 +23,7 @@ def main():
         f.write("\n")
         print(f"input_dir: {input_dir}")
         file_list = sorted(list(input_dir.glob("*.js")))
-
+        file_list = [x for x in file_list if x.stem != "wrapper_loader"]
         for in_js in file_list:
             stem = in_js.stem
             f.write(f"import {{ {stem} }} from '{subdir}/{stem}.js';\n")

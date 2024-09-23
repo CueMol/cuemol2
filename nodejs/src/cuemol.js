@@ -1,8 +1,8 @@
-import { wrapper_map } from './wrapper_loader';
+import { wrapper_map } from './wrappers/wrapper_loader.js';
 
 export class CueMol {
-  constructor(myapi) {
-    this._internal = myapi.internal;
+  constructor(value) {
+    this._internal = value.internal;
   }
 
   get internal() {
@@ -10,10 +10,16 @@ export class CueMol {
   }
 
   initCueMol(config) {
-    this.internal.initCueMol(config);
+    if (config) {
+      this.internal.initCueMol(config);
+    } else {
+      this.internal.initCueMol();
+    }
   }
 
-  bindView(id, view) {}
+  bindView(id, view) {
+    throw new Error('not implemented');
+  }
 
   createWrapper(native_obj) {
     if (typeof native_obj === 'undefined') {

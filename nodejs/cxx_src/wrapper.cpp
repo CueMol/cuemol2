@@ -8,6 +8,8 @@
 #include <qlib/LVariant.hpp>
 #include <qlib/qlib.hpp>
 
+#include <libcuemol2_api/binding.hpp>
+
 namespace node_jsbr {
 
 using qlib::LString;
@@ -87,23 +89,12 @@ Napi::Value Wrapper::getProp(const Napi::CallbackInfo &info)
 
     auto propname = info[0].As<Napi::String>().Utf8Value();
     auto pScObj = getWrapped();
-    if (!pScObj) {
-        Napi::Error::New(env, "Wrapped obj is null").ThrowAsJavaScriptException();
-        return env.Null();
-    }
-
-    if (!pScObj->hasNestedProperty(propname)) {
-        auto msg =
-            LString::format("GetProp: property \"%s\") not found.", propname.c_str());
-        Napi::Error::New(env, msg.c_str()).ThrowAsJavaScriptException();
-        return env.Null();
-    }
-
     qlib::LVariant lvar;
-    if (!pScObj->getNestedProperty(propname, lvar)) {
-        LString msg = LString::format("GetProp: getProperty(\"%s\") call failed.",
-                                      propname.c_str());
-        Napi::Error::New(env, msg.c_str()).ThrowAsJavaScriptException();
+    LString errmsg;
+
+    bool ok = cuemol2::getProp(pScObj, propname, lvar, errmsg);
+    if (!ok) {
+        Napi::Error::New(env, errmsg.c_str()).ThrowAsJavaScriptException();
         return env.Null();
     }
 
@@ -126,22 +117,7 @@ Napi::Value Wrapper::setProp(const Napi::CallbackInfo &info)
         return env.Null();
     }
     auto propname = info[0].As<Napi::String>().Utf8Value();
-
     auto value = info[1];
-
-    auto pScObj = getWrapped();
-    if (!pScObj) {
-        Napi::Error::New(env, "Wrapped obj is null").ThrowAsJavaScriptException();
-        return env.Null();
-    }
-
-    if (!pScObj->hasNestedProperty(propname)) {
-        auto msg =
-            LString::format("SetProp: property \"%s\") not found.", propname.c_str());
-        Napi::Error::New(env, msg.c_str()).ThrowAsJavaScriptException();
-        return env.Null();
-    }
-
     // variant (lvar) doesn't have ownership of its content
     qlib::LVariant lvar;
     if (!Wrapper::napiValueToLVar(env, value, lvar)) {
@@ -151,9 +127,11 @@ Napi::Value Wrapper::setProp(const Napi::CallbackInfo &info)
         return env.Null();
     }
 
-    if (!pScObj->setNestedProperty(propname, lvar)) {
-        auto msg = LString::format("SetProp(%s) failed.", propname.c_str());
-        Napi::Error::New(env, msg.c_str()).ThrowAsJavaScriptException();
+    auto pScObj = getWrapped();
+    LString errmsg;
+    bool ok = cuemol2::setProp(pScObj, propname, lvar, errmsg);
+    if (!ok) {
+        Napi::Error::New(env, errmsg.c_str()).ThrowAsJavaScriptException();
         return env.Null();
     }
 
@@ -215,20 +193,22 @@ Napi::Value Wrapper::invokeMethod(const Napi::CallbackInfo &info)
     // Invoke method
     bool ok = false;
     LString errmsg;
-    try {
-        ok = pScObj->invokeMethod(methodname, largs);
-        if (!ok) errmsg = LString::format("call method %s: failed", methodname.c_str());
-    } catch (qlib::LException &e) {
-        errmsg = LString::format("Exception occured in native method %s: %s",
-                                 methodname.c_str(), e.getMsg().c_str());
-    } catch (std::exception &e) {
-        errmsg = LString::format("Std::exception occured in native method %s: %s",
-                                 methodname.c_str(), e.what());
-    } catch (...) {
-        LOG_DPRINTLN("*********");
-        errmsg = LString::format("Unknown Exception occured in native method %s",
-                                 methodname.c_str());
-    }
+    ok = cuemol2::invokeMethod(pScObj, methodname, largs, errmsg);
+    
+    // try {
+    //     ok = pScObj->invokeMethod(methodname, largs);
+    //     if (!ok) errmsg = LString::format("call method %s: failed", methodname.c_str());
+    // } catch (qlib::LException &e) {
+    //     errmsg = LString::format("Exception occured in native method %s: %s",
+    //                              methodname.c_str(), e.getMsg().c_str());
+    // } catch (std::exception &e) {
+    //     errmsg = LString::format("Std::exception occured in native method %s: %s",
+    //                              methodname.c_str(), e.what());
+    // } catch (...) {
+    //     LOG_DPRINTLN("*********");
+    //     errmsg = LString::format("Unknown Exception occured in native method %s",
+    //                              methodname.c_str());
+    // }
 
     if (!ok) {
         Napi::Error::New(env, errmsg.c_str()).ThrowAsJavaScriptException();

@@ -17,6 +17,7 @@ set(Boost_USE_STATIC_LIBS OFF)
 find_package(Boost 1.50.0 REQUIRED
   COMPONENTS system thread filesystem chrono timer)
 
+##########
 # Include node-addon-api wrappers
 execute_process(COMMAND node -p "require('node-addon-api').include"
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src
@@ -29,7 +30,7 @@ message(STATUS "NODE_ADDON_API_DIR: ${NODE_ADDON_API_DIR}")
 # Essential include files to build a node addon,
 # you should add this line in every CMake.js based project.
 
-#####################
+##########
 
 if (WIN32)
   add_definitions(-DNODEJS_EXPORTS=1)
@@ -82,6 +83,3 @@ install(TARGETS cuemol_internal
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   )
-
-SET(JS_OUTPUT_DIR ${CMAKE_BINARY_DIR}/javascript)
-

@@ -14,5 +14,6 @@
   },
   "devDependencies": {
     "node-addon-api": "^5.0.0"
-  }
+  },
+  "type": "module"
 }
