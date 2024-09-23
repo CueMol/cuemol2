@@ -22,6 +22,8 @@ npx cmake-js compile \
     --CDLIBCUEMOL2_ROOT=$INST_PATH \
     --CDBoost_ROOT=$BOOST_DIR
 
-npx cmake-js install
+# npx cmake-js install
+npm install
+npm test
 
-# TODO: run tests?
+
