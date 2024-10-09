@@ -30,6 +30,6 @@ else()
   target_compile_options(qmzlib PUBLIC "-fPIC")
 endif()
 
-install(TARGETS qmzlib
-  FILE_SET HEADERS
-)
+# install(TARGETS qmzlib
+#   FILE_SET HEADERS
+# )

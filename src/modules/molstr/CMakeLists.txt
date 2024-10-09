@@ -130,7 +130,7 @@ target_link_libraries(molstr PRIVATE qlib gfx qsys Boost::filesystem Boost::thre
 
 MCWRAPGEN_SCR_WRAPPERS(molstr)
 
-install(TARGETS molstr
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  )
+# install(TARGETS molstr
+#   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+#   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#   )

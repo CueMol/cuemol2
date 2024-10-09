@@ -95,9 +95,9 @@ target_link_libraries(molvis PRIVATE qlib gfx qsys molstr Boost::filesystem Boos
 
 MCWRAPGEN_SCR_WRAPPERS(molvis)
 
-install(TARGETS molvis
-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-  )
+# install(TARGETS molvis
+#   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+#   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+#   )
 
 install(FILES ${GLSL_SHADER_FILES} DESTINATION data/shaders)

@@ -101,7 +101,8 @@ target_include_directories(
 if (WIN32)
   target_compile_definitions(sysdep PUBLIC SYSDEP_EXPORTS=1)
 else()
-  target_compile_options(sysdep PUBLIC "-fPIC")
+  # target_compile_options(sysdep PUBLIC "-fPIC")
+  set_property(TARGET sysdep PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()
 
 # message(STATUS "SYSDEP_LINK_LIBRARIES: ${SYSDEP_LINK_LIBRARIES}")
