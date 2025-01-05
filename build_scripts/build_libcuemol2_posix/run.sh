@@ -4,11 +4,19 @@
 # usage: run.sh deplibs_dir [Debug]
 #
 
+usage()
+{
+    echo "usage: run.sh deplibs_dir [Debug]"
+    exit 1
+}
+
+if [ -z "${1:-}" ]; then
+   usage
+fi
+
 set -eux
 
 BASEDIR=$1
-# RUNNER_OS=$2
-# RUNNER_ARCH=$3
 
 REPOS_DIR=$(cd $(dirname $0)/../..; pwd)
 WORKSPACE=${GITHUB_WORKSPACE:-$REPOS_DIR}
