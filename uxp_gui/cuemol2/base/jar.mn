@@ -13,6 +13,12 @@ cuemol2.jar:
 #ifdef XP_MACOSX
   content/cuemol2/cuemol2-sysdep.css (content/macosx.css)
 #endif
+#ifdef XP_WIN
+  content/cuemol2/cuemol2-sysdep.css (content/windows7.css)
+#endif
+#ifdef XP_UNIX
+  content/cuemol2/cuemol2-sysdep.css (content/gdk-x11.css)
+#endif
 #
 # Config Dialog
 * content/cuemol2/config-dialog.js (content/config-dialog.js)
