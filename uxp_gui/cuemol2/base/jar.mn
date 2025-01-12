@@ -12,11 +12,9 @@ cuemol2.jar:
   content/cuemol2/cuemol2.css (content/cuemol2.css)
 #ifdef XP_MACOSX
   content/cuemol2/cuemol2-sysdep.css (content/macosx.css)
-#endif
-#ifdef XP_WIN
+#elif XP_WIN
   content/cuemol2/cuemol2-sysdep.css (content/windows7.css)
-#endif
-#ifdef XP_UNIX
+#elif MOZ_WIDGET_GTK
   content/cuemol2/cuemol2-sysdep.css (content/gdk-x11.css)
 #endif
 #
