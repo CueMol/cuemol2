@@ -5,6 +5,18 @@
 #  host_os ... macOS
 #  host_arch ... ARM64 X64
 
+usage()
+{
+    echo "usage: run.sh base_dir host_os host_arch"
+    echo "  host_os ... macOS"
+    echo "  host_arch ... ARM64 X64"
+    exit 1
+}
+
+if [ -z "${1:-}" ] || [ -z "${2:-}" ] || [ -z "${3:-}" ]; then
+   usage
+fi
+
 set -eux
 
 BASEDIR=$1
