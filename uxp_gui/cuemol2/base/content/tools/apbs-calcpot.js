@@ -55,10 +55,14 @@
   var default_path = "";
 
   // default apbs.exe path
-  if (dlg.mPlfName=="Windows_NT")
-    default_path = util.createDefaultPath("CurProcD", "apbs", "apbs.exe");
-  else
-    default_path = util.createDefaultPath("CurProcD", "apbs-pdb2pqr", "apbs");
+  if (dlg.mPlfName=="Windows_NT") {
+    // default_path = util.createDefaultPath("CurProcD", "apbs", "apbs.exe");
+    default_path = util.createDefaultPath("GreD", "apbs", "apbs.exe");
+  }
+  else {
+    // default_path = util.createDefaultPath("CurProcD", "apbs", "apbs");
+    default_path = util.createDefaultPath("GreD", "apbs", "apbs");
+  }
 
   if (pref.has(apbs_exe_key))
     dlg.mApbsExePath = pref.get(apbs_exe_key);
@@ -66,10 +70,14 @@
     dlg.mApbsExePath = default_path ;
 
   // default pdb2pqr.py path
-  if (dlg.mPlfName=="Windows_NT")
-    default_path = util.createDefaultPath("CurProcD", "apbs", "pdb2pqr_wrap.bat");
-  else
-    default_path = util.createDefaultPath("CurProcD", "apbs-pdb2pqr", "pdb2pqr");
+  if (dlg.mPlfName=="Windows_NT") {
+    // default_path = util.createDefaultPath("CurProcD", "apbs", "pdb2pqr_wrap.bat");
+    default_path = util.createDefaultPath("GreD", "apbs", "pdb2pqr_wrap.bat");
+  }
+  else {
+    // default_path = util.createDefaultPath("CurProcD", "apbs", "pdb2pqr");
+    default_path = util.createDefaultPath("GreD", "apbs", "pdb2pqr");
+  }
 
   if (pref.has(pdb2pqr_py_key))
     dlg.mPdb2pqrPath = pref.get(pdb2pqr_py_key);
@@ -653,9 +661,9 @@
     let out_path = "\"" + this.mPqrFile.path + "\"";
 
     // submit PDB2PQR task
-    let args = ["-v","--chain",
+    let args = ["--keep-chain",
 		"--nodebump", "--noopt",
-		"--ff", ffname, in_path, out_path];
+        "--ff", ffname.toUpperCase(), in_path, out_path];
 
     let strargs = args.join(" ");
 

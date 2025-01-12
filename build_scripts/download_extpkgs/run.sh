@@ -42,6 +42,9 @@ if [ $RUNNER_OS = "macOS" ]; then
 fi
 tar xjf $APBSPKG_TGZ
 
+if [ -d $BASEDIR/apbs ]; then
+    rm -rf $BASEDIR/apbs
+fi
 mv apbs $BASEDIR/
 
 ##########
@@ -58,9 +61,33 @@ if [ $RUNNER_OS = "macOS" ]; then
 fi
 tar xjf $POVRAYPKG_TGZ
 
+if [ -d $BASEDIR/povray ]; then
+    rm -rf $BASEDIR/povray
+fi
 mv povray $BASEDIR/
 
 ##########
 # FFMPEG
+if [ $RUNNER_OS = "Linux" ]; then
+    # TODO: impl
+    return 0
+fi
 
-# TODO
+# Retrieve ffmpeg bin
+if [ $RUNNER_ARCH = "ARM64" ]; then
+    FFMPEG_DIST=ffmpeg61arm
+elif [ $RUNNER_ARCH = "X64" ]; then
+    FFMPEG_DIST=ffmpeg61intel
+else
+    echo "unknown runner arch: $RUNNER_ARCH"
+    exit 1
+fi
+
+wget --progress=dot:mega -c https://www.osxexperts.net/${FFMPEG_DIST}.zip
+if [ $RUNNER_OS = "macOS" ]; then
+    xattr -cr ${FFMPEG_DIST}.zip
+fi
+mkdir -p $BASEDIR/ffmpeg/bin
+cd $BASEDIR/ffmpeg/bin
+unzip -o $TMPDIR/${FFMPEG_DIST}.zip
+# popd

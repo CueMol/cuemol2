@@ -40,7 +40,7 @@ fi
 # Build UXP
 cd ${WORKSPACE}/uxp_gui
 
-BUNDLE_DIR=$BASEDIR/cuemol2_bundle_apps
+BUNDLE_DIR=$BASEDIR
 CUEMOL_DIR=$BASEDIR/cuemol2
 BOOST_DIR=$BASEDIR/boost_1_84_0
 DEPLIBS_DIR=$BASEDIR/boost_1_84_0/lib
