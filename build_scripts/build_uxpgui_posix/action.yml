@@ -30,12 +30,6 @@ runs:
       pyenv versions
       python --version
 
-  # - name: Download bundle apps
-  #   shell: bash
-  #   run: |
-  #     cd ${GITHUB_WORKSPACE}
-  #     bash build_scripts/build_uxpgui_posix/download_bundle_apps.sh ${{ inputs.basedir }} ${{ runner.os }} ${{ runner.arch }}
-`
   - name: Build UXP GUI
     id: create-artifact
     shell: bash
