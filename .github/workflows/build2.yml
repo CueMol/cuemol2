@@ -38,6 +38,11 @@ jobs:
       with:
         basedir: ${{ github.workspace }}/target
 
+    - name: Download external packages
+      uses: ./build_scripts/download_extpkgs
+      with:
+        basedir: ${{ github.workspace }}/target
+
     - name: Build libcuemol2
       uses: ./build_scripts/build_libcuemol2_posix
       with:
