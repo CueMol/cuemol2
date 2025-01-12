@@ -430,10 +430,21 @@ void MmcifMolReader::readAtomLine()
     m_nBfac = findDataItem("B_iso_or_equiv");
 
     m_nAuthAtomID = findDataItem("auth_atom_id");
+    if (m_nAuthAtomID<0) {
+        LOG_DPRINTLN("mmCIF> Warning: auth_atom_id not found in _atom_site");
+    }
     m_nAuthCompID = findDataItem("auth_comp_id");
+    if (m_nAuthCompID<0) {
+        LOG_DPRINTLN("mmCIF> Warning: auth_comp_id not found in _atom_site");
+    }
     m_nAuthSeqID = findDataItem("auth_seq_id");
+    if (m_nAuthSeqID<0) {
+        LOG_DPRINTLN("mmCIF> Warning: auth_seq_id not found in _atom_site");
+    }
     m_nAuthAsymID = findDataItem("auth_asym_id");
-
+    if (m_nAuthAsymID<0) {
+        LOG_DPRINTLN("mmCIF> Warning: auth_asym_id not found in _atom_site");
+    }
     m_nModelID = findDataItem("pdbx_PDB_model_num");
 
     m_bLoopDefsOK = true;
@@ -458,25 +469,45 @@ void MmcifMolReader::readAtomLine()
 
   ElemID eleid = ElemSym::str2SymID(getToken(m_nTypeSymbol));
 
-  LString atomname1, atomname2;
+  LString atomname;
   if (m_nAuthAtomID>=0) {
-    atomname1 = getToken(m_nAuthAtomID);
-    if (atomname1.getAt(0)=='"')
-      atomname1 = atomname1.substr(1, atomname1.length()-2);
+    atomname = getToken(m_nAuthAtomID);
   }
-  if (m_nLabelAtomID>=0)
-    atomname2 = getToken(m_nLabelAtomID);
+  else if (m_nLabelAtomID>=0) {
+    atomname = getToken(m_nLabelAtomID);
+  }
+  else {
+    error("invalid mmCIF format, cannot get atom name (_atom_site.label_atom_id)");
+    return;
+  }
+  if (atomname.getAt(0)=='"')
+    atomname = atomname.substr(1, atomname.length()-2);
 
   LString resname1;
   if (m_nAuthCompID>=0) {
     resname1 = getToken(m_nAuthCompID);
   }
+  else if (m_nLabelCompID>=0) {
+    resname1 = getToken(m_nLabelCompID);
+  }
+  else {
+    error("invalid mmCIF format, cannot get residue name (_atom_site.label_comp_id)");
+    return;
+  }
   
   char confid = getConfID(m_nLabelAltID); //getToken(m_nLabelAltID);
   
   LString chain1;
-  if (m_nAuthAsymID>=0)
-    chain1 = getToken(m_nAuthAsymID);
+  if (m_nAuthAsymID>=0) {
+      chain1 = getToken(m_nAuthAsymID);
+  }
+  else if (m_nLabelAsymID>=0) {
+      chain1 = getToken(m_nLabelAsymID);
+  }
+  else {
+      error("invalid mmCIF format, cannot get chain name (_atom_site.label_asym_id)");
+      return;
+  }
 
   ResidIndex residx = getResidIndex(m_nAuthSeqID, m_nInsCode);
 
@@ -524,7 +555,7 @@ void MmcifMolReader::readAtomLine()
   
   MolAtomPtr pAtom = MolAtomPtr(MB_NEW MolAtom());
   pAtom->setParentUID(m_pMol->getUID());
-  pAtom->setName(atomname1);
+  pAtom->setName(atomname);
   pAtom->setElement(eleid);
   pAtom->setChainName(chain1);
   pAtom->setResIndex(residx);

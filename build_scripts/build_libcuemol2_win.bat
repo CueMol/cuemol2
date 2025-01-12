@@ -10,6 +10,16 @@ SET RUNNER_OS=Windows
 SET RUNNER_ARCH=X64
 SET TMPDIR=%BASEDIR%\tmp
 
+SET SCRIPT_DIR=%~dp0
+echo SCRIPT_DIR: %SCRIPT_DIR%
+if "%GITHUB_WORKSPACE%"=="" (
+   cd %SCRIPT_DIR%\..
+   for /f %%i in ('cd') do set TOP_DIR=%%i
+) ELSE (
+   SET TOP_DIR=%GITHUB_WORKSPACE%
+)
+echo TOP_DIR: %TOP_DIR%
+
 mkdir %TMPDIR%
 %~d1
 cd %TMPDIR%
@@ -25,7 +35,7 @@ REM Build libcuemol2
 SET INSTPATH=%DEPLIBS_DIR%\cuemol2
 rd /s /q build
 
-cmake -S %GITHUB_WORKSPACE% -B build ^
+cmake -S %TOP_DIR% -B build ^
  -DCMAKE_INSTALL_PREFIX=%INSTPATH% ^
  -DBoost_ROOT=%DEPLIBS_DIR%\boost_1_84_0 ^
  -DCGAL_ROOT=%DEPLIBS_DIR%\CGAL-4.14.3 ^
