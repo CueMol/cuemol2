@@ -101,6 +101,10 @@ else
 fi
 
 ./mach build
+ls -l obj-aarch64-apple-darwin/dist/CueMol2.app/Contents/Resources
+find obj-aarch64-apple-darwin/dist -name "apbs"
+
+# Packaging
 ./mach package
 
 if [ $RUNNER_OS = "macOS" ]; then
