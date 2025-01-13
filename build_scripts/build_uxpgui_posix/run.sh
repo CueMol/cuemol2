@@ -101,11 +101,11 @@ else
 fi
 
 ./mach build
-ls -l obj-aarch64-apple-darwin/dist/CueMol2.app/Contents/Resources
-find obj-aarch64-apple-darwin/dist -name "apbs"
 
 # Packaging
 ./mach package
+
+find obj-*-apple-darwin/dist -name "apbs"
 
 if [ $RUNNER_OS = "macOS" ]; then
     ls -l obj-*/dist/cuemol2-*.dmg
