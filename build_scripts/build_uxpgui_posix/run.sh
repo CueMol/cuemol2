@@ -52,10 +52,15 @@ fi
 # Build UXP
 cd ${WORKSPACE}/uxp_gui
 
-BUNDLE_DIR=$BASEDIR/cuemol2_bundle_apps
+BUNDLE_DIR=$BASEDIR
 CUEMOL_DIR=$BASEDIR/cuemol2
 BOOST_DIR=$BASEDIR/boost_1_84_0
 DEPLIBS_DIR=$BASEDIR/boost_1_84_0/lib
+
+ls -l $BUNDLE_DIR
+ls -l $BUNDLE_DIR/povray
+ls -l $BUNDLE_DIR/ffmpeg
+ls -l $BUNDLE_DIR/apbs
 
 if [ $RUNNER_OS = "macOS" ]; then
     brew install autoconf@2.13 yasm
@@ -96,7 +101,11 @@ else
 fi
 
 ./mach build
+
+# Packaging
 ./mach package
+
+find obj-*-apple-darwin/dist -name "apbs"
 
 if [ $RUNNER_OS = "macOS" ]; then
     ls -l obj-*/dist/cuemol2-*.dmg

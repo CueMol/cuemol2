@@ -1,0 +1,18 @@
+name: 'Download external packages posix'
+description: 'Download external packages posix'
+
+inputs:
+  basedir:
+     description: 'base dir'
+     required: true
+
+runs:
+  using: "composite"
+  steps:
+
+  - name: Download extpkgs
+    shell: bash
+    run: |
+      cd ${GITHUB_WORKSPACE}
+      BASEDIR=${{ inputs.basedir }}
+      bash build_scripts/download_extpkgs/run.sh $BASEDIR ${{ runner.os }} ${{ runner.arch }}

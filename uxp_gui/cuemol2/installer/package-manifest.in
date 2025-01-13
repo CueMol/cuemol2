@@ -162,8 +162,9 @@
 @RESPATH@/api-utils-lib/*
 @RESPATH@/cuemol2ui-lib/*
 @RESPATH@/cuemol-wrappers/*
-; @RESPATH@/povray/*
-; @RESPATH@/ffmpeg/*
+@RESPATH@/povray/*
+@RESPATH@/ffmpeg/*
+@RESPATH@/apbs/*
 #ifdef XP_WIN32
 @RESPATH@/blendpng.exe
 #else
