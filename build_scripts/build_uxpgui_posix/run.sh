@@ -57,6 +57,11 @@ CUEMOL_DIR=$BASEDIR/cuemol2
 BOOST_DIR=$BASEDIR/boost_1_84_0
 DEPLIBS_DIR=$BASEDIR/boost_1_84_0/lib
 
+ls -l $BUNDLE_DIR
+ls -l $BUNDLE_DIR/povray
+ls -l $BUNDLE_DIR/ffmpeg
+ls -l $BUNDLE_DIR/apbs
+
 if [ $RUNNER_OS = "macOS" ]; then
     brew install autoconf@2.13 yasm
 
