@@ -30,6 +30,7 @@ ac_add_options --disable-jxl
 # ac_add_options --disable-ffmpeg
 ac_add_options --with-pthreads
 # ac_add_options --with-branding=whitestar/branding/whitestar
+ac_add_options --disable-install-strip
 
 
 # Please see https://www.palemoon.org/redist.shtml for restrictions when using the official branding.
