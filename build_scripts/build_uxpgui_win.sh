@@ -23,7 +23,7 @@ if [ ! -d ${WSDIR}/uxp_gui/platform ]; then
     mv uxp platform
 
     # Apply patch
-    patch -p5 < uxp_diff.patch
+    patch -p0 < uxp_diff.patch
 fi
 
 
