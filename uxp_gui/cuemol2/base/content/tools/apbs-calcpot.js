@@ -661,9 +661,15 @@
     let out_path = "\"" + this.mPqrFile.path + "\"";
 
     // submit PDB2PQR task
-    let args = ["--keep-chain",
-		"--nodebump", "--noopt",
-        "--ff", ffname.toUpperCase(), in_path, out_path];
+    let args = [];
+    if (dlg.mPlfName=="Windows_NT") {
+        args = [ffname.toUpperCase(), in_path, out_path];
+    }
+    else {
+        args = ["--keep-chain",
+		        "--nodebump", "--noopt",
+                "--ff", ffname.toUpperCase(), in_path, out_path];
+    }
 
     let strargs = args.join(" ");
 

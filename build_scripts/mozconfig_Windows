@@ -39,10 +39,6 @@ ac_add_options --disable-updater
 ac_add_options --disable-av1
 ac_add_options --disable-jxl
 
-# WIN32_REDIST_DIR="C:/{{VCINSTALLDIR}}/VC/redist/MSVC/14.36.32532/$BUILD_ARCH/Microsoft.VC143.CRT"
-# WIN32_REDIST_DIR="C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Redist/MSVC/14.38.33130/$BUILD_ARCH/Microsoft.VC143.CRT"
-# WIN_UCRT_REDIST_DIR="C:/Program Files (x86)/Windows Kits/10/Redist/10.0.22621.0/ucrt/DLLs/$BUILD_ARCH"
-
 WIN32_REDIST_DIR="@WIN32_REDIST_DIR@"
 WIN_UCRT_REDIST_DIR="@WIN_UCRT_REDIST_DIR@"
 
@@ -50,3 +46,5 @@ ac_add_options --enable-cuemol=@CUEMOL_DIR@
 ac_add_options --enable-cuemol-boostdir=@BOOST_DIR@
 ac_add_options --enable-cuemol-deplibs=@DEPLIBS_DIR@
 ac_add_options --enable-cuemol-bundle=@CUEMOL_BUNDLE@
+
+@CUEMOL_DEBUG@
