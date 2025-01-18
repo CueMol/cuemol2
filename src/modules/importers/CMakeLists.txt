@@ -15,6 +15,7 @@ MmcifMolReader.cpp
 SDFMolReader.cpp
 MOL2MolReader.cpp
 SDFMolWriter.cpp
+CifParser.cpp
   )
 
 ##########

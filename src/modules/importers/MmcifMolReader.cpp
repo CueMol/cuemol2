@@ -1,6 +1,6 @@
 // -*-Mode: C++;-*-
 //
-// PDB coordinate reader
+// mmCIF coordinate reader
 //
 
 #include <common.h>
@@ -17,6 +17,7 @@
 
 #include <modules/symm/CrystalInfo.hpp>
 #include <modules/symm/SymOpDB.hpp>
+#include "CifParser.hpp"
 
 /// Max atom counts thr. for prot 2ndry str auto calc.
 #define MAX_ATOMS_PROTSEC 1000000
@@ -69,6 +70,38 @@ bool MmcifMolReader::read(qlib::InStream &ins)
 
   qlib::LineStream lin(ins);
 
+  CifParser parser(this);
+  parser.read(lin);
+
+  if (m_nReadAtoms<=0) {
+    MB_THROW (MmcifFormatException, "invalid mmCIF coordinates format");
+    return false;
+  }
+
+  m_pMol->applyTopology(m_bAutoTopoGen);
+  m_pMol->calcBasePair(3.7, 30);
+
+  if (m_nReadAtoms>MAX_ATOMS_PROTSEC && !m_bLoadSecstr) {
+    LOG_DPRINTLN("mmCIF> Too many atoms are loaded: secstr reassgnment is disabled (--> loaded from the file)!!");
+    m_bLoadSecstr = true;
+  }
+
+  if (m_bLoadSecstr) {
+    apply2ndry("H", "helix", m_helix);
+    apply2ndry("G", "helix", m_helix310);
+    apply2ndry("I", "helix", m_helixpi);
+    apply2ndry("E", "sheet", m_sheet);
+  }
+  else
+    m_pMol->calcProt2ndry(-500.0);
+
+  applyLink();
+
+  LOG_DPRINTLN("mmCIF> read %d atoms", m_nReadAtoms);
+
+  return true;
+
+#if 0
   m_nState = MMCIFMOL_INIT;
 
   for ( ;; ) {
@@ -158,24 +191,24 @@ bool MmcifMolReader::read(qlib::InStream &ins)
   LOG_DPRINTLN("mmCIF> read %d atoms", m_nReadAtoms);
 
   return true;
+#endif
 }
 
 void MmcifMolReader::error(const LString &msg) const
 {
-  LString msg2 = msg + LString::format(", cat <%s>, at line %d (%s)",
-                                       m_strCatName.c_str(),
+  LString msg2 = msg + LString::format(", at line %d (%s)",
                                        m_lineno, m_recbuf.c_str());
   MB_THROW (MmcifFormatException, msg2);
 }
 
 void MmcifMolReader::warning(const LString &msg) const
 {
-  LString msg2 = msg + LString::format(", cat <%s>, at line %d (%s)",
-                                       m_strCatName.c_str(),
+  LString msg2 = msg + LString::format(", at line %d (%s)",
                                        m_lineno, m_recbuf.c_str());
   LOG_DPRINTLN("mmCIF> Warning: %s", msg2.c_str());
 }
 
+#if 0
 bool MmcifMolReader::readRecord(qlib::LineStream &ins)
 {
   LString str = ins.readLine();
@@ -343,7 +376,27 @@ bool MmcifMolReader::tokenizeLine(bool bChk)
 
   return true;
 }
+#endif
 
+void MmcifMolReader::readDataItem(CifParser &parser)
+{
+    if (parser.getCatName().equals("_atom_site"))
+        readAtomLine(parser);
+    else if (m_bLoadAnisoU && parser.getCatName().equals("_atom_site_anisotrop"))
+        readAnisoULine(parser);
+    else if (parser.getCatName().equals("_struct_conf"))
+        readHelixLine(parser);
+    else if (parser.getCatName().equals("_struct_sheet_range"))
+        readSheetLine(parser);
+    else if (parser.getCatName().equals("_struct_conn"))
+        readConnLine(parser);
+    else if (parser.getCatName().equals("_cell"))
+        readCellLine(parser);
+    else if (parser.getCatName().equals("_symmetry"))
+        readSymmLine(parser);
+}
+
+/*
 void MmcifMolReader::readLoopDataItem()
 {
   // MB_DPRINTLN("mmCIF> loop line : %s", m_recbuf.c_str());
@@ -366,14 +419,14 @@ void MmcifMolReader::readLoopDataItem()
     readSymmLine();
 
 }
-
+*/
 ////////////////////////////////////
 
-ResidIndex MmcifMolReader::getResidIndex(int nSeqID, int nInsID)
+ResidIndex MmcifMolReader::getResidIndex(CifParser &parser, int nSeqID, int nInsID)
 {
   LString inscode;
   if (nInsID>=0)
-    inscode = getToken(nInsID);
+    inscode = parser.getToken(nInsID);
   if (inscode.equals("?") ||inscode.equals("."))
     inscode = "";
   
@@ -383,7 +436,7 @@ ResidIndex MmcifMolReader::getResidIndex(int nSeqID, int nInsID)
 
   LString resseq1;
   if (nSeqID>=0)
-	  resseq1 = getToken(nSeqID);
+	  resseq1 = parser.getToken(nSeqID);
 
   int itmp;
   if (!resseq1.toInt(&itmp)) {
@@ -397,11 +450,11 @@ ResidIndex MmcifMolReader::getResidIndex(int nSeqID, int nInsID)
   return residx;
 }
 
-char MmcifMolReader::getConfID(int nConfID)
+char MmcifMolReader::getConfID(CifParser &parser, int nConfID)
 {
   if (nConfID<0)
     return '\0';
-  LString alt1 = getToken(nConfID);
+  LString alt1 = parser.getToken(nConfID);
   if (alt1.equals("?") || alt1.equals("."))
     return '\0';
   if (alt1.isEmpty())
@@ -410,71 +463,73 @@ char MmcifMolReader::getConfID(int nConfID)
   return alt1.getAt(0);
 }
 
-void MmcifMolReader::readAtomLine()
+void MmcifMolReader::readAtomLine(CifParser &parser)
 {
-  if (!m_bLoopDefsOK) {
-    m_recStPos.resize( m_loopDefs.size() );
-    m_recEnPos.resize( m_loopDefs.size() );
-    m_nID = findDataItem("id");
-    m_nTypeSymbol = findDataItem("type_symbol");
-    m_nLabelAtomID = findDataItem("label_atom_id");
-    m_nLabelAltID = findDataItem("label_alt_id");
-    m_nLabelCompID = findDataItem("label_comp_id");
-    m_nLabelSeqID = findDataItem("label_seq_id");
-    m_nLabelAsymID = findDataItem("label_asym_id");
-    m_nInsCode = findDataItem("pdbx_PDB_ins_code");
-    m_nCartX = findDataItem("Cartn_x");
-    m_nCartY = findDataItem("Cartn_y");
-    m_nCartZ = findDataItem("Cartn_z");
-    m_nOcc = findDataItem("occupancy");
-    m_nBfac = findDataItem("B_iso_or_equiv");
+  if (!parser.isLoopDefsOK()) {
+    parser.setupLoopDefs();
+    // m_recStPos.resize( m_loopDefs.size() );
+    // m_recEnPos.resize( m_loopDefs.size() );
+    m_nID = parser.findDataItem("id");
+    m_nTypeSymbol = parser.findDataItem("type_symbol");
+    m_nLabelAtomID = parser.findDataItem("label_atom_id");
+    m_nLabelAltID = parser.findDataItem("label_alt_id");
+    m_nLabelCompID = parser.findDataItem("label_comp_id");
+    m_nLabelSeqID = parser.findDataItem("label_seq_id");
+    m_nLabelAsymID = parser.findDataItem("label_asym_id");
+    m_nInsCode = parser.findDataItem("pdbx_PDB_ins_code");
+    m_nCartX = parser.findDataItem("Cartn_x");
+    m_nCartY = parser.findDataItem("Cartn_y");
+    m_nCartZ = parser.findDataItem("Cartn_z");
+    m_nOcc = parser.findDataItem("occupancy");
+    m_nBfac = parser.findDataItem("B_iso_or_equiv");
 
-    m_nAuthAtomID = findDataItem("auth_atom_id");
+    m_nAuthAtomID = parser.findDataItem("auth_atom_id");
     if (m_nAuthAtomID<0) {
         LOG_DPRINTLN("mmCIF> Warning: auth_atom_id not found in _atom_site");
     }
-    m_nAuthCompID = findDataItem("auth_comp_id");
+    m_nAuthCompID = parser.findDataItem("auth_comp_id");
     if (m_nAuthCompID<0) {
         LOG_DPRINTLN("mmCIF> Warning: auth_comp_id not found in _atom_site");
     }
-    m_nAuthSeqID = findDataItem("auth_seq_id");
+    m_nAuthSeqID = parser.findDataItem("auth_seq_id");
     if (m_nAuthSeqID<0) {
         LOG_DPRINTLN("mmCIF> Warning: auth_seq_id not found in _atom_site");
     }
-    m_nAuthAsymID = findDataItem("auth_asym_id");
+    m_nAuthAsymID = parser.findDataItem("auth_asym_id");
     if (m_nAuthAsymID<0) {
         LOG_DPRINTLN("mmCIF> Warning: auth_asym_id not found in _atom_site");
     }
-    m_nModelID = findDataItem("pdbx_PDB_model_num");
+    m_nModelID = parser.findDataItem("pdbx_PDB_model_num");
 
-    m_bLoopDefsOK = true;
+    // m_bLoopDefsOK = true;
+    parser.setLoopDefsOK(true);
   }    
 
-  if (!tokenizeLine())
+  if (!parser.tokenizeLine())
     return;
 
   int nID;
 
-  if (!getToken(m_nID).toInt(&nID)) {
+  if (!parser.getToken(m_nID).toInt(&nID)) {
     error("invalid mmCIF format, cannot get atom site id");
     return;
   }
 
   int nSeqID;
-  if (!getToken(m_nLabelSeqID).toInt(&nSeqID)) {
+  if (!parser.getToken(m_nLabelSeqID).toInt(&nSeqID)) {
     //error("invalid mmCIF format");
     //return;
     nSeqID = -1;
   }
 
-  ElemID eleid = ElemSym::str2SymID(getToken(m_nTypeSymbol));
+  ElemID eleid = ElemSym::str2SymID(parser.getToken(m_nTypeSymbol));
 
   LString atomname;
   if (m_nAuthAtomID>=0) {
-    atomname = getToken(m_nAuthAtomID);
+    atomname = parser.getToken(m_nAuthAtomID);
   }
   else if (m_nLabelAtomID>=0) {
-    atomname = getToken(m_nLabelAtomID);
+    atomname = parser.getToken(m_nLabelAtomID);
   }
   else {
     error("invalid mmCIF format, cannot get atom name (_atom_site.label_atom_id)");
@@ -485,67 +540,67 @@ void MmcifMolReader::readAtomLine()
 
   LString resname1;
   if (m_nAuthCompID>=0) {
-    resname1 = getToken(m_nAuthCompID);
+    resname1 = parser.getToken(m_nAuthCompID);
   }
   else if (m_nLabelCompID>=0) {
-    resname1 = getToken(m_nLabelCompID);
+    resname1 = parser.getToken(m_nLabelCompID);
   }
   else {
     error("invalid mmCIF format, cannot get residue name (_atom_site.label_comp_id)");
     return;
   }
   
-  char confid = getConfID(m_nLabelAltID); //getToken(m_nLabelAltID);
+  char confid = getConfID(parser, m_nLabelAltID);
   
   LString chain1;
   if (m_nAuthAsymID>=0) {
-      chain1 = getToken(m_nAuthAsymID);
+      chain1 = parser.getToken(m_nAuthAsymID);
   }
   else if (m_nLabelAsymID>=0) {
-      chain1 = getToken(m_nLabelAsymID);
+      chain1 = parser.getToken(m_nLabelAsymID);
   }
   else {
       error("invalid mmCIF format, cannot get chain name (_atom_site.label_asym_id)");
       return;
   }
 
-  ResidIndex residx = getResidIndex(m_nAuthSeqID, m_nInsCode);
+  ResidIndex residx = getResidIndex(parser, m_nAuthSeqID, m_nInsCode);
 
   Vector4D pos;
   double dbuf;
 
-  if (!getToken(m_nCartX).toDouble(&dbuf)) {
+  if (!parser.getToken(m_nCartX).toDouble(&dbuf)) {
     error("invalid mmCIF format, cannot get atom site cart_x");
     return;
   }
   pos.x() = dbuf;
 
-  if (!getToken(m_nCartY).toDouble(&dbuf)) {
+  if (!parser.getToken(m_nCartY).toDouble(&dbuf)) {
     error("invalid mmCIF format, cannot get atom site cart_y");
     return;
   }
   pos.y() = dbuf;
 
-  if (!getToken(m_nCartZ).toDouble(&dbuf)) {
+  if (!parser.getToken(m_nCartZ).toDouble(&dbuf)) {
     error("invalid mmCIF format, cannot get atom site cart_z");
     return;
   }
   pos.z() = dbuf;
 
   double occ;
-  if (!getToken(m_nOcc).toDouble(&occ)) {
+  if (!parser.getToken(m_nOcc).toDouble(&occ)) {
     error("invalid mmCIF format, cannot get atom site occpancy");
     return;
   }
 
   double bfac;
-  if (!getToken(m_nBfac).toDouble(&bfac)) {
+  if (!parser.getToken(m_nBfac).toDouble(&bfac)) {
     error("invalid mmCIF format, cannot get atom site bfac");
     return;
   }
   
   int nModel;
-  if (!getToken(m_nModelID).toInt(&nModel))
+  if (!parser.getToken(m_nModelID).toInt(&nModel))
     nModel = 1;
   if (nModel>1) {
     if (!m_bLoadMultiModel)
@@ -594,55 +649,58 @@ void MmcifMolReader::readAtomLine()
   m_nReadAtoms++;
 }
 
-void MmcifMolReader::readAnisoULine()
+
+void MmcifMolReader::readAnisoULine(CifParser &parser)
 {
-  if (!m_bLoopDefsOK) {
-    m_recStPos.resize( m_loopDefs.size() );
-    m_recEnPos.resize( m_loopDefs.size() );
+  if (!parser.isLoopDefsOK()) {
+    // m_recStPos.resize( m_loopDefs.size() );
+    // m_recEnPos.resize( m_loopDefs.size() );
+    parser.setupLoopDefs();      
 
-    m_nID = findDataItem("id");
-    m_nU11 = findDataItem("U[1][1]");
-    m_nU22 = findDataItem("U[2][2]");
-    m_nU33 = findDataItem("U[3][3]");
-    m_nU12 = findDataItem("U[1][2]");
-    m_nU13 = findDataItem("U[1][3]");
-    m_nU23 = findDataItem("U[2][3]");
+    m_nID = parser.findDataItem("id");
+    m_nU11 = parser.findDataItem("U[1][1]");
+    m_nU22 = parser.findDataItem("U[2][2]");
+    m_nU33 = parser.findDataItem("U[3][3]");
+    m_nU12 = parser.findDataItem("U[1][2]");
+    m_nU13 = parser.findDataItem("U[1][3]");
+    m_nU23 = parser.findDataItem("U[2][3]");
 
-    m_bLoopDefsOK = true;
+    // m_bLoopDefsOK = true;
+    parser.setLoopDefsOK(true);
   }    
 
-  if (!tokenizeLine())
+  if (!parser.tokenizeLine())
     return;
 
   int nID;
 
-  if (!getToken(m_nID).toInt(&nID)) {
+  if (!parser.getToken(m_nID).toInt(&nID)) {
     error("invalid mmCIF format, cannot get anisou ID");
     return;
   }
 
   double u11, u12, u13, u22, u23, u33;
-  if (!getToken(m_nU11).toDouble(&u11)) {
+  if (!parser.getToken(m_nU11).toDouble(&u11)) {
     error("invalid mmCIF format, cannot get anisou U11");
     return;
   }
-  if (!getToken(m_nU22).toDouble(&u22)) {
+  if (!parser.getToken(m_nU22).toDouble(&u22)) {
     error("invalid mmCIF format, cannot get anisou U22");
     return;
   }
-  if (!getToken(m_nU33).toDouble(&u33)) {
+  if (!parser.getToken(m_nU33).toDouble(&u33)) {
     error("invalid mmCIF format, cannot get anisou U33");
     return;
   }
-  if (!getToken(m_nU12).toDouble(&u12)) {
+  if (!parser.getToken(m_nU12).toDouble(&u12)) {
     error("invalid mmCIF format, cannot get anisou U12");
     return;
   }
-  if (!getToken(m_nU13).toDouble(&u13)) {
+  if (!parser.getToken(m_nU13).toDouble(&u13)) {
     error("invalid mmCIF format, cannot get anisou U13");
     return;
   }
-  if (!getToken(m_nU23).toDouble(&u23)) {
+  if (!parser.getToken(m_nU23).toDouble(&u23)) {
     error("invalid mmCIF format, cannot get anisou U23");
     return;
   }
@@ -664,43 +722,45 @@ void MmcifMolReader::readAnisoULine()
   pAtom->setU(2, 2, u33);
 }
 
-void MmcifMolReader::readHelixLine()
+void MmcifMolReader::readHelixLine(CifParser &parser)
 {
-  if (!m_bLoopDefsOK) {
-    m_recStPos.resize( m_loopDefs.size() );
-    m_recEnPos.resize( m_loopDefs.size() );
+  if (!parser.isLoopDefsOK()) {
+    // m_recStPos.resize( m_loopDefs.size() );
+    // m_recEnPos.resize( m_loopDefs.size() );
+    parser.setupLoopDefs();
 
-    //m_nStSeqID = findDataItem("beg_label_seq_id");
-    //m_nEnSeqID = findDataItem("end_label_seq_id");
+    //m_nStSeqID = parser.findDataItem("beg_label_seq_id");
+    //m_nEnSeqID = parser.findDataItem("end_label_seq_id");
     
-    m_nID = findDataItem("conf_type_id");
-    m_nChainID1 = findDataItem("beg_auth_asym_id");
-    m_nSeqID1 = findDataItem("beg_auth_seq_id");
-    m_nInsID1 = findDataItem("pdbx_beg_PDB_ins_code");
+    m_nID = parser.findDataItem("conf_type_id");
+    m_nChainID1 = parser.findDataItem("beg_auth_asym_id");
+    m_nSeqID1 = parser.findDataItem("beg_auth_seq_id");
+    m_nInsID1 = parser.findDataItem("pdbx_beg_PDB_ins_code");
 
-    m_nChainID2 = findDataItem("end_auth_asym_id");
-    m_nSeqID2 = findDataItem("end_auth_seq_id");
-    m_nInsID2 = findDataItem("pdbx_end_PDB_ins_code");
+    m_nChainID2 = parser.findDataItem("end_auth_asym_id");
+    m_nSeqID2 = parser.findDataItem("end_auth_seq_id");
+    m_nInsID2 = parser.findDataItem("pdbx_end_PDB_ins_code");
 
-    m_nHlxClass = findDataItem("pdbx_PDB_helix_class");
-    m_bLoopDefsOK = true;
+    m_nHlxClass = parser.findDataItem("pdbx_PDB_helix_class");
+    // m_bLoopDefsOK = true;
+    parser.setLoopDefsOK(true);
   }
 
-  if (!tokenizeLine())
+  if (!parser.tokenizeLine())
     return;
 
-  LString idstr = getToken(m_nID);
+  LString idstr = parser.getToken(m_nID);
   if (!idstr.equals("HELX_P"))
     return;
 
-  LString ch = getToken(m_nChainID1);
-  // lnk.ch2 = getToken(m_nChainID2);
+  LString ch = parser.getToken(m_nChainID1);
+  // lnk.ch2 = parser.getToken(m_nChainID2);
 
-  ResidIndex begseq = getResidIndex(m_nSeqID1, m_nInsID1);
-  ResidIndex endseq = getResidIndex(m_nSeqID2, m_nInsID2);
+  ResidIndex begseq = getResidIndex(parser, m_nSeqID1, m_nInsID1);
+  ResidIndex endseq = getResidIndex(parser, m_nSeqID2, m_nInsID2);
 
   int ntype;
-  if (!getToken(m_nHlxClass).toInt(&ntype)) {
+  if (!parser.getToken(m_nHlxClass).toInt(&ntype)) {
     ntype = 1;
   }
   
@@ -726,45 +786,47 @@ void MmcifMolReader::readHelixLine()
   */
 }
 
-void MmcifMolReader::readSheetLine()
+void MmcifMolReader::readSheetLine(CifParser &parser)
 {
-  if (!m_bLoopDefsOK) {
-    m_recStPos.resize( m_loopDefs.size() );
-    m_recEnPos.resize( m_loopDefs.size() );
+  if (!parser.isLoopDefsOK()) {
+    // m_recStPos.resize( m_loopDefs.size() );
+    // m_recEnPos.resize( m_loopDefs.size() );
+    parser.setupLoopDefs();
 
-    //m_nStSeqID = findDataItem("beg_label_seq_id");
-    //m_nEnSeqID = findDataItem("end_label_seq_id");
+    //m_nStSeqID = parser.findDataItem("beg_label_seq_id");
+    //m_nEnSeqID = parser.findDataItem("end_label_seq_id");
     
-    m_nChainID1 = findDataItem("beg_auth_asym_id");
-    m_nSeqID1 = findDataItem("beg_auth_seq_id");
-    m_nInsID1 = findDataItem("pdbx_beg_PDB_ins_code");
+    m_nChainID1 = parser.findDataItem("beg_auth_asym_id");
+    m_nSeqID1 = parser.findDataItem("beg_auth_seq_id");
+    m_nInsID1 = parser.findDataItem("pdbx_beg_PDB_ins_code");
 
-    m_nChainID2 = findDataItem("end_auth_asym_id");
-    m_nSeqID2 = findDataItem("end_auth_seq_id");
-    m_nInsID2 = findDataItem("pdbx_end_PDB_ins_code");
+    m_nChainID2 = parser.findDataItem("end_auth_asym_id");
+    m_nSeqID2 = parser.findDataItem("end_auth_seq_id");
+    m_nInsID2 = parser.findDataItem("pdbx_end_PDB_ins_code");
 
-    m_bLoopDefsOK = true;
+    // m_bLoopDefsOK = true;
+    parser.setLoopDefsOK(true);
   }
 
-  if (!tokenizeLine())
+  if (!parser.tokenizeLine())
     return;
 
-  LString ch = getToken(m_nChainID1);
-  // lnk.ch2 = getToken(m_nChainID2);
+  LString ch = parser.getToken(m_nChainID1);
+  // lnk.ch2 = parser.getToken(m_nChainID2);
 
-  ResidIndex begseq = getResidIndex(m_nSeqID1, m_nInsID1);
-  ResidIndex endseq = getResidIndex(m_nSeqID2, m_nInsID2);
+  ResidIndex begseq = getResidIndex(parser, m_nSeqID1, m_nInsID1);
+  ResidIndex endseq = getResidIndex(parser, m_nSeqID2, m_nInsID2);
 
   m_sheet.append(ch, begseq, endseq);
 
   /*
   int nStSeqID;
-  if (!getToken(m_nStSeqID).toInt(&nStSeqID)) {
+  if (!parser.getToken(m_nStSeqID).toInt(&nStSeqID)) {
     error("invalid mmCIF format");
     return;
   }
   int nEnSeqID;
-  if (!getToken(m_nEnSeqID).toInt(&nEnSeqID)) {
+  if (!parser.getToken(m_nEnSeqID).toInt(&nEnSeqID)) {
     error("invalid mmCIF format");
     return;
   }
@@ -810,122 +872,63 @@ void MmcifMolReader::apply2ndry(const char *ss1, const char *ss2, const ResidSet
   }
 }
 
-#if 0
-void MmcifMolReader::applySecstr(const LString &sec1, const LString &sec2, const SecStrList &rng)
+void MmcifMolReader::readConnLine(CifParser &parser)
 {
-  SecStrList::const_iterator iter = rng.begin();
-  SecStrList::const_iterator eiter = rng.end();
+  if (!parser.isLoopDefsOK()) {
+    // m_recStPos.resize( m_loopDefs.size() );
+    // m_recEnPos.resize( m_loopDefs.size() );
+    parser.setupLoopDefs();
 
-  for (; iter!=eiter; ++iter) {
-    int nst = iter->first;
-    int nen = iter->second;
-
-    ResidTab::const_iterator iter = m_residTab.find(nst);
-    if (iter==m_residTab.end()) {
-      error("invalid mmCIF format");
-      return;
-    }
-
-    /*
-    ResidTab::const_iterator en_iter = m_residTab.find(nen);
-    if (en_iter==m_residTab.end()) {
-      error("invalid mmCIF format");
-      return;
-    }*/
-
-    for (;; ++iter) {
-      int ind = iter->first;
-      MolResiduePtr pRes = iter->second;
-      LString val = sec2;
-      if (ind==nst)
-        val += "s";
-      else if (ind==nen)
-        val += "e";
-
-      pRes->setPropStr("secondary", sec1);
-      pRes->setPropStr("secondary2", val);
-
-      if (ind==nen)
-        break;
-    }
-
-  }
-}
-#endif
-
-void MmcifMolReader::readConnLine()
-{
-  if (!m_bLoopDefsOK) {
-    m_recStPos.resize( m_loopDefs.size() );
-    m_recEnPos.resize( m_loopDefs.size() );
-
-    m_nConnTypeID = findDataItem("conn_type_id");
+    m_nConnTypeID = parser.findDataItem("conn_type_id");
     
-    m_nChainID1 = findDataItem("ptnr1_auth_asym_id");
-    m_nSeqID1 = findDataItem("ptnr1_auth_seq_id");
-    m_nInsID1 = findDataItem("pdbx_ptnr1_PDB_ins_code");
-    m_nAtomID1 = findDataItem("ptnr1_label_atom_id");
-    m_nAltID1 = findDataItem("pdbx_ptnr1_label_alt_id");
-    m_nSymmID1 = findDataItem("ptnr1_symmetry");
+    m_nChainID1 = parser.findDataItem("ptnr1_auth_asym_id");
+    m_nSeqID1 = parser.findDataItem("ptnr1_auth_seq_id");
+    m_nInsID1 = parser.findDataItem("pdbx_ptnr1_PDB_ins_code");
+    m_nAtomID1 = parser.findDataItem("ptnr1_label_atom_id");
+    m_nAltID1 = parser.findDataItem("pdbx_ptnr1_label_alt_id");
+    m_nSymmID1 = parser.findDataItem("ptnr1_symmetry");
 
-    m_nChainID2 = findDataItem("ptnr2_auth_asym_id");
-    m_nSeqID2 = findDataItem("ptnr2_auth_seq_id");
-    m_nInsID2 = findDataItem("pdbx_ptnr2_PDB_ins_code");
-    m_nAtomID2 = findDataItem("ptnr2_label_atom_id");
-    m_nAltID2 = findDataItem("pdbx_ptnr2_label_alt_id");
-    m_nSymmID2 = findDataItem("ptnr2_symmetry");
+    m_nChainID2 = parser.findDataItem("ptnr2_auth_asym_id");
+    m_nSeqID2 = parser.findDataItem("ptnr2_auth_seq_id");
+    m_nInsID2 = parser.findDataItem("pdbx_ptnr2_PDB_ins_code");
+    m_nAtomID2 = parser.findDataItem("ptnr2_label_atom_id");
+    m_nAltID2 = parser.findDataItem("pdbx_ptnr2_label_alt_id");
+    m_nSymmID2 = parser.findDataItem("ptnr2_symmetry");
 
-    m_bLoopDefsOK = true;
+    // m_bLoopDefsOK = true;
+    parser.setLoopDefsOK(true);
   }
 
-  if (!tokenizeLine())
+  if (!parser.tokenizeLine())
     return;
 
-  LString conn_typeid = getToken(m_nConnTypeID);
+  LString conn_typeid = parser.getToken(m_nConnTypeID);
   if (!conn_typeid.equals("covale")&&!conn_typeid.equals("disulf"))
     return;
 
   Linkage lnk;
 
-  lnk.ch1 = getToken(m_nChainID1);
-  lnk.ch2 = getToken(m_nChainID2);
+  lnk.ch1 = parser.getToken(m_nChainID1);
+  lnk.ch2 = parser.getToken(m_nChainID2);
 
-  lnk.resi1 = getResidIndex(m_nSeqID1, m_nInsID1);
-  lnk.resi2 = getResidIndex(m_nSeqID2, m_nInsID2);
+  lnk.resi1 = getResidIndex(parser, m_nSeqID1, m_nInsID1);
+  lnk.resi2 = getResidIndex(parser, m_nSeqID2, m_nInsID2);
     
-  lnk.aname1 = getToken(m_nAtomID1);
-  lnk.aname2 = getToken(m_nAtomID2);
+  lnk.aname1 = parser.getToken(m_nAtomID1);
+  lnk.aname2 = parser.getToken(m_nAtomID2);
 
-  lnk.alt1 = getConfID(m_nAltID1);
-  lnk.alt2 = getConfID(m_nAltID2);
-  //LString symm1 = getToken(m_nSymmID1);
-  //LString symm2 = getToken(m_nSymmID2);
+  lnk.alt1 = getConfID(parser, m_nAltID1);
+  lnk.alt2 = getConfID(parser, m_nAltID2);
+  //LString symm1 = parser.getToken(m_nSymmID1);
+  //LString symm2 = parser.getToken(m_nSymmID2);
 
     m_linkdat.push_back(lnk);
 }
 
 void MmcifMolReader::applyLink()
 {
-  BOOST_FOREACH (const Linkage &elem, m_linkdat) {
-    /*
-    MolResiduePtr pRes1 = findResid(elem.resi1);
-    MolResiduePtr pRes2 = findResid(elem.resi2);
-
-    if (pRes1.isnull()||pRes2.isnull()) {
-      error("invalid mmCIF format");
-      return;
-    }
-
-    if (elem.alt1.isEmpty())
-      pAtom1 = pRes1->getAtom(elem.aname1);
-    else
-      pAtom1 = pRes1->getAtom(elem.aname1, elem.alt1.getAt(0));
-
-    if (elem.alt2.isEmpty())
-      pAtom2 = pRes2->getAtom(elem.aname2);
-    else
-      pAtom2 = pRes2->getAtom(elem.aname2, elem.alt2.getAt(0));
-     */
+    // BOOST_FOREACH (const Linkage &elem, m_linkdat) {
+  for (const Linkage &elem: m_linkdat) {
     MolAtomPtr pAtom1, pAtom2;
     pAtom1 = m_pMol->getAtom(elem.ch1, elem.resi1, elem.aname1, elem.alt1);
     pAtom2 = m_pMol->getAtom(elem.ch2, elem.resi2, elem.aname2, elem.alt2);
@@ -941,87 +944,79 @@ void MmcifMolReader::applyLink()
   }  
 }
 
-/*
-MolResiduePtr MmcifMolReader::findResid(int nSeqID) const
-{
-  ResidTab::const_iterator iter = m_residTab.find(nSeqID);
-  if (iter==m_residTab.end()) {
-    return MolResiduePtr();
-  }
-  return iter->second;
-}
-*/
 
-void MmcifMolReader::readCellLine()
+void MmcifMolReader::readCellLine(CifParser &parser)
 {
-  m_recStPos.resize( m_loopDefs.size() );
-  m_recEnPos.resize( m_loopDefs.size() );
+  parser.setupLoopDefs();
+  // m_recStPos.resize( m_loopDefs.size() );
+  // m_recEnPos.resize( m_loopDefs.size() );
 
-  int nLenAID = findDataItem("length_a");
+  int nLenAID = parser.findDataItem("length_a");
   if (nLenAID<0) {
     error("_cell.length_a not found in _cell");
     return;
   }
     
-  int nLenBID = findDataItem("length_b");
+  int nLenBID = parser.findDataItem("length_b");
   if (nLenBID<0) {
     error("_cell.length_b not found in _cell");
     return;
   }
 
-  int nLenCID = findDataItem("length_c");
+  int nLenCID = parser.findDataItem("length_c");
   if (nLenCID<0) {
     error("_cell.length_c not found in _cell");
     return;
   }
     
-  int nAngAID = findDataItem("angle_alpha");
+  int nAngAID = parser.findDataItem("angle_alpha");
   if (nAngAID<0) {
     error("_cell.angle_alpha not found in _cell");
     return;
   }
-  int nAngBID = findDataItem("angle_beta");
+  int nAngBID = parser.findDataItem("angle_beta");
   if (nAngBID<0) {
     error("_cell.angle_beta not found in _cell");
     return;
   }
-  int nAngGID = findDataItem("angle_gamma");
+  int nAngGID = parser.findDataItem("angle_gamma");
   if (nAngGID<0) {
     error("_cell.angle_gamma not found in _cell");
     return;
   }
 
-  m_bLoopDefsOK = true;
+  // m_bLoopDefsOK = true;
+  parser.setLoopDefsOK(true);
 
-  if (!tokenizeLine())
+  if (!parser.tokenizeLine())
     return;
 
 
   double len_a, len_b, len_c;
   double ang_a, ang_b, ang_g;
 
-  if (!getToken(nLenAID).toDouble(&len_a)) {
+  if (!parser.getToken(nLenAID).toDouble(&len_a)) {
     warning("invalid mmCIF format");
     return;
   }
-  if (!getToken(nLenBID).toDouble(&len_b)) {
+  if (!parser.getToken(nLenBID).toDouble(&len_b)) {
     warning("invalid mmCIF format");
     return;
   }
-  if (!getToken(nLenCID).toDouble(&len_c)) {
+  if (!parser.getToken(nLenCID).toDouble(&len_c)) {
     warning("invalid mmCIF format");
     return;
   }
 
-  if (!getToken(nAngAID).toDouble(&ang_a)) {
+  if (!parser.getToken(nAngAID).toDouble(&ang_a)) {
     warning("invalid mmCIF format");
     return;
   }
-  if (!getToken(nAngBID).toDouble(&ang_b)) {
+  if (!parser.getToken(nAngBID).toDouble(&ang_b)) {
     warning("invalid mmCIF format");
     return;
   }
-  if (!getToken(nAngGID).toDouble(&ang_g)) {
+  if (!parser.getToken(nAngGID).toDouble(&ang_g)) {
     warning("invalid mmCIF format");
     return;
   }
@@ -1032,19 +1027,21 @@ void MmcifMolReader::readCellLine()
                         ang_a, ang_b, ang_g);
 }
 
-void MmcifMolReader::readSymmLine()
+void MmcifMolReader::readSymmLine(CifParser &parser)
 {
-  m_recStPos.resize( m_loopDefs.size() );
-  m_recEnPos.resize( m_loopDefs.size() );
+  parser.setupLoopDefs();
+  // m_recStPos.resize( m_loopDefs.size() );
+  // m_recEnPos.resize( m_loopDefs.size() );
   
-  int nSgNameID = findDataItem("space_group_name_H-M");
+  int nSgNameID = parser.findDataItem("space_group_name_H-M");
   
-  m_bLoopDefsOK = true;
+  // m_bLoopDefsOK = true;
+  parser.setLoopDefsOK(true);
 
-  if (!tokenizeLine())
+  if (!parser.tokenizeLine())
     return;
 
-  LString sgname = getToken(nSgNameID);
+  LString sgname = parser.getToken(nSgNameID);
 
   symm::CrystalInfoPtr pci = m_pMol->getCreateExtData("CrystalInfo");
 

@@ -397,12 +397,12 @@ void MmcifMapReader::readCellLine()
 
     // symm::CrystalInfoPtr pci = m_pMol->getCreateExtData("CrystalInfo");
     // pci->setCellDimension(len_a, len_b, len_c, ang_a, ang_b, ang_g);
-    m_cella = tmp[0];
-    m_cellb = tmp[1];
-    m_cellc = tmp[2];
-    m_alpha = tmp[3];
-    m_beta = tmp[4];
-    m_gamma = tmp[5];
+    m_cella = len_a;
+    m_cellb = len_b;
+    m_cellc = len_c;
+    m_alpha = ang_a;
+    m_beta = ang_b;
+    m_gamma = ang_g;
 
     MB_DPRINT("  unit cell a=%.2fA, b=%.2fA, c=%.2fA,\n", m_cella, m_cellb, m_cellc);
     MB_DPRINT("            alpha=%.2fdeg, beta=%.2fdeg, gamma=%.2fdeg,\n", m_alpha,
@@ -426,4 +426,8 @@ void MmcifMapReader::readSymmLine()
     // pci->setSGByName(sgname);
 }
 
-void MmcifMapReader::readReflnLine() {}
+void MmcifMapReader::readReflnLine()
+{
+    m_recStPos.resize(m_loopDefs.size());
+    m_recEnPos.resize(m_loopDefs.size());
+}
