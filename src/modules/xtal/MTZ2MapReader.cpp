@@ -91,7 +91,7 @@ const char *MTZ2MapReader::getFileExt() const
 bool MTZ2MapReader::read(qlib::InStream &arg)
 {
   // get the target object (DensityMap)
-  m_pMap = NULL;
+  // m_pMap = NULL;
   m_pMap = getTarget<DensityMap>();
   if (m_pMap==NULL) return false;
 

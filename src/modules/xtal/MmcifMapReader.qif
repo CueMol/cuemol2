@@ -1,0 +1,27 @@
+// -*-Mode: C++;-*-
+//
+// mmCIF s.f. file reader scripting interface
+//
+
+#ifndef MMCIF_2MAP_READER_QIF_INCLUDED
+#define MMCIF_MAP_READER_QIF_INCLUDED
+
+#include <qsys/ObjReader.qif>
+
+runtime_class MmcifMapReader extends ObjReader
+{
+  client_hdr "MmcifMapReader.hpp";
+  client_name xtal::MmcifMapReader;
+
+  scriptable;
+  smartptr;
+
+  //  property real resolution => m_mapr;
+  //  property real min_res => m_dResMin (readonly);
+  //  property real max_res => m_dResMax (readonly);
+
+  //  property real gridsize => m_grid;
+};
+
+#endif
+

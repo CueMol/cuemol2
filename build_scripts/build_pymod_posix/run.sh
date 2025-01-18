@@ -4,6 +4,16 @@
 # usage: run.sh deplibs_dir
 #
 
+usage()
+{
+    echo "usage: run.sh deplibs_dir"
+    exit 1
+}
+
+if [ -z "${1:-}" ]; then
+   usage
+fi
+
 set -eux
 
 BASEDIR=$1
@@ -27,12 +37,17 @@ $PYTHON -m pip install \
      -v . 
 
 # Copy dependent libs (boost)
-ls -la $BOOST_DIR/lib/lib*
+# ls -la $BOOST_DIR/lib/lib*
 cp $BOOST_DIR/lib/lib* $BASEDIR/cuemol2/lib/
 
 # run python tests
 cd $WORKSPACE
 $PYTHON -m pip install pytest
-env LD_LIBRARY_PATH=$INST_PATH/lib \
-    pytest tests
 
+if [ "$(uname)" == 'Darwin' ]; then
+    env DYLD_LIBRARY_PATH=$INST_PATH/lib \
+        pytest tests
+else
+    env LD_LIBRARY_PATH=$INST_PATH/lib \
+        pytest tests
+fi
