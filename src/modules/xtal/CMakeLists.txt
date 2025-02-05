@@ -31,6 +31,8 @@ SET(XTAL_SRCS
   QdfDenMapWriter.cpp
   BrixMapReader.cpp
   MmcifMapReader.cpp
+  CifParser.cpp
+  MapFFT.cpp
 )
 
 

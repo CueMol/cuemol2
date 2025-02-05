@@ -17,7 +17,6 @@
 
 #include <modules/symm/CrystalInfo.hpp>
 #include <modules/symm/SymOpDB.hpp>
-#include "CifParser.hpp"
 
 /// Max atom counts thr. for prot 2ndry str auto calc.
 #define MAX_ATOMS_PROTSEC 1000000

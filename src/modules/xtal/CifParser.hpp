@@ -5,24 +5,25 @@
 
 #pragma once
 
-#include "importers.hpp"
+#include "xtal.hpp"
 
 namespace qlib {
 class LineStream;
 }
-namespace importers {
+
+namespace xtal {
 
 using qlib::LString;
 
 class CifParser;
 
-class IMPORTERS_API CifParserClient
+class XTAL_API CifParserClient
 {
 public:
     virtual void readDataItem(CifParser &) = 0;
 };
 
-class IMPORTERS_API CifParser
+class XTAL_API CifParser
 {
 private:
     /// Line input buffer
@@ -81,7 +82,6 @@ public:
         else
             return tok;
     }
-
 
 private:
     bool readRecord(qlib::LineStream &ins);
@@ -146,4 +146,4 @@ private:
     void warning(const LString &msg) const;
 };
 
-}  // namespace importers
+}  // namespace xtal

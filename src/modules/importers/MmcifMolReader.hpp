@@ -13,7 +13,7 @@
 #include <qsys/ObjReader.hpp>
 #include <modules/molstr/molstr.hpp>
 #include <modules/molstr/ResidIndex.hpp>
-#include "CifParser.hpp"
+#include <modules/xtal/CifParser.hpp>
 
 namespace qlib {
   class LineStream;
@@ -27,6 +27,8 @@ namespace importers {
   using molstr::MolResiduePtr;
   using molstr::ResidIndex;
   using molstr::ResidSet;
+  using xtal::CifParser;
+  using xtal::CifParserClient;
 
   //
   ///   mmCIF mol structure reader class

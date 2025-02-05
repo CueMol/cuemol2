@@ -8,8 +8,9 @@
 #include "CifParser.hpp"
 
 #include <qlib/LineStream.hpp>
+#include <qlib/LExceptions.hpp>
 
-namespace importers {
+namespace xtal {
 
 CifParser::CifParser(CifParserClient *pclient) : m_pClient(pclient)
 {
@@ -257,4 +258,4 @@ void CifParser::readLoopDataItem()
     m_pClient->readDataItem(*this);
 }
 
-}  // namespace importers
+}  // namespace xtal

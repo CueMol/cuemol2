@@ -12,6 +12,7 @@
 #include <qlib/mcutils.hpp>
 #include <qsys/ObjReader.hpp>
 
+#include "CifParser.hpp"
 #include "xtal.hpp"
 
 namespace qlib {
@@ -27,7 +28,7 @@ class DensityMap;
 //
 ///   mmCIF map reader class
 //
-class XTAL_API MmcifMapReader : public qsys::ObjReader
+class XTAL_API MmcifMapReader : public qsys::ObjReader, CifParserClient
 {
     MC_SCRIPTABLE;
 
@@ -83,7 +84,10 @@ public:
 
     //////////////////////////////////////////////
 
+    virtual void readDataItem(CifParser &parser);
+
 private:
+    /*
     bool readRecord(qlib::LineStream &ins);
 
     void readDataLine();
@@ -165,10 +169,10 @@ private:
         int ien = m_recEnPos[n];
         return m_recbuf.substr(ist, ien - ist);
     }
-
-    void readCellLine();
-    void readSymmLine();
-    void readReflnLine();
+    */
+    void readCellLine(CifParser &parser);
+    void readSymmLine(CifParser &parser);
+    void readReflnLine(CifParser &parser);
 
     void error(const LString &msg) const;
     void warning(const LString &msg) const;

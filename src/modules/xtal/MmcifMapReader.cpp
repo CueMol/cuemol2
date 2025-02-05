@@ -20,14 +20,15 @@
 #include <modules/symm/SymOpDB.hpp>
 #include <qlib/LineStream.hpp>
 
+#include "CifParser.hpp"
 #include "MmcifMapReader.hpp"
-
-using namespace xtal;
 
 // Ignore anomalous scattering ( F(+)==F(-) )
 #define HERMIT
 
-MmcifMapReader::MmcifMapReader() : m_pMap(NULL), m_lineno(0), m_bLoopDefsOK(false)
+namespace xtal {
+
+MmcifMapReader::MmcifMapReader() : m_pMap(NULL), m_lineno(0)
 {
     m_nSG = 0;
 }
@@ -68,58 +69,8 @@ bool MmcifMapReader::read(qlib::InStream &ins)
 
     qlib::LineStream lin(ins);
 
-    m_nState = MMCIF_INIT;
-
-    for (;;) {
-        if (!readRecord(lin)) break;
-
-        // Skip empty lines
-        if (m_recbuf.isEmpty()) continue;
-
-        if (m_recbuf.startsWith("#")) continue;
-
-        switch (m_nState) {
-            case MMCIF_INIT:
-                if (m_recbuf.startsWith("data_")) {
-                    m_nState = MMCIF_DATA;
-                }
-                break;
-            case MMCIF_DATA:
-                if (m_recbuf.startsWith("_")) {
-                    readDataLine();
-                } else if (m_recbuf.startsWith("loop_")) {
-                    // new data table begins (end of data line)
-                    emulateSingleDataLoop();
-                    m_nState = MMCIF_LOOPDEF;
-                    resetLoopDef();
-                }
-                break;
-
-            case MMCIF_LOOPDEF:
-                if (m_recbuf.startsWith("_")) {
-                    appendDataItem();
-                } else {
-                    m_nState = MMCIF_LOOPDATA;
-                    readLoopDataItem();
-                }
-                break;
-
-            case MMCIF_LOOPDATA:
-                if (m_recbuf.startsWith("_")) {
-                    // new data line begins (end of loop)
-                    m_nState = MMCIF_DATA;
-                    resetLoopDef();
-                    readDataLine();
-                } else if (m_recbuf.startsWith("loop_")) {
-                    // new data table begins (end of loop)
-                    m_nState = MMCIF_LOOPDEF;
-                    resetLoopDef();
-                } else {
-                    readLoopDataItem();
-                }
-                break;
-        }  // switch
-    }
+    CifParser parser(this);
+    parser.read(lin);
 
     return true;
 }
@@ -127,270 +78,94 @@ bool MmcifMapReader::read(qlib::InStream &ins)
 void MmcifMapReader::error(const LString &msg) const
 {
     LString msg2 =
-        msg + LString::format(", cat <%s>, at line %d (%s)", m_strCatName.c_str(),
-                              m_lineno, m_recbuf.c_str());
+        msg + LString::format(", at line %d (%s)", m_lineno, m_recbuf.c_str());
     MB_THROW(qlib::FileFormatException, msg2);
 }
 
 void MmcifMapReader::warning(const LString &msg) const
 {
     LString msg2 =
-        msg + LString::format(", cat <%s>, at line %d (%s)", m_strCatName.c_str(),
-                              m_lineno, m_recbuf.c_str());
+        msg + LString::format(", at line %d (%s)", m_lineno, m_recbuf.c_str());
     LOG_DPRINTLN("mmCIF> Warning: %s", msg2.c_str());
 }
 
-bool MmcifMapReader::readRecord(qlib::LineStream &ins)
+void MmcifMapReader::readDataItem(CifParser &parser)
 {
-    LString str = ins.readLine();
-    if (str.isEmpty()) return false;
-
-    m_recbuf = str.chomp();
-
-    if (!m_prevline.isEmpty()) {
-        if (m_recbuf.startsWith("loop_"))
-            warning("Unexpected loop_ directive, data lost: \"" + m_prevline + "\"");
-        else
-            m_recbuf = m_prevline + " " + m_recbuf;
-        m_prevline = "";
-    }
-
-    // m_recbuf = m_recbuf.toUpperCase();
-    m_lineno = ins.getLineNo();
-    return true;
+    if (parser.getCatName().equals("_cell"))
+        readCellLine(parser);
+    else if (parser.getCatName().equals("_symmetry"))
+        readSymmLine(parser);
+    else if (parser.getCatName().equals("_refln"))
+        readReflnLine(parser);
 }
 
-void MmcifMapReader::readDataLine()
+void MmcifMapReader::readCellLine(CifParser &parser)
 {
-    MB_DPRINTLN("mmCIF> data line : %s", m_recbuf.c_str());
+    parser.setupLoopDefs();
 
-    // data line contains 2 elements (name and value)
-    m_recStPos.resize(2);
-    m_recEnPos.resize(2);
-
-    tokenizeLine(false);
-
-    LString name = getToken(0);
-    LString value = "\'\'";
-    if (isTokAvail(1)) value = getRawToken(1);
-
-    int dotpos = name.indexOf('.');
-    LString catname = name.substr(0, dotpos);
-    LString item = name.substr(dotpos + 1);
-
-    if (m_strCatName.equals(catname)) {
-        // the same category name as the previous line
-        m_loopDefs.push_back(item.trim());
-        m_values.push_back(value);
-    } else if (m_strCatName.isEmpty()) {
-        // new category name in the file
-        m_loopDefs.push_back(item.trim());
-        m_values.push_back(value);
-        m_strCatName = catname;
-    } else {
-        // new category line begins
-        emulateSingleDataLoop();
-        m_loopDefs.push_back(item.trim());
-        m_values.push_back(value);
-        m_strCatName = catname;
-    }
-}
-
-void MmcifMapReader::emulateSingleDataLoop()
-{
-    m_recbuf = LString::join(" ", m_values);
-    m_recbuf = m_recbuf.trim();
-    m_values.clear();
-    readLoopDataItem();
-    resetLoopDef();
-}
-
-void MmcifMapReader::resetLoopDef()
-{
-    m_strCatName = "";
-    m_loopDefs.clear();
-    m_recStPos.clear();
-    m_recEnPos.clear();
-    m_bLoopDefsOK = false;
-}
-
-void MmcifMapReader::appendDataItem()
-{
-    MB_DPRINTLN("mmCIF> loop def : %s", m_recbuf.c_str());
-
-    int dotpos = m_recbuf.indexOf('.');
-    LString catname = m_recbuf.substr(0, dotpos);
-    if (m_strCatName.isEmpty()) {
-        m_strCatName = catname;
-    } else if (!m_strCatName.equals(catname)) {
-        // ERROR!!
-        LString msg = LString::format(
-            "invalid mmCIF format, catname mismatch (%s!=%s) in loopdef",
-            m_strCatName.c_str(), catname.c_str());
-        error(msg);
-        return;
-    }
-
-    LString item = m_recbuf.substr(dotpos + 1);
-    // remove white spaces
-    m_loopDefs.push_back(item.trim());
-}
-
-bool MmcifMapReader::tokenizeLine(bool bChk)
-{
-    int nState = TOK_FIND_START;
-    const int nsize = m_recbuf.length();
-    const int nmaxtok = m_recStPos.size();
-    int i, j;
-
-    for (i = 0, j = 0; i < nsize && j < nmaxtok; ++i) {
-        char c = m_recbuf.getAt(i);
-        if (nState == TOK_FIND_START) {
-            if (c != ' ') {
-                if (c == '\'') {
-                    m_recStPos[j] = i;
-                    nState = TOK_FIND_QUOTEND;
-                } else if (c == '\"') {
-                    m_recStPos[j] = i;
-                    nState = TOK_FIND_DQUOTEND;
-                } else {
-                    m_recStPos[j] = i;
-                    nState = TOK_FIND_END;
-                }
-            }
-        } else if (nState == TOK_FIND_END) {
-            if (c == ' ') {
-                m_recEnPos[j] = i;
-                nState = TOK_FIND_START;
-                ++j;
-            }
-        } else if (nState == TOK_FIND_QUOTEND) {
-            if (c == '\'') {
-                m_recEnPos[j] = i + 1;
-                nState = TOK_FIND_START;
-                ++j;
-            }
-        } else if (nState == TOK_FIND_DQUOTEND) {
-            if (c == '\"') {
-                m_recEnPos[j] = i + 1;
-                nState = TOK_FIND_START;
-                ++j;
-            }
-        }
-    }
-
-    if (nState == TOK_FIND_END) {
-        m_recEnPos[j] = i;
-        ++j;
-    }
-
-    if (!bChk) return true;
-
-    int ndefs = m_loopDefs.size();
-    if (j < ndefs) {
-        // try concat with next line...
-        // LOG_DPRINTLN("Cat: %s, num of token(%d) is smaller than defs(%d): <%s>",
-        // m_strCatName.c_str(), j, ndefs, m_recbuf.c_str());
-        m_prevline = m_recbuf;
-        return false;
-    }
-
-    return true;
-}
-
-void MmcifMapReader::readLoopDataItem()
-{
-    // MB_DPRINTLN("mmCIF> loop line : %s", m_recbuf.c_str());
-
-    // if (m_strCatName.equals("_atom_site"))
-    //     readAtomLine();
-    // else if (m_bLoadAnisoU && m_strCatName.equals("_atom_site_anisotrop"))
-    //     readAnisoULine();
-    // // else if (m_bLoadSecstr && m_strCatName.equals("_struct_conf"))
-    // else if (m_strCatName.equals("_struct_conf"))
-    //     readHelixLine();
-    // // else if (m_bLoadSecstr && m_strCatName.equals("_struct_sheet_range"))
-    // else if (m_strCatName.equals("_struct_sheet_range"))
-    //     readSheetLine();
-    // else if (m_strCatName.equals("_struct_conn"))
-    //     readConnLine();
-
-    if (m_strCatName.equals("_cell"))
-        readCellLine();
-    else if (m_strCatName.equals("_symmetry"))
-        readSymmLine();
-    else if (m_strCatName.equals("_refln"))
-        readReflnLine();
-}
-
-void MmcifMapReader::readCellLine()
-{
-    m_recStPos.resize(m_loopDefs.size());
-    m_recEnPos.resize(m_loopDefs.size());
-
-    int nLenAID = findDataItem("length_a");
+    int nLenAID = parser.findDataItem("length_a");
     if (nLenAID < 0) {
         error("_cell.length_a not found in _cell");
         return;
     }
 
-    int nLenBID = findDataItem("length_b");
+    int nLenBID = parser.findDataItem("length_b");
     if (nLenBID < 0) {
         error("_cell.length_b not found in _cell");
         return;
     }
 
-    int nLenCID = findDataItem("length_c");
+    int nLenCID = parser.findDataItem("length_c");
     if (nLenCID < 0) {
         error("_cell.length_c not found in _cell");
         return;
     }
 
-    int nAngAID = findDataItem("angle_alpha");
+    int nAngAID = parser.findDataItem("angle_alpha");
     if (nAngAID < 0) {
         error("_cell.angle_alpha not found in _cell");
         return;
     }
-    int nAngBID = findDataItem("angle_beta");
+    int nAngBID = parser.findDataItem("angle_beta");
     if (nAngBID < 0) {
         error("_cell.angle_beta not found in _cell");
         return;
     }
-    int nAngGID = findDataItem("angle_gamma");
+    int nAngGID = parser.findDataItem("angle_gamma");
     if (nAngGID < 0) {
         error("_cell.angle_gamma not found in _cell");
         return;
     }
 
-    m_bLoopDefsOK = true;
+    parser.setLoopDefsOK(true);
 
-    if (!tokenizeLine()) return;
+    if (!parser.tokenizeLine()) return;
 
     double len_a, len_b, len_c;
     double ang_a, ang_b, ang_g;
 
-    if (!getToken(nLenAID).toDouble(&len_a)) {
+    if (!parser.getToken(nLenAID).toDouble(&len_a)) {
         warning("invalid mmCIF format");
         return;
     }
-    if (!getToken(nLenBID).toDouble(&len_b)) {
+    if (!parser.getToken(nLenBID).toDouble(&len_b)) {
         warning("invalid mmCIF format");
         return;
     }
-    if (!getToken(nLenCID).toDouble(&len_c)) {
+    if (!parser.getToken(nLenCID).toDouble(&len_c)) {
         warning("invalid mmCIF format");
         return;
     }
 
-    if (!getToken(nAngAID).toDouble(&ang_a)) {
+    if (!parser.getToken(nAngAID).toDouble(&ang_a)) {
         warning("invalid mmCIF format");
         return;
     }
-    if (!getToken(nAngBID).toDouble(&ang_b)) {
+    if (!parser.getToken(nAngBID).toDouble(&ang_b)) {
         warning("invalid mmCIF format");
         return;
     }
-    if (!getToken(nAngGID).toDouble(&ang_g)) {
+    if (!parser.getToken(nAngGID).toDouble(&ang_g)) {
         warning("invalid mmCIF format");
         return;
     }
@@ -409,25 +184,87 @@ void MmcifMapReader::readCellLine()
               m_beta, m_gamma);
 }
 
-void MmcifMapReader::readSymmLine()
+void MmcifMapReader::readSymmLine(CifParser &parser)
 {
-    m_recStPos.resize(m_loopDefs.size());
-    m_recEnPos.resize(m_loopDefs.size());
+    parser.setupLoopDefs();
 
-    int nSgNameID = findDataItem("space_group_name_H-M");
+    int nSgNameID = parser.findDataItem("space_group_name_H-M");
+    int nSgID = parser.findDataItem("Int_Tables_number");
 
-    m_bLoopDefsOK = true;
+    parser.setLoopDefsOK(true);
 
-    if (!tokenizeLine()) return;
+    if (!parser.tokenizeLine()) return;
 
-    LString sgname = getToken(nSgNameID);
+    LString sgname = parser.getToken(nSgNameID);
+    int nSG;
+    if (!parser.getToken(nSgID).toInt(&nSG)) {
+        warning("Int_Tables_number not found");
+        return;
+    }
 
     // symm::CrystalInfoPtr pci = m_pMol->getCreateExtData("CrystalInfo");
     // pci->setSGByName(sgname);
 }
 
-void MmcifMapReader::readReflnLine()
+void MmcifMapReader::readReflnLine(CifParser &parser)
 {
-    m_recStPos.resize(m_loopDefs.size());
-    m_recEnPos.resize(m_loopDefs.size());
+    parser.setupLoopDefs();
+
+    int nIndHID = parser.findDataItem("index_h");
+    if (nIndHID < 0) {
+        error("_refln.index_h not found");
+        return;
+    }
+    int nIndKID = parser.findDataItem("index_k");
+    if (nIndKID < 0) {
+        error("_refln.index_k not found");
+        return;
+    }
+    int nIndLID = parser.findDataItem("index_l");
+    if (nIndLID < 0) {
+        error("_refln.index_l not found");
+        return;
+    }
+    int nFwtID = parser.findDataItem("pdbx_FWT");
+    if (nFwtID < 0) {
+        error("_refln.pdbx_FWT not found");
+        return;
+    }
+    int nPhwtID = parser.findDataItem("pdbx_PHWT");
+    if (nPhwtID < 0) {
+        error("_refln.pdbx_PHWT not found");
+        return;
+    }
+
+    parser.setLoopDefsOK(true);
+
+    if (!parser.tokenizeLine()) return;
+
+    int ind_h, ind_k, ind_l;
+    double fwt, phwt;
+    if (!parser.getToken(nIndHID).toInt(&ind_h)) {
+        warning("cannot convert index_h to integer");
+        return;
+    }
+    if (!parser.getToken(nIndKID).toInt(&ind_k)) {
+        warning("cannot convert index_k to integer");
+        return;
+    }
+    if (!parser.getToken(nIndLID).toInt(&ind_l)) {
+        warning("cannot convert index_l to integer");
+        return;
+    }
+    if (!parser.getToken(nFwtID).toDouble(&fwt)) {
+        warning("cannot convert pdbx_FWT to double");
+        return;
+    }
+    if (!parser.getToken(nPhwtID).toDouble(&phwt)) {
+        warning("cannot convert pdbx_PHWT to double");
+        return;
+    }
+
+    MB_DPRINT("refln: %d %d %d, FWT=%.2f, PHWT=%.2f\n", ind_h, ind_k, ind_l, fwt, phwt);
+    return;
 }
+
+}  // namespace xtal
