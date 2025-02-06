@@ -16,11 +16,11 @@ runtime_class MmcifMapReader extends ObjReader
   scriptable;
   smartptr;
 
-  //  property real resolution => m_mapr;
+  property real resolution => redirect(getResoln, setResoln);
   //  property real min_res => m_dResMin (readonly);
   //  property real max_res => m_dResMax (readonly);
 
-  //  property real gridsize => m_grid;
+  property real gridsize => redirect(getGridSize, setGridSize);
 };
 
 #endif

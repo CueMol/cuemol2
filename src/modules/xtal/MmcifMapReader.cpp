@@ -1,36 +1,30 @@
 // -*-Mode: C++;-*-
 //
-// PDB coordinate reader
+// Mmcif map reader
 //
 
 #include <common.h>
 
+#include "MmcifMapReader.hpp"
+
 #include <boost/math/special_functions/fpclassify.hpp>
 #include <complex>
-#include <modules/symm/SymOpDB.hpp>
-#include <qlib/LineStream.hpp>
-
-#include "DensityMap.hpp"
-#include "MTZ2MapReader.hpp"
-#ifdef HAVE_FFTW3_H
-#include <fftw3.h>
-#endif
-
 #include <modules/symm/CrystalInfo.hpp>
 #include <modules/symm/SymOpDB.hpp>
 #include <qlib/LineStream.hpp>
 
 #include "CifParser.hpp"
-#include "MmcifMapReader.hpp"
-
-// Ignore anomalous scattering ( F(+)==F(-) )
-#define HERMIT
+#include "DensityMap.hpp"
+#include "MTZ2MapReader.hpp"
+#include "MapFFT.hpp"
 
 namespace xtal {
 
 MmcifMapReader::MmcifMapReader() : m_pMap(NULL), m_lineno(0)
 {
     m_nSG = 0;
+    m_grid = 0.33;
+    m_mapr = -1.0;  // auto (calc from max F)
 }
 
 MmcifMapReader::~MmcifMapReader()
@@ -72,20 +66,43 @@ bool MmcifMapReader::read(qlib::InStream &ins)
     CifParser parser(this);
     parser.read(lin);
 
+    int nrefln = m_data.size();
+    if (nrefln <= 0) {
+        auto msg2 = LString("no reflections read");
+        MB_THROW(qlib::FileFormatException, msg2);
+        return false;
+    }
+    MB_DPRINTLN("CifMap> read %d reflns", nrefln);
+
+    const int ncol = 5;
+    qlib::Array<float> data(nrefln * ncol * sizeof(float));
+    for (int i = 0; i < nrefln; ++i) {
+        data[i * 5] = m_data[i].h;
+        data[i * 5 + 1] = m_data[i].k;
+        data[i * 5 + 2] = m_data[i].l;
+        data[i * 5 + 3] = m_data[i].fwt;
+        data[i * 5 + 4] = m_data[i].phwt;
+    }
+
+    MapFFT mapfft;
+    mapfft.setTarget(m_pMap);
+    mapfft.setParams(m_cella, m_cellb, m_cellc, m_alpha, m_beta, m_gamma, m_nSG, m_grid,
+                     m_mapr);
+    mapfft.setData(nrefln, ncol, data.data(), 0, 1, 2, 3, 4, -1);
+    mapfft.doFFT();
+
     return true;
 }
 
 void MmcifMapReader::error(const LString &msg) const
 {
-    LString msg2 =
-        msg + LString::format(", at line %d (%s)", m_lineno, m_recbuf.c_str());
+    auto msg2 = msg + LString::format(", at line %d (%s)", m_lineno, m_recbuf.c_str());
     MB_THROW(qlib::FileFormatException, msg2);
 }
 
 void MmcifMapReader::warning(const LString &msg) const
 {
-    LString msg2 =
-        msg + LString::format(", at line %d (%s)", m_lineno, m_recbuf.c_str());
+    auto msg2 = msg + LString::format(", at line %d (%s)", m_lineno, m_recbuf.c_str());
     LOG_DPRINTLN("mmCIF> Warning: %s", msg2.c_str());
 }
 
@@ -179,9 +196,10 @@ void MmcifMapReader::readCellLine(CifParser &parser)
     m_beta = ang_b;
     m_gamma = ang_g;
 
-    MB_DPRINT("  unit cell a=%.2fA, b=%.2fA, c=%.2fA,\n", m_cella, m_cellb, m_cellc);
-    MB_DPRINT("            alpha=%.2fdeg, beta=%.2fdeg, gamma=%.2fdeg,\n", m_alpha,
-              m_beta, m_gamma);
+    MB_DPRINT("CifMap> unit cell a=%.2fA, b=%.2fA, c=%.2fA,\n", m_cella, m_cellb,
+              m_cellc);
+    MB_DPRINT("CifMap>  alpha=%.2fdeg, beta=%.2fdeg, gamma=%.2fdeg,\n", m_alpha, m_beta,
+              m_gamma);
 }
 
 void MmcifMapReader::readSymmLine(CifParser &parser)
@@ -204,6 +222,8 @@ void MmcifMapReader::readSymmLine(CifParser &parser)
 
     // symm::CrystalInfoPtr pci = m_pMol->getCreateExtData("CrystalInfo");
     // pci->setSGByName(sgname);
+    m_nSG = nSG;
+    MB_DPRINTLN("CifMap> Space group no: %d", m_nSG);
 }
 
 void MmcifMapReader::readReflnLine(CifParser &parser)
@@ -263,7 +283,10 @@ void MmcifMapReader::readReflnLine(CifParser &parser)
         return;
     }
 
-    MB_DPRINT("refln: %d %d %d, FWT=%.2f, PHWT=%.2f\n", ind_h, ind_k, ind_l, fwt, phwt);
+    // MB_DPRINT("refln: %d %d %d, FWT=%.2f, PHWT=%.2f\n", ind_h, ind_k, ind_l, fwt,
+    // phwt);
+
+    m_data.push_back({ind_h, ind_k, ind_l, float(fwt), float(phwt)});
     return;
 }
 

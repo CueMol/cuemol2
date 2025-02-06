@@ -48,6 +48,12 @@ private:
     /// Space group no.
     int m_nSG;
 
+    /// Map (max; high) resolution (default: auto)
+    double m_mapr;
+
+    /// Map grid size (default: 0.33)
+    double m_grid;
+
 public:
     //////////////////////////////////////////////
     // properties
@@ -86,90 +92,34 @@ public:
 
     virtual void readDataItem(CifParser &parser);
 
+    double getResoln() const
+    {
+        return m_mapr;
+    }
+    void setResoln(double val)
+    {
+        m_mapr = val;
+    }
+    double getGridSize() const
+    {
+        return m_grid;
+    }
+    void setGridSize(double val)
+    {
+        m_grid = val;
+    }
+
 private:
-    /*
-    bool readRecord(qlib::LineStream &ins);
-
-    void readDataLine();
-
-    void appendDataItem();
-
-    void readLoopDataItem();
-
-    int m_nState;
-
-    LString m_strCatName;
-
-    static const int MMCIF_INIT = 0;
-    static const int MMCIF_DATA = 1;
-    static const int MMCIF_LOOPDEF = 2;
-    static const int MMCIF_LOOPDATA = 3;
-
-    void resetLoopDef();
-
-    std::deque<LString> m_loopDefs;
-    std::list<LString> m_values;
-
-    void emulateSingleDataLoop();
-
-    bool m_bLoopDefsOK;
-
-    std::vector<int> m_recStPos;
-    std::vector<int> m_recEnPos;
-
-    int findDataItem(const char *key) const
+    struct Refln
     {
-        std::deque<LString>::const_iterator i = m_loopDefs.begin();
-        std::deque<LString>::const_iterator iend = m_loopDefs.end();
-        for (int j = 0; i != iend; ++i, ++j) {
-            if (i->equals(key)) return j;
-        }
-        return -1;
-    }
+        int h;
+        int k;
+        int l;
+        float fwt;
+        float phwt;
+    };
+    std::deque<Refln> m_data;
 
-    static const int TOK_FIND_START = 0;
-    static const int TOK_FIND_END = 1;
-    static const int TOK_FIND_QUOTEND = 2;
-    static const int TOK_FIND_DQUOTEND = 3;
-
-    LString m_prevline;
-
-    bool tokenizeLine(bool bChk = true);
-
-    LString getToken(int n) const
-    {
-        LString tok = getRawToken(n);
-        if (tok.length() <= 2) return tok;
-        if (tok.getAt(0) == '\'')
-            return tok.substr(1, tok.length() - 2);
-        else if (tok.getAt(0) == '\"')
-            return tok.substr(1, tok.length() - 2);
-        else
-            return tok;
-    }
-
-    bool isTokAvail(int n) const
-    {
-        if (n < 0 || n >= m_recStPos.size()) return false;
-        int ist = m_recStPos[n];
-        int ien = m_recEnPos[n];
-        if (0 <= ist && ist <= m_recbuf.length() && 0 <= ien &&
-            ien <= m_recbuf.length())
-            return true;
-        return false;
-    }
-
-    LString getRawToken(int n) const
-    {
-        if (!isTokAvail(n)) {
-            error(LString::format("mmCIF data item (%d) not found", n));
-            return LString();
-        }
-        int ist = m_recStPos[n];
-        int ien = m_recEnPos[n];
-        return m_recbuf.substr(ist, ien - ist);
-    }
-    */
     void readCellLine(CifParser &parser);
     void readSymmLine(CifParser &parser);
     void readReflnLine(CifParser &parser);

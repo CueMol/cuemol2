@@ -16,23 +16,26 @@ public:
     MapFFT();
     ~MapFFT();
 
-    void setData(int nrefl, int ind_h, int ind_k, int ind_l, int ifp, int iphase,
-                 int iweight, float *pbuf);
+    void setTarget(DensityMap *pMap)
+    {
+        m_pMap = pMap;
+    }
 
-    void setupSymmOp();
-    qlib::Matrix3D makeRecipOp(const qlib::Matrix4D &r);
+    void setParams(double cella, double cellb, double cellc, double alpha, double beta,
+                   double gamma, int nSG, double grid /*= 0.33*/,
+                   double mapr /*= -1.0*/);
 
-    void calcgrid();
-    void checkMapResoln();
-    void guessFFTColumns();
-    void checkHKLColumns();
+    void setData(int nrefl, int nincr, const float *pbuf, int ind_h, int ind_k, int ind_l,
+                 int ifp, int iphase, int iweight);
+
     void doFFT();
 
-    void setupMap();
-    void selectFFTColumns();
-    void cleanup();
-
 private:
+    void setupSymmOp();
+    void checkMapResoln();
+    void calcgrid();
+    qlib::Matrix3D makeRecipOp(const qlib::Matrix4D &r);
+
     /// num of reflections
     int m_nrefl;
 
@@ -47,7 +50,7 @@ private:
     /// struct factors and phases
     std::vector<float> m_vFWT;
     std::vector<float> m_vPHI;
-    
+
     /// Unit cell dimension parameters
     double m_cella, m_cellb, m_cellc;
     double m_alpha, m_beta, m_gamma;
@@ -57,7 +60,7 @@ private:
 
     /// use phases
     bool m_bUsePhases;
-    
+
     /////
 
     /// target map object (output)

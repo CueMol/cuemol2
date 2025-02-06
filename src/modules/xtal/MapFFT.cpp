@@ -23,6 +23,7 @@
 #define HERMIT
 
 namespace xtal {
+
 using qlib::Matrix3D;
 using qlib::Matrix4D;
 using qlib::Vector4D;
@@ -45,11 +46,29 @@ MapFFT::MapFFT()
     m_nSG = -1;
 
     m_bUsePhases = true;
+    m_grid = 0.33;
+    m_mapr = -1.0;
 }
+
 MapFFT::~MapFFT() {}
 
-void MapFFT::setData(int nrefl, int ind_h, int ind_k, int ind_l, int ifp, int iphase, 
-                    int iweight, float *pbuf)
+void MapFFT::setParams(double cella, double cellb, double cellc, double alpha,
+                       double beta, double gamma, int nSG, double grid = 0.33,
+                       double mapr = -1.0)
+{
+    m_cella = cella;
+    m_cellb = cellb;
+    m_cellc = cellc;
+    m_alpha = alpha;
+    m_beta = beta;
+    m_gamma = gamma;
+    m_nSG = nSG;
+    m_grid = grid;
+    m_mapr = mapr;
+}
+
+void MapFFT::setData(int nrefl, int nincr, const float *pbuf, int ind_h, int ind_k, int ind_l,
+                     int ifp, int iphase, int iweight)
 {
     m_nrefl = nrefl;
     m_vh.resize(nrefl);
@@ -62,7 +81,6 @@ void MapFFT::setData(int nrefl, int ind_h, int ind_k, int ind_l, int ifp, int ip
     m_maxL = m_maxK = m_maxH = INT_MIN;
     int nptr = 0, iref;
     for (iref = 0; iref < m_nrefl; ++iref) {
-
         // if (nptr + m_ncol > m_nrawdat / 4) {
         //     MB_THROW(qlib::RuntimeException, "Out of buffer");
         //     return;
@@ -110,7 +128,7 @@ void MapFFT::setData(int nrefl, int ind_h, int ind_k, int ind_l, int ifp, int ip
         }
          */
 
-        nptr += m_ncol;
+        nptr += nincr;
 
         m_maxH = qlib::max(m_maxH, qlib::abs(hhh));
         m_maxK = qlib::max(m_maxK, qlib::abs(kkk));
@@ -305,6 +323,8 @@ void MapFFT::checkMapResoln()
 
 void MapFFT::doFFT()
 {
+    setupSymmOp();
+
     ///////////////////////////////////
     // calculate grid size
 
@@ -481,6 +501,7 @@ void MapFFT::doFFT()
     MB_DPRINTLN("FFT OK");
 
     //////////////////////////////////////
+    // Setup map
 
     try {
         // ATTN: FFT axis is different from the map axis,
@@ -492,5 +513,12 @@ void MapFFT::doFFT()
     }
 
     fftwf_free(out);
+
+    // setup map dimension parameters
+    m_pMap->setMapParams(0, 0, 0, m_na, m_nb, m_nc);
+
+    // setup crystal lattice parameters
+    m_pMap->setXtalParams(m_cella, m_cellb, m_cellc, m_alpha, m_beta, m_gamma, m_nSG);
 }
+
 }  // namespace xtal
