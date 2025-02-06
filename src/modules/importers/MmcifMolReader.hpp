@@ -13,6 +13,7 @@
 #include <qsys/ObjReader.hpp>
 #include <modules/molstr/molstr.hpp>
 #include <modules/molstr/ResidIndex.hpp>
+#include <modules/xtal/CifParser.hpp>
 
 namespace qlib {
   class LineStream;
@@ -26,12 +27,14 @@ namespace importers {
   using molstr::MolResiduePtr;
   using molstr::ResidIndex;
   using molstr::ResidSet;
+  using xtal::CifParser;
+  using xtal::CifParserClient;
 
   //
   ///   mmCIF mol structure reader class
   //
-  class IMPORTERS_API MmcifMolReader : public qsys::ObjReader
-  {
+class IMPORTERS_API MmcifMolReader : public qsys::ObjReader, CifParserClient
+{
     MC_SCRIPTABLE;
 
   public:
@@ -100,8 +103,11 @@ namespace importers {
 
     //////////////////////////////////////////////
 
-  private:
+    virtual void readDataItem(CifParser &parser);
 
+
+  private:
+    /*
     bool readRecord(qlib::LineStream &ins);
 
     void readDataLine();
@@ -127,9 +133,9 @@ namespace importers {
     void emulateSingleDataLoop();
 
     bool m_bLoopDefsOK;
-
-    void readAtomLine();
-    void readAnisoULine();
+    */
+    void readAtomLine(CifParser &parser);
+    void readAnisoULine(CifParser &parser);
 
     // atom_site data items
     int m_nID;
@@ -152,60 +158,60 @@ namespace importers {
     int m_nAuthAsymID;
     int m_nModelID;
 
-    std::vector<int> m_recStPos;
-    std::vector<int> m_recEnPos;
+    // std::vector<int> m_recStPos;
+    // std::vector<int> m_recEnPos;
 
-    int findDataItem(const char *key) const {
-      std::deque<LString>::const_iterator i = m_loopDefs.begin();
-      std::deque<LString>::const_iterator iend = m_loopDefs.end();
-      for (int j=0; i!=iend; ++i, ++j) {
-        if (i->equals(key))
-          return j;
-      }
-      return -1;
-    }
+    // int findDataItem(const char *key) const {
+    //   std::deque<LString>::const_iterator i = m_loopDefs.begin();
+    //   std::deque<LString>::const_iterator iend = m_loopDefs.end();
+    //   for (int j=0; i!=iend; ++i, ++j) {
+    //     if (i->equals(key))
+    //       return j;
+    //   }
+    //   return -1;
+    // }
 
-    static const int TOK_FIND_START = 0;
-    static const int TOK_FIND_END = 1;
-    static const int TOK_FIND_QUOTEND = 2;
-    static const int TOK_FIND_DQUOTEND = 3;
+    // static const int TOK_FIND_START = 0;
+    // static const int TOK_FIND_END = 1;
+    // static const int TOK_FIND_QUOTEND = 2;
+    // static const int TOK_FIND_DQUOTEND = 3;
 
-    LString m_prevline;
+    // LString m_prevline;
 
-    bool tokenizeLine(bool bChk=true);
+    // bool tokenizeLine(bool bChk=true);
 
-    LString getToken(int n) const {
-      LString tok = getRawToken(n);
-      if (tok.length()<=2)
-	return tok;
-      if (tok.getAt(0)=='\'')
-        return tok.substr(1, tok.length()-2);
-      else if (tok.getAt(0)=='\"')
-        return tok.substr(1, tok.length()-2);
-      else
-        return tok;
-    }
+    // LString getToken(int n) const {
+    //   LString tok = getRawToken(n);
+    //   if (tok.length()<=2)
+	// return tok;
+    //   if (tok.getAt(0)=='\'')
+    //     return tok.substr(1, tok.length()-2);
+    //   else if (tok.getAt(0)=='\"')
+    //     return tok.substr(1, tok.length()-2);
+    //   else
+    //     return tok;
+    // }
     
-    bool isTokAvail(int n) const {
-      if (n<0||n>=m_recStPos.size())
-	return false;
-      int ist = m_recStPos[n];
-      int ien = m_recEnPos[n];
-      if (0<=ist && ist<=m_recbuf.length() &&
-	  0<=ien && ien<=m_recbuf.length())
-	return true;
-      return false;
-    }
+    // bool isTokAvail(int n) const {
+    //   if (n<0||n>=m_recStPos.size())
+	// return false;
+    //   int ist = m_recStPos[n];
+    //   int ien = m_recEnPos[n];
+    //   if (0<=ist && ist<=m_recbuf.length() &&
+	//   0<=ien && ien<=m_recbuf.length())
+	// return true;
+    //   return false;
+    // }
 
-    LString getRawToken(int n) const {
-      if (!isTokAvail(n)) {
-        error(LString::format("mmCIF data item (%d) not found", n));
-        return LString();
-      }
-      int ist = m_recStPos[n];
-      int ien = m_recEnPos[n];
-      return m_recbuf.substr(ist, ien-ist);
-    }
+    // LString getRawToken(int n) const {
+    //   if (!isTokAvail(n)) {
+    //     error(LString::format("mmCIF data item (%d) not found", n));
+    //     return LString();
+    //   }
+    //   int ist = m_recStPos[n];
+    //   int ien = m_recEnPos[n];
+    //   return m_recbuf.substr(ist, ien-ist);
+    // }
 
 #ifdef HAVE_UNORDERED_MAP
     typedef std::unordered_map<int, int> AtomIDMap;
@@ -227,8 +233,8 @@ namespace importers {
 
     // MolResiduePtr findResid(int nSeqID) const;
 
-    void readHelixLine();
-    void readSheetLine();
+    void readHelixLine(CifParser &parser);
+    void readSheetLine(CifParser &parser);
     int m_nStSeqID;
     int m_nEnSeqID;
     int m_nHlxClass;
@@ -247,7 +253,7 @@ namespace importers {
     //void applySecstr(const LString &sec, const LString &sec2, const SecStrList &rng);
     void apply2ndry(const char *ss1, const char *ss2, const ResidSet &data);
 
-    void readConnLine();
+    void readConnLine(CifParser &parser);
 
     int m_nConnTypeID;
     int m_nChainID1;
@@ -280,15 +286,14 @@ namespace importers {
 
     void applyLink();
 
+    void readCellLine(CifParser &parser);
+    void readSymmLine(CifParser &parser);
 
-    void readCellLine();
-    void readSymmLine();
+    ResidIndex getResidIndex(CifParser &parser, int nSeqID, int nInsID);
+    char getConfID(CifParser &parser, int nConfID);
 
     void error(const LString &msg) const;
     void warning(const LString &msg) const;
-
-    ResidIndex getResidIndex(int nSeqID, int nInsID);
-    char getConfID(int nConfID);
   };
 
 

@@ -16,6 +16,7 @@
 #include "XplorMapReader.hpp"
 #include "QdfDenMapWriter.hpp"
 #include "QdfDenMapReader.hpp"
+#include "MmcifMapReader.hpp"
 
 #ifdef USE_OPENGL
 #  include "GLSLMapMeshRenderer.hpp"
@@ -58,6 +59,7 @@ bool init()
   pSM->registReader<XplorMapReader>();
   pSM->registWriter<QdfDenMapWriter>();
   pSM->registWriter<QdfDenMapReader>();
+  pSM->registReader<MmcifMapReader>();
 
   MB_DPRINTLN("xtal init: OK");
   return true;

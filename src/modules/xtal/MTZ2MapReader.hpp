@@ -66,7 +66,7 @@ public:
 
   LString getColumnInfoJSON();
 
-protected:
+private:
   /// Map (max; high) resolution (default: auto)
   double m_mapr;
 
@@ -134,7 +134,7 @@ private:
   double m_dResMin, m_dResMax;
 
   ///////////////////////////////////////////
-protected:
+private:
   struct Column {
     int nid;
     LString name;
@@ -178,7 +178,6 @@ private:
   void checkHKLColumns();
   void doFFT();
 
-protected:
   void readData(qlib::InStream &arg);
   void setupMap();
   void selectFFTColumns();
