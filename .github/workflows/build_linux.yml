@@ -20,6 +20,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        lfs: true
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.4
