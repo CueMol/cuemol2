@@ -48,6 +48,77 @@ MapFFT::MapFFT()
 }
 MapFFT::~MapFFT() {}
 
+void MapFFT::setData(int nrefl, int ind_h, int ind_k, int ind_l, int ifp, int iphase, 
+                    int iweight, float *pbuf)
+{
+    m_nrefl = nrefl;
+    m_vh.resize(nrefl);
+    m_vk.resize(nrefl);
+    m_vl.resize(nrefl);
+    m_vFWT.resize(nrefl);
+    m_vPHI.resize(nrefl);
+    m_bUsePhases = iphase >= 0;
+
+    m_maxL = m_maxK = m_maxH = INT_MIN;
+    int nptr = 0, iref;
+    for (iref = 0; iref < m_nrefl; ++iref) {
+
+        // if (nptr + m_ncol > m_nrawdat / 4) {
+        //     MB_THROW(qlib::RuntimeException, "Out of buffer");
+        //     return;
+        // }
+
+        const int hhh = int(pbuf[nptr + ind_h]);
+        const int kkk = int(pbuf[nptr + ind_k]);
+        const int lll = int(pbuf[nptr + ind_l]);
+
+        m_vh[iref] = hhh;
+        m_vk[iref] = kkk;
+        m_vl[iref] = lll;
+
+        double wgt = 1.0;
+        if (iweight >= 0) {
+            wgt = pbuf[nptr + iweight];
+        }
+
+        double fp = pbuf[nptr + ifp] * wgt;
+
+        double phi = 0.0;
+        if (iphase >= 0) {
+            phi = pbuf[nptr + iphase];
+        }
+
+        if (boost::math::isfinite(fp))
+            m_vFWT[iref] = fp;
+        else
+            m_vFWT[iref] = 0.0;
+
+        // if (boost::math::isfinite(phi))
+        if (std::isfinite(phi)) {
+            m_vPHI[iref] = phi;
+        } else {
+            m_vPHI[iref] = 0.0;
+        }
+
+        /*
+        //if (iref<30) {
+        if (lll==-26) {
+          MB_DPRINTLN("(%d,%d,%d) F=%f, Phi=%f",
+              vh[iref], vk[iref], vl[iref],
+              vFWT[iref], vPHI[iref]);
+          //MB_DPRINTLN("finite F=%d, Phi=%d", finite(fp), finite(phi));
+        }
+         */
+
+        nptr += m_ncol;
+
+        m_maxH = qlib::max(m_maxH, qlib::abs(hhh));
+        m_maxK = qlib::max(m_maxK, qlib::abs(kkk));
+        m_maxL = qlib::max(m_maxL, qlib::abs(lll));
+        // fprintf(stdout, "\n");
+    }
+}
+
 void MapFFT::setupSymmOp()
 {
     int i;
@@ -388,8 +459,8 @@ void MapFFT::doFFT()
                     fprintf(fp, "F( %03d.%03d.%03d )=( %e %.2f )\n", h, k, l, a,
                             qlib::toDegree(arg(floc)));
                 }
-        fclose(fp); 
-   }
+        fclose(fp);
+    }
 #endif
 
     fftwf_plan p;

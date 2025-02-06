@@ -16,6 +16,9 @@ public:
     MapFFT();
     ~MapFFT();
 
+    void setData(int nrefl, int ind_h, int ind_k, int ind_l, int ifp, int iphase,
+                 int iweight, float *pbuf);
+
     void setupSymmOp();
     qlib::Matrix3D makeRecipOp(const qlib::Matrix4D &r);
 
@@ -25,7 +28,6 @@ public:
     void checkHKLColumns();
     void doFFT();
 
-    void readData(qlib::InStream &arg);
     void setupMap();
     void selectFFTColumns();
     void cleanup();
