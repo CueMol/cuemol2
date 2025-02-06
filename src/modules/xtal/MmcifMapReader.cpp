@@ -22,7 +22,7 @@ namespace xtal {
 
 MmcifMapReader::MmcifMapReader() : m_pMap(NULL), m_lineno(0)
 {
-    m_cella = m_cellb = mcellc = m_alpha = m_beta = m_gamma = -1.0;
+    m_cella = m_cellb = m_cellc = m_alpha = m_beta = m_gamma = -1.0;
     m_nSG = -1;
     m_grid = 0.33;
     m_mapr = -1.0;  // auto (calc from max F)
@@ -68,7 +68,7 @@ bool MmcifMapReader::read(qlib::InStream &ins)
     parser.read(lin);
 
     // check cell dimension
-    if (m_cella < 0.0 || m_cellb < 0.0 || mcellc < 0.0 || m_alpha < 0.0 || m_beta < 0.0 ||
+    if (m_cella < 0.0 || m_cellb < 0.0 || m_cellc < 0.0 || m_alpha < 0.0 || m_beta < 0.0 ||
         m_gamma < 0.0) {
         auto msg2 = LString("Unit cell def not found");
         MB_THROW(qlib::FileFormatException, msg2);
