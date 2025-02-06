@@ -1,0 +1,1 @@
+tests/test_data/2ydo_test.cif.gz filter=lfs diff=lfs merge=lfs -text

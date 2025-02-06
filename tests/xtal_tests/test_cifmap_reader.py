@@ -8,8 +8,9 @@ def test_cifmap_reader(test_data_path):
     reader = svc.createHandler("mmcifmap", 0)
     print(f"{reader=}")
 
-    test_cif_file = test_data_path / "2ydo_test.cif"
+    test_cif_file = test_data_path / "2ydo_test.cif.gz"
     reader.setPath(str(test_cif_file))
+    reader.compress = "gzip"
     obj = reader.createDefaultObj()
     reader.attach(obj)
     reader.read()
