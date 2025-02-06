@@ -28,7 +28,24 @@ using qlib::Matrix4D;
 using qlib::Vector4D;
 using symm::SymOpDB;
 
-MapFFT::MapFFT() {}
+MapFFT::MapFFT()
+{
+    m_nrefl = -1;
+    m_maxH = -1;
+    m_maxK = -1;
+    m_maxL = -1;
+
+    m_cella = 0.0;
+    m_cellb = 0.0;
+    m_cellc = 0.0;
+    m_alpha = 0.0;
+    m_beta = 0.0;
+    m_gamma = 0.0;
+
+    m_nSG = -1;
+
+    m_bUsePhases = true;
+}
 MapFFT::~MapFFT() {}
 
 void MapFFT::setupSymmOp()
@@ -217,74 +234,6 @@ void MapFFT::checkMapResoln()
 
 void MapFFT::doFFT()
 {
-    std::vector<int> vh(m_nrefl);
-    std::vector<int> vk(m_nrefl);
-    std::vector<int> vl(m_nrefl);
-
-    std::vector<float> vFWT(m_nrefl);
-    std::vector<float> vPHI(m_nrefl);
-
-    if (m_nphi < 0) {
-        LOG_DPRINTLN("MTZ2Map FFT> Warning: No phase is specified.");
-        LOG_DPRINTLN("MTZ2Map FFT> Result may be Patterson map.");
-    }
-
-    m_maxL = m_maxK = m_maxH = INT_MIN;
-    int nptr = 0, iref;
-    for (iref = 0; iref < m_nrefl; ++iref) {
-        if (nptr + m_ncol > m_nrawdat / 4) {
-            MB_THROW(qlib::RuntimeException, "Out of buffer");
-            return;
-        }
-
-        const int hhh = (int)((float *)m_pbuf)[nptr + m_cind_h];
-        const int kkk = (int)((float *)m_pbuf)[nptr + m_cind_k];
-        const int lll = (int)((float *)m_pbuf)[nptr + m_cind_l];
-        vh[iref] = hhh;
-        vk[iref] = kkk;
-        vl[iref] = lll;
-
-        double wgt = 1.0;
-        if (m_nwgt >= 0) wgt = ((float *)m_pbuf)[nptr + m_nwgt];
-
-        double fp = ((float *)m_pbuf)[nptr + m_nfp] * wgt;
-
-        double phi = 0.0;
-        if (m_nphi >= 0) phi = ((float *)m_pbuf)[nptr + m_nphi];
-
-        if (boost::math::isfinite(fp))
-            vFWT[iref] = fp;
-        else
-            vFWT[iref] = 0.0;
-
-        if (boost::math::isfinite(phi))
-            vPHI[iref] = phi;
-        else
-            vPHI[iref] = 0.0;
-
-        /*
-        //if (iref<30) {
-        if (lll==-26) {
-          MB_DPRINTLN("(%d,%d,%d) F=%f, Phi=%f",
-              vh[iref], vk[iref], vl[iref],
-              vFWT[iref], vPHI[iref]);
-          //MB_DPRINTLN("finite F=%d, Phi=%d", finite(fp), finite(phi));
-        }
-         */
-
-        nptr += m_ncol;
-
-        m_maxH = qlib::max(m_maxH, qlib::abs(hhh));
-        m_maxK = qlib::max(m_maxK, qlib::abs(kkk));
-        m_maxL = qlib::max(m_maxL, qlib::abs(lll));
-        // fprintf(stdout, "\n");
-    }
-
-    delete m_pbuf;
-    m_pbuf = NULL;
-
-    MB_DPRINTLN("LOAD OK");
-
     ///////////////////////////////////
     // calculate grid size
 
@@ -312,15 +261,15 @@ void MapFFT::doFFT()
     // check the memory allocation results
     if (in == NULL) {
         LString msg =
-            LString::format("MTZ.doFFT> cannot allocate in-memory (%d w)", ninalloc);
-        LOG_DPRINTLN("MTZ.doFFT> %s", msg.c_str());
+            LString::format("MapFFT> cannot allocate in-memory (%d w)", ninalloc);
+        LOG_DPRINTLN("MapFFT> %s", msg.c_str());
         MB_THROW(qlib::RuntimeException, msg);
         return;
     }
     if (out == NULL) {
         LString msg =
-            LString::format("MTZ.doFFT> cannot allocate out-memory (%d w)", noutalloc);
-        LOG_DPRINTLN("MTZ.doFFT> %s", msg.c_str());
+            LString::format("MapFFT> cannot allocate out-memory (%d w)", noutalloc);
+        LOG_DPRINTLN("MapFFT> %s", msg.c_str());
         MB_THROW(qlib::RuntimeException, msg);
         return;
     }
@@ -332,7 +281,7 @@ void MapFFT::doFFT()
 
     const double rth = M_PI * 2.0 / 24.0;
     const float fscale = float(1.0 / (m_cella * m_cellb * m_cellc));
-    int isym;
+    int isym, iref;
 
     // FILE *fp = fopen("f:\\proj\\fft-f0.hkl","w");
     // fprintf(fp, "%d %d %d\n", m_na, m_nb, NCS);
@@ -347,9 +296,9 @@ void MapFFT::doFFT()
 
         for (iref = 0; iref < m_nrefl; ++iref) {
             // Apply rotation by reciprocal symop
-            const int hh = vh[iref];
-            const int kk = vk[iref];
-            const int ll = vl[iref];
+            const int hh = m_vh[iref];
+            const int kk = m_vk[iref];
+            const int ll = m_vl[iref];
             Vector4D ohkl(hh, kk, ll);
             m_rsymm[isym].xform(ohkl);
             h = int(ohkl.x());
@@ -362,10 +311,12 @@ void MapFFT::doFFT()
             const double zsh = m_symm[isym].aij(3, 4);
             double phsh = 0.0;
             // Do not apply phase shift in the Patterson map case.
-            if (m_nphi >= 0) phsh = (xsh * h + ysh * k + zsh * l) * M_PI * 2.0;
+            if (m_bUsePhases) {
+                phsh = (xsh * h + ysh * k + zsh * l) * M_PI * 2.0;
+            }
 
-            const float ampl = float(vFWT[iref] * fscale);
-            const float phas = float(vPHI[iref] * float(M_PI) / 180.0f);
+            const float ampl = float(m_vFWT[iref] * fscale);
+            const float phas = float(m_vPHI[iref] * float(M_PI) / 180.0f);
 
             std::complex<float> floc =
                 std::polar(1.0f, float(phsh)) * std::polar(ampl, phas);
@@ -437,8 +388,8 @@ void MapFFT::doFFT()
                     fprintf(fp, "F( %03d.%03d.%03d )=( %e %.2f )\n", h, k, l, a,
                             qlib::toDegree(arg(floc)));
                 }
-        fclose(fp);
-    }
+        fclose(fp); 
+   }
 #endif
 
     fftwf_plan p;

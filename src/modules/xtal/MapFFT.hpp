@@ -31,12 +31,37 @@ public:
     void cleanup();
 
 private:
+    /// num of reflections
+    int m_nrefl;
+
+    /// maximum indices
+    int m_maxH, m_maxK, m_maxL;
+
+    /// index array
+    std::vector<int> m_vh;
+    std::vector<int> m_vk;
+    std::vector<int> m_vl;
+
+    /// struct factors and phases
+    std::vector<float> m_vFWT;
+    std::vector<float> m_vPHI;
+    
     /// Unit cell dimension parameters
     double m_cella, m_cellb, m_cellc;
     double m_alpha, m_beta, m_gamma;
 
     /// Space group no.
     int m_nSG;
+
+    /// use phases
+    bool m_bUsePhases;
+    
+    /////
+
+    /// target map object (output)
+    DensityMap *m_pMap;
+
+    /////
 
     /// num of symm ops
     int m_nsymm;
@@ -56,15 +81,8 @@ private:
     /// Check resolution and grid size
     bool m_bChkResGrid;
 
-    /// num of reflections
-    int m_nrefl;
-
     /// num of indices
     int m_na, m_nb, m_nc;
-
-    /// maximun indices
-    int m_maxH, m_maxK, m_maxL;
-
 };
 
 }  // namespace xtal
