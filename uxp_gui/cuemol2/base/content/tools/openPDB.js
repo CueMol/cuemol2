@@ -61,19 +61,11 @@ window.gPdbDlg = {
     }
 
     if (pdbchk) {
-      //let url_pdb = "http://www.rcsb.org/pdb/download/downloadFile.do?"+
-      //"fileFormat=pdb&compression=NO&structureId="+pdbid;
-
       let svr = document.getElementById('pdb-svr-list').value;
-
-      //if (svr=="EBI")
-      //  url_pdb = "http://files.rcsb.org/download/"+pdbid+".cif.gz";
-      //else
-      //url_pdb = "http://files.rcsb.org/download/"+pdbid+".cif.gz";
-
       url_pdb = cuemolui.replacePDBURL(svr, pdbid);
       let uri = this.mIoService.newURI(url_pdb, null, null);
   
+      dd("Check PDB URL: "+url_pdb);
       try {
         let httpChannel = this.mIoService.newChannelFromURI(uri)
           .QueryInterface(Components.interfaces.nsIHttpChannel);
@@ -90,19 +82,27 @@ window.gPdbDlg = {
       }
       catch (e) {
         debug.exception(e);
-        return false;
+        // return false;
       }
     }
 
     if (mapchk_2fofc || mapchk_fofc) {
       let svr = document.getElementById('map-svr-list').value;
-      if (svr=="EDS")
-        url_map = "http://eds.bmc.uu.se/eds/sfd/"+pdbid+"/"+pdbid+"_sigmaa.mtz";
-      else
+      if (svr=="EBI") {
         url_map = "https://www.ebi.ac.uk/pdbe/coordinates/files/"+pdbid+"_map.mtz";
-
+      }
+      else {
+        let mid = pdbid.substr(1,2);
+        let maptype;
+        if (mapchk_2fofc)
+          maptype = "2fo-fc";
+        else
+          maptype = "fo-fc";
+        url_map = "https://files.rcsb.org/pub/pdb/validation_reports/"+mid+"/"+pdbid+"/"+pdbid+"_validation_"+maptype+"_map_coef.cif.gz";
+      }
       let uri = this.mIoService.newURI(url_map, null, null);
   
+      dd("Check Map URL: "+url_map);
       try {
         let httpChannel = this.mIoService.newChannelFromURI(uri)
           .QueryInterface(Ci.nsIHttpChannel);
@@ -119,7 +119,7 @@ window.gPdbDlg = {
       }
       catch (e) {
         debug.exception(e);
-        return false;
+        // return false;
       }
     }
 

@@ -80,6 +80,9 @@ StreamListener.prototype.onStopRequest = function (aRequest, aContext, aStatus)
     this.showProgress(-1);
 
   let obj = this.m_strmgr.waitLoadAsync(this.m_tid);
+  if (!obj) {
+    dd("onStopReq: strmgr.waitLoadAsync obj is null");
+  }
   obj.name = this.mNewObjName;
 
   // EDIT TXN START //
@@ -367,12 +370,7 @@ Qm2Main.prototype.openEDSsiteImpl = function (pdbid, aURLMap, b2fofc, afuncs)
 
   var listener;
 
-  // // EDS
-  // eds_url = "http://eds.bmc.uu.se/eds/sfd/"+pdbid+"/"+pdbid+"_sigmaa.mtz";
-  // EBI: http://www.ebi.ac.uk/pdbe/coordinates/files/1cbs_map.mtz
-  //eds_url = "http://www.ebi.ac.uk/pdbe/coordinates/files/"+pdbid+"_map.mtz";
-
-  //dd("open PDBe site (density): URL=\""+eds_url+"\"");
+  dd("open map URL=\""+eds_url+"\"");
   cuemol.println("Open map: URL=\""+eds_url+"\"");
 
   var new_obj_name;
@@ -381,7 +379,6 @@ Qm2Main.prototype.openEDSsiteImpl = function (pdbid, aURLMap, b2fofc, afuncs)
   else
     new_obj_name = pdbid+"_fofc";
 
-
   //////////
   // show the setup-rend dialog
 
@@ -389,28 +386,30 @@ Qm2Main.prototype.openEDSsiteImpl = function (pdbid, aURLMap, b2fofc, afuncs)
 
   var obj_type;
   var rend_types;
-  var reader = smg.createHandler("mtzmap", 0);
-  // reader.compress = "gzip";
-  if (b2fofc) {
-    if (eds_url.search(/_sigmaa.mtz$/)) {
-      reader.clmn_F = "2FOFCWT";
-      reader.clmn_PHI = "PH2FOFCWT";
-    }
-    else {
-      reader.clmn_F = "FWT";
-      reader.clmn_PHI = "PHWT";
-    }
+
+  let reader;
+  if (eds_url.endsWith("_map_coef.cif.gz")) {
+      dd("Open MMCIF URL: "+eds_url);
+      reader = smg.createHandler("mmcifmap", 0);
+      reader.compress = "gzip";
+  }
+  else if (eds_url.endsWith("_map.mtz")) {
+      dd("Open MTZ URL: "+eds_url);
+      reader = smg.createHandler("mtzmap", 0);
+      if (b2fofc) {
+          reader.clmn_F = "FWT";
+          reader.clmn_PHI = "PHWT";
+      }
+      else {
+          reader.clmn_F = "DELFWT";
+          reader.clmn_PHI = "PHDELWT";
+      }
   }
   else {
-    if (eds_url.search(/_sigmaa.mtz$/)) {
-      reader.clmn_F = "FOFCWT";
-      reader.clmn_PHI = "PHFOFCWT";
-    }
-    else {
-      reader.clmn_F = "DELFWT";
-      reader.clmn_PHI = "PHDELWT";
-    }
+      dd("Unknown type URL: "+eds_url);
+      return;
   }
+
   reader.gridsize = 0.25;
   ( function () {
     var tmpobj = reader.createDefaultObj();

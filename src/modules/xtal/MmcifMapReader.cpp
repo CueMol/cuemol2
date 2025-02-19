@@ -263,13 +263,19 @@ void MmcifMapReader::readReflnLine(CifParser &parser)
     }
     int nFwtID = parser.findDataItem("pdbx_FWT");
     if (nFwtID < 0) {
-        error("_refln.pdbx_FWT not found");
-        return;
+        nFwtID = parser.findDataItem("pdbx_DELFWT");
+        if (nFwtID < 0) {
+            error("_refln.pdbx_FWT or _refln.pdbx_DELFWT not found");
+            return;
+        }
     }
     int nPhwtID = parser.findDataItem("pdbx_PHWT");
     if (nPhwtID < 0) {
-        error("_refln.pdbx_PHWT not found");
-        return;
+        nPhwtID = parser.findDataItem("pdbx_DELPHWT");
+        if (nPhwtID < 0) {
+            error("_refln.pdbx_PHWT or _refln.pdbx_DELPHWT not found");
+            return;
+        }
     }
 
     parser.setLoopDefsOK(true);
