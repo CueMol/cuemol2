@@ -151,9 +151,6 @@ window.gPdbDlg = {
 
     this.mArgs[0]({
       pdbid: pdbid,
-      bpdb: pdbchk,
-      bmap_2fofc: mapchk_2fofc,
-      bmap_fofc: mapchk_fofc,
       url_pdb: url_pdb,
       url_map_2fofc: url_map_2fofc,
       url_map_fofc: url_map_fofc
