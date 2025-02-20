@@ -203,27 +203,21 @@ StreamListener.prototype.QueryInterface = function(aIID)
 
 ////////////////////////////////////////////////////////////
 
-Qm2Main.prototype.onOpenPDBsite = function ()
-{
-  var pdbid = null;
-  var bpdb = false;
-  var bmap_2fofc = false;
-  var bmap_fofc = false;
-
-  var url_pdb = null;
-  var url_map = null;
-
+Qm2Main.prototype.onOpenPDBsite = function () {
+  let result = null;
   window.openDialog("chrome://cuemol2/content/tools/openPDB.xul",
 		    "openPDB",
 		    "chrome,modal,resizable=no,dependent,centerscreen",
-		    function(aPDBID, aPDB, aMap2FoFc, aMapFoFc, aPDBURL, aMapURL) {
-		      pdbid = aPDBID;
-		      bpdb = aPDB;
-		      bmap_2fofc = aMap2FoFc;
-		      bmap_fofc = aMapFoFc;
-		      url_pdb = aPDBURL;
-		      url_map = aMapURL;
+            function(aRes) {
+              result = aRes;
 		    });
+
+  let pdbid = result.pdbid;
+  let bpdb = result.bpdb;
+  let bmap_2fofc = result.bmap_2fofc;
+  let bmap_fofc = result.bmap_fofc;
+  let url_pdb = result.url_pdb;
+  let url_map = result.url_map_2fofc;
 
   if (!pdbid)
     return;

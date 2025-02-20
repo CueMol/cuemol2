@@ -36,8 +36,8 @@
     <checkbox id="chk-get-map-fofc" label="Fetch map file (Fo-Fc)" checked="false"/>
     <menulist id="map-svr-list">
       <menupopup>
-	<menuitem label="RCSB (files.rcsb.org)" value="RCSB" selected="true"/>
-	<menuitem label="EBI (www.ebi.ac.uk)" value="EBI"/>
+	<menuitem label="RCSB (files.rcsb.org)" value="RCSB_CIF" selected="true"/>
+	<menuitem label="EBI (www.ebi.ac.uk)" value="EBI_MTZ"/>
       </menupopup>
     </menulist>
   </groupbox>

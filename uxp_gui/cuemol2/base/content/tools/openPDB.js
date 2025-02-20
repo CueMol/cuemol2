@@ -38,15 +38,78 @@ window.gPdbDlg = {
     return false;
   },
 
+  makePDBURL: function (pdbid, svr_type) {
+    if (svr_type == "RCSB_CIF") {
+      url_pdb = "https://files.rcsb.org/download/"+pdbid+".cif";
+    }
+    else if (svr_type == "RCSB_PDB") {
+      url_pdb = "https://files.rcsb.org/download/"+pdbid+".pdb";
+    }
+    else {
+      dd("Unknown PDB server: "+svr_type);
+      return null;
+    }
+    url_pdb = cuemolui.replacePDBURL(url_pdb, pdbid);
+    return url_pdb;
+  },
+
+  makeMapURL: function (pdbid, svr_type, mapchk_2fofc) {
+    if (svr_type=="EBI_MTZ") {
+      url_map = "https://www.ebi.ac.uk/pdbe/coordinates/files/"+pdbid+"_map.mtz";
+    }
+    else if (svr_type=="RCSB_CIF") {
+      let mid = pdbid.substr(1,2);
+      let maptype;
+      if (mapchk_2fofc)
+        maptype = "2fo-fc";
+      else
+        maptype = "fo-fc";
+      url_map = "https://files.rcsb.org/pub/pdb/validation_reports/"+mid+"/"+pdbid+"/"+pdbid+"_validation_"+maptype+"_map_coef.cif.gz";
+    }
+    return url_map;
+  },
+
+  checkURL: function (url_pdb) {
+    let uri = this.mIoService.newURI(url_pdb, null, null);
+    let httpChannel;
+    try {
+      httpChannel = this.mIoService.newChannelFromURI(uri)
+        .QueryInterface(Components.interfaces.nsIHttpChannel);
+      httpChannel.requestMethod = "HEAD";
+      httpChannel.redirectionLimit = 10;
+      httpChannel.open();
+    }
+    catch (e) {
+      debug.exception(e);
+      return false;
+    }
+
+    try {
+      dd("Response "+httpChannel.responseStatus+httpChannel.responseStatusText+" for URL: "+url_pdb);
+      if (httpChannel.responseStatus==200) {
+        return false;
+      }
+    }
+    catch (e) {
+      debug.exception(e);
+      return false;
+    }
+
+    return true;
+  },
+
+  showErrMsg: function (msg) {
+    this.mResBox.value = msg;
+    this.mPdbIdBox.select();
+    this.mPdbIdBox.focus();
+  },
+
   onFind: function () {
-    var pdbid = this.mPdbIdBox.value.toLowerCase();
+    let pdbid = this.mPdbIdBox.value.toLowerCase();
 
-    var pdbchk = document.getElementById('chk-get-pdb').checked;
-    var mapchk_2fofc = document.getElementById('chk-get-map-2fofc').checked;
-    var mapchk_fofc = document.getElementById('chk-get-map-fofc').checked;
-
-    var url_pdb = null;
-    var url_map = null;
+    let pdbchk = document.getElementById('chk-get-pdb').checked;
+    let mapchk_2fofc = document.getElementById('chk-get-map-2fofc').checked;
+    let mapchk_fofc = document.getElementById('chk-get-map-fofc').checked;
 
     if (!pdbchk && !mapchk_2fofc && !mapchk_fofc) {
       this.mResBox.value = "Neither pdb nor map selected";
@@ -54,86 +117,47 @@ window.gPdbDlg = {
     }
 
     if (!this.validation(pdbid)) {
-      this.mResBox.value = "Invalid PDB ID: "+pdbid;
-      this.mPdbIdBox.select();
-      this.mPdbIdBox.focus();
+      this.showErrMsg("Invalid PDB ID: "+pdbid);
       return false;
     }
 
+    let url_pdb = null;
     if (pdbchk) {
       let svr = document.getElementById('pdb-svr-list').value;
-      if (svr == "RCSB_CIF") {
-        url_pdb = "https://files.rcsb.org/download/"+pdbid+".cif";
-      }
-      else if (svr == "RCSB_PDB") {
-        url_pdb = "https://files.rcsb.org/download/"+pdbid+".pdb";
-      }
-      else {
-        dd("Unknown PDB server: "+svr);
+      url_pdb = this.makePDBURL(pdbid, svr);
+      dd("Check PDB URL: "+url_pdb);
+      if (this.checkURL(url_pdb)) {
+        this.showErrMsg("PDB Entry " + pdbid + ": not found.");
         return false;
       }
-      url_pdb = cuemolui.replacePDBURL(url_pdb, pdbid);
-      let uri = this.mIoService.newURI(url_pdb, null, null);
-  
-      dd("Check PDB URL: "+url_pdb);
-      try {
-        let httpChannel = this.mIoService.newChannelFromURI(uri)
-          .QueryInterface(Components.interfaces.nsIHttpChannel);
-        httpChannel.requestMethod = "HEAD";
-        httpChannel.redirectionLimit = 10;
-        httpChannel.open();
-        dd("Response "+httpChannel.responseStatus+httpChannel.responseStatusText+" for URL: "+url_pdb);
-        if (httpChannel.responseStatus!=200) {
-          this.mResBox.value = "PDB Entry "+pdbid+" not found.";
-          this.mPdbIdBox.select();
-          this.mPdbIdBox.focus();
-          return false;
-        }
-      }
-      catch (e) {
-        debug.exception(e);
-        // return false;
-      }
     }
 
+    let map_svr = document.getElementById('map-svr-list').value;
     if (mapchk_2fofc || mapchk_fofc) {
-      let svr = document.getElementById('map-svr-list').value;
-      if (svr=="EBI") {
-        url_map = "https://www.ebi.ac.uk/pdbe/coordinates/files/"+pdbid+"_map.mtz";
-      }
-      else {
-        let mid = pdbid.substr(1,2);
-        let maptype;
-        if (mapchk_2fofc)
-          maptype = "2fo-fc";
-        else
-          maptype = "fo-fc";
-        url_map = "https://files.rcsb.org/pub/pdb/validation_reports/"+mid+"/"+pdbid+"/"+pdbid+"_validation_"+maptype+"_map_coef.cif.gz";
-      }
-      let uri = this.mIoService.newURI(url_map, null, null);
-  
+      url_map = this.makeMapURL(pdbid, map_svr, mapchk_2fofc);
       dd("Check Map URL: "+url_map);
-      try {
-        let httpChannel = this.mIoService.newChannelFromURI(uri)
-          .QueryInterface(Ci.nsIHttpChannel);
-        httpChannel.requestMethod = "HEAD";
-        httpChannel.redirectionLimit = 0;
-        httpChannel.open();
-        dd("Response "+httpChannel.responseStatus+" "+httpChannel.responseStatusText+" for URL: "+url_map);
-        if (httpChannel.responseStatus!=200) {
-          this.mResBox.value = "Map Entry "+pdbid+" not found in "+svr;
-          this.mPdbIdBox.select();
-          this.mPdbIdBox.focus();
-          return false;
-        }
-      }
-      catch (e) {
-        debug.exception(e);
-        // return false;
+      if (this.checkURL(url_map)) {
+        this.showErrMsg("Map Entry " + pdbid + ": not found.");
+        return false;
       }
     }
 
-    this.mArgs[0](pdbid, pdbchk, mapchk_2fofc, mapchk_fofc, url_pdb, url_map);
+    url_map_2fofc = null;
+    if (mapchk_2fofc)
+      url_map_2fofc = this.makeMapURL(pdbid, map_svr, mapchk_2fofc);
+    url_map_fofc = null;
+    if (mapchk_fofc)
+      url_map_fofc = this.makeMapURL(pdbid, map_svr, !mapchk_fofc);
+
+    this.mArgs[0]({
+      pdbid: pdbid,
+      bpdb: pdbchk,
+      bmap_2fofc: mapchk_2fofc,
+      bmap_fofc: mapchk_fofc,
+      url_pdb: url_pdb,
+      url_map_2fofc: url_map_2fofc,
+      url_map_fofc: url_map_fofc
+    });
 
     this.mHis.append(pdbid);
     this.mHis.saveToPref();
