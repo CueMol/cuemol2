@@ -99,10 +99,10 @@ bool CifParser::read(qlib::LineStream &lin)
 bool CifParser::readRecord(qlib::LineStream &ins)
 {
     LString str = ins.readLine();
-    MB_DPRINTLN("CifParser> readRecord: %s", str.c_str());
     if (str.isEmpty()) return false;
 
     m_recbuf = str.chomp();
+    MB_DPRINTLN("CifParser> readRecord: %s", m_recbuf.c_str());
 
     if (!m_prevline.isEmpty()) {
         if (m_recbuf.startsWith("loop_"))

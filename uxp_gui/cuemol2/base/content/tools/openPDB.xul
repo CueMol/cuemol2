@@ -23,9 +23,9 @@
     <checkbox id="chk-get-pdb" label="Fetch pdb file" checked="true"/>
     <menulist id="pdb-svr-list">
       <menupopup>
-	<menuitem label="RCSB (files.rcsb.org)/cif.gz" value="http://files.rcsb.org/download/{code}.cif.gz" selected="true"/>
-	<menuitem label="RCSB (files.rcsb.org)/pdb.gz" value="http://files.rcsb.org/download/{code}.pdb.gz" />
-	<menuitem label="EBI (ftp.ebi.ac.uk)/pdb.gz" value="http://ftp.ebi.ac.uk/pub/databases/rcsb/pdb-remediated/data/structures/divided/pdb/{mid}/pdb{code}.ent.gz" />
+	<menuitem label="RCSB (files.rcsb.org)/cif.gz" value="RCSB_CIF" selected="true"/>
+	<menuitem label="RCSB (files.rcsb.org)/pdb.gz" value="RCSB_PDB" />
+	<!-- <menuitem label="EBI (ftp.ebi.ac.uk)/pdb.gz" value="EBI_PDB" />-->
       </menupopup>
     </menulist>
   </groupbox>

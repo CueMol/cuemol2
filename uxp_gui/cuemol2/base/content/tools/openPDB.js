@@ -62,7 +62,17 @@ window.gPdbDlg = {
 
     if (pdbchk) {
       let svr = document.getElementById('pdb-svr-list').value;
-      url_pdb = cuemolui.replacePDBURL(svr, pdbid);
+      if (svr == "RCSB_CIF") {
+        url_pdb = "https://files.rcsb.org/download/"+pdbid+".cif";
+      }
+      else if (svr == "RCSB_PDB") {
+        url_pdb = "https://files.rcsb.org/download/"+pdbid+".pdb";
+      }
+      else {
+        dd("Unknown PDB server: "+svr);
+        return false;
+      }
+      url_pdb = cuemolui.replacePDBURL(url_pdb, pdbid);
       let uri = this.mIoService.newURI(url_pdb, null, null);
   
       dd("Check PDB URL: "+url_pdb);
