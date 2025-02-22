@@ -386,6 +386,7 @@ Qm2Main.prototype.openMapImpl = function (pdbid, map_url, b2fofc, afuncs)
   // dlgdata.target[0].reader = reader;
 
   dlgdata.center = false;
+  dlgdata.redraw = true;
   dlgdata.rendtype = "contour";
   dlgdata.rendname = "contour1";
 
