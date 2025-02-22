@@ -102,6 +102,7 @@ bool CifParser::readRecord(qlib::LineStream &ins)
     if (str.isEmpty()) return false;
 
     m_recbuf = str.chomp();
+    MB_DPRINTLN("CifParser> readRecord: %s", m_recbuf.c_str());
 
     if (!m_prevline.isEmpty()) {
         if (m_recbuf.startsWith("loop_"))

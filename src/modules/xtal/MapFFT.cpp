@@ -46,7 +46,7 @@ MapFFT::MapFFT()
     m_nSG = -1;
 
     m_bUsePhases = true;
-    m_grid = 0.33;
+    m_grid = 1.0/3.0;
     m_mapr = -1.0;
 }
 
@@ -65,6 +65,7 @@ void MapFFT::setParams(double cella, double cellb, double cellc, double alpha,
     m_nSG = nSG;
     m_grid = grid;
     m_mapr = mapr;
+    MB_DPRINTLN("MapFFT> grid=%f, mapr=%f", m_grid, m_mapr);
 }
 
 void MapFFT::setData(int nrefl, int nincr, const float *pbuf, int ind_h, int ind_k, int ind_l,
@@ -159,7 +160,7 @@ void MapFFT::setupSymmOp()
     }
     delete[] pdum;
 
-    MB_DPRINTLN("MTZ> sgname=%s nasym=%d", symname, nsymm);
+    MB_DPRINTLN("MapFFT> sgname=%s nasym=%d", symname, nsymm);
 
     m_nsymm = nsymm;
     m_symm.resize(m_nsymm);
@@ -315,9 +316,10 @@ void MapFFT::checkMapResoln()
 
     if (bauto) {
         // determine from max HKL
-        m_grid = 0.33;
+        if (m_grid < 0.0)
+            m_grid = 1.0 / 3.0;
         m_mapr = maxg / m_grid;
-        LOG_DPRINTLN("MTZ> Auto resoln: resoln=%f, grid=%f", m_mapr, m_grid);
+        LOG_DPRINTLN("MapFFT> Auto resoln: resoln=%f, grid=%f", m_mapr, m_grid);
     }
 }
 

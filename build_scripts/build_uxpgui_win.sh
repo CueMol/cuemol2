@@ -24,6 +24,12 @@ if [ ! -d ${WSDIR}/uxp_gui/platform ]; then
 
     # Apply patch
     patch -p0 < uxp_diff.patch
+
+    # Other-licenses
+    wget --progress=dot:giga -c \
+         https://github.com/CueMol/uxp_release/releases/download/$UXP_VERSION/other_licenses_${UXP_TGZ}
+    rm -rf other_licenses
+    tar xjf other_licenses_${UXP_TGZ}
 fi
 
 
