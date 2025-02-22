@@ -85,70 +85,17 @@ StreamListener.prototype.onStopRequest = function (aRequest, aContext, aStatus)
     dd("onStopReq: strmgr.waitLoadAsync obj is null");
   }
 
-  if (this.mLoadFunc) {
-      this.mLoadFunc(obj);
-      dd("created: "+obj);
-      this.mChannel = null;
-      this.m_window.close();
-
-      if (this.mFuncs) {
-          let funcs = this.mFuncs;
-          window.setTimeout(function () {
-                  if (funcs.length>0)
-                      funcs.shift().call();
-              }, 0);
-      }
-      return;
-  }
-
-  // EDIT TXN START //
-  obj.name = this.mNewObjName;
-  if (this.mLoadPDB)
-    this.m_scene.startUndoTxn("Get PDB");
-  else
-    this.m_scene.startUndoTxn("Get EDS");
-
-  try {
-    this.m_scene.addObject(obj);
-    this.mDlgRes.obj_id = obj.uid;
-    this.mDlgRes.new_obj = true;
-    if (this.mLoadEDS_2fofc) {
-	this.mDlgRes.rendname = "contour1";
-	this.mDlgRes.mapcolor = "#0000FF";
-	this.mDlgRes.mapsigma = 1.0;
-	gQm2Main.doSetupRend(this.m_scene, this.mDlgRes);
-    }
-    else if (this.mLoadEDS_fofc) {
-	this.mDlgRes.rendname = "pos-cont";
-	this.mDlgRes.mapcolor = "#00FF00";
-	this.mDlgRes.mapsigma = 3.0;
-	gQm2Main.doSetupRend(this.m_scene, this.mDlgRes);
-	this.mDlgRes.rendname = "neg-cont";
-	this.mDlgRes.mapcolor = "#FF0000";
-	this.mDlgRes.mapsigma = -3.0;
-	gQm2Main.doSetupRend(this.m_scene, this.mDlgRes);
-    }
-    else {
-	gQm2Main.doSetupRend(this.m_scene, this.mDlgRes);
-    }
-  }
-  catch (e) {
-    dd("Exception occured: "+e);
-    debug.exception(e);
-  }
-  this.m_scene.commitUndoTxn();
-  // EDIT TXN END //
-
+  this.mLoadFunc(obj);
   dd("created: "+obj);
   this.mChannel = null;
   this.m_window.close();
-
+  
   if (this.mFuncs) {
-    let funcs = this.mFuncs;
-    window.setTimeout(function () {
-      if (funcs.length>0)
-	funcs.shift().call();
-    }, 0);
+      let funcs = this.mFuncs;
+      window.setTimeout(function () {
+              if (funcs.length>0)
+                  funcs.shift().call();
+          }, 0);
   }
 };
 
@@ -445,35 +392,36 @@ Qm2Main.prototype.openMapImpl = function (pdbid, map_url, b2fofc, afuncs)
   //////////
   // start asynchronous loading
 
-  var ioService = Cc["@mozilla.org/network/io-service;1"].getService(Ci.nsIIOService);
-  var uri = ioService.newURI(map_url, null, null);
-
-  var tid = smg.loadObjectAsync(reader);
-  listener = new StreamListener(tid);
-  listener.m_scene = scene;
-  listener.m_strmgr = smg;
-  listener.mNewObjName = new_obj_name;
-  listener.mDlgRes = dlgdata;
-  listener.mChannel = ioService.newChannelFromURI(uri);
-  listener.mFuncs = afuncs;
-
-  if (b2fofc) {
-    listener.mLoadEDS_2fofc = true;
+  const loadFunc = (obj) => {
+      obj.name = new_obj_name;
+      scene.startUndoTxn("Get Density Map");
+      try {
+          scene.addObject(obj);
+          dlgdata.obj_id = obj.uid;
+          dlgdata.new_obj = true;
+          if (b2fofc) {
+              dlgdata.rendname = "contour1";
+              dlgdata.mapcolor = "#0000FF";
+              dlgdata.mapsigma = 1.0;
+              this.doSetupRend(scene, dlgdata);
+          }
+          else {
+              dlgdata.rendname = "pos-cont";
+              dlgdata.mapcolor = "#00FF00";
+              dlgdata.mapsigma = 3.0;
+              this.doSetupRend(scene, dlgdata);
+              dlgdata.rendname = "neg-cont";
+              dlgdata.mapcolor = "#FF0000";
+              dlgdata.mapsigma = -3.0;
+              this.doSetupRend(scene, dlgdata);
+          }
+      }
+      catch (e) {
+          dd("Exception occured: "+e);
+          debug.exception(e);
+      }
+      scene.commitUndoTxn();
   }
-  else {
-    listener.mLoadEDS_fofc = true;
-  }
 
-  function onLoad(aDlg) {
-    listener.m_window = aDlg;
-    listener.mChannel.notificationCallbacks = listener;
-    listener.mChannel.asyncOpen(listener, null);
-    return listener;
-  }
-
-  window.openDialog("chrome://cuemol2/content/tools/netpdb-progress-dlg.xul",
-		    "openPDB",
-		    "chrome,modal,resizable=no,dependent,centerscreen",
-		    onLoad);
-
+  startAsyncLoad(pdbid, map_url, reader, loadFunc, afuncs);
 }
