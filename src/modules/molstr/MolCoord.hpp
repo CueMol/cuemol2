@@ -144,6 +144,8 @@ namespace molstr {
     ///
     int appendAtom(MolAtomPtr pAtom);
 
+    bool checkAppendAtom(MolAtomPtr pAtom) const;
+
     int appendAtomScrHelper(MolAtomPtr pAtom, const LString &ch,
 			    ResidIndex resid, const LString &resn);
     int appendAtomScr1(MolAtomPtr pAtom, const LString &ch, int nresid, const LString &resn);

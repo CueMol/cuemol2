@@ -1,0 +1,56 @@
+data_3RXN
+# 
+_entry.id   3RXN 
+# 
+_audit_conform.dict_name       mmcif_pdbx.dic 
+_audit_conform.dict_version    5.280 
+_audit_conform.dict_location   http://mmcif.pdb.org/dictionaries/ascii/mmcif_pdbx.dic 
+# 
+_cell.entry_id           3RXN 
+_cell.length_a           19.993 
+_cell.length_b           41.505 
+_cell.length_c           24.404 
+_cell.angle_alpha        90.00 
+_cell.angle_beta         107.60 
+_cell.angle_gamma        90.00 
+_cell.Z_PDB              2 
+_cell.pdbx_unique_axis   ? 
+# 
+_symmetry.entry_id                         3RXN 
+_symmetry.space_group_name_H-M             'P 1 21 1' 
+_symmetry.pdbx_full_space_group_name_H-M   ? 
+_symmetry.cell_setting                     ? 
+_symmetry.Int_Tables_number                4 
+# 
+loop_
+_atom_site.group_PDB 
+_atom_site.id 
+_atom_site.type_symbol 
+_atom_site.label_atom_id 
+_atom_site.label_alt_id 
+_atom_site.label_comp_id 
+_atom_site.label_asym_id 
+_atom_site.label_entity_id 
+_atom_site.label_seq_id 
+_atom_site.pdbx_PDB_ins_code 
+_atom_site.Cartn_x 
+_atom_site.Cartn_y 
+_atom_site.Cartn_z 
+_atom_site.occupancy 
+_atom_site.B_iso_or_equiv 
+_atom_site.pdbx_formal_charge 
+_atom_site.auth_seq_id 
+_atom_site.auth_comp_id 
+_atom_site.auth_asym_id 
+_atom_site.auth_atom_id 
+_atom_site.pdbx_PDB_model_num 
+HETATM 1   N  N   . MET A 1 . ? -1.526 -15.170 -3.678 1.00 13.80 ? 1  MET ? N   1 
+HETATM 2   C  CA  . MET A 1 . ? -2.678 -14.328 -2.952 1.00 14.60 ? 1  MET ? CA  1 
+HETATM 3   C  C   . MET A 1 . ? -2.157 -12.759 -2.919 1.00 12.20 ? 1  MET ? C   1 
+HETATM 4   O  O   . MET A 1 . ? -1.068 -12.095 -3.017 1.00 12.00 ? 1  MET ? O   1 
+HETATM 5   C  CB  . MET A 1 . ? -3.490 -14.705 -1.503 1.00 16.60 ? 1  MET ? CB  1 
+HETATM 6   C  CG  . MET A 1 . ? -4.015 -13.755 -0.256 1.00 18.70 ? 1  MET ? CG  1 
+HETATM 7   S  SD  . MET A 1 . ? -4.060 -12.356 1.258  1.00 14.60 ? 1  MET ? SD  1 
+HETATM 8   C  CE  . MET A 1 . ? -5.677 -12.659 1.875  1.00 23.00 ? 1  MET ? CE  1 
+HETATM 389 FE FE  . FE  B 2 . ? 2.419  -0.091  9.342  1.00 2.00  ? 1  FE  ? FE  1 
+# 

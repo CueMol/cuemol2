@@ -99,41 +99,12 @@ class IMPORTERS_API MmcifMolReader : public qsys::ObjReader, CifParserClient
     /// create default object for this reader
     virtual qsys::ObjectPtr createDefaultObj() const;
 
-    // virtual int isSupportedFile(const char *fname, qlib::InStream *pins);
-
     //////////////////////////////////////////////
 
     virtual void readDataItem(CifParser &parser);
 
 
   private:
-    /*
-    bool readRecord(qlib::LineStream &ins);
-
-    void readDataLine();
-
-    void appendDataItem();
-
-    void readLoopDataItem();
-
-    int m_nState;
-
-    LString m_strCatName;
-
-    static const int MMCIFMOL_INIT = 0;
-    static const int MMCIFMOL_DATA = 1;
-    static const int MMCIFMOL_LOOPDEF = 2;
-    static const int MMCIFMOL_LOOPDATA = 3;
-
-    void resetLoopDef();
-
-    std::deque<LString> m_loopDefs;
-    std::list<LString> m_values;
-
-    void emulateSingleDataLoop();
-
-    bool m_bLoopDefsOK;
-    */
     void readAtomLine(CifParser &parser);
     void readAnisoULine(CifParser &parser);
 
@@ -158,60 +129,51 @@ class IMPORTERS_API MmcifMolReader : public qsys::ObjReader, CifParserClient
     int m_nAuthAsymID;
     int m_nModelID;
 
-    // std::vector<int> m_recStPos;
-    // std::vector<int> m_recEnPos;
+    LString getAtomID(CifParser &parser, int auth_id, int label_id) {
+        LString atom_id;
+        if (auth_id>=0)
+            atom_id = parser.getToken(auth_id);
+        else if (label_id>=0)
+            atom_id = parser.getToken(label_id);
+        else
+            return "";
 
-    // int findDataItem(const char *key) const {
-    //   std::deque<LString>::const_iterator i = m_loopDefs.begin();
-    //   std::deque<LString>::const_iterator iend = m_loopDefs.end();
-    //   for (int j=0; i!=iend; ++i, ++j) {
-    //     if (i->equals(key))
-    //       return j;
-    //   }
-    //   return -1;
-    // }
+        // remove double-quotations
+        if (atom_id.getAt(0)=='"')
+            atom_id = atom_id.substr(1, atom_id.length()-2);
 
-    // static const int TOK_FIND_START = 0;
-    // static const int TOK_FIND_END = 1;
-    // static const int TOK_FIND_QUOTEND = 2;
-    // static const int TOK_FIND_DQUOTEND = 3;
+        return atom_id;
+    }
 
-    // LString m_prevline;
 
-    // bool tokenizeLine(bool bChk=true);
+    LString getCompID(CifParser &parser, int auth_id, int label_id) {
+        LString comp_id;
+        if (auth_id>=0)
+            comp_id = parser.getToken(auth_id);
+        else if (label_id>=0)
+            comp_id = parser.getToken(label_id);
+        else
+            return "";
 
-    // LString getToken(int n) const {
-    //   LString tok = getRawToken(n);
-    //   if (tok.length()<=2)
-	// return tok;
-    //   if (tok.getAt(0)=='\'')
-    //     return tok.substr(1, tok.length()-2);
-    //   else if (tok.getAt(0)=='\"')
-    //     return tok.substr(1, tok.length()-2);
-    //   else
-    //     return tok;
-    // }
-    
-    // bool isTokAvail(int n) const {
-    //   if (n<0||n>=m_recStPos.size())
-	// return false;
-    //   int ist = m_recStPos[n];
-    //   int ien = m_recEnPos[n];
-    //   if (0<=ist && ist<=m_recbuf.length() &&
-	//   0<=ien && ien<=m_recbuf.length())
-	// return true;
-    //   return false;
-    // }
+        return comp_id;
+    }
 
-    // LString getRawToken(int n) const {
-    //   if (!isTokAvail(n)) {
-    //     error(LString::format("mmCIF data item (%d) not found", n));
-    //     return LString();
-    //   }
-    //   int ist = m_recStPos[n];
-    //   int ien = m_recEnPos[n];
-    //   return m_recbuf.substr(ist, ien-ist);
-    // }
+    LString getAsymID(CifParser &parser, int auth_id, int label_id) {
+        LString asym_id;
+        if (auth_id>=0)
+            asym_id = parser.getToken(auth_id);
+        else if (label_id>=0)
+            asym_id = parser.getToken(label_id);
+        else
+            // ERROR!!
+            return "";
+        // conv unnamed chain ("?") to "_"
+        if (asym_id == "?")
+            asym_id = "_";
+        else if (asym_id.isEmpty())
+            asym_id = "_";
+        return asym_id;
+    }
 
 #ifdef HAVE_UNORDERED_MAP
     typedef std::unordered_map<int, int> AtomIDMap;
@@ -228,46 +190,34 @@ class IMPORTERS_API MmcifMolReader : public qsys::ObjReader, CifParserClient
     int m_nU13;
     int m_nU23;
     
-    // typedef std::unordered_map<quint32, MolResiduePtr> ResidTab;
-    // ResidTab m_residTab;
-
-    // MolResiduePtr findResid(int nSeqID) const;
-
     void readHelixLine(CifParser &parser);
     void readSheetLine(CifParser &parser);
-    int m_nStSeqID;
-    int m_nEnSeqID;
-    int m_nHlxClass;
-
-    //typedef std::deque<std::pair<int,int> > SecStrList;
-    //SecStrList m_rngHelix;
-    //SecStrList m_rng310Helix;
-    //SecStrList m_rngPiHelix;
-    //SecStrList m_rngSheet;
 
     ResidSet m_helix;
     ResidSet m_helix310;
     ResidSet m_helixpi;
     ResidSet m_sheet;
 
-    //void applySecstr(const LString &sec, const LString &sec2, const SecStrList &rng);
     void apply2ndry(const char *ss1, const char *ss2, const ResidSet &data);
 
     void readConnLine(CifParser &parser);
 
     int m_nConnTypeID;
-    int m_nChainID1;
+    int m_nAuthChainID1;
+    int m_nLabelChainID1;
     int m_nSeqID1;
     int m_nInsID1;
     int m_nAtomID1;
     int m_nAltID1;
     int m_nSymmID1;
-    int m_nChainID2;
+    int m_nAuthChainID2;
+    int m_nLabelChainID2;
     int m_nSeqID2;
     int m_nInsID2;
     int m_nAtomID2;
     int m_nAltID2;
     int m_nSymmID2;
+    int m_nHlxClass;
 
     struct Linkage
     {

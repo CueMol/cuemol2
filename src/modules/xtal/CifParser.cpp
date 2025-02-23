@@ -102,7 +102,7 @@ bool CifParser::readRecord(qlib::LineStream &ins)
     if (str.isEmpty()) return false;
 
     m_recbuf = str.chomp();
-    MB_DPRINTLN("CifParser> readRecord: %s", m_recbuf.c_str());
+    // MB_DPRINTLN("CifParser> readRecord: %s", m_recbuf.c_str());
 
     if (!m_prevline.isEmpty()) {
         if (m_recbuf.startsWith("loop_"))
@@ -118,7 +118,7 @@ bool CifParser::readRecord(qlib::LineStream &ins)
 
 void CifParser::readDataLine()
 {
-    MB_DPRINTLN("mmCIF> data line : %s", m_recbuf.c_str());
+    // MB_DPRINTLN("mmCIF> data line : %s", m_recbuf.c_str());
 
     // data line contains 2 elements (name and value)
     m_recStPos.resize(2);
@@ -172,7 +172,7 @@ void CifParser::resetLoopDef()
 
 void CifParser::appendDataItem()
 {
-    MB_DPRINTLN("mmCIF> loop def : %s", m_recbuf.c_str());
+    // MB_DPRINTLN("mmCIF> loop def : %s", m_recbuf.c_str());
 
     int dotpos = m_recbuf.indexOf('.');
     LString catname = m_recbuf.substr(0, dotpos);
