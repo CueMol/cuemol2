@@ -56,6 +56,10 @@ SET(PYMODULE_SRCS
 
 python3_add_library(_cuemol_internal MODULE ${PYMODULE_SRCS} WITH_SOABI)
 
+set_target_properties(_cuemol_internal PROPERTIES
+    INSTALL_RPATH "@loader_path/lib"
+    BUILD_WITH_INSTALL_RPATH TRUE)
+
 target_include_directories(
   _cuemol_internal PRIVATE
   ${CMAKE_SOURCE_DIR}/src
@@ -72,6 +76,7 @@ target_link_libraries(_cuemol_internal PRIVATE
   ${PYMOD_LINK_LIBRARIES}
 )
 
+
 file(TO_NATIVE_PATH "${LIBCUEMOL2_ROOT}/data/sysconfig.xml" DEFAULT_SYSCONFIG_PATH)
 STRING(REPLACE "\\" "\\\\" DEFAULT_SYSCONFIG_PATH ${DEFAULT_SYSCONFIG_PATH})
 message(STATUS "DEFAULT_SYSCONFIG_PATH: ${DEFAULT_SYSCONFIG_PATH}")
@@ -85,6 +90,19 @@ target_compile_definitions(_cuemol_internal PUBLIC LINK_SHARED)
 # endif ()
 
 install(TARGETS _cuemol_internal DESTINATION .)
+
+install(FILES
+  ${LIBCUEMOL2_LIBDIR}/libcuemol2.dylib
+  ${LIBCUEMOL2_LIBDIR}/libboost_atomic.dylib
+  ${LIBCUEMOL2_LIBDIR}/libboost_date_time.dylib
+  ${LIBCUEMOL2_LIBDIR}/libboost_iostreams.dylib
+  ${LIBCUEMOL2_LIBDIR}/libboost_thread.dylib
+  ${LIBCUEMOL2_LIBDIR}/libboost_chrono.dylib
+  ${LIBCUEMOL2_LIBDIR}/libboost_filesystem.dylib
+  ${LIBCUEMOL2_LIBDIR}/libboost_system.dylib
+  ${LIBCUEMOL2_LIBDIR}/libboost_timer.dylib
+  DESTINATION ./lib)
+
 
 # configure_file(
 #   "${PROJECT_SOURCE_DIR}/python/cuemol/__init__.py.in"

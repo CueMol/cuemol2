@@ -12,13 +12,15 @@ wheel.py-api = "cp37"
 [tool.scikit-build]
 build-dir = "build/{wheel_tag}"
 cmake.args = ["-G", "Unix Makefiles"]
-wheel.packages = ["python/cuemol"]
+wheel.packages = ["python/cuemol", "cuemol_internal"]
+# cmake.install-dir = "mypackage"
+wheel.install-dir = "cuemol_internal"
 
 # [tool.scikit-build.cmake.define]
-# LIBCUEMOL2_ROOT = "/opt/cuemol2"
+# LIBCUEMOL2_ROOT =
 
 # [tool.scikit-build.wheel.packages]
-# "example/mypackage" = "python/mypackage"
+# "example/mypackage" =
 
 [tool.black]
 line-length = 88
@@ -30,7 +32,7 @@ ensure_newline_before_comments = true
 force_grid_wrap = 0
 force_single_line = false
 include_trailing_comma = true
-known_first_party = ["pfdock", "pfdock_internal"]
+known_first_party = ["cuemol2", "cuemol2_internal"]
 line_length = 88
 multi_line_output = 3
 use_parentheses = true
