@@ -2,13 +2,12 @@ echo on
 
 REM Common Setup
 if "%1"=="" (
-   echo "arg1 not specified"
+   echo "arg1 (deplibs_dir) not specified"
    exit /b   
 )
-SET BASEDIR=%1
+SET DEPLIBS_DIR=%1
 SET RUNNER_OS=Windows
 SET RUNNER_ARCH=X64
-SET TMPDIR=%BASEDIR%\tmp
 
 SET SCRIPT_DIR=%~dp0
 echo SCRIPT_DIR: %SCRIPT_DIR%
@@ -20,11 +19,11 @@ if "%GITHUB_WORKSPACE%"=="" (
 )
 echo TOP_DIR: %TOP_DIR%
 
+SET TMPDIR=%DEPLIBS_DIR%\tmp
 mkdir %TMPDIR%
 %~d1
 cd %TMPDIR%
 
-SET DEPLIBS_DIR=%BASEDIR%\proj64_deplibs
 echo "DEPLIBS_DIR:" %DEPLIBS_DIR%
 dir %DEPLIBS_DIR%
 
