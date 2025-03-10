@@ -191,6 +191,44 @@ int MolCoord::fromStrAID(const LString &strid) const
 
 ///////////////////////////////////////////////////////////
 
+bool MolCoord::checkAppendAtom(MolAtomPtr pAtom) const
+{
+    const LString &cname = pAtom->getChainName();
+    const LString &rname = pAtom->getResName();
+    const LString &aname = pAtom->getName();
+    ResidIndex nresid = pAtom->getResIndex();
+    
+    if (cname.length()<=0 || aname.length()<=0) {
+        // invalid chain name or atom name
+        return false;
+    }
+    
+    MolChainPtr pCh = getChain(cname);
+    if (pCh.isnull()) {
+        // chain not found --> append OK
+        return true;
+    }
+
+    MolResiduePtr pRes = pCh->getResidue(nresid);
+    if (pRes.isnull()) {
+        // residue not found --> append OK
+        return true;
+    }
+
+    // const LString &pre_rname = pRes->getName();
+    // if (!pre_rname.equals(rname)) {
+    //     // inconsistent residue name
+    //     return false;
+    // }
+    char confid = pAtom->getConfID();
+    if (pRes->getAtomID(aname, confid)>=0) {
+        // atom already exists
+        return false;
+    }
+    
+    return true;
+}
+
 int MolCoord::appendAtom(MolAtomPtr pAtom)
 {
   pAtom->setParentUID(getUID());
@@ -232,13 +270,13 @@ int MolCoord::appendAtom(MolAtomPtr pAtom)
   else {
     const LString &pre_rname = pRes->getName();
     if (!pre_rname.equals(rname)) {
-      MB_DPRINTLN("MolCoord> ERROR: appending an atom (%s %s%s %s) with inconsistent residue (%s)",
+      MB_DPRINTLN("MolCoord> Warning: appending an atom "
+                  "(%s %s%s %s) with inconsistent residue (%s)",
                   cname.c_str(), rname.c_str(),
                   nresid.toString().c_str(), aname.c_str(),
                   pre_rname.c_str());
       // TO DO: throw exception (???)
       // This is often the case, so is not an exception.
-      // return -1;
     }
   }
   

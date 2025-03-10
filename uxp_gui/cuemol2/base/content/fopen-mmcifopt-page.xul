@@ -77,8 +77,8 @@ if (document.getElementById("mmcif_options_tabpanel")) {
     // Alternate conf.
     setProp(rdr, "loadaltconf", !document.getElementById('no_load_altconf').checked);
 
-    // SEGID record
-    setProp(rdr, "loadsegid", document.getElementById('load_segid').checked);
+    // // SEGID record
+    // setProp(rdr, "loadsegid", document.getElementById('load_segid').checked);
   }
   catch (e) {
     dd("Fopen mmCIFOptPage SetProp error: "+e);

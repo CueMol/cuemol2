@@ -114,18 +114,15 @@ bool MolResidue::appendAtom(MolAtomPtr pAtom)
     return false;
   int atomid = pAtom->getID();
 
-  // At first atom is non-bonded
-  //  (bonded atoms will become bonded,
-  //   after the topology to be applied)
-  //pAtom->fBonded=false;
-//  pAtom->resetBondCount();
-  
-  // MB_DPRINTLN("/%s/%s/", m_chain.c_str(), pAtom->getChainName().c_str());
-
   // check consistencies
   MB_ASSERT(pAtom->getParentUID()==m_molID);
-
-  MB_ASSERT(m_name.equals(pAtom->getResName()));
+#ifdef MB_DEBUG
+  // MB_ASSERT(m_name.equals(pAtom->getResName()));
+  if (!m_name.equals(pAtom->getResName())) {
+      MB_DPRINTLN("MolResidue> WARNING: residue name mismatch: %s != %s",
+                  m_name.c_str(), pAtom->getResName().c_str());
+  }
+#endif
   MB_ASSERT(pAtom->getResIndex()==getIndex());
   MB_ASSERT(m_chain.equals(pAtom->getChainName()));
 

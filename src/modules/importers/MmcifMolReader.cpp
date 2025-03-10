@@ -97,100 +97,7 @@ bool MmcifMolReader::read(qlib::InStream &ins)
   applyLink();
 
   LOG_DPRINTLN("mmCIF> read %d atoms", m_nReadAtoms);
-
   return true;
-
-#if 0
-  m_nState = MMCIFMOL_INIT;
-
-  for ( ;; ) {
-    if (!readRecord(lin))
-      break;
-
-    // Skip empty lines
-    if (m_recbuf.isEmpty())
-      continue;
-
-    if (m_recbuf.startsWith("#"))
-      continue;
-
-    switch (m_nState) {
-    case MMCIFMOL_INIT:
-      if (m_recbuf.startsWith("data_")) {
-        m_nState = MMCIFMOL_DATA;
-      }
-      break;
-
-    case MMCIFMOL_DATA:
-      if (m_recbuf.startsWith("_")) {
-        readDataLine();
-      }
-      else if (m_recbuf.startsWith("loop_")) {
-        // new data table begins (end of data line)
-        emulateSingleDataLoop();
-        m_nState = MMCIFMOL_LOOPDEF;
-        resetLoopDef();
-      }
-      break;
-
-    case MMCIFMOL_LOOPDEF:
-      if (m_recbuf.startsWith("_")) {
-        appendDataItem();
-      }
-      else {
-        m_nState = MMCIFMOL_LOOPDATA;
-        readLoopDataItem();
-      }
-      break;
-
-    case MMCIFMOL_LOOPDATA:
-      if (m_recbuf.startsWith("_")) {
-        // new data line begins (end of loop)
-        m_nState = MMCIFMOL_DATA;
-        resetLoopDef();
-        readDataLine();
-      }
-      else if (m_recbuf.startsWith("loop_")) {
-        // new data table begins (end of loop)
-        m_nState = MMCIFMOL_LOOPDEF;
-        resetLoopDef();
-      }
-      else {
-        readLoopDataItem();
-      }
-      break;
-    }
-
-  }
-  
-  if (m_nReadAtoms<=0) {
-    MB_THROW (MmcifFormatException, "invalid mmCIF coordinates format");
-    return false;
-  }
-
-  m_pMol->applyTopology(m_bAutoTopoGen);
-  m_pMol->calcBasePair(3.7, 30);
-
-  if (m_nReadAtoms>MAX_ATOMS_PROTSEC && !m_bLoadSecstr) {
-    LOG_DPRINTLN("mmCIF> Too many atoms are loaded: secstr reassgnment is disabled (--> loaded from the file)!!");
-    m_bLoadSecstr = true;
-  }
-
-  if (m_bLoadSecstr) {
-    apply2ndry("H", "helix", m_helix);
-    apply2ndry("G", "helix", m_helix310);
-    apply2ndry("I", "helix", m_helixpi);
-    apply2ndry("E", "sheet", m_sheet);
-  }
-  else
-    m_pMol->calcProt2ndry(-500.0);
-
-  applyLink();
-
-  LOG_DPRINTLN("mmCIF> read %d atoms", m_nReadAtoms);
-
-  return true;
-#endif
 }
 
 void MmcifMolReader::error(const LString &msg) const
@@ -206,176 +113,6 @@ void MmcifMolReader::warning(const LString &msg) const
                                        m_lineno, m_recbuf.c_str());
   LOG_DPRINTLN("mmCIF> Warning: %s", msg2.c_str());
 }
-
-#if 0
-bool MmcifMolReader::readRecord(qlib::LineStream &ins)
-{
-  LString str = ins.readLine();
-  if (str.isEmpty())
-    return false;
-
-  m_recbuf = str.chomp();
-
-  if (!m_prevline.isEmpty()) {
-    if (m_recbuf.startsWith("loop_"))
-      warning("Unexpected loop_ directive, data lost: \""+m_prevline+"\"");
-    else
-      m_recbuf = m_prevline + " " + m_recbuf;
-    m_prevline = "";
-  }
-
-  // m_recbuf = m_recbuf.toUpperCase();
-  m_lineno = ins.getLineNo();
-  return true;
-}
-
-void MmcifMolReader::readDataLine()
-{
-  MB_DPRINTLN("mmCIF> data line : %s", m_recbuf.c_str());
-
-  // data line contains 2 elements (name and value)
-  m_recStPos.resize( 2 );
-  m_recEnPos.resize( 2 );
-
-  tokenizeLine(false);
-
-  LString name = getToken(0);
-  LString value = "\'\'";
-  if (isTokAvail(1))
-    value = getRawToken(1);
-
-  int dotpos = name.indexOf('.');
-  LString catname = name.substr(0, dotpos);
-  LString item = name.substr(dotpos+1);
-
-  if (m_strCatName.equals(catname)) {
-    // the same category name as the previous line
-    m_loopDefs.push_back( item.trim() );
-    m_values.push_back( value );
-  }
-  else if (m_strCatName.isEmpty()) {
-    // new category name in the file
-    m_loopDefs.push_back( item.trim() );
-    m_values.push_back( value );
-    m_strCatName = catname;
-  }
-  else {
-    // new category line begins
-    emulateSingleDataLoop();
-    m_loopDefs.push_back( item.trim() );
-    m_values.push_back( value );
-    m_strCatName = catname;
-  }
-
-}
-
-void MmcifMolReader::emulateSingleDataLoop()
-{
-  m_recbuf = LString::join(" ", m_values);
-  m_recbuf = m_recbuf.trim();
-  m_values.clear();
-  readLoopDataItem();
-  resetLoopDef();
-}
-
-void MmcifMolReader::resetLoopDef()
-{
-  m_strCatName = "";
-  m_loopDefs.clear();
-  m_recStPos.clear();
-  m_recEnPos.clear();
-  m_bLoopDefsOK = false;
-}
-
-void MmcifMolReader::appendDataItem()
-{
-  MB_DPRINTLN("mmCIF> loop def : %s", m_recbuf.c_str());
-
-  int dotpos = m_recbuf.indexOf('.');
-  LString catname = m_recbuf.substr(0, dotpos);
-  if (m_strCatName.isEmpty()) {
-    m_strCatName = catname;
-  }
-  else if (!m_strCatName.equals(catname)) {
-    // ERROR!!
-    LString msg = LString::format("invalid mmCIF format, catname mismatch (%s!=%s) in loopdef", m_strCatName.c_str(), catname.c_str());
-    error(msg);
-    return;
-  }
-  
-  LString item = m_recbuf.substr(dotpos+1);
-  // remove white spaces
-  m_loopDefs.push_back( item.trim() );
-}
-
-bool MmcifMolReader::tokenizeLine(bool bChk)
-{
-  int nState = TOK_FIND_START;
-  const int nsize = m_recbuf.length();
-  const int nmaxtok = m_recStPos.size();
-  int i, j;
-
-  for (i=0, j=0; i<nsize && j<nmaxtok; ++i) {
-    char c = m_recbuf.getAt(i);
-    if (nState==TOK_FIND_START) {
-      if (c!=' ') {
-        if (c=='\'') {
-          m_recStPos[j] = i;
-          nState = TOK_FIND_QUOTEND;
-        }
-        else if (c=='\"') {
-          m_recStPos[j] = i;
-          nState = TOK_FIND_DQUOTEND;
-        }
-        else {
-          m_recStPos[j] = i;
-          nState = TOK_FIND_END;
-        }
-      }
-    }
-    else if (nState==TOK_FIND_END) {
-      if (c==' ') {
-        m_recEnPos[j] = i;
-        nState = TOK_FIND_START;
-        ++j;
-      }
-    }
-    else if (nState==TOK_FIND_QUOTEND) {
-      if (c=='\'') {
-        m_recEnPos[j] = i+1;
-        nState = TOK_FIND_START;
-        ++j;
-      }
-    }
-    else if (nState==TOK_FIND_DQUOTEND) {
-      if (c=='\"') {
-        m_recEnPos[j] = i+1;
-        nState = TOK_FIND_START;
-        ++j;
-      }
-    }
-  }
-
-  if (nState==TOK_FIND_END) {
-    m_recEnPos[j] = i;
-    ++j;
-  }
-
-  if (!bChk)
-    return true;
-
-  int ndefs = m_loopDefs.size();
-  if (j<ndefs) {
-    // try concat with next line...
-    //LOG_DPRINTLN("Cat: %s, num of token(%d) is smaller than defs(%d): <%s>",
-    //m_strCatName.c_str(), j, ndefs, m_recbuf.c_str());
-    m_prevline = m_recbuf;
-    return false;
-  }
-
-  return true;
-}
-#endif
 
 void MmcifMolReader::readDataItem(CifParser &parser)
 {
@@ -395,30 +132,6 @@ void MmcifMolReader::readDataItem(CifParser &parser)
         readSymmLine(parser);
 }
 
-/*
-void MmcifMolReader::readLoopDataItem()
-{
-  // MB_DPRINTLN("mmCIF> loop line : %s", m_recbuf.c_str());
-
-  if (m_strCatName.equals("_atom_site"))
-    readAtomLine();
-  else if (m_bLoadAnisoU && m_strCatName.equals("_atom_site_anisotrop"))
-    readAnisoULine();
-  //else if (m_bLoadSecstr && m_strCatName.equals("_struct_conf"))
-  else if (m_strCatName.equals("_struct_conf"))
-    readHelixLine();
-  //else if (m_bLoadSecstr && m_strCatName.equals("_struct_sheet_range"))
-  else if (m_strCatName.equals("_struct_sheet_range"))
-    readSheetLine();
-  else if (m_strCatName.equals("_struct_conn"))
-    readConnLine();
-  else if (m_strCatName.equals("_cell"))
-    readCellLine();
-  else if (m_strCatName.equals("_symmetry"))
-    readSymmLine();
-
-}
-*/
 ////////////////////////////////////
 
 ResidIndex MmcifMolReader::getResidIndex(CifParser &parser, int nSeqID, int nInsID)
@@ -508,7 +221,6 @@ void MmcifMolReader::readAtomLine(CifParser &parser)
     return;
 
   int nID;
-
   if (!parser.getToken(m_nID).toInt(&nID)) {
     error("invalid mmCIF format, cannot get atom site id");
     return;
@@ -523,42 +235,22 @@ void MmcifMolReader::readAtomLine(CifParser &parser)
 
   ElemID eleid = ElemSym::str2SymID(parser.getToken(m_nTypeSymbol));
 
-  LString atomname;
-  if (m_nAuthAtomID>=0) {
-    atomname = parser.getToken(m_nAuthAtomID);
+  LString atomname = getAtomID(parser, m_nAuthAtomID, m_nLabelAtomID);
+  if (atomname.isEmpty()) {
+      error("invalid mmCIF format, cannot get atom name (_atom_site.label_atom_id)");
+      return;
   }
-  else if (m_nLabelAtomID>=0) {
-    atomname = parser.getToken(m_nLabelAtomID);
-  }
-  else {
-    error("invalid mmCIF format, cannot get atom name (_atom_site.label_atom_id)");
-    return;
-  }
-  if (atomname.getAt(0)=='"')
-    atomname = atomname.substr(1, atomname.length()-2);
 
-  LString resname1;
-  if (m_nAuthCompID>=0) {
-    resname1 = parser.getToken(m_nAuthCompID);
-  }
-  else if (m_nLabelCompID>=0) {
-    resname1 = parser.getToken(m_nLabelCompID);
-  }
-  else {
-    error("invalid mmCIF format, cannot get residue name (_atom_site.label_comp_id)");
-    return;
+  LString resname1 = getCompID(parser, m_nAuthCompID, m_nLabelCompID);
+  if (resname1.isEmpty()) {
+      error("invalid mmCIF format, cannot get residue name (_atom_site.label_comp_id)");
+      return;
   }
   
   char confid = getConfID(parser, m_nLabelAltID);
   
-  LString chain1;
-  if (m_nAuthAsymID>=0) {
-      chain1 = parser.getToken(m_nAuthAsymID);
-  }
-  else if (m_nLabelAsymID>=0) {
-      chain1 = parser.getToken(m_nLabelAsymID);
-  }
-  else {
+  LString chain1 = getAsymID(parser, m_nAuthAsymID, m_nLabelAsymID);
+  if (chain1.isEmpty()) {
       error("invalid mmCIF format, cannot get chain name (_atom_site.label_asym_id)");
       return;
   }
@@ -632,6 +324,10 @@ void MmcifMolReader::readAtomLine(CifParser &parser)
     }
   }
 
+  if (!m_pMol->checkAppendAtom(pAtom)) {
+    error("invalid mmCIF format, checkAppendAtom() failed!!");
+    return;
+  }
   int naid = m_pMol->appendAtom(pAtom);
   if (naid<0) {
     error("invalid mmCIF format, appendAtom() failed!!");
@@ -640,11 +336,6 @@ void MmcifMolReader::readAtomLine(CifParser &parser)
 
   m_atommap.insert(std::pair<int,int>(nID, naid));
 
-  //if (nSeqID>=0) {
-  //MolResiduePtr pRes = pAtom->getParentResidue();
-  //m_residTab.insert(ResidTab::value_type(nSeqID, pRes));
-  //}
-  
   m_nReadAtoms++;
 }
 
@@ -724,24 +415,19 @@ void MmcifMolReader::readAnisoULine(CifParser &parser)
 void MmcifMolReader::readHelixLine(CifParser &parser)
 {
   if (!parser.isLoopDefsOK()) {
-    // m_recStPos.resize( m_loopDefs.size() );
-    // m_recEnPos.resize( m_loopDefs.size() );
     parser.setupLoopDefs();
 
-    //m_nStSeqID = parser.findDataItem("beg_label_seq_id");
-    //m_nEnSeqID = parser.findDataItem("end_label_seq_id");
-    
     m_nID = parser.findDataItem("conf_type_id");
-    m_nChainID1 = parser.findDataItem("beg_auth_asym_id");
+    m_nAuthChainID1 = parser.findDataItem("beg_auth_asym_id");
+    m_nLabelChainID1 = parser.findDataItem("beg_label_asym_id");
     m_nSeqID1 = parser.findDataItem("beg_auth_seq_id");
     m_nInsID1 = parser.findDataItem("pdbx_beg_PDB_ins_code");
 
-    m_nChainID2 = parser.findDataItem("end_auth_asym_id");
+    m_nAuthChainID2 = parser.findDataItem("end_auth_asym_id");
     m_nSeqID2 = parser.findDataItem("end_auth_seq_id");
     m_nInsID2 = parser.findDataItem("pdbx_end_PDB_ins_code");
 
     m_nHlxClass = parser.findDataItem("pdbx_PDB_helix_class");
-    // m_bLoopDefsOK = true;
     parser.setLoopDefsOK(true);
   }
 
@@ -752,7 +438,7 @@ void MmcifMolReader::readHelixLine(CifParser &parser)
   if (!idstr.equals("HELX_P"))
     return;
 
-  LString ch = parser.getToken(m_nChainID1);
+  LString ch = getAsymID(parser, m_nAuthChainID1, m_nLabelChainID1);
   // lnk.ch2 = parser.getToken(m_nChainID2);
 
   ResidIndex begseq = getResidIndex(parser, m_nSeqID1, m_nInsID1);
@@ -774,32 +460,19 @@ void MmcifMolReader::readHelixLine(CifParser &parser)
     m_helixpi.append(ch, begseq, endseq);
   else
     m_helix.append(ch, begseq, endseq);
-
-  /*
-  if (ntype==5)
-    m_rng310Helix.push_back(SecStrList::value_type(nStSeqID, nEnSeqID));
-  else if (ntype==3)
-    m_rngPiHelix.push_back(SecStrList::value_type(nStSeqID, nEnSeqID));
-  else
-    m_rngHelix.push_back(SecStrList::value_type(nStSeqID, nEnSeqID));
-  */
 }
 
 void MmcifMolReader::readSheetLine(CifParser &parser)
 {
   if (!parser.isLoopDefsOK()) {
-    // m_recStPos.resize( m_loopDefs.size() );
-    // m_recEnPos.resize( m_loopDefs.size() );
     parser.setupLoopDefs();
 
-    //m_nStSeqID = parser.findDataItem("beg_label_seq_id");
-    //m_nEnSeqID = parser.findDataItem("end_label_seq_id");
-    
-    m_nChainID1 = parser.findDataItem("beg_auth_asym_id");
+    m_nAuthChainID1 = parser.findDataItem("beg_auth_asym_id");
+    m_nLabelChainID1 = parser.findDataItem("beg_label_asym_id");
     m_nSeqID1 = parser.findDataItem("beg_auth_seq_id");
     m_nInsID1 = parser.findDataItem("pdbx_beg_PDB_ins_code");
 
-    m_nChainID2 = parser.findDataItem("end_auth_asym_id");
+    m_nAuthChainID2 = parser.findDataItem("end_auth_asym_id");
     m_nSeqID2 = parser.findDataItem("end_auth_seq_id");
     m_nInsID2 = parser.findDataItem("pdbx_end_PDB_ins_code");
 
@@ -810,27 +483,13 @@ void MmcifMolReader::readSheetLine(CifParser &parser)
   if (!parser.tokenizeLine())
     return;
 
-  LString ch = parser.getToken(m_nChainID1);
+  LString ch = getAsymID(parser, m_nAuthChainID1, m_nLabelChainID1);
   // lnk.ch2 = parser.getToken(m_nChainID2);
 
   ResidIndex begseq = getResidIndex(parser, m_nSeqID1, m_nInsID1);
   ResidIndex endseq = getResidIndex(parser, m_nSeqID2, m_nInsID2);
 
   m_sheet.append(ch, begseq, endseq);
-
-  /*
-  int nStSeqID;
-  if (!parser.getToken(m_nStSeqID).toInt(&nStSeqID)) {
-    error("invalid mmCIF format");
-    return;
-  }
-  int nEnSeqID;
-  if (!parser.getToken(m_nEnSeqID).toInt(&nEnSeqID)) {
-    error("invalid mmCIF format");
-    return;
-  }
-
-  m_rngSheet.push_back(SecStrList::value_type(nStSeqID, nEnSeqID));*/
 }
 
 void MmcifMolReader::apply2ndry(const char *ss1, const char *ss2, const ResidSet &data)
@@ -880,14 +539,16 @@ void MmcifMolReader::readConnLine(CifParser &parser)
 
     m_nConnTypeID = parser.findDataItem("conn_type_id");
     
-    m_nChainID1 = parser.findDataItem("ptnr1_auth_asym_id");
+    m_nAuthChainID1 = parser.findDataItem("ptnr1_auth_asym_id");
+    m_nLabelChainID1 = parser.findDataItem("ptnr1_auth_asym_id");
     m_nSeqID1 = parser.findDataItem("ptnr1_auth_seq_id");
     m_nInsID1 = parser.findDataItem("pdbx_ptnr1_PDB_ins_code");
     m_nAtomID1 = parser.findDataItem("ptnr1_label_atom_id");
     m_nAltID1 = parser.findDataItem("pdbx_ptnr1_label_alt_id");
     m_nSymmID1 = parser.findDataItem("ptnr1_symmetry");
 
-    m_nChainID2 = parser.findDataItem("ptnr2_auth_asym_id");
+    m_nAuthChainID2 = parser.findDataItem("ptnr2_auth_asym_id");
+    m_nLabelChainID2 = parser.findDataItem("ptnr2_label_asym_id");
     m_nSeqID2 = parser.findDataItem("ptnr2_auth_seq_id");
     m_nInsID2 = parser.findDataItem("pdbx_ptnr2_PDB_ins_code");
     m_nAtomID2 = parser.findDataItem("ptnr2_label_atom_id");
@@ -907,8 +568,8 @@ void MmcifMolReader::readConnLine(CifParser &parser)
 
   Linkage lnk;
 
-  lnk.ch1 = parser.getToken(m_nChainID1);
-  lnk.ch2 = parser.getToken(m_nChainID2);
+  lnk.ch1 = getAsymID(parser, m_nAuthChainID1, m_nLabelChainID1);
+  lnk.ch2 = getAsymID(parser, m_nAuthChainID2, m_nLabelChainID2);
 
   lnk.resi1 = getResidIndex(parser, m_nSeqID1, m_nInsID1);
   lnk.resi2 = getResidIndex(parser, m_nSeqID2, m_nInsID2);
@@ -926,7 +587,6 @@ void MmcifMolReader::readConnLine(CifParser &parser)
 
 void MmcifMolReader::applyLink()
 {
-    // BOOST_FOREACH (const Linkage &elem, m_linkdat) {
   for (const Linkage &elem: m_linkdat) {
     MolAtomPtr pAtom1, pAtom2;
     pAtom1 = m_pMol->getAtom(elem.ch1, elem.resi1, elem.aname1, elem.alt1);
@@ -947,8 +607,6 @@ void MmcifMolReader::applyLink()
 void MmcifMolReader::readCellLine(CifParser &parser)
 {
   parser.setupLoopDefs();
-  // m_recStPos.resize( m_loopDefs.size() );
-  // m_recEnPos.resize( m_loopDefs.size() );
 
   int nLenAID = parser.findDataItem("length_a");
   if (nLenAID<0) {
@@ -1029,12 +687,8 @@ void MmcifMolReader::readCellLine(CifParser &parser)
 void MmcifMolReader::readSymmLine(CifParser &parser)
 {
   parser.setupLoopDefs();
-  // m_recStPos.resize( m_loopDefs.size() );
-  // m_recEnPos.resize( m_loopDefs.size() );
-  
   int nSgNameID = parser.findDataItem("space_group_name_H-M");
   
-  // m_bLoopDefsOK = true;
   parser.setLoopDefsOK(true);
 
   if (!parser.tokenizeLine())
