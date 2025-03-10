@@ -35,8 +35,8 @@ def test_mmcifmol_invalid1(test_data_path):
     reader.detach()
     natoms = obj.getAtomSize()
     print(f"{natoms=}")
-    # assert natoms == 327
+    assert natoms == 9
 
     nbonds = obj.getBondSize()
     print(f"{nbonds=}")
-    # assert nbonds == 337
+    assert nbonds == 7

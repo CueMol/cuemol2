@@ -1,7 +1,24 @@
 #!/bin/sh
+#
+# build script for libcuemol2 in posix
+# usage: run.sh deplibs_dir host_os host_arch
+#  host_os ... macOS
+#  host_arch ... ARM64 X64
+
+usage()
+{
+    echo "usage: run.sh deplibs_dir"
+    echo "  deplibs_dir: dependent libs/packages dir"
+    exit 1
+}
+
+if [ -z "${1:-}" ]; then
+   usage
+fi
+
 set -eux
 
-BASEDIR=$1
+DEPLIBS_DIR=$1
 RUNNER_OS="Windows"
 RUNNER_ARCH="X64"
 
@@ -34,8 +51,8 @@ fi
 
 
 # Setup external packages
-BUNDLE_DIR=$BASEDIR/proj64_deplibs
-TMPDIR=$BASEDIR/tmp
+BUNDLE_DIR=$DEPLIBS_DIR
+TMPDIR=$DEPLIBS_DIR/tmp
 
 mkdir -p $BUNDLE_DIR
 
@@ -56,13 +73,12 @@ popd
 ###########
 # Build UXP
 cd ${WSDIR}/uxp_gui
-BASEDIR_WD=$(echo $BASEDIR | sed "s|/c/|c:/|g")
+DEPLIBS_DIR_WD=$(echo $DEPLIBS_DIR | sed "s|/c/|c:/|g")
 
-# BUNDLE_DIR=$BASEDIR/proj64_deplibs
-CUEMOL_DIR=$BASEDIR_WD/proj64_deplibs/cuemol2
-BOOST_DIR=$BASEDIR_WD/proj64_deplibs/boost_1_84_0/include/boost-1_84
-DEPLIBS_DIR=$BASEDIR_WD/proj64_deplibs/boost_1_84_0/lib
-BUNDLE_DIR=$BASEDIR_WD/proj64_deplibs
+CUEMOL_DIR=$DEPLIBS_DIR_WD/cuemol2
+BOOST_DIR=$DEPLIBS_DIR_WD/boost_1_84_0/include/boost-1_84
+DEPLIBS_DIR=$DEPLIBS_DIR_WD/boost_1_84_0/lib
+BUNDLE_DIR=$DEPLIBS_DIR_WD
 # DEBUG Flag
 CUEMOL_DEBUG=""
 

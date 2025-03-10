@@ -21,7 +21,7 @@ Please use it *at your own risk*.
 
 For non-profit (academic) organization users,
 CueMol (including both binary and source code) is distributed with no costs,
-under the [GPLv3](http://opensource.org/licenses/GPL-3.0).
+under MIT License.
 
 If you are commercial organization user and want to use CueMol,
 you can use CueMol with no costs as well, but I'm appreciate if you could contact us,
