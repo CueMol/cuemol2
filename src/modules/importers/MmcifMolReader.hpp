@@ -205,16 +205,21 @@ class IMPORTERS_API MmcifMolReader : public qsys::ObjReader, CifParserClient
     int m_nConnTypeID;
     int m_nAuthChainID1;
     int m_nLabelChainID1;
-    int m_nSeqID1;
+    int m_nAuthSeqID1;
+    int m_nLabelSeqID1;
+    int m_nAuthAtomID1;
+    int m_nLabelAtomID1;
     int m_nInsID1;
-    int m_nAtomID1;
     int m_nAltID1;
     int m_nSymmID1;
+
     int m_nAuthChainID2;
     int m_nLabelChainID2;
-    int m_nSeqID2;
+    int m_nAuthSeqID2;
+    int m_nLabelSeqID2;
+    int m_nAuthAtomID2;
+    int m_nLabelAtomID2;
     int m_nInsID2;
-    int m_nAtomID2;
     int m_nAltID2;
     int m_nSymmID2;
     int m_nHlxClass;
@@ -242,6 +247,7 @@ class IMPORTERS_API MmcifMolReader : public qsys::ObjReader, CifParserClient
     void readSymmLine(CifParser &parser);
 
     ResidIndex getResidIndex(CifParser &parser, int nSeqID, int nInsID);
+    ResidIndex getResidIndex(CifParser &parser, int nAuthSeqID, int nLabelSeqID, int nInsID);
     char getConfID(CifParser &parser, int nConfID);
 
     void error(const LString &msg) const;

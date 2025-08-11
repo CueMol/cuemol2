@@ -1,0 +1,59 @@
+data_xxx
+# 
+_entry.id   xxx
+# 
+_audit_conform.dict_name       mmcif_pdbx.dic 
+_audit_conform.dict_version    5.280 
+_audit_conform.dict_location   http://mmcif.pdb.org/dictionaries/ascii/mmcif_pdbx.dic 
+# 
+loop_
+_struct_conn.id 
+_struct_conn.conn_type_id 
+_struct_conn.pdbx_value_order 
+_struct_conn.ptnr1_label_asym_id 
+_struct_conn.ptnr2_label_asym_id 
+_struct_conn.ptnr1_label_comp_id 
+_struct_conn.ptnr2_label_comp_id 
+_struct_conn.ptnr1_label_seq_id 
+_struct_conn.ptnr2_label_seq_id 
+_struct_conn.ptnr1_label_atom_id 
+_struct_conn.ptnr2_label_atom_id 
+_struct_conn.pdbx_ptnr1_PDB_ins_code 
+_struct_conn.pdbx_ptnr2_PDB_ins_code 
+1   covale sing A A MET ALA 1   2   C     N . .
+#
+loop_
+_atom_site.group_PDB 
+_atom_site.type_symbol 
+_atom_site.label_atom_id 
+_atom_site.label_alt_id 
+_atom_site.label_comp_id 
+_atom_site.label_asym_id 
+_atom_site.label_entity_id 
+_atom_site.label_seq_id 
+_atom_site.pdbx_PDB_ins_code 
+_atom_site.auth_seq_id 
+_atom_site.auth_comp_id 
+_atom_site.auth_asym_id 
+_atom_site.auth_atom_id 
+_atom_site.B_iso_or_equiv 
+_atom_site.Cartn_x 
+_atom_site.Cartn_y 
+_atom_site.Cartn_z 
+_atom_site.pdbx_PDB_model_num 
+_atom_site.id 
+_atom_site.occupancy 
+ATOM   N N     . MET A 1 1   . 1   MET A N     50.93 -40.78753    -24.575909     9.088205      1 1    1.0
+ATOM   C CA    . MET A 1 1   . 1   MET A CA    50.38 -41.09253    -25.998337     8.952679      1 2    1.0
+ATOM   C C     . MET A 1 1   . 1   MET A C     55.32 -40.108585   -26.67663      8.003672      1 3    1.0
+ATOM   O O     . MET A 1 1   . 1   MET A O     52.39 -39.35617    -27.580132     8.407211      1 4    1.0
+ATOM   C CB    . MET A 1 1   . 1   MET A CB    50.68 -42.51944    -26.17957      8.409909      1 5    1.0
+ATOM   C CG    . MET A 1 1   . 1   MET A CG    47.51 -43.589363   -25.702065     9.361635      1 6    1.0
+ATOM   S SD    . MET A 1 1   . 1   MET A SD    44.65 -45.19979    -25.547447     8.576805      1 7    1.0
+ATOM   C CE    . MET A 1 1   . 1   MET A CE    42.32 -45.27307    -27.022568     7.541956      1 8    1.0
+ATOM   N N     . ALA A 1 2   . 2   ALA A N     59.69 -40.101013   -26.211506     6.7555714     1 9    1.0
+ATOM   C CA    . ALA A 1 2   . 2   ALA A CA    58.51 -39.20204    -26.77341      5.744199      1 10   1.0
+ATOM   C C     . ALA A 1 2   . 2   ALA A C     61.43 -37.761635   -26.386784     6.064298      1 11   1.0
+ATOM   O O     . ALA A 1 2   . 2   ALA A O     58.39 -37.500313   -25.30389      6.602926      1 12   1.0
+ATOM   C CB    . ALA A 1 2   . 2   ALA A CB    57.44 -39.599396   -26.287971     4.361643      1 13   1.0
+# 

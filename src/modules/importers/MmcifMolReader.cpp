@@ -162,6 +162,32 @@ ResidIndex MmcifMolReader::getResidIndex(CifParser &parser, int nSeqID, int nIns
   return residx;
 }
 
+ResidIndex MmcifMolReader::getResidIndex(CifParser &parser, int nAuthSeqID, int nLabelSeqID, int nInsID)
+{
+    if (nAuthSeqID >= 0 && nLabelSeqID < 0) {
+        // use auth_seq_id
+        return getResidIndex(parser, nAuthSeqID, nInsID);
+    }
+    else if (nAuthSeqID < 0 && nLabelSeqID >= 0) {
+        // use label_seq_id
+        return getResidIndex(parser, nLabelSeqID, nInsID);
+    }
+    else if (nAuthSeqID >= 0 && nLabelSeqID >= 0) {
+        // try auth_seq_id first, then label_seq_id
+        LString resseq = parser.getToken(nAuthSeqID);
+        int itmp;
+        if (resseq.toInt(&itmp)) {
+            return getResidIndex(parser, nAuthSeqID, nInsID);
+        }
+        else {
+            return getResidIndex(parser, nLabelSeqID, nInsID);
+        }
+    }
+
+    MB_THROW (MmcifFormatException, "invalid mmCIF format: both auth_seq_id and label_seq_id are not found in _atom_site");
+    return ResidIndex(); // never reached
+}
+
 char MmcifMolReader::getConfID(CifParser &parser, int nConfID)
 {
   if (nConfID<0)
@@ -420,11 +446,13 @@ void MmcifMolReader::readHelixLine(CifParser &parser)
     m_nID = parser.findDataItem("conf_type_id");
     m_nAuthChainID1 = parser.findDataItem("beg_auth_asym_id");
     m_nLabelChainID1 = parser.findDataItem("beg_label_asym_id");
-    m_nSeqID1 = parser.findDataItem("beg_auth_seq_id");
+    m_nAuthSeqID1 = parser.findDataItem("beg_auth_seq_id");
+    m_nLabelSeqID1 = parser.findDataItem("beg_label_seq_id");
     m_nInsID1 = parser.findDataItem("pdbx_beg_PDB_ins_code");
 
     m_nAuthChainID2 = parser.findDataItem("end_auth_asym_id");
-    m_nSeqID2 = parser.findDataItem("end_auth_seq_id");
+    m_nAuthSeqID2 = parser.findDataItem("end_auth_seq_id");
+    m_nLabelSeqID2 = parser.findDataItem("end_label_seq_id");
     m_nInsID2 = parser.findDataItem("pdbx_end_PDB_ins_code");
 
     m_nHlxClass = parser.findDataItem("pdbx_PDB_helix_class");
@@ -441,8 +469,8 @@ void MmcifMolReader::readHelixLine(CifParser &parser)
   LString ch = getAsymID(parser, m_nAuthChainID1, m_nLabelChainID1);
   // lnk.ch2 = parser.getToken(m_nChainID2);
 
-  ResidIndex begseq = getResidIndex(parser, m_nSeqID1, m_nInsID1);
-  ResidIndex endseq = getResidIndex(parser, m_nSeqID2, m_nInsID2);
+  ResidIndex begseq = getResidIndex(parser, m_nAuthSeqID1, m_nLabelSeqID1, m_nInsID1);
+  ResidIndex endseq = getResidIndex(parser, m_nAuthSeqID2, m_nLabelSeqID2, m_nInsID2);
 
   int ntype;
   if (!parser.getToken(m_nHlxClass).toInt(&ntype)) {
@@ -469,11 +497,13 @@ void MmcifMolReader::readSheetLine(CifParser &parser)
 
     m_nAuthChainID1 = parser.findDataItem("beg_auth_asym_id");
     m_nLabelChainID1 = parser.findDataItem("beg_label_asym_id");
-    m_nSeqID1 = parser.findDataItem("beg_auth_seq_id");
+    m_nAuthSeqID1 = parser.findDataItem("beg_auth_seq_id");
+    m_nLabelSeqID1 = parser.findDataItem("beg_label_seq_id");
     m_nInsID1 = parser.findDataItem("pdbx_beg_PDB_ins_code");
 
     m_nAuthChainID2 = parser.findDataItem("end_auth_asym_id");
-    m_nSeqID2 = parser.findDataItem("end_auth_seq_id");
+    m_nAuthSeqID2 = parser.findDataItem("end_auth_seq_id");
+    m_nLabelSeqID2 = parser.findDataItem("end_label_seq_id");
     m_nInsID2 = parser.findDataItem("pdbx_end_PDB_ins_code");
 
     // m_bLoopDefsOK = true;
@@ -486,8 +516,8 @@ void MmcifMolReader::readSheetLine(CifParser &parser)
   LString ch = getAsymID(parser, m_nAuthChainID1, m_nLabelChainID1);
   // lnk.ch2 = parser.getToken(m_nChainID2);
 
-  ResidIndex begseq = getResidIndex(parser, m_nSeqID1, m_nInsID1);
-  ResidIndex endseq = getResidIndex(parser, m_nSeqID2, m_nInsID2);
+  ResidIndex begseq = getResidIndex(parser, m_nAuthSeqID1, m_nLabelSeqID1, m_nInsID1);
+  ResidIndex endseq = getResidIndex(parser, m_nAuthSeqID2, m_nLabelSeqID2, m_nInsID2);
 
   m_sheet.append(ch, begseq, endseq);
 }
@@ -538,20 +568,32 @@ void MmcifMolReader::readConnLine(CifParser &parser)
     parser.setupLoopDefs();
 
     m_nConnTypeID = parser.findDataItem("conn_type_id");
-    
+     
+   // chain ID (1)
     m_nAuthChainID1 = parser.findDataItem("ptnr1_auth_asym_id");
-    m_nLabelChainID1 = parser.findDataItem("ptnr1_auth_asym_id");
-    m_nSeqID1 = parser.findDataItem("ptnr1_auth_seq_id");
+    m_nLabelChainID1 = parser.findDataItem("ptnr1_label_asym_id");
+    // sequence ID (1)
+    m_nAuthSeqID1 = parser.findDataItem("ptnr1_auth_seq_id");
+    m_nLabelSeqID1 = parser.findDataItem("ptnr1_label_seq_id");
+    // atom ID (1)
+    m_nAuthAtomID1 = parser.findDataItem("ptnr1_auth_atom_id");
+    m_nLabelAtomID1 = parser.findDataItem("ptnr1_label_atom_id");
+    // insertion code (pdbx/1)
     m_nInsID1 = parser.findDataItem("pdbx_ptnr1_PDB_ins_code");
-    m_nAtomID1 = parser.findDataItem("ptnr1_label_atom_id");
     m_nAltID1 = parser.findDataItem("pdbx_ptnr1_label_alt_id");
     m_nSymmID1 = parser.findDataItem("ptnr1_symmetry");
 
+    // chain ID (2)
     m_nAuthChainID2 = parser.findDataItem("ptnr2_auth_asym_id");
     m_nLabelChainID2 = parser.findDataItem("ptnr2_label_asym_id");
-    m_nSeqID2 = parser.findDataItem("ptnr2_auth_seq_id");
+    // sequence ID (2)
+    m_nAuthSeqID2 = parser.findDataItem("ptnr2_auth_seq_id");
+    m_nLabelSeqID2 = parser.findDataItem("ptnr2_label_seq_id");
+    // atom ID (2)
+    m_nAuthAtomID2 = parser.findDataItem("ptnr2_auth_atom_id");
+    m_nLabelAtomID2 = parser.findDataItem("ptnr2_label_atom_id");
+    // insertion code (pdbx/2)
     m_nInsID2 = parser.findDataItem("pdbx_ptnr2_PDB_ins_code");
-    m_nAtomID2 = parser.findDataItem("ptnr2_label_atom_id");
     m_nAltID2 = parser.findDataItem("pdbx_ptnr2_label_alt_id");
     m_nSymmID2 = parser.findDataItem("ptnr2_symmetry");
 
@@ -571,11 +613,13 @@ void MmcifMolReader::readConnLine(CifParser &parser)
   lnk.ch1 = getAsymID(parser, m_nAuthChainID1, m_nLabelChainID1);
   lnk.ch2 = getAsymID(parser, m_nAuthChainID2, m_nLabelChainID2);
 
-  lnk.resi1 = getResidIndex(parser, m_nSeqID1, m_nInsID1);
-  lnk.resi2 = getResidIndex(parser, m_nSeqID2, m_nInsID2);
+  lnk.resi1 = getResidIndex(parser, m_nAuthSeqID1, m_nLabelSeqID1, m_nInsID1);
+  lnk.resi2 = getResidIndex(parser, m_nAuthSeqID2, m_nLabelSeqID2, m_nInsID2);
     
-  lnk.aname1 = parser.getToken(m_nAtomID1);
-  lnk.aname2 = parser.getToken(m_nAtomID2);
+  // lnk.aname1 = parser.getToken(m_nAtomID1);
+  // lnk.aname2 = parser.getToken(m_nAtomID2);
+  lnk.aname1 = getAtomID(parser, m_nAuthAtomID1, m_nLabelAtomID1);
+  lnk.aname2 = getAtomID(parser, m_nAuthAtomID2, m_nLabelAtomID2);
 
   lnk.alt1 = getConfID(parser, m_nAltID1);
   lnk.alt2 = getConfID(parser, m_nAltID2);
