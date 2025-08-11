@@ -334,11 +334,11 @@ panel.makeSelstrByNode = function (aNode)
   var selstr = "";
   switch (aNode.type) {
   case "chain":
-    selstr = "c;"+aNode.chain;
+    selstr = "c;'" + aNode.chain + "'";
     break;
     
   case "resid":
-    selstr = aNode.chain + "." + aNode.index + ".*";
+    selstr = "'" + aNode.chain + "'." + aNode.index + ".*";
     break;
     
   case "atom":
@@ -369,9 +369,9 @@ panel.makeSelstrByTreeSel = function ()
 	node_end.type=="resid" &&
 	node_start.chain==node_end.chain) {
       if (node_start.index==node_end.index)
-        selstr = node_start.chain + "." + node_start.index +".*";
+        selstr = "'" +  node_start.chain + "'." + node_start.index +".*";
       else
-        selstr = node_start.chain + "." + node_start.index + ":" + node_end.index +".*";
+        selstr = "'" + node_start.chain + "'." + node_start.index + ":" + node_end.index +".*";
       selstr_ary.push(selstr);
       continue;
     }

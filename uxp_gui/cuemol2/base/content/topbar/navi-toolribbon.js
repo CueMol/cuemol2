@@ -506,7 +506,7 @@ klass.toggleResidSel = function (obj, atom)
   let rrs = cuemol.createObj("ResidRangeSet");
   rrs.fromSel(obj, obj.sel);
   
-  let addsel = cuemol.makeSel(chname + "." + resindex + ".*");
+  let addsel = cuemol.makeSel("'" + chname + "'." + resindex + ".*");
   if (rrs.contains(resid))
     rrs.remove(obj, addsel);
   else
@@ -563,7 +563,7 @@ klass.extendResidSel = function (obj, atom)
   let rrs = cuemol.createObj("ResidRangeSet");
   rrs.fromSel(obj, obj.sel);
   
-  let addsel = cuemol.makeSel(chname + "." + prev_resindex + ":"+resindex+".*");
+  let addsel = cuemol.makeSel("'" + chname + "'." + prev_resindex + ":"+resindex+".*");
   rrs.append(obj, addsel);
   
   let sel = rrs.toSel(obj);
