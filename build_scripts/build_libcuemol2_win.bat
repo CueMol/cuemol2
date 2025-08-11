@@ -5,9 +5,11 @@ if "%1"=="" (
    echo "arg1 (deplibs_dir) not specified"
    exit /b   
 )
+
 SET DEPLIBS_DIR=%1
-SET RUNNER_OS=Windows
-SET RUNNER_ARCH=X64
+REM SET RUNNER_OS=Windows
+REM SET RUNNER_ARCH=X64
+SET CONFIG=Release
 
 SET SCRIPT_DIR=%~dp0
 echo SCRIPT_DIR: %SCRIPT_DIR%
@@ -48,7 +50,7 @@ cmake -S %TOP_DIR% -B build ^
  -DCGAL_DO_NOT_WARN_ABOUT_CMAKE_BUILD_TYPE=TRUE ^
  -DCGAL_DISABLE_GMP=TRUE ^
  -DCGAL_HEADER_ONLY=TRUE ^
- -DCMAKE_BUILD_TYPE=Release
+ -DCMAKE_BUILD_TYPE=%CONFIG%
 
-cmake --build build --config Release
-cmake --install build --config Release
+cmake --build build --config %CONFIG%
+cmake --install build --config %CONFIG%
