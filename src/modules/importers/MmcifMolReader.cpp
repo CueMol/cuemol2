@@ -582,6 +582,7 @@ void MmcifMolReader::readConnLine(CifParser &parser)
   //LString symm1 = parser.getToken(m_nSymmID1);
   //LString symm2 = parser.getToken(m_nSymmID2);
 
+  lnk.orig_line = parser.getLine();
     m_linkdat.push_back(lnk);
 }
 
@@ -592,10 +593,18 @@ void MmcifMolReader::applyLink()
     pAtom1 = m_pMol->getAtom(elem.ch1, elem.resi1, elem.aname1, elem.alt1);
     pAtom2 = m_pMol->getAtom(elem.ch2, elem.resi2, elem.aname2, elem.alt2);
 
-    if (pAtom1.isnull()||pAtom2.isnull()) {
-      error(LString::format("Apply link failed for %s%s %s <--> %s%s %s",
-                            elem.ch1.c_str(), elem.resi1.toString().c_str(), elem.aname1.c_str(),
-                            elem.ch2.c_str(), elem.resi2.toString().c_str(), elem.aname2.c_str()));
+    if (pAtom1.isnull()) {
+      warning(LString::format("Apply link failed: atom1 %s.%s.%s is null (%s)",
+                              elem.ch1.c_str(), elem.resi1.toString().c_str(), elem.aname1.c_str(),
+                              elem.orig_line.c_str()));
+
+      return;
+    }
+
+    if (pAtom2.isnull()) {
+      warning(LString::format("Apply link failed: atom2 %s.%s.%s is null (%s)",
+                              elem.ch2.c_str(), elem.resi2.toString().c_str(), elem.aname2.c_str(),
+                              elem.orig_line.c_str()));
       return;
     }
 

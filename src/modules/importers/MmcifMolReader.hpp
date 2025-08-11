@@ -230,6 +230,8 @@ class IMPORTERS_API MmcifMolReader : public qsys::ObjReader, CifParserClient
       ResidIndex resi2;
       LString aname2;
       char alt2;
+
+      LString orig_line;
     };
 
     std::deque<Linkage> m_linkdat;
