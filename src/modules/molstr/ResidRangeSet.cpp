@@ -189,7 +189,7 @@ LString ResidRangeSet::toString() const
 
     const LString &chname = iter->first;
     LString srng = toStringResid(*pVal);
-    rval += chname + "." + srng + ".*";
+    rval += "'" + chname + "'." + srng + ".*";
   }
 
   return rval;

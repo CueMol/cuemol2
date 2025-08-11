@@ -549,7 +549,7 @@ if (!("seqpanel" in cuemolui)) {
       let rrs = cuemol.createObj("ResidRangeSet");
       rrs.fromSel(mol, mol.sel);
   
-      let addsel = cuemol.makeSel(res.chainName + "." + res.sindex + ".*");
+      let addsel = cuemol.makeSel("'" + res.chainName + "'." + res.sindex + ".*");
       if (rrs.contains(res))
         rrs.remove(mol, addsel);
       else
@@ -816,7 +816,7 @@ if (!("seqpanel" in cuemolui)) {
       let rrs = cuemol.createObj("ResidRangeSet");
       rrs.fromSel(mol, mol.sel);
   
-      let selstr = res.res.chainName + "." +
+      let selstr = "'" + res.res.chainName + "'." +
         res.res.sindex + ":" + this.mPrevRes.res.sindex +
           ".*";
       dd("seqpanel> rangeSelect selstr="+selstr);
