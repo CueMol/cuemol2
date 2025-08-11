@@ -13,11 +13,10 @@ wheel.py-api = "cp37"
 logging.level = "INFO"
 build-dir = "build/{wheel_tag}"
 cmake.args = ["-G", "Unix Makefiles"]
+cmake.define = {"CMAKE_MAKE_PROGRAM" = "make"}
 wheel.packages = ["python/cuemol", "cuemol_internal"]
 # cmake.install-dir = "mypackage"
 wheel.install-dir = "cuemol_internal"
-ninja.version = ">=1.5"
-ninja.make-fallback = true
 
 # [tool.scikit-build.cmake.define]
 # LIBCUEMOL2_ROOT =
