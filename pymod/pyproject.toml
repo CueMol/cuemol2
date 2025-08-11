@@ -3,7 +3,7 @@ name = "cuemol2"
 version = "0.0.1"
 
 [build-system]
-requires = ["scikit-build-core"]
+requires = ["scikit-build-core==0.11.0"]
 build-backend = "scikit_build_core.build"
 
 [tool.scikit-build-core]
