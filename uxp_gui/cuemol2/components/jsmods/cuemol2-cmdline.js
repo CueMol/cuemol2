@@ -4,6 +4,8 @@ Components.utils.import("resource://gre/modules/XPCOMUtils.jsm");
 
 function myAppHandler() {}
 
+dump(">>>>>>>>>> cuemol2-cmdline.js called!! <<<<<<<<<<\n");
+
 myAppHandler.prototype =
 {
   classID: Components.ID("{4349a533-9aa1-4760-85ef-f537cc69d13c}"),
@@ -27,7 +29,7 @@ myAppHandler.prototype =
 
   handle : function clh_handle(cmdLine)
   {
-    // dump(">>>>>>>>>> nsICLH handle() called!! <<<<<<<<<<\n");
+    dump(">>>>>>>>>> nsICLH handle() called!! <<<<<<<<<<\n");
     //cmdLine.preventDefault = true;
 
     var singletonWindowType = "cuemol2";
