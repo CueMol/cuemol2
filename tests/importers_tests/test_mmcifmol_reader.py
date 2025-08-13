@@ -40,3 +40,22 @@ def test_mmcifmol_invalid1(test_data_path):
     nbonds = obj.getBondSize()
     print(f"{nbonds=}")
     assert nbonds == 7
+
+def test_mmcifmol_label_conn(test_data_path):
+    svc = cuemol.getService("StreamManager")
+    reader = svc.createHandler("mmcif", 0)
+    print(f"{reader=}")
+
+    test_sdf_file = test_data_path / "label_conn.mmcif"
+    reader.setPath(str(test_sdf_file))
+    obj = reader.createDefaultObj()
+    reader.attach(obj)
+    reader.read()
+    reader.detach()
+    natoms = obj.getAtomSize()
+    print(f"{natoms=}")
+    assert natoms == 13
+
+    nbonds = obj.getBondSize()
+    print(f"{nbonds=}")
+    assert nbonds == 12

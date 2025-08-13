@@ -24,7 +24,7 @@ jobs:
         lfs: true
 
     - name: Run sccache-cache
-      uses: mozilla-actions/sccache-action@v0.0.4
+      uses: mozilla-actions/sccache-action@v0.0.9
 
     - name: Setup Python
       uses: actions/setup-python@v5

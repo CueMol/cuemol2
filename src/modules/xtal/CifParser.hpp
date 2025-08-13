@@ -83,6 +83,8 @@ public:
             return tok;
     }
 
+    LString getLine() const { return m_recbuf; }
+
 private:
     bool readRecord(qlib::LineStream &ins);
 

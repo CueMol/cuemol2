@@ -5,18 +5,42 @@
 ///////////////////////////////////////////////////////
 // Drag and drop operations
 
+/// try to read the file using the specified reader
+// TODO: impl more efficient way to check if the file can be read
+Qm2Main.prototype.tryReadFile = function(filename, reader_name)
+{
+  try {
+    let reader = this.mStrMgr.createHandler(reader_name, 0);
+    reader.setPath(filename);
+    let gzpos = filename.lastIndexOf(".gz");
+    if (gzpos == filename.length-3)
+      reader.compress = "gzip";
+    let newobj = reader.createDefaultObj();
+    reader.attach(newobj);
+    reader.read();
+    reader.detach();
+  }
+  catch (e) {
+    dd("tryReadFile: failed to read file "+filename+" with reader "+reader_name);
+    debug.exception(e);
+    return false;
+  }
+  return true;
+}
+
 /// find matching io handler (names) for the file name (filename) and returns the index
 Qm2Main.prototype.findMatchIOHandler = function(filename, names)
 {
-  // TO DO: check the content of the file is actually readable
-
   for (let i=0; i<names.length; ++i) {
     let ext = names[i].fext;
     let c = util.splitFileName3(filename, ext);
     if (c>=0) {
       // matching handler is found
       // alert("findMatch: matched "+ext);
-      return i;
+
+      // try to read with the reader
+      if (this.tryReadFile(filename, names[i].name))
+        return i;
     }
   }
 
@@ -139,14 +163,15 @@ Qm2Main.prototype.onDrop = function (aEvent)
 Qm2Main.prototype.openNsFileImpl = function (aNsFile, names, sc_names)
 {
   let newobj_name = aNsFile.leafName;
+  let path_name = aNsFile.path;
   dd("  leafName: "+ newobj_name);
 
   // check Object readers
-  findex = this.findMatchIOHandler(newobj_name, names);
+  findex = this.findMatchIOHandler(path_name, names);
   if (findex>=0) {
     let reader_name = names[findex].name;
     dd("  suggested reader name: "+ reader_name);
-    this.fileOpenHelper1(aNsFile.path, newobj_name, reader_name);
+    this.fileOpenHelper1(path_name, newobj_name, reader_name);
     return true;
   }
 
@@ -155,14 +180,14 @@ Qm2Main.prototype.openNsFileImpl = function (aNsFile, names, sc_names)
   if (findex>=0) {
     let reader_name = sc_names[findex].name;
     dd("  suggested reader name: "+ reader_name);
-    this.openSceneImpl(aNsFile.path, reader_name);
+    this.openSceneImpl(path_name, reader_name);
     return true;
   }
 
   // check script handlers
   let c = util.splitFileName3(newobj_name, ".js");
   if (c>=0) {
-    this.execIntJS(aNsFile.path);
+    this.execIntJS(path_name);
     return true;
   }
 
@@ -173,7 +198,7 @@ Qm2Main.prototype.openNsFileImpl = function (aNsFile, names, sc_names)
       if (pybr) {
 	let scene = this.mMainWnd.currentSceneW;
 	let vwid = this.mMainWnd.getCurrentViewID();
-	pybr.runFile2(aNsFile.path, scene.uid, vwid);
+	pybr.runFile2(path_name, scene.uid, vwid);
       }
     }
     catch (e) {}

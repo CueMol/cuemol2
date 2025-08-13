@@ -13,32 +13,18 @@ const pref = require("preferences-service");
 const styleutil = require("styleutil");
 
 if (cuemol.xpc.isInitialized()) {
-
-  ////////////////////////////////
-  // secondary window
-
-  /*
-  let bCmdLineOK = false;
-  try {
-    var cmdLine = window.arguments[0].QueryInterface(Ci.nsICommandLine);
-    if (cmdLine) {
-      // request for second instance with cmdline param from OS/Shell
-      cuemol.cmdLineFiles = convCmdLineFiles(cmdLine);
-      bCmdLineOK = true;
+    //
+    // secondary window
+    //
+    dd("Opening secondary window...");
+    if (window.arguments.length==2) {
+        // request for new window from UI
+        if (window.arguments[0]>=0)
+            new_scid = window.arguments[0];
+        if (window.arguments[1]>=0)
+            new_vwid = window.arguments[1];
+        dd("secondary win sc="+new_scid+", vw="+new_scid);
     }
-  }
-  catch (e) {}
-   */
-
-  if (/*!bCmdLineOK &&*/ window.arguments.length==2) {
-    // request for new window from UI
-    if (window.arguments[0]>=0)
-      new_scid = window.arguments[0];
-    if (window.arguments[1]>=0)
-      new_vwid = window.arguments[1];
-    dd("secondary win sc="+new_scid+", vw="+new_scid);
-  }
-
 }
 else {
 
