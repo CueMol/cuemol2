@@ -53,6 +53,8 @@ namespace sysdep {
     OglProgramObject *m_pEdgePO;
     OglProgramObject *m_pSilhPO;
 
+    OglProgramObject *m_pLinewPO;
+
     //////////
 
   public:

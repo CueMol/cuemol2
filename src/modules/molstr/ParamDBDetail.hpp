@@ -19,7 +19,7 @@ namespace molstr {
     };
 
     struct less_bond 
-      : std::binary_function <BondTag, BondTag, bool>
+    // : std::binary_function <BondTag, BondTag, bool>
     {
   
       bool operator() (const BondTag &x,
@@ -60,7 +60,7 @@ namespace molstr {
     };
 
     struct angl_less_tag 
-      : std::binary_function <AnglTag, AnglTag, bool>
+    // : std::binary_function <AnglTag, AnglTag, bool>
     {
   
       bool operator() (const AnglTag &x,
@@ -111,7 +111,7 @@ namespace molstr {
     };
 
     struct less_dihe 
-      : std::binary_function <DiheTag, DiheTag, bool>
+    // : std::binary_function <DiheTag, DiheTag, bool>
     {
   
       bool operator() (const DiheTag &x,

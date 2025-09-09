@@ -73,6 +73,8 @@ SET(GLSL_SHADER_FILES
   silh_frag.glsl
   es2_default_vert.glsl
   es2_default_frag.glsl
+  linew_vert.glsl
+  linew_frag.glsl
 )
 
 #####################

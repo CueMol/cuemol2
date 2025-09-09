@@ -104,8 +104,6 @@ void OglDisplayContext::init()
     return;
   }
 
-  //glFogi(GL_FOG_COORDINATE_SOURCE, GL_FRAGMENT_DEPTH);
-  //glFogi(GL_FOG_COORDINATE_SOURCE, GL_FOG_COORDINATE);
   m_pDefPO->loadShader("vert",
                        "%%CONFDIR%%/data/shaders/default_vert.glsl",
                        GL_VERTEX_SHADER);
@@ -162,6 +160,27 @@ void OglDisplayContext::init()
   m_pSilhPO->setUniformF("edge_width", 0.001);
   m_pSilhPO->setUniformF("edge_color", 0,0,0,1);
   m_pSilhPO->disable();
+
+  //////////
+
+  // m_pLinewPO = createProgramObject("linew");
+  // if (m_pLinewPO==NULL) {
+  //   LOG_DPRINTLN("Failed to load Linew ProgramObject");
+  //   return;
+  // }
+  // m_pLinewPO->loadShader("vert",
+  //                       "%%CONFDIR%%/data/shaders/linew_vert.glsl",
+  //                      GL_VERTEX_SHADER);
+  // m_pLinewPO->loadShader("frag",
+  //                       "%%CONFDIR%%/data/shaders/linew_frag.glsl",
+  //                       GL_FRAGMENT_SHADER);
+  // m_pLinewPO->link();
+  
+  // m_pLinewPO->enable();
+  // m_pLinewPO->setUniformF("frag_alpha", 1.0);
+  // m_pLinewPO->setUniformF("edge_width", 0.001);
+  // m_pLinewPO->setUniformF("edge_color", 0,0,0,1);
+  // m_pLinewPO->disable();
 
 #endif
 }

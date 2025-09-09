@@ -139,7 +139,6 @@ bool OglProgramObject::init()
 
   CLR_GLERROR();
 
-  // m_hPO = glCreateProgramObjectARB();
   m_hPO = glCreateProgram();
   errc = glGetError();
 

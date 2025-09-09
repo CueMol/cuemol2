@@ -20,6 +20,11 @@
 #include <gfx/SolidColor.hpp>
 #include <qsys/Scene.hpp>
 
+#include <gfx/DrawAttrArray.hpp>
+#include <sysdep/OglDisplayContext.hpp>
+#include <sysdep/OglProgramObject.hpp>
+#include <sysdep/GLSLLineHelper.hpp>
+
 using namespace molstr;
 using qlib::Vector4D;
 using gfx::ColorPtr;
@@ -37,11 +42,13 @@ SimpleRenderer::SimpleRenderer()
   m_dCvScl2 = 0.05;
 
   m_pVBO = NULL;
+  m_pGlslLine = MB_NEW sysdep::GLSLLineHelper();
 }
 
 SimpleRenderer::~SimpleRenderer()
 {
-  MB_DPRINTLN("SimpleRenderer destructed %p", this);
+    delete m_pGlslLine;
+    MB_DPRINTLN("SimpleRenderer destructed %p", this);
 }
 
 const char *SimpleRenderer::getTypeName() const
@@ -212,16 +219,27 @@ void SimpleRenderer::display(DisplayContext *pdc)
   }
 
   // new rendering routine using VBO (DrawElem)
+  m_pGlslLine->initShader(this);
 
-  if (m_pVBO==NULL) {
+  // if (m_pVBO==NULL) {
+  //   renderVBO();
+  //   if (m_pVBO==NULL)
+  //     return; // Error, Cannot draw anything (ignore)
+  // }
+  if (!m_pGlslLine->isValid()) {
     renderVBO();
-    if (m_pVBO==NULL)
+    if (!m_pGlslLine->isValid())
       return; // Error, Cannot draw anything (ignore)
   }
   
   preRender(pdc);
-  m_pVBO->setLineWidth(m_lw);
-  pdc->drawElem(*m_pVBO);
+
+  // m_pVBO->setLineWidth(m_lw);
+  // pdc->drawElem(*m_pVBO);
+
+  m_pGlslLine->setLineWidth(m_lw);
+  m_pGlslLine->draw(pdc, getSceneID());
+
   postRender(pdc);
 #else
   super_t::display(pdc);
@@ -242,10 +260,6 @@ void SimpleRenderer::renderVBO()
   pMol->getColSchm()->start(pMol, this);
 
   std::deque<int> isolated_atoms;
-  
-  // IntBondArray sbonds;
-  // IntMBondArray mbonds;
-  // IntAtomArray atoms;
   
   {
     // build bond data structure/estimate VBO size
@@ -392,14 +406,21 @@ void SimpleRenderer::renderVBO()
   getColSchm()->end();
   pMol->getColSchm()->end();
 
-  if (m_pVBO!=NULL)
-    delete m_pVBO;
+  // if (m_pVBO!=NULL)
+  //   delete m_pVBO;
     
-  m_pVBO = MB_NEW gfx::DrawElemVC();
-  m_pVBO->alloc(nva);
-  m_pVBO->setDrawMode(gfx::DrawElemVC::DRAW_LINES);
-  MB_DPRINTLN("SimpleRenderer> %d elems VBO created", nva);
+  // m_pVBO = MB_NEW gfx::DrawElemVC();
+  // m_pVBO->alloc(nva);
+  // m_pVBO->setDrawMode(gfx::DrawElemVC::DRAW_LINES);
   
+  /////
+
+  m_pGlslLine->invalidate();
+  m_pGlslLine->alloc(nva);
+
+  /////
+
+  MB_DPRINTLN("SimpleRenderer> %d elems VBO created", nva);
   updateVBO(true);
 }
 
@@ -419,6 +440,8 @@ void SimpleRenderer::updateVBO(bool bUpdateColor)
   Vector4D midpos, pos1, pos2;
   quint32 aid1, aid2;
 
+  auto &data = *m_pGlslLine;
+
   // Single bonds
   for (i=0; i<nbons; ++i) {
     aid1 = m_sbonds[i].aid1;
@@ -433,21 +456,21 @@ void SimpleRenderer::updateVBO(bool bUpdateColor)
 
     switch (m_sbonds[i].itype) {
     case IBON_1C_1V:
-      m_pVBO->vertex(j, pos1);
+      data.vertex(j, pos1);
       ++j;
-      m_pVBO->vertex(j, pos2);
+      data.vertex(j, pos2);
       ++j;
       break;
 
     case IBON_2C_1V: {
       midpos = (pos1+pos2).divide(2.0);
-      m_pVBO->vertex(j, pos1);
+      data.vertex(j, pos1);
       ++j;
-      m_pVBO->vertex(j, midpos);
+      data.vertex(j, midpos);
       ++j;
-      m_pVBO->vertex(j, pos2);
+      data.vertex(j, pos2);
       ++j;
-      m_pVBO->vertex(j, midpos);
+      data.vertex(j, midpos);
       ++j;
       break;
     }
@@ -472,82 +495,82 @@ void SimpleRenderer::updateVBO(bool bUpdateColor)
 
     switch (m_mbonds[i].itype) {
     case IBON_1C_2V: {
-      m_pVBO->vertex(j, pos1 + dvd.scale(m_dCvScl1));
+      data.vertex(j, pos1 + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->vertex(j, pos2 + dvd.scale(m_dCvScl1));
+      data.vertex(j, pos2 + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->vertex(j, pos1 + dvd.scale(m_dCvScl2));
+      data.vertex(j, pos1 + dvd.scale(m_dCvScl2));
       ++j;
-      m_pVBO->vertex(j, pos2 + dvd.scale(m_dCvScl2));
+      data.vertex(j, pos2 + dvd.scale(m_dCvScl2));
       ++j;
       break;
     }
     case IBON_2C_2V: {
       midpos = (pos1+pos2).divide(2.0);
 
-      m_pVBO->vertex(j, pos1 + dvd.scale(m_dCvScl1));
+      data.vertex(j, pos1 + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->vertex(j, midpos + dvd.scale(m_dCvScl1));
+      data.vertex(j, midpos + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->vertex(j, pos1 + dvd.scale(m_dCvScl2));
+      data.vertex(j, pos1 + dvd.scale(m_dCvScl2));
       ++j;
-      m_pVBO->vertex(j, midpos + dvd.scale(m_dCvScl2));
+      data.vertex(j, midpos + dvd.scale(m_dCvScl2));
       ++j;
 
-      m_pVBO->vertex(j, pos2 + dvd.scale(m_dCvScl1));
+      data.vertex(j, pos2 + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->vertex(j, midpos + dvd.scale(m_dCvScl1));
+      data.vertex(j, midpos + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->vertex(j, pos2 + dvd.scale(m_dCvScl2));
+      data.vertex(j, pos2 + dvd.scale(m_dCvScl2));
       ++j;
-      m_pVBO->vertex(j, midpos + dvd.scale(m_dCvScl2));
+      data.vertex(j, midpos + dvd.scale(m_dCvScl2));
       ++j;
 
       break;
     }
 
     case IBON_1C_3V: {
-      m_pVBO->vertex(j, pos1);
+      data.vertex(j, pos1);
       ++j;
-      m_pVBO->vertex(j, pos2);
+      data.vertex(j, pos2);
       ++j;
-      m_pVBO->vertex(j, pos1 + dvd.scale(m_dCvScl1));
+      data.vertex(j, pos1 + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->vertex(j, pos2 + dvd.scale(m_dCvScl1));
+      data.vertex(j, pos2 + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->vertex(j, pos1 + dvd.scale(-m_dCvScl1));
+      data.vertex(j, pos1 + dvd.scale(-m_dCvScl1));
       ++j;
-      m_pVBO->vertex(j, pos2 + dvd.scale(-m_dCvScl1));
+      data.vertex(j, pos2 + dvd.scale(-m_dCvScl1));
       ++j;
       break;
     }
     case IBON_2C_3V: {
       midpos = (pos1+pos2).divide(2.0);
 
-      m_pVBO->vertex(j, pos1);
+      data.vertex(j, pos1);
       ++j;
-      m_pVBO->vertex(j, midpos);
+      data.vertex(j, midpos);
       ++j;
-      m_pVBO->vertex(j, pos1 + dvd.scale(m_dCvScl1));
+      data.vertex(j, pos1 + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->vertex(j, midpos + dvd.scale(m_dCvScl1));
+      data.vertex(j, midpos + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->vertex(j, pos1 + dvd.scale(-m_dCvScl1));
+      data.vertex(j, pos1 + dvd.scale(-m_dCvScl1));
       ++j;
-      m_pVBO->vertex(j, midpos + dvd.scale(-m_dCvScl1));
+      data.vertex(j, midpos + dvd.scale(-m_dCvScl1));
       ++j;
 
-      m_pVBO->vertex(j, pos2);
+      data.vertex(j, pos2);
       ++j;
-      m_pVBO->vertex(j, midpos);
+      data.vertex(j, midpos);
       ++j;
-      m_pVBO->vertex(j, pos2 + dvd.scale(m_dCvScl1));
+      data.vertex(j, pos2 + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->vertex(j, midpos + dvd.scale(m_dCvScl1));
+      data.vertex(j, midpos + dvd.scale(m_dCvScl1));
       ++j;
-      m_pVBO->vertex(j, pos2 + dvd.scale(-m_dCvScl1));
+      data.vertex(j, pos2 + dvd.scale(-m_dCvScl1));
       ++j;
-      m_pVBO->vertex(j, midpos + dvd.scale(-m_dCvScl1));
+      data.vertex(j, midpos + dvd.scale(-m_dCvScl1));
       ++j;
 
       break;
@@ -572,17 +595,17 @@ void SimpleRenderer::updateVBO(bool bUpdateColor)
     MolAtomPtr pA1 = pMol->getAtom(aid1);
     Vector4D pos1 = pA1->getPos();
 
-    m_pVBO->vertex(j, pos1-xdel);
+    data.vertex(j, pos1-xdel);
     ++j;
-    m_pVBO->vertex(j, pos1+xdel);
+    data.vertex(j, pos1+xdel);
     ++j;
-    m_pVBO->vertex(j, pos1-ydel);
+    data.vertex(j, pos1-ydel);
     ++j;
-    m_pVBO->vertex(j, pos1+ydel);
+    data.vertex(j, pos1+ydel);
     ++j;
-    m_pVBO->vertex(j, pos1-zdel);
+    data.vertex(j, pos1-zdel);
     ++j;
-    m_pVBO->vertex(j, pos1+zdel);
+    data.vertex(j, pos1+zdel);
     ++j;
   }
 
@@ -596,17 +619,17 @@ void SimpleRenderer::updateVBO(bool bUpdateColor)
       pA1 = pMol->getAtom(aid1);
       cc1 = ColSchmHolder::getColor(pA1)->getCode();
       
-      m_pVBO->color(j, cc1);
+      data.color(j, cc1);
       ++j;
-      m_pVBO->color(j, cc1);
+      data.color(j, cc1);
       ++j;
 
       if (m_sbonds[i].itype==IBON_2C_1V) {
         pA2 = pMol->getAtom(aid2);
         cc2 = ColSchmHolder::getColor(pA2)->getCode();
-        m_pVBO->color(j, cc2);
+        data.color(j, cc2);
         ++j;
-        m_pVBO->color(j, cc2);
+        data.color(j, cc2);
         ++j;
       }
     }
@@ -623,22 +646,22 @@ void SimpleRenderer::updateVBO(bool bUpdateColor)
       switch (m_mbonds[i].itype) {
       case IBON_1C_2V: {
         for (int k=0; k<4; ++k, ++j)
-          m_pVBO->color(j, cc1);
+          data.color(j, cc1);
         break;
       }
       case IBON_2C_2V: {
         pA2 = pMol->getAtom(aid2);
         cc2 = ColSchmHolder::getColor(pA2)->getCode();
         for (int k=0; k<4; ++k, ++j)
-          m_pVBO->color(j, cc1);
+          data.color(j, cc1);
         for (int k=0; k<4; ++k, ++j)
-          m_pVBO->color(j, cc2);
+          data.color(j, cc2);
         break;
       }
 
       case IBON_1C_3V: {
         for (int k=0; k<6; ++k, ++j)
-          m_pVBO->color(j, cc1);
+          data.color(j, cc1);
         break;
       }
       case IBON_2C_3V: {
@@ -646,9 +669,9 @@ void SimpleRenderer::updateVBO(bool bUpdateColor)
         cc2 = ColSchmHolder::getColor(pA2)->getCode();
         
         for (int k=0; k<6; ++k, ++j)
-          m_pVBO->color(j, cc1);
+          data.color(j, cc1);
         for (int k=0; k<6; ++k, ++j)
-          m_pVBO->color(j, cc2);
+          data.color(j, cc2);
         break;
       }
       default:
@@ -665,7 +688,7 @@ void SimpleRenderer::updateVBO(bool bUpdateColor)
       cc1 = ColSchmHolder::getColor(pA1)->getCode();
       
       for (int k=0; k<6; ++k,++j)
-        m_pVBO->color(j, cc1);
+        data.color(j, cc1);
     }
 
   }
@@ -682,6 +705,8 @@ void SimpleRenderer::invalidateDisplayCache()
     m_sbonds.clear();
     m_mbonds.clear();
     m_atoms.clear();
+
+    m_pGlslLine->invalidate();
   }
 #endif
 
