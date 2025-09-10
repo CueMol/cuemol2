@@ -705,9 +705,9 @@ void SimpleRenderer::invalidateDisplayCache()
     m_sbonds.clear();
     m_mbonds.clear();
     m_atoms.clear();
-
-    m_pGlslLine->invalidate();
   }
+
+  m_pGlslLine->invalidate();
 #endif
 
   super_t::invalidateDisplayCache();

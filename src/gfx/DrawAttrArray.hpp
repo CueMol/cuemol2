@@ -36,10 +36,11 @@ namespace gfx {
     }
 
     inline void setAttrInfo(int ind, int al, int ae, int at, int pos) {
-      m_attrs[ind].nAttrLoc = al;
-      m_attrs[ind].nAttrElems = ae;
-      m_attrs[ind].iAttrType = at;
-      m_attrs[ind].nStartPos = pos;
+        MB_ASSERT(ind>=0 && ind<m_attrs.size());
+        m_attrs[ind].nAttrLoc = al;
+        m_attrs[ind].nAttrElems = ae;
+        m_attrs[ind].iAttrType = at;
+        m_attrs[ind].nStartPos = pos;
     }
 
     inline int getAttrLoc(int ind) const {

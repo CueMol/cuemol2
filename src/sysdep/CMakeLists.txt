@@ -75,6 +75,7 @@ SET(GLSL_SHADER_FILES
   es2_default_frag.glsl
   linew_vert.glsl
   linew_frag.glsl
+  linew_geom.glsl
 )
 
 #####################

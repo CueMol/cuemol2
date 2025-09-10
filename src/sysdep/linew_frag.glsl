@@ -21,4 +21,5 @@ void main(void)
     color = vec4(fogmixed, alpha);
 
     gl_FragColor = color;
+    // gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
 }

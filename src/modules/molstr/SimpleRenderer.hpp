@@ -41,7 +41,6 @@ public:
     void setLineWidth(double f)
     {
         m_lw = f;
-        // super_t::invalidateDisplayCache();
     }
     double getLineWidth() const
     {
