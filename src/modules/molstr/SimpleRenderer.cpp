@@ -238,7 +238,7 @@ void SimpleRenderer::display(DisplayContext *pdc)
   // pdc->drawElem(*m_pVBO);
 
   m_pGlslLine->setLineWidth(m_lw);
-  m_pGlslLine->draw(pdc, getSceneID());
+  m_pGlslLine->draw(pdc);
 
   postRender(pdc);
 #else

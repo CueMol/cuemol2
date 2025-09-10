@@ -4,11 +4,22 @@
 //
 
 uniform float frag_alpha;
+uniform float stippleLen;
+
+varying float v_length;
 
 void main(void)
 {
     vec4 color;
 
+    if (stippleLen > 0.0) {
+        float stipos = mod(v_length, stippleLen);
+        if (stipos < stippleLen*0.5) {
+            // gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+            discard;
+        }
+    }
+    
     color = gl_Color;
     float z = gl_FogFragCoord;
 
@@ -21,5 +32,4 @@ void main(void)
     color = vec4(fogmixed, alpha);
 
     gl_FragColor = color;
-    // gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
 }

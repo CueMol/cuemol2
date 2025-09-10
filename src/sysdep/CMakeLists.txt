@@ -9,6 +9,7 @@ SET(SYSDEP_SRCS
   OglProgramObject.cpp
   OglProgObjMgr.cpp
   Canvas2DTextRender2.cpp
+  GLSLLineHelper.cpp
 )
 
 SET(SYSDEP_HDRS

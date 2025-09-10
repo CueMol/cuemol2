@@ -7,6 +7,7 @@
 // Uniforms
 uniform vec2 screenSize;
 uniform float lineWidth;
+uniform float stippleLen;
 
 ////////////////////
 // Vertex attributes
@@ -21,6 +22,11 @@ attribute vec4 a_color2;
 
 // vertex index
 attribute float a_index;
+
+////////////////////
+// Varying
+
+varying float v_length;
 
 ////////////////////
 
@@ -50,45 +56,61 @@ void main(void)
     offset.y /= screenSize.y;
     offset *= 2.0;
 
-
     // vec2 dir = normalize((p2 - p1).xy);
     // vec2 normal = vec2(-dir.y, dir.x) * lineWidth * 0.5;
-
     // mat4 projection = gl_ProjectionMatrix;
-    int ind = int(a_index);
 
+    float vlen;
+    if (stippleLen > 0.0) {
+        vlen = length(p1_screen.xy - p2_screen.xy);
+    } else {
+        vlen = 0.0;
+    }
+
+    int ind = int(a_index);
     if (ind == 0) {
         // P0
         // gl_Position = projection * (p1 + vec4(normal, 0.0, 0.0));
         gl_Position = vec4(p1_ndc.xy / p1_ndc.w + offset, p1_ndc.z / p1_ndc.w, 1.0);
         gl_FogFragCoord = ffog(ecpos1.z);
+        gl_FrontColor = a_color1;
+        v_length = 0.0;
     } else if (ind == 1) {
         // P1
         // gl_Position = projection * (p1 - vec4(normal, 0.0, 0.0));
         gl_Position = vec4(p1_ndc.xy / p1_ndc.w - offset, p1_ndc.z / p1_ndc.w, 1.0);
         gl_FogFragCoord = ffog(ecpos1.z);
+        gl_FrontColor = a_color1;
+        v_length = 0.0;
     } else if (ind == 2) {
         // P2
         // gl_Position = projection * (p2 + vec4(normal, 0.0, 0.0));
         gl_Position = vec4(p2_ndc.xy / p2_ndc.w + offset, p2_ndc.z / p2_ndc.w, 1.0);
         gl_FogFragCoord = ffog(ecpos2.z);
+        gl_FrontColor = a_color2;
+        v_length = vlen;
     } else if (ind == 3) {
         // P2
         // gl_Position = projection * (p2 + vec4(normal, 0.0, 0.0));
         gl_Position = vec4(p2_ndc.xy / p2_ndc.w + offset, p2_ndc.z / p2_ndc.w, 1.0);
         gl_FogFragCoord = ffog(ecpos2.z);
+        gl_FrontColor = a_color2;
+        v_length = vlen;
     } else if (ind == 4) {
         // P1
         // gl_Position = projection * (p1 - vec4(normal, 0.0, 0.0));
         gl_Position = vec4(p1_ndc.xy / p1_ndc.w - offset, p1_ndc.z / p1_ndc.w, 1.0);
         gl_FogFragCoord = ffog(ecpos1.z);
+        gl_FrontColor = a_color1;
+        v_length = 0.0;
     } else {
         // P3
         // gl_Position = projection * (p2 - vec4(normal, 0.0, 0.0));
         gl_Position = vec4(p2_ndc.xy / p2_ndc.w - offset, p2_ndc.z / p2_ndc.w, 1.0);
         gl_FogFragCoord = ffog(ecpos2.z);
+        gl_FrontColor = a_color2;
+        v_length = vlen;
     }
 
-    // gl_FrontColor = a_color;
-    gl_FrontColor = vec4(1.0, 1.0, 1.0, 1.0);
+    // gl_FrontColor = vec4(1.0, 1.0, 1.0, 1.0);
 }
