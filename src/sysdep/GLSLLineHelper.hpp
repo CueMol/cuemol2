@@ -1,8 +1,11 @@
+// -*-Mode: C++;-*-
 //
 //  GLSL line rendering helper class
 //
 
 #pragma once
+
+#include "sysdep.hpp"
 
 #include <gfx/DrawAttrArray.hpp>
 
@@ -17,7 +20,7 @@ namespace sysdep {
 
 class OglProgramObject;
 
-class GLSLLineHelper
+class SYSDEP_API GLSLLineHelper
 {
 private:
     struct LineElem
