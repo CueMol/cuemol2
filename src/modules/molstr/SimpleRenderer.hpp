@@ -12,10 +12,12 @@
 #include "MolAtomRenderer.hpp"
 #include "molstr.hpp"
 
-// #include <sysdep/GLSLLineHelper.hpp>
+
+#ifdef USE_OPENGL
 namespace sysdep {
 class GLSLLineHelper;
 }
+#endif
 
 class SimpleRenderer_wrap;
 
@@ -147,11 +149,13 @@ public:
 
     IntAtomArray m_atoms;
 
-    /// cached vertex array/VBO
-    gfx::DrawElemVC *m_pVBO;
+    // /// cached vertex array/VBO
+    // gfx::DrawElemVC *m_pVBO;
 
+#ifdef USE_OPENGL
     /// GLSL impl
     sysdep::GLSLLineHelper *m_pGlslLine;
+#endif
 
     //////////////////////////////////////////////////////
 
@@ -184,23 +188,24 @@ private:
     //////////////////////////////////////////////////////
 
 public:
-    // new rendering interface (using GL VBO)
+#ifdef USE_OPENGL
+    // new rendering interface (using OpenGL SL)
     virtual void display(DisplayContext *pdc);
 
     virtual void invalidateDisplayCache();
 
-private:
-    /// Rendering using VBO (builds sbonds, mbonds, and atoms data structure)
-    void renderVBO();
-
-    /// update VBO using m_sbonds, m_mbonds, m_atoms and MolCoord's data
-    void updateVBO(bool bUpdateColor);
-
-    //////////////////////////////////////////////////////
-    // Event handling
-public:
     /// object changed event (--> update vertex positions if required)
     virtual void objectChanged(qsys::ObjectEvent &ev);
+
+private:
+    /// Rendering using GLSL (builds sbonds, mbonds, and atoms data structure)
+    void renderVBO();
+
+    /// Update GL buffer using m_sbonds, m_mbonds, m_atoms and MolCoord's data
+    void updateVBO(bool bUpdateColor);
+
+#endif
+
 };
 }  // namespace molstr
 
