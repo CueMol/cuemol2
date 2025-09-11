@@ -50,16 +50,6 @@ jobs:
       with:
         basedir: ${{ github.workspace }}/target
         
-    - name: Build node.js addon
-      uses: ./build_scripts/build_nodejs_posix
-      with:
-        basedir: ${{ github.workspace }}/target
-
-    - name: Build python module
-      uses: ./build_scripts/build_pymod_posix
-      with:
-        basedir: ${{ github.workspace }}/target
-
     - name: Build cuetty
       uses: ./build_scripts/build_cuetty_posix
       with:
@@ -74,3 +64,12 @@ jobs:
         ldd $BASEDIR/cuemol2/bin/cuetty
         env LD_LIBRARY_PATH=$BASEDIR/cuemol2/lib $BASEDIR/cuemol2/bin/cuetty
 
+    - name: Build node.js addon
+      uses: ./build_scripts/build_nodejs_posix
+      with:
+        basedir: ${{ github.workspace }}/target
+
+    - name: Build python module
+      uses: ./build_scripts/build_pymod_posix
+      with:
+        basedir: ${{ github.workspace }}/target
