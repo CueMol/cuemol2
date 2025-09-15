@@ -27,7 +27,8 @@ OcDisplayList::OcDisplayList()
     m_matstack.clear();
     pushMatrix();
     loadIdent();
-    m_vertLineWidth = 0.0;
+    m_vertLineWidth = -1.0;
+    m_lineWidth = -1.0;
 }
 
 OcDisplayList::~OcDisplayList()
@@ -78,6 +79,7 @@ void OcDisplayList::vertex(const Vector4D &aV)
                 drawLine(v, color_value, m_prevPos, m_prevCol);
                 m_fPrevPosValid = false;
             }
+            // MB_DPRINTLN("line width = %f <-- %f", m_vertLineWidth, m_lineWidth);
             m_vertLineWidth = m_lineWidth;
             break;
 
@@ -200,6 +202,7 @@ void OcDisplayList::startLines()
         return;
     }
     m_nDrawMode = DRAWMODE_LINES;
+    m_vertLineWidth = -1.0;
     // printf("OcDisplayList::startLines OK\n");
 }
 
@@ -210,6 +213,7 @@ void OcDisplayList::startLineStrip()
         return;
     }
     m_nDrawMode = DRAWMODE_LINESTRIP;
+    m_vertLineWidth = -1.0;
 }
 
 void OcDisplayList::startTriangles()
@@ -341,7 +345,7 @@ void OcDisplayList::createLineArray()
             m_pGlslLine->vertex(i, elem.pos);
             ++i;
         }
-        MB_DPRINTLN("createLineArray> line width = %f", m_vertLineWidth);
+        // MB_DPRINTLN("createLineArray> line width = %f", m_vertLineWidth);
         m_pGlslLine->setLineWidth(m_vertLineWidth);
         m_lineBuf.clear();
     }

@@ -38,6 +38,9 @@ namespace gfx {
     /// Default alpha value
     double m_defAlpha;
 
+    /// Default line width
+    double m_lineWidth;
+
     /// Pixel scaling factor
     double m_dPixSclFac;
 
@@ -179,6 +182,8 @@ namespace gfx {
     ////////////////
 
     virtual void setLineWidth(double lw);
+    double getLineWidth() const { return m_lineWidth; }
+
     virtual void setLineStipple(unsigned short pattern);
     virtual void setLighting(bool f=true);
     virtual void setPointSize(double size);

@@ -21,6 +21,7 @@ DisplayContext::DisplayContext()
   m_pTargView = NULL;
   m_nSceneID = qlib::invalid_uid;
   m_nViewID = qlib::invalid_uid;
+  m_lineWidth = -1.0;
 }
 
 bool DisplayContext::isRenderPixmap() const
@@ -164,6 +165,7 @@ void DisplayContext::drawElem(const AbstDrawElem &)
 
 void DisplayContext::setLineWidth(double lw)
 {
+    m_lineWidth = lw;
 }
 
 void DisplayContext::setLineStipple(unsigned short pattern)

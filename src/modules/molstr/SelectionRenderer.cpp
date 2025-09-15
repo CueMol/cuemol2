@@ -155,8 +155,12 @@ void SelectionRenderer::preRender(DisplayContext *pdc)
     dely += m_linew/2.0;
   }
   qsys::View *pview = pdc->getTargetView();
-  if (pview!=NULL)
+  if (pview!=NULL) {
     pview->convXYTrans(delx, dely, dv);
+    Vector4D dz;
+    pview->convZTrans(delx, dz);
+    dv -= dz;
+  }
 
   pdc->setLineWidth(m_linew);
   pdc->pushMatrix();

@@ -48,8 +48,6 @@ namespace sysdep {
     OglProgramObject *m_pEdgePO;
     OglProgramObject *m_pSilhPO;
 
-    OglProgramObject *m_pLinewPO;
-
     //////////
 
   public:
@@ -191,14 +189,7 @@ namespace sysdep {
     ///////////////////////////////
     // OpenGL SL support
 
-  private:
-    // typedef std::map<LString, OglProgramObject *> ProgTab;
-    // ProgTab m_progs;
-
   public:
-    // bool hasShaders() const;
-    // bool hasGeomShader() const;
-
     /// Create the GLSL program object.
     /// If program object with the same name already exists, returns it.
     /// @param name name of the program objec.
@@ -209,7 +200,6 @@ namespace sysdep {
     /// @param name name of the program object.
     /// @return program object having the specified name.
     OglProgramObject *getProgramObject(const LString &name);
-    // bool destroyProgramObject(const LString &name);
 
   private:
 

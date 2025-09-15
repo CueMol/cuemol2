@@ -159,27 +159,6 @@ void OglDisplayContext::init()
   m_pSilhPO->setUniformF("edge_color", 0,0,0,1);
   m_pSilhPO->disable();
 
-  //////////
-
-  // m_pLinewPO = createProgramObject("linew");
-  // if (m_pLinewPO==NULL) {
-  //   LOG_DPRINTLN("Failed to load Linew ProgramObject");
-  //   return;
-  // }
-  // m_pLinewPO->loadShader("vert",
-  //                       "%%CONFDIR%%/data/shaders/linew_vert.glsl",
-  //                      GL_VERTEX_SHADER);
-  // m_pLinewPO->loadShader("frag",
-  //                       "%%CONFDIR%%/data/shaders/linew_frag.glsl",
-  //                       GL_FRAGMENT_SHADER);
-  // m_pLinewPO->link();
-  
-  // m_pLinewPO->enable();
-  // m_pLinewPO->setUniformF("frag_alpha", 1.0);
-  // m_pLinewPO->setUniformF("edge_width", 0.001);
-  // m_pLinewPO->setUniformF("edge_color", 0,0,0,1);
-  // m_pLinewPO->disable();
-
 #endif
 }
 
@@ -446,7 +425,8 @@ void OglDisplayContext::color(double r, double g, double b)
 
 void OglDisplayContext::setLineWidth(double lw)
 {
-  glLineWidth( float(lw * getPixSclFac()) );
+    glLineWidth( float(lw * getPixSclFac()) );
+    super_t::setLineWidth(lw);
 }
 
 void OglDisplayContext::setLineStipple(unsigned short pattern)
@@ -763,26 +743,27 @@ void OglDisplayContext::loadIdent()
 
 DisplayContext *OglDisplayContext::createDisplayList()
 {
-  // OglDisplayList *pdl = MB_NEW OglDisplayList();
-  // // Targets the same view as this
-  // pdl->setTargetView( getTargetView() );
-
-  // // inherit properties (default alpha/material/pixsclfac)
-  // pdl->setAlpha(getAlpha());
-  // pdl->setMaterial(getMaterial());
-  // pdl->setUseShaderAlpha(useShaderAlpha());
-  // pdl->setPixSclFac(getPixSclFac());
-
-  OcDisplayList *pdl = MB_NEW OcDisplayList();
-  // Targets the same view as this
-  pdl->setTargetView( getTargetView() );
-  pdl->setAlpha(getAlpha());
-  pdl->setMaterial(getMaterial());
-  // pdl->setUseShaderAlpha(useShaderAlpha());
-  pdl->setPixSclFac(getPixSclFac());
-
-
-  return pdl;
+    if (false) {
+        OglDisplayList *pdl = MB_NEW OglDisplayList();
+        // Targets the same view as this
+        pdl->setTargetView( getTargetView() );
+        
+        // inherit properties (default alpha/material/pixsclfac)
+        pdl->setAlpha(getAlpha());
+        pdl->setMaterial(getMaterial());
+        pdl->setUseShaderAlpha(useShaderAlpha());
+        pdl->setPixSclFac(getPixSclFac());
+        return pdl;
+    } else {
+        OcDisplayList *pdl = MB_NEW OcDisplayList();
+        // Targets the same view as this
+        pdl->setTargetView( getTargetView() );
+        pdl->setAlpha(getAlpha());
+        pdl->setMaterial(getMaterial());
+        // pdl->setUseShaderAlpha(useShaderAlpha());
+        pdl->setPixSclFac(getPixSclFac());
+        return pdl;
+    }
 }
 
 bool OglDisplayContext::canCreateDL() const

@@ -54,7 +54,7 @@ void main(void)
     vec2 offset = normal * lineWidth * 0.5;
     offset.x /= screenSize.x;
     offset.y /= screenSize.y;
-    offset *= 2.0;
+    // offset *= 2.0;
 
     // vec2 dir = normalize((p2 - p1).xy);
     // vec2 normal = vec2(-dir.y, dir.x) * lineWidth * 0.5;
