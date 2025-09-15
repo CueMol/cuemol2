@@ -23,14 +23,13 @@ using qlib::Vector4D;
 
 void SimpleRenderer::display(DisplayContext *pdc)
 {
-    if (pdc->isFile() || !pdc->isDrawElemSupported()) {
-        // case of the file (non-ogl) rendering
-        // always use the old version.
+    if (!isUseShader() || pdc->isFile() || !pdc->isDrawElemSupported()) {
+        // Use display list
         super_t::display(pdc);
         return;
     }
 
-    m_pGlslLine->initShader(this);
+    m_pGlslLine->initShader(pdc);
 
     if (!m_pGlslLine->isValid()) {
         renderVBO();

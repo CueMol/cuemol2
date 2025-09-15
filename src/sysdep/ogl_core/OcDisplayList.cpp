@@ -7,13 +7,15 @@
 
 #include "OcDisplayList.hpp"
 #include "OglDisplayContext.hpp"
+#include "GLSLLineHelper.hpp"
 
 #include <qsys/View.hpp>
 
 namespace sysdep {
 
 OcDisplayList::OcDisplayList()
-    : m_pLineArray(nullptr),
+    :  // m_pLineArray(nullptr),
+      m_pGlslLine(nullptr),
       m_pTrigArray(nullptr),
       m_pTrigMesh(nullptr),
       m_fValid(false),
@@ -25,17 +27,25 @@ OcDisplayList::OcDisplayList()
     m_matstack.clear();
     pushMatrix();
     loadIdent();
+    m_vertLineWidth = 0.0;
 }
 
 OcDisplayList::~OcDisplayList()
 {
-    if (m_pLineArray) delete m_pLineArray;
+    // if (m_pLineArray) delete m_pLineArray;
+    if (m_pGlslLine) delete m_pGlslLine;
     if (m_pTrigArray) delete m_pTrigArray;
 }
 
 qlib::uid_t OcDisplayList::getSceneID() const
 {
     return getTargetView()->getSceneID();
+}
+
+void OcDisplayList::setLineWidth(double lw)
+{
+    MB_DPRINTLN("OcDisplayList::setLineWidth> lw=%f", lw);
+    m_lineWidth = lw;
 }
 
 void OcDisplayList::vertex(const Vector4D &aV)
@@ -68,6 +78,7 @@ void OcDisplayList::vertex(const Vector4D &aV)
                 drawLine(v, color_value, m_prevPos, m_prevCol);
                 m_fPrevPosValid = false;
             }
+            m_vertLineWidth = m_lineWidth;
             break;
 
             //////////////////////////////////////////////////////
@@ -81,6 +92,7 @@ void OcDisplayList::vertex(const Vector4D &aV)
                 drawLine(v, color_value, m_prevPos, m_prevCol);
                 m_prevPos = v;
             }
+            m_vertLineWidth = m_lineWidth;
             break;
 
             //////////////////////////////////////////////////////
@@ -183,7 +195,7 @@ void OcDisplayList::startPolygon()
 void OcDisplayList::startLines()
 {
     if (m_nDrawMode != DRAWMODE_NONE) {
-        printf("OcDisplayList::startLines ERR: %d\n", m_nDrawMode);
+        MB_DPRINTLN("OcDisplayList::startLines ERR: %d", m_nDrawMode);
         MB_THROW(qlib::RuntimeException, "OcDisplayList: Unexpected condition");
         return;
     }
@@ -266,15 +278,8 @@ void OcDisplayList::end()
 void OcDisplayList::drawLine(const Vector4D &v1, qlib::quint32 c1, const Vector4D &v2,
                              qlib::quint32 c2)
 {
-    m_lineBuf.push_back(LineDrawAttr{float(v1.x()), float(v1.y()), float(v1.z()),
-                                     float(v1.w()), float(gfx::getFR(c1)),
-                                     float(gfx::getFG(c1)), float(gfx::getFB(c1)),
-                                     float(gfx::getFA(c1))});
-
-    m_lineBuf.push_back(LineDrawAttr{float(v2.x()), float(v2.y()), float(v2.z()),
-                                     float(v2.w()), float(gfx::getFR(c2)),
-                                     float(gfx::getFG(c2)), float(gfx::getFB(c2)),
-                                     float(gfx::getFA(c2))});
+    m_lineBuf.push_back(LineDrawAttr{v1, c1});
+    m_lineBuf.push_back(LineDrawAttr{v2, c2});
 }
 
 void OcDisplayList::addTrigVert(const Vector4D &v1, const Vector4D &n1,
@@ -298,15 +303,15 @@ void OcDisplayList::addTrigVert(const Vector4D &v1, const Vector4D &n1,
 
 bool OcDisplayList::recordStart()
 {
-    printf("OcDisplayList::recordStart called %p\n", m_pLineArray);
-    if (m_pLineArray) {
-        printf("delete %p\n", m_pLineArray);
-        delete m_pLineArray;
-        m_pLineArray = nullptr;
+    MB_DPRINTLN("OcDisplayList::recordStart called");
+    if (m_pGlslLine != nullptr) {
+        MB_DPRINTLN("delete %p", m_pGlslLine);
+        delete m_pGlslLine;
+        m_pGlslLine = nullptr;
     }
 
     if (m_pTrigArray) {
-        printf("delete %p\n", m_pTrigArray);
+        MB_DPRINTLN("delete %p", m_pTrigArray);
         delete m_pTrigArray;
         m_pTrigArray = nullptr;
     }
@@ -324,25 +329,20 @@ void OcDisplayList::createLineArray()
 {
     // Create Line attr array
     const size_t nelems_line = m_lineBuf.size();
-    printf("OcDisplayList::recordEnd nelems_line %zu\n", nelems_line);
+    MB_DPRINTLN("OcDisplayList.createLinearray> nelems_line=%zu", nelems_line);
     if (nelems_line > 0) {
-        m_pLineArray = new LineDrawArray();
-        m_pLineArray->setDrawMode(gfx::AbstDrawElem::DRAW_LINES);
-        m_pLineArray->setAttrSize(2);
-        m_pLineArray->setAttrInfo(0, DSLOC_VERT_POS, 4, qlib::type_consts::QTC_FLOAT32,
-                                  offsetof(LineDrawAttr, x));
-        m_pLineArray->setAttrInfo(1, DSLOC_VERT_COLOR, 4,
-                                  qlib::type_consts::QTC_FLOAT32,
-                                  offsetof(LineDrawAttr, r));
-        m_pLineArray->alloc(nelems_line);
-
+        MB_ASSERT(m_pGlslLine == nullptr);
+        m_pGlslLine = MB_NEW GLSLLineHelper();
+        m_pGlslLine->alloc(nelems_line);
         size_t i = 0;
         for (const auto &elem : m_lineBuf) {
             MB_ASSERT(i < nelems_line);
-            m_pLineArray->at(i) = elem;
+            m_pGlslLine->color(i, elem.cc);
+            m_pGlslLine->vertex(i, elem.pos);
             ++i;
         }
-        m_pLineArray->setUpdated(true);
+        MB_DPRINTLN("createLineArray> line width = %f", m_vertLineWidth);
+        m_pGlslLine->setLineWidth(m_vertLineWidth);
         m_lineBuf.clear();
     }
 }
@@ -351,8 +351,9 @@ void OcDisplayList::createTrigArray()
 {
     MB_ASSERT(m_pTrigArray == nullptr);
     const size_t nelems_trig = m_trigBuf.size();
-    printf("OcDisplayList::recordEnd nelems_trig %zu\n", nelems_trig);
+    MB_DPRINTLN("OcDisplayList.createTrigArray> nelems_trig=%zu", nelems_trig);
     if (nelems_trig > 0) {
+        MB_ASSERT(m_pTrigArray == nullptr);
         m_pTrigArray = new TrigVertArray();
         m_pTrigArray->setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
         m_pTrigArray->setAttrSize(3);
@@ -384,6 +385,7 @@ void OcDisplayList::createTrigMesh()
     const size_t nMeshVerts = m_mesh.getVertexSize();
     const size_t nMeshFaces = m_mesh.getFaceSize();
     if (nMeshFaces > 0) {
+        MB_ASSERT(m_pTrigMesh == nullptr);
         m_pTrigMesh = new TrigMesh();
         m_pTrigMesh->setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
         m_pTrigMesh->setAttrSize(3);
@@ -425,8 +427,8 @@ void OcDisplayList::createTrigMesh()
 
 void OcDisplayList::recordEnd()
 {
-    printf("OcDisplayList::recordEnd called %p\n", m_pLineArray);
-    MB_ASSERT(m_pLineArray == nullptr);
+    MB_DPRINTLN("OcDisplayList::recordEnd called");
+    // MB_ASSERT(m_pLineArray == nullptr);
 
     // Mark as valid
     m_fValid = true;
@@ -459,11 +461,11 @@ bool OcDisplayList::isDisplayList() const
 void OcDisplayList::callDisplayListImpl(OglDisplayContext *pdc)
 {
     // Lines
-    auto *pLines = getLineArray();
-    if (pLines != nullptr) {
-        pdc->drawElem(*pLines);
+    if (m_pGlslLine != nullptr) {
+        m_pGlslLine->initShader(pdc);
+        m_pGlslLine->draw(pdc);
     }
-
+    
     // Triangles
     auto *pTrigs = getTrigArray();
     if (pTrigs != nullptr) {

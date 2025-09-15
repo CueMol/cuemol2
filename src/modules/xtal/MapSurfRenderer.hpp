@@ -341,7 +341,7 @@ namespace xtal {
 
     void displayGLSL2(DisplayContext *pdc);
     void createGLSL2(DisplayContext *pdc);
-    bool initShader();
+    bool initShader(DisplayContext *pdc);
 
     /// Called just before this object is unloaded
     virtual void unloading();

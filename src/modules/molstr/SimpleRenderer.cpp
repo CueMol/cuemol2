@@ -31,19 +31,12 @@ using namespace molstr;
 using qlib::Vector4D;
 using gfx::ColorPtr;
 
-// // Use OpenGL VBO implementation
-// #define USE_OPENGL_VBO
-
 SimpleRenderer::SimpleRenderer()
 {
-  // will be called by RendererFactory
-  //resetAllProps();
-
   m_bValBond = true;
   m_dCvScl1 = -0.05;
   m_dCvScl2 = 0.05;
 
-  // m_pVBO = NULL;
 #ifdef USE_OPENGL
   m_pGlslLine = MB_NEW sysdep::GLSLLineHelper();
 #endif
@@ -183,6 +176,7 @@ void SimpleRenderer::preRender(DisplayContext *pdc)
 
 void SimpleRenderer::beginRend(DisplayContext *pdl)
 {
+    MB_DPRINTLN("SimpleRenderer::beginRend setLineWidth %f", m_lw);
   pdl->setLineWidth(m_lw);
   pdl->startLines();
   m_nAtomDrawn = 0;

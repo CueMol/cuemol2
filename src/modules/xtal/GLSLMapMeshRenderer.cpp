@@ -1,6 +1,6 @@
 // -*-Mode: C++;-*-
 //
-// Generate/Render a mesh contour of ScalarObject
+// GLSL-based GPU map mesh renderer
 //
 
 #include <common.h>
@@ -12,6 +12,7 @@
 #include <qsys/ViewEvent.hpp>
 #include <qsys/View.hpp>
 #include <qsys/Scene.hpp>
+#include <sysdep/ShaderSetupHelper.hpp>
 
 #define SCALE 0x1000
 //#define DBG_DRAW_AXIS 0
@@ -141,11 +142,11 @@ void GLSLMapMeshRenderer::viewChanged(qsys::ViewEvent &ev)
   return;
 }
 
-bool GLSLMapMeshRenderer::initShader()
+bool GLSLMapMeshRenderer::initShader(DisplayContext *pdc)
 {
   m_pPO = NULL;
 
-  sysdep::ShaderSetupHelper<GLSLMapMeshRenderer> ssh(this);
+  sysdep::ShaderSetupHelper ssh(pdc);
 
   if (!ssh.checkEnvGS()) {
     LOG_DPRINTLN("GPUMapMesh> ERROR: OpenGL GPU geom program not supported.");
@@ -516,7 +517,7 @@ void GLSLMapMeshRenderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
 void GLSLMapMeshRenderer::display(DisplayContext *pdc)
 {
   if (!m_bChkShaderDone)
-    initShader();
+    initShader(pdc);
   
   if (m_pPO==NULL) {
     // TO DO: fallback to non-GPU rendering mode

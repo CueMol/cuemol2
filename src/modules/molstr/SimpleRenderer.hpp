@@ -43,6 +43,10 @@ public:
     void setLineWidth(double f)
     {
         m_lw = f;
+        if (!isUseShader()) {
+            super_t::invalidateDisplayCache();
+            MB_DPRINTLN("SimpleRenderer::setLineWidth(): invalidateDisplayCache() called");
+        }
     }
     double getLineWidth() const
     {
@@ -89,6 +93,21 @@ public:
     double getVBScl2() const
     {
         return m_dCvScl2;
+    }
+
+private:
+    /// Use custom shader for line drawing
+    bool m_bUseShader;
+
+public:
+    void setUseShader(bool b)
+    {
+        m_bUseShader = b;
+        invalidateDisplayCache();
+    }
+    bool isUseShader() const
+    {
+        return m_bUseShader;
     }
 
     //////////////////////////////////////////////////////

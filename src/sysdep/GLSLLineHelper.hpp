@@ -64,7 +64,7 @@ public:
         invalidate();
     }
 
-    bool initShader(qsys::Renderer *pRend);
+    bool initShader(gfx::DisplayContext *pdc);
 
     void alloc(int nverts);
 
@@ -102,6 +102,9 @@ public:
     {
         return m_bInitialized && m_pDrawAry != NULL;
     }
+
+private:
+    void setupAttrs();
 };
 
 }  // namespace sysdep

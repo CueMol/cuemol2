@@ -62,7 +62,7 @@ void CPK2Renderer::display(DisplayContext *pdc)
   }
 
   if (!m_bCheckShaderOK) {
-    if (m_pSlSph->initShader(this)) {
+    if (m_pSlSph->initShader(pdc)) {
       MB_DPRINTLN("CPK2 sphere shader OK");
       m_bUseShader = true;
     }

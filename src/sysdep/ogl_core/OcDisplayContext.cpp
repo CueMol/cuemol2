@@ -66,29 +66,7 @@ bool OcDisplayContext::isCompatibleDL(DisplayContext *pdl) const
 
 void OcDisplayContext::callDisplayList(DisplayContext *pdl)
 {
-    // printf("callDisplayList called\n");
-    OcDisplayList *psrc = dynamic_cast<OcDisplayList *>(pdl);
-    if (psrc == nullptr || !psrc->isValid()) return;
-
-    // Lines
-    auto *pLines = psrc->getLineArray();
-    if (pLines != nullptr) {
-        drawElem(*pLines);
-    }
-
-    // Triangles
-    auto *pTrigs = psrc->getTrigArray();
-    if (pTrigs != nullptr) {
-        drawElem(*pTrigs);
-    }
-
-    // Trig mesh
-    auto *pMesh = psrc->getTrigMesh();
-    if (pMesh != nullptr) {
-        drawElem(*pMesh);
-    }
-
-    // printf("callDisplayList OK\n");
+    // TODO: implementation
 }
 
 //////////

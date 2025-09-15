@@ -10,6 +10,7 @@ SET(SYSDEP_SRCS
   OglProgObjMgr.cpp
   Canvas2DTextRender2.cpp
   GLSLLineHelper.cpp
+  ShaderSetupHelper.cpp
   # core profile
   ogl_core/OcDisplayList.cpp
   ogl_core/OcDisplayContext.cpp

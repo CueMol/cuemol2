@@ -5,15 +5,16 @@
 #include <gfx/DrawAttrArray.hpp>
 #include <sysdep/OglDisplayContext.hpp>
 #include <sysdep/OglProgramObject.hpp>
+#include <sysdep/ShaderSetupHelper.hpp>
 
 namespace sysdep {
 
-bool GLSLLineHelper::initShader(qsys::Renderer *pRend)
+bool GLSLLineHelper::initShader(gfx::DisplayContext *pdc)
 {
     if (m_bInitialized) return true;
 
     MB_ASSERT(m_pPO == NULL);
-    sysdep::ShaderSetupHelper<qsys::Renderer> ssh(pRend);
+    ShaderSetupHelper ssh(pdc);
 
     if (!ssh.checkEnvVS()) {
         MB_DPRINTLN("GLShader not supported");
@@ -41,11 +42,16 @@ bool GLSLLineHelper::initShader(qsys::Renderer *pRend)
     return true;
 }
 
-void GLSLLineHelper::alloc(int nverts)
+void GLSLLineHelper::setupAttrs()
 {
-    LineArray *pdata = MB_NEW LineArray();
-    m_pDrawAry = pdata;
-    LineArray &data = *pdata;
+    MB_ASSERT(m_pDrawAry != NULL);
+    LineArray &data = *m_pDrawAry;
+
+    if (data.getAttrSize() > 0) {
+        // already setup
+        return;
+    }
+
     data.setAttrSize(5);
     data.setAttrInfo(0, m_nVertex1Loc, 3, qlib::type_consts::QTC_FLOAT32,
                      offsetof(LineElem, x1));
@@ -57,13 +63,16 @@ void GLSLLineHelper::alloc(int nverts)
                      offsetof(LineElem, r2));
     data.setAttrInfo(4, m_nIndLoc, 1, qlib::type_consts::QTC_FLOAT32,
                      offsetof(LineElem, ind));
+}
 
-    // data.alloc(nverts);
-    // data.setDrawMode(gfx::AbstDrawElem::DRAW_LINES);
+void GLSLLineHelper::alloc(int nverts)
+{
+    m_pDrawAry = MB_NEW LineArray();
+    LineArray &data = *m_pDrawAry;
 
     data.alloc(nverts * 3);
     data.setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
-    // data.setDrawMode(gfx::AbstDrawElem::DRAW_LINES);
+
     MB_DPRINTLN("GLSLLine> allocated %d vertices", nverts);
 
     // assign index
@@ -134,6 +143,8 @@ void GLSLLineHelper::draw(gfx::DisplayContext *pdc)
         return;
     }
 
+    setupAttrs();
+
     auto pview = pdc->getTargetView();
     if (pview == NULL) {
         MB_DPRINTLN("GLSLLine> ERROR: no target view");
@@ -143,9 +154,12 @@ void GLSLLineHelper::draw(gfx::DisplayContext *pdc)
     float w = pview->getWidth();
     float h = pview->getHeight();
 
+    float linew = m_linew * pdc->getPixSclFac();
+    MB_DPRINTLN("GLSLLine> linew=%f (pixscl=%f)", m_linew, pdc->getPixSclFac());
+
     m_pPO->enable();
     m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
-    m_pPO->setUniformF("lineWidth", m_linew);
+    m_pPO->setUniformF("lineWidth", linew);
     m_pPO->setUniformF("stippleLen", m_stippleLen);
     m_pPO->setUniformF("screenSize", w, h);
     pdc->drawElem(*m_pDrawAry);

@@ -801,7 +801,7 @@ void OglDisplayContext::callDisplayList(DisplayContext *pdl)
   }
   
   OcDisplayList *poc = dynamic_cast<OcDisplayList *>(pdl);
-  if (poc!=NULL && psrc->isValid()) {
+  if (poc!=NULL && poc->isValid()) {
       poc->callDisplayListImpl(this);
   }
 }

@@ -10,6 +10,7 @@
 #include "DensityMap.hpp"
 #include <gfx/DisplayContext.hpp>
 #include <sysdep/OglProgramObject.hpp>
+#include <sysdep/ShaderSetupHelper.hpp>
 
 #ifdef _OPENMP
 #  include <omp.h>
@@ -327,7 +328,7 @@ void MapSurfRenderer::createGLSL1(DisplayContext *pdl)
 void MapSurfRenderer::displayGLSL2(DisplayContext *pdc)
 {
   if (!m_bChkShaderDone)
-    initShader();
+    initShader(pdc);
 
   if (m_pPO==NULL) return; // not initialized
 
@@ -374,11 +375,11 @@ void MapSurfRenderer::displayGLSL2(DisplayContext *pdc)
   m_pCMap = NULL;
 }
 
-bool MapSurfRenderer::initShader()
+bool MapSurfRenderer::initShader(DisplayContext *pdc)
 {
   MB_ASSERT(m_pPO == NULL);
 
-  sysdep::ShaderSetupHelper<MapSurfRenderer> ssh(this);
+  sysdep::ShaderSetupHelper ssh(pdc);
 
   if (!ssh.checkEnvVS()) {
     LOG_DPRINTLN("GPUMapSurf> ERROR: OpenGL GPU shading not supported.");

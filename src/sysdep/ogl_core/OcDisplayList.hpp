@@ -5,6 +5,8 @@
 
 #pragma once
 
+#include "sysdep.hpp"
+
 #include <gfx/DisplayContext.hpp>
 #include <gfx/DrawAttrArray.hpp>
 #include <gfx/GrowMesh.hpp>
@@ -12,32 +14,35 @@
 namespace sysdep {
 
 class OglDisplayContext;
+class GLSLLineHelper;
 
-class OcDisplayList : public gfx::DisplayContext
+class SYSDEP_API OcDisplayList : public gfx::DisplayContext
 {
 private:
     using super_t = gfx::DisplayContext;
 
+    bool m_fPrevPosValid;
+
     //////////
     // lines
 
-    //////////
-    // triangles
+    float m_lineWidth;
 
-    // TODO: use uint8 for colors/remove w
     struct LineDrawAttr
     {
-        float x, y, z, w;
-        float r, g, b, a;
+        qlib::Vector4D pos;
+        quint32 cc;
     };
-
-    using LineDrawArray = gfx::DrawAttrArray<LineDrawAttr>;
-    LineDrawArray *m_pLineArray;
+    // using LineDrawArray = gfx::DrawAttrArray<LineDrawAttr>;
+    // LineDrawArray *m_pLineArray;
+    GLSLLineHelper *m_pGlslLine;
 
     using LineDrawBuf = std::deque<LineDrawAttr>;
     LineDrawBuf m_lineBuf;
+    float m_vertLineWidth;
 
-    bool m_fPrevPosValid;
+    //////////
+    // triangles
 
     // TODO: use uint8 for colors
     struct TrigVertAttr
@@ -178,10 +183,15 @@ public:
     virtual bool recordStart();
     virtual void recordEnd();
 
-    auto *getLineArray() const
-    {
-        return m_pLineArray;
-    }
+    virtual void setLineWidth(double lw);
+
+    void callDisplayListImpl(OglDisplayContext *pdc);
+private:
+    // auto *getLineArray() const
+    // {
+    //     return m_pLineArray;
+    // }
+
     auto *getTrigArray() const
     {
         return m_pTrigArray;
@@ -191,7 +201,6 @@ public:
         return m_pTrigMesh;
     }
 
-    void callDisplayListImpl(OglDisplayContext *pdc);
 };
 
 }  // namespace sysdep

@@ -12,6 +12,7 @@
 #include <qsys/ViewEvent.hpp>
 #include <qsys/View.hpp>
 #include <qsys/Scene.hpp>
+#include <sysdep/ShaderSetupHelper.hpp>
 
 #define CHK_GLERROR(MSG)\
 { \
@@ -133,9 +134,9 @@ void GLSLMapVolRenderer::viewChanged(qsys::ViewEvent &ev)
 
 //////////////////////////////////////////////////////////////////
 
-void GLSLMapVolRenderer::initShader()
+void GLSLMapVolRenderer::initShader(DisplayContext *pdc)
 {
-  sysdep::ShaderSetupHelper<GLSLMapVolRenderer> ssh(this);
+  sysdep::ShaderSetupHelper ssh(pdc);
 
   if (!ssh.checkEnvVS()) {
     LOG_DPRINTLN("GPUMapMesh> ERROR: OpenGL GPU shading not supported.");
@@ -459,7 +460,7 @@ void GLSLMapVolRenderer::genXferFunMap()
 void GLSLMapVolRenderer::display(DisplayContext *pdc)
 {
   if (!m_bChkShaderDone)
-    initShader();
+    initShader(pdc);
 
   ScalarObject *pMap = getScalarObj();
   DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
