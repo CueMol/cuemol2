@@ -139,6 +139,15 @@ void OglView::setup()
 
   if (useSclFac())
     pdc->setPixSclFac(getSclFacX());
+
+  GLint buffers, samples;
+  glGetIntegerv(GL_SAMPLE_BUFFERS, &buffers);
+  glGetIntegerv(GL_SAMPLES, &samples);
+  MB_DPRINTLN("GL_SAMPLE_BUFFERS=%d, GL_SAMPLES=%d", buffers, samples);
+  if (buffers>0 &&  samples>0) {
+      glEnable(GL_MULTISAMPLE);
+      MB_DPRINTLN("*** Multisampling enabled");
+  }
 }
 
 //#define CHK_GLERROR(MSG)						\

@@ -15,8 +15,6 @@
   NSView *mParView;
 
   BOOL mIgnoreHittest;
-  // NSOpenGLContext*     _openGLContext;
-  // NSOpenGLPixelFormat* _pixelFormat;
   BOOL mEmulateRBtn;
 }
 
@@ -79,8 +77,12 @@
   NSOpenGLPixelFormatAttribute attributes [] = {
     NSOpenGLPFAWindow,
     NSOpenGLPFADoubleBuffer,	// double buffered
-    NSOpenGLPFADepthSize, (NSOpenGLPixelFormatAttribute)16, // 16 bit depth buffer
-    (NSOpenGLPixelFormatAttribute)0
+    NSOpenGLPFADepthSize,
+    (NSOpenGLPixelFormatAttribute) 16, // 16 bit depth buffer
+    // NSOpenGLPFAMultisample,
+    // NSOpenGLPFASampleBuffers, 1,
+    // NSOpenGLPFASamples, 4,
+    (NSOpenGLPixelFormatAttribute) 0
   };
   return [[[NSOpenGLPixelFormat alloc] initWithAttributes:attributes] autorelease];
 }

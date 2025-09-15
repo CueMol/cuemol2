@@ -29,11 +29,6 @@ namespace sysdep {
     typedef gfx::DisplayContext super_t;
 
   private:
-    /// UID of the target view
-    qlib::uid_t m_nViewID;
-
-    /// UID of the target scene
-    qlib::uid_t m_nSceneID;
 
     Vector4D m_color;
     // Vector4D m_pos;
@@ -67,9 +62,6 @@ namespace sysdep {
     void setUseShaderAlpha(bool f) { m_bUseShaderAlpha = f; }
 
   public:  
-    inline qlib::uid_t getViewID() const { return m_nViewID; }
-    inline qlib::uid_t getSceneID() const { return m_nSceneID; }
-
     virtual void setTargetView(qsys::View *pView);
 
     // OpenGL-level initialization

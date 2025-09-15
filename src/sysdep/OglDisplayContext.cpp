@@ -36,6 +36,8 @@
 #include "OglProgramObject.hpp"
 #include "OglProgObjMgr.hpp"
 
+#include "ogl_core/OcDisplayList.hpp"
+
 #include <gfx/TextRenderManager.hpp>
 #include <gfx/PixelBuffer.hpp>
 #include <gfx/SolidColor.hpp>
@@ -76,17 +78,13 @@ OglDisplayContext::~OglDisplayContext()
 {
   if (m_pGluData!=NULL)
     ::gluDeleteQuadric((GLUquadricObj *)m_pGluData);
-
-  /*BOOST_FOREACH (ProgTab::value_type &elem, m_progs) {
-    delete elem.second;
-  }*/
 }
 
 void OglDisplayContext::setTargetView(qsys::View *pView)
 {
   super_t::setTargetView(pView);
-  m_nViewID = pView->getUID();
-  m_nSceneID = pView->getSceneID();
+  setSceneID(pView->getSceneID());
+  setViewID(pView->getUID());
 }
 
 void OglDisplayContext::init()
@@ -761,45 +759,28 @@ void OglDisplayContext::loadIdent()
 }
 
 //////////////////////////////////////////////////////////////////
-// Texture impl
-
-/*
-#include "OglTexture.hpp"
-
-void OglDisplayContext::useTexture(const LTexture &tex)
-{
-  OglTextureRep *pRep = dynamic_cast<OglTextureRep *>(tex.getRep());
-  if (pRep==NULL) return;
-  glBindTexture(GL_TEXTURE_2D, pRep->getTexID());
-  glEnable(GL_TEXTURE_2D);
-}
-
-void OglDisplayContext::unuseTexture()
-{
-  glDisable(GL_TEXTURE_2D);
-}
-
-void OglDisplayContext::texCoord(float fx, float fy)
-{
-  glTexCoord2d(fx, fy);
-}
-*/
-
-//////////////////////////////////////////////////////////////////
 // Display list impl
 
 DisplayContext *OglDisplayContext::createDisplayList()
 {
-  OglDisplayList *pdl = MB_NEW OglDisplayList();
+  // OglDisplayList *pdl = MB_NEW OglDisplayList();
+  // // Targets the same view as this
+  // pdl->setTargetView( getTargetView() );
 
+  // // inherit properties (default alpha/material/pixsclfac)
+  // pdl->setAlpha(getAlpha());
+  // pdl->setMaterial(getMaterial());
+  // pdl->setUseShaderAlpha(useShaderAlpha());
+  // pdl->setPixSclFac(getPixSclFac());
+
+  OcDisplayList *pdl = MB_NEW OcDisplayList();
   // Targets the same view as this
   pdl->setTargetView( getTargetView() );
-
-  // inherit properties (default alpha/material/pixsclfac)
   pdl->setAlpha(getAlpha());
   pdl->setMaterial(getMaterial());
-  pdl->setUseShaderAlpha(useShaderAlpha());
+  // pdl->setUseShaderAlpha(useShaderAlpha());
   pdl->setPixSclFac(getPixSclFac());
+
 
   return pdl;
 }
@@ -812,22 +793,30 @@ bool OglDisplayContext::canCreateDL() const
 void OglDisplayContext::callDisplayList(DisplayContext *pdl)
 {
   OglDisplayList *psrc = dynamic_cast<OglDisplayList *>(pdl);
-  if (psrc==NULL || !psrc->isValid())
-    return;
-
-  GLuint id = psrc->getID();
-  if (id==0)
-    return;
-
-  glCallList(id);
+  if (psrc!=NULL && psrc->isValid()) {
+      GLuint id = psrc->getID();
+      if (id==0)
+          return;
+      glCallList(id);
+  }
+  
+  OcDisplayList *poc = dynamic_cast<OcDisplayList *>(pdl);
+  if (poc!=NULL && psrc->isValid()) {
+      poc->callDisplayListImpl(this);
+  }
 }
 
 bool OglDisplayContext::isCompatibleDL(DisplayContext *pdl) const
 {
   OglDisplayList *psrc = dynamic_cast<OglDisplayList *>(pdl);
-  if (psrc==NULL)
-    return false;
-  return true;
+  if (psrc!=NULL)
+      return true;
+
+  OcDisplayList *poc = dynamic_cast<OcDisplayList *>(pdl);
+  if (poc!=NULL) {
+      return true;
+  }
+  return false;
 }
 
 bool OglDisplayContext::isDisplayList() const
@@ -946,18 +935,6 @@ void OglDisplayContext::sphere(double r, const Vector4D &vec)
   sphere();
   popMatrix();
 }
-
-/*
-void OglDisplayContext::cylinder(double r, const Vector4D &pos1, const Vector4D &pos2)
-{
-  cone(r, r, pos1, pos2, false);
-}
-
-void OglDisplayContext::cylinderCap(double r, const Vector4D &pos1, const Vector4D &pos2)
-{
-  cone(r, r, pos1, pos2, true);
-}
-*/
 
 void OglDisplayContext::setDetail(int n)
 {
@@ -1297,43 +1274,6 @@ void OglDisplayContext::drawElem(const AbstDrawElem &ade)
 #endif
 }
 
-/*
-namespace {
-  class OglTexRep : public gfx::VBORep
-  {
-  public:
-    qlib::uid_t m_nSceneID;
-    GLuint m_nBufID;
-    
-    virtual ~OglTexRep()
-    {
-      qsys::ScenePtr rsc = qsys::SceneManager::getSceneS(m_nSceneID);
-      if (rsc.isnull()) {
-        MB_DPRINTLN("OglTexture> unknown scene, Texture %d cannot be deleted", m_nBufID);
-        return;
-      }
-
-      qsys::Scene::ViewIter viter = rsc->beginView();
-      if (viter==rsc->endView()) {
-        MB_DPRINTLN("OglTexture> no view, Texture %d cannot be deleted", m_nBufID);
-        return;
-      }
-
-      qsys::ViewPtr rvw = viter->second;
-      if (rvw.isnull()) {
-        // If any views aren't found, it is no problem,
-        // because the parent context (and also all DLs) may be already destructed.
-        return;
-      }
-      gfx::DisplayContext *pctxt = rvw->getDisplayContext();
-      pctxt->setCurrent();
-      
-      glDeleteTextures(1, &m_nBufID);
-    }
-  };
-}
-*/
-
 void OglDisplayContext::drawElemPix(const gfx::DrawElemPix &de)
 {
   gfx::ColorPtr pcol = gfx::ColorPtr(new gfx::SolidColor(de.m_color));
@@ -1533,7 +1473,6 @@ void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
 
 }
 
-
 OglProgramObject *OglDisplayContext::createProgramObject(const LString &name)
 {
   if (!qsys::View::hasVS())
@@ -1542,29 +1481,6 @@ OglProgramObject *OglDisplayContext::createProgramObject(const LString &name)
   OglProgObjMgr *pMgr = OglProgObjMgr::getInstance();
 
   return pMgr->createProgramObject(name, this);
-
-/*
-  OglProgramObject *pRval = NULL;
-
-  if (!qsys::View::hasVS())
-    return NULL;
-
-#ifdef HAVE_GLEW
-  setCurrent();
-  pRval = getProgramObject(name);
-  if (pRval!=NULL)
-    return pRval;
-  pRval = new OglProgramObject();  
-  if (!pRval->init()) {
-    delete pRval;
-    return NULL;
-  }
-
-  m_progs.insert(ProgTab::value_type(name, pRval));
-#endif
-
-  return pRval;
-*/
 }
 
 OglProgramObject *OglDisplayContext::getProgramObject(const LString &name)
@@ -1572,26 +1488,4 @@ OglProgramObject *OglDisplayContext::getProgramObject(const LString &name)
   OglProgObjMgr *pMgr = OglProgObjMgr::getInstance();
 
   return pMgr->getProgramObject(name, this);
-
-/*
-  ProgTab::const_iterator i = m_progs.find(name);
-  if (i==m_progs.end())
-    return NULL;
-  return i->second;
-  */
 }
-
-/*
-bool OglDisplayContext::destroyProgramObject(const LString &name)
-{
-  ProgTab::iterator i = m_progs.find(name);
-  if (i==m_progs.end())
-    return false;
-  
-  OglProgramObject *pdel = i->second;
-  m_progs.erase(i);
-  delete pdel;
-  return true;
-}
-*/
-

@@ -10,6 +10,9 @@ SET(SYSDEP_SRCS
   OglProgObjMgr.cpp
   Canvas2DTextRender2.cpp
   GLSLLineHelper.cpp
+  # core profile
+  ogl_core/OcDisplayList.cpp
+  ogl_core/OcDisplayContext.cpp
 )
 
 SET(SYSDEP_HDRS

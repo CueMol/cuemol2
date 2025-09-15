@@ -53,6 +53,11 @@ namespace gfx {
     /// Target view
     qsys::View *m_pTargView;
 
+    /// UID of the target view
+    qlib::uid_t m_nViewID;
+
+    /// UID of the target scene
+    qlib::uid_t m_nSceneID;
 
   public:
     /// Polygon rendering mode
@@ -85,8 +90,18 @@ namespace gfx {
     virtual bool setCurrent() =0;
     virtual bool isCurrent() const =0;
 
+    ////////////////
+
+    //
+    // Target scene and view
+    //
     virtual void setTargetView(qsys::View *);
     virtual qsys::View *getTargetView() const;
+
+    inline qlib::uid_t getViewID() const { return m_nViewID; }
+    inline void setViewID(qlib::uid_t uid) { m_nViewID = uid; }
+    inline qlib::uid_t getSceneID() const { return m_nSceneID; }
+    inline void setSceneID(qlib::uid_t uid) { m_nSceneID = uid; }
 
     /// Returns whether the rendering target of this context is a file or not.
     virtual bool isFile() const =0;
