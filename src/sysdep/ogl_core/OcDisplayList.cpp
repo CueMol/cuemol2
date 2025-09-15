@@ -89,10 +89,10 @@ void OcDisplayList::vertex(const Vector4D &aV)
                 m_prevPos = v;
                 m_prevCol = color_value;
                 m_fPrevPosValid = true;
-                break;
             } else {
                 drawLine(v, color_value, m_prevPos, m_prevCol);
                 m_prevPos = v;
+                m_prevCol = color_value;
             }
             m_vertLineWidth = m_lineWidth;
             break;
