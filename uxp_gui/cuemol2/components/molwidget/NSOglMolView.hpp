@@ -2,8 +2,6 @@
 //
 // NSOglMolView: Cocoa OpenGL View ObjC++ class
 //
-// $Id: NSOglMolView.hpp,v 1.3 2010/12/07 14:14:31 rishitani Exp $
-//
 
 //
 // Custom view for OpenGL display
@@ -24,8 +22,8 @@
 }
 
 // MSAA flag setting
-+ (void) setForceMSAADisabled:(BOOL)disabled;
-+ (BOOL) getForceMSAADisabled;
++ (void) setForceMSAA:(int)itry;
++ (int) getForceMSAA;
 
 //
 // OpenGL support
@@ -86,31 +84,34 @@
 @end
 
 // MSAA related static var
-static BOOL sForceMSAADisabled = NO;
+static int sForceMSAA = 0;
 
 @implementation NSOglMolView
 
 // MSAA flag control support methods
-+ (void) setForceMSAADisabled:(BOOL)disabled
++ (void) setForceMSAA:(int)itry
 {
-  sForceMSAADisabled = disabled;
+  sForceMSAA = itry;
+  MB_DPRINTLN("sForceMSAA=%d", sForceMSAA);
 }
 
-+ (BOOL) getForceMSAADisabled
++ (int) getForceMSAA
 {
-  return sForceMSAADisabled;
+  return sForceMSAA;
 }
 
 // pixel format definition
 + (NSOpenGLPixelFormat*) basicPixelFormat
 {
   // whether to try MSAA or not
-  BOOL tryMSAA = ![NSOglMolView getForceMSAADisabled];
+  int tryMSAA = [NSOglMolView getForceMSAA];
+  MB_DPRINTLN("TryMSAA=%d", tryMSAA);
 
-  if (tryMSAA) {
+  if (tryMSAA>0) {
     // Try MSAA pixel formats
-    NSInteger sampleCounts[] = {8, 4, 2, 0};
-    for (int i = 0; sampleCounts[i] > 0; i++) {
+    // NSInteger sampleCounts[] = {8, 4, 2, 0};
+    NSInteger sampleCounts[] = {0, 2, 4, 8, 16};
+    for (int i = tryMSAA; sampleCounts[i] > 0; i--) {
       NSOpenGLPixelFormat* pf = [NSOglMolView pixelFormatWithMSAA:YES samples:sampleCounts[i]];
       if (pf != nil) {
         LOG_DPRINTLN("NSOglMolView: MSAA enabled with %ld samples", (long)sampleCounts[i]);

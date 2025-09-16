@@ -47,6 +47,9 @@ interface qINativeWidget : nsISupports
   /// Use HiDPI display (display with sclfac!=1)
   attribute boolean useHiDPI;
 
+  /// Enable MSAA support
+  attribute long enableMSAA;
+
   attribute long sceneID;
   attribute long viewID;
 

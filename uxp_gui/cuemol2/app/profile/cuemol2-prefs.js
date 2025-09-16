@@ -43,6 +43,7 @@ pref("cuemol2.ui.mouse-multitouch-pad", true);
 
 pref("cuemol2.ui.view.use_hidpi", true);
 pref("cuemol2.ui.view.use_gl_shader", true);
+pref("cuemol2.ui.view.enable_msaa", 2);
 
 
 // Feedback URL

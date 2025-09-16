@@ -114,6 +114,12 @@ exports.setup = function (window, aFrm, aScID, aVwID)
       return;
     }
 
+    if (pref.has("cuemol2.ui.view.enable_msaa")) {
+      const val = pref.get("cuemol2.ui.view.enable_msaa");
+      natwin.enableMSAA = val;
+      dd("********** pref enable-msaa = "+val);
+    }
+
     // Get base window object
     var treeOwner = window.QueryInterface(Ci.nsIInterfaceRequestor)
       .getInterface(Ci.nsIWebNavigation)
@@ -184,15 +190,16 @@ exports.updateNatWins = function ()
 
 function setPrefs(natwin)
 {
-  //window.alert("use-gl-shader = "+natwin.useGlShader);
-  dd("********** Use-gl-shader = "+natwin.useGlShader);
-  if (pref.has("cuemol2.ui.view.use_gl_shader")) {
-    let val = pref.get("cuemol2.ui.view.use_gl_shader");
-    dd("********** pref use-gl-shader = "+val);
-    natwin.useGlShader = val;
-  }
-  else
-    natwin.useGlShader = false; // default: not use glshader
+  // dd("********** Use-gl-shader = "+natwin.useGlShader);
+  // if (pref.has("cuemol2.ui.view.use_gl_shader")) {
+  //   let val = pref.get("cuemol2.ui.view.use_gl_shader");
+  //   dd("********** pref use-gl-shader = "+val);
+  //   natwin.useGlShader = val;
+  // }
+  // else
+  //   natwin.useGlShader = false; // default: not use glshader
+
+  natwin.useGlShader = true;
 
   if (pref.has("cuemol2.ui.view.use_hidpi"))
     natwin.useHiDPI = pref.get("cuemol2.ui.view.use_hidpi");
