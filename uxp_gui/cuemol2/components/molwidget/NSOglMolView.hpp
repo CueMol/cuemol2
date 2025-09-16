@@ -16,12 +16,28 @@
 
   BOOL mIgnoreHittest;
   BOOL mEmulateRBtn;
+
+  // MSAA related flags
+  BOOL mMSAAEnabled;
+  NSInteger mMSAASamples;
+
 }
+
+// MSAA flag setting
++ (void) setForceMSAADisabled:(BOOL)disabled;
++ (BOOL) getForceMSAADisabled;
 
 //
 // OpenGL support
 //
 + (NSOpenGLPixelFormat*) basicPixelFormat;
+// MSAA support
++ (NSOpenGLPixelFormat*) pixelFormatWithMSAA:(BOOL)useMSAA samples:(NSInteger)samples;
+
+// MSAA support methods
+- (BOOL) isMSAAEnabled;
+- (NSInteger) getMSAASamples;
+
 - (void) prepareOpenGL;
 - (id) initWithFrameAndOwner: (NSRect) frameRect
 		       owner: (XPCNativeWidgetCocoa *) aOwner;
@@ -69,23 +85,104 @@
 - (BOOL) getUseRbtnEmul;
 @end
 
+// MSAA related static var
+static BOOL sForceMSAADisabled = NO;
+
 @implementation NSOglMolView
+
+// MSAA flag control support methods
++ (void) setForceMSAADisabled:(BOOL)disabled
+{
+  sForceMSAADisabled = disabled;
+}
+
++ (BOOL) getForceMSAADisabled
+{
+  return sForceMSAADisabled;
+}
 
 // pixel format definition
 + (NSOpenGLPixelFormat*) basicPixelFormat
 {
-  NSOpenGLPixelFormatAttribute attributes [] = {
-    NSOpenGLPFAWindow,
-    NSOpenGLPFADoubleBuffer,	// double buffered
-    NSOpenGLPFADepthSize,
-    (NSOpenGLPixelFormatAttribute) 16, // 16 bit depth buffer
-    // NSOpenGLPFAMultisample,
-    // NSOpenGLPFASampleBuffers, 1,
-    // NSOpenGLPFASamples, 4,
-    (NSOpenGLPixelFormatAttribute) 0
-  };
-  return [[[NSOpenGLPixelFormat alloc] initWithAttributes:attributes] autorelease];
+  // whether to try MSAA or not
+  BOOL tryMSAA = ![NSOglMolView getForceMSAADisabled];
+
+  if (tryMSAA) {
+    // Try MSAA pixel formats
+    NSInteger sampleCounts[] = {8, 4, 2, 0};
+    for (int i = 0; sampleCounts[i] > 0; i++) {
+      NSOpenGLPixelFormat* pf = [NSOglMolView pixelFormatWithMSAA:YES samples:sampleCounts[i]];
+      if (pf != nil) {
+        LOG_DPRINTLN("NSOglMolView: MSAA enabled with %ld samples", (long)sampleCounts[i]);
+        return pf;
+      }
+    }
+    
+    LOG_DPRINTLN("NSOglMolView: MSAA not available, falling back to non-MSAA");
+  } else {
+    LOG_DPRINTLN("NSOglMolView: MSAA forcibly disabled");
+  }
+  
+  // Fallback to pixformat without MSAA
+  return [NSOglMolView pixelFormatWithMSAA:NO samples:0];
 }
+
++ (NSOpenGLPixelFormat*) pixelFormatWithMSAA:(BOOL)useMSAA samples:(NSInteger)samples
+{
+  NSMutableArray* attributes = [NSMutableArray array];
+  
+  // NSOpenGLPixelFormatAttribute attributes [] = {
+  //   NSOpenGLPFAWindow,
+  //   NSOpenGLPFADoubleBuffer,	// double buffered
+  //   NSOpenGLPFADepthSize,
+  //   (NSOpenGLPixelFormatAttribute) 16, // 16 bit depth buffer
+  //   // NSOpenGLPFAMultisample,
+  //   // NSOpenGLPFASampleBuffers, 1,
+  //   // NSOpenGLPFASamples, 4,
+  //   (NSOpenGLPixelFormatAttribute) 0
+  // };
+  // return [[[NSOpenGLPixelFormat alloc] initWithAttributes:attributes] autorelease];
+
+  // Basic attributes
+  [attributes addObject:@(NSOpenGLPFAWindow)];
+  [attributes addObject:@(NSOpenGLPFADoubleBuffer)];
+  [attributes addObject:@(NSOpenGLPFADepthSize)];
+  [attributes addObject:@(16)]; // 16 bit depth buffer
+  
+  // Color buffer
+  [attributes addObject:@(NSOpenGLPFAColorSize)];
+  [attributes addObject:@(24)]; // 24-bit color
+  [attributes addObject:@(NSOpenGLPFAAlphaSize)];
+  [attributes addObject:@(8)]; // 8-bit alpha
+  
+  // Enable MSAA
+  if (useMSAA && samples > 0) {
+    [attributes addObject:@(NSOpenGLPFAMultisample)];
+    [attributes addObject:@(NSOpenGLPFASampleBuffers)];
+    [attributes addObject:@(1)];
+    [attributes addObject:@(NSOpenGLPFASamples)];
+    [attributes addObject:@(samples)];
+  }
+  
+  // terminate attribute list
+  [attributes addObject:@(0)];
+  
+  // convert NSArray to C array
+  NSOpenGLPixelFormatAttribute* attributeArray = 
+    (NSOpenGLPixelFormatAttribute*)calloc([attributes count], sizeof(NSOpenGLPixelFormatAttribute));
+  
+  for (NSUInteger i = 0; i < [attributes count]; i++) {
+    attributeArray[i] = (NSOpenGLPixelFormatAttribute)[[attributes objectAtIndex:i] integerValue];
+  }
+  
+  NSOpenGLPixelFormat* pixelFormat = 
+    [[NSOpenGLPixelFormat alloc] initWithAttributes:attributeArray];
+  
+  free(attributeArray);
+  
+  return [pixelFormat autorelease];
+}
+
 
 - (id) initWithFrameAndOwner: (NSRect) frameRect
   owner: (XPCNativeWidgetCocoa *) aOwner
@@ -93,16 +190,36 @@
   mOwner = aOwner;
   mIgnoreHittest = NO;
   mEmulateRBtn = NO;
+
+  // Init MSAA related flags
+  mMSAAEnabled = NO;
+  mMSAASamples = 0;
+
   //MB_DPRINT("initWithFramwAndOwner: owner=%p\n", mOwner);
   NSOpenGLPixelFormat * pf = [NSOglMolView basicPixelFormat];
 
   self = [super initWithFrame: frameRect pixelFormat: pf];
-  /*
-  self = [super initWithFrame: frameRect];
-  NSOpenGLContext *ctxt = 
-    [[[NSOpenGLContext alloc] initWithFormat:pf shareContext: share] autorelease];
-  [self setOpenGLContext: ctxt];
-  */
+  // self = [super initWithFrame: frameRect];
+  // NSOpenGLContext *ctxt = 
+  //   [[[NSOpenGLContext alloc] initWithFormat:pf shareContext: share] autorelease];
+  // [self setOpenGLContext: ctxt];
+
+  // Show MSAA status
+  if (self && pf) {
+    GLint sampleBuffers = 0;
+    GLint samples = 0;
+    
+    [pf getValues:&sampleBuffers forAttribute:NSOpenGLPFASampleBuffers forVirtualScreen:0];
+    [pf getValues:&samples forAttribute:NSOpenGLPFASamples forVirtualScreen:0];
+    
+    if (sampleBuffers > 0 && samples > 0) {
+      mMSAAEnabled = YES;
+      mMSAASamples = samples;
+      LOG_DPRINTLN("NSOglMolView: Created with MSAA (%ld samples)", (long)samples);
+    } else {
+      LOG_DPRINTLN("NSOglMolView: Created without MSAA");
+    }
+  }
 
   return self;
 }
@@ -143,55 +260,14 @@
 
 - (void) drawRect: (NSRect) rect
 {		
-  /*
-  // Get view dimensions in pixels
-  NSRect backingBounds = [self convertRectToBacking:[self bounds]];
-  GLsizei backingPixelWidth  = (GLsizei)(backingBounds.size.width),
-    backingPixelHeight = (GLsizei)(backingBounds.size.height);
-
-  MB_DPRINT("DrawRect(%f,%f)-(%f,%f) called!!\n",
-	    backingBounds.origin.x, backingBounds.origin.y,
-	    backingBounds.size.width, backingBounds.size.height);
-  */
-
   if (mOwner) 
     mOwner->doRedrawGL();
 
   return;
-  
-  /*
-    NSRectFill(rect);
-
-  [[NSColor whiteColor] setStroke];
-
-  NSRect rc = NSMakeRect(10, 10, 50, 50);
-    
-  NSBezierPath* thePath = [NSBezierPath bezierPath];
-  [thePath moveToPoint:rect.origin];
-  [thePath lineToPoint:NSMakePoint(NSMaxX(rect), NSMaxY(rect))];
-  [thePath moveToPoint:NSMakePoint(NSMinX(rect), NSMaxY(rect))];
-  [thePath lineToPoint:NSMakePoint(NSMaxX(rect), NSMinY(rect))];
-  [thePath closePath];
-  [thePath stroke];
-  */
-  //[super drawRect:rect];
 }
 
 ////////////////////////////////////////
 // Mouse events
-/*
-- (void)mouseEntered:(NSEvent *)theEvent
-{
-//MB_DPRINT("===NSOglMolView: mouse entered called!!\n");
-  //[super mouseEntered:theEvent];
-}
-
-- (void)mouseExited:(NSEvent *)theEvent
-{
-  //MB_DPRINT("===NSOglMolView: mouseExited called!!\n");
-  //[super mouseExited:theEvent];
-}
-*/
 
 - (void)mouseMoved:(NSEvent *)theEvent
 {
@@ -206,11 +282,6 @@
   //MB_DPRINTLN("MouseMove NEXT ignore hittest=%d", mIgnoreHittest);
 
   [[self nextResponder] mouseMoved:theEvent];
-
-  //MB_DPRINTLN("MouseMove END ignore hittest=%d", mIgnoreHittest);
-  //[super mouseMoved:theEvent];
-  //MB_DPRINTLN("MouseMove NextResponder=%p", [self nextResponder]);
-  //[mParView mouseMoved:theEvent];
 }
 
 /////
@@ -490,4 +561,13 @@
   mEmulateRBtn = aFlag;
 }
 
+- (BOOL) isMSAAEnabled
+{
+  return mMSAAEnabled;
+}
+
+- (NSInteger) getMSAASamples
+{
+  return mMSAASamples;
+}
 @end
