@@ -80,7 +80,8 @@ SET(GLSL_SHADER_FILES
   es2_default_frag.glsl
   linew_vert.glsl
   linew_frag.glsl
-  linew_geom.glsl
+  ogl_core/trig_vert.glsl
+  ogl_core/trig_frag.glsl
 )
 
 #####################

@@ -7,7 +7,9 @@
 
 #include "OcDisplayList.hpp"
 #include "OglDisplayContext.hpp"
+#include "OglProgramObject.hpp"
 #include "GLSLLineHelper.hpp"
+#include "ShaderSetupHelper.hpp"
 
 #include <qsys/View.hpp>
 
@@ -18,6 +20,7 @@ OcDisplayList::OcDisplayList()
       m_pGlslLine(nullptr),
       m_pTrigArray(nullptr),
       m_pTrigMesh(nullptr),
+      m_pTrigPO(nullptr),
       m_fValid(false),
       m_nDrawMode(DRAWMODE_NONE),
       m_pColor(gfx::SolidColor::createRGB(0.5, 0.5, 0.5)),
@@ -104,14 +107,12 @@ void OcDisplayList::vertex(const Vector4D &aV)
 
             //////////////////////////////////////////////////////
         case DRAWMODE_TRIGSTRIP:
-            // printf("vertex color %X\n", color_value);
             m_mesh.addVertex(v, m_norm, color_value);
             break;
 
             //////////////////////////////////////////////////////
         case DRAWMODE_TRIGFAN:
             m_mesh.addVertex(v, m_norm, color_value);
-            // m_pIntData->meshVertex(v, m_norm, m_pColor);
             break;
     }
 }
@@ -290,18 +291,16 @@ void OcDisplayList::addTrigVert(const Vector4D &v1, const Vector4D &n1,
                                 qlib::quint32 c1)
 {
     m_trigBuf.push_back(TrigVertAttr{
-        float(v1.x()),
-        float(v1.y()),
-        float(v1.z()),
-        float(v1.w()),
-        float(gfx::getFR(c1)),
-        float(gfx::getFG(c1)),
-        float(gfx::getFB(c1)),
-        float(gfx::getFA(c1)),
-        float(n1.x()),
-        float(n1.y()),
-        float(n1.z()),
-        float(n1.w()),
+        qfloat32(v1.x()),
+        qfloat32(v1.y()),
+        qfloat32(v1.z()),
+        qbyte(gfx::getRCode(c1)),
+        qbyte(gfx::getGCode(c1)),
+        qbyte(gfx::getBCode(c1)),
+        qbyte(gfx::getACode(c1)),
+        qfloat32(n1.x()),
+        qfloat32(n1.y()),
+        qfloat32(n1.z()),
     });
 }
 
@@ -360,15 +359,16 @@ void OcDisplayList::createTrigArray()
         MB_ASSERT(m_pTrigArray == nullptr);
         m_pTrigArray = new TrigVertArray();
         m_pTrigArray->setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
-        m_pTrigArray->setAttrSize(3);
-        m_pTrigArray->setAttrInfo(0, DSLOC_VERT_POS, 4, qlib::type_consts::QTC_FLOAT32,
-                                  offsetof(TrigVertAttr, x));
-        m_pTrigArray->setAttrInfo(1, DSLOC_VERT_COLOR, 4,
-                                  qlib::type_consts::QTC_FLOAT32,
-                                  offsetof(TrigVertAttr, r));
-        m_pTrigArray->setAttrInfo(2, DSLOC_VERT_NORMAL, 4,
-                                  qlib::type_consts::QTC_FLOAT32,
-                                  offsetof(TrigVertAttr, nx));
+        // m_pTrigArray->setAttrSize(3);
+        // m_pTrigArray->setAttrInfo(0, DSLOC_VERT_POS, 4,
+        // qlib::type_consts::QTC_FLOAT32,
+        //                           offsetof(TrigVertAttr, x));
+        // m_pTrigArray->setAttrInfo(1, DSLOC_VERT_COLOR, 4,
+        //                           qlib::type_consts::QTC_FLOAT32,
+        //                           offsetof(TrigVertAttr, r));
+        // m_pTrigArray->setAttrInfo(2, DSLOC_VERT_NORMAL, 4,
+        //                           qlib::type_consts::QTC_FLOAT32,
+        //                           offsetof(TrigVertAttr, nx));
         m_pTrigArray->alloc(nelems_trig);
 
         size_t i = 0;
@@ -392,14 +392,16 @@ void OcDisplayList::createTrigMesh()
         MB_ASSERT(m_pTrigMesh == nullptr);
         m_pTrigMesh = new TrigMesh();
         m_pTrigMesh->setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
-        m_pTrigMesh->setAttrSize(3);
-        m_pTrigMesh->setAttrInfo(0, DSLOC_VERT_POS, 4, qlib::type_consts::QTC_FLOAT32,
-                                 offsetof(TrigVertAttr, x));
-        m_pTrigMesh->setAttrInfo(1, DSLOC_VERT_COLOR, 4, qlib::type_consts::QTC_FLOAT32,
-                                 offsetof(TrigVertAttr, r));
-        m_pTrigMesh->setAttrInfo(2, DSLOC_VERT_NORMAL, 4,
-                                 qlib::type_consts::QTC_FLOAT32,
-                                 offsetof(TrigVertAttr, nx));
+        // m_pTrigMesh->setAttrSize(3);
+        // m_pTrigMesh->setAttrInfo(0, DSLOC_VERT_POS, 4,
+        // qlib::type_consts::QTC_FLOAT32,
+        //                          offsetof(TrigVertAttr, x));
+        // m_pTrigMesh->setAttrInfo(1, DSLOC_VERT_COLOR, 4,
+        // qlib::type_consts::QTC_FLOAT32,
+        //                          offsetof(TrigVertAttr, r));
+        // m_pTrigMesh->setAttrInfo(2, DSLOC_VERT_NORMAL, 4,
+        //                          qlib::type_consts::QTC_FLOAT32,
+        //                          offsetof(TrigVertAttr, nx));
         m_pTrigMesh->alloc(nMeshVerts);
         m_pTrigMesh->allocInd(nMeshFaces * 3);
         size_t i = 0;
@@ -408,12 +410,16 @@ void OcDisplayList::createTrigMesh()
             const auto &v1 = pelem->v;
             const auto &n1 = pelem->n;
             m_pTrigMesh->at(i) = TrigVertAttr{
-                float(v1.x()),         float(v1.y()),
-                float(v1.z()),         1.0f,
-                float(gfx::getFR(c1)), float(gfx::getFG(c1)),
-                float(gfx::getFB(c1)), float(gfx::getFA(c1)),
-                float(n1.x()),         float(n1.y()),
-                float(n1.z()),         1.0f,
+                qfloat32(v1.x()),
+                qfloat32(v1.y()),
+                qfloat32(v1.z()),
+                qbyte(gfx::getRCode(c1)),
+                qbyte(gfx::getGCode(c1)),
+                qbyte(gfx::getBCode(c1)),
+                qbyte(gfx::getACode(c1)),
+                qfloat32(n1.x()),
+                qfloat32(n1.y()),
+                qfloat32(n1.z()),
             };
             i++;
         }
@@ -447,6 +453,91 @@ void OcDisplayList::recordEnd()
     createTrigMesh();
 }
 
+void OcDisplayList::initShader(gfx::DisplayContext *pdc)
+{
+    if (m_pTrigPO != nullptr) {
+        return;
+    }
+    ShaderSetupHelper ssh(pdc);
+
+    if (!ssh.checkEnvVS()) {
+        MB_DPRINTLN("GLShader not supported");
+    }
+    m_pTrigPO = ssh.createProgObj("gpu_trig", "%%CONFDIR%%/data/shaders/trig_vert.glsl",
+                                  "%%CONFDIR%%/data/shaders/trig_frag.glsl");
+
+    // setup attributes
+    m_nVertexLoc = m_pTrigPO->getAttribLocation("aVertex");
+    m_nColLoc = m_pTrigPO->getAttribLocation("aColor");
+    m_nNormLoc = m_pTrigPO->getAttribLocation("aNormal");
+}
+
+void OcDisplayList::setupTrigArrayAttrs()
+{
+    if (m_pTrigArray == nullptr) {
+        return;
+    }
+    auto &data = *m_pTrigArray;
+    if (data.getAttrSize() > 0) {
+        // already setup
+        return;
+    }
+    data.setAttrSize(3);
+    data.setAttrInfo(0, m_nVertexLoc, 3, qlib::type_consts::QTC_FLOAT32,
+                     offsetof(TrigVertAttr, x));
+    data.setAttrInfo(1, m_nColLoc, 4, qlib::type_consts::QTC_UINT8,
+                     offsetof(TrigVertAttr, r));
+    data.setAttrInfo(2, m_nNormLoc, 3, qlib::type_consts::QTC_FLOAT32,
+                     offsetof(TrigVertAttr, nx));
+}
+
+void OcDisplayList::setupTrigMeshAttrs()
+{
+    if (m_pTrigMesh == nullptr) {
+        return;
+    }
+    auto &data = *m_pTrigMesh;
+    if (data.getAttrSize() > 0) {
+        // already setup
+        return;
+    }
+    data.setAttrSize(3);
+    data.setAttrInfo(0, m_nVertexLoc, 3, qlib::type_consts::QTC_FLOAT32,
+                     offsetof(TrigVertAttr, x));
+    data.setAttrInfo(1, m_nColLoc, 4, qlib::type_consts::QTC_UINT8,
+                     offsetof(TrigVertAttr, r));
+    data.setAttrInfo(2, m_nNormLoc, 3, qlib::type_consts::QTC_FLOAT32,
+                     offsetof(TrigVertAttr, nx));
+}
+
+void OcDisplayList::drawTrigArray(gfx::DisplayContext *pdc)
+{
+    if (m_pTrigArray == nullptr) {
+        return;
+    }
+    initShader(pdc);
+    setupTrigArrayAttrs();
+    m_pTrigPO->enable();
+    m_pTrigPO->setUniformF("frag_alpha", pdc->getAlpha());
+    m_pTrigPO->setUniform("enable_lighting", true);
+    pdc->drawElem(*m_pTrigArray);
+    m_pTrigPO->disable();
+}
+
+void OcDisplayList::drawTrigMesh(gfx::DisplayContext *pdc)
+{
+    if (m_pTrigMesh == nullptr) {
+        return;
+    }
+    initShader(pdc);
+    setupTrigMeshAttrs();
+    m_pTrigPO->enable();
+    m_pTrigPO->setUniformF("frag_alpha", pdc->getAlpha());
+    m_pTrigPO->setUniform("enable_lighting", true);
+    pdc->drawElem(*m_pTrigMesh);
+    m_pTrigPO->disable();
+}
+
 gfx::DisplayContext *OcDisplayList::createDisplayList()
 {
     return nullptr;
@@ -469,18 +560,24 @@ void OcDisplayList::callDisplayListImpl(OglDisplayContext *pdc)
         m_pGlslLine->initShader(pdc);
         m_pGlslLine->draw(pdc);
     }
-    
+
     // Triangles
-    auto *pTrigs = getTrigArray();
-    if (pTrigs != nullptr) {
-        pdc->drawElem(*pTrigs);
-    }
+    drawTrigArray(pdc);
+    // auto *pTrigs = getTrigArray();
+    // if (pTrigs != nullptr) {
+    //     initShader(pdc);
+    //     setupTrigArrayAttrs();
+    //     pdc->drawElem(*pTrigs);
+    // }
 
     // Trig mesh
-    auto *pMesh = getTrigMesh();
-    if (pMesh != nullptr) {
-        pdc->drawElem(*pMesh);
-    }
+    drawTrigMesh(pdc);
+    // auto *pMesh = getTrigMesh();
+    // if (pMesh != nullptr) {
+    //     initShader(pdc);
+    //     setupTrigMeshAttrs();
+    //     pdc->drawElem(*pMesh);
+    // }
 }
 
 }  // namespace sysdep

@@ -14,6 +14,7 @@
 namespace sysdep {
 
 class OglDisplayContext;
+class OglProgramObject;
 class GLSLLineHelper;
 
 class SYSDEP_API OcDisplayList : public gfx::DisplayContext
@@ -44,12 +45,11 @@ private:
     //////////
     // triangles
 
-    // TODO: use uint8 for colors
     struct TrigVertAttr
     {
-        float x, y, z, w;
-        float r, g, b, a;
-        float nx, ny, nz, nw;
+        qfloat32 x, y, z;
+        qbyte r, g, b, a;
+        qfloat32 nx, ny, nz;
     };
 
     //////////
@@ -69,6 +69,12 @@ private:
     using TrigMesh = gfx::DrawAttrElems<qlib::quint32, TrigVertAttr>;
     TrigMesh *m_pTrigMesh;
 
+    // Triangle shader
+    quint32 m_nVertexLoc;
+    quint32 m_nColLoc;
+    quint32 m_nNormLoc;
+    OglProgramObject *m_pTrigPO;
+    
     /////
 
     bool m_fValid;
@@ -127,12 +133,17 @@ private:
     void createTrigArray();
     void createTrigMesh();
 
+    void initShader(gfx::DisplayContext *pdc);
+    void setupTrigArrayAttrs();
+    void setupTrigMeshAttrs();
+
+
 public:
     // Attribute location ID
     // These values should coincide with the location layout qualifiers in the shader
-    static const int DSLOC_VERT_POS = 0;
-    static const int DSLOC_VERT_COLOR = 1;
-    static const int DSLOC_VERT_NORMAL = 2;
+    // static const int DSLOC_VERT_POS = 0;
+    // static const int DSLOC_VERT_COLOR = 1;
+    // static const int DSLOC_VERT_NORMAL = 2;
 
     OcDisplayList();
     virtual ~OcDisplayList();
@@ -192,14 +203,17 @@ private:
     //     return m_pLineArray;
     // }
 
-    auto *getTrigArray() const
-    {
-        return m_pTrigArray;
-    }
-    auto *getTrigMesh() const
-    {
-        return m_pTrigMesh;
-    }
+    void drawTrigArray(gfx::DisplayContext *pdc);
+    void drawTrigMesh(gfx::DisplayContext *pdc);
+
+    // auto *getTrigArray() const
+    // {
+    //     return m_pTrigArray;
+    // }
+    // auto *getTrigMesh() const
+    // {
+    //     return m_pTrigMesh;
+    // }
 
 };
 
