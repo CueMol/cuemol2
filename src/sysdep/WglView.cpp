@@ -9,6 +9,7 @@
 #ifdef HAVE_GLEW
 #define GLEW_STATIC
 #include <GL/glew.h>
+#include <GL/wglew.h>
 // #pragma comment(lib, "glew32.lib")
 #endif
 
@@ -41,6 +42,11 @@ WglView::WglView()
   m_nDragStart = DRAG_NONE;
 
   m_bHasQuadBuffer = false;
+
+  m_nMultiSamples = 16;  // default: 4xMSAA
+  m_bHasMultisample = false;
+
+
 /*
   m_hStdCursor = ::LoadCursor(NULL, IDC_ARROW);
   m_hWaitCursor = ::LoadCursor(NULL, IDC_WAIT);
@@ -120,6 +126,13 @@ bool WglView::attach(HWND hWnd, HDC hDC)
   // perform OpenGL-common initialization tasks
   OglView::setup();
 
+#ifdef HAVE_GLEW
+  if (m_bHasMultisample && WGL_ARB_multisample) {
+    glEnable(GL_MULTISAMPLE_ARB);
+    LOG_DPRINTLN("Multisample antialiasing enabled");
+  }
+#endif
+
   m_bInitOK = true;
   MB_DPRINTLN("WglView::setup() OK.");
 
@@ -153,103 +166,91 @@ bool WglView::setupShareList()
   return true;
 }
 
-bool WglView::setupPixelFormat()
+int WglView::choosePixFmt(bool bStereo)
 {
-  int ipx;
-  /*
-  int ipx = ::GetPixelFormat(m_hDC);
-  if (ipx>0) {
-    ::DescribePixelFormat(m_hDC, ipx,
-                          sizeof(PIXELFORMATDESCRIPTOR), &m_pfd);
-    return true;
-  }
-   */
-
-  ::memset(&m_pfd, 0, sizeof(PIXELFORMATDESCRIPTOR));
-  m_pfd.nSize = (sizeof(PIXELFORMATDESCRIPTOR));
-  m_pfd.nVersion = 1;
-
-  m_pfd.dwFlags =
-    PFD_DRAW_TO_WINDOW | // support window
-      PFD_SUPPORT_OPENGL |          // support OpenGL
-        PFD_DOUBLEBUFFER;           // double buffered
-  m_pfd.iPixelType = PFD_TYPE_RGBA; // RGBA type
-  m_pfd.cColorBits = 24; // 24-bit color depth
-  m_pfd.cDepthBits = 32;
-  m_pfd.iLayerType = PFD_MAIN_PLANE; // main layer
-  
-  m_pfd.cRedBits = 8;
-  m_pfd.cGreenBits = 8;
-  m_pfd.cBlueBits = 8;
-
-  // valid color bit size
-  int bufsz[] = {32, 24, 16, 0};
-  int i;
-
-  // Check Quad-buffered stereo capability
-  m_bHasQuadBuffer = false;
-  for (i=0; bufsz[i]>0; ++i) {
-    ipx = choosePixFmt(bufsz[i], true);
-    if (ipx>0) {
-      LOG_DPRINTLN("WglView.PixFmt> cbits=%d (hardware stereo) is accepted.", bufsz[i]);
-      m_bHasQuadBuffer = true;
-      break;
-    }
-  }
-
-  if (m_bHasQuadBuffer) {
-    LOG_DPRINTLN("WglView.PixFmt> Quadbuffer stereo capable videoboard is detected.");
-    if (getStereoMode()==qsys::Camera::CSM_HW_QBUF) {
-      setPixFmt(ipx);
-      return true; // ==> Use the found quadbuffer stereo pixel format
-    }
-  }
-  else {
-    MB_DPRINTLN("Cannot use quad-buffered stereo in this environment.");
-  }
-  
-  // Check non-stereo OpenGL pixel format
-  for (i=0; bufsz[i]>0; ++i) {
-    ipx = choosePixFmt(bufsz[i], false);
-    if (ipx>0) {
-      LOG_DPRINTLN("WglView.PixFmt> cbits=%d (no stereo) is accepted.", bufsz[i]);
-      setPixFmt(ipx);
-      return true;
-    }
-  }
-
-  LOG_DPRINTLN("WglView.PixFmt> FATAL ERROR, No suitable OpenGL pixel format was found!!");
-  return false;
-}
-
-int WglView::choosePixFmt(int nColorBits, bool bStereo)
-{
+  const int colorBitSizes[] = {32, 24, 16, 0};
   int pixelformat;
-  m_pfd.cColorBits = nColorBits;
 
-  if (bStereo)
-    m_pfd.dwFlags |= PFD_STEREO;
-  else
-    m_pfd.dwFlags &= ~PFD_STEREO;
+  for (int i = 0; colorBitSizes[i] > 0; ++i) {
+    auto nColorBits = colorBitSizes[i];
+    m_pfd.cColorBits = nColorBits;
+    if (bStereo)
+      m_pfd.dwFlags |= PFD_STEREO;
+    else
+      m_pfd.dwFlags &= ~PFD_STEREO;
 
-  if ( (pixelformat = ::ChoosePixelFormat(m_hDC, &m_pfd)) == 0 ) {
-    MB_DPRINTLN("ChoosePixFmt(cbit:%d, stereo:%d) failed", nColorBits, bStereo);
-    return 0;
+    pixelformat = ::ChoosePixelFormat(m_hDC, &m_pfd);
+    if (pixelformat == 0) {
+      continue;
+    }
+
+    ::DescribePixelFormat(m_hDC, pixelformat,
+                          sizeof(PIXELFORMATDESCRIPTOR), &m_pfd);
+    
+    // check the selected pixel format
+    if (bStereo)
+      if (!(m_pfd.dwFlags & PFD_STEREO))
+        continue;
+    if (nColorBits>m_pfd.cColorBits)
+      continue;
+
+    // OK
+    return pixelformat;
   }
 
-  ::DescribePixelFormat(m_hDC, pixelformat,
-                        sizeof(PIXELFORMATDESCRIPTOR), &m_pfd);
-    
-  // check the selected pixel format
-  if (bStereo)
-    if (!(m_pfd.dwFlags & PFD_STEREO))
-      return 0;
-
-  if (nColorBits>m_pfd.cColorBits)
-    return 0;
-
-  return pixelformat;
+  MB_DPRINTLN("ChoosePixFmt(stereo:%d) failed", bStereo);
+  return 0;
 }
+
+#ifdef HAVE_GLEW
+// Choose pixel format using wglChoosePixelFormatARB extension function
+int WglView::choosePixFmtARB(bool bStereo, int nMultiSamples)
+{
+  const int colorBitSizes[] = {32, 24, 16, 0};
+  float fAttributes[] = {0, 0};
+  int pixelFormat = 0;
+  UINT numFormats = 0;
+
+  for (int i = 0; colorBitSizes[i] > 0; ++i) {
+    auto nColorBits = colorBitSizes[i];
+    std::vector<int> attributes;
+    // Basic attributes
+    attributes.push_back(WGL_DRAW_TO_WINDOW_ARB); attributes.push_back(GL_TRUE);
+    attributes.push_back(WGL_SUPPORT_OPENGL_ARB); attributes.push_back(GL_TRUE);
+    attributes.push_back(WGL_ACCELERATION_ARB); attributes.push_back(WGL_FULL_ACCELERATION_ARB);
+    attributes.push_back(WGL_COLOR_BITS_ARB); attributes.push_back(nColorBits);
+    attributes.push_back(WGL_ALPHA_BITS_ARB); attributes.push_back(8);
+    attributes.push_back(WGL_DEPTH_BITS_ARB); attributes.push_back(24);
+    // attributes.push_back(WGL_STENCIL_BITS_ARB); attributes.push_back(8);
+    attributes.push_back(WGL_DOUBLE_BUFFER_ARB); attributes.push_back(GL_TRUE);
+    attributes.push_back(WGL_PIXEL_TYPE_ARB); attributes.push_back(WGL_TYPE_RGBA_ARB);
+    // HW Stereo
+    if (bStereo) {
+      attributes.push_back(WGL_STEREO_ARB);
+      attributes.push_back(GL_TRUE);
+    }
+    // MSAA
+    if (nMultiSamples > 0 && WGL_ARB_multisample) {
+      attributes.push_back(WGL_SAMPLE_BUFFERS_ARB);
+      attributes.push_back(GL_TRUE);
+      attributes.push_back(WGL_SAMPLES_ARB);
+      attributes.push_back(nMultiSamples);
+    }
+    attributes.push_back(0);
+    BOOL result = wglChoosePixelFormatARB(m_hDC, attributes.data(), fAttributes, 
+                                          1, &pixelFormat, &numFormats);
+  
+    MB_DPRINTLN("wglChoosePixelFormatARB result=%d, pixfmt=%d, numfmt=%d", result, pixelFormat, numFormats);
+    if (result && numFormats >= 1) {
+      LOG_DPRINTLN("wglChoosePixelFormatARB cbit=%d, msaa=%d, stereo=%d OK", nColorBits, nMultiSamples, bStereo);
+      return pixelFormat;
+    }
+  }
+  
+  return 0;
+}
+#endif
+
 
 bool WglView::setPixFmt(int ipx)
 {
@@ -258,8 +259,6 @@ bool WglView::setPixFmt(int ipx)
 
   return true;
 }
-
-/////////////////////////////////////////////////////////////////////////////
 
 /// Query hardware stereo capability
 bool WglView::hasHWStereo() const
@@ -270,13 +269,144 @@ bool WglView::hasHWStereo() const
 
 ////////////////////////////////////////////
 
-// namespace qsys {
-//   //static
-//   qsys::View *View::createView()
-//   {
-//     qsys::View *pret = MB_NEW WglView();
-//     MB_DPRINTLN("WglView created (%p, ID=%d)", pret, pret->getUID());
-//     return pret;
-// //    return NULL;
-//   }
-// }
+bool WglView::setupPixelFormat()
+{
+  ::memset(&m_pfd, 0, sizeof(PIXELFORMATDESCRIPTOR));
+  m_pfd.nSize = sizeof(PIXELFORMATDESCRIPTOR);
+  m_pfd.nVersion = 1;
+  m_pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+  m_pfd.iPixelType = PFD_TYPE_RGBA;
+  m_pfd.cColorBits = 24;
+  m_pfd.cDepthBits = 32;
+  m_pfd.iLayerType = PFD_MAIN_PLANE;
+  m_pfd.cRedBits = 8;
+  m_pfd.cGreenBits = 8;
+  m_pfd.cBlueBits = 8;
+  
+#ifdef HAVE_GLEW
+  if (!WGL_ARB_pixel_format) {
+    LOG_DPRINTLN("WglView.PixFmt> Failed to initialize GLEW, falling back to legacy mode");
+    return tryLegacyPixelFormat();
+  }
+  
+  if (tryAdvancedPixelFormat()) {
+    LOG_DPRINTLN("WglView.PixFmt> Advanced pixel format selected successfully");
+    return true;
+  }
+#endif
+  
+  LOG_DPRINTLN("WglView.PixFmt> Falling back to legacy pixel format");
+  return tryLegacyPixelFormat();
+}
+
+
+// Try pixel format without extension
+bool WglView::tryLegacyPixelFormat()
+{
+  int pixelFormat;
+  
+  // Stereo mode request
+  bool needStereo = (getStereoMode() == qsys::Camera::CSM_HW_QBUF);
+
+  // Check Quad-buffered stereo capability
+  m_bHasQuadBuffer = false;
+  pixelFormat = choosePixFmt(true);
+  if (pixelFormat > 0) {
+    LOG_DPRINTLN("WglView.PixFmt> Quadbuffer stereo capable videoboard is detected.");
+    m_bHasQuadBuffer = true;
+  }
+  
+  if (m_bHasQuadBuffer && needStereo) {
+    setPixFmt(pixelFormat);
+    return true;
+  }
+  
+  // Check non-stereo OpenGL pixel format
+  pixelFormat = choosePixFmt(false);
+  if (pixelFormat > 0) {
+    setPixFmt(pixelFormat);
+    return true;
+  }
+  
+  LOG_DPRINTLN("WglView.PixFmt> FATAL ERROR, No suitable OpenGL pixel format was found!!");
+  return false;
+}
+
+#ifdef HAVE_GLEW
+
+bool WglView::initializeGLEW()
+{
+  // Initialize GLEW
+  static bool glewInitialized = false;
+  if (!glewInitialized) {
+    GLenum err = glewInit();
+    if (err != GLEW_OK) {
+      LOG_DPRINTLN("GLEW initialization failed: %s", glewGetErrorString(err));
+      return false;
+    }
+    glewInitialized = true;
+    LOG_DPRINTLN("GLEW initialized successfully");
+  }
+  return true;
+}
+
+bool WglView::tryMSAAPixelFormat(bool stereo, int& pixelFormat)
+{
+  const int sampleCounts[] = {16, 8, 4, 2, 0};
+  
+  for (int i = 0; sampleCounts[i] >= 0; ++i) {
+    const auto smpCnt = sampleCounts[i];
+    if (smpCnt > m_nMultiSamples) {
+      continue;
+    }
+    
+    pixelFormat = choosePixFmtARB(stereo, smpCnt);
+    if (pixelFormat > 0) {
+      // Check actual num of samples
+      int actualSamples = 0;
+      int iattrs[] = {WGL_SAMPLES_ARB, 0};
+      wglGetPixelFormatAttribivARB(m_hDC, pixelFormat, 0, 1, 
+                                   iattrs, &actualSamples);
+      
+      LOG_DPRINTLN("WglView.PixFmt> MSAA: stereo=%d, samples=%d (requested=%d)", 
+                   stereo, actualSamples, smpCnt);
+      
+      // Update pixel format descriptor
+      ::DescribePixelFormat(m_hDC, pixelFormat, sizeof(PIXELFORMATDESCRIPTOR), &m_pfd);
+      return true;
+    }
+  }
+  
+  return false;
+}
+
+bool WglView::tryAdvancedPixelFormat()
+{
+  int pixelFormat = 0;
+  
+  // Stereo mode request
+  bool needStereo = (getStereoMode() == qsys::Camera::CSM_HW_QBUF);
+  
+  // Check Quad-buffered stereo capability
+  m_bHasMultisample = false;
+  if (tryMSAAPixelFormat(true, pixelFormat)) {
+    LOG_DPRINTLN("WglView.PixFmt> Quadbuffer stereo capable videoboard is detected.");
+    m_bHasQuadBuffer = true;
+  }
+
+  if (m_bHasQuadBuffer && needStereo) {
+    setPixFmt(pixelFormat);
+    return true;
+  }
+  
+  // Check non-stereo OpenGL pixel format
+  if (tryMSAAPixelFormat(false, pixelFormat)) {
+    setPixFmt(pixelFormat);
+    return true;
+  }
+
+  LOG_DPRINTLN("WglView.PixFmt> FATAL ERROR, No suitable OpenGL pixel format was found!!");
+  return false;
+}
+
+#endif
