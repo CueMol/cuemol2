@@ -197,23 +197,10 @@ public:
     virtual void setLineWidth(double lw);
 
     void callDisplayListImpl(OglDisplayContext *pdc);
-private:
-    // auto *getLineArray() const
-    // {
-    //     return m_pLineArray;
-    // }
 
+private:
     void drawTrigArray(gfx::DisplayContext *pdc);
     void drawTrigMesh(gfx::DisplayContext *pdc);
-
-    // auto *getTrigArray() const
-    // {
-    //     return m_pTrigArray;
-    // }
-    // auto *getTrigMesh() const
-    // {
-    //     return m_pTrigMesh;
-    // }
 
 };
 

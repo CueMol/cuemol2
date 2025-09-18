@@ -359,16 +359,7 @@ void OcDisplayList::createTrigArray()
         MB_ASSERT(m_pTrigArray == nullptr);
         m_pTrigArray = new TrigVertArray();
         m_pTrigArray->setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
-        // m_pTrigArray->setAttrSize(3);
-        // m_pTrigArray->setAttrInfo(0, DSLOC_VERT_POS, 4,
-        // qlib::type_consts::QTC_FLOAT32,
-        //                           offsetof(TrigVertAttr, x));
-        // m_pTrigArray->setAttrInfo(1, DSLOC_VERT_COLOR, 4,
-        //                           qlib::type_consts::QTC_FLOAT32,
-        //                           offsetof(TrigVertAttr, r));
-        // m_pTrigArray->setAttrInfo(2, DSLOC_VERT_NORMAL, 4,
-        //                           qlib::type_consts::QTC_FLOAT32,
-        //                           offsetof(TrigVertAttr, nx));
+
         m_pTrigArray->alloc(nelems_trig);
 
         size_t i = 0;
@@ -389,19 +380,12 @@ void OcDisplayList::createTrigMesh()
     const size_t nMeshVerts = m_mesh.getVertexSize();
     const size_t nMeshFaces = m_mesh.getFaceSize();
     if (nMeshFaces > 0) {
+        MB_DPRINTLN("OcDisplayList.createTrigMesh> Verts=%zu, Faces=%zu", nMeshVerts,
+                    nMeshFaces);
         MB_ASSERT(m_pTrigMesh == nullptr);
         m_pTrigMesh = new TrigMesh();
         m_pTrigMesh->setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
-        // m_pTrigMesh->setAttrSize(3);
-        // m_pTrigMesh->setAttrInfo(0, DSLOC_VERT_POS, 4,
-        // qlib::type_consts::QTC_FLOAT32,
-        //                          offsetof(TrigVertAttr, x));
-        // m_pTrigMesh->setAttrInfo(1, DSLOC_VERT_COLOR, 4,
-        // qlib::type_consts::QTC_FLOAT32,
-        //                          offsetof(TrigVertAttr, r));
-        // m_pTrigMesh->setAttrInfo(2, DSLOC_VERT_NORMAL, 4,
-        //                          qlib::type_consts::QTC_FLOAT32,
-        //                          offsetof(TrigVertAttr, nx));
+
         m_pTrigMesh->alloc(nMeshVerts);
         m_pTrigMesh->allocInd(nMeshFaces * 3);
         size_t i = 0;
@@ -410,16 +394,11 @@ void OcDisplayList::createTrigMesh()
             const auto &v1 = pelem->v;
             const auto &n1 = pelem->n;
             m_pTrigMesh->at(i) = TrigVertAttr{
-                qfloat32(v1.x()),
-                qfloat32(v1.y()),
-                qfloat32(v1.z()),
-                qbyte(gfx::getRCode(c1)),
-                qbyte(gfx::getGCode(c1)),
-                qbyte(gfx::getBCode(c1)),
-                qbyte(gfx::getACode(c1)),
-                qfloat32(n1.x()),
-                qfloat32(n1.y()),
-                qfloat32(n1.z()),
+                qfloat32(v1.x()),         qfloat32(v1.y()),
+                qfloat32(v1.z()),         qbyte(gfx::getRCode(c1)),
+                qbyte(gfx::getGCode(c1)), qbyte(gfx::getBCode(c1)),
+                qbyte(gfx::getACode(c1)), qfloat32(n1.x()),
+                qfloat32(n1.y()),         qfloat32(n1.z()),
             };
             i++;
         }

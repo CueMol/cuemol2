@@ -5,12 +5,18 @@
 
 uniform float frag_alpha;
 
+////////////////////
+// Varying variables
+
+varying vec4 vFrontColor;
+varying float vFogFragCoord;
+
 void main (void)
 {
   vec4 color;
 
-  color = gl_Color;
-  float z = gl_FogFragCoord;
+  color = vFrontColor;
+  float z = vFogFragCoord;
 
   float fog;
   fog = (gl_Fog.end - z) * gl_Fog.scale;

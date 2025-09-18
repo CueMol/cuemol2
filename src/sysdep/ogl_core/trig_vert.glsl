@@ -3,15 +3,30 @@
 //  Triangle vertex shader for OpenGL
 //
 
+////////////////////
+// Uniform variables
+
+uniform bool enable_lighting;
+
+////////////////////
+// Vertex attributes
+
 attribute vec4 aVertex;
 attribute vec4 aColor;
 attribute vec4 aNormal;
 
+////////////////////
+// Varying variables
+
+varying vec4 vFrontColor;
+varying float vFogFragCoord;
+
+////////////////////
+// Workarea
+
 vec4 Ambient;
 vec4 Diffuse;
 vec4 Specular;
-
-uniform bool enable_lighting;
 
 void DirectionalLight(in int i, in vec3 normal)
 {
@@ -37,15 +52,7 @@ float ffog(in float ecDistance)
     return (abs(ecDistance));
 }
 
-vec3 fnormal(void)
-{
-    // Compute the normal
-    vec3 normal = gl_NormalMatrix * gl_Normal;
-    normal = normalize(normal);
-    return normal;
-}
-
-vec4 flight(in vec3 normal, in vec4 ecPosition)
+vec4 flight(in vec3 normal, in vec4 ecPosition, in vec4 a_color)
 {
     vec4 color;
     vec3 ecPosition3;
@@ -62,9 +69,9 @@ vec4 flight(in vec3 normal, in vec4 ecPosition)
     // pointLight(0, normal, eye, ecPosition3);
     DirectionalLight(0, normal);
 
-    color = gl_LightModel.ambient * gl_Color;
-    color += Ambient * gl_Color;
-    color += Diffuse * gl_Color;
+    color = gl_LightModel.ambient * a_color;
+    color += Ambient * a_color;
+    color += Diffuse * a_color;
     color += Specular * gl_FrontMaterial.specular;
     color = clamp(color, 0.0, 1.0);
     return color;
@@ -75,17 +82,14 @@ void main(void)
     // Eye-coordinate position of vertex, needed in various calculations
     vec4 ecPosition = gl_ModelViewMatrix * aVertex;
 
-    // Do fixed functionality vertex transform
-    // ???: gl_Position = gl_ProjectionMatrix * ecPosition;
-    // gl_Position = ftransform();
     gl_Position = gl_ModelViewProjectionMatrix * aVertex;
 
     if (enable_lighting) {
         vec3 normal = normalize(gl_NormalMatrix * aNormal.xyz);
-        gl_FrontColor = flight(normal, ecPosition);
+        vFrontColor = flight(normal, ecPosition, aColor);
     } else {
-        gl_FrontColor = gl_Color;
+        vFrontColor = aColor;
     }
 
-    gl_FogFragCoord = ffog(ecPosition.z);
+    vFogFragCoord = ffog(ecPosition.z);
 }
