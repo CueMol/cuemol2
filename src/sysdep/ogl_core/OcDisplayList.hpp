@@ -77,6 +77,9 @@ private:
     quint32 m_nNormLoc;
     OglProgramObject *m_pTrigPO;
     
+    // Triangle edge shader
+    OglProgramObject *m_pTrigEdgePO;
+
     /////
 
     bool m_fValid;

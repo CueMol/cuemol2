@@ -82,6 +82,7 @@ void CPK2Renderer::display(DisplayContext *pdc)
         return; // Error, Cannot draw anything (ignore)
     }
     
+    // LOG_DPRINTLN("CPK2Renderer.display> ***** DRAW CALLED");
     preRender(pdc);
     m_pSlSph->draw(pdc);
     postRender(pdc);

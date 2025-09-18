@@ -22,6 +22,7 @@ OcDisplayList::OcDisplayList()
       m_pTrigArray(nullptr),
       m_pTrigMesh(nullptr),
       m_pTrigPO(nullptr),
+      m_pTrigEdgePO(nullptr),
       m_fValid(false),
       m_nDrawMode(DRAWMODE_NONE),
       m_pColor(gfx::SolidColor::createRGB(0.5, 0.5, 0.5)),
@@ -158,7 +159,7 @@ void OcDisplayList::pushMatrix()
 void OcDisplayList::popMatrix()
 {
     if (m_matstack.size() <= 1) {
-        LString msg("POVWriter> FATAL ERROR: cannot popMatrix()!!");
+        LString msg("FATAL ERROR: cannot popMatrix()!!");
         LOG_DPRINTLN(msg);
         MB_THROW(qlib::RuntimeException, msg);
         return;
@@ -461,6 +462,10 @@ void OcDisplayList::initShader(gfx::DisplayContext *pdc)
     m_nVertexLoc = m_pTrigPO->getAttribLocation("aVertex");
     m_nColLoc = m_pTrigPO->getAttribLocation("aColor");
     m_nNormLoc = m_pTrigPO->getAttribLocation("aNormal");
+
+    m_pTrigEdgePO = ssh.createProgObj("gpu_trig_edge",
+                                      "%%CONFDIR%%/data/shaders/trigedge_vert.glsl",
+                                      "%%CONFDIR%%/data/shaders/trigedge_frag.glsl");
 }
 
 void OcDisplayList::setupTrigArrayAttrs()
@@ -521,6 +526,7 @@ void OcDisplayList::drawTrigMesh(gfx::DisplayContext *pdc)
     if (m_pTrigMesh == nullptr) {
         return;
     }
+
     initShader(pdc);
     setupTrigMeshAttrs();
     m_pTrigMesh->setDrawMode(m_nPolyMode);
@@ -529,6 +535,18 @@ void OcDisplayList::drawTrigMesh(gfx::DisplayContext *pdc)
     m_pTrigPO->setUniform("enable_lighting", true);
     pdc->drawElem(*m_pTrigMesh);
     m_pTrigPO->disable();
+
+    // draw edges
+    m_pTrigEdgePO->enable();
+    m_pTrigEdgePO->setUniformF("frag_alpha", pdc->getAlpha());
+    m_pTrigEdgePO->setUniformF("edge_width", 0.15);
+    m_pTrigEdgePO->setUniformF("edge_color", 0, 0, 0, 255);
+    glEnable(GL_CULL_FACE);
+    glFrontFace(GL_CW);
+    pdc->drawElem(*m_pTrigMesh);
+    m_pTrigEdgePO->disable();
+    glFrontFace(GL_CCW);
+    glDisable(GL_CULL_FACE);
 }
 
 gfx::DisplayContext *OcDisplayList::createDisplayList()

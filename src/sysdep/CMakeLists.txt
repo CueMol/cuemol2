@@ -82,6 +82,8 @@ SET(GLSL_SHADER_FILES
   linew_frag.glsl
   ogl_core/trig_vert.glsl
   ogl_core/trig_frag.glsl
+  ogl_core/trigedge_vert.glsl
+  ogl_core/trigedge_frag.glsl
 )
 
 #####################
