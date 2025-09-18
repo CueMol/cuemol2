@@ -12,6 +12,7 @@
 #include "ShaderSetupHelper.hpp"
 
 #include <qsys/View.hpp>
+#include <gfx/Mesh.hpp>
 
 namespace sysdep {
 
@@ -32,6 +33,7 @@ OcDisplayList::OcDisplayList()
     loadIdent();
     m_vertLineWidth = -1.0;
     m_lineWidth = -1.0;
+    m_nPolyMode = gfx::AbstDrawElem::DRAW_TRIANGLES;
 }
 
 OcDisplayList::~OcDisplayList()
@@ -182,7 +184,15 @@ void OcDisplayList::loadMatrix(const qlib::Matrix4D &mat)
 
 void OcDisplayList::setPolygonMode(int id)
 {
-    MB_DPRINTLN("setPolygonMode is not supported (ignored.)");
+    if (id == POLY_POINT) {
+        // m_nPolyMode = gfx::AbstDrawElem::DRAW_POINTS;
+        MB_DPRINTLN("POLY_POINT mode is not supported (ignored)");
+    } else if (id == POLY_LINE) {
+        m_nPolyMode = gfx::AbstDrawElem::DRAW_LINES;
+        MB_DPRINTLN("POLY_LINE mode is not supported (ignored)");
+    } else /*if (id == POLY_FILL)*/ {
+        m_nPolyMode = gfx::AbstDrawElem::DRAW_TRIANGLES;
+    }
 }
 
 void OcDisplayList::startPoints()
@@ -352,66 +362,68 @@ void OcDisplayList::createLineArray()
 
 void OcDisplayList::createTrigArray()
 {
-    MB_ASSERT(m_pTrigArray == nullptr);
     const size_t nelems_trig = m_trigBuf.size();
     MB_DPRINTLN("OcDisplayList.createTrigArray> nelems_trig=%zu", nelems_trig);
-    if (nelems_trig > 0) {
-        MB_ASSERT(m_pTrigArray == nullptr);
-        m_pTrigArray = new TrigVertArray();
-        m_pTrigArray->setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
-
-        m_pTrigArray->alloc(nelems_trig);
-
-        size_t i = 0;
-        for (const auto &elem : m_trigBuf) {
-            MB_ASSERT(i < nelems_trig);
-            m_pTrigArray->at(i) = elem;
-            ++i;
-        }
-        m_pTrigArray->setUpdated(true);
-        m_trigBuf.clear();
+    if (nelems_trig <= 0) {
+        return;
     }
+
+    MB_ASSERT(m_pTrigArray == nullptr);
+    m_pTrigArray = new TrigVertArray();
+    m_pTrigArray->setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
+
+    m_pTrigArray->alloc(nelems_trig);
+
+    size_t i = 0;
+    for (const auto &elem : m_trigBuf) {
+        MB_ASSERT(i < nelems_trig);
+        m_pTrigArray->at(i) = elem;
+        ++i;
+    }
+    m_pTrigArray->setUpdated(true);
+    m_trigBuf.clear();
 }
 
 void OcDisplayList::createTrigMesh()
 {
     // Create Trig attr indexed array
-    MB_ASSERT(m_pTrigMesh == nullptr);
     const size_t nMeshVerts = m_mesh.getVertexSize();
     const size_t nMeshFaces = m_mesh.getFaceSize();
-    if (nMeshFaces > 0) {
-        MB_DPRINTLN("OcDisplayList.createTrigMesh> Verts=%zu, Faces=%zu", nMeshVerts,
-                    nMeshFaces);
-        MB_ASSERT(m_pTrigMesh == nullptr);
-        m_pTrigMesh = new TrigMesh();
-        m_pTrigMesh->setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
-
-        m_pTrigMesh->alloc(nMeshVerts);
-        m_pTrigMesh->allocInd(nMeshFaces * 3);
-        size_t i = 0;
-        for (const auto *pelem : m_mesh.getVertexData()) {
-            const auto &c1 = pelem->c;
-            const auto &v1 = pelem->v;
-            const auto &n1 = pelem->n;
-            m_pTrigMesh->at(i) = TrigVertAttr{
-                qfloat32(v1.x()),         qfloat32(v1.y()),
-                qfloat32(v1.z()),         qbyte(gfx::getRCode(c1)),
-                qbyte(gfx::getGCode(c1)), qbyte(gfx::getBCode(c1)),
-                qbyte(gfx::getACode(c1)), qfloat32(n1.x()),
-                qfloat32(n1.y()),         qfloat32(n1.z()),
-            };
-            i++;
-        }
-        i = 0;
-        for (const auto &elem : m_mesh.getFaceData()) {
-            m_pTrigMesh->atind(i) = elem.iv1;
-            m_pTrigMesh->atind(i + 1) = elem.iv2;
-            m_pTrigMesh->atind(i + 2) = elem.iv3;
-            i += 3;
-        }
-        m_pTrigMesh->setUpdated(true);
-        m_mesh.clear();
+    if (nMeshFaces <= 0) {
+        return;
     }
+
+    MB_DPRINTLN("OcDisplayList.createTrigMesh> Verts=%zu, Faces=%zu", nMeshVerts,
+                nMeshFaces);
+    MB_ASSERT(m_pTrigMesh == nullptr);
+    m_pTrigMesh = new TrigMesh();
+    m_pTrigMesh->setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
+
+    m_pTrigMesh->alloc(nMeshVerts);
+    m_pTrigMesh->allocInd(nMeshFaces * 3);
+    size_t i = 0;
+    for (const auto *pelem : m_mesh.getVertexData()) {
+        const auto &c1 = pelem->c;
+        const auto &v1 = pelem->v;
+        const auto &n1 = pelem->n;
+        m_pTrigMesh->at(i) = TrigVertAttr{
+            qfloat32(v1.x()),         qfloat32(v1.y()),
+            qfloat32(v1.z()),         qbyte(gfx::getRCode(c1)),
+            qbyte(gfx::getGCode(c1)), qbyte(gfx::getBCode(c1)),
+            qbyte(gfx::getACode(c1)), qfloat32(n1.x()),
+            qfloat32(n1.y()),         qfloat32(n1.z()),
+        };
+        i++;
+    }
+    i = 0;
+    for (const auto &elem : m_mesh.getFaceData()) {
+        m_pTrigMesh->atind(i) = elem.iv1;
+        m_pTrigMesh->atind(i + 1) = elem.iv2;
+        m_pTrigMesh->atind(i + 2) = elem.iv3;
+        i += 3;
+    }
+    m_pTrigMesh->setUpdated(true);
+    m_mesh.clear();
 }
 
 void OcDisplayList::recordEnd()
@@ -496,6 +508,7 @@ void OcDisplayList::drawTrigArray(gfx::DisplayContext *pdc)
     }
     initShader(pdc);
     setupTrigArrayAttrs();
+    m_pTrigArray->setDrawMode(m_nPolyMode);
     m_pTrigPO->enable();
     m_pTrigPO->setUniformF("frag_alpha", pdc->getAlpha());
     m_pTrigPO->setUniform("enable_lighting", true);
@@ -510,6 +523,7 @@ void OcDisplayList::drawTrigMesh(gfx::DisplayContext *pdc)
     }
     initShader(pdc);
     setupTrigMeshAttrs();
+    m_pTrigMesh->setDrawMode(m_nPolyMode);
     m_pTrigPO->enable();
     m_pTrigPO->setUniformF("frag_alpha", pdc->getAlpha());
     m_pTrigPO->setUniform("enable_lighting", true);
@@ -542,21 +556,50 @@ void OcDisplayList::callDisplayListImpl(OglDisplayContext *pdc)
 
     // Triangles
     drawTrigArray(pdc);
-    // auto *pTrigs = getTrigArray();
-    // if (pTrigs != nullptr) {
-    //     initShader(pdc);
-    //     setupTrigArrayAttrs();
-    //     pdc->drawElem(*pTrigs);
-    // }
 
     // Trig mesh
     drawTrigMesh(pdc);
-    // auto *pMesh = getTrigMesh();
-    // if (pMesh != nullptr) {
-    //     initShader(pdc);
-    //     setupTrigMeshAttrs();
-    //     pdc->drawElem(*pMesh);
-    // }
+}
+
+void OcDisplayList::drawMesh(const gfx::Mesh &mesh)
+{
+    MB_ASSERT(m_pTrigMesh == nullptr);
+
+    const size_t nMeshVerts = mesh.getVertSize();
+    const size_t nMeshFaces = mesh.getFaceSize();
+    if (nMeshFaces <= 0) {
+        return;
+    }
+
+    MB_DPRINTLN("OcDisplayList.drawMesh> Verts=%zu, Faces=%zu", nMeshVerts, nMeshFaces);
+    m_pTrigMesh = new TrigMesh();
+    m_pTrigMesh->setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
+
+    m_pTrigMesh->alloc(nMeshVerts);
+    m_pTrigMesh->allocInd(nMeshFaces * 3);
+
+    qlib::uid_t nSceneID = getSceneID();
+    gfx::ColorPtr pcol;
+    for (size_t i = 0; i < nMeshVerts; ++i) {
+        const auto &v1 = mesh.getVertex(i);
+        const auto &n1 = mesh.getNormal(i);
+        mesh.getCol(pcol, i);
+        auto c1 = pcol->getDevCode(nSceneID);
+
+        m_pTrigMesh->at(i) = TrigVertAttr{
+            qfloat32(v1.x()),         qfloat32(v1.y()),
+            qfloat32(v1.z()),         qbyte(gfx::getRCode(c1)),
+            qbyte(gfx::getGCode(c1)), qbyte(gfx::getBCode(c1)),
+            qbyte(gfx::getACode(c1)), qfloat32(n1.x()),
+            qfloat32(n1.y()),         qfloat32(n1.z()),
+        };
+    }
+
+    auto faces = mesh.getFaces();
+    for (size_t i = 0; i < nMeshFaces * 3; ++i) {
+        m_pTrigMesh->atind(i) = faces[i];
+    }
+    m_pTrigMesh->setUpdated(true);
 }
 
 }  // namespace sysdep

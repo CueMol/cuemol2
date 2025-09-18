@@ -52,6 +52,8 @@ private:
         qfloat32 nx, ny, nz;
     };
 
+    int m_nPolyMode;
+
     //////////
     // trigs (vert only)
 
@@ -195,6 +197,8 @@ public:
     virtual void recordEnd();
 
     virtual void setLineWidth(double lw);
+
+    virtual void drawMesh(const gfx::Mesh &mesh);
 
     void callDisplayListImpl(OglDisplayContext *pdc);
 
