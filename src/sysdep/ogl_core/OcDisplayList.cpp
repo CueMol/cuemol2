@@ -530,23 +530,25 @@ void OcDisplayList::drawTrigMesh(gfx::DisplayContext *pdc)
     initShader(pdc);
     setupTrigMeshAttrs();
     m_pTrigMesh->setDrawMode(m_nPolyMode);
+
+    // // draw edges
+    // m_pTrigEdgePO->enable();
+    // m_pTrigEdgePO->setUniformF("frag_alpha", pdc->getAlpha());
+    // m_pTrigEdgePO->setUniformF("edge_width", 0.15);
+    // m_pTrigEdgePO->setUniformF("edge_color", 0, 0, 0, 255);
+    // glEnable(GL_CULL_FACE);
+    // glCullFace(GL_FRONT);
+    // pdc->drawElem(*m_pTrigMesh);
+    // m_pTrigEdgePO->disable();
+    // glCullFace(GL_BACK);
+    // glDisable(GL_CULL_FACE);
+
     m_pTrigPO->enable();
     m_pTrigPO->setUniformF("frag_alpha", pdc->getAlpha());
     m_pTrigPO->setUniform("enable_lighting", true);
     pdc->drawElem(*m_pTrigMesh);
     m_pTrigPO->disable();
 
-    // draw edges
-    m_pTrigEdgePO->enable();
-    m_pTrigEdgePO->setUniformF("frag_alpha", pdc->getAlpha());
-    m_pTrigEdgePO->setUniformF("edge_width", 0.15);
-    m_pTrigEdgePO->setUniformF("edge_color", 0, 0, 0, 255);
-    glEnable(GL_CULL_FACE);
-    glFrontFace(GL_CW);
-    pdc->drawElem(*m_pTrigMesh);
-    m_pTrigEdgePO->disable();
-    glFrontFace(GL_CCW);
-    glDisable(GL_CULL_FACE);
 }
 
 gfx::DisplayContext *OcDisplayList::createDisplayList()
