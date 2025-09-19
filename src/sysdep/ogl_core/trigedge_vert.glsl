@@ -13,7 +13,6 @@ uniform vec4 edge_color;
 // Vertex attributes
 
 attribute vec4 aVertex;
-attribute vec4 aColor;
 attribute vec4 aNormal;
 
 void main(void)

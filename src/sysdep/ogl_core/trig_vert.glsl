@@ -12,8 +12,8 @@ uniform bool enable_lighting;
 // Vertex attributes
 
 attribute vec4 aVertex;
-attribute vec4 aColor;
 attribute vec4 aNormal;
+attribute vec4 aColor;
 
 ////////////////////
 // Varying variables

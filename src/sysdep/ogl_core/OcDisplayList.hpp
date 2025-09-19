@@ -48,8 +48,8 @@ private:
     struct TrigVertAttr
     {
         qfloat32 x, y, z;
-        qbyte r, g, b, a;
         qfloat32 nx, ny, nz;
+        qbyte r, g, b, a;
     };
 
     int m_nPolyMode;
@@ -72,13 +72,16 @@ private:
     TrigMesh *m_pTrigMesh;
 
     // Triangle shader
+    OglProgramObject *m_pTrigPO;
     quint32 m_nVertexLoc;
     quint32 m_nColLoc;
     quint32 m_nNormLoc;
-    OglProgramObject *m_pTrigPO;
     
     // Triangle edge shader
     OglProgramObject *m_pTrigEdgePO;
+    quint32 m_nEVertLoc;
+    quint32 m_nEColLoc;
+    quint32 m_nENormLoc;
 
     /////
 
@@ -142,6 +145,7 @@ private:
     void setupTrigArrayAttrs();
     void setupTrigMeshAttrs();
 
+    void setupTrigEdgeMeshAttrs();
 
 public:
     // Attribute location ID
