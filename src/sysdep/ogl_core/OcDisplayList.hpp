@@ -27,7 +27,7 @@ private:
     //////////
     // lines
 
-    float m_lineWidth;
+    // float m_lineWidth;
 
     struct LineDrawAttr
     {
@@ -41,6 +41,7 @@ private:
     using LineDrawBuf = std::deque<LineDrawAttr>;
     LineDrawBuf m_lineBuf;
     float m_vertLineWidth;
+    bool m_bVertStipple;
 
     //////////
     // triangles
@@ -202,8 +203,6 @@ public:
     virtual bool isDisplayList() const;
     virtual bool recordStart();
     virtual void recordEnd();
-
-    virtual void setLineWidth(double lw);
 
     virtual void drawMesh(const gfx::Mesh &mesh);
 

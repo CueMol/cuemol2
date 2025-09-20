@@ -41,6 +41,12 @@ namespace gfx {
     /// Default line width
     double m_lineWidth;
 
+    /// Line stipple
+    quint16 m_lineStipple;
+
+    /// lighting
+    bool m_bLighting;
+
     /// Pixel scaling factor
     double m_dPixSclFac;
 
@@ -185,7 +191,13 @@ namespace gfx {
     double getLineWidth() const { return m_lineWidth; }
 
     virtual void setLineStipple(unsigned short pattern);
+    unsigned short getLineStipple() const { return m_lineStipple; }
+
     virtual void setLighting(bool f=true);
+    bool isLighting() const {
+        return m_bLighting;
+    }
+
     virtual void setPointSize(double size);
 
     ////////////////

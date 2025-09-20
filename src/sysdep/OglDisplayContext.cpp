@@ -440,11 +440,13 @@ void OglDisplayContext::setLineStipple(unsigned short pattern)
     glEnable(GL_LINE_STIPPLE);
     glLineStipple(1,pattern);
   }
+  super_t::setLineStipple(pattern);
 }
 
 void OglDisplayContext::setPointSize(double size)
 {
-  ::glPointSize((GLfloat)size);
+    ::glPointSize((GLfloat)size);
+    super_t::setPointSize(size);
 }
 
 void OglDisplayContext::startPoints()
@@ -635,6 +637,8 @@ void OglDisplayContext::setLighting(bool f)
     // shader mode
     m_pDefPO->setUniform("enable_lighting", f);
   }
+
+  super_t::setLighting(f);
 }
 
 void OglDisplayContext::setCullFace(bool f/*=true*/)

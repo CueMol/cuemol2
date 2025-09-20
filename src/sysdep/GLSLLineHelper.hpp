@@ -44,7 +44,7 @@ private:
     bool m_bInitialized;
 
     float m_linew;
-    float m_stippleLen;
+    bool m_bStipple;
 
 public:
     GLSLLineHelper()
@@ -52,7 +52,7 @@ public:
           m_pDrawAry(NULL),
           m_bInitialized(false),
           m_linew(1.0),
-          m_stippleLen(0.0)
+          m_bStipple(false)
     {
     }
 
@@ -73,13 +73,13 @@ public:
     {
         return m_linew;
     }
-    void setStippleLength(double sl)
+    void setStipple(bool f)
     {
-        m_stippleLen = sl;
+        m_bStipple = f;
     }
-    double getStippleLength() const
+    bool isStipple() const
     {
-        return m_stippleLen;
+        return m_bStipple;
     }
 
     void color(int ind, quint32 devcode);

@@ -160,10 +160,14 @@ void GLSLLineHelper::draw(gfx::DisplayContext *pdc)
     }
     // MB_DPRINTLN("GLSLLine> linew=%f (pixscl=%f)", linew, pdc->getPixSclFac());
 
+    float stippleLen = 0.0;
+    if (isStipple())
+        stippleLen = 8.0f;
+
     m_pPO->enable();
     m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
     m_pPO->setUniformF("lineWidth", linew * pdc->getPixSclFac());
-    m_pPO->setUniformF("stippleLen", m_stippleLen);
+    m_pPO->setUniformF("stippleLen", stippleLen);
     m_pPO->setUniformF("screenSize", w, h);
     pdc->drawElem(*m_pDrawAry);
     m_pPO->disable();

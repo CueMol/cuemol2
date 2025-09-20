@@ -33,7 +33,8 @@ OcDisplayList::OcDisplayList()
     pushMatrix();
     loadIdent();
     m_vertLineWidth = -1.0;
-    m_lineWidth = -1.0;
+    // m_lineWidth = -1.0;
+    m_bVertStipple = false;
     m_nPolyMode = gfx::AbstDrawElem::DRAW_TRIANGLES;
 }
 
@@ -49,11 +50,11 @@ qlib::uid_t OcDisplayList::getSceneID() const
     return getTargetView()->getSceneID();
 }
 
-void OcDisplayList::setLineWidth(double lw)
-{
-    MB_DPRINTLN("OcDisplayList::setLineWidth> lw=%f", lw);
-    m_lineWidth = lw;
-}
+// void OcDisplayList::setLineWidth(double lw)
+// {
+//     MB_DPRINTLN("OcDisplayList::setLineWidth> lw=%f", lw);
+//     m_lineWidth = lw;
+// }
 
 void OcDisplayList::vertex(const Vector4D &aV)
 {
@@ -86,7 +87,11 @@ void OcDisplayList::vertex(const Vector4D &aV)
                 m_fPrevPosValid = false;
             }
             // MB_DPRINTLN("line width = %f <-- %f", m_vertLineWidth, m_lineWidth);
-            m_vertLineWidth = m_lineWidth;
+            m_vertLineWidth = getLineWidth();
+            if (getLineStipple()==0xFFFF)
+                m_bVertStipple = false;
+            else
+                m_bVertStipple = true;
             break;
 
             //////////////////////////////////////////////////////
@@ -100,7 +105,11 @@ void OcDisplayList::vertex(const Vector4D &aV)
                 m_prevPos = v;
                 m_prevCol = color_value;
             }
-            m_vertLineWidth = m_lineWidth;
+            m_vertLineWidth = getLineWidth();
+            if (getLineStipple()==0xFFFF)
+                m_bVertStipple = false;
+            else
+                m_bVertStipple = true;
             break;
 
             //////////////////////////////////////////////////////
@@ -215,6 +224,7 @@ void OcDisplayList::startLines()
     }
     m_nDrawMode = DRAWMODE_LINES;
     m_vertLineWidth = -1.0;
+    m_bVertStipple = false;
     // printf("OcDisplayList::startLines OK\n");
 }
 
@@ -226,6 +236,7 @@ void OcDisplayList::startLineStrip()
     }
     m_nDrawMode = DRAWMODE_LINESTRIP;
     m_vertLineWidth = -1.0;
+    m_bVertStipple = false;
 }
 
 void OcDisplayList::startTriangles()
@@ -358,6 +369,7 @@ void OcDisplayList::createLineArray()
         }
         // MB_DPRINTLN("createLineArray> line width = %f", m_vertLineWidth);
         m_pGlslLine->setLineWidth(m_vertLineWidth);
+        m_pGlslLine->setStipple(m_bVertStipple);
         m_lineBuf.clear();
     }
 }
@@ -550,7 +562,7 @@ void OcDisplayList::drawTrigArray(gfx::DisplayContext *pdc)
 
     m_pTrigPO->enable();
     m_pTrigPO->setUniformF("frag_alpha", alpha);
-    m_pTrigPO->setUniform("enable_lighting", true);
+    m_pTrigPO->setUniform("enable_lighting", pdc->isLighting());
     pdc->drawElem(*m_pTrigArray);
     m_pTrigPO->disable();
 }
@@ -573,7 +585,7 @@ void OcDisplayList::drawTrigMesh(gfx::DisplayContext *pdc)
     // setupTrigMeshAttrs();
     m_pTrigPO->enable();
     m_pTrigPO->setUniformF("frag_alpha", alpha);
-    m_pTrigPO->setUniform("enable_lighting", true);
+    m_pTrigPO->setUniform("enable_lighting", pdc->isLighting());
     pdc->drawElem(*m_pTrigMesh);
     m_pTrigPO->disable();
 }

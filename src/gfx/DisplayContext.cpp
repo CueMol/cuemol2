@@ -22,6 +22,8 @@ DisplayContext::DisplayContext()
   m_nSceneID = qlib::invalid_uid;
   m_nViewID = qlib::invalid_uid;
   m_lineWidth = -1.0;
+  m_lineStipple = 0xFFFF;
+  m_bLighting = false;
 }
 
 bool DisplayContext::isRenderPixmap() const
@@ -170,14 +172,16 @@ void DisplayContext::setLineWidth(double lw)
 
 void DisplayContext::setLineStipple(unsigned short pattern)
 {
-}
-
-void DisplayContext::setLighting(bool f)
-{
+    m_lineStipple = pattern;
 }
 
 void DisplayContext::setPointSize(double size)
 {
+}
+
+void DisplayContext::setLighting(bool f)
+{
+    m_bLighting = f;
 }
 
 

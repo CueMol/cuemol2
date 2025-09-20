@@ -55,22 +55,8 @@ void OglShaderObject::loadFile(const LString& filename)
     sbuf[n] = '\0';
     m_source += sbuf;
   }
-/*
-  std::ifstream f_in( fnam.c_str(), std::ios::binary );
-  if ( f_in.fail()) {
-    LOG_DPRINTLN("ShaderObject::ShaderObject(): cannot open file: %s",
-                 fnam.c_str());
-    MB_ASSERT(false);
-    return;
-  }
 
-  std::ostringstream str_out;
-  str_out << f_in.rdbuf();
-  m_source = str_out.str();
-  f_in.close();
-*/
   // set shader source
-
   const char *s = m_source.c_str();
   int l = m_source.length();
 
@@ -286,7 +272,7 @@ void OglProgramObject::setProgParam(GLenum pname, GLint param)
 #endif
 }
 
-void OglProgramObject::setMatrix(const char *name, const qlib::Matrix4D &mat)
+void OglProgramObject::setMatrix(const LString &name, const qlib::Matrix4D &mat)
 {
   GLfloat m[16];
 
@@ -313,12 +299,24 @@ void OglProgramObject::setMatrix(const char *name, const qlib::Matrix4D &mat)
   setMatrix4fv(name, 1, GL_FALSE, m);
 }
 
-/*
-void OglProgramObject::setMatrix(const char *name, GLuint count, GLboolean transpose,
-                    const GLfloat *v)
+GLint OglProgramObject::getUniformLocation(const LString &name)
 {
-
-  glLoadMatrixd(m);
-*/
+    // check cache
+    auto it = m_uniforms.find(name);
+    if (it != m_uniforms.end()) {
+        return it->second;
+    }
+    
+    GLint ul = glGetUniformLocation(m_hPO, name.c_str());
+    if (ul == -1) {
+        MB_DPRINTLN("Cannot find uniform location: %s", name.c_str());
+        return -1;
+    }
+    
+    // register to cache
+    m_uniforms[name] = ul;
+    
+    return ul;
+}
 
 #endif
