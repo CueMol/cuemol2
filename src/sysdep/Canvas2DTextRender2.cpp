@@ -99,15 +99,11 @@ bool Canvas2DTextRender2::renderText(const qlib::LString &str, gfx::PixelBuffer 
   ev.m_pAry->setHeight(height);
   LString category = "renderText";
 
-  MB_DPRINTLN("Call Render Text...");
   pSEM->fireEventScript(category,
                         qsys::ScrEventManager::SEM_EXTND,
                         qsys::ScrEventManager::SEM_OTHER,
                         qlib::invalid_uid, ev);
 
-  // ev.m_pAry->dump();
-  // delete ev.m_pAry;
-  //buf = *(ev.m_pAry);
   {
     int i, j;
     QUE_BYTE *psrc = ev.m_pAry->data();

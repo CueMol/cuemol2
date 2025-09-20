@@ -23,6 +23,13 @@ void OcTexRep::create(gfx::DisplayContext *pdc, const gfx::PixelBuffer &pixbuf)
     const int ow = pixbuf.getWidth();
     const int oh = pixbuf.getHeight();
 
+    // for (int i=0; i<ow*oh; i++) {
+    //     const_cast<gfx::PixelBuffer &>(pixbuf).data()[i] = 255;;
+    //     // unsigned char v = pixbuf.data()[i];
+    //     // MB_DPRINTLN("pixbuf[%d]=%d", i, v);
+    // }
+
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texid);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, ow, oh, 0, GL_ALPHA, GL_UNSIGNED_BYTE,
                  pixbuf.data());
@@ -96,7 +103,7 @@ void OcPixDraw::setupAttrs()
     data.setAttrSize(2);
     data.setAttrInfo(0, m_nVertexLoc, 2, qlib::type_consts::QTC_FLOAT32,
                      offsetof(Elem, x));
-    data.setAttrInfo(1, m_nVertexLoc, 2, qlib::type_consts::QTC_FLOAT32,
+    data.setAttrInfo(1, m_nTexCoordLoc, 2, qlib::type_consts::QTC_FLOAT32,
                      offsetof(Elem, tx));
 }
 
@@ -158,6 +165,12 @@ void OcPixDraw::draw(gfx::DisplayContext *pdc, const Vector4D &pos,
         return;
     }
 
+    auto pView = pdc->getTargetView();
+    if (pView == nullptr) {
+        MB_DPRINTLN("GLSLLine> ERROR: no target view");
+        return;
+    }
+
     const int w = pixbuf.getWidth();
     const int h = pixbuf.getHeight();
 
@@ -168,6 +181,8 @@ void OcPixDraw::draw(gfx::DisplayContext *pdc, const Vector4D &pos,
         g = gfx::getFG(c1);
         b = gfx::getFB(c1);
     }
+    float view_w = pView->getWidth();
+    float view_h = pView->getHeight();
 
     setupAttrs();
 
@@ -175,17 +190,20 @@ void OcPixDraw::draw(gfx::DisplayContext *pdc, const Vector4D &pos,
     // m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
     m_pPO->setUniformF("u_position", pos.x(), pos.y(), pos.z());
     m_pPO->setUniformF("u_size", w, h);
+    m_pPO->setUniformF("u_viewportSize", view_w, view_h);
     m_pPO->setUniformF("u_colorBias", r, g, b);
     m_pPO->setUniformF("u_texture", 0);
 
     // Bind texture
-    auto texture = pRep->m_nBufID;
+    auto texid = pRep->m_nBufID;
+    glEnable(GL_TEXTURE_2D);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture);
+    glBindTexture(GL_TEXTURE_2D, texid);
 
     pdc->drawElem(*m_pDrawAry);
 
     glBindTexture(GL_TEXTURE_2D, 0);
+    glDisable(GL_TEXTURE_2D);
     m_pPO->disable();
 }
 

@@ -139,14 +139,14 @@ void GLSLLineHelper::vertex(int ind, const Vector4D &v)
 
 void GLSLLineHelper::draw(gfx::DisplayContext *pdc)
 {
-    if (m_pDrawAry == NULL) {
+    if (m_pDrawAry == nullptr) {
         return;
     }
 
     setupAttrs();
 
     auto pview = pdc->getTargetView();
-    if (pview == NULL) {
+    if (pview == nullptr) {
         MB_DPRINTLN("GLSLLine> ERROR: no target view");
         return;
     }
@@ -171,9 +171,9 @@ void GLSLLineHelper::draw(gfx::DisplayContext *pdc)
 
 void GLSLLineHelper::invalidate()
 {
-    if (m_pDrawAry != NULL) {
+    if (m_pDrawAry != nullptr) {
         delete m_pDrawAry;
-        m_pDrawAry = NULL;
+        m_pDrawAry = nullptr;
         MB_DPRINTLN("GLSLLine> deleted draw array");
     }
 }

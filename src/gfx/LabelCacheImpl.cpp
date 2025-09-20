@@ -57,7 +57,6 @@ void LabelCacheImpl::draw(DisplayContext *pdc)
         MB_DPRINTLN("LabelCache> render <%s> OK.", iter->str.c_str());
         iter->pPixBuf = pixbuf;
       }
-      MB_DPRINTLN("LabelCache> draw <%s>:", iter->str.c_str());
       pdc->drawPixels(pos, *pixbuf, ColorPtr());
     }
   }

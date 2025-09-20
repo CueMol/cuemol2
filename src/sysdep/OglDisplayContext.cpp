@@ -645,7 +645,6 @@ void OglDisplayContext::setCullFace(bool f/*=true*/)
     glDisable(GL_CULL_FACE);
 }
 
-#if 0
 void OglDisplayContext::drawPixels(const Vector4D &pos,
                                    const gfx::PixelBuffer &data,
                                    const gfx::ColorPtr &acol)
@@ -662,8 +661,8 @@ void OglDisplayContext::drawPixels(const Vector4D &pos,
 
     m_pOcPixDraw->draw(this, pos, data, acol);
 }
-#endif
 
+#if 0
 void OglDisplayContext::drawPixels(const Vector4D &pos,
                                    const gfx::PixelBuffer &data,
                                    const gfx::ColorPtr &acol)
@@ -709,6 +708,7 @@ void OglDisplayContext::drawPixels(const Vector4D &pos,
 
   //delete [] pdata;
 }
+#endif
 
 void OglDisplayContext::drawString(const Vector4D &pos, const qlib::LString &str)
 {
