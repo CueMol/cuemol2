@@ -7,35 +7,39 @@
 
 #include "PixelBuffer.hpp"
 
-using namespace gfx;
-
+namespace gfx {
 
 PixelBuffer::~PixelBuffer()
 {
-  clear();
+    clear();
 }
 
 PixelBuffer::PixelBuffer(const PixelBuffer &src)
-     : m_nWidth(src.m_nWidth), m_nHeight(src.m_nHeight), m_nDepth(src.m_nDepth)
+    : m_nWidth(src.m_nWidth), m_nHeight(src.m_nHeight), m_nDepth(src.m_nDepth)
 {
-  size_t n = src.m_pData->size();
-  m_pData = new data_t(n);
-  for (int i=0; i<n; ++i)
-    m_pData->operator[](i) = src.m_pData->operator[](i);
+    size_t n = src.m_pData->size();
+    m_pData = new data_t(n);
+    for (int i = 0; i < n; ++i) {
+        m_pData->operator[](i) = src.m_pData->operator[](i);
+    }
+
+    m_pPixRep = nullptr;
 }
 
 void PixelBuffer::resize(size_t n)
 {
-  if (m_pData!=NULL) delete m_pData;
-  //m_pData = MB_NEW data_t(n);
-  m_pData = new data_t(n);
+    if (m_pData != NULL) delete m_pData;
+    // m_pData = MB_NEW data_t(n);
+    m_pData = new data_t(n);
 }
 
 void PixelBuffer::clear()
 {
-  if (m_pData!=NULL)
-    delete m_pData;
-  m_pData = NULL;
+    if (m_pData != nullptr) delete m_pData;
+    m_pData = nullptr;
+
+    if (m_pPixRep != nullptr) delete m_pPixRep;
+    m_pPixRep = nullptr;
 }
 
-
+}  // namespace gfx

@@ -91,7 +91,6 @@ namespace sysdep {
     }
 
     inline void disable() {
-      //glUseProgramObjectARB(0);
       glUseProgram(0);
     }
 

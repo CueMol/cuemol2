@@ -51,6 +51,9 @@ public:
 
     virtual void endSection();
 
+    //////////
+    // Display list impl
+
     virtual gfx::DisplayContext *createDisplayList();
     virtual bool canCreateDL() const;
     virtual void callDisplayList(DisplayContext *pdl);
@@ -60,14 +63,50 @@ public:
 
     virtual bool isFile() const;
 
-    virtual void vertex(const qlib::Vector4D &);
-    virtual void normal(const qlib::Vector4D &);
-    virtual void color(const gfx::ColorPtr &c);
+    bool isDrawElemSupported() const
+    {
+        return true;
+    }
+
+    void drawElem(const AbstDrawElem &ade);
+    void drawElemAttrs(const gfx::AbstDrawAttrs &ada);
+
+    void OglDisplayContext::setMaterial(const LString &name)
+    {
+        super_t::setMaterial(name);
+        setMaterImpl(name);
+    }
+
+    void setLineWidth(double lw) {
+    }
+
+    void setLineStipple(unsigned short pattern) {
+    }
+
+    void OglDisplayContext::setPointSize(double size) {
+    }
+
+    void enableDepthTest(bool f) {
+    }
+
+    void OglDisplayContext::setLighting(bool f);
+
+    void OglDisplayContext::setCullFace(bool f/*=true*/);
+
+    //////////
+    // 
 
     virtual void pushMatrix();
     virtual void popMatrix();
     virtual void multMatrix(const qlib::Matrix4D &mat);
     virtual void loadMatrix(const qlib::Matrix4D &mat);
+
+    //////////
+    // noimpl
+
+    virtual void vertex(const qlib::Vector4D &);
+    virtual void normal(const qlib::Vector4D &);
+    virtual void color(const gfx::ColorPtr &c);
 
     virtual void setPolygonMode(int id);
     virtual void startPoints();
@@ -102,10 +141,11 @@ public:
         mtop.xform4D(v);
     }
 
+public:
+
     ///////////////////////////////
     // Shader support
 
-public:
     /// Create the GLSL program object.
     /// If program object with the same name already exists, returns it.
     /// @param name name of the program objec.
@@ -118,6 +158,14 @@ public:
     OglProgramObject *getProgramObject(const LString &name);
 
     // virtual ProgramObject *createProgObjImpl() = 0;
+
+    // Impl: DisplayList ??
+    // void OglDisplayContext::drawPixels(const Vector4D &pos,
+    //                                    const gfx::PixelBuffer &data,
+    //                                    const gfx::ColorPtr &acol);
+
+    // void OglDisplayContext::drawString(const Vector4D &pos, const qlib::LString &str);
+
 };
 
 }  // namespace sysdep

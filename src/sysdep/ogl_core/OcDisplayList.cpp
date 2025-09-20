@@ -301,6 +301,7 @@ void OcDisplayList::drawLine(const Vector4D &v1, qlib::quint32 c1, const Vector4
 void OcDisplayList::addTrigVert(const Vector4D &v1, const Vector4D &n1,
                                 qlib::quint32 c1)
 {
+    MB_DPRINTLN("addTrigVert: col=%08x", c1);
     m_trigBuf.push_back(TrigVertAttr{
         qfloat32(v1.x()),
         qfloat32(v1.y()),
@@ -379,6 +380,8 @@ void OcDisplayList::createTrigArray()
     for (const auto &elem : m_trigBuf) {
         MB_ASSERT(i < nelems_trig);
         m_pTrigArray->at(i) = elem;
+        // MB_DPRINTLN("%d: (%f,%f,%f) col=%02x%02x%02x%02x", i, elem.x, elem.y, elem.z,
+        //             elem.r, elem.g, elem.b, elem.a);
         ++i;
     }
     m_pTrigArray->setUpdated(true);
@@ -408,16 +411,11 @@ void OcDisplayList::createTrigMesh()
         const auto &v1 = pelem->v;
         const auto &n1 = pelem->n;
         m_pTrigMesh->at(i) = TrigVertAttr{
-            qfloat32(v1.x()),
-            qfloat32(v1.y()),
-            qfloat32(v1.z()),
-            qfloat32(n1.x()),
-            qfloat32(n1.y()),
-            qfloat32(n1.z()),
-            qbyte(gfx::getRCode(c1)),
-            qbyte(gfx::getGCode(c1)),
-            qbyte(gfx::getBCode(c1)),
-            qbyte(gfx::getACode(c1)),
+            qfloat32(v1.x()),         qfloat32(v1.y()),
+            qfloat32(v1.z()),         qfloat32(n1.x()),
+            qfloat32(n1.y()),         qfloat32(n1.z()),
+            qbyte(gfx::getRCode(c1)), qbyte(gfx::getGCode(c1)),
+            qbyte(gfx::getBCode(c1)), qbyte(gfx::getACode(c1)),
         };
         i++;
     }
@@ -544,8 +542,14 @@ void OcDisplayList::drawTrigArray(gfx::DisplayContext *pdc)
     initShader(pdc);
     setupTrigArrayAttrs();
     m_pTrigArray->setDrawMode(m_nPolyMode);
+
+    float alpha = pdc->getAlpha();
+
+    // draw edges
+    drawTrigEdges(pdc, *m_pTrigArray);
+
     m_pTrigPO->enable();
-    m_pTrigPO->setUniformF("frag_alpha", pdc->getAlpha());
+    m_pTrigPO->setUniformF("frag_alpha", alpha);
     m_pTrigPO->setUniform("enable_lighting", true);
     pdc->drawElem(*m_pTrigArray);
     m_pTrigPO->disable();
@@ -561,41 +565,43 @@ void OcDisplayList::drawTrigMesh(gfx::DisplayContext *pdc)
     setupTrigMeshAttrs();
     m_pTrigMesh->setDrawMode(m_nPolyMode);
 
-    float r=.0,g=.0,b=.0;
-    ColorPtr pcol = pdc->getEdgeLineColor();
-    if (!pcol.isnull()) {
-      auto c1 = pcol->getDevCode(pdc->getSceneID());
-      r = gfx::getFR(c1);
-      g = gfx::getFG(c1);
-      b = gfx::getFB(c1);
-    }
     float alpha = pdc->getAlpha();
 
-
     // draw edges
-    if (pdc->getEdgeLineType()==ELT_EDGES) {
-      // setupTrigEdgeMeshAttrs();
-      m_pTrigEdgePO->enable();
-      m_pTrigEdgePO->setUniformF("frag_alpha", alpha);
-      m_pTrigEdgePO->setUniformF("edge_width", pdc->getEdgeLineWidth());
-      m_pTrigEdgePO->setUniformF("edge_color", r, g, b, alpha);
-      glEnable(GL_CULL_FACE);
-      // glCullFace(GL_FRONT);
-      glFrontFace(GL_CW);
-      pdc->drawElem(*m_pTrigMesh);
-      m_pTrigEdgePO->disable();
-      // glCullFace(GL_BACK);
-      glFrontFace(GL_CCW);
-      glDisable(GL_CULL_FACE);
-    }
-    
+    drawTrigEdges(pdc, *m_pTrigMesh);
+
     // setupTrigMeshAttrs();
     m_pTrigPO->enable();
     m_pTrigPO->setUniformF("frag_alpha", alpha);
     m_pTrigPO->setUniform("enable_lighting", true);
     pdc->drawElem(*m_pTrigMesh);
     m_pTrigPO->disable();
+}
 
+void OcDisplayList::drawTrigEdges(gfx::DisplayContext *pdc, const gfx::AbstDrawElem &de)
+{
+    float r = .0, g = .0, b = .0;
+    ColorPtr pcol = pdc->getEdgeLineColor();
+    if (!pcol.isnull()) {
+        auto c1 = pcol->getDevCode(pdc->getSceneID());
+        r = gfx::getFR(c1);
+        g = gfx::getFG(c1);
+        b = gfx::getFB(c1);
+    }
+    float alpha = pdc->getAlpha();
+
+    if (pdc->getEdgeLineType() == ELT_EDGES) {
+        m_pTrigEdgePO->enable();
+        m_pTrigEdgePO->setUniformF("frag_alpha", alpha);
+        m_pTrigEdgePO->setUniformF("edge_width", pdc->getEdgeLineWidth());
+        m_pTrigEdgePO->setUniformF("edge_color", r, g, b, alpha);
+        glEnable(GL_CULL_FACE);
+        glFrontFace(GL_CW);
+        pdc->drawElem(de);
+        m_pTrigEdgePO->disable();
+        glFrontFace(GL_CCW);
+        glDisable(GL_CULL_FACE);
+    }
 }
 
 gfx::DisplayContext *OcDisplayList::createDisplayList()
@@ -655,12 +661,10 @@ void OcDisplayList::drawMesh(const gfx::Mesh &mesh)
 
         m_pTrigMesh->at(i) = TrigVertAttr{
             qfloat32(v1.x()),         qfloat32(v1.y()),
-            qfloat32(v1.z()),
-            qfloat32(n1.x()),
+            qfloat32(v1.z()),         qfloat32(n1.x()),
             qfloat32(n1.y()),         qfloat32(n1.z()),
-            qbyte(gfx::getRCode(c1)),
-            qbyte(gfx::getGCode(c1)), qbyte(gfx::getBCode(c1)),
-            qbyte(gfx::getACode(c1)), 
+            qbyte(gfx::getRCode(c1)), qbyte(gfx::getGCode(c1)),
+            qbyte(gfx::getBCode(c1)), qbyte(gfx::getACode(c1)),
         };
     }
 

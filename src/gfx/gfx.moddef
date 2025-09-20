@@ -19,7 +19,7 @@ module gfx
   Color uuid f0dafa00-bc1a-4521-a61a-d5dbdb4eb42b;
   NamedColor;
   MolColorRef;
-  TextImgBuf;
+  //TextImgBuf;
   //MultiGradient;
   GradientColor;
 };

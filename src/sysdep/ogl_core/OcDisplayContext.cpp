@@ -52,8 +52,11 @@ gfx::DisplayContext *OcDisplayContext::createDisplayList()
 
     // Targets the same view as this
     pdl->setTargetView(getTargetView());
+    pdl->setAlpha(getAlpha());
+    pdl->setMaterial(getMaterial());
+    pdl->setPixSclFac(getPixSclFac());
 
-    printf("createDisplayList OK\n");
+    MB_DPRINTLN("createDisplayList OK");
     return pdl;
 }
 
@@ -66,7 +69,15 @@ bool OcDisplayContext::isCompatibleDL(DisplayContext *pdl) const
 
 void OcDisplayContext::callDisplayList(DisplayContext *pdl)
 {
-    // TODO: implementation
+    OcDisplayList *poc = dynamic_cast<OcDisplayList *>(pdl);
+    if (poc != NULL && poc->isValid()) {
+        poc->callDisplayListImpl(this);
+    }
+
+    LString msg(
+        "OcDisplayContext::callDisplayList: FATAL ERROR: Incompatible DL type!!");
+    LOG_DPRINTLN(msg);
+    MB_THROW(qlib::RuntimeException, msg);
 }
 
 //////////
@@ -147,6 +158,58 @@ OglProgramObject *OcDisplayContext::getProgramObject(const LString &name)
     auto pMgr = OglProgObjMgr::getInstance();
     return pMgr->getProgramObject(name, this);
     // return pMgr->getProgramObject(name, getSceneID());
+}
+
+void OcDisplayContext::setMaterImpl(const LString &name)
+{
+    // if (m_curMater.equals(name)) return;
+    // m_curMater = name;
+
+    // qsys::StyleMgr *pSM = qsys::StyleMgr::getInstance();
+    // double dvalue;
+
+    // // Default Material: (defined in OglView; plastic-like shading)
+    // //  Ambient = 0.2 (*(1,1,1))
+    // //  Diffuse = 0.8
+    // //  Specular = 0.4
+    // double amb = 0.2, diff = 0.8, spec = 0.4;
+    // double shin = 32.0;
+
+    // dvalue = pSM->getMaterial(name, gfx::Material::MAT_AMBIENT);
+    // if (dvalue >= -0.1) {
+    //     amb = dvalue;
+    // }
+
+    // dvalue = pSM->getMaterial(name, gfx::Material::MAT_DIFFUSE);
+    // if (dvalue >= -0.1) {
+    //     diff = dvalue;
+    // }
+
+    // dvalue = pSM->getMaterial(name, gfx::Material::MAT_SPECULAR);
+    // if (dvalue >= -0.1) {
+    //     spec = dvalue;
+    // }
+
+    // dvalue = pSM->getMaterial(name, gfx::Material::MAT_SHININESS);
+    // if (dvalue >= -0.1) {
+    //     shin = dvalue;
+    // }
+
+    // GLfloat tmpv[4] = {0.0, 0.0, 0.0, 1.0};
+
+    // tmpv[0] = tmpv[1] = tmpv[2] = float(amb);
+    // glLightfv(GL_LIGHT0, GL_AMBIENT, tmpv);
+
+    // tmpv[0] = tmpv[1] = tmpv[2] = float(diff);
+    // glLightfv(GL_LIGHT0, GL_DIFFUSE, tmpv);
+
+    // tmpv[0] = tmpv[1] = tmpv[2] = float(spec);
+    // glLightfv(GL_LIGHT0, GL_SPECULAR, tmpv);
+
+    // glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, float(shin));
+
+    // LOG_DPRINTLN("OglSetMaterial %s a=%f,d=%f,s=%f,sh=%f",
+    // name.c_str(), amb, diff, spec, shin);
 }
 
 }  // namespace sysdep

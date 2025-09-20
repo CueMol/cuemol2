@@ -212,6 +212,7 @@ public:
 private:
     void drawTrigArray(gfx::DisplayContext *pdc);
     void drawTrigMesh(gfx::DisplayContext *pdc);
+    void drawTrigEdges(gfx::DisplayContext *pdc, const gfx::AbstDrawElem &de);
 
 };
 

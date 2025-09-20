@@ -9,9 +9,6 @@
 
 #include <gfx/DrawAttrArray.hpp>
 
-namespace qsys {
-class Renderer;
-}
 namespace gfx {
 class DisplayContext;
 }

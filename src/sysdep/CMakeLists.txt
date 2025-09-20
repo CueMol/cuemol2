@@ -13,7 +13,8 @@ SET(SYSDEP_SRCS
   ShaderSetupHelper.cpp
   # core profile
   ogl_core/OcDisplayList.cpp
-  ogl_core/OcDisplayContext.cpp
+  ogl_core/OcPixDraw.cpp
+  # ogl_core/OcDisplayContext.cpp
 )
 
 SET(SYSDEP_HDRS
@@ -84,6 +85,8 @@ SET(GLSL_SHADER_FILES
   ogl_core/trig_frag.glsl
   ogl_core/trigedge_vert.glsl
   ogl_core/trigedge_frag.glsl
+  ogl_core/pixdraw_vert.glsl
+  ogl_core/pixdraw_frag.glsl
 )
 
 #####################
