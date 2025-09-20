@@ -50,10 +50,14 @@ void LabelCacheImpl::draw(DisplayContext *pdc)
       if (pixbuf==NULL) {
         pixbuf = MB_NEW gfx::PixelBuffer();
         MB_DPRINTLN("LabelCache> new pixbuf for <%s> created.", iter->str.c_str());
-        if (!pTRM->renderText(iter->str, *pixbuf))
-          return;
+        if (!pTRM->renderText(iter->str, *pixbuf)) {
+            LOG_DPRINTLN("LabelCache> render <%s> failed.", iter->str.c_str());
+            return;
+        }
+        MB_DPRINTLN("LabelCache> render <%s> OK.", iter->str.c_str());
         iter->pPixBuf = pixbuf;
       }
+      MB_DPRINTLN("LabelCache> draw <%s>:", iter->str.c_str());
       pdc->drawPixels(pos, *pixbuf, ColorPtr());
     }
   }

@@ -54,7 +54,7 @@ public:
 
     bool initShader(gfx::DisplayContext *pdc);
 
-    bool createDrawElem(const gfx::PixelBuffer &pixbuf);
+    bool createDrawElem(gfx::DisplayContext *pdc, const gfx::PixelBuffer &pixbuf);
 
     void draw(gfx::DisplayContext *pdc, const qlib::Vector4D &pos,
               const gfx::PixelBuffer &data, const gfx::ColorPtr &pcol);

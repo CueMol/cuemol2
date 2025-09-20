@@ -37,6 +37,7 @@
 #include "OglProgObjMgr.hpp"
 
 #include "ogl_core/OcDisplayList.hpp"
+#include "ogl_core/OcPixDraw.hpp"
 
 #include <gfx/TextRenderManager.hpp>
 #include <gfx/PixelBuffer.hpp>
@@ -72,6 +73,8 @@ OglDisplayContext::OglDisplayContext()
   m_pDefPO = NULL;
   m_pEdgePO = NULL;
   m_pSilhPO = NULL;
+
+  m_pOcPixDraw == nullptr;
 }
 
 OglDisplayContext::~OglDisplayContext()
@@ -642,17 +645,38 @@ void OglDisplayContext::setCullFace(bool f/*=true*/)
     glDisable(GL_CULL_FACE);
 }
 
+#if 0
 void OglDisplayContext::drawPixels(const Vector4D &pos,
                                    const gfx::PixelBuffer &data,
                                    const gfx::ColorPtr &acol)
 {
+    if (m_pOcPixDraw == nullptr) {
+        m_pOcPixDraw = MB_NEW OcPixDraw();
+        m_pOcPixDraw->initShader(this);
+    }
+
+    if (!m_pOcPixDraw->createDrawElem(this, data)) {
+        LOG_DPRINTLN("OglDisplayContext::drawPixels> failed to create DrawElem");
+        return;
+    }
+
+    m_pOcPixDraw->draw(this, pos, data, acol);
+}
+#endif
+
+void OglDisplayContext::drawPixels(const Vector4D &pos,
+                                   const gfx::PixelBuffer &data,
+                                   const gfx::ColorPtr &acol)
+{
+    MB_DPRINTLN("drawPixels called (%f, %f, %f) size=(%d,%d) depth=%d",
+                pos.x(), pos.y(), pos.z(),
+                data.getWidth(), data.getHeight(), data.getDepth());
   // TO DO: use devcolor
   gfx::ColorPtr col = acol;
   if (col.isnull()) {
     //gfx::SolidColor col(m_color);
     col = gfx::ColorPtr(new gfx::SolidColor(m_color));
   }
-  
 
   glRasterPos3d(pos.x(), pos.y(), pos.z());
 

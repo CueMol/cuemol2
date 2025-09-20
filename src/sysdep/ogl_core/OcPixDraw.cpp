@@ -124,13 +124,27 @@ void OcPixDraw::alloc()
     };
 }
 
-bool OcPixDraw::createDrawElem(const gfx::PixelBuffer &pixbuf)
+bool OcPixDraw::createDrawElem(gfx::DisplayContext *pdc,const gfx::PixelBuffer &pixbuf)
 {
+    if (!m_bInitialized) {
+        LOG_DPRINTLN("OcPixdraw> ERROR: not initialized.");
+        return false;
+    }
+
+    OcTexRep *pRep = static_cast<OcTexRep *>(pixbuf.getRep());
+    if (pRep != nullptr) {
+        return true;
+    }
+
+    pRep = MB_NEW OcTexRep();
+    pRep->create(pdc, pixbuf);
+    pixbuf.setRep(pRep);
+
     return true;
 }
 
 void OcPixDraw::draw(gfx::DisplayContext *pdc, const Vector4D &pos,
-                     const gfx::PixelBuffer &data, const gfx::ColorPtr &pcol)
+                     const gfx::PixelBuffer &pixbuf, const gfx::ColorPtr &pcol)
 {
     MB_ASSERT(m_bInitialized);
 
@@ -138,16 +152,16 @@ void OcPixDraw::draw(gfx::DisplayContext *pdc, const Vector4D &pos,
         return;
     }
 
-    OcTexRep *pRep = static_cast<OcTexRep *>(data.getRep());
+    OcTexRep *pRep = static_cast<OcTexRep *>(pixbuf.getRep());
     if (pRep == nullptr) {
         MB_DPRINTLN("OcPixDraw> texture rep is null");
         return;
     }
 
-    const int w = data.getWidth();
-    const int h = data.getHeight();
+    const int w = pixbuf.getWidth();
+    const int h = pixbuf.getHeight();
 
-    float r = .0, g = .0, b = .0;
+    float r = 1.0, g = 1.0, b = 1.0;
     if (!pcol.isnull()) {
         auto c1 = pcol->getDevCode(pdc->getSceneID());
         r = gfx::getFR(c1);
@@ -158,7 +172,7 @@ void OcPixDraw::draw(gfx::DisplayContext *pdc, const Vector4D &pos,
     setupAttrs();
 
     m_pPO->enable();
-    m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
+    // m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
     m_pPO->setUniformF("u_position", pos.x(), pos.y(), pos.z());
     m_pPO->setUniformF("u_size", w, h);
     m_pPO->setUniformF("u_colorBias", r, g, b);

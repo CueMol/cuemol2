@@ -19,6 +19,7 @@ namespace gfx {
 namespace sysdep {
 
   class OglProgramObject;
+  class OcPixDraw;
 
   using gfx::AbstractColor;
   using gfx::ColorPtr;
@@ -49,6 +50,8 @@ namespace sysdep {
     OglProgramObject *m_pSilhPO;
 
     //////////
+
+    OcPixDraw *m_pOcPixDraw;
 
   public:
     OglDisplayContext();
