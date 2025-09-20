@@ -659,7 +659,13 @@ void OglDisplayContext::drawPixels(const Vector4D &pos,
         return;
     }
 
-    m_pOcPixDraw->draw(this, pos, data, acol);
+    gfx::ColorPtr col = acol;
+    if (col.isnull()) {
+        // use current color
+        col = gfx::ColorPtr(new gfx::SolidColor(m_color));
+    }
+
+    m_pOcPixDraw->draw(this, pos, data, col);
 }
 
 #if 0

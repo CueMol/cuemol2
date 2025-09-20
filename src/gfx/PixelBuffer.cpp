@@ -11,6 +11,7 @@ namespace gfx {
 
 PixelBuffer::~PixelBuffer()
 {
+    MB_DPRINTLN("PixelBuffer::~PixelBuffer() rep=%p", m_pPixRep);
     clear();
 }
 
@@ -24,6 +25,7 @@ PixelBuffer::PixelBuffer(const PixelBuffer &src)
     }
 
     m_pPixRep = nullptr;
+    MB_DPRINTLN("PixelBuffer::PixelBuffer(copy)");
 }
 
 void PixelBuffer::resize(size_t n)

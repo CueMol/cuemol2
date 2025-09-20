@@ -44,7 +44,7 @@ View::View()
 
   m_pEvtCaster = MB_NEW ViewEventCaster;
   m_uid = qlib::ObjectManager::sRegObj(this);
-  MB_DPRINTLN("### View (%p/%d) created\n", this, m_uid);
+  MB_DPRINTLN("View (%p/%d) created\n", this, m_uid);
 
   // ???
   m_nWidth = 100;
@@ -93,7 +93,7 @@ View::~View()
   delete m_pEvtCaster;
   delete m_pStyles;
 
-  MB_DPRINTLN("View(%p) destructed\n", this);
+  MB_DPRINTLN("View(%p) destructed", this);
   qlib::ObjectManager::sUnregObj(m_uid);
 }
 

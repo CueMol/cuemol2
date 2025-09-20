@@ -60,7 +60,6 @@ OglView::OglView()
 
 OglView::~OglView()
 {
-  // delete [] m_pHitBuf;
   if (m_pqua!=NULL)
     gluDeleteQuadric(static_cast<GLUquadricObj*>(m_pqua));
 }

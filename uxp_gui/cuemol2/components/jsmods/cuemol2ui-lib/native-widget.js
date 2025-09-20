@@ -117,7 +117,6 @@ exports.setup = function (window, aFrm, aScID, aVwID)
     if (pref.has("cuemol2.ui.view.enable_msaa")) {
       const val = pref.get("cuemol2.ui.view.enable_msaa");
       natwin.enableMSAA = val;
-      dd("********** pref enable-msaa = "+val);
     }
 
     // Get base window object

@@ -10,6 +10,7 @@
 uniform sampler2D u_texture;
 uniform vec3 u_colorBias;
 // uniform float u_alphaThreshold;
+uniform float frag_alpha;
 
 ////////////////////
 // Varying variables
@@ -22,6 +23,7 @@ void main()
 
     // Alpha is stored R channel in the GL_ALPHA texture
     float alpha = texture2D(u_texture, v_texCoord).a;
+    alpha *= frag_alpha;
 
     // Alpha test
     if (alpha <= alphaThreshold) {

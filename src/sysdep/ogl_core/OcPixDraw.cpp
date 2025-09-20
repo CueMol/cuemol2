@@ -23,12 +23,6 @@ void OcTexRep::create(gfx::DisplayContext *pdc, const gfx::PixelBuffer &pixbuf)
     const int ow = pixbuf.getWidth();
     const int oh = pixbuf.getHeight();
 
-    // for (int i=0; i<ow*oh; i++) {
-    //     const_cast<gfx::PixelBuffer &>(pixbuf).data()[i] = 255;;
-    //     // unsigned char v = pixbuf.data()[i];
-    //     // MB_DPRINTLN("pixbuf[%d]=%d", i, v);
-    // }
-
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texid);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, ow, oh, 0, GL_ALPHA, GL_UNSIGNED_BYTE,
@@ -42,6 +36,8 @@ void OcTexRep::create(gfx::DisplayContext *pdc, const gfx::PixelBuffer &pixbuf)
 
 OcTexRep::~OcTexRep()
 {
+    MB_DPRINTLN("OcTexRep::~OcTexRep view=%d, tex=%d", m_nViewID, m_nBufID);
+
     qsys::ViewPtr rvw = qsys::SceneManager::getViewS(m_nViewID);
     if (rvw.isnull()) {
         MB_DPRINTLN("OcTexRep> unknown parent view (%d), Texture %d cannot be deleted",
@@ -50,8 +46,13 @@ OcTexRep::~OcTexRep()
     }
 
     gfx::DisplayContext *pctxt = rvw->getDisplayContext();
-    pctxt->setCurrent();
+    if (pctxt == nullptr) {
+        MB_DPRINTLN("OcTexRep> view has no display context, Texture %d cannot be deleted",
+                    m_nBufID);
+        return;
+    }
 
+    pctxt->setCurrent();
     glDeleteTextures(1, &m_nBufID);
     MB_DPRINTLN("OcTexRep> Texture %d deleted", m_nBufID);
 }
@@ -187,7 +188,7 @@ void OcPixDraw::draw(gfx::DisplayContext *pdc, const Vector4D &pos,
     setupAttrs();
 
     m_pPO->enable();
-    // m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
+    m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
     m_pPO->setUniformF("u_position", pos.x(), pos.y(), pos.z());
     m_pPO->setUniformF("u_size", w, h);
     m_pPO->setUniformF("u_viewportSize", view_w, view_h);
