@@ -38,27 +38,19 @@ float ffog(in float ecDistance)
 void main(void)
 {
     vec4 ecpos1 = gl_ModelViewMatrix * a_vertex1;
-    vec4 p1_ndc = gl_ProjectionMatrix * ecpos1;
+    vec4 clipPos1 = gl_ProjectionMatrix * ecpos1;
 
     vec4 ecpos2 = gl_ModelViewMatrix * a_vertex2;
-    vec4 p2_ndc = gl_ProjectionMatrix * ecpos2;
+    vec4 clipPos2 = gl_ProjectionMatrix * ecpos2;
 
-    vec2 p1_screen = (p1_ndc.xy / p1_ndc.w) * 0.5 + 0.5;
-    vec2 p2_screen = (p2_ndc.xy / p2_ndc.w) * 0.5 + 0.5;
-    p1_screen *= screenSize;
-    p2_screen *= screenSize;
+    vec2 p1_screen = ((clipPos1.xy / clipPos1.w) * 0.5 + 0.5) * screenSize;
+    vec2 p2_screen = ((clipPos2.xy / clipPos2.w) * 0.5 + 0.5) * screenSize;
 
     vec2 direction = normalize(p2_screen - p1_screen);
     vec2 normal = vec2(-direction.y, direction.x);
- 
-    vec2 offset = normal * lineWidth * 0.5;
-    offset.x /= screenSize.x;
-    offset.y /= screenSize.y;
-    // offset *= 2.0;
 
-    // vec2 dir = normalize((p2 - p1).xy);
-    // vec2 normal = vec2(-dir.y, dir.x) * lineWidth * 0.5;
-    // mat4 projection = gl_ProjectionMatrix;
+    vec2 offset = (normal * lineWidth * 0.5) / screenSize * 2.0;
+    vec4 of4 = vec4(offset * clipPos1.w, 0.0, 0.0);
 
     float vlen;
     if (stippleLen > 0.0) {
@@ -70,43 +62,45 @@ void main(void)
     int ind = int(a_index);
     if (ind == 0) {
         // P0
-        // gl_Position = projection * (p1 + vec4(normal, 0.0, 0.0));
-        gl_Position = vec4(p1_ndc.xy / p1_ndc.w + offset, p1_ndc.z / p1_ndc.w, 1.0);
+        // gl_Position = vec4(clipPos1.xy / clipPos1.w + offset, clipPos1.z /
+        // clipPos1.w, 1.0);
+        gl_Position = clipPos1 + of4;
         gl_FogFragCoord = ffog(ecpos1.z);
         gl_FrontColor = a_color1;
         v_length = 0.0;
     } else if (ind == 1) {
         // P1
-        // gl_Position = projection * (p1 - vec4(normal, 0.0, 0.0));
-        gl_Position = vec4(p1_ndc.xy / p1_ndc.w - offset, p1_ndc.z / p1_ndc.w, 1.0);
+        // gl_Position = vec4(clipPos1.xy / clipPos1.w - offset, clipPos1.z /
+        // clipPos1.w, 1.0);
+        gl_Position = clipPos1 - of4;
         gl_FogFragCoord = ffog(ecpos1.z);
         gl_FrontColor = a_color1;
         v_length = 0.0;
     } else if (ind == 2) {
         // P2
         // gl_Position = projection * (p2 + vec4(normal, 0.0, 0.0));
-        gl_Position = vec4(p2_ndc.xy / p2_ndc.w + offset, p2_ndc.z / p2_ndc.w, 1.0);
+        gl_Position = clipPos2 + of4;
         gl_FogFragCoord = ffog(ecpos2.z);
         gl_FrontColor = a_color2;
         v_length = vlen;
     } else if (ind == 3) {
         // P2
         // gl_Position = projection * (p2 + vec4(normal, 0.0, 0.0));
-        gl_Position = vec4(p2_ndc.xy / p2_ndc.w + offset, p2_ndc.z / p2_ndc.w, 1.0);
+        gl_Position = clipPos2 + of4;
         gl_FogFragCoord = ffog(ecpos2.z);
         gl_FrontColor = a_color2;
         v_length = vlen;
     } else if (ind == 4) {
         // P1
         // gl_Position = projection * (p1 - vec4(normal, 0.0, 0.0));
-        gl_Position = vec4(p1_ndc.xy / p1_ndc.w - offset, p1_ndc.z / p1_ndc.w, 1.0);
+        gl_Position = clipPos1 - of4;
         gl_FogFragCoord = ffog(ecpos1.z);
         gl_FrontColor = a_color1;
         v_length = 0.0;
     } else {
         // P3
         // gl_Position = projection * (p2 - vec4(normal, 0.0, 0.0));
-        gl_Position = vec4(p2_ndc.xy / p2_ndc.w - offset, p2_ndc.z / p2_ndc.w, 1.0);
+        gl_Position = clipPos2 - of4;
         gl_FogFragCoord = ffog(ecpos2.z);
         gl_FrontColor = a_color2;
         v_length = vlen;
