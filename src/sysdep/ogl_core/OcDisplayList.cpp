@@ -153,6 +153,7 @@ void OcDisplayList::normal(const Vector4D &av)
 void OcDisplayList::color(const gfx::ColorPtr &c)
 {
     m_pColor = c;
+    m_bSetColor = true;
 }
 
 void OcDisplayList::pushMatrix()
@@ -225,6 +226,7 @@ void OcDisplayList::startLines()
     m_nDrawMode = DRAWMODE_LINES;
     m_vertLineWidth = -1.0;
     m_bVertStipple = false;
+    m_bSetColor = false;
     // printf("OcDisplayList::startLines OK\n");
 }
 
@@ -237,6 +239,7 @@ void OcDisplayList::startLineStrip()
     m_nDrawMode = DRAWMODE_LINESTRIP;
     m_vertLineWidth = -1.0;
     m_bVertStipple = false;
+    m_bSetColor = false;
 }
 
 void OcDisplayList::startTriangles()
@@ -360,11 +363,12 @@ void OcDisplayList::createLineArray()
         MB_ASSERT(m_pGlslLine == nullptr);
         m_pGlslLine = MB_NEW GLSLLineHelper();
         m_pGlslLine->alloc(nelems_line);
+        m_pGlslLine->setUseVertColor(m_bSetColor);
         size_t i = 0;
         for (const auto &elem : m_lineBuf) {
             MB_ASSERT(i < nelems_line);
-            m_pGlslLine->color(i, elem.cc);
             m_pGlslLine->vertex(i, elem.pos);
+            m_pGlslLine->color(i, elem.cc);
             ++i;
         }
         // MB_DPRINTLN("createLineArray> line width = %f", m_vertLineWidth);

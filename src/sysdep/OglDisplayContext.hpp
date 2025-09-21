@@ -31,7 +31,7 @@ namespace sysdep {
 
   private:
 
-    Vector4D m_color;
+    Vector4D m_fcolor;
     // Vector4D m_pos;
 
     int m_nDetail;

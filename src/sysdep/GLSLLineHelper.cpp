@@ -161,10 +161,30 @@ void GLSLLineHelper::draw(gfx::DisplayContext *pdc)
     // MB_DPRINTLN("GLSLLine> linew=%f (pixscl=%f)", linew, pdc->getPixSclFac());
 
     float stippleLen = 0.0;
-    if (isStipple())
-        stippleLen = 8.0f;
+    if (isStipple()) stippleLen = 8.0f;
 
     m_pPO->enable();
+
+    MB_DPRINTLN("*** isUseVertColor()=%d", isUseVertColor());
+    if (!isUseVertColor()) {
+        // use single color
+        m_pPO->setUniform("use_u_color", true);
+
+        float r = 0.5, g = 0.5, b = 0.5;
+        ColorPtr pcol = pdc->getColor();
+        if (!pcol.isnull()) {
+            auto c1 = pcol->getDevCode(pdc->getSceneID());
+            r = gfx::getFR(c1);
+            g = gfx::getFG(c1);
+            b = gfx::getFB(c1);
+        }
+        m_pPO->setUniformF("u_color", r, g, b, 1.0);
+        MB_DPRINTLN("*** RGB=%f %f %f", r, g, b);
+
+    } else {
+        m_pPO->setUniform("use_u_color", false);
+    }
+
     m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
     m_pPO->setUniformF("lineWidth", linew * pdc->getPixSclFac());
     m_pPO->setUniformF("stippleLen", stippleLen);

@@ -71,6 +71,12 @@ void DisplayContext::color(double r, double g, double b)
   color(SolidColor::createRGB(r,g,b));
 }
 
+void DisplayContext::color(const ColorPtr &c)
+{
+    m_color = c;
+}
+
+
 void DisplayContext::setMaterial(const LString &name)
 {
   m_defMatName = name;

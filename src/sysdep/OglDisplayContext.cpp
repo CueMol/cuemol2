@@ -66,7 +66,7 @@ OglDisplayContext::OglDisplayContext()
 {
   // m_nSceneID = sceneid;
   m_pGluData = NULL;
-  m_color = Vector4D(1.0, 1.0, 1.0, 1.0);
+  m_fcolor = Vector4D(1.0, 1.0, 1.0, 1.0);
   m_nDetail = 5;
 
   m_bUseShaderAlpha = false;
@@ -364,66 +364,58 @@ void OglDisplayContext::setMaterImpl(const LString &name)
 
 void OglDisplayContext::color(const ColorPtr &c)
 {
-  //::glColor4ub(c->r(), c->g(), c->b(), c->a());
-
+    super_t::color(c);
   quint32 devcolc = c->getDevCode( getSceneID() );
 
-  m_color.x() = gfx::getFR(devcolc); //c->fr();
-  m_color.y() = gfx::getFG(devcolc); //c->fg();
-  m_color.z() = gfx::getFB(devcolc); //c->fb();
+  m_fcolor.x() = gfx::getFR(devcolc); //c->fr();
+  m_fcolor.y() = gfx::getFG(devcolc); //c->fg();
+  m_fcolor.z() = gfx::getFB(devcolc); //c->fb();
   if (useShaderAlpha())
-    m_color.w() = c->fa();
+    m_fcolor.w() = c->fa();
   else
-    m_color.w() = c->fa() * getAlpha();
+    m_fcolor.w() = c->fa() * getAlpha();
     
-/*
-  LString strmat = c->getMaterial();
-  LString defmat = getMaterial();
-  if (strmat.isEmpty()) {
-    setMaterImpl(defmat);
-  }
-  else {
-    setMaterImpl(strmat);
-  }
-*/
+  // LString strmat = c->getMaterial();
+  // LString defmat = getMaterial();
+  // if (strmat.isEmpty()) {
+  //   setMaterImpl(defmat);
+  // }
+  // else {
+  //   setMaterImpl(strmat);
+  // }
   
-  ::glColor4d(m_color.x(), m_color.y(), m_color.z(), m_color.w());
+  ::glColor4d(m_fcolor.x(), m_fcolor.y(), m_fcolor.z(), m_fcolor.w());
 }
 
 void OglDisplayContext::color(double r, double g, double b, double a)
 {
+    super_t::color(r, g, b, a);
   Vector4D vcol(r,g,b);
   gfx::ColProfMgr *pCPM = gfx::ColProfMgr::getInstance();
-  pCPM->doXForm( getSceneID(), vcol, m_color);
-
-  //m_color.x() = r;
-  //m_color.y() = g;
-  //m_color.z() = b;
+  pCPM->doXForm( getSceneID(), vcol, m_fcolor);
 
   if (useShaderAlpha())
-    m_color.w() = a;
+    m_fcolor.w() = a;
   else
-    m_color.w() = a * getAlpha();
+    m_fcolor.w() = a * getAlpha();
   
-  ::glColor4d(m_color.x(), m_color.y(), m_color.z(), m_color.w());
+  ::glColor4d(m_fcolor.x(), m_fcolor.y(), m_fcolor.z(), m_fcolor.w());
 }
 
 void OglDisplayContext::color(double r, double g, double b)
 {
+    super_t::color(r, g, b);
+
   Vector4D vcol(r,g,b);
   gfx::ColProfMgr *pCPM = gfx::ColProfMgr::getInstance();
-  pCPM->doXForm( getSceneID(), vcol, m_color);
+  pCPM->doXForm( getSceneID(), vcol, m_fcolor);
   
-  //m_color.x() = r;
-  //m_color.y() = g;
-  //m_color.z() = b;
-
   if (useShaderAlpha())
-    m_color.w() = 1.0;
+    m_fcolor.w() = 1.0;
   else
-    m_color.w() = getAlpha();
+    m_fcolor.w() = getAlpha();
 
-  ::glColor4d(m_color.x(), m_color.y(), m_color.z(), m_color.w());
+  ::glColor4d(m_fcolor.x(), m_fcolor.y(), m_fcolor.z(), m_fcolor.w());
 }
 
 void OglDisplayContext::setLineWidth(double lw)
@@ -664,9 +656,9 @@ void OglDisplayContext::drawPixels(const Vector4D &pos,
     }
 
     gfx::ColorPtr col = acol;
-    if (col.isnull()) {
+    if (acol.isnull()) {
         // use current color
-        col = gfx::ColorPtr(new gfx::SolidColor(m_color));
+        col = super_t::getColor();
     }
 
     m_pOcPixDraw->draw(this, pos, data, col);

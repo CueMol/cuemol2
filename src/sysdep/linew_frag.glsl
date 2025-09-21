@@ -5,6 +5,8 @@
 
 uniform float frag_alpha;
 uniform float stippleLen;
+uniform vec4 u_color;
+uniform bool use_u_color;
 
 varying float v_length;
 
@@ -20,7 +22,13 @@ void main(void)
         }
     }
     
-    color = gl_Color;
+    if (use_u_color) {
+        color = u_color;
+    }
+    else {
+        color = gl_Color;
+    }
+
     float z = gl_FogFragCoord;
 
     float fog;

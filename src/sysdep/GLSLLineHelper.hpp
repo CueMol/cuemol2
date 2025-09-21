@@ -45,6 +45,7 @@ private:
 
     float m_linew;
     bool m_bStipple;
+    bool m_bUseVertColor;
 
 public:
     GLSLLineHelper()
@@ -52,7 +53,8 @@ public:
           m_pDrawAry(NULL),
           m_bInitialized(false),
           m_linew(1.0),
-          m_bStipple(false)
+          m_bStipple(false),
+          m_bUseVertColor(true)
     {
     }
 
@@ -80,6 +82,15 @@ public:
     bool isStipple() const
     {
         return m_bStipple;
+    }
+
+    void setUseVertColor(bool f)
+    {
+        m_bUseVertColor = f;
+    }
+    bool isUseVertColor() const
+    {
+        return m_bUseVertColor;
     }
 
     void color(int ind, quint32 devcode);

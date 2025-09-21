@@ -94,6 +94,8 @@ private:
     /// current color
     gfx::ColorPtr m_pColor;
 
+    bool m_bSetColor;
+
     /// current normal vec
     qlib::Vector4D m_norm;
 

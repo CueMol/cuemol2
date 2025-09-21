@@ -59,6 +59,9 @@ namespace gfx {
     /// Edge line color
     ColorPtr m_egLineCol;
 
+    /// Current color
+    ColorPtr m_color;
+
     /// Target view
     qsys::View *m_pTargView;
 
@@ -130,7 +133,10 @@ namespace gfx {
     virtual void normal(const Vector4D &vec) =0;
 
     /// Set current color
-    virtual void color(const ColorPtr &c) =0;
+    virtual void color(const ColorPtr &c);
+
+    /// Get curent color
+    ColorPtr getColor() const { return m_color; }
 
     /// Set current vertex attribute
     virtual void attribute(int n);
