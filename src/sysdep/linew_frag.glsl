@@ -8,7 +8,11 @@ uniform float stippleLen;
 uniform vec4 u_color;
 uniform bool use_u_color;
 
+////////////////////
+// Varying
+
 varying float v_length;
+varying float v_fogCoord;
 
 void main(void)
 {
@@ -16,23 +20,19 @@ void main(void)
 
     if (stippleLen > 0.0) {
         float stipos = mod(v_length, stippleLen);
-        if (stipos < stippleLen*0.5) {
+        if (stipos < stippleLen * 0.5) {
             // gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
             discard;
         }
     }
-    
+
     if (use_u_color) {
         color = u_color;
-    }
-    else {
+    } else {
         color = gl_Color;
     }
 
-    float z = gl_FogFragCoord;
-
-    float fog;
-    fog = (gl_Fog.end - z) * gl_Fog.scale;
+    float fog = (gl_Fog.end - v_fogCoord) * gl_Fog.scale;
     fog = clamp(fog, 0.0, 1.0);
 
     float alpha = color.a * frag_alpha;

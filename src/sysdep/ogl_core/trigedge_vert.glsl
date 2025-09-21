@@ -15,6 +15,12 @@ uniform vec4 edge_color;
 attribute vec4 aVertex;
 attribute vec4 aNormal;
 
+////////////////////
+// Varying
+
+varying vec4 v_frontColor;
+varying float v_fogCoord;
+
 void main(void)
 {
     // float edge_width = 0.15;
@@ -32,7 +38,7 @@ void main(void)
 
     gl_Position = pos;
 
-    gl_FrontColor = edge_color;
+    v_frontColor = edge_color;
 
-    gl_FogFragCoord = abs(ecPosition.z);
+    v_fogCoord = abs(ecPosition.z);
 }

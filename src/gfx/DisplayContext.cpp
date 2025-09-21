@@ -76,6 +76,26 @@ void DisplayContext::color(const ColorPtr &c)
     m_color = c;
 }
 
+// Enable fog
+void DisplayContext::enableFog(bool b)
+{
+    m_bFogEnabled = b;
+}
+
+void DisplayContext::setFogStart(float val)
+{
+    m_fFogStart = val;
+}
+
+void DisplayContext::setFogEnd(float val)
+{
+    m_fFogEnd = val;
+}
+
+void DisplayContext::setFogColor(const ColorPtr &val)
+{
+    m_fogColor = val;
+}
 
 void DisplayContext::setMaterial(const LString &name)
 {

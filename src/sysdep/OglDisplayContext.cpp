@@ -641,6 +641,42 @@ void OglDisplayContext::setCullFace(bool f/*=true*/)
     glDisable(GL_CULL_FACE);
 }
 
+// Enable fog
+void OglDisplayContext::enableFog(bool b)
+{
+    super_t::enableFog(b);
+    if (b) {
+        glEnable(GL_FOG);
+    } else {
+        glDisable(GL_FOG);
+    }
+}
+
+void OglDisplayContext::setFogStart(float val)
+{
+    super_t::setFogStart(val);
+    glFogf(GL_FOG_START, val);
+}
+
+void OglDisplayContext::setFogEnd(float val)
+{
+    super_t::setFogEnd(val);
+    glFogf(GL_FOG_END, val);
+}
+
+void OglDisplayContext::setFogColor(const ColorPtr &val)
+{
+    super_t::setFogColor(val);
+    GLfloat col[4];
+    col[0] = GLfloat(val->fr());
+    col[1] = GLfloat(val->fg());
+    col[2] = GLfloat(val->fb());
+    // col[3] = GLfloat(val->fa());
+    col[3] = 1.0f;
+    glFogfv(GL_FOG_COLOR, col);
+}
+
+
 void OglDisplayContext::drawPixels(const Vector4D &pos,
                                    const gfx::PixelBuffer &data,
                                    const gfx::ColorPtr &acol)

@@ -62,6 +62,12 @@ namespace gfx {
     /// Current color
     ColorPtr m_color;
 
+    /// Fog
+    bool m_bFogEnabled;
+    float m_fFogStart;
+    float m_fFogEnd;
+    ColorPtr m_fogColor;
+
     /// Target view
     qsys::View *m_pTargView;
 
@@ -157,6 +163,15 @@ namespace gfx {
     virtual ColorPtr getEdgeLineColor() const;
     virtual void setEdgeLineColor(const ColorPtr &c);
 
+    // Fog
+    virtual void enableFog(bool b);
+    bool isFogEnabled() const { return m_bFogEnabled; }
+    virtual void setFogStart(float val);
+    float getFogStart() const { return m_fFogStart; }
+    virtual void setFogEnd(float val);
+    float getFogEnd() const { return m_fFogEnd; }
+    virtual void setFogColor(const ColorPtr &val);
+    ColorPtr getFogColor() const { return m_fogColor; }
 
     LString getMaterial() const { return m_defMatName; }
     double getAlpha() const { return m_defAlpha; }

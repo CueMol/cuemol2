@@ -27,6 +27,7 @@ attribute float a_index;
 // Varying
 
 varying float v_length;
+varying float v_fogCoord;
 
 ////////////////////
 
@@ -65,7 +66,7 @@ void main(void)
         // gl_Position = vec4(clipPos1.xy / clipPos1.w + offset, clipPos1.z /
         // clipPos1.w, 1.0);
         gl_Position = clipPos1 + of4;
-        gl_FogFragCoord = ffog(ecpos1.z);
+        v_fogCoord = ffog(ecpos1.z);
         gl_FrontColor = a_color1;
         v_length = 0.0;
     } else if (ind == 1) {
@@ -73,35 +74,35 @@ void main(void)
         // gl_Position = vec4(clipPos1.xy / clipPos1.w - offset, clipPos1.z /
         // clipPos1.w, 1.0);
         gl_Position = clipPos1 - of4;
-        gl_FogFragCoord = ffog(ecpos1.z);
+        v_fogCoord = ffog(ecpos1.z);
         gl_FrontColor = a_color1;
         v_length = 0.0;
     } else if (ind == 2) {
         // P2
         // gl_Position = projection * (p2 + vec4(normal, 0.0, 0.0));
         gl_Position = clipPos2 + of4;
-        gl_FogFragCoord = ffog(ecpos2.z);
+        v_fogCoord = ffog(ecpos2.z);
         gl_FrontColor = a_color2;
         v_length = vlen;
     } else if (ind == 3) {
         // P2
         // gl_Position = projection * (p2 + vec4(normal, 0.0, 0.0));
         gl_Position = clipPos2 + of4;
-        gl_FogFragCoord = ffog(ecpos2.z);
+        v_fogCoord = ffog(ecpos2.z);
         gl_FrontColor = a_color2;
         v_length = vlen;
     } else if (ind == 4) {
         // P1
         // gl_Position = projection * (p1 - vec4(normal, 0.0, 0.0));
         gl_Position = clipPos1 - of4;
-        gl_FogFragCoord = ffog(ecpos1.z);
+        v_fogCoord = ffog(ecpos1.z);
         gl_FrontColor = a_color1;
         v_length = 0.0;
     } else {
         // P3
         // gl_Position = projection * (p2 - vec4(normal, 0.0, 0.0));
         gl_Position = clipPos2 - of4;
-        gl_FogFragCoord = ffog(ecpos2.z);
+        v_fogCoord = ffog(ecpos2.z);
         gl_FrontColor = a_color2;
         v_length = vlen;
     }

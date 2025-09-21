@@ -130,7 +130,7 @@ namespace sysdep {
 
 
   protected:
-    void setFogColorImpl();
+    void setFogColorImpl(gfx::DisplayContext *pdc=nullptr);
 
   };
 

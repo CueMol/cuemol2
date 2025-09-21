@@ -3,19 +3,28 @@
 //  triangle edge fragment shader for OpenGL
 //
 
+////////////////////
+// Uniform variables
+
 uniform float frag_alpha;
 
-void main (void)
+uniform float u_fogEnd;
+uniform float u_fogScale;
+uniform vec3 u_fogColor;
+
+////////////////////
+// Varying
+
+varying vec4 v_frontColor;
+varying float v_fogCoord;
+
+void main(void)
 {
-  vec4 color;
+    vec4 color = v_frontColor;
 
-  color = gl_Color;
-  float z = gl_FogFragCoord;
+    float fog = (u_fogEnd - v_fogCoord) * u_fogScale;
+    fog = clamp(fog, 0.0, 1.0);
+    color = vec4(mix(u_fogColor, vec3(color), fog), color.a * frag_alpha);
 
-  float fog;
-  fog = (gl_Fog.end - z) * gl_Fog.scale;
-  fog = clamp(fog, 0.0, 1.0);
-  color = vec4(mix( vec3(gl_Fog.color), vec3(color), fog), color.a * frag_alpha);
-
-  gl_FragColor = color;
+    gl_FragColor = color;
 }

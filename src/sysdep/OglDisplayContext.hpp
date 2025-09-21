@@ -111,6 +111,12 @@ namespace sysdep {
     virtual void setLighting(bool f=true);
     virtual void setCullFace(bool f=true);
 
+    // Fog
+    virtual void enableFog(bool b);
+    virtual void setFogStart(float val);
+    virtual void setFogEnd(float val);
+    virtual void setFogColor(const ColorPtr &val);
+
     ////////////////
     // metadata operations
 

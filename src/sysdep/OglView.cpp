@@ -43,6 +43,7 @@
 #include "OglViewCap.hpp"
 
 #include <gfx/HittestContext.hpp>
+#include <gfx/SolidColor.hpp>
 
 using gfx::DisplayContext;
 using namespace sysdep;
@@ -72,6 +73,7 @@ LString OglView::toString() const
 void OglView::setup()
 {
   if (!safeSetCurrent()) return;
+  OglDisplayContext *pdc = static_cast<OglDisplayContext *>( getDisplayContext() );
 
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_CULL_FACE);
@@ -89,12 +91,15 @@ void OglView::setup()
   //glDisable(GL_LINE_SMOOTH);
   //glDisable(GL_BLEND);
 
-  GLfloat fogColor[4] = {0, 0, 0, 1.0};
+  // GLfloat fogColor[4] = {0, 0, 0, 1.0};
 
-  glEnable(GL_FOG);
-  //glDisable(GL_FOG);
+  // glEnable(GL_FOG);
+  pdc->enableFog(true);
+  // //glDisable(GL_FOG);
+  // pdc->enableFog(false);
   glFogi(GL_FOG_MODE, GL_LINEAR);
-  glFogfv(GL_FOG_COLOR, fogColor);
+  // glFogfv(GL_FOG_COLOR, fogColor);
+  pdc->setFogColor(gfx::SolidColor::createRGB(0.0, 0.0, 0.0));
 
   setUpProjMat(-1, -1);
   setUpLightColor();
@@ -122,7 +127,6 @@ void OglView::setup()
     setViewCap(pVC);
   }
 
-  OglDisplayContext *pdc = static_cast<OglDisplayContext *>( getDisplayContext() );
   try {
     pdc->init();
   }
@@ -183,10 +187,12 @@ void OglView::setUpProjMat(int cx, int cy)
   if (fognear<1.0)
     fognear = 1.0;
   
-  glFogf(GL_FOG_START, (GLfloat)fognear);
-  glFogf(GL_FOG_END, (GLfloat)fogfar);
+  // glFogf(GL_FOG_START, (GLfloat)fognear);
+  // glFogf(GL_FOG_END, (GLfloat)fogfar);
+  pdc->setFogStart(fognear);
+  pdc->setFogEnd(fogfar);
 
-  setFogColorImpl();
+  setFogColorImpl(pdc);
 
   //MB_DPRINTLN("Zoom=%f", zoom);
   double vw = zoom/2.0f;
@@ -225,16 +231,22 @@ void OglView::setUpProjMat(int cx, int cy)
   glMatrixMode(GL_MODELVIEW);
 }
 
-void OglView::setFogColorImpl()
+void OglView::setFogColorImpl(DisplayContext *pdc)
 {
-  GLfloat tmpv[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-  qsys::ScenePtr pScene = getScene();
-  gfx::ColorPtr pBgCol = pScene->getBgColor();
-  tmpv[0] = (GLfloat) pBgCol->fr();
-  tmpv[1] = (GLfloat) pBgCol->fg();
-  tmpv[2] = (GLfloat) pBgCol->fb();
-  glFogfv(GL_FOG_COLOR, tmpv);
-  CHK_GLERROR("4");
+    qsys::ScenePtr pScene = getScene();
+    gfx::ColorPtr pBgCol = pScene->getBgColor();
+    if (pdc == nullptr) {
+        pdc = getDisplayContext();
+        pdc->setCurrent();
+    }
+    pdc->setFogColor(pBgCol);
+
+  // GLfloat tmpv[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+  // tmpv[0] = (GLfloat) pBgCol->fr();
+  // tmpv[1] = (GLfloat) pBgCol->fg();
+  // tmpv[2] = (GLfloat) pBgCol->fb();
+  // glFogfv(GL_FOG_COLOR, tmpv);
+  // CHK_GLERROR("4");
 }
 
 void OglView::setUpModelMat(int nid)
@@ -354,7 +366,7 @@ void OglView::drawScene()
 
   gfx::ColorPtr pBgCol = pScene->getBgColor();
   glClearColor(float(pBgCol->fr()), float(pBgCol->fg()), float(pBgCol->fb()), 1.0f);
-  setFogColorImpl();
+  setFogColorImpl(pdc);
   
   pdc->setLighting(false);
 
@@ -498,7 +510,6 @@ void OglView::drawScene()
 //////////////////////////////////////////////////////////////////////////////
 // Hittest Impl
 
-#ifndef USE_GL_SELECTION
 using gfx::HittestContext;
 
 LString OglView::hitTest(int ax, int ay)
@@ -628,7 +639,6 @@ LString OglView::hitTestRect(int ax, int ay, int aw, int ah, bool bNearest)
       LOG_DPRINTLN("FATAL ERROR: Unknown object id %d", objid);
       return LString();
     }
-    
 
     if (ii>0)
       rval += ",";
@@ -720,295 +730,6 @@ bool OglView::hitTestImpl(gfx::DisplayContext *pdc, const Vector4D &parm,
 
   return true;
 }
-#endif
-
-#ifdef USE_GL_SELECTION
-//////////////////////////////////////////////////////////////////////////////
-// Hittest Using OpenGL Selection buffer
-
-// Setup the projection matrix for hit-testing
-void OglView::setUpHitProjMat(gfx::DisplayContext *pdc, const Vector4D &parm, double far_factor)
-{
-  double slabdepth = (double) getSlabDepth();
-  if (slabdepth<=0.1f)
-    slabdepth = 0.1f;
-  
-  double zoom = (double) getZoom(), dist = (double) getViewDist();
-
-  // double fHitPrec = 10.0; //(double) getHitPrec();
-  double slabnear = dist-slabdepth/2.0f;
-  double slabfar  = dist+slabdepth*far_factor;
-  double vw = zoom/2.0f;
-  // double cx = getWidth();
-  // double cy = getHeight();
-  double cx = convToBackingX( getWidth() );
-  double cy = convToBackingY( getHeight() );
-  double fasp = cx/cy;
-  
-  /*
-  if (getStereoMode()==STEREO_PARA ||
-      getStereoMode()==STEREO_CROSS) {
-    fasp /= 2.0f;
-    //glViewport(0, 0, cx/2, cy);
-  }
-  else {
-    //glViewport(0, 0, cx, cy);
-  }
-  */
-
-  // initialize proj matrix with ident mat
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
-  
-  // setup pick matrix
-  // GLint viewport[4] = {0, 0, getWidth(), getHeight()};
-  GLint viewport[4] = {0, 0, GLint(cx), GLint(cy)};
-
-  // glGetIntegerv(GL_VIEWPORT, viewport);
-  gluPickMatrix((GLfloat)parm.x(), (GLfloat)(cy - parm.y()),
-                parm.z(), parm.w(), viewport);
-
-  // set projection matrix
-  if (!isPerspec()) {
-    glOrtho(-vw*fasp, vw*fasp,
-            -vw, vw, slabnear, slabfar);
-  }
-  else {
-    //double vang = qlib::toDegree(::atan(vw/dist));
-    double vang = qlib::toDegree<double>(::atan(vw/dist))*2.0;
-    gluPerspective(vang, fasp, slabnear, slabfar);
-  }
-
-  glMatrixMode(GL_MODELVIEW);
-}
-
-bool OglView::hitTestImpl(gfx::DisplayContext *pdc, const Vector4D &parm, bool fGetAll, double far_factor)
-{
-  qsys::ScenePtr pScene = getScene();
-  if (pScene.isnull()) {
-    MB_DPRINTLN("hitTest: invalid scene %d !!", getSceneID());
-    return false;
-  }
-
-  ///////////////////////////////////
-  // DEBUG
-#if 0
-  {
-    gfx::ColorPtr pBgCol = pScene->getBgColor();
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    
-    glDrawBuffer(GL_BACK);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    setUpModelMat(0);
-    
-    pdc->setLighting(false);
-    glDisable(GL_FOG);
-    glDisable(GL_LINE_SMOOTH);
-    glDisable(GL_BLEND);
-    //pdc->pushName(0);
-    pScene->processHit(pdc);
-    glFinish();
-    glEnable(GL_FOG);
-    glEnable(GL_LINE_SMOOTH);
-    glEnable(GL_BLEND);
-
-    unsigned char pbuf[1024], pix;
-    for (int i=0; i<sizeof pbuf; ++i) {
-      pbuf[i] = 0;
-    }
-    glPixelStorei(GL_PACK_ALIGNMENT ,1);
-    glReadBuffer( GL_BACK );
-
-    int cx = getWidth();
-    int cy = getHeight();
-    MB_DPRINTLN("x=%d, y=%d, cy=%d", x, y, cy);
-    glReadPixels(x, cy-y, 10, 10, GL_RGB, GL_UNSIGNED_BYTE, pbuf);
-
-    for (int i=9; i>=0; --i) {
-      for (int j=0; j<10; ++j) {
-        pix = pbuf[(i*10+j)*3+0];
-        MB_DPRINT("%02X", int(pix));
-        pix = pbuf[(i*10+j)*3+1];
-        MB_DPRINT("%02X", int(pix));
-        pix = pbuf[(i*10+j)*3+2];
-        MB_DPRINT("%02X ", int(pix));
-      }
-      MB_DPRINT("\n");
-    }
-    swapBuffers();
-  }
-#endif
-
-  ///////////////////////////////////
-  //  setup GL's selection buffer
-  
-  //glSelectBuffer(GlHitData::HITBUF_SIZE, m_hitdata.m_pHitBuf);
-  m_hitdata.setSelectBuffer();
-  m_hitdata.clear();
-  glRenderMode(GL_SELECT);
-
-  glInitNames();
-  glPushName(-1);
-
-  setUpHitProjMat(pdc, parm, far_factor);
-  // 0 == no stereo
-  setUpModelMat(MM_NORMAL);
-
-  //pdc->pushName(0);
-  pScene->processHit(pdc);
-  glFlush();
-
-  GLint hit = glRenderMode(GL_RENDER);
-  if (hit<0) {
-    MB_DPRINTLN("Hittest> selection buffer overflow");
-  }
-  setUpProjMat(-1, -1);
-  // gfx::Hittest *pRes = NULL;
-
-  if (fGetAll) {
-    if (!m_hitdata.createAllFromGlBuf(hit))
-      return false;
-  }
-  else {
-    if (!m_hitdata.createFromGlBuf(hit))
-      return false;
-  }
-
-  return true;
-}
-
-LString OglView::hitTest(int ax, int ay)
-{
-  int x = convToBackingX(ax);
-  int y = convToBackingY(ay);
-
-  DisplayContext *pdc = getDisplayContext();
-  pdc->setCurrent();
-
-  double dHitPrec = convToBackingX( qsys::ViewInputConfig::getInstance()->getHitPrec() );
-
-  // Perform hittest (single hit)
-  if ( !hitTestImpl(pdc, Vector4D(x, y, dHitPrec, dHitPrec), false, 1.0) )
-    return LString();
-
-  int nrend = m_hitdata.getRendSize();
-  if (nrend==0) // no hit
-    return LString();
-    
-  MB_DPRINTLN("OglView.hitTest> hit nrend=%d", nrend);
-  qlib::uid_t rend_id;
-  // qlib::Array<qlib::uid_t> rend_ids(nrend);
-  m_hitdata.getRendArray(&rend_id, 1);
-  // m_hitdata.getRendArray(rend_ids.data(), nrend);
-
-  qsys::RendererPtr pRend = SceneManager::getRendererS(rend_id);
-  if (pRend.isnull()) {
-    LOG_DPRINTLN("FATAL ERROR: Unknown renderer id %d", rend_id);
-    return LString();
-  }
-
-  qlib::uid_t sceneid = pRend->getSceneID();
-  qlib::uid_t objid = pRend->getClientObjID();
-
-  qsys::ObjectPtr pObj = SceneManager::getObjectS(objid);
-  if (pObj.isnull()) {
-    LOG_DPRINTLN("FATAL ERROR: Unknown object id %d", objid);
-    return LString();
-  }
-
-  MB_DPRINTLN("Hittest OK: sc=%d, rend=%d, obj=%d", sceneid, rend_id, objid);
-
-  {
-    LString rval;
-    rval += "{";
-
-    rval += pRend->interpHit(m_hitdata);
-
-    rval += LString::format("\"scene_id\": %d,\n", sceneid);
-    rval += LString::format("\"rend_id\": %d,\n", rend_id);
-    rval += LString::format("\"rendtype\": \"%s\",\n", pRend->getTypeName());
-    rval += LString::format("\"rend_name\": \"%s\",\n", pRend->getName().c_str());
-    rval += LString::format("\"obj_id\": %d,\n", objid);
-    rval += LString::format("\"obj_name\": \"%s\"\n", pObj->getName().c_str());
-    rval += "}";
-
-    return rval;
-  }
-}
-
-LString OglView::hitTestRect(int ax, int ay, int aw, int ah, bool bNearest)
-{
-  int x = convToBackingX(ax);
-  int y = convToBackingY(ay);
-  int w = convToBackingX(aw);
-  int h = convToBackingY(ah);
-
-  DisplayContext *pdc = getDisplayContext();
-  pdc->setCurrent();
-
-  double cnx = double(x) + double(w)/2.0;
-  double cny = double(y) + double(h)/2.0;
-
-  // Perform hittest (multiple hit)
-  if ( !hitTestImpl(pdc, Vector4D(cnx, cny, w, h), true, 0.5) )
-    return LString();
-
-  int nrend = m_hitdata.getRendSize();
-  if (nrend==0) // no hit
-    return LString();
-    
-  qlib::Array<qlib::uid_t> rend_ids;
-  if (bNearest) {
-    nrend = 1;
-    rend_ids.resize(1);
-    rend_ids[0] = m_hitdata.getNearestRendID();
-  }
-  else {
-    rend_ids.resize(nrend);
-    m_hitdata.getRendArray(rend_ids.data(), nrend);
-  }
-
-  ////////////////////////
-
-  LString rval;
-  rval += "[";
-
-  for (int ii=0; ii<nrend; ++ii) {
-    qlib::uid_t rend_id = rend_ids[ii];
-
-    if (rend_id==qlib::invalid_uid)
-      continue; // ignore null entry
-
-    if (ii>0)
-      rval += ",";
-    rval += "{";
-    rval += LString::format("\"rend_id\": %d,\n", rend_id);
-
-    qsys::RendererPtr pRend = SceneManager::getRendererS(rend_id);
-    if (pRend.isnull()) {
-      LOG_DPRINTLN("OglView.hitTestRect> FATAL ERROR: Unknown renderer id %d", rend_id);
-      return LString();
-    }
-
-    qlib::uid_t sceneid = pRend->getSceneID();
-    qlib::uid_t objid = pRend->getClientObjID();
-
-    qsys::ObjectPtr pObj = SceneManager::getObjectS(objid);
-    if (pObj.isnull()) {
-      LOG_DPRINTLN("FATAL ERROR: Unknown object id %d", objid);
-      return LString();
-    }
-    
-    rval += pRend->interpHit(m_hitdata);
-    rval += LString::format("\"obj_id\": %d", objid);
-    rval += "}";
-    //MB_DPRINTLN("Hittest OK: sc=%d, rend=%d, obj=%d", sceneid, rend_id, objid);
-  }
-  rval += "]";
-
-  return rval;
-}
-#endif
 
 //////////
 // Framebuffer operations
