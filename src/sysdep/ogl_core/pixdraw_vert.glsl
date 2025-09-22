@@ -28,6 +28,7 @@ varying float v_fogCoord;
 void main()
 {
     // Transform 3D position to clip space
+    vec4 ecPos = gl_ModelViewMatrix * vec4(u_position, 1.0);
     vec4 clipPos = gl_ModelViewProjectionMatrix * vec4(u_position, 1.0);
 
     // Convert to normalized device coordinates for screen space calculations
@@ -43,5 +44,5 @@ void main()
     gl_Position = vec4(quadPos * clipPos.w, clipPos.z, clipPos.w);
 
     v_texCoord = a_texCoord;
-    v_fogCoord = abs(clipPos.z);
+    v_fogCoord = abs(ecPos.z);
 }

@@ -22,6 +22,7 @@ void OcTexRep::create(gfx::DisplayContext *pdc, const gfx::PixelBuffer &pixbuf)
 
     const int ow = pixbuf.getWidth();
     const int oh = pixbuf.getHeight();
+    MB_DPRINTLN("OcTexRep::create tex=%d (%d x %d)", m_nBufID, ow, oh);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texid);
@@ -184,6 +185,7 @@ void OcPixDraw::draw(gfx::DisplayContext *pdc, const Vector4D &pos,
     setupAttrs();
 
     m_pPO->enable();
+    m_pPO->setupFog(pdc);
     m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
     m_pPO->setUniformF("u_position", pos.x(), pos.y(), pos.z());
     m_pPO->setUniformF("u_size", w, h);
