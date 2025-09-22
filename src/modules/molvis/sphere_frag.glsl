@@ -118,9 +118,9 @@ void main()
       // fog calculation
       float fogz = abs(ecpos.z);
       float fog;
-      fog = (u_fogEnd - fogz) * u_FogScale;
+      fog = (u_fogEnd - fogz) * u_fogScale;
       fog = clamp(fog, 0.0, 1.0);
-      color = vec4(mix( u_fogColor), vec3(color), fog), v_color.a*frag_alpha);
+      color = vec4(mix( u_fogColor, vec3(color), fog), v_color.a*frag_alpha);
       
       gl_FragDepth = u_bsilh ? 0.99 : fd;
       gl_FragColor = color;
