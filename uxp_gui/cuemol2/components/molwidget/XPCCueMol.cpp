@@ -130,10 +130,12 @@ NS_IMETHODIMP XPCCueMol::Init(const char *confpath, bool *_retval)
     return NS_ERROR_ALREADY_INITIALIZED;
   }
 
+  MB_DPRINTLN("Call cuemol2::init...");
   int result = cuemol2::init(confpath, true);
   if (result < 0) {
     return NS_ERROR_FAILURE;
   }
+  MB_DPRINTLN("Call cuemol2::init OK.");
 
   initTextRender();
   MB_DPRINTLN("---------- initTextRender() OK");

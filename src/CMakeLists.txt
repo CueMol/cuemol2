@@ -1,6 +1,8 @@
 if (${CMAKE_BUILD_TYPE} MATCHES "[Dd][Ee][Bb][Uu][Gg]")
   SET(MB_DEBUG "1")
 endif ()
+message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+message(STATUS "MB_DEBUG: ${MB_DEBUG}")
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_OUTPUT_EXTENSION_REPLACE 1)  # ref. https://texus.me/2015/09/06/cmake-and-gcov/
