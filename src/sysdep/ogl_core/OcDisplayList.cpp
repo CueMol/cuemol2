@@ -88,7 +88,7 @@ void OcDisplayList::vertex(const Vector4D &aV)
             }
             // MB_DPRINTLN("line width = %f <-- %f", m_vertLineWidth, m_lineWidth);
             m_vertLineWidth = getLineWidth();
-            if (getLineStipple()==0xFFFF)
+            if (getLineStipple() == 0xFFFF)
                 m_bVertStipple = false;
             else
                 m_bVertStipple = true;
@@ -106,7 +106,7 @@ void OcDisplayList::vertex(const Vector4D &aV)
                 m_prevCol = color_value;
             }
             m_vertLineWidth = getLineWidth();
-            if (getLineStipple()==0xFFFF)
+            if (getLineStipple() == 0xFFFF)
                 m_bVertStipple = false;
             else
                 m_bVertStipple = true;
@@ -550,6 +550,19 @@ void OcDisplayList::setupTrigEdgeMeshAttrs()
                      offsetof(TrigVertAttr, nx));
 }
 
+// void OcDisplayList::setupFog(gfx::DisplayContext *pdc, OglProgramObject *pPO)
+// {
+//     auto fog_end = pdc->getFogEnd();
+//     auto fog_start = pdc->getFogStart();
+//     auto fog_scl = 1.0 / (fog_end - fog_start);
+//     float fog_r = 0.0, fog_g = 0.0, fog_b = 0.0;
+//     pdc->getDevRGBColor(pdc->getFogColor(), fog_r, fog_g, fog_b);
+//     pPO->setUniformF("u_fogEnd", fog_end);
+//     pPO->setUniformF("u_fogScale", fog_scl);
+//     pPO->setUniformF("u_fogColor", fog_r, fog_g, fog_b);
+// }
+
+
 void OcDisplayList::drawTrigArray(gfx::DisplayContext *pdc)
 {
     if (m_pTrigArray == nullptr) {
@@ -559,13 +572,12 @@ void OcDisplayList::drawTrigArray(gfx::DisplayContext *pdc)
     setupTrigArrayAttrs();
     m_pTrigArray->setDrawMode(m_nPolyMode);
 
-    float alpha = pdc->getAlpha();
-
     // draw edges
     drawTrigEdges(pdc, *m_pTrigArray);
 
     m_pTrigPO->enable();
-    m_pTrigPO->setUniformF("frag_alpha", alpha);
+    m_pTrigPO->setupFog(pdc);
+    m_pTrigPO->setUniformF("frag_alpha", pdc->getAlpha());
     m_pTrigPO->setUniform("enable_lighting", pdc->isLighting());
     pdc->drawElem(*m_pTrigArray);
     m_pTrigPO->disable();
@@ -581,14 +593,14 @@ void OcDisplayList::drawTrigMesh(gfx::DisplayContext *pdc)
     setupTrigMeshAttrs();
     m_pTrigMesh->setDrawMode(m_nPolyMode);
 
-    float alpha = pdc->getAlpha();
-
     // draw edges
     drawTrigEdges(pdc, *m_pTrigMesh);
 
     // setupTrigMeshAttrs();
+
     m_pTrigPO->enable();
-    m_pTrigPO->setUniformF("frag_alpha", alpha);
+    m_pTrigPO->setupFog(pdc);
+    m_pTrigPO->setUniformF("frag_alpha", pdc->getAlpha());
     m_pTrigPO->setUniform("enable_lighting", pdc->isLighting());
     pdc->drawElem(*m_pTrigMesh);
     m_pTrigPO->disable();
@@ -597,17 +609,12 @@ void OcDisplayList::drawTrigMesh(gfx::DisplayContext *pdc)
 void OcDisplayList::drawTrigEdges(gfx::DisplayContext *pdc, const gfx::AbstDrawElem &de)
 {
     float r = .0, g = .0, b = .0;
-    ColorPtr pcol = pdc->getEdgeLineColor();
-    if (!pcol.isnull()) {
-        auto c1 = pcol->getDevCode(pdc->getSceneID());
-        r = gfx::getFR(c1);
-        g = gfx::getFG(c1);
-        b = gfx::getFB(c1);
-    }
+    pdc->getDevRGBColor(pdc->getEdgeLineColor(), r, g, b);
     float alpha = pdc->getAlpha();
 
     if (pdc->getEdgeLineType() == ELT_EDGES) {
         m_pTrigEdgePO->enable();
+        m_pTrigEdgePO->setupFog(pdc);
         m_pTrigEdgePO->setUniformF("frag_alpha", alpha);
         m_pTrigEdgePO->setUniformF("edge_width", pdc->getEdgeLineWidth());
         m_pTrigEdgePO->setUniformF("edge_color", r, g, b, alpha);

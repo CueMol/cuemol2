@@ -176,12 +176,8 @@ void OcPixDraw::draw(gfx::DisplayContext *pdc, const Vector4D &pos,
     const int h = pixbuf.getHeight();
 
     float r = 1.0, g = 1.0, b = 1.0;
-    if (!pcol.isnull()) {
-        auto c1 = pcol->getDevCode(pdc->getSceneID());
-        r = gfx::getFR(c1);
-        g = gfx::getFG(c1);
-        b = gfx::getFB(c1);
-    }
+    pdc->getDevRGBColor(pcol, r, g, b);
+
     float view_w = pView->getWidth();
     float view_h = pView->getHeight();
 

@@ -307,3 +307,23 @@ void DisplayContext::attribute(int n)
 {
 }
 
+void DisplayContext::getDevRGBColor(const ColorPtr &pcol, float &r, float &g, float &b)
+{
+    if (!pcol.isnull()) {
+        auto ccode = pcol->getDevCode(getSceneID());
+        r = gfx::getFR(ccode);
+        g = gfx::getFG(ccode);
+        b = gfx::getFB(ccode);
+    }
+}
+
+void DisplayContext::getDevRGBAColor(const ColorPtr &pcol, float &r, float &g, float &b, float &a)
+{
+    if (!pcol.isnull()) {
+        auto ccode = pcol->getDevCode(getSceneID());
+        r = gfx::getFR(ccode);
+        g = gfx::getFG(ccode);
+        b = gfx::getFB(ccode);
+        a = gfx::getFA(ccode);
+    }
+}

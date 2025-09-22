@@ -344,6 +344,9 @@ namespace gfx {
       vertex(pos+zdel);
     }
 
+    void getDevRGBColor(const ColorPtr &pcol, float &r, float &g, float &b);
+    void getDevRGBAColor(const ColorPtr &pcol, float &r, float &g, float &b, float &a);
+
   };
 
 }

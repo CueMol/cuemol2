@@ -169,21 +169,15 @@ void GLSLLineHelper::draw(gfx::DisplayContext *pdc)
     if (!isUseVertColor()) {
         // use single color
         m_pPO->setUniform("use_u_color", true);
-
         float r = 0.5, g = 0.5, b = 0.5;
-        ColorPtr pcol = pdc->getColor();
-        if (!pcol.isnull()) {
-            auto c1 = pcol->getDevCode(pdc->getSceneID());
-            r = gfx::getFR(c1);
-            g = gfx::getFG(c1);
-            b = gfx::getFB(c1);
-        }
+        pdc->getDevRGBColor(pdc->getColor(), r, g, b);
         m_pPO->setUniformF("u_color", r, g, b, 1.0);
-        MB_DPRINTLN("*** RGB=%f %f %f", r, g, b);
-
+        // MB_DPRINTLN("*** RGB=%f %f %f", r, g, b);
     } else {
         m_pPO->setUniform("use_u_color", false);
     }
+
+    m_pPO->setupFog(pdc);
 
     m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
     m_pPO->setUniformF("lineWidth", linew * pdc->getPixSclFac());

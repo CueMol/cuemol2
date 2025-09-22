@@ -16,6 +16,11 @@ uniform vec4 u_edgecolor;
 // silhouette mode flag
 uniform bool u_bsilh;
 
+// Fog
+uniform float u_fogEnd;
+uniform float u_fogScale;
+uniform vec3 u_fogColor;
+
 ////////////////////
 // Varying variables
 
@@ -155,9 +160,9 @@ void main()
   // fog calculation
   float fogz = abs(ecpos.z);
   float fog;
-  fog = (gl_Fog.end - fogz) * gl_Fog.scale;
+  fog = (u_fogEnd - fogz) * u_fogScale;
   fog = clamp(fog, 0.0, 1.0);
-  color = vec4(mix( vec3(gl_Fog.color), vec3(color), fog), v_color.a*frag_alpha);
+  color = vec4(mix( u_fogColor, vec3(color), fog), v_color.a*frag_alpha);
   
   gl_FragColor = color;
 

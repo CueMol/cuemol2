@@ -8,6 +8,11 @@ uniform float stippleLen;
 uniform vec4 u_color;
 uniform bool use_u_color;
 
+// Fog
+uniform float u_fogEnd;
+uniform float u_fogScale;
+uniform vec3 u_fogColor;
+
 ////////////////////
 // Varying
 
@@ -32,11 +37,11 @@ void main(void)
         color = gl_Color;
     }
 
-    float fog = (gl_Fog.end - v_fogCoord) * gl_Fog.scale;
+    float fog = (u_fogEnd - v_fogCoord) * u_fogScale;
     fog = clamp(fog, 0.0, 1.0);
 
     float alpha = color.a * frag_alpha;
-    vec3 fogmixed = mix(vec3(gl_Fog.color), vec3(color), fog);
+    vec3 fogmixed = mix(u_fogColor, vec3(color), fog);
     color = vec4(fogmixed, alpha);
 
     gl_FragColor = color;

@@ -23,6 +23,7 @@ attribute vec2 a_texCoord;
 // Varying variables
 
 varying vec2 v_texCoord;
+varying float v_fogCoord;
 
 void main()
 {
@@ -42,4 +43,5 @@ void main()
     gl_Position = vec4(quadPos * clipPos.w, clipPos.z, clipPos.w);
 
     v_texCoord = a_texCoord;
+    v_fogCoord = abs(clipPos.z);
 }

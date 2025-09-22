@@ -22,6 +22,10 @@
 #include <qlib/LString.hpp>
 #include <qlib/Matrix4D.hpp>
 
+namespace gfx {
+class DisplayContext;
+}
+
 namespace sysdep {
 
 using qlib::LString;
@@ -271,6 +275,11 @@ public:
     }
 
     void setProgParam(GLenum pname, GLint param);
+
+    // convenience functions
+    void setupFog(gfx::DisplayContext *pdc);
+    
+
 };
 
 }  // namespace sysdep
