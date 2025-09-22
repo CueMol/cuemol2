@@ -158,7 +158,6 @@ void GLSLLineHelper::draw(gfx::DisplayContext *pdc)
     if (linew < 0.0) {
         linew = pdc->getLineWidth();
     }
-    // MB_DPRINTLN("GLSLLine> linew=%f (pixscl=%f)", linew, pdc->getPixSclFac());
 
     float stippleLen = 0.0;
     if (isStipple()) stippleLen = 8.0f;
@@ -180,7 +179,7 @@ void GLSLLineHelper::draw(gfx::DisplayContext *pdc)
     m_pPO->setupFog(pdc);
 
     m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
-    m_pPO->setUniformF("lineWidth", linew * pdc->getPixSclFac());
+    m_pPO->setUniformF("lineWidth", linew);
     m_pPO->setUniformF("stippleLen", stippleLen);
     m_pPO->setUniformF("screenSize", w, h);
     pdc->drawElem(*m_pDrawAry);
