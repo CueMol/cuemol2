@@ -41,6 +41,9 @@ jobs:
     #     restore-keys: |
     #       libcuemol-
 
+    - name: Run sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.9
+
     - name: Install prerequisite
       run: |
         choco install -y -r wget winflexbison3
