@@ -23,13 +23,10 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Clear sccache
-      run: |
-        rm -rf ~/.cache/sccache
-        mkdir -p ~/.cache/sccache
-
     - name: Run sccache-cache
-      uses: mozilla-actions/sccache-action@v0.0.4
+      uses: mozilla-actions/sccache-action@v0.0.9
+      env:
+        SCCACHE_GHA_CACHE_FROM: "xxx-"
 
     - name: Show build env versions
       shell: bash
