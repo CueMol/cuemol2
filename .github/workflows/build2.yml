@@ -25,8 +25,6 @@ jobs:
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.9
-      env:
-        SCCACHE_GHA_CACHE_FROM: "xxx-"
 
     - name: Show build env versions
       shell: bash
