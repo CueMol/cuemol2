@@ -23,10 +23,10 @@ jobs:
       with:
         lfs: true
 
-    - name: Clear sccache
-      run: |
-        rm -rf ~/.cache/sccache
-        mkdir -p ~/.cache/sccache
+    # - name: Clear sccache
+    #   run: |
+    #     rm -rf ~/.cache/sccache
+    #     mkdir -p ~/.cache/sccache
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.9
