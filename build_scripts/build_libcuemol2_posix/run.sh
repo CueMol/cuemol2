@@ -54,7 +54,11 @@ CMAKE_INSTALL_PREFIX=$BASEDIR/cuemol2
 CMAKE_PREFIX_PATH="$BASEDIR"
 ls -la $BASEDIR
 
-cmake -S ${WORKSPACE} -B $BUILD_DIR \
+# GENERATOR="Unix Makefiles"
+GENERATOR="Ninja"
+
+cmake -G "$GENERATOR" \
+      -S ${WORKSPACE} -B $BUILD_DIR \
       $CMAKE_OPT \
       $CMAKE_SCCACHE_OPT \
       -DCMAKE_INSTALL_PREFIX=$CMAKE_INSTALL_PREFIX \
@@ -72,5 +76,5 @@ cmake -S ${WORKSPACE} -B $BUILD_DIR \
       -DCGAL_DISABLE_GMP=TRUE \
       -DCGAL_HEADER_ONLY=TRUE
 
-make -j $NCPU
-make install
+cmake --build $BUILD_DIR --parallel --config $BUILD_TYPE
+cmake --install $BUILD_DIR --config $BUILD_TYPE

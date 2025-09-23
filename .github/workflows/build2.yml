@@ -15,6 +15,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # - os: macos-15
+          #   name: "MacOS 15 arm64 clang"
           - os: macos-14
             name: "MacOS 14 arm64 clang"
           - os: macos-13
@@ -32,6 +34,7 @@ jobs:
         set -eux
         clang --version
         xcodebuild -version
+        ninja --version
 
     - name: Download deplibs
       uses: ./build_scripts/download_deplibs
