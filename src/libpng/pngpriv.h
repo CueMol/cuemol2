@@ -156,7 +156,7 @@ typedef PNG_CONST png_uint_16p FAR * png_const_uint_16pp;
       * <fp.h> if possible.
       */
 #    if !defined(__MATH_H__) && !defined(__MATH_H) && !defined(__cmath__)
-#      include <fp.h>
+//#      include <fp.h>
 #    endif
 #  else
 #    include <math.h>
