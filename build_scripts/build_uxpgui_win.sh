@@ -1,9 +1,7 @@
 #!/bin/sh
 #
-# build script for libcuemol2 in posix
-# usage: run.sh deplibs_dir host_os host_arch
-#  host_os ... macOS
-#  host_arch ... ARM64 X64
+# build script for libcuemol2 in windows
+# usage: run.sh deplibs_dir
 
 usage()
 {
@@ -44,11 +42,11 @@ if [ ! -d ${WSDIR}/uxp_gui/platform ]; then
 
     # Other-licenses
     wget --progress=dot:giga -c \
-         https://github.com/CueMol/uxp_release/releases/download/$UXP_VERSION/other_licenses_${UXP_TGZ}
-    rm -rf other_licenses
-    tar xjf other_licenses_${UXP_TGZ}
-fi
+         https://github.com/CueMol/uxp_release/releases/download/$UXP_VERSION/other-licenses_${UXP_TGZ}
 
+    rm -rf other-licenses
+    tar xjf other-licenses_${UXP_TGZ}
+fi
 
 # Setup external packages
 BUNDLE_DIR=$DEPLIBS_DIR
