@@ -32,6 +32,7 @@ jobs:
         set -eux
         clang --version
         xcodebuild -version
+        ninja --version
 
     - name: Download deplibs
       uses: ./build_scripts/download_deplibs
