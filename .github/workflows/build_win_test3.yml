@@ -2,13 +2,13 @@ name: Build and release
 
 on:
   push:
-    branches-ignore:
-      - '**'
+    # branches-ignore:
+    #   - '**'
 
 env:
   mozbuild-cache-version: v1
-  uxp-cache-version: v1
-  libcuemol-cache-version: v1
+  # uxp-cache-version: v1
+  # libcuemol-cache-version: v1
 
 ###############################################
 
@@ -27,23 +27,23 @@ jobs:
         restore-keys: |
           mozbuild-
 
-    - uses: actions/cache@v4
-      with:
-        path: ${{ github.workspace }}\uxp_gui\platform
-        key: uxp-${{ env.uxp-cache-version }}
-        restore-keys: |
-          uxp-
+    # - uses: actions/cache@v4
+    #   with:
+    #     path: ${{ github.workspace }}\uxp_gui\platform
+    #     key: uxp-${{ env.uxp-cache-version }}
+    #     restore-keys: |
+    #       uxp-
 
-    - uses: actions/cache@v4
-      with:
-        path: ${{ runner.temp }}\proj64_deplibs\cuemol2
-        key: libcuemol-${{ env.libcuemol-cache-version }}
-        restore-keys: |
-          libcuemol-
+    # - uses: actions/cache@v4
+    #   with:
+    #     path: ${{ runner.temp }}\proj64_deplibs\cuemol2
+    #     key: libcuemol-${{ env.libcuemol-cache-version }}
+    #     restore-keys: |
+    #       libcuemol-
 
     - name: Install prerequisite
       run: |
-        choco install -r wget winflexbison3
+        choco install -r wget winflexbison3 ninja
 
         $mozilladir = "c:\mozilla-build"
         $src_url = "https://ftp.mozilla.org/pub/mozilla/libraries/win32/MozillaBuildSetup-3.4.exe"
@@ -118,11 +118,7 @@ jobs:
         cd %GITHUB_WORKSPACE%
         SET DEPLIBS_DIR=${{ runner.temp }}\proj64_deplibs
         dir %DEPLIBS_DIR%
-        IF EXIST %DEPLIBS_DIR%\cuemol2\ (
-          echo %DEPLIBS_DIR%\cuemol2\ exists, skip build
-        ) ELSE (
-          cmd /c %GITHUB_WORKSPACE%\build_scripts\build_libcuemol2_win.bat ${{ runner.temp }}
-        )
+        cmd /c %GITHUB_WORKSPACE%\build_scripts\build_libcuemol2_win.bat ${{ runner.temp }}
 
     - name: Build cuetty
       shell: cmd

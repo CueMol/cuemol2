@@ -36,7 +36,7 @@ REM Build libcuemol2
 SET INSTPATH=%DEPLIBS_DIR%\cuemol2
 rd /s /q build
 
-cmake -S %TOP_DIR% -B build ^
+cmake -G Ninja -S %TOP_DIR% -B build ^
  -DCMAKE_INSTALL_PREFIX=%INSTPATH% ^
  -DBoost_ROOT=%DEPLIBS_DIR%\boost_1_84_0 ^
  -DCGAL_ROOT=%DEPLIBS_DIR%\CGAL-4.14.3 ^
