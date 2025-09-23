@@ -23,6 +23,11 @@ jobs:
       with:
         lfs: true
 
+    # - name: Clear sccache
+    #   run: |
+    #     rm -rf ~/.cache/sccache
+    #     mkdir -p ~/.cache/sccache
+
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.9
 
@@ -39,6 +44,7 @@ jobs:
         gcc --version
         python3 --version
         python3 -m pip --version
+        ninja --version
 
     - name: Download deplibs
       uses: ./build_scripts/download_deplibs
@@ -50,13 +56,13 @@ jobs:
       with:
         basedir: ${{ github.workspace }}/target
         
-    - name: Build node.js addon
-      uses: ./build_scripts/build_nodejs_posix
+    - name: Build python module
+      uses: ./build_scripts/build_pymod_posix
       with:
         basedir: ${{ github.workspace }}/target
 
-    - name: Build python module
-      uses: ./build_scripts/build_pymod_posix
+    - name: Build node.js addon
+      uses: ./build_scripts/build_nodejs_posix
       with:
         basedir: ${{ github.workspace }}/target
 
@@ -73,4 +79,3 @@ jobs:
         ls -la $BASEDIR/cuemol2/bin/cuetty
         ldd $BASEDIR/cuemol2/bin/cuetty
         env LD_LIBRARY_PATH=$BASEDIR/cuemol2/lib $BASEDIR/cuemol2/bin/cuetty
-

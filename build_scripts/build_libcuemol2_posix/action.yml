@@ -17,7 +17,7 @@ runs:
         echo "brew prefix: $(brew --prefix)"
         export PATH="$(brew --prefix)/opt/bison/bin:$PATH"
       elif [ ${{ runner.os }} = "Linux" ]; then
-        echo "XXX"
+        echo "Linux ${{ runner.os }}"
       else
         echo "unknown runner os: ${{ runner.os }}"
         exit 1
