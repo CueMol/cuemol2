@@ -118,7 +118,7 @@ jobs:
         cd %GITHUB_WORKSPACE%
         SET DEPLIBS_DIR=${{ runner.temp }}\proj64_deplibs
         dir %DEPLIBS_DIR%
-        cmd /c %GITHUB_WORKSPACE%\build_scripts\build_libcuemol2_win.bat ${{ runner.temp }}
+        cmd /c %GITHUB_WORKSPACE%\build_scripts\build_libcuemol2_win.bat %DEPLIBS_DIR% Release
 
     - name: Build cuetty
       shell: cmd
