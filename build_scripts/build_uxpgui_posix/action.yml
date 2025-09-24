@@ -17,7 +17,7 @@ runs:
   - name: Install python2
     shell: bash
     env:
-      SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_GHA_ENABLED: "false"
     run: |
       brew install pyenv zlib
 
