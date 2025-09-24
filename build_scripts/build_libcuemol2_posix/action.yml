@@ -30,7 +30,9 @@ runs:
       SCCACHE_GHA_ENABLED: "true"
     run: |
       cd ${GITHUB_WORKSPACE}
+      sccache --show-stats
       if [ ${{ runner.os }} = "macOS" ]; then
         export PATH="$(brew --prefix)/opt/bison/bin:$PATH"
       fi
       bash build_scripts/build_libcuemol2_posix/run.sh ${{ inputs.basedir }} ${{ runner.os }} ${{ runner.arch }}
+      sccache --show-stats

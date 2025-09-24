@@ -84,10 +84,10 @@ if [ $RUNNER_OS = "macOS" ]; then
         exit 1
     fi
 
-    # CC_CMD="sccache clang -Wno-implicit-int"
-    # CXX_CMD="sccache clang++"
-    CC_CMD="clang -Wno-implicit-int"
-    CXX_CMD="clang++"
+    CC_CMD="sccache clang -Wno-implicit-int"
+    CXX_CMD="sccache clang++"
+    # CC_CMD="clang -Wno-implicit-int"
+    # CXX_CMD="clang++"
     sed "s!@CUEMOL_BUNDLE@!$BUNDLE_DIR!g" $SCRIPT_DIR/mozconfig_macOS \
         | sed "s!@CUEMOL_DIR@!$CUEMOL_DIR!g" \
         | sed "s!@CUEMOL_DEBUG@!$CUEMOL_DEBUG!g" \

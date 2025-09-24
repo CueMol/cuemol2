@@ -29,9 +29,9 @@ runs:
     uses: actions/cache@v4
     with:
       path: ${{ env.PYENV_ROOT }}
-      key: pyenv27-${{ runner.os }}-${{ env.pyenv27-cache-version }}
-      restore-keys: |
-        pyenv27-${{ runner.os }}-
+      key: pyenv27-${{ runner.os }}-${{ runner.arch }}-${{ env.pyenv27-cache-version }}
+      # restore-keys: |
+      #   pyenv27-${{ runner.os }}-${{ runner.arch }}-
 
   - name: Install python2
     if: steps.cache-pyenv27.outputs.cache-hit != 'true'
@@ -66,9 +66,11 @@ runs:
       pyenv global 2.7.18
 
       cd ${GITHUB_WORKSPACE}
+      sccache --show-stats
       which python
       python --version
       bash build_scripts/build_uxpgui_posix/run.sh ${{ inputs.basedir }} ${{ runner.os }} ${{ runner.arch }}
 
+      sccache --show-stats
       ls -l ${GITHUB_WORKSPACE}/${ARTIFACT_NAME}
       echo "artifact-path=${GITHUB_WORKSPACE}/${ARTIFACT_NAME}" >> $GITHUB_OUTPUT
