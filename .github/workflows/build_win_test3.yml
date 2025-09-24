@@ -45,8 +45,9 @@ jobs:
 
     - name: Verify sccache config
       run: |
+        sccache --version
         sccache --show-config
-        sccache --show-stats
+        sccache --help
 
     - name: Install prerequisite
       run: |

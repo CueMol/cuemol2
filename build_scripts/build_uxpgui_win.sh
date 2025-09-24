@@ -42,10 +42,10 @@ if [ ! -d ${WSDIR}/uxp_gui/platform ]; then
 
     # Other-licenses
     wget --progress=dot:giga -c \
-         https://github.com/CueMol/uxp_release/releases/download/$UXP_VERSION/other-licenses_${UXP_TGZ}
+         https://github.com/CueMol/uxp_release/releases/download/$UXP_VERSION/other-licenses_RB_20231106.tar.bz2
 
     rm -rf other-licenses
-    tar xjf other-licenses_${UXP_TGZ}
+    tar xjf other-licenses_RB_20231106.tar.bz2
 fi
 
 # Setup external packages
