@@ -22,7 +22,6 @@ void OcTexRep::create(gfx::DisplayContext *pdc, const gfx::PixelBuffer &pixbuf)
 
     const int ow = pixbuf.getWidth();
     const int oh = pixbuf.getHeight();
-    MB_DPRINTLN("OcTexRep::create tex=%d (%d x %d)", m_nBufID, ow, oh);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texid);
@@ -179,8 +178,8 @@ void OcPixDraw::draw(gfx::DisplayContext *pdc, const Vector4D &pos,
     float r = 1.0, g = 1.0, b = 1.0;
     pdc->getDevRGBColor(pcol, r, g, b);
 
-    float view_w = pView->getWidth();
-    float view_h = pView->getHeight();
+    float view_w = pView->convToBackingX(pView->getWidth());
+    float view_h = pView->convToBackingY(pView->getHeight());
 
     setupAttrs();
 
@@ -188,7 +187,7 @@ void OcPixDraw::draw(gfx::DisplayContext *pdc, const Vector4D &pos,
     m_pPO->setupFog(pdc);
     m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
     m_pPO->setUniformF("u_position", pos.x(), pos.y(), pos.z());
-    m_pPO->setUniformF("u_size", w, h);
+    m_pPO->setUniformF("u_size", float(w), float(h));
     m_pPO->setUniformF("u_viewportSize", view_w, view_h);
     m_pPO->setUniformF("u_colorBias", r, g, b);
     m_pPO->setUniformF("u_texture", 0);
@@ -204,6 +203,9 @@ void OcPixDraw::draw(gfx::DisplayContext *pdc, const Vector4D &pos,
     glBindTexture(GL_TEXTURE_2D, 0);
     glDisable(GL_TEXTURE_2D);
     m_pPO->disable();
+
+    // LOG_DPRINTLN("OcPixDraw::view size=(%f x %f)", view_w, view_h);
+    // LOG_DPRINTLN("OcPixDraw::draw img=(%d x %d)", w, h);
 }
 
 void OcPixDraw::invalidate()

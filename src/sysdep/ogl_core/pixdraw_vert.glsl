@@ -35,7 +35,7 @@ void main()
     vec2 ndcPos = clipPos.xy / clipPos.w;
 
     // Convert pixel size to NDC size
-    vec2 ndcSize = (u_size / u_viewportSize); // * 2.0;
+    vec2 ndcSize = (u_size / u_viewportSize) * 2.0;
 
     // Create quad in screen space with pixel-accurate size
     vec2 quadPos = ndcPos + (a_vertex * ndcSize);
