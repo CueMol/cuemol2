@@ -27,18 +27,17 @@ jobs:
       uses: mozilla-actions/sccache-action@v0.0.9
 
     - name: Show sccache config
-    run: |
+      shell: bash
+      run: |
         echo "=== Environment Variables ==="
         echo "SCCACHE_GHA_ENABLED: $env:SCCACHE_GHA_ENABLED"
         echo "SCCACHE_GHA_CACHE_TO: $env:SCCACHE_GHA_CACHE_TO"
         echo "SCCACHE_GHA_CACHE_FROM: $env:SCCACHE_GHA_CACHE_FROM"
         echo "ACTIONS_CACHE_URL: $(if ($env:ACTIONS_CACHE_URL) { 'SET' } else { 'NOT SET' })"
         echo "ACTIONS_RUNTIME_TOKEN: $(if ($env:ACTIONS_RUNTIME_TOKEN) { 'SET' } else { 'NOT SET' })"
-        
         echo "=== sccache Version and stats ==="
         sccache --version
         sccache --show-stats
-
 
     - name: Setup Python
       uses: actions/setup-python@v5
