@@ -2,8 +2,8 @@ name: Build and release
 
 on:
   push:
-    # branches-ignore:
-    #   - '**'
+    branches-ignore:
+      - '**'
 
 env:
   mozbuild-cache-version: v1
