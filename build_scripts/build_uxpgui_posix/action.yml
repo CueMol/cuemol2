@@ -19,6 +19,7 @@ runs:
   steps:
 
   - name: Set HOME variable
+    shell: bash
     run: |
       echo "USER_HOME=$HOME" >> $GITHUB_ENV
       echo "PYENV_ROOT=$HOME/.pyenv" >> $GITHUB_ENV
