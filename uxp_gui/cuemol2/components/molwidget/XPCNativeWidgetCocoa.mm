@@ -141,7 +141,7 @@ nsresult XPCNativeWidgetCocoa::attachImpl()
     NSSize tmp2 = [view convertSizeToBacking: tmp];
     double sclx = double(tmp2.width) / double(tmp.width);
     double scly = double(tmp2.height) / double(tmp.height);
-    MB_DPRINTLN("scale factor %f, %f", sclx, scly);
+    LOG_DPRINTLN("scale factor %f, %f", sclx, scly);
     pCglView->setSclFac(sclx, scly);
   }
 

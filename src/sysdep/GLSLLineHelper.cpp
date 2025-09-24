@@ -164,7 +164,6 @@ void GLSLLineHelper::draw(gfx::DisplayContext *pdc)
 
     m_pPO->enable();
 
-    MB_DPRINTLN("*** isUseVertColor()=%d", isUseVertColor());
     if (!isUseVertColor()) {
         // use single color
         m_pPO->setUniform("use_u_color", true);
