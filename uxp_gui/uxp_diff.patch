@@ -25,3 +25,15 @@ diff -x *.pyc -x *~ -r -u uxp/gfx/graphite2/src/moz.build platform/gfx/graphite2
      'CachedFace.cpp',
      'CmapCache.cpp',
      'Code.cpp',
+diff -x *.pyc -x *~ -r -u /Users/user1/tmp/proj64_deplibs/tmp/uxp/modules/zlib/src/zutil.h platform/modules/zlib/src/zutil.h
+--- /Users/user1/tmp/proj64_deplibs/tmp/uxp/modules/zlib/src/zutil.h	2023-11-04 15:47:00
++++ platform/modules/zlib/src/zutil.h	2025-09-24 14:26:53
+@@ -137,7 +137,7 @@
+ #      include <unix.h> /* for fdopen */
+ #    else
+ #      ifndef fdopen
+-#        define fdopen(fd,mode) NULL /* No fdopen() */
++// #        define fdopen(fd,mode) NULL /* No fdopen() */
+ #      endif
+ #    endif
+ #  endif
