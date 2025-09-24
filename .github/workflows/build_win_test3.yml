@@ -36,6 +36,18 @@ jobs:
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.9
 
+    - name: Enable GitHub Actions Cache backend
+      shell: pwsh
+      run: |
+        echo "SCCACHE_GHA_ENABLED=true" >> $env:GITHUB_ENV
+        echo "SCCACHE_GHA_CACHE_TO=sccache-${{ runner.os }}-${{ github.sha }}" >> $env:GITHUB_ENV
+        echo "SCCACHE_GHA_CACHE_FROM=sccache-${{ runner.os }}-" >> $env:GITHUB_ENV
+
+    - name: Verify sccache config
+      run: |
+        sccache --show-config
+        sccache --show-stats
+
     - name: Install prerequisite
       run: |
         choco install -y -r wget winflexbison3
