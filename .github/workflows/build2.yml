@@ -15,8 +15,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-15
-            name: "MacOS 15 arm64 clang"
+          # - os: macos-15
+          #   name: "MacOS 15 arm64 clang"
           - os: macos-15-intel
             name: "MacOS 15 x64 clang"
           # - os: macos-14
