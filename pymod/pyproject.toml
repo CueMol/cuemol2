@@ -10,10 +10,9 @@ build-backend = "scikit_build_core.build"
 wheel.py-api = "cp37"
 
 [tool.scikit-build]
-logging.level = "INFO"
 build-dir = "build/{wheel_tag}"
-cmake.args = ["-G", "Unix Makefiles"]
-cmake.define = {"CMAKE_MAKE_PROGRAM" = "make"}
+# cmake.args = ["-G", "Unix Makefiles"]
+cmake.args = ["-G", "Ninja"]
 wheel.packages = ["python/cuemol", "cuemol_internal"]
 # cmake.install-dir = "mypackage"
 wheel.install-dir = "cuemol_internal"

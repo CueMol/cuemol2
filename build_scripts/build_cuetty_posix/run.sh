@@ -25,15 +25,19 @@ BUILD_TYPE=Release
 
 ls -la $BASEDIR
 
-cmake -S ${WORKSPACE}/cli -B $BUILD_DIR \
+# GENERATOR="Unix Makefiles"
+GENERATOR="Ninja"
+
+cmake -G "$GENERATOR" \
+      -S ${WORKSPACE}/cli -B $BUILD_DIR \
       -DCMAKE_INSTALL_PREFIX=$INST_PATH \
       -DCMAKE_PREFIX_PATH=$BASEDIR \
       -DBoost_ROOT=$BASEDIR/$BOOST_VER/ \
       -DLIBCUEMOL2_ROOT=$BASEDIR\cuemol2 \
       -DCMAKE_BUILD_TYPE=$BUILD_TYPE
 
-make # -j 8
-make install
+cmake --build $BUILD_DIR --parallel --config $BUILD_TYPE
+cmake --install $BUILD_DIR --config $BUILD_TYPE
 
 ls -la $BASEDIR/$BOOST_VER/lib/lib*
 cp $BASEDIR/$BOOST_VER/lib/lib* $BASEDIR/cuemol2/lib/
