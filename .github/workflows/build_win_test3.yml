@@ -131,9 +131,14 @@ jobs:
 
         cat .mozconfig
 
-    - name: Run mozilla build and build UXP
-      shell: cmd
-      run: |
-        echo on
-        echo ${{ steps.get-repos-dir.outputs.repos-dir }}
-        cmd /c C:\mozilla-build\start-shell.bat ${{ steps.get-repos-dir.outputs.repos-dir }}/build_scripts/build_uxpgui_win.sh ${{ runner.temp }}
+#    - name: Run mozilla build and build UXP
+#      shell: cmd
+#      run: |
+#        echo on
+#        echo ${{ steps.get-repos-dir.outputs.repos-dir }}
+#
+#        BASEDIR=$(echo '${{ runner.temp }}' | sed 's/\\/\//g')
+#        DEPLIBS_DIR=$BASEDIR/proj64_deplibs
+#        BUNDLE_DIR=$BASEDIR/cuemol2_bundle
+#
+#        cmd /c C:\mozilla-build\start-shell.bat ${{ steps.get-repos-dir.outputs.repos-dir }}/build_scripts/build_uxpgui_win.sh ${{ runner.temp }}
