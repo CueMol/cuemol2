@@ -34,9 +34,10 @@ del %DEPLIBS_DIR%\CGAL-4.14.3\lib\cmake\CGAL\CGALConfig-installation-dirs.cmake
 
 REM Build libcuemol2
 SET INSTPATH=%DEPLIBS_DIR%\cuemol2
-rd /s /q build
+SET BUILDDIR=build_libcuemol2
+rd /s /q %BUILDDIR%
 
-cmake -S %TOP_DIR% -B build ^
+cmake -G Ninja -S %TOP_DIR% -B %BUILDDIR% ^
  -DCMAKE_INSTALL_PREFIX=%INSTPATH% ^
  -DBoost_ROOT=%DEPLIBS_DIR%\boost_1_84_0 ^
  -DCGAL_ROOT=%DEPLIBS_DIR%\CGAL-4.14.3 ^
@@ -50,7 +51,9 @@ cmake -S %TOP_DIR% -B build ^
  -DCGAL_DO_NOT_WARN_ABOUT_CMAKE_BUILD_TYPE=TRUE ^
  -DCGAL_DISABLE_GMP=TRUE ^
  -DCGAL_HEADER_ONLY=TRUE ^
- -DCMAKE_BUILD_TYPE=%CONFIG%
+ -DCMAKE_BUILD_TYPE=%CONFIG% ^
+ -DCMAKE_C_COMPILER_LAUNCHER=sccache ^
+ -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
-cmake --build build --config %CONFIG%
-cmake --install build --config %CONFIG%
+cmake --build %BUILDDIR% --parallel --config %CONFIG%
+cmake --install %BUILDDIR% --config %CONFIG%
