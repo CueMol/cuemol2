@@ -1,6 +1,9 @@
 name: 'Build UXP GUI posix'
 description: 'Build UXP GUI posix'
 
+env:
+  pyenv27-cache-version: v1
+
 inputs:
   basedir:
      description: 'base dir'
@@ -14,19 +17,37 @@ outputs:
 runs:
   using: "composite"
   steps:
-  - name: Install python2
-    shell: bash
-    env:
-      SCCACHE_GHA_ENABLED: "true"
-    run: |
-      brew install pyenv zlib
 
+  - name: Set HOME variable
+    run: |
+      echo "USER_HOME=$HOME" >> $GITHUB_ENV
+      echo "PYENV_ROOT=$HOME/.pyenv" >> $GITHUB_ENV
+
+  - name: Populate pyenv27 cache
+    id: cache-pyenv27
+    uses: actions/cache@v4
+    with:
+      path: ${{ env.PYENV_ROOT }}
+      key: pyenv27-${{ runner.os }}-${{ env.pyenv27-cache-version }}
+      restore-keys: |
+        pyenv27-${{ runner.os }}-
+
+  - name: Install python2
+    if: steps.cache-pyenv27.outputs.cache-hit != 'true'
+    shell: bash
+    run: |
       export PYENV_ROOT="$HOME/.pyenv"
+      brew install pyenv zlib
       command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
       eval "$(pyenv init -)"
-
-      # env CC="sccache clang" CXX=="sccache clang++" LDFLAGS="-L$(brew --prefix zlib)/lib" CPPFLAGS="-I$(brew --prefix zlib)/include" PKG_CONFIG_PATH="$(brew --prefix zlib)/lib/pkgconfig" pyenv install 2.7.18
       env LDFLAGS="-L$(brew --prefix zlib)/lib" CPPFLAGS="-I$(brew --prefix zlib)/include" PKG_CONFIG_PATH="$(brew --prefix zlib)/lib/pkgconfig" pyenv install 2.7.18
+
+  - name: Check pyenv
+    shell: bash
+    run: |
+      echo $PYENV_ROOT
+      export PYENV_ROOT="$HOME/.pyenv"
+      eval "$(pyenv init -)"
       pyenv global 2.7.18
       pyenv versions
       python --version
