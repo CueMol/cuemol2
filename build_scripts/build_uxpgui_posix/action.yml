@@ -25,7 +25,8 @@ runs:
       command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
       eval "$(pyenv init -)"
 
-      env CC="sccache clang" CXX=="sccache clang++" LDFLAGS="-L$(brew --prefix zlib)/lib" CPPFLAGS="-I$(brew --prefix zlib)/include" PKG_CONFIG_PATH="$(brew --prefix zlib)/lib/pkgconfig" pyenv install 2.7.18
+      # env CC="sccache clang" CXX=="sccache clang++" LDFLAGS="-L$(brew --prefix zlib)/lib" CPPFLAGS="-I$(brew --prefix zlib)/include" PKG_CONFIG_PATH="$(brew --prefix zlib)/lib/pkgconfig" pyenv install 2.7.18
+      env LDFLAGS="-L$(brew --prefix zlib)/lib" CPPFLAGS="-I$(brew --prefix zlib)/include" PKG_CONFIG_PATH="$(brew --prefix zlib)/lib/pkgconfig" pyenv install 2.7.18
       pyenv global 2.7.18
       pyenv versions
       python --version
