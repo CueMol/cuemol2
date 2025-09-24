@@ -20,26 +20,18 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    # - name: Add msbuild to PATH
+    #   uses: microsoft/setup-msbuild@v2
+    - uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+
     - uses: actions/cache@v4
       with:
         path: C:\mozilla-build\
         key: mozbuild-${{ env.mozbuild-cache-version }}
         restore-keys: |
           mozbuild-
-
-    # - uses: actions/cache@v4
-    #   with:
-    #     path: ${{ github.workspace }}\uxp_gui\platform
-    #     key: uxp-${{ env.uxp-cache-version }}
-    #     restore-keys: |
-    #       uxp-
-
-    # - uses: actions/cache@v4
-    #   with:
-    #     path: ${{ runner.temp }}\proj64_deplibs\cuemol2
-    #     key: libcuemol-${{ env.libcuemol-cache-version }}
-    #     restore-keys: |
-    #       libcuemol-
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.9
@@ -59,17 +51,12 @@ jobs:
         }
         dir $mozilladir
 
-    # - name: Add msbuild to PATH
-    #   uses: microsoft/setup-msbuild@v2
-    - uses: ilammy/msvc-dev-cmd@v1
-      with:
-        arch: x64
-
     - name: Get repository dirname
       id: get-repos-dir
       shell: bash
       run: |
         set -eux
+        sccache -s
         REPOS_DIR=$(echo '${{ github.workspace }}' | sed 's/\\/\//g')
         echo "repos-dir=$REPOS_DIR" >> $GITHUB_OUTPUT
         HOMEPATH_UX=$(echo "$HOMEPATH" | sed 's/\\/\//g')
