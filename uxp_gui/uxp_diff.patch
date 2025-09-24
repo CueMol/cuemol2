@@ -37,3 +37,26 @@ diff -x *.pyc -x *~ -r -u /Users/user1/tmp/proj64_deplibs/tmp/uxp/modules/zlib/s
  #      endif
  #    endif
  #  endif
+diff -x *.pyc -x *~ -r -u /Users/user1/tmp/proj64_deplibs/tmp/uxp/js/src/ctypes/libffi/src/aarch64/sysv.S platform/js/src/ctypes/libffi/src/aarch64/sysv.S
+--- /Users/user1/tmp/proj64_deplibs/tmp/uxp/js/src/ctypes/libffi/src/aarch64/sysv.S	2023-11-04 15:47:00
++++ platform/js/src/ctypes/libffi/src/aarch64/sysv.S	2025-09-24 15:40:27
+@@ -100,8 +100,8 @@
+
+ #define ffi_call_SYSV_FS (8 * 4)
+
+-        .cfi_startproc
+ CNAME(ffi_call_SYSV):
++        .cfi_startproc
+         stp     x29, x30, [sp, #-16]!
+ 	cfi_adjust_cfa_offset (16)
+         cfi_rel_offset (x29, 0)
+@@ -247,8 +247,8 @@
+ #ifdef __APPLE__
+         .align 2
+ #endif
+-        .cfi_startproc
+ CNAME(ffi_closure_SYSV):
++        .cfi_startproc
+         stp     x29, x30, [sp, #-16]!
+ 	cfi_adjust_cfa_offset (16)
+         cfi_rel_offset (x29, 0)
