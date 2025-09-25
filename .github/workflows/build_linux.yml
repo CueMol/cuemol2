@@ -2,8 +2,8 @@ name: Build and release
 
 on:
   push:
-    # branches-ignore:
-    #   - '**'
+#    branches-ignore:
+#      - '**'
 
 ###############################################
 
@@ -35,10 +35,12 @@ jobs:
       shell: bash
       run: |
         set -eux
+        echo "RUNNER_TYPE=${{ matrix.os }}" >> $GITHUB_ENV
         uname -a
         gcc --version
         python3 --version
         python3 -m pip --version
+        ninja --version
 
     - name: Download deplibs
       uses: ./build_scripts/download_deplibs
@@ -50,6 +52,16 @@ jobs:
       with:
         basedir: ${{ github.workspace }}/target
         
+    - name: Build python module
+      uses: ./build_scripts/build_pymod_posix
+      with:
+        basedir: ${{ github.workspace }}/target
+
+    - name: Build node.js addon
+      uses: ./build_scripts/build_nodejs_posix
+      with:
+        basedir: ${{ github.workspace }}/target
+
     - name: Build cuetty
       uses: ./build_scripts/build_cuetty_posix
       with:
@@ -63,13 +75,3 @@ jobs:
         ls -la $BASEDIR/cuemol2/bin/cuetty
         ldd $BASEDIR/cuemol2/bin/cuetty
         env LD_LIBRARY_PATH=$BASEDIR/cuemol2/lib $BASEDIR/cuemol2/bin/cuetty
-
-    - name: Build node.js addon
-      uses: ./build_scripts/build_nodejs_posix
-      with:
-        basedir: ${{ github.workspace }}/target
-
-    - name: Build python module
-      uses: ./build_scripts/build_pymod_posix
-      with:
-        basedir: ${{ github.workspace }}/target

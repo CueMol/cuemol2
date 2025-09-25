@@ -1,6 +1,6 @@
 
-export CC="sccache clang -Wno-implicit-int"
-export CXX="sccache clang++"
+export CC="@CC_CMD@"
+export CXX="@CXX_CMD@"
 
 # Clear this if not a 64bit build
 _BUILD_64=1
