@@ -61,6 +61,7 @@ runs:
     shell: bash
     env:
       SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_GHA_VERSION: "${{ runner.os }}_${{ runner.arch }}"
       ARTIFACT_NAME: cuemol2_${{ runner.os }}_${{ runner.arch }}.tar.bz2
     run: |
       export PYENV_ROOT="$HOME/.pyenv"

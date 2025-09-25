@@ -28,6 +28,7 @@ runs:
     shell: bash
     env:
       SCCACHE_GHA_ENABLED: "true"
+      SCCACHE_GHA_VERSION: "${{ runner.os }}_${{ runner.arch }}"
     run: |
       cd ${GITHUB_WORKSPACE}
       sccache --show-stats

@@ -40,8 +40,9 @@ jobs:
       shell: pwsh
       run: |
         echo "SCCACHE_GHA_ENABLED=true" >> $env:GITHUB_ENV
-        echo "SCCACHE_GHA_CACHE_TO=sccache-${{ runner.os }}-${{ github.sha }}" >> $env:GITHUB_ENV
-        echo "SCCACHE_GHA_CACHE_FROM=sccache-${{ runner.os }}-" >> $env:GITHUB_ENV
+        echo "SCCACHE_GHA_VERSION=${{ runner.os }}_${{ runner.arch }}" >> $env:GITHUB_ENV
+        # echo "SCCACHE_GHA_CACHE_TO=sccache-${{ runner.os }}-${{ github.sha }}" >> $env:GITHUB_ENV
+        # echo "SCCACHE_GHA_CACHE_FROM=sccache-${{ runner.os }}-" >> $env:GITHUB_ENV
 
     - name: Verify sccache config
       run: |
