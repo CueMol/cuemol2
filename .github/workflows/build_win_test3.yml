@@ -142,10 +142,10 @@ jobs:
 
         cat .mozconfig
 
-   - name: Run mozilla build and build UXP
-     shell: cmd
-     run: |
-       echo on
-       echo ${{ steps.get-repos-dir.outputs.repos-dir }}
+    - name: Run mozilla build and build UXP
+      shell: cmd
+      run: |
+        echo on
+        echo ${{ steps.get-repos-dir.outputs.repos-dir }}
 
-       cmd /c C:\mozilla-build\start-shell.bat ${{ steps.get-repos-dir.outputs.repos-dir }}/build_scripts/build_uxpgui_win.sh %MSYS_DEPLIBS_DIR%
+        cmd /c C:\mozilla-build\start-shell.bat ${{ steps.get-repos-dir.outputs.repos-dir }}/build_scripts/build_uxpgui_win.sh %MSYS_DEPLIBS_DIR%
