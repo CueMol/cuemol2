@@ -26,8 +26,11 @@ target_include_directories(
 
 if (WIN32)
 else()
-  # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
   target_compile_options(qmpng PUBLIC "-fPIC")
+endif()
+
+if (APPLE)
+  target_compile_definitions(qmpng PUBLIC PNG_ARM_NEON_OPT=0)
 endif()
 
 # install(TARGETS qmpng

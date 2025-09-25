@@ -15,12 +15,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # - os: macos-15
-          #   name: "MacOS 15 arm64 clang"
-          - os: macos-14
-            name: "MacOS 14 arm64 clang"
-          - os: macos-13
-            name: "MacOS 13 x64 clang"
+          - os: macos-15
+            name: "MacOS 15 arm64 clang"
+          - os: macos-15-intel
+            name: "MacOS 15 x64 clang"
+          # - os: macos-14
+          #   name: "MacOS 14 arm64 clang"
+          # - os: macos-13
+          #   name: "MacOS 13 x64 clang"
 
     steps:
     - uses: actions/checkout@v4
@@ -31,6 +33,7 @@ jobs:
     - name: Show build env versions
       shell: bash
       run: |
+        echo "RUNNER_TYPE=${{ matrix.os }}" >> $GITHUB_ENV
         set -eux
         clang --version
         xcodebuild -version

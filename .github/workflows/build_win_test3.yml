@@ -2,8 +2,8 @@ name: Build and release
 
 on:
   push:
-    # branches-ignore:
-    #   - '**'
+#    branches-ignore:
+#      - '**'
 
 env:
   mozbuild-cache-version: v1
@@ -40,13 +40,14 @@ jobs:
       shell: pwsh
       run: |
         echo "SCCACHE_GHA_ENABLED=true" >> $env:GITHUB_ENV
-        echo "SCCACHE_GHA_CACHE_TO=sccache-${{ runner.os }}-${{ github.sha }}" >> $env:GITHUB_ENV
-        echo "SCCACHE_GHA_CACHE_FROM=sccache-${{ runner.os }}-" >> $env:GITHUB_ENV
+        echo "SCCACHE_GHA_VERSION=${{ runner.os }}_${{ runner.arch }}" >> $env:GITHUB_ENV
+        # echo "SCCACHE_GHA_CACHE_TO=sccache-${{ runner.os }}-${{ github.sha }}" >> $env:GITHUB_ENV
+        # echo "SCCACHE_GHA_CACHE_FROM=sccache-${{ runner.os }}-" >> $env:GITHUB_ENV
 
     - name: Verify sccache config
       run: |
         sccache --version
-        sccache --show-config
+        sccache --show-stats
         sccache --help
 
     - name: Install prerequisite
@@ -102,6 +103,16 @@ jobs:
         cmd /c %GITHUB_WORKSPACE%\build_scripts\build_cuetty_win.bat ${{ runner.temp }}
 
 
+    - name: Setup build envvars
+      shell: bash
+      run: |
+        BASEDIR=$(echo '${{ runner.temp }}' | sed 's/\\/\//g')
+        echo "MSYS_BASEDIR=$BASEDIR" >> $GITHUB_ENV
+        DEPLIBS_DIR=$BASEDIR/proj64_deplibs
+        echo "MSYS_DEPLIBS_DIR=$DEPLIBS_DIR" >> $GITHUB_ENV
+        BUNDLE_DIR=$BASEDIR/cuemol2_bundle
+        echo "MSYS_BUNDLE_DIR=$BUNDLE_DIR" >> $GITHUB_ENV
+
     - name: Edit mozconfig
       shell: bash
       run: |
@@ -113,9 +124,9 @@ jobs:
         WIN_UCRT_REDIST_DIR=$(echo "${WindowsSdkDir}Redist\\${WindowsSDKLibVersion}ucrt\\DLLs\\x64" | sed 's/\\/\//g')
         echo "$WIN_UCRT_REDIST_DIR"
 
-        BASEDIR=$(echo '${{ runner.temp }}' | sed 's/\\/\//g')
-        DEPLIBS_DIR=$BASEDIR/proj64_deplibs
-        BUNDLE_DIR=$BASEDIR/cuemol2_bundle
+        BASEDIR=$MSYS_BASEDIR
+        DEPLIBS_DIR=$MSYS_DEPLIBS_DIR
+        BUNDLE_DIR=$MSYS_BUNDLE_DIR
 
         BOOST_DIR=$DEPLIBS_DIR/boost_1_84_0/include/boost-1_84
         LIBDIR=$DEPLIBS_DIR/boost_1_84_0/lib
@@ -131,14 +142,10 @@ jobs:
 
         cat .mozconfig
 
-#    - name: Run mozilla build and build UXP
-#      shell: cmd
-#      run: |
-#        echo on
-#        echo ${{ steps.get-repos-dir.outputs.repos-dir }}
-#
-#        BASEDIR=$(echo '${{ runner.temp }}' | sed 's/\\/\//g')
-#        DEPLIBS_DIR=$BASEDIR/proj64_deplibs
-#        BUNDLE_DIR=$BASEDIR/cuemol2_bundle
-#
-#        cmd /c C:\mozilla-build\start-shell.bat ${{ steps.get-repos-dir.outputs.repos-dir }}/build_scripts/build_uxpgui_win.sh ${{ runner.temp }}
+    - name: Run mozilla build and build UXP
+      shell: cmd
+      run: |
+        echo on
+        echo ${{ steps.get-repos-dir.outputs.repos-dir }}
+
+        cmd /c C:\mozilla-build\start-shell.bat ${{ steps.get-repos-dir.outputs.repos-dir }}/build_scripts/build_uxpgui_win.sh %MSYS_DEPLIBS_DIR%
