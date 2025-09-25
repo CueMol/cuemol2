@@ -31,10 +31,13 @@ add_library(mdtools STATIC ${MDTOOLS_SRCS} ${MCWG_HEADERS})
 if (WIN32)
   # add_definitions(-DMDTOOLS_EXPORTS=1)
   target_compile_definitions(mdtools PUBLIC MDTOOLS_EXPORTS=1)
-  target_precompile_headers(mdtools PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
 else()
   target_compile_options(mdtools PUBLIC "-fPIC")
 endif()
+
+if (USE_PCH)
+  target_precompile_headers(mdtools PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
+endif ()
 
 target_link_libraries(mdtools PRIVATE qlib gfx qsys molstr)
 

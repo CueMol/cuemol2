@@ -78,10 +78,13 @@ add_library(surface STATIC ${SURFACE_SRCS} ${MCWG_HEADERS})
 if (WIN32)
   # add_definitions(-DSURFACE_EXPORTS=1)
   target_compile_definitions(surface PUBLIC SURFACE_EXPORTS=1)
-  target_precompile_headers(surface PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
 else()
   target_compile_options(surface PUBLIC "-fPIC")
 endif()
+
+if (USE_PCH)
+  target_precompile_headers(surface PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
+endif ()
 
 target_link_libraries(surface PRIVATE qlib gfx qsys molstr CGAL::CGAL)
 

@@ -37,10 +37,13 @@ add_library(symm STATIC ${SYMM_SRCS} ${MCWG_HEADERS})
 if (WIN32)
   # add_definitions(-DSYMM_EXPORTS=1)
   target_compile_definitions(symm PUBLIC SYMM_EXPORTS=1)
-  target_precompile_headers(symm PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
 else()
   target_compile_options(symm PUBLIC "-fPIC")
 endif()
+
+if (USE_PCH)
+  target_precompile_headers(symm PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
+endif ()
 
 target_link_libraries(symm PRIVATE qlib gfx qsys molstr)
 

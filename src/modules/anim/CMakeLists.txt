@@ -47,10 +47,13 @@ add_library(anim STATIC ${ANIM_SRCS} ${MCWG_HEADERS})
 if (WIN32)
   # add_definitions(-DANIM_EXPORTS=1)
   target_compile_definitions(anim PUBLIC ANIM_EXPORTS=1)
-  target_precompile_headers(anim PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
 else()
   target_compile_options(anim PUBLIC "-fPIC")
 endif()
+
+if (USE_PCH)
+  target_precompile_headers(anim PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
+endif ()
 
 target_link_libraries(anim PRIVATE qlib gfx qsys molstr Boost::filesystem Boost::thread)
 

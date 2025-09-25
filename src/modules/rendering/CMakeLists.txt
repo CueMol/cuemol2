@@ -52,11 +52,14 @@ add_library(render STATIC ${RENDER_SRCS} ${MCWG_HEADERS})
 if (WIN32)
   # add_definitions(-DRENDER_EXPORTS=1)
   target_compile_definitions(render PUBLIC RENDER_EXPORTS=1)
-  target_precompile_headers(render PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
 else()
   # target_compile_options(render PUBLIC "-fPIC")
   set_property(TARGET render PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()
+
+if (USE_PCH)
+  target_precompile_headers(render PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
+endif ()
 
 target_link_libraries(render PRIVATE qlib gfx qsys CGAL::CGAL qmpng qmzlib Boost::filesystem)
 

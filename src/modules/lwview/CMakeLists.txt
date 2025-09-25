@@ -37,10 +37,13 @@ add_library(lwview STATIC ${LWVIEW_SRCS} ${MCWG_HEADERS})
 if (WIN32)
   # add_definitions(-DLWVIEW_EXPORTS=1)
   target_compile_definitions(lwview PUBLIC LWVIEW_EXPORTS=1)
-  target_precompile_headers(lwview PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
 else()
   set_target_properties(lwview PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
+
+if (USE_PCH)
+  target_precompile_headers(lwview PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
+endif ()
 
 target_link_libraries(lwview PRIVATE qlib gfx qsys molstr render)
 

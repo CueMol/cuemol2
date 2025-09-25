@@ -211,11 +211,14 @@ add_library(qlib STATIC)
 
 if (WIN32)
   target_compile_definitions(qlib PUBLIC QLIB_EXPORTS=1)
-  target_precompile_headers(qlib PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
 else()
   # target_compile_options(qlib PUBLIC "-fPIC")
   set_property(TARGET qlib PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()
+
+if (USE_PCH)
+  target_precompile_headers(qlib PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
+endif ()
 
 target_sources(qlib
   PRIVATE ${QLIB_SRCS} ${MCWG_HEADERS}

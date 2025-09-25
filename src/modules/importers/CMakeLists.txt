@@ -40,10 +40,14 @@ add_library(importers STATIC ${IMPORTERS_SRCS} ${MCWG_HEADERS})
 if (WIN32)
    # add_definitions(-DIMPORTERS_EXPORTS=1)
   target_compile_definitions(importers PUBLIC IMPORTERS_EXPORTS=1)
-  target_precompile_headers(importers PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
 else()
   set_property(TARGET importers PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()
+
+if (USE_PCH)
+  target_precompile_headers(importers PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
+endif()
+
 target_link_libraries(importers PRIVATE qlib gfx qsys molstr molvis surface symm)
 
 MCWRAPGEN_SCR_WRAPPERS(importers)
