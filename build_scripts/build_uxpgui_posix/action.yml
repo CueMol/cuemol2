@@ -61,7 +61,7 @@ runs:
     shell: bash
     env:
       SCCACHE_GHA_ENABLED: "true"
-      SCCACHE_GHA_VERSION: "${{ runner.os }}_${{ runner.arch }}"
+      SCCACHE_GHA_VERSION: "${{ env.RUNNER_TYPE }}"
       ARTIFACT_NAME: cuemol2_${{ runner.os }}_${{ runner.arch }}.tar.bz2
     run: |
       export PYENV_ROOT="$HOME/.pyenv"
@@ -71,6 +71,7 @@ runs:
 
       cd ${GITHUB_WORKSPACE}
       sccache --show-stats
+      echo "SCCACHE_GHA_VERSION: $SCCACHE_GHA_VERSION"
       which python
       python --version
       bash build_scripts/build_uxpgui_posix/run.sh ${{ inputs.basedir }} ${{ runner.os }} ${{ runner.arch }}

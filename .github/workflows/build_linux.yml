@@ -35,6 +35,7 @@ jobs:
       shell: bash
       run: |
         set -eux
+        echo "RUNNER_TYPE=${{ matrix.os }}" >> $GITHUB_ENV
         uname -a
         gcc --version
         python3 --version
