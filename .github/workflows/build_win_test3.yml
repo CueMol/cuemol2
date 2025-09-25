@@ -106,7 +106,8 @@ jobs:
     - name: Setup build envvars
       shell: bash
       run: |
-        BASEDIR=$(echo '${{ runner.temp }}' | sed 's/\\/\//g')
+        # BASEDIR=$(echo '${{ runner.temp }}' | sed 's/\\/\//g')
+        BASEDIR=$(echo '${{ runner.temp }}' | sed 's/^\([a-zA-Z]\):\\/\/\1\//; s/\\/\//g')
         echo "MSYS_BASEDIR=$BASEDIR" >> $GITHUB_ENV
         DEPLIBS_DIR=$BASEDIR/proj64_deplibs
         echo "MSYS_DEPLIBS_DIR=$DEPLIBS_DIR" >> $GITHUB_ENV

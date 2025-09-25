@@ -184,6 +184,7 @@ target_include_directories(
 if (WIN32)
   # add_definitions(-DQSYS_EXPORTS=1)
   target_compile_definitions(qsys PUBLIC QSYS_EXPORTS=1)
+  target_precompile_headers(qsys PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
 else()
   # target_compile_options(qsys PUBLIC "-fPIC")
   set_property(TARGET qsys PROPERTY POSITION_INDEPENDENT_CODE ON)

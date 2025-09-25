@@ -100,6 +100,7 @@ target_include_directories(
 
 if (WIN32)
   target_compile_definitions(sysdep PUBLIC SYSDEP_EXPORTS=1)
+  target_precompile_headers(sysdep PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
 else()
   # target_compile_options(sysdep PUBLIC "-fPIC")
   set_property(TARGET sysdep PROPERTY POSITION_INDEPENDENT_CODE ON)

@@ -41,13 +41,13 @@ SET(ANIM_MODLDR_SRC anim.moddef)
 MCWRAPGEN_CLASS(ANIM_SRCS ${ANIM_MCWG_QIFS})
 MCWRAPGEN_MODULE(ANIM_SRCS ${ANIM_MODLDR_SRC} ${ANIM_MCWG_QIFS})
 
-if (WIN32)
-  add_definitions(-DANIM_EXPORTS=1)
-endif()
-
 # add_library(anim SHARED ${ANIM_SRCS} ${MCWG_HEADERS})
 add_library(anim STATIC ${ANIM_SRCS} ${MCWG_HEADERS})
+
 if (WIN32)
+  # add_definitions(-DANIM_EXPORTS=1)
+  target_compile_definitions(anim PUBLIC ANIM_EXPORTS=1)
+  target_precompile_headers(anim PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
 else()
   target_compile_options(anim PUBLIC "-fPIC")
 endif()
