@@ -44,6 +44,8 @@ if %CONFIG%=="Debug" (
   SET SCCACHE=-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 )
 
+sccache -z
+
 cmake -G Ninja -S %TOP_DIR% -B %BUILDDIR% ^
  -DCMAKE_INSTALL_PREFIX=%INSTPATH% ^
  -DBoost_ROOT=%DEPLIBS_DIR%\boost_1_84_0 ^
@@ -64,5 +66,7 @@ cmake -G Ninja -S %TOP_DIR% -B %BUILDDIR% ^
 cmake --build %BUILDDIR% --target clean --config %CONFIG%
 cmake --build %BUILDDIR% --parallel --config %CONFIG%
 cmake --install %BUILDDIR% --config %CONFIG%
+
+sccache -s
 
 popd

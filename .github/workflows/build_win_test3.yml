@@ -76,6 +76,22 @@ jobs:
         HOMEPATH_UX=$(echo "$HOMEPATH" | sed 's/\\/\//g')
         echo "home-dir=$HOMEDRIVE$HOMEPATH_UX" >> $GITHUB_OUTPUT
 
+    - name: Setup build envvars
+      shell: bash
+      run: |
+        BASEDIR2=$(echo '${{ runner.temp }}' | sed 's/\\/\//g')
+        DEPLIBS_DIR2=$BASEDIR2/proj64_deplibs
+        echo "MSYS_DEPLIBS_DIR2=$DEPLIBS_DIR" >> $GITHUB_ENV
+        BUNDLE_DIR2=$BASEDIR2/cuemol2_bundle
+        echo "MSYS_BUNDLE_DIR2=$BUNDLE_DIR2" >> $GITHUB_ENV
+
+        BASEDIR=$(echo '${{ runner.temp }}' | sed 's/^\([a-zA-Z]\):\\/\/\1\//; s/\\/\//g')
+        echo "MSYS_BASEDIR=$BASEDIR" >> $GITHUB_ENV
+        DEPLIBS_DIR=$BASEDIR/proj64_deplibs
+        echo "MSYS_DEPLIBS_DIR=$DEPLIBS_DIR" >> $GITHUB_ENV
+        BUNDLE_DIR=$BASEDIR/cuemol2_bundle
+        echo "MSYS_BUNDLE_DIR=$BUNDLE_DIR" >> $GITHUB_ENV
+
     - name: Download/install deplibs
       shell: bash
       run: |
@@ -103,17 +119,6 @@ jobs:
         cmd /c %GITHUB_WORKSPACE%\build_scripts\build_cuetty_win.bat ${{ runner.temp }}
 
 
-    - name: Setup build envvars
-      shell: bash
-      run: |
-        # BASEDIR=$(echo '${{ runner.temp }}' | sed 's/\\/\//g')
-        BASEDIR=$(echo '${{ runner.temp }}' | sed 's/^\([a-zA-Z]\):\\/\/\1\//; s/\\/\//g')
-        echo "MSYS_BASEDIR=$BASEDIR" >> $GITHUB_ENV
-        DEPLIBS_DIR=$BASEDIR/proj64_deplibs
-        echo "MSYS_DEPLIBS_DIR=$DEPLIBS_DIR" >> $GITHUB_ENV
-        BUNDLE_DIR=$BASEDIR/cuemol2_bundle
-        echo "MSYS_BUNDLE_DIR=$BUNDLE_DIR" >> $GITHUB_ENV
-
     - name: Edit mozconfig
       shell: bash
       run: |
@@ -125,9 +130,8 @@ jobs:
         WIN_UCRT_REDIST_DIR=$(echo "${WindowsSdkDir}Redist\\${WindowsSDKLibVersion}ucrt\\DLLs\\x64" | sed 's/\\/\//g')
         echo "$WIN_UCRT_REDIST_DIR"
 
-        BASEDIR=$MSYS_BASEDIR
-        DEPLIBS_DIR=$MSYS_DEPLIBS_DIR
-        BUNDLE_DIR=$MSYS_BUNDLE_DIR
+        DEPLIBS_DIR=$MSYS_DEPLIBS_DIR2
+        BUNDLE_DIR=$MSYS_BUNDLE_DIR2
 
         BOOST_DIR=$DEPLIBS_DIR/boost_1_84_0/include/boost-1_84
         LIBDIR=$DEPLIBS_DIR/boost_1_84_0/lib
