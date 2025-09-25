@@ -31,7 +31,6 @@ jobs:
       shell: bash
       run: |
         set -eux
-        sccache -s
         REPOS_DIR=$(echo '${{ github.workspace }}' | sed 's/\\/\//g')
         echo "repos-dir=$REPOS_DIR" >> $GITHUB_OUTPUT
         HOMEPATH_UX=$(echo "$HOMEPATH" | sed 's/\\/\//g')
@@ -101,11 +100,11 @@ jobs:
         # echo "SCCACHE_GHA_CACHE_TO=sccache-${{ runner.os }}-${{ github.sha }}" >> $env:GITHUB_ENV
         # echo "SCCACHE_GHA_CACHE_FROM=sccache-${{ runner.os }}-" >> $env:GITHUB_ENV
 
-    - name: Verify sccache config
-      run: |
-        sccache --version
-        sccache --show-stats
-        sccache --help
+#    - name: Verify sccache config
+#      run: |
+#        sccache --version
+#        sccache --show-stats
+#        sccache --help
 
     - name: Install prerequisite
       run: |
