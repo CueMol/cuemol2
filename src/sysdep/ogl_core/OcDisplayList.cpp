@@ -362,8 +362,8 @@ void OcDisplayList::createLineArray()
     if (nelems_line > 0) {
         MB_ASSERT(m_pGlslLine == nullptr);
         m_pGlslLine = MB_NEW GLSLLineHelper();
-        m_pGlslLine->alloc(nelems_line);
         m_pGlslLine->setUseVertColor(m_bSetColor);
+        m_pGlslLine->alloc(nelems_line);
         size_t i = 0;
         for (const auto &elem : m_lineBuf) {
             MB_ASSERT(i < nelems_line);

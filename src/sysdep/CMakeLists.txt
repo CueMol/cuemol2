@@ -9,12 +9,12 @@ SET(SYSDEP_SRCS
   OglProgramObject.cpp
   OglProgObjMgr.cpp
   Canvas2DTextRender2.cpp
-  GLSLLineHelper.cpp
   ShaderSetupHelper.cpp
   # core profile
   ogl_core/OcDisplayList.cpp
   ogl_core/OcPixDraw.cpp
   # ogl_core/OcDisplayContext.cpp
+  ogl_core/GLSLLineHelper.cpp
 )
 
 SET(SYSDEP_HDRS
@@ -82,16 +82,14 @@ SET(GLSL_SHADER_FILES
   edge_frag.glsl
   silh_vert.glsl
   silh_frag.glsl
-  es2_default_vert.glsl
-  es2_default_frag.glsl
-  linew_vert.glsl
-  linew_frag.glsl
+#  es2_default_vert.glsl
+#  es2_default_frag.glsl
 #  ogl_core/trig_vert.glsl
 #  ogl_core/trig_frag.glsl
 #  ogl_core/trigedge_vert.glsl
 #  ogl_core/trigedge_frag.glsl
-  ogl_core/pixdraw_vert.glsl
-  ogl_core/pixdraw_frag.glsl
+#  ogl_core/pixdraw_vert.glsl
+#  ogl_core/pixdraw_frag.glsl
 )
 
 SET(SHADER_SOURCES 
@@ -99,6 +97,10 @@ SET(SHADER_SOURCES
   ogl_core/trig_frag.glsl
   ogl_core/trigedge_vert.glsl
   ogl_core/trigedge_frag.glsl
+  ogl_core/pixdraw_vert.glsl
+  ogl_core/pixdraw_frag.glsl
+  ogl_core/linew_vert.glsl
+  ogl_core/linew_frag.glsl
 )
 SET(SHADER_DEPS
   ogl_core/lighting_inc.glsl

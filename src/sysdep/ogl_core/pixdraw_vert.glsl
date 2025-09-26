@@ -2,8 +2,9 @@
 //
 //  Pixel drawing shader for OpenGL
 //
-
 // #version 120
+
+#include "fog_inc.glsl"
 
 ////////////////////
 // Uniform variables
@@ -23,7 +24,7 @@ attribute vec2 a_texCoord;
 // Varying variables
 
 varying vec2 v_texCoord;
-varying float v_fogCoord;
+// varying float v_fogCoord;
 
 void main()
 {
@@ -44,5 +45,6 @@ void main()
     gl_Position = vec4(quadPos * clipPos.w, clipPos.z, clipPos.w);
 
     v_texCoord = a_texCoord;
-    v_fogCoord = abs(ecPos.z);
+    // v_fogCoord = abs(ecPos.z);
+    v_fogCoord = ffog(ecPos.z);
 }

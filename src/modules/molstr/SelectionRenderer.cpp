@@ -101,7 +101,6 @@ bool SelectionRenderer::isRendBond() const
 
 void SelectionRenderer::beginRend(DisplayContext *pdl)
 {
-  pdl->color(m_color);
   if (m_nMode==0) {
     pdl->startLines();
   }
@@ -109,6 +108,8 @@ void SelectionRenderer::beginRend(DisplayContext *pdl)
     pdl->setPointSize(m_linew);
     pdl->startPoints();
   }
+
+  pdl->color(m_color);
 }
 
 void SelectionRenderer::endRend(DisplayContext *pdl)

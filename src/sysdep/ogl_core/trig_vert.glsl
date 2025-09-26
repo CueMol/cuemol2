@@ -3,6 +3,9 @@
 //  Triangle vertex shader for OpenGL
 //
 
+#include "lighting_inc.glsl"
+#include "fog_inc.glsl"
+
 ////////////////////
 // Uniform variables
 
@@ -20,9 +23,6 @@ attribute vec4 aColor;
 
 varying vec4 vFrontColor;
 // varying float v_fogCoord;
-
-#include "lighting_inc.glsl"
-#include "fog_inc.glsl"
 
 // ////////////////////
 // // Workarea

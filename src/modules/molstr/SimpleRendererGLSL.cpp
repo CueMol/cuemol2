@@ -14,7 +14,7 @@
 #include <gfx/DrawAttrArray.hpp>
 #include <sysdep/OglDisplayContext.hpp>
 #include <sysdep/OglProgramObject.hpp>
-#include <sysdep/GLSLLineHelper.hpp>
+#include <sysdep/ogl_core/GLSLLineHelper.hpp>
 
 namespace molstr {
 // using namespace molstr;

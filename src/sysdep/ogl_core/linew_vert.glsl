@@ -3,6 +3,8 @@
 //  Default vertex shader for OpenGL
 //
 
+#include "fog_inc.glsl"
+
 ////////////////////
 // Uniforms
 uniform vec2 screenSize;
@@ -27,14 +29,15 @@ attribute float a_index;
 // Varying
 
 varying float v_length;
-varying float v_fogCoord;
+varying vec4 v_frontColor;
+// varying float v_fogCoord;
 
 ////////////////////
 
-float ffog(in float ecDistance)
-{
-    return abs(ecDistance);
-}
+// float ffog(in float ecDistance)
+// {
+//     return abs(ecDistance);
+// }
 
 void main(void)
 {
@@ -67,7 +70,7 @@ void main(void)
         // clipPos1.w, 1.0);
         gl_Position = clipPos1 + of4;
         v_fogCoord = ffog(ecpos1.z);
-        gl_FrontColor = a_color1;
+        v_frontColor = a_color1;
         v_length = 0.0;
     } else if (ind == 1) {
         // P1
@@ -75,37 +78,37 @@ void main(void)
         // clipPos1.w, 1.0);
         gl_Position = clipPos1 - of4;
         v_fogCoord = ffog(ecpos1.z);
-        gl_FrontColor = a_color1;
+        v_frontColor = a_color1;
         v_length = 0.0;
     } else if (ind == 2) {
         // P2
         // gl_Position = projection * (p2 + vec4(normal, 0.0, 0.0));
         gl_Position = clipPos2 + of4;
         v_fogCoord = ffog(ecpos2.z);
-        gl_FrontColor = a_color2;
+        v_frontColor = a_color2;
         v_length = vlen;
     } else if (ind == 3) {
         // P2
         // gl_Position = projection * (p2 + vec4(normal, 0.0, 0.0));
         gl_Position = clipPos2 + of4;
         v_fogCoord = ffog(ecpos2.z);
-        gl_FrontColor = a_color2;
+        v_frontColor = a_color2;
         v_length = vlen;
     } else if (ind == 4) {
         // P1
         // gl_Position = projection * (p1 - vec4(normal, 0.0, 0.0));
         gl_Position = clipPos1 - of4;
         v_fogCoord = ffog(ecpos1.z);
-        gl_FrontColor = a_color1;
+        v_frontColor = a_color1;
         v_length = 0.0;
     } else {
         // P3
         // gl_Position = projection * (p2 - vec4(normal, 0.0, 0.0));
         gl_Position = clipPos2 - of4;
         v_fogCoord = ffog(ecpos2.z);
-        gl_FrontColor = a_color2;
+        v_frontColor = a_color2;
         v_length = vlen;
     }
 
-    // gl_FrontColor = vec4(1.0, 1.0, 1.0, 1.0);
+    // v_frontColor = vec4(1.0, 1.0, 1.0, 1.0);
 }

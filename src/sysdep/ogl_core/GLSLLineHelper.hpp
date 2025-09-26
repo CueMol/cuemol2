@@ -5,8 +5,7 @@
 
 #pragma once
 
-#include "sysdep.hpp"
-
+#include <sysdep/sysdep.hpp>
 #include <gfx/DrawAttrArray.hpp>
 
 namespace gfx {

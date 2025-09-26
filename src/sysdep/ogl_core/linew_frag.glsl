@@ -3,21 +3,24 @@
 //  Default fragment shader for OpenGL
 //
 
+#include "fog_inc.glsl"
+
 uniform float frag_alpha;
 uniform float stippleLen;
 uniform vec4 u_color;
 uniform bool use_u_color;
 
-// Fog
-uniform float u_fogEnd;
-uniform float u_fogScale;
-uniform vec3 u_fogColor;
+// // Fog
+// uniform float u_fogEnd;
+// uniform float u_fogScale;
+// uniform vec3 u_fogColor;
 
 ////////////////////
 // Varying
 
 varying float v_length;
-varying float v_fogCoord;
+varying vec4 v_frontColor;
+// varying float v_fogCoord;
 
 void main(void)
 {
@@ -37,12 +40,14 @@ void main(void)
         color = gl_Color;
     }
 
-    float fog = (u_fogEnd - v_fogCoord) * u_fogScale;
-    fog = clamp(fog, 0.0, 1.0);
+    // float fog = (u_fogEnd - v_fogCoord) * u_fogScale;
+    // fog = clamp(fog, 0.0, 1.0);
 
-    float alpha = color.a * frag_alpha;
-    vec3 fogmixed = mix(u_fogColor, vec3(color), fog);
-    color = vec4(fogmixed, alpha);
+    // float alpha = color.a * frag_alpha;
+    // vec3 fogmixed = mix(u_fogColor, vec3(color), fog);
+    // color = vec4(fogmixed, alpha);
 
-    gl_FragColor = color;
+    // gl_FragColor = color;
+
+    gl_FragColor = fragFogColor(color, frag_alpha);
 }
