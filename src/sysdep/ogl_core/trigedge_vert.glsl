@@ -3,6 +3,8 @@
 //  Default vertex shader for OpenGL
 //
 
+#include "fog_inc.glsl"
+
 ////////////////////
 // Uniform variables
 
@@ -19,7 +21,7 @@ attribute vec4 aNormal;
 // Varying
 
 varying vec4 v_frontColor;
-varying float v_fogCoord;
+// varying float v_fogCoord;
 
 void main(void)
 {
@@ -40,5 +42,6 @@ void main(void)
 
     v_frontColor = edge_color;
 
-    v_fogCoord = abs(ecPosition.z);
+    // v_fogCoord = abs(ecPosition.z);
+    v_fogCoord = ffog(ecPosition.z);
 }

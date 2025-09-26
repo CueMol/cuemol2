@@ -69,6 +69,11 @@ SET(SYSDEP_LINK_LIBRARIES
   OpenGL::GL OpenGL::GLU GLEW::glew_s)
 
 ###################
+# sysdep library target
+# add_library(sysdep SHARED)
+add_library(sysdep STATIC)
+
+###################
 # GLSL shader files
 SET(GLSL_SHADER_FILES
   default_vert.glsl
@@ -81,19 +86,28 @@ SET(GLSL_SHADER_FILES
   es2_default_frag.glsl
   linew_vert.glsl
   linew_frag.glsl
-  ogl_core/trig_vert.glsl
-  ogl_core/trig_frag.glsl
-  ogl_core/trigedge_vert.glsl
-  ogl_core/trigedge_frag.glsl
+#  ogl_core/trig_vert.glsl
+#  ogl_core/trig_frag.glsl
+#  ogl_core/trigedge_vert.glsl
+#  ogl_core/trigedge_frag.glsl
   ogl_core/pixdraw_vert.glsl
   ogl_core/pixdraw_frag.glsl
 )
 
-#####################
-# sysdep library target
+SET(SHADER_SOURCES 
+  ogl_core/trig_vert.glsl
+  ogl_core/trig_frag.glsl
+  ogl_core/trigedge_vert.glsl
+  ogl_core/trigedge_frag.glsl
+)
+SET(SHADER_DEPS
+  ogl_core/lighting_inc.glsl
+  ogl_core/fog_inc.glsl
+)
+set_target_properties(sysdep PROPERTIES SHADER_SOURCES "${SHADER_SOURCES}")
+GLSL_PREPROC(sysdep "${SHADER_DEPS}")
 
-# add_library(sysdep SHARED)
-add_library(sysdep STATIC)
+#####################
 
 target_sources(sysdep
   PRIVATE ${SYSDEP_SRCS}

@@ -149,6 +149,7 @@ add_definitions(-DHAVE_CONFIG_H=1)
 # Subdirs
 
 include("mcwgen.cmake")
+include("glsl.cmake")
 
 # support libraries
 add_subdirectory(pcre)

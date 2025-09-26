@@ -19,63 +19,66 @@ attribute vec4 aColor;
 // Varying variables
 
 varying vec4 vFrontColor;
-varying float vFogFragCoord;
+// varying float v_fogCoord;
 
-////////////////////
-// Workarea
+#include "lighting_inc.glsl"
+#include "fog_inc.glsl"
 
-vec4 Ambient;
-vec4 Diffuse;
-vec4 Specular;
+// ////////////////////
+// // Workarea
 
-void DirectionalLight(in int i, in vec3 normal)
-{
-    float nDotVP;  // normal . light direction
-    float nDotHV;  // normal . light half vector
-    float pf;      // power factor
+// vec4 Ambient;
+// vec4 Diffuse;
+// vec4 Specular;
 
-    nDotVP = max(0.0, dot(normal, normalize(vec3(gl_LightSource[i].position))));
-    nDotHV = max(0.0, dot(normal, vec3(gl_LightSource[i].halfVector)));
+// void DirectionalLight(in int i, in vec3 normal)
+// {
+//     float nDotVP;  // normal . light direction
+//     float nDotHV;  // normal . light half vector
+//     float pf;      // power factor
 
-    if (nDotVP == 0.0)
-        pf = 0.0;
-    else
-        pf = pow(nDotHV, gl_FrontMaterial.shininess);
+//     nDotVP = max(0.0, dot(normal, normalize(vec3(gl_LightSource[i].position))));
+//     nDotHV = max(0.0, dot(normal, vec3(gl_LightSource[i].halfVector)));
 
-    Ambient += gl_LightSource[i].ambient;
-    Diffuse += gl_LightSource[i].diffuse * nDotVP;
-    Specular += gl_LightSource[i].specular * pf;
-}
+//     if (nDotVP == 0.0)
+//         pf = 0.0;
+//     else
+//         pf = pow(nDotHV, gl_FrontMaterial.shininess);
 
-float ffog(in float ecDistance)
-{
-    return (abs(ecDistance));
-}
+//     Ambient += gl_LightSource[i].ambient;
+//     Diffuse += gl_LightSource[i].diffuse * nDotVP;
+//     Specular += gl_LightSource[i].specular * pf;
+// }
 
-vec4 flight(in vec3 normal, in vec4 ecPosition, in vec4 a_color)
-{
-    vec4 color;
-    vec3 ecPosition3;
-    vec3 eye;
+// float ffog(in float ecDistance)
+// {
+//     return (abs(ecDistance));
+// }
 
-    ecPosition3 = (vec3(ecPosition)) / ecPosition.w;
-    eye = vec3(0.0, 0.0, 1.0);
+// vec4 flight(in vec3 normal, in vec4 ecPosition, in vec4 a_color)
+// {
+//     vec4 color;
+//     vec3 ecPosition3;
+//     vec3 eye;
 
-    // Clear the light intensity accumulators
-    Ambient = vec4(0.0);
-    Diffuse = vec4(0.0);
-    Specular = vec4(0.0);
+//     ecPosition3 = (vec3(ecPosition)) / ecPosition.w;
+//     eye = vec3(0.0, 0.0, 1.0);
 
-    // pointLight(0, normal, eye, ecPosition3);
-    DirectionalLight(0, normal);
+//     // Clear the light intensity accumulators
+//     Ambient = vec4(0.0);
+//     Diffuse = vec4(0.0);
+//     Specular = vec4(0.0);
 
-    color = gl_LightModel.ambient * a_color;
-    color += Ambient * a_color;
-    color += Diffuse * a_color;
-    color += Specular * gl_FrontMaterial.specular;
-    color = clamp(color, 0.0, 1.0);
-    return color;
-}
+//     // pointLight(0, normal, eye, ecPosition3);
+//     DirectionalLight(0, normal);
+
+//     color = gl_LightModel.ambient * a_color;
+//     color += Ambient * a_color;
+//     color += Diffuse * a_color;
+//     color += Specular * gl_FrontMaterial.specular;
+//     color = clamp(color, 0.0, 1.0);
+//     return color;
+// }
 
 void main(void)
 {
@@ -91,5 +94,6 @@ void main(void)
         vFrontColor = aColor;
     }
 
-    vFogFragCoord = ffog(ecPosition.z);
+    // v_fogCoord = ffog(ecPosition.z);
+    v_fogCoord = ffog(ecPosition.z);
 }
