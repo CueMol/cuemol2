@@ -310,8 +310,6 @@ bool OcDisplayList::recordStart()
     m_fValid = false;
 
     clearMatStack();
-    // pushMatrix();
-    // loadIdent();
 
     return true;
 }
@@ -512,19 +510,6 @@ void OcDisplayList::setupTrigEdgeMeshAttrs()
                      offsetof(TrigVertAttr, nx));
 }
 
-// void OcDisplayList::setupFog(gfx::DisplayContext *pdc, OglProgramObject *pPO)
-// {
-//     auto fog_end = pdc->getFogEnd();
-//     auto fog_start = pdc->getFogStart();
-//     auto fog_scl = 1.0 / (fog_end - fog_start);
-//     float fog_r = 0.0, fog_g = 0.0, fog_b = 0.0;
-//     pdc->getDevRGBColor(pdc->getFogColor(), fog_r, fog_g, fog_b);
-//     pPO->setUniformF("u_fogEnd", fog_end);
-//     pPO->setUniformF("u_fogScale", fog_scl);
-//     pPO->setUniformF("u_fogColor", fog_r, fog_g, fog_b);
-// }
-
-
 void OcDisplayList::drawTrigArray(gfx::DisplayContext *pdc)
 {
     if (m_pTrigArray == nullptr) {
@@ -539,6 +524,7 @@ void OcDisplayList::drawTrigArray(gfx::DisplayContext *pdc)
 
     m_pTrigPO->enable();
     m_pTrigPO->setupFog(pdc);
+    m_pTrigPO->setupMat(pdc);
     m_pTrigPO->setUniformF("frag_alpha", pdc->getAlpha());
     m_pTrigPO->setUniform("enable_lighting", pdc->isLighting());
     pdc->drawElem(*m_pTrigArray);
@@ -562,6 +548,7 @@ void OcDisplayList::drawTrigMesh(gfx::DisplayContext *pdc)
 
     m_pTrigPO->enable();
     m_pTrigPO->setupFog(pdc);
+    m_pTrigPO->setupMat(pdc);
     m_pTrigPO->setUniformF("frag_alpha", pdc->getAlpha());
     m_pTrigPO->setUniform("enable_lighting", pdc->isLighting());
     pdc->drawElem(*m_pTrigMesh);
@@ -577,6 +564,7 @@ void OcDisplayList::drawTrigEdges(gfx::DisplayContext *pdc, const gfx::AbstDrawE
     if (pdc->getEdgeLineType() == ELT_EDGES) {
         m_pTrigEdgePO->enable();
         m_pTrigEdgePO->setupFog(pdc);
+        m_pTrigEdgePO->setupMat(pdc);
         m_pTrigEdgePO->setUniformF("frag_alpha", alpha);
         m_pTrigEdgePO->setUniformF("edge_width", pdc->getEdgeLineWidth());
         m_pTrigEdgePO->setUniformF("edge_color", r, g, b, alpha);

@@ -307,6 +307,32 @@ void OglProgramObject::setMatrix(const LString &name, const qlib::Matrix4D &mat)
     glUniformMatrix4fv(idx, 1, GL_FALSE, m);
 }
 
+void OglProgramObject::setMatrix(const LString &name, const qlib::Matrix3D &mat)
+{
+    auto idx = getUniformLocation(name);
+    if (idx < 0) {
+        // uniform undefined
+        //   --> ignore set
+        return;
+    }
+
+    GLfloat m[9];
+    
+    m[0] = mat.aij(1,1);
+    m[1] = mat.aij(2,1);
+    m[2] = mat.aij(3,1);
+
+    m[3] = mat.aij(1,2);
+    m[4] = mat.aij(2,2);
+    m[5] = mat.aij(3,2);
+
+    m[6] = mat.aij(1,3);
+    m[7] = mat.aij(2,3);
+    m[8] = mat.aij(3,3);
+
+    glUniformMatrix3fv(idx, 1, GL_FALSE, m);
+}
+
 GLint OglProgramObject::getUniformLocation(const LString &name)
 {
     // check cache
@@ -354,7 +380,7 @@ void OglProgramObject::setupMat(gfx::DisplayContext *pdc)
     setMatrix("u_ModelViewProjectionMatrix", mvp);
 
     // setup normal matrix
-    auto nmMat = mvMat.invert().transpose();
+    auto nmMat = mvMat.getMatrix3D().invert().transpose();
     setMatrix("u_NormalMatrix", nmMat);
 }
 

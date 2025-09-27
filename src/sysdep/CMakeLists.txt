@@ -82,14 +82,6 @@ SET(GLSL_SHADER_FILES
   edge_frag.glsl
   silh_vert.glsl
   silh_frag.glsl
-#  es2_default_vert.glsl
-#  es2_default_frag.glsl
-#  ogl_core/trig_vert.glsl
-#  ogl_core/trig_frag.glsl
-#  ogl_core/trigedge_vert.glsl
-#  ogl_core/trigedge_frag.glsl
-#  ogl_core/pixdraw_vert.glsl
-#  ogl_core/pixdraw_frag.glsl
 )
 
 SET(SHADER_SOURCES 

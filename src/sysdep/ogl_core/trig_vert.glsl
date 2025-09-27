@@ -10,6 +10,9 @@
 // Uniform variables
 
 uniform bool enable_lighting;
+uniform mat4 u_ModelViewMatrix;
+uniform mat4 u_ProjectionMatrix;
+uniform mat3 u_NormalMatrix;
 
 ////////////////////
 // Vertex attributes
@@ -21,77 +24,24 @@ attribute vec4 aColor;
 ////////////////////
 // Varying variables
 
-varying vec4 vFrontColor;
-// varying float v_fogCoord;
-
-// ////////////////////
-// // Workarea
-
-// vec4 Ambient;
-// vec4 Diffuse;
-// vec4 Specular;
-
-// void DirectionalLight(in int i, in vec3 normal)
-// {
-//     float nDotVP;  // normal . light direction
-//     float nDotHV;  // normal . light half vector
-//     float pf;      // power factor
-
-//     nDotVP = max(0.0, dot(normal, normalize(vec3(gl_LightSource[i].position))));
-//     nDotHV = max(0.0, dot(normal, vec3(gl_LightSource[i].halfVector)));
-
-//     if (nDotVP == 0.0)
-//         pf = 0.0;
-//     else
-//         pf = pow(nDotHV, gl_FrontMaterial.shininess);
-
-//     Ambient += gl_LightSource[i].ambient;
-//     Diffuse += gl_LightSource[i].diffuse * nDotVP;
-//     Specular += gl_LightSource[i].specular * pf;
-// }
-
-// float ffog(in float ecDistance)
-// {
-//     return (abs(ecDistance));
-// }
-
-// vec4 flight(in vec3 normal, in vec4 ecPosition, in vec4 a_color)
-// {
-//     vec4 color;
-//     vec3 ecPosition3;
-//     vec3 eye;
-
-//     ecPosition3 = (vec3(ecPosition)) / ecPosition.w;
-//     eye = vec3(0.0, 0.0, 1.0);
-
-//     // Clear the light intensity accumulators
-//     Ambient = vec4(0.0);
-//     Diffuse = vec4(0.0);
-//     Specular = vec4(0.0);
-
-//     // pointLight(0, normal, eye, ecPosition3);
-//     DirectionalLight(0, normal);
-
-//     color = gl_LightModel.ambient * a_color;
-//     color += Ambient * a_color;
-//     color += Diffuse * a_color;
-//     color += Specular * gl_FrontMaterial.specular;
-//     color = clamp(color, 0.0, 1.0);
-//     return color;
-// }
+varying vec4 v_frontColor;
+varying float v_fogCoord;
 
 void main(void)
 {
     // Eye-coordinate position of vertex, needed in various calculations
     vec4 ecPosition = gl_ModelViewMatrix * aVertex;
+    // vec4 ecPosition = u_ModelViewMatrix * aVertex;
 
     gl_Position = gl_ModelViewProjectionMatrix * aVertex;
+    // gl_Position = u_ProjectionMatrix * ecPosition;
 
     if (enable_lighting) {
-        vec3 normal = normalize(gl_NormalMatrix * aNormal.xyz);
-        vFrontColor = flight(normal, ecPosition, aColor);
+        // vec3 normal = normalize(gl_NormalMatrix * aNormal.xyz);
+        vec3 normal = normalize(u_NormalMatrix * aNormal.xyz);
+        v_frontColor = flight(normal, ecPosition, aColor);
     } else {
-        vFrontColor = aColor;
+        v_frontColor = aColor;
     }
 
     // v_fogCoord = ffog(ecPosition.z);

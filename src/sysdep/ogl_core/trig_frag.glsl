@@ -17,19 +17,10 @@ uniform float frag_alpha;
 ////////////////////
 // Varying variables
 
-varying vec4 vFrontColor;
-// varying float vFogFragCoord;
+varying vec4 v_frontColor;
+varying float v_fogCoord;
 
 void main(void)
 {
-    gl_FragColor = fragFogColor(vFrontColor, frag_alpha);
-
-    // float fog = (u_fogEnd - vFogFragCoord) * u_fogScale;
-    // fog = clamp(fog, 0.0, 1.0);
-
-    // float alpha = color.a * frag_alpha;
-    // vec3 fogmixed = mix(u_fogColor, vec3(color), fog);
-    // color = vec4(fogmixed, alpha);
-
-    // gl_FragColor = color;
+    gl_FragColor = fragFogColor(v_frontColor, frag_alpha, v_fogCoord);
 }

@@ -22,7 +22,7 @@ uniform float frag_alpha;
 // Varying variables
 
 varying vec2 v_texCoord;
-// varying float v_fogCoord;
+varying float v_fogCoord;
 
 void main()
 {
@@ -36,11 +36,5 @@ void main()
         discard;
     }
 
-    // // Apply color bias (equivalent to glPixelTransferf bias)
-    // float fog = (u_fogEnd - v_fogCoord) * u_fogScale;
-    // fog = clamp(fog, 0.0, 1.0);
-    // vec3 fogmixed = mix(u_fogColor, u_colorBias, fog);
-    // gl_FragColor = vec4(fogmixed, alpha);
-
-    gl_FragColor = fragFogColor(vec4(u_colorBias, alpha), frag_alpha);
+    gl_FragColor = fragFogColor(vec4(u_colorBias, alpha), frag_alpha, v_fogCoord);
 }

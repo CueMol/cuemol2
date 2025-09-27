@@ -12,7 +12,7 @@ uniform float lineWidth;
 uniform float stippleLen;
 
 uniform mat4 u_ModelViewMatrix;
-uniform mat4 u_ProjectionMatrix
+uniform mat4 u_ProjectionMatrix;
 
 ////////////////////
 // Vertex attributes
@@ -33,14 +33,9 @@ attribute float a_index;
 
 varying float v_length;
 varying vec4 v_frontColor;
-// varying float v_fogCoord;
+varying float v_fogCoord;
 
 ////////////////////
-
-// float ffog(in float ecDistance)
-// {
-//     return abs(ecDistance);
-// }
 
 void main(void)
 {

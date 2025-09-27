@@ -3,6 +3,9 @@
 //  fragment shader for spheres
 //
 
+// #include <lighting_inc.glsl>
+#include <fog_inc.glsl>
+
 ////////////////////
 // Uniform variables
 
@@ -18,9 +21,9 @@ uniform float frag_alpha;
 uniform bool u_bsilh;
 
 // Fog
-uniform float u_fogEnd;
-uniform float u_fogScale;
-uniform vec3 u_fogColor;
+// uniform float u_fogEnd;
+// uniform float u_fogScale;
+// uniform vec3 u_fogColor;
 
 ////////////////////
 // Varying variables
@@ -69,7 +72,7 @@ vec4 flight(in vec3 normal, in vec4 ecPosition, in vec4 matcol)
   Diffuse  = vec4 (0.0);
   Specular = vec4 (0.0);
 
-  DirectionalLight(0, normal);
+  DirectionalLight(normal);
 
   color = gl_LightModel.ambient * matcol;
   color += Ambient  * matcol;
@@ -116,11 +119,11 @@ void main()
       vec4 color = u_edgecolor;
       
       // fog calculation
-      float fogz = abs(ecpos.z);
-      float fog;
-      fog = (u_fogEnd - fogz) * u_fogScale;
-      fog = clamp(fog, 0.0, 1.0);
-      color = vec4(mix( u_fogColor, vec3(color), fog), v_color.a*frag_alpha);
+      float fogz = ffog(ecpos.z);
+      // float fog = (u_fogEnd - fogz) * u_fogScale;
+      // fog = clamp(fog, 0.0, 1.0);
+      // color = vec4(mix( u_fogColor, vec3(color), fog), v_color.a*frag_alpha);
+      color = fragFogColor(u_edgecolor, frag_alpha, fogz);
       
       gl_FragDepth = u_bsilh ? 0.99 : fd;
       gl_FragColor = color;
@@ -160,11 +163,12 @@ void main()
       vec4 color = flight(normal, ecpos, v_color);
       
       // fog calculation
-      float fogz = abs(ecpos.z);
-      float fog;
-      fog = (u_fogEnd - fogz) * u_fogScale;
-      fog = clamp(fog, 0.0, 1.0);
-      color = vec4(mix( u_fogColor, vec3(color), fog), v_color.a*frag_alpha);
+      float fogz = ffog(ecpos.z);
+      // float fog;
+      // fog = (u_fogEnd - fogz) * u_fogScale;
+      // fog = clamp(fog, 0.0, 1.0);
+      // color = vec4(mix( u_fogColor, vec3(color), fog), v_color.a*frag_alpha);
+      color = fragFogColor(color, frag_alpha, fogz);
       
       gl_FragColor = color;
     }

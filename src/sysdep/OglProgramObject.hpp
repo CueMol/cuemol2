@@ -227,6 +227,7 @@ public:
     }
 
     void setMatrix(const LString &name, const qlib::Matrix4D &mat);
+    void setMatrix(const LString &name, const qlib::Matrix3D &mat);
 
     // attribute variable
 

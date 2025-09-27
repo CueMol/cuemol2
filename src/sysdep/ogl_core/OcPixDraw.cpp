@@ -185,6 +185,7 @@ void OcPixDraw::draw(gfx::DisplayContext *pdc, const Vector4D &pos,
 
     m_pPO->enable();
     m_pPO->setupFog(pdc);
+    m_pPO->setupMat(pdc);
     m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
     m_pPO->setUniformF("u_position", pos.x(), pos.y(), pos.z());
     m_pPO->setUniformF("u_size", float(w), float(h));

@@ -152,7 +152,7 @@ function(GLSL_PREPROC _target SHADER_DEPENDENCIES)
     
     # Output debug information
     message(STATUS "GLSL_PREPROC configured for target: ${_target}")
-    message(STATUS "  - Shader count: ${list_length_PROCESSED_SHADERS}")
+    message(STATUS "  - Shader: ${PROCESSED_SHADERS}")
     message(STATUS "  - Output directory: ${SHADER_OUTPUT_DIR}")
     message(STATUS "  - Install directory: ${SHADER_INSTALL_DIR}")
     message(STATUS "  - Preprocessor: ${PREPROCESSOR_CMD}")
