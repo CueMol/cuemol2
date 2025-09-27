@@ -116,6 +116,7 @@ function(GLSL_PREPROC _target SHADER_DEPENDENCIES)
                 COMMAND ${PREPROCESSOR_CMD} ${PREPROCESSOR_FLAGS} "${SHADER_ABS_PATH}" > "${PROCESSED_SHADER}"
                 DEPENDS ${SHADER_DEPENDENCIES}
                 COMMENT "Preprocessing shader: ${SHADER_NAME}"
+                # COMMENT "${PREPROCESSOR_CMD} ${PREPROCESSOR_FLAGS} ${SHADER_ABS_PATH} > ${PROCESSED_SHADER}"
                 VERBATIM
             )
         endif()

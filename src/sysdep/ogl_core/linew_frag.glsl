@@ -19,23 +19,20 @@ varying float v_fogCoord;
 
 void main(void)
 {
+    if (stippleLen > 0.0) {
+        float stipos = mod(v_length, stippleLen);
+        if (stipos < stippleLen * 0.5) {
+            // gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+            discard;
+        }
+    }
+
     vec4 color;
-    gl_FragColor = v_frontColor;
+    if (use_u_color) {
+        color = u_color;
+    } else {
+        color = v_frontColor;
+    }
 
-    // if (stippleLen > 0.0) {
-    //     float stipos = mod(v_length, stippleLen);
-    //     if (stipos < stippleLen * 0.5) {
-    //         // gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
-    //         discard;
-    //     }
-    // }
-
-    // if (use_u_color) {
-    //     color = u_color;
-    // } else {
-    //     color = gl_Color;
-    // }
-
-    // gl_FragColor = fragFogColor(color, frag_alpha, v_fogCoord);
-
+    gl_FragColor = fragFogColor(color, frag_alpha, v_fogCoord);
 }

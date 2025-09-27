@@ -373,11 +373,11 @@ void OglProgramObject::setupMat(gfx::DisplayContext *pdc)
 
     // setup projection matrix
     auto prjMat = pdc->getProjMat();
-    setMatrix("u_projMat", prjMat);
+    setMatrix("u_ProjectionMatrix", prjMat);
 
-    // mvp mat
-    auto mvp = prjMat * mvMat;
-    setMatrix("u_ModelViewProjectionMatrix", mvp);
+    // // mvp mat
+    // auto mvp = prjMat * mvMat;
+    // setMatrix("u_ModelViewProjectionMatrix", mvp);
 
     // setup normal matrix
     auto nmMat = mvMat.getMatrix3D().invert().transpose();

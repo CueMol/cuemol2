@@ -235,7 +235,6 @@ void OglView::setUpProjMat(int cx, int cy)
       pdc->loadOrthoProj(vw, fasp, slabnear, slabfar);
   }
   
-  
   resetProjChgFlag();
 }
 

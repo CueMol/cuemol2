@@ -165,6 +165,7 @@ namespace molvis {
       if (m_pDrawElem!=NULL) {
         m_pPO->enable();
         m_pPO->setupFog(pdc);
+        m_pPO->setupMat(pdc);
         m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
 
         // Setup edge/silhouette

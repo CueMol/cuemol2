@@ -9,6 +9,9 @@
 // edge rendering
 uniform float u_edge;
 
+uniform mat4 u_ModelViewMatrix;
+uniform mat4 u_ProjectionMatrix;
+
 ////////////////////
 // Vertex attributes
 
@@ -38,24 +41,23 @@ varying float v_edgeratio;
 
 void main()
 {
-  vec4 pos;
-  //gl_Position = ftransform();
-  pos = a_vertex;
-  
-  pos = gl_ModelViewMatrix * pos;
-  pos.xy = pos.xy + a_impos.xy * (a_radius + u_edge);
-  v_ecpos = pos;
-  pos = gl_ProjectionMatrix * pos;
+    vec4 pos;
 
-  gl_Position = pos; //vec4(pos, 1.0);
+    pos = a_vertex;
 
-  v_edgeratio = (a_radius + u_edge)/a_radius;
-  v_impos = a_impos * v_edgeratio;
-  v_radius = a_radius;
-  v_color = a_color;
+    pos = u_ModelViewMatrix * pos;
+    pos.xy = pos.xy + a_impos.xy * (a_radius + u_edge);
+    v_ecpos = pos;
+    pos = u_ProjectionMatrix * pos;
 
-  //gl_Position = vec4(0,0,0,0);
-  //v_color = vec4(1,1,1,1);
-  // gl_FrontColor = gl_Color;
+    gl_Position = pos;  // vec4(pos, 1.0);
+
+    v_edgeratio = (a_radius + u_edge) / a_radius;
+    v_impos = a_impos * v_edgeratio;
+    v_radius = a_radius;
+    v_color = a_color;
+
+    // gl_Position = vec4(0,0,0,0);
+    // v_color = vec4(1,1,1,1);
+    //  gl_FrontColor = gl_Color;
 }
-

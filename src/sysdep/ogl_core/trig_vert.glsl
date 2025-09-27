@@ -30,14 +30,12 @@ varying float v_fogCoord;
 void main(void)
 {
     // Eye-coordinate position of vertex, needed in various calculations
-    vec4 ecPosition = gl_ModelViewMatrix * aVertex;
-    // vec4 ecPosition = u_ModelViewMatrix * aVertex;
+    // vec4 ecPosition = gl_ModelViewMatrix * aVertex;
+    vec4 ecPosition = u_ModelViewMatrix * aVertex;
 
-    gl_Position = gl_ModelViewProjectionMatrix * aVertex;
-    // gl_Position = u_ProjectionMatrix * ecPosition;
+    gl_Position = u_ProjectionMatrix * ecPosition;
 
     if (enable_lighting) {
-        // vec3 normal = normalize(gl_NormalMatrix * aNormal.xyz);
         vec3 normal = normalize(u_NormalMatrix * aNormal.xyz);
         v_frontColor = flight(normal, ecPosition, aColor);
     } else {

@@ -9,6 +9,9 @@
 // edge rendering
 uniform float u_edge;
 
+uniform mat4 u_ModelViewMatrix;
+uniform mat4 u_ProjectionMatrix;
+
 ////////////////////
 // Vertex attributes
 
@@ -51,8 +54,8 @@ void main()
 {
   //const float u_edge = 0.05;
 
-  vec4 ec_tpos = gl_ModelViewMatrix * vec4(a_vertex, 1.0);
-  vec4 ec_opos = gl_ModelViewMatrix * vec4((a_vertex+a_dir), 1.0);
+  vec4 ec_tpos = u_ModelViewMatrix * vec4(a_vertex, 1.0);
+  vec4 ec_opos = u_ModelViewMatrix * vec4((a_vertex+a_dir), 1.0);
   
   vec4 ec_dir = ec_opos - ec_tpos;
   vec2 n_vwdir = normalize(ec_dir.xy);
@@ -104,7 +107,7 @@ void main()
   v_impos.x *= 1.0 + u_edge/a_radius;
 
   vec4 ec_pos_dsp = ec_tpos + vec4(vert_dsp, 0.0);
-  gl_Position = gl_ProjectionMatrix * ec_pos_dsp;
+  gl_Position = u_ProjectionMatrix * ec_pos_dsp;
 
   v_color = a_color;
   v_ecpos = ec_pos_dsp;
