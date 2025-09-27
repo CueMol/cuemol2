@@ -214,21 +214,29 @@ void OglView::setUpProjMat(int cx, int cy)
     glViewport(0, 0, bcx, bcy);
   }
 
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
+  // Setup projection matrix
 
-  if (!isPerspec()) {
-    glOrtho(-vw*fasp, vw*fasp,
-            -vw, vw, slabnear, slabfar);
-  }
-  else {
-    double vang = qlib::toDegree<double>(::atan(vw/dist))*2.0;
-    //MB_DPRINTLN("fov %f", vang);
-    gluPerspective(vang, fasp, slabnear, slabfar);
+  // glMatrixMode(GL_PROJECTION);
+  // glLoadIdentity();
+  // if (!isPerspec()) {
+  //   glOrtho(-vw*fasp, vw*fasp,
+  //           -vw, vw, slabnear, slabfar);
+  // }
+  // else {
+  //   double vang = oqlib::toDegree<double>(::atan(vw/dist))*2.0;
+  //   //MB_DPRINTLN("fov %f", vang);
+  //   gluPerspective(vang, fasp, slabnear, slabfar);
+  // }
+  // glMatrixMode(GL_MODELVIEW);
+
+  if (isPerspec()) {
+      pdc->loadPerspProj(vw, fasp, slabnear, slabfar, dist);
+  } else {
+      pdc->loadOrthoProj(vw, fasp, slabnear, slabfar);
   }
   
+  
   resetProjChgFlag();
-  glMatrixMode(GL_MODELVIEW);
 }
 
 void OglView::setFogColorImpl(DisplayContext *pdc)
@@ -253,8 +261,10 @@ void OglView::setUpModelMat(int nid)
 {
   DisplayContext *pdc = getDisplayContext();
 
-  glLoadIdentity();
-  glTranslated(0,0,-getViewDist());
+  // glLoadIdentity();
+  pdc->loadIdent();
+  // glTranslated(0,0,-getViewDist());
+  pdc->translate(Vector4D(0,0,-getViewDist()));
 
   double sd = getStereoDist();
 
@@ -263,11 +273,15 @@ void OglView::setUpModelMat(int nid)
     break;
 
   case MM_STEREO_RIGHT:
-    glRotated(-sd,0,1,0);
+      pdc->rotate(qlib::LQuat(qlib::Vector4D(0, 1, 0),
+                              qlib::toRadian(-sd/2.0)));
+      // glRotated(-sd,0,1,0);
     break;
-    
+
   case MM_STEREO_LEFT:
-    glRotated(sd,0,1,0);
+      pdc->rotate(qlib::LQuat(qlib::Vector4D(0, 1, 0),
+                              qlib::toRadian(sd/2.0)));
+      // glRotated(sd,0,1,0);
     break;
     
   default:
@@ -277,7 +291,8 @@ void OglView::setUpModelMat(int nid)
   pdc->rotate(getRotQuat());
 
   const qlib::Vector4D c = getViewCenter();
-  glTranslated(-c.x(), -c.y(), -c.z());
+  // glTranslated(-c.x(), -c.y(), -c.z());
+  pdc->translate(-c);
 }
 
 void OglView::setUpLightColor()

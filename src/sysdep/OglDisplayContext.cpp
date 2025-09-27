@@ -800,6 +800,30 @@ void OglDisplayContext::loadIdent()
   glLoadIdentity();
 }
 
+void OglDisplayContext::loadOrthoProj(float vw, float fasp,
+                                      float slabnear, float slabfar)
+{
+    super_t::loadOrthoProj(vw, fasp, slabnear, slabfar);
+
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    loadMatrix(getProjMat());
+    // glOrtho(-vw*fasp, vw*fasp,
+    //         -vw, vw, slabnear, slabfar);
+    glMatrixMode(GL_MODELVIEW);
+}
+
+void OglDisplayContext::loadPerspProj(float width, float fasp,
+                                      float near, float far, float distance)
+{
+    super_t::loadPerspProj(width, fasp, near, far, distance);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    loadMatrix(getProjMat());
+    glMatrixMode(GL_MODELVIEW);
+}
+
+
 //////////////////////////////////////////////////////////////////
 // Display list impl
 

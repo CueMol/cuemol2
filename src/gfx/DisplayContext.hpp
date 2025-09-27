@@ -68,6 +68,9 @@ namespace gfx {
     float m_fFogEnd;
     ColorPtr m_fogColor;
 
+    /// Proj mat
+    Matrix4D m_projMat;
+
     /// Target view
     qsys::View *m_pTargView;
 
@@ -199,12 +202,21 @@ namespace gfx {
     virtual void color(double r, double g, double b);
     virtual void color(double r, double g, double b, double a);
 
+    // Model matrix
     virtual void rotate(const LQuat &q);
     virtual void scale(const Vector4D &);
     virtual void translate(const Vector4D &);
     virtual void loadIdent();
 
     virtual void setCullFace(bool f=true) {}
+
+    // Projection matrix
+    virtual void loadOrthoProj(float width, float fasp,
+                               float near, float far);
+    virtual void loadPerspProj(float width, float fasp,
+                               float near, float far, float distance);
+
+    Matrix4D getProjMat() const { return m_projMat; }
 
     ////////////////
 

@@ -129,6 +129,74 @@ void DisplayContext::loadIdent()
   loadMatrix(m);
 }
 
+void DisplayContext::loadOrthoProj(float vw, float fasp,
+                                   float near, float far)
+{
+    float left=-vw*fasp;
+    float right=vw*fasp;
+    float bottom=-vw;
+    float top=vw;
+
+  MB_DPRINTLN("LR=%f,%f", left, right);
+  MB_DPRINTLN("BT=%f,%f", bottom, top);
+  MB_DPRINTLN("NF=%f,%f", near, far);
+
+  float r_l = right - left;
+  float t_b = top - bottom;
+  float f_n = far - near;
+  float tx = - (right + left) / (right - left);
+  float ty = - (top + bottom) / (top - bottom);
+  float tz = - (far + near) / (far - near);
+
+  m_projMat.aij(1,1) = 2.0f / r_l;
+  m_projMat.aij(2,1) = 0.0f;
+  m_projMat.aij(3,1) = 0.0f;
+  m_projMat.aij(4,1) = 0.0f;
+
+  m_projMat.aij(1,2) = 0.0f;
+  m_projMat.aij(2,2) = 2.0f / t_b;
+  m_projMat.aij(3,2) = 0.0f;
+  m_projMat.aij(4,2) = 0.0f;
+
+  m_projMat.aij(1,3) = 0.0f;
+  m_projMat.aij(2,3) = 0.0f;
+  m_projMat.aij(3,3) = -2.0f / f_n;
+  m_projMat.aij(4,3) = 0.0f;
+
+  m_projMat.aij(1,4) = tx;
+  m_projMat.aij(2,4) = ty;
+  m_projMat.aij(3,4) = tz;
+  m_projMat.aij(4,4) = 1.0f;
+}
+
+void DisplayContext::loadPerspProj(float width, float fasp,
+                                   float near, float far, float distance)
+{
+    float t = distance/width;
+
+    m_projMat.aij(1,1) = t / fasp;
+    m_projMat.aij(2,1) = 0;
+    m_projMat.aij(3,1) = 0;
+    m_projMat.aij(4,1) = 0;
+    
+    m_projMat.aij(1,2) = 0;
+    m_projMat.aij(2,2) = t;
+    m_projMat.aij(3,2) = 0;
+    m_projMat.aij(4,2) = 0;
+    
+    m_projMat.aij(1,3) = 0;
+    m_projMat.aij(2,3) = 0;
+    m_projMat.aij(3,3) = (far + near) / (near - far);
+    m_projMat.aij(4,3) = -1;
+    
+    m_projMat.aij(1,4) = 0;
+    m_projMat.aij(2,4) = 0;
+    m_projMat.aij(3,4) = (2 * far * near) / (near - far);
+    m_projMat.aij(4,4) = 0;
+}
+
+//////////
+
 void DisplayContext::drawString(const Vector4D &pos,
                                 const qlib::LString &str)
 {
