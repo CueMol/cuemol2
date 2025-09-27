@@ -29,7 +29,6 @@ OcDisplayList::OcDisplayList()
       m_fPrevPosValid(false),
       m_prevCol(0)
 {
-    m_matstack.clear();
     pushMatrix();
     loadIdent();
     m_vertLineWidth = -1.0;
@@ -154,43 +153,6 @@ void OcDisplayList::color(const gfx::ColorPtr &c)
 {
     m_pColor = c;
     m_bSetColor = true;
-}
-
-void OcDisplayList::pushMatrix()
-{
-    if (m_matstack.size() <= 0) {
-        Matrix4D m;
-        m_matstack.push_front(m);
-        return;
-    }
-    const Matrix4D &top = m_matstack.front();
-    m_matstack.push_front(top);
-}
-void OcDisplayList::popMatrix()
-{
-    if (m_matstack.size() <= 1) {
-        LString msg("FATAL ERROR: cannot popMatrix()!!");
-        LOG_DPRINTLN(msg);
-        MB_THROW(qlib::RuntimeException, msg);
-        return;
-    }
-    m_matstack.pop_front();
-}
-void OcDisplayList::multMatrix(const qlib::Matrix4D &mat)
-{
-    Matrix4D top = m_matstack.front();
-    top.matprod(mat);
-    m_matstack.front() = top;
-
-    // check unitarity
-    // checkUnitary();
-}
-void OcDisplayList::loadMatrix(const qlib::Matrix4D &mat)
-{
-    m_matstack.front() = mat;
-
-    // check unitarity
-    // checkUnitary();
 }
 
 void OcDisplayList::setPolygonMode(int id)
@@ -347,9 +309,9 @@ bool OcDisplayList::recordStart()
 
     m_fValid = false;
 
-    m_matstack.clear();
-    pushMatrix();
-    loadIdent();
+    clearMatStack();
+    // pushMatrix();
+    // loadIdent();
 
     return true;
 }

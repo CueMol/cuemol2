@@ -34,10 +34,10 @@ MqoDisplayContext::~MqoDisplayContext()
 
 void MqoDisplayContext::init(qlib::OutStream *pMqoOut)
 {
-  clearMatStack();
+    clearMatStack();
+    // pushMatrix();
+    // loadIdent();
 
-  pushMatrix();
-  loadIdent();
   m_linew = 1.0;
 //  m_color = LColor();
   m_nDrawMode = POV_NONE;

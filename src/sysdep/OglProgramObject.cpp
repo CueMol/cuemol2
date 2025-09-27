@@ -275,29 +275,36 @@ void OglProgramObject::setProgParam(GLenum pname, GLint param)
 
 void OglProgramObject::setMatrix(const LString &name, const qlib::Matrix4D &mat)
 {
-  GLfloat m[16];
+    auto idx = getUniformLocation(name);
+    if (idx < 0) {
+        // uniform undefined
+        //   --> ignore set
+        return;
+    }
 
-  m[0]  = mat.aij(1,1);
-  m[4]  = mat.aij(1,2);
-  m[8]  = mat.aij(1,3);
-  m[12] = mat.aij(1,4);
+    GLfloat m[16];
+    
+    m[0]  = mat.aij(1,1);
+    m[4]  = mat.aij(1,2);
+    m[8]  = mat.aij(1,3);
+    m[12] = mat.aij(1,4);
+    
+    m[1]  = mat.aij(2,1);
+    m[5]  = mat.aij(2,2);
+    m[9]  = mat.aij(2,3);
+    m[13] = mat.aij(2,4);
+    
+    m[2]  = mat.aij(3,1);
+    m[6]  = mat.aij(3,2);
+    m[10] = mat.aij(3,3);
+    m[14] = mat.aij(3,4);
 
-  m[1]  = mat.aij(2,1);
-  m[5]  = mat.aij(2,2);
-  m[9]  = mat.aij(2,3);
-  m[13] = mat.aij(2,4);
+    m[3]  = mat.aij(4,1);
+    m[7]  = mat.aij(4,2);
+    m[11] = mat.aij(4,3);
+    m[15] = mat.aij(4,4);
 
-  m[2]  = mat.aij(3,1);
-  m[6]  = mat.aij(3,2);
-  m[10] = mat.aij(3,3);
-  m[14] = mat.aij(3,4);
-
-  m[3]  = mat.aij(4,1);
-  m[7]  = mat.aij(4,2);
-  m[11] = mat.aij(4,3);
-  m[15] = mat.aij(4,4);
-
-  setMatrix4fv(name, 1, GL_FALSE, m);
+    glUniformMatrix4fv(idx, 1, GL_FALSE, m);
 }
 
 GLint OglProgramObject::getUniformLocation(const LString &name)
@@ -332,5 +339,23 @@ void OglProgramObject::setupFog(gfx::DisplayContext *pdc)
     setUniformF("u_fogColor", fog_r, fog_g, fog_b);
 }
 
+void OglProgramObject::setupMat(gfx::DisplayContext *pdc)
+{
+    // setup model-view matrix
+    auto mvMat = pdc->getModelViewMat();
+    setMatrix("u_ModelViewMatrix", mvMat);
+
+    // setup projection matrix
+    auto prjMat = pdc->getProjMat();
+    setMatrix("u_projMat", prjMat);
+
+    // mvp mat
+    auto mvp = prjMat * mvMat;
+    setMatrix("u_ModelViewProjectionMatrix", mvp);
+
+    // setup normal matrix
+    auto nmMat = mvMat.invert().transpose();
+    setMatrix("u_NormalMatrix", nmMat);
+}
 
 #endif

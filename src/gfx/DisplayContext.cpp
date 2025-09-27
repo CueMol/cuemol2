@@ -24,6 +24,8 @@ DisplayContext::DisplayContext()
   m_lineWidth = -1.0;
   m_lineStipple = 0xFFFF;
   m_bLighting = false;
+
+  m_matstack.push_front(Matrix4D());
 }
 
 bool DisplayContext::isRenderPixmap() const
@@ -54,11 +56,6 @@ void DisplayContext::vertex(double x, double y, double z)
 void DisplayContext::normal(double x, double y, double z)
 {
   normal(Vector4D(x,y,z));
-}
-
-void DisplayContext::rotate(const qlib::LQuat &q)
-{
-  multMatrix(q.toRotMatrix());
 }
 
 void DisplayContext::color(double r, double g, double b, double a)
@@ -112,21 +109,42 @@ void DisplayContext::setStyleNames(const LString &name)
   m_styleNames = name;
 }
 
-
-void DisplayContext::scale(const Vector4D &v)
+void DisplayContext::pushMatrix()
 {
-  multMatrix(Matrix4D::makeScaleMat(v));
+    if (m_matstack.size() <= 0) {
+        m_matstack.push_front(Matrix4D());
+        return;
+    }
+    const Matrix4D &top = m_matstack.front();
+    m_matstack.push_front(top);
 }
 
-void DisplayContext::translate(const Vector4D &v)
+void DisplayContext::popMatrix()
 {
-  multMatrix( Matrix4D::makeTransMat(v) );
+    if (m_matstack.size() <= 1) {
+        LString msg("FATAL ERROR: cannot popMatrix()!!");
+        LOG_DPRINTLN(msg);
+        MB_THROW(qlib::RuntimeException, msg);
+        return;
+    }
+    m_matstack.pop_front();
 }
 
-void DisplayContext::loadIdent()
+void DisplayContext::multMatrix(const qlib::Matrix4D &mat)
 {
-  Matrix4D m;
-  loadMatrix(m);
+    Matrix4D top = m_matstack.front();
+    top.matprod(mat);
+    m_matstack.front() = top;
+
+    // check unitarity
+    // checkUnitary();
+}
+void DisplayContext::loadMatrix(const qlib::Matrix4D &mat)
+{
+    m_matstack.front() = mat;
+
+    // check unitarity
+    // checkUnitary();
 }
 
 void DisplayContext::loadOrthoProj(float vw, float fasp,

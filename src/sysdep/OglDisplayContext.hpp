@@ -97,10 +97,10 @@ namespace sysdep {
 
     virtual void enableDepthTest(bool);
 
-    // virtual void rotate(const qlib::LQuat &q);
-    virtual void scale(const Vector4D &);
-    virtual void translate(const Vector4D &);
-    virtual void loadIdent();
+    // // virtual void rotate(const qlib::LQuat &q);
+    // virtual void scale(const Vector4D &);
+    // virtual void translate(const Vector4D &);
+    // virtual void loadIdent();
 
     void loadOrthoProj(float width, float fasp,
                        float near, float far);

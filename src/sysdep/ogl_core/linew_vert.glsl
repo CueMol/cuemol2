@@ -11,6 +11,9 @@ uniform vec2 screenSize;
 uniform float lineWidth;
 uniform float stippleLen;
 
+uniform mat4 u_ModelViewMatrix;
+uniform mat4 u_ProjectionMatrix
+
 ////////////////////
 // Vertex attributes
 
@@ -41,11 +44,11 @@ varying vec4 v_frontColor;
 
 void main(void)
 {
-    vec4 ecpos1 = gl_ModelViewMatrix * a_vertex1;
-    vec4 clipPos1 = gl_ProjectionMatrix * ecpos1;
+    vec4 ecpos1 = u_ModelViewMatrix * a_vertex1;
+    vec4 clipPos1 = u_ProjectionMatrix * ecpos1;
 
-    vec4 ecpos2 = gl_ModelViewMatrix * a_vertex2;
-    vec4 clipPos2 = gl_ProjectionMatrix * ecpos2;
+    vec4 ecpos2 = u_ModelViewMatrix * a_vertex2;
+    vec4 clipPos2 = u_ProjectionMatrix * ecpos2;
 
     vec2 p1_screen = ((clipPos1.xy / clipPos1.w) * 0.5 + 0.5) * screenSize;
     vec2 p2_screen = ((clipPos2.xy / clipPos2.w) * 0.5 + 0.5) * screenSize;

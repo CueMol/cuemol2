@@ -508,11 +508,14 @@ void OglDisplayContext::end()
 
 void OglDisplayContext::pushMatrix()
 {
-  glPushMatrix();
+    super_t::pushMatrix();
+    glPushMatrix();
 }
 
 void OglDisplayContext::multMatrix(const Matrix4D &mat)
 {
+    super_t::multMatrix(mat);
+
   GLdouble m[16];
 
   m[0]  = mat.aij(1,1);
@@ -540,6 +543,8 @@ void OglDisplayContext::multMatrix(const Matrix4D &mat)
 
 void OglDisplayContext::loadMatrix(const Matrix4D &mat)
 {
+    super_t::loadMatrix(mat);
+
   GLdouble m[16];
 
   m[0]  = mat.aij(1,1);
@@ -567,8 +572,34 @@ void OglDisplayContext::loadMatrix(const Matrix4D &mat)
 
 void OglDisplayContext::popMatrix()
 {
-  glPopMatrix();
+    super_t::popMatrix();
+    glPopMatrix();
 }
+
+// // specialized impl for GL matrix stack
+
+// void OglDisplayContext::translate(const Vector4D &v)
+// {
+//     super_t::multMatrix( Matrix4D::makeTransMat(v) );
+
+//     glTranslated(v.x(), v.y(), v.z());
+// }
+
+// void OglDisplayContext::scale(const Vector4D &v)
+// {
+//     super_t::multMatrix( Matrix4D::makeScaleMat(v) );
+
+//     glScaled(v.x(), v.y(), v.z());
+// }
+
+// void OglDisplayContext::loadIdent()
+// {
+//     super_t::loadMatrix(Matrix4D());
+
+//     glLoadIdentity();
+// }
+
+//////////
 
 void OglDisplayContext::enableDepthTest(bool f)
 {
@@ -782,23 +813,6 @@ void OglDisplayContext::setPolygonMode(int id)
   }  
 }
 
-////////////////////////////////////////////////
-// specialized impl for GL matrix stack
-
-void OglDisplayContext::translate(const Vector4D &v)
-{
-  glTranslated(v.x(), v.y(), v.z());
-}
-
-void OglDisplayContext::scale(const Vector4D &v)
-{
-  glScaled(v.x(), v.y(), v.z());
-}
-
-void OglDisplayContext::loadIdent()
-{
-  glLoadIdentity();
-}
 
 void OglDisplayContext::loadOrthoProj(float vw, float fasp,
                                       float slabnear, float slabfar)

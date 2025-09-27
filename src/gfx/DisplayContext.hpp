@@ -71,6 +71,9 @@ namespace gfx {
     /// Proj mat
     Matrix4D m_projMat;
 
+    /// Model-view matrix stack
+    std::deque<qlib::Matrix4D> m_matstack;
+
     /// Target view
     qsys::View *m_pTargView;
 
@@ -181,16 +184,68 @@ namespace gfx {
     LString getStyleNames() const { return m_styleNames; }
     
     ////////////////
+    // Model-view matrix
 
-    virtual void pushMatrix() =0;
-    virtual void popMatrix() =0;
-    virtual void multMatrix(const Matrix4D &mat) =0;
-    virtual void loadMatrix(const Matrix4D &mat) =0;
+    virtual void pushMatrix();
+    virtual void popMatrix();
+    virtual void multMatrix(const Matrix4D &mat);
+    virtual void loadMatrix(const Matrix4D &mat);
+
+    void rotate(const LQuat &q) {
+        multMatrix(q.toRotMatrix());
+    }
+    void scale(const Vector4D &v) {
+        multMatrix( Matrix4D::makeScaleMat(v) );
+    }
+    void translate(const Vector4D &v) {
+        multMatrix( Matrix4D::makeTransMat(v) );
+    }
+    void loadIdent() {
+        loadMatrix(Matrix4D());
+    }
+
+    void clearMatStack() {
+        m_matstack.clear();
+        m_matstack.push_front(Matrix4D());
+    }
+
+    const Matrix4D &getModelViewMat() const {
+        if (m_matstack.empty()) {
+            MB_THROW(qlib::RuntimeException,
+                     "DisplayContext::getModelViewMat(): matrix stack underflow");
+            // return Matrix4D();
+        } else {
+            return m_matstack.front();
+        }
+    }
+
+    void xform_vec(Vector4D &v) const
+    {
+        const Matrix4D &mtop = getModelViewMat();
+        v.w() = 1.0;
+        mtop.xform4D(v);
+    }
+
+    void xform_norm(Vector4D &v) const
+    {
+        const Matrix4D &mtop = getModelViewMat();
+        v.w() = 0.0;
+        mtop.xform4D(v);
+    }
+
+    // Projection matrix
+    virtual void loadOrthoProj(float width, float fasp,
+                               float near, float far);
+    virtual void loadPerspProj(float width, float fasp,
+                               float near, float far, float distance);
+
+    Matrix4D getProjMat() const { return m_projMat; }
 
     virtual void enableDepthTest(bool) {}
+    virtual void setCullFace(bool f=true) {}
 
     ////////////////
-    // inteface with default implementation
+    // Geometry construction
 
     /// Set current vertex vector by x,y,z (calls vector version)
     virtual void vertex(double x, double y, double z);
@@ -202,21 +257,6 @@ namespace gfx {
     virtual void color(double r, double g, double b);
     virtual void color(double r, double g, double b, double a);
 
-    // Model matrix
-    virtual void rotate(const LQuat &q);
-    virtual void scale(const Vector4D &);
-    virtual void translate(const Vector4D &);
-    virtual void loadIdent();
-
-    virtual void setCullFace(bool f=true) {}
-
-    // Projection matrix
-    virtual void loadOrthoProj(float width, float fasp,
-                               float near, float far);
-    virtual void loadPerspProj(float width, float fasp,
-                               float near, float far, float distance);
-
-    Matrix4D getProjMat() const { return m_projMat; }
 
     ////////////////
 

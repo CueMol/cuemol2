@@ -27,15 +27,12 @@ private:
     //////////
     // lines
 
-    // float m_lineWidth;
-
     struct LineDrawAttr
     {
         qlib::Vector4D pos;
         quint32 cc;
     };
-    // using LineDrawArray = gfx::DrawAttrArray<LineDrawAttr>;
-    // LineDrawArray *m_pLineArray;
+
     GLSLLineHelper *m_pGlslLine;
 
     using LineDrawBuf = std::deque<LineDrawAttr>;
@@ -88,9 +85,6 @@ private:
 
     bool m_fValid;
 
-    /// matrix stack
-    std::deque<qlib::Matrix4D> m_matstack;
-
     /// current color
     gfx::ColorPtr m_pColor;
 
@@ -114,20 +108,6 @@ private:
     static const int DRAWMODE_TRIGS = 5;
     static const int DRAWMODE_TRIGSTRIP = 6;
     static const int DRAWMODE_TRIGFAN = 7;
-
-    void xform_vec(Vector4D &v) const
-    {
-        const Matrix4D &mtop = m_matstack.front();
-        v.w() = 1.0;
-        mtop.xform4D(v);
-    }
-
-    void xform_norm(Vector4D &v) const
-    {
-        const Matrix4D &mtop = m_matstack.front();
-        v.w() = 0.0;
-        mtop.xform4D(v);
-    }
 
     /// Draw a single line segment from v1 to v2 to the output
     /// v1 and v2 should be transformed by matrix stack
@@ -177,10 +157,10 @@ public:
     virtual void normal(const qlib::Vector4D &);
     virtual void color(const gfx::ColorPtr &c);
 
-    virtual void pushMatrix();
-    virtual void popMatrix();
-    virtual void multMatrix(const qlib::Matrix4D &mat);
-    virtual void loadMatrix(const qlib::Matrix4D &mat);
+    // virtual void pushMatrix();
+    // virtual void popMatrix();
+    // virtual void multMatrix(const qlib::Matrix4D &mat);
+    // virtual void loadMatrix(const qlib::Matrix4D &mat);
 
     virtual void startPoints();
     virtual void startLines();

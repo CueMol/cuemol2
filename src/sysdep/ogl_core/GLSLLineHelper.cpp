@@ -170,12 +170,13 @@ void GLSLLineHelper::draw(gfx::DisplayContext *pdc)
         float r = 0.5, g = 0.5, b = 0.5;
         pdc->getDevRGBColor(pdc->getColor(), r, g, b);
         m_pPO->setUniformF("u_color", r, g, b, 1.0);
-        LOG_DPRINTLN("*** UseUniformColor RGB=%f %f %f pdc=%p", r, g, b, pdc);
+        // MB_DPRINTLN("*** UseUniformColor RGB=%f %f %f pdc=%p", r, g, b, pdc);
     } else {
         m_pPO->setUniform("use_u_color", false);
     }
 
     m_pPO->setupFog(pdc);
+    m_pPO->setupMat(pdc);
 
     m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
     m_pPO->setUniformF("lineWidth", linew);
