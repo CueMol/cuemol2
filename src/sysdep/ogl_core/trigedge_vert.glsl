@@ -2,6 +2,8 @@
 //
 //  Default vertex shader for OpenGL
 //
+#define attribute in
+#define varying out
 
 #include "fog_inc.glsl"
 

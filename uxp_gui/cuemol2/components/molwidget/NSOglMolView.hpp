@@ -137,30 +137,31 @@ static int sForceMSAA = 0;
 {
   NSMutableArray* attributes = [NSMutableArray array];
   
-  // NSOpenGLPixelFormatAttribute attributes [] = {
-  //   NSOpenGLPFAWindow,
-  //   NSOpenGLPFADoubleBuffer,	// double buffered
-  //   NSOpenGLPFADepthSize,
-  //   (NSOpenGLPixelFormatAttribute) 16, // 16 bit depth buffer
-  //   // NSOpenGLPFAMultisample,
-  //   // NSOpenGLPFASampleBuffers, 1,
-  //   // NSOpenGLPFASamples, 4,
-  //   (NSOpenGLPixelFormatAttribute) 0
-  // };
-  // return [[[NSOpenGLPixelFormat alloc] initWithAttributes:attributes] autorelease];
-
   // Basic attributes
-  [attributes addObject:@(NSOpenGLPFAWindow)];
   [attributes addObject:@(NSOpenGLPFADoubleBuffer)];
-  [attributes addObject:@(NSOpenGLPFADepthSize)];
-  [attributes addObject:@(16)]; // 16 bit depth buffer
-  
+
   // Color buffer
   [attributes addObject:@(NSOpenGLPFAColorSize)];
   [attributes addObject:@(24)]; // 24-bit color
   [attributes addObject:@(NSOpenGLPFAAlphaSize)];
   [attributes addObject:@(8)]; // 8-bit alpha
-  
+
+  [attributes addObject:@(NSOpenGLPFADepthSize)];
+  // [attributes addObject:@(16)]; // 16 bit depth buffer
+  [attributes addObject:@(24)]; // 24 bit depth buffer
+
+  // [attributes addObject:@(NSOpenGLPFAStencilSize)];
+  // [attributes addObject:@(8)]; // 8-bit stencil
+
+  [attributes addObject:@(NSOpenGLPFAAccelerated)];
+  [attributes addObject:@(NSOpenGLPFANoRecovery)];
+
+  // Profile
+  [attributes addObject:@(NSOpenGLPFAOpenGLProfile)];
+  [attributes addObject:@(NSOpenGLProfileVersion4_1Core)];
+  // [attributes addObject:@(NSOpenGLProfileVersion3_2Core)];
+  // [attributes addObject:@(NSOpenGLProfileVersionLegacy)];
+
   // Enable MSAA
   if (useMSAA && samples > 0) {
     [attributes addObject:@(NSOpenGLPFAMultisample)];
@@ -169,12 +170,6 @@ static int sForceMSAA = 0;
     [attributes addObject:@(NSOpenGLPFASamples)];
     [attributes addObject:@(samples)];
   }
-  
-  // Profile
-  [attributes addObject:@(NSOpenGLPFAOpenGLProfile)];
-  // [attributes addObject:@(NSOpenGLProfileVersion4_1Core)];
-  // [attributes addObject:@(NSOpenGLProfileVersion3_2Core)];
-  [attributes addObject:@(NSOpenGLProfileVersionLegacy)];
 
   // terminate attribute list
   [attributes addObject:@(0)];
@@ -193,23 +188,6 @@ static int sForceMSAA = 0;
   free(attributeArray);
   
   return [pixelFormat autorelease];
-
-    // NSOpenGLPixelFormatAttribute attrs[] = {
-    //     NSOpenGLPFADoubleBuffer,
-    //     NSOpenGLPFADepthSize, 24,
-    //     NSOpenGLPFAStencilSize, 8,
-    //     NSOpenGLPFAAccelerated,
-    //     NSOpenGLPFANoRecovery,
-    //     NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion4_1Core,
-    //     NSOpenGLPFAMultisample,
-    //     NSOpenGLPFASampleBuffers, 1,
-    //     NSOpenGLPFASamples, 4,
-    //     0 
-    // };
-    
-    // NSOpenGLPixelFormat *pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
-    // LOG_DPRINTLN("NSOglMolView: pixelFormatWithMSAA: %p", pixelFormat);
-    // return [pixelFormat autorelease];
 }
 
 

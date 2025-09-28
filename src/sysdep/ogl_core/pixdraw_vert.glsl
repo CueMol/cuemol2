@@ -2,7 +2,8 @@
 //
 //  Pixel drawing shader for OpenGL
 //
-// #version 120
+#define attribute in
+#define varying out
 
 #include "fog_inc.glsl"
 

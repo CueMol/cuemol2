@@ -1,151 +1,161 @@
+// -*-Mode: C++;-*-
+//
+//  OpenGL display context interface
+//
+
 #pragma once
 
+#include <sysdep/sysdep.hpp>
 #include <gfx/DisplayContext.hpp>
 
-// namespace gfx {
-// class ProgramObject;
-// }
+namespace gfx {
+class DrawElemPix;
+class AbstDrawAttrs;
+}  // namespace gfx
 
 namespace sysdep {
 
-class EsView;
 class OglProgramObject;
+class OcPixDraw;
 
-class OcDisplayContext : public gfx::DisplayContext
+using gfx::AbstractColor;
+using gfx::ColorPtr;
+
+class SYSDEP_API OcDisplayContext : public gfx::DisplayContext
 {
 private:
     typedef gfx::DisplayContext super_t;
 
-    /// UID of the target view
-    qlib::uid_t m_nViewID;
+private:
+    Vector4D m_fcolor;
 
-    /// UID of the target scene
-    qlib::uid_t m_nSceneID;
+    int m_nDetail;
+    void *m_pGluData;
 
-    /// Matrix stack
-    std::deque<qlib::Matrix4D> m_matstack;
+    /// Name buffer emulation
+    std::deque<int> m_namebuf;
 
-    qlib::LString m_sectionName;
+    /// Use shader alpha
+    bool m_bUseShaderAlpha;
+
+    OcPixDraw *m_pOcPixDraw;
 
 public:
-    OcDisplayContext() : m_nViewID(qlib::invalid_uid), m_nSceneID(qlib::invalid_uid) {}
+    OcDisplayContext();
     virtual ~OcDisplayContext();
 
-    inline qlib::uid_t getViewID() const
-    {
-        return m_nViewID;
-    }
-    inline qlib::uid_t getSceneID() const
-    {
-        return m_nSceneID;
-    }
-
-    inline qlib::LString getSectionName() const
-    {
-        return m_sectionName;
-    }
-
-    virtual void setTargetView(qsys::View *pView);
-
-    virtual void startSection(const qlib::LString &section_name);
-
-    virtual void endSection();
-
     //////////
-    // Display list impl
 
-    virtual gfx::DisplayContext *createDisplayList();
-    virtual bool canCreateDL() const;
-    virtual void callDisplayList(DisplayContext *pdl);
-    virtual bool isCompatibleDL(DisplayContext *pdl) const;
-
-    //
-
-    virtual bool isFile() const;
-
-    bool isDrawElemSupported() const
+    bool useShaderAlpha() const
     {
         return true;
     }
-
-    void drawElem(const AbstDrawElem &ade);
-    void drawElemAttrs(const gfx::AbstDrawAttrs &ada);
-
-    void OglDisplayContext::setMaterial(const LString &name)
+    void setUseShaderAlpha(bool)
     {
-        super_t::setMaterial(name);
-        setMaterImpl(name);
-    }
-
-    void setLineWidth(double lw) {
-    }
-
-    void setLineStipple(unsigned short pattern) {
-    }
-
-    void OglDisplayContext::setPointSize(double size) {
-    }
-
-    void enableDepthTest(bool f) {
-    }
-
-    void OglDisplayContext::setLighting(bool f);
-
-    void OglDisplayContext::setCullFace(bool f/*=true*/);
-
-    //////////
-    // 
-
-    virtual void pushMatrix();
-    virtual void popMatrix();
-    virtual void multMatrix(const qlib::Matrix4D &mat);
-    virtual void loadMatrix(const qlib::Matrix4D &mat);
-
-    //////////
-    // noimpl
-
-    virtual void vertex(const qlib::Vector4D &);
-    virtual void normal(const qlib::Vector4D &);
-    virtual void color(const gfx::ColorPtr &c);
-
-    virtual void setPolygonMode(int id);
-    virtual void startPoints();
-    virtual void startPolygon();
-    virtual void startLines();
-    virtual void startLineStrip();
-    virtual void startTriangles();
-    virtual void startTriangleStrip();
-    virtual void startTriangleFan();
-    virtual void startQuadStrip();
-    virtual void startQuads();
-    virtual void end();
-
-    //
-
-    void clearMatStack()
-    {
-        m_matstack.erase(m_matstack.begin(), m_matstack.end());
-    }
-
-    void xform_vec(Vector4D &v) const
-    {
-        const Matrix4D &mtop = m_matstack.front();
-        v.w() = 1.0;
-        mtop.xform4D(v);
-    }
-
-    void xform_norm(Vector4D &v) const
-    {
-        const Matrix4D &mtop = m_matstack.front();
-        v.w() = 0.0;
-        mtop.xform4D(v);
     }
 
 public:
+    virtual void setTargetView(qsys::View *pView);
+
+    // OpenGL-level initialization
+    virtual void init();
+
+    virtual bool isFile() const;
+
+    /// Returns whether this context support VA/VBO (DrawElem()) method
+    virtual bool isDrawElemSupported() const;
+
+    // // shader control
+    // virtual void startSection(const LString &section_name);
+    // virtual void endSection();
+
+    // virtual void startEdgeSection();
+    // virtual void endEdgeSection();
+
+    ////////////////
+
+    virtual void vertex(const Vector4D &) { MB_ASSERT(false); }
+    virtual void normal(const Vector4D &) { MB_ASSERT(false); }
+
+    virtual void enableDepthTest(bool);
+
+    void loadOrthoProj(float width, float fasp, float near, float far);
+    void loadPerspProj(float width, float fasp, float near, float far, float distance);
+
+    ////////////////
+
+    virtual void setCullFace(bool f = true);
+
+    ////////////////
+    // image/text drawing
+
+    virtual void drawString(const Vector4D &pos, const qlib::LString &str);
+    virtual void drawPixels(const Vector4D &pos, const gfx::PixelBuffer &data,
+                            const gfx::ColorPtr &col);
+
+    ////////////////
+
+    virtual void setPolygonMode(int id) { }
+
+    virtual void startPoints() { MB_ASSERT(false); }
+    virtual void startPolygon() { MB_ASSERT(false); }
+    virtual void startLines() { MB_ASSERT(false); }
+    virtual void startLineStrip() { MB_ASSERT(false); }
+    virtual void startTriangles() { MB_ASSERT(false); }
+    virtual void startTriangleStrip() { MB_ASSERT(false); }
+    virtual void startTriangleFan() { MB_ASSERT(false); }
+    virtual void startQuadStrip() { MB_ASSERT(false); }
+    virtual void startQuads() { MB_ASSERT(false); }
+    virtual void end() { MB_ASSERT(false); }
 
     ///////////////////////////////
-    // Shader support
 
+    // /// Display unit sphere
+    // virtual void sphere();
+
+    // virtual void sphere(double r, const Vector4D &vec);
+
+    // /// Display cone (and cylinder)
+    // virtual void cone(double r1, double r2, const Vector4D &pos1, const Vector4D &pos2,
+    //                   bool bCap);
+
+    // virtual void setDetail(int n);
+    // virtual int getDetail() const;
+
+    virtual void drawMesh(const gfx::Mesh &l);
+
+    virtual void drawElem(const gfx::AbstDrawElem &l);
+
+    ///////////////////////////////
+    // Display List support
+
+    virtual gfx::DisplayContext *createDisplayList();
+    virtual bool canCreateDL() const;
+
+    virtual void callDisplayList(DisplayContext *pdl);
+    virtual bool isCompatibleDL(DisplayContext *pdl) const;
+
+    virtual bool isDisplayList() const;
+
+    virtual bool recordStart();
+    virtual void recordEnd();
+
+    virtual void setMaterial(const LString &name);
+
+    ///////////////////////////////
+    // OpenGL VBO support
+
+    /// draw element (vertex array version)
+    // void drawElemVA(const gfx::DrawElem &l);
+
+    // void drawElemPix(const gfx::DrawElemPix &de);
+
+    void drawElemAttrs(const gfx::AbstDrawAttrs &ada);
+
+    ///////////////////////////////
+    // OpenGL SL support
+
+public:
     /// Create the GLSL program object.
     /// If program object with the same name already exists, returns it.
     /// @param name name of the program objec.
@@ -157,15 +167,12 @@ public:
     /// @return program object having the specified name.
     OglProgramObject *getProgramObject(const LString &name);
 
-    // virtual ProgramObject *createProgObjImpl() = 0;
+private:
+    /// Current material name
+    LString m_curMater;
 
-    // Impl: DisplayList ??
-    // void OglDisplayContext::drawPixels(const Vector4D &pos,
-    //                                    const gfx::PixelBuffer &data,
-    //                                    const gfx::ColorPtr &acol);
-
-    // void OglDisplayContext::drawString(const Vector4D &pos, const qlib::LString &str);
-
+    /// Set current material name
+    void setMaterImpl(const LString &name);
 };
 
 }  // namespace sysdep

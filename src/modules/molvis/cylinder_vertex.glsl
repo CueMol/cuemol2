@@ -2,6 +2,8 @@
 //
 //  vertex shader for cylinders
 //
+#define attribute in
+#define varying out
 
 ////////////////////
 // Uniform variables

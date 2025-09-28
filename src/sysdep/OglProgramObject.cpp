@@ -57,6 +57,8 @@ void OglShaderObject::loadFile(const LString& filename)
     m_source += sbuf;
   }
 
+  m_source = "#version 410 core\n\n" + m_source;
+
   // set shader source
   const char *s = m_source.c_str();
   int l = m_source.length();
@@ -235,8 +237,6 @@ bool OglProgramObject::link()
 void OglProgramObject::use()
 {
   CLR_GLERROR();
-
-  //glUseProgramObjectARB(m_hPO);
   glUseProgram(m_hPO);
   CHK_GLERROR("PO.use");
 }
@@ -343,7 +343,7 @@ GLint OglProgramObject::getUniformLocation(const LString &name)
     
     GLint ul = glGetUniformLocation(m_hPO, name.c_str());
     if (ul == -1) {
-        MB_DPRINTLN("Cannot find uniform location: %s", name.c_str());
+        MB_DPRINTLN("OglProgramObject> Cannot find uniform location: %s (ignored)", name.c_str());
         return -1;
     }
     

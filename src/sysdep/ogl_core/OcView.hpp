@@ -1,3 +1,4 @@
+// -*-Mode: C++;-*-
 //
 // OcView.hpp
 // View class for OpenGL core profile
@@ -5,29 +6,22 @@
 
 #pragma once
 
-#include "sysdep.hpp"
+#include <sysdep/sysdep.hpp>
 
 #include <qsys/qsys.hpp>
 #include <qsys/View.hpp>
-#include <qlib/MatrixND.hpp>
-#include <qsys/MouseEventHandler.hpp>
+#include <gfx/Hittest.hpp>
 
 namespace sysdep {
 
-using Matrix4F = qlib::MatrixND<4, float>;
-class OcDisplayContext;
-
-class OcView : public View
+class SYSDEP_API OcView : public qsys::View
 {
 protected:
-    /// Model matrix
-    Matrix4F m_modelMat;
+    bool m_bInitOK;
 
-    /// Projection matrix
-    Matrix4F m_projMat;
+    void *m_pqua;
 
-    /// Viewport size
-    int m_bcx, m_bcy;
+    bool m_bUseGlShader;
 
 public:
     OcView();
@@ -39,33 +33,68 @@ public:
     //////////
 
 public:
+    virtual LString toString() const;
+
+    void setup();
+
+    ///////////////////////////////
+
+    /// Setup the light source color
+    void setUpLightColor();
+
     /// Setup the projection matrix for stereo (View interface)
     virtual void setUpModelMat(int nid);
 
     /// Setup projection matrix (View interface)
     virtual void setUpProjMat(int w, int h);
 
-    void onMouseDown(double clientX, double clientY, double screenX, double screenY,
-                     int modif);
-    void onMouseUp(double clientX, double clientY, double screenX, double screenY,
-                   int modif);
-    void onMouseMove(double clientX, double clientY, double screenX, double screenY,
-                     int modif);
+    /// Draw current scene
+    virtual void drawScene();
 
-    //////////
+    /// Clean-up the drawing display with the current bg color
+    virtual void clear();
+
+    ////////////////////////////////////////////////
+    // Hit test operations
+
+private:
+    gfx::HitData m_hitdata;
+
+    /// Hit-test implementation
+    /// @param pdc display context attached to the hittest buffer
+    /// @parm 4D vector containing: (screen X, screen Y, X-hit precision, Y-hit
+    /// precision)
+    /// @fGetAll If true, all of the hit elements are returned.
+    ///   Otherwise, only the nearest hit is returned.
+    /// @far_factor factor of far slab limitation (1.0 for the same as display)
+    bool hitTestImpl(gfx::DisplayContext *pdc, const Vector4D &parm, bool fGetAll,
+                     double far_factor);
+
+public:
+    virtual LString hitTest(int x, int y);
+
+    virtual LString hitTestRect(int x, int y, int w, int h, bool bNr);
+
+    ////////////////////////////////////////////////
+    // Framebuffer operations
+
+    /// Create a new off-screen view compatible with this view
+    virtual View *createOffScreenView(int w, int h, int aa_depth);
+
+    virtual void readPixels(int x, int y, int width, int height, char *pbuf,
+                            int nbufsize, int ncomp);
+
+    ////////////////////////////////////////////////
+    // implementation
+
+    /// set GL Shader flag (only valid before calling setup())
+    void setUseGlShader(bool f)
+    {
+        m_bUseGlShader = f;
+    }
 
 protected:
-    static const int DME_MOUSE_DOWN = 0;
-    static const int DME_MOUSE_MOVE = 1;
-    static const int DME_MOUSE_UP = 2;
-    static const int DME_WHEEL = 3;
-    static const int DME_DBCHK_TIMEUP = 4;
-
-    MouseEventHandler m_meh;
-
-    void setupInDevEvent(double clientX, double clientY, double screenX, double screenY,
-                         int modif, InDevEvent &ev);
-    void dispatchMouseEvent(int nType, InDevEvent &ev);
+    void setFogColorImpl(gfx::DisplayContext *pdc = nullptr);
 };
 
 }  // namespace sysdep

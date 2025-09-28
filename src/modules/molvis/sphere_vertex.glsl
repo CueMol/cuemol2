@@ -2,6 +2,8 @@
 //
 //  vertex shader for spheres
 //
+#define attribute in
+#define varying out
 
 ////////////////////
 // Uniform variables

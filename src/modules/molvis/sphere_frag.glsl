@@ -2,6 +2,7 @@
 //
 //  fragment shader for spheres
 //
+#define varying in
 
 #include <lighting_inc.glsl>
 #include <fog_inc.glsl>
@@ -30,6 +31,8 @@ varying vec2 v_impos;
 varying vec4 v_ecpos;
 varying float v_radius;
 varying float v_edgeratio;
+
+out vec4 o_FragColor;
 
 void main()
 {
@@ -90,5 +93,5 @@ void main()
 
     // fog calculation
     float fogz = ffog(ecpos.z);
-    gl_FragColor = fragFogColor(color, frag_alpha, fogz);
+    o_FragColor = fragFogColor(color, frag_alpha, fogz);
 }

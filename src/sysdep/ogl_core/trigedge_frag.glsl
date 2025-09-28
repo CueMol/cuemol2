@@ -2,6 +2,7 @@
 //
 //  triangle edge fragment shader for OpenGL
 //
+#define varying in
 
 #include "fog_inc.glsl"
 
@@ -16,7 +17,9 @@ uniform float frag_alpha;
 varying vec4 v_frontColor;
 varying float v_fogCoord;
 
+out vec4 o_FragColor;
+
 void main(void)
 {
-    gl_FragColor = fragFogColor(v_frontColor, frag_alpha, v_fogCoord);
+    o_FragColor = fragFogColor(v_frontColor, frag_alpha, v_fogCoord);
 }

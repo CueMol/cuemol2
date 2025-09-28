@@ -14,6 +14,7 @@
 namespace sysdep {
 
 class OglDisplayContext;
+class OcDisplayContext;
 class OglProgramObject;
 class GLSLLineHelper;
 
@@ -188,7 +189,8 @@ public:
 
     virtual void drawMesh(const gfx::Mesh &mesh);
 
-    void callDisplayListImpl(OglDisplayContext *pdc);
+    // void callDisplayListImpl(OglDisplayContext *pdc);
+    void callDisplayListImpl(gfx::DisplayContext *pdc);
 
 private:
     void drawTrigArray(gfx::DisplayContext *pdc);

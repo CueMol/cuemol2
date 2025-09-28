@@ -2,6 +2,8 @@
 //
 //  Triangle vertex shader for OpenGL
 //
+#define attribute in
+#define varying out
 
 #include "lighting_inc.glsl"
 #include "fog_inc.glsl"

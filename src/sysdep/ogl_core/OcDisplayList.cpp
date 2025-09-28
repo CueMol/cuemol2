@@ -6,7 +6,8 @@
 #include <common.h>
 
 #include "OcDisplayList.hpp"
-#include "OglDisplayContext.hpp"
+// #include "OglDisplayContext.hpp"
+#include "OcDisplayContext.hpp"
 #include "OglProgramObject.hpp"
 #include "GLSLLineHelper.hpp"
 #include "ShaderSetupHelper.hpp"
@@ -592,7 +593,8 @@ bool OcDisplayList::isDisplayList() const
     return true;
 }
 
-void OcDisplayList::callDisplayListImpl(OglDisplayContext *pdc)
+// void OcDisplayList::callDisplayListImpl(OglDisplayContext *pdc)
+void OcDisplayList::callDisplayListImpl(gfx::DisplayContext *pdc)
 {
     // Lines
     if (m_pGlslLine != nullptr) {

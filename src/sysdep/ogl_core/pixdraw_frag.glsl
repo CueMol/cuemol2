@@ -2,8 +2,8 @@
 //
 //  Pixel drawing shader for OpenGL
 //
+#define varying in
 
-// #version 120
 #include "fog_inc.glsl"
 
 ////////////////////
@@ -13,28 +13,28 @@ uniform vec3 u_colorBias;
 // uniform float u_alphaThreshold;
 uniform float frag_alpha;
 
-// // fog
-// uniform float u_fogEnd;
-// uniform float u_fogScale;
-// uniform vec3 u_fogColor;
-
 ////////////////////
 // Varying variables
 
 varying vec2 v_texCoord;
 varying float v_fogCoord;
 
+out vec4 o_FragColor;
+
 void main()
 {
+    o_FragColor = vec4(1.0, 0.0, 1.0, 1.0); // debug
+    return;
+
     float alphaThreshold = 0.1;
 
-    float alpha = texture2D(u_texture, v_texCoord).a;
-    // alpha *= frag_alpha;
+    // float alpha = texture2D(u_texture, v_texCoord).a;
+    float alpha = texture(u_texture, v_texCoord).a;
 
     // Alpha test
     if (alpha <= alphaThreshold) {
         discard;
     }
 
-    gl_FragColor = fragFogColor(vec4(u_colorBias, alpha), frag_alpha, v_fogCoord);
+    o_FragColor = fragFogColor(vec4(u_colorBias, alpha), frag_alpha, v_fogCoord);
 }

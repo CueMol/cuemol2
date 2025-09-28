@@ -6,31 +6,23 @@
 #include <common.h>
 
 #include "OglProgramObject.hpp"
+#include "ogl_core/OcDisplayContext.hpp"
 #include "ShaderSetupHelper.hpp"
 
 namespace sysdep {
 
-// OglDisplayContext *ShaderSetupHelper::getContext()
-// {
-//     OglDisplayContext *pOglDC = NULL;
-//     qsys::ScenePtr pScene = getTargetScene();
-//     qsys::Scene::ViewIter vi = pScene->beginView();
-//     qsys::Scene::ViewIter vie = pScene->endView();
-//     for (; vi != vie; ++vi) {
-//         qsys::ViewPtr pView = vi->second;
-//         gfx::DisplayContext *pDC = pView->getDisplayContext();
-//         // pDC->setCurrent();
-//         pOglDC = dynamic_cast<sysdep::OglDisplayContext *>(pDC);
-//         if (pOglDC != NULL) break;
-//     }
-//     return pOglDC;
-// }
+ShaderSetupHelper::ShaderSetupHelper(gfx::DisplayContext *pCtxt)
+    : m_pCtxt(dynamic_cast<DisplayContextType *>(pCtxt))
+{
+}
+
+ShaderSetupHelper::~ShaderSetupHelper() {}
 
 OglProgramObject *ShaderSetupHelper::createProgObj(const LString &name,
-                                                       const LString &vert_path,
-                                                       const LString &frag_path)
+                                                   const LString &vert_path,
+                                                   const LString &frag_path)
 {
-    OglDisplayContext *pOglDC = getContext();
+    auto *pOglDC = getContext();
 
     if (pOglDC == NULL) return NULL;
 
@@ -61,7 +53,7 @@ OglProgramObject *ShaderSetupHelper::createProgObj(
     const LString &name, const LString &vert_path, const LString &frag_path,
     const LString &geom_path, GLint in_type, GLint out_type, GLint out_count)
 {
-    OglDisplayContext *pOglDC = getContext();
+    auto *pOglDC = getContext();
 
     if (pOglDC == NULL) return NULL;
 

@@ -84,6 +84,8 @@ bool OcPixDraw::initShader(gfx::DisplayContext *pdc)
     // setup attributes
     m_nVertexLoc = m_pPO->getAttribLocation("a_vertex");
     m_nTexCoordLoc = m_pPO->getAttribLocation("a_texCoord");
+    MB_DPRINTLN("OcPixdraw> a_vertex loc=%d, a_texCoord loc=%d", m_nVertexLoc,
+                m_nTexCoordLoc);
 
     alloc();
 
@@ -106,6 +108,8 @@ void OcPixDraw::setupAttrs()
                      offsetof(Elem, x));
     data.setAttrInfo(1, m_nTexCoordLoc, 2, qlib::type_consts::QTC_FLOAT32,
                      offsetof(Elem, tx));
+
+    MB_DPRINTLN("OcPixdraw> setup vertex attributes OK");
 }
 
 void OcPixDraw::alloc()
@@ -130,6 +134,8 @@ void OcPixDraw::alloc()
     data.at(3) = {
         1.0f, 0.0f, 1.0f, 0.0f  // Bottom-right
     };
+
+    MB_DPRINTLN("OcPixdraw> allocated draw array");
 }
 
 bool OcPixDraw::createDrawElem(gfx::DisplayContext *pdc,const gfx::PixelBuffer &pixbuf)

@@ -13,8 +13,9 @@ SET(SYSDEP_SRCS
   # core profile
   ogl_core/OcDisplayList.cpp
   ogl_core/OcPixDraw.cpp
-  # ogl_core/OcDisplayContext.cpp
+  ogl_core/OcDisplayContext.cpp
   ogl_core/GLSLLineHelper.cpp
+  ogl_core/OcView.cpp
 )
 
 SET(SYSDEP_HDRS
@@ -30,6 +31,8 @@ OglView.hpp
 OglViewCap.hpp
 TouchEventHandler.hpp
 sysdep.hpp
+ogl_core/OcView.hpp
+ogl_core/OcDisplayContext.hpp
 )
 
 if (WIN32)

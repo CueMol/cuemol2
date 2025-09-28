@@ -2,6 +2,7 @@
 //
 //  Default fragment shader for OpenGL
 //
+#define varying in
 
 #include "fog_inc.glsl"
 
@@ -16,6 +17,8 @@ uniform bool use_u_color;
 varying float v_length;
 varying vec4 v_frontColor;
 varying float v_fogCoord;
+
+out vec4 o_FragColor;
 
 void main(void)
 {
@@ -34,5 +37,5 @@ void main(void)
         color = v_frontColor;
     }
 
-    gl_FragColor = fragFogColor(color, frag_alpha, v_fogCoord);
+    o_FragColor = fragFogColor(color, frag_alpha, v_fogCoord);
 }

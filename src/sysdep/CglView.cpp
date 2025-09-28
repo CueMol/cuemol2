@@ -65,7 +65,7 @@ bool CglView::attach(void *pnsctxt, CGLContextObj ctx)
   // OK
   m_pCtxt = pCtxt;
 
-  OglView::setup();
+  super_t::setup();
 
   m_bInitOK = true;
   MB_DPRINTLN("CglView::attach() OK.");

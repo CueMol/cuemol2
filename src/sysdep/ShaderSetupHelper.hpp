@@ -13,52 +13,20 @@
 namespace sysdep {
 
 class OglDisplayContext;
+class OcDisplayContext;
 
-// template <class _ClientType>
-// class ContextGetter
-// {
-// private:
-//     _ClientType *m_pCli;
-
-// public:
-//     ContextGetter(_ClientType *pCli) : m_pCli(pCli) {}
-
-//     qsys::ScenePtr getTargetScene() const
-//     {
-//         return m_pCli->getScene();
-//     }
-
-//     OglDisplayContext *getContext()
-//     {
-//         OglDisplayContext *pOglDC = NULL;
-//         qsys::ScenePtr pScene = getTargetScene();
-//         qsys::Scene::ViewIter vi = pScene->beginView();
-//         qsys::Scene::ViewIter vie = pScene->endView();
-//         for (; vi != vie; ++vi) {
-//             qsys::ViewPtr pView = vi->second;
-//             gfx::DisplayContext *pDC = pView->getDisplayContext();
-//             // pDC->setCurrent();
-//             pOglDC = dynamic_cast<sysdep::OglDisplayContext *>(pDC);
-//             if (pOglDC != NULL) break;
-//         }
-//         return pOglDC;
-//     }
-//};
-
-//////////
+// using DisplayContextType = OglDisplayContext;
+using DisplayContextType = OcDisplayContext;
 
 class SYSDEP_API ShaderSetupHelper
 {
 private:
-    OglDisplayContext *m_pCtxt;
+    DisplayContextType *m_pCtxt;
 
 public:
-    ShaderSetupHelper(gfx::DisplayContext *pCtxt)
-        : m_pCtxt(dynamic_cast<OglDisplayContext *>(pCtxt))
-    {
-    }
+    ShaderSetupHelper(gfx::DisplayContext *pCtxt);
 
-    ~ShaderSetupHelper() {}
+    ~ShaderSetupHelper();
 
     inline bool checkEnvVS() const
     {
@@ -76,7 +44,7 @@ public:
         return true;
     }
 
-    inline OglDisplayContext *getContext()
+    inline DisplayContextType *getContext()
     {
         // TODO: impl
         return m_pCtxt;

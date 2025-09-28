@@ -12,8 +12,8 @@ vec4 Ambient;
 vec4 Diffuse;
 vec4 Specular;
 
+#if 0
 // void DirectionalLight(in int i, in vec3 normal)
-
 void DirectionalLight(in vec3 normal)
 {
     float nDotVP;  // normal . light direction
@@ -57,6 +57,7 @@ vec4 flight(in vec3 normal, in vec4 ecPosition, in vec4 a_color)
     color = clamp(color, 0.0, 1.0);
     return color;
 }
+#endif
 
 //////////
 // simple lighting version

@@ -2,6 +2,7 @@
 //
 //  fragment shader for cylinders
 //
+#define varying in
 
 #include <lighting_inc.glsl>
 #include <fog_inc.glsl>
@@ -38,6 +39,8 @@ varying vec2 v_normadj;
 varying mat2 v_normmat;
 // varying vec2 v_vwdir;
 
+out vec4 o_FragColor;
+
 void main()
 {
     float adj_cen = sqrt(max(0.0, 1.0 - v_impos.x * v_impos.x));
@@ -51,7 +54,6 @@ void main()
     // discard the impostor pixels out of the cylinder
     if (imy <= -1.0 || 1.0 <= imy) {
         discard;
-        return;
     }
 
     bool bEdge = (v_impos.x < -1.0 || v_impos.x > 1.0) ? true : false;
@@ -62,7 +64,7 @@ void main()
     // if (!bEdge) ecpos.z += depth;
     ecpos.z += bEdge ? 0.0 : depth;
 
-    vec4 clip_space_pos = gl_ProjectionMatrix * ecpos;
+    vec4 clip_space_pos = u_ProjectionMatrix * ecpos;
     float ndc_depth = clip_space_pos.z / clip_space_pos.w;
     float fd = (((far - near) * ndc_depth) + near + far) / 2.0;
 
@@ -95,6 +97,6 @@ void main()
     float fogz = ffog(ecpos.z);
     color = fragFogColor(color, frag_alpha, fogz);
 
-    gl_FragColor = color;
-    // gl_FragColor = v_color;
+    o_FragColor = color;
+    // o_FragColor = v_color;
 }
