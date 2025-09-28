@@ -104,6 +104,7 @@ static int sForceMSAA = 0;
 + (NSOpenGLPixelFormat*) basicPixelFormat
 {
   // whether to try MSAA or not
+  NSOpenGLPixelFormat* pf = nil;
   int tryMSAA = [NSOglMolView getForceMSAA];
   MB_DPRINTLN("TryMSAA=%d", tryMSAA);
 
@@ -112,7 +113,7 @@ static int sForceMSAA = 0;
     // NSInteger sampleCounts[] = {8, 4, 2, 0};
     NSInteger sampleCounts[] = {0, 2, 4, 8, 16};
     for (int i = tryMSAA; sampleCounts[i] > 0; i--) {
-      NSOpenGLPixelFormat* pf = [NSOglMolView pixelFormatWithMSAA:YES samples:sampleCounts[i]];
+      pf = [NSOglMolView pixelFormatWithMSAA:YES samples:sampleCounts[i]];
       if (pf != nil) {
         LOG_DPRINTLN("NSOglMolView: MSAA enabled with %ld samples", (long)sampleCounts[i]);
         return pf;
@@ -125,7 +126,11 @@ static int sForceMSAA = 0;
   }
   
   // Fallback to pixformat without MSAA
-  return [NSOglMolView pixelFormatWithMSAA:NO samples:0];
+  pf = [NSOglMolView pixelFormatWithMSAA:NO samples:0];
+  if (pf == nil) {
+    LOG_DPRINTLN("NSOglMolView: Failed to create even non-MSAA pixel format");
+  }
+  return pf;
 }
 
 + (NSOpenGLPixelFormat*) pixelFormatWithMSAA:(BOOL)useMSAA samples:(NSInteger)samples
@@ -165,6 +170,12 @@ static int sForceMSAA = 0;
     [attributes addObject:@(samples)];
   }
   
+  // Profile
+  [attributes addObject:@(NSOpenGLPFAOpenGLProfile)];
+  // [attributes addObject:@(NSOpenGLProfileVersion4_1Core)];
+  // [attributes addObject:@(NSOpenGLProfileVersion3_2Core)];
+  [attributes addObject:@(NSOpenGLProfileVersionLegacy)];
+
   // terminate attribute list
   [attributes addObject:@(0)];
   
@@ -182,6 +193,23 @@ static int sForceMSAA = 0;
   free(attributeArray);
   
   return [pixelFormat autorelease];
+
+    // NSOpenGLPixelFormatAttribute attrs[] = {
+    //     NSOpenGLPFADoubleBuffer,
+    //     NSOpenGLPFADepthSize, 24,
+    //     NSOpenGLPFAStencilSize, 8,
+    //     NSOpenGLPFAAccelerated,
+    //     NSOpenGLPFANoRecovery,
+    //     NSOpenGLPFAOpenGLProfile, NSOpenGLProfileVersion4_1Core,
+    //     NSOpenGLPFAMultisample,
+    //     NSOpenGLPFASampleBuffers, 1,
+    //     NSOpenGLPFASamples, 4,
+    //     0 
+    // };
+    
+    // NSOpenGLPixelFormat *pixelFormat = [[NSOpenGLPixelFormat alloc] initWithAttributes:attrs];
+    // LOG_DPRINTLN("NSOglMolView: pixelFormatWithMSAA: %p", pixelFormat);
+    // return [pixelFormat autorelease];
 }
 
 

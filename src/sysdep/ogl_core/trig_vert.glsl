@@ -37,7 +37,7 @@ void main(void)
 
     if (enable_lighting) {
         vec3 normal = normalize(u_NormalMatrix * aNormal.xyz);
-        v_frontColor = flight(normal, ecPosition, aColor);
+        v_frontColor = flight2(normal, ecPosition, aColor);
     } else {
         v_frontColor = aColor;
     }

@@ -85,7 +85,7 @@ void main()
         // edge
         color = u_edgecolor;
     } else {
-        color = flight(normal, ecpos, v_color);
+        color = flight2(normal, ecpos, v_color);
     }
 
     // fog calculation

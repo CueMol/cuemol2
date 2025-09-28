@@ -88,7 +88,7 @@ void main()
         // normal.xy *= rmat;
         normal.xy *= v_normmat;
 
-        color = flight(normal, ecpos, v_color);
+        color = flight2(normal, ecpos, v_color);
     }
 
     // fog calculation
