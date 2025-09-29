@@ -10,6 +10,7 @@
 
 #include "sysdep.hpp"
 #include "OglView.hpp"
+#include <sysdep/ogl_core/OcView.hpp>
 
 #ifdef WIN32
 #  include <windows.h>
@@ -20,10 +21,11 @@ namespace sysdep {
   class WglDisplayContext;
   using gfx::DisplayContext;
 
-  class SYSDEP_API WglView : public OglView
+  //  class SYSDEP_API WglView : public OglView
+  class SYSDEP_API WglView : public OcView
   {
   private:
-    typedef OglView super_t;
+    typedef OcView super_t;
 
     WglDisplayContext *m_pCtxt;
 

@@ -207,10 +207,10 @@ void OcDisplayContext::loadOrthoProj(float vw, float fasp, float slabnear,
     glMatrixMode(GL_MODELVIEW);
 }
 
-void OcDisplayContext::loadPerspProj(float width, float fasp, float near, float far,
+void OcDisplayContext::loadPerspProj(float width, float fasp, float slabnear, float slabfar,
                                       float distance)
 {
-    super_t::loadPerspProj(width, fasp, near, far, distance);
+    super_t::loadPerspProj(width, fasp, slabnear, slabfar, distance);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     loadMatrix(getProjMat());
