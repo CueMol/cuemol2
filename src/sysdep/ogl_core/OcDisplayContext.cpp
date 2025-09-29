@@ -4,31 +4,7 @@
 //
 
 #include <common.h>
-
-#ifdef HAVE_GL_GLEW_H
-#define GLEW_STATIC
-#include <GL/glew.h>
-#endif
-
-#if defined(_WIN32)
-#include <windows.h>
-#endif
-
-#ifdef HAVE_GL_GL_H
-#include <GL/gl.h>
-#elif defined(HAVE_OPENGL_GL_H)
-#include <OpenGL/gl.h>
-#else
-#error no gl.h
-#endif
-
-#ifdef HAVE_GL_GLU_H
-#include <GL/glu.h>
-#elif defined(HAVE_OPENGL_GLU_H)
-#include <OpenGL/glu.h>
-#else
-#error no glu.h
-#endif
+#include "OglCommon.hpp"
 
 #include "OcDisplayContext.hpp"
 #include "OcDisplayList.hpp"
@@ -36,6 +12,7 @@
 #include "OglProgramObject.hpp"
 #include "OglProgObjMgr.hpp"
 #include "OcPixDraw.hpp"
+#include "OcBufferRep.hpp"
 
 #include <gfx/TextRenderManager.hpp>
 #include <gfx/PixelBuffer.hpp>
@@ -54,11 +31,6 @@ namespace sysdep {
 using gfx::AbstDrawElem;
 using gfx::DisplayContext;
 using gfx::DrawElem;
-// using gfx::DrawElemV;
-// using gfx::DrawElemVC;
-// using gfx::DrawElemVNC;
-// using gfx::DrawElemVNCI;
-// using gfx::DrawElemVNCI32;
 using gfx::DrawElemPix;
 
 OcDisplayContext::OcDisplayContext() : super_t()
@@ -72,9 +44,7 @@ OcDisplayContext::OcDisplayContext() : super_t()
     m_pOcPixDraw = nullptr;
 }
 
-OcDisplayContext::~OcDisplayContext()
-{
-}
+OcDisplayContext::~OcDisplayContext() {}
 
 void OcDisplayContext::setTargetView(qsys::View *pView)
 {
@@ -83,9 +53,7 @@ void OcDisplayContext::setTargetView(qsys::View *pView)
     setViewID(pView->getUID());
 }
 
-void OcDisplayContext::init()
-{
-}
+void OcDisplayContext::init() {}
 
 bool OcDisplayContext::isFile() const
 {
@@ -105,17 +73,13 @@ bool OcDisplayContext::isDrawElemSupported() const
 // {
 // }
 
-
 void OcDisplayContext::setMaterial(const LString &name)
 {
     super_t::setMaterial(name);
     setMaterImpl(name);
 }
 
-void OcDisplayContext::setMaterImpl(const LString &name)
-{
-}
-
+void OcDisplayContext::setMaterImpl(const LString &name) {}
 
 //////////
 
@@ -127,30 +91,6 @@ void OcDisplayContext::enableDepthTest(bool f)
         ::glDepthMask(GL_FALSE);
 }
 
-// void OcDisplayContext::startHit(qlib::uid_t rend_uid)
-// {
-// }
-
-// void OcDisplayContext::endHit()
-// {
-// }
-
-// void OcDisplayContext::drawPointHit(int nid, const Vector4D &pos)
-// {
-// }
-
-// void OcDisplayContext::loadName(int nameid)
-// {
-// }
-
-// void OcDisplayContext::pushName(int nameid)
-// {
-// }
-
-// void OcDisplayContext::popName()
-// {
-// }
-
 void OcDisplayContext::setCullFace(bool f /*=true*/)
 {
     if (f)
@@ -160,7 +100,7 @@ void OcDisplayContext::setCullFace(bool f /*=true*/)
 }
 
 void OcDisplayContext::drawPixels(const Vector4D &pos, const gfx::PixelBuffer &data,
-                                   const gfx::ColorPtr &acol)
+                                  const gfx::ColorPtr &acol)
 {
     if (m_pOcPixDraw == nullptr) {
         m_pOcPixDraw = MB_NEW OcPixDraw();
@@ -198,7 +138,7 @@ void OcDisplayContext::drawString(const Vector4D &pos, const qlib::LString &str)
 // }
 
 void OcDisplayContext::loadOrthoProj(float vw, float fasp, float slabnear,
-                                      float slabfar)
+                                     float slabfar)
 {
     super_t::loadOrthoProj(vw, fasp, slabnear, slabfar);
 
@@ -208,8 +148,8 @@ void OcDisplayContext::loadOrthoProj(float vw, float fasp, float slabnear,
     glMatrixMode(GL_MODELVIEW);
 }
 
-void OcDisplayContext::loadPerspProj(float width, float fasp, float slabnear, float slabfar,
-                                      float distance)
+void OcDisplayContext::loadPerspProj(float width, float fasp, float slabnear,
+                                     float slabfar, float distance)
 {
     super_t::loadPerspProj(width, fasp, slabnear, slabfar, distance);
     glMatrixMode(GL_PROJECTION);
@@ -293,93 +233,7 @@ void OcDisplayContext::recordEnd() {}
 //     return m_nDetail;
 // }
 
-void OcDisplayContext::drawMesh(const gfx::Mesh &mesh)
-{
-}
-
-namespace {
-GLenum convDrawMode(int nMode)
-{
-    GLenum mode;
-    switch (nMode) {
-        case DrawElem::DRAW_POINTS:
-            mode = GL_POINTS;
-            break;
-        case DrawElem::DRAW_LINE_STRIP:
-            mode = GL_LINE_STRIP;
-            break;
-        case DrawElem::DRAW_LINE_LOOP:
-            mode = GL_LINE_LOOP;
-            break;
-        case DrawElem::DRAW_LINES:
-            mode = GL_LINES;
-            break;
-        case DrawElem::DRAW_TRIANGLE_STRIP:
-            mode = GL_TRIANGLE_STRIP;
-            break;
-        case DrawElem::DRAW_TRIANGLE_FAN:
-            mode = GL_TRIANGLE_FAN;
-            break;
-        case DrawElem::DRAW_TRIANGLES:
-            mode = GL_TRIANGLES;
-            break;
-        case DrawElem::DRAW_QUAD_STRIP:
-            mode = GL_QUAD_STRIP;
-            break;
-        case DrawElem::DRAW_QUADS:
-            mode = GL_QUADS;
-            break;
-        case DrawElem::DRAW_POLYGON:
-            mode = GL_POLYGON;
-            break;
-        default: {
-            LString msg = "Ogl DrawElem: invalid draw mode";
-            LOG_DPRINTLN(msg);
-            MB_THROW(qlib::RuntimeException, msg);
-        }
-    }
-    return mode;
-}
-}  // namespace
-
-/////////////////////////////////////////////////
-
-namespace {
-class OglVBORep : public gfx::VBORep
-{
-public:
-    qlib::uid_t m_nSceneID;
-    GLuint m_nBufID;
-
-    virtual ~OglVBORep()
-    {
-        qsys::ScenePtr rsc = qsys::SceneManager::getSceneS(m_nSceneID);
-        if (rsc.isnull()) {
-            MB_DPRINTLN("OglVBO> unknown scene, VBO %d cannot be deleted", m_nBufID);
-            return;
-        }
-
-        qsys::Scene::ViewIter viter = rsc->beginView();
-        if (viter == rsc->endView()) {
-            MB_DPRINTLN("OglVBO> no view, VBO %d cannot be deleted", m_nBufID);
-            return;
-        }
-
-        qsys::ViewPtr rvw = viter->second;
-        if (rvw.isnull()) {
-            // If any views aren't found, it is no problem,
-            // because the parent context (and also all DLs) may be already destructed.
-            return;
-        }
-        gfx::DisplayContext *pctxt = rvw->getDisplayContext();
-        pctxt->setCurrent();
-
-        GLuint buffers[1];
-        buffers[0] = m_nBufID;
-        glDeleteBuffers(1, buffers);
-    }
-};
-}  // namespace
+void OcDisplayContext::drawMesh(const gfx::Mesh &mesh) {}
 
 void OcDisplayContext::drawElem(const AbstDrawElem &ade)
 {
@@ -390,133 +244,27 @@ void OcDisplayContext::drawElem(const AbstDrawElem &ade)
     drawElemAttrs(static_cast<const gfx::AbstDrawAttrs &>(ade));
 }
 
-namespace {
-int convGLConsts(int id)
-{
-    switch (id) {
-        case qlib::type_consts::QTC_BOOL:
-            return GL_BOOL;
-        case qlib::type_consts::QTC_UINT8:
-            return GL_UNSIGNED_BYTE;
-        case qlib::type_consts::QTC_UINT16:
-            return GL_UNSIGNED_SHORT;
-        case qlib::type_consts::QTC_UINT32:
-            return GL_UNSIGNED_INT;
-        case qlib::type_consts::QTC_INT8:
-            return GL_BYTE;
-        case qlib::type_consts::QTC_INT16:
-            return GL_SHORT;
-        case qlib::type_consts::QTC_INT32:
-            return GL_INT;
-        case qlib::type_consts::QTC_FLOAT32:
-            return GL_FLOAT;
-        case qlib::type_consts::QTC_FLOAT64:
-            return GL_DOUBLE;
-        default:
-            return -1;
-    }
-}
-
-int convGLNorm(int id)
-{
-    if (id == qlib::type_consts::QTC_FLOAT32 || id == qlib::type_consts::QTC_FLOAT64)
-        return GL_FALSE;
-    else
-        return GL_TRUE;
-}
-}  // namespace
-
 void OcDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
 {
-    int itype = ada.getType();
-
-    GLuint nvbo = 0;
-    GLuint nvbo_ind = 0;
-
-    if (ada.getVBO() == NULL) {
-        // Make VBO for attribute array
-        glGenBuffers(1, &nvbo);
-        OglVBORep *pRep = MB_NEW OglVBORep();
-        pRep->m_nBufID = nvbo;
-        pRep->m_nSceneID = getSceneID();
+    auto *pRep = static_cast<OcBufferRep *>(ada.getVBO());
+    if (pRep == NULL) {
+        // Make new VBO and bind it
+        pRep = MB_NEW OcBufferRep();
+        pRep->create(this, ada);
         ada.setVBO(pRep);
-
-        // Init VBO & copy data
-        glBindBuffer(GL_ARRAY_BUFFER, nvbo);
-        glBufferData(GL_ARRAY_BUFFER, ada.getDataSize(), ada.getData(), GL_STATIC_DRAW);
-
-        if (itype == AbstDrawElem::VA_ATTR_INDS) {
-            // Make VBO for indices
-            glGenBuffers(1, &nvbo_ind);
-            OglVBORep *pRep = MB_NEW OglVBORep();
-            pRep->m_nBufID = nvbo_ind;
-            pRep->m_nSceneID = getSceneID();
-            ada.setIndexVBO(pRep);
-
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, nvbo_ind);
-            glBufferData(GL_ELEMENT_ARRAY_BUFFER, ada.getIndDataSize(),
-                         ada.getIndData(), GL_STATIC_DRAW);
-        }
     } else {
-        OglVBORep *pRep = (OglVBORep *)ada.getVBO();
-        nvbo = pRep->m_nBufID;
-        glBindBuffer(GL_ARRAY_BUFFER, nvbo);
-
-        if (itype == AbstDrawElem::VA_ATTR_INDS) {
-            OglVBORep *pRep = (OglVBORep *)ada.getIndexVBO();
-            nvbo_ind = pRep->m_nBufID;
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, nvbo_ind);
-        }
-
-        if (ada.isUpdated()) {
-            glBufferSubData(GL_ARRAY_BUFFER, 0, ada.getDataSize(), ada.getData());
-            if (itype == AbstDrawElem::VA_ATTR_INDS) {
-                glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, ada.getIndDataSize(),
-                                ada.getIndData());
-            }
-        }
+        pRep->bind();
+        pRep->update(ada);
     }
 
-    size_t nattr = ada.getAttrSize();
-    for (int i = 0; i < nattr; ++i) {
-        int al = ada.getAttrLoc(i);
-        int az = ada.getAttrElemSize(i);
-        int at = ada.getAttrTypeID(i);
-        int ap = ada.getAttrPos(i);
-        glVertexAttribPointer(al, az, convGLConsts(at), convGLNorm(at),
-                              ada.getElemSize(), (void *)ap);
-        glEnableVertexAttribArray(al);
-        CHK_GLERROR("glEnableVertexAttribArray(al)");
-    }
-
-    GLenum mode = convDrawMode(ada.getDrawMode());
-    size_t indsz = ada.getIndElemSize();
-    if (itype == AbstDrawElem::VA_ATTR_INDS) {
-        if (indsz == 2)
-            glDrawElements(mode, ada.getIndSize(), GL_UNSIGNED_SHORT, 0);
-        else if (indsz == 4)
-            glDrawElements(mode, ada.getIndSize(), GL_UNSIGNED_INT, 0);
-        else {
-            LOG_DPRINTLN("unsupported index element size %d", indsz);
-            MB_ASSERT(false);
-        }
-    } else {
-        glDrawArrays(mode, 0, ada.getSize());
-        CHK_GLERROR("glDrawArrays(mode, 0, ada.getSize())");
-    }
-
-    for (int i = 0; i < nattr; ++i) {
-        int al = ada.getAttrLoc(i);
-        glDisableVertexAttribArray(al);
-    }
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    pRep->setAttrib(ada);
+    pRep->draw(ada);
+    pRep->unbind(ada);
 }
 
 OglProgramObject *OcDisplayContext::createProgramObject(const LString &name)
 {
-    if (!qsys::View::hasVS()) return NULL;
+    // if (!qsys::View::hasVS()) return NULL;
 
     OglProgObjMgr *pMgr = OglProgObjMgr::getInstance();
 
