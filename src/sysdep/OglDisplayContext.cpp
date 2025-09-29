@@ -74,7 +74,7 @@ OglDisplayContext::OglDisplayContext()
   m_pEdgePO = NULL;
   m_pSilhPO = NULL;
 
-  m_pOcPixDraw == nullptr;
+  m_pOcPixDraw = nullptr;
 }
 
 OglDisplayContext::~OglDisplayContext()
