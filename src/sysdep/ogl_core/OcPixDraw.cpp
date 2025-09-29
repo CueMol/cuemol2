@@ -25,13 +25,15 @@ void OcTexRep::create(gfx::DisplayContext *pdc, const gfx::PixelBuffer &pixbuf)
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texid);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, ow, oh, 0, GL_ALPHA, GL_UNSIGNED_BYTE,
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, ow, oh, 0, GL_RED, GL_UNSIGNED_BYTE,
                  pixbuf.data());
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glBindTexture(GL_TEXTURE_2D, 0);
+
+    // LOG_DPRINTLN("create texture (%d, %d) OK.", ow, oh);
 }
 
 OcTexRep::~OcTexRep()

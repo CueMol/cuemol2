@@ -23,13 +23,10 @@ out vec4 o_FragColor;
 
 void main()
 {
-    o_FragColor = vec4(1.0, 0.0, 1.0, 1.0); // debug
-    return;
-
     float alphaThreshold = 0.1;
 
     // float alpha = texture2D(u_texture, v_texCoord).a;
-    float alpha = texture(u_texture, v_texCoord).a;
+    float alpha = texture(u_texture, v_texCoord).r;
 
     // Alpha test
     if (alpha <= alphaThreshold) {

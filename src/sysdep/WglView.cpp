@@ -102,7 +102,16 @@ bool WglView::attach(HWND hWnd, HDC hDC)
   setupPixelFormat();
   
   // create and enable the render context (RC)
-  m_hGL = ::wglCreateContext( m_hDC );
+  const int contextAttribs[] = {
+    WGL_CONTEXT_MAJOR_VERSION_ARB, 4,
+    WGL_CONTEXT_MINOR_VERSION_ARB, 1,  // OpenGL 4.1
+    WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
+    WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
+    0
+  };
+
+  m_hGL = wglCreateContextAttribsARB(m_hDC, 0, contextAttribs);
+  // m_hGL = ::wglCreateContext( m_hDC );
 
   if (hOldGL==NULL) {
     setupShareList();
@@ -124,7 +133,7 @@ bool WglView::attach(HWND hWnd, HDC hDC)
   m_pCtxt->setCurrent();
 
   // perform OpenGL-common initialization tasks
-  OglView::setup();
+  super_t::setup();
 
 #ifdef HAVE_GLEW
   if (m_bHasMultisample && WGL_ARB_multisample) {
