@@ -343,7 +343,7 @@ GLint OglProgramObject::getUniformLocation(const LString &name)
     
     GLint ul = glGetUniformLocation(m_hPO, name.c_str());
     if (ul == -1) {
-        MB_DPRINTLN("OglProgramObject> Cannot find uniform location: %s (ignored)", name.c_str());
+        // MB_DPRINTLN("OglProgramObject> Cannot find uniform location: %s (ignored)", name.c_str());
         return -1;
     }
     

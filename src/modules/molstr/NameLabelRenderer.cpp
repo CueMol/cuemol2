@@ -113,6 +113,7 @@ void NameLabelRenderer::display(DisplayContext *pdc)
 
 void NameLabelRenderer::displayLabels(DisplayContext *pdc)
 {
+  MB_DPRINTLN("NameLabelRenderer::displayLabels> called");
   if (!pdc->isFile()) {
     preRender(pdc);
     render(pdc);

@@ -47,6 +47,7 @@
 #include <qsys/Scene.hpp>
 #include <qsys/SceneManager.hpp>
 #include <qsys/style/StyleMgr.hpp>
+#include <sysdep/OglError.hpp>
 
 namespace sysdep {
 
@@ -485,6 +486,7 @@ void OcDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
         glVertexAttribPointer(al, az, convGLConsts(at), convGLNorm(at),
                               ada.getElemSize(), (void *)ap);
         glEnableVertexAttribArray(al);
+        CHK_GLERROR("glEnableVertexAttribArray(al)");
     }
 
     GLenum mode = convDrawMode(ada.getDrawMode());
@@ -500,6 +502,7 @@ void OcDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
         }
     } else {
         glDrawArrays(mode, 0, ada.getSize());
+        CHK_GLERROR("glDrawArrays(mode, 0, ada.getSize())");
     }
 
     for (int i = 0; i < nattr; ++i) {

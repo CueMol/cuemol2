@@ -280,8 +280,6 @@ public:
     // convenience functions
     void setupFog(gfx::DisplayContext *pdc);
     void setupMat(gfx::DisplayContext *pdc);
-    
-
 };
 
 }  // namespace sysdep

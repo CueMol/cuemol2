@@ -9,6 +9,7 @@
 #include <qsys/SceneManager.hpp>
 #include <sysdep/OglProgramObject.hpp>
 #include <sysdep/ShaderSetupHelper.hpp>
+#include <sysdep/OglError.hpp>
 
 namespace sysdep {
 
@@ -24,16 +25,19 @@ void OcTexRep::create(gfx::DisplayContext *pdc, const gfx::PixelBuffer &pixbuf)
     const int oh = pixbuf.getHeight();
 
     glActiveTexture(GL_TEXTURE0);
+    CHK_GLERROR("glActiveTexture");
     glBindTexture(GL_TEXTURE_2D, texid);
+    CHK_GLERROR("glBindTexture");
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, ow, oh, 0, GL_RED, GL_UNSIGNED_BYTE,
                  pixbuf.data());
+    CHK_GLERROR("glTexImage2D");
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    // LOG_DPRINTLN("create texture (%d, %d) OK.", ow, oh);
+    MB_DPRINTLN("create texture (%d, %d) OK.", ow, oh);
 }
 
 OcTexRep::~OcTexRep()
@@ -122,16 +126,17 @@ void OcPixDraw::alloc()
 
     data.alloc(nverts);
     data.setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLE_STRIP);
+    // data.setDrawMode(gfx::AbstDrawElem::DRAW_LINE_STRIP);
 
     // assign data
     data.at(0) = {
         0.0f, 1.0f, 0.0f, 1.0f,  // Top-left
     };
     data.at(1) = {
-        1.0f, 1.0f, 1.0f, 1.0f,  // Top-right
+        0.0f, 0.0f, 0.0f, 0.0f,  // Bottom-left
     };
     data.at(2) = {
-        0.0f, 0.0f, 0.0f, 0.0f,  // Bottom-left
+        1.0f, 1.0f, 1.0f, 1.0f,  // Top-right
     };
     data.at(3) = {
         1.0f, 0.0f, 1.0f, 0.0f  // Bottom-right
@@ -201,11 +206,16 @@ void OcPixDraw::draw(gfx::DisplayContext *pdc, const Vector4D &pos,
     m_pPO->setUniformF("u_colorBias", r, g, b);
     m_pPO->setUniformF("u_texture", 0);
 
+    CLR_GLERROR();
+
     // Bind texture
     auto texid = pRep->m_nBufID;
-    glEnable(GL_TEXTURE_2D);
+    // glEnable(GL_TEXTURE_2D);
+    // CHK_GLERROR("glEnable(GL_TEXTURE_2D)");
     glActiveTexture(GL_TEXTURE0);
+    CHK_GLERROR("glActiveTexture(GL_TEXTURE0)");
     glBindTexture(GL_TEXTURE_2D, texid);
+    CHK_GLERROR("glBindTexture(GL_TEXTURE_2D, texid)");
 
     pdc->drawElem(*m_pDrawAry);
 

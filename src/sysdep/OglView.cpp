@@ -153,11 +153,6 @@ void OglView::setup()
   }
 }
 
-//#define CHK_GLERROR(MSG)						\
-//{ GLenum errc; errc = glGetError(); MB_DPRINTLN("%s GLError: %s", MSG, gluErrorString(errc)); }
-
-#define CHK_GLERROR(MSG) {}
-
 // setup the projection matrix
 void OglView::setUpProjMat(int cx, int cy)
 {
