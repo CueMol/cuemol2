@@ -10,7 +10,7 @@
     {                                                                           \
         GLenum errc;                                                            \
         errc = glGetError();                                                    \
-        /*if (errc != GL_NO_ERROR)*/ MB_DPRINTLN("%s GLError (%d)", MSG, errc); \
+        /*if (errc != GL_NO_ERROR)*/ MB_DPRINTLN("%s GLError (%X)", MSG, errc); \
     }
 #else
 #define CHK_GLERROR(MSG) glGetError()

@@ -11,12 +11,6 @@
 #include <gfx/DisplayContext.hpp>
 #include <gfx/Mesh.hpp>
 
-//#include <qsys/ScrEventManager.hpp>
-//#include <qsys/ViewEvent.hpp>
-//#include <qsys/View.hpp>
-//#include <qsys/Scene.hpp>
-//#include <modules/molstr/AtomIterator.hpp>
-
 #ifdef _OPENMP
 #  include <omp.h>
 #endif
@@ -24,8 +18,6 @@
 using namespace xtal;
 using qlib::Matrix4D;
 using qlib::Matrix3D;
-//using qsys::ScrEventManager;
-//using molstr::AtomIterator;
 
 void MapSurfRenderer::display(DisplayContext *pdc)
 {

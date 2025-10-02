@@ -13,14 +13,15 @@
 #include <qsys/View.hpp>
 #include <qsys/Scene.hpp>
 #include <sysdep/ShaderSetupHelper.hpp>
+#include <sysdep/OglError.hpp>
 
-#define CHK_GLERROR(MSG)\
-{ \
-  GLenum errc; \
-  errc = glGetError(); \
-  if (errc!=GL_NO_ERROR) \
-    MB_DPRINTLN("%s GLError(%d): %s", MSG, errc, gluErrorString(errc)); \
-}
+// #define CHK_GLERROR(MSG)\
+// { \
+//   GLenum errc; \
+//   errc = glGetError(); \
+//   if (errc!=GL_NO_ERROR) \
+//     MB_DPRINTLN("%s GLError(%d): %s", MSG, errc, gluErrorString(errc)); \
+// }
 
 using namespace xtal;
 using qlib::Matrix4D;

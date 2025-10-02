@@ -4,8 +4,6 @@
 //    fragment shader for volume rendering
 //
 
-#version 120
-
 uniform sampler1D xferFunTex;
 uniform sampler3D dataFieldTex;
 uniform float thickness;

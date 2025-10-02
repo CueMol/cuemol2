@@ -44,6 +44,5 @@ void main(void)
         v_frontColor = aColor;
     }
 
-    // v_fogCoord = ffog(ecPosition.z);
     v_fogCoord = ffog(ecPosition.z);
 }

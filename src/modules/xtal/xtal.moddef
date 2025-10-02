@@ -16,10 +16,10 @@
 #include "BrixMapReader.qif"
 #include "MmcifMapReader.qif"
 
-#ifdef USE_OPENGL
-#  include "GLSLMapMeshRenderer.qif"
-#  include "GLSLMapVolRenderer.qif"
-#endif
+// #ifdef USE_OPENGL
+// #  include "GLSLMapMeshRenderer.qif"
+// #  include "GLSLMapVolRenderer.qif"
+// #endif
 
 module xtal
 {
@@ -35,10 +35,9 @@ module xtal
   BrixMapReader;
   MmcifMapReader;
 
-#ifdef USE_OPENGL
-  GLSLMapMeshRenderer;
-  GLSLMapVolRenderer;
-#endif
+// #ifdef USE_OPENGL
+//  GLSLMapMeshRenderer;
+//  GLSLMapVolRenderer;
+// #endif
 
 };
-

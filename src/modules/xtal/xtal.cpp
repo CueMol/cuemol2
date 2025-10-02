@@ -18,10 +18,10 @@
 #include "QdfDenMapReader.hpp"
 #include "MmcifMapReader.hpp"
 
-#ifdef USE_OPENGL
-#  include "GLSLMapMeshRenderer.hpp"
-#  include "GLSLMapVolRenderer.hpp"
-#endif
+// #ifdef USE_OPENGL
+// #  include "GLSLMapMeshRenderer.hpp"
+// #  include "GLSLMapVolRenderer.hpp"
+// #endif
 
 extern void xtal_regClasses();
 extern void xtal_unregClasses();
@@ -47,10 +47,10 @@ bool init()
   pRF->regist<MapMeshRenderer>();
   pRF->regist<MapSurfRenderer>();
 
-#ifdef USE_OPENGL
-  pRF->regist<GLSLMapVolRenderer>();
-  pRF->regist<GLSLMapMeshRenderer>();
-#endif
+// #ifdef USE_OPENGL
+//   pRF->regist<GLSLMapVolRenderer>();
+//   pRF->regist<GLSLMapMeshRenderer>();
+// #endif
 
   StreamManager *pSM = StreamManager::getInstance();
   pSM->registReader<CCP4MapReader>();

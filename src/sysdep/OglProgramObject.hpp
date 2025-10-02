@@ -38,6 +38,8 @@ private:
     GLenum m_nType;
     LString m_source;
 
+    static LString s_shaderVerStr;
+
 public:
     OglShaderObject(const GLenum shader_type) : m_nType(shader_type), m_hGL(0) {}
 
@@ -51,6 +53,14 @@ public:
     {
         return m_hGL;
     }
+
+    static void setShaderVersionString(const LString &verstr) {
+        s_shaderVerStr = verstr;
+    }
+    static const LString &getShaderVersionString() {
+        return s_shaderVerStr;
+    }
+
 };
 
 ////////////////////////////////////////

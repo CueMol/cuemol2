@@ -17,6 +17,9 @@
 using namespace sysdep;
 using qsys::SysConfig;
 
+// static
+LString OglShaderObject::s_shaderVerStr;
+
 OglShaderObject::~OglShaderObject()
 {
   if (m_hGL) {
@@ -57,7 +60,22 @@ void OglShaderObject::loadFile(const LString& filename)
     m_source += sbuf;
   }
 
-  m_source = "#version 410 core\n\n" + m_source;
+  if (s_shaderVerStr.isEmpty()) {
+      // get default shader version string
+      LString verstr = (const char *) glGetString(GL_SHADING_LANGUAGE_VERSION);
+      // GL
+      int vmaj=0, vmin=0;
+      if (sscanf(verstr.c_str(), "%d.%d", &vmaj, &vmin)==2) {
+          s_shaderVerStr = LString::format("%d%d", vmaj, vmin);
+      }
+      else {
+          s_shaderVerStr = "120";
+      }
+      MB_DPRINTLN("OglProgramObject> Using default shader version string: %s",
+                  s_shaderVerStr.c_str());
+  }
+  auto verStr = LString::format("#version %s\n\n", s_shaderVerStr.c_str());
+  m_source = verStr + m_source;
 
   // set shader source
   const char *s = m_source.c_str();
