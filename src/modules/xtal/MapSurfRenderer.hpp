@@ -350,9 +350,9 @@ namespace xtal {
     bool m_bChkShaderDone;
 
     struct AttrElem {
-      qfloat32 ind;
-      qfloat32 flag;
-      qfloat32 ivert;
+        qfloat32 ind;
+        qfloat32 flag;
+        qfloat32 ivert;
     };
     
     typedef gfx::DrawAttrArray<AttrElem> AttrArray;

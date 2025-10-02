@@ -31,14 +31,14 @@ OglShaderObject::~OglShaderObject()
 
 void OglShaderObject::loadFile(const LString& filename)
 {
-  CLR_GLERROR();
-  // CHK_GLERROR("SO.loadFile createShader BEFORE");
+    // CLR_GLERROR();
+    glGetError();
+    // CHK_GLERROR("SO.loadFile createShader BEFORE");
 
   //m_hGL = glCreateShaderObjectARB(m_nType);
   m_hGL = glCreateShader(m_nType);
   CHK_GLERROR("SO.loadFile createShader");
-  GLenum errc;
-  errc = glGetError();
+  GLenum errc = glGetError();
   if ( errc != GL_NO_ERROR ) {
     LOG_DPRINTLN("ShaderObject::ShaderObject(): cannot create shader object: %s",
                  filename.c_str());
@@ -97,7 +97,8 @@ bool OglShaderObject::compile()
 {
   int length, l;
 
-  CLR_GLERROR();
+  // CLR_GLERROR();
+  glGetError();
 
   // compile
   glCompileShader(m_hGL);
@@ -142,18 +143,17 @@ bool OglShaderObject::compile()
 
 bool OglProgramObject::init()
 {
-  GLenum errc;
-
-  CLR_GLERROR();
+  // CLR_GLERROR();
+  // glGetError();
 
   m_hPO = glCreateProgram();
-  errc = glGetError();
 
-  if ( errc != GL_NO_ERROR ) {
-    //LOG_DPRINTLN("ProgramObject::ProgramObject(): cannot create program object (%d; %s)",
-    //errc, gluErrorString(errc));
-    return false;
-  }
+  // GLenum errc = glGetError();
+  // if ( errc != GL_NO_ERROR ) {
+  //   LOG_DPRINTLN("ProgramObject::ProgramObject(): cannot create program object (%d; %s)",
+  //                errc, gluErrorString(errc));
+  //   return false;
+  // }
 
   return true;
 }
@@ -196,22 +196,17 @@ bool OglProgramObject::loadShader(const LString &name, const LString &srcpath, G
 
 void OglProgramObject::attach( const OglShaderObject *s )
 {
-  CLR_GLERROR();
-
-  // glAttachObjectARB( m_hPO, s->getHandle());
-  glAttachShader( m_hPO, s->getHandle());
-
-  if ( glGetError() != GL_NO_ERROR ) {
-    MB_THROW(qlib::RuntimeException, "glAttachShader error");
-    //MB_ASSERT(false);
-  }
+    CLR_GLERROR();
+    glAttachShader( m_hPO, s->getHandle());
+    CHK_GLERROR("glAttachShader( m_hPO, s->getHandle())");
 }
 
 bool OglProgramObject::link()
 {
   int length, l;
 
-  CLR_GLERROR();
+  // CLR_GLERROR();
+  glGetError();
 
   // link
   //glLinkProgramARB(m_hPO);

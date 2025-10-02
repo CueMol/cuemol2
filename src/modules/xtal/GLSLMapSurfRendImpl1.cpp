@@ -364,6 +364,11 @@ void MapSurfRenderer::displayGLSL2(DisplayContext *pdc)
   m_pPO->enable();
   m_pPO->setupFog(pdc);
   m_pPO->setupMat(pdc);
+  {
+      float r = 0.5, g = 0.5, b = 0.5;
+      pdc->getDevRGBColor(pdc->getColor(), r, g, b);
+      m_pPO->setUniformF("u_color", r, g, b, 1.0);
+  }
   m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
 
   pdc->drawElem(*m_pAttrArray);
@@ -540,16 +545,16 @@ void MapSurfRenderer::createGLSL2(DisplayContext *pdl)
   MB_DPRINTLN("estimated vertex size %d", nsz_est_tot);
   
   for (i=0; i<m_pAttrArray->getSize(); ++i) {
-    m_pAttrArray->at(i).ind = 0.0f;
-    m_pAttrArray->at(i).flag = 0.0f;
-    m_pAttrArray->at(i).ivert = 0.0f;
+    m_pAttrArray->at(i).ind = 0;
+    m_pAttrArray->at(i).flag = 0;
+    m_pAttrArray->at(i).ivert = 0;
   }
 
-  quint32 cc = getColor()->getCode();
-  m_col_r = gfx::getRCode(cc);
-  m_col_g = gfx::getGCode(cc);
-  m_col_b = gfx::getBCode(cc);
-  m_col_a = gfx::getACode(cc);
+  // quint32 cc = getColor()->getCode();
+  // m_col_r = gfx::getRCode(cc);
+  // m_col_g = gfx::getGCode(cc);
+  // m_col_b = gfx::getBCode(cc);
+  // m_col_a = gfx::getACode(cc);
 
   m_nbcol = m_nStCol - pMap->getStartCol();
   m_nbrow = m_nStRow - pMap->getStartRow();

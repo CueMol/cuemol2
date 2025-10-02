@@ -17,6 +17,8 @@ uniform mat4 u_ModelViewMatrix;
 uniform mat4 u_ProjectionMatrix;
 uniform mat3 u_NormalMatrix;
 
+uniform vec4 u_color;
+
 // constant tables
 uniform ivec3 ivtxoffs[8];
 uniform vec3 fvtxoffs[8];
@@ -47,59 +49,6 @@ varying float v_fogCoord;
 
 const int u_binfac = 1;
 
-// vec4 Ambient;
-// vec4 Diffuse;
-// vec4 Specular;
-
-// void DirectionalLight(in int i, in vec3 normal)
-// {
-//   float nDotVP;         // normal . light direction
-//   float nDotHV;         // normal . light half vector
-//   float pf;             // power factor
-
-//   nDotVP = max(0.0, dot(normal,
-//                         normalize(vec3(gl_LightSource[i].position))));
-//   nDotHV = max(0.0, dot(normal, vec3(gl_LightSource[i].halfVector)));
-
-//   if (nDotVP == 0.0)
-//     pf = 0.0;
-//   else
-//     pf = pow(nDotHV, gl_FrontMaterial.shininess);
-
-//   Ambient  += gl_LightSource[i].ambient;
-//   Diffuse  += gl_LightSource[i].diffuse * nDotVP;
-//   Specular += gl_LightSource[i].specular * pf;
-// }
-
-// vec4 flight(in vec3 normal, in vec4 ecPosition)
-// {
-//   vec4 color;
-//   vec3 ecPosition3;
-//   vec3 eye;
-
-//   ecPosition3 = (vec3 (ecPosition)) / ecPosition.w;
-//   eye = vec3 (0.0, 0.0, 1.0);
-
-//   // Clear the light intensity accumulators
-//   Ambient  = vec4 (0.0);
-//   Diffuse  = vec4 (0.0);
-//   Specular = vec4 (0.0);
-
-//   //pointLight(0, normal, eye, ecPosition3);
-//   DirectionalLight(0, normal);
-
-//   //color = gl_FrontLightModelProduct.sceneColor;
-//   //color += Ambient  * gl_FrontMaterial.ambient;
-//   //color += Diffuse  * gl_FrontMaterial.diffuse;
-
-//   color = gl_LightModel.ambient * gl_Color;
-//   color += Ambient  * gl_Color;
-//   color += Diffuse  * gl_Color;
-//   color += Specular * gl_FrontMaterial.specular;
-//   color = clamp( color, 0.0, 1.0 );
-//   return color;
-// }
-
 int getDensity(ivec3 iv)
 {
     int index = iv.x + u_ncol * (iv.y + u_nrow * iv.z);
@@ -122,7 +71,7 @@ ivec3 getNorm(ivec3 iv)
 
 void main(void)
 {
-    int vid = gl_VertexID % 3;
+    // int vid = gl_VertexID % 3;
 
     int iind = int(a_ind);
     int iflag = int(a_flag);
@@ -147,15 +96,12 @@ void main(void)
     int val1 = getDensity(ivv);
     ivec3 inorm1 = getNorm(ivv);
 
-    float fOffset;  // = getOffset(val0, val1, u_isolevel);
-    {
-        int delta = int(val1) - int(val0);
-
-        if (delta == 0)
-            fOffset = 0.5f;
-        else
-            fOffset = float(int(u_isolevel) - int(val0)) / float(delta);
-    }
+    float fOffset;
+    int delta = val1 - val0;
+    if (delta == 0)
+        fOffset = 0.5f;
+    else
+        fOffset = float(int(u_isolevel) - int(val0)) / float(delta);
 
     vec4 vec;
     vec.xyz = vec3(vind) + (fvtxoffs[ec0] + fegdir[iedge] * fOffset) * float(u_binfac);
@@ -176,7 +122,7 @@ void main(void)
 
     ////
 
-    vec4 in_color = vec4(0.5, 0.5, 0.5, 1.0);
+    vec4 in_color = u_color;
     v_frontColor = flight2(norm, ecPosition, in_color);
     v_fogCoord = ffog(ecPosition.z);
 

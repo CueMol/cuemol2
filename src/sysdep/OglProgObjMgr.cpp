@@ -57,8 +57,9 @@ OglProgramObject *OglProgObjMgr::createProgramObject(const LString &name, Displa
   }
   pScene->addListener(this);
 
-  pRval = MB_NEW OglProgramObject();  
+  pRval = MB_NEW OglProgramObject();
   if (!pRval->init()) {
+      LOG_DPRINTLN("cannot initialize OglProgramObject");
     delete pRval;
     return NULL;
   }
