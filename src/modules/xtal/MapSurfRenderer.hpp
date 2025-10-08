@@ -350,6 +350,7 @@ namespace xtal {
     bool m_bChkShaderDone;
 
     struct AttrElem {
+        // TODO: use integer attrib
         qfloat32 ind;
         qfloat32 flag;
         qfloat32 ivert;

@@ -13,19 +13,11 @@
 #include <qsys/View.hpp>
 #include <qsys/Scene.hpp>
 #include <sysdep/ShaderSetupHelper.hpp>
+#include <sysdep/OglError.hpp>
 
 #define SCALE 0x1000
 //#define DBG_DRAW_AXIS 0
 
-#define MY_MAPTEX_DIM GL_TEXTURE_BUFFER
-
-#define CHK_GLERROR(MSG)\
-{ \
-  GLenum errc; \
-  errc = glGetError(); \
-  if (errc!=GL_NO_ERROR) \
-    MB_DPRINTLN("%s GLError(%d): %s", MSG, errc, gluErrorString(errc)); \
-}
 
 using namespace xtal;
 using qlib::Matrix4D;
@@ -54,6 +46,7 @@ GLSLMapMeshRenderer::GLSLMapMeshRenderer()
 
   m_bMapTexOK = false;
 
+  m_pAttrArray = null_ptr;
 }
 
 // destructor
@@ -210,22 +203,22 @@ bool GLSLMapMeshRenderer::initShader(DisplayContext *pdc)
   
   m_pPO->disable();
 
-  glGenBuffersARB(1, &m_nMapBufID);
-  glGenBuffersARB(1, &m_nVBOID);
+  glGenBuffers(1, &m_nMapBufID);
+  // glGenBuffers(1, &m_nVBOID);
 
   // setup texture
   glGenTextures(1, &m_nMapTexID);
   glActiveTexture(GL_TEXTURE0);
-  glEnable(MY_MAPTEX_DIM);
-  glBindTexture(MY_MAPTEX_DIM, m_nMapTexID);
+  glEnable(GL_TEXTURE_BUFFER);
+  glBindTexture(GL_TEXTURE_BUFFER, m_nMapTexID);
 
-  //glTexParameteri(MY_MAPTEX_DIM, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  //glTexParameteri(MY_MAPTEX_DIM, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  //glTexParameteri(MY_MAPTEX_DIM, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  //glTexParameteri(MY_MAPTEX_DIM, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  //glTexParameteri(MY_MAPTEX_DIM, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+  //glTexParameteri(GL_TEXTURE_BUFFER, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  //glTexParameteri(GL_TEXTURE_BUFFER, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  //glTexParameteri(GL_TEXTURE_BUFFER, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  //glTexParameteri(GL_TEXTURE_BUFFER, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  //glTexParameteri(GL_TEXTURE_BUFFER, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
   
-  glBindTexture(MY_MAPTEX_DIM, 0);
+  glBindTexture(GL_TEXTURE_BUFFER, 0);
 
   m_bChkShaderDone = true;
 
@@ -236,8 +229,12 @@ void GLSLMapMeshRenderer::unloading()
 {
   // delete texture
   glDeleteTextures(1, &m_nMapTexID);
-  glDeleteBuffersARB(1, &m_nMapBufID);
-  glDeleteBuffersARB(1, &m_nVBOID);
+  glDeleteBuffers(1, &m_nMapBufID);
+
+  if (m_pAttrArray!=NULL) {
+    delete m_pAttrArray;
+    m_pAttrArray = NULL;
+  }
 
   // ProgramObject is owned by DisplayContext
   // and will be reused other renderes,
@@ -364,50 +361,38 @@ void GLSLMapMeshRenderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
   MB_DPRINT("nsec: %d\n", nsec);
 
   // Generate Grid Data VBO
-  if (!bReuse) {
+  if (!bReuse || m_pAttrArray == null_ptr) {
     // size is changed --> generate grid data
+    if (m_pAttrArray!=null_ptr) {
+      delete m_pAttrArray;
+    }
+    m_pAttrArray = MB_NEW AttrArray();
+    m_pAttrArray->setAttrSize(1);
+    
+    m_pAttrArray->setAttrInfo(0, m_pPO->getAttribLocation("aVertex"), 3,
+                              qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, ix));
+
     int vcol = ncol-1;
     int vrow = nrow-1;
     int vsec = nsec-1;
-    qlib::Array3D<qint16> grid;
 
-    grid.resize(vcol*3, vrow, vsec);
-    int i,j,k,l, ibase;
-    qint16 *pdata = const_cast<qint16 *>(grid.data());
+    const int nsz_tot = vcol * vrow * vsec;
+    m_pAttrArray->alloc(nsz_tot);
+
     for (k=0; k<vsec; k++)
       for (j=0; j<vrow; j++)
-        for (i=0; i<vcol; i++){
-          ibase = 3*(i + vcol*(j + vrow*k));
-          pdata[ibase + 0] = i;
-          pdata[ibase + 1] = j;
-          pdata[ibase + 2] = k;
+        for (i=0; i<vcol; i++) {
+          ibase = i + vcol*(j + vrow*k);
+          m_pAttrArray->at(ibase).ix = i;
+          m_pAttrArray->at(ibase).iy = j;
+          m_pAttrArray->at(ibase).iz = k;
         }
 
-    glBindBuffer(GL_ARRAY_BUFFER_ARB, m_nVBOID);
-    glBufferDataARB(GL_ARRAY_BUFFER_ARB, vcol*vrow*vsec*3*(sizeof (qint16)), grid.data(), GL_STATIC_DRAW_ARB);
-    glBindBuffer(GL_ARRAY_BUFFER_ARB, 0);
-
-    /*
-    grid.resize(vcol*4*3, vrow, vsec);
-    int i,j,k,l, ibase;
-    qint16 *pdata = const_cast<qint16 *>(grid.data());
-    for (k=0; k<vsec; k++)
-      for (j=0; j<vrow; j++)
-        for (i=0; i<vcol; i++){
-          for (l=0; l<3; ++l) {
-            ibase = 4*(l + 3*(i + vcol*(j + vrow*k)));
-            pdata[ibase + 0] = i;
-            pdata[ibase + 1] = j;
-            pdata[ibase + 2] = k;
-            pdata[ibase + 3] = l;
-          }
-        }
-
-    glBindBuffer(GL_ARRAY_BUFFER_ARB, m_nVBOID);
-    glBufferDataARB(GL_ARRAY_BUFFER_ARB, vcol*vrow*vsec*4*3*(sizeof qint16), grid.data(), GL_STATIC_DRAW_ARB);
-    glBindBuffer(GL_ARRAY_BUFFER_ARB, 0);
-     */
+    // glBindBuffer(GL_ARRAY_BUFFER, m_nVBOID);
+    // glBufferData(GL_ARRAY_BUFFER, vcol*vrow*vsec*3*(sizeof (qint16)), grid.data(), GL_STATIC_DRAW);
+    // glBindBuffer(GL_ARRAY_BUFFER, 0);
   }
+  m_pAttrArray->setUpdated(true);
 
   //
   // generate texture map
@@ -423,26 +408,26 @@ void GLSLMapMeshRenderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
         //dataField[i + ncol*(j + nrow*k)] = float(i)/float(ncol);
       }
 
-  glBindBufferARB(GL_TEXTURE_BUFFER, m_nMapBufID);
+  glBindBuffer(GL_TEXTURE_BUFFER, m_nMapBufID);
   CHK_GLERROR("glBindBuffer");
 
   if (!bReuse) {
-    glBufferDataARB(GL_TEXTURE_BUFFER, ncol*nrow*nsec*sizeof(MapTmp::value_type), m_maptmp.data(), GL_DYNAMIC_DRAW_ARB);
-    CHK_GLERROR("glBufferDataARB");
+    glBufferData(GL_TEXTURE_BUFFER, ncol*nrow*nsec*sizeof(MapTmp::value_type), m_maptmp.data(), GL_DYNAMIC_DRAW);
+    CHK_GLERROR("glBufferData");
   }
   else {
-    glBufferSubDataARB(GL_TEXTURE_BUFFER, 0, ncol*nrow*nsec*sizeof(MapTmp::value_type), m_maptmp.data());
-    CHK_GLERROR("glBufferDataARB");
+    glBufferSubData(GL_TEXTURE_BUFFER, 0, ncol*nrow*nsec*sizeof(MapTmp::value_type), m_maptmp.data());
+    CHK_GLERROR("glBufferData");
   }
 
   glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
   glActiveTexture(GL_TEXTURE0);
-  // glEnable(MY_MAPTEX_DIM);
-  glBindTexture(MY_MAPTEX_DIM, m_nMapTexID);
+  // glEnable(GL_TEXTURE_BUFFER);
+  glBindTexture(GL_TEXTURE_BUFFER, m_nMapTexID);
 
-  glTexBufferARB(GL_TEXTURE_BUFFER, GL_R8UI, m_nMapBufID);
-  CHK_GLERROR("glTexBufferARB");
+  glTexBuffer(GL_TEXTURE_BUFFER, GL_R8UI, m_nMapBufID);
+  CHK_GLERROR("glTexBuffer");
 
   {
     //
@@ -467,7 +452,7 @@ void GLSLMapMeshRenderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
 
   m_pPO->disable();
 
-  // glBindTexture(MY_MAPTEX_DIM, 0);
+  // glBindTexture(GL_TEXTURE_BUFFER, 0);
   
   MB_DPRINTLN("make3D texture OK.");
   m_bMapTexOK = true;
@@ -476,14 +461,14 @@ void GLSLMapMeshRenderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
 #if 0
   if (1) {
 /*
-    glTexImage3D(MY_MAPTEX_DIM, 0,
+    glTexImage3D(GL_TEXTURE_BUFFER, 0,
                  GL_ALPHA32F_ARB,
                  ncol, nrow, nsec, 0,
                  GL_ALPHA, GL_FLOAT,
                  (const float *)(m_maptmp));
 */
     /*
-    glTexImage3D(MY_MAPTEX_DIM, 0,
+    glTexImage3D(GL_TEXTURE_BUFFER, 0,
                  GL_ALPHA16UI_EXT, // components
                  ncol, nrow, nsec, 0,
                  GL_ALPHA_INTEGER_EXT, GL_UNSIGNED_SHORT,
@@ -493,7 +478,7 @@ void GLSLMapMeshRenderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
   }
   else {
 /*
-    glTexSubImage3D(MY_MAPTEX_DIM,
+    glTexSubImage3D(GL_TEXTURE_BUFFER,
                     0, // LOD
                     0, 0, 0, // offset
                     ncol, nrow, nsec, // size
@@ -501,7 +486,7 @@ void GLSLMapMeshRenderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
                     GL_FLOAT, // type
                     (const float *)(m_maptmp));
 
-    glTexSubImage3D(MY_MAPTEX_DIM,
+    glTexSubImage3D(GL_TEXTURE_BUFFER,
                     0, // LOD
                     0,0,0, // offset
                     ncol,nrow,nsec, // size
@@ -578,9 +563,9 @@ void GLSLMapMeshRenderer::renderGPU(DisplayContext *pdc)
   DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
 
   glActiveTexture(GL_TEXTURE0);
-  // glEnable(MY_MAPTEX_DIM);
-  glBindTexture(MY_MAPTEX_DIM, m_nMapTexID);
-  glTexBufferARB(GL_TEXTURE_BUFFER, GL_R8UI, m_nMapBufID);
+  // glEnable(GL_TEXTURE_BUFFER);
+  glBindTexture(GL_TEXTURE_BUFFER, m_nMapTexID);
+  glTexBuffer(GL_TEXTURE_BUFFER, GL_R8UI, m_nMapBufID);
 
   m_pPO->enable();
   
@@ -600,29 +585,21 @@ void GLSLMapMeshRenderer::renderGPU(DisplayContext *pdc)
 
   m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
 
-  /*
-  pdc->startPoints();
+  // glBindBuffer(GL_ARRAY_BUFFER, m_nVBOID);
+  // glEnableClientState(GL_VERTEX_ARRAY);
+  // glVertexPointer(3, GL_SHORT, 0,  NULL);
+  // // glVertexAttribIPointer(m_nVertexLoc, 4, GL_SHORT, 0, NULL);
+  // glDrawArrays(GL_POINTS, 0, (ncol-1)*(nsec-1)*(nrow-1));
+  // glDisableClientState(GL_VERTEX_ARRAY);
+  // glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-  for (k=0; k<nsec-1; k++)
-    for (j=0; j<nrow-1; j++)
-      for (i=0; i<ncol-1; i++){
-        glVertex3f(i,j,k);
-      }
-
-  pdc->end();
-   */
-
-  glBindBuffer(GL_ARRAY_BUFFER_ARB, m_nVBOID);
-  glEnableClientState(GL_VERTEX_ARRAY);
-  glVertexPointer(3, GL_SHORT, 0,  NULL);
-  // glVertexAttribIPointer(m_nVertexLoc, 4, GL_SHORT, 0, NULL);
-  glDrawArrays(GL_POINTS, 0, (ncol-1)*(nsec-1)*(nrow-1));
-  glDisableClientState(GL_VERTEX_ARRAY);
-  glBindBuffer(GL_ARRAY_BUFFER_ARB, 0);
+  m_pPO->setupFog(pdc);
+  m_pPO->setupMat(pdc);
+  pdc->drawElem(*m_pAttrArray);
 
   m_pPO->disable();
 
-  glBindTexture(MY_MAPTEX_DIM, 0);
+  glBindTexture(GL_TEXTURE_BUFFER, 0);
 
 }
 

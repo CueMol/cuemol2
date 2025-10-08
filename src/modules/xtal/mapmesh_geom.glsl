@@ -4,18 +4,6 @@
 //    geometry shader
 //
 
-// // GLSL version 1.30
-// #version 130
-// #extension GL_ARB_compatibility : enable
-
-//GLSL version 1.40
-#version 140
-#extension GL_ARB_compatibility : enable
-
-//New G80 extensions
-#extension GL_EXT_geometry_shader4 : enable
-#extension GL_EXT_gpu_shader4 : enable 
-
 /*
 // Volume data field texture 
 uniform usampler3D dataFieldTex; 
@@ -25,17 +13,20 @@ uint getDensity(ivec3 iv)
 }
 */
 
+// input (points)
+layout(points) in;
+// output (line strip; 16 verts max)
+layout(line_strip, max_vertices = 16) out;
+
+
+uniform mat4 u_ModelViewMatrix;
+uniform mat4 u_ProjectionMatrix;
+
 // Volume data field texture buffer
 uniform int ncol;
 uniform int nrow;
 uniform int nsec;
 uniform usamplerBuffer dataFieldTex; 
-uint getDensity(ivec3 iv)
-{
-  int index = iv.x + ncol*(iv.y + nrow*iv.z);
-  return uint( texelFetch(dataFieldTex, index).r );
-}
-
 uniform int isolevel;
 
 uniform ivec3 ivdel[12];
@@ -43,7 +34,14 @@ uniform ivec3 ivdel[12];
 uniform ivec2 edgetab[16];
 
 // for fog calc
-varying float FogFragCoord; 
+varying float v_fogCoord; 
+
+uint getDensity(ivec3 iv)
+{
+  int index = iv.x + ncol*(iv.y + nrow*iv.z);
+  return uint( texelFetch(dataFieldTex, index).r );
+}
+
 
 /// get the crossing value between d0 and d1 (uses isolevel)
 float getCrossVal(uint d0, uint d1)
@@ -76,17 +74,17 @@ float ffog(in float ecDistance)
 
 vec4 wvertex(vec4 v)
 {
-  vec4 ecPosition = gl_ModelViewMatrix * v;
-  FogFragCoord = ffog(ecPosition.z);
-  return gl_ProjectionMatrix * ecPosition;
+  vec4 ecPosition = u_ModelViewMatrix * v;
+  v_fogCoord = ffog(ecPosition.z);
+  return u_ProjectionMatrix * ecPosition;
 }
 
 
 void main(void)
 {
   int i;
-  vec4 pos = gl_PositionIn[0];
-  gl_FrontColor = gl_FrontColorIn[0];
+  vec4 pos = gl_in[0].gl_Position;
+  // gl_FrontColor = gl_FrontColorIn[0];
   
   ivec3 ipos = ivec3(pos.xyz);
 

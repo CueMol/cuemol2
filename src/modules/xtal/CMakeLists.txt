@@ -57,13 +57,13 @@ SET(XTAL_MODLDR_SRC xtal.moddef)
 # GL files (for OpenGL build)
 IF (BUILD_OPENGL_SYSDEP)
   list(APPEND XTAL_SRCS
-    # GLSLMapMeshRenderer.cpp
+    GLSLMapMeshRenderer.cpp
     # GLSLMapVolRenderer.cpp
     MapSurfRendImpl2.cpp
     GLSLMapSurfRendImpl1.cpp
   )
   list(APPEND XTAL_MCWG_QIFS
-    # GLSLMapMeshRenderer.qif
+    GLSLMapMeshRenderer.qif
     # GLSLMapVolRenderer.qif
   )
 
@@ -85,9 +85,9 @@ add_library(xtal STATIC ${XTAL_SRCS} ${MCWG_HEADERS})
 # GLSL shader files
 IF (BUILD_OPENGL_SYSDEP)
   SET(GLSL_SHADER_FILES
-    # mapmesh_vertex.glsl
-    # mapmesh_frag.glsl
-    # mapmesh_geom.glsl
+    mapmesh_vertex.glsl
+    mapmesh_frag.glsl
+    mapmesh_geom.glsl
     # mapvol_vertex.glsl
     # mapvol_frag.glsl
     mapsurf1_vertex.glsl

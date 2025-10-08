@@ -74,6 +74,17 @@ namespace xtal {
     /// GLSL shader objects
     OglProgramObject *m_pPO;
 
+    struct AttrElem {
+      // TODO: use integer attrib
+      qfloat32 ix, iy, iz;
+    };
+    
+    typedef gfx::DrawAttrArray<AttrElem> AttrArray;
+    AttrArray m_pAttrArray;
+    
+    GLuint m_nVertexLoc;
+
+
     ///////////////////////////////////////////
     // work area
 
@@ -92,11 +103,9 @@ namespace xtal {
     /// map 3D texture ID
     GLuint m_nMapTexID;
     GLuint m_nMapBufID;
-    GLuint m_nVBOID;
+    // GLuint m_nVBOID;
     
     unsigned int m_isolevel;
-
-    GLuint m_nVertexLoc;
 
     //typedef qlib::Array3D<int> MapTmp;
     typedef qlib::Array3D<quint8> MapTmp;
