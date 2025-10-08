@@ -34,7 +34,7 @@ uniform ivec3 ivdel[12];
 uniform ivec2 edgetab[16];
 
 // for fog calc
-varying float v_fogCoord; 
+out float v_fogCoord; 
 
 uint getDensity(ivec3 iv)
 {

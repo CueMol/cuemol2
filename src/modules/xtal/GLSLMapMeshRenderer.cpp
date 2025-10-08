@@ -46,7 +46,7 @@ GLSLMapMeshRenderer::GLSLMapMeshRenderer()
 
   m_bMapTexOK = false;
 
-  m_pAttrArray = null_ptr;
+  m_pAttrArray = nullptr;
 }
 
 // destructor
@@ -137,37 +137,45 @@ void GLSLMapMeshRenderer::viewChanged(qsys::ViewEvent &ev)
 
 bool GLSLMapMeshRenderer::initShader(DisplayContext *pdc)
 {
-  m_pPO = NULL;
+    if (m_bChkShaderDone) {
+        // already initialized / checked --> return
+        return true;
+    }
 
-  sysdep::ShaderSetupHelper ssh(pdc);
+    sysdep::ShaderSetupHelper ssh(pdc);
 
-  if (!ssh.checkEnvGS()) {
-    LOG_DPRINTLN("GPUMapMesh> ERROR: OpenGL GPU geom program not supported.");
-    m_bChkShaderDone = true;
-    return false;
-  }
+  // if (!ssh.checkEnvGS()) {
+  //   LOG_DPRINTLN("GPUMapMesh> ERROR: OpenGL GPU geom program not supported.");
+  //   m_bChkShaderDone = true;
+  //   return false;
+  // }
 
-  if (m_pPO==NULL)
+    MB_ASSERT(m_pPO == nullptr);
     m_pPO = ssh.createProgObj("gpu_mapmesh",
                               "%%CONFDIR%%/data/shaders/mapmesh_vertex.glsl",
                               "%%CONFDIR%%/data/shaders/mapmesh_frag.glsl",
-                              "%%CONFDIR%%/data/shaders/mapmesh_geom.glsl",
-                              GL_POINTS, GL_LINE_STRIP, 16);
+                              "%%CONFDIR%%/data/shaders/mapmesh_geom.glsl");
   
-  if (m_pPO==NULL) {
-    LOG_DPRINTLN("GPUMapMesh> ERROR: cannot create progobj.");
-    m_bChkShaderDone = true;
-    return false;
-  }
+    if (m_pPO==NULL) {
+        LOG_DPRINTLN("GPUMapMesh> ERROR: cannot create progobj.");
+        m_bChkShaderDone = true;
+        return false;
+    }
 
-  m_pPO->enable();
+    MB_DPRINTLN("m_pPO (%p) ->enable", m_pPO);
+    m_pPO->enable();
 
   // Setup the index displacement array
   // X-Y plane
+    MB_DPRINTLN("MapMesh> setup ivdel OK.");
   m_pPO->setUniform("ivdel[0]", 0, 0, 0);
+  MB_DPRINTLN("MapMesh> setup ivdel OK.");
   m_pPO->setUniform("ivdel[1]", 1, 0, 0);
+  MB_DPRINTLN("MapMesh> setup ivdel OK.");
   m_pPO->setUniform("ivdel[2]", 1, 1, 0);
+  MB_DPRINTLN("MapMesh> setup ivdel OK.");
   m_pPO->setUniform("ivdel[3]", 0, 1, 0);
+  MB_DPRINTLN("MapMesh> setup ivdel OK.");
   
   // Y-Z plane
   m_pPO->setUniform("ivdel[4]", 0, 0, 0);
@@ -361,9 +369,9 @@ void GLSLMapMeshRenderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
   MB_DPRINT("nsec: %d\n", nsec);
 
   // Generate Grid Data VBO
-  if (!bReuse || m_pAttrArray == null_ptr) {
+  if (!bReuse || m_pAttrArray == nullptr) {
     // size is changed --> generate grid data
-    if (m_pAttrArray!=null_ptr) {
+    if (m_pAttrArray!=nullptr) {
       delete m_pAttrArray;
     }
     m_pAttrArray = MB_NEW AttrArray();
@@ -379,13 +387,13 @@ void GLSLMapMeshRenderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
     const int nsz_tot = vcol * vrow * vsec;
     m_pAttrArray->alloc(nsz_tot);
 
-    for (k=0; k<vsec; k++)
-      for (j=0; j<vrow; j++)
-        for (i=0; i<vcol; i++) {
-          ibase = i + vcol*(j + vrow*k);
-          m_pAttrArray->at(ibase).ix = i;
-          m_pAttrArray->at(ibase).iy = j;
-          m_pAttrArray->at(ibase).iz = k;
+    for (int k=0; k<vsec; k++)
+      for (int j=0; j<vrow; j++)
+        for (int i=0; i<vcol; i++) {
+            int ibase = i + vcol*(j + vrow*k);
+            m_pAttrArray->at(ibase).ix = i;
+            m_pAttrArray->at(ibase).iy = j;
+            m_pAttrArray->at(ibase).iz = k;
         }
 
     // glBindBuffer(GL_ARRAY_BUFFER, m_nVBOID);

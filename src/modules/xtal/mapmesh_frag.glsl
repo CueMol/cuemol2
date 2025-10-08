@@ -4,8 +4,8 @@
 //    fragment shader
 //
 
-varying vec4 v_frontColor;
-varying float v_fogCoord; 
+in vec4 v_frontColor;
+in float v_fogCoord; 
 
 // total transparency
 uniform float frag_alpha;

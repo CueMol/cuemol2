@@ -13,6 +13,7 @@
 #include <qlib/IntVec3D.hpp>
 #include <qsys/ScalarObject.hpp>
 #include <qsys/ViewEvent.hpp>
+#include <gfx/DrawAttrArray.hpp>
 
 #include <sysdep/OglDisplayContext.hpp>
 #include <sysdep/OglProgramObject.hpp>
@@ -80,7 +81,7 @@ namespace xtal {
     };
     
     typedef gfx::DrawAttrArray<AttrElem> AttrArray;
-    AttrArray m_pAttrArray;
+    AttrArray *m_pAttrArray;
     
     GLuint m_nVertexLoc;
 

@@ -51,7 +51,7 @@ OglProgramObject *ShaderSetupHelper::createProgObj(const LString &name,
 
 OglProgramObject *ShaderSetupHelper::createProgObj(
     const LString &name, const LString &vert_path, const LString &frag_path,
-    const LString &geom_path, GLint in_type, GLint out_type, GLint out_count)
+    const LString &geom_path)
 {
     auto *pOglDC = getContext();
 
@@ -71,9 +71,9 @@ OglProgramObject *ShaderSetupHelper::createProgObj(
             pPO->loadShader("vert", vert_path, GL_VERTEX_SHADER);
             pPO->loadShader("frag", frag_path, GL_FRAGMENT_SHADER);
             pPO->loadShader("geom", geom_path, GL_GEOMETRY_SHADER);
-            pPO->setProgParam(GL_GEOMETRY_INPUT_TYPE_EXT, in_type);
-            pPO->setProgParam(GL_GEOMETRY_OUTPUT_TYPE_EXT, out_type);
-            pPO->setProgParam(GL_GEOMETRY_VERTICES_OUT_EXT, out_count);
+            // pPO->setProgParam(GL_GEOMETRY_INPUT_TYPE, in_type);
+            // pPO->setProgParam(GL_GEOMETRY_OUTPUT_TYPE, out_type);
+            // pPO->setProgParam(GL_GEOMETRY_VERTICES_OUT, out_count);
             pPO->link();
         } catch (...) {
             LOG_DPRINTLN("FATAL ERROR: loadShader(%s) failed!!", name.c_str());
