@@ -37,8 +37,6 @@ GLSLMapMeshRenderer::GLSLMapMeshRenderer()
 
   //resetAllProps();
 
-  //m_pVS = NULL;
-  //m_pFS = NULL;
   m_pPO = NULL;
 
   m_nMapTexID = 0;
@@ -162,20 +160,14 @@ bool GLSLMapMeshRenderer::initShader(DisplayContext *pdc)
         return false;
     }
 
-    MB_DPRINTLN("m_pPO (%p) ->enable", m_pPO);
     m_pPO->enable();
 
-  // Setup the index displacement array
-  // X-Y plane
-    MB_DPRINTLN("MapMesh> setup ivdel OK.");
-  m_pPO->setUniform("ivdel[0]", 0, 0, 0);
-  MB_DPRINTLN("MapMesh> setup ivdel OK.");
-  m_pPO->setUniform("ivdel[1]", 1, 0, 0);
-  MB_DPRINTLN("MapMesh> setup ivdel OK.");
-  m_pPO->setUniform("ivdel[2]", 1, 1, 0);
-  MB_DPRINTLN("MapMesh> setup ivdel OK.");
-  m_pPO->setUniform("ivdel[3]", 0, 1, 0);
-  MB_DPRINTLN("MapMesh> setup ivdel OK.");
+    // Setup the index displacement array
+    // X-Y plane
+    m_pPO->setUniform("ivdel[0]", 0, 0, 0);
+    m_pPO->setUniform("ivdel[1]", 1, 0, 0);
+    m_pPO->setUniform("ivdel[2]", 1, 1, 0);
+    m_pPO->setUniform("ivdel[3]", 0, 1, 0);
   
   // Y-Z plane
   m_pPO->setUniform("ivdel[4]", 0, 0, 0);
@@ -466,47 +458,6 @@ void GLSLMapMeshRenderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
   m_bMapTexOK = true;
 }
 
-#if 0
-  if (1) {
-/*
-    glTexImage3D(GL_TEXTURE_BUFFER, 0,
-                 GL_ALPHA32F_ARB,
-                 ncol, nrow, nsec, 0,
-                 GL_ALPHA, GL_FLOAT,
-                 (const float *)(m_maptmp));
-*/
-    /*
-    glTexImage3D(GL_TEXTURE_BUFFER, 0,
-                 GL_ALPHA16UI_EXT, // components
-                 ncol, nrow, nsec, 0,
-                 GL_ALPHA_INTEGER_EXT, GL_UNSIGNED_SHORT,
-                 m_maptmp.data());
-     */
-
-  }
-  else {
-/*
-    glTexSubImage3D(GL_TEXTURE_BUFFER,
-                    0, // LOD
-                    0, 0, 0, // offset
-                    ncol, nrow, nsec, // size
-                    GL_ALPHA, // format
-                    GL_FLOAT, // type
-                    (const float *)(m_maptmp));
-
-    glTexSubImage3D(GL_TEXTURE_BUFFER,
-                    0, // LOD
-                    0,0,0, // offset
-                    ncol,nrow,nsec, // size
-                    GL_ALPHA_INTEGER_EXT, // format
-                    GL_UNSIGNED_SHORT, // type
-                    m_maptmp.data());
-    
-*/    
-  }
-
-#endif
-
 void GLSLMapMeshRenderer::display(DisplayContext *pdc)
 {
   if (!m_bChkShaderDone)
@@ -593,17 +544,10 @@ void GLSLMapMeshRenderer::renderGPU(DisplayContext *pdc)
 
   m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
 
-  // glBindBuffer(GL_ARRAY_BUFFER, m_nVBOID);
-  // glEnableClientState(GL_VERTEX_ARRAY);
-  // glVertexPointer(3, GL_SHORT, 0,  NULL);
-  // // glVertexAttribIPointer(m_nVertexLoc, 4, GL_SHORT, 0, NULL);
-  // glDrawArrays(GL_POINTS, 0, (ncol-1)*(nsec-1)*(nrow-1));
-  // glDisableClientState(GL_VERTEX_ARRAY);
-  // glBindBuffer(GL_ARRAY_BUFFER, 0);
-
   m_pPO->setupFog(pdc);
   m_pPO->setupMat(pdc);
-  pdc->drawElem(*m_pAttrArray);
+  // pdc->drawElem(*m_pAttrArray);
+  glDrawArraysInstanced(GL_POINTS, 0, 1, ncol*nrow*nsec);
 
   m_pPO->disable();
 

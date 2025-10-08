@@ -66,6 +66,14 @@ public:
      */
     void draw(const gfx::AbstDrawAttrs &ada);
 
+    /** Draw VBO with instancing
+     * @param pdc Display context
+     * @param ada Abstract drawing attributes
+     * @param nCount Number of vertices/indices to draw
+     * @param nInsts Number of instances to draw
+     */
+    void draw(const gfx::AbstDrawAttrs &ada, int nCount, int nInsts);
+
     /** Unbind VBO
      * @param pdc Display context
      * @param ada Abstract drawing attributes

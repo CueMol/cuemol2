@@ -169,6 +169,27 @@ void OcBufferRep::draw(const gfx::AbstDrawAttrs &ada)
     }
 }
 
+void OcBufferRep::draw(const gfx::AbstDrawAttrs &ada, int nCount, int nInsts)
+{
+    GLenum mode = convDrawMode(ada.getDrawMode());
+    int itype = ada.getType();
+    size_t indsz = ada.getIndElemSize();
+    if (itype == AbstDrawElem::VA_ATTR_INDS) {
+        if (indsz == 2)
+            glDrawElements(mode, ada.getIndSize(), GL_UNSIGNED_SHORT, 0);
+        else if (indsz == 4)
+            glDrawElements(mode, ada.getIndSize(), GL_UNSIGNED_INT, 0);
+        else {
+            LOG_DPRINTLN("unsupported index element size %d", indsz);
+            MB_ASSERT(false);
+        }
+    } else {
+        // glDrawArrays(mode, 0, ada.getSize());
+        glDrawArraysInstanced(mode, 0, nCount, nInsts);
+        CHK_GLERROR("glDrawArrays(mode, 0, ada.getSize())");
+    }
+}
+
 void OcBufferRep::unbind(const gfx::AbstDrawAttrs &ada)
 {
     size_t nattr = ada.getAttrSize();

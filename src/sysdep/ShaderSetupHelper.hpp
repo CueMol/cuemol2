@@ -54,8 +54,7 @@ public:
                                     const LString &frag_path);
 
     OglProgramObject *createProgObj(const LString &name, const LString &vert_path,
-                                    const LString &frag_path, const LString &geom_path,
-                                    GLint in_type, GLint out_type, GLint out_count);
+                                    const LString &frag_path, const LString &geom_path);
 };
 
 // //
