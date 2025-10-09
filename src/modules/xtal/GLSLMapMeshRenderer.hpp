@@ -21,30 +21,29 @@
 class GLSLMapMeshRenderer_wrap;
 
 namespace sysdep {
-  class OglProgramObject;
-  class OglShaderObject;
-}
+class OglProgramObject;
+class OglShaderObject;
+}  // namespace sysdep
 
 namespace xtal {
 
-  using gfx::DisplayContext;
-  using qsys::ScalarObject;
-  class DensityMap;
-  using sysdep::OglProgramObject;
-  using sysdep::OglShaderObject;
+using gfx::DisplayContext;
+using qsys::ScalarObject;
+class DensityMap;
+using sysdep::OglProgramObject;
+using sysdep::OglShaderObject;
 
-  using qlib::IntVec3D;
+using qlib::IntVec3D;
 
-  class GLSLMapMeshRenderer : public MapRenderer,
-                          public qsys::ViewEventListener
-  {
+class GLSLMapMeshRenderer : public MapRenderer, public qsys::ViewEventListener
+{
     MC_SCRIPTABLE;
     MC_CLONEABLE;
 
     typedef MapRenderer super_t;
     friend class ::GLSLMapMeshRenderer_wrap;
 
-  private:
+private:
     ///////////////////////////////////////////
     // properties
 
@@ -67,24 +66,23 @@ namespace xtal {
     /// (default: false)
     bool m_bDragUpdate;
 
-  private:
-
+private:
     /// GLSL support check flag
     bool m_bChkShaderDone;
 
     /// GLSL shader objects
     OglProgramObject *m_pPO;
 
-    struct AttrElem {
-      // TODO: use integer attrib
-      qfloat32 ix, iy, iz;
+    struct AttrElem
+    {
+        // TODO: use integer attrib
+        qfloat32 ix, iy, iz;
     };
-    
+
     typedef gfx::DrawAttrArray<AttrElem> AttrArray;
     AttrArray *m_pAttrArray;
-    
-    GLuint m_nVertexLoc;
 
+    GLuint m_nVertexLoc;
 
     ///////////////////////////////////////////
     // work area
@@ -105,12 +103,12 @@ namespace xtal {
     GLuint m_nMapTexID;
     GLuint m_nMapBufID;
     // GLuint m_nVBOID;
-    
+
     unsigned int m_isolevel;
 
-    //typedef qlib::Array3D<int> MapTmp;
+    // typedef qlib::Array3D<int> MapTmp;
     typedef qlib::Array3D<quint8> MapTmp;
-    //typedef qlib::Array3D<float> MapTmp;
+    // typedef qlib::Array3D<float> MapTmp;
 
     MapTmp m_maptmp;
 
@@ -118,10 +116,10 @@ namespace xtal {
     void renderCPU(DisplayContext *pdc);
 
     IntVec3D m_ivdel[12];
-    
-    Vector4D calcVecCrs(const IntVec3D &tpos, int iv0, float crs0, int ivbase);
-  public:
 
+    Vector4D calcVecCrs(const IntVec3D &tpos, int iv0, float crs0, int ivbase);
+
+public:
     ///////////////////////////////////////////
     // constructors / destructor
 
@@ -147,12 +145,15 @@ namespace xtal {
     ///////////////////////////////////////////
 
     void display(DisplayContext *pdc);
-    
+
     virtual void render(DisplayContext *pdl) {}
     virtual void preRender(DisplayContext *pdc) {}
     virtual void postRender(DisplayContext *pdc) {}
 
-    virtual bool isTransp() const { return true; }
+    virtual bool isTransp() const
+    {
+        return true;
+    }
 
     virtual void invalidateDisplayCache();
 
@@ -162,17 +163,25 @@ namespace xtal {
 
     ///////////////////////////////////////////////////////////////
 
-    void setLineWidth(double f) {
-      m_lw = f;
-      super_t::invalidateDisplayCache();
+    void setLineWidth(double f)
+    {
+        m_lw = f;
+        super_t::invalidateDisplayCache();
     }
-    double getLineWidth() const { return m_lw; }
+    double getLineWidth() const
+    {
+        return m_lw;
+    }
 
     double getMaxExtent() const;
 
-    int getBufSize() const { return m_nBufSize; }
-    void setBufSize(int nsize) {
-      m_nBufSize = nsize;
+    int getBufSize() const
+    {
+        return m_nBufSize;
+    }
+    void setBufSize(int nsize)
+    {
+        m_nBufSize = nsize;
     }
 
     ///////////////////////////////////////////////////////////////
@@ -181,28 +190,25 @@ namespace xtal {
 
     ///////////////////////////////////////////////////////////////
 
-  private:
-
+private:
     bool m_bMapTexOK;
 
     unsigned char getMap(ScalarObject *pMap, int x, int y, int z) const
     {
-      if (m_bPBC) {
-        const int xx = (x+10000*m_nMapColNo)%m_nMapColNo;
-        const int yy = (y+10000*m_nMapRowNo)%m_nMapRowNo;
-        const int zz = (z+10000*m_nMapSecNo)%m_nMapSecNo;
-        return pMap->atByte(xx,yy,zz);
-      }
-      else {
-        if (pMap->isInBoundary(x,y,z))
-          return pMap->atByte(x,y,z);
-        else
-          return 0;
-      }
+        if (m_bPBC) {
+            const int xx = (x + 10000 * m_nMapColNo) % m_nMapColNo;
+            const int yy = (y + 10000 * m_nMapRowNo) % m_nMapRowNo;
+            const int zz = (z + 10000 * m_nMapSecNo) % m_nMapSecNo;
+            return pMap->atByte(xx, yy, zz);
+        } else {
+            if (pMap->isInBoundary(x, y, z))
+                return pMap->atByte(x, y, z);
+            else
+                return 0;
+        }
     }
+};
 
-  };
-
-}
+}  // namespace xtal
 
 #endif
