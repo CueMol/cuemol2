@@ -23,9 +23,10 @@ out vec4 v_frontColor;
 
 void main(void)
 {
-    gl_Position = aVertex;
+  gl_Position = aVertex;
 
-    // int id = gl_InstanceID;
+  // int id = gl_InstanceID;
+    // int id = gl_VertexID;
     // int iz = id / (ncol * nrow);
     // int temp = id - iz * ncol * nrow;
     // int iy = temp / ncol;

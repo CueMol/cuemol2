@@ -389,10 +389,6 @@ void GLSLMapMeshRenderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
             m_pAttrArray->at(ibase).iy = j;
             m_pAttrArray->at(ibase).iz = k;
         }
-
-    // glBindBuffer(GL_ARRAY_BUFFER, m_nVBOID);
-    // glBufferData(GL_ARRAY_BUFFER, vcol*vrow*vsec*3*(sizeof (qint16)), grid.data(), GL_STATIC_DRAW);
-    // glBindBuffer(GL_ARRAY_BUFFER, 0);
   }
   m_pAttrArray->setUpdated(true);
 

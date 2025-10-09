@@ -108,17 +108,20 @@ void main(void)
     if (flag==0U || flag>=15U)
       continue;
 
-    ivec2 i01 = edgetab[flag];
-    float crs0 = getCrossVal(val[i01.x], val[(i01.x+1)%4]);
-    float crs1 = getCrossVal(val[i01.y], val[(i01.y+1)%4]);
+    ivec2 ieg = edgetab[flag];
     
     // if (crs0<0.0 || crs1<0.0 || crs0>1.0 || crs1>1.0)
     //   continue;
 
-    vec4 v0 = calcVecCrs(ipos, i01.x, crs0, ibase);
-    vec4 v1 = calcVecCrs(ipos, i01.y, crs1, ibase);
+    int ieg0 = ieg.x;
+    float crs0 = getCrossVal(val[ieg0], val[(ieg0+1)%4]);
+    vec4 v0 = calcVecCrs(ipos, ieg0, crs0, ibase);
     gl_Position = wvertex(v0);
     EmitVertex();
+
+    int ieg1 = ieg.y;
+    float crs1 = getCrossVal(val[ieg1], val[(ieg1+1)%4]);
+    vec4 v1 = calcVecCrs(ipos, ieg1, crs1, ibase);
     gl_Position = wvertex(v1);
     EmitVertex();
 
