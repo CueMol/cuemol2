@@ -149,10 +149,13 @@ bool GLSLMapMeshRenderer::initShader(DisplayContext *pdc)
   // }
 
     MB_ASSERT(m_pPO == nullptr);
+    // m_pPO = ssh.createProgObj("gpu_mapmesh",
+    //                           "%%CONFDIR%%/data/shaders/mapmesh_vertex.glsl",
+    //                           "%%CONFDIR%%/data/shaders/mapmesh_frag.glsl",
+    //                           "%%CONFDIR%%/data/shaders/mapmesh_geom.glsl");
     m_pPO = ssh.createProgObj("gpu_mapmesh",
-                              "%%CONFDIR%%/data/shaders/mapmesh_vertex.glsl",
-                              "%%CONFDIR%%/data/shaders/mapmesh_frag.glsl",
-                              "%%CONFDIR%%/data/shaders/mapmesh_geom.glsl");
+                              "%%CONFDIR%%/data/shaders/mapmesh2_vert.glsl",
+                              "%%CONFDIR%%/data/shaders/mapmesh_frag.glsl");
   
     if (m_pPO==NULL) {
         LOG_DPRINTLN("GPUMapMesh> ERROR: cannot create progobj.");
@@ -369,28 +372,28 @@ void GLSLMapMeshRenderer::make3DTexMap(ScalarObject *pMap, DensityMap *pXtal)
       delete m_pAttrArray;
     }
     m_pAttrArray = MB_NEW AttrArray();
-    m_pAttrArray->setAttrSize(1);
+    // m_pAttrArray->setAttrSize(1);
     
-    m_pAttrArray->setAttrInfo(0, m_pPO->getAttribLocation("aVertex"), 3,
-                              qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, ix));
+    // m_pAttrArray->setAttrInfo(0, m_pPO->getAttribLocation("aVertex"), 3,
+    //                           qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, ix));
 
-    int vcol = ncol-1;
-    int vrow = nrow-1;
-    int vsec = nsec-1;
+    // int vcol = ncol-1;
+    // int vrow = nrow-1;
+    // int vsec = nsec-1;
 
-    const int nsz_tot = vcol * vrow * vsec;
-    m_pAttrArray->alloc(nsz_tot);
+    // const int nsz_tot = vcol * vrow * vsec;
+    // m_pAttrArray->alloc(nsz_tot);
 
-    for (int k=0; k<vsec; k++)
-      for (int j=0; j<vrow; j++)
-        for (int i=0; i<vcol; i++) {
-            int ibase = i + vcol*(j + vrow*k);
-            m_pAttrArray->at(ibase).ix = i;
-            m_pAttrArray->at(ibase).iy = j;
-            m_pAttrArray->at(ibase).iz = k;
-        }
+    // for (int k=0; k<vsec; k++)
+    //   for (int j=0; j<vrow; j++)
+    //     for (int i=0; i<vcol; i++) {
+    //         int ibase = i + vcol*(j + vrow*k);
+    //         m_pAttrArray->at(ibase).ix = i;
+    //         m_pAttrArray->at(ibase).iy = j;
+    //         m_pAttrArray->at(ibase).iz = k;
+    //     }
   }
-  m_pAttrArray->setUpdated(true);
+  // m_pAttrArray->setUpdated(true);
 
   //
   // generate texture map
@@ -545,8 +548,10 @@ void GLSLMapMeshRenderer::renderGPU(DisplayContext *pdc)
   m_pPO->setupFog(pdc);
   m_pPO->setupMat(pdc);
 
-  pdc->drawElem(*m_pAttrArray);
-  // glDrawArraysInstanced(GL_POINTS, 0, 1, ncol*nrow*nsec);
+  // pdc->drawElem(*m_pAttrArray);
+  
+  // glDrawArraysInstanced(GL_POINTS, 0, 1, ncol*nrow*nsec*3*2);
+  glDrawArraysInstanced(GL_LINES, 0, 2, ncol*nrow*nsec*3);
 
   m_pPO->disable();
 

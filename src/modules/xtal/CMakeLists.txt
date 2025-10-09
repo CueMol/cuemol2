@@ -88,6 +88,7 @@ IF (BUILD_OPENGL_SYSDEP)
     mapmesh_vertex.glsl
     mapmesh_frag.glsl
     mapmesh_geom.glsl
+    mapmesh2_vert.glsl
     # mapvol_vertex.glsl
     # mapvol_frag.glsl
     mapsurf1_vertex.glsl
