@@ -187,12 +187,14 @@ bool GLSLMapMeshRenderer::initShader(DisplayContext *pdc)
   m_pPO->setUniform("edgetab[2]" ,  0, 1); // 0010
   m_pPO->setUniform("edgetab[3]" ,  1, 3); // 0011
   m_pPO->setUniform("edgetab[4]" ,  1, 2); // 0100
-  m_pPO->setUniform("edgetab[5]" , -1,-1); // 0101
+  // m_pPO->setUniform("edgetab[5]" , -1,-1); // 0101
+  m_pPO->setUniform("edgetab[5]" ,  0, 1); // 0101
   m_pPO->setUniform("edgetab[6]" ,  0, 2); // 0110
   m_pPO->setUniform("edgetab[7]" ,  2, 3); // 0111
   m_pPO->setUniform("edgetab[8]" ,  2, 3); // 1000
   m_pPO->setUniform("edgetab[9]" ,  0, 2); // 1001
-  m_pPO->setUniform("edgetab[10]", -1,-1); // 1010
+  // m_pPO->setUniform("edgetab[10]", -1,-1); // 1010
+  m_pPO->setUniform("edgetab[10]",  2, 3); // 1010
   m_pPO->setUniform("edgetab[11]",  1, 2); // 1011
   m_pPO->setUniform("edgetab[12]",  1, 3); // 1100
   m_pPO->setUniform("edgetab[13]",  0, 1); // 1101
@@ -546,8 +548,9 @@ void GLSLMapMeshRenderer::renderGPU(DisplayContext *pdc)
 
   m_pPO->setupFog(pdc);
   m_pPO->setupMat(pdc);
-  // pdc->drawElem(*m_pAttrArray);
-  glDrawArraysInstanced(GL_POINTS, 0, 1, ncol*nrow*nsec);
+
+  pdc->drawElem(*m_pAttrArray);
+  // glDrawArraysInstanced(GL_POINTS, 0, 1, ncol*nrow*nsec);
 
   m_pPO->disable();
 

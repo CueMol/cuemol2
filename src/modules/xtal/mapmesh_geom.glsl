@@ -112,8 +112,8 @@ void main(void)
     float crs0 = getCrossVal(val[i01.x], val[(i01.x+1)%4]);
     float crs1 = getCrossVal(val[i01.y], val[(i01.y+1)%4]);
     
-    if (crs0<-0.0 || crs1<-0.0)
-      continue;
+    // if (crs0<0.0 || crs1<0.0 || crs0>1.0 || crs1>1.0)
+    //   continue;
 
     vec4 v0 = calcVecCrs(ipos, i01.x, crs0, ibase);
     vec4 v1 = calcVecCrs(ipos, i01.y, crs1, ibase);
