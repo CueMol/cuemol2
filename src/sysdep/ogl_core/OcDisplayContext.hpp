@@ -110,15 +110,12 @@ public:
 
     ///////////////////////////////
 
-    /// Display unit sphere
-    // TODO: impl
+    // /// Display unit sphere
     // virtual void sphere();
 
-    // TODO: impl
     // virtual void sphere(double r, const Vector4D &vec);
 
-    /// Display cone (and cylinder)
-    // TODO: impl
+    // /// Display cone (and cylinder)
     // virtual void cone(double r1, double r2, const Vector4D &pos1, const Vector4D &pos2,
     //                   bool bCap);
 
@@ -128,8 +125,6 @@ public:
     virtual void drawMesh(const gfx::Mesh &l);
 
     virtual void drawElem(const gfx::AbstDrawElem &l);
-
-    virtual void drawElem(const gfx::AbstDrawElem &l, int nCount, int nInsts);
 
     ///////////////////////////////
     // Display List support
@@ -146,6 +141,16 @@ public:
     virtual void recordEnd();
 
     virtual void setMaterial(const LString &name);
+
+    ///////////////////////////////
+    // OpenGL VBO support
+
+    /// draw element (vertex array version)
+    // void drawElemVA(const gfx::DrawElem &l);
+
+    // void drawElemPix(const gfx::DrawElemPix &de);
+
+    void drawElemAttrs(const gfx::AbstDrawAttrs &ada);
 
     ///////////////////////////////
     // OpenGL SL support

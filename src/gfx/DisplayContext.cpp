@@ -277,10 +277,6 @@ void DisplayContext::drawElem(const AbstDrawElem &)
 {
 }
 
-void DisplayContext::drawElem(const gfx::AbstDrawElem &, int nCount, int nInsts)
-{
-}
-
 void DisplayContext::setLineWidth(double lw)
 {
     m_lineWidth = lw;

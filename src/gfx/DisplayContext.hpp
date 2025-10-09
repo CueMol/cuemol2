@@ -353,8 +353,6 @@ namespace gfx {
     /// Drawing element support (vertex array version)
     virtual void drawElem(const AbstDrawElem &);
 
-    virtual void drawElem(const gfx::AbstDrawElem &, int nCount, int nInsts);
-
     ///////////////////////////////
     // Display List support
   

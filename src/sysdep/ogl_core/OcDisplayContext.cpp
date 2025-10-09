@@ -240,8 +240,12 @@ void OcDisplayContext::drawElem(const AbstDrawElem &ade)
     const int ntype = ade.getType();
     MB_ASSERT(ntype == AbstDrawElem::VA_ATTRS || ntype == AbstDrawElem::VA_ATTR_INDS);
 
-    const auto &ada = static_cast<const gfx::AbstDrawAttrs &>(ade);
+    // shader attribute impl
+    drawElemAttrs(static_cast<const gfx::AbstDrawAttrs &>(ade));
+}
 
+void OcDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
+{
     auto *pRep = static_cast<OcBufferRep *>(ada.getVBO());
     if (pRep == NULL) {
         // Make new VBO and bind it
@@ -255,29 +259,6 @@ void OcDisplayContext::drawElem(const AbstDrawElem &ade)
 
     pRep->setAttrib(ada);
     pRep->draw(ada);
-    pRep->unbind(ada);
-}
-
-void OcDisplayContext::drawElem(const AbstDrawElem &ade, int nCount, int nInsts)
-{
-    const int ntype = ade.getType();
-    MB_ASSERT(ntype == AbstDrawElem::VA_ATTRS || ntype == AbstDrawElem::VA_ATTR_INDS);
-
-    const auto &ada = static_cast<const gfx::AbstDrawAttrs &>(ade);
-
-    auto *pRep = static_cast<OcBufferRep *>(ada.getVBO());
-    if (pRep == NULL) {
-        // Make new VBO and bind it
-        pRep = MB_NEW OcBufferRep();
-        pRep->create(this, ada);
-        ada.setVBO(pRep);
-    } else {
-        pRep->bind();
-        pRep->update(ada);
-    }
-
-    pRep->setAttrib(ada);
-    pRep->draw(ada, nCount, nInsts);
     pRep->unbind(ada);
 }
 
