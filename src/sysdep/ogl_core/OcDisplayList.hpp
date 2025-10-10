@@ -181,8 +181,15 @@ public:
     ///////////////////////////////
     // higher-order objects
 private:
+    /**
+       Detail level for sphere and cylinder tessellation.
+     */       
+    int m_nDetail;
+
     using CylList = gfx::CylinderList<Vector4D, Matrix4D, gfx::GrowMesh<qlib::quint32>>;
     CylList m_cylinders;
+
+    void convertToMesh();
 
 public:
     /// Display unit sphere

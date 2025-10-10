@@ -36,6 +36,8 @@ OcDisplayList::OcDisplayList()
     // m_lineWidth = -1.0;
     m_bVertStipple = false;
     m_nPolyMode = gfx::AbstDrawElem::DRAW_TRIANGLES;
+
+    m_nDetail = 5;
 }
 
 OcDisplayList::~OcDisplayList()
@@ -421,6 +423,8 @@ void OcDisplayList::recordEnd()
     // Create Trig attr array
     createTrigArray();
 
+    convertToMesh();
+
     // Create Trig attr indexed array
     createTrigMesh();
 }
@@ -652,42 +656,49 @@ void OcDisplayList::drawMesh(const gfx::Mesh &mesh)
 
 void OcDisplayList::sphere()
 {
-  LOG_DPRINTLN("OcDisplayList::sphere()");
+    MB_DPRINTLN("OcDisplayList::sphere()");
 }
 
 void OcDisplayList::sphere(double r, const Vector4D &vec)
 {
-  LOG_DPRINTLN("OcDisplayList::sphere(%f, vec)", r);
+    MB_DPRINTLN("OcDisplayList::sphere(%f, vec)", r);
 }
 
 void OcDisplayList::cylinder(double r, const Vector4D &pos1, const Vector4D &pos2)
 {
-  LOG_DPRINTLN("OcDisplayList::cylinder()");
-  auto col = m_pColor->getDevCode(getSceneID());
-  int ndet = 10;
-  m_cylinders.add(pos1, pos2, r, r, ndet, col, false, nullptr);
+    MB_DPRINTLN("OcDisplayList::cylinder()");
+    auto col = m_pColor->getDevCode(getSceneID());
+    int ndet = m_nDetail;
+    m_cylinders.add(pos1, pos2, r, r, col, ndet, false, nullptr);
 }
 
 void OcDisplayList::cylinderCap(double r, const Vector4D &pos1, const Vector4D &pos2)
 {
-  LOG_DPRINTLN("OcDisplayList::cylinderCap()");
-  // m_cylinders.add(double r, const Vector4D &pos1, const Vector4D &pos2, true);
+    MB_DPRINTLN("OcDisplayList::cylinderCap()");
+    // m_cylinders.add(double r, const Vector4D &pos1, const Vector4D &pos2, true);
 }
 
-void OcDisplayList::cone(double r1, double r2,
-                         const Vector4D &pos1, const Vector4D &pos2,
-                         bool bCap)
+void OcDisplayList::cone(double r1, double r2, const Vector4D &pos1,
+                         const Vector4D &pos2, bool bCap)
 {
-  LOG_DPRINTLN("OcDisplayList::cone()");
+    MB_DPRINTLN("OcDisplayList::cone()");
 }
 
 void OcDisplayList::setDetail(int n)
 {
+    MB_DPRINTLN("OcDisplayList::setDetail(%d)", n);
+    m_nDetail = n;
 }
 
 int OcDisplayList::getDetail() const
 {
-  return 1;
+    return m_nDetail;
+}
+
+void OcDisplayList::convertToMesh()
+{
+    MB_DPRINTLN("convertToMesh num cyls: %d", m_cylinders.getSize());
+    m_cylinders.makeMesh(&m_mesh, true);
 }
 
 }  // namespace sysdep
