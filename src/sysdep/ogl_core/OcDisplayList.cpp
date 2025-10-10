@@ -228,7 +228,7 @@ void OcDisplayList::startTriangleStrip()
         return;
     }
     m_nDrawMode = DRAWMODE_TRIGSTRIP;
-    m_mesh.start(gfx::GrowMesh::GM_TRIGSTRIP);
+    m_mesh.start(gfx::GrowMesh<qlib::quint32>::GM_TRIGSTRIP);
     // m_pIntData->meshStart(m_nDrawMode);
 }
 
@@ -239,7 +239,7 @@ void OcDisplayList::startTriangleFan()
         return;
     }
     m_nDrawMode = DRAWMODE_TRIGFAN;
-    m_mesh.start(gfx::GrowMesh::GM_TRIGFAN);
+    m_mesh.start(gfx::GrowMesh<qlib::quint32>::GM_TRIGFAN);
     // m_pIntData->meshStart(m_nDrawMode);
 }
 
@@ -648,6 +648,46 @@ void OcDisplayList::drawMesh(const gfx::Mesh &mesh)
         m_pTrigMesh->atind(i) = faces[i];
     }
     m_pTrigMesh->setUpdated(true);
+}
+
+void OcDisplayList::sphere()
+{
+  LOG_DPRINTLN("OcDisplayList::sphere()");
+}
+
+void OcDisplayList::sphere(double r, const Vector4D &vec)
+{
+  LOG_DPRINTLN("OcDisplayList::sphere(%f, vec)", r);
+}
+
+void OcDisplayList::cylinder(double r, const Vector4D &pos1, const Vector4D &pos2)
+{
+  LOG_DPRINTLN("OcDisplayList::cylinder()");
+  auto col = m_pColor->getDevCode(getSceneID());
+  int ndet = 10;
+  m_cylinders.add(pos1, pos2, r, r, ndet, col, false, nullptr);
+}
+
+void OcDisplayList::cylinderCap(double r, const Vector4D &pos1, const Vector4D &pos2)
+{
+  LOG_DPRINTLN("OcDisplayList::cylinderCap()");
+  // m_cylinders.add(double r, const Vector4D &pos1, const Vector4D &pos2, true);
+}
+
+void OcDisplayList::cone(double r1, double r2,
+                         const Vector4D &pos1, const Vector4D &pos2,
+                         bool bCap)
+{
+  LOG_DPRINTLN("OcDisplayList::cone()");
+}
+
+void OcDisplayList::setDetail(int n)
+{
+}
+
+int OcDisplayList::getDetail() const
+{
+  return 1;
 }
 
 }  // namespace sysdep

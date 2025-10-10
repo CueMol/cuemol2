@@ -10,6 +10,7 @@
 #include <gfx/DisplayContext.hpp>
 #include <gfx/DrawAttrArray.hpp>
 #include <gfx/GrowMesh.hpp>
+#include <gfx/SphereCyls.hpp>
 
 namespace sysdep {
 
@@ -65,7 +66,7 @@ private:
     //////////
     // trig mesh (vert + indices)
 
-    gfx::GrowMesh m_mesh;
+    gfx::GrowMesh<qlib::quint32> m_mesh;
 
     using TrigMesh = gfx::DrawAttrElems<qlib::quint32, TrigVertAttr>;
     TrigMesh *m_pTrigMesh;
@@ -177,6 +178,37 @@ public:
     virtual void startQuadStrip() {}
     virtual void startQuads() {}
 
+    ///////////////////////////////
+    // higher-order objects
+private:
+    using CylList = gfx::CylinderList<Vector4D, Matrix4D, gfx::GrowMesh<qlib::quint32>>;
+    CylList m_cylinders;
+
+public:
+    /// Display unit sphere
+    virtual void sphere();
+
+    /// Display sphere with radius of r at position vec
+    virtual void sphere(double r, const Vector4D &vec);
+
+    /// Display cylinder (capping is dependent on the implementation)
+    virtual void cylinder(double r, const Vector4D &pos1, const Vector4D &pos2);
+
+    /// Display cylinder (capping is always created)
+    virtual void cylinderCap(double r, const Vector4D &pos1, const Vector4D &pos2);
+
+    virtual void cone(double r1, double r2,
+                      const Vector4D &pos1, const Vector4D &pos2,
+                      bool bCap);
+
+    virtual void setDetail(int n);
+    virtual int getDetail() const;
+
+    virtual void drawMesh(const gfx::Mesh &mesh);
+
+    ///////////////////////////////
+    // Display list emulation
+
     virtual gfx::DisplayContext *createDisplayList();
     virtual bool canCreateDL() const;
     virtual bool isValid() const
@@ -186,8 +218,6 @@ public:
     virtual bool isDisplayList() const;
     virtual bool recordStart();
     virtual void recordEnd();
-
-    virtual void drawMesh(const gfx::Mesh &mesh);
 
     // void callDisplayListImpl(OglDisplayContext *pdc);
     void callDisplayListImpl(gfx::DisplayContext *pdc);

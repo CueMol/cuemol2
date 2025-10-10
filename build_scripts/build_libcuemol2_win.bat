@@ -16,8 +16,10 @@ echo SCRIPT_DIR: %SCRIPT_DIR%
 if "%GITHUB_WORKSPACE%"=="" (
    cd %SCRIPT_DIR%\..
    for /f %%i in ('cd') do set TOP_DIR=%%i
+   SET SCCACHE=
 ) ELSE (
    SET TOP_DIR=%GITHUB_WORKSPACE%
+   SET SCCACHE=-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 )
 echo TOP_DIR: %TOP_DIR%
 
@@ -37,6 +39,8 @@ SET INSTPATH=%DEPLIBS_DIR%\cuemol2
 SET BUILDDIR=build_libcuemol2
 rd /s /q %BUILDDIR%
 
+
+
 cmake -G Ninja -S %TOP_DIR% -B %BUILDDIR% ^
  -DCMAKE_INSTALL_PREFIX=%INSTPATH% ^
  -DBoost_ROOT=%DEPLIBS_DIR%\boost_1_84_0 ^
@@ -52,8 +56,7 @@ cmake -G Ninja -S %TOP_DIR% -B %BUILDDIR% ^
  -DCGAL_DISABLE_GMP=TRUE ^
  -DCGAL_HEADER_ONLY=TRUE ^
  -DCMAKE_BUILD_TYPE=%CONFIG% ^
- -DCMAKE_C_COMPILER_LAUNCHER=sccache ^
- -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+ %SCCACHE%
 
 cmake --build %BUILDDIR% --parallel --config %CONFIG%
 cmake --install %BUILDDIR% --config %CONFIG%
