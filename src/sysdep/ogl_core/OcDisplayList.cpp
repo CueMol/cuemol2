@@ -657,31 +657,58 @@ void OcDisplayList::drawMesh(const gfx::Mesh &mesh)
 void OcDisplayList::sphere()
 {
     MB_DPRINTLN("OcDisplayList::sphere()");
-}
 
-void OcDisplayList::sphere(double r, const Vector4D &vec)
-{
-    MB_DPRINTLN("OcDisplayList::sphere(%f, vec)", r);
-}
+    // TODO: impl??
+    // if (m_nDrawMode != POV_NONE) {
+    //     MB_THROW(qlib::RuntimeException, "FileDisplayContext: Unexpected condition");
+    //     return;
+    // }
 
-void OcDisplayList::cylinder(double r, const Vector4D &pos1, const Vector4D &pos2)
-{
-    MB_DPRINTLN("OcDisplayList::cylinder()");
-    auto col = m_pColor->getDevCode(getSceneID());
-    int ndet = m_nDetail;
-    m_cylinders.add(pos1, pos2, r, r, col, ndet, false, nullptr);
-}
+    Vector4D v(0, 0, 0);
+    xform_vec(v);
 
-void OcDisplayList::cylinderCap(double r, const Vector4D &pos1, const Vector4D &pos2)
-{
-    MB_DPRINTLN("OcDisplayList::cylinderCap()");
-    // m_cylinders.add(double r, const Vector4D &pos1, const Vector4D &pos2, true);
+    auto color = m_pColor->getDevCode(getSceneID());
+    const Matrix4D &mtop = getModelViewMat();
+    if (mtop.isIdentAffine(F_EPS4)) {
+        m_spheres.add(v, 1.0, color, m_nDetail);
+    } else {
+        LOG_DPRINTLN("ERROR, sphere(): unsupported operation!!");
+        m_spheres.add(v, 1.0, color, m_nDetail);
+    }
 }
 
 void OcDisplayList::cone(double r1, double r2, const Vector4D &pos1,
                          const Vector4D &pos2, bool bCap)
 {
     MB_DPRINTLN("OcDisplayList::cone()");
+    constexpr double dtol = F_EPS4;
+
+    if (pos1.equals(pos2, dtol)) return;
+
+    // TODO: impl??
+    // if (m_nDrawMode != POV_NONE) {
+    //     MB_THROW(qlib::RuntimeException, "FileDisplayContext: Unexpected condition");
+    //     return;
+    // }
+
+    const auto &xm = getModelViewMat();
+    auto xm3 = xm.getMatrix3D();
+    bool bUnitary = true;
+    if (!xm3.isIdent()) {
+        auto test = xm3.transpose() * xm3;
+        bUnitary = test.isIdent(dtol);
+    }
+
+    auto color = m_pColor->getDevCode(getSceneID());
+    if (bUnitary) {
+        Vector4D p1 = pos1;
+        Vector4D p2 = pos2;
+        xform_vec(p1);
+        xform_vec(p2);
+        m_cylinders.add(p1, p2, r1, r2, color, m_nDetail, bCap, NULL);
+    } else {
+        m_cylinders.add(pos1, pos2, r1, r2, color, m_nDetail, bCap, &xm);
+    }
 }
 
 void OcDisplayList::setDetail(int n)
@@ -697,6 +724,9 @@ int OcDisplayList::getDetail() const
 
 void OcDisplayList::convertToMesh()
 {
+    MB_DPRINTLN("convertToMesh num sphs: %d", m_spheres.getSize());
+    m_spheres.makeMesh(&m_mesh, true);
+
     MB_DPRINTLN("convertToMesh num cyls: %d", m_cylinders.getSize());
     m_cylinders.makeMesh(&m_mesh, true);
 }
