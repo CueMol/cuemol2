@@ -8,7 +8,6 @@
 #include <qlib/LStream.hpp>
 #include <qlib/LString.hpp>
 
-// #include "ColorTable.hpp"
 #include "DisplayContext.hpp"
 #include "gfx.hpp"
 

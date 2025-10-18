@@ -376,13 +376,6 @@ namespace gfx {
     ////////////////////////////////////////////////////
     // convenience methods
 
-    /*
-    inline void color(const ColorPtr &c) {
-      MB_ASSERT(!c.isnull());
-      color(*(c.get()));
-    }
-     */
-    
     inline void drawAster(const Vector4D &pos, double rad) {
       const Vector4D xdel(rad,0,0);
       const Vector4D ydel(0,rad,0);
@@ -399,6 +392,11 @@ namespace gfx {
     void getDevRGBColor(const ColorPtr &pcol, float &r, float &g, float &b);
     void getDevRGBAColor(const ColorPtr &pcol, float &r, float &g, float &b, float &a);
 
+    static Matrix4D makeOrthoProjMat(float vw, float fasp,
+                                     float near, float far);
+
+    static Matrix4D makePersProjMat(float width, float fasp,
+                                    float near, float far, float distance);
   };
 
 }

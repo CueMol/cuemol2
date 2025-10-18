@@ -152,6 +152,7 @@ void OcDisplayContext::loadPerspProj(float width, float fasp, float slabnear,
                                      float slabfar, float distance)
 {
     super_t::loadPerspProj(width, fasp, slabnear, slabfar, distance);
+
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
     loadMatrix(getProjMat());

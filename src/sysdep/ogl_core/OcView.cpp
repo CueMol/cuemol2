@@ -55,18 +55,13 @@ using qsys::SceneManager;
 OcView::OcView()
 {
     m_bInitOK = false;
-    m_bUseGlShader = true;
-    m_pqua = gluNewQuadric();
 }
 
-OcView::~OcView()
-{
-    if (m_pqua != NULL) gluDeleteQuadric(static_cast<GLUquadricObj *>(m_pqua));
-}
+OcView::~OcView() {}
 
 LString OcView::toString() const
 {
-    return LString::format("OpenGL View(%p)", this);
+    return LString::format("OpenGL CoreProf View(%p)", this);
 }
 
 void OcView::setup()
@@ -90,8 +85,6 @@ void OcView::setup()
     // glDisable(GL_LINE_SMOOTH);
     // glDisable(GL_BLEND);
 
-    // GLfloat fogColor[4] = {0, 0, 0, 1.0};
-
     pdc->enableFog(true);
     pdc->setFogColor(gfx::SolidColor::createRGB(0.0, 0.0, 0.0));
 
@@ -113,10 +106,6 @@ void OcView::setup()
     // set view capability flag object
     {
         OcViewCap *pVC = new OcViewCap();
-        // if (!m_bUseGlShader) {
-        //   pVC->disableShader();
-        //   LOG_DPRINTLN("OcView> shaders disabled");
-        // }
         setViewCap(pVC);
     }
 
@@ -252,9 +241,7 @@ void OcView::setUpModelMat(int nid)
     pdc->translate(-c);
 }
 
-void OcView::setUpLightColor()
-{
-}
+void OcView::setUpLightColor() {}
 
 void OcView::drawScene()
 {
@@ -505,13 +492,19 @@ bool OcView::hitTestImpl(gfx::DisplayContext *pdc, const Vector4D &parm, bool fG
     const double cy = convToBackingY(getHeight());
     const double fasp = cx / cy;
 
-    const double left = -vw * fasp;
-    const double right = vw * fasp;
-    const double bottom = -vw;
-    const double top = vw;
-    const double nearVal = slabnear;
-    const double farVal = slabfar;
+    MB_DPRINTLN("HitTestImpl> near=%f, far=%f, vw=%f, fasp=%f", slabnear, slabfar, vw,
+                fasp);
 
+    // Setup projection matrix
+    Matrix4D projmat;
+    if (isPerspec()) {
+        projmat = DisplayContext::makePersProjMat(vw, fasp, slabnear, slabfar, dist);
+        // projmat = DisplayContext::makeOrthoProjMat(vw, fasp, slabnear, slabfar);
+    } else {
+        projmat = DisplayContext::makeOrthoProjMat(vw, fasp, slabnear, slabfar);
+    }
+
+    /////
     // GLint viewport[4] = {0, 0, GLint(cx), GLint(cy)};
     // gluPickMatrix((GLfloat)parm.x(), (GLfloat)(cy - parm.y()),parm.z(), parm.w(),
     // viewport);
@@ -519,28 +512,30 @@ bool OcView::hitTestImpl(gfx::DisplayContext *pdc, const Vector4D &parm, bool fG
     const double picky = cy - parm.y();
     const double deltax = parm.z();
     const double deltay = parm.w();
+
     Matrix4D pickmat;
+    // Scale (cx / deltax, cy / deltay, 1)
     pickmat.aij(1, 1) = cx / deltax;
     pickmat.aij(2, 2) = cy / deltay;
-    pickmat.aij(3, 3) = 1.0;
-    ;
+    
+    // Translate ((cx - 2.0 * pickx) / deltax, (cy - 2.0 * picky) / deltay, 0)
     pickmat.aij(1, 4) = (cx - 2.0 * pickx) / deltax;
     pickmat.aij(2, 4) = (cy - 2.0 * picky) / deltay;
-    pickmat.aij(3, 4) = 1.0;
+    // pickmat.aij(3, 4) = 1.0;
 
-    // glOrtho(-vw*fasp, vw*fasp,
-    //-vw, vw, slabnear, slabfar);
-    Matrix4D orthmat;
-    orthmat.aij(1, 1) = 2.0 / (right - left);
-    orthmat.aij(2, 2) = 2.0 / (top - bottom);
-    orthmat.aij(3, 3) = -2.0 / (farVal - nearVal);
-    orthmat.aij(1, 4) = -(right + left) / (right - left);
-    orthmat.aij(2, 4) = -(top + bottom) / (top - bottom);
-    orthmat.aij(3, 4) = -(farVal + nearVal) / (farVal - nearVal);
-    orthmat.aij(4, 4) = 1.0;
+    MB_DPRINTLN("PickMat:");
+    pickmat.dump();
 
-    // phc->m_projMat = orthmat.mul(pickmat);
-    phc->m_projMat = pickmat.mul(orthmat);
+    MB_DPRINTLN("ProjMat:");
+    projmat.dump();
+
+    /////
+
+    // phc->m_projMat = projmat.mul(pickmat);
+    phc->m_projMat = pickmat.mul(projmat);
+
+    // MB_DPRINTLN("PickMat * ProjMat:");
+    // phc->m_projMat.dump();
 
     // 0 == no stereo
     // setUpModelMat(MM_NORMAL);

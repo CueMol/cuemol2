@@ -19,10 +19,6 @@ class SYSDEP_API OcView : public qsys::View
 protected:
     bool m_bInitOK;
 
-    void *m_pqua;
-
-    bool m_bUseGlShader;
-
 public:
     OcView();
 
@@ -90,7 +86,7 @@ public:
     /// set GL Shader flag (only valid before calling setup())
     void setUseGlShader(bool f)
     {
-        m_bUseGlShader = f;
+        // m_bUseGlShader = f;
     }
 
 protected:

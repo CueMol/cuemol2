@@ -251,11 +251,18 @@ void HittestContext::callDisplayList(DisplayContext *pdl)
 
   // m_data.push_back(phl);
 
-  topMatrix().dump();
+  // MB_DPRINTLN("ModelMat:");
+  // topMatrix().dump();
+  Matrix4D xform = m_projMat.mul(topMatrix());
+  // MB_DPRINTLN("XformMat:");
+  // xform.dump();
 
-  BOOST_FOREACH (const HittestList::HitElem &elem, phl->m_data) {
-    Vector4D vv = topMatrix().mulvec(elem.pos);
-    vv = m_projMat.mulvec(vv);
+  for (const auto &elem : phl->m_data) {
+  // BOOST_FOREACH (const HittestList::HitElem &elem, phl->m_data) {
+    // Vector4D vv = topMatrix().mulvec(elem.pos);
+    // vv = m_projMat.mulvec(vv);
+    Vector4D vv = xform.mulvec(elem.pos);
+    vv = vv.divide(vv.w());
 
     //MB_DPRINTLN("***** (%f,%f,%f)->(%f,%f,%f)",
     //elem.pos.x(), elem.pos.y(), elem.pos.z(),
@@ -264,11 +271,13 @@ void HittestContext::callDisplayList(DisplayContext *pdl)
     // XXX: z<1.2 is empilical value limit that can be seen in the fog
     if (vv.x()>-1.0 && vv.x()<1.0 &&
         vv.y()>-1.0 && vv.y()<1.0 &&
-        //vv.z()>-1.0 && vv.z()<1.0) {
-        vv.z()>0.0 && vv.z()<1.2) {
-      MB_DPRINT("[%d %d]", m_nCurUID, elem.id);
-      MB_DPRINTLN(" (%f,%f,%f)",
+        vv.z()>-1.0 && vv.z()<1.0) {
+        // vv.z()>0.0 && vv.z()<1.2) {
+
+        MB_DPRINT("[%d %d]", m_nCurUID, elem.id);
+        MB_DPRINT(" (%f,%f,%f) -->",
                   elem.pos.x(), elem.pos.y(), elem.pos.z());
+        MB_DPRINTLN(" (%f,%f,%f)", vv.x(), vv.y(), vv.z());
 
       m_data.push_back(DataElem());
       DataElem &he = m_data.back();

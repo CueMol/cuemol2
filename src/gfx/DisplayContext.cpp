@@ -147,70 +147,93 @@ void DisplayContext::loadMatrix(const qlib::Matrix4D &mat)
     // checkUnitary();
 }
 
-void DisplayContext::loadOrthoProj(float vw, float fasp,
-                                   float near, float far)
+// static
+Matrix4D DisplayContext::makeOrthoProjMat(float vw, float fasp,
+                                          float near, float far)
 {
     float left=-vw*fasp;
     float right=vw*fasp;
     float bottom=-vw;
     float top=vw;
 
-  MB_DPRINTLN("LR=%f,%f", left, right);
-  MB_DPRINTLN("BT=%f,%f", bottom, top);
-  MB_DPRINTLN("NF=%f,%f", near, far);
+    MB_DPRINTLN("LR=%f,%f", left, right);
+    MB_DPRINTLN("BT=%f,%f", bottom, top);
+    MB_DPRINTLN("NF=%f,%f", near, far);
+    
+    float r_l = right - left;
+    float t_b = top - bottom;
+    float f_n = far - near;
+    float tx = - (right + left) / (right - left);
+    float ty = - (top + bottom) / (top - bottom);
+    float tz = - (far + near) / (far - near);
+    
+    Matrix4D ret;
+    ret.aij(1,1) = 2.0f / r_l;
+    ret.aij(2,1) = 0.0f;
+    ret.aij(3,1) = 0.0f;
+    ret.aij(4,1) = 0.0f;
+    
+    ret.aij(1,2) = 0.0f;
+    ret.aij(2,2) = 2.0f / t_b;
+    ret.aij(3,2) = 0.0f;
+    ret.aij(4,2) = 0.0f;
+    
+    ret.aij(1,3) = 0.0f;
+    ret.aij(2,3) = 0.0f;
+    ret.aij(3,3) = -2.0f / f_n;
+    ret.aij(4,3) = 0.0f;
+    
+    ret.aij(1,4) = tx;
+    ret.aij(2,4) = ty;
+    ret.aij(3,4) = tz;
+    ret.aij(4,4) = 1.0f;
 
-  float r_l = right - left;
-  float t_b = top - bottom;
-  float f_n = far - near;
-  float tx = - (right + left) / (right - left);
-  float ty = - (top + bottom) / (top - bottom);
-  float tz = - (far + near) / (far - near);
+    return ret;
+}
 
-  m_projMat.aij(1,1) = 2.0f / r_l;
-  m_projMat.aij(2,1) = 0.0f;
-  m_projMat.aij(3,1) = 0.0f;
-  m_projMat.aij(4,1) = 0.0f;
+void DisplayContext::loadOrthoProj(float vw, float fasp,
+                                   float near, float far)
+{
+    m_projMat = makeOrthoProjMat(vw, fasp, near, far);
+}
 
-  m_projMat.aij(1,2) = 0.0f;
-  m_projMat.aij(2,2) = 2.0f / t_b;
-  m_projMat.aij(3,2) = 0.0f;
-  m_projMat.aij(4,2) = 0.0f;
+// static
+Matrix4D DisplayContext::makePersProjMat(float width, float fasp,
+                                         float near, float far, float distance)
+{
+    float t = distance/width;
 
-  m_projMat.aij(1,3) = 0.0f;
-  m_projMat.aij(2,3) = 0.0f;
-  m_projMat.aij(3,3) = -2.0f / f_n;
-  m_projMat.aij(4,3) = 0.0f;
+    Matrix4D ret;
+    ret.aij(1,1) = t / fasp;
+    ret.aij(2,1) = 0;
+    ret.aij(3,1) = 0;
+    ret.aij(4,1) = 0;
+    
+    ret.aij(1,2) = 0;
+    ret.aij(2,2) = t;
+    ret.aij(3,2) = 0;
+    ret.aij(4,2) = 0;
+    
+    ret.aij(1,3) = 0;
+    ret.aij(2,3) = 0;
+    ret.aij(3,3) = (far + near) / (near - far);
+    ret.aij(4,3) = -1;
+    
+    ret.aij(1,4) = 0;
+    ret.aij(2,4) = 0;
+    ret.aij(3,4) = (2 * far * near) / (near - far);
+    ret.aij(4,4) = 0;
 
-  m_projMat.aij(1,4) = tx;
-  m_projMat.aij(2,4) = ty;
-  m_projMat.aij(3,4) = tz;
-  m_projMat.aij(4,4) = 1.0f;
+    return ret;
 }
 
 void DisplayContext::loadPerspProj(float width, float fasp,
                                    float near, float far, float distance)
 {
-    float t = distance/width;
+    m_projMat = makePersProjMat(width, fasp, near, far, distance);
 
-    m_projMat.aij(1,1) = t / fasp;
-    m_projMat.aij(2,1) = 0;
-    m_projMat.aij(3,1) = 0;
-    m_projMat.aij(4,1) = 0;
-    
-    m_projMat.aij(1,2) = 0;
-    m_projMat.aij(2,2) = t;
-    m_projMat.aij(3,2) = 0;
-    m_projMat.aij(4,2) = 0;
-    
-    m_projMat.aij(1,3) = 0;
-    m_projMat.aij(2,3) = 0;
-    m_projMat.aij(3,3) = (far + near) / (near - far);
-    m_projMat.aij(4,3) = -1;
-    
-    m_projMat.aij(1,4) = 0;
-    m_projMat.aij(2,4) = 0;
-    m_projMat.aij(3,4) = (2 * far * near) / (near - far);
-    m_projMat.aij(4,4) = 0;
+    // MB_DPRINTLN("PerspProjMat:");
+    // m_projMat.dump();
 }
 
 //////////
