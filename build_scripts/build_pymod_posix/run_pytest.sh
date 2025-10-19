@@ -6,7 +6,7 @@
 
 usage()
 {
-    echo "usage: run.sh deplibs_dir"
+    echo "usage: run_pytest.sh deplibs_dir"
     exit 1
 }
 
@@ -30,23 +30,8 @@ if [ -d $VENV_DIR ]; then
     source $VENV_DIR/bin/activate
 fi
 
-BOOST_VER=boost_1_84_0
-BOOST_DIR=$BASEDIR/$BOOST_VER
-
 # Install location
 INST_PATH=$BASEDIR/cuemol2
-
-export CMAKE_GENERATOR="Unix Makefiles"
-export CMAKE_MAKE_PROGRAM="make"
-cd $WORKSPACE/pymod
-$PYTHON -m pip install \
-     --config-settings=cmake.define.LIBCUEMOL2_ROOT=$INST_PATH \
-     --config-settings=cmake.define.Boost_ROOT=$BOOST_DIR \
-     -v . 
-
-# Copy dependent libs (boost)
-# ls -la $BOOST_DIR/lib/lib*
-cp $BOOST_DIR/lib/lib* $BASEDIR/cuemol2/lib/
 
 # run python tests
 cd $WORKSPACE
@@ -54,7 +39,7 @@ $PYTHON -m pip install pytest
 
 if [ "$(uname)" == 'Darwin' ]; then
     env DYLD_LIBRARY_PATH=$INST_PATH/lib \
-        pytest tests
+        pytest tests -s
 else
     env LD_LIBRARY_PATH=$INST_PATH/lib \
         pytest tests
