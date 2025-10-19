@@ -545,6 +545,9 @@ bool OcView::hitTestImpl(gfx::DisplayContext *pdc, const Vector4D &parm, bool fG
     const qlib::Vector4D c = getViewCenter();
     phc->translate(-c);
 
+    // MB_DPRINTLN("*** ModelMat:");
+    // phc->getModelViewMat().dump();
+
     pScene->processHit(phc);
 
     // phc->dump();

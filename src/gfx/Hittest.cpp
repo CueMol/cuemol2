@@ -181,46 +181,46 @@ void HittestList::drawPointHit(int nid, const Vector4D &pos)
 
 ///////////////////////////////////////////////////////////////////
 
-void HittestContext::pushMatrix()
-{
-  MB_DPRINTLN("Hit(%p) pushMat %d", this, m_matstack.size());
-  if (m_matstack.size()<=0)
-    m_matstack.push_front(Matrix4D());
-  else
-    m_matstack.push_front(m_matstack.front());
-}
+// void HittestContext::pushMatrix()
+// {
+//   MB_DPRINTLN("Hit(%p) pushMat %d", this, m_matstack.size());
+//   if (m_matstack.size()<=0)
+//     m_matstack.push_front(Matrix4D());
+//   else
+//     m_matstack.push_front(m_matstack.front());
+// }
 
-void HittestContext::popMatrix()
-{
-  MB_DPRINTLN("Hit(%p) popMat %d", this, m_matstack.size());
-  if (m_matstack.size()<=1) {
-    LString msg("Hittest> FATAL ERROR: cannot popMatrix()!!");
-    LOG_DPRINTLN(msg);
-    MB_THROW(qlib::RuntimeException, msg);
-    return;
-  }
-  m_matstack.pop_front();
-}
+// void HittestContext::popMatrix()
+// {
+//   MB_DPRINTLN("Hit(%p) popMat %d", this, m_matstack.size());
+//   if (m_matstack.size()<=1) {
+//     LString msg("Hittest> FATAL ERROR: cannot popMatrix()!!");
+//     LOG_DPRINTLN(msg);
+//     MB_THROW(qlib::RuntimeException, msg);
+//     return;
+//   }
+//   m_matstack.pop_front();
+// }
 
-void HittestContext::multMatrix(const Matrix4D &mat)
-{
-  Matrix4D top = m_matstack.front();
-  top.matprod(mat);
-  m_matstack.front() = top;
-}
+// void HittestContext::multMatrix(const Matrix4D &mat)
+// {
+//   Matrix4D top = m_matstack.front();
+//   top.matprod(mat);
+//   m_matstack.front() = top;
+// }
 
-void HittestContext::loadMatrix(const Matrix4D &mat) {
-  m_matstack.front() = mat;
-}
+// void HittestContext::loadMatrix(const Matrix4D &mat) {
+//   m_matstack.front() = mat;
+// }
 
-const qlib::Matrix4D &HittestContext::topMatrix() const {
-  if (m_matstack.size()<1) {
-    LString msg("Hittest> FATAL ERROR: cannot topMatrix()!!");
-    LOG_DPRINTLN(msg);
-    MB_THROW(qlib::RuntimeException, msg);
-  }
-  return m_matstack.front();
-}
+// const qlib::Matrix4D &HittestContext::topMatrix() const {
+//   if (m_matstack.size()<1) {
+//     LString msg("Hittest> FATAL ERROR: cannot topMatrix()!!");
+//     LOG_DPRINTLN(msg);
+//     MB_THROW(qlib::RuntimeException, msg);
+//   }
+//   return m_matstack.front();
+// }
 
 void HittestContext::loadName(int nameid) {
   MB_DPRINTLN("HitCtxt> load name %d", nameid);
@@ -249,45 +249,48 @@ void HittestContext::callDisplayList(DisplayContext *pdl)
   if (phl==NULL)
     return;
 
-  // m_data.push_back(phl);
-
   // MB_DPRINTLN("ModelMat:");
-  // topMatrix().dump();
-  Matrix4D xform = m_projMat.mul(topMatrix());
+  // getModelViewMat().dump();
+
+  Matrix4D xform = m_projMat.mul(getModelViewMat());
+
   // MB_DPRINTLN("XformMat:");
   // xform.dump();
 
+  const double z_min = -1.0;
+  const double z_max = 1.0;
+
+  // XXX: z<1.2 is empilical value limit that can be seen in the fog ??
+  // const double z_min = 0.0;
+  // const double z_max = 1.2;
+
   for (const auto &elem : phl->m_data) {
-  // BOOST_FOREACH (const HittestList::HitElem &elem, phl->m_data) {
-    // Vector4D vv = topMatrix().mulvec(elem.pos);
-    // vv = m_projMat.mulvec(vv);
-    Vector4D vv = xform.mulvec(elem.pos);
-    vv = vv.divide(vv.w());
-
-    //MB_DPRINTLN("***** (%f,%f,%f)->(%f,%f,%f)",
-    //elem.pos.x(), elem.pos.y(), elem.pos.z(),
-    //vv.x(), vv.y(), vv.z());
-
-    // XXX: z<1.2 is empilical value limit that can be seen in the fog
-    if (vv.x()>-1.0 && vv.x()<1.0 &&
-        vv.y()>-1.0 && vv.y()<1.0 &&
-        vv.z()>-1.0 && vv.z()<1.0) {
-        // vv.z()>0.0 && vv.z()<1.2) {
-
-        MB_DPRINT("[%d %d]", m_nCurUID, elem.id);
-        MB_DPRINT(" (%f,%f,%f) -->",
-                  elem.pos.x(), elem.pos.y(), elem.pos.z());
-        MB_DPRINTLN(" (%f,%f,%f)", vv.x(), vv.y(), vv.z());
-
-      m_data.push_back(DataElem());
-      DataElem &he = m_data.back();
-      he.z = vv.z();
-      he.rendid = m_nCurUID;
-      he.names.resize(m_names.size()+1-1);
-      int j;
-      for (j=1; j<m_names.size(); ++j)
-        he.names[j-1] = m_names[j];
-      he.names[j-1] = elem.id;
-    }
+      Vector4D vv = xform.mulvec(elem.pos);
+      vv = vv.divide(vv.w());
+      
+      // MB_DPRINT("[%d %d]", m_nCurUID, elem.id);
+      // MB_DPRINT(" (%f,%f,%f) -->",
+      //           elem.pos.x(), elem.pos.y(), elem.pos.z());
+      // MB_DPRINTLN(" (%f,%f,%f)", vv.x(), vv.y(), vv.z());
+      
+      if (vv.x()>-1.0 && vv.x()<1.0 &&
+          vv.y()>-1.0 && vv.y()<1.0 &&
+          vv.z()>z_min && vv.z()<z_max) {
+          
+          MB_DPRINT("[%d %d]", m_nCurUID, elem.id);
+          MB_DPRINT(" (%f,%f,%f) -->",
+                    elem.pos.x(), elem.pos.y(), elem.pos.z());
+          MB_DPRINTLN(" (%f,%f,%f)", vv.x(), vv.y(), vv.z());
+          
+          m_data.push_back(DataElem());
+          DataElem &he = m_data.back();
+          he.z = vv.z();
+          he.rendid = m_nCurUID;
+          he.names.resize(m_names.size()+1-1);
+          int j;
+          for (j=1; j<m_names.size(); ++j)
+              he.names[j-1] = m_names[j];
+          he.names[j-1] = elem.id;
+      }
   }
 }
