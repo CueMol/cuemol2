@@ -177,7 +177,8 @@ void OpenDXPotReader::readDensity(qlib::LineStream &ins, double &rho)
     // fill the float buffer
     std::list<LString> ls;
     readRecord(ins);
-    int ns = m_recbuf.split(' ', ls);
+    // int ns = m_recbuf.split(' ', ls);
+    int ns = m_recbuf.split_of(" \t\n\r\f", ls);
     //MB_ASSERT(ns<=RECORD_LEN);
     std::list<LString>::const_iterator iter = ls.begin();
     int i;
