@@ -1,0 +1,28 @@
+# OpenDX density file written by gridDataFormats.Grid.export()
+# File format: http://opendx.sdsc.edu/docs/html/pages/usrgu068.htm#HDREDF
+# Data are embedded in the header and tied to the grid positions.
+# Data is written in C array order: In grid[x,y,z] the axis z is fastest
+# varying, then y, then finally x, i.e. z is the innermost loop.
+# (Note: the VMD dx-reader chokes on comments below this line)
+object 1 class gridpositions counts  3 3 3
+origin 0.420002 0.260003 4.505003
+delta  1 0 0
+delta  0 1 0
+delta  0 0 1
+object 2 class gridconnections counts  3 3 3
+object 3 class array type "double" rank 0 items 1367631 data follows
+0.000000000000000	0.000000000000000	0.000000000000000	
+0.000000000000000	0.000000000000000	0.000000000000000	
+0.000000000000000	0.000000000000000	0.000000000000000	
+0.000000000000000	0.000000000000000	0.000000000000000	
+0.000000000000000	0.000000000000000	0.000000000000000	
+0.000000000000000	0.000000000000000	0.000000000000000	
+0.000000000000000	0.000000000000000	0.000000000000000	
+0.000000000000000	0.000000000000000	0.000000000000000	
+0.000000000000000	0.000000000000000	0.000000000000000	
+
+attribute "dep" string "positions"
+object "density" class field 
+component "positions" value 1
+component "connections" value 2
+component "data" value 3
