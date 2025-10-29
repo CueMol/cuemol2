@@ -10,7 +10,7 @@ delta  1 0 0
 delta  0 1 0
 delta  0 0 1
 object 2 class gridconnections counts  3 3 3
-object 3 class array type "double" rank 0 items 1367631 data follows
+object 3 class array type "double" rank 0 items 27 data follows
 0.000000000000000	0.000000000000000	0.000000000000000	
 0.000000000000000	0.000000000000000	0.000000000000000	
 0.000000000000000	0.000000000000000	0.000000000000000	
