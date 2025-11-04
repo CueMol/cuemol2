@@ -24,6 +24,9 @@ jobs:
           # - os: macos-13
           #   name: "MacOS 13 x64 clang"
 
+    env:
+      MACOSX_DEPLOYMENT_TARGET: "10.15"
+
     steps:
     - uses: actions/checkout@v4
 
