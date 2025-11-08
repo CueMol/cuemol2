@@ -87,8 +87,7 @@ namespace BALL
 				@param ptr the array to construct from
 				@exception NullPointer if <tt>ptr == 0</tt>
 		*/
-		TMatrix4x4(const T* ptr)
-			throw(Exception::NullPointer);
+		TMatrix4x4(const T* ptr);
 
 		/**	Array constructor.
 				This constructor creates a TMatrix4x4 object from the
@@ -96,8 +95,7 @@ namespace BALL
 				@param ptr the array to construct from
 				@exception NullPointer if <tt>ptr == 0</tt>
 		*/
-		TMatrix4x4(const T ptr[4][4])
-			throw(Exception::NullPointer);
+		TMatrix4x4(const T ptr[4][4]);
 
 		/**	Copy constructor.
 				Create a new TMatrix4x4 object from another.
@@ -156,16 +154,14 @@ namespace BALL
 				@param ptr the array to construct from
 				@exception NullPointer if <tt>ptr == 0</tt>
 		*/
-		void set(const T* ptr)
-			throw(Exception::NullPointer);
+		void set(const T* ptr);
 
 		/**	Assign from the first sixteen elements.
 				pointed to by the array assigned by <tt>ptr</tt>.
 				@param ptr the array to construct from
 				@exception NullPointer if <tt>ptr == 0</tt>
 		*/
-		void set(const T ptr[4][4])
-			throw(Exception::NullPointer);
+		void set(const T ptr[4][4]);
 
 		/**	Assign from another instance.
 				@param TMatrix4x4	the TMatrix4x4 object to assign from
@@ -198,15 +194,13 @@ namespace BALL
 				Assign the components from the first 16 values assigned by <tt>ptr</tt>.
 				@param ptr the array to construct from
 		**/
-		TMatrix4x4& operator = (const T* ptr)
-			throw(Exception::NullPointer);
+		TMatrix4x4& operator = (const T* ptr);
 
 		/**	Assignment operator.
 				Assign the components from the first 16 values assigned by <tt>ptr</tt>.
 				@param ptr the array to construct from
 		**/
-		TMatrix4x4& operator = (const T ptr[4][4])
-			throw(Exception::NullPointer);
+		TMatrix4x4& operator = (const T ptr[4][4]);
 
 		/**	Assignment operator.
 				Assign the components from another instance of TMatrix4x4.
@@ -220,16 +214,14 @@ namespace BALL
 				@exception NullPointer if <tt>ptr == 0</tt>
 				@param ptr the pointer to assign to
 		*/
-		void get(T* ptr) const
-			throw(Exception::NullPointer);
+		void get(T* ptr) const;
 
 		/**	Assign to an array.
 				Assigns the components to an array of sixteen values of type <tt>T</tt>.
 				@exception NullPointer if <tt>ptr == 0</tt>
 				@param ptr the array to assign to
 		*/
-		void get(T ptr[4][4]) const
-			throw(Exception::NullPointer);
+		void get(T ptr[4][4]) const;
 
 		/**	Assign to another instance.
 				Assigns the components to another TMatrix4x4.
@@ -310,32 +302,28 @@ namespace BALL
 				@exception IndexOverflow if <tt>row > 3</tt>
 				@return TVector4 the row
 		*/
-		TVector4<T> getRow(Position row) const
-			throw(Exception::IndexOverflow);
+		TVector4<T> getRow(Position row) const;
 
 		/** Get a column of the matrix.
 				@param col the number of the column (0-3)
 				@exception IndexOverflow if <tt>col > 3</tt>
 				@return TVector4 the column
 		*/
-		TVector4<T> getColumn(Position col) const
-			throw(Exception::IndexOverflow);
+		TVector4<T> getColumn(Position col) const;
 
 		/** Set a row of the matrix.
 				@param row the number of the row (0-3)
 				@param row_value the new value of the row
 				@exception IndexOverflow if <tt>row > 3</tt>
 		*/
-		void setRow(Position row, const TVector4<T>& row_value)
-			throw(Exception::IndexOverflow);
+		void setRow(Position row, const TVector4<T>& row_value);
 
 		/** Set a column of the matrix.
 				@param col the number of the column (0-3)
 				@param col_value the new value of the col
 				@exception IndexOverflow if <tt>col > 3</tt>
 		*/
-		void setColumn(Position col, const TVector4<T>& col_value)
-			throw(Exception::IndexOverflow);
+		void setColumn(Position col, const TVector4<T>& col_value);
 
 		/** Test whether two matrices are equal.
 				Two matrices are considered equal, if  \link Maths::isEqual Maths::isEqual \endlink  returns <b>true</b> 
@@ -356,8 +344,7 @@ namespace BALL
 				@exception IndexOverflow if <tt>col >3 || row > 3</tt>
 				@return T& a reference to the cell
 		*/
-		T& operator () (Position row, Position col)
-			throw(Exception::IndexOverflow);
+		T& operator () (Position row, Position col);
 
 		/** Constant access operator of a cell.
 				@param row the number of the row (0-3)
@@ -365,8 +352,7 @@ namespace BALL
 				@exception IndexOverflow if <tt>col ||row > 3</tt>
 				@return T& a const reference to the cell
 		*/
-		const T& operator () (Position row, Position col) const
-			throw(Exception::IndexOverflow);
+		const T& operator () (Position row, Position col) const;
 
 		/**	Constant random access operator.
 				Access single elements of the matrix. <tt>index</tt> may assume
@@ -374,14 +360,12 @@ namespace BALL
 				are returned rows first, i.e., in the following order: <tt>m11</tt>, <tt>m12</tt>, <tt>m13</tt>...
 				
 		*/
-		const T& operator [] (Position position) const
-			throw(Exception::IndexOverflow);
+		const T& operator [] (Position position) const;
 
 		/**	Mutable random access operator.
 				@see operator[]
 		*/
-		T& operator [] (Position position)
-			throw(Exception::IndexOverflow);
+		T& operator [] (Position position);
 
 		/**	Positive sign.
 		*/
@@ -436,16 +420,14 @@ namespace BALL
 				@exception DivisionByZero if <tt>scalar == 0</tt>
 				@return TMatrix4x4 the result
 		*/
-		TMatrix4x4 operator / (const T& scalar) const
-			throw(Exception::DivisionByZero);
+		TMatrix4x4 operator / (const T& scalar) const;
 
 		/**	Divide by a scalar.
 				Operator for dividing every cell value by a scalar value.
 				@exception DivisionByZero if <tt>scalar == 0</tt>
 				@return TMatrix4x4&, {\em *this}
 		*/
-		TMatrix4x4& operator /= (const T& scalar)
-			throw(Exception::DivisionByZero);
+		TMatrix4x4& operator /= (const T& scalar);
 
 		/**	Multiply two matrices.
 				@return TMatrix4x4 the result
@@ -770,7 +752,6 @@ namespace BALL
 
 	template <typename T>
 	TMatrix4x4<T>::TMatrix4x4( const T* ptr)
-		throw(Exception::NullPointer)
 	{
 		if (ptr == 0)
 		{
@@ -787,7 +768,6 @@ namespace BALL
 
 	template <typename T>
 	TMatrix4x4<T>::TMatrix4x4(const T array_ptr[4][4])
-		throw(Exception::NullPointer)
 	{
 		if (array_ptr == 0)
 		{
@@ -853,7 +833,6 @@ namespace BALL
 
 	template <typename T>
 	void TMatrix4x4<T>::set(const T* ptr)
-		throw(Exception::NullPointer)
 	{
 		if (ptr == 0)	
 		{
@@ -868,7 +847,6 @@ namespace BALL
 
 	template <typename T>
 	void TMatrix4x4<T>::set(const T array_ptr[4][4])
-		throw(Exception::NullPointer)
 	{
     if (array_ptr == 0)
 		{
@@ -922,7 +900,6 @@ namespace BALL
 	template <typename T>
 	BALL_INLINE 
 	TMatrix4x4<T>& TMatrix4x4<T>::operator = (const T* ptr)
-		throw(Exception::NullPointer)
 	{
 		set(ptr);
 		return *this;
@@ -931,7 +908,6 @@ namespace BALL
 	template <typename T>
 	BALL_INLINE 
 	TMatrix4x4<T>& TMatrix4x4<T>::operator = (const T array_ptr[4][4])
-		throw(Exception::NullPointer)
 	{
 		set(array_ptr);
 		return *this;
@@ -948,7 +924,6 @@ namespace BALL
 
 	template <typename T>
 	void TMatrix4x4<T>::get(T* ptr) const
-		throw(Exception::NullPointer)
 	{
     if (ptr == 0)
 		{
@@ -963,7 +938,6 @@ namespace BALL
 
 	template <typename T>
 	void TMatrix4x4<T>::get(T array_ptr[4][4]) const
-		throw(Exception::NullPointer)
 	{
     if (array_ptr == 0)
 		{
@@ -1120,7 +1094,6 @@ namespace BALL
 
 	template <typename T>
 	TVector4<T> TMatrix4x4<T>::getRow(Position row) const
-		throw(Exception::IndexOverflow)
 	{
 		if (row > 3)
 		{
@@ -1134,7 +1107,6 @@ namespace BALL
 
 	template <typename T>
 	TVector4<T> TMatrix4x4<T>::getColumn(Position col) const
-		throw(Exception::IndexOverflow)
 	{
 		if (col > 3)
 		{
@@ -1149,7 +1121,6 @@ namespace BALL
 
 	template <typename T>
 	void TMatrix4x4<T>::setRow(Position row, const TVector4<T>& row_value)
-		throw(Exception::IndexOverflow)
 	{
 		if (row > 3)
 		{
@@ -1167,7 +1138,6 @@ namespace BALL
 
 	template <typename T>
 	void TMatrix4x4<T>::setColumn(Position col, const TVector4<T>& col_value)
-		throw(Exception::IndexOverflow)
 	{
 		if (col > 3)
 		{
@@ -1210,7 +1180,6 @@ namespace BALL
 	template <typename T>
 	BALL_INLINE  
 	T& TMatrix4x4<T>::operator () (Position row, Position col)
-		throw(Exception::IndexOverflow)
 	{
     if ((row > 3) || (col > 3))
 		{
@@ -1223,7 +1192,6 @@ namespace BALL
 	template <typename T>
 	BALL_INLINE 
 	const T& TMatrix4x4<T>::operator () (Position row, Position col) const
-		throw(Exception::IndexOverflow)
 	{
     if ((row > 3) || (col > 3))
 		{
@@ -1236,7 +1204,6 @@ namespace BALL
 	template <typename T>
 	BALL_INLINE
 	const T& TMatrix4x4<T>::operator [] (Position position) const
-		throw(Exception::IndexOverflow)
 	{
 		if (position > 15)
 		{
@@ -1248,7 +1215,6 @@ namespace BALL
 	template <typename T>
 	BALL_INLINE
 	T& TMatrix4x4<T>::operator [] (Position position)
-		throw(Exception::IndexOverflow)
 	{
 		if (position > 15)
 		{
@@ -1406,7 +1372,6 @@ namespace BALL
 	template <typename T>
 	BALL_INLINE 
 	TMatrix4x4<T>TMatrix4x4<T>::operator / (const T& scalar) const
-		throw(Exception::DivisionByZero)
 	{
 		if (scalar == (T)0)
 		{
@@ -1419,7 +1384,6 @@ namespace BALL
 	template <typename T>
 	BALL_INLINE 
 	TMatrix4x4<T>& TMatrix4x4<T>::operator /= (const T& scalar)
-		throw(Exception::DivisionByZero)
 	{
 		if (scalar == (T)0)
 		{

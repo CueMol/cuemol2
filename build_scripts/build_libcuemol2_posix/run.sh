@@ -4,6 +4,13 @@
 # usage: run.sh deplibs_dir [Debug]
 #
 
+# Dependency versions
+BOOST_VER=1_84_0
+FFTW_VER=3.3.10
+# LCMS2_VER=2.15
+LCMS2_VER=2.17
+GLEW_VER=2.1.0
+
 usage()
 {
     echo "usage: run.sh deplibs_dir [Debug]"
@@ -63,10 +70,10 @@ cmake -G "$GENERATOR" \
       $CMAKE_SCCACHE_OPT \
       -DCMAKE_INSTALL_PREFIX=$CMAKE_INSTALL_PREFIX \
       -DCMAKE_PREFIX_PATH=$CMAKE_PREFIX_PATH \
-      -DBoost_ROOT=$BASEDIR/boost_1_84_0 \
-      -DFFTW_ROOT=$BASEDIR/fftw-3.3.10 \
-      -DLCMS2_ROOT=$BASEDIR/lcms2-2.15 \
-      -DGLEW_ROOT=$BASEDIR/glew-2.1.0 \
+      -DBoost_ROOT=$BASEDIR/boost_$BOOST_VER \
+      -DFFTW_ROOT=$BASEDIR/fftw-$FFTW_VER \
+      -DLCMS2_ROOT=$BASEDIR/lcms2-$LCMS2_VER \
+      -DGLEW_ROOT=$BASEDIR/glew-$GLEW_VER \
       -DBUILD_PYTHON_BINDINGS=$BUILD_PYTHON_BINDINGS \
       -DBUILD_NODEJS_BINDINGS=$BUILD_NODEJS_BINDINGS \
       -DPython3_ROOT_DIR=$PYTHON_ROOT \

@@ -289,8 +289,7 @@ namespace BALL
 														RSVertex if i = 0, the intersection point near
 														to the second RSVertex otherwise
 		*/
-		TVector3<double> getIntersectionPoint(Position i) const
-			throw(Exception::GeneralException);
+		TVector3<double> getIntersectionPoint(Position i) const;
 
 		/** Set singular
 		*/

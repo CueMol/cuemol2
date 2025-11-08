@@ -113,7 +113,6 @@ namespace BALL
 				@param	a, b, c are used to calculate the normal <tt>n</tt> and the point <tt>p</tt>
 		*/
 		TPlane3(const T& a, const T& b, const T& c, const T& d)
-			throw(Exception::DivisionByZero)
 		{
 			n = TVector3<T>(a, b, c);
 			if (a == 0 && b == 0 && c == 0)
@@ -251,7 +250,6 @@ namespace BALL
 				@exception DivisionByZero if the length of the normal is 0
 		*/
 		void normalize()
-			throw(Exception::DivisionByZero)
 		{
 			T length = n.getLength();
 			// throw an exception on zero length normal
