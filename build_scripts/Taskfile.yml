@@ -1,0 +1,82 @@
+# https://taskfile.dev
+
+version: '3'
+
+vars:
+  WORKDIR: $HOME/tmp/proj64_deplibs
+  LIBCUEMOL2_BUILDDIR: "{{.WORKDIR}}/build_libcuemol2"
+  CONFIG: "Debug"
+
+tasks:
+  default:
+    cmds:
+      - echo "Default workdir {{.WORKDIR}}"
+    silent: true
+
+#####
+
+  build_libcuemol2:
+    deps:
+      - task: build_libcuemol2:{{OS}}
+
+  build_libcuemol2:darwin:
+    platforms: [darwin]
+    cmds:
+      - bash build_libcuemol2_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
+
+  build_libcuemol2:linux:
+    platforms: [linux]
+    cmds:
+      - bash build_libcuemol2_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
+
+  build_libcuemol2:windows:
+    platforms: [windows]
+    cmds:
+      - echo "not implemented"
+
+#####
+
+  rebuild_libcuemol2:
+    deps:
+      - task: rebuild_libcuemol2:{{OS}}
+
+  rebuild_libcuemol2:darwin:
+    platforms: [darwin]
+    cmds:
+      - cmake --build "{{.LIBCUEMOL2_BUILDDIR}}" --parallel 1 --config "{{.CONFIG}}" --target install
+
+  clean_libcuemol2:
+    cmds:
+      - rm -rf "{{.LIBCUEMOL2_BUILDDIR}}"
+
+#####
+
+  build_uxpgui:
+    platforms: [darwin]
+    cmds:
+      - bash build_uxpgui_posix/run.sh "{{.WORKDIR}}" macOS ARM64
+
+  rebuild_uxpgui:
+    platforms: [darwin]
+    dir: "{{.ROOT_DIR}}/../uxp_gui/"
+    cmds:
+      - ./mach build
+
+  run_uxpgui:
+    platforms: [darwin]
+    dir: "{{.ROOT_DIR}}/../uxp_gui/"
+    cmds:
+      - ./obj-aarch64-apple-darwin/dist/CueMol2.app/Contents/MacOS/cuemol2
+
+  clean_uxpgui:
+    cmds:
+      - rm -rf "{{.ROOT_DIR}}/../uxp_gui/obj-*"
+
+#####
+
+  uxpgui:
+    platforms: [darwin]
+    cmds:
+      - task: rebuild_libcuemol2
+      - task: rebuild_uxpgui
+      - task: run_uxpgui
