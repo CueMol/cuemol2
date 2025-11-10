@@ -17,7 +17,7 @@ PovDisplayContext.cpp
 PovSceneExporter.cpp
 PovSilBuilder.cpp
 RendIntData.cpp
-RendIntDataEdges.cpp
+RendIntData_AABBTree.cpp
 WbpSceneExporter.cpp
 StlDisplayContext.cpp
 StlSceneExporter.cpp
