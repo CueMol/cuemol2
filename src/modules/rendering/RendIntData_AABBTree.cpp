@@ -18,12 +18,15 @@
 #define CGAL_LIB_DIAGNOSTIC
 #define CGAL_HAS_NO_THREADS
 #define CGAL_DISABLE_ROUNDING_MATH_CHECK
-#define CGAL_INTERSECTION_VERSION 1
-#include <CGAL/AABB_tree.h>  // must be inserted before kernel
-// #include <CGAL/AABB_traits_3.h>
-#include <CGAL/AABB_traits.h>
-// #include <CGAL/AABB_triangle_primitive_3.h>
-#include <CGAL/AABB_triangle_primitive.h>
+// #define CGAL_INTERSECTION_VERSION 1
+
+#include <CGAL/AABB_tree.h>
+
+// #include <CGAL/AABB_traits.h>
+// #include <CGAL/AABB_triangle_primitive.h>
+#include <CGAL/AABB_traits_3.h>
+#include <CGAL/AABB_triangle_primitive_3.h>
+
 #include <CGAL/Simple_cartesian.h>
 #include <CGAL/basic.h>
 
@@ -36,35 +39,8 @@ namespace {
 using K = CGAL::Simple_cartesian<double>;
 
 using Point = K::Point_3;
-// typedef K::Point_3 Point;
-// class Point : public K::Point_3
-// {
-//     typedef K::Point_3 super_t;
-
-// public:
-//     Point() : super_t() {}
-//     Point(const Vector4D &av) : super_t(av.x(), av.y(), av.z()) {}
-//     int id;
-// };
-
 using Segment = K::Segment_3;
-
 using Triangle = K::Triangle_3;
-// class Triangle : public K::Triangle_3
-// {
-//     typedef K::Triangle_3 super_t;
-
-// public:
-//     Triangle() : super_t() {}
-
-//     Triangle(const Vector4D &v1, const Vector4D &v2, const Vector4D &v3, int aiv1,
-//              int aiv2, int aiv3)
-//         : super_t(Point(v1), Point(v2), Point(v3)), iv1(aiv1), iv2(aiv2), iv3(aiv3)
-//     {
-//     }
-
-//     int iv1, iv2, iv3;
-// };
 
 inline auto convToPoint(const Vector4D &v)
 {
@@ -88,16 +64,17 @@ bool contains_id(int iv1, int iv2, int if1, int if2, int if3)
 using FaceId = std::tuple<int, int, int>;
 using FaceVec = std::vector<Triangle>;
 using FaceVecIterator = FaceVec::iterator;
-using Primitive = CGAL::AABB_triangle_primitive<K, FaceVecIterator>;
-// using Primitive = CGAL::AABB_triangle_primitive_3<K, FaceVecIterator>;
-using AABB_triangle_traits = CGAL::AABB_traits<K, Primitive>;
-// using AABB_triangle_traits = CGAL::AABB_traits_3<K, Primitive>;
+
+// using Primitive = CGAL::AABB_triangle_primitive<K, FaceVecIterator>;
+// using AABB_triangle_traits = CGAL::AABB_traits<K, Primitive>;
+using Primitive = CGAL::AABB_triangle_primitive_3<K, FaceVecIterator>;
+using AABB_triangle_traits = CGAL::AABB_traits_3<K, Primitive>;
+
 using Tree = CGAL::AABB_tree<AABB_triangle_traits>;
 
-// using SegIsec = Tree::Intersection_and_primitive_id<Segment>::Type;
-using SegIsec = Tree::Object_and_primitive_id;
+// using SegIsec = Tree::Object_and_primitive_id;
+using SegIsec = Tree::Intersection_and_primitive_id<Segment>::Type;
 using SegIsecList = std::list<SegIsec>;
-// using IntrsecList = std::list<Tree::Object_and_primitive_id>;
 
 }  // namespace
 
@@ -215,10 +192,6 @@ bool RendIntData::isVertSilVisible(const Vector4D &vert, int iv)
     for (const auto &[intersection_obj, primitive_id] : ilst) {
         size_t idx = std::distance(faces.begin(), primitive_id);
         const auto &[fiv1, fiv2, fiv3] = faceids[idx];
-        // const FaceId &fids = faceids[idx];
-        // int fiv1 = std::get<0>(fids);
-        // int fiv2 = std::get<1>(fids);
-        // int fiv3 = std::get<2>(fids);
         if (iv == fiv1 || iv == fiv2 || iv == fiv3) {
             continue;
         }
@@ -345,22 +318,22 @@ void RendIntData::calcEdgeIntrsec()
                 continue;
             }
 
-            // if (const Point *p = std::get_if<Point>(&intersection_obj)) {
-            //     Vector4D vsec(p->x(), p->y(), p->z());
-            //     double fsec = (vsec - pv1->v).length() / l12;
-            //     elem.pushIsecList(fsec);
-            // } else {
-            //     MB_DPRINTLN("ERROR assign to pointer failed!!");
-            // }
-            // CGAL::Object obj = intersection_obj;
-            K::Point_3 psec;
-            if (CGAL::assign(psec, intersection_obj)) {
-                Vector4D vsec(psec.x(), psec.y(), psec.z());
+            if (const Point *p = std::get_if<Point>(&intersection_obj)) {
+                Vector4D vsec(p->x(), p->y(), p->z());
                 double fsec = (vsec - pv1->v).length() / l12;
                 elem.pushIsecList(fsec);
             } else {
                 MB_DPRINTLN("ERROR assign to pointer failed!!");
             }
+
+            // K::Point_3 psec;
+            // if (CGAL::assign(psec, intersection_obj)) {
+            //     Vector4D vsec(psec.x(), psec.y(), psec.z());
+            //     double fsec = (vsec - pv1->v).length() / l12;
+            //     elem.pushIsecList(fsec);
+            // } else {
+            //     MB_DPRINTLN("ERROR assign to pointer failed!!");
+            // }
         }
     }
 }
