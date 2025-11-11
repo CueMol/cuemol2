@@ -76,14 +76,18 @@ jobs:
         HOMEPATH_UX=$(echo "$HOMEPATH" | sed 's/\\/\//g')
         echo "home-dir=$HOMEDRIVE$HOMEPATH_UX" >> $GITHUB_OUTPUT
 
-    - name: Download/install deplibs
-      shell: bash
-      run: |
-        set -eux
-        TEMP_DIR=$(echo '${{ runner.temp }}' | sed 's/\\/\//g')
-        cd $GITHUB_WORKSPACE
-        bash build_scripts/download_deplibs/run_windows.sh $TEMP_DIR
+    # - name: Download/install deplibs
+    #   shell: bash
+    #   run: |
+    #     set -eux
+    #     TEMP_DIR=$(echo '${{ runner.temp }}' | sed 's/\\/\//g')
+    #     cd $GITHUB_WORKSPACE
+    #     bash build_scripts/download_deplibs/run_windows.sh $TEMP_DIR
         
+    - name: Download deplibs
+      uses: ./build_scripts/download_deplibs
+      with:
+        basedir: ${{ github.workspace }}/target
 
     - name: Build libcuemol2
       shell: cmd
