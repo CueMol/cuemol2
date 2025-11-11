@@ -86,10 +86,15 @@ MCWRAPGEN_MODULE(MOLVIS_SRCS ${MOLVIS_MODLDR_SRC} ${MOLVIS_MCWG_QIFS})
 add_library(molvis STATIC ${MOLVIS_SRCS} ${MCWG_HEADERS})
 
 if (WIN32)
-  add_definitions(-DMOLVIS_EXPORTS=1)
+  # add_definitions(-DMOLVIS_EXPORTS=1)
+  target_compile_definitions(molvis PUBLIC MOLVIS_EXPORTS=1)
 else()
   target_compile_options(molvis PUBLIC "-fPIC")
 endif()
+
+if (USE_PCH)
+  target_precompile_headers(molvis PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
+endif ()
 
 target_link_libraries(molvis PRIVATE qlib gfx qsys molstr Boost::filesystem Boost::thread)
 
