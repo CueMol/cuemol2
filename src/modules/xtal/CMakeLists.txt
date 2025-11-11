@@ -94,10 +94,15 @@ MCWRAPGEN_MODULE(XTAL_SRCS ${XTAL_MODLDR_SRC} ${XTAL_MCWG_QIFS})
 add_library(xtal STATIC ${XTAL_SRCS} ${MCWG_HEADERS})
 
 if (WIN32)
-  add_definitions(-DXTAL_EXPORTS=1)
+  # add_definitions(-DXTAL_EXPORTS=1)
+  target_compile_definitions(xtal PUBLIC XTAL_EXPORTS=1)
 else()
   target_compile_options(xtal PUBLIC "-fPIC")
 endif()
+
+if (USE_PCH)
+  target_precompile_headers(xtal PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
+endif ()
 
 target_link_libraries(xtal PRIVATE qlib gfx qsys molstr symm surface ${XTAL_LINK_LIBRARIES})
 

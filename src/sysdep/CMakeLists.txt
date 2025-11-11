@@ -105,6 +105,10 @@ else()
   set_property(TARGET sysdep PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()
 
+if (USE_PCH)
+  target_precompile_headers(sysdep PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
+endif ()
+
 # message(STATUS "SYSDEP_LINK_LIBRARIES: ${SYSDEP_LINK_LIBRARIES}")
 target_link_libraries(sysdep PRIVATE ${SYSDEP_LINK_LIBRARIES})
 
