@@ -22,8 +22,9 @@ SET GLEW_VER=2.2.0
 SET SCRIPT_DIR=%~dp0
 echo SCRIPT_DIR: %SCRIPT_DIR%
 if "%GITHUB_WORKSPACE%"=="" (
-   cd %SCRIPT_DIR%\..
+   pushd %SCRIPT_DIR%\..
    for /f %%i in ('cd') do set TOP_DIR=%%i
+   popd
 ) ELSE (
    SET TOP_DIR=%GITHUB_WORKSPACE%
 )
@@ -32,7 +33,7 @@ echo TOP_DIR: %TOP_DIR%
 SET TMPDIR=%DEPLIBS_DIR%\tmp
 mkdir %TMPDIR%
 %~d1
-cd %TMPDIR%
+pushd %TMPDIR%
 
 echo "DEPLIBS_DIR:" %DEPLIBS_DIR%
 dir %DEPLIBS_DIR%
@@ -44,6 +45,12 @@ REM Build libcuemol2
 SET INSTPATH=%DEPLIBS_DIR%\cuemol2
 SET BUILDDIR=build_libcuemol2
 rd /s /q %BUILDDIR%
+
+if %CONFIG%=="Debug" (
+   SET SCCACHE=
+) ELSE (
+  SET SCCACHE=-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+)
 
 cmake -G Ninja -S %TOP_DIR% -B %BUILDDIR% ^
  -DCMAKE_INSTALL_PREFIX=%INSTPATH% ^
@@ -60,8 +67,12 @@ cmake -G Ninja -S %TOP_DIR% -B %BUILDDIR% ^
  -DCGAL_DISABLE_GMP=TRUE ^
  -DCGAL_HEADER_ONLY=TRUE ^
  -DCMAKE_BUILD_TYPE=%CONFIG% ^
- -DCMAKE_C_COMPILER_LAUNCHER=sccache ^
- -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+ %SCCACHE%
 
+cmake --build %BUILDDIR% --target clean --config %CONFIG%
 cmake --build %BUILDDIR% --parallel --config %CONFIG%
 cmake --install %BUILDDIR% --config %CONFIG%
+
+sccache -s
+
+popd

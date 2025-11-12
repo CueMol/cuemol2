@@ -83,11 +83,16 @@ MCWRAPGEN_MODULE(MOLANL_SRCS ${MOLANL_MODLDR_SRC} ${MOLANL_MCWG_QIFS})
 add_library(molanl STATIC ${MOLANL_SRCS} ${MCWG_HEADERS})
 
 if (WIN32)
-  add_definitions(-DMOLANL_EXPORTS=1)
-  add_definitions(-D_MVS)
+  # add_definitions(-DMOLANL_EXPORTS=1)
+  # add_definitions(-D_MVS)
+  target_compile_definitions(molanl PUBLIC MOLANL_EXPORTS=1 _MVS)
 else()
   target_compile_options(molanl PUBLIC "-fPIC")
 endif()
+
+if (USE_PCH)
+  target_precompile_headers(molanl PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
+endif ()
 
 target_link_libraries(molanl PRIVATE qlib gfx qsys molstr)
 
