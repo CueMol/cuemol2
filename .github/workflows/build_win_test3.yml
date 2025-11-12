@@ -41,8 +41,8 @@ jobs:
         MSYS_TOP_DIR=$(cygpath -u '${{ github.workspace }}')
         echo "MSYS_TOP_DIR=$MSYS_TOP_DIR" >> $GITHUB_ENV
 
-#        BASEDIR2=$(echo '${{ github.workspace }}' | sed 's/\\/\//g')
-#        echo "BASEDIR2=$BASEDIR2" >> $GITHUB_ENV
+        MSYS_TOP_DIR2=$(cygpath -m '${{ github.workspace }}')
+        echo "MSYS_TOP_DIR2=$MSYS_TOP_DIR2" >> $GITHUB_ENV
 
 #        DEPLIBS_DIR2=$BASEDIR2/proj64_deplibs
 #        echo "MSYS_DEPLIBS_DIR2=$DEPLIBS_DIR2" >> $GITHUB_ENV
@@ -67,8 +67,8 @@ jobs:
         WIN_UCRT_REDIST_DIR=$(echo "${WindowsSdkDir}Redist\\${WindowsSDKLibVersion}ucrt\\DLLs\\x64" | sed 's/\\/\//g')
         echo "$WIN_UCRT_REDIST_DIR"
 
-        DEPLIBS_DIR=${MSYS_TOP_DIR}/target
-        BUNDLE_DIR=${MSYS_TOP_DIR}/target
+        DEPLIBS_DIR=${MSYS_TOP_DIR2}/target
+        BUNDLE_DIR=${MSYS_TOP_DIR2}/target
 
         BOOST_DIR=$DEPLIBS_DIR/boost_1_84_0/include/boost-1_84
         LIBDIR=$DEPLIBS_DIR/boost_1_84_0/lib

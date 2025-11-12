@@ -69,44 +69,6 @@ tar xjvf $TMPDIR/$PKG_TGZ
 popd
 
 ###########
-# Edit mozconfig
-
-# cd ${WSDIR}/uxp_gui
-
-# # DEPLIBS_DIR_WD=$(echo $DEPLIBS_DIR | sed "s|/c/|c:/|g")
-# DEPLIBS_DIR_WD=$(echo $DEPLIBS_DIR | sed 's|^/\([a-zA-Z]\)/|\1:/|')
-
-# CUEMOL_DIR=$DEPLIBS_DIR_WD/cuemol2
-# BOOST_DIR=$DEPLIBS_DIR_WD/boost_1_84_0/include/boost-1_84
-# DEPLIBS_DIR=$DEPLIBS_DIR_WD/boost_1_84_0/lib
-# BUNDLE_DIR=$DEPLIBS_DIR_WD
-# # DEBUG Flag
-# CUEMOL_DEBUG=""
-
-# BUILD_ARCH=x64
-# # WIN32_REDIST_DIR="C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Redist/MSVC/14.38.33130/$BUILD_ARCH/Microsoft.VC143.CRT"
-# # WIN_UCRT_REDIST_DIR="C:/Program Files (x86)/Windows Kits/10/Redist/10.0.22621.0/ucrt/DLLs/$BUILD_ARCH"
-
-# WIN32_REDIST_DIR=$(echo "${VCToolsRedistDir}x64\\Microsoft.VC143.CRT" | sed 's/\\/\//g')
-# echo "$WIN32_REDIST_DIR"
-# ls -la "$WIN32_REDIST_DIR"
-
-# WIN_UCRT_REDIST_DIR=$(echo "${WindowsSdkDir}Redist\\${WindowsSDKLibVersion}ucrt\\DLLs\\x64" | sed 's/\\/\//g')
-# echo "$WIN_UCRT_REDIST_DIR"
-
-# sed "s!@CUEMOL_BUNDLE@!$BUNDLE_DIR!g" $SCRIPT_DIR/mozconfig_Windows \
-#     | sed "s!@CUEMOL_DIR@!$CUEMOL_DIR!g" \
-#     | sed "s!@CUEMOL_DEBUG@!$CUEMOL_DEBUG!g" \
-#     | sed "s!@BOOST_DIR@!$BOOST_DIR!g" \
-#     | sed "s!@DEPLIBS_DIR@!$DEPLIBS_DIR!g" \
-#     | sed "s!@WIN32_REDIST_DIR@!$WIN32_REDIST_DIR!g" \
-#     | sed "s!@WIN_UCRT_REDIST_DIR@!$WIN_UCRT_REDIST_DIR!g" \
-#           > .mozconfig
-
-# echo $ADD_MOZCONFIG >> .mozconfig
-
-
-###########
 # Build UXP
 
 cd ${WSDIR}/uxp_gui
