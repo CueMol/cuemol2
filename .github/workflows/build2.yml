@@ -106,6 +106,8 @@ jobs:
         MSYS_TOP_DIR2=$(cygpath -m '${{ github.workspace }}')
         echo "MSYS_TOP_DIR2=$MSYS_TOP_DIR2" >> $GITHUB_ENV
 
+        echo NUMBER_OF_PROCESSORS=$NUMBER_OF_PROCESSORS
+
     - uses: actions/cache@v4
       with:
         path: C:\mozilla-build\
