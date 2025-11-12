@@ -1,4 +1,4 @@
-name: Build and release (macOS)
+name: Build and release
 
 on:
   push:
@@ -217,8 +217,11 @@ jobs:
     - name: Check and copy artifacts
       shell: bash
       run: |
+        set -eux
         cd $MSYS_TOP_DIR/uxp_gui
-        ls -l obj-*/dist/cuemol2-*.dmg
+        ls -l obj-x86_64-pc-mingw32/
+        ls -l obj-x86_64-pc-mingw32/dist/
+        ls -l obj-x86_64-pc-mingw32/dist/*cuemol*.exe
         cp obj-*/dist/cuemol2-*.dmg $MSYS_TOP_DIR/
         cd $MSYS_TOP_DIR
         ls -l cuemol2-*
@@ -227,7 +230,7 @@ jobs:
 ###############################################
 
   release_build:
-    needs: [build_posix]
+    needs: [build_posix, build_win_x64]
     runs-on: ubuntu-latest
     steps:
     - name: Download All Artifacts

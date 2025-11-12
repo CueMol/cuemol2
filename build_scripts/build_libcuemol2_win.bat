@@ -72,7 +72,7 @@ cmake -G Ninja -S %TOP_DIR% -B %BUILDDIR% ^
  %SCCACHE%
 
 cmake --build %BUILDDIR% --target clean --config %CONFIG%
-cmake --build %BUILDDIR% --parallel --config %CONFIG% --verbose
+cmake --build %BUILDDIR% --parallel --config %CONFIG%
 cmake --install %BUILDDIR% --config %CONFIG%
 
 sccache -s
