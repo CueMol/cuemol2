@@ -1,6 +1,8 @@
 
 export CC="@CC_CMD@"
 export CXX="@CXX_CMD@"
+ac_add_options CFLAGS="/FS"
+ac_add_options CXXFLAGS="/FS"
 
 BUILD_64=1
 
