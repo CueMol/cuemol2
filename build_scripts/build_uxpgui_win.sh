@@ -48,26 +48,6 @@ if [ ! -d ${WSDIR}/uxp_gui/platform ]; then
     tar xjf other-licenses_RB_20231106.tar.bz2
 fi
 
-# Setup external packages
-BUNDLE_DIR=$DEPLIBS_DIR
-TMPDIR=$DEPLIBS_DIR/tmp
-
-mkdir -p $BUNDLE_DIR
-
-# Retrieve extpkgs binary
-mkdir -p $TMPDIR
-pushd $TMPDIR
-PKG_TGZ=extpkgs_${RUNNER_OS}_${RUNNER_ARCH}.tar.bz2
-PKG_VER=v0.0.5
-URL=https://github.com/CueMol/povray_build/releases/download/$PKG_VER/$PKG_TGZ
-wget --progress=dot:mega -c $URL
-popd
-
-# extract files
-pushd $BUNDLE_DIR
-tar xjvf $TMPDIR/$PKG_TGZ
-popd
-
 ###########
 # Build UXP
 

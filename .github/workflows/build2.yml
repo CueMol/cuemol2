@@ -5,6 +5,9 @@ on:
 #    branches-ignore:
 #      - '**'
 
+env:
+  mozbuild-cache-version: v1
+
 ###############################################
 
 jobs:
@@ -81,6 +84,145 @@ jobs:
       with:
         name: cuemol2_${{ runner.os }}_${{ runner.arch }}
         path: ${{ steps.build-artifact.outputs.artifact-path }}
+
+###############################################
+
+  build_win_x64:
+    name: "Windows intel msvc"
+    runs-on: windows-2022
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: x64
+
+    - name: Setup build envvars
+      shell: bash
+      run: |
+        MSYS_TOP_DIR=$(cygpath -u '${{ github.workspace }}')
+        echo "MSYS_TOP_DIR=$MSYS_TOP_DIR" >> $GITHUB_ENV
+
+        MSYS_TOP_DIR2=$(cygpath -m '${{ github.workspace }}')
+        echo "MSYS_TOP_DIR2=$MSYS_TOP_DIR2" >> $GITHUB_ENV
+
+    - uses: actions/cache@v4
+      with:
+        path: C:\mozilla-build\
+        key: mozbuild-${{ env.mozbuild-cache-version }}
+        restore-keys: |
+          mozbuild-
+
+    - name: Run sccache-cache
+      uses: mozilla-actions/sccache-action@v0.0.9
+
+    - name: Enable GitHub Actions Cache backend
+      shell: pwsh
+      run: |
+        echo "SCCACHE_GHA_ENABLED=true" >> $env:GITHUB_ENV
+        echo "SCCACHE_GHA_VERSION=${{ runner.os }}_${{ runner.arch }}" >> $env:GITHUB_ENV
+
+    - name: Find and set sccache path
+      shell: cmd
+      run: |
+        for /f "tokens=*" %%i in ('where sccache') do set SCCACHE_PATH=%%i & goto :done
+        :done
+        echo SCCACHE_PATH=%SCCACHE_PATH%
+        echo SCCACHE_PATH=%SCCACHE_PATH%>> %GITHUB_ENV%
+
+    - name: Edit mozconfig
+      shell: bash
+      run: |
+        set -eux
+        cd $GITHUB_WORKSPACE
+        # WIN32_REDIST_DIR=$(echo "${VCToolsRedistDir}x64\\Microsoft.VC142.CRT" | sed 's/\\/\//g')
+        WIN32_REDIST_DIR=$(echo "${VCToolsRedistDir}x64\\Microsoft.VC143.CRT" | sed 's/\\/\//g')
+        echo "$WIN32_REDIST_DIR"
+        WIN_UCRT_REDIST_DIR=$(echo "${WindowsSdkDir}Redist\\${WindowsSDKLibVersion}ucrt\\DLLs\\x64" | sed 's/\\/\//g')
+        echo "$WIN_UCRT_REDIST_DIR"
+
+        DEPLIBS_DIR=${MSYS_TOP_DIR2}/target
+        BUNDLE_DIR=${MSYS_TOP_DIR2}/target
+
+        BOOST_DIR=$DEPLIBS_DIR/boost_1_84_0/include/boost-1_84
+        LIBDIR=$DEPLIBS_DIR/boost_1_84_0/lib
+        CUEMOL_DIR=$DEPLIBS_DIR/cuemol2
+        CUEMOL_DEBUG=""
+
+        SCCACHE_PATH=$(cygpath -m "$SCCACHE_PATH")
+        CC_CMD="$SCCACHE_PATH cl.exe"
+        CXX_CMD="$SCCACHE_PATH cl.exe"
+
+        cd uxp_gui
+        sed "s!@WIN32_REDIST_DIR@!$WIN32_REDIST_DIR!g" $GITHUB_WORKSPACE/build_scripts/mozconfig_Windows \
+        | sed "s!@WIN_UCRT_REDIST_DIR@!$WIN_UCRT_REDIST_DIR!g" \
+        | sed "s!@CUEMOL_BUNDLE@!$BUNDLE_DIR!g" \
+        | sed "s!@CUEMOL_DIR@!$CUEMOL_DIR!g" \
+        | sed "s!@CUEMOL_DEBUG@!$CUEMOL_DEBUG!g" \
+        | sed "s!@BOOST_DIR@!$BOOST_DIR!g" \
+        | sed "s!@CC_CMD@!$CC_CMD!g" \
+        | sed "s!@CXX_CMD@!$CXX_CMD!g" \
+        | sed "s!@DEPLIBS_DIR@!$LIBDIR!g" > .mozconfig
+
+        cat .mozconfig
+
+    - name: Install prerequisite
+      run: |
+        choco install -y -r wget winflexbison3
+
+        $mozilladir = "c:\mozilla-build"
+        $src_url = "https://ftp.mozilla.org/pub/mozilla/libraries/win32/MozillaBuildSetup-3.4.exe"
+        if((Test-Path $mozilladir) -eq "True"){
+          Write-Host "Cache exists"
+          dir $mozilladir
+        }else{
+          Start-BitsTransfer -Source $src_url -Destination ./MozillaBuildSetup.exe
+          .\MozillaBuildSetup.exe /S | Out-Null
+        }
+        dir $mozilladir
+
+    - name: Download deplibs
+      uses: ./build_scripts/download_deplibs
+      with:
+        basedir: ${{ github.workspace }}/target
+
+    - name: Download external packages
+      uses: ./build_scripts/download_extpkgs
+      with:
+        basedir: ${{ github.workspace }}/target
+
+    - name: Build libcuemol2
+      shell: cmd
+      run: |
+        echo on
+        cd %GITHUB_WORKSPACE%
+        SET BASEDIR=${{ github.workspace }}\target
+        dir %BASEDIR%
+        cmd /c %GITHUB_WORKSPACE%\build_scripts\build_libcuemol2_win.bat %BASEDIR% Release
+
+    - name: Build and run cuetty
+      shell: cmd
+      run: |
+        echo on
+        cd %GITHUB_WORKSPACE%
+        set HOME=%HOMEDRIVE%%HOMEPATH%
+        set BASEDIR=${{ github.workspace }}\target
+        cmd /c %GITHUB_WORKSPACE%\build_scripts\build_cuetty_win.bat %BASEDIR%
+
+    - name: Run mozilla build and build UXP
+      shell: cmd
+      run: |
+        cmd /c C:\mozilla-build\start-shell.bat %MSYS_TOP_DIR%/build_scripts/build_uxpgui_win.sh ${MSYS_TOP_DIR}/target
+
+    - name: Check and copy artifacts
+      shell: bash
+      run: |
+        cd $MSYS_TOP_DIR/uxp_gui
+        ls -l obj-*/dist/cuemol2-*.dmg
+        cp obj-*/dist/cuemol2-*.dmg $MSYS_TOP_DIR/
+        cd $MSYS_TOP_DIR
+        ls -l cuemol2-*
+        # tar cjvf ${WORKSPACE}/${ARTIFACT_NAME} *.dmg
 
 ###############################################
 
