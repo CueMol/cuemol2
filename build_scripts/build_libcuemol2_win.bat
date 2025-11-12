@@ -49,7 +49,7 @@ SET BUILDDIR=build_libcuemol2
 rd /s /q %BUILDDIR%
 
 if %CONFIG%=="Debug" (
-   SET SCCACHE=
+  SET SCCACHE=
 ) ELSE (
   SET SCCACHE=-DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 )
@@ -72,7 +72,7 @@ cmake -G Ninja -S %TOP_DIR% -B %BUILDDIR% ^
  %SCCACHE%
 
 cmake --build %BUILDDIR% --target clean --config %CONFIG%
-cmake --build %BUILDDIR% --parallel --config %CONFIG%
+cmake --build %BUILDDIR% --parallel --config %CONFIG% --verbose
 cmake --install %BUILDDIR% --config %CONFIG%
 
 sccache -s
