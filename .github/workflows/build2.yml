@@ -217,17 +217,25 @@ jobs:
         cmd /c C:\mozilla-build\start-shell.bat %MSYS_TOP_DIR%/build_scripts/build_uxpgui_win.sh ${MSYS_TOP_DIR}/target
 
     - name: Check and copy artifacts
+      id: build-artifact
       shell: bash
+      env:
+        ARTIFACT_NAME: cuemol2_${{ runner.os }}_${{ runner.arch }}.tar.bz2
       run: |
         set -eux
         cd $MSYS_TOP_DIR/uxp_gui
-        ls -l obj-x86_64-pc-mingw32/
-        ls -l obj-x86_64-pc-mingw32/dist/
-        ls -l obj-x86_64-pc-mingw32/dist/*cuemol*.exe
-        cp obj-*/dist/cuemol2-*.dmg $MSYS_TOP_DIR/
+        # obj-x86_64-pc-mingw32/dist/cuemol2-2.3.0.461.win64.installer.exe
+        cp obj-x86_64-pc-mingw32/dist/cuemol2-*.installer.exe $MSYS_TOP_DIR/
         cd $MSYS_TOP_DIR
-        ls -l cuemol2-*
-        # tar cjvf ${WORKSPACE}/${ARTIFACT_NAME} *.dmg
+        ls -l cuemol2-*.installer.exe
+        tar cjvf $MSYS_TOP_DIR/${ARTIFACT_NAME} cuemol2-*.installer.exe
+        echo "artifact-path=${GITHUB_WORKSPACE}/${ARTIFACT_NAME}" >> $GITHUB_OUTPUT
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: cuemol2_${{ runner.os }}_${{ runner.arch }}
+        path: ${{ steps.build-artifact.outputs.artifact-path }}
 
 ###############################################
 
