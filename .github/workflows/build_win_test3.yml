@@ -25,31 +25,36 @@ jobs:
       with:
         arch: x64
 
-    - name: Get repository dirname
-      id: get-repos-dir
-      shell: bash
-      run: |
-        set -eux
-        REPOS_DIR=$(echo '${{ github.workspace }}' | sed 's/\\/\//g')
-        echo "repos-dir=$REPOS_DIR" >> $GITHUB_OUTPUT
-        HOMEPATH_UX=$(echo "$HOMEPATH" | sed 's/\\/\//g')
-        echo "home-dir=$HOMEDRIVE$HOMEPATH_UX" >> $GITHUB_OUTPUT
+#    - name: Get repository dirname
+#      id: get-repos-dir
+ #     shell: bash
+#      run: |
+#        set -eux
+#        REPOS_DIR=$(echo '${{ github.workspace }}' | sed 's/\\/\//g')
+#        echo "repos-dir=$REPOS_DIR" >> $GITHUB_OUTPUT
+#        HOMEPATH_UX=$(echo "$HOMEPATH" | sed 's/\\/\//g')
+#        echo "home-dir=$HOMEDRIVE$HOMEPATH_UX" >> $GITHUB_OUTPUT
 
     - name: Setup build envvars
       shell: bash
       run: |
-        BASEDIR2=$(echo '${{ runner.temp }}' | sed 's/\\/\//g')
-        DEPLIBS_DIR2=$BASEDIR2/proj64_deplibs
-        echo "MSYS_DEPLIBS_DIR2=$DEPLIBS_DIR2" >> $GITHUB_ENV
-        BUNDLE_DIR2=$BASEDIR2/cuemol2_bundle
-        echo "MSYS_BUNDLE_DIR2=$BUNDLE_DIR2" >> $GITHUB_ENV
+        MSYS_TOP_DIR=$(cygpath -u '${{ github.workspace }}')
+        echo "MSYS_TOP_DIR=$MSYS_TOP_DIR" >> $GITHUB_ENV
 
-        BASEDIR=$(echo '${{ runner.temp }}' | sed 's/^\([a-zA-Z]\):\\/\/\1\//; s/\\/\//g')
-        echo "MSYS_BASEDIR=$BASEDIR" >> $GITHUB_ENV
-        DEPLIBS_DIR=$BASEDIR/proj64_deplibs
-        echo "MSYS_DEPLIBS_DIR=$DEPLIBS_DIR" >> $GITHUB_ENV
-        BUNDLE_DIR=$BASEDIR/cuemol2_bundle
-        echo "MSYS_BUNDLE_DIR=$BUNDLE_DIR" >> $GITHUB_ENV
+#        BASEDIR2=$(echo '${{ github.workspace }}' | sed 's/\\/\//g')
+#        echo "BASEDIR2=$BASEDIR2" >> $GITHUB_ENV
+
+#        DEPLIBS_DIR2=$BASEDIR2/proj64_deplibs
+#        echo "MSYS_DEPLIBS_DIR2=$DEPLIBS_DIR2" >> $GITHUB_ENV
+#        BUNDLE_DIR2=$BASEDIR2/cuemol2_bundle
+#        echo "MSYS_BUNDLE_DIR2=$BUNDLE_DIR2" >> $GITHUB_ENV
+
+#        BASEDIR=$(echo '${{ runner.temp }}' | sed 's/^\([a-zA-Z]\):\\/\/\1\//; s/\\/\//g')
+#        echo "MSYS_BASEDIR=$BASEDIR" >> $GITHUB_ENV
+#        DEPLIBS_DIR=$BASEDIR/proj64_deplibs
+#        echo "MSYS_DEPLIBS_DIR=$DEPLIBS_DIR" >> $GITHUB_ENV
+#        BUNDLE_DIR=$BASEDIR/cuemol2_bundle
+#        echo "MSYS_BUNDLE_DIR=$BUNDLE_DIR" >> $GITHUB_ENV
 
     - name: Edit mozconfig
       shell: bash
@@ -62,8 +67,8 @@ jobs:
         WIN_UCRT_REDIST_DIR=$(echo "${WindowsSdkDir}Redist\\${WindowsSDKLibVersion}ucrt\\DLLs\\x64" | sed 's/\\/\//g')
         echo "$WIN_UCRT_REDIST_DIR"
 
-        DEPLIBS_DIR=$MSYS_DEPLIBS_DIR2
-        BUNDLE_DIR=$MSYS_BUNDLE_DIR2
+        DEPLIBS_DIR=${MSYS_TOP_DIR}/target
+        BUNDLE_DIR=${MSYS_TOP_DIR}/target
 
         BOOST_DIR=$DEPLIBS_DIR/boost_1_84_0/include/boost-1_84
         LIBDIR=$DEPLIBS_DIR/boost_1_84_0/lib
@@ -114,14 +119,6 @@ jobs:
         }
         dir $mozilladir
 
-    # - name: Download/install deplibs
-    #   shell: bash
-    #   run: |
-    #     set -eux
-    #     TEMP_DIR=$(echo '${{ runner.temp }}' | sed 's/\\/\//g')
-    #     cd $GITHUB_WORKSPACE
-    #     bash build_scripts/download_deplibs/run_windows.sh $TEMP_DIR
-        
     - name: Download deplibs
       uses: ./build_scripts/download_deplibs
       with:
@@ -141,19 +138,20 @@ jobs:
         dir %BASEDIR%
         cmd /c %GITHUB_WORKSPACE%\build_scripts\build_libcuemol2_win.bat %BASEDIR% Release
 
-    - name: Build cuetty
+    - name: Build and run cuetty
       shell: cmd
       run: |
         echo on
         cd %GITHUB_WORKSPACE%
         set HOME=%HOMEDRIVE%%HOMEPATH%
-        cmd /c %GITHUB_WORKSPACE%\build_scripts\build_cuetty_win.bat ${{ runner.temp }}
+        set BASEDIR=${{ github.workspace }}\target
+        cmd /c %GITHUB_WORKSPACE%\build_scripts\build_cuetty_win.bat %BASEDIR%
 
 
     - name: Run mozilla build and build UXP
       shell: cmd
       run: |
         echo on
-        echo ${{ steps.get-repos-dir.outputs.repos-dir }}
+        SET MSYS_BASEDIR=
 
-        cmd /c C:\mozilla-build\start-shell.bat ${{ steps.get-repos-dir.outputs.repos-dir }}/build_scripts/build_uxpgui_win.sh %MSYS_DEPLIBS_DIR%
+        cmd /c C:\mozilla-build\start-shell.bat %MSYS_TOP_DIR%/build_scripts/build_uxpgui_win.sh ${MSYS_TOP_DIR}/target
