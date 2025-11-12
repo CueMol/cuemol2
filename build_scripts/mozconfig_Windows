@@ -17,7 +17,7 @@ ac_add_options --enable-application=cuemol2
 # Build options
 # Adjust the -j parameter if you need more or fewer parallel build tasks
 # Maximum supported without build errors is around 32
-mk_add_options MOZ_MAKE_FLAGS="-j3"
+mk_add_options MOZ_MAKE_FLAGS="-j5"
 ac_add_options --enable-optimize="-O2 -GTs -GS- -Qspectre -utf-8"
 
 # ac_add_options --enable-official-branding
