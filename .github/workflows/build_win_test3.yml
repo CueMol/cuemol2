@@ -1,9 +1,9 @@
-name: Build and release
+name: Build and release (Win X64)
 
 on:
   push:
-#    branches-ignore:
-#      - '**'
+   branches-ignore:
+     - '**'
 
 env:
   mozbuild-cache-version: v1
@@ -16,71 +16,21 @@ jobs:
   build_win_x64:
     name: "Windows intel msvc"
     runs-on: windows-2022
-    # runs-on: windows-2019
     steps:
     - uses: actions/checkout@v4
 
-    # - name: Add msbuild to PATH
-    #   uses: microsoft/setup-msbuild@v2
     - uses: ilammy/msvc-dev-cmd@v1
       with:
         arch: x64
 
-    - name: Get repository dirname
-      id: get-repos-dir
-      shell: bash
-      run: |
-        set -eux
-        REPOS_DIR=$(echo '${{ github.workspace }}' | sed 's/\\/\//g')
-        echo "repos-dir=$REPOS_DIR" >> $GITHUB_OUTPUT
-        HOMEPATH_UX=$(echo "$HOMEPATH" | sed 's/\\/\//g')
-        echo "home-dir=$HOMEDRIVE$HOMEPATH_UX" >> $GITHUB_OUTPUT
-
     - name: Setup build envvars
       shell: bash
       run: |
-        BASEDIR2=$(echo '${{ runner.temp }}' | sed 's/\\/\//g')
-        DEPLIBS_DIR2=$BASEDIR2/proj64_deplibs
-        echo "MSYS_DEPLIBS_DIR2=$DEPLIBS_DIR2" >> $GITHUB_ENV
-        BUNDLE_DIR2=$BASEDIR2/cuemol2_bundle
-        echo "MSYS_BUNDLE_DIR2=$BUNDLE_DIR2" >> $GITHUB_ENV
+        MSYS_TOP_DIR=$(cygpath -u '${{ github.workspace }}')
+        echo "MSYS_TOP_DIR=$MSYS_TOP_DIR" >> $GITHUB_ENV
 
-        BASEDIR=$(echo '${{ runner.temp }}' | sed 's/^\([a-zA-Z]\):\\/\/\1\//; s/\\/\//g')
-        echo "MSYS_BASEDIR=$BASEDIR" >> $GITHUB_ENV
-        DEPLIBS_DIR=$BASEDIR/proj64_deplibs
-        echo "MSYS_DEPLIBS_DIR=$DEPLIBS_DIR" >> $GITHUB_ENV
-        BUNDLE_DIR=$BASEDIR/cuemol2_bundle
-        echo "MSYS_BUNDLE_DIR=$BUNDLE_DIR" >> $GITHUB_ENV
-
-    - name: Edit mozconfig
-      shell: bash
-      run: |
-        set -eux
-        cd $GITHUB_WORKSPACE
-        # WIN32_REDIST_DIR=$(echo "${VCToolsRedistDir}x64\\Microsoft.VC142.CRT" | sed 's/\\/\//g')
-        WIN32_REDIST_DIR=$(echo "${VCToolsRedistDir}x64\\Microsoft.VC143.CRT" | sed 's/\\/\//g')
-        echo "$WIN32_REDIST_DIR"
-        WIN_UCRT_REDIST_DIR=$(echo "${WindowsSdkDir}Redist\\${WindowsSDKLibVersion}ucrt\\DLLs\\x64" | sed 's/\\/\//g')
-        echo "$WIN_UCRT_REDIST_DIR"
-
-        DEPLIBS_DIR=$MSYS_DEPLIBS_DIR2
-        BUNDLE_DIR=$MSYS_BUNDLE_DIR2
-
-        BOOST_DIR=$DEPLIBS_DIR/boost_1_84_0/include/boost-1_84
-        LIBDIR=$DEPLIBS_DIR/boost_1_84_0/lib
-        CUEMOL_DIR=$DEPLIBS_DIR/cuemol2
-        CUEMOL_DEBUG=""
-
-        cd uxp_gui
-        sed "s!@WIN32_REDIST_DIR@!$WIN32_REDIST_DIR!g" $GITHUB_WORKSPACE/build_scripts/mozconfig_Windows \
-        | sed "s!@WIN_UCRT_REDIST_DIR@!$WIN_UCRT_REDIST_DIR!g" \
-        | sed "s!@CUEMOL_BUNDLE@!$BUNDLE_DIR!g" \
-        | sed "s!@CUEMOL_DIR@!$CUEMOL_DIR!g" \
-        | sed "s!@CUEMOL_DEBUG@!$CUEMOL_DEBUG!g" \
-        | sed "s!@BOOST_DIR@!$BOOST_DIR!g" \
-        | sed "s!@DEPLIBS_DIR@!$LIBDIR!g" > .mozconfig
-
-        cat .mozconfig
+        MSYS_TOP_DIR2=$(cygpath -m '${{ github.workspace }}')
+        echo "MSYS_TOP_DIR2=$MSYS_TOP_DIR2" >> $GITHUB_ENV
 
     - uses: actions/cache@v4
       with:
@@ -100,11 +50,49 @@ jobs:
         # echo "SCCACHE_GHA_CACHE_TO=sccache-${{ runner.os }}-${{ github.sha }}" >> $env:GITHUB_ENV
         # echo "SCCACHE_GHA_CACHE_FROM=sccache-${{ runner.os }}-" >> $env:GITHUB_ENV
 
-#    - name: Verify sccache config
-#      run: |
-#        sccache --version
-#        sccache --show-stats
-#        sccache --help
+    - name: Find and set sccache path
+      shell: cmd
+      run: |
+        for /f "tokens=*" %%i in ('where sccache') do set SCCACHE_PATH=%%i & goto :done
+        :done
+        echo SCCACHE_PATH=%SCCACHE_PATH%
+        echo SCCACHE_PATH=%SCCACHE_PATH%>> %GITHUB_ENV%
+
+    - name: Edit mozconfig
+      shell: bash
+      run: |
+        set -eux
+        cd $GITHUB_WORKSPACE
+        # WIN32_REDIST_DIR=$(echo "${VCToolsRedistDir}x64\\Microsoft.VC142.CRT" | sed 's/\\/\//g')
+        WIN32_REDIST_DIR=$(echo "${VCToolsRedistDir}x64\\Microsoft.VC143.CRT" | sed 's/\\/\//g')
+        echo "$WIN32_REDIST_DIR"
+        WIN_UCRT_REDIST_DIR=$(echo "${WindowsSdkDir}Redist\\${WindowsSDKLibVersion}ucrt\\DLLs\\x64" | sed 's/\\/\//g')
+        echo "$WIN_UCRT_REDIST_DIR"
+
+        DEPLIBS_DIR=${MSYS_TOP_DIR2}/target
+        BUNDLE_DIR=${MSYS_TOP_DIR2}/target
+
+        BOOST_DIR=$DEPLIBS_DIR/boost_1_84_0/include/boost-1_84
+        LIBDIR=$DEPLIBS_DIR/boost_1_84_0/lib
+        CUEMOL_DIR=$DEPLIBS_DIR/cuemol2
+        CUEMOL_DEBUG=""
+
+        SCCACHE_PATH=$(cygpath -m "$SCCACHE_PATH")
+        CC_CMD="$SCCACHE_PATH cl.exe"
+        CXX_CMD="$SCCACHE_PATH cl.exe"
+
+        cd uxp_gui
+        sed "s!@WIN32_REDIST_DIR@!$WIN32_REDIST_DIR!g" $GITHUB_WORKSPACE/build_scripts/mozconfig_Windows \
+        | sed "s!@WIN_UCRT_REDIST_DIR@!$WIN_UCRT_REDIST_DIR!g" \
+        | sed "s!@CUEMOL_BUNDLE@!$BUNDLE_DIR!g" \
+        | sed "s!@CUEMOL_DIR@!$CUEMOL_DIR!g" \
+        | sed "s!@CUEMOL_DEBUG@!$CUEMOL_DEBUG!g" \
+        | sed "s!@BOOST_DIR@!$BOOST_DIR!g" \
+        | sed "s!@CC_CMD@!$CC_CMD!g" \
+        | sed "s!@CXX_CMD@!$CXX_CMD!g" \
+        | sed "s!@DEPLIBS_DIR@!$LIBDIR!g" > .mozconfig
+
+        cat .mozconfig
 
     - name: Install prerequisite
       run: |
@@ -121,37 +109,39 @@ jobs:
         }
         dir $mozilladir
 
-    - name: Download/install deplibs
-      shell: bash
-      run: |
-        set -eux
-        TEMP_DIR=$(echo '${{ runner.temp }}' | sed 's/\\/\//g')
-        cd $GITHUB_WORKSPACE
-        bash build_scripts/download_deplibs/run_windows.sh $TEMP_DIR
-        
+    - name: Download deplibs
+      uses: ./build_scripts/download_deplibs
+      with:
+        basedir: ${{ github.workspace }}/target
+
+    # - name: Download external packages
+    #   uses: ./build_scripts/download_extpkgs
+    #   with:
+    #     basedir: ${{ github.workspace }}/target
 
     - name: Build libcuemol2
       shell: cmd
       run: |
         echo on
         cd %GITHUB_WORKSPACE%
-        SET DEPLIBS_DIR=${{ runner.temp }}\proj64_deplibs
-        dir %DEPLIBS_DIR%
-        cmd /c %GITHUB_WORKSPACE%\build_scripts\build_libcuemol2_win.bat %DEPLIBS_DIR% Release
+        SET BASEDIR=${{ github.workspace }}\target
+        dir %BASEDIR%
+        cmd /c %GITHUB_WORKSPACE%\build_scripts\build_libcuemol2_win.bat %BASEDIR% Release
 
-    - name: Build cuetty
+    - name: Build and run cuetty
       shell: cmd
       run: |
         echo on
         cd %GITHUB_WORKSPACE%
         set HOME=%HOMEDRIVE%%HOMEPATH%
-        cmd /c %GITHUB_WORKSPACE%\build_scripts\build_cuetty_win.bat ${{ runner.temp }}
+        set BASEDIR=${{ github.workspace }}\target
+        cmd /c %GITHUB_WORKSPACE%\build_scripts\build_cuetty_win.bat %BASEDIR%
 
 
     - name: Run mozilla build and build UXP
       shell: cmd
       run: |
         echo on
-        echo ${{ steps.get-repos-dir.outputs.repos-dir }}
+        SET MSYS_BASEDIR=
 
-        cmd /c C:\mozilla-build\start-shell.bat ${{ steps.get-repos-dir.outputs.repos-dir }}/build_scripts/build_uxpgui_win.sh %MSYS_DEPLIBS_DIR%
+        cmd /c C:\mozilla-build\start-shell.bat %MSYS_TOP_DIR%/build_scripts/build_uxpgui_win.sh ${MSYS_TOP_DIR}/target

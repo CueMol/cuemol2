@@ -1276,7 +1276,7 @@ void RendIntData::calcSilEdgeLines(double dViewDist, double dnangl)
   MB_DPRINTLN("Silhouette extraction done. (%d edges, %d corners)", m_silEdges.size(), ncorner);
 }
 
-
+#if 0
 #define CGAL_LIB_DIAGNOSTIC
 #define CGAL_HAS_NO_THREADS
 #define CGAL_DISABLE_ROUNDING_MATH_CHECK
@@ -1594,11 +1594,32 @@ void RendIntData::calcEdgeIntrsec()
   
 }
 
+void RendIntData::cleanupSilEdgeLines()
+{
+  delete m_pEgMesh;
+  m_pEgMesh = NULL;
+
+  Tree *ptree = static_cast<Tree *>(m_pTree);
+  delete ptree;
+  m_pTree = NULL;
+
+  FaceVec *pfaces = static_cast<FaceVec *>(m_pTreeFaces); 
+  delete pfaces;
+  m_pTreeFaces = NULL;
+
+  m_vertvec.clear();
+  m_facevec.clear();
+  m_silEdges.clear();
+  m_secpts.clear();
+  
+  //m_silVertSet.clear();
+  //m_vvl.clear();
+}
+
+#endif
+
 void RendIntData::calcSilhIntrsec(double divw)
 {
-  MB_ASSERT(m_pTree!=NULL);
-  Tree &tree = *static_cast<Tree *>(m_pTree);
-
   int i;
   MeshVert *pv1, *pv2, *pv3;
   
@@ -1668,34 +1689,12 @@ void RendIntData::calcSilhIntrsec(double divw)
       rho_prev = rho;
     }
 
-    MB_DPRINTLN("Edge %d,%d ndiv=%d, isec=%d", elem.iv1, elem.iv2, ndiv, elem.getIsecSize());
+    // MB_DPRINTLN("Edge %d,%d ndiv=%d, isec=%d", elem.iv1, elem.iv2, ndiv, elem.getIsecSize());
 
   }
   
 }
 
-
-void RendIntData::cleanupSilEdgeLines()
-{
-  delete m_pEgMesh;
-  m_pEgMesh = NULL;
-
-  Tree *ptree = static_cast<Tree *>(m_pTree);
-  delete ptree;
-  m_pTree = NULL;
-
-  FaceVec *pfaces = static_cast<FaceVec *>(m_pTreeFaces); 
-  delete pfaces;
-  m_pTreeFaces = NULL;
-
-  m_vertvec.clear();
-  m_facevec.clear();
-  m_silEdges.clear();
-  m_secpts.clear();
-  
-  //m_silVertSet.clear();
-  //m_vvl.clear();
-}
 
 void RendIntData::writeEdgeLines(PrintStream &ps)
 {

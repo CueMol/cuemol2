@@ -1,0 +1,97 @@
+# https://taskfile.dev
+
+version: '3'
+
+vars:
+  WORKDIR: $HOME/tmp/proj64_deplibs
+  LIBCUEMOL2_BUILDDIR: "{{.WORKDIR}}/build_libcuemol2"
+  CONFIG: "Debug"
+  PARALLEL: 1
+
+tasks:
+  default:
+    cmds:
+      - echo "Default workdir {{.WORKDIR}}"
+    silent: true
+
+#####
+
+  build_libcuemol2:
+    deps:
+      - task: build_libcuemol2:{{OS}}
+
+  build_libcuemol2:darwin:
+    platforms: [darwin]
+    cmds:
+      - bash build_libcuemol2_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
+
+  build_libcuemol2:linux:
+    platforms: [linux]
+    cmds:
+      - bash build_libcuemol2_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
+
+  build_libcuemol2:windows:
+    platforms: [windows]
+    cmds:
+      - echo "not implemented"
+
+#####
+
+  rebuild_libcuemol2:
+    desc: "Setup, config, and build libcuemol2"
+    deps:
+      - task: rebuild_libcuemol2:{{OS}}
+
+  rebuild_libcuemol2:darwin:
+    desc: "Rebuild libcuemol2 (without running setup/config)"
+    platforms: [darwin]
+    cmds:
+      - cmake --build "{{.LIBCUEMOL2_BUILDDIR}}" --parallel "{{.PARALLEL}}" --config "{{.CONFIG}}" --target install
+
+  rebuild_libcuemol2:linux:
+    desc: "Rebuild libcuemol2 (without running setup/config)"
+    platforms: [linux]
+    cmds:
+      - cmake --build "{{.LIBCUEMOL2_BUILDDIR}}" --parallel "{{.PARALLEL}}" --config "{{.CONFIG}}" --target install
+
+  clean_libcuemol2:
+    desc: "Clean up the libcuemol2 obj dir"
+    cmds:
+      - rm -rf "{{.LIBCUEMOL2_BUILDDIR}}"
+
+#####
+
+  build_uxpgui:
+    desc: "Setup, config, and build the uxpgui app"
+    platforms: [darwin]
+    cmds:
+      - bash build_uxpgui_posix/run.sh "{{.WORKDIR}}" macOS ARM64
+
+  rebuild_uxpgui:
+    desc: "Rebuild the uxpgui app (without running setup/config)"
+    platforms: [darwin]
+    dir: "{{.ROOT_DIR}}/../uxp_gui/"
+    cmds:
+      - ./mach build
+
+  run_uxpgui:
+    desc: "Run the built uxpgui app"
+    platforms: [darwin]
+    dir: "{{.ROOT_DIR}}/../uxp_gui/"
+    cmds:
+      - ./obj-aarch64-apple-darwin/dist/CueMol2.app/Contents/MacOS/cuemol2
+
+  clean_uxpgui:
+    desc: "Clean up uxpgui obj dir"
+    cmds:
+      - rm -rf "{{.ROOT_DIR}}/../uxp_gui/obj-*"
+
+#####
+
+  uxpgui:
+    desc: "Build libcuemol2 and uxp and run the built app"
+    platforms: [darwin]
+    cmds:
+      - task: rebuild_libcuemol2
+      - task: rebuild_uxpgui
+      - task: run_uxpgui

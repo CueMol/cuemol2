@@ -8,7 +8,7 @@ set -eux
 
 BASEDIR=$1
 REPOS_DIR=$(cd $(dirname $0)/../..; pwd)
-WORKSPACE=${GITHUB_WORKSPACE:-$REPOS_DIR}
+TOP_DIR=${GITHUB_WORKSPACE:-$REPOS_DIR}
 
 BOOST_VER=boost_1_84_0
 
@@ -29,7 +29,7 @@ ls -la $BASEDIR
 GENERATOR="Ninja"
 
 cmake -G "$GENERATOR" \
-      -S ${WORKSPACE}/cli -B $BUILD_DIR \
+      -S ${TOP_DIR}/cli -B $BUILD_DIR \
       -DCMAKE_INSTALL_PREFIX=$INST_PATH \
       -DCMAKE_PREFIX_PATH=$BASEDIR \
       -DBoost_ROOT=$BASEDIR/$BOOST_VER/ \

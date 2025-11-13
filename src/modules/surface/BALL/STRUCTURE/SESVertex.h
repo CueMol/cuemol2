@@ -141,8 +141,7 @@ namespace BALL
 		/**	Set the normal vector of the SESVertex.
 				@param	normal	the new normal vector
 		*/
-		void setNormal(const TVector3<double>& normal)
-			throw(Exception::DivisionByZero);
+		void setNormal(const TVector3<double>& normal);
 
 		/**	Return the normal vector of the SESVertex.
 				@return	TVector3<double>	the normal vector of the vertex
