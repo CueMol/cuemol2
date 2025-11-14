@@ -102,12 +102,14 @@ if (${LCMS2_FOUND})
 endif()
 
 if (WIN32)
-  # add_definitions(-DGFX_EXPORTS=1)
   target_compile_definitions(gfx PUBLIC GFX_EXPORTS=1)
 else()
-  # target_compile_options(gfx PUBLIC "-fPIC")
   set_property(TARGET gfx PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()
+
+if (USE_PCH)
+   target_precompile_headers(gfx PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
+endif ()
 
 target_sources(gfx
   PRIVATE ${GFX_SRCS} ${MCWG_HEADERS}

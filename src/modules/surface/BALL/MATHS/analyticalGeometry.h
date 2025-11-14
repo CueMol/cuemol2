@@ -366,7 +366,6 @@ namespace BALL
 	template <typename T>
 	BALL_INLINE 
 	TVector3<T> GetPartition(const TVector3<T>& a, const TVector3<T>& b, const T& r, const T& s)
-		throw(Exception::DivisionByZero)
 	{
 		T sum = r + s;
 		if (sum == (T)0)
@@ -403,7 +402,6 @@ namespace BALL
 	template <typename T>
 	BALL_INLINE 
 	T GetDistance(const TLine3<T>& line, const TVector3<T>& point)
-		throw(Exception::DivisionByZero)
 	{
 		if (line.d.getLength() == (T)0)
 		{
@@ -420,7 +418,6 @@ namespace BALL
 	template <typename T>
 	BALL_INLINE 
 	T GetDistance(const TVector3<T>& point, const TLine3<T>& line)
-		throw(Exception::DivisionByZero)
 	{
 		return GetDistance(line, point);
 	}
@@ -432,7 +429,6 @@ namespace BALL
 	*/
 	template <typename T>
 	T GetDistance(const TLine3<T>& a, const TLine3<T>& b)
-		throw(Exception::DivisionByZero)
 	{
 		T cross_product_length = (a.d % b.d).getLength();
 		
@@ -469,7 +465,6 @@ namespace BALL
 	template <typename T>
 	BALL_INLINE 
 	T GetDistance(const TVector3<T>& point, const TPlane3<T>& plane)
-		throw(Exception::DivisionByZero)
 	{
 		T length = plane.n.getLength();
 
@@ -488,7 +483,6 @@ namespace BALL
 	template <typename T>
 	BALL_INLINE 
 	T GetDistance(const TPlane3<T>& plane, const TVector3<T>& point)
-		throw(Exception::DivisionByZero)
 	{
 		return GetDistance(point, plane);
 	}
@@ -501,7 +495,6 @@ namespace BALL
 	template <typename T>
 	BALL_INLINE 
 	T GetDistance(const TLine3<T>& line, const TPlane3<T>& plane)
-		throw(Exception::DivisionByZero)
 	{
 		T length = plane.n.getLength();
 		if (length == (T)0)
@@ -519,7 +512,6 @@ namespace BALL
 	template <typename T>
 	BALL_INLINE 
 	T GetDistance(const TPlane3<T>& plane, const TLine3<T>& line)
-		throw(Exception::DivisionByZero)
 	{
 		return GetDistance(line, plane);
 	}
@@ -532,7 +524,6 @@ namespace BALL
 	template <typename T>
 	BALL_INLINE 
 	T GetDistance(const TPlane3<T>& a, const TPlane3<T>& b)
-		throw(Exception::DivisionByZero)
 	{
 		T length = a.n.getLength();
 		if (length == (T)0)
@@ -1260,7 +1251,6 @@ namespace BALL
 		(const T& ax, const T& ay, const T& az,
 		 const T& bx, const T& by, const T& bz,
 		 const T& nx, const T& ny, const T& nz)
-		throw(Exception::DivisionByZero)
 	{
     // Calculate the length of the two normals
     T bl = (T) sqrt((double)ax * ax + ay * ay + az * az);
@@ -1299,7 +1289,6 @@ namespace BALL
   template <typename T>
 	BALL_INLINE 
   TAngle<T>getOrientedAngle(const TVector3<T>& a, const TVector3<T>& b, const TVector3<T>& normal)
-		throw(Exception::DivisionByZero)
   {
     return getOrientedAngle(a.x, a.y, a.z, b.x, b.y, b.z, normal.x, normal.y, normal.z);
 	}
@@ -1325,7 +1314,6 @@ namespace BALL
 		 const T& bx, const T& by, const T& bz,
 		 const T& cx, const T& cy, const T& cz, 
 		 const T& dx, const T& dy, const T& dz)
-		throw(Exception::DivisionByZero)
 	{
 		T abx = ax - bx;
 		T aby = ay - by;

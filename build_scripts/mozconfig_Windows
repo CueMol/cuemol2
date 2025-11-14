@@ -1,3 +1,7 @@
+
+export CC="@CC_CMD@"
+export CXX="@CXX_CMD@"
+
 BUILD_64=1
 
 BUILD_ARCH=x64
@@ -13,7 +17,7 @@ ac_add_options --enable-application=cuemol2
 # Build options
 # Adjust the -j parameter if you need more or fewer parallel build tasks
 # Maximum supported without build errors is around 32
-mk_add_options MOZ_MAKE_FLAGS="-j24"
+mk_add_options MOZ_MAKE_FLAGS="-j5"
 ac_add_options --enable-optimize="-O2 -GTs -GS- -Qspectre -utf-8"
 
 # ac_add_options --enable-official-branding
@@ -33,6 +37,7 @@ ac_add_options --disable-gamepad
 ac_add_options --disable-webrtc
 ac_add_options --disable-tests
 ac_add_options --disable-debug
+ac_add_options --disable-debug-symbols
 ac_add_options --disable-necko-wifi
 ac_add_options --disable-updater
 

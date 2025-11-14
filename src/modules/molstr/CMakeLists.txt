@@ -133,10 +133,15 @@ MCWRAPGEN_MODULE(MOLSTR_SRCS ${MOLSTR_MODLDR_SRC} ${MOLSTR_MCWG_QIFS})
 add_library(molstr STATIC ${MOLSTR_SRCS} ${MCWG_HEADERS})
 
 if (WIN32)
-  add_definitions(-DMOLSTR_EXPORTS=1)
+  # add_definitions(-DMOLSTR_EXPORTS=1)
+  target_compile_definitions(molstr PUBLIC MOLSTR_EXPORTS=1)
 else()
   target_compile_options(molstr PUBLIC "-fPIC")
 endif()
+
+if (USE_PCH)
+  target_precompile_headers(molstr PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
+endif ()
 
 target_link_libraries(molstr PRIVATE qlib gfx qsys Boost::filesystem Boost::thread CGAL::CGAL)
 

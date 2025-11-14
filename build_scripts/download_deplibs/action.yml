@@ -13,6 +13,12 @@ runs:
   - name: Download deplibs
     shell: bash
     run: |
+      if [[ "$RUNNER_OS" == "Windows" ]]; then
+        GITHUB_WORKSPACE=$(cygpath -u "$GITHUB_WORKSPACE")
+        BASEDIR=$(cygpath -u "${{ inputs.basedir }}")
+      else
+        BASEDIR=${{ inputs.basedir }}
+      fi
+
       cd ${GITHUB_WORKSPACE}
-      BASEDIR=${{ inputs.basedir }}
       bash build_scripts/download_deplibs/run.sh $BASEDIR ${{ runner.os }} ${{ runner.arch }}

@@ -112,7 +112,7 @@ fi
 # Packaging
 ./mach package
 
-find obj-*-apple-darwin/dist -name "apbs"
+# find obj-*-apple-darwin/dist -name "apbs"
 
 if [ $RUNNER_OS = "macOS" ]; then
     ls -l obj-*/dist/cuemol2-*.dmg

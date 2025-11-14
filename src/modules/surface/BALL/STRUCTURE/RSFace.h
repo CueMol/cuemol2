@@ -123,8 +123,7 @@ namespace BALL
 				const TVector3<double>& center,
 				const TVector3<double>& normal,
 				bool singular,
-				Index index)
-			throw(Exception::DivisionByZero);
+				Index index);
 
 		/**	Destructor.
 				Destructs the RSFace object.
@@ -175,8 +174,7 @@ namespace BALL
 				const TVector3<double>& center,
 				const TVector3<double>& normal,
 				bool singular,
-				Index index)
-			throw(Exception::DivisionByZero);
+				Index index);
 
 		//@}
 		/**	@name	Predicates
@@ -231,8 +229,7 @@ namespace BALL
 		/** Set the vector orthogonal to the RSFace.
 				@param	normal	the new normal
 		*/
-		void setNormal(const TVector3<double>& normal)
-			throw(Exception::DivisionByZero);
+		void setNormal(const TVector3<double>& normal);
 
 		/** Return the vector orthogonal to the RSFace.
 				@return	TVector3<double>	the vector orthogonal to the RSFace.

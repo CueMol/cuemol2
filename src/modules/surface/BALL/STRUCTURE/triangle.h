@@ -133,8 +133,7 @@ namespace BALL
 											If i is greater three, an exception is thrown.
 				@param	point	a pointer to the new point
 		*/
-		void setPoint(Position i, TrianglePoint* point)
-			throw(Exception::IndexOverflow);
+		void setPoint(Position i, TrianglePoint* point);
 
 		/** Return one of the three points of the Triangle.
 				@param	i										the relative index of the point which	
@@ -142,8 +141,7 @@ namespace BALL
 																		three, an exception is thrown.
 				@return	TrianglePoint*	a pointer to the asked point
 		*/
-		TrianglePoint* getPoint(Position i) const
-			throw(Exception::IndexOverflow);
+		TrianglePoint* getPoint(Position i) const;
 
 		/**	Remove an edge from the Triangle.
 				The edge is set to NULL.

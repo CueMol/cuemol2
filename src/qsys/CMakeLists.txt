@@ -189,6 +189,10 @@ else()
   set_property(TARGET qsys PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()
 
+if (USE_PCH)
+  target_precompile_headers(qsys PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
+endif ()
+
 target_compile_definitions(qsys PUBLIC NO_SCRIPT=1)
 
 target_link_libraries(qsys PRIVATE qlib gfx Boost::filesystem Boost::thread)

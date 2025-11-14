@@ -75,27 +75,25 @@ namespace BALL
 		//@{
 
 		/// Move the iterator to the item at the beginning of the container
-		BALL_INLINE void toBegin() throw(Exception::Precondition);
+		BALL_INLINE void toBegin();
 
 		/// Check whether the iterator points to the first item of the container
 		BALL_INLINE bool isBegin() const ;
 
 		/// Move the iterator behind the last item of the container
-		BALL_INLINE void toEnd() throw(Exception::Precondition);
+		BALL_INLINE void toEnd();
 
 		/// Check whether the iterator points behind the last item of the container
 		BALL_INLINE bool isEnd() const ;
 
 		/// Return an iterator pointing to the beginning of the container
-		static ConstForwardIterator begin(const Container& container)
-			throw(Exception::Precondition);
+		static ConstForwardIterator begin(const Container& container);
 
 		/// Return an iterator pointing at the end of the container
-		static ConstForwardIterator end(const Container& container) 
-			throw(Exception::Precondition);
+		static ConstForwardIterator end(const Container& container);
 
     /// Increment operator
-    BALL_INLINE ConstForwardIterator& operator ++ () throw(Exception::Precondition)
+    BALL_INLINE ConstForwardIterator& operator ++ ()
     {
       BALL_PRECONDITION_EXCEPTION(Base::isValid(), "cannot increment invalid iterator")
       Base::getTraits().forward();
@@ -103,7 +101,7 @@ namespace BALL
 		}
 
     /// Postfix increment operator
-    BALL_INLINE ConstForwardIterator operator ++ (int) throw(Exception::Precondition)
+    BALL_INLINE ConstForwardIterator operator ++ (int)
     {
       BALL_PRECONDITION_EXCEPTION(Base::isValid(), "cannot increment invalid iterator")
       ConstForwardIterator tmp(*this);
@@ -126,7 +124,6 @@ namespace BALL
 	template <typename Container, typename DataType, typename Position, typename Traits>
 	BALL_INLINE
 	void ConstForwardIterator<Container, DataType, Position, Traits>::toBegin()
-		throw(Exception::Precondition)
 	{
     BALL_PRECONDITION_EXCEPTION(!Base::isSingular(),	"cannot move singular iterator to begin")
 		Base::getTraits().toBegin();
@@ -136,7 +133,6 @@ namespace BALL
 	BALL_INLINE
 	ConstForwardIterator<Container, DataType, Position, Traits> 
 		ConstForwardIterator<Container, DataType, Position, Traits>::begin(const Container& container)
-		throw(Exception::Precondition)
 	{
 		ConstForwardIterator<Container, DataType, Position, Traits> iterator(container);
 		iterator.toBegin();
@@ -158,7 +154,6 @@ namespace BALL
 	template <typename Container, typename DataType, typename Position, typename Traits>
 	BALL_INLINE
 	void ConstForwardIterator<Container, DataType, Position, Traits>::toEnd()
-		throw(Exception::Precondition)
 	{
     BALL_PRECONDITION_EXCEPTION(!Base::isSingular(), "cannot move singular iterator to end")
 		Base::getTraits().toEnd();
@@ -168,7 +163,6 @@ namespace BALL
 	BALL_INLINE
 	ConstForwardIterator<Container, DataType, Position, Traits> 
 		ConstForwardIterator<Container, DataType, Position, Traits>::end(const Container& container)
-		throw(Exception::Precondition)
 	{
 		ConstForwardIterator iterator(container);
 		iterator.toEnd();
@@ -243,10 +237,10 @@ namespace BALL
 		//@{
 
 		/// Return an iterator pointing to the beginning of the container
-		static ForwardIterator begin(const Container& container) throw(Exception::Precondition);
+		static ForwardIterator begin(const Container& container);
 
 		/// Return an iterator pointing at the end of the container
-		static ForwardIterator end(const Container& container) throw(Exception::Precondition);
+		static ForwardIterator end(const Container& container);
 
 		///
 		BALL_INLINE reference operator * () const  
@@ -261,7 +255,7 @@ namespace BALL
 		}
 
     /// Increment operator
-    BALL_INLINE ForwardIterator& operator ++ () throw(Exception::Precondition)
+    BALL_INLINE ForwardIterator& operator ++ ()
     {
 			BALL_PRECONDITION_EXCEPTION(Base::isValid(), "cannot increment invalid iterator")
 			Base::getTraits().forward();
@@ -269,7 +263,7 @@ namespace BALL
 		}
 
     /// Postfix increment operator
-    BALL_INLINE ForwardIterator operator ++ (int) throw(Exception::Precondition)
+    BALL_INLINE ForwardIterator operator ++ (int)
     {
 			BALL_PRECONDITION_EXCEPTION(Base::isValid(), "cannot increment invalid iterator")
       ForwardIterator tmp(*this);
@@ -293,7 +287,6 @@ namespace BALL
 	BALL_INLINE
 	ForwardIterator<Container, DataType, Position, Traits> 
 		ForwardIterator<Container, DataType, Position, Traits>::begin(const Container& container)
-		throw(Exception::Precondition)
 	{
 		ForwardIterator iterator(container);
 		iterator.toBegin();
@@ -304,7 +297,6 @@ namespace BALL
 	BALL_INLINE
 	ForwardIterator<Container, DataType, Position, Traits> 
 		ForwardIterator<Container, DataType, Position, Traits>::end(const Container& container)
-		throw(Exception::Precondition)
 	{
 		ForwardIterator iterator(container);
 		iterator.toEnd();
