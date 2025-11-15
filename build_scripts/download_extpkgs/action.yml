@@ -24,7 +24,8 @@ runs:
         PKG_TGZ=extpkgs_${RUNNER_OS}_${RUNNER_ARCH}.tar.bz2
         PKG_VER=v0.0.5
         URL=https://github.com/CueMol/povray_build/releases/download/$PKG_VER/$PKG_TGZ
-        wget --progress=dot:mega -c $URL
+        # wget --progress=dot:mega -c $URL
+        curl -sS -L -O $URL
 
         # extract files
         BUNDLE_DIR=$BASEDIR
