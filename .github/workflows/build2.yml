@@ -6,8 +6,8 @@ on:
       - '**'  # All branches
     tags:
       - 'v*'  # Release tags (v1.0.0, etc)
-#  pull_request:
-#  workflow_dispatch:
+  pull_request:
+  workflow_dispatch:
 
 #    branches-ignore:
 #      - '**'
@@ -15,11 +15,11 @@ on:
 env:
   mozbuild-cache-version: v1
 
-  BUILD_MODE: ${{
-    (github.ref == 'refs/heads/develop' ||
-     github.event_name == 'workflow_dispatch' ||
-     startsWith(github.ref, 'refs/tags/')) && 'full' || 'quick'
-  }}
+  # BUILD_MODE: ${{
+  #   (github.ref == 'refs/heads/develop' ||
+  #    github.event_name == 'workflow_dispatch' ||
+  #    startsWith(github.ref, 'refs/tags/')) && 'full' || 'quick'
+  # }}
 
 ###############################################
 
