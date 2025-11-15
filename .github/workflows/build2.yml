@@ -187,6 +187,7 @@ jobs:
         cmd /c C:\mozilla-build\start-shell.bat %MSYS_TOP_DIR%/build_scripts/build_uxpgui_win/run.sh ${MSYS_TOP_DIR}/target
 
     - name: Check and copy artifacts
+      if: env.BUILD_MODE == 'full'
       id: build-artifact
       shell: bash
       env:
