@@ -29,7 +29,7 @@ runs:
     if: runner.os == 'Windows'
     shell: powershell
     run: |
-      choco install -y -r wget winflexbison3
+      choco install -y -r winflexbison3
 
       $mozilladir = "c:\mozilla-build"
       $src_url = "https://ftp.mozilla.org/pub/mozilla/libraries/win32/MozillaBuildSetup-3.4.exe"
