@@ -132,6 +132,10 @@ jobs:
         echo SCCACHE_PATH=%SCCACHE_PATH%
         echo SCCACHE_PATH=%SCCACHE_PATH%>> %GITHUB_ENV%
 
+    - name: Make mozconfig
+      shell: bash
+      run: bash ${MSYS_TOP_DIR}/build_scripts/build_uxpgui_win/make_mozconfig.sh
+
     - name: Download deplibs
       uses: ./build_scripts/download_deplibs
       with:
@@ -155,10 +159,6 @@ jobs:
         set HOME=%HOMEDRIVE%%HOMEPATH%
         set BASEDIR=${{ github.workspace }}\target
         cmd /c %GITHUB_WORKSPACE%\build_scripts\build_cuetty_win.bat %BASEDIR%
-
-    - name: Make mozconfig
-      shell: bash
-      run: bash ${{ github.workspace }}/build_scripts/build_uxpgui_win/make_mozconfig.sh
 
     - name: Run mozilla build and build UXP
       shell: cmd
