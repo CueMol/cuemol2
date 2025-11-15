@@ -60,18 +60,18 @@ jobs:
       with:
         basedir: ${{ github.workspace }}/target
 
-    - name: Build cuetty
+    - name: Build and check cuetty
       uses: ./build_scripts/build_cuetty_posix
       with:
         basedir: ${{ github.workspace }}/target
 
-    # - name: Check cuetty run
-    #   shell: bash
-    #   run: |
-    #     set -eux
-    #     BASEDIR=${{ github.workspace }}/target
-    #     ls -la $BASEDIR/cuemol2/bin/cuetty
-    #     $BASEDIR/cuemol2/bin/cuetty
+    - name: Check cuetty run
+      shell: bash
+      run: |
+        set -eux
+        BASEDIR=${{ github.workspace }}/target
+        ls -la $BASEDIR/cuemol2/bin/cuetty
+        env LD_LIBRARY_PATH=$BASEDIR/cuemol2/lib $BASEDIR/cuemol2/bin/cuetty
         
     - name: Build UXP GUI
       id: build-artifact

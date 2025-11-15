@@ -15,26 +15,14 @@ runs:
     env:
       SCCACHE_GHA_ENABLED: "true"
     run: |
-      BASEDIR=${{ inputs.basedir }}
-
       cd ${GITHUB_WORKSPACE}
-      bash build_scripts/build_cuetty_posix/run.sh $BASEDIR
+      bash build_scripts/build_cuetty_posix/run.sh ${{ inputs.basedir }}
 
-      ls -la $BASEDIR/cuemol2/bin/cuetty
-      $BASEDIR/cuemol2/bin/cuetty
-
-  # - name: Check cuetty run
-  #   shell: bash
-  #   if: runner.os != 'Windows'
-  #   run: |
-  #     set -eux
-  #     BASEDIR=${{ inputs.basedir }}
+      # ls -la ${{ inputs.basedir }}/cuemol2/bin/cuetty
+      # ${{ inputs.basedir }}/cuemol2/bin/cuetty
 
   - name: Build and install cuetty (windows)
     if: runner.os == 'Windows'
-#    shell: bash
-#    env:
-#      SCCACHE_GHA_ENABLED: "true"
     shell: cmd
     run: |
       echo on
@@ -42,4 +30,4 @@ runs:
       set HOME=%HOMEDRIVE%%HOMEPATH%
       cmd /c build_scripts\build_cuetty_posix\run_win.bat ${{ inputs.basedir }}
       REM check run
-      %BASEDIR%\cuemol2\bin\cuetty.exe
+      ${{ inputs.basedir }}\cuemol2\bin\cuetty.exe
