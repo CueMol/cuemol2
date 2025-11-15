@@ -9,10 +9,30 @@ inputs:
 runs:
   using: "composite"
   steps:
-  - name: Build and install cuetty
+  - name: Build and install cuetty (posix)
+    if: runner.os != 'Windows'
     shell: bash
     env:
       SCCACHE_GHA_ENABLED: "true"
     run: |
       cd ${GITHUB_WORKSPACE}
       bash build_scripts/build_cuetty_posix/run.sh ${{ inputs.basedir }}
+
+      if [ "$(uname)" == 'Darwin' ]; then
+        env DYLD_LIBRARY_PATH=${{ inputs.basedir }}/cuemol2/lib \
+          ${{ inputs.basedir }}/cuemol2/bin/cuetty
+      else
+        env LD_LIBRARY_PATH=${{ inputs.basedir }}/cuemol2/lib \
+          ${{ inputs.basedir }}/cuemol2/bin/cuetty
+      fi
+
+  - name: Build and install cuetty (windows)
+    if: runner.os == 'Windows'
+    shell: cmd
+    run: |
+      echo on
+      cd %GITHUB_WORKSPACE%
+      set HOME=%HOMEDRIVE%%HOMEPATH%
+      cmd /c build_scripts\build_cuetty_posix\run_win.bat ${{ inputs.basedir }}
+      REM check run
+      ${{ inputs.basedir }}\cuemol2\bin\cuetty.exe

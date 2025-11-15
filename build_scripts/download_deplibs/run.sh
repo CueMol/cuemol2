@@ -15,9 +15,11 @@ cd $TMPDIR
 
 # Retrieve deplibs binary
 DEPLIBS_TGZ=deplibs_${RUNNER_OS}_${RUNNER_ARCH}.tar.bz2
+URL=https://github.com/CueMol/build_scripts/releases/download/$DEPLIBS_VERSION/$DEPLIBS_TGZ
 
-wget --progress=dot:mega -c \
-     https://github.com/CueMol/build_scripts/releases/download/$DEPLIBS_VERSION/$DEPLIBS_TGZ
+# wget --progress=dot:mega -c \
+curl -sS -L -O $URL
+     
 # xattr -cr $DEPLIBS_TGZ
 tar xjf $DEPLIBS_TGZ
 
