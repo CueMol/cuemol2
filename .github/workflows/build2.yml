@@ -5,8 +5,21 @@ on:
 #    branches-ignore:
 #      - '**'
 
+    branches:
+      - '**'  # All branches
+    tags:
+      - 'v*'  # Release tags (v1.0.0, etc)
+  pull_request:
+  workflow_dispatch:
+
 env:
   mozbuild-cache-version: v1
+
+  BUILD_MODE: ${{ 
+    (github.ref == 'refs/heads/develop' || 
+     github.event_name == 'workflow_dispatch' || 
+     startsWith(github.ref, 'refs/tags/')) && 'full' || 'quick' 
+  }}
 
 ###############################################
 
@@ -31,6 +44,12 @@ jobs:
       MACOSX_DEPLOYMENT_TARGET: "10.15"
 
     steps:
+    - name: Show build mode
+      run: |
+        echo "BUILD_MODE: ${{ env.BUILD_MODE }}"
+        echo "Branch/Tag: ${{ github.ref }}"
+        echo "Event: ${{ github.event_name }}"
+
     - uses: actions/checkout@v4
 
     - name: Run sccache-cache
@@ -47,11 +66,6 @@ jobs:
 
     - name: Download deplibs
       uses: ./build_scripts/download_deplibs
-      with:
-        basedir: ${{ github.workspace }}/target
-
-    - name: Download external packages
-      uses: ./build_scripts/download_extpkgs
       with:
         basedir: ${{ github.workspace }}/target
 
@@ -73,13 +87,21 @@ jobs:
         ls -la $BASEDIR/cuemol2/bin/cuetty
         env LD_LIBRARY_PATH=$BASEDIR/cuemol2/lib $BASEDIR/cuemol2/bin/cuetty
         
+    - name: Download external packages
+      if: env.BUILD_MODE == 'full'
+      uses: ./build_scripts/download_extpkgs
+      with:
+        basedir: ${{ github.workspace }}/target
+
     - name: Build UXP GUI
+      if: env.BUILD_MODE == 'full'
       id: build-artifact
       uses: ./build_scripts/build_uxpgui_posix
       with:
         basedir: ${{ github.workspace }}/target
 
     - name: Upload artifact
+      if: env.BUILD_MODE == 'full'
       uses: actions/upload-artifact@v4
       with:
         name: cuemol2_${{ runner.os }}_${{ runner.arch }}
@@ -132,17 +154,8 @@ jobs:
         echo SCCACHE_PATH=%SCCACHE_PATH%
         echo SCCACHE_PATH=%SCCACHE_PATH%>> %GITHUB_ENV%
 
-    - name: Make mozconfig
-      shell: bash
-      run: bash ${MSYS_TOP_DIR}/build_scripts/build_uxpgui_win/make_mozconfig.sh
-
     - name: Download deplibs
       uses: ./build_scripts/download_deplibs
-      with:
-        basedir: ${{ github.workspace }}/target
-
-    - name: Download external packages
-      uses: ./build_scripts/download_extpkgs
       with:
         basedir: ${{ github.workspace }}/target
 
@@ -156,16 +169,19 @@ jobs:
       with:
         basedir: ${{ github.workspace }}\target
 
-    # - name: Build and run cuetty
-    #   shell: cmd
-    #   run: |
-    #     echo on
-    #     cd %GITHUB_WORKSPACE%
-    #     set HOME=%HOMEDRIVE%%HOMEPATH%
-    #     set BASEDIR=${{ github.workspace }}\target
-    #     cmd /c %GITHUB_WORKSPACE%\build_scripts\build_cuetty_win.bat %BASEDIR%
+    - name: Make mozconfig
+      if: env.BUILD_MODE == 'full'
+      shell: bash
+      run: bash ${MSYS_TOP_DIR}/build_scripts/build_uxpgui_win/make_mozconfig.sh
+
+    - name: Download external packages
+      if: env.BUILD_MODE == 'full'
+      uses: ./build_scripts/download_extpkgs
+      with:
+        basedir: ${{ github.workspace }}/target
 
     - name: Run mozilla build and build UXP
+      if: env.BUILD_MODE == 'full'
       shell: cmd
       run: |
         cmd /c C:\mozilla-build\start-shell.bat %MSYS_TOP_DIR%/build_scripts/build_uxpgui_win/run.sh ${MSYS_TOP_DIR}/target
@@ -186,6 +202,7 @@ jobs:
         echo "artifact-path=${GITHUB_WORKSPACE}/${ARTIFACT_NAME}" >> $GITHUB_OUTPUT
 
     - name: Upload artifact
+      if: env.BUILD_MODE == 'full'
       uses: actions/upload-artifact@v4
       with:
         name: cuemol2_${{ runner.os }}_${{ runner.arch }}
@@ -194,6 +211,7 @@ jobs:
 ###############################################
 
   release_build:
+    if: env.BUILD_MODE == 'full'
     needs: [build_posix, build_win_x64]
     runs-on: ubuntu-latest
     steps:
@@ -202,8 +220,8 @@ jobs:
       with:
         path: artifacts
         merge-multiple: true
-    - run: |
-        ls -lR
+    # - run: |
+    #     ls -lR
 
     - name: Release
       uses: softprops/action-gh-release@v2

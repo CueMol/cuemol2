@@ -18,8 +18,13 @@ runs:
       cd ${GITHUB_WORKSPACE}
       bash build_scripts/build_cuetty_posix/run.sh ${{ inputs.basedir }}
 
-      # ls -la ${{ inputs.basedir }}/cuemol2/bin/cuetty
-      # ${{ inputs.basedir }}/cuemol2/bin/cuetty
+      if [ "$(uname)" == 'Darwin' ]; then
+        env DYLD_LIBRARY_PATH=$BASEDIR/cuemol2/lib \
+          $BASEDIR/cuemol2/bin/cuetty
+      else
+        env LD_LIBRARY_PATH=$BASEDIR/cuemol2/lib \
+          $BASEDIR/cuemol2/bin/cuetty
+      fi
 
   - name: Build and install cuetty (windows)
     if: runner.os == 'Windows'
