@@ -65,13 +65,13 @@ jobs:
       with:
         basedir: ${{ github.workspace }}/target
 
-    - name: Check cuetty run
-      shell: bash
-      run: |
-        set -eux
-        BASEDIR=${{ github.workspace }}/target
-        ls -la $BASEDIR/cuemol2/bin/cuetty
-        $BASEDIR/cuemol2/bin/cuetty
+    # - name: Check cuetty run
+    #   shell: bash
+    #   run: |
+    #     set -eux
+    #     BASEDIR=${{ github.workspace }}/target
+    #     ls -la $BASEDIR/cuemol2/bin/cuetty
+    #     $BASEDIR/cuemol2/bin/cuetty
         
     - name: Build UXP GUI
       id: build-artifact
@@ -151,14 +151,19 @@ jobs:
       with:
         basedir: ${{ github.workspace }}\target
 
-    - name: Build and run cuetty
-      shell: cmd
-      run: |
-        echo on
-        cd %GITHUB_WORKSPACE%
-        set HOME=%HOMEDRIVE%%HOMEPATH%
-        set BASEDIR=${{ github.workspace }}\target
-        cmd /c %GITHUB_WORKSPACE%\build_scripts\build_cuetty_win.bat %BASEDIR%
+    - name: Build and check cuetty
+      uses: ./build_scripts/build_cuetty_posix
+      with:
+        basedir: ${{ github.workspace }}\target
+
+    # - name: Build and run cuetty
+    #   shell: cmd
+    #   run: |
+    #     echo on
+    #     cd %GITHUB_WORKSPACE%
+    #     set HOME=%HOMEDRIVE%%HOMEPATH%
+    #     set BASEDIR=${{ github.workspace }}\target
+    #     cmd /c %GITHUB_WORKSPACE%\build_scripts\build_cuetty_win.bat %BASEDIR%
 
     - name: Run mozilla build and build UXP
       shell: cmd

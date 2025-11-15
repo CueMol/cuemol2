@@ -18,6 +18,16 @@ runs:
       cd ${GITHUB_WORKSPACE}
       bash build_scripts/build_cuetty_posix/run.sh ${{ inputs.basedir }}
 
+      ls -la $BASEDIR/cuemol2/bin/cuetty
+      $BASEDIR/cuemol2/bin/cuetty
+
+  # - name: Check cuetty run
+  #   shell: bash
+  #   if: runner.os != 'Windows'
+  #   run: |
+  #     set -eux
+  #     BASEDIR=${{ inputs.basedir }}
+
   - name: Build and install cuetty (windows)
     if: runner.os == 'Windows'
 #    shell: bash
