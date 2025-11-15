@@ -31,7 +31,7 @@ runs:
         BUNDLE_DIR=$BASEDIR
         mkdir -p $BUNDLE_DIR
         cd $BUNDLE_DIR
-        tar xjvf $TMPDIR/$PKG_TGZ
+        tar xjf $TMPDIR/$PKG_TGZ
       else
         cd ${GITHUB_WORKSPACE}
         BASEDIR=${{ inputs.basedir }}

@@ -30,8 +30,6 @@ runs:
     with:
       path: ${{ env.PYENV_ROOT }}
       key: pyenv27-${{ runner.os }}-${{ runner.arch }}-${{ env.pyenv27-cache-version }}
-      # restore-keys: |
-      #   pyenv27-${{ runner.os }}-${{ runner.arch }}-
 
   - name: Install python2
     if: steps.cache-pyenv27.outputs.cache-hit != 'true'
