@@ -2,15 +2,15 @@ name: Build and release
 
 on:
   push:
-#    branches-ignore:
-#      - '**'
-
     branches:
       - '**'  # All branches
     tags:
       - 'v*'  # Release tags (v1.0.0, etc)
-  pull_request:
-  workflow_dispatch:
+#  pull_request:
+#  workflow_dispatch:
+
+#    branches-ignore:
+#      - '**'
 
 env:
   mozbuild-cache-version: v1
