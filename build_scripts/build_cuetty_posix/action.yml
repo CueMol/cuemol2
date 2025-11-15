@@ -15,8 +15,10 @@ runs:
     env:
       SCCACHE_GHA_ENABLED: "true"
     run: |
+      BASEDIR=${{ inputs.basedir }}
+
       cd ${GITHUB_WORKSPACE}
-      bash build_scripts/build_cuetty_posix/run.sh ${{ inputs.basedir }}
+      bash build_scripts/build_cuetty_posix/run.sh $BASEDIR
 
       ls -la $BASEDIR/cuemol2/bin/cuetty
       $BASEDIR/cuemol2/bin/cuetty
@@ -39,5 +41,5 @@ runs:
       cd %GITHUB_WORKSPACE%
       set HOME=%HOMEDRIVE%%HOMEPATH%
       cmd /c build_scripts\build_cuetty_posix\run_win.bat ${{ inputs.basedir }}
-#      cmd /c %GITHUB_WORKSPACE%\build_scripts\build_cuetty_win.bat %BASEDIR%
-
+      REM check run
+      %BASEDIR%\cuemol2\bin\cuetty.exe

@@ -53,6 +53,3 @@ cmake --install %BUILD_DIR% --config %BUILD_TYPE%
 
 copy %BASEDIR%\boost_%BOOST_VER%\lib\*mt-x64*.dll %INSTPATH%\bin\
 
-REM check run
-%INSTPATH%\bin\cuetty.exe
-
