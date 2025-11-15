@@ -211,11 +211,11 @@ jobs:
 ###############################################
 
   release_build:
-    if: env.BUILD_MODE == 'full'
     needs: [build_posix, build_win_x64]
     runs-on: ubuntu-latest
     steps:
     - name: Download All Artifacts
+      if: env.BUILD_MODE == 'full'
       uses: actions/download-artifact@v4
       with:
         path: artifacts
