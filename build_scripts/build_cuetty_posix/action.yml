@@ -9,10 +9,25 @@ inputs:
 runs:
   using: "composite"
   steps:
-  - name: Build and install cuetty
+  - name: Build and install cuetty (posix)
+    if: runner.os != 'Windows'
     shell: bash
     env:
       SCCACHE_GHA_ENABLED: "true"
     run: |
       cd ${GITHUB_WORKSPACE}
       bash build_scripts/build_cuetty_posix/run.sh ${{ inputs.basedir }}
+
+  - name: Build and install cuetty (windows)
+    if: runner.os == 'Windows'
+#    shell: bash
+#    env:
+#      SCCACHE_GHA_ENABLED: "true"
+    shell: cmd
+    run: |
+      echo on
+      cd %GITHUB_WORKSPACE%
+      set HOME=%HOMEDRIVE%%HOMEPATH%
+      cmd /c build_scripts\build_cuetty_posix\run_win.bat ${{ inputs.basedir }}
+#      cmd /c %GITHUB_WORKSPACE%\build_scripts\build_cuetty_win.bat %BASEDIR%
+
