@@ -150,10 +150,10 @@ void CmsXform::loadIccFile(const LString &path)
                                               hInProf,
                                               TYPE_RGB_8,
                                               hOutProf,
-                                              nProofIntent,
-                                              nProofIntent,
-                                              //INTENT_ABSOLUTE_COLORIMETRIC,
-                                              //INTENT_PERCEPTUAL,
+                                              // nProofIntent,
+                                              // nProofIntent,
+                                              INTENT_PERCEPTUAL,
+                                              INTENT_ABSOLUTE_COLORIMETRIC,
                                               cmsFLAGS_SOFTPROOFING);
   
   cmsHPROFILE hNullProf = cmsCreateNULLProfile();
@@ -167,11 +167,9 @@ void CmsXform::loadIccFile(const LString &path)
   //                                                cmsFLAGS_SOFTPROOFING|cmsFLAGS_GAMUTCHECK|cmsFLAGS_NOCACHE);
 
   m_pimpl->m_hTrChk = cmsCreateProofingTransform(hInProf,
-                                                 TYPE_RGB_DBL,
+                                                 TYPE_RGB_8,
                                                  hInProf,
-                                                 TYPE_RGB_DBL,
-                                                 // hOutProf,
-                                                 // TYPE_CMYK_DBL,
+                                                 TYPE_RGB_8,
                                                  hOutProf,
                                                  INTENT_PERCEPTUAL,
                                                  INTENT_ABSOLUTE_COLORIMETRIC,
@@ -279,20 +277,38 @@ bool CmsXform::isInGamut(quint32 incode) const
     return true;
   }
 
-  double gamutchk[4];
-  double inbuf2[4];
+  quint8 gamutchk[3];
+  quint8 inbuf2[3];
 
-  inbuf2[0] = convI2F( getRCode(incode) );
-  inbuf2[1] = convI2F( getGCode(incode) );
-  inbuf2[2] = convI2F( getBCode(incode) );
+  inbuf2[0] = getRCode(incode);
+  inbuf2[1] = getGCode(incode);
+  inbuf2[2] = getBCode(incode);
+
+  cmsUInt16Number alarm[cmsMAXCHANNELS];
+  if (inbuf2[0]==0xFF && inbuf2[1]==0 && inbuf2[2]==0xFF) {
+      alarm[0] = 0;
+      alarm[1] = 0xFFFF;
+      alarm[2] = 0xFFFF;
+  } else {
+      alarm[0] = 0xFFFF;
+      alarm[1] = 0;
+      alarm[2] = 0xFFFF;
+  }
+  cmsSetAlarmCodes(alarm);
 
   cmsDoTransform(static_cast<cmsHTRANSFORM>(m_pimpl->m_hTrChk), inbuf2, gamutchk, 1);
-  MB_DPRINTLN("CMS> %.3f:%.3f:%.3f --> %.3f:%.3f:%.3f:%.3f",
+  MB_DPRINTLN("CMS.isInGamut> %02X:%02X:%02X --> %02X:%02X:%02X",
               inbuf2[0],inbuf2[1],inbuf2[2],
-              gamutchk[0],gamutchk[1],gamutchk[2],gamutchk[3]);
+              gamutchk[0],gamutchk[1],gamutchk[2]);
 
-  if (gamutchk[0]<0.0)
+  MB_DPRINTLN("CMS.isInGamut> alarm: %02X:%02X:%02X",
+              alarm[0]>>8,alarm[1]>>8,alarm[2]>>8);
+
+  if (gamutchk[0]==(alarm[0]>>8) &&
+      gamutchk[1]==(alarm[1]>>8) &&
+      gamutchk[2]==(alarm[2]>>8)) {
     return false;
+  }
 #endif
 
   return true;

@@ -9,10 +9,10 @@ def test_new_scene_command():
     result = mgr.runCmdArgs("new_scene", args)
 
     assert "result_scene" in result
-    assert result["result_scene"] != None
+    assert result["result_scene"] is not None
     assert cuemol.isscene(result["result_scene"])
     assert result["result_scene"].name == "new scene"
 
     assert "result_view" in result
-    assert result["result_view"] != None
+    assert result["result_view"] is not None
     assert cuemol.isview(result["result_view"])
