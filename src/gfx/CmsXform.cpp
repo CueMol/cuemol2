@@ -141,8 +141,6 @@ void CmsXform::loadIccFile(const LString &path)
 
 #ifdef USEPROOFING
   cmsUInt16Number alarm[cmsMAXCHANNELS] = {0xFFFF, 0, 0xFFFF};
-  // for (int i=0; i < cmsMAXCHANNELS; i++)
-  //   alarm[i] = 0xFFFF;
   cmsSetAlarmCodes(alarm);
 
   m_pimpl->m_hTr = cmsCreateProofingTransform(hInProf,
@@ -150,32 +148,18 @@ void CmsXform::loadIccFile(const LString &path)
                                               hInProf,
                                               TYPE_RGB_8,
                                               hOutProf,
-                                              // nProofIntent,
-                                              // nProofIntent,
-                                              INTENT_PERCEPTUAL,
+                                              nProofIntent,
                                               INTENT_ABSOLUTE_COLORIMETRIC,
                                               cmsFLAGS_SOFTPROOFING);
   
-  cmsHPROFILE hNullProf = cmsCreateNULLProfile();
-  // m_pimpl->m_hTrChk = cmsCreateProofingTransform(hInProf,
-  //                                                TYPE_RGB_DBL,
-  //                                                hNullProf,
-  //                                                TYPE_GRAY_DBL,
-  //                                                hOutProf,
-  //                                                nProofIntent,
-  //                                                nProofIntent,
-  //                                                cmsFLAGS_SOFTPROOFING|cmsFLAGS_GAMUTCHECK|cmsFLAGS_NOCACHE);
-
   m_pimpl->m_hTrChk = cmsCreateProofingTransform(hInProf,
                                                  TYPE_RGB_8,
                                                  hInProf,
                                                  TYPE_RGB_8,
                                                  hOutProf,
-                                                 INTENT_PERCEPTUAL,
+                                                 nProofIntent,
                                                  INTENT_ABSOLUTE_COLORIMETRIC,
                                                  cmsFLAGS_SOFTPROOFING|cmsFLAGS_GAMUTCHECK|cmsFLAGS_NOCACHE);
-
-  cmsCloseProfile(hNullProf);
 
 #else
   m_pimpl->m_hTr1 = cmsCreateTransform(hInProf,

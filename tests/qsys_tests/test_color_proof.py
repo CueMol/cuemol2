@@ -14,10 +14,10 @@ def test_color_proof(create_scene):
     assert white.isInGamut(scene.uid)
 
     # gray should be in gamut in CMYK space
-    white = cuemol.col("#777", scene)
-    scode = f"{white.getDevCode(scene.uid) & 0xFFFFFF:06X}"
+    gray = cuemol.col("#777", scene)
+    scode = f"{gray.getDevCode(scene.uid) & 0xFFFFFF:06X}"
     assert scode == "767578"
-    assert white.isInGamut(scene.uid)
+    assert gray.isInGamut(scene.uid)
 
     # blue should be out of gamut in CMYK space
     blue = cuemol.col("#00F", scene)
