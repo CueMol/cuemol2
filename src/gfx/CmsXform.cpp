@@ -140,9 +140,9 @@ void CmsXform::loadIccFile(const LString &path)
     m_info += info+"\n";
 
 #ifdef USEPROOFING
-  cmsUInt16Number alarm[cmsMAXCHANNELS];
-  for (int i=0; i < cmsMAXCHANNELS; i++)
-    alarm[i] = 0xFFFF;
+  cmsUInt16Number alarm[cmsMAXCHANNELS] = {0xFFFF, 0, 0xFFFF};
+  // for (int i=0; i < cmsMAXCHANNELS; i++)
+  //   alarm[i] = 0xFFFF;
   cmsSetAlarmCodes(alarm);
 
   m_pimpl->m_hTr = cmsCreateProofingTransform(hInProf,
@@ -157,14 +157,26 @@ void CmsXform::loadIccFile(const LString &path)
                                               cmsFLAGS_SOFTPROOFING);
   
   cmsHPROFILE hNullProf = cmsCreateNULLProfile();
+  // m_pimpl->m_hTrChk = cmsCreateProofingTransform(hInProf,
+  //                                                TYPE_RGB_DBL,
+  //                                                hNullProf,
+  //                                                TYPE_GRAY_DBL,
+  //                                                hOutProf,
+  //                                                nProofIntent,
+  //                                                nProofIntent,
+  //                                                cmsFLAGS_SOFTPROOFING|cmsFLAGS_GAMUTCHECK|cmsFLAGS_NOCACHE);
+
   m_pimpl->m_hTrChk = cmsCreateProofingTransform(hInProf,
                                                  TYPE_RGB_DBL,
-                                                 hNullProf,
-                                                 TYPE_GRAY_DBL,
+                                                 hInProf,
+                                                 TYPE_RGB_DBL,
+                                                 // hOutProf,
+                                                 // TYPE_CMYK_DBL,
                                                  hOutProf,
-                                                 nProofIntent,
-                                                 nProofIntent,
+                                                 INTENT_PERCEPTUAL,
+                                                 INTENT_ABSOLUTE_COLORIMETRIC,
                                                  cmsFLAGS_SOFTPROOFING|cmsFLAGS_GAMUTCHECK|cmsFLAGS_NOCACHE);
+
   cmsCloseProfile(hNullProf);
 
 #else
@@ -231,6 +243,9 @@ void CmsXform::doXForm(quint32 incode, quint32 &routcode) const
   
 #ifdef USEPROOFING
   cmsDoTransform(static_cast<cmsHTRANSFORM>(m_pimpl->m_hTr), inbuf, outbuf, 1);
+  MB_DPRINTLN("CMS> %02X:%02X:%02X --> %02X:%02X:%02X",
+              inbuf[0],inbuf[1],inbuf[2],
+              outbuf[0],outbuf[1],outbuf[2]);
 
 #else  
   //quint8 cmykbuf[4];
@@ -264,20 +279,19 @@ bool CmsXform::isInGamut(quint32 incode) const
     return true;
   }
 
-  double gamutchk;
+  double gamutchk[4];
   double inbuf2[4];
 
   inbuf2[0] = convI2F( getRCode(incode) );
   inbuf2[1] = convI2F( getGCode(incode) );
   inbuf2[2] = convI2F( getBCode(incode) );
 
-  cmsDoTransform(static_cast<cmsHTRANSFORM>(m_pimpl->m_hTrChk), inbuf2, &gamutchk, 1);
-  /*MB_DPRINTLN("CMS> %02X:%02X:%02X --> %02X:%02X:%02X (%f)",
-              inbuf[0],inbuf[1],inbuf[2],
-              outbuf[0],outbuf[1],outbuf[2],
-              gamutchk);*/
+  cmsDoTransform(static_cast<cmsHTRANSFORM>(m_pimpl->m_hTrChk), inbuf2, gamutchk, 1);
+  MB_DPRINTLN("CMS> %.3f:%.3f:%.3f --> %.3f:%.3f:%.3f:%.3f",
+              inbuf2[0],inbuf2[1],inbuf2[2],
+              gamutchk[0],gamutchk[1],gamutchk[2],gamutchk[3]);
 
-  if (gamutchk<0.0)
+  if (gamutchk[0]<0.0)
     return false;
 #endif
 
