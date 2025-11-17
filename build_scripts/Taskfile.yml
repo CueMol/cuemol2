@@ -61,6 +61,18 @@ tasks:
 
 #####
 
+  build_pytest:
+    deps:
+      - task: build_pytest:{{OS}}
+
+  build_pytest:darwin:
+    platforms: [darwin]
+    cmds:
+      - task: build_libcuemol2
+      - bash build_pymod_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
+
+#####
+
   build_uxpgui:
     desc: "Setup, config, and build the uxpgui app"
     platforms: [darwin]
