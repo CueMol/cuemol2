@@ -21,7 +21,7 @@ RUNNER_OS="Windows"
 RUNNER_ARCH="X64"
 
 SCRIPT_DIR=$(cd $(dirname $0); pwd)
-WSDIR=$(cd $(dirname $0)/..; pwd)
+WSDIR=$(cd $(dirname $0)/../..; pwd)
 cd ${WSDIR}/uxp_gui
 
 # Retrieve UXP tarball

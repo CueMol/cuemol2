@@ -273,6 +273,7 @@ set(SYSCONFIG_FILE ${DATA_DIR}/sysconfig.xml)
 
 install(FILES ${DATA_FILES} DESTINATION data/data)
 install(FILES ${SYSCONFIG_FILE} DESTINATION data)
+install(FILES ${DATA_DIR}/icc_profiles/GenericCMYK.icm DESTINATION data/data/icc_profiles)
 
 if (BUILD_NODEJS_BINDINGS)
   add_custom_command(

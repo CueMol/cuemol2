@@ -36,6 +36,10 @@ BOOST_DIR=$BASEDIR/$BOOST_VER
 # Install location
 INST_PATH=$BASEDIR/cuemol2
 
+# Copy dependent libs (boost)
+# ls -la $BOOST_DIR/lib/lib*
+cp $BOOST_DIR/lib/lib* $BASEDIR/cuemol2/lib/
+
 export CMAKE_GENERATOR="Unix Makefiles"
 export CMAKE_MAKE_PROGRAM="make"
 cd $WORKSPACE/pymod
@@ -43,10 +47,6 @@ $PYTHON -m pip install \
      --config-settings=cmake.define.LIBCUEMOL2_ROOT=$INST_PATH \
      --config-settings=cmake.define.Boost_ROOT=$BOOST_DIR \
      -v . 
-
-# Copy dependent libs (boost)
-# ls -la $BOOST_DIR/lib/lib*
-cp $BOOST_DIR/lib/lib* $BASEDIR/cuemol2/lib/
 
 # run python tests
 cd $WORKSPACE

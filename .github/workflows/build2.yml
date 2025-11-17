@@ -2,11 +2,25 @@ name: Build and release
 
 on:
   push:
+    branches:
+      - '**'  # All branches
+    tags:
+      - 'v*'  # Release tags (v1.0.0, etc)
+#  pull_request:
+  workflow_dispatch:
+
 #    branches-ignore:
 #      - '**'
 
 env:
   mozbuild-cache-version: v1
+
+  BUILD_MODE: >-
+    ${{
+      (github.ref == 'refs/heads/develop' ||
+      github.event_name == 'workflow_dispatch' ||
+      startsWith(github.ref, 'refs/tags/')) && 'full' || 'quick'
+    }}
 
 ###############################################
 
@@ -31,6 +45,12 @@ jobs:
       MACOSX_DEPLOYMENT_TARGET: "10.15"
 
     steps:
+    - name: Show build mode
+      run: |
+        echo "BUILD_MODE: ${{ env.BUILD_MODE }}"
+        echo "Branch/Tag: ${{ github.ref }}"
+        echo "Event: ${{ github.event_name }}"
+
     - uses: actions/checkout@v4
 
     - name: Run sccache-cache
@@ -50,17 +70,12 @@ jobs:
       with:
         basedir: ${{ github.workspace }}/target
 
-    - name: Download external packages
-      uses: ./build_scripts/download_extpkgs
-      with:
-        basedir: ${{ github.workspace }}/target
-
     - name: Build libcuemol2
       uses: ./build_scripts/build_libcuemol2_posix
       with:
         basedir: ${{ github.workspace }}/target
 
-    - name: Build cuetty
+    - name: Build and check cuetty
       uses: ./build_scripts/build_cuetty_posix
       with:
         basedir: ${{ github.workspace }}/target
@@ -71,15 +86,23 @@ jobs:
         set -eux
         BASEDIR=${{ github.workspace }}/target
         ls -la $BASEDIR/cuemol2/bin/cuetty
-        $BASEDIR/cuemol2/bin/cuetty
+        env LD_LIBRARY_PATH=$BASEDIR/cuemol2/lib $BASEDIR/cuemol2/bin/cuetty
         
+    - name: Download external packages
+      if: env.BUILD_MODE == 'full'
+      uses: ./build_scripts/download_extpkgs
+      with:
+        basedir: ${{ github.workspace }}/target
+
     - name: Build UXP GUI
+      if: env.BUILD_MODE == 'full'
       id: build-artifact
       uses: ./build_scripts/build_uxpgui_posix
       with:
         basedir: ${{ github.workspace }}/target
 
     - name: Upload artifact
+      if: env.BUILD_MODE == 'full'
       uses: actions/upload-artifact@v4
       with:
         name: cuemol2_${{ runner.os }}_${{ runner.arch }}
@@ -132,91 +155,40 @@ jobs:
         echo SCCACHE_PATH=%SCCACHE_PATH%
         echo SCCACHE_PATH=%SCCACHE_PATH%>> %GITHUB_ENV%
 
-    - name: Edit mozconfig
-      shell: bash
-      run: |
-        set -eux
-        cd $GITHUB_WORKSPACE
-        # WIN32_REDIST_DIR=$(echo "${VCToolsRedistDir}x64\\Microsoft.VC142.CRT" | sed 's/\\/\//g')
-        WIN32_REDIST_DIR=$(echo "${VCToolsRedistDir}x64\\Microsoft.VC143.CRT" | sed 's/\\/\//g')
-        echo "$WIN32_REDIST_DIR"
-        WIN_UCRT_REDIST_DIR=$(echo "${WindowsSdkDir}Redist\\${WindowsSDKLibVersion}ucrt\\DLLs\\x64" | sed 's/\\/\//g')
-        echo "$WIN_UCRT_REDIST_DIR"
-
-        DEPLIBS_DIR=${MSYS_TOP_DIR2}/target
-        BUNDLE_DIR=${MSYS_TOP_DIR2}/target
-
-        BOOST_DIR=$DEPLIBS_DIR/boost_1_84_0/include/boost-1_84
-        LIBDIR=$DEPLIBS_DIR/boost_1_84_0/lib
-        CUEMOL_DIR=$DEPLIBS_DIR/cuemol2
-        CUEMOL_DEBUG=""
-
-        SCCACHE_PATH=$(cygpath -m "$SCCACHE_PATH")
-        CC_CMD="$SCCACHE_PATH cl.exe"
-        CXX_CMD="$SCCACHE_PATH cl.exe"
-
-        cd uxp_gui
-        sed "s!@WIN32_REDIST_DIR@!$WIN32_REDIST_DIR!g" $GITHUB_WORKSPACE/build_scripts/mozconfig_Windows \
-        | sed "s!@WIN_UCRT_REDIST_DIR@!$WIN_UCRT_REDIST_DIR!g" \
-        | sed "s!@CUEMOL_BUNDLE@!$BUNDLE_DIR!g" \
-        | sed "s!@CUEMOL_DIR@!$CUEMOL_DIR!g" \
-        | sed "s!@CUEMOL_DEBUG@!$CUEMOL_DEBUG!g" \
-        | sed "s!@BOOST_DIR@!$BOOST_DIR!g" \
-        | sed "s!@CC_CMD@!$CC_CMD!g" \
-        | sed "s!@CXX_CMD@!$CXX_CMD!g" \
-        | sed "s!@DEPLIBS_DIR@!$LIBDIR!g" > .mozconfig
-
-        cat .mozconfig
-
-    - name: Install prerequisite
-      run: |
-        choco install -y -r wget winflexbison3
-
-        $mozilladir = "c:\mozilla-build"
-        $src_url = "https://ftp.mozilla.org/pub/mozilla/libraries/win32/MozillaBuildSetup-3.4.exe"
-        if((Test-Path $mozilladir) -eq "True"){
-          Write-Host "Cache exists"
-          dir $mozilladir
-        }else{
-          Start-BitsTransfer -Source $src_url -Destination ./MozillaBuildSetup.exe
-          .\MozillaBuildSetup.exe /S | Out-Null
-        }
-        dir $mozilladir
-
     - name: Download deplibs
       uses: ./build_scripts/download_deplibs
       with:
         basedir: ${{ github.workspace }}/target
 
+    - name: Build libcuemol2
+      uses: ./build_scripts/build_libcuemol2_posix
+      with:
+        basedir: ${{ github.workspace }}\target
+
+    - name: Build and check cuetty
+      uses: ./build_scripts/build_cuetty_posix
+      with:
+        basedir: ${{ github.workspace }}\target
+
+    - name: Make mozconfig
+      if: env.BUILD_MODE == 'full'
+      shell: bash
+      run: bash ${MSYS_TOP_DIR}/build_scripts/build_uxpgui_win/make_mozconfig.sh
+
     - name: Download external packages
+      if: env.BUILD_MODE == 'full'
       uses: ./build_scripts/download_extpkgs
       with:
         basedir: ${{ github.workspace }}/target
 
-    - name: Build libcuemol2
-      shell: cmd
-      run: |
-        echo on
-        cd %GITHUB_WORKSPACE%
-        SET BASEDIR=${{ github.workspace }}\target
-        dir %BASEDIR%
-        cmd /c %GITHUB_WORKSPACE%\build_scripts\build_libcuemol2_win.bat %BASEDIR% Release
-
-    - name: Build and run cuetty
-      shell: cmd
-      run: |
-        echo on
-        cd %GITHUB_WORKSPACE%
-        set HOME=%HOMEDRIVE%%HOMEPATH%
-        set BASEDIR=${{ github.workspace }}\target
-        cmd /c %GITHUB_WORKSPACE%\build_scripts\build_cuetty_win.bat %BASEDIR%
-
     - name: Run mozilla build and build UXP
+      if: env.BUILD_MODE == 'full'
       shell: cmd
       run: |
-        cmd /c C:\mozilla-build\start-shell.bat %MSYS_TOP_DIR%/build_scripts/build_uxpgui_win.sh ${MSYS_TOP_DIR}/target
+        cmd /c C:\mozilla-build\start-shell.bat %MSYS_TOP_DIR%/build_scripts/build_uxpgui_win/run.sh ${MSYS_TOP_DIR}/target
 
     - name: Check and copy artifacts
+      if: env.BUILD_MODE == 'full'
       id: build-artifact
       shell: bash
       env:
@@ -232,6 +204,7 @@ jobs:
         echo "artifact-path=${GITHUB_WORKSPACE}/${ARTIFACT_NAME}" >> $GITHUB_OUTPUT
 
     - name: Upload artifact
+      if: env.BUILD_MODE == 'full'
       uses: actions/upload-artifact@v4
       with:
         name: cuemol2_${{ runner.os }}_${{ runner.arch }}
@@ -244,12 +217,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Download All Artifacts
+      if: env.BUILD_MODE == 'full'
       uses: actions/download-artifact@v4
       with:
         path: artifacts
         merge-multiple: true
-    - run: |
-        ls -lR
+    # - run: |
+    #     ls -lR
 
     - name: Release
       uses: softprops/action-gh-release@v2

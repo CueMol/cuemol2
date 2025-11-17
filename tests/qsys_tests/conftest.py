@@ -1,7 +1,6 @@
 import pytest
 import cuemol
 
-
 @pytest.fixture
 def create_scene():
     mgr = cuemol.svc("CmdMgr")
