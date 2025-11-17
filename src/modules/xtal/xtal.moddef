@@ -35,9 +35,9 @@ module xtal
   BrixMapReader;
   MmcifMapReader;
 
-// #ifdef USE_OPENGL
+#ifdef USE_OPENGL
   GLSLMapMeshRenderer;
 //  GLSLMapVolRenderer;
-// #endif
+#endif
 
 };
