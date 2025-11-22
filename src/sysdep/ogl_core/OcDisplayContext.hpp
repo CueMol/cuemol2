@@ -79,9 +79,6 @@ public:
 
     virtual void enableDepthTest(bool);
 
-    void loadOrthoProj(float width, float fasp, float near, float far);
-    void loadPerspProj(float width, float fasp, float near, float far, float distance);
-
     ////////////////
 
     virtual void setCullFace(bool f = true);

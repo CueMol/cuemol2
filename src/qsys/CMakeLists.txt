@@ -47,6 +47,7 @@ RendGroup.cpp
 MultiGradient.cpp
 TTYView.cpp
 QdfAbsWriter.cpp
+DrawObj.cpp
 command/Command.cpp
 command/NewSceneCommand.cpp
 command/NewRendererCommand.cpp

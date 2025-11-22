@@ -133,31 +133,6 @@ void OcDisplayContext::drawString(const Vector4D &pos, const qlib::LString &str)
     drawPixels(pos, pixbuf, ColorPtr());
 }
 
-// void OcDisplayContext::setPolygonMode(int id)
-// {
-// }
-
-void OcDisplayContext::loadOrthoProj(float vw, float fasp, float slabnear,
-                                     float slabfar)
-{
-    super_t::loadOrthoProj(vw, fasp, slabnear, slabfar);
-
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    loadMatrix(getProjMat());
-    glMatrixMode(GL_MODELVIEW);
-}
-
-void OcDisplayContext::loadPerspProj(float width, float fasp, float slabnear,
-                                     float slabfar, float distance)
-{
-    super_t::loadPerspProj(width, fasp, slabnear, slabfar, distance);
-
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    loadMatrix(getProjMat());
-    glMatrixMode(GL_MODELVIEW);
-}
 
 //////////////////////////////////////////////////////////////////
 // Display list impl

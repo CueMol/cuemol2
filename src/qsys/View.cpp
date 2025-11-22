@@ -1024,37 +1024,19 @@ bool View::hasHWStereo() const
   return false;
 }
 
-//////////////////////////////
-// DrawObj
-
-DrawObj::DrawObj()
-     : m_bEnabled(false)
-{
-}
-
-DrawObj::~DrawObj()
-{
-}
-
-void DrawObj::setEnabled(bool f)
-{
-  m_bEnabled = f;
-}
-
 ////////
 
 View *View::createOffScreenView(int w, int h, int aa_depth)
 {
-  return NULL;
+    return NULL;
 }
 
-void View::readPixels(int x, int y, int width, int height, char *pbuf, int nbufsize, int ncomp)
+void View::readPixels(int x, int y, int width, int height, char *pbuf, int nbufsize,
+                      int ncomp)
 {
 }
 
-void View::swapBuffers()
-{
-}
+void View::swapBuffers() {}
 
 ////////////////////////////////////////
 // Style supports
