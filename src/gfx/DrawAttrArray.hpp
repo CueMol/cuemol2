@@ -84,11 +84,11 @@ namespace gfx {
   template <class _ElemType>
   class DrawAttrArray : public AbstDrawAttrs
   {
+  public:
+    using super_t = AbstDrawAttrs;
+    using elem_t = _ElemType;
+
   private:
-    typedef AbstDrawAttrs super_t;
-
-    typedef _ElemType elem_t;
-
     qlib::Array<_ElemType> m_data;
 
   public:
@@ -125,15 +125,24 @@ namespace gfx {
       return m_data.at(i);
     }
 
+      void assignElems(std::initializer_list<_ElemType> list)
+      {
+          if (m_data.size() != list.size()) {
+              alloc(list.size());
+          }
+          m_data.assign(list);
+      }
   };
 
   /// Attribute array with indeces for shading language
   template <class _IndType, class _ElemType>
   class DrawAttrElems : public DrawAttrArray<_ElemType>
   {
-  private:
-    typedef DrawAttrArray<_ElemType> super_t;
+  public:
+    using super_t = DrawAttrArray<_ElemType>;
+    using index_t = _IndType;
 
+  private:
     qlib::Array<_IndType> m_inds;
 
   public:
@@ -172,6 +181,13 @@ namespace gfx {
       return m_inds.at(i);
     }
 
+      void assignInds(std::initializer_list<_IndType> list)
+      {
+          if (m_inds.size() != list.size()) {
+              allocInd(list.size());
+          }
+          m_inds.assign(list);
+      }
   };
 
 }

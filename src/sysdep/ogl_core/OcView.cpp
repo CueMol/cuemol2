@@ -40,6 +40,7 @@
 
 #include "OcDisplayContext.hpp"
 #include "OcViewCap.hpp"
+#include "CenterMarkDrawObj.hpp"
 
 #include <gfx/HittestContext.hpp>
 #include <gfx/SolidColor.hpp>
@@ -135,6 +136,10 @@ void OcView::setup()
     GLuint vao;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
+
+    auto pMark = qsys::DrawObjPtr(MB_NEW CenterMarkDrawObj());
+    pMark->setEnabled(true);
+    addDrawObj("CenterMarkDrawObj", pMark);
 }
 
 // setup the projection matrix
@@ -309,10 +314,11 @@ void OcView::drawScene()
 
     ////////////////////////////////////////////////
 
-    // TODO: draw center mark
+    // TODO: Display UI drawing objects (+center mark)
+    super_t::showDrawObj(pdc);
 
-    // TODO: Display UI drawing objects
-    // View::showDrawObj(pdc);
+    // Display 2D-UI drawing objects
+    super_t::showDrawObj2D(pdc);
 
     swapBuffers();
 

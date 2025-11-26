@@ -12,6 +12,7 @@
 #include <qlib/LScrSmartPtr.hpp>
 #include <qlib/LPropEvent.hpp>
 #include <qlib/mcutils.hpp>
+#include <gfx/DrawAttrArray.hpp>
 
 namespace gfx {
 class DisplayContext;
@@ -22,6 +23,8 @@ namespace qsys {
 using gfx::DisplayContext;
 using qlib::LString;
 
+///////////
+
 class QSYS_API DrawObj : public qlib::LNoCopyScrObject, public qlib::LUIDObject
 //  public qlib::LPropEventListener
 {
@@ -30,6 +33,7 @@ class QSYS_API DrawObj : public qlib::LNoCopyScrObject, public qlib::LUIDObject
 private:
     bool m_bEnabled;
 
+public:
 public:
     DrawObj();
     virtual ~DrawObj();

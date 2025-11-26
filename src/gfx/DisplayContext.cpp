@@ -436,3 +436,14 @@ void DisplayContext::getDevRGBAColor(const ColorPtr &pcol, float &r, float &g, f
         a = gfx::getFA(ccode);
     }
 }
+
+DrawObjElems3D *DisplayContext::createDrawObjElems3D() const
+{
+    return nullptr;
+}
+
+void DisplayContext::drawObjElems3D(const DrawObjElems3D &attr)
+{
+}
+
+    

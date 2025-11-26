@@ -20,6 +20,8 @@ protected:
     bool m_bInitOK;
 
 public:
+    using super_t = qsys::View;
+
     OcView();
 
     OcView(const OcView &r);

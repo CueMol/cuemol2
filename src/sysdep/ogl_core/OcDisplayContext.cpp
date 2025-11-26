@@ -20,11 +20,14 @@
 #include <gfx/Mesh.hpp>
 #include <gfx/DrawAttrArray.hpp>
 #include <gfx/ColProfMgr.hpp>
+#include <gfx/DrawObjElems.hpp>
 
 #include <qsys/Scene.hpp>
 #include <qsys/SceneManager.hpp>
 #include <qsys/style/StyleMgr.hpp>
 #include <sysdep/OglError.hpp>
+
+#include <sysdep/ShaderSetupHelper.hpp>
 
 namespace sysdep {
 
@@ -132,7 +135,6 @@ void OcDisplayContext::drawString(const Vector4D &pos, const qlib::LString &str)
     // gfx::SolidColor col(m_color);
     drawPixels(pos, pixbuf, ColorPtr());
 }
-
 
 //////////////////////////////////////////////////////////////////
 // Display list impl
@@ -252,6 +254,88 @@ OglProgramObject *OcDisplayContext::getProgramObject(const LString &name)
     OglProgObjMgr *pMgr = OglProgObjMgr::getInstance();
 
     return pMgr->getProgramObject(name, this);
+}
+
+//////////
+
+class OcDrawObjElems3D : public gfx::DrawObjElems3D
+{
+private:
+    bool m_bInitialized;
+
+    quint32 m_nVertexLoc;
+    quint32 m_nColorLoc;
+
+    OglProgramObject *m_pPO;
+
+public:
+    OcDrawObjElems3D() : gfx::DrawObjElems3D(), m_bInitialized(false) {}
+    virtual ~OcDrawObjElems3D() {}
+
+    bool initShader(gfx::DisplayContext *pdc)
+    {
+        if (m_bInitialized) return true;
+
+        MB_ASSERT(m_pPO == NULL);
+        ShaderSetupHelper ssh(pdc);
+
+        m_pPO = ssh.createProgObj("drawobj3d",
+                                  "%%CONFDIR%%/data/shaders/drawobj3d_vert.glsl",
+                                  "%%CONFDIR%%/data/shaders/drawobj3d_frag.glsl");
+
+        if (m_pPO == NULL) {
+            LOG_DPRINTLN("OcPixdraw> ERROR: cannot create progobj.");
+            return false;
+        }
+
+        // setup attributes
+        m_nVertexLoc = m_pPO->getAttribLocation("aVertex");
+        m_nColorLoc = m_pPO->getAttribLocation("aColor");
+
+        setAttrSize(2);
+        setAttrInfo(0, m_nVertexLoc, 3, qlib::type_consts::QTC_FLOAT32,
+                    offsetof(elem_t, x));
+        setAttrInfo(1, m_nColorLoc, 4, qlib::type_consts::QTC_UINT8,
+                    offsetof(elem_t, r));
+
+        m_bInitialized = true;
+        return true;
+    }
+
+    void draw(gfx::DisplayContext *pdc)
+    {
+        MB_ASSERT(m_bInitialized);
+        MB_ASSERT(m_pPO != NULL);
+
+        m_pPO->use();
+
+        // set uniforms if any
+        m_pPO->setupMat(pdc);
+
+        // draw call
+        pdc->drawElem(*this);
+
+        m_pPO->disable();
+    }
+};
+
+gfx::DrawObjElems3D *OcDisplayContext::createDrawObjElems3D() const
+{
+    return MB_NEW OcDrawObjElems3D();
+}
+
+void OcDisplayContext::drawObjElems3D(const gfx::DrawObjElems3D &attr)
+{
+    const OcDrawObjElems3D &ocattr =
+        dynamic_cast<const OcDrawObjElems3D &>(attr);
+
+    OcDrawObjElems3D *pocattr = const_cast<OcDrawObjElems3D *>(&ocattr);
+    if (!pocattr->initShader(this)) {
+        LOG_DPRINTLN("OcDisplayContext::drawObjElems3D> shader init failed");
+        return;
+    }
+
+    pocattr->draw(this);
 }
 
 }  // namespace sysdep

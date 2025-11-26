@@ -528,6 +528,13 @@ namespace qsys {
     drawobjtab_t m_drawObjTab;
 
   public:
+    bool addDrawObj(const LString &clsname, DrawObjPtr pObj) {
+        if (m_drawObjTab.find(clsname) != m_drawObjTab.end())
+            return false;
+        // m_drawObjTab[clsname] = pObj;
+        m_drawObjTab.insert(drawobjtab_t::value_type(clsname, pObj));
+        return true;
+    }
     DrawObjPtr getDrawObj(const LString &clsname);
 
     void showDrawObj(DisplayContext *pdc);

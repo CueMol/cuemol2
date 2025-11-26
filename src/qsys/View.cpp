@@ -990,7 +990,8 @@ DrawObjPtr View::getDrawObj(const LString &clsname)
   }
   
   DrawObjPtr pRes(pObj);
-  m_drawObjTab.insert(drawobjtab_t::value_type(clsname, pRes));
+  // m_drawObjTab.insert(drawobjtab_t::value_type(clsname, pRes));
+  addDrawObj(clsname, pRes);
 
   return pRes;
 }

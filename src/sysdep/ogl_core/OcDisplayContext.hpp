@@ -170,6 +170,14 @@ private:
 
     /// Set current material name
     void setMaterImpl(const LString &name);
+
+
+public:
+    virtual gfx::DrawObjElems3D *createDrawObjElems3D() const;
+
+    virtual void drawObjElems3D(const gfx::DrawObjElems3D &attr);
+
+
 };
 
 }  // namespace sysdep
