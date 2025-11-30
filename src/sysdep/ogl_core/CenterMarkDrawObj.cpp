@@ -36,7 +36,7 @@ bool CenterMarkDrawObj::init(DisplayContext* pdc)
     // Initialize the center mark drawing object
     m_pdata = pdc->createDrawObjElems3D();
 
-    const float dsize = 10.0f;
+    const float dsize = 20.0f;
     // m_pdata->at(0) = {0.0f, 0.0f, 0.0f, 0xFF, 0xFF, 0xFF, 0xFF};
     // m_pdata->at(1) = {dsize, 0.0f, 0.0f, 0xFF, 0xFF, 0xFF, 0xFF};
     // m_pdata->at(2) = {0.0f, dsize, 0.0f, 0xFF, 0xFF, 0xFF, 0xFF};

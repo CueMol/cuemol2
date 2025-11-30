@@ -178,6 +178,7 @@ void OcView::setUpProjMat(int cx, int cy)
     double fasp = (double)cx / (double)cy;
 
     MB_DPRINTLN("OcView.setUpProjMat> CX=%d, CY=%d, Vw=%f, Fasp=%f", cx, cy, vw, fasp);
+    MB_DPRINTLN("OcView.setUpProjMat> Near=%f, Far=%f", slabnear, slabfar);
 
     int bcx = convToBackingX(cx);
     int bcy = convToBackingY(cy);

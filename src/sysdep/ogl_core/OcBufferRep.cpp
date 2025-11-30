@@ -144,6 +144,7 @@ void OcBufferRep::setAttrib(const gfx::AbstDrawAttrs &ada)
         int ap = ada.getAttrPos(i);
         glVertexAttribPointer(al, az, convGLConsts(at), convGLNorm(at),
                               ada.getElemSize(), (void *)ap);
+        glVertexAttribDivisor(al, ada.getAttrDivisor(i));
         glEnableVertexAttribArray(al);
         CHK_GLERROR("glEnableVertexAttribArray(al)");
     }
@@ -151,21 +152,41 @@ void OcBufferRep::setAttrib(const gfx::AbstDrawAttrs &ada)
 
 void OcBufferRep::draw(const gfx::AbstDrawAttrs &ada)
 {
-    GLenum mode = convDrawMode(ada.getDrawMode());
-    int itype = ada.getType();
-    size_t indsz = ada.getIndElemSize();
+    const GLenum mode = convDrawMode(ada.getDrawMode());
+    const int itype = ada.getType();
+    const size_t indsz = ada.getIndElemSize();
+    const int ninst = ada.getNumInstances();
+
     if (itype == AbstDrawElem::VA_ATTR_INDS) {
-        if (indsz == 2)
-            glDrawElements(mode, ada.getIndSize(), GL_UNSIGNED_SHORT, 0);
-        else if (indsz == 4)
-            glDrawElements(mode, ada.getIndSize(), GL_UNSIGNED_INT, 0);
-        else {
+        GLenum ind_type;
+        if (indsz == 2) {
+            ind_type = GL_UNSIGNED_SHORT;
+        } else if (indsz == 4) {
+            ind_type = GL_UNSIGNED_INT;
+        } else {
             LOG_DPRINTLN("unsupported index element size %d", indsz);
             MB_ASSERT(false);
+            return;
+        }
+        if (ninst <= 0) {
+            glDrawElements(mode, ada.getIndSize(), ind_type, 0);
+            CHK_GLERROR("glDrawElements(mode, ada.getIndSize(), ind_type, 0)");
+        } else {
+            glDrawElementsInstanced(mode, ada.getIndSize(), ind_type, 0, ninst);
+            CHK_GLERROR("glDrawElementsInstanced(mode, ada.getIndSize(), ind_type, 0, ninst)");
+        }
+    } else if (itype == AbstDrawElem::VA_ATTRS) {
+        if (ninst <= 0) {
+            glDrawArrays(mode, 0, ada.getSize());
+            CHK_GLERROR("glDrawArrays(mode, 0, ada.getSize())");
+            return;
+        } else {
+            glDrawArraysInstanced(mode, 0, ada.getSize(), ninst);
+            CHK_GLERROR("glDrawArraysInstanced(mode, 0, ada.getSize(), ninst)");
         }
     } else {
-        glDrawArrays(mode, 0, ada.getSize());
-        CHK_GLERROR("glDrawArrays(mode, 0, ada.getSize())");
+        LOG_DPRINTLN("unsupported draw element type %d", itype);
+        MB_ASSERT(false);
     }
 }
 
@@ -188,14 +209,16 @@ OcBufferRep::~OcBufferRep()
 
     qsys::ViewPtr rvw = qsys::SceneManager::getViewS(m_nViewID);
     if (rvw.isnull()) {
-        MB_DPRINTLN("OcBufferRep> unknown parent view (%d), Texture %d cannot be deleted",
-                    m_nViewID, m_nBufID);
+        MB_DPRINTLN(
+            "OcBufferRep> unknown parent view (%d), Texture %d cannot be deleted",
+            m_nViewID, m_nBufID);
         return;
     }
     gfx::DisplayContext *pctxt = rvw->getDisplayContext();
     if (pctxt == nullptr) {
-        MB_DPRINTLN("OcBufferRep> view has no display context, Texture %d cannot be deleted",
-                    m_nBufID);
+        MB_DPRINTLN(
+            "OcBufferRep> view has no display context, Texture %d cannot be deleted",
+            m_nBufID);
         return;
     }
 

@@ -298,6 +298,7 @@ public:
         setAttrInfo(1, m_nColorLoc, 4, qlib::type_consts::QTC_UINT8,
                     offsetof(elem_t, r));
 
+        setDrawMode(DRAW_LINES);
         m_bInitialized = true;
         return true;
     }
@@ -310,7 +311,24 @@ public:
         m_pPO->use();
 
         // set uniforms if any
-        m_pPO->setupMat(pdc);
+        // m_pPO->setupMat(pdc);
+        Matrix4D mv_mat = pdc->getModelViewMat();
+        auto pView = pdc->getTargetView();
+        const auto vc = pView->getViewCenter();
+        mv_mat.translate(vc);
+        m_pPO->setMatrix("u_ModelViewMatrix", mv_mat);
+
+        const double cx = pView->getWidth();
+        const double cy = pView->getHeight();
+        const double fasp = cx / cy;
+        const double vw = cy / 2.0;
+        const double slabnear = 100.0;
+        const double slabfar = 300.0;
+        MB_DPRINTLN("OcDrawObjElems3D::draw> cx=%f, cy=%f", cx, cy);
+
+        const auto proj_mat =
+            DisplayContext::makeOrthoProjMat(vw, fasp, slabnear, slabfar);
+        m_pPO->setMatrix("u_ProjectionMatrix", proj_mat);
 
         // draw call
         pdc->drawElem(*this);
@@ -326,8 +344,7 @@ gfx::DrawObjElems3D *OcDisplayContext::createDrawObjElems3D() const
 
 void OcDisplayContext::drawObjElems3D(const gfx::DrawObjElems3D &attr)
 {
-    const OcDrawObjElems3D &ocattr =
-        dynamic_cast<const OcDrawObjElems3D &>(attr);
+    const OcDrawObjElems3D &ocattr = dynamic_cast<const OcDrawObjElems3D &>(attr);
 
     OcDrawObjElems3D *pocattr = const_cast<OcDrawObjElems3D *>(&ocattr);
     if (!pocattr->initShader(this)) {

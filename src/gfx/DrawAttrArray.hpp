@@ -20,11 +20,16 @@ namespace gfx {
       int nAttrElems;
       int iAttrType;
       int nStartPos;
+      int nDivisor;  
     };
 
     std::vector<AttrInfo> m_attrs;
 
+    /** number of instances for instanced rendering */
+    int m_nInsts; 
+
   public:
+    AbstDrawAttrs() : m_nInsts(0) {}
 
     // attribute query methods
 
@@ -41,6 +46,12 @@ namespace gfx {
         m_attrs[ind].nAttrElems = ae;
         m_attrs[ind].iAttrType = at;
         m_attrs[ind].nStartPos = pos;
+        m_attrs[ind].nDivisor = 0;
+    }
+
+    inline void setAttrDivisor(int ind, int div) {
+        MB_ASSERT(ind>=0 && ind<m_attrs.size());
+        m_attrs[ind].nDivisor = div;
     }
 
     inline int getAttrLoc(int ind) const {
@@ -54,6 +65,9 @@ namespace gfx {
     }
     inline int getAttrPos(int ind) const {
       return m_attrs[ind].nStartPos;
+    }
+    inline int getAttrDivisor(int ind) const {
+        return m_attrs[ind].nDivisor;
     }
 
   public:
@@ -78,6 +92,18 @@ namespace gfx {
       return getIndElemSize() * getIndSize();
     }
 
+    ///
+    // instanciation support
+    void setNumInstances(int ninsts)
+    {
+        m_nInsts = ninsts;
+    }
+    
+    int getNumInstances() const
+    {
+        return m_nInsts;
+    }
+
   };
 
   /// Attribute array for shading language
@@ -93,11 +119,11 @@ namespace gfx {
 
   public:
 
-    DrawAttrArray() : super_t() {}
+      DrawAttrArray() : super_t() {}
     virtual ~DrawAttrArray() {}
 
     virtual int getType() const {
-      return AbstDrawElem::VA_ATTRS;
+        return AbstDrawElem::VA_ATTRS;
     }
 
     virtual void alloc(int nsize)
@@ -150,7 +176,7 @@ namespace gfx {
     //virtual ~DrawAttrElems() {}
 
     virtual int getType() const {
-      return AbstDrawElem::VA_ATTR_INDS;
+        return AbstDrawElem::VA_ATTR_INDS;
     }
 
     void allocInd(int nsize)
