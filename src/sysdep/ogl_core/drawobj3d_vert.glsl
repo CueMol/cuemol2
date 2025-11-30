@@ -26,5 +26,6 @@ void main(void)
 {
     vec4 ecPosition = u_ModelViewMatrix * aVertex;
     gl_Position = u_ProjectionMatrix * ecPosition;
+    gl_Position.z = -0.99;
     v_frontColor = aColor;
 }

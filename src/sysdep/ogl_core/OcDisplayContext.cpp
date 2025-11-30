@@ -316,14 +316,15 @@ public:
         auto pView = pdc->getTargetView();
         const auto vc = pView->getViewCenter();
         mv_mat.translate(vc);
+        // mv_mat.translate(Vector4D(0, 0, -50));
         m_pPO->setMatrix("u_ModelViewMatrix", mv_mat);
 
         const double cx = pView->getWidth();
         const double cy = pView->getHeight();
         const double fasp = cx / cy;
         const double vw = cy / 2.0;
-        const double slabnear = 100.0;
-        const double slabfar = 300.0;
+        const double slabnear = 150;
+        const double slabfar = 250;
         MB_DPRINTLN("OcDrawObjElems3D::draw> cx=%f, cy=%f", cx, cy);
 
         const auto proj_mat =
