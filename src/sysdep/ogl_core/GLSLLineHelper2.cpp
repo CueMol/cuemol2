@@ -170,6 +170,14 @@ void GLSLLineHelper::draw(gfx::DisplayContext *pdc)
     m_pPO->setUniformF("lineWidth", linew);
     m_pPO->setUniformF("stippleLen", stippleLen);
     m_pPO->setUniformF("screenSize", w, h);
+
+    // if (true) {
+    if (m_bNoDepth) {
+        m_pPO->setUniform("u_nodepth", 1);
+    } else {
+        m_pPO->setUniform("u_nodepth", 0);
+    }
+
     pdc->drawElem(*m_pDrawAry);
     m_pPO->disable();
 }

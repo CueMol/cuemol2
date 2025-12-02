@@ -353,7 +353,13 @@ void OcDisplayContext::drawObjElems3D(const gfx::DrawObjElems3D &attr)
         return;
     }
 
+    glEnable(GL_BLEND);
+    // glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ZERO);
+    glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ONE_MINUS_SRC_COLOR);
+
     pocattr->draw(this);
+
+    glDisable(GL_BLEND);
 }
 
 }  // namespace sysdep

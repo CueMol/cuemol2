@@ -47,6 +47,8 @@ private:
     bool m_bStipple;
     bool m_bUseVertColor;
 
+    bool m_bNoDepth;
+
 public:
     GLSLLineHelper()
         : m_pPO(NULL),
@@ -54,7 +56,8 @@ public:
           m_bInitialized(false),
           m_linew(1.0),
           m_bStipple(false),
-          m_bUseVertColor(true)
+          m_bUseVertColor(true),
+          m_bNoDepth(false)
     {
     }
 
@@ -91,6 +94,15 @@ public:
     bool isUseVertColor() const
     {
         return m_bUseVertColor;
+    }
+
+    void setNoDepth(bool f)
+    {
+        m_bNoDepth = f;
+    }
+    bool isNoDepth() const
+    {
+        return m_bNoDepth;
     }
 
     void color(int ind, quint32 devcode);

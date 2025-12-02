@@ -16,6 +16,8 @@ uniform float stippleLen;
 uniform mat4 u_ModelViewMatrix;
 uniform mat4 u_ProjectionMatrix;
 
+uniform int u_nodepth;
+
 ////////////////////
 // Vertex attributes
 
@@ -41,4 +43,10 @@ varying float v_fogCoord;
 void main(void)
 {
     linew_func(stippleLen, v_length, v_fogCoord);
+
+    if (u_nodepth > 0) {
+        // billboarded line without depth
+        gl_Position.z = -0.99;
+        gl_Position.w = 1.0;
+    }
 }
