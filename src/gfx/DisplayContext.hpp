@@ -277,9 +277,10 @@ public:
     }
 
     // Projection matrix
-    virtual void loadOrthoProj(float width, float fasp, float near, float far);
-    virtual void loadPerspProj(float width, float fasp, float near, float far,
-                               float distance);
+    virtual void setProjMat(const Matrix4D &mat);
+    // virtual void loadOrthoProj(float width, float fasp, float near, float far);
+    // virtual void loadPerspProj(float width, float fasp, float near, float far,
+    //                            float distance);
 
     Matrix4D getProjMat() const
     {
@@ -448,7 +449,11 @@ public:
     void getDevRGBColor(const ColorPtr &pcol, float &r, float &g, float &b);
     void getDevRGBAColor(const ColorPtr &pcol, float &r, float &g, float &b, float &a);
 
-    static Matrix4D makeOrthoProjMat(float vw, float fasp, float near, float far);
+    static Matrix4D makeOrthoProjMat(float left, float right, float bottom, float top,
+                                     float near, float far);
+    static Matrix4D makeOrthoProjMat(float vw, float fasp, float near, float far) {
+        return makeOrthoProjMat(-vw*fasp, vw*fasp, -vw, vw, near, far);
+    }
 
     static Matrix4D makePersProjMat(float width, float fasp, float near, float far,
                                     float distance);

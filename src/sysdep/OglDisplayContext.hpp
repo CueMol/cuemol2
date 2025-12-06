@@ -102,10 +102,12 @@ namespace sysdep {
     // virtual void translate(const Vector4D &);
     // virtual void loadIdent();
 
-    void loadOrthoProj(float width, float fasp,
-                       float near, float far);
-    void loadPerspProj(float width, float fasp,
-                       float near, float far, float distance);
+    // Projection matrix
+    virtual void setProjMat(const Matrix4D &mat);
+    // void loadOrthoProj(float width, float fasp,
+    //                    float near, float far);
+    // void loadPerspProj(float width, float fasp,
+    //                    float near, float far, float distance);
 
     ////////////////
 

@@ -210,24 +210,12 @@ void OglView::setUpProjMat(int cx, int cy)
   }
 
   // Setup projection matrix
-
-  // glMatrixMode(GL_PROJECTION);
-  // glLoadIdentity();
-  // if (!isPerspec()) {
-  //   glOrtho(-vw*fasp, vw*fasp,
-  //           -vw, vw, slabnear, slabfar);
-  // }
-  // else {
-  //   double vang = oqlib::toDegree<double>(::atan(vw/dist))*2.0;
-  //   //MB_DPRINTLN("fov %f", vang);
-  //   gluPerspective(vang, fasp, slabnear, slabfar);
-  // }
-  // glMatrixMode(GL_MODELVIEW);
-
   if (isPerspec()) {
-      pdc->loadPerspProj(vw, fasp, slabnear, slabfar, dist);
+      // pdc->loadPerspProj(vw, fasp, slabnear, slabfar, dist);
+      pdc->setProjMat(DisplayContext::makePersProjMat(vw, fasp, slabnear, slabfar, dist));
   } else {
-      pdc->loadOrthoProj(vw, fasp, slabnear, slabfar);
+      // pdc->loadOrthoProj(vw, fasp, slabnear, slabfar);
+        pdc->setProjMat(DisplayContext::makeOrthoProjMat(vw, fasp, slabnear, slabfar));
   }
   
   resetProjChgFlag();

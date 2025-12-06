@@ -147,15 +147,15 @@ void DisplayContext::loadMatrix(const qlib::Matrix4D &mat)
     // checkUnitary();
 }
 
+void DisplayContext::setProjMat(const Matrix4D &mat)
+{
+    m_projMat = mat;
+}
+
 // static
-Matrix4D DisplayContext::makeOrthoProjMat(float vw, float fasp,
+Matrix4D DisplayContext::makeOrthoProjMat(float left, float right, float bottom, float top,
                                           float near, float far)
 {
-    float left=-vw*fasp;
-    float right=vw*fasp;
-    float bottom=-vw;
-    float top=vw;
-
     MB_DPRINTLN("LR=%f,%f", left, right);
     MB_DPRINTLN("BT=%f,%f", bottom, top);
     MB_DPRINTLN("NF=%f,%f", near, far);
@@ -191,11 +191,11 @@ Matrix4D DisplayContext::makeOrthoProjMat(float vw, float fasp,
     return ret;
 }
 
-void DisplayContext::loadOrthoProj(float vw, float fasp,
-                                   float near, float far)
-{
-    m_projMat = makeOrthoProjMat(vw, fasp, near, far);
-}
+// void DisplayContext::loadOrthoProj(float vw, float fasp,
+//                                    float near, float far)
+// {
+//     m_projMat = makeOrthoProjMat(vw, fasp, near, far);
+// }
 
 // static
 Matrix4D DisplayContext::makePersProjMat(float width, float fasp,
@@ -227,14 +227,14 @@ Matrix4D DisplayContext::makePersProjMat(float width, float fasp,
     return ret;
 }
 
-void DisplayContext::loadPerspProj(float width, float fasp,
-                                   float near, float far, float distance)
-{
-    m_projMat = makePersProjMat(width, fasp, near, far, distance);
+// void DisplayContext::loadPerspProj(float width, float fasp,
+//                                    float near, float far, float distance)
+// {
+//     m_projMat = makePersProjMat(width, fasp, near, far, distance);
 
-    // MB_DPRINTLN("PerspProjMat:");
-    // m_projMat.dump();
-}
+//     // MB_DPRINTLN("PerspProjMat:");
+//     // m_projMat.dump();
+// }
 
 //////////
 

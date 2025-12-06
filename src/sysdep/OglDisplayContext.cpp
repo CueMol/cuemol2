@@ -814,28 +814,38 @@ void OglDisplayContext::setPolygonMode(int id)
 }
 
 
-void OglDisplayContext::loadOrthoProj(float vw, float fasp,
-                                      float slabnear, float slabfar)
+void OglDisplayContext::setProjMat(const Matrix4D &mat)
 {
-    super_t::loadOrthoProj(vw, fasp, slabnear, slabfar);
+    super_t::setProjMat(mat);
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    loadMatrix(getProjMat());
-    // glOrtho(-vw*fasp, vw*fasp,
-    //         -vw, vw, slabnear, slabfar);
+    loadMatrix(mat);
     glMatrixMode(GL_MODELVIEW);
 }
 
-void OglDisplayContext::loadPerspProj(float awidth, float afasp,
-                                      float anear, float afar, float adistance)
-{
-    super_t::loadPerspProj(awidth, afasp, anear, afar, adistance);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    loadMatrix(getProjMat());
-    glMatrixMode(GL_MODELVIEW);
-}
+// void OglDisplayContext::loadOrthoProj(float vw, float fasp,
+//                                       float slabnear, float slabfar)
+// {
+//     super_t::loadOrthoProj(vw, fasp, slabnear, slabfar);
+
+//     glMatrixMode(GL_PROJECTION);
+//     glLoadIdentity();
+//     loadMatrix(getProjMat());
+//     // glOrtho(-vw*fasp, vw*fasp,
+//     //         -vw, vw, slabnear, slabfar);
+//     glMatrixMode(GL_MODELVIEW);
+// }
+
+// void OglDisplayContext::loadPerspProj(float awidth, float afasp,
+//                                       float anear, float afar, float adistance)
+// {
+//     super_t::loadPerspProj(awidth, afasp, anear, afar, adistance);
+//     glMatrixMode(GL_PROJECTION);
+//     glLoadIdentity();
+//     loadMatrix(getProjMat());
+//     glMatrixMode(GL_MODELVIEW);
+// }
 
 
 //////////////////////////////////////////////////////////////////

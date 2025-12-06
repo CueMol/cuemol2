@@ -9,7 +9,7 @@
 #include <gfx/SolidColor.hpp>
 
 namespace gfx {
-  class DrawObjSet;
+class DrawObjSet;
 }
 
 namespace sysdep {
@@ -23,6 +23,8 @@ class SYSDEP_API CenterMarkDrawObj : public qsys::DrawObj
 private:
     using super_t = qsys::DrawObj;
 
+    int m_nCenterMark;
+
 public:
     CenterMarkDrawObj();
     virtual ~CenterMarkDrawObj();
@@ -30,14 +32,24 @@ public:
     virtual void display(DisplayContext *pdc);
     virtual void display2D(DisplayContext *pdc);
 
+    int getCenterMark() const
+    {
+        return m_nCenterMark;
+    }
+
+    void setCenterMark(int nMode)
+    {
+        if (m_nCenterMark != nMode && m_pdata != nullptr) {
+            m_nCenterMark = nMode;
+            delete m_pdata;
+            m_pdata = nullptr;
+        }
+    }
+
 private:
     gfx::DrawObjSet *m_pdata;
-    
-    bool m_bInitOK;
 
     bool init(gfx::DisplayContext *pdc);
-    
-
 };
 
 }  // namespace sysdep
