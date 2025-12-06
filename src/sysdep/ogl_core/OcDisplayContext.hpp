@@ -173,9 +173,9 @@ private:
 
 
 public:
-    virtual gfx::DrawObjElems3D *createDrawObjElems3D() const;
+    virtual gfx::DrawObjSet *createDrawObjSet() const;
 
-    virtual void drawObjElems3D(const gfx::DrawObjElems3D &attr);
+    virtual void drawObjSet(const gfx::DrawObjSet &dos);
 
 
 };

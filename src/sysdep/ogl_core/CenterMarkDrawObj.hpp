@@ -9,7 +9,7 @@
 #include <gfx/SolidColor.hpp>
 
 namespace gfx {
-  class DrawObjElems3D;
+  class DrawObjSet;
 }
 
 namespace sysdep {
@@ -31,7 +31,7 @@ public:
     virtual void display2D(DisplayContext *pdc);
 
 private:
-    gfx::DrawObjElems3D *m_pdata;
+    gfx::DrawObjSet *m_pdata;
     
     bool m_bInitOK;
 

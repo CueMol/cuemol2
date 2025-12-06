@@ -28,8 +28,7 @@ class AbstDrawElem;
 class DrawElem;
 class AbstractColor;
 class PixelBuffer;
-class DrawObjElems3D;
-class DrawObjElems2D;
+class DrawObjSet;
 
 class GFX_API DisplayContext : public qlib::LObject
 {
@@ -456,9 +455,9 @@ public:
 
     ////
 
-    virtual DrawObjElems3D *createDrawObjElems3D() const;
+    virtual DrawObjSet *createDrawObjSet() const;
 
-    virtual void drawObjElems3D(const DrawObjElems3D &attr);
+    virtual void drawObjSet(const DrawObjSet &dos);
 };
 
 }  // namespace gfx

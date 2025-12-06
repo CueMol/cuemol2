@@ -13,6 +13,7 @@
 #include "OglProgObjMgr.hpp"
 #include "OcPixDraw.hpp"
 #include "OcBufferRep.hpp"
+#include "OcDrawObjSet.hpp"
 
 #include <gfx/TextRenderManager.hpp>
 #include <gfx/PixelBuffer.hpp>
@@ -258,6 +259,7 @@ OglProgramObject *OcDisplayContext::getProgramObject(const LString &name)
 
 //////////
 
+/*
 class OcDrawObjElems3D : public gfx::DrawObjElems3D
 {
 private:
@@ -337,14 +339,19 @@ public:
         m_pPO->disable();
     }
 };
+*/
 
-gfx::DrawObjElems3D *OcDisplayContext::createDrawObjElems3D() const
+gfx::DrawObjSet *OcDisplayContext::createDrawObjSet() const
 {
-    return MB_NEW OcDrawObjElems3D();
+    return MB_NEW OcDrawObjSet();
 }
 
-void OcDisplayContext::drawObjElems3D(const gfx::DrawObjElems3D &attr)
+void OcDisplayContext::drawObjSet(const gfx::DrawObjSet &dos)
 {
+    const OcDrawObjSet &ocdos = dynamic_cast<const OcDrawObjSet &>(dos);
+    ocdos.draw(this);
+
+    /*
     const OcDrawObjElems3D &ocattr = dynamic_cast<const OcDrawObjElems3D &>(attr);
 
     OcDrawObjElems3D *pocattr = const_cast<OcDrawObjElems3D *>(&ocattr);
@@ -360,6 +367,7 @@ void OcDisplayContext::drawObjElems3D(const gfx::DrawObjElems3D &attr)
     pocattr->draw(this);
 
     glDisable(GL_BLEND);
+    */
 }
 
 }  // namespace sysdep

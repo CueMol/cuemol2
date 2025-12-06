@@ -25,7 +25,6 @@ private:
         qfloat32 x2, y2, z2;
         qbyte r1, g1, b1, a1;
         qbyte r2, g2, b2, a2;
-        // qfloat32 ind;  // index number
     };
 
     // using LineArray = gfx::DrawAttrArray<LineElem>;

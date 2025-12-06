@@ -48,5 +48,6 @@ void main(void)
         // billboarded line without depth
         gl_Position.z = -0.99;
         gl_Position.w = 1.0;
+        v_fogCoord = 0.0;
     }
 }

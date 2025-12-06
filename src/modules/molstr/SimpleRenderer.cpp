@@ -24,7 +24,7 @@
 #include <gfx/DrawAttrArray.hpp>
 #include <sysdep/OglDisplayContext.hpp>
 #include <sysdep/OglProgramObject.hpp>
-#include <sysdep/ogl_core/GLSLLineHelper.hpp>
+#include <sysdep/ogl_core/GLSLLineHelper2.hpp>
 #endif
 
 using namespace molstr;

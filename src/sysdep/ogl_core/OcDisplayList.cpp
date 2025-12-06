@@ -9,7 +9,7 @@
 // #include "OglDisplayContext.hpp"
 #include "OcDisplayContext.hpp"
 #include "OglProgramObject.hpp"
-#include "GLSLLineHelper.hpp"
+#include "GLSLLineHelper2.hpp"
 #include "ShaderSetupHelper.hpp"
 
 #include <qsys/View.hpp>

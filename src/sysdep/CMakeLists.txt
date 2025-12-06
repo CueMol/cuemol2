@@ -19,6 +19,7 @@ SET(SYSDEP_SRCS
   ogl_core/OcView.cpp
   ogl_core/OcBufferRep.cpp
   ogl_core/CenterMarkDrawObj.cpp
+  ogl_core/OcDrawObjSet.cpp
 )
 
 SET(SYSDEP_HDRS

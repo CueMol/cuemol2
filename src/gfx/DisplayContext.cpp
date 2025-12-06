@@ -437,13 +437,12 @@ void DisplayContext::getDevRGBAColor(const ColorPtr &pcol, float &r, float &g, f
     }
 }
 
-DrawObjElems3D *DisplayContext::createDrawObjElems3D() const
+DrawObjSet *DisplayContext::createDrawObjSet() const
 {
+    MB_ASSERT(false);
     return nullptr;
 }
 
-void DisplayContext::drawObjElems3D(const DrawObjElems3D &attr)
+void DisplayContext::drawObjSet(const DrawObjSet &dos)
 {
 }
-
-    
