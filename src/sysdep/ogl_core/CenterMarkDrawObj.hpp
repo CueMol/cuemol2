@@ -29,22 +29,15 @@ public:
     CenterMarkDrawObj();
     virtual ~CenterMarkDrawObj();
 
-    virtual void display(DisplayContext *pdc);
-    virtual void display2D(DisplayContext *pdc);
+    virtual void display(DisplayContext *pdc, qsys::ViewPtr pView);
+    virtual void display2D(DisplayContext *pdc, qsys::ViewPtr pView);
 
     int getCenterMark() const
     {
         return m_nCenterMark;
     }
 
-    void setCenterMark(int nMode)
-    {
-        if (m_nCenterMark != nMode && m_pdata != nullptr) {
-            m_nCenterMark = nMode;
-            delete m_pdata;
-            m_pdata = nullptr;
-        }
-    }
+    void setCenterMark(int nMode);
 
 private:
     gfx::DrawObjSet *m_pdata;

@@ -38,8 +38,8 @@ public:
     DrawObj();
     virtual ~DrawObj();
 
-    virtual void display(DisplayContext *pdc) = 0;
-    virtual void display2D(DisplayContext *pdc) = 0;
+    virtual void display(DisplayContext *pdc, ViewPtr pView) = 0;
+    virtual void display2D(DisplayContext *pdc, ViewPtr pView) = 0;
 
     bool isEnabled() const
     {

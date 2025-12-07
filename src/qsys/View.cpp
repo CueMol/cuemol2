@@ -998,26 +998,32 @@ DrawObjPtr View::getDrawObj(const LString &clsname)
 
 void View::showDrawObj(DisplayContext *pdc)
 {
-  drawobjtab_t::const_iterator iter = m_drawObjTab.begin();
-  drawobjtab_t::const_iterator eiter = m_drawObjTab.end();
-
-  for (; iter!=eiter; ++iter) {
-    if (!iter->second->isEnabled())
-      continue;
-    iter->second->display(pdc);
+  auto pView = ViewPtr(this);
+  for (const auto & pair : m_drawObjTab) {
+      if (pair.second->isEnabled()) {
+          pair.second->display(pdc, pView);
+      }
   }
 }
 
 void View::showDrawObj2D(DisplayContext *pdc)
 {
-  drawobjtab_t::const_iterator iter = m_drawObjTab.begin();
-  drawobjtab_t::const_iterator eiter = m_drawObjTab.end();
-
-  for (; iter!=eiter; ++iter) {
-    if (!iter->second->isEnabled())
-      continue;
-    iter->second->display2D(pdc);
+  auto pView = ViewPtr(this);
+  for (const auto & pair : m_drawObjTab) {
+      if (pair.second->isEnabled()) {
+          pair.second->display2D(pdc, pView);
+      }
   }
+
+  // drawobjtab_t::const_iterator iter = m_drawObjTab.begin();
+  // drawobjtab_t::const_iterator eiter = m_drawObjTab.end();
+
+  // auto pView = ViewPtr(this);
+  // for (; iter!=eiter; ++iter) {
+  //   if (!iter->second->isEnabled())
+  //     continue;
+  //   iter->second->display2D(pdc, pView);
+  // }
 }
 
 bool View::hasHWStereo() const

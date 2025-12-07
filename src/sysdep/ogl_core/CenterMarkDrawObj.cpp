@@ -18,6 +18,15 @@ CenterMarkDrawObj::CenterMarkDrawObj()
 
 CenterMarkDrawObj::~CenterMarkDrawObj() {}
 
+void CenterMarkDrawObj::setCenterMark(int nMode)
+{
+    if (m_nCenterMark != nMode && m_pdata != nullptr) {
+        m_nCenterMark = nMode;
+        delete m_pdata;
+        m_pdata = nullptr;
+    }
+}
+
 bool CenterMarkDrawObj::init(DisplayContext* pdc)
 {
     if (m_pdata != nullptr) {
@@ -39,41 +48,66 @@ bool CenterMarkDrawObj::init(DisplayContext* pdc)
         m_pdata->setLine(0, Vector4D(0, 0, 0), ccode, Vector4D(dsize, 0, 0), ccode);
         m_pdata->setLine(1, Vector4D(0, 0, 0), ccode, Vector4D(0, dsize, 0), ccode);
         m_pdata->setLine(2, Vector4D(0, 0, 0), ccode, Vector4D(0, 0, dsize), ccode);
-    }
-    else {
+    } else {
         // 2D cross
         m_pdata->allocLines(2);
         const float dsize = 10.0f;
 
         m_pdata->setLineWidth(1.0f);
         m_pdata->setNoDepth(true);
-        m_pdata->setLine(0, Vector4D(-dsize, 0, 0), ccode, Vector4D(dsize, 0, 0), ccode);
-        m_pdata->setLine(1, Vector4D(0, -dsize, 0), ccode, Vector4D(0, dsize, 0), ccode);
+        m_pdata->setLine(0, Vector4D(-dsize, 0, 0), ccode, Vector4D(dsize, 0, 0),
+                         ccode);
+        m_pdata->setLine(1, Vector4D(0, -dsize, 0), ccode, Vector4D(0, dsize, 0),
+                         ccode);
     }
 
     MB_DPRINTLN("CenterMarkDrawObj::init() OK !!!!!");
     return true;
 }
 
-void CenterMarkDrawObj::display(DisplayContext* pdc)
+void CenterMarkDrawObj::display(DisplayContext* pdc, qsys::ViewPtr pView)
 {
     if (m_nCenterMark != qsys::Camera::CCM_AXIS) {
         return;
     }
 
     init(pdc);
+
+    pdc->pushMatrix();
+    pdc->translate(pView->getViewCenter());
+    auto projMat = pdc->getProjMat();
+
+    const double cx = pView->getWidth();
+    const double cy = pView->getHeight();
+    const double fasp = cx / cy;
+    const double vw = cy / 2.0;
+    const double slabnear = 150;
+    const double slabfar = 250;
+    pdc->setProjMat(DisplayContext::makeOrthoProjMat(vw, fasp, slabnear, slabfar));
+
     pdc->drawObjSet(*m_pdata);
+
+    pdc->setProjMat(projMat);
+    pdc->popMatrix();
+
     MB_DPRINTLN("CenterMarkDrawObj::display()");
 }
 
-void CenterMarkDrawObj::display2D(DisplayContext* pdc)
+void CenterMarkDrawObj::display2D(DisplayContext* pdc, qsys::ViewPtr pView)
 {
     if (m_nCenterMark != qsys::Camera::CCM_CROSS) {
         return;
     }
 
     init(pdc);
+
+    const double cx = pView->getWidth();
+    const double cy = pView->getHeight();
+
+    pdc->pushMatrix();
+    pdc->translate(Vector4D(cx / 2.0, cy / 2.0, 0));
     pdc->drawObjSet(*m_pdata);
+    pdc->popMatrix();
     MB_DPRINTLN("CenterMarkDrawObj::display2D()");
 }
 

@@ -320,22 +320,7 @@ void OcView::drawScene()
 
     // TODO: Display UI drawing objects (+center mark)
     {
-        pdc->pushMatrix();
-        pdc->translate(getViewCenter());
-        auto projMat = pdc->getProjMat();
-
-        const double cx = getWidth();
-        const double cy = getHeight();
-        const double fasp = cx / cy;
-        const double vw = cy / 2.0;
-        const double slabnear = 150;
-        const double slabfar = 250;
-        pdc->setProjMat(DisplayContext::makeOrthoProjMat(vw, fasp, slabnear, slabfar));
-
         super_t::showDrawObj(pdc);
-
-        pdc->setProjMat(projMat);
-        pdc->popMatrix();
     }
 
     // Display 2D-UI drawing objects
@@ -346,7 +331,6 @@ void OcView::drawScene()
 
         pdc->pushMatrix();
         pdc->loadIdent();
-        pdc->translate(Vector4D(cx / 2.0, cy / 2.0, 0));
         auto projMat = pdc->getProjMat();
         pdc->setProjMat(DisplayContext::makeOrthoProjMat(0, cx, cy, 0, 1.0, -1.0));
 
