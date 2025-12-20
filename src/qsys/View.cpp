@@ -1031,6 +1031,14 @@ bool View::hasHWStereo() const
   return false;
 }
 
+void View::setCenterMark(int nMode)
+{
+    if (m_curcam.getCenterMark() != nMode) {
+        m_curcam.setCenterMark(nMode);
+        setUpdateFlag();
+    }
+}
+
 ////////
 
 View *View::createOffScreenView(int w, int h, int aa_depth)

@@ -217,12 +217,7 @@ namespace qsys {
     int getCenterMark() const {
       return m_curcam.getCenterMark();
     }
-    void setCenterMark(int nMode) {
-      if (m_curcam.getCenterMark() != nMode) {
-        m_curcam.setCenterMark(nMode);
-	setUpdateFlag();
-      }
-    }
+    virtual void setCenterMark(int nMode);
 
     // view direction vectors
     /// Get up-direction vector (in world coord)

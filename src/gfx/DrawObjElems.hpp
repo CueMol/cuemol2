@@ -67,6 +67,20 @@ public:
     /// Set line data (color by ColorPtr)
     void setLine(int idx, const qlib::Vector4D &v1, const ColorPtr &col1,
                  const qlib::Vector4D &v2, const ColorPtr &col2);
+
+private:
+    bool m_bInvertColor;
+
+public:
+    void setInvertColor(bool bInv)
+    {
+        m_bInvertColor = bInv;
+    }
+
+    bool isInvertColor() const
+    {
+        return m_bInvertColor;
+    }
 };
 
 }  // namespace gfx

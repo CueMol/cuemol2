@@ -20,8 +20,12 @@ CenterMarkDrawObj::~CenterMarkDrawObj() {}
 
 void CenterMarkDrawObj::setCenterMark(int nMode)
 {
-    if (m_nCenterMark != nMode && m_pdata != nullptr) {
-        m_nCenterMark = nMode;
+    if (m_nCenterMark == nMode)
+        return;
+
+    m_nCenterMark = nMode;
+
+    if (m_pdata != nullptr) {
         delete m_pdata;
         m_pdata = nullptr;
     }
@@ -30,6 +34,11 @@ void CenterMarkDrawObj::setCenterMark(int nMode)
 bool CenterMarkDrawObj::init(DisplayContext* pdc)
 {
     if (m_pdata != nullptr) {
+        return true;
+    }
+
+    if (m_nCenterMark == qsys::Camera::CCM_NONE) {
+        MB_DPRINTLN("CenterMarkDrawObj::init() CCM_NONE !!!!!");
         return true;
     }
 
@@ -48,7 +57,8 @@ bool CenterMarkDrawObj::init(DisplayContext* pdc)
         m_pdata->setLine(0, Vector4D(0, 0, 0), ccode, Vector4D(dsize, 0, 0), ccode);
         m_pdata->setLine(1, Vector4D(0, 0, 0), ccode, Vector4D(0, dsize, 0), ccode);
         m_pdata->setLine(2, Vector4D(0, 0, 0), ccode, Vector4D(0, 0, dsize), ccode);
-    } else {
+
+    } else if (m_nCenterMark == qsys::Camera::CCM_CROSS) {
         // 2D cross
         m_pdata->allocLines(2);
         const float dsize = 10.0f;
@@ -59,8 +69,14 @@ bool CenterMarkDrawObj::init(DisplayContext* pdc)
                          ccode);
         m_pdata->setLine(1, Vector4D(0, -dsize, 0), ccode, Vector4D(0, dsize, 0),
                          ccode);
+    } else {
+        MB_DPRINTLN("CenterMarkDrawObj::init(): Unknown center mark mode: %d", m_nCenterMark);
+        delete m_pdata;
+        m_pdata = nullptr;
+        return false;
     }
 
+    m_pdata->setInvertColor(true);
     MB_DPRINTLN("CenterMarkDrawObj::init() OK !!!!!");
     return true;
 }
@@ -71,7 +87,9 @@ void CenterMarkDrawObj::display(DisplayContext* pdc, qsys::ViewPtr pView)
         return;
     }
 
-    init(pdc);
+    if (!init(pdc)) {
+        return;
+    }
 
     pdc->pushMatrix();
     pdc->translate(pView->getViewCenter());
@@ -99,7 +117,11 @@ void CenterMarkDrawObj::display2D(DisplayContext* pdc, qsys::ViewPtr pView)
         return;
     }
 
-    init(pdc);
+    MB_DPRINTLN("CenterMarkDrawObj::display2D() CCM_CROSS");
+
+    if (!init(pdc)) {
+        return;
+    }
 
     const double cx = pView->getWidth();
     const double cy = pView->getHeight();
@@ -108,7 +130,6 @@ void CenterMarkDrawObj::display2D(DisplayContext* pdc, qsys::ViewPtr pView)
     pdc->translate(Vector4D(cx / 2.0, cy / 2.0, 0));
     pdc->drawObjSet(*m_pdata);
     pdc->popMatrix();
-    MB_DPRINTLN("CenterMarkDrawObj::display2D()");
 }
 
 }  // namespace sysdep

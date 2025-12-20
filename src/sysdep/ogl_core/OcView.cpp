@@ -345,6 +345,21 @@ void OcView::drawScene()
     return;
 }
 
+void OcView::setCenterMark(int nMode)
+{
+    if (getCenterMark() == nMode) {
+        return;
+    }
+    super_t::setCenterMark(nMode);
+    auto pdo = getDrawObj("CenterMarkDrawObj");
+    auto *pcmdo = dynamic_cast<CenterMarkDrawObj *>(pdo.get());
+    if (pcmdo == nullptr) {
+        MB_DPRINTLN("OcView::setCenterMark> CenterMarkDrawObj not found!!");
+        return;
+    }
+    pcmdo->setCenterMark(nMode);
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // Hittest Impl
 

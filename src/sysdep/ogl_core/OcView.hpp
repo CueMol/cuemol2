@@ -52,6 +52,8 @@ public:
     /// Clean-up the drawing display with the current bg color
     virtual void clear();
 
+    virtual void setCenterMark(int nMode);
+
     ////////////////////////////////////////////////
     // Hit test operations
 

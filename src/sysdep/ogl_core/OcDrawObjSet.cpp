@@ -63,7 +63,14 @@ void OcDrawObjSet::draw(gfx::DisplayContext *pdc) const
 {
     if (m_pGlslLine != nullptr) {
         m_pGlslLine->initShader(pdc);
+        if (isInvertColor()) {
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ZERO);
+        }
         m_pGlslLine->draw(pdc);
+        if (isInvertColor()) {
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        }
     }
 }
 
