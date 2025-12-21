@@ -59,6 +59,13 @@ void OcDrawObjSet::setLine(int idx, const qlib::Vector4D &v1, qlib::quint32 cc1,
     m_pGlslLine->color(idx * 2 + 1, cc2);
 }
 
+void OcDrawObjSet::setLineUpdated(bool bUpdated)
+{
+    if (m_pGlslLine != nullptr) {
+        m_pGlslLine->setUpdated(bUpdated);
+    }
+}
+
 void OcDrawObjSet::draw(gfx::DisplayContext *pdc) const
 {
     if (m_pGlslLine != nullptr) {

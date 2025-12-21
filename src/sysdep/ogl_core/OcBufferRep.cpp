@@ -124,14 +124,19 @@ void OcBufferRep::bind()
 void OcBufferRep::update(const gfx::AbstDrawAttrs &ada)
 {
     if (!ada.isUpdated()) {
+        // no update
         return;
     }
 
+    // transfer updated data to GPU by glBufferSubData
     glBufferSubData(GL_ARRAY_BUFFER, 0, ada.getDataSize(), ada.getData());
     if (ada.getType() == AbstDrawElem::VA_ATTR_INDS) {
         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, ada.getIndDataSize(),
                         ada.getIndData());
     }
+
+    // reset update flag
+    ada.setUpdated(false);
 }
 
 void OcBufferRep::setAttrib(const gfx::AbstDrawAttrs &ada)

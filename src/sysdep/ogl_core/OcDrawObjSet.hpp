@@ -36,6 +36,8 @@ public:
     virtual void setLine(int idx, const qlib::Vector4D &v1, qlib::quint32 cc1,
                          const qlib::Vector4D &v2, qlib::quint32 cc2);
 
+    virtual void setLineUpdated(bool bUpdated);
+
     void draw(gfx::DisplayContext *pdl) const;
 
 };

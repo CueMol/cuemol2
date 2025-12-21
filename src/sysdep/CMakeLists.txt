@@ -14,8 +14,8 @@ SET(SYSDEP_SRCS
   ogl_core/OcDisplayList.cpp
   ogl_core/OcPixDraw.cpp
   ogl_core/OcDisplayContext.cpp
-#  ogl_core/GLSLLineHelper.cpp
   ogl_core/GLSLLineHelper2.cpp
+  ogl_core/GLSLTrigHelper.cpp
   ogl_core/OcView.cpp
   ogl_core/OcBufferRep.cpp
   ogl_core/CenterMarkDrawObj.cpp

@@ -7,7 +7,7 @@ vars:
   LIBCUEMOL2_BUILDDIR: "{{.WORKDIR}}/build_libcuemol2"
   LIBCUEMOL2_INSTDIR: "{{.WORKDIR}}/cuemol2"
   CONFIG: "Debug"
-  PARALLEL: 1
+  PARALLEL: ""
 
 tasks:
   default:

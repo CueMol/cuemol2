@@ -33,4 +33,6 @@ void DrawObjSet::setLine(int idx, const qlib::Vector4D &v1, const ColorPtr &col1
     setLine(idx, v1, cc1, v2, cc2);
 }
 
+void DrawObjSet::setLineUpdated(bool bUpdated) {}
+
 }  // namespace gfx

@@ -549,8 +549,6 @@ void OcDisplayList::drawTrigMesh(gfx::DisplayContext *pdc)
     // draw edges
     drawTrigEdges(pdc, *m_pTrigMesh);
 
-    // setupTrigMeshAttrs();
-
     m_pTrigPO->enable();
     m_pTrigPO->setupFog(pdc);
     m_pTrigPO->setupMat(pdc);

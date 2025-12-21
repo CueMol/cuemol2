@@ -38,7 +38,7 @@ public:
         m_nSceneID = id;
     }
 
-    //////////
+    ////////////////////
     // lines
 
     /// Allocate line storage
@@ -67,6 +67,13 @@ public:
     /// Set line data (color by ColorPtr)
     void setLine(int idx, const qlib::Vector4D &v1, const ColorPtr &col1,
                  const qlib::Vector4D &v2, const ColorPtr &col2);
+
+    virtual void setLineUpdated(bool bUpdated);
+
+    ////////////////////
+    // Triangle mesh
+
+    
 
 private:
     bool m_bInvertColor;

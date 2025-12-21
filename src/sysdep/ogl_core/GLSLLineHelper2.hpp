@@ -108,6 +108,14 @@ public:
 
     void vertex(int ind, const qlib::Vector4D &v);
 
+    /// Set update flag
+    void setUpdated(bool b)
+    {
+        if (m_pDrawAry != NULL) {
+            m_pDrawAry->setUpdated(b);
+        }
+    }
+
     gfx::AbstDrawElem *getDrawElem() const
     {
         return m_pDrawAry;

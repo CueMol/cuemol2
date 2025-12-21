@@ -8,96 +8,108 @@
 #include "RectSelDrawObj.hpp"
 
 #include <gfx/DisplayContext.hpp>
+#include <gfx/DrawObjElems.hpp>
 #include <qsys/SceneManager.hpp>
 
-using namespace molstr;
+namespace molstr {
 
 RectSelDrawObj::RectSelDrawObj()
 {
-  m_color = gfx::SolidColor::createRGB(0.2, 0.8, 1.0);
-  m_colorPaint = gfx::SolidColor::createRGB(0.2, 0.8, 1.0, 0.5);
-  m_bStart = false;
+    m_color = gfx::SolidColor::createRGB(0.2, 0.8, 1.0);
+    m_colorPaint = gfx::SolidColor::createRGB(0.2, 0.8, 1.0, 0.5);
+    m_bStart = false;
 }
 
-RectSelDrawObj::~RectSelDrawObj()
+RectSelDrawObj::~RectSelDrawObj() {}
+
+bool RectSelDrawObj::init(DisplayContext *pdc)
 {
+    if (m_pdata != nullptr) {
+        return true;
+    }
+
+    // Initialize the draw object set
+    m_pdata = pdc->createDrawObjSet();
+
+    m_pdata->allocLines(4);
+    const float dsize = 20.0f;
+
+    m_pdata->setLineWidth(1.0f);
+    m_pdata->setNoDepth(true);
+    // m_pdata->setLine(0, Vector4D(0, 0, 0), ccode, Vector4D(dsize, 0, 0), ccode);
+    // m_pdata->setLine(1, Vector4D(0, 0, 0), ccode, Vector4D(0, dsize, 0), ccode);
+    // m_pdata->setLine(2, Vector4D(0, 0, 0), ccode, Vector4D(0, 0, dsize), ccode);
+
+    return true;
 }
 
-void RectSelDrawObj::display(DisplayContext *pdc)
+void RectSelDrawObj::display(DisplayContext *pdc, qsys::ViewPtr pView) {}
+
+void RectSelDrawObj::display2D(DisplayContext *pdc, qsys::ViewPtr pView)
 {
-/*
-  pdc->color(m_color);
-  pdc->setLineWidth(4.0);
-  pdc->startLines();
+    if (!m_bStart) return;
 
-  data_t::const_iterator iter = m_data.begin();
-  data_t::const_iterator eiter = m_data.end();
-  for (; iter!=eiter; ++iter) {
-    const Vector4D &pos = *iter;
-    pdc->drawAster(pos, 0.25f);
-  }
+    if (!init(pdc)) return;
 
-  pdc->end();
-*/
-}
+    int x = getLeft();
+    int y = getTop();
+    int w = getWidth();
+    int h = getHeight();
 
-void RectSelDrawObj::display2D(DisplayContext *pdc)
-{
-  if (!m_bStart)
-    return;
+    if (w == 0 || h == 0) return;
 
-  int x = getLeft();
-  int y = getTop();
-  int w = getWidth();
-  int h = getHeight();
+    m_pdata->setLine(0, Vector4D(x, y, 0), m_color, Vector4D(x + w, y, 0), m_color);
+    m_pdata->setLine(1, Vector4D(x + w, y, 0), m_color, Vector4D(x + w, y + h, 0), m_color);
+    m_pdata->setLine(2, Vector4D(x + w, y + h, 0), m_color, Vector4D(x, y + h, 0), m_color);
+    m_pdata->setLine(3, Vector4D(x, y + h, 0), m_color, Vector4D(x, y, 0), m_color);
+    m_pdata->setLineUpdated(true);
+    
+    pdc->drawObjSet(*m_pdata);
 
-  if (w==0||h==0)
-    return;
+    // pdc->color(m_color);
+    // pdc->setLineWidth(1.0);
+    // pdc->startLineStrip();
+    // pdc->vertex(Vector4D(x, y, 0));
+    // pdc->vertex(Vector4D(x + w, y, 0));
+    // pdc->vertex(Vector4D(x + w, y + h, 0));
+    // pdc->vertex(Vector4D(x, y + h, 0));
+    // pdc->vertex(Vector4D(x, y, 0));
+    // pdc->end();
 
-  pdc->color(m_color);
-  pdc->setLineWidth(1.0);
-  pdc->startLineStrip();
-  pdc->vertex( Vector4D(x, y, 0) );
-  pdc->vertex( Vector4D(x+w, y, 0) );
-  pdc->vertex( Vector4D(x+w, y+h, 0) );
-  pdc->vertex( Vector4D(x, y+h, 0) );
-  pdc->vertex( Vector4D(x, y, 0) );
-  pdc->end();
-
-  pdc->color(m_colorPaint);
-  pdc->startPolygon();
-  pdc->vertex( Vector4D(x, y, 0) );
-  pdc->vertex( Vector4D(x+w, y, 0) );
-  pdc->vertex( Vector4D(x+w, y+h, 0) );
-  pdc->vertex( Vector4D(x, y+h, 0) );
-  pdc->end();
+    // pdc->color(m_colorPaint);
+    // pdc->startPolygon();
+    // pdc->vertex(Vector4D(x, y, 0));
+    // pdc->vertex(Vector4D(x + w, y, 0));
+    // pdc->vertex(Vector4D(x + w, y + h, 0));
+    // pdc->vertex(Vector4D(x, y + h, 0));
+    // pdc->end();
 }
 
 void RectSelDrawObj::setEnabled(bool f)
 {
-  super_t::setEnabled(f);
+    super_t::setEnabled(f);
 
-  if (!f)
-    m_bStart = false;
+    if (!f) m_bStart = false;
 }
 
 void RectSelDrawObj::start(int x, int y)
 {
-  m_bStart = true;
-  m_nStartX = x;
-  m_nStartY = y;
-  m_nEndX = x;
-  m_nEndY = y;
+    m_bStart = true;
+    m_nStartX = x;
+    m_nStartY = y;
+    m_nEndX = x;
+    m_nEndY = y;
 }
 
 void RectSelDrawObj::move(int x, int y)
 {
-  m_nEndX = x;
-  m_nEndY = y;
+    m_nEndX = x;
+    m_nEndY = y;
 }
 
 void RectSelDrawObj::end()
 {
-  m_bStart = false;
+    m_bStart = false;
 }
 
+}  // namespace molstr
