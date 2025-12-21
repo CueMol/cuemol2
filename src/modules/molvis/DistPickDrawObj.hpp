@@ -11,7 +11,7 @@
 #include <qsys/DrawObj.hpp>
 #include <qlib/Vector4D.hpp>
 #include <gfx/SolidColor.hpp>
-#include <gfx/DrawObjElems.hpp>
+#include <gfx/DrawObjSet.hpp>
 
 class DistPickDrawObj_wrap;
 

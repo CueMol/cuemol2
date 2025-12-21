@@ -4,7 +4,7 @@
 #include "CenterMarkDrawObj.hpp"
 
 #include <gfx/DisplayContext.hpp>
-#include <gfx/DrawObjElems.hpp>
+#include <gfx/DrawObjSet.hpp>
 #include <qsys/SceneManager.hpp>
 
 namespace sysdep {

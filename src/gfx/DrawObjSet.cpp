@@ -5,7 +5,7 @@
 
 #include <common.h>
 
-#include "DrawObjElems.hpp"
+#include "DrawObjSet.hpp"
 
 namespace gfx {
 

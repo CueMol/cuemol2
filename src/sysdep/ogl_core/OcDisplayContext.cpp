@@ -8,7 +8,6 @@
 
 #include "OcDisplayContext.hpp"
 #include "OcDisplayList.hpp"
-// #include "OcView.hpp"
 #include "OglProgramObject.hpp"
 #include "OglProgObjMgr.hpp"
 #include "OcPixDraw.hpp"
@@ -21,7 +20,6 @@
 #include <gfx/Mesh.hpp>
 #include <gfx/DrawAttrArray.hpp>
 #include <gfx/ColProfMgr.hpp>
-#include <gfx/DrawObjElems.hpp>
 
 #include <qsys/Scene.hpp>
 #include <qsys/SceneManager.hpp>

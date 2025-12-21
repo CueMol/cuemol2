@@ -8,7 +8,7 @@
 #include "RectSelDrawObj.hpp"
 
 #include <gfx/DisplayContext.hpp>
-#include <gfx/DrawObjElems.hpp>
+#include <gfx/DrawObjSet.hpp>
 #include <qsys/SceneManager.hpp>
 
 namespace molstr {

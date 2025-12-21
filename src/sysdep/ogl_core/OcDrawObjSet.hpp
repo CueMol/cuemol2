@@ -6,7 +6,7 @@
 #pragma once
 
 #include <sysdep/sysdep.hpp>
-#include <gfx/DrawObjElems.hpp>
+#include <gfx/DrawObjSet.hpp>
 
 namespace sysdep {
 
