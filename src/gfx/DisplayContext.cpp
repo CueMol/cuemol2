@@ -154,18 +154,18 @@ void DisplayContext::setProjMat(const Matrix4D &mat)
 
 // static
 Matrix4D DisplayContext::makeOrthoProjMat(float left, float right, float bottom, float top,
-                                          float near, float far)
+                                          float slabnear, float slabfar)
 {
     MB_DPRINTLN("LR=%f,%f", left, right);
     MB_DPRINTLN("BT=%f,%f", bottom, top);
-    MB_DPRINTLN("NF=%f,%f", near, far);
+    MB_DPRINTLN("NF=%f,%f", slabnear, slabfar);
     
     float r_l = right - left;
     float t_b = top - bottom;
-    float f_n = far - near;
+    float f_n = slabfar - slabnear;
     float tx = - (right + left) / (right - left);
     float ty = - (top + bottom) / (top - bottom);
-    float tz = - (far + near) / (far - near);
+    float tz = - (slabfar + slabnear) / (slabfar - slabnear);
     
     Matrix4D ret;
     ret.aij(1,1) = 2.0f / r_l;
@@ -191,15 +191,9 @@ Matrix4D DisplayContext::makeOrthoProjMat(float left, float right, float bottom,
     return ret;
 }
 
-// void DisplayContext::loadOrthoProj(float vw, float fasp,
-//                                    float near, float far)
-// {
-//     m_projMat = makeOrthoProjMat(vw, fasp, near, far);
-// }
-
 // static
 Matrix4D DisplayContext::makePersProjMat(float width, float fasp,
-                                         float near, float far, float distance)
+                                         float slabnear, float slabfar, float distance)
 {
     float t = distance/width;
 
@@ -216,25 +210,16 @@ Matrix4D DisplayContext::makePersProjMat(float width, float fasp,
     
     ret.aij(1,3) = 0;
     ret.aij(2,3) = 0;
-    ret.aij(3,3) = (far + near) / (near - far);
+    ret.aij(3,3) = (slabfar + slabnear) / (slabnear - slabfar);
     ret.aij(4,3) = -1;
     
     ret.aij(1,4) = 0;
     ret.aij(2,4) = 0;
-    ret.aij(3,4) = (2 * far * near) / (near - far);
+    ret.aij(3,4) = (2 * slabfar * slabnear) / (slabnear - slabfar);
     ret.aij(4,4) = 0;
 
     return ret;
 }
-
-// void DisplayContext::loadPerspProj(float width, float fasp,
-//                                    float near, float far, float distance)
-// {
-//     m_projMat = makePersProjMat(width, fasp, near, far, distance);
-
-//     // MB_DPRINTLN("PerspProjMat:");
-//     // m_projMat.dump();
-// }
 
 //////////
 
