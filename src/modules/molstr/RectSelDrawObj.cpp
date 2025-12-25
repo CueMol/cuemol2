@@ -58,11 +58,11 @@ void RectSelDrawObj::display2D(DisplayContext *pdc, qsys::ViewPtr pView)
 
     if (w == 0 || h == 0) return;
 
-    // m_pdata->setLine(0, Vector4D(x, y, 0), m_color, Vector4D(x + w, y, 0), m_color);
-    // m_pdata->setLine(1, Vector4D(x + w, y, 0), m_color, Vector4D(x + w, y + h, 0), m_color);
-    // m_pdata->setLine(2, Vector4D(x + w, y + h, 0), m_color, Vector4D(x, y + h, 0), m_color);
-    // m_pdata->setLine(3, Vector4D(x, y + h, 0), m_color, Vector4D(x, y, 0), m_color);
-    // m_pdata->setLineUpdated(true);
+    m_pdata->setLine(0, Vector4D(x, y, 0), m_color, Vector4D(x + w, y, 0), m_color);
+    m_pdata->setLine(1, Vector4D(x + w, y, 0), m_color, Vector4D(x + w, y + h, 0), m_color);
+    m_pdata->setLine(2, Vector4D(x + w, y + h, 0), m_color, Vector4D(x, y + h, 0), m_color);
+    m_pdata->setLine(3, Vector4D(x, y + h, 0), m_color, Vector4D(x, y, 0), m_color);
+    m_pdata->setLineUpdated(true);
     
     m_pdata->setTrigMeshVertex(0, Vector4D(x, y, 0));
     m_pdata->setTrigMeshVertex(1, Vector4D(x + w, y, 0));
@@ -75,24 +75,6 @@ void RectSelDrawObj::display2D(DisplayContext *pdc, qsys::ViewPtr pView)
     m_pdata->setTrigMeshUpdated(true);
 
     pdc->drawObjSet(*m_pdata);
-
-    // pdc->color(m_color);
-    // pdc->setLineWidth(1.0);
-    // pdc->startLineStrip();
-    // pdc->vertex(Vector4D(x, y, 0));
-    // pdc->vertex(Vector4D(x + w, y, 0));
-    // pdc->vertex(Vector4D(x + w, y + h, 0));
-    // pdc->vertex(Vector4D(x, y + h, 0));
-    // pdc->vertex(Vector4D(x, y, 0));
-    // pdc->end();
-
-    // pdc->color(m_colorPaint);
-    // pdc->startPolygon();
-    // pdc->vertex(Vector4D(x, y, 0));
-    // pdc->vertex(Vector4D(x + w, y, 0));
-    // pdc->vertex(Vector4D(x + w, y + h, 0));
-    // pdc->vertex(Vector4D(x, y + h, 0));
-    // pdc->end();
 }
 
 void RectSelDrawObj::setEnabled(bool f)

@@ -130,10 +130,12 @@ void OcBufferRep::update(const gfx::AbstDrawAttrs &ada)
 
     // transfer updated data to GPU by glBufferSubData
     glBufferSubData(GL_ARRAY_BUFFER, 0, ada.getDataSize(), ada.getData());
-    if (ada.getType() == AbstDrawElem::VA_ATTR_INDS) {
-        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, ada.getIndDataSize(),
-                        ada.getIndData());
-    }
+
+    // Indeices are always immutable in the current implementation
+    // if (ada.getType() == AbstDrawElem::VA_ATTR_INDS) {
+    //     glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, ada.getIndDataSize(),
+    //                     ada.getIndData());
+    // }
 
     // reset update flag
     ada.setUpdated(false);
