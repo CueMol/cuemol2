@@ -25,5 +25,6 @@ out vec4 o_FragColor;
 
 void main(void)
 {
-    o_FragColor = fragFogColor(v_frontColor, frag_alpha, v_fogCoord);
+    // o_FragColor = fragFogColor(v_frontColor, frag_alpha, v_fogCoord);
+    o_FragColor = vec4(1, 0, 0, 1);
 }

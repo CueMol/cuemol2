@@ -10,20 +10,24 @@
 
 namespace sysdep {
 
+class GLSLLineHelper;
+class GLSLTrigHelper;
+
 class SYSDEP_API OcDrawObjSet : public gfx::DrawObjSet
 {
 private:
     using super_t = gfx::DrawObjSet;
 
     GLSLLineHelper *m_pGlslLine;
-    // float m_lineWidth;
-    // bool m_bStipple;
-    // bool m_bNoDepth;
 
+    GLSLTrigHelper *m_pGlslTrigMesh;
 
 public:
     OcDrawObjSet();
     virtual ~OcDrawObjSet();
+
+    ////////////////////
+    // lines
 
     virtual void allocLines(int nlines);
 
@@ -38,8 +42,19 @@ public:
 
     virtual void setLineUpdated(bool bUpdated);
 
-    void draw(gfx::DisplayContext *pdl) const;
+    ////////////////////
+    // Triangle mesh
 
+    virtual void allocTrigMesh(int nverts, int nfaces);
+
+    virtual void setTrigMeshVertex(int idx, const qlib::Vector4D &v);
+    virtual void setTrigMeshNormal(int idx, const qlib::Vector4D &n);
+    virtual void setTrigMeshColor(int idx, qlib::quint32 cc);
+    virtual void setTrigMeshFace(int idx, int v1, int v2, int v3);
+
+    virtual void setTrigMeshUpdated(bool bUpdated);
+
+    void draw(gfx::DisplayContext *pdl) const;
 };
 
 }  // namespace sysdep

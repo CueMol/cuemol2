@@ -93,6 +93,8 @@ public:
 
     void normal(int ind, const qlib::Vector4D &n);
 
+    void face(int ind, int v1, int v2, int v3);
+
     /// Set update flag
     void setUpdated(bool b)
     {

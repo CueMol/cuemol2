@@ -27,11 +27,11 @@ bool GLSLTrigHelper::initShader(gfx::DisplayContext *pdc)
         m_pPO = ssh.createProgObj("gpu_trig", "%%CONFDIR%%/data/shaders/trig_vert.glsl",
                                   "%%CONFDIR%%/data/shaders/trig_frag.glsl");
     }
-
     if (m_pPO == nullptr) {
         LOG_DPRINTLN("GLSLTrig> ERROR: cannot create progobj.");
         return false;
     }
+    MB_DPRINTLN("GLSLTrig> create progobj gpu_trig OK.");
 
     // setup attributes
     m_nVertexLoc = m_pPO->getAttribLocation("aVertex");
@@ -87,6 +87,7 @@ void GLSLTrigHelper::alloc(int nverts, int nfaces)
     data.alloc(nverts);
     data.allocInd(nfaces * 3);
     data.setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
+    // data.setDrawMode(gfx::AbstDrawElem::DRAW_LINES);
 
     MB_DPRINTLN("GLSLTrig> allocated %d vertices %d faces", nverts, nfaces);
 }
@@ -116,6 +117,14 @@ void GLSLTrigHelper::normal(int ind, const Vector4D &n)
     data.at(ind).nz = (qfloat32)n.z();
 }
 
+void GLSLTrigHelper::face(int ind, int v1, int v2, int v3)
+{
+    auto &data = *m_pDrawElems;
+    data.atind(ind * 3) = v1;
+    data.atind(ind * 3 + 1) = v2;
+    data.atind(ind * 3 + 2) = v3;
+}
+
 void GLSLTrigHelper::draw(gfx::DisplayContext *pdc)
 {
     if (m_pDrawElems == nullptr) {
@@ -133,11 +142,18 @@ void GLSLTrigHelper::draw(gfx::DisplayContext *pdc)
         drawEdges(pdc);
     }
 
+    auto &data = *m_pDrawElems;
+    for (int i=0; i<data.getIndSize(); ++i) {
+        MB_DPRINTLN("face %d: %d", i, data.atind(i));
+    }
+
     m_pPO->enable();
     m_pPO->setupFog(pdc);
     m_pPO->setupMat(pdc);
-    m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
-    m_pPO->setUniform("enable_lighting", pdc->isLighting());
+    // m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
+    m_pPO->setUniformF("frag_alpha", 1.0);
+    // m_pPO->setUniform("enable_lighting", pdc->isLighting());
+    m_pPO->setUniform("enable_lighting", false);
     pdc->drawElem(*m_pDrawElems);
     m_pPO->disable();
 }

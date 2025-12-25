@@ -73,7 +73,16 @@ public:
     ////////////////////
     // Triangle mesh
 
+    virtual void allocTrigMesh(int nverts, int nfaces);
     
+    virtual void setTrigMeshVertex(int idx, const qlib::Vector4D &v);
+    virtual void setTrigMeshNormal(int idx, const qlib::Vector4D &n);
+    virtual void setTrigMeshColor(int idx, qlib::quint32 cc);
+    virtual void setTrigMeshFace(int idx, int v1, int v2, int v3);
+
+    void setTrigMeshColor(int idx, const ColorPtr &col);
+
+    virtual void setTrigMeshUpdated(bool bUpdated);
 
 private:
     bool m_bInvertColor;

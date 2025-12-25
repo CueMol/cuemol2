@@ -35,4 +35,18 @@ void DrawObjSet::setLine(int idx, const qlib::Vector4D &v1, const ColorPtr &col1
 
 void DrawObjSet::setLineUpdated(bool bUpdated) {}
 
+void DrawObjSet::allocTrigMesh(int nverts, int nfaces) {}
+void DrawObjSet::setTrigMeshVertex(int idx, const qlib::Vector4D &v) {}
+void DrawObjSet::setTrigMeshNormal(int idx, const qlib::Vector4D &n) {}
+void DrawObjSet::setTrigMeshColor(int idx, qlib::quint32 cc) {}
+void DrawObjSet::setTrigMeshFace(int idx, int v1, int v2, int v3) {}
+void DrawObjSet::setTrigMeshUpdated(bool bUpdated) {}
+
+void DrawObjSet::setTrigMeshColor(int idx, const ColorPtr &col)
+{
+    auto nSceneID = getSceneID();
+    auto cc = col->getDevCode(nSceneID);
+    setTrigMeshColor(idx, cc);
+}
+
 }  // namespace gfx

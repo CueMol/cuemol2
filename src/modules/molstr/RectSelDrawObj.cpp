@@ -32,13 +32,13 @@ bool RectSelDrawObj::init(DisplayContext *pdc)
     m_pdata = pdc->createDrawObjSet();
 
     m_pdata->allocLines(4);
-    const float dsize = 20.0f;
-
     m_pdata->setLineWidth(1.0f);
+
+    m_pdata->allocTrigMesh(4, 2);
+    m_pdata->setTrigMeshFace(0, 0, 2, 1);
+    m_pdata->setTrigMeshFace(1, 2, 0, 3);
+
     m_pdata->setNoDepth(true);
-    // m_pdata->setLine(0, Vector4D(0, 0, 0), ccode, Vector4D(dsize, 0, 0), ccode);
-    // m_pdata->setLine(1, Vector4D(0, 0, 0), ccode, Vector4D(0, dsize, 0), ccode);
-    // m_pdata->setLine(2, Vector4D(0, 0, 0), ccode, Vector4D(0, 0, dsize), ccode);
 
     return true;
 }
@@ -58,12 +58,22 @@ void RectSelDrawObj::display2D(DisplayContext *pdc, qsys::ViewPtr pView)
 
     if (w == 0 || h == 0) return;
 
-    m_pdata->setLine(0, Vector4D(x, y, 0), m_color, Vector4D(x + w, y, 0), m_color);
-    m_pdata->setLine(1, Vector4D(x + w, y, 0), m_color, Vector4D(x + w, y + h, 0), m_color);
-    m_pdata->setLine(2, Vector4D(x + w, y + h, 0), m_color, Vector4D(x, y + h, 0), m_color);
-    m_pdata->setLine(3, Vector4D(x, y + h, 0), m_color, Vector4D(x, y, 0), m_color);
-    m_pdata->setLineUpdated(true);
+    // m_pdata->setLine(0, Vector4D(x, y, 0), m_color, Vector4D(x + w, y, 0), m_color);
+    // m_pdata->setLine(1, Vector4D(x + w, y, 0), m_color, Vector4D(x + w, y + h, 0), m_color);
+    // m_pdata->setLine(2, Vector4D(x + w, y + h, 0), m_color, Vector4D(x, y + h, 0), m_color);
+    // m_pdata->setLine(3, Vector4D(x, y + h, 0), m_color, Vector4D(x, y, 0), m_color);
+    // m_pdata->setLineUpdated(true);
     
+    m_pdata->setTrigMeshVertex(0, Vector4D(x, y, 0));
+    m_pdata->setTrigMeshVertex(1, Vector4D(x + w, y, 0));
+    m_pdata->setTrigMeshVertex(2, Vector4D(x + w, y + h, 0));
+    m_pdata->setTrigMeshVertex(3, Vector4D(x, y + h, 0));
+    m_pdata->setTrigMeshColor(0, m_colorPaint);
+    m_pdata->setTrigMeshColor(1, m_colorPaint);
+    m_pdata->setTrigMeshColor(2, m_colorPaint);
+    m_pdata->setTrigMeshColor(3, m_colorPaint);
+    m_pdata->setTrigMeshUpdated(true);
+
     pdc->drawObjSet(*m_pdata);
 
     // pdc->color(m_color);
