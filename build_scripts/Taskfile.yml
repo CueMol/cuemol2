@@ -33,8 +33,11 @@ tasks:
 
   build_libcuemol2:windows:
     platforms: [windows]
+    set: [pwsh]
     cmds:
-      - echo "not implemented"
+       - dir
+       - build_libcuemol2_win.bat
+#      - echo "not implemented"
 
 #####
 
