@@ -18,6 +18,7 @@ RectSelDrawObj::RectSelDrawObj()
     m_color = gfx::SolidColor::createRGB(0.2, 0.8, 1.0);
     m_colorPaint = gfx::SolidColor::createRGB(0.2, 0.8, 1.0, 0.5);
     m_bStart = false;
+    m_pdata = nullptr;
 }
 
 RectSelDrawObj::~RectSelDrawObj() {}

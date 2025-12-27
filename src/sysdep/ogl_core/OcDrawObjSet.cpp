@@ -24,6 +24,16 @@ OcDrawObjSet::~OcDrawObjSet()
     }
 }
 
+void OcDrawObjSet::setNoDepth(bool bNoDepth)
+{
+    if (m_pGlslLine != nullptr) {
+        m_pGlslLine->setNoDepth(bNoDepth);
+    }
+    if (m_pGlslTrigMesh != nullptr) {
+        m_pGlslTrigMesh->setNoDepth(bNoDepth);
+    }
+}
+
 //////////
 
 void OcDrawObjSet::allocLines(int nlines)
@@ -37,13 +47,6 @@ void OcDrawObjSet::setLineWidth(float width)
 {
     if (m_pGlslLine != nullptr) {
         m_pGlslLine->setLineWidth(width);
-    }
-}
-
-void OcDrawObjSet::setNoDepth(bool bNoDepth)
-{
-    if (m_pGlslLine != nullptr) {
-        m_pGlslLine->setNoDepth(bNoDepth);
     }
 }
 

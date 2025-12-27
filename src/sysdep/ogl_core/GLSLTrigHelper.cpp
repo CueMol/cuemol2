@@ -142,18 +142,28 @@ void GLSLTrigHelper::draw(gfx::DisplayContext *pdc)
         drawEdges(pdc);
     }
 
-    auto &data = *m_pDrawElems;
-    for (int i=0; i<data.getIndSize(); ++i) {
-        MB_DPRINTLN("face %d: %d", i, data.atind(i));
-    }
+    // Debug: dump face indices
+    // auto &data = *m_pDrawElems;
+    // for (int i=0; i<data.getIndSize(); ++i) {
+    //     MB_DPRINTLN("face %d: %d", i, data.atind(i));
+    // }
 
     m_pPO->enable();
     m_pPO->setupFog(pdc);
     m_pPO->setupMat(pdc);
-    // m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
-    m_pPO->setUniformF("frag_alpha", 1.0);
+
+    m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
+    // m_pPO->setUniformF("frag_alpha", 1.0);
+
     // m_pPO->setUniform("enable_lighting", pdc->isLighting());
     m_pPO->setUniform("enable_lighting", false);
+
+    if (m_bNoDepth) {
+        m_pPO->setUniform("u_nodepth", 1);
+    } else {
+        m_pPO->setUniform("u_nodepth", 0);
+    }
+
     pdc->drawElem(*m_pDrawElems);
     m_pPO->disable();
 }

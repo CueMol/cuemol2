@@ -16,6 +16,8 @@ uniform mat4 u_ModelViewMatrix;
 uniform mat4 u_ProjectionMatrix;
 uniform mat3 u_NormalMatrix;
 
+uniform int u_nodepth;
+
 ////////////////////
 // Vertex attributes
 
@@ -44,5 +46,12 @@ void main(void)
         v_frontColor = aColor;
     }
 
-    v_fogCoord = ffog(ecPosition.z);
+    if (u_nodepth > 0) {
+        // billboarded line without depth
+        gl_Position.z = -0.99;
+        gl_Position.w = 1.0;
+        v_fogCoord = 0.0;
+    } else {
+        v_fogCoord = ffog(ecPosition.z);
+    }
 }

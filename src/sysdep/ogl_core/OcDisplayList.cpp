@@ -532,6 +532,7 @@ void OcDisplayList::drawTrigArray(gfx::DisplayContext *pdc)
     m_pTrigPO->setupMat(pdc);
     m_pTrigPO->setUniformF("frag_alpha", pdc->getAlpha());
     m_pTrigPO->setUniform("enable_lighting", pdc->isLighting());
+    m_pTrigPO->setUniform("u_nodepth", 0);
     pdc->drawElem(*m_pTrigArray);
     m_pTrigPO->disable();
 }
@@ -554,6 +555,7 @@ void OcDisplayList::drawTrigMesh(gfx::DisplayContext *pdc)
     m_pTrigPO->setupMat(pdc);
     m_pTrigPO->setUniformF("frag_alpha", pdc->getAlpha());
     m_pTrigPO->setUniform("enable_lighting", pdc->isLighting());
+    m_pTrigPO->setUniform("u_nodepth", 0);
     pdc->drawElem(*m_pTrigMesh);
     m_pTrigPO->disable();
 }

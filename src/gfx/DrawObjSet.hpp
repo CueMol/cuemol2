@@ -20,8 +20,11 @@ private:
     /// Associated scene ID
     qlib::uid_t m_nSceneID;
 
+    /// invert color
+    bool m_bInvertColor;
+
 public:
-    DrawObjSet() : m_nSceneID(qlib::invalid_uid) {}
+    DrawObjSet() : m_nSceneID(qlib::invalid_uid), m_bInvertColor(false) {}
     virtual ~DrawObjSet();
 
     /// Get associated scene ID
@@ -84,10 +87,8 @@ public:
 
     virtual void setTrigMeshUpdated(bool bUpdated);
 
-private:
-    bool m_bInvertColor;
+    // invert color
 
-public:
     void setInvertColor(bool bInv)
     {
         m_bInvertColor = bInv;
