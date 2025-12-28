@@ -566,13 +566,22 @@ void OcDisplayList::drawTrigEdges(gfx::DisplayContext *pdc, const gfx::AbstDrawE
     pdc->getDevRGBColor(pdc->getEdgeLineColor(), r, g, b);
     float alpha = pdc->getAlpha();
 
-    if (pdc->getEdgeLineType() == ELT_EDGES) {
+    const auto elt = pdc->getEdgeLineType();
+    if (elt == ELT_EDGES ||
+        elt == ELT_SILHOUETTE) {
         m_pTrigEdgePO->enable();
         m_pTrigEdgePO->setupFog(pdc);
         m_pTrigEdgePO->setupMat(pdc);
         m_pTrigEdgePO->setUniformF("frag_alpha", alpha);
         m_pTrigEdgePO->setUniformF("edge_width", pdc->getEdgeLineWidth());
         m_pTrigEdgePO->setUniformF("edge_color", r, g, b, alpha);
+        if (elt == ELT_EDGES) {
+            MB_DPRINTLN("drawTrigEdges: ELT_EDGES");
+            m_pTrigEdgePO->setUniform("u_silh", 0);
+        } else {
+            MB_DPRINTLN("drawTrigEdges: ELT_SILHOUETTE");
+            m_pTrigEdgePO->setUniform("u_silh", 1);
+        }
         glEnable(GL_CULL_FACE);
         glFrontFace(GL_CW);
         pdc->drawElem(de);

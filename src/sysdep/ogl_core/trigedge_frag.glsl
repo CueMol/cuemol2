@@ -10,6 +10,7 @@
 // Uniform variables
 
 uniform float frag_alpha;
+uniform int u_silh;
 
 ////////////////////
 // Varying
