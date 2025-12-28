@@ -101,7 +101,8 @@ void AnIsoURenderer::drawQsphere(DisplayContext *pdl,
       (ndet+1)*2!=m_pSphrTab->size())
     buildSphrTab();
 
-  if (bSphere) {
+  if (true) {
+  // if (bSphere) {
     //pdl->startLineStrip();
     for (j=0; j<ndet; ++j) {
       double z1 = sphrcos(j);
@@ -178,12 +179,13 @@ void AnIsoURenderer::drawSphere(DisplayContext *pdl)
   Matrix4D r;
   
   if (m_fDrawDisc) {
-    pdl->cylinderCap(m_dDiscScale, Vector4D(0, 0, m_dDiscThick/2.0), Vector4D(0, 0, -m_dDiscThick/2.0));
-    pdl->cylinderCap(m_dDiscScale, Vector4D(0, m_dDiscThick/2.0, 0), Vector4D(0, -m_dDiscThick/2.0, 0));
-    pdl->cylinderCap(m_dDiscScale, Vector4D(m_dDiscThick/2.0, 0, 0), Vector4D(-m_dDiscThick/2.0, 0, 0));
+    pdl->cylinderCap(m_dDiscScale, Vector4D(0, 0, m_dDiscThick/2.0),
+                     Vector4D(0, 0, -m_dDiscThick/2.0));
+    pdl->cylinderCap(m_dDiscScale, Vector4D(0, m_dDiscThick/2.0, 0),
+                     Vector4D(0, -m_dDiscThick/2.0, 0));
+    pdl->cylinderCap(m_dDiscScale, Vector4D(m_dDiscThick/2.0, 0, 0),
+                     Vector4D(-m_dDiscThick/2.0, 0, 0));
   }
-  //else {
-  //}
   
   ////
 

@@ -7,21 +7,17 @@
 
 namespace gfx {
 
-/**
-   Cylinder object
-*/
+///
+/// Cylinder object
+///
 template <class _TVector, class _TColor, class _TXform>
 class Cylinder
 {
 public:
-    /**
-       location of termini
-    */
+    /// location of termini
     _TVector v1, v2;
 
-    /**
-       color
-    */
+    /// color
     _TColor col;
 
     /// width of termini
@@ -36,10 +32,10 @@ public:
     /// transformation matrix
     _TXform *pTransf;
 
-    /**
-       ctor
-       @note default width is 1.0
-    */
+    ///
+    ///  default ctor
+    /// @note default width is 1.0
+    ///
     Cylinder() : w1(1.0), w2(1.0), bcap(false), ndetail(1), pTransf(nullptr) {}
 
     /**
@@ -87,10 +83,10 @@ public:
         p->ndetail = ndet;
         p->bcap = bcap;
 
-        if (ptrf == NULL)
-            p->pTransf = NULL;
+        if (ptrf == nullptr)
+            p->pTransf = nullptr;
         else
-            p->pTransf = MB_NEW Matrix4D(*ptrf);
+            p->pTransf = MB_NEW _TXform(*ptrf);
 
         MB_DPRINTLN("cyl.add ndet=%d", ndet);
         m_data.push_back(p);
@@ -107,17 +103,12 @@ public:
     /**
          Generate mesh data from the cylinder list
          @param pMesh pointer to the mesh object to be filled
-         @param bErase if true, the cylinder list is erased after the mesh generation
      */
-    void makeMesh(_TMesh *pMesh, bool bErase)
+    void makeMesh(_TMesh *pMesh)
     {
         for (const auto *p : m_data) {
             makeMeshImpl(pMesh, p);
         }
-
-        if (bErase) eraseAll();
-
-        return;
     }
 
     int getSize() const
@@ -166,7 +157,7 @@ private:
             return;
         }
         n1 = n1.normalize();
-        Matrix4D mat = Matrix4D::makeRotMat(nn, n1);
+        _TXform mat = _TXform::makeRotMat(nn, n1);
 
         //
         // generate verteces
@@ -188,16 +179,29 @@ private:
 
         MB_DPRINTLN("cyl ndiv r,v =(%d, %d)", NDIVR, NDIVV);
 
-        Matrix4D xfm;
-        if (pCyl->pTransf != NULL) xfm = *(pCyl->pTransf);
+        _TXform xfm;
+        if (pCyl->pTransf != NULL) {
+            xfm = *(pCyl->pTransf);
+        }
 
-        xfm.matprod(Matrix4D::makeTransMat(cylv2));
+        xfm.matprod(_TXform::makeTransMat(cylv2));
         xfm.matprod(mat);
 
-        // bottom terminal vertex (at the center of the disk)
-        const int ivbot =
-            pMesh->addVertex(_TVector(0, 0, 0), _TVector(0, 0, -1), col, xfm);
+        int ivbot = -1;
+        if (bcap) {
+            // bottom terminal vertex (at the center of the disk)
+            ivbot = pMesh->addVertex(_TVector(0, 0, 0), _TVector(0, 0, -1), col, xfm);
+            for (th = 0.0, i = 0; i < NDIVR; ++i, th += dth) {
+                const double costh = ::cos(th);
+                const double sinth = ::sin(th);
+                const double xx = w1 * costh;
+                const double yy = w1 * sinth;
+                pMesh->addVertex(_TVector(xx, yy, 0),
+                                 _TVector(0, 0, -1), col, xfm);
+            }
+        }
 
+        int ivcyl = -1;
         for (j = 0; j < NDIVV; ++j) {
             const double ww = w1 + dw * double(j);
             const double zz = dlen * double(j);
@@ -206,14 +210,28 @@ private:
                 const double sinth = ::sin(th);
                 const double xx = ww * costh;
                 const double yy = ww * sinth;
-                pMesh->addVertex(_TVector(xx, yy, zz), _TVector(costh, sinth, 0), col,
-                                 xfm);
+                int iv = pMesh->addVertex(_TVector(xx, yy, zz),
+                                          _TVector(costh, sinth, 0), col, xfm);
+                if (ivcyl < 0) {
+                    ivcyl = iv;
+                }
             }
         }
 
-        // top terminal vertex (at the center of the disk)
-        const int ivtop =
-            pMesh->addVertex(_TVector(0, 0, len), _TVector(0, 0, 1), col, xfm);
+        int ivtop = -1;
+        if (bcap) {
+            // top terminal vertex (at the center of the disk)
+            ivtop =
+                pMesh->addVertex(_TVector(0, 0, len), _TVector(0, 0, 1), col, xfm);
+            for (th = 0.0, i = 0; i < NDIVR; ++i, th += dth) {
+                const double costh = ::cos(th);
+                const double sinth = ::sin(th);
+                const double xx = w2 * costh;
+                const double yy = w2 * sinth;
+                int iv = pMesh->addVertex(_TVector(xx, yy, len),
+                                          _TVector(0, 0, 1), col, xfm);
+            }
+        }
 
         //
         // connect verteces & make faces
@@ -232,13 +250,13 @@ private:
 
         // cylinder body
         for (j = 0; j < NDIVV - 1; ++j) {
-            const int u = 1 + j * NDIVR;
-            const int v = 1 + (j + 1) * NDIVR;
+            const int u = j * NDIVR;
+            const int v = (j + 1) * NDIVR;
             for (i = 0; i < NDIVR; ++i) {
                 const int ii = i % NDIVR;
                 const int jj = (i + 1) % NDIVR;
-                pMesh->addFace(ivbot + u + ii, ivbot + u + jj, ivbot + v + jj, nfmode);
-                pMesh->addFace(ivbot + u + ii, ivbot + v + jj, ivbot + v + ii, nfmode);
+                pMesh->addFace(ivcyl + u + ii, ivcyl + u + jj, ivcyl + v + jj, nfmode);
+                pMesh->addFace(ivcyl + u + ii, ivcyl + v + jj, ivcyl + v + ii, nfmode);
             }
         }
 
@@ -247,80 +265,92 @@ private:
             for (i = 0; i <= NDIVR; ++i) {
                 const int ii = i % NDIVR;
                 const int jj = (i + 1) % NDIVR;
-
-                pMesh->addFace(ivtop, ivbot + 1 + (NDIVV - 1) * NDIVR + ii,
-                               ivbot + 1 + (NDIVV - 1) * NDIVR + jj, nfmode);
+                pMesh->addFace(ivtop, ivtop + 1 + ii, ivtop + 1 + jj, nfmode);
             }
         }
     }
 };
 
-/**
-   Sphere object
-*/
-template <class _TVector, class _TColor>
+//////////
+
+///
+/// Sphere object
+///
+template <class _TVector, class _TColor, class _TXform>
 class Sphere
 {
 public:
+    /// location of center
     _TVector v1;
+
+    /// color
     _TColor col;
+
+    /// radius
     double r;
+
+    /// detail level for tesselation
     int ndetail;
 
+    /// transformation matrix
+    _TXform *pTransf;
+
+    /// default ctor
     Sphere(const _TVector &v, _TColor c, double radius, int nDet)
-        : v1(v), col(c), r(radius), ndetail(nDet)
+        : v1(v), col(c), r(radius), ndetail(nDet), pTransf(nullptr)
     {
+    }
+
+    /// dtor
+    ~Sphere()
+    {
+        if (pTransf != nullptr) {
+            delete pTransf;
+        }
     }
 };
 
-/**
-   Cylinder list object
-*/
-template <class _TVector, class _TMesh>
+///
+/// Sphere list object
+///
+template <class _TVector, class _TXform, class _TMesh>
 class SphereList
 {
 public:
     using _TColor = typename _TMesh::color_t;
-    using sphere_t = Sphere<_TVector, _TColor>;
+    using sphere_t = Sphere<_TVector, _TColor, _TXform>;
     using data_t = std::deque<sphere_t *>;
 
     data_t m_data;
 
-    /**
-       Add a cylinder to the list
-       @param v location of the sphere center
-       @param radius sphere radius
-       @param color color
-       @param nDetail detail level for tesselation
-    */
-    void add(const _TVector &v, double radius, _TColor color, int nDetail)
+    /// Add a sphere to the list
+    /// @param v location of center
+    /// @param radius radius
+    /// @param color color
+    /// @param nDetail detail level for tesselation
+    void add(const _TVector &v, double radius, _TColor color, int nDetail,
+             const _TXform *ptrf = nullptr)
     {
         auto *p = MB_NEW sphere_t(v, color, radius, nDetail);
+
+        if (ptrf == nullptr)
+            p->pTransf = nullptr;
+        else
+            p->pTransf = MB_NEW _TXform(*ptrf);
+
         m_data.push_back(p);
     }
 
-    /**
-       Erase all cylinders
-    */
     void eraseAll()
     {
         qlib::delete_and_clear<data_t, sphere_t>(m_data);
     }
 
-    /**
-         Generate mesh data from the cylinder list
-         @param pMesh pointer to the mesh object to be filled
-         @param bErase if true, the cylinder list is erased after the mesh generation
-     */
-    void makeMesh(_TMesh *pMesh, bool bErase, const Matrix4D *pXfm = nullptr)
+    void makeMesh(_TMesh *pMesh, const _TXform *pXfm = nullptr)
     {
         for (const auto *p : m_data) {
             makeMeshImpl(pMesh, p, pXfm);
         }
-
-        if (bErase) eraseAll();
-
-        return;
     }
 
     int getSize() const
@@ -329,13 +359,8 @@ public:
     }
 
 private:
-    /**
-       Internal function to generate mesh data from a single cylinder
-       @param pMesh pointer to the mesh object to be filled
-       @param pCyl pointer to the cylinder object
-    */
     void makeMeshImpl(_TMesh *pMesh, const sphere_t *pSph,
-                      const Matrix4D *pXfm = nullptr)
+                      const _TXform *pXfm = nullptr)
     {
         const _TVector v1 = pSph->v1;
 
@@ -359,8 +384,15 @@ private:
         // xform.matprod(Matrix4D::makeRotMat(e3, e1).transpose());
         // xform.matprod(Matrix4D::makeTransMat(-v1));
 
-        Matrix4D xform;
-        if (pXfm != nullptr) xform = *pXfm;
+        _TXform xform;
+        if (pXfm != nullptr) {
+            xform = *pXfm;
+        }
+
+        if (pSph->pTransf != nullptr) {
+            // xform.matprod(*(pSph->pTransf));
+            xform = *pSph->pTransf;
+        }
 
         const auto rad = pSph->r;
         const auto col = pSph->col;

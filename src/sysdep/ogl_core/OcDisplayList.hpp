@@ -189,7 +189,7 @@ private:
     using CylList = gfx::CylinderList<Vector4D, Matrix4D, gfx::GrowMesh<qlib::quint32>>;
     CylList m_cylinders;
 
-    using SphList = gfx::SphereList<Vector4D, gfx::GrowMesh<qlib::quint32>>;
+    using SphList = gfx::SphereList<Vector4D, Matrix4D, gfx::GrowMesh<qlib::quint32>>;
     SphList m_spheres;
 
     void convertToMesh();

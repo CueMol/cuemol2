@@ -672,8 +672,8 @@ void OcDisplayList::sphere()
     if (mtop.isIdentAffine(F_EPS4)) {
         m_spheres.add(v, 1.0, color, m_nDetail);
     } else {
-        LOG_DPRINTLN("ERROR, sphere(): unsupported operation!!");
-        m_spheres.add(v, 1.0, color, m_nDetail);
+        // LOG_DPRINTLN("ERROR, sphere(): unsupported operation!!");
+        m_spheres.add(Vector4D(0, 0, 0), 1.0, color, m_nDetail, &mtop);
     }
 }
 
@@ -725,10 +725,12 @@ int OcDisplayList::getDetail() const
 void OcDisplayList::convertToMesh()
 {
     MB_DPRINTLN("convertToMesh num sphs: %d", m_spheres.getSize());
-    m_spheres.makeMesh(&m_mesh, true);
+    m_spheres.makeMesh(&m_mesh);
+    m_spheres.eraseAll();
 
     MB_DPRINTLN("convertToMesh num cyls: %d", m_cylinders.getSize());
-    m_cylinders.makeMesh(&m_mesh, true);
+    m_cylinders.makeMesh(&m_mesh);
+    m_cylinders.eraseAll();
 }
 
 }  // namespace sysdep
