@@ -28,7 +28,7 @@ attribute vec4 aNormal;
 varying vec4 v_frontColor;
 varying float v_fogCoord;
 
-uniform int u_silh;
+// uniform int u_silh;
 
 void main(void)
 {
@@ -49,8 +49,8 @@ void main(void)
     // v_fogCoord = abs(ecPosition.z);
     v_fogCoord = ffog(ecPosition.z);
 
-    if (u_silh == 1) {
-        gl_Position.z = 0.9999;
-        gl_Position.w = 1.0;
-    }
+    // if (u_silh == 1) {
+    //     gl_Position.z = 0.9999;
+    //     gl_Position.w = 1.0;
+    // }
 }

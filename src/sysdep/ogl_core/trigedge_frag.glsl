@@ -23,4 +23,10 @@ out vec4 o_FragColor;
 void main(void)
 {
     o_FragColor = fragFogColor(v_frontColor, frag_alpha, v_fogCoord);
+
+    if (u_silh == 1) {
+        gl_FragDepth = 0.9999;
+    } else {
+        gl_FragDepth = gl_FragCoord.z;
+    }
 }
