@@ -31,7 +31,10 @@ message(STATUS "Python3_INCLUDE_DIRS=${Python3_INCLUDE_DIRS}")
 message(STATUS "Python3_LIBRARIES=${Python3_LIBRARIES}")
 
 find_package(Python3 COMPONENTS NumPy)
-message(STATUS "Python_NumPy_FOUND=${Python_NumPy_FOUND}")
+message(STATUS "Python3_NumPy_FOUND=${Python3_NumPy_FOUND}")
+if (Python3_NumPy_FOUND)
+  add_definitions(-DHAVE_NUMPY=1)
+endif()
 
 #####################
 
@@ -43,6 +46,7 @@ endif()
 # Dependent libs
 SET(PYMOD_LINK_LIBRARIES
   cuemol2
+  Python3::NumPy
   # Boost::filesystem
 )
 
