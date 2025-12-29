@@ -8,11 +8,13 @@
 #define GFX_WGL_DISPLAY_CONTEXT_HPP_
 
 #include "OglDisplayContext.hpp"
+#include <sysdep/ogl_core/OcDisplayContext.hpp>
 #include "WglView.hpp"
 
 namespace sysdep {
 
-  class WglDisplayContext : public OglDisplayContext
+  // class WglDisplayContext : public OglDisplayContext
+  class WglDisplayContext : public OcDisplayContext
   {
   private:
     HGLRC m_hGlrc;

@@ -12,14 +12,16 @@
 #include <qsys/ViewEvent.hpp>
 #include <qsys/View.hpp>
 #include <qsys/Scene.hpp>
+#include <sysdep/ShaderSetupHelper.hpp>
+#include <sysdep/OglError.hpp>
 
-#define CHK_GLERROR(MSG)\
-{ \
-  GLenum errc; \
-  errc = glGetError(); \
-  if (errc!=GL_NO_ERROR) \
-    MB_DPRINTLN("%s GLError(%d): %s", MSG, errc, gluErrorString(errc)); \
-}
+// #define CHK_GLERROR(MSG)\
+// { \
+//   GLenum errc; \
+//   errc = glGetError(); \
+//   if (errc!=GL_NO_ERROR) \
+//     MB_DPRINTLN("%s GLError(%d): %s", MSG, errc, gluErrorString(errc)); \
+// }
 
 using namespace xtal;
 using qlib::Matrix4D;
@@ -133,9 +135,9 @@ void GLSLMapVolRenderer::viewChanged(qsys::ViewEvent &ev)
 
 //////////////////////////////////////////////////////////////////
 
-void GLSLMapVolRenderer::initShader()
+void GLSLMapVolRenderer::initShader(DisplayContext *pdc)
 {
-  sysdep::ShaderSetupHelper<GLSLMapVolRenderer> ssh(this);
+  sysdep::ShaderSetupHelper ssh(pdc);
 
   if (!ssh.checkEnvVS()) {
     LOG_DPRINTLN("GPUMapMesh> ERROR: OpenGL GPU shading not supported.");
@@ -459,7 +461,7 @@ void GLSLMapVolRenderer::genXferFunMap()
 void GLSLMapVolRenderer::display(DisplayContext *pdc)
 {
   if (!m_bChkShaderDone)
-    initShader();
+    initShader(pdc);
 
   ScalarObject *pMap = getScalarObj();
   DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);

@@ -20,8 +20,10 @@ module gfx
   NamedColor;
   MolColorRef;
   TextImgBuf;
-  //MultiGradient;
   GradientColor;
+
+  // ???
+  // MultiGradient;
 };
 
 

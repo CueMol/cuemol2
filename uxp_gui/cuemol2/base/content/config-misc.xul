@@ -18,8 +18,6 @@
     <script type="application/javascript" src="chrome://cuemol2/content/config-dialog.js"/>
   
     <preferences id="misc-prefs">
-      <preference id="misc-pref-autoupdatechk" name="cuemol2.ui.updater.dontcheck" type="bool"/>
-      <preference id="view-pref-useglshader" name="cuemol2.ui.view.use_gl_shader" type="bool"/>
       <preference id="view-pref-hidpi" name="cuemol2.ui.view.use_hidpi" type="bool"/>
     </preferences>
 
@@ -76,28 +74,39 @@
     </groupbox>
 
     <groupbox>
-      <caption label="Other settings"/>
+      <caption label="Misc settings"/>
 
-      <checkbox id="autoupdate-check" label="Disable software update checking"
-	preference="misc-pref-autoupdatechk"/>
-
+        <!--
+      <hbox align="center">
+	    <label value="Enable MSAA" flex="0"/>
+	    <menulist id="view-pref-enablemsaa" flex="1">
+	      <menupopup>
+	        <menuitem label="Disable" value="0"/>
+	        <menuitem label="2x2" value="1"/>
+	        <menuitem label="4x4" value="2"/>
+	        <menuitem label="8x8" value="3"/>
+	        <menuitem label="16x16" value="4"/>
+	      </menupopup>
+	    </menulist>
+      </hbox>
       <checkbox id="use-glshader-check" label="Use OpenGL Shader"
-	preference="view-pref-useglshader"/>
+	            preference="view-pref-useglshader"/>
+        -->
 
 #ifdef XP_MACOSX
       <!-- HiDPI Retina support ON/OFF (MacOSX only) -->
       <checkbox id="view-hidpi-check" label="Enable HiDPI (Retina) display"
-		preference="view-pref-hidpi"/>
+		        preference="view-pref-hidpi"/>
 #endif
     
       <hbox align="center">
-	<label value="&config_dlg.langGroup;" flex="0"/>
-	<menulist id="uilang-list" flex="1">
-	  <menupopup>
-	    <menuitem label="&config_dlg.lang.en-US;" value="en-US"/>
-	    <menuitem label="&config_dlg.lang.ja;" value="ja"/>
-	  </menupopup>
-	</menulist>
+	    <label value="&config_dlg.langGroup;" flex="0"/>
+	    <menulist id="uilang-list" flex="1">
+	      <menupopup>
+	        <menuitem label="&config_dlg.lang.en-US;" value="en-US"/>
+	        <menuitem label="&config_dlg.lang.ja;" value="ja"/>
+	      </menupopup>
+	    </menulist>
       </hbox>
       
     </groupbox>

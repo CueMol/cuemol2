@@ -3,8 +3,7 @@
 // Pixel buffer object
 //
 
-#ifndef GFX_PIXEL_BUFFER_HPP_INCLUDED_
-#define GFX_PIXEL_BUFFER_HPP_INCLUDED_
+#pragma once
 
 #include "gfx.hpp"
 
@@ -12,11 +11,17 @@
 
 namespace gfx {
 
-  using qlib::LString;
+using qlib::LString;
 
-  class GFX_API PixelBuffer
-  {
-  private:
+class GFX_API PixRep
+{
+public:
+    virtual ~PixRep() {}
+};
+
+class GFX_API PixelBuffer
+{
+private:
     int m_nWidth;
     int m_nHeight;
     int m_nDepth;
@@ -24,51 +29,81 @@ namespace gfx {
 
     data_t *m_pData;
 
-  public:
-    PixelBuffer() : m_nWidth(0), m_nHeight(0), m_nDepth(8), m_pData(NULL) {}
+    /// buffer ID (for impl)
+    mutable PixRep *m_pPixRep;
+
+public:
+    PixelBuffer()
+        : m_nWidth(0), m_nHeight(0), m_nDepth(8), m_pData(nullptr), m_pPixRep(nullptr)
+    {
+    }
 
     /// copy ctor
     PixelBuffer(const PixelBuffer &src);
 
     ~PixelBuffer();
 
-    int getWidth() const { return m_nWidth; }
-    int getHeight() const { return m_nHeight; }
-    int getDepth() const { return m_nDepth; }
+    PixRep *getRep() const
+    {
+        return m_pPixRep;
+    }
+    void setRep(PixRep *p) const
+    {
+        m_pPixRep = p;
+    }
 
-    void setHeight(int aValue) { m_nHeight = aValue; }
-    void setWidth(int aValue) { m_nWidth = aValue; }
-    void setDepth(int aValue) { m_nDepth = aValue; }
+    int getWidth() const
+    {
+        return m_nWidth;
+    }
+    int getHeight() const
+    {
+        return m_nHeight;
+    }
+    int getDepth() const
+    {
+        return m_nDepth;
+    }
 
-    //QUE_BYTE *data() { return &(super_t::operator[](0)); }
-    //const QUE_BYTE *data() const { return &(super_t::operator[](0)); }
+    void setHeight(int aValue)
+    {
+        m_nHeight = aValue;
+    }
+    void setWidth(int aValue)
+    {
+        m_nWidth = aValue;
+    }
+    void setDepth(int aValue)
+    {
+        m_nDepth = aValue;
+    }
 
     QUE_BYTE *data()
     {
-      if (m_pData==NULL) return NULL;
-      return &( m_pData->operator[](0) );
+        if (m_pData == NULL) return NULL;
+        return &(m_pData->operator[](0));
     }
 
     const QUE_BYTE *data() const
     {
-      if (m_pData==NULL) return NULL;
-      return &( m_pData->operator[](0) );
+        if (m_pData == NULL) return NULL;
+        return &(m_pData->operator[](0));
     }
 
     size_t size() const
     {
-      if (m_pData==NULL) return 0;
-      return m_pData->size();
+        if (m_pData == NULL) return 0;
+        return m_pData->size();
     }
 
     void resize(size_t n);
 
-    QUE_BYTE at(int index) const { return m_pData->at(index); }
+    QUE_BYTE at(int index) const
+    {
+        return m_pData->at(index);
+    }
 
     void clear();
+};
 
-  };
-
-}
-
-#endif
+}  // namespace gfx

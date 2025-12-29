@@ -43,16 +43,6 @@ namespace gfx {
     virtual void color(const ColorPtr &c) {}
 
     ////////////////
-
-    ///////////////////////
-    // Matrix stack support
-
-    virtual void pushMatrix() {}
-    virtual void popMatrix() {}
-    virtual void multMatrix(const Matrix4D &mat) {}
-    virtual void loadMatrix(const Matrix4D &mat) {}
-
-    ////////////////
     // line and triangle primitives
     
     virtual void setPolygonMode(int id) {}
@@ -143,7 +133,7 @@ namespace gfx {
     qlib::uid_t m_nCurUID;
 
     /// matrix stack impl
-    std::deque<Matrix4D> m_matstack;
+    // std::deque<Matrix4D> m_matstack;
 
   public:
     HittestContext() : m_nCurUID(qlib::invalid_uid) { pushMatrix(); pushName(-1);}
@@ -152,15 +142,11 @@ namespace gfx {
     ///////////////////////
     // Matrix stack support
 
-    virtual void pushMatrix();
-
-    virtual void popMatrix();
-
-    virtual void multMatrix(const Matrix4D &mat);
-
-    virtual void loadMatrix(const Matrix4D &mat);
-
-    const Matrix4D &topMatrix() const;
+    // virtual void pushMatrix();
+    // virtual void popMatrix();
+    // virtual void multMatrix(const Matrix4D &mat);
+    // virtual void loadMatrix(const Matrix4D &mat);
+    // const Matrix4D &topMatrix() const;
 
     Matrix4D m_projMat;
 

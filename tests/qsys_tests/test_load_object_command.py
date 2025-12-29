@@ -11,6 +11,10 @@ def test_load_object_command(mol_1crn_path, create_scene):
         "file_format": "pdb",
     }
     result = mgr.runCmdArgs("load_object", args)
+
     assert "result_object" in result
-    assert cuemol.isobj(result["result_object"])
-    assert result["result_object"].name == "1CRN"
+    assert result["result_object"] is not None
+    mol = result["result_object"]
+    assert cuemol.isobj(mol)
+    assert mol.name == "1CRN"
+

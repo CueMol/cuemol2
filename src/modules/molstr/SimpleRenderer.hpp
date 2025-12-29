@@ -7,16 +7,24 @@
 #ifndef SIMPLE_RENDERER_H__
 #define SIMPLE_RENDERER_H__
 
-#include "molstr.hpp"
-#include "MolAtomRenderer.hpp"
 #include <gfx/DrawElem.hpp>
+
+#include "MolAtomRenderer.hpp"
+#include "molstr.hpp"
+
+
+#ifdef USE_OPENGL
+namespace sysdep {
+class GLSLLineHelper;
+}
+#endif
 
 class SimpleRenderer_wrap;
 
 namespace molstr {
 
-  class MOLSTR_API SimpleRenderer : public MolAtomRenderer
-  {
+class MOLSTR_API SimpleRenderer : public MolAtomRenderer
+{
     MC_SCRIPTABLE;
     MC_CLONEABLE;
 
@@ -27,46 +35,80 @@ namespace molstr {
     //////////////
     // Properties
 
-  private:
+private:
     /// drawing line width
     double m_lw;
 
-  public:
-    void setLineWidth(double f) {
-      m_lw = f;
-      // super_t::invalidateDisplayCache();
+public:
+    void setLineWidth(double f)
+    {
+        m_lw = f;
+        if (!isUseShader()) {
+            super_t::invalidateDisplayCache();
+            MB_DPRINTLN("SimpleRenderer::setLineWidth(): invalidateDisplayCache() called");
+        }
     }
-    double getLineWidth() const { return m_lw; }
+    double getLineWidth() const
+    {
+        return m_lw;
+    }
 
-  private:
+private:
     /// display valency bond
     bool m_bValBond;
 
-  public:
-    void setValBond(bool val) {
-      m_bValBond = val;
-      super_t::invalidateDisplayCache();
+public:
+    void setValBond(bool val)
+    {
+        m_bValBond = val;
+        super_t::invalidateDisplayCache();
     }
-    bool getValBond() const { return m_bValBond; }
+    bool getValBond() const
+    {
+        return m_bValBond;
+    }
 
-  private:
+private:
     double m_dCvScl1;
     double m_dCvScl2;
 
-  public:
+public:
     /// Set valence bond scaling factor 1 (for double/triple bond drawing)
-    void setVBScl1(double f) {
-      m_dCvScl1 = f;
-      super_t::invalidateDisplayCache();
+    void setVBScl1(double f)
+    {
+        m_dCvScl1 = f;
+        super_t::invalidateDisplayCache();
     }
-    double getVBScl1() const { return m_dCvScl1; }
+    double getVBScl1() const
+    {
+        return m_dCvScl1;
+    }
 
     /// Set valence bond scaling factor 2 (for double bond drawing)
-    void setVBScl2(double f) {
-      m_dCvScl2 = f;
-      super_t::invalidateDisplayCache();
+    void setVBScl2(double f)
+    {
+        m_dCvScl2 = f;
+        super_t::invalidateDisplayCache();
     }
-    double getVBScl2() const { return m_dCvScl2; }
+    double getVBScl2() const
+    {
+        return m_dCvScl2;
+    }
+
+private:
+    /// Use custom shader for line drawing
+    bool m_bUseShader;
+
+public:
+    void setUseShader(bool b)
+    {
+        m_bUseShader = b;
+        invalidateDisplayCache();
+    }
+    bool isUseShader() const
+    {
+        return m_bUseShader;
+    }
 
     //////////////////////////////////////////////////////
     //
@@ -93,45 +135,50 @@ namespace molstr {
     // single valence bonds
     struct IntBond
     {
-      quint32 itype;
-      quint32 aid1, aid2;
-      quint32 vaind, nelems;
+        quint32 itype;
+        quint32 aid1, aid2;
+        quint32 vaind, nelems;
     };
 
     typedef std::vector<IntBond> IntBondArray;
-    
+
     IntBondArray m_sbonds;
 
     // multivalence bonds
     struct IntMBond
     {
-      quint32 itype;
-      quint32 aid1, aid2;
-      quint32 vaind, nelems;
-      qfloat32 nx, ny, nz;
+        quint32 itype;
+        quint32 aid1, aid2;
+        quint32 vaind, nelems;
+        qfloat32 nx, ny, nz;
     };
-    
+
     typedef std::vector<IntMBond> IntMBondArray;
-    
+
     IntMBondArray m_mbonds;
 
     // isolated atoms
     struct IntAtom
     {
-      quint32 aid1;
-      quint32 vaind;
+        quint32 aid1;
+        quint32 vaind;
     };
 
     typedef std::vector<IntAtom> IntAtomArray;
-    
+
     IntAtomArray m_atoms;
 
-    /// cached vertex array/VBO
-    gfx::DrawElemVC *m_pVBO;
+    // /// cached vertex array/VBO
+    // gfx::DrawElemVC *m_pVBO;
+
+#ifdef USE_OPENGL
+    /// GLSL impl
+    sysdep::GLSLLineHelper *m_pGlslLine;
+#endif
 
     //////////////////////////////////////////////////////
 
-  public:
+public:
     SimpleRenderer();
     virtual ~SimpleRenderer();
 
@@ -149,37 +196,36 @@ namespace molstr {
     virtual void endRend(DisplayContext *pdl);
 
     virtual void rendAtom(DisplayContext *pdl, MolAtomPtr pAtom, bool fbonded);
-    virtual void rendBond(DisplayContext *pdl, MolAtomPtr pAtom1, MolAtomPtr pAtom2, MolBond *pMB);
+    virtual void rendBond(DisplayContext *pdl, MolAtomPtr pAtom1, MolAtomPtr pAtom2,
+                          MolBond *pMB);
 
-  private:
-    void drawInterAtomLine(MolAtomPtr pAtom1, MolAtomPtr pAtom2,
-                           MolBond *pMB,
-			   DisplayContext *pdl);
+private:
+    void drawInterAtomLine(MolAtomPtr pAtom1, MolAtomPtr pAtom2, MolBond *pMB,
+                           DisplayContext *pdl);
     void drawAtom(MolAtomPtr pAtom, DisplayContext *pdl);
 
     //////////////////////////////////////////////////////
 
-  public:
-    // new rendering interface (using GL VBO)
+public:
+#ifdef USE_OPENGL
+    // new rendering interface (using OpenGL SL)
     virtual void display(DisplayContext *pdc);
 
     virtual void invalidateDisplayCache();
 
-  private:
-    /// Rendering using VBO (builds sbonds, mbonds, and atoms data structure)
-    void renderVBO();
-
-    /// update VBO using m_sbonds, m_mbonds, m_atoms and MolCoord's data
-    void updateVBO(bool bUpdateColor);
-
-    //////////////////////////////////////////////////////
-    // Event handling
-  public:
-
     /// object changed event (--> update vertex positions if required)
     virtual void objectChanged(qsys::ObjectEvent &ev);
 
-  };
-}
+private:
+    /// Rendering using GLSL (builds sbonds, mbonds, and atoms data structure)
+    void renderVBO();
+
+    /// Update GL buffer using m_sbonds, m_mbonds, m_atoms and MolCoord's data
+    void updateVBO(bool bUpdateColor);
+
+#endif
+
+};
+}  // namespace molstr
 
 #endif

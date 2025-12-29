@@ -161,7 +161,7 @@ void SplineRenderer::renderSpline(DisplayContext *pdl, SplineCoeff *pCoeff,
   ColorPtr pPrevCol;
 
   pdl->startLineStrip();
-  pdl->startLines();
+  // pdl->startLines();
   int i;
   for (i=0; i<=ndelta; i++) {
     double par = fstart + double(i)/double(m_nAxialDetail);

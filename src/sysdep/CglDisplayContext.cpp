@@ -23,7 +23,7 @@ CglDisplayContext::CglDisplayContext(int sceneid, CglView *pView)
 */
 
 CglDisplayContext::CglDisplayContext()
-  : OglDisplayContext()
+  : OcDisplayContext()
 {
   m_pnsc = NULL;
   m_glcx = NULL;

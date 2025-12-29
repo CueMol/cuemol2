@@ -8,96 +8,101 @@
 #include "RectSelDrawObj.hpp"
 
 #include <gfx/DisplayContext.hpp>
+#include <gfx/DrawObjSet.hpp>
 #include <qsys/SceneManager.hpp>
 
-using namespace molstr;
+namespace molstr {
 
 RectSelDrawObj::RectSelDrawObj()
 {
-  m_color = gfx::SolidColor::createRGB(0.2, 0.8, 1.0);
-  m_colorPaint = gfx::SolidColor::createRGB(0.2, 0.8, 1.0, 0.5);
-  m_bStart = false;
+    m_color = gfx::SolidColor::createRGB(0.2, 0.8, 1.0);
+    m_colorPaint = gfx::SolidColor::createRGB(0.2, 0.8, 1.0, 0.5);
+    m_bStart = false;
+    m_pdata = nullptr;
 }
 
-RectSelDrawObj::~RectSelDrawObj()
+RectSelDrawObj::~RectSelDrawObj() {}
+
+bool RectSelDrawObj::init(DisplayContext *pdc)
 {
+    if (m_pdata != nullptr) {
+        return true;
+    }
+
+    // Initialize the draw object set
+    m_pdata = pdc->createDrawObjSet();
+
+    m_pdata->allocLines(4);
+    m_pdata->setLineWidth(1.0f);
+
+    m_pdata->allocTrigMesh(4, 2);
+    m_pdata->setTrigMeshFace(0, 0, 2, 1);
+    m_pdata->setTrigMeshFace(1, 2, 0, 3);
+
+    m_pdata->setNoDepth(true);
+
+    return true;
 }
 
-void RectSelDrawObj::display(DisplayContext *pdc)
+void RectSelDrawObj::display(DisplayContext *pdc, qsys::ViewPtr pView) {}
+
+void RectSelDrawObj::display2D(DisplayContext *pdc, qsys::ViewPtr pView)
 {
-/*
-  pdc->color(m_color);
-  pdc->setLineWidth(4.0);
-  pdc->startLines();
+    if (!m_bStart) return;
 
-  data_t::const_iterator iter = m_data.begin();
-  data_t::const_iterator eiter = m_data.end();
-  for (; iter!=eiter; ++iter) {
-    const Vector4D &pos = *iter;
-    pdc->drawAster(pos, 0.25f);
-  }
+    if (!init(pdc)) return;
 
-  pdc->end();
-*/
-}
+    int x = getLeft();
+    int y = getTop();
+    int w = getWidth();
+    int h = getHeight();
 
-void RectSelDrawObj::display2D(DisplayContext *pdc)
-{
-  if (!m_bStart)
-    return;
+    if (w == 0 || h == 0) return;
 
-  int x = getLeft();
-  int y = getTop();
-  int w = getWidth();
-  int h = getHeight();
+    m_pdata->setLine(0, Vector4D(x, y, 0), m_color, Vector4D(x + w, y, 0), m_color);
+    m_pdata->setLine(1, Vector4D(x + w, y, 0), m_color, Vector4D(x + w, y + h, 0), m_color);
+    m_pdata->setLine(2, Vector4D(x + w, y + h, 0), m_color, Vector4D(x, y + h, 0), m_color);
+    m_pdata->setLine(3, Vector4D(x, y + h, 0), m_color, Vector4D(x, y, 0), m_color);
+    m_pdata->setLineUpdated(true);
+    
+    m_pdata->setTrigMeshVertex(0, Vector4D(x, y, 0));
+    m_pdata->setTrigMeshVertex(1, Vector4D(x + w, y, 0));
+    m_pdata->setTrigMeshVertex(2, Vector4D(x + w, y + h, 0));
+    m_pdata->setTrigMeshVertex(3, Vector4D(x, y + h, 0));
+    m_pdata->setTrigMeshColor(0, m_colorPaint);
+    m_pdata->setTrigMeshColor(1, m_colorPaint);
+    m_pdata->setTrigMeshColor(2, m_colorPaint);
+    m_pdata->setTrigMeshColor(3, m_colorPaint);
+    m_pdata->setTrigMeshUpdated(true);
 
-  if (w==0||h==0)
-    return;
-
-  pdc->color(m_color);
-  pdc->setLineWidth(1.0);
-  pdc->startLineStrip();
-  pdc->vertex( Vector4D(x, y, 0) );
-  pdc->vertex( Vector4D(x+w, y, 0) );
-  pdc->vertex( Vector4D(x+w, y+h, 0) );
-  pdc->vertex( Vector4D(x, y+h, 0) );
-  pdc->vertex( Vector4D(x, y, 0) );
-  pdc->end();
-
-  pdc->color(m_colorPaint);
-  pdc->startPolygon();
-  pdc->vertex( Vector4D(x, y, 0) );
-  pdc->vertex( Vector4D(x+w, y, 0) );
-  pdc->vertex( Vector4D(x+w, y+h, 0) );
-  pdc->vertex( Vector4D(x, y+h, 0) );
-  pdc->end();
+    pdc->drawObjSet(*m_pdata);
 }
 
 void RectSelDrawObj::setEnabled(bool f)
 {
-  super_t::setEnabled(f);
+    super_t::setEnabled(f);
 
-  if (!f)
-    m_bStart = false;
+    if (!f) m_bStart = false;
 }
 
 void RectSelDrawObj::start(int x, int y)
 {
-  m_bStart = true;
-  m_nStartX = x;
-  m_nStartY = y;
-  m_nEndX = x;
-  m_nEndY = y;
+    m_bStart = true;
+    m_nStartX = x;
+    m_nStartY = y;
+    m_nEndX = x;
+    m_nEndY = y;
 }
 
 void RectSelDrawObj::move(int x, int y)
 {
-  m_nEndX = x;
-  m_nEndY = y;
+    m_nEndX = x;
+    m_nEndY = y;
 }
 
 void RectSelDrawObj::end()
 {
-  m_bStart = false;
+    m_bStart = false;
 }
 
+}  // namespace molstr

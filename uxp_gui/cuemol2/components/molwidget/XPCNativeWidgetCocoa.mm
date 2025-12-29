@@ -64,6 +64,10 @@ nsresult XPCNativeWidgetCocoa::setupImpl(nativeWindow widget)
   if (height<0) height = 100;
   NSRect rect = NSMakeRect(0,0,width,height);
 
+  // Set MSAA flag
+  MB_DPRINTLN("XPCNativeWidget::EnableMSAA=%d", m_nEnableMSAA);
+  [NSOglMolView setForceMSAA: m_nEnableMSAA];
+
   // Create NSOglMolView object (defined in NSOglMolView.hpp)
   NSOglMolView *view = [NSOglMolView alloc];
   // NSView *view = [NSButton alloc]];
@@ -137,7 +141,7 @@ nsresult XPCNativeWidgetCocoa::attachImpl()
     NSSize tmp2 = [view convertSizeToBacking: tmp];
     double sclx = double(tmp2.width) / double(tmp.width);
     double scly = double(tmp2.height) / double(tmp.height);
-    MB_DPRINTLN("scale factor %f, %f", sclx, scly);
+    LOG_DPRINTLN("scale factor %f, %f", sclx, scly);
     pCglView->setSclFac(sclx, scly);
   }
 

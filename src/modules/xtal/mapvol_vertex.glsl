@@ -4,8 +4,6 @@
 //    vertex shader for volume rendering
 //
 
-#version 120
-
 uniform mat4 modelview_matrix_inverse;
 varying vec3 texcoor;
 
@@ -17,4 +15,3 @@ void main()
 
   gl_ClipVertex = gl_Vertex;
 }
-

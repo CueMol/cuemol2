@@ -69,6 +69,10 @@ namespace xpcom {
     
     HWND createNativeChildWnd();
 
+    bool createDummyWindow(HWND& hWnd, HDC& hDC, HGLRC& hRC);
+    void destroyDummyWindow(HWND hWnd, HDC hDC, HGLRC hRC);
+    bool initGlewWithDummyWnd();
+
   };
 
 }

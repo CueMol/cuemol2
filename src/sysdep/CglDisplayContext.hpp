@@ -7,12 +7,13 @@
 #ifndef GFX_CGL_DISPLAY_CONTEXT_HPP_
 #define GFX_CGL_DISPLAY_CONTEXT_HPP_
 
-#include "OglDisplayContext.hpp"
+// #include "OglDisplayContext.hpp"
+#include "ogl_core/OcDisplayContext.hpp"
 #include "CglView.hpp"
 
 namespace sysdep {
 
-  class SYSDEP_API CglDisplayContext : public OglDisplayContext
+  class SYSDEP_API CglDisplayContext : public OcDisplayContext
   {
   private:
 

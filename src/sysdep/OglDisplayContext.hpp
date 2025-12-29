@@ -19,6 +19,7 @@ namespace gfx {
 namespace sysdep {
 
   class OglProgramObject;
+  class OcPixDraw;
 
   using gfx::AbstractColor;
   using gfx::ColorPtr;
@@ -29,13 +30,8 @@ namespace sysdep {
     typedef gfx::DisplayContext super_t;
 
   private:
-    /// UID of the target view
-    qlib::uid_t m_nViewID;
 
-    /// UID of the target scene
-    qlib::uid_t m_nSceneID;
-
-    Vector4D m_color;
+    Vector4D m_fcolor;
     // Vector4D m_pos;
 
     int m_nDetail;
@@ -55,6 +51,8 @@ namespace sysdep {
 
     //////////
 
+    OcPixDraw *m_pOcPixDraw;
+
   public:
     OglDisplayContext();
     virtual ~OglDisplayContext();
@@ -65,9 +63,6 @@ namespace sysdep {
     void setUseShaderAlpha(bool f) { m_bUseShaderAlpha = f; }
 
   public:  
-    inline qlib::uid_t getViewID() const { return m_nViewID; }
-    inline qlib::uid_t getSceneID() const { return m_nSceneID; }
-
     virtual void setTargetView(qsys::View *pView);
 
     // OpenGL-level initialization
@@ -102,10 +97,17 @@ namespace sysdep {
 
     virtual void enableDepthTest(bool);
 
-    // virtual void rotate(const qlib::LQuat &q);
-    virtual void scale(const Vector4D &);
-    virtual void translate(const Vector4D &);
-    virtual void loadIdent();
+    // // virtual void rotate(const qlib::LQuat &q);
+    // virtual void scale(const Vector4D &);
+    // virtual void translate(const Vector4D &);
+    // virtual void loadIdent();
+
+    // Projection matrix
+    virtual void setProjMat(const Matrix4D &mat);
+    // void loadOrthoProj(float width, float fasp,
+    //                    float near, float far);
+    // void loadPerspProj(float width, float fasp,
+    //                    float near, float far, float distance);
 
     ////////////////
 
@@ -115,6 +117,12 @@ namespace sysdep {
 
     virtual void setLighting(bool f=true);
     virtual void setCullFace(bool f=true);
+
+    // Fog
+    virtual void enableFog(bool b);
+    virtual void setFogStart(float val);
+    virtual void setFogEnd(float val);
+    virtual void setFogColor(const ColorPtr &val);
 
     ////////////////
     // metadata operations
@@ -197,14 +205,7 @@ namespace sysdep {
     ///////////////////////////////
     // OpenGL SL support
 
-  private:
-    // typedef std::map<LString, OglProgramObject *> ProgTab;
-    // ProgTab m_progs;
-
   public:
-    // bool hasShaders() const;
-    // bool hasGeomShader() const;
-
     /// Create the GLSL program object.
     /// If program object with the same name already exists, returns it.
     /// @param name name of the program objec.
@@ -215,7 +216,6 @@ namespace sysdep {
     /// @param name name of the program object.
     /// @return program object having the specified name.
     OglProgramObject *getProgramObject(const LString &name);
-    // bool destroyProgramObject(const LString &name);
 
   private:
 

@@ -57,6 +57,9 @@ namespace xpcom {
      NS_IMETHOD GetUseHiDPI(bool *aUseHiDPI) override;
      NS_IMETHOD SetUseHiDPI(bool aUseHiDPI) override;
 
+     NS_IMETHOD GetEnableMSAA(PRInt32 *aEnableMSAA) override;
+     NS_IMETHOD SetEnableMSAA(PRInt32 aEnableMSAA) override;
+
      NS_IMETHOD GetSceneID(PRInt32 *aSceneID) override;
      NS_IMETHOD SetSceneID(PRInt32 aSceneID) override;
      NS_IMETHOD GetViewID(PRInt32 *aViewID) override;
@@ -110,6 +113,7 @@ namespace xpcom {
     bool m_bUseGlShader;
     bool m_bUseMultiPad;
     bool m_bUseHiDPI;
+    int m_nEnableMSAA;
 
     void setupFromDOMEvent(nsIDOMEvent* aEvent, bool bMouseBtn, qsys::InDevEvent &ev);
   };

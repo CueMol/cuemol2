@@ -35,9 +35,9 @@ StlDisplayContext::~StlDisplayContext()
 void StlDisplayContext::init(qlib::OutStream *pStlOut)
 {
   clearMatStack();
+  // pushMatrix();
+  // loadIdent();
 
-  pushMatrix();
-  loadIdent();
   m_linew = 1.0;
 //  m_color = LColor();
   m_nDrawMode = POV_NONE;

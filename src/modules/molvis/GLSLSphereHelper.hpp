@@ -6,6 +6,8 @@
 #ifndef GLSL_SPHERE_HELPER_HPP_INCLUDED
 #define GLSL_SPHERE_HELPER_HPP_INCLUDED
 
+#include <sysdep/ShaderSetupHelper.hpp>
+
 namespace molvis {
 
   class GLSLSphereHelper
@@ -49,10 +51,10 @@ namespace molvis {
       invalidate();
     }
 
-    bool initShader(qsys::Renderer *pRend)
+    bool initShader(gfx::DisplayContext *pdc)
     {
       MB_ASSERT(m_pPO == NULL);
-      sysdep::ShaderSetupHelper<qsys::Renderer> ssh(pRend);
+      sysdep::ShaderSetupHelper ssh(pdc);
       
       if (!ssh.checkEnvVS()) {
         MB_DPRINTLN("GLShader not supported");
@@ -139,6 +141,8 @@ namespace molvis {
     {
       if (m_pDrawElem!=NULL) {
         m_pPO->enable();
+        m_pPO->setupFog(pdc);
+        m_pPO->setupMat(pdc);
         m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
         if (pdc->getEdgeLineType()!=DisplayContext::ELT_NONE) {
           m_pPO->setUniformF("u_edge", pdc->getEdgeLineWidth());

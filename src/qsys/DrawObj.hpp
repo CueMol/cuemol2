@@ -3,8 +3,7 @@
 // DrawObj: base class of UI drawing object
 //
 
-#ifndef QSYS_DRAWINGOBJECT_HPP_INCLUDE_
-#define QSYS_DRAWINGOBJECT_HPP_INCLUDE_
+#pragma once
 
 #include "qsys.hpp"
 
@@ -13,40 +12,40 @@
 #include <qlib/LScrSmartPtr.hpp>
 #include <qlib/LPropEvent.hpp>
 #include <qlib/mcutils.hpp>
+#include <gfx/DrawAttrArray.hpp>
 
 namespace gfx {
-  class DisplayContext;
+class DisplayContext;
 }
 
 namespace qsys {
 
-using qlib::LString;
 using gfx::DisplayContext;
+using qlib::LString;
 
-class QSYS_API DrawObj :
-  public qlib::LNoCopyScrObject,
-  public qlib::LUIDObject
+///////////
+
+class QSYS_API DrawObj : public qlib::LNoCopyScrObject, public qlib::LUIDObject
 //  public qlib::LPropEventListener
 {
-  MC_SCRIPTABLE;
+    MC_SCRIPTABLE;
 
 private:
-  bool m_bEnabled;
+    bool m_bEnabled;
 
 public:
+public:
+    DrawObj();
+    virtual ~DrawObj();
 
-  DrawObj();
-  virtual ~DrawObj();
+    virtual void display(DisplayContext *pdc, ViewPtr pView) = 0;
+    virtual void display2D(DisplayContext *pdc, ViewPtr pView) = 0;
 
-  virtual void display(DisplayContext *pdc) =0;
-  virtual void display2D(DisplayContext *pdc) =0;
-
-  bool isEnabled() const { return m_bEnabled; }
-  virtual void setEnabled(bool f);
-
+    bool isEnabled() const
+    {
+        return m_bEnabled;
+    }
+    virtual void setEnabled(bool f);
 };
 
-}
-
-#endif
-
+}  // namespace qsys

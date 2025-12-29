@@ -12,6 +12,7 @@ Cpp11BracedListStyle: true
 BreakBeforeBinaryOperators: None
 AllowShortFunctionsOnASingleLine: Empty
 
+SortIncludes: false
 IncludeBlocks:   Regroup
 IncludeCategories:
   - Regex:           '^<common.h>$'

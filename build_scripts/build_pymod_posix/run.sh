@@ -24,6 +24,12 @@ PYTHON="python3"
 REPOS_DIR=$(cd $(dirname $0)/../..; pwd)
 WORKSPACE=${GITHUB_WORKSPACE:-$REPOS_DIR}
 
+# Use venv if exists
+VENV_DIR=$REPOS_DIR/.venv
+if [ -d $VENV_DIR ]; then
+    source $VENV_DIR/bin/activate
+fi
+
 BOOST_VER=boost_1_84_0
 BOOST_DIR=$BASEDIR/$BOOST_VER
 

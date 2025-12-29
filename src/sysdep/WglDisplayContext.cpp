@@ -19,7 +19,7 @@
 using namespace sysdep;
 
 WglDisplayContext::WglDisplayContext()
-     : OglDisplayContext()
+     : OcDisplayContext()
 {
 }
 

@@ -44,10 +44,10 @@ FileDisplayContext::~FileDisplayContext()
 
 void FileDisplayContext::init()
 {
-  clearMatStack();
-  pushMatrix();
-  loadIdent();
-  m_linew = 1.0;
+    clearMatStack();
+    // pushMatrix();
+    // loadIdent();
+    m_linew = 1.0;
 
   // default color
   m_pColor = gfx::SolidColor::createRGB(0.5, 0.5, 0.5);
@@ -195,31 +195,31 @@ void FileDisplayContext::attribute(int n)
 
 ////////////////////////////////////////////////
 
-void FileDisplayContext::pushMatrix()
-{
-  if (m_matstack.size()<=0) {
-    Matrix4D m;
-    m_matstack.push_front(m);
-    return;
-  }
-  const Matrix4D &top = m_matstack.front();
-  m_matstack.push_front(top);
-}
+// void FileDisplayContext::pushMatrix()
+// {
+//   if (m_matstack.size()<=0) {
+//     Matrix4D m;
+//     m_matstack.push_front(m);
+//     return;
+//   }
+//   const Matrix4D &top = m_matstack.front();
+//   m_matstack.push_front(top);
+// }
 
-void FileDisplayContext::popMatrix()
-{
-  if (m_matstack.size()<=1) {
-    LString msg("POVWriter> FATAL ERROR: cannot popMatrix()!!");
-    LOG_DPRINTLN(msg);
-    MB_THROW(qlib::RuntimeException, msg);
-    return;
-  }
-  m_matstack.pop_front();
-}
+// void FileDisplayContext::popMatrix()
+// {
+//   if (m_matstack.size()<=1) {
+//     LString msg("POVWriter> FATAL ERROR: cannot popMatrix()!!");
+//     LOG_DPRINTLN(msg);
+//     MB_THROW(qlib::RuntimeException, msg);
+//     return;
+//   }
+//   m_matstack.pop_front();
+// }
 
 void FileDisplayContext::checkUnitary()
 {
-  const Matrix4D &top = m_matstack.front();
+    const Matrix4D &top = getModelViewMat();
   Matrix3D t = top.getMatrix3D();
   Matrix3D t2 = t;
   t2.transpose();
@@ -230,23 +230,23 @@ void FileDisplayContext::checkUnitary()
     m_bUnitary = false;
 }  
 
-void FileDisplayContext::multMatrix(const Matrix4D &mat)
-{
-  Matrix4D top = m_matstack.front();
-  top.matprod(mat);
-  m_matstack.front() = top;
+// void FileDisplayContext::multMatrix(const Matrix4D &mat)
+// {
+//   Matrix4D top = m_matstack.front();
+//   top.matprod(mat);
+//   m_matstack.front() = top;
 
-  // check unitarity
-  checkUnitary();
-}
+//   // check unitarity
+//   checkUnitary();
+// }
 
-void FileDisplayContext::loadMatrix(const Matrix4D &mat)
-{
-  m_matstack.front() = mat;
+// void FileDisplayContext::loadMatrix(const Matrix4D &mat)
+// {
+//   m_matstack.front() = mat;
 
-  // check unitarity
-  checkUnitary();
-}
+//   // check unitarity
+//   checkUnitary();
+// }
 
 void FileDisplayContext::setLineWidth(double lw)
 {
@@ -448,7 +448,7 @@ void FileDisplayContext::sphere()
   Vector4D v(0, 0, 0);
   xform_vec(v);
   
-  const Matrix4D &mtop = m_matstack.front();
+  const Matrix4D &mtop = getModelViewMat();
   if (mtop.isIdentAffine(F_EPS4)) {
     m_pIntData->sphere(v, 1.0, m_nDetail);
     updateBboxSphere(v, 1.0);
@@ -472,7 +472,7 @@ void FileDisplayContext::cone(double r1, double r2,
   if (pos1.equals(pos2))
     return;
 
-  const Matrix4D &xm = m_matstack.front();
+  const Matrix4D &xm = getModelViewMat();
   Matrix3D xm3 = xm.getMatrix3D(), test;
   bool bUnitary = true;
   if (!xm3.isIdent()) {
@@ -499,7 +499,7 @@ void FileDisplayContext::cone(double r1, double r2,
 
 void FileDisplayContext::drawMesh(const gfx::Mesh &mesh)
 {
-  const Matrix4D &mat = m_matstack.front();
+  const Matrix4D &mat = getModelViewMat();
   m_pIntData->mesh(mat, mesh);
 
   // update bbox

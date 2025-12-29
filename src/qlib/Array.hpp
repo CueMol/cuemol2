@@ -147,16 +147,6 @@ namespace qlib {
       return *this;
     }
 
-#if 0
-    /// *= operator (scaling)
-    const Array<_Type> &operator*=(const _Type &arg)
-    {
-      for(int i=0; i<getSize(); i++)
-	m_array[i] *= arg;
-      return *this;
-    }
-#endif
-
     const _Type &operator [](int i) const {
       return at(i);
     }
@@ -164,6 +154,12 @@ namespace qlib {
     _Type &operator [](int i) {
       return at(i);
     }
+      
+      void assign(std::initializer_list<_Type> list)
+      {
+          MB_ASSERT (list.size() <= m_nSize);
+          std::copy(list.begin(), list.end(), m_array);
+      }
   };
 
 }

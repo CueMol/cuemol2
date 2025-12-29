@@ -5,8 +5,9 @@ version: '3'
 vars:
   WORKDIR: $HOME/tmp/proj64_deplibs
   LIBCUEMOL2_BUILDDIR: "{{.WORKDIR}}/build_libcuemol2"
+  LIBCUEMOL2_INSTDIR: "{{.WORKDIR}}/cuemol2"
   CONFIG: "Debug"
-  PARALLEL: 1
+  PARALLEL: ""
 
 tasks:
   default:
@@ -32,8 +33,11 @@ tasks:
 
   build_libcuemol2:windows:
     platforms: [windows]
+    set: [pwsh]
     cmds:
-      - echo "not implemented"
+       - dir
+       - build_libcuemol2_win.bat
+#      - echo "not implemented"
 
 #####
 
@@ -58,6 +62,12 @@ tasks:
     desc: "Clean up the libcuemol2 obj dir"
     cmds:
       - rm -rf "{{.LIBCUEMOL2_BUILDDIR}}"
+
+  clean_shaders:
+    desc: "Clean up the libcuemol2 shader files"
+    cmds:
+      - find "{{.LIBCUEMOL2_BUILDDIR}}" -name "*.glsl" | xargs rm
+      - find "{{.LIBCUEMOL2_INSTDIR}}" -name "*.glsl" | xargs rm
 
 #####
 

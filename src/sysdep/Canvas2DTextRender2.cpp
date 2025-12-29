@@ -104,9 +104,6 @@ bool Canvas2DTextRender2::renderText(const qlib::LString &str, gfx::PixelBuffer 
                         qsys::ScrEventManager::SEM_OTHER,
                         qlib::invalid_uid, ev);
 
-  // ev.m_pAry->dump();
-  // delete ev.m_pAry;
-  //buf = *(ev.m_pAry);
   {
     int i, j;
     QUE_BYTE *psrc = ev.m_pAry->data();
