@@ -59,7 +59,7 @@ SET(PYMODULE_SRCS
 )
 
 if (Python3_NumPy_FOUND)
-  list(APPEND PYMODULE_SRCS src/ndarray_wrap.cpp)
+  list(APPEND PYMODULE_SRCS src/wrapper_ndarray.cpp)
 endif()
 
 python3_add_library(_cuemol_internal MODULE ${PYMODULE_SRCS} WITH_SOABI)
