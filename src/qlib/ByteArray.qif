@@ -29,6 +29,26 @@ runtime_class ByteArray
 
   property integer length => redirect(getSize, XXX) (readonly);
 
+  property integer BOOL => enumBOOL (readonly);
+
+  property integer UINT8 => enumUINT8 (readonly);
+  property integer UINT16 => enumUINT16 (readonly);
+  property integer UINT32 => enumUINT32 (readonly);
+  property integer UINT64 => enumUINT64 (readonly);
+
+  property integer INT8 => enumINT8 (readonly);
+  property integer INT16 => enumINT16 (readonly);
+  property integer INT32 => enumINT32 (readonly);
+  property integer INT64 => enumINT64 (readonly);
+
+  property integer FLOAT8 => enumFLOAT8 (readonly);
+  property integer FLOAT16 => enumFLOAT16 (readonly);
+  property integer FLOAT32 => enumFLOAT32 (readonly);
+  property integer FLOAT64 => enumFLOAT64 (readonly);
+  property integer FLOAT128 => enumFLOAT128 (readonly);
+
+  property integer UTF8STR => enumUTF8STR (readonly);
+
   //
   // methods
   //
@@ -39,9 +59,9 @@ runtime_class ByteArray
 
   void setValue(integer, integer);
 
-  real getValueF(integer);
+  real getAtF(integer);
 
-  void setValueF(integer, real);
+  void setAtF(integer, real);
 
   string toString();
 

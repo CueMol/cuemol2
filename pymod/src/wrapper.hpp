@@ -89,11 +89,6 @@ public:
     /// print log
     static PyObject *print(PyObject *self, PyObject *args);
 
-#ifdef HAVE_NUMPY
-    static PyObject *numpychk(PyObject *self, PyObject *args);
-    static PyObject *tondarray(PyObject *self, PyObject *args);
-#endif
-
     //////////
 
     /// create wrapper object
@@ -124,8 +119,24 @@ public:
 
     static PyObject *getPropImpl(qlib::LScriptable *pObj, const LString &name);
 
+#ifdef HAVE_NUMPY
+    //
+    // numpy support
+    //
+
+    static PyObject *numpychk(PyObject *self, PyObject *args);
+
+    /// create new NDArray and copy from ByteArray
+    static PyObject *copyToNDArray(PyObject *self, PyObject *args);
+
+    /// create NDArray that shares memory with ByteArray
+    static PyObject *toNDArray(PyObject *self, PyObject *args);
+#endif
+
+
 private:
     static bool setupMethObj();
+    static bool initNumPy();
 };
 
 }  // namespace pybr

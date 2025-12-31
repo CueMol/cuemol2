@@ -860,7 +860,9 @@ static PyMethodDef cuemol_methods[] = {
 
 #ifdef HAVE_NUMPY
     {"numpychk", (PyCFunction)Wrapper::numpychk, METH_VARARGS, "numpychk.\n"},
-    {"tondarray", (PyCFunction)Wrapper::tondarray, METH_VARARGS,
+    {"copy_to_ndarray", (PyCFunction)Wrapper::copyToNDArray, METH_VARARGS,
+     "conv to numpy ndarray.\n"},
+    {"to_ndarray", (PyCFunction)Wrapper::toNDArray, METH_VARARGS,
      "conv to numpy ndarray.\n"},
 #endif
     {NULL} /* Sentinel */
@@ -898,10 +900,6 @@ static struct PyModuleDef moduledef = {PyModuleDef_HEAD_INIT,
                                        cuemol_clear,
                                        NULL};
 
-#ifdef HAVE_NUMPY
-#include <numpy/arrayobject.h>
-#endif
-
 // static
 PyObject *Wrapper::init()
 {
@@ -922,108 +920,9 @@ PyObject *Wrapper::init()
 
     setupMethObj();
 
-#ifdef HAVE_NUMPY
-    import_array();
-#endif
+    if (!initNumPy()) {
+        return NULL;
+    }
 
     return m;
 }
-
-#ifdef HAVE_NUMPY
-
-// static
-PyObject *Wrapper::numpychk(PyObject *self, PyObject *args)
-{
-    npy_intp i, ndim, stride;
-    // npy_intp *dim1, *dim2, *dim;
-    PyObject *array1, *array2, *array;
-
-    npy_intp dim[1] = {10};
-
-    array = PyArray_SimpleNew(1, dim, NPY_FLOAT);
-    if (array == NULL) return NULL;
-
-    return array;
-
-    /*
-    const char *msg;
-
-    if (!PyArg_ParseTuple(args, "s", &msg))
-      return NULL;
-
-    LOG_DPRINT("%s", msg);
-
-    return Py_BuildValue("");
-    */
-}
-
-#include <qlib/LByteArray.hpp>
-
-// static
-PyObject *Wrapper::tondarray(PyObject *self, PyObject *args)
-{
-    PyObject *pPyObj;
-
-    if (!PyArg_ParseTuple(args, "O", &pPyObj)) {
-        PyErr_SetString(PyExc_RuntimeError, "invalid arguments");
-        return NULL;
-    }
-
-    qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
-    if (pScObj == NULL) {
-        PyErr_SetString(PyExc_RuntimeError, "wrapper obj not found");
-        return NULL;
-    }
-
-    // LOG_DPRINTLN("type of arg: %s", typeid(*pScObj).name());
-    qlib::LScrSp<qlib::LByteArray> *pba =
-        dynamic_cast<qlib::LScrSp<qlib::LByteArray> *>(pScObj);
-    if (pba == NULL) {
-        PyErr_SetString(PyExc_RuntimeError, "wrapper obj not found");
-        return NULL;
-    }
-
-    npy_intp dim[1] = {10};
-
-    int ntypeid = (*pba)->getElemType();
-    int nelems = (*pba)->getElemCount();
-
-    PyObject *array;
-    dim[0] = nelems;
-
-    if (ntypeid == qlib::type_consts::QTC_INT32) {
-        array = PyArray_SimpleNew(1, dim, NPY_INT32);
-        if (array == NULL) return NULL;
-        qint32 *pdat = (qint32 *)((*pba)->data());
-        for (int i = 0; i < nelems; ++i) {
-            dim[0] = i;
-            qint32 *p = (qint32 *)PyArray_GetPtr((PyArrayObject *)array, dim);
-            *p = pdat[i];
-        }
-    } else if (ntypeid == qlib::type_consts::QTC_FLOAT32) {
-        array = PyArray_SimpleNew(1, dim, NPY_FLOAT);
-        if (array == NULL) return NULL;
-        float *pdat = (float *)((*pba)->data());
-        for (int i = 0; i < nelems; ++i) {
-            dim[0] = i;
-            float *p = (float *)PyArray_GetPtr((PyArrayObject *)array, dim);
-            *p = pdat[i];
-        }
-    } else if (ntypeid == qlib::type_consts::QTC_FLOAT64) {
-        array = PyArray_SimpleNew(1, dim, NPY_DOUBLE);
-        if (array == NULL) return NULL;
-        double *pdat = (double *)((*pba)->data());
-        for (int i = 0; i < nelems; ++i) {
-            dim[0] = i;
-            double *p = (double *)PyArray_GetPtr((PyArrayObject *)array, dim);
-            *p = pdat[i];
-        }
-    } else {
-        PyErr_SetString(PyExc_RuntimeError, "unknown bytearray type");
-        return NULL;
-    }
-
-    return array;
-}
-
-#endif

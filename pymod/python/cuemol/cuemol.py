@@ -35,6 +35,7 @@ __all__ = [
     "col",
     "timeval",
     "copy",
+    "copy_to_ndarray",
 ]
 
 ci = import_internal()
@@ -42,7 +43,7 @@ ci = import_internal()
 ##########
 
 
-def getWrpClass(clsnm):
+def getWrpClass(clsnm: str) -> type:
     """Get wrapper class for class clsnm.
 
     Args:
@@ -62,20 +63,27 @@ def getWrpClass(clsnm):
 
 
 def createWrapper(obj):
+    """Create wrapper object for the given internal object.
+
+    Args:
+        obj: internal object to wrap.
+    Returns:
+        Wrapper object for the given internal object.
+    """
     if obj is None:
         return None
-    if type(obj) == ci.Wrapper:
+    if isinstance(obj, ci.Wrapper):
         # obj is an internal wrapper obj
         # print("createWrapper obj:",obj)
         clsnm = ci.getClassName(obj)
         cls = getWrpClass(clsnm)
         wr = cls(obj)
         return wr
-    elif type(obj) == dict:
+    elif isinstance(obj, dict):
         for k, v in obj.items():
             obj[k] = createWrapper(v)
         return obj
-    elif type(obj) == list:
+    elif isinstance(obj, list):
         for k, v in enumerate(obj):
             obj[k] = createWrapper(v)
         return obj
@@ -84,7 +92,8 @@ def createWrapper(obj):
 
 
 def conv_dict_arg(d):
-    assert type(d) == dict
+    assert isinstance(d, dict)
+    # assert type(d) == dict
     result = {}
     for k, v in d.items():
         if iswrapper(v):
@@ -99,6 +108,7 @@ def createObj(name, strval=None):
         return createWrapper(ci.createObj(name))
     else:
         return createWrapper(ci.createObj(name, strval))
+
 
 def getService(name):
     return createWrapper(ci.getService(name))
@@ -325,3 +335,8 @@ def copy(aObj, aNewObjName):
     newobj.name = aNewObjName
     s.addObject(newobj)
     return newobj
+
+
+def copy_to_ndarray(ba_obj: WrapperBase):
+    ndary = ci.copy_to_ndarray(ba_obj._wrapped)
+    return ndary

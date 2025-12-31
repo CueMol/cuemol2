@@ -44,6 +44,8 @@ export CMAKE_GENERATOR="Unix Makefiles"
 export CMAKE_MAKE_PROGRAM="make"
 cd $WORKSPACE/pymod
 
+$PYTHON -m pip install "numpy<2"
+
 $PYTHON -m pip install \
      --config-settings=cmake.define.LIBCUEMOL2_ROOT=$INST_PATH \
      --config-settings=cmake.define.Boost_ROOT=$BOOST_DIR \

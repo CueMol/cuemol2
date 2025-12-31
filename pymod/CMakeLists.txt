@@ -58,6 +58,10 @@ SET(PYMODULE_SRCS
   src/initcuemol.cpp
 )
 
+if (Python3_NumPy_FOUND)
+  list(APPEND PYMODULE_SRCS src/ndarray_wrap.cpp)
+endif()
+
 python3_add_library(_cuemol_internal MODULE ${PYMODULE_SRCS} WITH_SOABI)
 
 target_include_directories(
