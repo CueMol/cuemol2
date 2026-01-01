@@ -57,10 +57,6 @@ public:
 
 public:
     // type constants
-    // static constexpr int enumBOOL()
-    // {
-    //     return type_consts::QTC_BOOL;
-    // }
     static const int enumBOOL = type_consts::QTC_BOOL;
     static const int enumUINT8 = type_consts::QTC_UINT8;
     static const int enumUINT16 = type_consts::QTC_UINT16;
@@ -86,6 +82,8 @@ public:
     LByteArray(int nsize) : Array<qbyte>(nsize), m_nElemType(type_consts::QTC_UINT8) {}
 
     LByteArray(const LByteArray &a) : Array<qbyte>(a), m_nElemType(a.m_nElemType) {}
+
+    virtual ~LByteArray();
 
     //////////
 

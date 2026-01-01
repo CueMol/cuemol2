@@ -89,6 +89,9 @@ public:
     /// print log
     static PyObject *print(PyObject *self, PyObject *args);
 
+    /// get ref count for smartptr (if possible)
+    static PyObject *getRefCount(PyObject *self, PyObject *args);
+
     //////////
 
     /// create wrapper object

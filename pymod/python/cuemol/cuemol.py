@@ -14,6 +14,7 @@ __all__ = [
     "createObj",
     "getService",
     "println",
+    "get_ref_count",
     "iswrapper",
     "isimpl",
     "isscene",
@@ -35,6 +36,7 @@ __all__ = [
     "col",
     "timeval",
     "copy",
+    "to_ndarray",
     "copy_to_ndarray",
 ]
 
@@ -114,12 +116,12 @@ def getService(name):
     return createWrapper(ci.getService(name))
 
 
-# def print(astr):
-#     return ci.print(astr)
-
-
 def println(astr):
     return ci.print(astr + "\n")
+
+
+def get_ref_count(obj):
+    return ci.get_ref_count(obj._wrapped)
 
 
 ##########
@@ -337,6 +339,13 @@ def copy(aObj, aNewObjName):
     return newobj
 
 
+##########
+
+
 def copy_to_ndarray(ba_obj: WrapperBase):
     ndary = ci.copy_to_ndarray(ba_obj._wrapped)
+    return ndary
+
+def to_ndarray(ba_obj: WrapperBase):
+    ndary = ci.to_ndarray(ba_obj._wrapped)
     return ndary

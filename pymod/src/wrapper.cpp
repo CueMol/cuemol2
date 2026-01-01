@@ -15,6 +15,7 @@
 #include <qlib/LVarArgs.hpp>
 #include <qlib/LVarArray.hpp>
 #include <qlib/PropSpec.hpp>
+#include <qlib/LScrSmartPtr.hpp>
 
 using namespace pybr;
 using qlib::LScriptable;
@@ -92,7 +93,7 @@ PyObject *Wrapper::createWrapper(qlib::LScriptable *pObj)
 static void wr_dealloc(QpyWrapObj *pSelf)
 {
     if (pSelf->m_pObj != NULL) {
-        MB_DPRINTLN("QpyWrapObj destruct: %p", pSelf->m_pObj);
+        // MB_DPRINTLN("QpyWrapObj destruct: %p", pSelf->m_pObj);
         pSelf->m_pObj->destruct();
         pSelf->m_pObj = NULL;
     }
@@ -522,7 +523,7 @@ PyObject *Wrapper::getProp(PyObject *self, PyObject *args)
 
     qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
     if (pScObj == NULL) {
-        PyErr_SetString(PyExc_RuntimeError, "Wrapper not found");
+        PyErr_SetString(PyExc_RuntimeError, "arg is not a wrapper obj");
         return NULL;
     }
 
@@ -549,7 +550,7 @@ PyObject *Wrapper::resetProp(PyObject *self, PyObject *args)
 
     qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
     if (pScObj == NULL) {
-        PyErr_SetString(PyExc_RuntimeError, "Wrapper not found");
+        PyErr_SetString(PyExc_RuntimeError, "arg is not a wrapper obj");
         return NULL;
     }
 
@@ -727,7 +728,7 @@ PyObject *Wrapper::invokeMethodImpl(qlib::LScriptable *pScrObj, const char *mthn
         }
     }
 
-    MB_DPRINTLN("invoke method %s nargs=%d", mthname, nargs);
+    // MB_DPRINTLN("invoke method %s nargs=%d", mthname, nargs);
 
     // Invoke method
 
@@ -804,6 +805,32 @@ PyObject *Wrapper::createBAryFromBytes(PyObject *self, PyObject *args)
 }
 
 // static
+PyObject *Wrapper::getRefCount(PyObject *self, PyObject *args)
+{
+    PyObject *pPyObj;
+
+    if (!PyArg_ParseTuple(args, "O", &pPyObj)) {
+        PyErr_SetString(PyExc_RuntimeError, "Invalid arguments");
+        return nullptr;
+    }
+
+    qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
+    if (pScObj == nullptr) {
+        PyErr_SetString(PyExc_RuntimeError, "arg is not a wrapper obj");
+        return nullptr;
+    }
+
+    qlib::LSupScrSp *pssp = dynamic_cast<qlib::LSupScrSp *>(pScObj);
+    if (pssp == nullptr) {
+        PyErr_SetString(PyExc_RuntimeError, "Not a smart pointer object");
+        return nullptr;
+    }
+    int refcnt = pssp->use_count();
+
+    return Py_BuildValue("i", refcnt);
+}
+
+// static
 PyObject *Wrapper::print(PyObject *self, PyObject *args)
 {
     const char *msg;
@@ -838,8 +865,8 @@ static PyMethodDef cuemol_methods[] = {
     {"isInstanceOf", (PyCFunction)Wrapper::isInstanceOf, METH_VARARGS,
      "check object type\n"},
 
-    {"setProp", (PyCFunction)Wrapper::setProp, METH_VARARGS, "\n"},
-    {"getProp", (PyCFunction)Wrapper::getProp, METH_VARARGS, "\n"},
+    {"setProp", (PyCFunction)Wrapper::setProp, METH_VARARGS, "set property\n"},
+    {"getProp", (PyCFunction)Wrapper::getProp, METH_VARARGS, "get property\n"},
     {"isPropDefault", (PyCFunction)Wrapper::isPropDefault, METH_VARARGS, "\n"},
     {"hasPropDefault", (PyCFunction)Wrapper::hasPropDefault, METH_VARARGS, "\n"},
     {"resetProp", (PyCFunction)Wrapper::resetProp, METH_VARARGS, "\n"},
@@ -851,6 +878,7 @@ static PyMethodDef cuemol_methods[] = {
      "create ByteArray obj from bytes\n"},
 
     {"print", (PyCFunction)Wrapper::print, METH_VARARGS, "print log message.\n"},
+    {"get_ref_count", (PyCFunction)Wrapper::getRefCount, METH_VARARGS, "get ref count.\n"},
 
     {"initCueMol", (PyCFunction)initCueMol, METH_VARARGS,
      "initialize CueMol system.\n"},

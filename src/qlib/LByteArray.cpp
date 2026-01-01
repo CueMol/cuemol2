@@ -7,6 +7,11 @@
 
 namespace qlib {
 
+LByteArray::~LByteArray()
+{
+    MB_DPRINTLN("LByteArray::~LByteArray()");
+}
+
 bool LByteArray::isIntElem() const
 {
     if (m_nElemType == type_consts::QTC_UINT8 || m_nElemType == type_consts::QTC_INT8 ||
