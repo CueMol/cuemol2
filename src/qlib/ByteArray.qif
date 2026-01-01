@@ -59,6 +59,10 @@ runtime_class ByteArray
 
   void setValue(integer, integer);
 
+  integer getAt(integer);
+
+  void setAt(integer, integer);
+
   real getAtF(integer);
 
   void setAtF(integer, real);

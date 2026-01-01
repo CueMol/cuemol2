@@ -67,6 +67,12 @@ template <> struct NpyTypeTraits<qint32> {
 template <> struct NpyTypeTraits<quint8> {
     static constexpr int npy_type = NPY_UINT8;
 };
+template <> struct NpyTypeTraits<quint16> {
+    static constexpr int npy_type = NPY_UINT16;
+};
+template <> struct NpyTypeTraits<quint32> {
+    static constexpr int npy_type = NPY_UINT32;
+};
 
 template <typename T>
 PyObject* createNumpyArrayImpl(qlib::LScrSp<qlib::LByteArray> &baptr)
@@ -118,12 +124,21 @@ PyObject *Wrapper::copyToNDArray(PyObject *self, PyObject *args)
             return createNumpyArrayImpl<qfloat32>(baptr);
         case qlib::type_consts::QTC_FLOAT64:
             return createNumpyArrayImpl<qfloat64>(baptr);
+
+        case qlib::type_consts::QTC_UINT8:
+            return createNumpyArrayImpl<quint8>(baptr);
+        case qlib::type_consts::QTC_UINT16:
+            return createNumpyArrayImpl<quint16>(baptr);
+        case qlib::type_consts::QTC_UINT32:
+            return createNumpyArrayImpl<quint32>(baptr);
+
         case qlib::type_consts::QTC_INT8:
             return createNumpyArrayImpl<qint8>(baptr);
         case qlib::type_consts::QTC_INT16:
             return createNumpyArrayImpl<qint16>(baptr);
         case qlib::type_consts::QTC_INT32:
             return createNumpyArrayImpl<qint32>(baptr);
+
         default:
             PyErr_SetString(PyExc_RuntimeError, "unknown bytearray type");
             return nullptr;

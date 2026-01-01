@@ -125,6 +125,18 @@ public:
     /// @param value float value
     void setAtF(int ind, double value);
 
+    /// Get integer value at the specified index depending on the element type
+    /// Fails if the element type is not integral type.
+    /// @param ind index
+    /// @return integer value
+    int getAt(int ind) const;
+
+    /// Set integer value at the specified index depending on the element type
+    /// Fails if the element type is not integral type.
+    /// @param ind index
+    /// @param value integer value
+    void setAt(int ind, int value);
+
     //////////
 
     LString toString() const;

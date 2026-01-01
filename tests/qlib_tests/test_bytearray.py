@@ -21,12 +21,20 @@ def test_qlib_bytearray_length(ba_obj):
     assert ba_obj.length == 100
 
 
-def test_qlib_bytearray_getset(ba_obj):
+def test_qlib_bytearray_getval_setval(ba_obj):
     # uint8 array of 100 elems
     ba_obj.init(ba_obj.UINT8, 100)
     for i in range(100):
         ba_obj.setValue(i, 10)
         assert ba_obj.getValue(i) == 10
+
+
+def test_qlib_bytearray_get_set(ba_obj):
+    # int32 array of 100 elems
+    ba_obj.init(ba_obj.INT32, 100)
+    for i in range(100):
+        ba_obj.setAt(i, -123)
+        assert ba_obj.getAt(i) == -123
 
 
 def test_qlib_bytearray_getfsetf(ba_obj):
@@ -37,17 +45,29 @@ def test_qlib_bytearray_getfsetf(ba_obj):
         assert pytest.approx(12.34) == ba_obj.getAtF(i)
 
 
-# def test_qlib_bytearray_set_err(ba_obj):
-#     # uint8 array of 100 elems
-#     ba_obj.init(1, 100)
-#     ba_obj.setValue(1000, 10)
+def test_numpy_array_ba_uint8(ba_obj):
+    ba_obj.init(ba_obj.UINT8, 100)
+    for i in range(100):
+        ba_obj.setAt(i, 123)
 
-# def test_numpy_array():
-#     print(dir(cuemol.ci))
-#     arr = cuemol.ci.numpychk()
-#     print(arr)
-#     assert len(arr) == 10
+    arr = cuemol.copy_to_ndarray(ba_obj)
+    assert arr.shape == (100,)
+    assert arr.dtype == "uint8"
+    print(f"{arr=}")
+    for v in arr:
+        assert 123 == v
 
+def test_numpy_array_ba_int32(ba_obj):
+    ba_obj.init(ba_obj.INT32, 100)
+    for i in range(100):
+        ba_obj.setAt(i, -123456)
+
+    arr = cuemol.copy_to_ndarray(ba_obj)
+    assert arr.shape == (100,)
+    assert arr.dtype == "int32"
+    print(f"{arr=}")
+    for v in arr:
+        assert -123456 == v
 
 def test_numpy_array_ba_float(ba_obj):
     ba_obj.init(ba_obj.FLOAT32, 100)
@@ -56,19 +76,20 @@ def test_numpy_array_ba_float(ba_obj):
 
     arr = cuemol.copy_to_ndarray(ba_obj)
     assert arr.shape == (100,)
+    assert arr.dtype == "float32"
     print(f"{arr=}")
     for v in arr:
         assert pytest.approx(1.23) == v
 
 
-# def test_numpy_array_ba_int32(ba_obj):
-#     ba_obj.init(ba_obj.INT32, 100)
-#     for i in range(100):
-#         ba_obj.setValue(i, 123)
+def test_numpy_array_ba_double(ba_obj):
+    ba_obj.init(ba_obj.FLOAT64, 100)
+    for i in range(100):
+        ba_obj.setAtF(i, 1.23)
 
-#     arr = cuemol.copy_to_ndarray(ba_obj)
-#     assert arr.shape == (100,)
-#     print(f"{arr=}")
-#     print(f"{arr.dtype=}")
-#     for v in arr:
-#         assert 123 == v
+    arr = cuemol.copy_to_ndarray(ba_obj)
+    assert arr.shape == (100,)
+    assert arr.dtype == "float64"
+    print(f"{arr=}")
+    for v in arr:
+        assert pytest.approx(1.23) == v
