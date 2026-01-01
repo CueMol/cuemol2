@@ -234,6 +234,10 @@ PyObject *Wrapper::toNDArray(PyObject *self, PyObject *args)
     void *src_data = static_cast<void *>(baptr->data());
     MB_DPRINTLN("Wrapper::toNDArray %p (%d) created!!", baptr.get(), baptr.use_count());
 
+    baptr->setOnDestroy([](auto &p) {
+        MB_DPRINTLN("LByteArray(%p) destroyed callback called!!", p.data());
+    });
+
     ////
     // make shared copy
     qlib::LScrSp<qlib::LByteArray> *pba_sh = new qlib::LScrSp<qlib::LByteArray>(*pba);
@@ -299,3 +303,61 @@ PyObject *Wrapper::toNDArray(PyObject *self, PyObject *args)
 
     return nullptr;
 }
+
+//////////
+
+// static
+PyObject *Wrapper::fromNDArray(PyObject *self, PyObject *args)
+{
+    PyObject *pPyObj;
+
+    if (!PyArg_ParseTuple(args, "O", &pPyObj)) {
+        PyErr_SetString(PyExc_RuntimeError, "invalid arguments");
+        return nullptr;
+    }
+
+    if (!PyArray_Check(pPyObj)) {
+        PyErr_SetString(PyExc_RuntimeError, "arg1 is not numpy array");
+        return nullptr;
+    }
+
+    PyArrayObject *pArr = reinterpret_cast<PyArrayObject *>(pPyObj);
+    int ndim = PyArray_NDIM(pArr);
+    npy_intp *dims = PyArray_DIMS(pArr);
+    int typenum = PyArray_TYPE(pArr);
+    void *data = PyArray_DATA(pArr);
+
+    MB_DPRINTLN("Wrapper::fromNDArray ndim=%d, dim[0]=%ld, typenum=%d", ndim, dims[0], typenum);
+
+    return Py_BuildValue("");
+}
+
+//     qlib::LVarPtr<qlib::LByteArray> ba = qlib::LByteArray::createInstance();
+//     ba->allocateByElemCount(static_cast<int>(dims[0]), qlib::type_consts::QTC_INVALID);
+
+//     switch (typenum) {
+//         case NPY_FLOAT:
+//             ba->copyFromMem(static_cast<const qfloat32 *>(data), static_cast<int>(dims[0]));
+//             break;
+//         case NPY_DOUBLE:
+//             ba->copyFromMem(static_cast<const qfloat64 *>(data), static_cast<int>(dims[0]));
+//             break;
+
+//         case NPY_UINT8:
+//             ba->copyFromMem(static_cast<const quint8 *>(data), static_cast<int>(dims[0]));
+//             break;
+//         case NPY_UINT16:
+//             ba->copyFromMem(static_cast<const quint16 *>(data), static_cast<int>(dims[0]));
+//             break;
+//         case NPY_UINT32:
+//             ba->copyFromMem(static_cast<const quint32 *>(data), static_cast<int>(dims[0]));
+//             break;
+
+//         case NPY_INT8:
+//             ba->copyFromMem(static_cast<const qint8 *>(data), static_cast<int>(dims[0]));
+//             break;
+//         case NPY_INT16:
+//             ba->copyFromMem(static_cast<const qint16 *>(data), static_cast<int>(dims[0]));
+//             break;
+//         case NPY_INT32:
+//             ba->copyFromMem(static_cast<const qint32 *>(data), static_cast<int>(dims[0]));

@@ -892,6 +892,8 @@ static PyMethodDef cuemol_methods[] = {
      "conv to numpy ndarray.\n"},
     {"to_ndarray", (PyCFunction)Wrapper::toNDArray, METH_VARARGS,
      "conv to numpy ndarray.\n"},
+    {"from_ndarray", (PyCFunction)Wrapper::fromNDArray, METH_VARARGS,
+     "conv from numpy ndarray to ByteArray.\n"},
 #endif
     {NULL} /* Sentinel */
 };

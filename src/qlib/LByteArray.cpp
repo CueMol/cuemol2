@@ -9,7 +9,7 @@ namespace qlib {
 
 LByteArray::~LByteArray()
 {
-    MB_DPRINTLN("LByteArray::~LByteArray()");
+    // MB_DPRINTLN("LByteArray::~LByteArray()");
 }
 
 bool LByteArray::isIntElem() const

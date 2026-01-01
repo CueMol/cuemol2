@@ -134,6 +134,9 @@ public:
 
     /// create NDArray that shares memory with ByteArray
     static PyObject *toNDArray(PyObject *self, PyObject *args);
+
+    static PyObject *fromNDArray(PyObject *self, PyObject *args);
+
 #endif
 
 
