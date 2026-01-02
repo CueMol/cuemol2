@@ -13,6 +13,7 @@ __all__ = [
     "conv_dict_arg",
     "createObj",
     "getService",
+    "copyObj",
     "println",
     "get_ref_count",
     "iswrapper",
@@ -38,6 +39,7 @@ __all__ = [
     "copy",
     "to_ndarray",
     "copy_to_ndarray",
+    "from_ndarray",
 ]
 
 ci = import_internal()
@@ -114,6 +116,10 @@ def createObj(name, strval=None):
 
 def getService(name):
     return createWrapper(ci.getService(name))
+
+
+def copyObj(obj):
+    return createWrapper(ci.copyObj(obj._wrapped))
 
 
 def println(astr):
@@ -349,3 +355,8 @@ def copy_to_ndarray(ba_obj: WrapperBase):
 def to_ndarray(ba_obj: WrapperBase):
     ndary = ci.to_ndarray(ba_obj._wrapped)
     return ndary
+
+def from_ndarray(ndary) -> WrapperBase:
+    ba_wrapped = ci.from_ndarray(ndary)
+    ba_obj = createWrapper(ba_wrapped)
+    return ba_obj

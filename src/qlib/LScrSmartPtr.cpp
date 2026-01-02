@@ -151,7 +151,6 @@ LScriptable *LSupScrSp::copy() const
 
 void LSupScrSp::destruct()
 {
-    MB_DPRINTLN("LSupScrSp::destruct");
   delete this;
 }
 

@@ -43,6 +43,9 @@ public:
     /// create new cuemol object
     static PyObject *createObj(PyObject *self, PyObject *args);
 
+    /// copy cuemol object
+    static PyObject *copyObj(PyObject *self, PyObject *args);
+
     /// get class names
     static PyObject *getAllClassNamesJSON(PyObject *self, PyObject *args);
 
@@ -135,8 +138,10 @@ public:
     /// create NDArray that shares memory with ByteArray
     static PyObject *toNDArray(PyObject *self, PyObject *args);
 
+    /// create ByteArray that shares memory with NDArray
     static PyObject *fromNDArray(PyObject *self, PyObject *args);
 
+    static PyObject *copyFromNDArray(PyObject *self, PyObject *args);
 #endif
 
 

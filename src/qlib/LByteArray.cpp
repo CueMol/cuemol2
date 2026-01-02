@@ -70,7 +70,33 @@ void LByteArray::init(int nElemType, int nElemCount)
     }
 
     m_nElemType = nElemType;
-    Array<qbyte>::allocate(nElemSize * nElemCount);
+    super_t::allocate(nElemSize * nElemCount);
+}
+
+void LByteArray::initFrom(int nElemType, int nElemCount, const void *pdata)
+{
+    int nElemSize = getElemSize(nElemType);
+    if (nElemSize < 0) {
+        MB_THROW(RuntimeException,
+                 LString::format("Unsupported element type %d", nElemType));
+    }
+
+    m_nElemType = nElemType;
+    super_t::allocate(nElemSize * nElemCount);
+    const qbyte *src = reinterpret_cast<const qbyte *>(pdata);
+    std::copy(src, src + nElemSize * nElemCount, super_t::data());
+}
+
+void LByteArray::refer(int nElemType, int nElemCount, void *pdata)
+{
+    int nElemSize = getElemSize(nElemType);
+    if (nElemSize < 0) {
+        MB_THROW(RuntimeException,
+                 LString::format("Unsupported element type %d", nElemType));
+    }
+
+    m_nElemType = nElemType;
+    super_t::refer(nElemSize * nElemCount, reinterpret_cast<qbyte *>(pdata));
 }
 
 //
@@ -189,7 +215,6 @@ void LByteArray::setAt(int ind, int value)
     MB_THROW(RuntimeException,
              LString::format("Unsupported element type %d", m_nElemType));
 }
-
 
 double LByteArray::getAtF(int ind) const
 {

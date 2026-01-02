@@ -25,6 +25,8 @@ class QLIB_API LByteArray : public LSimpleCopyScrObject, public Array<qbyte>
     MC_CLONEABLE;
 
 private:
+    using super_t = Array<qbyte>;
+
     /// Element type (defined in LTypes.hpp, qlib::type_consts)
     int m_nElemType;
 
@@ -93,7 +95,14 @@ public:
 
     static int getElemSize(int nElemType);
 
+    /// Initialize with element type and count
     void init(int nElemType, int nElemCount);
+
+    /// Initialize from external data pointer (copy)
+    void initFrom(int nElemType, int nElemCount, const void *pdata);
+
+    /// Initialize from external data pointer (refer)
+    void refer(int nElemType, int nElemCount, void *pdata);
 
     //
 

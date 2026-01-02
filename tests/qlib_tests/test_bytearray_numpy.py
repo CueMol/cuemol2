@@ -1,214 +1,276 @@
+import weakref
 import pytest
 import cuemol
 import gc
 import numpy as np
+import sys
 
 
-@pytest.fixture
-def ba_obj():
-    def _fn():
-        return cuemol.createObj("ByteArray")
+def test_refcount_increases_on_hold():
+    """Verify that holding an array increases its reference count."""
+    arr = np.arange(10, dtype="float32")
+    initial_refcount = sys.getrefcount(arr)
 
-    return _fn
+    result = cuemol.from_ndarray(arr)
 
+    # Ref == 1
+    assert cuemol.get_ref_count(result) == 1
 
-@pytest.fixture
-def ba_uint8_obj(ba_obj):
-    def _fn(size=100):
-        result = ba_obj()
-        result.init(result.UINT8, size)
-        for i in range(size):
-            result.setAt(i, i)
-        return result
-
-    return _fn
+    # Reference count should increase by 1 (ByteArray holds one reference)
+    assert sys.getrefcount(arr) == initial_refcount + 1
 
 
-@pytest.fixture
-def ba_int32_obj(ba_obj):
-    def _fn(size=100):
-        result = ba_obj()
-        result.init(result.INT32, size)
-        for i in range(size):
-            result.setAt(i, i)
-        return result
+def test_refcount_decreases_when_released():
+    """Verify that releasing the shared_ptr decreases the reference count."""
+    arr = np.arange(10, dtype="float32")
+    initial_refcount = sys.getrefcount(arr)
 
-    return _fn
+    result = cuemol.from_ndarray(arr)
+    assert cuemol.get_ref_count(result) == 1
 
+    del result
+    gc.collect()
+    final_refcount = sys.getrefcount(arr)
 
-@pytest.fixture
-def ba_float_obj(ba_obj):
-    def _fn(size=100):
-        result = ba_obj()
-        result.init(result.FLOAT32, size)
-        for i in range(size):
-            result.setAtF(i, float(i))
-        return result
-
-    return _fn
+    # Reference count should return to initial value
+    assert final_refcount == initial_refcount
 
 
-def test_numpy_refcount1(ba_int32_obj):
-    """Verify deleter is called when single array is deleted."""
-    target = ba_int32_obj()
-    print(f"{cuemol.get_ref_count(target)=}")
-    assert cuemol.get_ref_count(target) == 1
+def test_refcount_with_multiple_shared_ptr_copies():
+    """Verify reference counting with multiple shared_ptr copies."""
+    arr = np.arange(10, dtype="float32")
+    initial_refcount = sys.getrefcount(arr)
 
-    arr = cuemol.to_ndarray(target)
-    assert cuemol.get_ref_count(target) == 2
+    result = cuemol.from_ndarray(arr)
+    print(f"{cuemol.get_ref_count(result)=}")
+    assert cuemol.get_ref_count(result) == 1
+    # Creating a copy of shared_ptr should NOT increase numpy refcount
+    # (only ByteArray ref_count increases)
+    copied = cuemol.copyObj(result)
 
+    # Numpy refcount should still be initial + 1
+    assert sys.getrefcount(arr) == initial_refcount + 1
+
+    # But shared_ptr use_count should be 2
+    print(f"{cuemol.get_ref_count(copied)=}")
+    assert cuemol.get_ref_count(copied) == 2
+    assert cuemol.get_ref_count(result) == 2
+
+    # Release copy - refcount unchanged, use_count decreases
+    del copied
+    gc.collect()
+    assert sys.getrefcount(arr) == initial_refcount + 1
+    assert cuemol.get_ref_count(result) == 1
+
+    # Release main - refcount returns to initial
+    del result
+    gc.collect()
+    assert sys.getrefcount(arr) == initial_refcount
+
+
+def test_read_data_through_shared_ptr():
+    """Verify data can be read through the shared_ptr."""
+    arr = np.arange(10, dtype="float32")
+    result = cuemol.from_ndarray(arr)
+
+    for i in range(len(arr)):
+        assert pytest.approx(arr[i]) == result.getAtF(i)
+
+
+def test_write_data_through_shared_ptr():
+    """Verify data can be written through the shared_ptr."""
+    arr = np.arange(10, dtype="float32")
+    result = cuemol.from_ndarray(arr)
+
+    result.setAtF(0, 10.0)
+    result.setAtF(1, 20.0)
+    result.setAtF(2, 30.0)
+
+    # Changes should be visible in original numpy array
+    assert pytest.approx(10.0) == arr[0]
+    assert arr[1] == pytest.approx(20.0)
+    assert arr[2] == pytest.approx(30.0)
+
+
+def test_numpy_modifications_visible_through_shared_ptr():
+    """Verify numpy modifications are visible through shared_ptr."""
+    arr = np.arange(10, dtype="float32")
+    result = cuemol.from_ndarray(arr)
+
+    # Modify through numpy
+    arr[0] = 100.0
+    arr[1] = 200.0
+
+    # Should be visible through shared_ptr
+    assert result.getAtF(0) == pytest.approx(100.0)
+    assert result.getAtF(1) == pytest.approx(200.0)
+
+
+def test_array_survives_python_variable_deletion():
+    """Array data should remain valid even if Python variable is deleted."""
+    arr = np.arange(10, dtype="float32")
+    result = cuemol.from_ndarray(arr)
+
+    # Delete the Python variable
     del arr
     gc.collect()
 
-    print(f"{cuemol.get_ref_count(target)=}")
-    assert cuemol.get_ref_count(target) == 1
+    # Data should still be accessible through ByteArray
+    assert result.getAtF(0) == pytest.approx(0.0)
+    assert result.getAtF(1) == pytest.approx(1.0)
+    assert result.getAtF(2) == pytest.approx(2.0)
 
 
-def test_numpy_shared_refcount(ba_int32_obj):
-    """Verify deleters are called for multiple arrays."""
-    target = ba_int32_obj()
-    nobjs = 5
-    arrays = [cuemol.to_ndarray(target) for _ in range(nobjs)]
+def test_weakref_shows_array_alive_while_held():
+    """Weakref should show array is alive while ByteArray holds it."""
+    arr = np.arange(10, dtype="float32")
+    weak = weakref.ref(arr)
 
-    arrays[0][11] = 71
-    for i in range(nobjs):
-        print(f"{arrays[i][11]=}")
-        assert arrays[i][11] == 71
-
-    assert cuemol.get_ref_count(target) == 1 + nobjs
-
-    del arrays
-    gc.collect()
-
-    print(f"{cuemol.get_ref_count(target)=}")
-    assert cuemol.get_ref_count(target) == 1
-
-
-def test_numpy_partial_deallocation(ba_int32_obj):
-    """Verify only deleted arrays have their deleter called."""
-    tgt1 = ba_int32_obj()
-    tgt2 = ba_int32_obj()
-    tgt3 = ba_int32_obj()
-
-    assert cuemol.get_ref_count(tgt1) == 1
-    assert cuemol.get_ref_count(tgt2) == 1
-    assert cuemol.get_ref_count(tgt3) == 1
-
-    tgt1_arr = cuemol.to_ndarray(tgt1)
-    tgt2_arr = cuemol.to_ndarray(tgt2)
-    tgt3_arr = cuemol.to_ndarray(tgt3)
-
-    del tgt2_arr
-    gc.collect()
-
-    assert cuemol.get_ref_count(tgt1) == 2
-    assert cuemol.get_ref_count(tgt2) == 1
-    assert cuemol.get_ref_count(tgt3) == 2
-
-    assert tgt1_arr[0] == 0
-    assert tgt3_arr[0] == 0
-
-    del tgt1_arr, tgt3_arr
-    gc.collect()
-
-    assert cuemol.get_ref_count(tgt1) == 1
-    assert cuemol.get_ref_count(tgt2) == 1
-    assert cuemol.get_ref_count(tgt3) == 1
-
-
-def test_view_keeps_memory_alive(ba_int32_obj):
-    """Verify view prevents premature deallocation."""
-    target = ba_int32_obj()
-    arr = cuemol.to_ndarray(target)
-    view = arr[10:20]  # Create a view
-
+    result = cuemol.from_ndarray(arr)
     del arr
     gc.collect()
 
-    # Memory should NOT be deallocated yet
-    assert cuemol.get_ref_count(target) == 2
+    # Array should still be alive (weakref returns object)
+    assert weak() is not None
 
-    # View should still be valid
-    expected = np.arange(10, 20, dtype=np.float64)
-    np.testing.assert_array_equal(view, expected)
+    # Release shared_ptr
+    del result
+    gc.collect()
 
+    # Now array should be garbage collected
+    assert weak() is None
+
+
+#
+# Test edge cases and error handling
+#
+
+
+def test_hold_empty_array():
+    """Test with empty array."""
+    arr = np.array([], dtype=np.float32)
+    initial_refcount = sys.getrefcount(arr)
+    target = cuemol.from_ndarray(arr)
+
+    assert cuemol.get_ref_count(target) == 1
+    assert sys.getrefcount(arr) == initial_refcount + 1
+
+    del target
+    gc.collect()
+
+    assert sys.getrefcount(arr) == initial_refcount
+
+
+def test_hold_large_array():
+    """Test with large array to ensure no memory issues."""
+    arr = np.arange(100000, dtype=np.float32)
+    initial_refcount = sys.getrefcount(arr)
+
+    target = cuemol.from_ndarray(arr)
+    assert target.getAtF(0) == pytest.approx(0.0)
+    assert target.getAtF(99999) == pytest.approx(99999.0)
+
+    del target
+    gc.collect()
+
+    assert sys.getrefcount(arr) == initial_refcount
+
+
+def test_hold_view_keeps_base_alive():
+    """Holding a view should keep the base array alive."""
+    base = np.arange(10, dtype="float32")
+    view = base[1:4]  # View of elements 1, 2, 3
+
+    # Get weakref to base
+    base_weak = weakref.ref(base)
+
+    target = cuemol.from_ndarray(view)
+
+    # Delete both Python references
     del view
+    del base
     gc.collect()
 
-    # Now memory should be deallocated
+    # Base should still be alive (because view keeps it alive,
+    # and shared_ptr keeps view alive)
+    # Note: This depends on numpy's internal reference management
     assert cuemol.get_ref_count(target) == 1
+    assert target.getAtF(0) == 1.0  # First element of view
+    assert base_weak() is not None
 
-
-def test_multiple_views_keep_memory_alive(ba_int32_obj):
-    """Verify multiple views all keep memory alive."""
-    target = ba_int32_obj()
-
-    arr = cuemol.to_ndarray(target)
-    view1 = arr[0:10]
-    view2 = arr[10:20]
-    view3 = arr[50:60]
-
-    del arr
+    del target
     gc.collect()
-
-    assert cuemol.get_ref_count(target) == 2
-
-    del view1, view2
-    gc.collect()
-
-    assert cuemol.get_ref_count(target) == 2
-
-    # view3 should still be valid
-    assert view3.shape == (10,)
-
-    del view3
-    gc.collect()
-
-    assert cuemol.get_ref_count(target) == 1
+    assert base_weak() is None
 
 
-def test_reshape_keeps_memory_alive(ba_int32_obj):
-    """Verify reshape (which creates a view) keeps memory alive."""
-    target = ba_int32_obj()
-    arr = cuemol.to_ndarray(target)
-    reshaped = arr.reshape(10, 10)
-
-    del arr
-    gc.collect()
-
-    assert cuemol.get_ref_count(target) == 2
-
-    # Reshaped array should be valid
-    assert reshaped.shape == (10, 10)
-    assert reshaped[0, 0] == 0
-    assert reshaped[9, 9] == 99
+#
+# Test that non-C-contiguous and non-native byte order arrays are rejected
+#
 
 
-def test_numpy_array_ba_uint8(ba_uint8_obj):
-    target = ba_uint8_obj()
-    for i in range(100):
-        target.setAt(i, 123)
+def test_f_order_1d_array_accepted():
+    """1D F-order array is also C-contiguous, should be accepted."""
+    arr = np.array([1.0, 2.0, 3.0], dtype=np.float64, order="F")
 
-    arr = cuemol.to_ndarray(target)
-    assert arr.shape == (100,)
-    assert arr.dtype == "uint8"
-    print(f"{cuemol.get_ref_count(target)=}")
-    assert cuemol.get_ref_count(target) == 2
-    print(f"{arr=}")
-    for v in arr:
-        assert 123 == v
-
-    print("pytest OK.")
+    # 1D array is both C and F contiguous
+    # Should succeed
+    target = cuemol.from_ndarray(arr)
+    assert target.getAtF(0) == 1.0
 
 
-def test_numpy_array_ba_float(ba_float_obj):
-    target = ba_float_obj()
-    for i in range(100):
-        target.setAtF(i, 1.2345)
+def test_non_contiguous_slice_raises():
+    """Non-contiguous slice (stride > element size) should raise ValueError."""
+    arr = np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], dtype=np.float64)
+    sliced = arr[::2]  # Every other element: [1.0, 3.0, 5.0]
 
-    arr = cuemol.to_ndarray(target)
-    assert arr.shape == (100,)
-    assert arr.dtype == "float32"
-    assert cuemol.get_ref_count(target) == 2
-    for v in arr:
-        assert pytest.approx(1.2345) == v
+    with pytest.raises(ValueError, match="C-contiguous"):
+        cuemol.from_ndarray(sliced)
+
+
+def test_non_contiguous_column_slice_raises():
+    """Column slice of 2D array (non-contiguous) should raise ValueError."""
+    arr = np.array([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]], dtype=np.float64)
+    col = arr[:, 0]  # First column
+
+    # assert not col.flags['C_CONTIGUOUS']
+
+    with pytest.raises(ValueError, match="C-contiguous"):
+        cuemol.from_ndarray(col)
+
+
+def test_hold_contiguous_copy():
+    """Test with non-contiguous array that gets copied."""
+    arr = np.array([[1.0, 2.0], [3.0, 4.0]], dtype=np.float64)
+    col = np.ascontiguousarray(arr[:, 0])  # Make contiguous copy of column
+
+    target = cuemol.from_ndarray(col)
+    assert target.getAtF(0) == 1.0
+    assert target.getAtF(1) == 3.0
+
+
+def test_non_native_byte_order_raises():
+    """Non-native byte order array should raise ValueError."""
+    native_order = sys.byteorder  # 'little' or 'big'
+
+    # Create array with swapped byte order
+    if native_order == "little":
+        non_native_dtype = ">f8"  # Big-endian float64
+    else:
+        non_native_dtype = "<f8"  # Little-endian float64
+
+    print(f"{non_native_dtype=}")
+    arr = np.array([1.0, 2.0, 3.0], dtype=non_native_dtype)
+
+    # assert arr.flags['C_CONTIGUOUS']
+
+    with pytest.raises(ValueError, match="native byte order"):
+        cuemol.from_ndarray(arr)
+
+
+def test_byteswapped_array_raises():
+    """Byte-swapped array should raise ValueError."""
+    arr = np.array([1.0, 2.0, 3.0], dtype=np.float64)
+    swapped = arr.byteswap().view(arr.dtype.newbyteorder())
+
+    with pytest.raises(ValueError, match="native byte order"):
+        cuemol.from_ndarray(swapped)

@@ -310,6 +310,25 @@ PyObject *Wrapper::createObj(PyObject *self, PyObject *args)
 }
 
 // static
+PyObject *Wrapper::copyObj(PyObject *self, PyObject *args)
+{
+    PyObject *pPyObj;
+
+    if (!PyArg_ParseTuple(args, "O", &pPyObj)) {
+        PyErr_SetString(PyExc_RuntimeError, "invalid arguments");
+        return NULL;
+    }
+    qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
+    if (pScObj == NULL) {
+        PyErr_SetString(PyExc_RuntimeError, "arg1 is not a wrapper obj");
+        return NULL;
+    }
+
+    LScriptable *pNewObj = pScObj->copy();
+    return createWrapper(pNewObj);
+}
+
+// static
 PyObject *Wrapper::getAllClassNamesJSON(PyObject *self, PyObject *args)
 {
     LString rstr, errmsg;
@@ -325,7 +344,10 @@ PyObject *Wrapper::getAbiClassName(PyObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "O", &pPyObj)) return NULL;
 
     qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
-    if (pScObj == NULL) return NULL;
+    if (pScObj == NULL) {
+        PyErr_SetString(PyExc_RuntimeError, "arg1 is not a wrapper obj");
+        return NULL;
+    }
 
     LString str;
     if (pScObj != NULL) {
@@ -352,7 +374,7 @@ PyObject *Wrapper::getClassName(PyObject *self, PyObject *args)
 
     qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
     if (pScObj == NULL) {
-        PyErr_SetString(PyExc_RuntimeError, "wrapped LScriptable obj not found");
+        PyErr_SetString(PyExc_RuntimeError, "arg1 is not a wrapper obj");
         return NULL;
     }
 
@@ -382,7 +404,7 @@ PyObject *Wrapper::isInstanceOf(PyObject *self, PyObject *args)
 
     qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
     if (pScObj == NULL) {
-        PyErr_SetString(PyExc_RuntimeError, "wrapper obj not found");
+        PyErr_SetString(PyExc_RuntimeError, "arg1 is not a wrapper obj");
         return NULL;
     }
 
@@ -408,7 +430,7 @@ PyObject *Wrapper::setProp(PyObject *self, PyObject *args)
 
     qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
     if (pScObj == NULL) {
-        PyErr_SetString(PyExc_RuntimeError, "wrapper obj not found");
+        PyErr_SetString(PyExc_RuntimeError, "arg1 is not a wrapper obj");
         return NULL;
     }
 
@@ -431,7 +453,7 @@ PyObject *Wrapper::isPropDefault(PyObject *self, PyObject *args)
 
     qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
     if (pScObj == NULL) {
-        PyErr_SetString(PyExc_RuntimeError, "wrapper obj not found");
+        PyErr_SetString(PyExc_RuntimeError, "arg1 is not a wrapper obj");
         return NULL;
     }
 
@@ -477,7 +499,10 @@ PyObject *Wrapper::hasPropDefault(PyObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "Os", &pPyObj, &propname)) return NULL;
 
     qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
-    if (pScObj == NULL) return NULL;
+    if (pScObj == NULL) {
+        PyErr_SetString(PyExc_RuntimeError, "arg1 is not a wrapper obj");
+        return NULL;
+    }
 
     bool ok = true;
     bool result;
@@ -795,13 +820,17 @@ PyObject *Wrapper::createBAryFromBytes(PyObject *self, PyObject *args)
     int nlen = PyBytes_Size(pPyBytes);
 
     qlib::LByteArray *pNewObj = new qlib::LByteArray(nlen);
+
     if (nlen > 0) {
         const char *ptr = PyBytes_AsString(pPyBytes);
         char *pBuf = (char *)(pNewObj->data());
         for (int i = 0; i < nlen; ++i) pBuf[i] = ptr[i];
     }
 
-    return createWrapper(pNewObj);
+    // return shared ptr obj
+    auto *pRet = MB_NEW qlib::LByteArrayPtr(pNewObj);
+
+    return createWrapper(pRet);
 }
 
 // static
@@ -855,6 +884,8 @@ static PyMethodDef cuemol_methods[] = {
      "get CueMol service object.\n"},
     {"createObj", (PyCFunction)Wrapper::createObj, METH_VARARGS,
      "create CueMol object.\n"},
+    {"copyObj", (PyCFunction)Wrapper::copyObj, METH_VARARGS,
+     "copy CueMol object.\n"},
     {"getAllClassNamesJSON", (PyCFunction)Wrapper::getAllClassNamesJSON, METH_VARARGS,
      "get all class names in JSON format.\n"},
 
@@ -894,6 +925,8 @@ static PyMethodDef cuemol_methods[] = {
      "conv to numpy ndarray.\n"},
     {"from_ndarray", (PyCFunction)Wrapper::fromNDArray, METH_VARARGS,
      "conv from numpy ndarray to ByteArray.\n"},
+    {"copy_from_ndarray", (PyCFunction)Wrapper::copyFromNDArray, METH_VARARGS,
+     "copy from numpy ndarray to ByteArray.\n"},
 #endif
     {NULL} /* Sentinel */
 };
