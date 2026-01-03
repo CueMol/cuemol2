@@ -12,16 +12,11 @@
 #include <qlib/ClassRegistry.hpp>
 #include <qlib/LByteArray.hpp>
 #include <qlib/LString.hpp>
-// #include <qlib/LVarArgs.hpp>
-// #include <qlib/LVarArray.hpp>
-// #include <qlib/PropSpec.hpp>
 
 using namespace pybr;
 using qlib::LScriptable;
 
-#ifdef HAVE_NUMPY
 #include <numpy/arrayobject.h>
-#endif
 
 // static
 bool Wrapper::initNumPy()

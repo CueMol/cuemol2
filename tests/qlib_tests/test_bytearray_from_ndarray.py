@@ -21,7 +21,7 @@ def test_refcount_increases_on_hold():
 
 
 def test_refcount_decreases_when_released():
-    """Verify that releasing the shared_ptr decreases the reference count."""
+    """Verify that releasing the ByteArray decreases the reference count."""
     arr = np.arange(10, dtype="float32")
     initial_refcount = sys.getrefcount(arr)
 
@@ -36,22 +36,22 @@ def test_refcount_decreases_when_released():
     assert final_refcount == initial_refcount
 
 
-def test_refcount_with_multiple_shared_ptr_copies():
-    """Verify reference counting with multiple shared_ptr copies."""
+def test_refcount_with_multiple_ByteArray_copies():
+    """Verify reference counting with multiple ByteArray copies."""
     arr = np.arange(10, dtype="float32")
     initial_refcount = sys.getrefcount(arr)
 
     result = cuemol.from_ndarray(arr)
     print(f"{cuemol.get_ref_count(result)=}")
     assert cuemol.get_ref_count(result) == 1
-    # Creating a copy of shared_ptr should NOT increase numpy refcount
+    # Creating a copy of ByteArray should NOT increase numpy refcount
     # (only ByteArray ref_count increases)
     copied = cuemol.copyObj(result)
 
     # Numpy refcount should still be initial + 1
     assert sys.getrefcount(arr) == initial_refcount + 1
 
-    # But shared_ptr use_count should be 2
+    # But ByteArray use_count should be 2
     print(f"{cuemol.get_ref_count(copied)=}")
     assert cuemol.get_ref_count(copied) == 2
     assert cuemol.get_ref_count(result) == 2
@@ -68,8 +68,8 @@ def test_refcount_with_multiple_shared_ptr_copies():
     assert sys.getrefcount(arr) == initial_refcount
 
 
-def test_read_data_through_shared_ptr():
-    """Verify data can be read through the shared_ptr."""
+def test_read_data_through_bytearray():
+    """Verify data can be read through the ByteArray."""
     arr = np.arange(10, dtype="float32")
     result = cuemol.from_ndarray(arr)
 
@@ -77,8 +77,8 @@ def test_read_data_through_shared_ptr():
         assert pytest.approx(arr[i]) == result.getAtF(i)
 
 
-def test_write_data_through_shared_ptr():
-    """Verify data can be written through the shared_ptr."""
+def test_write_data_through_bytearray():
+    """Verify data can be written through the ByteArray."""
     arr = np.arange(10, dtype="float32")
     result = cuemol.from_ndarray(arr)
 
@@ -92,8 +92,8 @@ def test_write_data_through_shared_ptr():
     assert arr[2] == pytest.approx(30.0)
 
 
-def test_numpy_modifications_visible_through_shared_ptr():
-    """Verify numpy modifications are visible through shared_ptr."""
+def test_numpy_modifications_visible_through_bytearray():
+    """Verify numpy modifications are visible through ByteArray."""
     arr = np.arange(10, dtype="float32")
     result = cuemol.from_ndarray(arr)
 
@@ -101,7 +101,7 @@ def test_numpy_modifications_visible_through_shared_ptr():
     arr[0] = 100.0
     arr[1] = 200.0
 
-    # Should be visible through shared_ptr
+    # Should be visible through ByteArray
     assert result.getAtF(0) == pytest.approx(100.0)
     assert result.getAtF(1) == pytest.approx(200.0)
 
@@ -133,7 +133,7 @@ def test_weakref_shows_array_alive_while_held():
     # Array should still be alive (weakref returns object)
     assert weak() is not None
 
-    # Release shared_ptr
+    # Release ByteArray
     del result
     gc.collect()
 
@@ -192,7 +192,7 @@ def test_hold_view_keeps_base_alive():
     gc.collect()
 
     # Base should still be alive (because view keeps it alive,
-    # and shared_ptr keeps view alive)
+    # and ByteArray keeps view alive)
     # Note: This depends on numpy's internal reference management
     assert cuemol.get_ref_count(target) == 1
     assert target.getAtF(0) == 1.0  # First element of view

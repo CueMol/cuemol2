@@ -40,6 +40,7 @@ __all__ = [
     "to_ndarray",
     "copy_to_ndarray",
     "from_ndarray",
+    "copy_from_ndarray",
 ]
 
 ci = import_internal()
@@ -352,11 +353,19 @@ def copy_to_ndarray(ba_obj: WrapperBase):
     ndary = ci.copy_to_ndarray(ba_obj._wrapped)
     return ndary
 
+
 def to_ndarray(ba_obj: WrapperBase):
     ndary = ci.to_ndarray(ba_obj._wrapped)
     return ndary
 
+
 def from_ndarray(ndary) -> WrapperBase:
     ba_wrapped = ci.from_ndarray(ndary)
+    ba_obj = createWrapper(ba_wrapped)
+    return ba_obj
+
+
+def copy_from_ndarray(ndary) -> WrapperBase:
+    ba_wrapped = ci.copy_from_ndarray(ndary)
     ba_obj = createWrapper(ba_wrapped)
     return ba_obj
