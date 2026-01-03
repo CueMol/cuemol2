@@ -3,8 +3,7 @@
 // Scriptable Byte Array
 //
 
-#ifndef L_BYTE_ARRAY_HPP_INCLUDED_
-#define L_BYTE_ARRAY_HPP_INCLUDED_
+#pragma once
 
 #include "qlib.hpp"
 
@@ -17,214 +16,137 @@
 
 namespace qlib {
 
-  ///
-  /// Scriptable array of byte (unsigned char)
-  ///
-  class QLIB_API LByteArray : public LSimpleCopyScrObject, public Array<qbyte>
-  {
+///
+/// Scriptable array of byte (unsigned char)
+///
+class QLIB_API LByteArray : public LSimpleCopyScrObject, public Array<qbyte>
+{
     MC_SCRIPTABLE;
     MC_CLONEABLE;
 
-  private:
+private:
+    using super_t = Array<qbyte>;
+
     /// Element type (defined in LTypes.hpp, qlib::type_consts)
     int m_nElemType;
 
-  public:
-    int getElemType() const { return m_nElemType; }
-
-    void setElemType(int n) { m_nElemType = n; }
-
-/*
-  private:
-    /// number of elements (max: 3D array)
-    IntVec3D m_shape;
-
-  public:
-    const IntVec3D &getShape() const { return m_shape; }
-
-    void setShape(const IntVec3D &s) { m_shape = s; }
-*/
-  public:
-    int getElemCount() const { return getSize()/getElemSize(m_nElemType); }
-    
-  public:
-    LByteArray()
-         : Array<qbyte>(), m_nElemType(type_consts::QTC_UINT8)
+public:
+    int getElemType() const
     {
+        return m_nElemType;
     }
 
-    LByteArray(int nsize)
-         : Array<qbyte>(nsize), m_nElemType(type_consts::QTC_UINT8)
+    void setElemType(int n)
     {
+        m_nElemType = n;
     }
 
-    LByteArray(const LByteArray &a)
-         : Array<qbyte>(a), m_nElemType(a.m_nElemType)
+    /*
+      private:
+        /// number of elements (max: 3D array)
+        IntVec3D m_shape;
+
+      public:
+        const IntVec3D &getShape() const { return m_shape; }
+
+        void setShape(const IntVec3D &s) { m_shape = s; }
+    */
+public:
+    int getElemCount() const
     {
+        return getSize() / getElemSize(m_nElemType);
     }
+
+public:
+    // type constants
+    static const int enumBOOL = type_consts::QTC_BOOL;
+    static const int enumUINT8 = type_consts::QTC_UINT8;
+    static const int enumUINT16 = type_consts::QTC_UINT16;
+    static const int enumUINT32 = type_consts::QTC_UINT32;
+    static const int enumUINT64 = type_consts::QTC_UINT64;
+
+    static const int enumINT8 = type_consts::QTC_INT8;
+    static const int enumINT16 = type_consts::QTC_INT16;
+    static const int enumINT32 = type_consts::QTC_INT32;
+    static const int enumINT64 = type_consts::QTC_INT64;
+
+    static const int enumFLOAT8 = type_consts::QTC_FLOAT8;
+    static const int enumFLOAT16 = type_consts::QTC_FLOAT16;
+    static const int enumFLOAT32 = type_consts::QTC_FLOAT32;
+    static const int enumFLOAT64 = type_consts::QTC_FLOAT64;
+    static const int enumFLOAT128 = type_consts::QTC_FLOAT128;
+
+    static const int enumUTF8STR = type_consts::QTC_UTF8STR;
+
+public:
+    LByteArray() : Array<qbyte>(), m_nElemType(type_consts::QTC_UINT8) {}
+
+    LByteArray(int nsize) : Array<qbyte>(nsize), m_nElemType(type_consts::QTC_UINT8) {}
+
+    LByteArray(const LByteArray &a) : Array<qbyte>(a), m_nElemType(a.m_nElemType) {}
+
+    virtual ~LByteArray();
 
     //////////
 
-    bool isIntElem() const {
-      if (m_nElemType==type_consts::QTC_UINT8||
-          m_nElemType==type_consts::QTC_INT8||
-          m_nElemType==type_consts::QTC_UINT16||
-          m_nElemType==type_consts::QTC_INT16||
-          m_nElemType==type_consts::QTC_UINT32||
-          m_nElemType==type_consts::QTC_INT32||
-          m_nElemType==type_consts::QTC_UINT64||
-          m_nElemType==type_consts::QTC_INT64)
-        return true;
-      else
-        return false;
-    }
+    bool isIntElem() const;
 
-    bool isFloatElem() const {
-      if (m_nElemType==type_consts::QTC_FLOAT8||
-          m_nElemType==type_consts::QTC_FLOAT16||
-          m_nElemType==type_consts::QTC_FLOAT32||
-          m_nElemType==type_consts::QTC_FLOAT64||
-          m_nElemType==type_consts::QTC_FLOAT128)
-        return true;
-      else
-        return false;
-    }
+    bool isFloatElem() const;
 
-    static int getElemSize(int nElemType) {
-      int nElemSize=-1;
-      if (nElemType==type_consts::QTC_UINT8||
-          nElemType==type_consts::QTC_INT8||
-          nElemType==type_consts::QTC_FLOAT8)
-        nElemSize=1;
-      else if (nElemType==type_consts::QTC_UINT16||
-               nElemType==type_consts::QTC_INT16||
-               nElemType==type_consts::QTC_FLOAT16)
-        nElemSize=2;
-      else if (nElemType==type_consts::QTC_UINT32||
-               nElemType==type_consts::QTC_INT32||
-               nElemType==type_consts::QTC_FLOAT32)
-        nElemSize=4;
-      else if (nElemType==type_consts::QTC_UINT64||
-               nElemType==type_consts::QTC_INT64||
-               nElemType==type_consts::QTC_FLOAT64)
-        nElemSize=8;
-      else if (nElemType==type_consts::QTC_FLOAT128)
-        nElemSize=16;
-      return nElemSize;
-    }
+    static int getElemSize(int nElemType);
 
-    void init(int nElemType, int nElemCount)
-    {
-      int nElemSize=getElemSize(nElemType);
-      if (nElemSize<0) {
-        MB_THROW(RuntimeException,
-                 LString::format("Unsupported element type %d", nElemType));
-      }
+    /// Initialize with element type and count
+    void init(int nElemType, int nElemCount);
 
-      m_nElemType = nElemType;
-      Array<qbyte>::allocate(nElemSize*nElemCount);
-    }
-    
+    /// Initialize from external data pointer (copy)
+    void initFrom(int nElemType, int nElemCount, const void *pdata);
+
+    /// Initialize from external data pointer (refer)
+    void refer(int nElemType, int nElemCount, void *pdata);
 
     //
 
-    int getValue(int ind) const
-    {
-      if (!isIntElem())
-        MB_THROW(RuntimeException,
-                 LString::format("Element type %d mismatch", m_nElemType));
-      
-      const int nsize = getSize();
-      MB_ASSERT(0<=ind && ind<nsize);
-      if (ind<0 || nsize<=ind)
-        MB_THROW(IndexOutOfBoundsException,
-                 LString::format("LByteArray get() out of index %d", ind));
-      return at(ind);
-    }
+    /// Get integer value at the specified index.
+    /// The element type is always considered as unsigned byte (uint8).
+    /// @param ind index as byte element
+    /// @return integer value
+    int getValue(int ind) const;
 
-    void setValue(int ind, int value)
-    {
-      if (!isIntElem())
-        MB_THROW(RuntimeException,
-                 LString::format("Element type %d mismatch", m_nElemType));
-
-      const int nsize = getSize();
-      MB_ASSERT(0<=ind && ind<nsize);
-      if (ind<0 || nsize<=ind)
-        MB_THROW(IndexOutOfBoundsException,
-                 LString::format("LByteArray get() out of index %d", ind));
-      at(ind) = qbyte(value);
-    }
+    /// Set integer value at the specified index.
+    /// The element type is always considered as unsigned byte (uint8).
+    /// @param ind index as byte element
+    /// @param value integer value
+    void setValue(int ind, int value);
 
     //
 
-    double getValueF(int ind) const
-    {
-      if (!isFloatElem())
-        MB_THROW(RuntimeException,
-                 LString::format("Element type %d mismatch", m_nElemType));
-      
-      int nElemSize = getElemSize(m_nElemType);
-      int addr = ind*nElemSize;
-      const int nsize = getSize();
-      //MB_ASSERT(0<=ind && ind*nElemSize<nsize);
-      if (ind<0 || nsize<=addr)
-        MB_THROW(IndexOutOfBoundsException,
-                 LString::format("LByteArray get() out of index %d", ind));
+    /// Get float value at the specified index depending on the element type
+    /// Fails if the element type is not float type.
+    /// @param ind index
+    /// @return float value
+    double getAtF(int ind) const;
 
-      const qbyte *pdata = Array<qbyte>::data();
-      if (m_nElemType==type_consts::QTC_FLOAT32) {
-        const qfloat32 *pp = reinterpret_cast<const qfloat32 *>(pdata);
-        return double(pp[ind]);
-      }
-      else if (m_nElemType==type_consts::QTC_FLOAT64) {
-        const qfloat64 *pp = reinterpret_cast<const qfloat64 *>(pdata);
-        return double(pp[ind]);
-      }
+    /// Set float value at the specified index depending on the element type
+    /// Fails if the element type is not float type.
+    /// @param ind index
+    /// @param value float value
+    void setAtF(int ind, double value);
 
-      MB_THROW(RuntimeException,
-               LString::format("Unsupported element type %d", m_nElemType));
-      return 0.0;
-    }
+    /// Get integer value at the specified index depending on the element type
+    /// Fails if the element type is not integral type.
+    /// @param ind index
+    /// @return integer value
+    int getAt(int ind) const;
 
-    void setValueF(int ind, double value)
-    {
-      if (!isFloatElem())
-        MB_THROW(RuntimeException,
-                 LString::format("Element type %d mismatch", m_nElemType));
-
-      int nElemSize = getElemSize(m_nElemType);
-      int addr = ind*nElemSize;
-      const int nsize = getSize();
-      //MB_ASSERT(0<=ind && ind*nElemSize<nsize);
-      if (ind<0 || nsize<=addr)
-        MB_THROW(IndexOutOfBoundsException,
-                 LString::format("LByteArray get() out of index %d", ind));
-
-      qbyte *pdata = Array<qbyte>::data();
-      if (m_nElemType==type_consts::QTC_FLOAT32) {
-        qfloat32 *pp = reinterpret_cast<qfloat32 *>(pdata);
-        pp[ind] = qfloat32(value);
-        return;
-      }
-      else if (m_nElemType==type_consts::QTC_FLOAT64) {
-        qfloat64 *pp = reinterpret_cast<qfloat64 *>(pdata);
-        pp[ind] = qfloat64(value);
-        return;
-      }
-
-      MB_THROW(RuntimeException,
-               LString::format("Unsupported element type %d", m_nElemType));
-    }
+    /// Set integer value at the specified index depending on the element type
+    /// Fails if the element type is not integral type.
+    /// @param ind index
+    /// @param value integer value
+    void setAt(int ind, int value);
 
     //////////
 
-    LString toString() const {
-      return LString::format("ByteArray(type=%d, nelem=%d)", m_nElemType, getElemCount());
-    }
+    LString toString() const;
+};
 
-  };
-
-}
-
-#endif
+}  // namespace qlib

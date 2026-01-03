@@ -11,6 +11,7 @@ SET(QLIB_LINK_LIBRARIES
 
 # Normal C++ source files
 SET(QLIB_SRCS
+LByteArray.cpp
 NamedObject.cpp
 LMsgLog.cpp
 ClassRegistry.cpp

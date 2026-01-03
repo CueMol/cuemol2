@@ -13,7 +13,9 @@ __all__ = [
     "conv_dict_arg",
     "createObj",
     "getService",
+    "copyObj",
     "println",
+    "get_ref_count",
     "iswrapper",
     "isimpl",
     "isscene",
@@ -35,6 +37,10 @@ __all__ = [
     "col",
     "timeval",
     "copy",
+    "to_ndarray",
+    "copy_to_ndarray",
+    "from_ndarray",
+    "copy_from_ndarray",
 ]
 
 ci = import_internal()
@@ -42,7 +48,7 @@ ci = import_internal()
 ##########
 
 
-def getWrpClass(clsnm):
+def getWrpClass(clsnm: str) -> type:
     """Get wrapper class for class clsnm.
 
     Args:
@@ -62,20 +68,27 @@ def getWrpClass(clsnm):
 
 
 def createWrapper(obj):
+    """Create wrapper object for the given internal object.
+
+    Args:
+        obj: internal object to wrap.
+    Returns:
+        Wrapper object for the given internal object.
+    """
     if obj is None:
         return None
-    if type(obj) == ci.Wrapper:
+    if isinstance(obj, ci.Wrapper):
         # obj is an internal wrapper obj
         # print("createWrapper obj:",obj)
         clsnm = ci.getClassName(obj)
         cls = getWrpClass(clsnm)
         wr = cls(obj)
         return wr
-    elif type(obj) == dict:
+    elif isinstance(obj, dict):
         for k, v in obj.items():
             obj[k] = createWrapper(v)
         return obj
-    elif type(obj) == list:
+    elif isinstance(obj, list):
         for k, v in enumerate(obj):
             obj[k] = createWrapper(v)
         return obj
@@ -84,7 +97,8 @@ def createWrapper(obj):
 
 
 def conv_dict_arg(d):
-    assert type(d) == dict
+    assert isinstance(d, dict)
+    # assert type(d) == dict
     result = {}
     for k, v in d.items():
         if iswrapper(v):
@@ -100,16 +114,21 @@ def createObj(name, strval=None):
     else:
         return createWrapper(ci.createObj(name, strval))
 
+
 def getService(name):
     return createWrapper(ci.getService(name))
 
 
-# def print(astr):
-#     return ci.print(astr)
+def copyObj(obj):
+    return createWrapper(ci.copyObj(obj._wrapped))
 
 
 def println(astr):
     return ci.print(astr + "\n")
+
+
+def get_ref_count(obj):
+    return ci.get_ref_count(obj._wrapped)
 
 
 ##########
@@ -325,3 +344,97 @@ def copy(aObj, aNewObjName):
     newobj.name = aNewObjName
     s.addObject(newobj)
     return newobj
+
+
+##########
+
+
+def copy_to_ndarray(ba_obj: WrapperBase):
+    """
+    Create a NumPy array containing a copy of the data in a CueMol buffer/array.
+
+    This function copies the underlying data from the ByteArray object into
+    a new NumPy `ndarray`, so modifying the returned array will not affect the
+    original ByteArray object.
+
+    Parameters
+    ----------
+    ba_obj : WrapperBase
+        A source ByteArray object.
+
+    Returns
+    -------
+    numpy.ndarray
+        A new NumPy array containing a copy of the data.
+    """
+    ndary = ci.copy_to_ndarray(ba_obj._wrapped)
+    return ndary
+
+
+def to_ndarray(ba_obj: WrapperBase):
+    """
+    Expose a ByteArray object as a NumPy array, sharing memory.
+
+    Unlike :func:`copy_to_ndarray`, this function may return an `ndarray` that
+    shares its underlying memory with the ByteArray object. In that case, changes
+    to the array will be reflected in the ByteArray object, and vice versa.
+
+    Parameters
+    ----------
+    ba_obj : WrapperBase
+        A Source ByteArray object.
+
+    Returns
+    -------
+    numpy.ndarray
+        A NumPy array view of the CueMol data. The array may share memory with
+        the original object.
+    """
+    ndary = ci.to_ndarray(ba_obj._wrapped)
+    return ndary
+
+
+def from_ndarray(ndary) -> WrapperBase:
+    """
+    Wrap an existing NumPy array as a ByteArray object, sharing memory.
+
+    This function creates a ByteArray object that views
+    the given NumPy `ndarray` without copying its data.
+
+    Parameters
+    ----------
+    ndary : numpy.ndarray
+        The NumPy array whose data should be shared with ByteArray object.
+
+    Returns
+    -------
+    WrapperBase
+        A ByteArray object whose underlying implementation references the
+        provided NumPy array.
+    """
+    ba_wrapped = ci.from_ndarray(ndary)
+    ba_obj = createWrapper(ba_wrapped)
+    return ba_obj
+
+
+def copy_from_ndarray(ndary) -> WrapperBase:
+    """
+    Create a ByteArray object by copying data from a NumPy array.
+
+    Unlike :func:`from_ndarray`, this function copies the contents of the
+    provided NumPy `ndarray` into a new ByteArray object, so subsequent changes
+    to the NumPy array will not affect the ByteArray object.
+
+    Parameters
+    ----------
+    ndary : numpy.ndarray
+        The NumPy array whose data should be copied into a new ByteArray object.
+
+    Returns
+    -------
+    WrapperBase
+        A ByteArray object containing a copy of the data from the array.
+    """
+    ba_wrapped = ci.copy_from_ndarray(ndary)
+    ba_obj = createWrapper(ba_wrapped)
+    return ba_obj
