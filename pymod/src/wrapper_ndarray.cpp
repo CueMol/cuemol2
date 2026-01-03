@@ -292,10 +292,6 @@ PyObject *Wrapper::toNDArray(PyObject *self, PyObject *args)
             delete pba_sh;
             return nullptr;
     }
-
-
-    delete pba_sh;
-    return nullptr;
 }
 
 //////////

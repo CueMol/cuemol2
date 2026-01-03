@@ -143,7 +143,7 @@ int LByteArray::getAt(int ind) const
     // MB_ASSERT(0<=ind && ind*nElemSize<nsize);
     if (ind < 0 || nsize <= addr)
         MB_THROW(IndexOutOfBoundsException,
-                 LString::format("LByteArray get() out of index %d", ind));
+                 LString::format("LByteArray getAt() out of index %d", ind));
 
     const qbyte *pdata = Array<qbyte>::data();
     if (m_nElemType == type_consts::QTC_UINT8) {

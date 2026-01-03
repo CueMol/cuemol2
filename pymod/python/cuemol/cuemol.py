@@ -350,22 +350,91 @@ def copy(aObj, aNewObjName):
 
 
 def copy_to_ndarray(ba_obj: WrapperBase):
+    """
+    Create a NumPy array containing a copy of the data in a CueMol buffer/array.
+
+    This function copies the underlying data from the ByteArray object into
+    a new NumPy `ndarray`, so modifying the returned array will not affect the
+    original ByteArray object.
+
+    Parameters
+    ----------
+    ba_obj : WrapperBase
+        A source ByteArray object.
+
+    Returns
+    -------
+    numpy.ndarray
+        A new NumPy array containing a copy of the data.
+    """
     ndary = ci.copy_to_ndarray(ba_obj._wrapped)
     return ndary
 
 
 def to_ndarray(ba_obj: WrapperBase):
+    """
+    Expose a ByteArray object as a NumPy array, sharing memory.
+
+    Unlike :func:`copy_to_ndarray`, this function may return an `ndarray` that
+    shares its underlying memory with the ByteArray object. In that case, changes
+    to the array will be reflected in the ByteArray object, and vice versa.
+
+    Parameters
+    ----------
+    ba_obj : WrapperBase
+        A Source ByteArray object.
+
+    Returns
+    -------
+    numpy.ndarray
+        A NumPy array view of the CueMol data. The array may share memory with
+        the original object.
+    """
     ndary = ci.to_ndarray(ba_obj._wrapped)
     return ndary
 
 
 def from_ndarray(ndary) -> WrapperBase:
+    """
+    Wrap an existing NumPy array as a ByteArray object, sharing memory.
+
+    This function creates a ByteArray object that views
+    the given NumPy `ndarray` without copying its data.
+
+    Parameters
+    ----------
+    ndary : numpy.ndarray
+        The NumPy array whose data should be shared with ByteArray object.
+
+    Returns
+    -------
+    WrapperBase
+        A ByteArray object whose underlying implementation references the
+        provided NumPy array.
+    """
     ba_wrapped = ci.from_ndarray(ndary)
     ba_obj = createWrapper(ba_wrapped)
     return ba_obj
 
 
 def copy_from_ndarray(ndary) -> WrapperBase:
+    """
+    Create a ByteArray object by copying data from a NumPy array.
+
+    Unlike :func:`from_ndarray`, this function copies the contents of the
+    provided NumPy `ndarray` into a new ByteArray object, so subsequent changes
+    to the NumPy array will not affect the ByteArray object.
+
+    Parameters
+    ----------
+    ndary : numpy.ndarray
+        The NumPy array whose data should be copied into a new ByteArray object.
+
+    Returns
+    -------
+    WrapperBase
+        A ByteArray object containing a copy of the data from the array.
+    """
     ba_wrapped = ci.copy_from_ndarray(ndary)
     ba_obj = createWrapper(ba_wrapped)
     return ba_obj
