@@ -36,12 +36,12 @@ public:
     ///
     /// Make empty array (we must allocate memory by resize() later.)
     ///
-    Array() : m_array(nullptr), m_nSize(0), m_bOwn(false) {}
+    Array() : m_array(nullptr), m_nSize(0), m_bOwn(false), m_on_destroy() {}
 
     ///
     ///  Make array with size sz
     ///
-    explicit Array(int sz) : m_nSize(sz), m_bOwn(true)
+    explicit Array(int sz) : m_nSize(sz), m_bOwn(true), m_on_destroy()
     {
         m_array = MB_NEW _Type[sz];
     }
@@ -49,7 +49,7 @@ public:
     ///
     ///  Make array with size sz and initialize all elements by ini
     ///
-    explicit Array(const _Type &ini, int sz) : m_nSize(sz), m_bOwn(true)
+    explicit Array(const _Type &ini, int sz) : m_nSize(sz), m_bOwn(true), m_on_destroy()
     {
         m_array = MB_NEW _Type[sz];
         for (int i = 0; i < sz; i++) m_array[i] = ini;
@@ -58,7 +58,7 @@ public:
     ///
     ///  Make array from existing C array
     ///
-    explicit Array(int sz, const _Type *p) : m_nSize(sz), m_bOwn(true)
+    explicit Array(int sz, const _Type *p) : m_nSize(sz), m_bOwn(true), m_on_destroy()
     {
         m_array = MB_NEW _Type[sz];
         for (int i = 0; i < sz; i++) m_array[i] = p[i];
@@ -67,7 +67,7 @@ public:
     ///
     /// Copy constructor
     ///
-    Array(const Array<_Type> &arg) : m_nSize(arg.m_nSize), m_bOwn(true)
+    Array(const Array<_Type> &arg) : m_nSize(arg.m_nSize), m_bOwn(true), m_on_destroy()
     {
         m_array = MB_NEW _Type[arg.m_nSize];
         for (int i = 0; i < arg.m_nSize; i++) m_array[i] = arg.m_array[i];
@@ -101,6 +101,7 @@ public:
     void clear()
     {
         if (m_on_destroy) {
+            // call destroy callback
             m_on_destroy(*this);
         }
         if (m_array != nullptr && m_bOwn) delete[] m_array;
@@ -182,20 +183,22 @@ public:
     const Array<_Type> &operator=(const Array<_Type> &arg)
     {
         if (&arg != this) {
-            if (m_array != nullptr) delete[] m_array;
+            clear();
             m_array = MB_NEW _Type[arg.getSize()];
-
             m_nSize = arg.m_nSize;
+            m_bOwn = true;
+            m_on_destroy = DestroyCallback();
             for (int i = 0; i < arg.getSize(); i++) m_array[i] = arg[i];
         }
         return *this;
     }
 
-    const Array<_Type> &operator=(const _Type &arg)
-    {
-        for (int i = 0; i < getSize(); i++) m_array[i] = arg;
-        return *this;
-    }
+    // XXX: dangerous ???
+    // const Array<_Type> &operator=(const _Type &arg)
+    // {
+    //     for (int i = 0; i < getSize(); i++) m_array[i] = arg;
+    //     return *this;
+    // }
 
     const _Type &operator[](int i) const
     {

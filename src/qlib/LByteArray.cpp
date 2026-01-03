@@ -111,7 +111,7 @@ int LByteArray::getValue(int ind) const
     MB_ASSERT(0 <= ind && ind < nsize);
     if (ind < 0 || nsize <= ind)
         MB_THROW(IndexOutOfBoundsException,
-                 LString::format("LByteArray get() out of index %d", ind));
+                 LString::format("LByteArray getValue() out of index %d", ind));
     return at(ind);
 }
 
@@ -125,7 +125,7 @@ void LByteArray::setValue(int ind, int value)
     MB_ASSERT(0 <= ind && ind < nsize);
     if (ind < 0 || nsize <= ind)
         MB_THROW(IndexOutOfBoundsException,
-                 LString::format("LByteArray get() out of index %d", ind));
+                 LString::format("LByteArray setValue() out of index %d", ind));
     at(ind) = qbyte(value);
 }
 
@@ -160,6 +160,11 @@ int LByteArray::getAt(int ind) const
         return int(pp[ind]);
     } else if (m_nElemType == type_consts::QTC_UINT32) {
         const quint32 *pp = reinterpret_cast<const quint32 *>(pdata);
+        if (pp[ind] > INT_MAX) {
+            MB_THROW(RuntimeException,
+                     LString::format("LByteArray::getAt(): value overflow %u",
+                                     pp[ind]));
+        }
         return int(pp[ind]);
     } else if (m_nElemType == type_consts::QTC_INT32) {
         const qint32 *pp = reinterpret_cast<const qint32 *>(pdata);
@@ -183,7 +188,7 @@ void LByteArray::setAt(int ind, int value)
     // MB_ASSERT(0<=ind && ind*nElemSize<nsize);
     if (ind < 0 || nsize <= addr)
         MB_THROW(IndexOutOfBoundsException,
-                 LString::format("LByteArray get() out of index %d", ind));
+                 LString::format("LByteArray setAt() out of index %d", ind));
 
     qbyte *pdata = Array<qbyte>::data();
     if (m_nElemType == type_consts::QTC_UINT8) {
@@ -228,7 +233,7 @@ double LByteArray::getAtF(int ind) const
     // MB_ASSERT(0<=ind && ind*nElemSize<nsize);
     if (ind < 0 || nsize <= addr)
         MB_THROW(IndexOutOfBoundsException,
-                 LString::format("LByteArray get() out of index %d", ind));
+                 LString::format("LByteArray getAtF() out of index %d", ind));
 
     const qbyte *pdata = Array<qbyte>::data();
     if (m_nElemType == type_consts::QTC_FLOAT32) {
@@ -256,7 +261,7 @@ void LByteArray::setAtF(int ind, double value)
     // MB_ASSERT(0<=ind && ind*nElemSize<nsize);
     if (ind < 0 || nsize <= addr)
         MB_THROW(IndexOutOfBoundsException,
-                 LString::format("LByteArray get() out of index %d", ind));
+                 LString::format("LByteArray setAtF() out of index %d", ind));
 
     qbyte *pdata = Array<qbyte>::data();
     if (m_nElemType == type_consts::QTC_FLOAT32) {

@@ -289,10 +289,12 @@ PyObject *Wrapper::toNDArray(PyObject *self, PyObject *args)
 
         default:
             PyErr_SetString(PyExc_RuntimeError, "unknown bytearray type");
+            delete pba_sh;
             return nullptr;
     }
 
 
+    delete pba_sh;
     return nullptr;
 }
 

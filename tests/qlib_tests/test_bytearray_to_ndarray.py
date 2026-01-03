@@ -109,7 +109,7 @@ def test_view_keeps_memory_alive(ba_int32_obj):
     assert cuemol.get_ref_count(target) == 2
 
     # View should still be valid
-    expected = np.arange(10, 20, dtype=np.float64)
+    expected = np.arange(10, 20, dtype=np.int32)
     np.testing.assert_array_equal(view, expected)
 
     del view
