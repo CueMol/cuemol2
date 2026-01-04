@@ -15,6 +15,7 @@ namespace fs = boost::filesystem;
 #include "PythonBridge.hpp"
 
 extern void pybr_regClasses();
+extern void pybr_unregClasses();
 
 // internal dummy module functions
 namespace {
@@ -51,10 +52,19 @@ PyObject *initModuleFunc(void)
     return m;
 }
 
+bool g_bEmbedInit;
+
 bool init(const char *szConfPath)
 {
     pybr_regClasses();
 
+    if (Py_IsInitialized()) {
+        LOG_DPRINTLN("Python> already initialized.");
+        g_bEmbedInit = false;
+        return true;
+    }
+
+    g_bEmbedInit = true;
     Py_SetProgramName(Py_DecodeLocale("cuemol2", NULL));
 
     PyImport_AppendInittab("_cuemol_internal", &initModuleFunc);
@@ -120,6 +130,10 @@ bool init(const char *szConfPath)
 
 void fini()
 {
-    Py_Finalize();
+    pybr_unregClasses();
+
+    if (g_bEmbedInit) {
+        Py_Finalize();
+    }
 }
 }  // namespace pybr

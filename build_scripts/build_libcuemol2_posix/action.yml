@@ -14,7 +14,7 @@ runs:
     shell: bash
     run: |
       if [ ${{ runner.os }} = "macOS" ]; then
-        brew install bison boost
+        brew install bison
         echo "brew prefix: $(brew --prefix)"
         export PATH="$(brew --prefix)/opt/bison/bin:$PATH"
       elif [ ${{ runner.os }} = "Linux" ]; then
