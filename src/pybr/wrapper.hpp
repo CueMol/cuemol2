@@ -43,6 +43,9 @@ public:
     /// create new cuemol object
     static PyObject *createObj(PyObject *self, PyObject *args);
 
+    /// copy cuemol object
+    static PyObject *copyObj(PyObject *self, PyObject *args);
+
     /// get class names
     static PyObject *getAllClassNamesJSON(PyObject *self, PyObject *args);
 
@@ -89,10 +92,8 @@ public:
     /// print log
     static PyObject *print(PyObject *self, PyObject *args);
 
-#ifdef HAVE_NUMPY
-    static PyObject *numpychk(PyObject *self, PyObject *args);
-    static PyObject *tondarray(PyObject *self, PyObject *args);
-#endif
+    /// get ref count for smartptr (if possible)
+    static PyObject *getRefCount(PyObject *self, PyObject *args);
 
     //////////
 
@@ -123,6 +124,10 @@ public:
                            PyObject *pValue);
 
     static PyObject *getPropImpl(qlib::LScriptable *pObj, const LString &name);
+
+#ifdef HAVE_NUMPY
+    static bool initNumPy(PyObject *m);
+#endif
 
 private:
     static bool setupMethObj();

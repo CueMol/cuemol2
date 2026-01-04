@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 project(cuetty CXX C)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_OUTPUT_EXTENSION_REPLACE 1)  # ref. https://texus.me/2015/09/06/cmake-and-gcov/
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
@@ -16,7 +16,7 @@ add_definitions(-DHAVE_CONFIG_H=1)
 # Boost
 set(Boost_USE_STATIC_LIBS OFF)
 find_package(Boost 1.50.0 REQUIRED
-  COMPONENTS system thread filesystem chrono timer)
+  COMPONENTS system thread filesystem chrono timer program_options)
 
 #####################
 
@@ -24,6 +24,7 @@ find_package(Boost 1.50.0 REQUIRED
 SET(CLI_LINK_LIBRARIES
   cuemol2
   Boost::filesystem
+  Boost::program_options
 )
 
 # Normal C++ source files

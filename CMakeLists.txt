@@ -16,10 +16,10 @@ option(BUILD_MINIMUM_MODULES "Build CueMol with minimum modules." OFF)
 option(BUILD_XPCJS_BINDINGS "Build XPCOM-js bindings")
 option(BUILD_NODEJS_BINDINGS "Build node.js bindings")
 
+option(ENABLE_PYTHON_EMBED "Enable Python embedding")
+
 find_package(Perl 5.10.0 REQUIRED)
 message(STATUS "PERL_EXECUTABLE: ${PERL_EXECUTABLE}")
-find_package (Python3 3.6 COMPONENTS Interpreter)
-message(STATUS "Python3_EXECUTABLE: ${Python3_EXECUTABLE}")
 find_package(BISON 3.7.4 REQUIRED)
 find_package(FLEX 2.6.4 REQUIRED)
 

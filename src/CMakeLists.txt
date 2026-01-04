@@ -1,3 +1,19 @@
+#
+#
+#
+
+# Python3
+find_package (Python3 3.6 COMPONENTS Interpreter REQUIRED)
+message(STATUS "Python3_EXECUTABLE: ${Python3_EXECUTABLE}")
+
+if (ENABLE_PYTHON_EMBED)
+  message(STATUS "ENABLE_PYTHON_EMBED is ON")
+  find_package(Python3 COMPONENTS Development.Embed REQUIRED)
+  message(STATUS "Python3_INCLUDE_DIRS: ${Python3_INCLUDE_DIRS}")
+  message(STATUS "Python3_LIBRARIES: ${Python3_LIBRARIES}")
+endif ()
+
+
 if (${CMAKE_BUILD_TYPE} MATCHES "[Dd][Ee][Bb][Uu][Gg]")
   SET(MB_DEBUG "1")
 endif ()
@@ -179,6 +195,11 @@ if (NOT BUILD_MINIMUM_MODULES)
   add_subdirectory(modules/anim)
   add_subdirectory(modules/mdtools)
   add_subdirectory(modules/importers)
+
+  if (ENABLE_PYTHON_EMBED)
+    add_subdirectory(pybr)
+  endif ()
+
 endif ()
 
 # utils (blendpng)
@@ -224,6 +245,10 @@ SET(CUEMOL2_DEFS "")
 
 if (BUILD_OPENGL_SYSDEP)
   list(APPEND CUEMOL2_LINK_LIBRARIES sysdep)
+endif ()
+
+if (ENABLE_PYTHON_EMBED)
+  list(APPEND CUEMOL2_LINK_LIBRARIES pybr)
 endif ()
 
 if (${XMLRPC_FOUND})

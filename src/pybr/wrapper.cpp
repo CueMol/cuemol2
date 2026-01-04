@@ -3,6 +3,7 @@
 //
 
 #include <common.h>
+#include <libcuemol2_api/binding.hpp>
 
 #include "wrapper.hpp"
 
@@ -14,6 +15,7 @@
 #include <qlib/LVarArgs.hpp>
 #include <qlib/LVarArray.hpp>
 #include <qlib/PropSpec.hpp>
+#include <qlib/LScrSmartPtr.hpp>
 
 using namespace pybr;
 using qlib::LScriptable;
@@ -30,8 +32,6 @@ static PyObject *wr_str(QpyWrapObj *pSelf);
 /// wrapper class type definition
 static PyTypeObject gWrapperType = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    //  PyObject_HEAD_INIT(NULL)
-    //  0,                         /*ob_size*/
     "cuemol.Wrapper",                         /*tp_name*/
     sizeof(QpyWrapObj),                       /*tp_basicsize*/
     0,                                        /*tp_itemsize*/
@@ -91,7 +91,7 @@ PyObject *Wrapper::createWrapper(qlib::LScriptable *pObj)
 static void wr_dealloc(QpyWrapObj *pSelf)
 {
     if (pSelf->m_pObj != NULL) {
-        MB_DPRINTLN("QpyWrapObj destruct: %p", pSelf->m_pObj);
+        // MB_DPRINTLN("QpyWrapObj destruct: %p", pSelf->m_pObj);
         pSelf->m_pObj->destruct();
         pSelf->m_pObj = NULL;
     }
@@ -243,12 +243,7 @@ static PyObject *wr_str(QpyWrapObj *pSelf)
 
     LString str = pObj->toString();
 
-#if PY_MAJOR_VERSION >= 3
-    // return PyBytes_FromString(str);
     return PyUnicode_FromString(str);
-#else
-    return PyString_FromString(str);
-#endif
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -287,34 +282,22 @@ PyObject *Wrapper::getService(PyObject *self, PyObject *args)
 PyObject *Wrapper::createObj(PyObject *self, PyObject *args)
 {
     const char *clsname;
+    const char *strval = "";
 
-    if (!PyArg_ParseTuple(args, "s", &clsname)) return NULL;
-
-    qlib::ClassRegistry *pMgr = qlib::ClassRegistry::getInstance();
-    MB_ASSERT(pMgr != NULL);
-
-    qlib::LClass *pCls = NULL;
-    try {
-        pCls = pMgr->getClassObj(clsname);
-        MB_DPRINTLN("!!! CreateObj, LClass for %s: %p", clsname, pCls);
-    } catch (...) {
-        LString msg = LString::format("createObj class %s not found", clsname);
-        PyErr_SetString(PyExc_RuntimeError, msg);
-        return NULL;
+    int nargs = PyTuple_GET_SIZE(args);
+    if (nargs == 1) {
+      if (!PyArg_ParseTuple(args, "s", &clsname)) return NULL;
+    }
+    else if (nargs == 2) {
+      if (!PyArg_ParseTuple(args, "ss", &clsname, &strval)) return NULL;
     }
 
-    qlib::LDynamic *pDyn = pCls->createScrObj();
-    // MB_DPRINTLN("createScrObj returned: %p (%s)", pDyn, typeid(*pDyn).name());
-
-    // XXX: dynamic_cast<> returns NULL for LScriptable derived class's objects,
-    //   in some situations (Apple LLVM version 5.0??).
-    //   Old-type type cast is used to avoid this problem.
-    // LScriptable *pNewObj = dynamic_cast<LScriptable *>(pDyn);
-    LScriptable *pNewObj = (LScriptable *)(pDyn);
-
-    if (pNewObj == NULL) {
-        LString msg = LString::format(
-            "createObj %s failed (class.createScrObj returned NULL)", clsname);
+    LScriptable *pNewObj;
+    LString errmsg;
+    bool ok = cuemol2::createObj(clsname, strval, &pNewObj, errmsg);
+    
+    if (!ok) {
+        LString msg = LString::format("createObj %s failed (reason: %s)", clsname, errmsg.c_str());
         PyErr_SetString(PyExc_RuntimeError, msg);
         return NULL;
     }
@@ -325,24 +308,29 @@ PyObject *Wrapper::createObj(PyObject *self, PyObject *args)
 }
 
 // static
+PyObject *Wrapper::copyObj(PyObject *self, PyObject *args)
+{
+    PyObject *pPyObj;
+
+    if (!PyArg_ParseTuple(args, "O", &pPyObj)) {
+        PyErr_SetString(PyExc_RuntimeError, "invalid arguments");
+        return NULL;
+    }
+    qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
+    if (pScObj == NULL) {
+        PyErr_SetString(PyExc_RuntimeError, "arg1 is not a wrapper obj");
+        return NULL;
+    }
+
+    LScriptable *pNewObj = pScObj->copy();
+    return createWrapper(pNewObj);
+}
+
+// static
 PyObject *Wrapper::getAllClassNamesJSON(PyObject *self, PyObject *args)
 {
-    qlib::ClassRegistry *pMgr = qlib::ClassRegistry::getInstance();
-    MB_ASSERT(pMgr != NULL);
-
-    std::list<qlib::LString> ls;
-    pMgr->getAllClassNames(ls);
-
-    LString rstr = "[";
-    bool ffirst = true;
-    BOOST_FOREACH (const LString &str, ls) {
-        MB_DPRINTLN("GACNJSON> class %s", str.c_str());
-        if (!ffirst) rstr += ",";
-        rstr += "\"" + str + "\"";
-        ffirst = false;
-    }
-    rstr += "]";
-
+    LString rstr, errmsg;
+    cuemol2::getAllClassNamesJSON(rstr, errmsg);
     return Py_BuildValue("s", rstr.c_str());
 }
 
@@ -354,7 +342,10 @@ PyObject *Wrapper::getAbiClassName(PyObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "O", &pPyObj)) return NULL;
 
     qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
-    if (pScObj == NULL) return NULL;
+    if (pScObj == NULL) {
+        PyErr_SetString(PyExc_RuntimeError, "arg1 is not a wrapper obj");
+        return NULL;
+    }
 
     LString str;
     if (pScObj != NULL) {
@@ -381,7 +372,7 @@ PyObject *Wrapper::getClassName(PyObject *self, PyObject *args)
 
     qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
     if (pScObj == NULL) {
-        PyErr_SetString(PyExc_RuntimeError, "wrapped LScriptable obj not found");
+        PyErr_SetString(PyExc_RuntimeError, "arg1 is not a wrapper obj");
         return NULL;
     }
 
@@ -411,7 +402,7 @@ PyObject *Wrapper::isInstanceOf(PyObject *self, PyObject *args)
 
     qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
     if (pScObj == NULL) {
-        PyErr_SetString(PyExc_RuntimeError, "wrapper obj not found");
+        PyErr_SetString(PyExc_RuntimeError, "arg1 is not a wrapper obj");
         return NULL;
     }
 
@@ -437,7 +428,7 @@ PyObject *Wrapper::setProp(PyObject *self, PyObject *args)
 
     qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
     if (pScObj == NULL) {
-        PyErr_SetString(PyExc_RuntimeError, "wrapper obj not found");
+        PyErr_SetString(PyExc_RuntimeError, "arg1 is not a wrapper obj");
         return NULL;
     }
 
@@ -460,7 +451,7 @@ PyObject *Wrapper::isPropDefault(PyObject *self, PyObject *args)
 
     qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
     if (pScObj == NULL) {
-        PyErr_SetString(PyExc_RuntimeError, "wrapper obj not found");
+        PyErr_SetString(PyExc_RuntimeError, "arg1 is not a wrapper obj");
         return NULL;
     }
 
@@ -506,7 +497,10 @@ PyObject *Wrapper::hasPropDefault(PyObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "Os", &pPyObj, &propname)) return NULL;
 
     qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
-    if (pScObj == NULL) return NULL;
+    if (pScObj == NULL) {
+        PyErr_SetString(PyExc_RuntimeError, "arg1 is not a wrapper obj");
+        return NULL;
+    }
 
     bool ok = true;
     bool result;
@@ -552,7 +546,7 @@ PyObject *Wrapper::getProp(PyObject *self, PyObject *args)
 
     qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
     if (pScObj == NULL) {
-        PyErr_SetString(PyExc_RuntimeError, "Wrapper not found");
+        PyErr_SetString(PyExc_RuntimeError, "arg is not a wrapper obj");
         return NULL;
     }
 
@@ -579,7 +573,7 @@ PyObject *Wrapper::resetProp(PyObject *self, PyObject *args)
 
     qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
     if (pScObj == NULL) {
-        PyErr_SetString(PyExc_RuntimeError, "Wrapper not found");
+        PyErr_SetString(PyExc_RuntimeError, "arg is not a wrapper obj");
         return NULL;
     }
 
@@ -623,30 +617,14 @@ PyObject *Wrapper::getPropsJSON(PyObject *self, PyObject *args)
     if (!PyArg_ParseTuple(args, "O", &pPyObj)) return NULL;
 
     qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
-    if (pScObj == NULL) return NULL;
-
-    LString str;
-
-    try {
-        str = qlib::getPropsJSONImpl(pScObj);
-    } catch (qlib::LException &e) {
-        LString errmsg = LString::format("Exception occured in getPropsJSON: %s",
-                                         e.getFmtMsg().c_str());
-        LOG_DPRINTLN(errmsg);
-        PyErr_SetString(PyExc_RuntimeError, errmsg.c_str());
-        return NULL;
-    } catch (...) {
-        LString errmsg = LString::format("Unknown Exception occured in getPropsJSON");
-        LOG_DPRINTLN(errmsg);
-        PyErr_SetString(PyExc_RuntimeError, errmsg.c_str());
-        return NULL;
+    LString str, errmsg;
+    if (!cuemol2::getPropsJSON(pScObj, str, errmsg)) {
+      LOG_DPRINTLN(errmsg);
+      PyErr_SetString(PyExc_RuntimeError, errmsg.c_str());
+      return NULL;
     }
 
-#if PY_MAJOR_VERSION >= 3
     return PyBytes_FromString(str.c_str());
-#else
-    return PyString_FromString(str.c_str());
-#endif
 }
 
 // static
@@ -682,11 +660,7 @@ PyObject *Wrapper::getEnumDefsJSON(PyObject *self, PyObject *args)
     }
     rval += "}";
 
-#if PY_MAJOR_VERSION >= 3
     return PyBytes_FromString(rval.c_str());
-#else
-    return PyString_FromString(rval.c_str());
-#endif
 }
 
 // static
@@ -717,29 +691,17 @@ PyObject *Wrapper::invokeMethod(PyObject *self, PyObject *arg)
     PyObject *pPyObj = PyTuple_GET_ITEM(arg, 1);
     bool bOK = false;
     // string
-#if PY_MAJOR_VERSION >= 3
     if (PyBytes_Check(pPyObj)) {
         const char *pstr = PyBytes_AsString(pPyObj);
         mthname = pstr;
         bOK = true;
     }
-#else
-    if (PyString_Check(pPyObj)) {
-        const char *pstr = PyString_AsString(pPyObj);
-        mthname = pstr;
-        bOK = true;
-    }
-#endif
 
     // string (unicode)
     if (!bOK && PyUnicode_Check(pPyObj)) {
         // TO DO: debug
         PyObject *pUTF8Obj = PyUnicode_AsUTF8String(pPyObj);
-#if PY_MAJOR_VERSION >= 3
         const char *pstr = PyBytes_AsString(pUTF8Obj);
-#else
-        const char *pstr = PyString_AsString(pUTF8Obj);
-#endif
         mthname = pstr;
         bOK = true;
         Py_DECREF(pUTF8Obj);
@@ -789,7 +751,7 @@ PyObject *Wrapper::invokeMethodImpl(qlib::LScriptable *pScrObj, const char *mthn
         }
     }
 
-    MB_DPRINTLN("invoke method %s nargs=%d", mthname, nargs);
+    // MB_DPRINTLN("invoke method %s nargs=%d", mthname, nargs);
 
     // Invoke method
 
@@ -856,13 +818,43 @@ PyObject *Wrapper::createBAryFromBytes(PyObject *self, PyObject *args)
     int nlen = PyBytes_Size(pPyBytes);
 
     qlib::LByteArray *pNewObj = new qlib::LByteArray(nlen);
+
     if (nlen > 0) {
         const char *ptr = PyBytes_AsString(pPyBytes);
         char *pBuf = (char *)(pNewObj->data());
         for (int i = 0; i < nlen; ++i) pBuf[i] = ptr[i];
     }
 
-    return createWrapper(pNewObj);
+    // return shared ptr obj
+    auto *pRet = MB_NEW qlib::LByteArrayPtr(pNewObj);
+
+    return createWrapper(pRet);
+}
+
+// static
+PyObject *Wrapper::getRefCount(PyObject *self, PyObject *args)
+{
+    PyObject *pPyObj;
+
+    if (!PyArg_ParseTuple(args, "O", &pPyObj)) {
+        PyErr_SetString(PyExc_RuntimeError, "Invalid arguments");
+        return nullptr;
+    }
+
+    qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
+    if (pScObj == nullptr) {
+        PyErr_SetString(PyExc_RuntimeError, "arg is not a wrapper obj");
+        return nullptr;
+    }
+
+    qlib::LSupScrSp *pssp = dynamic_cast<qlib::LSupScrSp *>(pScObj);
+    if (pssp == nullptr) {
+        PyErr_SetString(PyExc_RuntimeError, "Not a smart pointer object");
+        return nullptr;
+    }
+    int refcnt = pssp->use_count();
+
+    return Py_BuildValue("i", refcnt);
 }
 
 // static
@@ -879,78 +871,11 @@ PyObject *Wrapper::print(PyObject *self, PyObject *args)
 
 //////////////////////////////////////////////////////
 
-namespace pybr {
-PyObject *initCueMol(PyObject *self, PyObject *args);
-PyObject *finiCueMol(PyObject *self, PyObject *args);
-PyObject *isInitialized(PyObject *self, PyObject *args);
-}  // namespace pybr
-
-static PyMethodDef cuemol_methods[] = {
-    {"getService", (PyCFunction)Wrapper::getService, METH_VARARGS,
-     "get CueMol service object.\n"},
-    {"createObj", (PyCFunction)Wrapper::createObj, METH_VARARGS,
-     "create CueMol object.\n"},
-    {"getAllClassNamesJSON", (PyCFunction)Wrapper::getAllClassNamesJSON, METH_VARARGS,
-     "get all class names in JSON format.\n"},
-
-    {"getAbiClassName", (PyCFunction)Wrapper::getAbiClassName, METH_VARARGS,
-     "get C++ABI class name.\n"},
-    {"getClassName", (PyCFunction)Wrapper::getClassName, METH_VARARGS,
-     "get class name.\n"},
-    {"isInstanceOf", (PyCFunction)Wrapper::isInstanceOf, METH_VARARGS,
-     "check object type\n"},
-
-    {"setProp", (PyCFunction)Wrapper::setProp, METH_VARARGS, "\n"},
-    {"getProp", (PyCFunction)Wrapper::getProp, METH_VARARGS, "\n"},
-    {"isPropDefault", (PyCFunction)Wrapper::isPropDefault, METH_VARARGS, "\n"},
-    {"hasPropDefault", (PyCFunction)Wrapper::hasPropDefault, METH_VARARGS, "\n"},
-    {"resetProp", (PyCFunction)Wrapper::resetProp, METH_VARARGS, "\n"},
-    {"getPropsJSON", (PyCFunction)Wrapper::getPropsJSON, METH_VARARGS, "\n"},
-    {"getEnumDefsJSON", (PyCFunction)Wrapper::getEnumDefsJSON, METH_VARARGS, "\n"},
-    {"getEnumDef", (PyCFunction)Wrapper::getEnumDef, METH_VARARGS, "\n"},
-    {"invokeMethod", (PyCFunction)Wrapper::invokeMethod, METH_VARARGS, "\n"},
-    {"createBAryFromBytes", (PyCFunction)Wrapper::createBAryFromBytes, METH_VARARGS,
-     "create ByteArray obj from bytes\n"},
-
-    {"print", (PyCFunction)Wrapper::print, METH_VARARGS, "print log message.\n"},
-
-    {"initCueMol", (PyCFunction)initCueMol, METH_VARARGS,
-     "initialize CueMol system.\n"},
-    {"finiCueMol", (PyCFunction)finiCueMol, METH_VARARGS, "finalize CueMol system.\n"},
-    {"isInitialized", (PyCFunction)isInitialized, METH_VARARGS,
-     "check initialization.\n"},
-
-#ifdef HAVE_NUMPY
-    {"numpychk", (PyCFunction)Wrapper::numpychk, METH_VARARGS, "numpychk.\n"},
-    {"tondarray", (PyCFunction)Wrapper::tondarray, METH_VARARGS,
-     "conv to numpy ndarray.\n"},
-#endif
-    {NULL} /* Sentinel */
-};
-
-//////////////////////////////////////////////////////////////////////
-// Dummy initialization methods (for embedded python)
-
-#ifndef BUILD_PYMODULE
-namespace pybr {
-
-PyObject *initCueMol(PyObject *self, PyObject *args)
-{
-    return Py_BuildValue("");
-}
-
-PyObject *finiCueMol(PyObject *self, PyObject *args)
-{
-    return Py_BuildValue("");
-}
-
-PyObject *isInitialized(PyObject *self, PyObject *args)
-{
-    Py_RETURN_TRUE;
-}
-
-}  // namespace pybr
-#endif
+// namespace pybr {
+//   PyObject *initCueMol(PyObject *self, PyObject *args);
+//   PyObject *finiCueMol(PyObject *self, PyObject *args);
+//   PyObject *isInitialized(PyObject *self, PyObject *args);
+// }  // namespace pybr
 
 //////////////////////////////////////////////////////////////////////
 // initialization
@@ -960,11 +885,7 @@ struct module_state
     PyObject *error;
 };
 
-#if PY_MAJOR_VERSION >= 3
 #define GETSTATE(m) ((struct module_state *)PyModule_GetState(m))
-#endif
-
-#if PY_MAJOR_VERSION >= 3
 
 static int cuemol_traverse(PyObject *m, visitproc visit, void *arg)
 {
@@ -978,6 +899,41 @@ static int cuemol_clear(PyObject *m)
     return 0;
 }
 
+static PyMethodDef cuemol_methods[] = {
+    {"getService", (PyCFunction)Wrapper::getService, METH_VARARGS,
+     "get CueMol service object.\n"},
+    {"createObj", (PyCFunction)Wrapper::createObj, METH_VARARGS,
+     "create CueMol object.\n"},
+    {"copyObj", (PyCFunction)Wrapper::copyObj, METH_VARARGS,
+     "copy CueMol object.\n"},
+    {"getAllClassNamesJSON", (PyCFunction)Wrapper::getAllClassNamesJSON, METH_VARARGS,
+     "get all class names in JSON format.\n"},
+
+    {"getAbiClassName", (PyCFunction)Wrapper::getAbiClassName, METH_VARARGS,
+     "get C++ABI class name.\n"},
+    {"getClassName", (PyCFunction)Wrapper::getClassName, METH_VARARGS,
+     "get class name.\n"},
+    {"isInstanceOf", (PyCFunction)Wrapper::isInstanceOf, METH_VARARGS,
+     "check object type\n"},
+
+    {"setProp", (PyCFunction)Wrapper::setProp, METH_VARARGS, "set property\n"},
+    {"getProp", (PyCFunction)Wrapper::getProp, METH_VARARGS, "get property\n"},
+    {"isPropDefault", (PyCFunction)Wrapper::isPropDefault, METH_VARARGS, "\n"},
+    {"hasPropDefault", (PyCFunction)Wrapper::hasPropDefault, METH_VARARGS, "\n"},
+    {"resetProp", (PyCFunction)Wrapper::resetProp, METH_VARARGS, "\n"},
+    {"getPropsJSON", (PyCFunction)Wrapper::getPropsJSON, METH_VARARGS, "\n"},
+    {"getEnumDefsJSON", (PyCFunction)Wrapper::getEnumDefsJSON, METH_VARARGS, "\n"},
+    {"getEnumDef", (PyCFunction)Wrapper::getEnumDef, METH_VARARGS, "\n"},
+    {"invokeMethod", (PyCFunction)Wrapper::invokeMethod, METH_VARARGS, "\n"},
+    {"createBAryFromBytes", (PyCFunction)Wrapper::createBAryFromBytes, METH_VARARGS,
+     "create ByteArray obj from bytes\n"},
+
+    {"print", (PyCFunction)Wrapper::print, METH_VARARGS, "print log message.\n"},
+    {"get_ref_count", (PyCFunction)Wrapper::getRefCount, METH_VARARGS, "get ref count.\n"},
+
+    {NULL} /* Sentinel */
+};
+
 static struct PyModuleDef moduledef = {PyModuleDef_HEAD_INIT,
                                        "cuemol_internal",
                                        NULL,
@@ -987,26 +943,17 @@ static struct PyModuleDef moduledef = {PyModuleDef_HEAD_INIT,
                                        cuemol_traverse,
                                        cuemol_clear,
                                        NULL};
-#endif
 
-#ifdef HAVE_NUMPY
-#include <numpy/arrayobject.h>
-#endif
 
 // static
 PyObject *Wrapper::init()
 {
-    PyObject *m;
-
     gWrapperType.tp_new = PyType_GenericNew;
     gWrapperType.tp_base = &PyBaseObject_Type;
     if (PyType_Ready(&gWrapperType) < 0) return NULL;
 
-#if PY_MAJOR_VERSION >= 3
+    PyObject *m;
     m = PyModule_Create(&moduledef);
-#else
-    m = Py_InitModule3("cuemol_internal", cuemol_methods, "CueMol internal module.");
-#endif
 
     Py_INCREF(&gWrapperType);
     PyModule_AddObject(m, "Wrapper", (PyObject *)&gWrapperType);
@@ -1014,107 +961,8 @@ PyObject *Wrapper::init()
     setupMethObj();
 
 #ifdef HAVE_NUMPY
-    import_array();
+    Wrapper::initNumPy(m);
 #endif
 
     return m;
 }
-
-#ifdef HAVE_NUMPY
-
-// static
-PyObject *Wrapper::numpychk(PyObject *self, PyObject *args)
-{
-    npy_intp i, ndim, stride;
-    // npy_intp *dim1, *dim2, *dim;
-    PyObject *array1, *array2, *array;
-
-    npy_intp dim[1] = {10};
-
-    array = PyArray_SimpleNew(1, dim, NPY_FLOAT);
-    if (array == NULL) return NULL;
-
-    return array;
-
-    /*
-    const char *msg;
-
-    if (!PyArg_ParseTuple(args, "s", &msg))
-      return NULL;
-
-    LOG_DPRINT("%s", msg);
-
-    return Py_BuildValue("");
-    */
-}
-
-#include <qlib/LByteArray.hpp>
-
-// static
-PyObject *Wrapper::tondarray(PyObject *self, PyObject *args)
-{
-    PyObject *pPyObj;
-
-    if (!PyArg_ParseTuple(args, "O", &pPyObj)) {
-        PyErr_SetString(PyExc_RuntimeError, "invalid arguments");
-        return NULL;
-    }
-
-    qlib::LScriptable *pScObj = Wrapper::getWrapped(pPyObj);
-    if (pScObj == NULL) {
-        PyErr_SetString(PyExc_RuntimeError, "wrapper obj not found");
-        return NULL;
-    }
-
-    // LOG_DPRINTLN("type of arg: %s", typeid(*pScObj).name());
-    qlib::LScrSp<qlib::LByteArray> *pba =
-        dynamic_cast<qlib::LScrSp<qlib::LByteArray> *>(pScObj);
-    if (pba == NULL) {
-        PyErr_SetString(PyExc_RuntimeError, "wrapper obj not found");
-        return NULL;
-    }
-
-    npy_intp dim[1] = {10};
-
-    int ntypeid = (*pba)->getElemType();
-    int nelems = (*pba)->getElemCount();
-
-    PyObject *array;
-    dim[0] = nelems;
-
-    if (ntypeid == qlib::type_consts::QTC_INT32) {
-        array = PyArray_SimpleNew(1, dim, NPY_INT32);
-        if (array == NULL) return NULL;
-        qint32 *pdat = (qint32 *)((*pba)->data());
-        for (int i = 0; i < nelems; ++i) {
-            dim[0] = i;
-            qint32 *p = (qint32 *)PyArray_GetPtr((PyArrayObject *)array, dim);
-            *p = pdat[i];
-        }
-    } else if (ntypeid == qlib::type_consts::QTC_FLOAT32) {
-        array = PyArray_SimpleNew(1, dim, NPY_FLOAT);
-        if (array == NULL) return NULL;
-        float *pdat = (float *)((*pba)->data());
-        for (int i = 0; i < nelems; ++i) {
-            dim[0] = i;
-            float *p = (float *)PyArray_GetPtr((PyArrayObject *)array, dim);
-            *p = pdat[i];
-        }
-    } else if (ntypeid == qlib::type_consts::QTC_FLOAT64) {
-        array = PyArray_SimpleNew(1, dim, NPY_DOUBLE);
-        if (array == NULL) return NULL;
-        double *pdat = (double *)((*pba)->data());
-        for (int i = 0; i < nelems; ++i) {
-            dim[0] = i;
-            double *p = (double *)PyArray_GetPtr((PyArrayObject *)array, dim);
-            *p = pdat[i];
-        }
-    } else {
-        PyErr_SetString(PyExc_RuntimeError, "unknown bytearray type");
-        return NULL;
-    }
-
-    return array;
-}
-
-#endif

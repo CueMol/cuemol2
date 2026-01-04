@@ -9,7 +9,6 @@
 #include <boost/filesystem.hpp>
 namespace fs = boost::filesystem;
 
-#ifdef BUILD_PYTHON_BINDINGS
 #include <Python.h>
 #include "pybr.hpp"
 #include "wrapper.hpp"
@@ -17,18 +16,41 @@ namespace fs = boost::filesystem;
 
 extern void pybr_regClasses();
 
+// internal dummy module functions
+namespace {
+PyObject *initCueMol(PyObject *self, PyObject *args)
+{
+    return Py_BuildValue("");
+}
+
+PyObject *finiCueMol(PyObject *self, PyObject *args)
+{
+    return Py_BuildValue("");
+}
+
+PyObject *isInitialized(PyObject *self, PyObject *args)
+{
+    Py_RETURN_TRUE;
+}
+}
+
+static PyMethodDef module_methods[] = {
+    {"initCueMol", (PyCFunction)initCueMol, METH_VARARGS,
+     "initialize CueMol system.\n"},
+    {"finiCueMol", (PyCFunction)finiCueMol, METH_VARARGS, "finalize CueMol system.\n"},
+    {"isInitialized", (PyCFunction)isInitialized, METH_VARARGS,
+     "check initialization.\n"},
+    {NULL, NULL, 0, NULL}
+};
+
 namespace pybr {
 
-  PyModuleDef DummyPkg = {
-    PyModuleDef_HEAD_INIT, "cuemol", NULL, -1, NULL,
-    NULL, NULL, NULL, NULL
-  };
-  PyObject* initDummyPkg(void)
-  {
-    PyObject *mod = PyModule_Create(&DummyPkg);
-    PyModule_AddObject(mod, "__path__", Py_BuildValue("()"));
-    return mod;
-  }
+ PyObject *initModuleFunc(void)
+ {
+     auto m = Wrapper::init();
+     PyModule_AddFunctions(m, module_methods);
+     return m;
+ }
 
   bool init(const char *szConfPath)
   {
@@ -36,8 +58,7 @@ namespace pybr {
 
     Py_SetProgramName(Py_DecodeLocale("cuemol2", NULL));
 
-    // PyImport_AppendInittab("cuemol._internal", &Wrapper::init);
-    PyImport_AppendInittab("_cuemol_internal", &Wrapper::init);
+    PyImport_AppendInittab("_cuemol_internal", &initModuleFunc);
 
 #ifdef HAVE_LOCAL_PYTHON
     // Case: GUI application with local python installation
@@ -90,9 +111,6 @@ namespace pybr {
       LOG_DPRINTLN("Python> local script path=%s added", strpath.c_str());
     }
 
-    //bool res = Wrapper::setup();
-    //Wrapper::init();
-
     // Redirect stdout/err to the logwindow
     PyRun_SimpleString(
 "import sys\n"
@@ -121,21 +139,3 @@ namespace pybr {
     Py_Finalize();
   }
 }
-
-#else
-
-namespace pybr {
-
-  bool init()
-  {
-    return true;
-  }
-  
-  void fini()
-  {
-  }
-
-}
-
-#endif
-

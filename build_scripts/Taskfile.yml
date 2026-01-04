@@ -83,6 +83,24 @@ tasks:
 
 #####
 
+  build_cli:
+    deps:
+      - task: build_cli:{{OS}}
+
+  build_cli:darwin:
+    platforms: [darwin]
+    cmds:
+      - task: build_libcuemol2
+      - bash build_cuetty_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
+
+  run_cli:
+    platforms: [darwin]
+    cmds:
+      # - task: build_cli
+      - env LD_LIBRARY_PATH="{{.WORKDIR}}/cuemol2/lib" "{{.WORKDIR}}/cuemol2/bin/cuetty" -i
+
+#####
+
   build_uxpgui:
     desc: "Setup, config, and build the uxpgui app"
     platforms: [darwin]

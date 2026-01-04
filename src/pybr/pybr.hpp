@@ -43,7 +43,7 @@ namespace pybr {
 class Interp;
 
 /// Initialize the pybr library
-PYBR_API bool init(const char *confpath = NULL);
+PYBR_API bool init(const char *confpath = nullptr);
 
 /// Cleanup the pybr library
 PYBR_API void fini();
