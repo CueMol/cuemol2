@@ -94,3 +94,8 @@ set_target_properties(cuetty PROPERTIES
 
 set_target_properties(cuetty PROPERTIES
   INSTALL_RPATH "@executable_path/../lib")
+
+# set_target_properties(cuetty PROPERTIES
+#   BUILD_RPATH "${Python3_LIBRARY_DIRS}"
+#   INSTALL_RPATH "@executable_path/../lib/python/lib"
+# )

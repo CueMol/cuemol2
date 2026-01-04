@@ -54,10 +54,70 @@ PyObject *initModuleFunc(void)
 
 bool g_bEmbedInit;
 
-bool init(const char *szConfPath)
-{
-    pybr_regClasses();
+void handleError(PyStatus status, PyConfig* config) {
+    if (status.err_msg) {
+        fprintf(stderr, "Python config error: %s\n", status.err_msg);
+    }
+    PyConfig_Clear(config);
+}
 
+bool initEmbedWithPath(const char *szConfPath)
+{
+    fs::path confpath(szConfPath);
+    auto pythonHome = confpath.parent_path() / ".." / "lib" / "python";
+
+    LOG_DPRINTLN("Python> Try PythonHome=%s", pythonHome.c_str());
+    if (!fs::exists(pythonHome)) {
+        LOG_DPRINTLN("Python> %s does not exist", pythonHome.c_str());
+        return false;
+    }
+    if (!fs::is_directory(pythonHome)) {
+        LOG_DPRINTLN("Python> %s is not a directory", pythonHome.c_str());
+        return false;
+    }
+
+    PyConfig config;
+    PyConfig_InitIsolatedConfig(&config);
+
+    PyStatus status;
+    status = PyConfig_SetString(&config, &config.program_name, Py_DecodeLocale("cuemol2", NULL));
+    status = PyConfig_SetString(&config, &config.home,
+                                Py_DecodeLocale(pythonHome.c_str(), NULL));
+    if (PyStatus_Exception(status)) {
+        handleError(status, &config);
+        return false;
+    }
+
+    LOG_DPRINTLN("Python> PythonHome=%s", pythonHome.c_str());
+
+    auto libPath = pythonHome / "lib" / "python3.12";
+    auto sitePath = libPath / "site-packages";
+    auto dynloadPath = libPath / "lib-dynload";
+
+    config.module_search_paths_set = 1;
+    PyWideStringList_Append(&config.module_search_paths,
+                            Py_DecodeLocale(libPath.c_str(), NULL));
+    PyWideStringList_Append(&config.module_search_paths,
+                            Py_DecodeLocale(dynloadPath.c_str(), NULL));
+    PyWideStringList_Append(&config.module_search_paths,
+                            Py_DecodeLocale(sitePath.c_str(), NULL));
+
+    status = Py_InitializeFromConfig(&config);
+    PyConfig_Clear(&config);
+
+    if (PyStatus_Exception(status)) {
+        fprintf(stderr, "Python initialization failed\n");
+        Py_ExitStatusException(status);
+        return false;
+    }
+ 
+
+    return true;
+    // return !PyStatus_Exception(status);
+}
+
+bool initEmbedPython(const char *szConfPath)
+{
     if (Py_IsInitialized()) {
         LOG_DPRINTLN("Python> already initialized.");
         g_bEmbedInit = false;
@@ -65,27 +125,17 @@ bool init(const char *szConfPath)
     }
 
     g_bEmbedInit = true;
-    Py_SetProgramName(Py_DecodeLocale("cuemol2", NULL));
-
     PyImport_AppendInittab("_cuemol_internal", &initModuleFunc);
 
-#ifdef HAVE_LOCAL_PYTHON
-    // Case: GUI application with local python installation
-    //   --> Set local python path as PYTHONHOME
     if (szConfPath != NULL) {
-        fs::path confpath(szConfPath);
-        confpath = confpath.parent_path();
-        confpath /= "Python";
-        if (fs::exists(confpath) && fs::is_directory(confpath)) {
-            LString strpath = confpath.string();
-            strpath = strpath.escapeQuots();
-            Py_SetPythonHome(Py_DecodeLocale(strpath.c_str(), NULL));
-            LOG_DPRINTLN("Python> SetPythonHome=%s", strpath.c_str());
+        if (!initEmbedWithPath(szConfPath)) {
+            LOG_DPRINTLN("Python> failed to initialize with custom path.");
+            return false;
         }
+    } else {
+        Py_SetProgramName(Py_DecodeLocale("cuemol2", NULL));
+        Py_Initialize();
     }
-#endif
-
-    Py_Initialize();
 
     // LOG_DPRINTLN("Python> PythonHome=%s", Py_EncodeLocale(Py_GetPythonHome(), NULL));
 
@@ -126,6 +176,13 @@ bool init(const char *szConfPath)
     LOG_DPRINTLN("Python> %s.", Py_GetVersion());
 
     return true;
+}
+
+bool init(const char *szConfPath)
+{
+    pybr_regClasses();
+
+    return initEmbedPython(szConfPath);
 }
 
 void fini()

@@ -50,9 +50,13 @@ else
     BUILD_TYPE=Release
 fi
 
-PYTHON=python3
-PYTHON_ROOT=$($PYTHON -c 'import sys;import pathlib; print(pathlib.Path(sys.executable).parent.parent)')
-echo "PYTHON_ROOT=$PYTHON_ROOT"
+if [ "${PYTHON_ROOT+foo}" ]; then
+    echo "Using PYTHON_ROOT=$PYTHON_ROOT"
+else
+    PYTHON=python3
+    PYTHON_ROOT=$($PYTHON -c 'import sys;import pathlib; print(pathlib.Path(sys.executable).parent.parent)')
+    echo "Found PYTHON_ROOT=$PYTHON_ROOT"
+fi
 
 BUILD_PYTHON_BINDINGS=ON
 BUILD_NODEJS_BINDINGS=ON

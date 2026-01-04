@@ -33,7 +33,7 @@ cmake -G "$GENERATOR" \
       -DCMAKE_INSTALL_PREFIX=$INST_PATH \
       -DCMAKE_PREFIX_PATH=$BASEDIR \
       -DBoost_ROOT=$BASEDIR/$BOOST_VER/ \
-      -DLIBCUEMOL2_ROOT=$BASEDIR\cuemol2 \
+      -DLIBCUEMOL2_ROOT=$BASEDIR/cuemol2 \
       -DCMAKE_BUILD_TYPE=$BUILD_TYPE
 
 cmake --build $BUILD_DIR --parallel --config $BUILD_TYPE
