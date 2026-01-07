@@ -34,13 +34,13 @@ jobs:
         include:
           # - os: macos-15
           #   name: "MacOS 15 arm64 clang"
-          #   embed-pyhon: ""
+          #   embed-python: ""
           - os: macos-15
             name: "MacOS 15 arm64 clang py312"
-            embed-pyhon: "3.12"
+            embed-python: "3.12"
           - os: macos-15-intel
             name: "MacOS 15 x64 clang"
-            embed-pyhon: ""
+            embed-python: ""
 
     env:
       MACOSX_DEPLOYMENT_TARGET: "10.15"
@@ -51,7 +51,8 @@ jobs:
         echo "BUILD_MODE: ${{ env.BUILD_MODE }}"
         echo "Branch/Tag: ${{ github.ref }}"
         echo "Event: ${{ github.event_name }}"
-        echo "Build type ${{ matrix.name }}: ${{ matrix.os }} ${{ matrix.embed-python }}"
+        echo "Build type: ${{ matrix.os }}"
+        echo "Embed python: ${{ matrix.embed-python }}"
 
     - uses: actions/checkout@v4
 
