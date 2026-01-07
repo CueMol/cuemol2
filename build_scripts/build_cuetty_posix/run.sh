@@ -39,6 +39,13 @@ cmake -G "$GENERATOR" \
 cmake --build $BUILD_DIR --parallel --config $BUILD_TYPE
 cmake --install $BUILD_DIR --config $BUILD_TYPE
 
-ls -la $BASEDIR/$BOOST_VER/lib/lib*
+# Copy dependent shared libs
 cp $BASEDIR/$BOOST_VER/lib/lib* $BASEDIR/cuemol2/lib/
 
+# Python embed
+if [ "${PYTHON_ROOT+foo}" ]; then
+    ls -la $PYTHON_ROOT
+    cp -r $PYTHON_ROOT $BASEDIR/cuemol2/lib/
+fi
+
+ls -la $BASEDIR/cuemol2/lib/
