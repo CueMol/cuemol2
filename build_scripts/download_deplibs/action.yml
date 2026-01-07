@@ -42,5 +42,5 @@ runs:
       tar xjf $TGZ_FILE
       
       rm $TGZ_FILE
-      echo "PYTHON_ROOT=$BASEDIR/python" >> $GITHUB_ENV
+      echo "EMBED_PYTHON_ROOT=$BASEDIR/python" >> $GITHUB_ENV
       ls -la

@@ -51,12 +51,13 @@ else
 fi
 
 # Python embed
-if [ "${PYTHON_ROOT+foo}" ]; then
+if [ "${EMBED_PYTHON_ROOT+foo}" ]; then
     ENABLE_PYTHON_EMBED=ON
-    echo "Using PYTHON_ROOT=$PYTHON_ROOT"
+    PYTHON_ROOT=$EMBED_PYTHON_ROOT
+    echo "Using PYTHON_ROOT=$EMBED_PYTHON_ROOT"
 else
-    PYTHON=python3
-    PYTHON_ROOT=$($PYTHON -c 'import sys;import pathlib; print(pathlib.Path(sys.executable).parent.parent)')
+    # PYTHON=python3
+    PYTHON_ROOT=$(python3 -c 'import sys;import pathlib; print(pathlib.Path(sys.executable).parent.parent)')
     echo "Found PYTHON_ROOT=$PYTHON_ROOT"
     ENABLE_PYTHON_EMBED=OFF
 fi
@@ -102,9 +103,8 @@ cmake --install $BUILD_DIR --config $BUILD_TYPE
 cp $BASEDIR/boost_$BOOST_VER/lib/lib* $BASEDIR/cuemol2/lib/
 
 # Python embed
-if [ "${PYTHON_ROOT+foo}" ]; then
-    ls -la $PYTHON_ROOT
-    cp -r $PYTHON_ROOT $BASEDIR/cuemol2/lib/
+if [ "${EMBED_PYTHON_ROOT+foo}" ]; then
+    cp -r $EMBED_PYTHON_ROOT $BASEDIR/cuemol2/lib/
 fi
 
 ls -la $BASEDIR/cuemol2/lib/

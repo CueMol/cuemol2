@@ -14,11 +14,11 @@
 // #include <sysdep/sysdep.hpp>
 // #endif
 
-#include <pybr/wrapper.hpp>
+// #include <pybr/wrapper.hpp>
 // #include "../../src/pybr/wrapper.hpp"
-// namespace pybr {
-// PyObject *wrapperInit();
-// }
+namespace pybr {
+PyObject *wrapperInit();
+}
 
 #ifndef DEFAULT_CONFIG
 #define DEFAULT_CONFIG "./sysconfig.xml"
