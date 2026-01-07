@@ -47,7 +47,7 @@ namespace pybr {
 
 PyObject *initModuleFunc(void)
 {
-    auto m = Wrapper::init();
+    auto m = wrapperInit();
     PyModule_AddFunctions(m, module_methods);
     return m;
 }
@@ -199,9 +199,8 @@ bool init(const char *szConfPath)
 
 void fini()
 {
-    pybr_unregClasses();
-
     if (g_bEmbedInit) {
+        pybr_unregClasses();
         Py_Finalize();
     }
 }

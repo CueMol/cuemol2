@@ -945,8 +945,9 @@ static struct PyModuleDef moduledef = {PyModuleDef_HEAD_INIT,
                                        NULL};
 
 
-// static
-PyObject *Wrapper::init()
+namespace pybr {
+
+PyObject *wrapperInit()
 {
     gWrapperType.tp_new = PyType_GenericNew;
     gWrapperType.tp_base = &PyBaseObject_Type;
@@ -958,11 +959,13 @@ PyObject *Wrapper::init()
     Py_INCREF(&gWrapperType);
     PyModule_AddObject(m, "Wrapper", (PyObject *)&gWrapperType);
 
-    setupMethObj();
+    Wrapper::setupMethObj();
 
 #ifdef HAVE_NUMPY
     Wrapper::initNumPy(m);
 #endif
 
     return m;
+}
+
 }

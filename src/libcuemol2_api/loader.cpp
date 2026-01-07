@@ -110,7 +110,7 @@ int init_qlib() noexcept
     return -1;
 }
 
-int init(const LString &confpath, bool reg_view) noexcept
+int init(const LString &confpath, bool reg_view, bool use_pybr) noexcept
 {
     try {
         if (!qsys::init(confpath)) {
@@ -143,7 +143,9 @@ int init(const LString &confpath, bool reg_view) noexcept
 #endif
 
 #ifdef ENABLE_PYTHON_EMBED
-        pybr::init(confpath.c_str());
+        if (use_pybr) {
+            pybr::init(confpath.c_str());
+        }
 #endif
 
         if (reg_view) {

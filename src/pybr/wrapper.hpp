@@ -3,8 +3,7 @@
 // Python object wrapper
 //
 
-#ifndef PYBR_WRAPPER_HPP_INCLUDED__
-#define PYBR_WRAPPER_HPP_INCLUDED__
+#pragma once
 
 #include <Python.h>
 
@@ -14,6 +13,8 @@
 #include "pybr.hpp"
 
 namespace pybr {
+
+using qlib::LString;
 
 /// wrapper instance type
 typedef struct
@@ -25,15 +26,13 @@ typedef struct
 
 } QpyWrapObj;
 
-using qlib::LString;
+/// Initialize python obj wrapper
+PyObject *wrapperInit();
 
 /// wrapper utility methods
 class PYBR_API Wrapper
 {
 public:
-    /// initialize wrapper
-    static PyObject *init();
-
     //////////////////////////////////////////
     // cuemol_internal.* service methods implementation
 
@@ -129,10 +128,7 @@ public:
     static bool initNumPy(PyObject *m);
 #endif
 
-private:
     static bool setupMethObj();
 };
 
 }  // namespace pybr
-
-#endif
