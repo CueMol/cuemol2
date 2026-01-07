@@ -28,3 +28,19 @@ runs:
     shell: bash
     run: |
       echo "Download python-build-standalone $EMBED_PYTHON"
+      BASEDIR=${{ inputs.basedir }}
+      cd $BASEDIR
+
+      URL_BASE="https://github.com/astral-sh/python-build-standalone/releases/download"
+      DATE="20251217"
+      ARCH="aarch64"
+      OS="apple-darwin"
+      PYTHON_VER="3.12.12"
+      TGZ_FILE="cpython-${PYTHON_VER}+${DATE}-${ARCH}-${OS}-install_only_stripped.tar.gz"
+      URL="${URL_BASE}/${DATE}/${TGZ_FILE}"
+      curl -sS -L -O $URL
+      tar xjf $TGZ_FILE
+      
+      rm $TGZ_FILE
+
+      ls -la
