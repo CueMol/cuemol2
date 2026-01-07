@@ -3,7 +3,9 @@
 #
 
 # Python3
-find_package (Python3 3.6 COMPONENTS Interpreter REQUIRED)
+set(Python3_FIND_FRAMEWORK NEVER)
+set(Python3_FIND_STRATEGY LOCATION)
+find_package (Python3 3.8 COMPONENTS Interpreter REQUIRED)
 message(STATUS "Python3_EXECUTABLE: ${Python3_EXECUTABLE}")
 
 if (ENABLE_PYTHON_EMBED)
