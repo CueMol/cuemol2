@@ -269,7 +269,7 @@ target_link_libraries(cuemol2 PRIVATE ${CUEMOL2_LINK_LIBRARIES})
 
 set_target_properties(cuemol2 PROPERTIES
   BUILD_RPATH "${Python3_LIBRARY_DIRS}"
-  INSTALL_RPATH "@executable_path/../lib/python/lib"
+  INSTALL_RPATH "@loader_path;@loader_path/../lib/python/lib;@loader_path/../Resources/python/lib"
 )
 
 list(APPEND CUEMOL2_DEFS "LIBCUEMOL_EXPORTS=1")

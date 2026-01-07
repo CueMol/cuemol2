@@ -61,20 +61,32 @@ void handleError(PyStatus status, PyConfig* config) {
     PyConfig_Clear(config);
 }
 
+std::optional<fs::path> findPythonHome(const fs::path& appDir)
+{
+    // Try to find python home directory relative to the appDir
+    
+
+    auto pythonHome = appDir / ".." / "lib" / "python";
+    if (fs::exists(pythonHome) && fs::is_directory(pythonHome)) {
+        return pythonHome;
+    }
+    pythonHome = appDir / ".." / "Resources" / "python";
+    if (fs::exists(pythonHome) && fs::is_directory(pythonHome)) {
+        return pythonHome;
+    }
+
+    LOG_DPRINTLN("Python> cannot find pythonHome");
+    return std::nullopt;
+}
+
 bool initEmbedWithPath(const char *szConfPath)
 {
     fs::path confpath(szConfPath);
-    auto pythonHome = confpath.parent_path() / ".." / "lib" / "python";
-
-    LOG_DPRINTLN("Python> Try PythonHome=%s", pythonHome.c_str());
-    if (!fs::exists(pythonHome)) {
-        LOG_DPRINTLN("Python> %s does not exist", pythonHome.c_str());
+    auto pythonHome = findPythonHome(confpath.parent_path());
+    if (!pythonHome.has_value()) {
         return false;
     }
-    if (!fs::is_directory(pythonHome)) {
-        LOG_DPRINTLN("Python> %s is not a directory", pythonHome.c_str());
-        return false;
-    }
+    auto pythonHomePath = pythonHome.value();
 
     PyConfig config;
     PyConfig_InitIsolatedConfig(&config);
@@ -82,15 +94,15 @@ bool initEmbedWithPath(const char *szConfPath)
     PyStatus status;
     status = PyConfig_SetString(&config, &config.program_name, Py_DecodeLocale("cuemol2", NULL));
     status = PyConfig_SetString(&config, &config.home,
-                                Py_DecodeLocale(pythonHome.c_str(), NULL));
+                                Py_DecodeLocale(pythonHomePath.c_str(), NULL));
     if (PyStatus_Exception(status)) {
         handleError(status, &config);
         return false;
     }
 
-    LOG_DPRINTLN("Python> PythonHome=%s", pythonHome.c_str());
+    LOG_DPRINTLN("Python> PythonHome=%s", pythonHomePath.c_str());
 
-    auto libPath = pythonHome / "lib" / "python3.12";
+    auto libPath = pythonHomePath / "lib" / "python3.12";
     auto sitePath = libPath / "site-packages";
     auto dynloadPath = libPath / "lib-dynload";
 

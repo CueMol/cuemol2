@@ -59,6 +59,18 @@ def find_lib(libpath, search_path):
     raise IOError(msg)
 
 
+g_python_path = None
+
+
+def find_python(search_path):
+    for i in search_path:
+        chkpath = os.path.join(i, "python")
+        if os.path.isdir(chkpath):
+            return chkpath
+    print "Warning: python lib not found"
+    return None
+
+
 def traverse_deplibs(cur_libpath, search_path):
     deplibs = get_deplibs(cur_libpath)
     abs_dep_list = []
@@ -66,6 +78,11 @@ def traverse_deplibs(cur_libpath, search_path):
     for dep_path in deplibs:
         if is_system_lib(dep_path):
             print "%s is system lib --> skip" % dep_path
+            continue
+        if "libpython" in dep_path:
+            print "%s is python lib --> copytree" % dep_path
+            global g_python_path
+            g_python_path = find_python(search_path)
             continue
         if "cuemol2" not in dep_path:
             if dep_path.startswith("@executable_path/"):
@@ -88,21 +105,22 @@ def traverse_deplibs(cur_libpath, search_path):
     return rewr_dict
 
 
-def create_argparser():
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument("-i", "--input_path", type=str, default=None)
-    parser.add_argument("-o", "--out_dir", type=str, default=None)
-    parser.add_argument("--search_path", type=str, default=None)
-    
-    args = parser.parse_args()
-    return args
+def copy_tree(src, dst):
+    # remove dst if exists
+    if os.path.isdir(dst):
+        shutil.rmtree(dst)
+    shutil.copytree(src, dst)        
 
 
 def copy_dylibs(rewr_dict, out_dir, nocopy):
     if not os.path.isdir(out_dir):
         os.makedirs(out_dir)
         
+    if g_python_path:
+        dest_path = os.path.join(out_dir, "python")
+        print "Python dylib dependency found --> copy %s %s" % (g_python_path, dest_path)
+        copy_tree(g_python_path, dest_path)
+
     for k in sorted(rewr_dict.keys()):
         # print "%s: %s" % (k, rewr_dict[k])
         if k in nocopy:
@@ -125,6 +143,18 @@ def copy_dylibs(rewr_dict, out_dir, nocopy):
                                    dest_path,
                                    ])
             print "rewrite %s: %s --> %s" % (dest_path, orig_nm, dest_nm)
+
+
+def create_argparser():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("-i", "--input_path", type=str, default=None)
+    parser.add_argument("-o", "--out_dir", type=str, default=None)
+    parser.add_argument("--search_path", type=str, default=None)
+    
+    args = parser.parse_args()
+    return args
+
 
 def main():
     args = create_argparser()
