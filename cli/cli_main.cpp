@@ -70,9 +70,9 @@ std::optional<Config> parse_arguments(int argc, const char *argv[])
         return std::nullopt;
     }
 
-    return Config{.interactive = vm.count("interactive") > 0,
-                  .input_file = vm["input"].as<std::string>(),
-                  .config_file = vm["config"].as<std::string>()};
+    return Config{vm.count("interactive") > 0,
+                  vm["input"].as<std::string>(),
+                  vm["config"].as<std::string>()};
 }
 
 // //
