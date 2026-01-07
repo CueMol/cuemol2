@@ -32,14 +32,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # - os: macos-15
+          #   name: "MacOS 15 arm64 clang"
+          #   embed-pyhon: ""
           - os: macos-15
-            name: "MacOS 15 arm64 clang"
+            name: "MacOS 15 arm64 clang py312"
+            embed-pyhon: "3.12"
           - os: macos-15-intel
             name: "MacOS 15 x64 clang"
-          # - os: macos-14
-          #   name: "MacOS 14 arm64 clang"
-          # - os: macos-13
-          #   name: "MacOS 13 x64 clang"
+            embed-pyhon: ""
 
     env:
       MACOSX_DEPLOYMENT_TARGET: "10.15"
@@ -50,6 +51,7 @@ jobs:
         echo "BUILD_MODE: ${{ env.BUILD_MODE }}"
         echo "Branch/Tag: ${{ github.ref }}"
         echo "Event: ${{ github.event_name }}"
+        echo "Build type ${{ matrix.name }}: ${{ matrix.os }} ${{ matrix.embed-python }}"
 
     - uses: actions/checkout@v4
 
@@ -60,6 +62,7 @@ jobs:
       shell: bash
       run: |
         echo "RUNNER_TYPE=${{ matrix.os }}" >> $GITHUB_ENV
+        echo "EMBED_PYTHON=${{ matrix.embed-python }}" >> $GITHUB_ENV
         set -eux
         clang --version
         xcodebuild -version

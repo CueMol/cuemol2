@@ -22,3 +22,9 @@ runs:
 
       cd ${GITHUB_WORKSPACE}
       bash build_scripts/download_deplibs/run.sh $BASEDIR ${{ runner.os }} ${{ runner.arch }}
+
+  - name: Download python-build-standalone (macOS)
+    if: ${{ runner.os == 'macOS' && env.EMBED_PYTHON != "" }}
+    shell: bash
+    run: |
+      echo "Download python-build-standalone $EMBED_PYTHON"
