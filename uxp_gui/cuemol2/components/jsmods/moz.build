@@ -2,6 +2,11 @@
 EXTRA_JS_MODULES += ['appboots.js', 'harness.js']
 # EXTRA_JS_MODULES += ['appboots.js']
 
+EXTRA_COMPONENTS += [
+    'cuemol2-cmdline.js',
+    'nsCueMol2CLH.manifest',
+]
+
 FINAL_TARGET_FILES['addon-kit-lib'] += [
     'addon-kit-lib/clipboard.js',
     'addon-kit-lib/context-menu.js',
