@@ -51,7 +51,8 @@ else
 fi
 
 # Python embed
-if [ "${EMBED_PYTHON_ROOT+foo}" ]; then
+if [ -d "${EMBED_PYTHON_ROOT:-}" ]; then
+    # if [ "${EMBED_PYTHON_ROOT+foo}" ]; then
     ENABLE_PYTHON_EMBED=ON
     PYTHON_ROOT=$EMBED_PYTHON_ROOT
     echo "Using PYTHON_ROOT=$EMBED_PYTHON_ROOT"

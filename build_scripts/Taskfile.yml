@@ -8,6 +8,8 @@ vars:
   LIBCUEMOL2_INSTDIR: "{{.WORKDIR}}/cuemol2"
   CONFIG: "Debug"
   PARALLEL: ""
+  EMBED_PYTHON_ROOT:
+    sh: '[ -d "{{.WORKDIR}}/python" ] && echo "{{.WORKDIR}}/python" || echo ""'
 
 tasks:
   default:
@@ -15,7 +17,17 @@ tasks:
       - echo "Default workdir {{.WORKDIR}}"
     silent: true
 
-#####
+  #####
+
+  download_deplibs:
+    cmds:
+      - bash download_deplibs/run.sh "{{.WORKDIR}}" macOS ARM64
+
+  download_extpkgs:
+    cmds:
+      - bash download_extpkgs/run.sh "{{.WORKDIR}}" macOS ARM64
+
+  #####
 
   build_libcuemol2:
     deps:
@@ -23,11 +35,15 @@ tasks:
 
   build_libcuemol2:darwin:
     platforms: [darwin]
+    env:
+      EMBED_PYTHON_ROOT: "{{.EMBED_PYTHON_ROOT}}"
     cmds:
       - bash build_libcuemol2_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
 
   build_libcuemol2:linux:
     platforms: [linux]
+    env:
+      EMBED_PYTHON_ROOT: "{{.EMBED_PYTHON_ROOT}}"
     cmds:
       - bash build_libcuemol2_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
 

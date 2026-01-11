@@ -54,23 +54,23 @@ PyObject *initModuleFunc(void)
 
 bool g_bEmbedInit;
 
-void handleError(PyStatus status, PyConfig* config) {
+void handleError(PyStatus status, PyConfig *config)
+{
     if (status.err_msg) {
         fprintf(stderr, "Python config error: %s\n", status.err_msg);
     }
     PyConfig_Clear(config);
 }
 
-std::optional<fs::path> findPythonHome(const fs::path& appDir)
+std::optional<fs::path> findPythonHome(const fs::path &appDir)
 {
     // Try to find python home directory relative to the appDir
-    
-
     auto pythonHome = appDir / ".." / "lib" / "python";
     if (fs::exists(pythonHome) && fs::is_directory(pythonHome)) {
         return pythonHome;
     }
-    pythonHome = appDir / ".." / "Resources" / "python";
+    // pythonHome = appDir / ".." / "Resources" / "python";
+    pythonHome = appDir / "python";
     if (fs::exists(pythonHome) && fs::is_directory(pythonHome)) {
         return pythonHome;
     }
@@ -82,7 +82,8 @@ std::optional<fs::path> findPythonHome(const fs::path& appDir)
 bool initEmbedWithPath(const char *szConfPath)
 {
     fs::path confpath(szConfPath);
-    auto pythonHome = findPythonHome(confpath.parent_path());
+    auto appDir = confpath.parent_path();
+    auto pythonHome = findPythonHome(appDir);
     if (!pythonHome.has_value()) {
         return false;
     }
@@ -92,7 +93,8 @@ bool initEmbedWithPath(const char *szConfPath)
     PyConfig_InitIsolatedConfig(&config);
 
     PyStatus status;
-    status = PyConfig_SetString(&config, &config.program_name, Py_DecodeLocale("cuemol2", NULL));
+    status = PyConfig_SetString(&config, &config.program_name,
+                                Py_DecodeLocale("cuemol2", NULL));
     status = PyConfig_SetString(&config, &config.home,
                                 Py_DecodeLocale(pythonHomePath.c_str(), NULL));
     if (PyStatus_Exception(status)) {
@@ -122,10 +124,23 @@ bool initEmbedWithPath(const char *szConfPath)
         Py_ExitStatusException(status);
         return false;
     }
- 
 
     return true;
     // return !PyStatus_Exception(status);
+}
+
+void addPythonPath(const fs::path &pyDir)
+{
+    LString strpath = pyDir.string();
+    strpath = strpath.escapeQuots();
+
+    LString src = LString::format(
+        "import sys\n"
+        "sys.path.append('%s')\n",
+        strpath.c_str());
+
+    PyRun_SimpleString(src.c_str());
+    LOG_DPRINTLN("Python> local script path=%s added", strpath.c_str());
 }
 
 bool initEmbedPython(const char *szConfPath)
@@ -153,20 +168,9 @@ bool initEmbedPython(const char *szConfPath)
 
     // Append local python script path to sys.path
     if (szConfPath != NULL) {
-        fs::path confpath(szConfPath);
-        confpath = confpath.parent_path();
-        confpath /= "python";
-        LString strpath = confpath.string();
-        strpath = strpath.escapeQuots();
-
-        LString src = LString::format(
-            "import sys\n"
-            "sys.path.append('%s')\n",
-            //"print(sys.path)\n",
-            strpath.c_str());
-
-        PyRun_SimpleString(src.c_str());
-        LOG_DPRINTLN("Python> local script path=%s added", strpath.c_str());
+        auto appDir = fs::path(szConfPath).parent_path();
+        addPythonPath(appDir / "python");
+        addPythonPath(appDir / "data" / "python");
     }
 
     // Redirect stdout/err to the logwindow

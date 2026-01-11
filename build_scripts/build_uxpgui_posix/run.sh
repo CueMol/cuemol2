@@ -113,14 +113,15 @@ fi
 ./mach package
 
 # find obj-*-apple-darwin/dist -name "apbs"
-
-if [ $RUNNER_OS = "macOS" ]; then
-    ls -l obj-*/dist/cuemol2-*.dmg
-    cp obj-*/dist/cuemol2-*.dmg ${WORKSPACE}/
-    cd ${WORKSPACE}
-    ls -l cuemol2-*.dmg
-    tar cjvf ${WORKSPACE}/${ARTIFACT_NAME} *.dmg
-else
-    echo "unknown runner os: $RUNNER_OS"
-    exit 1
+if [ "${ARTIFACT_NAME+foo}" ]; then
+    if [ $RUNNER_OS = "macOS" ]; then
+        ls -l obj-*/dist/cuemol2-*.dmg
+        cp obj-*/dist/cuemol2-*.dmg ${WORKSPACE}/
+        cd ${WORKSPACE}
+        ls -l cuemol2-*.dmg
+        tar cjvf ${WORKSPACE}/${ARTIFACT_NAME} *.dmg
+    else
+        echo "unknown runner os: $RUNNER_OS"
+        exit 1
+    fi
 fi

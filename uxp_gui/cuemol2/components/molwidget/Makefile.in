@@ -4,6 +4,7 @@
 ifeq (Darwin, $(OS_ARCH))
 
 PROGRAMS_DEST = $(DIST)/bin/components
+dist_dest = $(DIST)/$(MOZ_MACBUNDLE_NAME)
 
 #.PHONY: repackage
 #tools repackage:: $(PROGRAM)
@@ -13,6 +14,10 @@ libs::
 	echo 'CUEMOL_DEPLIB_DIRS=$(CUEMOL_DEPLIB_DIRS)'
 	$(PYTHON) --version
 	$(PYTHON) $(srcdir)/install_dylibs.py -i '$(PROGRAMS_DEST)/$(SHARED_LIBRARY)' --search_path=$(CUEMOL_DEPLIB_DIRS):$(CUEMOL_DIR)/lib --out_dir '$(DIST)/bin'
+	if [ -d "$(CUEMOL_DIR)/data/python" ] ; then \
+      mkdir -p $(dist_dest)/Contents/Resources/data/ ; \
+	  cp -R $(CUEMOL_DIR)/data/python $(dist_dest)/Contents/Resources/data/ ; \
+	fi
 
 # @$(foreach V,$(sort $(.VARIABLES)),$(if $(filter-out environment% default automatic,$(origin $V)),$(warning $V=$($V) ($(value $V)))))
 
