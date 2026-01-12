@@ -754,6 +754,7 @@ MolCoordPtr AtomIntrRenderer::evalMol(const AtomIntrElem &elem) const
 bool AtomIntrRenderer::evalPos(AtomIntrElem &elem,
                                Vector4D &rval)
 {
+    MB_DPRINTLN("AtomIntrRenderer::evalPos> strAid=<%s>", elem.strAid.c_str());
   if (elem.nMode==AtomIntrElem::AI_POS) {
     rval = elem.pos;
     return true;
@@ -1114,18 +1115,28 @@ bool AtomIntrRenderer::readFrom2Helper(qlib::LDom2Node *pNode, int nOrder,
   key = LString::format("aid%d", nOrder);
   if (pNode->findChild(key)) {
     value = pNode->getStrAttr(key);
+
+    // number AID (obsolete)
+    qlib::LRegExpr re("^[0-9]+$");
     int aid;
-    if (value.toInt(&aid)) {
-      // number type aid (obsolete)
+    if (re.match(value) && value.toInt(&aid)) {
       elem.setAtomID(aid);
+      MB_DPRINTLN("AtomIntrRenderer.readFrom2Helper> AID=%d", elem.nAtomID);
       return true;
     }
+    // if (value.toInt(&aid)) {
+    //   // number type aid (obsolete)
+    //   elem.setAtomID(aid);
+    //   MB_DPRINTLN("AtomIntrRenderer.readFrom2Helper> AID=%d", elem.nAtomID);
+    //   return true;
+    // }
 
     if (value.isEmpty()) return false;
 
     // string AID (A.123.CA form)
     elem.setAtomID(-1);
     elem.strAid = value;
+    MB_DPRINTLN("AtomIntrRenderer.readFrom2Helper> strAid=%s", elem.strAid.c_str());
     return true;
   }
 
