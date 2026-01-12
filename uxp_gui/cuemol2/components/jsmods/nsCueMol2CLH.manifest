@@ -1,0 +1,3 @@
+component {4349a533-9aa1-4760-85ef-f537cc69d13c} cuemol2-cmdline.js
+contract @cuemol.org/toolkit/default-clh;1 {4349a533-9aa1-4760-85ef-f537cc69d13c}
+category command-line-handler a-default @cuemol.org/toolkit/default-clh;1

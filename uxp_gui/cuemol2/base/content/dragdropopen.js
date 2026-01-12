@@ -7,18 +7,22 @@
 
 /// try to read the file using the specified reader
 // TODO: impl more efficient way to check if the file can be read
-Qm2Main.prototype.tryReadFile = function(filename, reader_name)
+Qm2Main.prototype.tryReadFile = function(filename, reader_name, cat_id)
 {
   try {
-    let reader = this.mStrMgr.createHandler(reader_name, 0);
+    let reader = this.mStrMgr.createHandler(reader_name, cat_id);
     reader.setPath(filename);
     let gzpos = filename.lastIndexOf(".gz");
     if (gzpos == filename.length-3)
       reader.compress = "gzip";
-    let newobj = reader.createDefaultObj();
-    reader.attach(newobj);
-    reader.read();
-    reader.detach();
+    if (cat_id == 0) {
+      let newobj = reader.createDefaultObj();
+      reader.attach(newobj);
+      reader.read();
+      reader.detach();
+    } else if (cat_id == 3) {
+      ;
+    }
   }
   catch (e) {
     dd("tryReadFile: failed to read file "+filename+" with reader "+reader_name);
@@ -29,7 +33,7 @@ Qm2Main.prototype.tryReadFile = function(filename, reader_name)
 }
 
 /// find matching io handler (names) for the file name (filename) and returns the index
-Qm2Main.prototype.findMatchIOHandler = function(filename, names)
+Qm2Main.prototype.findMatchIOHandler = function(filename, names, cat_id)
 {
   for (let i=0; i<names.length; ++i) {
     let ext = names[i].fext;
@@ -39,7 +43,7 @@ Qm2Main.prototype.findMatchIOHandler = function(filename, names)
       // alert("findMatch: matched "+ext);
 
       // try to read with the reader
-      if (this.tryReadFile(filename, names[i].name))
+      if (this.tryReadFile(filename, names[i].name, cat_id))
         return i;
     }
   }
@@ -167,7 +171,7 @@ Qm2Main.prototype.openNsFileImpl = function (aNsFile, names, sc_names)
   dd("  leafName: "+ newobj_name);
 
   // check Object readers
-  findex = this.findMatchIOHandler(path_name, names);
+  findex = this.findMatchIOHandler(path_name, names, 0);
   if (findex>=0) {
     let reader_name = names[findex].name;
     dd("  suggested reader name: "+ reader_name);
@@ -176,7 +180,7 @@ Qm2Main.prototype.openNsFileImpl = function (aNsFile, names, sc_names)
   }
 
   // check Scene readers
-  findex = this.findMatchIOHandler(newobj_name, sc_names);
+  findex = this.findMatchIOHandler(newobj_name, sc_names, 3);
   if (findex>=0) {
     let reader_name = sc_names[findex].name;
     dd("  suggested reader name: "+ reader_name);
