@@ -19,8 +19,13 @@ DisplayContext::DisplayContext()
   m_dEdgeLineWidth = -1.0;
   m_nEdgeLineType = ELT_NONE;
   m_pTargView = NULL;
-  // m_nSceneID = qlib::invalid_uid;
-  // m_nViewID = qlib::invalid_uid;
+  m_nSceneID = qlib::invalid_uid;
+  m_nViewID = qlib::invalid_uid;
+  m_lineWidth = -1.0;
+  m_lineStipple = 0xFFFF;
+  m_bLighting = false;
+
+  m_matstack.push_front(Matrix4D());
 }
 
 bool DisplayContext::isRenderPixmap() const
@@ -36,8 +41,6 @@ bool DisplayContext::isDrawElemSupported() const
 void DisplayContext::setTargetView(qsys::View *pView)
 {
   m_pTargView = pView;
-  // m_nSceneID = pView->getSceneID();
-  // m_nViewID = pView->getUID();
 }
 
 qsys::View *DisplayContext::getTargetView() const
@@ -55,11 +58,6 @@ void DisplayContext::normal(double x, double y, double z)
   normal(Vector4D(x,y,z));
 }
 
-void DisplayContext::rotate(const qlib::LQuat &q)
-{
-  multMatrix(q.toRotMatrix());
-}
-
 void DisplayContext::color(double r, double g, double b, double a)
 {
   color(SolidColor::createRGB(r,g,b,a));
@@ -68,6 +66,32 @@ void DisplayContext::color(double r, double g, double b, double a)
 void DisplayContext::color(double r, double g, double b)
 {
   color(SolidColor::createRGB(r,g,b));
+}
+
+void DisplayContext::color(const ColorPtr &c)
+{
+    m_color = c;
+}
+
+// Enable fog
+void DisplayContext::enableFog(bool b)
+{
+    m_bFogEnabled = b;
+}
+
+void DisplayContext::setFogStart(float val)
+{
+    m_fFogStart = val;
+}
+
+void DisplayContext::setFogEnd(float val)
+{
+    m_fFogEnd = val;
+}
+
+void DisplayContext::setFogColor(const ColorPtr &val)
+{
+    m_fogColor = val;
 }
 
 void DisplayContext::setMaterial(const LString &name)
@@ -85,22 +109,119 @@ void DisplayContext::setStyleNames(const LString &name)
   m_styleNames = name;
 }
 
-
-void DisplayContext::scale(const Vector4D &v)
+void DisplayContext::pushMatrix()
 {
-  multMatrix(Matrix4D::makeScaleMat(v));
+    if (m_matstack.size() <= 0) {
+        m_matstack.push_front(Matrix4D());
+        return;
+    }
+    const Matrix4D &top = m_matstack.front();
+    m_matstack.push_front(top);
 }
 
-void DisplayContext::translate(const Vector4D &v)
+void DisplayContext::popMatrix()
 {
-  multMatrix( Matrix4D::makeTransMat(v) );
+    if (m_matstack.size() <= 1) {
+        LString msg("FATAL ERROR: cannot popMatrix()!!");
+        LOG_DPRINTLN(msg);
+        MB_THROW(qlib::RuntimeException, msg);
+        return;
+    }
+    m_matstack.pop_front();
 }
 
-void DisplayContext::loadIdent()
+void DisplayContext::multMatrix(const qlib::Matrix4D &mat)
 {
-  Matrix4D m;
-  loadMatrix(m);
+    Matrix4D top = m_matstack.front();
+    top.matprod(mat);
+    m_matstack.front() = top;
+
+    // check unitarity
+    // checkUnitary();
 }
+void DisplayContext::loadMatrix(const qlib::Matrix4D &mat)
+{
+    m_matstack.front() = mat;
+
+    // check unitarity
+    // checkUnitary();
+}
+
+void DisplayContext::setProjMat(const Matrix4D &mat)
+{
+    m_projMat = mat;
+}
+
+// static
+Matrix4D DisplayContext::makeOrthoProjMat(float left, float right, float bottom, float top,
+                                          float slabnear, float slabfar)
+{
+    MB_DPRINTLN("LR=%f,%f", left, right);
+    MB_DPRINTLN("BT=%f,%f", bottom, top);
+    MB_DPRINTLN("NF=%f,%f", slabnear, slabfar);
+    
+    float r_l = right - left;
+    float t_b = top - bottom;
+    float f_n = slabfar - slabnear;
+    float tx = - (right + left) / (right - left);
+    float ty = - (top + bottom) / (top - bottom);
+    float tz = - (slabfar + slabnear) / (slabfar - slabnear);
+    
+    Matrix4D ret;
+    ret.aij(1,1) = 2.0f / r_l;
+    ret.aij(2,1) = 0.0f;
+    ret.aij(3,1) = 0.0f;
+    ret.aij(4,1) = 0.0f;
+    
+    ret.aij(1,2) = 0.0f;
+    ret.aij(2,2) = 2.0f / t_b;
+    ret.aij(3,2) = 0.0f;
+    ret.aij(4,2) = 0.0f;
+    
+    ret.aij(1,3) = 0.0f;
+    ret.aij(2,3) = 0.0f;
+    ret.aij(3,3) = -2.0f / f_n;
+    ret.aij(4,3) = 0.0f;
+    
+    ret.aij(1,4) = tx;
+    ret.aij(2,4) = ty;
+    ret.aij(3,4) = tz;
+    ret.aij(4,4) = 1.0f;
+
+    return ret;
+}
+
+// static
+Matrix4D DisplayContext::makePersProjMat(float width, float fasp,
+                                         float slabnear, float slabfar, float distance)
+{
+    float t = distance/width;
+
+    Matrix4D ret;
+    ret.aij(1,1) = t / fasp;
+    ret.aij(2,1) = 0;
+    ret.aij(3,1) = 0;
+    ret.aij(4,1) = 0;
+    
+    ret.aij(1,2) = 0;
+    ret.aij(2,2) = t;
+    ret.aij(3,2) = 0;
+    ret.aij(4,2) = 0;
+    
+    ret.aij(1,3) = 0;
+    ret.aij(2,3) = 0;
+    ret.aij(3,3) = (slabfar + slabnear) / (slabnear - slabfar);
+    ret.aij(4,3) = -1;
+    
+    ret.aij(1,4) = 0;
+    ret.aij(2,4) = 0;
+    ret.aij(3,4) = (2 * slabfar * slabnear) / (slabnear - slabfar);
+    ret.aij(4,4) = 0;
+
+    return ret;
+}
+
+//////////
 
 void DisplayContext::drawString(const Vector4D &pos,
                                 const qlib::LString &str)
@@ -166,18 +287,21 @@ void DisplayContext::drawElem(const AbstDrawElem &)
 
 void DisplayContext::setLineWidth(double lw)
 {
+    m_lineWidth = lw;
 }
 
 void DisplayContext::setLineStipple(unsigned short pattern)
+{
+    m_lineStipple = pattern;
+}
+
+void DisplayContext::setPointSize(double size)
 {
 }
 
 void DisplayContext::setLighting(bool f)
 {
-}
-
-void DisplayContext::setPointSize(double size)
-{
+    m_bLighting = f;
 }
 
 
@@ -277,3 +401,33 @@ void DisplayContext::attribute(int n)
 {
 }
 
+void DisplayContext::getDevRGBColor(const ColorPtr &pcol, float &r, float &g, float &b)
+{
+    if (!pcol.isnull()) {
+        auto ccode = pcol->getDevCode(getSceneID());
+        r = gfx::getFR(ccode);
+        g = gfx::getFG(ccode);
+        b = gfx::getFB(ccode);
+    }
+}
+
+void DisplayContext::getDevRGBAColor(const ColorPtr &pcol, float &r, float &g, float &b, float &a)
+{
+    if (!pcol.isnull()) {
+        auto ccode = pcol->getDevCode(getSceneID());
+        r = gfx::getFR(ccode);
+        g = gfx::getFG(ccode);
+        b = gfx::getFB(ccode);
+        a = gfx::getFA(ccode);
+    }
+}
+
+DrawObjSet *DisplayContext::createDrawObjSet() const
+{
+    MB_ASSERT(false);
+    return nullptr;
+}
+
+void DisplayContext::drawObjSet(const DrawObjSet &dos)
+{
+}

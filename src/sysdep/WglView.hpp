@@ -10,6 +10,7 @@
 
 #include "sysdep.hpp"
 #include "OglView.hpp"
+#include <sysdep/ogl_core/OcView.hpp>
 
 #ifdef WIN32
 #  include <windows.h>
@@ -20,10 +21,11 @@ namespace sysdep {
   class WglDisplayContext;
   using gfx::DisplayContext;
 
-  class SYSDEP_API WglView : public OglView
+  //  class SYSDEP_API WglView : public OglView
+  class SYSDEP_API WglView : public OcView
   {
   private:
-    typedef OglView super_t;
+    typedef OcView super_t;
 
     WglDisplayContext *m_pCtxt;
 
@@ -51,6 +53,11 @@ namespace sysdep {
     };
     
     bool m_bCursorIn;
+
+    // MSAA support
+    int m_nMultiSamples;
+    bool m_bHasMultisample;
+
 
     WglView(const WglView &) {}
 
@@ -84,17 +91,37 @@ namespace sysdep {
     HDC getDC() const { return m_hDC; }
     HWND getHWND() const { return m_hWnd; }
 
+    bool initializeGLEW();
+
+    void setMultisample(int samples) {
+      if (samples == 0) {
+        m_nMultiSamples = 0;
+      } else if (samples > 4) {
+        m_nMultiSamples = 1 << 4;
+      } else {
+        m_nMultiSamples = (1 << samples);
+      }
+      LOG_DPRINTLN("Set MSAA %d --> nsamples=%d", samples, m_nMultiSamples);
+    }
+
   private:
     bool m_bHasQuadBuffer;
 
     bool setupShareList();
 
     bool setupPixelFormat();
-    int choosePixFmt(int nColorBits, bool bStereo);
+    int choosePixFmt(bool bStereo);
     bool setPixFmt(int);
 
     // void setUpMouseEvent(UINT nFlags, POINTS point, qsys::InDevEvent &ev);
 
+    bool tryLegacyPixelFormat();
+#ifdef HAVE_GLEW
+    int choosePixFmtARB(bool bStereo, int nMultiSamples);
+    bool tryMSAAPixelFormat(bool stereo, int& pixelFormat);
+    bool tryAdvancedPixelFormat();
+#endif
+    
   };
 
 }

@@ -9,7 +9,8 @@ inputs:
 runs:
   using: "composite"
   steps:
-  - name: Install prerequsites
+  - name: Install prerequsites (posix)
+    if: runner.os != 'Windows'
     shell: bash
     run: |
       if [ ${{ runner.os }} = "macOS" ]; then
@@ -24,7 +25,25 @@ runs:
       fi
       bison --version
 
-  - name: Install deplibs and build libcuemol2
+  - name: Install prerequsites (Windows)
+    if: runner.os == 'Windows'
+    shell: powershell
+    run: |
+      choco install -y -r winflexbison3
+
+      $mozilladir = "c:\mozilla-build"
+      $src_url = "https://ftp.mozilla.org/pub/mozilla/libraries/win32/MozillaBuildSetup-3.4.exe"
+      if((Test-Path $mozilladir) -eq "True"){
+        Write-Host "Cache exists"
+        dir $mozilladir
+      }else{
+        Start-BitsTransfer -Source $src_url -Destination ./MozillaBuildSetup.exe
+        .\MozillaBuildSetup.exe /S | Out-Null
+      }
+      dir $mozilladir
+
+  - name: Build libcuemol2
+    if: runner.os != 'Windows'
     shell: bash
     env:
       SCCACHE_GHA_ENABLED: "true"
@@ -37,3 +56,13 @@ runs:
       fi
       bash build_scripts/build_libcuemol2_posix/run.sh ${{ inputs.basedir }} ${{ runner.os }} ${{ runner.arch }}
       sccache --show-stats
+
+  - name: Build libcuemol2
+    if: runner.os == 'Windows'
+    shell: cmd
+    run: |
+      echo on
+      cd %GITHUB_WORKSPACE%
+      SET BASEDIR=${{ inputs.basedir }}
+      dir %BASEDIR%
+      cmd /c %GITHUB_WORKSPACE%\build_scripts\build_libcuemol2_win.bat %BASEDIR% Release

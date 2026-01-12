@@ -408,6 +408,7 @@ void MapMeshRenderer::preRender(DisplayContext *pdc)
 // generate display list
 void MapMeshRenderer::render(DisplayContext *pdl)
 {
+  // pdl->color(getColor());
   if (m_pXCrsLst==NULL ||
       m_pYCrsLst==NULL ||
       m_pZCrsLst==NULL)

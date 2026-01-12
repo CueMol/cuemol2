@@ -10,18 +10,20 @@
 #include "DensityMap.hpp"
 #include <gfx/DisplayContext.hpp>
 #include <sysdep/OglProgramObject.hpp>
+#include <sysdep/ShaderSetupHelper.hpp>
+#include <sysdep/OglError.hpp>
 
 #ifdef _OPENMP
 #  include <omp.h>
 #endif
 
-#define CHK_GLERROR(MSG)\
-{ \
-  GLenum errc; \
-  errc = glGetError(); \
-  if (errc!=GL_NO_ERROR) \
-    MB_DPRINTLN("%s GLError(%d): %s", MSG, errc, gluErrorString(errc)); \
-}
+// #define CHK_GLERROR(MSG)\
+// { \
+//   GLenum errc; \
+//   errc = glGetError(); \
+//   if (errc!=GL_NO_ERROR) \
+//     MB_DPRINTLN("%s GLError(%d): %s", MSG, errc, gluErrorString(errc)); \
+// }
 
 using namespace xtal;
 using qlib::Matrix4D;
@@ -327,7 +329,7 @@ void MapSurfRenderer::createGLSL1(DisplayContext *pdl)
 void MapSurfRenderer::displayGLSL2(DisplayContext *pdc)
 {
   if (!m_bChkShaderDone)
-    initShader();
+    initShader(pdc);
 
   if (m_pPO==NULL) return; // not initialized
 
@@ -357,9 +359,17 @@ void MapSurfRenderer::displayGLSL2(DisplayContext *pdc)
 
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_BUFFER, m_nMapTexID);
-  glTexBufferARB(GL_TEXTURE_BUFFER, GL_R8UI, m_nMapBufID);
+  glTexBuffer(GL_TEXTURE_BUFFER, GL_R8UI, m_nMapBufID);
 
   m_pPO->enable();
+  m_pPO->setupFog(pdc);
+  m_pPO->setupMat(pdc);
+  {
+      float r = 0.5, g = 0.5, b = 0.5;
+      pdc->getDevRGBColor(pdc->getColor(), r, g, b);
+      m_pPO->setUniformF("u_color", r, g, b, 1.0);
+  }
+  m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
 
   pdc->drawElem(*m_pAttrArray);
 
@@ -374,11 +384,11 @@ void MapSurfRenderer::displayGLSL2(DisplayContext *pdc)
   m_pCMap = NULL;
 }
 
-bool MapSurfRenderer::initShader()
+bool MapSurfRenderer::initShader(DisplayContext *pdc)
 {
   MB_ASSERT(m_pPO == NULL);
 
-  sysdep::ShaderSetupHelper<MapSurfRenderer> ssh(this);
+  sysdep::ShaderSetupHelper ssh(pdc);
 
   if (!ssh.checkEnvVS()) {
     LOG_DPRINTLN("GPUMapSurf> ERROR: OpenGL GPU shading not supported.");
@@ -400,6 +410,7 @@ bool MapSurfRenderer::initShader()
   m_pPO->enable();
 
   // setup constant tables
+  MB_DPRINTLN("MapSurf> setup constant tables.");
   int i;
   LString key;
 
@@ -408,39 +419,47 @@ bool MapSurfRenderer::initShader()
     key = LString::format("ivtxoffs[%d]", i);
     m_pPO->setUniform(key, vtxoffs[i][0], vtxoffs[i][1], vtxoffs[i][2]);
   }
+  MB_DPRINTLN("MapSurf> setup vtxoffs OK.");
   
   // a2fVertexOffset
   for (i=0; i<8; ++i) {
     key = LString::format("fvtxoffs[%d]", i);
     m_pPO->setUniformF(key, a2fVertexOffset[i][0], a2fVertexOffset[i][1], a2fVertexOffset[i][2]);
   }
+  MB_DPRINTLN("MapSurf> setup fvtxoffs OK.");
 
   // a2fEdgeDirection
   for (i=0; i<12; ++i) {
     key = LString::format("fegdir[%d]", i);
     m_pPO->setUniformF(key, a2fEdgeDirection[i][0], a2fEdgeDirection[i][1], a2fEdgeDirection[i][2]);
   }
+  MB_DPRINTLN("MapSurf> setup fegdir OK.");
 
   // a2iEdgeConnection
   for (i=0; i<12; ++i) {
     key = LString::format("iegconn[%d]", i);
     m_pPO->setUniform(key, a2iEdgeConnection[i][0], a2iEdgeConnection[i][1]);
   }
+  MB_DPRINTLN("MapSurf> setup iegconn OK.");
 
   // a2iTriangleConnectionTable
-
 
   m_pPO->disable();
 
   // setup texture (TBO)
-  glGenBuffersARB(1, &m_nMapBufID);
+  // glGenBuffersARB(1, &m_nMapBufID);
+  glGenBuffers(1, &m_nMapBufID);
+  MB_DPRINTLN("MapSurf> glGenBuffers %d.", m_nMapBufID);
   glGenTextures(1, &m_nMapTexID);
+  MB_DPRINTLN("MapSurf> glGenTextures %d.", m_nMapTexID);
+
   glActiveTexture(GL_TEXTURE0);
   glEnable(GL_TEXTURE_BUFFER);
   glBindTexture(GL_TEXTURE_BUFFER, m_nMapTexID);
   glBindTexture(GL_TEXTURE_BUFFER, 0);
 
   m_bChkShaderDone = true;
+  LOG_DPRINTLN("MapSurf> initShader OK.");
   return true;
 }
 
@@ -449,7 +468,8 @@ void MapSurfRenderer::unloading()
   // delete texture
   if (m_nMapBufID!=0) {
     glDeleteTextures(1, &m_nMapTexID);
-    glDeleteBuffersARB(1, &m_nMapBufID);
+    // glDeleteBuffersARB(1, &m_nMapBufID);
+    glDeleteBuffers(1, &m_nMapBufID);
     m_nMapTexID = 0;
     m_nMapBufID = 0;
   }
@@ -516,7 +536,7 @@ void MapSurfRenderer::createGLSL2(DisplayContext *pdl)
                              qlib::type_consts::QTC_FLOAT32, offsetof(AttrElem, ivert));
 
     m_pAttrArray->setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
-    //m_pAttrArray->setDrawMode(gfx::AbstDrawElem::DRAW_LINES);
+    // m_pAttrArray->setDrawMode(gfx::AbstDrawElem::DRAW_LINES);
     //m_pAttrArray->setDrawMode(gfx::AbstDrawElem::DRAW_POINTS);
     m_pAttrArray->alloc(nsz_est_tot);
   }
@@ -525,16 +545,16 @@ void MapSurfRenderer::createGLSL2(DisplayContext *pdl)
   MB_DPRINTLN("estimated vertex size %d", nsz_est_tot);
   
   for (i=0; i<m_pAttrArray->getSize(); ++i) {
-    m_pAttrArray->at(i).ind = 0.0f;
-    m_pAttrArray->at(i).flag = 0.0f;
-    m_pAttrArray->at(i).ivert = 0.0f;
+    m_pAttrArray->at(i).ind = 0;
+    m_pAttrArray->at(i).flag = 0;
+    m_pAttrArray->at(i).ivert = 0;
   }
 
-  quint32 cc = getColor()->getCode();
-  m_col_r = gfx::getRCode(cc);
-  m_col_g = gfx::getGCode(cc);
-  m_col_b = gfx::getBCode(cc);
-  m_col_a = gfx::getACode(cc);
+  // quint32 cc = getColor()->getCode();
+  // m_col_r = gfx::getRCode(cc);
+  // m_col_g = gfx::getGCode(cc);
+  // m_col_b = gfx::getBCode(cc);
+  // m_col_a = gfx::getACode(cc);
 
   m_nbcol = m_nStCol - pMap->getStartCol();
   m_nbrow = m_nStRow - pMap->getStartRow();
@@ -642,31 +662,32 @@ void MapSurfRenderer::createGLSL2(DisplayContext *pdl)
         m_maptmp.at(i,j,k) = getByteDen(ix, iy, iz);
       }
 
-  glEnable(GL_TEXTURE_BUFFER);
-  CHK_GLERROR("glEnable(GL_TEXTURE_BUFFER)");
+  CLR_GLERROR();
+  // glEnable(GL_TEXTURE_BUFFER);
+  // CHK_GLERROR("glEnable(GL_TEXTURE_BUFFER)");
 
   glActiveTexture(GL_TEXTURE0);
   CHK_GLERROR("glActiveTexture(GL_TEXTURE0)");
 
-  glBindBufferARB(GL_TEXTURE_BUFFER, m_nMapBufID);
+  glBindBuffer(GL_TEXTURE_BUFFER, m_nMapBufID);
   CHK_GLERROR("glBindBuffer");
 
   if (!bReuse) {
-    glBufferDataARB(GL_TEXTURE_BUFFER, mncol*mnrow*mnsec*sizeof(MapTmp::value_type), m_maptmp.data(), GL_DYNAMIC_DRAW_ARB);
-    CHK_GLERROR("glBufferDataARB");
+    glBufferData(GL_TEXTURE_BUFFER, mncol*mnrow*mnsec*sizeof(MapTmp::value_type), m_maptmp.data(), GL_DYNAMIC_DRAW);
+    CHK_GLERROR("glBufferData");
   }
   else {
-    glBufferSubDataARB(GL_TEXTURE_BUFFER, 0, mncol*mnrow*mnsec*sizeof(MapTmp::value_type), m_maptmp.data());
-    CHK_GLERROR("glBufferDataARB");
+    glBufferSubData(GL_TEXTURE_BUFFER, 0, mncol*mnrow*mnsec*sizeof(MapTmp::value_type), m_maptmp.data());
+    CHK_GLERROR("glBufferData");
   }
 
-  glBindBufferARB(GL_TEXTURE_BUFFER, 0);
+  glBindBuffer(GL_TEXTURE_BUFFER, 0);
 
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_BUFFER, m_nMapTexID);
 
-  glTexBufferARB(GL_TEXTURE_BUFFER, GL_R8UI, m_nMapBufID);
-  CHK_GLERROR("glTexBufferARB");
+  glTexBuffer(GL_TEXTURE_BUFFER, GL_R8UI, m_nMapBufID);
+  CHK_GLERROR("glTexBuffer");
 
   ////////////////////////
   /// Setup uniform values
@@ -687,4 +708,3 @@ void MapSurfRenderer::createGLSL2(DisplayContext *pdl)
 
   m_bWorkOK = true;
 }
-

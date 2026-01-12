@@ -44,7 +44,7 @@ View::View()
 
   m_pEvtCaster = MB_NEW ViewEventCaster;
   m_uid = qlib::ObjectManager::sRegObj(this);
-  MB_DPRINTLN("### View (%p/%d) created\n", this, m_uid);
+  MB_DPRINTLN("View (%p/%d) created\n", this, m_uid);
 
   // ???
   m_nWidth = 100;
@@ -93,7 +93,7 @@ View::~View()
   delete m_pEvtCaster;
   delete m_pStyles;
 
-  MB_DPRINTLN("View(%p) destructed\n", this);
+  MB_DPRINTLN("View(%p) destructed", this);
   qlib::ObjectManager::sUnregObj(m_uid);
 }
 
@@ -990,33 +990,40 @@ DrawObjPtr View::getDrawObj(const LString &clsname)
   }
   
   DrawObjPtr pRes(pObj);
-  m_drawObjTab.insert(drawobjtab_t::value_type(clsname, pRes));
+  // m_drawObjTab.insert(drawobjtab_t::value_type(clsname, pRes));
+  addDrawObj(clsname, pRes);
 
   return pRes;
 }
 
 void View::showDrawObj(DisplayContext *pdc)
 {
-  drawobjtab_t::const_iterator iter = m_drawObjTab.begin();
-  drawobjtab_t::const_iterator eiter = m_drawObjTab.end();
-
-  for (; iter!=eiter; ++iter) {
-    if (!iter->second->isEnabled())
-      continue;
-    iter->second->display(pdc);
+  auto pView = ViewPtr(this);
+  for (const auto & pair : m_drawObjTab) {
+      if (pair.second->isEnabled()) {
+          pair.second->display(pdc, pView);
+      }
   }
 }
 
 void View::showDrawObj2D(DisplayContext *pdc)
 {
-  drawobjtab_t::const_iterator iter = m_drawObjTab.begin();
-  drawobjtab_t::const_iterator eiter = m_drawObjTab.end();
-
-  for (; iter!=eiter; ++iter) {
-    if (!iter->second->isEnabled())
-      continue;
-    iter->second->display2D(pdc);
+  auto pView = ViewPtr(this);
+  for (const auto & pair : m_drawObjTab) {
+      if (pair.second->isEnabled()) {
+          pair.second->display2D(pdc, pView);
+      }
   }
+
+  // drawobjtab_t::const_iterator iter = m_drawObjTab.begin();
+  // drawobjtab_t::const_iterator eiter = m_drawObjTab.end();
+
+  // auto pView = ViewPtr(this);
+  // for (; iter!=eiter; ++iter) {
+  //   if (!iter->second->isEnabled())
+  //     continue;
+  //   iter->second->display2D(pdc, pView);
+  // }
 }
 
 bool View::hasHWStereo() const
@@ -1024,37 +1031,27 @@ bool View::hasHWStereo() const
   return false;
 }
 
-//////////////////////////////
-// DrawObj
-
-DrawObj::DrawObj()
-     : m_bEnabled(false)
+void View::setCenterMark(int nMode)
 {
-}
-
-DrawObj::~DrawObj()
-{
-}
-
-void DrawObj::setEnabled(bool f)
-{
-  m_bEnabled = f;
+    if (m_curcam.getCenterMark() != nMode) {
+        m_curcam.setCenterMark(nMode);
+        setUpdateFlag();
+    }
 }
 
 ////////
 
 View *View::createOffScreenView(int w, int h, int aa_depth)
 {
-  return NULL;
+    return NULL;
 }
 
-void View::readPixels(int x, int y, int width, int height, char *pbuf, int nbufsize, int ncomp)
+void View::readPixels(int x, int y, int width, int height, char *pbuf, int nbufsize,
+                      int ncomp)
 {
 }
 
-void View::swapBuffers()
-{
-}
+void View::swapBuffers() {}
 
 ////////////////////////////////////////
 // Style supports

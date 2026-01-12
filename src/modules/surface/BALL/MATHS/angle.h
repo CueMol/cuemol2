@@ -250,22 +250,19 @@ namespace BALL
 				@param angle the angle to divide by
 				@return TAngle, {\em *this}
 		*/
-		TAngle& operator /= (const TAngle& angle)
-			throw(Exception::DivisionByZero);
+		TAngle& operator /= (const TAngle& angle);
 
 		/**	Divide this angle by a value.
 				@param val the angle to divide by
 				@return TAngle, {\em *this}
 		*/
-		TAngle& operator /= (const T& val)
-			throw(Exception::DivisionByZero);
+		TAngle& operator /= (const T& val);
 
 		/**	Divide this angle by a value.
 				@param val the angle to divide by
 				@return TAngle, the new angle
 		*/
-		TAngle operator / (const TAngle& val)
-			throw(Exception::DivisionByZero);
+		TAngle operator / (const TAngle& val);
 
 		//@}
 		/**	@name	Predicates
@@ -579,7 +576,6 @@ namespace BALL
 
 	template <typename T>
 	TAngle<T>& TAngle<T>::operator /= (const TAngle& angle)
-		throw(Exception::DivisionByZero)
 	{
 		if (angle.value == 0)
 		{
@@ -592,7 +588,6 @@ namespace BALL
 
 	template <typename T>
 	TAngle<T>& TAngle<T>::operator /= (const T& val) 
-		throw(Exception::DivisionByZero)
 	{
 		if (val == 0)
 		{
@@ -606,7 +601,6 @@ namespace BALL
 
 	template <typename T>
 	TAngle<T> TAngle<T>::operator / (const TAngle<T>& val) 
-		throw(Exception::DivisionByZero)
 	{
 		if (val.value == 0)
 		{

@@ -11,6 +11,7 @@ SET(QLIB_LINK_LIBRARIES
 
 # Normal C++ source files
 SET(QLIB_SRCS
+LByteArray.cpp
 NamedObject.cpp
 LMsgLog.cpp
 ClassRegistry.cpp
@@ -215,6 +216,10 @@ else()
   # target_compile_options(qlib PUBLIC "-fPIC")
   set_property(TARGET qlib PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()
+
+if (USE_PCH)
+  target_precompile_headers(qlib PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
+endif ()
 
 target_sources(qlib
   PRIVATE ${QLIB_SRCS} ${MCWG_HEADERS}

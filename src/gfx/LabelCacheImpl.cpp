@@ -50,8 +50,11 @@ void LabelCacheImpl::draw(DisplayContext *pdc)
       if (pixbuf==NULL) {
         pixbuf = MB_NEW gfx::PixelBuffer();
         MB_DPRINTLN("LabelCache> new pixbuf for <%s> created.", iter->str.c_str());
-        if (!pTRM->renderText(iter->str, *pixbuf))
-          return;
+        if (!pTRM->renderText(iter->str, *pixbuf)) {
+            LOG_DPRINTLN("LabelCache> render <%s> failed.", iter->str.c_str());
+            return;
+        }
+        MB_DPRINTLN("LabelCache> render <%s> OK.", iter->str.c_str());
         iter->pPixBuf = pixbuf;
       }
       pdc->drawPixels(pos, *pixbuf, ColorPtr());
@@ -105,16 +108,19 @@ int LabelCacheImpl::addString(const Vector4D &pos, const LString &str)
 
 bool LabelCacheImpl::remove(int id)
 {
-  PixBufCache::iterator iter = m_data.begin();
-  PixBufCache::iterator eiter = m_data.end();
-  for (; iter!=eiter; ++iter) {
-    if (iter->m_nID==id) {
-      m_data.erase(iter);
-      return true;
+    PixBufCache::iterator iter = m_data.begin();
+    PixBufCache::iterator eiter = m_data.end();
+    for (; iter!=eiter; ++iter) {
+        if (iter->m_nID==id) {
+            MB_DPRINTLN("LabelCache> remove id=%d <%s> %p", id, iter->str.c_str(), iter->pPixBuf);
+            if (iter->pPixBuf!=nullptr)
+                delete iter->pPixBuf;
+            m_data.erase(iter);
+            return true;
+        }
     }
-  }
-
-  return false;
+    
+    return false;
 }
 
 void LabelCacheImpl::setFont(double fs, const LString &fn, const LString &fsty, const LString &fw)

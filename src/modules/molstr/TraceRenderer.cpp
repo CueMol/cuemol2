@@ -221,24 +221,3 @@ void TraceRenderer::endRend(DisplayContext *pdl)
 
   }
 }
-
-/*
-void TraceRenderer::invalidateDisplayCache()
-{
-  super_t::invalidateDisplayCache();
-}
-  */
-
-/*void TraceRenderer::propChanged(qlib::LPropEvent &ev)
-{
-  if (ev.getName().equals("linew")) {
-    invalidateDisplayCache();
-  }
-  else if (ev.getParentName().equals("coloring")||
-      ev.getParentName().startsWith("coloring.")) {
-    invalidateDisplayCache();
-  }
-
-  MainChainRenderer::propChanged(ev);
-}*/
-

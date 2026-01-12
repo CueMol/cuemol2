@@ -341,7 +341,7 @@ namespace xtal {
 
     void displayGLSL2(DisplayContext *pdc);
     void createGLSL2(DisplayContext *pdc);
-    bool initShader();
+    bool initShader(DisplayContext *pdc);
 
     /// Called just before this object is unloaded
     virtual void unloading();
@@ -350,9 +350,10 @@ namespace xtal {
     bool m_bChkShaderDone;
 
     struct AttrElem {
-      qfloat32 ind;
-      qfloat32 flag;
-      qfloat32 ivert;
+        // TODO: use integer attrib
+        qfloat32 ind;
+        qfloat32 flag;
+        qfloat32 ivert;
     };
     
     typedef gfx::DrawAttrArray<AttrElem> AttrArray;

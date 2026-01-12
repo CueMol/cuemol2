@@ -14,6 +14,8 @@
 #include <sysdep/WglView.hpp>
 #include <sysdep/WglDisplayContext.hpp>
 
+#pragma comment(lib, "opengl32.lib")
+
 using namespace xpcom;
 using gfx::DisplayContext;
 using sysdep::WglDisplayContext;
@@ -159,11 +161,13 @@ nsresult XPCNativeWidgetWin::attachImpl()
     return NS_ERROR_FAILURE;
   }
   
-  pWglView->setUseGlShader(m_bUseGlShader);
-  pWglView->setSclFac(m_sclX, m_sclY);
-
   // set cached view ptr
   m_pWglView = pWglView;
+
+  m_pWglView->setUseGlShader(m_bUseGlShader);
+  m_pWglView->setSclFac(m_sclX, m_sclY);
+  m_pWglView->setMultisample(m_nEnableMSAA);
+  initGlewWithDummyWnd();
 
   bool res = pWglView->attach(m_hWnd, m_hDC);
   MB_DPRINTLN("Win bind: %s", res?"OK":"NG");
@@ -558,3 +562,123 @@ NS_IMETHODIMP XPCNativeWidgetWin::Reload(bool *_retval )
   return NS_OK;
 }
 
+bool XPCNativeWidgetWin::createDummyWindow(HWND& hWnd, HDC& hDC, HGLRC& hRC)
+{
+  // Create dummy window class
+  WNDCLASS wc;
+  ::memset(&wc, 0, sizeof(wc));
+  wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+  wc.lpfnWndProc = DefWindowProc;
+  wc.hInstance = GetModuleHandle(NULL);
+  wc.lpszClassName = TEXT("WglDummyWindow");
+  
+  if (!RegisterClass(&wc)) {
+    DWORD error = GetLastError();
+    if (error != ERROR_CLASS_ALREADY_EXISTS) {
+      MB_DPRINTLN("Failed to register dummy window class: %d", error);
+      return false;
+    }
+  }
+  
+  // Create dummy window
+  hWnd = CreateWindowEx(
+    0,
+    TEXT("WglDummyWindow"),
+    TEXT("Dummy"),
+    WS_POPUP,
+    0, 0, 1, 1,
+    NULL, NULL,
+    GetModuleHandle(NULL),
+    NULL
+  );
+  
+  if (hWnd == NULL) {
+    MB_DPRINTLN("Failed to create dummy window");
+    return false;
+  }
+  
+  hDC = GetDC(hWnd);
+  if (hDC == NULL) {
+    MB_DPRINTLN("Failed to get dummy DC");
+    DestroyWindow(hWnd);
+    return false;
+  }
+  
+  // Setup basic pixel format
+  PIXELFORMATDESCRIPTOR pfd;
+  ::memset(&pfd, 0, sizeof(pfd));
+  pfd.nSize = sizeof(pfd);
+  pfd.nVersion = 1;
+  pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+  pfd.iPixelType = PFD_TYPE_RGBA;
+  pfd.cColorBits = 24;
+  pfd.cDepthBits = 24;
+  pfd.iLayerType = PFD_MAIN_PLANE;
+  
+  int pixelFormat = ChoosePixelFormat(hDC, &pfd);
+  if (pixelFormat == 0) {
+    MB_DPRINTLN("Failed to choose pixel format for dummy window");
+    ReleaseDC(hWnd, hDC);
+    DestroyWindow(hWnd);
+    return false;
+  }
+  
+  if (!SetPixelFormat(hDC, pixelFormat, &pfd)) {
+    MB_DPRINTLN("Failed to set pixel format for dummy window");
+    ReleaseDC(hWnd, hDC);
+    DestroyWindow(hWnd);
+    return false;
+  }
+  
+  // Create OpenGL context
+  hRC = wglCreateContext(hDC);
+  if (hRC == NULL) {
+    MB_DPRINTLN("Failed to create dummy GL context");
+    ReleaseDC(hWnd, hDC);
+    DestroyWindow(hWnd);
+    return false;
+  }
+  
+  if (!wglMakeCurrent(hDC, hRC)) {
+    MB_DPRINTLN("Failed to make dummy context current");
+    wglDeleteContext(hRC);
+    ReleaseDC(hWnd, hDC);
+    DestroyWindow(hWnd);
+    return false;
+  }
+  
+  return true;
+}
+
+void XPCNativeWidgetWin::destroyDummyWindow(HWND hWnd, HDC hDC, HGLRC hRC)
+{
+  if (hRC) {
+    wglMakeCurrent(NULL, NULL);
+    wglDeleteContext(hRC);
+  }
+  if (hDC && hWnd) {
+    ReleaseDC(hWnd, hDC);
+  }
+  if (hWnd) {
+    DestroyWindow(hWnd);
+  }
+}
+
+bool XPCNativeWidgetWin::initGlewWithDummyWnd()
+{
+  HWND dummyWnd = NULL;
+  HDC dummyDC = NULL;
+  HGLRC dummyRC = NULL;
+
+  if (!createDummyWindow(dummyWnd, dummyDC, dummyRC)) {
+    LOG_DPRINTLN("Failed to create dummy window for GLEW initialization");
+    return false;
+  }
+
+  if (!m_pWglView->WglView::initializeGLEW()) {
+    return false;
+  }
+
+  destroyDummyWindow(dummyWnd, dummyDC, dummyRC);
+  return true;
+}

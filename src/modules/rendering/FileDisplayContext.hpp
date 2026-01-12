@@ -53,8 +53,8 @@ namespace render {
     /// bg color
     gfx::ColorPtr m_bgcolor;
 
-    /// matrix stack
-    std::deque<Matrix4D> m_matstack;
+    // /// matrix stack
+    // std::deque<Matrix4D> m_matstack;
 
     /// unitarity of the current transformation
     bool m_bUnitary;
@@ -180,10 +180,10 @@ namespace render {
     virtual void color(const gfx::ColorPtr &c);
     virtual void attribute(int n);
 
-    virtual void pushMatrix();
-    virtual void popMatrix();
-    virtual void multMatrix(const Matrix4D &mat);
-    virtual void loadMatrix(const Matrix4D &mat);
+    // virtual void pushMatrix();
+    // virtual void popMatrix();
+    // virtual void multMatrix(const Matrix4D &mat);
+    // virtual void loadMatrix(const Matrix4D &mat);
 
     ////////////////
 
@@ -261,23 +261,23 @@ namespace render {
     ///////////////////////////////
     // file context specific op.
 
-    void clearMatStack() {
-      m_matstack.erase(m_matstack.begin(), m_matstack.end());
-    }
+    // void clearMatStack() {
+    //   m_matstack.erase(m_matstack.begin(), m_matstack.end());
+    // }
 
     void checkUnitary();
 
-    void xform_vec(Vector4D &v) const {
-      const Matrix4D &mtop = m_matstack.front();
-      v.w() = 1.0;
-      mtop.xform4D(v);
-    }
+    // void xform_vec(Vector4D &v) const {
+    //   const Matrix4D &mtop = m_matstack.front();
+    //   v.w() = 1.0;
+    //   mtop.xform4D(v);
+    // }
 
-    void xform_norm(Vector4D &v) const {
-      const Matrix4D &mtop = m_matstack.front();
-      v.w() = 0.0;
-      mtop.xform4D(v);
-    }
+    // void xform_norm(Vector4D &v) const {
+    //   const Matrix4D &mtop = m_matstack.front();
+    //   v.w() = 0.0;
+    //   mtop.xform4D(v);
+    // }
 
     /// Draw a single line segment from v1 to v2 to the output
     /// v1 and v2 should be transformed by matrix stack

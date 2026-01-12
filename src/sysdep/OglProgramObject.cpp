@@ -10,11 +10,15 @@
 
 #include <qlib/FileStream.hpp>
 #include <qsys/SysConfig.hpp>
+#include <gfx/DisplayContext.hpp>
 
 #if defined(HAVE_GLEW) || defined(USE_GLES2)
 
 using namespace sysdep;
 using qsys::SysConfig;
+
+// static
+LString OglShaderObject::s_shaderVerStr;
 
 OglShaderObject::~OglShaderObject()
 {
@@ -27,14 +31,14 @@ OglShaderObject::~OglShaderObject()
 
 void OglShaderObject::loadFile(const LString& filename)
 {
-  CLR_GLERROR();
-  // CHK_GLERROR("SO.loadFile createShader BEFORE");
+    // CLR_GLERROR();
+    glGetError();
+    // CHK_GLERROR("SO.loadFile createShader BEFORE");
 
   //m_hGL = glCreateShaderObjectARB(m_nType);
   m_hGL = glCreateShader(m_nType);
   CHK_GLERROR("SO.loadFile createShader");
-  GLenum errc;
-  errc = glGetError();
+  GLenum errc = glGetError();
   if ( errc != GL_NO_ERROR ) {
     LOG_DPRINTLN("ShaderObject::ShaderObject(): cannot create shader object: %s",
                  filename.c_str());
@@ -55,22 +59,25 @@ void OglShaderObject::loadFile(const LString& filename)
     sbuf[n] = '\0';
     m_source += sbuf;
   }
-/*
-  std::ifstream f_in( fnam.c_str(), std::ios::binary );
-  if ( f_in.fail()) {
-    LOG_DPRINTLN("ShaderObject::ShaderObject(): cannot open file: %s",
-                 fnam.c_str());
-    MB_ASSERT(false);
-    return;
+
+  if (s_shaderVerStr.isEmpty()) {
+      // get default shader version string
+      LString verstr = (const char *) glGetString(GL_SHADING_LANGUAGE_VERSION);
+      // GL
+      int vmaj=0, vmin=0;
+      if (sscanf(verstr.c_str(), "%d.%d", &vmaj, &vmin)==2) {
+          s_shaderVerStr = LString::format("%d%d", vmaj, vmin);
+      }
+      else {
+          s_shaderVerStr = "120";
+      }
+      MB_DPRINTLN("OglProgramObject> Using default shader version string: %s",
+                  s_shaderVerStr.c_str());
   }
+  auto verStr = LString::format("#version %s\n\n", s_shaderVerStr.c_str());
+  m_source = verStr + m_source;
 
-  std::ostringstream str_out;
-  str_out << f_in.rdbuf();
-  m_source = str_out.str();
-  f_in.close();
-*/
   // set shader source
-
   const char *s = m_source.c_str();
   int l = m_source.length();
 
@@ -90,7 +97,8 @@ bool OglShaderObject::compile()
 {
   int length, l;
 
-  CLR_GLERROR();
+  // CLR_GLERROR();
+  glGetError();
 
   // compile
   glCompileShader(m_hGL);
@@ -135,19 +143,17 @@ bool OglShaderObject::compile()
 
 bool OglProgramObject::init()
 {
-  GLenum errc;
+  // CLR_GLERROR();
+  // glGetError();
 
-  CLR_GLERROR();
-
-  // m_hPO = glCreateProgramObjectARB();
   m_hPO = glCreateProgram();
-  errc = glGetError();
 
-  if ( errc != GL_NO_ERROR ) {
-    //LOG_DPRINTLN("ProgramObject::ProgramObject(): cannot create program object (%d; %s)",
-    //errc, gluErrorString(errc));
-    return false;
-  }
+  // GLenum errc = glGetError();
+  // if ( errc != GL_NO_ERROR ) {
+  //   LOG_DPRINTLN("ProgramObject::ProgramObject(): cannot create program object (%d; %s)",
+  //                errc, gluErrorString(errc));
+  //   return false;
+  // }
 
   return true;
 }
@@ -190,22 +196,17 @@ bool OglProgramObject::loadShader(const LString &name, const LString &srcpath, G
 
 void OglProgramObject::attach( const OglShaderObject *s )
 {
-  CLR_GLERROR();
-
-  // glAttachObjectARB( m_hPO, s->getHandle());
-  glAttachShader( m_hPO, s->getHandle());
-
-  if ( glGetError() != GL_NO_ERROR ) {
-    MB_THROW(qlib::RuntimeException, "glAttachShader error");
-    //MB_ASSERT(false);
-  }
+    CLR_GLERROR();
+    glAttachShader( m_hPO, s->getHandle());
+    CHK_GLERROR("glAttachShader( m_hPO, s->getHandle())");
 }
 
 bool OglProgramObject::link()
 {
   int length, l;
 
-  CLR_GLERROR();
+  // CLR_GLERROR();
+  glGetError();
 
   // link
   //glLinkProgramARB(m_hPO);
@@ -249,8 +250,6 @@ bool OglProgramObject::link()
 void OglProgramObject::use()
 {
   CLR_GLERROR();
-
-  //glUseProgramObjectARB(m_hPO);
   glUseProgram(m_hPO);
   CHK_GLERROR("PO.use");
 }
@@ -287,39 +286,115 @@ void OglProgramObject::setProgParam(GLenum pname, GLint param)
 #endif
 }
 
-void OglProgramObject::setMatrix(const char *name, const qlib::Matrix4D &mat)
+void OglProgramObject::setMatrix(const LString &name, const qlib::Matrix4D &mat)
 {
-  GLfloat m[16];
+    auto idx = getUniformLocation(name);
+    if (idx < 0) {
+        // uniform undefined
+        //   --> ignore set
+        return;
+    }
 
-  m[0]  = mat.aij(1,1);
-  m[4]  = mat.aij(1,2);
-  m[8]  = mat.aij(1,3);
-  m[12] = mat.aij(1,4);
+    GLfloat m[16];
+    
+    m[0]  = mat.aij(1,1);
+    m[4]  = mat.aij(1,2);
+    m[8]  = mat.aij(1,3);
+    m[12] = mat.aij(1,4);
+    
+    m[1]  = mat.aij(2,1);
+    m[5]  = mat.aij(2,2);
+    m[9]  = mat.aij(2,3);
+    m[13] = mat.aij(2,4);
+    
+    m[2]  = mat.aij(3,1);
+    m[6]  = mat.aij(3,2);
+    m[10] = mat.aij(3,3);
+    m[14] = mat.aij(3,4);
 
-  m[1]  = mat.aij(2,1);
-  m[5]  = mat.aij(2,2);
-  m[9]  = mat.aij(2,3);
-  m[13] = mat.aij(2,4);
+    m[3]  = mat.aij(4,1);
+    m[7]  = mat.aij(4,2);
+    m[11] = mat.aij(4,3);
+    m[15] = mat.aij(4,4);
 
-  m[2]  = mat.aij(3,1);
-  m[6]  = mat.aij(3,2);
-  m[10] = mat.aij(3,3);
-  m[14] = mat.aij(3,4);
-
-  m[3]  = mat.aij(4,1);
-  m[7]  = mat.aij(4,2);
-  m[11] = mat.aij(4,3);
-  m[15] = mat.aij(4,4);
-
-  setMatrix4fv(name, 1, GL_FALSE, m);
+    glUniformMatrix4fv(idx, 1, GL_FALSE, m);
 }
 
-/*
-void OglProgramObject::setMatrix(const char *name, GLuint count, GLboolean transpose,
-                    const GLfloat *v)
+void OglProgramObject::setMatrix(const LString &name, const qlib::Matrix3D &mat)
 {
+    auto idx = getUniformLocation(name);
+    if (idx < 0) {
+        // uniform undefined
+        //   --> ignore set
+        return;
+    }
 
-  glLoadMatrixd(m);
-*/
+    GLfloat m[9];
+    
+    m[0] = mat.aij(1,1);
+    m[1] = mat.aij(2,1);
+    m[2] = mat.aij(3,1);
+
+    m[3] = mat.aij(1,2);
+    m[4] = mat.aij(2,2);
+    m[5] = mat.aij(3,2);
+
+    m[6] = mat.aij(1,3);
+    m[7] = mat.aij(2,3);
+    m[8] = mat.aij(3,3);
+
+    glUniformMatrix3fv(idx, 1, GL_FALSE, m);
+}
+
+GLint OglProgramObject::getUniformLocation(const LString &name)
+{
+    // check cache
+    auto it = m_uniforms.find(name);
+    if (it != m_uniforms.end()) {
+        return it->second;
+    }
+    
+    GLint ul = glGetUniformLocation(m_hPO, name.c_str());
+    if (ul == -1) {
+        // MB_DPRINTLN("OglProgramObject> Cannot find uniform location: %s (ignored)", name.c_str());
+        return -1;
+    }
+    
+    // register to cache
+    m_uniforms[name] = ul;
+    
+    return ul;
+}
+
+void OglProgramObject::setupFog(gfx::DisplayContext *pdc)
+{
+    auto fog_end = pdc->getFogEnd();
+    auto fog_start = pdc->getFogStart();
+    auto fog_scl = 1.0 / (fog_end - fog_start);
+    float fog_r = 0.0, fog_g = 0.0, fog_b = 0.0;
+    pdc->getDevRGBColor(pdc->getFogColor(), fog_r, fog_g, fog_b);
+    setUniformF("u_fogEnd", fog_end);
+    setUniformF("u_fogScale", fog_scl);
+    setUniformF("u_fogColor", fog_r, fog_g, fog_b);
+}
+
+void OglProgramObject::setupMat(gfx::DisplayContext *pdc)
+{
+    // setup model-view matrix
+    auto mvMat = pdc->getModelViewMat();
+    setMatrix("u_ModelViewMatrix", mvMat);
+
+    // setup projection matrix
+    auto prjMat = pdc->getProjMat();
+    setMatrix("u_ProjectionMatrix", prjMat);
+
+    // // mvp mat
+    // auto mvp = prjMat * mvMat;
+    // setMatrix("u_ModelViewProjectionMatrix", mvp);
+
+    // setup normal matrix
+    auto nmMat = mvMat.getMatrix3D().invert().transpose();
+    setMatrix("u_NormalMatrix", nmMat);
+}
 
 #endif

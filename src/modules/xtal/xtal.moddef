@@ -18,7 +18,7 @@
 
 #ifdef USE_OPENGL
 #  include "GLSLMapMeshRenderer.qif"
-#  include "GLSLMapVolRenderer.qif"
+// #  include "GLSLMapVolRenderer.qif"
 #endif
 
 module xtal
@@ -37,8 +37,7 @@ module xtal
 
 #ifdef USE_OPENGL
   GLSLMapMeshRenderer;
-  GLSLMapVolRenderer;
+//  GLSLMapVolRenderer;
 #endif
 
 };
-

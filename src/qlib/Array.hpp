@@ -5,167 +5,216 @@
 //
 // $Id: Array.hpp,v 1.3 2010/11/23 11:19:33 rishitani Exp $
 
-#ifndef ARRAY_1D_H__
-#define ARRAY_1D_H__
+#pragma once
 
 #include "LDebugAssert.hpp"
 #include "LDebugNew.hpp"
 
 namespace qlib {
 
-  template <class _Type>
-  class Array
-  {
-  private:
+template <class _Type>
+class Array
+{
+private:
     /// data
     _Type *m_array;
 
     /// number of entries;
     int m_nSize;
-    
-  public:
-    typedef _Type value_type;
+
+    /// This object own the m_array or not (usually true)
+    bool m_bOwn;
+
+    /// destroy callback type
+    using DestroyCallback = std::function<void(Array<_Type> &)>;
+
+    DestroyCallback m_on_destroy;
+
+public:
+    using value_type = _Type;
 
     ///
     /// Make empty array (we must allocate memory by resize() later.)
     ///
-    Array() : m_array(NULL), m_nSize(0)
-    {
-    }
-    
+    Array() : m_array(nullptr), m_nSize(0), m_bOwn(false), m_on_destroy() {}
+
     ///
     ///  Make array with size sz
     ///
-    explicit Array(int sz)
-      : m_nSize(sz)
+    explicit Array(int sz) : m_nSize(sz), m_bOwn(true), m_on_destroy()
     {
-      m_array = MB_NEW _Type[sz];
+        m_array = MB_NEW _Type[sz];
     }
 
     ///
     ///  Make array with size sz and initialize all elements by ini
     ///
-    explicit Array(const _Type &ini, int sz)
-      : m_nSize(sz)
+    explicit Array(const _Type &ini, int sz) : m_nSize(sz), m_bOwn(true), m_on_destroy()
     {
-      m_array = MB_NEW _Type[sz];
-      for (int i=0; i<sz; i++)
-        m_array[i] = ini;
+        m_array = MB_NEW _Type[sz];
+        for (int i = 0; i < sz; i++) m_array[i] = ini;
     }
 
     ///
     ///  Make array from existing C array
     ///
-    explicit Array(int sz, const _Type *p)
-      : m_nSize(sz)
+    explicit Array(int sz, const _Type *p) : m_nSize(sz), m_bOwn(true), m_on_destroy()
     {
-      m_array = MB_NEW _Type[sz];
-      for (int i=0; i<sz; i++)
-        m_array[i] = p[i];
+        m_array = MB_NEW _Type[sz];
+        for (int i = 0; i < sz; i++) m_array[i] = p[i];
     }
-    
+
     ///
     /// Copy constructor
     ///
-    Array(const Array<_Type> &arg)
-      : m_nSize(arg.m_nSize)
+    Array(const Array<_Type> &arg) : m_nSize(arg.m_nSize), m_bOwn(true), m_on_destroy()
     {
-      m_array = MB_NEW _Type[arg.m_nSize];
-      for(int i=0; i<arg.m_nSize; i++)
-        m_array[i] = arg.m_array[i];
+        m_array = MB_NEW _Type[arg.m_nSize];
+        for (int i = 0; i < arg.m_nSize; i++) m_array[i] = arg.m_array[i];
     }
-    
-    ~Array() {
-      if(m_array!=NULL) delete [] m_array;
+
+    /// destructor
+    ~Array()
+    {
+        // if (m_array != NULL) delete[] m_array;
+        clear();
     }
 
     /////////////////////////////////////////////////////
     // member methods
 
-    int size() const { return m_nSize; }
-    int getSize() const { return size(); }
+    void setOnDestroy(DestroyCallback cb)
+    {
+        m_on_destroy = std::move(cb);
+    }
 
-    void resize(int newsz) {
-      if (m_array!=NULL) {
-	delete [] m_array;
-	m_array = NULL;
+    int size() const
+    {
+        return m_nSize;
+    }
+    int getSize() const
+    {
+        return size();
+    }
+
+    /// clear the array
+    void clear()
+    {
+        if (m_on_destroy) {
+            // call destroy callback
+            m_on_destroy(*this);
+        }
+        if (m_array != nullptr && m_bOwn) delete[] m_array;
+        m_array = nullptr;
         m_nSize = 0;
-      }
-      
-      if (newsz>0) {
-        m_array = MB_NEW _Type[newsz];
-        m_nSize = newsz;
-      }
+        m_bOwn = false;
     }
 
-    inline void allocate(int newsz) { resize(newsz); }
-    inline void destroy() { resize(0); }
+    void resize(int newsz)
+    {
+        clear();
 
-    const _Type &at(int i) const {
-      MB_ASSERT(i>=0); MB_ASSERT(i<m_nSize);
-      return m_array[i];
+        if (newsz > 0) {
+            m_array = MB_NEW _Type[newsz];
+            m_nSize = newsz;
+            m_bOwn = true;
+        }
     }
 
-    _Type &at(int i) {
-      MB_ASSERT(i>=0); MB_ASSERT(i<m_nSize);
-      return m_array[i];
+    inline bool isOwn() const
+    {
+        return m_bOwn;
     }
 
-    const _Type *data() const {
-      return m_array;
+    inline void allocate(int newsz)
+    {
+        resize(newsz);
+    }
+    inline void destroy()
+    {
+        clear();
     }
 
-    _Type *data() {
-      return m_array;
+    /// Setup reference (un-owned) array
+    void refer(int sz, _Type *p)
+    {
+        clear();
+        if (sz > 0) {
+            m_array = p;
+            m_bOwn = false;
+            m_nSize = sz;
+        }
+    }
+
+    //////////
+
+    const _Type &at(int i) const
+    {
+        MB_ASSERT(i >= 0);
+        MB_ASSERT(i < m_nSize);
+        return m_array[i];
+    }
+
+    _Type &at(int i)
+    {
+        MB_ASSERT(i >= 0);
+        MB_ASSERT(i < m_nSize);
+        return m_array[i];
+    }
+
+    const _Type *data() const
+    {
+        return m_array;
+    }
+
+    _Type *data()
+    {
+        return m_array;
     }
 
     /////////////////////////////////////////////////////
     // member operators
 
-    operator const _Type *() const {
-      return data();
-    }
-
-    const Array<_Type> &operator =(const Array<_Type> &arg)
+    operator const _Type *() const
     {
-      if(&arg!=this){
-	if(m_array!=NULL)
-	  delete [] m_array;
-	m_array = MB_NEW _Type[arg.getSize()];
-
-	m_nSize = arg.m_nSize;
-	for(int i=0; i<arg.getSize(); i++)
-	  m_array[i] = arg[i];
-      }
-      return *this;
+        return data();
     }
 
-    const Array<_Type> &operator =(const _Type &arg)
+    const Array<_Type> &operator=(const Array<_Type> &arg)
     {
-      for(int i=0; i<getSize(); i++)
-	m_array[i] = arg;
-      return *this;
+        if (&arg != this) {
+            clear();
+            m_array = MB_NEW _Type[arg.getSize()];
+            m_nSize = arg.m_nSize;
+            m_bOwn = true;
+            m_on_destroy = DestroyCallback();
+            for (int i = 0; i < arg.getSize(); i++) m_array[i] = arg[i];
+        }
+        return *this;
     }
 
-#if 0
-    /// *= operator (scaling)
-    const Array<_Type> &operator*=(const _Type &arg)
+    // XXX: dangerous ???
+    // const Array<_Type> &operator=(const _Type &arg)
+    // {
+    //     for (int i = 0; i < getSize(); i++) m_array[i] = arg;
+    //     return *this;
+    // }
+
+    const _Type &operator[](int i) const
     {
-      for(int i=0; i<getSize(); i++)
-	m_array[i] *= arg;
-      return *this;
-    }
-#endif
-
-    const _Type &operator [](int i) const {
-      return at(i);
+        return at(i);
     }
 
-    _Type &operator [](int i) {
-      return at(i);
+    _Type &operator[](int i)
+    {
+        return at(i);
     }
-  };
 
-}
+    void assign(std::initializer_list<_Type> list)
+    {
+        MB_ASSERT(list.size() <= m_nSize);
+        std::copy(list.begin(), list.end(), m_array);
+    }
+};
 
-#endif // ARRAY_1D_H__
+}  // namespace qlib

@@ -9,6 +9,17 @@ SET(SYSDEP_SRCS
   OglProgramObject.cpp
   OglProgObjMgr.cpp
   Canvas2DTextRender2.cpp
+  ShaderSetupHelper.cpp
+  # core profile
+  ogl_core/OcDisplayList.cpp
+  ogl_core/OcPixDraw.cpp
+  ogl_core/OcDisplayContext.cpp
+  ogl_core/GLSLLineHelper2.cpp
+  ogl_core/GLSLTrigHelper.cpp
+  ogl_core/OcView.cpp
+  ogl_core/OcBufferRep.cpp
+  ogl_core/CenterMarkDrawObj.cpp
+  ogl_core/OcDrawObjSet.cpp
 )
 
 SET(SYSDEP_HDRS
@@ -24,6 +35,8 @@ OglView.hpp
 OglViewCap.hpp
 TouchEventHandler.hpp
 sysdep.hpp
+ogl_core/OcView.hpp
+ogl_core/OcDisplayContext.hpp
 )
 
 if (WIN32)
@@ -63,6 +76,11 @@ SET(SYSDEP_LINK_LIBRARIES
   OpenGL::GL OpenGL::GLU GLEW::glew_s)
 
 ###################
+# sysdep library target
+# add_library(sysdep SHARED)
+add_library(sysdep STATIC)
+
+###################
 # GLSL shader files
 SET(GLSL_SHADER_FILES
   default_vert.glsl
@@ -71,15 +89,29 @@ SET(GLSL_SHADER_FILES
   edge_frag.glsl
   silh_vert.glsl
   silh_frag.glsl
-  es2_default_vert.glsl
-  es2_default_frag.glsl
 )
 
-#####################
-# sysdep library target
+SET(SHADER_SOURCES 
+  ogl_core/trig_vert.glsl
+  ogl_core/trig_frag.glsl
+  ogl_core/trigedge_vert.glsl
+  ogl_core/trigedge_frag.glsl
+  ogl_core/pixdraw_vert.glsl
+  ogl_core/pixdraw_frag.glsl
+  ogl_core/linew_vert.glsl
+  ogl_core/linew2_vert.glsl
+  ogl_core/linew_frag.glsl
+  ogl_core/drawobj3d_vert.glsl
+  ogl_core/drawobj3d_frag.glsl
+)
+SET(SHADER_DEPS
+  ogl_core/lighting_inc.glsl
+  ogl_core/fog_inc.glsl
+)
+set_target_properties(sysdep PROPERTIES SHADER_SOURCES "${SHADER_SOURCES}")
+GLSL_PREPROC(sysdep "${SHADER_DEPS}")
 
-# add_library(sysdep SHARED)
-add_library(sysdep STATIC)
+#####################
 
 target_sources(sysdep
   PRIVATE ${SYSDEP_SRCS}
@@ -104,6 +136,10 @@ else()
   # target_compile_options(sysdep PUBLIC "-fPIC")
   set_property(TARGET sysdep PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()
+
+if (USE_PCH)
+  target_precompile_headers(sysdep PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
+endif ()
 
 # message(STATUS "SYSDEP_LINK_LIBRARIES: ${SYSDEP_LINK_LIBRARIES}")
 target_link_libraries(sysdep PRIVATE ${SYSDEP_LINK_LIBRARIES})

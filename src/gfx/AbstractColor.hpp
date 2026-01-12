@@ -109,6 +109,7 @@ namespace gfx {
     
     static void RGBtoHSB(int r, int g, int b,
                          double &hue, double &saturation, double &brightness);
+
     ////////////
 
     // virtual bool fromString(const LString &src);

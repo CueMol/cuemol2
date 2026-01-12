@@ -120,10 +120,10 @@ LString PovDisplayContext::getPostBlendTableJSON() const
 
 void PovDisplayContext::init(qlib::OutStream *pPovOut, qlib::OutStream *pIncOut)
 {
-  m_matstack.erase(m_matstack.begin(), m_matstack.end());
+    clearMatStack();
+    // pushMatrix();
+    // loadIdent();
 
-  pushMatrix();
-  loadIdent();
   m_linew = 1.0;
   m_pColor = gfx::SolidColor::createRGB(1,1,1);
   m_nDrawMode = POV_NONE;

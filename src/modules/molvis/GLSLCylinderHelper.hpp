@@ -6,6 +6,8 @@
 #ifndef GLSL_CYLINDER_HELPER_HPP_INCLUDED
 #define GLSL_CYLINDER_HELPER_HPP_INCLUDED
 
+#include <sysdep/ShaderSetupHelper.hpp>
+
 namespace molvis {
 
   class GLSLCylinderHelper
@@ -51,10 +53,10 @@ namespace molvis {
       invalidate();
     }
 
-    bool initShader(qsys::Renderer *pRend)
+    bool initShader(gfx::DisplayContext *pdc)
     {
       MB_ASSERT(m_pPO == NULL);
-      sysdep::ShaderSetupHelper<qsys::Renderer> ssh(pRend);
+      sysdep::ShaderSetupHelper ssh(pdc);
       
       if (!ssh.checkEnvVS()) {
         MB_DPRINTLN("GLShader not supported");
@@ -162,6 +164,8 @@ namespace molvis {
     {
       if (m_pDrawElem!=NULL) {
         m_pPO->enable();
+        m_pPO->setupFog(pdc);
+        m_pPO->setupMat(pdc);
         m_pPO->setUniformF("frag_alpha", pdc->getAlpha());
 
         // Setup edge/silhouette

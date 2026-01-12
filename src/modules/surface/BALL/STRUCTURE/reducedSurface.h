@@ -87,7 +87,7 @@ namespace std
 	{
 #endif // BALL_HAS_TR1_UNORDERED_MAP
 		template<>
-		struct hash<BALL::SortedPosition2> : public std::unary_function<BALL::SortedPosition2, size_t>
+		struct hash<BALL::SortedPosition2> // : public std::unary_function<BALL::SortedPosition2, size_t>
 		{
 			inline size_t operator()(const BALL::SortedPosition2& p) const
 			{
@@ -96,7 +96,7 @@ namespace std
 		};
 
 		template<>
-		struct hash<BALL::SortedPosition3> : public std::unary_function<BALL::SortedPosition3, size_t>
+		struct hash<BALL::SortedPosition3> // : public std::unary_function<BALL::SortedPosition3, size_t>
 		{
 			inline size_t operator()(const BALL::SortedPosition3& p) const
 			{
@@ -239,29 +239,25 @@ namespace BALL
 				@param	i	the index of the sphere that should be given back
 				@return TSphere3<double>, the i'th sphere
 		*/
-    TSphere3<double> getSphere(Position i) const
-	    throw(Exception::IndexOverflow);
+    TSphere3<double> getSphere(Position i) const;
 
 		/** Return the i'th rsvertex.
 				@param	i	the index of the rsvertex that should be given back
 				@return RSVertex, the i'th rsvertex
 		*/
-		RSVertex* getVertex(Position i) const
-			throw(Exception::IndexOverflow);
+		RSVertex* getVertex(Position i) const;
 
 		/** Return the i'th rsedge.
 				@param	i	the index of the rsedge that should be given back
 				@return RSEdge, the i'th rsedge
 		*/
-		RSEdge* getEdge(Position i) const
-			throw(Exception::IndexOverflow);
+		RSEdge* getEdge(Position i) const;
 
 		/** Return the i'th rsface.
 				@param	i	the index of the rsface that should be given back
 				@return RSFace, the i'th rsface
 		*/
-		RSFace* getFace(Position i) const
-			throw(Exception::IndexOverflow);
+		RSFace* getFace(Position i) const;
 
 		/** Insert a new RSVertex.
 				@param	rsvertex	a pointer to the RSVertex to insert
@@ -308,10 +304,7 @@ namespace BALL
 
 		/** Compute the reduced surface.
 		*/
-		void compute()
-			throw(Exception::GeneralException,
-			      Exception::DivisionByZero,
-			      Exception::IndexOverflow);
+		void compute();
 
 		//@}
 
@@ -475,10 +468,7 @@ namespace BALL
 
 		/** Compute the reduced surface
 		*/
-		void run()
-			throw(Exception::GeneralException,
-						Exception::DivisionByZero,
-						Exception::IndexOverflow);
+		void run();
 
 		//@}
 
@@ -495,26 +485,17 @@ namespace BALL
 
 		/*_ Compute a RSComponent.
 		*/
-		void getRSComponent()
-			throw(Exception::GeneralException,
-						Exception::DivisionByZero,
-						Exception::IndexOverflow);
+		void getRSComponent();
 
 		/*_ Treat all edges of a face.
 			@param	face	the RSFace to be treated
 		*/
-		bool treatFace(RSFace* face)
-			throw(Exception::GeneralException,
-						Exception::DivisionByZero,
-						Exception::IndexOverflow);
+		bool treatFace(RSFace* face);
 
 		/*_ Roll over an edge that belongs to only one face and find the other one.
 				@param	edge	the RSEdge to be treated
 		*/
-		bool treatEdge(RSEdge* edge)
-			throw(Exception::GeneralException,
-						Exception::DivisionByZero,
-						Exception::IndexOverflow);
+		bool treatEdge(RSEdge* edge);
 
 		/*_ Treat an ambiguous situation.
 				All vertices on an ambiguous atom are deleted with all its edges and
@@ -525,10 +506,7 @@ namespace BALL
 
 		/*_ Check all new created vertices for extensions
 		*/
-		void extendComponent()
-			throw(Exception::GeneralException,
-						Exception::DivisionByZero,
-						Exception::IndexOverflow);
+		void extendComponent();
 
 		/*_ Find a third atom rolling over two vertices starting on a face.
 				From all atoms which can be touched by the probe sphere when it
@@ -546,10 +524,7 @@ namespace BALL
 		*/
 		Index thirdAtom(RSVertex* vertex1, RSVertex* vertex2,
 		                RSFace* face, TSphere3<double>& probe, TAngle<double>& phi,
-                                bool &bTouchFour)
-			throw(Exception::GeneralException,
-						Exception::DivisionByZero,
-						Exception::IndexOverflow);
+                    bool &bTouchFour);
 
 		//@}
 		/*_ @name Finding a start position
@@ -567,8 +542,7 @@ namespace BALL
 												2, if an edge is found,
 												3, if a face is found
 		*/
-		Position getStartPosition()
-			throw(Exception::DivisionByZero);
+		Position getStartPosition();
 
 		//@}
 		/*_ @name Finding a first face
@@ -579,8 +553,7 @@ namespace BALL
 			@return	RSFace*	a pointer to the found face, if a face can be found,
 													NULL otherwise
 		*/
-		RSFace* findFirstFace()
-			throw(Exception::DivisionByZero);
+		RSFace* findFirstFace();
 
 		/*_ Try to find a starting face in a given direction
 			@param	direction		search in x-direction, if direction is 0,
@@ -591,8 +564,7 @@ namespace BALL
 			@return	RSFace*	a pointer to the found face, if a face can be found,
 													NULL otherwise
 		*/
-		RSFace* findFace(Position direction, Position extrem)
-			throw(Exception::DivisionByZero);
+		RSFace* findFace(Position direction, Position extrem);
 
 		//@}
 		/*_ @name Finding a first edge

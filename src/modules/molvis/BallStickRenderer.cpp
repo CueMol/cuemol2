@@ -73,8 +73,8 @@ void BallStickRenderer::display(DisplayContext *pdc)
   //////////
 
   if (!m_bCheckShaderOK) {
-    if (m_pSlSph->initShader(this) &&
-	m_pSlCyl->initShader(this)) {
+    if (m_pSlSph->initShader(pdc) &&
+        m_pSlCyl->initShader(pdc)) {
       MB_DPRINTLN("BallStick sphere shader OK");
       m_bUseShader = true;
     }

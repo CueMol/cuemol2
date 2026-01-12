@@ -4,8 +4,7 @@
 //
 //  $Id: DisplayContext.hpp,v 1.25 2011/01/09 15:12:22 rishitani Exp $
 
-#ifndef GFX_DISPLAY_CONTEXT_HPP_
-#define GFX_DISPLAY_CONTEXT_HPP_
+#pragma once
 
 #include "gfx.hpp"
 
@@ -13,30 +12,41 @@
 #include <qlib/Matrix4D.hpp>
 #include <qlib/LQuat.hpp>
 #include "AbstractColor.hpp"
-// #include "LTexture.hpp"
 
-using qlib::Vector4D;
-using qlib::Matrix4D;
 using qlib::LQuat;
+using qlib::Matrix4D;
+using qlib::Vector4D;
 
-namespace qsys { class View; }
+namespace qsys {
+class View;
+}
 
 namespace gfx {
 
-  class Mesh;
-  class AbstDrawElem;
-  class DrawElem;
-  class AbstractColor;
-  class PixelBuffer;
+class Mesh;
+class AbstDrawElem;
+class DrawElem;
+class AbstractColor;
+class PixelBuffer;
+class DrawObjSet;
 
-  class GFX_API DisplayContext : public qlib::LObject
-  {
-  private:
+class GFX_API DisplayContext : public qlib::LObject
+{
+private:
     LString m_defMatName;
     LString m_styleNames;
 
     /// Default alpha value
     double m_defAlpha;
+
+    /// Default line width
+    double m_lineWidth;
+
+    /// Line stipple
+    quint16 m_lineStipple;
+
+    /// lighting
+    bool m_bLighting;
 
     /// Pixel scaling factor
     double m_dPixSclFac;
@@ -50,46 +60,88 @@ namespace gfx {
     /// Edge line color
     ColorPtr m_egLineCol;
 
+    /// Current color
+    ColorPtr m_color;
+
+    /// Fog
+    bool m_bFogEnabled;
+    float m_fFogStart;
+    float m_fFogEnd;
+    ColorPtr m_fogColor;
+
+    /// Proj mat
+    Matrix4D m_projMat;
+
+    /// Model-view matrix stack
+    std::deque<qlib::Matrix4D> m_matstack;
+
     /// Target view
     qsys::View *m_pTargView;
 
+    /// UID of the target view
+    qlib::uid_t m_nViewID;
 
-  public:
+    /// UID of the target scene
+    qlib::uid_t m_nSceneID;
+
+public:
     /// Polygon rendering mode
     enum {
-      POLY_POINT,
-      POLY_LINE,
-      POLY_FILL,
-      // filled face without ridge lines
-      POLY_FILL_NORGLN,
-      POLY_FILL_XX,
+        POLY_POINT,
+        POLY_LINE,
+        POLY_FILL,
+        // filled face without ridge lines
+        POLY_FILL_NORGLN,
+        POLY_FILL_XX,
     };
 
     /// Edge line types
     enum {
-      ELT_NONE,
-      ELT_EDGES,
-      ELT_SILHOUETTE,
+        ELT_NONE,
+        ELT_EDGES,
+        ELT_SILHOUETTE,
     };
 
     /// Vertex attribute types (used as hint for edge rendering)
     enum {
-      DVA_NONE,
-      DVA_NOEDGE,
+        DVA_NONE,
+        DVA_NOEDGE,
     };
 
-  public:
+public:
     DisplayContext();
     virtual ~DisplayContext() {}
 
-    virtual bool setCurrent() =0;
-    virtual bool isCurrent() const =0;
+    virtual bool setCurrent() = 0;
+    virtual bool isCurrent() const = 0;
 
+    ////////////////
+
+    //
+    // Target scene and view
+    //
     virtual void setTargetView(qsys::View *);
     virtual qsys::View *getTargetView() const;
 
+    inline qlib::uid_t getViewID() const
+    {
+        return m_nViewID;
+    }
+    inline void setViewID(qlib::uid_t uid)
+    {
+        m_nViewID = uid;
+    }
+    inline qlib::uid_t getSceneID() const
+    {
+        return m_nSceneID;
+    }
+    inline void setSceneID(qlib::uid_t uid)
+    {
+        m_nSceneID = uid;
+    }
+
     /// Returns whether the rendering target of this context is a file or not.
-    virtual bool isFile() const =0;
+    virtual bool isFile() const = 0;
 
     /// Returns whether this context can render pixmap or not.
     virtual bool isRenderPixmap() const;
@@ -100,13 +152,19 @@ namespace gfx {
     ////////////////
 
     /// Set current vertex vector by Vector4D
-    virtual void vertex(const Vector4D &vec) =0;
+    virtual void vertex(const Vector4D &vec) = 0;
 
     /// Set current normal vector by Vector4D
-    virtual void normal(const Vector4D &vec) =0;
+    virtual void normal(const Vector4D &vec) = 0;
 
     /// Set current color
-    virtual void color(const ColorPtr &c) =0;
+    virtual void color(const ColorPtr &c);
+
+    /// Get curent color
+    ColorPtr getColor() const
+    {
+        return m_color;
+    }
 
     /// Set current vertex attribute
     virtual void attribute(int n);
@@ -127,22 +185,113 @@ namespace gfx {
     virtual ColorPtr getEdgeLineColor() const;
     virtual void setEdgeLineColor(const ColorPtr &c);
 
+    // Fog
+    virtual void enableFog(bool b);
+    bool isFogEnabled() const
+    {
+        return m_bFogEnabled;
+    }
+    virtual void setFogStart(float val);
+    float getFogStart() const
+    {
+        return m_fFogStart;
+    }
+    virtual void setFogEnd(float val);
+    float getFogEnd() const
+    {
+        return m_fFogEnd;
+    }
+    virtual void setFogColor(const ColorPtr &val);
+    ColorPtr getFogColor() const
+    {
+        return m_fogColor;
+    }
 
-    LString getMaterial() const { return m_defMatName; }
-    double getAlpha() const { return m_defAlpha; }
-    LString getStyleNames() const { return m_styleNames; }
-    
+    LString getMaterial() const
+    {
+        return m_defMatName;
+    }
+    double getAlpha() const
+    {
+        return m_defAlpha;
+    }
+    LString getStyleNames() const
+    {
+        return m_styleNames;
+    }
+
     ////////////////
+    // Model-view matrix
 
-    virtual void pushMatrix() =0;
-    virtual void popMatrix() =0;
-    virtual void multMatrix(const Matrix4D &mat) =0;
-    virtual void loadMatrix(const Matrix4D &mat) =0;
+    virtual void pushMatrix();
+    virtual void popMatrix();
+    virtual void multMatrix(const Matrix4D &mat);
+    virtual void loadMatrix(const Matrix4D &mat);
+
+    void rotate(const LQuat &q)
+    {
+        multMatrix(q.toRotMatrix());
+    }
+    void scale(const Vector4D &v)
+    {
+        multMatrix(Matrix4D::makeScaleMat(v));
+    }
+    void translate(const Vector4D &v)
+    {
+        multMatrix(Matrix4D::makeTransMat(v));
+    }
+    void loadIdent()
+    {
+        loadMatrix(Matrix4D());
+    }
+
+    void clearMatStack()
+    {
+        m_matstack.clear();
+        m_matstack.push_front(Matrix4D());
+    }
+
+    const Matrix4D &getModelViewMat() const
+    {
+        if (m_matstack.empty()) {
+            MB_THROW(qlib::RuntimeException,
+                     "DisplayContext::getModelViewMat(): matrix stack underflow");
+            // return Matrix4D();
+        } else {
+            return m_matstack.front();
+        }
+    }
+
+    void xform_vec(Vector4D &v) const
+    {
+        const Matrix4D &mtop = getModelViewMat();
+        v.w() = 1.0;
+        mtop.xform4D(v);
+    }
+
+    void xform_norm(Vector4D &v) const
+    {
+        const Matrix4D &mtop = getModelViewMat();
+        v.w() = 0.0;
+        mtop.xform4D(v);
+    }
+
+    // Projection matrix
+    virtual void setProjMat(const Matrix4D &mat);
+    // virtual void loadOrthoProj(float width, float fasp, float near, float far);
+    // virtual void loadPerspProj(float width, float fasp, float near, float far,
+    //                            float distance);
+
+    Matrix4D getProjMat() const
+    {
+        return m_projMat;
+    }
 
     virtual void enableDepthTest(bool) {}
+    virtual void setCullFace(bool f = true) {}
 
     ////////////////
-    // inteface with default implementation
+    // Geometry construction
 
     /// Set current vertex vector by x,y,z (calls vector version)
     virtual void vertex(double x, double y, double z);
@@ -154,23 +303,31 @@ namespace gfx {
     virtual void color(double r, double g, double b);
     virtual void color(double r, double g, double b, double a);
 
-    virtual void rotate(const LQuat &q);
-    virtual void scale(const Vector4D &);
-    virtual void translate(const Vector4D &);
-    virtual void loadIdent();
-
-    virtual void setCullFace(bool f=true) {}
-
     ////////////////
 
     virtual void setLineWidth(double lw);
+    double getLineWidth() const
+    {
+        return m_lineWidth;
+    }
+
     virtual void setLineStipple(unsigned short pattern);
-    virtual void setLighting(bool f=true);
+    unsigned short getLineStipple() const
+    {
+        return m_lineStipple;
+    }
+
+    virtual void setLighting(bool f = true);
+    bool isLighting() const
+    {
+        return m_bLighting;
+    }
+
     virtual void setPointSize(double size);
 
     ////////////////
     // metadata operations
-    
+
     virtual void startHit(qlib::uid_t rend_uid);
     virtual void endHit();
 
@@ -191,28 +348,33 @@ namespace gfx {
     // image/text drawing (default: do nothing)
 
     virtual void drawString(const Vector4D &pos, const qlib::LString &str);
-    virtual void drawPixels(const Vector4D &pos,
-                            const PixelBuffer &data,
+    virtual void drawPixels(const Vector4D &pos, const PixelBuffer &data,
                             const ColorPtr &col);
 
     // pixel scaling factor
-    void setPixSclFac(double f) { m_dPixSclFac = f; }
-    inline double getPixSclFac() const { return m_dPixSclFac; }
+    void setPixSclFac(double f)
+    {
+        m_dPixSclFac = f;
+    }
+    inline double getPixSclFac() const
+    {
+        return m_dPixSclFac;
+    }
 
     ////////////////
     // line and triangle primitives
-    
-    virtual void setPolygonMode(int id) =0;
-    virtual void startPoints() =0;
-    virtual void startPolygon() =0;
-    virtual void startLines() =0;
-    virtual void startLineStrip() =0;
-    virtual void startTriangles() =0;
-    virtual void startTriangleStrip() =0;
-    virtual void startTriangleFan() =0;
-    virtual void startQuadStrip() =0;
-    virtual void startQuads() =0;
-    virtual void end() =0;
+
+    virtual void setPolygonMode(int id) = 0;
+    virtual void startPoints() = 0;
+    virtual void startPolygon() = 0;
+    virtual void startLines() = 0;
+    virtual void startLineStrip() = 0;
+    virtual void startTriangles() = 0;
+    virtual void startTriangleStrip() = 0;
+    virtual void startTriangleFan() = 0;
+    virtual void startQuadStrip() = 0;
+    virtual void startQuads() = 0;
+    virtual void end() = 0;
 
     ///////////////////////////////
     // higher-order objects
@@ -229,8 +391,7 @@ namespace gfx {
     /// Display cylinder (capping is always created)
     virtual void cylinderCap(double r, const Vector4D &pos1, const Vector4D &pos2);
 
-    virtual void cone(double r1, double r2,
-                      const Vector4D &pos1, const Vector4D &pos2,
+    virtual void cone(double r1, double r2, const Vector4D &pos1, const Vector4D &pos2,
                       bool bCap);
 
     virtual void setDetail(int n);
@@ -250,7 +411,7 @@ namespace gfx {
 
     ///////////////////////////////
     // Display List support
-  
+
     /// Create new display list.
     /// returns NULL if display list is not supported.
     virtual DisplayContext *createDisplayList();
@@ -260,7 +421,7 @@ namespace gfx {
     /// Call display list.
     /// "pdl" should be a display list supported by this context.
     virtual void callDisplayList(DisplayContext *pdl);
-  
+
     virtual bool isCompatibleDL(DisplayContext *pdl) const;
 
     virtual bool isDisplayList() const;
@@ -271,28 +432,37 @@ namespace gfx {
     ////////////////////////////////////////////////////
     // convenience methods
 
-    /*
-    inline void color(const ColorPtr &c) {
-      MB_ASSERT(!c.isnull());
-      color(*(c.get()));
-    }
-     */
-    
-    inline void drawAster(const Vector4D &pos, double rad) {
-      const Vector4D xdel(rad,0,0);
-      const Vector4D ydel(0,rad,0);
-      const Vector4D zdel(0,0,rad);
-      
-      vertex(pos-xdel);
-      vertex(pos+xdel);
-      vertex(pos-ydel);
-      vertex(pos+ydel);
-      vertex(pos-zdel);
-      vertex(pos+zdel);
+    inline void drawAster(const Vector4D &pos, double rad)
+    {
+        const Vector4D xdel(rad, 0, 0);
+        const Vector4D ydel(0, rad, 0);
+        const Vector4D zdel(0, 0, rad);
+
+        vertex(pos - xdel);
+        vertex(pos + xdel);
+        vertex(pos - ydel);
+        vertex(pos + ydel);
+        vertex(pos - zdel);
+        vertex(pos + zdel);
     }
 
-  };
+    void getDevRGBColor(const ColorPtr &pcol, float &r, float &g, float &b);
+    void getDevRGBAColor(const ColorPtr &pcol, float &r, float &g, float &b, float &a);
 
-}
+    static Matrix4D makeOrthoProjMat(float left, float right, float bottom, float top,
+                                     float slabnear, float slabfar);
+    static Matrix4D makeOrthoProjMat(float vw, float fasp, float slabnear, float slabfar) {
+        return makeOrthoProjMat(-vw*fasp, vw*fasp, -vw, vw, slabnear, slabfar);
+    }
 
-#endif
+    static Matrix4D makePersProjMat(float width, float fasp, float near, float far,
+                                    float distance);
+
+    ////
+
+    virtual DrawObjSet *createDrawObjSet() const;
+
+    virtual void drawObjSet(const DrawObjSet &dos);
+};
+
+}  // namespace gfx

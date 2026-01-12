@@ -42,7 +42,7 @@ OglProgObjMgr::~OglProgObjMgr()
   }
 }
 
-OglProgramObject *OglProgObjMgr::createProgramObject(const LString &name, OglDisplayContext *pdc)
+OglProgramObject *OglProgObjMgr::createProgramObject(const LString &name, DisplayContext *pdc)
 {
   OglProgramObject *pRval = NULL;
 
@@ -57,8 +57,9 @@ OglProgramObject *OglProgObjMgr::createProgramObject(const LString &name, OglDis
   }
   pScene->addListener(this);
 
-  pRval = MB_NEW OglProgramObject();  
+  pRval = MB_NEW OglProgramObject();
   if (!pRval->init()) {
+      LOG_DPRINTLN("cannot initialize OglProgramObject");
     delete pRval;
     return NULL;
   }
@@ -68,7 +69,7 @@ OglProgramObject *OglProgObjMgr::createProgramObject(const LString &name, OglDis
   return pRval;
 }
 
-OglProgramObject *OglProgObjMgr::getProgramObject(const LString &name, OglDisplayContext *pdc)
+OglProgramObject *OglProgObjMgr::getProgramObject(const LString &name, DisplayContext *pdc)
 {
   LString key = LString::format("%s@%d", name.c_str(), pdc->getSceneID());
   

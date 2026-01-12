@@ -719,8 +719,7 @@ namespace BALL
 												If i is greater three, an exception is thrown.
 				@param	vertex	a pointer to the new vertex
 		*/
-		void setVertex(Position i, Vertex* vertex)
-			throw(Exception::IndexOverflow);
+		void setVertex(Position i, Vertex* vertex);
 
 		/** Return one of the vertices of the GraphTriangle.
 				@param	i				the relative index of the vertex which should be given
@@ -728,24 +727,21 @@ namespace BALL
 												thrown.
 				@return	Vertex*	a pointer to the asked vertex
 		*/
-		Vertex* getVertex(Position i) const
-			throw(Exception::IndexOverflow);
+		Vertex* getVertex(Position i) const;
 
 		/** Set one of the edges of the GraphTriangle.
 				@param	i			the relative index of the edge which should be set.
 											If i is greater than three, an exception is thrown.
 				@param	edge	a pointer to the new edge
 		*/
-		void setEdge(Position i, Edge* edge)
-			throw(Exception::IndexOverflow);
+		void setEdge(Position i, Edge* edge);
 
 		/** Return one of the edges of the GraphTriangle.
 				@param	i			the relative index of the edge which should be given
 											back. If i is greater than three, an exception is thrown.
 				@return	Edge*	a pointer to the asked vertex
 		*/
-		Edge* getEdge(Position i) const
-			throw(Exception::IndexOverflow);
+		Edge* getEdge(Position i) const;
 
 		/** Set the index of the GraphTriangle.
 				@param	index	the new index
@@ -1022,7 +1018,6 @@ namespace BALL
 
 	template <typename Vertex, typename Edge, typename Face>
 	void GraphTriangle<Vertex,Edge,Face>::setVertex(Position i, Vertex* vertex)
-		throw(Exception::IndexOverflow)
 	{
 		if (i > 2)
 		{
@@ -1037,7 +1032,6 @@ namespace BALL
 
 	template <typename Vertex, typename Edge, typename Face>
 	Vertex* GraphTriangle<Vertex,Edge,Face>::getVertex(Position i) const
-		throw(Exception::IndexOverflow)
 	{
 		if (i > 2)
 		{
@@ -1052,7 +1046,6 @@ namespace BALL
 
 	template <typename Vertex, typename Edge, typename Face>
 	void GraphTriangle<Vertex,Edge,Face>::setEdge(Position i, Edge* edge)
-		throw(Exception::IndexOverflow)
 	{
 		if (i > 2)
 		{
@@ -1067,7 +1060,6 @@ namespace BALL
 
 	template <typename Vertex, typename Edge, typename Face>
 	Edge* GraphTriangle<Vertex,Edge,Face>::getEdge(Position i) const
-		throw(Exception::IndexOverflow)
 	{
 		if (i > 2)
 		{

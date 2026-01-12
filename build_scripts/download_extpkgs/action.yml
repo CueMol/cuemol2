@@ -13,6 +13,28 @@ runs:
   - name: Download extpkgs
     shell: bash
     run: |
-      cd ${GITHUB_WORKSPACE}
-      BASEDIR=${{ inputs.basedir }}
-      bash build_scripts/download_extpkgs/run.sh $BASEDIR ${{ runner.os }} ${{ runner.arch }}
+      set -eux
+      if [[ "$RUNNER_OS" == "Windows" ]]; then
+        BASEDIR=$(cygpath -u "${{ inputs.basedir }}")
+
+        # Retrieve extpkgs binary
+        TMPDIR=$BASEDIR/tmp
+        mkdir -p $TMPDIR
+        cd $TMPDIR
+        PKG_TGZ=extpkgs_${RUNNER_OS}_${RUNNER_ARCH}.tar.bz2
+        PKG_VER=v0.0.5
+        URL=https://github.com/CueMol/povray_build/releases/download/$PKG_VER/$PKG_TGZ
+        # wget --progress=dot:mega -c $URL
+        curl -sS -L -O $URL
+
+        # extract files
+        BUNDLE_DIR=$BASEDIR
+        mkdir -p $BUNDLE_DIR
+        cd $BUNDLE_DIR
+        tar xjf $TMPDIR/$PKG_TGZ
+      else
+        cd ${GITHUB_WORKSPACE}
+        BASEDIR=${{ inputs.basedir }}
+        bash build_scripts/download_extpkgs/run.sh $BASEDIR ${{ runner.os }} ${{ runner.arch }}
+      fi
+

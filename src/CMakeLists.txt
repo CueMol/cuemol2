@@ -1,8 +1,10 @@
 if (${CMAKE_BUILD_TYPE} MATCHES "[Dd][Ee][Bb][Uu][Gg]")
   SET(MB_DEBUG "1")
 endif ()
+message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+message(STATUS "MB_DEBUG: ${MB_DEBUG}")
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_OUTPUT_EXTENSION_REPLACE 1)  # ref. https://texus.me/2015/09/06/cmake-and-gcov/
 SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
@@ -147,6 +149,7 @@ add_definitions(-DHAVE_CONFIG_H=1)
 # Subdirs
 
 include("mcwgen.cmake")
+include("glsl.cmake")
 
 # support libraries
 add_subdirectory(pcre)
@@ -270,6 +273,7 @@ set(SYSCONFIG_FILE ${DATA_DIR}/sysconfig.xml)
 
 install(FILES ${DATA_FILES} DESTINATION data/data)
 install(FILES ${SYSCONFIG_FILE} DESTINATION data)
+install(FILES ${DATA_DIR}/icc_profiles/GenericCMYK.icm DESTINATION data/data/icc_profiles)
 
 if (BUILD_NODEJS_BINDINGS)
   add_custom_command(

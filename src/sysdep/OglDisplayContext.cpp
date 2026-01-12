@@ -36,6 +36,9 @@
 #include "OglProgramObject.hpp"
 #include "OglProgObjMgr.hpp"
 
+#include "ogl_core/OcDisplayList.hpp"
+#include "ogl_core/OcPixDraw.hpp"
+
 #include <gfx/TextRenderManager.hpp>
 #include <gfx/PixelBuffer.hpp>
 #include <gfx/SolidColor.hpp>
@@ -63,30 +66,28 @@ OglDisplayContext::OglDisplayContext()
 {
   // m_nSceneID = sceneid;
   m_pGluData = NULL;
-  m_color = Vector4D(1.0, 1.0, 1.0, 1.0);
+  m_fcolor = Vector4D(1.0, 1.0, 1.0, 1.0);
   m_nDetail = 5;
 
   m_bUseShaderAlpha = false;
   m_pDefPO = NULL;
   m_pEdgePO = NULL;
   m_pSilhPO = NULL;
+
+  m_pOcPixDraw = nullptr;
 }
 
 OglDisplayContext::~OglDisplayContext()
 {
   if (m_pGluData!=NULL)
     ::gluDeleteQuadric((GLUquadricObj *)m_pGluData);
-
-  /*BOOST_FOREACH (ProgTab::value_type &elem, m_progs) {
-    delete elem.second;
-  }*/
 }
 
 void OglDisplayContext::setTargetView(qsys::View *pView)
 {
   super_t::setTargetView(pView);
-  m_nViewID = pView->getUID();
-  m_nSceneID = pView->getSceneID();
+  setSceneID(pView->getSceneID());
+  setViewID(pView->getUID());
 }
 
 void OglDisplayContext::init()
@@ -104,8 +105,6 @@ void OglDisplayContext::init()
     return;
   }
 
-  //glFogi(GL_FOG_COORDINATE_SOURCE, GL_FRAGMENT_DEPTH);
-  //glFogi(GL_FOG_COORDINATE_SOURCE, GL_FOG_COORDINATE);
   m_pDefPO->loadShader("vert",
                        "%%CONFDIR%%/data/shaders/default_vert.glsl",
                        GL_VERTEX_SHADER);
@@ -365,71 +364,64 @@ void OglDisplayContext::setMaterImpl(const LString &name)
 
 void OglDisplayContext::color(const ColorPtr &c)
 {
-  //::glColor4ub(c->r(), c->g(), c->b(), c->a());
-
+    super_t::color(c);
   quint32 devcolc = c->getDevCode( getSceneID() );
 
-  m_color.x() = gfx::getFR(devcolc); //c->fr();
-  m_color.y() = gfx::getFG(devcolc); //c->fg();
-  m_color.z() = gfx::getFB(devcolc); //c->fb();
+  m_fcolor.x() = gfx::getFR(devcolc); //c->fr();
+  m_fcolor.y() = gfx::getFG(devcolc); //c->fg();
+  m_fcolor.z() = gfx::getFB(devcolc); //c->fb();
   if (useShaderAlpha())
-    m_color.w() = c->fa();
+    m_fcolor.w() = c->fa();
   else
-    m_color.w() = c->fa() * getAlpha();
+    m_fcolor.w() = c->fa() * getAlpha();
     
-/*
-  LString strmat = c->getMaterial();
-  LString defmat = getMaterial();
-  if (strmat.isEmpty()) {
-    setMaterImpl(defmat);
-  }
-  else {
-    setMaterImpl(strmat);
-  }
-*/
+  // LString strmat = c->getMaterial();
+  // LString defmat = getMaterial();
+  // if (strmat.isEmpty()) {
+  //   setMaterImpl(defmat);
+  // }
+  // else {
+  //   setMaterImpl(strmat);
+  // }
   
-  ::glColor4d(m_color.x(), m_color.y(), m_color.z(), m_color.w());
+  ::glColor4d(m_fcolor.x(), m_fcolor.y(), m_fcolor.z(), m_fcolor.w());
 }
 
 void OglDisplayContext::color(double r, double g, double b, double a)
 {
+    super_t::color(r, g, b, a);
   Vector4D vcol(r,g,b);
   gfx::ColProfMgr *pCPM = gfx::ColProfMgr::getInstance();
-  pCPM->doXForm( getSceneID(), vcol, m_color);
-
-  //m_color.x() = r;
-  //m_color.y() = g;
-  //m_color.z() = b;
+  pCPM->doXForm( getSceneID(), vcol, m_fcolor);
 
   if (useShaderAlpha())
-    m_color.w() = a;
+    m_fcolor.w() = a;
   else
-    m_color.w() = a * getAlpha();
+    m_fcolor.w() = a * getAlpha();
   
-  ::glColor4d(m_color.x(), m_color.y(), m_color.z(), m_color.w());
+  ::glColor4d(m_fcolor.x(), m_fcolor.y(), m_fcolor.z(), m_fcolor.w());
 }
 
 void OglDisplayContext::color(double r, double g, double b)
 {
+    super_t::color(r, g, b);
+
   Vector4D vcol(r,g,b);
   gfx::ColProfMgr *pCPM = gfx::ColProfMgr::getInstance();
-  pCPM->doXForm( getSceneID(), vcol, m_color);
+  pCPM->doXForm( getSceneID(), vcol, m_fcolor);
   
-  //m_color.x() = r;
-  //m_color.y() = g;
-  //m_color.z() = b;
-
   if (useShaderAlpha())
-    m_color.w() = 1.0;
+    m_fcolor.w() = 1.0;
   else
-    m_color.w() = getAlpha();
+    m_fcolor.w() = getAlpha();
 
-  ::glColor4d(m_color.x(), m_color.y(), m_color.z(), m_color.w());
+  ::glColor4d(m_fcolor.x(), m_fcolor.y(), m_fcolor.z(), m_fcolor.w());
 }
 
 void OglDisplayContext::setLineWidth(double lw)
 {
-  glLineWidth( float(lw * getPixSclFac()) );
+    glLineWidth( float(lw * getPixSclFac()) );
+    super_t::setLineWidth(lw);
 }
 
 void OglDisplayContext::setLineStipple(unsigned short pattern)
@@ -440,11 +432,13 @@ void OglDisplayContext::setLineStipple(unsigned short pattern)
     glEnable(GL_LINE_STIPPLE);
     glLineStipple(1,pattern);
   }
+  super_t::setLineStipple(pattern);
 }
 
 void OglDisplayContext::setPointSize(double size)
 {
-  ::glPointSize((GLfloat)size);
+    ::glPointSize((GLfloat)size);
+    super_t::setPointSize(size);
 }
 
 void OglDisplayContext::startPoints()
@@ -514,11 +508,14 @@ void OglDisplayContext::end()
 
 void OglDisplayContext::pushMatrix()
 {
-  glPushMatrix();
+    super_t::pushMatrix();
+    glPushMatrix();
 }
 
 void OglDisplayContext::multMatrix(const Matrix4D &mat)
 {
+    super_t::multMatrix(mat);
+
   GLdouble m[16];
 
   m[0]  = mat.aij(1,1);
@@ -546,6 +543,8 @@ void OglDisplayContext::multMatrix(const Matrix4D &mat)
 
 void OglDisplayContext::loadMatrix(const Matrix4D &mat)
 {
+    super_t::loadMatrix(mat);
+
   GLdouble m[16];
 
   m[0]  = mat.aij(1,1);
@@ -573,8 +572,34 @@ void OglDisplayContext::loadMatrix(const Matrix4D &mat)
 
 void OglDisplayContext::popMatrix()
 {
-  glPopMatrix();
+    super_t::popMatrix();
+    glPopMatrix();
 }
+
+// // specialized impl for GL matrix stack
+
+// void OglDisplayContext::translate(const Vector4D &v)
+// {
+//     super_t::multMatrix( Matrix4D::makeTransMat(v) );
+
+//     glTranslated(v.x(), v.y(), v.z());
+// }
+
+// void OglDisplayContext::scale(const Vector4D &v)
+// {
+//     super_t::multMatrix( Matrix4D::makeScaleMat(v) );
+
+//     glScaled(v.x(), v.y(), v.z());
+// }
+
+// void OglDisplayContext::loadIdent()
+// {
+//     super_t::loadMatrix(Matrix4D());
+
+//     glLoadIdentity();
+// }
+
+//////////
 
 void OglDisplayContext::enableDepthTest(bool f)
 {
@@ -635,6 +660,8 @@ void OglDisplayContext::setLighting(bool f)
     // shader mode
     m_pDefPO->setUniform("enable_lighting", f);
   }
+
+  super_t::setLighting(f);
 }
 
 void OglDisplayContext::setCullFace(bool f/*=true*/)
@@ -645,17 +672,79 @@ void OglDisplayContext::setCullFace(bool f/*=true*/)
     glDisable(GL_CULL_FACE);
 }
 
+// Enable fog
+void OglDisplayContext::enableFog(bool b)
+{
+    super_t::enableFog(b);
+    if (b) {
+        glEnable(GL_FOG);
+    } else {
+        glDisable(GL_FOG);
+    }
+}
+
+void OglDisplayContext::setFogStart(float val)
+{
+    super_t::setFogStart(val);
+    glFogf(GL_FOG_START, val);
+}
+
+void OglDisplayContext::setFogEnd(float val)
+{
+    super_t::setFogEnd(val);
+    glFogf(GL_FOG_END, val);
+}
+
+void OglDisplayContext::setFogColor(const ColorPtr &val)
+{
+    super_t::setFogColor(val);
+    GLfloat col[4];
+    col[0] = GLfloat(val->fr());
+    col[1] = GLfloat(val->fg());
+    col[2] = GLfloat(val->fb());
+    // col[3] = GLfloat(val->fa());
+    col[3] = 1.0f;
+    glFogfv(GL_FOG_COLOR, col);
+}
+
+
 void OglDisplayContext::drawPixels(const Vector4D &pos,
                                    const gfx::PixelBuffer &data,
                                    const gfx::ColorPtr &acol)
 {
+    if (m_pOcPixDraw == nullptr) {
+        m_pOcPixDraw = MB_NEW OcPixDraw();
+        m_pOcPixDraw->initShader(this);
+    }
+
+    if (!m_pOcPixDraw->createDrawElem(this, data)) {
+        LOG_DPRINTLN("OglDisplayContext::drawPixels> failed to create DrawElem");
+        return;
+    }
+
+    gfx::ColorPtr col = acol;
+    if (acol.isnull()) {
+        // use current color
+        col = super_t::getColor();
+    }
+
+    m_pOcPixDraw->draw(this, pos, data, col);
+}
+
+#if 0
+void OglDisplayContext::drawPixels(const Vector4D &pos,
+                                   const gfx::PixelBuffer &data,
+                                   const gfx::ColorPtr &acol)
+{
+    MB_DPRINTLN("drawPixels called (%f, %f, %f) size=(%d,%d) depth=%d",
+                pos.x(), pos.y(), pos.z(),
+                data.getWidth(), data.getHeight(), data.getDepth());
   // TO DO: use devcolor
   gfx::ColorPtr col = acol;
   if (col.isnull()) {
     //gfx::SolidColor col(m_color);
     col = gfx::ColorPtr(new gfx::SolidColor(m_color));
   }
-  
 
   glRasterPos3d(pos.x(), pos.y(), pos.z());
 
@@ -688,6 +777,7 @@ void OglDisplayContext::drawPixels(const Vector4D &pos,
 
   //delete [] pdata;
 }
+#endif
 
 void OglDisplayContext::drawString(const Vector4D &pos, const qlib::LString &str)
 {
@@ -723,66 +813,67 @@ void OglDisplayContext::setPolygonMode(int id)
   }  
 }
 
-////////////////////////////////////////////////
-// specialized impl for GL matrix stack
 
-void OglDisplayContext::translate(const Vector4D &v)
+void OglDisplayContext::setProjMat(const Matrix4D &mat)
 {
-  glTranslated(v.x(), v.y(), v.z());
+    super_t::setProjMat(mat);
+
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    loadMatrix(mat);
+    glMatrixMode(GL_MODELVIEW);
 }
 
-void OglDisplayContext::scale(const Vector4D &v)
-{
-  glScaled(v.x(), v.y(), v.z());
-}
+// void OglDisplayContext::loadOrthoProj(float vw, float fasp,
+//                                       float slabnear, float slabfar)
+// {
+//     super_t::loadOrthoProj(vw, fasp, slabnear, slabfar);
 
-void OglDisplayContext::loadIdent()
-{
-  glLoadIdentity();
-}
+//     glMatrixMode(GL_PROJECTION);
+//     glLoadIdentity();
+//     loadMatrix(getProjMat());
+//     // glOrtho(-vw*fasp, vw*fasp,
+//     //         -vw, vw, slabnear, slabfar);
+//     glMatrixMode(GL_MODELVIEW);
+// }
 
-//////////////////////////////////////////////////////////////////
-// Texture impl
+// void OglDisplayContext::loadPerspProj(float awidth, float afasp,
+//                                       float anear, float afar, float adistance)
+// {
+//     super_t::loadPerspProj(awidth, afasp, anear, afar, adistance);
+//     glMatrixMode(GL_PROJECTION);
+//     glLoadIdentity();
+//     loadMatrix(getProjMat());
+//     glMatrixMode(GL_MODELVIEW);
+// }
 
-/*
-#include "OglTexture.hpp"
-
-void OglDisplayContext::useTexture(const LTexture &tex)
-{
-  OglTextureRep *pRep = dynamic_cast<OglTextureRep *>(tex.getRep());
-  if (pRep==NULL) return;
-  glBindTexture(GL_TEXTURE_2D, pRep->getTexID());
-  glEnable(GL_TEXTURE_2D);
-}
-
-void OglDisplayContext::unuseTexture()
-{
-  glDisable(GL_TEXTURE_2D);
-}
-
-void OglDisplayContext::texCoord(float fx, float fy)
-{
-  glTexCoord2d(fx, fy);
-}
-*/
 
 //////////////////////////////////////////////////////////////////
 // Display list impl
 
 DisplayContext *OglDisplayContext::createDisplayList()
 {
-  OglDisplayList *pdl = MB_NEW OglDisplayList();
-
-  // Targets the same view as this
-  pdl->setTargetView( getTargetView() );
-
-  // inherit properties (default alpha/material/pixsclfac)
-  pdl->setAlpha(getAlpha());
-  pdl->setMaterial(getMaterial());
-  pdl->setUseShaderAlpha(useShaderAlpha());
-  pdl->setPixSclFac(getPixSclFac());
-
-  return pdl;
+    if (false) {
+        OglDisplayList *pdl = MB_NEW OglDisplayList();
+        // Targets the same view as this
+        pdl->setTargetView( getTargetView() );
+        
+        // inherit properties (default alpha/material/pixsclfac)
+        pdl->setAlpha(getAlpha());
+        pdl->setMaterial(getMaterial());
+        pdl->setUseShaderAlpha(useShaderAlpha());
+        pdl->setPixSclFac(getPixSclFac());
+        return pdl;
+    } else {
+        OcDisplayList *pdl = MB_NEW OcDisplayList();
+        // Targets the same view as this
+        pdl->setTargetView( getTargetView() );
+        pdl->setAlpha(getAlpha());
+        pdl->setMaterial(getMaterial());
+        // pdl->setUseShaderAlpha(useShaderAlpha());
+        pdl->setPixSclFac(getPixSclFac());
+        return pdl;
+    }
 }
 
 bool OglDisplayContext::canCreateDL() const
@@ -793,22 +884,30 @@ bool OglDisplayContext::canCreateDL() const
 void OglDisplayContext::callDisplayList(DisplayContext *pdl)
 {
   OglDisplayList *psrc = dynamic_cast<OglDisplayList *>(pdl);
-  if (psrc==NULL || !psrc->isValid())
-    return;
-
-  GLuint id = psrc->getID();
-  if (id==0)
-    return;
-
-  glCallList(id);
+  if (psrc!=NULL && psrc->isValid()) {
+      GLuint id = psrc->getID();
+      if (id==0)
+          return;
+      glCallList(id);
+  }
+  
+  OcDisplayList *poc = dynamic_cast<OcDisplayList *>(pdl);
+  if (poc!=NULL && poc->isValid()) {
+      poc->callDisplayListImpl(this);
+  }
 }
 
 bool OglDisplayContext::isCompatibleDL(DisplayContext *pdl) const
 {
   OglDisplayList *psrc = dynamic_cast<OglDisplayList *>(pdl);
-  if (psrc==NULL)
-    return false;
-  return true;
+  if (psrc!=NULL)
+      return true;
+
+  OcDisplayList *poc = dynamic_cast<OcDisplayList *>(pdl);
+  if (poc!=NULL) {
+      return true;
+  }
+  return false;
 }
 
 bool OglDisplayContext::isDisplayList() const
@@ -927,18 +1026,6 @@ void OglDisplayContext::sphere(double r, const Vector4D &vec)
   sphere();
   popMatrix();
 }
-
-/*
-void OglDisplayContext::cylinder(double r, const Vector4D &pos1, const Vector4D &pos2)
-{
-  cone(r, r, pos1, pos2, false);
-}
-
-void OglDisplayContext::cylinderCap(double r, const Vector4D &pos1, const Vector4D &pos2)
-{
-  cone(r, r, pos1, pos2, true);
-}
-*/
 
 void OglDisplayContext::setDetail(int n)
 {
@@ -1278,43 +1365,6 @@ void OglDisplayContext::drawElem(const AbstDrawElem &ade)
 #endif
 }
 
-/*
-namespace {
-  class OglTexRep : public gfx::VBORep
-  {
-  public:
-    qlib::uid_t m_nSceneID;
-    GLuint m_nBufID;
-    
-    virtual ~OglTexRep()
-    {
-      qsys::ScenePtr rsc = qsys::SceneManager::getSceneS(m_nSceneID);
-      if (rsc.isnull()) {
-        MB_DPRINTLN("OglTexture> unknown scene, Texture %d cannot be deleted", m_nBufID);
-        return;
-      }
-
-      qsys::Scene::ViewIter viter = rsc->beginView();
-      if (viter==rsc->endView()) {
-        MB_DPRINTLN("OglTexture> no view, Texture %d cannot be deleted", m_nBufID);
-        return;
-      }
-
-      qsys::ViewPtr rvw = viter->second;
-      if (rvw.isnull()) {
-        // If any views aren't found, it is no problem,
-        // because the parent context (and also all DLs) may be already destructed.
-        return;
-      }
-      gfx::DisplayContext *pctxt = rvw->getDisplayContext();
-      pctxt->setCurrent();
-      
-      glDeleteTextures(1, &m_nBufID);
-    }
-  };
-}
-*/
-
 void OglDisplayContext::drawElemPix(const gfx::DrawElemPix &de)
 {
   gfx::ColorPtr pcol = gfx::ColorPtr(new gfx::SolidColor(de.m_color));
@@ -1514,7 +1564,6 @@ void OglDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
 
 }
 
-
 OglProgramObject *OglDisplayContext::createProgramObject(const LString &name)
 {
   if (!qsys::View::hasVS())
@@ -1523,29 +1572,6 @@ OglProgramObject *OglDisplayContext::createProgramObject(const LString &name)
   OglProgObjMgr *pMgr = OglProgObjMgr::getInstance();
 
   return pMgr->createProgramObject(name, this);
-
-/*
-  OglProgramObject *pRval = NULL;
-
-  if (!qsys::View::hasVS())
-    return NULL;
-
-#ifdef HAVE_GLEW
-  setCurrent();
-  pRval = getProgramObject(name);
-  if (pRval!=NULL)
-    return pRval;
-  pRval = new OglProgramObject();  
-  if (!pRval->init()) {
-    delete pRval;
-    return NULL;
-  }
-
-  m_progs.insert(ProgTab::value_type(name, pRval));
-#endif
-
-  return pRval;
-*/
 }
 
 OglProgramObject *OglDisplayContext::getProgramObject(const LString &name)
@@ -1553,26 +1579,4 @@ OglProgramObject *OglDisplayContext::getProgramObject(const LString &name)
   OglProgObjMgr *pMgr = OglProgObjMgr::getInstance();
 
   return pMgr->getProgramObject(name, this);
-
-/*
-  ProgTab::const_iterator i = m_progs.find(name);
-  if (i==m_progs.end())
-    return NULL;
-  return i->second;
-  */
 }
-
-/*
-bool OglDisplayContext::destroyProgramObject(const LString &name)
-{
-  ProgTab::iterator i = m_progs.find(name);
-  if (i==m_progs.end())
-    return false;
-  
-  OglProgramObject *pdel = i->second;
-  m_progs.erase(i);
-  delete pdel;
-  return true;
-}
-*/
-

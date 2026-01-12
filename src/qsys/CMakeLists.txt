@@ -47,6 +47,7 @@ RendGroup.cpp
 MultiGradient.cpp
 TTYView.cpp
 QdfAbsWriter.cpp
+DrawObj.cpp
 command/Command.cpp
 command/NewSceneCommand.cpp
 command/NewRendererCommand.cpp
@@ -188,6 +189,10 @@ else()
   # target_compile_options(qsys PUBLIC "-fPIC")
   set_property(TARGET qsys PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif()
+
+if (USE_PCH)
+  target_precompile_headers(qsys PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
+endif ()
 
 target_compile_definitions(qsys PUBLIC NO_SCRIPT=1)
 

@@ -73,8 +73,7 @@ namespace BALL
 				@param ptr the array to construct from
 				@exception NullPointer if <tt>ptr == 0</tt>
 		*/
-		TVector4(const T* ptr)
-		throw(Exception::NullPointer);
+      TVector4(const T* ptr);
 
    /** Scalar constructor.
         Create a new vector with all components set
@@ -123,8 +122,7 @@ namespace BALL
 				@param ptr an array
 				@exception Nullpointer if <tt>ptr == 0</tt>
 		*/
-		void set(const T* ptr)
-      throw(Exception::NullPointer);
+		void set(const T* ptr);
 
 		/**	Assign the vector components.
 				@param rx the new x component
@@ -144,8 +142,7 @@ namespace BALL
 				@param	ptr the array
 				@exception	NullPointer if <tt>ptr == 0</tt>
 		*/
-		TVector4& operator = (const T* ptr)
-		throw(Exception::NullPointer);
+		TVector4& operator = (const T* ptr);
 
 		/**	Assignment operator.
 				Assign the vector components from another vector.
@@ -165,8 +162,7 @@ namespace BALL
 				@param ptr the array
 				@exception	NullPointer if <tt>ptr == 0</tt>
 		*/
-		void get(T* ptr) const
-      throw(Exception::NullPointer);
+		void get(T* ptr) const;
 
 		/**	Assign to four variables of type <tt>T</tt>.
 				@param	rx the x component
@@ -212,8 +208,7 @@ namespace BALL
 				@return T, a reference to {\em *this} vector
 				@exception DivisionByZero if the length of the vector is 0
 		*/
-		TVector4& normalize()
-      throw(Exception::DivisionByZero);
+		TVector4& normalize();
 
 		/**	Return a vector with all components 0.
 		*/
@@ -231,14 +226,12 @@ namespace BALL
 		/**	Mutable array-like access to the components.
 				@exception Exception::IndexOverflow if <tt>index > 3</tt>
 		*/
-		T& operator [] (Position position)
-      throw(Exception::IndexOverflow);
+		T& operator [] (Position position);
 
 		/**	Constant array-like access to the components.
 				@exception Exception::IndexOverflow if <tt>index > 3</tt>
 		*/
-		const T& operator [] (Position position) const
-      throw(Exception::IndexOverflow);
+		const T& operator [] (Position position) const;
 
 		//@}
 		/**	@name	Arithmetic operators
@@ -285,16 +278,14 @@ namespace BALL
 				@return TVector4 
 				@exception Exception::DivisionByZero if <tt>scalar == (T)0</tt>
 		*/
-		TVector4 operator / (const T& scalar)
-      throw(Exception::DivisionByZero);
+		TVector4 operator / (const T& scalar);
 
 		/**	Divide a vector by a scalar.
 				@param scalar the scalar to divide by
 				@return TVector4&, {\em *this}
 				@exception Exception::DivisionByZero if <tt>scalar == (T)0</tt>
 		*/
-		TVector4& operator /= (const T& scalar)
-      throw(Exception::DivisionByZero);
+		TVector4& operator /= (const T& scalar);
 
 		/** Dot product.
 				@param vector the vector to multiply by
@@ -402,7 +393,6 @@ namespace BALL
 
 	template <typename T>
 	TVector4<T>::TVector4(const T* ptr)
-		throw(Exception::NullPointer)
 	{
 		if (ptr == 0)
 		{
@@ -455,7 +445,6 @@ namespace BALL
 	template <typename T>
 	BALL_INLINE 
 	void TVector4<T>::set(const T* ptr)
-		throw(Exception::NullPointer)
 	{
 		if (ptr == 0)
 		{
@@ -492,7 +481,6 @@ namespace BALL
 	template <typename T>
 	BALL_INLINE 
 	TVector4<T>& TVector4<T>::operator = (const T* ptr)
-		throw(Exception::NullPointer)
 	{
 		if (ptr == 0)
 		{
@@ -535,7 +523,6 @@ namespace BALL
 	template <typename T>
 	BALL_INLINE 
 	void TVector4<T>::get(T* ptr) const
-		throw(Exception::NullPointer)
 	{
 		if (ptr == 0)
 		{
@@ -610,7 +597,6 @@ namespace BALL
 
 	BALL_INLINE
 	TVector4<T>& TVector4<T>::normalize()
-		throw(Exception::DivisionByZero)
 	{
 		T len = (T)sqrt(x * x + y * y + z * z + h * h);
 
@@ -656,7 +642,6 @@ namespace BALL
 	template <typename T>
 	BALL_INLINE 
 	T& TVector4<T>::operator [] (Position pos)
-		throw(Exception::IndexOverflow)
 	{
 		if (pos > 3)
 		{
@@ -676,7 +661,6 @@ namespace BALL
 	template <typename T>
 	BALL_INLINE 
 	const T& TVector4<T>::operator [] (Position pos) const
-		throw(Exception::IndexOverflow)
 	{
 		if (pos > 3)
 		{
@@ -758,7 +742,6 @@ namespace BALL
 
 	template <typename T>
 	TVector4<T>TVector4<T>::operator / (const T &scalar)
-		throw(Exception::DivisionByZero)
 	{
 		if (Maths::isZero(scalar))
 		{
@@ -769,7 +752,6 @@ namespace BALL
 
 	template <typename T>
 	TVector4<T>& TVector4<T>::operator /= (const T& scalar)
-		throw(Exception::DivisionByZero)
 	{
 		if (Maths::isZero(scalar))
 		{

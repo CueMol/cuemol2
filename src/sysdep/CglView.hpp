@@ -8,16 +8,17 @@
 #ifndef CGL_VIEW_HPP_INCLUDE_
 #define CGL_VIEW_HPP_INCLUDE_
 
-#include "OglView.hpp"
+// #include "OglView.hpp"
+#include <sysdep/ogl_core/OcView.hpp>
 
 namespace sysdep {
 
   class CglDisplayContext;
   using gfx::DisplayContext;
 
-  class SYSDEP_API CglView : public OglView
+  class SYSDEP_API CglView : public OcView
   {
-    typedef OglView super_t;
+    typedef OcView super_t;
 
   private:
 

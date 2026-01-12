@@ -284,6 +284,7 @@ namespace render {
     /// AABB Tree
     void *m_pTree;
     void *m_pTreeFaces;
+    void *m_pTreeFaceIds;
 
     /// silhouette mode
     bool m_bSilhouette;

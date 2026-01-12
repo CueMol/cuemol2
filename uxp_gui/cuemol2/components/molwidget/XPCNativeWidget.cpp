@@ -36,6 +36,7 @@ XPCNativeWidget::XPCNativeWidget()
   m_bUseGlShader = false;
   m_bUseMultiPad = false;
   m_bUseHiDPI = false;
+  m_nEnableMSAA = 2;
 
   //m_timer = do_CreateInstance("@mozilla.org/timer;1");
   //printf("!! XPCNativeWidget ctor called.\n");
@@ -217,6 +218,23 @@ NS_IMETHODIMP XPCNativeWidget::SetUseHiDPI(bool aUseHiDPI)
   return NS_OK;
 }
 
+/* attribute boolean enableMSAA; */
+NS_IMETHODIMP XPCNativeWidget::GetEnableMSAA(PRInt32 *aEnableMSAA)
+{
+  *aEnableMSAA = m_nEnableMSAA;
+  return NS_OK;
+}
+NS_IMETHODIMP XPCNativeWidget::SetEnableMSAA(PRInt32 aEnableMSAA)
+{
+    if (aEnableMSAA<0) {
+        m_nEnableMSAA = 0;
+    } else if (aEnableMSAA>4) {
+        m_nEnableMSAA = 4;
+    } else {
+        m_nEnableMSAA = aEnableMSAA;
+    }
+    return NS_OK;
+}
 
 /* attribute long sceneID; */
 NS_IMETHODIMP XPCNativeWidget::GetSceneID(PRInt32 *aSceneID)

@@ -24,43 +24,49 @@ namespace sysdep {
   public:
     OglViewCap()
     {
-      // Check FBO
-      if (GLEW_ARB_framebuffer_object) {
         m_bHasFBO = true;
-      }
-      else {
-        m_bHasFBO = false;
-        LOG_DPRINTLN("OglView> Warning: Framebuffer Object not supported!!");
-      }
-
-      // Check VBO
-      if (GLEW_ARB_vertex_buffer_object) {
         m_bHasVBO = true;
-      }
-      else {
-        m_bHasVBO = false;
-        LOG_DPRINTLN("OglView> Warning: Vertex Buffer Object not supported!!");
-      }
-      
-      // Check VS/FS
-      if ( GLEW_ARB_vertex_shader && GLEW_ARB_fragment_shader ) {
         m_bHasVS = true;
         m_bHasFS = true;
-      }
-      else {
-        m_bHasVS = false;
-        m_bHasFS = false;
-        LOG_DPRINTLN("OglView> Warning: Vertex/Fragment Shader not supported!!");
-      }
-      
-      // Check GS
-      if ( GLEW_EXT_geometry_shader4 ) {
         m_bHasGS = true;
-      }
-      else {
-        m_bHasGS = false;
-        LOG_DPRINTLN("OglView> Warning: Geometry Shader not supported!!");
-      }
+
+      // // Check FBO
+      // if (GLEW_ARB_framebuffer_object) {
+      //   m_bHasFBO = true;
+      // }
+      // else {
+      //   m_bHasFBO = false;
+      //   LOG_DPRINTLN("OglView> Warning: Framebuffer Object not supported!!");
+      // }
+
+      // // Check VBO
+      // if (GLEW_ARB_vertex_buffer_object) {
+      //   m_bHasVBO = true;
+      // }
+      // else {
+      //   m_bHasVBO = false;
+      //   LOG_DPRINTLN("OglView> Warning: Vertex Buffer Object not supported!!");
+      // }
+      
+      // // Check VS/FS
+      // if ( GLEW_ARB_vertex_shader && GLEW_ARB_fragment_shader ) {
+      //   m_bHasVS = true;
+      //   m_bHasFS = true;
+      // }
+      // else {
+      //   m_bHasVS = false;
+      //   m_bHasFS = false;
+      //   LOG_DPRINTLN("OglView> Warning: Vertex/Fragment Shader not supported!!");
+      // }
+      
+      // // Check GS
+      // if ( GLEW_EXT_geometry_shader4 ) {
+      //   m_bHasGS = true;
+      // }
+      // else {
+      //   m_bHasGS = false;
+      //   LOG_DPRINTLN("OglView> Warning: Geometry Shader not supported!!");
+      // }
 
       // show device info
       LOG_DPRINTLN("--- OpenGL Info ---");

@@ -191,7 +191,6 @@ namespace BALL
 	}
 
 	TSphere3<double> ReducedSurface::getSphere(Position i) const
-		throw(Exception::IndexOverflow)
 	{
 		if (i < number_of_atoms_)
 		{
@@ -204,7 +203,6 @@ namespace BALL
 	}
 
 	RSVertex* ReducedSurface::getVertex(Position i) const
-		throw(Exception::IndexOverflow)
 	{
 		if (i < number_of_vertices_)
 		{
@@ -217,7 +215,6 @@ namespace BALL
 	}
 
 	RSEdge* ReducedSurface::getEdge(Position i) const
-		throw(Exception::IndexOverflow)
 	{
 		if (i < number_of_edges_)
 		{
@@ -230,7 +227,6 @@ namespace BALL
 	}
 
 	RSFace* ReducedSurface::getFace(Position i) const
-		throw(Exception::IndexOverflow)
 	{
 		if (i < number_of_faces_)
 		{
@@ -580,9 +576,6 @@ namespace BALL
 	}
 
 	void ReducedSurface::compute()
-		throw(Exception::GeneralException,
-					Exception::DivisionByZero,
-					Exception::IndexOverflow)
 	{
 		RSComputer rsc(this);
 		rsc.run();
@@ -673,9 +666,6 @@ namespace BALL
 	}
 
 	void RSComputer::run()
-		throw(Exception::GeneralException,
-					Exception::DivisionByZero,
-					Exception::IndexOverflow)
 	{
 		// we need to use a larger value for epsilon for our computation
 		// so store the old value and restore it when we are done.
@@ -709,9 +699,6 @@ namespace BALL
 
 
 	void RSComputer::getRSComponent()
-		throw(Exception::GeneralException,
-					Exception::DivisionByZero,
-					Exception::IndexOverflow)
 	{
 		Position i = 0;
 		while (i < rs_->number_of_faces_)
@@ -741,9 +728,6 @@ namespace BALL
 	}
 
 	bool RSComputer::treatFace(RSFace* face)
-		throw(Exception::GeneralException,
-					Exception::DivisionByZero,
-					Exception::IndexOverflow)
 	{
 		if (face->edge_[0]->face_[1] == NULL)
 		{
@@ -771,9 +755,6 @@ namespace BALL
 	}
 
 	bool RSComputer::treatEdge(RSEdge* edge)
-		throw(Exception::GeneralException,
-					Exception::DivisionByZero,
-					Exception::IndexOverflow)
 	{
 		// This function rolls the probe sphere over a RSEdge.
 		// From all atoms that can be touced by the probe sphere when it touches
@@ -992,9 +973,6 @@ namespace BALL
 
 
 	void RSComputer::extendComponent()
-		throw(Exception::GeneralException,
-					Exception::DivisionByZero,
-					Exception::IndexOverflow)
 	{
 		std::deque<RSVertex*> new_vertices;
 		std::copy(new_vertices_.begin(), new_vertices_.end(), std::back_inserter(new_vertices));
@@ -1084,9 +1062,6 @@ namespace BALL
 	Index RSComputer::thirdAtom(RSVertex*	vertex1, RSVertex* vertex2,
                                     RSFace* face, TSphere3<double>&	probe, TAngle<double>& phi,
                                     bool &bTouchFour)
-		throw(Exception::GeneralException,
-					Exception::DivisionByZero,
-					Exception::IndexOverflow)
 	{
 		// This function chooses from all atoms which can be touced by the probe
 		// sphere when it touches the given two vertices this one, for which is
@@ -1187,7 +1162,6 @@ namespace BALL
 	}
 
 	Position RSComputer::getStartPosition()
-		throw(Exception::DivisionByZero)
 	{
 		if (findFirstFace() != NULL)
 		{
@@ -1205,7 +1179,6 @@ namespace BALL
 	}
 
 	RSFace* RSComputer::findFirstFace()
-		throw(Exception::DivisionByZero)
 	{
 		for (Position direction = 0; direction < 3; direction++)
 		{
@@ -1258,7 +1231,6 @@ namespace BALL
 	}
 
 	RSFace* RSComputer::findFace(Position direction, Position extrem)
-		throw(Exception::DivisionByZero)
 	{
 		Index a1 = findFirstAtom(direction, extrem);
 		if (a1 == -1)

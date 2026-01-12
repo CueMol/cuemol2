@@ -180,6 +180,7 @@ bool init(const char *config)
                pSceMgr->getVerArchName().c_str(),
                pSceMgr->getBuildID().c_str());
 
+  MB_DPRINTLN("XXXXX");
   //pVIC->applyStyle("DefaultViewInConf,UserViewConf");
 
   return true;
