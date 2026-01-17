@@ -104,7 +104,7 @@ cmake --install $BUILD_DIR --config $BUILD_TYPE
 cp $BASEDIR/boost_$BOOST_VER/lib/lib* $BASEDIR/cuemol2/lib/
 
 # Python embed
-if [ "${EMBED_PYTHON_ROOT+foo}" ]; then
+if [ -n "${EMBED_PYTHON_ROOT:-}" ]; then
     cp -r $EMBED_PYTHON_ROOT $BASEDIR/cuemol2/lib/
 fi
 

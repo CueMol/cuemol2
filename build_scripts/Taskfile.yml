@@ -36,14 +36,14 @@ tasks:
   build_libcuemol2:darwin:
     platforms: [darwin]
     env:
-      EMBED_PYTHON_ROOT: "{{.EMBED_PYTHON_ROOT}}"
+      EMBED_PYTHON_ROOT: '{{.EMBED_PYTHON_ROOT | default (env "EMBED_PYTHON_ROOT")}}'
     cmds:
       - bash build_libcuemol2_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
 
   build_libcuemol2:linux:
     platforms: [linux]
     env:
-      EMBED_PYTHON_ROOT: "{{.EMBED_PYTHON_ROOT}}"
+      EMBED_PYTHON_ROOT: '{{.EMBED_PYTHON_ROOT | default (env "EMBED_PYTHON_ROOT")}}'
     cmds:
       - bash build_libcuemol2_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
 
@@ -78,6 +78,7 @@ tasks:
     desc: "Clean up the libcuemol2 obj dir"
     cmds:
       - rm -rf "{{.LIBCUEMOL2_BUILDDIR}}"
+      - rm -rf "{{.LIBCUEMOL2_INSTDIR}}"
 
   clean_shaders:
     desc: "Clean up the libcuemol2 shader files"

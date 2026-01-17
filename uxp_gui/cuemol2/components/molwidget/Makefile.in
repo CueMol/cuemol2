@@ -17,7 +17,10 @@ libs::
 	if [ -d "$(CUEMOL_DIR)/data/python" ] ; then \
       mkdir -p $(dist_dest)/Contents/Resources/data/ ; \
 	  cp -R $(CUEMOL_DIR)/data/python $(dist_dest)/Contents/Resources/data/ ; \
+	else \
+	  echo "No python data dir found in $(CUEMOL_DIR)/data/python" ; \
 	fi
+	mkdir -p $(dist_dest)/Contents/Resources/python
 
 # @$(foreach V,$(sort $(.VARIABLES)),$(if $(filter-out environment% default automatic,$(origin $V)),$(warning $V=$($V) ($(value $V)))))
 
@@ -25,8 +28,9 @@ endif
 ifeq (WINNT,$(OS_ARCH))
 libs::
 	echo 'srcdir: $(srcdir)'
-	echo 'PROGRAMS_DEST/SHARED_LIBRARY: $(PROGRAMS_DEST)/$(SHARED_LIBRARY)'
+	echo 'DIST: $(dist)'
 	echo 'CUEMOL_DEPLIB_DIRS=$(CUEMOL_DEPLIB_DIRS)'
+	mkdir -p $(DIST)/bin/python ; \
 	cp $(CUEMOL_DEPLIB_DIRS)/*-mt-x64-*.dll $(DIST)/bin/
 	cp $(CUEMOL_DIR)/bin/*.dll $(DIST)/bin/
 endif
