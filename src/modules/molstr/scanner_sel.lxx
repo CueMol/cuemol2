@@ -66,9 +66,23 @@ SEL_TOKEN  [_a-zA-Z0-9][_a-zA-Z0-9\'\*]*
 "or"	{ return SEL_OR; }
 "!"	{ return SEL_NOT; }
 "not"	{ return SEL_NOT; }
-"="	{ return SEL_EQ; }
-">"	{ return SEL_GT; }
-"<"	{ return SEL_LT; }
+
+"="	{
+  MB_DPRINTLN("EQ token --> set num state");
+  SelCompiler::setSelNumState();
+  return SEL_EQ;
+}
+">"	{
+  MB_DPRINTLN("GT token --> set num state");
+  SelCompiler::setSelNumState();
+  return SEL_GT;
+}
+"<"	{
+  MB_DPRINTLN("LT token --> set num state");
+  SelCompiler::setSelNumState();
+  return SEL_LT;
+}
+
 "*"	{ return SELTK_ALL; }
 
  /* Regular expression (mode start) */
@@ -226,6 +240,10 @@ SEL_TOKEN  [_a-zA-Z0-9][_a-zA-Z0-9\'\*]*
    return SEL_INTNUM;
 }
 
+<SEL_NUM_STAT>. {
+  yyerror("unknown char in num statement");
+  return LEX_ERROR;
+}
 
   /* Regular Expression Mode */
 <SEL_REX_STAT>"/"	{

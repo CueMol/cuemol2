@@ -951,11 +951,11 @@ LString SelCompNode::toString() const
 
   LString oper;
   if (m_ncompop==COMP_EQ)
-    oper = "eq";
+    oper = "=";
   else if (m_ncompop==COMP_GT)
-    oper = "gt";
+    oper = ">";
   else /*if (m_ncompop==COMP_GT)*/
-    oper = "lt";
+    oper = "<";
 
   return LString::format("%s %s %f", mode.c_str(), oper.c_str(), m_dvalue);
 }
