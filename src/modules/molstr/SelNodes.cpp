@@ -570,6 +570,8 @@ int SelResidNode::getType() const
 
 void SelResidNode::append(int n1, char c1, int n2, char c2)
 {
+    // MB_DPRINTLN("SelResidNode::append(%d%c, %d%c)", n1, c1, n2, c2);
+
   ResidIndex r1, r2;
 
   if (n1<n2) {
@@ -579,12 +581,29 @@ void SelResidNode::append(int n1, char c1, int n2, char c2)
     r2.first = n2;
     r2.second = c2+1;
   }
-  else {
+  else if (n1>n2) {
     r1.first = n2;
     r1.second = c2;
     
     r2.first = n1;
     r2.second = c1+1;
+  }
+  else {
+      // n1 == n2
+      if (c1<c2) {
+        r1.first = n1;
+        r1.second = c1;
+        
+        r2.first = n2;
+        r2.second = c2+1;
+      }
+      else {
+        r1.first = n2;
+        r1.second = c2;
+        
+        r2.first = n1;
+        r2.second = c1+1;
+      }
   }
 
   m_list.append(r1, r2);
@@ -600,6 +619,14 @@ LString SelResidNode::toString() const
   const RangeSet<ResidIndex> &range = m_list;
   LString rval;
 
+  // for (const auto &elem: range) {
+  //     MB_DPRINTLN("Residue Range: %d%c - %d%c",
+  //                 elem.nstart.first,
+  //                 elem.nstart.second ? elem.nstart.second : '.',
+  //                 elem.nend.first,
+  //                 (elem.nend.second - 1) ? (elem.nend.second - 1) : '.');
+  // }
+  
   RangeSet<ResidIndex>::const_iterator ebegin = range.begin();
   RangeSet<ResidIndex>::const_iterator eend = range.end();
   RangeSet<ResidIndex>::const_iterator eiter = ebegin;
