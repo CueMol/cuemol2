@@ -9,10 +9,18 @@ inputs:
 runs:
   using: "composite"
   steps:
+
+  - name: Create Python virtual environment
+    shell: bash
+    run: |
+      cd ${GITHUB_WORKSPACE}
+      python3 -m venv .venv
+
   - name: Build and install python module
     shell: bash
     env:
       SCCACHE_GHA_ENABLED: "true"
+      PYTHON: python
     run: |
       cd ${GITHUB_WORKSPACE}
       bash build_scripts/build_pymod_posix/run.sh ${{ inputs.basedir }}
