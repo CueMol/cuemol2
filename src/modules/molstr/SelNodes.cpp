@@ -67,7 +67,7 @@ LString SelOpNode::toString() const
     if (m_artarg.isEmpty())
       return LString::format("(%s) around %f", rval.c_str(), m_dvalue);
     else
-      return LString::format("(%s) around [%s] %f", rval.c_str(), m_artarg.c_str(), m_dvalue);
+      return LString::format("(%s) around %f [\"%s\"]", rval.c_str(), m_dvalue, m_artarg.c_str());
   }
   else if (m_nmode==OP_BYRES) {
     return LString::format("byres (%s)", rval.c_str());
