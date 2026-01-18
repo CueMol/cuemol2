@@ -94,6 +94,11 @@ jobs:
         ls -la $BASEDIR/cuemol2/bin/cuetty
         env LD_LIBRARY_PATH=$BASEDIR/cuemol2/lib $BASEDIR/cuemol2/bin/cuetty
         
+    - name: Build python module
+      uses: ./build_scripts/build_pymod_posix
+      with:
+        basedir: ${{ github.workspace }}/target
+
     - name: Download external packages
       if: env.BUILD_MODE == 'full'
       uses: ./build_scripts/download_extpkgs
