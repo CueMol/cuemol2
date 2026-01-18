@@ -51,8 +51,7 @@ VALID_CASES = [
     ("rprop Prop='Value'", "rprop Prop=Value"),
     
     # --- Regular expressions ---
-    # ("rprop secondary=/^hel/", "rprop secondary=/^hel/"),
-    # ("rprop /^sec/=/^hel/", "rprop /^sec/=/^hel/"),
+    ("rprop secondary=/^hel/", "rprop secondary=^hel"),
     
     # --- null value ---
     ("rprop prop=null", "rprop prop="),
@@ -92,7 +91,7 @@ INVALID_CASES = [
 QUOTED_WORKAROUND_CASES = [
     # Double quoted
     # ('rprop "1A"=value', 'rprop "1A"=value'),  # INSRES as bare, works quoted
-    # ('rprop prop="1.5"', 'rprop prop="1.5"'),  # FLOATNUM as bare, works quoted
+    ('rprop prop="1.5"', 'rprop prop=1.5'),  # FLOATNUM as bare, works quoted
     # ('rprop "prop.name"=value', 'rprop "prop.name"=value'),  # dot, works quoted
     # ('rprop "-prop"=value', 'rprop "-prop"=value'),  # hyphen start, works quoted
     

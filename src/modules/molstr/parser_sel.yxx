@@ -279,6 +279,7 @@ sel_prop_name : SEL_STRING
 sel_prop_val : SEL_STRING
 		| SEL_QSTR
 		| SEL_DQSTR
+		| SEL_REGEXP
 		| SEL_NULL
 		{
 		  // empty name for chain or altconf
