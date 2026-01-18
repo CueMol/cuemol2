@@ -55,6 +55,8 @@ jobs:
         echo "Embed python: ${{ matrix.embed-python }}"
 
     - uses: actions/checkout@v4
+      with:
+        lfs: true
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.9
@@ -126,6 +128,8 @@ jobs:
     runs-on: windows-2022
     steps:
     - uses: actions/checkout@v4
+      with:
+        lfs: true
 
     - uses: ilammy/msvc-dev-cmd@v1
       with:
