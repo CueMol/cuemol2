@@ -85,6 +85,7 @@ using qlib::LChar;
  */
 %type <seltok> select_terms select_term sel_name_list
 %type <str> sel_name sel_molname
+%type <str> sel_prop_name sel_prop_val
 %type <seltok> sel_hierar
 %type <seltok> sel_ranges
 %type <seltok> sel_resid_ranges
@@ -258,12 +259,37 @@ select_term	: SEL_STRING
 		  SelCompiler::setSelState();
 		  $$ = new SelCompNode(SelCompNode::COMP_OCC, $2, $3);
 		}
-		| SEL_RPROP sel_name SEL_EQ sel_name
+		| SEL_RPROP sel_prop_name SEL_EQ sel_prop_val
 		{
 		  $$ = new SelPropNode(SelPropNode::RPROP, $2, $4);
 		  delete [] $2; delete [] $4;
 		}
 		| sel_hierar
+		;
+
+sel_prop_name : SEL_STRING
+		| SEL_INTNUM
+		{
+		  // prop name node composed of int num should be permitted...
+		  LString sbuf = LString::format("%d", $1);
+		  $$ = LChar::dup(sbuf);
+		}
+		;
+
+sel_prop_val : SEL_STRING
+		| SEL_QSTR
+		| SEL_DQSTR
+		| SEL_NULL
+		{
+		  // empty name for chain or altconf
+		  $$ = LChar::dup("");
+		}
+		| SEL_INTNUM
+		{
+		  // name-node composed of int num should be permitted...
+		  LString sbuf = LString::format("%d", $1);
+		  $$ = LChar::dup(sbuf);
+		}
 		;
 
 sel_name	: SEL_STRING
@@ -343,6 +369,7 @@ sel_name_list	: sel_name
 		  /*=== dqstring mode ===*/
 		| SEL_DQSTR
 		{
+          MB_DPRINTLN("name list dqstr: <%s>", $1);
 		  SelNamesNode *pp = new SelNamesNode();
 		  // pp->append($1);
 		  pp->append($1, SelNamesNode::SNN_DQSTR);

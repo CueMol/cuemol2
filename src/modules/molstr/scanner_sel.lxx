@@ -68,8 +68,8 @@ SEL_TOKEN  [_a-zA-Z0-9][_a-zA-Z0-9\'\*]*
 "not"	{ return SEL_NOT; }
 
 "="	{
-  MB_DPRINTLN("EQ token --> set num state");
-  SelCompiler::setSelNumState();
+  // MB_DPRINTLN("EQ token --> set num state");
+  // SelCompiler::setSelNumState();
   return SEL_EQ;
 }
 ">"	{
@@ -267,7 +267,7 @@ SEL_TOKEN  [_a-zA-Z0-9][_a-zA-Z0-9\'\*]*
   /* Quoted String ("...") Mode */
 <SEL_DQSTR_STAT>"\""	{
   yylval.str = LChar::dup(string_buf);
-  MB_DPRINTLN("sel dqstr end %s", string_buf.c_str());
+  MB_DPRINTLN("sel dqstr end <%s>", string_buf.c_str());
   string_buf = "";
   BEGIN INITIAL;
   return SEL_DQSTR;
@@ -280,7 +280,7 @@ SEL_TOKEN  [_a-zA-Z0-9][_a-zA-Z0-9\'\*]*
 
 <SEL_DQSTR_STAT>.	{
   string_buf += yytext;
-  MB_DPRINTLN("sel dqstr %s", string_buf.c_str());
+  // MB_DPRINTLN("sel dqstr %s", string_buf.c_str());
 }
 
   /* Signle-Quoted String ('...') Mode */
