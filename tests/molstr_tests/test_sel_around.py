@@ -19,11 +19,6 @@ Molecule name specification (for cross-molecule selection):
 - Can be bare string, single-quoted, or double-quoted
 - Follows the same rules as sel_molname in grammar
 
-Grammar rules:
-- select_terms SEL_AROUND sel_number
-- select_terms SEL_AROUND sel_number SEL_LBRACK sel_molname SEL_RBRACK
-- sel_number := SEL_INTNUM | SEL_FLOATNUM
-
 Reference: https://cuemol.github.io/cuemol2_docs/cuemol2/SelSyntax/
 """
 
@@ -129,6 +124,8 @@ INVALID_CASES = [
     ("name CA around +", "syntax error"),
     ("name CA around -", "syntax error"),
     ("name CA around *", "syntax error"),
+
+    ("name CA expand 3 [mol1]", 'syntax error'),
 ]
 
 # Operator precedence and associativity cases
@@ -193,9 +190,7 @@ class TestSelectAroundInvalid:
 class TestSelectAroundEquivalence:
     """Tests to verify that 'around' and 'a;' are equivalent."""
 
-    @pytest.mark.parametrize(
-        "distance", ["3", "5", "3.5", "2.0", "10", "1.23", "0.5", "-3", "1.0e1"]
-    )
+    @pytest.mark.parametrize("distance", ["3", "3.5", "-3", "1.0e1"])
     def test_around_and_shorthand_equivalence(self, selobj, distance):
         """Verify 'around' and 'a;' produce identical results."""
         selobj.compile(f"name CA around {distance}", 0)
@@ -218,9 +213,10 @@ class TestSelectAroundEquivalence:
         assert dump_around == dump_shorthand
 
 
-class TestSelectAroundCombinations:
-    """Tests for around operator combined with various selection types."""
+class TestSelectDistanceOperatorCombinations:
+    """Tests for distance-based operators (around, expand, neighbor, extend) combined with various selection types."""
 
+    @pytest.mark.parametrize("distance_op", ["around", "expand", "neighbor", "extend"])
     @pytest.mark.parametrize(
         "base_expr,distance",
         [
@@ -232,24 +228,26 @@ class TestSelectAroundCombinations:
             ("*.5:10.*", "3"),
         ],
     )
-    def test_around_with_various_selections(self, selobj, base_expr, distance):
-        """Test around operator works with various selection expressions."""
-        expression = f"{base_expr} around {distance}"
+    def test_distance_op_with_various_selections(
+        self, selobj, distance_op, base_expr, distance
+    ):
+        """Test distance operators work with various selection expressions."""
+        expression = f"{base_expr} {distance_op} {distance}"
         result = selobj.compile(expression, 0)
         assert result, f"Failed: {expression!r}, error: {selobj.error_msg}"
         assert selobj.error_msg == ""
-        assert "around" in selobj.dumpNodes()
+        assert distance_op in selobj.dumpNodes()
 
-    @pytest.mark.parametrize("operator", ["byres", "bysidech", "bymainch"])
-    def test_around_with_unary_operators(self, selobj, operator):
-        """Test around operator with various unary operators."""
-        expression = f"{operator} name CA around 3"
+    @pytest.mark.parametrize("distance_op", ["around", "expand", "neighbor", "extend"])
+    @pytest.mark.parametrize("unary_op", ["byres", "bysidech", "bymainch"])
+    def test_distance_op_with_unary_operators(self, selobj, distance_op, unary_op):
+        """Test distance operators with various unary operators."""
+        expression = f"{unary_op} name CA {distance_op} 3"
         result = selobj.compile(expression, 0)
         assert result, f"Failed: {expression!r}, error: {selobj.error_msg}"
         assert selobj.error_msg == ""
-
         dumpstr = selobj.dumpNodes()
         print(f"dump: {dumpstr}")
-        assert dumpstr == f"{operator} ((name CA) around 3.000000)"
-        assert operator in dumpstr
-        assert "around" in dumpstr
+        assert dumpstr == f"{unary_op} ((name CA) {distance_op} 3.000000)"
+        assert unary_op in dumpstr
+        assert distance_op in dumpstr

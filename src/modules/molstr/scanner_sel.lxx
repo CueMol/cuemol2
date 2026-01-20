@@ -153,34 +153,34 @@ SEL_TOKEN  [_a-zA-Z0-9][_a-zA-Z0-9\'\*]*
 
 "expand"	{
   MB_DPRINTLN("EXPAND token");
-  // SelCompiler::setValueState();
-  // MB_DPRINTLN("EXPAND set value state");
+  SelCompiler::setValueState();
+  MB_DPRINTLN("EXPAND set value state");
   return SEL_EXPAND;
 }
 "ex;"	{
   MB_DPRINTLN("EXPAND token");
-  // SelCompiler::setValueState();
-  // MB_DPRINTLN("EXPAND set value state");
+  SelCompiler::setValueState();
+  MB_DPRINTLN("EXPAND set value state");
   return SEL_EXPAND;
 }
 
 "neighbor"	{
   MB_DPRINTLN("NBR token");
-  // SelCompiler::setValueState();
-  // MB_DPRINTLN("NBR set value state");
+  SelCompiler::setValueState();
+  MB_DPRINTLN("NBR set value state");
   return SEL_NBR;
 }
 "nbr;"	{
   MB_DPRINTLN("NBR token");
-  // SelCompiler::setValueState();
-  // MB_DPRINTLN("NBR set value state");
+  SelCompiler::setValueState();
+  MB_DPRINTLN("NBR set value state");
   return SEL_NBR;
 }
 
 "extend"	{
   MB_DPRINTLN("EXTEND token");
-  // SelCompiler::setValueState();
-  // MB_DPRINTLN("EXTEND set value state");
+  SelCompiler::setValueState();
+  MB_DPRINTLN("EXTEND set value state");
   return SEL_EXTEND;
 }
 
