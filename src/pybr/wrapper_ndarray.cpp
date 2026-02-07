@@ -13,21 +13,14 @@
 #include <qlib/LByteArray.hpp>
 #include <qlib/LString.hpp>
 
-using namespace pybr;
-using qlib::LScriptable;
-
 #include <numpy/arrayobject.h>
 
-// static
-bool Wrapper::initNumPy()
-{
-    import_array1(false);
+namespace pybr {
 
-    return true;
-}
+using qlib::LScriptable;
 
 // static
-PyObject *Wrapper::numpychk(PyObject *self, PyObject *args)
+PyObject *numpychk(PyObject *self, PyObject *args)
 {
     npy_intp i, ndim, stride;
     // npy_intp *dim1, *dim2, *dim;
@@ -41,54 +34,70 @@ PyObject *Wrapper::numpychk(PyObject *self, PyObject *args)
     return array;
 }
 
+template <typename T>
+struct NpyTypeTraits;
 
-template <typename T> struct NpyTypeTraits;
-
-template <> struct NpyTypeTraits<qfloat32> {
+template <>
+struct NpyTypeTraits<qfloat32>
+{
     static constexpr int npy_type = NPY_FLOAT;
 };
-template <> struct NpyTypeTraits<qfloat64> {
+template <>
+struct NpyTypeTraits<qfloat64>
+{
     static constexpr int npy_type = NPY_DOUBLE;
 };
-template <> struct NpyTypeTraits<qint8> {
+template <>
+struct NpyTypeTraits<qint8>
+{
     static constexpr int npy_type = NPY_INT8;
 };
-template <> struct NpyTypeTraits<qint16> {
+template <>
+struct NpyTypeTraits<qint16>
+{
     static constexpr int npy_type = NPY_INT16;
 };
-template <> struct NpyTypeTraits<qint32> {
+template <>
+struct NpyTypeTraits<qint32>
+{
     static constexpr int npy_type = NPY_INT32;
 };
-template <> struct NpyTypeTraits<quint8> {
+template <>
+struct NpyTypeTraits<quint8>
+{
     static constexpr int npy_type = NPY_UINT8;
 };
-template <> struct NpyTypeTraits<quint16> {
+template <>
+struct NpyTypeTraits<quint16>
+{
     static constexpr int npy_type = NPY_UINT16;
 };
-template <> struct NpyTypeTraits<quint32> {
+template <>
+struct NpyTypeTraits<quint32>
+{
     static constexpr int npy_type = NPY_UINT32;
 };
 
 template <typename T>
-PyObject* createNumpyArrayImpl(qlib::LScrSp<qlib::LByteArray> &baptr)
+PyObject *createNumpyArrayImpl(qlib::LScrSp<qlib::LByteArray> &baptr)
 {
-    const void* src_data = baptr->data();
+    const void *src_data = baptr->data();
     npy_intp nelems = baptr->getElemCount();
 
     npy_intp dim[1] = {nelems};
-    PyObject* array = PyArray_SimpleNew(1, dim, NpyTypeTraits<T>::npy_type);
+    PyObject *array = PyArray_SimpleNew(1, dim, NpyTypeTraits<T>::npy_type);
     if (array == nullptr) {
         return nullptr;
     }
-    
-    const T* pdat = static_cast<const T*>(src_data);
-    T* p = static_cast<T*>(PyArray_DATA(reinterpret_cast<PyArrayObject*>(array)));
-    
+
+    const T *pdat = static_cast<const T *>(src_data);
+    T *p = static_cast<T *>(PyArray_DATA(reinterpret_cast<PyArrayObject *>(array)));
+
     std::copy(pdat, pdat + nelems, p);
     return array;
 }
 
-template<typename T>
+template <typename T>
 qlib::LScrSp<T> *parseArg(PyObject *args)
 {
     PyObject *pPyObj;
@@ -105,8 +114,7 @@ qlib::LScrSp<T> *parseArg(PyObject *args)
     }
 
     // LOG_DPRINTLN("type of arg: %s", typeid(*pScObj).name());
-    qlib::LScrSp<T> *pba =
-        dynamic_cast<qlib::LScrSp<T> *>(pScObj);
+    qlib::LScrSp<T> *pba = dynamic_cast<qlib::LScrSp<T> *>(pScObj);
     if (pba == nullptr) {
         PyErr_SetString(PyExc_RuntimeError, "arg1 is not expected type");
         return nullptr;
@@ -115,7 +123,7 @@ qlib::LScrSp<T> *parseArg(PyObject *args)
 }
 
 // static
-PyObject *Wrapper::copyToNDArray(PyObject *self, PyObject *args)
+PyObject *copyToNDArray(PyObject *self, PyObject *args)
 {
     auto *pba = parseArg<qlib::LByteArray>(args);
     if (pba == nullptr) {
@@ -165,11 +173,10 @@ private:
         explicit CapsuleContext(Deleter d) : deleter(std::move(d)) {}
     };
 
-    static void capsule_destructor(PyObject* capsule)
+    static void capsule_destructor(PyObject *capsule)
     {
-        auto* ctx = static_cast<CapsuleContext*>(
-            PyCapsule_GetPointer(capsule, capsule_name)
-        );
+        auto *ctx =
+            static_cast<CapsuleContext *>(PyCapsule_GetPointer(capsule, capsule_name));
         if (ctx) {
             if (ctx->deleter) {
                 ctx->deleter();
@@ -178,47 +185,44 @@ private:
         }
     }
 
-    static constexpr const char* capsule_name = "cpp_array_memory";
+    static constexpr const char *capsule_name = "cpp_array_memory";
 
 public:
-    static PyObject *create(
-        void *data,
-        int ndim,
-        const npy_intp *dims,
-        int typenum,
-        Deleter deleter
-    ) {
+    static PyObject *create(void *data, int ndim, const npy_intp *dims, int typenum,
+                            Deleter deleter)
+    {
         // Create capsule context
         auto ctx = std::make_unique<CapsuleContext>(std::move(deleter));
-        
+
         // Create capsule
         PyObject *capsule = PyCapsule_New(ctx.get(), capsule_name, capsule_destructor);
         if (!capsule) {
             return nullptr;
         }
         ctx.release();  // Capsule now owns the context
-        
+
         // Create numpy array
-        PyObject* arr = PyArray_SimpleNewFromData(ndim, const_cast<npy_intp*>(dims), typenum, data);
+        PyObject *arr = PyArray_SimpleNewFromData(ndim, const_cast<npy_intp *>(dims),
+                                                  typenum, data);
         if (!arr) {
             Py_DECREF(capsule);
             return nullptr;
         }
-        
+
         // Set base object to manage memory
-        if (PyArray_SetBaseObject(reinterpret_cast<PyArrayObject*>(arr), capsule) < 0) {
+        if (PyArray_SetBaseObject(reinterpret_cast<PyArrayObject *>(arr), capsule) <
+            0) {
             Py_DECREF(arr);
             Py_DECREF(capsule);
             return nullptr;
         }
-        
+
         return arr;
     }
-
 };
 
 // static
-PyObject *Wrapper::toNDArray(PyObject *self, PyObject *args)
+PyObject *toNDArray(PyObject *self, PyObject *args)
 {
     qlib::LScrSp<qlib::LByteArray> *pba = parseArg<qlib::LByteArray>(args);
     if (pba == nullptr) {
@@ -227,65 +231,43 @@ PyObject *Wrapper::toNDArray(PyObject *self, PyObject *args)
 
     qlib::LScrSp<qlib::LByteArray> &baptr = *pba;
     void *src_data = static_cast<void *>(baptr->data());
-    MB_DPRINTLN("Wrapper::toNDArray %p (%d) created!!", baptr.get(), baptr.use_count());
+    MB_DPRINTLN("toNDArray %p (%d) created!!", baptr.get(), baptr.use_count());
 
     ////
     // make shared copy
     qlib::LScrSp<qlib::LByteArray> *pba_sh = new qlib::LScrSp<qlib::LByteArray>(*pba);
-    MB_DPRINTLN("Wrapper::toNDArray shared %p (%d) created!!", pba_sh->get(), pba_sh->use_count());
+    MB_DPRINTLN("toNDArray shared %p (%d) created!!", pba_sh->get(),
+                pba_sh->use_count());
     auto deleter = [pba_sh]() mutable {
         // Release the shared pointer when numpy array is deleted
         qlib::LScrSp<qlib::LByteArray> &baptr = *pba_sh;
-        MB_DPRINTLN("Wrapper::toNDArray %p (%d) deleter called!!", baptr.get(), baptr.use_count());
+        MB_DPRINTLN("toNDArray %p (%d) deleter called!!", baptr.get(),
+                    baptr.use_count());
         delete pba_sh;
-        MB_DPRINTLN("Wrapper::toNDArray destruct OK");
+        MB_DPRINTLN("toNDArray destruct OK");
     };
 
     npy_intp dim[1] = {baptr->getElemCount()};
 
     switch (baptr->getElemType()) {
         case qlib::type_consts::QTC_FLOAT32:
-            return NumpyArrayFromCMemory::create(
-                src_data, 1, dim, NPY_FLOAT,
-                deleter
-            );
+            return NumpyArrayFromCMemory::create(src_data, 1, dim, NPY_FLOAT, deleter);
         case qlib::type_consts::QTC_FLOAT64:
-            return NumpyArrayFromCMemory::create(
-                src_data, 1, dim, NPY_DOUBLE,
-                deleter
-            );
+            return NumpyArrayFromCMemory::create(src_data, 1, dim, NPY_DOUBLE, deleter);
 
         case qlib::type_consts::QTC_UINT8:
-            return NumpyArrayFromCMemory::create(
-                src_data, 1, dim, NPY_UINT8,
-                deleter
-            );
+            return NumpyArrayFromCMemory::create(src_data, 1, dim, NPY_UINT8, deleter);
         case qlib::type_consts::QTC_UINT16:
-            return NumpyArrayFromCMemory::create(
-                src_data, 1, dim, NPY_UINT16,
-                deleter
-            );
+            return NumpyArrayFromCMemory::create(src_data, 1, dim, NPY_UINT16, deleter);
         case qlib::type_consts::QTC_UINT32:
-            return NumpyArrayFromCMemory::create(
-                src_data, 1, dim, NPY_UINT32,
-                deleter
-            );
+            return NumpyArrayFromCMemory::create(src_data, 1, dim, NPY_UINT32, deleter);
 
         case qlib::type_consts::QTC_INT8:
-            return NumpyArrayFromCMemory::create(
-                src_data, 1, dim, NPY_INT8,
-                deleter
-            );
+            return NumpyArrayFromCMemory::create(src_data, 1, dim, NPY_INT8, deleter);
         case qlib::type_consts::QTC_INT16:
-            return NumpyArrayFromCMemory::create(
-                src_data, 1, dim, NPY_INT16,
-                deleter
-            );
+            return NumpyArrayFromCMemory::create(src_data, 1, dim, NPY_INT16, deleter);
         case qlib::type_consts::QTC_INT32:
-            return NumpyArrayFromCMemory::create(
-                src_data, 1, dim, NPY_INT32,
-                deleter
-            );
+            return NumpyArrayFromCMemory::create(src_data, 1, dim, NPY_INT32, deleter);
 
         default:
             PyErr_SetString(PyExc_RuntimeError, "unknown bytearray type");
@@ -298,7 +280,7 @@ PyObject *Wrapper::toNDArray(PyObject *self, PyObject *args)
 // NDArray --> ByteArray
 
 // static
-PyObject *Wrapper::copyFromNDArray(PyObject *self, PyObject *args)
+PyObject *copyFromNDArray(PyObject *self, PyObject *args)
 {
     PyObject *pPyObj;
 
@@ -318,55 +300,54 @@ PyObject *Wrapper::copyFromNDArray(PyObject *self, PyObject *args)
     int typenum = PyArray_TYPE(pArr);
     void *data = PyArray_DATA(pArr);
 
-    if (ndim!=1) {
+    if (ndim != 1) {
         MB_DPRINTLN("ERROR: numpy array ndim !=1 not supported");
         PyErr_SetString(PyExc_ValueError, "numpy array ndim !=1 not supported");
         return nullptr;
     }
 
-    MB_DPRINTLN("Wrapper::copyFromNDArray ndim=%d, dim[0]=%ld, typenum=%d", ndim, dims[0], typenum);
+    MB_DPRINTLN("copyFromNDArray ndim=%d, dim[0]=%ld, typenum=%d", ndim, dims[0],
+                typenum);
     auto nitems = dims[0];
     qlib::LByteArray *pNewObj = new qlib::LByteArray();
     switch (typenum) {
-    case NPY_FLOAT:
-        pNewObj->initFrom(qlib::type_consts::QTC_FLOAT32, nitems, data);
-        break;
-    case NPY_DOUBLE:
-        pNewObj->initFrom(qlib::type_consts::QTC_FLOAT64, nitems, data);
-        break;
-    case NPY_UINT8:
-        pNewObj->initFrom(qlib::type_consts::QTC_UINT8, nitems, data);
-        break;
-    case NPY_UINT16:
-        pNewObj->initFrom(qlib::type_consts::QTC_UINT16, nitems, data);
-        break;
-    case NPY_UINT32:
-        pNewObj->initFrom(qlib::type_consts::QTC_UINT32, nitems, data);
-        break;
-    case NPY_INT8:
-        pNewObj->initFrom(qlib::type_consts::QTC_INT8, nitems, data);
-        break;
-    case NPY_INT16:
-        pNewObj->initFrom(qlib::type_consts::QTC_INT16, nitems, data);
-        break;
-    case NPY_INT32:
-        pNewObj->initFrom(qlib::type_consts::QTC_INT32, nitems, data);
-        break;
-    default:
-        PyErr_SetString(PyExc_RuntimeError, "numpy array type not supported");
-        return nullptr;
+        case NPY_FLOAT:
+            pNewObj->initFrom(qlib::type_consts::QTC_FLOAT32, nitems, data);
+            break;
+        case NPY_DOUBLE:
+            pNewObj->initFrom(qlib::type_consts::QTC_FLOAT64, nitems, data);
+            break;
+        case NPY_UINT8:
+            pNewObj->initFrom(qlib::type_consts::QTC_UINT8, nitems, data);
+            break;
+        case NPY_UINT16:
+            pNewObj->initFrom(qlib::type_consts::QTC_UINT16, nitems, data);
+            break;
+        case NPY_UINT32:
+            pNewObj->initFrom(qlib::type_consts::QTC_UINT32, nitems, data);
+            break;
+        case NPY_INT8:
+            pNewObj->initFrom(qlib::type_consts::QTC_INT8, nitems, data);
+            break;
+        case NPY_INT16:
+            pNewObj->initFrom(qlib::type_consts::QTC_INT16, nitems, data);
+            break;
+        case NPY_INT32:
+            pNewObj->initFrom(qlib::type_consts::QTC_INT32, nitems, data);
+            break;
+        default:
+            PyErr_SetString(PyExc_RuntimeError, "numpy array type not supported");
+            return nullptr;
     }
-        
+
     // return shared ptr obj
     auto *pRet = MB_NEW qlib::LByteArrayPtr(pNewObj);
 
-    return createWrapper(pRet);
+    return Wrapper::createWrapper(pRet);
 }
 
-
-    
 // static
-PyObject *Wrapper::fromNDArray(PyObject *self, PyObject *args)
+PyObject *fromNDArray(PyObject *self, PyObject *args)
 {
     PyObject *pPyObj;
 
@@ -386,7 +367,7 @@ PyObject *Wrapper::fromNDArray(PyObject *self, PyObject *args)
     int typenum = PyArray_TYPE(pArr);
     void *data = PyArray_DATA(pArr);
 
-    if (ndim!=1) {
+    if (ndim != 1) {
         MB_DPRINTLN("ERROR: numpy array ndim !=1 not supported");
         PyErr_SetString(PyExc_ValueError, "numpy array ndim !=1 not supported");
         return nullptr;
@@ -395,48 +376,49 @@ PyObject *Wrapper::fromNDArray(PyObject *self, PyObject *args)
     // check C-contiguous/native byte order
     if (!PyArray_ISCARRAY(pArr)) {
         MB_DPRINTLN("ERROR: array is not C-contiguous/native byte order");
-        PyErr_SetString(PyExc_ValueError, "array is not C-contiguous/native byte order");
+        PyErr_SetString(PyExc_ValueError,
+                        "array is not C-contiguous/native byte order");
         return nullptr;
     }
-    
-    MB_DPRINTLN("Wrapper::fromNDArray ndim=%d, dim[0]=%ld, typenum=%d", ndim, dims[0], typenum);
+
+    MB_DPRINTLN("fromNDArray ndim=%d, dim[0]=%ld, typenum=%d", ndim, dims[0], typenum);
 
     auto nitems = dims[0];
     qlib::LByteArray *pNewObj = new qlib::LByteArray();
 
     switch (typenum) {
-    case NPY_FLOAT:
-        pNewObj->refer(qlib::type_consts::QTC_FLOAT32, nitems, data);
-        break;
-    case NPY_DOUBLE:
-        pNewObj->refer(qlib::type_consts::QTC_FLOAT64, nitems, data);
-        break;
-        
-    case NPY_UINT8:
-        pNewObj->refer(qlib::type_consts::QTC_UINT8, nitems, data);
-        break;
-    case NPY_UINT16:
-        pNewObj->refer(qlib::type_consts::QTC_UINT16, nitems, data);
-        break;
-    case NPY_UINT32:
-        pNewObj->refer(qlib::type_consts::QTC_UINT32, nitems, data);
-        break;
-        
-    case NPY_INT8:
-        pNewObj->refer(qlib::type_consts::QTC_INT8, nitems, data);
-        break;
-    case NPY_INT16:
-        pNewObj->refer(qlib::type_consts::QTC_INT16, nitems, data);
-        break;
-    case NPY_INT32:
-        pNewObj->refer(qlib::type_consts::QTC_INT32, nitems, data);
-        break;
+        case NPY_FLOAT:
+            pNewObj->refer(qlib::type_consts::QTC_FLOAT32, nitems, data);
+            break;
+        case NPY_DOUBLE:
+            pNewObj->refer(qlib::type_consts::QTC_FLOAT64, nitems, data);
+            break;
 
-    default:
-        PyErr_SetString(PyExc_RuntimeError, "numpy array type not supported");
-        return nullptr;
+        case NPY_UINT8:
+            pNewObj->refer(qlib::type_consts::QTC_UINT8, nitems, data);
+            break;
+        case NPY_UINT16:
+            pNewObj->refer(qlib::type_consts::QTC_UINT16, nitems, data);
+            break;
+        case NPY_UINT32:
+            pNewObj->refer(qlib::type_consts::QTC_UINT32, nitems, data);
+            break;
+
+        case NPY_INT8:
+            pNewObj->refer(qlib::type_consts::QTC_INT8, nitems, data);
+            break;
+        case NPY_INT16:
+            pNewObj->refer(qlib::type_consts::QTC_INT16, nitems, data);
+            break;
+        case NPY_INT32:
+            pNewObj->refer(qlib::type_consts::QTC_INT32, nitems, data);
+            break;
+
+        default:
+            PyErr_SetString(PyExc_RuntimeError, "numpy array type not supported");
+            return nullptr;
     }
-    
+
     Py_INCREF(pPyObj);  // hold numpy array
     pNewObj->setOnDestroy([pPyObj](auto &p) {
         MB_DPRINTLN("***** LByteArray(%p) onDestroy callback called!!", p.data());
@@ -451,6 +433,28 @@ PyObject *Wrapper::fromNDArray(PyObject *self, PyObject *args)
     // return shared ptr obj
     auto *pRet = MB_NEW qlib::LByteArrayPtr(pNewObj);
 
-    return createWrapper(pRet);
+    return Wrapper::createWrapper(pRet);
 }
 
+static PyMethodDef numpy_methods[] = {
+    {"numpychk", (PyCFunction)numpychk, METH_VARARGS, "numpychk.\n"},
+    {"copy_to_ndarray", (PyCFunction)copyToNDArray, METH_VARARGS,
+     "conv to numpy ndarray.\n"},
+    {"to_ndarray", (PyCFunction)toNDArray, METH_VARARGS, "conv to numpy ndarray.\n"},
+    {"from_ndarray", (PyCFunction)fromNDArray, METH_VARARGS,
+     "conv from numpy ndarray to ByteArray.\n"},
+    {"copy_from_ndarray", (PyCFunction)copyFromNDArray, METH_VARARGS,
+     "copy from numpy ndarray to ByteArray.\n"},
+    {NULL, NULL, 0, NULL} /* Sentinel */
+};
+
+// static
+bool Wrapper::initNumPy(PyObject *m)
+{
+    import_array1(false);
+
+    PyModule_AddFunctions(m, numpy_methods);
+    return true;
+}
+
+}  // namespace pybr

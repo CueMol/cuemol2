@@ -52,14 +52,14 @@ SET(PYMOD_LINK_LIBRARIES
 
 # Normal C++ source files
 SET(PYMODULE_SRCS
-  src/wrapper.cpp
-  src/convert.cpp
-  src/methodobj.cpp
+  ../src/pybr/wrapper.cpp
+  ../src/pybr/convert.cpp
+  ../src/pybr/methodobj.cpp
   src/initcuemol.cpp
 )
 
 if (Python3_NumPy_FOUND)
-  list(APPEND PYMODULE_SRCS src/wrapper_ndarray.cpp)
+  list(APPEND PYMODULE_SRCS ../src/pybr/wrapper_ndarray.cpp)
 endif()
 
 python3_add_library(_cuemol_internal MODULE ${PYMODULE_SRCS} WITH_SOABI)

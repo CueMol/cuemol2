@@ -18,8 +18,8 @@ set -eux
 
 BASEDIR=$1
 
-# PYTHON="python3.12"
-PYTHON="python3"
+# Use PYTHON env var if already set, otherwise default to python3
+PYTHON="${PYTHON:-python3}"
 
 REPOS_DIR=$(cd $(dirname $0)/../..; pwd)
 WORKSPACE=${GITHUB_WORKSPACE:-$REPOS_DIR}
@@ -27,6 +27,7 @@ WORKSPACE=${GITHUB_WORKSPACE:-$REPOS_DIR}
 # Use venv if exists
 VENV_DIR=$REPOS_DIR/.venv
 if [ -d $VENV_DIR ]; then
+    echo "Activating virtual environment at $VENV_DIR"
     source $VENV_DIR/bin/activate
 fi
 

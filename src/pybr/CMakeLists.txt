@@ -1,8 +1,16 @@
+find_package(Python3 COMPONENTS NumPy)
+message(STATUS "Python3_NumPy_FOUND=${Python3_NumPy_FOUND}")
+
 # Dependent libs
 SET(PYBR_LINK_LIBRARIES
   Boost::filesystem
   Python3::Python
 )
+
+if (Python3_NumPy_FOUND)
+  add_definitions(-DHAVE_NUMPY=1)
+  list(APPEND PYBR_LINK_LIBRARIES Python3::NumPy)
+endif()
 
 # Normal C++ source files
 SET(PYBR_SRCS
@@ -19,6 +27,10 @@ SET(PYBR_HDRS
   pybr.hpp
   wrapper.hpp
 )
+
+if (Python3_NumPy_FOUND)
+  list(APPEND PYBR_SRCS wrapper_ndarray.cpp)
+endif()
 
 #####
 

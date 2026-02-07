@@ -3,8 +3,7 @@
 // Python object wrapper
 //
 
-#ifndef PYBR_WRAPPER_HPP_INCLUDED__
-#define PYBR_WRAPPER_HPP_INCLUDED__
+#pragma once
 
 #include <Python.h>
 
@@ -14,6 +13,8 @@
 #include "pybr.hpp"
 
 namespace pybr {
+
+using qlib::LString;
 
 /// wrapper instance type
 typedef struct
@@ -25,15 +26,13 @@ typedef struct
 
 } QpyWrapObj;
 
-using qlib::LString;
+/// Initialize python obj wrapper
+PyObject *wrapperInit();
 
 /// wrapper utility methods
 class PYBR_API Wrapper
 {
 public:
-    /// initialize wrapper
-    static PyObject *init();
-
     //////////////////////////////////////////
     // cuemol_internal.* service methods implementation
 
@@ -42,6 +41,9 @@ public:
 
     /// create new cuemol object
     static PyObject *createObj(PyObject *self, PyObject *args);
+
+    /// copy cuemol object
+    static PyObject *copyObj(PyObject *self, PyObject *args);
 
     /// get class names
     static PyObject *getAllClassNamesJSON(PyObject *self, PyObject *args);
@@ -89,10 +91,8 @@ public:
     /// print log
     static PyObject *print(PyObject *self, PyObject *args);
 
-#ifdef HAVE_NUMPY
-    static PyObject *numpychk(PyObject *self, PyObject *args);
-    static PyObject *tondarray(PyObject *self, PyObject *args);
-#endif
+    /// get ref count for smartptr (if possible)
+    static PyObject *getRefCount(PyObject *self, PyObject *args);
 
     //////////
 
@@ -124,10 +124,11 @@ public:
 
     static PyObject *getPropImpl(qlib::LScriptable *pObj, const LString &name);
 
-private:
+#ifdef HAVE_NUMPY
+    static bool initNumPy(PyObject *m);
+#endif
+
     static bool setupMethObj();
 };
 
 }  // namespace pybr
-
-#endif

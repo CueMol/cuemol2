@@ -1,3 +1,21 @@
+#
+#
+#
+
+# Python3
+set(Python3_FIND_FRAMEWORK NEVER)
+set(Python3_FIND_STRATEGY LOCATION)
+find_package (Python3 3.8 COMPONENTS Interpreter REQUIRED)
+message(STATUS "Python3_EXECUTABLE: ${Python3_EXECUTABLE}")
+
+if (ENABLE_PYTHON_EMBED)
+  message(STATUS "ENABLE_PYTHON_EMBED is ON")
+  find_package(Python3 COMPONENTS Development.Embed REQUIRED)
+  message(STATUS "Python3_INCLUDE_DIRS: ${Python3_INCLUDE_DIRS}")
+  message(STATUS "Python3_LIBRARIES: ${Python3_LIBRARIES}")
+endif ()
+
+
 if (${CMAKE_BUILD_TYPE} MATCHES "[Dd][Ee][Bb][Uu][Gg]")
   SET(MB_DEBUG "1")
 endif ()
@@ -179,6 +197,11 @@ if (NOT BUILD_MINIMUM_MODULES)
   add_subdirectory(modules/anim)
   add_subdirectory(modules/mdtools)
   add_subdirectory(modules/importers)
+
+  if (ENABLE_PYTHON_EMBED)
+    add_subdirectory(pybr)
+  endif ()
+
 endif ()
 
 # utils (blendpng)
@@ -226,6 +249,10 @@ if (BUILD_OPENGL_SYSDEP)
   list(APPEND CUEMOL2_LINK_LIBRARIES sysdep)
 endif ()
 
+if (ENABLE_PYTHON_EMBED)
+  list(APPEND CUEMOL2_LINK_LIBRARIES pybr)
+endif ()
+
 if (${XMLRPC_FOUND})
   list(APPEND CUEMOL2_LINK_LIBRARIES molclient)
   list(APPEND CUEMOL2_DEFS "BUILD_MOLCLIENT=1")
@@ -241,6 +268,11 @@ target_include_directories(
   ${Boost_INCLUDE_DIRS}
 )
 target_link_libraries(cuemol2 PRIVATE ${CUEMOL2_LINK_LIBRARIES})
+
+set_target_properties(cuemol2 PROPERTIES
+  BUILD_RPATH "${Python3_LIBRARY_DIRS}"
+  INSTALL_RPATH "@loader_path;@loader_path/../lib/python/lib;@loader_path/../Resources/python/lib"
+)
 
 list(APPEND CUEMOL2_DEFS "LIBCUEMOL_EXPORTS=1")
 target_compile_definitions(cuemol2 PUBLIC ${CUEMOL2_DEFS})

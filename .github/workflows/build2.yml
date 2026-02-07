@@ -32,14 +32,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # - os: macos-15
+          #   name: "MacOS 15 arm64 clang"
+          #   embed-python: ""
           - os: macos-15
-            name: "MacOS 15 arm64 clang"
+            name: "MacOS 15 arm64 clang py312"
+            embed-python: "3.12"
           - os: macos-15-intel
             name: "MacOS 15 x64 clang"
-          # - os: macos-14
-          #   name: "MacOS 14 arm64 clang"
-          # - os: macos-13
-          #   name: "MacOS 13 x64 clang"
+            embed-python: ""
 
     env:
       MACOSX_DEPLOYMENT_TARGET: "10.15"
@@ -50,16 +51,23 @@ jobs:
         echo "BUILD_MODE: ${{ env.BUILD_MODE }}"
         echo "Branch/Tag: ${{ github.ref }}"
         echo "Event: ${{ github.event_name }}"
+        echo "Build type: ${{ matrix.os }}"
+        echo "Embed python: ${{ matrix.embed-python }}"
 
     - uses: actions/checkout@v4
+      with:
+        lfs: true
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.9
+      with:
+        version: "v0.12.0"
 
     - name: Show build env versions
       shell: bash
       run: |
         echo "RUNNER_TYPE=${{ matrix.os }}" >> $GITHUB_ENV
+        echo "EMBED_PYTHON=${{ matrix.embed-python }}" >> $GITHUB_ENV
         set -eux
         clang --version
         xcodebuild -version
@@ -88,6 +96,11 @@ jobs:
         ls -la $BASEDIR/cuemol2/bin/cuetty
         env LD_LIBRARY_PATH=$BASEDIR/cuemol2/lib $BASEDIR/cuemol2/bin/cuetty
         
+    - name: Build python module
+      uses: ./build_scripts/build_pymod_posix
+      with:
+        basedir: ${{ github.workspace }}/target
+
     - name: Download external packages
       if: env.BUILD_MODE == 'full'
       uses: ./build_scripts/download_extpkgs
@@ -115,6 +128,8 @@ jobs:
     runs-on: windows-2022
     steps:
     - uses: actions/checkout@v4
+      with:
+        lfs: true
 
     - uses: ilammy/msvc-dev-cmd@v1
       with:

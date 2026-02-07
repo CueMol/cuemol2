@@ -165,6 +165,7 @@
 @RESPATH@/povray/*
 @RESPATH@/ffmpeg/*
 @RESPATH@/apbs/*
+@RESPATH@/python/*
 #ifdef XP_WIN32
 @RESPATH@/blendpng.exe
 #else

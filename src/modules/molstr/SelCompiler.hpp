@@ -32,9 +32,10 @@ namespace molstr {
        Change to the number scanning state.
        Only used from parser implementation.
     */
-    static void setSelNumState();
-    static void setSelRexState();
-    static void setSelState();
+    // static void setSelNumState();
+    static void setValueState();
+    static void setRexState();
+    static void setInitState();
 
     /// Check validity of name reference
     static bool checkNameRef(const char *name);

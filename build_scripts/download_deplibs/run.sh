@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eux
 
-DEPLIBS_VERSION=v0.0.7
+DEPLIBS_VERSION=v0.0.8
 
 BASEDIR=$1
 RUNNER_OS=$2

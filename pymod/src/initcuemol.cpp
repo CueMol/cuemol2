@@ -10,27 +10,25 @@
 #include <qlib/LProcMgr.hpp>
 #include <qlib/qlib.hpp>
 
-#if (GUI_ARCH != MB_GUI_ARCH_CLI)
-#include <sysdep/sysdep.hpp>
-#endif
+// #if (GUI_ARCH != MB_GUI_ARCH_CLI)
+// #include <sysdep/sysdep.hpp>
+// #endif
+
+// #include <pybr/wrapper.hpp>
+// #include "../../src/pybr/wrapper.hpp"
+namespace pybr {
+PyObject *wrapperInit();
+}
 
 #ifndef DEFAULT_CONFIG
 #define DEFAULT_CONFIG "./sysconfig.xml"
 #endif
 
-#include "wrapper.hpp"
 
 using namespace pybr;
 
-PyMODINIT_FUNC PyInit__cuemol_internal()
-{
-    qlib::init();
-    MB_DPRINTLN("CueMol2 pymodule : INITIALIZED");
-    PyObject *module = Wrapper::init();
-    return module;
-}
-
-namespace pybr {
+namespace {
+using qlib::LString;
 
   bool g_bInitOK = false;
   
@@ -63,7 +61,7 @@ namespace pybr {
     
     LOG_DPRINTLN("initCueMol(%s) called.", confpath.c_str());
 
-    int result = cuemol2::init(confpath, true);
+    int result = cuemol2::init(confpath, true, false);
     if (result < 0) {
       PyErr_SetString(PyExc_RuntimeError, "init failed");
       return NULL;
@@ -95,6 +93,25 @@ namespace pybr {
 
     return Py_BuildValue("");
   }
+} // namespace
+
+static PyMethodDef module_methods[] = {
+    {"initCueMol", (PyCFunction)initCueMol, METH_VARARGS,
+     "initialize CueMol system.\n"},
+    {"finiCueMol", (PyCFunction)finiCueMol, METH_VARARGS, "finalize CueMol system.\n"},
+    {"isInitialized", (PyCFunction)isInitialized, METH_VARARGS,
+     "check initialization.\n"},
+    {NULL, NULL, 0, NULL}
+};
+
+
+PyMODINIT_FUNC PyInit__cuemol_internal()
+{
+    qlib::init();
+    MB_DPRINTLN("CueMol2 pymodule : INITIALIZED");
+    PyObject *m = pybr::wrapperInit();
+
+    PyModule_AddFunctions(m, module_methods);
+
+    return m;
 }
-
-

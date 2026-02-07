@@ -50,9 +50,19 @@ else
     BUILD_TYPE=Release
 fi
 
-PYTHON=python3
-PYTHON_ROOT=$($PYTHON -c 'import sys;import pathlib; print(pathlib.Path(sys.executable).parent.parent)')
-echo "PYTHON_ROOT=$PYTHON_ROOT"
+# Python embed
+if [ -d "${EMBED_PYTHON_ROOT:-}" ]; then
+    # if [ "${EMBED_PYTHON_ROOT+foo}" ]; then
+    ENABLE_PYTHON_EMBED=ON
+    PYTHON_ROOT=$EMBED_PYTHON_ROOT
+    echo "Using PYTHON_ROOT=$EMBED_PYTHON_ROOT"
+else
+    # PYTHON=python3
+    PYTHON_ROOT=$(python3 -c 'import sys;import pathlib; print(pathlib.Path(sys.executable).parent.parent)')
+    echo "Found PYTHON_ROOT=$PYTHON_ROOT"
+    ENABLE_PYTHON_EMBED=OFF
+fi
+echo "ENABLE_PYTHON_EMBED=$ENABLE_PYTHON_EMBED"
 
 BUILD_PYTHON_BINDINGS=ON
 BUILD_NODEJS_BINDINGS=ON
@@ -78,6 +88,7 @@ cmake -G "$GENERATOR" \
       -DLCMS2_ROOT=$BASEDIR/lcms2-$LCMS2_VER \
       -DGLEW_ROOT=$BASEDIR/glew-$GLEW_VER \
       -DBUILD_PYTHON_BINDINGS=$BUILD_PYTHON_BINDINGS \
+      -DENABLE_PYTHON_EMBED=$ENABLE_PYTHON_EMBED \
       -DBUILD_NODEJS_BINDINGS=$BUILD_NODEJS_BINDINGS \
       -DPython3_ROOT_DIR=$PYTHON_ROOT \
       -DBUILD_XPCJS_BINDINGS=ON \
@@ -88,3 +99,13 @@ cmake -G "$GENERATOR" \
 
 cmake --build $BUILD_DIR --parallel --config $BUILD_TYPE
 cmake --install $BUILD_DIR --config $BUILD_TYPE
+
+# Copy dependent shared libs
+cp $BASEDIR/boost_$BOOST_VER/lib/lib* $BASEDIR/cuemol2/lib/
+
+# Python embed
+if [ -n "${EMBED_PYTHON_ROOT:-}" ]; then
+    cp -r $EMBED_PYTHON_ROOT $BASEDIR/cuemol2/lib/
+fi
+
+ls -la $BASEDIR/cuemol2/lib/

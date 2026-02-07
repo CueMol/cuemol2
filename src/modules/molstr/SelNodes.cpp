@@ -67,7 +67,16 @@ LString SelOpNode::toString() const
     if (m_artarg.isEmpty())
       return LString::format("(%s) around %f", rval.c_str(), m_dvalue);
     else
-      return LString::format("(%s) around [%s] %f", rval.c_str(), m_artarg.c_str(), m_dvalue);
+      return LString::format("(%s) around %f [\"%s\"]", rval.c_str(), m_dvalue, m_artarg.c_str());
+  }
+  else if (m_nmode==OP_EXTEND) {
+      return LString::format("(%s) extend %f", rval.c_str(), m_dvalue);
+  }
+  else if (m_nmode==OP_EXPAND) {
+      return LString::format("(%s) expand %f", rval.c_str(), m_dvalue);
+  }
+  else if (m_nmode==OP_NEIGHBOR) {
+      return LString::format("(%s) neighbor %f", rval.c_str(), m_dvalue);
   }
   else if (m_nmode==OP_BYRES) {
     return LString::format("byres (%s)", rval.c_str());
@@ -570,6 +579,8 @@ int SelResidNode::getType() const
 
 void SelResidNode::append(int n1, char c1, int n2, char c2)
 {
+    // MB_DPRINTLN("SelResidNode::append(%d%c, %d%c)", n1, c1, n2, c2);
+
   ResidIndex r1, r2;
 
   if (n1<n2) {
@@ -579,12 +590,29 @@ void SelResidNode::append(int n1, char c1, int n2, char c2)
     r2.first = n2;
     r2.second = c2+1;
   }
-  else {
+  else if (n1>n2) {
     r1.first = n2;
     r1.second = c2;
     
     r2.first = n1;
     r2.second = c1+1;
+  }
+  else {
+      // n1 == n2
+      if (c1<c2) {
+        r1.first = n1;
+        r1.second = c1;
+        
+        r2.first = n2;
+        r2.second = c2+1;
+      }
+      else {
+        r1.first = n2;
+        r1.second = c2;
+        
+        r2.first = n1;
+        r2.second = c1+1;
+      }
   }
 
   m_list.append(r1, r2);
@@ -600,6 +628,14 @@ LString SelResidNode::toString() const
   const RangeSet<ResidIndex> &range = m_list;
   LString rval;
 
+  // for (const auto &elem: range) {
+  //     MB_DPRINTLN("Residue Range: %d%c - %d%c",
+  //                 elem.nstart.first,
+  //                 elem.nstart.second ? elem.nstart.second : '.',
+  //                 elem.nend.first,
+  //                 (elem.nend.second - 1) ? (elem.nend.second - 1) : '.');
+  // }
+  
   RangeSet<ResidIndex>::const_iterator ebegin = range.begin();
   RangeSet<ResidIndex>::const_iterator eend = range.end();
   RangeSet<ResidIndex>::const_iterator eiter = ebegin;
@@ -924,11 +960,11 @@ LString SelCompNode::toString() const
 
   LString oper;
   if (m_ncompop==COMP_EQ)
-    oper = "eq";
+    oper = "=";
   else if (m_ncompop==COMP_GT)
-    oper = "gt";
+    oper = ">";
   else /*if (m_ncompop==COMP_GT)*/
-    oper = "lt";
+    oper = "<";
 
   return LString::format("%s %s %f", mode.c_str(), oper.c_str(), m_dvalue);
 }

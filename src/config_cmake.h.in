@@ -98,7 +98,7 @@
 
 /* Define to 1 if you have python3 */
 #cmakedefine BUILD_PYTHON_BINDINGS
-#cmakedefine BUILD_PYTHON_MODULE
+#cmakedefine ENABLE_PYTHON_EMBED
 
 /* Enable debug code/verbose log display */
 #cmakedefine MB_DEBUG
