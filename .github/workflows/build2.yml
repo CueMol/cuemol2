@@ -121,7 +121,7 @@ jobs:
       if: env.BUILD_MODE == 'full'
       uses: actions/upload-artifact@v4
       with:
-        name: cuemol2_${{ runner.os }}_${{ runner.arch }}
+        name: cuemol2_${{ runner.os }}_${{ runner.arch }}_${{ matrix.postfix }}
         path: ${{ steps.build-artifact.outputs.artifact-path }}
 
 ###############################################
@@ -225,7 +225,7 @@ jobs:
       if: env.BUILD_MODE == 'full'
       uses: actions/upload-artifact@v4
       with:
-        name: cuemol2_${{ runner.os }}_${{ runner.arch }}_${{ matrix.postfix }}
+        name: cuemol2_${{ runner.os }}_${{ runner.arch }}
         path: ${{ steps.build-artifact.outputs.artifact-path }}
 
 ###############################################
