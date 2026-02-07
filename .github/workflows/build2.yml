@@ -66,7 +66,7 @@ jobs:
       shell: bash
       run: |
         VERSION=$(grep '#define QM_VERSION' src/_version.h | sed 's/.*"\(.*\)".*/\1/')
-        TARGET="cuemol2_${{ runner.os }}_${{ runner.arch }}_${VERSION}${{ matrix.postfix }}"
+        TARGET="cuemol2_${VERSION}_${{ runner.os }}_${{ runner.arch }}${{ matrix.postfix }}"
         echo $VERSION
         echo "Build: $TARGET"
         echo "version=$VERSION" >> "$GITHUB_OUTPUT"
@@ -166,7 +166,7 @@ jobs:
       shell: bash
       run: |
         VERSION=$(grep '#define QM_VERSION' src/_version.h | sed 's/.*"\(.*\)".*/\1/')
-        TARGET="cuemol2_${{ runner.os }}_${{ runner.arch }}_${VERSION}"
+        TARGET="cuemol2_${VERSION}_${{ runner.os }}_${{ runner.arch }}"
         echo $VERSION
         echo "Build: $TARGET"
         echo "version=$VERSION" >> "$GITHUB_OUTPUT"
