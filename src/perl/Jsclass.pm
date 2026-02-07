@@ -368,7 +368,7 @@ sub genEs6InvokeCode($$)
     # }
     else {
       # basic types
-      print OUT "  return rval;\n";
+      print OUT "  return result;\n";
     }
 
     print OUT "};\n";
