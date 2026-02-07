@@ -32,9 +32,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # - os: macos-15
-          #   name: "MacOS 15 arm64 clang"
-          #   embed-python: ""
+          - os: macos-15
+            name: "MacOS 15 arm64 clang"
+            embed-python: ""
           - os: macos-15
             name: "MacOS 15 arm64 clang py312"
             embed-python: "3.12"
