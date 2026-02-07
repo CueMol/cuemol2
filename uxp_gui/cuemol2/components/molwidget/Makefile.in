@@ -20,7 +20,10 @@ libs::
 	else \
 	  echo "No python data dir found in $(CUEMOL_DIR)/data/python" ; \
 	fi
-	mkdir -p $(dist_dest)/Contents/Resources/python
+	if [ ! -d "$(dist_dest)/Contents/Resources/python" ] ; then \
+	  mkdir -p $(dist_dest)/Contents/Resources/python ; \
+	  touch $(dist_dest)/Contents/Resources/python/dummy ; \
+	fi
 
 # @$(foreach V,$(sort $(.VARIABLES)),$(if $(filter-out environment% default automatic,$(origin $V)),$(warning $V=$($V) ($(value $V)))))
 
@@ -30,7 +33,8 @@ libs::
 	echo 'srcdir: $(srcdir)'
 	echo 'DIST: $(dist)'
 	echo 'CUEMOL_DEPLIB_DIRS=$(CUEMOL_DEPLIB_DIRS)'
-	mkdir -p $(DIST)/bin/python ; \
+	mkdir -p $(DIST)/bin/python
+	touch $(DIST)/bin/python/dummy
 	cp $(CUEMOL_DEPLIB_DIRS)/*-mt-x64-*.dll $(DIST)/bin/
 	cp $(CUEMOL_DIR)/bin/*.dll $(DIST)/bin/
 endif

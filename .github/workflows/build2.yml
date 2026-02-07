@@ -32,15 +32,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # - os: macos-15
-          #   name: "MacOS 15 arm64 clang"
-          #   embed-python: ""
+          - os: macos-15
+            name: "MacOS 15 arm64 clang"
+            embed-python: ""
+            postfix: ""
           - os: macos-15
             name: "MacOS 15 arm64 clang py312"
             embed-python: "3.12"
+            postfix: "_py312"
           - os: macos-15-intel
             name: "MacOS 15 x64 clang"
             embed-python: ""
+            postfix: ""
 
     env:
       MACOSX_DEPLOYMENT_TARGET: "10.15"
@@ -57,6 +60,17 @@ jobs:
     - uses: actions/checkout@v4
       with:
         lfs: true
+
+    - name: Get version
+      id: version
+      shell: bash
+      run: |
+        VERSION=$(grep '#define QM_VERSION' src/_version.h | sed 's/.*"\(.*\)".*/\1/')
+        TARGET="cuemol2_${VERSION}_${{ runner.os }}_${{ runner.arch }}${{ matrix.postfix }}"
+        echo $VERSION
+        echo "Build: $TARGET"
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+        echo "artifact-base=$TARGET" >> "$GITHUB_OUTPUT"
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.9
@@ -113,12 +127,13 @@ jobs:
       uses: ./build_scripts/build_uxpgui_posix
       with:
         basedir: ${{ github.workspace }}/target
+        artifact-name: ${{ steps.version.outputs.artifact-base }}
 
     - name: Upload artifact
       if: env.BUILD_MODE == 'full'
       uses: actions/upload-artifact@v4
       with:
-        name: cuemol2_${{ runner.os }}_${{ runner.arch }}
+        name: ${{ steps.version.outputs.artifact-base }}
         path: ${{ steps.build-artifact.outputs.artifact-path }}
 
 ###############################################
@@ -145,6 +160,17 @@ jobs:
         echo "MSYS_TOP_DIR2=$MSYS_TOP_DIR2" >> $GITHUB_ENV
 
         echo NUMBER_OF_PROCESSORS=$NUMBER_OF_PROCESSORS
+
+    - name: Get version
+      id: version
+      shell: bash
+      run: |
+        VERSION=$(grep '#define QM_VERSION' src/_version.h | sed 's/.*"\(.*\)".*/\1/')
+        TARGET="cuemol2_${VERSION}_${{ runner.os }}_${{ runner.arch }}"
+        echo $VERSION
+        echo "Build: $TARGET"
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+        echo "artifact-base=$TARGET" >> "$GITHUB_OUTPUT"
 
     - uses: actions/cache@v4
       with:
@@ -207,7 +233,7 @@ jobs:
       id: build-artifact
       shell: bash
       env:
-        ARTIFACT_NAME: cuemol2_${{ runner.os }}_${{ runner.arch }}.tar.bz2
+        ARTIFACT_NAME: ${{ steps.version.outputs.artifact-base }}.tar.bz2
       run: |
         set -eux
         cd $MSYS_TOP_DIR/uxp_gui
@@ -222,7 +248,7 @@ jobs:
       if: env.BUILD_MODE == 'full'
       uses: actions/upload-artifact@v4
       with:
-        name: cuemol2_${{ runner.os }}_${{ runner.arch }}
+        name: ${{ steps.version.outputs.artifact-base }}
         path: ${{ steps.build-artifact.outputs.artifact-path }}
 
 ###############################################
