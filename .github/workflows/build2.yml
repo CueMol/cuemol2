@@ -35,12 +35,15 @@ jobs:
           - os: macos-15
             name: "MacOS 15 arm64 clang"
             embed-python: ""
+            postfix: "nopy"
           - os: macos-15
             name: "MacOS 15 arm64 clang py312"
             embed-python: "3.12"
+            postfix: "py312"
           - os: macos-15-intel
             name: "MacOS 15 x64 clang"
             embed-python: ""
+            postfix: "nopy"
 
     env:
       MACOSX_DEPLOYMENT_TARGET: "10.15"
@@ -222,7 +225,7 @@ jobs:
       if: env.BUILD_MODE == 'full'
       uses: actions/upload-artifact@v4
       with:
-        name: cuemol2_${{ runner.os }}_${{ runner.arch }}
+        name: cuemol2_${{ runner.os }}_${{ runner.arch }}_${{ matrix.postfix }}
         path: ${{ steps.build-artifact.outputs.artifact-path }}
 
 ###############################################
