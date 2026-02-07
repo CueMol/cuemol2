@@ -35,15 +35,15 @@ jobs:
           - os: macos-15
             name: "MacOS 15 arm64 clang"
             embed-python: ""
-            postfix: "nopy"
+            postfix: ""
           - os: macos-15
             name: "MacOS 15 arm64 clang py312"
             embed-python: "3.12"
-            postfix: "py312"
+            postfix: "_py312"
           - os: macos-15-intel
             name: "MacOS 15 x64 clang"
             embed-python: ""
-            postfix: "nopy"
+            postfix: ""
 
     env:
       MACOSX_DEPLOYMENT_TARGET: "10.15"
