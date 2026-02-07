@@ -100,6 +100,18 @@ tasks:
 
 #####
 
+  build_nodejs:
+    deps:
+      - task: build_nodejs:{{OS}}
+
+  build_nodejs:darwin:
+    platforms: [darwin]
+    cmds:
+      - task: build_libcuemol2
+      - bash build_nodejs_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
+
+#####
+
   build_cli:
     deps:
       - task: build_cli:{{OS}}
