@@ -61,6 +61,17 @@ jobs:
       with:
         lfs: true
 
+    - name: Get version
+      id: version
+      shell: bash
+      run: |
+        VERSION=$(grep '#define QM_VERSION' src/_version.h | sed 's/.*"\(.*\)".*/\1/')
+        TARGET="cuemol2_${{ runner.os }}_${{ runner.arch }}_${VERSION}${{ matrix.postfix }}"
+        echo $VERSION
+        echo "Build: $TARGET"
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+        echo "artifact-base=$TARGET" >> "$GITHUB_OUTPUT"
+
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.9
       with:
@@ -110,13 +121,6 @@ jobs:
       with:
         basedir: ${{ github.workspace }}/target
 
-    - name: Get version
-      id: version
-      run: |
-        VERSION=$(grep '#define QM_VERSION' src/_version.h | sed 's/.*"\(.*\)".*/\1/')
-        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-        echo "artifact-base=cuemol2_${{ runner.os }}_${{ runner.arch }}_${VERSION}${{ matrix.postfix }}" >> "$GITHUB_OUTPUT"
-
     - name: Build UXP GUI
       if: env.BUILD_MODE == 'full'
       id: build-artifact
@@ -156,6 +160,17 @@ jobs:
         echo "MSYS_TOP_DIR2=$MSYS_TOP_DIR2" >> $GITHUB_ENV
 
         echo NUMBER_OF_PROCESSORS=$NUMBER_OF_PROCESSORS
+
+    - name: Get version
+      id: version
+      shell: bash
+      run: |
+        VERSION=$(grep '#define QM_VERSION' src/_version.h | sed 's/.*"\(.*\)".*/\1/')
+        TARGET="cuemol2_${{ runner.os }}_${{ runner.arch }}_${VERSION}"
+        echo $VERSION
+        echo "Build: $TARGET"
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+        echo "artifact-base=$TARGET" >> "$GITHUB_OUTPUT"
 
     - uses: actions/cache@v4
       with:
@@ -206,13 +221,6 @@ jobs:
       uses: ./build_scripts/download_extpkgs
       with:
         basedir: ${{ github.workspace }}/target
-
-    - name: Get version
-      id: version
-      run: |
-        VERSION=$(grep '#define QM_VERSION' src/_version.h | sed 's/.*"\(.*\)".*/\1/')
-        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-        echo "artifact-base=cuemol2_${{ runner.os }}_${{ runner.arch }}_${VERSION}" >> "$GITHUB_OUTPUT"
 
     - name: Run mozilla build and build UXP
       if: env.BUILD_MODE == 'full'
