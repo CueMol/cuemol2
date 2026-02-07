@@ -110,18 +110,26 @@ jobs:
       with:
         basedir: ${{ github.workspace }}/target
 
+    - name: Get version
+      id: version
+      run: |
+        VERSION=$(grep '#define QM_VERSION' src/_version.h | sed 's/.*"\(.*\)".*/\1/')
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+        echo "artifact-base=cuemol2_${{ runner.os }}_${{ runner.arch }}_${VERSION}${{ matrix.postfix }}" >> "$GITHUB_OUTPUT"
+
     - name: Build UXP GUI
       if: env.BUILD_MODE == 'full'
       id: build-artifact
       uses: ./build_scripts/build_uxpgui_posix
       with:
         basedir: ${{ github.workspace }}/target
+        artifact-name: ${{ steps.version.outputs.artifact-base }}
 
     - name: Upload artifact
       if: env.BUILD_MODE == 'full'
       uses: actions/upload-artifact@v4
       with:
-        name: cuemol2_${{ runner.os }}_${{ runner.arch }}_${{ matrix.postfix }}
+        name: ${{ steps.version.outputs.artifact-base }}
         path: ${{ steps.build-artifact.outputs.artifact-path }}
 
 ###############################################
@@ -199,6 +207,13 @@ jobs:
       with:
         basedir: ${{ github.workspace }}/target
 
+    - name: Get version
+      id: version
+      run: |
+        VERSION=$(grep '#define QM_VERSION' src/_version.h | sed 's/.*"\(.*\)".*/\1/')
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+        echo "artifact-base=cuemol2_${{ runner.os }}_${{ runner.arch }}_${VERSION}" >> "$GITHUB_OUTPUT"
+
     - name: Run mozilla build and build UXP
       if: env.BUILD_MODE == 'full'
       shell: cmd
@@ -210,7 +225,7 @@ jobs:
       id: build-artifact
       shell: bash
       env:
-        ARTIFACT_NAME: cuemol2_${{ runner.os }}_${{ runner.arch }}.tar.bz2
+        ARTIFACT_NAME: ${{ steps.version.outputs.artifact-base }}.tar.bz2
       run: |
         set -eux
         cd $MSYS_TOP_DIR/uxp_gui
@@ -225,7 +240,7 @@ jobs:
       if: env.BUILD_MODE == 'full'
       uses: actions/upload-artifact@v4
       with:
-        name: cuemol2_${{ runner.os }}_${{ runner.arch }}
+        name: ${{ steps.version.outputs.artifact-base }}
         path: ${{ steps.build-artifact.outputs.artifact-path }}
 
 ###############################################
