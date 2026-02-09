@@ -41,7 +41,7 @@ echo "BASEDIR:" %BASEDIR%
 dir %BASEDIR%
 
 REM Remove CGAL install location file
-del %BASEDIR%\CGAL-4.14.3\lib\cmake\CGAL\CGALConfig-installation-dirs.cmake
+REM del %BASEDIR%\CGAL-4.14.3\lib\cmake\CGAL\CGALConfig-installation-dirs.cmake
 
 REM Build libcuemol2
 SET INSTPATH=%BASEDIR%\cuemol2
@@ -65,6 +65,7 @@ cmake -G Ninja -S %TOP_DIR% -B %BUILDDIR% ^
  -DBUILD_PYTHON_BINDINGS=OFF ^
  -DBUILD_PYTHON_MODULE=OFF ^
  -DBUILD_XPCJS_BINDINGS=ON ^
+ -DBUILD_NODEJS_BINDINGS=ON ^
  -DCGAL_DO_NOT_WARN_ABOUT_CMAKE_BUILD_TYPE=TRUE ^
  -DCGAL_DISABLE_GMP=TRUE ^
  -DCGAL_HEADER_ONLY=TRUE ^

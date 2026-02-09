@@ -3,10 +3,10 @@
 version: '3'
 
 vars:
-  WORKDIR: $HOME/tmp/proj64_deplibs
-  LIBCUEMOL2_BUILDDIR: "{{.WORKDIR}}/build_libcuemol2"
+  WORKDIR: '{{if eq OS "windows"}}c:\tmp\proj64_deplibs{{else}}$HOME/tmp/proj64_deplibs{{end}}'
+  LIBCUEMOL2_BUILDDIR: '{{if eq OS "windows"}}{{.WORKDIR}}/tmp/build_libcuemol2{{else}}{{.WORKDIR}}/build_libcuemol2{{end}}'
   LIBCUEMOL2_INSTDIR: "{{.WORKDIR}}/cuemol2"
-  CONFIG: "Debug"
+  CONFIG: '{{if eq OS "windows"}}Release{{else}}Debug{{end}}'
   PARALLEL: ""
   EMBED_PYTHON_ROOT:
     sh: '[ -d "{{.WORKDIR}}/python" ] && echo "{{.WORKDIR}}/python" || echo ""'
@@ -29,48 +29,49 @@ tasks:
 
   #####
 
-  build_libcuemol2:
+  rebuild_libcuemol2:
+    desc: "Config & Rebuild libcuemol2"
     deps:
-      - task: build_libcuemol2:{{OS}}
+      - task: rebuild_libcuemol2:{{OS}}
 
-  build_libcuemol2:darwin:
+  rebuild_libcuemol2:darwin:
     platforms: [darwin]
     env:
       EMBED_PYTHON_ROOT: '{{.EMBED_PYTHON_ROOT | default (env "EMBED_PYTHON_ROOT")}}'
     cmds:
       - bash build_libcuemol2_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
 
-  build_libcuemol2:linux:
+  rebuild_libcuemol2:linux:
     platforms: [linux]
     env:
       EMBED_PYTHON_ROOT: '{{.EMBED_PYTHON_ROOT | default (env "EMBED_PYTHON_ROOT")}}'
     cmds:
       - bash build_libcuemol2_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
 
-  build_libcuemol2:windows:
+  rebuild_libcuemol2:windows:
     platforms: [windows]
-    set: [pwsh]
     cmds:
-       - dir
-       - build_libcuemol2_win.bat
-#      - echo "not implemented"
+      - cmd /c build_libcuemol2_win.bat "{{.WORKDIR}}" "{{.CONFIG}}"
 
-#####
-
-  rebuild_libcuemol2:
-    desc: "Setup, config, and build libcuemol2"
+  build_libcuemol2:
+    desc: "Build libcuemol2 (using current config)"
     deps:
-      - task: rebuild_libcuemol2:{{OS}}
+      - task: build_libcuemol2:{{OS}}
 
-  rebuild_libcuemol2:darwin:
+  build_libcuemol2:darwin:
     desc: "Rebuild libcuemol2 (without running setup/config)"
     platforms: [darwin]
     cmds:
       - cmake --build "{{.LIBCUEMOL2_BUILDDIR}}" --parallel "{{.PARALLEL}}" --config "{{.CONFIG}}" --target install
 
-  rebuild_libcuemol2:linux:
+  build_libcuemol2:linux:
     desc: "Rebuild libcuemol2 (without running setup/config)"
     platforms: [linux]
+    cmds:
+      - cmake --build "{{.LIBCUEMOL2_BUILDDIR}}" --parallel "{{.PARALLEL}}" --config "{{.CONFIG}}" --target install
+
+  build_libcuemol2:windows:
+    platforms: [windows]
     cmds:
       - cmake --build "{{.LIBCUEMOL2_BUILDDIR}}" --parallel "{{.PARALLEL}}" --config "{{.CONFIG}}" --target install
 
@@ -109,6 +110,12 @@ tasks:
     cmds:
       - task: build_libcuemol2
       - bash build_nodejs_posix/run.sh "{{.WORKDIR}}" "{{.CONFIG}}"
+
+  build_nodejs:windows:
+    platforms: [windows]
+    cmds:
+      - task: build_libcuemol2
+      - cmd /c build_nodejs_posix\\run_win.bat "{{.WORKDIR}}" "{{.CONFIG}}"
 
 #####
 
