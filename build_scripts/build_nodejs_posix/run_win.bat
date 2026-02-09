@@ -31,6 +31,7 @@ call npm install
 
 call npx cmake-js compile --CDLIBCUEMOL2_ROOT=%INSTPATH% --CDBoost_ROOT=%BOOST_DIR%
 
+echo on
 copy %BASEDIR%\boost_%BOOST_VER%\lib\*mt-x64*.dll %INSTPATH%\bin\
 set PATH=%PATH%;%INSTPATH%\bin\
 

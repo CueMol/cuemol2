@@ -16,7 +16,6 @@ using qlib::LString;
 
 Napi::Value getService(const Napi::CallbackInfo &info)
 {
-    printf("getService called\n");
     Napi::Env env = info.Env();
 
     if (info.Length() != 1) {
@@ -104,7 +103,6 @@ Napi::Value hasClass(const Napi::CallbackInfo &info)
 
 Napi::String getAllClassNamesJSON(const Napi::CallbackInfo &info)
 {
-    printf("getAllClassNamesJSON called\n");
     Napi::Env env = info.Env();
     LString retval, errmsg;
     cuemol2::getAllClassNamesJSON(retval, errmsg);
