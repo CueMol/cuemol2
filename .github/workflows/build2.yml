@@ -110,8 +110,13 @@ jobs:
         ls -la $BASEDIR/cuemol2/bin/cuetty
         env LD_LIBRARY_PATH=$BASEDIR/cuemol2/lib $BASEDIR/cuemol2/bin/cuetty
         
-    - name: Build python module
+    - name: Build and test python module
       uses: ./build_scripts/build_pymod_posix
+      with:
+        basedir: ${{ github.workspace }}/target
+
+    - name: Build and test node.js addon
+      uses: ./build_scripts/build_nodejs_posix
       with:
         basedir: ${{ github.workspace }}/target
 
@@ -205,6 +210,11 @@ jobs:
       uses: ./build_scripts/build_libcuemol2_posix
       with:
         basedir: ${{ github.workspace }}\target
+
+    - name: Build and test node.js addon
+      uses: ./build_scripts/build_nodejs_posix
+      with:
+        basedir: ${{ github.workspace }}/target
 
     - name: Build and check cuetty
       uses: ./build_scripts/build_cuetty_posix

@@ -115,7 +115,7 @@ tasks:
     platforms: [windows]
     cmds:
       - task: build_libcuemol2
-      - cmd /c build_nodejs_posix\\run_win.bat "{{.WORKDIR}}" "{{.CONFIG}}"
+      - cmd /c build_nodejs_posix\\run_win.bat "{{.WORKDIR}}"
 
 #####
 
