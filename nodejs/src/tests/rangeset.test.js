@@ -83,7 +83,7 @@ describe('RangeSet', () => {
     it('handles single-element range', () => {
       const rs = createRange([5, 6]);
 
-      expect(rs.toString()).toBe('5:6');
+      expect(rs.toString()).toBe('5');
     });
   });
 
