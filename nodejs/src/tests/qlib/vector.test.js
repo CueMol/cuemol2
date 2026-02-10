@@ -1,4 +1,4 @@
-import { cm } from './setup.js';
+import { cm } from '../setup.js';
 
 describe('test vector', () => {
   let sut;

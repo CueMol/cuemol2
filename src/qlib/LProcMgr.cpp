@@ -385,12 +385,12 @@ void LProcMgr::checkQueue()
 void LProcMgr::killSlot(int isl)
 {
     ProcInThread *pData = m_tab[isl]->m_pThr;
-    MB_DPRINTLN("killing...");
+    MB_DPRINTLN("LProcMgr::killSlot> killing...");
     m_pImpl->kill(pData);
-    MB_DPRINTLN("killed");
-    MB_DPRINTLN("wait term...");
+    MB_DPRINTLN("LProcMgr::killSlot> killed");
+    MB_DPRINTLN("LProcMgr::killSlot> wait term...");
     pData->waitTermination();
-    MB_DPRINTLN("terminated");
+    MB_DPRINTLN("LProcMgr::killSlot> terminated");
     // transfer to the endq
     finishTask(isl);
 }

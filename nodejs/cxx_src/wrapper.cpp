@@ -294,18 +294,18 @@ public:
     {
         auto func = value.As<Napi::Function>();
         m_funcRef = Napi::Persistent(func);
-        printf("NAPI Callback obj created %p\n", this);
+        // printf("NAPI Callback obj created %p\n", this);
     }
 
     virtual ~NapiCallBackObj()
     {
         m_funcRef.Unref();
-        printf("NAPI Callback obj deleted %p\n", this);
+        // printf("NAPI Callback obj deleted %p\n", this);
     }
 
     virtual bool invoke(qlib::LVarArgs &args)
     {
-        printf("NAPI Callback obj %p invoke called\n", this);
+        // printf("NAPI Callback obj %p invoke called\n", this);
         const int nargs = args.getSize();
         auto env = m_funcRef.Env();
         std::vector<napi_value> napi_args(nargs);
@@ -373,7 +373,7 @@ bool Wrapper::napiValueToLVar(Napi::Env env, Napi::Value value, qlib::LVariant &
             for (int i=0; i<nsize; ++i) {
                 napiValueToLVar(env, array.Get(i), pArray->at(i));
             }
-            printf("*** array length: %d\n", nsize);
+            // printf("*** array length: %d\n", nsize);
             return true;
         }
         // object (wrapped or dict)
@@ -387,12 +387,12 @@ bool Wrapper::napiValueToLVar(Napi::Env env, Napi::Value value, qlib::LVariant &
                 // This should not be failed
                 Wrapper *pWrapper = Wrapper::Unwrap(obj);
                 if (!pWrapper) {
-                    printf("Napi::Object not wrapper object\n");
+                    // printf("Napi::Object not wrapper object\n");
                     return false;
                 }
                 auto pScrObj = pWrapper->getWrapped();
                 if (!pScrObj) {
-                    printf("Null wrapped object\n");
+                    // printf("Null wrapped object\n");
                     return false;
                 }
                 if (pScrObj) {

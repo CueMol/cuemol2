@@ -33,19 +33,23 @@ LScrRangeSet LScrRangeSet::negate() const
     retval.append(minfty, hd.nstart);
   }
 
-  if (hd.nend<pinfty) {
-    retval.append(hd.nend, pinfty);
+  if (tl.nend<pinfty) {
+    retval.append(tl.nend, pinfty);
   }
 
   if (m_data.size()==1) {
     return retval;
   }
 
-  data_t::const_iterator iter = m_data.begin(), iter2;
-  iter2 = iter;
-  ++iter2;
-  for ( ; iter2!=m_data.end(); ++iter, ++iter2)
-    retval.append(iter->nend, iter->nstart);
+  // MB_DPRINTLN("negate: input %s", toString().c_str());
+  data_t::const_iterator iter = m_data.begin(), iter_nx;
+  iter_nx = iter;
+  ++iter_nx;
+  for ( ; iter_nx!=m_data.end(); ++iter, ++iter_nx) {
+      // MB_DPRINTLN("negate: appending %d-%d", iter->nend, iter_nx->nstart);
+      retval.append(iter->nend, iter_nx->nstart);
+  }
+  // MB_DPRINTLN("negate: done %s", rangeToString(retval).c_str());
 
   return retval;
 }

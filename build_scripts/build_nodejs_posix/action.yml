@@ -9,10 +9,20 @@ inputs:
 runs:
   using: "composite"
   steps:
-  - name: Build and install node.js addon
+  - name: Build, install, and test nodejs addon (posix)
+    if: runner.os != 'Windows'
     shell: bash
     # env:
     #   SCCACHE_GHA_ENABLED: "true"
     run: |
       cd ${GITHUB_WORKSPACE}
       bash build_scripts/build_nodejs_posix/run.sh ${{ inputs.basedir }}
+
+  - name: Build, install, and test nodejs addon (windows)
+    if: runner.os == 'Windows'
+    shell: cmd
+    run: |
+      echo on
+      cd %GITHUB_WORKSPACE%
+      REM set HOME=%HOMEDRIVE%%HOMEPATH%
+      cmd /c build_scripts\build_nodejs_posix\run_win.bat ${{ inputs.basedir }}

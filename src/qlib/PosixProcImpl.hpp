@@ -173,6 +173,8 @@ public:
     virtual ProcInThread *createProcess(const LString &path, const LString &args,
                                         const LString &wdir)
     {
+        MB_DPRINTLN("PosixProc: createProcess: path=[%s] args=[%s] wdir=[%s]",
+                     path.c_str(), args.c_str(), wdir.c_str());
         std::vector<LString> vargs;
         if (!parseCmdLine(args, vargs)) {
             LOG_DPRINTLN("PosixProc: cmdline error: " + args);

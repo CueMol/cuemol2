@@ -310,7 +310,7 @@ install(FILES ${DATA_DIR}/icc_profiles/GenericCMYK.icm DESTINATION data/data/icc
 if (BUILD_NODEJS_BINDINGS)
   add_custom_command(
     TARGET cuemol2 POST_BUILD
-    COMMAND python3
+    COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/python/make_es6_wrapper_table.py
     --input_dir ${CMAKE_BINARY_DIR}/js/wrappers
     --output_js ${CMAKE_BINARY_DIR}/js/wrappers/wrapper_loader.js
