@@ -226,6 +226,15 @@ public:
         if (m_data.empty()) return;
 
         elem_type nr(nstart, nend);
+        if (nr.empty()) {
+            // empty range: no operation
+            assertConsistency("remove:exit");  // DEBUG only
+            return;
+        }
+        if (m_data.empty()) {
+            assertConsistency("remove:exit");  // DEBUG only
+            return;
+        }
 
         typename data_t::iterator iter2;
         typename data_t::iterator iter = m_data.begin();

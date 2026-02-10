@@ -172,6 +172,12 @@ describe('RangeSet', () => {
 
       expect(rs.toString()).toBe('1:9,20:29');
     });
+
+    it('empty range removal', () => {
+      const rs = createRange([1, 10]).removeInt(5, 5);
+
+      expect(rs.toString()).toBe('1:9');
+    });
   });
 
   describe('remove', () => {
