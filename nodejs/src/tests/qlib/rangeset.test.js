@@ -1,4 +1,4 @@
-import { cm } from './setup.js';
+import { cm } from '../setup.js';
 
 /**
  * Helper: Create a RangeSet with specified integer ranges

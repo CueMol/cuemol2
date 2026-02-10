@@ -1,4 +1,4 @@
-import { cm } from './setup.js';
+import { cm } from '../setup.js';
 
 // Test constants
 const SAMPLE_QUAT = { x: 1, y: 2, z: 3, a: 4 };

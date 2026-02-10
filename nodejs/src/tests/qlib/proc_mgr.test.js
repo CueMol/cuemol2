@@ -1,4 +1,4 @@
-import { cm } from './setup.js';
+import { cm } from '../setup.js';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -12,7 +12,7 @@ const __dirname = dirname(__filename);
 const NODE_EXE = process.execPath;
 
 // Path to helper scripts
-const HELPERS_DIR = path.join(__dirname, 'helpers');
+const HELPERS_DIR = path.join(__dirname, '..', 'helpers');
 const SLEEP_HELPER = path.join(HELPERS_DIR, 'sleep.js');
 const LIST_HELPER = path.join(HELPERS_DIR, 'ls.js');
 
