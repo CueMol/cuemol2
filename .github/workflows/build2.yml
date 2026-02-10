@@ -204,7 +204,7 @@ jobs:
     - name: Download deplibs
       uses: ./build_scripts/download_deplibs
       with:
-        basedir: ${{ github.workspace }}/target
+        basedir: ${{ github.workspace }}\target
 
     - name: Build libcuemol2
       uses: ./build_scripts/build_libcuemol2_posix
@@ -214,7 +214,7 @@ jobs:
     - name: Build and test node.js addon
       uses: ./build_scripts/build_nodejs_posix
       with:
-        basedir: ${{ github.workspace }}/target
+        basedir: ${{ github.workspace }}\target
 
     - name: Build and check cuetty
       uses: ./build_scripts/build_cuetty_posix
