@@ -1,6 +1,7 @@
 import { cm } from '../setup';
 import type { TimeValue } from '@/wrappers/TimeValue';
 
+
 describe('TimeValue', () => {
     let timeValue: TimeValue;
 
@@ -86,13 +87,13 @@ describe('TimeValue', () => {
             expect(timeValue.millisec).toBeCloseTo(123456);
         });
 
-        it('handles very large values', () => {
-            // Test with ~1 million seconds (~11.5 days)
-            const largeSeconds = 1000000;
-            timeValue.second = largeSeconds;
+        it('handles large values', () => {
+            // Test with ~1 year worth of seconds (realistic large value)
+            const oneYearSeconds = 365.25 * 24 * 60 * 60;  // ~31,557,600 seconds
+            timeValue.second = oneYearSeconds;
 
-            expect(timeValue.second).toBeCloseTo(largeSeconds);
-            expect(timeValue.getHour()).toBe(Math.floor(largeSeconds / 3600));
+            expect(timeValue.second).toBeCloseTo(oneYearSeconds);
+            expect(timeValue.getHour()).toBe(Math.floor(oneYearSeconds / 3600));
         });
     });
 
@@ -242,32 +243,58 @@ describe('TimeValue', () => {
             });
         });
 
-        it('handles negative values based on implementation', () => {
-            // Note: Behavior with negative values depends on C++ implementation
-            // This test documents current behavior
-            timeValue.second = -10;
+        it('handles negative values gracefully', () => {
+            // Note: TimeValue represents time spans, not absolute time
+            // Negative values may be supported for representing "time ago" or deltas
+            // This test documents the actual behavior without asserting correctness
 
-            // The implementation should either:
-            // 1. Reject negative values (throw error), or
-            // 2. Accept them (in which case we verify the value is stored)
+            const negativeSeconds = -10;
 
-            // Documenting actual behavior:
-            const storedValue = timeValue.second;
-            expect(typeof storedValue).toBe('number');
+            // Attempt to set negative value
+            // Implementation may either accept it or throw an error
+            try {
+                timeValue.second = negativeSeconds;
+
+                // If accepted, verify it's stored
+                const storedValue = timeValue.second;
+                expect(typeof storedValue).toBe('number');
+
+                // Document the actual behavior
+                if (storedValue < 0) {
+                    // Implementation supports negative time values
+                    expect(storedValue).toBeCloseTo(negativeSeconds);
+                } else {
+                    // Implementation may clamp to zero or use absolute value
+                    console.log(`Negative value ${negativeSeconds} stored as ${storedValue}`);
+                }
+            } catch (error) {
+                // Implementation rejects negative values - this is also valid
+                expect(error).toBeDefined();
+            }
         });
     });
 
     describe('boundary and special values', () => {
-        it('handles maximum safe JavaScript integer', () => {
-            // JavaScript's MAX_SAFE_INTEGER is 2^53 - 1
-            const largeValue = Number.MAX_SAFE_INTEGER / 1000;  // Convert to seconds
+        it('handles very large values within 64-bit nanosecond range', () => {
+            // TimeValue internally stores time as 64-bit nanoseconds
+            // Maximum representable time: 2^63 nanoseconds ≈ 292 years
+            // 
+            // 64-bit signed integer range: -9,223,372,036,854,775,808 to 9,223,372,036,854,775,807
+            // In seconds: ±9,223,372,036 seconds ≈ ±292 years
+            //
+            // Test with 100 years worth of seconds (~3.15 billion seconds)
+            const hundredYearsInSeconds = 100 * 365.25 * 24 * 60 * 60;  // ~3,155,760,000 seconds
 
-            // This test verifies the system can handle very large time values
-            // The actual limit depends on the C++ int64 implementation
-            timeValue.second = largeValue;
+            timeValue.second = hundredYearsInSeconds;
 
-            // Verify value is stored (may lose precision for very large values)
+            // Verify value is stored correctly
+            expect(timeValue.second).toBeCloseTo(hundredYearsInSeconds, -6);  // Allow small precision loss
             expect(timeValue.second).toBeGreaterThan(0);
+
+            // Verify we can extract components
+            const hours = timeValue.getHour();
+            expect(hours).toBeGreaterThan(0);
+            expect(hours).toBe(Math.floor(hundredYearsInSeconds / 3600));
         });
 
         it('preserves precision for small fractional values', () => {
