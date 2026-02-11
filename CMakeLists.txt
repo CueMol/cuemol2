@@ -15,6 +15,7 @@ option(BUILD_PYTHON_BINDINGS "Build Python bindings")
 option(BUILD_MINIMUM_MODULES "Build CueMol with minimum modules." OFF)
 option(BUILD_XPCJS_BINDINGS "Build XPCOM-js bindings")
 option(BUILD_NODEJS_BINDINGS "Build node.js bindings")
+option(ENABLE_TYPESCRIPT "Build TypeScript code for node.js bindings")
 
 option(ENABLE_PYTHON_EMBED "Enable Python embedding")
 

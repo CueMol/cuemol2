@@ -35,6 +35,11 @@ export class BaseWrapper {
     return this._utils.createWrapper(native_obj);
   }
 
+  getEnumDef(propName, enumName) {
+    // TODO: implement
+    return -1;
+  }
+
   // toString() {
   //   if (this._wrapped !== undefined)
   //     return `Wrapper(ptr=0x${this._wrapped.toString(16)})`;

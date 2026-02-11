@@ -32,6 +32,7 @@ use Wrapper;
 use ModLdr;
 use Jsclass;
 use Pyclass;
+use TsClass;
 
 my $msvc=0;
 
@@ -82,7 +83,6 @@ for (;;) {
   }
   elsif ($arg eq "-jsdir") {
     shift @ARGV;
-    # $Jsclass::out_dir = shift @ARGV;
     $outdir = shift @ARGV;
     next;
   }
@@ -124,6 +124,8 @@ elsif ($mode eq "js") {
 }
 elsif ($mode eq "nodejs") {
     $Jsclass::out_dir = $outdir;
+} elsif ($mode eq "ts") {
+    $TsClass::out_dir = $outdir;
 }
 elsif ($mode eq "py") {
     $Pyclass::out_dir = $outdir;
@@ -182,6 +184,8 @@ elsif ($mode eq "js") {
 elsif ($mode eq "nodejs") {
     $Jsclass::use_es6_mod = 1;
     Jsclass::genJsWrapper($Parser::db{$curcls});
+} elsif ($mode eq "ts") {
+    TsClass::genTsWrapper($Parser::db{$curcls});
 }
 elsif ($mode eq "py") {
   Pyclass::genWrapper($Parser::db{$curcls});

@@ -2,19 +2,29 @@
  * Jest configuration for CueMol Node.js bindings tests
  */
 
-export default {
+// export default {
+module.exports = {
+  preset: 'ts-jest',
+
   // Test environment - Node.js for C++ addon testing
   testEnvironment: 'node',
 
-  // ES modules support - no transformation needed
-  transform: {},
-  
   // Supported file extensions
-  moduleFileExtensions: ['js', 'mjs', 'cjs'],
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'mjs', 'cjs'],
+
+  extensionsToTreatAsEsm: ['.ts'],
+  transform: {
+    '^.+\\.ts$': [
+      'ts-jest',
+      {
+        useESM: true,
+      },
+    ],
+  },
   
   // Test file patterns - matches both current and qlib/ subdirectory structure
   testMatch: [
-    '<rootDir>/src/tests/**/*.test.js',
+    '<rootDir>/src/tests/**/*.test.{js,ts}',
     '<rootDir>/src/tests/**/*.spec.js',
   ],
   
