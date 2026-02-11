@@ -1,56 +1,63 @@
-// const path = require('path');
-// const _internal = require('bindings')('cuemol_internal.node');
-// const { CueMol, EventManager } = require('./cuemol');
 import path from 'path';
+import { fileURLToPath } from 'url';
 import bindings from 'bindings';
-const _internal = bindings('cuemol_internal.node');
 import { CueMol, EventManager } from './cuemol.js';
-
-const cuemol = {'value': null};
-
-console.log("bindings: ", bindings);
-console.log("bindings('cuemol_internal.node'): ", bindings('cuemol_internal.node'));
-console.log("_internal: ", _internal);
-
-// exports.getModule = function () {
+// ES modules equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+// Load the native addon
+const _internal = bindings('cuemol_internal.node');
+// Singleton instance of CueMol
+const cuemol = { value: null };
+// Debug logging
+console.log(">>>>> bindings: ", bindings);
+console.log(">>>>> bindings('cuemol_internal.node'): ", bindings('cuemol_internal.node'));
+console.log(">>>>> _internal: ", _internal);
+/**
+ * Get the native CueMol internal module
+ * @returns The native addon module
+ */
 export function getModule() {
-  return _internal;
-};
-
-// exports.getSysConfigPath = function () {
+    return _internal;
+}
+/**
+ * Get the system configuration file path
+ * @returns Absolute path to sysconfig.xml
+ */
 export function getSysConfigPath() {
-  // console.log('XXX path.resolve:',path.resolve('.'));
-  // console.log('XXX __filename:', __filename);
-  // console.log('XXX __dirname:', __dirname);
-  const load_path = path.join(__dirname, 'build', 'data', 'sysconfig.xml');
-  console.log('load_path:', load_path);
-  return load_path;
-};
-
-// exports.createCueMol = function (sysconfig_path = '') {
+    // Note: __dirname equivalent in ES modules
+    const load_path = path.join(__dirname, 'build', 'data', 'sysconfig.xml');
+    console.log('load_path:', load_path);
+    return load_path;
+}
+/**
+ * Create and initialize the CueMol singleton instance
+ * @param sysconfig_path - Optional path to system configuration file
+ * @returns The CueMol instance
+ */
 export function createCueMol(sysconfig_path = '') {
-  if (cuemol.value) {
-    console.log('cuemol already created');
-    return cuemol;
-  }
-  cuemol.value = new CueMol({internal: _internal});
-  cuemol.value.initCueMol(sysconfig_path);
-  return cuemol.value;
-};
-
+    if (cuemol.value) {
+        console.log('cuemol already created');
+        return cuemol.value;
+    }
+    cuemol.value = new CueMol({ internal: _internal });
+    cuemol.value.initCueMol(sysconfig_path);
+    return cuemol.value;
+}
+// Event manager singleton
 let event_manager = null;
-
-// exports.getEventManager = function() {
+/**
+ * Get or create the EventManager singleton
+ * @returns The EventManager instance, or null if CueMol is not initialized
+ */
 export function getEventManager() {
-  if (cuemol === null) {
-    console.log('cuemol not created');
-    return null;
-  }
-  if (event_manager) {
+    if (cuemol.value === null) {
+        console.log('cuemol not created');
+        return null;
+    }
+    if (event_manager) {
+        return event_manager;
+    }
+    event_manager = new EventManager(cuemol.value);
     return event_manager;
-  }
-  else {
-    event_manager = new EventManager(cuemol);
-    return event_manager;
-  }
-};
+}

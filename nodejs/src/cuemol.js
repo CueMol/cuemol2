@@ -28,6 +28,7 @@ export class CueMol {
     // console.log('native_obj:', native_obj);
     const className = native_obj.getClassName();
     // console.log('className:', className);
+
     const Klass = wrapper_map[className];
     const obj = new Klass(native_obj, this);
     // console.log('wrapper created:', obj);

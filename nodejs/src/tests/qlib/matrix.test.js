@@ -1,4 +1,4 @@
-import { cm } from '../setup.js';
+import { cm } from '../setup.ts';
 
 /** Create a Vector with 3 or 4 components */
 const vec = (x, y, z, w) => {
