@@ -1,43 +1,10 @@
-import { cm } from '../setup.js';
+import { cm } from '../setup';
+import { Vector } from '@/wrappers/Vector';
+import { Matrix } from '@/wrappers/Matrix';
 
 /**
  * Type definitions for CueMol objects
  */
-interface Vector {
-    x: number;
-    y: number;
-    z: number;
-    w: number;
-    set3(x: number, y: number, z: number): void;
-    set4(x: number, y: number, z: number, w: number): void;
-    equals(other: Vector): boolean;
-    normalize(): Vector;
-}
-
-interface Matrix {
-    getAt(row: number, col: number): number;
-    setAt(row: number, col: number, value: number): void;
-    addAt(row: number, col: number, value: number): void;
-    setIdent(): void;
-    setZero(): void;
-    isIdent(): boolean;
-    isZero(): boolean;
-    setRow(row: number, vec: Vector): void;
-    setCol(col: number, vec: Vector): void;
-    row(row: number): Vector;
-    col(col: number): Vector;
-    equals(other: Matrix): boolean;
-    toString(): string;
-    scale(factor: number): Matrix;
-    divide(divisor: number): Matrix;
-    add(other: Matrix): Matrix;
-    sub(other: Matrix): Matrix;
-    mul(other: Matrix): Matrix;
-    mulvec(vec: Vector): Vector;
-    setRotate(center: Vector, axis: Vector, angle: number): void;
-    setTranslate(vec: Vector): void;
-    diag3(): Matrix;
-}
 
 /**
  * Constants for test data

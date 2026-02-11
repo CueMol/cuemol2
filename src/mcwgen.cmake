@@ -14,6 +14,7 @@ SET(MCWG_PY_CMD "${MCWRAPGEN} ${MCWG_INCLUDES} -m py")
 SET(MCWG_XPCJS_CMD "${MCWRAPGEN} ${MCWG_INCLUDES} -m js")
 # node.js
 SET(MCWG_NODEJS_CMD "${MCWRAPGEN} ${MCWG_INCLUDES} -m nodejs")
+SET(MCWG_TS_CMD "${MCWRAPGEN} ${MCWG_INCLUDES} -m ts")
 
 macro(MCWRAPGEN_CLASS _target_sources)
   foreach(_current_file ${ARGN})
@@ -79,11 +80,17 @@ macro(MCWRAPGEN_CLASS _target_sources)
       list(APPEND MCWG_XPCJS_WRAPPERS ${_out_xpcjs_file})
     endif ()
 
-    # Generate node.js wrapper scripts
+    # Generate nodejs/ts wrapper scripts
     if (BUILD_NODEJS_BINDINGS)
-      SET(_out_nodejs_dir "${CMAKE_BINARY_DIR}/js/wrappers")
-      SET(_out_nodejs_file "${_out_nodejs_dir}/${_file_stem}.js")
-      separate_arguments(_mcwg_nodejs_command NATIVE_COMMAND "${MCWG_NODEJS_CMD}")
+      if (ENABLE_TYPESCRIPT)
+        SET(_out_nodejs_dir "${CMAKE_BINARY_DIR}/ts/wrappers")
+        SET(_out_nodejs_file "${_out_nodejs_dir}/${_file_stem}.ts")
+        separate_arguments(_mcwg_nodejs_command NATIVE_COMMAND "${MCWG_TS_CMD}")
+      else ()
+        SET(_out_nodejs_dir "${CMAKE_BINARY_DIR}/js/wrappers")
+        SET(_out_nodejs_file "${_out_nodejs_dir}/${_file_stem}.js")
+        separate_arguments(_mcwg_nodejs_command NATIVE_COMMAND "${MCWG_NODEJS_CMD}")
+      endif ()
       add_custom_command(
 	    OUTPUT ${_out_nodejs_file}
 	    COMMAND ${_mcwg_nodejs_command} -jsdir ${_out_nodejs_dir} ${_abs_file}

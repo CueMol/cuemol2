@@ -1,7 +1,7 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import bindings from 'bindings';
-import { CueMol, EventManager } from './cuemol.js';
+import { CueMol } from './cuemol';
 
 // ES modules equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -13,6 +13,7 @@ interface CueMolInternal {
   initCueMol(configPath?: string): void;
   hasClass(className: string): boolean;
   createObj(className: string, ...args: any[]): any;
+  getService(className: string, ...args: any[]): any;
   // Add other methods as needed
 }
 
@@ -67,23 +68,3 @@ export function createCueMol(sysconfig_path: string = ''): CueMol {
   return cuemol.value;
 }
 
-// Event manager singleton
-let event_manager: EventManager | null = null;
-
-/**
- * Get or create the EventManager singleton
- * @returns The EventManager instance, or null if CueMol is not initialized
- */
-export function getEventManager(): EventManager | null {
-  if (cuemol.value === null) {
-    console.log('cuemol not created');
-    return null;
-  }
-  
-  if (event_manager) {
-    return event_manager;
-  }
-  
-  event_manager = new EventManager(cuemol.value);
-  return event_manager;
-}
