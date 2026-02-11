@@ -17,6 +17,13 @@ using qlib::LString;
 Napi::Value Wrapper::toString(const Napi::CallbackInfo &info)
 {
     Napi::Env env = info.Env();
+
+    if (info.Length() != 0) {
+        Napi::TypeError::New(env, "Wrong number of arguments")
+            .ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
     auto pobj = getWrapped();
     if (!pobj) {
         Napi::Error::New(env, "Wrapper is not initialized")
@@ -32,6 +39,13 @@ Napi::Value Wrapper::toString(const Napi::CallbackInfo &info)
 Napi::Value Wrapper::getAbiClassName(const Napi::CallbackInfo &info)
 {
     Napi::Env env = info.Env();
+
+    if (info.Length() != 0) {
+        Napi::TypeError::New(env, "Wrong number of arguments")
+            .ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
     auto pScObj = getWrapped();
 
     qlib::LString str;
@@ -53,6 +67,13 @@ Napi::Value Wrapper::getAbiClassName(const Napi::CallbackInfo &info)
 Napi::Value Wrapper::getClassName(const Napi::CallbackInfo &info)
 {
     Napi::Env env = info.Env();
+
+    if (info.Length() != 0) {
+        Napi::TypeError::New(env, "Wrong number of arguments")
+            .ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
     auto pScObj = getWrapped();
 
     qlib::LString str;
@@ -138,6 +159,48 @@ Napi::Value Wrapper::setProp(const Napi::CallbackInfo &info)
     return env.Null();
 }
 
+Napi::Value Wrapper::getPropsJSON(const Napi::CallbackInfo &info)
+{
+    Napi::Env env = info.Env();
+
+    if (info.Length() != 0) {
+        Napi::TypeError::New(env, "Wrong number of arguments")
+            .ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    auto pScObj = getWrapped();
+    LString str, errmsg;
+    bool ok = cuemol2::getPropsJSON(pScObj, str, errmsg);
+    if (!ok) {
+        Napi::Error::New(env, errmsg.c_str()).ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    return Napi::String::New(env, str.c_str());
+}    
+
+Napi::Value Wrapper::hasProp(const Napi::CallbackInfo &info)
+{
+    Napi::Env env = info.Env();
+    Napi::Error::New(env, "not implemented").ThrowAsJavaScriptException();
+    return env.Null();
+}
+
+Napi::Value Wrapper::resetProp(const Napi::CallbackInfo &info)
+{
+    Napi::Env env = info.Env();
+    Napi::Error::New(env, "not implemented").ThrowAsJavaScriptException();
+    return env.Null();
+}
+
+Napi::Value Wrapper::getPropDefaultStatus(const Napi::CallbackInfo &info)
+{
+    Napi::Env env = info.Env();
+    Napi::Error::New(env, "not implemented").ThrowAsJavaScriptException();
+    return env.Null();
+}
+
 Napi::Value Wrapper::invokeMethod(const Napi::CallbackInfo &info)
 {
     Napi::Env env = info.Env();
@@ -195,21 +258,6 @@ Napi::Value Wrapper::invokeMethod(const Napi::CallbackInfo &info)
     LString errmsg;
     ok = cuemol2::invokeMethod(pScObj, methodname, largs, errmsg);
     
-    // try {
-    //     ok = pScObj->invokeMethod(methodname, largs);
-    //     if (!ok) errmsg = LString::format("call method %s: failed", methodname.c_str());
-    // } catch (qlib::LException &e) {
-    //     errmsg = LString::format("Exception occured in native method %s: %s",
-    //                              methodname.c_str(), e.getMsg().c_str());
-    // } catch (std::exception &e) {
-    //     errmsg = LString::format("Std::exception occured in native method %s: %s",
-    //                              methodname.c_str(), e.what());
-    // } catch (...) {
-    //     LOG_DPRINTLN("*********");
-    //     errmsg = LString::format("Unknown Exception occured in native method %s",
-    //                              methodname.c_str());
-    // }
-
     if (!ok) {
         Napi::Error::New(env, errmsg.c_str()).ThrowAsJavaScriptException();
         return env.Null();
@@ -238,10 +286,13 @@ Napi::Value Wrapper::lvarToNapiValue(Napi::Env env, qlib::LVariant &variant)
             // MB_DPRINTLN("LVar: real(%f)", variant.getRealValue());
             return Napi::Number::New(env, variant.getRealValue());
 
-        case qlib::LVariant::LT_STRING: {
+        case qlib::LVariant::LT_STRING:
             // MB_DPRINTLN("LVar: string(%s)", str.c_str());
             return Napi::String::New(env, variant.getStringValue().c_str());
-        }
+
+        case qlib::LVariant::LT_ENUM:
+            return Napi::String::New(env, variant.getEnumValue().c_str());
+
         case qlib::LVariant::LT_OBJECT: {
             auto pObj = createWrapper(env, variant.getObjectPtr());
             // At this point, the ownership of value is passed to PyObject
@@ -434,8 +485,12 @@ Napi::Object Wrapper::Init(Napi::Env env, Napi::Object exports)
                     {InstanceMethod<&Wrapper::toString>("toString"),
                      InstanceMethod<&Wrapper::getClassName>("getClassName"),
                      InstanceMethod<&Wrapper::getAbiClassName>("getAbiClassName"),
+                     InstanceMethod<&Wrapper::hasProp>("hasProp"),
                      InstanceMethod<&Wrapper::getProp>("getProp"),
                      InstanceMethod<&Wrapper::setProp>("setProp"),
+                     InstanceMethod<&Wrapper::resetProp>("resetProp"),
+                     InstanceMethod<&Wrapper::getPropsJSON>("getPropsJSON"),
+                     InstanceMethod<&Wrapper::getPropsJSON>("getPropDefaultStatus"),
                      InstanceMethod<&Wrapper::invokeMethod>("invokeMethod")});
 
     Napi::FunctionReference *ctor = new Napi::FunctionReference();

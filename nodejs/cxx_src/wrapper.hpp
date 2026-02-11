@@ -30,12 +30,17 @@ public:
         m_pWrapped = pval;
     }
 
-    Napi::Value toString(const Napi::CallbackInfo &info);
     Napi::Value getClassName(const Napi::CallbackInfo &info);
     Napi::Value getAbiClassName(const Napi::CallbackInfo &info);
+
+    Napi::Value hasProp(const Napi::CallbackInfo &info);
     Napi::Value getProp(const Napi::CallbackInfo &info);
     Napi::Value setProp(const Napi::CallbackInfo &info);
     Napi::Value invokeMethod(const Napi::CallbackInfo &info);
+    Napi::Value toString(const Napi::CallbackInfo &info);
+    Napi::Value resetProp(const Napi::CallbackInfo &info);
+    Napi::Value getPropsJSON(const Napi::CallbackInfo &info);
+    Napi::Value getPropDefaultStatus(const Napi::CallbackInfo &info);
 
     static Napi::Value lvarToNapiValue(Napi::Env env, qlib::LVariant &variant);
     static bool napiValueToLVar(Napi::Env env, Napi::Value napi_val, qlib::LVariant &rvar);

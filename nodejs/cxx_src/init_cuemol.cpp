@@ -122,8 +122,8 @@ Napi::Object Init(Napi::Env env, Napi::Object exports)
     MB_DPRINTLN("CueMol2 nodejs add-on : INITIALIZED");
 
     // for test
-    exports.Set(Napi::String::New(env, "hello"),
-                Napi::Function::New(env, node_jsbr::Method));
+    // exports.Set(Napi::String::New(env, "hello"),
+    //             Napi::Function::New(env, node_jsbr::Method));
 
     exports.Set(Napi::String::New(env, "initCueMol"),
                 Napi::Function::New(env, node_jsbr::initCueMol));
@@ -136,6 +136,7 @@ Napi::Object Init(Napi::Env env, Napi::Object exports)
                 Napi::Function::New(env, node_jsbr::hasClass));
     exports.Set(Napi::String::New(env, "getAllClassNamesJSON"),
                 Napi::Function::New(env, node_jsbr::getAllClassNamesJSON));
+
     // exports.Set(Napi::String::New(env, "getClassName"),
     //             Napi::Function::New(env, node_jsbr::getClassName));
 

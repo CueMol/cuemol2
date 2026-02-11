@@ -108,7 +108,7 @@ int LByteArray::getValue(int ind) const
                  LString::format("Element type %d mismatch", m_nElemType));
 
     const int nsize = getSize();
-    MB_ASSERT(0 <= ind && ind < nsize);
+    // MB_ASSERT(0 <= ind && ind < nsize);
     if (ind < 0 || nsize <= ind)
         MB_THROW(IndexOutOfBoundsException,
                  LString::format("LByteArray getValue() out of index %d", ind));
@@ -122,7 +122,7 @@ void LByteArray::setValue(int ind, int value)
                  LString::format("Element type %d mismatch", m_nElemType));
 
     const int nsize = getSize();
-    MB_ASSERT(0 <= ind && ind < nsize);
+    // MB_ASSERT(0 <= ind && ind < nsize);
     if (ind < 0 || nsize <= ind)
         MB_THROW(IndexOutOfBoundsException,
                  LString::format("LByteArray setValue() out of index %d", ind));
