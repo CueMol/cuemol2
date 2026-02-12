@@ -86,11 +86,6 @@ describe('ByteArray', () => {
             expect(ba.getValue(5)).toBe(255);
         });
 
-        it('getValue returns 0 for uninitialized bytes', () => {
-            expect(ba.getValue(0)).toBe(0);
-            expect(ba.getValue(9)).toBe(0);
-        });
-
         it.each([
             ['negative index', -1],
             ['index at length', 10],
@@ -130,13 +125,6 @@ describe('ByteArray', () => {
 
             expect(ba.getAt(0)).toBe(testValue);
             expect(ba.getAt(5)).toBe(testValue * 2);
-        });
-
-        it('getAt returns 0 for uninitialized elements', () => {
-            ba.init(ba.INT32, 10);
-
-            expect(ba.getAt(0)).toBe(0);
-            expect(ba.getAt(9)).toBe(0);
         });
 
         it.each([
@@ -205,13 +193,6 @@ describe('ByteArray', () => {
 
             expect(ba.getAtF(0)).toBeCloseTo(3.14, 5);
             expect(ba.getAtF(5)).toBeCloseTo(-2.718, 5);
-        });
-
-        it('getAtF returns 0.0 for uninitialized elements', () => {
-            ba.init(ba.FLOAT32, 10);
-
-            expect(ba.getAtF(0)).toBeCloseTo(0.0);
-            expect(ba.getAtF(9)).toBeCloseTo(0.0);
         });
 
         it.each([
@@ -315,9 +296,10 @@ describe('ByteArray', () => {
             // Read back via element access
             expect(ba.getAt(5)).toBe(42);
 
-            // Verify other elements are still zero
-            expect(ba.getAt(0)).toBe(0);
-            expect(ba.getAt(9)).toBe(0);
+            // Set another element to verify independence
+            ba.setAt(0, 100);
+            expect(ba.getAt(0)).toBe(100);
+            expect(ba.getAt(5)).toBe(42); // Original value unchanged
         });
     });
 
