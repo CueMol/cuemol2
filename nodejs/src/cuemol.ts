@@ -12,6 +12,8 @@ export interface CueMolInternal {
 
     copyToTypedArray(src: any): any;
     copyFromTypedArray(src: any): any;
+    toTypedArray(src: any): any;
+    fromTypedArray(src: any): any;
 }
 
 /**
@@ -107,6 +109,15 @@ export class CueMol {
 
     copyFromTypedArray(src: any): any {
         const result = this.internal.copyFromTypedArray(src);
+        return this.createWrapper(result as NativeObject);
+    }
+    
+    toTypedArray(src: any): any {
+        return this.internal.toTypedArray(src.wrapped);
+    }
+
+    fromTypedArray(src: any): any {
+        const result = this.internal.fromTypedArray(src);
         return this.createWrapper(result as NativeObject);
     }
     

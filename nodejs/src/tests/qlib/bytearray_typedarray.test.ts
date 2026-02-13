@@ -177,7 +177,7 @@ describe('copyFromTypedArray', () => {
 
             // Create view starting at byte offset 4
             const offsetView = new Uint8Array(buffer, 4, 4);
-            
+
             const ba = cm.copyFromTypedArray(offsetView) as ByteArray;
 
             expect(ba.length).toBe(4);
