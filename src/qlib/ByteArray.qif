@@ -28,6 +28,8 @@ runtime_class ByteArray
   //
 
   property integer length => redirect(getSize, XXX) (readonly);
+  property integer elemType => redirect(getElemType, XXX) (readonly);
+  property integer elemCount => redirect(getElemCount, XXX) (readonly);
 
   property integer BOOL => enumBOOL (readonly);
 

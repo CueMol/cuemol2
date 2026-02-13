@@ -519,8 +519,7 @@ bool Wrapper::napiValueToLVar(Napi::Env env, Napi::Value value, qlib::LVariant &
                 if (!pScrObj) {
                     // printf("Null wrapped object\n");
                     return false;
-                }
-                if (pScrObj) {
+                } else {
                     // pobj is owned by the interpreter (?)
                     // (variant share the ptr and won't have the ownership!!)
                     rvar.shareObjectPtr(pScrObj);

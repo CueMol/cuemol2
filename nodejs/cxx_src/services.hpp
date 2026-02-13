@@ -19,4 +19,14 @@ Napi::Value copyToTypedArray(const Napi::CallbackInfo &info);
  */
 Napi::Value copyFromTypedArray(const Napi::CallbackInfo &info);
 
+/**
+   Create a JS TypedArray that shares memory with ByteArray
+ */
+Napi::Value toTypedArray(const Napi::CallbackInfo &info);
+
+/**
+    Create a ByteArray that shares memory with JS TypedArray
+ */
+Napi::Value fromTypedArray(const Napi::CallbackInfo &info);
+
 }  // namespace node_jsbr

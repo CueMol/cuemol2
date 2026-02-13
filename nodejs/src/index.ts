@@ -1,21 +1,11 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import bindings from 'bindings';
-import { CueMol } from './cuemol';
+import { CueMol, CueMolInternal } from './cuemol';
 
 // ES modules equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Type definitions for the native C++ addon
-interface CueMolInternal {
-  hello(): void;
-  initCueMol(configPath?: string): void;
-  hasClass(className: string): boolean;
-  createObj(className: string, ...args: any[]): any;
-  getService(className: string, ...args: any[]): any;
-  // Add other methods as needed
-}
 
 // Type for the CueMol singleton wrapper
 interface CueMolSingleton {

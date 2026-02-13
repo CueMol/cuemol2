@@ -2,15 +2,6 @@ import { cm } from '../setup';
 import type { ByteArray } from '@/wrappers/ByteArray';
 
 /**
- * Helper: Create a ByteArray initialized with specified element type and count
- */
-const createByteArray = (elemType: number, elemCount: number): ByteArray => {
-    const ba = cm.createObj('ByteArray') as ByteArray;
-    ba.init(elemType, elemCount);
-    return ba;
-};
-
-/**
  * Element type test cases with their properties
  */
 const INT_TYPES = [
@@ -315,4 +306,5 @@ describe('ByteArray', () => {
             expect(str.length).toBeGreaterThan(0);
         });
     });
+
 });

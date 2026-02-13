@@ -143,6 +143,16 @@ Napi::Object Init(Napi::Env env, Napi::Object exports)
     // exports.Set(Napi::String::New(env, "bindPeer"),
     //             Napi::Function::New(env, node_jsbr::bindPeer));
 
+    exports.Set(Napi::String::New(env, "copyFromTypedArray"),
+                Napi::Function::New(env, node_jsbr::copyFromTypedArray));
+    exports.Set(Napi::String::New(env, "copyToTypedArray"),
+                Napi::Function::New(env, node_jsbr::copyToTypedArray));
+    
+    exports.Set(Napi::String::New(env, "fromTypedArray"),
+                Napi::Function::New(env, node_jsbr::fromTypedArray));
+    exports.Set(Napi::String::New(env, "toTypedArray"),
+                Napi::Function::New(env, node_jsbr::toTypedArray));
+
     exports = node_jsbr::Wrapper::Init(env, exports);
 
     return exports;
