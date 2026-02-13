@@ -102,11 +102,12 @@ export class CueMol {
     }
 
     copyToTypedArray(src: any): any {
-        return this.internal.copyToTypedArray(src);
+        return this.internal.copyToTypedArray(src.wrapped);
     }
 
     copyFromTypedArray(src: any): any {
-        return this.internal.copyFromTypedArray(src);
+        const result = this.internal.copyFromTypedArray(src);
+        return this.createWrapper(result as NativeObject);
     }
     
 }

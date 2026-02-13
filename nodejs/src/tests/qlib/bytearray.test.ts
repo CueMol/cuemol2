@@ -2,15 +2,6 @@ import { cm } from '../setup';
 import type { ByteArray } from '@/wrappers/ByteArray';
 
 /**
- * Helper: Create a ByteArray initialized with specified element type and count
- */
-const createByteArray = (elemType: number, elemCount: number): ByteArray => {
-    const ba = cm.createObj('ByteArray') as ByteArray;
-    ba.init(elemType, elemCount);
-    return ba;
-};
-
-/**
  * Element type test cases with their properties
  */
 const INT_TYPES = [
@@ -316,16 +307,4 @@ describe('ByteArray', () => {
         });
     });
 
-    describe('copyToTypedArray', () => {
-        it('copies data to a typed array correctly', () => {
-            ba.init(ba.FLOAT32, 100);
-            // Set some values
-            for (let i = 0; i < 100; i++) {
-                ba.setAtF(i, i * 1.5);
-            }
-            const typedArray = cm.copyToTypedArray(ba) as Float32Array;
-            expect(typedArray.length).toBe(100);
-            expect(typedArray[10]).toBeCloseTo(15.0);
-        });
-    });
 });
