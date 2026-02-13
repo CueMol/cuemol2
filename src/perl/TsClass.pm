@@ -196,15 +196,15 @@ sub genTsEnumPropCode($$$)
   genTsBasicPropCode($classnm, $propnm, $prop);
   defined($prop->{"enumdef"}) || die;
 
-  my %enums = %{ $prop->{"enumdef"} };
-  foreach my $defnm (sort keys %enums) {
-    my $key = $propnm."_".uc($defnm);
-    my $value = $enums{$defnm};
-    print OUT "  get $key() : number {\n";
-    print OUT "    return this.getEnumDef(\'$propnm\', \'$defnm\');\n";
-    print OUT "  }\n";
-    print OUT "\n";
-  }	  
+  # my %enums = %{ $prop->{"enumdef"} };
+  # foreach my $defnm (sort keys %enums) {
+  #   my $key = $propnm."_".uc($defnm);
+  #   my $value = $enums{$defnm};
+  #   print OUT "  get $key() : number {\n";
+  #   print OUT "    return this.getEnumDef(\'$propnm\', \'$defnm\');\n";
+  #   print OUT "  }\n";
+  #   print OUT "\n";
+  # }	  
 }
 
 #####################

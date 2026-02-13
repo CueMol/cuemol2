@@ -55,6 +55,76 @@ describe('Vector', () => {
         });
     });
 
+    describe('property introspection', () => {
+        it('confirms existence of properties via hasProp()', () => {
+            expect(sut.hasProp('x')).toBe(true);
+            expect(sut.hasProp('y')).toBe(true);
+            expect(sut.hasProp('z')).toBe(true);
+            expect(sut.hasProp('w')).toBe(true);
+            expect(sut.hasProp('strvalue')).toBe(true);
+            expect(sut.hasProp('nonexistent')).toBe(false);
+        });
+
+        it('returns property metadata as JSON via getPropsJSON()', () => {
+            // Arrange - set vector components to known values
+            sut.x = -5.5;
+            sut.y = -10.0;
+            sut.z = -15.25;
+            sut.w = -20.5;
+
+            // Act - get properties as JSON string
+            const jsonString = sut.getPropsJSON();
+            const props = JSON.parse(jsonString);
+
+            // Assert - verify JSON structure and values
+            expect(Array.isArray(props)).toBe(true);
+            expect(props.length).toBeGreaterThanOrEqual(5);
+
+            // Find each property by name
+            const strvalueProp = props.find((p: any) => p.name === 'strvalue');
+            const xProp = props.find((p: any) => p.name === 'x');
+            const yProp = props.find((p: any) => p.name === 'y');
+            const zProp = props.find((p: any) => p.name === 'z');
+            const wProp = props.find((p: any) => p.name === 'w');
+
+            // Verify strvalue property
+            expect(strvalueProp).toBeDefined();
+            expect(strvalueProp.type).toBe('string');
+            expect(strvalueProp.readonly).toBe(false);
+            expect(strvalueProp.hasdefault).toBe(false);
+            expect(strvalueProp.value).toBe('(-5.5,-10,-15.25,-20.5)');
+
+            // Verify x property
+            expect(xProp).toBeDefined();
+            expect(xProp.type).toBe('real');
+            expect(xProp.readonly).toBe(false);
+            expect(xProp.hasdefault).toBe(false);
+            expect(xProp.value).toBeCloseTo(-5.5);
+
+            // Verify y property
+            expect(yProp).toBeDefined();
+            expect(yProp.type).toBe('real');
+            expect(yProp.readonly).toBe(false);
+            expect(yProp.hasdefault).toBe(false);
+            expect(yProp.value).toBeCloseTo(-10.0);
+
+            // Verify z property
+            expect(zProp).toBeDefined();
+            expect(zProp.type).toBe('real');
+            expect(zProp.readonly).toBe(false);
+            expect(zProp.hasdefault).toBe(false);
+            expect(zProp.value).toBeCloseTo(-15.25);
+
+            // Verify w property
+            expect(wProp).toBeDefined();
+            expect(wProp.type).toBe('real');
+            expect(wProp.readonly).toBe(false);
+            expect(wProp.hasdefault).toBe(false);
+            expect(wProp.value).toBeCloseTo(-20.5);
+        });
+    });
+
+
     describe('set3() and set4()', () => {
         it('sets 3D vector components with set3(), preserving existing w', () => {
             sut.set3(1.0, 2.3, 4.5);
