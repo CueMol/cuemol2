@@ -315,4 +315,17 @@ describe('ByteArray', () => {
             expect(str.length).toBeGreaterThan(0);
         });
     });
+
+    describe('copyToTypedArray', () => {
+        it('copies data to a typed array correctly', () => {
+            ba.init(ba.FLOAT32, 100);
+            // Set some values
+            for (let i = 0; i < 100; i++) {
+                ba.setAtF(i, i * 1.5);
+            }
+            const typedArray = cm.copyToTypedArray(ba) as Float32Array;
+            expect(typedArray.length).toBe(100);
+            expect(typedArray[10]).toBeCloseTo(15.0);
+        });
+    });
 });

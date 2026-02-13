@@ -7,6 +7,7 @@
 #include <qlib/LExceptions.hpp>
 #include <qlib/LScriptable.hpp>
 #include <qlib/qlib.hpp>
+#include <qlib/LByteArray.hpp>
 #include "wrapper.hpp"
 #include "services.hpp"
 
@@ -106,13 +107,53 @@ Napi::String getAllClassNamesJSON(const Napi::CallbackInfo &info)
     return Napi::String::New(env, retval.c_str());
 }
 
+template <typename T>
+qlib::LScrSp<T> *parseArg(Napi::Value value)
+{
+    if (!value.IsObject()) {
+        return nullptr;
+    }
+
+    Napi::Object obj = value.ToObject();
+
+    // TODO: other key to check wrapped object ??
+    if (!obj.Has("getAbiClassName")) {
+        return nullptr;
+    }
+    Wrapper *pWrapper = Wrapper::Unwrap(obj);
+    if (!pWrapper) {
+        return nullptr;
+    }
+    auto pScrObj = pWrapper->getWrapped();
+    if (!pScrObj) {
+        return nullptr;
+    }
+
+    MB_DPRINTLN("type of arg: %s", typeid(*pScrObj).name());
+    qlib::LScrSp<T> *psp = dynamic_cast<qlib::LScrSp<T> *>(pScrObj);
+    if (psp == nullptr) {
+        return nullptr;
+    }
+
+    return psp;
+}
+
 /**
    Copy data from ByteArray to JS TypedArray
  */
 Napi::Value copyToTypedArray(const Napi::CallbackInfo &info)
 {
-    // TODO: implementation
     Napi::Env env = info.Env();
+
+    // arg0 should be ByteArray object
+    if (info.Length() != 1) {
+        Napi::TypeError::New(env, "Wrong number of arguments")
+            .ThrowAsJavaScriptException();
+        return env.Null();
+    }
+    
+    auto pba = parseArg<qlib::LByteArray>(info[0]);
+
     Napi::TypeError::New(env, "Not implemented").ThrowAsJavaScriptException();
     return env.Null();
 }

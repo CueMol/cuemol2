@@ -3,14 +3,15 @@ import { wrapper_map } from './wrappers/wrapper_loader';
 /**
  * Internal native module interface from C++ bindings
  */
-interface CueMolInternal {
-  hello(): void;
-  initCueMol(configPath?: string): void;
-  hasClass(className: string): boolean;
-  createObj(className: string, ...args: any[]): any;
-  getService(className: string, ...args: any[]): any;
+export interface CueMolInternal {
+    hello(): void;
+    initCueMol(configPath?: string): void;
+    hasClass(className: string): boolean;
+    createObj(className: string, ...args: any[]): any;
+    getService(className: string, ...args: any[]): any;
 
-  // Add other methods as needed
+    copyToTypedArray(src: any): any;
+    copyFromTypedArray(src: any): any;
 }
 
 /**
@@ -99,4 +100,13 @@ export class CueMol {
         const obj = this.internal.getService(className);
         return this.createWrapper(obj as NativeObject);
     }
+
+    copyToTypedArray(src: any): any {
+        return this.internal.copyToTypedArray(src);
+    }
+
+    copyFromTypedArray(src: any): any {
+        return this.internal.copyFromTypedArray(src);
+    }
+    
 }
