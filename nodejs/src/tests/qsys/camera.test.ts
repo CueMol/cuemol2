@@ -129,6 +129,14 @@ describe('Camera', () => {
 
             expect(sut.zoom).toBeCloseTo(MIN_ZOOM, 5);
         });
+
+        it('reset to default', () => {
+            expect(sut.hasPropDefault('zoom')).toBe(true);
+            sut.zoom = CUSTOM_ZOOM;
+            expect(sut.zoom).toBe(CUSTOM_ZOOM);
+            sut.resetProp('zoom');
+            expect(sut.zoom).toBe(DEFAULT_ZOOM);
+        });
     });
 
     describe('slab property', () => {
@@ -154,6 +162,14 @@ describe('Camera', () => {
             sut.slab = -50;
 
             expect(sut.slab).toBe(MIN_SLAB);
+        });
+
+        it('reset to default', () => {
+            expect(sut.hasPropDefault('slab')).toBe(true);
+            sut.slab = CUSTOM_SLAB;
+            expect(sut.slab).toBe(CUSTOM_SLAB);
+            sut.resetProp('slab');
+            expect(sut.slab).toBe(DEFAULT_SLAB);
         });
     });
 

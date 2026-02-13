@@ -183,22 +183,96 @@ Napi::Value Wrapper::getPropsJSON(const Napi::CallbackInfo &info)
 Napi::Value Wrapper::hasProp(const Napi::CallbackInfo &info)
 {
     Napi::Env env = info.Env();
-    Napi::Error::New(env, "not implemented").ThrowAsJavaScriptException();
-    return env.Null();
+
+    if (info.Length() != 1) {
+        Napi::TypeError::New(env, "Wrong number of arguments")
+            .ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    if (!info[0].IsString()) {
+        Napi::TypeError::New(env, "Wrong type of argument 0")
+            .ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    auto propname = info[0].As<Napi::String>().Utf8Value();
+    auto pScObj = getWrapped();
+    bool retval;
+    LString errmsg;
+
+    bool ok = cuemol2::hasProp(pScObj, propname, retval, errmsg);
+    if (!ok) {
+        Napi::Error::New(env, errmsg.c_str()).ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    return Napi::Boolean::New(env, retval);
 }
 
 Napi::Value Wrapper::resetProp(const Napi::CallbackInfo &info)
 {
     Napi::Env env = info.Env();
-    Napi::Error::New(env, "not implemented").ThrowAsJavaScriptException();
+
+    if (info.Length() != 1) {
+        Napi::TypeError::New(env, "Wrong number of arguments")
+            .ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    if (!info[0].IsString()) {
+        Napi::TypeError::New(env, "Wrong type of argument 0")
+            .ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    auto propname = info[0].As<Napi::String>().Utf8Value();
+    auto pScObj = getWrapped();
+    LString errmsg;
+
+    bool ok = cuemol2::resetProp(pScObj, propname, errmsg);
+    if (!ok) {
+        Napi::Error::New(env, errmsg.c_str()).ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
     return env.Null();
 }
 
-Napi::Value Wrapper::getPropDefaultStatus(const Napi::CallbackInfo &info)
+Napi::Value Wrapper::hasPropDefault(const Napi::CallbackInfo &info)
 {
     Napi::Env env = info.Env();
-    Napi::Error::New(env, "not implemented").ThrowAsJavaScriptException();
-    return env.Null();
+
+    if (info.Length() != 1) {
+        Napi::TypeError::New(env, "Wrong number of arguments")
+            .ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    if (!info[0].IsString()) {
+        Napi::TypeError::New(env, "Wrong type of argument 0")
+            .ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    auto propname = info[0].As<Napi::String>().Utf8Value();
+    auto pScObj = getWrapped();
+    int retval;
+    LString errmsg;
+
+    bool ok = cuemol2::getPropDefaultStatus(pScObj, propname, retval, errmsg);
+    if (!ok) {
+        Napi::Error::New(env, errmsg.c_str()).ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    bool isDefault;
+    if (retval == 0)
+        isDefault = false;
+    else
+        isDefault = true;
+
+    return Napi::Boolean::New(env, isDefault);
 }
 
 Napi::Value Wrapper::invokeMethod(const Napi::CallbackInfo &info)
@@ -251,7 +325,7 @@ Napi::Value Wrapper::invokeMethod(const Napi::CallbackInfo &info)
         }
     }
 
-    MB_DPRINTLN("invoke method %s nargs=%zu", methodname.c_str(), nargs);
+    // MB_DPRINTLN("invoke method %s nargs=%zu", methodname.c_str(), nargs);
 
     // Invoke method
     bool ok = false;
@@ -490,7 +564,7 @@ Napi::Object Wrapper::Init(Napi::Env env, Napi::Object exports)
                      InstanceMethod<&Wrapper::setProp>("setProp"),
                      InstanceMethod<&Wrapper::resetProp>("resetProp"),
                      InstanceMethod<&Wrapper::getPropsJSON>("getPropsJSON"),
-                     InstanceMethod<&Wrapper::getPropsJSON>("getPropDefaultStatus"),
+                     InstanceMethod<&Wrapper::hasPropDefault>("hasPropDefault"),
                      InstanceMethod<&Wrapper::invokeMethod>("invokeMethod")});
 
     Napi::FunctionReference *ctor = new Napi::FunctionReference();

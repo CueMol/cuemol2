@@ -25,6 +25,10 @@ export interface IWrappedObject {
     hasProp(propName: string): boolean;
 
     getPropsJSON(): string;
+
+    hasPropDefault(propName: string): boolean;
+
+    // getEnumDef(propName: string, enumName: string): number;
 }
 
 /**

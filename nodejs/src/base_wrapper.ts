@@ -105,11 +105,11 @@ export class BaseWrapper {
     }
 
     resetProp(propName: string): void {
-        return this.wrapped.resetProp(propName);
+        this.wrapped.resetProp(propName);
     }
 
-    getEnumDef(propName: string, enumName: string): any {
-        return this._wrapped.getEnumDef(propName, enumName);
+    hasPropDefault(propName: string): boolean {
+        return this._wrapped.hasPropDefault(propName);
     }
 
     // /**

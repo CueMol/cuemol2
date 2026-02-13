@@ -38,25 +38,23 @@ Napi::Value getService(const Napi::CallbackInfo &info)
         Napi::Error::New(env, errmsg.c_str()).ThrowAsJavaScriptException();
         return env.Null();
     }
-    MB_DPRINTLN("getService(%s) OK: %p", clsname.c_str(), pobj);
+    // MB_DPRINTLN("getService(%s) OK: %p", clsname.c_str(), pobj);
     return Wrapper::createWrapper(env, pobj);
 }
 
 Napi::Value createObj(const Napi::CallbackInfo &info)
 {
-    MB_DPRINTLN("createObj called");
+    // MB_DPRINTLN("createObj called");
     Napi::Env env = info.Env();
 
     LString clsname, strval;
     if (info.Length() == 1 && info[0].IsString()) {
         clsname = info[0].As<Napi::String>().Utf8Value();
         strval = "";
-    }
-    else if (info.Length() == 2 && info[0].IsString()&& info[1].IsString()) {
+    } else if (info.Length() == 2 && info[0].IsString() && info[1].IsString()) {
         clsname = info[0].As<Napi::String>().Utf8Value();
         strval = info[1].As<Napi::String>().Utf8Value();
-    }
-    else {
+    } else {
         Napi::TypeError::New(env, "Wrong number of arguments")
             .ThrowAsJavaScriptException();
         return env.Null();
@@ -70,7 +68,7 @@ Napi::Value createObj(const Napi::CallbackInfo &info)
         return env.Null();
     }
 
-    MB_DPRINTLN("createObj(%s) OK, result=%p!!", clsname.c_str(), pobj);
+    // MB_DPRINTLN("createObj(%s) OK, result=%p!!", clsname.c_str(), pobj);
 
     return Wrapper::createWrapper(env, pobj);
 }
@@ -82,8 +80,7 @@ Napi::Value hasClass(const Napi::CallbackInfo &info)
     LString clsname;
     if (info.Length() == 1 && info[0].IsString()) {
         clsname = info[0].As<Napi::String>().Utf8Value();
-    }
-    else {
+    } else {
         Napi::TypeError::New(env, "Wrong number of arguments")
             .ThrowAsJavaScriptException();
         return env.Null();
@@ -109,5 +106,26 @@ Napi::String getAllClassNamesJSON(const Napi::CallbackInfo &info)
     return Napi::String::New(env, retval.c_str());
 }
 
-} // namespace node_jsbr
+/**
+   Copy data from ByteArray to JS TypedArray
+ */
+Napi::Value copyToTypedArray(const Napi::CallbackInfo &info)
+{
+    // TODO: implementation
+    Napi::Env env = info.Env();
+    Napi::TypeError::New(env, "Not implemented").ThrowAsJavaScriptException();
+    return env.Null();
+}
 
+/**
+   Copy data from JS TypedArray to ByteArray
+ */
+Napi::Value copyFromTypedArray(const Napi::CallbackInfo &info)
+{
+    // TODO: implementation
+    Napi::Env env = info.Env();
+    Napi::TypeError::New(env, "Not implemented").ThrowAsJavaScriptException();
+    return env.Null();
+}
+
+}  // namespace node_jsbr

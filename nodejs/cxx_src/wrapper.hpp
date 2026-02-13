@@ -40,7 +40,7 @@ public:
     Napi::Value toString(const Napi::CallbackInfo &info);
     Napi::Value resetProp(const Napi::CallbackInfo &info);
     Napi::Value getPropsJSON(const Napi::CallbackInfo &info);
-    Napi::Value getPropDefaultStatus(const Napi::CallbackInfo &info);
+    Napi::Value hasPropDefault(const Napi::CallbackInfo &info);
 
     static Napi::Value lvarToNapiValue(Napi::Env env, qlib::LVariant &variant);
     static bool napiValueToLVar(Napi::Env env, Napi::Value napi_val, qlib::LVariant &rvar);

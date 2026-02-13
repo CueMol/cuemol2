@@ -56,6 +56,15 @@ describe('Vector', () => {
     });
 
     describe('property introspection', () => {
+        it('confirms existence of properties via hasProp()', () => {
+            expect(sut.hasProp('x')).toBe(true);
+            expect(sut.hasProp('y')).toBe(true);
+            expect(sut.hasProp('z')).toBe(true);
+            expect(sut.hasProp('w')).toBe(true);
+            expect(sut.hasProp('strvalue')).toBe(true);
+            expect(sut.hasProp('nonexistent')).toBe(false);
+        });
+
         it('returns property metadata as JSON via getPropsJSON()', () => {
             // Arrange - set vector components to known values
             sut.x = -5.5;
