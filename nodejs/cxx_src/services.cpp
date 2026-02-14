@@ -11,7 +11,40 @@
 #include "wrapper.hpp"
 #include "services.hpp"
 
+// for test
+#define USE_MEM_TRACKING 1
+#include <atomic>
+
 namespace node_jsbr {
+
+#ifdef USE_MEM_TRACKING
+
+/// Tracks alloc/free events for zero-copy memory sharing functions.
+/// Uses relaxed atomics for minimal overhead (~1ns per operation).
+struct MemoryTracker
+{
+    // toTypedArray: shared_ptr copies created as ArrayBuffer finalizer hints
+    std::atomic<int64_t> toTA_allocs{0};
+    std::atomic<int64_t> toTA_frees{0};
+
+    // fromTypedArray: Napi::ObjectReference created to prevent TypedArray GC
+    std::atomic<int64_t> fromTA_ref_allocs{0};
+    std::atomic<int64_t> fromTA_ref_frees{0};
+
+    void reset()
+    {
+        toTA_allocs.store(0, std::memory_order_relaxed);
+        toTA_frees.store(0, std::memory_order_relaxed);
+        fromTA_ref_allocs.store(0, std::memory_order_relaxed);
+        fromTA_ref_frees.store(0, std::memory_order_relaxed);
+    }
+};
+
+static MemoryTracker g_memTracker;
+
+#endif
+
+//////////////////////////////////////////////////
 
 using qlib::LString;
 
@@ -128,7 +161,7 @@ qlib::LScrSp<T> *parseArg(const Napi::CallbackInfo &info)
     // }
     Wrapper *pWrapper = Wrapper::Unwrap(obj);
     if (!pWrapper) {
-        MB_DPRINTLN("obj is not wrapped object");
+        LOG_DPRINTLN("obj is not wrapped object");
         return nullptr;
     }
     auto pScrObj = pWrapper->getWrapped();
@@ -136,7 +169,7 @@ qlib::LScrSp<T> *parseArg(const Napi::CallbackInfo &info)
         return nullptr;
     }
 
-    MB_DPRINTLN("type of arg: %s", typeid(*pScrObj).name());
+    // MB_DPRINTLN("type of arg: %s", typeid(*pScrObj).name());
     qlib::LScrSp<T> *psp = dynamic_cast<qlib::LScrSp<T> *>(pScrObj);
     if (psp == nullptr) {
         return nullptr;
@@ -195,7 +228,7 @@ Napi::Value copyToTypedArray(const Napi::CallbackInfo &info)
             return createTypedArrayImpl<qint32>(env, baptr);
     }
 
-    MB_DPRINTLN("Unknown element type %d", elem_type);
+    LOG_DPRINTLN("Unknown element type %d", elem_type);
     auto errmsg = qlib::LString::format("Unknown ByteArray type: %d", elem_type);
     Napi::TypeError::New(env, errmsg.c_str()).ThrowAsJavaScriptException();
     return env.Null();
@@ -320,21 +353,21 @@ struct ByteArraySharedContext
         // This increments the reference count
         m_pba_sh = new qlib::LScrSp<qlib::LByteArray>(pBA);
 
-        MB_DPRINTLN("ByteArraySharedContext created for %p (refcount: %d)",
-                    m_pba_sh->get(), m_pba_sh->use_count());
+        // MB_DPRINTLN("ByteArraySharedContext created for %p (refcount: %d)",
+        //             m_pba_sh->get(), m_pba_sh->use_count());
     }
 
     ~ByteArraySharedContext()
     {
-        MB_DPRINTLN("ByteArraySharedContext destructor called for %p (refcount: %d)",
-                    m_pba_sh->get(), m_pba_sh->use_count());
+        // MB_DPRINTLN("ByteArraySharedContext destructor called for %p (refcount: %d)",
+        //             m_pba_sh->get(), m_pba_sh->use_count());
 
         // Delete the shared pointer
         // This decrements the reference count
         // If count reaches 0, the ByteArray will be deleted
         delete m_pba_sh;
 
-        MB_DPRINTLN("ByteArraySharedContext destroyed");
+        // MB_DPRINTLN("ByteArraySharedContext destroyed");
     }
 };
 
@@ -360,9 +393,9 @@ Napi::Value toTypedArray(const Napi::CallbackInfo &info)
     size_t elemCount = baptr->getElemCount();
     size_t byteLength = baptr->getSize();
 
-    MB_DPRINTLN(
-        "toTypedArrayShared: ByteArray %p, elemType=%d, elemCount=%zu, byteLength=%zu",
-        pba, elemType, elemCount, byteLength);
+    // MB_DPRINTLN(
+    //     "toTypedArrayShared: ByteArray %p, elemType=%d, elemCount=%zu, byteLength=%zu",
+    //     pba, elemType, elemCount, byteLength);
 
     if (data == nullptr || byteLength == 0) {
         Napi::Error::New(env, "ByteArray has no data").ThrowAsJavaScriptException();
@@ -373,12 +406,19 @@ Napi::Value toTypedArray(const Napi::CallbackInfo &info)
     // ByteArraySharedContext *ctx = new ByteArraySharedContext(pba);
     qlib::LByteArrayPtr *pba_sh = new qlib::LByteArrayPtr(*pba);
 
+#ifdef USE_MEM_TRACKING
+    g_memTracker.toTA_allocs.fetch_add(1, std::memory_order_relaxed);
+#endif
+
     // Create ArrayBuffer with external memory and finalizer
     Napi::ArrayBuffer arrayBuffer = Napi::ArrayBuffer::New(
         env, data, byteLength,
         [](Napi::Env env, void * /*data*/, qlib::LByteArrayPtr *pba_sh) {
             // Finalizer called when ArrayBuffer is garbage collected
-            MB_DPRINTLN("ArrayBuffer finalizer called");
+            // MB_DPRINTLN("ArrayBuffer finalizer called");
+#ifdef USE_MEM_TRACKING
+            g_memTracker.toTA_frees.fetch_add(1, std::memory_order_relaxed);
+#endif
             delete pba_sh;  // This will decrement the reference count
         },
         pba_sh);
@@ -436,9 +476,9 @@ Napi::Value toTypedArray(const Napi::CallbackInfo &info)
 
 /**
  * Create ByteArray from JS TypedArray with zero-copy memory sharing
- * 
+ *
  * FINAL CORRECTED VERSION - This fixes all compilation errors
- * 
+ *
  * @param info - Napi callback info containing the TypedArray argument
  * @return Wrapped ByteArray object sharing memory with input TypedArray
  */
@@ -461,22 +501,22 @@ Napi::Value fromTypedArray(const Napi::CallbackInfo &info)
 
     // Get TypedArray object
     auto typedArray = info[0].As<Napi::TypedArray>();
-    
+
     // Get array properties
     size_t length = typedArray.ElementLength();
     void *data = typedArray.ArrayBuffer().Data();
     size_t byteOffset = typedArray.ByteOffset();
-    
+
     // Adjust data pointer for byte offset
     void *actualData = static_cast<qbyte *>(data) + byteOffset;
-    
-    MB_DPRINTLN("fromTypedArray: length=%zu, byteOffset=%zu, data=%p", 
-                length, byteOffset, actualData);
+
+    // MB_DPRINTLN("fromTypedArray: length=%zu, byteOffset=%zu, data=%p", length,
+    //             byteOffset, actualData);
 
     // Determine element type based on TypedArray type
     int elemType = -1;
     napi_typedarray_type arrayType = typedArray.TypedArrayType();
-    
+
     switch (arrayType) {
         case napi_float32_array:
             elemType = qlib::type_consts::QTC_FLOAT32;
@@ -505,7 +545,8 @@ Napi::Value fromTypedArray(const Napi::CallbackInfo &info)
             break;
         case napi_bigint64_array:
         case napi_biguint64_array:
-            Napi::TypeError::New(env, "BigInt64Array and BigUint64Array are not supported")
+            Napi::TypeError::New(env,
+                                 "BigInt64Array and BigUint64Array are not supported")
                 .ThrowAsJavaScriptException();
             return env.Null();
         default:
@@ -516,34 +557,96 @@ Napi::Value fromTypedArray(const Napi::CallbackInfo &info)
 
     // Create new ByteArray object
     qlib::LByteArray *pNewObj = new qlib::LByteArray();
-    
+
     // Set up zero-copy reference to TypedArray memory
     pNewObj->refer(elemType, static_cast<int>(length), actualData);
-    
-    // ========================================================================
-    // FIX: Use Napi::ObjectReference which is designed for this purpose
-    // ========================================================================
+
     auto *pPersistentRef = new Napi::ObjectReference();
-    pPersistentRef->Reset(typedArray);
-    
+    // IMPORTANT: refcount=1 creates a STRONG reference that prevents
+    // the TypedArray from being garbage collected. With refcount=0
+    // (the default), it would be a weak reference and the TypedArray's
+    // ArrayBuffer memory could be freed while ByteArray still points to it.
+    pPersistentRef->Reset(typedArray, 1);
+    // pPersistentRef->Reset(typedArray);
+
+#ifdef USE_MEM_TRACKING
+    g_memTracker.fromTA_ref_allocs.fetch_add(1, std::memory_order_relaxed);
+#endif
+
     // Set up destroy callback to release the persistent reference
     pNewObj->setOnDestroy([pPersistentRef](auto &p) {
-        MB_DPRINTLN("***** LByteArray(%p) onDestroy callback called!!", p.data());
-        
+        // MB_DPRINTLN("***** LByteArray(%p) onDestroy callback called!!", p.data());
+#ifdef USE_MEM_TRACKING
+        g_memTracker.fromTA_ref_frees.fetch_add(1, std::memory_order_relaxed);
+#endif
         // Release the persistent reference to allow TypedArray to be garbage collected
         pPersistentRef->Reset();
         delete pPersistentRef;
-        
-        MB_DPRINTLN("***** LByteArray(%p) TypedArray reference released!!", p.data());
+
+        // MB_DPRINTLN("***** LByteArray(%p) TypedArray reference released!!", p.data());
     });
-    
-    MB_DPRINTLN("fromTypedArray: ByteArray created with %d elements of type %d", 
-                static_cast<int>(length), elemType);
+
+    // MB_DPRINTLN("fromTypedArray: ByteArray created with %d elements of type %d",
+    //             static_cast<int>(length), elemType);
 
     // Create shared pointer wrapper (similar to Python version)
     auto *pRet = MB_NEW qlib::LScrSp<qlib::LByteArray>(pNewObj);
 
     return Wrapper::createWrapper(env, pRet);
+}
+
+//////////
+
+/**
+ * Get memory tracking statistics for zero-copy functions
+ *
+ * @param info - Napi callback info (not used)
+ * @return Object containing allocation and free counts for toTypedArray and
+ * fromTypedArray
+ */
+Napi::Value getMemoryTrackingStats(const Napi::CallbackInfo &info)
+{
+    Napi::Env env = info.Env();
+    auto obj = Napi::Object::New(env);
+
+#ifdef USE_MEM_TRACKING
+    auto toTA_allocs = g_memTracker.toTA_allocs.load(std::memory_order_relaxed);
+    auto toTA_frees = g_memTracker.toTA_frees.load(std::memory_order_relaxed);
+    auto fromTA_ref_allocs =
+        g_memTracker.fromTA_ref_allocs.load(std::memory_order_relaxed);
+    auto fromTA_ref_frees =
+        g_memTracker.fromTA_ref_frees.load(std::memory_order_relaxed);
+#else
+    int64_t toTA_allocs = 0;
+    int64_t toTA_frees = 0;
+    int64_t fromTA_ref_allocs = 0;
+    int64_t fromTA_ref_frees = 0;
+#endif
+
+    obj.Set("toTypedArrayAllocs",
+            Napi::Number::New(env, static_cast<double>(toTA_allocs)));
+    obj.Set("toTypedArrayFrees",
+            Napi::Number::New(env, static_cast<double>(toTA_frees)));
+    obj.Set("fromTypedArrayRefAllocs",
+            Napi::Number::New(env, static_cast<double>(fromTA_ref_allocs)));
+    obj.Set("fromTypedArrayRefFrees",
+            Napi::Number::New(env, static_cast<double>(fromTA_ref_frees)));
+
+    return obj;
+}
+
+/**
+ * Reset memory tracking statistics to zero
+ *
+ * @param info - Napi callback info (not used)
+ * @return Undefined
+ */
+Napi::Value resetMemoryTracking(const Napi::CallbackInfo &info)
+{
+#ifdef USE_MEM_TRACKING
+    g_memTracker.reset();
+#endif#    
+    return info.Env().Undefined();
 }
 
 }  // namespace node_jsbr

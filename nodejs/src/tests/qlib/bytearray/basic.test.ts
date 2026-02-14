@@ -1,4 +1,4 @@
-import { cm } from '../setup';
+import { cm } from '../../setup';
 import type { ByteArray } from '@/wrappers/ByteArray';
 
 /**

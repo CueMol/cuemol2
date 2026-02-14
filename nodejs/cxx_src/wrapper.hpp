@@ -19,7 +19,14 @@ public:
     using super_t = Napi::ObjectWrap<Wrapper>;
 
     Wrapper(const Napi::CallbackInfo &info) : super_t(info) {}
-    ~Wrapper() = default;
+
+    /// Destructor: releases the wrapped native object.
+    ~Wrapper()
+    {
+        if (m_pWrapped) {
+            delete m_pWrapped;
+        }
+    }
 
     qlib::LScriptable *getWrapped()
     {
@@ -45,7 +52,7 @@ public:
     static Napi::Value lvarToNapiValue(Napi::Env env, qlib::LVariant &variant);
     static bool napiValueToLVar(Napi::Env env, Napi::Value napi_val, qlib::LVariant &rvar);
 
-    static Napi::Object Init(Napi::Env env, Napi::Object exports);
+    static Napi::Object init(Napi::Env env, Napi::Object exports);
 
     static Napi::Object createWrapper(Napi::Env env, qlib::LScriptable *pObj);
 };

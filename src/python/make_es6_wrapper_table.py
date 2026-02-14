@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
-
+import re
 from pathlib import Path
 
 
@@ -12,6 +12,11 @@ def arg_parser():
     parser.add_argument("--input_dir", type=str, default="results")
     args = parser.parse_args()
     return args
+
+
+def is_pascal_case(name):
+    pattern = r"^[A-Z][a-zA-Z0-9]*$"
+    return bool(re.match(pattern, name))
 
 
 def main():
@@ -38,7 +43,7 @@ def main():
         else:
             file_list = sorted(list(input_dir.glob("*.js")))
 
-        file_list = [x for x in file_list if x.stem != "wrapper_loader"]
+        file_list = [x for x in file_list if is_pascal_case(x.stem)]
         for in_js in file_list:
             stem = in_js.stem
             if mode == "ts":

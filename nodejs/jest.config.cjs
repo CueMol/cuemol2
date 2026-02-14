@@ -75,7 +75,7 @@ module.exports = {
   
   // The maximum amount of workers used to run tests
   // Set to 1 for debugging C++ crashes to get sequential execution
-  // maxWorkers: 1,
+  maxWorkers: 1,
   
   // Automatically clear mock calls and instances between every test
   clearMocks: true,
@@ -100,7 +100,7 @@ module.exports = {
   
   // Test timeout in milliseconds (default: 5000)
   // Increase if tests interact with slow C++ operations
-  testTimeout: 10000,
+  testTimeout: 30000,
   
   // Module name mapper for path aliases (optional)
   // Uncomment and customize if you use import aliases

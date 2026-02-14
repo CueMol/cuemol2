@@ -1,4 +1,4 @@
-import { wrapper_map } from './wrappers/wrapper_loader';
+import { wrapper_map } from './wrappers/wrapper-loader';
 
 /**
  * Internal native module interface from C++ bindings
@@ -14,6 +14,15 @@ export interface CueMolInternal {
     copyFromTypedArray(src: any): any;
     toTypedArray(src: any): any;
     fromTypedArray(src: any): any;
+
+    getMemoryTrackingStats(): {
+        toTypedArrayAllocs: number;
+        toTypedArrayFrees: number;
+        fromTypedArrayRefAllocs: number;
+        fromTypedArrayRefFrees: number;
+    };
+    resetMemoryTracking(): void;
+
 }
 
 /**
@@ -121,4 +130,20 @@ export class CueMol {
         return this.createWrapper(result as NativeObject);
     }
     
+    /**
+     * Get memory tracking statistics for zero-copy operations.
+     * Tracks alloc/free events for shared pointers and object references
+     * used in toTypedArray and fromTypedArray.
+     */
+    getMemoryTrackingStats() {
+        return this.internal.getMemoryTrackingStats();
+    }
+
+    /**
+     * Reset all memory tracking counters to zero.
+     * Call at the start of each test for clean measurement.
+     */
+    resetMemoryTracking(): void {
+        this.internal.resetMemoryTracking();
+    }
 }

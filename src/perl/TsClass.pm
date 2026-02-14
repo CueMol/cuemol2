@@ -53,7 +53,7 @@ sub genTsWrapper($)
   print OUT "\n";
 
   my $base_class = "BaseWrapper";
-  my $base_class_path = "../base_wrapper";
+  my $base_class_path = "../BaseWrapper";
   if ($cls->{"extends"}) {
       my @extends = @{$cls->{"extends"}};
       if (@extends>1) {

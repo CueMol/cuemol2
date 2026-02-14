@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "src/index.js",
   "scripts": {
-    "test": "cross-env NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" npx jest"
+    "test": "cross-env NODE_OPTIONS=\"--experimental-vm-modules --no-warnings --expose-gc\" npx jest"
   },
   "author": "",
   "license": "ISC",
