@@ -14,6 +14,15 @@ namespace node_jsbr {
 
 using qlib::LString;
 
+/// Destructor: releases the wrapped native object.
+Wrapper::~Wrapper()
+{
+    if (m_pWrapped!=nullptr) {
+        m_pWrapped->destruct();
+        m_pWrapped = nullptr;
+    }
+}
+
 Napi::Value Wrapper::toString(const Napi::CallbackInfo &info)
 {
     Napi::Env env = info.Env();

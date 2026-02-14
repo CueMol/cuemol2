@@ -21,12 +21,7 @@ public:
     Wrapper(const Napi::CallbackInfo &info) : super_t(info) {}
 
     /// Destructor: releases the wrapped native object.
-    ~Wrapper()
-    {
-        if (m_pWrapped) {
-            delete m_pWrapped;
-        }
-    }
+    ~Wrapper();
 
     qlib::LScriptable *getWrapped()
     {
