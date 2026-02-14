@@ -645,7 +645,7 @@ Napi::Value resetMemoryTracking(const Napi::CallbackInfo &info)
 {
 #ifdef USE_MEM_TRACKING
     g_memTracker.reset();
-#endif#    
+#endif
     return info.Env().Undefined();
 }
 
