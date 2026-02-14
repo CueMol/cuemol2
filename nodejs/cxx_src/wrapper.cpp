@@ -19,6 +19,7 @@ Wrapper::~Wrapper()
 {
     if (m_pWrapped!=nullptr) {
         m_pWrapped->destruct();
+        m_pWrapped = nullptr;
     }
 }
 

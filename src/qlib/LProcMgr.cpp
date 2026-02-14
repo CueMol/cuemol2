@@ -71,6 +71,10 @@ LProcMgr::LProcMgr() : m_nNextIndex(0)
 
 LProcMgr::~LProcMgr()
 {
+    // XXX: should we kill all processes here?
+    // (LProcMgr is a singleton, and is destructed at the end of the program,
+    //  so memory leak is not a big problem...)
+    // killAll();
     delete m_pImpl;
 }
 
@@ -80,6 +84,18 @@ void LProcMgr::setSlotSize(int n)
     if (nsize <= 0) {
         nsize = m_pImpl->getCPUCount();
     }
+
+    // NOTE: Clean up entries may be needed if the new size is smaller than the current
+    // size. However, we do not kill the processes here because it may cause unexpected
+    // termination of the processes.
+    // if (static_cast<int>(m_tab.size()) > nsize) {
+    //     for (int i = nsize; i < static_cast<int>(m_tab.size()); ++i) {
+    //         if (m_tab[i] != NULL) {
+    //             killSlot(i);
+    //         }
+    //     }
+    // }
+
     m_tab.resize(nsize);
 }
 
@@ -431,7 +447,20 @@ void LProcMgr::killAll()
 
     // std::for_each(m_endq.begin(), m_endq.end(), delete_ptr<ProcEnt *>());
     // m_endq.clear();
+
     delete_and_clear<endq_t, ProcEnt>(m_endq);
+    // NOTE: delete_and_clear does not delete m_pThr (ProcInThread).
+    // This could cause memory leak, (but we cannot delete m_pThr here because it is
+    // still running...) for (endq_t::iterator it = m_endq.begin(); it != m_endq.end();
+    // ++it) {
+    //     ProcEnt *pEnt = *it;
+    //     if (pEnt->m_pThr != nullptr) {
+    //         delete pEnt->m_pThr;
+    //     }
+    //     delete pEnt;
+    // }
+
+    m_endq.clear();
 
     // clear error messgae
     m_errormsg = "";
