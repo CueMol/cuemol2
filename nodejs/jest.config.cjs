@@ -75,7 +75,7 @@ module.exports = {
   
   // The maximum amount of workers used to run tests
   // Set to 1 for debugging C++ crashes to get sequential execution
-  // maxWorkers: 1,
+  maxWorkers: 1,
   
   // Automatically clear mock calls and instances between every test
   clearMocks: true,
