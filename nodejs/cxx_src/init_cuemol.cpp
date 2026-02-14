@@ -6,13 +6,12 @@
 
 #include <napi.h>
 
-// #include <qlib/EventManager.hpp>
-
-// #include <gfx/gfx.hpp>
 #include <qlib/ClassRegistry.hpp>
 #include <qlib/LExceptions.hpp>
 #include <qlib/LScriptable.hpp>
 #include <qlib/qlib.hpp>
+// #include <qlib/EventManager.hpp>
+// #include <gfx/gfx.hpp>
 // #include <qsys/qsys.hpp>
 
 // #include "ElecTimerImpl.hpp"
@@ -147,13 +146,18 @@ Napi::Object Init(Napi::Env env, Napi::Object exports)
                 Napi::Function::New(env, node_jsbr::copyFromTypedArray));
     exports.Set(Napi::String::New(env, "copyToTypedArray"),
                 Napi::Function::New(env, node_jsbr::copyToTypedArray));
-    
     exports.Set(Napi::String::New(env, "fromTypedArray"),
                 Napi::Function::New(env, node_jsbr::fromTypedArray));
     exports.Set(Napi::String::New(env, "toTypedArray"),
                 Napi::Function::New(env, node_jsbr::toTypedArray));
 
-    exports = node_jsbr::Wrapper::Init(env, exports);
+    // Memory tracking diagnostic functions
+    exports.Set(Napi::String::New(env, "getMemoryTrackingStats"),
+                Napi::Function::New(env, node_jsbr::getMemoryTrackingStats));
+    exports.Set(Napi::String::New(env, "resetMemoryTracking"),
+                Napi::Function::New(env, node_jsbr::resetMemoryTracking));
+
+    exports = node_jsbr::Wrapper::init(env, exports);
 
     return exports;
 }

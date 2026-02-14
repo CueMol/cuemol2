@@ -551,7 +551,7 @@ bool Wrapper::napiValueToLVar(Napi::Env env, Napi::Value value, qlib::LVariant &
     return false;
 }
 
-Napi::Object Wrapper::Init(Napi::Env env, Napi::Object exports)
+Napi::Object Wrapper::init(Napi::Env env, Napi::Object exports)
 {
     Napi::Function func =
         DefineClass(env, "Wrapper",

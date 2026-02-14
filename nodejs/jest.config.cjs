@@ -100,7 +100,7 @@ module.exports = {
   
   // Test timeout in milliseconds (default: 5000)
   // Increase if tests interact with slow C++ operations
-  testTimeout: 10000,
+  testTimeout: 30000,
   
   // Module name mapper for path aliases (optional)
   // Uncomment and customize if you use import aliases

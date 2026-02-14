@@ -314,9 +314,9 @@ if (BUILD_NODEJS_BINDINGS)
       COMMAND ${Python3_EXECUTABLE}
       ${CMAKE_CURRENT_SOURCE_DIR}/python/make_es6_wrapper_table.py
       --input_dir ${CMAKE_BINARY_DIR}/ts/wrappers
-      --output_ts ${CMAKE_BINARY_DIR}/ts/wrappers/wrapper_loader.ts
+      --output_ts ${CMAKE_BINARY_DIR}/ts/wrappers/wrapper-loader.ts
     )
-    install(FILES ${CMAKE_BINARY_DIR}/ts/wrappers/wrapper_loader.ts
+    install(FILES ${CMAKE_BINARY_DIR}/ts/wrappers/wrapper-loader.ts
       DESTINATION ${PROJECT_SOURCE_DIR}/nodejs/src/wrappers)
   else()
     add_custom_command(
@@ -324,9 +324,9 @@ if (BUILD_NODEJS_BINDINGS)
       COMMAND ${Python3_EXECUTABLE}
       ${CMAKE_CURRENT_SOURCE_DIR}/python/make_es6_wrapper_table.py
       --input_dir ${CMAKE_BINARY_DIR}/js/wrappers
-      --output_js ${CMAKE_BINARY_DIR}/js/wrappers/wrapper_loader.js
+      --output_js ${CMAKE_BINARY_DIR}/js/wrappers/wrapper-loader.js
     )
-    install(FILES ${CMAKE_BINARY_DIR}/js/wrappers/wrapper_loader.js
+    install(FILES ${CMAKE_BINARY_DIR}/js/wrappers/wrapper-loader.js
       DESTINATION ${PROJECT_SOURCE_DIR}/nodejs/src/wrappers)
   endif()
 endif()

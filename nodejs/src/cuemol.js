@@ -1,4 +1,4 @@
-import { wrapper_map } from './wrappers/wrapper_loader.js';
+import { wrapper_map } from './wrappers/wrapper-loader.js';
 
 export class CueMol {
   constructor(value) {

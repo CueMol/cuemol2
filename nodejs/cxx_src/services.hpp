@@ -29,4 +29,19 @@ Napi::Value toTypedArray(const Napi::CallbackInfo &info);
  */
 Napi::Value fromTypedArray(const Napi::CallbackInfo &info);
 
+// =========================================================================
+// Memory tracking diagnostic functions
+// =========================================================================
+
+/**
+ * Get memory tracking statistics as a JS object.
+ * Returns counters for alloc/free events in toTypedArray and fromTypedArray.
+ */
+Napi::Value getMemoryTrackingStats(const Napi::CallbackInfo &info);
+
+/**
+ * Reset all memory tracking counters to zero.
+ */
+Napi::Value resetMemoryTracking(const Napi::CallbackInfo &info);
+
 }  // namespace node_jsbr
