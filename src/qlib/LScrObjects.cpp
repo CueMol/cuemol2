@@ -743,6 +743,7 @@ namespace qlib {
     }
 
     rval += "]";
+    MB_DPRINTLN("LScrObjBase::getPropsJSONImpl> rval=\n%s\n", rval.c_str());
     return rval;
   }
 
