@@ -12,10 +12,10 @@
 
 using namespace gfx;
 
-// MC_CLONEABLE_IMPL(gfx::GradientColor);
-
 GradientColor::GradientColor()
 {
+    // default rho value is 0.0
+    m_rho = 0.0;
 }
 
 GradientColor::GradientColor(const GradientColor &r)
