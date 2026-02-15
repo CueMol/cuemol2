@@ -362,7 +362,7 @@ Napi::Value Wrapper::lvarToNapiValue(Napi::Env env, qlib::LVariant &variant)
             return Napi::Boolean::New(env, variant.getBoolValue());
 
         case qlib::LVariant::LT_INTEGER:
-            // MB_DPRINTLN("LVar: integer(%d)", variant.getIntValue());
+            // MB_DPRINTLN("LVar: integer(%X)", variant.getIntValue());
             return Napi::Number::New(env, variant.getIntValue());
 
         case qlib::LVariant::LT_REAL:

@@ -16,6 +16,14 @@ runtime_class GradientColor extends AbstractColor
   cloneable;
   smartptr;
 
+  /////
+
+  property string material => redirect(getMaterial, _) (readonly);
+
+  property integer code => redirect(getCode, _) (readonly);
+
+  /////
+
   property real rho => redirect(getGradParam, setGradParam);
   default rho = 0.0;
   
