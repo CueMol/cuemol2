@@ -103,11 +103,11 @@ module.exports = {
   testTimeout: 30000,
   
   // Module name mapper for path aliases (optional)
-  // Uncomment and customize if you use import aliases
-  // moduleNameMapper: {
-  //   '^@/(.*)$': '<rootDir>/src/$1',
-  //   '^@tests/(.*)$': '<rootDir>/src/tests/$1',
-  // },
+  // Path aliases (keep in sync with tsconfig.json "paths")
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/src/$1',
+    '^@tests/(.*)$': '<rootDir>/src/tests/$1',
+  },
   
   // Bail out after the first test failure
   // Useful for debugging - stops on first error
