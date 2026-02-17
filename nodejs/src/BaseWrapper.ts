@@ -112,13 +112,21 @@ export class BaseWrapper {
         return this._wrapped.hasPropDefault(propName);
     }
 
-    // /**
-    //  * Convert the wrapper to a string representation.
-    //  * @returns String representation with pointer address
-    //  */
-    // toString(): string {
-    //   if (this._wrapped !== undefined)
-    //     return `Wrapper(ptr=0x${this._wrapped.toString(16)})`;
-    //   else return `Wrapper(ptr=null)`;
-    // }
+    /**
+     * Convert the wrapper to a string representation.
+     * @returns String representation with pointer address
+     */
+    toString(): string {
+        if (this._wrapped !== undefined)
+            return `Wrapper(${this._wrapped.toString()}`;
+        else return `Wrapper(null)`;
+    }
+
+    getClassName(): string {
+        return this._wrapped.getClassName();
+    }
+
+    getAbiClassName(): string {
+        return this._wrapped.getAbiClassName();
+    }
 }

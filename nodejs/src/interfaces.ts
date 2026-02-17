@@ -18,7 +18,10 @@ export interface IWrappedObject {
     invokeMethod(methodName: string, ...args: any[]): any;
 
     /** Convert to string representation (returns pointer address) */
-    toString(radix?: number): string;
+    toString(): string;
+
+    getAbiClassName(): string;
+    getClassName(): string;
 
     resetProp(propName: string): void;
 
@@ -27,6 +30,8 @@ export interface IWrappedObject {
     getPropsJSON(): string;
 
     hasPropDefault(propName: string): boolean;
+
+
 
     // getEnumDef(propName: string, enumName: string): number;
 }
