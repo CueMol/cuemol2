@@ -1,7 +1,7 @@
 import { cm } from '../setup';
 import type { Color } from '@/wrappers/Color';
 import type { GradientColor } from '@/wrappers/GradientColor';
-import { RGBA_CODE } from './Color.test';
+import { RGBA_CODE, createColor, expectedGradValue } from './test-helpers';
 
 // ============================================================================
 // Constants
@@ -13,13 +13,6 @@ const DEFAULT_RHO = 0.0;
 // ============================================================================
 // Helpers
 // ============================================================================
-
-/** Create a SolidColor (Color) with the given RGBA integer values (0-255) */
-const createColor = (r: number, g: number, b: number, a: number = 255): Color => {
-    const c = cm.createObj('Color') as Color;
-    c.setCode(RGBA_CODE(r, g, b, a));
-    return c;
-};
 
 /** Create a GradientColor instance */
 const createGradientColor = (): GradientColor => {
@@ -41,16 +34,6 @@ const createInitializedGradient = (
     gc.col2 = createColor(r2, g2, b2, a2);
     gc.rho = rho;
     return gc;
-};
-
-/**
- * Compute expected gradient value for a single channel.
- * Formula: int(v1 * rho + v2 * (1.0 - rho))
- * Special case: if v1 == v2, returns v1 directly.
- */
-const expectedGradValue = (v1: number, v2: number, rho: number): number => {
-    if (v1 === v2) return v1;
-    return Math.trunc(v1 * rho + v2 * (1.0 - rho));
 };
 
 // ============================================================================

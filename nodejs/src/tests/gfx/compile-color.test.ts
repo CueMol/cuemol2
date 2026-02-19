@@ -14,62 +14,12 @@ import type { Scene } from '@/wrappers/Scene';
 import { AbstractColor } from '@/wrappers/AbstractColor';
 import { MolColorRef } from '@/wrappers/MolColorRef';
 import { NamedColor } from '@/wrappers/NamedColor';
-
-// ============================================================================
-// Test Helpers
-// ============================================================================
-
-type RGBA = { r: number; g: number; b: number; a?: number };
-
-/** Extract individual color channels from RGBA code */
-const extractChannels = (color: AbstractColor): RGBA => ({
-    r: color.r(),
-    g: color.g(),
-    b: color.b(),
-    a: color.a(),
-});
-
-/**
- * Compile color string and return Color object or null on error.
- * Does not throw - catches exceptions and returns null instead.
- */
-const compileColor = (
-    stylem: StyleManager,
-    sceneUid: number,
-    colorStr: string
-): AbstractColor | null => {
-    try {
-        const color = stylem.compileColor(colorStr, sceneUid);
-        return color || null;
-    } catch {
-        return null;
-    }
-};
-
-/**
- * Compile color string and assert channels match expected values.
- * Use approximate: true for HSB/converted values (uses toBeCloseTo).
- */
-const expectCompiledColor = (
-    stylem: StyleManager,
-    sceneUid: number,
-    colorStr: string,
-    expected: RGBA,
-    options?: { approximate?: boolean }
-): void => {
-    const color = compileColor(stylem, sceneUid, colorStr);
-    expect(color).not.toBeNull();
-    const { r, g, b, a } = extractChannels(color!);
-    const assert = options?.approximate
-        ? (actual: number, exp: number) => expect(actual).toBeCloseTo(exp, 0)
-        : (actual: number, exp: number) => expect(actual).toBe(exp);
-    assert(r, expected.r);
-    assert(g, expected.g);
-    assert(b, expected.b);
-    if (expected.a !== undefined) {
-        assert(a!, expected.a!);
-    }
-};
+import {
+    setupColorTestEnvironment,
+    compileColorSafe,
+    expectCompiledColor,
+    extractChannels,
+} from './test-helpers';
 
 // ============================================================================
 // Test Suite
@@ -81,9 +31,9 @@ describe('compileColor (StyleManager)', () => {
     let sceneUid: number;
 
     beforeAll(() => {
-        // Initialize services once for all tests
-        stylem = cm.getService('StyleManager') as StyleManager;
-        scene = cm.createScene() as Scene;
+        const env = setupColorTestEnvironment();
+        stylem = env.stylem;
+        scene = env.scene;
         sceneUid = scene.uid;
     });
 
@@ -113,7 +63,7 @@ describe('compileColor (StyleManager)', () => {
             ['purple', 128, 0, 128, 255],
             ['pink', 255, 192, 203, 255],
         ])('parses "%s" correctly', (colorStr, expR, expG, expB, expA) => {
-            expectCompiledColor(stylem, sceneUid, colorStr, {
+            expectCompiledColor(colorStr, stylem, sceneUid, {
                 r: expR,
                 g: expG,
                 b: expB,
@@ -142,7 +92,7 @@ describe('compileColor (StyleManager)', () => {
             ['#AbCdEf', 171, 205, 239, 255, 'mixed case'],
             ['#123456', 18, 52, 86, 255, 'arbitrary hex'],
         ])('parses %s correctly (%s)', (colorStr, expR, expG, expB, expA) => {
-            expectCompiledColor(stylem, sceneUid, colorStr, {
+            expectCompiledColor(colorStr, stylem, sceneUid, {
                 r: expR,
                 g: expG,
                 b: expB,
@@ -164,7 +114,7 @@ describe('compileColor (StyleManager)', () => {
                 ['rgb(0.5, 0.5, 0.5)', 128, 128, 128, 'gray (0.5 → 128)'],
                 ['rgb(0.25, 0.5, 0.75)', 64, 128, 191, 'mixed floats'],
             ])('parses %s correctly (%s)', (colorStr, expR, expG, expB) => {
-                expectCompiledColor(stylem, sceneUid, colorStr, {
+                expectCompiledColor(colorStr, stylem, sceneUid, {
                     r: expR,
                     g: expG,
                     b: expB,
@@ -189,16 +139,16 @@ describe('compileColor (StyleManager)', () => {
             ['hsb(0.0, 1.0, 0.5)', 0.0, 1.0, 0.5, 128, 0, 0, 'dark red (bri=0.5)'],
         ])('parses %s correctly (%s)', (colorStr, _h, _s, _b, expR, expG, expB) => {
             expectCompiledColor(
+                colorStr,
                 stylem,
                 sceneUid,
-                colorStr,
                 { r: expR, g: expG, b: expB },
                 { approximate: true }
             );
         });
 
         it('parses HSBA with alpha channel correctly', () => {
-            expectCompiledColor(stylem, sceneUid, 'hsba(0.0, 1.0, 1.0, 0.5)', {
+            expectCompiledColor('hsba(0.0, 1.0, 1.0, 0.5)', stylem, sceneUid, {
                 r: 255,
                 g: 0,
                 b: 0,
@@ -213,35 +163,35 @@ describe('compileColor (StyleManager)', () => {
 
     describe('returned wrapper types', () => {
         it('#RRGGBB returns Color', () => {
-            const col = compileColor(stylem, sceneUid, '#112233');
+            const col = compileColorSafe('#112233', stylem, sceneUid);
             expect(col).not.toBeNull();
             expect(col).toBeInstanceOf(Color);
             expect(col!.getClassName()).toBe('Color');
         });
 
         it('rgb() returns Color', () => {
-            const col = compileColor(stylem, sceneUid, 'rgb(0.1, 0.2, 0.3)');
+            const col = compileColorSafe('rgb(0.1, 0.2, 0.3)', stylem, sceneUid);
             expect(col).not.toBeNull();
             expect(col).toBeInstanceOf(Color);
             expect(col!.getClassName()).toBe('Color');
         });
 
         it('hsb() returns Color', () => {
-            const col = compileColor(stylem, sceneUid, 'hsb(0.0, 1.0, 1.0)');
+            const col = compileColorSafe('hsb(0.0, 1.0, 1.0)', stylem, sceneUid);
             expect(col).not.toBeNull();
             expect(col).toBeInstanceOf(Color);
             expect(col!.getClassName()).toBe('Color');
         });
 
         it('named color returns NamedColor', () => {
-            const col = compileColor(stylem, sceneUid, 'red');
+            const col = compileColorSafe('red', stylem, sceneUid);
             expect(col).not.toBeNull();
             expect(col).toBeInstanceOf(NamedColor);
             expect(col!.getClassName()).toBe('NamedColor');
         });
 
         it('$molcol returns MolColorRef', () => {
-            const col = compileColor(stylem, sceneUid, '$molcol');
+            const col = compileColorSafe('$molcol', stylem, sceneUid);
             expect(col).not.toBeNull();
             expect(col).toBeInstanceOf(MolColorRef);
             expect(col!.getClassName()).toBe('MolColorRef');
@@ -262,7 +212,7 @@ describe('compileColor (StyleManager)', () => {
                 ['hsb(0.0, 1.0, 1.0){alpha: 0.5}', 255, 0, 0, 128, 'HSB with alpha'],
                 ['red{alpha: 0.25}', 255, 0, 0, 64, 'named color with alpha'],
             ])('applies alpha to %s correctly (%s)', (colorStr, expR, expG, expB, expA) => {
-                expectCompiledColor(stylem, sceneUid, colorStr, {
+                expectCompiledColor(colorStr, stylem, sceneUid, {
                     r: expR,
                     g: expG,
                     b: expB,
@@ -273,8 +223,8 @@ describe('compileColor (StyleManager)', () => {
 
         describe('named color modifiers (mod_h/mod_s/mod_b)', () => {
             it('supports mod_h for named colors', () => {
-                const base = compileColor(stylem, sceneUid, 'red');
-                const modified = compileColor(stylem, sceneUid, 'red{mod_h: 120.0}');
+                const base = compileColorSafe('red', stylem, sceneUid);
+                const modified = compileColorSafe('red{mod_h: 120.0}', stylem, sceneUid);
                 expect(base).not.toBeNull();
                 expect(modified).not.toBeNull();
                 expect(modified).toBeInstanceOf(NamedColor);
@@ -287,8 +237,8 @@ describe('compileColor (StyleManager)', () => {
             });
 
             it('supports mod_s for named colors', () => {
-                const base = compileColor(stylem, sceneUid, 'red');
-                const desaturated = compileColor(stylem, sceneUid, 'red{mod_s: -0.5}');
+                const base = compileColorSafe('red', stylem, sceneUid);
+                const desaturated = compileColorSafe('red{mod_s: -0.5}', stylem, sceneUid);
                 expect(base).not.toBeNull();
                 expect(desaturated).not.toBeNull();
                 expect(desaturated).toBeInstanceOf(NamedColor);
@@ -304,9 +254,9 @@ describe('compileColor (StyleManager)', () => {
             });
 
             it('supports mod_b for named colors', () => {
-                const base = compileColor(stylem, sceneUid, 'gray');
-                const brighter = compileColor(stylem, sceneUid, 'gray{mod_b: 0.2}');
-                const darker = compileColor(stylem, sceneUid, 'gray{mod_b: -0.2}');
+                const base = compileColorSafe('gray', stylem, sceneUid);
+                const brighter = compileColorSafe('gray{mod_b: 0.2}', stylem, sceneUid);
+                const darker = compileColorSafe('gray{mod_b: -0.2}', stylem, sceneUid);
                 expect(base).not.toBeNull();
                 expect(brighter).not.toBeNull();
                 expect(darker).not.toBeNull();
@@ -329,25 +279,25 @@ describe('compileColor (StyleManager)', () => {
 
         describe('material modifier', () => {
             it('sets material property for RGB colors', () => {
-                const color = compileColor(stylem, sceneUid, 'rgb(1.0, 0.0, 0.0){material: shiny}');
+                const color = compileColorSafe('rgb(1.0, 0.0, 0.0){material: shiny}', stylem, sceneUid);
                 expect(color).not.toBeNull();
                 expect((color as any).material).toBe('shiny');
             });
 
             it('sets material property for HSB colors', () => {
-                const color = compileColor(stylem, sceneUid, 'hsb(0.0, 1.0, 1.0){material: matte}');
+                const color = compileColorSafe('hsb(0.0, 1.0, 1.0){material: matte}', stylem, sceneUid);
                 expect(color).not.toBeNull();
                 expect((color as any).material).toBe('matte');
             });
 
             it('sets material property for hex colors', () => {
-                const color = compileColor(stylem, sceneUid, '#ff0000{material: glossy}');
+                const color = compileColorSafe('#ff0000{material: glossy}', stylem, sceneUid);
                 expect(color).not.toBeNull();
                 expect((color as any).material).toBe('glossy');
             });
 
             it('sets material property for named colors', () => {
-                const color = compileColor(stylem, sceneUid, 'red{material: metallic}');
+                const color = compileColorSafe('red{material: metallic}', stylem, sceneUid);
                 expect(color).not.toBeNull();
                 expect((color as any).material).toBe('metallic');
             });
@@ -355,10 +305,10 @@ describe('compileColor (StyleManager)', () => {
 
         describe('combined modifiers', () => {
             it('applies alpha and material together', () => {
-                const color = compileColor(
+                const color = compileColorSafe(
+                    'rgb(0.39, 0.59, 0.78){alpha: 0.5; material: shiny}',
                     stylem,
-                    sceneUid,
-                    'rgb(0.39, 0.59, 0.78){alpha: 0.5; material: shiny}'
+                    sceneUid
                 );
                 expect(color).not.toBeNull();
                 const { a } = extractChannels(color!);
@@ -374,20 +324,20 @@ describe('compileColor (StyleManager)', () => {
 
     describe('$molcol reference', () => {
         it('creates a MolColorRef instance from "$molcol"', () => {
-            const color = compileColor(stylem, sceneUid, '$molcol');
+            const color = compileColorSafe('$molcol', stylem, sceneUid);
             expect(color).not.toBeNull();
             expect(color).toBeInstanceOf(MolColorRef);
             expect(color!.getClassName()).toBe('MolColorRef');
 
             // MolColorRef returns a fixed debug color (0x7f) for channels
-            expectCompiledColor(stylem, sceneUid, '$molcol', { r: 0x7f, g: 0x7f, b: 0x7f, a: 0x7f });
+            expectCompiledColor('$molcol', stylem, sceneUid, { r: 0x7f, g: 0x7f, b: 0x7f, a: 0x7f });
         });
 
         it('accepts alpha/material/mod_h/mod_s/mod_b modifiers on "$molcol"', () => {
-            const color = compileColor(
+            const color = compileColorSafe(
+                '$molcol{alpha: 0.5; material: shiny; mod_h: 30.0; mod_s: 0.1; mod_b: -0.2}',
                 stylem,
-                sceneUid,
-                '$molcol{alpha: 0.5; material: shiny; mod_h: 30.0; mod_s: 0.1; mod_b: -0.2}'
+                sceneUid
             );
             expect(color).not.toBeNull();
             expect(color).toBeInstanceOf(MolColorRef);
@@ -410,7 +360,7 @@ describe('compileColor (StyleManager)', () => {
             ['rgb(0.0, 1.0, 0.0)', (c: Color) => c.setRGB(0.0, 1.0, 0.0)],
             ['hsb(0.0, 1.0, 1.0)', (c: Color) => c.setHSB(0.0, 1.0, 1.0)],
         ])('compileColor("%s") matches direct Color', (colorStr, setupDirect) => {
-            const compiled = compileColor(stylem, sceneUid, colorStr) as Color | null;
+            const compiled = compileColorSafe(colorStr, stylem, sceneUid) as Color | null;
             expect(compiled).not.toBeNull();
             const direct = cm.createObj('Color') as Color;
             setupDirect(direct);

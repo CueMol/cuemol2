@@ -1,12 +1,5 @@
-import { cm } from '../setup';
 import type { Color } from '@/wrappers/Color';
-
-// RGBA code layout: (A << 24) | (R << 16) | (G << 8) | B
-export const RGBA_CODE = (r: number, g: number, b: number, a: number = 255): number =>
-    ((a & 0xFF) << 24 | (r & 0xFF) << 16 | (g & 0xFF) << 8 | (b & 0xFF));
-
-/** Create a Color instance via CueMol factory */
-const createColor = (): Color => cm.createObj('Color') as Color;
+import { RGBA_CODE, createColor } from './test-helpers';
 
 describe('Color (SolidColor)', () => {
     let sut: Color;
