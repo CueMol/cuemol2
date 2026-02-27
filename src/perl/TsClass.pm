@@ -279,7 +279,7 @@ sub makeMthArg($)
   foreach my $arg (@{$args}) {
     my $arg_type = $arg->{"type"};
     if ($arg_type eq "object") {
-      push(@rval, "arg_${ind}._wrapped");
+      push(@rval, "arg_${ind}.wrapped");
     }
     else {
       push(@rval, "arg_$ind");
@@ -301,7 +301,7 @@ sub makeMthArg2($)
   foreach my $arg (@{$args}) {
     my $arg_type = $arg->{"type"};
     if ($arg_type eq "object") {
-      push(@rval, "arg_${ind}._wrapped");
+      push(@rval, "arg_${ind}.wrapped");
     }
     else {
       push(@rval, "arg_$ind");

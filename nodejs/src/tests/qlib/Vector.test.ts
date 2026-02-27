@@ -183,6 +183,8 @@ describe('Vector', () => {
         it('returns (0,0,0) for default vector', () => {
             expect(sut.strvalue).toBe('(0,0,0)');
             expect(sut.toString()).toBe('(0,0,0)');
+            // ObjID should start with "0x" 
+            expect(sut.wrapped.toObjID()).toMatch(/^0x[0-9a-f]+$/i);
         });
 
         it('parses vector from string via strvalue setter', () => {
