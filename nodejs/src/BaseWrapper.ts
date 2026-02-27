@@ -33,7 +33,8 @@ export class BaseWrapper {
      * @returns The native C++ object
      */
     get wrapped(): IWrappedObject {
-        return this._wrapped;
+        return this._utils.getWrapped(this._wrapped);
+        // return this._wrapped;
     }
 
     /**
@@ -59,12 +60,23 @@ export class BaseWrapper {
     destroy(): void { }
 
     /**
+     * Create a wrapper for a native object.
+     * @param native_obj - The native object to wrap
+     * @returns A wrapper instance for the native object
+     */
+    createWrapper(native_obj: any): any {
+        return this._utils.createWrapper(native_obj);
+    }
+
+    //////////
+
+    /**
      * Get a property value from the wrapped object.
      * @param propName - Name of the property to get
      * @returns The property value
      */
     getProp(propName: string): any {
-        return this.wrapped.getProp(propName);
+        return this._wrapped.getProp(propName);
     }
 
     /**
@@ -73,7 +85,7 @@ export class BaseWrapper {
      * @param value - Value to set
      */
     setProp(propName: string, value: any): void {
-        this.wrapped.setProp(propName, value);
+        this._wrapped.setProp(propName, value);
     }
 
     /**
@@ -87,15 +99,6 @@ export class BaseWrapper {
         return rval;
     }
 
-    /**
-     * Create a wrapper for a native object.
-     * @param native_obj - The native object to wrap
-     * @returns A wrapper instance for the native object
-     */
-    createWrapper(native_obj: any): any {
-        return this._utils.createWrapper(native_obj);
-    }
-
     getPropsJSON(): string {
         return this._wrapped.getPropsJSON();
     }
@@ -105,7 +108,7 @@ export class BaseWrapper {
     }
 
     resetProp(propName: string): void {
-        this.wrapped.resetProp(propName);
+        this._wrapped.resetProp(propName);
     }
 
     hasPropDefault(propName: string): boolean {
@@ -117,9 +120,12 @@ export class BaseWrapper {
      * @returns String representation with pointer address
      */
     toString(): string {
-        if (this._wrapped !== undefined)
-            return `Wrapper(${this._wrapped.toString()}`;
-        else return `Wrapper(null)`;
+        if (this._wrapped !== undefined) {
+            // return `Wrapper(${this._wrapped.toString()}`;
+            return `Wrapper(${this._utils.getWrapped(this._wrapped).toString()}`;
+        } else {
+            return `Wrapper(null)`;
+        }
     }
 
     getClassName(): string {
@@ -129,4 +135,5 @@ export class BaseWrapper {
     getAbiClassName(): string {
         return this._wrapped.getAbiClassName();
     }
+
 }

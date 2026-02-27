@@ -1,7 +1,8 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import bindings from 'bindings';
-import { CueMol, CueMolInternal } from './cuemol';
+import { CueMol } from './cuemol';
+import type { CueMolInternal } from './interfaces';
 
 // ES modules equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);

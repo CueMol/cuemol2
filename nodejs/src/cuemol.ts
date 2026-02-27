@@ -1,8 +1,6 @@
 import { wrapper_map } from './wrappers/wrapper-loader';
 import { BaseWrapper } from './BaseWrapper';
 import type { Vector } from './wrappers/Vector';
-import type { Matrix } from './wrappers/Matrix';
-import type { Quat } from './wrappers/Quat';
 import type { SelCommand } from './wrappers/SelCommand';
 import type { Color } from './wrappers/Color';
 import { AbstractColor } from './wrappers/AbstractColor';
@@ -15,65 +13,7 @@ import { StyleManager } from './wrappers/StyleManager';
 import type { ByteArray } from './wrappers/ByteArray';
 import { Object } from './wrappers/Object';
 import { Renderer } from './wrappers/Renderer';
-
-/**
- * Memory tracking statistics for debugging and testing
- */
-export interface MemoryTrackingStats {
-    /** Number of toTypedArray allocations */
-    toTypedArrayAllocs: number;
-    /** Number of toTypedArray deallocations */
-    toTypedArrayFrees: number;
-    /** Number of fromTypedArray reference allocations */
-    fromTypedArrayRefAllocs: number;
-    /** Number of fromTypedArray reference deallocations */
-    fromTypedArrayRefFrees: number;
-}
-
-/**
- * Union type of all JavaScript TypedArray types
- */
-export type TypedArray =
-    | Uint8Array
-    | Int8Array
-    | Uint16Array
-    | Int16Array
-    | Uint32Array
-    | Int32Array
-    | Float32Array
-    | Float64Array;
-
-/**
- * Internal native module interface from C++ bindings
- */
-export interface CueMolInternal {
-    initCueMol(configPath?: string): void;
-    hasClass(className: string): boolean;
-    createObj(className: string): any;
-    getService(className: string): any;
-    getAllClassNamesJSON(): string;
-
-    copyToTypedArray(src: any): TypedArray;
-    copyFromTypedArray(src: TypedArray): any;
-    toTypedArray(src: any): TypedArray;
-    fromTypedArray(src: TypedArray): any;
-
-    // copyToTypedArray(src: BaseWrapper): TypedArray;
-    // copyFromTypedArray(src: TypedArray): NativeObject;
-    // toTypedArray(src: BaseWrapper): TypedArray;
-    // fromTypedArray(src: TypedArray): NativeObject;
-
-    getMemoryTrackingStats(): MemoryTrackingStats;
-    resetMemoryTracking(): void;
-}
-
-
-/**
- * Native object interface returned from C++ bindings
- */
-export interface NativeObject {
-    getClassName(): string;
-}
+import type { CueMolInternal, IWrappedObject, MemoryTrackingStats, NativeObject } from './interfaces';
 
 /**
  * CueMol constructor options
@@ -148,6 +88,10 @@ export class CueMol {
         return obj;
     }
 
+    getWrapped(wrappedObj: any): IWrappedObject {
+        return wrappedObj as IWrappedObject;
+    }
+
     /**
      * Create a CueMol object by class name
      * 
@@ -190,7 +134,6 @@ export class CueMol {
     getAllClassNamesJSON(): string {
         return this.internal.getAllClassNamesJSON();
     }
-
 
     /**
      * Copy data from ByteArray to TypedArray (creates new array)

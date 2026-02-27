@@ -46,3 +46,62 @@ export interface IWrapperUtils {
     /** Create a wrapper for a native object */
     createWrapper(nativeObj: any): any;
 }
+
+/**
+ * Memory tracking statistics for debugging and testing
+ */
+export interface MemoryTrackingStats {
+    /** Number of toTypedArray allocations */
+    toTypedArrayAllocs: number;
+    /** Number of toTypedArray deallocations */
+    toTypedArrayFrees: number;
+    /** Number of fromTypedArray reference allocations */
+    fromTypedArrayRefAllocs: number;
+    /** Number of fromTypedArray reference deallocations */
+    fromTypedArrayRefFrees: number;
+}
+
+/**
+ * Union type of all JavaScript TypedArray types
+ */
+export type TypedArray =
+    | Uint8Array
+    | Int8Array
+    | Uint16Array
+    | Int16Array
+    | Uint32Array
+    | Int32Array
+    | Float32Array
+    | Float64Array;
+
+/**
+ * Internal native module interface from C++ bindings
+ */
+export interface CueMolInternal {
+    initCueMol(configPath?: string): void;
+    hasClass(className: string): boolean;
+    createObj(className: string): any;
+    getService(className: string): any;
+    getAllClassNamesJSON(): string;
+
+    copyToTypedArray(src: any): TypedArray;
+    copyFromTypedArray(src: TypedArray): any;
+    toTypedArray(src: any): TypedArray;
+    fromTypedArray(src: TypedArray): any;
+
+    // copyToTypedArray(src: BaseWrapper): TypedArray;
+    // copyFromTypedArray(src: TypedArray): NativeObject;
+    // toTypedArray(src: BaseWrapper): TypedArray;
+    // fromTypedArray(src: TypedArray): NativeObject;
+
+    getMemoryTrackingStats(): MemoryTrackingStats;
+    resetMemoryTracking(): void;
+}
+
+
+/**
+ * Native object interface returned from C++ bindings
+ */
+export interface NativeObject {
+    getClassName(): string;
+}
