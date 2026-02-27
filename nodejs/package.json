@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "src/index.js",
   "scripts": {
-    "test": "cross-env NODE_OPTIONS=\"--experimental-vm-modules --no-warnings --expose-gc\" npx jest --runInBand"
+    "test": "cross-env NODE_OPTIONS=\"--experimental-vm-modules --no-warnings --expose-gc\" npx jest --runInBand",
+    "example:vector": "tsx examples/vector-examples.ts"
+
   },
   "author": "",
   "license": "ISC",
@@ -23,6 +25,7 @@
     "jest": "^29.7.0",
     "node-addon-api": "^5.0.0",
     "ts-jest": "^29.4.6",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   },
   "type": "module"

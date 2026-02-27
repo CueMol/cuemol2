@@ -17,7 +17,7 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["src/tests/**/*"],
-  // "include": ["src/**/*"],  // All files under src
+  // "include": ["src/tests/**/*", ],
+  "include": ["src/**/*"],  // All files under src
   "exclude": ["node_modules", "dist", "build"]
 }
