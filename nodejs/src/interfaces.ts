@@ -19,6 +19,7 @@ export interface IWrappedObject {
 
     /** Convert to string representation (returns pointer address) */
     toString(): string;
+    toObjID(): string;
 
     getAbiClassName(): string;
     getClassName(): string;

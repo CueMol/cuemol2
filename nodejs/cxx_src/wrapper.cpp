@@ -17,7 +17,7 @@ using qlib::LString;
 /// Destructor: releases the wrapped native object.
 Wrapper::~Wrapper()
 {
-    if (m_pWrapped!=nullptr) {
+    if (m_pWrapped != nullptr) {
         m_pWrapped->destruct();
         m_pWrapped = nullptr;
     }
@@ -42,6 +42,27 @@ Napi::Value Wrapper::toString(const Napi::CallbackInfo &info)
 
     auto msg =
         qlib::LString::format("wrapper (%p) <%s>", pobj, pobj->toString().c_str());
+    return Napi::String::New(env, msg.c_str());
+}
+
+Napi::Value Wrapper::toObjID(const Napi::CallbackInfo &info)
+{
+    Napi::Env env = info.Env();
+
+    if (info.Length() != 0) {
+        Napi::TypeError::New(env, "Wrong number of arguments")
+            .ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    auto pobj = getWrapped();
+    if (!pobj) {
+        Napi::Error::New(env, "Wrapper is not initialized")
+            .ThrowAsJavaScriptException();
+        return env.Null();
+    }
+
+    auto msg = qlib::LString::format("%p", this);
     return Napi::String::New(env, msg.c_str());
 }
 
@@ -187,7 +208,7 @@ Napi::Value Wrapper::getPropsJSON(const Napi::CallbackInfo &info)
     }
 
     return Napi::String::New(env, str.c_str());
-}    
+}
 
 Napi::Value Wrapper::hasProp(const Napi::CallbackInfo &info)
 {
@@ -340,7 +361,7 @@ Napi::Value Wrapper::invokeMethod(const Napi::CallbackInfo &info)
     bool ok = false;
     LString errmsg;
     ok = cuemol2::invokeMethod(pScObj, methodname, largs, errmsg);
-    
+
     if (!ok) {
         Napi::Error::New(env, errmsg.c_str()).ThrowAsJavaScriptException();
         return env.Null();
@@ -388,7 +409,7 @@ Napi::Value Wrapper::lvarToNapiValue(Napi::Env env, qlib::LVariant &variant)
             int nsize = pLArray->size();
             auto napi_array = Napi::Array::New(env);
             // transfer elements
-            for (int i=0; i<nsize; ++i) {
+            for (int i = 0; i < nsize; ++i) {
                 qlib::LVariant &value = pLArray->at(i);
                 auto napi_val = lvarToNapiValue(env, value);
                 napi_array.Set(i, napi_val);
@@ -396,7 +417,7 @@ Napi::Value Wrapper::lvarToNapiValue(Napi::Env env, qlib::LVariant &variant)
             return napi_array;
         }
         case qlib::LVariant::LT_DICT: {
-            auto napi_dict =Napi::Object::New(env);
+            auto napi_dict = Napi::Object::New(env);
             // transfer elements
             auto *pLDict = variant.getDictPtr();
             for (auto &&elem : *pLDict) {
@@ -408,7 +429,7 @@ Napi::Value Wrapper::lvarToNapiValue(Napi::Env env, qlib::LVariant &variant)
 
             return napi_dict;
         }
-    default:
+        default:
             break;
     }
 
@@ -504,7 +525,7 @@ bool Wrapper::napiValueToLVar(Napi::Env env, Napi::Value value, qlib::LVariant &
             int nsize = array.Length();
             qlib::LVarArray *pArray = MB_NEW qlib::LVarArray(nsize);
             rvar.setArrayPtr(pArray);
-            for (int i=0; i<nsize; ++i) {
+            for (int i = 0; i < nsize; ++i) {
                 napiValueToLVar(env, array.Get(i), pArray->at(i));
             }
             // printf("*** array length: %d\n", nsize);
@@ -539,7 +560,7 @@ bool Wrapper::napiValueToLVar(Napi::Env env, Napi::Value value, qlib::LVariant &
                 qlib::LVarDict *pDict = MB_NEW qlib::LVarDict();
                 rvar.setDictPtr(pDict);
                 auto prop_names = obj.GetPropertyNames();
-                for (int i=0; i<prop_names.Length(); ++i) {
+                for (int i = 0; i < prop_names.Length(); ++i) {
                     auto key = prop_names.Get(i);
                     auto key_str = qlib::LString(key.ToString().Utf8Value().c_str());
                     // printf("dict key %d: %s\n", i, key_str.c_str());
@@ -564,7 +585,8 @@ Napi::Object Wrapper::init(Napi::Env env, Napi::Object exports)
 {
     Napi::Function func =
         DefineClass(env, "Wrapper",
-                    {InstanceMethod<&Wrapper::toString>("toString"),
+                    {InstanceMethod<&Wrapper::toObjID>("toObjID"),
+                     InstanceMethod<&Wrapper::toString>("toString"),
                      InstanceMethod<&Wrapper::getClassName>("getClassName"),
                      InstanceMethod<&Wrapper::getAbiClassName>("getAbiClassName"),
                      InstanceMethod<&Wrapper::hasProp>("hasProp"),
