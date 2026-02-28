@@ -26,6 +26,9 @@ class WorkerService {
             'initCueMol': this.initCueMol,
             'terminateWorker': this.terminateWorker,
             'createObj': this.createObj,
+            'getService': this.getService,
+            'hasClass': this.hasClass,
+            'getAllClassNamesJSON': this.getAllClassNamesJSON,
             'getProp': this.getProp,
             'setProp': this.setProp,
             'invokeMethod': this.invokeMethod,
@@ -140,6 +143,25 @@ class WorkerService {
         }
         console.log('Worker> createObj result:', obj.toString());
         return this.getWrapped(obj, className);
+    }
+
+    getService(className: string): ObjTuple | null {
+        console.log('Worker> getService called:', className);
+        const obj = this._internal.getService(className);
+        if (obj === null) {
+            console.log('Worker> getService failed for class:', className);
+            return null;
+        }
+        console.log('Worker> getService result:', obj.toString());
+        return this.getWrapped(obj, className);
+    }
+
+    hasClass(className: string): boolean {
+        return this._internal.hasClass(className);
+    }
+
+    getAllClassNamesJSON(): string {
+        return this._internal.getAllClassNamesJSON();
     }
 
     getProp(thisobj: ObjTuple, propName: string): any {

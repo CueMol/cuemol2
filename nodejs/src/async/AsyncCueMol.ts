@@ -96,34 +96,28 @@ export class AsyncCueMol {
 
     //////////
 
-    createWrapper(nativeObj: any): BaseWrapper | null {
-        if (typeof nativeObj === 'undefined') {
-            return null;
-        }
-
-        if (nativeObj != null && typeof (nativeObj as any).then === 'function') {
-            console.log('createWrapper called for Promise:', nativeObj);
-            return nativeObj.then((resolvedObj: any) => {
-                console.log('Promise resolved for nativeObj:', resolvedObj);
-                return this.createWrapper(resolvedObj);
-            }
-            ).catch((e: any) => {
-                console.log('Error resolving Promise for nativeObj:', e);
-                return null;
-            });
-        }
-
-        // const [_, className] = nativeObj as [number, string];
-        console.log('createWrapper called for nativeObj:', nativeObj);
-        const className = nativeObj.getClassName();
+    createWrapperImpl(obj: ObjProxy): BaseWrapper {
+        console.log('createWrapper called for obj:', obj);
+        const className = obj.getClassName();
         console.log('createWrapper called for class:', className);
         const Klass = wrapper_map[className];
-        const obj = new Klass(nativeObj, this);
-        return obj;
+        const wrapper = new Klass(obj, this);
+        return wrapper;
     }
 
-    getWrapped(nativeObj: ObjProxy): ObjTuple {
-        return nativeObj.getObj();
+    async createWrapper(prom: Promise<ObjProxy>): Promise<BaseWrapper | null> {
+        console.log('createWrapper called for Promise:', prom);
+        return prom.then((resolvedObj: any) => {
+            console.log('Promise resolved for obj:', resolvedObj);
+            return this.createWrapperImpl(resolvedObj);
+        }).catch((e: any) => {
+            console.warn('Error resolving Promise for obj:', e);
+            return null;
+        });
+    }
+
+    getWrapped(obj: ObjProxy): ObjTuple {
+        return obj.getObjTuple();
     }
 
     //////////
@@ -135,7 +129,7 @@ export class AsyncCueMol {
             await this.invokeWorker('initCueMol', sysConfigPath);
             console.log('init cuemol OK');
         } catch (e) {
-            console.log('init cuemol ERROR!!!', e);
+            console.error('init cuemol ERROR!!!', e);
         }
     }
 
@@ -146,7 +140,7 @@ export class AsyncCueMol {
             this._worker.terminate();
             this._ready = false;
         } catch (e) {
-            console.log('terminateWorker ERROR: ', e);
+            console.error('terminateWorker ERROR: ', e);
         }
     }
 
@@ -154,17 +148,64 @@ export class AsyncCueMol {
         try {
             const result = await this.invokeWorker('createObj', className);
             if (result === null) {
-                console.log('createObj failed for class:', className);
+                console.warn('createObj failed for class:', className);
                 return null;
             }
             // console.log('createObj OK, result=', result);
             const obj_id = result[0]._obj_id;
             const natObj = new ObjProxy(obj_id, className, this);
-            return this.createWrapper(natObj);
+            return this.createWrapperImpl(natObj);
         } catch (e) {
-            console.log('createObj ERROR: ', e);
+            console.error('createObj ERROR: ', e);
         }
         return null;
     }
 
+    async getService(className: string): Promise<BaseWrapper | null> {
+        try {
+            const result = await this.invokeWorker('getService', className);
+            if (result === null) {
+                console.warn('getService failed for class:', className);
+                return null;
+            }
+            // console.log('createObj OK, result=', result);
+            const obj_id = result[0]._obj_id;
+            const natObj = new ObjProxy(obj_id, className, this);
+            return this.createWrapperImpl(natObj);
+        } catch (e) {
+            console.error('getService ERROR: ', e);
+        }
+        return null;
+
+        // const obj = this.internal.getService(className);
+        // return this.createWrapper(obj as NativeObject);
+    }
+
+    async hasClass(className: string): Promise<boolean | null> {
+        try {
+            const result = await this.invokeWorker('hasClass', className);
+            if (result === null) {
+                console.warn('hasClass failed for class:', className);
+                return null;
+            }
+            return result[0] as boolean;
+        } catch (e) {
+            console.error('hasClass ERROR: ', e);
+        }
+        return null;
+    }
+
+    async getAllClassNamesJSON(): Promise<string | null> {
+        try {
+            const result = await this.invokeWorker('getAllClassNamesJSON');
+            if (result === null) {
+                console.warn('getAllClassNamesJSON failed');
+                return null;
+            }
+            return result[0] as string;
+        } catch (e) {
+            console.error('getAllClassNamesJSON ERROR: ', e);
+        }
+        return null;
+    }
 }    

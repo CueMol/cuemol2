@@ -14,7 +14,7 @@ export class ObjProxy {
         return this._obj.className;
     }
 
-    getObj(): ObjTuple {
+    getObjTuple(): ObjTuple {
         return this._obj;
     }
 
