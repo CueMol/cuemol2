@@ -49,7 +49,7 @@ class WorkerService {
             }
         } catch (e) {
             console.log('Worker> call method failed:', method, e);
-            parentPort?.postMessage([method, seqno, false]);
+            parentPort?.postMessage([method, seqno, false, e]);
             // parentPort?.postMessage([method, seqno, true]);
         }
     }
@@ -199,8 +199,6 @@ const svc = new WorkerService();
 
 parentPort?.on('message', (data: any) => {
     console.log('Worker> Received:', data);
-    // const result = data.value * data.value;
-    // parentPort?.postMessage(result);
 
     const method: string = data[0];
     const seqno: number = data[1];

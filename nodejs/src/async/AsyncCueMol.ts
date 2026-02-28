@@ -4,12 +4,15 @@ import { BaseWrapper } from '../BaseWrapper';
 import { wrapper_map } from '../wrappers/wrapper-loader';
 import { ObjTuple } from './ObjTuple';
 import { ObjProxy } from './ObjProxy';
+import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
 
 function makeMethodSeq(method: string, seqno: number): string {
     return method + '.' + seqno.toString();
 }
 
 export class AsyncCueMol {
+    private _ready: boolean = false;
     private _seqno: number = 0;
     private _worker: Worker;
     private _worker_onmessage_dict: { [key: string]: any } = {};
@@ -18,7 +21,11 @@ export class AsyncCueMol {
     constructor() {
         // this._seqno = 0;
         console.log('launch worker...');
-        this._worker = new Worker(path.join(import.meta.dirname, 'worker.ts'));
+
+        // this._worker = new Worker(path.join(import.meta.dirname, 'worker.ts'));
+        const cwd = dirname(fileURLToPath(import.meta.url));
+        console.log('current working directory:', cwd);
+        this._worker = new Worker(path.join(cwd, 'worker.ts'));
         console.log('launch worker OK');
 
         this._worker.on('message', (event: any) => {
@@ -41,6 +48,12 @@ export class AsyncCueMol {
                 delete this._worker_onmessage_dict[method_seq];
             }
         });
+
+        this._ready = true;
+    }
+
+    isReady(): boolean {
+        return this._ready;
     }
 
     postMessage(method: string, seq: number, args: any[], xfer: any = null) {
@@ -66,9 +79,11 @@ export class AsyncCueMol {
         let promise = new Promise<any[]>((resolve, reject) => {
             this.addListener(method, cur_seq, (result: boolean, ...msgargs: any[]): void => {
                 if (result) {
+                    // console.log('invokeWorker OK:', method, 'msgargs:', msgargs);
                     resolve(msgargs);
                 } else {
-                    reject(msgargs);
+                    // console.log('invokeWorker error:', method, 'error:', msgargs[0]);
+                    reject(msgargs[0]);
                 }
             });
         });
@@ -127,7 +142,9 @@ export class AsyncCueMol {
     async terminateWorker(): Promise<void> {
         try {
             await this.invokeWorker('terminateWorker');
-            console.log('terminateWorker');
+            console.log('terminateWorker OK');
+            this._worker.terminate();
+            this._ready = false;
         } catch (e) {
             console.log('terminateWorker ERROR: ', e);
         }

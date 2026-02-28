@@ -9,7 +9,7 @@ interface WorkerSingleton {
 const _worker: WorkerSingleton = { value: null };
 
 export function createCueMol(): AsyncCueMol {
-    if (_worker.value) {
+    if (_worker.value && _worker.value.isReady()) {
         console.log('cuemol already created');
         return _worker.value;
     }
