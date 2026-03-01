@@ -46,6 +46,10 @@ const gcAndSettle = async (): Promise<void> => {
     await new Promise<void>(r => setImmediate(r));
     global.gc!();
     await new Promise<void>(r => setImmediate(r));
+    global.gc!();
+    await new Promise<void>(r => setImmediate(r));
+    global.gc!();
+    await new Promise<void>(r => setImmediate(r));
 };
 
 /**
