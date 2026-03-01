@@ -77,6 +77,11 @@ jobs:
       with:
         version: "v0.12.0"
 
+    - name: Setup Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: '24'
+
     - name: Show build env versions
       shell: bash
       run: |
@@ -186,6 +191,11 @@ jobs:
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.9
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v6
+      with:
+        node-version: '24'
 
     - name: Enable GitHub Actions Cache backend
       shell: pwsh
