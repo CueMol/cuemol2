@@ -1,10 +1,16 @@
 import { parentPort } from 'worker_threads';
 import bindings from 'bindings';
 import type { CueMolInternal } from '../interfaces';
+
+// NOTE: .ts extension required — Node.js ESM native TS execution
+// @ts-expect-error TS5097: allowImportingTsExtensions not enabled
 import { ObjTuple, isObjTuple } from './ObjTuple.ts';
+// @ts-expect-error TS5097: allowImportingTsExtensions not enabled
+import { createLogger } from "../logger.ts";
+
+const log = createLogger(import.meta.url);
 
 type ServiceMethod = (...args: any[]) => any;
-
 
 class WorkerService {
 
@@ -20,7 +26,7 @@ class WorkerService {
     constructor() {
         // Load the native addon
         this._internal = bindings('cuemol_internal.node') as CueMolInternal;
-        console.log("Worker>>>>> _internal: ", this._internal);
+        log.info("_internal: %s", this._internal);
 
         this._methods = {
             'initCueMol': this.initCueMol,
@@ -36,9 +42,9 @@ class WorkerService {
     }
 
     invoke(method: string, seqno: number, args: any[]): void {
-        console.log('Worker> invoke called:', method, 'seqno:', seqno, 'args:', args);
+        log.info('Worker> invoke called: %s seqno: %d args: %s', method, seqno, args);
         if (!(method in this._methods)) {
-            console.log('Worker> unknown method:', method);
+            log.error('Worker> unknown method: %s', method);
             parentPort?.postMessage([method, seqno, false]);
             return;
         }
@@ -51,7 +57,7 @@ class WorkerService {
                 parentPort?.postMessage([method, seqno, true, result]);
             }
         } catch (e) {
-            console.log('Worker> call method failed:', method, e);
+            log.error('Worker> call method failed: %s, %s', method, e);
             parentPort?.postMessage([method, seqno, false, e]);
             // parentPort?.postMessage([method, seqno, true]);
         }
@@ -65,10 +71,10 @@ class WorkerService {
     getWrapped(obj: any, clsName?:string): ObjTuple | any {
         // check whether obj is NativeObject or not, if so, create wrapper and return ObjTuple
         if (obj && typeof obj === 'object' && 'toObjID' in obj) {
-            console.log('Worker> getWrapped result is a native object, create wrapper');
+            log.info('Worker> getWrapped result is a native object, create wrapper');
         }
         else {
-            console.log('Worker> getWrapped result is a primitive value, return directly:', obj);
+            log.info('Worker> getWrapped result is a primitive value, return directly: %s', obj);
             return obj;
         }
 
@@ -77,10 +83,10 @@ class WorkerService {
         if (!(slot_id in this._objSlot)) {
             this._objSlot[slot_id.toString()] = obj;
         } else {
-            console.log('Worker> getWrapped: obj already has slot, slot_id=', slot_id);
+            log.info('Worker> getWrapped: obj already has slot, slot_id=%s', slot_id);
         }
 
-        console.log('Worker> getWrapped OK, slot_id=', slot_id, 'obj=', obj);
+        log.info('Worker> getWrapped OK, slot_id=%s, obj=%s', slot_id, obj);
         if (clsName) {
             return new ObjTuple(slot_id, clsName);
         } else {
@@ -96,7 +102,7 @@ class WorkerService {
         const objTuple = obj as ObjTuple;
         const slot_id = objTuple._obj_id;
         if (!(slot_id in this._objSlot)) {
-            console.log('Worker> resolveWrapped failed: invalid slot_id:', slot_id);
+            log.error('Worker> resolveWrapped failed: invalid slot_id: %s', slot_id);
             return null;
         }
         return this._objSlot[slot_id];
@@ -105,7 +111,7 @@ class WorkerService {
     //////////
 
     initCueMol(loadPath?: string): boolean {
-        console.log('Worker> initCueMol called:', loadPath);
+        log.info('Worker> initCueMol called, loadPath: %s', loadPath);
         if (!loadPath) {
             this._internal.initCueMol();
         } else {
@@ -130,29 +136,29 @@ class WorkerService {
     }
 
     terminateWorker(): void {
-        console.log('Worker> terminateWorker called');
+        log.info('Worker> terminateWorker called');
         parentPort?.close();
     }
 
     createObj(className: string): ObjTuple | null {
-        console.log('Worker> createObj called:', className);
+        log.info('Worker> createObj called, className=%s', className);
         const obj = this._internal.createObj(className);
         if (obj === null) {
-            console.log('Worker> createObj failed for class:', className);
+            log.error('Worker> createObj failed for class: %s', className);
             return null;
         }
-        console.log('Worker> createObj result:', obj.toString());
+        log.info('Worker> createObj result: %s', obj.toString());
         return this.getWrapped(obj, className);
     }
 
     getService(className: string): ObjTuple | null {
-        console.log('Worker> getService called:', className);
+        log.info('Worker> getService called: %s', className);
         const obj = this._internal.getService(className);
         if (obj === null) {
-            console.log('Worker> getService failed for class:', className);
+            log.error('Worker> getService failed for class: %s', className);
             return null;
         }
-        console.log('Worker> getService result:', obj.toString());
+        log.info('Worker> getService result: %s', obj.toString());
         return this.getWrapped(obj, className);
     }
 
@@ -165,53 +171,50 @@ class WorkerService {
     }
 
     getProp(thisobj: ObjTuple, propName: string): any {
-        console.log('Worker> getProp called:', 'thisobj:', thisobj, 'propName:', propName);
+        log.info('Worker> getProp called: thisobj=%s, propName=%s', thisobj, propName);
         const obj = this.resolveWrapped(thisobj);
-        console.log('Worker> resolved thisobj to:', obj);
+        log.info('Worker> resolved thisobj to: %s', obj);
         if (obj === null) {
-            console.log('Worker> getProp failed: could not resolve thisobj:',
-                thisobj, 'propName:', propName);
+            log.error('Worker> getProp failed: could not resolve thisobj=%s, propName=%s', thisobj, propName);
             return null;
         }
         const rval = obj.getProp(propName);
-        console.log('Worker> getProp OK, result:', rval);
+        log.info('Worker> getProp OK, result: %s', rval);
         return this.getWrapped(rval);
     }
 
     setProp(thisobj: ObjTuple, propName: string, value: any): boolean {
-        console.log('Worker> setProp called:', 'thisobj:', thisobj, 'propName:', propName, 'value:', value);
+        log.info('Worker> setProp called: thisobj=%s, propName=%s, value=%s', thisobj, propName, value);
         const obj = this.resolveWrapped(thisobj);
-        console.log('Worker> resolved thisobj to:', obj);
+        log.info('Worker> resolved thisobj to: %s', obj);
         if (obj === null) {
-            console.log('Worker> setProp failed: could not resolve thisobj:',
-                thisobj, 'propName:', propName, 'value:', value);
+            log.error('Worker> setProp failed: could not resolve thisobj=%s, propName=%s, value=%s', thisobj, propName, value);
             return false;
         }
         // convert value using resolveWrapped
         const resolvedValue = this.resolveWrapped(value);
-        console.log('Worker> setProp obj:', obj, 'propName:', propName, 'resolved value:', resolvedValue);
+        log.info('Worker> setProp obj=%s propName=%s resolved value=%s', obj, propName, resolvedValue);
         const rval = obj.setProp(propName, resolvedValue);
-        console.log('Worker> setProp OK, result:', rval);
+        log.info('Worker> setProp OK, result: %s', rval);
         return rval;
     }
 
     invokeMethod(methodName: string, thisobj: ObjTuple, args: any[]): any {
-        console.log('Worker> invokeMethod called:', methodName, 'thisobj:', thisobj, 'args:', args);
-        console.log('Worker> thisobj._obj_id:', thisobj._obj_id);
+        log.info('Worker> invokeMethod called: %s thisobj=%s args=%s', methodName, thisobj, args);
+        log.info('Worker> thisobj._obj_id=%s', thisobj._obj_id);
         const obj = this.resolveWrapped(thisobj);
-        console.log('Worker> resolved thisobj to:', obj);
+        log.info('Worker> resolved thisobj to: %s', obj);
         if (obj === null) {
-            console.log('Worker> invokeMethod failed: could not resolve thisobj:',
-                thisobj, 'methodName:', methodName, 'args:', args);
+            log.error('Worker> invokeMethod failed: could not resolve thisobj');
             return null;
         }
 
         // convert args using resolveWrapped
         const resolvedArgs = args.map(arg => this.resolveWrapped(arg));
 
-        console.log('Worker> obj:', obj, 'methodName:', methodName, 'args:', resolvedArgs);
+        log.info('Worker> mth=%s thisobj=%s args=%s', methodName, thisobj, args);
         const rval = obj.invokeMethod(methodName, ...resolvedArgs);
-        console.log('Worker> invokeMethod OK, result:', rval);
+        log.info('Worker> invokeMethod OK, result: %s', rval);
 
         return this.getWrapped(rval);
     }
@@ -220,7 +223,7 @@ class WorkerService {
 const svc = new WorkerService();
 
 parentPort?.on('message', (data: any) => {
-    console.log('Worker> Received:', data);
+    log.info('Worker> Received: <%s>', data);
 
     const method: string = data[0];
     const seqno: number = data[1];

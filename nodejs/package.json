@@ -4,15 +4,16 @@
   "main": "src/index.js",
   "scripts": {
     "test": "cross-env NODE_OPTIONS=\"--experimental-vm-modules --no-warnings --expose-gc\" npx jest --runInBand",
-    "example:vector": "tsx examples/vector-examples.ts"
-
+    "example:async": "tsx examples/async-example.ts"
   },
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
     "bindings": "^1.5.0",
-    "cmake-js": "^7.3.0"
+    "cmake-js": "^7.3.0",
+    "pino": "^10.3.1",
+    "pino-pretty": "^13.1.3"
   },
   "devDependencies": {
     "@types/bindings": "^1.5.5",

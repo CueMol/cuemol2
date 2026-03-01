@@ -16,7 +16,7 @@ async function main(cm: any) : Promise<void> {
     await v2.set4(3, 2, 1, 0);
 
     console.log('getprop.x:',
-                await v1.get_x(),
+                await v1.x,
                 await v1.y,
                 await v1.z,
                 await v1.w);

@@ -6,6 +6,9 @@ import { ObjTuple } from './ObjTuple';
 import { ObjProxy } from './ObjProxy';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
+import { createLogger } from "@/logger";
+
+const log = createLogger(import.meta.url);
 
 function makeMethodSeq(method: string, seqno: number): string {
     return method + '.' + seqno.toString();
@@ -20,23 +23,23 @@ export class AsyncCueMol {
 
     constructor() {
         // this._seqno = 0;
-        console.log('launch worker...');
+        log.info('launch worker...');
 
         // this._worker = new Worker(path.join(import.meta.dirname, 'worker.ts'));
         const cwd = dirname(fileURLToPath(import.meta.url));
-        console.log('current working directory:', cwd);
+        log.info('current working directory: %s', cwd);
         this._worker = new Worker(path.join(cwd, 'worker.ts'));
-        console.log('launch worker OK');
+        log.info('launch worker OK');
 
         this._worker.on('message', (event: any) => {
-            console.log('worker message received:', event);
+            log.info('worker message received: %s', event);
             // if (event.data[0] === 'event-notify') {
             //     // const [, ...evtargs] = event.data;
             //     const evtargs = event.data.slice(1) as [number, string, number, number, number, string];
             //     try {
             //         this.eventNotify(...evtargs);
             //     } catch (e) {
-            //         console.log('event manager notify failed:', e);
+            //         log.info('event manager notify failed:', e);
             //     }
             //     return;
             // }
@@ -57,7 +60,7 @@ export class AsyncCueMol {
     }
 
     postMessage(method: string, seq: number, args: any[], xfer: any = null) {
-        console.log('postMessage called:', method, seq, args, 'xfer:', xfer);
+        log.info('postMessage called: %s %s %s, xfer: %s', method, seq, args, xfer);
         if (xfer === null)
             this._worker.postMessage([method, seq, ...args]);
         else
@@ -79,10 +82,10 @@ export class AsyncCueMol {
         let promise = new Promise<any[]>((resolve, reject) => {
             this.addListener(method, cur_seq, (result: boolean, ...msgargs: any[]): void => {
                 if (result) {
-                    // console.log('invokeWorker OK:', method, 'msgargs:', msgargs);
+                    // log.info('invokeWorker OK:', method, 'msgargs:', msgargs);
                     resolve(msgargs);
                 } else {
-                    // console.log('invokeWorker error:', method, 'error:', msgargs[0]);
+                    // log.info('invokeWorker error:', method, 'error:', msgargs[0]);
                     reject(msgargs[0]);
                 }
             });
@@ -97,21 +100,21 @@ export class AsyncCueMol {
     //////////
 
     createWrapperImpl(obj: ObjProxy): BaseWrapper {
-        console.log('createWrapper called for obj:', obj);
+        log.info('createWrapper called for obj: %s', obj);
         const className = obj.getClassName();
-        console.log('createWrapper called for class:', className);
+        log.info('createWrapper called for class: %s', className);
         const Klass = wrapper_map[className];
         const wrapper = new Klass(obj, this);
         return wrapper;
     }
 
     async createWrapper(prom: Promise<ObjProxy>): Promise<BaseWrapper | null> {
-        console.log('createWrapper called for Promise:', prom);
+        log.info('createWrapper called for Promise: %s', prom);
         return prom.then((resolvedObj: any) => {
-            console.log('Promise resolved for obj:', resolvedObj);
+            log.info('Promise resolved for obj: %s', resolvedObj);
             return this.createWrapperImpl(resolvedObj);
         }).catch((e: any) => {
-            console.warn('Error resolving Promise for obj:', e);
+            log.warn('Error resolving Promise for obj:', e);
             return null;
         });
     }
@@ -123,24 +126,24 @@ export class AsyncCueMol {
     //////////
 
     async initCueMol(sysConfigPath?: string): Promise<void> {
-        console.log('load_path:', sysConfigPath);
+        log.info('load_path: %s', sysConfigPath);
 
         try {
             await this.invokeWorker('initCueMol', sysConfigPath);
-            console.log('init cuemol OK');
+            log.info('initCueMol OK');
         } catch (e) {
-            console.error('init cuemol ERROR!!!', e);
+            log.error('initCueMol failed: %s', e);
         }
     }
 
     async terminateWorker(): Promise<void> {
         try {
             await this.invokeWorker('terminateWorker');
-            console.log('terminateWorker OK');
+            log.info('terminateWorker OK');
             this._worker.terminate();
             this._ready = false;
         } catch (e) {
-            console.error('terminateWorker ERROR: ', e);
+            log.error('terminateWorker failed: %s', e);
         }
     }
 
@@ -148,15 +151,15 @@ export class AsyncCueMol {
         try {
             const result = await this.invokeWorker('createObj', className);
             if (result === null) {
-                console.warn('createObj failed for class:', className);
+                log.warn('createObj failed for class: %s', className);
                 return null;
             }
-            // console.log('createObj OK, result=', result);
+            // log.info('createObj OK, result=', result);
             const obj_id = result[0]._obj_id;
             const natObj = new ObjProxy(obj_id, className, this);
             return this.createWrapperImpl(natObj);
         } catch (e) {
-            console.error('createObj ERROR: ', e);
+            log.error('createObj failed: %s', e);
         }
         return null;
     }
@@ -165,15 +168,15 @@ export class AsyncCueMol {
         try {
             const result = await this.invokeWorker('getService', className);
             if (result === null) {
-                console.warn('getService failed for class:', className);
+                log.warn('getService failed for class: %s', className);
                 return null;
             }
-            // console.log('createObj OK, result=', result);
+            // log.info('createObj OK, result=', result);
             const obj_id = result[0]._obj_id;
             const natObj = new ObjProxy(obj_id, className, this);
             return this.createWrapperImpl(natObj);
         } catch (e) {
-            console.error('getService ERROR: ', e);
+            log.error('getService failed: %s', e);
         }
         return null;
 
@@ -185,12 +188,12 @@ export class AsyncCueMol {
         try {
             const result = await this.invokeWorker('hasClass', className);
             if (result === null) {
-                console.warn('hasClass failed for class:', className);
+                log.warn('hasClass failed for class: %s', className);
                 return null;
             }
             return result[0] as boolean;
         } catch (e) {
-            console.error('hasClass ERROR: ', e);
+            log.error('hasClass failed: %s', e);
         }
         return null;
     }
@@ -199,12 +202,12 @@ export class AsyncCueMol {
         try {
             const result = await this.invokeWorker('getAllClassNamesJSON');
             if (result === null) {
-                console.warn('getAllClassNamesJSON failed');
+                log.warn('getAllClassNamesJSON failed');
                 return null;
             }
             return result[0] as string;
         } catch (e) {
-            console.error('getAllClassNamesJSON ERROR: ', e);
+            log.error('getAllClassNamesJSON failed: %s', e);
         }
         return null;
     }

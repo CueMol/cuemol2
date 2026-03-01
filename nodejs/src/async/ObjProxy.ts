@@ -1,5 +1,8 @@
 import { ObjTuple, isObjTuple } from './ObjTuple';
 import type { AsyncCueMol } from './AsyncCueMol';
+import { createLogger } from "../logger";
+
+const log = createLogger(import.meta.url);
 
 export class ObjProxy {
     private _obj: ObjTuple;
@@ -25,7 +28,7 @@ export class ObjProxy {
                 this._obj,
                 propName,
             );
-            console.log('NativeObj.getProp OK, result:', result);
+            log.info('NativeObj.getProp OK, result: %s', result);
             if (isObjTuple(result[0])) {
                 const objTup = result[0] as ObjTuple;
                 return new ObjProxy(objTup._obj_id, objTup._class_name,
@@ -34,7 +37,7 @@ export class ObjProxy {
                 return result[0];
             }
         } catch (e) {
-            console.log('getProp failed:', propName, e);
+            log.error('getProp failed: %s, %s', propName, e);
             throw e;
         }
     }
@@ -47,9 +50,9 @@ export class ObjProxy {
                 propName,
                 value,
             );
-            console.log('NativeObj.setProp OK');
+            log.info('NativeObj.setProp OK');
         } catch (e) {
-            console.log('setProp failed:', propName, e);
+            log.error('setProp failed: %s, %s', propName, e);
             throw e;
         }
     }
@@ -58,7 +61,7 @@ export class ObjProxy {
         try {
             const result = await this._acm.invokeWorker("invokeMethod",
                 method, this._obj, args);
-            console.log('NativeObj.invokeMethod OK, result:', result);
+            log.info('NativeObj.invokeMethod OK, result: %s', result);
             if (isObjTuple(result[0])) {
                 const objTup = result[0] as ObjTuple;
                 return new ObjProxy(objTup._obj_id, objTup._class_name,
@@ -67,7 +70,7 @@ export class ObjProxy {
                 return result[0];
             }
         } catch (e) {
-            console.log('invokeMethod failed:', method, e);
+            log.error('invokeMethod failed: %s, %s', method, e);
             throw e;
         }
 
