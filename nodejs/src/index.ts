@@ -3,6 +3,9 @@ import { fileURLToPath } from 'url';
 import bindings from 'bindings';
 import { CueMol } from './cuemol';
 import type { CueMolInternal } from './interfaces';
+import { createLogger } from "@/logger";
+
+const log = createLogger(import.meta.url);
 
 // ES modules equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url);
@@ -10,7 +13,7 @@ const __dirname = path.dirname(__filename);
 
 // Type for the CueMol singleton wrapper
 interface CueMolSingleton {
-  value: CueMol | null;
+    value: CueMol | null;
 }
 
 // Load the native addon
@@ -20,16 +23,16 @@ const _internal = bindings('cuemol_internal.node') as CueMolInternal;
 const cuemol: CueMolSingleton = { value: null };
 
 // Debug logging
-console.log(">>>>> bindings: ", bindings);
-console.log(">>>>> bindings('cuemol_internal.node'): ", bindings('cuemol_internal.node'));
-console.log(">>>>> _internal: ", _internal);
+log.debug("bindings: %s", bindings);
+log.debug("bindings('cuemol_internal.node'): %s", bindings('cuemol_internal.node'));
+log.debug("_internal: %s", _internal);
 
 /**
  * Get the native CueMol internal module
  * @returns The native addon module
  */
 export function getModule(): CueMolInternal {
-  return _internal;
+    return _internal;
 }
 
 /**
@@ -37,10 +40,10 @@ export function getModule(): CueMolInternal {
  * @returns Absolute path to sysconfig.xml
  */
 export function getSysConfigPath(): string {
-  // Note: __dirname equivalent in ES modules
-  const load_path = path.join(__dirname, 'build', 'data', 'sysconfig.xml');
-  console.log('load_path:', load_path);
-  return load_path;
+    // Note: __dirname equivalent in ES modules
+    const load_path = path.join(__dirname, 'build', 'data', 'sysconfig.xml');
+    log.info('load_path: <%s>', load_path);
+    return load_path;
 }
 
 /**
@@ -49,13 +52,13 @@ export function getSysConfigPath(): string {
  * @returns The CueMol instance
  */
 export function createCueMol(sysconfig_path: string = ''): CueMol {
-  if (cuemol.value) {
-    console.log('cuemol already created');
+    if (cuemol.value) {
+        log.info('cuemol already created');
+        return cuemol.value;
+    }
+
+    cuemol.value = new CueMol({ internal: _internal });
+    cuemol.value.initCueMol(sysconfig_path);
     return cuemol.value;
-  }
-  
-  cuemol.value = new CueMol({ internal: _internal });
-  cuemol.value.initCueMol(sysconfig_path);
-  return cuemol.value;
 }
 

@@ -229,13 +229,6 @@ export class CueMol {
      * @param obj - Object to check
      * @param className - Class name to check against
      * @returns True if object is an instance of the specified class
-     * 
-     * @example
-     * ```typescript
-     * const vector = cm.createVector(1, 2, 3);
-     * if (cm.isImplementation(vector, 'Vector')) {
-     *     console.log('It is a Vector');
-     * }
      * ```
      */
     isImplementation(obj: any, className: string): boolean {
