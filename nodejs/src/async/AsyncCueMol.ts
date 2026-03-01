@@ -23,11 +23,11 @@ export class AsyncCueMol {
 
     constructor() {
         // this._seqno = 0;
-        log.info('launch worker...');
+        log.debug('launch worker...');
 
         // this._worker = new Worker(path.join(import.meta.dirname, 'worker.ts'));
         const cwd = dirname(fileURLToPath(import.meta.url));
-        log.info('current working directory: %s', cwd);
+        log.debug('current working directory: %s', cwd);
         this._worker = new Worker(path.join(cwd, 'worker.ts'));
         log.info('launch worker OK');
 
@@ -60,7 +60,7 @@ export class AsyncCueMol {
     }
 
     postMessage(method: string, seq: number, args: any[], xfer: any = null) {
-        log.info('postMessage called: %s %s %s, xfer: %s', method, seq, args, xfer);
+        log.debug('postMessage called: %s %s %s, xfer: %s', method, seq, args, xfer);
         if (xfer === null)
             this._worker.postMessage([method, seq, ...args]);
         else

@@ -1,4 +1,7 @@
 import { AsyncCueMol } from './AsyncCueMol'
+import { createLogger } from "@/logger";
+
+const log = createLogger(import.meta.url);
 
 // Type for the Worker singleton wrapper
 interface WorkerSingleton {
@@ -10,7 +13,7 @@ const _worker: WorkerSingleton = { value: null };
 
 export function createCueMol(): AsyncCueMol {
     if (_worker.value && _worker.value.isReady()) {
-        console.log('cuemol already created');
+        log.info('cuemol already created');
         return _worker.value;
     }
 
