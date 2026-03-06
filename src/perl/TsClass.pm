@@ -278,9 +278,19 @@ sub makeMthArg($)
   my $ind = 0;
   foreach my $arg (@{$args}) {
     my $arg_type = $arg->{"type"};
-    if ($arg_type eq "object") {
+
+    if (isCallbackObj($arg)) {
+        # function obj can be directly passed to the methods
+        # (it is converted to callback obj in the wrapper)
+      push(@rval, "arg_$ind");
+    }
+    elsif ($arg_type eq "object") {
       push(@rval, "arg_${ind}.wrapped");
     }
+    # TODO: conv for array/dict
+    # elsif ($arg_type eq "dict") {
+    #   push(@rval, "cuemol.conv_dict_arg(arg_${ind})");
+    # }
     else {
       push(@rval, "arg_$ind");
     }
@@ -289,37 +299,9 @@ sub makeMthArg($)
   return join(", ", @rval);
 }
 
-sub makeMthArg2($)
+sub isCallbackObj($)
 {
-  my $mth = shift;
-  my $args = $mth->{"args"};
-  my $name = $mth->{"name"};
-
-  my @rval; # = ("\"$name\"");
-
-  my $ind = 0;
-  foreach my $arg (@{$args}) {
-    my $arg_type = $arg->{"type"};
-    if ($arg_type eq "object") {
-      push(@rval, "arg_${ind}.wrapped");
-    }
-    else {
-      push(@rval, "arg_$ind");
-    }
-    ++$ind;
-  }
-
-  return "\"$name\"" . ", [" . join(", ", @rval) . "]";
-}
-
-sub checkCallbackReg($)
-{
-  my $mth = shift;
-  my $args = $mth->{"args"};
-  my $name = $mth->{"name"};
-
-  return 0 if (!defined($args->[0]));
-  my $arg = $args->[0];
+  my $arg = shift;
 
   return 0 if ($arg->{"type"} ne "object");
 
