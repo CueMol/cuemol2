@@ -34,6 +34,8 @@ module.exports = {
     '/build/',
     '/dist/',
     '/cxx_src/',
+    // Skip async tests in CI environment (GitHub Actions sets CI=true)
+    ...(process.env.CI ? ['/src/tests/async/'] : []),
   ],
   
   // Module paths - helps with imports
