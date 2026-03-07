@@ -317,7 +317,7 @@ if (BUILD_NODEJS_BINDINGS)
       --output_ts ${CMAKE_BINARY_DIR}/ts/wrappers/wrapper-loader.ts
     )
     install(FILES ${CMAKE_BINARY_DIR}/ts/wrappers/wrapper-loader.ts
-      DESTINATION ${PROJECT_SOURCE_DIR}/nodejs/src/wrappers)
+      DESTINATION share/typescript)
   else()
     add_custom_command(
       TARGET cuemol2 POST_BUILD
@@ -327,6 +327,6 @@ if (BUILD_NODEJS_BINDINGS)
       --output_js ${CMAKE_BINARY_DIR}/js/wrappers/wrapper-loader.js
     )
     install(FILES ${CMAKE_BINARY_DIR}/js/wrappers/wrapper-loader.js
-      DESTINATION ${PROJECT_SOURCE_DIR}/nodejs/src/wrappers)
+      DESTINATION share/javascript)
   endif()
 endif()
