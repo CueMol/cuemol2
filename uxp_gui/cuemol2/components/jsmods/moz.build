@@ -111,7 +111,7 @@ FINAL_TARGET_FILES['cuemol2ui-lib'] += [
 ]
 
 FINAL_TARGET_FILES['cuemol-wrappers'] += [
-    '%%%s/data/cuemol-wrappers/*.js' % CONFIG['CUEMOL_DIR']
+    '%%%s/share/xpcjs/*.js' % CONFIG['CUEMOL_DIR']
 ]
 
 FINAL_TARGET_FILES += [

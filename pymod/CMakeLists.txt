@@ -87,12 +87,6 @@ message(STATUS "DEFAULT_SYSCONFIG_PATH: ${DEFAULT_SYSCONFIG_PATH}")
 target_compile_definitions(_cuemol_internal PUBLIC DEFAULT_CONFIG=\"${DEFAULT_SYSCONFIG_PATH}\")
 target_compile_definitions(_cuemol_internal PUBLIC LINK_SHARED)
 
-# if (WIN32)
-#   set_target_properties(_cuemol_internal PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
-# else ()
-#   set_target_properties(_cuemol_internal PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-# endif ()
-
 install(TARGETS _cuemol_internal DESTINATION .)
 
 if (APPLE)
@@ -113,10 +107,15 @@ if (APPLE)
     DESTINATION ./lib)
 endif ()
 
-# configure_file(
-#   "${PROJECT_SOURCE_DIR}/python/cuemol/__init__.py.in"
-#   "${PROJECT_BINARY_DIR}/python/cuemol/__init__.py")
-# install(FILES "${PROJECT_BINARY_DIR}/python/cuemol/__init__.py" DESTINATION cuemol)
+# Copy python wrappers from the installed prefix to the source tree.
+# This runs after the native addon is built so that the wrapper files are
+# available for python.
+set(WRAPPER_SRC_DIR "${LIBCUEMOL2_ROOT}/share/python")
+set(WRAPPER_DST_DIR "${CMAKE_CURRENT_SOURCE_DIR}/python/cuemol/wrappers")
 
-# install(FILES "${LIBCUEMOL2_ROOT}/data/python/cuemol/wrappers/Vector.py" DESTINATION "${PROJECT_SOURCE_DIR}/python/cuemol/wrappers")
-# install(DIRECTORY "${LIBCUEMOL2_ROOT}/data/python/cuemol/wrappers" DESTINATION "${PROJECT_SOURCE_DIR}/python/cuemol")
+add_custom_command(
+  TARGET _cuemol_internal POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E make_directory "${WRAPPER_DST_DIR}"
+  COMMAND ${CMAKE_COMMAND} -E copy_directory "${WRAPPER_SRC_DIR}" "${WRAPPER_DST_DIR}"
+  COMMENT "Copying python wrappers from ${WRAPPER_SRC_DIR} to ${WRAPPER_DST_DIR}"
+)

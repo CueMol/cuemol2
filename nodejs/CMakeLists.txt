@@ -83,3 +83,17 @@ install(TARGETS cuemol_internal
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
   )
+
+# Copy TypeScript wrappers from the installed prefix to the source tree.
+# This runs after the native addon is built so that the wrapper files are
+# available for TypeScript compilation.
+set(TS_WRAPPER_SRC_DIR "${LIBCUEMOL2_ROOT}/share/typescript")
+set(TS_WRAPPER_DST_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/wrappers")
+
+add_custom_target(copy_wrappers ALL
+# add_custom_command(
+#   TARGET cuemol_internal POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E make_directory "${TS_WRAPPER_DST_DIR}"
+  COMMAND ${CMAKE_COMMAND} -E copy_directory "${TS_WRAPPER_SRC_DIR}" "${TS_WRAPPER_DST_DIR}"
+  COMMENT "Copying TypeScript wrappers from ${TS_WRAPPER_SRC_DIR} to ${TS_WRAPPER_DST_DIR}"
+)
