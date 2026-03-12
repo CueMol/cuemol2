@@ -18,6 +18,10 @@ option(BUILD_NODEJS_BINDINGS "Build node.js bindings")
 option(ENABLE_TYPESCRIPT "Build TypeScript code for node.js bindings")
 
 option(ENABLE_PYTHON_EMBED "Enable Python embedding")
+option(BUILD_TESTS "Build C++ unit tests" OFF)
+if(BUILD_TESTS)
+  enable_testing()
+endif()
 
 find_package(Perl 5.10.0 REQUIRED)
 message(STATUS "PERL_EXECUTABLE: ${PERL_EXECUTABLE}")

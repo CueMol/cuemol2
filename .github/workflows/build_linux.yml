@@ -57,6 +57,12 @@ jobs:
       with:
         basedir: ${{ github.workspace }}/target
         
+    - name: Run gtest
+      shell: bash
+      run: |
+        set -eux
+        ctest --test-dir ${{ github.workspace }}/target/build_libcuemol2 --output-on-failure
+
     - name: Build python module
       uses: ./build_scripts/build_pymod_posix
       with:

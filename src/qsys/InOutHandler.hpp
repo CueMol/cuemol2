@@ -35,17 +35,17 @@ namespace qsys {
 
   public:
     /// Category ID
-    static const int IOH_CAT_OBJREADER = 0;
-    static const int IOH_CAT_OBJWRITER = 1;
+    static constexpr int IOH_CAT_OBJREADER = 0;
+    static constexpr int IOH_CAT_OBJWRITER = 1;
     /// Category ID for scene renderer
-    static const int IOH_CAT_RENDTOFILE = 2;
-    static const int IOH_CAT_SCEREADER = 3;
-    static const int IOH_CAT_SCEWRITER = 4;
+    static constexpr int IOH_CAT_RENDTOFILE = 2;
+    static constexpr int IOH_CAT_SCEREADER = 3;
+    static constexpr int IOH_CAT_SCEWRITER = 4;
 
-    static const int COMP_NONE = 0;
-    static const int COMP_GZIP = 1;
-    static const int COMP_BZIP2 = 2;
-    static const int COMP_XZIP = 3;
+    static constexpr int COMP_NONE = 0;
+    static constexpr int COMP_GZIP = 1;
+    static constexpr int COMP_BZIP2 = 2;
+    static constexpr int COMP_XZIP = 3;
 
     ///////////////////////////
     // Constructor / Destructor

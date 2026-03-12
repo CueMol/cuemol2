@@ -307,6 +307,10 @@ install(FILES ${DATA_FILES} DESTINATION data/data)
 install(FILES ${SYSCONFIG_FILE} DESTINATION data)
 install(FILES ${DATA_DIR}/icc_profiles/GenericCMYK.icm DESTINATION data/data/icc_profiles)
 
+if(BUILD_TESTS)
+  add_subdirectory(tests)
+endif()
+
 if (BUILD_NODEJS_BINDINGS)
   if (ENABLE_TYPESCRIPT)
     add_custom_command(

@@ -97,9 +97,11 @@ cmake -G "$GENERATOR" \
       -DCGAL_DO_NOT_WARN_ABOUT_CMAKE_BUILD_TYPE=TRUE \
       -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
       -DCGAL_DISABLE_GMP=TRUE \
-      -DCGAL_HEADER_ONLY=TRUE
+      -DCGAL_HEADER_ONLY=TRUE \
+      -DBUILD_TESTS=ON
 
 cmake --build $BUILD_DIR --parallel --config $BUILD_TYPE
+ctest --test-dir $BUILD_DIR --output-on-failure
 cmake --install $BUILD_DIR --config $BUILD_TYPE
 
 # Copy dependent shared libs

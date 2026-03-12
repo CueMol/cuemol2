@@ -20,8 +20,8 @@ namespace qsys {
   private:
 
   public:
-    static const int OBE_CHANGED = 2;
-    static const int OBE_PROPCHG = 3;
+    static constexpr int OBE_CHANGED = 2;
+    static constexpr int OBE_PROPCHG = 3;
 
     //////////
 
