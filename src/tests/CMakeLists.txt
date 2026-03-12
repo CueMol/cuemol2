@@ -57,6 +57,12 @@ add_executable(test_qsys
   qsys/test_sceneexporter.cpp
   qsys/test_view.cpp
   qsys/test_screventmanager.cpp
+  qsys/test_displistrenderer.cpp
+  qsys/test_qdfabsreader.cpp
+  qsys/test_qdfabswriter.cpp
+  qsys/test_scalarobject.cpp
+  qsys/test_scenexmlreader.cpp
+  qsys/test_scenexmlwriter.cpp
 )
 target_include_directories(test_qsys PRIVATE
   ${CMAKE_SOURCE_DIR}/src
