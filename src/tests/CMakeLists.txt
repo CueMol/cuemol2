@@ -83,4 +83,7 @@ target_include_directories(test_molstr PRIVATE
   ${Boost_INCLUDE_DIRS}
 )
 target_link_libraries(test_molstr PRIVATE molstr qsys gfx qlib Boost::filesystem Boost::thread GTest::gtest)
+if (BUILD_OPENGL_SYSDEP)
+  target_link_libraries(test_molstr PRIVATE sysdep)
+endif()
 gtest_discover_tests(test_molstr)

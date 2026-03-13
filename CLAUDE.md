@@ -13,6 +13,16 @@ First-time setup (download dependencies):
 cd build_scripts/ && task download_deplibs
 ```
 
+初回rebuildしたいときは、
+```sh
+cd build_scripts/ && task rebuild_libcuemol2
+```
+あるいは、既存のbuild結果を全消ししてrebuildしたい場合
+```sh
+cd build_scripts/ && task clean_libcuemol2 && task rebuild_libcuemol2
+```
+
+
 Build:
 ```sh
 cd build_scripts/ && task build_libcuemol2
