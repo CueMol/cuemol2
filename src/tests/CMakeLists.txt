@@ -15,7 +15,7 @@ target_include_directories(test_qlib PRIVATE
 )
 target_link_libraries(test_qlib PRIVATE qlib GTest::gtest_main)
 include(GoogleTest)
-gtest_discover_tests(test_qlib)
+gtest_discover_tests(test_qlib PROPERTIES LABELS "test_qlib")
 
 add_executable(test_gfx gfx/test_solid_color.cpp)
 target_include_directories(test_gfx PRIVATE
@@ -24,7 +24,7 @@ target_include_directories(test_gfx PRIVATE
   ${Boost_INCLUDE_DIRS}
 )
 target_link_libraries(test_gfx PRIVATE gfx qlib GTest::gtest)
-gtest_discover_tests(test_gfx)
+gtest_discover_tests(test_gfx PROPERTIES LABELS "test_gfx")
 
 add_executable(test_qsys
   qsys/test_main.cpp
@@ -72,7 +72,7 @@ target_include_directories(test_qsys PRIVATE
   ${Boost_INCLUDE_DIRS}
 )
 target_link_libraries(test_qsys PRIVATE qsys gfx qlib Boost::filesystem Boost::thread GTest::gtest)
-gtest_discover_tests(test_qsys)
+gtest_discover_tests(test_qsys PROPERTIES LABELS "test_qsys")
 
 add_executable(test_molstr
   modules/molstr/test_main.cpp
@@ -92,4 +92,23 @@ target_link_libraries(test_molstr PRIVATE molstr qsys gfx qlib Boost::filesystem
 if (BUILD_OPENGL_SYSDEP)
   target_link_libraries(test_molstr PRIVATE sysdep)
 endif()
-gtest_discover_tests(test_molstr)
+gtest_discover_tests(test_molstr PROPERTIES LABELS "test_molstr")
+
+add_executable(test_importers
+  modules/importers/test_main.cpp
+  modules/importers/test_sdfmolreader.cpp
+)
+target_include_directories(test_importers PRIVATE
+  ${CMAKE_SOURCE_DIR}/src
+  ${CMAKE_SOURCE_DIR}/src/modules
+  ${CMAKE_BINARY_DIR}/src
+  ${Boost_INCLUDE_DIRS}
+)
+target_compile_definitions(test_importers PRIVATE
+  CUEMOL2_SYSCONFIG_PATH="${CMAKE_SOURCE_DIR}/data/sysconfig.xml"
+)
+target_link_libraries(test_importers PRIVATE importers surface symm xtal molvis molstr qsys gfx qlib Boost::filesystem Boost::thread GTest::gtest)
+if (BUILD_OPENGL_SYSDEP)
+  target_link_libraries(test_importers PRIVATE sysdep)
+endif()
+gtest_discover_tests(test_importers PROPERTIES LABELS "test_importers")

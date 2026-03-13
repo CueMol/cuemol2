@@ -70,5 +70,7 @@ src/
 - Unit tests cover all logic in `.hpp` and `.cpp` files
 - Exclude `*_wrap.cpp` (auto-generated) from test coverage
 - Tests in `src/tests/` mirror the module structure of `src/`
-- `View::m_nSceneID` is initialised to `qlib::invalid_uid` in the `View` constructor; `getSceneID()` returns `invalid_uid` for a freshly constructed view not yet attached to a scene.
+- SetUp()では、src/libcuemol2_api/loader.cppのinit(...)と同様の初期化を行う必要がある。場合によってはqsys::init(...)に渡す引数confpathに、システムの設定ファイル、sysconfig.xmlのpathを渡す必要がある。
+  - sysconfig.xmlは、インストール前のものは、`<topdir>/data/sysconfig.xml` にある
+  - sysconfig.xmlは、インストール後は、`<install prefix>/data/sysconfig.xml` にある
 
