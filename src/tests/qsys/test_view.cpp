@@ -322,3 +322,11 @@ TEST(ViewTest, ToStringIsNotEmpty)
     v.setName("testview");
     EXPECT_FALSE(v.toString().isEmpty());
 }
+
+// --- SceneID initial value ---
+
+TEST(ViewTest, SceneIDIsInvalidByDefault)
+{
+    qsys::TTYView v;
+    EXPECT_EQ(v.getSceneID(), qlib::invalid_uid);
+}
