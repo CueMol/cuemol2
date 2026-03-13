@@ -9,18 +9,18 @@
 #include <sysdep/sysdep.hpp>
 
 #include <qsys/qsys.hpp>
-#include <qsys/View.hpp>
+#include <qsys/GUIView.hpp>
 #include <gfx/Hittest.hpp>
 
 namespace sysdep {
 
-class SYSDEP_API OcView : public qsys::View
+class SYSDEP_API OcView : public qsys::GUIView
 {
 protected:
     bool m_bInitOK;
 
 public:
-    using super_t = qsys::View;
+    using super_t = qsys::GUIView;
 
     OcView();
 
