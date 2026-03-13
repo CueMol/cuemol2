@@ -192,7 +192,7 @@ if (NOT BUILD_MINIMUM_MODULES)
   add_subdirectory(modules/molanl)
   add_subdirectory(modules/symm)
   add_subdirectory(modules/xtal)
-  add_subdirectory(modules/lwview)
+  # add_subdirectory(modules/lwview)
   add_subdirectory(modules/rendering)
   add_subdirectory(modules/anim)
   add_subdirectory(modules/mdtools)
@@ -229,7 +229,7 @@ SET(CUEMOL2_LINK_LIBRARIES
   gfx
   qsys
   molstr
-  lwview
+#  lwview
   anim
   molvis
   surface

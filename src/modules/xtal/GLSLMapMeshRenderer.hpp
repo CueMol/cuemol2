@@ -15,7 +15,6 @@
 #include <qsys/ViewEvent.hpp>
 #include <gfx/DrawAttrArray.hpp>
 
-#include <sysdep/OglDisplayContext.hpp>
 #include <sysdep/OglProgramObject.hpp>
 
 class GLSLMapMeshRenderer_wrap;

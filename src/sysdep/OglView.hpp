@@ -8,6 +8,7 @@
 #ifndef OPENGL_VIEW_HPP_INCLUDE_
 #define OPENGL_VIEW_HPP_INCLUDE_
 
+#if 0
 #include "sysdep.hpp"
 
 #include <qsys/qsys.hpp>
@@ -135,5 +136,5 @@ namespace sysdep {
   };
 
 }
-
+#endif
 #endif

@@ -7,7 +7,7 @@
 #ifndef SIMPLE_RENDERER_H__
 #define SIMPLE_RENDERER_H__
 
-#include <gfx/DrawElem.hpp>
+// #include <gfx/DrawElem.hpp>
 
 #include "MolAtomRenderer.hpp"
 #include "molstr.hpp"

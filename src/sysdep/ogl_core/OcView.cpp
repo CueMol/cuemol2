@@ -18,13 +18,13 @@
 #error no gl.h
 #endif
 
-#ifdef HAVE_GL_GLU_H
-#include <GL/glu.h>
-#elif defined(HAVE_OPENGL_GLU_H)
-#include <OpenGL/glu.h>
-#else
-#error no glu.h
-#endif
+// #ifdef HAVE_GL_GLU_H
+// #include <GL/glu.h>
+// #elif defined(HAVE_OPENGL_GLU_H)
+// #include <OpenGL/glu.h>
+// #else
+// #error no glu.h
+// #endif
 
 #include "OcView.hpp"
 
@@ -34,9 +34,9 @@
 #include <qsys/SceneManager.hpp>
 #include <qsys/ViewInputConfig.hpp>
 
-#ifdef HAVE_OGL_FBO
-#include "OglFBOView.hpp"
-#endif
+// #ifdef HAVE_OGL_FBO
+// #include "OglFBOView.hpp"
+// #endif
 
 #include "OcDisplayContext.hpp"
 #include "OcViewCap.hpp"

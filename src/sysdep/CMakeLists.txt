@@ -2,10 +2,10 @@
 SET(SYSDEP_SRCS
   sysdep.cpp
   MouseEventHandler.cpp
-  OglView.cpp
-  OglDisplayList.cpp
-  OglDisplayContext.cpp
-  OglFBOView.cpp
+#  OglView.cpp
+#  OglDisplayList.cpp
+#  OglDisplayContext.cpp
+#  OglFBOView.cpp
   OglProgramObject.cpp
   OglProgObjMgr.cpp
   Canvas2DTextRender2.cpp
@@ -24,14 +24,14 @@ SET(SYSDEP_SRCS
 
 SET(SYSDEP_HDRS
 MouseEventHandler.hpp
-OglDisplayContext.hpp
-OglDisplayList.hpp
+# OglDisplayContext.hpp
+# OglDisplayList.hpp
 OglError.hpp
-OglFBOView.hpp
+# OglFBOView.hpp
 OglHitData.hpp
 OglProgObjMgr.hpp
 OglProgramObject.hpp
-OglView.hpp
+#OglView.hpp
 OglViewCap.hpp
 TouchEventHandler.hpp
 sysdep.hpp

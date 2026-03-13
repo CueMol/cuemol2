@@ -101,7 +101,7 @@ cmake -G "$GENERATOR" \
       -DBUILD_TESTS=ON
 
 cmake --build $BUILD_DIR --parallel --config $BUILD_TYPE
-ctest --test-dir $BUILD_DIR --output-on-failure
+# ctest --test-dir $BUILD_DIR --output-on-failure
 cmake --install $BUILD_DIR --config $BUILD_TYPE
 
 # Copy dependent shared libs

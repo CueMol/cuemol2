@@ -19,7 +19,6 @@
 #include <gfx/DrawAttrArray.hpp>
 
 #ifdef USE_OPENGL
-# include <sysdep/OglDisplayContext.hpp>
 # include <sysdep/OglProgramObject.hpp>
 # include "GLSLSphereHelper.hpp"
 # include "GLSLCylinderHelper.hpp"

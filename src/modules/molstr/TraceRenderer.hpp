@@ -9,8 +9,6 @@
 
 #include "molstr.hpp"
 #include "MainChainRenderer.hpp"
-//#include "ColoringScheme.hpp"
-#include <gfx/DrawElem.hpp>
 
 class TraceRenderer_wrap;
 
@@ -34,19 +32,19 @@ namespace molstr {
 
     bool m_bUseVBO;
 
-    struct IntBond {
-      quint32 aid1, aid2;
-    };
+    // struct IntBond {
+    //   quint32 aid1, aid2;
+    // };
 
-    bool m_bPrevAidValid;
-    quint32 m_nPrevAid;
-    quint32 m_nBonds;
-    quint32 m_nVA;
+    // bool m_bPrevAidValid;
+    // quint32 m_nPrevAid;
+    // quint32 m_nBonds;
+    // quint32 m_nVA;
 
-    std::deque<IntBond> m_bonds;
-    std::deque<quint32> m_atoms;
+    // std::deque<IntBond> m_bonds;
+    // std::deque<quint32> m_atoms;
 
-    gfx::DrawElemVC *m_pVBO;
+    // gfx::DrawElemVC *m_pVBO;
 
     ////////////
     
@@ -60,7 +58,7 @@ namespace molstr {
     // Renderer interface
     
     // new rendering interface (using GL VBO)
-    virtual void display(DisplayContext *pdc);
+    // virtual void display(DisplayContext *pdc);
     
     // virtual void invalidateDisplayCache();
     

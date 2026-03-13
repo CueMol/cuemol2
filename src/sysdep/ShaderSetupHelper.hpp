@@ -8,11 +8,11 @@
 
 #include <qsys/View.hpp>
 // #include <qsys/Scene.hpp>
-#include "OglDisplayContext.hpp"
+// #include "OglDisplayContext.hpp"
 
 namespace sysdep {
 
-class OglDisplayContext;
+// class OglDisplayContext;
 class OcDisplayContext;
 
 // using DisplayContextType = OglDisplayContext;

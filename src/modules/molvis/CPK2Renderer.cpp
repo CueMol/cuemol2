@@ -15,7 +15,6 @@
 #include <gfx/DrawAttrArray.hpp>
 
 #ifdef USE_OPENGL
-#include <sysdep/OglDisplayContext.hpp>
 #include <sysdep/OglProgramObject.hpp>
 #include "GLSLSphereHelper.hpp"
 #endif
@@ -25,7 +24,7 @@ using namespace molstr;
 
 CPK2Renderer::CPK2Renderer()
 {
-  m_pDrawElem = NULL;
+    // m_pDrawElem = NULL;
   m_bUseShader = false;
   m_bCheckShaderOK = false;
   m_nGlRendMode = REND_DEFAULT;
@@ -87,7 +86,7 @@ void CPK2Renderer::display(DisplayContext *pdc)
     m_pSlSph->draw(pdc);
     postRender(pdc);
   }
-  else if (pdc->isDrawElemSupported() &&
+  /*else if (pdc->isDrawElemSupported() &&
            (m_nGlRendMode==REND_DEFAULT ||
             m_nGlRendMode==REND_VBO)) {
     // VBO rendering mode
@@ -100,7 +99,7 @@ void CPK2Renderer::display(DisplayContext *pdc)
     preRender(pdc);
     pdc->drawElem(*m_pDrawElem);
     postRender(pdc);
-  }
+    }*/
   else {
     // old version (uses DisplayContext::sphere)
     super_t::display(pdc);
@@ -113,10 +112,10 @@ void CPK2Renderer::invalidateDisplayCache()
   super_t::invalidateDisplayCache();
   
 #ifdef USE_OPENGL
-  if (m_pDrawElem!=NULL) {
+  /*  if (m_pDrawElem!=NULL) {
     delete m_pDrawElem;
     m_pDrawElem = NULL;
-  }
+    }*/
   if (m_bUseShader) {
     m_pSlSph->invalidate();
   }
@@ -126,10 +125,10 @@ void CPK2Renderer::invalidateDisplayCache()
 void CPK2Renderer::unloading()
 {
 #ifdef USE_OPENGL
-  if (m_pDrawElem!=NULL) {
+    /*  if (m_pDrawElem!=NULL) {
     delete m_pDrawElem;
     m_pDrawElem = NULL;
-  }
+    }*/
   if (m_bUseShader) {
     m_pSlSph->invalidate();
   }
@@ -207,77 +206,6 @@ void CPK2Renderer::rendAtom(DisplayContext *pdl, MolAtomPtr pAtom, bool)
 {
   pdl->color(ColSchmHolder::getColor(pAtom));
   pdl->sphere(getVdWRadius(pAtom), pAtom->getPos());
-}
-
-/////////////////////
-// VBO implementation
-
-void CPK2Renderer::renderVBOImpl()
-{
-  MolCoordPtr pMol = getClientMol();
-  if (pMol.isnull()) {
-    MB_DPRINTLN("CPK2Renderer::render> Client mol is null");
-    return;
-  }
-
-  // estimate the size of drawing elements
-  int nsphs=0;
-  {
-    AtomIterator iter(pMol, getSelection());
-    for (iter.first(); iter.hasMore(); iter.next()) {
-      int aid = iter.getID();
-      MolAtomPtr pAtom = pMol->getAtom(aid);
-      if (pAtom.isnull()) continue; // ignore errors
-      ++nsphs;
-    }
-  }
-  
-  if (nsphs==0)
-    return; // nothing to draw
-  
-  // initialize the coloring scheme
-  getColSchm()->start(pMol, this);
-  pMol->getColSchm()->start(pMol, this);
-
-
-  gfx::SphereSetTmpl<gfx::VBOSphereSet_traits> sphs2;
-
-  //gfx::SphereSet sphs;
-  //sphs.create(nsphs, m_nDetail);
-  sphs2.getdata().create(nsphs, m_nDetail);
-  if (!useShaderAlpha()) {
-    //sphs.setAlpha(getDefaultAlpha());
-    sphs2.getdata().setAlpha(getDefaultAlpha());
-  }
-
-  // build meshes / DrawElemVNCI
-  {
-    AtomIterator iter(pMol, getSelection());
-    int i=0;
-    for (iter.first(); iter.hasMore(); iter.next()) {
-      int aid = iter.getID();
-      MolAtomPtr pAtom = pMol->getAtom(aid);
-      if (pAtom.isnull()) continue; // ignore errors
-
-      //sphs.sphere(i, pAtom->getPos(),
-      //getVdWRadius(pAtom),
-      //ColSchmHolder::getColor(pAtom));
-
-      sphs2.getdata().sphere(i, pAtom->getPos(),
-                             getVdWRadius(pAtom),
-                             ColSchmHolder::getColor(pAtom));
-
-      ++i;
-    }
-  }
-
-  //m_pDrawElem = sphs.buildDrawElem();
-  m_pDrawElem = sphs2.getdata().buildDrawElem(&sphs2);
-
-  // finalize the coloring scheme
-  getColSchm()->end();
-  pMol->getColSchm()->end();
-
 }
 
 //////////////////////
