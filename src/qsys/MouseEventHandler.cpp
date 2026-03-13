@@ -5,7 +5,7 @@
 #include <common.h>
 #include "MouseEventHandler.hpp"
 
-using namespace sysdep;
+using namespace qsys;
 
 MouseEventHandler::MouseEventHandler()
      : m_prevPt_x(0), m_prevPt_y(0), m_startPt_x(0), m_startPt_y(0),
@@ -90,7 +90,7 @@ bool MouseEventHandler::buttonUp(InDevEvent &ev)
     const qlib::time_value currt = qlib::EventManager::sGetCurrentTime();
     const qlib::time_value del_t = currt - m_prevClickTime;
     MB_DPRINTLN("prev %f currt %f del_t %f", double(m_prevClickTime), double(currt), double(del_t));
-    
+
     if (del_t<qlib::time_value(DBLCLICK_TIME)) {
       MB_DPRINTLN("del_t %f < DBLCLICK_TIME %f", double(del_t), double(DBLCLICK_TIME));
 
@@ -162,7 +162,7 @@ void MouseEventHandler::calcVelocity(InDevEvent &ev, qlib::time_value curr)
     }
   }
 #endif
-  
+
   if (m_cbuf.size()>=3) {
     EventBuf::const_reverse_iterator iter = m_cbuf.rbegin();
     const EventEnt &t0 = *iter;
@@ -186,7 +186,7 @@ void MouseEventHandler::calcVelocity(InDevEvent &ev, qlib::time_value curr)
     // no velocity
     return;
   }
-  
+
   {
     EventBuf::const_iterator iter = m_cbuf.begin();
     EventBuf::const_iterator eiter = m_cbuf.end();
@@ -243,4 +243,3 @@ void MouseEventHandler::calcVelocity(InDevEvent &ev, qlib::time_value curr)
   ev.setVeloX(bx);
   ev.setVeloY(by);
 }
-

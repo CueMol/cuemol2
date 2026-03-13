@@ -1,14 +1,12 @@
 # Normal C++ source files
 SET(SYSDEP_SRCS
   sysdep.cpp
-  MouseEventHandler.cpp
 #  OglView.cpp
 #  OglDisplayList.cpp
 #  OglDisplayContext.cpp
 #  OglFBOView.cpp
   OglProgramObject.cpp
   OglProgObjMgr.cpp
-  Canvas2DTextRender2.cpp
   ShaderSetupHelper.cpp
   # core profile
   ogl_core/OcDisplayList.cpp
@@ -23,7 +21,6 @@ SET(SYSDEP_SRCS
 )
 
 SET(SYSDEP_HDRS
-MouseEventHandler.hpp
 # OglDisplayContext.hpp
 # OglDisplayList.hpp
 OglError.hpp

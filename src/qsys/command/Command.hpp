@@ -47,7 +47,7 @@ MC_DECL_SCRSP(Command);
 #include "qsys/SceneManager.hpp"
 #include "qsys/SceneXMLReader.hpp"
 #include "qsys/StreamManager.hpp"
-#include "sysdep/MouseEventHandler.hpp"
+#include "qsys/MouseEventHandler.hpp"
 
 /// Open scene file command class
 class SceneOpenCommand : public AbstractCommand

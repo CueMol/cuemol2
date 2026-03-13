@@ -8,7 +8,7 @@
 #include "xpcom.hpp"
 
 #include "XPCNativeWidget.hpp"
-#include <sysdep/MouseEventHandler.hpp>
+#include <qsys/MouseEventHandler.hpp>
 
 #include <gtk/gtk.h>
 #include <gdk/gdkx.h>
@@ -52,7 +52,7 @@ namespace xpcom {
 
     sysdep::XglView *m_pXglView;
 
-    sysdep::MouseEventHandler m_meh;
+    qsys::MouseEventHandler m_meh;
 
     //bool setupOpenGL();
     //bool setupOpenGL2();

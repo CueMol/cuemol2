@@ -11,7 +11,7 @@
 #include <qsys/ScrEventManager.hpp>
 #include <gfx/TextImgBuf.hpp>
 
-using namespace sysdep;
+using namespace qsys;
 using qlib::LString;
 
 //////////////////////////////
@@ -70,7 +70,7 @@ class TextRenderEvent : public qlib::LEvent
 {
 public:
   gfx::TextImgBufPtr m_pAry;
-  
+
   virtual ~TextRenderEvent()
   {
   }
@@ -128,11 +128,11 @@ bool Canvas2DTextRender2::renderText(const qlib::LString &str, gfx::PixelBuffer 
   }
 
   return true;
-}  
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-namespace sysdep {
+namespace qsys {
   void *createTextRender()
   {
     Canvas2DTextRender2 *pTTR = new Canvas2DTextRender2;
@@ -140,11 +140,10 @@ namespace sysdep {
     //pTTR->setupFont(20.0, "Times New Roman", FONT_STYLE_NORMAL, FONT_WEIGHT_NORMAL);
     return pTTR;
   }
-  
+
   void destroyTextRender(void *pTR)
   {
     Canvas2DTextRender2 *pTTR = static_cast<Canvas2DTextRender2 *>(pTR);
     delete pTTR;
   }
 }
-

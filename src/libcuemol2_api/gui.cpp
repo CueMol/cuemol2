@@ -6,7 +6,8 @@
 
 #ifdef BUILD_OPENGL_SYSDEP
 #include <sysdep/sysdep.hpp>
-#include <sysdep/MouseEventHandler.hpp>
+#include <qsys/qsys.hpp>
+#include <qsys/MouseEventHandler.hpp>
 #endif
 
 #if (GUI_ARCH == MB_GUI_ARCH_WIN)
@@ -96,7 +97,7 @@ namespace cuemol2 {
   gfx::TextRenderImpl *initTextRender()
   {
     try {
-      gfx::TextRenderImpl *pTR = (gfx::TextRenderImpl *) sysdep::createTextRender();
+      gfx::TextRenderImpl *pTR = (gfx::TextRenderImpl *) qsys::createTextRender();
       gfx::TextRenderManager *pTRM = gfx::TextRenderManager::getInstance();
       pTRM->setImpl(pTR);
       return pTR;
@@ -114,13 +115,13 @@ namespace cuemol2 {
 
   void finiTextRender(gfx::TextRenderImpl *pTR)
   {
-    sysdep::destroyTextRender(pTR);
+    qsys::destroyTextRender(pTR);
   }
 #endif
 
 #ifdef BUILD_OPENGL_SYSDEP
-  sysdep::MouseEventHandler *createMouseEventHander() {
-    return new sysdep::MouseEventHandler();
+  qsys::MouseEventHandler *createMouseEventHander() {
+    return new qsys::MouseEventHandler();
   }
 #endif
 }

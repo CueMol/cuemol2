@@ -59,6 +59,9 @@ namespace qsys {
   MC_DECL_SCRSP(AnimMgr);
 
   MC_DECL_SCRSP(MultiGradient);
+
+  QSYS_API void *createTextRender();
+  QSYS_API void destroyTextRender(void *pTR);
 }
 
 #endif // QSYS_DLL_H__

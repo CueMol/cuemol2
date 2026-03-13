@@ -166,7 +166,7 @@ NS_IMETHODIMP XPCCueMol::Init(const char *confpath, bool *_retval)
 
 NS_IMETHODIMP XPCCueMol::Fini()
 {
-  sysdep::destroyTextRender(m_pTR);
+  qsys::destroyTextRender(m_pTR);
   cleanupWrappers();
   // cleanup timer
   qlib::EventManager::getInstance()->finiTimer();

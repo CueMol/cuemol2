@@ -10,7 +10,7 @@
 #include "xpcom.hpp"
 
 #include "XPCNativeWidget.hpp"
-#include <sysdep/MouseEventHandler.hpp>
+#include <qsys/MouseEventHandler.hpp>
 
 #include <windows.h>
 #include <windowsx.h>
@@ -61,7 +61,7 @@ namespace xpcom {
 
     sysdep::WglView *m_pWglView;
 
-    sysdep::MouseEventHandler m_meh;
+    qsys::MouseEventHandler m_meh;
 
     bool m_bCursorIn;
 

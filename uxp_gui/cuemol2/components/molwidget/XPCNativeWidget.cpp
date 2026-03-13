@@ -274,7 +274,7 @@ void XPCNativeWidget::dispatchMouseEvent(int nType, qsys::InDevEvent &ev)
     // mouse down event
   case DME_MOUSE_DOWN:
     /*
-    if (m_meh.getState()==sysdep::MouseEventHandler::DRAG_NONE) {
+    if (m_meh.getState()==qsys::MouseEventHandler::DRAG_NONE) {
       m_timer->InitWithFuncCallback(timerCallbackFunc, this, DBCLK_TIMER, nsITimer::TYPE_ONE_SHOT);
     }
     else {

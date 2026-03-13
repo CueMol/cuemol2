@@ -3,14 +3,14 @@
 #include "api.hpp"
 
 namespace gfx { class TextRenderImpl; }
-namespace sysdep { class MouseEventHandler; }
+namespace qsys { class MouseEventHandler; }
 
 namespace cuemol2 {
 
 #ifdef BUILD_OPENGL_SYSDEP
   LIBCUEMOL_API gfx::TextRenderImpl *initTextRender();
   LIBCUEMOL_API void finiTextRender(gfx::TextRenderImpl *pTR);
-  LIBCUEMOL_API sysdep::MouseEventHandler *createMouseEventHander();
+  LIBCUEMOL_API qsys::MouseEventHandler *createMouseEventHander();
 #endif
 
   void registerViewFactory();
