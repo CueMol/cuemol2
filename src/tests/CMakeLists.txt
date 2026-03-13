@@ -71,3 +71,16 @@ target_include_directories(test_qsys PRIVATE
 )
 target_link_libraries(test_qsys PRIVATE qsys gfx qlib Boost::filesystem Boost::thread GTest::gtest)
 gtest_discover_tests(test_qsys)
+
+add_executable(test_molstr
+  modules/molstr/test_main.cpp
+  modules/molstr/test_molatom.cpp
+)
+target_include_directories(test_molstr PRIVATE
+  ${CMAKE_SOURCE_DIR}/src
+  ${CMAKE_SOURCE_DIR}/src/modules
+  ${CMAKE_BINARY_DIR}/src
+  ${Boost_INCLUDE_DIRS}
+)
+target_link_libraries(test_molstr PRIVATE molstr qsys gfx qlib Boost::filesystem Boost::thread GTest::gtest)
+gtest_discover_tests(test_molstr)
