@@ -9,14 +9,220 @@
 #include "GUIView.hpp"
 
 #include <gfx/HittestContext.hpp>
+#include <qlib/LPerfMeas.hpp>
+
 #include "SceneManager.hpp"
 #include "Renderer.hpp"
 #include "ViewInputConfig.hpp"
+
 
 namespace qsys {
 
 GUIView::GUIView() : View() {}
 GUIView::~GUIView() {}
+
+void GUIView::setUpModelMat(int nid)
+{
+    DisplayContext *pdc = getDisplayContext();
+
+    pdc->loadIdent();
+    pdc->translate(Vector4D(0, 0, -getViewDist()));
+
+    double sd = getStereoDist();
+
+    switch (nid) {
+        case MM_NORMAL:
+            break;
+
+        case MM_STEREO_RIGHT:
+            pdc->rotate(
+                qlib::LQuat(qlib::Vector4D(0, 1, 0), qlib::toRadian(-sd / 2.0)));
+            break;
+
+        case MM_STEREO_LEFT:
+            pdc->rotate(qlib::LQuat(qlib::Vector4D(0, 1, 0), qlib::toRadian(sd / 2.0)));
+            break;
+
+        default:
+            break;
+    }
+
+    pdc->rotate(getRotQuat());
+
+    const qlib::Vector4D c = getViewCenter();
+    pdc->translate(-c);
+}
+
+void GUIView::setUpLightColor() {}
+
+// setup the projection matrix
+void GUIView::setUpProjMat(int cx, int cy)
+{
+    DisplayContext *pdc = getDisplayContext();
+    pdc->setCurrent();
+
+    if (cx < 0 || cy < 0) {
+        cx = getWidth();
+        cy = getHeight();
+    }
+
+    double zoom = (double)getZoom(), dist = (double)getViewDist();
+    double slabdepth = (double)getSlabDepth();
+    if (slabdepth <= 0.1) slabdepth = 0.1;
+
+    double slabnear = dist - slabdepth / 2.0;
+    double slabfar = dist + slabdepth;
+    // truncate near slab by camera distance
+    if (slabnear < 0.1) slabnear = 0.1;
+
+    double fognear = dist;
+    double fogfar = dist + slabdepth / 2.0;
+    if (fognear < 1.0) fognear = 1.0;
+
+    pdc->setFogStart(fognear);
+    pdc->setFogEnd(fogfar);
+
+    setFogColorImpl(pdc);
+
+    // MB_DPRINTLN("Zoom=%f", zoom);
+    double vw = zoom / 2.0f;
+    double fasp = (double)cx / (double)cy;
+
+    MB_DPRINTLN("OcView.setUpProjMat> CX=%d, CY=%d, Vw=%f, Fasp=%f", cx, cy, vw, fasp);
+    MB_DPRINTLN("OcView.setUpProjMat> Near=%f, Far=%f", slabnear, slabfar);
+
+    int bcx = convToBackingX(cx);
+    int bcy = convToBackingY(cy);
+
+    MB_DPRINTLN("OcView.setUpProjMat> BCX=%d, BCY=%d", bcx, bcy);
+
+    if (getStereoMode() == Camera::CSM_PARA || getStereoMode() == Camera::CSM_CROSS) {
+        fasp /= 2.0f;
+        pdc->setViewport(Vector4D(0, 0, bcx / 2, bcy));
+    } else {
+        pdc->setViewport(Vector4D(0, 0, bcx, bcy));
+    }
+
+    // Setup projection matrix
+    if (isPerspec()) {
+        pdc->setProjMat(
+            DisplayContext::makePersProjMat(vw, fasp, slabnear, slabfar, dist));
+    } else {
+        pdc->setProjMat(DisplayContext::makeOrthoProjMat(vw, fasp, slabnear, slabfar));
+    }
+
+    resetProjChgFlag();
+}
+
+void GUIView::drawScene()
+{
+    // if (!m_bInitOK) return;
+    if (!safeSetCurrent()) return;
+
+    qlib::AutoPerfMeas apm(PM_DRAW_SCENE);
+
+    qsys::ScenePtr pScene = getScene();
+    if (pScene.isnull()) {
+        MB_DPRINTLN("DrawScene: invalid scene %d !!", getSceneID());
+        return;
+    }
+
+    DisplayContext *pdc = getDisplayContext();
+    pdc->setCurrent();
+
+    // gfx::ColorPtr pBgCol = pScene->getBgColor();
+    // glClearColor(float(pBgCol->fr()), float(pBgCol->fg()), float(pBgCol->fb()), 1.0f);
+    setFogColorImpl(pdc);
+
+    pdc->setLighting(false);
+
+    ////////////////////////////////////////////////
+
+    if (isProjChange()) setUpProjMat(-1, -1);
+
+    switch (getStereoMode()) {
+        default:
+        case Camera::CSM_NONE:
+            setUpModelMat(MM_NORMAL);
+            // glDrawBuffer(GL_BACK);
+            // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            pdc->clearBuffer(pScene->getBgColor());
+
+            // Draw main 3D objects
+            pScene->display(pdc);
+            break;
+
+        //     ////////////////////////////////////////////////
+        //     // Quad-buffer stereo
+        // case Camera::CSM_HW_QBUF:
+
+        //     // for right eye
+        //     setUpModelMat(MM_STEREO_RIGHT);
+        //     if (isSwapStereoEyes())
+        //         glDrawBuffer(GL_BACK_LEFT);
+        //     else
+        //         glDrawBuffer(GL_BACK_RIGHT);
+        //     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        //     // Draw main 3D objects
+        //     pScene->display(pdc);
+
+        //     // for left eye
+        //     setUpModelMat(MM_STEREO_LEFT);
+        //     if (isSwapStereoEyes())
+        //         glDrawBuffer(GL_BACK_RIGHT);
+        //     else
+        //         glDrawBuffer(GL_BACK_LEFT);
+        //     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        //     // Draw main 3D objects
+        //     pScene->display(pdc);
+
+        //     break;
+    }
+
+    ////////////////////////////////////////////////
+
+    // Display UI drawing objects (+center mark)
+    {
+        super_t::showDrawObj(pdc);
+    }
+
+    // Display 2D-UI drawing objects
+    {
+        const double cx = getWidth();
+        const double cy = getHeight();
+        // const float dist = float(getViewDist());
+
+        pdc->pushMatrix();
+        pdc->loadIdent();
+        auto projMat = pdc->getProjMat();
+        pdc->setProjMat(DisplayContext::makeOrthoProjMat(0, cx, cy, 0, 1.0, -1.0));
+
+        super_t::showDrawObj2D(pdc);
+
+        pdc->setProjMat(projMat);
+        pdc->popMatrix();
+    }
+
+    swapBuffers();
+
+    return;
+}
+
+/// clean-up the drawing display with the current bg color
+void GUIView::clear()
+{
+    qsys::ScenePtr pScene = getScene();
+    if (pScene.isnull()) {
+        MB_DPRINTLN("OcView::clear() invalid scene %d !!", getSceneID());
+        return;
+    }
+
+    DisplayContext *pdc = getDisplayContext();
+    pdc->setCurrent();
+    pdc->clearBuffer(pScene->getBgColor());
+}
+
+//////////
 
 using gfx::HittestContext;
 
@@ -263,6 +469,17 @@ qsys::View *GUIView::createOffScreenView(int w, int h, int aa_depth)
 void GUIView::readPixels(int x, int y, int width, int height, char *pbuf, int nbufsize,
                          int ncomp)
 {
+}
+
+void GUIView::setFogColorImpl(DisplayContext *pdc)
+{
+    qsys::ScenePtr pScene = getScene();
+    gfx::ColorPtr pBgCol = pScene->getBgColor();
+    if (pdc == nullptr) {
+        pdc = getDisplayContext();
+        pdc->setCurrent();
+    }
+    pdc->setFogColor(pBgCol);
 }
 
 }  // namespace qsys

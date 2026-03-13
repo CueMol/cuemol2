@@ -35,23 +35,6 @@ public:
 
     void setup();
 
-    ///////////////////////////////
-
-    /// Setup the light source color
-    void setUpLightColor();
-
-    /// Setup the projection matrix for stereo (View interface)
-    virtual void setUpModelMat(int nid);
-
-    /// Setup projection matrix (View interface)
-    virtual void setUpProjMat(int w, int h);
-
-    /// Draw current scene
-    virtual void drawScene();
-
-    /// Clean-up the drawing display with the current bg color
-    virtual void clear();
-
     virtual void setCenterMark(int nMode);
 
     ////////////////////////////////////////////////
@@ -61,8 +44,6 @@ public:
     {
     }
 
-protected:
-    void setFogColorImpl(gfx::DisplayContext *pdc = nullptr);
 };
 
 }  // namespace sysdep

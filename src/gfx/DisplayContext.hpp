@@ -72,6 +72,9 @@ private:
     /// Proj mat
     Matrix4D m_projMat;
 
+    /// Viewport (x,y,w,h)
+    Vector4D m_viewport;
+
     /// Model-view matrix stack
     std::deque<qlib::Matrix4D> m_matstack;
 
@@ -278,13 +281,18 @@ public:
 
     // Projection matrix
     virtual void setProjMat(const Matrix4D &mat);
-    // virtual void loadOrthoProj(float width, float fasp, float near, float far);
-    // virtual void loadPerspProj(float width, float fasp, float near, float far,
-    //                            float distance);
 
     Matrix4D getProjMat() const
     {
         return m_projMat;
+    }
+
+    // Viewport
+    virtual void setViewport(const Vector4D &vp);
+
+    Vector4D getViewport() const
+    {
+        return m_viewport;
     }
 
     virtual void enableDepthTest(bool) {}
@@ -463,6 +471,9 @@ public:
     virtual DrawObjSet *createDrawObjSet() const;
 
     virtual void drawObjSet(const DrawObjSet &dos);
+
+    /// Clear the target buffer with the specified color.
+    virtual void clearBuffer(const gfx::ColorPtr &pcol) {}
 };
 
 }  // namespace gfx

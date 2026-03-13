@@ -21,7 +21,7 @@
 #include "OcView.hpp"
 
 #include <qlib/Utils.hpp>
-#include <qlib/LPerfMeas.hpp>
+// #include <qlib/LPerfMeas.hpp>
 #include <gfx/DisplayContext.hpp>
 #include <qsys/SceneManager.hpp>
 #include <qsys/ViewInputConfig.hpp>
@@ -34,7 +34,6 @@
 #include "OcViewCap.hpp"
 #include "CenterMarkDrawObj.hpp"
 
-#include <gfx/HittestContext.hpp>
 #include <gfx/SolidColor.hpp>
 
 namespace sysdep {
@@ -134,112 +133,7 @@ void OcView::setup()
     addDrawObj("CenterMarkDrawObj", pMark);
 }
 
-// setup the projection matrix
-void OcView::setUpProjMat(int cx, int cy)
-{
-    GLenum errc;
-
-    DisplayContext *pdc = getDisplayContext();
-    pdc->setCurrent();
-
-    if (cx < 0 || cy < 0) {
-        cx = getWidth();
-        cy = getHeight();
-    }
-
-    double zoom = (double)getZoom(), dist = (double)getViewDist();
-    double slabdepth = (double)getSlabDepth();
-    if (slabdepth <= 0.1) slabdepth = 0.1;
-
-    double slabnear = dist - slabdepth / 2.0;
-    double slabfar = dist + slabdepth;
-    // truncate near slab by camera distance
-    if (slabnear < 0.1) slabnear = 0.1;
-
-    double fognear = dist;
-    double fogfar = dist + slabdepth / 2.0;
-    if (fognear < 1.0) fognear = 1.0;
-
-    pdc->setFogStart(fognear);
-    pdc->setFogEnd(fogfar);
-
-    setFogColorImpl(pdc);
-
-    // MB_DPRINTLN("Zoom=%f", zoom);
-    double vw = zoom / 2.0f;
-    double fasp = (double)cx / (double)cy;
-
-    MB_DPRINTLN("OcView.setUpProjMat> CX=%d, CY=%d, Vw=%f, Fasp=%f", cx, cy, vw, fasp);
-    MB_DPRINTLN("OcView.setUpProjMat> Near=%f, Far=%f", slabnear, slabfar);
-
-    int bcx = convToBackingX(cx);
-    int bcy = convToBackingY(cy);
-
-    MB_DPRINTLN("OcView.setUpProjMat> BCX=%d, BCY=%d", bcx, bcy);
-
-    if (getStereoMode() == Camera::CSM_PARA || getStereoMode() == Camera::CSM_CROSS) {
-        fasp /= 2.0f;
-        glViewport(0, 0, bcx / 2, bcy);
-    } else {
-        glViewport(0, 0, bcx, bcy);
-    }
-
-    // Setup projection matrix
-    if (isPerspec()) {
-        pdc->setProjMat(
-            DisplayContext::makePersProjMat(vw, fasp, slabnear, slabfar, dist));
-    } else {
-        pdc->setProjMat(DisplayContext::makeOrthoProjMat(vw, fasp, slabnear, slabfar));
-    }
-
-    resetProjChgFlag();
-}
-
-void OcView::setFogColorImpl(DisplayContext *pdc)
-{
-    qsys::ScenePtr pScene = getScene();
-    gfx::ColorPtr pBgCol = pScene->getBgColor();
-    if (pdc == nullptr) {
-        pdc = getDisplayContext();
-        pdc->setCurrent();
-    }
-    pdc->setFogColor(pBgCol);
-}
-
-void OcView::setUpModelMat(int nid)
-{
-    DisplayContext *pdc = getDisplayContext();
-
-    pdc->loadIdent();
-    pdc->translate(Vector4D(0, 0, -getViewDist()));
-
-    double sd = getStereoDist();
-
-    switch (nid) {
-        case MM_NORMAL:
-            break;
-
-        case MM_STEREO_RIGHT:
-            pdc->rotate(
-                qlib::LQuat(qlib::Vector4D(0, 1, 0), qlib::toRadian(-sd / 2.0)));
-            break;
-
-        case MM_STEREO_LEFT:
-            pdc->rotate(qlib::LQuat(qlib::Vector4D(0, 1, 0), qlib::toRadian(sd / 2.0)));
-            break;
-
-        default:
-            break;
-    }
-
-    pdc->rotate(getRotQuat());
-
-    const qlib::Vector4D c = getViewCenter();
-    pdc->translate(-c);
-}
-
-void OcView::setUpLightColor() {}
-
+/*
 void OcView::drawScene()
 {
     if (!m_bInitOK) return;
@@ -256,8 +150,8 @@ void OcView::drawScene()
     DisplayContext *pdc = getDisplayContext();
     pdc->setCurrent();
 
-    gfx::ColorPtr pBgCol = pScene->getBgColor();
-    glClearColor(float(pBgCol->fr()), float(pBgCol->fg()), float(pBgCol->fb()), 1.0f);
+    // gfx::ColorPtr pBgCol = pScene->getBgColor();
+    // glClearColor(float(pBgCol->fr()), float(pBgCol->fg()), float(pBgCol->fb()), 1.0f);
     setFogColorImpl(pdc);
 
     pdc->setLighting(false);
@@ -270,45 +164,44 @@ void OcView::drawScene()
         default:
         case Camera::CSM_NONE:
             setUpModelMat(MM_NORMAL);
-            glDrawBuffer(GL_BACK);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            // glDrawBuffer(GL_BACK);
+            // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            pdc->clearBuffer(pScene->getBgColor());
 
             // Draw main 3D objects
             pScene->display(pdc);
             break;
 
-            ////////////////////////////////////////////////
-            // Quad-buffer stereo
-        case Camera::CSM_HW_QBUF:
+        //     ////////////////////////////////////////////////
+        //     // Quad-buffer stereo
+        // case Camera::CSM_HW_QBUF:
 
-            // for right eye
-            setUpModelMat(MM_STEREO_RIGHT);
-            if (isSwapStereoEyes())
-                glDrawBuffer(GL_BACK_LEFT);
-            else
-                glDrawBuffer(GL_BACK_RIGHT);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            // Draw main 3D objects
-            pScene->display(pdc);
+        //     // for right eye
+        //     setUpModelMat(MM_STEREO_RIGHT);
+        //     if (isSwapStereoEyes())
+        //         glDrawBuffer(GL_BACK_LEFT);
+        //     else
+        //         glDrawBuffer(GL_BACK_RIGHT);
+        //     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        //     // Draw main 3D objects
+        //     pScene->display(pdc);
 
-            // for left eye
-            setUpModelMat(MM_STEREO_LEFT);
-            if (isSwapStereoEyes())
-                glDrawBuffer(GL_BACK_RIGHT);
-            else
-                glDrawBuffer(GL_BACK_LEFT);
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            // Draw main 3D objects
-            pScene->display(pdc);
+        //     // for left eye
+        //     setUpModelMat(MM_STEREO_LEFT);
+        //     if (isSwapStereoEyes())
+        //         glDrawBuffer(GL_BACK_RIGHT);
+        //     else
+        //         glDrawBuffer(GL_BACK_LEFT);
+        //     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        //     // Draw main 3D objects
+        //     pScene->display(pdc);
 
-            break;
+        //     break;
     }
 
     ////////////////////////////////////////////////
 
-    // update center mark mode
-
-    // TODO: Display UI drawing objects (+center mark)
+    // Display UI drawing objects (+center mark)
     {
         super_t::showDrawObj(pdc);
     }
@@ -334,6 +227,7 @@ void OcView::drawScene()
 
     return;
 }
+*/
 
 void OcView::setCenterMark(int nMode)
 {
@@ -348,28 +242,6 @@ void OcView::setCenterMark(int nMode)
         return;
     }
     pcmdo->setCenterMark(nMode);
-}
-
-//////////////////////////////////////////////////////////////////////////////
-// Hittest Impl
-
-
-/// clean-up the drawing display with the current bg color
-void OcView::clear()
-{
-    if (!safeSetCurrent()) return;
-
-    qsys::ScenePtr pScene = getScene();
-    if (pScene.isnull()) {
-        MB_DPRINTLN("OcView::clear() invalid scene %d !!", getSceneID());
-        return;
-    }
-
-    gfx::ColorPtr pBgCol = pScene->getBgColor();
-    glClearColor(pBgCol->fr(), pBgCol->fg(), pBgCol->fb(), 1.0f);
-
-    ::glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glFlush();
 }
 
 }  // namespace sysdep

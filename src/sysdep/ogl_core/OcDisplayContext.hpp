@@ -177,6 +177,8 @@ public:
 
     virtual void drawObjSet(const gfx::DrawObjSet &dos);
 
+    /// Clear the target buffer with the specified color.
+    virtual void clearBuffer(const gfx::ColorPtr &pcol);
 
 };
 

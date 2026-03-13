@@ -14,9 +14,26 @@ namespace qsys {
 
 class QSYS_API GUIView : public qsys::View
 {
+    using super_t = qsys::View;
+
 public:
     GUIView();
     virtual ~GUIView();
+
+
+    /// Setup the projection matrix
+    void setUpProjMat(int cx, int cy);
+
+    /// Setup the light source color
+    void setUpLightColor();
+
+    /// Setup the projection matrix for stereo (View interface)
+    virtual void setUpModelMat(int nid);
+
+    virtual void drawScene();
+
+    /// Clean-up the drawing display with the current bg color
+    virtual void clear();
 
     ////////////////////////////////////////////////
     // Hit test operations
@@ -49,6 +66,7 @@ public:
     virtual void readPixels(int x, int y, int width, int height, char *pbuf,
                             int nbufsize, int ncomp);
 
+    void setFogColorImpl(DisplayContext *pdc);
 };
     
 } // namespace qsys
