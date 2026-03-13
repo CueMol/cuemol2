@@ -89,6 +89,7 @@ bool SelCommand::compile(const LString &com, qlib::uid_t nCtxtID /*= qlib::inval
 {
   if (m_pSelRoot!=NULL)
     delete m_pSelRoot;
+  m_pSelRoot = NULL;
 
   if (com.isEmpty())
     return true;

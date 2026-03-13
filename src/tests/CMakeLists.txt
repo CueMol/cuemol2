@@ -77,6 +77,10 @@ gtest_discover_tests(test_qsys)
 add_executable(test_molstr
   modules/molstr/test_main.cpp
   modules/molstr/test_molatom.cpp
+  modules/molstr/test_molresidue.cpp
+  modules/molstr/test_molchain.cpp
+  modules/molstr/test_molbond.cpp
+  modules/molstr/test_selcommand.cpp
 )
 target_include_directories(test_molstr PRIVATE
   ${CMAKE_SOURCE_DIR}/src

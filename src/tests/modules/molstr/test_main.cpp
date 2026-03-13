@@ -6,6 +6,7 @@
 #include "qsys/RendererFactory.hpp"
 #include "qsys/StreamManager.hpp"
 #include "molstr/ElemSym.hpp"
+#include "molstr/SelCompiler.hpp"
 
 class MolstrEnvironment : public ::testing::Environment {
 public:
@@ -15,8 +16,10 @@ public:
         qsys::StyleMgr::init();
         qsys::RendererFactory::init();
         molstr::ElemSym::init();
+        molstr::SelCompiler::init();
     }
     void TearDown() override {
+        molstr::SelCompiler::fini();
         molstr::ElemSym::fini();
         qsys::fini();
         qlib::fini();
