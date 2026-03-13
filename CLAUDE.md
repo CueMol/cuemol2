@@ -63,9 +63,38 @@ src/
 - Follow `.clang-format` for formatting
 - Use C++17 features where applicable; replace Boost with C++17 equivalents where possible
 - Build option `BUILD_TESTS=ON` enables gtest compilation
+- Headers inside `src/qsys/` must use `""` (quoted) form for intra-module includes, not `<>`. The test build's `-I` flags do not include `qsys/` directly, so `<View.hpp>` fails while `"View.hpp"` works.
 
 ## gtest Implementation Policy
 
 - Unit tests cover all logic in `.hpp` and `.cpp` files
 - Exclude `*_wrap.cpp` (auto-generated) from test coverage
 - Tests in `src/tests/` mirror the module structure of `src/`
+
+### qsys test initialization
+
+`src/tests/qsys/test_main.cpp` sets up the global environment for all `test_qsys` tests:
+```cpp
+qlib::init();
+qsys::init("");        // registers classes; skips config loading
+qsys::StyleMgr::init();
+qsys::RendererFactory::init();
+```
+`ViewInputConfig` singleton is initialized by `qsys::init("")` and is available in all `test_qsys` tests.
+
+### Writing a concrete View subclass for tests
+
+`qsys::View` has four pure-virtual methods that must be implemented:
+
+| Method | Signature | Typical stub |
+|--------|-----------|--------------|
+| `getDisplayContext` | `gfx::DisplayContext *()` | return pointer to an inner stub `DisplayContext` |
+| `drawScene` | `void()` | empty body |
+| `setUpProjMat` | `void(int w, int h)` (protected) | empty body |
+| `setUpModelMat` | `void(int nid)` (protected) | empty body |
+
+See `src/qsys/TTYView.cpp` for the reference stub `DisplayContext` implementation (`TTYDisplayContext`). Tests that need a `GUIView`-derived stub can follow the same pattern inside an anonymous namespace in the test file.
+
+### Known View pitfalls
+
+- `View::m_nSceneID` is **not initialised** in the `View` constructor. Do not assert `getSceneID() == invalid_uid` for a freshly constructed view.

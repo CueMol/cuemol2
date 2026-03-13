@@ -1,10 +1,6 @@
 # Normal C++ source files
 SET(SYSDEP_SRCS
   sysdep.cpp
-#  OglView.cpp
-#  OglDisplayList.cpp
-#  OglDisplayContext.cpp
-#  OglFBOView.cpp
   OglProgramObject.cpp
   OglProgObjMgr.cpp
   ShaderSetupHelper.cpp
@@ -21,16 +17,11 @@ SET(SYSDEP_SRCS
 )
 
 SET(SYSDEP_HDRS
-# OglDisplayContext.hpp
-# OglDisplayList.hpp
 OglError.hpp
-# OglFBOView.hpp
 OglHitData.hpp
 OglProgObjMgr.hpp
 OglProgramObject.hpp
-#OglView.hpp
 OglViewCap.hpp
-TouchEventHandler.hpp
 sysdep.hpp
 ogl_core/OcView.hpp
 ogl_core/OcDisplayContext.hpp

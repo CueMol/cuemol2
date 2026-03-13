@@ -47,6 +47,7 @@ SceneExporter.cpp
 RendGroup.cpp
 MultiGradient.cpp
 TTYView.cpp
+GUIView.cpp
 QdfAbsWriter.cpp
 DrawObj.cpp
 command/Command.cpp
@@ -99,6 +100,7 @@ ScrEventManager.hpp
 StreamManager.hpp
 SysConfig.hpp
 TTYView.hpp
+GUIView.hpp
 TestRenderer.hpp
 UndoManager.hpp
 View.hpp
