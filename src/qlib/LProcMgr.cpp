@@ -209,14 +209,9 @@ LString LProcMgr::getResultOutput(int id)
             return res;
         }
 
-        // remove from the slot and return the result
-        m_tab[isl] = NULL;
-        ProcInThread *pThr = pEnt->m_pThr;
-        LString res = pThr->m_sbuf;
-        delete pEnt;
-        delete pThr;
-        writeLogFile(res);
-        return res;
+        // move to endq (also clears wait IDs of queued tasks depending on this id)
+        finishTask(isl);
+        // fall through to endq retrieval below
     }
 
     // search id in the endq

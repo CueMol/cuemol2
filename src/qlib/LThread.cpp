@@ -63,12 +63,16 @@ bool LThread::waitTermination(int nsec)
 }
 
 bool LThread::isRunning() const {
-  if (m_pimp->m_pthr!=NULL) {
+  if (m_pimp->m_pthr != NULL) {
+    // Guard against calling timed_join on an already-joined (non-joinable) thread,
+    // which is undefined behaviour in Boost.Thread and can cause timed_join to
+    // erroneously return false, making a finished thread appear still running.
+    if (!m_pimp->m_pthr->joinable())
+      return false;
     if (m_pimp->m_pthr->timed_join(boost::posix_time::seconds(0)))
       return false;
     return true;
   }
-  else
-    return false;
+  return false;
 }
 

@@ -84,3 +84,32 @@ TEST(LThread, WaitTerminationNoThread)
     t.waitTermination();
     EXPECT_FALSE(t.isRunning());
 }
+
+TEST(LThread, IsRunningConsistentAfterFirstFalseReturn)
+{
+    // Regression test for the double-join UB in isRunning().
+    //
+    // isRunning() uses timed_join(0) internally.  When the thread has finished,
+    // the first call joins it via timed_join and returns false.  Without the
+    // joinable() guard, subsequent timed_join calls on the already-joined
+    // (non-joinable) boost::thread are undefined behaviour: on some platforms
+    // they may return false, making isRunning() wrongly return true.
+    //
+    // The fix adds a joinable() check so that once the thread is joined, every
+    // subsequent isRunning() call returns false immediately without calling
+    // timed_join again.
+    FlagThread t;
+    t.kick();
+
+    // Wait until the thread has finished.
+    while (t.isRunning()) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+    // First call returned false (thread finished, internally joined by timed_join).
+    // All further calls must also return false — not flip back to true.
+    for (int i = 0; i < 10; ++i) {
+        EXPECT_FALSE(t.isRunning())
+            << "isRunning() returned true on call " << (i + 1)
+            << " after thread had already finished";
+    }
+}

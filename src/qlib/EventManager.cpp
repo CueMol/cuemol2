@@ -119,11 +119,11 @@ void EventManager::initTimer(TimerImpl *pimpl)
 
 void EventManager::finiTimer()
 {
-  m_pImpl->stop();
-
-  if (m_pImpl!=NULL)
+  if (m_pImpl != NULL) {
+    m_pImpl->stop();
     delete m_pImpl;
-  m_pImpl = NULL;
+    m_pImpl = NULL;
+  }
 }
 
 void EventManager::checkTimerQueue()
