@@ -52,9 +52,9 @@ bool LThread::waitTermination(int nsec)
 {
   MB_DPRINTLN("wait (%d sec) termination ...", nsec);
   if (m_pimp->m_pthr!=NULL) {
-    if (m_pimp->m_pthr->timed_join(boost::posix_time::seconds(nsec)))
+    if (!m_pimp->m_pthr->timed_join(boost::posix_time::seconds(nsec)))
       return false; // timeout
-    // OK
+    // OK: thread finished within the time limit
     delete m_pimp->m_pthr;
     m_pimp->m_pthr = NULL;
   }
