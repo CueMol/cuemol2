@@ -4,6 +4,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
+もしわからないことがあったら無理に探索して解決しようとせずにユーザーに尋ねること
+
 CueMol2 is a macromolecular structure visualization framework (PDB, CCP4, CNS, MTZ, MSMS, APBS formats). The core is a C++17 shared library (`libcuemol2`) with Python/Node.js bindings and a multi-platform GUI.
 
 ## Build
@@ -67,6 +69,7 @@ src/
 
 ## gtest Implementation Policy
 
+- 本体のソースコードがおかしい場合は、無理にそちらに迎合してtestを作成しようとせずに、本体も修正する
 - Unit tests cover all logic in `.hpp` and `.cpp` files
 - Exclude `*_wrap.cpp` (auto-generated) from test coverage
 - Tests in `src/tests/` mirror the module structure of `src/`

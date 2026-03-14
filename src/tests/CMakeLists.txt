@@ -7,13 +7,23 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-add_executable(test_qlib qlib/test_vector4d.cpp)
+add_executable(test_qlib
+  qlib/test_main.cpp
+  qlib/test_vector4d.cpp
+  qlib/test_matrix4d.cpp
+  qlib/test_lquat.cpp
+  qlib/test_lstring.cpp
+  qlib/test_rangeset.cpp
+  qlib/test_lscrtime.cpp
+  qlib/test_lregexpr.cpp
+  qlib/test_msglog.cpp
+)
 target_include_directories(test_qlib PRIVATE
   ${CMAKE_SOURCE_DIR}/src
   ${CMAKE_BINARY_DIR}/src
   ${Boost_INCLUDE_DIRS}
 )
-target_link_libraries(test_qlib PRIVATE qlib GTest::gtest_main)
+target_link_libraries(test_qlib PRIVATE qlib GTest::gtest)
 include(GoogleTest)
 gtest_discover_tests(test_qlib PROPERTIES LABELS "test_qlib")
 
@@ -81,6 +91,8 @@ add_executable(test_molstr
   modules/molstr/test_molchain.cpp
   modules/molstr/test_molbond.cpp
   modules/molstr/test_selcommand.cpp
+  modules/molstr/test_simplerenderer.cpp
+  modules/molstr/test_tracerenderer.cpp
 )
 target_include_directories(test_molstr PRIVATE
   ${CMAKE_SOURCE_DIR}/src
