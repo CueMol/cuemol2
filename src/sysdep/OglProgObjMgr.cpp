@@ -20,7 +20,6 @@
 #endif
 
 #include "OglProgObjMgr.hpp"
-#include "OglDisplayContext.hpp"
 #include "OglProgramObject.hpp"
 
 #include <qsys/SceneEvent.hpp>

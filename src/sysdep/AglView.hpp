@@ -8,14 +8,14 @@
 #ifndef AGL_VIEW_HPP_INCLUDE_
 #define AGL_VIEW_HPP_INCLUDE_
 
-#include "OglView.hpp"
+#include "ogl_core/OcView.hpp"
 
 namespace sysdep {
 
   class AglDisplayContext;
   using gfx::DisplayContext;
 
-  class AglView : public OglView
+  class AglView : public OcView
   {
   private:
     WindowRef m_win;

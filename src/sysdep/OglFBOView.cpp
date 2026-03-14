@@ -41,7 +41,6 @@
 #include <qlib/Utils.hpp>
 
 #include "OglFBOView.hpp"
-#include "OglDisplayContext.hpp"
 #include <qsys/Scene.hpp>
 
 using namespace sysdep;
@@ -115,7 +114,7 @@ DisplayContext *OglFBOView::getDisplayContext()
 }
 
 /// attach to the parent view and create fbo
-bool OglFBOView::attach(OglView *pParView, int width, int height)
+bool OglFBOView::attach(OcView *pParView, int width, int height)
 {
 #ifdef WIN32
   if (glGenFramebuffersEXT==NULL)

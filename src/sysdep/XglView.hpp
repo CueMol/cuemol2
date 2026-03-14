@@ -14,14 +14,14 @@
 #include <GL/glu.h>
 #include <GL/glx.h>
 
-#include "OglView.hpp"
+#include "ogl_core/OcView.hpp"
 
 namespace sysdep {
 
   class XglDisplayContext;
   using gfx::DisplayContext;
 
-  class SYSDEP_API XglView : public OglView
+  class SYSDEP_API XglView : public OcView
   {
   public:
     Display *m_pDisplay;

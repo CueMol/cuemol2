@@ -6,14 +6,14 @@
 #ifndef WGL_IMG_VIEW_HPP_INCLUDE_
 #define WGL_IMG_VIEW_HPP_INCLUDE_
 
-#include "OglView.hpp"
+#include "ogl_core/OcView.hpp"
 
 namespace sysdep {
 
   class WglDisplayContext;
   using gfx::DisplayContext;
 
-  class SYSDEP_API WglImgView : public OglView
+  class SYSDEP_API WglImgView : public OcView
   {
   private:
     typedef OglView super_t;

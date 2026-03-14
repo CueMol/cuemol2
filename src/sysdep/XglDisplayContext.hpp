@@ -10,12 +10,12 @@
 #include <GL/glx.h>
 #include <X11/Xlib.h>
 
-#include "OglDisplayContext.hpp"
+#include "ogl_core/OcDisplayContext.hpp"
 #include "XglView.hpp"
 
 namespace sysdep {
 
-  class XglDisplayContext : public OglDisplayContext
+  class XglDisplayContext : public OcDisplayContext
   {
   private:
     Display *m_pDisplay;

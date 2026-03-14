@@ -9,7 +9,7 @@
 #define WGL_VIEW_HPP_INCLUDE_
 
 #include "sysdep.hpp"
-#include <sysdep/ogl_core/OcView.hpp>
+#include "ogl_core/OcView.hpp"
 
 #ifdef WIN32
 #  include <windows.h>

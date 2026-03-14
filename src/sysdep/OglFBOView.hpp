@@ -6,20 +6,20 @@
 #ifndef OGL_FBO_VIEW_HPP_INCLUDE_
 #define OGL_FBO_VIEW_HPP_INCLUDE_
 
-#include "OglView.hpp"
+#include "ogl_core/OcView.hpp"
 
 namespace sysdep {
 
   class OglDisplayContext;
   using gfx::DisplayContext;
 
-  class SYSDEP_API OglFBOView : public OglView
+  class SYSDEP_API OglFBOView : public OcView
   {
   private:
-    typedef OglView super_t;
+    typedef OcView super_t;
 
     /// Parent view for this off-screen view
-    OglView *m_pParView;
+    OcView *m_pParView;
 
     /// Frame buffer ID
     GLuint m_nFrameBufID;
@@ -60,7 +60,7 @@ namespace sysdep {
     // FBO dependent implementations
 
     /// attach to the parent view and create fbo
-    bool attach(OglView *pParView, int width, int height);
+    bool attach(OcView *pParView, int width, int height);
 
     /// detach from the parent view and perform cleanup
     void detach();

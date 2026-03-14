@@ -6,7 +6,6 @@
 #include <common.h>
 
 #include "OcDisplayList.hpp"
-// #include "OglDisplayContext.hpp"
 #include "OcDisplayContext.hpp"
 #include "OglProgramObject.hpp"
 #include "GLSLLineHelper2.hpp"
