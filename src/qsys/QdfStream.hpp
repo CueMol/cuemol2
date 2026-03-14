@@ -28,43 +28,43 @@ namespace qsys {
   class QdfDataType
   {
   public:
-    static const int QDF_TYPE_BOOL = 0;
+    static constexpr int QDF_TYPE_BOOL = 0;
 
-    static const int QDF_TYPE_UINT8 = 1;
-    static const int QDF_TYPE_UINT16 = 2;
-    static const int QDF_TYPE_UINT32 = 3;
-    static const int QDF_TYPE_UINT64 = 4;
+    static constexpr int QDF_TYPE_UINT8 = 1;
+    static constexpr int QDF_TYPE_UINT16 = 2;
+    static constexpr int QDF_TYPE_UINT32 = 3;
+    static constexpr int QDF_TYPE_UINT64 = 4;
 
     // alias
-    static const int QDF_TYPE_UID = QDF_TYPE_UINT32;
+    static constexpr int QDF_TYPE_UID = QDF_TYPE_UINT32;
 
-    static const int QDF_TYPE_INT8 = 11;
-    static const int QDF_TYPE_INT16 = 12;
-    static const int QDF_TYPE_INT32 = 13;
-    static const int QDF_TYPE_INT64 = 14;
+    static constexpr int QDF_TYPE_INT8 = 11;
+    static constexpr int QDF_TYPE_INT16 = 12;
+    static constexpr int QDF_TYPE_INT32 = 13;
+    static constexpr int QDF_TYPE_INT64 = 14;
 
-    static const int QDF_TYPE_FLOAT32 = 21;
-    static const int QDF_TYPE_FLOAT64 = 22;
-    static const int QDF_TYPE_FLOAT128 = 23;
-    static const int QDF_TYPE_FLOAT16 = 24;
+    static constexpr int QDF_TYPE_FLOAT32 = 21;
+    static constexpr int QDF_TYPE_FLOAT64 = 22;
+    static constexpr int QDF_TYPE_FLOAT128 = 23;
+    static constexpr int QDF_TYPE_FLOAT16 = 24;
 
-    static const int QDF_TYPE_UTF8STR = 41;
+    static constexpr int QDF_TYPE_UTF8STR = 41;
 
     // fixed-length string data types (from version 2.2.2.39x)
-    static const int QDF_TYPE_FIXSTR8 = 42;
-    static const int QDF_TYPE_FIXSTR16 = 43;
-    static const int QDF_TYPE_FIXSTR32 = 44;
+    static constexpr int QDF_TYPE_FIXSTR8 = 42;
+    static constexpr int QDF_TYPE_FIXSTR16 = 43;
+    static constexpr int QDF_TYPE_FIXSTR32 = 44;
 
     // extended data types (from version 2.0.1.182)
 
     /// float32 x 3 elem vector
-    static const int QDF_TYPE_VEC3 = 51;
+    static constexpr int QDF_TYPE_VEC3 = 51;
     /// float32 x 4 elem vector
-    static const int QDF_TYPE_VEC4 = 52;
+    static constexpr int QDF_TYPE_VEC4 = 52;
     /// qbyte x 3 RGB color
-    static const int QDF_TYPE_RGB = 53;
+    static constexpr int QDF_TYPE_RGB = 53;
     /// qbyte x 4 RGBA color
-    static const int QDF_TYPE_RGBA = 54;
+    static constexpr int QDF_TYPE_RGBA = 54;
 
     // typedef std::pair<LString, int> RecElem;
     struct RecElem : public std::pair<LString, int>

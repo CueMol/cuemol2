@@ -16,7 +16,6 @@
 #include <modules/molstr/BSPTree.hpp>
 
 #include <modules/surface/MolSurfObj.hpp>
-//#include <gfx/DrawElem.hpp>
 #include <gfx/DrawAttrArray.hpp>
 
 class MapSurfRenderer_wrap;
@@ -273,11 +272,11 @@ namespace xtal {
     // Experimental rendering impl (OpenMP/VBO)
 
     /// Workarea data OK/NG (invalid)
-    bool m_bWorkOK;
+      //    bool m_bWorkOK;
 
-    virtual void display(DisplayContext *pdc);
+// virtual void display(DisplayContext *pdc);
 
-    virtual void invalidateDisplayCache();
+//    virtual void invalidateDisplayCache();
     
     void createVBO1(DisplayContext *pdl);
     void displayVBO1(DisplayContext *pdl);
@@ -331,20 +330,20 @@ namespace xtal {
 
     qbyte m_col_r, m_col_g, m_col_b, m_col_a;
     //std::vector<gfx::DrawElemVNC> m_verts;
-    gfx::DrawElemVNC *m_pVBO;
+      // gfx::DrawElemVNC *m_pVBO;
     
     //////////
     // Experimental rendering impl (OpenMP/GLSL)
     
-    void displayGLSL1(DisplayContext *pdc);
-    void createGLSL1(DisplayContext *pdc);
+    // void displayGLSL1(DisplayContext *pdc);
+    // void createGLSL1(DisplayContext *pdc);
 
-    void displayGLSL2(DisplayContext *pdc);
-    void createGLSL2(DisplayContext *pdc);
-    bool initShader(DisplayContext *pdc);
+    // void displayGLSL2(DisplayContext *pdc);
+    // void createGLSL2(DisplayContext *pdc);
+    // bool initShader(DisplayContext *pdc);
 
     /// Called just before this object is unloaded
-    virtual void unloading();
+    // virtual void unloading();
 
   private:
     bool m_bChkShaderDone;

@@ -44,5 +44,5 @@ runtime_class CPKRenderer extends MolRenderer
 
 };
 
-#endif BALL_STICK_RENDERER_QIF
+#endif
 

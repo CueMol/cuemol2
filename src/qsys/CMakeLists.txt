@@ -18,6 +18,7 @@ ObjLoadEditInfo.cpp
 SceneXMLReader.cpp
 SceneXMLWriter.cpp
 InDevEvent.cpp
+MouseEventHandler.cpp
 ObjectEvent.cpp
 RendererEvent.cpp
 SceneEvent.cpp
@@ -46,6 +47,7 @@ SceneExporter.cpp
 RendGroup.cpp
 MultiGradient.cpp
 TTYView.cpp
+GUIView.cpp
 QdfAbsWriter.cpp
 DrawObj.cpp
 command/Command.cpp
@@ -54,6 +56,7 @@ command/NewRendererCommand.cpp
 command/LoadSceneCommand.cpp
 command/LoadObjectCommand.cpp
 command/CmdMgr.cpp
+Canvas2DTextRender2.cpp
 )
 
 # Normal C++ header files
@@ -66,6 +69,7 @@ DrawObj.hpp
 EditInfo.hpp
 IOThread.hpp
 InDevEvent.hpp
+MouseEventHandler.hpp
 InOutHandler.hpp
 MomentumScroll.hpp
 MultiGradient.hpp
@@ -96,6 +100,7 @@ ScrEventManager.hpp
 StreamManager.hpp
 SysConfig.hpp
 TTYView.hpp
+GUIView.hpp
 TestRenderer.hpp
 UndoManager.hpp
 View.hpp
@@ -112,6 +117,7 @@ command/LoadObjectCommand.hpp
 command/LoadSceneCommand.hpp
 command/NewRendererCommand.hpp
 command/NewSceneCommand.hpp
+Canvas2DTextRender2.hpp
 qsys.hpp
 style/AutoStyleCtxt.hpp
 style/StyleEditInfo.hpp

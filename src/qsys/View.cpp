@@ -67,6 +67,8 @@ View::View()
   m_sclfac_x = 1.0;
   m_sclfac_y = 1.0;
 
+  m_nSceneID = qlib::invalid_uid;
+
   // m_fViewDist = 200.0f;
   // m_ltAmbi = Vector4D(0.2f, 0.2f, 0.2f);
   // m_ltDiff = Vector4D(0.8f, 0.8f, 0.8f);

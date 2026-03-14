@@ -14,7 +14,6 @@
 #include <qsys/ScalarObject.hpp>
 #include <qsys/ViewEvent.hpp>
 
-#include <sysdep/OglDisplayContext.hpp>
 #include <sysdep/OglProgramObject.hpp>
 
 #include <qsys/MultiGradient.hpp>

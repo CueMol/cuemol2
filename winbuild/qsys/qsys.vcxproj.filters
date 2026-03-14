@@ -51,7 +51,7 @@
     <ClCompile Include="..\..\src\qsys\InOutHandler.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\sysdep\MouseEventHandler.cpp">
+    <ClCompile Include="..\..\src\qsys\MouseEventHandler.cpp">
       <Filter>Source files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\qsys\Object.cpp">
@@ -669,8 +669,8 @@
     <ClCompile Include="..\..\src\gfx\TextRenderManager.cpp">
       <Filter>gfx</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\sysdep\Canvas2DTextRender2.cpp">
-      <Filter>sysdep</Filter>
+    <ClCompile Include="..\..\src\qsys\Canvas2DTextRender2.cpp">
+      <Filter>qsys</Filter>
     </ClCompile>
     <ClCompile Include="..\..\src\modules\molvis\CPK2Renderer.cpp">
       <Filter>molvis</Filter>

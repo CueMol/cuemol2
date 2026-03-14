@@ -49,8 +49,8 @@ MapSurfRenderer::MapSurfRenderer()
   
   m_nOmpThr = -1;
   m_bIsoLev = 0;
-  m_bWorkOK = false;
-  m_pVBO=NULL;
+  // m_bWorkOK = false;
+  // m_pVBO=NULL;
 
   m_bChkShaderDone = false;
 
@@ -68,11 +68,10 @@ MapSurfRenderer::~MapSurfRenderer()
   ScrEventManager *pSEM = ScrEventManager::getInstance();
   pSEM->removeViewListener(this);
 
-#if (GUI_ARCH!=MB_GUI_ARCH_CLI)
-//#if (GUI_ARCH!=CLI)
-  if (m_pVBO!=NULL)
-    delete m_pVBO;
-#endif
+// #if (GUI_ARCH!=MB_GUI_ARCH_CLI)
+//   if (m_pVBO!=NULL)
+//     delete m_pVBO;
+// #endif
 }
 
 /////////////////////////////////

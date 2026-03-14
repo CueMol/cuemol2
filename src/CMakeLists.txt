@@ -192,7 +192,7 @@ if (NOT BUILD_MINIMUM_MODULES)
   add_subdirectory(modules/molanl)
   add_subdirectory(modules/symm)
   add_subdirectory(modules/xtal)
-  add_subdirectory(modules/lwview)
+  # add_subdirectory(modules/lwview)
   add_subdirectory(modules/rendering)
   add_subdirectory(modules/anim)
   add_subdirectory(modules/mdtools)
@@ -229,7 +229,7 @@ SET(CUEMOL2_LINK_LIBRARIES
   gfx
   qsys
   molstr
-  lwview
+#  lwview
   anim
   molvis
   surface
@@ -306,6 +306,10 @@ set(SYSCONFIG_FILE ${DATA_DIR}/sysconfig.xml)
 install(FILES ${DATA_FILES} DESTINATION data/data)
 install(FILES ${SYSCONFIG_FILE} DESTINATION data)
 install(FILES ${DATA_DIR}/icc_profiles/GenericCMYK.icm DESTINATION data/data/icc_profiles)
+
+if(BUILD_TESTS)
+  add_subdirectory(tests)
+endif()
 
 if (BUILD_NODEJS_BINDINGS)
   if (ENABLE_TYPESCRIPT)

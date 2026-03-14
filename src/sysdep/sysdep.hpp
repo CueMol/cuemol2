@@ -39,9 +39,6 @@ namespace sysdep {
   /// Cleanup the sysdep library
   SYSDEP_API void fini();
 
-  SYSDEP_API void *createTextRender();
-  SYSDEP_API void destroyTextRender(void *pTR);
-
 }
 
 

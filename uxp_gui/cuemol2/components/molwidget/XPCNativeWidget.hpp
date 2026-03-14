@@ -16,7 +16,7 @@
 #include "qINativeWidget.h"
 
 #include <qsys/View.hpp>
-#include <sysdep/MouseEventHandler.hpp>
+#include <qsys/MouseEventHandler.hpp>
 
 namespace qsys { class InDevEvent; }
 
@@ -108,7 +108,7 @@ namespace xpcom {
     int m_nSceneID, m_nViewID;
     qsys::ViewPtr m_rQmView;
 
-    sysdep::MouseEventHandler m_meh;
+    qsys::MouseEventHandler m_meh;
     
     bool m_bUseGlShader;
     bool m_bUseMultiPad;

@@ -7,6 +7,7 @@
 #ifndef GFX_OGL_DISPLAY_CONTEXT_HPP_
 #define GFX_OGL_DISPLAY_CONTEXT_HPP_
 
+#if 0
 #include "sysdep.hpp"
 
 #include <gfx/DisplayContext.hpp>
@@ -228,5 +229,5 @@ namespace sysdep {
   };
 
 }
-
+#endif
 #endif

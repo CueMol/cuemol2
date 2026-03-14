@@ -3,7 +3,8 @@
 #include "GLSLLineHelper2.hpp"
 
 #include <gfx/DrawAttrArray.hpp>
-#include <sysdep/OglDisplayContext.hpp>
+#include <gfx/DisplayContext.hpp>
+
 #include <sysdep/OglProgramObject.hpp>
 #include <sysdep/ShaderSetupHelper.hpp>
 

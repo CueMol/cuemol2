@@ -152,6 +152,11 @@ void DisplayContext::setProjMat(const Matrix4D &mat)
     m_projMat = mat;
 }
 
+void DisplayContext::setViewport(const Vector4D &vp)
+{
+    m_viewport = vp;
+}
+
 // static
 Matrix4D DisplayContext::makeOrthoProjMat(float left, float right, float bottom, float top,
                                           float slabnear, float slabfar)

@@ -380,6 +380,9 @@ void OglProgramObject::setupFog(gfx::DisplayContext *pdc)
 
 void OglProgramObject::setupMat(gfx::DisplayContext *pdc)
 {
+    const Vector4D &vp = pdc->getViewport();
+    glViewport(vp.x(), vp.y(), vp.z(), vp.w());
+
     // setup model-view matrix
     auto mvMat = pdc->getModelViewMat();
     setMatrix("u_ModelViewMatrix", mvMat);

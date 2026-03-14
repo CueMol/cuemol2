@@ -95,9 +95,9 @@ namespace molvis {
     // VBO Rendering implementation
 
     /// cached vertex array/VBO
-    gfx::AbstDrawElem *m_pDrawElem;
+    // gfx::AbstDrawElem *m_pDrawElem;
 
-    void renderVBOImpl();
+    // void renderVBOImpl();
 
   private:
     ///////////////////////////////////
@@ -113,10 +113,10 @@ namespace molvis {
     int m_nGlRendMode;
 
   public:
-    static const int REND_DEFAULT=0;
-    static const int REND_SHADER=1;
-    static const int REND_VBO=2;
-    static const int REND_GLU=3;
+    static constexpr int REND_DEFAULT=0;
+    static constexpr int REND_SHADER=1;
+    static constexpr int REND_VBO=0;
+    static constexpr int REND_GLU=0;
 
     int getGLRenderMode() const { return m_nGlRendMode; }
     void setGLRenderMode(int n) { m_nGlRendMode = n; } 

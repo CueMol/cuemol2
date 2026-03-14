@@ -20,8 +20,19 @@ tasks:
   #####
 
   download_deplibs:
+    desc: "Download dependent library"
+    deps:
+      - task: download_deplibs:{{OS}}
+
+  download_deplibs:darwin:
     cmds:
       - bash download_deplibs/run.sh "{{.WORKDIR}}" macOS ARM64
+
+  download_deplibs:linux:
+    cmds:
+      - bash download_deplibs/run.sh "{{.WORKDIR}}" Linux X64
+
+  #####
 
   download_extpkgs:
     cmds:
@@ -74,6 +85,14 @@ tasks:
     platforms: [windows]
     cmds:
       - cmake --build "{{.LIBCUEMOL2_BUILDDIR}}" --parallel "{{.PARALLEL}}" --config "{{.CONFIG}}" --target install
+
+  run_gtest:
+    desc: "Run C++ unit tests (ctest). TEST=<binary> filters by label (e.g. test_qlib), FILTER=<regex> filters by test name."
+    vars:
+      TEST: '{{default "" .TEST}}'
+      FILTER: '{{default "" .FILTER}}'
+    cmds:
+      - ctest --test-dir "{{.LIBCUEMOL2_BUILDDIR}}" --output-on-failure{{if .TEST}} -L "{{.TEST}}"{{end}}{{if .FILTER}} -R "{{.FILTER}}"{{end}}
 
   clean_libcuemol2:
     desc: "Clean up the libcuemol2 obj dir"

@@ -77,14 +77,16 @@ namespace molstr {
 extern bool init();
 extern void fini();
 }  // namespace molstr
-namespace lwview {
-extern bool init();
-extern void fini();
-}  // namespace lwview
+
 namespace anim {
 extern bool init();
 extern void fini();
 }  // namespace anim
+
+// namespace lwview {
+// extern bool init();
+// extern void fini();
+// }  // namespace lwview
 
 #ifdef ENABLE_PYTHON_EMBED
 namespace pybr {
@@ -125,7 +127,7 @@ int init(const LString &confpath, bool reg_view, bool use_pybr) noexcept
 
         // load molstr/lwview module
         molstr::init();
-        lwview::init();
+        // lwview::init();
         anim::init();
 
         // load other modules
@@ -184,7 +186,7 @@ int fini() noexcept
         molanl::fini();
 
         anim::fini();
-        lwview::fini();
+        // lwview::fini();
         molstr::fini();
         MB_DPRINTLN("=== molstr::fini() OK ===");
 

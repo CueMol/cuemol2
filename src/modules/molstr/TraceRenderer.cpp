@@ -22,7 +22,7 @@ TraceRenderer::TraceRenderer()
 {
   //m_bUseVBO = true;
   m_bUseVBO = false;
-  m_pVBO = NULL;
+  // m_pVBO = NULL;
 }
 
 TraceRenderer::~TraceRenderer()
@@ -34,6 +34,7 @@ const char *TraceRenderer::getTypeName() const
   return "trace";
 }
 
+/*
 void TraceRenderer::display(DisplayContext *pdc)
 {
   if (!m_bUseVBO) {
@@ -67,6 +68,7 @@ void TraceRenderer::display(DisplayContext *pdc)
     return;
   }
 }
+*/
 
 void TraceRenderer::preRender(DisplayContext *pdc)
 {
@@ -82,8 +84,8 @@ void TraceRenderer::beginRend(DisplayContext *pdl)
     return;
   }
 
-  m_bPrevAidValid = false;
-  m_nVA = 0;
+  // m_bPrevAidValid = false;
+  // m_nVA = 0;
 }
 
 void TraceRenderer::beginSegment(DisplayContext *pdl, MolResiduePtr pRes)
@@ -93,8 +95,8 @@ void TraceRenderer::beginSegment(DisplayContext *pdl, MolResiduePtr pRes)
     return;
   }
 
-  m_bPrevAidValid = false;
-  m_nBonds = 0;
+  // m_bPrevAidValid = false;
+  // m_nBonds = 0;
 }
 
 void TraceRenderer::rendResid(DisplayContext *pdl, MolResiduePtr pRes)
@@ -107,7 +109,7 @@ void TraceRenderer::rendResid(DisplayContext *pdl, MolResiduePtr pRes)
     pdl->vertex(curpt);
     return;
   }
-
+  /*
   // VBO implementation
 
   if (!m_bPrevAidValid) {
@@ -122,6 +124,7 @@ void TraceRenderer::rendResid(DisplayContext *pdl, MolResiduePtr pRes)
     m_nPrevAid = val.aid2;
     m_nBonds ++;
   }
+  */
 }
 
 void TraceRenderer::endSegment(DisplayContext *pdl, MolResiduePtr pRes)
@@ -131,15 +134,15 @@ void TraceRenderer::endSegment(DisplayContext *pdl, MolResiduePtr pRes)
     return;
   }
 
-  // VBO implementation
-  if (m_nBonds>0) {
-    m_nVA += m_nBonds * 2;
-  }
-  else if (m_bPrevAidValid) {
-    // isolated segment
-    m_nVA += 3*2;
-    m_atoms.push_back(m_nPrevAid);
-  }
+  // // VBO implementation
+  // if (m_nBonds>0) {
+  //   m_nVA += m_nBonds * 2;
+  // }
+  // else if (m_bPrevAidValid) {
+  //   // isolated segment
+  //   m_nVA += 3*2;
+  //   m_atoms.push_back(m_nPrevAid);
+  // }
 
 }
 
@@ -149,7 +152,7 @@ void TraceRenderer::endRend(DisplayContext *pdl)
     pdl->setLineWidth(1.0f);
     return;
   }
-
+  /*
   if (m_pVBO!=NULL)
     delete m_pVBO;
     
@@ -220,4 +223,5 @@ void TraceRenderer::endRend(DisplayContext *pdl)
     ++j;
 
   }
+  */
 }
