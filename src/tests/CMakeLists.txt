@@ -19,13 +19,14 @@ add_executable(test_qlib
   qlib/test_msglog.cpp
   qlib/test_lscrmatrix4d.cpp
   qlib/test_ldom2node.cpp
+  qlib/test_pipestream.cpp
 )
 target_include_directories(test_qlib PRIVATE
   ${CMAKE_SOURCE_DIR}/src
   ${CMAKE_BINARY_DIR}/src
   ${Boost_INCLUDE_DIRS}
 )
-target_link_libraries(test_qlib PRIVATE qlib GTest::gtest)
+target_link_libraries(test_qlib PRIVATE qlib Boost::thread GTest::gtest)
 include(GoogleTest)
 gtest_discover_tests(test_qlib PROPERTIES LABELS "test_qlib")
 

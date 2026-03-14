@@ -90,7 +90,7 @@ int PipeStreamImpl::skip(int len)
   for (i=0; i<len; ++i) {
     if (m_data.size()<=0)
       return i;
-    read();
+    m_data.pop_back();  // inline pop to avoid re-acquiring m_mu via read()
   }
 
   return i;
