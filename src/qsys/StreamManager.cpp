@@ -15,17 +15,8 @@
 #include <qlib/LByteArray.hpp>
 #include <qlib/LVarArray.hpp>
 
-#ifdef HAVE_BOOST_THREAD
-#define BOOST_LIB_DIAGNOSTIC 1
-//#define BOOST_DYN_LINK 1
-#define BOOST_ALL_DYN_LINK 1
-#include <boost/thread.hpp>
-#include <boost/thread/condition.hpp>
-#include <boost/bind.hpp>
-//#include "PipeStream.hpp"
 #include <qlib/PipeStream.hpp>
 #include "IOThread.hpp"
-#endif
 
 #include <qlib/LDOM2Stream.hpp>
 #include <qlib/StringStream.hpp>
@@ -55,7 +46,6 @@ StreamManager::~StreamManager()
 //int StreamManager::loadObjectAsync(const LString &ftype)
 int StreamManager::loadObjectAsync(qlib::LScrSp<ObjReader> pReader)
 {
-#ifdef HAVE_BOOST_THREAD
   MB_DPRINTLN("StreamManager.loadAsyncObject(%s) called", pReader->getName());
 
   IOThread *pThr = MB_NEW IOThread;
@@ -64,9 +54,6 @@ int StreamManager::loadObjectAsync(qlib::LScrSp<ObjReader> pReader)
   pThr->kick();
 
   return tid;
-#else
-  return -1;
-#endif
 }
 
 void StreamManager::supplyDataAsync(int id, qlib::LScrSp<qlib::LByteArray> pbuf, int nlen)

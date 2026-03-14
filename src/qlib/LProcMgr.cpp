@@ -7,7 +7,7 @@
 
 #include "LProcMgr.hpp"
 
-#include <boost/thread.hpp>
+#include <mutex>
 
 #include "FileStream.hpp"
 #include "LThread.hpp"
@@ -25,7 +25,7 @@ public:
     int m_nExitCode;
 
     /// lock obj for m_sbuf access
-    mutable boost::mutex m_lock;
+    mutable std::mutex m_lock;
 };
 
 SINGLETON_BASE_IMPL(LProcMgr);
@@ -201,7 +201,7 @@ LString LProcMgr::getResultOutput(int id)
             LString res;
             {
                 ProcInThread *pThr = pEnt->m_pThr;
-                boost::mutex::scoped_lock lck(pThr->m_lock);
+                std::lock_guard<std::mutex> lck(pThr->m_lock);
                 res = pThr->m_sbuf;
                 pThr->m_sbuf = LString();
             }

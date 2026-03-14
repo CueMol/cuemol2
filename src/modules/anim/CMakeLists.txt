@@ -55,7 +55,7 @@ if (USE_PCH)
   target_precompile_headers(anim PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
 endif ()
 
-target_link_libraries(anim PRIVATE qlib gfx qsys molstr Boost::filesystem Boost::thread)
+target_link_libraries(anim PRIVATE qlib gfx qsys molstr Boost::filesystem)
 
 MCWRAPGEN_SCR_WRAPPERS(anim)
 

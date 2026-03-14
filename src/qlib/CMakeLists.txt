@@ -5,7 +5,6 @@ SET(QLIB_LINK_LIBRARIES
   qmzlib
   Boost::filesystem
   Boost::timer
-  Boost::thread
   )
 
 # Normal C++ source files

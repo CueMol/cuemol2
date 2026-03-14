@@ -30,7 +30,7 @@ target_include_directories(test_qlib PRIVATE
   ${CMAKE_BINARY_DIR}/src
   ${Boost_INCLUDE_DIRS}
 )
-target_link_libraries(test_qlib PRIVATE qlib Boost::thread GTest::gtest)
+target_link_libraries(test_qlib PRIVATE qlib GTest::gtest)
 include(GoogleTest)
 gtest_discover_tests(test_qlib PROPERTIES LABELS "test_qlib")
 
@@ -88,7 +88,7 @@ target_include_directories(test_qsys PRIVATE
   ${CMAKE_BINARY_DIR}/src
   ${Boost_INCLUDE_DIRS}
 )
-target_link_libraries(test_qsys PRIVATE qsys gfx qlib Boost::filesystem Boost::thread GTest::gtest)
+target_link_libraries(test_qsys PRIVATE qsys gfx qlib Boost::filesystem GTest::gtest)
 gtest_discover_tests(test_qsys PROPERTIES LABELS "test_qsys")
 
 add_executable(test_molstr
@@ -107,7 +107,7 @@ target_include_directories(test_molstr PRIVATE
   ${CMAKE_BINARY_DIR}/src
   ${Boost_INCLUDE_DIRS}
 )
-target_link_libraries(test_molstr PRIVATE molstr qsys gfx qlib Boost::filesystem Boost::thread GTest::gtest)
+target_link_libraries(test_molstr PRIVATE molstr qsys gfx qlib Boost::filesystem GTest::gtest)
 if (BUILD_OPENGL_SYSDEP)
   target_link_libraries(test_molstr PRIVATE sysdep)
 endif()
@@ -126,7 +126,7 @@ target_include_directories(test_importers PRIVATE
 target_compile_definitions(test_importers PRIVATE
   CUEMOL2_SYSCONFIG_PATH="${CMAKE_SOURCE_DIR}/data/sysconfig.xml"
 )
-target_link_libraries(test_importers PRIVATE importers surface symm xtal molvis molstr qsys gfx qlib Boost::filesystem Boost::thread GTest::gtest)
+target_link_libraries(test_importers PRIVATE importers surface symm xtal molvis molstr qsys gfx qlib Boost::filesystem GTest::gtest)
 if (BUILD_OPENGL_SYSDEP)
   target_link_libraries(test_importers PRIVATE sysdep)
 endif()

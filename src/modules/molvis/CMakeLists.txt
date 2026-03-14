@@ -107,7 +107,7 @@ if (USE_PCH)
   target_precompile_headers(molvis PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
 endif ()
 
-target_link_libraries(molvis PRIVATE qlib gfx qsys molstr Boost::filesystem Boost::thread)
+target_link_libraries(molvis PRIVATE qlib gfx qsys molstr Boost::filesystem)
 
 MCWRAPGEN_SCR_WRAPPERS(molvis)
 
