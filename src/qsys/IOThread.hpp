@@ -27,7 +27,14 @@ namespace qsys {
 
     //////////
 
-    IOThread() : LThread() {}
+    IOThread() : LThread()
+    {
+      // Initialize the pipe before kick() so that supplyData() can be called
+      // from the main thread immediately after loadObjectAsync() without a
+      // race condition on m_pipeImpl.
+      m_pipeImpl = qlib::sp<PipeStreamImpl>(MB_NEW PipeStreamImpl);
+      m_in.setImpl(m_pipeImpl);
+    }
 
     virtual ~IOThread()
     {
@@ -39,8 +46,6 @@ namespace qsys {
     {
       //MB_DPRINTLN("*** Thread %p started ***", m_pthr);
       try {
-        m_pipeImpl = qlib::sp<PipeStreamImpl>(MB_NEW PipeStreamImpl);
-        m_in.setImpl(m_pipeImpl);
         ObjectPtr pret = m_pRdr->load(m_in);
         m_pObj = pret;
       }
