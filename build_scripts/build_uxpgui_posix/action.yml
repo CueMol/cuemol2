@@ -57,6 +57,15 @@ runs:
       pyenv versions
       python --version
 
+  - name: Install autoconf 2.13
+    run: |
+      curl -fsSL https://ftp.gnu.org/gnu/autoconf/autoconf-2.13.tar.gz | tar xz
+      cd autoconf-2.13
+      ./configure --prefix=$HOME/autoconf-2.13 --program-suffix=213
+      make
+      make install
+      echo "$HOME/autoconf-2.13/bin" >> $GITHUB_PATH
+
   - name: Build UXP GUI
     id: create-artifact
     shell: bash
