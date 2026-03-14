@@ -118,19 +118,19 @@ public:
     int m_nAtomDrawn, m_nBondDrawn;
 
     /// one color - single valence
-    static const int IBON_1C_1V = 0;
+    static constexpr int IBON_1C_1V = 0;
     /// two color - single valence
-    static const int IBON_2C_1V = 1;
+    static constexpr int IBON_2C_1V = 1;
 
     /// one color - double valence
-    static const int IBON_1C_2V = 2;
+    static constexpr int IBON_1C_2V = 2;
     /// two color - double valence
-    static const int IBON_2C_2V = 3;
+    static constexpr int IBON_2C_2V = 3;
 
     /// one color - triple valence
-    static const int IBON_1C_3V = 4;
+    static constexpr int IBON_1C_3V = 4;
     /// two color - triple valence
-    static const int IBON_2C_3V = 5;
+    static constexpr int IBON_2C_3V = 5;
 
     // single valence bonds
     struct IntBond
