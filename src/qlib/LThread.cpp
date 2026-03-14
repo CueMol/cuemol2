@@ -7,7 +7,6 @@
 #include "LThread.hpp"
 
 #include <boost/thread.hpp>
-#include <boost/bind.hpp>
 
 namespace qlib {
   class LTThreadImpl
@@ -35,7 +34,7 @@ LThread::~LThread()
 void LThread::kick()
 {
   MB_ASSERT(m_pimp->m_pthr==NULL);
-  m_pimp->m_pthr = MB_NEW boost::thread(boost::bind(&LThread::run, this));
+  m_pimp->m_pthr = MB_NEW boost::thread([this]() { this->run(); });
 }
 
 void LThread::waitTermination()

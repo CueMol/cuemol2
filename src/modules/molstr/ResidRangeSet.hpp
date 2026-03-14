@@ -110,7 +110,7 @@ namespace molstr {
 
     virtual bool fromString(const LString &src);
 
-    typedef boost::true_type has_fromString;
+    typedef std::true_type has_fromString;
     static ResidRangeSet *fromStringS(const LString &src);
     
   private:

@@ -116,7 +116,7 @@ public:
 
     void setStrValue(const LString &val);
 
-    typedef boost::true_type has_fromString;
+    typedef std::true_type has_fromString;
     static LScrVector4D *fromStringS(const LString &src);
 
 #if 0

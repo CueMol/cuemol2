@@ -53,7 +53,7 @@ public:
     // String <--> value conversion
     virtual bool isStrConv() const;
     virtual LString toString() const;
-    typedef boost::true_type has_fromString;
+    typedef std::true_type has_fromString;
     static LScrMatrix4D *fromStringS(const LString &src);
 
     static inline void indexCheck(int i, int j) {

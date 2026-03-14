@@ -587,7 +587,7 @@ namespace qlib {
     // string to obj conversion util
     template <typename _Type>
     static inline
-    _Type *tryConvStrToObj_impl(const LString &aSrc, const boost::false_type&)
+    _Type *tryConvStrToObj_impl(const LString &aSrc, const std::false_type&)
     {
       // doesn't have fromString() static method
       return NULL;
@@ -595,7 +595,7 @@ namespace qlib {
 
     template <typename _Type>
     static inline
-    _Type *tryConvStrToObj_impl(const LString &aSrc, const boost::true_type&)
+    _Type *tryConvStrToObj_impl(const LString &aSrc, const std::true_type&)
     {
       qlib::LClass *pCls = _Type::getClassObjS();
       _Type *pObj = static_cast<_Type *>(pCls->createFromString(aSrc));

@@ -60,7 +60,7 @@ public:
 
     //
 
-    typedef boost::true_type has_fromString;
+    typedef std::true_type has_fromString;
     static LScrRangeSet *fromStringS(const LString &src);
 };
 

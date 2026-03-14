@@ -166,14 +166,11 @@ TimerImpl::~TimerImpl()
 {
 }
 
-#ifdef HAVE_BOOST_CHRONO
-#include <boost/chrono/chrono.hpp>
-#endif
+#include <chrono>
 
 qlib::time_value TimerImpl::getCurrentTime()
 {
-#ifdef HAVE_BOOST_CHRONO
-  using namespace boost::chrono;
+  using namespace std::chrono;
 
   high_resolution_clock::time_point tp = high_resolution_clock::now();
 
@@ -182,9 +179,6 @@ qlib::time_value TimerImpl::getCurrentTime()
 
   // LOG_DPRINTLN("getCurrentTime() = %llu", t1);
   return t1;
-#else
-  return qlib::time_value(0);
-#endif
 }
 
 //////////

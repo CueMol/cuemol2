@@ -28,7 +28,7 @@ namespace qlib {
     LScrObjBase();
     virtual ~LScrObjBase();
 
-    typedef boost::false_type has_fromString;
+    typedef std::false_type has_fromString;
 
   public:
     //////////////////////

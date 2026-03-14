@@ -116,7 +116,7 @@ namespace qlib {
     virtual bool isStrConv() const;
     virtual LString toString() const;
 
-    typedef boost::true_type has_fromString;
+    typedef std::true_type has_fromString;
     static LScrTime *fromStringS(const LString &src);
   };
 
