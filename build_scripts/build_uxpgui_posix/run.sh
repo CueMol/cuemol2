@@ -63,6 +63,8 @@ ls -l $BUNDLE_DIR/ffmpeg
 ls -l $BUNDLE_DIR/apbs
 
 if [ $RUNNER_OS = "macOS" ]; then
+    brew install yasm
+
     SDK_BASE_PATH=$(dirname $(xcrun --show-sdk-path))
     SDK_PATH=$(echo $SDK_BASE_PATH/MacOSX*.*.sdk | tr ' ' '\n' | sort | tail -1)
     echo SDK_PATH: $SDK_PATH
