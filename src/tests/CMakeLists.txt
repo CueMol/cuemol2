@@ -17,6 +17,8 @@ add_executable(test_qlib
   qlib/test_lscrtime.cpp
   qlib/test_lregexpr.cpp
   qlib/test_msglog.cpp
+  qlib/test_lscrmatrix4d.cpp
+  qlib/test_ldom2node.cpp
 )
 target_include_directories(test_qlib PRIVATE
   ${CMAKE_SOURCE_DIR}/src

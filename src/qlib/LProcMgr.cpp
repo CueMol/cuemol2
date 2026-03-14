@@ -117,7 +117,7 @@ int LProcMgr::queueTask(const LString &path, const LString &args, const LString 
     if (!wait.isEmpty()) {
         LStringList ls;
         wait.split(' ', ls);
-        BOOST_FOREACH (const LString &elem, ls) {
+        for (const LString &elem : ls) {
             if (elem.toInt(&val)) pEnt->m_waitIDs.push_back(val);
         }
     }
@@ -180,7 +180,7 @@ void LProcMgr::finishTask(int isl)
     m_tab[isl] = NULL;
 
     // clear the waiting list, if exists
-    BOOST_FOREACH (const queue_t::value_type &elem, m_queue) {
+    for (const queue_t::value_type &elem : m_queue) {
         pEnt = elem.second;
         pEnt->removeWaitID(iendid);
     }
@@ -318,7 +318,7 @@ int LProcMgr::getEmptySlot()
 void LProcMgr::updateWaitIDs(ProcEnt *pEnt)
 {
     std::list<int> newlist;
-    BOOST_FOREACH (int id, pEnt->m_waitIDs) {
+    for (int id : pEnt->m_waitIDs) {
         int state = getState(id);
         if (state == PM_QUEUED || state == PM_RUNNING) {
             newlist.push_back(id);
@@ -433,7 +433,7 @@ void LProcMgr::kill(int id)
 
 void LProcMgr::killAll()
 {
-    BOOST_FOREACH (const queue_t::value_type &elem, m_queue) {
+    for (const queue_t::value_type &elem : m_queue) {
         delete elem.second;
     }
     m_queue.clear();

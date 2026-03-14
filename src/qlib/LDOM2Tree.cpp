@@ -25,7 +25,7 @@ LDom2Node::LDom2Node(const LDom2Node &src)
   m_bIsAttr = src.m_bIsAttr;
   m_bConsumed = src.m_bConsumed;
 
-  BOOST_FOREACH(LDom2Node *pChNode, src.m_children) {
+  for (LDom2Node *pChNode : src.m_children) {
     LDom2Node *pNewNode = MB_NEW LDom2Node(*pChNode);
     m_children.push_back(pNewNode);
   };
@@ -43,7 +43,7 @@ LDom2Node::LDom2Node(const LDom2Node &src)
 LDom2Node::~LDom2Node()
 {
   //std::for_each( m_children.begin(), m_children.end(), delete_ptr<LDom2Node *>() );
-  BOOST_FOREACH(LDom2Node *pNode, m_children) {
+  for (LDom2Node *pNode : m_children) {
     if (pNode!=NULL)
       delete pNode;
   };
@@ -91,7 +91,7 @@ void LDom2Node::setTypeNameByObj(const LScriptable *pObj)
 
 LString LDom2Node::getStrAttr(const LString &key) const
 {
-  BOOST_FOREACH(LDom2Node *pnode, m_children) {
+  for (LDom2Node *pnode : m_children) {
     if (pnode->getTagName().equals(key)) {
       if (!pnode->value.isEmpty()) {
         return pnode->value;
@@ -208,7 +208,7 @@ void LDom2Node::popBackChild()
 
 LDom2Node *LDom2Node::findChild(const LString &key) const
 {
-  BOOST_FOREACH(LDom2Node *pnode, m_children) {
+  for (LDom2Node *pnode : m_children) {
     if (pnode->getTagName().equals(key)) {
       return pnode;
     }
@@ -218,7 +218,7 @@ LDom2Node *LDom2Node::findChild(const LString &key) const
 
 bool LDom2Node::isChildrenConsumed() const
 {
-  BOOST_FOREACH(LDom2Node *pNode, m_children) {
+  for (LDom2Node *pNode : m_children) {
     //NodeList::const_iterator iter = m_children.begin();
     //for (; iter!=m_children.end(); ++iter) {
     //LDom2Node *pNode = *iter;
@@ -239,7 +239,7 @@ void LDom2Node::dump() const
   }
   else {
     MB_DPRINTLN(", children= {");
-    BOOST_FOREACH (LDom2Node *p, m_children) {
+    for (LDom2Node *p : m_children) {
       if (p==NULL)
         MB_DPRINTLN("(nil)\n");
       else
@@ -320,7 +320,7 @@ void LDom2Node::appendErrMsg(const char *fmt, ...)
 LString LDom2Node::getErrorMsgs() const
 {
   LString rval;
-  BOOST_FOREACH (LDom2Node* p, m_children) {
+  for (LDom2Node* p : m_children) {
     if (p!=NULL)
       rval += p->getErrorMsgs();
   }

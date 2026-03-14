@@ -206,7 +206,7 @@ void EventManager::performIdleTasks()
     // process timer events
     checkTimerQueue();
     
-    BOOST_FOREACH (IdleTask *pTask, m_idleTasks) {
+    for (IdleTask *pTask : m_idleTasks) {
       pTask->doIdleTask();
     }
   }
