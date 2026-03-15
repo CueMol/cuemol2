@@ -3,39 +3,34 @@
 //  Thread object
 //
 
-#ifndef QLIB_THREAD_HPP
-#define QLIB_THREAD_HPP
+#pragma once
 
 #include "qlib.hpp"
 
 namespace qlib {
 
-  class LTThreadImpl;
+class LTThreadImpl;
 
-  class QLIB_API LThread
-  {
-  private:
-    //boost::thread *m_pthr;
+class QLIB_API LThread
+{
+private:
     LTThreadImpl *m_pimp;
 
     //////////
 
-  public:
+public:
     LThread();
 
     virtual ~LThread();
 
     //////////
 
-    virtual void run() =0;
+    virtual void run() = 0;
 
     void kick();
     void waitTermination();
     bool waitTermination(int nsec);
     bool isRunning() const;
-  };
-}
+};
 
-#endif
-
-
+}  // namespace qlib
