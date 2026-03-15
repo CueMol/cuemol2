@@ -132,7 +132,7 @@ namespace qlib {
 
     LString toString() const;
 
-    typedef boost::true_type has_fromString;
+    typedef std::true_type has_fromString;
     static bool fromStringS(const LString &src, Vector4D &result);
 
 

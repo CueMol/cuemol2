@@ -75,7 +75,7 @@ LScrMatrix4D *LScrMatrix4D::fromStringS(const LString &src)
   double d;
   int i=1;
   LScrMatrix4D *pRes = MB_NEW LScrMatrix4D();
-  BOOST_FOREACH (LString e, ls) {
+  for (LString e : ls) {
     if (!e.toDouble(&d)) {
       // ERROR!!
       delete pRes;

@@ -11,7 +11,7 @@ using namespace qlib;
 /** check if input is available. */
 bool PipeStreamImpl::ready()
 {
-  boost::mutex::scoped_lock lk(m_mu);
+  std::lock_guard<std::mutex> lk(m_mu);
   if (m_data.size()>0)
     return true;
   // data buffer is empty
@@ -19,29 +19,19 @@ bool PipeStreamImpl::ready()
     return false; // channel was closed
 
   // still connected
-  return true; 
+  return true;
 }
-    
+
 /** read one byte */
 int PipeStreamImpl::read()
 {
-  boost::mutex::scoped_lock lk(m_mu);
-  
-  while (!m_feof && m_data.size()<=0)
-    m_cond.wait(lk);
+  std::unique_lock<std::mutex> lk(m_mu);
 
-  if (m_feof && m_data.size()<=0)
+  m_cond.wait(lk, [this]{ return m_feof || !m_data.empty(); });
+
+  if (m_feof && m_data.empty())
     return -1;
 
-  /*
-
-    if (m_data.size()<=0) {
-    MB_THROW(qlib::IOException, "");
-    return 0;
-    }
-
-  */
-  
   int rval = m_data.back();
   m_data.pop_back();
 
@@ -52,17 +42,16 @@ int PipeStreamImpl::read()
 /** read into mem block */
 int PipeStreamImpl::read(char *buf, int off, int len)
 {
-  boost::mutex::scoped_lock lk(m_mu);
-  
-  while (!m_feof && m_data.size()<=0)
-    m_cond.wait(lk);
+  std::unique_lock<std::mutex> lk(m_mu);
 
-  if (m_feof && m_data.size()<=0)
+  m_cond.wait(lk, [this]{ return m_feof || !m_data.empty(); });
+
+  if (m_feof && m_data.empty())
     return -1;
-  
+
   int i;
   for (i=0; i<len; ++i) {
-    if (m_data.size()<=0)
+    if (m_data.empty())
       break;
     buf[off+i] = m_data.back();
     m_data.pop_back();
@@ -78,19 +67,18 @@ int PipeStreamImpl::read(char *buf, int off, int len)
 */
 int PipeStreamImpl::skip(int len)
 {
-  boost::mutex::scoped_lock lk(m_mu);
-  
-  while (!m_feof && m_data.size()<=0)
-    m_cond.wait(lk);
+  std::unique_lock<std::mutex> lk(m_mu);
 
-  if (m_feof && m_data.size()<=0)
+  m_cond.wait(lk, [this]{ return m_feof || !m_data.empty(); });
+
+  if (m_feof && m_data.empty())
     return -1;
-  
+
   int i;
   for (i=0; i<len; ++i) {
-    if (m_data.size()<=0)
+    if (m_data.empty())
       return i;
-    read();
+    m_data.pop_back();  // inline pop to avoid re-acquiring m_mu via read()
   }
 
   return i;
@@ -112,12 +100,12 @@ LString PipeStreamImpl::getSrcURI() const
 /** write out mem block */
 int PipeStreamImpl::write(const char *buf, int off, int len)
 {
-  boost::mutex::scoped_lock lk(m_mu);
-  
+  std::lock_guard<std::mutex> lk(m_mu);
+
   for (int i=0; i<len; ++i) {
     m_data.push_front(buf[i+off]);
   }
-  
+
   m_cond.notify_all();
   return len;
 }
@@ -125,7 +113,7 @@ int PipeStreamImpl::write(const char *buf, int off, int len)
 /** write one byte */
 void PipeStreamImpl::write(int b)
 {
-  boost::mutex::scoped_lock lk(m_mu);
+  std::lock_guard<std::mutex> lk(m_mu);
   m_data.push_front((char)b);
   m_cond.notify_all();
 }
@@ -138,7 +126,7 @@ void PipeStreamImpl::flush()
 /** close the stream */
 void PipeStreamImpl::o_close()
 {
-  boost::mutex::scoped_lock lk(m_mu);
+  std::lock_guard<std::mutex> lk(m_mu);
   m_feof = true;
   m_cond.notify_all();
 }

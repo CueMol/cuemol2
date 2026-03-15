@@ -151,7 +151,7 @@ public:
     {
         LString rval = "[";
         bool bstart = true;
-        BOOST_FOREACH (ProcEnt *pEnt, m_endq) {
+        for (ProcEnt *pEnt : m_endq) {
             if (bstart)
                 bstart = false;
             else

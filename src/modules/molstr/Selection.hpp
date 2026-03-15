@@ -57,7 +57,7 @@ namespace molstr {
 
     virtual qlib::LString toString() const =0;
 
-    typedef boost::true_type has_fromString;
+    typedef std::true_type has_fromString;
     static Selection *fromStringS(const qlib::LString &src);
   };
 

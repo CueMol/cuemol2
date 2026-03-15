@@ -78,7 +78,7 @@ public:
                 printf("child(%d): %s", m_childpid, sbuf);
 
                 {
-                    boost::mutex::scoped_lock lck(m_lock);
+                    std::lock_guard<std::mutex> lck(m_lock);
                     m_sbuf.append(sbuf);
                 }
             }

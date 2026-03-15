@@ -202,7 +202,7 @@ endif ()
 
 target_compile_definitions(qsys PUBLIC NO_SCRIPT=1)
 
-target_link_libraries(qsys PRIVATE qlib gfx Boost::filesystem Boost::thread)
+target_link_libraries(qsys PRIVATE qlib gfx Boost::filesystem)
 
 MCWRAPGEN_SCR_WRAPPERS(qsys)
 

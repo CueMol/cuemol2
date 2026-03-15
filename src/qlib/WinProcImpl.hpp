@@ -26,7 +26,7 @@ public:
       // m_sbuf.append(buffer);
 
       {
-	boost::mutex::scoped_lock lck(m_lock);
+	std::lock_guard<std::mutex> lck(m_lock);
 	m_sbuf.append(buffer);
       }
     }

@@ -7,7 +7,7 @@
 
 #include "LProcMgr.hpp"
 
-#include <boost/thread.hpp>
+#include <mutex>
 
 #include "FileStream.hpp"
 #include "LThread.hpp"
@@ -25,7 +25,7 @@ public:
     int m_nExitCode;
 
     /// lock obj for m_sbuf access
-    mutable boost::mutex m_lock;
+    mutable std::mutex m_lock;
 };
 
 SINGLETON_BASE_IMPL(LProcMgr);
@@ -117,7 +117,7 @@ int LProcMgr::queueTask(const LString &path, const LString &args, const LString 
     if (!wait.isEmpty()) {
         LStringList ls;
         wait.split(' ', ls);
-        BOOST_FOREACH (const LString &elem, ls) {
+        for (const LString &elem : ls) {
             if (elem.toInt(&val)) pEnt->m_waitIDs.push_back(val);
         }
     }
@@ -180,7 +180,7 @@ void LProcMgr::finishTask(int isl)
     m_tab[isl] = NULL;
 
     // clear the waiting list, if exists
-    BOOST_FOREACH (const queue_t::value_type &elem, m_queue) {
+    for (const queue_t::value_type &elem : m_queue) {
         pEnt = elem.second;
         pEnt->removeWaitID(iendid);
     }
@@ -201,7 +201,7 @@ LString LProcMgr::getResultOutput(int id)
             LString res;
             {
                 ProcInThread *pThr = pEnt->m_pThr;
-                boost::mutex::scoped_lock lck(pThr->m_lock);
+                std::lock_guard<std::mutex> lck(pThr->m_lock);
                 res = pThr->m_sbuf;
                 pThr->m_sbuf = LString();
             }
@@ -209,14 +209,9 @@ LString LProcMgr::getResultOutput(int id)
             return res;
         }
 
-        // remove from the slot and return the result
-        m_tab[isl] = NULL;
-        ProcInThread *pThr = pEnt->m_pThr;
-        LString res = pThr->m_sbuf;
-        delete pEnt;
-        delete pThr;
-        writeLogFile(res);
-        return res;
+        // move to endq (also clears wait IDs of queued tasks depending on this id)
+        finishTask(isl);
+        // fall through to endq retrieval below
     }
 
     // search id in the endq
@@ -318,7 +313,7 @@ int LProcMgr::getEmptySlot()
 void LProcMgr::updateWaitIDs(ProcEnt *pEnt)
 {
     std::list<int> newlist;
-    BOOST_FOREACH (int id, pEnt->m_waitIDs) {
+    for (int id : pEnt->m_waitIDs) {
         int state = getState(id);
         if (state == PM_QUEUED || state == PM_RUNNING) {
             newlist.push_back(id);
@@ -433,7 +428,7 @@ void LProcMgr::kill(int id)
 
 void LProcMgr::killAll()
 {
-    BOOST_FOREACH (const queue_t::value_type &elem, m_queue) {
+    for (const queue_t::value_type &elem : m_queue) {
         delete elem.second;
     }
     m_queue.clear();

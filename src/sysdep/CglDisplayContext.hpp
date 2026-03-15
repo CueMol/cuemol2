@@ -7,7 +7,6 @@
 #ifndef GFX_CGL_DISPLAY_CONTEXT_HPP_
 #define GFX_CGL_DISPLAY_CONTEXT_HPP_
 
-// #include "OglDisplayContext.hpp"
 #include "ogl_core/OcDisplayContext.hpp"
 #include "CglView.hpp"
 

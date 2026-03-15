@@ -133,7 +133,7 @@ bool LScrRangeSet::fromString(const LString &src)
   // tokenize by comma
   LStringList ls;
   src.split(',', ls);
-  BOOST_FOREACH (const LString &elem, ls) {
+  for (const LString &elem : ls) {
     int cc = elem.indexOf(':');
     if (cc<0) {
       int num;

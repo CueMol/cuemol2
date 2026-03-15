@@ -7,12 +7,12 @@
 #ifndef GFX_AGL_DISPLAY_CONTEXT_HPP_
 #define GFX_AGL_DISPLAY_CONTEXT_HPP_
 
-#include "OglDisplayContext.hpp"
+#include "ogl_core/OcDisplayContext.hpp"
 #include "AglView.hpp"
 
 namespace sysdep {
 
-  class AglDisplayContext : public OglDisplayContext
+  class AglDisplayContext : public OcDisplayContext
   {
   private:
     //WindowRef m_win;

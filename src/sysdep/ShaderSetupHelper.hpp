@@ -7,15 +7,11 @@
 #include "sysdep.hpp"
 
 #include <qsys/View.hpp>
-// #include <qsys/Scene.hpp>
-// #include "OglDisplayContext.hpp"
 
 namespace sysdep {
 
-// class OglDisplayContext;
 class OcDisplayContext;
 
-// using DisplayContextType = OglDisplayContext;
 using DisplayContextType = OcDisplayContext;
 
 class SYSDEP_API ShaderSetupHelper

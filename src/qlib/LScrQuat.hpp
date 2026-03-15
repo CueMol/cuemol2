@@ -83,7 +83,7 @@ namespace qlib {
     virtual bool isStrConv() const;
     virtual LString toString() const;
 
-    typedef boost::true_type has_fromString;
+    typedef std::true_type has_fromString;
     static LScrQuat *fromStringS(const LString &src);
 
     LScrQuat scale(double aVal) const {

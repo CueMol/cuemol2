@@ -115,7 +115,7 @@ namespace gfx {
     // virtual bool fromString(const LString &src);
     // virtual LString toString() const;
 
-    typedef boost::true_type has_fromString;
+    typedef std::true_type has_fromString;
     static AbstractColor *fromStringS(const LString &aStr);
     static AbstractColor *fromNode(qlib::LDom2Node *);
     

@@ -143,7 +143,7 @@ if (USE_PCH)
   target_precompile_headers(molstr PRIVATE ${CMAKE_SOURCE_DIR}/src/common.h)
 endif ()
 
-target_link_libraries(molstr PRIVATE qlib gfx qsys Boost::filesystem Boost::thread CGAL::CGAL)
+target_link_libraries(molstr PRIVATE qlib gfx qsys Boost::filesystem CGAL::CGAL)
 
 MCWRAPGEN_SCR_WRAPPERS(molstr)
 

@@ -17,6 +17,13 @@ add_executable(test_qlib
   qlib/test_lscrtime.cpp
   qlib/test_lregexpr.cpp
   qlib/test_msglog.cpp
+  qlib/test_lscrmatrix4d.cpp
+  qlib/test_ldom2node.cpp
+  qlib/test_pipestream.cpp
+  qlib/test_lthread.cpp
+  qlib/test_binstream.cpp
+  qlib/test_eventmanager.cpp
+  qlib/test_lprocmgr.cpp
 )
 target_include_directories(test_qlib PRIVATE
   ${CMAKE_SOURCE_DIR}/src
@@ -81,7 +88,7 @@ target_include_directories(test_qsys PRIVATE
   ${CMAKE_BINARY_DIR}/src
   ${Boost_INCLUDE_DIRS}
 )
-target_link_libraries(test_qsys PRIVATE qsys gfx qlib Boost::filesystem Boost::thread GTest::gtest)
+target_link_libraries(test_qsys PRIVATE qsys gfx qlib Boost::filesystem GTest::gtest)
 gtest_discover_tests(test_qsys PROPERTIES LABELS "test_qsys")
 
 add_executable(test_molstr
@@ -100,7 +107,7 @@ target_include_directories(test_molstr PRIVATE
   ${CMAKE_BINARY_DIR}/src
   ${Boost_INCLUDE_DIRS}
 )
-target_link_libraries(test_molstr PRIVATE molstr qsys gfx qlib Boost::filesystem Boost::thread GTest::gtest)
+target_link_libraries(test_molstr PRIVATE molstr qsys gfx qlib Boost::filesystem GTest::gtest)
 if (BUILD_OPENGL_SYSDEP)
   target_link_libraries(test_molstr PRIVATE sysdep)
 endif()
@@ -119,7 +126,7 @@ target_include_directories(test_importers PRIVATE
 target_compile_definitions(test_importers PRIVATE
   CUEMOL2_SYSCONFIG_PATH="${CMAKE_SOURCE_DIR}/data/sysconfig.xml"
 )
-target_link_libraries(test_importers PRIVATE importers surface symm xtal molvis molstr qsys gfx qlib Boost::filesystem Boost::thread GTest::gtest)
+target_link_libraries(test_importers PRIVATE importers surface symm xtal molvis molstr qsys gfx qlib Boost::filesystem GTest::gtest)
 if (BUILD_OPENGL_SYSDEP)
   target_link_libraries(test_importers PRIVATE sysdep)
 endif()

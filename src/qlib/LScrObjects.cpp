@@ -261,7 +261,7 @@ void LScrObjBase::writeTo2(LDom2Node *pNode) const
   std::set<LString> names;
   getPropNames(names);
 
-  BOOST_FOREACH(const LString &nm, names) {
+  for (const LString &nm : names) {
 
     PropSpec spec;
     if (!getPropSpecImpl(nm, &spec))
@@ -696,7 +696,7 @@ namespace qlib {
           }
           rval += "\"enumdef\": [";
           int i=0;
-          BOOST_FOREACH(qlib::EnumDef::value_type ii, *(spec.pEnumDef)) {
+          for (qlib::EnumDef::value_type ii : *(spec.pEnumDef)) {
             if (i!=0) rval += ",";
             rval += LString('"') + ii.first + '"';
             ++i;

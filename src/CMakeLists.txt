@@ -28,7 +28,7 @@ SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
 
 set(Boost_USE_STATIC_LIBS OFF)
 find_package(Boost 1.50.0 REQUIRED
-  COMPONENTS system thread filesystem chrono timer)
+  COMPONENTS system filesystem timer)
 
 find_package(CGAL REQUIRED)
 message(STATUS "CGAL_CONFIG: ${CGAL_CONFIG}")
@@ -138,10 +138,6 @@ endif (${Boost_FILESYSTEM_FOUND})
 if (${Boost_SYSTEM_FOUND})
   SET(HAVE_BOOST_SYSTEM "1")
 endif (${Boost_SYSTEM_FOUND})
-
-if (${Boost_THREAD_FOUND})
-  SET(HAVE_BOOST_THREAD "1")
-endif (${Boost_THREAD_FOUND})
 
 if (${Boost_TIMER_FOUND})
   SET(HAVE_BOOST_TIMER "1")

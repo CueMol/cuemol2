@@ -9,7 +9,7 @@
 #include "BinStream.hpp"
 #include "LString.hpp"
 
-#include <boost/thread.hpp>
+#include <thread>
 
 using namespace qlib;
 
@@ -33,7 +33,7 @@ void InStream::readFully(char *b, int off, int len)
       break;
     
     // facilitate context switching here, not to block the input thread
-    boost::thread::yield();
+    std::this_thread::yield();
   }
 }
 
