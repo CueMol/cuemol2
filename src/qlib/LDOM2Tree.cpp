@@ -112,16 +112,6 @@ bool LDom2Node::getBoolAttr(const LString &key) const
   return false;
 }
 
-/*bool LDom2Node::hasAttr(const LString &key) const
-{
-  BOOST_FOREACH(LDom2Node *pnode, m_children) {
-    if (pnode->getTagName().equals(key))
-      return true;
-  };
-
-  return false;
-}*/
-
 bool LDom2Node::removeChild(const LString &key)
 {
   NodeList::iterator iter = m_children.begin();
@@ -219,9 +209,6 @@ LDom2Node *LDom2Node::findChild(const LString &key) const
 bool LDom2Node::isChildrenConsumed() const
 {
   for (LDom2Node *pNode : m_children) {
-    //NodeList::const_iterator iter = m_children.begin();
-    //for (; iter!=m_children.end(); ++iter) {
-    //LDom2Node *pNode = *iter;
     if (!pNode->isConsumed())
       return false;
   }
@@ -251,15 +238,8 @@ void LDom2Node::dump() const
 
 bool LDom2Node::isLeaf() const
 {
-  //if (!m_children.empty())
-  //return false;
-
   if (!m_typeName.isEmpty())
     return false;
-
-  //if (!m_bIsAttr)
-  //return false;
-
   return true;
 }
 
