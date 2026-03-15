@@ -54,7 +54,7 @@ private:
     /** result vector */
     std::vector<int> m_ovector;
 
-    static const int OVECCOUNT = 60;
+    static constexpr int OVECCOUNT = 60;
 
     int m_nSubstr;
 

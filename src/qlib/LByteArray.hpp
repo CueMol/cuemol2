@@ -59,24 +59,24 @@ public:
 
 public:
     // type constants
-    static const int enumBOOL = type_consts::QTC_BOOL;
-    static const int enumUINT8 = type_consts::QTC_UINT8;
-    static const int enumUINT16 = type_consts::QTC_UINT16;
-    static const int enumUINT32 = type_consts::QTC_UINT32;
-    static const int enumUINT64 = type_consts::QTC_UINT64;
+    static constexpr int enumBOOL = type_consts::QTC_BOOL;
+    static constexpr int enumUINT8 = type_consts::QTC_UINT8;
+    static constexpr int enumUINT16 = type_consts::QTC_UINT16;
+    static constexpr int enumUINT32 = type_consts::QTC_UINT32;
+    static constexpr int enumUINT64 = type_consts::QTC_UINT64;
 
-    static const int enumINT8 = type_consts::QTC_INT8;
-    static const int enumINT16 = type_consts::QTC_INT16;
-    static const int enumINT32 = type_consts::QTC_INT32;
-    static const int enumINT64 = type_consts::QTC_INT64;
+    static constexpr int enumINT8 = type_consts::QTC_INT8;
+    static constexpr int enumINT16 = type_consts::QTC_INT16;
+    static constexpr int enumINT32 = type_consts::QTC_INT32;
+    static constexpr int enumINT64 = type_consts::QTC_INT64;
 
-    static const int enumFLOAT8 = type_consts::QTC_FLOAT8;
-    static const int enumFLOAT16 = type_consts::QTC_FLOAT16;
-    static const int enumFLOAT32 = type_consts::QTC_FLOAT32;
-    static const int enumFLOAT64 = type_consts::QTC_FLOAT64;
-    static const int enumFLOAT128 = type_consts::QTC_FLOAT128;
+    static constexpr int enumFLOAT8 = type_consts::QTC_FLOAT8;
+    static constexpr int enumFLOAT16 = type_consts::QTC_FLOAT16;
+    static constexpr int enumFLOAT32 = type_consts::QTC_FLOAT32;
+    static constexpr int enumFLOAT64 = type_consts::QTC_FLOAT64;
+    static constexpr int enumFLOAT128 = type_consts::QTC_FLOAT128;
 
-    static const int enumUTF8STR = type_consts::QTC_UTF8STR;
+    static constexpr int enumUTF8STR = type_consts::QTC_UTF8STR;
 
 public:
     LByteArray() : Array<qbyte>(), m_nElemType(type_consts::QTC_UINT8) {}

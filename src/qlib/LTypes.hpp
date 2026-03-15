@@ -31,33 +31,33 @@ namespace qlib {
   ///  (These defs are common with QDF data type definition,
   ///   and should be persistent and part of API)
   struct type_consts {
-    static const int QTC_BOOL = 0;
-    static const int QTC_UINT8 = 1;
-    static const int QTC_UINT16 = 2;
-    static const int QTC_UINT32 = 3;
-    static const int QTC_UINT64 = 4;
+    static constexpr int QTC_BOOL = 0;
+    static constexpr int QTC_UINT8 = 1;
+    static constexpr int QTC_UINT16 = 2;
+    static constexpr int QTC_UINT32 = 3;
+    static constexpr int QTC_UINT64 = 4;
 
-    static const int QTC_INT8 = 11;
-    static const int QTC_INT16 = 12;
-    static const int QTC_INT32 = 13;
-    static const int QTC_INT64 = 14;
+    static constexpr int QTC_INT8 = 11;
+    static constexpr int QTC_INT16 = 12;
+    static constexpr int QTC_INT32 = 13;
+    static constexpr int QTC_INT64 = 14;
 
-    static const int QTC_FLOAT8 = 19;
-    static const int QTC_FLOAT16 = 20;
-    static const int QTC_FLOAT32 = 21;
-    static const int QTC_FLOAT64 = 22;
-    static const int QTC_FLOAT128 = 23;
+    static constexpr int QTC_FLOAT8 = 19;
+    static constexpr int QTC_FLOAT16 = 20;
+    static constexpr int QTC_FLOAT32 = 21;
+    static constexpr int QTC_FLOAT64 = 22;
+    static constexpr int QTC_FLOAT128 = 23;
 
-    static const int QTC_UTF8STR = 41;
+    static constexpr int QTC_UTF8STR = 41;
 
     /// float32 x 3 elem vector
-    static const int QTC_VEC3 = 51;
+    static constexpr int QTC_VEC3 = 51;
     /// float32 x 4 elem vector
-    static const int QTC_VEC4 = 52;
+    static constexpr int QTC_VEC4 = 52;
     /// qbyte x 3 RGB color
-    static const int QTC_RGB = 53;
+    static constexpr int QTC_RGB = 53;
     /// qbyte x 4 RGBA color
-    static const int QTC_RGBA = 54;
+    static constexpr int QTC_RGBA = 54;
   };
 
   namespace detail {

@@ -38,17 +38,17 @@ private:
     bool m_bOwned;
 
 public:
-    static const int LT_NULL = 0;
-    static const int LT_BOOLEAN = 1;
-    static const int LT_INTEGER = 2;
-    static const int LT_REAL = 3;
-    static const int LT_STRING = 4;
-    static const int LT_OBJECT = 5;
-    static const int LT_SMARTPTR = 6;
-    static const int LT_ENUM = 7;
-    static const int LT_ARRAY = 8;
-    static const int LT_LIST = 9;
-    static const int LT_DICT = 10;
+    static constexpr int LT_NULL = 0;
+    static constexpr int LT_BOOLEAN = 1;
+    static constexpr int LT_INTEGER = 2;
+    static constexpr int LT_REAL = 3;
+    static constexpr int LT_STRING = 4;
+    static constexpr int LT_OBJECT = 5;
+    static constexpr int LT_SMARTPTR = 6;
+    static constexpr int LT_ENUM = 7;
+    static constexpr int LT_ARRAY = 8;
+    static constexpr int LT_LIST = 9;
+    static constexpr int LT_DICT = 10;
 
     struct copy_tag
     {
@@ -159,16 +159,16 @@ public:
     {
         if (type == LT_OBJECT) {
             type = LT_NULL;
-            value.pObjValue = NULL;
+            value.pObjValue = nullptr;
         } else if (type == LT_ARRAY) {
             type = LT_NULL;
-            value.pArrayValue = NULL;
+            value.pArrayValue = nullptr;
         } else if (type == LT_LIST) {
             type = LT_NULL;
-            value.pListValue = NULL;
+            value.pListValue = nullptr;
         } else if (type == LT_DICT) {
             type = LT_NULL;
-            value.pDictValue = NULL;
+            value.pDictValue = nullptr;
         } else {
             cleanup();
         }
@@ -218,7 +218,7 @@ public:
     {
         cleanup();
         type = LT_NULL;
-        value.pObjValue = NULL;
+        value.pObjValue = nullptr;
     }
 
     //////
@@ -488,7 +488,7 @@ public:
                                           getTypeString().c_str());
             MB_THROW(InvalidCastException, msg);
         }
-        if (value.pObjValue == NULL) return NULL;
+        if (value.pObjValue == nullptr) return nullptr;
         if (!value.pObjValue->isSmartPtr()) return value.pObjValue;
         return value.pObjValue->getSPInner();
     }
@@ -499,11 +499,11 @@ public:
     {
         // pObj is not a smart pointer
         LScriptable *pObj = LVariant::getBareObjectPtr();
-        if (pObj == NULL) {
+        if (pObj == nullptr) {
             MB_THROW(NullPointerException, "Variant content is null or invalid");
         }
         _Type *pCasted = dynamic_cast<_Type *>(pObj);
-        if (pCasted == NULL) {
+        if (pCasted == nullptr) {
             LString msg = LString::format("Cannot cast object (%s) to %s",
                                           typeid(*pObj).name(), typeid(_Type).name());
             MB_THROW(InvalidCastException, msg);
