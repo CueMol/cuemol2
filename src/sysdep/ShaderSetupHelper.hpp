@@ -6,6 +6,7 @@
 
 #include "sysdep.hpp"
 
+#include <gfx/ShaderObject.hpp>
 #include <qsys/View.hpp>
 
 namespace sysdep {
@@ -46,11 +47,11 @@ public:
         return m_pCtxt;
     }
 
-    OglProgramObject *createProgObj(const LString &name, const LString &vert_path,
-                                    const LString &frag_path);
+    gfx::ShaderObject *createProgObj(const LString &name, const LString &vert_path,
+                                     const LString &frag_path);
 
-    OglProgramObject *createProgObj(const LString &name, const LString &vert_path,
-                                    const LString &frag_path, const LString &geom_path);
+    gfx::ShaderObject *createProgObj(const LString &name, const LString &vert_path,
+                                     const LString &frag_path, const LString &geom_path);
 };
 
 // //

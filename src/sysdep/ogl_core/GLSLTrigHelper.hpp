@@ -8,14 +8,13 @@
 #include <sysdep/sysdep.hpp>
 #include <gfx/DrawAttrArray.hpp>
 #include <gfx/DisplayContext.hpp>
+#include <gfx/ShaderObject.hpp>
 
 namespace gfx {
 class DisplayContext;
 }
 
 namespace sysdep {
-
-class OglProgramObject;
 
 class SYSDEP_API GLSLTrigHelper
 {
@@ -31,13 +30,13 @@ private:
     TrigMesh *m_pDrawElems;
 
     // Triangle shader
-    OglProgramObject *m_pPO;
+    gfx::ShaderObject *m_pPO;
     quint32 m_nVertexLoc;
     quint32 m_nColLoc;
     quint32 m_nNormLoc;
 
     // Triangle edge shader
-    OglProgramObject *m_pEdgePO;
+    gfx::ShaderObject *m_pEdgePO;
     quint32 m_nEVertLoc;
     quint32 m_nEColLoc;
     quint32 m_nENormLoc;

@@ -9,7 +9,8 @@
 #include "MapSurfRenderer_consts.hpp"
 #include "DensityMap.hpp"
 #include <gfx/DisplayContext.hpp>
-#include <sysdep/OglProgramObject.hpp>
+#include <sysdep/OglCommon.hpp>
+#include <gfx/ShaderObject.hpp>
 #include <sysdep/ShaderSetupHelper.hpp>
 #include <sysdep/OglError.hpp>
 

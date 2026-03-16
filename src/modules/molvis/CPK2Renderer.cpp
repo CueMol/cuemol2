@@ -15,7 +15,7 @@
 #include <gfx/DrawAttrArray.hpp>
 
 #ifdef USE_OPENGL
-#include <sysdep/OglProgramObject.hpp>
+#include <sysdep/OglCommon.hpp>
 #include "GLSLSphereHelper.hpp"
 #endif
 

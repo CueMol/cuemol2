@@ -83,6 +83,7 @@ add_executable(test_qsys
   qsys/test_scenexmlwriter.cpp
   qsys/test_canvas2dtextrender2.cpp
   qsys/test_guiview.cpp
+  qsys/test_shaderobjmgr.cpp
 )
 target_include_directories(test_qsys PRIVATE
   ${CMAKE_SOURCE_DIR}/src

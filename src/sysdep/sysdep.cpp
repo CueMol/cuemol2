@@ -5,21 +5,13 @@
 #include <common.h>
 #include "sysdep.hpp"
 
-#include "OglProgObjMgr.hpp"
-
-using namespace sysdep;
-
 namespace sysdep {
 
-  bool init()
-  {
-    OglProgObjMgr::init();
+bool init()
+{
     return true;
-  }
-
-  void fini()
-  {
-    OglProgObjMgr::fini();
-  }
-
 }
+
+void fini() {}
+
+}  // namespace sysdep

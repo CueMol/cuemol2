@@ -8,6 +8,7 @@
 #include "qsys/StreamManager.hpp"
 #include "qsys/SceneXMLReader.hpp"
 #include "qsys/SceneXMLWriter.hpp"
+#include "qsys/ShaderObjMgr.hpp"
 
 // Initialize qlib and qsys scripting infrastructure for all tests.
 // qsys::init("") registers all classes but skips config loading (returns false).
@@ -21,6 +22,9 @@ public:
 
         // StyleMgr is required by Scene constructor
         qsys::StyleMgr::init();
+
+        // ShaderObjMgr manages shader objects per scene
+        qsys::ShaderObjMgr::init();
 
         // RendererFactory is required for renderer creation
         qsys::RendererFactory::init();

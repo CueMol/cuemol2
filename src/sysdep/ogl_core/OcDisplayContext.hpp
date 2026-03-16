@@ -15,7 +15,6 @@ class AbstDrawAttrs;
 
 namespace sysdep {
 
-class OglProgramObject;
 class OcPixDraw;
 
 using gfx::AbstractColor;
@@ -148,21 +147,6 @@ public:
     // void drawElemPix(const gfx::DrawElemPix &de);
 
     void drawElemAttrs(const gfx::AbstDrawAttrs &ada);
-
-    ///////////////////////////////
-    // OpenGL SL support
-
-public:
-    /// Create the GLSL program object.
-    /// If program object with the same name already exists, returns it.
-    /// @param name name of the program objec.
-    /// @return program object having the specified name.
-    OglProgramObject *createProgramObject(const LString &name);
-
-    /// Get the GLSL program object by name.
-    /// @param name name of the program object.
-    /// @return program object having the specified name.
-    OglProgramObject *getProgramObject(const LString &name);
 
 private:
     /// Current material name

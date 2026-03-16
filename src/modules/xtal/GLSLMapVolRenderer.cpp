@@ -12,7 +12,8 @@
 #include <qsys/ViewEvent.hpp>
 #include <qsys/View.hpp>
 #include <qsys/Scene.hpp>
-#include <sysdep/OglProgramObject.hpp>
+#include <sysdep/OglCommon.hpp>
+#include <gfx/ShaderObject.hpp>
 #include <sysdep/ShaderSetupHelper.hpp>
 #include <sysdep/OglError.hpp>
 

@@ -10,13 +10,13 @@
 #include <gfx/DisplayContext.hpp>
 #include <gfx/DrawAttrArray.hpp>
 #include <gfx/GrowMesh.hpp>
+#include <gfx/ShaderObject.hpp>
 #include <gfx/SphereCyls.hpp>
 
 namespace sysdep {
 
 class OglDisplayContext;
 class OcDisplayContext;
-class OglProgramObject;
 class GLSLLineHelper;
 
 class SYSDEP_API OcDisplayList : public gfx::DisplayContext
@@ -72,13 +72,13 @@ private:
     TrigMesh *m_pTrigMesh;
 
     // Triangle shader
-    OglProgramObject *m_pTrigPO;
+    gfx::ShaderObject *m_pTrigPO;
     quint32 m_nVertexLoc;
     quint32 m_nColLoc;
     quint32 m_nNormLoc;
-    
+
     // Triangle edge shader
-    OglProgramObject *m_pTrigEdgePO;
+    gfx::ShaderObject *m_pTrigEdgePO;
     quint32 m_nEVertLoc;
     quint32 m_nEColLoc;
     quint32 m_nENormLoc;

@@ -4,14 +4,13 @@
 
 #include <gfx/DrawAttrArray.hpp>
 #include <gfx/PixelBuffer.hpp>
+#include <gfx/ShaderObject.hpp>
 
 namespace gfx {
 class DisplayContext;
 }
 
 namespace sysdep {
-
-class OglProgramObject;
 
 class OcTexRep : public gfx::PixRep
 {
@@ -38,7 +37,7 @@ private:
     quint32 m_nVertexLoc;
     quint32 m_nTexCoordLoc;
 
-    sysdep::OglProgramObject *m_pPO;
+    gfx::ShaderObject *m_pPO;
 
     QuadArray *m_pDrawAry;
 

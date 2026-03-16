@@ -8,8 +8,6 @@
 
 #include "OcDisplayContext.hpp"
 #include "OcDisplayList.hpp"
-#include "OglProgramObject.hpp"
-#include "OglProgObjMgr.hpp"
 #include "OcPixDraw.hpp"
 #include "OcBufferRep.hpp"
 #include "OcDrawObjSet.hpp"
@@ -203,20 +201,6 @@ void OcDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
     pRep->setAttrib(ada);
     pRep->draw(ada);
     pRep->unbind(ada);
-}
-
-OglProgramObject *OcDisplayContext::createProgramObject(const LString &name)
-{
-    OglProgObjMgr *pMgr = OglProgObjMgr::getInstance();
-
-    return pMgr->createProgramObject(name, this);
-}
-
-OglProgramObject *OcDisplayContext::getProgramObject(const LString &name)
-{
-    OglProgObjMgr *pMgr = OglProgObjMgr::getInstance();
-
-    return pMgr->getProgramObject(name, this);
 }
 
 //////////

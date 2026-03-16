@@ -7,9 +7,11 @@
 
 #include "OcDisplayList.hpp"
 #include "OcDisplayContext.hpp"
-#include "OglProgramObject.hpp"
+#include "OglCommon.hpp"
 #include "GLSLLineHelper2.hpp"
 #include "ShaderSetupHelper.hpp"
+
+#include <gfx/ShaderObject.hpp>
 
 #include <qsys/View.hpp>
 #include <gfx/Mesh.hpp>

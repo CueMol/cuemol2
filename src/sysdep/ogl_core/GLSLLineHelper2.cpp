@@ -5,7 +5,7 @@
 #include <gfx/DrawAttrArray.hpp>
 #include <gfx/DisplayContext.hpp>
 
-#include <sysdep/OglProgramObject.hpp>
+#include <gfx/ShaderObject.hpp>
 #include <sysdep/ShaderSetupHelper.hpp>
 
 namespace sysdep {

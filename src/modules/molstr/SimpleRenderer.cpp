@@ -22,7 +22,6 @@
 
 #ifdef USE_OPENGL
 #include <gfx/DrawAttrArray.hpp>
-#include <sysdep/OglProgramObject.hpp>
 #include <sysdep/ogl_core/GLSLLineHelper2.hpp>
 #endif
 

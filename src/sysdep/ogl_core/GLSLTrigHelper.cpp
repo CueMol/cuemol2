@@ -1,9 +1,10 @@
 #include <common.h>
 
 #include "GLSLTrigHelper.hpp"
+#include <sysdep/OglCommon.hpp>
 
 #include <gfx/DrawAttrArray.hpp>
-#include <sysdep/OglProgramObject.hpp>
+#include <gfx/ShaderObject.hpp>
 #include <sysdep/ShaderSetupHelper.hpp>
 
 namespace sysdep {

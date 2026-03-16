@@ -6,8 +6,9 @@
 #include <common.h>
 
 #include "OcPixDraw.hpp"
+#include "OglCommon.hpp"
 #include <qsys/SceneManager.hpp>
-#include <sysdep/OglProgramObject.hpp>
+#include <gfx/ShaderObject.hpp>
 #include <sysdep/ShaderSetupHelper.hpp>
 #include <sysdep/OglError.hpp>
 

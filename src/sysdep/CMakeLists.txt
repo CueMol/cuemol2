@@ -2,7 +2,6 @@
 SET(SYSDEP_SRCS
   sysdep.cpp
   OglProgramObject.cpp
-  OglProgObjMgr.cpp
   ShaderSetupHelper.cpp
   # core profile
   ogl_core/OcDisplayList.cpp
@@ -19,7 +18,6 @@ SET(SYSDEP_SRCS
 SET(SYSDEP_HDRS
 OglError.hpp
 OglHitData.hpp
-OglProgObjMgr.hpp
 OglProgramObject.hpp
 OglViewCap.hpp
 sysdep.hpp

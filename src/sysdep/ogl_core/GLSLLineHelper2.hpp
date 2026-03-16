@@ -7,14 +7,13 @@
 
 #include <sysdep/sysdep.hpp>
 #include <gfx/DrawAttrArray.hpp>
+#include <gfx/ShaderObject.hpp>
 
 namespace gfx {
 class DisplayContext;
 }
 
 namespace sysdep {
-
-class OglProgramObject;
 
 class SYSDEP_API GLSLLineHelper
 {
@@ -36,7 +35,7 @@ private:
     quint32 m_nCol2Loc;
     quint32 m_nIndLoc;
 
-    sysdep::OglProgramObject *m_pPO;
+    gfx::ShaderObject *m_pPO;
 
     LineArray *m_pDrawAry;
 
