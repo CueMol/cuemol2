@@ -20,7 +20,7 @@ namespace qlib {
     class QLIB_API Base64InFilterImpl : public InFilterImpl
     {
     private:
-      static const int BUF_SIZE = 4096; //(80/4)*3;
+      static constexpr int BUF_SIZE = 4096; //(80/4)*3;
       boost::circular_buffer<unsigned char> m_buf;
       LString m_remaining;
 
@@ -59,7 +59,7 @@ namespace qlib {
     class QLIB_API Base64OutFilterImpl : public OutFilterImpl
     {
     private:
-      static const int BUF_SIZE = (80/4)*3;
+      static constexpr int BUF_SIZE = (80/4)*3;
       boost::circular_buffer<unsigned char> m_buf;
 
       inline bool isBufFull() const {

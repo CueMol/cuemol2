@@ -25,43 +25,43 @@ void LVariant::cleanup()
   case LT_INTEGER:
   case LT_REAL:
   default:
-    value.pObjValue = NULL;
+    value.pObjValue = nullptr;
     break;
 
   case LT_ENUM:
   case LT_STRING: {
     //MB_DPRINTLN("LVar(%p) Deleting string variant %p", this, value.pStrValue);
     delete value.pStrValue;
-    value.pStrValue = NULL;
+    value.pStrValue = nullptr;
     //MB_DPRINTLN("LVar(%p) Delete string variant %p OK", this, value.pStrValue);
     break;
   }
-	
+
   case LT_OBJECT: {
     if (m_bOwned)
       value.pObjValue->destruct();
-    value.pObjValue = NULL;
+    value.pObjValue = nullptr;
     break;
   }
 
   case LT_ARRAY: {
     if (m_bOwned)
       delete value.pArrayValue;
-    value.pArrayValue = NULL;
+    value.pArrayValue = nullptr;
     break;
   }
 
   case LT_LIST: {
     if (m_bOwned)
       delete value.pListValue;
-    value.pListValue = NULL;
+    value.pListValue = nullptr;
     break;
   }
 
   case LT_DICT: {
     if (m_bOwned)
       delete value.pDictValue;
-    value.pDictValue = NULL;
+    value.pDictValue = nullptr;
     break;
   }
 
@@ -318,7 +318,7 @@ void LVarList::dump() const
   MB_DPRINTLN("list(%d)[", nsz);
   for (int i=0; i<nsz; ++i) {
     MB_DPRINT("%d: ", i);
-    if (at(i)==NULL)
+    if (at(i)==nullptr)
       MB_DPRINT("(null)");
     else
       at(i)->dump();

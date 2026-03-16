@@ -4,7 +4,6 @@ SET(QLIB_LINK_LIBRARIES
   qmexpat
   qmzlib
   Boost::filesystem
-  Boost::timer
   )
 
 # Normal C++ source files

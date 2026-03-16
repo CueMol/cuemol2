@@ -70,33 +70,6 @@ namespace qlib {
       }
     }
 
-    /*
-    explicit sp(T *p, detail::get_ref_cnt_tag): m_ptr(p)
-    {
-
-      if (p!=NULL) {
-        int *pcnt = p->getSpRefCounter();
-        if (pcnt!=NULL) {
-          m_pcnt = pcnt;
-          ++*m_pcnt;
-          return;
-        }
-      }
-
-      try { // prevent leak if new throws
-	m_pcnt = MB_NEW count_type(1);
-      }
-      catch(...) {
-	delete p;
-	throw;
-      }
-
-      if (p!=NULL)
-        p->setSpRefCounter(m_pcnt);
-
-    }
-    */
-    
     //////////////////////////////////////////////////
     
     ~sp() {
@@ -167,19 +140,6 @@ namespace qlib {
       return *this;
     }
 
-
-#if 0
-    explicit sp(std::auto_ptr<T> & r) { 
-      m_pcnt = MB_NEW count_type(1); // may throw
-      m_ptr = r.release(); // fix: moved here to stop leak if new throws
-    } 
-    
-    sp & operator=(std::auto_ptr<T> & r) {
-      sp(r).swap(*this);
-      return *this;
-    }
-#endif
-    
     void reset(T *p = 0) {
       // MB_ASSERT(p == 0 || p != m_ptr);
       sp(p).swap(*this);
@@ -234,12 +194,6 @@ namespace qlib {
   {
     return a.get() != b.get();
   }
-  
-  /*  template<class T> inline
-  bool operator<(sp<T> const & a, sp<T> const & b)
-  {
-    return std::less<T*>()(a.get(), b.get());
-    }*/
   
   template<class T>
   void swap(sp<T> & a, sp<T> & b)

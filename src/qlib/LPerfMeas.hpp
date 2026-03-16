@@ -1,7 +1,6 @@
 // -*-Mode: C++;-*-
 //
-//  Performance measurement using boost::timer
-//
+//  Performance measurement using std::chrono
 
 #ifndef QLIB_PERF_MEAS_HPP
 #define QLIB_PERF_MEAS_HPP
@@ -21,18 +20,18 @@ namespace qlib {
   class QLIB_API PerfMeasManager : public SingletonBase<PerfMeasManager>
   {
   private:
-    static const int NAVER_SIZE = 100;
+    static constexpr int NAVER_SIZE = 100;
 
     std::vector<qint64> m_busytimes;
-    void *m_pTimer;
+    qint64 m_startTimeNs;  // nanoseconds since epoch; 0 = not started
     int m_nBusyTimeIndex;
 
     int m_nActiveTimerID;
-    
+
     void setBusyTime(quint64 nanosec);
 
   public:
-    
+
     PerfMeasManager();
     virtual ~PerfMeasManager();
 
@@ -44,7 +43,7 @@ namespace qlib {
     void end(int nID);
 
   };
-  
+
   /// Auto performance measurement class for iterative execution
   class QLIB_API AutoPerfMeas
   {
@@ -53,43 +52,43 @@ namespace qlib {
     PerfMeasManager *m_pPM;
 
   public:
-    AutoPerfMeas(int nID) : m_nID(nID), m_pPM(NULL)
+    AutoPerfMeas(int nID) : m_nID(nID), m_pPM(nullptr)
     {
       BeginRequest();
     }
-    
+
     ~AutoPerfMeas()
     {
       EndRequest();
     }
-    
+
   private:
 
     void EndRequest()
     {
-      if (m_pPM==NULL)
+      if (m_pPM == nullptr)
         m_pPM = PerfMeasManager::getInstance();
       m_pPM->end(m_nID);
     }
-    
+
     void BeginRequest()
     {
-      if (m_pPM==NULL)
+      if (m_pPM == nullptr)
         m_pPM = PerfMeasManager::getInstance();
       m_pPM->start(m_nID);
     }
   };
-  
+
   /// Auto performance measurement class for single execution
   class QLIB_API AutoTimeMeas
   {
   private:
-    void *m_pTimerObj;
+    qint64 m_startTimeNs;  // nanoseconds since epoch; 0 = not started
 
     LString m_msg;
 
   public:
-    AutoTimeMeas(const char *msg=NULL);
+    AutoTimeMeas(const char *msg = nullptr);
 
     ~AutoTimeMeas();
 
