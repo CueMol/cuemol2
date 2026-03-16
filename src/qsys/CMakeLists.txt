@@ -57,6 +57,7 @@ command/LoadSceneCommand.cpp
 command/LoadObjectCommand.cpp
 command/CmdMgr.cpp
 Canvas2DTextRender2.cpp
+ShaderObjMgr.cpp
 )
 
 # Normal C++ header files
@@ -118,6 +119,7 @@ command/LoadSceneCommand.hpp
 command/NewRendererCommand.hpp
 command/NewSceneCommand.hpp
 Canvas2DTextRender2.hpp
+ShaderObjMgr.hpp
 qsys.hpp
 style/AutoStyleCtxt.hpp
 style/StyleEditInfo.hpp

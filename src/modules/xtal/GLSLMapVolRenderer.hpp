@@ -22,7 +22,6 @@ class GLSLMapVolRenderer_wrap;
 
 namespace sysdep {
   class OglProgramObject;
-  class OglShaderObject;
 }
 
 namespace xtal {
@@ -31,7 +30,6 @@ namespace xtal {
   using qsys::ScalarObject;
   class DensityMap;
   using sysdep::OglProgramObject;
-  using sysdep::OglShaderObject;
   using qlib::IntVec3D;
 
   class GLSLMapVolRenderer : public MapRenderer,

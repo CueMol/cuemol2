@@ -14,6 +14,7 @@
 #include "SceneXMLWriter.hpp"
 #include "ViewInputConfig.hpp"
 #include "RendGroup.hpp"
+#include "ShaderObjMgr.hpp"
 
 #include <qlib/FileStream.hpp>
 #include <gfx/gfx.hpp>
@@ -163,6 +164,8 @@ bool init(const char *config)
   pCmdMgr->regist<LoadSceneCommand>();
   pCmdMgr->regist<LoadObjectCommand>();
 
+  ShaderObjMgr::init();
+
   ///////////////////
   // initialize other services
 
@@ -180,7 +183,6 @@ bool init(const char *config)
                pSceMgr->getVerArchName().c_str(),
                pSceMgr->getBuildID().c_str());
 
-  MB_DPRINTLN("XXXXX");
   //pVIC->applyStyle("DefaultViewInConf,UserViewConf");
 
   return true;
@@ -190,6 +192,8 @@ void fini()
 {
   ///////////////////
   // finitialize qsys
+
+  ShaderObjMgr::fini();
 
   StyleMgr::fini();
 

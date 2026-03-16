@@ -21,7 +21,6 @@ class GLSLMapMeshRenderer_wrap;
 
 namespace sysdep {
 class OglProgramObject;
-class OglShaderObject;
 }  // namespace sysdep
 
 namespace xtal {
@@ -30,7 +29,6 @@ using gfx::DisplayContext;
 using qsys::ScalarObject;
 class DensityMap;
 using sysdep::OglProgramObject;
-using sysdep::OglShaderObject;
 
 using qlib::IntVec3D;
 

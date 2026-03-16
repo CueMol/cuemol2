@@ -21,6 +21,7 @@
 
 #include <qlib/LString.hpp>
 #include <qlib/Matrix4D.hpp>
+#include <gfx/ShaderObject.hpp>
 
 namespace gfx {
 class DisplayContext;
@@ -30,7 +31,7 @@ namespace sysdep {
 
 using qlib::LString;
 
-class SYSDEP_API OglShaderObject
+class SYSDEP_API OglShObjImpl
 {
 private:
     GLuint m_hGL;
@@ -41,9 +42,9 @@ private:
     static LString s_shaderVerStr;
 
 public:
-    OglShaderObject(const GLenum shader_type) : m_nType(shader_type), m_hGL(0) {}
+    OglShObjImpl(const GLenum shader_type) : m_nType(shader_type), m_hGL(0) {}
 
-    virtual ~OglShaderObject();
+    virtual ~OglShObjImpl();
 
     void loadFile(const LString &filename);
 
@@ -65,12 +66,12 @@ public:
 
 ////////////////////////////////////////
 
-class SYSDEP_API OglProgramObject
+class SYSDEP_API OglProgramObject : public gfx::ShaderObject
 {
 private:
     GLuint m_hPO;
 
-    using ShaderTab = std::map<LString, OglShaderObject *>;
+    using ShaderTab = std::map<LString, OglShObjImpl *>;
     ShaderTab m_shaders;
 
     using UniformTab = std::map<LString, GLint>;
@@ -82,15 +83,21 @@ public:
 
     bool init();
 
+    virtual bool loadShaders(const qlib::MapTable<qlib::LString> &name);
+
+    virtual void enable();
+
+    virtual void disable();
+
+    //////////
+
     bool loadShader(const LString &name, const LString &srcpath, GLenum shader_type);
 
     void clear();
 
-    void attach(const OglShaderObject *s);
+    void attach(const OglShObjImpl *s);
 
     bool link();
-
-    void use();
 
     void validate();
 
@@ -99,14 +106,9 @@ public:
         return m_hPO;
     }
 
-    inline void enable()
+    inline void use()
     {
-        use();
-    }
-
-    inline void disable()
-    {
-        glUseProgram(0);
+        enable();
     }
 
     GLint getUniformLocation(const LString &name);

@@ -207,8 +207,6 @@ void OcDisplayContext::drawElemAttrs(const gfx::AbstDrawAttrs &ada)
 
 OglProgramObject *OcDisplayContext::createProgramObject(const LString &name)
 {
-    // if (!qsys::View::hasVS()) return NULL;
-
     OglProgObjMgr *pMgr = OglProgObjMgr::getInstance();
 
     return pMgr->createProgramObject(name, this);
