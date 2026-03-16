@@ -12,6 +12,7 @@
 #include <qsys/ViewEvent.hpp>
 #include <qsys/View.hpp>
 #include <qsys/Scene.hpp>
+#include <sysdep/OglProgramObject.hpp>
 #include <sysdep/ShaderSetupHelper.hpp>
 #include <sysdep/OglError.hpp>
 
@@ -647,44 +648,8 @@ void GLSLMapVolRenderer::renderGPU(DisplayContext *pdc)
   //glBindTexture( GL_TEXTURE_3D, texture_data );
 
   // calc inverse modelview matrix
-  // because glsl's ModelViewMatrixInverse is sometimes incorrect...
-
-  float	m[ 16 ];
-  float	mi[ 16 ];
-  float	d;
-
-  glGetFloatv( GL_MODELVIEW_MATRIX, m );
-
-  d = m[ 0 ] * ( m[ 5 ] * m[ 10 ] - m[ 9 ] * m[  6 ] )
-    + m[ 4 ] * ( m[ 9 ] * m[  2 ] - m[ 1 ] * m[ 10 ] )
-      + m[ 8 ] * ( m[ 1 ] * m[  6 ] - m[ 5 ] * m[  2 ] );
-
-  mi[ 0 ] =    m[ 5 ] * m[ 10 ] - m[ 9 ] * m[ 6 ];
-  mi[ 1 ] = -( m[ 1 ] * m[ 10 ] - m[ 9 ] * m[ 2 ] );
-  mi[ 2 ] =    m[ 1 ] * m[  6 ] - m[ 5 ] * m[ 2 ];
-  mi[ 3 ] = 0.0f;
-
-  mi[ 4 ] = -( m[ 4 ] * m[ 10 ] - m[ 8 ] * m[ 6 ] );
-  mi[ 5 ] =    m[ 0 ] * m[ 10 ] - m[ 8 ] * m[ 2 ];
-  mi[ 6 ] = -( m[ 0 ] * m[  6 ] - m[ 4 ] * m[ 2 ] );
-  mi[ 7 ] = 0.0f;
-
-  mi[ 8 ] =    m[ 4 ] * m[ 9 ] - m[ 8 ] * m[ 5 ];
-  mi[ 9 ] = -( m[ 0 ] * m[ 9 ] - m[ 8 ] * m[ 1 ] );
-  mi[ 10 ] =    m[ 0 ] * m[ 5 ] - m[ 4 ] * m[ 1 ];
-  mi[ 11 ] = 0.0f;
-
-  for ( int i = 0; i < 12; i++ ) {
-    mi[ i ] /= d;
-  }
-
-  mi[ 12 ] = -( mi[ 0 ] * m[ 12 ] + mi[ 4 ] * m[ 13 ] + mi[  8 ] * m[ 14 ] );
-  mi[ 13 ] = -( mi[ 1 ] * m[ 12 ] + mi[ 5 ] * m[ 13 ] + mi[  9 ] * m[ 14 ] );
-  mi[ 14 ] = -( mi[ 2 ] * m[ 12 ] + mi[ 6 ] * m[ 13 ] + mi[ 10 ] * m[ 14 ] );
-
-  mi[ 15 ] = 1.0f;
-
-  //////////////////////////////
+  qlib::Matrix4D mvMat = pdc->getModelViewMat();
+  qlib::Matrix4D miMat = mvMat.invert();
 
   glActiveTexture(GL_TEXTURE0);
   //glEnable(GL_TEXTURE_3D);
@@ -695,13 +660,13 @@ void GLSLMapVolRenderer::renderGPU(DisplayContext *pdc)
 
   if (m_pPO)
     m_pPO->enable();
-  
+
   // set variables
 
   // m_pPO->setUniform( "dataFieldTex", 0 );
   // m_pPO->setUniformF( "isolevel", float(m_isolevel)/255.0 );
   m_pPO->setUniformF( "thickness", thickness );
-  m_pPO->setMatrix4fv( "modelview_matrix_inverse", 1, GL_FALSE, mi );
+  m_pPO->setMatrix( "modelview_matrix_inverse", miMat );
 
   // draw proxy polygons
 

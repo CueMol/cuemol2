@@ -15,20 +15,15 @@
 #include <qsys/ViewEvent.hpp>
 #include <gfx/DrawAttrArray.hpp>
 
-#include <sysdep/OglProgramObject.hpp>
+#include <gfx/ShaderObject.hpp>
 
 class GLSLMapMeshRenderer_wrap;
-
-namespace sysdep {
-class OglProgramObject;
-}  // namespace sysdep
 
 namespace xtal {
 
 using gfx::DisplayContext;
 using qsys::ScalarObject;
 class DensityMap;
-using sysdep::OglProgramObject;
 
 using qlib::IntVec3D;
 
@@ -68,7 +63,7 @@ private:
     bool m_bChkShaderDone;
 
     /// GLSL shader objects
-    OglProgramObject *m_pPO;
+    gfx::ShaderObject *m_pPO;
 
     struct AttrElem
     {
@@ -78,8 +73,6 @@ private:
 
     typedef gfx::DrawAttrArray<AttrElem> AttrArray;
     AttrArray *m_pAttrArray;
-
-    GLuint m_nVertexLoc;
 
     ///////////////////////////////////////////
     // work area
@@ -97,9 +90,9 @@ private:
     double m_delta;
 
     /// map 3D texture ID
-    GLuint m_nMapTexID;
-    GLuint m_nMapBufID;
-    // GLuint m_nVBOID;
+    unsigned int m_nMapTexID;
+    unsigned int m_nMapBufID;
+    // unsigned int m_nVBOID;
 
     unsigned int m_isolevel;
 

@@ -17,12 +17,9 @@
 
 #include <modules/surface/MolSurfObj.hpp>
 #include <gfx/DrawAttrArray.hpp>
+#include <gfx/ShaderObject.hpp>
 
 class MapSurfRenderer_wrap;
-
-namespace sysdep {
-  class OglProgramObject;
-}
 
 namespace xtal {
 
@@ -357,7 +354,7 @@ namespace xtal {
     
     typedef gfx::DrawAttrArray<AttrElem> AttrArray;
 
-    sysdep::OglProgramObject *m_pPO;
+    gfx::ShaderObject *m_pPO;
 
     AttrArray *m_pAttrArray;
     

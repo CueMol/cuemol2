@@ -29,7 +29,7 @@ namespace molvis {
     GLuint m_nRadLoc;
     GLuint m_nColLoc;
 
-    sysdep::OglProgramObject *m_pPO;
+    gfx::ShaderObject *m_pPO;
 
     SphElemAry32 *m_pDrawElem;
 
