@@ -208,14 +208,14 @@ namespace qlib {
     }
     
     /// little endian
-    static const int INTBO_LE = 0;
+    static constexpr int INTBO_LE = 0;
     /// big endian
-    static const int INTBO_BE = 1;
+    static constexpr int INTBO_BE = 1;
 
     /// little endian
-    static const int FLTBO_LE = 0;
+    static constexpr int FLTBO_LE = 0;
     /// big endian
-    static const int FLTBO_BE = 1;
+    static constexpr int FLTBO_BE = 1;
 
     /// Get endian info
     inline static

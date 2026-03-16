@@ -5,10 +5,13 @@
 #include <common.h>
 
 #include "LPerfMeas.hpp"
+#include <chrono>
 
-#ifdef USE_BOOST_TIMER
-#include <boost/timer/timer.hpp>
-#endif  
+static qlib::qint64 getNowNs()
+{
+  return std::chrono::duration_cast<std::chrono::nanoseconds>(
+    std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+}
 
 #define NAVER_SIZE 10
 
@@ -19,19 +22,12 @@ namespace qlib {
 using namespace qlib;
 
 PerfMeasManager::PerfMeasManager()
-     : m_busytimes(NAVER_SIZE), m_nBusyTimeIndex(0), m_nActiveTimerID(-1)
+     : m_busytimes(NAVER_SIZE), m_nBusyTimeIndex(0), m_nActiveTimerID(-1), m_startTimeNs(0)
 {
-#ifdef USE_BOOST_TIMER
-  m_pTimer = MB_NEW boost::timer::cpu_timer();
-#endif
 }
 
 PerfMeasManager::~PerfMeasManager()
 {
-#ifdef USE_BOOST_TIMER
-  boost::timer::cpu_timer *pTimer = static_cast<boost::timer::cpu_timer *>(m_pTimer);
-  delete pTimer;
-#endif
 }
 
 void PerfMeasManager::enable(int nID)
@@ -61,55 +57,30 @@ void PerfMeasManager::setBusyTime(quint64 nanosec)
 
 void PerfMeasManager::start(int nID)
 {
-  if (nID!=m_nActiveTimerID)
-    return;
-  
-#ifdef USE_BOOST_TIMER
-  boost::timer::cpu_timer *pTimer = static_cast<boost::timer::cpu_timer *>(m_pTimer);
-  pTimer->start();
-#endif
+  if (nID != m_nActiveTimerID) return;
+  m_startTimeNs = getNowNs();
 }
 
 void PerfMeasManager::end(int nID)
 {
-  if (nID!=m_nActiveTimerID)
-    return;
-
-#ifdef USE_BOOST_TIMER
-  boost::timer::cpu_timer *pTimer = static_cast<boost::timer::cpu_timer *>(m_pTimer);
-  pTimer->stop();
-  boost::timer::cpu_times t = pTimer->elapsed();
-  setBusyTime(t.wall);
-#endif
+  if (nID != m_nActiveTimerID || m_startTimeNs == 0) return;
+  setBusyTime(static_cast<quint64>(getNowNs() - m_startTimeNs));
+  m_startTimeNs = 0;
 }
 
 //////////
 
 AutoTimeMeas::AutoTimeMeas(const char *msg)
 {
-  if (msg!=NULL)
+  if (msg != nullptr)
     m_msg = msg;
-#ifdef USE_BOOST_TIMER
-  boost::timer::cpu_timer *p = new boost::timer::cpu_timer();
-  p->start();
-  m_pTimerObj = p;
-#endif
+  m_startTimeNs = getNowNs();
 }
 
 AutoTimeMeas::~AutoTimeMeas()
 {
-#ifdef USE_BOOST_TIMER
-  boost::timer::cpu_timer *p = static_cast<boost::timer::cpu_timer *>(m_pTimerObj);
-  boost::timer::cpu_times t = p->elapsed();
-  delete p;
-  m_pTimerObj = NULL;
-  
-  LString msg = boost::timer::format(t);
-  msg = msg.chomp();
-  
-  LOG_DPRINTLN( "%s> %s",
-                m_msg.c_str(),
-                msg.c_str() );
-#endif
+  if (m_startTimeNs == 0) return;
+  qint64 ns = getNowNs() - m_startTimeNs;
+  LOG_DPRINTLN("%s> %lld ns (%.3f ms)", m_msg.c_str(), (long long)ns, ns / 1e6);
 }
 

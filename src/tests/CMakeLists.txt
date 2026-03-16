@@ -19,6 +19,7 @@ add_executable(test_qlib
   qlib/test_msglog.cpp
   qlib/test_lscrmatrix4d.cpp
   qlib/test_ldom2node.cpp
+  qlib/test_ldom2stream.cpp
   qlib/test_pipestream.cpp
   qlib/test_lthread.cpp
   qlib/test_binstream.cpp

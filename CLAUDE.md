@@ -66,6 +66,8 @@ src/
 - Use C++17 features where applicable; replace Boost with C++17 equivalents where possible
 - Build option `BUILD_TESTS=ON` enables gtest compilation
 - Headers inside `src/qsys/` must use `""` (quoted) form for intra-module includes, not `<>`. The test build's `-I` flags do not include `qsys/` directly, so `<View.hpp>` fails while `"View.hpp"` works.
+- gtestが未実装のコードをrefactoring変更しようとする場合は、その部分に関連するgtestを作成してテストが通ることを確認してから実装を行う。実装後、gtestが通ることでrefactoringによりコードが壊れていないことを確認する。
+
 
 ## gtest Implementation Policy
 
