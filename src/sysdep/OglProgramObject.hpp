@@ -83,11 +83,11 @@ public:
 
     bool init();
 
-    virtual bool loadShaders(const qlib::MapTable<qlib::LString> &name);
+    virtual bool loadShaders(const qlib::MapTable<qlib::LString> &name) override;
 
-    virtual void enable();
+    virtual void enable() override;
 
-    virtual void disable();
+    virtual void disable() override;
 
     //////////
 

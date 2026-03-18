@@ -156,14 +156,14 @@ tasks:
 
 #####
 
-  build_uxpgui:
+  rebuild_uxpgui:
     desc: "Setup, config, and build the uxpgui app"
     platforms: [darwin]
     cmds:
       - bash build_uxpgui_posix/run.sh "{{.WORKDIR}}" macOS ARM64
 
-  rebuild_uxpgui:
-    desc: "Rebuild the uxpgui app (without running setup/config)"
+  build_uxpgui:
+    desc: "Build the uxpgui app (without running setup/config)"
     platforms: [darwin]
     dir: "{{.ROOT_DIR}}/../uxp_gui/"
     cmds:
@@ -187,6 +187,6 @@ tasks:
     desc: "Build libcuemol2 and uxp and run the built app"
     platforms: [darwin]
     cmds:
-      - task: rebuild_libcuemol2
-      - task: rebuild_uxpgui
+      - task: build_libcuemol2
+      - task: build_uxpgui
       - task: run_uxpgui
