@@ -1,5 +1,9 @@
 #pragma once
 
+#if defined(_WIN32)
+#define NOMINMAX  // prevent Windows min/max macros before glew.h includes windows.h
+#endif
+
 #ifdef HAVE_GL_GLEW_H
 #define GLEW_STATIC
 #include <GL/glew.h>
