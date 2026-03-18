@@ -3,7 +3,7 @@ echo on
 REM Common Setup
 if "%1"=="" (
    echo "arg1 not specified"
-   exit /b   
+   exit /b 1
 )
 SET BASEDIR=%1
 SET RUNNER_OS=Windows
@@ -28,14 +28,18 @@ SET INSTPATH=%BASEDIR%\cuemol2
 
 pushd %TOP_DIR%\nodejs
 call npm install
+if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 call npx cmake-js compile --CDLIBCUEMOL2_ROOT=%INSTPATH% --CDBoost_ROOT=%BOOST_DIR%
+if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 echo on
 copy %BASEDIR%\boost_%BOOST_VER%\lib\*mt-x64*.dll %INSTPATH%\bin\
+if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+
 set PATH=%PATH%;%INSTPATH%\bin\
 
 call npm test
-
+if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 popd

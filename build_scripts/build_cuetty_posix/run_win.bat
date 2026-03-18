@@ -3,7 +3,7 @@ echo on
 REM Common Setup
 if "%1"=="" (
    echo "arg1 not specified"
-   exit /b   
+   exit /b 1
 )
 SET BASEDIR=%1
 SET RUNNER_OS=Windows
@@ -46,10 +46,17 @@ cmake -G Ninja -S %TOP_DIR%\cli -B %BUILD_DIR% ^
  -DLIBCUEMOL2_ROOT=%BASEDIR%\cuemol2 ^
  -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
  %SCCACHE%
+if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 cmake --build %BUILD_DIR% --target clean --config %BUILD_TYPE%
+if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+
 cmake --build %BUILD_DIR% --parallel --config %BUILD_TYPE%
+if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+
 cmake --install %BUILD_DIR% --config %BUILD_TYPE%
+if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 copy %BASEDIR%\boost_%BOOST_VER%\lib\*mt-x64*.dll %INSTPATH%\bin\
+if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 

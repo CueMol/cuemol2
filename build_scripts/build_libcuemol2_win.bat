@@ -13,7 +13,7 @@ SET LZMA_VER=5.2.12
 REM Common Setup
 if "%1"=="" (
    echo "arg1 (deplibs_dir) not specified"
-   exit /b   
+   exit /b 1
 )
 
 SET BASEDIR=%1
@@ -72,10 +72,16 @@ cmake -G Ninja -S %TOP_DIR% -B %BUILDDIR% ^
  -DCGAL_HEADER_ONLY=TRUE ^
  -DCMAKE_BUILD_TYPE=%CONFIG% ^
  %SCCACHE%
+if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 cmake --build %BUILDDIR% --target clean --config %CONFIG%
+if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+
 cmake --build %BUILDDIR% --parallel --config %CONFIG%
+if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+
 cmake --install %BUILDDIR% --config %CONFIG%
+if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 sccache -s
 
