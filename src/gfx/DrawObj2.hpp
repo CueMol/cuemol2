@@ -53,11 +53,11 @@ public:
     using SphElemAry32 = gfx::DrawAttrElems<quint32, SphElem>;
 
 private:
-    // GL attribute locations (set during init())
-    int m_nVertexLoc;
-    int m_nImposLoc;
-    int m_nRadLoc;
-    int m_nColLoc;
+    // Predefined attribute locations (must match layout(location=N) in sphere2_vertex.glsl)
+    static constexpr int ATTRLOC_VERTEX = 0;
+    static constexpr int ATTRLOC_IMPOS  = 1;
+    static constexpr int ATTRLOC_RAD    = 2;
+    static constexpr int ATTRLOC_COLOR  = 3;
 
     gfx::ShaderObject *m_pPO;
     SphElemAry32 *m_pDrawElem;

@@ -17,11 +17,7 @@ using namespace gfx;
 // SphereDrawObj2
 
 SphereDrawObj2::SphereDrawObj2()
-    : m_nVertexLoc(0),
-      m_nImposLoc(1),
-      m_nRadLoc(2),
-      m_nColLoc(3),
-      m_pPO(nullptr),
+    : m_pPO(nullptr),
       m_pDrawElem(nullptr)
 {
     m_dsps[0][0] = -1.0f;
@@ -43,18 +39,13 @@ bool SphereDrawObj2::init(DisplayContext *pDC)
 {
     if (m_pPO != nullptr) return true;
 
-    m_pPO = pDC->loadShaderObject("gpu_sphere",
-                                  "%%CONFDIR%%/data/shaders/sphere_vertex.glsl",
-                                  "%%CONFDIR%%/data/shaders/sphere_frag.glsl");
+    m_pPO = pDC->loadShaderObject("gpu_sphere2",
+                                  "%%CONFDIR%%/data/shaders/sphere2_vertex.glsl",
+                                  "%%CONFDIR%%/data/shaders/sphere2_frag.glsl");
     if (m_pPO == nullptr) {
         LOG_DPRINTLN("SphereDrawObj2> ERROR: cannot load shader.");
         return false;
     }
-
-    m_nVertexLoc = m_pPO->getAttribLocation("a_vertex");
-    m_nImposLoc = m_pPO->getAttribLocation("a_impos");
-    m_nRadLoc = m_pPO->getAttribLocation("a_radius");
-    m_nColLoc = m_pPO->getAttribLocation("a_color");
 
     return true;
 }
@@ -68,13 +59,13 @@ void SphereDrawObj2::alloc(int nsph)
     SphElemAry32 &sphdata = *pdata;
 
     sphdata.setAttrSize(4);
-    sphdata.setAttrInfo(0, m_nVertexLoc, 3, qlib::type_consts::QTC_FLOAT32,
+    sphdata.setAttrInfo(0, ATTRLOC_VERTEX, 3, qlib::type_consts::QTC_FLOAT32,
                         offsetof(SphElem, cenx));
-    sphdata.setAttrInfo(1, m_nImposLoc, 2, qlib::type_consts::QTC_FLOAT32,
+    sphdata.setAttrInfo(1, ATTRLOC_IMPOS, 2, qlib::type_consts::QTC_FLOAT32,
                         offsetof(SphElem, dspx));
-    sphdata.setAttrInfo(2, m_nRadLoc, 1, qlib::type_consts::QTC_FLOAT32,
+    sphdata.setAttrInfo(2, ATTRLOC_RAD, 1, qlib::type_consts::QTC_FLOAT32,
                         offsetof(SphElem, rad));
-    sphdata.setAttrInfo(3, m_nColLoc, 4, qlib::type_consts::QTC_UINT8,
+    sphdata.setAttrInfo(3, ATTRLOC_COLOR, 4, qlib::type_consts::QTC_UINT8,
                         offsetof(SphElem, r));
 
     sphdata.alloc(nsph * 4);
