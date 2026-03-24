@@ -110,50 +110,22 @@ TEST(SimpleRendererTest, SetGetLineWidthOne)
     EXPECT_DOUBLE_EQ(r.getLineWidth(), 1.0);
 }
 
-// ---- setUseShader / isUseShader ----
+// ---- DrawObj2-based shader state ----
 
-TEST(SimpleRendererTest, SetUseShaderTrue)
+TEST(SimpleRendererTest, DefaultUseShaderFalse)
 {
     SimpleRenderer r;
-    r.setUseShader(true);
-    EXPECT_TRUE(r.isUseShader());
+    EXPECT_FALSE(r.m_bUseShader);
 }
 
-TEST(SimpleRendererTest, SetUseShaderFalseAfterTrue)
+TEST(SimpleRendererTest, DefaultCheckShaderOKFalse)
 {
     SimpleRenderer r;
-    r.setUseShader(true);
-    r.setUseShader(false);
-    EXPECT_FALSE(r.isUseShader());
+    EXPECT_FALSE(r.m_bCheckShaderOK);
 }
 
-// ---- Static bond type constants ----
-
-TEST(SimpleRendererTest, IBondConstantValues)
+TEST(SimpleRendererTest, DefaultLineDrawObjNotValid)
 {
-    EXPECT_EQ(SimpleRenderer::IBON_1C_1V, 0);
-    EXPECT_EQ(SimpleRenderer::IBON_2C_1V, 1);
-    EXPECT_EQ(SimpleRenderer::IBON_1C_2V, 2);
-    EXPECT_EQ(SimpleRenderer::IBON_2C_2V, 3);
-    EXPECT_EQ(SimpleRenderer::IBON_1C_3V, 4);
-    EXPECT_EQ(SimpleRenderer::IBON_2C_3V, 5);
-}
-
-TEST(SimpleRendererTest, IBondConstantsAreDistinct)
-{
-    EXPECT_NE(SimpleRenderer::IBON_1C_1V, SimpleRenderer::IBON_2C_1V);
-    EXPECT_NE(SimpleRenderer::IBON_1C_1V, SimpleRenderer::IBON_1C_2V);
-    EXPECT_NE(SimpleRenderer::IBON_1C_1V, SimpleRenderer::IBON_2C_2V);
-    EXPECT_NE(SimpleRenderer::IBON_1C_1V, SimpleRenderer::IBON_1C_3V);
-    EXPECT_NE(SimpleRenderer::IBON_1C_1V, SimpleRenderer::IBON_2C_3V);
-    EXPECT_NE(SimpleRenderer::IBON_2C_1V, SimpleRenderer::IBON_1C_2V);
-    EXPECT_NE(SimpleRenderer::IBON_2C_1V, SimpleRenderer::IBON_2C_2V);
-    EXPECT_NE(SimpleRenderer::IBON_2C_1V, SimpleRenderer::IBON_1C_3V);
-    EXPECT_NE(SimpleRenderer::IBON_2C_1V, SimpleRenderer::IBON_2C_3V);
-    EXPECT_NE(SimpleRenderer::IBON_1C_2V, SimpleRenderer::IBON_2C_2V);
-    EXPECT_NE(SimpleRenderer::IBON_1C_2V, SimpleRenderer::IBON_1C_3V);
-    EXPECT_NE(SimpleRenderer::IBON_1C_2V, SimpleRenderer::IBON_2C_3V);
-    EXPECT_NE(SimpleRenderer::IBON_2C_2V, SimpleRenderer::IBON_1C_3V);
-    EXPECT_NE(SimpleRenderer::IBON_2C_2V, SimpleRenderer::IBON_2C_3V);
-    EXPECT_NE(SimpleRenderer::IBON_1C_3V, SimpleRenderer::IBON_2C_3V);
+    SimpleRenderer r;
+    EXPECT_FALSE(r.m_slLine.isValid());
 }
