@@ -41,7 +41,7 @@ bool SphereDrawObj2::init(DisplayContext *pDC)
 
     m_pPO = pDC->loadShaderObject("gpu_sphere2",
                                   "%%CONFDIR%%/data/shaders/sphere2_vertex.glsl",
-                                  "%%CONFDIR%%/data/shaders/sphere2_frag.glsl");
+                                  "%%CONFDIR%%/data/shaders/sphere_frag.glsl");
     if (m_pPO == nullptr) {
         LOG_DPRINTLN("SphereDrawObj2> ERROR: cannot load shader.");
         return false;

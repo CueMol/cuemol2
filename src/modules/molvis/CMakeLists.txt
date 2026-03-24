@@ -82,7 +82,6 @@ IF (BUILD_OPENGL_SYSDEP)
     sphere_vertex.glsl
     sphere_frag.glsl
     sphere2_vertex.glsl
-    sphere2_frag.glsl
     cylinder_vertex.glsl
     cylinder_frag.glsl
   )
