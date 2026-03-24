@@ -13,32 +13,20 @@
 #include "CPK2Renderer.hpp"
 
 #include <gfx/DrawAttrArray.hpp>
-
-#ifdef USE_OPENGL
-#include <sysdep/OglCommon.hpp>
-#include "GLSLSphereHelper.hpp"
-#endif
+#include <gfx/DrawObj2.hpp>
 
 using namespace molvis;
 using namespace molstr;
 
 CPK2Renderer::CPK2Renderer()
 {
-    // m_pDrawElem = NULL;
-  m_bUseShader = false;
-  m_bCheckShaderOK = false;
-  m_nGlRendMode = REND_DEFAULT;
-
-#ifdef USE_OPENGL
-  m_pSlSph = MB_NEW GLSLSphereHelper();
-#endif
+    m_bUseShader = false;
+    m_bCheckShaderOK = false;
+    m_nGlRendMode = REND_DEFAULT;
 }
 
 CPK2Renderer::~CPK2Renderer()
 {
-#ifdef USE_OPENGL
-  delete m_pSlSph;
-#endif
 }
 
 const char *CPK2Renderer::getTypeName() const
@@ -50,9 +38,6 @@ const char *CPK2Renderer::getTypeName() const
 
 void CPK2Renderer::display(DisplayContext *pdc)
 {
-#ifndef USE_OPENGL
-  super_t::display(pdc);
-#else
   if (pdc->isFile()) {
     // case of the file (non-ogl) rendering
     // always use the old version.
@@ -61,13 +46,9 @@ void CPK2Renderer::display(DisplayContext *pdc)
   }
 
   if (!m_bCheckShaderOK) {
-    if (m_pSlSph->initShader(pdc)) {
+    m_bUseShader = m_slSph.init(pdc);
+    if (m_bUseShader)
       MB_DPRINTLN("CPK2 sphere shader OK");
-      m_bUseShader = true;
-    }
-    else {
-      m_bUseShader = false;
-    }
     m_bCheckShaderOK = true;
   }
 
@@ -75,65 +56,30 @@ void CPK2Renderer::display(DisplayContext *pdc)
       (m_nGlRendMode==REND_DEFAULT ||
        m_nGlRendMode==REND_SHADER)) {
     // shader rendering mode
-    if (m_pSlSph->getDrawElem()==NULL) {
+    if (!m_slSph.isValid()) {
       renderShaderImpl();
-      if (m_pSlSph->getDrawElem()==NULL)
+      if (!m_slSph.isValid())
         return; // Error, Cannot draw anything (ignore)
     }
-    
-    // LOG_DPRINTLN("CPK2Renderer.display> ***** DRAW CALLED");
     preRender(pdc);
-    m_pSlSph->draw(pdc);
+    m_slSph.draw(pdc);
     postRender(pdc);
   }
-  /*else if (pdc->isDrawElemSupported() &&
-           (m_nGlRendMode==REND_DEFAULT ||
-            m_nGlRendMode==REND_VBO)) {
-    // VBO rendering mode
-    if (m_pDrawElem==NULL) {
-      renderVBOImpl();
-      if (m_pDrawElem==NULL)
-	return; // Error, Cannot draw anything (ignore)
-    }
-    
-    preRender(pdc);
-    pdc->drawElem(*m_pDrawElem);
-    postRender(pdc);
-    }*/
   else {
     // old version (uses DisplayContext::sphere)
     super_t::display(pdc);
   }
-#endif
 }
 
 void CPK2Renderer::invalidateDisplayCache()
 {
   super_t::invalidateDisplayCache();
-  
-#ifdef USE_OPENGL
-  /*  if (m_pDrawElem!=NULL) {
-    delete m_pDrawElem;
-    m_pDrawElem = NULL;
-    }*/
-  if (m_bUseShader) {
-    m_pSlSph->invalidate();
-  }
-#endif
+  m_slSph.invalidate();
 }
 
 void CPK2Renderer::unloading()
 {
-#ifdef USE_OPENGL
-    /*  if (m_pDrawElem!=NULL) {
-    delete m_pDrawElem;
-    m_pDrawElem = NULL;
-    }*/
-  if (m_bUseShader) {
-    m_pSlSph->invalidate();
-  }
-#endif
-
+  m_slSph.invalidate();
   super_t::unloading();
 }
 
@@ -209,9 +155,8 @@ void CPK2Renderer::rendAtom(DisplayContext *pdl, MolAtomPtr pAtom, bool)
 }
 
 //////////////////////
-// GLSL implementation
+// Shader implementation
 
-#ifdef USE_OPENGL
 void CPK2Renderer::renderShaderImpl()
 {
   MolCoordPtr pMol = getClientMol();
@@ -231,26 +176,26 @@ void CPK2Renderer::renderShaderImpl()
       ++nsphs;
     }
   }
-  
+
   if (nsphs==0)
     return; // nothing to draw
-  
+
   // initialize the coloring scheme
   getColSchm()->start(pMol, this);
   pMol->getColSchm()->start(pMol, this);
 
-  m_pSlSph->alloc(nsphs);
+  m_slSph.alloc(nsphs);
 
   {
     AtomIterator iter(pMol, getSelection());
-    int i=0; //, j, ifc=0;
-    Vector4D pos;
+    int i=0;
     for (iter.first(); iter.hasMore(); iter.next()) {
       int aid = iter.getID();
       MolAtomPtr pAtom = pMol->getAtom(aid);
       if (pAtom.isnull()) continue; // ignore errors
 
-      m_pSlSph->setData(i, pAtom->getPos(), getVdWRadius(pAtom), ColSchmHolder::getColor(pAtom), getSceneID());
+      quint32 devcode = ColSchmHolder::getColor(pAtom)->getDevCode(getSceneID());
+      m_slSph.setData(i, pAtom->getPos(), static_cast<float>(getVdWRadius(pAtom)), devcode);
       ++i;
     }
   }
@@ -259,6 +204,6 @@ void CPK2Renderer::renderShaderImpl()
   getColSchm()->end();
   pMol->getColSchm()->end();
 
+  LOG_DPRINTLN("CPK2Renderer> rendered sphere atoms=%d", nsphs);
 }
-#endif
 

@@ -9,6 +9,8 @@
 #include "View.hpp"
 #include <gfx/TextRenderManager.hpp>
 #include <gfx/PixelBuffer.hpp>
+#include <gfx/ShaderObject.hpp>
+#include "ShaderObjMgr.hpp"
 
 namespace qsys {
 
@@ -24,6 +26,26 @@ void GUIDisplayContext::setTargetView(qsys::View *pView)
 }
 
 //////////
+
+gfx::ShaderObject *GUIDisplayContext::loadShaderObject(const LString &name,
+                                                       const LString &vert_path,
+                                                       const LString &frag_path)
+{
+    qlib::uid_t sceneID = getSceneID();
+    qsys::ShaderObjMgr *pMgr = qsys::ShaderObjMgr::getInstance();
+
+    // Check cache first
+    gfx::ShaderObject *pExisting = pMgr->getShaderObject(name, sceneID);
+    if (pExisting != nullptr) return pExisting;
+
+    // Delegate compilation to the backend (OcDisplayContext)
+    gfx::ShaderObject *pNew = createShaderObject(name, vert_path, frag_path);
+    if (pNew == nullptr) return nullptr;
+
+    // Register in cache
+    pMgr->registerShaderObject(name, sceneID, pNew);
+    return pNew;
+}
 
 void GUIDisplayContext::drawString(const Vector4D &pos, const qlib::LString &str)
 {

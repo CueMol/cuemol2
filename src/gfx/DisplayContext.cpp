@@ -8,6 +8,7 @@
 
 #include "DisplayContext.hpp"
 #include "SolidColor.hpp"
+#include "ShaderObject.hpp"
 
 using namespace gfx;
 
@@ -435,4 +436,18 @@ DrawObjSet *DisplayContext::createDrawObjSet() const
 
 void DisplayContext::drawObjSet(const DrawObjSet &dos)
 {
+}
+
+ShaderObject *DisplayContext::loadShaderObject(const LString &name,
+                                               const LString &vert_path,
+                                               const LString &frag_path)
+{
+    return nullptr;
+}
+
+ShaderObject *DisplayContext::createShaderObject(const LString &name,
+                                                 const LString &vert_path,
+                                                 const LString &frag_path)
+{
+    return nullptr;
 }

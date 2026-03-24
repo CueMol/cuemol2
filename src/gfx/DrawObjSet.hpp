@@ -1,6 +1,5 @@
 // -*-Mode: C++;-*-
 //
-// Elements for qsys::DrawObj
 //
 
 #pragma once

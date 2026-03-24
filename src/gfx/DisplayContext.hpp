@@ -29,6 +29,7 @@ class DrawElem;
 class AbstractColor;
 class PixelBuffer;
 class DrawObjSet;
+class ShaderObject;
 
 class GFX_API DisplayContext : public qlib::LObject
 {
@@ -474,6 +475,20 @@ public:
 
     /// Clear the target buffer with the specified color.
     virtual void clearBuffer(const gfx::ColorPtr &pcol) {}
+
+    ///////////////////////////////
+    // Shader object support
+
+    /// Load (or retrieve cached) shader object. Default returns nullptr.
+    virtual ShaderObject *loadShaderObject(const LString &name, const LString &vert_path,
+                                           const LString &frag_path);
+
+    /// Create a new shader object (backend-specific compilation). Default returns nullptr.
+    virtual ShaderObject *createShaderObject(const LString &name, const LString &vert_path,
+                                             const LString &frag_path);
+
+    /// Set front face winding order. Default is a no-op.
+    virtual void setFrontFace(bool bCCW = true) {}
 };
 
 }  // namespace gfx

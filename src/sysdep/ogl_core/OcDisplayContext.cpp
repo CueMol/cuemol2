@@ -12,6 +12,8 @@
 #include "OcBufferRep.hpp"
 #include "OcDrawObjSet.hpp"
 
+#include <sysdep/OglProgramObject.hpp>
+
 #include <gfx/PixelBuffer.hpp>
 #include <gfx/SolidColor.hpp>
 #include <gfx/Mesh.hpp>
@@ -145,6 +147,38 @@ void OcDisplayContext::clearBuffer(const gfx::ColorPtr &pcol)
 {
     glClearColor(float(pcol->fr()), float(pcol->fg()), float(pcol->fb()), 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+//////////
+
+gfx::ShaderObject *OcDisplayContext::createShaderObject(const LString &name,
+                                                        const LString &vert_path,
+                                                        const LString &frag_path)
+{
+    OglProgramObject *pPO = new OglProgramObject();
+    if (!pPO->init()) {
+        LOG_DPRINTLN("OcDisplayContext> ERROR: cannot initialize OglProgramObject <%s>.",
+                     name.c_str());
+        delete pPO;
+        return nullptr;
+    }
+
+    try {
+        pPO->loadShader("vert", vert_path, GL_VERTEX_SHADER);
+        pPO->loadShader("frag", frag_path, GL_FRAGMENT_SHADER);
+        pPO->link();
+    } catch (...) {
+        LOG_DPRINTLN("OcDisplayContext> FATAL ERROR: loadShader(%s) failed!!", name.c_str());
+        delete pPO;
+        return nullptr;
+    }
+
+    return pPO;
+}
+
+void OcDisplayContext::setFrontFace(bool bCCW)
+{
+    glFrontFace(bCCW ? GL_CCW : GL_CW);
 }
 
 }  // namespace sysdep

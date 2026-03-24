@@ -143,6 +143,13 @@ public:
     virtual gfx::DrawObjSet *createDrawObjSet() const = 0;
 
     virtual void drawObjSet(const gfx::DrawObjSet &dos) = 0;
+
+    ///////////////////////////////
+    // Shader object support: check cache, then delegate creation to subclass
+
+    virtual gfx::ShaderObject *loadShaderObject(const LString &name,
+                                                const LString &vert_path,
+                                                const LString &frag_path) override;
 };
 
 }  // namespace qsys

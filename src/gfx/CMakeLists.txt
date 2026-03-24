@@ -22,6 +22,7 @@ CmsXform.cpp
 ColProfMgr.cpp
 Hittest.cpp
 DrawObjSet.cpp
+DrawObj2.cpp
 )
 
 # Normal C++ header files
