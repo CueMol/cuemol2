@@ -215,13 +215,9 @@ void CylinderDrawObj2::alloc(int ncyl)
     cyldata.setAttrInfo(4, m_nColLoc, 4, qlib::type_consts::QTC_UINT8,
                         offsetof(CylElem, r));
 
-    // Instanced rendering
-    for (int k = 0; k < 5; ++k) cyldata.setAttrDivisor(k, 1);
-
     cyldata.alloc(ncyl * 4);
     cyldata.allocInd(ncyl * 6);
     cyldata.setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
-    cyldata.setNumInstances(ncyl);
 }
 
 void CylinderDrawObj2::setData(int idx, const qlib::Vector4D &pos1,
