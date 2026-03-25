@@ -79,7 +79,6 @@ IF (BUILD_OPENGL_SYSDEP)
   )
   # GLSL shader files
   SET(GLSL_SHADER_FILES
-    sphere_vertex.glsl
     sphere_frag.glsl
     sphere2_vertex.glsl
     cylinder_vertex.glsl
