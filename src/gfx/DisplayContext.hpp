@@ -288,7 +288,7 @@ public:
         return m_projMat;
     }
 
-    // Viewport
+    // Viewport (in device pixel unit)
     virtual void setViewport(const Vector4D &vp);
 
     Vector4D getViewport() const
@@ -360,7 +360,8 @@ public:
     virtual void drawPixels(const Vector4D &pos, const PixelBuffer &data,
                             const ColorPtr &col);
 
-    // pixel scaling factor
+    // get logical to device pixel scaling factor
+    // default returns 1.0 (no scaling)
     void setPixSclFac(double f)
     {
         m_dPixSclFac = f;

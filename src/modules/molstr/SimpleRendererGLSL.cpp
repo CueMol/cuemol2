@@ -11,7 +11,6 @@
 
 #include <gfx/DrawAttrArray.hpp>
 #include <gfx/DrawObj2.hpp>
-#include <qsys/View.hpp>
 
 namespace molstr {
 
@@ -39,11 +38,7 @@ void SimpleRenderer::display(DisplayContext *pdc)
         }
         preRender(pdc);
         auto lw = static_cast<float>(m_lw);
-        auto pview = pdc->getTargetView();
-        if (pview != nullptr && pview->useSclFac()) {
-            lw *= static_cast<float>(pview->getSclFacX());
-        }
-        m_slLine.setLineWidth(lw);
+        m_slLine.setLineWidth(lw * pdc->getPixSclFac());
         m_slLine.draw(pdc);
         postRender(pdc);
     } else {
