@@ -242,37 +242,6 @@ TEST_F(TrigDrawObj2Test, DrawDoesNotCrash)
     obj.draw(&dc);
 }
 
-// ---- TrigMeshDrawObj2 tests ----
-
-class TrigMeshDrawObj2Test : public ::testing::Test
-{
-protected:
-    MockDisplayContext dc;
-    gfx::TrigMeshDrawObj2 obj;
-};
-
-TEST_F(TrigMeshDrawObj2Test, InitSucceeds)
-{
-    EXPECT_TRUE(obj.init(&dc));
-}
-
-TEST_F(TrigMeshDrawObj2Test, ValidAfterAlloc)
-{
-    obj.init(&dc);
-    obj.alloc(6, 2);
-    EXPECT_TRUE(obj.isValid());
-    EXPECT_EQ(obj.getVertexSize(), 6);
-    EXPECT_EQ(obj.getFaceSize(), 2);
-}
-
-TEST_F(TrigMeshDrawObj2Test, InvalidateResetsState)
-{
-    obj.init(&dc);
-    obj.alloc(6, 2);
-    obj.invalidate();
-    EXPECT_FALSE(obj.isValid());
-}
-
 // ---- LineDrawObj2 tests ----
 
 class LineDrawObj2Test : public ::testing::Test

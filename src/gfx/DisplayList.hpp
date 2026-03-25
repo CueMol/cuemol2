@@ -20,7 +20,7 @@ namespace gfx {
 
 /// Backend-independent display list.
 /// Accumulates immediate-mode-style drawing calls into buffers, then converts
-/// them to LineDrawObj2/TrigDrawObj2/TrigMeshDrawObj2 on first draw.
+/// them to LineDrawObj2/TrigDrawObj2 on first draw.
 class GFX_API DisplayList : public gfx::DisplayContext
 {
 private:
@@ -66,7 +66,7 @@ private:
 
     gfx::GrowMesh<qlib::quint32> m_mesh;
 
-    gfx::TrigMeshDrawObj2 *m_pTrigMeshObj;
+    gfx::TrigDrawObj2 *m_pTrigMeshObj;
 
     /////
 

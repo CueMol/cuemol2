@@ -306,7 +306,14 @@ void DisplayList::createLineObj(DisplayContext *pdc)
                             m_lineBuf[i].pos, m_lineBuf[i].cc,
                             m_lineBuf[i + 1].pos, m_lineBuf[i + 1].cc);
     }
-    m_pLineObj->setLineWidth(m_vertLineWidth);
+    auto lw = m_vertLineWidth;
+    if (lw < 0) {
+        lw = pdc->getLineWidth();
+        if (lw < 0) {
+            lw = 1.0;
+        }
+    }
+    m_pLineObj->setLineWidth(lw * pdc->getPixSclFac());
     m_pLineObj->setStipple(m_bVertStipple);
     m_pLineObj->setUpdated(true);
     m_lineBuf.clear();
@@ -345,7 +352,7 @@ void DisplayList::createTrigMeshObj(DisplayContext *pdc)
     if (nMeshFaces == 0) return;
 
     MB_ASSERT(m_pTrigMeshObj == nullptr);
-    m_pTrigMeshObj = MB_NEW gfx::TrigMeshDrawObj2();
+    m_pTrigMeshObj = MB_NEW gfx::TrigDrawObj2();
     m_pTrigMeshObj->init(pdc);
     m_pTrigMeshObj->alloc(nMeshVerts, nMeshFaces);
 
@@ -386,9 +393,11 @@ void DisplayList::callDisplayListImpl(gfx::DisplayContext *pdc)
         m_pLineObj->draw(pdc);
     }
     if (m_pTrigObj != nullptr) {
+        m_pTrigObj->setEdgeLineType(pdc->getEdgeLineType());
         m_pTrigObj->draw(pdc);
     }
     if (m_pTrigMeshObj != nullptr) {
+        m_pTrigMeshObj->setEdgeLineType(pdc->getEdgeLineType());
         m_pTrigMeshObj->draw(pdc);
     }
 }
