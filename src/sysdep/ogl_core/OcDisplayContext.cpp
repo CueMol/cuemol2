@@ -11,6 +11,7 @@
 
 #include <gfx/DisplayList.hpp>
 #include "OcPixDraw.hpp"
+#include <gfx/PixDrawObj2.hpp>
 #include "OcBufferRep.hpp"
 #include "OcDrawObjSet.hpp"
 
@@ -31,7 +32,7 @@ using gfx::DisplayContext;
 
 OcDisplayContext::OcDisplayContext() : super_t()
 {
-    m_pOcPixDraw = nullptr;
+    m_pPixDrawObj = nullptr;
 }
 
 OcDisplayContext::~OcDisplayContext() {}
@@ -57,14 +58,17 @@ void OcDisplayContext::setCullFace(bool f /*=true*/)
 void OcDisplayContext::drawPixels(const Vector4D &pos, const gfx::PixelBuffer &data,
                                   const gfx::ColorPtr &acol)
 {
-    if (m_pOcPixDraw == nullptr) {
-        m_pOcPixDraw = MB_NEW OcPixDraw();
-        m_pOcPixDraw->initShader(this);
+    if (m_pPixDrawObj == nullptr) {
+        m_pPixDrawObj = MB_NEW gfx::PixDrawObj2();
+        m_pPixDrawObj->init(this);
     }
 
-    if (!m_pOcPixDraw->createDrawElem(this, data)) {
-        LOG_DPRINTLN("OcDisplayContext::drawPixels> failed to create DrawElem");
-        return;
+    // Create OcTexRep if not yet set on this PixelBuffer (GL-specific, stays here)
+    OcTexRep *pRep = static_cast<OcTexRep *>(data.getRep());
+    if (pRep == nullptr) {
+        pRep = MB_NEW OcTexRep();
+        pRep->create(this, data);
+        data.setRep(pRep);
     }
 
     gfx::ColorPtr col = acol;
@@ -73,7 +77,7 @@ void OcDisplayContext::drawPixels(const Vector4D &pos, const gfx::PixelBuffer &d
         col = super_t::getColor();
     }
 
-    m_pOcPixDraw->draw(this, pos, data, col);
+    m_pPixDrawObj->draw(this, pos, data, col);
 }
 
 //////////////////////////////////////////////////////////////////

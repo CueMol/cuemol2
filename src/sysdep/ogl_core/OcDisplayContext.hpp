@@ -10,18 +10,19 @@
 
 namespace gfx {
 class AbstDrawAttrs;
+class PixDrawObj2;
 }  // namespace gfx
 
 namespace sysdep {
 
-class OcPixDraw;
+class OcTexRep;
 
 class SYSDEP_API OcDisplayContext : public qsys::GUIDisplayContext
 {
 private:
     typedef qsys::GUIDisplayContext super_t;
 
-    OcPixDraw *m_pOcPixDraw;
+    gfx::PixDrawObj2 *m_pPixDrawObj;
 
 public:
     OcDisplayContext();

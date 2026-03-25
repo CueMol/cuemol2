@@ -17,6 +17,8 @@ class GFX_API PixRep
 {
 public:
     virtual ~PixRep() {}
+    virtual void bind(int texUnit) = 0;
+    virtual void unbind() = 0;
 };
 
 class GFX_API PixelBuffer
