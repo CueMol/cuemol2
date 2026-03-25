@@ -751,7 +751,8 @@ void LineDrawObj2::draw(DisplayContext *pDC)
     float w = (float)vp.z();
     float h = (float)vp.w();
 
-    float linew = (m_linew < 0.0f) ? (float)pDC->getLineWidth() : m_linew;
+    // float linew = (m_linew < 0.0f) ? (float)pDC->getDeviceLineWidth() : m_linew;
+    float linew = (m_linew < 0.0f) ? 1.0 : m_linew;
     float stippleLen = m_bStipple ? 8.0f : 0.0f;
 
     m_pPO->enable();

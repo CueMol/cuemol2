@@ -134,12 +134,16 @@ void GLSLLineHelper::draw(gfx::DisplayContext *pdc)
 
     setupAttrs();
 
+    // // Get screen size from viewport
+    // qlib::Vector4D vp = pDC->getViewport();
+    // float w = (float)vp.z();
+    // float h = (float)vp.w();
+
     auto pview = pdc->getTargetView();
     if (pview == nullptr) {
         MB_DPRINTLN("GLSLLine> ERROR: no target view");
         return;
     }
-
     float w = pview->getWidth();
     float h = pview->getHeight();
 

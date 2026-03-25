@@ -11,6 +11,7 @@
 
 #include <gfx/DrawAttrArray.hpp>
 #include <gfx/DrawObj2.hpp>
+#include <qsys/View.hpp>
 
 namespace molstr {
 
@@ -27,8 +28,7 @@ void SimpleRenderer::display(DisplayContext *pdc)
 
     if (!m_bCheckShaderOK) {
         m_bUseShader = m_slLine.init(pdc);
-        if (m_bUseShader)
-            MB_DPRINTLN("SimpleRenderer line shader OK");
+        if (m_bUseShader) MB_DPRINTLN("SimpleRenderer line shader OK");
         m_bCheckShaderOK = true;
     }
 
@@ -38,7 +38,12 @@ void SimpleRenderer::display(DisplayContext *pdc)
             if (!m_slLine.isValid()) return;  // Error: cannot draw anything
         }
         preRender(pdc);
-        m_slLine.setLineWidth(static_cast<float>(m_lw));
+        auto lw = static_cast<float>(m_lw);
+        auto pview = pdc->getTargetView();
+        if (pview != nullptr && pview->useSclFac()) {
+            lw *= static_cast<float>(pview->getSclFacX());
+        }
+        m_slLine.setLineWidth(lw);
         m_slLine.draw(pdc);
         postRender(pdc);
     } else {
