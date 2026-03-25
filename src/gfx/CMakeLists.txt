@@ -23,6 +23,7 @@ ColProfMgr.cpp
 Hittest.cpp
 DrawObjSet.cpp
 DrawObj2.cpp
+DisplayList.cpp
 )
 
 # Normal C++ header files
@@ -49,6 +50,7 @@ SphereSet.hpp
 TextImgBuf.hpp
 TextRenderManager.hpp
 DrawObjSet.hpp
+DisplayList.hpp
 # color_parser.h
 gfx.hpp
 )

@@ -8,6 +8,8 @@
 
 #include "OcDisplayContext.hpp"
 #include "OcDisplayList.hpp"
+
+#include <gfx/DisplayList.hpp>
 #include "OcPixDraw.hpp"
 #include "OcBufferRep.hpp"
 #include "OcDrawObjSet.hpp"
@@ -79,7 +81,7 @@ void OcDisplayContext::drawPixels(const Vector4D &pos, const gfx::PixelBuffer &d
 
 DisplayContext *OcDisplayContext::createDisplayList()
 {
-    OcDisplayList *pdl = MB_NEW OcDisplayList();
+    gfx::DisplayList *pdl = MB_NEW gfx::DisplayList();
     // Targets the same view as this
     pdl->setTargetView(getTargetView());
     pdl->setAlpha(getAlpha());
@@ -90,7 +92,7 @@ DisplayContext *OcDisplayContext::createDisplayList()
 
 void OcDisplayContext::callDisplayList(DisplayContext *pdl)
 {
-    OcDisplayList *poc = dynamic_cast<OcDisplayList *>(pdl);
+    gfx::DisplayList *poc = dynamic_cast<gfx::DisplayList *>(pdl);
     if (poc != NULL && poc->isValid()) {
         poc->callDisplayListImpl(this);
     }
@@ -98,11 +100,7 @@ void OcDisplayContext::callDisplayList(DisplayContext *pdl)
 
 bool OcDisplayContext::isCompatibleDL(DisplayContext *pdl) const
 {
-    OcDisplayList *poc = dynamic_cast<OcDisplayList *>(pdl);
-    if (poc != NULL) {
-        return true;
-    }
-    return false;
+    return dynamic_cast<gfx::DisplayList *>(pdl) != nullptr;
 }
 
 void OcDisplayContext::drawElem(const AbstDrawElem &ade)
