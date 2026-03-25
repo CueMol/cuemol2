@@ -6,6 +6,7 @@ SET(SYSDEP_SRCS
   # core profile
   ogl_core/OcDisplayList.cpp
   ogl_core/OcPixDraw.cpp
+  ogl_core/OcBufTexRep.cpp
   ogl_core/OcDisplayContext.cpp
   ogl_core/GLSLLineHelper2.cpp
   ogl_core/GLSLTrigHelper.cpp

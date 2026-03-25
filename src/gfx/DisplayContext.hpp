@@ -31,6 +31,8 @@ class PixelBuffer;
 class DrawObjSet;
 class ShaderObject;
 
+class BufTexRep;
+
 class GFX_API DisplayContext : public qlib::LObject
 {
 private:
@@ -490,6 +492,12 @@ public:
 
     /// Set front face winding order. Default is a no-op.
     virtual void setFrontFace(bool bCCW = true) {}
+
+    ///////////////////////////////
+    // Buffer texture support
+
+    /// Create a backend-specific BufTexRep. Returns nullptr if not supported.
+    virtual BufTexRep *createBufTexRep();
 };
 
 }  // namespace gfx

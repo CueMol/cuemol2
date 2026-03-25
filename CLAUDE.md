@@ -71,7 +71,7 @@ src/
 
 ## gtest Implementation Policy
 
-- 本体のソースコードがおかしい場合は、無理にそちらに迎合してtestを作成しようとせずに、本体も修正する
+- 本体のソースコードがおかしい場合は、無理にそちらに迎合してtestを作成/修正しようとせずに、本体を修正する
 - Unit tests cover all logic in `.hpp` and `.cpp` files
 - Exclude `*_wrap.cpp` (auto-generated) from test coverage
 - Tests in `src/tests/` mirror the module structure of `src/`

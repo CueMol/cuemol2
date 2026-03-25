@@ -18,6 +18,7 @@
 #include <sysdep/OglProgramObject.hpp>
 
 #include <gfx/PixelBuffer.hpp>
+#include "OcBufTexRep.hpp"
 #include <gfx/SolidColor.hpp>
 #include <gfx/Mesh.hpp>
 #include <gfx/DrawAttrArray.hpp>
@@ -181,6 +182,13 @@ gfx::ShaderObject *OcDisplayContext::createShaderObject(const LString &name,
 void OcDisplayContext::setFrontFace(bool bCCW)
 {
     glFrontFace(bCCW ? GL_CCW : GL_CW);
+}
+
+gfx::BufTexRep *OcDisplayContext::createBufTexRep()
+{
+    OcBufTexRep *p = MB_NEW OcBufTexRep();
+    p->init(this);
+    return p;
 }
 
 }  // namespace sysdep

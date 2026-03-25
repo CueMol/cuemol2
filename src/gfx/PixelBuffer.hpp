@@ -21,6 +21,26 @@ public:
     virtual void unbind() = 0;
 };
 
+/// Abstract interface for buffer texture (GL_TEXTURE_BUFFER equivalent).
+/// Paired with a CPU-side data holder (e.g., xtal::MapBufTex).
+class GFX_API BufTexRep
+{
+public:
+    virtual ~BufTexRep() {}
+
+    /// Allocate GPU buffer and upload data (called on first use or size change).
+    virtual void create(size_t sz, const void *data) = 0;
+
+    /// Update GPU buffer in-place (same size as create()).
+    virtual void update(size_t sz, const void *data) = 0;
+
+    /// Bind the buffer texture to the given texture unit.
+    virtual void bind(int texUnit) = 0;
+
+    /// Unbind the buffer texture.
+    virtual void unbind() = 0;
+};
+
 class GFX_API PixelBuffer
 {
 private:

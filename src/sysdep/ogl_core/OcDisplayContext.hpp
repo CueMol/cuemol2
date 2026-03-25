@@ -11,11 +11,13 @@
 namespace gfx {
 class AbstDrawAttrs;
 class PixDrawObj2;
+class BufTexRep;
 }  // namespace gfx
 
 namespace sysdep {
 
 class OcTexRep;
+class OcBufTexRep;
 
 class SYSDEP_API OcDisplayContext : public qsys::GUIDisplayContext
 {
@@ -62,6 +64,8 @@ public:
                                                   const LString &frag_path) override;
 
     virtual void setFrontFace(bool bCCW = true) override;
+
+    virtual gfx::BufTexRep *createBufTexRep() override;
 };
 
 }  // namespace sysdep

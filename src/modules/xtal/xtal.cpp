@@ -20,6 +20,7 @@
 
 #ifdef USE_OPENGL
 #  include "GLSLMapMeshRenderer.hpp"
+#  include "GLSLMapMeshRenderer2.hpp"
 // #  include "GLSLMapVolRenderer.hpp"
 #endif
 
@@ -49,6 +50,7 @@ bool init()
 
 #ifdef USE_OPENGL
   pRF->regist<GLSLMapMeshRenderer>();
+  pRF->regist<GLSLMapMeshRenderer2>();
   //  pRF->regist<GLSLMapVolRenderer>();
 #endif
 

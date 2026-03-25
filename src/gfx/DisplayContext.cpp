@@ -9,6 +9,7 @@
 #include "DisplayContext.hpp"
 #include "SolidColor.hpp"
 #include "ShaderObject.hpp"
+#include "PixelBuffer.hpp"
 
 using namespace gfx;
 
@@ -448,6 +449,11 @@ ShaderObject *DisplayContext::loadShaderObject(const LString &name,
 ShaderObject *DisplayContext::createShaderObject(const LString &name,
                                                  const LString &vert_path,
                                                  const LString &frag_path)
+{
+    return nullptr;
+}
+
+BufTexRep *DisplayContext::createBufTexRep()
 {
     return nullptr;
 }

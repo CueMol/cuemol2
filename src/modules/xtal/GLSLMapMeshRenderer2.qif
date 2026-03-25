@@ -1,0 +1,39 @@
+// -*-Mode: C++;-*-
+//
+// QIF for GLSLMapMeshRenderer2 (DrawObj2-based GPU map mesh renderer)
+//
+
+#ifndef GLSL_MAPMESH_RENDERER2_QIF_INCLUDED
+#define GLSL_MAPMESH_RENDERER2_QIF_INCLUDED
+
+#include "MapRenderer.qif"
+
+runtime_class GLSLMapMeshRenderer2 extends MapRenderer
+{
+  client_hdr "GLSLMapMeshRenderer2.hpp";
+  client_name xtal::GLSLMapMeshRenderer2;
+  using Color;
+
+  scriptable;
+  smartptr;
+  cloneable;
+
+  property real maxExtent => redirect(getMaxExtent, XXX) (readonly);
+
+  property real width => redirect(getLineWidth, setLineWidth);
+  default width = 1.0;
+
+  property integer bufsize => redirect(getBufSize, setBufSize);
+  default bufsize = 100;
+
+  property boolean autoupdate => m_bAutoUpdate;
+  default autoupdate = true;
+
+  property boolean dragupdate => m_bDragUpdate;
+  default dragupdate = true;
+
+  property object<AbstractColor$> color => redirect(getColor, setColor);
+  default color = gfx::SolidColor::createRGB(0.0, 1.0, 0.0);
+};
+
+#endif
