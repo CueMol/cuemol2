@@ -452,13 +452,17 @@ void TrigDrawObj2::drawEdges(DisplayContext *pDC)
     pDC->getDevRGBColor(pDC->getEdgeLineColor(), r, g, b);
     float alpha = (float)pDC->getAlpha();
 
-    if (m_nEdgeLineType == DisplayContext::ELT_EDGES) {
+    if (m_nEdgeLineType == DisplayContext::ELT_EDGES ||
+        m_nEdgeLineType == DisplayContext::ELT_SILHOUETTE) {
         m_pEdgePO->enable();
         m_pEdgePO->setupFog(pDC);
         m_pEdgePO->setupMat(pDC);
         m_pEdgePO->setUniformF("frag_alpha", alpha);
         m_pEdgePO->setUniformF("edge_width", (float)pDC->getEdgeLineWidth());
         m_pEdgePO->setUniformF("edge_color", r, g, b, alpha);
+        m_pEdgePO->setUniform(
+            "u_silh",
+            (m_nEdgeLineType == DisplayContext::ELT_SILHOUETTE) ? 1 : 0);
         pDC->setCullFace(true);
         pDC->setFrontFace(false);  // GL_CW
         pDC->drawElem(*m_pDrawElems);
