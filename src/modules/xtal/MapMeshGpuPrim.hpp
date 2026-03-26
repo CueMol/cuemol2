@@ -1,6 +1,6 @@
 // -*-Mode: C++;-*-
 //
-// xtal-specific DrawObj2 for GPU marching-cubes map mesh rendering.
+// xtal-specific GpuPrim for GPU marching-cubes map mesh rendering.
 // Manages the GLSL shader and issues the instanced draw call.
 //
 
@@ -9,7 +9,7 @@
 #include "xtal.hpp"
 #include "MapBufTex.hpp"
 
-#include <gfx/DrawObj2.hpp>
+#include <gfx/GpuPrim.hpp>
 #include <gfx/DrawAttrArray.hpp>
 
 namespace gfx {
@@ -19,7 +19,7 @@ class DisplayContext;
 
 namespace xtal {
 
-/// Per-frame draw parameters for MapMeshDrawObj2::draw().
+/// Per-frame draw parameters for MapMeshGpuPrim::draw().
 struct MapMeshDrawParams {
     MapBufTex *pBufTex;       // non-owning pointer to CPU/GPU buffer texture
     unsigned int isolevel;    // isosurface threshold (0-255)
@@ -27,9 +27,9 @@ struct MapMeshDrawParams {
     float frag_alpha;         // fragment alpha
 };
 
-/// GPU marching-cubes draw object for density map mesh.
+/// GPU marching-cubes draw primitive for density map mesh.
 /// Owns the GLSL shader program; the texture buffer is passed via MapMeshDrawParams.
-class MapMeshDrawObj2 : public gfx::BaseDrawObj2
+class MapMeshGpuPrim : public gfx::GpuPrim
 {
 private:
     gfx::ShaderObject *m_pPO;
@@ -40,17 +40,17 @@ private:
     InstDrawArray *m_pDrawElem;
 
 public:
-    MapMeshDrawObj2() : m_pPO(nullptr), m_pDrawElem(nullptr) {}
-    virtual ~MapMeshDrawObj2() { invalidate(); }
+    MapMeshGpuPrim() : m_pPO(nullptr), m_pDrawElem(nullptr) {}
+    virtual ~MapMeshGpuPrim() { invalidate(); }
 
     // Non-copyable
-    MapMeshDrawObj2(const MapMeshDrawObj2 &) = delete;
-    MapMeshDrawObj2 &operator=(const MapMeshDrawObj2 &) = delete;
+    MapMeshGpuPrim(const MapMeshGpuPrim &) = delete;
+    MapMeshGpuPrim &operator=(const MapMeshGpuPrim &) = delete;
 
     /// Load shaders and set static uniforms (ivdel[], edgetab[]).
     bool init(gfx::DisplayContext *pDC) override;
 
-    /// Unused overload (required by BaseDrawObj2).
+    /// Unused overload (required by GpuPrim).
     void draw(gfx::DisplayContext *pDC) override {}
 
     /// Issue instanced draw call with per-frame uniforms.

@@ -13,7 +13,7 @@
 #include "CPK2Renderer.hpp"
 
 #include <gfx/DrawAttrArray.hpp>
-#include <gfx/DrawObj2.hpp>
+#include <gfx/GpuPrim.hpp>
 
 using namespace molvis;
 using namespace molstr;
@@ -46,7 +46,7 @@ void CPK2Renderer::display(DisplayContext *pdc)
   }
 
   if (!m_bCheckShaderOK) {
-    m_bUseShader = m_slSph.init(pdc);
+    m_bUseShader = m_sphGpuPrim.init(pdc);
     if (m_bUseShader)
       MB_DPRINTLN("CPK2 sphere shader OK");
     m_bCheckShaderOK = true;
@@ -56,13 +56,13 @@ void CPK2Renderer::display(DisplayContext *pdc)
       (m_nGlRendMode==REND_DEFAULT ||
        m_nGlRendMode==REND_SHADER)) {
     // shader rendering mode
-    if (!m_slSph.isValid()) {
+    if (!m_sphGpuPrim.isValid()) {
       renderShaderImpl();
-      if (!m_slSph.isValid())
+      if (!m_sphGpuPrim.isValid())
         return; // Error, Cannot draw anything (ignore)
     }
     preRender(pdc);
-    m_slSph.draw(pdc);
+    m_sphGpuPrim.draw(pdc);
     postRender(pdc);
   }
   else {
@@ -74,12 +74,12 @@ void CPK2Renderer::display(DisplayContext *pdc)
 void CPK2Renderer::invalidateDisplayCache()
 {
   super_t::invalidateDisplayCache();
-  m_slSph.invalidate();
+  m_sphGpuPrim.invalidate();
 }
 
 void CPK2Renderer::unloading()
 {
-  m_slSph.invalidate();
+  m_sphGpuPrim.invalidate();
   super_t::unloading();
 }
 
@@ -184,7 +184,7 @@ void CPK2Renderer::renderShaderImpl()
   getColSchm()->start(pMol, this);
   pMol->getColSchm()->start(pMol, this);
 
-  m_slSph.alloc(nsphs);
+  m_sphGpuPrim.alloc(nsphs);
 
   {
     AtomIterator iter(pMol, getSelection());
@@ -195,7 +195,7 @@ void CPK2Renderer::renderShaderImpl()
       if (pAtom.isnull()) continue; // ignore errors
 
       quint32 devcode = ColSchmHolder::getColor(pAtom)->getDevCode(getSceneID());
-      m_slSph.setData(i, pAtom->getPos(), static_cast<float>(getVdWRadius(pAtom)), devcode);
+      m_sphGpuPrim.setData(i, pAtom->getPos(), static_cast<float>(getVdWRadius(pAtom)), devcode);
       ++i;
     }
   }

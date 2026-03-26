@@ -17,7 +17,7 @@
 #include <modules/molstr/BondIterator.hpp>
 
 #include <gfx/DrawAttrArray.hpp>
-#include <gfx/DrawObj2.hpp>
+#include <gfx/GpuPrim.hpp>
 
 using namespace molvis;
 using namespace molstr;
@@ -30,16 +30,16 @@ BallStickRenderer::BallStickRenderer()
   m_bUseShader = false;
   m_bCheckShaderOK = false;
   m_bDrawRingOnly = false;
-  m_pSlSph = MB_NEW gfx::SphereDrawObj2();
-  m_pSlCyl = MB_NEW gfx::CylinderDrawObj2();
+  m_pSphGpuPrim = MB_NEW gfx::SphereGpuPrim();
+  m_pCylGpuPrim = MB_NEW gfx::CylinderGpuPrim();
   m_nVBMode = VBMODE_OFF;
 }
 
 BallStickRenderer::~BallStickRenderer()
 {
   MB_DPRINTLN("BallStickRenderer destructed %p", this);
-  delete m_pSlSph;
-  delete m_pSlCyl;
+  delete m_pSphGpuPrim;
+  delete m_pCylGpuPrim;
 }
 
 const char *BallStickRenderer::getTypeName() const
@@ -59,8 +59,8 @@ void BallStickRenderer::display(DisplayContext *pdc)
   //////////
 
   if (!m_bCheckShaderOK) {
-    if (m_pSlSph->init(pdc) &&
-        m_pSlCyl->init(pdc)) {
+    if (m_pSphGpuPrim->init(pdc) &&
+        m_pCylGpuPrim->init(pdc)) {
       MB_DPRINTLN("BallStick sphere shader OK");
       m_bUseShader = true;
     }
@@ -86,16 +86,16 @@ void BallStickRenderer::display(DisplayContext *pdc)
     }
 
     // shader rendering mode
-    if (!m_pSlSph->isValid()) {
+    if (!m_pSphGpuPrim->isValid()) {
       renderShaderImpl();
-      if (!m_pSlSph->isValid())
+      if (!m_pSphGpuPrim->isValid())
         return; // Error, Cannot draw anything (ignore)
     }
 
     MB_DPRINTLN("Ballstick shader render");
     preRender(pdc);
-    m_pSlSph->draw(pdc);
-    m_pSlCyl->draw(pdc);
+    m_pSphGpuPrim->draw(pdc);
+    m_pCylGpuPrim->draw(pdc);
     postRender(pdc);
 
   }
@@ -110,8 +110,8 @@ void BallStickRenderer::invalidateDisplayCache()
   super_t::invalidateDisplayCache();
 
   if (m_bUseShader) {
-    m_pSlSph->invalidate();
-    m_pSlCyl->invalidate();
+    m_pSphGpuPrim->invalidate();
+    m_pCylGpuPrim->invalidate();
   }
 }
 
@@ -463,7 +463,7 @@ void BallStickRenderer::renderShaderImpl()
   }
 
   if (nsphs!=0) {
-    m_pSlSph->alloc(nsphs);
+    m_pSphGpuPrim->alloc(nsphs);
 
     AtomIterator iter(pMol, getSelection());
     int i=0;
@@ -473,7 +473,7 @@ void BallStickRenderer::renderShaderImpl()
       if (pAtom.isnull()) continue; // ignore errors
 
       quint32 devcode = ColSchmHolder::getColor(pAtom)->getDevCode(nSceneID);
-      m_pSlSph->setData(i, pAtom->getPos(), (float)m_sphr, devcode);
+      m_pSphGpuPrim->setData(i, pAtom->getPos(), (float)m_sphr, devcode);
       ++i;
     }
   }
@@ -511,7 +511,7 @@ void BallStickRenderer::renderShaderImpl()
   }
 
   if (nbons!=0) {
-    m_pSlCyl->alloc(nbons);
+    m_pCylGpuPrim->alloc(nbons);
 
     BondIterator biter(pMol, getSelection());
     int i=0;
@@ -534,15 +534,15 @@ void BallStickRenderer::renderShaderImpl()
 
       if ( pcol1->equals(*pcol2.get()) ) {
         // same color --> one bond
-        m_pSlCyl->setData(i, pos1, pos2, (float)m_bondw, pcol1->getDevCode(nSceneID));
+        m_pCylGpuPrim->setData(i, pos1, pos2, (float)m_bondw, pcol1->getDevCode(nSceneID));
         ++i;
       }
       else {
         // different color --> two bonds
         const Vector4D mpos = (pos1 + pos2).divide(2.0);
-        m_pSlCyl->setData(i, pos1, mpos, (float)m_bondw, pcol1->getDevCode(nSceneID));
+        m_pCylGpuPrim->setData(i, pos1, mpos, (float)m_bondw, pcol1->getDevCode(nSceneID));
         ++i;
-        m_pSlCyl->setData(i, mpos, pos2, (float)m_bondw, pcol2->getDevCode(nSceneID));
+        m_pCylGpuPrim->setData(i, mpos, pos2, (float)m_bondw, pcol2->getDevCode(nSceneID));
         ++i;
       }
 

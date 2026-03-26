@@ -10,7 +10,7 @@
 
 namespace gfx {
 class AbstDrawAttrs;
-class PixDrawObj2;
+class PixGpuPrim;
 class BufTexRep;
 }  // namespace gfx
 
@@ -24,7 +24,7 @@ class SYSDEP_API OcDisplayContext : public qsys::GUIDisplayContext
 private:
     typedef qsys::GUIDisplayContext super_t;
 
-    gfx::PixDrawObj2 *m_pPixDrawObj;
+    gfx::PixGpuPrim *m_pPixGpuPrim;
 
 public:
     OcDisplayContext();

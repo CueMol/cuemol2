@@ -1,6 +1,6 @@
 // -*-Mode: C++;-*-
 //
-// DrawObj2: OpenGL-independent draw object classes
+// GpuPrim: OpenGL-independent GPU primitive draw classes
 //
 
 #pragma once
@@ -15,12 +15,12 @@ namespace gfx {
 
 class ShaderObject;
 
-/// Base interface for all DrawObj2 classes.
-class GFX_API BaseDrawObj2
+/// Base interface for all GpuPrim classes.
+class GFX_API GpuPrim
 {
 public:
-    BaseDrawObj2() = default;
-    virtual ~BaseDrawObj2() = default;
+    GpuPrim() = default;
+    virtual ~GpuPrim() = default;
 
     /// Initialize shaders. Must be called before alloc()/draw().
     virtual bool init(DisplayContext *pDC) = 0;
@@ -37,9 +37,9 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-/// Sphere impostor draw object.
+/// Sphere impostor draw primitive.
 /// Uses instanced rendering: each SphElem describes one sphere.
-class GFX_API SphereDrawObj2 : public BaseDrawObj2
+class GFX_API SphereGpuPrim : public GpuPrim
 {
 public:
     struct SphElem
@@ -66,8 +66,8 @@ private:
     qfloat32 m_dsps[4][2];
 
 public:
-    SphereDrawObj2();
-    virtual ~SphereDrawObj2();
+    SphereGpuPrim();
+    virtual ~SphereGpuPrim();
 
     bool init(DisplayContext *pDC) override;
 
@@ -93,9 +93,9 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-/// Cylinder impostor draw object.
+/// Cylinder impostor draw primitive.
 /// Uses instanced rendering: each CylElem describes one cylinder.
-class GFX_API CylinderDrawObj2 : public BaseDrawObj2
+class GFX_API CylinderGpuPrim : public GpuPrim
 {
 public:
     struct CylElem
@@ -122,8 +122,8 @@ private:
     qfloat32 m_dsps[4][2];
 
 public:
-    CylinderDrawObj2();
-    virtual ~CylinderDrawObj2();
+    CylinderGpuPrim();
+    virtual ~CylinderGpuPrim();
 
     bool init(DisplayContext *pDC) override;
 
@@ -150,8 +150,8 @@ public:
 
 //////////////////////////////////////////////////////////////////////////
 
-/// Triangle mesh draw object with optional edge/silhouette rendering.
-class GFX_API TrigDrawObj2 : public BaseDrawObj2
+/// Triangle mesh draw primitive with optional edge/silhouette rendering.
+class GFX_API TrigGpuPrim : public GpuPrim
 {
 public:
     struct TrigVertAttr
@@ -179,8 +179,8 @@ private:
     int m_nEdgeLineType;
 
 public:
-    TrigDrawObj2();
-    virtual ~TrigDrawObj2();
+    TrigGpuPrim();
+    virtual ~TrigGpuPrim();
 
     bool init(DisplayContext *pDC) override;
 
@@ -233,8 +233,8 @@ private:
 
 //////////////////////////////////////////////////////////////////////////
 
-/// Wide-line draw object using instanced impostor quads.
-class GFX_API LineDrawObj2 : public BaseDrawObj2
+/// Wide-line draw primitive using instanced impostor quads.
+class GFX_API LineGpuPrim : public GpuPrim
 {
 public:
     struct LineElem
@@ -262,8 +262,8 @@ private:
     bool m_bUseVertColor;
 
 public:
-    LineDrawObj2();
-    virtual ~LineDrawObj2();
+    LineGpuPrim();
+    virtual ~LineGpuPrim();
 
     bool init(DisplayContext *pDC) override;
 

@@ -8,7 +8,7 @@
 
 #include "molvis.hpp"
 #include <gfx/DrawElem.hpp>
-#include <gfx/DrawObj2.hpp>
+#include <gfx/GpuPrim.hpp>
 
 #include <modules/molstr/MolAtomRenderer.hpp>
 
@@ -47,7 +47,7 @@ namespace molvis {
 
     bool m_bCheckShaderOK;
 
-    gfx::SphereDrawObj2 m_slSph;
+    gfx::SphereGpuPrim m_sphGpuPrim;
 
   public:
     CPK2Renderer();

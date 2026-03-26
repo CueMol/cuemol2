@@ -1,12 +1,12 @@
 // -*-Mode: C++;-*-
 //
-// PixDrawObj2: pixel buffer drawing using a texture-mapped quad
+// PixGpuPrim: pixel buffer drawing using a texture-mapped quad
 //
 
 #pragma once
 
 #include "gfx.hpp"
-#include "DrawObj2.hpp"
+#include "GpuPrim.hpp"
 #include "DrawAttrArray.hpp"
 #include "PixelBuffer.hpp"
 
@@ -14,11 +14,11 @@
 
 namespace gfx {
 
-/// Pixel buffer draw object.
+/// Pixel buffer draw primitive.
 /// Renders a PixelBuffer as a screen-space billboard quad.
 /// The caller (sysdep) is responsible for creating the PixRep on the PixelBuffer
 /// before calling draw().
-class GFX_API PixDrawObj2 : public BaseDrawObj2
+class GFX_API PixGpuPrim : public GpuPrim
 {
 private:
     struct Elem
@@ -36,8 +36,8 @@ private:
     int m_nTexCoordLoc = -1;
 
 public:
-    PixDrawObj2() = default;
-    ~PixDrawObj2() override { invalidate(); }
+    PixGpuPrim() = default;
+    ~PixGpuPrim() override { invalidate(); }
 
     bool init(DisplayContext *pDC) override;
     void draw(DisplayContext *pDC) override {}

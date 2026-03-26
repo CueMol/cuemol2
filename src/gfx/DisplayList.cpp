@@ -1,6 +1,6 @@
 // -*-Mode: C++;-*-
 //
-// DisplayList.cpp: backend-independent display list using DrawObj2
+// DisplayList.cpp: backend-independent display list using GpuPrim
 //
 
 #include <common.h>
@@ -297,7 +297,7 @@ void DisplayList::createLineObj(DisplayContext *pdc)
     if (nelems == 0) return;
 
     MB_ASSERT(m_pLineObj == nullptr);
-    m_pLineObj = MB_NEW gfx::LineDrawObj2();
+    m_pLineObj = MB_NEW gfx::LineGpuPrim();
     m_pLineObj->init(pdc);
     m_pLineObj->alloc(nelems / 2);
 
@@ -329,7 +329,7 @@ void DisplayList::createTrigObj(DisplayContext *pdc)
     if (n == 0) return;
 
     MB_ASSERT(m_pTrigObj == nullptr);
-    m_pTrigObj = MB_NEW gfx::TrigDrawObj2();
+    m_pTrigObj = MB_NEW gfx::TrigGpuPrim();
     m_pTrigObj->init(pdc);
     m_pTrigObj->alloc(n, n / 3);
 
@@ -355,7 +355,7 @@ void DisplayList::createTrigMeshObj(DisplayContext *pdc)
     if (nMeshFaces == 0) return;
 
     MB_ASSERT(m_pTrigMeshObj == nullptr);
-    m_pTrigMeshObj = MB_NEW gfx::TrigDrawObj2();
+    m_pTrigMeshObj = MB_NEW gfx::TrigGpuPrim();
     m_pTrigMeshObj->init(pdc);
     m_pTrigMeshObj->alloc(nMeshVerts, nMeshFaces);
 
@@ -380,7 +380,7 @@ void DisplayList::createTrigMeshObj(DisplayContext *pdc)
 
 void DisplayList::callDisplayListImpl(gfx::DisplayContext *pdc)
 {
-    // Lazy initialization: create DrawObj2 on first call
+    // Lazy initialization: create GpuPrim on first call
     if (m_pLineObj == nullptr && !m_lineBuf.empty()) {
         createLineObj(pdc);
     }

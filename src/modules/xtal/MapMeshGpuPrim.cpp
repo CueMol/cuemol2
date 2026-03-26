@@ -1,17 +1,17 @@
 // -*-Mode: C++;-*-
 //
-// GPU marching-cubes draw object for density map mesh.
+// GPU marching-cubes draw primitive for density map mesh.
 //
 
 #include <common.h>
 
-#include "MapMeshDrawObj2.hpp"
+#include "MapMeshGpuPrim.hpp"
 #include <gfx/DisplayContext.hpp>
 #include <gfx/ShaderObject.hpp>
 
 using namespace xtal;
 
-bool MapMeshDrawObj2::init(gfx::DisplayContext *pDC)
+bool MapMeshGpuPrim::init(gfx::DisplayContext *pDC)
 {
     if (m_pPO != nullptr) return true;
 
@@ -26,7 +26,7 @@ bool MapMeshDrawObj2::init(gfx::DisplayContext *pDC)
                                    "%%CONFDIR%%/data/shaders/mapmesh2_vert.glsl",
                                    "%%CONFDIR%%/data/shaders/mapmesh_frag.glsl");
     if (m_pPO == nullptr) {
-        LOG_DPRINTLN("MapMeshDrawObj2> ERROR: cannot load shader.");
+        LOG_DPRINTLN("MapMeshGpuPrim> ERROR: cannot load shader.");
         return false;
     }
 
@@ -73,7 +73,7 @@ bool MapMeshDrawObj2::init(gfx::DisplayContext *pDC)
     return true;
 }
 
-void MapMeshDrawObj2::draw(gfx::DisplayContext *pDC, const MapMeshDrawParams &params)
+void MapMeshGpuPrim::draw(gfx::DisplayContext *pDC, const MapMeshDrawParams &params)
 {
     if (m_pPO == nullptr) return;
     if (params.pBufTex == nullptr) return;
@@ -105,7 +105,7 @@ void MapMeshDrawObj2::draw(gfx::DisplayContext *pDC, const MapMeshDrawParams &pa
     params.pBufTex->unbind();
 }
 
-void MapMeshDrawObj2::invalidate()
+void MapMeshGpuPrim::invalidate()
 {
     if (m_pDrawElem != nullptr) {
         m_pDrawElem->invalidateCache();

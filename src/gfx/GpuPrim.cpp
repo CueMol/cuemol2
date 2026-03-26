@@ -1,11 +1,11 @@
 // -*-Mode: C++;-*-
 //
-// DrawObj2 implementations
+// GpuPrim implementations
 //
 
 #include <common.h>
 
-#include "DrawObj2.hpp"
+#include "GpuPrim.hpp"
 #include "ShaderObject.hpp"
 #include "DisplayContext.hpp"
 #include "AbstractColor.hpp"
@@ -14,9 +14,9 @@
 using namespace gfx;
 
 //////////////////////////////////////////////////////////////////////////
-// SphereDrawObj2
+// SphereGpuPrim
 
-SphereDrawObj2::SphereDrawObj2()
+SphereGpuPrim::SphereGpuPrim()
     : m_pPO(nullptr),
       m_pDrawElem(nullptr)
 {
@@ -30,12 +30,12 @@ SphereDrawObj2::SphereDrawObj2()
     m_dsps[3][1] = 1.0f;
 }
 
-SphereDrawObj2::~SphereDrawObj2()
+SphereGpuPrim::~SphereGpuPrim()
 {
     invalidate();
 }
 
-bool SphereDrawObj2::init(DisplayContext *pDC)
+bool SphereGpuPrim::init(DisplayContext *pDC)
 {
     if (m_pPO != nullptr) return true;
 
@@ -43,14 +43,14 @@ bool SphereDrawObj2::init(DisplayContext *pDC)
                                   "%%CONFDIR%%/data/shaders/sphere2_vertex.glsl",
                                   "%%CONFDIR%%/data/shaders/sphere_frag.glsl");
     if (m_pPO == nullptr) {
-        LOG_DPRINTLN("SphereDrawObj2> ERROR: cannot load shader.");
+        LOG_DPRINTLN("SphereGpuPrim> ERROR: cannot load shader.");
         return false;
     }
 
     return true;
 }
 
-void SphereDrawObj2::alloc(int nsph)
+void SphereGpuPrim::alloc(int nsph)
 {
     MB_ASSERT(m_pPO != nullptr);
 
@@ -73,7 +73,7 @@ void SphereDrawObj2::alloc(int nsph)
     sphdata.setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
 }
 
-void SphereDrawObj2::setData(int idx, const qlib::Vector4D &pos, float rad,
+void SphereGpuPrim::setData(int idx, const qlib::Vector4D &pos, float rad,
                              quint32 devcode)
 {
     int i = idx * 4;
@@ -111,7 +111,7 @@ void SphereDrawObj2::setData(int idx, const qlib::Vector4D &pos, float rad,
     }
 }
 
-void SphereDrawObj2::draw(DisplayContext *pDC)
+void SphereGpuPrim::draw(DisplayContext *pDC)
 {
     if (m_pDrawElem == nullptr || m_pPO == nullptr) return;
 
@@ -136,10 +136,10 @@ void SphereDrawObj2::draw(DisplayContext *pDC)
 
     pDC->drawElem(*m_pDrawElem);
     m_pPO->disable();
-    MB_DPRINTLN("****** SphereDrawObj2::draw: done.");
+    MB_DPRINTLN("****** SphereGpuPrim::draw: done.");
 }
 
-void SphereDrawObj2::invalidate()
+void SphereGpuPrim::invalidate()
 {
     if (m_pDrawElem != nullptr) {
         delete m_pDrawElem;
@@ -148,9 +148,9 @@ void SphereDrawObj2::invalidate()
 }
 
 //////////////////////////////////////////////////////////////////////////
-// CylinderDrawObj2
+// CylinderGpuPrim
 
-CylinderDrawObj2::CylinderDrawObj2()
+CylinderGpuPrim::CylinderGpuPrim()
     : m_nVertexLoc(0),
       m_nDirLoc(1),
       m_nImposLoc(2),
@@ -169,12 +169,12 @@ CylinderDrawObj2::CylinderDrawObj2()
     m_dsps[3][1] = 1.0f;
 }
 
-CylinderDrawObj2::~CylinderDrawObj2()
+CylinderGpuPrim::~CylinderGpuPrim()
 {
     invalidate();
 }
 
-bool CylinderDrawObj2::init(DisplayContext *pDC)
+bool CylinderGpuPrim::init(DisplayContext *pDC)
 {
     if (m_pPO != nullptr) return true;
 
@@ -182,7 +182,7 @@ bool CylinderDrawObj2::init(DisplayContext *pDC)
                                   "%%CONFDIR%%/data/shaders/cylinder_vertex.glsl",
                                   "%%CONFDIR%%/data/shaders/cylinder_frag.glsl");
     if (m_pPO == nullptr) {
-        LOG_DPRINTLN("CylinderDrawObj2> ERROR: cannot load shader.");
+        LOG_DPRINTLN("CylinderGpuPrim> ERROR: cannot load shader.");
         return false;
     }
 
@@ -195,7 +195,7 @@ bool CylinderDrawObj2::init(DisplayContext *pDC)
     return true;
 }
 
-void CylinderDrawObj2::alloc(int ncyl)
+void CylinderGpuPrim::alloc(int ncyl)
 {
     MB_ASSERT(m_pPO != nullptr);
 
@@ -220,7 +220,7 @@ void CylinderDrawObj2::alloc(int ncyl)
     cyldata.setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
 }
 
-void CylinderDrawObj2::setData(int idx, const qlib::Vector4D &pos1,
+void CylinderGpuPrim::setData(int idx, const qlib::Vector4D &pos1,
                                const qlib::Vector4D &pos2, float rad, quint32 devcode)
 {
     qlib::Vector4D dir = pos2 - pos1;
@@ -278,7 +278,7 @@ void CylinderDrawObj2::setData(int idx, const qlib::Vector4D &pos1,
     }
 }
 
-void CylinderDrawObj2::draw(DisplayContext *pDC)
+void CylinderGpuPrim::draw(DisplayContext *pDC)
 {
     if (m_pDrawElem == nullptr || m_pPO == nullptr) return;
 
@@ -305,7 +305,7 @@ void CylinderDrawObj2::draw(DisplayContext *pDC)
     m_pPO->disable();
 }
 
-void CylinderDrawObj2::invalidate()
+void CylinderGpuPrim::invalidate()
 {
     if (m_pDrawElem != nullptr) {
         delete m_pDrawElem;
@@ -314,9 +314,9 @@ void CylinderDrawObj2::invalidate()
 }
 
 //////////////////////////////////////////////////////////////////////////
-// TrigDrawObj2
+// TrigGpuPrim
 
-TrigDrawObj2::TrigDrawObj2()
+TrigGpuPrim::TrigGpuPrim()
     : m_nVertexLoc(0),
       m_nNormLoc(1),
       m_nColLoc(2),
@@ -329,19 +329,19 @@ TrigDrawObj2::TrigDrawObj2()
 {
 }
 
-TrigDrawObj2::~TrigDrawObj2()
+TrigGpuPrim::~TrigGpuPrim()
 {
     invalidate();
 }
 
-bool TrigDrawObj2::init(DisplayContext *pDC)
+bool TrigGpuPrim::init(DisplayContext *pDC)
 {
     if (m_pPO != nullptr) return true;
 
     m_pPO = pDC->loadShaderObject("gpu_trig", "%%CONFDIR%%/data/shaders/trig_vert.glsl",
                                   "%%CONFDIR%%/data/shaders/trig_frag.glsl");
     if (m_pPO == nullptr) {
-        LOG_DPRINTLN("TrigDrawObj2> ERROR: cannot load trig shader.");
+        LOG_DPRINTLN("TrigGpuPrim> ERROR: cannot load trig shader.");
         return false;
     }
 
@@ -353,7 +353,7 @@ bool TrigDrawObj2::init(DisplayContext *pDC)
                                       "%%CONFDIR%%/data/shaders/trigedge_vert.glsl",
                                       "%%CONFDIR%%/data/shaders/trigedge_frag.glsl");
     if (m_pEdgePO == nullptr) {
-        LOG_DPRINTLN("TrigDrawObj2> ERROR: cannot load edge shader.");
+        LOG_DPRINTLN("TrigGpuPrim> ERROR: cannot load edge shader.");
         return false;
     }
 
@@ -363,7 +363,7 @@ bool TrigDrawObj2::init(DisplayContext *pDC)
     return true;
 }
 
-void TrigDrawObj2::alloc(int nverts, int nfaces)
+void TrigGpuPrim::alloc(int nverts, int nfaces)
 {
     MB_ASSERT(m_pPO != nullptr);
 
@@ -374,7 +374,7 @@ void TrigDrawObj2::alloc(int nverts, int nfaces)
     data.setDrawMode(gfx::AbstDrawElem::DRAW_TRIANGLES);
 }
 
-void TrigDrawObj2::setupAttrs()
+void TrigGpuPrim::setupAttrs()
 {
     MB_ASSERT(m_pDrawElems != nullptr);
     auto &data = *m_pDrawElems;
@@ -390,7 +390,7 @@ void TrigDrawObj2::setupAttrs()
                      offsetof(TrigVertAttr, r));
 }
 
-void TrigDrawObj2::setVertex(int idx, const qlib::Vector4D &v)
+void TrigGpuPrim::setVertex(int idx, const qlib::Vector4D &v)
 {
     auto &data = *m_pDrawElems;
     data.at(idx).x = (qfloat32)v.x();
@@ -398,7 +398,7 @@ void TrigDrawObj2::setVertex(int idx, const qlib::Vector4D &v)
     data.at(idx).z = (qfloat32)v.z();
 }
 
-void TrigDrawObj2::setNormal(int idx, const qlib::Vector4D &n)
+void TrigGpuPrim::setNormal(int idx, const qlib::Vector4D &n)
 {
     auto &data = *m_pDrawElems;
     data.at(idx).nx = (qfloat32)n.x();
@@ -406,7 +406,7 @@ void TrigDrawObj2::setNormal(int idx, const qlib::Vector4D &n)
     data.at(idx).nz = (qfloat32)n.z();
 }
 
-void TrigDrawObj2::setColor(int idx, quint32 devcode)
+void TrigGpuPrim::setColor(int idx, quint32 devcode)
 {
     auto &data = *m_pDrawElems;
     data.at(idx).r = getRCode(devcode);
@@ -415,7 +415,7 @@ void TrigDrawObj2::setColor(int idx, quint32 devcode)
     data.at(idx).a = getACode(devcode);
 }
 
-void TrigDrawObj2::setFace(int idx, int v1, int v2, int v3)
+void TrigGpuPrim::setFace(int idx, int v1, int v2, int v3)
 {
     auto &data = *m_pDrawElems;
     data.atind(idx * 3) = v1;
@@ -423,7 +423,7 @@ void TrigDrawObj2::setFace(int idx, int v1, int v2, int v3)
     data.atind(idx * 3 + 2) = v3;
 }
 
-void TrigDrawObj2::draw(DisplayContext *pDC)
+void TrigGpuPrim::draw(DisplayContext *pDC)
 {
     if (m_pDrawElems == nullptr || m_pPO == nullptr) return;
 
@@ -444,7 +444,7 @@ void TrigDrawObj2::draw(DisplayContext *pDC)
     m_pPO->disable();
 }
 
-void TrigDrawObj2::drawEdges(DisplayContext *pDC)
+void TrigGpuPrim::drawEdges(DisplayContext *pDC)
 {
     if (m_pEdgePO == nullptr) return;
 
@@ -472,7 +472,7 @@ void TrigDrawObj2::drawEdges(DisplayContext *pDC)
     }
 }
 
-void TrigDrawObj2::invalidate()
+void TrigGpuPrim::invalidate()
 {
     if (m_pDrawElems != nullptr) {
         delete m_pDrawElems;
@@ -482,9 +482,9 @@ void TrigDrawObj2::invalidate()
 
 
 //////////////////////////////////////////////////////////////////////////
-// LineDrawObj2
+// LineGpuPrim
 
-LineDrawObj2::LineDrawObj2()
+LineGpuPrim::LineGpuPrim()
     : m_nVertex1Loc(0),
       m_nVertex2Loc(1),
       m_nCol1Loc(2),
@@ -498,12 +498,12 @@ LineDrawObj2::LineDrawObj2()
 {
 }
 
-LineDrawObj2::~LineDrawObj2()
+LineGpuPrim::~LineGpuPrim()
 {
     invalidate();
 }
 
-bool LineDrawObj2::init(DisplayContext *pDC)
+bool LineGpuPrim::init(DisplayContext *pDC)
 {
     if (m_pPO != nullptr) return true;
 
@@ -511,7 +511,7 @@ bool LineDrawObj2::init(DisplayContext *pDC)
                                   "%%CONFDIR%%/data/shaders/linew2_vert.glsl",
                                   "%%CONFDIR%%/data/shaders/linew_frag.glsl");
     if (m_pPO == nullptr) {
-        LOG_DPRINTLN("LineDrawObj2> ERROR: cannot load shader.");
+        LOG_DPRINTLN("LineGpuPrim> ERROR: cannot load shader.");
         return false;
     }
 
@@ -523,7 +523,7 @@ bool LineDrawObj2::init(DisplayContext *pDC)
     return true;
 }
 
-void LineDrawObj2::alloc(int nlines)
+void LineGpuPrim::alloc(int nlines)
 {
     MB_ASSERT(m_pPO != nullptr);
 
@@ -537,7 +537,7 @@ void LineDrawObj2::alloc(int nlines)
     data.setNumInstances(nlines);
 }
 
-void LineDrawObj2::setupAttrs()
+void LineGpuPrim::setupAttrs()
 {
     MB_ASSERT(m_pDrawAry != nullptr);
     LineArray &data = *m_pDrawAry;
@@ -561,7 +561,7 @@ void LineDrawObj2::setupAttrs()
     data.setAttrDivisor(3, ndiv);
 }
 
-void LineDrawObj2::setLine(int idx, const qlib::Vector4D &v1, quint32 devcode1,
+void LineGpuPrim::setLine(int idx, const qlib::Vector4D &v1, quint32 devcode1,
                            const qlib::Vector4D &v2, quint32 devcode2)
 {
     LineElem &elem = m_pDrawAry->at(idx);
@@ -583,7 +583,7 @@ void LineDrawObj2::setLine(int idx, const qlib::Vector4D &v1, quint32 devcode1,
     elem.a2 = getACode(devcode2);
 }
 
-void LineDrawObj2::draw(DisplayContext *pDC)
+void LineGpuPrim::draw(DisplayContext *pDC)
 {
     if (m_pDrawAry == nullptr || m_pPO == nullptr) return;
 
@@ -619,7 +619,7 @@ void LineDrawObj2::draw(DisplayContext *pDC)
     m_pPO->disable();
 }
 
-void LineDrawObj2::invalidate()
+void LineGpuPrim::invalidate()
 {
     if (m_pDrawAry != nullptr) {
         delete m_pDrawAry;

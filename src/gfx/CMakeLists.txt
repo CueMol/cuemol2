@@ -22,8 +22,8 @@ CmsXform.cpp
 ColProfMgr.cpp
 Hittest.cpp
 DrawObjSet.cpp
-DrawObj2.cpp
-PixDrawObj2.cpp
+GpuPrim.cpp
+PixGpuPrim.cpp
 DisplayList.cpp
 )
 

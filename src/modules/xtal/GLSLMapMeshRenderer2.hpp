@@ -1,6 +1,6 @@
 // -*-Mode: C++;-*-
 //
-// Generate/Render a mesh contour of ScalarObject (DrawObj2-based implementation)
+// Generate/Render a mesh contour of ScalarObject (GpuPrim-based implementation)
 //
 
 #ifndef XTAL_GLSL_MAP_MESH_RENDERER2_HPP_INCLUDED
@@ -9,7 +9,7 @@
 #include "xtal.hpp"
 #include "MapRenderer.hpp"
 #include "MapBufTex.hpp"
-#include "MapMeshDrawObj2.hpp"
+#include "MapMeshGpuPrim.hpp"
 
 #include <qlib/IntVec3D.hpp>
 #include <qsys/ScalarObject.hpp>
@@ -56,8 +56,8 @@ private:
     /// Shader init flag
     bool m_bChkShaderDone;
 
-    /// DrawObj2 for GPU marching-cubes rendering (owned)
-    MapMeshDrawObj2 *m_pDrawObj;
+    /// GpuPrim for GPU marching-cubes rendering (owned)
+    MapMeshGpuPrim *m_pGpuPrim;
 
     /// CPU/GPU buffer texture pair (owned)
     MapBufTex m_mapBufTex;

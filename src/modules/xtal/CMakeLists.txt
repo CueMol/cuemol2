@@ -59,7 +59,7 @@ IF (BUILD_OPENGL_SYSDEP)
   list(APPEND XTAL_SRCS
     GLSLMapMeshRenderer.cpp
     MapBufTex.cpp
-    MapMeshDrawObj2.cpp
+    MapMeshGpuPrim.cpp
     GLSLMapMeshRenderer2.cpp
     # GLSLMapVolRenderer.cpp
     # MapSurfRendImpl2.cpp

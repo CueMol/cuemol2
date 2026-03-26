@@ -1,11 +1,11 @@
 // -*-Mode: C++;-*-
 //
-// PixDrawObj2 implementation
+// PixGpuPrim implementation
 //
 
 #include <common.h>
 
-#include "PixDrawObj2.hpp"
+#include "PixGpuPrim.hpp"
 #include "ShaderObject.hpp"
 #include "DisplayContext.hpp"
 #include "AbstractColor.hpp"
@@ -14,7 +14,7 @@
 
 using namespace gfx;
 
-bool PixDrawObj2::init(DisplayContext *pDC)
+bool PixGpuPrim::init(DisplayContext *pDC)
 {
     if (m_pPO != nullptr) return true;
 
@@ -22,20 +22,20 @@ bool PixDrawObj2::init(DisplayContext *pDC)
                                    "%%CONFDIR%%/data/shaders/pixdraw_vert.glsl",
                                    "%%CONFDIR%%/data/shaders/pixdraw_frag.glsl");
     if (m_pPO == nullptr) {
-        LOG_DPRINTLN("PixDrawObj2> ERROR: cannot load shader.");
+        LOG_DPRINTLN("PixGpuPrim> ERROR: cannot load shader.");
         return false;
     }
 
     m_nVertexLoc = m_pPO->getAttribLocation("a_vertex");
     m_nTexCoordLoc = m_pPO->getAttribLocation("a_texCoord");
-    MB_DPRINTLN("PixDrawObj2> a_vertex loc=%d, a_texCoord loc=%d",
+    MB_DPRINTLN("PixGpuPrim> a_vertex loc=%d, a_texCoord loc=%d",
                 m_nVertexLoc, m_nTexCoordLoc);
 
     alloc();
     return true;
 }
 
-void PixDrawObj2::alloc()
+void PixGpuPrim::alloc()
 {
     m_pDrawElem = MB_NEW QuadArray();
     QuadArray &data = *m_pDrawElem;
@@ -55,7 +55,7 @@ void PixDrawObj2::alloc()
     data.at(3) = {1.0f, 0.0f, 1.0f, 0.0f};  // bottom-right
 }
 
-void PixDrawObj2::draw(DisplayContext *pDC, const qlib::Vector4D &pos,
+void PixGpuPrim::draw(DisplayContext *pDC, const qlib::Vector4D &pos,
                        const PixelBuffer &pixbuf, const ColorPtr &pcol)
 {
     MB_ASSERT(m_pPO != nullptr);
@@ -63,13 +63,13 @@ void PixDrawObj2::draw(DisplayContext *pDC, const qlib::Vector4D &pos,
 
     auto *pRep = pixbuf.getRep();
     if (pRep == nullptr) {
-        MB_DPRINTLN("PixDrawObj2> PixRep is null, skipping draw");
+        MB_DPRINTLN("PixGpuPrim> PixRep is null, skipping draw");
         return;
     }
 
     auto pView = pDC->getTargetView();
     if (pView == nullptr) {
-        MB_DPRINTLN("PixDrawObj2> ERROR: no target view");
+        MB_DPRINTLN("PixGpuPrim> ERROR: no target view");
         return;
     }
 
@@ -101,7 +101,7 @@ void PixDrawObj2::draw(DisplayContext *pDC, const qlib::Vector4D &pos,
     pRep->unbind();
 }
 
-void PixDrawObj2::invalidate()
+void PixGpuPrim::invalidate()
 {
     if (m_pDrawElem != nullptr) {
         delete m_pDrawElem;

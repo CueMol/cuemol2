@@ -7,7 +7,7 @@
 #ifndef SIMPLE_RENDERER_H__
 #define SIMPLE_RENDERER_H__
 
-#include <gfx/DrawObj2.hpp>
+#include <gfx/GpuPrim.hpp>
 
 #include "MolAtomRenderer.hpp"
 #include "molstr.hpp"
@@ -93,7 +93,7 @@ public:
     int m_nAtomDrawn, m_nBondDrawn;
 
     /// shader draw object for lines
-    gfx::LineDrawObj2 m_slLine;
+    gfx::LineGpuPrim m_lineGpuPrim;
 
     bool m_bUseShader;
     bool m_bCheckShaderOK;
@@ -129,7 +129,7 @@ private:
     //////////////////////////////////////////////////////
 
 public:
-    // new rendering interface (using LineDrawObj2)
+    // new rendering interface (using LineGpuPrim)
     virtual void display(DisplayContext *pdc);
 
     virtual void invalidateDisplayCache();
@@ -138,7 +138,7 @@ public:
     virtual void objectChanged(qsys::ObjectEvent &ev);
 
 private:
-    /// Build and upload line geometry to LineDrawObj2
+    /// Build and upload line geometry to LineGpuPrim
     void renderShaderImpl();
 };
 

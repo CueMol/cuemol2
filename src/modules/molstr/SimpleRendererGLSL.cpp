@@ -1,6 +1,6 @@
 // -*-Mode: C++;-*-
 //
-// Simple molecular renderer (stick model) using LineDrawObj2
+// Simple molecular renderer (stick model) using LineGpuPrim
 //
 
 #include <common.h>
@@ -10,7 +10,7 @@
 #include "AtomIterator.hpp"
 
 #include <gfx/DrawAttrArray.hpp>
-#include <gfx/DrawObj2.hpp>
+#include <gfx/GpuPrim.hpp>
 
 namespace molstr {
 
@@ -26,20 +26,20 @@ void SimpleRenderer::display(DisplayContext *pdc)
     }
 
     if (!m_bCheckShaderOK) {
-        m_bUseShader = m_slLine.init(pdc);
+        m_bUseShader = m_lineGpuPrim.init(pdc);
         if (m_bUseShader) MB_DPRINTLN("SimpleRenderer line shader OK");
         m_bCheckShaderOK = true;
     }
 
     if (m_bUseShader) {
-        if (!m_slLine.isValid()) {
+        if (!m_lineGpuPrim.isValid()) {
             renderShaderImpl();
-            if (!m_slLine.isValid()) return;  // Error: cannot draw anything
+            if (!m_lineGpuPrim.isValid()) return;  // Error: cannot draw anything
         }
         preRender(pdc);
         auto lw = static_cast<float>(m_lw);
-        m_slLine.setLineWidth(lw * pdc->getPixSclFac());
-        m_slLine.draw(pdc);
+        m_lineGpuPrim.setLineWidth(lw * pdc->getPixSclFac());
+        m_lineGpuPrim.draw(pdc);
         postRender(pdc);
     } else {
         // Shader not available: fall back to legacy rendering
@@ -109,7 +109,7 @@ void SimpleRenderer::renderShaderImpl()
         return;
     }
 
-    m_slLine.alloc(nlines);
+    m_lineGpuPrim.alloc(nlines);
 
     // Pass 2: fill line segment data
     int iline = 0;
@@ -138,51 +138,51 @@ void SimpleRenderer::renderShaderImpl()
 
                 if (nBondType == MolBond::DOUBLE) {
                     if (bSameCol) {
-                        m_slLine.setLine(iline++, pos1 + dvd.scale(m_dCvScl1), cc1,
+                        m_lineGpuPrim.setLine(iline++, pos1 + dvd.scale(m_dCvScl1), cc1,
                                          pos2 + dvd.scale(m_dCvScl1), cc1);
-                        m_slLine.setLine(iline++, pos1 + dvd.scale(m_dCvScl2), cc1,
+                        m_lineGpuPrim.setLine(iline++, pos1 + dvd.scale(m_dCvScl2), cc1,
                                          pos2 + dvd.scale(m_dCvScl2), cc1);
                     } else {
                         const Vector4D mid = (pos1 + pos2).divide(2.0);
-                        m_slLine.setLine(iline++, pos1 + dvd.scale(m_dCvScl1), cc1,
+                        m_lineGpuPrim.setLine(iline++, pos1 + dvd.scale(m_dCvScl1), cc1,
                                          mid + dvd.scale(m_dCvScl1), cc1);
-                        m_slLine.setLine(iline++, pos1 + dvd.scale(m_dCvScl2), cc1,
+                        m_lineGpuPrim.setLine(iline++, pos1 + dvd.scale(m_dCvScl2), cc1,
                                          mid + dvd.scale(m_dCvScl2), cc1);
-                        m_slLine.setLine(iline++, pos2 + dvd.scale(m_dCvScl1), cc2,
+                        m_lineGpuPrim.setLine(iline++, pos2 + dvd.scale(m_dCvScl1), cc2,
                                          mid + dvd.scale(m_dCvScl1), cc2);
-                        m_slLine.setLine(iline++, pos2 + dvd.scale(m_dCvScl2), cc2,
+                        m_lineGpuPrim.setLine(iline++, pos2 + dvd.scale(m_dCvScl2), cc2,
                                          mid + dvd.scale(m_dCvScl2), cc2);
                     }
                 } else {
                     // TRIPLE bond
                     if (bSameCol) {
-                        m_slLine.setLine(iline++, pos1, cc1, pos2, cc1);
-                        m_slLine.setLine(iline++, pos1 + dvd.scale(m_dCvScl1), cc1,
+                        m_lineGpuPrim.setLine(iline++, pos1, cc1, pos2, cc1);
+                        m_lineGpuPrim.setLine(iline++, pos1 + dvd.scale(m_dCvScl1), cc1,
                                          pos2 + dvd.scale(m_dCvScl1), cc1);
-                        m_slLine.setLine(iline++, pos1 + dvd.scale(-m_dCvScl1), cc1,
+                        m_lineGpuPrim.setLine(iline++, pos1 + dvd.scale(-m_dCvScl1), cc1,
                                          pos2 + dvd.scale(-m_dCvScl1), cc1);
                     } else {
                         const Vector4D mid = (pos1 + pos2).divide(2.0);
-                        m_slLine.setLine(iline++, pos1, cc1, mid, cc1);
-                        m_slLine.setLine(iline++, pos1 + dvd.scale(m_dCvScl1), cc1,
+                        m_lineGpuPrim.setLine(iline++, pos1, cc1, mid, cc1);
+                        m_lineGpuPrim.setLine(iline++, pos1 + dvd.scale(m_dCvScl1), cc1,
                                          mid + dvd.scale(m_dCvScl1), cc1);
-                        m_slLine.setLine(iline++, pos1 + dvd.scale(-m_dCvScl1), cc1,
+                        m_lineGpuPrim.setLine(iline++, pos1 + dvd.scale(-m_dCvScl1), cc1,
                                          mid + dvd.scale(-m_dCvScl1), cc1);
-                        m_slLine.setLine(iline++, pos2, cc2, mid, cc2);
-                        m_slLine.setLine(iline++, pos2 + dvd.scale(m_dCvScl1), cc2,
+                        m_lineGpuPrim.setLine(iline++, pos2, cc2, mid, cc2);
+                        m_lineGpuPrim.setLine(iline++, pos2 + dvd.scale(m_dCvScl1), cc2,
                                          mid + dvd.scale(m_dCvScl1), cc2);
-                        m_slLine.setLine(iline++, pos2 + dvd.scale(-m_dCvScl1), cc2,
+                        m_lineGpuPrim.setLine(iline++, pos2 + dvd.scale(-m_dCvScl1), cc2,
                                          mid + dvd.scale(-m_dCvScl1), cc2);
                     }
                 }
             } else {
                 // Single bond (or valence bond disabled)
                 if (bSameCol) {
-                    m_slLine.setLine(iline++, pos1, cc1, pos2, cc1);
+                    m_lineGpuPrim.setLine(iline++, pos1, cc1, pos2, cc1);
                 } else {
                     const Vector4D mid = (pos1 + pos2).divide(2.0);
-                    m_slLine.setLine(iline++, pos1, cc1, mid, cc1);
-                    m_slLine.setLine(iline++, pos2, cc2, mid, cc2);
+                    m_lineGpuPrim.setLine(iline++, pos1, cc1, mid, cc1);
+                    m_lineGpuPrim.setLine(iline++, pos2, cc2, mid, cc2);
                 }
             }
         }
@@ -198,9 +198,9 @@ void SimpleRenderer::renderShaderImpl()
         if (pAtom.isnull()) continue;
         const Vector4D pos = pAtom->getPos();
         quint32 cc = ColSchmHolder::getColor(pAtom)->getDevCode(getSceneID());
-        m_slLine.setLine(iline++, pos - xdel, cc, pos + xdel, cc);
-        m_slLine.setLine(iline++, pos - ydel, cc, pos + ydel, cc);
-        m_slLine.setLine(iline++, pos - zdel, cc, pos + zdel, cc);
+        m_lineGpuPrim.setLine(iline++, pos - xdel, cc, pos + xdel, cc);
+        m_lineGpuPrim.setLine(iline++, pos - ydel, cc, pos + ydel, cc);
+        m_lineGpuPrim.setLine(iline++, pos - zdel, cc, pos + zdel, cc);
     }
 
     // Finalize the coloring scheme
@@ -213,7 +213,7 @@ void SimpleRenderer::renderShaderImpl()
 void SimpleRenderer::invalidateDisplayCache()
 {
     super_t::invalidateDisplayCache();
-    m_slLine.invalidate();
+    m_lineGpuPrim.invalidate();
 }
 
 void SimpleRenderer::objectChanged(qsys::ObjectEvent &ev)
@@ -222,7 +222,7 @@ void SimpleRenderer::objectChanged(qsys::ObjectEvent &ev)
         if (ev.getDescr().equals("atomsMoved")) {
             if (m_bUseShader) {
                 // Invalidate shader cache so it is rebuilt on next display()
-                m_slLine.invalidate();
+                m_lineGpuPrim.invalidate();
                 return;
             }
         }

@@ -1,6 +1,6 @@
 // -*-Mode: C++;-*-
 //
-// GLSL-based GPU map mesh renderer (DrawObj2-based implementation)
+// GLSL-based GPU map mesh renderer (GpuPrim-based implementation)
 //
 
 #include <common.h>
@@ -27,7 +27,7 @@ GLSLMapMeshRenderer2::GLSLMapMeshRenderer2() : super_t()
     m_lw = 1.0;
     m_bPBC = false;
     m_bAutoUpdate = true;
-    m_pDrawObj = nullptr;
+    m_pGpuPrim = nullptr;
     m_bMapTexOK = false;
 }
 
@@ -111,12 +111,12 @@ bool GLSLMapMeshRenderer2::initShader(DisplayContext *pdc)
 {
     if (m_bChkShaderDone) return true;
 
-    MB_ASSERT(m_pDrawObj == nullptr);
-    m_pDrawObj = MB_NEW MapMeshDrawObj2();
-    if (!m_pDrawObj->init(pdc)) {
+    MB_ASSERT(m_pGpuPrim == nullptr);
+    m_pGpuPrim = MB_NEW MapMeshGpuPrim();
+    if (!m_pGpuPrim->init(pdc)) {
         LOG_DPRINTLN("GLSLMapMeshRenderer2> ERROR: cannot init draw object.");
-        delete m_pDrawObj;
-        m_pDrawObj = nullptr;
+        delete m_pGpuPrim;
+        m_pGpuPrim = nullptr;
         m_bChkShaderDone = true;
         return false;
     }
@@ -127,8 +127,8 @@ bool GLSLMapMeshRenderer2::initShader(DisplayContext *pdc)
 
 void GLSLMapMeshRenderer2::unloading()
 {
-    delete m_pDrawObj;
-    m_pDrawObj = nullptr;
+    delete m_pGpuPrim;
+    m_pGpuPrim = nullptr;
 
     // m_mapBufTex destructor handles GPU resource cleanup
 
@@ -275,7 +275,7 @@ void GLSLMapMeshRenderer2::display(DisplayContext *pdc)
 {
     if (!m_bChkShaderDone) initShader(pdc);
 
-    if (m_pDrawObj == nullptr) return;
+    if (m_pGpuPrim == nullptr) return;
 
     ScalarObject *pMap = getScalarObj();
     DensityMap *pXtal = dynamic_cast<DensityMap *>(pMap);
@@ -319,7 +319,7 @@ void GLSLMapMeshRenderer2::display(DisplayContext *pdc)
 
 void GLSLMapMeshRenderer2::renderGPU(DisplayContext *pdc)
 {
-    if (m_pDrawObj == nullptr) return;
+    if (m_pGpuPrim == nullptr) return;
     if (!m_mapBufTex.isValid()) return;
 
     MapMeshDrawParams params;
@@ -330,7 +330,7 @@ void GLSLMapMeshRenderer2::renderGPU(DisplayContext *pdc)
     params.nsec = m_nActSec;
     params.frag_alpha = float(pdc->getAlpha());
 
-    m_pDrawObj->draw(pdc, params);
+    m_pGpuPrim->draw(pdc, params);
 }
 
 float getCrossVal2(quint8 d0, quint8 d1, quint8 isolev)

@@ -8,7 +8,7 @@
 
 #include "OcDisplayContext.hpp"
 #include "OcPixDraw.hpp"
-#include <gfx/PixDrawObj2.hpp>
+#include <gfx/PixGpuPrim.hpp>
 #include "OcBufferRep.hpp"
 #include "OcDrawObjSet.hpp"
 
@@ -30,7 +30,7 @@ using gfx::DisplayContext;
 
 OcDisplayContext::OcDisplayContext() : super_t()
 {
-    m_pPixDrawObj = nullptr;
+    m_pPixGpuPrim = nullptr;
 }
 
 OcDisplayContext::~OcDisplayContext() {}
@@ -56,9 +56,9 @@ void OcDisplayContext::setCullFace(bool f /*=true*/)
 void OcDisplayContext::drawPixels(const Vector4D &pos, const gfx::PixelBuffer &data,
                                   const gfx::ColorPtr &acol)
 {
-    if (m_pPixDrawObj == nullptr) {
-        m_pPixDrawObj = MB_NEW gfx::PixDrawObj2();
-        m_pPixDrawObj->init(this);
+    if (m_pPixGpuPrim == nullptr) {
+        m_pPixGpuPrim = MB_NEW gfx::PixGpuPrim();
+        m_pPixGpuPrim->init(this);
     }
 
     // Create OcTexRep if not yet set on this PixelBuffer (GL-specific, stays here)
@@ -75,7 +75,7 @@ void OcDisplayContext::drawPixels(const Vector4D &pos, const gfx::PixelBuffer &d
         col = super_t::getColor();
     }
 
-    m_pPixDrawObj->draw(this, pos, data, col);
+    m_pPixGpuPrim->draw(this, pos, data, col);
 }
 
 void OcDisplayContext::drawElem(const AbstDrawElem &ade)

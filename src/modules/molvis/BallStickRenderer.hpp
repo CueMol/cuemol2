@@ -8,7 +8,7 @@
 
 #include "molvis.hpp"
 #include <modules/molstr/MolAtomRenderer.hpp>
-#include <gfx/DrawObj2.hpp>
+#include <gfx/GpuPrim.hpp>
 
 namespace molstr { class MolCoord; }
 
@@ -128,14 +128,14 @@ namespace molvis {
     }
 
     //////////////////////////
-    // Shader-based implementations using DrawObj2
+    // Shader-based implementations using GpuPrim
 
   private:
     bool m_bUseShader;
     bool m_bCheckShaderOK;
 
-    gfx::SphereDrawObj2 *m_pSlSph;
-    gfx::CylinderDrawObj2 *m_pSlCyl;
+    gfx::SphereGpuPrim *m_pSphGpuPrim;
+    gfx::CylinderGpuPrim *m_pCylGpuPrim;
 
     void renderShaderImpl();
 

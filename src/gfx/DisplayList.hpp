@@ -1,13 +1,13 @@
 // -*-Mode: C++;-*-
 //
-// DisplayList.hpp: backend-independent display list using DrawObj2
+// DisplayList.hpp: backend-independent display list using GpuPrim
 //
 
 #pragma once
 
 #include "gfx.hpp"
 #include "DisplayContext.hpp"
-#include "DrawObj2.hpp"
+#include "GpuPrim.hpp"
 #include "GrowMesh.hpp"
 #include "SphereCyls.hpp"
 
@@ -20,7 +20,7 @@ namespace gfx {
 
 /// Backend-independent display list.
 /// Accumulates immediate-mode-style drawing calls into buffers, then converts
-/// them to LineDrawObj2/TrigDrawObj2 on first draw.
+/// them to LineGpuPrim/TrigGpuPrim on first draw.
 class GFX_API DisplayList : public gfx::DisplayContext
 {
 private:
@@ -37,7 +37,7 @@ private:
         quint32 cc;
     };
 
-    gfx::LineDrawObj2 *m_pLineObj;
+    gfx::LineGpuPrim *m_pLineObj;
 
     using LineDrawBuf = std::deque<LineDrawAttr>;
     LineDrawBuf m_lineBuf;
@@ -56,7 +56,7 @@ private:
 
     int m_nPolyMode;
 
-    gfx::TrigDrawObj2 *m_pTrigObj;
+    gfx::TrigGpuPrim *m_pTrigObj;
 
     using TrigBuf = std::deque<TrigVertBuf>;
     TrigBuf m_trigBuf;
@@ -66,7 +66,7 @@ private:
 
     gfx::GrowMesh<qlib::quint32> m_mesh;
 
-    gfx::TrigDrawObj2 *m_pTrigMeshObj;
+    gfx::TrigGpuPrim *m_pTrigMeshObj;
 
     /////
 
@@ -101,7 +101,7 @@ private:
     void addTrigVert(const qlib::Vector4D &v, const qlib::Vector4D &n,
                      qlib::quint32 c);
 
-    // Create DrawObj2 objects lazily (requires active OpenGL context)
+    // Create GpuPrim objects lazily (requires active OpenGL context)
     void createLineObj(DisplayContext *pdc);
     void createTrigObj(DisplayContext *pdc);
     void createTrigMeshObj(DisplayContext *pdc);

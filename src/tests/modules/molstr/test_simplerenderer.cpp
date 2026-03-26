@@ -127,5 +127,5 @@ TEST(SimpleRendererTest, DefaultCheckShaderOKFalse)
 TEST(SimpleRendererTest, DefaultLineDrawObjNotValid)
 {
     SimpleRenderer r;
-    EXPECT_FALSE(r.m_slLine.isValid());
+    EXPECT_FALSE(r.m_lineGpuPrim.isValid());
 }

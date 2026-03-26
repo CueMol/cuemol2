@@ -37,7 +37,7 @@ gtest_discover_tests(test_qlib PROPERTIES LABELS "test_qlib")
 
 add_executable(test_gfx
   gfx/test_solid_color.cpp
-  gfx/test_drawobj2.cpp
+  gfx/test_gpuprim.cpp
 )
 target_include_directories(test_gfx PRIVATE
   ${CMAKE_SOURCE_DIR}/src
