@@ -493,7 +493,8 @@ LineDrawObj2::LineDrawObj2()
       m_pDrawAry(nullptr),
       m_linew(1.0f),
       m_bStipple(false),
-      m_bNoDepth(false)
+      m_bNoDepth(false),
+      m_bUseVertColor(true)
 {
 }
 
@@ -598,7 +599,14 @@ void LineDrawObj2::draw(DisplayContext *pDC)
     float stippleLen = m_bStipple ? 8.0f : 0.0f;
 
     m_pPO->enable();
-    m_pPO->setUniform("use_u_color", 0);
+    if (!m_bUseVertColor) {
+        m_pPO->setUniform("use_u_color", 1);
+        float r = 0.5f, g = 0.5f, b = 0.5f;
+        pDC->getDevRGBColor(pDC->getColor(), r, g, b);
+        m_pPO->setUniformF("u_color", r, g, b, 1.0f);
+    } else {
+        m_pPO->setUniform("use_u_color", 0);
+    }
     m_pPO->setupFog(pDC);
     m_pPO->setupMat(pDC);
     m_pPO->setUniformF("frag_alpha", (float)pDC->getAlpha());

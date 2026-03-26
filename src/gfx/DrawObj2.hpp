@@ -259,6 +259,7 @@ private:
     float m_linew;
     bool m_bStipple;
     bool m_bNoDepth;
+    bool m_bUseVertColor;
 
 public:
     LineDrawObj2();
@@ -298,6 +299,15 @@ public:
     bool isNoDepth() const
     {
         return m_bNoDepth;
+    }
+
+    void setUseVertColor(bool f)
+    {
+        m_bUseVertColor = f;
+    }
+    bool isUseVertColor() const
+    {
+        return m_bUseVertColor;
     }
 
     void setUpdated(bool b)

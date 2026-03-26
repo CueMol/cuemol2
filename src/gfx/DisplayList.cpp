@@ -316,6 +316,9 @@ void DisplayList::createLineObj(DisplayContext *pdc)
     m_pLineObj->setLineWidth(lw * pdc->getPixSclFac());
     m_pLineObj->setStipple(m_bVertStipple);
     m_pLineObj->setUpdated(true);
+    if (!m_bSetColor) {
+        m_pLineObj->setUseVertColor(false);
+    }
     m_lineBuf.clear();
 }
 
