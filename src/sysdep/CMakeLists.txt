@@ -4,7 +4,6 @@ SET(SYSDEP_SRCS
   OglProgramObject.cpp
   ShaderSetupHelper.cpp
   # core profile
-  ogl_core/OcDisplayList.cpp
   ogl_core/OcPixDraw.cpp
   ogl_core/OcBufTexRep.cpp
   ogl_core/OcDisplayContext.cpp
