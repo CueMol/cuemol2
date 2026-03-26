@@ -39,14 +39,6 @@ public:
 
     virtual void drawElem(const gfx::AbstDrawElem &l);
 
-    ///////////////////////////////
-    // Display List support
-
-    virtual gfx::DisplayContext *createDisplayList();
-
-    virtual void callDisplayList(DisplayContext *pdl);
-    virtual bool isCompatibleDL(DisplayContext *pdl) const;
-
     //////////
 
     virtual gfx::DrawObjSet *createDrawObjSet() const;

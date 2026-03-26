@@ -117,14 +117,14 @@ public:
     ///////////////////////////////
     // Display List support
 
-    // virtual gfx::DisplayContext *createDisplayList();
+    virtual gfx::DisplayContext *createDisplayList() override;
     virtual bool canCreateDL() const
     {
         return true;
     }
 
-    // virtual void callDisplayList(DisplayContext *pdl);
-    // virtual bool isCompatibleDL(DisplayContext *pdl) const;
+    virtual void callDisplayList(DisplayContext *pdl) override;
+    virtual bool isCompatibleDL(DisplayContext *pdl) const override;
 
     virtual bool isDisplayList() const
     {

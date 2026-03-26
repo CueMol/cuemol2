@@ -10,6 +10,7 @@
 #include <gfx/TextRenderManager.hpp>
 #include <gfx/PixelBuffer.hpp>
 #include <gfx/ShaderObject.hpp>
+#include <gfx/DisplayList.hpp>
 #include "ShaderObjMgr.hpp"
 
 namespace qsys {
@@ -62,33 +63,28 @@ void GUIDisplayContext::drawString(const Vector4D &pos, const qlib::LString &str
 //////////////////////////////////////////////////////////////////
 // Display list impl
 
-// DisplayContext *GUIDisplayContext::createDisplayList()
-// {
-//     OcDisplayList *pdl = MB_NEW OcDisplayList();
-//     // Targets the same view as this
-//     pdl->setTargetView(getTargetView());
-//     pdl->setAlpha(getAlpha());
-//     pdl->setMaterial(getMaterial());
-//     // pdl->setUseShaderAlpha(useShaderAlpha());
-//     pdl->setPixSclFac(getPixSclFac());
-//     return pdl;
-// }
+gfx::DisplayContext *GUIDisplayContext::createDisplayList()
+{
+    gfx::DisplayList *pdl = MB_NEW gfx::DisplayList();
+    // Targets the same view as this
+    pdl->setTargetView(getTargetView());
+    pdl->setAlpha(getAlpha());
+    pdl->setMaterial(getMaterial());
+    pdl->setPixSclFac(getPixSclFac());
+    return pdl;
+}
 
-// void GUIDisplayContext::callDisplayList(DisplayContext *pdl)
-// {
-//     OcDisplayList *poc = dynamic_cast<OcDisplayList *>(pdl);
-//     if (poc != NULL && poc->isValid()) {
-//         poc->callDisplayListImpl(this);
-//     }
-// }
+void GUIDisplayContext::callDisplayList(DisplayContext *pdl)
+{
+    gfx::DisplayList *poc = dynamic_cast<gfx::DisplayList *>(pdl);
+    if (poc != NULL && poc->isValid()) {
+        poc->callDisplayListImpl(this);
+    }
+}
 
-// bool GUIDisplayContext::isCompatibleDL(DisplayContext *pdl) const
-// {
-//     OcDisplayList *poc = dynamic_cast<OcDisplayList *>(pdl);
-//     if (poc != NULL) {
-//         return true;
-//     }
-//     return false;
-// }
+bool GUIDisplayContext::isCompatibleDL(DisplayContext *pdl) const
+{
+    return dynamic_cast<gfx::DisplayList *>(pdl) != nullptr;
+}
 
 }  // namespace qsys
