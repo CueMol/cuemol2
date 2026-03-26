@@ -49,7 +49,7 @@ bool init()
   pRF->regist<MapSurfRenderer>();
 
 #ifdef USE_OPENGL
-  pRF->regist<GLSLMapMeshRenderer>();
+  // pRF->regist<GLSLMapMeshRenderer>();
   pRF->regist<GLSLMapMeshRenderer2>();
   //  pRF->regist<GLSLMapVolRenderer>();
 #endif

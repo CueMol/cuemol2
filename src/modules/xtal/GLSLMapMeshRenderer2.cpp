@@ -41,7 +41,7 @@ GLSLMapMeshRenderer2::~GLSLMapMeshRenderer2()
 
 const char *GLSLMapMeshRenderer2::getTypeName() const
 {
-    return "gpu_mapmesh2";
+    return "gpu_mapmesh";
 }
 
 double GLSLMapMeshRenderer2::getMaxExtent() const
