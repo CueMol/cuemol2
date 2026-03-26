@@ -89,6 +89,11 @@ void MapMeshDrawObj2::draw(gfx::DisplayContext *pDC, const MapMeshDrawParams &pa
     m_pPO->setUniformF("frag_alpha", params.frag_alpha);
     m_pPO->setupFog(pDC);
     m_pPO->setupMat(pDC);
+    {
+        float r = 0.5f, g = 0.5f, b = 0.5f;
+        pDC->getDevRGBColor(pDC->getColor(), r, g, b);
+        m_pPO->setUniformF("u_color", r, g, b, 1.0f);
+    }
 
     // Update instance count and issue draw via the backend-independent drawElem() path.
     // OcBufferRep::draw() calls glDrawArraysInstanced when numInstances > 0.

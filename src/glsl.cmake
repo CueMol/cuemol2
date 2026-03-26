@@ -105,7 +105,7 @@ function(GLSL_PREPROC _target SHADER_DEPENDENCIES)
             add_custom_command(
                 OUTPUT "${PROCESSED_SHADER}"
                 COMMAND ${PREPROCESSOR_CMD} ${PREPROCESSOR_FLAGS} "${SHADER_ABS_PATH}" > "${PROCESSED_SHADER}"
-                DEPENDS ${SHADER_DEPENDENCIES}
+                DEPENDS "${SHADER_ABS_PATH}" ${SHADER_DEPENDENCIES}
                 COMMENT "Preprocessing shader: ${SHADER_NAME}"
                 VERBATIM
             )
@@ -114,7 +114,7 @@ function(GLSL_PREPROC _target SHADER_DEPENDENCIES)
             add_custom_command(
                 OUTPUT "${PROCESSED_SHADER}"
                 COMMAND ${PREPROCESSOR_CMD} ${PREPROCESSOR_FLAGS} "${SHADER_ABS_PATH}" > "${PROCESSED_SHADER}"
-                DEPENDS ${SHADER_DEPENDENCIES}
+                DEPENDS "${SHADER_ABS_PATH}" ${SHADER_DEPENDENCIES}
                 COMMENT "Preprocessing shader: ${SHADER_NAME}"
                 # COMMENT "${PREPROCESSOR_CMD} ${PREPROCESSOR_FLAGS} ${SHADER_ABS_PATH} > ${PROCESSED_SHADER}"
                 VERBATIM

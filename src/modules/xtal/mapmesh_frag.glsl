@@ -4,26 +4,18 @@
 //    fragment shader
 //
 
-in vec4 v_frontColor;
-in float v_fogCoord; 
+in float v_fogCoord;
 
 // total transparency
 uniform float frag_alpha;
 
+// mesh color (RGB) set per-frame from the renderer's current color
+uniform vec4 u_color;
+
 out vec4 o_FragColor;
 
-void main (void) 
+void main (void)
 {
-  // vec4 color;
-  // color = gl_Color;
-  
-  // float fog;
-  // fog = (gl_Fog.end - FogFragCoord) * gl_Fog.scale;
-  // fog = clamp(fog, 0.0, 1.0);
-  // color = vec4(mix( vec3(gl_Fog.color), vec3(color), fog), color.a*frag_alpha);
-
-  // gl_FragColor = color;
-
-  o_FragColor = vec4(1.0, 1.0, 1.0, 1.0); //fragFogColor(v_frontColor, frag_alpha, v_fogCoord);
+  o_FragColor = vec4(u_color.rgb, u_color.a * frag_alpha);
 }
 
