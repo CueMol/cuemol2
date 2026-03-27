@@ -106,6 +106,9 @@ void View::unloading()
   m_pMscr->cancel();
   qlib::EventManager::getInstance()->removeTimer(this);
   clearDrawObjs();
+  auto *pDC = getDisplayContext();
+  if (pDC != nullptr)
+    pDC->cleanup();
 }
 
 LString View::toString() const

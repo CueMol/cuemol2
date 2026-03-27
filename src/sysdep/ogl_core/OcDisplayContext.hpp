@@ -10,8 +10,10 @@
 
 namespace gfx {
 class AbstDrawAttrs;
-class PixGpuPrim;
 class BufTexRep;
+class VBORep;
+class PixRep;
+class PixelBuffer;
 }  // namespace gfx
 
 namespace sysdep {
@@ -24,8 +26,6 @@ class SYSDEP_API OcDisplayContext : public qsys::GUIDisplayContext
 private:
     typedef qsys::GUIDisplayContext super_t;
 
-    gfx::PixGpuPrim *m_pPixGpuPrim;
-
 public:
     OcDisplayContext();
     virtual ~OcDisplayContext();
@@ -35,11 +35,6 @@ public:
     virtual void setCullFace(bool f = true);
 
     virtual void setInvertColorBlend(bool bInv) override;
-
-    virtual void drawPixels(const Vector4D &pos, const gfx::PixelBuffer &data,
-                            const gfx::ColorPtr &col);
-
-    virtual void drawElem(const gfx::AbstDrawElem &l);
 
     //////////
 
@@ -56,6 +51,10 @@ public:
     virtual void setFrontFace(bool bCCW = true) override;
 
     virtual gfx::BufTexRep *createBufTexRep() override;
+
+    virtual gfx::VBORep *createVBORep(const gfx::AbstDrawAttrs &ada) override;
+
+    virtual gfx::PixRep *createPixRep(const gfx::PixelBuffer &pixbuf) override;
 };
 
 }  // namespace sysdep

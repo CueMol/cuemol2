@@ -25,10 +25,14 @@ namespace gfx {
 
 class Mesh;
 class AbstDrawElem;
+class AbstDrawAttrs;
 class DrawElem;
 class AbstractColor;
 class PixelBuffer;
+class PixRep;
+class VBORep;
 class ShaderObject;
+class PixGpuPrim;
 
 class BufTexRep;
 
@@ -115,7 +119,7 @@ public:
 
 public:
     DisplayContext();
-    virtual ~DisplayContext() {}
+    virtual ~DisplayContext();
 
     virtual bool setCurrent() = 0;
     virtual bool isCurrent() const = 0;
@@ -355,6 +359,10 @@ public:
     virtual void startEdgeSection();
     virtual void endEdgeSection();
 
+    /// Release GPU-side resources owned by this context.
+    /// Must be called before the OpenGL context is destroyed (i.e., from View::unloading()).
+    virtual void cleanup();
+
     ////////////////
     // image/text drawing (default: do nothing)
 
@@ -494,6 +502,17 @@ public:
 
     /// Create a backend-specific BufTexRep. Returns nullptr if not supported.
     virtual BufTexRep *createBufTexRep();
+
+    /// Create a backend-specific VBORep for the given draw attributes.
+    /// Returns nullptr if this context does not support drawElem.
+    virtual VBORep *createVBORep(const AbstDrawAttrs &ada);
+
+    /// Create a backend-specific PixRep for the given pixel buffer.
+    /// Returns nullptr if this context does not support drawPixels.
+    virtual PixRep *createPixRep(const PixelBuffer &pixbuf);
+
+protected:
+    PixGpuPrim *m_pPixGpuPrim = nullptr;
 };
 
 }  // namespace gfx
