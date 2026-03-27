@@ -7,8 +7,6 @@ SET(SYSDEP_SRCS
   ogl_core/OcPixDraw.cpp
   ogl_core/OcBufTexRep.cpp
   ogl_core/OcDisplayContext.cpp
-  ogl_core/GLSLLineHelper2.cpp
-  ogl_core/GLSLTrigHelper.cpp
   ogl_core/OcView.cpp
   ogl_core/OcBufferRep.cpp
 )
@@ -85,8 +83,6 @@ SET(SHADER_SOURCES
   ogl_core/linew_vert.glsl
   ogl_core/linew2_vert.glsl
   ogl_core/linew_frag.glsl
-  ogl_core/drawobj3d_vert.glsl
-  ogl_core/drawobj3d_frag.glsl
 )
 SET(SHADER_DEPS
   ogl_core/lighting_inc.glsl
