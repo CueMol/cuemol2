@@ -35,8 +35,6 @@ public:
 
     void setup();
 
-    virtual void setCenterMark(int nMode);
-
     ////////////////////////////////////////////////
     // implementation
 

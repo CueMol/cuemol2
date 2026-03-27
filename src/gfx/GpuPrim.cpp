@@ -325,7 +325,8 @@ TrigGpuPrim::TrigGpuPrim()
       m_pPO(nullptr),
       m_pEdgePO(nullptr),
       m_pDrawElems(nullptr),
-      m_nEdgeLineType(DisplayContext::ELT_NONE)
+      m_nEdgeLineType(DisplayContext::ELT_NONE),
+      m_bNoDepth(false)
 {
 }
 
@@ -438,7 +439,7 @@ void TrigGpuPrim::draw(DisplayContext *pDC)
     m_pPO->setupMat(pDC);
     m_pPO->setUniformF("frag_alpha", (float)pDC->getAlpha());
     m_pPO->setUniform("enable_lighting", pDC->isLighting());
-    m_pPO->setUniform("u_nodepth", 0);
+    m_pPO->setUniform("u_nodepth", m_bNoDepth ? 1 : 0);
 
     pDC->drawElem(*m_pDrawElems);
     m_pPO->disable();

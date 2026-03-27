@@ -32,7 +32,6 @@
 
 #include "OcDisplayContext.hpp"
 #include "OcViewCap.hpp"
-#include "CenterMarkDrawObj.hpp"
 
 #include <gfx/SolidColor.hpp>
 
@@ -128,9 +127,6 @@ void OcView::setup()
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
 
-    auto pMark = qsys::DrawObjPtr(MB_NEW CenterMarkDrawObj());
-    pMark->setEnabled(true);
-    addDrawObj("CenterMarkDrawObj", pMark);
 }
 
 /*
@@ -228,20 +224,5 @@ void OcView::drawScene()
     return;
 }
 */
-
-void OcView::setCenterMark(int nMode)
-{
-    if (getCenterMark() == nMode) {
-        return;
-    }
-    super_t::setCenterMark(nMode);
-    auto pdo = getDrawObj("CenterMarkDrawObj");
-    auto *pcmdo = dynamic_cast<CenterMarkDrawObj *>(pdo.get());
-    if (pcmdo == nullptr) {
-        MB_DPRINTLN("OcView::setCenterMark> CenterMarkDrawObj not found!!");
-        return;
-    }
-    pcmdo->setCenterMark(nMode);
-}
 
 }  // namespace sysdep

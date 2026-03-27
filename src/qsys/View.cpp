@@ -105,6 +105,7 @@ void View::unloading()
 {
   m_pMscr->cancel();
   qlib::EventManager::getInstance()->removeTimer(this);
+  clearDrawObjs();
 }
 
 LString View::toString() const

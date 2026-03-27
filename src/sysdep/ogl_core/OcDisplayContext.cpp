@@ -10,7 +10,6 @@
 #include "OcPixDraw.hpp"
 #include <gfx/PixGpuPrim.hpp>
 #include "OcBufferRep.hpp"
-#include "OcDrawObjSet.hpp"
 
 #include <sysdep/OglProgramObject.hpp>
 
@@ -51,6 +50,16 @@ void OcDisplayContext::setCullFace(bool f /*=true*/)
         glEnable(GL_CULL_FACE);
     else
         glDisable(GL_CULL_FACE);
+}
+
+void OcDisplayContext::setInvertColorBlend(bool bInv)
+{
+    if (bInv) {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ZERO);
+    } else {
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    }
 }
 
 void OcDisplayContext::drawPixels(const Vector4D &pos, const gfx::PixelBuffer &data,
@@ -99,19 +108,6 @@ void OcDisplayContext::drawElem(const AbstDrawElem &ade)
     pRep->setAttrib(ada);
     pRep->draw(ada);
     pRep->unbind(ada);
-}
-
-//////////
-
-gfx::DrawObjSet *OcDisplayContext::createDrawObjSet() const
-{
-    return MB_NEW OcDrawObjSet();
-}
-
-void OcDisplayContext::drawObjSet(const gfx::DrawObjSet &dos)
-{
-    const OcDrawObjSet &ocdos = dynamic_cast<const OcDrawObjSet &>(dos);
-    ocdos.draw(this);
 }
 
 //////////

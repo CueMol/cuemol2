@@ -177,6 +177,7 @@ private:
     gfx::ShaderObject *m_pEdgePO;
     TrigMesh *m_pDrawElems;
     int m_nEdgeLineType;
+    bool m_bNoDepth;
 
 public:
     TrigGpuPrim();
@@ -200,6 +201,9 @@ public:
     {
         return m_nEdgeLineType;
     }
+
+    void setNoDepth(bool f) { m_bNoDepth = f; }
+    bool isNoDepth() const { return m_bNoDepth; }
 
     /// Set update flag
     void setUpdated(bool b)

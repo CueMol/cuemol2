@@ -11,7 +11,7 @@
 #include <qsys/DrawObj.hpp>
 #include <qlib/Vector4D.hpp>
 #include <gfx/SolidColor.hpp>
-#include <gfx/DrawObjSet.hpp>
+#include <gfx/GpuPrim.hpp>
 
 class DistPickDrawObj_wrap;
 
@@ -37,7 +37,7 @@ private:
 
     double m_width;
 
-    gfx::DrawObjSet *m_pdata;
+    gfx::LineGpuPrim m_linePrim;
 
     bool init(gfx::DisplayContext *pdc);
 public:

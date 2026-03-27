@@ -10,12 +10,9 @@
 #include <qsys/DrawObj.hpp>
 #include <qlib/Vector4D.hpp>
 #include <gfx/SolidColor.hpp>
+#include <gfx/GpuPrim.hpp>
 
 class RectSelDrawObj_wrap;
-
-namespace gfx {
-class DrawObjSet;
-}
 
 namespace molstr {
 
@@ -40,7 +37,8 @@ private:
 
     bool m_bStart;
 
-    gfx::DrawObjSet *m_pdata;
+    gfx::LineGpuPrim m_linePrim;
+    gfx::TrigGpuPrim m_trigPrim;
 
     bool init(DisplayContext *pdc);
 

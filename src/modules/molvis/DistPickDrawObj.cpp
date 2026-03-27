@@ -15,7 +15,7 @@
 using namespace molvis;
 
 DistPickDrawObj::DistPickDrawObj()
-    : super_t(), m_pdata(nullptr), m_color(gfx::SolidColor::createRGB(1.0, 1.0, 1.0))
+    : super_t(), m_color(gfx::SolidColor::createRGB(1.0, 1.0, 1.0))
 {
     m_width = 2.0f;
 }
@@ -24,50 +24,37 @@ DistPickDrawObj::~DistPickDrawObj() {}
 
 bool DistPickDrawObj::init(DisplayContext* pdc)
 {
-    if (m_pdata != nullptr) {
+    if (m_linePrim.isValid())
         return true;
-    }
 
-    // Initialize draw object data
-    m_pdata = pdc->createDrawObjSet();
+    if (!m_linePrim.init(pdc))
+        return false;
 
     const qlib::quint32 ccode = 0xFFFFFF80;  // White color
 
-    m_pdata->allocLines(3);
+    m_linePrim.alloc(3);
     const float dsize = 0.25f;
-    
-    m_pdata->setLineWidth(m_width);
-    m_pdata->setNoDepth(true);
-    m_pdata->setLine(0, Vector4D(-dsize, 0, 0), ccode, Vector4D(dsize, 0, 0), ccode);
-    m_pdata->setLine(1, Vector4D(0, -dsize, 0), ccode, Vector4D(0, dsize, 0), ccode);
-    m_pdata->setLine(2, Vector4D(0, 0, -dsize), ccode, Vector4D(0, 0, dsize), ccode);
-    
+
+    m_linePrim.setLineWidth(m_width);
+    m_linePrim.setNoDepth(true);
+    m_linePrim.setLine(0, Vector4D(-dsize, 0, 0), ccode, Vector4D(dsize, 0, 0), ccode);
+    m_linePrim.setLine(1, Vector4D(0, -dsize, 0), ccode, Vector4D(0, dsize, 0), ccode);
+    m_linePrim.setLine(2, Vector4D(0, 0, -dsize), ccode, Vector4D(0, 0, dsize), ccode);
+
     return true;
 }
 
 void DistPickDrawObj::display(DisplayContext* pdc, qsys::ViewPtr pView)
 {
-    init(pdc);
+    if (!init(pdc))
+        return;
 
     for (const auto& pos : m_data) {
         pdc->pushMatrix();
         pdc->translate(pos);
-        pdc->drawObjSet(*m_pdata);
+        m_linePrim.draw(pdc);
         pdc->popMatrix();
     }
-
-    // pdc->color(m_color);
-    // pdc->setLineWidth(4.0);
-    // pdc->startLines();
-
-    // data_t::const_iterator iter = m_data.begin();
-    // data_t::const_iterator eiter = m_data.end();
-    // for (; iter!=eiter; ++iter) {
-    //   const Vector4D &pos = *iter;
-    //   pdc->drawAster(pos, 0.25f);
-    // }
-
-    // pdc->end();
 }
 
 void DistPickDrawObj::display2D(DisplayContext* pdc, qsys::ViewPtr pView) {}

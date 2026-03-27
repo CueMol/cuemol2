@@ -46,6 +46,8 @@ LString XglView::toString() const
 
 void XglView::unloading()
 {
+    super_t::unloading();
+
   if (m_pCtxt!=NULL)
     delete m_pCtxt;
   m_pCtxt = NULL;

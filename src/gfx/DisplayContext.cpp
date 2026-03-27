@@ -429,16 +429,6 @@ void DisplayContext::getDevRGBAColor(const ColorPtr &pcol, float &r, float &g, f
     }
 }
 
-DrawObjSet *DisplayContext::createDrawObjSet() const
-{
-    MB_ASSERT(false);
-    return nullptr;
-}
-
-void DisplayContext::drawObjSet(const DrawObjSet &dos)
-{
-}
-
 ShaderObject *DisplayContext::loadShaderObject(const LString &name,
                                                const LString &vert_path,
                                                const LString &frag_path)

@@ -34,16 +34,14 @@ public:
 
     virtual void setCullFace(bool f = true);
 
+    virtual void setInvertColorBlend(bool bInv) override;
+
     virtual void drawPixels(const Vector4D &pos, const gfx::PixelBuffer &data,
                             const gfx::ColorPtr &col);
 
     virtual void drawElem(const gfx::AbstDrawElem &l);
 
     //////////
-
-    virtual gfx::DrawObjSet *createDrawObjSet() const;
-
-    virtual void drawObjSet(const gfx::DrawObjSet &dos);
 
     /// Clear the target buffer with the specified color.
     virtual void clearBuffer(const gfx::ColorPtr &pcol);

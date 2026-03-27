@@ -28,7 +28,6 @@ class AbstDrawElem;
 class DrawElem;
 class AbstractColor;
 class PixelBuffer;
-class DrawObjSet;
 class ShaderObject;
 
 class BufTexRep;
@@ -300,6 +299,7 @@ public:
 
     virtual void enableDepthTest(bool) {}
     virtual void setCullFace(bool f = true) {}
+    virtual void setInvertColorBlend(bool bInv) {}
 
     ////////////////
     // Geometry construction
@@ -471,10 +471,6 @@ public:
                                     float distance);
 
     ////
-
-    virtual DrawObjSet *createDrawObjSet() const;
-
-    virtual void drawObjSet(const DrawObjSet &dos);
 
     /// Clear the target buffer with the specified color.
     virtual void clearBuffer(const gfx::ColorPtr &pcol) {}

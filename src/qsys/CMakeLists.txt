@@ -51,6 +51,7 @@ GUIView.cpp
 GUIDisplayContext.cpp
 QdfAbsWriter.cpp
 DrawObj.cpp
+CenterMarkDrawObj.cpp
 command/Command.cpp
 command/NewSceneCommand.cpp
 command/NewRendererCommand.cpp
@@ -68,6 +69,7 @@ CameraEditInfo.hpp
 DispCacheRenderer.hpp
 DispListRenderer.hpp
 DrawObj.hpp
+CenterMarkDrawObj.hpp
 EditInfo.hpp
 IOThread.hpp
 InDevEvent.hpp
