@@ -46,31 +46,31 @@ public:
      * @param pdc Display context
      * @param ada Abstract drawing attributes
      */
-    void bind();
+    void bind() override;
 
     /** Update VBO data
      * @param pdc Display context
      * @param ada Abstract drawing attributes
      */
-    void update(const gfx::AbstDrawAttrs &ada);
+    void update(const gfx::AbstDrawAttrs &ada) override;
 
     /** Set vertex attribute pointers
      * @param pdc Display context
      * @param ada Abstract drawing attributes
      */
-    void setAttrib(const gfx::AbstDrawAttrs &ada);
+    void setAttrib(const gfx::AbstDrawAttrs &ada) override;
 
     /** Draw VBO
      * @param pdc Display context
      * @param ada Abstract drawing attributes
      */
-    void draw(const gfx::AbstDrawAttrs &ada);
+    void draw(const gfx::AbstDrawAttrs &ada) override;
 
     /** Unbind VBO
      * @param pdc Display context
      * @param ada Abstract drawing attributes
      */
-    void unbind(const gfx::AbstDrawAttrs &ada);
+    void unbind(const gfx::AbstDrawAttrs &ada) override;
 
     virtual ~OcBufferRep();
 };

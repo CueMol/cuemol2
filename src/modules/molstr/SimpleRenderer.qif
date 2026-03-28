@@ -30,9 +30,6 @@ runtime_class SimpleRenderer extends MolRenderer
   property real vb_scl2 => redirect(getVBScl2, setVBScl2);
   default vb_scl2 = 0.0;
 
-  property boolean use_custom_shader => redirect(isUseShader, setUseShader);
-  // default use_custom_shader = true;
-  default use_custom_shader = false;
 };
 
 #endif

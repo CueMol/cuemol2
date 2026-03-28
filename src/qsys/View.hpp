@@ -535,6 +535,9 @@ namespace qsys {
     void showDrawObj(DisplayContext *pdc);
     void showDrawObj2D(DisplayContext *pdc);
 
+    /// Release all DrawObj GPU resources; call before destroying the GL context.
+    void clearDrawObjs() { m_drawObjTab.clear(); }
+
     ////////////////////////////////////////
     // Style supports
 

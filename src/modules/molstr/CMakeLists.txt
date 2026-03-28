@@ -14,6 +14,7 @@ ColoringScheme.cpp
 CPKColoring.cpp
 BfacColoring.cpp
 SimpleRenderer.cpp
+SimpleRendererGLSL.cpp
 MolAtomRenderer.cpp
 SelCommand.cpp
 SelNodes.cpp
@@ -117,9 +118,6 @@ SET(MOLSTR_MODLDR_SRC molstr.moddef)
 ##########
 # GL/GLSL files (for OpenGL build)
 IF (BUILD_OPENGL_SYSDEP)
-  list(APPEND MOLSTR_SRCS
-    SimpleRendererGLSL.cpp
-  )
   include_directories(
     ${GLEW_INCLUDE_DIRS}
     ${OPENGL_INCLUDE_DIR}

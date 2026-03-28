@@ -30,6 +30,10 @@ CglView::CglView()
 CglView::~CglView()
 {
   MB_DPRINTLN("CglView (ctxt=%p) destructing.", m_pCtxt);
+  // Release DrawObj GpuPrims before destroying the GL context to avoid
+  // pure-virtual dispatch when OcBufferRep calls getDisplayContext() during
+  // destruction from View::~View().
+  // clearDrawObjs();
   if (m_pCtxt!=NULL)
     delete m_pCtxt;
 }
@@ -41,6 +45,8 @@ LString CglView::toString() const
 
 void CglView::unloading()
 {
+    super_t::unloading();
+
   if (m_pCtxt!=NULL)
     delete m_pCtxt;
   m_pCtxt = NULL;

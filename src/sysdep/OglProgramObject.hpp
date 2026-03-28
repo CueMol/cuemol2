@@ -21,6 +21,7 @@
 
 #include <qlib/LString.hpp>
 #include <qlib/Matrix4D.hpp>
+#include <gfx/ShaderObject.hpp>
 
 namespace gfx {
 class DisplayContext;
@@ -30,7 +31,7 @@ namespace sysdep {
 
 using qlib::LString;
 
-class SYSDEP_API OglShaderObject
+class SYSDEP_API OglShObjImpl
 {
 private:
     GLuint m_hGL;
@@ -41,9 +42,9 @@ private:
     static LString s_shaderVerStr;
 
 public:
-    OglShaderObject(const GLenum shader_type) : m_nType(shader_type), m_hGL(0) {}
+    OglShObjImpl(const GLenum shader_type) : m_nType(shader_type), m_hGL(0) {}
 
-    virtual ~OglShaderObject();
+    virtual ~OglShObjImpl();
 
     void loadFile(const LString &filename);
 
@@ -65,12 +66,12 @@ public:
 
 ////////////////////////////////////////
 
-class SYSDEP_API OglProgramObject
+class SYSDEP_API OglProgramObject : public gfx::ShaderObject
 {
 private:
     GLuint m_hPO;
 
-    using ShaderTab = std::map<LString, OglShaderObject *>;
+    using ShaderTab = std::map<LString, OglShObjImpl *>;
     ShaderTab m_shaders;
 
     using UniformTab = std::map<LString, GLint>;
@@ -82,15 +83,21 @@ public:
 
     bool init();
 
+    virtual bool loadShaders(const qlib::MapTable<qlib::LString> &name) override;
+
+    virtual void enable() override;
+
+    virtual void disable() override;
+
+    //////////
+
     bool loadShader(const LString &name, const LString &srcpath, GLenum shader_type);
 
     void clear();
 
-    void attach(const OglShaderObject *s);
+    void attach(const OglShObjImpl *s);
 
     bool link();
-
-    void use();
 
     void validate();
 
@@ -99,14 +106,9 @@ public:
         return m_hPO;
     }
 
-    inline void enable()
+    inline void use()
     {
-        use();
-    }
-
-    inline void disable()
-    {
-        glUseProgram(0);
+        enable();
     }
 
     GLint getUniformLocation(const LString &name);
@@ -116,7 +118,7 @@ public:
         glBindAttribLocation(m_hPO, index, name);
     }
 
-    inline GLint getAttribLocation(const char *name)
+    virtual int getAttribLocation(const char *name) override
     {
         GLint al = glGetAttribLocation(m_hPO, name);
         if (al == -1) {
@@ -129,45 +131,45 @@ public:
 
     // int
 
-    inline void setUniform(const LString &name, GLint v0)
+    virtual void setUniform(const LString &name, int v0) override
     {
         glUniform1i(getUniformLocation(name), v0);
     }
 
-    inline void setUniform(const LString &name, GLint v0, GLint v1)
+    virtual void setUniform(const LString &name, int v0, int v1) override
     {
         glUniform2i(getUniformLocation(name), v0, v1);
     }
 
-    inline void setUniform(const LString &name, GLint v0, GLint v1, GLint v2)
+    virtual void setUniform(const LString &name, int v0, int v1, int v2) override
     {
         glUniform3i(getUniformLocation(name), v0, v1, v2);
     }
 
-    inline void setUniform(const LString &name, GLint v0, GLint v1, GLint v2, GLint v3)
+    virtual void setUniform(const LString &name, int v0, int v1, int v2, int v3) override
     {
         glUniform4i(getUniformLocation(name), v0, v1, v2, v3);
     }
 
     // float
 
-    inline void setUniformF(const LString &name, GLfloat v0)
+    virtual void setUniformF(const LString &name, float v0) override
     {
         glUniform1f(getUniformLocation(name), v0);
     }
 
-    inline void setUniformF(const LString &name, GLfloat v0, GLfloat v1)
+    virtual void setUniformF(const LString &name, float v0, float v1) override
     {
         glUniform2f(getUniformLocation(name), v0, v1);
     }
 
-    inline void setUniformF(const LString &name, GLfloat v0, GLfloat v1, GLfloat v2)
+    virtual void setUniformF(const LString &name, float v0, float v1, float v2) override
     {
         glUniform3f(getUniformLocation(name), v0, v1, v2);
     }
 
-    inline void setUniformF(const LString &name, GLfloat v0, GLfloat v1, GLfloat v2,
-                            GLfloat v3)
+    virtual void setUniformF(const LString &name, float v0, float v1, float v2,
+                             float v3) override
     {
         glUniform4f(getUniformLocation(name), v0, v1, v2, v3);
     }
@@ -236,8 +238,8 @@ public:
         glUniformMatrix4fv(getUniformLocation(name), count, transpose, v);
     }
 
-    void setMatrix(const LString &name, const qlib::Matrix4D &mat);
-    void setMatrix(const LString &name, const qlib::Matrix3D &mat);
+    virtual void setMatrix(const LString &name, const qlib::Matrix4D &mat) override;
+    virtual void setMatrix(const LString &name, const qlib::Matrix3D &mat) override;
 
     // attribute variable
 
@@ -288,8 +290,8 @@ public:
     void setProgParam(GLenum pname, GLint param);
 
     // convenience functions
-    void setupFog(gfx::DisplayContext *pdc);
-    void setupMat(gfx::DisplayContext *pdc);
+    virtual void setupFog(gfx::DisplayContext *pdc) override;
+    virtual void setupMat(gfx::DisplayContext *pdc) override;
 };
 
 }  // namespace sysdep

@@ -14,24 +14,17 @@
 #include <qsys/ScalarObject.hpp>
 #include <qsys/ViewEvent.hpp>
 
-#include <sysdep/OglProgramObject.hpp>
+#include <gfx/ShaderObject.hpp>
 
 #include <qsys/MultiGradient.hpp>
 
 class GLSLMapVolRenderer_wrap;
-
-namespace sysdep {
-  class OglProgramObject;
-  class OglShaderObject;
-}
 
 namespace xtal {
 
   using gfx::DisplayContext;
   using qsys::ScalarObject;
   class DensityMap;
-  using sysdep::OglProgramObject;
-  using sysdep::OglShaderObject;
   using qlib::IntVec3D;
 
   class GLSLMapVolRenderer : public MapRenderer,
@@ -79,7 +72,7 @@ namespace xtal {
   private:
 
     // GLSL shader objects
-    OglProgramObject *m_pPO;
+    gfx::ShaderObject *m_pPO;
 
     ///////////////////////////////////////////
     // work area
@@ -96,13 +89,13 @@ namespace xtal {
     double m_dgrid;
 
     /// map 3D texture ID
-    GLuint m_nMapTexID;
+    unsigned int m_nMapTexID;
 
     // transfer function 1D texture
-    GLuint m_nXfunTexID;
+    unsigned int m_nXfunTexID;
 
     // planes to draw (not used??)
-    // GLuint m_nVBOID;
+    // unsigned int m_nVBOID;
     
     /// isosurface level
     //  (in int unit, calculated from MapRenderer::getSigLevel())

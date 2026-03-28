@@ -8,6 +8,7 @@
 
 #include "molvis.hpp"
 #include <modules/molstr/MolAtomRenderer.hpp>
+#include <gfx/GpuPrim.hpp>
 
 namespace molstr { class MolCoord; }
 
@@ -17,11 +18,6 @@ namespace molvis {
 
   using namespace molstr;
   using gfx::DisplayContext;
-
-#ifdef USE_OPENGL
-  class GLSLSphereHelper;
-  class GLSLCylinderHelper;
-#endif
 
   class MOLVIS_API BallStickRenderer : public MolAtomRenderer
   {
@@ -48,9 +44,6 @@ namespace molvis {
     bool m_fRing;
 
     gfx::ColorPtr m_ringcol;
-
-    /// default color
-    // gfx::SolidColor m_defaultColor;
 
   public:
     double getSphr() const { return m_sphr; }
@@ -92,9 +85,6 @@ namespace molvis {
     virtual ~BallStickRenderer();
 
     virtual const char *getTypeName() const;
-
-    // /// override to initialize the gl shaders
-    // virtual void setSceneID(qlib::uid_t nid);
 
     //////////////////////////////////////////////////////
 
@@ -138,18 +128,16 @@ namespace molvis {
     }
 
     //////////////////////////
-    // GLSL implementations
+    // Shader-based implementations using GpuPrim
 
   private:
     bool m_bUseShader;
     bool m_bCheckShaderOK;
 
-#ifdef USE_OPENGL
-    GLSLSphereHelper *m_pSlSph;
-    GLSLCylinderHelper *m_pSlCyl;
-    void initShader();
+    gfx::SphereGpuPrim *m_pSphGpuPrim;
+    gfx::CylinderGpuPrim *m_pCylGpuPrim;
+
     void renderShaderImpl();
-#endif
 
   private:
     int m_nGlRendMode;
@@ -161,7 +149,7 @@ namespace molvis {
     static const int REND_GLU=3;
 
     int getGLRenderMode() const { return m_nGlRendMode; }
-    void setGLRenderMode(int n) { m_nGlRendMode = n; } 
+    void setGLRenderMode(int n) { m_nGlRendMode = n; }
 
   };
 

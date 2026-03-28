@@ -150,6 +150,8 @@ bool WglView::attach(HWND hWnd, HDC hDC)
 
 void WglView::unloading()
 {
+    super_t::unloading();
+
   if (m_pCtxt!=NULL) {
     delete m_pCtxt;
     m_pCtxt = NULL;

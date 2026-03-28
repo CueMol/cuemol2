@@ -48,8 +48,10 @@ RendGroup.cpp
 MultiGradient.cpp
 TTYView.cpp
 GUIView.cpp
+GUIDisplayContext.cpp
 QdfAbsWriter.cpp
 DrawObj.cpp
+CenterMarkDrawObj.cpp
 command/Command.cpp
 command/NewSceneCommand.cpp
 command/NewRendererCommand.cpp
@@ -57,6 +59,7 @@ command/LoadSceneCommand.cpp
 command/LoadObjectCommand.cpp
 command/CmdMgr.cpp
 Canvas2DTextRender2.cpp
+ShaderObjMgr.cpp
 )
 
 # Normal C++ header files
@@ -66,6 +69,7 @@ CameraEditInfo.hpp
 DispCacheRenderer.hpp
 DispListRenderer.hpp
 DrawObj.hpp
+CenterMarkDrawObj.hpp
 EditInfo.hpp
 IOThread.hpp
 InDevEvent.hpp
@@ -101,6 +105,7 @@ StreamManager.hpp
 SysConfig.hpp
 TTYView.hpp
 GUIView.hpp
+GUIDisplayContext.hpp
 TestRenderer.hpp
 UndoManager.hpp
 View.hpp
@@ -118,6 +123,7 @@ command/LoadSceneCommand.hpp
 command/NewRendererCommand.hpp
 command/NewSceneCommand.hpp
 Canvas2DTextRender2.hpp
+ShaderObjMgr.hpp
 qsys.hpp
 style/AutoStyleCtxt.hpp
 style/StyleEditInfo.hpp

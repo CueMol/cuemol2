@@ -25,10 +25,16 @@ namespace gfx {
 
 class Mesh;
 class AbstDrawElem;
+class AbstDrawAttrs;
 class DrawElem;
 class AbstractColor;
 class PixelBuffer;
-class DrawObjSet;
+class PixRep;
+class VBORep;
+class ShaderObject;
+class PixGpuPrim;
+
+class BufTexRep;
 
 class GFX_API DisplayContext : public qlib::LObject
 {
@@ -113,7 +119,7 @@ public:
 
 public:
     DisplayContext();
-    virtual ~DisplayContext() {}
+    virtual ~DisplayContext();
 
     virtual bool setCurrent() = 0;
     virtual bool isCurrent() const = 0;
@@ -287,7 +293,7 @@ public:
         return m_projMat;
     }
 
-    // Viewport
+    // Viewport (in device pixel unit)
     virtual void setViewport(const Vector4D &vp);
 
     Vector4D getViewport() const
@@ -297,6 +303,7 @@ public:
 
     virtual void enableDepthTest(bool) {}
     virtual void setCullFace(bool f = true) {}
+    virtual void setInvertColorBlend(bool bInv) {}
 
     ////////////////
     // Geometry construction
@@ -352,6 +359,10 @@ public:
     virtual void startEdgeSection();
     virtual void endEdgeSection();
 
+    /// Release GPU-side resources owned by this context.
+    /// Must be called before the OpenGL context is destroyed (i.e., from View::unloading()).
+    virtual void cleanup();
+
     ////////////////
     // image/text drawing (default: do nothing)
 
@@ -359,7 +370,8 @@ public:
     virtual void drawPixels(const Vector4D &pos, const PixelBuffer &data,
                             const ColorPtr &col);
 
-    // pixel scaling factor
+    // get logical to device pixel scaling factor
+    // default returns 1.0 (no scaling)
     void setPixSclFac(double f)
     {
         m_dPixSclFac = f;
@@ -468,12 +480,39 @@ public:
 
     ////
 
-    virtual DrawObjSet *createDrawObjSet() const;
-
-    virtual void drawObjSet(const DrawObjSet &dos);
-
     /// Clear the target buffer with the specified color.
     virtual void clearBuffer(const gfx::ColorPtr &pcol) {}
+
+    ///////////////////////////////
+    // Shader object support
+
+    /// Load (or retrieve cached) shader object. Default returns nullptr.
+    virtual ShaderObject *loadShaderObject(const LString &name, const LString &vert_path,
+                                           const LString &frag_path);
+
+    /// Create a new shader object (backend-specific compilation). Default returns nullptr.
+    virtual ShaderObject *createShaderObject(const LString &name, const LString &vert_path,
+                                             const LString &frag_path);
+
+    /// Set front face winding order. Default is a no-op.
+    virtual void setFrontFace(bool bCCW = true) {}
+
+    ///////////////////////////////
+    // Buffer texture support
+
+    /// Create a backend-specific BufTexRep. Returns nullptr if not supported.
+    virtual BufTexRep *createBufTexRep();
+
+    /// Create a backend-specific VBORep for the given draw attributes.
+    /// Returns nullptr if this context does not support drawElem.
+    virtual VBORep *createVBORep(const AbstDrawAttrs &ada);
+
+    /// Create a backend-specific PixRep for the given pixel buffer.
+    /// Returns nullptr if this context does not support drawPixels.
+    virtual PixRep *createPixRep(const PixelBuffer &pixbuf);
+
+protected:
+    PixGpuPrim *m_pPixGpuPrim = nullptr;
 };
 
 }  // namespace gfx

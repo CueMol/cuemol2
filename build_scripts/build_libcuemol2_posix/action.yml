@@ -65,4 +65,5 @@ runs:
       cd %GITHUB_WORKSPACE%
       SET BASEDIR=${{ inputs.basedir }}
       dir %BASEDIR%
-      cmd /c %GITHUB_WORKSPACE%\build_scripts\build_libcuemol2_win.bat %BASEDIR% Release
+      call %GITHUB_WORKSPACE%\build_scripts\build_libcuemol2_win.bat %BASEDIR% Release
+      if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%

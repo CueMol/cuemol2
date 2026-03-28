@@ -7,17 +7,10 @@
 #ifndef SIMPLE_RENDERER_H__
 #define SIMPLE_RENDERER_H__
 
-// #include <gfx/DrawElem.hpp>
+#include <gfx/GpuPrim.hpp>
 
 #include "MolAtomRenderer.hpp"
 #include "molstr.hpp"
-
-
-#ifdef USE_OPENGL
-namespace sysdep {
-class GLSLLineHelper;
-}
-#endif
 
 class SimpleRenderer_wrap;
 
@@ -43,10 +36,7 @@ public:
     void setLineWidth(double f)
     {
         m_lw = f;
-        if (!isUseShader()) {
-            super_t::invalidateDisplayCache();
-            MB_DPRINTLN("SimpleRenderer::setLineWidth(): invalidateDisplayCache() called");
-        }
+        invalidateDisplayCache();
     }
     double getLineWidth() const
     {
@@ -61,7 +51,7 @@ public:
     void setValBond(bool val)
     {
         m_bValBond = val;
-        super_t::invalidateDisplayCache();
+        invalidateDisplayCache();
     }
     bool getValBond() const
     {
@@ -77,7 +67,7 @@ public:
     void setVBScl1(double f)
     {
         m_dCvScl1 = f;
-        super_t::invalidateDisplayCache();
+        invalidateDisplayCache();
     }
     double getVBScl1() const
     {
@@ -88,26 +78,11 @@ public:
     void setVBScl2(double f)
     {
         m_dCvScl2 = f;
-        super_t::invalidateDisplayCache();
+        invalidateDisplayCache();
     }
     double getVBScl2() const
     {
         return m_dCvScl2;
-    }
-
-private:
-    /// Use custom shader for line drawing
-    bool m_bUseShader;
-
-public:
-    void setUseShader(bool b)
-    {
-        m_bUseShader = b;
-        invalidateDisplayCache();
-    }
-    bool isUseShader() const
-    {
-        return m_bUseShader;
     }
 
     //////////////////////////////////////////////////////
@@ -117,64 +92,11 @@ public:
 
     int m_nAtomDrawn, m_nBondDrawn;
 
-    /// one color - single valence
-    static constexpr int IBON_1C_1V = 0;
-    /// two color - single valence
-    static constexpr int IBON_2C_1V = 1;
+    /// shader draw object for lines
+    gfx::LineGpuPrim m_lineGpuPrim;
 
-    /// one color - double valence
-    static constexpr int IBON_1C_2V = 2;
-    /// two color - double valence
-    static constexpr int IBON_2C_2V = 3;
-
-    /// one color - triple valence
-    static constexpr int IBON_1C_3V = 4;
-    /// two color - triple valence
-    static constexpr int IBON_2C_3V = 5;
-
-    // single valence bonds
-    struct IntBond
-    {
-        quint32 itype;
-        quint32 aid1, aid2;
-        quint32 vaind, nelems;
-    };
-
-    typedef std::vector<IntBond> IntBondArray;
-
-    IntBondArray m_sbonds;
-
-    // multivalence bonds
-    struct IntMBond
-    {
-        quint32 itype;
-        quint32 aid1, aid2;
-        quint32 vaind, nelems;
-        qfloat32 nx, ny, nz;
-    };
-
-    typedef std::vector<IntMBond> IntMBondArray;
-
-    IntMBondArray m_mbonds;
-
-    // isolated atoms
-    struct IntAtom
-    {
-        quint32 aid1;
-        quint32 vaind;
-    };
-
-    typedef std::vector<IntAtom> IntAtomArray;
-
-    IntAtomArray m_atoms;
-
-    // /// cached vertex array/VBO
-    // gfx::DrawElemVC *m_pVBO;
-
-#ifdef USE_OPENGL
-    /// GLSL impl
-    sysdep::GLSLLineHelper *m_pGlslLine;
-#endif
+    bool m_bUseShader;
+    bool m_bCheckShaderOK;
 
     //////////////////////////////////////////////////////
 
@@ -207,25 +129,19 @@ private:
     //////////////////////////////////////////////////////
 
 public:
-#ifdef USE_OPENGL
-    // new rendering interface (using OpenGL SL)
+    // new rendering interface (using LineGpuPrim)
     virtual void display(DisplayContext *pdc);
 
     virtual void invalidateDisplayCache();
 
-    /// object changed event (--> update vertex positions if required)
+    /// object changed event (--> invalidate shader cache if required)
     virtual void objectChanged(qsys::ObjectEvent &ev);
 
 private:
-    /// Rendering using GLSL (builds sbonds, mbonds, and atoms data structure)
-    void renderVBO();
-
-    /// Update GL buffer using m_sbonds, m_mbonds, m_atoms and MolCoord's data
-    void updateVBO(bool bUpdateColor);
-
-#endif
-
+    /// Build and upload line geometry to LineGpuPrim
+    void renderShaderImpl();
 };
+
 }  // namespace molstr
 
 #endif

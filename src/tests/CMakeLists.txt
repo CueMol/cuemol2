@@ -35,7 +35,10 @@ target_link_libraries(test_qlib PRIVATE qlib GTest::gtest)
 include(GoogleTest)
 gtest_discover_tests(test_qlib PROPERTIES LABELS "test_qlib")
 
-add_executable(test_gfx gfx/test_solid_color.cpp)
+add_executable(test_gfx
+  gfx/test_solid_color.cpp
+  gfx/test_gpuprim.cpp
+)
 target_include_directories(test_gfx PRIVATE
   ${CMAKE_SOURCE_DIR}/src
   ${CMAKE_BINARY_DIR}/src
@@ -83,6 +86,7 @@ add_executable(test_qsys
   qsys/test_scenexmlwriter.cpp
   qsys/test_canvas2dtextrender2.cpp
   qsys/test_guiview.cpp
+  qsys/test_shaderobjmgr.cpp
 )
 target_include_directories(test_qsys PRIVATE
   ${CMAKE_SOURCE_DIR}/src
@@ -113,6 +117,25 @@ if (BUILD_OPENGL_SYSDEP)
   target_link_libraries(test_molstr PRIVATE sysdep)
 endif()
 gtest_discover_tests(test_molstr PROPERTIES LABELS "test_molstr")
+
+add_executable(test_molvis
+  modules/molvis/test_main.cpp
+  modules/molvis/test_cpk2renderer.cpp
+)
+target_include_directories(test_molvis PRIVATE
+  ${CMAKE_SOURCE_DIR}/src
+  ${CMAKE_SOURCE_DIR}/src/modules
+  ${CMAKE_BINARY_DIR}/src
+  ${Boost_INCLUDE_DIRS}
+)
+target_compile_definitions(test_molvis PRIVATE
+  CUEMOL2_SYSCONFIG_PATH="${CMAKE_SOURCE_DIR}/data/sysconfig.xml"
+)
+target_link_libraries(test_molvis PRIVATE molvis molstr qsys gfx qlib Boost::filesystem GTest::gtest)
+if (BUILD_OPENGL_SYSDEP)
+  target_link_libraries(test_molvis PRIVATE sysdep)
+endif()
+gtest_discover_tests(test_molvis PROPERTIES LABELS "test_molvis")
 
 add_executable(test_importers
   modules/importers/test_main.cpp

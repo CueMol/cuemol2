@@ -33,6 +33,8 @@ runs:
       echo on
       cd %GITHUB_WORKSPACE%
       set HOME=%HOMEDRIVE%%HOMEPATH%
-      cmd /c build_scripts\build_cuetty_posix\run_win.bat ${{ inputs.basedir }}
+      call build_scripts\build_cuetty_posix\run_win.bat ${{ inputs.basedir }}
+      if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
       REM check run
       ${{ inputs.basedir }}\cuemol2\bin\cuetty.exe
+      if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%

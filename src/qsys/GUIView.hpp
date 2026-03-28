@@ -21,6 +21,8 @@ public:
     virtual ~GUIView();
 
 
+    virtual void setCenterMark(int nMode) override;
+
     /// Setup the projection matrix
     void setUpProjMat(int cx, int cy);
 

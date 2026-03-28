@@ -21,7 +21,9 @@ SphereSet.cpp
 CmsXform.cpp
 ColProfMgr.cpp
 Hittest.cpp
-DrawObjSet.cpp
+GpuPrim.cpp
+PixGpuPrim.cpp
+DisplayList.cpp
 )
 
 # Normal C++ header files
@@ -47,7 +49,7 @@ SolidColor.hpp
 SphereSet.hpp
 TextImgBuf.hpp
 TextRenderManager.hpp
-DrawObjSet.hpp
+DisplayList.hpp
 # color_parser.h
 gfx.hpp
 )

@@ -32,6 +32,10 @@ cd build_scripts/ && task build_libcuemol2
 
 Success indicators: `Install the project...` or `-- Up-to-date:...` in output.
 
+**注意: build出力の読み方**
+
+`task build_libcuemol2` は cmake build + install を両方行う。出力の末尾には install ステップの `-- Up-to-date: ...` が大量に並ぶが、これはビルドが実行されなかったことを意味しない。コンパイルエラーの有無は出力中の `error:` や `^\[N/M\]` の行で確認する。
+
 ## Tests
 
 ```sh
@@ -71,7 +75,7 @@ src/
 
 ## gtest Implementation Policy
 
-- 本体のソースコードがおかしい場合は、無理にそちらに迎合してtestを作成しようとせずに、本体も修正する
+- 本体のソースコードがおかしい場合は、無理にそちらに迎合してtestを作成/修正しようとせずに、本体を修正する
 - Unit tests cover all logic in `.hpp` and `.cpp` files
 - Exclude `*_wrap.cpp` (auto-generated) from test coverage
 - Tests in `src/tests/` mirror the module structure of `src/`

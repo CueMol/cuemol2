@@ -8,6 +8,10 @@
 
 #include "DisplayContext.hpp"
 #include "SolidColor.hpp"
+#include "ShaderObject.hpp"
+#include "PixelBuffer.hpp"
+#include "DrawAttrArray.hpp"
+#include "PixGpuPrim.hpp"
 
 using namespace gfx;
 
@@ -26,6 +30,11 @@ DisplayContext::DisplayContext()
   m_bLighting = false;
 
   m_matstack.push_front(Matrix4D());
+}
+
+DisplayContext::~DisplayContext()
+{
+    delete m_pPixGpuPrim;
 }
 
 bool DisplayContext::isRenderPixmap() const
@@ -235,8 +244,20 @@ void DisplayContext::drawString(const Vector4D &pos,
 
 void DisplayContext::drawPixels(const Vector4D &pos,
                                 const PixelBuffer &data,
-                                const ColorPtr &col)
+                                const ColorPtr &acol)
 {
+    PixRep *pRep = data.getRep();
+    if (pRep == nullptr) {
+        pRep = createPixRep(data);
+        if (pRep == nullptr) return;
+        data.setRep(pRep);
+    }
+    if (m_pPixGpuPrim == nullptr) {
+        m_pPixGpuPrim = MB_NEW PixGpuPrim();
+        m_pPixGpuPrim->init(this);
+    }
+    ColorPtr col = acol.isnull() ? getColor() : acol;
+    m_pPixGpuPrim->draw(this, pos, data, col);
 }
 
 /// Display unit sphere
@@ -286,8 +307,23 @@ void DisplayContext::drawMesh(const Mesh &)
 {
 }
 
-void DisplayContext::drawElem(const AbstDrawElem &)
+void DisplayContext::drawElem(const AbstDrawElem &ade)
 {
+    const int ntype = ade.getType();
+    MB_ASSERT(ntype == AbstDrawElem::VA_ATTRS || ntype == AbstDrawElem::VA_ATTR_INDS);
+    const AbstDrawAttrs &ada = static_cast<const AbstDrawAttrs &>(ade);
+    auto *pRep = ada.getVBO();
+    if (pRep == nullptr) {
+        pRep = createVBORep(ada);
+        if (pRep == nullptr) return;
+        ada.setVBO(pRep);
+    } else {
+        pRep->bind();
+        pRep->update(ada);
+    }
+    pRep->setAttrib(ada);
+    pRep->draw(ada);
+    pRep->unbind(ada);
 }
 
 void DisplayContext::setLineWidth(double lw)
@@ -366,6 +402,12 @@ void DisplayContext::endSection() {}
 void DisplayContext::startEdgeSection() {}
 void DisplayContext::endEdgeSection() {}
 
+void DisplayContext::cleanup()
+{
+    delete m_pPixGpuPrim;
+    m_pPixGpuPrim = nullptr;
+}
+
 //
 
 void DisplayContext::setEdgeLineType( int n )
@@ -427,12 +469,31 @@ void DisplayContext::getDevRGBAColor(const ColorPtr &pcol, float &r, float &g, f
     }
 }
 
-DrawObjSet *DisplayContext::createDrawObjSet() const
+ShaderObject *DisplayContext::loadShaderObject(const LString &name,
+                                               const LString &vert_path,
+                                               const LString &frag_path)
 {
-    MB_ASSERT(false);
     return nullptr;
 }
 
-void DisplayContext::drawObjSet(const DrawObjSet &dos)
+ShaderObject *DisplayContext::createShaderObject(const LString &name,
+                                                 const LString &vert_path,
+                                                 const LString &frag_path)
 {
+    return nullptr;
+}
+
+BufTexRep *DisplayContext::createBufTexRep()
+{
+    return nullptr;
+}
+
+VBORep *DisplayContext::createVBORep(const AbstDrawAttrs &)
+{
+    return nullptr;
+}
+
+PixRep *DisplayContext::createPixRep(const PixelBuffer &)
+{
+    return nullptr;
 }

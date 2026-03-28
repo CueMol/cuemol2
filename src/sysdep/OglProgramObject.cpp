@@ -18,9 +18,9 @@ using namespace sysdep;
 using qsys::SysConfig;
 
 // static
-LString OglShaderObject::s_shaderVerStr;
+LString OglShObjImpl::s_shaderVerStr;
 
-OglShaderObject::~OglShaderObject()
+OglShObjImpl::~OglShObjImpl()
 {
   if (m_hGL) {
     MB_DPRINTLN("OglShader %d destroyed", m_hGL);
@@ -29,7 +29,7 @@ OglShaderObject::~OglShaderObject()
   }
 }
 
-void OglShaderObject::loadFile(const LString& filename)
+void OglShObjImpl::loadFile(const LString& filename)
 {
     // CLR_GLERROR();
     glGetError();
@@ -93,7 +93,7 @@ void OglShaderObject::loadFile(const LString& filename)
   m_name = fnam;
 }
 
-bool OglShaderObject::compile()
+bool OglShObjImpl::compile()
 {
   int length, l;
 
@@ -174,13 +174,19 @@ void OglProgramObject::clear()
   m_shaders.clear();
 }
 
+bool OglProgramObject::loadShaders(const qlib::MapTable<qlib::LString> &file_names)
+{
+    // TODO: implement shader loading from multiple files
+    return false;
+}
+
 bool OglProgramObject::loadShader(const LString &name, const LString &srcpath, GLenum shader_type)
 {
   ShaderTab::const_iterator i = m_shaders.find(name);
   if (i!=m_shaders.end())
     return false;
   
-  OglShaderObject *pVS = new OglShaderObject(shader_type);
+  OglShObjImpl *pVS = new OglShObjImpl(shader_type);
   if (pVS==NULL)
     return false;
 
@@ -194,7 +200,7 @@ bool OglProgramObject::loadShader(const LString &name, const LString &srcpath, G
   return true;
 }
 
-void OglProgramObject::attach( const OglShaderObject *s )
+void OglProgramObject::attach( const OglShObjImpl *s )
 {
     CLR_GLERROR();
     glAttachShader( m_hPO, s->getHandle());
@@ -247,11 +253,16 @@ bool OglProgramObject::link()
   return true;
 }
 
-void OglProgramObject::use()
+void OglProgramObject::enable()
 {
   CLR_GLERROR();
   glUseProgram(m_hPO);
   CHK_GLERROR("PO.use");
+}
+
+void OglProgramObject::disable()
+{
+    glUseProgram(0);
 }
 
 void OglProgramObject::validate()

@@ -25,4 +25,5 @@ runs:
       echo on
       cd %GITHUB_WORKSPACE%
       REM set HOME=%HOMEDRIVE%%HOMEPATH%
-      cmd /c build_scripts\build_nodejs_posix\run_win.bat ${{ inputs.basedir }}
+      call build_scripts\build_nodejs_posix\run_win.bat ${{ inputs.basedir }}
+      if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%

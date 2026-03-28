@@ -8,10 +8,9 @@
 
 #include "molvis.hpp"
 #include <gfx/DrawElem.hpp>
+#include <gfx/GpuPrim.hpp>
 
 #include <modules/molstr/MolAtomRenderer.hpp>
-
-// namespace molstr { class MolCoord; }
 
 class CPK2Renderer_wrap;
 
@@ -19,10 +18,6 @@ namespace molvis {
 
   using namespace molstr;
   using gfx::DisplayContext;
-
-#ifdef USE_OPENGL
-  class GLSLSphereHelper;
-#endif
 
   class MOLVIS_API CPK2Renderer : public MolAtomRenderer
   {
@@ -51,6 +46,8 @@ namespace molvis {
     bool m_bUseShader;
 
     bool m_bCheckShaderOK;
+
+    gfx::SphereGpuPrim m_sphGpuPrim;
 
   public:
     CPK2Renderer();
@@ -103,11 +100,7 @@ namespace molvis {
     ///////////////////////////////////
     // shader rendering implementations
 
-#ifdef USE_OPENGL
-    GLSLSphereHelper *m_pSlSph;
-    void initShader();
     void renderShaderImpl();
-#endif
 
   private:
     int m_nGlRendMode;

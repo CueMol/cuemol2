@@ -11,6 +11,7 @@
 #include <gfx/HittestContext.hpp>
 #include <qlib/LPerfMeas.hpp>
 
+#include "CenterMarkDrawObj.hpp"
 #include "SceneManager.hpp"
 #include "Renderer.hpp"
 #include "ViewInputConfig.hpp"
@@ -18,8 +19,24 @@
 
 namespace qsys {
 
-GUIView::GUIView() : View() {}
+GUIView::GUIView() : View()
+{
+    auto pMark = DrawObjPtr(new CenterMarkDrawObj());
+    pMark->setEnabled(true);
+    addDrawObj("CenterMarkDrawObj", pMark);
+}
+
 GUIView::~GUIView() {}
+
+void GUIView::setCenterMark(int nMode)
+{
+    super_t::setCenterMark(nMode);
+    auto pdo = getDrawObj("CenterMarkDrawObj");
+    auto *pcmdo = dynamic_cast<CenterMarkDrawObj *>(pdo.get());
+    if (pcmdo == nullptr)
+        return;
+    pcmdo->setCenterMark(nMode);
+}
 
 void GUIView::setUpModelMat(int nid)
 {

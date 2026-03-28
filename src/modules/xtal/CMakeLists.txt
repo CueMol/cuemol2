@@ -58,12 +58,16 @@ SET(XTAL_MODLDR_SRC xtal.moddef)
 IF (BUILD_OPENGL_SYSDEP)
   list(APPEND XTAL_SRCS
     GLSLMapMeshRenderer.cpp
+    MapBufTex.cpp
+    MapMeshGpuPrim.cpp
+    GLSLMapMeshRenderer2.cpp
     # GLSLMapVolRenderer.cpp
     # MapSurfRendImpl2.cpp
     # GLSLMapSurfRendImpl1.cpp
   )
   list(APPEND XTAL_MCWG_QIFS
     GLSLMapMeshRenderer.qif
+    GLSLMapMeshRenderer2.qif
     # GLSLMapVolRenderer.qif
   )
 

@@ -2,24 +2,18 @@
 SET(SYSDEP_SRCS
   sysdep.cpp
   OglProgramObject.cpp
-  OglProgObjMgr.cpp
   ShaderSetupHelper.cpp
   # core profile
-  ogl_core/OcDisplayList.cpp
   ogl_core/OcPixDraw.cpp
+  ogl_core/OcBufTexRep.cpp
   ogl_core/OcDisplayContext.cpp
-  ogl_core/GLSLLineHelper2.cpp
-  ogl_core/GLSLTrigHelper.cpp
   ogl_core/OcView.cpp
   ogl_core/OcBufferRep.cpp
-  ogl_core/CenterMarkDrawObj.cpp
-  ogl_core/OcDrawObjSet.cpp
 )
 
 SET(SYSDEP_HDRS
 OglError.hpp
 OglHitData.hpp
-OglProgObjMgr.hpp
 OglProgramObject.hpp
 OglViewCap.hpp
 sysdep.hpp
@@ -89,8 +83,6 @@ SET(SHADER_SOURCES
   ogl_core/linew_vert.glsl
   ogl_core/linew2_vert.glsl
   ogl_core/linew_frag.glsl
-  ogl_core/drawobj3d_vert.glsl
-  ogl_core/drawobj3d_frag.glsl
 )
 SET(SHADER_DEPS
   ogl_core/lighting_inc.glsl
