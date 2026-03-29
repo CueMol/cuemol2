@@ -24,15 +24,15 @@ public:
     virtual void setCenterMark(int nMode) override;
 
     /// Setup the projection matrix
-    void setUpProjMat(int cx, int cy);
+    virtual void setUpProjMat(int cx, int cy) override;
 
     /// Setup the light source color
     void setUpLightColor();
 
     /// Setup the projection matrix for stereo (View interface)
-    virtual void setUpModelMat(int nid);
+    virtual void setUpModelMat(int nid) override;
 
-    virtual void drawScene();
+    virtual void drawScene() override;
 
     /// Clean-up the drawing display with the current bg color
     virtual void clear();
@@ -41,9 +41,9 @@ public:
     // Hit test operations
 
 public:
-    virtual LString hitTest(int x, int y);
+    virtual LString hitTest(int x, int y) override;
 
-    virtual LString hitTestRect(int x, int y, int w, int h, bool bNr);
+    virtual LString hitTestRect(int x, int y, int w, int h, bool bNr) override;
 
 private:
     gfx::HitData m_hitdata;
@@ -63,10 +63,10 @@ private:
 
 public:
     /// Create a new off-screen view compatible with this view
-    virtual View *createOffScreenView(int w, int h, int aa_depth);
+    virtual View *createOffScreenView(int w, int h, int aa_depth) override;
 
     virtual void readPixels(int x, int y, int width, int height, char *pbuf,
-                            int nbufsize, int ncomp);
+                            int nbufsize, int ncomp) override;
 
     void setFogColorImpl(DisplayContext *pdc);
 };

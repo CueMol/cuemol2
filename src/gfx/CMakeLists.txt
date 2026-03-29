@@ -24,6 +24,7 @@ Hittest.cpp
 GpuPrim.cpp
 PixGpuPrim.cpp
 DisplayList.cpp
+ShaderObject.cpp
 )
 
 # Normal C++ header files

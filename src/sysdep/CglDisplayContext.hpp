@@ -29,8 +29,8 @@ namespace sysdep {
 
     virtual ~CglDisplayContext();
 
-    virtual bool setCurrent();
-    virtual bool isCurrent() const;
+    virtual bool setCurrent() override;
+    virtual bool isCurrent() const override;
 
     ///////////////
     // System dependent impl.

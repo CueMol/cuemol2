@@ -290,7 +290,6 @@ public:
     void setProgParam(GLenum pname, GLint param);
 
     // convenience functions
-    virtual void setupFog(gfx::DisplayContext *pdc) override;
     virtual void setupMat(gfx::DisplayContext *pdc) override;
 };
 

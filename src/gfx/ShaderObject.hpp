@@ -57,7 +57,7 @@ public:
     virtual int getAttribLocation(const char *name) = 0;
 
     // convenience functions
-    virtual void setupFog(DisplayContext *pdc) = 0;
+    virtual void setupFog(DisplayContext *pdc);
     virtual void setupMat(DisplayContext *pdc) = 0;
 };
 
