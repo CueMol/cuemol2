@@ -51,6 +51,7 @@ SphereSet.hpp
 TextImgBuf.hpp
 TextRenderManager.hpp
 DisplayList.hpp
+ShaderObject.hpp
 # color_parser.h
 gfx.hpp
 )

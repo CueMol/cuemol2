@@ -82,6 +82,9 @@ runtime_class View
 
   /////////////
 
+  // Set view size
+  void sizeChanged(integer cx, integer cy) => sizeChanged;
+
   // Zoom factor
   void setZoom(real f);
   real getZoom();
@@ -117,6 +120,8 @@ runtime_class View
   void invalidate() => setUpdateFlag;
 
   void redraw() => forceRedraw;
+
+  void checkAndUpdate() => checkAndUpdate;
 
   /////////////
 
