@@ -59,6 +59,12 @@ public:
     // convenience functions
     virtual void setupFog(DisplayContext *pdc);
     virtual void setupMat(DisplayContext *pdc) = 0;
+
+    // UBO management — implemented by platform-specific subclass (e.g. OglProgramObject).
+    // Default implementations are no-ops so non-OpenGL backends compile without change.
+    virtual void initDrawParamsUBO(size_t /*size*/) {}
+    virtual void updateDrawParamsUBO(const void * /*data*/, size_t /*size*/) {}
+    virtual void updateFogUBO(const void * /*data*/, size_t /*size*/) {}
 };
 
 }  // namespace gfx

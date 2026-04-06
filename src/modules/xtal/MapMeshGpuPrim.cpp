@@ -11,6 +11,19 @@
 
 using namespace xtal;
 
+namespace {
+
+// MapMeshGpuPrim DrawParamsBlock (binding=2, 32 bytes)
+struct MapMeshDrawUBO {
+    float frag_alpha;   // offset 0
+    int   ncol;         // offset 4
+    int   nrow;         // offset 8
+    int   isolevel;     // offset 12
+    float u_color[4];   // offset 16
+};
+
+}  // namespace
+
 bool MapMeshGpuPrim::init(gfx::DisplayContext *pDC)
 {
     if (m_pPO != nullptr) return true;
@@ -29,6 +42,8 @@ bool MapMeshGpuPrim::init(gfx::DisplayContext *pDC)
         LOG_DPRINTLN("MapMeshGpuPrim> ERROR: cannot load shader.");
         return false;
     }
+
+    m_pPO->initDrawParamsUBO(sizeof(MapMeshDrawUBO));
 
     m_pPO->enable();
 
@@ -80,20 +95,26 @@ void MapMeshGpuPrim::draw(gfx::DisplayContext *pDC, const MapMeshDrawParams &par
 
     params.pBufTex->bind(0);
 
+    float r = 0.5f, g = 0.5f, b = 0.5f;
+    pDC->getDevRGBColor(pDC->getColor(), r, g, b);
+
+    MapMeshDrawUBO ubo = {};
+    ubo.frag_alpha  = params.frag_alpha;
+    ubo.ncol        = params.ncol;
+    ubo.nrow        = params.nrow;
+    ubo.isolevel    = params.isolevel;
+    ubo.u_color[0]  = r;
+    ubo.u_color[1]  = g;
+    ubo.u_color[2]  = b;
+    ubo.u_color[3]  = 1.0f;
+
     m_pPO->enable();
 
+    // dataFieldTex is a sampler; must remain as a regular uniform
     m_pPO->setUniform("dataFieldTex", 0);
-    m_pPO->setUniform("isolevel", params.isolevel);
-    m_pPO->setUniform("ncol", params.ncol);
-    m_pPO->setUniform("nrow", params.nrow);
-    m_pPO->setUniformF("frag_alpha", params.frag_alpha);
     m_pPO->setupFog(pDC);
     m_pPO->setupMat(pDC);
-    {
-        float r = 0.5f, g = 0.5f, b = 0.5f;
-        pDC->getDevRGBColor(pDC->getColor(), r, g, b);
-        m_pPO->setUniformF("u_color", r, g, b, 1.0f);
-    }
+    m_pPO->updateDrawParamsUBO(&ubo, sizeof(ubo));
 
     // Update instance count and issue draw via the backend-independent drawElem() path.
     // OcBufferRep::draw() calls glDrawArraysInstanced when numInstances > 0.

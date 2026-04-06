@@ -5,15 +5,18 @@
 #define varying out
 
 #include "fog_inc.glsl"
+#include "matrices_inc.glsl"
 
 ////////////////////
-// Uniform variables
+// DrawParamsBlock UBO: binding point 2
 
-uniform float edge_width;
-uniform vec4 edge_color;
-uniform mat4 u_ModelViewMatrix;
-uniform mat4 u_ProjectionMatrix;
-uniform mat3 u_NormalMatrix;
+layout(std140) uniform DrawParamsBlock {
+    float frag_alpha;  // offset 0
+    float edge_width;  // offset 4
+    int   u_silh;      // offset 8
+    float _pad;        // offset 12
+    vec4  edge_color;  // offset 16
+};
 
 ////////////////////
 // Vertex attributes (predefined locations)
@@ -27,14 +30,12 @@ layout(location = 1) in vec4 aNormal;
 varying vec4 v_frontColor;
 varying float v_fogCoord;
 
-// uniform int u_silh;
-
 void main(void)
 {
     // Eye-coordinate position of vertex, needed in various calculations
     vec4 ecPosition = u_ModelViewMatrix * aVertex;
 
-    vec3 normal = normalize(u_NormalMatrix * aNormal.xyz);
+    vec3 normal = normalize(mat3(u_NormalMatrix) * aNormal.xyz);
 
     ecPosition += vec4(normal * edge_width, 0);
 
@@ -45,11 +46,5 @@ void main(void)
 
     v_frontColor = edge_color;
 
-    // v_fogCoord = abs(ecPosition.z);
     v_fogCoord = ffog(ecPosition.z);
-
-    // if (u_silh == 1) {
-    //     gl_Position.z = 0.9999;
-    //     gl_Position.w = 1.0;
-    // }
 }

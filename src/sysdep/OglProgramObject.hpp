@@ -77,6 +77,14 @@ private:
     using UniformTab = std::map<LString, GLint>;
     UniformTab m_uniforms;
 
+    // UBO handles (0 = not yet created)
+    GLuint m_uboMatrices   = 0;  // binding point 0: MatricesBlock
+    GLuint m_uboFog        = 0;  // binding point 1: FogBlock
+    GLuint m_uboDrawParams = 0;  // binding point 2: DrawParamsBlock
+
+    void createOrUpdateUBO(GLuint &ubo, GLuint bindingPoint,
+                           const void *data, size_t size);
+
 public:
     OglProgramObject() : m_hPO(0) {}
     virtual ~OglProgramObject();
@@ -291,6 +299,11 @@ public:
 
     // convenience functions
     virtual void setupMat(gfx::DisplayContext *pdc) override;
+
+    // UBO management
+    virtual void initDrawParamsUBO(size_t size) override;
+    virtual void updateDrawParamsUBO(const void *data, size_t size) override;
+    virtual void updateFogUBO(const void *data, size_t size) override;
 };
 
 }  // namespace sysdep

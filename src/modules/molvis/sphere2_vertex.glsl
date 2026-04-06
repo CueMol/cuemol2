@@ -4,14 +4,18 @@
 //
 #define varying out
 
+#include <matrices_inc.glsl>
+
 ////////////////////
-// Uniform variables
+// DrawParamsBlock UBO: binding point 2
 
-// edge rendering
-uniform float u_edge;
-
-uniform mat4 u_ModelViewMatrix;
-uniform mat4 u_ProjectionMatrix;
+layout(std140) uniform DrawParamsBlock {
+    float frag_alpha;   // offset 0
+    float u_edge;       // offset 4
+    int   u_bsilh;      // offset 8
+    float _pad;         // offset 12
+    vec4  u_edgecolor;  // offset 16
+};
 
 ////////////////////
 // Vertex attributes (predefined locations)

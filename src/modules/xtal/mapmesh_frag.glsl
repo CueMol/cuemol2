@@ -6,11 +6,16 @@
 
 in float v_fogCoord;
 
-// total transparency
-uniform float frag_alpha;
+////////////////////
+// DrawParamsBlock UBO: binding point 2
 
-// mesh color (RGB) set per-frame from the renderer's current color
-uniform vec4 u_color;
+layout(std140) uniform DrawParamsBlock {
+    float frag_alpha;  // offset 0
+    int   ncol;        // offset 4
+    int   nrow;        // offset 8
+    int   isolevel;    // offset 12
+    vec4  u_color;     // offset 16
+};
 
 out vec4 o_FragColor;
 
@@ -18,4 +23,3 @@ void main (void)
 {
   o_FragColor = vec4(u_color.rgb, u_color.a * frag_alpha);
 }
-

@@ -162,6 +162,9 @@ OglProgramObject::~OglProgramObject()
 {
   MB_DPRINTLN("OglProgramObj %d destroyed", m_hPO);
   clear();
+  if (m_uboMatrices   != 0) glDeleteBuffers(1, &m_uboMatrices);
+  if (m_uboFog        != 0) glDeleteBuffers(1, &m_uboFog);
+  if (m_uboDrawParams != 0) glDeleteBuffers(1, &m_uboDrawParams);
   // glDeleteObjectARB(m_hPO);
   glDeleteProgram(m_hPO);
 }
@@ -248,6 +251,18 @@ bool OglProgramObject::link()
       delete [] info_log;
     }
 #endif
+
+    // Bind UBO blocks to their binding points.
+    // layout(binding=N) requires GLSL 4.2+ and is unavailable on macOS (max 4.1)
+    // and WebGL2 (GLSL ES 3.00), so we set binding points programmatically.
+    auto bindBlock = [this](const char *name, GLuint bp) {
+      GLuint idx = glGetUniformBlockIndex(m_hPO, name);
+      if (idx != GL_INVALID_INDEX)
+        glUniformBlockBinding(m_hPO, idx, bp);
+    };
+    bindBlock("MatricesBlock",   0);
+    bindBlock("FogBlock",        1);
+    bindBlock("DrawParamsBlock", 2);
   }
 
   return true;
@@ -382,21 +397,93 @@ void OglProgramObject::setupMat(gfx::DisplayContext *pdc)
     const Vector4D &vp = pdc->getViewport();
     glViewport(vp.x(), vp.y(), vp.z(), vp.w());
 
-    // setup model-view matrix
-    auto mvMat = pdc->getModelViewMat();
-    setMatrix("u_ModelViewMatrix", mvMat);
+    // std140 MatricesBlock layout (binding = 0):
+    //   mat4 u_ModelViewMatrix  (offset 0,   64 bytes, column-major)
+    //   mat4 u_ProjectionMatrix (offset 64,  64 bytes, column-major)
+    //   mat4 u_NormalMatrix     (offset 128, 64 bytes, mat3 stored as mat4)
+    struct MatricesUBO {
+        GLfloat modelView[16];
+        GLfloat projection[16];
+        GLfloat normal[16];   // mat3 padded to mat4 (4th row/col = 0,0,0,1)
+    } data = {};
 
-    // setup projection matrix
+    // Helper lambda: fill column-major mat4 array from Matrix4D
+    auto fillMat4 = [](GLfloat *dst, const qlib::Matrix4D &m) {
+        dst[0]  = (GLfloat)m.aij(1,1);  dst[1]  = (GLfloat)m.aij(2,1);
+        dst[2]  = (GLfloat)m.aij(3,1);  dst[3]  = (GLfloat)m.aij(4,1);
+        dst[4]  = (GLfloat)m.aij(1,2);  dst[5]  = (GLfloat)m.aij(2,2);
+        dst[6]  = (GLfloat)m.aij(3,2);  dst[7]  = (GLfloat)m.aij(4,2);
+        dst[8]  = (GLfloat)m.aij(1,3);  dst[9]  = (GLfloat)m.aij(2,3);
+        dst[10] = (GLfloat)m.aij(3,3);  dst[11] = (GLfloat)m.aij(4,3);
+        dst[12] = (GLfloat)m.aij(1,4);  dst[13] = (GLfloat)m.aij(2,4);
+        dst[14] = (GLfloat)m.aij(3,4);  dst[15] = (GLfloat)m.aij(4,4);
+    };
+
+    auto mvMat  = pdc->getModelViewMat();
     auto prjMat = pdc->getProjMat();
-    setMatrix("u_ProjectionMatrix", prjMat);
+    auto nmMat  = mvMat.getMatrix3D().invert().transpose();
 
-    // // mvp mat
-    // auto mvp = prjMat * mvMat;
-    // setMatrix("u_ModelViewProjectionMatrix", mvp);
+    fillMat4(data.modelView,  mvMat);
+    fillMat4(data.projection, prjMat);
 
-    // setup normal matrix
-    auto nmMat = mvMat.getMatrix3D().invert().transpose();
-    setMatrix("u_NormalMatrix", nmMat);
+    // mat3 → mat4: fill columns 0-2 with mat3 data, column 3 = (0,0,0,1)
+    data.normal[0]  = (GLfloat)nmMat.aij(1,1);
+    data.normal[1]  = (GLfloat)nmMat.aij(2,1);
+    data.normal[2]  = (GLfloat)nmMat.aij(3,1);
+    data.normal[3]  = 0.0f;
+    data.normal[4]  = (GLfloat)nmMat.aij(1,2);
+    data.normal[5]  = (GLfloat)nmMat.aij(2,2);
+    data.normal[6]  = (GLfloat)nmMat.aij(3,2);
+    data.normal[7]  = 0.0f;
+    data.normal[8]  = (GLfloat)nmMat.aij(1,3);
+    data.normal[9]  = (GLfloat)nmMat.aij(2,3);
+    data.normal[10] = (GLfloat)nmMat.aij(3,3);
+    data.normal[11] = 0.0f;
+    data.normal[12] = 0.0f;
+    data.normal[13] = 0.0f;
+    data.normal[14] = 0.0f;
+    data.normal[15] = 1.0f;
+
+    createOrUpdateUBO(m_uboMatrices, 0, &data, sizeof(data));
+}
+
+void OglProgramObject::createOrUpdateUBO(GLuint &ubo, GLuint bindingPoint,
+                                          const void *data, size_t size)
+{
+    if (ubo == 0) {
+        glGenBuffers(1, &ubo);
+        glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+        glBufferData(GL_UNIFORM_BUFFER, (GLsizeiptr)size, nullptr, GL_DYNAMIC_DRAW);
+    }
+    glBindBuffer(GL_UNIFORM_BUFFER, ubo);
+    glBufferSubData(GL_UNIFORM_BUFFER, 0, (GLsizeiptr)size, data);
+    glBindBufferBase(GL_UNIFORM_BUFFER, bindingPoint, ubo);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+}
+
+void OglProgramObject::initDrawParamsUBO(size_t size)
+{
+    // Allocate the DrawParams UBO buffer (binding point 2).
+    // Called once from each GpuPrim::init() with the appropriate size.
+    if (m_uboDrawParams != 0) {
+        glDeleteBuffers(1, &m_uboDrawParams);
+        m_uboDrawParams = 0;
+    }
+    glGenBuffers(1, &m_uboDrawParams);
+    glBindBuffer(GL_UNIFORM_BUFFER, m_uboDrawParams);
+    glBufferData(GL_UNIFORM_BUFFER, (GLsizeiptr)size, nullptr, GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 2, m_uboDrawParams);
+    glBindBuffer(GL_UNIFORM_BUFFER, 0);
+}
+
+void OglProgramObject::updateDrawParamsUBO(const void *data, size_t size)
+{
+    createOrUpdateUBO(m_uboDrawParams, 2, data, size);
+}
+
+void OglProgramObject::updateFogUBO(const void *data, size_t size)
+{
+    createOrUpdateUBO(m_uboFog, 1, data, size);
 }
 
 #endif

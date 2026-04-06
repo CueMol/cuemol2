@@ -4,19 +4,23 @@
 //    mapmesh render vertex shader
 //
 
-// attributes (none)
+#include <matrices_inc.glsl>
 
-// uniforms
-uniform mat4 u_ModelViewMatrix;
-uniform mat4 u_ProjectionMatrix;
+////////////////////
+// DrawParamsBlock UBO: binding point 2
 
-// Volume data field texture buffer
-uniform int ncol;
-uniform int nrow;
-uniform int nsec;
+layout(std140) uniform DrawParamsBlock {
+    float frag_alpha;  // offset 0
+    int   ncol;        // offset 4
+    int   nrow;        // offset 8
+    int   isolevel;    // offset 12
+    vec4  u_color;     // offset 16
+};
+
+// Volume data field texture buffer (sampler must stay outside UBO)
 uniform usamplerBuffer dataFieldTex;
-uniform int isolevel;
 
+// Marching-cubes lookup tables (static arrays; kept as regular uniforms)
 uniform ivec3 ivdel[12];
 uniform ivec2 edgetab[16];
 
@@ -82,7 +86,7 @@ void main(void)
     vec4 pos = calcVertex(gl_InstanceID / 3);
     int modVert = gl_InstanceID % 3;
     int vert_id = gl_VertexID;
-    int iplane = modVert;  // / 2;
+    int iplane = modVert;
 
     ivec3 ipos = ivec3(pos.xyz);
 
@@ -90,7 +94,6 @@ void main(void)
     uint uisolev = uint(isolevel);
     int ii;
 
-    // for (iplane = 0; iplane<3; ++iplane) {
     {
         uint flag = 0U;
         uint mask = 1U;
@@ -109,9 +112,6 @@ void main(void)
         }
 
         ivec2 ieg = edgetab[flag];
-
-        // if (crs0<0.0 || crs1<0.0 || crs0>1.0 || crs1>1.0)
-        //   continue;
 
         int ieg0 = vert_id == 0 ? ieg.x : ieg.y;
         float crs0 = getCrossVal(val[ieg0], val[(ieg0 + 1) % 4]);

@@ -7,10 +7,15 @@
 #include "fog_inc.glsl"
 
 ////////////////////
-// Uniform variables
+// DrawParamsBlock UBO: binding point 2
 
-uniform float frag_alpha;
-uniform int u_silh;
+layout(std140) uniform DrawParamsBlock {
+    float frag_alpha;  // offset 0
+    float edge_width;  // offset 4
+    int   u_silh;      // offset 8
+    float _pad;        // offset 12
+    vec4  edge_color;  // offset 16
+};
 
 ////////////////////
 // Varying

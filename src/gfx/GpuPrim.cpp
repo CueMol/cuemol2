@@ -14,6 +14,51 @@
 using namespace gfx;
 
 //////////////////////////////////////////////////////////////////////////
+// DrawParams UBO structs (must match std140 layout in the GLSL shaders)
+
+namespace {
+
+// SphereGpuPrim / CylinderGpuPrim — DrawParamsBlock (binding=2, 32 bytes)
+struct SphCylDrawUBO {
+    float frag_alpha;       // offset 0
+    float u_edge;           // offset 4
+    int u_bsilh;          // offset 8
+    float _pad;             // offset 12
+    float u_edgecolor[4];   // offset 16
+};
+
+// TrigGpuPrim main shader — DrawParamsBlock (binding=2, 16 bytes)
+struct TrigDrawUBO {
+    float frag_alpha;       // offset 0
+    int enable_lighting;  // offset 4
+    int u_nodepth;        // offset 8
+    float _pad;             // offset 12
+};
+
+// TrigGpuPrim edge shader — DrawParamsBlock (binding=2, 32 bytes)
+struct TrigEdgeDrawUBO {
+    float frag_alpha;       // offset 0
+    float edge_width;       // offset 4
+    int u_silh;           // offset 8
+    float _pad;             // offset 12
+    float edge_color[4];    // offset 16
+};
+
+// LineGpuPrim — DrawParamsBlock (binding=2, 48 bytes)
+struct LineDrawUBO {
+    float frag_alpha;       // offset 0
+    float lineWidth;        // offset 4
+    float stippleLen;       // offset 8
+    int u_nodepth;        // offset 12
+    float screenSize[2];    // offset 16
+    int use_u_color;      // offset 24
+    float _pad;             // offset 28
+    float u_color[4];       // offset 32
+};
+
+}  // namespace
+
+//////////////////////////////////////////////////////////////////////////
 // SphereGpuPrim
 
 SphereGpuPrim::SphereGpuPrim()
@@ -47,6 +92,7 @@ bool SphereGpuPrim::init(DisplayContext *pDC)
         return false;
     }
 
+    m_pPO->initDrawParamsUBO(sizeof(SphCylDrawUBO));
     return true;
 }
 
@@ -115,24 +161,26 @@ void SphereGpuPrim::draw(DisplayContext *pDC)
 {
     if (m_pDrawElem == nullptr || m_pPO == nullptr) return;
 
+    SphCylDrawUBO ubo = {};
+    ubo.frag_alpha = (float)pDC->getAlpha();
+
+    if (pDC->getEdgeLineType() != DisplayContext::ELT_NONE) {
+        ubo.u_edge  = (float)pDC->getEdgeLineWidth();
+        ubo.u_bsilh = (pDC->getEdgeLineType() == DisplayContext::ELT_SILHOUETTE) ? 1 : 0;
+        float r = 0.0f, g = 0.0f, b = 0.0f;
+        pDC->getDevRGBColor(pDC->getEdgeLineColor(), r, g, b);
+        ubo.u_edgecolor[0] = r;
+        ubo.u_edgecolor[1] = g;
+        ubo.u_edgecolor[2] = b;
+        ubo.u_edgecolor[3] = 1.0f;
+    } else {
+        ubo.u_edgecolor[3] = 1.0f;
+    }
+
     m_pPO->enable();
     m_pPO->setupFog(pDC);
     m_pPO->setupMat(pDC);
-    m_pPO->setUniformF("frag_alpha", (float)pDC->getAlpha());
-
-    if (pDC->getEdgeLineType() != DisplayContext::ELT_NONE) {
-        m_pPO->setUniformF("u_edge", (float)pDC->getEdgeLineWidth());
-        float r = 0.0f, g = 0.0f, b = 0.0f;
-        pDC->getDevRGBColor(pDC->getEdgeLineColor(), r, g, b);
-        m_pPO->setUniformF("u_edgecolor", r, g, b, 1.0f);
-        m_pPO->setUniform(
-            "u_bsilh",
-            (pDC->getEdgeLineType() == DisplayContext::ELT_SILHOUETTE) ? 1 : 0);
-    } else {
-        m_pPO->setUniformF("u_edge", 0.0f);
-        m_pPO->setUniformF("u_edgecolor", 0.0f, 0.0f, 0.0f, 1.0f);
-        m_pPO->setUniform("u_bsilh", 0);
-    }
+    m_pPO->updateDrawParamsUBO(&ubo, sizeof(ubo));
 
     pDC->drawElem(*m_pDrawElem);
     m_pPO->disable();
@@ -181,6 +229,7 @@ bool CylinderGpuPrim::init(DisplayContext *pDC)
         return false;
     }
 
+    m_pPO->initDrawParamsUBO(sizeof(SphCylDrawUBO));
     return true;
 }
 
@@ -271,24 +320,26 @@ void CylinderGpuPrim::draw(DisplayContext *pDC)
 {
     if (m_pDrawElem == nullptr || m_pPO == nullptr) return;
 
+    SphCylDrawUBO ubo = {};
+    ubo.frag_alpha = (float)pDC->getAlpha();
+
+    if (pDC->getEdgeLineType() != DisplayContext::ELT_NONE) {
+        ubo.u_edge  = (float)pDC->getEdgeLineWidth();
+        ubo.u_bsilh = (pDC->getEdgeLineType() == DisplayContext::ELT_SILHOUETTE) ? 1 : 0;
+        float r = 0.0f, g = 0.0f, b = 0.0f;
+        pDC->getDevRGBColor(pDC->getEdgeLineColor(), r, g, b);
+        ubo.u_edgecolor[0] = r;
+        ubo.u_edgecolor[1] = g;
+        ubo.u_edgecolor[2] = b;
+        ubo.u_edgecolor[3] = 1.0f;
+    } else {
+        ubo.u_edgecolor[3] = 1.0f;
+    }
+
     m_pPO->enable();
     m_pPO->setupFog(pDC);
     m_pPO->setupMat(pDC);
-    m_pPO->setUniformF("frag_alpha", (float)pDC->getAlpha());
-
-    if (pDC->getEdgeLineType() != DisplayContext::ELT_NONE) {
-        m_pPO->setUniformF("u_edge", (float)pDC->getEdgeLineWidth());
-        float r = 0.0f, g = 0.0f, b = 0.0f;
-        pDC->getDevRGBColor(pDC->getEdgeLineColor(), r, g, b);
-        m_pPO->setUniformF("u_edgecolor", r, g, b, 1.0f);
-        m_pPO->setUniform(
-            "u_bsilh",
-            (pDC->getEdgeLineType() == DisplayContext::ELT_SILHOUETTE) ? 1 : 0);
-    } else {
-        m_pPO->setUniformF("u_edge", 0.0f);
-        m_pPO->setUniformF("u_edgecolor", 0.0f, 0.0f, 0.0f, 1.0f);
-        m_pPO->setUniform("u_bsilh", 0);
-    }
+    m_pPO->updateDrawParamsUBO(&ubo, sizeof(ubo));
 
     pDC->drawElem(*m_pDrawElem);
     m_pPO->disable();
@@ -338,6 +389,8 @@ bool TrigGpuPrim::init(DisplayContext *pDC)
         return false;
     }
 
+    m_pPO->initDrawParamsUBO(sizeof(TrigDrawUBO));
+    m_pEdgePO->initDrawParamsUBO(sizeof(TrigEdgeDrawUBO));
     return true;
 }
 
@@ -411,12 +464,15 @@ void TrigGpuPrim::draw(DisplayContext *pDC)
         drawEdges(pDC);
     }
 
+    TrigDrawUBO ubo = {};
+    ubo.frag_alpha      = (float)pDC->getAlpha();
+    ubo.enable_lighting = pDC->isLighting() ? 1 : 0;
+    ubo.u_nodepth       = m_bNoDepth ? 1 : 0;
+
     m_pPO->enable();
     m_pPO->setupFog(pDC);
     m_pPO->setupMat(pDC);
-    m_pPO->setUniformF("frag_alpha", (float)pDC->getAlpha());
-    m_pPO->setUniform("enable_lighting", pDC->isLighting());
-    m_pPO->setUniform("u_nodepth", m_bNoDepth ? 1 : 0);
+    m_pPO->updateDrawParamsUBO(&ubo, sizeof(ubo));
 
     pDC->drawElem(*m_pDrawElems);
     m_pPO->disable();
@@ -432,15 +488,19 @@ void TrigGpuPrim::drawEdges(DisplayContext *pDC)
 
     if (m_nEdgeLineType == DisplayContext::ELT_EDGES ||
         m_nEdgeLineType == DisplayContext::ELT_SILHOUETTE) {
+        TrigEdgeDrawUBO ubo = {};
+        ubo.frag_alpha  = alpha;
+        ubo.edge_width  = (float)pDC->getEdgeLineWidth();
+        ubo.u_silh      = (m_nEdgeLineType == DisplayContext::ELT_SILHOUETTE) ? 1 : 0;
+        ubo.edge_color[0] = r;
+        ubo.edge_color[1] = g;
+        ubo.edge_color[2] = b;
+        ubo.edge_color[3] = alpha;
+
         m_pEdgePO->enable();
         m_pEdgePO->setupFog(pDC);
         m_pEdgePO->setupMat(pDC);
-        m_pEdgePO->setUniformF("frag_alpha", alpha);
-        m_pEdgePO->setUniformF("edge_width", (float)pDC->getEdgeLineWidth());
-        m_pEdgePO->setUniformF("edge_color", r, g, b, alpha);
-        m_pEdgePO->setUniform(
-            "u_silh",
-            (m_nEdgeLineType == DisplayContext::ELT_SILHOUETTE) ? 1 : 0);
+        m_pEdgePO->updateDrawParamsUBO(&ubo, sizeof(ubo));
         pDC->setCullFace(true);
         pDC->setFrontFace(false);  // GL_CW
         pDC->drawElem(*m_pDrawElems);
@@ -489,6 +549,7 @@ bool LineGpuPrim::init(DisplayContext *pDC)
         return false;
     }
 
+    m_pPO->initDrawParamsUBO(sizeof(LineDrawUBO));
     MB_DPRINTLN("LineGpuPrim> shader loaded: %p", m_pPO);
     return true;
 }
@@ -565,32 +626,36 @@ void LineGpuPrim::draw(DisplayContext *pDC)
     float h = (float)vp.w();
     MB_DPRINTLN("LineGpuPrim> viewport: (%f, %f)", w, h);
 
-    // float linew = (m_linew < 0.0f) ? (float)pDC->getDeviceLineWidth() : m_linew;
-    float linew = (m_linew < 0.0f) ? 1.0 : m_linew;
+    float linew = (m_linew < 0.0f) ? 1.0f : m_linew;
     float stippleLen = m_bStipple ? 8.0f : 0.0f;
 
-    m_pPO->enable();
+    LineDrawUBO ubo = {};
+    ubo.frag_alpha  = (float)pDC->getAlpha();
+    ubo.lineWidth   = linew;
+    ubo.stippleLen  = stippleLen;
+    ubo.u_nodepth   = m_bNoDepth ? 1 : 0;
+    ubo.screenSize[0] = w;
+    ubo.screenSize[1] = h;
+
     if (!m_bUseVertColor) {
-        m_pPO->setUniform("use_u_color", 1);
+        ubo.use_u_color = 1;
         float r = 0.5f, g = 0.5f, b = 0.5f;
         pDC->getDevRGBColor(pDC->getColor(), r, g, b);
-        m_pPO->setUniformF("u_color", r, g, b, 1.0f);
-    } else {
-        m_pPO->setUniform("use_u_color", 0);
+        ubo.u_color[0] = r;
+        ubo.u_color[1] = g;
+        ubo.u_color[2] = b;
+        ubo.u_color[3] = 1.0f;
     }
+
+    m_pPO->enable();
     m_pPO->setupFog(pDC);
     m_pPO->setupMat(pDC);
-    m_pPO->setUniformF("frag_alpha", (float)pDC->getAlpha());
-    m_pPO->setUniformF("lineWidth", linew);
-    m_pPO->setUniformF("stippleLen", stippleLen);
-    m_pPO->setUniformF("screenSize", w, h);
-    m_pPO->setUniform("u_nodepth", m_bNoDepth ? 1 : 0);
+    m_pPO->updateDrawParamsUBO(&ubo, sizeof(ubo));
 
     pDC->drawElem(*m_pDrawAry);
     m_pPO->disable();
 
     MB_DPRINTLN("LineGpuPrim> linew: %f", linew);
-
 }
 
 void LineGpuPrim::invalidate()

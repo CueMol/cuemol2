@@ -102,6 +102,7 @@ IF (BUILD_OPENGL_SYSDEP)
   SET(SHADER_DEPS
     ${CMAKE_SOURCE_DIR}/src/sysdep/ogl_core/lighting_inc.glsl
     ${CMAKE_SOURCE_DIR}/src/sysdep/ogl_core/fog_inc.glsl
+    ${CMAKE_SOURCE_DIR}/src/sysdep/ogl_core/matrices_inc.glsl
   )
   SET(SHADER_INCLUDE_DIRS
     ${CMAKE_SOURCE_DIR}/src/sysdep/ogl_core

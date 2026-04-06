@@ -6,10 +6,19 @@
 
 #include "fog_inc.glsl"
 
-uniform float frag_alpha;
-uniform float stippleLen;
-uniform vec4 u_color;
-uniform bool use_u_color;
+////////////////////
+// DrawParamsBlock UBO: binding point 2
+
+layout(std140) uniform DrawParamsBlock {
+    float frag_alpha;   // offset 0
+    float lineWidth;    // offset 4
+    float stippleLen;   // offset 8
+    int   u_nodepth;    // offset 12
+    vec2  screenSize;   // offset 16
+    int   use_u_color;  // offset 24
+    float _pad;         // offset 28
+    vec4  u_color;      // offset 32
+};
 
 ////////////////////
 // Varying
@@ -25,13 +34,12 @@ void main(void)
     if (stippleLen > 0.0) {
         float stipos = mod(v_length, stippleLen);
         if (stipos < stippleLen * 0.5) {
-            // gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
             discard;
         }
     }
 
     vec4 color;
-    if (use_u_color) {
+    if (use_u_color != 0) {
         color = u_color;
     } else {
         color = v_frontColor;
