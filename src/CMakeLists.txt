@@ -285,6 +285,9 @@ install(TARGETS cuemol2 FILE_SET HEADERS)
 
 install(FILES ${PROJECT_BINARY_DIR}/src/config.h ${PROJECT_BINARY_DIR}/src/version.hpp DESTINATION include)
 
+#
+#
+#
 set(DATA_DIR ${CMAKE_SOURCE_DIR}/data/)
 set(DATA_FILES
 ${DATA_DIR}/prot_top.xml
@@ -299,10 +302,17 @@ ${DATA_DIR}/default_style.xml
 )
 set(SYSCONFIG_FILE ${DATA_DIR}/sysconfig.xml)
 
-install(FILES ${DATA_FILES} DESTINATION data/data)
-install(FILES ${SYSCONFIG_FILE} DESTINATION data)
-install(FILES ${DATA_DIR}/icc_profiles/GenericCMYK.icm DESTINATION data/data/icc_profiles)
+# install(FILES ${DATA_FILES} DESTINATION data/data)
+# install(FILES ${SYSCONFIG_FILE} DESTINATION data)
+# install(FILES ${DATA_DIR}/icc_profiles/GenericCMYK.icm DESTINATION data/data/icc_profiles)
 
+install(FILES ${DATA_FILES} DESTINATION share/data)
+install(FILES ${SYSCONFIG_FILE} DESTINATION share)
+install(FILES ${DATA_DIR}/icc_profiles/GenericCMYK.icm DESTINATION share/icc_profiles)
+
+#
+#
+#
 if(BUILD_TESTS)
   add_subdirectory(tests)
 endif()

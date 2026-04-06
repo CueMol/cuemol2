@@ -116,6 +116,7 @@ gfx::ShaderObject *OcDisplayContext::createShaderObject(const LString &name,
         return nullptr;
     }
 
+    pPO->setName(name);
     return pPO;
 }
 

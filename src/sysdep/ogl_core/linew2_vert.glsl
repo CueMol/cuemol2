@@ -22,12 +22,12 @@ uniform int u_nodepth;
 // Vertex attributes
 
 // position
-attribute vec4 a_vertex1;
-attribute vec4 a_vertex2;
+layout(location = 0) in vec4 a_vertex1;
+layout(location = 1) in vec4 a_vertex2;
 
 // color
-attribute vec4 a_color1;
-attribute vec4 a_color2;
+layout(location = 2) in vec4 a_color1;
+layout(location = 3) in vec4 a_color2;
 
 ////////////////////
 // Varying

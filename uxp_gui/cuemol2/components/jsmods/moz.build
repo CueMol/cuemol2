@@ -115,14 +115,14 @@ FINAL_TARGET_FILES['cuemol-wrappers'] += [
 ]
 
 FINAL_TARGET_FILES += [
-    '%%%s/data/sysconfig.xml' % CONFIG['CUEMOL_DIR'],
+    '%%%s/share/sysconfig.xml' % CONFIG['CUEMOL_DIR'],
 ]
 FINAL_TARGET_FILES["data"] += [
-    '%%%s/data/data/*' % CONFIG['CUEMOL_DIR'],
+    '%%%s/share/data/*' % CONFIG['CUEMOL_DIR'],
 ]
-FINAL_TARGET_FILES["data"]["shaders"] += [
-    '%%%s/data/shaders/*.glsl' % CONFIG['CUEMOL_DIR'],
-]
+#FINAL_TARGET_FILES["data"]["shaders"] += [
+#    '%%%s/share/data/shaders/*.glsl' % CONFIG['CUEMOL_DIR'],
+#]
 
 FINAL_TARGET_FILES += ['harness-options.json']
 

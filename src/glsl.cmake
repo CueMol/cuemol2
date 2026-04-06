@@ -20,7 +20,7 @@ function(GLSL_PREPROC _target SHADER_DEPENDENCIES)
     
     # Set output directories
     set(SHADER_OUTPUT_DIR "${CMAKE_BINARY_DIR}/processed_shaders")
-    set(SHADER_INSTALL_DIR "data/shaders")
+    set(SHADER_INSTALL_DIR "share/data/shaders")
     
     # Create output directory
     file(MAKE_DIRECTORY ${SHADER_OUTPUT_DIR})

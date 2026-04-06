@@ -133,6 +133,8 @@ void GUIView::setUpProjMat(int cx, int cy)
 
 void GUIView::drawScene()
 {
+    MB_DPRINTLN("GUIView::drawScene called");
+    
     // if (!m_bInitOK) return;
     if (!safeSetCurrent()) return;
 

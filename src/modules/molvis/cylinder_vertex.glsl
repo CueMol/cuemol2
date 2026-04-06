@@ -2,7 +2,6 @@
 //
 //  vertex shader for cylinders
 //
-#define attribute in
 #define varying out
 
 ////////////////////
@@ -15,22 +14,22 @@ uniform mat4 u_ModelViewMatrix;
 uniform mat4 u_ProjectionMatrix;
 
 ////////////////////
-// Vertex attributes
+// Vertex attributes (predefined locations)
 
 // position
-attribute vec3 a_vertex;
+layout(location = 0) in vec3 a_vertex;
 
 // direction (oth-pos)
-attribute vec3 a_dir;
-
-// radius
-attribute float a_radius;
-
-// color
-attribute vec4 a_color;
+layout(location = 1) in vec3 a_dir;
 
 // impostor
-attribute vec2 a_impos;
+layout(location = 2) in vec2 a_impos;
+
+// radius
+layout(location = 3) in float a_radius;
+
+// color
+layout(location = 4) in vec4 a_color;
 
 ////////////////////
 // Varying variables

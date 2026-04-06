@@ -26,11 +26,6 @@ bool PixGpuPrim::init(DisplayContext *pDC)
         return false;
     }
 
-    m_nVertexLoc = m_pPO->getAttribLocation("a_vertex");
-    m_nTexCoordLoc = m_pPO->getAttribLocation("a_texCoord");
-    MB_DPRINTLN("PixGpuPrim> a_vertex loc=%d, a_texCoord loc=%d",
-                m_nVertexLoc, m_nTexCoordLoc);
-
     alloc();
     return true;
 }
@@ -41,9 +36,9 @@ void PixGpuPrim::alloc()
     QuadArray &data = *m_pDrawElem;
 
     data.setAttrSize(2);
-    data.setAttrInfo(0, m_nVertexLoc, 2, qlib::type_consts::QTC_FLOAT32,
+    data.setAttrInfo(0, ATTRLOC_VERTEX, 2, qlib::type_consts::QTC_FLOAT32,
                      offsetof(Elem, x));
-    data.setAttrInfo(1, m_nTexCoordLoc, 2, qlib::type_consts::QTC_FLOAT32,
+    data.setAttrInfo(1, ATTRLOC_TEXCOORD, 2, qlib::type_consts::QTC_FLOAT32,
                      offsetof(Elem, tx));
 
     data.alloc(4);

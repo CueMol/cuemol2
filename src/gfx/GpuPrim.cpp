@@ -151,12 +151,7 @@ void SphereGpuPrim::invalidate()
 // CylinderGpuPrim
 
 CylinderGpuPrim::CylinderGpuPrim()
-    : m_nVertexLoc(0),
-      m_nDirLoc(1),
-      m_nImposLoc(2),
-      m_nRadLoc(3),
-      m_nColLoc(4),
-      m_pPO(nullptr),
+    : m_pPO(nullptr),
       m_pDrawElem(nullptr)
 {
     m_dsps[0][0] = -1.0f;
@@ -186,12 +181,6 @@ bool CylinderGpuPrim::init(DisplayContext *pDC)
         return false;
     }
 
-    m_nVertexLoc = m_pPO->getAttribLocation("a_vertex");
-    m_nDirLoc = m_pPO->getAttribLocation("a_dir");
-    m_nImposLoc = m_pPO->getAttribLocation("a_impos");
-    m_nRadLoc = m_pPO->getAttribLocation("a_radius");
-    m_nColLoc = m_pPO->getAttribLocation("a_color");
-
     return true;
 }
 
@@ -204,15 +193,15 @@ void CylinderGpuPrim::alloc(int ncyl)
     CylElemAry32 &cyldata = *pdata;
 
     cyldata.setAttrSize(5);
-    cyldata.setAttrInfo(0, m_nVertexLoc, 3, qlib::type_consts::QTC_FLOAT32,
+    cyldata.setAttrInfo(0, ATTRLOC_VERTEX, 3, qlib::type_consts::QTC_FLOAT32,
                         offsetof(CylElem, cenx));
-    cyldata.setAttrInfo(1, m_nDirLoc, 3, qlib::type_consts::QTC_FLOAT32,
+    cyldata.setAttrInfo(1, ATTRLOC_DIR, 3, qlib::type_consts::QTC_FLOAT32,
                         offsetof(CylElem, dirx));
-    cyldata.setAttrInfo(2, m_nImposLoc, 2, qlib::type_consts::QTC_FLOAT32,
+    cyldata.setAttrInfo(2, ATTRLOC_IMPOS, 2, qlib::type_consts::QTC_FLOAT32,
                         offsetof(CylElem, dspx));
-    cyldata.setAttrInfo(3, m_nRadLoc, 1, qlib::type_consts::QTC_FLOAT32,
+    cyldata.setAttrInfo(3, ATTRLOC_RAD, 1, qlib::type_consts::QTC_FLOAT32,
                         offsetof(CylElem, rad));
-    cyldata.setAttrInfo(4, m_nColLoc, 4, qlib::type_consts::QTC_UINT8,
+    cyldata.setAttrInfo(4, ATTRLOC_COLOR, 4, qlib::type_consts::QTC_UINT8,
                         offsetof(CylElem, r));
 
     cyldata.alloc(ncyl * 4);
@@ -317,12 +306,7 @@ void CylinderGpuPrim::invalidate()
 // TrigGpuPrim
 
 TrigGpuPrim::TrigGpuPrim()
-    : m_nVertexLoc(0),
-      m_nNormLoc(1),
-      m_nColLoc(2),
-      m_nEVertLoc(0),
-      m_nENormLoc(1),
-      m_pPO(nullptr),
+    : m_pPO(nullptr),
       m_pEdgePO(nullptr),
       m_pDrawElems(nullptr),
       m_nEdgeLineType(DisplayContext::ELT_NONE),
@@ -346,10 +330,6 @@ bool TrigGpuPrim::init(DisplayContext *pDC)
         return false;
     }
 
-    m_nVertexLoc = m_pPO->getAttribLocation("aVertex");
-    m_nNormLoc = m_pPO->getAttribLocation("aNormal");
-    m_nColLoc = m_pPO->getAttribLocation("aColor");
-
     m_pEdgePO = pDC->loadShaderObject("gpu_trig_edge",
                                       "%%CONFDIR%%/data/shaders/trigedge_vert.glsl",
                                       "%%CONFDIR%%/data/shaders/trigedge_frag.glsl");
@@ -357,9 +337,6 @@ bool TrigGpuPrim::init(DisplayContext *pDC)
         LOG_DPRINTLN("TrigGpuPrim> ERROR: cannot load edge shader.");
         return false;
     }
-
-    m_nEVertLoc = m_pEdgePO->getAttribLocation("aVertex");
-    m_nENormLoc = m_pEdgePO->getAttribLocation("aNormal");
 
     return true;
 }
@@ -383,11 +360,11 @@ void TrigGpuPrim::setupAttrs()
     if (data.getAttrSize() > 0) return;  // already set up
 
     data.setAttrSize(3);
-    data.setAttrInfo(0, m_nVertexLoc, 3, qlib::type_consts::QTC_FLOAT32,
+    data.setAttrInfo(0, ATTRLOC_VERTEX, 3, qlib::type_consts::QTC_FLOAT32,
                      offsetof(TrigVertAttr, x));
-    data.setAttrInfo(1, m_nNormLoc, 3, qlib::type_consts::QTC_FLOAT32,
+    data.setAttrInfo(1, ATTRLOC_NORM, 3, qlib::type_consts::QTC_FLOAT32,
                      offsetof(TrigVertAttr, nx));
-    data.setAttrInfo(2, m_nColLoc, 4, qlib::type_consts::QTC_UINT8,
+    data.setAttrInfo(2, ATTRLOC_COLOR, 4, qlib::type_consts::QTC_UINT8,
                      offsetof(TrigVertAttr, r));
 }
 
@@ -486,11 +463,7 @@ void TrigGpuPrim::invalidate()
 // LineGpuPrim
 
 LineGpuPrim::LineGpuPrim()
-    : m_nVertex1Loc(0),
-      m_nVertex2Loc(1),
-      m_nCol1Loc(2),
-      m_nCol2Loc(3),
-      m_pPO(nullptr),
+    : m_pPO(nullptr),
       m_pDrawAry(nullptr),
       m_linew(1.0f),
       m_bStipple(false),
@@ -516,11 +489,7 @@ bool LineGpuPrim::init(DisplayContext *pDC)
         return false;
     }
 
-    m_nVertex1Loc = m_pPO->getAttribLocation("a_vertex1");
-    m_nVertex2Loc = m_pPO->getAttribLocation("a_vertex2");
-    m_nCol1Loc = m_pPO->getAttribLocation("a_color1");
-    m_nCol2Loc = m_pPO->getAttribLocation("a_color2");
-
+    MB_DPRINTLN("LineGpuPrim> shader loaded: %p", m_pPO);
     return true;
 }
 
@@ -546,13 +515,13 @@ void LineGpuPrim::setupAttrs()
     if (data.getAttrSize() > 0) return;  // already set up
 
     data.setAttrSize(4);
-    data.setAttrInfo(0, m_nVertex1Loc, 3, qlib::type_consts::QTC_FLOAT32,
+    data.setAttrInfo(0, ATTRLOC_VERTEX1, 3, qlib::type_consts::QTC_FLOAT32,
                      offsetof(LineElem, x1));
-    data.setAttrInfo(1, m_nVertex2Loc, 3, qlib::type_consts::QTC_FLOAT32,
+    data.setAttrInfo(1, ATTRLOC_VERTEX2, 3, qlib::type_consts::QTC_FLOAT32,
                      offsetof(LineElem, x2));
-    data.setAttrInfo(2, m_nCol1Loc, 4, qlib::type_consts::QTC_UINT8,
+    data.setAttrInfo(2, ATTRLOC_COLOR1, 4, qlib::type_consts::QTC_UINT8,
                      offsetof(LineElem, r1));
-    data.setAttrInfo(3, m_nCol2Loc, 4, qlib::type_consts::QTC_UINT8,
+    data.setAttrInfo(3, ATTRLOC_COLOR2, 4, qlib::type_consts::QTC_UINT8,
                      offsetof(LineElem, r2));
 
     const int ndiv = 1;
@@ -594,6 +563,7 @@ void LineGpuPrim::draw(DisplayContext *pDC)
     qlib::Vector4D vp = pDC->getViewport();
     float w = (float)vp.z();
     float h = (float)vp.w();
+    MB_DPRINTLN("LineGpuPrim> viewport: (%f, %f)", w, h);
 
     // float linew = (m_linew < 0.0f) ? (float)pDC->getDeviceLineWidth() : m_linew;
     float linew = (m_linew < 0.0f) ? 1.0 : m_linew;
@@ -618,6 +588,9 @@ void LineGpuPrim::draw(DisplayContext *pDC)
 
     pDC->drawElem(*m_pDrawAry);
     m_pPO->disable();
+
+    MB_DPRINTLN("LineGpuPrim> linew: %f", linew);
+
 }
 
 void LineGpuPrim::invalidate()

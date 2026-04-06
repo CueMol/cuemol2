@@ -110,11 +110,12 @@ public:
     using CylElemAry32 = gfx::DrawAttrElems<quint32, CylElem>;
 
 private:
-    int m_nVertexLoc;
-    int m_nDirLoc;
-    int m_nImposLoc;
-    int m_nRadLoc;
-    int m_nColLoc;
+    // Predefined attribute locations (must match layout(location=N) in cylinder_vertex.glsl)
+    static constexpr int ATTRLOC_VERTEX = 0;
+    static constexpr int ATTRLOC_DIR    = 1;
+    static constexpr int ATTRLOC_IMPOS  = 2;
+    static constexpr int ATTRLOC_RAD    = 3;
+    static constexpr int ATTRLOC_COLOR  = 4;
 
     gfx::ShaderObject *m_pPO;
     CylElemAry32 *m_pDrawElem;
@@ -164,14 +165,14 @@ public:
     using TrigMesh = gfx::DrawAttrElems<quint32, TrigVertAttr>;
 
 private:
-    // Main triangle shader attributes
-    int m_nVertexLoc;
-    int m_nNormLoc;
-    int m_nColLoc;
+    // Predefined attribute locations (must match layout(location=N) in trig_vert.glsl)
+    static constexpr int ATTRLOC_VERTEX = 0;
+    static constexpr int ATTRLOC_NORM   = 1;
+    static constexpr int ATTRLOC_COLOR  = 2;
 
-    // Edge shader attributes
-    int m_nEVertLoc;
-    int m_nENormLoc;
+    // Edge shader uses same locations (trigedge_vert.glsl: aVertex=0, aNormal=1)
+    static constexpr int ATTRLOC_EVERT  = 0;
+    static constexpr int ATTRLOC_ENORM  = 1;
 
     gfx::ShaderObject *m_pPO;
     gfx::ShaderObject *m_pEdgePO;
@@ -252,10 +253,11 @@ public:
     using LineArray = gfx::DrawAttrElems<quint32, LineElem>;
 
 private:
-    int m_nVertex1Loc;
-    int m_nVertex2Loc;
-    int m_nCol1Loc;
-    int m_nCol2Loc;
+    // Predefined attribute locations (must match layout(location=N) in linew2_vert.glsl)
+    static constexpr int ATTRLOC_VERTEX1 = 0;
+    static constexpr int ATTRLOC_VERTEX2 = 1;
+    static constexpr int ATTRLOC_COLOR1  = 2;
+    static constexpr int ATTRLOC_COLOR2  = 3;
 
     gfx::ShaderObject *m_pPO;
     LineArray *m_pDrawAry;

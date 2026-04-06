@@ -2,7 +2,6 @@
 //
 //  Default vertex shader for OpenGL
 //
-#define attribute in
 #define varying out
 
 #include "fog_inc.glsl"
@@ -17,10 +16,10 @@ uniform mat4 u_ProjectionMatrix;
 uniform mat3 u_NormalMatrix;
 
 ////////////////////
-// Vertex attributes
+// Vertex attributes (predefined locations)
 
-attribute vec4 aVertex;
-attribute vec4 aNormal;
+layout(location = 0) in vec4 aVertex;
+layout(location = 1) in vec4 aNormal;
 
 ////////////////////
 // Varying

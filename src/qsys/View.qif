@@ -85,6 +85,9 @@ runtime_class View
   // Set view size
   void sizeChanged(integer cx, integer cy) => sizeChanged;
 
+  // Pixel scale factor (DPI scaling)
+  void setSclFac(real cx, real cy);
+
   // Zoom factor
   void setZoom(real f);
   real getZoom();

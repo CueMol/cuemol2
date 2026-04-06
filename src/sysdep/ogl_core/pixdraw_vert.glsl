@@ -2,7 +2,6 @@
 //
 //  Pixel drawing shader for OpenGL
 //
-#define attribute in
 #define varying out
 
 #include "fog_inc.glsl"
@@ -18,10 +17,10 @@ uniform mat4 u_ModelViewMatrix;
 uniform mat4 u_ProjectionMatrix;
 
 ////////////////////
-// Vertex attributes
+// Vertex attributes (predefined locations)
 
-attribute vec2 a_vertex;
-attribute vec2 a_texCoord;
+layout(location = 0) in vec2 a_vertex;
+layout(location = 1) in vec2 a_texCoord;
 
 ////////////////////
 // Varying variables

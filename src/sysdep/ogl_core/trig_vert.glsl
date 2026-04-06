@@ -2,7 +2,6 @@
 //
 //  Triangle vertex shader for OpenGL
 //
-#define attribute in
 #define varying out
 
 #include "lighting_inc.glsl"
@@ -19,11 +18,11 @@ uniform mat3 u_NormalMatrix;
 uniform int u_nodepth;
 
 ////////////////////
-// Vertex attributes
+// Vertex attributes (predefined locations)
 
-attribute vec4 aVertex;
-attribute vec4 aNormal;
-attribute vec4 aColor;
+layout(location = 0) in vec4 aVertex;
+layout(location = 1) in vec4 aNormal;
+layout(location = 2) in vec4 aColor;
 
 ////////////////////
 // Varying variables
